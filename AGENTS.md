@@ -74,6 +74,10 @@ changes) so release notes can be generated. Scopes: `sim`, `ui`, `worker`, `data
 
 ## Writing
 
+Use American English everywhere: prose, UI copy, code identifiers, comments and commit
+messages (neighborhood, color, signalized, meters, license). Titles of cited works keep
+their original spelling.
+
 All prose a person will read (README and other docs, UI copy, OpenSpec proposals and
 designs, commit bodies) goes through the `humanizer` skill
 (https://github.com/blader/humanizer) before it is committed. `npm install` fetches it
