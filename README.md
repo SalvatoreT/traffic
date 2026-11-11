@@ -1,6 +1,6 @@
 # Traffic
 
-A neighbourhood traffic simulator. It runs a microscopic model of today's traffic on a real street network. You add
+A neighborhood traffic simulator. It runs a microscopic model of today's traffic on a real street network. You add
 interventions (modal filters, speed humps, traffic circles, one-way streets, turn bans, signal changes) and see the
 result next to the baseline. The first study area is the Rockridge Trapezoid in North Oakland, CA; study areas are
 data, so nothing in the code is specific to it. The simulation core is Rust compiled to WASM and runs in a Web Worker; the UI is
@@ -59,7 +59,7 @@ Contributors and agents should read [AGENTS.md](AGENTS.md).
   schemes also remove traffic ([Thomas2024]), which this version does not model.
 - Safety is reported as surrogate indicators (speeds, time-to-collision
   conflicts; [Hayward1972], [Mahmud2017]), not crash predictions.
-- Parameters and demand that are not sourced are labelled as assumptions in
+- Parameters and demand that are not sourced are labeled as assumptions in
   code, specs and the UI.
 
 Keys resolve in [docs/references.md](docs/references.md), which records how each entry was verified.
@@ -80,7 +80,7 @@ Non-trivial changes go through OpenSpec: propose with `npx openspec new change <
 design and tasks, and validate with `npx openspec validate <name> --strict --no-interactive`.
 After implementing, archive with `npx openspec archive <name> --yes`. See [AGENTS.md](AGENTS.md).
 
-## Licence and attribution
+## License and attribution
 
-Code is released under the licence in [LICENSE](LICENSE). Map data is (c) OpenStreetMap contributors, available under the
+Code is released under the license in [LICENSE](LICENSE). Map data is (c) OpenStreetMap contributors, available under the
 [ODbL](https://www.openstreetmap.org/copyright); derived network and basemap files carry the same attribution.

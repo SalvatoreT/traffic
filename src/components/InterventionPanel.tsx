@@ -87,7 +87,7 @@ export function InterventionPanel(p: Props) {
       case 'traffic_circle': iv = { type: 'traffic_circle', node: nodeId }; break;
       case 'control': iv = { type: 'control', node: nodeId, control }; break;
       case 'signal_timing':
-        if (B.network.nodes[nodeId].control !== 'signal') return p.onAdd([], `${X.nodeName[nodeId]} is not signalised. Use "Intersection control" to make it a signal first.`);
+        if (B.network.nodes[nodeId].control !== 'signal') return p.onAdd([], `${X.nodeName[nodeId]} is not signalized. Use "Intersection control" to make it a signal first.`);
         iv = { type: 'signal_timing', node: nodeId, cycle }; break;
       case 'turn_ban': setBanNode(nodeId); setBanFrom(null); setBanTo(null); return;
     }

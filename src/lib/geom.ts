@@ -46,7 +46,7 @@ export function polylineLength(g: [number, number][]): number {
 }
 
 /**
- * Nearest directed link to a point (local metres) within tolerance. Where a street has two directions the
+ * Nearest directed link to a point (local meters) within tolerance. Where a street has two directions the
  * link on whose right-hand side the point lies wins (links are drawn offset to the right).
  */
 export function pickLink(net: Network, x: number, y: number, tol: number): NetLink | null {

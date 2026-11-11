@@ -48,7 +48,7 @@ The simulation SHALL report through-trip traffic on residential and service link
 - **THEN** that link's cut-through flow and the aggregate cut-through vehicle-km increase
 
 ### Requirement: Safety surrogate metrics
-The simulation SHALL report, for residential links in the study area, mean and 85th-percentile speed, the share of vehicle-time above 20 mph and 25 mph, and counts of car-following conflicts with time-to-collision below 1.5 s [Hayward1972, Mahmud2017], labelled as surrogates rather than crash predictions.
+The simulation SHALL report, for residential links in the study area, mean and 85th-percentile speed, the share of vehicle-time above 20 mph and 25 mph, and counts of car-following conflicts with time-to-collision below 1.5 s [Hayward1972, Mahmud2017], labeled as surrogates rather than crash predictions.
 
 #### Scenario: Speeding on a local street
 - **WHEN** vehicles travel a residential link above 25 mph

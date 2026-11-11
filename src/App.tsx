@@ -240,7 +240,7 @@ function Simulator({ bundle }: { bundle: AreaBundle }) {
                 </p>
               )}
               {bundle.synthetic && <p className="notice" role="note">Showing a synthetic fixture area because the study-area data files were not found.</p>}
-              {engine?.kind === 'mock' && <p className="notice" role="note">Using the built-in mock simulation ({engine.reason}). Vehicle behaviour and metrics are illustrative only.</p>}
+              {engine?.kind === 'mock' && <p className="notice" role="note">Using the built-in mock simulation ({engine.reason}). Vehicle behavior and metrics are illustrative only.</p>}
               {simError && <p className="notice err" role="alert">{simError}</p>}
             </div>
           )}

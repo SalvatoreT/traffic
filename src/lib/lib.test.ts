@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { makeProjection, metresPerPixel } from './projection';
+import { makeProjection, metersPerPixel } from './projection';
 import { decodeHash, encodeHash } from './hash';
 import { buildIndex, directedLabel } from './naming';
 import { formatDiff, formatValue, formatClock } from './format';
@@ -24,7 +24,7 @@ describe('projection', () => {
     expect(y).toBeGreaterThan(111000); expect(y).toBeLessThan(111400);
     const [x] = p.toLocal(-122.256 + 1, 37.8455);
     expect(x / y).toBeCloseTo(Math.cos((37.8455 * Math.PI) / 180), 5);
-    expect(metresPerPixel(15, 37.8)).toBeCloseTo(1.887, 2);
+    expect(metersPerPixel(15, 37.8)).toBeCloseTo(1.887, 2);
   });
 });
 
@@ -126,7 +126,7 @@ describe('network health', () => {
 });
 
 describe('friendly street names', () => {
-  it('names unnamed service roads after a neighbouring street and tags cul-de-sac ends', () => {
+  it('names unnamed service roads after a neighboring street and tags cul-de-sac ends', () => {
     const net: Network = JSON.parse(JSON.stringify(fx));
     const l = net.links.find((x) => x.inStudyArea && x.name)!;
     const tail = net.nodes.length;

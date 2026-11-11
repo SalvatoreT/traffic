@@ -8,7 +8,7 @@ Baseline demand SHALL be expressed as origin–destination vehicle flows per tim
 - **THEN** every flow references existing nodes and has a non-negative rate
 
 ### Requirement: Derived from public data with provenance
-Demand SHALL be synthesised from public sources (traffic counts, census commute flows) and the demand file SHALL list each source with URL and a note of how it was used; values that are assumptions rather than data SHALL be labelled as such.
+Demand SHALL be synthesized from public sources (traffic counts, census commute flows) and the demand file SHALL list each source with URL and a note of how it was used; values that are assumptions rather than data SHALL be labeled as such.
 
 #### Scenario: Count available for a street
 - **WHEN** a public traffic count exists for a gate street

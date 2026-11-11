@@ -78,7 +78,7 @@ export function Legend(p: LegendProps) {
         <div className="ramp-title">{title}</div>
         <div className="ramp-bar" style={{ background: grad }} />
         <div className="ramp-ticks" aria-hidden="false">{ticks.map((t, i) => <span key={i}>{t}</span>)}</div>
-        <div className="muted small">{p.overlay === 'speed' ? 'Slower = darker/wider (more congested).' : 'Higher = wider line.'} Grey thin = no vehicles.</div>
+        <div className="muted small">{p.overlay === 'speed' ? 'Slower = darker/wider (more congested).' : 'Higher = wider line.'} Gray thin = no vehicles.</div>
       </div>
       <ul className="keys" aria-label="Map symbols">
         <li><svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="var(--veh)" stroke="var(--veh-ring)" /></svg> Vehicle</li>

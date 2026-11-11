@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Metrics } from '../types';
-import { CARDS, networkHealth, summarise } from '../lib/metrics';
+import { CARDS, networkHealth, summarize } from '../lib/metrics';
 import { formatClock, formatDiff, formatValue } from '../lib/format';
 
 interface Props {
@@ -14,7 +14,7 @@ export function Comparison({ base, scen, comparing, scenarioCount, onRef }: Prop
   useEffect(() => {
     if (!base || !scen || !comparing) { setAnnounce(''); return; }
     const now = Date.now();
-    if (now - last.current > 20000 && scen.time >= 120) { last.current = now; setAnnounce(summarise(base, scen)); }
+    if (now - last.current > 20000 && scen.time >= 120) { last.current = now; setAnnounce(summarize(base, scen)); }
   }, [base, scen, comparing]);
 
   const elapsed = scen?.time ?? 0;
@@ -60,7 +60,7 @@ export function Comparison({ base, scen, comparing, scenarioCount, onRef }: Prop
       ))}
       <aside className="caveat" aria-label="Caveat about fixed demand">
         Trip demand is fixed in this version: the same trips are made before and after
-        every change. Real schemes also remove some traffic. A meta-analysis of London low-traffic neighbourhoods found traffic
+        every change. Real schemes also remove some traffic. A meta-analysis of London low-traffic neighborhoods found traffic
         inside the schemes fell by about 47% on average while boundary roads were on average roughly unchanged (with wide variation
         between schemes) [<button type="button" className="link" onClick={() => onRef('Thomas2024')}>Thomas2024</button>]. These results show a fixed set of trips redistributed, not a forecast.
         {scenarioCount === 0 ? '' : ' Model parameters are uncalibrated assumptions unless the Sources page says otherwise.'}

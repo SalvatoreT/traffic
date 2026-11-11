@@ -29,7 +29,7 @@ The UI SHALL show the scenario's metrics beside the baseline's for the same peri
 - **THEN** cut-through, safety and delay metrics show baseline, scenario and difference
 
 ### Requirement: Accessibility
-The UI SHALL meet WCAG 2.2 AA: full keyboard operation with visible focus, labelled controls, 4.5:1 text contrast in light and dark themes, colour never the sole carrier of meaning, and a text/table alternative for information shown only on the map.
+The UI SHALL meet WCAG 2.2 AA: full keyboard operation with visible focus, labeled controls, 4.5:1 text contrast in light and dark themes, color never the sole carrier of meaning, and a text/table alternative for information shown only on the map.
 
 #### Scenario: Screen reader user
 - **WHEN** a screen reader user explores results

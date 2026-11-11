@@ -1,4 +1,4 @@
-# Traffic-science bibliography for the North Oakland (Rockridge) neighbourhood traffic simulator
+# Traffic-science bibliography for the North Oakland (Rockridge) neighborhood traffic simulator
 
 Compiled 2026-11-11. Second (verification) pass 2026-11-11.
 
@@ -39,7 +39,7 @@ Compiled 2026-11-11. Second (verification) pass 2026-11-11.
 ### 1.1 Core model: IDM
 
 **[Treiber2000]** [V] Treiber, M., Hennecke, A., Helbing, D. (2000). Congested traffic states in empirical observations and microscopic simulations. *Physical Review E* 62(2), 1805–1824. DOI 10.1103/PhysRevE.62.1805 (Crossref). arXiv cond-mat/0002177 (full text read for the IDM equations).
-Introduces the Intelligent Driver Model. Bottlenecks are modelled by locally raising the time headway T.
+Introduces the Intelligent Driver Model. Bottlenecks are modeled by locally raising the time headway T.
 
 **IDM equations** (**Checked against:** [Treiber2000] arXiv cond-mat/0002177 Eq. 6-7 and Table I, and traffic-simulation.de/info/info_IDM.html, 2026-11-11):
 
@@ -63,13 +63,13 @@ s*(v,dv) = s0 + max(0, v*T + v*dv/(2*sqrt(a*b)))
 The textbook reference for IDM, the numerics, calibration and fuel consumption. The first implementation reference.
 
 **[Kesting2009]** [V-meta] Kesting, A., Treiber, M., Helbing, D. (2009). Agents for traffic simulation. In: Uhrmacher & Weyns (eds.), *Multi-Agent Systems: Simulation and Applications*, CRC Press, ch. 11, pp. 325–356. DOI 10.1201/9781420070248.ch11. arXiv 0805.0300 (journal_ref confirmed by the arXiv API).
-Driver-agent parameterisation (reaction time, desired speed, time gap, anticipation). The parameter table was not read; use [Kesting2010] Table 1 and [Treiber2000] Table I for values.
+Driver-agent parameterization (reaction time, desired speed, time gap, anticipation). The parameter table was not read; use [Kesting2010] Table 1 and [Treiber2000] Table I for values.
 
 **[Treiber2006]** [V] Treiber, M., Kesting, A., Helbing, D. (2006). Delays, inaccuracies and anticipation in microscopic traffic models. *Physica A* 360(1), 71–88. DOI 10.1016/j.physa.2005.05.001 (Crossref).
-Adds finite reaction time, estimation errors modelled as Wiener processes, and anticipation to IDM. This is the canonical stochastic and human-factors extension.
+Adds finite reaction time, estimation errors modeled as Wiener processes, and anticipation to IDM. This is the canonical stochastic and human-factors extension.
 
 **[Treiber2015]** [V] Treiber, M., Kanagaraj, V. (2015). Comparing numerical integration schemes for time-continuous car-following models. *Physica A* 419, 183–195. arXiv 1403.4881.
-DOI 10.1016/j.physa.2014.09.061 (Crossref). Compares Euler, ballistic update, Heun (trapezoidal) and RK4. The ballistic update has only about 30% of Euler's discretisation error at equal cost. The paper recommends the ballistic and trapezoidal schemes. For h ≤ 0.5 s the order of performance is RK4, trapezoidal, ballistic, Euler, but RK4 is worst once lane changes are included.
+DOI 10.1016/j.physa.2014.09.061 (Crossref). Compares Euler, ballistic update, Heun (trapezoidal) and RK4. The ballistic update has only about 30% of Euler's discretization error at equal cost. The paper recommends the ballistic and trapezoidal schemes. For h ≤ 0.5 s the order of performance is RK4, trapezoidal, ballistic, Euler, but RK4 is worst once lane changes are included.
 **Implementation note** (**Checked against:** [Treiber2015] arXiv 1403.4881 Eq. 14-15, and traffic-simulation.de which states that any update step below 0.5 s gives essentially the same IDM result):
 
 ```
@@ -125,10 +125,10 @@ Hierarchical Bayesian posterior over IDM parameters with Gaussian-process tempor
 Common calibration objectives (multiple-runs mean error, MLE) are biased for stochastic models. MRMin is near-unbiased. Spacing as the measure of performance does not always beat speed.
 
 **[Vasconcelos2025]** [V] Vasconcelos, L., Bandeira, J.M. (2025). Calibration of the Intelligent Driver Model (IDM) at the microscopic level. *Future Transportation* 5(2), 57. DOI 10.3390/futuretransp5020057.
-A two-step urban calibration (manual physical-parameter fit, then bounded simultaneous optimisation) on instrumented-vehicle data from an urban route. Crossref confirms the journal record and an earlier preprint (10.20944/preprints202501.0468.v1). The paper's parameters were not read.
+A two-step urban calibration (manual physical-parameter fit, then bounded simultaneous optimization) on instrumented-vehicle data from an urban route. Crossref confirms the journal record and an earlier preprint (10.20944/preprints202501.0468.v1). The paper's parameters were not read.
 
 **[Punzo2016]** [V] Punzo, V., Montanino, M. (2016). Speed or spacing? Cumulative variables, and convolution of model errors and time in traffic flow models validation and calibration. *Transportation Research Part B* 91, 21–33. DOI 10.1016/j.trb.2016.04.012.
-Calibrating on travelled space (a cumulative variable) is more robust than calibrating on speed or acceleration. The NGSIM and IDM use in the paper was not confirmed.
+Calibrating on traveled space (a cumulative variable) is more robust than calibrating on speed or acceleration. The NGSIM and IDM use in the paper was not confirmed.
 
 **[Treiber2013cal]** [V] Treiber, M., Kesting, A. (2013). Microscopic calibration and validation of car-following models: a systematic approach. *Procedia – Social and Behavioral Sciences* 80, 922–939. DOI 10.1016/j.sbspro.2013.05.050 (DOI, year and pages confirmed by Crossref). arXiv 1403.4990.
 Data preparation, local MLE and global least-squares calibration. A practical recipe.
@@ -175,10 +175,10 @@ The standard survey.
 
 ## 3. Intersections
 
-### 3.1 Signalised
+### 3.1 Signalized
 
 **[Webster1958]** [V-partial] Webster, F.V. (1958). *Traffic signal settings.* Road Research Technical Paper No. 39, HMSO, London.
-Number and role were corroborated by secondary citations (Allsop 1971, SWOV, Salter). No catalogue record or full text was seen.
+Number and role were corroborated by secondary citations (Allsop 1971, SWOV, Salter). No catalog record or full text was seen.
 
 **Webster equations:**
 
@@ -204,7 +204,7 @@ S*     = argmax_j p(S_j)
 ```
 
 - This matches the earlier written form. In the original ("Original-MP") model `x` is the vehicle count on a point-queue link and downstream capacity is treated as infinite.
-- **Property:** decentralised, needs no demand knowledge, and maximally stabilising (serves all demand that any signal plan can serve). Strong v1 adaptive controller. Known weakness: it ignores finite link storage and spillover (the motivation for [Kouvelas2014] and travel-time variants).
+- **Property:** decentralized, needs no demand knowledge, and maximally stabilizing (serves all demand that any signal plan can serve). Strong v1 adaptive controller. Known weakness: it ignores finite link storage and spillover (the motivation for [Kouvelas2014] and travel-time variants).
 
 **[Kouvelas2014]** [V] Kouvelas, A., Lioris, J., Fayazi, S.A., Varaiya, P. (2014). Maximum pressure controller for stabilizing queues in signalized arterial networks. *Transportation Research Record* 2421, 133–141. DOI 10.3141/2421-15 (Crossref). The arterial extension, accounting for finite link storage.
 
@@ -213,14 +213,14 @@ S*     = argmax_j p(S_j)
 **[Wei2019]** [V] Wei, H., Chen, C., Zheng, G., Wu, K., Gayah, V., Xu, K., Li, Z. (2019). PressLight: Learning max pressure control to coordinate traffic signals in arterial network. *Proc. 25th ACM SIGKDD*, pp. 1290–1298. DOI 10.1145/3292500.3330949 (Crossref).
 RL reward built on max-pressure theory. A reference for later, learning-based signal retiming.
 
-### 3.2 Unsignalised, all-way stop
+### 3.2 Unsignalized, all-way stop
 
 **[HCM7]** [V-partial] Transportation Research Board (2022). *Highway Capacity Manual 7th Edition: A Guide for Multimodal Mobility Analysis.* National Academies Press.
 Whether the 7th-edition AWSC model changes from the 2010/6th edition is not confirmed. Sources conflict. HCM 6th ed. (2016) is the safer cite, and the model is the same iterative departure-headway method.
 Seen: the departure headway is a base plus adjustments for left, right and heavy vehicles, with the iteration starting at 3.2 s (NCHRP guidebook snippet). Per-degree-of-conflict saturation headway values were **not** seen. They must be taken from the HCM chapter.
 **Simulator note:** for v1, model AWSC by first-come-first-served with a discharge headway of about 3–4 s, falling to about 2–3 s in same-direction platoons (recalled, UNVERIFIED).
 
-### 3.3 Unsignalised, gap acceptance
+### 3.3 Unsignalized, gap acceptance
 
 **[Brilon1999]** [V] Brilon, W., Koenig, R., Troutbeck, R.J. (1999). Useful estimation procedures for critical gaps. *Transportation Research Part A* 33(3–4), 161–186. DOI 10.1016/S0965-8564(98)00048-2.
 Recommends maximum likelihood (Troutbeck) and Hewitt's method. The test criterion is independence from major-street volume.
@@ -260,7 +260,7 @@ generic Siegloch form used for calibration: c = (3600/t_f) * exp(-v_circ * (t_c 
 
 **[Retting2001]** [V] Retting, R.A., Persaud, B.N., Garder, P.E., Lord, D. (2001). Crash and injury reduction following installation of roundabouts in the United States. *American Journal of Public Health* 91(4), 628–631. DOI 10.2105/AJPH.91.4.628 (Crossref; author list not returned in the record).
 Empirical Bayes before/after at 24 intersections converted from signal or stop control: about −38% all crashes and about −76% injury crashes. About −90% for fatal/incapacitating, as reported in the abstract.
-**Caveat:** these are mostly single-lane, higher-volume intersections, not neighbourhood mini-circles. Do not transfer the magnitudes to residential traffic circles without adjustment.
+**Caveat:** these are mostly single-lane, higher-volume intersections, not neighborhood mini-circles. Do not transfer the magnitudes to residential traffic circles without adjustment.
 
 ---
 
@@ -269,7 +269,7 @@ Empirical Bayes before/after at 24 intersections converted from signal or stop c
 ### 4.1 Macroscopic fundamental diagram (MFD)
 
 **[Daganzo2007]** [V] Daganzo, C.F. (2007). Urban gridlock: Macroscopic modeling and mitigation approaches. *Transportation Research Part B* 41(1), 49–62. DOI 10.1016/j.trb.2006.03.001.
-Aggregate neighbourhood accumulation-based models and perimeter control. Corrigendum in vol. 41(3), p. 379.
+Aggregate neighborhood accumulation-based models and perimeter control. Corrigendum in vol. 41(3), p. 379.
 
 **[Geroliminis2008]** [V] Geroliminis, N., Daganzo, C.F. (2008). Existence of urban-scale macroscopic fundamental diagrams: Some experimental findings. *Transportation Research Part B* 42(9), 759–770. DOI 10.1016/j.trb.2008.02.002.
 Yokohama detectors plus taxi GPS. A low-scatter relation between network flow and density, linked to trip completion rate.
@@ -285,7 +285,7 @@ Perimeter gating, reducing delay in a Chania case study.
 
 **[Loder2019]** [V] Loder, A., Ambühl, L., Menendez, M., Axhausen, K.W. (2019). Understanding traffic capacity of urban networks. *Scientific Reports* 9, 16283. DOI 10.1038/s41598-019-51539-5 (DOI from Crossref; article number from pass 1).
 More than 40 cities. Network topology explains about 90% of the variation in the MFD critical point. Critical accumulation scales sublinearly with network size.
-**Use:** the validation check. The simulated neighbourhood's MFD (accumulation against trip completion rate) should show a plausible peak.
+**Use:** the validation check. The simulated neighborhood's MFD (accumulation against trip completion rate) should show a plausible peak.
 
 **[Johari2021]** [V] Johari, M., Keyvan-Ekbatani, M., Leclercq, L., Ngoduy, D., Mahmassani, H.S. (2021). Macroscopic network-level traffic models: Bridging fifty years of development toward the next era. *Transportation Research Part C* 131, 103334. DOI 10.1016/j.trc.2021.103334.
 Review covering equilibrium and dynamic network models, MFD-based control and open gaps.
@@ -306,7 +306,7 @@ Mathematical formulation of Wardrop's first principle.
 The DTA survey.
 
 **[BarGera2002]** [V] Bar-Gera, H. (2002). Origin-based algorithm for the traffic assignment problem. *Transportation Science* 36(4), 398–417. DOI 10.1287/trsc.36.4.398.549.
-A converging alternative to Frank–Wolfe. A later *Transportation Science* note reports a flaw in the second-derivative step. This is probably overkill for a neighbourhood-sized network.
+A converging alternative to Frank–Wolfe. A later *Transportation Science* note reports a flaw in the second-derivative step. This is probably overkill for a neighborhood-sized network.
 
 **Practical v1 route choice** (design suggestion, no citation): iterative day-to-day updating with MSA-style blending, or perturbed shortest paths (stochastic user equilibrium via logit), on a network of a few hundred links, run client-side.
 
@@ -320,7 +320,7 @@ Home-side flows are partially synthetic and work-side flows carry noise infusion
 
 **[Matet2024]** [V-meta] Matet, B., Côme, E., Furno, A., Hörl, S., Oukhellou, L., El Faouzi, N.-E. (2024). Improving the generation of synthetic travel demand using origin–destination matrices from mobile phone data. *Transportation* 53(3), 1107–1139. DOI 10.1007/s11116-024-10524-2 (Crossref). Uses mobile-phone OD matrices, **not LODES**. Relevant only as a method for calibrating synthetic demand to an observed OD matrix. (Initial name spelling "El Faouzi N" in Crossref; full given name not confirmed.)
 
-Still **not found:** a peer-reviewed paper that specifically turns LODES block-level flows into microsimulation trips for a neighbourhood. LODES also covers only commute trips (about a fifth of trips), so non-work trips need another source.
+Still **not found:** a peer-reviewed paper that specifically turns LODES block-level flows into microsimulation trips for a neighborhood. LODES also covers only commute trips (about a fifth of trips), so non-work trips need another source.
 
 **Demand-synthesis methods and datasets (added 2026-11-11 for `data/demand/README.md`):**
 
@@ -334,7 +334,7 @@ Still **not found:** a peer-reviewed paper that specifically turns LODES block-l
 
 **[FHWA-TMG2022]** [V-partial] Federal Highway Administration (2022). *Traffic Monitoring Guide.* Office of Highway Policy Information, December 2022. fhwa.dot.gov/policyinformation/tmguide/2022_TMG.pdf. The report and its date were seen in search results; the PDF was not opened. FHWA's traffic-data highlights page defines K-factor as the share of AADT in the design hour (K-30, K-50, K-100 are the 30th, 50th and 100th highest hours as a percentage of AADT) and DDHV = AADT × K × D. The pocket guide is FHWA-PL-18-027 (August 2018). **The 0.08–0.10 urban-arterial K range and the 0.09 value used in the README were not found in any source opened** (the HCM 7th ed. is [HCM7], DOI 10.17226/26432, now Crossref-confirmed; its K values were not read).
 
-**[OaklandTMC]** [V] City of Oakland, OakDOT. *Annual Multi-Modal Counts, Raw Data* (dataset amtg-eh64). `https://data.oaklandca.gov/d/amtg-eh64`, file OaklandTurningMovementCounts.zip (about 35 MB). Confirmed by the Socrata metadata API on 2026-11-11 (name, attribution OakDOT, file size). Description: annual bicycle and pedestrian count programme begun September 2011. No licence field was checked beyond the README's note.
+**[OaklandTMC]** [V] City of Oakland, OakDOT. *Annual Multi-Modal Counts, Raw Data* (dataset amtg-eh64). `https://data.oaklandca.gov/d/amtg-eh64`, file OaklandTurningMovementCounts.zip (about 35 MB). Confirmed by the Socrata metadata API on 2026-11-11 (name, attribution OakDOT, file size). Description: annual bicycle and pedestrian count program begun September 2011. No license field was checked beyond the README's note.
 
 **[CaltransAADT]** [V] California Department of Transportation. *Annual Average Daily Traffic (AADT)*, ArcGIS FeatureServer layer 0. `https://caltrans-gis.dot.ca.gov/arcgis/rest/services/CHhighway/Traffic_AADT/FeatureServer/0`. Service metadata read on 2026-11-11: AADT is the annual total divided by 365, and the count year runs from 1 October to 30 September. Each year's vintage was not recorded here; the README uses the 2023-24 count year.
 
@@ -344,7 +344,7 @@ Still **not found:** a peer-reviewed paper that specifically turns LODES block-l
 
 ## 5. Evidence on interventions
 
-### 5.1 Low-traffic neighbourhoods and modal filters
+### 5.1 Low-traffic neighborhoods and modal filters
 
 **[Cairns2002]** [V] Cairns, S., Atkins, S., Goodwin, P. (2002). Disappearing traffic? The story so far. *Proc. ICE – Municipal Engineer* 151(1), 13–22. DOI 10.1680/muen.2002.151.1.13.
 The classic "traffic evaporation" paper. 63 cases (49 from the 1998 study plus 14), ten countries. Predicted traffic problems are often overstated, and drivers respond in more ways than planners assume.
@@ -374,7 +374,7 @@ Meta-analysis of monitoring data from 587 count locations in 46 schemes.
 
 **[Yin2023]** [V-meta] Yin, B., Diallo, A., Seregina, T., Coulombel, N., Liu, L. (2023). Evaluation of low-traffic neighborhoods and scale effects: The Paris case study. *Transportation Research Record* 2678(1), 88–101. DOI 10.1177/03611981231170130 (Crossref). Uses the multi-agent simulator MATSim, extended with park-and-walk and park-and-ride intermodality, to evaluate two scales of a driving-restriction zone. It finds limited modal shift for a small central zone (about 1.4% of trips shift cars to other modes for the whole-Paris scale) and emissions that rise far from a small zone. **Caveat:** the abstract is about a regional driving-restriction zone, a macro-scale policy, not street-level modal filters.
 
-**[Nieland2025]** [V-meta] Nieland, S., Krajzewicz, D., Weschke, J., Schuppan, J. (2025). Effects of street space redesign on travel demand in Berlin, Germany. *Lecture Notes in Mobility* (Springer), pp. 46–51. DOI 10.1007/978-3-031-85578-8_6 (Crossref). Couples an agent-based demand model with a microscopic traffic simulation for a baseline and a redesign scenario of an inner-city neighbourhood. A short book chapter. A search snippet mentioned a "30% reduction in car traffic" and the use of SUMO, but **neither is confirmed** by the Crossref abstract, so neither is claimed here.
+**[Nieland2025]** [V-meta] Nieland, S., Krajzewicz, D., Weschke, J., Schuppan, J. (2025). Effects of street space redesign on travel demand in Berlin, Germany. *Lecture Notes in Mobility* (Springer), pp. 46–51. DOI 10.1007/978-3-031-85578-8_6 (Crossref). Couples an agent-based demand model with a microscopic traffic simulation for a baseline and a redesign scenario of an inner-city neighborhood. A short book chapter. A search snippet mentioned a "30% reduction in car traffic" and the use of SUMO, but **neither is confirmed** by the Crossref abstract, so neither is claimed here.
 
 **[Furlong2026]** [V-meta, preprint] Furlong, J., Fevyer, D., Berkoff, N., Armstrong, B., Laverty, A., Aldred, R., Verlinghieri, E., Goodman, A. (2026). Low Traffic Neighbourhoods in London: boundary road journey times and congestion. SSRN, DOI 10.2139/ssrn.6685379 (Crossref; a second SSRN record, 10.2139/ssrn.6795014, has the same title). Observational, not a simulation. The best-targeted evidence on boundary-road delay. Not peer reviewed, and the content was not read.
 
@@ -384,7 +384,7 @@ Still **not found:** a verified study that microsimulates an LTN with street-sca
 
 **[Cabannes2018]** [V-partial] Cabannes, T., Sangiovanni Vincentelli, M., Sundt, A., Signargout, H., Porter, E., Fighiera, V., Ugirumurera, J., Bayen, A. (2018). The impact of GPS-enabled shortest path routing on mobility: A game theoretic approach. *97th Annual Meeting of the Transportation Research Board*, paper 18-02304 (TRID 1495267). Author list and venue taken from search records (UC Berkeley ITS, TRID); no Crossref record exists. Frames the recent rise of "cut-through" traffic as an effect of routing apps and simulates the I-210 corridor in the LA basin with Aimsun. Full text not read; the Berkeley PDF found is a 2017 draft.
 
-**[Cabannes2019]** [V-meta] Cabannes, T., Sangiovanni Vincentelli, M., Keimer, A., Bayen, A.M. (2019). Regrets in routing networks: Measuring the impact of routing apps on traffic. *ACM Transactions on Spatial Algorithms and Systems* 5(2), 1–19. DOI 10.1145/3325916 (Crossref). Introduces the "average marginal regret", a distance between an observed traffic state and user equilibrium computable from link flows and times, and tests it on app-usage models on three networks including the whole LA network. Useful for modelling what fraction of drivers follow shortest-path apps versus habitual routes.
+**[Cabannes2019]** [V-meta] Cabannes, T., Sangiovanni Vincentelli, M., Keimer, A., Bayen, A.M. (2019). Regrets in routing networks: Measuring the impact of routing apps on traffic. *ACM Transactions on Spatial Algorithms and Systems* 5(2), 1–19. DOI 10.1145/3325916 (Crossref). Introduces the "average marginal regret", a distance between an observed traffic state and user equilibrium computable from link flows and times, and tests it on app-usage models on three networks including the whole LA network. Useful for modeling what fraction of drivers follow shortest-path apps versus habitual routes.
 
 **[Macfarlane2019]** [V-meta, popular press] Macfarlane, J. (2019). When apps rule the road: The proliferation of navigation apps is causing traffic chaos. *IEEE Spectrum* 56(10), 22–27. DOI 10.1109/MSPEC.2019.8847586 (Crossref). A magazine article, not a peer-reviewed study. Content not read.
 
@@ -400,7 +400,7 @@ Casualties fell by about 41.9% in zones (secondary reports), with no migration t
 **Caveat:** these are signed 20 mph zones that mostly include physical calming.
 
 **[Elvik2009]** [V] Elvik, R. (2009). *The Power Model of the relationship between speed and road safety: update and new analyses.* TØI Report 1034/2009, Institute of Transport Economics, Oslo. 115 studies, 526 estimates. Urban effects are smaller than rural effects.
-A re-parameterisation is in Elvik (2013), *Accident Analysis & Prevention* (doi 10.1016/j.aap.2012.07.012, seen as a repository filename; not read). An update is Elvik, Vadeby, Hels, van Schagen (2019), *AAP* 123, 114–122, DOI 10.1016/j.aap.2018.11.014 (Crossref); its text was blocked.
+A re-parameterization is in Elvik (2013), *Accident Analysis & Prevention* (doi 10.1016/j.aap.2012.07.012, seen as a repository filename; not read). An update is Elvik, Vadeby, Hels, van Schagen (2019), *AAP* 123, 114–122, DOI 10.1016/j.aap.2018.11.014 (Crossref); its text was blocked.
 
 **Power model** (**Checked against:** FHWA-HRT-17-098 section 3, fhwa.dot.gov/publications/research/safety/17098/003.cfm, which reproduces Nilsson's equation and Table 18 of [Elvik2009]):
 
@@ -415,7 +415,7 @@ Elvik 2009 best estimates, RURAL roads / freeways only:
   property-damage-only accidents 1.5 (0.1-2.9)
 ```
 
-- **The urban-road exponents were not obtained.** The FHWA page says the 2009 study gave separate rural and urban values, and that urban effects are smaller. For an urban neighbourhood model, use Nilsson's 2/3/4 as a documented default and tag it as such, or fetch Table 18 or later tables from the TØI report.
+- **The urban-road exponents were not obtained.** The FHWA page says the 2009 study gave separate rural and urban values, and that urban effects are smaller. For an urban neighborhood model, use Nilsson's 2/3/4 as a documented default and tag it as such, or fetch Table 18 or later tables from the TØI report.
 - The earlier draft's "k higher for fatal than for injury crashes" is confirmed.
 
 **[Tefft2013]** [V] Tefft, B.C. (2013). Impact speed and a pedestrian's risk of severe injury or death. *Accident Analysis & Prevention* 50, 871–878. DOI 10.1016/j.aap.2012.07.022 (Crossref). Abstract read via PubMed (PMID 22935347).
@@ -424,7 +424,7 @@ For a pedestrian struck by a car or light truck (**Checked against:** the PubMed
 - Death risk: 10% at 24.1 mph, 25% at 32.5, 50% at 40.6, 75% at 48.0, 90% at 54.6.
 - Age shifts these: the death risk for a 70-year-old at any speed equals that of a 30-year-old struck 11.8 mph faster.
 - **Do not mix with the AAA Foundation technical report** (Tefft 2011), which reports different, rounded figures: severe injury 10% at 16 mph and 50% at 31 mph; death 10% at 23 mph and 50% at 42 mph. The journal paper is the version to cite.
-- The data are US crashes from 1994-1998 (standardised to 2007-2009 vehicles), so risk at a given speed may now be somewhat different, and the sample was small.
+- The data are US crashes from 1994-1998 (standardized to 2007-2009 vehicles), so risk at a given speed may now be somewhat different, and the sample was small.
 **Use:** the pedestrian-injury-risk function for the safety score in the simulator.
 
 **Speed humps and diversion (pass 2):** a peer-reviewed before-after study of hump effects on volume and speed was again **not found**. What exists is practitioner evidence, none individually verified in detail:
@@ -445,8 +445,8 @@ Sites with higher traffic volumes showed lower crash reductions, so the effect m
 Other studies named in the appendix: Pawlovich et al. 2006 (Iowa, −25.2% crash frequency per mile) and Noyce et al. 2006 (Minnesota, −44% by EB). Both are known only from the guide's summary.
 
 **[Duranton2011]** [V] Duranton, G., Turner, M.A. (2011). The fundamental law of road congestion: Evidence from US cities. *American Economic Review* 101(6), 2616–2652.
-Vehicle-km travelled rises roughly one-for-one with interstate lane-km. Little diversion from other road types. No evidence that transit affects VKT.
-**Use:** a sanity check, not a neighbourhood-scale model. Inform the "induced demand" toggle by applying elasticities near 1 to freeway-like capacity changes.
+Vehicle-km traveled rises roughly one-for-one with interstate lane-km. Little diversion from other road types. No evidence that transit affects VKT.
+**Use:** a sanity check, not a neighborhood-scale model. Inform the "induced demand" toggle by applying elasticities near 1 to freeway-like capacity changes.
 
 **[Hymel2019]** [V-meta] Hymel, K. (2019). If you build it, they will drive: Measuring induced demand for vehicle travel in urban areas. *Transport Policy* 76, 57–66. DOI 10.1016/j.tranpol.2018.12.006 (Crossref confirms title, venue and pages).
 The effect-size note ("a 1% lane-mile increase leads to about 1% more VMT, speeds returning to baseline within about five years") comes from an SSTI blog summary only, not from the paper, and is **unverified**.
@@ -468,7 +468,7 @@ Still **not found:** a systematic review or multi-site peer-reviewed study of pe
 
 Seen as search results only, not verified in detail:
 - Oakland DOT, Oakland Slow Streets (oaklandca.gov/projects/oakland-slow-streets), plus an interim findings report (ABAG).
-- An MTI/SJSU study, "Fewer Cars, Slower Streets: The Potential of the Oakland Slow Streets Program to Transform Communities". Summarised as finding that effects vary widely by site and that a Slow Streets designation alone does not reliably reduce through traffic or speeds.
+- An MTI/SJSU study, "Fewer Cars, Slower Streets: The Potential of the Oakland Slow Streets Program to Transform Communities". Summarized as finding that effects vary widely by site and that a Slow Streets designation alone does not reliably reduce through traffic or speeds.
 - Telegraph Avenue Complete Streets (parking-protected bike lanes and a lane removal between 19th and 41st St, per Oakland DOT material).
 - A resident-led Rockridge Slow Neighborhood pilot plan with 10 candidate projects (news item).
 - College Avenue bike lanes on most of Broadway–Claremont (2021).
@@ -493,7 +493,7 @@ Existing microsimulation tools produce poor bicycle trajectories and bicycle–m
 
 **[Twaddle2016]** [V-meta] Twaddle, H., Grigoropoulos, G. (2016). Modeling the speed, acceleration, and deceleration of bicyclists for microscopic traffic simulation. *Transportation Research Record* 2587(1), 8–16. DOI 10.3141/2587-02 (Crossref). Munich intersection data. Outside the 2018+ window but the standard parameter source for cyclist speed and acceleration.
 
-**[Kaths2023]** [V-meta] Kaths, H. (2023). A movement and interaction model for cyclists and other non-lane-based road users. *Frontiers in Future Transportation* 4, DOI 10.3389/ffutr.2023.1183270 (Crossref). Per its abstract (search record): built on the NOMAD pedestrian model and calibrated on cyclist trajectories at four signalised Munich intersections. Full text not read.
+**[Kaths2023]** [V-meta] Kaths, H. (2023). A movement and interaction model for cyclists and other non-lane-based road users. *Frontiers in Future Transportation* 4, DOI 10.3389/ffutr.2023.1183270 (Crossref). Per its abstract (search record): built on the NOMAD pedestrian model and calibrated on cyclist trajectories at four signalized Munich intersections. Full text not read.
 
 **[Schmidt2023]** [V-meta, thesis-grade] Schmidt, C., Dabiri, A., Schulte, F., Happee, R., Moore, J. (2023). Essential bicycle dynamics for microscopic traffic simulation: An example using the social force model. *The Evolving Scholar* (TU Delft), DOI 10.24404/63fe3f96e46cae666e6d2463 (Crossref). A review/preprint-style item. Not read.
 
@@ -503,13 +503,13 @@ Still **not found:** a verified 2018–2026 *review* of cyclist microsimulation.
 
 **Pedestrian crossing models (pass 2):**
 
-**[Zeng2014]** [V] Zeng, W., Chen, P., Nakamura, H., Iryo-Asano, M. (2014). Application of social force model to pedestrian behavior analysis at signalized crosswalk. *Transportation Research Part C* 40, 143–159. DOI 10.1016/j.trc.2014.01.007 (Crossref). A social-force model for signalised crosswalks, including conflict with turning vehicles. Content not read beyond the title.
+**[Zeng2014]** [V] Zeng, W., Chen, P., Nakamura, H., Iryo-Asano, M. (2014). Application of social force model to pedestrian behavior analysis at signalized crosswalk. *Transportation Research Part C* 40, 143–159. DOI 10.1016/j.trc.2014.01.007 (Crossref). A social-force model for signalized crosswalks, including conflict with turning vehicles. Content not read beyond the title.
 
-**[Tian2022]** [V-meta] Tian, K., Markkula, G., Wei, C., Lee, Y.M., Madigan, R., Merat, N., Romano, R. (2022). Explaining unsafe pedestrian road crossing behaviours using a psychophysics-based gap acceptance model. *Safety Science* 154, 105837. DOI 10.1016/j.ssci.2022.105837 (Crossref). A gap-acceptance model driven by visual looming cues with a logit choice, per its search summary. Relevant to unsignalised crossings. Not read.
+**[Tian2022]** [V-meta] Tian, K., Markkula, G., Wei, C., Lee, Y.M., Madigan, R., Merat, N., Romano, R. (2022). Explaining unsafe pedestrian road crossing behaviours using a psychophysics-based gap acceptance model. *Safety Science* 154, 105837. DOI 10.1016/j.ssci.2022.105837 (Crossref). A gap-acceptance model driven by visual looming cues with a logit choice, per its search summary. Relevant to unsignalized crossings. Not read.
 
 **[Wang2025]** [V-meta] Wang, Y., Srinivasan, A.R., Jokinen, J.P.P., Oulasvirta, A., Markkula, G. (2025). Pedestrian crossing decisions can be explained by bounded optimal decision-making under noisy visual perception. *Transportation Research Part C* 171, 104963. DOI 10.1016/j.trc.2024.104963 (Crossref; initials beyond the first were taken from the search record). Reinforcement-learning model of speed-dependent gap acceptance. Not read.
 
-Still **not found:** a verified calibrated microsimulation rule set for pedestrians crossing *unsignalised neighbourhood* streets with yielding drivers. A FHWA-style 27-mid-block-crossing gap-acceptance prototype and a WCTR 2010 discrete-choice model were seen only as search snippets and are not cited.
+Still **not found:** a verified calibrated microsimulation rule set for pedestrians crossing *unsignalized neighborhood* streets with yielding drivers. A FHWA-style 27-mid-block-crossing gap-acceptance prototype and a WCTR 2010 discrete-choice model were seen only as search snippets and are not cited.
 
 **Buses and transit signal priority:**
 - Lin, Yang, Zou, Franz (2014). Transit signal priority control at signalized intersections: a comprehensive review. *Transportation Letters*. [V-partial] Seen in a snippet. Covers passive and active TSP and field benefits from 24 cities.
@@ -531,7 +531,7 @@ Co-evolutionary agent-based, queue-based mobility. A reference for plan-based de
 **[Zhang2019CF]** [V] Zhang, H., Feng, S., Liu, C., Ding, Y., Zhu, Y., Zhou, Z., Zhang, W., Yu, Y., Jin, H., Li, Z. (2019). CityFlow: A multi-agent reinforcement learning environment for large scale city traffic scenario. *Proc. WWW '19 (demo)*, San Francisco, pp. 3620–3624. DOI 10.1145/3308558.3314139 (Crossref). arXiv 1905.05217.
 Claimed to be more than twenty times faster than SUMO. A useful design reference for a lightweight engine with a data-oriented layout.
 
-**A/B Street** [V-partial] Carlino, D. et al. A/B Street. Open-source (Apache-2.0, Rust), runs in the browser, built on OpenStreetMap and census data. Has an A/B test mode with two simulations side by side. `https://abstreet.org`, repository `a-b-street/abstreet`. **No peer-reviewed paper was found.** Cited as software only. Its own docs describe it as a simplified game-like model for advocacy, so it is the closest analogue to this project's UX.
+**A/B Street** [V-partial] Carlino, D. et al. A/B Street. Open-source (Apache-2.0, Rust), runs in the browser, built on OpenStreetMap and census data. Has an A/B test mode with two simulations side by side. `https://abstreet.org`, repository `a-b-street/abstreet`. **No peer-reviewed paper was found.** Cited as software only. Its own docs describe it as a simplified game-like model for advocacy, so it is the closest analog to this project's UX.
 
 ### 7.2 Safety surrogate measures
 
@@ -580,7 +580,7 @@ The "MOVES-lite" route is a lookup table (bins by VSP and speed) times a per-bin
 
 **[HBEFA]** [V] INFRAS / UBA. Handbook Emission Factors for Road Transport (HBEFA), 4.2 (January 2022) and 5.1 (Oct 2025).
 Factors by vehicle category and *traffic situation* (road type, speed limit, level of service), not per-second dynamics. It is the standard in the DACH countries, and SUMO has HBEFA emission classes.
-**Use:** suited to link-average emissions, not to a second-by-second model. A licence is required for the online tool.
+**Use:** suited to link-average emissions, not to a second-by-second model. A license is required for the online tool.
 The PHEM/HBEFA3 paper (Hausberger et al. 2009) was searched for and **not found**, so it is not cited.
 
 **Not found:** a single "lightweight microsim" emissions comparison paper. A design choice (VSP-bin lookup, VT-CPFM, or link-average HBEFA) has to be made without a verified head-to-head benchmark.
@@ -594,7 +594,7 @@ The PHEM/HBEFA3 paper (Hausberger et al. 2009) was searched for and **not found*
 | Car following | IDM with the CAH/ACC blend (or IDM+, unchecked) for cut-ins, ballistic update with stopping rule, dt about 0.2 s, parameter heterogeneity from calibrated posteriors | [Treiber2000], [Treiber2013], [Kesting2010], [Schakel2010], [Treiber2015], [Zhang2024] | IDM, CAH/ACC, ballistic: checked. IDM+: unchecked. |
 | Lane change | MOBIL on arterials only, p about 0.2, b_safe 4, threshold 0.2 | [Kesting2007] | Checked (secondary full-text sources) |
 | Signals | Fixed-time Webster plans for baseline, max-pressure for "adaptive" | [Webster1958], [Varaiya2013], [Kouvelas2014] | Cycle formula and max-pressure: checked. Full Webster delay: unchecked. |
-| Unsignalised | Gap acceptance with HCM-style t_c and t_f, FCFS for AWSC | [Brilon1999], [HCM7] | Capacity form and TWSC defaults: checked via FHWA/PTV reproductions. AWSC: unchecked. |
+| Unsignalized | Gap acceptance with HCM-style t_c and t_f, FCFS for AWSC | [Brilon1999], [HCM7] | Capacity form and TWSC defaults: checked via FHWA/PTV reproductions. AWSC: unchecked. |
 | Roundabouts | Gap acceptance on circulating flow; entry capacity 1130 exp(-0.001 v_c) as a check | [Rodegerdts2007], [Rodegerdts2010], [Retting2001] | Checked via a secondary report |
 | Routing | Iterative equilibrium (MSA) on simulated travel times | [Wardrop1952], [Peeta2001], [Cabannes2019] | n/a |
 | Demand | LODES + ACS commute pipeline for work trips; other trip purposes need another source | [LODES], [Sen2025] | n/a |
@@ -611,7 +611,7 @@ Resolved in pass 2: author/venue/DOI for [Bock2020], [Zhang2022], [Zhang2024], [
 Still open:
 
 1. **Equations not checked against a primary source:** IDM+ (Schakel 2010, paywalled), Webster's three-term delay formula, HCM AWSC saturation headways, HCM 6/7 TWSC tables (only secondary reproductions), roundabout default t_c/t_f, TTC/PET definitions and thresholds, VT-Micro form, BPR (primary not seen).
-2. **Elvik urban exponents** (and the 2013 re-parameterisation): TØI and ScienceDirect were blocked. Use Nilsson 2/3/4 as a documented default meanwhile.
+2. **Elvik urban exponents** (and the 2013 re-parameterization): TØI and ScienceDirect were blocked. Use Nilsson 2/3/4 as a documented default meanwhile.
 3. **No verified source** for: a MOBIL calibration on highD or pNEUMA; a peer-reviewed speed-hump diversion study; a multi-site peer-reviewed bike-lane delay study; a cyclist-microsimulation review 2018–2026; a LODES-to-microsim-trips methods paper beyond the [Sen2025] preprint; an LTN microsimulation with street-scale modal filters; a peer-reviewed measurement of app-induced residential cut-through; an HBEFA/PHEM paper.
 4. **Metadata-only entries** tagged [V-meta] have not had their full text read. Entries with no Crossref DOI that cannot be re-checked: [Webster1958], [Webster1966], [Beckmann1956], [BPR1964], [Hayward1972], [Sunkari2004], [Rodegerdts2010], [Rodegerdts2007], [HCM7], [EPA-MOVES].
 5. A/B Street has no paper. NGSIM has no standalone verified dataset entry.

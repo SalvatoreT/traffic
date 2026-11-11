@@ -11,8 +11,8 @@ cut-through traffic and safety.
 - Project foundation: Cloudflare Worker + Vite/React/TypeScript UI, Rust simulation core
   compiled to WASM, OpenSpec, AGENTS.md with model-delegation policy, bibliography.
 - Street-network import from OpenStreetMap into an area-agnostic network file.
-- Baseline demand synthesised from public data (Oakland counts, Census LODES), with every
-  assumption labelled.
+- Baseline demand synthesized from public data (Oakland counts, Census LODES), with every
+  assumption labeled.
 - Microscopic vehicle simulation: car-following, intersection control (signals, stop
   signs, uncontrolled), congestion-responsive route choice, cut-through and safety metrics.
 - Interventions: modal filters/diverters, traffic calming (humps, circles, speed limits),
@@ -27,7 +27,7 @@ cut-through traffic and safety.
 - `street-network`: import and representation of a study area's street network
 - `demand-model`: baseline travel demand derived from public data
 - `traffic-simulation`: the microscopic simulation model and its outputs
-- `interventions`: the set of changes a user can apply to a scenario and their modelled effect
+- `interventions`: the set of changes a user can apply to a scenario and their modeled effect
 - `simulator-ui`: the web interface for viewing traffic and editing scenarios
 
 ### Modified Capabilities

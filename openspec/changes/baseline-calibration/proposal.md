@@ -9,7 +9,7 @@ once the baseline reproduces today's pattern without artificial gridlock.
 ## What Changes
 
 - A native calibration tool that runs the simulation headless, performs select-link
-  analysis and reports modelled versus observed shares and network health.
+  analysis and reports modeled versus observed shares and network health.
 - Importer fixes found during integration: roundabout rings collapse to one node, and
   gates that cannot be reached or left are flagged so demand never targets them.
 - Demand and model parameters tuned so the baseline is stable and matches the targets
@@ -34,4 +34,4 @@ runner), regenerated `public/data/*` (must be re-published to R2), UI status tex
 
 ## Out of scope
 
-Automatic parameter optimisation, mode shift and multimodal agents.
+Automatic parameter optimization, mode shift and multimodal agents.

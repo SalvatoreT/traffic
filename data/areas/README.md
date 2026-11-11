@@ -8,7 +8,7 @@ One JSON file per area, read by `tools/import-osm.ts` (`npm run data`). No area-
 | `extract` | Overpass JSON path (`data/osm/...`) |
 | `bbox` | `[minLon, minLat, maxLon, maxLat]` of the extract; ways are clipped to it and cut ends become gates |
 | `studyArea` | Closed lon/lat polygon |
-| `boundingStreets` | Optional `west/east/south/north` street names; `npx tsx tools/lib/derive-study-area.ts data/areas/<id>.json` rewrites `studyArea` from them (street centrelines between corner intersections, buffered 15 m outward). A bounding street is matched by `name` or `ref`; it may be a motorway (Rockridge's south edge is SR-24), in which case a corner with no shared junction uses the closest pair of nodes (within 60 m) on the two streets |
+| `boundingStreets` | Optional `west/east/south/north` street names; `npx tsx tools/lib/derive-study-area.ts data/areas/<id>.json` rewrites `studyArea` from them (street centerlines between corner intersections, buffered 15 m outward). A bounding street is matched by `name` or `ref`; it may be a motorway (Rockridge's south edge is SR-24), in which case a corner with no shared junction uses the closest pair of nodes (within 60 m) on the two streets |
 | `center`, `zoom` | Map view for `public/data/areas.json` |
 
 ## Import defaults
@@ -39,4 +39,4 @@ component (plus one-way spurs leading to or from gates) is kept. Humps: `traffic
 
 Study-area flags: motorway-class links and nodes touched only by motorway links are never `inStudyArea` (the freeway and its ramps are not local streets), so cut-through and safety metrics ignore them.
 
-Collapsed circles: each `junction=roundabout|circular` ring becomes one `traffic_circle` node at the ring centroid (ring ways are dropped, approaches end at the centre). Gate nodes carry `canEnter`/`canExit` flags (an outgoing / incoming link connected to the main network); demand uses only enterable origins and exitable destinations.
+Collapsed circles: each `junction=roundabout|circular` ring becomes one `traffic_circle` node at the ring centroid (ring ways are dropped, approaches end at the center). Gate nodes carry `canEnter`/`canExit` flags (an outgoing / incoming link connected to the main network); demand uses only enterable origins and exitable destinations.

@@ -1,6 +1,6 @@
 /**
  * MockSimulation: a tiny stand-in with the same interface as the WASM `Simulation`, used with `?mock=1` or
- * when WASM fails to initialise. Vehicles drift along links; it is NOT a traffic model.
+ * when WASM fails to initialize. Vehicles drift along links; it is NOT a traffic model.
  */
 import type { Demand, Intervention, Metrics, Network } from '../types';
 import { pointAlong } from '../lib/geom';

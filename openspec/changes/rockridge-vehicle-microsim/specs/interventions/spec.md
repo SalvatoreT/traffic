@@ -5,7 +5,7 @@ A scenario SHALL be an ordered list of interventions (Intervention contract) app
 
 #### Scenario: Removing an intervention
 - **WHEN** an intervention is removed from the list
-- **THEN** the simulated network returns to its prior behaviour for that element
+- **THEN** the simulated network returns to its prior behavior for that element
 
 ### Requirement: Modal filters
 A modal filter on a link or node SHALL prevent motor vehicles from passing through it while leaving access to both sides, and routes SHALL adapt.

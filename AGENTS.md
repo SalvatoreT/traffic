@@ -1,9 +1,9 @@
 # Traffic: agent guide
 
-A web app that simulates neighbourhood traffic as it is today. People try
+A web app that simulates neighborhood traffic as it is today. People try
 interventions and compare outcomes. First study area: the Rockridge Trapezoid in
 North Oakland, CA (Telegraph Ave W, College Ave E, Claremont Ave S, Alcatraz Ave N).
-The design must generalise to other areas: nothing Rockridge-specific in code, study
+The design must generalize to other areas: nothing Rockridge-specific in code, study
 areas are data.
 
 ## Layout
@@ -33,10 +33,10 @@ Use the cheapest model that can do the job well. The lead session orchestrates,
 decides architecture and reviews. It does no bulk work itself.
 
 - Haiku (`model: "haiku"`): file search, mechanical edits, renames, formatting,
-  running commands and summarising output, boilerplate, simple docs.
+  running commands and summarizing output, boilerplate, simple docs.
 - Sonnet (`model: "sonnet"`): feature implementation against a written spec,
   tests, data wrangling, web/literature research, code review of a diff.
-- Lead (most capable model): cross-cutting design, model-science judgement calls,
+- Lead (most capable model): cross-cutting design, model-science judgment calls,
   interface contracts, debugging that subagents failed at, final review.
 
 Give subagents the spec/contract paths to read rather than restating them, and
@@ -58,12 +58,12 @@ Trivial fixes (typos, dependency bumps) skip the cycle.
 
 ## Research and citations
 
-- Model behaviour must trace to published research. Any equation, parameter value or
+- Model behavior must trace to published research. Any equation, parameter value or
   effect size in code or specs cites a key from `docs/references.md`
   (e.g. `[Treiber2000]`) in a comment at the point of use or in the spec.
 - Never cite from memory: add an entry to `docs/references.md` only after verifying it
   exists (DOI/URL resolves) and tag its verification status.
-- Uncalibrated assumptions are labelled as assumptions in code, specs and UI.
+- Uncalibrated assumptions are labeled as assumptions in code, specs and UI.
 
 ## Git
 
@@ -93,5 +93,5 @@ citation keys, or the required structure of OpenSpec spec files.
 - Minimal comments; citations are the exception.
 - SI units internally (m, s, m/s); convert at the UI boundary.
 - UI meets WCAG 2.2 AA: keyboard operable, visible focus, reduced-motion respected,
-  colour never the only signal, text alternatives for what the map shows.
+  color never the only signal, text alternatives for what the map shows.
 - Map data © OpenStreetMap contributors (ODbL): keep attribution visible.

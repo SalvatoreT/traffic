@@ -1,6 +1,6 @@
 import type { Overlay, Theme } from '../types';
 
-/** Viridis-derived sequential ramp (colour-blind safe). Light theme: dark = high; dark theme: bright = high. */
+/** Viridis-derived sequential ramp (color-blind safe). Light theme: dark = high; dark theme: bright = high. */
 const VIRIDIS = ['#440154', '#3b528b', '#21918c', '#5ec962', '#fde725'];
 const VIRIDIS_ON_DARK = ['#3b528b', '#21918c', '#5ec962', '#bddf26', '#fde725'];
 export type Mode = 'light' | 'dark';
@@ -22,7 +22,7 @@ export function percentile(values: number[], p: number): number {
   return a[Math.min(a.length - 1, Math.floor(p * (a.length - 1)))];
 }
 
-/** Normalised intensity 0..1 for a link given overlay. `limit` in m/s. Returns -1 for "no data". */
+/** Normalized intensity 0..1 for a link given overlay. `limit` in m/s. Returns -1 for "no data". */
 export function intensity(overlay: Overlay, flow: number, speed: number, cut: number, limit: number, max: number): number {
   if (overlay === 'speed') {
     if (flow <= 0 && speed <= 0) return -1;

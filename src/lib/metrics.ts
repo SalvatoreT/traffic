@@ -40,7 +40,7 @@ export const CARDS: CardDef[] = [
   },
 ];
 
-export function summarise(base: Metrics, scen: Metrics): string {
+export function summarize(base: Metrics, scen: Metrics): string {
   const pick = ['ctKm', 'meanSpeed', 'ttc', 'trip', 'art'];
   const parts: string[] = [];
   for (const c of CARDS) for (const d of c.metrics) {

@@ -7,7 +7,7 @@ The project SHALL build to a single Cloudflare Worker that serves the web app as
 - **WHEN** `npm run build` is run on a clean checkout with Rust, wasm-pack and Node installed
 - **THEN** the WASM module, the client bundle and the Worker bundle are produced with no type errors
 
-### Requirement: Cited modelling
+### Requirement: Cited modeling
 Every model equation, parameter value and effect size used in code or specs SHALL reference a citation key defined in `docs/references.md`, and each bibliography entry SHALL record how its existence was verified.
 
 #### Scenario: Adding a model parameter

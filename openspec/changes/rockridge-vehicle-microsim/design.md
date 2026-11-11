@@ -37,16 +37,16 @@ on entry plus reduced negotiation speed [Rodegerdts2010]. A vehicle approaching 
 treats a closed stop line as a standing leader in IDM.
 
 ### D4 Route choice produces cut-through
-Routes are time-shortest paths on generalised cost; link costs are updated from simulated
+Routes are time-shortest paths on generalized cost; link costs are updated from simulated
 travel times and a share of drivers re-route periodically, approximating iterative
-equilibrium [Wardrop1952, Peeta2001] and navigation-app behaviour. The model measures cut-through instead of assuming it: a trip whose origin and destination are both boundary gates, counted on links
+equilibrium [Wardrop1952, Peeta2001] and navigation-app behavior. The model measures cut-through instead of assuming it: a trip whose origin and destination are both boundary gates, counted on links
 of class residential/service inside the study area.
 
 ### D5 Demand as a generic OD list
 The sim consumes `{origin node, destination node, veh/h}` flows and spawns Poisson
 arrivals. How the list is built (counts + LODES gravity model) lives in `tools/`, so other
 areas can use other sources. Demand is inelastic in this change; evaporation evidence
-[Thomas2024] is surfaced as a caveat in the UI until elasticity is modelled.
+[Thomas2024] is surfaced as a caveat in the UI until elasticity is modeled.
 
 ### D6 Safety metrics
 Speed distributions on residential links, share of vehicles above 20/25 mph, and
@@ -55,8 +55,8 @@ surrogates and are not crash predictions.
 
 ### D7 Basemap without a tile server
 The basemap renders from the same OSM extract as GeoJSON layers in MapLibre. That needs no tile
-hosting, makes no third-party requests at runtime, and keeps the payload tiny for a neighbourhood. Revisit
-(PMTiles on R2) when generalising to large areas.
+hosting, makes no third-party requests at runtime, and keeps the payload tiny for a neighborhood. Revisit
+(PMTiles on R2) when generalizing to large areas.
 
 ### D8 Study areas are data
 `public/data/<area>.network.json`, `<area>.demand.json`, `<area>.basemap.json` plus an
@@ -65,7 +65,7 @@ area manifest. No area-specific code.
 ## Contracts
 
 ### Network file (`version: 1`)
-Coordinates are metres in a local equirectangular projection about `origin`
+Coordinates are meters in a local equirectangular projection about `origin`
 (x east, y north). Links are directed; a two-way street is two links.
 
 ```ts

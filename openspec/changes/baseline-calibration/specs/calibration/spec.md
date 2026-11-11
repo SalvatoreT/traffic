@@ -1,11 +1,11 @@
 ## ADDED Requirements
 
 ### Requirement: Headless calibration run
-The project SHALL provide a command that runs the baseline simulation natively for a chosen period and duration and writes a report comparing modelled select-link shares with the observed targets for the area.
+The project SHALL provide a command that runs the baseline simulation natively for a chosen period and duration and writes a report comparing modeled select-link shares with the observed targets for the area.
 
 #### Scenario: Running calibration
 - **WHEN** a contributor runs the calibration command for Rockridge
-- **THEN** a report lists each observed share, the modelled value and the difference, plus network-health indicators
+- **THEN** a report lists each observed share, the modeled value and the difference, plus network-health indicators
 
 ### Requirement: Select-link analysis
 The simulation SHALL be able to record, for nominated links, the origins, destinations and upstream/downstream streets of trips traversing them.

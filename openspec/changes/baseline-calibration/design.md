@@ -9,15 +9,15 @@ for two residential streets and the freeway ramps.
 
 ### D1 Measure before tuning
 Build the measurement tool first, then tune by hand and record each change. An automatic
-optimiser would overfit: there are ~10 observed shares and dozens of free parameters. A short,
+optimizer would overfit: there are ~10 observed shares and dozens of free parameters. A short,
 explained list of adjustments can be audited.
 
 ### D2 Select-link analysis in the core
 The simulation records, for configured links, each traversing trip's origin, destination
 and the named streets used before and after. This mirrors how the observed data was
-produced, so modelled and observed shares compare directly.
+produced, so modeled and observed shares compare directly.
 
-### D3 Tune demand before behaviour
+### D3 Tune demand before behavior
 Order of suspicion: default gate volumes (assumptions), then the origin/destination
 distribution, then intersection capacity parameters marked ASSUMPTION, then
 literature-sourced parameters (left alone unless clearly mis-applied). Car-following parameters from [Treiber2000] and
@@ -28,7 +28,7 @@ The baseline is "stable" when a 60-minute PM-peak run at scale 1.0 has zero grid
 removals, backlog below 2% of spawned trips, and arterial mean speed above 4 m/s.
 
 ### D5 Fit tolerance
-Modelled select-link shares within ±10 percentage points of observed for the headline
+Modeled select-link shares within ±10 percentage points of observed for the headline
 shares (freeway origin/destination share on Hillegass and Colby); others are reported but
 not gated. StreetLight samples are themselves approximate.
 
@@ -44,6 +44,6 @@ interface Node {
 }
 ```
 
-- A roundabout or traffic-circle ring is one `traffic_circle` node at the ring centroid; ring ways are not links and approach geometry ends at the centre.
+- A roundabout or traffic-circle ring is one `traffic_circle` node at the ring centroid; ring ways are not links and approach geometry ends at the center.
 - Motorway-class links, and nodes touched only by motorway links, are never `inStudyArea`. The Rockridge study area is bounded on the south by SR-24 (`boundingStreets.south`).
 - Config `selectLinks: number[]` (sim `Config`) enables select-link recording; empty by default.

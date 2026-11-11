@@ -3,7 +3,7 @@ import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import type { AreaBundle, Intervention, Overlay } from '../types';
-import { makeProjection, metresPerPixel } from '../lib/projection';
+import { makeProjection, metersPerPixel } from '../lib/projection';
 import { pickLink, pickNode, pointAlong } from '../lib/geom';
 import { intensity, rampStops, WIDTH_MAX, WIDTH_MIN, type Mode } from '../lib/ramps';
 import type { NetIndex } from '../lib/naming';
@@ -319,7 +319,7 @@ export function MapView(p: Props) {
     const find = (lngLat: maplibregl.LngLat) => {
       const L = live.current;
       const [x, y] = L.proj.toLocal(lngLat.lng, lngLat.lat);
-      const mpp = metresPerPixel(map.getZoom(), lngLat.lat);
+      const mpp = metersPerPixel(map.getZoom(), lngLat.lat);
       if (L.pick === 'node') return { node: pickNode(L.bundle.network, x, y, 18 * mpp), link: null as number | null };
       const l = pickLink(L.bundle.network, x, y, 12 * mpp);
       return { node: null, link: l ? l.id : null };

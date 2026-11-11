@@ -9,6 +9,6 @@ context: |
 rules:
   design:
     - Record each decision with the alternatives considered and why they lost
-    - Cite docs/references.md keys for every modelling choice
+    - Cite docs/references.md keys for every modeling choice
   proposal:
     - State what is out of scope
