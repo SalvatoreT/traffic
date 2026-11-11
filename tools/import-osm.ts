@@ -72,7 +72,11 @@ function main() {
     writeFileSync(resolve(outDir, `${cfg.id}.network.json`), JSON.stringify(network));
     writeFileSync(resolve(outDir, `${cfg.id}.basemap.json`), JSON.stringify(buildBasemap(cfg, osm)));
     console.log(summarize(network));
-    console.log('stats:', JSON.stringify(stats));
+    const { joinedList, ...rest } = stats;
+    console.log('stats:', JSON.stringify(rest));
+    const largest = [...joinedList].sort((a, b) => b.size - a.size || b.streets.length - a.streets.length).slice(0, 10);
+    console.log(`joined clusters (largest ten of ${joinedList.length}):`);
+    for (const j of largest) console.log(`  ${j.size} nodes, ${j.control}: ${j.streets.join(' / ') || '(unnamed)'}`);
     const ring = cfg.studyArea;
     const center = cfg.center ?? [
       round6(ring.reduce((s, p) => s + p[0], 0) / ring.length),

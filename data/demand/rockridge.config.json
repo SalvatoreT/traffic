@@ -178,6 +178,6 @@
       "directionFloor": 0.03
     }
   },
-  "assumedGateScale": 0.3,
-  "assumedGateScaleNote": "ASSUMPTION (calibration step F): single factor on all gate volumes that are not count-based (class-default ADT gates); count-based gates (TMC, Caltrans override) and ramp volumes are unscaled."
+  "assumedGateScale": 0.35,
+  "assumedGateScaleNote": "ASSUMPTION (calibration steps F and J: 0.3 -> 0.35): single factor on all gate volumes that are not count-based (class-default ADT gates); count-based gates (TMC, Caltrans override) and ramp volumes are unscaled."
 }

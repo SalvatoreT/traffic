@@ -1076,3 +1076,17 @@ fn residential_perceived_cost_factor_moves_route_to_arterial() {
     assert!(!route_with(1.0), "slow arterial: the parallel local street is faster");
     assert!(route_with(2.5), "a high perceived-cost factor keeps drivers on the arterial");
 }
+
+#[test]
+fn saturated_two_lane_approach_discharges_near_saturation_flow() {
+    let (net, x) = sig_cross(2);
+    let d = demand(&[(x.w, x.e, 4000.0)]);
+    let mut sim = Simulation::from_parts(net, d, cfg(1, 1.0)).unwrap();
+    step_n(&mut sim, 300.0);
+    let c0 = sim.metrics().completed_trips;
+    step_n(&mut sim, 1200.0);
+    let c1 = sim.metrics().completed_trips;
+    let rate = (c1 - c0) as f64 / 1200.0 * 3600.0;
+    // 65 s of green in a 90 s cycle on 2 lanes: 1500-1700 veh/h per green-hour per lane, in line with 1800 veh/h/lane nominal.
+    assert!(rate > 1900.0 && rate < 2700.0, "discharge {rate} veh/h");
+}

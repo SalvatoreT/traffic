@@ -15,7 +15,7 @@ The importer SHALL record for each gate whether trips can enter and whether they
 - **THEN** it is flagged as exit-only
 
 ### Requirement: Junction joining
-The importer SHALL join graph nodes that form one real intersection into a single node at their centroid when they lie within the configured radius (`junctionJoinRadius`, default 20 m), are connected by short non-freeway links, and share a street name or are both signals. The joined node SHALL be a signal if any member is a signal and an all-way stop only if every remaining approach has a stop. The importer SHALL drop the internal links, keep the `stopAtEnd` flags, humps and gates of the remaining links, and join a cluster only when its internal links keep it strongly connected, so that the joined node allows no movement the members did not allow. It SHALL NOT join across a freeway link, gate or traffic circle.
+The importer SHALL join graph nodes that form one real intersection into a single node at their centroid when they lie within `junctionJoinRadius` (default 20 m), are connected by short non-freeway links, and share a street name or are both signals.
 
 #### Scenario: Offset signalized crossing
 - **WHEN** two signal-tagged nodes 10 m apart on one street carry the north and south legs of one crossing
@@ -24,6 +24,14 @@ The importer SHALL join graph nodes that form one real intersection into a singl
 #### Scenario: Distinct intersections on a longer block
 - **WHEN** two intersections are more than the join radius apart
 - **THEN** they stay separate nodes
+
+#### Scenario: Control and approaches of a joined node
+- **WHEN** a cluster is joined
+- **THEN** the node is a signal if any member is a signal and an all-way stop only if every remaining approach has a stop, the internal links are dropped, and the remaining approaches keep their stop flags, humps and gates
+
+#### Scenario: No new movements
+- **WHEN** the members of a cluster are not strongly connected by their internal links, or the cluster contains a freeway link, a gate or a traffic circle
+- **THEN** those members are not joined
 
 ### Requirement: Study area from boundary streets
 The importer SHALL derive the study-area polygon from an ordered list of boundary streets, following each street's way geometry between the crossings with its neighbors in the list, and SHALL treat links lying on a boundary street as inside the study area, except motorway-class links.

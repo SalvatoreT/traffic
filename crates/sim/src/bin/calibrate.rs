@@ -21,10 +21,11 @@ struct Args {
     local_factor: Option<f64>,
     out: Option<PathBuf>,
     write: bool,
+    link_flows: bool,
 }
 
 fn parse_args() -> Args {
-    let mut a = Args { area: "rockridge".into(), period: "pm_peak".into(), minutes: 60.0, scale: 1.0, seed: 1, warmup_min: 10.0, local_factor: None, out: None, write: true };
+    let mut a = Args { area: "rockridge".into(), period: "pm_peak".into(), minutes: 60.0, scale: 1.0, seed: 1, warmup_min: 10.0, local_factor: None, out: None, write: true, link_flows: false };
     let argv: Vec<String> = std::env::args().skip(1).collect();
     let mut i = 0;
     while i < argv.len() {
@@ -43,6 +44,7 @@ fn parse_args() -> Args {
             "--local-factor" => a.local_factor = Some(val().parse().unwrap_or_else(|_| usage("bad --local-factor"))),
             "--out" => a.out = Some(PathBuf::from(val())),
             "--no-write" => a.write = false,
+            "--link-flows" => a.link_flows = true,
             "-h" | "--help" => usage(""),
             _ => usage(&format!("unknown argument {k}")),
         }
@@ -55,7 +57,7 @@ fn usage(msg: &str) -> ! {
     if !msg.is_empty() {
         eprintln!("error: {msg}");
     }
-    eprintln!("usage: calibrate [--area rockridge] [--period pm_peak] [--minutes 60] [--scale 1.0] [--seed 1] [--warmup 10] [--out DIR] [--no-write]");
+    eprintln!("usage: calibrate [--area rockridge] [--period pm_peak] [--minutes 60] [--scale 1.0] [--seed 1] [--warmup 10] [--out DIR] [--no-write] [--link-flows]");
     std::process::exit(if msg.is_empty() { 0 } else { 2 });
 }
 
@@ -594,6 +596,7 @@ fn main() {
             "rampShares": ramp_rows.iter().map(|(k, v, o, mo, n)| json!({"direction": k, "via": v, "observed": o, "modelled": if mo.is_nan() { Value::Null } else { json!(mo) }, "n": n})).collect::<Vec<_>>(),
             "topLinks": link_idx.iter().take(15).map(|&l| json!({"link": l, "street": net.links[l].name, "delayVehH": d.link_delay_s[l] / 3600.0, "stoppedVehH": d.link_stopped_s[l] / 3600.0})).collect::<Vec<_>>(),
             "topNodes": node_idx.iter().take(15).map(|&n| json!({"node": n, "streets": street_label(&net, n, &inc), "control": ctrl_str(net.nodes[n].control), "blockedLaneH": d.node_wait_s[n] / 3600.0, "noSpaceLaneH": d.node_space_s[n] / 3600.0})).collect::<Vec<_>>(),
+            "linkFlowVehPerHour": if args.link_flows { json!((0..net.links.len()).map(|l| ((d.link_exits[l] - exits0[l]) as f64 / elapsed_h).round()).collect::<Vec<_>>()) } else { Value::Null },
             "streetFlows": flow_rows.iter().map(|(k, dch, n, med, max)| json!({"street": k, "dir": dch.to_string(), "links": n, "medianVehPerHour": med, "maxVehPerHour": max})).collect::<Vec<_>>(),
         });
         std::fs::write(dir.join(format!("{stem}.json")), serde_json::to_string_pretty(&js).unwrap()).expect("write json");

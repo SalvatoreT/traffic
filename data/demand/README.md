@@ -41,6 +41,7 @@ Full before/after table: `data/calibration/rockridge.record.md`.
 
 - BUGFIX: a two-way street appearing as an enter-only plus an exit-only gate (same street name, within 250 m) now splits the street volume by direction instead of giving each the full volume. A truly one-way gate keeps the whole volume.
 - ASSUMPTION: `classDefaultAdt` residential 800 -> 300 and tertiary 5000 -> 3000 (hillside collectors; counted Alcatraz is not representative).
-- ASSUMPTION: `assumedGateScale` = 0.3, one factor on all gates without a count (class-default ADT). Count-based gates and ramp volumes are unscaled. It brings the PM peak close to the simulated network's capacity; it is a stability workaround and not an estimate.
+- ASSUMPTION: `assumedGateScale` = 0.35 (0.3 until the second round), one factor on all gates without a count (class-default ADT). Count-based gates and ramp volumes are unscaled. After junction joining and the re-route change the network takes about 8k veh/h offered, and 0.35 is the highest value that keeps PM backlog under 2% and arterial speed above 4 m/s; 0.7 gives 124 gridlock removals. It is a stability workaround and not an estimate.
 - ASSUMPTION: `ramps.localShare` 0.15 -> 0.30.
 - DATA unchanged: Telegraph/Alcatraz TMC legs, Claremont override, ramp ADT.
+- Second round (record steps G to J): the study area is derived from five ordered boundary streets, graph nodes of one real intersection are joined by the importer (`junctionJoinRadius`), and the simulator's re-route share is 80% per 60 s epoch. These change the network and route choice, not the demand tables; the demand was regenerated because gate and node ids moved. `ramps.localShare` stays 0.30 (0.45 and 0.6 were tested and moved the headline shares less than the seed spread).
