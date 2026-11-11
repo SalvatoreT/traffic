@@ -1,0 +1,9 @@
+node_modules
+dist
+target
+.wrangler
+src/sim/pkg
+*.log
+public/data/
+data/osm/*.json
+data/**/raw/

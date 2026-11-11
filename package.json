@@ -1,0 +1,38 @@
+{
+  "name": "traffic",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "wasm": "sh scripts/build-wasm.sh",
+    "typecheck": "tsc --noEmit",
+    "build": "npm run wasm && npm run typecheck && vite build",
+    "preview": "vite preview",
+    "deploy": "npm run build && wrangler deploy",
+    "cf-typegen": "wrangler types",
+    "data": "tsx tools/import-osm.ts && tsx tools/build-demand.ts",
+    "test": "cargo test --workspace && vitest run",
+    "prepare": "git config core.hooksPath .githooks",
+    "data:pull": "tsx tools/r2-sync.ts pull",
+    "data:push": "tsx tools/r2-sync.ts push"
+  },
+  "dependencies": {
+    "maplibre-gl": "^6.18.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.69.0",
+    "@cloudflare/workers-types": "^5.20261110.1",
+    "@fission-ai/openspec": "^1.17.0",
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6.3.0",
+    "tsx": "^4",
+    "typescript": "~5.9",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.0",
+    "wrangler": "^4.160.1"
+  }
+}

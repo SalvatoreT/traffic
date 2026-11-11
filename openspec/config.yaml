@@ -1,0 +1,14 @@
+schema: spec-driven
+
+context: |
+  Traffic simulator web app (Rust/WASM sim core, React+TS UI, Cloudflare Worker).
+  See AGENTS.md. Model equations, parameters and effect sizes must cite keys from
+  docs/references.md. Study areas are data; nothing area-specific in code.
+  UI requirements must hold to WCAG 2.2 AA.
+
+rules:
+  design:
+    - Record each decision with the alternatives considered and why they lost
+    - Cite docs/references.md keys for every modelling choice
+  proposal:
+    - State what is out of scope

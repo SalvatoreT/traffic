@@ -1,0 +1,13 @@
+#!/bin/sh
+# Blocks commits containing large files. Data belongs in the R2 bucket (see data/README.md).
+limit=${MAX_FILE_KB:-200}
+fail=0
+for f in $(git diff --cached --name-only --diff-filter=AM -z | tr '\0' '\n'); do
+  case "$f" in package-lock.json|Cargo.lock) continue ;; esac
+  size=$(git cat-file -s ":$f" 2>/dev/null || echo 0)
+  if [ "$size" -gt $((limit * 1024)) ]; then
+    echo "pre-commit: $f is $((size / 1024)) KB (limit ${limit} KB). Store it in R2 instead." >&2
+    fail=1
+  fi
+done
+exit $fail
