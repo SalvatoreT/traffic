@@ -6,7 +6,7 @@ Decisions made with the user on 2026-11-11:
 | --- | --- |
 | Study area | Rockridge Trapezoid: Telegraph (W), College (E), Claremont (S), Alcatraz (N) |
 | Focus | Cut-through traffic and safety first |
-| Modes | Fully multimodal wanted for v1 → staged: vehicles here, peds/bikes/buses next change |
+| Modes | Fully multimodal wanted for v1; staged, with vehicles here and peds/bikes/buses in the next change |
 | Interventions | Modal filters, traffic calming, signal & stop control, one-way / turn restrictions |
 | Demand | Public data, calibrated; assumptions documented |
 | Stack | TypeScript UI + Rust/WASM simulation core (Leptos end-to-end and all-TS rejected) |
@@ -16,18 +16,18 @@ Decisions made with the user on 2026-11-11:
 ## Decisions
 
 ### D1 Rust core, TS UI
-Sim core is a Rust crate (`crates/sim`) with no I/O, built natively for tests/batch
+The sim core is a Rust crate (`crates/sim`) with no I/O, built natively for tests/batch
 calibration and to WASM (wasm-bindgen via `wasm-pack --target web`) for the browser, where
-it runs in a Web Worker. UI is React + MapLibre GL. *Leptos* lost because the map and
-accessible-component ecosystem is JS-native; *all-TS* lost on determinism, speed and
+it runs in a Web Worker. UI is React + MapLibre GL. Leptos lost because the map and
+accessible-component ecosystem is JS-native, and all-TS lost on determinism, speed and
 scaling to larger regions.
 
 ### D2 Microscopic, time-stepped model
 Individual vehicles on directed links, fixed step Δt = 0.25 s, ballistic update
 [Treiber2015]. Car-following: IDM [Treiber2000, Treiber2013] with per-driver parameters
-drawn from urban-calibrated ranges. Microscopic (vs. meso/macro) because the questions —
-cut-through on specific blocks, speeds past homes, conflicts — are block-level, and people
-need to *see* vehicles.
+drawn from urban-calibrated ranges. It is microscopic rather than meso or macro because the questions
+(cut-through on specific blocks, speeds past homes, conflicts) are block-level, and people
+need to see vehicles.
 
 ### D3 Intersections
 Each node has a control type. Signals: fixed-time plans from Webster's method
@@ -39,8 +39,7 @@ treats a closed stop line as a standing leader in IDM.
 ### D4 Route choice produces cut-through
 Routes are time-shortest paths on generalised cost; link costs are updated from simulated
 travel times and a share of drivers re-route periodically, approximating iterative
-equilibrium [Wardrop1952, Peeta2001] and navigation-app behaviour. Cut-through is measured,
-not assumed: a trip whose origin and destination are both boundary gates, counted on links
+equilibrium [Wardrop1952, Peeta2001] and navigation-app behaviour. The model measures cut-through instead of assuming it: a trip whose origin and destination are both boundary gates, counted on links
 of class residential/service inside the study area.
 
 ### D5 Demand as a generic OD list
@@ -51,12 +50,12 @@ areas can use other sources. Demand is inelastic in this change; evaporation evi
 
 ### D6 Safety metrics
 Speed distributions on residential links, share of vehicles above 20/25 mph, and
-surrogate conflicts by time-to-collision threshold [Hayward1972, Mahmud2017]. Reported as
-surrogates, not crash predictions.
+surrogate conflicts by time-to-collision threshold [Hayward1972, Mahmud2017]. They are reported as
+surrogates and are not crash predictions.
 
 ### D7 Basemap without a tile server
-Render the basemap from the same OSM extract as GeoJSON layers in MapLibre. No tile
-hosting, no third-party requests at runtime, tiny payload for a neighbourhood. Revisit
+The basemap renders from the same OSM extract as GeoJSON layers in MapLibre. That needs no tile
+hosting, makes no third-party requests at runtime, and keeps the payload tiny for a neighbourhood. Revisit
 (PMTiles on R2) when generalising to large areas.
 
 ### D8 Study areas are data

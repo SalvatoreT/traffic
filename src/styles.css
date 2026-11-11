@@ -48,6 +48,7 @@ nav { display: flex; gap: .25rem; }
 .btn.primary:hover { filter: brightness(1.08); }
 .btn:disabled { opacity: .55; cursor: not-allowed; }
 .small-btn { min-height: 28px; padding: .1rem .55rem; font-size: .85rem; }
+.foot-right { margin-left: auto; }
 button.link { background: none; border: 0; padding: 0; min-height: 24px; color: var(--accent); text-decoration: underline; font: inherit; cursor: pointer; }
 .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--surface); }
 .seg button { min-height: 34px; min-width: 40px; padding: .2rem .7rem; border: 0; background: none; cursor: pointer; border-right: 1px solid var(--border); }
@@ -158,7 +159,7 @@ table.cmp td, table.cmp th[scope='row'] { font-variant-numeric: tabular-nums; }
 .md p, .md li { max-width: 80ch; }
 .md blockquote { margin: .5rem 0; padding-left: .8rem; border-left: 3px solid var(--border); color: var(--muted); }
 .prov { padding-left: 1.2rem; }
-.foot { padding: .3rem 1rem; font-size: .85rem; background: var(--surface); border-top: 1px solid var(--border); color: var(--muted); }
+.foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .2rem 1rem; padding: .3rem 1rem; font-size: .85rem; background: var(--surface); border-top: 1px solid var(--border); color: var(--muted); }
 
 .extras { display: contents; }
 .more-btn { display: none; }

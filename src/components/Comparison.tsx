@@ -59,10 +59,10 @@ export function Comparison({ base, scen, comparing, scenarioCount, onRef }: Prop
         </section>
       ))}
       <aside className="caveat" aria-label="Caveat about fixed demand">
-        <strong>Fixed-demand caveat.</strong> This version holds trip demand fixed: the same trips are made before and after
-        every change. In real schemes some traffic disappears. A meta-analysis of London low-traffic neighbourhoods found traffic
+        Trip demand is fixed in this version: the same trips are made before and after
+        every change. Real schemes also remove some traffic. A meta-analysis of London low-traffic neighbourhoods found traffic
         inside the schemes fell by about 47% on average while boundary roads were on average roughly unchanged (with wide variation
-        between schemes) [<button type="button" className="link" onClick={() => onRef('Thomas2024')}>Thomas2024</button>]. Treat these results as the redistribution of a fixed set of trips, not a forecast.
+        between schemes) [<button type="button" className="link" onClick={() => onRef('Thomas2024')}>Thomas2024</button>]. These results show a fixed set of trips redistributed, not a forecast.
         {scenarioCount === 0 ? '' : ' Model parameters are uncalibrated assumptions unless the Sources page says otherwise.'}
       </aside>
       <div className="sr-only" aria-live="polite" role="status">{announce}</div>

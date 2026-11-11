@@ -73,7 +73,7 @@ export function formatDiff(
   else {
     const pctTxt = pct === null ? '' : `${Math.abs(pct) < 10 ? Math.abs(pct).toFixed(1) : Math.abs(pct).toFixed(0)}% `;
     const word = direction === 'up' ? 'higher' : 'lower';
-    text = `${arrow} ${pctTxt}${word} (${absTxt})${lowerIsBetter === null ? '' : ` — ${verdict}`}`;
+    text = `${arrow} ${pctTxt}${word} (${absTxt})${lowerIsBetter === null ? '' : `, ${verdict}`}`;
   }
   return { direction, verdict, arrow, abs, pct, text };
 }

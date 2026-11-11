@@ -1,10 +1,10 @@
 ## Why
 
-The repository is empty. We need a first end-to-end slice: people can open a web page,
+The repository is empty. The first end-to-end slice lets people open a web page,
 watch today's traffic in the Rockridge Trapezoid (North Oakland: Telegraph / College /
-Claremont / Alcatraz) move on a map, add an intervention, and see what changes — with the
-model traceable to published traffic research. The user's priority questions are
-**cut-through traffic** and **safety**.
+Claremont / Alcatraz) move on a map, add an intervention, and see what changes. The
+model must trace to published traffic research. The user's priority questions are
+cut-through traffic and safety.
 
 ## What Changes
 
@@ -41,8 +41,8 @@ New code everywhere. New runtime dependencies: React, MapLibre GL. Build needs R
 
 ## Out of scope
 
-- Pedestrians, cyclists and buses as simulated agents (user wants fully multimodal v1;
-  delivered as the next change, `multimodal-agents`, on top of this vehicle core).
+- Pedestrians, cyclists and buses as simulated agents (the user wants a fully multimodal v1;
+  it arrives as the next change, `multimodal-agents`, on top of this vehicle core).
 - Lane changing within multi-lane links (MOBIL), emissions, noise.
-- Mode shift / demand elasticity ("traffic evaporation") — demand is fixed in this change.
+- Mode shift / demand elasticity ("traffic evaporation"). Demand is fixed in this change.
 - Saving/sharing scenarios server-side; areas other than Rockridge.

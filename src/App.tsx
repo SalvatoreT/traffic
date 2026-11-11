@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { AreaBundle, Intervention, Metrics, Overlay, Theme } from './types';
 import { loadArea } from './data';
+import { SOURCE_REPO_URL } from './config';
 import { SimClient, type StatsMsg } from './sim/client';
 import { buildIndex } from './lib/naming';
 import { decodeHash, encodeHash } from './lib/hash';
@@ -233,7 +234,7 @@ function Simulator({ bundle }: { bundle: AreaBundle }) {
             <div className="banners">
               {showCal && (
                 <p className="notice calm" role="note">
-                  <span>Preview — the baseline is not yet calibrated against observed traffic. Treat results as illustrative.
+                  <span>Preview: the baseline is not yet calibrated against observed traffic, so treat results as illustrations.
                     {bundle.entry.calibration?.note ? ` ${bundle.entry.calibration.note}` : ''}</span>
                   <button type="button" className="btn small-btn" onClick={() => { setCalDismissed(true); store.set(calKey, '1'); }}>Dismiss</button>
                 </p>
@@ -300,8 +301,11 @@ function Simulator({ bundle }: { bundle: AreaBundle }) {
         )}
       </main>
       <footer className="foot">
-        <span>Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>.</span>{' '}
-        <button type="button" className="link" onClick={() => { setSourceRef(null); setView('sources'); }}>Sources &amp; assumptions</button>
+        <span className="foot-left">
+          <span>Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>.</span>{' '}
+          <button type="button" className="link" onClick={() => { setSourceRef(null); setView('sources'); }}>Sources &amp; assumptions</button>
+        </span>
+        <a className="foot-right" href={SOURCE_REPO_URL} target="_blank" rel="noopener noreferrer">Source on GitHub</a>
       </footer>
     </div>
   );

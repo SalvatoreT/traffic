@@ -17,7 +17,7 @@ export function Sources({ demand, synthetic, focusRef }: { demand: Demand; synth
           {demand.provenance.map((p, i) => (
             <li key={i}>
               <strong>{p.source}</strong>
-              {/^https?:\/\//.test(p.url) && <> — <a href={p.url} target="_blank" rel="noopener noreferrer">{p.url}</a></>}
+              {/^https?:\/\//.test(p.url) && <>, <a href={p.url} target="_blank" rel="noopener noreferrer">{p.url}</a></>}
               <br /><span className="muted">{p.note}</span>
             </li>
           ))}

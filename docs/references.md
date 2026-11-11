@@ -4,8 +4,8 @@ Compiled 2026-11-11. Second (verification) pass 2026-11-11.
 
 ## READ FIRST: verification method and limits
 
-- **Pass 1** (network blocked) verified entries only from search snippets. **Pass 2** (this version, 2026-11-11) had `api.crossref.org`, `export.arxiv.org`/`arxiv.org/pdf`, NCBI eutils and several open pages (traffic-simulation.de, FHWA, LibreTexts) reachable. `doi.org` returned 403, and publisher sites (ScienceDirect, SAGE, TRB, NAP, TØI brage) were blocked or paywalled.
-- **What was checked how:**
+- Pass 1 (network blocked) verified entries only from search snippets. Pass 2 (this version, 2026-11-11) had `api.crossref.org`, `export.arxiv.org`/`arxiv.org/pdf`, NCBI eutils and several open pages (traffic-simulation.de, FHWA, LibreTexts) reachable. `doi.org` returned 403, and publisher sites (ScienceDirect, SAGE, TRB, NAP, TØI brage) were blocked or paywalled.
+- What was checked, and how:
   - Every entry tagged V-partial or UNVERIFIED in pass 1 was re-resolved against Crossref (DOI lookup or bibliographic query) or the arXiv API. Fields were corrected from those records.
   - About 45 of the "V" entries were spot-checked against Crossref by DOI. All exist. Two had metadata errors (fixed): Marshall & Ferenchak 2019 (article no. 100539, not pp. 285-301) and the CityFlow page range.
   - Equations and parameter values were checked against full text that could be read (arXiv PDFs, Treiber's traffic-simulation.de pages, an FHWA HPMS appendix, an FHWA/SWOV table, a Virginia Tech thesis quoting VT-CPFM, a LibreTexts open textbook, a Wisconsin roundabout-software report quoting NCHRP 572). Each equation block carries a **Checked against:** line naming its source, or **unchecked - from memory**.
@@ -14,14 +14,14 @@ Compiled 2026-11-11. Second (verification) pass 2026-11-11.
   - **[V-partial]**: the item exists but some field or the content was not confirmed. The gap is flagged inline.
   - **[V-meta]**: metadata confirmed by Crossref/arXiv, but the full text was not read, so content notes come from abstracts only.
   - **[UNVERIFIED]**: not confirmed. Check before citing.
-- **Still blocked or unread:** the Schakel 2010 IDM+ equation (IEEE, paywalled), HCM 6th/7th chapters themselves (only secondary reproductions seen), NCHRP 572/672 text, Webster 1958/1966 originals, Elvik 2013 and the urban exponents of Elvik 2009 (TØI/ScienceDirect blocked), Mahmud 2017 and Allen 1978 text.
+- Still blocked or unread: the Schakel 2010 IDM+ equation (IEEE, paywalled), HCM 6th/7th chapters themselves (only secondary reproductions seen), NCHRP 572/672 text, Webster 1958/1966 originals, Elvik 2013 and the urban exponents of Elvik 2009 (TØI/ScienceDirect blocked), Mahmud 2017 and Allen 1978 text.
 - Corrections found in pass 1 (kept for the record):
   - Anvari et al. 2015 authors are Anvari, Bell, Sivakumar, Ochieng (Ben-Akiva is not an author).
   - Keyvan-Ekbatani et al. 2012 authors are Keyvan-Ekbatani, Kouvelas, Papamichail, Papageorgiou.
   - Johari et al. 2021 authors are Johari, Keyvan-Ekbatani, Leclercq, Ngoduy, Mahmassani.
   - Thomas & Aldred 2024 is in *Case Studies on Transport Policy*, not *Journal of Transport & Health*.
 - Corrections found in pass 2:
-  - [Zhang2022] first author is **Yifan** Zhang (Zhang, Chen, Wang, Zheng, Wu), *TR-C* 145, 103926; it was listed as "Zhang, C. et al.".
+  - [Zhang2022] first author is Yifan Zhang (Zhang, Chen, Wang, Zheng, Wu), *TR-C* 145, 103926; it was listed as "Zhang, C. et al.".
   - [Zhang2024] confirmed as Zhang & Sun, *IEEE TITS* 25(8), 9308-9320. It is calibrated on highD (not pNEUMA).
   - [Mercader2020] is *TR-C* 110, 275-290.
   - [Huang2002] title is "...on Crashes and Injuries" (TRR 1784, 80-90, DOI 10.3141/1784-11); the earlier title text was wrong.
@@ -30,7 +30,7 @@ Compiled 2026-11-11. Second (verification) pass 2026-11-11.
   - [Twaddle2014] confirmed (authors, TRR 2434, 140-146), but the Crossref title is "Bicycles in Urban Areas".
   - [Verlinghieri2025] is in *Journal of Transport Geography* 128, 104360.
   - [Loder2019] DOI is 10.1038/s41598-019-51539-5.
-  - **Equations corrected:** MOBIL threshold (0.2 not 0.1 m/s2), ballistic-update stopping rule, Tefft AIS4+ and death figures kept (confirmed), Elvik exponents added (rural), HCM follow-up values confirmed, roundabout capacity equation added. See each block.
+  - Equations corrected: MOBIL threshold (0.2 not 0.1 m/s2), ballistic-update stopping rule, Tefft AIS4+ and death figures kept (confirmed), Elvik exponents added (rural), HCM follow-up values confirmed, roundabout capacity equation added. See each block.
 
 ---
 

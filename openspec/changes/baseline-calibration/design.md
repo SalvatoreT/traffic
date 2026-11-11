@@ -8,19 +8,19 @@ for two residential streets and the freeway ramps.
 ## Decisions
 
 ### D1 Measure before tuning
-Build the measurement tool first and tune by hand with each change recorded, rather than
-an automatic optimiser. With ~10 observed shares and dozens of free parameters an
-optimiser would overfit; a short, explained list of adjustments is auditable.
+Build the measurement tool first, then tune by hand and record each change. An automatic
+optimiser would overfit: there are ~10 observed shares and dozens of free parameters. A short,
+explained list of adjustments can be audited.
 
 ### D2 Select-link analysis in the core
 The simulation records, for configured links, each traversing trip's origin, destination
 and the named streets used before and after. This mirrors how the observed data was
-produced, so modelled and observed shares are directly comparable.
+produced, so modelled and observed shares compare directly.
 
 ### D3 Tune demand before behaviour
-Order of suspicion: default gate volumes (assumptions) → origin/destination distribution
-→ intersection capacity parameters marked ASSUMPTION → literature-sourced parameters
-(left alone unless clearly mis-applied). Car-following parameters from [Treiber2000] and
+Order of suspicion: default gate volumes (assumptions), then the origin/destination
+distribution, then intersection capacity parameters marked ASSUMPTION, then
+literature-sourced parameters (left alone unless clearly mis-applied). Car-following parameters from [Treiber2000] and
 calibrated ranges stay fixed.
 
 ### D4 Stability criterion
@@ -29,7 +29,7 @@ removals, backlog below 2% of spawned trips, and arterial mean speed above 4 m/s
 
 ### D5 Fit tolerance
 Modelled select-link shares within ±10 percentage points of observed for the headline
-shares (freeway origin/destination share on Hillegass and Colby); others reported but
+shares (freeway origin/destination share on Hillegass and Colby); others are reported but
 not gated. StreetLight samples are themselves approximate.
 
 ## Contract changes

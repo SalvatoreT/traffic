@@ -3,8 +3,8 @@
 The first end-to-end run gridlocks at 100% demand, and nothing yet checks the baseline
 against observation. Residents provided StreetLight select-link shares for Hillegass Ave
 and Colby St (`data/calibration/rockridge.targets.json`) showing about half of that
-traffic travels to or from the freeway ramps. Interventions cannot be compared credibly
-until the baseline reproduces today's pattern without artificial gridlock.
+traffic travels to or from the freeway ramps. Interventions can only be compared credibly
+once the baseline reproduces today's pattern without artificial gridlock.
 
 ## What Changes
 
@@ -34,4 +34,4 @@ runner), regenerated `public/data/*` (must be re-published to R2), UI status tex
 
 ## Out of scope
 
-Automatic optimisation of parameters; mode shift; multimodal agents.
+Automatic parameter optimisation, mode shift and multimodal agents.
