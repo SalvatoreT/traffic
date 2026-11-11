@@ -6,7 +6,8 @@ import { formatDiff, formatValue, formatClock } from './format';
 import { addInterventions } from './scenario';
 import { nearestOnPolyline, pickLink } from './geom';
 import { buildFixture } from '../fixtures/area';
-import type { Intervention } from '../types';
+import { networkHealth } from './metrics';
+import type { Intervention, Metrics, Network } from '../types';
 
 const fx = buildFixture().network;
 
@@ -110,5 +111,32 @@ describe('scenario + geometry', () => {
     expect(pickLink(fx, mx, y - 2, 10)!.id).toBe(a.id); // south of an eastbound link is its right side
     expect(pickLink(fx, mx, y + 2, 10)!.id).toBe(a.reverse);
     expect(pickLink(fx, 5000, 5000, 10)).toBeNull();
+  });
+});
+
+describe('network health', () => {
+  const m = (o: Partial<Metrics>) => ({ spawned: 1000, backlog: 0, unroutableTrips: 0, vehiclesInNetwork: 100, ...o }) as Metrics;
+  it('is calm by default and when the field is absent', () => {
+    expect(networkHealth(m({})).oversaturated).toBe(false);
+  });
+  it('flags gridlock removals and large backlogs', () => {
+    expect(networkHealth(m({ gridlockRemoved: 1 })).oversaturated).toBe(true);
+    expect(networkHealth(m({ backlog: 60 })).oversaturated).toBe(true);
+    expect(networkHealth(m({ backlog: 10 })).oversaturated).toBe(false);
+  });
+});
+
+describe('friendly street names', () => {
+  it('names unnamed service roads after a neighbouring street and tags cul-de-sac ends', () => {
+    const net: Network = JSON.parse(JSON.stringify(fx));
+    const l = net.links.find((x) => x.inStudyArea && x.name)!;
+    const tail = net.nodes.length;
+    net.nodes.push({ id: tail, osmId: 9e6, x: 0, y: 0, control: 'uncontrolled', gate: false, inStudyArea: true });
+    const a = net.links.length;
+    const mk = (id: number, from: number, to: number, reverse: number) => ({ ...l, id, from, to, reverse, name: '', class: 'service' as const, geometry: [[0, 0], [10, 0]] as [number, number][] });
+    net.links.push(mk(a, l.to, tail, a + 1), mk(a + 1, tail, l.to, a));
+    const idx = buildIndex(net);
+    expect(idx.linkName[a]).toMatch(/^Unnamed service road off /);
+    expect(idx.blocks[idx.blockOfLink[a]].label).toMatch(/\(cul-de-sac end\)$/);
   });
 });

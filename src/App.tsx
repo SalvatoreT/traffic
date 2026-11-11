@@ -247,6 +247,7 @@ function Simulator({ bundle }: { bundle: AreaBundle }) {
               {sheetOpen ? 'Hide panel' : `Scenario & results (${interventions.length})`}
             </button>
             <div id="panel-body" className="panel-body">
+              <h2 className="sr-only">Scenario and results</h2>
               <div className="tabs" role="tablist" aria-label="Panel sections">
                 {(['scenario', 'results'] as const).map((t) => (
                   <button key={t} type="button" role="tab" id={`tab-${t}`} aria-selected={panelTab === t} aria-controls={`tabpanel-${t}`}
