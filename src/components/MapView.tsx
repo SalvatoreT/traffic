@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import maplibregl from 'maplibre-gl';
+import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import type { AreaBundle, Intervention, Overlay } from '../types';
 import { makeProjection, metresPerPixel } from '../lib/projection';
 import { pickLink, pickNode, pointAlong } from '../lib/geom';
 import { intensity, rampStops, WIDTH_MAX, WIDTH_MIN, type Mode } from '../lib/ramps';
 import { directedLabel, linkStreet, type NetIndex } from '../lib/naming';
 import type { SimClient } from '../sim/client';
+
+maplibregl.setWorkerUrl(workerUrl);
 
 export type PickKind = 'link' | 'node' | null;
 
@@ -187,7 +190,7 @@ export function MapView(p: Props) {
 
     map.on('load', () => {
       const pr = makeProjection(b.network.origin);
-      map.addSource('basemap', { type: 'geojson', data: b.basemap });
+      map.addSource('basemap', { type: 'geojson', data: b.basemap as never });
       map.addSource('study', { type: 'geojson', data: { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [b.network.studyArea] } } });
       map.addSource('links', {
         type: 'geojson',
@@ -201,7 +204,7 @@ export function MapView(p: Props) {
       });
       map.addSource('hover', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
       const K = KIND_STYLE.light;
-      const major = ['match', ['get', 'kind'], ['motorway', 'trunk', 'primary', 'secondary', 'tertiary'], true, false];
+      const major = ['match', ['get', 'kind'], ['motorway', 'trunk', 'primary', 'secondary', 'tertiary'], true, false] as never;
       map.addLayer({ id: 'base-paths', type: 'line', source: 'basemap', filter: ['match', ['get', 'kind'], ['footway', 'path', 'cycleway', 'steps', 'pedestrian', 'track'], true, false],
         paint: { 'line-color': K.path, 'line-width': 1, 'line-dasharray': [2, 2] } });
       map.addLayer({ id: 'base-lines', type: 'line', source: 'basemap', filter: ['!', ['match', ['get', 'kind'], ['footway', 'path', 'cycleway', 'steps', 'pedestrian', 'track'], true, false]],
@@ -215,7 +218,7 @@ export function MapView(p: Props) {
         paint: { 'line-color': ramp(mode) as never, 'line-width': widthExpr() as never, 'line-offset': OFFSET as never } });
       map.addLayer({ id: 'hover', type: 'line', source: 'hover', layout: { 'line-cap': 'round' },
         paint: { 'line-color': K.study, 'line-width': 7, 'line-opacity': 0.55, 'line-offset': OFFSET as never } });
-      setReady(true);
+      map.once('idle', () => setReady(true));
     });
     map.on('move', schedule);
     map.on('resize', schedule);
@@ -229,8 +232,9 @@ export function MapView(p: Props) {
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready) return;
+    const apply = () => {
     const K = KIND_STYLE[mode];
-    const major = ['match', ['get', 'kind'], ['motorway', 'trunk', 'primary', 'secondary', 'tertiary'], true, false];
+    const major = ['match', ['get', 'kind'], ['motorway', 'trunk', 'primary', 'secondary', 'tertiary'], true, false] as never;
     map.setPaintProperty('bg', 'background-color', K.bg);
     map.setPaintProperty('base-paths', 'line-color', K.path);
     map.setPaintProperty('base-lines', 'line-color', ['case', major, K.major, K.minor]);
@@ -239,6 +243,8 @@ export function MapView(p: Props) {
     map.setPaintProperty('hover', 'line-color', K.study);
     map.setPaintProperty('links-casing', 'line-color', mode === 'dark' ? '#0b1118' : '#ffffff');
     map.setPaintProperty('links', 'line-color', ramp(mode) as never);
+    };
+    try { apply(); } catch { map.once('idle', () => { try { apply(); } catch { /* theme applies on next change */ } }); }
     schedule();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, ready]);
@@ -307,7 +313,7 @@ export function MapView(p: Props) {
       hoverRef.current = f;
       const src = map.getSource('hover') as maplibregl.GeoJSONSource | undefined;
       const net = live.current.bundle.network;
-      const feats: GeoJSON.Feature[] = [];
+      const feats: unknown[] = [];
       let text = '';
       if (f.link !== null) {
         const l = net.links[f.link];
@@ -319,7 +325,7 @@ export function MapView(p: Props) {
         feats.push({ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: live.current.proj.toLonLat(n.x, n.y) } });
         text = live.current.index.nodeName[f.node];
       }
-      src?.setData({ type: 'FeatureCollection', features: feats });
+      src?.setData({ type: 'FeatureCollection', features: feats } as never);
       setHoverText(text);
     };
     const click = (e: maplibregl.MapMouseEvent) => {
@@ -328,9 +334,10 @@ export function MapView(p: Props) {
       if (f.link !== null) live.current.onPickLink(f.link);
       else if (f.node !== null) live.current.onPickNode(f.node);
     };
-    map.on('mousemove', move); map.on('click', click);
+    const leave = () => { (map.getSource('hover') as maplibregl.GeoJSONSource | undefined)?.setData({ type: 'FeatureCollection', features: [] }); setHoverText(''); };
+    map.on('mousemove', move); map.on('click', click); cvs.addEventListener('mouseleave', leave);
     return () => {
-      map.off('mousemove', move); map.off('click', click);
+      map.off('mousemove', move); map.off('click', click); cvs.removeEventListener('mouseleave', leave);
       (map.getSource('hover') as maplibregl.GeoJSONSource | undefined)?.setData({ type: 'FeatureCollection', features: [] });
       setHoverText('');
     };
@@ -340,7 +347,7 @@ export function MapView(p: Props) {
     <div className="map-wrap" hidden={!p.visible}>
       <div ref={box} className="map" role="group" aria-label={`Interactive map of ${bundle.network.name}`} />
       <canvas ref={canvas} className="map-overlay" aria-hidden="true" />
-      {p.pick && <div className="map-hint" aria-hidden="true">{hoverText || (p.pick === 'node' ? 'Click an intersection' : 'Click a street')}</div>}
+      {p.pick && hoverText && <div className="map-hint" aria-hidden="true">{hoverText}</div>}
     </div>
   );
 }

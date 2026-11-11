@@ -26,7 +26,7 @@ export function Sources({ demand, synthetic, focusRef }: { demand: Demand; synth
       </section>
       <section aria-labelledby="bib-h">
         <h3 id="bib-h">Research references</h3>
-        <Markdown source={refs} />
+        <Markdown source={refs} offset={3} />
       </section>
     </div>
   );

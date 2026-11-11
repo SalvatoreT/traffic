@@ -51,7 +51,7 @@ export function Legend(p: LegendProps) {
   const grad = `linear-gradient(to right, ${stops.join(', ')})`;
   const ticks = p.overlay === 'speed'
     ? ['100%', '75%', '50%', '25%', '0%']
-    : [0, 0.25, 0.5, 0.75, 1].map((f) => String(Math.round(p.max * f)));
+    : [0, 0.25, 0.5, 0.75, 1].map((f) => (p.max < 8 ? String(Math.round(p.max * f * 100) / 100) : String(Math.round(p.max * f))));
   const title = p.overlay === 'speed' ? 'Mean speed, % of limit' : p.overlay === 'flow' ? 'Flow (veh/h)' : 'Cut-through flow (veh/h)';
   return (
     <div className="legend">

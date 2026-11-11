@@ -4,7 +4,7 @@
   --good: #14662f; --bad: #a3260f; --good-bg: #e3f3e8; --bad-bg: #fbe7e2; --note-bg: #fff4d6; --note-border: #a8730a;
   --veh: #1d5fc4; --veh-ring: #ffffff; --thru: #e8590c; --thru-ring: #1a0f05;
   --shadow: 0 1px 2px rgba(20, 30, 45, .08), 0 6px 20px rgba(20, 30, 45, .08);
-  --radius: 10px; --panel-w: 420px;
+  --radius: 10px; --panel-w: 480px;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {

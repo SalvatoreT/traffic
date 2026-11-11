@@ -2,9 +2,10 @@ import type { Overlay, Theme } from '../types';
 
 /** Viridis-derived sequential ramp (colour-blind safe). Light theme: dark = high; dark theme: bright = high. */
 const VIRIDIS = ['#440154', '#3b528b', '#21918c', '#5ec962', '#fde725'];
+const VIRIDIS_ON_DARK = ['#3b528b', '#21918c', '#5ec962', '#bddf26', '#fde725'];
 export type Mode = 'light' | 'dark';
 export function rampStops(mode: Mode): string[] {
-  return mode === 'dark' ? VIRIDIS : [...VIRIDIS].reverse().map((c, i) => (i === 0 ? '#b8d82c' : c));
+  return mode === 'dark' ? VIRIDIS_ON_DARK : [...VIRIDIS].reverse().map((c, i) => (i === 0 ? '#b8d82c' : c));
 }
 export const resolveMode = (t: Theme, prefersDark: boolean): Mode => (t === 'auto' ? (prefersDark ? 'dark' : 'light') : t);
 

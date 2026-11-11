@@ -58,7 +58,7 @@ export type Theme = 'auto' | 'light' | 'dark';
 
 export interface AreaBundle {
   entry: AreaEntry; network: Network; demand: Demand;
-  basemap: GeoJSON.FeatureCollection; synthetic: boolean;
+  basemap: GeoFC; synthetic: boolean;
 }
 
 /** Link stats from the sim: stride 4 per link. */
@@ -68,4 +68,9 @@ export interface LinkStatsView {
 export function linkStatsView(a: Float32Array | null): LinkStatsView {
   const g = (i: number, o: number) => (a && a.length > i * 4 + o ? a[i * 4 + o] : 0);
   return { flow: (i) => g(i, 0), speed: (i) => g(i, 1), cut: (i) => g(i, 2), density: (i) => g(i, 3) };
+}
+
+export interface GeoFC {
+  type: 'FeatureCollection';
+  features: { type: 'Feature'; properties: Record<string, unknown> | null; geometry: { type: string; coordinates: unknown } }[];
 }

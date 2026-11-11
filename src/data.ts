@@ -1,4 +1,4 @@
-import type { AreaBundle, AreaEntry, Demand, Network } from './types';
+import type { AreaBundle, AreaEntry, Demand, GeoFC, Network } from './types';
 import { buildFixture } from './fixtures/area';
 
 async function getJson<T>(url: string): Promise<T> {
@@ -18,7 +18,7 @@ export async function loadArea(preferred?: string, forceFixture = false): Promis
         const [network, demand, basemap] = await Promise.all([
           getJson<Network>(base(entry.network)),
           getJson<Demand>(base(entry.demand)),
-          getJson<GeoJSON.FeatureCollection>(base(entry.basemap)),
+          getJson<GeoFC>(base(entry.basemap)),
         ]);
         return { entry, network, demand, basemap, synthetic: false };
       }

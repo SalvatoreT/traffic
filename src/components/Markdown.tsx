@@ -32,7 +32,7 @@ function inline(text: string, keyBase: string): ReactNode[] {
   return out;
 }
 
-export function Markdown({ source }: { source: string }) {
+export function Markdown({ source, offset = 1 }: { source: string; offset?: number }) {
   const lines = source.replace(/\r/g, '').split('\n');
   const nodes: ReactNode[] = [];
   let i = 0, k = 0;
@@ -48,7 +48,7 @@ export function Markdown({ source }: { source: string }) {
     }
     const h = /^(#{1,6})\s+(.*)$/.exec(line);
     if (h) {
-      const lvl = Math.min(h[1].length + 1, 6); // page title is the h1
+      const lvl = Math.min(h[1].length + offset, 6);
       const Tag = `h${lvl}` as 'h2';
       nodes.push(<Tag key={k++} id={slug(h[2])}>{inline(h[2], `h${k}`)}</Tag>);
       i++; continue;

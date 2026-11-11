@@ -1,4 +1,4 @@
-import type { AreaBundle, Demand, NetLink, NetNode, Network } from '../types';
+import type { AreaBundle, GeoFC, Demand, NetLink, NetNode, Network } from '../types';
 import { makeProjection } from '../lib/projection';
 
 /** Small synthetic study area used until/unless /data/*.json is available. Not real streets. */
@@ -78,7 +78,7 @@ export function buildFixture(): AreaBundle {
     }],
   };
 
-  const basemap: GeoJSON.FeatureCollection = {
+  const basemap: GeoFC = {
     type: 'FeatureCollection',
     features: links.filter((l) => l.id % 2 === 0).map((l) => ({
       type: 'Feature',
