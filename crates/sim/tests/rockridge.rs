@@ -23,7 +23,7 @@ fn rockridge_30_minutes() {
     let dem_json = if dem_p.exists() {
         std::fs::read_to_string(&dem_p).unwrap()
     } else {
-        // Synthesise gate-to-gate demand.
+        // Synthesize gate-to-gate demand.
         let net: serde_json::Value = serde_json::from_str(&net_json).unwrap();
         let gates: Vec<u64> = net["nodes"]
             .as_array()
