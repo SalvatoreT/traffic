@@ -152,7 +152,6 @@
     "caltransPadDeg": 0.04,
     "lodesBase": "https://lehd.ces.census.gov/data/lodes/LODES8/ca/",
     "lodesOd": "od/ca_od_main_JT00_{year}.csv.gz",
-    "lodesXwalk": "ca_xwalk.csv.gz",
-    "lodesCacheDir": "data/demand/raw/_cache"
+    "lodesXwalk": "ca_xwalk.csv.gz"
   }
 }
