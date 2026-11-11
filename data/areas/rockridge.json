@@ -91,6 +91,6 @@
   "zoom": 15,
   "calibration": {
     "status": "uncalibrated",
-    "note": "The baseline is close to stable at full demand but not there yet. Non-count side streets carry 35% of their class-default volume. PM peak averages 9 gridlock removals per hour, mostly where the SR-24 off-ramp backs up onto the freeway stub, and arterials average 9.5 mph. Three of four freeway-share targets are within 10 points of observed; Hillegass Avenue southbound to the freeway is 20 points low."
+    "note": "Peak periods still jam near the freeway ramps, side-street volumes are scaled-down assumptions, and one of four observed route shares is 20 points off. See data/calibration/rockridge.record.md."
   }
 }
