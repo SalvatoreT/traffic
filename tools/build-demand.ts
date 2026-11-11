@@ -152,7 +152,8 @@ for (const n of net.nodes.filter((q) => q.gate && !freewayIds.has(q.id))) {
     const ov = cfg.adtOverrides?.find((o: { street: string }) => o.street === street);
     if (ov) { adt = ov.adt * (ov.factor ?? 1); kind = 'DATA(adt)'; source = 'Caltrans AADT override (scaled)'; }
     else { adt = cfg.classDefaultAdt[cls] ?? cfg.classDefaultAdt.residential; kind = 'ASSUMPTION'; source = `class default (${cls})`; }
-    const pk = adt! * cfg.kFactor;
+    // F: single documented factor on all assumption-based (non-count) gate volumes; count-based gates and ramps are unaffected.
+    const pk = adt! * cfg.kFactor * (kind === 'ASSUMPTION' ? cfg.assumedGateScale ?? 1 : 1);
     // A two-way street can appear as a pair of one-way gate nodes (one enter-only, one exit-only, same street,
     // close together). BUGFIX: each of the pair takes its directional share of the street volume, not all of it.
     // A one-way gate with no partner (genuinely one-way street) carries the whole volume in its direction.

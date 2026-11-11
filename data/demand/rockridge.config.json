@@ -177,5 +177,6 @@
       "directionSigmaDeg": 90,
       "directionFloor": 0.03
     }
-  }
+  },
+  "assumedGateScale": 0.4
 }
