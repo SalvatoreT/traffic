@@ -2,12 +2,12 @@ import type { AreaBundle, Intervention } from '../types';
 import type { NetIndex } from './naming';
 import { pointAlong } from './geom';
 
-export function describeIntervention(iv: Intervention, net: AreaBundle['network'], idx: NetIndex, mph = true): string {
+export function describeIntervention(iv: Intervention, net: AreaBundle['network'], idx: NetIndex): string {
   const ln = (id: number) => idx.blocks[idx.blockOfLink[id]]?.label ?? `link ${id}`;
   const nn = (id: number) => idx.nodeName[id] ?? `node ${id}`;
   switch (iv.type) {
     case 'modal_filter': return 'link' in iv ? `Modal filter on ${ln(iv.link)}` : `Modal filter at ${nn(iv.node)}`;
-    case 'speed_limit': return `Speed limit ${mph ? Math.round(iv.speed * 2.23694) + ' mph' : Math.round(iv.speed * 3.6) + ' km/h'} on ${ln(iv.link)}`;
+    case 'speed_limit': return `Speed limit ${Math.round(iv.speed * 2.23694)} mph on ${ln(iv.link)}`;
     case 'speed_hump': return `Speed hump on ${ln(iv.link)}`;
     case 'traffic_circle': return `Traffic circle at ${nn(iv.node)}`;
     case 'control': return `${iv.control.replace(/_/g, ' ')} at ${nn(iv.node)}`;

@@ -10,6 +10,9 @@ fn main() {
     let dem_s = std::fs::read_to_string(root.join("public/data/rockridge.demand.json")).unwrap();
     let net: Network = serde_json::from_str(&net_s).unwrap();
     let mut sim = Simulation::new(&net_s, &dem_s, &format!("{{\"seed\":1,\"period\":\"pm_peak\",\"demandScale\":{scale}}}")).unwrap();
+    let mut plans = sim.signal_plans();
+    plans.sort_by(|a, b| b.2.partial_cmp(&a.2).unwrap());
+    for (n, c, y, g) in plans.iter().take(40) { println!("sig node {n} cycle {c:.0} ysum {y:.2} greens {g:?} {}", net.links.iter().filter(|l| l.to == *n).map(|l| l.name.clone()).collect::<std::collections::BTreeSet<_>>().into_iter().collect::<Vec<_>>().join("/")); }
     sim.step(mins * 60.0);
     let st = sim.debug_stuck(minwait);
     println!("{} stuck heads", st.len());

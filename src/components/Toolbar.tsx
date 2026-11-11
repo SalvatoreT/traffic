@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { AreaBundle, Overlay, Units } from '../types';
+import type { AreaBundle, Overlay } from '../types';
 import { formatClock } from '../lib/format';
 import { rampStops, type Mode } from '../lib/ramps';
 
@@ -45,12 +45,12 @@ export function Playback(p: PlaybackProps) {
 }
 
 interface LegendProps {
-  overlay: Overlay; onOverlay(o: Overlay): void; max: number; mode: Mode; units: Units;
+  overlay: Overlay; onOverlay(o: Overlay): void; max: number; mode: Mode;
   source: 'scenario' | 'baseline'; onSource(s: 'scenario' | 'baseline'): void; canCompare: boolean;
 }
 
 const OVERLAYS: { id: Overlay; label: string }[] = [
-  { id: 'flow', label: 'Flow' }, { id: 'speed', label: 'Speed' }, { id: 'cutthrough', label: 'Cut-through' },
+  { id: 'cutthrough', label: 'Cut-through' }, { id: 'speed', label: 'Speed' }, { id: 'flow', label: 'Flow' },
 ];
 
 export function Legend(p: LegendProps) {

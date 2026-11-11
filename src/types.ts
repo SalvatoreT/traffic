@@ -59,7 +59,6 @@ export interface Metrics {
   gridlockRemoved?: number;
 }
 
-export type Units = 'mph' | 'kmh';
 export type Overlay = 'flow' | 'speed' | 'cutthrough';
 export type Theme = 'auto' | 'light' | 'dark';
 

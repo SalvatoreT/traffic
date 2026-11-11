@@ -1,21 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Metrics, Units } from '../types';
+import type { Metrics } from '../types';
 import { CARDS, networkHealth, summarise } from '../lib/metrics';
 import { formatClock, formatDiff, formatValue } from '../lib/format';
 
 interface Props {
-  base: Metrics | null; scen: Metrics | null; comparing: boolean; units: Units; scenarioCount: number; onRef(key: string): void;
+  base: Metrics | null; scen: Metrics | null; comparing: boolean; scenarioCount: number; onRef(key: string): void;
 }
 
-export function Comparison({ base, scen, comparing, units, scenarioCount, onRef }: Props) {
+export function Comparison({ base, scen, comparing, scenarioCount, onRef }: Props) {
   // Throttled polite announcement: at most once per 20 s of wall time, only while a scenario exists.
   const [announce, setAnnounce] = useState('');
   const last = useRef(0);
   useEffect(() => {
     if (!base || !scen || !comparing) { setAnnounce(''); return; }
     const now = Date.now();
-    if (now - last.current > 20000 && scen.time >= 120) { last.current = now; setAnnounce(summarise(base, scen, units)); }
-  }, [base, scen, comparing, units]);
+    if (now - last.current > 20000 && scen.time >= 120) { last.current = now; setAnnounce(summarise(base, scen)); }
+  }, [base, scen, comparing]);
 
   const elapsed = scen?.time ?? 0;
   return (
@@ -44,12 +44,12 @@ export function Comparison({ base, scen, comparing, units, scenarioCount, onRef 
             <tbody>
               {c.metrics.map((d) => {
                 const b = base ? d.get(base) : undefined, s = scen ? d.get(scen) : undefined;
-                const df = formatDiff(b, s, d.kind, units, d.lowerIsBetter);
+                const df = formatDiff(b, s, d.kind, d.lowerIsBetter);
                 return (
                   <tr key={d.id}>
                     <th scope="row">{d.label}</th>
-                    <td>{formatValue(d.kind, b, units)}</td>
-                    <td>{formatValue(d.kind, s, units)}</td>
+                    <td>{formatValue(d.kind, b)}</td>
+                    <td>{formatValue(d.kind, s)}</td>
                     <td className={`chg ${comparing ? df.verdict.replace(/ /g, '-') : 'neutral'}`}>{comparing ? df.text : '—'}</td>
                   </tr>
                 );

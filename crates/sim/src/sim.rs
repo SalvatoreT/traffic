@@ -465,6 +465,16 @@ impl Simulation {
         out
     }
 
+    /// Fixed-time signal plans: (node, cycle s, sum of critical flow ratios, green s per phase).
+    pub fn signal_plans(&self) -> Vec<(u32, f32, f32, Vec<f32>)> {
+        self.eff
+            .sig
+            .iter()
+            .enumerate()
+            .filter_map(|(n, p)| p.as_ref().map(|p| (n as u32, p.cycle, p.ysum, p.phases.iter().map(|x| x.1).collect())))
+            .collect()
+    }
+
     /// Per-link / per-node diagnostics for calibration reports.
     pub fn diagnostics(&self) -> Diagnostics<'_> {
         Diagnostics {

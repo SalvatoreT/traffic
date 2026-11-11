@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import type { AreaBundle, Units } from '../types';
+import type { AreaBundle } from '../types';
 import { linkStatsView } from '../types';
 import type { NetIndex } from '../lib/naming';
 import { matchesQuery } from '../lib/naming';
@@ -12,12 +12,12 @@ interface Row {
 }
 
 interface Props {
-  bundle: AreaBundle; index: NetIndex; units: Units;
+  bundle: AreaBundle; index: NetIndex;
   scen: Float32Array | null; base: Float32Array | null; comparing: boolean;
   showService: boolean; onShowService(v: boolean): void;
 }
 
-export function StreetsTable({ index, units, scen, base, comparing, showService, onShowService }: Props) {
+export function StreetsTable({ index, scen, base, comparing, showService, onShowService }: Props) {
   const [sort, setSort] = useState<{ key: Key; dir: 1 | -1 }>({ key: 'ctS', dir: -1 });
   const [q, setQ] = useState('');
   const [cls, setCls] = useState('all');
@@ -57,8 +57,8 @@ export function StreetsTable({ index, units, scen, base, comparing, showService,
   );
   const cell = (b: number, s: number, kind: 'flow' | 'speed') => (
     <>
-      <td>{formatValue(kind, b, units, false)}</td>
-      <td>{comparing ? formatValue(kind, s, units, false) : '—'}</td>
+      <td>{formatValue(kind, b, false)}</td>
+      <td>{comparing ? formatValue(kind, s, false) : '—'}</td>
     </>
   );
   return (
@@ -66,7 +66,7 @@ export function StreetsTable({ index, units, scen, base, comparing, showService,
       <h2>Streets</h2>
       <p className="muted">
         A text alternative to the map: one row per street block (both directions combined). Flow and cut-through in veh/h,
-        speed in {units === 'mph' ? 'mph' : 'km/h'}, flow-weighted. {comparing ? '' : 'Scenario columns fill in once an intervention is added.'}
+        speed in mph, flow-weighted. {comparing ? '' : 'Scenario columns fill in once an intervention is added.'}
       </p>
       <div className="filters">
         <label>Search streets <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="e.g. Oak" /></label>
@@ -84,7 +84,7 @@ export function StreetsTable({ index, units, scen, base, comparing, showService,
               </th>
               {th('cls', 'Class', undefined, 2)}
               <th colSpan={2} scope="colgroup">Flow (veh/h)</th>
-              <th colSpan={2} scope="colgroup">Mean speed ({units === 'mph' ? 'mph' : 'km/h'})</th>
+              <th colSpan={2} scope="colgroup">Mean speed (mph)</th>
               <th colSpan={2} scope="colgroup">Cut-through (veh/h)</th>
             </tr>
             <tr>

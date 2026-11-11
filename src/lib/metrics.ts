@@ -1,4 +1,4 @@
-import type { Metrics, Units } from '../types';
+import type { Metrics } from '../types';
 import { formatDiff, formatValue, type Diff, type Kind } from './format';
 
 export interface MetricDef {
@@ -40,13 +40,13 @@ export const CARDS: CardDef[] = [
   },
 ];
 
-export function summarise(base: Metrics, scen: Metrics, units: Units): string {
+export function summarise(base: Metrics, scen: Metrics): string {
   const pick = ['ctKm', 'meanSpeed', 'ttc', 'trip', 'art'];
   const parts: string[] = [];
   for (const c of CARDS) for (const d of c.metrics) {
     if (!pick.includes(d.id)) continue;
-    const df: Diff = formatDiff(d.get(base), d.get(scen), d.kind, units, d.lowerIsBetter);
-    parts.push(`${d.label} ${df.direction === 'same' ? 'about the same' : `${df.direction === 'up' ? 'up' : 'down'} ${df.pct === null ? '' : Math.abs(df.pct).toFixed(0) + '%'}, ${df.verdict}`} at ${formatValue(d.kind, d.get(scen), units)}`);
+    const df: Diff = formatDiff(d.get(base), d.get(scen), d.kind, d.lowerIsBetter);
+    parts.push(`${d.label} ${df.direction === 'same' ? 'about the same' : `${df.direction === 'up' ? 'up' : 'down'} ${df.pct === null ? '' : Math.abs(df.pct).toFixed(0) + '%'}, ${df.verdict}`} at ${formatValue(d.kind, d.get(scen))}`);
   }
   return `Scenario versus baseline after ${Math.round(scen.time / 60)} simulated minutes. ${parts.join('. ')}.`;
 }

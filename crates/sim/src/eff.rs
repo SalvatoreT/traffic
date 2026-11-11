@@ -11,6 +11,8 @@ pub struct SigPlan {
     pub phases: Vec<(f32, f32)>,
     pub links: Vec<Vec<u32>>,
     pub always_green: bool,
+    /// Critical flow ratio sum used by the plan (Webster), for diagnostics.
+    pub ysum: f32,
 }
 
 pub struct Eff {
@@ -281,7 +283,7 @@ impl Eff {
             }
             let groups: Vec<Vec<u32>> = groups.into_iter().filter(|g| !g.is_empty()).collect();
             if groups.len() < 2 {
-                self.sig[n] = Some(SigPlan { cycle: 60.0, offset: 0.0, phases: vec![(0.0, 60.0)], links: groups, always_green: true });
+                self.sig[n] = Some(SigPlan { cycle: 60.0, offset: 0.0, phases: vec![(0.0, 60.0)], links: groups, always_green: true, ysum: 0.0 });
                 continue;
             }
             let ys: Vec<f32> = groups
@@ -328,7 +330,7 @@ impl Eff {
             }
             let cyc = t.max(1.0);
             let offset = ((n as f32 * 37.0) % 100.0) / 100.0 * cyc;
-            self.sig[n] = Some(SigPlan { cycle: cyc, offset, phases, links: groups, always_green: false });
+            self.sig[n] = Some(SigPlan { cycle: cyc, offset, phases, links: groups, always_green: false, ysum });
         }
     }
 }

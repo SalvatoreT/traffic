@@ -73,22 +73,21 @@ describe('naming', () => {
 
 describe('diff formatting', () => {
   it('describes decreases as better when lower is better', () => {
-    const d = formatDiff(10, 6, 'dist', 'mph', true);
+    const d = formatDiff(10, 6, 'dist', true);
     expect(d.verdict).toBe('better'); expect(d.arrow).toBe('↓'); expect(d.pct).toBeCloseTo(-40);
     expect(d.text).toContain('40% lower'); expect(d.text).toContain('better');
   });
   it('flags increases as worse and treats tiny changes as same', () => {
-    expect(formatDiff(5, 6, 'count', 'mph', true).verdict).toBe('worse');
-    expect(formatDiff(100, 100.2, 'count', 'mph', true).direction).toBe('same');
-    expect(formatDiff(100, 120, 'count', 'mph', false).verdict).toBe('better');
-    expect(formatDiff(undefined, 1, 'count', 'mph', true).verdict).toBe('n/a');
+    expect(formatDiff(5, 6, 'count', true).verdict).toBe('worse');
+    expect(formatDiff(100, 100.2, 'count', true).direction).toBe('same');
+    expect(formatDiff(100, 120, 'count', false).verdict).toBe('better');
+    expect(formatDiff(undefined, 1, 'count', true).verdict).toBe('n/a');
   });
   it('converts units', () => {
-    expect(formatValue('speed', 11.176, 'mph')).toBe('25 mph');
-    expect(formatValue('speed', 10, 'kmh')).toBe('36 km/h');
-    expect(formatValue('share', 0.123, 'mph')).toBe('12.3%');
-    expect(formatValue('minutes', 150, 'mph')).toBe('2.5 min');
-    expect(formatDiff(0.2, 0.1, 'share', 'mph', true).text).toContain('pp');
+    expect(formatValue('speed', 11.176)).toBe('25 mph');
+    expect(formatValue('share', 0.123)).toBe('12.3%');
+    expect(formatValue('minutes', 150)).toBe('2.5 min');
+    expect(formatDiff(0.2, 0.1, 'share', true).text).toContain('pp');
     expect(formatClock(3725)).toBe('1:02:05');
   });
 });

@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import type { AreaBundle, ControlType, Intervention, Units } from '../types';
+import type { AreaBundle, ControlType, Intervention } from '../types';
 import { directedLabel, linkStreet, matchesQuery, type NetIndex } from '../lib/naming';
 import { describeIntervention } from '../lib/describe';
 import type { PickKind } from './MapView';
@@ -26,12 +26,12 @@ const CONTROLS: { v: ControlType; label: string }[] = [
   { v: 'all_way_stop', label: 'All-way stop' }, { v: 'two_way_stop', label: 'Two-way stop' },
   { v: 'signal', label: 'Traffic signal' }, { v: 'uncontrolled', label: 'Uncontrolled' },
 ];
-const LIMITS = { mph: [10, 15, 20, 25, 30, 35], kmh: [20, 30, 40, 50, 60] };
+const LIMITS = [10, 15, 20, 25, 30, 35];
 
 export interface PickHandlers { link(id: number): void; node(id: number): void }
 
 interface Props {
-  bundle: AreaBundle; index: NetIndex; units: Units;
+  bundle: AreaBundle; index: NetIndex;
   showService: boolean; onShowService(v: boolean): void;
   interventions: Intervention[];
   onAdd(list: Intervention[], message: string): void;
@@ -42,10 +42,10 @@ interface Props {
 }
 
 export function InterventionPanel(p: Props) {
-  const { bundle: B, index: X, units } = p;
+  const { bundle: B, index: X } = p;
   const [tool, setTool] = useState<ToolId>('modal_filter_link');
   const [q, setQ] = useState('');
-  const [limit, setLimit] = useState(units === 'mph' ? 20 : 30);
+  const [limit, setLimit] = useState(20);
   const [control, setControl] = useState<ControlType>('all_way_stop');
   const [cycle, setCycle] = useState(90);
   const [banNode, setBanNode] = useState<number | null>(null);
@@ -54,9 +54,7 @@ export function InterventionPanel(p: Props) {
   const toolDef = TOOLS.find((t) => t.id === tool)!;
   const listId = useId();
 
-  useEffect(() => { setLimit(units === 'mph' ? 20 : 30); }, [units]);
-
-  const limitMps = (v: number) => (units === 'mph' ? v / 2.2369362920544 : v / 3.6);
+  const limitMps = (v: number) => v / 2.2369362920544;
 
   const addForLink = (linkId: number) => {
     const blk = X.blocks[X.blockOfLink[linkId]];
@@ -64,7 +62,7 @@ export function InterventionPanel(p: Props) {
     switch (tool) {
       case 'modal_filter_link': {
         const iv: Intervention = { type: 'modal_filter', link: blk.links[0] };
-        return p.onAdd([iv], `Added: ${describeIntervention(iv, B.network, X, units === 'mph')}`);
+        return p.onAdd([iv], `Added: ${describeIntervention(iv, B.network, X)}`);
       }
       case 'speed_hump': {
         const iv: Intervention = { type: 'speed_hump', link: blk.links[0], position: L[blk.links[0]].length / 2 };
@@ -72,7 +70,7 @@ export function InterventionPanel(p: Props) {
       }
       case 'speed_limit': {
         const iv: Intervention = { type: 'speed_limit', link: blk.links[0], speed: limitMps(limit) };
-        return p.onAdd([iv], `Added: ${describeIntervention(iv, B.network, X, units === 'mph')}`);
+        return p.onAdd([iv], `Added: ${describeIntervention(iv, B.network, X)}`);
       }
       case 'one_way': {
         const l = L[linkId];
@@ -93,7 +91,7 @@ export function InterventionPanel(p: Props) {
         iv = { type: 'signal_timing', node: nodeId, cycle }; break;
       case 'turn_ban': setBanNode(nodeId); setBanFrom(null); setBanTo(null); return;
     }
-    if (iv) p.onAdd([iv], `Added: ${describeIntervention(iv, B.network, X, units === 'mph')}`);
+    if (iv) p.onAdd([iv], `Added: ${describeIntervention(iv, B.network, X)}`);
   };
 
   // map picking is routed through the latest handlers
@@ -119,7 +117,7 @@ export function InterventionPanel(p: Props) {
       for (const n of X.intersections) out.push({ key: `n${n}`, label: X.nodeName[n], apply: () => addForNode(n), study: B.network.nodes[n].inStudyArea });
     }
     return out.sort((a, b) => Number(b.study) - Number(a.study));
-  }, [tool, X, B, limit, control, cycle, units, p.showService]); // eslint-disable-line
+  }, [tool, X, B, limit, control, cycle, p.showService]); // eslint-disable-line
 
   const filtered = useMemo(() => items.filter((i) => matchesQuery(i.label, q)), [items, q]);
   const [shown, setShown] = useState(80);
@@ -162,7 +160,7 @@ export function InterventionPanel(p: Props) {
       {tool === 'speed_limit' && (
         <label className="field">New limit
           <select value={limit} onChange={(e) => setLimit(Number(e.target.value))}>
-            {LIMITS[units].map((v) => <option key={v} value={v}>{v} {units === 'mph' ? 'mph' : 'km/h'}</option>)}
+            {LIMITS.map((v) => <option key={v} value={v}>{v} mph</option>)}
           </select>
         </label>
       )}
@@ -226,7 +224,7 @@ export function InterventionPanel(p: Props) {
         <>
           <ol className="scn-list">
             {p.interventions.map((iv, i) => {
-              const d = describeIntervention(iv, B.network, X, units === 'mph');
+              const d = describeIntervention(iv, B.network, X);
               return (
                 <li key={i}>
                   <span className={`iv-badge static iv-${iv.type}`} aria-hidden="true">{iv.type === 'speed_limit' ? Math.round(iv.speed * 2.23694) : iv.type === 'modal_filter' ? 'MF' : iv.type === 'speed_hump' ? 'SH' : iv.type === 'traffic_circle' ? 'TC' : iv.type === 'control' ? 'IC' : iv.type === 'signal_timing' ? 'ST' : iv.type === 'one_way' ? '1W' : 'TB'}</span>
