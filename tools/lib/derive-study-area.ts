@@ -13,10 +13,14 @@ export function deriveStudyArea(osm: Overpass, streets: BoundingStreets, bbox: A
     else if (DRIVABLE.test(e.tags?.highway ?? '')) ways.push(e);
   }
   const proj = makeProjection((bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2);
-  const xy = (id: number): Pt => proj.fwd(nodes.get(id)!.lon, nodes.get(id)!.lat);
+  const synth = new Map<number, Pt>();
+  let nextId = -1;
+  const xy = (id: number): Pt => synth.get(id) ?? proj.fwd(nodes.get(id)!.lon, nodes.get(id)!.lat);
+  const center: Pt = [0, 0];
 
-  const graphFor = (name: string) => {
-    const adj = new Map<number, Map<number, number>>();
+  type Graph = Map<number, Map<number, number>>;
+  const graphFor = (name: string): Graph => {
+    const adj: Graph = new Map();
     const add = (a: number, b: number) => {
       if (!adj.has(a)) adj.set(a, new Map());
       adj.get(a)!.set(b, dist(xy(a), xy(b)));
@@ -30,6 +34,10 @@ export function deriveStudyArea(osm: Overpass, streets: BoundingStreets, bbox: A
     }
     return adj;
   };
+  const isFreeway = (name: string) => {
+    const ws = ways.filter((w) => w.tags.name === name || w.tags.ref === name);
+    return ws.length > 0 && ws.every((w) => /^motorway/.test(w.tags.highway));
+  };
   const G = {
     west: graphFor(streets.west),
     east: graphFor(streets.east),
@@ -37,26 +45,67 @@ export function deriveStudyArea(osm: Overpass, streets: BoundingStreets, bbox: A
     north: graphFor(streets.north),
   };
 
-  const shared = (a: Map<number, unknown>, b: Map<number, unknown>) => [...a.keys()].filter((k) => b.has(k));
-  const pick = (c: number[], label: string) => {
-    if (c.length === 0) throw new Error(`no shared node for ${label}`);
-    return c[0];
+  const segments = (g: Graph) => {
+    const out: [number, number][] = [];
+    for (const [a, m] of g) for (const b of m.keys()) if (a < b) out.push([a, b]);
+    return out;
   };
-  // Corner between two bounding streets: a shared node, or, when they only cross without a junction (a freeway
-  // grade-separated from a street), the closest pair of nodes, one on each street.
-  const corner = (a: Map<number, unknown>, b: Map<number, unknown>, label: string): [number, number] => {
-    const sh = shared(a, b);
-    if (sh.length) return [sh[0], sh[0]];
-    let best: [number, number] | null = null;
-    let bd = Infinity;
-    for (const p of a.keys()) for (const q of b.keys()) {
-      const d = dist(xy(p), xy(q));
-      if (d < bd) (bd = d), (best = [p, q]);
+  const cross = (p: Pt, q: Pt, r: Pt, t: Pt): Pt | null => {
+    const d = (q[0] - p[0]) * (t[1] - r[1]) - (q[1] - p[1]) * (t[0] - r[0]);
+    if (Math.abs(d) < 1e-9) return null;
+    const u = ((r[0] - p[0]) * (t[1] - r[1]) - (r[1] - p[1]) * (t[0] - r[0])) / d;
+    const v = ((r[0] - p[0]) * (q[1] - p[1]) - (r[1] - p[1]) * (q[0] - p[0])) / d;
+    const e = 1e-6;
+    if (u < -e || u > 1 + e || v < -e || v > 1 + e) return null;
+    return [p[0] + u * (q[0] - p[0]), p[1] + u * (q[1] - p[1])];
+  };
+  // Put point `c` on segment (a, b) of graph `g` as a vertex (reusing an endpoint when it is within 0.05 m).
+  const insert = (g: Graph, a: number, b: number, c: Pt): number => {
+    for (const id of [a, b]) if (dist(xy(id), c) < 0.05) return id;
+    const id = nextId--;
+    synth.set(id, c);
+    g.get(a)!.delete(b);
+    g.get(b)!.delete(a);
+    g.set(id, new Map());
+    for (const e of [a, b]) {
+      g.get(id)!.set(e, dist(c, xy(e)));
+      g.get(e)!.set(id, dist(c, xy(e)));
     }
-    if (!best || bd > 60) throw new Error(`no shared or nearby node for ${label}`);
-    return best;
+    return id;
   };
-  void pick;
+  // Corner between two bounding streets: the geometric crossing of their centerlines (grade-separated streets
+  // cross without a shared node). With several crossings, as with a dual carriageway, the one nearest the area
+  // center is used, which is the carriageway on the inside. If the lines never cross, the closest pair of
+  // vertices within 60 m is used.
+  const corner = (ga: Graph, gb: Graph, label: string): [number, number] => {
+    let best: { c: Pt; sa: [number, number]; sb: [number, number] } | null = null;
+    for (const sa of segments(ga)) {
+      for (const sb of segments(gb)) {
+        const c = cross(xy(sa[0]), xy(sa[1]), xy(sb[0]), xy(sb[1]));
+        if (c && (!best || dist(c, center) < dist(best.c, center))) best = { c, sa, sb };
+      }
+    }
+    if (best) {
+      const ia = insert(ga, best.sa[0], best.sa[1], best.c);
+      const sb = gb.get(best.sb[0])?.has(best.sb[1]) ? best.sb : null;
+      if (sb) {
+        const ib = insert(gb, sb[0], sb[1], best.c);
+        if (ia !== ib && synth.has(ia) && synth.has(ib)) {
+          synth.set(ib, synth.get(ia)!);
+        }
+        return [ia, ib];
+      }
+      return [ia, ia];
+    }
+    let pair: [number, number] | null = null;
+    let bd = Infinity;
+    for (const p of ga.keys()) for (const q of gb.keys()) {
+      const d = dist(xy(p), xy(q));
+      if (d < bd) (bd = d), (pair = [p, q]);
+    }
+    if (!pair || bd > 60) throw new Error(`no crossing or nearby vertex for ${label}`);
+    return pair;
+  };
   const [sw, swS] = corner(G.west, G.south, 'west/south');
   const [nw] = corner(G.west, G.north, 'west/north');
   const [ne] = corner(G.east, G.north, 'east/north');
@@ -92,8 +141,24 @@ export function deriveStudyArea(osm: Overpass, streets: BoundingStreets, bbox: A
     ...path(G.east, ne, se).slice(1),
     ...path(G.south, seS, swS),
   ];
-  const ring = simplify([...loop.map(xy), xy(sw)], 4).slice(0, -1);
-  const buffered = bufferPolygon(ring, bufferM);
+  void loop;
+  // Each edge is simplified on its own (tolerance 3 m) so the freeway edge keeps its curve. The outward buffer applies
+  // to surface streets only: vertices of a freeway edge stay on the carriageway.
+  const edges: { pts: Pt[]; fixed: boolean }[] = [
+    { pts: path(G.west, sw, nw).map(xy), fixed: isFreeway(streets.west) },
+    { pts: path(G.north, nw, ne).map(xy), fixed: isFreeway(streets.north) },
+    { pts: path(G.east, ne, se).map(xy), fixed: isFreeway(streets.east) },
+    { pts: path(G.south, seS, swS).map(xy), fixed: isFreeway(streets.south) },
+  ].map((e) => ({ ...e, pts: simplify(e.pts, 3) }));
+  const ring: Pt[] = [];
+  const fixedFlags: boolean[] = [];
+  edges.forEach((e, k) => {
+    const pts = k === 0 ? e.pts : e.pts.slice(1);
+    for (const p of pts) (ring.push(p), fixedFlags.push(e.fixed));
+  });
+  if (dist(ring[0], ring.at(-1)!) < 0.5) (ring.pop(), fixedFlags.pop());
+  const buf = bufferPolygon(ring, bufferM);
+  const buffered = buf.map((p, i) => (fixedFlags[i] ? ring[i] : p));
   const ll = buffered.map(([x, y]) => proj.inv(x, y).map(round6) as [number, number]);
   return [...ll, ll[0]];
 }

@@ -57,6 +57,7 @@ export const PARAMS = {
   signalReachM: 30,
   stopReachM: 60,
   gateEdgeM: 60,
+  junctionJoinRadiusM: 20,
   minLinkM: 0.5,
   mph: 0.44704,
   kph: 1 / 3.6,
@@ -112,6 +113,10 @@ export interface BuildStats {
   gateCandidates: number;
   merged: number;
   collapsedRings: number;
+  joinedClusters: number;
+  joinedNodes: number;
+  /** One entry per joined cluster: member count and the street names touching it. */
+  joinedList: { size: number; streets: string[]; control: string }[];
 }
 
 function parseSpeed(v: string | undefined): number | null {
@@ -147,6 +152,9 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
     gateCandidates: 0,
     merged: 0,
     collapsedRings: 0,
+    joinedClusters: 0,
+    joinedNodes: 0,
+    joinedList: [],
   };
   const [minLon, minLat, maxLon, maxLat] = cfg.bbox;
   const lon0 = (minLon + maxLon) / 2;
@@ -460,6 +468,133 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
     }
     if (hits.length === 0 && stopTargets.size === before) stats.stopsUnattributed++;
     if (all) for (const h of hits) allWay.add(h);
+  }
+
+  // Junction joining: graph nodes that form one real intersection (dual carriageways, offset signal tags, offset T
+  // junctions, ramp terminals) become one node at the cluster centroid. Members must be joined by a short non-freeway
+  // link and share a street name (or both be signals). Clusters whose internal links are not strongly connected are
+  // skipped, so the merged node never allows a movement the members did not allow.
+  const joinR = cfg.junctionJoinRadius ?? PARAMS.junctionJoinRadiusM;
+  if (joinR > 0) {
+    const liveLinks = links.filter((l) => l.alive);
+    const touch = new Map<number, Link[]>();
+    for (const l of liveLinks) {
+      for (const id of [l.from, l.to]) {
+        if (!touch.has(id)) touch.set(id, []);
+        touch.get(id)!.push(l);
+      }
+    }
+    const eligible = (id: number) =>
+      !gateCand.has(id) &&
+      !circle.has(id) &&
+      edgeDist(xyOf(id)) > PARAMS.gateEdgeM &&
+      (touch.get(id) ?? []).some((l) => l.cls !== 'motorway');
+    const otherNames = (id: number, other: number) =>
+      new Set(
+        (touch.get(id) ?? [])
+          .filter((l) => !((l.from === id && l.to === other) || (l.from === other && l.to === id)))
+          .map((l) => l.name)
+          .filter((n) => n),
+      );
+    const d2 = (a: number, b: number) => Math.hypot(xyOf(a)[0] - xyOf(b)[0], xyOf(a)[1] - xyOf(b)[1]);
+    const cands = liveLinks
+      .filter((l) => l.cls !== 'motorway' && l.from !== l.to && polylineLength(l.geometry) <= joinR && d2(l.from, l.to) <= joinR)
+      .filter((l) => eligible(l.from) && eligible(l.to))
+      .filter((l) => {
+        if (signal.has(l.from) && signal.has(l.to)) return true;
+        const a = otherNames(l.from, l.to);
+        return [...otherNames(l.to, l.from)].some((n) => a.has(n));
+      })
+      .sort((a, b) => polylineLength(a.geometry) - polylineLength(b.geometry));
+    const parent = new Map<number, number>();
+    const members = new Map<number, number[]>();
+    const find = (x: number): number => {
+      if (!parent.has(x)) (parent.set(x, x), members.set(x, [x]));
+      let r = x;
+      while (parent.get(r) !== r) r = parent.get(r)!;
+      parent.set(x, r);
+      return r;
+    };
+    const centroidOf = (ids: number[]): Pt => [
+      ids.reduce((s, id) => s + xyOf(id)[0], 0) / ids.length,
+      ids.reduce((s, id) => s + xyOf(id)[1], 0) / ids.length,
+    ];
+    for (const l of cands) {
+      const ra = find(l.from);
+      const rb = find(l.to);
+      if (ra === rb) continue;
+      const all = [...members.get(ra)!, ...members.get(rb)!];
+      const c = centroidOf(all);
+      if (all.some((id) => Math.hypot(xyOf(id)[0] - c[0], xyOf(id)[1] - c[1]) > joinR)) continue;
+      parent.set(rb, ra);
+      members.set(ra, all);
+      members.delete(rb);
+    }
+    const remap = new Map<number, number>();
+    for (const ids of members.values()) {
+      if (ids.length < 2) continue;
+      const set = new Set(ids);
+      const internal = liveLinks.filter((l) => set.has(l.from) && set.has(l.to));
+      if (internal.some((l) => l.cls === 'motorway')) continue;
+      const reach = (fwd: boolean) => {
+        const seen = new Set([ids[0]]);
+        const st = [ids[0]];
+        while (st.length) {
+          const u = st.pop()!;
+          for (const l of internal) {
+            const [p, q] = fwd ? [l.from, l.to] : [l.to, l.from];
+            if (p === u && !seen.has(q)) (seen.add(q), st.push(q));
+          }
+        }
+        return seen.size === ids.length;
+      };
+      if (!reach(true) || !reach(false)) continue;
+      const c = centroidOf(ids);
+      const rep = ids.reduce((b, id) => (Math.hypot(xyOf(id)[0] - c[0], xyOf(id)[1] - c[1]) < Math.hypot(xyOf(b)[0] - c[0], xyOf(b)[1] - c[1]) ? id : b));
+      const extIn = liveLinks.filter((l) => set.has(l.to) && !set.has(l.from));
+      const covered = extIn.length > 0 && extIn.every((l) => l.stopAtEnd || allWay.has(l.to));
+      const isSignal = ids.some((id) => signal.has(id));
+      const stopsAll = !isSignal && covered && ids.some((id) => allWay.has(id) || stopTargets.has(id));
+      const streets = [...new Set((touch.get(rep) ?? []).concat(...ids.map((id) => touch.get(id) ?? [])).map((l) => l.name).filter((n) => n))].sort();
+      for (const id of ids) {
+        signal.delete(id);
+        allWay.delete(id);
+        stopTargets.delete(id);
+        gateCand.delete(id);
+        graph.delete(id);
+        remap.set(id, rep);
+      }
+      graph.add(rep);
+      if (isSignal) signal.add(rep);
+      if (stopsAll) (allWay.add(rep), stopTargets.add(rep));
+      else if (extIn.some((l) => l.stopAtEnd)) stopTargets.add(rep);
+      nodeXY.set(rep, c);
+      stats.joinedClusters++;
+      stats.joinedNodes += ids.length;
+      stats.joinedList.push({ size: ids.length, streets, control: isSignal ? 'signal' : stopsAll ? 'all_way_stop' : 'other' });
+    }
+    for (const l of liveLinks) {
+      const nf = remap.get(l.from);
+      const nt = remap.get(l.to);
+      if (nf === undefined && nt === undefined) continue;
+      if (nf !== undefined && nt !== undefined && nf === nt) {
+        l.alive = false;
+        continue;
+      }
+      const before = polylineLength(l.geometry);
+      if (nf !== undefined) {
+        l.from = nf;
+        l.geometry = [nodeXY.get(nf)!, ...l.geometry.slice(1)];
+        const shift = polylineLength(l.geometry) - before;
+        l.humps = l.humps.map((h) => round1(Math.max(0.1, h + shift)));
+      }
+      if (nt !== undefined) {
+        l.to = nt;
+        l.geometry = [...l.geometry.slice(0, -1), nodeXY.get(nt)!];
+      }
+      const len = polylineLength(l.geometry);
+      l.humps = l.humps.filter((h) => h < len - 0.1);
+    }
   }
 
   const special = new Set<number>([...signal, ...circle, ...stopTargets, ...allWay, ...gateCand]);

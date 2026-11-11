@@ -58,6 +58,8 @@ export interface AreaConfig {
   studyArea: [number, number][];
   center?: [number, number];
   zoom?: number;
+  /** Graph nodes within this distance (m) that form one intersection are joined into one node. Default 20; 0 turns it off. */
+  junctionJoinRadius?: number;
   /** Baseline calibration status shown in the UI. */
   calibration?: { status: 'uncalibrated' | 'calibrated'; note?: string };
 }
