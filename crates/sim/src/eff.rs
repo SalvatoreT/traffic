@@ -26,6 +26,8 @@ pub struct Eff {
     pub minor: Vec<bool>,
     pub must_stop: Vec<bool>,
     pub plevel: Vec<u8>,
+    /// Circle node whose circulating roadway is made of links (ring of circle nodes) rather than the node itself.
+    pub ring_node: Vec<bool>,
     pub ff: Vec<f32>,
     pub sig: Vec<Option<SigPlan>>,
     pub cycle_override: Vec<Option<f32>>,
@@ -120,6 +122,7 @@ impl Eff {
         let mut minor = vec![false; nl];
         let mut must_stop = vec![false; nl];
         let mut plevel = vec![0u8; nl];
+        let mut ring_node = vec![false; nn];
         for n in 0..nn {
             let ins = &topo.ins[n];
             match ctrl[n] {
@@ -157,6 +160,16 @@ impl Eff {
                         plevel[l as usize] = topo.rank[l as usize];
                     }
                 }
+                Control::TrafficCircle => {
+                    // Roundabouts imported as a ring of circle nodes: ring links (both ends are circle nodes)
+                    // have priority over entering links. A single circle node has no ring links, so all
+                    // approaches share priority and the circulating-arc rule alone applies.
+                    for &l in ins {
+                        let ring = ctrl[topo.link_from[l as usize] as usize] == Control::TrafficCircle;
+                        ring_node[n] |= ring;
+                        plevel[l as usize] = if ring { 0 } else { 10 };
+                    }
+                }
                 _ => {}
             }
         }
@@ -183,7 +196,7 @@ impl Eff {
                 V_CIRCLE.min(vlim)
             } else {
                 match m.kind {
-                    K_THROUGH => vlim,
+                    K_THROUGH => vlim * 1.4, // no node cap beyond the max compliance factor
                     K_RIGHT => V_RIGHT.min(vlim),
                     K_LEFT => V_LEFT.min(vlim),
                     _ => V_UTURN.min(vlim),
@@ -198,7 +211,7 @@ impl Eff {
                 let arc = (a_out - a_in).rem_euclid(std::f64::consts::TAU);
                 len = (R_CIRCLE * arc + 4.0).max(10.0) as f32;
             }
-            mv_ff[i] = len / vt;
+            mv_ff[i] = len / vt.min(vlim);
             let mut c = match m.kind {
                 K_RIGHT => TURN_RIGHT_S,
                 K_LEFT => TURN_LEFT_S,
@@ -233,6 +246,7 @@ impl Eff {
             minor,
             must_stop,
             plevel,
+            ring_node,
             ff,
             sig: (0..nn).map(|_| None).collect(),
             cycle_override,

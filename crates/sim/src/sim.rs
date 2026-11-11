@@ -65,6 +65,7 @@ struct FlowRt {
     through: bool,
 }
 
+#[allow(dead_code)]
 struct Veh {
     alive: bool,
     in_transit: bool,
@@ -205,6 +206,7 @@ pub struct Simulation {
     bin_vs: Vec<f32>,
     cur_bin: usize,
     scratch: Vec<u32>,
+    gridlock_log: Vec<(u32, f64)>,
 }
 
 fn idm(v: f32, v0: f32, s: f32, dv: f32, a: f32, b: f32, t_hw: f32, s0: f32) -> f32 {
@@ -281,6 +283,7 @@ impl Simulation {
             bin_vs: vec![0.0; nl * NBINS],
             cur_bin: 0,
             scratch: Vec::new(),
+            gridlock_log: Vec::new(),
             topo,
             net,
         };
@@ -510,6 +513,36 @@ impl Simulation {
         serde_json::to_string(&self.metrics()).unwrap_or_else(|_| "{}".into())
     }
 
+    #[doc(hidden)]
+    pub fn debug_gridlock(&self) -> &[(u32, f64)] {
+        &self.gridlock_log
+    }
+
+    /// Diagnostics: head vehicles that have waited longer than `min_wait` seconds.
+    #[doc(hidden)]
+    pub fn debug_stuck(&self, min_wait: f32) -> Vec<String> {
+        let mut out = Vec::new();
+        for l in 0..self.topo.n_links {
+            for k in 0..self.net.links[l].lanes.max(1) as usize {
+                if let Some(&id) = self.lanes[self.topo.lane_base[l] as usize + k].front() {
+                    let v = &self.vehs[id as usize];
+                    if v.wait_t > min_wait {
+                        let node = self.topo.link_to[l] as usize;
+                        let nxt = v.next();
+                        let nxt_room = nxt.map(|b| (0..self.net.links[b as usize].lanes.max(1) as usize).map(|k| self.lane_room(b, k)).fold(f32::MIN, f32::max));
+                        out.push(format!(
+                            "link {l} ({} -> {}) len {:.0} lanes {} ctrl {:?} sig {} wait {:.0} next {:?} room {:?} blocked_space {} go {} stop_t {:.1} nq {}",
+                            self.topo.link_from[l], node, self.topo.length[l], self.net.links[l].lanes, self.eff.ctrl[node],
+                            self.sig_state[l], v.wait_t, nxt, nxt_room, v.blocked_space, v.go, v.stop_t,
+                            self.lanes[self.topo.lane_base[l] as usize + k].len()
+                        ));
+                    }
+                }
+            }
+        }
+        out
+    }
+
     /// Check physical invariants: lanes ordered and non-overlapping, node transit bookkeeping consistent.
     pub fn check_invariants(&self) -> Result<(), String> {
         for l in 0..self.topo.n_links {
@@ -630,9 +663,11 @@ impl Simulation {
     fn best_lane(&self, l: u32) -> Option<usize> {
         let nl = self.net.links[l as usize].lanes.max(1) as usize;
         let mut best: Option<(f32, usize)> = None;
+        // Very short links (junction fragments) cannot offer ROOM_MIN; scale the requirement down to their usable length.
+        let need = ROOM_MIN.min(0.6 * (self.topo.length[l as usize] - self.topo.emerge_pos[l as usize]));
         for k in 0..nl {
             let r = self.lane_room(l, k);
-            if r >= ROOM_MIN && best.map_or(true, |(br, _)| r > br + 1e-4) {
+            if r >= need && best.map_or(true, |(br, _)| r > br + 1e-4) {
                 best = Some((r, k));
             }
         }
@@ -795,6 +830,7 @@ impl Simulation {
             self.lanes[idx].pop_front();
             self.remove_vehicle(vid);
             self.st.gridlock_removed += 1;
+            self.gridlock_log.push((l as u32, self.t));
         }
     }
 
@@ -865,6 +901,7 @@ impl Simulation {
         let o = &self.topo.mvs[other as usize];
         match ctrl {
             Control::Signal => a.kind == K_LEFT && o.kind != K_LEFT,
+            Control::TrafficCircle => self.eff.plevel[o.a as usize] < self.eff.plevel[a.a as usize],
             Control::TwoWayStop | Control::Uncontrolled => {
                 let pm = self.eff.plevel[a.a as usize];
                 let po = self.eff.plevel[o.a as usize];
@@ -896,7 +933,7 @@ impl Simulation {
     fn conflict_free(&self, vid: u32, mv: u32, ctrl: Control) -> bool {
         let veh = &self.vehs[vid as usize];
         let node = self.topo.mvs[mv as usize].node as usize;
-        let circle = ctrl == Control::TrafficCircle;
+        let circle = ctrl == Control::TrafficCircle && !self.eff.ring_node[node];
         if veh.wait_t < CONFLICT_FALLBACK_S {
             for tr in &self.transit[node] {
                 if self.topo.conflicts(mv, tr.mv, circle) {
@@ -904,7 +941,7 @@ impl Simulation {
                 }
             }
         }
-        if veh.wait_t >= YIELD_FALLBACK_S || circle {
+        if veh.wait_t >= YIELD_FALLBACK_S || (circle && !self.eff.ring_node[node]) {
             return true;
         }
         let l = veh.link;
@@ -981,6 +1018,7 @@ impl Simulation {
                     }
                     let d = &veh.drv;
                     let mut v0 = (limit * d.fcomp).max(1.0);
+                    let mut a_req = f32::INFINITY; // kinematic braking needed to meet a speed constraint ahead
                     for &h in humps.iter() {
                         let dist = h - veh.pos;
                         if dist.abs() > HUMP_ZONE {
@@ -993,6 +1031,9 @@ impl Simulation {
                             (HUMP_V * HUMP_V + 2.0 * d.a * (-dist)).sqrt()
                         };
                         v0 = v0.min(cap);
+                        if dist >= 0.0 && veh.v > HUMP_V {
+                            a_req = a_req.min(-(veh.v * veh.v - HUMP_V * HUMP_V) / (2.0 * dist.max(0.5)));
+                        }
                     }
                     let (mut s, mut vl) = (f32::INFINITY, 0.0);
                     if i == 0 {
@@ -1001,6 +1042,9 @@ impl Simulation {
                                 let vt = eff.mv_vturn[mv as usize];
                                 let dd = (stop_pos - veh.pos).max(0.0);
                                 v0 = v0.min((vt * vt + 2.0 * d.b * dd).sqrt());
+                                if veh.v > vt {
+                                    a_req = a_req.min(-(veh.v * veh.v - vt * vt) / (2.0 * dd.max(0.5)));
+                                }
                             }
                         }
                         if !veh.go {
@@ -1024,7 +1068,7 @@ impl Simulation {
                             veh.ttc_leader = NONE_UID;
                         }
                     }
-                    veh.acc = idm(veh.v, v0, s, veh.v - vl, d.a, d.b, d.t_hw, d.s0);
+                    veh.acc = idm(veh.v, v0, s, veh.v - vl, d.a, d.b, d.t_hw, d.s0).min(a_req).max(-B_MAX);
                 }
             }
         }
@@ -1179,7 +1223,7 @@ impl Simulation {
         let ctrl = self.eff.ctrl[node];
         if veh.wait_t < CONFLICT_FALLBACK_S {
             for tr in &self.transit[node] {
-                if self.topo.conflicts(mv, tr.mv, ctrl == Control::TrafficCircle) {
+                if self.topo.conflicts(mv, tr.mv, ctrl == Control::TrafficCircle && !self.eff.ring_node[node]) {
                     return false;
                 }
             }
@@ -1189,7 +1233,7 @@ impl Simulation {
             self.st.red_entries += 1;
         }
         let m_len = if ctrl == Control::TrafficCircle {
-            (self.eff.mv_ff[mv as usize] * self.eff.mv_vturn[mv as usize]).max(4.0)
+            (self.eff.mv_ff[mv as usize] * self.eff.mv_vturn[mv as usize].min(self.eff.limit[l])).max(4.0)
         } else {
             self.topo.mvs[mv as usize].len
         };
@@ -1481,9 +1525,5 @@ impl Simulation {
 
     pub(crate) fn test_eff(&self) -> &Eff {
         &self.eff
-    }
-
-    pub(crate) fn test_vehicle_positions(&self) -> Vec<(u32, u32, f32, f32)> {
-        self.vehs.iter().filter(|v| v.alive && !v.in_transit).map(|v| (v.uid, v.link, v.pos, v.v)).collect()
     }
 }

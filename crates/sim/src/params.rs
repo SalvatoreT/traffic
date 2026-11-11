@@ -25,7 +25,7 @@ pub const MIN_APPROACH_SPEED: f32 = 2.0; // ASSUMPTION: floor in arrival-time es
 pub const STOP_DWELL: f32 = 1.0; // ASSUMPTION: s stopped before a stop-sign driver may go (discharge headway 3-4 s [HCM7] UNVERIFIED)
 pub const YIELD_FALLBACK_S: f32 = 45.0; // ASSUMPTION: bounded-wait deadlock guard: drop approach-gap/FIFO checks
 pub const CONFLICT_FALLBACK_S: f32 = 120.0; // ASSUMPTION: drop in-node conflict check as well
-pub const GRIDLOCK_REMOVE_S: f32 = 240.0; // ASSUMPTION: remove vehicle blocked by no downstream space this long
+pub const GRIDLOCK_REMOVE_S: f32 = 180.0; // ASSUMPTION: remove vehicle blocked by no downstream space this long
 pub const DECISION_HORIZON: f32 = 100.0; // m: heads farther than this ignore node control
 
 // --- node crossing (m/s) ---

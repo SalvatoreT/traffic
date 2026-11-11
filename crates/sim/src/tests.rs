@@ -885,3 +885,4 @@ fn perf_3000_vehicles() {
         wall
     );
 }
+
