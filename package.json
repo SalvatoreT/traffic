@@ -14,7 +14,8 @@
     "test": "cargo test --workspace && vitest run",
     "prepare": "git config core.hooksPath .githooks",
     "data:pull": "tsx tools/r2-sync.ts pull",
-    "data:push": "tsx tools/r2-sync.ts push"
+    "data:push": "tsx tools/r2-sync.ts push",
+    "data:fetch": "tsx tools/fetch-osm.ts && tsx tools/fetch-demand.ts"
   },
   "dependencies": {
     "maplibre-gl": "^6.18.0",
