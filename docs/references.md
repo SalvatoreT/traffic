@@ -322,6 +322,22 @@ Home-side flows are partially synthetic and work-side flows carry noise infusion
 
 Still **not found:** a peer-reviewed paper that specifically turns LODES block-level flows into microsimulation trips for a neighbourhood. LODES also covers only commute trips (about a fifth of trips), so non-work trips need another source.
 
+**Demand-synthesis methods and datasets (added 2026-11-11 for `data/demand/README.md`):**
+
+**[DemingStephan1940]** [V] Deming, W.E., Stephan, F.F. (1940). On a least squares adjustment of a sampled frequency table when the expected marginal totals are known. *Annals of Mathematical Statistics* 11(4), 427–444. DOI 10.1214/aoms/1177731829 (Crossref). The origin of iterative proportional fitting (IPF). Stephan (1942), *Ann. Math. Stat.* 13(2), 166–178, DOI 10.1214/aoms/1177731604 (Crossref), gives the iterative form. Content not read.
+
+**[Furness1965]** [UNVERIFIED] Furness, K.P. (1965). Time function iteration. *Traffic Engineering and Control* 7(7), 458–460. Cited from memory as the origin of the doubly-constrained "Furness" balancing used in trip distribution. A search for it found no record, and Crossref does not index the journal. Cite it as "Furness balancing = IPF" via [DemingStephan1940] until a record is seen.
+
+**[Fratar1954]** [V-partial] Fratar, T.J. (1954). Vehicular trip distribution by successive approximations. *Traffic Quarterly* 8(1), 53–65. Confirmed by a TRID record (trid.trb.org/View/692385) and by a reference list in an ASCE paper (1993). No DOI, and the text was not read. A different 1954 item, Fratar/Voorhees/Raff in *Highway Research Board Proceedings* 33 (TRID 120891), shares the topic and should not be conflated.
+
+**[ITE-TGM11]** [V-partial] Institute of Transportation Engineers (2021). *Trip Generation Manual, 11th Edition.* ITE, Washington, DC. ISBN 978-1-7345078-7-4. Released September 2021 (TRID 1886990; ITE and Wisconsin DOT pages seen via search). Confirmed as the current edition as of the search; no newer edition was seen. The manual is paid and its rates were not read, so none are quoted. The README's per-worker and per-job daily trip rates are not taken from it.
+
+**[FHWA-TMG2022]** [V-partial] Federal Highway Administration (2022). *Traffic Monitoring Guide.* Office of Highway Policy Information, December 2022. fhwa.dot.gov/policyinformation/tmguide/2022_TMG.pdf. The report and its date were seen in search results; the PDF was not opened. FHWA's traffic-data highlights page defines K-factor as the share of AADT in the design hour (K-30, K-50, K-100 are the 30th, 50th and 100th highest hours as a percentage of AADT) and DDHV = AADT × K × D. The pocket guide is FHWA-PL-18-027 (August 2018). **The 0.08–0.10 urban-arterial K range and the 0.09 value used in the README were not found in any source opened** (the HCM 7th ed. is [HCM7], DOI 10.17226/26432, now Crossref-confirmed; its K values were not read).
+
+**[OaklandTMC]** [V] City of Oakland, OakDOT. *Annual Multi-Modal Counts, Raw Data* (dataset amtg-eh64). `https://data.oaklandca.gov/d/amtg-eh64`, file OaklandTurningMovementCounts.zip (about 35 MB). Confirmed by the Socrata metadata API on 2026-11-11 (name, attribution OakDOT, file size). Description: annual bicycle and pedestrian count programme begun September 2011. No licence field was checked beyond the README's note.
+
+**[CaltransAADT]** [V] California Department of Transportation. *Annual Average Daily Traffic (AADT)*, ArcGIS FeatureServer layer 0. `https://caltrans-gis.dot.ca.gov/arcgis/rest/services/CHhighway/Traffic_AADT/FeatureServer/0`. Service metadata read on 2026-11-11: AADT is the annual total divided by 365, and the count year runs from 1 October to 30 September. Each year's vintage was not recorded here; the README uses the 2023-24 count year.
+
 ---
 
 ## 5. Evidence on interventions
