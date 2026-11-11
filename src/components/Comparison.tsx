@@ -4,10 +4,10 @@ import { CARDS, summarise } from '../lib/metrics';
 import { formatClock, formatDiff, formatValue } from '../lib/format';
 
 interface Props {
-  base: Metrics | null; scen: Metrics | null; comparing: boolean; units: Units; scenarioCount: number;
+  base: Metrics | null; scen: Metrics | null; comparing: boolean; units: Units; scenarioCount: number; onRef(key: string): void;
 }
 
-export function Comparison({ base, scen, comparing, units, scenarioCount }: Props) {
+export function Comparison({ base, scen, comparing, units, scenarioCount, onRef }: Props) {
   // Throttled polite announcement: at most once per 20 s of wall time, only while a scenario exists.
   const [announce, setAnnounce] = useState('');
   const last = useRef(0);
@@ -61,7 +61,7 @@ export function Comparison({ base, scen, comparing, units, scenarioCount }: Prop
         <strong>Fixed-demand caveat.</strong> This version holds trip demand fixed: the same trips are made before and after
         every change. In real schemes some traffic disappears. A meta-analysis of London low-traffic neighbourhoods found traffic
         inside the schemes fell by about 47% on average while boundary roads were on average roughly unchanged (with wide variation
-        between schemes) [<a href="#ref-Thomas2024" data-ref="Thomas2024">Thomas2024</a>]. Treat these results as the redistribution of a fixed set of trips, not a forecast.
+        between schemes) [<button type="button" className="link" onClick={() => onRef('Thomas2024')}>Thomas2024</button>]. Treat these results as the redistribution of a fixed set of trips, not a forecast.
         {scenarioCount === 0 ? '' : ' Model parameters are uncalibrated assumptions unless the Sources page says otherwise.'}
       </aside>
       <div className="sr-only" aria-live="polite" role="status">{announce}</div>

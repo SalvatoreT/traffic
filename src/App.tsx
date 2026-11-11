@@ -250,7 +250,7 @@ function Simulator({ bundle }: { bundle: AreaBundle }) {
                 <p className="toast" role="status">{toast}</p>
               </div>
               <div role="tabpanel" id="tabpanel-results" aria-labelledby="tab-results" hidden={panelTab !== 'results'}>
-                <Comparison base={base} scen={scen} comparing={comparing} units={units} scenarioCount={interventions.length} />
+                <Comparison base={base} scen={scen} comparing={comparing} units={units} scenarioCount={interventions.length} onRef={(k) => { setSourceRef(k); setView('sources'); }} />
               </div>
             </div>
           </aside>
