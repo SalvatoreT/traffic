@@ -15,7 +15,11 @@ function query([minLon, minLat, maxLon, maxLat]: number[]): string {
 async function fetchExtract(bbox: number[]): Promise<string> {
   for (const url of ENDPOINTS) {
     try {
-      const res = await fetch(url, { method: "POST", body: new URLSearchParams({ data: query(bbox) }) });
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "User-Agent": "traffic-data-fetch/1.0" },
+        body: new URLSearchParams({ data: query(bbox) }),
+      });
       const text = await res.text();
       if (res.ok && text.includes('"elements"')) return text;
       console.warn(`${url}: HTTP ${res.status}`);
