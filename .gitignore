@@ -7,3 +7,4 @@ src/sim/pkg
 public/data/
 data/osm/*.json
 data/**/raw/
+.claude/skills/humanizer/

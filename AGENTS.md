@@ -72,6 +72,15 @@ Commit messages follow [Conventional Commits 1.0.0](https://www.conventionalcomm
 (`feat(sim): …`, `fix(ui): …`, `docs: …`, `chore: …`; `!` / `BREAKING CHANGE:` for breaking
 changes) so release notes can be generated. Scopes: `sim`, `ui`, `worker`, `data`, `spec`.
 
+## Writing
+
+All prose a person will read (README and other docs, UI copy, OpenSpec proposals and
+designs, commit bodies) goes through the `humanizer` skill
+(https://github.com/blader/humanizer) before it is committed. `npm install` fetches it
+into `.claude/skills/humanizer/` (not vendored). Subagents that write prose are told to
+load `.claude/skills/humanizer/SKILL.md` and apply it. It must not change facts, numbers,
+citation keys, or the required structure of OpenSpec spec files.
+
 ## Conventions
 
 - Never put people's names in the repository (code, docs, data, commit messages).
