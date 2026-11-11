@@ -1,0 +1,891 @@
+//! Spec-scenario tests on small synthetic networks.
+
+use crate::model::*;
+use crate::params::*;
+use crate::route::NO_NOISE;
+use crate::sim::Simulation;
+use std::collections::HashMap;
+
+// ---------------------------------------------------------------- builders
+
+#[derive(Default)]
+struct B {
+    nodes: Vec<Node>,
+    links: Vec<Link>,
+}
+
+impl B {
+    fn node(&mut self, x: f64, y: f64, control: Control, gate: bool) -> u32 {
+        let id = self.nodes.len() as u32;
+        self.nodes.push(Node { id, osm_id: id as i64, x, y, control, gate, in_study_area: true });
+        id
+    }
+
+    fn link(&mut self, a: u32, b: u32, class: RoadClass, lanes: u32, limit: f64, stop: bool) -> u32 {
+        let id = self.links.len() as u32;
+        let (pa, pb) = (&self.nodes[a as usize], &self.nodes[b as usize]);
+        let len = ((pb.x - pa.x).powi(2) + (pb.y - pa.y).powi(2)).sqrt();
+        self.links.push(Link {
+            id,
+            osm_way_id: id as i64,
+            from: a,
+            to: b,
+            reverse: None,
+            name: format!("l{id}"),
+            class,
+            lanes,
+            speed_limit: limit,
+            length: len,
+            geometry: vec![[pa.x, pa.y], [pb.x, pb.y]],
+            stop_at_end: stop,
+            humps: vec![],
+            in_study_area: true,
+        });
+        id
+    }
+
+    /// Two-way street; returns (a->b, b->a).
+    fn two_way(&mut self, a: u32, b: u32, class: RoadClass, lanes: u32, limit: f64) -> (u32, u32) {
+        let f = self.link(a, b, class, lanes, limit, false);
+        let r = self.link(b, a, class, lanes, limit, false);
+        self.links[f as usize].reverse = Some(r);
+        self.links[r as usize].reverse = Some(f);
+        (f, r)
+    }
+
+    fn net(self) -> Network {
+        Network { version: 1, id: "t".into(), name: "t".into(), nodes: self.nodes, links: self.links }
+    }
+}
+
+fn demand(flows: &[(u32, u32, f64)]) -> Demand {
+    Demand {
+        version: 1,
+        area: "t".into(),
+        periods: vec![Period {
+            id: "p".into(),
+            label: "p".into(),
+            flows: flows.iter().map(|&(o, d, v)| Flow { origin: o, destination: d, veh_per_hour: v }).collect(),
+        }],
+    }
+}
+
+fn cfg(seed: u64, scale: f64) -> Config {
+    Config { seed, period: "p".into(), demand_scale: scale }
+}
+
+#[allow(dead_code)]
+struct Cross {
+    c: u32,
+    w: u32,
+    e: u32,
+    s: u32,
+    n: u32,
+    w_in: u32,
+    w_out: u32,
+    e_in: u32,
+    e_out: u32,
+    s_in: u32,
+    s_out: u32,
+    n_in: u32,
+    n_out: u32,
+}
+
+/// Four-way intersection, 200 m legs. W/E secondary (major), S/N residential (minor).
+fn cross4(ctrl: Control, minor_class: RoadClass, minor_stop: bool) -> (Network, Cross) {
+    let mut b = B::default();
+    let c = b.node(0.0, 0.0, ctrl, false);
+    let w = b.node(-200.0, 0.0, Control::Uncontrolled, true);
+    let e = b.node(200.0, 0.0, Control::Uncontrolled, true);
+    let s = b.node(0.0, -200.0, Control::Uncontrolled, true);
+    let n = b.node(0.0, 200.0, Control::Uncontrolled, true);
+    let (w_in, w_out) = b.two_way(w, c, RoadClass::Secondary, 1, 11.2);
+    let (e_in, e_out) = b.two_way(e, c, RoadClass::Secondary, 1, 11.2);
+    let (s_in, s_out) = b.two_way(s, c, minor_class, 1, 11.2);
+    let (n_in, n_out) = b.two_way(n, c, minor_class, 1, 11.2);
+    // two_way(leg, c) returns (leg->c, c->leg)
+    if minor_stop {
+        b.links[s_in as usize].stop_at_end = true;
+        b.links[n_in as usize].stop_at_end = true;
+    }
+    (b.net(), Cross { c, w, e, s, n, w_in, w_out, e_in, e_out, s_in, s_out, n_in, n_out })
+}
+
+struct Corr {
+    a: [u32; 4],
+    l: [u32; 4],
+    art: Vec<(u32, u32)>,   // arterial links (fwd, rev)
+    loc: Vec<(u32, u32)>,   // local row links
+    conn: Vec<(u32, u32)>,  // connectors
+}
+
+/// Arterial row (y=0, gates at both ends) with a parallel residential row (y=120) and connectors.
+fn corridor(art_limit: f64, art_ctrl: Control) -> (Network, Corr) {
+    let mut b = B::default();
+    let mut a = [0u32; 4];
+    let mut l = [0u32; 4];
+    for i in 0..4 {
+        let gate = i == 0 || i == 3;
+        let ctrl = if i == 1 || i == 2 { art_ctrl } else { Control::Uncontrolled };
+        a[i] = b.node(250.0 * i as f64, 0.0, ctrl, gate);
+    }
+    for i in 0..4 {
+        l[i] = b.node(250.0 * i as f64, 120.0, Control::Uncontrolled, false);
+    }
+    let mut art = vec![];
+    let mut loc = vec![];
+    let mut conn = vec![];
+    for i in 0..3 {
+        art.push(b.two_way(a[i], a[i + 1], RoadClass::Secondary, 1, art_limit));
+        loc.push(b.two_way(l[i], l[i + 1], RoadClass::Residential, 1, 11.2));
+    }
+    for i in 0..4 {
+        conn.push(b.two_way(a[i], l[i], RoadClass::Residential, 1, 11.2));
+    }
+    (b.net(), Corr { a, l, art, loc, conn })
+}
+
+fn step_n(sim: &mut Simulation, secs: f64) {
+    let n = (secs / DT) as usize;
+    for _ in 0..n {
+        sim.step(DT);
+    }
+}
+
+/// Step with per-step callback; also checks invariants.
+fn run(sim: &mut Simulation, secs: f64, mut f: impl FnMut(&Simulation)) {
+    let n = (secs / DT) as usize;
+    for _ in 0..n {
+        sim.step(DT);
+        sim.check_invariants().unwrap();
+        f(sim);
+    }
+}
+
+fn empty_sim(net: Network) -> Simulation {
+    Simulation::from_parts(net, demand(&[]), cfg(1, 1.0)).unwrap()
+}
+
+// ---------------------------------------------------------------- car-following
+
+fn line_net(limit: f64, len: f64) -> (Network, u32, u32) {
+    let mut b = B::default();
+    let n0 = b.node(0.0, 0.0, Control::Uncontrolled, true);
+    let n1 = b.node(len, 0.0, Control::Uncontrolled, false);
+    let n2 = b.node(2.0 * len, 0.0, Control::Uncontrolled, true);
+    let (f, _) = b.two_way(n0, n1, RoadClass::Residential, 1, limit);
+    b.two_way(n1, n2, RoadClass::Residential, 1, limit);
+    (b.net(), f, n2)
+}
+
+#[test]
+fn approaching_a_stopped_leader() {
+    let (net, l0, dest) = line_net(13.4, 400.0);
+    let mut sim = empty_sim(net);
+    let lead = sim.test_place(l0, 0, 250.0, 0.0, dest, true);
+    let foll = sim.test_place(l0, 0, 20.0, 12.0, dest, false);
+    sim.test_set_drv(foll, 1.0);
+    let mut prev_v = 12.0f32;
+    let mut min_acc = 0.0f32;
+    let mut min_gap = f32::MAX;
+    run(&mut sim, 60.0, |s| {
+        let (_, lp, _, _) = s.test_veh(lead);
+        let (_, fp, fv, _) = s.test_veh(foll);
+        let gap = lp - 4.5 - fp; // leader length is 4.5 for placed vehicles
+        min_gap = min_gap.min(gap);
+        min_acc = min_acc.min((fv - prev_v) / DT as f32);
+        prev_v = fv;
+    });
+    let (_, _, fv, _) = sim.test_veh(foll);
+    assert!(fv < 0.05, "follower should be stopped, v={fv}");
+    assert!(min_gap > 0.5, "positive gap, min={min_gap}");
+    assert!(min_acc > -4.5, "smooth deceleration, min acc={min_acc}");
+}
+
+#[test]
+fn free_road_reaches_desired_speed() {
+    let (net, l0, dest) = line_net(13.4, 1500.0);
+    let mut sim = empty_sim(net);
+    let v = sim.test_place(l0, 0, 10.0, 0.0, dest, false);
+    sim.test_set_drv(v, 1.1);
+    let mut vmax = 0.0f32;
+    run(&mut sim, 100.0, |s| {
+        vmax = vmax.max(s.test_veh(v).2);
+    });
+    let (_, pos, speed, _) = sim.test_veh(v);
+    assert!(pos < 1400.0);
+    assert!(vmax <= 13.4 * 1.1 + 0.01, "bounded by limit x compliance: {vmax}");
+    assert!(speed > 0.97 * 13.4 * 1.1, "approaches desired speed: {speed}");
+}
+
+// ---------------------------------------------------------------- intersections
+
+/// (uid -> node transit conflicts) invariant + helper to observe crossings.
+fn assert_no_conflicting_transit(sim: &Simulation, node: usize) {
+    let tr = sim.test_transit(node);
+    let topo = sim.test_topo();
+    for i in 0..tr.len() {
+        for j in 0..tr.len() {
+            if i == j {
+                continue;
+            }
+            let mi = topo.find_mv(tr[i].1, tr[i].2).unwrap();
+            let mj = topo.find_mv(tr[j].1, tr[j].2).unwrap();
+            assert!(!topo.conflicts(mi, mj, false), "conflicting movements in node at once: {:?} {:?}", tr[i], tr[j]);
+        }
+    }
+}
+
+#[test]
+fn red_signal_stops_then_proceeds() {
+    let (net, x) = cross4(Control::Signal, RoadClass::Secondary, false);
+    let mut sim = empty_sim(net);
+    // Wait for the W approach to turn red.
+    let mut guard = 0;
+    while sim.signals()[x.w_in as usize] != 3 {
+        sim.step(DT);
+        guard += 1;
+        assert!(guard < 2000, "signal never red");
+    }
+    let sigs = sim.signals();
+    assert!(sigs[x.w_in as usize] == 3 && sigs[x.s_in as usize] != 0, "signals exported");
+    let v = sim.test_place(x.w_in, 0, 80.0, 10.0, x.e, false);
+    let stop_pos = sim.test_topo_stop(x.w_in);
+    let mut stopped_at_line = false;
+    let mut crossed_at: Option<f64> = None;
+    let mut red_while_stopped = true;
+    run(&mut sim, 140.0, |s| {
+        let (l, pos, vel, alive) = s.test_veh(v);
+        if alive && l == x.w_in && vel < 0.05 && pos > stop_pos - 3.0 {
+            stopped_at_line = true;
+            red_while_stopped &= s.signals()[x.w_in as usize] != 1 || crossed_at.is_some();
+        }
+        if crossed_at.is_none() && (!alive || l != x.w_in) {
+            crossed_at = Some(s.time());
+        }
+    });
+    assert!(stopped_at_line, "vehicle stops at the stop line on red");
+    assert!(crossed_at.is_some(), "vehicle proceeds after green");
+    assert_eq!(sim.test_stats().0, 0, "no entries on red");
+}
+
+#[test]
+fn stop_sign_stops_then_enters_on_gap() {
+    let (net, x) = cross4(Control::TwoWayStop, RoadClass::Residential, true);
+    let d = demand(&[
+        (x.w, x.e, 500.0),
+        (x.e, x.w, 500.0),
+        (x.s, x.n, 200.0),
+        (x.n, x.s, 150.0),
+    ]);
+    let mut sim = Simulation::from_parts(net, d, cfg(3, 1.0)).unwrap();
+    let node = x.c as usize;
+    let stop_pos = sim.test_topo_stop(x.s_in);
+    let mut stopped: HashMap<u32, bool> = HashMap::new();
+    let mut seen: HashMap<u32, bool> = HashMap::new();
+    let mut minor_crossings = 0;
+    run(&mut sim, 900.0, |s| {
+        for (uid, pos, v) in s.test_lane_vehicles(x.s_in).into_iter().chain(s.test_lane_vehicles(x.n_in)) {
+            if v < 0.3 && pos > stop_pos - 6.0 {
+                stopped.insert(uid, true);
+            }
+        }
+        assert_no_conflicting_transit(s, node);
+        for (uid, a, _b) in s.test_transit(node) {
+            if (a == x.s_in || a == x.n_in) && !seen.contains_key(&uid) {
+                seen.insert(uid, true);
+                minor_crossings += 1;
+                assert!(stopped.get(&uid).copied().unwrap_or(false), "minor vehicle {uid} crossed without stopping");
+            }
+        }
+    });
+    assert!(minor_crossings > 20, "minor street traffic gets through ({minor_crossings})");
+    let m = sim.metrics();
+    assert!(m.completed_trips > 100);
+}
+
+#[test]
+fn all_way_stop_is_fifo_one_at_a_time() {
+    let (net, x) = cross4(Control::AllWayStop, RoadClass::Secondary, false);
+    let mut sim = empty_sim(net);
+    // Arrive at staggered distances so the stopping order is S, W, E, N.
+    let s = sim.test_place(x.s_in, 0, 194.0 - 20.0 - 0.0, 8.0, x.n, false);
+    let w = sim.test_place(x.w_in, 0, 194.0 - 45.0, 8.0, x.e, false);
+    let e = sim.test_place(x.e_in, 0, 194.0 - 75.0, 8.0, x.w, false);
+    let n = sim.test_place(x.n_in, 0, 194.0 - 105.0, 8.0, x.s, false);
+    let ids = [s, w, e, n];
+    let uids: Vec<u32> = ids.iter().map(|&i| sim.test_veh_uid(i)).collect();
+    let mut stop_time: HashMap<u32, f64> = HashMap::new();
+    let mut cross_time: HashMap<u32, f64> = HashMap::new();
+    let node = x.c as usize;
+    run(&mut sim, 90.0, |sm| {
+        for l in [x.s_in, x.w_in, x.e_in, x.n_in] {
+            let sp = sm.test_topo_stop(l);
+            for (uid, pos, v) in sm.test_lane_vehicles(l) {
+                if v < 0.2 && pos > sp - 5.0 {
+                    stop_time.entry(uid).or_insert(sm.time());
+                }
+            }
+        }
+        assert_no_conflicting_transit(sm, node);
+        for (uid, _, _) in sm.test_transit(node) {
+            cross_time.entry(uid).or_insert(sm.time());
+        }
+    });
+    assert_eq!(cross_time.len(), 4, "all vehicles cross");
+    // Every conflicting pair crosses in stop order.
+    let conflicts = [(0usize, 1usize), (0, 2), (0, 3), (1, 3), (2, 3), (1, 2)];
+    let _ = conflicts;
+    // S->N conflicts with W->E and E->W; N->S too; W->E vs E->W do not conflict.
+    for (i, j) in [(0, 1), (0, 2), (3, 1), (3, 2), (0, 3)] {
+        let (a, b) = (uids[i], uids[j]);
+        let order_stop = stop_time[&a] < stop_time[&b];
+        let order_cross = cross_time[&a] <= cross_time[&b];
+        if (stop_time[&a] - stop_time[&b]).abs() > 0.3 {
+            assert_eq!(order_stop, order_cross, "FIFO between {i} and {j}");
+        }
+    }
+}
+
+#[test]
+fn uncontrolled_symmetric_conflict_resolves() {
+    let mut b = B::default();
+    let c = b.node(0.0, 0.0, Control::Uncontrolled, false);
+    let w = b.node(-200.0, 0.0, Control::Uncontrolled, true);
+    let e = b.node(200.0, 0.0, Control::Uncontrolled, true);
+    let s = b.node(0.0, -200.0, Control::Uncontrolled, true);
+    let n = b.node(0.0, 200.0, Control::Uncontrolled, true);
+    let (wi, _) = b.two_way(w, c, RoadClass::Residential, 1, 11.2);
+    let (ei, _) = b.two_way(e, c, RoadClass::Residential, 1, 11.2);
+    let (si, _) = b.two_way(s, c, RoadClass::Residential, 1, 11.2);
+    let (ni, _) = b.two_way(n, c, RoadClass::Residential, 1, 11.2);
+    let mut sim = empty_sim(b.net());
+    let ids = [
+        sim.test_place(wi, 0, 160.0, 8.0, e, false),
+        sim.test_place(ei, 0, 160.0, 8.0, w, false),
+        sim.test_place(si, 0, 160.0, 8.0, n, false),
+        sim.test_place(ni, 0, 160.0, 8.0, s, false),
+    ];
+    run(&mut sim, 120.0, |sm| assert_no_conflicting_transit(sm, c as usize));
+    for id in ids {
+        assert!(!sim.test_veh(id).3 || sim.test_veh(id).0 != wi, "all four eventually pass (bounded-wait fallback)");
+    }
+    assert_eq!(sim.metrics().vehicles_in_network, 0);
+}
+
+#[test]
+fn no_entry_when_downstream_is_full() {
+    let (net, x) = cross4(Control::Uncontrolled, RoadClass::Secondary, false);
+    let mut sim = empty_sim(net);
+    // Fill link C->E with frozen vehicles from its end back to its start.
+    let mut p = 194.0;
+    while p > 10.0 {
+        sim.test_place(x.e_out, 0, p, 0.0, x.e, true);
+        p -= 7.5;
+    }
+    // e_out is C->E per two_way(e, c) = (e->c, c->e)
+    let v = sim.test_place(x.w_in, 0, 100.0, 10.0, x.e, false);
+    let mut entered = false;
+    run(&mut sim, 60.0, |s| {
+        if !s.test_transit(x.c as usize).is_empty() {
+            entered = true;
+        }
+    });
+    let (l, pos, vel, alive) = sim.test_veh(v);
+    assert!(!entered, "must not enter the node without downstream space");
+    assert!(alive && l == x.w_in && vel < 0.1 && pos > 150.0, "waits at the stop line");
+}
+
+// ---------------------------------------------------------------- routing
+
+#[test]
+fn route_adapts_to_arterial_congestion() {
+    let (net, c) = corridor(11.2, Control::Uncontrolled);
+    let mut sim = Simulation::from_parts(net, demand(&[]), cfg(1, 1.0)).unwrap();
+    let local: Vec<u32> = c.loc.iter().flat_map(|&(f, r)| [f, r]).collect();
+    let base = sim.test_route_for(c.a[0], c.a[3], NO_NOISE).unwrap();
+    assert!(base.iter().all(|l| !local.contains(l)), "free-flow route stays on the arterial");
+    for &(f, r) in &c.art {
+        sim.test_set_ema(f as usize, 400.0);
+        sim.test_set_ema(r as usize, 400.0);
+    }
+    let alt = sim.test_route_for(c.a[0], c.a[3], NO_NOISE).unwrap();
+    assert!(alt.iter().any(|l| local.contains(l)), "congested arterial pushes drivers to the local street");
+}
+
+#[test]
+fn congestion_emerges_and_drivers_divert() {
+    // Arterial intersections are all-way stops: capacity-limited, so measured travel times rise.
+    let (net, c) = corridor(11.2, Control::AllWayStop);
+    let d = demand(&[(c.a[0], c.a[3], 1100.0), (c.a[3], c.a[0], 1100.0)]);
+    let mut sim = Simulation::from_parts(net, d, cfg(5, 1.0)).unwrap();
+    step_n(&mut sim, 120.0);
+    let early = sim.metrics().cut_through.veh_km;
+    run(&mut sim, 1500.0, |_| {});
+    let late = sim.metrics().cut_through.veh_km;
+    assert!(late > early + 0.05, "later drivers choose the local street (early {early}, late {late})");
+}
+
+// ---------------------------------------------------------------- determinism and metrics
+
+fn busy_corridor(seed: u64) -> Simulation {
+    let (net, c) = corridor(6.0, Control::Uncontrolled);
+    let d = demand(&[(c.a[0], c.a[3], 500.0), (c.a[3], c.a[0], 400.0), (c.l[1], c.a[3], 200.0)]);
+    Simulation::from_parts(net, d, cfg(seed, 1.0)).unwrap()
+}
+
+#[test]
+fn repeat_run_is_identical() {
+    let mut a = busy_corridor(7);
+    let mut b = busy_corridor(7);
+    let mut c = busy_corridor(8);
+    step_n(&mut a, 3600.0);
+    step_n(&mut b, 3600.0);
+    step_n(&mut c, 3600.0);
+    assert_eq!(a.metrics_json(), b.metrics_json());
+    assert_ne!(a.metrics_json(), c.metrics_json());
+    assert_eq!(a.vehicles(), b.vehicles());
+    // Reset reproduces the run.
+    let first = a.metrics_json();
+    a.reset();
+    step_n(&mut a, 3600.0);
+    assert_eq!(first, a.metrics_json());
+}
+
+#[test]
+fn cut_through_on_local_street() {
+    let mut sim = busy_corridor(2);
+    run(&mut sim, 900.0, |_| {});
+    let m = sim.metrics();
+    assert!(m.cut_through.veh_km > 0.1, "through trips use the residential row: {}", m.cut_through.veh_km);
+    assert!(m.cut_through.share_of_local_veh_km > 0.0 && m.cut_through.share_of_local_veh_km <= 1.0);
+    let stats = sim.link_stats();
+    let (net, c) = corridor(6.0, Control::Uncontrolled);
+    let _ = net;
+    let ct: f32 = c.loc.iter().flat_map(|&(f, r)| [f, r]).map(|l| stats[l as usize * 4 + 2]).sum();
+    assert!(ct > 0.0, "per-link cut-through flow reported");
+    // Local-origin trips alone are not cut-through.
+    let (net, c) = corridor(6.0, Control::Uncontrolled);
+    let mut s2 = Simulation::from_parts(net, demand(&[(c.l[1], c.a[3], 300.0)]), cfg(1, 1.0)).unwrap();
+    step_n(&mut s2, 600.0);
+    assert_eq!(s2.metrics().cut_through.veh_km, 0.0);
+}
+
+fn single_street(limit: f64) -> (Network, u32, u32) {
+    let mut b = B::default();
+    let n0 = b.node(0.0, 0.0, Control::Uncontrolled, true);
+    let n1 = b.node(1000.0, 0.0, Control::Uncontrolled, true);
+    let (f, _) = b.two_way(n0, n1, RoadClass::Residential, 1, limit);
+    (b.net(), n0, n1.max(f))
+}
+
+#[test]
+fn speeding_on_local_street_raises_share_above_25() {
+    let run_with = |limit: f64| {
+        let (net, n0, n1) = single_street(limit);
+        let mut sim = Simulation::from_parts(net, demand(&[(n0, n1, 200.0)]), cfg(1, 1.0)).unwrap();
+        step_n(&mut sim, 600.0);
+        sim.metrics()
+    };
+    let fast = run_with(15.0);
+    let slow = run_with(6.0);
+    assert!(fast.safety.share_above_25mph > 0.4, "{}", fast.safety.share_above_25mph);
+    assert!(fast.safety.share_above_20mph >= fast.safety.share_above_25mph);
+    assert_eq!(slow.safety.share_above_25mph, 0.0);
+    assert_eq!(slow.safety.share_above_20mph, 0.0);
+    assert!(fast.safety.local_p85_speed > slow.safety.local_p85_speed);
+    assert!(fast.safety.local_mean_speed > slow.safety.local_mean_speed);
+}
+
+#[test]
+fn ttc_conflict_counted_once_per_episode() {
+    let (net, l0, dest) = line_net(13.4, 400.0);
+    let mut sim = empty_sim(net);
+    sim.test_place(l0, 0, 100.0, 0.0, dest, true);
+    let f = sim.test_place(l0, 0, 85.0, 12.0, dest, false);
+    sim.test_set_drv(f, 1.0);
+    run(&mut sim, 30.0, |_| {});
+    assert_eq!(sim.metrics().safety.ttc_conflicts, 1);
+    assert!(sim.test_veh(f).2 < 0.1);
+}
+
+#[test]
+fn network_metrics_report() {
+    let mut sim = busy_corridor(4);
+    run(&mut sim, 1200.0, |_| {});
+    let json = sim.metrics_json();
+    for key in [
+        "\"time\"", "\"vehiclesInNetwork\"", "\"spawned\"", "\"completedTrips\"", "\"backlog\"", "\"unroutableTrips\"",
+        "\"meanTripTime\"", "\"meanTripDelay\"", "\"vehKm\"", "\"cutThrough\"", "\"shareOfLocalVehKm\"", "\"safety\"",
+        "\"localMeanSpeed\"", "\"localP85Speed\"", "\"shareAbove20mph\"", "\"shareAbove25mph\"", "\"ttcConflicts\"",
+        "\"arterialMeanSpeed\"",
+    ] {
+        assert!(json.contains(key), "missing {key}");
+    }
+    let m = sim.metrics();
+    assert!(m.completed_trips > 50 && m.spawned >= m.completed_trips);
+    assert!(m.mean_trip_time > 60.0 && m.mean_trip_delay > -5.0 && m.mean_trip_delay < m.mean_trip_time);
+    assert!(m.veh_km > 5.0 && m.arterial_mean_speed > 0.0);
+    assert!((m.time - 1200.0).abs() < 1e-6);
+    let ls = sim.link_stats();
+    assert_eq!(ls.len(), sim.n_links() * 4);
+    assert!(ls.iter().step_by(4).any(|&f| f > 0.0), "link flows reported");
+    assert_eq!(sim.vehicles().len(), sim.n_vehicles() * 6);
+}
+
+// ---------------------------------------------------------------- interventions
+
+fn iv(json: &str) -> String {
+    json.to_string()
+}
+
+#[test]
+fn modal_filter_link_closes_and_reroutes_then_removal_restores() {
+    let (net, c) = corridor(6.0, Control::Uncontrolled);
+    let d = demand(&[(c.a[0], c.a[3], 500.0), (c.a[3], c.a[0], 400.0)]);
+    let mut sim = Simulation::from_parts(net, d, cfg(9, 1.0)).unwrap();
+    run(&mut sim, 300.0, |_| {});
+    let (f, r) = c.loc[1];
+    let filtered = iv(&format!("[{{\"type\":\"modal_filter\",\"link\":{f}}}]"));
+    sim.set_interventions(&filtered).unwrap();
+    run(&mut sim, 60.0, |_| {}); // vehicles already on the link may finish it
+    let mut done = 0u64;
+    run(&mut sim, 600.0, |s| {
+        assert!(s.test_lane_vehicles(f).is_empty() && s.test_lane_vehicles(r).is_empty(), "no vehicle on filtered link");
+        done = s.metrics().completed_trips;
+    });
+    assert!(done > 50, "affected trips re-route and complete ({done})");
+    let before = sim.metrics().cut_through.veh_km;
+    // Remove the intervention: behaviour returns.
+    sim.set_interventions("[]").unwrap();
+    let mut used = false;
+    run(&mut sim, 600.0, |s| {
+        used |= !s.test_lane_vehicles(f).is_empty() || !s.test_lane_vehicles(r).is_empty();
+    });
+    assert!(used, "link is used again once the filter is removed");
+    assert!(sim.metrics().cut_through.veh_km > before);
+}
+
+#[test]
+fn modal_filter_node_bans_all_movements() {
+    let (net, c) = corridor(6.0, Control::Uncontrolled);
+    let d = demand(&[(c.a[0], c.a[3], 500.0), (c.a[3], c.a[0], 400.0)]);
+    let mut sim = Simulation::from_parts(net, d, cfg(9, 1.0)).unwrap();
+    sim.set_interventions(&iv(&format!("[{{\"type\":\"modal_filter\",\"node\":{}}}]", c.l[1]))).unwrap();
+    run(&mut sim, 900.0, |s| {
+        assert!(s.test_transit(c.l[1] as usize).is_empty(), "no through movement at a filtered node");
+    });
+    assert!(sim.metrics().completed_trips > 50);
+}
+
+#[test]
+fn speed_hump_slows_locally_and_adds_travel_time() {
+    let travel = |hump: bool| {
+        let (net, l0, dest) = line_net(11.2, 400.0);
+        let mut sim = empty_sim(net);
+        if hump {
+            sim.set_interventions(&format!("[{{\"type\":\"speed_hump\",\"link\":{l0},\"position\":200}}]")).unwrap();
+        }
+        let v = sim.test_place(l0, 0, 10.0, 11.0, dest, false);
+        sim.test_set_drv(v, 1.0);
+        let mut near_min = f32::MAX;
+        let mut far_max = 0.0f32;
+        let mut t_done = None;
+        for _ in 0..(120.0 / DT) as usize {
+            sim.step(DT);
+            let (_, pos, vel, _) = sim.test_veh(v);
+            if (pos - 200.0).abs() < 3.0 {
+                near_min = near_min.min(vel);
+            }
+            if pos < 100.0 {
+                far_max = far_max.max(vel);
+            }
+            if pos > 380.0 && t_done.is_none() {
+                t_done = Some(sim.time());
+            }
+        }
+        (near_min, far_max, t_done.unwrap())
+    };
+    let (n0, _f0, t0) = travel(false);
+    let (n1, f1, t1) = travel(true);
+    assert!(n0 > 9.0);
+    assert!(n1 <= HUMP_V + 0.8, "slows to crossing speed at the hump ({n1})");
+    assert!(f1 > 9.0, "unaffected far from the hump");
+    assert!(t1 > t0 + 3.0, "link travel time increases ({t0} -> {t1})");
+}
+
+#[test]
+fn baseline_humps_from_network_are_honoured() {
+    let (mut net, l0, dest) = line_net(11.2, 400.0);
+    net.links[l0 as usize].humps = vec![200.0];
+    let mut sim = empty_sim(net);
+    let v = sim.test_place(l0, 0, 10.0, 11.0, dest, false);
+    sim.test_set_drv(v, 1.0);
+    let mut near_min = f32::MAX;
+    run(&mut sim, 60.0, |s| {
+        let (_, pos, vel, _) = s.test_veh(v);
+        if (pos - 200.0).abs() < 3.0 {
+            near_min = near_min.min(vel);
+        }
+    });
+    assert!(near_min <= HUMP_V + 0.8);
+}
+
+#[test]
+fn speed_limit_change_applies_to_both_directions() {
+    let (net, l0, dest) = line_net(13.4, 800.0);
+    let mut sim = empty_sim(net);
+    sim.set_interventions(&format!("[{{\"type\":\"speed_limit\",\"link\":{l0},\"speed\":6.0}}]")).unwrap();
+    let rev = sim.test_topo_reverse(l0);
+    assert_eq!(sim.test_eff().limit[l0 as usize], 6.0);
+    assert_eq!(sim.test_eff().limit[rev as usize], 6.0);
+    let v = sim.test_place(l0, 0, 10.0, 0.0, dest, false);
+    sim.test_set_drv(v, 1.0);
+    let mut vmax = 0.0f32;
+    run(&mut sim, 60.0, |s| vmax = vmax.max(s.test_veh(v).2));
+    assert!(vmax <= 6.0 + 0.01 && vmax > 5.5, "desired speed follows the new limit ({vmax})");
+}
+
+#[test]
+fn traffic_circle_replaces_control_and_caps_speed() {
+    let (net, x) = cross4(Control::Uncontrolled, RoadClass::Secondary, false);
+    let d = demand(&[(x.w, x.e, 400.0), (x.s, x.n, 300.0), (x.e, x.s, 200.0)]);
+    let mut sim = Simulation::from_parts(net, d, cfg(2, 1.0)).unwrap();
+    sim.set_interventions(&format!("[{{\"type\":\"traffic_circle\",\"node\":{}}}]", x.c)).unwrap();
+    assert_eq!(sim.test_eff().ctrl[x.c as usize], Control::TrafficCircle);
+    let mut vmax = 0.0f32;
+    let mut crossed = 0;
+    run(&mut sim, 600.0, |s| {
+        for v in s.test_transit_speeds(x.c as usize) {
+            vmax = vmax.max(v);
+        }
+        crossed += s.test_transit(x.c as usize).len();
+    });
+    assert!(crossed > 0 && sim.metrics().completed_trips > 50);
+    assert!(vmax <= V_CIRCLE + 0.01, "negotiation speed cap: {vmax}");
+}
+
+#[test]
+fn stop_to_signal_runs_webster_plan() {
+    let (net, x) = cross4(Control::TwoWayStop, RoadClass::Residential, true);
+    let d = demand(&[(x.w, x.e, 700.0), (x.e, x.w, 700.0), (x.s, x.n, 150.0), (x.n, x.s, 150.0)]);
+    let mut sim = Simulation::from_parts(net, d, cfg(2, 1.0)).unwrap();
+    assert!(sim.test_eff().sig[x.c as usize].is_none());
+    sim.set_interventions(&format!("[{{\"type\":\"control\",\"node\":{},\"control\":\"signal\"}}]", x.c)).unwrap();
+    {
+        let p = sim.test_eff().sig[x.c as usize].as_ref().expect("signal plan");
+        assert!(p.cycle >= CYCLE_MIN && p.cycle <= CYCLE_MAX, "Webster cycle {}", p.cycle);
+        assert_eq!(p.phases.len(), 2);
+        // The heavily loaded E-W axis gets the longer green.
+        let ew = p.links.iter().position(|g| g.contains(&x.w_in)).unwrap();
+        let ns = 1 - ew;
+        assert!(p.phases[ew].1 > p.phases[ns].1, "{:?}", p.phases);
+    }
+    let mut seen = [false; 4];
+    run(&mut sim, 400.0, |s| {
+        let sg = s.signals();
+        seen[sg[x.w_in as usize] as usize] = true;
+    });
+    assert!(seen[1] && seen[2] && seen[3], "green, yellow and red all appear: {seen:?}");
+    assert_eq!(sim.test_stats().0, 0);
+    // signal_timing sets the cycle and re-derives splits.
+    sim.set_interventions(&format!(
+        "[{{\"type\":\"control\",\"node\":{c},\"control\":\"signal\"}},{{\"type\":\"signal_timing\",\"node\":{c},\"cycle\":120}}]",
+        c = x.c
+    ))
+    .unwrap();
+    let p = sim.test_eff().sig[x.c as usize].as_ref().unwrap();
+    assert!((p.cycle - 120.0).abs() < 0.01);
+    let total: f32 = p.phases.iter().map(|ph| ph.1 + YELLOW + ALL_RED).sum();
+    assert!((total - 120.0).abs() < 0.01);
+}
+
+#[test]
+fn one_way_closes_reverse_direction() {
+    let (net, c) = corridor(6.0, Control::Uncontrolled);
+    let d = demand(&[(c.a[0], c.a[3], 400.0), (c.a[3], c.a[0], 400.0)]);
+    let mut sim = Simulation::from_parts(net, d, cfg(9, 1.0)).unwrap();
+    let (f, r) = c.loc[1];
+    sim.set_interventions(&iv(&format!("[{{\"type\":\"one_way\",\"link\":{f}}}]"))).unwrap();
+    assert!(sim.test_eff().closed[r as usize] && !sim.test_eff().closed[f as usize]);
+    run(&mut sim, 900.0, |s| {
+        assert!(s.test_lane_vehicles(r).is_empty());
+    });
+    let mut used = false;
+    let mut s2 = sim;
+    run(&mut s2, 300.0, |s| used |= !s.test_lane_vehicles(f).is_empty());
+    assert!(used || s2.metrics().completed_trips > 0);
+}
+
+#[test]
+fn turn_ban_is_respected_by_routes_and_vehicles() {
+    let (net, c) = corridor(6.0, Control::Uncontrolled);
+    let mut sim = Simulation::from_parts(net, demand(&[(c.a[0], c.a[3], 500.0)]), cfg(1, 1.0)).unwrap();
+    // The preferred (slow arterial) route is avoided via the local row: ban the turn from connector into the local row.
+    let base = sim.test_route_for(c.a[0], c.a[3], NO_NOISE).unwrap();
+    let (conn_down, _) = c.conn[0]; // a0 -> l0
+    let (loc_fwd, _) = c.loc[0]; // l0 -> l1
+    let uses = |r: &[u32]| r.windows(2).any(|w| w[0] == conn_down && w[1] == loc_fwd);
+    assert!(uses(&base), "baseline uses the turn");
+    sim.set_interventions(&format!("[{{\"type\":\"turn_ban\",\"fromLink\":{conn_down},\"toLink\":{loc_fwd}}}]")).unwrap();
+    let r = sim.test_route_for(c.a[0], c.a[3], NO_NOISE).unwrap();
+    assert!(!uses(&r), "no route uses the banned turn");
+    run(&mut sim, 600.0, |s| {
+        for (_, a, b) in s.test_transit(c.l[0] as usize) {
+            assert!(!(a == conn_down && b == loc_fwd));
+        }
+    });
+    assert!(sim.metrics().completed_trips > 20);
+}
+
+#[test]
+fn unroutable_trips_are_dropped_and_counted() {
+    let (net, c) = corridor(6.0, Control::Uncontrolled);
+    let mut sim = Simulation::from_parts(net, demand(&[(c.a[0], c.a[3], 500.0)]), cfg(1, 1.0)).unwrap();
+    step_n(&mut sim, 120.0);
+    assert_eq!(sim.metrics().unroutable_trips, 0);
+    // Seal the destination side: filter both gate connectors at the far end and the arterial end.
+    let (f, _) = c.art[2];
+    let (g, _) = c.conn[3];
+    sim.set_interventions(&format!(
+        "[{{\"type\":\"modal_filter\",\"link\":{f}}},{{\"type\":\"modal_filter\",\"link\":{g}}}]"
+    ))
+    .unwrap();
+    step_n(&mut sim, 300.0);
+    let m = sim.metrics();
+    assert!(m.unroutable_trips > 10, "{}", m.unroutable_trips);
+    // Interventions JSON round trip with removal restores routing.
+    sim.set_interventions("[]").unwrap();
+    let before = sim.metrics().unroutable_trips;
+    step_n(&mut sim, 300.0);
+    assert_eq!(sim.metrics().unroutable_trips, before);
+}
+
+#[test]
+fn origin_backlog_is_reported_when_entry_is_blocked() {
+    let (net, x) = cross4(Control::Uncontrolled, RoadClass::Secondary, false);
+    let mut sim = Simulation::from_parts(net, demand(&[(x.w, x.e, 600.0)]), cfg(1, 1.0)).unwrap();
+    let mut p = 190.0;
+    while p > 6.0 {
+        sim.test_place(x.w_in, 0, p, 0.0, x.e, true);
+        p -= 7.5;
+    }
+    step_n(&mut sim, 120.0);
+    let m = sim.metrics();
+    assert!(m.backlog > 10 && m.spawned == p_count(&sim), "backlog {} spawned {}", m.backlog, m.spawned);
+}
+
+fn p_count(sim: &Simulation) -> u64 {
+    sim.test_lane_vehicles(0).len() as u64
+}
+
+#[test]
+fn gridlock_breaker_unjams_and_counts() {
+    let (net, x) = cross4(Control::Uncontrolled, RoadClass::Secondary, false);
+    let mut sim = empty_sim(net);
+    let mut p = 194.0;
+    while p > 10.0 {
+        sim.test_place(x.e_out, 0, p, 0.0, x.e, true);
+        p -= 7.5;
+    }
+    sim.test_place(x.w_in, 0, 150.0, 5.0, x.e, false);
+    step_n(&mut sim, GRIDLOCK_REMOVE_S as f64 + 60.0);
+    assert_eq!(sim.metrics().gridlock_removed, 1);
+}
+
+// ---------------------------------------------------------------- invariants on a mixed grid
+
+#[test]
+fn grid_with_mixed_controls_has_no_overlaps() {
+    let mut b = B::default();
+    let ctrls = [Control::Signal, Control::AllWayStop, Control::TwoWayStop, Control::Uncontrolled, Control::TrafficCircle];
+    let n = 5;
+    let mut ids = vec![vec![0u32; n]; n];
+    for i in 0..n {
+        for j in 0..n {
+            let gate = i == 0 || j == 0 || i == n - 1 || j == n - 1;
+            let c = if gate { Control::Uncontrolled } else { ctrls[(i * n + j) % ctrls.len()] };
+            ids[i][j] = b.node(i as f64 * 150.0, j as f64 * 150.0, c, gate);
+        }
+    }
+    for i in 0..n {
+        for j in 0..n {
+            let cls = if j == 2 || i == 2 { RoadClass::Secondary } else { RoadClass::Residential };
+            if i + 1 < n {
+                b.two_way(ids[i][j], ids[i + 1][j], cls, if j == 2 { 2 } else { 1 }, 11.2);
+            }
+            if j + 1 < n {
+                b.two_way(ids[i][j], ids[i][j + 1], cls, 1, 11.2);
+            }
+        }
+    }
+    for l in b.links.iter_mut() {
+        l.stop_at_end = l.class == RoadClass::Residential;
+    }
+    let gates: Vec<u32> = b.nodes.iter().filter(|n| n.gate).map(|n| n.id).collect();
+    let mut flows = vec![];
+    for (k, &o) in gates.iter().enumerate() {
+        let d = gates[(k * 7 + 5) % gates.len()];
+        if o != d {
+            flows.push((o, d, 150.0));
+        }
+    }
+    let mut sim = Simulation::from_parts(b.net(), demand(&flows), cfg(11, 1.0)).unwrap();
+    run(&mut sim, 1200.0, |_| {});
+    let m = sim.metrics();
+    assert!(m.completed_trips > 100, "{}", m.completed_trips);
+    assert_eq!(m.gridlock_removed, 0, "no gridlock removals at moderate demand");
+    assert_eq!(sim.test_stats().0, 0);
+    assert_eq!(sim.test_stats().1, 0, "IDM never needed the hard overlap clamp");
+}
+
+#[test]
+#[ignore]
+fn perf_3000_vehicles() {
+    let mut b = B::default();
+    let n = 14;
+    let mut ids = vec![vec![0u32; n]; n];
+    for i in 0..n {
+        for j in 0..n {
+            let gate = i == 0 || j == 0 || i == n - 1 || j == n - 1;
+            let c = if gate { Control::Uncontrolled } else if (i + j) % 3 == 0 { Control::Signal } else { Control::AllWayStop };
+            ids[i][j] = b.node(i as f64 * 120.0, j as f64 * 120.0, c, gate);
+        }
+    }
+    for i in 0..n {
+        for j in 0..n {
+            let cls = if i % 4 == 0 || j % 4 == 0 { RoadClass::Secondary } else { RoadClass::Residential };
+            let lanes = if cls == RoadClass::Secondary { 2 } else { 1 };
+            if i + 1 < n {
+                b.two_way(ids[i][j], ids[i + 1][j], cls, lanes, 11.2);
+            }
+            if j + 1 < n {
+                b.two_way(ids[i][j], ids[i][j + 1], cls, lanes, 11.2);
+            }
+        }
+    }
+    let gates: Vec<u32> = b.nodes.iter().filter(|n| n.gate).map(|n| n.id).collect();
+    let mut flows = vec![];
+    for (k, &o) in gates.iter().enumerate() {
+        for m in 0..6 {
+            let d = gates[(k * 5 + 11 + m * 13) % gates.len()];
+            if o != d {
+                flows.push((o, d, 130.0));
+            }
+        }
+    }
+    let mut sim = Simulation::from_parts(b.net(), demand(&flows), cfg(1, 1.0)).unwrap();
+    step_n(&mut sim, 900.0);
+    let t0 = std::time::Instant::now();
+    let sim_secs = 300.0;
+    step_n(&mut sim, sim_secs);
+    let wall = t0.elapsed().as_secs_f64();
+    let m = sim.metrics();
+    println!(
+        "vehicles={} speedup={:.1}x completed={} wall={:.2}s",
+        m.vehicles_in_network,
+        sim_secs / wall,
+        m.completed_trips,
+        wall
+    );
+}
