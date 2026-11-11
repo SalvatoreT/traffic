@@ -1,7 +1,8 @@
 //! Static topology derived from the network: link geometry, movements (in-link -> out-link
 //! pairs at a node), movement paths and the movement conflict matrices.
 
-use crate::model::{Network, RoadClass};
+use crate::model::{Control, Network, RoadClass};
+use crate::params::POCKET_MIN_LINK_M;
 use std::f64::consts::PI;
 
 /// Half-extent of the node area along each link (m): stop line is this far before the node centre
@@ -62,6 +63,10 @@ pub struct Topo {
     pub preds: Vec<Vec<u32>>,
     pub lane_base: Vec<u32>,
     pub n_lanes: usize,
+    /// Through lanes of each link (`Link::lanes`, at least 1). Lane 0 is the innermost (left-most), `nmain-1` the outer (right-most).
+    pub nmain: Vec<usize>,
+    /// Link ends in a left-turn pocket: one extra lane (index `nmain`) reserved for left-turners, with limited storage.
+    pub pocket: Vec<bool>,
     pub rank: Vec<u8>,
     pub is_local: Vec<bool>,        // residential/service inside the study area (cut-through domain)
     pub is_res_study: Vec<bool>,    // residential inside the study area (safety domain)
@@ -114,12 +119,6 @@ impl Topo {
             stop_pos.push(length[l] - sr);
             emerge_pos.push(sr);
         }
-        let mut lane_base = Vec::new();
-        let mut nl = 0u32;
-        for l in &net.links {
-            lane_base.push(nl);
-            nl += l.lanes.max(1);
-        }
         let mut t = Topo {
             n_nodes,
             n_links,
@@ -140,8 +139,10 @@ impl Topo {
             conf_geo: Vec::new(),
             conf_circ: Vec::new(),
             preds: vec![Vec::new(); n_links],
-            lane_base,
-            n_lanes: nl as usize,
+            lane_base: Vec::new(),
+            n_lanes: 0,
+            nmain: net.links.iter().map(|l| l.lanes.max(1) as usize).collect(),
+            pocket: vec![false; n_links],
             rank: net.links.iter().map(|l| l.class.rank()).collect(),
             is_local: net
                 .links
@@ -165,7 +166,39 @@ impl Topo {
                 .collect(),
         };
         t.build_movements(net);
+        t.build_pockets(net);
+        let mut nl = 0usize;
+        for l in 0..n_links {
+            t.lane_base.push(nl as u32);
+            nl += t.nmain[l] + t.pocket[l] as usize;
+        }
+        t.n_lanes = nl;
         t
+    }
+
+    /// Total lanes of link `l` including a left-turn pocket.
+    #[inline]
+    pub fn nlanes(&self, l: usize) -> usize {
+        self.nmain[l] + self.pocket[l] as usize
+    }
+
+    /// Left-turn pockets (ASSUMPTION, class rule): approaches of primary/secondary/tertiary links to a signalised node that
+    /// offer a left movement and at least one other movement, and are long enough to hold the pocket.
+    fn build_pockets(&mut self, net: &Network) {
+        for l in 0..self.n_links {
+            let link = &net.links[l];
+            if !matches!(link.class, RoadClass::Primary | RoadClass::Secondary | RoadClass::Tertiary) {
+                continue;
+            }
+            if net.nodes[link.to as usize].control != Control::Signal || self.length[l] < POCKET_MIN_LINK_M {
+                continue;
+            }
+            let ms = self.lm_start[l] as usize;
+            let mc = self.lm_cnt[l] as usize;
+            let left = self.mvs[ms..ms + mc].iter().any(|m| m.kind == K_LEFT);
+            let other = self.mvs[ms..ms + mc].iter().any(|m| m.kind != K_LEFT && m.kind != K_UTURN);
+            self.pocket[l] = left && other;
+        }
     }
 
     /// Point on link `l` at distance `s` (m, link coordinates) offset `off` m to the right. Returns (x, y, heading).

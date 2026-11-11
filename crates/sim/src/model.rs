@@ -126,11 +126,13 @@ pub struct Config {
     /// Additive: link ids to record select-link analysis for (see `Simulation::select_link_records`).
     /// Empty (default) disables recording entirely.
     pub select_links: Vec<u32>,
+    /// Additive: perceived-cost multiplier for residential/service links in route choice (default `params::LOCAL_COST_FACTOR`).
+    pub local_cost_factor: Option<f64>,
 }
 
 impl Default for Config {
     fn default() -> Self {
-        Config { seed: 1, period: String::new(), demand_scale: 1.0, select_links: Vec::new() }
+        Config { seed: 1, period: String::new(), demand_scale: 1.0, select_links: Vec::new(), local_cost_factor: None }
     }
 }
 

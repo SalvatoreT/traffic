@@ -31,6 +31,8 @@ pub struct Eff {
     /// Circle node whose circulating roadway is made of links (ring of circle nodes) rather than the node itself.
     pub ring_node: Vec<bool>,
     pub ff: Vec<f32>,
+    /// Perceived-cost weight per link in route choice (street-hierarchy preference; 1.0 on arterials).
+    pub route_w: Vec<f32>,
     pub sig: Vec<Option<SigPlan>>,
     pub cycle_override: Vec<Option<f32>>,
 }
@@ -250,6 +252,7 @@ impl Eff {
             plevel,
             ring_node,
             ff,
+            route_w: net.links.iter().map(|l| class_weight(l.class, LOCAL_COST_FACTOR)).collect(),
             sig: (0..nn).map(|_| None).collect(),
             cycle_override,
         }
@@ -350,4 +353,30 @@ pub fn phase_state(p: &SigPlan, phase: usize, t: f64) -> u8 {
     } else {
         3
     }
+}
+
+/// Route-choice weight of a link class: residential and service streets are perceived as `local_factor` times
+/// their travel time [ASSUMPTION], everything else as 1.
+pub fn class_weight(class: crate::model::RoadClass, local_factor: f32) -> f32 {
+    match class {
+        crate::model::RoadClass::Residential | crate::model::RoadClass::Service => local_factor,
+        _ => 1.0,
+    }
+}
+
+impl Eff {
+    /// Override the perceived-cost multiplier for residential/service links.
+    pub fn set_local_factor(&mut self, net: &Network, f: f32) {
+        self.route_w = net.links.iter().map(|l| class_weight(l.class, f)).collect();
+    }
+}
+
+/// Seconds since the green of a phase ended (0 during green).
+pub fn phase_since_green(p: &SigPlan, phase: usize, t: f64) -> f32 {
+    if p.always_green {
+        return 0.0;
+    }
+    let tc = ((t as f32) + p.offset).rem_euclid(p.cycle);
+    let (start, g) = p.phases[phase];
+    ((tc - start).rem_euclid(p.cycle) - g).max(0.0)
 }

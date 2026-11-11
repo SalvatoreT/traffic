@@ -49,8 +49,8 @@ impl Router {
         self.heap.clear();
         for l in 0..topo.n_links {
             if topo.link_to[l] == dest && !eff.closed[l] {
-                h[l] = cost[l];
-                self.heap.push(Reverse((cost[l].to_bits(), l as u32)));
+                h[l] = cost[l] * eff.route_w[l];
+                self.heap.push(Reverse((h[l].to_bits(), l as u32)));
             }
         }
         while let Some(Reverse((bits, l))) = self.heap.pop() {
@@ -66,7 +66,7 @@ impl Router {
                 if eff.closed[a] {
                     continue;
                 }
-                let cand = cost[a] + eff.mv_cost[mv as usize] + hl;
+                let cand = cost[a] * eff.route_w[a] + eff.mv_cost[mv as usize] + hl;
                 if cand < h[a] {
                     h[a] = cand;
                     self.heap.push(Reverse((cand.to_bits(), a as u32)));

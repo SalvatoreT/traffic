@@ -1,7 +1,7 @@
 //! Simulation core: microscopic IDM traffic on directed links with node control, routing,
 //! interventions and metrics. Pure Rust, deterministic, no I/O.
 
-use crate::eff::{phase_state, Eff};
+use crate::eff::{phase_since_green, phase_state, Eff};
 use crate::model::*;
 use crate::params::*;
 use crate::rng::{hash32, Rng};
@@ -13,6 +13,7 @@ use std::collections::VecDeque;
 /// vehicle may be admitted. ASSUMPTION.
 const ROOM_MIN: f32 = 4.0;
 const NONE_UID: u32 = u32::MAX;
+fn tog(c: char) -> bool { static T: std::sync::OnceLock<String> = std::sync::OnceLock::new(); T.get_or_init(|| std::env::var("TS_OFF").unwrap_or_default()).contains(c) } // TEMP-TOGGLE
 
 #[derive(Clone, Copy, Debug)]
 struct Drv {
@@ -253,6 +254,10 @@ pub struct Simulation {
     backlog: Vec<VecDeque<Trip>>,
     awsc: Vec<Vec<u32>>,
     sig_state: Vec<u8>,
+    /// Seconds since the green of each signalised approach ended (0 while green).
+    sig_since: Vec<f32>,
+    /// Permissive lefts that have used the yellow/all-red on each approach this cycle (reset on green).
+    sneak: Vec<u8>,
     router: Router,
     link_cost: Vec<f32>,
     ema: Vec<f32>,
@@ -336,6 +341,8 @@ impl Simulation {
             backlog: (0..nn).map(|_| VecDeque::new()).collect(),
             awsc: vec![Vec::new(); nn],
             sig_state: vec![0; nl],
+            sig_since: vec![0.0; nl],
+            sneak: vec![0; nl],
             router: Router::new(nn),
             link_cost: vec![0.0; nl],
             ema: vec![0.0; nl],
@@ -540,6 +547,9 @@ impl Simulation {
 
     fn rebuild_effective(&mut self) {
         let mut eff = Eff::derive(&self.topo, &self.net, &self.ivs);
+        if let Some(f) = self.cfg.local_cost_factor {
+            eff.set_local_factor(&self.net, f.max(0.1) as f32);
+        }
         let has_signal = eff.ctrl.iter().any(|&c| c == Control::Signal);
         if has_signal {
             let est = self.estimate_flows(&eff);
@@ -628,7 +638,7 @@ impl Simulation {
                 let dy = 2.0 * (1.0 - u) * (m.x[1] - m.p0[1]) + 2.0 * u * (m.p1[1] - m.x[1]);
                 ([x, y], dy.atan2(dx))
             } else {
-                let off = LANE_OFFSET0 + LANE_WIDTH * v.lane as f64;
+                let off = if (v.lane as usize) >= self.topo.nmain[v.link as usize] { LANE_OFFSET0 - 0.5 * LANE_WIDTH } else { LANE_OFFSET0 + LANE_WIDTH * v.lane as f64 };
                 let s = (v.pos - 0.5 * v.drv.len).max(0.0) as f64;
                 self.topo.link_point(v.link as usize, s, off)
             };
@@ -651,7 +661,7 @@ impl Simulation {
                 vt += self.bin_vt[l * NBINS + b];
                 vs += self.bin_vs[l * NBINS + b];
             }
-            let nlanes = self.net.links[l].lanes.max(1) as usize;
+            let nlanes = self.topo.nlanes(l);
             let mut count = 0usize;
             for k in 0..nlanes {
                 count += self.lanes[self.topo.lane_base[l] as usize + k].len();
@@ -720,13 +730,13 @@ impl Simulation {
     pub fn debug_stuck(&self, min_wait: f32) -> Vec<String> {
         let mut out = Vec::new();
         for l in 0..self.topo.n_links {
-            for k in 0..self.net.links[l].lanes.max(1) as usize {
+            for k in 0..self.topo.nlanes(l) {
                 if let Some(&id) = self.lanes[self.topo.lane_base[l] as usize + k].front() {
                     let v = &self.vehs[id as usize];
                     if v.wait_t > min_wait {
                         let node = self.topo.link_to[l] as usize;
                         let nxt = v.next();
-                        let nxt_room = nxt.map(|b| (0..self.net.links[b as usize].lanes.max(1) as usize).map(|k| self.lane_room(b, k)).fold(f32::MIN, f32::max));
+                        let nxt_room = nxt.map(|b| (0..self.topo.nmain[b as usize]).map(|k| self.lane_room(b, k)).fold(f32::MIN, f32::max));
                         out.push(format!(
                             "link {l} ({} -> {}) len {:.0} lanes {} ctrl {:?} sig {} wait {:.0} next {:?} room {:?} blocked_space {} go {} stop_t {:.1} nq {}",
                             self.topo.link_from[l], node, self.topo.length[l], self.net.links[l].lanes, self.eff.ctrl[node],
@@ -743,7 +753,7 @@ impl Simulation {
     /// Check physical invariants: lanes ordered and non-overlapping, node transit bookkeeping consistent.
     pub fn check_invariants(&self) -> Result<(), String> {
         for l in 0..self.topo.n_links {
-            let nl = self.net.links[l].lanes.max(1) as usize;
+            let nl = self.topo.nlanes(l);
             for k in 0..nl {
                 let q = &self.lanes[self.topo.lane_base[l] as usize + k];
                 let mut prev: Option<&Veh> = None;
@@ -810,8 +820,13 @@ impl Simulation {
             if let Some(p) = &self.eff.sig[n] {
                 for (ph, links) in p.links.iter().enumerate() {
                     let s = phase_state(p, ph, self.t);
+                    let since = phase_since_green(p, ph, self.t);
                     for &l in links {
                         self.sig_state[l as usize] = s;
+                        self.sig_since[l as usize] = since;
+                        if s == 1 {
+                            self.sneak[l as usize] = 0;
+                        }
                     }
                 }
             }
@@ -845,30 +860,94 @@ impl Simulation {
     }
 
     fn lane_room(&self, l: u32, lane: usize) -> f32 {
+        self.lane_room_ahead(l, lane, 0.0)
+    }
+
+    /// Room at the start of a lane, projecting the tail vehicle forward `horizon` s at its current speed (crossing a node takes
+    /// a few seconds, during which a moving leader opens up the gap; a standing queue gains nothing).
+    fn lane_room_ahead(&self, l: u32, lane: usize, horizon: f32) -> f32 {
+        let horizon = if tog('h') { 0.0 } else { horizon }; // TEMP-TOGGLE
         let idx = self.topo.lane_base[l as usize] as usize + lane;
         let tail = match self.lanes[idx].back() {
             Some(&v) => {
                 let v = &self.vehs[v as usize];
-                v.pos - v.drv.len
+                v.pos - v.drv.len + v.v * horizon
             }
             None => self.topo.length[l as usize],
         };
         tail - self.topo.emerge_pos[l as usize] - self.reserved[idx]
     }
 
-    /// Lane with the most room that has at least ROOM_MIN.
-    fn best_lane(&self, l: u32) -> Option<usize> {
-        let nl = self.net.links[l as usize].lanes.max(1) as usize;
+    /// Room needed on a link before another vehicle may be admitted. Very short links (junction fragments) cannot offer
+    /// ROOM_MIN; the requirement scales down to their usable length.
+    fn room_need(&self, l: usize) -> f32 {
+        ROOM_MIN.min(0.6 * (self.topo.length[l] - self.topo.emerge_pos[l]))
+    }
+
+    /// Length (m) of the standing queue at the tail of lane `k` of link `l`, measured back from the stop line.
+    fn queue_extent(&self, l: usize, k: usize) -> f32 {
+        match self.lanes[self.topo.lane_base[l] as usize + k].back() {
+            Some(&v) => {
+                let v = &self.vehs[v as usize];
+                if v.v < 2.0 {
+                    (self.topo.stop_pos[l] - (v.pos - v.drv.len)).max(0.0)
+                } else {
+                    0.0
+                }
+            }
+            None => 0.0,
+        }
+    }
+
+    /// Can a left-turner enter the pocket of link `l` now? Storage is limited to POCKET_VEH vehicles, and a standing
+    /// queue in the inner through lane longer than the pocket blocks its entrance (ASSUMPTION).
+    fn pocket_open(&self, l: usize, need: f32, horizon: f32) -> bool {
+        if tog('p') || !self.topo.pocket[l] || self.eff.ctrl[self.topo.link_to[l] as usize] != Control::Signal {
+            return false;
+        }
+        let main = self.topo.nmain[l];
+        self.lanes[self.topo.lane_base[l] as usize + main].len() < POCKET_VEH
+            && self.lane_room_ahead(l as u32, main, horizon) >= need
+            && self.queue_extent(l, 0) <= POCKET_LEN
+    }
+
+    /// Lane choice on entering link `l` for a vehicle whose next movement at its far end has kind `kind` [None = unknown/through].
+    /// Left-turners use the left lane (or the pocket), right-turners the right lane, through traffic the lane with most room.
+    /// Falls back to any lane with room. None only if no lane has room.
+    fn pick_lane(&self, l: u32, kind: Option<u8>, horizon: f32) -> Option<usize> {
+        let lu = l as usize;
+        let main = self.topo.nmain[lu];
+        let need = self.room_need(lu);
+        let kind = if tog('l') { None } else { kind }; // TEMP-TOGGLE
+        if kind == Some(K_LEFT) && self.pocket_open(lu, need, horizon) {
+            return Some(main);
+        }
+        if main >= 2 {
+            let pref = match kind {
+                Some(K_LEFT) => Some(0),
+                Some(K_RIGHT) => Some(main - 1),
+                _ => None,
+            };
+            if let Some(k) = pref {
+                if self.lane_room_ahead(l, k, horizon) >= need {
+                    return Some(k);
+                }
+            }
+        }
         let mut best: Option<(f32, usize)> = None;
-        // Very short links (junction fragments) cannot offer ROOM_MIN; scale the requirement down to their usable length.
-        let need = ROOM_MIN.min(0.6 * (self.topo.length[l as usize] - self.topo.emerge_pos[l as usize]));
-        for k in 0..nl {
-            let r = self.lane_room(l, k);
+        for k in 0..main {
+            let r = self.lane_room_ahead(l, k, horizon);
             if r >= need && best.map_or(true, |(br, _)| r > br + 1e-4) {
                 best = Some((r, k));
             }
         }
         best.map(|b| b.1)
+    }
+
+    /// Kind of the movement from link `from` onto `to`, if the pair exists.
+    fn mv_kind(&self, from: u32, to: Option<u32>) -> Option<u8> {
+        let m = self.topo.find_mv(from, to?)?;
+        Some(self.topo.mvs[m as usize].kind)
     }
 
     fn alloc_veh(&mut self) -> u32 {
@@ -929,7 +1008,7 @@ impl Simulation {
                     continue;
                 }
                 let b = first.unwrap();
-                let Some(lane) = self.best_lane(b) else {
+                let Some(lane) = self.pick_lane(b, self.mv_kind(b, route.first().copied()), 0.0) else {
                     self.scratch = route;
                     break;
                 };
@@ -972,7 +1051,7 @@ impl Simulation {
         let rev = self.step_n % 2 == 1;
         for i in 0..nl {
             let l = if rev { nl - 1 - i } else { i };
-            let nlanes = self.net.links[l].lanes.max(1) as usize;
+            let nlanes = self.topo.nlanes(l);
             for k in 0..nlanes {
                 let idx = self.topo.lane_base[l] as usize + k;
                 if let Some(&vid) = self.lanes[idx].front() {
@@ -1042,16 +1121,15 @@ impl Simulation {
     fn permission(&self, vid: u32, l: usize, d: f32, v: f32, ctrl: Control) -> (bool, bool) {
         let veh = &self.vehs[vid as usize];
         match ctrl {
-            Control::Signal => match self.sig_state[l] {
-                3 => return (false, false),
-                2 => {
+            Control::Signal => {
+                let st = self.sig_state[l];
+                if st >= 2 && !self.sneaker(veh, l, d, v) {
                     // [Webster1958]-style dilemma rule: continue on yellow only if a comfortable stop is impossible.
-                    if !(v * v / (2.0 * YELLOW_DECEL) > d) {
+                    if st == 3 || !(v * v / (2.0 * YELLOW_DECEL) > d) {
                         return (false, false);
                     }
                 }
-                _ => {}
-            },
+            }
             Control::AllWayStop | Control::TwoWayStop => {
                 if self.eff.must_stop[l] && veh.stop_t < STOP_DWELL {
                     return (false, false);
@@ -1065,10 +1143,19 @@ impl Simulation {
             // Banned/closed after the plan was made; will be re-planned. Hold.
             return (false, false);
         }
-        if self.best_lane(b).is_none() {
+        if self.pick_lane(b, None, NODE_CROSS_S).is_none() {
             return (false, true);
         }
         (self.conflict_free(vid, mv, ctrl), false)
+    }
+
+    /// Permissive-left "sneaker": a left-turner waiting at the stop line may clear on the yellow or all-red, up to SNEAKERS per
+    /// cycle and approach (ASSUMPTION). The in-node and opposing-flow conflict checks still apply.
+    fn sneaker(&self, veh: &Veh, l: usize, d: f32, v: f32) -> bool {
+        if tog('s') || self.sneak[l] >= SNEAKERS || self.sig_since[l] >= YELLOW + ALL_RED || d > 10.0 || v > 3.0 {
+            return false;
+        }
+        veh.next().and_then(|b| self.topo.find_mv(l as u32, b)).map_or(false, |m| self.topo.mvs[m as usize].kind == K_LEFT)
     }
 
     fn critical_gap(&self, mv: u32, ctrl: Control, gap_f: f32) -> f32 {
@@ -1173,7 +1260,7 @@ impl Simulation {
             if ctrl == Control::Signal && self.sig_state[e as usize] == 3 {
                 continue;
             }
-            let nlanes = self.net.links[e as usize].lanes.max(1) as usize;
+            let nlanes = self.topo.nlanes(e as usize);
             for k in 0..nlanes {
                 let q = &self.lanes[self.topo.lane_base[e as usize] as usize + k];
                 for &x in q.iter().take(4) {
@@ -1182,6 +1269,9 @@ impl Simulation {
                     let tx = dx / xv.v.max(MIN_APPROACH_SPEED);
                     if tx > tc {
                         break;
+                    }
+                    if ctrl == Control::Signal && self.sig_state[e as usize] == 2 && !(xv.v * xv.v / (2.0 * YELLOW_DECEL) > dx) {
+                        continue; // opposing vehicle will stop for the yellow
                     }
                     let Some(xb) = xv.next() else { continue };
                     let Some(mx) = self.topo.find_mv(e, xb) else { continue };
@@ -1197,10 +1287,10 @@ impl Simulation {
     // ------------------------------------------------------------------ dynamics
 
     fn compute_accels(&mut self) {
-        let Simulation { lanes, vehs, eff, topo, net, st, .. } = self;
+        let Simulation { lanes, vehs, eff, topo, st, .. } = self;
         let mut ttc_new = 0u64;
         for l in 0..topo.n_links {
-            let nlanes = net.links[l].lanes.max(1) as usize;
+            let nlanes = topo.nlanes(l);
             let stop_pos = topo.stop_pos[l];
             let limit = eff.limit[l];
             let humps = &eff.humps[l];
@@ -1286,7 +1376,7 @@ impl Simulation {
         let cb = self.cur_bin;
         for i in 0..nl {
             let l = if rev { nl - 1 - i } else { i };
-            let nlanes = self.net.links[l].lanes.max(1) as usize;
+            let nlanes = self.topo.nlanes(l);
             let stop_pos = self.topo.stop_pos[l];
             for k in 0..nlanes {
                 let qi = self.topo.lane_base[l] as usize + k;
@@ -1442,7 +1532,11 @@ impl Simulation {
                 }
             }
         }
-        let Some(lane) = self.best_lane(b) else { return false };
+        let after = veh.route.get(veh.ridx as usize + 1).copied();
+        let Some(lane) = self.pick_lane(b, self.mv_kind(b, after), NODE_CROSS_S) else { return false };
+        if ctrl == Control::Signal && self.sig_state[l] >= 2 && self.topo.mvs[mv as usize].kind == K_LEFT {
+            self.sneak[l] = self.sneak[l].saturating_add(1);
+        }
         if ctrl == Control::Signal && self.sig_state[l] == 3 {
             self.st.red_entries += 1;
         }
@@ -1603,7 +1697,7 @@ impl Simulation {
                 self.ema[l] = if self.ema[l] <= 0.0 { obs } else { (1.0 - EMA_ALPHA) * self.ema[l] + EMA_ALPHA * obs };
             } else {
                 // Nobody left the link this epoch: if vehicles are stuck, cost is at least their age.
-                let nlanes = self.net.links[l].lanes.max(1) as usize;
+                let nlanes = self.topo.nlanes(l);
                 let mut age = 0.0f32;
                 for k in 0..nlanes {
                     if let Some(&f) = self.lanes[self.topo.lane_base[l] as usize + k].front() {
@@ -1693,7 +1787,7 @@ impl Simulation {
     }
 
     pub(crate) fn test_lane_vehicles(&self, link: u32) -> Vec<(u32, f32, f32)> {
-        let nl = self.net.links[link as usize].lanes.max(1) as usize;
+        let nl = self.topo.nlanes(link as usize);
         let mut out = Vec::new();
         for k in 0..nl {
             for &id in &self.lanes[self.topo.lane_base[link as usize] as usize + k] {

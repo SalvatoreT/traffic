@@ -964,3 +964,42 @@ fn select_link_in_flight_trips_include_planned_streets() {
     assert_eq!(r.streets.len(), 1);
     assert_eq!(r.streets[0].name, "Main");
 }
+
+// ---------------------------------------------------------------- capacity realism
+
+/// Four-way signalised intersection with `lanes` lanes on the W/E secondary legs; returns (net, cross).
+fn sig_cross(lanes: u32) -> (Network, Cross) {
+    let mut b = B::default();
+    let c = b.node(0.0, 0.0, Control::Signal, false);
+    let w = b.node(-300.0, 0.0, Control::Uncontrolled, true);
+    let e = b.node(300.0, 0.0, Control::Uncontrolled, true);
+    let s = b.node(0.0, -300.0, Control::Uncontrolled, true);
+    let n = b.node(0.0, 300.0, Control::Uncontrolled, true);
+    let (w_in, w_out) = b.two_way(w, c, RoadClass::Secondary, lanes, 11.2);
+    let (e_in, e_out) = b.two_way(e, c, RoadClass::Secondary, lanes, 11.2);
+    let (s_in, s_out) = b.two_way(s, c, RoadClass::Residential, 1, 11.2);
+    let (n_in, n_out) = b.two_way(n, c, RoadClass::Residential, 1, 11.2);
+    (b.net(), Cross { c, w, e, s, n, w_in, w_out, e_in, e_out, s_in, s_out, n_in, n_out })
+}
+
+#[test]
+fn zz_saturation_probe() {
+    let (net, x) = sig_cross(1);
+    let d = demand(&[(x.w, x.e, 3000.0), (x.s, x.n, 100.0)]);
+    let mut sim = Simulation::from_parts(net, d, cfg(1, 1.0)).unwrap();
+    let mut seen = std::collections::HashSet::new();
+    let mut prev: Vec<(u32, f32, f32)> = vec![];
+    for k in 0..(120.0 / DT) as usize {
+        sim.step(DT);
+        let t = (k + 1) as f64 * DT;
+        for (uid, _, _) in sim.test_transit(x.c as usize) {
+            if seen.insert(uid) {
+                let p = prev.iter().find(|q| q.0 == uid);
+                println!("t={t:.2} cross uid {uid} prevstate {:?} nlane {}", p, sim.test_lane_vehicles(x.w_in).len());
+            }
+        }
+        prev = sim.test_lane_vehicles(x.w_in);
+        prev.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+        if t > 66.0 && t < 74.0 { println!("  t={t:.2} head3 {:?} sig {:?}", prev.iter().take(3).map(|q| (q.0, (q.1*10.0).round()/10.0, (q.2*10.0).round()/10.0)).collect::<Vec<_>>(), sim.signals()[x.w_in as usize]); }
+    }
+}
