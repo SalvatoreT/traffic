@@ -31,3 +31,19 @@ removals, backlog below 2% of spawned trips, and arterial mean speed above 4 m/s
 Modelled select-link shares within ±10 percentage points of observed for the headline
 shares (freeway origin/destination share on Hillegass and Colby); others reported but
 not gated. StreetLight samples are themselves approximate.
+
+## Contract changes
+
+Additive changes to the Network contract (`version` stays 1; consumers ignore unknown fields):
+
+```ts
+interface Node {
+  // ...existing fields...
+  canEnter?: boolean;   // gates only: trips can start here (outgoing link connected to the main network)
+  canExit?: boolean;    // gates only: trips can end here (incoming link reachable from the main network)
+}
+```
+
+- A roundabout or traffic-circle ring is one `traffic_circle` node at the ring centroid; ring ways are not links and approach geometry ends at the centre.
+- Motorway-class links, and nodes touched only by motorway links, are never `inStudyArea`. The Rockridge study area is bounded on the south by SR-24 (`boundingStreets.south`).
+- Config `selectLinks: number[]` (sim `Config`) enables select-link recording; empty by default.

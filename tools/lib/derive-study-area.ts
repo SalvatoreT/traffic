@@ -2,6 +2,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { bufferPolygon, dist, makeProjection, round6, simplify, type Pt } from './geo';
 import type { AreaConfig, BoundingStreets, OsmNode, OsmWay, Overpass } from './types';
 
+// Bounding streets are matched by `name` or `ref` (an unnamed-in-places motorway can be given by its ref).
 const DRIVABLE = /^(motorway|primary|secondary|tertiary|residential|unclassified|living_street)(_link)?$/;
 
 export function deriveStudyArea(osm: Overpass, streets: BoundingStreets, bbox: AreaConfig['bbox'], bufferM = 15): [number, number][] {
@@ -21,7 +22,7 @@ export function deriveStudyArea(osm: Overpass, streets: BoundingStreets, bbox: A
       adj.get(a)!.set(b, dist(xy(a), xy(b)));
     };
     for (const w of ways) {
-      if (w.tags.name !== name) continue;
+      if (w.tags.name !== name && w.tags.ref !== name) continue;
       for (let i = 1; i < w.nodes.length; i++) {
         add(w.nodes[i - 1], w.nodes[i]);
         add(w.nodes[i], w.nodes[i - 1]);
@@ -41,10 +42,25 @@ export function deriveStudyArea(osm: Overpass, streets: BoundingStreets, bbox: A
     if (c.length === 0) throw new Error(`no shared node for ${label}`);
     return c[0];
   };
-  const sw = pick(shared(G.west, G.south), 'west/south');
-  const nw = pick(shared(G.west, G.north), 'west/north');
-  const ne = pick(shared(G.east, G.north), 'east/north');
-  const se = pick(shared(G.east, G.south), 'east/south');
+  // Corner between two bounding streets: a shared node, or, when they only cross without a junction (a freeway
+  // grade-separated from a street), the closest pair of nodes, one on each street.
+  const corner = (a: Map<number, unknown>, b: Map<number, unknown>, label: string): [number, number] => {
+    const sh = shared(a, b);
+    if (sh.length) return [sh[0], sh[0]];
+    let best: [number, number] | null = null;
+    let bd = Infinity;
+    for (const p of a.keys()) for (const q of b.keys()) {
+      const d = dist(xy(p), xy(q));
+      if (d < bd) (bd = d), (best = [p, q]);
+    }
+    if (!best || bd > 60) throw new Error(`no shared or nearby node for ${label}`);
+    return best;
+  };
+  void pick;
+  const [sw, swS] = corner(G.west, G.south, 'west/south');
+  const [nw] = corner(G.west, G.north, 'west/north');
+  const [ne] = corner(G.east, G.north, 'east/north');
+  const [se, seS] = corner(G.east, G.south, 'east/south');
 
   const path = (adj: Map<number, Map<number, number>>, from: number, to: number): number[] => {
     const d = new Map<number, number>([[from, 0]]);
@@ -74,7 +90,7 @@ export function deriveStudyArea(osm: Overpass, streets: BoundingStreets, bbox: A
     ...path(G.west, sw, nw),
     ...path(G.north, nw, ne).slice(1),
     ...path(G.east, ne, se).slice(1),
-    ...path(G.south, se, sw).slice(1, -1),
+    ...path(G.south, seS, swS),
   ];
   const ring = simplify([...loop.map(xy), xy(sw)], 4).slice(0, -1);
   const buffered = bufferPolygon(ring, bufferM);

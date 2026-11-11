@@ -106,6 +106,14 @@ describe('rockridge network', () => {
     expect(net.links.filter((l) => l.stopAtEnd).length).toBeGreaterThan(50);
   });
 
+  it('excludes the freeway from the study area and bounds it by the freeway', () => {
+    expect(net.links.filter((l) => l.class === 'motorway').every((l) => !l.inStudyArea)).toBe(true);
+    const inLocal = net.links.filter((l) => l.inStudyArea);
+    expect(inLocal.length).toBeGreaterThan(200);
+    expect(cfg.boundingStreets?.south).toBe('Grove Shafter Freeway');
+    expect(inLocal.some((l) => l.name === 'Claremont Avenue')).toBe(true);
+  });
+
   it('flags study-area membership consistently', () => {
     const poly = cfg.studyArea;
     expect(poly[0]).toEqual(poly.at(-1));

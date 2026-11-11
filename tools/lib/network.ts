@@ -616,6 +616,7 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
   const used = new Set<number>();
   for (const l of finalLinks) (used.add(l.from), used.add(l.to));
   const nodeIds = ids.filter((id) => used.has(id));
+  const surfaceNodes = new Set(finalLinks.filter((l) => l.cls !== 'motorway').flatMap((l) => [l.from, l.to]));
   const hasOut = new Set(finalLinks.map((l) => l.from));
   const hasIn = new Set(finalLinks.map((l) => l.to));
   const nodeIndex = new Map(nodeIds.map((id, i) => [id, i]));
@@ -645,7 +646,7 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
       y: round1(p[1]),
       control,
       gate: gates.has(id),
-      inStudyArea: pointInPolygon(p, studyPoly),
+      inStudyArea: surfaceNodes.has(id) && pointInPolygon(p, studyPoly),
     };
     if (node.gate) {
       // Trips can enter at a gate with an outgoing link from which the main network is reachable, and leave at
@@ -675,7 +676,7 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
       geometry,
       stopAtEnd: l.stopAtEnd,
       humps: [...l.humps].sort((a, b) => a - b),
-      inStudyArea: pointInPolygon(mid, studyPoly),
+      inStudyArea: l.cls !== 'motorway' && pointInPolygon(mid, studyPoly),
     };
   });
 

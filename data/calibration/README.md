@@ -13,3 +13,17 @@ Key finding: roughly half the traffic on both streets is travelling to or from t
 freeway ramps at Claremont Ave, and almost none of the northbound traffic ends up on
 College Ave. The model's baseline should show the same pattern before interventions
 are compared.
+
+## Running the calibration report
+
+No npm needed (Rust only; reads `public/data/<area>.{network,demand}.json` and `<area>.targets.json`):
+
+```
+cargo run --release -p traffic-sim --bin calibrate -- --area rockridge --period pm_peak --minutes 60 --scale 1.0 --seed 1
+```
+
+Options: `--warmup <min>` (flow tables ignore the first N minutes of runs of 30+ min, default 10), `--out <dir>`, `--no-write`.
+It prints a markdown report and writes `reports/<area>-<period>-s<scale>-seed<seed>.{md,json}`: stability criteria, vehicles in
+network every 5 min, modelled vs observed select-link shares (target blocks resolved from street name, direction and the
+two cross streets), ramp shares, top 15 links by delay, top 15 nodes by blocked time, gridlock removals and entry backlog by
+location, and flow per direction on the key streets. A full 60-minute run takes about 5 s.
