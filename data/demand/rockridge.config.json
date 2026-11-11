@@ -1,0 +1,158 @@
+{
+  "area": "rockridge",
+  "network": "public/data/rockridge.network.json",
+  "output": "public/data/rockridge.demand.json",
+  "bbox": [
+    -122.264,
+    37.836,
+    -122.248,
+    37.855
+  ],
+  "raw": {
+    "lodes": "data/demand/raw/lodes8-ca-2024-rockridge.json",
+    "oaklandTmc": "data/demand/raw/oakland-multimodal",
+    "caltrans": "data/demand/raw/caltrans-aadt-bbox.json"
+  },
+  "periods": [
+    {
+      "id": "am_peak",
+      "label": "AM peak (07:00-09:00 weekday, hourly rate)"
+    },
+    {
+      "id": "midday",
+      "label": "Midday (11:00-13:00 weekday, hourly rate)"
+    },
+    {
+      "id": "pm_peak",
+      "label": "PM peak (16:00-18:00 weekday, hourly rate)"
+    }
+  ],
+  "periodFactors": {
+    "_note": "ASSUMPTION: hourly volume relative to the PM peak hour on arterials; typical urban weekday profile, to be calibrated.",
+    "am_peak": {
+      "volume": 0.85,
+      "inboundShare": 0.58
+    },
+    "midday": {
+      "volume": 0.62,
+      "inboundShare": 0.5
+    },
+    "pm_peak": {
+      "volume": 1.0,
+      "inboundShare": 0.45
+    }
+  },
+  "kFactor": 0.09,
+  "kFactorNote": "ASSUMPTION: peak-hour share of ADT for urban arterials (typically 0.08-0.10); not derived from local data.",
+  "directionalSplitDefault": 0.5,
+  "classDefaultAdt": {
+    "_note": "ASSUMPTION: per-class default two-way ADT when no count exists for the gate street (residential 800 ~ low-volume local street; uncalibrated).",
+    "primary": 14000,
+    "secondary": 9000,
+    "tertiary": 5000,
+    "residential": 800,
+    "service": 150
+  },
+  "streetCounts": [
+    {
+      "_note": "DATA: Oakland PM peak-hour turning-movement counts at Telegraph Ave & Alcatraz Ave (Quality Counts; 2018-09-11, 2018-09-12, 2019-09-10, 2021-09-29), averaged. Leg volumes entering/leaving the intersection are used for gates lying on that leg's street in that compass direction from the count intersection (N/E/S/W). ASSUMPTION: the south Telegraph gate (Claremont) reuses the S-leg volume as a proxy.",
+      "source": "oaklandTmc",
+      "filePattern": "AlcatrazAve",
+      "intersection": {
+        "lat": 37.850193,
+        "lon": -122.2605153
+      },
+      "legStreets": {
+        "N": "telegraph",
+        "S": "telegraph",
+        "E": "alcatraz",
+        "W": "alcatraz"
+      }
+    }
+  ],
+  "adtOverrides": [
+    {
+      "street": "claremont",
+      "adt": 23500,
+      "source": "Caltrans AADT 2023 (SR-13 Claremont Ave, Berkeley PM 10.79, ahead AADT 23500; BACK 32500). Context: nearest published State count, located ~1 km east/south-east of the Claremont/College gate; applied with ASSUMPTION of 0.6 factor because the SR-13 count is at Ashby/Tunnel Rd, not Claremont Ave itself.",
+      "factor": 0.6
+    }
+  ],
+  "streetMatch": {
+    "_note": "Lower-case substrings of OSM link names mapped to a count key.",
+    "telegraph": [
+      "telegraph"
+    ],
+    "alcatraz": [
+      "alcatraz"
+    ],
+    "college": [
+      "college"
+    ],
+    "claremont": [
+      "claremont"
+    ],
+    "shattuck": [
+      "shattuck"
+    ]
+  },
+  "gravity": {
+    "distanceExponent": 0,
+    "sameStreetBonus": 3.0,
+    "uTurnPenalty": 0.05,
+    "oppositeBonus": 1.0,
+    "adjacentFactor": 0.6,
+    "furnessIterations": 200
+  },
+  "local": {
+    "_note": "ASSUMPTION: vehicle trip rates per resident worker / per job per weekday; ITE-like order of magnitude, uncalibrated.",
+    "dailyTripsPerResidentWorker": 3.2,
+    "dailyTripsPerJob": 3.5,
+    "residentsPerWorker": 1.0,
+    "externalShareOfResidentTrips": 0.8,
+    "peakHourShare": {
+      "am_peak": 0.085,
+      "midday": 0.06,
+      "pm_peak": 0.095
+    },
+    "vehicleModeShare": 0.62,
+    "vehicleModeShareNote": "ASSUMPTION: drive-alone+carpool share for commutes (ACS-like; not derived here).",
+    "originShareResidents": {
+      "am_peak": 0.7,
+      "midday": 0.5,
+      "pm_peak": 0.3
+    },
+    "destShareJobs": {
+      "am_peak": 0.7,
+      "midday": 0.5,
+      "pm_peak": 0.3
+    },
+    "internalShare": 0.2,
+    "internalDecayM": 1000,
+    "maxLocalShareOfGate": 0.5
+  },
+  "minFlowVehPerHour": 0.5,
+  "maxFlows": 4000,
+  "lodes": {
+    "year": 2024
+  },
+  "excludeClasses": [
+    "motorway"
+  ],
+  "excludeNote": "ASSUMPTION: freeway (motorway-class) gates carry no demand; SR-24 through traffic is out of scope.",
+  "fetch": {
+    "tmcZip": "https://data.oaklandca.gov/api/views/amtg-eh64/files/12a70ef9-737d-4c3e-b7da-dc6b497d4121",
+    "tmcMembers": [
+      "2018/2018.09.11-TelegraphAve&AlcatrazAve-pm.csv",
+      "2018/2018.09.12-TelegraphAve&AlcatrazAve-pm.csv",
+      "2019/TelegraphAve_AlcatrazAve_2019-09-10_PM.csv",
+      "2021/TelegraphAve_AlcatrazAve_PM_2021.csv"
+    ],
+    "caltransQuery": "https://caltrans-gis.dot.ca.gov/arcgis/rest/services/CHhighway/Traffic_AADT/FeatureServer/0/query",
+    "caltransPadDeg": 0.04,
+    "lodesBase": "https://lehd.ces.census.gov/data/lodes/LODES8/ca/",
+    "lodesOd": "od/ca_od_main_JT00_{year}.csv.gz",
+    "lodesXwalk": "ca_xwalk.csv.gz",
+    "lodesCacheDir": "data/demand/raw/_cache"
+  }
+}

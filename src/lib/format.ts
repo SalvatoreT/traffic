@@ -1,0 +1,89 @@
+import type { Units } from '../types';
+
+export const MPS_TO_MPH = 2.2369362920544;
+export const KM_TO_MI = 0.621371192;
+
+export type Kind = 'speed' | 'dist' | 'share' | 'minutes' | 'count' | 'flow';
+
+export function speedValue(mps: number, u: Units): number { return u === 'mph' ? mps * MPS_TO_MPH : mps * 3.6; }
+export const speedUnit = (u: Units) => (u === 'mph' ? 'mph' : 'km/h');
+export const distUnit = (u: Units) => (u === 'mph' ? 'veh-mi' : 'veh-km');
+
+/** Convert an SI-ish metric (speed m/s, dist km, share 0..1, time s) to a display number. */
+export function displayValue(kind: Kind, v: number, u: Units): number {
+  switch (kind) {
+    case 'speed': return speedValue(v, u);
+    case 'dist': return u === 'mph' ? v * KM_TO_MI : v;
+    case 'share': return v * 100;
+    case 'minutes': return v / 60;
+    default: return v;
+  }
+}
+export function unitLabel(kind: Kind, u: Units): string {
+  switch (kind) {
+    case 'speed': return speedUnit(u);
+    case 'dist': return distUnit(u);
+    case 'share': return '%';
+    case 'minutes': return 'min';
+    case 'flow': return 'veh/h';
+    default: return '';
+  }
+}
+function digits(kind: Kind, x: number): number {
+  if (kind === 'count' || kind === 'flow') return Math.abs(x) >= 100 || Number.isInteger(x) ? 0 : 1;
+  return Math.abs(x) >= 100 ? 0 : 1;
+}
+export function formatValue(kind: Kind, v: number | undefined | null, u: Units, withUnit = true): string {
+  if (v === undefined || v === null || !Number.isFinite(v)) return '—';
+  const d = displayValue(kind, v, u);
+  const s = d.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: digits(kind, d) });
+  const unit = unitLabel(kind, u);
+  if (!withUnit || !unit) return s;
+  return kind === 'share' ? `${s}%` : `${s} ${unit}`;
+}
+
+export interface Diff {
+  direction: 'up' | 'down' | 'same';
+  verdict: 'better' | 'worse' | 'about the same' | 'n/a';
+  arrow: '↑' | '↓' | '→';
+  abs: number;      // display units (signed)
+  pct: number | null;
+  text: string;
+}
+
+/** Describe the change scenario vs baseline in words. `lowerIsBetter` null = neutral. */
+export function formatDiff(
+  base: number | undefined, scen: number | undefined, kind: Kind, u: Units, lowerIsBetter: boolean | null,
+): Diff {
+  if (base === undefined || scen === undefined || !Number.isFinite(base) || !Number.isFinite(scen)) {
+    return { direction: 'same', verdict: 'n/a', arrow: '→', abs: 0, pct: null, text: 'not available yet' };
+  }
+  const b = displayValue(kind, base, u), s = displayValue(kind, scen, u);
+  const abs = s - b;
+  const pct = b !== 0 ? (abs / Math.abs(b)) * 100 : null;
+  const tiny = pct !== null ? Math.abs(pct) < 0.5 : Math.abs(abs) < 1e-9;
+  const direction = tiny ? 'same' : abs > 0 ? 'up' : 'down';
+  const arrow = direction === 'up' ? '↑' : direction === 'down' ? '↓' : '→';
+  let verdict: Diff['verdict'] = 'about the same';
+  if (direction !== 'same') {
+    verdict = lowerIsBetter === null ? 'about the same' : (direction === 'down') === lowerIsBetter ? 'better' : 'worse';
+  }
+  const unit = kind === 'share' ? 'pp' : unitLabel(kind, u);
+  const absTxt = `${abs > 0 ? '+' : abs < 0 ? '−' : ''}${Math.abs(abs).toLocaleString('en-US', {
+    maximumFractionDigits: digits(kind, abs),
+  })}${unit ? (kind === 'share' ? ' pp' : ` ${unit}`) : ''}`;
+  let text: string;
+  if (direction === 'same') text = `${arrow} about the same`;
+  else {
+    const pctTxt = pct === null ? '' : `${Math.abs(pct) < 10 ? Math.abs(pct).toFixed(1) : Math.abs(pct).toFixed(0)}% `;
+    const word = direction === 'up' ? 'higher' : 'lower';
+    text = `${arrow} ${pctTxt}${word} (${absTxt})${lowerIsBetter === null ? '' : ` — ${verdict}`}`;
+  }
+  return { direction, verdict, arrow, abs, pct, text };
+}
+
+export function formatClock(seconds: number): string {
+  const s = Math.max(0, Math.floor(seconds));
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+  return `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+}

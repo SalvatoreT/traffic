@@ -1,0 +1,70 @@
+import { useEffect, useRef, useState } from 'react';
+import type { Metrics, Units } from '../types';
+import { CARDS, summarise } from '../lib/metrics';
+import { formatClock, formatDiff, formatValue } from '../lib/format';
+
+interface Props {
+  base: Metrics | null; scen: Metrics | null; comparing: boolean; units: Units; scenarioCount: number;
+}
+
+export function Comparison({ base, scen, comparing, units, scenarioCount }: Props) {
+  // Throttled polite announcement: at most once per 20 s of wall time, only while a scenario exists.
+  const [announce, setAnnounce] = useState('');
+  const last = useRef(0);
+  useEffect(() => {
+    if (!base || !scen || !comparing) { setAnnounce(''); return; }
+    const now = Date.now();
+    if (now - last.current > 20000 && scen.time >= 120) { last.current = now; setAnnounce(summarise(base, scen, units)); }
+  }, [base, scen, comparing, units]);
+
+  const elapsed = scen?.time ?? 0;
+  return (
+    <div className="results">
+      <p className="muted small">
+        Baseline and scenario run side by side from the same seed, period and demand, so both show the same elapsed time
+        {scen ? <> (<strong>{formatClock(elapsed)}</strong> simulated)</> : null}. Editing the scenario restarts both runs.
+      </p>
+      {!comparing && (
+        <p className="notice" role="note">
+          No interventions yet, so the scenario is the baseline. Add an intervention to see the differences.
+        </p>
+      )}
+      {comparing && elapsed < 600 && (
+        <p className="notice" role="note">Early results are noisy: let both runs reach at least 10 simulated minutes (use a faster speed).</p>
+      )}
+      {CARDS.map((c) => (
+        <section key={c.id} className="card" aria-labelledby={`card-${c.id}`}>
+          <h3 id={`card-${c.id}`}>{c.title}</h3>
+          {c.note && <p className="muted small">{c.note}</p>}
+          <table className="cmp">
+            <thead>
+              <tr><th scope="col">Metric</th><th scope="col">Baseline</th><th scope="col">Scenario</th><th scope="col">Change</th></tr>
+            </thead>
+            <tbody>
+              {c.metrics.map((d) => {
+                const b = base ? d.get(base) : undefined, s = scen ? d.get(scen) : undefined;
+                const df = formatDiff(b, s, d.kind, units, d.lowerIsBetter);
+                return (
+                  <tr key={d.id}>
+                    <th scope="row">{d.label}</th>
+                    <td>{formatValue(d.kind, b, units)}</td>
+                    <td>{formatValue(d.kind, s, units)}</td>
+                    <td className={`chg ${comparing ? df.verdict.replace(/ /g, '-') : 'neutral'}`}>{comparing ? df.text : '—'}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </section>
+      ))}
+      <aside className="caveat" aria-label="Caveat about fixed demand">
+        <strong>Fixed-demand caveat.</strong> This version holds trip demand fixed: the same trips are made before and after
+        every change. In real schemes some traffic disappears. A meta-analysis of London low-traffic neighbourhoods found traffic
+        inside the schemes fell by about 47% on average while boundary roads were on average roughly unchanged (with wide variation
+        between schemes) [<a href="#ref-Thomas2024" data-ref="Thomas2024">Thomas2024</a>]. Treat these results as the redistribution of a fixed set of trips, not a forecast.
+        {scenarioCount === 0 ? '' : ' Model parameters are uncalibrated assumptions unless the Sources page says otherwise.'}
+      </aside>
+      <div className="sr-only" aria-live="polite" role="status">{announce}</div>
+    </div>
+  );
+}
