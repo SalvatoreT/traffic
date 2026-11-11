@@ -22,8 +22,10 @@ No npm needed (Rust only; reads `public/data/<area>.{network,demand}.json` and `
 cargo run --release -p traffic-sim --bin calibrate -- --area rockridge --period pm_peak --minutes 60 --scale 1.0 --seed 1
 ```
 
-Options: `--warmup <min>` (flow tables ignore the first N minutes of runs of 30+ min, default 10), `--out <dir>`, `--no-write`.
+Options: `--local-factor <x>` (override the residential/service perceived-cost multiplier), `--warmup <min>` (flow tables ignore the first N minutes of runs of 30+ min, default 10), `--out <dir>`, `--no-write`.
 It prints a markdown report and writes `reports/<area>-<period>-s<scale>-seed<seed>.{md,json}`: stability criteria, vehicles in
 network every 5 min, modelled vs observed select-link shares (target blocks resolved from street name, direction and the
 two cross streets), ramp shares, top 15 links by delay, top 15 nodes by blocked time, gridlock removals and entry backlog by
 location, and flow per direction on the key streets. A full 60-minute run takes about 5 s.
+
+The calibration record with every tuned parameter is `rockridge.record.md`.

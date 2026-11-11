@@ -34,3 +34,14 @@ Regenerate everything: `NODE_USE_ENV_PROXY=1 npx tsx tools/fetch-demand.ts` (add
 11. Flows below 0.5 veh/h are dropped (max 4,000 flows) and totals renormalised.
 
 Results (veh/h, weekday; surface gate-to-gate "through" / local / freeway-ramp trips): AM 12,398 = 8,277 / 1,302 / 2,818 (23% ramp); midday 8,371 = 5,444 / 837 / 2,090 (25%); PM 12,819 = 8,030 / 1,470 / 3,319 (26%), of which 481 PM veh/h have a local end. Freeway gates PM: gate 422 out 1,034, gate 243 out 656, gate 418 in 936, gate 417 in 693. PM freeway-origin trips by destination sector (from the off-ramps): NE 40%, N 30%, E 15%, SE 8%, other 7%; ~3% end on College Ave gates. The through share, the ramp share and the destination mix are consequences of the assumptions above and are uncalibrated; compare against `data/calibration/` before trusting them. Run the tool for the ramp list, per-freeway-gate volumes and the per-gate target table.
+
+
+## Calibration changes (baseline-calibration tasks 3.x)
+
+Full before/after table: `data/calibration/rockridge.record.md`.
+
+- BUGFIX: a two-way street appearing as an enter-only plus an exit-only gate (same street name, within 250 m) now splits the street volume by direction instead of giving each the full volume. A truly one-way gate keeps the whole volume.
+- ASSUMPTION: `classDefaultAdt` residential 800 -> 300 and tertiary 5000 -> 3000 (hillside collectors; counted Alcatraz is not representative).
+- ASSUMPTION: `assumedGateScale` = 0.3, one factor on all gates without a count (class-default ADT). Count-based gates and ramp volumes are unscaled. It was needed to bring the PM peak close to the simulated network's capacity; it is a stability workaround, not an estimate.
+- ASSUMPTION: `ramps.localShare` 0.15 -> 0.30.
+- DATA unchanged: Telegraph/Alcatraz TMC legs, Claremont override, ramp ADT.
