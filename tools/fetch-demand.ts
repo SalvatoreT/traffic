@@ -7,7 +7,8 @@ import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { tmpdir } from 'node:os';
 import { inflateRawSync } from 'node:zlib';
-import { extractLodes } from './lib/demand-lodes-extract.ts';
+import { extractLodes } from './lib/demand-lodes-extract';
+import { extractRampAdt } from './lib/demand-ramp-extract';
 
 const args = process.argv.slice(2);
 const force = args.includes('--force');
@@ -34,6 +35,19 @@ async function caltrans() {
   if (!r.ok) throw new Error(`Caltrans HTTP ${r.status}`);
   mkdirSync(dirname(out), { recursive: true });
   writeFileSync(out, await r.text());
+  console.log(`wrote ${out}`);
+}
+
+// --- Caltrans ramp ADT (District 4 ramp-volume workbooks, rows of the configured routes) ---
+async function caltransRamps() {
+  const out = cfg.raw.caltransRamps;
+  if (existsSync(out) && !force) return console.log(`skip ${out}`);
+  const get = async (url: string) => {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`${url}: HTTP ${r.status}`);
+    return Buffer.from(await r.arrayBuffer());
+  };
+  await extractRampAdt(fx.rampXlsx, fx.rampRoutes, out, get);
   console.log(`wrote ${out}`);
 }
 
@@ -79,5 +93,6 @@ async function lodes() {
 }
 
 await caltrans();
+await caltransRamps();
 await oaklandTmc();
 await lodes();

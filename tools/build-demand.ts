@@ -1,9 +1,10 @@
 // Builds <area>.demand.json from the network, public counts and LODES. Node built-ins only.
 // Usage: npx tsx tools/build-demand.ts [data/demand/<area>.config.json]
 // Method and provenance: data/demand/README.md. Steps are tagged DATA or ASSUMPTION.
-// Methods: Furness/IPF balancing of the gate-to-gate matrix; gravity seeding; LODES [LODES].
+// Methods: Furness/IPF balancing of the gate-to-gate matrix; gravity seeding; LODES [LODES]; freeway-ramp demand (DATA ramp ADT, ASSUMPTION destination choice).
 import { readFileSync, readdirSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { discoverRamps, matchRampVolumes, type Ramp, type RampRow, type RampVolume } from './lib/demand-ramps';
 
 const cfgPath = process.argv[2] ?? 'data/demand/rockridge.config.json';
 const cfg = JSON.parse(readFileSync(cfgPath, 'utf8'));
@@ -13,7 +14,7 @@ interface Link { id: number; from: number; to: number; name: string; class: stri
 interface Network { id: string; origin: { lon: number; lat: number }; studyArea: [number, number][]; nodes: Node[]; links: Link[] }
 interface Flow { origin: number; destination: number; vehPerHour: number }
 
-const missing = [cfg.network, cfg.raw.lodes, cfg.raw.caltrans, cfg.raw.oaklandTmc].filter((f: string) => !existsSync(f));
+const missing = [cfg.network, cfg.raw.lodes, cfg.raw.caltrans, cfg.raw.caltransRamps, cfg.raw.oaklandTmc].filter((f: string) => !existsSync(f));
 if (missing.length) {
   console.error(`Missing input files:\n  ${missing.join('\n  ')}\nRaw demand data: run \`npx tsx tools/fetch-demand.ts\` (or \`npm run data:pull\`); network: run tools/import-osm.ts.`);
   process.exit(1);
@@ -84,7 +85,9 @@ const gates: Gate[] = [];
 const pf = cfg.periodFactors;
 const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
 
-const excluded = new Set<string>(cfg.excludeClasses ?? []);
+// ---------- freeway topology (generic: freeway-class links, ramps = surface nodes touched by them) ----------
+const { ramps, freewayGates: freewayIds } = discoverRamps(net.nodes, net.links, new Set<string>(cfg.freewayClasses ?? []));
+const nodeById = new Map(net.nodes.map((n) => [n.id, n]));
 const legGroups = new Map<string, { orig: number; dest: number }>();
 const legKey = (street: string | null, leg: string | null) => `${street}|${leg}`;
 const caps = (id: number) => {
@@ -93,7 +96,7 @@ const caps = (id: number) => {
 };
 const legStreet = tmc ? cfg.streetCounts[0].legStreets : {};
 const gateLeg = (n: Node) => (tmc ? legOf(bearing(n.x, n.y, tx, ty)) : null);
-for (const n of net.nodes.filter((q) => q.gate)) {
+for (const n of net.nodes.filter((q) => q.gate && !freewayIds.has(q.id))) {
   const street = (incident.get(n.id) ?? []).map((l) => streetKey(l.name)).find(Boolean) ?? null;
   const leg = gateLeg(n);
   if (tmc && street && leg && legStreet[leg] === street && tmc.legs[leg]) {
@@ -101,15 +104,14 @@ for (const n of net.nodes.filter((q) => q.gate)) {
     r.orig += c.canIn ? 1 : 0; r.dest += c.canOut ? 1 : 0; legGroups.set(legKey(street, leg), r);
   }
 }
-for (const n of net.nodes.filter((q) => q.gate)) {
+for (const n of net.nodes.filter((q) => q.gate && !freewayIds.has(q.id))) {
   const links = incident.get(n.id) ?? [];
   const street = links.map((l) => streetKey(l.name)).find(Boolean) ?? null;
   const cls = links.reduce((a, l) => (classRank[l.class] > (classRank[a] ?? 0) ? l.class : a), '') || 'residential';
   const { canIn, canOut } = caps(n.id);
   let pmIn: number, pmOut: number, kind: Gate['kind'], source: string, adt: number | null = null;
   const leg = gateLeg(n);
-  if (excluded.has(cls)) { pmIn = 0; pmOut = 0; kind = 'ASSUMPTION'; source = `excluded class (${cls}): no demand`; }
-  else if (tmc && street && leg && legStreet[leg] === street && tmc.legs[leg]) {
+  if (tmc && street && leg && legStreet[leg] === street && tmc.legs[leg]) {
     const grp = legGroups.get(legKey(street, leg))!;
     pmIn = canIn ? tmc.legs[leg].entering / Math.max(1, grp.orig) : 0;
     pmOut = canOut ? tmc.legs[leg].leaving / Math.max(1, grp.dest) : 0;
@@ -134,7 +136,23 @@ for (const n of net.nodes.filter((q) => q.gate)) {
   gates.push(g);
 }
 if (!gates.length) { console.error('Network has no gate nodes'); process.exit(1); }
-const gateById = new Map(gates.map((g) => [g.id, g]));
+
+// ---------- freeway gates: ramp volumes (DATA: Caltrans ramp ADT; peak-hour factors ASSUMPTION) ----------
+const rampRows: RampRow[] = JSON.parse(readFileSync(cfg.raw.caltransRamps, 'utf8')).rows;
+const rc = cfg.ramps;
+const rampVol = matchRampVolumes(ramps, rampRows, cfg.streetMatch, streetKey, rc.defaultAdt, 'Caltrans ramp ADT');
+const rampVeh = (r: Ramp, p: string) => (rampVol.get(r)!.adt * rc.kFactor * pf[p].volume) / r.gates.length;
+interface FwGate { id: number; deg: number; inT: Record<string, number>; outT: Record<string, number> }
+const fwGates: FwGate[] = [...freewayIds].map((id) => {
+  const n = nodeById.get(id)!;
+  const f: FwGate = { id, deg: bearing(n.x, n.y), inT: {}, outT: {} };
+  for (const p of periodIds) {
+    f.inT[p] = ramps.filter((r) => r.kind === 'off' && r.gates.includes(id)).reduce((a, r) => a + rampVeh(r, p), 0);
+    f.outT[p] = ramps.filter((r) => r.kind === 'on' && r.gates.includes(id)).reduce((a, r) => a + rampVeh(r, p), 0);
+  }
+  return f;
+});
+const gateName = (id: number) => (incident.get(id) ?? []).find((l) => l.name && l.class !== 'motorway')?.name || '(unnamed)';
 
 // ---------- LODES blocks -> local origin/destination nodes ----------
 const lodes = existsSync(cfg.raw.lodes) ? JSON.parse(readFileSync(cfg.raw.lodes, 'utf8')) : null;
@@ -174,7 +192,7 @@ function gateWeights(sector: string, p: string, dir: 'in' | 'out') {
 
 // ---------- per period ----------
 const outPeriods: { id: string; label: string; flows: Flow[] }[] = [];
-const summary: { id: string; total: number; through: number; local: number; localInternal: number; dropped: number }[] = [];
+const summary: { id: string; total: number; through: number; local: number; ramp: number; rampLocal: number; localInternal: number; dropped: number; fw: Map<number, { out: number; in: number }>; rampDest: Map<number, number> }[] = [];
 let throughDebug: string[] = [];
 
 for (const p of cfg.periods as { id: string; label: string }[]) {
@@ -185,14 +203,64 @@ for (const p of cfg.periods as { id: string; label: string }[]) {
   const locList = [...localNodes.values()];
   for (const g of gates) { g.locIn[p.id] = 0; g.locOut[p.id] = 0; }
   const rawLocal: { o: number; d: number; v: number; gateO?: Gate; gateD?: Gate }[] = [];
-
-  for (const b of locList) {
+  const blockTrips = (b: LocalBlock) => {
     // Residents: outbound trips (origin = block). ASSUMPTION rates (config local.*)
     const resTrips = b.res * lo.residentsPerWorker * lo.dailyTripsPerResidentWorker * scale;
     const jobTrips = b.jobs * lo.dailyTripsPerJob * scale;
-    const outFromRes = resTrips * origShare, inToRes = resTrips * (1 - origShare);
-    const inToJob = jobTrips * destShare, outFromJob = jobTrips * (1 - destShare);
-    const outTotal = outFromRes + outFromJob, inTotal = inToRes + inToJob;
+    return { outTotal: resTrips * origShare + jobTrips * (1 - destShare), inTotal: resTrips * (1 - origShare) + jobTrips * destShare };
+  };
+
+  // ---- Freeway-ramp trips (ASSUMPTION destination choice; volumes DATA/ASSUMPTION per ramp) ----
+  // Surface gate in/out targets are shared with ramp trips: ramp trips count toward the gate's flows and are removed
+  // from the residual that the through (Furness) step must fill. Ramp trips with a local end replace part of that
+  // block's external trips. Freeway mainline-to-mainline trips are not generated (they never touch surface streets).
+  const rampFlows = new Map<string, number>();
+  const rampAtGate = new Map<number, { in: number; out: number }>(gates.map((g) => [g.id, { in: 0, out: 0 }] as [number, { in: number; out: number }]));
+  const rampAtBlock = new Map<number, { in: number; out: number }>(locList.map((b) => [b.node, { in: 0, out: 0 }] as [number, { in: number; out: number }]));
+  const capLeft = new Map(gates.map((g) => [g.id, { in: g.inT[p.id] * rc.maxShareOfGate, out: g.outT[p.id] * rc.maxShareOfGate }] as [number, { in: number; out: number }]));
+  const dst = rc.destination;
+  for (const r of ramps) for (const gid of r.gates) {
+    const vol = rampVeh(r, p.id);
+    if (vol <= 0) continue;
+    const rn = nodeById.get(r.surface)!;
+    const pref = bearing(centre[0], centre[1], rn.x, rn.y); // inward: from the ramp toward the study-area centre
+    const plaus = (x: number, y: number) => Math.max(dst.directionFloor, Math.exp(-((angDiff(bearing(x, y, rn.x, rn.y), pref) / dst.directionSigmaDeg) ** 2)));
+    const off = r.kind === 'off', side = off ? 'out' : 'in'; // ends at surface: gate outflow (off) or gate inflow (on)
+    const gc = gates.map((g) => { const n = nodeById.get(g.id)!; return { id: g.id, w: (off ? g.outT[p.id] : g.inT[p.id]) * plaus(n.x, n.y), room: capLeft.get(g.id)![side] }; }).filter((c) => c.w > 0 && c.room > 0);
+    const lc = locList.map((b) => ({ id: b.node, w: (off ? blockTrips(b).inTotal : blockTrips(b).outTotal) * plaus(b.x, b.y) })).filter((c) => c.w > 0);
+    const lShare = lc.length ? rc.localShare : 0;
+    // Gate part: water-filling so no gate exceeds its remaining ramp cap.
+    const give = new Map<number, number>();
+    let rem = vol * (1 - lShare), act = gc.slice();
+    for (let it = 0; it < 50 && rem > 1e-6 && act.length; it++) {
+      const sw = act.reduce((a, c) => a + c.w, 0);
+      let used = 0;
+      const next: typeof act = [];
+      for (const c of act) {
+        const x = (rem * c.w) / sw, room = c.room - (give.get(c.id) ?? 0), y = Math.min(x, room);
+        give.set(c.id, (give.get(c.id) ?? 0) + y); used += y;
+        if (x < room - 1e-9) next.push(c);
+      }
+      rem -= used; act = next;
+    }
+    const placed = [...give.values()].reduce((a, c) => a + c, 0);
+    const lVol = vol - placed; // local share plus any gate part that could not be placed
+    for (const [id, v] of give) {
+      rampFlows.set(off ? `${gid}>${id}` : `${id}>${gid}`, (rampFlows.get(off ? `${gid}>${id}` : `${id}>${gid}`) ?? 0) + v);
+      capLeft.get(id)![side] -= v; rampAtGate.get(id)![side] += v;
+    }
+    const lw = lc.reduce((a, c) => a + c.w, 0);
+    if (lw > 0) for (const c of lc) {
+      const v = (lVol * c.w) / lw, k = off ? `${gid}>${c.id}` : `${c.id}>${gid}`;
+      rampFlows.set(k, (rampFlows.get(k) ?? 0) + v);
+      rampAtBlock.get(c.id)![off ? 'in' : 'out'] += v;
+    }
+  }
+
+  for (const b of locList) {
+    const { outTotal: outT0, inTotal: inT0 } = blockTrips(b);
+    const taken = rampAtBlock.get(b.node)!;
+    const outTotal = Math.max(0, outT0 - taken.out / lo.externalShareOfResidentTrips), inTotal = Math.max(0, inT0 - taken.in / lo.externalShareOfResidentTrips);
     const sOut = Object.values(b.outSectors).reduce((a, c) => a + c, 0), sIn = Object.values(b.inSectors).reduce((a, c) => a + c, 0);
     const fallbackSec = Object.fromEntries(SECTORS.map((s) => [s, 1]));
     const outS = sOut ? b.outSectors : fallbackSec, inS = sIn ? b.inSectors : fallbackSec;
@@ -230,8 +298,8 @@ for (const p of cfg.periods as { id: string; label: string }[]) {
 
   // Through trips: gate inflow minus local = through supply; gate outflow minus local = through demand. Furness balanced.
   const n = gates.length;
-  const R = gates.map((g) => Math.max(0, g.inT[p.id] - g.locIn[p.id]));
-  let C = gates.map((g) => Math.max(0, g.outT[p.id] - g.locOut[p.id]));
+  const R = gates.map((g) => Math.max(0, g.inT[p.id] - g.locIn[p.id] - rampAtGate.get(g.id)!.in));
+  let C = gates.map((g) => Math.max(0, g.outT[p.id] - g.locOut[p.id] - rampAtGate.get(g.id)!.out));
   const rs = R.reduce((a, b) => a + b, 0), cs = C.reduce((a, b) => a + b, 0);
   C = C.map((c) => (c * rs) / (cs || 1));
   const gv = cfg.gravity;
@@ -253,6 +321,7 @@ for (const p of cfg.periods as { id: string; label: string }[]) {
   for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) if (T[i][j] > 0) { thr.set(`${gates[i].id}>${gates[j].id}`, T[i][j]); throughTotal += T[i][j]; }
   if (p.id === lastPeriod) throughDebug = [`through supply ${rs.toFixed(0)} vs demand ${cs.toFixed(0)} veh/h (demand scaled to supply)`];
   for (const [k, v] of thr) flowsMap.set(k, (flowsMap.get(k) ?? 0) + v);
+  for (const [k, v] of rampFlows) flowsMap.set(k, (flowsMap.get(k) ?? 0) + v);
 
   // Prune: drop < min, cap count, renormalise to preserve total.
   const totalBefore = [...flowsMap.values()].reduce((a, b) => a + b, 0);
@@ -261,9 +330,20 @@ for (const p of cfg.periods as { id: string; label: string }[]) {
   const f = totalAfter > 0 ? totalBefore / totalAfter : 1;
   const flows: Flow[] = list.map(([k, v]) => { const [o, d] = k.split('>').map(Number); return { origin: o, destination: d, vehPerHour: Math.round(v * f * 100) / 100 }; });
   const gateIds = new Set(gates.map((g) => g.id));
-  let thrOut = 0, locOut = 0;
-  for (const fl of flows) (gateIds.has(fl.origin) && gateIds.has(fl.destination) ? (thrOut += fl.vehPerHour) : (locOut += fl.vehPerHour));
-  summary.push({ id: p.id, total: thrOut + locOut, through: thrOut, local: locOut, localInternal: internalTotal * f, dropped: flowsMap.size - list.length });
+  let thrOut = 0, locOut = 0, rampOut = 0, rampLocal = 0;
+  const fwPer = new Map<number, { out: number; in: number }>(fwGates.map((g) => [g.id, { out: 0, in: 0 }] as const));
+  const rampDest = new Map<number, number>(); // PM-style destination table: surface gate or local node id -> ramp-off veh/h
+  for (const fl of flows) {
+    const fo = fwPer.get(fl.origin), fd = fwPer.get(fl.destination);
+    if (fo || fd) {
+      rampOut += fl.vehPerHour;
+      if (fo) { fo.out += fl.vehPerHour; rampDest.set(fl.destination, (rampDest.get(fl.destination) ?? 0) + fl.vehPerHour); }
+      if (fd) fd.in += fl.vehPerHour;
+      if (!gateIds.has(fo ? fl.destination : fl.origin)) rampLocal += fl.vehPerHour;
+    } else if (gateIds.has(fl.origin) && gateIds.has(fl.destination)) thrOut += fl.vehPerHour;
+    else locOut += fl.vehPerHour;
+  }
+  summary.push({ id: p.id, total: thrOut + locOut + rampOut, through: thrOut, local: locOut, ramp: rampOut, rampLocal, localInternal: internalTotal * f, dropped: flowsMap.size - list.length, fw: fwPer, rampDest });
   outPeriods.push({ id: p.id, label: p.label, flows });
 }
 
@@ -271,6 +351,7 @@ for (const p of cfg.periods as { id: string; label: string }[]) {
 const provenance = [
   { source: 'Oakland Annual Multi-Modal Counts, Raw Data (OakDOT), Telegraph Ave & Alcatraz Ave PM peak turning movements 2018/2019/2021', url: 'https://data.oaklandca.gov/d/amtg-eh64', note: tmc ? `DATA. Gate peak in/out volumes on Telegraph and Alcatraz legs; ${tmc.files.length} counts averaged (${tmc.peakHours.join('; ')}). Other periods scaled by ASSUMPTION factors (periodFactors).` : 'not available' },
   { source: 'Caltrans Traffic Volumes AADT (SR-13 Claremont Ave, Berkeley)', url: 'https://caltrans-gis.dot.ca.gov/arcgis/rest/services/CHhighway/Traffic_AADT/FeatureServer/0', note: 'DATA used as nearest-count ADT for the Claremont gate with an ASSUMPTION scaling factor; SR-24 AADT is context only.' },
+  { source: 'Caltrans Ramp Volumes on the California State Freeway System, District 4 (ramp ADT, SR-24 ramps)', url: 'https://dot.ca.gov/programs/traffic-operations/census', note: `DATA: ramp ADT for the ramps found in the network (count year as listed in the build log; the Claremont and Telegraph ramps were last counted in 2012, no growth applied). ASSUMPTION: ramp peak-hour factor, local share of ramp trips, destination choice (gravity x direction plausibility toward the study area), per-gate ramp share cap. Freeway mainline through trips are excluded.` },
   { source: 'US Census LEHD LODES8 CA OD main JT00 2024 and ca_xwalk', url: 'https://lehd.ces.census.gov/data/lodes/LODES8/ca/', note: 'DATA. Resident workers and jobs per block in the bbox (nearest in-area residential node) and home/work direction mix by compass sector. Trip rates, mode share, peak-hour shares are ASSUMPTIONS.' },
   { source: 'Assumptions', url: 'data/demand/README.md', note: 'ASSUMPTION: K-factor, period volume factors, per-class default ADT, directional split, trip rates, gravity turning factors, sector-to-gate weights, local trip share capped per gate. Uncalibrated.' }
 ];
@@ -280,11 +361,32 @@ mkdirSync(dirname(cfg.output), { recursive: true });
 writeFileSync(cfg.output, JSON.stringify(out));
 
 // ---------- summary ----------
-console.log(`Demand for ${cfg.area}: ${gates.length} gates, ${localNodes.size} local nodes (LODES ${lodes ? 'ok' : 'MISSING'}); TMC ${tmc ? 'ok' : 'MISSING'}`);
-console.log('\nPeriod        total veh/h  through  local   through%  flows  pruned');
-for (const s of summary) console.log(`${s.id.padEnd(12)} ${s.total.toFixed(0).padStart(10)} ${s.through.toFixed(0).padStart(8)} ${s.local.toFixed(0).padStart(7)} ${((100 * s.through) / s.total).toFixed(0).padStart(9)}% ${String(outPeriods.find((q) => q.id === s.id)!.flows.length).padStart(6)} ${String(s.dropped).padStart(6)}`);
+const pct = (a: number, b: number) => `${((100 * a) / (b || 1)).toFixed(0)}%`;
+console.log(`Demand for ${cfg.area}: ${gates.length} surface gates, ${fwGates.length} freeway gates, ${ramps.length} ramps, ${localNodes.size} local nodes (LODES ${lodes ? 'ok' : 'MISSING'}); TMC ${tmc ? 'ok' : 'MISSING'}`);
+console.log('\nPeriod        total veh/h  through   local    ramp  (ramp->local)  through%  local%  ramp%  flows  pruned');
+for (const s of summary) console.log(`${s.id.padEnd(12)} ${s.total.toFixed(0).padStart(10)} ${s.through.toFixed(0).padStart(8)} ${s.local.toFixed(0).padStart(7)} ${s.ramp.toFixed(0).padStart(7)} ${s.rampLocal.toFixed(0).padStart(14)} ${pct(s.through, s.total).padStart(9)} ${pct(s.local, s.total).padStart(7)} ${pct(s.ramp, s.total).padStart(6)} ${String(outPeriods.find((q) => q.id === s.id)!.flows.length).padStart(6)} ${String(s.dropped).padStart(6)}`);
 console.log(throughDebug.join('\n'));
-console.log('\nGate targets (PM peak, veh/h) vs count data');
+
+console.log('\nFreeway ramps (kind, surface node, surface streets -> freeway gate(s); volume source)');
+for (const r of ramps) { const v = rampVol.get(r)!; console.log(`  ${r.kind.padEnd(3)} node ${String(r.surface).padEnd(4)} ${r.streets.join(' / ').padEnd(34)} ${r.kind === 'off' ? 'from' : 'to  '} gate ${r.gates.join(',').padEnd(4)} ADT ${String(Math.round(v.adt)).padStart(6)} ${v.kind}: ${v.source}`); }
+console.log('\nFreeway gates, veh/h by period (out = enters the model at the gate, in = leaves it)');
+for (const f of fwGates) console.log(`  gate ${String(f.id).padEnd(4)} ${summary.map((s) => `${s.id} out ${s.fw.get(f.id)!.out.toFixed(0)} in ${s.fw.get(f.id)!.in.toFixed(0)}`).join('  |  ')}`);
+
+const lastS = summary.find((s) => s.id === lastPeriod)!;
+const offTotal = [...lastS.rampDest.values()].reduce((a, b) => a + b, 0);
+const rampXY = ramps.filter((r) => r.kind === 'off').map((r) => nodeById.get(r.surface)!);
+const sectorOfNode = (id: number) => { const n = nodeById.get(id)!; return rampXY.length ? sectorOf(bearing(n.x, n.y, rampXY.reduce((a, q) => a + q.x, 0) / rampXY.length, rampXY.reduce((a, q) => a + q.y, 0) / rampXY.length)) : '-'; };
+const bySector = new Map<string, number>(), byName = new Map<string, number>();
+for (const [id, v] of lastS.rampDest) {
+  const loc = !gates.some((g) => g.id === id);
+  bySector.set(sectorOfNode(id), (bySector.get(sectorOfNode(id)) ?? 0) + v);
+  const nm = loc ? '(in-area local)' : gateName(id);
+  byName.set(nm, (byName.get(nm) ?? 0) + v);
+}
+console.log(`\nFreeway-origin trips (PM peak ${offTotal.toFixed(0)} veh/h) by destination compass sector from the off-ramps: ${[...bySector].sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${pct(v, offTotal)}`).join(', ')}`);
+console.log(`Freeway-origin trips by destination street (top 10): ${[...byName].sort((a, b) => b[1] - a[1]).slice(0, 10).map(([k, v]) => `${k} ${pct(v, offTotal)}`).join(', ')}`);
+
+console.log('\nSurface gate targets (PM peak, veh/h) vs count data');
 console.log('gate  street       class        dir  target_in target_out  kind        data/source');
 for (const g of [...gates].sort((a, b) => b.inT[lastPeriod] + b.outT[lastPeriod] - a.inT[lastPeriod] - a.outT[lastPeriod])) {
   console.log(`${String(g.id).padEnd(5)} ${(g.street ?? '-').padEnd(12)} ${g.cls.padEnd(12)} ${String(Math.round(g.deg)).padStart(3)}  ${g.inT[lastPeriod].toFixed(0).padStart(9)} ${g.outT[lastPeriod].toFixed(0).padStart(10)}  ${g.kind.padEnd(11)} ${g.source}${g.adt ? ` ADT ${Math.round(g.adt)}` : ''}`);
@@ -295,4 +397,4 @@ if (tmc) {
 }
 const byStreet = new Map<string, number>();
 for (const g of gates) byStreet.set(g.street ?? 'unnamed', (byStreet.get(g.street ?? 'unnamed') ?? 0) + g.inT[lastPeriod] + g.outT[lastPeriod]);
-console.log('\nPM gate two-way volume by street:', [...byStreet].map(([k, v]) => `${k} ${v.toFixed(0)}`).join(', '));
+console.log('\nPM surface-gate two-way volume by street:', [...byStreet].map(([k, v]) => `${k} ${v.toFixed(0)}`).join(', '));

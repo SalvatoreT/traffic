@@ -338,6 +338,8 @@ Still **not found:** a peer-reviewed paper that specifically turns LODES block-l
 
 **[CaltransAADT]** [V] California Department of Transportation. *Annual Average Daily Traffic (AADT)*, ArcGIS FeatureServer layer 0. `https://caltrans-gis.dot.ca.gov/arcgis/rest/services/CHhighway/Traffic_AADT/FeatureServer/0`. Service metadata read on 2026-11-11: AADT is the annual total divided by 365, and the count year runs from 1 October to 30 September. Each year's vintage was not recorded here; the README uses the 2023-24 count year.
 
+**[CaltransRampADT]** [V] California Department of Transportation, Traffic Operations, Traffic Census Program. *Ramp Volumes on the California State Freeway System, District 4* (annual xlsx workbooks of ramp ADT by route and postmile). Index page `https://dot.ca.gov/programs/traffic-operations/census`; files `https://dot.ca.gov/-/media/dot-media/programs/traffic-operations/documents/census/2021/d04-ramp-adt-2021-a11y.xlsx` (publication years 2012-2021) and `.../2024/2024-d4-ramp-adt-a11y.xlsx` (2015-2024). Downloaded and read on 2026-11-11 (HTTP 200; SR-24 rows at PM R3.064-R3.360 checked). Ramp ADT, not AADT: column values are the count-year ADT; the Claremont and Telegraph ramps only carry a 2012 value in these files.
+
 ---
 
 ## 5. Evidence on interventions
