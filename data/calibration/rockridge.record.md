@@ -4,7 +4,8 @@ Run: `cargo run --release -p traffic-sim --bin calibrate -- --area rockridge --p
 Reports for the final state are in `reports/` (all three periods). Every value below is an ASSUMPTION unless marked DATA.
 Run-to-run noise from the chaotic congested regime is roughly +/-5% on completed trips, so single steps of that size are not significant.
 Steps C0 to C3 were measured on the step B2 demand (before F); D, E, F on the later demand. PM peak, scale 1.0, 60 min, seed 1.
-Shares are the four headline freeway shares, modeled (PM observed): Hillegass NB from freeway (47), Colby NB from (47), Hillegass SB to (68), Colby SB to (45).
+Headline shares are the four freeway shares, modeled (PM observed): Hillegass NB from freeway (47), Colby NB from (47), Hillegass SB to (68), Colby SB to (45).
+Speeds are in m/s; multiply by 2.237 for mph.
 
 | Step | Change (before -> after) | Type | Reason | Completed trips/h | Gridlock removals | Backlog | Arterial speed (m/s) | Headline shares (%) |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -22,15 +23,15 @@ Shares are the four headline freeway shares, modeled (PM observed): Hillegass NB
 | E | Ramp trips with an in-area end: `ramps.localShare` 0.15 -> 0.30 | ASSUMPTION | Moves more freeway traffic onto Hillegass/Colby side streets without fixing routes | (final state) | 69 | 5.0% | 3.68 | 26 / 36 / 45 / 61 |
 | F | `assumedGateScale` 1.0 -> 0.3 on all non-count gate volumes (residential 300 -> 90 ADT, tertiary 3000 -> 900, primary 14000 -> 4200). Count-based gates and ramps untouched | ASSUMPTION | Offered 8.5k -> 7.3k veh/h. Scales 0.5 / 0.15 gave no better stability | 5246 | 69 | 5.0% | 3.68 | 26 / 36 / 45 / 61 |
 
-Other measurements (final state, PM): the model saturates at about 6.3-6.8k veh/h offered. With non-count gates at zero (6.2k veh/h) the PM peak has 12 removals, 1.3% backlog and 6.4 m/s, so the floor is the unscaled count-based and ramp demand (ramps 3.3k veh/h) plus the junction bottlenecks listed below, not the assumed volumes.
+Other measurements (final state, PM): the model saturates at about 6.3-6.8k veh/h offered. With non-count gates at zero (6.2k veh/h) the PM peak has 12 removals, 1.3% backlog and 6.4 m/s (14 mph), so the floor is set by the unscaled count-based and ramp demand (ramps 3.3k veh/h) and the junction bottlenecks under "What remains off".
 
 ## Final state, scale 1.0, seed 1
 
 | Period | Offered veh/h | Completed trips | Gridlock removals | Backlog | Arterial speed (m/s) | Stable (D4) |
 | --- | --- | --- | --- | --- | --- | --- |
-| PM peak | 7331 | 5246 | 69 | 5.0% | 3.68 | no |
-| AM peak | 6992 | 5867 | 14 | 1.6% | 5.13 | no (removals) |
-| Midday | 4761 | 4454 | 4 | 0.0% | 7.66 | no (removals) |
+| PM peak | 7331 | 5246 | 69 | 5.0% | 3.68 (8.2 mph) | no |
+| AM peak | 6992 | 5867 | 14 | 1.6% | 5.13 (11.5 mph) | no (removals) |
+| Midday | 4761 | 4454 | 4 | 0.0% | 7.66 (17.1 mph) | no (removals) |
 
 | Headline share | PM modeled | PM observed | AM modeled | Midday modeled | Within +/-10 pp (PM) |
 | --- | --- | --- | --- | --- | --- |
@@ -45,7 +46,7 @@ Claremont 208 / 400 vs 635 (14.1k ADT used in the demand): 0.33 / 0.63; Alcatraz
 
 ## What remains off
 
-- D4 is not met: PM has 69 gridlock removals, 5% backlog and 3.7 m/s. The recurring sites are short two-node signal pairs (56th St/Telegraph, Aileen/Telegraph) and the SR-24 ramp approaches, where an 11 m link between two independently timed signals holds one vehicle.
+- D4 is not met: PM has 69 gridlock removals, 5% backlog and 3.7 m/s (8.3 mph). The recurring sites are short two-node signal pairs (56th St/Telegraph, Aileen/Telegraph) and the SR-24 ramp approaches, where an 11 m link between two independently timed signals holds one vehicle.
 - Lowering non-count volumes does not fix it; the remaining demand is DATA (ramps, Telegraph, Alcatraz, Claremont).
 - Hillegass shares stay 20 points below observed, Colby SB 16 points above; the Claremont approach is under-loaded relative to its count-based ADT.
-- The non-count gate volumes (`assumedGateScale` 0.3) are low enough that residential gates carry about 90 ADT; this is a stability workaround, not an estimate.
+- The non-count gate volumes (`assumedGateScale` 0.3) are low enough that residential gates carry about 90 ADT; this is a stability workaround and not an estimate.
