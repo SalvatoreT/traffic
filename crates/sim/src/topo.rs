@@ -5,10 +5,10 @@ use crate::model::{Control, Network, RoadClass};
 use crate::params::POCKET_MIN_LINK_M;
 use std::f64::consts::PI;
 
-/// Half-extent of the node area along each link (m): stop line is this far before the node centre
+/// Half-extent of the node area along each link (m): stop line is this far before the node center
 /// and vehicles emerge this far after it. ASSUMPTION: typical half-width of a two-lane street junction.
 pub const R_NODE: f64 = 6.0;
-/// Lateral offset of lane 0 to the right of the link centreline (m). ASSUMPTION (rendering only).
+/// Lateral offset of lane 0 to the right of the link centerline (m). ASSUMPTION (rendering only).
 pub const LANE_OFFSET0: f64 = 1.8;
 pub const LANE_WIDTH: f64 = 3.2;
 
@@ -182,7 +182,7 @@ impl Topo {
         self.nmain[l] + self.pocket[l] as usize
     }
 
-    /// Left-turn pockets (ASSUMPTION, class rule): approaches of primary/secondary/tertiary links to a signalised node that
+    /// Left-turn pockets (ASSUMPTION, class rule): approaches of primary/secondary/tertiary links to a signalized node that
     /// offer a left movement and at least one other movement, and are long enough to hold the pocket.
     fn build_pockets(&mut self, net: &Network) {
         for l in 0..self.n_links {
@@ -352,7 +352,7 @@ fn geometric_conflict(a: &Mv, b: &Mv) -> bool {
 /// approach angle lies inside `j`'s arc. Entering vehicles yield to circulating ones [Rodegerdts2010].
 fn circle_conflict(i: &Mv, j: &Mv) -> bool {
     let ang = |h: f64| (h + 2.0 * PI) % (2.0 * PI);
-    let ai = ang(i.h_in + PI); // position angle of approach as seen from node centre
+    let ai = ang(i.h_in + PI); // position angle of approach as seen from node center
     let aj = ang(j.h_in + PI);
     let bj = ang(j.h_out);
     let arc = (bj - aj + 2.0 * PI) % (2.0 * PI);

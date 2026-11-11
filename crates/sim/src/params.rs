@@ -42,7 +42,7 @@ pub const V_RIGHT: f32 = 4.0; // ASSUMPTION: a_lat ~ 2 m/s^2, r ~ 8 m
 pub const V_LEFT: f32 = 5.0; // ASSUMPTION: a_lat ~ 2 m/s^2, r ~ 12 m
 pub const V_UTURN: f32 = 3.0; // ASSUMPTION
 pub const V_CIRCLE: f32 = 5.0; // ASSUMPTION: 18 km/h, within the 15-25 km/h negotiation range; [Rodegerdts2010] (value not sourced)
-pub const R_CIRCLE: f64 = 7.0; // ASSUMPTION: central-island + circulating radius of a neighbourhood circle (m)
+pub const R_CIRCLE: f64 = 7.0; // ASSUMPTION: central-island + circulating radius of a neighborhood circle (m)
 
 // --- speed humps ---
 pub const HUMP_V: f32 = 5.5; // ASSUMPTION: crossing speed (~12 mph); no peer-reviewed value in references.md 5.2

@@ -173,7 +173,7 @@
     "maxShareOfGate": 0.4,
     "maxShareOfGateNote": "ASSUMPTION: ramp trips use at most this share of a surface gate's in/outflow target (surface totals stay consistent; the Furness step fills the rest).",
     "destination": {
-      "_note": "ASSUMPTION: gravity over surface gates and local nodes, attraction x direction plausibility. Plausibility = exp(-(dTheta/sigma)^2) floored, where dTheta is the angle between the bearing ramp->destination and the bearing ramp->study-area centre. No distance term. Street choice is left to the simulator.",
+      "_note": "ASSUMPTION: gravity over surface gates and local nodes, attraction x direction plausibility. Plausibility = exp(-(dTheta/sigma)^2) floored, where dTheta is the angle between the bearing ramp->destination and the bearing ramp->study-area center. No distance term. Street choice is left to the simulator.",
       "directionSigmaDeg": 90,
       "directionFloor": 0.03
     }

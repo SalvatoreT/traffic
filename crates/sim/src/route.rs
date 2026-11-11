@@ -2,7 +2,7 @@
 //!
 //! One reverse Dijkstra per destination node yields, for every link, the cost-to-go from the *start*
 //! of that link. Tables are cached per destination for one cost epoch. A route is then walked
-//! forward choosing, at each node, the movement minimising (turn cost + cost-to-go), with a static
+//! forward choosing, at each node, the movement minimizing (turn cost + cost-to-go), with a static
 //! per-(driver, link) perceived-cost noise so that drivers do not all pick identical routes.
 
 use crate::eff::Eff;

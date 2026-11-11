@@ -217,7 +217,7 @@ const DIRS: [char; 4] = ['N', 'E', 'S', 'W'];
 pub struct Diagnostics<'a> {
     /// Veh-seconds spent below 1 m/s on each link.
     pub link_stopped_s: &'a [f32],
-    /// Excess travel time (s) versus travelling at the effective limit, summed over vehicles.
+    /// Excess travel time (s) versus traveling at the effective limit, summed over vehicles.
     pub link_delay_s: &'a [f32],
     /// Vehicles that left each link (cumulative).
     pub link_exits: &'a [u32],
@@ -253,7 +253,7 @@ pub struct Simulation {
     backlog: Vec<VecDeque<Trip>>,
     awsc: Vec<Vec<u32>>,
     sig_state: Vec<u8>,
-    /// Seconds since the green of each signalised approach ended (0 while green).
+    /// Seconds since the green of each signalized approach ended (0 while green).
     sig_since: Vec<f32>,
     /// Permissive lefts that have used the yellow/all-red on each approach this cycle (reset on green).
     sneak: Vec<u8>,

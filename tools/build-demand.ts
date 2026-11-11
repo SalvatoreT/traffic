@@ -27,12 +27,12 @@ const M_LAT = 110540;
 const mLon = (lat: number) => 111320 * Math.cos((lat * Math.PI) / 180);
 const toXY = (lat: number, lon: number): [number, number] => [(lon - net.origin.lon) * mLon(net.origin.lat), (lat - net.origin.lat) * M_LAT];
 
-// Study-area centre (metres) from the polygon, else mean of in-area nodes.
+// Study-area center (metres) from the polygon, else mean of in-area nodes.
 const poly = net.studyArea?.map(([lon, lat]) => toXY(lat, lon)) ?? [];
-const centre: [number, number] = poly.length
+const center: [number, number] = poly.length
   ? [poly.reduce((s, p) => s + p[0], 0) / poly.length, poly.reduce((s, p) => s + p[1], 0) / poly.length]
   : (() => { const n = net.nodes.filter((q) => q.inStudyArea); return [n.reduce((s, q) => s + q.x, 0) / n.length, n.reduce((s, q) => s + q.y, 0) / n.length] as [number, number]; })();
-const bearing = (x: number, y: number, cx = centre[0], cy = centre[1]) => ((Math.atan2(x - cx, y - cy) * 180) / Math.PI + 360) % 360;
+const bearing = (x: number, y: number, cx = center[0], cy = center[1]) => ((Math.atan2(x - cx, y - cy) * 180) / Math.PI + 360) % 360;
 const angDiff = (a: number, b: number) => { const d = Math.abs(a - b) % 360; return d > 180 ? 360 - d : d; };
 const SECTORS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
 const sectorOf = (deg: number) => SECTORS[Math.round(deg / 45) % 8];
@@ -260,7 +260,7 @@ for (const p of cfg.periods as { id: string; label: string }[]) {
     const vol = rampVeh(r, p.id);
     if (vol <= 0) continue;
     const rn = nodeById.get(r.surface)!;
-    const pref = bearing(centre[0], centre[1], rn.x, rn.y); // inward: from the ramp toward the study-area centre
+    const pref = bearing(center[0], center[1], rn.x, rn.y); // inward: from the ramp toward the study-area center
     const plaus = (x: number, y: number) => Math.max(dst.directionFloor, Math.exp(-((angDiff(bearing(x, y, rn.x, rn.y), pref) / dst.directionSigmaDeg) ** 2)));
     const off = r.kind === 'off', side = off ? 'out' : 'in'; // ends at surface: gate outflow (off) or gate inflow (on)
     const gc = gates.map((g) => { const n = nodeById.get(g.id)!; return { id: g.id, w: (off ? g.outT[p.id] : g.inT[p.id]) * plaus(n.x, n.y), room: capLeft.get(g.id)![side] }; }).filter((c) => c.w > 0 && c.room > 0 && (off ? routable(gid, c.id) : routable(c.id, gid)));
@@ -360,7 +360,7 @@ for (const p of cfg.periods as { id: string; label: string }[]) {
   for (const [k, v] of thr) flowsMap.set(k, (flowsMap.get(k) ?? 0) + v);
   for (const [k, v] of rampFlows) flowsMap.set(k, (flowsMap.get(k) ?? 0) + v);
 
-  // Prune: drop < min, cap count, renormalise to preserve total.
+  // Prune: drop < min, cap count, renormalize to preserve total.
   for (const k of [...flowsMap.keys()]) { const [o, d] = k.split('>').map(Number); const ok = (nodeById.get(o)!.gate ? caps(o).canIn : true) && (nodeById.get(d)!.gate ? caps(d).canOut : true) && routable(o, d); if (!ok) { unroutableDropped += flowsMap.get(k)!; flowsMap.delete(k); } }
   const totalBefore = [...flowsMap.values()].reduce((a, b) => a + b, 0);
   let list = [...flowsMap].filter(([, v]) => v >= cfg.minFlowVehPerHour).sort((a, b) => b[1] - a[1]).slice(0, cfg.maxFlows);

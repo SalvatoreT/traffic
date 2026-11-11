@@ -178,10 +178,10 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
   const studyPoly: Pt[] = cfg.studyArea.map(([lon, lat]) => proj.fwd(lon, lat));
 
   // Roundabout rings collapse to one traffic-circle node at the ring centroid. Ring ways are dropped and
-  // every other way touching the ring is redirected to the centre, so approaches end at the centre.
+  // every other way touching the ring is redirected to the center, so approaches end at the center.
   const isRing = (w: OsmWay) => w.tags.junction === 'roundabout' || w.tags.junction === 'circular';
   const alias = new Map<number, number>();
-  const centres = new Set<number>();
+  const centers = new Set<number>();
   for (const w of ways) {
     if (!isRing(w) || !classify(w.tags)) continue;
     const ring = [...new Set(w.nodes)].filter((id) => nodes.has(id) && !alias.has(id));
@@ -190,7 +190,7 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
     const lon = ring.reduce((a, id) => a + nodes.get(id)!.lon, 0) / ring.length;
     const cid = -w.id;
     nodes.set(cid, { type: 'node', id: cid, lat, lon });
-    centres.add(cid);
+    centers.add(cid);
     for (const id of ring) alias.set(id, cid);
     stats.collapsedRings++;
   }
@@ -463,7 +463,7 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
   }
 
   const special = new Set<number>([...signal, ...circle, ...stopTargets, ...allWay, ...gateCand]);
-  for (const c of centres) if (graph.has(c)) circle.add(c);
+  for (const c of centers) if (graph.has(c)) circle.add(c);
   for (const c of circle) special.add(c);
 
   const sig = (l: Link) => `${l.cls}|${l.name}|${l.lanes}|${l.speed.toFixed(2)}`;

@@ -3,7 +3,7 @@
   "source": {
     "id": "streetlight-2025",
     "description": "StreetLight Data select-link analysis of Hillegass Ave and Colby St between Alcatraz Ave and Claremont Ave, January–July 2025, provided by residents.",
-    "caveat": "Sample does not represent all travellers. Shares are of trips traversing the analysed segment, each direction analysed separately."
+    "caveat": "Sample does not represent all travelers. Shares are of trips traversing the analyzed segment, each direction analyzed separately."
   },
   "selectLink": [
     {
@@ -66,8 +66,8 @@
     ]
   },
   "qualitative": [
-    "Little drop-off in freeway-bound and freeway-origin traffic between Claremont Avenue and Alcatraz Avenue: these trips continue through the neighbourhood.",
+    "Little drop-off in freeway-bound and freeway-origin traffic between Claremont Avenue and Alcatraz Avenue: these trips continue through the neighborhood.",
     "Southbound freeway-bound drivers on College Avenue commonly arrive via Ashby Avenue and Benvenue Avenue, then jog to Hillegass Avenue.",
-    "Traffic on Martin Street and Colby Street is largely travelling between the freeway and Telegraph Avenue."
+    "Traffic on Martin Street and Colby Street is largely traveling between the freeway and Telegraph Avenue."
   ]
 }

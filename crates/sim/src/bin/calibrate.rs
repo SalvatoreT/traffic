@@ -1,4 +1,4 @@
-//! Headless calibration run: loads a study area, runs the baseline, and reports modelled versus observed
+//! Headless calibration run: loads a study area, runs the baseline, and reports modeled versus observed
 //! select-link shares plus network health. See data/calibration/README.md.
 //!
 //! cargo run --release -p traffic-sim --bin calibrate -- --area rockridge --period pm_peak --minutes 60 --scale 1.0 --seed 1
@@ -206,7 +206,7 @@ struct ShareRow {
     via: String,
     observed: f64,
     observed_pm: Option<f64>,
-    modelled: f64,
+    modeled: f64,
     n: usize,
     headline: bool,
 }
@@ -392,7 +392,7 @@ fn main() {
                     via: via.clone(),
                     observed: *share,
                     observed_pm: *pmshare,
-                    modelled: if n > 0 { hit as f64 / n as f64 } else { f64::NAN },
+                    modeled: if n > 0 { hit as f64 / n as f64 } else { f64::NAN },
                     n,
                     headline: matches!(v, Via::Freeway),
                 });
@@ -490,16 +490,16 @@ fn main() {
     for s in &series {
         let _ = writeln!(md, "| {:.0} | {} | {} | {} | {} | {:.2} |", s.t / 60.0, s.veh, s.backlog, s.completed, s.removed, s.art_speed);
     }
-    let _ = writeln!(md, "\n## Select-link shares: modelled vs observed (design D5: headline = freeway shares, tolerance +/-10 pp)\n");
+    let _ = writeln!(md, "\n## Select-link shares: modeled vs observed (design D5: headline = freeway shares, tolerance +/-10 pp)\n");
     for n in &notes {
         let _ = writeln!(md, "- {n}");
     }
-    let _ = writeln!(md, "\n| Block | Side | Via | Observed | Modelled | Diff (pp) | n trips | Headline |\n| --- | --- | --- | --- | --- | --- | --- | --- |");
+    let _ = writeln!(md, "\n| Block | Side | Via | Observed | Modeled | Diff (pp) | n trips | Headline |\n| --- | --- | --- | --- | --- | --- | --- | --- |");
     let mut head_ok = 0;
     let mut head_n = 0;
     for r in &rows {
         let obs = if pm { r.observed_pm.unwrap_or(r.observed) } else { r.observed };
-        let diff = 100.0 * (r.modelled - obs);
+        let diff = 100.0 * (r.modeled - obs);
         let ok = diff.abs() <= 10.0;
         if r.headline {
             head_n += 1;
@@ -511,13 +511,13 @@ fn main() {
             Some(p) => format!("{} (PM {})", pct(r.observed), pct(p)),
             None => pct(r.observed),
         };
-        let _ = writeln!(md, "| {} | {} | {} | {} | {} | {:+.0} | {} | {} |", r.target, r.side, r.via, o, if r.modelled.is_nan() { "n/a".into() } else { pct(r.modelled) }, if diff.is_nan() { 0.0 } else { diff }, r.n, if r.headline { if ok { "within" } else { "OUTSIDE" } } else { "" });
+        let _ = writeln!(md, "| {} | {} | {} | {} | {} | {:+.0} | {} | {} |", r.target, r.side, r.via, o, if r.modeled.is_nan() { "n/a".into() } else { pct(r.modeled) }, if diff.is_nan() { 0.0 } else { diff }, r.n, if r.headline { if ok { "within" } else { "OUTSIDE" } } else { "" });
     }
     let _ = writeln!(md, "\nHeadline shares within tolerance: {head_ok} of {head_n}. Observed column uses the PM-peak share where one is given and the period is pm_peak. 'Via' shares are the fraction of select-link trips using that street before (from) or after (to) the block; freeway = origin / destination gate with a motorway-class link attached.\n");
     if !ramp_rows.is_empty() {
         let _ = writeln!(md, "## Claremont ramps: streets used before the on-ramp / after the off-ramp\n");
-        let _ = writeln!(md, "Observed shares are for traffic from/to the north only; modelled shares are over all trips on the ramps (so modelled is an upper bound for streets that serve both sides).\n");
-        let _ = writeln!(md, "| Direction | Via | Observed | Modelled | n ramp trips |\n| --- | --- | --- | --- | --- |");
+        let _ = writeln!(md, "Observed shares are for traffic from/to the north only; modeled shares are over all trips on the ramps (so modeled is an upper bound for streets that serve both sides).\n");
+        let _ = writeln!(md, "| Direction | Via | Observed | Modeled | n ramp trips |\n| --- | --- | --- | --- | --- |");
         for (k, v, o, mo, n) in &ramp_rows {
             let _ = writeln!(md, "| {k} | {v} | {} | {} | {n} |", pct(*o), if mo.is_nan() { "n/a".into() } else { pct(*mo) });
         }
@@ -589,7 +589,7 @@ fn main() {
             "series": series.iter().map(|s| json!({"tMin": s.t / 60.0, "vehicles": s.veh, "backlog": s.backlog, "completed": s.completed, "removed": s.removed, "arterialSpeed": s.art_speed})).collect::<Vec<_>>(),
             "shares": rows.iter().map(|r| json!({
                 "block": r.target, "side": r.side, "via": r.via, "observed": r.observed, "observedPm": r.observed_pm,
-                "modelled": if r.modelled.is_nan() { Value::Null } else { json!(r.modelled) }, "n": r.n, "headline": r.headline,
+                "modelled": if r.modeled.is_nan() { Value::Null } else { json!(r.modeled) }, "n": r.n, "headline": r.headline,
             })).collect::<Vec<_>>(),
             "rampShares": ramp_rows.iter().map(|(k, v, o, mo, n)| json!({"direction": k, "via": v, "observed": o, "modelled": if mo.is_nan() { Value::Null } else { json!(mo) }, "n": n})).collect::<Vec<_>>(),
             "topLinks": link_idx.iter().take(15).map(|&l| json!({"link": l, "street": net.links[l].name, "delayVehH": d.link_delay_s[l] / 3600.0, "stoppedVehH": d.link_stopped_s[l] / 3600.0})).collect::<Vec<_>>(),

@@ -197,7 +197,7 @@ describe('roundabout collapse (synthetic)', () => {
     expect(r.network.links.every((l) => l.osmWayId !== 100)).toBe(true);
   });
 
-  it('ends approach geometry at the ring centre', () => {
+  it('ends approach geometry at the ring center', () => {
     const c = r.network.nodes.find((n) => n.control === 'traffic_circle')!;
     for (const l of r.network.links.filter((x) => x.to === c.id)) {
       const last = l.geometry.at(-1)!;

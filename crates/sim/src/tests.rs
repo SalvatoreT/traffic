@@ -556,7 +556,7 @@ fn modal_filter_link_closes_and_reroutes_then_removal_restores() {
     });
     assert!(done > 50, "affected trips re-route and complete ({done})");
     let before = sim.metrics().cut_through.veh_km;
-    // Remove the intervention: behaviour returns.
+    // Remove the intervention: behavior returns.
     sim.set_interventions("[]").unwrap();
     let mut used = false;
     run(&mut sim, 600.0, |s| {
