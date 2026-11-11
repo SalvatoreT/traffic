@@ -345,6 +345,7 @@ impl Eff {
                     *g = if *g < minimum { minimum } else if rest > 0.0 { *g * (avail - fixed) / rest } else { *g };
                 }
             }
+            if std::env::var("DBGSIG").is_ok() { eprintln!("SIG node {:?} cycle {} green {:?} ys {:?} groups {:?}", nodes, cycle, green, ys, groups.iter().map(|g| g.iter().map(|&l| (l, est_flow[l as usize] as i32)).collect::<Vec<_>>()).collect::<Vec<_>>()); }
             let mut phases = Vec::new();
             let mut t = 0.0;
             for g in &green {
