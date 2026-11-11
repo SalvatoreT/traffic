@@ -1,12 +1,12 @@
 # Traffic
 
-A neighbourhood traffic simulator: it runs a microscopic model of today's traffic on a real street network, lets you add
-interventions (modal filters, speed humps, traffic circles, one-way streets, turn bans, signal changes) and compares the
-outcome with the baseline side by side. The first study area is the Rockridge Trapezoid in North Oakland, CA; study areas are
-data, so the code is not specific to it. The simulation core is Rust compiled to WASM and runs in a Web Worker; the UI is
+A neighbourhood traffic simulator. It runs a microscopic model of today's traffic on a real street network. You add
+interventions (modal filters, speed humps, traffic circles, one-way streets, turn bans, signal changes) and see the
+result next to the baseline. The first study area is the Rockridge Trapezoid in North Oakland, CA; study areas are
+data, so nothing in the code is specific to it. The simulation core is Rust compiled to WASM and runs in a Web Worker; the UI is
 React and MapLibre.
 
-The baseline is not yet calibrated against observed traffic, so results are illustrative.
+The baseline is not yet calibrated against observed traffic, so treat results as illustrations.
 
 ## Quick start
 
@@ -44,11 +44,11 @@ The Worker serves the static app and reads generated study-area files from the b
 | `docs/references.md` | Bibliography and citation keys |
 | `openspec/` | Specs and change history |
 
-Details for contributors and agents are in [AGENTS.md](AGENTS.md).
+Contributors and agents should read [AGENTS.md](AGENTS.md).
 
 ## How the model works
 
-- Vehicles follow the Intelligent Driver 
+- Vehicles follow the Intelligent Driver Model
   ([Treiber2000], [Kesting2010]); the sim steps at 0.25 s.
 - Signals use fixed-time Webster-style plans ([Webster1958]); stop-controlled
   and all-way-stop junctions use gap acceptance ([Brilon1999]); circles use
@@ -71,8 +71,8 @@ Keys resolve in [docs/references.md](docs/references.md), which records how each
   assumed trip rates and peak factors. Counts cover few intersections, the ramp counts are from 2012, and local trip
   generation is largely assumed. See [data/demand/README.md](data/demand/README.md).
 - Calibration targets: summary route shares from resident-provided select-link data, recorded as percentages only and
-  indicative rather than exact. Nothing is fitted yet. See [data/calibration/README.md](data/calibration/README.md).
-- Large files live in R2, not git; see [data/README.md](data/README.md).
+  only indicative. Nothing is fitted yet. See [data/calibration/README.md](data/calibration/README.md).
+- Large files live in R2, not in git; see [data/README.md](data/README.md).
 
 ## Specs and changes
 

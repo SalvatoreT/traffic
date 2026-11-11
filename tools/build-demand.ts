@@ -112,6 +112,20 @@ const reachFrom = (o: number) => {
 };
 const routable = (o: number, d: number) => o !== d && reachFrom(o).has(d);
 const legStreet = tmc ? cfg.streetCounts[0].legStreets : {};
+// One-way gate pairing: an enter-only gate and an exit-only gate within PAIR_M metres that share a street name.
+const PAIR_M = 250;
+const linkNames = (id: number) => new Set((incident.get(id) ?? []).filter((l) => l.name && l.class !== 'motorway').map((l) => l.name.toLowerCase()));
+function hasGatePartner(n: Node, nIsIn: boolean): boolean {
+  const names = linkNames(n.id);
+  return net.nodes.some((q) => {
+    if (!q.gate || q.id === n.id || freewayIds.has(q.id)) return false;
+    const c = caps(q.id);
+    if (c.canIn && c.canOut) return false;
+    if (nIsIn ? !c.canOut : !c.canIn) return false;
+    if (Math.hypot(q.x - n.x, q.y - n.y) > PAIR_M) return false;
+    return [...linkNames(q.id)].some((nm) => names.has(nm));
+  });
+}
 const gateLeg = (n: Node) => (tmc ? legOf(bearing(n.x, n.y, tx, ty)) : null);
 for (const n of net.nodes.filter((q) => q.gate && !freewayIds.has(q.id))) {
   const street = (incident.get(n.id) ?? []).map((l) => streetKey(l.name)).find(Boolean) ?? null;
@@ -139,9 +153,13 @@ for (const n of net.nodes.filter((q) => q.gate && !freewayIds.has(q.id))) {
     if (ov) { adt = ov.adt * (ov.factor ?? 1); kind = 'DATA(adt)'; source = 'Caltrans AADT override (scaled)'; }
     else { adt = cfg.classDefaultAdt[cls] ?? cfg.classDefaultAdt.residential; kind = 'ASSUMPTION'; source = `class default (${cls})`; }
     const pk = adt! * cfg.kFactor;
-    // One-way gate nodes (only entering or only leaving) carry the whole street volume in that direction.
-    pmIn = canIn ? (canOut ? pk * pf[lastPeriod].inboundShare : pk) : 0;
-    pmOut = canOut ? (canIn ? pk - pmIn : pk) : 0;
+    // A two-way street can appear as a pair of one-way gate nodes (one enter-only, one exit-only, same street,
+    // close together). BUGFIX: each of the pair takes its directional share of the street volume, not all of it.
+    // A one-way gate with no partner (genuinely one-way street) carries the whole volume in its direction.
+    const paired = !(canIn && canOut) && hasGatePartner(n, canIn);
+    const share = pf[lastPeriod].inboundShare;
+    pmIn = canIn ? (canOut ? pk * share : paired ? pk * share : pk) : 0;
+    pmOut = canOut ? (canIn ? pk - pmIn : paired ? pk * (1 - share) : pk) : 0;
   }
   const g: Gate = { id: n.id, street, cls, deg: bearing(n.x, n.y), source, kind, adt, pmIn, pmOut, inT: {}, outT: {}, locIn: {}, locOut: {} };
   const sPm = pmIn / (pmIn + pmOut || 1);

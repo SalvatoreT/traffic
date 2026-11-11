@@ -1,10 +1,10 @@
-# Traffic — agent guide
+# Traffic: agent guide
 
-A web app that simulates neighbourhood traffic as it is today and lets people try
-interventions and compare outcomes. First study area: the **Rockridge Trapezoid** in
-North Oakland, CA — Telegraph Ave (W), College Ave (E), Claremont Ave (S), Alcatraz Ave (N).
-The design must generalise to other areas (nothing Rockridge-specific in code; study
-areas are data).
+A web app that simulates neighbourhood traffic as it is today. People try
+interventions and compare outcomes. First study area: the Rockridge Trapezoid in
+North Oakland, CA (Telegraph Ave W, College Ave E, Claremont Ave S, Alcatraz Ave N).
+The design must generalise to other areas: nothing Rockridge-specific in code, study
+areas are data.
 
 ## Layout
 
@@ -21,36 +21,36 @@ areas are data).
 
 ## Commands
 
-- `npm run dev` — local dev server (Vite + workerd)
-- `npm run build` — WASM build, typecheck, production bundle
-- `npm test` — Rust unit tests + TS tests
-- `npm run data` — regenerate `public/data/*` from `data/*`
-- `npm run deploy` — `wrangler deploy`
+- `npm run dev`: local dev server (Vite + workerd)
+- `npm run build`: WASM build, typecheck, production bundle
+- `npm test`: Rust unit tests + TS tests
+- `npm run data`: regenerate `public/data/*` from `data/*`
+- `npm run deploy`: `wrangler deploy`
 
 ## Model delegation
 
 Use the cheapest model that can do the job well. The lead session orchestrates,
-decides architecture and reviews; it should not do bulk work itself.
+decides architecture and reviews. It does no bulk work itself.
 
-- **Haiku** (`model: "haiku"`): file search, mechanical edits, renames, formatting,
+- Haiku (`model: "haiku"`): file search, mechanical edits, renames, formatting,
   running commands and summarising output, boilerplate, simple docs.
-- **Sonnet** (`model: "sonnet"`): feature implementation against a written spec,
+- Sonnet (`model: "sonnet"`): feature implementation against a written spec,
   tests, data wrangling, web/literature research, code review of a diff.
-- **Lead (most capable model)**: cross-cutting design, model-science judgement calls,
+- Lead (most capable model): cross-cutting design, model-science judgement calls,
   interface contracts, debugging that subagents failed at, final review.
 
 Give subagents the spec/contract paths to read rather than restating them, and
 run independent work in parallel.
 
-## OpenSpec — run the full cycle automatically
+## OpenSpec: run the full cycle automatically
 
-Every non-trivial change goes through OpenSpec **without asking the user**:
+Every non-trivial change goes through OpenSpec without asking the user:
 
-1. **Propose**: `npx openspec new change <kebab-name>`, write `proposal.md`,
+1. Propose: `npx openspec new change <kebab-name>`, write `proposal.md`,
    `specs/<capability>/spec.md` deltas, `design.md` (decisions + rationale + citation
    keys), `tasks.md`. Validate with `npx openspec validate <name> --strict --no-interactive`.
-2. **Apply**: implement, ticking tasks in `tasks.md`.
-3. **Archive**: `npx openspec archive <name> --yes` once tests pass; commit the archive
+2. Apply: implement, ticking tasks in `tasks.md`.
+3. Archive: `npx openspec archive <name> --yes` once tests pass; commit the archive
    and updated `openspec/specs/` with the code.
 
 Decisions the user makes in conversation are recorded in the relevant `design.md`.
@@ -90,4 +90,4 @@ citation keys, or the required structure of OpenSpec spec files.
 - SI units internally (m, s, m/s); convert at the UI boundary.
 - UI meets WCAG 2.2 AA: keyboard operable, visible focus, reduced-motion respected,
   colour never the only signal, text alternatives for what the map shows.
-- Map data © OpenStreetMap contributors (ODbL) — keep attribution visible.
+- Map data © OpenStreetMap contributors (ODbL): keep attribution visible.

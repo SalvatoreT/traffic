@@ -1,6 +1,6 @@
 # Study areas
 
-One JSON file per area, read by `tools/import-osm.ts` (`npm run data`). Nothing area-specific lives in code.
+One JSON file per area, read by `tools/import-osm.ts` (`npm run data`). No area-specific values live in code.
 
 | Field | Meaning |
 | --- | --- |
@@ -13,9 +13,9 @@ One JSON file per area, read by `tools/import-osm.ts` (`npm run data`). Nothing 
 
 ## Import defaults
 
-Classes: `motorway`/`motorway_link` → motorway; `primary`, `secondary`, `tertiary` (+ `_link`) keep their class;
-`residential`, `unclassified`, `living_street` → residential; `service` → service (skipped when `service=parking_aisle|driveway`
-or `access`/`motor_vehicle` is `private`/`no`). Footways, cycleways, paths, steps and pedestrian ways appear in the basemap only.
+Classes: `motorway`/`motorway_link` become motorway; `primary`, `secondary`, `tertiary` (+ `_link`) keep their class;
+`residential`, `unclassified`, `living_street` become residential; `service` stays service (skipped when `service=parking_aisle|driveway`
+or `access`/`motor_vehicle` is `private`/`no`). Footways, cycleways, paths, steps and pedestrian ways appear only in the basemap.
 
 | Class | Speed when `maxspeed` missing | Lanes per direction when `lanes` missing |
 | --- | --- | --- |
@@ -30,9 +30,9 @@ Lanes: `lanes:forward`/`lanes:backward`, else `lanes` (one-way: all; two-way: fl
 
 Direction: `oneway=yes|-1`, roundabouts and motorways (unless `oneway=no`) are one-way; a two-way segment yields two linked links.
 
-Control: `highway=traffic_signals` on a junction or on an approach within 30 m → signal. `highway=stop` is attributed to the
+Control: `highway=traffic_signals` on a junction or on an approach within 30 m is a signal. `highway=stop` is attributed to the
 nearest junction along its way (within 60 m) and, with `direction=forward|backward|both`, to the approach heading into it;
-`stop=all` forces all-way stop. Roundabout rings (collapsed to one node) and `mini_roundabout` → traffic circle. Stops on all approaches → all-way stop, some → two-way stop.
+`stop=all` forces all-way stop. Roundabout rings (collapsed to one node) and `mini_roundabout` become a traffic circle. Stops on all approaches make an all-way stop; stops on some make a two-way stop.
 
 Gates: ends of ways clipped by `bbox`, plus dead ends within 60 m of the bbox edge. Only the largest strongly connected
 component (plus one-way spurs leading to or from gates) is kept. Humps: `traffic_calming=hump|bump|table|cushion` on a way interior.
