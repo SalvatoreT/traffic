@@ -1,0 +1,73 @@
+{
+  "area": "rockridge",
+  "source": {
+    "id": "streetlight-2025",
+    "description": "StreetLight Data select-link analysis of Hillegass Ave and Colby St between Alcatraz Ave and Claremont Ave, January–July 2025, provided by residents.",
+    "caveat": "Sample does not represent all travellers. Shares are of trips traversing the analysed segment, each direction analysed separately."
+  },
+  "selectLink": [
+    {
+      "street": "Hillegass Avenue", "direction": "NB", "between": ["Claremont Avenue", "Alcatraz Avenue"],
+      "from": [{ "via": "freeway", "share": 0.47 }],
+      "to": [
+        { "via": "Benvenue Avenue", "share": 0.21, "pmPeakShare": 0.33 },
+        { "via": "College Avenue", "share": 0.06 },
+        { "via": "Alcatraz Avenue WB", "share": 0.27 }
+      ]
+    },
+    {
+      "street": "Colby Street", "direction": "NB", "between": ["Claremont Avenue", "Alcatraz Avenue"],
+      "from": [{ "via": "freeway", "share": 0.47 }],
+      "to": [
+        { "via": "Alcatraz Avenue WB", "share": 0.48 },
+        { "via": "Telegraph Avenue", "share": 0.25 },
+        { "via": "College Avenue", "share": 0.03 }
+      ]
+    },
+    {
+      "street": "Hillegass Avenue", "direction": "SB", "between": ["Alcatraz Avenue", "Claremont Avenue"],
+      "from": [
+        { "via": "Alcatraz Avenue WB", "share": 0.46 },
+        { "via": "Benvenue Avenue", "share": 0.26 },
+        { "via": "College Avenue", "share": 0.16 }
+      ],
+      "to": [{ "via": "freeway", "share": 0.57, "pmPeakShare": 0.68 }]
+    },
+    {
+      "street": "Colby Street", "direction": "SB", "between": ["Alcatraz Avenue", "Claremont Avenue"],
+      "from": [
+        { "via": "Alcatraz Avenue EB", "share": 0.43 },
+        { "via": "Alcatraz Avenue WB", "share": 0.46 },
+        { "via": "Telegraph Avenue", "share": 0.22 }
+      ],
+      "to": [
+        { "via": "freeway", "share": 0.45 },
+        { "via": "Forest Street", "share": 0.34 }
+      ]
+    }
+  ],
+  "freewayRamp": {
+    "location": "Claremont Avenue freeway on/off ramps",
+    "period": "weekday peak hour",
+    "ontoFreewayFromNorth": [
+      { "via": "College Avenue", "share": 0.16 },
+      { "via": "Hillegass Avenue", "share": 0.12 },
+      { "via": "Martin Street", "share": 0.10 },
+      { "via": "Colby Street", "share": 0.08 },
+      { "via": "Telegraph Avenue north of Alcatraz Avenue", "share": 0.08 },
+      { "via": "Benvenue Avenue", "share": 0.05 }
+    ],
+    "fromFreewayGoingNorth": [
+      { "via": "College Avenue", "share": 0.10 },
+      { "via": "Martin Street", "share": 0.10 },
+      { "via": "Colby Street", "share": 0.08 },
+      { "via": "Hillegass Avenue", "share": 0.05 },
+      { "via": "Benvenue Avenue", "share": 0.03 }
+    ]
+  },
+  "qualitative": [
+    "Little drop-off in freeway-bound and freeway-origin traffic between Claremont Avenue and Alcatraz Avenue: these trips continue through the neighbourhood.",
+    "Southbound freeway-bound drivers on College Avenue commonly arrive via Ashby Avenue and Benvenue Avenue, then jog to Hillegass Avenue.",
+    "Traffic on Martin Street and Colby Street is largely travelling between the freeway and Telegraph Avenue."
+  ]
+}

@@ -74,6 +74,9 @@ changes) so release notes can be generated. Scopes: `sim`, `ui`, `worker`, `data
 
 ## Conventions
 
+- Never put people's names in the repository (code, docs, data, commit messages).
+  Published authors in `docs/references.md` citations are the only exception. Describe
+  private sources by role ("resident-provided count data"), not by person.
 - Minimal comments; citations are the exception.
 - SI units internally (m, s, m/s); convert at the UI boundary.
 - UI meets WCAG 2.2 AA: keyboard operable, visible focus, reduced-motion respected,
