@@ -1,0 +1,16 @@
+{
+  "bucket": "traffic-data",
+  "keys": [
+    "areas/areas.json",
+    "areas/rockridge.basemap.json",
+    "areas/rockridge.demand.json",
+    "areas/rockridge.network.json",
+    "demand/raw/caltrans-aadt-bbox.json",
+    "demand/raw/lodes8-ca-2024-rockridge.json",
+    "demand/raw/oakland-multimodal/2018_2018.09.11-TelegraphAve_AlcatrazAve-pm.csv",
+    "demand/raw/oakland-multimodal/2018_2018.09.12-TelegraphAve_AlcatrazAve-pm.csv",
+    "demand/raw/oakland-multimodal/2019_TelegraphAve_AlcatrazAve_2019-09-10_PM.csv",
+    "demand/raw/oakland-multimodal/2021_TelegraphAve_AlcatrazAve_PM_2021.csv",
+    "osm/rockridge.overpass.json"
+  ]
+}
