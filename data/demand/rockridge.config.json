@@ -50,8 +50,8 @@
     "_note": "ASSUMPTION: per-class default two-way ADT when no count exists for the gate street (residential 800 ~ low-volume local street; uncalibrated).",
     "primary": 14000,
     "secondary": 9000,
-    "tertiary": 5000,
-    "residential": 800,
+    "tertiary": 3000,
+    "residential": 300,
     "service": 150
   },
   "streetCounts": [
