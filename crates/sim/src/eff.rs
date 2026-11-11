@@ -259,40 +259,16 @@ impl Eff {
     }
 
     /// Build fixed-time plans for signalized nodes. `est_flow[l]` is the estimated approach flow (veh/h).
-    /// Signalized nodes joined by a short link (SIGNAL_CLUSTER_M, e.g. the two carriageways of a divided road or the two
-    /// halves of an offset intersection) are one intersection: they share cycle, offset and phase greens.
     pub fn plan_signals(&mut self, topo: &Topo, net: &Network, est_flow: &[f32]) {
         let nn = topo.n_nodes;
         for n in 0..nn {
             self.sig[n] = None;
         }
         let is_sig = |s: &Eff, n: usize| s.ctrl[n] == Control::Signal;
-        let mut cluster: Vec<usize> = (0..nn).collect();
-        fn find(c: &mut Vec<usize>, x: usize) -> usize {
-            let mut r = x;
-            while c[r] != r {
-                r = c[r];
-            }
-            let mut y = x;
-            while c[y] != r {
-                let nx = c[y];
-                c[y] = r;
-                y = nx;
-            }
-            r
-        }
-        for l in 0..topo.n_links {
-            let (a, b) = (topo.link_from[l] as usize, topo.link_to[l] as usize);
-            if topo.length[l] < SIGNAL_CLUSTER_M && a != b && is_sig(self, a) && is_sig(self, b) {
-                let (ra, rb) = (find(&mut cluster, a), find(&mut cluster, b));
-                cluster[ra.max(rb)] = ra.min(rb);
-            }
-        }
         let mut members: Vec<Vec<usize>> = vec![Vec::new(); nn];
         for n in 0..nn {
             if is_sig(self, n) {
-                let r = find(&mut cluster, n);
-                members[r].push(n);
+                members[n].push(n);
             }
         }
         for root in 0..nn {

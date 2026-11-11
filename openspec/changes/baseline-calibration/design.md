@@ -45,5 +45,5 @@ interface Node {
 ```
 
 - A roundabout or traffic-circle ring is one `traffic_circle` node at the ring centroid; ring ways are not links and approach geometry ends at the center.
-- Motorway-class links, and nodes touched only by motorway links, are never `inStudyArea`. The Rockridge study area is bounded on the south by SR-24 (`boundingStreets.south`).
+- Motorway-class links, and nodes touched only by motorway links, are never `inStudyArea`. The study area is derived from an ordered `boundary` list of streets in the area config; Rockridge is bounded by Telegraph Ave, Alcatraz Ave, College Ave, Claremont Ave and the northern carriageway of SR-24. Links on a boundary street count as inside.
 - Config `selectLinks: number[]` (sim `Config`) enables select-link recording; empty by default.

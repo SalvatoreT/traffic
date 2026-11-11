@@ -110,8 +110,13 @@ describe('rockridge network', () => {
     expect(net.links.filter((l) => l.class === 'motorway').every((l) => !l.inStudyArea)).toBe(true);
     const inLocal = net.links.filter((l) => l.inStudyArea);
     expect(inLocal.length).toBeGreaterThan(200);
-    expect(cfg.boundingStreets?.south).toBe('Grove Shafter Freeway');
+    expect(cfg.boundary?.at(-1)).toEqual({ ref: 'CA 24', class: 'motorway' });
     expect(inLocal.some((l) => l.name === 'Claremont Avenue')).toBe(true);
+  });
+
+  it('joins short signal pairs into single nodes', () => {
+    const sigs = new Set(net.nodes.filter((n) => n.control === 'signal').map((n) => n.id));
+    for (const l of net.links) expect(sigs.has(l.from) && sigs.has(l.to) && l.length < 20, `link ${l.id}`).toBe(false);
   });
 
   it('flags study-area membership consistently', () => {
@@ -212,5 +217,79 @@ describe('roundabout collapse (synthetic)', () => {
       expect(n.canEnter).toBe(true);
       expect(n.canExit).toBe(true);
     }
+  });
+});
+
+describe('junction joining (synthetic)', () => {
+  const lat0 = 37.84;
+  const lon0 = -122.26;
+  const d = 0.0001;
+  const nd = (id: number, dx: number, dy: number, tags?: Record<string, string>) => ({
+    type: 'node' as const, id, lon: lon0 + dx * d, lat: lat0 + dy * d, ...(tags ? { tags } : {}),
+  });
+  const way = (id: number, name: string, nodes: number[], extra: Record<string, string> = {}) => ({
+    type: 'way' as const, id, nodes, tags: { highway: 'residential', name, ...extra },
+  });
+  const sig = { highway: 'traffic_signals' };
+  const junctions = (n: Network) => n.nodes.filter((x) => n.links.filter((l) => l.to === x.id).length >= 3);
+  const mk = (elements: Overpass['elements'], radius?: number): Network => {
+    const c: AreaConfig = {
+      id: 't', name: 't', extract: '', bbox: [lon0 - 40 * d, lat0 - 40 * d, lon0 + 40 * d, lat0 + 40 * d],
+      studyArea: [[lon0 - 5 * d, lat0 - 5 * d], [lon0 + 5 * d, lat0 - 5 * d], [lon0 + 5 * d, lat0 + 5 * d], [lon0 - 5 * d, lat0 + 5 * d], [lon0 - 5 * d, lat0 - 5 * d]],
+      ...(radius === undefined ? {} : { junctionJoinRadius: radius }),
+    };
+    return buildNetwork(c, { elements }).network;
+  };
+  // Main St crossed by North St at x=0 and South St at x=1 (about 9 m apart), both nodes tagged as signals.
+  const offset: Overpass['elements'] = [
+    nd(1, -30, 0), nd(2, 0, 0, sig), nd(3, 1, 0, sig), nd(4, 30, 0), nd(5, 0, 30), nd(6, 1, -30),
+    way(10, 'Main Street', [1, 2, 3, 4]), way(11, 'North Street', [5, 2]), way(12, 'South Street', [6, 3]),
+  ];
+
+  it('joins offset signal nodes of one crossing into one signal node with four approaches', () => {
+    const r = buildNetwork(
+      { id: 't', name: 't', extract: '', bbox: [lon0 - 40 * d, lat0 - 40 * d, lon0 + 40 * d, lat0 + 40 * d], studyArea: [[0, 0], [1, 0], [1, 1], [0, 0]] },
+      { elements: offset },
+    );
+    expect(r.stats.joinedClusters).toBe(1);
+    const sigs = r.network.nodes.filter((n) => n.control === 'signal');
+    expect(sigs).toHaveLength(1);
+    expect(r.network.links.filter((l) => l.to === sigs[0].id)).toHaveLength(4);
+    expect(r.network.links.filter((l) => l.from === sigs[0].id)).toHaveLength(4);
+    expect(r.network.links.every((l) => l.length > 5)).toBe(true);
+    // approach geometry ends at the node
+    for (const l of r.network.links.filter((x) => x.to === sigs[0].id)) {
+      const e = l.geometry.at(-1)!;
+      expect(Math.hypot(e[0] - sigs[0].x, e[1] - sigs[0].y)).toBeLessThan(1);
+    }
+  });
+
+  it('keeps them separate when the radius is 0', () => {
+    expect(mk(offset, 0).nodes.filter((n) => n.control === 'signal')).toHaveLength(2);
+  });
+
+  it('does not join distinct intersections on a longer block', () => {
+    const far = offset.map((e) => (e.type === 'node' && e.id === 3 ? nd(3, 5, 0, sig) : e.type === 'node' && e.id === 6 ? nd(6, 5, -30) : e));
+    expect(mk(far).nodes.filter((n) => n.control === 'signal')).toHaveLength(2);
+  });
+
+  it('does not join streets that share no name unless both are signals', () => {
+    const els: Overpass['elements'] = [
+      nd(1, 0, 30), nd(2, 0, 0), nd(3, 0, -30), nd(4, 1, 30), nd(5, 1, 0), nd(6, 1, -30),
+      way(10, 'Alpha Street', [1, 2, 3]), way(11, 'Beta Street', [4, 5, 6]), way(12, 'Link Road', [2, 5]),
+    ];
+    expect(junctions(mk(els))).toHaveLength(2);
+  });
+
+  it('makes an all-way stop when stops cover every merged approach', () => {
+    const stop = { highway: 'stop', stop: 'all' };
+    const els: Overpass['elements'] = [
+      nd(1, -30, 0), nd(2, 0, 0, stop), nd(3, 1, 0, stop), nd(4, 30, 0), nd(5, 0, 30), nd(6, 1, -30),
+      way(10, 'Main Street', [1, 2, 3, 4]), way(11, 'North Street', [5, 2]), way(12, 'South Street', [6, 3]),
+    ];
+    const net = mk(els);
+    const inner = junctions(net);
+    expect(inner).toHaveLength(1);
+    expect(inner[0].control).toBe('all_way_stop');
   });
 });

@@ -11,7 +11,6 @@ pub const ALL_RED: f32 = 1.5; // ASSUMPTION
 pub const SAT_FLOW: f32 = 1800.0; // veh/h/lane, [Webster1958] era value (unchecked in references.md)
 pub const CYCLE_MIN: f32 = 75.0; // ASSUMPTION: default plan range 60-90 s
 pub const CYCLE_MAX: f32 = 90.0; // ASSUMPTION
-pub const SIGNAL_CLUSTER_M: f32 = 0.0; // ASSUMPTION: signalized nodes joined by a link shorter than this share one controller; 0 = off (25 m tested: more gridlock on the Telegraph chain)
 pub const MIN_GREEN: f32 = 15.0; // ASSUMPTION
 pub const YELLOW_DECEL: f32 = 4.0; // ASSUMPTION: go on yellow if v^2/(2*4) > distance to line
 

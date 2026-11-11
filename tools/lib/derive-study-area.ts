@@ -1,11 +1,25 @@
 import { readFileSync, writeFileSync } from 'node:fs';
-import { bufferPolygon, dist, makeProjection, round6, simplify, type Pt } from './geo';
-import type { AreaConfig, BoundingStreets, OsmNode, OsmWay, Overpass } from './types';
+import { dist, makeProjection, round6, simplify, type Pt } from './geo';
+import type { AreaConfig, BoundaryStreet, OsmNode, OsmWay, Overpass } from './types';
 
 // Bounding streets are matched by `name` or `ref` (an unnamed-in-places motorway can be given by its ref).
 const DRIVABLE = /^(motorway|primary|secondary|tertiary|residential|unclassified|living_street)(_link)?$/;
 
-export function deriveStudyArea(osm: Overpass, streets: BoundingStreets, bbox: AreaConfig['bbox'], bufferM = 15): [number, number][] {
+/** True if the way belongs to the boundary street: a string matches `name` or `ref`; an object matches the fields it gives. */
+export function matchesBoundary(tags: Record<string, string>, b: BoundaryStreet): boolean {
+  if (typeof b === 'string') return tags.name === b || tags.ref === b;
+  if (b.name !== undefined && tags.name !== b.name) return false;
+  if (b.ref !== undefined && tags.ref !== b.ref) return false;
+  if (b.class !== undefined && !(tags.highway === b.class || tags.highway === `${b.class}_link`)) return false;
+  return true;
+}
+
+/**
+ * Study-area polygon from an ordered list of boundary streets. Consecutive streets (and the last with the first) meet at
+ * the geometric crossing of their centerlines (a shared node, or a grade-separated crossing; with several crossings, as at a
+ * dual carriageway, the one nearest the area center). Each edge follows the way geometry vertex by vertex.
+ */
+export function deriveStudyArea(osm: Overpass, boundary: BoundaryStreet[], bbox: AreaConfig['bbox']): [number, number][] {
   const nodes = new Map<number, OsmNode>();
   const ways: OsmWay[] = [];
   for (const e of osm.elements) {
@@ -19,31 +33,27 @@ export function deriveStudyArea(osm: Overpass, streets: BoundingStreets, bbox: A
   const center: Pt = [0, 0];
 
   type Graph = Map<number, Map<number, number>>;
-  const graphFor = (name: string): Graph => {
+  const graphFor = (b: BoundaryStreet): Graph => {
     const adj: Graph = new Map();
     const add = (a: number, b: number) => {
       if (!adj.has(a)) adj.set(a, new Map());
       adj.get(a)!.set(b, dist(xy(a), xy(b)));
     };
     for (const w of ways) {
-      if (w.tags.name !== name && w.tags.ref !== name) continue;
+      if (!matchesBoundary(w.tags, b)) continue;
       for (let i = 1; i < w.nodes.length; i++) {
         add(w.nodes[i - 1], w.nodes[i]);
         add(w.nodes[i], w.nodes[i - 1]);
       }
     }
+    if (adj.size === 0) throw new Error(`no ways match boundary street ${JSON.stringify(b)}`);
     return adj;
   };
-  const isFreeway = (name: string) => {
-    const ws = ways.filter((w) => w.tags.name === name || w.tags.ref === name);
+  const isFreeway = (b: BoundaryStreet) => {
+    const ws = ways.filter((w) => matchesBoundary(w.tags, b));
     return ws.length > 0 && ws.every((w) => /^motorway/.test(w.tags.highway));
   };
-  const G = {
-    west: graphFor(streets.west),
-    east: graphFor(streets.east),
-    south: graphFor(streets.south),
-    north: graphFor(streets.north),
-  };
+  const graphs = boundary.map(graphFor);
 
   const segments = (g: Graph) => {
     const out: [number, number][] = [];
@@ -98,10 +108,8 @@ export function deriveStudyArea(osm: Overpass, streets: BoundingStreets, bbox: A
     if (!pair || bd > 60) throw new Error(`no crossing or nearby vertex for ${label}`);
     return pair;
   };
-  const [sw, swS] = corner(G.west, G.south, 'west/south');
-  const [nw] = corner(G.west, G.north, 'west/north');
-  const [ne] = corner(G.east, G.north, 'east/north');
-  const [se, seS] = corner(G.east, G.south, 'east/south');
+  const n = boundary.length;
+  const corners = boundary.map((_, i) => corner(graphs[i], graphs[(i + 1) % n], `${i}/${(i + 1) % n}`));
 
   const path = (adj: Map<number, Map<number, number>>, from: number, to: number): number[] => {
     const d = new Map<number, number>([[from, 0]]);
@@ -127,27 +135,17 @@ export function deriveStudyArea(osm: Overpass, streets: BoundingStreets, bbox: A
     return out;
   };
 
-  // Surface edges are simplified on their own (tolerance 3 m); a freeway edge keeps every vertex of the carriageway. The outward buffer applies
-  // to surface streets only: vertices of a freeway edge stay on the carriageway.
-  const edges: { pts: Pt[]; fixed: boolean }[] = [
-    { pts: path(G.west, sw, nw).map(xy), fixed: isFreeway(streets.west) },
-    { pts: path(G.north, nw, ne).map(xy), fixed: isFreeway(streets.north) },
-    { pts: path(G.east, ne, se).map(xy), fixed: isFreeway(streets.east) },
-    { pts: path(G.south, seS, swS).map(xy), fixed: isFreeway(streets.south) },
-  ].map((e) => ({ ...e, pts: e.fixed ? e.pts : simplify(e.pts, 3) }));
+  // Surface edges are simplified on their own (tolerance 3 m); a freeway edge keeps every vertex of the carriageway.
   const ring: Pt[] = [];
-  const fixedFlags: boolean[] = [];
-  edges.forEach((e, k) => {
-    if (k > 0 && e.fixed) fixedFlags[fixedFlags.length - 1] = true;
-    const pts = k === 0 ? e.pts : e.pts.slice(1);
-    for (const p of pts) (ring.push(p), fixedFlags.push(e.fixed));
+  boundary.forEach((b, i) => {
+    const from = corners[(i + n - 1) % n][1];
+    const to = corners[i][0];
+    const pts = path(graphs[i], from, to).map(xy);
+    const edge = isFreeway(b) ? pts : simplify(pts, 3);
+    for (const p of i === 0 ? edge : edge.slice(1)) ring.push(p);
   });
-  if (dist(ring[0], ring.at(-1)!) < 0.5) {
-    ring.pop();
-    if (fixedFlags.pop()) fixedFlags[0] = true;
-  }
-  const buf = bufferPolygon(ring, bufferM);
-  const buffered = buf.map((p, i) => (fixedFlags[i] ? ring[i] : p));
+  if (dist(ring[0], ring.at(-1)!) < 0.5) ring.pop();
+  const buffered = ring;
   const ll = buffered.map(([x, y]) => proj.inv(x, y).map(round6) as [number, number]);
   return [...ll, ll[0]];
 }
@@ -155,9 +153,9 @@ export function deriveStudyArea(osm: Overpass, streets: BoundingStreets, bbox: A
 if (process.argv[1]?.endsWith('derive-study-area.ts')) {
   const cfgPath = process.argv[2];
   const cfg: AreaConfig = JSON.parse(readFileSync(cfgPath, 'utf8'));
-  if (!cfg.boundingStreets) throw new Error('config has no boundingStreets');
+  if (!cfg.boundary) throw new Error('config has no boundary');
   const osm: Overpass = JSON.parse(readFileSync(cfg.extract, 'utf8'));
-  cfg.studyArea = deriveStudyArea(osm, cfg.boundingStreets, cfg.bbox);
+  cfg.studyArea = deriveStudyArea(osm, cfg.boundary, cfg.bbox);
   writeFileSync(cfgPath, JSON.stringify(cfg, null, 2) + '\n');
   console.log(`wrote ${cfg.studyArea.length - 1}-vertex study area to ${cfgPath}`);
 }

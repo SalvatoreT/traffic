@@ -53,7 +53,7 @@ export function pointInPolygon(p: Pt, poly: Pt[]): boolean {
   return inside;
 }
 
-function distToSegment(p: Pt, a: Pt, b: Pt): number {
+export function distToSegment(p: Pt, a: Pt, b: Pt): number {
   const dx = b[0] - a[0];
   const dy = b[1] - a[1];
   const l2 = dx * dx + dy * dy;
@@ -110,4 +110,11 @@ export function bufferPolygon(ring: Pt[], d: number, miterLimit = 3): Pt[] {
     out.push([cur[0] + mx * scale, cur[1] + my * scale]);
   }
   return out;
+}
+
+/** Distance from a point to the boundary of a polygon ring (closed or not). */
+export function distToRing(p: Pt, ring: Pt[]): number {
+  let best = Infinity;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) best = Math.min(best, distToSegment(p, ring[j], ring[i]));
+  return best;
 }

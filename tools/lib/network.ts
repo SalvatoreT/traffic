@@ -1,5 +1,6 @@
 import {
   cumulative,
+  distToRing,
   makeProjection,
   pointAlong,
   pointInPolygon,
@@ -57,6 +58,7 @@ export const PARAMS = {
   signalReachM: 30,
   stopReachM: 60,
   gateEdgeM: 60,
+  boundaryReachM: 8,
   junctionJoinRadiusM: 20,
   minLinkM: 0.5,
   mph: 0.44704,
@@ -531,24 +533,37 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
       members.delete(rb);
     }
     const remap = new Map<number, number>();
-    for (const ids of members.values()) {
-      if (ids.length < 2) continue;
-      const set = new Set(ids);
-      const internal = liveLinks.filter((l) => set.has(l.from) && set.has(l.to));
-      if (internal.some((l) => l.cls === 'motorway')) continue;
-      const reach = (fwd: boolean) => {
-        const seen = new Set([ids[0]]);
-        const st = [ids[0]];
+    // Only strongly connected parts of a candidate cluster are joined (a one-way stub stays a separate node).
+    const sccs: number[][] = [];
+    for (const all of members.values()) {
+      if (all.length < 2) continue;
+      const inner = liveLinks.filter((l) => all.includes(l.from) && all.includes(l.to));
+      const reach = (s0: number, fwd: boolean) => {
+        const seen = new Set([s0]);
+        const st = [s0];
         while (st.length) {
           const u = st.pop()!;
-          for (const l of internal) {
+          for (const l of inner) {
             const [p, q] = fwd ? [l.from, l.to] : [l.to, l.from];
             if (p === u && !seen.has(q)) (seen.add(q), st.push(q));
           }
         }
-        return seen.size === ids.length;
+        return seen;
       };
-      if (!reach(true) || !reach(false)) continue;
+      const done = new Set<number>();
+      for (const v of all) {
+        if (done.has(v)) continue;
+        const f = reach(v, true);
+        const b = reach(v, false);
+        const comp = all.filter((x) => f.has(x) && b.has(x));
+        comp.forEach((x) => done.add(x));
+        if (comp.length >= 2) sccs.push(comp);
+      }
+    }
+    for (const ids of sccs) {
+      const set = new Set(ids);
+      const internal = liveLinks.filter((l) => set.has(l.from) && set.has(l.to));
+      if (internal.some((l) => l.cls === 'motorway')) continue;
       const c = centroidOf(ids);
       const rep = ids.reduce((b, id) => (Math.hypot(xyOf(id)[0] - c[0], xyOf(id)[1] - c[1]) < Math.hypot(xyOf(b)[0] - c[0], xyOf(b)[1] - c[1]) ? id : b));
       const extIn = liveLinks.filter((l) => set.has(l.to) && !set.has(l.from));
@@ -754,6 +769,20 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
   const surfaceNodes = new Set(finalLinks.filter((l) => l.cls !== 'motorway').flatMap((l) => [l.from, l.to]));
   const hasOut = new Set(finalLinks.map((l) => l.from));
   const hasIn = new Set(finalLinks.map((l) => l.to));
+  // Links on a boundary street count as inside even though their centerline lies on the polygon edge.
+  const onBoundary = (l: Link, mid: Pt) =>
+    l.cls !== 'motorway' &&
+    (cfg.boundary ?? []).some((b) =>
+      typeof b === 'string'
+        ? l.name === b
+        : (b.name === undefined || l.name === b.name) && (b.ref === undefined || l.name === b.ref) && (b.class === undefined || l.cls === b.class),
+    ) &&
+    distToRing(mid, studyPoly) <= PARAMS.boundaryReachM;
+  const boundaryNodes = new Set<number>();
+  for (const l of finalLinks) {
+    const g = l.geometry;
+    if (onBoundary(l, pointAlong(g, polylineLength(g) / 2))) (boundaryNodes.add(l.from), boundaryNodes.add(l.to));
+  }
   const nodeIndex = new Map(nodeIds.map((id, i) => [id, i]));
   const linkIndex = new Map(finalLinks.map((l, i) => [l, i]));
 
@@ -781,7 +810,7 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
       y: round1(p[1]),
       control,
       gate: gates.has(id),
-      inStudyArea: surfaceNodes.has(id) && pointInPolygon(p, studyPoly),
+      inStudyArea: surfaceNodes.has(id) && (pointInPolygon(p, studyPoly) || (boundaryNodes.has(id) && distToRing(p, studyPoly) <= PARAMS.boundaryReachM)),
     };
     if (node.gate) {
       // Trips can enter at a gate with an outgoing link from which the main network is reachable, and leave at
@@ -811,7 +840,7 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
       geometry,
       stopAtEnd: l.stopAtEnd,
       humps: [...l.humps].sort((a, b) => a - b),
-      inStudyArea: l.cls !== 'motorway' && pointInPolygon(mid, studyPoly),
+      inStudyArea: l.cls !== 'motorway' && (pointInPolygon(mid, studyPoly) || onBoundary(l, mid)),
     };
   });
 

@@ -7,8 +7,9 @@ One JSON file per area, read by `tools/import-osm.ts` (`npm run data`). No area-
 | `id`, `name` | Output file prefix and display name |
 | `extract` | Overpass JSON path (`data/osm/...`) |
 | `bbox` | `[minLon, minLat, maxLon, maxLat]` of the extract; ways are clipped to it and cut ends become gates |
-| `studyArea` | Closed lon/lat polygon |
-| `boundingStreets` | Optional `west/east/south/north` street names; `npx tsx tools/lib/derive-study-area.ts data/areas/<id>.json` rewrites `studyArea` from them (street centerlines between corner intersections, buffered 15 m outward). A bounding street is matched by `name` or `ref`; it may be a motorway (Rockridge's south edge is SR-24), in which case a corner with no shared junction uses the closest pair of nodes (within 60 m) on the two streets |
+| `studyArea` | Closed lon/lat polygon (derived from `boundary` when that is set) |
+| `junctionJoinRadius` | Optional, default 20 (m): graph nodes within this distance that form one intersection are joined into one node (see Junction joining below); 0 turns it off |
+| `boundary` | Optional ordered list of boundary streets; `npx tsx tools/lib/derive-study-area.ts data/areas/<id>.json` rewrites `studyArea` from it. An entry is a street name (matched against OSM `name` or `ref`) or an object `{name?, ref?, class?}` (for example `{"ref": "CA 24", "class": "motorway"}`). Consecutive entries, and the last with the first, meet at the geometric crossing of their centerlines: a shared node, or a grade-separated crossing; with several crossings (a dual carriageway) the one nearest the area center is used, which puts the edge on the inner carriageway. Each edge follows the way geometry vertex by vertex (surface edges are simplified to 3 m; freeway edges keep every vertex). There is no outward buffer: links lying on a boundary street (center within 8 m of the polygon edge) count as inside, while motorway-class links never do. Rockridge: Telegraph Ave, Alcatraz Ave, College Ave, Claremont Ave, SR-24 (a five-sided area; nothing south-east of Claremont) |
 | `center`, `zoom` | Map view for `public/data/areas.json` |
 
 ## Import defaults
@@ -38,5 +39,7 @@ Gates: ends of ways clipped by `bbox`, plus dead ends within 60 m of the bbox ed
 component (plus one-way spurs leading to or from gates) is kept. Humps: `traffic_calming=hump|bump|table|cushion` on a way interior.
 
 Study-area flags: motorway-class links and nodes touched only by motorway links are never `inStudyArea` (the freeway and its ramps are not local streets), so cut-through and safety metrics ignore them.
+
+Junction joining: graph nodes within `junctionJoinRadius` (default 20 m) of their cluster centroid that are connected by a short non-freeway link, and share a street name (or are both signals), become one node at the centroid (dual carriageways, offset signal tags, offset T junctions, ramp terminals). A cluster is joined only if its internal links make it strongly connected, so no impossible movement appears; it never contains a gate, a node near the extract edge, a traffic circle or a freeway link. Control: signal if any member is a signal; all-way stop if every remaining approach has a stop; otherwise a two-way stop if some approach has one. Internal links are dropped, approaches keep their `stopAtEnd` flags and humps.
 
 Collapsed circles: each `junction=roundabout|circular` ring becomes one `traffic_circle` node at the ring centroid (ring ways are dropped, approaches end at the center). Gate nodes carry `canEnter`/`canExit` flags (an outgoing / incoming link connected to the main network); demand uses only enterable origins and exitable destinations.

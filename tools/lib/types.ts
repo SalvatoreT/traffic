@@ -42,19 +42,16 @@ export interface Network {
   links: NetLink[];
 }
 
-export interface BoundingStreets {
-  west: string;
-  east: string;
-  south: string;
-  north: string;
-}
+/** A string matches OSM `name` or `ref`; an object matches the fields it gives (`class` is the OSM highway value). */
+export type BoundaryStreet = string | { name?: string; ref?: string; class?: string };
 
 export interface AreaConfig {
   id: string;
   name: string;
   extract: string;
   bbox: [number, number, number, number];
-  boundingStreets?: BoundingStreets;
+  /** Ordered boundary streets, each meeting the next (the last meets the first). Derives `studyArea`; the streets count as inside. */
+  boundary?: BoundaryStreet[];
   studyArea: [number, number][];
   center?: [number, number];
   zoom?: number;
