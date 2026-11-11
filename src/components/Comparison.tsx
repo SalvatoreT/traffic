@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Metrics, Units } from '../types';
-import { CARDS, summarise } from '../lib/metrics';
+import { CARDS, networkHealth, summarise } from '../lib/metrics';
 import { formatClock, formatDiff, formatValue } from '../lib/format';
 
 interface Props {
@@ -32,6 +32,7 @@ export function Comparison({ base, scen, comparing, units, scenarioCount, onRef 
       {comparing && elapsed < 600 && (
         <p className="notice" role="note">Early results are noisy: let both runs reach at least 10 simulated minutes (use a faster speed).</p>
       )}
+      {scen && <HealthLine scen={scen} base={comparing ? base : null} />}
       {CARDS.map((c) => (
         <section key={c.id} className="card" aria-labelledby={`card-${c.id}`}>
           <h3 id={`card-${c.id}`}>{c.title}</h3>
@@ -66,5 +67,30 @@ export function Comparison({ base, scen, comparing, units, scenarioCount, onRef 
       </aside>
       <div className="sr-only" aria-live="polite" role="status">{announce}</div>
     </div>
+  );
+}
+
+function HealthLine({ scen, base }: { scen: Metrics; base: Metrics | null }) {
+  const h = networkHealth(scen);
+  const hb = base ? networkHealth(base) : null;
+  const n = (v: number) => Math.round(v).toLocaleString('en-US');
+  const bad = h.oversaturated || !!hb?.oversaturated;
+  return (
+    <section className="health" aria-labelledby="health-h">
+      <h3 id="health-h">Network health</h3>
+      <p className="small" aria-label="Network health summary">
+        {n(h.inNetwork)} vehicles on the network · {n(h.backlog)} trips waiting to enter · {n(h.gridlockRemoved)} cleared from gridlock · {n(h.unroutable)} unroutable
+        {hb ? <span className="muted"> (baseline: {n(hb.backlog)} waiting, {n(hb.gridlockRemoved)} cleared)</span> : null}
+      </p>
+      {bad && (
+        <p className="notice" role="note">
+          <strong>The network is oversaturated at this demand level.</strong>{' '}
+          {h.oversaturated ? 'In the scenario' : 'In the baseline'}, {(h.oversaturated ? h : hb!).gridlockRemoved > 0
+            ? `${n((h.oversaturated ? h : hb!).gridlockRemoved)} vehicles had to be removed to clear gridlock`
+            : `${n((h.oversaturated ? h : hb!).backlog)} trips are queued outside waiting to enter`}.
+          Delay and speed figures understate real congestion, so treat comparisons with care. Try a lower demand setting or another period.
+        </p>
+      )}
+    </section>
   );
 }

@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { AreaBundle, ControlType, Intervention, Units } from '../types';
 import { directedLabel, linkStreet, matchesQuery, type NetIndex } from '../lib/naming';
-import { describeIntervention } from './MapView';
+import { describeIntervention } from '../lib/describe';
 import type { PickKind } from './MapView';
 
 export type ToolId =
@@ -32,6 +32,7 @@ export interface PickHandlers { link(id: number): void; node(id: number): void }
 
 interface Props {
   bundle: AreaBundle; index: NetIndex; units: Units;
+  showService: boolean; onShowService(v: boolean): void;
   interventions: Intervention[];
   onAdd(list: Intervention[], message: string): void;
   onRemove(i: number): void;
@@ -66,8 +67,8 @@ export function InterventionPanel(p: Props) {
         return p.onAdd([iv], `Added: ${describeIntervention(iv, B.network, X, units === 'mph')}`);
       }
       case 'speed_hump': {
-        const ivs: Intervention[] = blk.links.map((id) => ({ type: 'speed_hump', link: id, position: L[id].length / 2 }));
-        return p.onAdd(ivs, `Added speed hump on ${blk.label}`);
+        const iv: Intervention = { type: 'speed_hump', link: blk.links[0], position: L[blk.links[0]].length / 2 };
+        return p.onAdd([iv], `Added speed hump on ${blk.label}`);
       }
       case 'speed_limit': {
         const iv: Intervention = { type: 'speed_limit', link: blk.links[0], speed: limitMps(limit) };
@@ -107,17 +108,18 @@ export function InterventionPanel(p: Props) {
   const items = useMemo(() => {
     const out: { key: string; label: string; apply(): void; study: boolean }[] = [];
     if (toolDef.target === 'block') {
-      for (const b of X.blocks) out.push({ key: `b${b.key}`, label: b.label, apply: () => addForLink(b.links[0]), study: b.inStudyArea });
+      for (const b of X.blocks) if (p.showService || b.cls !== 'service') out.push({ key: `b${b.key}`, label: b.label, apply: () => addForLink(b.links[0]), study: b.inStudyArea });
     } else if (toolDef.target === 'dirlink') {
       for (const l of B.network.links) if (l.reverse !== null) {
         const b = X.blocks[X.blockOfLink[l.id]];
+        if (!p.showService && b.cls === 'service') continue;
         out.push({ key: `d${l.id}`, label: `Keep ${directedLabel(B.network, X, l.id)} (${b.label})`, apply: () => addForLink(l.id), study: l.inStudyArea });
       }
     } else {
       for (const n of X.intersections) out.push({ key: `n${n}`, label: X.nodeName[n], apply: () => addForNode(n), study: B.network.nodes[n].inStudyArea });
     }
     return out.sort((a, b) => Number(b.study) - Number(a.study));
-  }, [tool, X, B, limit, control, cycle, units]); // eslint-disable-line
+  }, [tool, X, B, limit, control, cycle, units, p.showService]); // eslint-disable-line
 
   const filtered = useMemo(() => items.filter((i) => matchesQuery(i.label, q)), [items, q]);
   const [shown, setShown] = useState(80);
@@ -142,7 +144,7 @@ export function InterventionPanel(p: Props) {
   const linkLbl = (id: number, dir: 'from' | 'to') => {
     const l = B.network.links[id];
     const other = dir === 'from' ? l.from : l.to;
-    return `${linkStreet(l)} ${dir === 'from' ? 'from' : 'toward'} ${X.nodeStreets[other].filter((s) => s !== linkStreet(l)).join(' / ') || X.nodeName[other]}`;
+    return `${X.linkName[id]} ${dir === 'from' ? 'from' : 'toward'} ${X.nodeStreets[other].filter((s) => s !== X.linkName[id] && s !== linkStreet(l)).join(' / ') || X.nodeName[other]}`;
   };
 
   return (
@@ -204,6 +206,9 @@ export function InterventionPanel(p: Props) {
           </label>
           <input id={`${listId}-q`} type="search" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={onSearchKey}
             placeholder="Type a street name" aria-describedby={`${listId}-help`} />
+          {toolDef.target !== 'node' && (
+            <label className="check"><input type="checkbox" checked={p.showService} onChange={(e) => p.onShowService(e.target.checked)} /> Show service roads</label>
+          )}
           <p className="muted small" aria-live="polite">{filtered.length} match{filtered.length === 1 ? '' : 'es'}. Press Enter or Space on an item to add it, or click the map.</p>
           <ul className="pick-list" ref={listRef} onKeyDown={onListKey} aria-label="Matching places">
             {filtered.slice(0, shown).map((it) => (

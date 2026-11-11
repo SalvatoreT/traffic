@@ -4,6 +4,8 @@ export type RoadClass = 'motorway' | 'primary' | 'secondary' | 'tertiary' | 'res
 export interface NetNode {
   id: number; osmId: number; x: number; y: number;
   control: ControlType; gate: boolean; inStudyArea: boolean;
+  /** Gate nodes only: whether traffic can enter / leave the study area here (absent = both). */
+  canEnter?: boolean; canExit?: boolean;
 }
 export interface NetLink {
   id: number; osmWayId: number; from: number; to: number; reverse: number | null;
@@ -24,9 +26,12 @@ export interface DemandPeriod {
 export interface Provenance { source: string; url: string; note: string }
 export interface Demand { version: 1; area: string; periods: DemandPeriod[]; provenance: Provenance[] }
 
+export interface Calibration { status: 'uncalibrated' | 'calibrated'; note?: string }
 export interface AreaEntry {
   id: string; name: string; network: string; demand: string; basemap: string;
   center: [number, number]; zoom: number;
+  /** Absent means uncalibrated. */
+  calibration?: Calibration;
 }
 
 export type Intervention =
@@ -50,6 +55,8 @@ export interface Metrics {
     shareAbove25mph: number; ttcConflicts: number;
   };
   arterialMeanSpeed: number;
+  /** Vehicles removed by the sim's gridlock breaker (absent in older sim builds). */
+  gridlockRemoved?: number;
 }
 
 export type Units = 'mph' | 'kmh';

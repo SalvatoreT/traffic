@@ -78,7 +78,6 @@ interface Run {
   speedF: number;
   speedB: number;
   name: string;
-  roundabout: boolean;
 }
 
 interface Link {
@@ -112,6 +111,7 @@ export interface BuildStats {
   prunedLinks: number;
   gateCandidates: number;
   merged: number;
+  collapsedRings: number;
 }
 
 function parseSpeed(v: string | undefined): number | null {
@@ -146,6 +146,7 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
     prunedLinks: 0,
     gateCandidates: 0,
     merged: 0,
+    collapsedRings: 0,
   };
   const [minLon, minLat, maxLon, maxLat] = cfg.bbox;
   const lon0 = (minLon + maxLon) / 2;
@@ -176,11 +177,33 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
   const edgeDist = (p: Pt) => Math.min(p[0] - bx0, bx1 - p[0], p[1] - by0, by1 - p[1]);
   const studyPoly: Pt[] = cfg.studyArea.map(([lon, lat]) => proj.fwd(lon, lat));
 
+  // Roundabout rings collapse to one traffic-circle node at the ring centroid. Ring ways are dropped and
+  // every other way touching the ring is redirected to the centre, so approaches end at the centre.
+  const isRing = (w: OsmWay) => w.tags.junction === 'roundabout' || w.tags.junction === 'circular';
+  const alias = new Map<number, number>();
+  const centres = new Set<number>();
+  for (const w of ways) {
+    if (!isRing(w) || !classify(w.tags)) continue;
+    const ring = [...new Set(w.nodes)].filter((id) => nodes.has(id) && !alias.has(id));
+    if (ring.length < 2) continue;
+    const lat = ring.reduce((a, id) => a + nodes.get(id)!.lat, 0) / ring.length;
+    const lon = ring.reduce((a, id) => a + nodes.get(id)!.lon, 0) / ring.length;
+    const cid = -w.id;
+    nodes.set(cid, { type: 'node', id: cid, lat, lon });
+    centres.add(cid);
+    for (const id of ring) alias.set(id, cid);
+    stats.collapsedRings++;
+  }
   const runs: Run[] = [];
   const gateCand = new Set<number>();
-  for (const way of ways) {
+  for (let way of ways) {
     const cls = classify(way.tags);
     if (!cls) continue;
+    if (alias.size) {
+      if (isRing(way) && way.nodes.some((id) => alias.has(id))) continue;
+      const mapped = way.nodes.map((id) => alias.get(id) ?? id).filter((id, i, a) => i === 0 || id !== a[i - 1]);
+      if (mapped.length !== way.nodes.length || mapped.some((id, i) => id !== way.nodes[i])) way = { ...way, nodes: mapped };
+    }
     const ins = way.nodes.map((id) => {
       const n = nodes.get(id);
       return !!n && inside(n);
@@ -189,12 +212,10 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
       if (isIn && ((i > 0 && !ins[i - 1]) || (i < ins.length - 1 && !ins[i + 1]))) gateCand.add(way.nodes[i]);
     });
     const t = way.tags;
-    const roundabout = t.junction === 'roundabout' || t.junction === 'circular';
     let fwd = true;
     let bwd = true;
     const ow = t.oneway;
-    if (roundabout) bwd = false;
-    else if (ow === 'yes' || ow === 'true' || ow === '1') bwd = false;
+    if (ow === 'yes' || ow === 'true' || ow === '1') bwd = false;
     else if (ow === '-1' || ow === 'reverse') fwd = false;
     else if (ow === undefined && (t.highway === 'motorway' || t.highway === 'motorway_link')) bwd = false;
     const oneDir = !(fwd && bwd);
@@ -226,7 +247,6 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
           speedF: speed('forward'),
           speedB: speed('backward'),
           name: t.name ?? t.ref ?? '',
-          roundabout,
         });
       }
       cur = [];
@@ -443,7 +463,7 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
   }
 
   const special = new Set<number>([...signal, ...circle, ...stopTargets, ...allWay, ...gateCand]);
-  for (const run of runs) if (run.roundabout) for (const id of run.nodes) if (graph.has(id)) circle.add(id);
+  for (const c of centres) if (graph.has(c)) circle.add(c);
   for (const c of circle) special.add(c);
 
   const sig = (l: Link) => `${l.cls}|${l.name}|${l.lanes}|${l.speed.toFixed(2)}`;
@@ -588,6 +608,7 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
   const inGates = ids.map((id, i) => i).filter((i) => B[i] && !keep[i] && gates.has(ids[i]));
   const kOut = reach(adjB, outGates, (i) => !!F[i] && !keep[i]);
   const kIn = reach(adjF, inGates, (i) => !!B[i] && !keep[i]);
+  const keep0 = keep.slice();
   for (let i = 0; i < ids.length; i++) if ((kOut[i] && F[i] && !keep[i]) || (kIn[i] && B[i] && !keep[i])) keep[i] = 1;
   const finalLinks = live.filter((l) => keep[idx.get(l.from)!] && keep[idx.get(l.to)!]);
   stats.prunedLinks = live.length - finalLinks.length;
@@ -595,6 +616,8 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
   const used = new Set<number>();
   for (const l of finalLinks) (used.add(l.from), used.add(l.to));
   const nodeIds = ids.filter((id) => used.has(id));
+  const hasOut = new Set(finalLinks.map((l) => l.from));
+  const hasIn = new Set(finalLinks.map((l) => l.to));
   const nodeIndex = new Map(nodeIds.map((id, i) => [id, i]));
   const linkIndex = new Map(finalLinks.map((l, i) => [l, i]));
 
@@ -615,7 +638,7 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
     }
     for (const l of ins) l.stopAtEnd = control === 'all_way_stop' || (control === 'two_way_stop' && l.stopAtEnd);
     const p = xyOf(id);
-    return {
+    const node: NetNode = {
       id: i,
       osmId: id,
       x: round1(p[0]),
@@ -624,6 +647,14 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
       gate: gates.has(id),
       inStudyArea: pointInPolygon(p, studyPoly),
     };
+    if (node.gate) {
+      // Trips can enter at a gate with an outgoing link from which the main network is reachable, and leave at
+      // one with an incoming link reachable from it.
+      const k = idx.get(id)!;
+      node.canEnter = hasOut.has(id) && (!!keep0[k] || !!B[k]);
+      node.canExit = hasIn.has(id) && (!!keep0[k] || !!F[k]);
+    }
+    return node;
   });
 
   const outLinks: NetLink[] = finalLinks.map((l, i) => {

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { AreaBundle, Overlay, Units } from '../types';
 import { formatClock } from '../lib/format';
 import { rampStops, type Mode } from '../lib/ramps';
@@ -12,6 +13,7 @@ interface PlaybackProps {
 }
 
 export function Playback(p: PlaybackProps) {
+  const [more, setMore] = useState(false);
   return (
     <div className="toolbar" role="group" aria-label="Simulation playback">
       <button type="button" className="btn primary" onClick={p.onToggle} aria-label={p.running ? 'Pause simulation' : 'Play simulation'}>
@@ -23,6 +25,10 @@ export function Playback(p: PlaybackProps) {
           <button key={s} type="button" className={p.speed === s ? 'on' : ''} aria-pressed={p.speed === s} onClick={() => p.onSpeed(s)}>{s}×</button>
         ))}
       </div>
+      <button type="button" className="btn more-btn" aria-expanded={more} aria-controls="pb-extras" onClick={() => setMore((m) => !m)}>
+        Period &amp; demand <span aria-hidden="true">{more ? '▴' : '▾'}</span>
+      </button>
+      <div id="pb-extras" className={`extras ${more ? 'open' : ''}`}>
       <label className="inline">Period
         <select value={p.period} onChange={(e) => p.onPeriod(e.target.value)}>
           {p.periods.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
@@ -31,6 +37,7 @@ export function Playback(p: PlaybackProps) {
       <label className="inline">Demand <output>{Math.round(p.scale * 100)}%</output>
         <input type="range" min={0.5} max={1.5} step={0.05} value={p.scale} onChange={(e) => p.onScale(Number(e.target.value))} aria-valuetext={`${Math.round(p.scale * 100)} percent of estimated demand`} />
       </label>
+      </div>
       <span className="clock" aria-label={`Simulated time ${formatClock(p.time)}`}><span aria-hidden="true">⏱</span> {formatClock(p.time)}</span>
       {p.reducedMotion && <span className="muted small">Paused at start (reduced motion preference).</span>}
     </div>

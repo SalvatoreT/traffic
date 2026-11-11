@@ -71,7 +71,7 @@ fn demand(flows: &[(u32, u32, f64)]) -> Demand {
 }
 
 fn cfg(seed: u64, scale: f64) -> Config {
-    Config { seed, period: "p".into(), demand_scale: scale }
+    Config { seed, period: "p".into(), demand_scale: scale, ..Default::default() }
 }
 
 #[allow(dead_code)]
@@ -886,3 +886,81 @@ fn perf_3000_vehicles() {
     );
 }
 
+
+// ---------------------------------------------------------------- select link
+
+/// W - c - E straight street "Main", with a side street "Side" from S and a motorway-class stub at the W end.
+fn select_net() -> (Network, u32, u32, u32, u32, u32) {
+    let mut b = B::default();
+    let w = b.node(-300.0, 0.0, Control::Uncontrolled, true);
+    let c = b.node(0.0, 0.0, Control::Uncontrolled, false);
+    let e = b.node(300.0, 0.0, Control::Uncontrolled, true);
+    let s = b.node(0.0, -300.0, Control::Uncontrolled, true);
+    let (we, ew) = b.two_way(w, c, RoadClass::Secondary, 1, 11.2);
+    let (ce, ec) = b.two_way(c, e, RoadClass::Secondary, 1, 11.2);
+    let (sc, cs) = b.two_way(s, c, RoadClass::Residential, 1, 11.2);
+    for l in [we, ew, ce, ec] {
+        b.links[l as usize].name = "Main".into();
+    }
+    for l in [sc, cs] {
+        b.links[l as usize].name = "Side".into();
+    }
+    b.links[we as usize].class = RoadClass::Motorway; // west gate is a freeway gate
+    b.links[ew as usize].class = RoadClass::Motorway;
+    let _ = (ew, ec, cs);
+    (b.net(), w, e, s, ce, sc)
+}
+
+#[test]
+fn select_link_disabled_records_nothing() {
+    let (net, w, e, _s, _ce, _sc) = select_net();
+    let mut sim = Simulation::from_parts(net, demand(&[(w, e, 300.0)]), cfg(1, 1.0)).unwrap();
+    sim.step(120.0);
+    assert!(sim.select_link_records().is_empty());
+}
+
+#[test]
+fn select_link_records_origin_destination_and_streets() {
+    let (net, w, e, s, ce, _sc) = select_net();
+    let mut c = cfg(3, 1.0);
+    c.select_links = vec![ce]; // Main, c -> e
+    // w->e passes ce; s->e passes ce after Side; s->w never touches ce.
+    let mut sim = Simulation::from_parts(net, demand(&[(w, e, 300.0), (s, e, 300.0), (s, w, 300.0)]), c).unwrap();
+    sim.step(300.0);
+    let recs = sim.select_link_records();
+    assert!(recs.len() > 20);
+    assert!(recs.iter().all(|r| r.dest == e && r.hits.iter().any(|h| h.0 == ce)));
+    let from_w: Vec<_> = recs.iter().filter(|r| r.origin == w && r.completed).collect();
+    let from_s: Vec<_> = recs.iter().filter(|r| r.origin == s && r.completed).collect();
+    assert!(!from_w.is_empty() && !from_s.is_empty());
+    for r in &from_w {
+        assert!(r.origin_freeway && !r.dest_freeway);
+        let names: Vec<&str> = r.streets.iter().map(|x| x.name.as_str()).collect();
+        assert_eq!(names, ["Main"]);
+        assert_eq!(r.streets[0].dir, 'E');
+        assert_eq!(r.hits[0].1, 0);
+    }
+    for r in &from_s {
+        assert!(!r.origin_freeway);
+        let names: Vec<&str> = r.streets.iter().map(|x| x.name.as_str()).collect();
+        assert_eq!(names, ["Side", "Main"]);
+        assert_eq!(r.streets[0].dir, 'N');
+        // street visited before the nominated link: Side only
+        assert_eq!(r.hits[0].1, 1);
+    }
+}
+
+#[test]
+fn select_link_in_flight_trips_include_planned_streets() {
+    let (net, w, e, _s, ce, _sc) = select_net();
+    let mut c = cfg(5, 1.0);
+    c.select_links = vec![0]; // first link w -> c
+    let mut sim = Simulation::from_parts(net, demand(&[(w, e, 600.0)]), c).unwrap();
+    sim.step(20.0);
+    let recs = sim.select_link_records();
+    assert!(!recs.is_empty());
+    let _ = ce;
+    let r = recs.iter().find(|r| !r.completed).expect("a trip still in the network");
+    assert_eq!(r.streets.len(), 1);
+    assert_eq!(r.streets[0].name, "Main");
+}

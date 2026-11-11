@@ -11,6 +11,7 @@ export interface Block {
   inStudyArea: boolean;
 }
 export interface NetIndex {
+  linkName: string[];     // friendly per-link street name ("Unnamed service road off Oak St")
   nodeName: string[];
   nodeStreets: string[][];
   blocks: Block[];
@@ -21,6 +22,7 @@ export interface NetIndex {
 }
 
 export const UNNAMED = 'Unnamed road';
+const CUL_DE_SAC = '(cul-de-sac end)';
 export const linkStreet = (l: NetLink) => l.name.trim() || UNNAMED;
 
 function joinNames(names: string[], fallback: string): string {
@@ -47,6 +49,14 @@ export function buildIndex(net: Network): NetIndex {
     s.length === 0 ? `Node ${i}` : s.length === 1 ? `${s[0]} (junction)` : joinNames(s, `Node ${i}`).replace(/ \/ /g, ' & '),
   );
 
+  const linkName = net.links.map((l) => {
+    const own = l.name.trim();
+    if (own) return own;
+    const kind = l.class === 'service' ? 'service road' : 'road';
+    const near = [...nodeStreets[l.from], ...nodeStreets[l.to]].filter((s) => s !== UNNAMED);
+    return near.length ? `Unnamed ${kind} off ${near[0]}` : `Unnamed ${kind}`;
+  });
+
   const blocks: Block[] = [];
   const blockOfLink: number[] = new Array(net.links.length).fill(-1);
   for (const l of net.links) {
@@ -54,15 +64,26 @@ export function buildIndex(net: Network): NetIndex {
     const rev = l.reverse !== null && l.reverse !== l.id ? net.links[l.reverse] : null;
     const ids = rev ? [Math.min(l.id, rev.id), Math.max(l.id, rev.id)] : [l.id];
     const first = net.links[ids[0]];
-    const name = linkStreet(first);
-    const others = (nid: number) => nodeStreets[nid].filter((s) => s !== name);
-    const A = joinNames(others(first.from), net.nodes[first.from].gate ? 'the study-area edge' : 'a dead end');
-    const B = joinNames(others(first.to), net.nodes[first.to].gate ? 'the study-area edge' : 'a dead end');
+    const unnamed = !first.name.trim();
+    const name = linkName[first.id];
+    const others = (nid: number) => nodeStreets[nid].filter((s) => s !== name && s !== UNNAMED);
+    const isDeadEnd = (nid: number) => !net.nodes[nid].gate && incoming[nid].length + outgoing[nid].length <= (rev ? 2 : 1);
+    const endText = (nid: number) => joinNames(others(nid), net.nodes[nid].gate ? 'the study-area edge' : 'a dead end');
+    let label: string;
+    if (unnamed) {
+      const dead = isDeadEnd(first.from) ? first.from : isDeadEnd(first.to) ? first.to : -1;
+      const far = dead === first.from ? first.to : first.from;
+      const base = name.replace(/^Unnamed (service road|road) off /, '');
+      const farStreets = others(far).filter((s) => s !== base);
+      label = dead >= 0 ? `${name} ${CUL_DE_SAC}` : farStreets.length ? `${name} to ${joinNames(farStreets, '')}` : name;
+    } else {
+      label = `${name} between ${endText(first.from)} and ${endText(first.to)}`;
+    }
     const idx = blocks.length;
     for (const id of ids) blockOfLink[id] = idx;
     blocks.push({
       key: ids[0], name, links: ids, a: first.from, b: first.to,
-      label: `${name} between ${A} and ${B}`, lengthM: first.length, cls: first.class,
+      label, lengthM: first.length, cls: first.class,
       inStudyArea: first.inStudyArea,
     });
   }
@@ -77,14 +98,15 @@ export function buildIndex(net: Network): NetIndex {
     if (neigh.size >= 3 || net.nodes[i].control === 'signal') intersections.push(i);
   }
   intersections.sort((p, q) => nodeName[p].localeCompare(nodeName[q]) || p - q);
-  return { nodeName, nodeStreets, blocks, blockOfLink, incomingLinks: incoming, outgoingLinks: outgoing, intersections };
+  return { linkName, nodeName, nodeStreets, blocks, blockOfLink, incomingLinks: incoming, outgoingLinks: outgoing, intersections };
 }
 
 /** Directed description: "Oak St toward Elm St" */
 export function directedLabel(net: Network, idx: NetIndex, linkId: number): string {
   const l = net.links[linkId];
+  const me = idx.linkName[linkId];
   const others = idx.nodeStreets[l.to].filter((s) => s !== linkStreet(l));
-  return `${linkStreet(l)} toward ${joinNames(others, idx.nodeName[l.to])}`;
+  return `${me} toward ${joinNames(others, idx.nodeName[l.to])}`;
 }
 
 export function matchesQuery(text: string, q: string): boolean {

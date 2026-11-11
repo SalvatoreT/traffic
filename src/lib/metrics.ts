@@ -50,3 +50,18 @@ export function summarise(base: Metrics, scen: Metrics, units: Units): string {
   }
   return `Scenario versus baseline after ${Math.round(scen.time / 60)} simulated minutes. ${parts.join('. ')}.`;
 }
+
+export interface NetworkHealth {
+  gridlockRemoved: number; backlog: number; unroutable: number; inNetwork: number;
+  oversaturated: boolean;
+}
+/** Backlog counts trips waiting to enter; "large" is an absolute or relative threshold (heuristic, not calibrated). */
+export function networkHealth(m: Metrics): NetworkHealth {
+  const gridlockRemoved = m.gridlockRemoved ?? 0;
+  const backlog = m.backlog ?? 0;
+  const bigBacklog = backlog >= 50 || (m.spawned >= 100 && backlog / m.spawned > 0.1);
+  return {
+    gridlockRemoved, backlog, unroutable: m.unroutableTrips ?? 0, inNetwork: m.vehiclesInNetwork ?? 0,
+    oversaturated: gridlockRemoved > 0 || bigBacklog,
+  };
+}

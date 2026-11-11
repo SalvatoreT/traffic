@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { AreaBundle, Intervention, Metrics, Overlay, Theme, Units } from './types';
 import { loadArea } from './data';
 import { SimClient, type StatsMsg } from './sim/client';
@@ -7,12 +7,13 @@ import { decodeHash, encodeHash } from './lib/hash';
 import { addInterventions } from './lib/scenario';
 import { niceMax, percentile, resolveMode } from './lib/ramps';
 import { linkStatsView } from './types';
-import { MapView, type PickKind } from './components/MapView';
+import type { PickKind } from './components/MapView';
 import { Playback, Legend } from './components/Toolbar';
 import { InterventionPanel, type PickHandlers } from './components/InterventionPanel';
 import { Comparison } from './components/Comparison';
 import { StreetsTable } from './components/StreetsTable';
-import { Sources } from './components/Sources';
+const MapView = lazy(() => import('./components/MapView').then((m) => ({ default: m.MapView })));
+const Sources = lazy(() => import('./components/Sources').then((m) => ({ default: m.Sources })));
 
 type View = 'map' | 'streets' | 'sources';
 const store = {
@@ -65,6 +66,11 @@ function Simulator({ bundle }: { bundle: AreaBundle }) {
   const [view, setView] = useState<View>('map');
   const [panelTab, setPanelTab] = useState<'scenario' | 'results'>('scenario');
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [showService, setShowService] = useState(false);
+  const calStatus = bundle.entry.calibration?.status ?? 'uncalibrated';
+  const calKey = `calnote:${bundle.entry.id}`;
+  const [calDismissed, setCalDismissed] = useState(() => store.get(calKey) === '1');
+  const showCal = calStatus !== 'calibrated' && !calDismissed && !bundle.synthetic;
   const [sourceRef, setSourceRef] = useState<string | null>(null);
 
   const periodId = demand.periods.some((p) => p.id === initial.period) ? initial.period! : demand.periods[0]?.id ?? '';
@@ -183,7 +189,7 @@ function Simulator({ bundle }: { bundle: AreaBundle }) {
           <div className="seg" role="group" aria-label="Units">
             {(['mph', 'kmh'] as Units[]).map((u) => <button key={u} type="button" className={units === u ? 'on' : ''} aria-pressed={units === u} onClick={() => setUnits(u)}>{u === 'mph' ? 'mph' : 'km/h'}</button>)}
           </div>
-          <label className="inline">Theme
+          <label className="inline"><span className="lbl">Theme</span>
             <select value={theme} onChange={(e) => setTheme(e.target.value as Theme)}>
               <option value="auto">System</option><option value="light">Light</option><option value="dark">Dark</option>
             </select>
@@ -193,8 +199,15 @@ function Simulator({ bundle }: { bundle: AreaBundle }) {
 
       <main id="main" tabIndex={-1} className={showPanel ? 'with-panel' : ''}>
         <div className="stage">
-          {(bundle.synthetic || engine?.kind === 'mock' || simError) && (
+          {(bundle.synthetic || engine?.kind === 'mock' || simError || showCal) && (
             <div className="banners">
+              {showCal && (
+                <p className="notice calm" role="note">
+                  <span>Preview — the baseline is not yet calibrated against observed traffic. Treat results as illustrative.
+                    {bundle.entry.calibration?.note ? ` ${bundle.entry.calibration.note}` : ''}</span>
+                  <button type="button" className="btn small-btn" onClick={() => { setCalDismissed(true); store.set(calKey, '1'); }}>Dismiss</button>
+                </p>
+              )}
               {bundle.synthetic && <p className="notice" role="note">Showing a synthetic fixture area because the study-area data files were not found.</p>}
               {engine?.kind === 'mock' && <p className="notice" role="note">Using the built-in mock simulation ({engine.reason}). Vehicle behaviour and metrics are illustrative only.</p>}
               {simError && <p className="notice err" role="alert">{simError}</p>}
@@ -209,20 +222,22 @@ function Simulator({ bundle }: { bundle: AreaBundle }) {
             />
           )}
           <div className="map-area" hidden={!mapVisible}>
+            <Suspense fallback={<p className="boot" role="status">Loading map…</p>}>
             <MapView
               bundle={bundle} index={index} mode={mode} overlay={overlay} overlayMax={overlayMax} linkStats={linkStats}
               client={client} interventions={interventions} pick={mapVisible ? pick.kind : null} pickDirectional={pick.dir}
               onPickLink={(id) => pickHandlers.current?.link(id)} onPickNode={(id) => pickHandlers.current?.node(id)}
               visible={mapVisible} reducedMotion={reduced}
             />
+            </Suspense>
             <Legend overlay={overlay} onOverlay={setOverlay} max={overlayMax} mode={mode} units={units}
               source={source} onSource={setSource} canCompare={comparing} />
           </div>
           {view === 'streets' && (
-            <StreetsTable bundle={bundle} index={index} units={units}
+            <StreetsTable bundle={bundle} index={index} showService={showService} onShowService={setShowService} units={units}
               scen={stats?.scenario.linkStats ?? null} base={stats?.baseline.linkStats ?? null} comparing={comparing} />
           )}
-          {view === 'sources' && <Sources demand={demand} synthetic={bundle.synthetic} focusRef={sourceRef} />}
+          {view === 'sources' && <Suspense fallback={<p className="boot" role="status">Loading sources…</p>}><Sources demand={demand} synthetic={bundle.synthetic} focusRef={sourceRef} /></Suspense>}
         </div>
 
         {showPanel && (
@@ -242,7 +257,7 @@ function Simulator({ bundle }: { bundle: AreaBundle }) {
                 ))}
               </div>
               <div role="tabpanel" id="tabpanel-scenario" aria-labelledby="tab-scenario" hidden={panelTab !== 'scenario'}>
-                <InterventionPanel bundle={bundle} index={index} units={units} interventions={interventions}
+                <InterventionPanel bundle={bundle} index={index} showService={showService} onShowService={setShowService} units={units} interventions={interventions}
                   onAdd={onAdd} onRemove={onRemove} onClear={onClear} onPickMode={onPickMode} registerPick={registerPick} />
                 <div className="share">
                   <button type="button" className="btn" onClick={() => { navigator.clipboard?.writeText(location.href).then(() => say('Link to this scenario copied.'), () => say('Copy failed. The address bar already holds the link.')); }}>Copy link to this scenario</button>

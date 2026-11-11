@@ -95,6 +95,10 @@ struct Veh {
     replan: bool,
     tr_mv: u32,
     tr_frac: f32,
+    /// Select-link recording (empty unless enabled): distinct consecutive named streets visited
+    /// (name id, direction bucket) and the nominated links traversed as (link, index into the street list).
+    sl_streets: Vec<(u32, u8)>,
+    sl_hits: Vec<(u32, u32)>,
 }
 
 impl Veh {
@@ -128,6 +132,8 @@ impl Veh {
             replan: false,
             tr_mv: 0,
             tr_frac: 0.0,
+            sl_streets: Vec::new(),
+            sl_hits: Vec::new(),
         }
     }
     #[inline]
@@ -171,6 +177,59 @@ struct Stats {
     clamps: u64,
 }
 
+/// A street visited by a recorded trip (consecutive links with the same name collapse into one visit).
+#[derive(Clone, Debug, PartialEq)]
+pub struct StreetVisit {
+    pub name: String,
+    /// Travel direction on the first link of the visit: 'N', 'E', 'S' or 'W' (nearest compass axis).
+    pub dir: char,
+}
+
+/// One trip that traversed at least one nominated link (select-link analysis).
+#[derive(Clone, Debug)]
+pub struct SelectLinkRecord {
+    pub uid: u32,
+    pub origin: u32,
+    pub dest: u32,
+    /// A motorway-class link is attached to the origin / destination node.
+    pub origin_freeway: bool,
+    pub dest_freeway: bool,
+    /// False for trips still in the network: their remaining planned route is appended to `streets`.
+    pub completed: bool,
+    /// Distinct consecutive named streets over the whole trip, in order (unnamed links are skipped).
+    pub streets: Vec<StreetVisit>,
+    /// Nominated links traversed in order, with the index in `streets` of the street each lies on.
+    pub hits: Vec<(u32, usize)>,
+}
+
+struct SelectLinkState {
+    is_sel: Vec<bool>,
+    street_of: Vec<u32>, // per link: name id, or u32::MAX if unnamed
+    dir_of: Vec<u8>,
+    names: Vec<String>,
+    node_fw: Vec<bool>,
+    records: Vec<SelectLinkRecord>,
+}
+
+const DIRS: [char; 4] = ['N', 'E', 'S', 'W'];
+
+/// Per-link and per-node diagnostics accumulated over the run (always on; a few adds per step).
+pub struct Diagnostics<'a> {
+    /// Veh-seconds spent below 1 m/s on each link.
+    pub link_stopped_s: &'a [f32],
+    /// Excess travel time (s) versus travelling at the effective limit, summed over vehicles.
+    pub link_delay_s: &'a [f32],
+    /// Vehicles that left each link (cumulative).
+    pub link_exits: &'a [u32],
+    /// Seconds the head vehicle of some lane waited at the node stop line without permission.
+    pub node_wait_s: &'a [f32],
+    /// Subset of `node_wait_s` where the only obstacle was no space on the downstream link.
+    pub node_space_s: &'a [f32],
+    /// Cumulative arterial speed-time and time (s) behind `Metrics::arterial_mean_speed`.
+    pub art_t: f64,
+    pub art_vs: f64,
+}
+
 pub struct Simulation {
     net: Network,
     demand: Demand,
@@ -207,6 +266,12 @@ pub struct Simulation {
     cur_bin: usize,
     scratch: Vec<u32>,
     gridlock_log: Vec<(u32, f64)>,
+    sl: Option<SelectLinkState>,
+    d_link_stopped: Vec<f32>,
+    d_link_delay: Vec<f32>,
+    d_link_exits: Vec<u32>,
+    d_node_wait: Vec<f32>,
+    d_node_space: Vec<f32>,
 }
 
 fn idm(v: f32, v0: f32, s: f32, dv: f32, a: f32, b: f32, t_hw: f32, s0: f32) -> f32 {
@@ -284,12 +349,131 @@ impl Simulation {
             cur_bin: 0,
             scratch: Vec::new(),
             gridlock_log: Vec::new(),
+            sl: None,
+            d_link_stopped: vec![0.0; nl],
+            d_link_delay: vec![0.0; nl],
+            d_link_exits: vec![0; nl],
+            d_node_wait: vec![0.0; nn],
+            d_node_space: vec![0.0; nn],
             topo,
             net,
         };
+        s.init_select_links();
         s.init_flows();
         s.rebuild_effective();
         Ok(s)
+    }
+
+    fn init_select_links(&mut self) {
+        self.sl = None;
+        if self.cfg.select_links.is_empty() {
+            return;
+        }
+        let nl = self.net.links.len();
+        let mut is_sel = vec![false; nl];
+        for &l in &self.cfg.select_links {
+            if (l as usize) < nl {
+                is_sel[l as usize] = true;
+            }
+        }
+        let mut names: Vec<String> = Vec::new();
+        let mut street_of = Vec::with_capacity(nl);
+        let mut dir_of = Vec::with_capacity(nl);
+        for l in &self.net.links {
+            if l.name.is_empty() {
+                street_of.push(u32::MAX);
+            } else {
+                let id = names.iter().position(|n| *n == l.name).unwrap_or_else(|| {
+                    names.push(l.name.clone());
+                    names.len() - 1
+                });
+                street_of.push(id as u32);
+            }
+            let (a, b) = (l.geometry.first().copied().unwrap_or([0.0, 0.0]), l.geometry.last().copied().unwrap_or([0.0, 1.0]));
+            let brg = (b[0] - a[0]).atan2(b[1] - a[1]).to_degrees().rem_euclid(360.0);
+            dir_of.push((((brg + 45.0) / 90.0) as usize % 4) as u8);
+        }
+        let mut node_fw = vec![false; self.net.nodes.len()];
+        for l in &self.net.links {
+            if l.class == RoadClass::Motorway {
+                node_fw[l.from as usize] = true;
+                node_fw[l.to as usize] = true;
+            }
+        }
+        self.sl = Some(SelectLinkState { is_sel, street_of, dir_of, names, node_fw, records: Vec::new() });
+    }
+
+    /// Select-link hook: vehicle `vid` has just entered link `l`.
+    fn sl_enter(&mut self, vid: u32, l: u32) {
+        let Some(sl) = &self.sl else { return };
+        let sid = sl.street_of[l as usize];
+        let is_sel = sl.is_sel[l as usize];
+        let dir = sl.dir_of[l as usize];
+        let v = &mut self.vehs[vid as usize];
+        if sid != u32::MAX && v.sl_streets.last().map_or(true, |s| s.0 != sid) {
+            v.sl_streets.push((sid, dir));
+        }
+        if is_sel {
+            let idx = v.sl_streets.len().saturating_sub(1) as u32;
+            v.sl_hits.push((l, idx));
+        }
+    }
+
+    fn sl_record(&self, v: &Veh, completed: bool) -> Option<SelectLinkRecord> {
+        let sl = self.sl.as_ref()?;
+        if v.sl_hits.is_empty() {
+            return None;
+        }
+        let mut streets: Vec<(u32, u8)> = v.sl_streets.clone();
+        if !completed {
+            let from = if v.in_transit { (v.ridx as usize).saturating_sub(1) } else { v.ridx as usize };
+            for &l in v.route.iter().skip(from) {
+                let sid = sl.street_of[l as usize];
+                if sid != u32::MAX && streets.last().map_or(true, |s| s.0 != sid) {
+                    streets.push((sid, sl.dir_of[l as usize]));
+                }
+            }
+        }
+        Some(SelectLinkRecord {
+            uid: v.uid,
+            origin: v.origin,
+            dest: v.dest,
+            origin_freeway: sl.node_fw[v.origin as usize],
+            dest_freeway: sl.node_fw[v.dest as usize],
+            completed,
+            streets: streets
+                .iter()
+                .map(|&(id, d)| StreetVisit { name: sl.names[id as usize].clone(), dir: DIRS[d as usize] })
+                .collect(),
+            hits: v.sl_hits.iter().map(|&(l, i)| (l, i as usize)).collect(),
+        })
+    }
+
+    /// Select-link analysis results: one record per trip that traversed a nominated link
+    /// (`Config::select_links`), completed trips first (in completion order), then trips still in
+    /// the network. Empty when recording is disabled.
+    pub fn select_link_records(&self) -> Vec<SelectLinkRecord> {
+        let Some(sl) = &self.sl else { return Vec::new() };
+        let mut out = sl.records.clone();
+        for v in self.vehs.iter().filter(|v| v.alive) {
+            if let Some(r) = self.sl_record(v, false) {
+                out.push(r);
+            }
+        }
+        out
+    }
+
+    /// Per-link / per-node diagnostics for calibration reports.
+    pub fn diagnostics(&self) -> Diagnostics<'_> {
+        Diagnostics {
+            link_stopped_s: &self.d_link_stopped,
+            link_delay_s: &self.d_link_delay,
+            link_exits: &self.d_link_exits,
+            node_wait_s: &self.d_node_wait,
+            node_space_s: &self.d_node_space,
+            art_t: self.st.art_t,
+            art_vs: self.st.art_vs,
+        }
     }
 
     fn init_flows(&mut self) {
@@ -763,6 +947,7 @@ impl Simulation {
                 let idx = self.topo.lane_base[b as usize] as usize + lane;
                 self.lanes[idx].push_back(id);
                 self.st.spawned += 1;
+                self.sl_enter(id, b);
             }
         }
     }
@@ -818,6 +1003,12 @@ impl Simulation {
             self.awsc[node].push(vid);
         }
         let (go, blocked) = self.permission(vid, l, d, v, ctrl);
+        if waiting && !go {
+            self.d_node_wait[node] += DT as f32;
+            if blocked {
+                self.d_node_space[node] += DT as f32;
+            }
+        }
         let remove = {
             let veh = &mut self.vehs[vid as usize];
             veh.go = go;
@@ -1146,6 +1337,10 @@ impl Simulation {
                     }
                     // Statistics.
                     let bi = l * NBINS + cb;
+                    if v < 1.0 {
+                        self.d_link_stopped[l] += dt;
+                    }
+                    self.d_link_delay[l] += dt * (1.0 - v / self.eff.limit[l]).max(0.0);
                     self.bin_vt[bi] += dt;
                     self.bin_vs[bi] += v * dt;
                     let st = &mut self.st;
@@ -1184,6 +1379,7 @@ impl Simulation {
     fn record_link_exit(&mut self, vid: u32, l: usize) {
         let bi = l * NBINS + self.cur_bin;
         self.bin_flow[bi] += 1.0;
+        self.d_link_exits[l] += 1;
         let veh = &self.vehs[vid as usize];
         if veh.through && self.topo.is_local[l] {
             self.bin_ct[bi] += 1.0;
@@ -1207,6 +1403,11 @@ impl Simulation {
         self.st.trip_time_sum += tt;
         self.st.delay_sum += tt - veh.ff_sum as f64;
         self.st.completed += 1;
+        if self.sl.is_some() {
+            if let Some(r) = self.sl_record(&self.vehs[vid as usize], true) {
+                self.sl.as_mut().unwrap().records.push(r);
+            }
+        }
         self.lanes[qi].pop_front();
         self.remove_vehicle(vid);
     }
@@ -1314,6 +1515,7 @@ impl Simulation {
                     veh.go = true;
                 }
                 self.lanes[qi].push_back(vid);
+                self.sl_enter(vid, tr.to_link);
                 if self.vehs[vid as usize].replan {
                     self.vehs[vid as usize].replan = false;
                     self.replan_vehicle(vid, true);

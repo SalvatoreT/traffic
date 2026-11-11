@@ -14,9 +14,10 @@ interface Row {
 interface Props {
   bundle: AreaBundle; index: NetIndex; units: Units;
   scen: Float32Array | null; base: Float32Array | null; comparing: boolean;
+  showService: boolean; onShowService(v: boolean): void;
 }
 
-export function StreetsTable({ bundle, index, units, scen, base, comparing }: Props) {
+export function StreetsTable({ index, units, scen, base, comparing, showService, onShowService }: Props) {
   const [sort, setSort] = useState<{ key: Key; dir: 1 | -1 }>({ key: 'ctS', dir: -1 });
   const [q, setQ] = useState('');
   const [cls, setCls] = useState('all');
@@ -37,14 +38,14 @@ export function StreetsTable({ bundle, index, units, scen, base, comparing }: Pr
 
   const classes = useMemo(() => ['all', ...Array.from(new Set(index.blocks.map((b) => b.cls)))], [index]);
   const shown = useMemo(() => {
-    const f = rows.filter((r) => (cls === 'all' || r.cls === cls) && matchesQuery(r.label, q));
+    const f = rows.filter((r) => (showService || cls === 'service' || r.cls !== 'service') && (cls === 'all' || r.cls === cls) && matchesQuery(r.label, q));
     const { key, dir } = sort;
     return f.sort((a, b) => {
       const av = a[key], bv = b[key];
       const c = typeof av === 'string' ? av.localeCompare(bv as string) : (av as number) - (bv as number);
       return (c || a.label.localeCompare(b.label)) * dir;
     });
-  }, [rows, q, cls, sort]);
+  }, [rows, q, cls, sort, showService]);
 
   const th = (key: Key, label: string, sub?: string, rowSpan?: number) => (
     <th scope="col" rowSpan={rowSpan} aria-sort={sort.key === key ? (sort.dir === 1 ? 'ascending' : 'descending') : 'none'}>
@@ -70,6 +71,7 @@ export function StreetsTable({ bundle, index, units, scen, base, comparing }: Pr
       <div className="filters">
         <label>Search streets <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="e.g. Oak" /></label>
         <label>Class <select value={cls} onChange={(e) => setCls(e.target.value)}>{classes.map((c) => <option key={c} value={c}>{c}</option>)}</select></label>
+ <label className="check"><input type="checkbox" checked={showService} onChange={(e) => onShowService(e.target.checked)} /> Show service roads</label>
         <span role="status" className="muted small">{shown.length} blocks</span>
       </div>
       <div className="table-scroll" tabIndex={0} role="region" aria-label="Streets table, scrollable">

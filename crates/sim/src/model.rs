@@ -123,11 +123,14 @@ pub struct Config {
     pub seed: u64,
     pub period: String,
     pub demand_scale: f64,
+    /// Additive: link ids to record select-link analysis for (see `Simulation::select_link_records`).
+    /// Empty (default) disables recording entirely.
+    pub select_links: Vec<u32>,
 }
 
 impl Default for Config {
     fn default() -> Self {
-        Config { seed: 1, period: String::new(), demand_scale: 1.0 }
+        Config { seed: 1, period: String::new(), demand_scale: 1.0, select_links: Vec::new() }
     }
 }
 

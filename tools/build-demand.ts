@@ -9,7 +9,7 @@ import { discoverRamps, matchRampVolumes, type Ramp, type RampRow, type RampVolu
 const cfgPath = process.argv[2] ?? 'data/demand/rockridge.config.json';
 const cfg = JSON.parse(readFileSync(cfgPath, 'utf8'));
 
-interface Node { id: number; x: number; y: number; gate: boolean; inStudyArea: boolean }
+interface Node { id: number; x: number; y: number; gate: boolean; canEnter?: boolean; canExit?: boolean; inStudyArea: boolean }
 interface Link { id: number; from: number; to: number; name: string; class: string; inStudyArea: boolean }
 interface Network { id: string; origin: { lon: number; lat: number }; studyArea: [number, number][]; nodes: Node[]; links: Link[] }
 interface Flow { origin: number; destination: number; vehPerHour: number }
@@ -90,10 +90,27 @@ const { ramps, freewayGates: freewayIds } = discoverRamps(net.nodes, net.links, 
 const nodeById = new Map(net.nodes.map((n) => [n.id, n]));
 const legGroups = new Map<string, { orig: number; dest: number }>();
 const legKey = (street: string | null, leg: string | null) => `${street}|${leg}`;
+// Origins must be enterable gates (canEnter), destinations exitable (canExit); falls back to link topology.
 const caps = (id: number) => {
   const ls = incident.get(id) ?? [];
-  return { canIn: ls.some((l) => l.from === id), canOut: ls.some((l) => l.to === id) };
+  const n = nodeById.get(id)!;
+  return { canIn: n.canEnter ?? ls.some((l) => l.from === id), canOut: n.canExit ?? ls.some((l) => l.to === id) };
 };
+// Node-level forward reachability (ignores turn restrictions; the sim reports any residual unroutable trips).
+const outAdj = new Map<number, number[]>();
+for (const l of net.links) (outAdj.get(l.from) ?? outAdj.set(l.from, []).get(l.from)!).push(l.to);
+const reachCache = new Map<number, Set<number>>();
+const reachFrom = (o: number) => {
+  let r = reachCache.get(o);
+  if (!r) {
+    r = new Set([o]);
+    const st = [o];
+    while (st.length) for (const v of outAdj.get(st.pop()!) ?? []) if (!r.has(v)) (r.add(v), st.push(v));
+    reachCache.set(o, r);
+  }
+  return r;
+};
+const routable = (o: number, d: number) => o !== d && reachFrom(o).has(d);
 const legStreet = tmc ? cfg.streetCounts[0].legStreets : {};
 const gateLeg = (n: Node) => (tmc ? legOf(bearing(n.x, n.y, tx, ty)) : null);
 for (const n of net.nodes.filter((q) => q.gate && !freewayIds.has(q.id))) {
@@ -194,6 +211,7 @@ function gateWeights(sector: string, p: string, dir: 'in' | 'out') {
 const outPeriods: { id: string; label: string; flows: Flow[] }[] = [];
 const summary: { id: string; total: number; through: number; local: number; ramp: number; rampLocal: number; localInternal: number; dropped: number; fw: Map<number, { out: number; in: number }>; rampDest: Map<number, number> }[] = [];
 let throughDebug: string[] = [];
+let unroutableDropped = 0;
 
 for (const p of cfg.periods as { id: string; label: string }[]) {
   const local = new Map<string, number>();
@@ -226,8 +244,8 @@ for (const p of cfg.periods as { id: string; label: string }[]) {
     const pref = bearing(centre[0], centre[1], rn.x, rn.y); // inward: from the ramp toward the study-area centre
     const plaus = (x: number, y: number) => Math.max(dst.directionFloor, Math.exp(-((angDiff(bearing(x, y, rn.x, rn.y), pref) / dst.directionSigmaDeg) ** 2)));
     const off = r.kind === 'off', side = off ? 'out' : 'in'; // ends at surface: gate outflow (off) or gate inflow (on)
-    const gc = gates.map((g) => { const n = nodeById.get(g.id)!; return { id: g.id, w: (off ? g.outT[p.id] : g.inT[p.id]) * plaus(n.x, n.y), room: capLeft.get(g.id)![side] }; }).filter((c) => c.w > 0 && c.room > 0);
-    const lc = locList.map((b) => ({ id: b.node, w: (off ? blockTrips(b).inTotal : blockTrips(b).outTotal) * plaus(b.x, b.y) })).filter((c) => c.w > 0);
+    const gc = gates.map((g) => { const n = nodeById.get(g.id)!; return { id: g.id, w: (off ? g.outT[p.id] : g.inT[p.id]) * plaus(n.x, n.y), room: capLeft.get(g.id)![side] }; }).filter((c) => c.w > 0 && c.room > 0 && (off ? routable(gid, c.id) : routable(c.id, gid)));
+    const lc = locList.map((b) => ({ id: b.node, w: (off ? blockTrips(b).inTotal : blockTrips(b).outTotal) * plaus(b.x, b.y) })).filter((c) => c.w > 0 && (off ? routable(gid, c.id) : routable(c.id, gid)));
     const lShare = lc.length ? rc.localShare : 0;
     // Gate part: water-filling so no gate exceeds its remaining ramp cap.
     const give = new Map<number, number>();
@@ -268,11 +286,11 @@ for (const p of cfg.periods as { id: string; label: string }[]) {
     // External share of trips: DATA-derived directional mix (LODES), share itself ASSUMPTION.
     for (const [s, n] of Object.entries(outS)) {
       const wOut = gateWeights(s, p.id, 'out');
-      gates.forEach((g, i) => { const v = outTotal * lo.externalShareOfResidentTrips * (n / oT) * wOut[i]; if (v > 0) rawLocal.push({ o: b.node, d: g.id, v, gateD: g }); });
+      gates.forEach((g, i) => { const v = outTotal * lo.externalShareOfResidentTrips * (n / oT) * wOut[i]; if (v > 0 && routable(b.node, g.id)) rawLocal.push({ o: b.node, d: g.id, v, gateD: g }); });
     }
     for (const [s, n] of Object.entries(inS)) {
       const w = gateWeights(s, p.id, 'in');
-      gates.forEach((g, i) => { const v = inTotal * lo.externalShareOfResidentTrips * (n / iT) * w[i]; if (v > 0) rawLocal.push({ o: g.id, d: b.node, v, gateO: g }); });
+      gates.forEach((g, i) => { const v = inTotal * lo.externalShareOfResidentTrips * (n / iT) * w[i]; if (v > 0 && routable(g.id, b.node)) rawLocal.push({ o: g.id, d: b.node, v, gateO: g }); });
     }
   }
   // Cap local gate usage at maxLocalShareOfGate of each gate target (leaves room for through trips).
@@ -304,7 +322,7 @@ for (const p of cfg.periods as { id: string; label: string }[]) {
   C = C.map((c) => (c * rs) / (cs || 1));
   const gv = cfg.gravity;
   const seed: number[][] = gates.map((gi, i) => gates.map((gj, j) => {
-    if (i === j) return 0;
+    if (!routable(gi.id, gj.id)) return 0;
     const d = angDiff(gi.deg, gj.deg);
     let f = d >= 135 ? gv.oppositeBonus : d >= 75 ? gv.adjacentFactor : d >= 40 ? gv.adjacentFactor * 0.5 : gv.uTurnPenalty;
     if (gi.street && gi.street === gj.street && d >= 75) f *= gv.sameStreetBonus;
@@ -324,6 +342,7 @@ for (const p of cfg.periods as { id: string; label: string }[]) {
   for (const [k, v] of rampFlows) flowsMap.set(k, (flowsMap.get(k) ?? 0) + v);
 
   // Prune: drop < min, cap count, renormalise to preserve total.
+  for (const k of [...flowsMap.keys()]) { const [o, d] = k.split('>').map(Number); const ok = (nodeById.get(o)!.gate ? caps(o).canIn : true) && (nodeById.get(d)!.gate ? caps(d).canOut : true) && routable(o, d); if (!ok) { unroutableDropped += flowsMap.get(k)!; flowsMap.delete(k); } }
   const totalBefore = [...flowsMap.values()].reduce((a, b) => a + b, 0);
   let list = [...flowsMap].filter(([, v]) => v >= cfg.minFlowVehPerHour).sort((a, b) => b[1] - a[1]).slice(0, cfg.maxFlows);
   const totalAfter = list.reduce((a, [, v]) => a + v, 0);
@@ -366,6 +385,7 @@ console.log(`Demand for ${cfg.area}: ${gates.length} surface gates, ${fwGates.le
 console.log('\nPeriod        total veh/h  through   local    ramp  (ramp->local)  through%  local%  ramp%  flows  pruned');
 for (const s of summary) console.log(`${s.id.padEnd(12)} ${s.total.toFixed(0).padStart(10)} ${s.through.toFixed(0).padStart(8)} ${s.local.toFixed(0).padStart(7)} ${s.ramp.toFixed(0).padStart(7)} ${s.rampLocal.toFixed(0).padStart(14)} ${pct(s.through, s.total).padStart(9)} ${pct(s.local, s.total).padStart(7)} ${pct(s.ramp, s.total).padStart(6)} ${String(outPeriods.find((q) => q.id === s.id)!.flows.length).padStart(6)} ${String(s.dropped).padStart(6)}`);
 console.log(throughDebug.join('\n'));
+console.log(`Unroutable flows dropped by the final check (all periods, veh/h): ${unroutableDropped.toFixed(1)}`);
 
 console.log('\nFreeway ramps (kind, surface node, surface streets -> freeway gate(s); volume source)');
 for (const r of ramps) { const v = rampVol.get(r)!; console.log(`  ${r.kind.padEnd(3)} node ${String(r.surface).padEnd(4)} ${r.streets.join(' / ').padEnd(34)} ${r.kind === 'off' ? 'from' : 'to  '} gate ${r.gates.join(',').padEnd(4)} ADT ${String(Math.round(v.adt)).padStart(6)} ${v.kind}: ${v.source}`); }

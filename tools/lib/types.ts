@@ -8,6 +8,9 @@ export interface NetNode {
   y: number;
   control: NodeControl;
   gate: boolean;
+  /** Gates only: trips can start / end here (additive, see baseline-calibration design). */
+  canEnter?: boolean;
+  canExit?: boolean;
   inStudyArea: boolean;
 }
 

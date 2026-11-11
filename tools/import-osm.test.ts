@@ -114,3 +114,95 @@ describe('rockridge network', () => {
     expect(pointInPolygon([net.origin.lon, net.origin.lat], poly)).toBeDefined();
   });
 });
+
+describe('rockridge circles and gates', () => {
+  it('has no ring links around traffic circles', () => {
+    const circles = net.nodes.filter((n) => n.control === 'traffic_circle');
+    expect(circles.length).toBeGreaterThanOrEqual(6);
+    for (const c of circles) {
+      const ins = net.links.filter((l) => l.to === c.id);
+      const outs = net.links.filter((l) => l.from === c.id);
+      expect(ins.length).toBeGreaterThanOrEqual(3);
+      expect(outs.length).toBeGreaterThanOrEqual(3);
+      // no short ring fragments: every approach is a real street segment
+      for (const l of ins) expect(l.length).toBeGreaterThan(20);
+    }
+  });
+
+  it('flags gate directions consistently with the links', () => {
+    for (const g of gates) {
+      expect(typeof g.canEnter).toBe('boolean');
+      expect(typeof g.canExit).toBe('boolean');
+      if (g.canEnter) expect(net.links.some((l) => l.from === g.id)).toBe(true);
+      if (g.canExit) expect(net.links.some((l) => l.to === g.id)).toBe(true);
+      expect(g.canEnter || g.canExit).toBe(true);
+    }
+    for (const n of net.nodes.filter((n) => !n.gate)) expect(n.canEnter).toBeUndefined();
+  });
+
+  it('every enterable gate reaches an exit gate and vice versa', () => {
+    const radj = net.nodes.map(() => [] as number[]);
+    for (const l of net.links) radj[l.to].push(l.from);
+    for (const g of gates.filter((x) => x.canEnter)) {
+      const fwd = reachable(g.id, adj);
+      expect(gates.some((o) => o.id !== g.id && o.canExit && fwd.has(o.id)), `gate ${g.id}`).toBe(true);
+    }
+    for (const g of gates.filter((x) => x.canExit)) {
+      const bwd = reachable(g.id, radj);
+      expect(gates.some((o) => o.id !== g.id && o.canEnter && bwd.has(o.id)), `gate ${g.id}`).toBe(true);
+    }
+  });
+});
+
+describe('roundabout collapse (synthetic)', () => {
+  const lat0 = 37.84;
+  const lon0 = -122.26;
+  const d = 0.0001;
+  const nd = (id: number, dx: number, dy: number) => ({ type: 'node' as const, id, lon: lon0 + dx * d, lat: lat0 + dy * d });
+  const osm: Overpass = {
+    elements: [
+      nd(1, 0, 3), nd(2, 3, 0), nd(3, 0, -3), nd(4, -3, 0),
+      nd(11, 0, 1), nd(12, 1, 0), nd(13, 0, -1), nd(14, -1, 0),
+      nd(21, 0, 8), nd(22, 8, 0), nd(23, 0, -8), nd(24, -8, 0),
+      { type: 'way', id: 100, nodes: [11, 14, 13, 12, 11], tags: { highway: 'residential', junction: 'roundabout' } },
+      { type: 'way', id: 101, nodes: [21, 1, 11], tags: { highway: 'residential', name: 'North St' } },
+      { type: 'way', id: 102, nodes: [22, 2, 12], tags: { highway: 'residential', name: 'East St' } },
+      { type: 'way', id: 103, nodes: [23, 3, 13], tags: { highway: 'residential', name: 'South St' } },
+      { type: 'way', id: 104, nodes: [24, 4, 14], tags: { highway: 'residential', name: 'West St' } },
+      // a one-way street that only leaves the model at the west end
+    ],
+  };
+  const cfg2: AreaConfig = {
+    id: 't', name: 't', extract: '', bbox: [lon0 - 10 * d, lat0 - 10 * d, lon0 + 10 * d, lat0 + 10 * d],
+    studyArea: [[lon0 - d, lat0 - d], [lon0 + d, lat0 - d], [lon0 + d, lat0 + d], [lon0 - d, lat0 + d], [lon0 - d, lat0 - d]],
+  };
+  const r = buildNetwork(cfg2, osm);
+
+  it('replaces the ring by one traffic_circle node with four approaches', () => {
+    expect(r.stats.collapsedRings).toBe(1);
+    const circles = r.network.nodes.filter((n) => n.control === 'traffic_circle');
+    expect(circles).toHaveLength(1);
+    const c = circles[0];
+    expect(Math.hypot(c.x, c.y)).toBeLessThan(1);
+    expect(r.network.links.filter((l) => l.to === c.id)).toHaveLength(4);
+    expect(r.network.links.filter((l) => l.from === c.id)).toHaveLength(4);
+    expect(r.network.links.every((l) => l.osmWayId !== 100)).toBe(true);
+  });
+
+  it('ends approach geometry at the ring centre', () => {
+    const c = r.network.nodes.find((n) => n.control === 'traffic_circle')!;
+    for (const l of r.network.links.filter((x) => x.to === c.id)) {
+      const last = l.geometry.at(-1)!;
+      expect(Math.hypot(last[0] - c.x, last[1] - c.y)).toBeLessThan(1);
+    }
+  });
+
+  it('flags the four outer ends as two-way gates', () => {
+    const g = r.network.nodes.filter((n) => n.gate);
+    expect(g).toHaveLength(4);
+    for (const n of g) {
+      expect(n.canEnter).toBe(true);
+      expect(n.canExit).toBe(true);
+    }
+  });
+});
