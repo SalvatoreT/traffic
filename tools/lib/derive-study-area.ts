@@ -87,15 +87,7 @@ export function deriveStudyArea(osm: Overpass, streets: BoundingStreets, bbox: A
     }
     if (best) {
       const ia = insert(ga, best.sa[0], best.sa[1], best.c);
-      const sb = gb.get(best.sb[0])?.has(best.sb[1]) ? best.sb : null;
-      if (sb) {
-        const ib = insert(gb, sb[0], sb[1], best.c);
-        if (ia !== ib && synth.has(ia) && synth.has(ib)) {
-          synth.set(ib, synth.get(ia)!);
-        }
-        return [ia, ib];
-      }
-      return [ia, ia];
+      return [ia, insert(gb, best.sb[0], best.sb[1], best.c)];
     }
     let pair: [number, number] | null = null;
     let bd = Infinity;
@@ -135,28 +127,25 @@ export function deriveStudyArea(osm: Overpass, streets: BoundingStreets, bbox: A
     return out;
   };
 
-  const loop = [
-    ...path(G.west, sw, nw),
-    ...path(G.north, nw, ne).slice(1),
-    ...path(G.east, ne, se).slice(1),
-    ...path(G.south, seS, swS),
-  ];
-  void loop;
-  // Each edge is simplified on its own (tolerance 3 m) so the freeway edge keeps its curve. The outward buffer applies
+  // Surface edges are simplified on their own (tolerance 3 m); a freeway edge keeps every vertex of the carriageway. The outward buffer applies
   // to surface streets only: vertices of a freeway edge stay on the carriageway.
   const edges: { pts: Pt[]; fixed: boolean }[] = [
     { pts: path(G.west, sw, nw).map(xy), fixed: isFreeway(streets.west) },
     { pts: path(G.north, nw, ne).map(xy), fixed: isFreeway(streets.north) },
     { pts: path(G.east, ne, se).map(xy), fixed: isFreeway(streets.east) },
     { pts: path(G.south, seS, swS).map(xy), fixed: isFreeway(streets.south) },
-  ].map((e) => ({ ...e, pts: simplify(e.pts, 3) }));
+  ].map((e) => ({ ...e, pts: e.fixed ? e.pts : simplify(e.pts, 3) }));
   const ring: Pt[] = [];
   const fixedFlags: boolean[] = [];
   edges.forEach((e, k) => {
+    if (k > 0 && e.fixed) fixedFlags[fixedFlags.length - 1] = true;
     const pts = k === 0 ? e.pts : e.pts.slice(1);
     for (const p of pts) (ring.push(p), fixedFlags.push(e.fixed));
   });
-  if (dist(ring[0], ring.at(-1)!) < 0.5) (ring.pop(), fixedFlags.pop());
+  if (dist(ring[0], ring.at(-1)!) < 0.5) {
+    ring.pop();
+    if (fixedFlags.pop()) fixedFlags[0] = true;
+  }
   const buf = bufferPolygon(ring, bufferM);
   const buffered = buf.map((p, i) => (fixedFlags[i] ? ring[i] : p));
   const ll = buffered.map(([x, y]) => proj.inv(x, y).map(round6) as [number, number]);
