@@ -1,0 +1,600 @@
+//! Headless calibration run: loads a study area, runs the baseline, and reports modelled versus observed
+//! select-link shares plus network health. See data/calibration/README.md.
+//!
+//! cargo run --release -p traffic-sim --bin calibrate -- --area rockridge --period pm_peak --minutes 60 --scale 1.0 --seed 1
+
+use serde_json::{json, Value};
+use std::cmp::Ordering;
+use std::collections::{BinaryHeap, HashMap};
+use std::fmt::Write as _;
+use std::path::{Path, PathBuf};
+use traffic_sim::model::{Config, Control, Demand, Network, RoadClass};
+use traffic_sim::sim::{SelectLinkRecord, Simulation, StreetVisit};
+
+struct Args {
+    area: String,
+    period: String,
+    minutes: f64,
+    scale: f64,
+    seed: u64,
+    warmup_min: f64,
+    out: Option<PathBuf>,
+    write: bool,
+}
+
+fn parse_args() -> Args {
+    let mut a = Args { area: "rockridge".into(), period: "pm_peak".into(), minutes: 60.0, scale: 1.0, seed: 1, warmup_min: 10.0, out: None, write: true };
+    let argv: Vec<String> = std::env::args().skip(1).collect();
+    let mut i = 0;
+    while i < argv.len() {
+        let k = argv[i].as_str();
+        let mut val = || {
+            i += 1;
+            argv.get(i).cloned().unwrap_or_else(|| usage(&format!("{k} needs a value")))
+        };
+        match k {
+            "--area" => a.area = val(),
+            "--period" => a.period = val(),
+            "--minutes" => a.minutes = val().parse().unwrap_or_else(|_| usage("bad --minutes")),
+            "--scale" => a.scale = val().parse().unwrap_or_else(|_| usage("bad --scale")),
+            "--seed" => a.seed = val().parse().unwrap_or_else(|_| usage("bad --seed")),
+            "--warmup" => a.warmup_min = val().parse().unwrap_or_else(|_| usage("bad --warmup")),
+            "--out" => a.out = Some(PathBuf::from(val())),
+            "--no-write" => a.write = false,
+            "-h" | "--help" => usage(""),
+            _ => usage(&format!("unknown argument {k}")),
+        }
+        i += 1;
+    }
+    a
+}
+
+fn usage(msg: &str) -> ! {
+    if !msg.is_empty() {
+        eprintln!("error: {msg}");
+    }
+    eprintln!("usage: calibrate [--area rockridge] [--period pm_peak] [--minutes 60] [--scale 1.0] [--seed 1] [--warmup 10] [--out DIR] [--no-write]");
+    std::process::exit(if msg.is_empty() { 0 } else { 2 });
+}
+
+fn root() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
+}
+
+fn bearing(net: &Network, l: usize) -> f64 {
+    let g = &net.links[l].geometry;
+    let (a, b) = (g.first().copied().unwrap_or([0.0, 0.0]), g.last().copied().unwrap_or([0.0, 1.0]));
+    (b[0] - a[0]).atan2(b[1] - a[1]).to_degrees().rem_euclid(360.0)
+}
+
+fn ang_diff(a: f64, b: f64) -> f64 {
+    let d = (a - b).abs() % 360.0;
+    if d > 180.0 {
+        360.0 - d
+    } else {
+        d
+    }
+}
+
+fn dir_char(brg: f64) -> char {
+    ['N', 'E', 'S', 'W'][(((brg + 45.0) / 90.0) as usize) % 4]
+}
+
+fn same(a: &str, b: &str) -> bool {
+    a.eq_ignore_ascii_case(b)
+}
+
+/// Street name without trailing qualifiers such as "north of X".
+fn base_street(s: &str) -> String {
+    let low = s.to_lowercase();
+    for q in [" north of ", " south of ", " east of ", " west of "] {
+        if let Some(i) = low.find(q) {
+            return s[..i].to_string();
+        }
+    }
+    s.to_string()
+}
+
+enum Via {
+    Freeway,
+    Street(String, Option<char>),
+}
+
+fn parse_via(s: &str) -> Via {
+    if s.eq_ignore_ascii_case("freeway") {
+        return Via::Freeway;
+    }
+    let base = base_street(s);
+    for (suf, c) in [(" NB", 'N'), (" SB", 'S'), (" EB", 'E'), (" WB", 'W')] {
+        if let Some(st) = base.strip_suffix(suf) {
+            return Via::Street(st.to_string(), Some(c));
+        }
+    }
+    Via::Street(base, None)
+}
+
+fn visit_matches(v: &StreetVisit, name: &str, dir: Option<char>) -> bool {
+    same(&v.name, name) && dir.map_or(true, |d| v.dir == d)
+}
+
+/// Links of the named street between two cross streets, in the stated direction of travel.
+/// Returns the link ids and a note describing how they were found.
+fn resolve_block(net: &Network, street: &str, dir: &str, between: &[String]) -> (Vec<u32>, String) {
+    let want = match dir {
+        "NB" => 0.0,
+        "EB" => 90.0,
+        "SB" => 180.0,
+        _ => 270.0,
+    };
+    let street_links: Vec<usize> = (0..net.links.len())
+        .filter(|&l| same(&net.links[l].name, street) && net.links[l].class != RoadClass::Motorway && ang_diff(bearing(net, l), want) <= 75.0)
+        .collect();
+    let nn = net.nodes.len();
+    let mut inc: Vec<Vec<usize>> = vec![Vec::new(); nn];
+    for (l, k) in net.links.iter().enumerate() {
+        inc[k.from as usize].push(l);
+        inc[k.to as usize].push(l);
+    }
+    let cross_nodes = |x: &str| -> Vec<usize> {
+        (0..nn)
+            .filter(|&n| inc[n].iter().any(|&l| same(&net.links[l].name, x)) && inc[n].iter().any(|&l| same(&net.links[l].name, street)))
+            .collect()
+    };
+    let fallback = |why: &str| -> (Vec<u32>, String) {
+        let v: Vec<u32> = street_links.iter().filter(|&&l| net.links[l].in_study_area).map(|&l| l as u32).collect();
+        (v, format!("FALLBACK ({why}): all study-area {street} {dir} links"))
+    };
+    if between.len() != 2 {
+        return fallback("no between pair");
+    }
+    let mut out_adj: HashMap<usize, Vec<usize>> = HashMap::new();
+    for &l in &street_links {
+        out_adj.entry(net.links[l].from as usize).or_default().push(l);
+    }
+    for order in [[0usize, 1], [1, 0]] {
+        let a = cross_nodes(&between[order[0]]);
+        let b = cross_nodes(&between[order[1]]);
+        if a.is_empty() || b.is_empty() {
+            continue;
+        }
+        // Dijkstra over the street's own directed links.
+        let mut dist: HashMap<usize, f64> = HashMap::new();
+        let mut prev: HashMap<usize, usize> = HashMap::new();
+        let mut heap = BinaryHeap::new();
+        for &s in &a {
+            dist.insert(s, 0.0);
+            heap.push((std::cmp::Reverse((0.0f64 * 1000.0) as u64), s));
+        }
+        while let Some((std::cmp::Reverse(d1000), n)) = heap.pop() {
+            let d = d1000 as f64 / 1000.0;
+            if d > *dist.get(&n).unwrap_or(&f64::INFINITY) + 1e-9 {
+                continue;
+            }
+            for &l in out_adj.get(&n).map(|v| v.as_slice()).unwrap_or(&[]) {
+                let m = net.links[l].to as usize;
+                let nd = d + net.links[l].length;
+                if nd < *dist.get(&m).unwrap_or(&f64::INFINITY) {
+                    dist.insert(m, nd);
+                    prev.insert(m, l);
+                    heap.push((std::cmp::Reverse((nd * 1000.0) as u64), m));
+                }
+            }
+        }
+        let best = b.iter().filter(|n| dist.contains_key(n) && !a.contains(n)).min_by(|x, y| dist[x].partial_cmp(&dist[y]).unwrap_or(Ordering::Equal));
+        if let Some(&end) = best {
+            let mut path = Vec::new();
+            let mut n = end;
+            while let Some(&l) = prev.get(&n) {
+                path.push(l as u32);
+                n = net.links[l].from as usize;
+                if a.contains(&n) {
+                    break;
+                }
+            }
+            path.reverse();
+            return (path, format!("path {} -> {} ({:.0} m)", between[order[0]], between[order[1]], dist[&end]));
+        }
+    }
+    fallback("no path between the cross streets")
+}
+
+struct ShareRow {
+    target: String,
+    side: &'static str,
+    via: String,
+    observed: f64,
+    observed_pm: Option<f64>,
+    modelled: f64,
+    n: usize,
+    headline: bool,
+}
+
+fn pct(x: f64) -> String {
+    format!("{:.0}%", 100.0 * x)
+}
+
+fn street_label(net: &Network, n: usize, inc: &[Vec<usize>]) -> String {
+    let mut names: Vec<String> = Vec::new();
+    for &l in &inc[n] {
+        let nm = &net.links[l].name;
+        if !nm.is_empty() && !names.contains(nm) {
+            names.push(nm.clone());
+        }
+    }
+    names.sort();
+    if names.is_empty() {
+        "(unnamed)".into()
+    } else {
+        names.into_iter().take(3).collect::<Vec<_>>().join(" / ")
+    }
+}
+
+fn ctrl_str(c: Control) -> &'static str {
+    match c {
+        Control::Signal => "signal",
+        Control::AllWayStop => "all_way_stop",
+        Control::TwoWayStop => "two_way_stop",
+        Control::Uncontrolled => "uncontrolled",
+        Control::TrafficCircle => "traffic_circle",
+    }
+}
+
+fn main() {
+    let args = parse_args();
+    let root = root();
+    let read = |p: PathBuf| std::fs::read_to_string(&p).unwrap_or_else(|e| usage(&format!("cannot read {}: {e}", p.display())));
+    let net_json = read(root.join(format!("public/data/{}.network.json", args.area)));
+    let dem_json = read(root.join(format!("public/data/{}.demand.json", args.area)));
+    let targets: Value = serde_json::from_str(&read(root.join(format!("data/calibration/{}.targets.json", args.area)))).expect("targets json");
+    let net: Network = serde_json::from_str(&net_json).expect("network");
+    let demand: Demand = serde_json::from_str(&dem_json).expect("demand");
+    let nn = net.nodes.len();
+    let mut inc: Vec<Vec<usize>> = vec![Vec::new(); nn];
+    for (l, k) in net.links.iter().enumerate() {
+        inc[k.from as usize].push(l);
+        inc[k.to as usize].push(l);
+    }
+
+    // ---- resolve targets
+    struct Target {
+        label: String,
+        links: Vec<u32>,
+        note: String,
+        from: Vec<(String, f64, Option<f64>)>,
+        to: Vec<(String, f64, Option<f64>)>,
+    }
+    let shares = |v: &Value| -> Vec<(String, f64, Option<f64>)> {
+        v.as_array()
+            .map(|a| a.iter().map(|e| (e["via"].as_str().unwrap_or("").to_string(), e["share"].as_f64().unwrap_or(0.0), e["pmPeakShare"].as_f64())).collect())
+            .unwrap_or_default()
+    };
+    let mut tgts: Vec<Target> = Vec::new();
+    for t in targets["selectLink"].as_array().map(|v| v.as_slice()).unwrap_or(&[]) {
+        let street = t["street"].as_str().unwrap_or("");
+        let dir = t["direction"].as_str().unwrap_or("NB");
+        let between: Vec<String> = t["between"].as_array().map(|a| a.iter().filter_map(|x| x.as_str().map(String::from)).collect()).unwrap_or_default();
+        let (links, note) = resolve_block(&net, street, dir, &between);
+        tgts.push(Target { label: format!("{street} {dir}"), links, note, from: shares(&t["from"]), to: shares(&t["to"]) });
+    }
+
+    // ---- freeway ramps: surface nodes touched by motorway-class and surface links
+    struct Ramp {
+        node: usize,
+        on: bool,
+        links: Vec<u32>,
+    }
+    let mut ramps: Vec<Ramp> = Vec::new();
+    for n in 0..nn {
+        let fw: Vec<usize> = inc[n].iter().copied().filter(|&l| net.links[l].class == RoadClass::Motorway).collect();
+        let surf = inc[n].iter().any(|&l| net.links[l].class != RoadClass::Motorway);
+        if fw.is_empty() || !surf {
+            continue;
+        }
+        let on: Vec<u32> = fw.iter().filter(|&&l| net.links[l].from as usize == n).map(|&l| l as u32).collect();
+        let off: Vec<u32> = fw.iter().filter(|&&l| net.links[l].to as usize == n).map(|&l| l as u32).collect();
+        if !on.is_empty() {
+            ramps.push(Ramp { node: n, on: true, links: on });
+        }
+        if !off.is_empty() {
+            ramps.push(Ramp { node: n, on: false, links: off });
+        }
+    }
+
+    let mut sel: Vec<u32> = tgts.iter().flat_map(|t| t.links.iter().copied()).collect();
+    sel.extend(ramps.iter().flat_map(|r| r.links.iter().copied()));
+    sel.sort_unstable();
+    sel.dedup();
+
+    // ---- run
+    let cfg = Config { seed: args.seed, period: args.period.clone(), demand_scale: args.scale, select_links: sel };
+    let mut sim = Simulation::from_parts(net.clone(), demand.clone(), cfg).expect("sim");
+    let total_s = args.minutes * 60.0;
+    let warm_s = if total_s >= 1800.0 { args.warmup_min * 60.0 } else { 0.0 };
+    let t0 = std::time::Instant::now();
+    #[derive(Clone)]
+    struct Sample {
+        t: f64,
+        veh: u64,
+        backlog: u64,
+        completed: u64,
+        removed: u64,
+        art_speed: f64,
+    }
+    let mut series: Vec<Sample> = Vec::new();
+    let (mut last_t, mut last_vs) = (0.0, 0.0);
+    let mut exits0: Vec<u32> = vec![0; net.links.len()];
+    let mut t = 0.0;
+    let mut warmed = warm_s == 0.0;
+    while t < total_s - 1e-9 {
+        let dt = 5.0f64.min(total_s - t);
+        sim.step(dt);
+        t += dt;
+        if !warmed && t >= warm_s - 1e-9 {
+            exits0 = sim.diagnostics().link_exits.to_vec();
+            warmed = true;
+        }
+        if (t % 300.0).abs() < 1e-6 || (t - total_s).abs() < 1e-9 {
+            let m = sim.metrics();
+            let d = sim.diagnostics();
+            let art = if d.art_t > last_t { (d.art_vs - last_vs) / (d.art_t - last_t) } else { 0.0 };
+            last_t = d.art_t;
+            last_vs = d.art_vs;
+            if series.last().map_or(true, |s| (s.t - t).abs() > 1e-6) {
+                series.push(Sample { t, veh: m.vehicles_in_network, backlog: m.backlog, completed: m.completed_trips, removed: m.gridlock_removed, art_speed: art });
+            }
+        }
+    }
+    let wall = t0.elapsed().as_secs_f64();
+    sim.check_invariants().expect("invariants");
+    let m = sim.metrics();
+    let d = sim.diagnostics();
+    let recs: Vec<SelectLinkRecord> = sim.select_link_records();
+
+    // ---- select-link shares
+    let pm = args.period == "pm_peak";
+    let mut rows: Vec<ShareRow> = Vec::new();
+    let mut notes: Vec<String> = Vec::new();
+    for t in &tgts {
+        let set: std::collections::HashSet<u32> = t.links.iter().copied().collect();
+        let mine: Vec<(&SelectLinkRecord, usize, usize)> = recs
+            .iter()
+            .filter_map(|r| {
+                let idx: Vec<usize> = r.hits.iter().filter(|h| set.contains(&h.0)).map(|h| h.1).collect();
+                Some((r, *idx.iter().min()?, *idx.iter().max()?))
+            })
+            .collect();
+        let n = mine.len();
+        notes.push(format!("{}: {} links ({}), {} trips ({} completed)", t.label, t.links.len(), t.note, n, mine.iter().filter(|x| x.0.completed).count()));
+        for (side, list) in [("from", &t.from), ("to", &t.to)] {
+            for (via, share, pmshare) in list {
+                let v = parse_via(via);
+                let hit = mine
+                    .iter()
+                    .filter(|(r, f, l)| match &v {
+                        Via::Freeway => {
+                            if side == "from" {
+                                r.origin_freeway
+                            } else {
+                                r.dest_freeway
+                            }
+                        }
+                        Via::Street(name, dir) => {
+                            let part = if side == "from" { &r.streets[..*f] } else { &r.streets[(*l + 1).min(r.streets.len())..] };
+                            part.iter().any(|s| visit_matches(s, name, *dir))
+                        }
+                    })
+                    .count();
+                rows.push(ShareRow {
+                    target: t.label.clone(),
+                    side: if side == "from" { "from" } else { "to" },
+                    via: via.clone(),
+                    observed: *share,
+                    observed_pm: *pmshare,
+                    modelled: if n > 0 { hit as f64 / n as f64 } else { f64::NAN },
+                    n,
+                    headline: matches!(v, Via::Freeway),
+                });
+            }
+        }
+    }
+
+    // ---- ramp shares
+    let loc = targets["freewayRamp"]["location"].as_str().unwrap_or("").to_lowercase();
+    let ramp_sets: Vec<(&Ramp, std::collections::HashSet<u32>)> = ramps
+        .iter()
+        .filter(|r| inc[r.node].iter().any(|&l| !net.links[l].name.is_empty() && loc.contains(&net.links[l].name.to_lowercase())))
+        .map(|r| (r, r.links.iter().copied().collect()))
+        .collect();
+    let mut ramp_rows: Vec<(&'static str, String, f64, f64, usize)> = Vec::new();
+    for (key, on) in [("ontoFreewayFromNorth", true), ("fromFreewayGoingNorth", false)] {
+        let mine: Vec<(&SelectLinkRecord, usize, usize)> = recs
+            .iter()
+            .filter_map(|r| {
+                let idx: Vec<usize> = r.hits.iter().filter(|h| ramp_sets.iter().any(|(rp, s)| rp.on == on && s.contains(&h.0))).map(|h| h.1).collect();
+                Some((r, *idx.iter().min()?, *idx.iter().max()?))
+            })
+            .collect();
+        for e in targets["freewayRamp"][key].as_array().map(|v| v.as_slice()).unwrap_or(&[]) {
+            let via = e["via"].as_str().unwrap_or("");
+            let Via::Street(name, dir) = parse_via(via) else { continue };
+            let hit = mine
+                .iter()
+                .filter(|(r, f, l)| {
+                    let part = if on { &r.streets[..(*f + 1).min(r.streets.len())] } else { &r.streets[(*l).min(r.streets.len())..] };
+                    part.iter().any(|s| visit_matches(s, &name, dir))
+                })
+                .count();
+            ramp_rows.push((if on { "onto freeway" } else { "from freeway" }, via.to_string(), e["share"].as_f64().unwrap_or(0.0), if mine.is_empty() { f64::NAN } else { hit as f64 / mine.len() as f64 }, mine.len()));
+        }
+    }
+
+    // ---- health
+    let spawned = m.spawned.max(1) as f64;
+    let backlog_pct = 100.0 * m.backlog as f64 / spawned;
+    let tail: Vec<&Sample> = series.iter().filter(|s| s.t > total_s - 900.0).collect();
+    let art_tail = if tail.is_empty() { 0.0 } else { tail.iter().map(|s| s.art_speed).sum::<f64>() / tail.len() as f64 };
+    let stable = m.gridlock_removed == 0 && backlog_pct < 2.0 && m.arterial_mean_speed > 4.0;
+    let elapsed_h = (total_s - warm_s).max(1.0) / 3600.0;
+
+    // ---- top links / nodes
+    let mut link_idx: Vec<usize> = (0..net.links.len()).collect();
+    link_idx.sort_by(|&a, &b| d.link_delay_s[b].partial_cmp(&d.link_delay_s[a]).unwrap_or(Ordering::Equal));
+    let mut node_idx: Vec<usize> = (0..nn).collect();
+    node_idx.sort_by(|&a, &b| d.node_wait_s[b].partial_cmp(&d.node_wait_s[a]).unwrap_or(Ordering::Equal));
+
+    // ---- key street flows (mid-block, per direction)
+    let keys = ["Telegraph", "College", "Claremont", "Alcatraz", "Hillegass", "Colby", "Benvenue", "Martin"];
+    let mut flow_rows: Vec<(String, char, usize, f64, f64)> = Vec::new();
+    for k in keys {
+        for dch in ['N', 'E', 'S', 'W'] {
+            let mut fl: Vec<f64> = (0..net.links.len())
+                .filter(|&l| {
+                    let lk = &net.links[l];
+                    lk.name.to_lowercase().starts_with(&k.to_lowercase()) && lk.in_study_area && lk.length >= 40.0 && lk.class != RoadClass::Motorway && dir_char(bearing(&net, l)) == dch
+                })
+                .map(|l| (d.link_exits[l] - exits0[l]) as f64 / elapsed_h)
+                .collect();
+            if fl.is_empty() {
+                continue;
+            }
+            fl.sort_by(|a, b| a.partial_cmp(b).unwrap());
+            flow_rows.push((k.to_string(), dch, fl.len(), fl[fl.len() / 2], *fl.last().unwrap()));
+        }
+    }
+
+    // ---- demand summary
+    let period = demand.periods.iter().find(|p| p.id == args.period).or(demand.periods.first());
+    let total_demand: f64 = period.map(|p| p.flows.iter().map(|f| f.veh_per_hour).sum()).unwrap_or(0.0);
+    let mut by_origin: HashMap<u32, f64> = HashMap::new();
+    if let Some(p) = period {
+        for f in &p.flows {
+            *by_origin.entry(f.origin).or_default() += f.veh_per_hour;
+        }
+    }
+    let mut top_origins: Vec<(u32, f64)> = by_origin.into_iter().collect();
+    top_origins.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+
+    // ---- markdown
+    let mut md = String::new();
+    let _ = writeln!(md, "# Calibration report: {} {} scale {} seed {} ({} min)\n", args.area, args.period, args.scale, args.seed, args.minutes);
+    let _ = writeln!(md, "Offered demand {:.0} veh/h x scale {} = {:.0} veh/h. Run took {:.1} s wall clock. Flow tables use the window after a {:.0} min warm-up; select-link and health figures cover the whole run from an empty network.\n", total_demand, args.scale, total_demand * args.scale, wall, warm_s / 60.0);
+    let _ = writeln!(md, "## Stability (design D4)\n");
+    let _ = writeln!(md, "| Criterion | Threshold | Value | Result |\n| --- | --- | --- | --- |");
+    let _ = writeln!(md, "| Gridlock removals | 0 | {} | {} |", m.gridlock_removed, if m.gridlock_removed == 0 { "pass" } else { "FAIL" });
+    let _ = writeln!(md, "| Backlog / spawned | < 2% | {:.1}% ({} of {}) | {} |", backlog_pct, m.backlog, m.spawned, if backlog_pct < 2.0 { "pass" } else { "FAIL" });
+    let _ = writeln!(md, "| Arterial mean speed (run) | > 4 m/s | {:.2} m/s (last 15 min {:.2}) | {} |", m.arterial_mean_speed, art_tail, if m.arterial_mean_speed > 4.0 { "pass" } else { "FAIL" });
+    let _ = writeln!(md, "\nOverall: **{}**. Mean trip delay {:.0} s, mean trip time {:.0} s, completed {}, unroutable {}.\n", if stable { "STABLE" } else { "NOT STABLE" }, m.mean_trip_delay, m.mean_trip_time, m.completed_trips, m.unroutable_trips);
+    let _ = writeln!(md, "| t (min) | vehicles in network | backlog | completed | removals | arterial speed in interval (m/s) |\n| --- | --- | --- | --- | --- | --- |");
+    for s in &series {
+        let _ = writeln!(md, "| {:.0} | {} | {} | {} | {} | {:.2} |", s.t / 60.0, s.veh, s.backlog, s.completed, s.removed, s.art_speed);
+    }
+    let _ = writeln!(md, "\n## Select-link shares: modelled vs observed (design D5: headline = freeway shares, tolerance +/-10 pp)\n");
+    for n in &notes {
+        let _ = writeln!(md, "- {n}");
+    }
+    let _ = writeln!(md, "\n| Block | Side | Via | Observed | Modelled | Diff (pp) | n trips | Headline |\n| --- | --- | --- | --- | --- | --- | --- | --- |");
+    let mut head_ok = 0;
+    let mut head_n = 0;
+    for r in &rows {
+        let obs = if pm { r.observed_pm.unwrap_or(r.observed) } else { r.observed };
+        let diff = 100.0 * (r.modelled - obs);
+        let ok = diff.abs() <= 10.0;
+        if r.headline {
+            head_n += 1;
+            if ok {
+                head_ok += 1;
+            }
+        }
+        let o = match r.observed_pm {
+            Some(p) => format!("{} (PM {})", pct(r.observed), pct(p)),
+            None => pct(r.observed),
+        };
+        let _ = writeln!(md, "| {} | {} | {} | {} | {} | {:+.0} | {} | {} |", r.target, r.side, r.via, o, if r.modelled.is_nan() { "n/a".into() } else { pct(r.modelled) }, if diff.is_nan() { 0.0 } else { diff }, r.n, if r.headline { if ok { "within" } else { "OUTSIDE" } } else { "" });
+    }
+    let _ = writeln!(md, "\nHeadline shares within tolerance: {head_ok} of {head_n}. Observed column uses the PM-peak share where one is given and the period is pm_peak. 'Via' shares are the fraction of select-link trips using that street before (from) or after (to) the block; freeway = origin / destination gate with a motorway-class link attached.\n");
+    if !ramp_rows.is_empty() {
+        let _ = writeln!(md, "## Claremont ramps: streets used before the on-ramp / after the off-ramp\n");
+        let _ = writeln!(md, "Observed shares are for traffic from/to the north only; modelled shares are over all trips on the ramps (so modelled is an upper bound for streets that serve both sides).\n");
+        let _ = writeln!(md, "| Direction | Via | Observed | Modelled | n ramp trips |\n| --- | --- | --- | --- | --- |");
+        for (k, v, o, mo, n) in &ramp_rows {
+            let _ = writeln!(md, "| {k} | {v} | {} | {} | {n} |", pct(*o), if mo.is_nan() { "n/a".into() } else { pct(*mo) });
+        }
+        md.push('\n');
+    }
+    let _ = writeln!(md, "## Top 15 links by delay\n");
+    let _ = writeln!(md, "| Link | Street | Class | Lanes | Len (m) | End node control | Delay (veh-h) | Stopped (veh-h) | Mean stopped veh | Flow (veh/h) |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |");
+    for &l in link_idx.iter().take(15) {
+        let lk = &net.links[l];
+        let _ = writeln!(md, "| {} | {} | {:?} | {} | {:.0} | {} | {:.2} | {:.2} | {:.1} | {:.0} |", l, if lk.name.is_empty() { "(unnamed)" } else { &lk.name }, lk.class, lk.lanes, lk.length, ctrl_str(net.nodes[lk.to as usize].control), d.link_delay_s[l] / 3600.0, d.link_stopped_s[l] / 3600.0, d.link_stopped_s[l] / total_s as f32, (d.link_exits[l] - exits0[l]) as f64 / elapsed_h);
+    }
+    let _ = writeln!(md, "\n## Top 15 nodes by blocked time\n");
+    let _ = writeln!(md, "Blocked time = lane-head seconds waiting at the stop line without permission (signal red, conflict, stop sign or no downstream space).\n");
+    let _ = writeln!(md, "| Node | Streets | Control | Gate | Blocked (lane-h) | of which no downstream space |\n| --- | --- | --- | --- | --- | --- |");
+    for &n in node_idx.iter().take(15) {
+        let _ = writeln!(md, "| {} | {} | {} | {} | {:.2} | {:.2} |", n, street_label(&net, n, &inc), ctrl_str(net.nodes[n].control), if net.nodes[n].gate { "yes" } else { "" }, d.node_wait_s[n] / 3600.0, d.node_space_s[n] / 3600.0);
+    }
+    let mut rem: HashMap<u32, (usize, f64)> = HashMap::new();
+    for &(l, t) in sim.debug_gridlock() {
+        let e = rem.entry(l).or_insert((0, t));
+        e.0 += 1;
+    }
+    let mut rem: Vec<(u32, (usize, f64))> = rem.into_iter().collect();
+    rem.sort_by(|a, b| b.1 .0.cmp(&a.1 .0).then(a.1 .1.partial_cmp(&b.1 .1).unwrap_or(Ordering::Equal)));
+    if !rem.is_empty() {
+        let _ = writeln!(md, "\n## Gridlock removals by link (top 10)\n");
+        let _ = writeln!(md, "| Link | Street | End node | Control | Removals | First at (min) |\n| --- | --- | --- | --- | --- | --- |");
+        for (l, (n, t)) in rem.iter().take(10) {
+            let lk = &net.links[*l as usize];
+            let _ = writeln!(md, "| {} | {} | {} | {} | {} | {:.1} |", l, if lk.name.is_empty() { "(unnamed)" } else { &lk.name }, street_label(&net, lk.to as usize, &inc), ctrl_str(net.nodes[lk.to as usize].control), n, t / 60.0);
+        }
+    }
+    let mut bl: Vec<(usize, u32)> = d.node_backlog.iter().enumerate().filter(|x| *x.1 > 0).map(|(n, &b)| (n, b)).collect();
+    bl.sort_by(|a, b| b.1.cmp(&a.1));
+    if !bl.is_empty() {
+        let _ = writeln!(md, "\n## Entry backlog by origin node at end of run (top 10)\n");
+        let _ = writeln!(md, "| Node | Streets | Trips waiting | Offered veh/h (before scale) |\n| --- | --- | --- | --- |");
+        for (n, b) in bl.iter().take(10) {
+            let off = top_origins.iter().find(|x| x.0 as usize == *n).map_or(0.0, |x| x.1);
+            let _ = writeln!(md, "| {} | {} | {} | {:.0} |", n, street_label(&net, *n, &inc), b, off);
+        }
+    }
+    let _ = writeln!(md, "\n## Flow on key streets (veh/h per direction, study-area links of 40 m or more)\n");
+    let _ = writeln!(md, "| Street | Direction of travel | Links | Median flow | Max flow |\n| --- | --- | --- | --- | --- |");
+    for (k, dch, n, med, max) in &flow_rows {
+        let _ = writeln!(md, "| {k} | {dch} | {n} | {med:.0} | {max:.0} |");
+    }
+    let _ = writeln!(md, "\n## Largest demand origins (offered, before scale)\n");
+    let _ = writeln!(md, "| Node | Streets | Veh/h |\n| --- | --- | --- |");
+    for (n, v) in top_origins.iter().take(10) {
+        let _ = writeln!(md, "| {} | {} | {:.0} |", n, street_label(&net, *n as usize, &inc), v);
+    }
+    print!("{md}");
+
+    if args.write {
+        let dir = args.out.clone().unwrap_or_else(|| root.join("data/calibration/reports"));
+        std::fs::create_dir_all(&dir).expect("mkdir reports");
+        let stem = format!("{}-{}-s{}-seed{}", args.area, args.period, args.scale, args.seed);
+        std::fs::write(dir.join(format!("{stem}.md")), &md).expect("write md");
+        let js = json!({
+            "area": args.area, "period": args.period, "scale": args.scale, "seed": args.seed, "minutes": args.minutes,
+            "offeredVehPerHour": total_demand * args.scale,
+            "stable": stable,
+            "health": {
+                "gridlockRemoved": m.gridlock_removed, "backlog": m.backlog, "spawned": m.spawned, "backlogPct": backlog_pct,
+                "arterialMeanSpeed": m.arterial_mean_speed, "arterialMeanSpeedLast15min": art_tail,
+                "meanTripDelay": m.mean_trip_delay, "meanTripTime": m.mean_trip_time, "completed": m.completed_trips, "unroutable": m.unroutable_trips,
+            },
+            "series": series.iter().map(|s| json!({"tMin": s.t / 60.0, "vehicles": s.veh, "backlog": s.backlog, "completed": s.completed, "removed": s.removed, "arterialSpeed": s.art_speed})).collect::<Vec<_>>(),
+            "shares": rows.iter().map(|r| json!({
+                "block": r.target, "side": r.side, "via": r.via, "observed": r.observed, "observedPm": r.observed_pm,
+                "modelled": if r.modelled.is_nan() { Value::Null } else { json!(r.modelled) }, "n": r.n, "headline": r.headline,
+            })).collect::<Vec<_>>(),
+            "rampShares": ramp_rows.iter().map(|(k, v, o, mo, n)| json!({"direction": k, "via": v, "observed": o, "modelled": if mo.is_nan() { Value::Null } else { json!(mo) }, "n": n})).collect::<Vec<_>>(),
+            "topLinks": link_idx.iter().take(15).map(|&l| json!({"link": l, "street": net.links[l].name, "delayVehH": d.link_delay_s[l] / 3600.0, "stoppedVehH": d.link_stopped_s[l] / 3600.0})).collect::<Vec<_>>(),
+            "topNodes": node_idx.iter().take(15).map(|&n| json!({"node": n, "streets": street_label(&net, n, &inc), "control": ctrl_str(net.nodes[n].control), "blockedLaneH": d.node_wait_s[n] / 3600.0, "noSpaceLaneH": d.node_space_s[n] / 3600.0})).collect::<Vec<_>>(),
+            "streetFlows": flow_rows.iter().map(|(k, dch, n, med, max)| json!({"street": k, "dir": dch.to_string(), "links": n, "medianVehPerHour": med, "maxVehPerHour": max})).collect::<Vec<_>>(),
+        });
+        std::fs::write(dir.join(format!("{stem}.json")), serde_json::to_string_pretty(&js).unwrap()).expect("write json");
+        eprintln!("wrote {}/{stem}.md and .json", dir.display());
+    }
+}

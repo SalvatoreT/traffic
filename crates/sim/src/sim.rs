@@ -228,6 +228,8 @@ pub struct Diagnostics<'a> {
     /// Cumulative arterial speed-time and time (s) behind `Metrics::arterial_mean_speed`.
     pub art_t: f64,
     pub art_vs: f64,
+    /// Trips waiting to enter the network at each node (entry link full).
+    pub node_backlog: Vec<u32>,
 }
 
 pub struct Simulation {
@@ -473,6 +475,7 @@ impl Simulation {
             node_space_s: &self.d_node_space,
             art_t: self.st.art_t,
             art_vs: self.st.art_vs,
+            node_backlog: self.backlog.iter().map(|b| b.len() as u32).collect(),
         }
     }
 
