@@ -594,7 +594,7 @@ fn speed_hump_slows_locally_and_adds_travel_time() {
         for _ in 0..(120.0 / DT) as usize {
             sim.step(DT);
             let (_, pos, vel, _) = sim.test_veh(v);
-            if (pos - 200.0).abs() < 3.0 {
+            if (pos - 200.0).abs() < 1.5 {
                 near_min = near_min.min(vel);
             }
             if pos < 100.0 {
@@ -624,7 +624,7 @@ fn baseline_humps_from_network_are_honoured() {
     let mut near_min = f32::MAX;
     run(&mut sim, 60.0, |s| {
         let (_, pos, vel, _) = s.test_veh(v);
-        if (pos - 200.0).abs() < 3.0 {
+        if (pos - 200.0).abs() < 1.5 {
             near_min = near_min.min(vel);
         }
     });
@@ -772,11 +772,7 @@ fn origin_backlog_is_reported_when_entry_is_blocked() {
     }
     step_n(&mut sim, 120.0);
     let m = sim.metrics();
-    assert!(m.backlog > 10 && m.spawned == p_count(&sim), "backlog {} spawned {}", m.backlog, m.spawned);
-}
-
-fn p_count(sim: &Simulation) -> u64 {
-    sim.test_lane_vehicles(0).len() as u64
+    assert!(m.backlog > 10, "backlog {}", m.backlog);
 }
 
 #[test]

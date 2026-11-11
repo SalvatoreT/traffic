@@ -1243,14 +1243,16 @@ impl Simulation {
                 // Emerge onto the target lane if there is physical room.
                 let qi = self.topo.lane_base[tr.to_link as usize] as usize + tr.lane as usize;
                 let len = self.vehs[vid as usize].drv.len;
-                let gap = match self.lanes[qi].back() {
+                // Physical room, plus enough distance to brake at 4 m/s^2 if closing on the new leader.
+                let (gap, need) = match self.lanes[qi].back() {
                     Some(&b) => {
                         let bv = &self.vehs[b as usize];
-                        bv.pos - bv.drv.len - self.topo.emerge_pos[tr.to_link as usize]
+                        let closing = (tr.v_exit - bv.v).max(0.0);
+                        (bv.pos - bv.drv.len - self.topo.emerge_pos[tr.to_link as usize], 0.5 + closing * closing / 8.0)
                     }
-                    None => 1e9,
+                    None => (1e9, 0.0),
                 };
-                if gap < 0.5 {
+                if gap < need {
                     self.transit[n][i] = tr;
                     i += 1;
                     continue;
@@ -1463,6 +1465,14 @@ impl Simulation {
         } else {
             None
         }
+    }
+
+    pub(crate) fn test_topo_stop(&self, l: u32) -> f32 {
+        self.topo.stop_pos[l as usize]
+    }
+
+    pub(crate) fn test_topo_reverse(&self, l: u32) -> u32 {
+        self.net.links[l as usize].reverse.unwrap()
     }
 
     pub(crate) fn test_topo(&self) -> &Topo {
