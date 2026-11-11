@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { AreaBundle, Intervention, Metrics, Overlay, Theme, Units } from './types';
+import type { AreaBundle, Intervention, Metrics, Overlay, Theme } from './types';
 import { loadArea } from './data';
 import { SimClient, type StatsMsg } from './sim/client';
 import { buildIndex } from './lib/naming';
@@ -54,18 +54,22 @@ function Simulator({ bundle }: { bundle: AreaBundle }) {
   const reduced = useMedia('(prefers-reduced-motion: reduce)');
   const prefersDark = useMedia('(prefers-color-scheme: dark)');
   const [theme, setTheme] = useState<Theme>(() => (store.get('theme') as Theme) || 'auto');
-  const [units, setUnits] = useState<Units>(() => (store.get('units') === 'kmh' ? 'kmh' : 'mph'));
+  const phone = useMedia('(max-width: 719.98px)');
+  const medium = useMedia('(max-width: 1099.98px)');
+  const layout = phone ? 'phone' : medium ? 'medium' : 'wide';
   const mode = resolveMode(theme, prefersDark);
   useEffect(() => {
     const r = document.documentElement;
     if (theme === 'auto') r.removeAttribute('data-theme'); else r.setAttribute('data-theme', theme);
     store.set('theme', theme);
   }, [theme]);
-  useEffect(() => store.set('units', units), [units]);
 
   const [view, setView] = useState<View>('map');
   const [panelTab, setPanelTab] = useState<'scenario' | 'results'>('scenario');
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const drawerBtn = useRef<HTMLButtonElement>(null);
+  const closeDrawer = useCallback(() => { setDrawerOpen(false); drawerBtn.current?.focus(); }, []);
   const [showService, setShowService] = useState(false);
   const calStatus = bundle.entry.calibration?.status ?? 'uncalibrated';
   const calKey = `calnote:${bundle.entry.id}`;
@@ -79,7 +83,7 @@ function Simulator({ bundle }: { bundle: AreaBundle }) {
   const [speed, setSpeed] = useState(5);
   const [running, setRunning] = useState(!reduced);
   const [interventions, setInterventions] = useState<Intervention[]>(initial.interventions);
-  const [overlay, setOverlay] = useState<Overlay>('flow');
+  const [overlay, setOverlay] = useState<Overlay>('cutthrough');
   const [source, setSource] = useState<'scenario' | 'baseline'>('scenario');
 
   const [engine, setEngine] = useState<{ kind: 'wasm' | 'mock'; reason?: string } | null>(null);
@@ -171,8 +175,22 @@ function Simulator({ bundle }: { bundle: AreaBundle }) {
   const mapVisible = view === 'map';
   const showPanel = view !== 'sources';
 
+  const scenarioPanel = (
+    <>
+      <InterventionPanel bundle={bundle} index={index} showService={showService} onShowService={setShowService} interventions={interventions}
+        onAdd={onAdd} onRemove={onRemove} onClear={onClear} onPickMode={onPickMode} registerPick={registerPick} />
+      <div className="share">
+        <button type="button" className="btn" onClick={() => { navigator.clipboard?.writeText(location.href).then(() => say('Link to this scenario copied.'), () => say('Copy failed. The address bar already holds the link.')); }}>Copy link to this scenario</button>
+      </div>
+      <p className="toast" role="status">{toast}</p>
+    </>
+  );
+  const resultsPanel = (
+    <Comparison base={base} scen={scen} comparing={comparing} scenarioCount={interventions.length} onRef={(k) => { setSourceRef(k); setView('sources'); }} />
+  );
+
   return (
-    <div className="app" data-view={view}>
+    <div className={`app layout-${layout}`} data-view={view}>
       <a className="skip" href="#main">Skip to main content</a>
       <header className="top">
         <div className="brand">
@@ -186,9 +204,11 @@ function Simulator({ bundle }: { bundle: AreaBundle }) {
           ))}
         </nav>
         <div className="prefs">
-          <div className="seg" role="group" aria-label="Units">
-            {(['mph', 'kmh'] as Units[]).map((u) => <button key={u} type="button" className={units === u ? 'on' : ''} aria-pressed={units === u} onClick={() => setUnits(u)}>{u === 'mph' ? 'mph' : 'km/h'}</button>)}
-          </div>
+          {showPanel && layout === 'medium' && (
+            <button ref={drawerBtn} type="button" className="btn drawer-toggle" aria-expanded={drawerOpen} aria-controls="scenario-panel" onClick={() => setDrawerOpen((o) => !o)}>
+              Scenario ({interventions.length})
+            </button>
+          )}
           <label className="inline"><span className="lbl">Theme</span>
             <select value={theme} onChange={(e) => setTheme(e.target.value as Theme)}>
               <option value="auto">System</option><option value="light">Light</option><option value="dark">Dark</option>
@@ -197,8 +217,18 @@ function Simulator({ bundle }: { bundle: AreaBundle }) {
         </div>
       </header>
 
-      <main id="main" tabIndex={-1} className={showPanel ? 'with-panel' : ''}>
-        <div className="stage">
+      <main id="main" tabIndex={-1} className={`layout-${layout}`}>
+        {showPanel && !phone && (
+          <aside key="left" id="scenario-panel" className={`side side-left ${drawerOpen ? 'open' : ''}`} aria-labelledby="scenario-h"
+            onKeyDown={(e) => { if (e.key === 'Escape' && layout === 'medium' && drawerOpen) { e.stopPropagation(); closeDrawer(); } }}>
+            <div className="side-head">
+              <h2 id="scenario-h">Scenario</h2>
+              {layout === 'medium' && <button type="button" className="btn small-btn" onClick={closeDrawer}>Close</button>}
+            </div>
+            <div className="side-body">{scenarioPanel}</div>
+          </aside>
+        )}
+        <div key="stage" className="stage">
           {(bundle.synthetic || engine?.kind === 'mock' || simError || showCal) && (
             <div className="banners">
               {showCal && (
@@ -230,18 +260,24 @@ function Simulator({ bundle }: { bundle: AreaBundle }) {
               visible={mapVisible} reducedMotion={reduced}
             />
             </Suspense>
-            <Legend overlay={overlay} onOverlay={setOverlay} max={overlayMax} mode={mode} units={units}
+            <Legend overlay={overlay} onOverlay={setOverlay} max={overlayMax} mode={mode} 
               source={source} onSource={setSource} canCompare={comparing} />
           </div>
           {view === 'streets' && (
-            <StreetsTable bundle={bundle} index={index} showService={showService} onShowService={setShowService} units={units}
+            <StreetsTable bundle={bundle} index={index} showService={showService} onShowService={setShowService}
               scen={stats?.scenario.linkStats ?? null} base={stats?.baseline.linkStats ?? null} comparing={comparing} />
           )}
           {view === 'sources' && <Suspense fallback={<p className="boot" role="status">Loading sources…</p>}><Sources demand={demand} synthetic={bundle.synthetic} focusRef={sourceRef} /></Suspense>}
         </div>
 
-        {showPanel && (
-          <aside className={`panel ${sheetOpen ? 'open' : ''}`} aria-label="Scenario and results">
+        {showPanel && !phone && (
+          <aside key="right" id="results-panel" className="side side-right" aria-labelledby="results-h">
+            <div className="side-head"><h2 id="results-h">Results</h2></div>
+            <div className="side-body">{resultsPanel}</div>
+          </aside>
+        )}
+        {showPanel && phone && (
+          <aside key="sheet" className={`panel ${sheetOpen ? 'open' : ''}`} aria-label="Scenario and results">
             <button type="button" className="sheet-handle" aria-expanded={sheetOpen} aria-controls="panel-body" onClick={() => setSheetOpen((o) => !o)}>
               <span aria-hidden="true" className="grip" />
               {sheetOpen ? 'Hide panel' : `Scenario & results (${interventions.length})`}
@@ -257,17 +293,8 @@ function Simulator({ bundle }: { bundle: AreaBundle }) {
                   </button>
                 ))}
               </div>
-              <div role="tabpanel" id="tabpanel-scenario" aria-labelledby="tab-scenario" hidden={panelTab !== 'scenario'}>
-                <InterventionPanel bundle={bundle} index={index} showService={showService} onShowService={setShowService} units={units} interventions={interventions}
-                  onAdd={onAdd} onRemove={onRemove} onClear={onClear} onPickMode={onPickMode} registerPick={registerPick} />
-                <div className="share">
-                  <button type="button" className="btn" onClick={() => { navigator.clipboard?.writeText(location.href).then(() => say('Link to this scenario copied.'), () => say('Copy failed. The address bar already holds the link.')); }}>Copy link to this scenario</button>
-                </div>
-                <p className="toast" role="status">{toast}</p>
-              </div>
-              <div role="tabpanel" id="tabpanel-results" aria-labelledby="tab-results" hidden={panelTab !== 'results'}>
-                <Comparison base={base} scen={scen} comparing={comparing} units={units} scenarioCount={interventions.length} onRef={(k) => { setSourceRef(k); setView('sources'); }} />
-              </div>
+              <div role="tabpanel" id="tabpanel-scenario" aria-labelledby="tab-scenario" hidden={panelTab !== 'scenario'}>{scenarioPanel}</div>
+              <div role="tabpanel" id="tabpanel-results" aria-labelledby="tab-results" hidden={panelTab !== 'results'}>{resultsPanel}</div>
             </div>
           </aside>
         )}
