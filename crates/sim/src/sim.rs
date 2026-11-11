@@ -13,7 +13,6 @@ use std::collections::VecDeque;
 /// vehicle may be admitted. ASSUMPTION.
 const ROOM_MIN: f32 = 4.0;
 const NONE_UID: u32 = u32::MAX;
-fn tog(c: char) -> bool { static T: std::sync::OnceLock<String> = std::sync::OnceLock::new(); T.get_or_init(|| std::env::var("TS_OFF").unwrap_or_default()).contains(c) } // TEMP-TOGGLE
 
 #[derive(Clone, Copy, Debug)]
 struct Drv {
@@ -866,7 +865,6 @@ impl Simulation {
     /// Room at the start of a lane, projecting the tail vehicle forward `horizon` s at its current speed (crossing a node takes
     /// a few seconds, during which a moving leader opens up the gap; a standing queue gains nothing).
     fn lane_room_ahead(&self, l: u32, lane: usize, horizon: f32) -> f32 {
-        let horizon = if tog('h') { 0.0 } else { horizon }; // TEMP-TOGGLE
         let idx = self.topo.lane_base[l as usize] as usize + lane;
         let tail = match self.lanes[idx].back() {
             Some(&v) => {
@@ -902,7 +900,7 @@ impl Simulation {
     /// Can a left-turner enter the pocket of link `l` now? Storage is limited to POCKET_VEH vehicles, and a standing
     /// queue in the inner through lane longer than the pocket blocks its entrance (ASSUMPTION).
     fn pocket_open(&self, l: usize, need: f32, horizon: f32) -> bool {
-        if tog('p') || !self.topo.pocket[l] || self.eff.ctrl[self.topo.link_to[l] as usize] != Control::Signal {
+        if !self.topo.pocket[l] || self.eff.ctrl[self.topo.link_to[l] as usize] != Control::Signal {
             return false;
         }
         let main = self.topo.nmain[l];
@@ -918,7 +916,6 @@ impl Simulation {
         let lu = l as usize;
         let main = self.topo.nmain[lu];
         let need = self.room_need(lu);
-        let kind = if tog('l') { None } else { kind }; // TEMP-TOGGLE
         if kind == Some(K_LEFT) && self.pocket_open(lu, need, horizon) {
             return Some(main);
         }
@@ -1152,7 +1149,7 @@ impl Simulation {
     /// Permissive-left "sneaker": a left-turner waiting at the stop line may clear on the yellow or all-red, up to SNEAKERS per
     /// cycle and approach (ASSUMPTION). The in-node and opposing-flow conflict checks still apply.
     fn sneaker(&self, veh: &Veh, l: usize, d: f32, v: f32) -> bool {
-        if tog('s') || self.sneak[l] >= SNEAKERS || self.sig_since[l] >= YELLOW + ALL_RED || d > 10.0 || v > 3.0 {
+        if self.sneak[l] >= SNEAKERS || self.sig_since[l] >= YELLOW + ALL_RED || d > 10.0 || v > 3.0 {
             return false;
         }
         veh.next().and_then(|b| self.topo.find_mv(l as u32, b)).map_or(false, |m| self.topo.mvs[m as usize].kind == K_LEFT)
@@ -1796,6 +1793,20 @@ impl Simulation {
             }
         }
         out
+    }
+
+    pub(crate) fn test_lanes_of(&self, link: u32) -> Vec<(u32, usize)> {
+        let mut out = Vec::new();
+        for k in 0..self.topo.nlanes(link as usize) {
+            for &id in &self.lanes[self.topo.lane_base[link as usize] as usize + k] {
+                out.push((self.vehs[id as usize].uid, k));
+            }
+        }
+        out
+    }
+
+    pub(crate) fn test_dest_of_uid(&self, uid: u32) -> Option<u32> {
+        self.vehs.iter().find(|v| v.alive && v.uid == uid).map(|v| v.dest)
     }
 
     pub(crate) fn test_stats(&self) -> (u64, u64) {

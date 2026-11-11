@@ -47,7 +47,7 @@
   "kFactorNote": "ASSUMPTION: peak-hour share of ADT for urban arterials (typically 0.08-0.10); not derived from local data.",
   "directionalSplitDefault": 0.5,
   "classDefaultAdt": {
-    "_note": "ASSUMPTION: per-class default two-way ADT when no count exists for the gate street (residential 800 ~ low-volume local street; uncalibrated).",
+    "_note": "ASSUMPTION: per-class default two-way ADT when no count exists for the gate street (calibration steps B and F: residential 800 -> 300, tertiary 5000 -> 3000; the F factor assumedGateScale applies on top; uncalibrated).",
     "primary": 14000,
     "secondary": 9000,
     "tertiary": 3000,
@@ -168,8 +168,8 @@
     "kFactorNote": "ASSUMPTION: peak-hour share of ramp ADT, same urban range as the arterial K-factor; period volume factors (periodFactors) apply on top.",
     "defaultAdt": 3000,
     "defaultAdtNote": "ASSUMPTION: ADT of a ramp with no matching published count.",
-    "localShare": 0.15,
-    "localShareNote": "ASSUMPTION: share of ramp trips whose surface end is an in-area (LODES) node rather than a surface gate. These trips replace part of the block's external local trips.",
+    "localShare": 0.3,
+    "localShareNote": "ASSUMPTION (calibration step E: 0.15 -> 0.30): share of ramp trips whose surface end is an in-area (LODES) node rather than a surface gate. These trips replace part of the block's external local trips.",
     "maxShareOfGate": 0.4,
     "maxShareOfGateNote": "ASSUMPTION: ramp trips use at most this share of a surface gate's in/outflow target (surface totals stay consistent; the Furness step fills the rest).",
     "destination": {
@@ -178,5 +178,6 @@
       "directionFloor": 0.03
     }
   },
-  "assumedGateScale": 0.4
+  "assumedGateScale": 0.3,
+  "assumedGateScaleNote": "ASSUMPTION (calibration step F): single factor on all gate volumes that are not count-based (class-default ADT gates); count-based gates (TMC, Caltrans override) and ramp volumes are unscaled."
 }

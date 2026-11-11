@@ -56,5 +56,9 @@
     -122.2565,
     37.8455
   ],
-  "zoom": 15
+  "zoom": 15,
+  "calibration": {
+    "status": "uncalibrated",
+    "note": "Baseline is not yet stable at full PM-peak demand (a few gridlock removals and mean arterial speed near 4 m/s, mainly around the Telegraph/SR-24 ramp junctions); Colby Street freeway shares fit within about 20 points but Hillegass Avenue shares remain 15 to 30 points below the observed values."
+  }
 }

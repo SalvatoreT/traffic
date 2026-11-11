@@ -86,6 +86,7 @@ function main() {
       basemap: `/data/${cfg.id}.basemap.json`,
       center,
       zoom: cfg.zoom ?? 15,
+      ...(cfg.calibration ? { calibration: cfg.calibration } : {}),
     });
   }
   writeFileSync(resolve(outDir, 'areas.json'), JSON.stringify(manifest, null, 2) + '\n');

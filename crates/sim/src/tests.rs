@@ -967,7 +967,7 @@ fn select_link_in_flight_trips_include_planned_streets() {
 
 // ---------------------------------------------------------------- capacity realism
 
-/// Four-way signalised intersection with `lanes` lanes on the W/E secondary legs; returns (net, cross).
+/// Four-way signalized intersection; the W/E secondary legs have `lanes` lanes, S/N are residential.
 fn sig_cross(lanes: u32) -> (Network, Cross) {
     let mut b = B::default();
     let c = b.node(0.0, 0.0, Control::Signal, false);
@@ -983,23 +983,96 @@ fn sig_cross(lanes: u32) -> (Network, Cross) {
 }
 
 #[test]
-fn zz_saturation_probe() {
-    let (net, x) = sig_cross(1);
-    let d = demand(&[(x.w, x.e, 3000.0), (x.s, x.n, 100.0)]);
-    let mut sim = Simulation::from_parts(net, d, cfg(1, 1.0)).unwrap();
-    let mut seen = std::collections::HashSet::new();
-    let mut prev: Vec<(u32, f32, f32)> = vec![];
-    for k in 0..(120.0 / DT) as usize {
+fn lane_choice_follows_the_movement_on_multilane_links() {
+    // Uncontrolled node (no pocket): W->N is a left turn, W->S a right turn, on a 2-lane approach.
+    let mut b = B::default();
+    let c = b.node(0.0, 0.0, Control::Uncontrolled, false);
+    let w = b.node(-300.0, 0.0, Control::Uncontrolled, true);
+    let n = b.node(0.0, 300.0, Control::Uncontrolled, true);
+    let s = b.node(0.0, -300.0, Control::Uncontrolled, true);
+    let e = b.node(300.0, 0.0, Control::Uncontrolled, true);
+    let (w_in, _) = b.two_way(w, c, RoadClass::Secondary, 2, 11.2);
+    b.two_way(n, c, RoadClass::Secondary, 1, 11.2);
+    b.two_way(s, c, RoadClass::Secondary, 1, 11.2);
+    b.two_way(e, c, RoadClass::Secondary, 1, 11.2);
+    let d = demand(&[(w, n, 120.0), (w, s, 120.0)]);
+    let mut sim = Simulation::from_parts(b.net(), d, cfg(3, 1.0)).unwrap();
+    let mut left_lanes = std::collections::HashSet::new();
+    let mut right_lanes = std::collections::HashSet::new();
+    for _ in 0..(300.0 / DT) as usize {
         sim.step(DT);
-        let t = (k + 1) as f64 * DT;
-        for (uid, _, _) in sim.test_transit(x.c as usize) {
-            if seen.insert(uid) {
-                let p = prev.iter().find(|q| q.0 == uid);
-                println!("t={t:.2} cross uid {uid} prevstate {:?} nlane {}", p, sim.test_lane_vehicles(x.w_in).len());
+        for (uid, lane) in sim.test_lanes_of(w_in) {
+            let dest = sim.test_dest_of_uid(uid);
+            if dest == Some(n) {
+                left_lanes.insert(lane);
+            } else if dest == Some(s) {
+                right_lanes.insert(lane);
             }
         }
-        prev = sim.test_lane_vehicles(x.w_in);
-        prev.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
-        if t > 66.0 && t < 74.0 { println!("  t={t:.2} head3 {:?} sig {:?}", prev.iter().take(3).map(|q| (q.0, (q.1*10.0).round()/10.0, (q.2*10.0).round()/10.0)).collect::<Vec<_>>(), sim.signals()[x.w_in as usize]); }
     }
+    assert_eq!(left_lanes, [0usize].into_iter().collect(), "left-turners use the inner lane");
+    assert_eq!(right_lanes, [1usize].into_iter().collect(), "right-turners use the outer lane");
+}
+
+#[test]
+fn left_pocket_exists_on_signalized_arterial_approaches_only() {
+    let (net, x) = sig_cross(1);
+    let sim = empty_sim(net);
+    let t = sim.test_topo();
+    assert!(t.pocket[x.w_in as usize] && t.pocket[x.e_in as usize], "secondary approach to a signal has a pocket");
+    assert!(!t.pocket[x.s_in as usize], "residential approach has none");
+    assert_eq!(t.nlanes(x.w_in as usize), 2);
+}
+
+#[test]
+fn waiting_left_turner_in_the_pocket_does_not_block_through_traffic() {
+    let (net, x) = sig_cross(1);
+    let mut sim = empty_sim(net);
+    // A frozen left-turner at the stop line of the pocket lane (index 1); a through vehicle behind it in lane 0.
+    let stop = sim.test_topo_stop(x.w_in);
+    sim.test_place(x.w_in, 1, stop - 0.5, 0.0, x.n, true);
+    let thru = sim.test_place(x.w_in, 0, stop - 40.0, 8.0, x.e, false);
+    run(&mut sim, 200.0, |_| {});
+    assert!(!sim.test_veh(thru).3, "through vehicle completed its trip past the waiting left-turner");
+}
+
+#[test]
+fn permissive_lefts_clear_against_heavy_opposing_flow() {
+    let (net, x) = sig_cross(1);
+    let d = demand(&[(x.w, x.n, 120.0), (x.e, x.w, 900.0), (x.s, x.n, 60.0)]);
+    let mut sim = Simulation::from_parts(net, d, cfg(5, 1.0)).unwrap();
+    step_n(&mut sim, 900.0);
+    let recs = sim.metrics();
+    assert!(recs.completed_trips > 150, "completed {}", recs.completed_trips);
+    assert!(recs.backlog < 10, "backlog {}", recs.backlog);
+    assert_eq!(recs.gridlock_removed, 0);
+}
+
+#[test]
+fn uncontrolled_minor_class_yields_to_major() {
+    let (net, x) = cross4(Control::Uncontrolled, RoadClass::Residential, false);
+    let mut sim = empty_sim(net);
+    let major = sim.test_place(x.w_in, 0, 150.0, 11.0, x.e, false);
+    sim.test_place(x.s_in, 0, 150.0, 9.0, x.n, false);
+    let mut min_v = f32::MAX;
+    run(&mut sim, 40.0, |sm| {
+        let (l, _, v, alive) = sm.test_veh(major);
+        if alive && l == x.w_in {
+            min_v = min_v.min(v);
+        }
+    });
+    assert!(min_v > 6.0, "major-street vehicle slowed to {min_v} m/s for a minor-class vehicle");
+}
+
+#[test]
+fn residential_perceived_cost_factor_moves_route_to_arterial() {
+    let route_with = |factor: f64| {
+        let (net, c) = corridor(5.0, Control::Uncontrolled);
+        let conf = Config { local_cost_factor: Some(factor), ..cfg(1, 1.0) };
+        let mut sim = Simulation::from_parts(net, demand(&[]), conf).unwrap();
+        let r = sim.test_route_for(c.a[0], c.a[3], NO_NOISE).unwrap();
+        r.iter().any(|l| c.art.iter().any(|&(f, rv)| *l == f || *l == rv))
+    };
+    assert!(!route_with(1.0), "slow arterial: the parallel local street is faster");
+    assert!(route_with(2.5), "a high perceived-cost factor keeps drivers on the arterial");
 }

@@ -258,14 +258,53 @@ impl Eff {
         }
     }
 
-    /// Build fixed-time plans for signalised nodes. `est_flow[l]` is the estimated approach flow (veh/h).
+    /// Build fixed-time plans for signalized nodes. `est_flow[l]` is the estimated approach flow (veh/h).
+    /// Signalized nodes joined by a short link (SIGNAL_CLUSTER_M, e.g. the two carriageways of a divided road or the two
+    /// halves of an offset intersection) are one intersection: they share cycle, offset and phase greens.
     pub fn plan_signals(&mut self, topo: &Topo, net: &Network, est_flow: &[f32]) {
-        for n in 0..topo.n_nodes {
+        let nn = topo.n_nodes;
+        for n in 0..nn {
             self.sig[n] = None;
-            if self.ctrl[n] != Control::Signal {
+        }
+        let is_sig = |s: &Eff, n: usize| s.ctrl[n] == Control::Signal;
+        let mut cluster: Vec<usize> = (0..nn).collect();
+        fn find(c: &mut Vec<usize>, x: usize) -> usize {
+            let mut r = x;
+            while c[r] != r {
+                r = c[r];
+            }
+            let mut y = x;
+            while c[y] != r {
+                let nx = c[y];
+                c[y] = r;
+                y = nx;
+            }
+            r
+        }
+        for l in 0..topo.n_links {
+            let (a, b) = (topo.link_from[l] as usize, topo.link_to[l] as usize);
+            if topo.length[l] < SIGNAL_CLUSTER_M && a != b && is_sig(self, a) && is_sig(self, b) {
+                let (ra, rb) = (find(&mut cluster, a), find(&mut cluster, b));
+                cluster[ra.max(rb)] = ra.min(rb);
+            }
+        }
+        let mut members: Vec<Vec<usize>> = vec![Vec::new(); nn];
+        for n in 0..nn {
+            if is_sig(self, n) {
+                let r = find(&mut cluster, n);
+                members[r].push(n);
+            }
+        }
+        for root in 0..nn {
+            if members[root].is_empty() {
                 continue;
             }
-            let ins: Vec<u32> = topo.ins[n].iter().copied().filter(|&l| !self.closed[l as usize]).collect();
+            let nodes = members[root].clone();
+            let ins: Vec<u32> = nodes
+                .iter()
+                .flat_map(|&n| topo.ins[n].iter().copied())
+                .filter(|&l| !self.closed[l as usize])
+                .collect();
             if ins.is_empty() {
                 continue;
             }
@@ -285,8 +324,13 @@ impl Eff {
                 groups[if d < std::f64::consts::FRAC_PI_4 { 0 } else { 1 }].push(l);
             }
             let groups: Vec<Vec<u32>> = groups.into_iter().filter(|g| !g.is_empty()).collect();
+            let split = |g: &Vec<Vec<u32>>, n: usize| -> Vec<Vec<u32>> {
+                g.iter().map(|x| x.iter().copied().filter(|&l| topo.link_to[l as usize] as usize == n).collect()).collect()
+            };
             if groups.len() < 2 {
-                self.sig[n] = Some(SigPlan { cycle: 60.0, offset: 0.0, phases: vec![(0.0, 60.0)], links: groups, always_green: true, ysum: 0.0 });
+                for &n in &nodes {
+                    self.sig[n] = Some(SigPlan { cycle: 60.0, offset: 0.0, phases: vec![(0.0, 60.0)], links: split(&groups, n), always_green: true, ysum: 0.0 });
+                }
                 continue;
             }
             let ys: Vec<f32> = groups
@@ -300,7 +344,7 @@ impl Eff {
             let np = groups.len() as f32;
             let lost = np * (YELLOW + ALL_RED); // L = sum of intergreens [Webster1958]
             let ysum: f32 = ys.iter().sum();
-            let cycle = if let Some(c) = self.cycle_override[n] {
+            let cycle = if let Some(c) = nodes.iter().find_map(|&n| self.cycle_override[n]) {
                 c
             } else {
                 let c = if ysum < 0.9 { (1.5 * lost + 5.0) / (1.0 - ysum) } else { CYCLE_MAX }; // [Webster1958]
@@ -332,8 +376,10 @@ impl Eff {
                 t += g + YELLOW + ALL_RED;
             }
             let cyc = t.max(1.0);
-            let offset = ((n as f32 * 37.0) % 100.0) / 100.0 * cyc;
-            self.sig[n] = Some(SigPlan { cycle: cyc, offset, phases, links: groups, always_green: false, ysum });
+            let offset = ((root as f32 * 37.0) % 100.0) / 100.0 * cyc;
+            for &n in &nodes {
+                self.sig[n] = Some(SigPlan { cycle: cyc, offset, phases: phases.clone(), links: split(&groups, n), always_green: false, ysum });
+            }
         }
     }
 }

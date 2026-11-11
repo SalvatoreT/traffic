@@ -58,6 +58,8 @@ export interface AreaConfig {
   studyArea: [number, number][];
   center?: [number, number];
   zoom?: number;
+  /** Baseline calibration status shown in the UI. */
+  calibration?: { status: 'uncalibrated' | 'calibrated'; note?: string };
 }
 
 export interface OsmNode {
