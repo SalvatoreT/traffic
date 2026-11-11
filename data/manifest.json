@@ -6,6 +6,7 @@
     "areas/rockridge.demand.json",
     "areas/rockridge.network.json",
     "demand/raw/caltrans-aadt-bbox.json",
+    "demand/raw/caltrans-ramp-adt-sr24.json",
     "demand/raw/lodes8-ca-2024-rockridge.json",
     "demand/raw/oakland-multimodal/2018_2018.09.11-TelegraphAve_AlcatrazAve-pm.csv",
     "demand/raw/oakland-multimodal/2018_2018.09.12-TelegraphAve_AlcatrazAve-pm.csv",
