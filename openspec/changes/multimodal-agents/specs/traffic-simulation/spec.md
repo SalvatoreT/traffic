@@ -30,7 +30,7 @@ The simulation SHALL model pedestrians walking beside links and crossing at inte
 - **THEN** the pedestrian waits and crosses during the phase parallel to the crossing
 
 ### Requirement: Safety metrics for people walking and biking
-The simulation SHALL report conflicts between motor vehicles and pedestrians or cyclists by post-encroachment time [Hayward1972, Mahmud2017], close passes of cyclists, and an injury-risk index from vehicle speed at each encounter [Tefft2013], labeled as surrogate indicators.
+The simulation SHALL report conflicts between motor vehicles and pedestrians or cyclists by post-encroachment time [Hayward1972, Mahmud2017], close passes of cyclists, and an injury-risk index from vehicle speed at each encounter ([Tefft2013] for pedestrians, [Lubbe2022] for cyclists), labeled as surrogate indicators.
 
 #### Scenario: Slower traffic past a crossing
 - **WHEN** an intervention lowers vehicle speeds at a crossing that pedestrians use

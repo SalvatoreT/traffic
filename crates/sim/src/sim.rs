@@ -13,7 +13,7 @@ mod modes;
 mod ped;
 
 use modes::*;
-pub use modes::injury_risk;
+pub use modes::{injury_risk, injury_risk_bike};
 use ped::PedWorld;
 
 /// Minimum free room (m) between a link's entry point and the tail of its last vehicle before another
@@ -73,7 +73,7 @@ impl Drv {
     }
 }
 
-/// Desired speed (m/s) of a cyclist, ASSUMPTION (see `params::BIKE_V_MEAN`).
+/// Desired speed (m/s) of a cyclist: normal fit of [Twaddle2016] Table 2 (see `params::BIKE_V_MEAN`), clip bounds ASSUMPTION.
 fn bike_speed(rng: &mut Rng) -> f32 {
     (BIKE_V_MEAN + BIKE_V_SD * rng.normal()).clamp(BIKE_V_MIN, BIKE_V_MAX) as f32
 }
@@ -1581,7 +1581,7 @@ impl Simulation {
                     }
                     if let Some((dv, speed)) = ex.score_pass {
                         veh.pass_scored = true;
-                        // ASSUMPTION thresholds (params::CLOSE_PASS_*): little lateral room or a large speed difference.
+                        // params::CLOSE_PASS_CLEAR_M is the 3 ft legal minimum [CVC21760]; the speed-difference threshold is an ASSUMPTION.
                         let close = veh.pass_close || dv > CLOSE_PASS_DV;
                         vuln.bike_pass(speed, close);
                     }

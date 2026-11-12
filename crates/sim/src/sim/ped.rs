@@ -12,12 +12,12 @@ use std::collections::BinaryHeap;
 
 pub(super) const NONE_XW: u32 = u32::MAX;
 
-/// Walking speed (m/s), ASSUMPTION (see `params::PED_V_MEAN`).
+/// Walking speed (m/s) from the normal fit in `params::PED_V_MEAN` ([Fitzpatrick2006]); the clip bounds are ASSUMPTION.
 pub(super) fn sample_speed(rng: &mut Rng) -> f32 {
     (PED_V_MEAN + PED_V_SD * rng.normal()).clamp(PED_V_MIN, PED_V_MAX) as f32
 }
 
-/// Lognormal multiplier on the safety margin of the critical gap, ASSUMPTION.
+/// Lognormal multiplier on the 3 s start-up margin of the critical gap ([Fitzpatrick2006] Table 11); the spread is ASSUMPTION.
 pub(super) fn sample_gap(rng: &mut Rng) -> f32 {
     (PED_GAP_SIGMA * rng.normal()).exp() as f32
 }

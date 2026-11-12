@@ -105,6 +105,18 @@ fn injury_risk_follows_tefft_points() {
     }
 }
 
+#[test]
+fn bike_injury_risk_follows_lubbe_points() {
+    use crate::sim::injury_risk_bike;
+    let mph = |m: f32| m / 2.236_936;
+    for (v, r) in LUBBE_BIKE_MAIS3 {
+        assert!((injury_risk_bike(mph(v)) - r).abs() < 1e-3, "{v} mph");
+    }
+    assert_eq!(injury_risk_bike(0.0), 0.0);
+    assert!(injury_risk_bike(mph(100.0)) <= 1.0);
+    assert!(injury_risk_bike(mph(30.0)) < injury_risk(mph(30.0)), "cyclists are less vulnerable than pedestrians at 30 mph");
+}
+
 // ------------------------------------------------------------------------------------------------ buses
 
 #[test]

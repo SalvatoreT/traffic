@@ -68,7 +68,7 @@ pub const DELAY_MINOR_S: f32 = 5.0; // ASSUMPTION
 pub const DELAY_CIRCLE_S: f32 = 3.0; // ASSUMPTION
 
 // --- safety surrogates ---
-pub const TTC_THRESHOLD: f32 = 1.5; // s [Hayward1972], [Mahmud2017] (adjustable)
+pub const TTC_THRESHOLD: f32 = 1.5; // s, SSAM default [FHWA-SSAM2008]; [Hayward1972], [Mahmud2017] (adjustable)
 pub const TTC_CLEAR: f32 = 3.0; // ASSUMPTION: hysteresis so one pair episode is counted once
 pub const MPH20: f32 = 8.9408;
 pub const MPH25: f32 = 11.176;
@@ -78,31 +78,32 @@ pub const NBINS: usize = 10; // rolling window = 10 bins x 30 s = 5 min
 pub const BIN_S: f64 = 30.0;
 pub const HIST_BINS: usize = 160; // speed histogram, 0.25 m/s bins
 
-// --- multimodal agents (change multimodal-agents). Values without a verified source in docs/references.md are ASSUMPTION. ---
+// --- multimodal agents (change multimodal-agents). Values without a verified source in docs/references.md are ASSUMPTION. Sources: [Fitzpatrick2006], [OBrien2022], [Bertulis2014], [Twaddle2016], [Beck2019], [CVC21760], [TCQSM3], [Lubbe2022]. ---
 pub const KIND_CAR: u8 = 0;
 pub const KIND_BUS: u8 = 1;
 pub const KIND_BIKE: u8 = 2;
 pub const KIND_PED: u8 = 3;
 
-// Buses (D2). Heavy-vehicle IDM values are the truck column of [Kesting2010] Table 1 (T = 2.0 s, s0 = 4.0 m, a = 0.7, b = 2.0).
-pub const BUS_LEN: f32 = 12.0; // m, design decision D2
-pub const BUS_A: f32 = 0.7; // [Kesting2010] Table 1 trucks; ASSUMPTION: a bus behaves like a heavy vehicle
-pub const BUS_B: f32 = 2.0; // [Kesting2010] Table 1 trucks
-pub const BUS_T: f32 = 2.0; // s, [Kesting2010] Table 1 trucks
-pub const BUS_S0: f32 = 4.0; // m, [Kesting2010] Table 1 trucks
-pub const BUS_DWELL_DEFAULT_S: f32 = 20.0; // ASSUMPTION: used when a stop carries no dwell time
+// Buses (D2). Acceleration and comfortable deceleration are the 12 m (40 ft) diesel bus values of [TCQSM3] Chapter 6; time gap and
+// jam gap are the truck column of [Kesting2010] Table 1 (T = 2.0 s, s0 = 4.0 m).
+pub const BUS_LEN: f32 = 12.0; // m, design decision D2 (40 ft standard bus, [TCQSM3] Ch. 6)
+pub const BUS_A: f32 = 1.0; // m/s^2, was 0.7 ([Kesting2010] trucks). [TCQSM3] Ch. 6: 1.0 m/s^2 average to 40 km/h. IDM `a` is the initial rate, so the average along the run-up is lower
+pub const BUS_B: f32 = 1.2; // m/s^2, was 2.0 ([Kesting2010] trucks). [TCQSM3] Ch. 6: comfortable bus deceleration 1.2 m/s^2
+pub const BUS_T: f32 = 2.0; // s, [Kesting2010] Table 1 trucks; ASSUMPTION: a bus follows like a heavy vehicle
+pub const BUS_S0: f32 = 4.0; // m, [Kesting2010] Table 1 trucks; ASSUMPTION: a bus follows like a heavy vehicle
+pub const BUS_DWELL_DEFAULT_S: f32 = 20.0; // ASSUMPTION: used when a stop carries no dwell time; [TCQSM3] Eq. 6-5 gives door time 2-5 s plus passenger service time, and a worked example averages 17.5-18.4 s, but no measured distribution was found
 pub const BUS_SETTLE_M: f32 = 2.5; // ASSUMPTION: a bus within this distance of its stop mark and stopped begins dwelling
 
-// Bicycles (D3). [Twaddle2016] is the parameter source named in D3 but its values are not recorded in docs/references.md.
+// Bicycles (D3). [Twaddle2016] is sourced for desired speed only; its acceleration findings do not map onto the IDM parameters below.
 pub const BIKE_LEN: f32 = 1.8; // ASSUMPTION
 pub const BIKE_A_RANGE: (f64, f64) = (0.8, 1.4); // ASSUMPTION m/s^2
 pub const BIKE_B_RANGE: (f64, f64) = (1.5, 2.5); // ASSUMPTION m/s^2
 pub const BIKE_T_RANGE: (f64, f64) = (0.9, 1.4); // ASSUMPTION s
 pub const BIKE_S0: f32 = 1.0; // ASSUMPTION m
-pub const BIKE_V_MEAN: f64 = 4.5; // ASSUMPTION m/s (16 km/h) desired speed
-pub const BIKE_V_SD: f64 = 0.8; // ASSUMPTION m/s
-pub const BIKE_V_MIN: f64 = 2.5; // ASSUMPTION m/s
-pub const BIKE_V_MAX: f64 = 7.0; // ASSUMPTION m/s
+pub const BIKE_V_MEAN: f64 = 5.23; // m/s, was 4.5. [Twaddle2016] Table 2: unhindered cyclists on green through four Munich junctions (N = 466); literature range of means 3.2-6.9 m/s
+pub const BIKE_V_SD: f64 = 1.25; // m/s, was 0.8. [Twaddle2016] Table 2
+pub const BIKE_V_MIN: f64 = 2.5; // ASSUMPTION m/s: clip about 2.2 SD below the mean
+pub const BIKE_V_MAX: f64 = 8.0; // m/s, was 7.0. ASSUMPTION: clip about 2.2 SD above the mean
 pub const V_BIKE_RIGHT: f32 = 3.0; // ASSUMPTION m/s node crossing
 pub const V_BIKE_LEFT: f32 = 3.5; // ASSUMPTION
 pub const V_BIKE_UTURN: f32 = 2.0; // ASSUMPTION
@@ -114,28 +115,31 @@ pub const BIKE_COST_SECONDARY: f32 = 1.3; // ASSUMPTION
 pub const BIKE_COST_TERTIARY: f32 = 1.1; // ASSUMPTION
 pub const BIKE_COST_V: f32 = 4.5; // ASSUMPTION m/s: nominal speed for routing time
 
-// Passing a cyclist on a shared link (D3). All ASSUMPTION.
-pub const LANE_WIDTH_M: f64 = 3.3; // lane width (also used for crossing width, D4)
+// Passing a cyclist on a shared link (D3). ASSUMPTION unless a key is given.
+pub const LANE_WIDTH_M: f64 = 3.3; // ASSUMPTION: lane width (also used for crossing width, D4); no published urban residential value was read (10-12 ft ranges seen in secondary summaries only)
 pub const CAR_WIDTH_M: f32 = 1.8;
 pub const BIKE_WIDTH_M: f32 = 0.7;
 pub const PASS_DECISION_GAP: f32 = 60.0; // m: distance at which a driver notices a cyclist ahead and decides to pass or follow
 pub const PASS_MIN_DV: f32 = 1.5; // m/s: desired-speed advantage that makes a driver want to pass
-pub const PASS_TIME_S: f32 = 5.0; // s: oncoming vehicle must be at least this far in time
+pub const PASS_TIME_S: f32 = 5.0; // s: oncoming vehicle must be at least this far in time. ASSUMPTION: [Rasch2020] tested 6 s and 9 s gaps on a test track and reports no acceptance threshold
 pub const PASS_MIN_CLEAR_M: f32 = 40.0; // m: and at least this far away, to pass using the opposing lane
 pub const PASS_MIN_LATERAL_M: f32 = 0.5; // m: least lateral room for passing inside one lane (one-way street)
-pub const CLOSE_PASS_CLEAR_M: f32 = 1.0; // m: lateral clearance below this is a close pass
-pub const CLOSE_PASS_DV: f32 = 8.0; // m/s: speed difference above this (about 18 mph) is a close pass
+pub const CLOSE_PASS_CLEAR_M: f32 = 0.9144; // m, was 1.0: three feet, the legal minimum in [CVC21760]. [Beck2019] counts passes under 100 cm (5.9% of 18,527); [Hamm2026] measured mean clearances of 2.2-3.0 m
+pub const CLOSE_PASS_DV: f32 = 8.0; // ASSUMPTION m/s: speed difference above this (about 18 mph) is a close pass; [Hamm2026] mean passing speeds are 10 m/s (residential) to 15 m/s but give no threshold
 
-// Pedestrians (D4). Values below are ASSUMPTION: docs/references.md has no verified walking speed or yielding rate.
-pub const PED_V_MEAN: f64 = 1.3; // m/s
-pub const PED_V_SD: f64 = 0.25; // m/s
-pub const PED_V_MIN: f64 = 0.7;
-pub const PED_V_MAX: f64 = 1.9;
-pub const PED_YIELD_MARKED: f64 = 0.6; // probability a driver yields to a waiting pedestrian, marked crossing
-pub const PED_YIELD_UNMARKED: f64 = 0.3; // unmarked (intersection without a marked crosswalk)
-pub const PED_LANE_W: f32 = 3.3; // m per lane: crossing width = lanes (both directions) x this
-pub const PED_GAP_MARGIN_S: f32 = 2.0; // s added to width / speed for the critical gap
-pub const PED_GAP_SIGMA: f64 = 0.3; // lognormal heterogeneity of the margin (some pedestrians accept short gaps)
+// Pedestrians (D4).
+pub const PED_V_MEAN: f64 = 1.44; // m/s, was 1.3. [Fitzpatrick2006] Table 18: median walking speed of 2430 crossing pedestrians
+pub const PED_V_SD: f64 = 0.30; // m/s, was 0.25. Derived, not tabulated: normal with median 1.44 and 15th percentile 1.13 m/s ([Fitzpatrick2006] Table 18) gives (1.44 - 1.13) / 1.036
+pub const PED_V_MIN: f64 = 0.7; // ASSUMPTION: clip about 2.5 SD below the mean
+pub const PED_V_MAX: f64 = 2.2; // was 1.9. ASSUMPTION: clip about 2.5 SD above the mean
+// One probability per crossing kind, from staged-pedestrian counts at uncontrolled two-lane 25 mph crossings. Yielding falls with speed
+// and lane count ([Bertulis2014]: 75% at 20 mph to 17% at 37 mph on two-lane streets, 9% on one four-lane street; [Fitzpatrick2006]
+// Tables 21-22: 61% at one 25 mph site, 17% on average at two 35 mph sites), which this single value does not capture.
+pub const PED_YIELD_MARKED: f64 = 0.33; // was 0.6. [OBrien2022] Tables 4-1 to 4-3: 189 yields in 579 events at marked crosswalks, 25 mph (our pooling)
+pub const PED_YIELD_UNMARKED: f64 = 0.08; // was 0.3. [OBrien2022] Tables 4-1 to 4-3: 38 yields in 475 events at unmarked crossings, 25 mph (our pooling)
+pub const PED_LANE_W: f32 = 3.3; // ASSUMPTION: m per lane: crossing width = lanes (both directions) x this ([Fitzpatrick2006] Table 11 uses 12 ft = 3.66 m for HCM examples)
+pub const PED_GAP_MARGIN_S: f32 = 3.0; // s, was 2.0. Start-up time of the HCM pedestrian critical gap, width / speed + 3 s ([Fitzpatrick2006] Table 11, HCM Eq. 18-17)
+pub const PED_GAP_SIGMA: f64 = 0.3; // ASSUMPTION: lognormal heterogeneity of the margin (some pedestrians accept short gaps); [Brewer2006] saw 85th percentile accepted gaps of 5.3-9.4 s, below the critical gap for 3.5 ft/s
 pub const PED_B_COMF: f32 = 3.0; // m/s^2: comfortable braking that decides whether a driver can still yield
 pub const PED_MIN_DECIDE_M: f32 = 6.0; // m
 pub const XW_STOP_M: f32 = 2.0; // m: vehicles stop this far before a mid-block crosswalk
@@ -145,12 +149,17 @@ pub const PED_CORNER_M: f32 = 3.0; // m: corner walking distance at a node
 pub const PED_OFFSET_M: f64 = 3.8; // m beyond the outer lane center (rendering only)
 
 // Safety (D5)
-pub const PET_THRESHOLD: f32 = 1.5; // s. ASSUMPTION: same adjustable value as the TTC threshold; PET definition [Mahmud2017]
+pub const PET_THRESHOLD: f32 = 1.5; // s. ASSUMPTION: same adjustable value as the TTC threshold; no PET threshold for pedestrian or bicycle encounters was found. PET definition [FHWA-SSAM2008], [Mahmud2017]
 pub const PET_MOVING_V: f32 = 2.0; // m/s ASSUMPTION: a user who enters a conflict point slower than this had stopped for the other, which is yielding, not a conflict
 pub const PET_ENCOUNTER_S: f32 = 5.0; // ASSUMPTION: an encounter is a vehicle passing a conflict point within this PET
 /// Severe-injury (AIS 4+) risk of a struck pedestrian against impact speed (mph), the points reported in the abstract of
 /// [Tefft2013]. Between points the index interpolates linearly; below the first point it falls linearly to zero at 0 mph and
 /// above the last it extends along the last segment, capped at 1 (interpolation choices are ours, not the paper's).
 pub const TEFFT_AIS4: [(f32, f32); 5] = [(17.1, 0.10), (24.9, 0.25), (33.0, 0.50), (40.8, 0.75), (48.1, 0.90)];
+/// At-least-serious (MAIS3+F) injury risk of a cyclist impacting the front of a car against closing speed (mph), from the logistic
+/// model of [Lubbe2022] Table 3 (intercept -7.467, 0.079 per km/h, 0.047 per year) evaluated at the median cyclist age of 39, at the
+/// same five risk levels as `TEFFT_AIS4` and with the same interpolation rules. The severity class is AIS 3+, not AIS 4+, and the
+/// data are German.
+pub const LUBBE_BIKE_MAIS3: [(f32, f32); 5] = [(27.03, 0.10), (35.67, 0.25), (44.31, 0.50), (52.96, 0.75), (61.60, 0.90)];
 pub const PED_EMERGENCY_B: f32 = 8.0; // ASSUMPTION m/s^2: hardest braking a driver uses to stop for a pedestrian already crossing
 pub const LC_GAP_M: f32 = 5.0; // ASSUMPTION: gap needed ahead of and behind a vehicle that changes lane around a dwelling bus

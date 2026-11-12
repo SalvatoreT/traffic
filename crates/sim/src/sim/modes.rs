@@ -66,7 +66,7 @@ impl Vuln {
     pub fn bike_encounter(&mut self, pet: f32, speed: f32, moving: bool) {
         if pet < PET_ENCOUNTER_S {
             self.bike_enc += 1;
-            self.bike_risk_sum += injury_risk(speed) as f64;
+            self.bike_risk_sum += injury_risk_bike(speed) as f64;
             if pet < PET_THRESHOLD && moving {
                 self.bike_conf += 1;
             }
@@ -75,7 +75,7 @@ impl Vuln {
 
     pub fn bike_pass(&mut self, speed: f32, close: bool) {
         self.bike_enc += 1;
-        self.bike_risk_sum += injury_risk(speed) as f64;
+        self.bike_risk_sum += injury_risk_bike(speed) as f64;
         if close {
             self.close_passes += 1;
         }
@@ -83,11 +83,18 @@ impl Vuln {
 }
 
 /// Severe-injury risk (0..1) of a pedestrian struck at `v` m/s: piecewise-linear through the points of [Tefft2013] (see
-/// `params::TEFFT_AIS4` for the interpolation rules). Used as an ASSUMPTION proxy for cyclists (no cyclist-specific source in
-/// docs/references.md).
+/// `params::TEFFT_AIS4` for the interpolation rules).
 pub fn injury_risk(v: f32) -> f32 {
+    risk_from_points(&TEFFT_AIS4, v)
+}
+
+/// At-least-serious injury risk (0..1) of a cyclist struck at `v` m/s, through the points of [Lubbe2022] (`params::LUBBE_BIKE_MAIS3`).
+pub fn injury_risk_bike(v: f32) -> f32 {
+    risk_from_points(&LUBBE_BIKE_MAIS3, v)
+}
+
+fn risk_from_points(p: &[(f32, f32); 5], v: f32) -> f32 {
     let mph = v * 2.236_936;
-    let p = &TEFFT_AIS4;
     if mph <= 0.0 {
         return 0.0;
     }

@@ -5,6 +5,7 @@ Compiled 2026-11-11. Second (verification) pass 2026-11-11.
 ## READ FIRST: verification method and limits
 
 - Pass 1 (network blocked) verified entries only from search snippets. Pass 2 (this version, 2026-11-11) had `api.crossref.org`, `export.arxiv.org`/`arxiv.org/pdf`, NCBI eutils and several open pages (traffic-simulation.de, FHWA, LibreTexts) reachable. `doi.org` returned 403, and publisher sites (ScienceDirect, SAGE, TRB, NAP, TØI brage) were blocked or paywalled.
+- Pass 3 (2026-11-12) added the multimodal parameter sources in section 6 ([Fitzpatrick2006], [OBrien2022], [Twaddle2016] and others), [Lubbe2022] in 5.2 and [FHWA-SSAM2008] in 7.2. Each entry says whether the numbers were read in the source or only in an abstract.
 - What was checked, and how:
   - Every entry tagged V-partial or UNVERIFIED in pass 1 was re-resolved against Crossref (DOI lookup or bibliographic query) or the arXiv API. Fields were corrected from those records.
   - About 45 of the "V" entries were spot-checked against Crossref by DOI. All exist. Two had metadata errors (fixed): Marshall & Ferenchak 2019 (article no. 100539, not pp. 285-301) and the CityFlow page range.
@@ -427,6 +428,10 @@ For a pedestrian struck by a car or light truck (**Checked against:** the PubMed
 - The data are US crashes from 1994-1998 (standardized to 2007-2009 vehicles), so risk at a given speed may now be somewhat different, and the sample was small.
 **Use:** the pedestrian-injury-risk function for the safety score in the simulator.
 
+**[Lubbe2022]** [V] Lubbe, N., Wu, D., Jeppsson, H. (2022). Safe speeds: fatality and injury risks of pedestrians, cyclists, motorcyclists, and car drivers impacting the front of another passenger car as a function of closing speed and age. *Traffic Safety Research* 2, 000006. DOI 10.55329/vfma7555 (Crossref). Open full text read (tsr.international).
+German in-depth accident data (GIDAS), weighted logistic regression, P = 1 / (1 + exp(-z)). Table 3, cyclists, at-least-serious injury (MAIS3+F): intercept -7.467, closing speed 0.079 per km/h, age 0.047 per year. At the median cyclist age of 39 this gives 10% risk at 43.5 km/h, matching the 44 km/h in the abstract. Our arithmetic for the other points at age 39: 25% at 57.4 km/h, 50% at 71.3, 75% at 85.2, 90% at 99.1. The pedestrian curve (Table 2, 10% at 29 km/h at age 46) is more severe than the cyclist curve; the paper ranks vulnerability drivers, motorcyclists, cyclists, pedestrians.
+Limits: closing speed of a cyclist impacting the front of a car, German data, MAIS3+F (not AIS4+ as in [Tefft2013]); the cyclist and pedestrian curves are close for MAIS3+F and fatal injuries.
+
 **Speed humps and diversion (pass 2):** a peer-reviewed before-after study of hump effects on volume and speed was again **not found**. What exists is practitioner evidence, none individually verified in detail:
 - FHWA *Traffic Calming ePrimer*, Module 4 (highways.dot.gov/safety/speed-management/traffic-calming-eprimer). Seen via search: a database of hump sites suggests 25–27 mph as a reasonable 85th-percentile speed after installation, higher where pre-installation speeds were higher, and that speed reductions may shift traffic off the street. The page itself could not be parsed, so these figures are **unverified**.
 - Iowa State (CTRE) evaluation of temporary speed humps and tables: lower speeds at and just downstream of the device, weaker effects upstream, and no volume reductions suggesting diversion on the test streets (search summary only; not read).
@@ -491,7 +496,8 @@ Existing microsimulation tools produce poor bicycle trajectories and bicycle–m
 
 **Cyclist microsimulation models, 2016–2025 (pass 2, partly filled):**
 
-**[Twaddle2016]** [V-meta] Twaddle, H., Grigoropoulos, G. (2016). Modeling the speed, acceleration, and deceleration of bicyclists for microscopic traffic simulation. *Transportation Research Record* 2587(1), 8–16. DOI 10.3141/2587-02 (Crossref). Munich intersection data. Outside the 2018+ window but the standard parameter source for cyclist speed and acceleration.
+**[Twaddle2016]** [V] Twaddle, H., Grigoropoulos, G. (2016). Modeling the speed, acceleration, and deceleration of bicyclists for microscopic traffic simulation. *Transportation Research Record* 2587(1), 8–16. DOI 10.3141/2587-02 (Crossref). Author preprint read in full (TU Wuppertal copy, 2026-11-12). Munich intersection data: 1030 trajectories from four signalized intersections in the city center.
+Numbers taken: Table 2, bicyclists riding straight on a bicycle lane with a gap over 2 s and a green phase (N = 466): crossing speed mean 5.23 m/s, SD 1.25 m/s; mean minimum speed 4.20 m/s, mean maximum speed 6.02 m/s. The introduction cites earlier studies with mean speeds of 3.2 to 6.9 m/s and mean accelerations of 0.23 to 1.07 m/s². These are speeds through a junction on green, so they are probably higher than mid-block speeds with stops. The paper gives no acceleration range that maps onto the simulator's IDM `a`, `b` or `T`.
 
 **[Kaths2023]** [V-meta] Kaths, H. (2023). A movement and interaction model for cyclists and other non-lane-based road users. *Frontiers in Future Transportation* 4, DOI 10.3389/ffutr.2023.1183270 (Crossref). Per its abstract (search record): built on the NOMAD pedestrian model and calibrated on cyclist trajectories at four signalized Munich intersections. Full text not read.
 
@@ -510,6 +516,48 @@ Still **not found:** a verified 2018–2026 *review* of cyclist microsimulation.
 **[Wang2025]** [V-meta] Wang, Y., Srinivasan, A.R., Jokinen, J.P.P., Oulasvirta, A., Markkula, G. (2025). Pedestrian crossing decisions can be explained by bounded optimal decision-making under noisy visual perception. *Transportation Research Part C* 171, 104963. DOI 10.1016/j.trc.2024.104963 (Crossref; initials beyond the first were taken from the search record). Reinforcement-learning model of speed-dependent gap acceptance. Not read.
 
 Still **not found:** a verified calibrated microsimulation rule set for pedestrians crossing *unsignalized neighborhood* streets with yielding drivers. A FHWA-style 27-mid-block-crossing gap-acceptance prototype and a WCTR 2010 discrete-choice model were seen only as search snippets and are not cited.
+
+**Pedestrian, cyclist and bus parameter sources (multimodal-agents, pass 3, 2026-11-12).** Network access reached Crossref, PubMed, the NACTO-hosted copy of TCRP 112 / NCHRP 562, the TRB chapter PDFs of TCRP 165, the FHWA site and several agency report PDFs. The California statute pages (leginfo, Justia, FindLaw) answered 403.
+
+**[Fitzpatrick2006]** [V] Fitzpatrick, K., Turner, S., Brewer, M., Carlson, P., Ullman, B., Trout, N., Park, E.S., Whitacre, J., Lalani, N., Lord, D. (2006). *Improving Pedestrian Safety at Unsignalized Crossings.* TCRP Report 112 / NCHRP Report 562. Transportation Research Board, Washington, DC. DOI 10.17226/13962 (Crossref; Crossref lists no authors, the author list is from the report's title page). Full text read from the PDF. Page numbers are the printed ones.
+Numbers taken:
+- Table 18 (p. 45): walking speed of 2430 walking pedestrians in the field studies, 15th percentile 3.70 ft/s (1.13 m/s), 50th percentile 4.72 ft/s (1.44 m/s). Young (2324) 1.15 and 1.45 m/s; older (106) 0.92 and 1.30 m/s. The report's recommendation is 3.5 ft/s (1.1 m/s) for design, 3.0 ft/s (0.9 m/s) where older pedestrians matter (Table 20 discussion, p. 47).
+- Table 11 (p. 25): pedestrian critical gap from HCM Equation 18-17 with 12-ft lanes, 4 ft/s walking speed and a 3-s start-up time: 9.0 s for two through lanes, 15.0 s for four. That is crossing distance / walking speed + 3 s.
+- Tables 21 and 22 (p. 48): motorist yielding to staged pedestrians. High-visibility signs and markings: one site at a 25 mph limit 61%, two sites at 35 mph 10% and 24% (average 17%). In-street crossing signs at 25 to 30 mph limits: 82 to 91%, average 87%, all on two-lane streets. Median refuge islands (marked crosswalks, 6 sites): 7 to 75%, average 34%. The report states that number of lanes and posted speed limit were statistically significant for yielding.
+These are mostly sites with a treatment, so they are not the baseline for a plain marked crosswalk.
+
+**[Bertulis2014]** [V-meta] Bertulis, T., Dulaski, D.M. (2014). Driver approach speed and its impact on driver yielding to pedestrian behavior at unsignalized crosswalks. *Transportation Research Record* 2464(1), 46–51. DOI 10.3141/2464-06 (Crossref). Abstract read from the Crossref record; the full text was not read.
+Staged pedestrian at marked crosswalks, nine sites in the Boston area, 100 trials per site. Yielding fell as the 85th percentile speed rose. On the eight two-lane streets it ran from 75% at the 20 mph street to 17% at the 37 mph street. The one four-lane street had 9%.
+
+**[OBrien2022]** [V] O'Brien, S.W., Ahmed, I., Chase, T., Searcy, S., Kearns, B., Pyo, K., Zegeer, C.V. (2022). *Yielding Compliance at High Visibility Crosswalks.* Report FHWA/NC/2019-18, Highway Safety Research Center, University of North Carolina, for the North Carolina Department of Transportation. May 2022. `https://rosap.ntl.bts.gov/view/dot/64540` (PDF read in full; no DOI).
+Staged-pedestrian yielding at 65 crossings in Cary, Clayton and Raleigh before any conversion. Tables 4-1, 4-2 and 4-3 give, per site, the control type, posted speed, lanes, marking style (U unmarked, T transverse, C continental), number of staged events and number of yields. Pooling the uncontrolled sites in those tables (our arithmetic, sites with the pedestrian-signage flag included):
+- 25 mph, all two-lane: unmarked 38 yields in 475 events (8.0%, 11 sites); marked with transverse or continental lines 189 in 579 (32.6%, 9 sites).
+- All speeds (25 and 35 mph): unmarked 70 in 644 (10.9%, 14 sites); marked 252 in 675 (37.3%, 12 sites).
+The three marked 35 mph sites pooled to 65.6% (63 in 96) and are single-site outliers. The study is from North Carolina cities, not California.
+
+**[Brewer2006]** [V-meta] Brewer, M.A., Fitzpatrick, K., Whitacre, J.A., Lord, D. (2006). Exploration of pedestrian gap-acceptance behavior at selected locations. *Transportation Research Record* 1982(1), 132–140. DOI 10.1177/0361198106198200117 (Crossref). Abstract read from Crossref.
+Data from 42 sites in seven states. At the 11 approaches with enough events, 85th percentile accepted gaps were 5.3 to 9.4 s and grew with crossing distance. All were below the MUTCD critical gap for a 3.5 ft/s walking speed. Pedestrians often used "rolling gaps", starting before the far lane was clear.
+
+**[Beck2019]** [V-meta] Beck, B., Chong, D., Olivier, J., Perkins, M., Tsay, A., Rushford, A., Li, L., Cameron, P., Fry, R., Johnson, M. (2019). How much space do drivers provide when passing cyclists? Understanding the impact of motor vehicle and infrastructure characteristics on passing distance. *Accident Analysis & Prevention* 128, 253–260. DOI 10.1016/j.aap.2019.03.007 (Crossref). Abstract read via PubMed (PMID 30981377).
+Victoria, Australia, 18,527 passes recorded by 60 cyclists. Passing distance is the lateral gap from handlebar end to vehicle. Median 173 cm (Q1 137, Q3 224); 5.9% of passes under 100 cm. Buses passed 28 cm closer than sedans; a marked bike lane with parked cars lowered the mean by 40 cm.
+
+**[Hamm2026]** [V-meta] Hamm, L., Miller, M. (2026). Bicyclist overtaking in naturalistic riding data: speed, clearance, and implications for injury risk. *Traffic Injury Prevention* 27(sup1), S232–S241. DOI 10.1080/15389588.2026.2686799 (Crossref). Abstract read via PubMed (PMID 42406922).
+Six commuter cyclists, 8,753 passes with vehicle speed. Mean passing speed from about 10 m/s on residential roads to nearly 15 m/s on primary and four-lane roads. Mean lateral clearance 2.2 to 3.0 m in most contexts, rising only 0.016 m per 1 m/s of passing speed. Painted bike lanes went with 0.31 m less clearance and 1.36 m/s higher passing speed than roads without bicycle accommodation.
+
+**[Rasch2020]** [V-partial] Rasch, A., Åkerberg Boda, C., Thalya, P., Aderum, T., Knauss, A., Dozza, M. (2020). How do oncoming traffic and cyclist lane position influence cyclist overtaking by drivers? *Accident Analysis & Prevention* 142, 105569. DOI 10.1016/j.aap.2020.105569 (Crossref). Open full text (Chalmers repository) skimmed for the design; results not extracted.
+Test-track overtaking of a robot cyclist, with an oncoming vehicle set to arrive at 6 s or 9 s time-to-collision (measured when the participant's car was 2 s from the cyclist), or absent. Drivers kept smaller margins at the shorter gap and when the cyclist rode nearer the lane center. It reports no minimum acceptable gap.
+
+**[CVC21760]** [V-partial] California Vehicle Code section 21760 ("Three Feet for Safety Act", added by AB 1371 in 2013, amended by AB 1909 in 2022). A driver overtaking a bicycle going the same way shall not pass with less than three feet between any part of the vehicle and any part of the bicycle or its operator. The statute text above comes from search-result summaries of the code; the official pages (leginfo, Justia, FindLaw) returned 403 and were not opened. Three feet is 0.9144 m.
+
+**[TCQSM3]** [V-partial] Kittelson & Associates, Inc., Parsons Brinckerhoff, KFH Group, Inc., Texas A&M Transportation Institute, Arup (2013). *Transit Capacity and Quality of Service Manual, Third Edition.* TCRP Report 165. Transportation Research Board, Washington, DC. DOI 10.17226/24766 (Crossref). Chapter 6 text read from the TRB chapter PDF; the numeric columns of its exhibit tables (for example Exhibit 6-4 passenger service times) did not survive text extraction and were not read.
+Numbers taken from running text:
+- Bus dwell time is the busiest door's passenger flow time plus door opening and closing time plus boarding lost time (Equation 6-5); door opening and closing time is "2-5 s typical".
+- Coefficient of variation of dwell times 0.4 to 0.8 across several U.S. cities, 0.6 recommended when there are no field data.
+- A typical 40-ft (12 m) diesel bus accelerates at 3.3 ft/s² (1.0 m/s²) to 25 mph (40 km/h) and decelerates comfortably at 4.0 ft/s² (1.2 m/s²) (Chapter 6, early in the Fundamentals section, about p. 6-3). Exhibit 6-2 lists other accelerations; its values were not read.
+- A worked calculation example gives average dwell times of 18.4 s (one street) and 17.5 s (another) for a downtown couplet. They are computed from the example's passenger counts, not measured distributions.
+No measured dwell-time distribution for a Bay Area route was found. The other dwell sources seen (TriMet, Pittsburgh, Chicago) were abstracts only and are not cited.
+
+Not found despite searching: a published rule for how many seconds of oncoming gap a driver needs before passing a cyclist on an urban two-lane street (only [Rasch2020] test-track conditions); a threshold speed difference for a "close pass"; a PET threshold validated for vehicle-pedestrian or vehicle-bicycle encounters; and a source for the 3.3 m urban lane width (the guides found state ranges of 10 to 12 ft in secondary summaries only).
 
 **Transit data and map matching (multimodal-agents data tasks, 2026-11-12):**
 
@@ -547,7 +595,7 @@ Claimed to be more than twenty times faster than SUMO. A useful design reference
 
 **[Hayward1972]** [V-partial] Hayward, J.C. (1972). Near miss determination through use of a scale of danger. *Highway Research Record* 384, 24–34. Introduced time-to-collision (TTC), after his 1971 Penn State thesis. The classic TTC assumes constant speeds, a known limitation.
 
-**TTC and PET definitions** (**unchecked - from memory**; these are the standard definitions, and the descriptions of PET as "time between the first road user leaving and the second arriving at the conflict point" and of TTC/PET as the most widely used proximal indicators were consistent across pass-2 search summaries):
+**TTC and PET definitions** (the PET definition is **checked against** [FHWA-SSAM2008] Chapter 2; the TTC formula is **unchecked - from memory**; these are the standard definitions, and the descriptions of PET as "time between the first road user leaving and the second arriving at the conflict point" and of TTC/PET as the most widely used proximal indicators were consistent across pass-2 search summaries):
 
 ```
 TTC = s / (v_follower - v_leader)   if v_follower > v_leader, else ∞
@@ -558,7 +606,10 @@ PET = t_second_user_arrives - t_first_user_left   (conflict-point crossing times
 
 **[Mahmud2017]** [V] Mahmud, S.M.S., Ferreira, L., Hoque, M.S., Tavassoli, A. (2017). Application of proximal surrogate indicators for safety evaluation: A review of recent developments and research needs. *IATSS Research* 41(4), 153–163. DOI 10.1016/j.iatssr.2017.02.001. Open access.
 Reviews TTC, PET and related indicators, and their strengths and limitations.
-**Threshold values:** a commonly used TTC threshold is about 1.5 s (**unchecked - from memory**; not found in any source opened). Use it only as an adjustable parameter.
+**Threshold values:** a TTC threshold of 1.5 s is the SSAM default ([FHWA-SSAM2008], checked, vehicle-to-vehicle). No PET threshold for vehicle-pedestrian or vehicle-bicycle encounters was found in a source that could be read. Use both only as adjustable parameters.
+
+**[FHWA-SSAM2008]** [V] Federal Highway Administration (2008). *Surrogate Safety Assessment Model and Validation: Final Report.* FHWA-HRT-08-051, June 2008. Chapter 2 read at `https://www.fhwa.dot.gov/publications/research/safety/08051/02.cfm` (no DOI found).
+States that SSAM defaults to a TTC threshold of 1.5 s "as suggested in previous research", and defines PET as the time between the first vehicle last occupying a position and the second arriving at it, with zero meaning a collision. The chapter does not give a PET threshold; it attributes the use of one to Hydén. These cover vehicle-to-vehicle interactions only.
 
 ---
 
