@@ -75,6 +75,10 @@ pub(super) struct Ped {
     prog: f32,
     t_depart: f64,
     wait_t: f32,
+    /// Placed by initial loading: its trip began before time zero, so trip time is partial and excluded from the means.
+    partial: bool,
+    /// Waiting at the crosswalk where initial loading placed it: that wait is partial and not scored.
+    skip_delay: bool,
 }
 
 #[derive(Clone, Copy)]
@@ -123,6 +127,7 @@ pub(super) struct PedWorld {
     free: Vec<u32>,
     alive: usize,
     completed: u64,
+    timed: u64,
     trip_time_sum: f64,
     cross_delay_sum: f64,
     crossings_done: u64,
@@ -134,11 +139,21 @@ impl PedWorld {
         self.alive
     }
 
+    /// Zero the results (time zero after initial loading); pedestrians still walking keep their state.
+    pub fn reset_stats(&mut self) {
+        self.completed = 0;
+        self.timed = 0;
+        self.trip_time_sum = 0.0;
+        self.cross_delay_sum = 0.0;
+        self.crossings_done = 0;
+        self.unroutable = 0;
+    }
+
     pub fn mode_metrics(&self) -> PedMode {
         PedMode {
             in_network: self.alive as u64,
             completed_trips: self.completed,
-            mean_trip_time: if self.completed > 0 { self.trip_time_sum / self.completed as f64 } else { 0.0 },
+            mean_trip_time: if self.timed > 0 { self.trip_time_sum / self.timed as f64 } else { 0.0 },
             mean_crossing_delay: if self.crossings_done > 0 { self.cross_delay_sum / self.crossings_done as f64 } else { 0.0 },
         }
     }
@@ -453,6 +468,17 @@ impl PedWorld {
     }
 }
 
+/// Time (s) of each step at walking speed `v`: walking distance over `v`; a crossing is its width over `v` plus `INITIAL_PED_WAIT_S`.
+fn ped_step_times(world: &PedWorld, steps: &[Step], v: f32) -> Vec<f64> {
+    steps
+        .iter()
+        .map(|s| match *s {
+            Step::Walk { from, to, .. } => ((to - from).abs() / v) as f64,
+            Step::Cross { xw, .. } => (world.xws[xw as usize].width / v) as f64 + INITIAL_PED_WAIT_S,
+        })
+        .collect()
+}
+
 /// Angular gap (rad) between links that separates two legs of a node. ASSUMPTION: 25 degrees.
 const LEG_GAP_RAD: f64 = 0.4363;
 /// Keep mid-block crossings this far from the ends of a link (m). ASSUMPTION.
@@ -467,14 +493,60 @@ impl Simulation {
         let id = match self.world.free.pop() {
             Some(i) => i as usize,
             None => {
-                self.world.peds.push(Ped { alive: false, uid: 0, v: 0.0, gap_f: 1.0, steps: Vec::new(), si: 0, pos: 0.0, state: ST_WALK, prog: 0.0, t_depart: 0.0, wait_t: 0.0 });
+                self.world.peds.push(Ped { alive: false, uid: 0, v: 0.0, gap_f: 1.0, steps: Vec::new(), si: 0, pos: 0.0, state: ST_WALK, prog: 0.0, t_depart: 0.0, wait_t: 0.0, partial: false, skip_delay: false });
                 self.world.peds.len() - 1
             }
         };
         self.world.alive += 1;
         let p = &mut self.world.peds[id];
-        *p = Ped { alive: true, uid, v, gap_f, steps, si: 0, pos: 0.0, state: ST_WALK, prog: 0.0, t_depart: t_arr, wait_t: 0.0 };
+        *p = Ped { alive: true, uid, v, gap_f, steps, si: 0, pos: 0.0, state: ST_WALK, prog: 0.0, t_depart: t_arr, wait_t: 0.0, partial: false, skip_delay: false };
         self.ped_begin_step(id);
+    }
+
+    /// Expected walking time (s) from `origin` to `dest` at the mean speed, with the expected wait at each crosswalk; None when unroutable.
+    pub(super) fn ped_expected_time(&mut self, origin: u32, dest: u32) -> Option<f64> {
+        let steps = self.world.route(origin, dest)?;
+        Some(ped_step_times(&self.world, &steps, PED_V_MEAN as f32).iter().sum::<f64>())
+    }
+
+    /// Place one pedestrian of the flow `origin` to `dest` at a position drawn uniformly by time along its walk: on a sidewalk, or
+    /// waiting at the crosswalk of a crossing step. False when there is no route.
+    pub(super) fn prepop_ped(&mut self, rng: &mut Rng, origin: u32, dest: u32) -> bool {
+        let Some(steps) = self.world.route(origin, dest) else { return false };
+        let (v, gap_f) = (sample_speed(rng), sample_gap(rng));
+        let times = ped_step_times(&self.world, &steps, v);
+        let total: f64 = times.iter().sum();
+        if total <= 0.0 {
+            return false;
+        }
+        let mut r = rng.f64() * total;
+        let mut si = steps.len() - 1;
+        for (i, t) in times.iter().enumerate() {
+            if r < *t {
+                si = i;
+                break;
+            }
+            r -= t;
+        }
+        let uid = self.uid_next;
+        self.uid_next += 1;
+        let (state, pos) = match steps[si] {
+            Step::Walk { from, to, .. } => (ST_WALK, from + (to - from) * (r / times[si].max(1e-9)).min(1.0) as f32),
+            Step::Cross { xw, .. } => {
+                self.world.xws[xw as usize].waiting += 1;
+                (ST_WAIT, 0.0)
+            }
+        };
+        let id = match self.world.free.pop() {
+            Some(i) => i as usize,
+            None => {
+                self.world.peds.push(Ped { alive: false, uid: 0, v: 0.0, gap_f: 1.0, steps: Vec::new(), si: 0, pos: 0.0, state: ST_WALK, prog: 0.0, t_depart: 0.0, wait_t: 0.0, partial: false, skip_delay: false });
+                self.world.peds.len() - 1
+            }
+        };
+        self.world.alive += 1;
+        self.world.peds[id] = Ped { alive: true, uid, v, gap_f, steps, si, pos, state, prog: 0.0, t_depart: self.t, wait_t: 0.0, partial: true, skip_delay: state == ST_WAIT };
+        true
     }
 
     /// Set up the pedestrian's current step, or finish its trip.
@@ -484,7 +556,10 @@ impl Simulation {
         match p.steps.get(p.si).copied() {
             None => {
                 self.world.completed += 1;
-                self.world.trip_time_sum += t - p.t_depart;
+                if !p.partial {
+                    self.world.timed += 1;
+                    self.world.trip_time_sum += t - p.t_depart;
+                }
                 p.alive = false;
                 p.steps.clear();
                 self.world.free.push(id as u32);
@@ -603,8 +678,11 @@ impl Simulation {
             p.prog = 0.0;
             (p.uid, p.wait_t)
         };
-        self.world.cross_delay_sum += wait as f64;
-        self.world.crossings_done += 1;
+        let skip = std::mem::replace(&mut self.world.peds[id].skip_delay, false);
+        if !skip {
+            self.world.cross_delay_sum += wait as f64;
+            self.world.crossings_done += 1;
+        }
         // Post-encroachment time against the last vehicle that passed [Mahmud2017].
         let (lp_uid, lp_v, pet) = {
             let x = &self.world.xws[xw as usize];
@@ -790,7 +868,7 @@ impl Simulation {
             Step::Walk { link: r, from: pr, to: self.topo.length[r as usize] },
         ];
         let id = self.world.peds.len();
-        self.world.peds.push(Ped { alive: true, uid, v, gap_f: 1.0, steps, si: 0, pos: 0.0, state: ST_WALK, prog: 0.0, t_depart: self.t, wait_t: 0.0 });
+        self.world.peds.push(Ped { alive: true, uid, v, gap_f: 1.0, steps, si: 0, pos: 0.0, state: ST_WALK, prog: 0.0, t_depart: self.t, wait_t: 0.0, partial: false, skip_delay: false });
         self.world.alive += 1;
         self.ped_begin_step(id);
     }

@@ -3,6 +3,8 @@
 //!
 //! cargo run --release -p traffic-sim --bin calibrate -- --area rockridge --period pm_peak --minutes 60 --scale 1.0 --seed 1
 
+mod multi;
+
 use serde_json::{json, Value};
 use std::cmp::Ordering;
 use std::collections::{BinaryHeap, HashMap};
@@ -41,10 +43,12 @@ struct Args {
     /// `--demand PATH` / `--network PATH`: read these files instead of `public/data/<area>.{demand,network}.json` (for A/B runs of variant demand).
     demand_path: Option<PathBuf>,
     network_path: Option<PathBuf>,
+    /// `--no-initial-load`: start from an empty network (the default places agents already en route, then settles).
+    no_initial_load: bool,
 }
 
 fn parse_args() -> Args {
-    let mut a = Args { area: "rockridge".into(), period: "pm_peak".into(), minutes: 60.0, scale: 1.0, seed: 1, warmup_min: 10.0, local_factor: None, guided_share: None, switch_band: None, legacy_reroute: false, adapt_min: None, motorway_removal: false, no_rtor: false, out: None, write: true, link_flows: false, select_od: None, cars_only: false, drop: Vec::new(), demand_path: None, network_path: None };
+    let mut a = Args { area: "rockridge".into(), period: "pm_peak".into(), minutes: 60.0, scale: 1.0, seed: 1, warmup_min: 10.0, local_factor: None, guided_share: None, switch_band: None, legacy_reroute: false, adapt_min: None, motorway_removal: false, no_rtor: false, out: None, write: true, link_flows: false, select_od: None, cars_only: false, drop: Vec::new(), demand_path: None, network_path: None, no_initial_load: false };
     let argv: Vec<String> = std::env::args().skip(1).collect();
     let mut i = 0;
     while i < argv.len() {
@@ -67,10 +71,14 @@ fn parse_args() -> Args {
             "--adapt-min" => a.adapt_min = Some(val().parse().unwrap_or_else(|_| usage("bad --adapt-min"))),
             "--motorway-removal" => a.motorway_removal = true,
             "--no-rtor" => a.no_rtor = true,
+            "--no-initial-load" => a.no_initial_load = true,
             "--select-od" => a.select_od = Some(PathBuf::from(val())),
             "--out" => a.out = Some(PathBuf::from(val())),
             "--no-write" => a.write = false,
             "--link-flows" => a.link_flows = true,
+            "--seeds" => a.seeds = Some(multi::parse_seeds(&val()).unwrap_or_else(|| usage("bad --seeds (use 1-10 or 1,2,5)"))),
+            "--jobs" => a.jobs = val().parse().unwrap_or_else(|_| usage("bad --jobs")),
+            "--keep-seeds" => a.keep_seeds = Some(PathBuf::from(val())),
             "--cars-only" => a.cars_only = true,
             "--demand" => a.demand_path = Some(PathBuf::from(val())),
             "--network" => a.network_path = Some(PathBuf::from(val())),
@@ -87,7 +95,7 @@ fn usage(msg: &str) -> ! {
     if !msg.is_empty() {
         eprintln!("error: {msg}");
     }
-    eprintln!("usage: calibrate [--area rockridge] [--period pm_peak] [--minutes 60] [--scale 1.0] [--seed 1] [--warmup 10] [--adapt-min 5] [--motorway-removal] [--no-rtor] [--out DIR] [--no-write] [--link-flows] [--cars-only]");
+    eprintln!("usage: calibrate [--area rockridge] [--period pm_peak] [--minutes 60] [--scale 1.0] [--seed 1] [--warmup 10] [--adapt-min 5] [--motorway-removal] [--no-rtor] [--no-initial-load] [--out DIR] [--no-write] [--link-flows] [--cars-only]");
     std::process::exit(if msg.is_empty() { 0 } else { 2 });
 }
 
@@ -320,6 +328,24 @@ fn ctrl_str(c: Control) -> &'static str {
 fn main() {
     let args = parse_args();
     let root = root();
+    if let Some(seeds) = args.seeds.clone() {
+        let targets: Value = serde_json::from_str(&std::fs::read_to_string(root.join(format!("data/calibration/{}.targets.json", args.area))).expect("targets")).expect("targets json");
+        let raw: Vec<String> = std::env::args().skip(1).collect();
+        let mut base = Vec::new();
+        let mut i = 0;
+        while i < raw.len() {
+            match raw[i].as_str() {
+                "--seeds" | "--jobs" | "--keep-seeds" | "--seed" | "--out" => i += 1,
+                "--link-flows" | "--no-write" => {}
+                _ => base.push(raw[i].clone()),
+            }
+            i += 1;
+        }
+        let out = args.out.clone().unwrap_or_else(|| root.join("data/calibration/reports"));
+        let prefix = format!("{}-{}-s{}-seed", args.area, args.period, args.scale);
+        multi::run(multi::Multi { exe: std::env::current_exe().expect("exe"), base_args: base, seeds, jobs: args.jobs, out, keep: args.keep_seeds.clone(), stem_prefix: prefix.trim_end_matches("-seed").to_string() + "-seed", targets: &targets });
+        return;
+    }
     let read = |p: PathBuf| std::fs::read_to_string(&p).unwrap_or_else(|e| usage(&format!("cannot read {}: {e}", p.display())));
     let net_json = read(args.network_path.clone().unwrap_or_else(|| root.join(format!("public/data/{}.network.json", args.area))));
     let dem_json = read(args.demand_path.clone().unwrap_or_else(|| root.join(format!("public/data/{}.demand.json", args.area))));
@@ -406,7 +432,7 @@ fn main() {
     sel.dedup();
 
     // ---- run
-    let cfg = Config { seed: args.seed, period: args.period.clone(), demand_scale: args.scale, select_links: sel, local_cost_factor: args.local_factor, guided_share: args.guided_share, switch_band: args.switch_band, record_trips: true, legacy_reroute: args.legacy_reroute, signal_adapt_min: args.adapt_min, motorway_gridlock_removal: args.motorway_removal, no_right_turn_on_red: args.no_rtor, ..Default::default() };
+    let cfg = Config { seed: args.seed, period: args.period.clone(), demand_scale: args.scale, select_links: sel, local_cost_factor: args.local_factor, guided_share: args.guided_share, switch_band: args.switch_band, record_trips: true, legacy_reroute: args.legacy_reroute, signal_adapt_min: args.adapt_min, motorway_gridlock_removal: args.motorway_removal, no_right_turn_on_red: args.no_rtor, initial_load: !args.no_initial_load, ..Default::default() };
     let mut sim = Simulation::from_parts(net.clone(), demand.clone(), cfg).expect("sim");
     let total_s = args.minutes * 60.0;
     let warm_s = if total_s >= 1800.0 { args.warmup_min * 60.0 } else { 0.0 };
