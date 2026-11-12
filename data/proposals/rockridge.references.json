@@ -20,6 +20,23 @@
             "west"
           ]
         ]
+      },
+      {
+        "type": "diagonal_diverter",
+        "at": [
+          "Colby Street",
+          "62nd Street"
+        ],
+        "connect": [
+          [
+            "Colby Street",
+            "south"
+          ],
+          [
+            "62nd Street",
+            "west"
+          ]
+        ]
       }
     ]
   }
