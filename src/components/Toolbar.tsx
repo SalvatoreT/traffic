@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import type { AreaBundle, ModeKey, ModeVisibility, Overlay } from '../types';
 import { formatClock } from '../lib/format';
 import { rampStops, type Mode } from '../lib/ramps';
@@ -74,7 +74,15 @@ const OVERLAYS: { id: Overlay; label: string }[] = [
   { id: 'cutthrough', label: 'Cut-through' }, { id: 'speed', label: 'Speed' }, { id: 'flow', label: 'Flow' },
 ];
 
+function initialLegendOpen(): boolean {
+  try { const v = localStorage.getItem('legendOpen'); if (v === '1' || v === '0') return v === '1'; } catch { /* unavailable */ }
+  try { return window.matchMedia('(min-width: 1100px)').matches; } catch { return true; }
+}
+
 export function Legend(p: LegendProps) {
+  const [open, setOpen] = useState(initialLegendOpen);
+  const moreId = useId();
+  const toggle = () => setOpen((o) => { try { localStorage.setItem('legendOpen', o ? '0' : '1'); } catch { /* unavailable */ } return !o; });
   const stops = rampStops(p.mode);
   const grad = `linear-gradient(to right, ${stops.join(', ')})`;
   const ticks = p.overlay === 'speed'
@@ -101,6 +109,10 @@ export function Legend(p: LegendProps) {
         <div className="ramp-ticks" aria-hidden="false">{ticks.map((t, i) => <span key={i}>{t}</span>)}</div>
         <div className="muted small">{p.overlay === 'speed' ? 'Slower = darker/wider (more congested).' : 'Higher = wider line.'} Gray thin = no vehicles.</div>
       </div>
+      <button type="button" className="btn legend-toggle" aria-expanded={open} aria-controls={moreId} onClick={toggle}>
+        Legend and layers <span aria-hidden="true">{open ? '▴' : '▾'}</span>
+      </button>
+      <div id={moreId} className="legend-more" hidden={!open}>
       <fieldset className="modes">
         <legend>Show on map</legend>
         {MODE_KEYS.filter((m) => p.multimodal || m.id === 'car').map((m) => (
@@ -117,13 +129,13 @@ export function Legend(p: LegendProps) {
         )}
       </fieldset>
       <ul className="keys" aria-label="Map symbols">
-        <li><svg width="16" height="16" aria-hidden="true"><path d="M8 1 L15 8 L8 15 L1 8Z" fill="var(--thru)" stroke="var(--thru-ring)" strokeWidth="1.6" /></svg> Through trip (car)</li>
         {p.multimodal && <li><svg width="14" height="14" aria-hidden="true"><rect x="2" y="2" width="10" height="10" rx="2" fill="var(--surface)" stroke="var(--bus)" strokeWidth="2" /></svg> Bus stop</li>}
         {p.multimodal && <li><svg width="14" height="14" aria-hidden="true"><line x1="7" y1="1" x2="7" y2="13" stroke="var(--text)" strokeWidth="2" /></svg> Crossing (zoomed in)</li>}
         <li><svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="var(--surface)" stroke="#1f9d55" strokeWidth="2" /></svg> Signal green (ring)</li>
         <li><svg width="14" height="14" aria-hidden="true"><path d="M7 1 L13 12 L1 12Z" fill="#f5c400" stroke="var(--text)" /></svg> Yellow (triangle)</li>
         <li><svg width="14" height="14" aria-hidden="true"><rect x="2" y="2" width="10" height="10" fill="#d62728" stroke="var(--text)" /></svg> Red (square)</li>
       </ul>
+      </div>
     </div>
   );
 }

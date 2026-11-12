@@ -101,7 +101,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
     const all: ModeVisibility = { car: true, bus: true, bicycle: true, pedestrian: true };
     try { return { ...all, ...JSON.parse(store.get('modes') ?? '{}') }; } catch { return all; }
   });
-  const [bikeNet, setBikeNet] = useState(() => store.get('bikeNet') !== '0');
+  const [bikeNet, setBikeNet] = useState(() => store.get('bikeNet') === '1');
   useEffect(() => { store.set('modes', JSON.stringify(modes)); }, [modes]);
   useEffect(() => { store.set('bikeNet', bikeNet ? '1' : '0'); }, [bikeNet]);
   const hasBikeNet = useMemo(() => network.links.some((l) => l.bikeLane || l.bikeRoute), [network]);

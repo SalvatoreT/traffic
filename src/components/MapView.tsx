@@ -188,9 +188,9 @@ export function MapView(p: Props) {
     const v = frame.vehicles;
     const M = L.modes;
     // One path per kind so each kind is a single fill and stroke.
-    const pCar = new Path2D(), pThru = new Path2D(), pBike = new Path2D(), pPed = new Path2D();
+    const pCar = new Path2D(), pBike = new Path2D(), pPed = new Path2D();
     let nb = 0;
-    const rr = r * 1.45, rb = r * 1.25, rp = Math.max(1.3, r * 0.6);
+    const rb = r * 1.25, rp = Math.max(1.3, r * 0.6);
     for (let i = 0; i + 5 < v.length; i += 6) {
       const kind = v[i + 4];
       if (kind === KIND_BUS ? !M.bus : kind === KIND_BIKE ? !M.bicycle : kind === KIND_PED ? !M.pedestrian : !M.car) continue;
@@ -205,17 +205,12 @@ export function MapView(p: Props) {
         pBike.moveTo(sx, sy - rb); pBike.lineTo(sx + rb * 0.95, sy + rb * 0.7); pBike.lineTo(sx - rb * 0.95, sy + rb * 0.7); pBike.closePath();
       } else if (kind === KIND_PED) {
         pPed.rect(sx - rp, sy - rp, rp * 2, rp * 2);
-      } else if ((v[i + 5] & 1) === 1) {
-        pThru.moveTo(sx, sy - rr); pThru.lineTo(sx + rr, sy); pThru.lineTo(sx, sy + rr); pThru.lineTo(sx - rr, sy); pThru.closePath();
       } else {
         pCar.moveTo(sx + r, sy); pCar.arc(sx, sy, r, 0, Math.PI * 2);
       }
     }
     g.lineWidth = 1; g.strokeStyle = C.ring;
     g.fillStyle = C.car; g.fill(pCar); g.stroke(pCar);
-    // through trips (cars only): diamond with heavy dark outline in orange
-    g.fillStyle = dark ? '#ffa94d' : '#e8590c'; g.strokeStyle = dark ? '#ffffff' : '#1a0f05'; g.lineWidth = 1.6;
-    g.fill(pThru); g.stroke(pThru);
     // buses: rounded rectangles along the heading, 12 m long when the zoom allows
     if (nb) {
       const buses = busBuf.current;
