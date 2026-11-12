@@ -66,8 +66,16 @@ With `--link-flows` the run SHALL write the mean delay per exiting vehicle on ev
 - **THEN** it prints the headline-share error and PM stability after each outer iteration and stops when the share error improves by less than half a point
 
 ### Requirement: Wandering and reported-pattern diagnostics
-The calibration report SHALL include the wandering metrics (route switches per trip, detour ratios, loops, reversals, and the share of study-area vehicle-miles driven by trips with a detour ratio above 1.3) for all trips, gate-to-gate trips, trips with a local end and each guidance class. It SHALL also report, from `patterns` in the targets file and with no street name in code, (a) the local-street vehicle-miles driven by trips between the surface gates on one side of the freeway ramps and the freeway mainline gates, and (b) for each configured bypass and arterial pair the share of corridor trips by direction that use the bypass for at least N blocks. Each diagnostic SHALL say whether an observed counterpart exists.
+The calibration report SHALL include the wandering metrics of completed car trips (route switches, detour ratios, loops, reversals, study-area vehicle-miles by detour) by trip type and guidance class, and the diagnostics configured under `patterns` in the targets file, with no street name in code. Each diagnostic SHALL say whether an observed counterpart exists.
+
+#### Scenario: Freeway through trips
+- **WHEN** the targets file names a surface side of the ramps
+- **THEN** the report gives the local-street vehicle-miles of trips between the surface gates on that side and the freeway mainline gates
+
+#### Scenario: Bypass and arterial
+- **WHEN** the targets file lists a bypass street, its arterial and a block count N
+- **THEN** the report gives, by direction, the share of corridor trips that use the bypass for at least N blocks
 
 #### Scenario: No observed counterpart
 - **WHEN** the targets file has no observed value for a diagnostic
-- **THEN** the report prints the modeled value and states that no observed counterpart exists
+- **THEN** the report prints the modeled value and says that no observed counterpart exists

@@ -60,23 +60,23 @@ The standing queue credited to a signalized approach in the adaptive plan SHALL 
 - **THEN** the ramp's standing vehicles count toward the approach's measured demand
 
 ### Requirement: Drivers keep their route unless an alternative is clearly better or the route is blocked
-A car SHALL choose its route at departure from the current measured link times. After departure it SHALL change route only when (a) a blocked route forces it (a link or movement on the remaining route is closed, or its next link has had no room for the blocked-wait limit), whatever its class, or (b) it follows live guidance, the cost of the alternative remaining route is lower than the cost of the current remaining route by more than the indifference band (a relative fraction of the current cost, and an absolute floor), the alternative does not return to a node already visited on the trip or reverse onto the link just left, the driver has made fewer than the switch cap of voluntary changes, and the minimum time since the last change has passed. Both costs SHALL use current link times and the driver's own per-link perception noise, which is fixed for the trip. The share of drivers that follow guidance SHALL come from `Config::guided_share` (default `params::GUIDED_SHARE`); the other drivers keep the departure route unless it is blocked. The band, the floor, the cap, the minimum gap and the blocked-wait limit are ASSUMPTIONS exposed in `params.rs`; the guidance share cites [Guin2021] and the band mechanism [Mahmassani1987], [Srinivasan2000], [Di2016].
+A car SHALL choose its route at departure from current measured link times and afterwards change it only when the route is blocked, or when it follows live guidance and an alternative is cheaper than the remaining route by more than the indifference band. Costs use current link times and the driver's own per-link noise, fixed for the trip. The guidance share (`Config::guided_share`, [Guin2021]) replaces any flat re-route share; the band and limits are ASSUMPTIONS in `params.rs`.
 
 #### Scenario: Near-equal routes
-- **WHEN** a driver following guidance faces an alternative route that is cheaper by less than the band or the floor
+- **WHEN** a driver following guidance faces an alternative cheaper by less than the band or the absolute floor
 - **THEN** it keeps its route at every epoch
 
 #### Scenario: Clearly better route
 - **WHEN** an alternative without backtracking is cheaper by more than the band and the floor
-- **THEN** the driver switches once and does not switch again within the minimum gap
+- **THEN** the driver switches once and does not switch again within the minimum gap, and never more than the cap
 
 #### Scenario: Backtracking
 - **WHEN** the only cheaper alternative reverses onto the link just left or revisits a node of the trip and the current route is open
 - **THEN** the driver keeps its route; if the route is closed the driver may backtrack
 
 #### Scenario: Blocked route
-- **WHEN** an intervention closes a link on the remaining route of a car
-- **THEN** the car re-plans at once, guided or not, and cars whose route is unaffected keep theirs
+- **WHEN** an intervention closes a link on the remaining route of a car, or its next link has had no room for the blocked-wait limit
+- **THEN** the car re-plans, guided or not, and cars whose route is unaffected keep theirs
 
 ### Requirement: Wandering metrics of completed trips
 When `Config::record_trips` is set the simulator SHALL record each completed car trip (links entered, en-route route changes, guidance flag) and report per trip the detour ratio against the shortest network distance and against the free-flow time-shortest route, repeated links and nodes, and reversals within 200 m.

@@ -89,6 +89,75 @@ Claremont Ave: checked end to end. OSM lanes (3 with one forward and one backwar
 
 Ramp junctions: after joining all four SR-24 terminals are single signalized nodes (Aileen/Telegraph and Clifton/Claremont off-ramps, Hudson/Claremont and 56th/Telegraph on-ramps) with 2-lane ramp approaches at 35 mph. Mean discharge in the PM peak (seeds 1 to 3, measured before the third round): Aileen off-ramp 584 veh/h (offered 656), Clifton off-ramp 914 veh/h (offered about 1,025), on-ramps 783 and 555 veh/h. That is 290 to 460 veh/h per lane averaged over the hour; the signal gives the ramp 30 to 45% of the cycle and the shortfall is downstream spill-back on Claremont and Telegraph, not the ramp signal itself. Before the third round the remaining gridlock removals were mostly vehicles queued on the 4-lane freeway stub behind the single-lane Clifton off-ramp (26 of about 45 removals over six seeds at scale 0.3). The third round checked the ramp lanes against OSM: the off-ramps are tagged one lane for most of their length and two lanes (turn lanes left | left;through;right at Clifton, left | right at Aileen) on the final way before the signal, and the importer keeps that per segment (a test covers it), so no lane count is lost. After step M the stub accounts for about one removal per run.
 
+## Tenth round: drivers commit to a route (task 13)
+
+User report: cars wander through the neighborhood instead of heading for an endpoint, Berkeley traffic cuts through the Trapezoid to SR-24, and College Ave traffic bypasses on Hillegass Ave. Every trip already had an origin and destination. In the code, every 60 s epoch 80% of en-route cars re-planned from the current link and took the result whatever the gain (the share was raised from 30% to 80% in steps I, N and U as a stabilizer for gridlock that later fixes removed). Runs: 60 minutes at scale 1.0, mean of seeds 1 to 3, same code with `--legacy-reroute` for "before" (the new binary with the old route choice), so the comparison is like for like and includes the signal phase fix. Reports in `reports/` are seed 1 of the new state. `public/data/*` is unchanged (no demand change).
+
+### Measured first (step AZ, before any change)
+
+Completed car trips, PM peak, mean of seeds 1 to 3: 1.05 route changes per trip, 43.8% of trips changed route at least once (gate-to-gate trips 1.5 per trip, 60%), mean detour ratio 1.117 against the shortest network distance, 9.8% of trips above 1.3, 0.3% above 2, 0.09% loops (same link twice or a node three times), 6.7% reversals (a link followed by its reverse within 200 m), 17.8% of study-area vehicle-miles driven by trips with a detour above 1.3. Midday: 0.76 changes per trip, detour 1.098, 7.1% above 1.3, 0.05% above 2, 0.07% loops, 7.2% reversals, 17.6%. AM: 0.83, 1.104, 7.9%, 0.15%, 0.08%, 6.3%, 16.6%.
+
+What the metrics show: the switching was real (about one change per trip) but the detours were not caused by it. Detours above 1.3 are mostly trips to and from the freeway gates that take a faster, longer road than the shortest distance, and departure-time choices that avoid congestion (against the free-flow time-shortest route the mean detour is 1.05 in the PM, 1.03 midday, and 6.0% / 3.0% of trips are above 1.3). Most "reversals" are out-and-back moves over a short dead-end spur (for example 46th St at MLK Jr Way before the SR-24 on-ramp) that the shortest path itself uses, with a detour ratio of 1.0: a banned movement at the ramp junction, not a driver choice.
+
+### Changes (step BA)
+
+| Rule | Value | Source |
+| --- | --- | --- |
+| Guidance class: re-evaluates its route every 60 s epoch | 46% of drivers (`GUIDED_SHARE`, config `guidedShare`); the old flat 80% is gone | [Guin2021]: 46% used navigation apps on regular commute trips (74 to 78% on infrequent and first-time trips); transfer to local trips is an ASSUMPTION |
+| Other drivers keep the departure route unless blocked | 54% | same |
+| Indifference band: switch only if the alternative remaining route is cheaper by more than a relative fraction and an absolute floor | 20% and 30 s (`SWITCH_BAND`, `SWITCH_MIN_GAIN_S`, config `switchBand`) | mechanism [Mahmassani1987], [Srinivasan2000], [Di2016]; no value for neighborhood trips found ([Guin2021]: 3 to 5 min on commute trips), so ASSUMPTION |
+| Same-footing comparison | both remaining routes costed link by link on current times with the driver's own noise (fixed per trip, `noise(seed, link)`) | design |
+| No backtracking | no node of the alternative already on the trip (covers reversing onto the link just left and U-turns); lifted when the route is blocked | design |
+| Switch cap and gap | 2 voluntary changes per trip, 120 s apart (`MAX_SWITCHES`, `MIN_SWITCH_GAP_S`) | ASSUMPTION |
+| Blocked route | a closed link or banned movement on the remaining route (intervention), or a next link without room for 60 s (`BLOCKED_REROUTE_S`): re-plan at once whatever the class; in the second case the car takes the best route that starts with another link | ASSUMPTION for the 60 s |
+| Departure routing | unchanged: current measured link times | |
+
+Local trip ends are nodes (the nearest residential node to the census block, `tools/build-demand.ts`) and a trip ends on first arrival at its destination node, so it cannot circle; the metrics show 0.0% loops for trips with a local end and detour ratios like those of gate-to-gate trips. No change was needed to the placement or the arrival rule.
+
+### Before and after (mean of seeds 1 to 3; before = `--legacy-reroute`)
+
+| Period | Switches per trip | Detour (mean) | > 1.3 | > 2 | Loops | Reversals | Study veh-miles by detour > 1.3 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| PM before | 1.05 | 1.117 | 9.8% | 0.32% | 0.09% | 6.7% | 17.8% |
+| PM after | 0.05 | 1.114 | 9.4% | 0.28% | 0.02% | 6.2% | 18.0% |
+| AM before | 0.83 | 1.104 | 7.9% | 0.15% | 0.08% | 6.3% | 16.6% |
+| AM after | 0.02 | 1.102 | 7.8% | 0.16% | 0.02% | 5.8% | 16.5% |
+| Midday before | 0.76 | 1.098 | 7.1% | 0.05% | 0.07% | 7.2% | 17.6% |
+| Midday after | 0.00 | 1.096 | 7.0% | 0.03% | 0.00% | 6.8% | 17.0% |
+
+Route changes fell by 95% or more and loops by about 80%, but detour ratios did not move: the route a driver picks at departure, not the changes after it, sets the detour. If the user's cars still look aimless on the map, the remaining candidates are the departure choice with noise of 8% per link, the street-hierarchy factor 1.25 and congestion-driven choices.
+
+### Stability (criterion D4) and speed
+
+| Period | Completed trips (before / after) | Removals by seed (before; after) | Backlog by seed % (after) | Arterial speed m/s (before / after) |
+| --- | --- | --- | --- | --- |
+| PM | 20,039 / 19,801 | 2 / 3 / 0; 2 / 0 / 2 | 0.6 / 1.8 / 1.8 | 8.51 / 8.09 |
+| AM | 17,785 / 17,634 | 0 / 0 / 0; 1 / 0 / 0 | 0.8 / 1.1 / 0.4 | 9.54 / 9.33 |
+| Midday | 13,174 / 13,166 | 0 / 0 / 1; 0 / 0 / 0 | 0.0 | 10.17 / 10.06 |
+
+120-minute PM run, seed 1 (before / after): removals 20 / 4, backlog 2.0% / 2.0%, speed 8.19 / 7.84 m/s, 42,992 / 42,733 completed. Fewer re-routing drivers cost about 1% of completed trips and 4% of arterial speed in the PM. The first version of the blocked rule (re-plan from the current link) gave AM removals of 1 / 2 / 1; the removals sat on single links behind small junctions (Idaho St at 59th St, San Pablo Ave at 62nd St), where the stuck car re-planned to the same blocked next link. Taking the best route that starts with another link changed that to 1 / 0 / 0 (PM 2 / 0 / 2 against 2 / 0 / 1). The re-route share was not raised and no demand scaling was added. Six PM seeds (1 to 6), measured with the first version of the blocked rule, before / after: mean backlog 1.3% / 1.45%, completed 20,122 / 19,816 (-1.5%), speed 8.55 / 8.18 m/s.
+
+D4 per period (zero removals, backlog under 2%, speed above 4 m/s, all three seeds): PM fails in 2 of 3 seeds, AM in 1 of 3, midday holds. Sim speed, PM peak seed 1 alone on one core: 27.2 s after, 29.7 s with the legacy rule, 28.6 s for the binary of the start of the round.
+
+### Shares (PM, mean of seeds 1 to 3, before -> after; observed in brackets)
+
+Headline: Hillegass Ave NB from the freeway 51 -> 53 (47), Colby St NB from 36 -> 41 (47), Hillegass Ave SB to 64 -> 66 (68), Colby St SB to 30 -> 37 (45). All four are within 10 points after (before: Colby St SB was 15 under). The seed range of one share is about 10 points, so the Colby St SB gain is not clearly beyond noise. AM after 54 / 39 / 56 / 29 and midday 62 / 36 / 55 / 35.
+Ramp via-street shares, side-resolved, PM, before -> after (observed): onto the freeway via College Ave 12 -> 13 (16), Hillegass Ave 12 -> 13 (12), Martin St 15 -> 15 (10), Colby St 8 -> 8 (8), Telegraph Ave north of Alcatraz Ave 12 -> 11 (8), Benvenue Ave 5 -> 5 (5); from the freeway via College Ave 8 -> 9 (10), Martin St 16 -> 17 (10), Colby St 6 -> 6 (8), Hillegass Ave 4 -> 5 (5), Benvenue Ave 3 -> 3 (3).
+Mid-block flows, PM, veh/h per direction, before -> after: Telegraph Ave N 1,012 -> 1,027, S 959 -> 985; College Ave N 259 -> 274, S 357 -> 360; Claremont Ave N 600 -> 600, S 506 -> 528; Alcatraz Ave E 498 -> 458, W 463 -> 500; Hillegass Ave N 36 -> 43, S 88 -> 100. Station fit and corridor ratios moved by less than the seed spread.
+
+### The two reported patterns (diagnostics; no observed counterpart for either)
+
+(a) Trips between the surface gates north of the ramps and the freeway mainline gates, local-street vehicle-miles: PM 3.4% of all local-street vehicle-miles to the freeway (1,117 trips) and 3.8% from it (1,348); AM 4.7% and 2.0%; midday 5.8% and 3.6%. Before: PM 3.5% and 3.0%. So Berkeley-to-freeway cut-through exists in the model and is a few percent of the miles on residential and service streets in the study area.
+(b) Corridor trips (from beyond one end of the study-area extent of Hillegass Ave and College Ave to beyond the other, within 1.2 km), share using Hillegass Ave for at least 3 blocks / College Ave only: PM northbound 1.2% / 11.8% (1,037 trips), southbound 3.4% / 17.2% (1,080); before 0.7% / 11.2% and 2.5% / 16.4%. The rest (about 87% and 79%) use other streets or the freeway. Hillegass Ave carries 43 veh/h northbound and 100 southbound at mid-block, against 274 and 360 on College Ave. The StreetLight notes give related shares that the select-link table reports (NB Hillegass traffic ends on College Ave in 6% of trips observed; 21 to 33% jogs to Benvenue Ave; southbound freeway-bound drivers on College Ave arrive via Ashby Ave and Benvenue Ave and jog to Hillegass Ave), but not the share of corridor trips that choose the bypass, so (b) has no observed value. The model shows little Hillegass Ave bypassing of College Ave; whether the real share is higher cannot be told from the figures available.
+
+### What remains
+
+- D4 still fails in the PM peak (2 of 3 seeds) and in one AM seed; D5 holds for the PM headline shares on the seed mean but not in every seed, and the status stays uncalibrated.
+- Detour ratios did not change: reducing wandering after departure did not reduce detours. Route choice at departure (noise, hierarchy factor, congestion response) is untested for realism against GPS traces.
+- The band (20%, 30 s), the cap, the gap and the 60 s blocked rule are assumptions; [Di2017] estimated bands could replace them once the paper's values are obtained.
+- 6.2% reversal trips come from turnaround spurs at ramp junctions (banned movements); the importer or turn-ban data should be checked there.
+
+
 ## Ninth round: freeway-edge stubs, one count once, right turn on red, simulator-measured costs (task 12)
 
 PM peak, scale 1.0, 60 min, mean of seeds 1 to 3 unless a row says otherwise. Steps AT to AY. Method: `data/demand/README.md` steps 22 to 25; generated fit report: `data/demand/rockridge.fit.md`; reports of seed 1 in `reports/`.

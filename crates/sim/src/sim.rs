@@ -2190,6 +2190,54 @@ impl Simulation {
         hash32(seed, 0x6D1D_ED01) % 1000 < share
     }
 
+    /// A car whose next link has had no room for a long time takes the best route that starts with another link and does not return to the blocked junction.
+    /// With no other way out it keeps its route and waits.
+    fn replan_around_blocked(&mut self, vid: u32) {
+        if self.vehs[vid as usize].kind != KIND_CAR {
+            return;
+        }
+        let (l, dest, seed, blocked) = {
+            let v = &self.vehs[vid as usize];
+            let Some(nx) = v.next() else { return };
+            (v.link, v.dest, v.noise_seed, nx)
+        };
+        self.router.ensure(dest, &self.topo, &self.eff, &self.link_cost);
+        let table = self.router.table(dest);
+        let ms = self.topo.lm_start[l as usize];
+        let mut best: Option<(f32, u32)> = None;
+        for m in ms..ms + self.topo.lm_cnt[l as usize] {
+            let b = self.topo.mvs[m as usize].b;
+            if b == blocked || !self.eff.mv_ok[m as usize] || self.eff.closed[b as usize] || self.topo.link_to[b as usize] == self.topo.link_from[l as usize] {
+                continue;
+            }
+            let h = table[b as usize];
+            if !h.is_finite() {
+                continue;
+            }
+            let c = (h + self.eff.mv_cost[m as usize]) * route::noise(seed, b);
+            if best.map_or(true, |(bc, _)| c < bc) {
+                best = Some((c, b));
+            }
+        }
+        let Some((_, b)) = best else { return };
+        let mut route = std::mem::take(&mut self.scratch);
+        route.clear();
+        route.push(b);
+        // A way out that comes back to the blocked junction only circles; the car keeps waiting.
+        let here = self.topo.link_to[l as usize];
+        if !route::walk(table, &self.topo, &self.eff, b, dest, seed, &mut route) || route.iter().any(|&x| self.topo.link_to[x as usize] == here) {
+            self.scratch = route;
+            return;
+        }
+        let veh = &mut self.vehs[vid as usize];
+        let mut old = std::mem::replace(&mut veh.route, route);
+        veh.ridx = 0;
+        veh.switches = veh.switches.saturating_add(1);
+        veh.last_switch_t = self.t;
+        old.clear();
+        self.scratch = old;
+    }
+
     fn drop_vehicle_unroutable(&mut self, vid: u32) {
         let (l, lane) = {
             let v = &self.vehs[vid as usize];
@@ -2257,7 +2305,7 @@ impl Simulation {
                     self.replan_vehicle(vid, true);
                 }
             } else if v.blocked_space && v.wait_t > BLOCKED_REROUTE_S {
-                self.replan_vehicle(vid, true);
+                self.replan_around_blocked(vid);
             } else if v.guided {
                 self.consider_reroute(vid);
             }

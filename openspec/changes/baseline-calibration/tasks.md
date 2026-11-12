@@ -90,3 +90,12 @@
 - [x] 12.8 Re-run: PM, AM and midday at scale 1.0 (seeds 1 to 3) and a 120-minute PM run; reports replaced, `public/data/*` regenerated, record, READMEs, area `calibration` entry (`uncalibrated`, PM experimental, default midday); D4 holds in midday, fails in the PM peak in 2 of 3 seeds and in AM in 1 of 3
 - [x] 12.10 Staggered T-junction join (`staggeredJoinRadius`, 14 pairs, Colby St/62nd St), tests, README and spec; final numbers re-run on the resulting network
 - [ ] 12.9 Reach D4 in the PM peak in every seed and D5 (Colby St SB to the freeway is 18 points under); long-peak entry backlog at two gates (120-minute run: 2.6%)
+
+## 13. Drivers commit to a route (tenth round)
+- [x] 13.1 Wandering metrics in the sim core (`wander.rs`, `Config::record_trips`) and the calibrate report; baseline measured for PM, AM and midday (seeds 1 to 3) before any change
+- [x] 13.2 Route choice: guidance class (46%, [Guin2021]), indifference band 20% / 30 s (assumption; mechanism [Mahmassani1987], [Srinivasan2000], [Di2016]), same-footing costs with per-trip noise, no backtracking, switch cap 2 and 120 s gap, blocked-route re-plan for both classes; `legacyReroute` for A/B runs
+- [x] 13.3 References verified through Crossref and added (section 4.2b); one brief read in full ([Guin2021], tagged V-partial)
+- [x] 13.4 Tests: near-equal routes do not flip, a clearly better route is taken once, no backtracking, blocked route re-plans for both classes, unaffected cars keep their route, detour/loop/reversal metrics on a toy network
+- [x] 13.5 Reported patterns as diagnostics (`patterns` in the targets file): freeway through trips on local streets, bypass versus arterial by direction
+- [x] 13.6 Re-run PM, AM, midday (seeds 1 to 3) and 120 min PM; reports replaced; record round; README; area `calibration` entry (uncalibrated, PM experimental, default midday)
+- [ ] 13.7 D4 in the PM peak (2 of 3 seeds still have removals) and in AM (1 of 3); departure route realism against observed paths
