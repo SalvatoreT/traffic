@@ -37,3 +37,12 @@
 - [x] 7.2 Browser performance at the larger size
 - [ ] 7.3 Fine-tune round on the wider network with all modes
 - [ ] 7.4 Reach D4 on the wider network (SR-24 west-end ramp capacity, south-edge corner, spread-out gridlock)
+
+## 8. Validation of the simulator's primitives
+- [x] 8.1 Benchmark suite in `crates/sim` (`validate` module, `validate` binary, `tests/validate.rs`) covering saturation flow, signal capacity with turns, close signals, all-way and two-way stops, circles, link capacity, gate insertion, ramps, other modes and junction traversal
+- [x] 8.2 Verify and add the sources the ranges need to `docs/references.md` ([FHWA-SIG2004], [FHWA-STM2008], [Treiber2014], [TxDOT-TSAP], [NCHRP08-135])
+- [x] 8.3 Fix the mechanisms found: turn-speed backstop, IIDM with cited urban means, gate entry speed, crossing conflicts that end at the conflict point, queue roll-up at stop signs; golden-metrics values replaced
+- [x] 8.4 Record the steps, describe the suite in the calibration README, update the area calibration note, restore `assumedGateScale` 1.0
+- [ ] 8.5 Remaining deviations: start-up lost time, adaptive plan on a saturated arterial, circle entry at high circulating flow, two-lane pocket overflow
+- [ ] 8.6 Reach D4 at full demand (the PM peak is stable at demand scale 0.4, not above 0.45)
+

@@ -8,7 +8,7 @@ pub const MIN_GAP: f32 = 0.1; // hard overlap guard (m)
 // --- signals [Webster1958] ---
 pub const YELLOW: f32 = 3.5; // ASSUMPTION: within 3-4 s
 pub const ALL_RED: f32 = 1.5; // ASSUMPTION
-pub const SAT_FLOW: f32 = 1800.0; // veh/h/lane, [Webster1958] era value (unchecked in references.md)
+pub const SAT_FLOW: f32 = 1800.0; // veh/h/lane, Webster-era value for the signal plan flow ratios; the ideal HCM value is 1,900 and the observed range 1,500 to 2,000 [FHWA-SIG2004]
 pub const CYCLE_MIN: f32 = 75.0; // ASSUMPTION: adaptive cycle range 60-120 s (urban arterial plans)
 pub const CYCLE_MAX: f32 = 120.0; // ASSUMPTION
 pub const MIN_GREEN: f32 = 15.0; // ASSUMPTION
@@ -22,6 +22,7 @@ pub const YELLOW_DECEL: f32 = 4.0; // ASSUMPTION: go on yellow if v^2/(2*4) > di
 
 // --- capacity realism (all ASSUMPTION: not sourced in docs/references.md) ---
 pub const NODE_CROSS_S: f32 = 2.0; // ASSUMPTION: s of leader motion credited when checking downstream room before a node crossing (crossing takes ~2-3 s)
+pub const NODE_SAFE_S: f32 = 0.5; // ASSUMPTION: s to spare when an entering vehicle will reach a conflict point just after a crossing one has cleared it
 pub const POCKET_VEH: usize = 3; // ASSUMPTION: left-turn pocket storage, vehicles (~20 m); more lefts queue in the through lane
 pub const POCKET_LEN: f32 = 20.0; // ASSUMPTION: pocket storage length (m); a through-lane queue longer than this blocks pocket entry
 pub const POCKET_MIN_LINK_M: f32 = 40.0; // ASSUMPTION: shortest approach link that can hold a pocket
@@ -36,6 +37,7 @@ pub const TC_MAJOR_LEFT: f32 = 4.1;
 pub const TC_UNCONTROLLED: f32 = 3.5; // ASSUMPTION: "short" critical gap, yield-to-right junctions
 pub const GAP_SIGMA: f64 = 0.15; // ASSUMPTION: lognormal heterogeneity of critical gap [Brilon1999] design choice
 pub const MIN_APPROACH_SPEED: f32 = 2.0; // ASSUMPTION: floor in arrival-time estimate (m/s)
+pub const QUEUE_V: f32 = 2.0; // ASSUMPTION: a vehicle following another below this speed (m/s) is in a queue and rolls up to a stop line without a second full stop
 pub const STOP_DWELL: f32 = 1.0; // ASSUMPTION: s stopped before a stop-sign driver may go (discharge headway 3-4 s [HCM7] UNVERIFIED)
 pub const YIELD_FALLBACK_S: f32 = 45.0; // ASSUMPTION: bounded-wait deadlock guard: drop approach-gap/FIFO checks
 pub const CONFLICT_FALLBACK_S: f32 = 120.0; // ASSUMPTION: drop in-node conflict check as well

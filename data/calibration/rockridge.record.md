@@ -6,6 +6,7 @@ Run-to-run noise from the chaotic congested regime is roughly +/-5% on completed
 Steps C0 to C3 were measured on the step B2 demand (before F); D, E, F on the later demand. PM peak, scale 1.0, 60 min, seed 1.
 Headline shares are the four freeway shares, modeled (PM observed): Hillegass NB from freeway (47), Colby NB from (47), Hillegass SB to (68), Colby SB to (45).
 Speeds are in m/s; multiply by 2.237 for mph.
+Steps Y to AD belong to the fifth round (task 8, validation of the simulator's primitives, `validation.md`): the suite measures each fix on a tiny network, so the real-network columns are filled only for the final state (step AD, PM peak, scale 1.0, mean of seeds 1 to 3, `assumedGateScale` 1.0).
 Steps P to W belong to the fourth round (task 7.3, the wider network of 2,162 nodes and 5,401 links with all modes). They are measured on the PM peak, scale 1.0, 60 min, as the mean of seeds 1 to 3, and each step was measured on the demand and network of that step, so rows differ in more than the one change named. Step 7.1 is the untuned state at the start of the round (seed 1 only).
 Steps K to N belong to the third round (signals and ramp terminals), measured the same way on the final demand (seeds 1 to 3, PM peak). Steps G to J were measured on the second calibration round: the figures are the mean of seeds 1 to 3 (PM peak, scale 1.0, 60 min). The state before step G is the seed-1 row of step F. Seeds differ a lot at the same state (PM removals 8 to 54 across six seeds at one setting), so differences below about 10 removals are not significant.
 
@@ -43,6 +44,12 @@ Steps K to N belong to the third round (signals and ramp terminals), measured th
 | V | `ramps.localShare` 0.30 -> 0.60. Tested 0.30 / 0.45 / 0.60 / 0.75 (headline shares 54 / 40 / 51 / 35, 51 / 34 / 61 / 43, 48 / 42 / 62 / 43, 53 / 44 / 61 / 46) | ASSUMPTION | The model area is now 5.7 by 3.4 km, so most ramp trips end inside it; 0.30 was set for a 1 km area. 0.60 brings all four headline shares within 10 points at this step and cuts the Colby St and College Ave ramp via-street shares to near the observed values | 11279 | 178 | 9.9% | 4.17 | 48 / 42 / 62 / 43 |
 | W | Left-turn pockets use the OSM left-turn lane where `turn:lanes` has one (`leftLanes`, 185 links, 112 at signals): the pocket takes one of the tagged lanes and adds none | BUGFIX | OSM lane counts already include marked turn lanes, so the class rule added a second one [OSMTurnLanes] | 11375 | 158 | 10.8% | 4.17 | 48 / 33 / 66 / 47 |
 | X | Final reports: the demand builder drops flows that round to 0.00 veh/h (a test caught one) | BUGFIX | Flow contract needs positive volumes | 11021 | 172 | 11.4% | 4.14 | 48 / 34 / 62 / 46 |
+| Y | Turn-speed backstop in `compute_accels`: the kinematic braking limit toward the turn speed (4 to 5 m/s) applied at any distance, so a head vehicle with a left or right turn ahead was held at the turn speed along the whole link. It now applies only when the braking needed exceeds half the driver's comfortable deceleration (same rule for humps) | BUGFIX | Junction traversal delay of a free-flow left turn 12.5 s, right 15.8 s against about 4 to 5 s kinematic (case k2, k3); platoons behind a turner moved at turn speed | n/a | n/a | n/a | n/a | n/a |
+| Z | Car following: IDM replaced by the Improved IDM of [Treiber2014] (steady-state time gap equals T); mean T 1.3 -> 1.2 s (range 0.9 to 1.5) and mean a 1.4 -> 1.5 m/s2 (range 1.1 to 1.9), the signal-discharge calibration of the same paper | BUGFIX, cited parameters | The plain IDM follows at a gap larger than s0 + v T, so a standing queue discharged every 2.38 s (1,510 veh/h/lane) against the observed 1,500 to 2,000 and the ideal 1,900 (case a1, a2); now 2.14 s (1,682) | n/a | n/a | n/a | n/a | n/a |
+| AA | Gate entry speed: vehicles enter at the highest speed up to their desired speed whose IDM gap fits the leader's room (before: fixed 4 m/s with 4 m of room), and wait until they can enter at least as fast as the leader | BUGFIX | The fixed entry speed capped every gate at about 1,480 veh/h per lane (case h1), below the 25 mph link capacity; now 1,734 | n/a | n/a | n/a | n/a | n/a |
+| AB | Node crossing conflicts: a crossing movement blocks an entering one only until its tail has passed the conflict point (or, for the entering vehicle, until it will have cleared it by the time the entering vehicle arrives, `NODE_SAFE_S` 0.5 s); merges onto one exit still block until the vehicle has left the node. The gap check measures arrival at the node center, not the stop line. Conflict positions are stored per movement pair | BUGFIX | Every conflicting movement waited for the whole crossing (3 to 4 s from a standing start): all-way stop 334 veh/h per approach (case d1), permissive left with 500 opposing 0.59 of the through limit (b4) | n/a | n/a | n/a | n/a | n/a |
+| AC | A driver who slowed to queue speed (2 m/s, `QUEUE_V`) behind another vehicle rolls up to a stop line without a second full stop | BUGFIX | Queued minor-street vehicles stopped again at the line: 6.5 s per vehicle with no conflicting flow against the HCM follow-up of 3.3 to 4.0 s (case e1 to e9); now 3.5 s | n/a | n/a | n/a | n/a | n/a |
+| AD | `assumedGateScale` 0.5 -> 1.0 (documented class defaults), demand rebuilt; final state of the fifth round, PM peak, mean of seeds 1 to 3 | ASSUMPTION restored | The 0.5 was a workaround for the capacities fixed above | 13056 | 242 (287 / 212 / 228) | 9.8% | 4.41 | 52 / 38 / 61 / 33 |
 
 Tried and not kept (PM, six seeds each, removals / backlog / arterial speed):
 - Signal green split by lane load (a left or right movement on a multilane approach gets its own lane in the Webster flow ratio): 33.5 / 2.2% / 4.00 against 30.2 / 3.5% / 4.06 for the plain per-lane split; AM got worse (22.7 against 14.0). Reverted.
@@ -164,6 +171,83 @@ Offered PM demand by type, veh/h: gate to gate 8,572, with a local end 3,285 (ga
 - The south-edge corner (40th St, West St, San Pablo Ave, Telegraph Ave) is cut by the extract edge; moving the south edge a few hundred meters south would give the gates room, at the price of a new extract.
 - Ramp via-street share onto the freeway via Telegraph Ave north of Alcatraz Ave is 52% against 8%.
 - Signal control is still an approximation (see the third round), and the 14 ramps without a count use an assumed 500 ADT.
+
+## Fifth round: validation of the simulator's primitives (task 8)
+
+Four tuning rounds adjusted demand and a few behaviors, yet the wider network still oversaturated (PM about 170 removals an hour, backlog 11%) while the counted corridors carried about half their expected flow. A network that jams while carrying half the real volume points at capacities below real values, so demand tuning stopped and the primitives were measured on their own. The suite is `cargo run --release -p traffic-sim --bin validate` (crate `traffic_sim::validate`, regression test `crates/sim/tests/validate.rs`); every case, its source and its result are in `validation.md`, and the method is in the README of this folder. Sources added to `docs/references.md` for it: [FHWA-SIG2004], [FHWA-STM2008], [Treiber2014], [TxDOT-TSAP] and [NCHRP08-135] (HCM 7 all-way stop headways). Ranges without a verified source are labeled ASSUMPTION in the table.
+
+### Mechanisms found and fixed (steps Y to AC)
+
+| Step | Mechanism in the code | Case before / after (expected) |
+| --- | --- | --- |
+| Y | `compute_accels` kept a kinematic limit `a_req = -(v^2 - vt^2) / (2 d)` for the turn speed `vt` at any distance. Once a head vehicle exceeded `vt` by a little, the limit was slightly negative for the whole link, so the first vehicle of every lane with a left or right turn ahead drove at 5 or 4 m/s along the link and held its platoon. The limit now applies once the braking needed is more than half the comfortable deceleration. Same rule for humps | k2 left 12.5 s / 4.6 s, k3 right 15.8 s / 4.6 s (2.5 to 6 and 3 to 7 s) |
+| Z | The plain IDM follows at a gap larger than s0 + v T, which lowers queue discharge. IIDM ([Treiber2014] eq. 1 to 3) has the steady-state gap s0 + v T; the means of T (1.2 s) and a (1.5 m/s2) are the signal-discharge calibration of the same paper, replacing uncited priors (1.3 s, 1.4 m/s2) | a1 headway 2.38 s / 2.14 s, a2 1,510 / 1,682 veh/h/lane (observed 1,500 to 2,000, ideal 1,900), i1 motorway 1,605 / 2,184 (2,350 at 65 mph), i3 ramp 1,584 / 2,052 (2,100) |
+| AA | A gate inserted vehicles at a fixed 4 m/s with 4 m of room, and each slow entry delayed the next (each insertion waited for the leader to cover 8.7 m from 4 m/s). Entry speed is now the highest speed up to the desired speed whose IDM gap fits the room, and a vehicle waits until it can enter at least as fast as its leader | h1 1,476 / 1,734 veh/h per lane on a 25 mph link (link capacity 1,790), g1 1,386 / 1,656 |
+| AB | A vehicle crossing a node blocked every conflicting movement until it left the node (4 s from a standing start), and the lag to an opposing vehicle was measured to the stop line, 6 m short of the conflict point. Crossing conflicts now end when the vehicle's tail passes the conflict point; the entering vehicle may start when the other will have cleared it on arrival (0.5 s to spare); merges onto the same exit still block until the node is empty | d1 all-way stop 334 / 473 veh/h per approach (400 to 550), b4 20% left with a pocket 588 / 936 (921 to 1,216), left-only permissive capacity with 500 opposing 416 / 1,038 per green hour (Harders formula 1,074) |
+| AC | Each queued minor-street driver stopped again at the line (a crawl at 1.4 m/s over 8.7 m, then 1 s of dwell): 6.5 s per vehicle with nothing to yield to, where the HCM follow-up time is 3.3 to 4.0 s. A driver who slowed below 2 m/s behind another vehicle now rolls up without a second full stop | e1 minor right with 200 on the major street 412 / 694 veh/h (635 to 1,058); no conflicting flow 550 / 1,030 |
+
+The golden-metrics test (`car_only_metrics_match_pre_multimodal_golden`) changed with these steps and its two golden strings were replaced in the same change. The invariant helper `assert_no_conflicting_transit` now allows two crossing vehicles in a node when neither is on the shared conflict point. Two stop-sign tests and the saturated two-lane approach test changed their bounds for the new rules.
+
+Checked and cleared. The anti-spillback room check before a node crossing (step C0) does not limit arterial throughput: with `ROOM_MIN` at 4, 2 and 0.5 m, two signals 100 m apart carried 1,818, 1,824 and 1,830 veh/h. The 23% shortfall of two signals 100 m apart against 1,000 m (case c1) is storage and uncoordinated offsets: the 100 m link holds about 28 vehicles on two lanes and the next green can arrive after the downstream signal has turned red.
+
+### Validation table, before and after (selected cases; every case is in `validation.md`)
+
+Ratio is the simulated value over the midpoint of the expected range. "Before" is the simulator at the start of this task, same cases and ranges.
+
+| Case | Quantity | Before | After | Expected | Source |
+| --- | --- | --- | --- | --- | --- |
+| a1 | Saturation headway, 1 lane, 25 mph (s) | 2.38 (1.14) | 2.14 (1.02) | 1.80 to 2.40 | [FHWA-SIG2004] |
+| a2 | Saturation flow (veh/h/lane) | 1,510 (0.86) | 1,682 (0.96) | 1,500 to 2,000 | [FHWA-SIG2004] |
+| a3 | Start-up lost time (s) | -0.36 | 0.37 | 1 to 3 | [FHWA-STM2008] |
+| b1 | Signal capacity, 1 lane, green share 0.5 (veh/h/lane) | 738 (0.86) | 837 (0.95) | 755 to 1,007 | [FHWA-SIG2004] |
+| b4 | 20% left, pocket, 500 opposing | 588 (0.59) | 936 (0.88) | 921 to 1,216 | [Brilon1999] |
+| b9 | 2 lanes, 10% left, pocket | 652 (0.71) | 790 (0.84) | 815 to 1,075 | [Brilon1999] |
+| c2 | Two signals 100 m apart, adaptive, over 1,000 m apart | 0.78 | 0.73 | 0.75 to 1.15 | ASSUMPTION |
+| d1 | All-way stop per approach (veh/h) | 334 (0.70) | 473 (1.00) | 400 to 550 | ASSUMPTION |
+| d2 | All-way stop departure headway (s) | 10.8 (1.59) | 7.6 (1.13) | 3.9 to 9.6 | [HCM7] via [NCHRP08-135] |
+| e1 | Minor right, major 200 per direction (veh/h) | 412 (0.49) | 694 (0.82) | 635 to 1,058 | [Brilon1999] |
+| e4 | Minor through, major 200 | 309 (0.57) | 574 (1.06) | 406 to 677 | [Brilon1999] |
+| e7 | Minor left, major 200 | 291 (0.52) | 516 (0.91) | 423 to 705 | [Brilon1999] |
+| f2 | Circle entry, 600 circulating (veh/h) | 262 (0.42) | 312 (0.50) | 496 to 744 | [Rodegerdts2007] |
+| g1 | Single lane at 25 mph, gate-fed (veh/h/lane) | 1,386 (0.97) | 1,656 (0.92) | 1,603 to 1,980 | [Treiber2014] |
+| i1 | Motorway lane, 65 mph (veh/h/lane) | 1,605 (0.70) | 2,184 (0.95) | 2,115 to 2,468 | [TxDOT-TSAP] |
+| i2 | Off-ramp, 1 lane flaring to 2 at a signal (veh/h/lane) | 444 (0.86) | 500 (0.97) | 443 to 591 | [FHWA-SIG2004] |
+| k2 | Free-flow left turn, extra time (s) | 12.5 (2.93) | 4.6 (1.07) | 2.5 to 6 | ASSUMPTION (kinematic) |
+| k3 | Free-flow right turn, extra time (s) | 15.8 (3.16) | 4.6 (0.92) | 3 to 7 | ASSUMPTION (kinematic) |
+
+Before, 28 of 54 cases passed; after, 40. Several "before" values pass the saturation-flow range only because it is the wide observed range of [FHWA-SIG2004] (1,500 to 2,000); against the ideal 1,900 the 25 mph approach went from 0.79 to 0.89.
+
+### Cases still outside their range (not fixed; mechanism)
+
+- a3 start-up lost time 0.4 s against about 2 s: vehicles have no response delay when the green starts, so the first vehicle leaves at once. This helps capacity; adding the delay would cost about 3%.
+- b9 two lanes, 10% left, pocket: 790 against 815 at the low end. Left-turners overflow the 3-vehicle pocket (`POCKET_VEH`, an ASSUMPTION) into the inner lane.
+- c5 and c2: with saturated demand the adaptive plan gives the arterial 16% less than the fixed start-up plan, because splits follow measured exits plus the standing queue, and exits are capped by the green the arterial already had. On the real network adaptation is still better than none (PM completed trips 13,004 against 11,778 with `--adapt-min 0`, seed 1).
+- e2, e3 (minor right with 600 and 1,000 on each major direction) are 27% and 38% below the formula, which uses only the near-side stream, while the simulator also yields to the far-side stream; e6 and e9 (through and left at 1,000 per direction) are above it.
+- f2, f3 circle entry at 600 and 1,000 circulating veh/h: 312 and 84 against 620 and 416. The single-node circle blocks the entry while a circulating vehicle is on the first 68% of its arc (arc 26 m at 5 m/s, 3.5 s per vehicle) and has no gap check on vehicles still approaching. Circles exist only as an intervention.
+- j6, j8, j9, j12 (other modes): 300 cyclists an hour sharing a signalized lane cost 39% of capacity (50 an hour cost 13%) because a cyclist at 5 m/s is a moving bottleneck for cars at 11 m/s; 600 pedestrians an hour on each crosswalk of an all-way stop leave 23% of its capacity. No verified HCM pedestrian or bicycle adjustment factor was found, so the floors in the table (0.6 and 0.7 of capacity) are guesses and these rows are information, not a pass test. Pedestrians at a signal only affect turning movements, as designed (the through approach is unchanged).
+
+### Real network after the fixes, `assumedGateScale` 1.0, mean of seeds 1 to 3
+
+| Period | Offered veh/h | Completed trips | Gridlock removals (seeds 1 / 2 / 3) | Backlog | Arterial speed (m/s) | Stable (D4) |
+| --- | --- | --- | --- | --- | --- | --- |
+| PM peak | 28,781 | 13,056 | 287 / 212 / 228 (mean 242) | 9.8% | 4.41 | no (removals, backlog) |
+| AM peak | 27,831 | 12,276 | 301 / 245 / 214 (mean 253) | 7.8% | 4.36 | no (removals, backlog) |
+| Midday | 18,806 | 12,982 | 30 / 24 / 27 (mean 27) | 2.5% | 6.65 | no (removals, backlog) |
+
+At the start of this task the same network at `assumedGateScale` 0.5 (24,924 offered in the PM) completed 11,021 trips with 172 removals; at scale 1.0 and before any fix, 9,124 with 450. The fixes raise PM completed trips by 19% at the same offered demand, and at full demand the removals fell from 450 to 242.
+
+PM mid-block flows, veh/h per direction, mean of seeds 1 to 3, against the expected peak flow (ratio; before in brackets): Telegraph Ave N 658 / 1,093 = 0.60 (0.51), S 548 / 910 = 0.60 (0.58); Alcatraz Ave E 458 / 618 = 0.74 (0.54), W 540 / 521 = 1.04 (0.62); Claremont Ave N 413 / 635 = 0.65 (0.38), S 834 / 635 = 1.31 (1.01); College Ave N 413 / 540 = 0.76 (0.39), S 699 / 540 = 1.29 (1.04); Ashby Ave E 846 / 1,260 = 0.67 (0.53), W 615 / 1,260 = 0.49 (0.43; median over all model-area links of the street).
+
+Headline freeway shares, PM, modeled / observed: Hillegass NB from freeway 52 / 47, Colby NB from 38 / 47, Hillegass SB to 61 / 68, Colby SB to 33 / 45; three of four within 10 points (Colby SB is 12 under). AM 44 / 26 / 46 / 29 and midday 56 / 32 / 52 / 21 (observed values are the PM ones). Ramp via-street shares, PM, modeled / observed: onto the freeway via College Ave 16 / 16, Hillegass Ave 21 / 12, Martin St 12 / 10, Colby St 15 / 8, Telegraph Ave north of Alcatraz Ave 53 / 8, Benvenue Ave 3 / 5; from the freeway via College Ave 8 / 10, Martin St 24 / 10, Colby St 11 / 8, Hillegass Ave 14 / 5, Benvenue Ave 2 / 3.
+
+### What remains, and the demand that would meet D4
+
+Not all primitives pass (list above), but none of the open ones explains a half-capacity network, and D4 still fails at full demand. The PM peak meets D4 (zero removals, backlog under 2%, arterial speed above 4 m/s) at demand scale 0.4 (seeds 1 to 3: 0 / 0 / 0 removals, backlog 0.0%, 9.1 to 9.5 m/s); at 0.45 it has 0 / 1 / 1 removals, at 0.5 1 / 1 / 3 and at 0.55 6 (seed 1). That is about 11,500 veh/h offered. At full demand the network completes about 13,000 trips an hour but only with queues, removals and a backlog, so the demand tables carry about 2.5 times the load at which the junctions run without a queue. No demand factor was applied in this task. Top bottlenecks at full demand (PM seed 1, blocked lane-hours): 40th St/San Pablo Ave (6.9), 52nd St/Shattuck Ave (6.8), 40th St/West St (5.7), 55th St/MLK Jr Way (5.1), 40th St/Adeline St (5.0), 62nd St/Claremont Ave/College Ave (4.9), and the removals sit on 40th St, MLK Jr Way at 42nd and 45th St, and Hollis St. Mechanisms:
+
+- Signals at the south edge of the model area (40th St, West St, Adeline St, San Pablo Ave) serve gates with 475 to 850 veh/h each and cycle at the 75 s floor with 15 s minimum greens; the area is cut by the extract edge, so the gates push demand straight into them (data and importer, as in the fourth round).
+- The SR-24 west-end freeway stubs queue (mean 126 stopped vehicles on the 4-lane mainline link 5121, about 700 trips waiting at each of the two mainline gates). The signal at the end of the ramp link 2371 passes 858 veh/h, and the off-ramp demand there comes from 32,600 ADT (design D9).
+- Signal control is still an approximation: no coordination, a 75 s floor on the cycle, and left turns only by gaps and sneakers.
+- Demand itself: Telegraph Ave carries 0.6 of the counted flow because its southern gate (559 veh/h offered) has about 300 trips waiting at the end of the run, queued behind the south-edge signals; the share of Telegraph Ave north of Alcatraz Ave among trips onto the Claremont ramps stays at 53% against 8%.
 
 ## Third-round state on the narrow network (history)
 

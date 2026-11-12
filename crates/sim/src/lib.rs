@@ -7,6 +7,7 @@ pub mod rng;
 pub mod route;
 pub mod sim;
 pub mod topo;
+pub mod validate;
 
 pub use model::{Config, Demand, Metrics, Network};
 pub use sim::Simulation;

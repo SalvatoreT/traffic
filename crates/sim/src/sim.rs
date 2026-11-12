@@ -40,12 +40,14 @@ impl Drv {
             len: rng.range(4.4, 5.0) as f32,
             // ASSUMPTION: desired speed = limit x compliance factor ~ N(1.0, 0.12) clipped [0.75, 1.4].
             fcomp: (1.0 + 0.12 * rng.normal()).clamp(0.75, 1.4) as f32,
-            // [Kesting2010] Table 1 a=1.4; [references.md 1.1] realistic 0.8-2.5; urban prior 1.0-1.5.
-            a: rng.range(1.0, 1.8) as f32,
+            // Mean 1.5 m/s^2: urban signal-discharge calibration of [Treiber2014] (a = 1.5); [Kesting2010] Table 1 a = 1.4;
+            // [references.md 1.1] realistic 0.8-2.5. Width of the range is an ASSUMPTION.
+            a: rng.range(1.1, 1.9) as f32,
             // [Kesting2010] b=2.0; urban prior 1.5-2.0.
             b: rng.range(1.5, 2.2) as f32,
-            // [Treiber2000] T=1.6, [Kesting2010] T=1.5; urban prior 1.0-1.5.
-            t_hw: rng.range(1.0, 1.6) as f32,
+            // Mean 1.2 s: urban signal-discharge calibration of [Treiber2014] (T = 1.2, IIDM); [Treiber2000] T = 1.6 and [Kesting2010] T = 1.5
+            // are highway values. Width of the range is an ASSUMPTION.
+            t_hw: rng.range(0.9, 1.5) as f32,
             // [Treiber2000] / [Kesting2010] s0 = 2 m.
             s0: rng.range(1.5, 2.5) as f32,
             gap_f: (GAP_SIGMA * rng.normal()).exp() as f32,
@@ -124,6 +126,8 @@ struct Veh {
     stop_t: f32,
     wait_t: f32,
     blocked_space: bool,
+    /// The vehicle slowed to queue speed behind another one on this link (it joined a queue), so a stop sign needs no second full stop.
+    queued: bool,
     registered: bool,
     ttc_leader: u32,
     replan: bool,
@@ -175,6 +179,7 @@ impl Veh {
             stop_t: 0.0,
             wait_t: 0.0,
             blocked_space: false,
+            queued: false,
             registered: false,
             ttc_leader: NONE_UID,
             replan: false,
@@ -364,16 +369,68 @@ pub struct Simulation {
     world: PedWorld,
 }
 
+/// Improved IDM [Treiber2014]: the IDM with `s1 = 0` and `delta = 4` whose steady-state time gap is exactly `t_hw` (the plain IDM
+/// follows at a larger gap, which cut the queue discharge flow below the observed 1,800-1,900 veh/h/lane). For v <= v0 the
+/// acceleration is a (1 - z^2) when z = s*/s >= 1 and a_free (1 - z^(2a/a_free)) otherwise ([Treiber2014] eq. 1-3). Above v0 the
+/// branch is ASSUMPTION: the free-road deceleration plus the braking term a (1 - z^2) where z >= 1.
 fn idm(v: f32, v0: f32, s: f32, dv: f32, a: f32, b: f32, t_hw: f32, s0: f32) -> f32 {
-    // [Treiber2000] eq. 6-7 with s1 = 0, delta = 4.
     let v0 = v0.max(0.5);
     let ratio = v / v0;
-    let free = 1.0 - ratio * ratio * ratio * ratio; // IDM_DELTA = 4
+    let a_free = a * (1.0 - ratio * ratio * ratio * ratio); // IDM_DELTA = 4
     let _ = IDM_DELTA;
     let s_star = s0 + (v * t_hw + v * dv / (2.0 * (a * b).sqrt())).max(0.0);
     let s = s.max(0.1);
-    let acc = a * (free - (s_star / s) * (s_star / s));
+    let z = s_star / s;
+    let acc = if a_free >= 0.0 {
+        if z >= 1.0 {
+            a * (1.0 - z * z)
+        } else if a_free < 1e-4 {
+            a_free
+        } else {
+            a_free * (1.0 - z.powf(2.0 * a / a_free))
+        }
+    } else if z >= 1.0 {
+        a_free + a * (1.0 - z * z)
+    } else {
+        a_free
+    };
     acc.max(-B_MAX)
+}
+
+/// Equilibrium (steady-state car-following) flow of the sim's driver population at `density` veh/km on a link with speed limit
+/// `limit` m/s: mean over `n` sampled drivers, each at the speed where the acceleration is zero. Used by the validation suite.
+pub fn equilibrium_flow(limit: f64, density: f64, n: usize, seed: u64) -> f64 {
+    let mut rng = Rng::stream(seed, 77);
+    let mut sum = 0.0;
+    for _ in 0..n {
+        let d = Drv::sample(&mut rng);
+        let v0 = (limit as f32 * d.fcomp).max(1.0);
+        let s = (1000.0 / density) as f32 - d.len;
+        if s <= 0.1 {
+            continue;
+        }
+        let (mut lo, mut hi) = (0.0f32, v0 * 1.5);
+        for _ in 0..50 {
+            let mid = 0.5 * (lo + hi);
+            if idm(mid, v0, s, 0.0, d.a, d.b, d.t_hw, d.s0) > 0.0 { lo = mid } else { hi = mid }
+        }
+        sum += density * 0.5 * (lo + hi) as f64 / 1000.0 * 3600.0;
+    }
+    sum / n as f64
+}
+
+/// Highest equilibrium flow (veh/h) over densities 1 to 200 veh/km and the density at which it occurs.
+pub fn equilibrium_capacity(limit: f64, n: usize, seed: u64) -> (f64, f64) {
+    let mut best = (0.0, 0.0);
+    let mut k = 2.0;
+    while k <= 200.0 {
+        let q = equilibrium_flow(limit, k, n, seed);
+        if q > best.0 {
+            best = (q, k);
+        }
+        k += 2.0;
+    }
+    best
 }
 
 impl Simulation {
@@ -1200,6 +1257,36 @@ impl Simulation {
         }
     }
 
+    /// Speed at which a vehicle with parameters `drv` can be inserted at the start of lane `lane` of link `b`: the highest speed up to its
+    /// desired speed whose IDM desired gap s*(v, v - leader speed) fits the free room, so a free link accepts up to its car-following
+    /// capacity (a fixed entry speed capped every gate near 1,500 veh/h). None while even the slowest entry (1 m/s) does not fit.
+    fn entry_speed(&self, b: u32, lane: usize, drv: &Drv) -> Option<f32> {
+        let room = self.lane_room(b, lane);
+        if room < self.room_need(b as usize) {
+            return None;
+        }
+        let v0 = self.eff.limit[b as usize] * drv.fcomp;
+        let vl = match self.lanes[self.topo.qidx(b as usize, lane)].back() {
+            Some(&l) => self.vehs[l as usize].v,
+            None => return Some(v0),
+        };
+        let root = 2.0 * (drv.a * drv.b).sqrt();
+        // Wait until the vehicle can enter at least as fast as its leader, so a slow leader does not make every follower enter slowly.
+        let target = v0.min(vl).max(1.0);
+        let mut v = v0;
+        while v >= target {
+            if drv.s0 + v * drv.t_hw + (v * (v - vl) / root).max(0.0) <= room {
+                return Some(v);
+            }
+            v -= 0.5;
+        }
+        if target <= 1.0 {
+            Some(1.0)
+        } else {
+            None
+        }
+    }
+
     fn try_spawns(&mut self) {
         for n in 0..self.topo.n_nodes {
             for _ in 0..4 {
@@ -1233,9 +1320,13 @@ impl Simulation {
                     self.scratch = route;
                     break;
                 };
+                let drv = self.backlog[n].front().unwrap().drv;
+                let Some(v_ins) = self.entry_speed(b, lane, &drv) else {
+                    self.scratch = route;
+                    break;
+                };
                 let trip = self.backlog[n].pop_front().unwrap();
                 let id = self.alloc_veh();
-                let v0 = self.eff.limit[b as usize] * trip.drv.fcomp;
                 let veh = &mut self.vehs[id as usize];
                 let mut old = std::mem::replace(&mut veh.route, route);
                 old.clear();
@@ -1246,7 +1337,7 @@ impl Simulation {
                     link: b,
                     lane: lane as u8,
                     pos: self.topo.emerge_pos[b as usize],
-                    v: v0.min(4.0),
+                    v: v_ins,
                     drv: trip.drv,
                     origin: trip.origin,
                     dest: trip.dest,
@@ -1297,7 +1388,10 @@ impl Simulation {
         }
         let node = self.topo.link_to[l] as usize;
         let ctrl = self.eff.ctrl[node];
-        let (stopped, waiting) = (v < 0.2 && d < 5.0, v < 0.2 && d < 8.0);
+        // A driver who stopped in the queue rolls up to the line without a second full stop, so queued minor-street vehicles
+        // depart at the HCM follow-up headway (3.3 to 4.0 s [HCM7]) instead of stopping again at the line.
+        let rolling = self.vehs[vid as usize].queued && d < 8.0 && v < 3.0;
+        let (stopped, waiting) = ((v < 0.2 && d < 5.0) || rolling, v < 0.2 && d < 8.0);
         {
             let veh = &mut self.vehs[vid as usize];
             if stopped {
@@ -1460,14 +1554,34 @@ impl Simulation {
         }
     }
 
+    /// Does the vehicle crossing the node in `tr` still block movement `mv`, which would take `t_mine` s to cross? Crossing paths conflict
+    /// only at a point: the entering vehicle may start once the crossing one will have cleared that point (tail included) by the time
+    /// it gets there, `NODE_SAFE_S` to spare. A merge onto the same exit lane blocks until the vehicle has left the node. Holding every
+    /// conflicting movement for the whole crossing (3 to 4 s from a standing start) cut stop-controlled and permissive-left capacity
+    /// by a third.
+    fn transit_blocks(&self, mv: u32, tr: &Transit, circle: bool, t_mine: f32) -> bool {
+        if !self.topo.conflicts(mv, tr.mv, circle) {
+            return false;
+        }
+        let pos = self.topo.conflict_pos(mv, tr.mv, circle);
+        if pos < 0.0 {
+            return true;
+        }
+        let tail = self.vehs[tr.veh as usize].drv.len / self.topo.mvs[tr.mv as usize].len.max(4.0);
+        let clear_in = (pos + tail) * tr.t_total - (tr.t_total - tr.t_left);
+        let arrive = if circle { 0.0 } else { self.topo.conflict_pos(tr.mv, mv, false).max(0.0) * t_mine };
+        clear_in > arrive - NODE_SAFE_S
+    }
+
     /// Gap-acceptance / priority / FIFO check for movement `mv` of vehicle `vid`.
     fn conflict_free(&self, vid: u32, mv: u32, ctrl: Control) -> bool {
         let veh = &self.vehs[vid as usize];
         let node = self.topo.mvs[mv as usize].node as usize;
         let circle = ctrl == Control::TrafficCircle && !self.eff.ring_node[node];
+        let t_mine = self.cross_profile(veh, veh.link as usize, mv, ctrl).2;
         if veh.wait_t < CONFLICT_FALLBACK_S {
             for tr in &self.transit[node] {
-                if self.topo.conflicts(mv, tr.mv, circle) {
+                if self.transit_blocks(mv, tr, circle, t_mine) {
                     return false;
                 }
             }
@@ -1505,7 +1619,7 @@ impl Simulation {
                 let q = &self.lanes[self.topo.qidx(e as usize, k)];
                 for &x in q.iter().take(4) {
                     let xv = &self.vehs[x as usize];
-                    let dx = (self.topo.stop_pos[e as usize] - xv.pos).max(0.0);
+                    let dx = (self.topo.stop_pos[e as usize] - xv.pos).max(0.0) + self.topo.length[e as usize].min(R_NODE as f32 * 4.0).min(R_NODE as f32);
                     let tx = dx / xv.v.max(MIN_APPROACH_SPEED);
                     if tx > tc {
                         break;
@@ -1609,7 +1723,10 @@ impl Simulation {
                         };
                         v0 = v0.min(cap);
                         if dist >= 0.0 && veh.v > HUMP_V {
-                            a_req = a_req.min(-(veh.v * veh.v - HUMP_V * HUMP_V) / (2.0 * dist.max(0.5)));
+                            let req = (veh.v * veh.v - HUMP_V * HUMP_V) / (2.0 * dist.max(0.5));
+                            if req > 0.5 * d.b {
+                                a_req = a_req.min(-req);
+                            }
                         }
                     }
                     let (mut s, mut vl) = (f32::INFINITY, 0.0);
@@ -1619,8 +1736,13 @@ impl Simulation {
                                 let vt = if kind == KIND_BIKE { eff.bike_mv_vturn[mv as usize] } else { eff.mv_vturn[mv as usize] };
                                 let dd = (stop_pos - veh.pos).max(0.0);
                                 v0 = v0.min((vt * vt + 2.0 * d.b * dd).sqrt());
+                                // Kinematic backstop only once the braking needed to reach the turn speed is noticeable. Applied at any
+                                // distance it held every turning head vehicle to the turn speed for the whole link.
                                 if veh.v > vt {
-                                    a_req = a_req.min(-(veh.v * veh.v - vt * vt) / (2.0 * dd.max(0.5)));
+                                    let req = (veh.v * veh.v - vt * vt) / (2.0 * dd.max(0.5));
+                                    if req > 0.5 * d.b {
+                                        a_req = a_req.min(-req);
+                                    }
                                 }
                             }
                         }
@@ -1727,6 +1849,9 @@ impl Simulation {
                         let veh = &mut self.vehs[vid as usize];
                         veh.pos = x;
                         veh.v = v;
+                        if idx > 0 && v < QUEUE_V {
+                            veh.queued = true;
+                        }
                     }
                     if self.ped_on && !self.world.mid[l].is_empty() {
                         self.mid_block_passes(vid, l, x0, x, v);
@@ -1837,6 +1962,20 @@ impl Simulation {
         self.remove_vehicle(vid);
     }
 
+    /// (path length m, exit speed m/s, crossing time s) of vehicle `veh` taking movement `mv` from the end of link `l` at its current speed.
+    fn cross_profile(&self, veh: &Veh, l: usize, mv: u32, ctrl: Control) -> (f32, f32, f32) {
+        let m_len = if ctrl == Control::TrafficCircle {
+            (self.eff.mv_ff[mv as usize] * self.eff.mv_vturn[mv as usize].min(self.eff.limit[l])).max(4.0)
+        } else {
+            self.topo.mvs[mv as usize].len
+        };
+        let vt = if veh.kind == KIND_BIKE { self.eff.bike_mv_vturn[mv as usize] } else { self.eff.mv_vturn[mv as usize] };
+        let (v, a) = (veh.v, veh.drv.a);
+        let v_exit = vt.min((v * v + 2.0 * a * m_len).sqrt()).max(0.5);
+        let t_total = (m_len / (0.5 * (v + v_exit)).max(1.0)).clamp(0.5, 12.0);
+        (m_len, v_exit, t_total)
+    }
+
     /// Start crossing the node for the front vehicle of lane `qi` on link `l`. False if conflicts or no space.
     fn begin_crossing(&mut self, vid: u32, l: usize, qi: usize) -> bool {
         let veh = &self.vehs[vid as usize];
@@ -1849,8 +1988,10 @@ impl Simulation {
         let node = self.topo.link_to[l] as usize;
         let ctrl = self.eff.ctrl[node];
         if veh.wait_t < CONFLICT_FALLBACK_S {
+            let circle = ctrl == Control::TrafficCircle && !self.eff.ring_node[node];
+            let t_mine = self.cross_profile(veh, l, mv, ctrl).2;
             for tr in &self.transit[node] {
-                if self.topo.conflicts(mv, tr.mv, ctrl == Control::TrafficCircle && !self.eff.ring_node[node]) {
+                if self.transit_blocks(mv, tr, circle, t_mine) {
                     return false;
                 }
             }
@@ -1863,15 +2004,9 @@ impl Simulation {
         if ctrl == Control::Signal && self.sig_state[l] == 3 {
             self.st.red_entries += 1;
         }
-        let m_len = if ctrl == Control::TrafficCircle {
-            (self.eff.mv_ff[mv as usize] * self.eff.mv_vturn[mv as usize].min(self.eff.limit[l])).max(4.0)
-        } else {
-            self.topo.mvs[mv as usize].len
-        };
-        let vt = if kind == KIND_BIKE { self.eff.bike_mv_vturn[mv as usize] } else { self.eff.mv_vturn[mv as usize] };
-        let (v, a, len, fcomp) = (veh.v, veh.drv.a, veh.drv.len, veh.drv.fcomp);
-        let v_exit = vt.min((v * v + 2.0 * a * m_len).sqrt()).max(0.5);
-        let t_total = (m_len / (0.5 * (v + v_exit)).max(1.0)).clamp(0.5, 12.0);
+        let (m_len, v_exit, t_total) = self.cross_profile(veh, l, mv, ctrl);
+        let (v, len, fcomp) = (veh.v, veh.drv.len, veh.drv.fcomp);
+        let _ = v;
         self.record_link_exit(vid, l);
         let ff = self.link_ff_for(l, fcomp) + self.eff.mv_ff[mv as usize];
         self.lanes[qi].pop_front();
@@ -1947,6 +2082,7 @@ impl Simulation {
                     veh.pos = self.topo.emerge_pos[tr.to_link as usize];
                     veh.v = tr.v_exit;
                     veh.t_enter = self.t;
+                    veh.queued = false;
                     veh.go = true;
                 }
                 self.lanes[qi].push_back(vid);
@@ -2121,6 +2257,17 @@ impl Simulation {
         self.transit[node]
             .iter()
             .map(|t| (self.vehs[t.veh as usize].uid, self.topo.mvs[t.mv as usize].a, self.topo.mvs[t.mv as usize].b))
+            .collect()
+    }
+
+    /// (uid, from link, to link, progress 0..1, vehicle length) of each vehicle crossing `node`.
+    pub(crate) fn test_transit_progress(&self, node: usize) -> Vec<(u32, u32, u32, f32, f32)> {
+        self.transit[node]
+            .iter()
+            .map(|t| {
+                let v = &self.vehs[t.veh as usize];
+                (v.uid, self.topo.mvs[t.mv as usize].a, self.topo.mvs[t.mv as usize].b, 1.0 - t.t_left / t.t_total, v.drv.len)
+            })
             .collect()
     }
 

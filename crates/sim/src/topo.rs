@@ -60,6 +60,10 @@ pub struct Topo {
     pub conf_geo: Vec<bool>,
     /// Directional circulating conflict: `[i*cnt+j]` = entering movement i must wait for in-node movement j.
     pub conf_circ: Vec<bool>,
+    /// Where conflict (i, j) happens along movement j's path, as a fraction 0..1 (-1: the whole crossing blocks, as for a merge onto
+    /// the same exit lane). Parallel to `conf_geo` and `conf_circ`.
+    pub conf_pos_geo: Vec<f32>,
+    pub conf_pos_circ: Vec<f32>,
     pub preds: Vec<Vec<u32>>,
     pub lane_base: Vec<u32>,
     pub n_lanes: usize,
@@ -138,6 +142,8 @@ impl Topo {
             cbase: vec![0; n_nodes],
             conf_geo: Vec::new(),
             conf_circ: Vec::new(),
+            conf_pos_geo: Vec::new(),
+            conf_pos_circ: Vec::new(),
             preds: vec![Vec::new(); n_links],
             lane_base: Vec::new(),
             n_lanes: 0,
@@ -290,6 +296,8 @@ impl Topo {
             self.cbase[n] = self.conf_geo.len();
             let mut geo = vec![false; cnt * cnt];
             let mut circ = vec![false; cnt * cnt];
+            let mut pgeo = vec![-1.0f32; cnt * cnt];
+            let mut pcirc = vec![-1.0f32; cnt * cnt];
             for i in 0..cnt {
                 for j in 0..cnt {
                     if i == j {
@@ -301,10 +309,31 @@ impl Topo {
                     }
                     geo[i * cnt + j] = geometric_conflict(mi, mj);
                     circ[i * cnt + j] = circle_conflict(mi, mj);
+                    if geo[i * cnt + j] {
+                        pgeo[i * cnt + j] = conflict_pos(mi, mj);
+                    }
+                    if circ[i * cnt + j] {
+                        pcirc[i * cnt + j] = circle_pos(mi, mj);
+                    }
                 }
             }
             self.conf_geo.extend(geo);
             self.conf_circ.extend(circ);
+            self.conf_pos_geo.extend(pgeo);
+            self.conf_pos_circ.extend(pcirc);
+        }
+    }
+
+    /// Fraction of movement `j`'s path after which it no longer conflicts with movement `i` at its entry (-1: until it leaves the node).
+    #[inline]
+    pub fn conflict_pos(&self, i: u32, j: u32, circle: bool) -> f32 {
+        let n = self.mvs[i as usize].node as usize;
+        let cnt = self.mcount[n] as usize;
+        let idx = self.cbase[n] + (i - self.mbase[n]) as usize * cnt + (j - self.mbase[n]) as usize;
+        if circle {
+            self.conf_pos_circ[idx]
+        } else {
+            self.conf_pos_geo[idx]
         }
     }
 
@@ -374,4 +403,40 @@ fn circle_conflict(i: &Mv, j: &Mv) -> bool {
     let arc = if arc < 1e-6 { 2.0 * PI } else { arc };
     let off = (ai - aj + 2.0 * PI) % (2.0 * PI);
     off > 1e-6 && off < arc
+}
+
+/// Where path `b` crosses path `a`, as a fraction of `b`'s length; -1 for a merge onto the same exit.
+fn conflict_pos(a: &Mv, b: &Mv) -> f32 {
+    if a.b == b.b {
+        return -1.0;
+    }
+    let len = |p: [f64; 2], q: [f64; 2]| ((q[0] - p[0]).powi(2) + (q[1] - p[1]).powi(2)).sqrt();
+    let sa = [[a.p0, a.x], [a.x, a.p1]];
+    let sb = [[b.p0, b.x], [b.x, b.p1]];
+    let (l1, l2) = (len(b.p0, b.x), len(b.x, b.p1));
+    let tot = (l1 + l2).max(1e-6);
+    for s1 in &sa {
+        for (k, s2) in sb.iter().enumerate() {
+            if seg_inter(s1[0], s1[1], s2[0], s2[1]) {
+                // Parameter of the crossing along s2.
+                let (d1x, d1y) = (s1[1][0] - s1[0][0], s1[1][1] - s1[0][1]);
+                let (d2x, d2y) = (s2[1][0] - s2[0][0], s2[1][1] - s2[0][1]);
+                let det = d1x * d2y - d1y * d2x;
+                let u = if det.abs() < 1e-9 { 0.5 } else { (((s2[0][0] - s1[0][0]) * d1y - (s2[0][1] - s1[0][1]) * d1x) / det).clamp(0.0, 1.0) };
+                let off = if k == 0 { u * l1 } else { l1 + u * l2 };
+                return (off / tot) as f32;
+            }
+        }
+    }
+    0.5
+}
+
+/// Position of entry `i` along circulating movement `j`'s arc, as a fraction.
+fn circle_pos(i: &Mv, j: &Mv) -> f32 {
+    let ang = |h: f64| (h + 2.0 * PI) % (2.0 * PI);
+    let (ai, aj, bj) = (ang(i.h_in + PI), ang(j.h_in + PI), ang(j.h_out));
+    let arc = (bj - aj + 2.0 * PI) % (2.0 * PI);
+    let arc = if arc < 1e-6 { 2.0 * PI } else { arc };
+    let off = (ai - aj + 2.0 * PI) % (2.0 * PI);
+    (off / arc) as f32
 }

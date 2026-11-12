@@ -56,7 +56,8 @@ s*(v,dv) = s0 + max(0, v*T + v*dv/(2*sqrt(a*b)))
   - [Treiber2000] Table I: v0 = 120 km/h, T = 1.6 s, a = 0.73 m/s², b = 1.67 m/s², s0 = 2 m, delta = 4.
   - [Kesting2010] Table 1 (cars): v0 = 120 km/h, T = 1.5 s, s0 = 2.0 m, a = 1.4 m/s², b = 2.0 m/s² (trucks: 85 km/h, 2.0 s, 4.0 m, 0.7, 2.0).
   - traffic-simulation.de table: car v0 120 km/h, T 1.5 s, s0 2 m, a 0.3 m/s² (deliberately low there to provoke stop-and-go), b 3.0. It states that realistic a is 0.8-2.5 m/s², realistic b is about 2 m/s², and that "for city traffic one would adapt the desired speed while the other parameters essentially can be left unchanged".
-- **Urban values for this project** (**unchecked - from memory**; use as priors only): v0 ≈ 25–50 km/h (street limit or local speed), T ≈ 1.0–1.5 s, s0 ≈ 2 m, a ≈ 1.0–1.5 m/s², b ≈ 1.5–2.0 m/s².
+- **Model in the simulator:** the IIDM of [Treiber2014] (below) with these parameters. The urban means are those calibrated on signal-discharge data in [Treiber2014]: T = 1.2 s, a = 1.5 m/s2, s0 = 2 m.
+- **Urban values for this project, earlier priors** (**unchecked - from memory**; use as priors only): v0 ≈ 25–50 km/h (street limit or local speed), T ≈ 1.0–1.5 s, s0 ≈ 2 m, a ≈ 1.0–1.5 m/s², b ≈ 1.5–2.0 m/s².
   - Calibrate on [Barmpounakis2020] (pNEUMA) or on [Vasconcelos2025].
   - Treat the urban values as priors only.
 
@@ -104,6 +105,22 @@ a_ACC = a_IDM                                                        if a_IDM >=
 
 - `Theta` is the Heaviside step; `c` is the "coolness factor", 0.99 in the paper (realistic range 0.95-1.00).
 - The CAH uses `s`, `v`, `v_l` and `a_l`. A simulator that does not track leader acceleration can pass `a_l = 0` (an approximation, not tested here).
+
+**[Treiber2014]** [V] Treiber, M., Kesting, A. (2014). Automatic and efficient driving strategies while approaching a traffic light. *17th International IEEE Conference on Intelligent Transportation Systems (ITSC)*, pp. 1122-1128. DOI 10.1109/ITSC.2014.6957838 (Crossref). arXiv 1408.5498 (full text read, 2026-11-12).
+Uses the Improved Intelligent-Driver Model (IIDM) of Chapter 11 of [Treiber2013] (Chapter 11, DOI 10.1007/978-3-642-32460-4_11, Crossref-confirmed) and calibrates it on queue-discharge trajectories at a signal (NGSIM Lankershim Boulevard data).
+
+**IIDM equations** (**Checked against:** [Treiber2014] arXiv 1408.5498 eq. 1-3, which gives the case v <= v0 only):
+
+```
+z = s*(v, v_l) / s          s* = s0 + max(v T + v (v - v_l) / (2 sqrt(a b)), 0)      (same as the IDM)
+a_free = a [1 - (v/v0)^delta]
+dv/dt = a (1 - z^2)                    if z >= 1
+      = a_free (1 - z^(2 a / a_free))  otherwise
+```
+
+- The paper states that in the IIDM the time-gap parameter T is exactly the steady-state time gap, while the plain IDM follows at a somewhat larger gap, and that a platoon with equal desired speeds does not disperse. The steady-state gap is s0 + v T for v < v0, so the lane capacity is v0 / (T v0 + s0 + L).
+- **Calibrated urban values** (identical drivers, read in the paper): effective vehicle length 6.5 m (4.5 m car plus s0 = 2 m), a = 1.5 m/s2, T = 1.2 s, b = 2 m/s2, v0 = 50 km/h. With heterogeneous drivers, independent uniform values of length, T and a with a standard deviation of about 30% of their means reproduce the observed scatter of discharge times.
+- **Not read:** the branch for v > v0 (the book chapter). The simulator uses a_free + a (1 - z^2) for z >= 1 and a_free otherwise there, an ASSUMPTION.
 
 **[Schakel2010]** [V] Schakel, W.J., van Arem, B., Netten, B.D. (2010). Effects of cooperative adaptive cruise control on traffic flow stability. *Proc. 13th IEEE ITSC*, Funchal, pp. 759–764. DOI 10.1109/ITSC.2010.5625133.
 Crossref confirms the paper. A 2025 IDM review (arXiv 2506.05909) cites IDM+ as resolving the mismatch between the time-gap parameter T and steady-state conditions, but gives no equation. **The IDM+ equation is unchecked - from memory** (the paper is IEEE-paywalled). The usual statement is `a * min[1-(v/v0)^4, 1-(s*/s)^2]`. Because it could not be checked, prefer the CAH/ACC blend above for the cut-in fix, which was checked.
@@ -194,6 +211,12 @@ Uniform delay d1 = C (1 - g/C)^2 / (2 (1 - (g/C) x))    (= 0.5 C (1-g/C)^2 / (1 
 
 **[Webster1966]** [V-partial] Webster, F.V., Cobbe, B.M. (1966). *Traffic Signals.* Road Research Technical Paper No. 56, HMSO. Existence confirmed indirectly (cited in TRRL Research Report 67, per search summary).
 
+**[FHWA-SIG2004]** [V] Federal Highway Administration (2004). *Signalized Intersections: Informational Guide*, FHWA-HRT-04-091, August 2004. Chapter 7 read at `https://www.fhwa.dot.gov/publications/research/safety/04091/07.cfm` (no DOI found).
+States that the HCM 2000 uses a default ideal saturation flow of 1,900 passenger cars per hour per lane (3.6 m lanes, through movements only, no pedestrians, bicyclists or grades), that saturation headway is measured from the fourth vehicle in the queue, that saturation flow rates "have been observed to range between 1,500 and 2,000 passenger cars per hour per lane", and that effective green is displayed green minus start-up loss plus end gain. It also gives the 1985 HCM planning capacity of about 1,400 veh/h for the critical lane at a signalized intersection.
+
+**[FHWA-STM2008]** [V] Federal Highway Administration (2008). *Signal Timing Manual*, FHWA-HOP-08-024. Chapter 3 read at `https://ops.fhwa.dot.gov/publications/fhwahop08024/chapter3.htm` (no DOI found; the 2nd edition is NCHRP Report 812, DOI 10.17226/22097, not read).
+States that the start-up lost time "is commonly assumed to be approximately 2 seconds", that after about the fourth vehicle the flow stabilizes at the saturation flow rate, that the ideal saturation flow rate is typically assumed to be 1,900 passenger cars per hour per lane, and that yellow extension (vehicles that cross during the yellow) is a further effect to account for in effective green.
+
 **[Varaiya2013]** [V] Varaiya, P. (2013). The max-pressure controller for arbitrary networks of signalized intersections. In: Ukkusuri & Ozbay (eds.), *Advances in Dynamic Network Modeling in Complex Transportation Systems*, Springer, pp. 27–66. DOI 10.1007/978-1-4614-6243-9_2 (Crossref confirms title, pages and DOI; the Crossref container is listed as "Complex Networks and Dynamic Systems"). A *Transportation Research Part C* version ("Max pressure control of a network of signalized intersections", 2013) was **not found**. The chapter is the confirmed source.
 
 **Max-pressure rule** (**Checked against:** Liu & Gayah, "A novel max pressure algorithm based on traffic delay", arXiv 2202.03290 Eq. 1-3, which restates Varaiya's original; [Varaiya2013] itself was not read):
@@ -219,7 +242,9 @@ RL reward built on max-pressure theory. A reference for later, learning-based si
 **[HCM7]** [V-partial] Transportation Research Board (2022). *Highway Capacity Manual 7th Edition: A Guide for Multimodal Mobility Analysis.* National Academies Press.
 Whether the 7th-edition AWSC model changes from the 2010/6th edition is not confirmed. Sources conflict. HCM 6th ed. (2016) is the safer cite, and the model is the same iterative departure-headway method.
 Seen: the departure headway is a base plus adjustments for left, right and heavy vehicles, with the iteration starting at 3.2 s (NCHRP guidebook snippet). Per-degree-of-conflict saturation headway values were **not** seen. They must be taken from the HCM chapter.
-**Simulator note:** for v1, model AWSC by first-come-first-served with a discharge headway of about 3–4 s, falling to about 2–3 s in same-direction platoons (recalled, UNVERIFIED).
+**Read 2026-11-12:** the HCM 7 base saturation headways (3.9, 4.7, 5.8, 7.0 and 9.6 s for cases 1 to 5) are in [NCHRP08-135]. **Simulator note:** for v1, model AWSC by first-come-first-served with a discharge headway of about 3–4 s, falling to about 2–3 s in same-direction platoons (recalled, UNVERIFIED).
+
+**[NCHRP08-135]** [V-partial] Rural Highway Analysis Guidebook (NCHRP Project 08-135), chapter 10, "All-Way Stop-Controlled Intersection Analysis Methodology", `https://nchrp-08-135.github.io/Guidebook/HCMawsc.html` (read 2026-11-12). Reproduces the HCM 7th edition AWSC procedure. **HCM 7 Exhibit 21-15**, base saturation headway for geometry group 1 (one-lane approaches): case 1 3.9 s, case 2 4.7 s, case 3 5.8 s, case 4 7.0 s, case 5 9.6 s (the cases are degrees of conflict). Departure headway is the probability-weighted sum over the cases (eq. 21-28) and the iteration starts at 3.2 s. The adjustment values for left turns, right turns and heavy vehicles and the case probabilities were not read here. The HCM itself was not opened, so this entry vouches for [HCM7] only through the reproduction.
 
 ### 3.3 Unsignalized, gap acceptance
 
@@ -240,6 +265,8 @@ Per-driver rule in microsim: accept the first lead/lag gap >= t_c (draw t_c from
   - FHWA HPMS Table 11 (HCM-2000-based): right turn t_c = 6.2 s, t_f = 3.3 s; through t_c = 6.5 s, t_f = 4.0 s; left turn t_c = 7.1 s, t_f = 3.5 s.
   - PTV Visum documentation (states it follows HCM 6th ed., which is essentially unchanged from 2010): t_c,base major left 4.1, minor right 6.2 (6.9 on roads with 4 or more major lanes), minor through 6.5, minor left 7.1 (7.5 with 4+ lanes).
   - Major-street left t_f = 2.2 s: seen in one study guide citing HCM 7th ed. only. **The HCM chapter tables were not read**, so treat these as the standard defaults but confirm the exact HCM 6/7 values (which also include adjustments for grade, T-intersections and two-stage gaps) before claiming HCM compliance.
+
+**[TxDOT-TSAP]** [V] Texas Department of Transportation. *Traffic and Safety Analysis Procedures Manual*, section 3.2.8 "Validation", Tables 3-1 and 3-2, `https://www.txdot.gov/manuals/des/tsp/chapter-3-traffic-volume-and-forecasting-/3-2-existing-traffic-volumes/3-2-8-validation.html` (read 2026-11-12). The tables give the capacities of the HCM 7th edition: basic freeway segment, per lane, free-flow speed 75 mph 2,400, 70 mph 2,400, 65 mph 2,350, 60 mph 2,300, 55 mph 2,250 pc/h/ln; multilane highway 45 mph 1,900 and 50 mph 2,000 pc/h/ln; single-lane ramp, free-flow speed above 50 mph 2,200, above 40 to 50 mph 2,100, above 30 to 40 mph 2,000, 20 to 30 mph 1,900, below 20 mph 1,800 pc/h. A secondary reproduction of the HCM table, so the HCM itself is still unread.
 
 ### 3.4 Roundabouts and mini-circles
 

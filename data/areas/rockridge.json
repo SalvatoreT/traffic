@@ -92,6 +92,6 @@
   "periodWindows": { "am_peak": [7, 9], "midday": [11, 13], "pm_peak": [16, 18] },
   "calibration": {
     "status": "uncalibrated",
-    "note": "Peak hours still gridlock about 170 trips an hour on arterials that average 9 mph (details in data/calibration/rockridge.record.md)."
+    "note": "Peak hours still gridlock about 240 trips an hour at the south edge and freeway stubs; details in data/calibration/rockridge.record.md."
   }
 }

@@ -27,3 +27,18 @@ Calibration results and every tuned parameter SHALL be recorded in the repositor
 #### Scenario: Reading the calibration record
 - **WHEN** someone opens the calibration record
 - **THEN** they see the fit to each observed share and the list of adjustments made
+
+### Requirement: Primitive validation suite
+The project SHALL provide a command that runs benchmark cases on small synthetic networks with saturated demand, each measuring one simulator primitive, and prints the simulated value, expected range, source key, ratio and result for every case. Each expected range SHALL cite a verified key of the bibliography or be labeled an assumption.
+
+#### Scenario: Running the validation suite
+- **WHEN** a contributor runs the validation command
+- **THEN** a table lists each case with its simulated value, expected range, source, ratio and result, and `validation.md` is written
+
+#### Scenario: A capacity rule regresses
+- **WHEN** a change to the car-following, junction or signal rules moves a case outside its range and the case is not a known deviation
+- **THEN** the regression test fails and names the case and its range
+
+#### Scenario: Known deviations are listed
+- **WHEN** a case is outside its range
+- **THEN** the regression test passes only if the case is on the documented list of known deviations

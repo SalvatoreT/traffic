@@ -259,9 +259,10 @@ fn free_road_reaches_desired_speed() {
 
 // ---------------------------------------------------------------- intersections
 
-/// (uid -> node transit conflicts) invariant + helper to observe crossings.
+/// Two conflicting movements are never in the node at the same time at their shared conflict point: a merge onto one exit lane is
+/// exclusive, and a crossing pair may overlap in the node only when neither vehicle is on the conflict point (front to tail) together.
 fn assert_no_conflicting_transit(sim: &Simulation, node: usize) {
-    let tr = sim.test_transit(node);
+    let tr = sim.test_transit_progress(node);
     let topo = sim.test_topo();
     for i in 0..tr.len() {
         for j in 0..tr.len() {
@@ -270,7 +271,14 @@ fn assert_no_conflicting_transit(sim: &Simulation, node: usize) {
             }
             let mi = topo.find_mv(tr[i].1, tr[i].2).unwrap();
             let mj = topo.find_mv(tr[j].1, tr[j].2).unwrap();
-            assert!(!topo.conflicts(mi, mj, false), "conflicting movements in node at once: {:?} {:?}", tr[i], tr[j]);
+            if !topo.conflicts(mi, mj, false) {
+                continue;
+            }
+            let pos_i = topo.conflict_pos(mj, mi, false);
+            let pos_j = topo.conflict_pos(mi, mj, false);
+            assert!(pos_i >= 0.0 && pos_j >= 0.0, "merging movements in node at once: {:?} {:?}", tr[i], tr[j]);
+            let on = |t: &(u32, u32, u32, f32, f32), pos: f32, m: u32| t.3 >= pos && t.3 <= pos + t.4 / topo.mvs[m as usize].len.max(4.0);
+            assert!(!(on(&tr[i], pos_i, mi) && on(&tr[j], pos_j, mj)), "two vehicles on one conflict point: {:?} {:?}", tr[i], tr[j]);
         }
     }
 }
@@ -325,7 +333,8 @@ fn stop_sign_stops_then_enters_on_gap() {
     let mut minor_crossings = 0;
     run(&mut sim, 900.0, |s| {
         for (uid, pos, v) in s.test_lane_vehicles(x.s_in).into_iter().chain(s.test_lane_vehicles(x.n_in)) {
-            if v < 0.3 && pos > stop_pos - 6.0 {
+            if v < QUEUE_V && pos > stop_pos - 60.0 {
+                // A driver who slowed to queue speed behind another has met the stop rule: queued vehicles roll up to the line.
                 stopped.insert(uid, true);
             }
         }
@@ -1126,8 +1135,8 @@ fn saturated_two_lane_approach_discharges_near_saturation_flow() {
     step_n(&mut sim, 1200.0);
     let c1 = sim.metrics().completed_trips;
     let rate = (c1 - c0) as f64 / 1200.0 * 3600.0;
-    // 65 s of green in a 90 s cycle on 2 lanes: 1500-1700 veh/h per green-hour per lane, in line with 1800 veh/h/lane nominal.
-    assert!(rate > 1900.0 && rate < 2700.0, "discharge {rate} veh/h");
+    // 65 s of green in a 90 s cycle on 2 lanes: at most 2 x 2,000 (top of the observed 1,500 to 2,000 range [FHWA-SIG2004]) x 65/90 plus the yellow.
+    assert!(rate > 1900.0 && rate < 3000.0, "discharge {rate} veh/h");
 }
 
 // ---------------------------------------------------------------- signal phasing and adaptation
@@ -1268,6 +1277,59 @@ fn vehicles_queued_on_a_motorway_stub_wait_instead_of_being_removed() {
     assert_eq!(sim.metrics().gridlock_removed, 1);
 }
 
+
+// ---------------------------------------------------------------- validation-suite fixes
+
+#[test]
+fn turning_head_vehicle_keeps_speed_until_it_must_brake_for_the_turn() {
+    // The kinematic turn-speed backstop used to hold any head vehicle with a turn ahead at the turn speed for the whole link.
+    let (net, x) = cross4(Control::Uncontrolled, RoadClass::Secondary, false);
+    let mut sim = empty_sim(net);
+    let id = sim.test_place(x.w_in, 0, 5.0, 8.0, x.n, false);
+    let mut v_mid = 0.0;
+    run(&mut sim, 20.0, |s| {
+        let (_, pos, v, alive) = s.test_veh(id);
+        if alive && pos > 90.0 && pos < 100.0 {
+            v_mid = v;
+        }
+    });
+    assert!(v_mid > V_LEFT + 2.0, "speed {v_mid} m/s 100 m before a left turn (turn speed {V_LEFT})");
+}
+
+#[test]
+fn free_link_accepts_close_to_its_car_following_capacity() {
+    // Entry at a fixed 4 m/s capped every gate near 1,500 veh/h; the insertion speed now follows the leader's gap.
+    let (flow, inserted) = crate::validate::link_flow(15.65, 1, RoadClass::Secondary, 1);
+    let (cap, _) = crate::sim::equilibrium_capacity(15.65, 200, 1);
+    assert!(flow > 0.85 * cap && inserted >= flow - 1.0, "flow {flow}, inserted {inserted}, equilibrium capacity {cap}");
+}
+
+#[test]
+fn improved_idm_discharges_a_standing_queue_in_the_observed_saturation_range() {
+    let (h, _l1, s, bursts) = crate::validate::sat_flow(1, 11.176);
+    assert!(bursts >= 5.0);
+    assert!(h > 1.8 && h < 2.4 && s > 1500.0 && s < 2000.0, "headway {h} s, saturation flow {s} veh/h/lane");
+}
+
+#[test]
+fn queued_minor_street_vehicles_depart_at_the_follow_up_headway() {
+    // Each queued driver used to stop again at the line (dwell plus a crawl): 6.5 s per vehicle against the HCM follow-up of 3.3 s.
+    let flow = crate::validate::twsc(0, 1.0, 1);
+    assert!(flow > 800.0, "minor right-turn discharge with no major flow {flow} veh/h");
+}
+
+#[test]
+fn permissive_left_capacity_follows_the_gap_acceptance_formula() {
+    // Opposing 500 veh/h: Harders capacity with tc 4.1 s and tf 2.2 s is about 1,070 per green hour; a crossing conflict no longer
+    // holds the entering vehicle for the whole crossing.
+    let (net, x) = crate::validate::cross(Control::Signal, RoadClass::Secondary, 1, RoadClass::Secondary, 1, false);
+    let fl = [(x.w, x.n, 4000.0, FlowMode::Car), (x.s, x.n, 4000.0, FlowMode::Car), (x.n, x.s, 4000.0, FlowMode::Car), (x.e, x.w, 500.0, FlowMode::Car)];
+    let mut r = crate::validate::Run::new(net, crate::validate::demand_m(&fl), cfg(1, 1.0));
+    r.advance(1500.0);
+    let rate = r.rate(&[x.w_in], 300.0, 1500.0);
+    assert!(rate > 350.0, "left-turn discharge {rate} veh/h");
+}
+
 // ---------------------------------------------------------------- car-only regression (multimodal-agents)
 
 fn golden_signal_cross() -> Simulation {
@@ -1294,7 +1356,7 @@ fn car_only_metrics_match_pre_multimodal_golden() {
     step_n(&mut b, 1800.0);
     assert_eq!(legacy_metrics(&b), GOLDEN_CROSS);
 }
-const GOLDEN_CORRIDOR: &str = r#"{"arterialMeanSpeed":5.433231493307917,"backlog":0,"completedTrips":521,"cutThrough":{"shareOfLocalVehKm":0.6339836786238884,"vehKm":100.98559865379332},"gridlockRemoved":0,"meanTripDelay":8.384775465409271,"meanTripTime":117.72515884497388,"safety":{"localMeanSpeed":8.709349302463082,"localP85Speed":11.23248003992016,"shareAbove20mph":0.5332095005258342,"shareAbove25mph":0.15732685032164662,"ttcConflicts":3},"spawned":558,"time":1800.0,"unroutableTrips":0,"vehKm":408.3957469768524,"vehiclesInNetwork":37}"#;
-const GOLDEN_CROSS: &str = r#"{"arterialMeanSpeed":7.54867544983693,"backlog":0,"completedTrips":550,"cutThrough":{"shareOfLocalVehKm":1.0,"vehKm":63.92283105659485},"gridlockRemoved":0,"meanTripDelay":17.96706181280725,"meanTripTime":55.36192410223595,"safety":{"localMeanSpeed":5.957030607316784,"localP85Speed":10.547747385358004,"shareAbove20mph":0.369393262609343,"shareAbove25mph":0.08289130839382096,"ttcConflicts":12},"spawned":572,"time":1800.0,"unroutableTrips":0,"vehKm":215.27309953260425,"vehiclesInNetwork":22}"#;
+const GOLDEN_CORRIDOR: &str = r#"{"arterialMeanSpeed":5.760706174508465,"backlog":0,"completedTrips":526,"cutThrough":{"shareOfLocalVehKm":0.7881007592928926,"vehKm":217.1792367334366},"gridlockRemoved":0,"meanTripDelay":2.533018145631116,"meanTripTime":103.9518968024608,"safety":{"localMeanSpeed":9.707236835622696,"localP85Speed":11.633705738054609,"shareAbove20mph":0.7119069644509053,"shareAbove25mph":0.2279635258358663,"ttcConflicts":3},"spawned":558,"time":1800.0,"unroutableTrips":0,"vehKm":438.9261624879838,"vehiclesInNetwork":32}"#;
+const GOLDEN_CROSS: &str = r#"{"arterialMeanSpeed":8.313011509983335,"backlog":0,"completedTrips":551,"cutThrough":{"shareOfLocalVehKm":1.0,"vehKm":64.10286659431458},"gridlockRemoved":0,"meanTripDelay":13.422630107903911,"meanTripTime":50.82705001554476,"safety":{"localMeanSpeed":6.375161500442407,"localP85Speed":11.414213947990543,"shareAbove20mph":0.4653576228161864,"shareAbove25mph":0.17064854910158778,"ttcConflicts":9},"spawned":572,"time":1800.0,"unroutableTrips":0,"vehKm":215.87383705997468,"vehiclesInNetwork":21}"#;
 
 mod modes;

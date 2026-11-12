@@ -372,8 +372,8 @@
     ],
     "excludeNote": "Rows that combine the 52nd St and MLK Jr Way (Grove St) ramps are dropped because per-street SEG rows (2016-2017 / 2012) exist for the same ramps and would double count."
   },
-  "assumedGateScale": 0.5,
-  "assumedGateScaleNote": "ASSUMPTION: single factor on all gate volumes that are not count-based (class-default ADT gates); count-based gates (TMC, Caltrans override) and ramp volumes are unscaled. 0.5 is a stability workaround, not an estimate: D4 fails at every value tested (0, 0.3, 0.5, 1.0), but at 0.5 the arterial speed stays above 4 m/s (calibration record, step T).",
+  "assumedGateScale": 1.0,
+  "assumedGateScaleNote": "ASSUMPTION: single factor on all gate volumes that are not count-based (class-default ADT gates); count-based gates (TMC, Caltrans override) and ramp volumes are unscaled. 1.0 means the documented class defaults are used as they are; the 0.5 of the fourth round was a stability workaround for simulator capacities that the validation suite (data/calibration/validation.md) found too low.",
   "transit": "public/data/rockridge.transit.json",
   "active": {
     "_note": "ASSUMPTION unless stated: walking and biking demand (design D6). Person trips use the car model's per-worker and per-job rates (local.*), then these mode shares. Volumes are persons per hour. Only the count scaling below uses data (DATA: Oakland pedestrian and bicycle counts at one intersection); everything else is uncounted. ACS commute mode shares were not retrievable (the Census API needs a key), so the shares are not derived from them.",

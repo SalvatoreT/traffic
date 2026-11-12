@@ -82,3 +82,5 @@ Fourth round (baseline-calibration task 7.3; full table in `data/calibration/roc
 - ASSUMPTION: `assumedGateScale` 1.0 -> 0.5 (stability workaround, not an estimate; D4 fails at every value, including 0) and `ramps.localShare` 0.30 -> 0.60 (the model area is 5.7 by 3.4 km, so most ramp trips end inside it).
 - Other accounting results: the 18 counted gates take 1.01 to 1.03 of their inflow target and 0.80 to 0.84 of their outflow target (the balancing step scales outflow to the inflow supply); the 14 ramps without a count carry 4 to 12 times their assumed 500 ADT in the simulation because the router takes the nearest exit.
 - The walking and biking method is unchanged. The demand file is regenerated because node ids moved with the importer changes (`signalJoinRadius`).
+- Fifth round (task 8): `assumedGateScale` was reset from 0.5 to 1.0 after the validation suite found and fixed capacity errors in the simulator (see `data/calibration/rockridge.record.md`, steps Y to AD). The demand tables are otherwise unchanged; PM offered demand is 28,781 veh/h.
+

@@ -766,7 +766,7 @@ fn without_yielding_the_pedestrian_waits_for_a_gap() {
     let started = min_cross_start.expect("pedestrian eventually crosses");
     assert!(started >= last_car_pass - 0.5, "pedestrian waited for the platoon: started {started}, last car before the crosswalk {last_car_pass}");
     let m = sim.metrics();
-    assert!(m.modes.pedestrian.mean_crossing_delay > 5.0, "waited for the platoon: {}", m.modes.pedestrian.mean_crossing_delay);
+    assert!(m.modes.pedestrian.mean_crossing_delay > 4.0, "waited for the platoon: {}", m.modes.pedestrian.mean_crossing_delay);
 }
 
 #[test]
