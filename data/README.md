@@ -21,3 +21,27 @@ The deployed Worker reads `areas/*` from the bucket at `/data/*`; local dev serv
 The OSM extract now includes bicycle route relations. A machine that holds an older extract can add them without changing any way or node id: `npx tsx tools/fetch-osm.ts --relations`.
 
 The OSM fetch tries the Overpass mirrors first. When none answers (the case on 2026-11-12), `tools/fetch-osm.ts` falls back to the OpenStreetMap map API, tiled into 40 requests and converted to the same JSON shape; `npx tsx tools/fetch-osm.ts --force --api` uses it directly. The extract covers the model area in `data/areas/<area>.json` (`bbox`), which is wider than the study area.
+
+## Publishing without a Cloudflare token
+
+The Worker takes data files at `/api/data/<key>` from requests that carry the upload
+secret in an `X-Upload-Token` header. It only reads and writes keys under `areas/`,
+`osm/` and `demand/`, and it is off until the secret exists.
+
+One-time setup, on a machine where wrangler is logged in:
+
+```
+openssl rand -hex 32
+npx wrangler secret put UPLOAD_TOKEN
+```
+
+Then publish or fetch with the site's address:
+
+```
+TRAFFIC_UPLOAD_URL=https://<site> TRAFFIC_UPLOAD_TOKEN=<secret> npm run data:push
+TRAFFIC_UPLOAD_URL=https://<site> TRAFFIC_UPLOAD_TOKEN=<secret> npm run data:pull
+```
+
+In a cloud session the secret is stored as a network secret for the site's host, so
+`TRAFFIC_UPLOAD_TOKEN` is left unset and the proxy fills in the header. Behind a proxy,
+Node needs `NODE_USE_ENV_PROXY=1`.

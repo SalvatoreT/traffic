@@ -5,5 +5,5 @@ import { cloudflare } from "@cloudflare/vite-plugin";
 export default defineConfig({
   plugins: [react(), cloudflare()],
   worker: { format: "es" },
-  test: { include: ["src/**/*.test.ts", "tools/**/*.test.ts"] },
+  test: { include: ["src/**/*.test.ts", "tools/**/*.test.ts", "worker/**/*.test.ts"] },
 });
