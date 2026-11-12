@@ -671,6 +671,19 @@ fn main() {
     for &n in node_idx.iter().take(15) {
         let _ = writeln!(md, "| {} | {} | {} | {} | {:.2} | {:.2} | {} |", n, street_label(&net, n, &inc), ctrl_str(net.nodes[n].control), if net.nodes[n].gate { "yes" } else { "" }, d.node_wait_s[n] / 3600.0, d.node_space_s[n] / 3600.0, plans.get(&(n as u32)).cloned().unwrap_or_default());
     }
+    let _ = writeln!(md, "\nPhases of the five most blocked signals (green s: approach links with their lanes, link ids in brackets):\n");
+    for &n in node_idx.iter().filter(|&&n| net.nodes[n].control == Control::Signal).take(5) {
+        let plan = sim.signal_plans().into_iter().find(|p| p.0 as usize == n);
+        let links = sim.signal_phase_links(n as u32);
+        if let Some((_, _, _, greens)) = plan {
+            let ph: Vec<String> = links
+                .iter()
+                .zip(greens.iter())
+                .map(|(ls, g)| format!("{:.0} s: {}", g, ls.iter().map(|&l| format!("{} {}L [{}]", net.links[l as usize].name, net.links[l as usize].lanes, l)).collect::<Vec<_>>().join(", ")))
+                .collect();
+            let _ = writeln!(md, "- node {}: {}", n, ph.join("; "));
+        }
+    }
     let mut rem: HashMap<u32, (usize, f64)> = HashMap::new();
     for &(l, t) in sim.debug_gridlock() {
         let e = rem.entry(l).or_insert((0, t));

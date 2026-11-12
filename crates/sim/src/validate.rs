@@ -541,7 +541,7 @@ pub fn run_all() -> Vec<Case> {
     // Right turn on red (ASSUMPTION: permitted at every signal after a stop; the legal basis, California Vehicle Code 21453, could not be read in this
     // environment). Gap acceptance for the turn is the two-way-stop minor right (tc 6.2 s, tf 3.3 s [Brilon1999]); the stop costs the rest of the
     // follow-up headway, so the red-time discharge is at most 3600 / tf = 1,090 veh/h.
-    let (off, gc0) = rtor_cap(100.0, true, 1);
+    let (off, _gc0) = rtor_cap(100.0, true, 1);
     let (on, gc1) = rtor_cap(100.0, false, 1);
     let (lo10, hi10) = (1.0 + 0.5 * (1.0 - gc1) * 1090.0 / (2000.0 * gc1), 1.0 + (1.0 - gc1) * 1090.0 / (1500.0 * gc1));
     out.push(case("b10", format!("Right turn on red, light cross traffic (100 veh/h/lane from the left): discharge over the no-turn-on-red discharge (green share {gc1:.2})"), "ratio", on / off, lo10, hi10, "ASSUMPTION", format!("{on:.0} against {off:.0} veh/h; bounds: red time (1 - G/C = {:.2}) at 0.5 to 1.0 of 1,090 veh/h on top of s x G/C with s 1,500 to 2,000 [FHWA-SIG2004]", 1.0 - gc1)));

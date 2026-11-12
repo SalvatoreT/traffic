@@ -621,6 +621,11 @@ impl Simulation {
             .collect()
     }
 
+    /// Approach links of each phase of the signal at `node` (empty when it has none), for calibration reports.
+    pub fn signal_phase_links(&self, node: u32) -> Vec<Vec<u32>> {
+        self.eff.sig.get(node as usize).and_then(|p| p.as_ref()).map(|p| p.links.clone()).unwrap_or_default()
+    }
+
     /// Per-link / per-node diagnostics for calibration reports.
     pub fn diagnostics(&self) -> Diagnostics<'_> {
         Diagnostics {
