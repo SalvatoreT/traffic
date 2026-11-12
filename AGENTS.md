@@ -2,7 +2,7 @@
 
 A web app that simulates neighborhood traffic as it is today. People try
 interventions and compare outcomes. First study area: the Rockridge Trapezoid in
-North Oakland, CA (Telegraph Ave W, College Ave E, Claremont Ave S, Alcatraz Ave N).
+North Oakland, CA (bounded by Telegraph Ave, Alcatraz Ave, College Ave, Claremont Ave and the SR-24 freeway).
 The design must generalize to other areas: nothing Rockridge-specific in code, study
 areas are data.
 
