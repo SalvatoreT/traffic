@@ -61,13 +61,25 @@ The cases are lettered: a saturation flow at a signal, b signalized approach cap
 
 ## Resident volunteer count, February 25, 2025
 
-`rockridge.volunteer-count-2025-02-25.json` holds figures from a manual turning-movement
-count done by more than 50 resident volunteers for the neighborhood working group on
-Tuesday, February 25, 2025, from 8 to 9 AM and 5 to 6 PM. It is the only measured data on
-the interior streets: how many cars enter by each side, how the traffic turning in from
-Claremont Avenue splits between Colby, Martin, Hillegass and Forest, and how many cars
-drive the whole of Colby Street and Hillegass Avenue between Claremont and Alcatraz.
+`rockridge.volunteer-count-2025-02-25.json` holds the figures of a manual turning-movement
+count by more than 50 resident volunteers for the neighborhood working group on Tuesday,
+February 25, 2025, from 8 to 9 AM and from 5 to 6 PM. `rockridge.volunteer-count-2025-02-25.notes.md`
+lists what was read from images and where the figures disagree. It is the only measured data on
+the interior streets. The JSON holds 98 AM and 109 PM directed block volumes (`blocks`), the
+entries at the 18 access points, 255 turning movements, the whole-street counts on Colby Street
+and Hillegass Avenue, the Alcatraz Avenue exit split, and the queue and signal observations for
+Colby Street at Claremont Avenue and Forest Street.
 
-It is one day and one hour per period, so treat single figures as accurate to within
-perhaps 15 to 20 percent. The per-block volume maps from the same count are not
-transcribed yet.
+It is one day and one hour per period, so a single figure is good to perhaps 15 to 20 percent
+(the sampling error of a count of 160 is about 8 percent by itself, and one day's volume differs
+from another's by more than that [FHWA-TAT3-2019]). The demand build reads it as count stations
+(`tools/lib/volunteer-count.ts`, section "Twelfth round" of `data/demand/README.md`), the
+simulator's flows are scored against the blocks, the entries, the movements and the whole-street
+counts in `rockridge.assessment.md`, and `signalObservations` in `data/areas/rockridge.json`
+carries the signal timing into the network. The count's hour 5 to 6 PM lies inside the period
+window 16:00 to 18:00 of `pm_peak` and 8 to 9 AM inside 7:00 to 9:00 of `am_peak`. The model's
+period rate is the hourly rate of the whole window, so the busiest hour of the window can be
+somewhat above it. The Oakland and Caltrans counts are peak hours too, so all counts are used as
+the hourly rate of their period in the same way. Midday has no interior count.
+
+The router's control delays (signal, all-way stop, minor stop approach, circle) are in `crates/sim/data/node-delays.json`, read by the simulator and by the demand fit. `npx tsx tools/node-delays.ts --dir DIR --seeds 1-3 --write` rewrites them from kept seed reports (`--keep-seeds DIR`) and writes `rockridge.node-delays.md`. `calibrate` reports, in the seed JSON, the simulator's count of the volunteer count's turning movements and whole-street routes (`features`, select-link trips per hour, read from the station file the demand build writes) and the plan of every signal with an observed timing (`observedSignals`); `tools/assess.ts` prints them with the interior blocks, the entries by side and Colby Street and Hillegass Avenue block by block.

@@ -114,3 +114,10 @@ The calibration report SHALL include the wandering metrics of completed car trip
 #### Scenario: No observed counterpart
 - **WHEN** the targets file has no observed value for a diagnostic
 - **THEN** the report prints the modeled value and says that no observed counterpart exists
+
+### Requirement: Interior streets are scored apart from the arterials
+The assessment SHALL score the count stations on the simulator's flows in two groups, interior blocks of the volunteer count and all other stations, each fitted and held out, and SHALL list the modeled and counted volume of every counted block of the streets named in the select-link targets, the entries by side against the counted entries, and the modeled volume of the counted turning movements and whole-street routes (select-link counts).
+
+#### Scenario: Colby Street block by block
+- **WHEN** the assessment is written
+- **THEN** it has a table with one row per counted block of Colby Street and Hillegass Avenue, with counted, modeled, ratio, GEH and whether the block was held out

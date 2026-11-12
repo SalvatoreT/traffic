@@ -202,3 +202,32 @@ When the targets file has ramp via-street shares and select-link freeway shares 
 #### Scenario: Report
 - **WHEN** the fit report is generated
 - **THEN** each implied volume shows its range, its target and the modeled volume before and after the fit
+
+### Requirement: A resident volunteer count enters the fit as count stations
+The demand build SHALL read a manual turning-movement count file and map each counted block, by street name, the names of its two cross streets and its direction, to a directed network link. Mapped blocks SHALL be link stations; turning movements that turn from one street onto another and whole-street route counts SHALL constrain the share of a flow's assigned routes that take them. Unmapped blocks SHALL be listed with the reason.
+
+#### Scenario: Blocks mapped
+- **WHEN** the build reads the Rockridge count
+- **THEN** the fit report states how many counted block values were mapped, how many stations were fitted and how many were held out, and lists each unmapped block with its reason
+
+#### Scenario: A movement constraint
+- **WHEN** a counted movement from street A onto street B is a constraint
+- **THEN** the assignment records, for every flow, the share of its routes that go from the link of A directly onto the link of B, and the fit scales the flows that take it toward the counted volume
+
+#### Scenario: Weights follow certainty
+- **WHEN** a reading is marked uncertain, or a target is the PM count scaled to midday
+- **THEN** its weight is the configured fraction of the weight of a measured block, and the report states the tolerance for one day and one hour
+
+### Requirement: Local trip rates follow the count's trip ends
+When the count implies trip ends inside the study area, the build SHALL scale the trip rates of the study-area blocks so that the external ends they offer equal those ends, per counted period, capped at `maxScale`. A period without a count SHALL take the mean of the counted periods' factors and be labeled an assumption.
+
+#### Scenario: Offered ends equal the counted ends
+- **WHEN** the count implies 927 destinations inside the study area in the PM peak (vehicles entering less the cars that drive a whole counted street)
+- **THEN** the offered external destination ends of the study-area blocks sum to 927 before the fit, and the fit report lists implied ends, offered ends and factors
+
+### Requirement: Interior blocks are held out in a fixed pattern
+Every `holdoutEvery`-th counted block along each street and direction, ordered along the street, SHALL be validation-only (not the last block of a run and never a block with an uncertain reading). Movement and route counts that touch a held-out block SHALL be left out of the cross-validation fit. The report SHALL give GEH and size-band shares for interior blocks and for the other stations separately, fitted and held out.
+
+#### Scenario: Out-of-sample interior blocks
+- **WHEN** the cross-validation fit runs without the held-out blocks
+- **THEN** the held-out interior blocks are scored on that fit, apart from the arterial, ramp and gate stations

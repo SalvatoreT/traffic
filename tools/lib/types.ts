@@ -14,6 +14,8 @@ export interface NetNode {
   inStudyArea: boolean;
   /** A marked crosswalk sits at or within 15 m of this junction. */
   markedCrossing?: boolean;
+  /** Signal timing observed in the field (area config `signalObservations`): in the listed periods the cycle and the green of the listed approach links. */
+  signalTiming?: { periods: string[]; cycleS: number; greens: { links: number[]; greenS: number }[]; source: string }[];
 }
 
 export interface NetLink {
@@ -94,6 +96,8 @@ export interface AreaConfig {
   freewayGateMergeM?: number;
   /** Hours of day (start, end) of each demand period, used to apply time-conditional turn restrictions (e.g. `no_left_turn @ (Mo-Fr 16:00-18:00)`). */
   periodWindows?: Record<string, [number, number]>;
+  /** Observed signal timing (DATA): cycle and green of one approach at a signalized junction, per period (see tools/lib/signal-obs.ts). */
+  signalObservations?: { at: string[]; approach: string; periods: string[]; cycleSeconds: number; greenSeconds: number; source: string }[];
   /**
    * Baseline calibration status shown in the UI. `defaultPeriod` is the demand period the app opens with; `experimentalPeriods` lists the
    * periods whose baseline fails the stability criterion (D4), which the app labels experimental. The importer copies the object into areas.json.

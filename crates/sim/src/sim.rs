@@ -760,6 +760,7 @@ impl Simulation {
 
     fn rebuild_effective(&mut self) {
         let mut eff = Eff::derive(&self.topo, &self.net, &self.ivs);
+        eff.period = self.cfg.period.clone();
         if let Some(f) = self.cfg.local_cost_factor {
             eff.set_local_factor(&self.net, f.max(0.1) as f32);
         }

@@ -1,3 +1,4 @@
+import { applySignalObservations } from './signal-obs';
 import {
   cumulative,
   distToRing,
@@ -170,6 +171,8 @@ export interface BuildStats {
   restrictionsUnresolved: number;
   /** Gates closer than `gateSignalWarnM` (default 60 m) to a signalized junction: a gate should sit mid-block, not inside a junction. */
   gatesNearSignal: { gate: number; distM: number; street: string }[];
+  /** Observed signal timings (area config `signalObservations`) that matched no signalized junction or approach. */
+  signalObservationsUnmatched: string[];
   /** Freeway-edge stubs merged into one gate: direction, the stub gates (OSM node ids), the gate that remains and the largest distance from the centroid. */
   freewayGateMerges: { role: 'entry' | 'exit'; gates: number[]; into: number; spreadM: number }[];
   /** Parallel stub links between the same two nodes joined into one link (lanes added). */
@@ -219,6 +222,7 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
     restrictionsSkipped: 0,
     restrictionsUnresolved: 0,
     gatesNearSignal: [],
+    signalObservationsUnmatched: [],
     freewayGateMerges: [],
     freewayStubLinksJoined: 0,
     freewayRampViolations: [],
@@ -1222,6 +1226,8 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
     for (const sNode of sigJunctions) best = Math.min(best, Math.hypot(sNode.x - g.x, sNode.y - g.y));
     if (best <= warnM) stats.gatesNearSignal.push({ gate: g.id, distM: Math.round(best), street: outLinks.find((l) => l.from === g.id || l.to === g.id)?.name ?? '' });
   }
+
+  for (const m of applySignalObservations(outNodes, outLinks, cfg.signalObservations ?? [])) stats.signalObservationsUnmatched.push(m);
 
   return {
     network: {

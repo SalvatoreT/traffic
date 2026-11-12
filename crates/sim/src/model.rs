@@ -53,6 +53,28 @@ pub struct Node {
     /// Additive (multimodal-agents): a marked pedestrian crossing at this intersection.
     #[serde(default)]
     pub marked_crossing: bool,
+    /// Additive (baseline-calibration, twelfth round): signal timing observed in the field (DATA from the area config `signalObservations`), per demand period.
+    #[serde(default)]
+    pub signal_timing: Vec<SignalTiming>,
+}
+
+/// An observed signal timing: in the listed periods the cycle is `cycle_s` and each listed approach group gets `green_s` (the other phases share the rest of the cycle by flow).
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SignalTiming {
+    pub periods: Vec<String>,
+    pub cycle_s: f32,
+    pub greens: Vec<ApproachGreen>,
+    #[serde(default)]
+    pub source: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ApproachGreen {
+    /// Incoming links of the approach.
+    pub links: Vec<u32>,
+    pub green_s: f32,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

@@ -13,6 +13,8 @@ export type FlowType = 'through' | 'local' | 'ramp';
  */
 export interface Constraint {
   id: string; kind: string; label: string; links: number[]; target: number; weight?: number; origins?: number[]; destinations?: number[];
+  /** A route feature (turning movement or path): index into the feature list the assignment was made with. The flow of the constraint is the sum over flows of volume x the share of the flow's routes that have it. */
+  feature?: number;
   /**
    * Share constraint: `target` is a share in (0,1) and the constraint holds when (sum of flow x num) / (sum of flow x den) equals it.
    * `den[i]` is the proportion of flow `flows[i]` that falls in the denominator group (it crosses the select link, uses the ramp), `num[i]` the
@@ -111,10 +113,13 @@ function membership(a: Assignment, cons: Constraint[], nLinks: number) {
     for (const o of c.origins ?? []) (byOrigin.get(o) ?? byOrigin.set(o, []).get(o)!).push(i);
     for (const d of c.destinations ?? []) (byDest.get(d) ?? byDest.set(d, []).get(d)!).push(i);
   });
+  const byFeature = new Map<number, number[]>();
+  cons.forEach((c, i) => { if (c.feature !== undefined && c.target > 0 && !c.ratio) (byFeature.get(c.feature) ?? byFeature.set(c.feature, []).get(c.feature)!).push(i); });
   const kk: number[] = [], cc: number[] = [], pp: number[] = [], nf: number[] = [];
   for (let k = 0; k < a.routable.length; k++) {
     if (!a.routable[k]) continue;
     const acc = new Map<number, number>();
+    if (a.feat && byFeature.size) for (let i = a.feat.start[k]; i < a.feat.start[k + 1]; i++) for (const c of byFeature.get(a.feat.id[i]) ?? []) acc.set(c, (acc.get(c) ?? 0) + a.feat.share[i]);
     for (let i = a.start[k]; i < a.start[k + 1]; i++) for (const c of inCons[a.link[i]]) acc.set(c, (acc.get(c) ?? 0) + a.share[i]);
     for (const c of byOrigin.get(a.origin[k]) ?? []) acc.set(c, (acc.get(c) ?? 0) + 1);
     for (const c of byDest.get(a.destination[k]) ?? []) acc.set(c, (acc.get(c) ?? 0) + 1);

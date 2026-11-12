@@ -1,0 +1,7 @@
+{
+  "note": "Control delay (s) the router adds per movement at the end of a link, by control type. One place for the Rust router (crates/sim/src/params.rs) and the static assignment of the demand fit (tools/lib/assign.ts). Written by `npx tsx tools/node-delays.ts` from simulated delays (data/calibration/rockridge.record.md, twelfth round); edit by running that tool, not by hand.",
+  "signal": 10,
+  "allWayStop": 8,
+  "minorStop": 14,
+  "circle": 4
+}

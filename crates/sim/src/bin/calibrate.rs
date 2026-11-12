@@ -434,6 +434,27 @@ fn main() {
             }
         }
     }
+    // Route features of the volunteer count (turning movements and whole-street paths; `data/demand/<area>.stations.json`, written by the demand build): their links are select links too.
+    struct Feat {
+        id: String,
+        label: String,
+        first: u32,
+        last: u32,
+        mv: bool,
+    }
+    let mut feats: Vec<Feat> = Vec::new();
+    if let Ok(txt) = std::fs::read_to_string(root.join(format!("data/demand/{}.stations.json", args.area))) {
+        if let Ok(v) = serde_json::from_str::<Value>(&txt) {
+            for st in v["stations"].as_array().map(|a| a.as_slice()).unwrap_or(&[]) {
+                let f = &st["feature"];
+                let (kind, a, b) = (f["kind"].as_str().unwrap_or(""), f["a"].as_u64().or(f["first"].as_u64()), f["b"].as_u64().or(f["last"].as_u64()));
+                if let (true, Some(a), Some(b)) = (kind == "move" || kind == "path", a, b) {
+                    feats.push(Feat { id: st["id"].as_str().unwrap_or("").to_string(), label: st["label"].as_str().unwrap_or("").to_string(), first: a as u32, last: b as u32, mv: kind == "move" });
+                }
+            }
+        }
+    }
+    sel.extend(feats.iter().flat_map(|f| [f.first, f.last]));
     sel.sort_unstable();
     sel.dedup();
 
@@ -943,6 +964,23 @@ fn main() {
             "rampShares": ramp_rows.iter().map(|(k, v, o, mo, n, m2, n2)| json!({"direction": k, "via": v, "observed": o, "modelled": if mo.is_nan() { Value::Null } else { json!(mo) }, "n": n, "modelledSide": if m2.is_nan() { Value::Null } else { json!(m2) }, "nSide": n2})).collect::<Vec<_>>(),
             "topLinks": link_idx.iter().take(15).map(|&l| json!({"link": l, "street": net.links[l].name, "delayVehH": d.link_delay_s[l] / 3600.0, "stoppedVehH": d.link_stopped_s[l] / 3600.0})).collect::<Vec<_>>(),
             "topNodes": node_idx.iter().take(15).map(|&n| json!({"node": n, "streets": street_label(&net, n, &inc), "control": ctrl_str(net.nodes[n].control), "blockedLaneH": d.node_wait_s[n] / 3600.0, "noSpaceLaneH": d.node_space_s[n] / 3600.0})).collect::<Vec<_>>(),
+            "features": feats.iter().map(|f| {
+                let n = recs.iter().filter(|r| {
+                    let h: Vec<u32> = r.hits.iter().map(|x| x.0).collect();
+                    if f.mv { h.windows(2).any(|w| w[0] == f.first && w[1] == f.last) } else { h.iter().position(|&l| l == f.first).map_or(false, |i| h[i + 1..].contains(&f.last)) }
+                }).count();
+                json!({"id": f.id, "label": f.label, "kind": if f.mv { "move" } else { "path" }, "trips": n, "vehPerHour": n as f64 / (args.minutes / 60.0)})
+            }).collect::<Vec<_>>(),
+            "observedSignals": sim.signal_plans().into_iter().filter(|p| !net.nodes[p.0 as usize].signal_timing.is_empty()).map(|(n, cycle, ysum, greens)| {
+                let applies = net.nodes[n as usize].signal_timing.iter().any(|o| o.periods.iter().any(|q| *q == args.period));
+                let obs = net.nodes[n as usize].signal_timing.iter().find(|o| o.periods.iter().any(|q| *q == args.period)).unwrap_or(&net.nodes[n as usize].signal_timing[0]);
+                let groups = sim.signal_phase_links(n);
+                json!({"node": n, "streets": street_label(&net, n as usize, &inc), "applies": applies, "cycleS": cycle, "greenS": greens, "observedCycleS": obs.cycle_s, "approaches": obs.greens.iter().map(|g| json!({
+                    "links": g.links, "observedGreenS": g.green_s,
+                    "modeledGreenS": groups.iter().position(|gr| gr.iter().any(|l| g.links.contains(l))).map(|i| greens[i]),
+                    "exitsPerHour": g.links.iter().map(|&l| (d.link_exits[l as usize] - exits0[l as usize]) as f64 / elapsed_h).sum::<f64>(),
+                })).collect::<Vec<_>>(), "ysum": ysum})
+            }).collect::<Vec<_>>(),
             "linkMeanDelayS": if args.link_flows { json!((0..net.links.len()).map(|l| { let n = d.link_exits[l] - exits0[l]; if n == 0 { 0.0 } else { (((d.link_delay_s[l] - delay0[l]) as f64 / n as f64) * 10.0).round() / 10.0 } }).collect::<Vec<_>>()) } else { Value::Null },
             "linkFlowVehPerHour": if args.link_flows { json!((0..net.links.len()).map(|l| ((d.link_exits[l] - exits0[l]) as f64 / elapsed_h).round()).collect::<Vec<_>>()) } else { Value::Null },
             "streetFlows": flow_rows.iter().map(|(k, dch, n, med, max)| json!({"street": k, "dir": dch.to_string(), "links": n, "medianVehPerHour": med, "maxVehPerHour": max})).collect::<Vec<_>>(),

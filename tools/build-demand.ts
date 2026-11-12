@@ -11,6 +11,7 @@ import { makeProjection } from './lib/geo';
 import { buildGraph, costToGo, treeFrom, type Graph } from './lib/assign';
 import { buildStations, corridorOf, markHoldout, overusedRecords, fitPeriod, fitReport, type FitConfig, type NetLinkIn, type PeriodResult } from './lib/demand-fit';
 import type { FlowType } from './lib/fit-counts';
+import { countReportLines, countStations, touchesHeld, tripEnds, type CountConfig, type CountFile, type CountReport, type TripEnds } from './lib/volunteer-count';
 
 const cfgPath = process.argv[2] ?? 'data/demand/rockridge.config.json';
 const cfg = JSON.parse(readFileSync(cfgPath, 'utf8'));
@@ -288,6 +289,13 @@ const nearest = (x: number, y: number) => { let b = candNodes[0], bd = Infinity;
 interface LocalBlock { node: number; x: number; y: number; res: number; jobs: number; outSectors: Record<string, number>; inSectors: Record<string, number> }
 const localNodes = new Map<number, LocalBlock>();
 const lo = cfg.local;
+// Resident volunteer count (data/demand/README.md): measured volumes on the interior streets. Read here because the trip ends it implies also scale the local trip rates.
+const vc = cfg.volunteerCount as (CountConfig & { enabled: boolean; periods: { am: string; pm: string; midday?: string } }) | undefined;
+const countFile: CountFile | null = vc?.enabled ? JSON.parse(readFileSync(vc.file, 'utf8')) : null;
+const countRes = countFile ? countStations(countFile, net as never, vc!, vc!.periods, Object.fromEntries(periodIds.map((p) => [p, cfg.periodFactors[p].volume]))) : null;
+const countEnds: Record<string, TripEnds> | null = countFile && countRes ? tripEnds(countFile, countRes, net as never, vc!.periods) : null;
+/** Multiplier on the trip rates of blocks inside the study area, per period and side (origins / destinations); filled in the period loop from the count-implied trip ends. */
+const localScale: Record<string, { o: number; d: number; rawO: number; rawD: number; targetO: number; targetD: number }> = {};
 if (lodes) {
   const byBlock = new Map<string, { out: Record<string, number>; in: Record<string, number> }>();
   for (const e of lodes.external) {
@@ -356,6 +364,20 @@ function summarizeFlows(flows: Flow[]) {
   }
   return { total: thrOut + locOut + rampOut, through: thrOut, local: locOut, ramp: rampOut, rampLocal, fw: fwPer, rampDest };
 }
+/** Trips a block offers at the assumed rates in period `pid` (before any count calibration). */
+const trips0 = (b: LocalBlock, pid: string) => {
+  const sc0 = lo.vehicleModeShare * lo.peakHourShare[pid];
+  const resTrips = b.res * lo.residentsPerWorker * lo.dailyTripsPerResidentWorker * sc0;
+  const jobTrips = b.jobs * lo.dailyTripsPerJob * sc0;
+  return { outTotal: resTrips * lo.originShareResidents[pid] + jobTrips * (1 - lo.destShareJobs[pid]), inTotal: resTrips * (1 - lo.originShareResidents[pid]) + jobTrips * lo.destShareJobs[pid] };
+};
+if (countEnds && lo.countCalibration?.enabled) {
+  const area = [...localNodes.values()].filter((b) => nodeById.get(b.node)!.inStudyArea);
+  for (const [pid, e] of Object.entries(countEnds)) {
+    const rawO = area.reduce((a, b) => a + trips0(b, pid).outTotal * lo.externalShareOfResidentTrips, 0), rawD = area.reduce((a, b) => a + trips0(b, pid).inTotal * lo.externalShareOfResidentTrips, 0);
+    localScale[pid] = { o: e.origins / rawO, d: e.destinations / rawD, rawO, rawD, targetO: e.origins, targetD: e.destinations };
+  }
+}
 let throughDebug: string[] = [];
 const periLog: string[] = [];
 let unroutableDropped = 0;
@@ -368,11 +390,15 @@ for (const p of cfg.periods as { id: string; label: string }[]) {
   const locList = [...localNodes.values()];
   for (const g of gates) { g.locIn[p.id] = 0; g.locOut[p.id] = 0; }
   const rawLocal: { o: number; d: number; v: number; gateO?: Gate; gateD?: Gate }[] = [];
+  const blockTrips0 = (b: LocalBlock) => trips0(b, p.id);
+  const inArea = (b: LocalBlock) => nodeById.get(b.node)!.inStudyArea;
   const blockTrips = (b: LocalBlock) => {
-    // Residents: outbound trips (origin = block). ASSUMPTION rates (config local.*)
-    const resTrips = b.res * lo.residentsPerWorker * lo.dailyTripsPerResidentWorker * scale;
-    const jobTrips = b.jobs * lo.dailyTripsPerJob * scale;
-    return { outTotal: resTrips * origShare + jobTrips * (1 - destShare), inTotal: resTrips * (1 - origShare) + jobTrips * destShare };
+    const t = blockTrips0(b);
+    if (!lo.countCalibration?.enabled || !countEnds || !inArea(b)) return t;
+    const cap = lo.countCalibration.maxScale ?? 4;
+    const counted = [vc!.periods.am, vc!.periods.pm].map((x) => localScale[x]).filter(Boolean);
+    const f = (k: 'o' | 'd') => Math.min(localScale[p.id]?.[k] ?? counted.reduce((a, x) => a + x[k], 0) / counted.length, cap);
+    return { outTotal: t.outTotal * f('o'), inTotal: t.inTotal * f('d') };
   };
 
   // ---- Freeway-ramp trips (ASSUMPTION destination choice; volumes DATA/ASSUMPTION per ramp) ----
@@ -633,6 +659,13 @@ function loadMeasured(fc: { assignment?: { measured?: { file: string; alpha: num
   if (j.links !== net.links.length) { console.warn(`${m.file}: written for ${j.links} links, the network has ${net.links.length}; measured delays skipped`); return undefined; }
   return { delayS: j.delayS as Record<string, number[]>, alpha: m.alpha, source: `${m.file}, ${j.note}` };
 }
+const localScaleLines = (): string[] => {
+  if (!countEnds || !Object.keys(localScale).length) return [];
+  const f = (x: number) => Math.round(x).toLocaleString('en-US').replace(/,/g, '');
+  const L = ['', '## Local trip ends scaled to the volunteer count', '', 'Study-area blocks only. The count implies trip ends as vehicles entering (leaving) less the cars that drive a whole counted street; the offered ends are the external-share trips the assumed rates give. Factor = implied / offered, applied to the block rates (capped; midday takes the mean of the AM and PM factors). Entries and exits are the 18 access points and their reverse links.', '', '| Period | Entering | Leaving | Through (whole streets) | Implied destinations | Implied origins | Offered destinations | Offered origins | Factor destinations | Factor origins |', '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |'];
+  for (const [pid, e] of Object.entries(countEnds)) { const q = localScale[pid]; L.push(`| ${pid} | ${f(e.entries)} | ${f(e.exits)} | ${f(e.through)} | ${f(e.destinations)} | ${f(e.origins)} | ${f(q.rawD)} | ${f(q.rawO)} | ${q.d.toFixed(2)} | ${q.o.toFixed(2)} |`); }
+  return L;
+};
 let fitText = '';
 const cvFlows: Record<string, { origin: number; destination: number; vehPerHour: number }[]> = {};
 const fitResults: PeriodResult[] = [];
@@ -649,12 +682,27 @@ if (fc?.enabled) {
     overrides: (cfg.adtOverrides ?? []).map((o: { street: string; adt: number; factor?: number; lat: number; lon: number; source: string }) => { const [x, y] = toXY(o.lat, o.lon); return { street: o.street, adt: o.adt, factor: o.factor, x, y, source: o.source }; }),
     cfg: { tmcNodeMaxM: fc.tmcNodeMaxM, stationRadiusM: fc.stationRadiusM, weights: fc.weights, tolerancePct: fc.tolerancePct },
   }, stationNotes);
+  // Resident volunteer count: measured volumes on the interior streets (blocks, turning movements, whole-street routes) as count stations (data/demand/README.md).
+  let countRep: CountReport | null = null;
+  if (countRes) {
+    const res = countRes;
+    countRep = res.report;
+    const heldLinks = new Set(res.stations.filter((q) => q.family === 'block' && q.held).map((q) => q.links[0]));
+    for (const q of res.stations) {
+      stations.push({
+        id: q.id, kind: 'count', label: q.label, basis: q.basis, links: q.links, target: Object.fromEntries(periodIds.map((p) => [p, q.target[p] ?? 0])), weight: q.weight, tolPct: q.tolPct,
+        records: [{ key: q.id, share: 1 }], held: q.held, cvExclude: q.family !== 'block' && touchesHeld(q, heldLinks), feature: q.feature, weightByPeriod: q.weightByPeriod, corridor: q.corridor,
+      });
+    }
+    stationNotes.push(`volunteer count: ${res.report.blocks.mapped} of ${res.report.blocks.total} counted block values mapped to ${res.stations.filter((q) => q.family === 'block').length} directed links (${res.report.blocks.held} held out), ${res.report.movements.used} turning movements and ${res.report.routes.used} whole-street routes as constraints`);
+  }
   if (fc.validation?.enabled) {
     const h = markHoldout(stations, lastPeriod, { fraction: fc.validation.fraction, minPerCorridor: fc.validation.minPerCorridor });
     stationNotes.push(`validation set: ${h.held.length} of ${stations.length} stations are held out of a cross-validation fit (about ${Math.round(100 * (fc.validation.fraction ?? 0.25))}% of each corridor, at least one per corridor; ${h.corridors.length} corridors: ${h.corridors.join(', ')}); they are reported separately`);
   }
-  if (fc.stationsOutput) writeFileSync(fc.stationsOutput, JSON.stringify({ area: cfg.area, note: 'Count stations for the calibration report: links are indices into the network link list, targets are veh/h per period, held = validation only (excluded from the fit). Gate stations have no links.', stations: stations.map((q) => ({ id: q.id, kind: q.kind, label: q.label, corridor: corridorOf(q), held: !!q.held, links: q.links, target: Object.fromEntries(Object.entries(q.target).map(([k, v]) => [k, Math.round(v as number)])) })) }));
+  if (fc.stationsOutput) writeFileSync(fc.stationsOutput, JSON.stringify({ area: cfg.area, note: 'Count stations for the calibration report: links are indices into the network link list, targets are veh/h per period, held = validation only (excluded from the fit). Gate stations have no links. Count stations of the volunteer count with a feature (turning movement or whole-street path) have no links either; entries lists the interior links that start at a surface arterial.', entries: countRep?.entries.map((e) => ({ side: e.side, label: e.label, link: e.link, counted: e.counted })), stations: stations.map((q) => ({ id: q.id, kind: q.kind, label: q.label, corridor: corridorOf(q), held: !!q.held, links: q.links, feature: q.feature, target: Object.fromEntries(Object.entries(q.target).map(([k, v]) => [k, Math.round(v as number)])) })) }));
   const heldIds = new Set(stations.filter((q) => q.held).map((q) => q.id));
+  const cvEx = new Set(stations.filter((q) => q.cvExclude).map((q) => q.id));
   const overused = overusedRecords(stations);
   if (overused.length) throw new Error(`a count is used by more than one station: ${overused.join('; ')}`);
   const fitCfg: FitConfig = {
@@ -677,10 +725,10 @@ if (fc?.enabled) {
     if (fc.validation?.enabled && stations.some((q) => q.held)) {
       cv = fitPeriod(per.id, cars, types, stations, net.nodes as never, net.links as NetLinkIn[], net.turnBans ?? [], fitCfg);
       cvFlows[per.id] = cars.map((q, k) => ({ ...q, vehPerHour: Math.round(cv!.volume[k] * 100) / 100 })).filter((q) => q.vehPerHour >= 0.01);
-      for (const q of stations) q.held = false;
+      for (const q of stations) { q.held = false; q.cvExclude = false; }
     }
     const r = fitPeriod(per.id, cars, types, stations, net.nodes as never, net.links as NetLinkIn[], net.turnBans ?? [], fitCfg);
-    if (cv) { r.heldRows = cv.heldRows; r.notes.push(`hold-out: the held-out stations are scored on a separate fit without them (${cv.cons} count constraints instead of ${r.cons}); the demand that ships is fitted on all counts`); for (const q of stations) q.held = heldIds.has(q.id); }
+    if (cv) { r.heldRows = cv.heldRows; r.notes.push(`hold-out: the held-out stations are scored on a separate fit without them (${cv.cons} count constraints instead of ${r.cons}); the demand that ships is fitted on all counts`); for (const q of stations) { q.held = heldIds.has(q.id); q.cvExclude = cvEx.has(q.id); } }
     fitResults.push(r);
     if (process.env.ASSIGN_DUMP && per.id === lastPeriod) {
       // Trips of every flow that loads one of the links in ASSIGN_LINKS (comma list of link ids), for the select-link comparison with the simulator.
@@ -698,7 +746,7 @@ if (fc?.enabled) {
     per.flows = [...cars.map((q, k) => ({ ...q, vehPerHour: Math.round(r.volume[k] * 100) / 100 })).filter((q) => q.vehPerHour >= 0.01), ...per.flows.filter((q) => q.mode)];
   }
   for (const s of summary) { const per = outPeriods.find((q) => q.id === s.id)!; Object.assign(s, summarizeFlows(per.flows)); }
-  fitText = fitReport(cfg.area, fitResults, flowsBy, { fit: fitCfg.fit, draws: fc.draws, noise: fc.noise, guardExcess: fc.capacityGuard.excessShare, guardWeight: fc.capacityGuard.weight, guardOn: fc.capacityGuard.enabled, tolOk: fc.tolerancePct.report, shareWeight: fc.shares?.enabled ? fc.shares.weight : undefined, assignment: fitCfg.assignment }, stationNotes, []);
+  fitText = fitReport(cfg.area, fitResults, flowsBy, { fit: fitCfg.fit, draws: fc.draws, noise: fc.noise, guardExcess: fc.capacityGuard.excessShare, guardWeight: fc.capacityGuard.weight, guardOn: fc.capacityGuard.enabled, tolOk: fc.tolerancePct.report, shareWeight: fc.shares?.enabled ? fc.shares.weight : undefined, assignment: fitCfg.assignment, links: net.links, composition: fc.composition }, stationNotes, [...(countRep ? countReportLines(countRep) : []), ...localScaleLines()]);
   if (fc.output) writeFileSync(fc.output, fitText);
 }
 

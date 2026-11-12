@@ -8,13 +8,14 @@ Links below were opened on 2026-11-12 unless the status says otherwise. Several 
 
 The count-coverage idea (audit R4 in `docs/simulator-audit.md`) says the next count is worth most where the model is least sure and no count constrains it. The PM station list in `data/demand/rockridge.fit.md` has 50 stations: freeway ramps, gates on Ashby Ave, Telegraph Ave and 43rd St, three Caltrans stations (Tunnel Rd, San Pablo Ave, and SR-13 Claremont Ave at Ashby, scaled by an assumed 0.6), and turning-movement legs at Telegraph/Alcatraz and Market/55th. Nothing sits on the interior streets. The audit also shows the north-side gates (Hillegass, Benvenue, College, Claremont Blvd) running on class defaults of 800 or 5,000 vehicles per day.
 
-### 1. Volunteer counts on the interior blocks and the entry points
+### 1. More volunteer count days and hours on the interior blocks and the entry points
 
-Fixes: the assumed volumes on Hillegass Ave and Colby St (residential default 800 ADT at the north gates; PM mid-block flows in the latest run are 45 northbound and 106 southbound on Hillegass Ave against 287 and 376 on College Ave) and the unconstrained College Ave and Alcatraz Ave east of Telegraph. A resident reports the Hillegass and Colby volumes are too low; a count settles that. The StreetLight shares (47% of Hillegass northbound from the freeway, and so on) are shares only, so the model has had nothing to say how many vehicles they are.
+Status: one day exists. Residents counted turning movements on Tuesday, February 25, 2025, from 8 to 9 AM and from 5 to 6 PM, over the interior blocks and the 18 entry points (`data/calibration/rockridge.volunteer-count-2025-02-25.json`). It replaced the assumed volumes on Hillegass Ave and Colby St and showed that the model had carried between 20 and 60 percent of the counted PM volume on those streets. The demand fit now uses it as count stations.
+Fixes: what one day cannot settle. A single weekday has a day-to-day error that is larger than the sampling error of a count of 160 (about 8 percent), the two periods are one hour each, midday has no count, and the Colby Street signal was timed only at 8 to 9 AM. Reading images instead of a spreadsheet also left a few figures uncertain (`rockridge.volunteer-count-2025-02-25.notes.md`).
 Where: volunteers, protocol in the next section. No agency involved.
-How to ask: a sign-up sheet in the working group; no permit needed for sidewalk counting.
-Need: weekday 4 to 6 PM and 7 to 9 AM, 15-minute bins, both directions, cars and trucks separate from bicycles and pedestrians, two PM days and one AM day. Minimum useful: one PM peak hour of two different weekdays at the four interior sites.
-Use: new station rows in the count fit (`tools/lib/demand-fit.ts`, station list, step 13 in `data/demand/README.md`), replacing class-default gate volumes at Hillegass, Colby, College and Claremont, and holding some sites out of the fit as validation (audit C2).
+How to ask: repeat the same sites on a second and third weekday, and add the 4 to 5 PM and 6 to 7 PM hours and one midday hour. Ask for the raw tally sheets or a spreadsheet of turning movements, not a map image.
+Need: weekday 4 to 6 PM and 7 to 9 AM in 15-minute bins, both directions, cars and trucks separate from bicycles and pedestrians; at the Claremont Ave, Colby St and Forest St signal, the cycle and the green of each approach for each hour.
+Use: a second day gives a measure of day-to-day spread, so the tolerance of the count stations (now 20 percent, an assumption) can be set from data; more hours replace the scaled midday targets and the assumption that the PM signal timing equals the morning's; some sites stay out of the fit as validation (audit C2).
 
 ### 2. Agency tube counts with speed and vehicle class
 
@@ -172,12 +173,13 @@ StreetLight adds sampled trip volumes, origin-destination zones, hourly profiles
 | --- | --- | --- |
 | Turning-movement counts, PM peak, four dates each at four intersections | Oakland open data | Two in the area; Telegraph/Alcatraz and Market/55th only |
 | Caltrans AADT at five state stations; ramp ADT for 22 of 36 ramps | Caltrans Traffic Census | 14 ramps on a 500 ADT default; ramp counts mix years from 2012 and have no peak direction |
-| Commute flows between blocks | Census LODES 2024 | Commute trips only; local trip rates and mode shares are assumptions |
+| Block volumes on the interior streets, turning movements, entries by side, whole-street counts on Colby St and Hillegass Ave, signal timing at Colby St and Claremont Ave | Resident volunteer count, February 25, 2025 (8 to 9 AM, 5 to 6 PM) | One weekday, one hour per period, read from map images; no midday hour; PM signal timing not stated |
+| Commute flows between blocks | Census LODES 2024 | Commute trips only; local trip rates and mode shares are assumptions, now scaled to the trip ends the volunteer count implies |
 | Route shares on Hillegass Ave and Colby St, and at the Claremont ramps | Resident-provided StreetLight slide summary (January to July 2025) | Percentages only, device sample, no sample sizes; the Colby SB freeway share misses |
 | Pedestrian and bicycle volumes at one intersection | Oakland counts | One scaling point; bicycle prior ten times the count |
 | Network, stop signs, turn bans, humps | OpenStreetMap | Tagging errors carry through; speed limits tagged on 29% of road ways in the extract |
-| Signal plans | Derived by formula | No agency timing sheets |
-| Hour-of-day profile | Assumed factors on the PM peak | No AM or midday counts in the area |
+| Signal plans | Derived by formula; the Colby St approach at Claremont Ave and Forest St is set from the volunteer count | No agency timing sheets |
+| Hour-of-day profile | Assumed factors on the PM peak | No midday counts in the area; one AM hour from the volunteer count |
 
 ## What data cannot settle
 

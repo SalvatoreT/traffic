@@ -45,7 +45,7 @@ pub struct B {
 impl B {
     pub fn node(&mut self, x: f64, y: f64, control: Control, gate: bool) -> u32 {
         let id = self.nodes.len() as u32;
-        self.nodes.push(Node { id, osm_id: id as i64, x, y, control, gate, in_study_area: true, marked_crossing: false });
+        self.nodes.push(Node { id, osm_id: id as i64, x, y, control, gate, in_study_area: true, marked_crossing: false, signal_timing: Vec::new() });
         id
     }
 

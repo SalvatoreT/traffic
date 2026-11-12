@@ -17,7 +17,7 @@ struct B {
 impl B {
     fn node(&mut self, x: f64, y: f64, control: Control, gate: bool) -> u32 {
         let id = self.nodes.len() as u32;
-        self.nodes.push(Node { id, osm_id: id as i64, x, y, control, gate, in_study_area: true, marked_crossing: false });
+        self.nodes.push(Node { id, osm_id: id as i64, x, y, control, gate, in_study_area: true, marked_crossing: false, signal_timing: Vec::new() });
         id
     }
 
@@ -723,6 +723,33 @@ fn traffic_circle_replaces_control_and_caps_speed() {
     });
     assert!(crossed > 0 && sim.metrics().completed_trips > 50);
     assert!(vmax <= V_CIRCLE + 0.01, "negotiation speed cap: {vmax}");
+}
+
+#[test]
+fn observed_signal_timing_sets_cycle_and_green_of_the_approach() {
+    let (mut net, x) = cross4(Control::Signal, RoadClass::Residential, false);
+    net.nodes[x.c as usize].signal_timing = vec![SignalTiming { periods: vec!["p".into()], cycle_s: 79.0, greens: vec![ApproachGreen { links: vec![x.s_in], green_s: 4.0 }], source: "test".into() }];
+    let d = demand(&[(x.w, x.e, 700.0), (x.e, x.w, 700.0), (x.s, x.n, 150.0), (x.n, x.s, 150.0)]);
+    let mut sim = Simulation::from_parts(net.clone(), d, cfg(2, 1.0)).unwrap();
+    {
+        let p = sim.test_eff().sig[x.c as usize].as_ref().expect("signal plan");
+        let ns = p.links.iter().position(|g| g.contains(&x.s_in)).unwrap();
+        assert!((p.phases[ns].1 - 4.0).abs() < 0.01, "observed green: {:?}", p.phases);
+        assert!((p.cycle - 79.0).abs() < 0.01, "observed cycle {}", p.cycle);
+        assert!((p.phases[1 - ns].1 - 65.0).abs() < 0.01, "the other phase takes the rest: {:?}", p.phases);
+    }
+    // A run in another period uses the Webster plan.
+    let d2 = demand(&[(x.w, x.e, 700.0)]);
+    let mut c2 = cfg(2, 1.0);
+    c2.period = "q".into();
+    let mut d2 = d2;
+    d2.periods[0].id = "q".into();
+    let sim2 = Simulation::from_parts(net, d2, c2).unwrap();
+    let p2 = sim2.test_eff().sig[x.c as usize].as_ref().unwrap();
+    assert!(p2.cycle >= CYCLE_MIN && (p2.cycle - 79.0).abs() > 0.01);
+    sim.set_interventions("[]").unwrap();
+    let p3 = sim.test_eff().sig[x.c as usize].as_ref().unwrap();
+    assert!((p3.cycle - 79.0).abs() < 0.01, "the observation survives a rebuild");
 }
 
 #[test]

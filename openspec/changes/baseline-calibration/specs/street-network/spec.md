@@ -114,3 +114,10 @@ Two T-junctions on an undivided street SHALL be joined into one node when their 
 #### Scenario: Different names or 60 m apart
 - **WHEN** the two side streets have different names, or the same name at 60 m
 - **THEN** the junctions stay separate
+
+### Requirement: Observed signal timing from the area config
+The importer SHALL attach `signalObservations` of the area config (street names that meet at the junction, the approach street, periods, cycle, green, source) to the signalized node where all the streets meet, listing the incoming links of the approach, and SHALL warn about an observation that matches no signal or approach.
+
+#### Scenario: Colby Street at Claremont Avenue
+- **WHEN** the config names Claremont Avenue, Colby Street and Forest Street with approach Colby Street
+- **THEN** the node carries the timing with the incoming Colby Street link, and an unmatched observation is reported

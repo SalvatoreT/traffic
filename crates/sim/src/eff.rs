@@ -73,6 +73,8 @@ pub struct Eff {
     pub bike_closed: Vec<bool>,
     /// Interventions skipped as invalid (diagonal diverters that do not fit their node).
     pub invalid_ivs: u64,
+    /// Demand period of the run: selects the observed signal timing of a node (`Node::signal_timing`).
+    pub period: String,
 }
 
 impl Eff {
@@ -241,6 +243,7 @@ impl Eff {
             .collect();
 
         let nm = topo.mvs.len();
+        let dl = node_delays();
         let osm_bans: std::collections::HashSet<(u32, u32)> = net.turn_bans.iter().map(|b| (b.from, b.to)).collect();
         let mut mv_ok = vec![true; nm];
         let mut mv_cost = vec![0.0; nm];
@@ -301,16 +304,16 @@ impl Eff {
                 _ => 0.0,
             };
             c += match ctrl[n] {
-                Control::Signal => DELAY_SIGNAL_S,
-                Control::AllWayStop => DELAY_ALLWAY_S,
+                Control::Signal => dl.signal,
+                Control::AllWayStop => dl.all_way_stop,
                 Control::TwoWayStop => {
                     if minor[m.a as usize] {
-                        DELAY_MINOR_S
+                        dl.minor_stop
                     } else {
                         0.0
                     }
                 }
-                Control::TrafficCircle => DELAY_CIRCLE_S,
+                Control::TrafficCircle => dl.circle,
                 Control::Uncontrolled => 0.0,
             };
             mv_cost[i] = c + mv_ff[i];
@@ -366,7 +369,12 @@ impl Eff {
             bike_w,
             bike_closed,
             invalid_ivs,
+            period: String::new(),
         }
+    }
+
+    fn plan_for(&self, net: &Network, n: usize, groups: &[Vec<u32>], ys: &[f32], pin: Option<f32>) -> (f32, Vec<(f32, f32)>, f32) {
+        plan_with_observation(net, &self.period, n, groups, ys, pin)
     }
 
     /// Build the start-up signal plans. `est_flow[l]` is the estimated approach flow (veh/h); `adapt_signals` replaces the
@@ -390,7 +398,7 @@ impl Eff {
                 continue;
             }
             let ys = group_flow_ratios(net, &groups, est_flow);
-            let (cycle, phases, ysum) = webster(&ys, self.cycle_override[n]);
+            let (cycle, phases, ysum) = self.plan_for(net, n, &groups, &ys, self.cycle_override[n]);
             let offset = ((n as f32 * 37.0) % 100.0) / 100.0 * cycle;
             self.sig[n] = Some(SigPlan { cycle, t0: -(offset as f64), phases, links: groups, always_green: false, ysum, next: None });
         }
@@ -406,7 +414,7 @@ impl Eff {
                 continue;
             }
             let ys = group_flow_ratios(net, &p.links, flow);
-            let (cycle, phases, ysum) = webster(&ys, pin);
+            let (cycle, phases, ysum) = plan_with_observation(net, &self.period, n, &p.links, &ys, pin);
             let k = ((t - p.t0) / p.cycle as f64).ceil().max(1.0);
             let start = p.t0 + k * p.cycle as f64;
             p.next = Some(Box::new(SigNext { t0: start, cycle, phases, ysum }));
@@ -522,6 +530,49 @@ pub fn webster(ys: &[f32], pinned: Option<f32>) -> (f32, Vec<(f32, f32)>, f32) {
         t += g + YELLOW + ALL_RED;
     }
     (t.max(1.0), phases, ysum)
+}
+
+/// Plan of a signal: Webster from the flow ratios, or, when the node has an observed timing for the run's period, the observed cycle with the observed approaches' green
+/// fixed (the phase that holds their links) and the other phases sharing the rest of the cycle by flow ratio, with the usual minimum green.
+fn plan_with_observation(net: &Network, period: &str, n: usize, groups: &[Vec<u32>], ys: &[f32], pin: Option<f32>) -> (f32, Vec<(f32, f32)>, f32) {
+    let Some(obs) = net.nodes[n].signal_timing.iter().find(|o| o.periods.iter().any(|p| p == period)) else { return webster(ys, pin) };
+    let mut fixed: Vec<Option<f32>> = vec![None; groups.len()];
+    for a in &obs.greens {
+        if let Some(gi) = groups.iter().position(|g| g.iter().any(|l| a.links.contains(l))) {
+            fixed[gi] = Some(a.green_s);
+        }
+    }
+    if fixed.iter().all(|f| f.is_none()) {
+        return webster(ys, pin);
+    }
+    let np = ys.len() as f32;
+    let lost = np * (YELLOW + ALL_RED);
+    let cycle = obs.cycle_s.clamp(30.0, 180.0);
+    let spent: f32 = fixed.iter().flatten().sum();
+    let nfree = fixed.iter().filter(|f| f.is_none()).count() as f32;
+    let avail = (cycle - lost - spent).max(nfree * 5.0);
+    let ysum_free: f32 = ys.iter().zip(&fixed).filter(|(_, f)| f.is_none()).map(|(y, _)| *y).sum();
+    let minimum = MIN_GREEN.min(avail / nfree.max(1.0));
+    let mut green: Vec<f32> = ys.iter().zip(&fixed).map(|(y, f)| f.unwrap_or(if ysum_free > 1e-6 { avail * y / ysum_free } else { avail / nfree.max(1.0) })).collect();
+    for _ in 0..2 {
+        let low = green.iter().zip(&fixed).filter(|(g, f)| f.is_none() && **g < minimum).count() as f32;
+        if low == 0.0 {
+            break;
+        }
+        let rest: f32 = green.iter().zip(&fixed).filter(|(g, f)| f.is_none() && **g >= minimum).map(|(g, _)| *g).sum();
+        for (g, f) in green.iter_mut().zip(&fixed) {
+            if f.is_none() {
+                *g = if *g < minimum { minimum } else if rest > 0.0 { *g * (avail - low * minimum) / rest } else { *g };
+            }
+        }
+    }
+    let mut phases = Vec::new();
+    let mut t = 0.0;
+    for g in &green {
+        phases.push((t, *g));
+        t += g + YELLOW + ALL_RED;
+    }
+    (t.max(1.0), phases, ys.iter().sum())
 }
 
 /// Signal state code (1 green, 2 yellow, 3 red) of a phase at time `t`.

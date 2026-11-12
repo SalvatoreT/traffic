@@ -264,7 +264,12 @@
     },
     "internalShare": 0.2,
     "internalDecayM": 1000,
-    "maxLocalShareOfGate": 0.5
+    "maxLocalShareOfGate": 0.5,
+    "countCalibration": {
+      "enabled": true,
+      "maxScale": 4,
+      "_note": "DATA-derived multiplier on the trip rates of blocks inside the study area: the external trip ends they offer are scaled to the ends the volunteer count implies (vehicles entering less the whole-street through cars; vehicles leaving less the same). The per-resident-worker rate above counts workers only (LODES resident workers), so it misses residents who do not work and non-work trips. Midday has no count: the mean of the AM and PM factors (ASSUMPTION). maxScale is a sanity cap (ASSUMPTION)."
+    }
   },
   "minFlowVehPerHour": 0.5,
   "maxFlows": 8000,
@@ -580,9 +585,63 @@
       "weight": 0.5,
       "_note": "DERIVED volumes on the select-link blocks: ramp count x via-street share / freeway share of the street's traffic (tools/lib/share-targets.ts impliedVolumes). Soft constraint with the share weight, below the counts."
     },
-    "stationsOutput": "data/demand/rockridge.stations.json"
+    "stationsOutput": "data/demand/rockridge.stations.json",
+    "composition": [
+      "Colby Street",
+      "Hillegass Avenue"
+    ]
   },
   "audit": {
     "nearM": 400
+  },
+  "volunteerCount": {
+    "enabled": true,
+    "_note": "DATA: resident volunteer turning-movement count, Tuesday 2025-02-25, 8-9 AM and 5-6 PM (data/calibration/README.md). Blocks are directed-link volume constraints; turning movements and whole-street routes constrain the share of assigned routes. One day, one hour: weights and tolerances below are ASSUMPTIONS. Midday has no count.",
+    "file": "data/calibration/rockridge.volunteer-count-2025-02-25.json",
+    "periods": {
+      "am": "am_peak",
+      "pm": "pm_peak",
+      "midday": "midday"
+    },
+    "weight": 1,
+    "uncertainFactor": 0.25,
+    "tolerancePct": 20,
+    "minMovementVeh": 25,
+    "movementWeight": 0.5,
+    "routeWeight": 0.5,
+    "holdoutEvery": 4,
+    "fullRouteEnds": [
+      "Claremont Avenue",
+      "Alcatraz Avenue"
+    ],
+    "arterials": [
+      "Alcatraz Avenue",
+      "Claremont Avenue",
+      "Telegraph Avenue",
+      "College Avenue"
+    ],
+    "middayFromPm": true,
+    "middayWeightFactor": 0.5,
+    "lowConfidenceMovements": [
+      {
+        "at": [
+          "Colby Street",
+          "Claremont Avenue"
+        ],
+        "period": "pm",
+        "from": "Colby Street from north",
+        "to": "Claremont Avenue toward northeast",
+        "reason": "the rotated exit number reads 75 but the block feeding the node carries 162 and the three exits sum to 218 (notes, section Not readable)"
+      }
+    ],
+    "fullRouteOverrides": [
+      {
+        "street": "Hillegass Avenue",
+        "direction": "NB",
+        "am": 34,
+        "pm": 48,
+        "reason": "the summary table lists 48 for AM and 34 for PM; the route diagrams, the access table and the block maps agree on AM 34 and PM 48, so the columns are taken as swapped"
+      }
+    ]
   }
 }

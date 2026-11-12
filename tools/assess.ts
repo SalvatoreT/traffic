@@ -6,7 +6,7 @@
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';
-import { corridorRatios, headlineError, noiseFile, rampStats, readSeeds, scoreStations, shareStats, type SeedRun, type StationFile } from './lib/assess';
+import { corridorRatios, featureStats, headlineError, meanLinkFlow, noiseFile, rampStats, readSeeds, scoreStations, shareStats, type SeedRun, type StationFile } from './lib/assess';
 import { seedStat } from './lib/acceptance';
 
 const root = resolve(import.meta.dirname, '..');
@@ -74,6 +74,42 @@ for (const p of periods) {
   if (sc) {
     L.push('', `Count stations, simulator flows (mean over seeds) against the counts [WebTAG-M3.1] [TfL-TMG4]; ${sc.skippedWithoutLinks} gate stations have no link and are scored only in the demand fit report:`, '', '| Set | Stations | GEH < 5 | Size bands | Mean GEH | Rule (more than 85%) |', '| --- | --- | --- | --- | --- | --- |');
     for (const [name, s] of [['fitted', sc.fitted], ['held out', sc.held]] as const) L.push(`| ${name} | ${s.n} | ${s.gehOk} (${pct(s.gehShare, 0)}%) | ${s.bandOk} (${pct(s.bandShare, 0)}%) | ${f(s.meanGeh, 1)} | ${s.meets ? 'met' : 'not met'} |`);
+    L.push('', 'Interior streets (volunteer-count blocks) against the other stations (arterials, ramps, Caltrans and turning-movement counts), simulator flows:', '', '| Group | Set | Stations | GEH < 5 | Size bands | Mean GEH |', '| --- | --- | --- | --- | --- | --- |');
+    for (const [gname, g] of [['interior blocks', sc.interior], ['other stations', sc.other]] as const) for (const [name, s] of [['fitted', g.fitted], ['held out', g.held]] as const) L.push(`| ${gname} | ${name} | ${s.n} | ${s.gehOk} (${pct(s.gehShare, 0)}%) | ${s.bandOk} (${pct(s.bandShare, 0)}%) | ${f(s.meanGeh, 1)} |`);
+    const streetsOf = [...new Set<string>((targets.selectLink ?? []).map((t: { street: string }) => t.street))];
+    for (const st of streetsOf) {
+      const rows = sc.cases.filter((c) => c.kind === 'count' && c.label.startsWith(`${st} `)).sort((a, b) => Number(/link (\d+)/.exec(a.label)?.[1]) - Number(/link (\d+)/.exec(b.label)?.[1]));
+      if (!rows.length) continue;
+      L.push('', `${st}, block by block (veh/h, counted by the volunteers, modeled seed mean):`, '', '| Block | Counted | Modeled | Ratio | GEH | Held out |', '| --- | --- | --- | --- | --- | --- |');
+      for (const c of rows) L.push(`| ${c.label.replace(`${st} `, '').replace(/ \(link \d+\)/, '')} | ${Math.round(c.counted)} | ${Math.round(c.modeled)} | ${f(c.modeled / c.counted)} | ${f(c.geh, 1)} | ${c.held ? 'yes' : 'no'} |`);
+      const nb = rows.filter((c) => /, NB$|, EB$/.test(c.label.replace(/ \(link \d+\)/, ''))), sb = rows.filter((c) => /, SB$|, WB$/.test(c.label.replace(/ \(link \d+\)/, '')));
+      const med = (xs: number[]) => { const q = [...xs].sort((a, b) => a - b); return q.length ? q[Math.floor(q.length / 2)] : NaN; };
+      L.push('', `Median block: counted ${Math.round(med(nb.map((c) => c.counted)))} NB/EB and ${Math.round(med(sb.map((c) => c.counted)))} SB/WB; modeled ${Math.round(med(nb.map((c) => c.modeled)))} and ${Math.round(med(sb.map((c) => c.modeled)))}.`);
+    }
+    if (stations!.entries?.length && (p === 'pm_peak' || p === 'am_peak')) {
+      const bySide = new Map<string, { counted: number; modeled: number; rows: string[] }>();
+      for (const e of stations!.entries) {
+        const c = e.counted[p]; if (c == null) continue;
+        const m = meanLinkFlow(runs, [e.link]);
+        const g = bySide.get(e.side) ?? bySide.set(e.side, { counted: 0, modeled: 0, rows: [] }).get(e.side)!;
+        g.counted += c; g.modeled += m; g.rows.push(`| ${e.label} | ${c} | ${Math.round(m)} |`);
+      }
+      L.push('', 'Entries by side (the interior links that start at a surface arterial; vehicles per hour, counted by the volunteers against the simulator mean):', '', '| Side | Counted | Modeled |', '| --- | --- | --- |');
+      for (const [side, g] of bySide) L.push(`| ${side} | ${g.counted} | ${Math.round(g.modeled)} |`);
+      L.push(`| all | ${[...bySide.values()].reduce((a, g) => a + g.counted, 0)} | ${Math.round([...bySide.values()].reduce((a, g) => a + g.modeled, 0))} |`, '', '| Entry | Counted | Modeled |', '| --- | --- | --- |', ...[...bySide.values()].flatMap((g) => g.rows));
+    }
+    const fs = stations!.stations.filter((q) => q.feature && q.target[p] > 0);
+    if (fs.length && runs[0].features) {
+      L.push('', 'Turning movements and whole-street routes (select-link counts of the simulator: trips that took the movement or drove the whole street, per hour, seed mean with 95% interval):', '', '| Count | Counted | Modeled | 95% interval | Ratio |', '| --- | --- | --- | --- | --- |');
+      for (const q of fs) { const st = featureStats(runs, q.id); L.push(`| ${q.label} | ${Math.round(q.target[p])} | ${f(st.mean, 0)} | ${f(st.lo, 0)} to ${f(st.hi, 0)} | ${f(st.mean / q.target[p])} |`); }
+    }
+    const sg = runs[0].observedSignals ?? [];
+    for (const [i, o] of sg.entries()) {
+      for (const [j, a] of o.approaches.entries()) {
+        const ex = seedStat(runs.map((r) => r.observedSignals![i].approaches[j].exitsPerHour));
+        L.push('', `Signal with observed timing, ${o.streets}${o.applies === false ? ' (the observation does not apply to this period; the plan is the Webster plan)' : ''}: modeled cycle ${f(o.cycleS, 0)} s (observed ${f(o.observedCycleS, 0)}), green of the observed approach ${a.modeledGreenS == null ? '-' : f(a.modeledGreenS, 0)} s (observed ${f(a.observedGreenS, 0)}); the approach discharges ${f(ex.mean, 0)} veh/h, ${f((ex.mean * o.cycleS) / 3600, 1)} cars per cycle (observed 3.3 to 4 on average in the count).`);
+      }
+    }
     const cr = corridorRatios(runs, stations!, p);
     L.push('', 'Corridor ratios (simulated flow over counted flow, link-based stations of the corridor):', '', '| Corridor | Stations | Ratio | 95% interval |', '| --- | --- | --- | --- |');
     for (const c of cr) L.push(`| ${c.corridor} | ${c.stations} | ${f(c.ratio)} | ${f(c.lo)} to ${f(c.hi)} |`);

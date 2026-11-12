@@ -89,6 +89,191 @@ Claremont Ave: checked end to end. OSM lanes (3 with one forward and one backwar
 
 Ramp junctions: after joining all four SR-24 terminals are single signalized nodes (Aileen/Telegraph and Clifton/Claremont off-ramps, Hudson/Claremont and 56th/Telegraph on-ramps) with 2-lane ramp approaches at 35 mph. Mean discharge in the PM peak (seeds 1 to 3, measured before the third round): Aileen off-ramp 584 veh/h (offered 656), Clifton off-ramp 914 veh/h (offered about 1,025), on-ramps 783 and 555 veh/h. That is 290 to 460 veh/h per lane averaged over the hour; the signal gives the ramp 30 to 45% of the cycle and the shortfall is downstream spill-back on Claremont and Telegraph, not the ramp signal itself. Before the third round the remaining gridlock removals were mostly vehicles queued on the 4-lane freeway stub behind the single-lane Clifton off-ramp (26 of about 45 removals over six seeds at scale 0.3). The third round checked the ramp lanes against OSM: the off-ramps are tagged one lane for most of their length and two lanes (turn lanes left | left;through;right at Clifton, left | right at Aileen) on the final way before the signal, and the importer keeps that per segment (a test covers it), so no lane count is lost. After step M the stub accounts for about one removal per run.
 
+## Twelfth round: the resident volunteer count, router delays, the Colby Street signal (task 16)
+
+Decisions of 2026-11-12 (design D20 to D22). The new data is the resident volunteer count of Tuesday, February 25, 2025 (8 to 9 AM and 5 to 6 PM): 98 AM and 109 PM directed block volumes, entries at 18 access points, 255 turning movements, the whole-street counts on Colby Street and Hillegass Avenue, and the queue and signal observations at Colby Street and Claremont Avenue. Decisions are judged over seeds 1 to 10 with the rules of D16 to D18; the exploring runs of this round used seeds 1 to 3 and are not listed unless a number from them is used. Runs include the initial loading (D19). Before the round the model carried, on Colby Street, a median block of 32 veh/h northbound and 99 southbound in the PM peak and, on Hillegass Avenue, 57 and 130; the count has 160 to 190 on every block of Colby Street and 93 to 178 on Hillegass Avenue.
+
+### What was added
+
+`tools/lib/volunteer-count.ts` (reader and mapper, no street names, tests in `tools/volunteer-count.test.ts`); route features in the assignment (turning movements and whole-street paths, `tools/lib/assign.ts`) and constraints on them in the fit (`tools/lib/fit-counts.ts`); count stations, hold-out, composition table and the interior/other split in the demand fit report; local trip rates scaled to the count's trip ends (`build-demand.ts`); `crates/sim/data/node-delays.json` read by the router and the assignment, written by `tools/node-delays.ts`; `signalObservations` (area config, importer `tools/lib/signal-obs.ts`, `Node::signal_timing`, `plan_with_observation` in `eff.rs`, Rust test); `calibrate` reports route features by select link and the observed signals; `tools/assess.ts` scores interior blocks apart from the other stations and lists the count's blocks, entries, movements, routes and signal; `tools/cost-loop.ts` keep rule for an unstable baseline.
+
+### Counted blocks and movements on the network
+
+Counted block values: 207 (98 AM, 109 PM). 203 map to a directed link (199 with both cross-street names matching, 4 approximate because the network merged a junction) and give 110 block stations, 91 fitted and 19 held out (every fourth block along each street and direction; none of the two uncertain readings). The 4 that do not map are the 61st Street values between Canning Street and Colby Street (AM 16 westbound, 14 eastbound; PM 8 and 13): the network splits that block into four links around park paths, so no single link has those cross streets. The Colby Street jog block between the two 63rd Street legs maps (link 2630 and 2631), and so does the 20 m link between 63rd Street and North Street.
+Turning movements: 255 values, 221 mapped to a pair of links. The 34 that do not map are the movements at the Colby Street and North Street / 63rd Street junction, which the network has as two nodes 20 m apart (10 values), at Martin Street and Hermann Street / 58th Street (6, direction not legible or merged names), the "straight to" rows and the Forest Street straight-across rows (7), and a few more with no readable direction. 47 mapped movements go straight on one street and are left to the block counts; 68 are below 25 veh/h; 22 are constraints, one of them down-weighted for a doubtful reading (Colby Street SB to Claremont Avenue NE, PM, "75"). Whole-street counts: 4 of 9 rows are used (the Martin Street to Telegraph Avenue route has no PM figure and no street end at Alcatraz Avenue).
+Entries: the 18 access points map to 18 entry links. Count hour against the model's period: the count's 5 to 6 PM is the last hour of `pm_peak` (16:00 to 18:00) and 8 to 9 AM the second hour of `am_peak` (7:00 to 9:00); the period rate is the mean hourly rate of the window, so the count is a high reading of it, and the same holds for the Oakland and Caltrans peak-hour counts, so all counts are used the same way. Midday: the interior targets are the PM count times 0.62 (the midday/PM ratio of `periodFactors`) at half weight, an ASSUMPTION.
+
+### Hold-out: the count stations in the demand fit
+
+The build fits twice (D17): once without the validation stations (the out-of-sample figures) and once on every count (the demand that ships). Static assignment against the counts, GEH below 5 (size bands), from `rockridge.fit.md`:
+
+| Period | Interior blocks, fitted | Interior blocks, held out | Other stations, fitted | Other stations, held out |
+| --- | --- | --- | --- | --- |
+| AM peak | 76 of 96 (79%; bands 99%) | 13 of 19 (68%; 95%; mean GEH 4.6) | 58 of 72 (81%; 96%) | 2 of 16 (13%; 19%; mean GEH 15.6) |
+| Midday | 91 of 110 (83%; 100%) | 13 of 19 (68%; 100%; mean GEH 3.9) | 58 of 69 (84%; 97%) | 6 of 16 (38%; 44%; mean GEH 10.1) |
+| PM peak | 85 of 107 (79%; 95%) | 11 of 18 (61%; 89%; mean GEH 4.1) | 53 of 69 (77%; 91%) | 4 of 16 (25%; 25%; mean GEH 13.4) |
+
+"Other stations" are the gates, ramps, Caltrans stations, the turning-movement legs, and the movements and routes of the count. The held-out interior blocks fit out of sample about as well as the fitted ones in the static assignment (61% to 68% against 79% to 83%), probably because the other blocks of the same street carry the information. The held-out arterial and ramp stations fit badly, as in the eleventh round (flows that touch no count fall to the median factor of their type); 25% in the PM against 31% before.
+On the simulator's flows (seed mean, ten seeds), GEH below 5 (size bands within 100 veh/h below 700 veh/h; on counts of 100 to 190 veh/h that band is wide, so the bands pass easily):
+
+| Period | Interior, fitted | Interior, held out | Other, fitted | Other, held out |
+| --- | --- | --- | --- | --- |
+| AM peak | 67 of 77 (87%; bands 100%) | 15 of 19 (79%; 100%) | 21 of 31 (68%; 61%) | 6 of 13 (46%; 54%) |
+| Midday | 81 of 91 (89%; 100%) | 15 of 19 (79%; 100%) | 25 of 31 (81%; 81%) | 11 of 13 (85%; 92%) |
+| PM peak | 69 of 89 (78%; 98%) | 12 of 18 (67%; 100%) | 15 of 31 (48%; 55%) | 5 of 13 (38%; 38%) |
+
+Out of sample, on the demand of the cross-validation fit (held-out stations left out of the fit; `rockridge.assessment-validation.md`): PM interior held out 11 of 18 (61%; bands 94%; mean GEH 4.6) against fitted 64 of 89 (72%); PM other stations held out 2 of 13 (15%; mean GEH 15.0) against fitted 18 of 31 (58%). AM: interior held out 16 of 19 (84%), other 2 of 13 (15%); midday: 12 of 19 (63%) and 6 of 13 (46%). So the interior blocks are predicted out of sample (61% to 84%) much better than the arterials and ramps (15% to 46%); in the eleventh round the held-out arterial and ramp stations scored 1 of 13 (8%) out of sample on the simulator's flows. The pooled rule (more than 85% by GEH or bands) is met by the pooled fitted PM stations (87% by bands) only because the 89 interior blocks pass the wide band; the 31 other stations alone meet neither (48% and 55%).
+
+### Where the trips come from
+
+Trip ends with an end in the study area, PM peak, car trips per hour (flows with an origin or a destination node in the study area; `ii` = both ends inside), before the round and after:
+
+| | Origins in the area | Destinations in the area | Both ends inside |
+| --- | --- | --- | --- |
+| Demand before the round (fit without the count) | 508 | 434 | 7 |
+| Offered at the assumed rates, external ends of study-area blocks (build) | 224 | 275 | - |
+| Implied by the count (entering and leaving less 268 whole-street cars; 1,195 entering, 1,208 leaving) | 940 | 927 | - |
+| Demand after the round (shipped) | 1,088 | 989 | 3 |
+
+The count shows about 1,175 to 1,195 vehicles entering the neighborhood in the PM hour and about 1,208 leaving, so the model, which offered 434 destination ends and 508 origin ends in the study area, did not generate nearly enough local trips: the rate of 3.2 trips per LODES resident worker and day covers workers only, and the ends it offers at the model's mode and peak-hour shares are about 29% (destinations) and 24% (origins) of what the count implies. The local rates of study-area blocks are now scaled by 3.4 (destinations) and 4.2 (origins, capped at 4.0) in the PM, 2.95 and 2.83 in the AM, and the mean of the two for midday (ASSUMPTION), so the offered external ends equal the count's. Through trips between the surrounding gates are not touched by this; they are the gate counts' business, and the fit lowers them by 22% in the PM (9,415 offered, 7,343 final) where the gates are over-supplied. Freeway-related trips keep the ramp counts (DATA): 13,068 offered and 13,174 final in the PM, off-ramp stations at 1.01 and on-ramp stations at 1.04 of target.
+The arterial, gate and ramp counts are not violated by the extra local trips: gate stations are at 1.00 of their targets and the Caltrans and ramp stations at 0.98 to 1.04 in the PM; the turning-movement legs at Telegraph Avenue / Alcatraz Avenue and Market Street / 55th Street come to 0.96 in total (0.94 before the round).
+
+Composition of the assigned traffic per block on the interior streets, PM peak, veh/h per block (static assignment; local-end = one end at a block, through = gate to gate, freeway = one end on the freeway; `rockridge.fit.md`, "Who uses the interior streets"):
+
+| Street, direction | Before the round: local-end / through / freeway (total) | Offered after the rate change | After the fit (shipped) |
+| --- | --- | --- | --- |
+| Colby Street NB | 7 / 0 / 11 (18) | 1 / 0 / 23 (24) | 3 / 0 / 62 (65) |
+| Colby Street SB | 4 / 0 / 24 (28) | 2 / 0 / 30 (33) | 7 / 1 / 49 (57) |
+| Hillegass Avenue NB | 8 / 0 / 44 (53) | 5 / 0 / 113 (119) | 15 / 1 / 75 (90) |
+| Hillegass Avenue SB | 16 / 3 / 66 (84) | 6 / 2 / 63 (70) | 17 / 5 / 107 (129) |
+
+The static assignment still carries only 57 to 65 veh/h on a Colby block against 160 to 190 counted; in the simulator the blocks carry more (next sections), because drivers there also take Colby Street when the arterials are slow. The composition shows why the fit cannot reach the count by scaling alone: on Colby Street 86% to 95% of the assigned volume is freeway-related, and local-end and through trips together are 3 to 8 veh/h. No gate-to-gate trip in the table is routed over the whole of Colby Street (the count's full-route counts are 102 northbound and 39 southbound, and the assignment gives 0 and 3). The fit scales flows; it cannot create a route that no flow takes, and with the router's costs no pair of through gates has a route over Colby Street within 5% of its best route (above).
+
+Observed shares against the count. The StreetLight shares say about 47% of the traffic on Colby Street northbound comes from the freeway and 45% of southbound goes to it; the count says 56% (northbound) and 28% (southbound) of the cars entering Colby Street at Claremont Avenue or Alcatraz Avenue in the PM hour drive its whole length, 51% and 44% on Hillegass Avenue, and 43% of the entrants across the two streets. These are different quantities (freeway end against whole-street trip), so they do not contradict each other. The volumes do conflict with the shares in the model: to put 160 to 190 veh/h on Colby Street the fit uses the trips that exist, which are almost all freeway-related, and the freeway-related share of the assigned traffic on the four select-link blocks comes out at 68% to 80% against 45% to 68% observed (final column of the share table in `rockridge.fit.md`: Hillegass NB 68, Colby NB 74, Hillegass SB 80, Colby SB 77, against 47, 47, 68, 45). Where they conflict the fit follows the counts (weight 1) over the shares (weight 0.5): counts are measured, the shares come from a device sample.
+
+### Simulator consistency: control delays of the router (D21)
+
+Measured in the PM peak on the first fit that used the count (seeds 1 to 3; `rockridge.node-delays.md` holds the table, `tools/node-delays.ts` the method): delay per vehicle on links that end at each control, time lost against the speed limit, flow-weighted.
+
+| Link group | Links | Mean delay (s) | Flow-weighted median (s) | Router constant before (s) | After (s) |
+| --- | --- | --- | --- | --- | --- |
+| ends at no control | 1113 | 3.2 | 1.4 | - | - |
+| major street at a two-way stop | 631 | 3.2 | 1.7 | 0 | 0 |
+| signal | 298 | 15.4 | 11.7 | 10 | 10 |
+| minor approach at a two-way stop | 378 | 28.4 | 15.5 | 5 | 14 |
+| all-way stop | 220 | 11.3 | 9.4 | 6 | 8 |
+| traffic circle | 79 | 9.0 | 5.6 | 3 | 4 |
+
+Which is wrong: the router. A vehicle that has to stop loses more than 5 s with no conflicting traffic (the stop dwell of 1 s, the deceleration and the acceleration), and the gap-acceptance waits come from the rule validated against [Brilon1999] in `validation.md` (cases e1 to e9: e1, e4, e5, e7 and e8 inside the published ranges, e2 and e3 below, e6 and e9 above). The count's own evidence concerns signals, not stops, and is below. Signals and all-way stops agree within 2 s, so only the minor stop moves a lot (5 to 14 s; the flow-weighted mean, 28 s, is set by a few jammed approaches whose queues are already in the route costs the simulator updates every epoch, so the median is used). The constants now live in one file, `crates/sim/data/node-delays.json`, read by the router and the assignment; `tools/node-delays.ts --write` rewrites it from seed reports.
+Effect on route choice (static router, all 9,900 ordered pairs of through gates): the free-flow cost of driving the whole of Colby Street changes from 108 s to 110 s (it has few minor stops), and the number of gate pairs for which a route over the whole street is within 15% of the best route falls from 251 to 205 northbound and from 126 to 107 southbound (within 30%: 1,539 to 1,367 and 1,378 to 1,290). No pair has a whole-Colby route within 5% of its best, so with this router a through trip takes Colby Street only when noise or arterial congestion tips it. In the fit, the interior blocks reached 79% of their summed target before the change (the first fit with the count) and 74% after it. Ten seeds of the PM peak with the old and the new constants (table under the ten-seed assessment) show no systematic effect on stability.
+
+### Simulator consistency: Colby Street at Claremont Avenue and Forest Street (D22)
+
+The count: cycle 79 s, 4 s of green for Colby Street, red 75 s (8 to 9 AM); a median of 4 cars (average 3.3) leave Colby per cycle; the queue averages 3.3 cars and reaches 13; from 9 AM the cycle is 147 s with 10 s of green. The PM cycle is not stated. The simulator, after the phase-grouping and adaptive-split fixes, planned this signal with three phases (Claremont Avenue, Forest Street, Colby Street) and the minimum green of 15 s for the smallest phase. Three seeds on the demand of the first fit:
+
+| Period | Plan | Cycle (s) | Greens Claremont / Colby / Forest (s) | Colby SB discharge | Cars per cycle |
+| --- | --- | --- | --- | --- | --- |
+| AM | before (Webster) | 75 | 28 / 16.5 / 15 | 196 veh/h | 4.1 |
+| AM | observed timing | 79 | 45 / 4 / 15 | 150 veh/h | 3.3 |
+| PM | before (Webster) | 75 | 30 / 15 / 15 | 250 veh/h | 5.2 |
+| PM | observed AM timing (ASSUMPTION) | 79 | 38 / 4 / 22 | 178 veh/h | 3.9 |
+
+The plan gave Colby about four times the observed green (16.5 s against 4 s; the minimum green of 15 s alone is nearly four times) and let 30% to 55% more traffic out of Colby than the count shows (196 against the counted AM block of 163; 250 against the PM block of 162). The 15 s minimum green is not a bug, but an approach with several times the observed green lets far more traffic leave Colby than reality. The fix is data, not a change of rule: `signalObservations` in `data/areas/rockridge.json` sets the observed cycle and green in a listed period and lets the other phases share the rest by flow. With it the AM approach discharges 3.3 cars per cycle (counted: average 3.3, median 4). The PM cycle: 3.5 cars per cycle at the 162 veh/h counted on the last Colby block gives about 78 s, so the AM timing is used for the PM peak, an ASSUMPTION; midday takes the 147 s timing seen after 9 AM, also an ASSUMPTION. The simulator discharges 3.9 cars per cycle in the PM, about 10% above the median of 3.5. The queue (average 3.3 cars, maximum 13) was not measured in the simulator.
+
+### Cost loop with measured delays (D18), run again on the new baseline
+
+`npm run cost-loop`, the PM peak over seeds 1 to 10, other periods over seeds 1 to 3, successive averages. The keep rule was changed because the PM baseline is not stable: an iteration is kept when removals, backlog and the headline-share error are not worse than iteration 0 (the share error within 0.5 points), no GEH share falls by more than 5 points, interior blocks included, and the least removals plus backlog wins.
+
+| Iteration | PM stable | Removals per hour | Backlog mean % | Seeds under 2% | Headline shares (47 / 47 / 68 / 45) | Error (points) | GEH<5 fitted / held | Interior GEH<5 fitted / held | Cost gap |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 0 (free-flow and BPR costs) | no | 2.50 | 3.88 | 0 | 65 / 76 / 70 / 71 | 18.9 | 70% / 55% | 78% / 67% | - |
+| 1 (measured delays, gap 0.34) | no | 25.60 | 1.85 | 5 | 49 / 77 / 56 / 68 | 17.1 | 70% / 55% | 78% / 78% | 0.337 |
+
+Iteration 1 moved trips onto the links that were fast in iteration 0 and the next run gridlocked (25.6 removals per hour, as in the ninth round), so the loop was stopped after it (a third iteration was under way and was dropped) and no iteration was kept; the demand uses free-flow and BPR costs and the delays file was removed. The stations' GEH shares in the table are those of the simulator on the state at the time (they are not the final ten-seed figures).
+
+### Ten-seed assessment of the shipped demand (D16 to D18)
+
+All numbers are from `rockridge.assessment.md` (seeds 1 to 10, 60 minutes, scale 1.0, initial loading on).
+
+| Period | Stability (D16) | Removals per hour, mean (min to max) | Backlog under 2% | Second-half growth above 2 points | Arterial speed (m/s) | Old rule |
+| --- | --- | --- | --- | --- | --- | --- |
+| AM peak | fails (at the limit) | 1.00 (0 to 6) | 10 of 10 (mean 0.20%) | none | 8.41 | 7 of 10 seeds |
+| Midday | holds | 0.00 | 10 of 10 (mean 0.00%) | none | 10.01 | 10 of 10 |
+| PM peak | fails | 2.50 (0 to 5) | 0 of 10 (mean 3.88%, max 6.23%) | seeds 1, 3, 4, 5, 6, 8, 9, 10 | 7.46 | 0 of 10 |
+| PM peak, 120 minutes | fails | 5.80 (0.5 to 24.5) | 0 of 10 (mean 5.11%) | all ten | 7.18 | 0 of 10 |
+| PM peak, cross-validation demand | fails | 2.70 (0 to 8) | 6 of 10 (mean 1.92%) | seeds 4, 6, 9 | 7.78 | 4 of 10 |
+
+AM misses the rule at its limit: a mean of 1.00 per hour against "below 1.0" (seed 5 with 6 removals, seeds 6 and 9 with 2 each). The eleventh round had AM at 0.40 per hour and PM at 3.40 with a backlog of 1.88% (5 of 10 seeds under 2%). Those PM figures do not reproduce on the tree this session started from: ten seeds of the old demand file (the eleventh round's demand) with the simulator as it stood at the start of this round (old router constants, no observed signal) gave 4.2 removals per hour and a backlog of 4.82% (0 of 10 under 2%). The baseline had moved before this round's changes: commits after the eleventh round's runs (the leg-bearing work) changed `topo.rs`, `diverter.rs` and `model.rs`, and the network now carries bearings. These runs cannot separate the effects. Attribution runs, PM, seeds 1 to 10:
+
+| Demand | Router constants | Colby signal | Removals per hour | Backlog (seeds under 2%) |
+| --- | --- | --- | --- | --- |
+| eleventh round demand | old (5, 6, 10, 3 s) | Webster | 4.2 | 4.82% (0) |
+| eleventh round demand | old | observed | 5.5 | 4.18% (0) |
+| eleventh round demand | new (14, 8, 10, 4 s) | observed | 3.9 | 4.24% (0) |
+| this round's demand | old | observed | 7.0 (one seed with 61) | 3.88% (0) |
+| this round's demand (shipped) | new | observed | 2.5 | 3.88% (0) |
+
+No one change moves PM stability: the new demand with the count and the new constants is at least as stable as the old state (2.5 against 4.2 removals per hour, 3.88% against 4.82% backlog). The interior volumes are not the bottleneck.
+Where the PM backlog sits (ten seeds): 855 trips on average wait at the SR-24 mainline gate (node 610, offered 4,810 veh/h), 13 at Telegraph Avenue / Ward Street, nothing inside the study area. The mainline link 611 to 1750 has a mean delay of 316 s, and the off-ramp to 52nd Street (link 4191) 371 s at 559 veh/h against 1,278 counted (GEH 23.7), and the ramp approach at the 52nd Street and Shattuck Avenue signal (node 688, the node with the most blocked time) 92 s. The queue of the 52nd Street off-ramp backs onto the mainline and holds back the mainline entry. The off-ramp to Claremont Avenue and Clifton Street carries 1,400 against 972 counted (GEH 12.4), so the simulator sends too many cars to one exit and too few to the other. Removals sit at Market Street and 60th Street (a two-way stop; 8 of 10 AM removals and 10 of 25 PM removals) and Market Street and Stanford Avenue, both outside the study area. I did not find a fix that is neither demand scaling nor a change of re-route share. By a rough estimate (four lanes and 42 s of green in a cycle of about 75 s) the ramp approach at node 688 could serve several times its 600 veh/h, so the limit lies downstream or in the merges, and finding it needs a look at the lane counts and the short links around nodes 730 to 734 that this round did not make.
+
+### Modeled and counted volumes on Colby Street and Hillegass Avenue (PM, ten seeds)
+
+Counted by the volunteers against the simulator's mean flow, veh/h per block, in order from Claremont Avenue to Alcatraz Avenue (held-out blocks marked h):
+
+| Colby Street block | NB counted / modeled | SB counted / modeled |
+| --- | --- | --- |
+| Claremont Ave to McAuley St | 189 / 142 | 162 / 189 |
+| McAuley St to 60th St (h) | 182 / 112 | 170 / 214 |
+| 60th St to 61st St | 179 / 90 | 159 / 223 |
+| 61st St to 62nd St | 174 / 70 | 160 / 207 |
+| 62nd St to 63rd St | 158 / 79 | 162 / 217 |
+| 63rd St jog (h) | 152 / 70 | 156 / 217 |
+| North St to Alcatraz Ave | 164 / 31 | 139 / 172 |
+| Median block | 174 / 79 | 160 / 214 |
+
+| Hillegass Avenue block | NB counted / modeled | SB counted / modeled |
+| --- | --- | --- |
+| Claremont Ave to 61st St | 114 / 67 | 152 / 109 |
+| 61st St to 62nd St (h) | 110 / 44 | 151 / 111 |
+| 62nd St to 63rd St | 93 / 38 | 168 / 153 |
+| 63rd St to Alcatraz Ave | 109 / 51 | 178 / 108 |
+| Median block | 110 / 51 | 168 / 111 |
+
+Before the round the median block carried 32 NB and 99 SB on Colby Street and 57 and 130 on Hillegass Avenue; now 79 and 214, and 51 and 111. Colby Street southbound is 17% to 40% above the count on every block, northbound is 25% to 80% under, and Colby Street northbound at its north end (North Street to Alcatraz Avenue) carries 31 against 164. Hillegass Avenue is under on both directions (0.4 to 0.9). Both streets together are at 0.88 (Colby) and 0.63 (Hillegass) of the counted flow in the corridor ratios. On Colby Street the limit is route choice: in the simulator 172 cars an hour turn from Colby Street southbound onto Claremont Avenue toward the southwest against 84 counted, and none turn toward the northeast (75 counted, a reading marked uncertain; the turn is about 150 degrees and the network does not allow it), and northbound only 5 of 131 counted cars reach Alcatraz Avenue and turn west, because the trips that enter Colby Street leave it for the cross streets toward Telegraph Avenue (the cross streets 57th to 63rd Street carry 1.4 to 1.8 times their count, except 58th Street at 1.0; McAuley Street 2.2, Howell Street 3.7, Hermann Street 2.3, Ayala Avenue 1.8).
+
+### Entries by side, the Claremont turn-in split, Alcatraz exits, full routes (PM, simulator mean)
+
+| Side | Counted (printed total) | Counted (sum of the 18 access points) | Modeled |
+| --- | --- | --- | --- |
+| Claremont Avenue and Forest Street (5) | 498 | 505 | 495 |
+| Alcatraz Avenue at Colby, Hillegass, Dana (3) | 360 | 360 | 298 |
+| Telegraph Avenue and the streets west of it (8) | 248 | 264 | 454 |
+| College Avenue (2) | 61 | 66 | 66 |
+| All 18 | 1,167 (1,175 in the text) | 1,195 | 1,313 |
+
+Telegraph Avenue entries are 72% above their count (the model sends too many cars east from the Telegraph Avenue side; the entry at 57th Street 139 against 73, at 63rd Street 71 against 27), Alcatraz Avenue 17% under. The Claremont Avenue turn-in split, counted (modeled): Colby Street 182 (142), Martin Street 164 (213), Hillegass Avenue 94 (67), Forest Street 58 (59), 60th Street 7 (14); as shares of the side, 36 / 32 / 19 / 11 / 1% counted and 29 / 43 / 14 / 12 / 3% modeled. The Alcatraz Avenue exits of the cars driving north on Colby Street and Hillegass Avenue: counted 64% toward Telegraph Avenue, 32% toward College Avenue and 4% straight across (174, 86, 13 of 273 cars); modeled 29 cars of 273 reach Alcatraz Avenue at all (5 and 16 turn west, 5 and 3 turn east), so the split is 72% and 28% of a tenth of the count. Whole-street counts, counted (modeled, 95% interval): Colby Street NB 102 (23, 20 to 27), SB 39 (114, 104 to 125), Hillegass Avenue NB 48 (34, 30 to 39), SB 79 (72, 62 to 82). The simulator reverses the direction of the through traffic on Colby Street (the count has the northbound excess that the writers could not explain). Turning movement from Claremont Avenue onto Colby Street: 121 counted, 88 modeled; Forest Street onto Colby Street 57 and 64.
+The signal: the simulator discharges 189 veh/h (4.2 cars per cycle) from Colby Street southbound at Claremont Avenue with the observed 79 s and 4 s; the count has 3.3 on average and a median of 3.5 to 4.
+
+### Route shares and ramp shares (PM, seed mean with 95% interval; observed in brackets)
+
+Headline: Hillegass Avenue NB from the freeway 64.8 (61.9 to 67.7) (47), Colby Street NB from 76.4 (74.0 to 78.9) (47), Hillegass Avenue SB to 69.7 (66.8 to 72.6) (68), Colby Street SB to 71.5 (69.0 to 73.9) (45). One of four is within 10 points; the mean absolute error is 18.9 points (10.9 in the eleventh round, with two of four within); D5 fails. AM 63.7 / 76.4 / 57.3 / 68.7 and midday 55.8 / 72.1 / 72.4 / 69.3 (observed values are the PM ones). The two Colby Street shares got worse because the count's volumes on Colby Street are carried by the freeway-related trips that exist in the table (86% to 95% of its assigned volume); the shares are the conflicting evidence (see "Where the trips come from") and the fit follows the counts. Ramp via-street shares, PM (observed): onto the freeway via College Avenue 8.5 (16), Hillegass Avenue 11.0 (12), Martin Street 10.6 (10), Colby Street 20.3 (8), Telegraph Avenue north of Alcatraz Avenue 5.6 (8), Benvenue Avenue 2.3 (5); from the freeway via College Avenue 5.0 (10), Martin Street 18.7 (10), Colby Street 8.9 (8), Hillegass Avenue 3.9 (5), Benvenue Avenue 1.7 (3). Colby Street onto the freeway is 12 points over; the others are within 9.
+Corridor ratios, PM (simulated over counted flow): Alcatraz Avenue 0.92 (0.90 to 0.93), freeway ramps 0.95, Market Street / 55th Street 0.66, San Pablo Avenue 1.03, Tunnel Road 0.77, Claremont Avenue 0.48 (two Caltrans stations; the station at link 3477 reads 105 against 698 counted, 191 to 199 with the old demand and the old router constants), Colby Street 0.88, Hillegass Avenue 0.63.
+
+### Calibration entry and verdict
+
+Status `uncalibrated`. Stability: AM fails (mean removals 1.00 per hour, the limit), midday holds, PM fails; the PM headline shares fail (1 of 4 within 10 points); the pooled PM station rule is met by the simulator's fitted stations (87% by size bands) only through the interior blocks. `experimentalPeriods` are the AM and PM peaks, `defaultPeriod` midday. The public note says Colby St and Hillegass Ave now carry closer to what residents counted and that the peaks still strand a few cars. The noise file `public/data/rockridge.noise.json` was regenerated from the ten PM, AM and midday seeds. The interior and the cross-validation numbers above, and the counts of the volunteers block by block, are in `rockridge.assessment.md` and `rockridge.assessment-validation.md`.
+
+### What remains
+
+- PM and AM stability: the backlog at the SR-24 mainline gate and the 52nd Street off-ramp (371 s, 559 against 1,278 veh/h), and removals at Market Street and 60th Street. The simulator also sends 1,400 against 972 veh/h to the Claremont Avenue and Clifton Street off-ramp. Needs a geometry check of the ramp terminals and a look at ramp choice.
+- Colby Street: northbound is 25% to 80% under and its north end 80% under, southbound 20% to 40% over; trips enter Colby Street and leave it for the cross streets toward Telegraph Avenue; the Claremont Avenue and Colby Street turn toward the northeast (75 counted) is not allowed; the cross streets between Telegraph Avenue and Colby Street carry 1.4 to 3.7 times their count. Needs the origins and destinations of the trips from the Berkeley side and from Telegraph Avenue, and the gates of the cross streets.
+- Hillegass Avenue is 0.4 to 0.9 of its count in both directions.
+- The freeway-related share of Colby Street traffic is 72% to 76% against 47% (StreetLight) and 45% to 56% (count); a source for local-end and through trips on Colby Street is missing.
+- Entries from Telegraph Avenue are 72% over their count.
+- A second count day and more hours (`docs/data-needs.md`, item 1).
+- Leave-one-corridor-out cross-validation was not run.
+- The cost loop with measured delays gridlocks (25.6 removals per hour at its first iteration), as in the ninth round.
+
 ## Initial loading: runs start with traffic on the streets (D19, change to the simulator)
 
 User report: at time 0 there was almost nothing on the map. The simulator started empty and filled over several minutes. It now places the agents already en route (Poisson count per flow from rate x free-flow trip time with the expected control delay x 1.3, positions uniform by travel time, queued in lane order with a gap), then settles for 120 s before the clock starts at 0 (`Config::initial_load`, default true; `calibrate --no-initial-load` switches it off and `--warmup` still applies). `INITIAL_CONGESTION` 1.3 and `INITIAL_SETTLE_S` 120 s are ASSUMPTIONS, tuned only on the vehicles on the network at time zero. The calibration reports above were all measured from an empty network and are not affected; a new run of `calibrate` starts loaded unless told otherwise.

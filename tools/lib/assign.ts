@@ -4,19 +4,21 @@
 // Approximations: the simulator's per-driver noise multiplies the cost-to-go of a candidate link; here each of `draws` assignments perturbs
 // every link cost by a seeded factor in 1 +/- noise and the flow is split equally over the draws (draws = 1, noise = 0 gives all-or-nothing).
 // Movement length uses the same corner/Bezier estimate as the simulator; the signal and stop delays are the fixed free-flow constants.
+import { readFileSync } from 'node:fs';
 export type Pt = [number, number];
 export interface ALink { id: number; from: number; to: number; length: number; speedLimit: number; geometry?: Pt[]; class: string; humps?: number[]; stopAtEnd?: boolean }
 export interface ANode { id: number; x: number; y: number; control: string }
 export interface ATurnBan { from: number; to: number; periods?: string[] }
 
-/** Constants copied from crates/sim/src/params.rs (each is an ASSUMPTION there too). */
+/** Constants copied from crates/sim/src/params.rs (each is an ASSUMPTION there too), except the control delays, which both routers read from crates/sim/data/node-delays.json (written by tools/node-delays.ts). */
+const NODE_DELAYS = JSON.parse(readFileSync(new URL('../../crates/sim/data/node-delays.json', import.meta.url), 'utf8')) as { signal: number; allWayStop: number; minorStop: number; circle: number };
 export interface RouteParams {
   localCostFactor: number; turnRightS: number; turnLeftS: number; turnUS: number;
   delaySignalS: number; delayAllwayS: number; delayMinorS: number; delayCircleS: number;
   humpPenaltyS: number; vRight: number; vLeft: number; vUturn: number; vCircle: number; rCircle: number; rNode: number;
 }
 export const SIM_ROUTE_PARAMS: RouteParams = {
-  localCostFactor: 1.25, turnRightS: 1, turnLeftS: 4, turnUS: 25, delaySignalS: 10, delayAllwayS: 6, delayMinorS: 5, delayCircleS: 3,
+  localCostFactor: 1.25, turnRightS: 1, turnLeftS: 4, turnUS: 25, delaySignalS: NODE_DELAYS.signal, delayAllwayS: NODE_DELAYS.allWayStop, delayMinorS: NODE_DELAYS.minorStop, delayCircleS: NODE_DELAYS.circle,
   humpPenaltyS: 3, vRight: 4, vLeft: 5, vUturn: 3, vCircle: 5, rCircle: 7, rNode: 6,
 };
 
@@ -197,8 +199,27 @@ export function treeFrom(g: Graph, origin: number, noiseOf: ((l: number) => numb
 }
 
 export interface OdFlow { origin: number; destination: number }
-/** Sparse link shares per flow, CSR: flow k uses links[start[k] .. start[k+1]] with share (0..1] each; unroutable flows have none. */
-export interface Assignment { start: Int32Array; link: Int32Array; share: Float32Array; routable: Uint8Array; origin: Int32Array; destination: Int32Array }
+/**
+ * A route property a count can constrain: a turning movement (link `a` followed at once by link `b`) or a path (the route uses link `first` and later link `last`),
+ * with link indices as positions in the link list given to `buildGraph`.
+ */
+export type Feature = { kind: 'move'; a: number; b: number } | { kind: 'path'; first: number; last: number };
+/** Sparse link shares per flow, CSR: flow k uses links[start[k] .. start[k+1]] with share (0..1] each; unroutable flows have none. `feat` (when features were given) holds per flow the share of its routes that have each feature. */
+export interface Assignment { start: Int32Array; link: Int32Array; share: Float32Array; routable: Uint8Array; origin: Int32Array; destination: Int32Array; feat?: { start: Int32Array; id: Int32Array; share: Float32Array } }
+
+/** Features of one route (links in travel order): indices into `feats` that the route has. `byLink` maps a link to the features that start or end on it. */
+export function featureIndex(feats: Feature[]): Map<number, number[]> {
+  const m = new Map<number, number[]>();
+  feats.forEach((f, i) => { const k = f.kind === 'move' ? f.a : f.first; (m.get(k) ?? m.set(k, []).get(k)!).push(i); });
+  return m;
+}
+export function routeFeatures(route: ArrayLike<number>, feats: Feature[], idx: Map<number, number[]>, out: number[] = []): number[] {
+  for (let i = 0; i < route.length; i++) for (const f of idx.get(route[i]) ?? []) {
+    const ft = feats[f];
+    if (ft.kind === 'move') { if (route[i + 1] === ft.b) out.push(f); } else for (let j = i + 1; j < route.length; j++) if (route[j] === ft.last) { out.push(f); break; }
+  }
+  return out;
+}
 
 /** One all-or-nothing pass: the shortest path of every flow (links in reverse path order), or null when the destination cannot be reached. */
 function aonPaths(g: Graph, flows: OdFlow[], byOrigin: Map<number, number[]>, draw: number, noise: number, cost: ArrayLike<number>): (number[] | null)[] {
@@ -222,7 +243,7 @@ const groupByOrigin = (flows: OdFlow[]) => {
   flows.forEach((f, k) => (byOrigin.get(f.origin) ?? byOrigin.set(f.origin, []).get(f.origin)!).push(k));
   return byOrigin;
 };
-function toAssignment(flows: OdFlow[], accum: Map<number, number>[], ok: number[]): Assignment {
+function toAssignment(flows: OdFlow[], accum: Map<number, number>[], ok: number[], featAccum?: Map<number, number>[]): Assignment {
   const routable = new Uint8Array(flows.length);
   const start = new Int32Array(flows.length + 1);
   const link: number[] = [], share: number[] = [];
@@ -231,22 +252,36 @@ function toAssignment(flows: OdFlow[], accum: Map<number, number>[], ok: number[
     if (ok[k] > 0) { routable[k] = 1; for (const [l, c] of accum[k]) { link.push(l); share.push(c / ok[k]); } }
   });
   start[flows.length] = link.length;
-  return { start, link: Int32Array.from(link), share: Float32Array.from(share), routable, origin: Int32Array.from(flows.map((f) => f.origin)), destination: Int32Array.from(flows.map((f) => f.destination)) };
+  let feat: Assignment['feat'];
+  if (featAccum) {
+    const fs = new Int32Array(flows.length + 1), fi: number[] = [], fh: number[] = [];
+    flows.forEach((_, k) => { fs[k] = fi.length; if (ok[k] > 0) for (const [f, c] of featAccum[k]) { fi.push(f); fh.push(c / ok[k]); } });
+    fs[flows.length] = fi.length;
+    feat = { start: fs, id: Int32Array.from(fi), share: Float32Array.from(fh) };
+  }
+  return { start, link: Int32Array.from(link), share: Float32Array.from(share), routable, origin: Int32Array.from(flows.map((f) => f.origin)), destination: Int32Array.from(flows.map((f) => f.destination)), feat };
 }
 
 /**
  * Assign every flow to its free-flow generalized-cost shortest path(s). Node ids in flows and link `from`/`to` are node ids; link
  * indices in the result are positions in `links` (what `buildGraph` was given).
  */
-export function assign(g: Graph, flows: OdFlow[], draws = 1, noise = 0): Assignment {
+export function assign(g: Graph, flows: OdFlow[], draws = 1, noise = 0, feats: Feature[] = []): Assignment {
   const byOrigin = groupByOrigin(flows);
   const accum: Map<number, number>[] = flows.map(() => new Map());
+  const fAccum: Map<number, number>[] = flows.map(() => new Map());
+  const fIdx = featureIndex(feats);
   const ok = new Array<number>(flows.length).fill(0);
   for (let dr = 0; dr < draws; dr++) {
     const paths = aonPaths(g, flows, byOrigin, dr, noise, g.cost);
-    paths.forEach((p, k) => { if (!p) return; ok[k]++; for (const l of p) accum[k].set(l, (accum[k].get(l) ?? 0) + 1); });
+    paths.forEach((p, k) => {
+      if (!p) return;
+      ok[k]++;
+      for (const l of p) accum[k].set(l, (accum[k].get(l) ?? 0) + 1);
+      if (feats.length) for (const f of routeFeatures(p.slice().reverse(), feats, fIdx)) fAccum[k].set(f, (fAccum[k].get(f) ?? 0) + 1);
+    });
   }
-  return toAssignment(flows, accum, ok);
+  return toAssignment(flows, accum, ok, feats.length ? fAccum : undefined);
 }
 
 /** Volume-delay function: link cost multiplier at volume x over capacity c, 1 + alpha (x / c)^beta. Form of the BPR function [Spiess1990]; alpha and beta are ASSUMPTION values (the usual 0.15 and 4). */
@@ -264,6 +299,8 @@ export interface MsaOptions {
   capacity: ArrayLike<number>;
   /** Extra perceived cost per link in seconds added to the free-flow cost before the volume-delay factor (measured delay from a simulator run, already weighted by class). */
   extraCost?: ArrayLike<number>;
+  /** Route features whose share per flow is recorded (turning movements, paths). */
+  features?: Feature[];
 }
 export interface MsaResult extends Assignment {
   /** Link volumes (veh/h) of the averaged assignment at the given flow volumes. */
@@ -345,6 +382,8 @@ function walkRoute(g: Graph, h: Float64Array, origin: number, dest: number, seed
  */
 export function assignMsa(g: Graph, flows: OdFlow[], volume: ArrayLike<number>, opt: MsaOptions): MsaResult {
   const accum: Map<number, number>[] = flows.map(() => new Map());
+  const feats = opt.features ?? [], fIdx = featureIndex(feats);
+  const fAccum: Map<number, number>[] = flows.map(() => new Map());
   const ok = new Array<number>(flows.length).fill(0);
   const byDest = new Map<number, number[]>();
   flows.forEach((f, k) => (byDest.get(f.destination) ?? byDest.set(f.destination, []).get(f.destination)!).push(k));
@@ -363,6 +402,7 @@ export function assignMsa(g: Graph, flows: OdFlow[], volume: ArrayLike<number>, 
           if (!route) break;
           ok[k]++;
           for (const l of route) { accum[k].set(l, (accum[k].get(l) ?? 0) + 1); y[l] += volume[k] / opt.drawsPerPass; }
+          if (feats.length) for (const f of routeFeatures(route, feats, fIdx)) fAccum[k].set(f, (fAccum[k].get(f) ?? 0) + 1);
         }
       }
     }
@@ -375,7 +415,7 @@ export function assignMsa(g: Graph, flows: OdFlow[], volume: ArrayLike<number>, 
     rel = n === 1 ? 1 : change / Math.max(tot, 1e-9);
     for (let l = 0; l < g.nLinks; l++) cost[l] = base[l] * bprFactor(x[l], opt.capacity[l], opt.alpha, opt.beta);
   }
-  return { ...toAssignment(flows, accum, ok), linkVolume: x, relChange: rel, passes: opt.iterations };
+  return { ...toAssignment(flows, accum, ok, feats.length ? fAccum : undefined), linkVolume: x, relChange: rel, passes: opt.iterations };
 }
 
 /** Per-link volume of `v` (per flow) under an assignment. */

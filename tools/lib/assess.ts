@@ -11,11 +11,17 @@ export interface SeedRun {
   rampShares: { direction: string; via: string; observed: number; modelledSide: number | null }[];
   linkFlowVehPerHour: number[] | null;
   linkMeanDelayS: number[] | null;
+  features?: { id: string; label: string; kind: string; trips: number; vehPerHour: number }[];
+  observedSignals?: { node: number; applies?: boolean; streets: string; cycleS: number; greenS: number[]; observedCycleS: number; approaches: { links: number[]; observedGreenS: number; modeledGreenS: number | null; exitsPerHour: number }[] }[];
   patternBypass?: { bypass: string; arterial: string; dir: string; corridorTrips: number; viaBypass: number }[];
   patternFreewayThrough?: { trips: string; localMiles: number; shareOfLocalMiles: number }[];
 }
 
-export interface StationFile { stations: { id: string; kind: string; label: string; corridor: string; held: boolean; links: number[]; target: Record<string, number> }[] }
+export interface StationFile {
+  stations: { id: string; kind: string; label: string; corridor: string; held: boolean; links: number[]; target: Record<string, number>; feature?: { kind: string } }[];
+  /** Interior links that start at a surface arterial, with the vehicles the volunteer count recorded entering there (per period id). */
+  entries?: { side: string; label: string; link: number; counted: Record<string, number | null> }[];
+}
 
 export const seedFile = (dir: string, area: string, period: string, scale: number, seed: number) => join(dir, `${area}-${period}-s${scale}-seed${seed}.json`);
 
@@ -51,7 +57,7 @@ export function rampStats(runs: SeedRun[]): RampStat[] {
 /** Mean absolute error of the headline shares, in points, on the seed means. */
 export const headlineError = (ss: ShareStat[]): number => { const h = ss.filter((q) => q.headline); return h.length ? h.reduce((a, q) => a + Math.abs(q.errPoints), 0) / h.length : NaN; };
 
-export interface StationScore { period: string; fitted: AcceptanceSummary; held: AcceptanceSummary; cases: (CaseResult & { corridor: string; label: string })[]; skippedWithoutLinks: number }
+export interface StationScore { period: string; fitted: AcceptanceSummary; held: AcceptanceSummary; interior: { fitted: AcceptanceSummary; held: AcceptanceSummary }; other: { fitted: AcceptanceSummary; held: AcceptanceSummary }; cases: (CaseResult & { corridor: string; label: string; kind: string; stationId: string })[]; skippedWithoutLinks: number }
 
 /** GEH and size bands of the simulator's link flows (mean over the seeds) against the count targets of link-based stations; gate stations have no link and are skipped. */
 export function scoreStations(runs: SeedRun[], file: StationFile, period: string): StationScore {
@@ -64,9 +70,10 @@ export function scoreStations(runs: SeedRun[], file: StationFile, period: string
     if (!st.links.length) { skipped++; continue; }
     const modeled = withFlows.length ? withFlows.reduce((a, r) => a + st.links.reduce((b, l) => b + (r.linkFlowVehPerHour![l] ?? 0), 0), 0) / withFlows.length : NaN;
     const [c] = evaluateCases([{ id: st.id, modeled, counted: target, held: st.held }]);
-    cases.push({ ...c, corridor: st.corridor, label: st.label });
+    cases.push({ ...c, corridor: st.corridor, label: st.label, kind: st.kind, stationId: st.id });
   }
-  return { period, fitted: summarizeCases(cases.filter((c) => !c.held)), held: summarizeCases(cases.filter((c) => c.held)), cases, skippedWithoutLinks: skipped };
+  const part = (sel: (c: (typeof cases)[number]) => boolean) => ({ fitted: summarizeCases(cases.filter((c) => sel(c) && !c.held)), held: summarizeCases(cases.filter((c) => sel(c) && c.held)) });
+  return { period, fitted: summarizeCases(cases.filter((c) => !c.held)), held: summarizeCases(cases.filter((c) => c.held)), interior: part((c) => c.kind === 'count'), other: part((c) => c.kind !== 'count'), cases, skippedWithoutLinks: skipped };
 }
 
 /** Corridor ratio: simulated flow over counted flow, summed over the link-based stations of a corridor, mean over seeds with its 95% interval across seeds. */
@@ -94,4 +101,14 @@ export function noiseFile(area: string, byPeriod: Record<string, SeedRun[]>, uni
     links = v.length; seeds = runs.map((r) => r.seed); minutes = runs[0].minutes;
   }
   return { area, unit: `sd[period][link] x ${unit} veh/h, sample standard deviation of the flow on the link after the warm-up across the seeds`, seeds, minutes, links, note: 'Seed-to-seed spread of the baseline link flows (veh/h). It measures simulator noise only (demand is fixed), at the baseline; a scenario run is expected to have a similar spread (ASSUMPTION). Links with a mean flow under 5 veh/h are zero.', sd };
+}
+
+/** Simulated link flow of every station link (sum over its links), mean over the seeds, and the modeled value of every route feature (turning movements, whole-street paths). */
+export function meanLinkFlow(runs: SeedRun[], links: number[]): number {
+  const w = runs.filter((r) => r.linkFlowVehPerHour);
+  return w.length ? w.reduce((a, r) => a + links.reduce((b, l) => b + (r.linkFlowVehPerHour![l] ?? 0), 0), 0) / w.length : NaN;
+}
+export function featureStats(runs: SeedRun[], id: string) {
+  const v = runs.map((r) => r.features?.find((x) => x.id === id)?.vehPerHour ?? NaN);
+  return seedStat(v);
 }

@@ -77,10 +77,23 @@ pub const ROUTE_NOISE: f32 = 0.08; // ASSUMPTION: per-driver perceived-cost nois
 pub const TURN_RIGHT_S: f32 = 1.0; // ASSUMPTION: turn penalties for routing (s)
 pub const TURN_LEFT_S: f32 = 4.0; // ASSUMPTION
 pub const TURN_U_S: f32 = 25.0; // ASSUMPTION
-pub const DELAY_SIGNAL_S: f32 = 10.0; // ASSUMPTION: expected control delay at node (s)
-pub const DELAY_ALLWAY_S: f32 = 6.0; // ASSUMPTION
-pub const DELAY_MINOR_S: f32 = 5.0; // ASSUMPTION
-pub const DELAY_CIRCLE_S: f32 = 3.0; // ASSUMPTION
+/// Expected control delay (s) per movement at the end of a link, by control type: the router's constants. They live in `data/node-delays.json`, which the demand
+/// fit's static assignment (`tools/lib/assign.ts`) reads too, and which `tools/node-delays.ts` rewrites from delays measured in simulation runs.
+#[derive(Clone, Copy, Debug)]
+pub struct NodeDelays {
+    pub signal: f32,
+    pub all_way_stop: f32,
+    pub minor_stop: f32,
+    pub circle: f32,
+}
+pub fn node_delays() -> NodeDelays {
+    static D: std::sync::OnceLock<NodeDelays> = std::sync::OnceLock::new();
+    *D.get_or_init(|| {
+        let v: serde_json::Value = serde_json::from_str(include_str!("../data/node-delays.json")).expect("data/node-delays.json");
+        let g = |k: &str| v[k].as_f64().unwrap_or_else(|| panic!("data/node-delays.json: missing {k}")) as f32;
+        NodeDelays { signal: g("signal"), all_way_stop: g("allWayStop"), minor_stop: g("minorStop"), circle: g("circle") }
+    })
+}
 
 // --- safety surrogates ---
 pub const TTC_THRESHOLD: f32 = 1.5; // s, SSAM default [FHWA-SSAM2008]; [Hayward1972], [Mahmud2017] (adjustable)

@@ -92,8 +92,34 @@
   "periodWindows": { "am_peak": [7, 9], "midday": [11, 13], "pm_peak": [16, 18] },
   "calibration": {
     "status": "uncalibrated",
-    "note": "Midday and the morning peak run steadily, but the evening peak still strands a few cars and Hillegass Ave and Colby St carry fewer than residents report.",
+    "note": "Colby St and Hillegass Ave now carry closer to what residents counted, and midday runs steadily, but the morning and evening peaks still strand a few cars.",
     "defaultPeriod": "midday",
-    "experimentalPeriods": ["pm_peak"]
-  }
+    "experimentalPeriods": ["am_peak", "pm_peak"]
+  },
+  "signalObservations": [
+    {
+      "at": ["Claremont Avenue", "Colby Street", "Forest Street"],
+      "approach": "Colby Street",
+      "periods": ["am_peak"],
+      "cycleSeconds": 79,
+      "greenSeconds": 4,
+      "source": "resident volunteer count of 2025-02-25, 8 to 9 AM: cycle 79 s, green for Colby 4 s, 3.3 cars discharged per cycle on average, queue up to 13 cars (data/calibration/rockridge.volunteer-count-2025-02-25.json, signal)"
+    },
+    {
+      "at": ["Claremont Avenue", "Colby Street", "Forest Street"],
+      "approach": "Colby Street",
+      "periods": ["pm_peak"],
+      "cycleSeconds": 79,
+      "greenSeconds": 4,
+      "source": "ASSUMPTION from the same count: the PM cycle was not stated, but 3.5 cars per cycle at the 162 veh/h counted on the last block of Colby Street gives a cycle of about 78 s, so the AM timing (79 s, 4 s) is used"
+    },
+    {
+      "at": ["Claremont Avenue", "Colby Street", "Forest Street"],
+      "approach": "Colby Street",
+      "periods": ["midday"],
+      "cycleSeconds": 147,
+      "greenSeconds": 10,
+      "source": "same count, from 9 AM: cycle 147 s, red 137 s, green 10 s; applied to midday as an ASSUMPTION (the count has no midday hour)"
+    }
+  ]
 }

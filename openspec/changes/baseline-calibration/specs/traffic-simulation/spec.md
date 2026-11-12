@@ -124,3 +124,21 @@ Metrics, link statistics, diagnostics, select-link records, wandering records, s
 #### Scenario: Partial trips stay out of the means
 - **WHEN** placed agents finish their trips on a route whose free-flow time is T
 - **THEN** they count as completed trips and the mean trip time stays at or above T, because only trips that began after the placement enter it
+
+### Requirement: The router's control delays are measured in simulation and kept in one file
+The control delay the router adds per movement at the end of a link (signal, all-way stop, minor approach at a two-way stop, traffic circle) SHALL be read from `crates/sim/data/node-delays.json` by the simulator and by the demand fit's static assignment. `tools/node-delays.ts` SHALL write that file from simulator runs: the flow-weighted median link delay of each control type less that of links that end at no control, with the table of groups beside the previous values.
+
+#### Scenario: One place
+- **WHEN** the file changes
+- **THEN** the simulator's route costs and the assignment's route costs both use the new constants
+
+### Requirement: Observed signal timing sets the cycle and the green of an approach
+A signalized node MAY carry observed timings (periods, cycle, and the green of named incoming links). In a run of a listed period the plan SHALL use the observed cycle and green, and the other phases SHALL share the rest of the cycle by flow ratio with the usual minimum green; in other periods the Webster plan applies.
+
+#### Scenario: Observed green
+- **WHEN** a node has an observed cycle of 79 s and 4 s of green for one approach in the run's period
+- **THEN** the plan has a 79 s cycle and a 4 s phase for that approach
+
+#### Scenario: Reported against the observation
+- **WHEN** a calibration report is written for a period with an observed timing
+- **THEN** it shows the modeled cycle and green beside the observed values and the approach's discharge in vehicles per cycle
