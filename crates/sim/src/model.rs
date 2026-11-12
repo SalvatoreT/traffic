@@ -128,11 +128,13 @@ pub struct Config {
     pub select_links: Vec<u32>,
     /// Additive: perceived-cost multiplier for residential/service links in route choice (default `params::LOCAL_COST_FACTOR`).
     pub local_cost_factor: Option<f64>,
+    /// Additive: minutes between signal split adaptations (default `params::ADAPT_INTERVAL_S`; 0 keeps the start-up splits).
+    pub signal_adapt_min: Option<f64>,
 }
 
 impl Default for Config {
     fn default() -> Self {
-        Config { seed: 1, period: String::new(), demand_scale: 1.0, select_links: Vec::new(), local_cost_factor: None }
+        Config { seed: 1, period: String::new(), demand_scale: 1.0, select_links: Vec::new(), local_cost_factor: None, signal_adapt_min: None }
     }
 }
 

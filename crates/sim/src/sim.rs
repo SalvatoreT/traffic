@@ -278,6 +278,12 @@ pub struct Simulation {
     d_link_exits: Vec<u32>,
     d_node_wait: Vec<f32>,
     d_node_space: Vec<f32>,
+    /// Smoothed measured approach flow (veh/h) per link, used for the adaptive signal splits.
+    adapt_flow: Vec<f32>,
+    /// Stop-line crossings and standing vehicles at the start of the current adaptation window, per link.
+    win_exit: Vec<u32>,
+    win_q0: Vec<u32>,
+    next_adapt_t: f64,
 }
 
 fn idm(v: f32, v0: f32, s: f32, dv: f32, a: f32, b: f32, t_hw: f32, s0: f32) -> f32 {
@@ -363,6 +369,10 @@ impl Simulation {
             d_link_exits: vec![0; nl],
             d_node_wait: vec![0.0; nn],
             d_node_space: vec![0.0; nn],
+            adapt_flow: vec![0.0; nl],
+            win_exit: vec![0; nl],
+            win_q0: vec![0; nl],
+            next_adapt_t: 0.0,
             topo,
             net,
         };
@@ -553,7 +563,10 @@ impl Simulation {
         if has_signal {
             let est = self.estimate_flows(&eff);
             eff.plan_signals(&self.topo, &self.net, &est);
+            self.adapt_flow = est;
         }
+        self.win_exit.iter_mut().for_each(|x| *x = 0);
+        self.next_adapt_t = self.t + self.adapt_interval();
         self.eff = eff;
         for l in 0..self.topo.n_links {
             self.link_cost[l] = self.eff.ff[l].max(self.ema[l]);
@@ -812,6 +825,47 @@ impl Simulation {
             self.next_epoch_t += EPOCH_S;
             self.epoch_update();
         }
+        if self.t >= self.next_adapt_t {
+            self.adapt_signals();
+        }
+    }
+
+    /// Seconds between signal adaptations (`Config::signal_adapt_min`, default `ADAPT_INTERVAL_S`); infinite when 0.
+    fn adapt_interval(&self) -> f64 {
+        match self.cfg.signal_adapt_min {
+            Some(m) if m <= 0.0 => f64::INFINITY,
+            Some(m) => m * 60.0,
+            None => ADAPT_INTERVAL_S,
+        }
+    }
+
+    fn standing_on(&self, l: usize) -> u32 {
+        let base = self.topo.lane_base[l] as usize;
+        (base..base + self.topo.nlanes(l))
+            .map(|i| self.lanes[i].iter().filter(|&&v| self.vehs[v as usize].v < 2.0).count() as u32)
+            .sum()
+    }
+
+    /// Measure each signalized approach over the last window (stop-line crossings plus the growth of the standing queue,
+    /// which is demand the signal did not serve), smooth it, and let every signal recompute its Webster splits.
+    fn adapt_signals(&mut self) {
+        let window = self.adapt_interval();
+        self.next_adapt_t = self.t + window;
+        for l in 0..self.topo.n_links {
+            let n = self.topo.link_to[l] as usize;
+            if self.eff.ctrl[n] != Control::Signal {
+                continue;
+            }
+            let q1 = self.standing_on(l);
+            let arrivals = self.win_exit[l] + q1.saturating_sub(self.win_q0[l]);
+            let meas = arrivals as f32 * (3600.0 / window as f32);
+            self.adapt_flow[l] = ADAPT_SMOOTH * meas + (1.0 - ADAPT_SMOOTH) * self.adapt_flow[l];
+            self.win_q0[l] = q1;
+            self.win_exit[l] = 0;
+        }
+        let flow = std::mem::take(&mut self.adapt_flow);
+        self.eff.adapt_signals(&self.net, &flow, self.t);
+        self.adapt_flow = flow;
     }
 
     fn update_signals(&mut self) {
@@ -1483,6 +1537,7 @@ impl Simulation {
         let bi = l * NBINS + self.cur_bin;
         self.bin_flow[bi] += 1.0;
         self.d_link_exits[l] += 1;
+        self.win_exit[l] += 1;
         let veh = &self.vehs[vid as usize];
         if veh.through && self.topo.is_local[l] {
             self.bin_ct[bi] += 1.0;
@@ -1765,6 +1820,11 @@ impl Simulation {
     pub(crate) fn test_veh(&self, id: u32) -> (u32, f32, f32, bool) {
         let v = &self.vehs[id as usize];
         (v.link, v.pos, v.v, v.alive)
+    }
+
+    /// Feed measured approach flows (veh/h per link) to the signal adaptation at the current time.
+    pub(crate) fn test_adapt_with(&mut self, flow: &[f32]) {
+        self.eff.adapt_signals(&self.net, flow, self.t);
     }
 
     pub(crate) fn test_veh_uid(&self, id: u32) -> u32 {

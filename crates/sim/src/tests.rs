@@ -1090,3 +1090,107 @@ fn saturated_two_lane_approach_discharges_near_saturation_flow() {
     // 65 s of green in a 90 s cycle on 2 lanes: 1500-1700 veh/h per green-hour per lane, in line with 1800 veh/h/lane nominal.
     assert!(rate > 1900.0 && rate < 2700.0, "discharge {rate} veh/h");
 }
+
+// ---------------------------------------------------------------- signal phasing and adaptation
+
+/// Five-leg junction: Main (W-E), Diag (SW-NE, `skew` degrees off Main, two-way) and Cross (a single leg from the north).
+fn skewed5(skew_deg: f64, named: bool) -> (Network, u32, Vec<(u32, &'static str)>) {
+    let mut b = B::default();
+    let c = b.node(0.0, 0.0, Control::Signal, false);
+    let a = skew_deg.to_radians();
+    let legs: [(f64, f64, &'static str); 5] =
+        [(-200.0, 0.0, "Main"), (200.0, 0.0, "Main"), (200.0 * a.cos(), 200.0 * a.sin(), "Diag"), (-200.0 * a.cos(), -200.0 * a.sin(), "Diag"), (0.0, 200.0, "Cross")];
+    let mut ins = Vec::new();
+    for (x, y, name) in legs {
+        let g = b.node(x, y, Control::Uncontrolled, true);
+        let (l_in, l_out) = b.two_way(g, c, RoadClass::Secondary, 1, 11.2);
+        if named {
+            b.links[l_in as usize].name = name.into();
+            b.links[l_out as usize].name = name.into();
+        } else {
+            b.links[l_in as usize].name = String::new();
+            b.links[l_out as usize].name = String::new();
+        }
+        ins.push((l_in, name));
+    }
+    (b.net(), c, ins)
+}
+
+fn phase_of(p: &crate::eff::SigPlan, l: u32) -> usize {
+    p.links.iter().position(|g| g.contains(&l)).expect("link in a phase")
+}
+
+#[test]
+fn skewed_junction_phases_follow_street_names() {
+    let (net, c, ins) = skewed5(35.0, true);
+    let sim = Simulation::from_parts(net, demand(&[(1, 2, 300.0)]), cfg(1, 1.0)).unwrap();
+    let p = sim.test_eff().sig[c as usize].as_ref().expect("plan");
+    assert_eq!(p.phases.len(), 3, "three streets, three phases: {:?}", p.links);
+    let ph: Vec<usize> = ins.iter().map(|&(l, _)| phase_of(p, l)).collect();
+    assert_eq!(ph[0], ph[1], "both Main approaches together");
+    assert_eq!(ph[2], ph[3], "both Diag approaches together");
+    assert!(ph[0] != ph[2] && ph[0] != ph[4] && ph[2] != ph[4], "{ph:?}");
+}
+
+#[test]
+fn unnamed_approaches_fall_back_to_bearing() {
+    // 35 degrees off the main axis is a separate axis; 20 degrees is the same axis.
+    let (net, c, _) = skewed5(35.0, false);
+    let sim = Simulation::from_parts(net, demand(&[(1, 2, 300.0)]), cfg(1, 1.0)).unwrap();
+    assert_eq!(sim.test_eff().sig[c as usize].as_ref().unwrap().phases.len(), 3);
+    let (net, c, _) = skewed5(20.0, false);
+    let sim = Simulation::from_parts(net, demand(&[(1, 2, 300.0)]), cfg(1, 1.0)).unwrap();
+    assert_eq!(sim.test_eff().sig[c as usize].as_ref().unwrap().phases.len(), 2);
+}
+
+#[test]
+fn adaptive_splits_follow_a_four_to_one_demand_imbalance() {
+    let (net, x) = cross4(Control::Signal, RoadClass::Secondary, false);
+    let d = demand(&[(x.w, x.e, 800.0), (x.e, x.w, 800.0), (x.s, x.n, 200.0), (x.n, x.s, 200.0)]);
+    let mut sim = Simulation::from_parts(net, d, cfg(3, 1.0)).unwrap();
+    step_n(&mut sim, 1200.0);
+    let p = sim.test_eff().sig[x.c as usize].as_ref().unwrap();
+    assert!(p.cycle >= CYCLE_MIN && p.cycle <= CYCLE_MAX, "cycle {}", p.cycle);
+    let ew = phase_of(p, x.w_in);
+    let ns = 1 - ew;
+    assert!(p.phases[ew].1 > 2.5 * p.phases[ns].1, "heavy street gets a clearly longer green: {:?}", p.phases);
+}
+
+#[test]
+fn adaptation_moves_green_to_the_street_that_now_carries_the_flow() {
+    let (net, x) = cross4(Control::Signal, RoadClass::Secondary, false);
+    let nl = net.links.len();
+    let d = demand(&[(x.w, x.e, 800.0), (x.e, x.w, 800.0), (x.s, x.n, 200.0), (x.n, x.s, 200.0)]);
+    let mut sim = Simulation::from_parts(net, d, cfg(3, 1.0)).unwrap();
+    let ew = phase_of(sim.test_eff().sig[x.c as usize].as_ref().unwrap(), x.w_in);
+    let mut flow = vec![0.0f32; nl];
+    flow[x.s_in as usize] = 900.0;
+    flow[x.n_in as usize] = 900.0;
+    flow[x.w_in as usize] = 100.0;
+    flow[x.e_in as usize] = 100.0;
+    sim.test_adapt_with(&flow);
+    step_n(&mut sim, 200.0); // the new plan starts at the end of the current cycle
+    let p = sim.test_eff().sig[x.c as usize].as_ref().unwrap();
+    assert!(p.phases[1 - ew].1 > 2.5 * p.phases[ew].1, "{:?}", p.phases);
+    // No phase is cut short: yellow and all-red always follow a green.
+    let mut prev = 0u8;
+    let mut sim2 = sim;
+    run(&mut sim2, 300.0, |s| {
+        let st = s.signals()[x.w_in as usize];
+        assert!(!(prev == 1 && st == 3), "green must be followed by yellow");
+        prev = st;
+    });
+}
+
+#[test]
+fn pinned_cycle_survives_adaptation() {
+    let (net, x) = cross4(Control::Signal, RoadClass::Secondary, false);
+    let d = demand(&[(x.w, x.e, 800.0), (x.e, x.w, 800.0), (x.s, x.n, 200.0), (x.n, x.s, 200.0)]);
+    let mut sim = Simulation::from_parts(net, d, cfg(3, 1.0)).unwrap();
+    sim.set_interventions(&format!("[{{\"type\":\"signal_timing\",\"node\":{},\"cycle\":100}}]", x.c)).unwrap();
+    step_n(&mut sim, 1500.0);
+    let p = sim.test_eff().sig[x.c as usize].as_ref().unwrap();
+    assert!((p.cycle - 100.0).abs() < 0.01, "cycle {}", p.cycle);
+    let total: f32 = p.phases.iter().map(|ph| ph.1 + YELLOW + ALL_RED).sum();
+    assert!((total - 100.0).abs() < 0.01);
+}
