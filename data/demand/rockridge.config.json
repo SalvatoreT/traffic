@@ -3,8 +3,8 @@
   "network": "public/data/rockridge.network.json",
   "output": "public/data/rockridge.demand.json",
   "bbox": [
-    -122.286,
-    37.83,
+    -122.2845,
+    37.8325,
     -122.22,
     37.8605
   ],
@@ -430,9 +430,7 @@
     },
     "countScaling": {
       "enabled": true,
-      "clampMin": 0.2,
-      "clampMax": 5,
-      "_note": "DATA: one factor per mode makes PM peak-hour persons passing the counted intersection (shortest paths, ends included) equal the mean of the Oakland counts (config streetCounts[0]); the factor is clamped to this range and applies to all periods and places."
+      "_note": "DATA: one factor per mode makes PM peak-hour persons passing the counted intersection (shortest paths, ends included) equal the mean of the Oakland counts (config streetCounts[0]), measured on the final flow list after the flow cap; the factor is not clamped and applies to all periods and places. A factor far from 1 means the assumed mode share and trip rates are off by that factor."
     },
     "commercialClasses": [
       "primary",

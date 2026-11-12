@@ -60,7 +60,7 @@ export interface ActiveCfg {
     routeBonus: number;
     laneRouteCostFactor: number;
   };
-  countScaling: { enabled: boolean; clampMin: number; clampMax: number };
+  countScaling: { enabled: boolean };
   commercialClasses: string[];
   commercialJobsRadiusM: number;
   minFlowPerHour: number;
@@ -88,11 +88,11 @@ export interface ActiveInput {
 
 export interface ModeReport {
   mode: Mode;
-  /** Peak-hour persons passing the counted intersection before and after scaling, observed value, applied factor. */
+  /** Peak-hour persons passing the counted intersection before scaling (prior) and in the final flow list (after, including the flow cap), the observed value and the applied factor. No clamp: a factor far from 1 is a finding about the prior, not something to hide. */
   prior: number | null;
   observed: number | null;
+  after: number | null;
   factor: number;
-  clamped: boolean;
   perPeriod: Record<string, { total: number; flows: number; candidates: number; toGates: number; toStops: number; toCommercial: number; through: number }>;
 }
 
@@ -288,25 +288,37 @@ export function buildActiveFlows(inp: ActiveInput): { flows: Record<string, AFlo
     const observed = inp.count?.[mode] ?? null;
     let factor = 1;
     let prior: number | null = null;
-    let clamped = false;
-    if (cfg.countScaling.enabled && inp.count && observed !== null) {
-      prior = passing(mode, raw.get(inp.scalePeriod)!.flows, inp.count.node);
-      if (prior > 0) {
-        factor = observed / prior;
-        const c = Math.min(cfg.countScaling.clampMax, Math.max(cfg.countScaling.clampMin, factor));
-        clamped = c !== factor;
-        factor = c;
-      }
+    let after: number | null = null;
+    const scaling = cfg.countScaling.enabled && inp.count && observed !== null;
+    if (scaling) {
+      prior = passing(mode, raw.get(inp.scalePeriod)!.flows, inp.count!.node);
+      if (prior > 0) factor = observed! / prior;
     }
-    const rep: ModeReport = { mode, prior, observed, factor, clamped, perPeriod: {} };
-    for (const p of inp.periodIds) {
+    const rep: ModeReport = { mode, prior, observed, after, factor, perPeriod: {} };
+    const build = (p: string, k0: number) => {
       const r = raw.get(p)!;
-      const k = factor * (mc.periodVolume[p] ?? 1);
+      const k = k0 * (mc.periodVolume[p] ?? 1);
       const all = [...r.flows].map(([key, v]) => ({ key, v: v * k }));
       const total = sum(all.map((x) => x.v));
       const list = all.filter((x) => x.v >= cfg.minFlowPerHour).sort((a, b) => b.v - a.v || (a.key < b.key ? -1 : 1)).slice(0, cfg.maxFlows[mode]);
       const kept = sum(list.map((x) => x.v));
       const f = kept > 0 ? total / kept : 1;
+      return { r, k, all, total, list, f };
+    };
+    // The flow cap (and the minimum flow) trims the list and renormalizes it, which moves the volume through the counted node; correct the factor until the final list matches the count.
+    if (scaling && prior! > 0) {
+      for (let it = 0; it < 6; it++) {
+        const b = build(inp.scalePeriod, factor);
+        after = passing(mode, new Map(b.list.map((x) => [x.key, x.v * b.f] as const)), inp.count!.node);
+        if (after <= 0 || Math.abs(after / observed! - 1) < 0.01) break;
+        factor *= observed! / after;
+      }
+      rep.after = after;
+      rep.factor = factor;
+    }
+    for (const p of inp.periodIds) {
+      const { r, k, all, list, f } = build(p, factor);
+      const total = sum(all.map((x) => x.v));
       for (const x of list) {
         const [o, d] = x.key.split('>').map(Number);
         flows[p].push({ origin: o, destination: d, vehPerHour: Math.round(x.v * f * 100) / 100, mode });

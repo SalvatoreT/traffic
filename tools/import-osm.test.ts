@@ -20,6 +20,20 @@ const adj = net.nodes.map(() => [] as number[]);
 for (const l of net.links) adj[l.from].push(l.to);
 const gates = net.nodes.filter((n) => n.gate);
 
+describe('gate placement', () => {
+  const stats = buildNetwork(cfg, osm).stats;
+  const signals = net.nodes.filter((n) => n.control === 'signal');
+  const near = (g: { x: number; y: number }) => Math.min(...signals.map((s) => Math.hypot(s.x - g.x, s.y - g.y)));
+  it('lists exactly the gates within 60 m of a signalized junction', () => {
+    const listed = new Set(stats.gatesNearSignal.map((g) => g.gate));
+    const expected = new Set(gates.filter((g) => near(g) <= 60).map((g) => g.id));
+    expect(listed).toEqual(expected);
+  });
+  it('keeps most gates mid-block: at most 3% of gates sit within 60 m of a signal', () => {
+    expect(stats.gatesNearSignal.length / gates.length).toBeLessThanOrEqual(0.03);
+  });
+});
+
 describe('rockridge network', () => {
   it('has valid structure', () => {
     expect(net.version).toBe(1);

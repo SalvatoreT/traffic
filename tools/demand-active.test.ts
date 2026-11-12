@@ -8,7 +8,7 @@ const root = resolve(import.meta.dirname, '..');
 const cfg: ActiveCfg = {
   pedestrian: { modeShare: 0.1, meanTripM: 300, maxTripM: 1000, gateShare: 0.2, gateMaxM: 800, commercialShare: 0.3, transitAccessShare: 0.1, maxWalkToStopM: 400, stopDecayM: 200, periodVolume: { am: 1, pm: 1 } },
   bicycle: { modeShare: 0.05, meanTripM: 1000, maxTripM: 3000, gateShare: 0.4, gateMaxM: 3000, throughFactor: 0.5, throughMinM: 300, routeBonus: 3, laneRouteCostFactor: 0.8, periodVolume: { am: 1, pm: 1 } },
-  countScaling: { enabled: true, clampMin: 0.1, clampMax: 10 },
+  countScaling: { enabled: true },
   commercialClasses: ['primary', 'secondary'],
   commercialJobsRadiusM: 150,
   minFlowPerHour: 0.01,
@@ -60,7 +60,7 @@ describe('walking and biking flows', () => {
   it('scales each mode to the observed count at the counted node', () => {
     for (const rep of r.reports) {
       expect(rep.observed).not.toBeNull();
-      expect(rep.prior! * rep.factor).toBeCloseTo(rep.observed!, 5);
+      expect(Math.abs(rep.after! / rep.observed! - 1)).toBeLessThan(0.02);
     }
   });
   it('sends walking trips to bus stops, commercial streets and gates', () => {

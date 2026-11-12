@@ -3,8 +3,8 @@
   "name": "Rockridge Trapezoid",
   "extract": "data/osm/rockridge.overpass.json",
   "bbox": [
-    -122.286,
-    37.83,
+    -122.2845,
+    37.8325,
     -122.22,
     37.8605
   ],

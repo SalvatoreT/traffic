@@ -289,8 +289,9 @@ if (lodes) {
     const m = e.dir === 'out' ? r.out : r.in;
     m[e.sector] = (m[e.sector] ?? 0) + e.n;
   }
+  const inBbox = (b: { lat: number; lon: number }) => b.lon >= cfg.bbox[0] && b.lon <= cfg.bbox[2] && b.lat >= cfg.bbox[1] && b.lat <= cfg.bbox[3];
   for (const b of lodes.blocks) {
-    if (!b.resWorkers && !b.jobs) continue;
+    if ((!b.resWorkers && !b.jobs) || !inBbox(b)) continue; // blocks outside the model area (the raw file was cut for a larger one) would map to the nearest edge node
     const [x, y] = toXY(b.lat, b.lon);
     const nd = nearest(x, y);
     const agg = localNodes.get(nd.id) ?? localNodes.set(nd.id, { node: nd.id, x: nd.x, y: nd.y, res: 0, jobs: 0, outSectors: {}, inSectors: {} }).get(nd.id)!;
@@ -594,7 +595,7 @@ if (cfg.active) {
   for (const per of outPeriods) per.flows.push(...(res.flows[per.id] as AFlow[]));
   activeSummary.lines.push(`Pedestrian and bicycle flows (persons/h; ${transit ? `${stopMap.size} bus-stop nodes` : 'no transit file: bus-stop walking trips skipped'}; ${counts.length} Oakland counts)`);
   for (const r of res.reports) {
-    activeSummary.lines.push(`  ${r.mode}: PM peak persons through the counted intersection ${r.prior === null ? 'n/a' : r.prior.toFixed(0)} before scaling, observed ${r.observed === null ? 'n/a' : r.observed.toFixed(0)}, factor ${r.factor.toFixed(2)}${r.clamped ? ' (clamped)' : ''}`);
+    activeSummary.lines.push(`  ${r.mode}: PM peak persons through the counted intersection ${r.prior === null ? 'n/a' : r.prior.toFixed(0)} before scaling, observed ${r.observed === null ? 'n/a' : r.observed.toFixed(0)}, factor ${r.factor.toFixed(3)}, in the final flow list ${r.after === null ? 'n/a' : r.after.toFixed(0)}`);
     for (const per of outPeriods) {
       const q = r.perPeriod[per.id];
       activeSummary.lines.push(`    ${per.id.padEnd(9)} ${q.total.toFixed(0).padStart(5)}/h in ${String(q.flows).padStart(4)} flows of ${q.candidates} (to gates ${q.toGates.toFixed(0)}, to bus stops ${q.toStops.toFixed(0)}, to commercial streets ${q.toCommercial.toFixed(0)}, gate-to-gate ${q.through.toFixed(0)})`);
