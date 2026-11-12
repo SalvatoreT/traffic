@@ -3,6 +3,7 @@ import type { AreaBundle, ModeKey, ModeVisibility, Overlay } from '../types';
 import { formatClock } from '../lib/format';
 import { rampStops, type Mode } from '../lib/ramps';
 import { speedNoteText } from '../lib/speed';
+import { usePeek } from './usePeek';
 
 export const SPEEDS = [1, 5, 20, 60];
 
@@ -41,87 +42,74 @@ const Chevron = ({ up }: { up?: boolean }) => (
 );
 
 export function Playback(p: PlaybackProps) {
-  const [compact, setCompactState] = useState(initialCompact);
-  const setCompact = (v: boolean) => { setCompactState(v); try { localStorage.setItem('toolbarCompact', v ? '1' : '0'); } catch { /* unavailable */ } };
-  const [more, setMore] = useState(false);
+  const peek = usePeek(!initialCompact());
+  const { open, pinned, dispatch } = peek;
+  const firstRun = useRef(true);
+  useEffect(() => {
+    if (firstRun.current) { firstRun.current = false; return; }
+    try { localStorage.setItem('toolbarCompact', pinned ? '0' : '1'); } catch { /* unavailable */ }
+  }, [pinned]);
   const [speedMenu, setSpeedMenu] = useState(false);
-  const moreRoot = useRef<HTMLDivElement>(null);
   const speedRoot = useRef<HTMLDivElement>(null);
-  const closeMore = useCallback(() => setMore(false), []);
+  const slot = useRef<HTMLDivElement>(null);
+  const row = useRef<HTMLDivElement>(null);
   const closeSpeed = useCallback(() => setSpeedMenu(false), []);
-  useDismiss(more && compact, closeMore, moreRoot);
   useDismiss(speedMenu, closeSpeed, speedRoot);
-  const moreId = useId(), speedId = useId();
+  useEffect(() => { dispatch({ type: 'child', open: speedMenu }); }, [speedMenu, dispatch]);
+  const speedId = useId(), extraId = useId();
   const note = speedNoteText(p.speed, p.achieved ?? null);
-  const periodSelect = (
-    <label className="inline">Period
-      <select value={p.period} onChange={(e) => p.onPeriod(e.target.value)}>
-        {p.periods.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
-      </select>
-    </label>
-  );
-  const demand = (
-    <label className="inline">Demand <output>{Math.round(p.scale * 100)}%</output>
-      <input type="range" min={0.5} max={1.5} step={0.05} value={p.scale} onChange={(e) => p.onScale(Number(e.target.value))} aria-valuetext={`${Math.round(p.scale * 100)} percent of estimated demand`} />
-    </label>
-  );
+  // The collapsed row's height is what the layout reserves; the extras overlay the map when peeking.
+  useEffect(() => {
+    const el = row.current, host = slot.current;
+    if (!el || !host) return;
+    const set = () => host.style.setProperty('--bar-row-h', `${el.offsetHeight}px`);
+    set();
+    const ro = new ResizeObserver(set);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   const playLabel = p.running ? 'Pause simulation' : 'Play simulation';
 
-  if (compact) {
-    return (
-      <div className="toolbar compact" role="group" aria-label="Simulation playback">
-        <button type="button" className="btn primary icon-btn" onClick={p.onToggle} aria-label={playLabel} title={playLabel}>
-          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor">{p.running ? <path d="M3 2h3.5v12H3zM9.5 2H13v12H9.5z" /> : <path d="M4 2l10 6-10 6z" />}</svg>
-        </button>
-        <div className="pb-pop-wrap" ref={speedRoot}>
-          <button type="button" className="btn speed-btn" aria-expanded={speedMenu} aria-controls={speedId} aria-label={`Simulation speed ${p.speed} times`} title="Simulation speed" onClick={() => setSpeedMenu((o) => !o)}>
-            {p.speed}× <Chevron up={speedMenu} />
+  return (
+    <div className="bar-slot" ref={slot}>
+      <div className={`toolbar ${open ? 'open' : ''} ${pinned ? 'pinned' : ''}`} role="group" aria-label="Simulation playback" {...peek.handlers}
+        onKeyDown={(e) => { if (e.key === 'Escape' && !pinned && !speedMenu && open) { e.stopPropagation(); dispatch({ type: 'dismiss' }); } }}>
+        <div className="toolbar-row" ref={row}>
+          <button type="button" className="btn bar-toggle icon-btn" aria-expanded={open} aria-controls={extraId} aria-label="Playback controls" title="Playback controls" onClick={() => dispatch({ type: 'toggle' })}>
+            <Chevron up={open} />
           </button>
-          <div id={speedId} className={`pb-menu ${speedMenu ? 'open' : ''}`} inert={!speedMenu} role="group" aria-label="Simulation speed">
-            {SPEEDS.map((s) => (
-              <button key={s} type="button" className={`pb-menu-item ${p.speed === s ? 'on' : ''}`} aria-pressed={p.speed === s}
-                onClick={() => { p.onSpeed(s); setSpeedMenu(false); (speedRoot.current?.querySelector('.speed-btn') as HTMLElement | null)?.focus(); }}>{s}×</button>
-            ))}
-          </div>
-        </div>
-        <span className="clock" aria-label={`Simulated time ${formatClock(p.time)}`}><span aria-hidden="true">⏱</span> {formatClock(p.time)}</span>
-        <span className="speed-note small" role="status">{note}</span>
-        <div className="pb-pop-wrap more-wrap" ref={moreRoot}>
-          <button type="button" className="btn more-btn" aria-expanded={more} aria-controls={moreId} onClick={() => setMore((m) => !m)}>
-            More <Chevron up={more} />
+          <button type="button" className="btn primary icon-btn" onClick={p.onToggle} aria-label={playLabel} title={playLabel}>
+            <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor">{p.running ? <path d="M3 2h3.5v12H3zM9.5 2H13v12H9.5z" /> : <path d="M4 2l10 6-10 6z" />}</svg>
           </button>
-          <div id={moreId} className={`pb-more ${more ? 'open' : ''}`} inert={!more}>
-            <div className="pb-more-in">
-              {periodSelect}
-              {demand}
-              <div className="pb-more-actions">
-                <button type="button" className="btn" onClick={p.onReset}>Reset</button>
-                <button type="button" className="btn" onClick={() => { setMore(false); setCompact(false); }}>Show full controls</button>
-              </div>
+          <div className="pb-pop-wrap" ref={speedRoot}>
+            <button type="button" className="btn speed-btn" aria-expanded={speedMenu} aria-controls={speedId} aria-label={`Simulation speed ${p.speed} times`} title="Simulation speed" onClick={() => setSpeedMenu((o) => !o)}>
+              {p.speed}× <Chevron up={speedMenu} />
+            </button>
+            <div id={speedId} className={`pb-menu ${speedMenu ? 'open' : ''}`} inert={!speedMenu} role="group" aria-label="Simulation speed">
+              {SPEEDS.map((s) => (
+                <button key={s} type="button" className={`pb-menu-item ${p.speed === s ? 'on' : ''}`} aria-pressed={p.speed === s}
+                  onClick={() => { p.onSpeed(s); setSpeedMenu(false); (speedRoot.current?.querySelector('.speed-btn') as HTMLElement | null)?.focus(); }}>{s}×</button>
+              ))}
             </div>
           </div>
+          <span className="speed-note small" role="status">{note}</span>
+          <span className="clock" aria-label={`Simulated time ${formatClock(p.time)}`}><span aria-hidden="true">⏱</span> {formatClock(p.time)}</span>
         </div>
-        {p.reducedMotion && <span className="muted small pb-rm">Paused at start (reduced motion preference).</span>}
+        <div id={extraId} className={`toolbar-extras ${open ? 'open' : ''}`} inert={!open}>
+          <div className="toolbar-extras-in">
+            <label className="inline">Period
+              <select value={p.period} onChange={(e) => p.onPeriod(e.target.value)}>
+                {p.periods.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
+              </select>
+            </label>
+            <label className="inline">Demand <output>{Math.round(p.scale * 100)}%</output>
+              <input type="range" min={0.5} max={1.5} step={0.05} value={p.scale} onChange={(e) => p.onScale(Number(e.target.value))} aria-valuetext={`${Math.round(p.scale * 100)} percent of estimated demand`} />
+            </label>
+            <button type="button" className="btn" onClick={p.onReset}>Reset</button>
+            {p.reducedMotion && <span className="muted small">Paused at start (reduced motion preference).</span>}
+          </div>
+        </div>
       </div>
-    );
-  }
-  return (
-    <div className="toolbar" role="group" aria-label="Simulation playback">
-      <button type="button" className="btn primary" onClick={p.onToggle} aria-label={playLabel}>
-        <span aria-hidden="true">{p.running ? '❚❚' : '▶'}</span> {p.running ? 'Pause' : 'Play'}
-      </button>
-      <button type="button" className="btn" onClick={p.onReset}>Reset</button>
-      <div className="seg" role="group" aria-label="Simulation speed">
-        {SPEEDS.map((s) => (
-          <button key={s} type="button" className={p.speed === s ? 'on' : ''} aria-pressed={p.speed === s} onClick={() => p.onSpeed(s)}>{s}×</button>
-        ))}
-      </div>
-      <span className="speed-note small" role="status">{note}</span>
-      {periodSelect}
-      {demand}
-      <span className="clock" aria-label={`Simulated time ${formatClock(p.time)}`}><span aria-hidden="true">⏱</span> {formatClock(p.time)}</span>
-      <button type="button" className="btn icon-btn" aria-label="Collapse playback controls" title="Collapse playback controls" onClick={() => setCompact(true)}><Chevron up /></button>
-      {p.reducedMotion && <span className="muted small">Paused at start (reduced motion preference).</span>}
     </div>
   );
 }
@@ -153,7 +141,8 @@ const OVERLAYS: { id: Overlay; label: string }[] = [
 
 /** Docked legend row along the bottom of the map. Collapsed it names the metric and shows the ramp ends; expanded it adds layers and symbols. */
 export function Legend(p: LegendProps) {
-  const [open, setOpen] = useState(false);
+  const peek = usePeek(false);
+  const { open, dispatch } = peek;
   const [tipOn, setTipOn] = useState(false);
   const [hush, setHush] = useState(false);
   const root = useRef<HTMLDivElement>(null);
@@ -177,21 +166,22 @@ export function Legend(p: LegendProps) {
     return () => { ro.disconnect(); host.style.removeProperty('--legend-h'); };
   }, []);
   // Interacting with anything else folds the legend back to its row.
+  const pinned = peek.pinned;
   useEffect(() => {
-    if (!open) return;
-    const out = (e: Event) => { if (root.current && !root.current.contains(e.target as Node)) setOpen(false); };
+    if (!pinned) return;
+    const out = (e: Event) => { if (root.current && !root.current.contains(e.target as Node)) dispatch({ type: 'unpin' }); };
     const evts = ['pointerdown', 'focusin', 'wheel'] as const;
     evts.forEach((n) => document.addEventListener(n, out, { capture: true, passive: true }));
     return () => evts.forEach((n) => document.removeEventListener(n, out, { capture: true }));
-  }, [open]);
+  }, [pinned, dispatch]);
 
   const tipShown = tipOn;
   return (
-    <div ref={root} className={`legend ${open ? 'open' : ''}`} role="group" aria-label="Map legend"
+    <div ref={root} className={`legend ${open ? 'open' : ''}`} role="group" aria-label="Map legend" {...peek.handlers}
       onKeyDown={(e) => {
         if (e.key !== 'Escape') return;
         if (tipOn || document.querySelector('.legend-tip-wrap:hover, .legend-tip-wrap:focus-within')) { e.stopPropagation(); setTipOn(false); setHush(true); }
-        else if (open) { e.stopPropagation(); setOpen(false); (root.current?.querySelector('.legend-toggle') as HTMLElement | null)?.focus(); }
+        else if (open) { e.stopPropagation(); dispatch({ type: pinned ? 'unpin' : 'dismiss' }); (root.current?.querySelector('.bar-toggle') as HTMLElement | null)?.focus(); }
       }}>
       <div id={extraId} className={`legend-extras ${open ? 'open' : ''}`} inert={!open}>
         <div className="legend-extras-in">
@@ -233,6 +223,9 @@ export function Legend(p: LegendProps) {
         </div>
       </div>
       <div className="legend-row">
+        <button type="button" className="btn bar-toggle icon-btn" aria-expanded={open} aria-controls={extraId} aria-label="Legend and layers" title="Legend and layers" onClick={() => dispatch({ type: 'toggle' })}>
+          <Chevron up={!open} />
+        </button>
         <div className="legend-name">
           <span className="legend-title" id={`${tipId}-n`}>{name}</span>
           <span className={`legend-tip-wrap ${hush ? 'hush' : ''}`} onMouseLeave={() => { setHush(false); setTipOn(false); }} onBlur={() => { setHush(false); setTipOn(false); }}>
@@ -250,9 +243,6 @@ export function Legend(p: LegendProps) {
           </div>
           <span className="ramp-end">{ticks[4]}</span>
         </div>
-        <button type="button" className="btn legend-toggle icon-btn" aria-expanded={open} aria-controls={extraId} aria-label="Legend and layers" title="Legend and layers" onClick={() => setOpen((o) => !o)}>
-          <Chevron up={open} />
-        </button>
       </div>
     </div>
   );
