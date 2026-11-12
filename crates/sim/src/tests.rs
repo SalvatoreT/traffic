@@ -1477,7 +1477,8 @@ fn car_only_metrics_match_pre_multimodal_golden() {
     step_n(&mut b, 1800.0);
     assert_eq!(legacy_metrics(&b), GOLDEN_CROSS);
 }
-const GOLDEN_CORRIDOR: &str = r#"{"arterialMeanSpeed":5.760706174508465,"backlog":0,"completedTrips":526,"cutThrough":{"shareOfLocalVehKm":0.7881007592928926,"vehKm":217.1792367334366},"gridlockRemoved":0,"meanTripDelay":2.533018145631116,"meanTripTime":103.9518968024608,"safety":{"localMeanSpeed":9.707236835622696,"localP85Speed":11.633705738054609,"shareAbove20mph":0.7119069644509053,"shareAbove25mph":0.2279635258358663,"ttcConflicts":3},"spawned":558,"time":1800.0,"unroutableTrips":0,"vehKm":438.9261624879838,"vehiclesInNetwork":32}"#;
+// Updated with the gate scan (a blocked first link no longer holds back trips behind it): same trips, a few vehicle entries move by a step, so the means differ in the fourth digit.
+const GOLDEN_CORRIDOR: &str = r#"{"arterialMeanSpeed":5.760706174508465,"backlog":0,"completedTrips":526,"cutThrough":{"shareOfLocalVehKm":0.7880976571376884,"vehKm":217.17473578739165},"gridlockRemoved":0,"meanTripDelay":2.5301664346045,"meanTripTime":103.9490450914342,"safety":{"localMeanSpeed":9.706729512982832,"localP85Speed":11.633189839572193,"shareAbove20mph":0.7118290179633333,"shareAbove25mph":0.2278233444044085,"ttcConflicts":3},"spawned":558,"time":1800.0,"unroutableTrips":0,"vehKm":438.921536061287,"vehiclesInNetwork":32}"#;
 // Updated when right turn on red was added (ASSUMPTION, validation cases b10 and b11): the w->s flow turns right on red, so mean delay falls from 13.4 to 13.1 s.
 const GOLDEN_CROSS: &str = r#"{"arterialMeanSpeed":8.436836013936235,"backlog":0,"completedTrips":551,"cutThrough":{"shareOfLocalVehKm":1.0,"vehKm":64.3283925333023},"gridlockRemoved":0,"meanTripDelay":13.054209055272334,"meanTripTime":50.45862896291319,"safety":{"localMeanSpeed":6.385964968918798,"localP85Speed":11.4,"shareAbove20mph":0.4679799284578696,"shareAbove25mph":0.16921701112877582,"ttcConflicts":10},"spawned":572,"time":1800.0,"unroutableTrips":0,"vehKm":216.17522833824157,"vehiclesInNetwork":21}"#;
 
@@ -1585,7 +1586,8 @@ fn a_fork_shares_its_lanes_out_by_branch_left_branch_in_the_left_lanes() {
         let ms = topo.lm_start[into as usize] as usize;
         (ms..ms + topo.lm_cnt[into as usize] as usize).find(|&m| topo.mvs[m].b == to).map(|m| topo.fork_band[m]).unwrap()
     };
-    assert_eq!(band(left), (0, 1));
+    // The middle lane serves both branches, as an OSM fork tagged `slight_left;slight_right` does.
+    assert_eq!(band(left), (0, 2));
     assert_eq!(band(right), (1, 3));
 }
 
@@ -1596,14 +1598,14 @@ fn a_sharp_turn_onto_a_street_of_another_name_is_a_turn_and_a_reversal_stays_ban
         let c = b.node(0.0, 0.0, Control::Uncontrolled, false);
         let n = b.node(0.0, 200.0, Control::Uncontrolled, true);
         let e = b.node(25.0, 55.0, Control::Uncontrolled, true);
-        let w = b.node(-200.0, 0.0, Control::Uncontrolled, true);
         let (n_in, _) = b.two_way(n, c, RoadClass::Residential, 1, 11.2);
         let (e_in, _) = b.two_way(e, c, RoadClass::Residential, 1, 11.2);
-        b.two_way(w, c, RoadClass::Residential, 1, 11.2);
         b.links[n_in as usize].name = "North Street".into();
         b.links[e_in as usize + 1].name = if same_name { "North Street".into() } else { "East Street".into() };
         let d = demand(&[(n, e, 200.0)]);
-        let mut sim = Simulation::from_parts(b.net(), d, cfg(3, 1.0)).unwrap();
+        let mut c = cfg(3, 1.0);
+        c.initial_load = false;
+        let mut sim = Simulation::from_parts(b.net(), d, c).unwrap();
         for _ in 0..(300.0 / DT) as usize {
             sim.step(DT);
         }
@@ -1625,6 +1627,7 @@ fn a_gate_vehicle_that_cannot_enter_does_not_hold_back_one_that_can() {
     let d = demand(&[(g, x1, 3000.0), (g, x2, 400.0)]);
     let mut c = cfg(2, 1.0);
     c.record_trips = true;
+    c.initial_load = false;
     let mut sim = Simulation::from_parts(b.net(), d, c).unwrap();
     for _ in 0..(900.0 / DT) as usize {
         sim.step(DT);

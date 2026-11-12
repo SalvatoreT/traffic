@@ -27,7 +27,7 @@ pub const POCKET_LEN: f32 = 20.0; // ASSUMPTION: pocket storage length (m); a th
 pub const POCKET_MIN_LINK_M: f32 = 40.0; // ASSUMPTION: shortest approach link that can hold a pocket
 pub const SNEAKERS: u8 = 2; // ASSUMPTION: permissive left-turners that may clear per signal cycle on yellow/all-red (HCM practice; [HCM7] value not verified in references.md)
 pub const SHARP_TURN_MAX: f64 = 2.88; // ASSUMPTION: rad (165 degrees); a turn between 149 and 165 degrees onto a street of another name is a sharp turn at an acute junction, not a U-turn
-pub const SPAWN_LOOKAHEAD: usize = 8; // ASSUMPTION: a gate stands for a multilane road whose vehicles arrive side by side, so a vehicle that cannot enter (its first link or lane has no room) does not hold back the next ones that can; this many waiting trips are tried per step, in order, and a trip never passes another on the same first link
+pub const SPAWN_SCAN: usize = 512; // ASSUMPTION: a gate stands for a multilane road whose vehicles arrive side by side, so a waiting trip whose first link has no room does not hold back the trips behind it that use another first link; at most this many waiting trips are scanned per step, in order, and a trip never passes another on the same first link
 pub const FORK_LANES: bool = true; // ASSUMPTION: lanes of a link that forks into several straight-ahead branches are shared out by branch, left branch in the left lanes (OSM `turn:lanes` is not read for this)
 pub const LOCAL_COST_FACTOR: f32 = 1.25; // ASSUMPTION: perceived-cost multiplier for residential/service links in route choice (street hierarchy preference)
 

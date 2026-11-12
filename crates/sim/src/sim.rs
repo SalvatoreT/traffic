@@ -1412,9 +1412,8 @@ impl Simulation {
     fn try_spawns(&mut self) {
         for n in 0..self.topo.n_nodes {
             let (mut spawned, mut idx) = (0, 0);
-            let mut blocked: [u32; SPAWN_LOOKAHEAD] = [u32::MAX; SPAWN_LOOKAHEAD];
-            let mut n_blocked = 0;
-            while spawned < 4 && idx < SPAWN_LOOKAHEAD {
+            let mut blocked: Vec<u32> = Vec::new();
+            while spawned < 4 && idx < SPAWN_SCAN && blocked.len() < self.topo.outs[n].len() {
                 let Some(trip) = self.backlog[n].get(idx) else { break };
                 let (dest, seed) = (trip.dest, trip.noise_seed);
                 self.router.ensure(dest, &self.topo, &self.eff, &self.link_cost);
@@ -1441,7 +1440,7 @@ impl Simulation {
                     continue;
                 }
                 let b = first.unwrap();
-                if blocked[..n_blocked].contains(&b) {
+                if blocked.contains(&b) {
                     self.scratch = route;
                     idx += 1;
                     continue;
@@ -1450,8 +1449,7 @@ impl Simulation {
                 let entry = self.pick_lane(b, self.mv_kind(b, route.first().copied()), route.first().copied(), 0.0).and_then(|lane| self.entry_speed(b, lane, &drv).map(|v| (lane, v)));
                 let Some((lane, v_ins)) = entry else {
                     self.scratch = route;
-                    blocked[n_blocked] = b;
-                    n_blocked += 1;
+                    blocked.push(b);
                     idx += 1;
                     continue;
                 };
