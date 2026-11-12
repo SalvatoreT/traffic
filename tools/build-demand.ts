@@ -6,12 +6,14 @@ import { readFileSync, readdirSync, writeFileSync, existsSync, mkdirSync } from 
 import { dirname, join } from 'node:path';
 import { buildActiveFlows, parseActiveCounts, type AFlow, type AStop } from './lib/demand-active';
 import { discoverRamps, matchRampVolumes, type Ramp, type RampRow, type RampVolume } from './lib/demand-ramps';
+import { linkMetrics, perimeterGap, perimeterLength, perimeterPos, relevanceOf, Router, routeStat, sideOf, type Rect, type Relevance, type RouteStat } from './lib/demand-audit';
+import { makeProjection } from './lib/geo';
 
 const cfgPath = process.argv[2] ?? 'data/demand/rockridge.config.json';
 const cfg = JSON.parse(readFileSync(cfgPath, 'utf8'));
 
 interface Node { id: number; x: number; y: number; gate: boolean; canEnter?: boolean; canExit?: boolean; inStudyArea: boolean }
-interface Link { id: number; from: number; to: number; name: string; class: string; length: number; inStudyArea: boolean; bikeLane?: boolean; bikeRoute?: boolean }
+interface Link { id: number; from: number; to: number; name: string; class: string; length: number; lanes?: number; speedLimit?: number; geometry?: [number, number][]; inStudyArea: boolean; bikeLane?: boolean; bikeRoute?: boolean }
 interface Network { id: string; origin: { lon: number; lat: number }; studyArea: [number, number][]; nodes: Node[]; links: Link[] }
 // `mode` is absent on car flows (default car). Pedestrian and bicycle flows are persons per hour in the same field.
 interface Flow { origin: number; destination: number; vehPerHour: number; mode?: 'car' | 'bicycle' | 'pedestrian' }
@@ -89,6 +91,7 @@ const [tx, ty] = tmc ? [tmc.x, tmc.y] : [0, 0];
 interface Gate { id: number; street: string | null; cls: string; deg: number; source: string; kind: 'DATA' | 'DATA(adt)' | 'ASSUMPTION'; adt: number | null; pmIn: number; pmOut: number; inT: Record<string, number>; outT: Record<string, number>; locIn: Record<string, number>; locOut: Record<string, number> }
 const gates: Gate[] = [];
 const pf = cfg.periodFactors;
+const pct = (a: number, b: number) => `${((100 * a) / (b || 1)).toFixed(0)}%`;
 const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
 
 // ---------- freeway topology (generic: freeway-class links, ramps = surface nodes touched by them) ----------
@@ -154,7 +157,58 @@ function countFor(n: Node, street: string | null): { c: Count; leg: string } | n
   return best;
 }
 const surfaceGates = net.nodes.filter((q) => q.gate && !freewayIds.has(q.id));
+const proj = makeProjection(net.origin.lon, net.origin.lat);
+const rect: Rect = (() => { const [a, b] = proj.fwd(cfg.bbox[0], cfg.bbox[1]), [c, d] = proj.fwd(cfg.bbox[2], cfg.bbox[3]); return { minX: a, minY: b, maxX: c, maxY: d }; })();
+const polyP = net.studyArea.map(([lon, lat]) => proj.fwd(lon, lat));
+const router = new Router(net.links);
+const lmet = linkMetrics(net.links, nodeById, polyP, rect);
+const NEAR_M: number = cfg.audit?.nearM ?? 400;
+const cordon = cfg.cordon ?? { signalizedVehPerHourPerLane: 837, freewayVehPerHourPerLane: 2184 };
+const laneSum = (id: number, dir: 'from' | 'to') => (incident.get(id) ?? []).filter((l) => l[dir] === id).reduce((a, l) => a + (l.lanes ?? 1), 0);
+const perimTotal = perimeterLength(rect);
+const statCache = new Map<number, RouteStat | null>();
+const statOf = (o: number, d: number): RouteStat | null => {
+  const k = o * 100003 + d;
+  if (statCache.has(k)) return statCache.get(k)!;
+  const r = router.route(o, d);
+  const v = r ? routeStat(r, lmet) : null;
+  statCache.set(k, v);
+  return v;
+};
+
 const gateStreet = (n: Node) => (incident.get(n.id) ?? []).map((l) => streetKey(l.name)).find(Boolean) ?? null;
+const gateClass = (n: Node) => (incident.get(n.id) ?? []).reduce((a, l) => (classRank[l.class] > (classRank[a] ?? 0) ? l.class : a), '') || 'residential';
+const nearestOverride = (n: Node, street: string | null) => {
+  const cands = (cfg.adtOverrides ?? []).filter((o: { street: string }) => o.street === street);
+  const dOf = (o: { lat?: number; lon?: number }) => (o.lat === undefined ? 0 : Math.hypot(...(toXY(o.lat, o.lon!).map((v, i) => v - (i ? n.y : n.x)) as [number, number])));
+  return cands.sort((a: object, b: object) => dOf(a) - dOf(b))[0] as { adt: number; factor?: number; source: string } | undefined;
+};
+// Class-default ADT (step 4 of the fifth-round calibration): the median ADT of the counted streets of that class when at least `minStreets` exist (DATA-derived), else the documented value.
+// A counted street's ADT is its count-based two-way volume: a TMC leg's peak-hour entering + leaving volume divided by K, or the Caltrans station ADT (times its factor).
+const classAdt: Record<string, number> = { ...cfg.classDefaultAdt };
+const classAdtLog: string[] = [];
+if (cfg.classDefaultFromCounts) {
+  const byClass = new Map<string, Map<string, Map<string, number>>>();
+  for (const n of surfaceGates) {
+    const street = gateStreet(n);
+    if (!street) continue;
+    const cls = gateClass(n), hit = countFor(n, street), ov = hit ? undefined : nearestOverride(n, street);
+    const src = hit ? `${hit.c.id}|${hit.leg}` : ov ? `ov|${ov.source}` : null;
+    const adt = hit ? (hit.c.legs[hit.leg].entering + hit.c.legs[hit.leg].leaving) / cfg.kFactor : ov ? ov.adt * (ov.factor ?? 1) : null;
+    if (src === null || adt === null) continue;
+    const streets = byClass.get(cls) ?? byClass.set(cls, new Map()).get(cls)!;
+    (streets.get(street) ?? streets.set(street, new Map()).get(street)!).set(src, adt);
+  }
+  const median = (v: number[]) => { const a = [...v].sort((x, y) => x - y), m = a.length >> 1; return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2; };
+  for (const cls of Object.keys(cfg.classDefaultAdt)) {
+    if (cls[0] === '_') continue;
+    const streets = [...(byClass.get(cls) ?? new Map<string, Map<string, number>>())].map(([st, m]) => [st, [...m.values()].reduce((a, b) => a + b, 0) / m.size] as [string, number]);
+    if (streets.length >= cfg.classDefaultFromCounts.minStreets) {
+      classAdt[cls] = Math.round(median(streets.map((q) => q[1])) / 100) * 100;
+      classAdtLog.push(`${cls}: median of ${streets.length} counted streets (${streets.map(([st, v]) => `${st} ${Math.round(v)}`).join(', ')}) = ${classAdt[cls]} (documented ${cfg.classDefaultAdt[cls]})`);
+    } else classAdtLog.push(`${cls}: ${streets.length} counted street(s)${streets.length ? ` (${streets.map(([st, v]) => `${st} ${Math.round(v)}`).join(', ')})` : ''}, fewer than ${cfg.classDefaultFromCounts.minStreets}, documented ${cfg.classDefaultAdt[cls]} kept`);
+  }
+}
 for (const n of surfaceGates) {
   const hit = countFor(n, gateStreet(n));
   if (hit) {
@@ -165,7 +219,7 @@ for (const n of surfaceGates) {
 for (const n of surfaceGates) {
   const links = incident.get(n.id) ?? [];
   const street = gateStreet(n);
-  const cls = links.reduce((a, l) => (classRank[l.class] > (classRank[a] ?? 0) ? l.class : a), '') || 'residential';
+  const cls = gateClass(n);
   const { canIn, canOut } = caps(n.id);
   let pmIn: number, pmOut: number, kind: Gate['kind'], source: string, adt: number | null = null;
   const hit = countFor(n, street);
@@ -176,14 +230,10 @@ for (const n of surfaceGates) {
     kind = 'DATA';
     source = `Oakland TMC ${hit.c.id} ${hit.leg}-leg avg of ${hit.c.legs[hit.leg].files} counts, ${Math.round(Math.hypot(n.x - hit.c.x, n.y - hit.c.y))} m away, shared by ${Math.max(grp.orig, grp.dest)} gate node(s)`;
   } else {
-    // Nearest Caltrans station on the gate's street (entries with lat/lon), else the first entry for the street.
-    const cands = (cfg.adtOverrides ?? []).filter((o: { street: string }) => o.street === street);
-    const dOf = (o: { lat?: number; lon?: number }) => (o.lat === undefined ? 0 : Math.hypot(...(toXY(o.lat, o.lon!).map((v, i) => v - (i ? n.y : n.x)) as [number, number])));
-    const ov = cands.sort((a: object, b: object) => dOf(a) - dOf(b))[0];
+    const ov = nearestOverride(n, street);
     if (ov) { adt = ov.adt * (ov.factor ?? 1); kind = 'DATA(adt)'; source = `Caltrans AADT: ${ov.source}`; }
-    else { adt = cfg.classDefaultAdt[cls] ?? cfg.classDefaultAdt.residential; kind = 'ASSUMPTION'; source = `class default (${cls})`; }
-    // F: single documented factor on all assumption-based (non-count) gate volumes; count-based gates and ramps are unaffected.
-    const pk = adt! * cfg.kFactor * (kind === 'ASSUMPTION' ? cfg.assumedGateScale ?? 1 : 1);
+    else { adt = classAdt[cls] ?? classAdt.residential; kind = 'ASSUMPTION'; source = `class default (${cls})`; }
+    const pk = adt! * cfg.kFactor;
     // A two-way street can appear as a pair of one-way gate nodes (one enter-only, one exit-only, same street,
     // close together). BUGFIX: each of the pair takes its directional share of the street volume, not all of it.
     // A one-way gate with no partner (genuinely one-way street) carries the whole volume in its direction.
@@ -263,6 +313,7 @@ function gateWeights(sector: string, p: string, dir: 'in' | 'out') {
 const outPeriods: { id: string; label: string; flows: Flow[] }[] = [];
 const summary: { id: string; total: number; through: number; local: number; ramp: number; rampLocal: number; localInternal: number; dropped: number; fw: Map<number, { out: number; in: number }>; rampDest: Map<number, number> }[] = [];
 let throughDebug: string[] = [];
+const periLog: string[] = [];
 let unroutableDropped = 0;
 
 for (const p of cfg.periods as { id: string; label: string }[]) {
@@ -377,22 +428,78 @@ for (const p of cfg.periods as { id: string; label: string }[]) {
 
   // Through trips: gate inflow minus local = through supply; gate outflow minus local = through demand. Furness balanced.
   const n = gates.length;
-  const R = gates.map((g) => Math.max(0, g.inT[p.id] - g.locIn[p.id] - rampAtGate.get(g.id)!.in));
+  let R = gates.map((g) => Math.max(0, g.inT[p.id] - g.locIn[p.id] - rampAtGate.get(g.id)!.in));
   let C = gates.map((g) => Math.max(0, g.outT[p.id] - g.locOut[p.id] - rampAtGate.get(g.id)!.out));
   const rs = R.reduce((a, b) => a + b, 0), cs = C.reduce((a, b) => a + b, 0);
-  C = C.map((c) => (c * rs) / (cs || 1));
   const gv = cfg.gravity;
-  const seed: number[][] = gates.map((gi, i) => gates.map((gj, j) => {
+  // Balancing: inflow supply and outflow demand of the residual gate volumes differ (in the PM peak the assumed gates are net exporters, inbound share 0.45; in the AM peak net importers).
+  // With `balanceKeepsCounted` the counted gates (DATA) keep both their inflow and outflow and only the assumed gates are scaled on the side with the surplus; if the counted
+  // volume alone exceeds the other side, every gate is scaled to it (the earlier behavior, which scaled the outflow of every gate to 0.77 of its target in the PM peak).
+  const isCounted = gates.map((g) => g.kind !== 'ASSUMPTION');
+  const sideCounted = (v: number[]) => v.reduce((a, c, j) => a + (isCounted[j] ? c : 0), 0);
+  const keepCounted = (v: number[], other: number) => !!gv.balanceKeepsCounted && sideCounted(v) <= other && v.reduce((a, c) => a + c, 0) > sideCounted(v);
+  if (rs >= cs) {
+    if (keepCounted(R, cs)) { const rc = sideCounted(R); R = R.map((r, j) => (isCounted[j] ? r : (r * (cs - rc)) / (rs - rc))); }
+    else C = C.map((c) => (c * rs) / (cs || 1));
+  } else if (keepCounted(C, rs)) { const cc = sideCounted(C); C = C.map((c, j) => (isCounted[j] ? c : (c * (rs - cc)) / (cs - cc))); }
+  else C = C.map((c) => (c * rs) / (cs || 1));
+  const peri = cfg.peripheral?.enabled ? cfg.peripheral : null;
+  const gpos = gates.map((g) => perimeterPos([nodeById.get(g.id)!.x, nodeById.get(g.id)!.y], rect));
+  const isCorner = (i: number, j: number) => {
+    if (!peri) return false;
+    const st = statOf(gates[i].id, gates[j].id);
+    return !!st && (perimeterGap(gpos[i], gpos[j], perimTotal) < peri.cornerClip.minPerimeterGapM || st.maxEdge < peri.cornerClip.edgeBandM);
+  };
+  const seedOf = (): number[][] => gates.map((gi, i) => gates.map((gj, j) => {
     if (!routable(gi.id, gj.id)) return 0;
     const d = angDiff(gi.deg, gj.deg);
     let f = d >= 135 ? gv.oppositeBonus : d >= 75 ? gv.adjacentFactor : d >= 40 ? gv.adjacentFactor * 0.5 : gv.uTurnPenalty;
     if (gi.street && gi.street === gj.street && d >= 75) f *= gv.sameStreetBonus;
     return f * Math.max(C[j], 1e-6);
   }));
-  const T = seed.map((r) => r.slice());
-  for (let it = 0; it < gv.furnessIterations; it++) {
-    for (let i = 0; i < n; i++) { const s = T[i].reduce((a, b) => a + b, 0); if (s > 0) for (let j = 0; j < n; j++) T[i][j] *= R[i] / s; }
-    for (let j = 0; j < n; j++) { let s = 0; for (let i = 0; i < n; i++) s += T[i][j]; if (s > 0) for (let i = 0; i < n; i++) T[i][j] *= C[j] / s; }
+  const furness = (seed: number[][]) => {
+    const T = seed.map((r) => r.slice());
+    for (let it = 0; it < gv.furnessIterations; it++) {
+      for (let i = 0; i < n; i++) { const s = T[i].reduce((a, b) => a + b, 0); if (s > 0) for (let j = 0; j < n; j++) T[i][j] *= R[i] / s; }
+      for (let j = 0; j < n; j++) { let s = 0; for (let i = 0; i < n; i++) s += T[i][j]; if (s > 0) for (let i = 0; i < n; i++) T[i][j] *= C[j] / s; }
+    }
+    return T;
+  };
+  const sumT = (T: number[][]) => T.reduce((a, r) => a + r.reduce((b, c) => b + c, 0), 0);
+  const T0 = furness(seedOf());
+  const T = T0.map((r) => r.slice());
+  if (peri) {
+    // Rule P1: corner-clipping pairs (gates close together along the perimeter, or a route that stays near the model edge) are dropped, not reallocated.
+    // Their volume leaves the gates' totals (counted gates included); the accounting below says how much. Reallocating it to other pairs at the same gates
+    // was tried and lengthened the trips: the PM peak completed 7% fewer trips at the same offered volume (calibration record, step S2).
+    let corner = 0, edge = 0, gap = 0;
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) if (T0[i][j] > 0 && isCorner(i, j)) {
+      corner += T0[i][j]; T[i][j] = 0;
+      const st = statOf(gates[i].id, gates[j].id)!;
+      if (perimeterGap(gpos[i], gpos[j], perimTotal) < peri.cornerClip.minPerimeterGapM) gap += T0[i][j];
+      if (st.maxEdge < peri.cornerClip.edgeBandM) edge += T0[i][j];
+    }
+    // Rule P2: a gate's modeled volume (through + local + ramp) may not exceed min(target, lane capacity); the excess is taken from its peripheral gate-to-gate trips only.
+    // Counted gates keep their count: their non-peripheral trips are never reduced, so a counted corridor that the cordon cannot serve is a network finding, not a demand fix.
+    let capCut = 0, capShort = 0;
+    const capDetail: string[] = [];
+    for (let it = 0; it < 3; it++) for (const dir of ['in', 'out'] as const) for (let g = 0; g < n; g++) {
+      const gate = gates[g], lanes = laneSum(gate.id, dir === 'in' ? 'from' : 'to');
+      const cap = Math.min(dir === 'in' ? gate.inT[p.id] : gate.outT[p.id], lanes * cordon.signalizedVehPerHourPerLane);
+      const thr = dir === 'in' ? T[g].reduce((a, c) => a + c, 0) : T.reduce((a, r) => a + r[g], 0);
+      const other = dir === 'in' ? gate.locIn[p.id] + rampAtGate.get(gate.id)!.in : gate.locOut[p.id] + rampAtGate.get(gate.id)!.out;
+      const excess = thr + other - cap;
+      if (excess <= 1e-6) continue;
+      const pair = (k: number): [number, number] => (dir === 'in' ? [gate.id, gates[k].id] : [gates[k].id, gate.id]);
+      const val = (k: number) => (dir === 'in' ? T[g][k] : T[k][g]);
+      const idx = gates.map((_, k) => k).filter((k) => { const st = statOf(...pair(k)); return st && relevanceOf(st, peri.nearM) === 'peripheral' && val(k) > 0; });
+      const per = idx.reduce((a, k) => a + val(k), 0);
+      const cut = Math.min(excess, per);
+      if (per > 0) for (const k of idx) { const c = (cut * val(k)) / per; if (dir === 'in') T[g][k] -= c; else T[k][g] -= c; }
+      capCut += cut; if (excess > per) capShort += excess - per;
+      if (it === 0 && excess > 5) capDetail.push(`${gate.id} ${gateName(gate.id)} ${dir} target ${(dir === 'in' ? gate.inT[p.id] : gate.outT[p.id]).toFixed(0)}, lane cap ${(lanes * cordon.signalizedVehPerHourPerLane).toFixed(0)}, other ${other.toFixed(0)}, through ${thr.toFixed(0)}, cut ${cut.toFixed(0)}`);
+    }
+    periLog.push(`${p.id}: P1 dropped ${corner.toFixed(0)} veh/h of ${sumT(T0).toFixed(0)} through veh/h (perimeter gap < ${peri.cornerClip.minPerimeterGapM} m ${gap.toFixed(0)}, route within ${peri.cornerClip.edgeBandM} m of the edge ${edge.toFixed(0)}; the two overlap by ${(gap + edge - corner).toFixed(0)}); P2 cap removed ${capCut.toFixed(0)} veh/h of peripheral trips, ${capShort.toFixed(0)} veh/h above cap with no peripheral trips left${capDetail.length ? '\n    ' + capDetail.join('\n    ') : ''}`);
   }
   let throughTotal = 0;
   const flowsMap = new Map(local);
@@ -497,6 +604,81 @@ if (cfg.active) {
   activeSummary.lines.push(`  flows per period, all modes: ${tot}`);
 }
 
+// ---------- demand audit: relevance of every car trip to the study area, and the cordon check ----------
+const gateById = new Map(gates.map((g) => [g.id, g]));
+const fwIdSet = new Set(fwGates.map((g) => g.id));
+const typeOf = (o: number, d: number) => (fwIdSet.has(o) || fwIdSet.has(d) ? 'ramp' : gateById.has(o) && gateById.has(d) ? 'through' : 'local');
+const relSum: Record<string, Record<string, Record<Relevance, number>>> = {};
+const gateRel = new Map<number, { in: number; out: number; inNear: number; outNear: number }>(gates.map((g) => [g.id, { in: 0, out: 0, inNear: 0, outNear: 0 }]));
+for (const per of outPeriods) {
+  const t = (relSum[per.id] = { through: { touches: 0, near: 0, peripheral: 0 }, local: { touches: 0, near: 0, peripheral: 0 }, ramp: { touches: 0, near: 0, peripheral: 0 } });
+  for (const fl of per.flows) {
+    if (fl.mode) continue;
+    const st = statOf(fl.origin, fl.destination);
+    if (!st) continue;
+    const rel = relevanceOf(st, NEAR_M);
+    t[typeOf(fl.origin, fl.destination)][rel] += fl.vehPerHour;
+    if (per.id === lastPeriod) {
+      const o = gateRel.get(fl.origin), d = gateRel.get(fl.destination);
+      if (o) { o.in += fl.vehPerHour; if (rel !== 'peripheral') o.inNear += fl.vehPerHour; }
+      if (d) { d.out += fl.vehPerHour; if (rel !== 'peripheral') d.outNear += fl.vehPerHour; }
+    }
+  }
+}
+const sideRows = new Map<string, { n: number; inflow: number; outflow: number; capIn: number; capOut: number; over: number; excess: number }>();
+const gateRows: string[] = [];
+const sideOfGate = (id: number) => sideOf([nodeById.get(id)!.x, nodeById.get(id)!.y], rect);
+for (const g of [...gates].sort((a, b) => b.inT[lastPeriod] + b.outT[lastPeriod] - a.inT[lastPeriod] - a.outT[lastPeriod])) {
+  const r = gateRel.get(g.id)!;
+  const side = sideOfGate(g.id);
+  const daily = g.adt ?? (g.pmIn + g.pmOut) / cfg.kFactor;
+  const capIn = laneSum(g.id, 'from') * cordon.signalizedVehPerHourPerLane, capOut = laneSum(g.id, 'to') * cordon.signalizedVehPerHourPerLane;
+  gateRows.push(`| ${g.id} | ${side} | ${gateName(g.id)} | ${g.cls} | ${g.kind === 'ASSUMPTION' ? 'ASSUMPTION' : 'DATA'} | ${Math.round(daily)} | ${g.inT[lastPeriod].toFixed(0)} / ${r.in.toFixed(0)} | ${capIn.toFixed(0)} | ${g.outT[lastPeriod].toFixed(0)} / ${r.out.toFixed(0)} | ${capOut.toFixed(0)} | ${r.in + r.out > 0 ? Math.round((100 * (r.inNear + r.outNear)) / (r.in + r.out)) : '-'} |`);
+  const row = sideRows.get(side) ?? sideRows.set(side, { n: 0, inflow: 0, outflow: 0, capIn: 0, capOut: 0, over: 0, excess: 0 }).get(side)!;
+  row.n++; row.inflow += r.in; row.outflow += r.out; row.capIn += capIn; row.capOut += capOut;
+  for (const [v, c] of [[r.in, capIn], [r.out, capOut]]) if (v > c) { row.over++; row.excess += v - c; }
+}
+const fwStat = new Map<string, { in: number; out: number; capIn: number; capOut: number }>();
+{
+  const pm = outPeriods.find((q) => q.id === lastPeriod)!.flows.filter((q) => !q.mode);
+  for (const f of fwGates) {
+    const side = sideOfGate(f.id), row = fwStat.get(side) ?? fwStat.set(side, { in: 0, out: 0, capIn: 0, capOut: 0 }).get(side)!;
+    row.in += pm.filter((q) => q.origin === f.id).reduce((a, q) => a + q.vehPerHour, 0);
+    row.out += pm.filter((q) => q.destination === f.id).reduce((a, q) => a + q.vehPerHour, 0);
+    row.capIn += laneSum(f.id, 'from') * cordon.freewayVehPerHourPerLane;
+    row.capOut += laneSum(f.id, 'to') * cordon.freewayVehPerHourPerLane;
+  }
+}
+{
+  const L: string[] = [];
+  const f0 = (v: number) => v.toFixed(0);
+  L.push(`# Demand audit: ${cfg.area}`, '', 'Generated by `tools/build-demand.ts` (do not edit). Car trips only, PM peak unless a period is named; veh/h. Free-flow route = shortest path by length / speed limit on the network file, no turn bans.', '');
+  L.push(`Relevance of a trip: (i) touches = its route uses a link of the study area or of a bounding street; (ii) near = it comes within ${NEAR_M} m of the study-area polygon; (iii) peripheral = it never comes within ${NEAR_M} m.`, '');
+  L.push('## Offered trips by relevance', '', '| Period | Type | Touches | Near | Peripheral | Total | Peripheral share |', '| --- | --- | --- | --- | --- | --- | --- |');
+  for (const per of outPeriods) {
+    const t = relSum[per.id];
+    const tot = { touches: 0, near: 0, peripheral: 0 };
+    for (const ty of ['through', 'local', 'ramp'] as const) {
+      const r = t[ty], s = r.touches + r.near + r.peripheral;
+      for (const k of Object.keys(tot) as Relevance[]) tot[k] += r[k];
+      L.push(`| ${per.id} | ${ty} | ${f0(r.touches)} | ${f0(r.near)} | ${f0(r.peripheral)} | ${f0(s)} | ${pct(r.peripheral, s)} |`);
+    }
+    const s = tot.touches + tot.near + tot.peripheral;
+    L.push(`| ${per.id} | **all** | ${f0(tot.touches)} | ${f0(tot.near)} | ${f0(tot.peripheral)} | ${f0(s)} | ${pct(tot.peripheral, s)} |`);
+  }
+  L.push('', '## Cordon: modeled gate flow against what the corridors can carry', '', `Capacity = lanes of the link at each surface gate x ${cordon.signalizedVehPerHourPerLane} veh/h per lane (measured signalized capacity of the validation suite, cases b1 and b2, green share 0.5); freeway mainline gates use ${cordon.freewayVehPerHourPerLane} veh/h per lane (case i1). Inflow = trips entering the model at the side, outflow = trips leaving it.`, '');
+  L.push('A side total hides single corridors: many residential gates have spare capacity that no demand uses. The last two columns therefore count gate directions whose modeled volume exceeds their own capacity, and the volume above it.', '');
+  L.push('| Side | Surface gates | Inflow | Inflow capacity | Ratio | Outflow | Outflow capacity | Ratio | Gate directions over capacity | Volume above capacity | Freeway gates in / capacity | Freeway gates out / capacity |', '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |');
+  for (const sd of ['north', 'east', 'south', 'west']) {
+    const r = sideRows.get(sd), fw = fwStat.get(sd);
+    if (!r && !fw) continue;
+    L.push(`| ${sd} | ${r?.n ?? 0} | ${f0(r?.inflow ?? 0)} | ${f0(r?.capIn ?? 0)} | ${r?.capIn ? ((r.inflow / r.capIn)).toFixed(2) : '-'} | ${f0(r?.outflow ?? 0)} | ${f0(r?.capOut ?? 0)} | ${r?.capOut ? (r.outflow / r.capOut).toFixed(2) : '-'} | ${r?.over ?? 0} | ${f0(r?.excess ?? 0)} | ${fw ? `${f0(fw.in)} / ${f0(fw.capIn)}` : '-'} | ${fw ? `${f0(fw.out)} / ${f0(fw.capOut)}` : '-'} |`);
+  }
+  L.push('', '## Gates (PM peak)', '', 'Daily volume is the ADT used (class default, Caltrans station) or, for count-based gates, the counted two-way peak volume divided by K. In / out are the target and the modeled volume (target / modeled) entering and leaving the model at the gate. Near share = share of the gate\'s modeled trips (in and out) whose route comes within ' + NEAR_M + ' m of the study area.', '');
+  L.push('| Gate | Side | Street | Class | Basis | Daily volume | In (target / modeled) | In capacity | Out (target / modeled) | Out capacity | Near share (%) |', '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |', ...gateRows);
+  if (cfg.audit?.output !== null) writeFileSync(cfg.audit?.output ?? `data/demand/${cfg.area}.audit.md`, L.join('\n') + '\n');
+}
+
 // ---------- provenance ----------
 const provenance = [
   { source: 'Oakland Annual Multi-Modal Counts, Raw Data (OakDOT), Telegraph Ave & Alcatraz Ave PM peak turning movements 2018/2019/2021', url: 'https://data.oaklandca.gov/d/amtg-eh64', note: tmc ? `DATA. Gate peak in/out volumes on Telegraph and Alcatraz legs; ${tmc.files.length} counts averaged (${tmc.peakHours.join('; ')}). Other periods scaled by ASSUMPTION factors (periodFactors).` : 'not available' },
@@ -512,11 +694,12 @@ mkdirSync(dirname(cfg.output), { recursive: true });
 writeFileSync(cfg.output, JSON.stringify(out));
 
 // ---------- summary ----------
-const pct = (a: number, b: number) => `${((100 * a) / (b || 1)).toFixed(0)}%`;
 console.log(`Demand for ${cfg.area}: ${gates.length} surface gates, ${fwGates.length} freeway gates, ${ramps.length} ramps, ${localNodes.size} local nodes (LODES ${lodes ? 'ok' : 'MISSING'}); TMC ${tmc ? 'ok' : 'MISSING'}`);
 console.log('\nPeriod        total veh/h  through   local    ramp  (ramp->local)  through%  local%  ramp%  flows  pruned');
 for (const s of summary) console.log(`${s.id.padEnd(12)} ${s.total.toFixed(0).padStart(10)} ${s.through.toFixed(0).padStart(8)} ${s.local.toFixed(0).padStart(7)} ${s.ramp.toFixed(0).padStart(7)} ${s.rampLocal.toFixed(0).padStart(14)} ${pct(s.through, s.total).padStart(9)} ${pct(s.local, s.total).padStart(7)} ${pct(s.ramp, s.total).padStart(6)} ${String(outPeriods.find((q) => q.id === s.id)!.flows.length).padStart(6)} ${String(s.dropped).padStart(6)}`);
 console.log(throughDebug.join('\n'));
+if (classAdtLog.length) console.log('Class defaults:\n  ' + classAdtLog.join('\n  '));
+if (periLog.length) console.log('Peripheral rules:\n  ' + periLog.join('\n  '));
 if (activeSummary.lines.length) console.log('\n' + activeSummary.lines.join('\n'));
 console.log(`Unroutable flows dropped by the final check (all periods, veh/h): ${unroutableDropped.toFixed(1)}`);
 

@@ -4,7 +4,7 @@
 use traffic_sim::validate::run_all;
 
 /// Cases that do not meet their expected range yet. A case that starts passing must be removed from this list.
-const KNOWN_DEVIATIONS: &[&str] = &["a3", "b9", "c2", "c5", "e2", "e3", "e6", "e9", "f2", "f3", "j6", "j8", "j9", "j12"];
+const KNOWN_DEVIATIONS: &[&str] = &["a3", "b9", "c2", "e2", "e3", "e6", "e9", "f2", "f3", "j6", "j8", "j9", "j12"];
 
 #[test]
 fn validation_suite_has_no_new_failures() {

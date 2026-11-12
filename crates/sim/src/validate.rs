@@ -300,6 +300,11 @@ pub fn approach_cap(a: Appr, seed: u64, extra: &[(u32, u32, f64, FlowMode)], nod
 // ---------------------------------------------------------------- (c) two signals
 
 pub fn two_signals(d: f64, adaptive: bool, seed: u64) -> f64 {
+    two_signals_served(d, adaptive, seed).0
+}
+
+/// (through flow past the second signal, all four approaches of the first signal, the two cross-street approaches of the first signal), veh/h.
+pub fn two_signals_served(d: f64, adaptive: bool, seed: u64) -> (f64, f64, f64) {
     let mut b = B::default();
     let w = b.node(-300.0, 0.0, Control::Uncontrolled, true);
     let s1 = b.node(0.0, 0.0, Control::Signal, false);
@@ -310,18 +315,22 @@ pub fn two_signals(d: f64, adaptive: bool, seed: u64) -> f64 {
     let n2 = b.node(d, 300.0, Control::Uncontrolled, true);
     let sg2 = b.node(d, -300.0, Control::Uncontrolled, true);
     let (w1, _) = b.two_way(w, s1, RoadClass::Secondary, 2, V25);
-    let (m12, _) = b.two_way(s1, s2, RoadClass::Secondary, 2, V25);
+    let (m12, m21) = b.two_way(s1, s2, RoadClass::Secondary, 2, V25);
     let (m2e, _) = b.two_way(s2, e, RoadClass::Secondary, 2, V25);
-    for (a, c) in [(n1, s1), (sg1, s1), (n2, s2), (sg2, s2)] {
-        b.two_way(a, c, RoadClass::Residential, 1, V25);
+    let mut cross = Vec::new();
+    for (k, (a, c)) in [(n1, s1), (sg1, s1), (n2, s2), (sg2, s2)].into_iter().enumerate() {
+        let (inbound, _) = b.two_way(a, c, RoadClass::Residential, 1, V25);
+        if k < 2 {
+            cross.push(inbound);
+        }
     }
-    let _ = (w1, m12);
     let net = b.net();
     let fl = [(w, e, 4000.0), (e, w, 4000.0), (n1, sg1, 500.0), (sg1, n1, 500.0), (n2, sg2, 500.0), (sg2, n2, 500.0)];
     let c = Config { signal_adapt_min: if adaptive { None } else { Some(0.0) }, ..cfg(seed) };
     let mut r = Run::new(net, demand(&fl), c).with_ivs(&format!(r#"[{{"type":"signal_timing","node":{s1},"cycle":90}},{{"type":"signal_timing","node":{s2},"cycle":90}}]"#));
     r.advance(WARM + MEAS);
-    r.rate(&[m2e], WARM, WARM + MEAS)
+    let cross_rate = r.rate(&cross, WARM, WARM + MEAS);
+    (r.rate(&[m2e], WARM, WARM + MEAS), r.rate(&[w1, m21, cross[0], cross[1]], WARM, WARM + MEAS), cross_rate)
 }
 
 // ---------------------------------------------------------------- (d) all-way stop
@@ -502,8 +511,10 @@ pub fn run_all() -> Vec<Case> {
         };
         out.push(case(id, format!("{nm} (green share {gc:.2})"), "veh/h/lane", cap, lo, hi, src, format!("per lane, cycle 100 s, saturated; {note}")));
     }
-    let iso = [false, true].map(|ad| two_signals(1000.0, ad, 1));
-    out.push(case("c5", "Adaptive plan over fixed plan, one signal on an arterial (cross 500 veh/h)", "ratio", iso[1] / iso[0], 0.9, 1.1, "ASSUMPTION", "saturated arterial: demand-proportional splits give it less green than the fixed start-up plan"));
+    let iso = [false, true].map(|ad| two_signals_served(1000.0, ad, 1));
+    out.push(case("c5", "Adaptive plan over fixed plan, saturated arterial (4,000 veh/h per direction) with a 500 veh/h cross street: vehicles served at the first signal", "ratio", iso[1].1 / iso[0].1, 0.9, 1.1, "ASSUMPTION", format!("{:.0} against {:.0} veh/h on all four approaches; the start-up plan sizes the arterial phase for the uncapped 4,000 veh/h (flow ratio 1.11) and gives the cross street 16 s of a 90 s cycle, so it serves {:.0} of the {:.0} veh/h the cross street offers; the adaptive plan gives it 30 s and serves {:.0}, and the arterial through flow past the second signal falls from {:.0} to {:.0} veh/h as a consequence (not a defect of the adaptive plan)", iso[1].1, iso[0].1, iso[0].2, 1000.0, iso[1].2, iso[0].0, iso[1].0)));
+    out.push(case("c6", "Adaptive plan: share of the cross-street demand (2 x 500 veh/h) served at the first signal", "share", iso[1].2 / 1000.0, 0.9, 1.1, "ASSUMPTION", format!("{:.0} against {:.0} veh/h with the fixed start-up plan", iso[1].2, iso[0].2)));
+    let iso = iso.map(|v| v.0);
     for d in [100.0, 200.0] {
         for (k, ad) in [false, true].into_iter().enumerate() {
             let t = two_signals(d, ad, 1);

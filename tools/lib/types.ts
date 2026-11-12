@@ -79,6 +79,8 @@ export interface AreaConfig {
   junctionJoinRadius?: number;
   /** Join radius (m) for clusters of two or more signal nodes; default 40. */
   signalJoinRadius?: number;
+  /** Importer warning distance (m, default 60): gates closer than this to a signalized junction are listed. */
+  gateSignalWarnM?: number;
   /** Hours of day (start, end) of each demand period, used to apply time-conditional turn restrictions (e.g. `no_left_turn @ (Mo-Fr 16:00-18:00)`). */
   periodWindows?: Record<string, [number, number]>;
   /** Baseline calibration status shown in the UI. */

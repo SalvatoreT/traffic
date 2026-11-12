@@ -143,6 +143,8 @@ export interface BuildStats {
   turnBansTimed: number;
   restrictionsSkipped: number;
   restrictionsUnresolved: number;
+  /** Gates closer than `gateSignalWarnM` (default 60 m) to a signalized junction: a gate should sit mid-block, not inside a junction. */
+  gatesNearSignal: { gate: number; distM: number; street: string }[];
 }
 
 function parseSpeed(v: string | undefined): number | null {
@@ -185,6 +187,7 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
     turnBansTimed: 0,
     restrictionsSkipped: 0,
     restrictionsUnresolved: 0,
+    gatesNearSignal: [],
   };
   const [minLon, minLat, maxLon, maxLat] = cfg.bbox;
   const lon0 = (minLon + maxLon) / 2;
@@ -1008,6 +1011,15 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
       if (kind.startsWith('no_')) for (const b of outs) a.rev !== b && addBan(a, b, periods);
       else for (const o of finalLinks) if (o.from === viaG && !outs.includes(o) && a.rev !== o) addBan(a, o, periods);
     }
+  }
+
+  const warnM = cfg.gateSignalWarnM ?? 60;
+  const sigJunctions = outNodes.filter((n) => n.control === 'signal');
+  for (const g of outNodes) {
+    if (!g.gate) continue;
+    let best = Infinity;
+    for (const sNode of sigJunctions) best = Math.min(best, Math.hypot(sNode.x - g.x, sNode.y - g.y));
+    if (best <= warnM) stats.gatesNearSignal.push({ gate: g.id, distM: Math.round(best), street: outLinks.find((l) => l.from === g.id || l.to === g.id)?.name ?? '' });
   }
 
   return {
