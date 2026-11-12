@@ -22,6 +22,8 @@ export function intensity(overlay: Overlay, flow: number, speed: number, cut: nu
 
 export const WIDTH_MIN = 1.2;
 export const WIDTH_MAX = 9;
+/** Line width (px, before zoom scaling) for a change intensity t in -1..1: thin near zero, thick at either end, on the same square-root scale as the colors. */
+export const changeWidthFor = (t: number): number => WIDTH_MIN + Math.sqrt(Math.min(1, Math.abs(t))) * (WIDTH_MAX - WIDTH_MIN);
 export const widthFor = (t: number) => (t < 0 ? WIDTH_MIN * 0.8 : WIDTH_MIN + t * (WIDTH_MAX - WIDTH_MIN));
 
 /**
@@ -50,19 +52,24 @@ export const TOP_NOTE: Record<'flow' | 'cutthrough', string> = {
 
 /**
  * Diverging ramp for change from baseline: decrease blue, increase orange (a blue-orange pair stays distinguishable under deuteranopia and protanopia).
- * Stops are [t, color] for t in 0..1 of the magnitude; zero is neutral gray, drawn thin. Hues are design choices, not calibrated values.
+ * Intensity grows with size of change: the smallest steps are mid tones, only large changes reach the dark (light theme) or bright (dark theme) ends.
+ * Every step is at least 3:1 against the basemap fill (light #f1efe8, dark #161b22; WCAG 1.4.11). Size also shows in line width, so the ramp
+ * does not carry it alone. Zero is neutral gray, drawn thin. Hues are design choices, not calibrated values.
  */
 const DIV = {
-  light: { neg: ['#6baed6', '#2171b5', '#08458a'], pos: ['#f5a05a', '#e0630f', '#a63a00'], zero: '#a8a291' },
-  dark: { neg: ['#3a74ad', '#5aa5ea', '#a6d3ff'], pos: ['#a8601f', '#f08a3c', '#ffc08a'], zero: '#4a5463' },
+  light: { neg: ['#4a8bc4', '#2a6db0', '#14509a', '#08306b'], pos: ['#c76a14', '#bd5a0a', '#9a4000', '#6e2800'], zero: '#a8a291' },
+  dark: { neg: ['#2f6fae', '#4a95dc', '#7db6f5', '#bfe0ff'], pos: ['#a8601f', '#d9792c', '#f59b4c', '#ffc78f'], zero: '#4a5463' },
 };
 export const DIV_BAND_T = 0.05;
+/** Magnitudes (0..1, perceptual) of the steps after the first; stops sit at their squares so mid-size changes spread out [see changeMagnitude]. */
+const DIV_STEPS = [0.5, 0.75, 1];
 export interface DivStop { t: number; color: string }
 /** Signed stops from -1 to 1. */
 export function divergingStops(mode: Mode): DivStop[] {
   const d = DIV[mode];
-  const pos: DivStop[] = [{ t: DIV_BAND_T, color: d.pos[0] }, { t: 0.5, color: d.pos[1] }, { t: 1, color: d.pos[2] }];
-  const neg: DivStop[] = [{ t: -1, color: d.neg[2] }, { t: -0.5, color: d.neg[1] }, { t: -DIV_BAND_T, color: d.neg[0] }];
+  const ts = [DIV_BAND_T, ...DIV_STEPS.map((m) => m * m)];
+  const pos: DivStop[] = ts.map((t, i) => ({ t, color: d.pos[i] }));
+  const neg: DivStop[] = ts.map((t, i) => ({ t: -t, color: d.neg[i] })).reverse();
   return [...neg, { t: 0, color: d.zero }, ...pos];
 }
 export const divergingGradient = (mode: Mode): string =>

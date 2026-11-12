@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  aggregate, changeIntensity, changeTicks, CHANGE_TOP, compareRows, DEAD_BAND, diffValue, effectiveView, formatSigned, initViewState, linkChangeIntensity,
+  aggregate, changeIntensity, changeMagnitude, changeMark, legendClipPath, changeTicks, CHANGE_TOP, compareRows, DEAD_BAND, diffValue, effectiveView, formatSigned, initViewState, linkChangeIntensity,
   NO_DATA, readoutText, viewReducer,
 } from './change';
 import { linkStatsView } from '../types';
@@ -107,5 +107,28 @@ describe('table sorting', () => {
   it('reverses and sorts other keys', () => {
     expect([...rows].sort(compareRows('chg', 1)).map((r) => r.label)).toEqual(['D', 'E', 'B', 'A', 'C']);
     expect([...rows].sort(compareRows('ctS', -1))[0].label).toBe('E');
+  });
+});
+
+describe('change view encoding', () => {
+  it('maps size to a square-root magnitude that stays in 0..1', () => {
+    expect(changeMagnitude(0)).toBe(0);
+    expect(changeMagnitude(0.25)).toBeCloseTo(0.5, 9);
+    expect(changeMagnitude(-0.5625)).toBeCloseTo(0.75, 9);
+    expect(changeMagnitude(3)).toBe(1);
+  });
+  it('marks only the largest changes, with the sign', () => {
+    expect(changeMark(0.3)).toBeNull();
+    expect(changeMark(0)).toBeNull();
+    expect(changeMark(NO_DATA)).toBeNull();
+    expect(changeMark(0.6)).toBe('▲');
+    expect(changeMark(-1)).toBe('▼');
+  });
+  it('draws the legend bar thin in the middle and thick at both ends', () => {
+    const pts = legendClipPath().replace('polygon(', '').replace(')', '').split(', ').map((p) => p.split(' ').map((v) => parseFloat(v)));
+    const topAt = (x: number) => pts.find((p) => p[0] === x)![1];
+    expect(topAt(50)).toBeGreaterThan(topAt(0));
+    expect(topAt(50)).toBeGreaterThan(topAt(100));
+    expect(topAt(0)).toBeCloseTo(topAt(100), 5);
   });
 });

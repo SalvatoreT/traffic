@@ -13,7 +13,7 @@ import { FADE_TIERS, interventionInRegion, REGION_FEATHER_M, type Region } from 
 import { REGION_BUFFER_M } from '../lib/area';
 import { advance, elapsedSim } from '../lib/extrapolate';
 import { divergingStops, intensity, rampStops, WIDTH_MAX, WIDTH_MIN, type Mode } from '../lib/ramps';
-import { linkChangeIntensity, NO_DATA, type MapView as ChangeView } from '../lib/change';
+import { changeMark, linkChangeIntensity, NO_DATA, type MapView as ChangeView } from '../lib/change';
 import { linkStatsView } from '../types';
 import type { RouteCheck } from '../lib/throughroutes';
 import { CELL_COLORS, CELL_DASHES, ROUTE_COLORS } from '../lib/routestyle';
@@ -82,7 +82,8 @@ function ramp(mode: Mode, view: ChangeView = 'scenario'): unknown[] {
 }
 function lineWidth(view: ChangeView): unknown[] {
   if (view === 'change') {
-    return ['interpolate', ['linear'], ['abs', ['coalesce', ['feature-state', 't'], NO_DATA]], 0, WIDTH_MIN, 1, WIDTH_MAX, 1.001, WIDTH_MIN * 0.8];
+    // Square root of |t|, as in the colors [changeMagnitude]; streets with no traffic (-2) fall past 1.2 and draw thin.
+    return ['interpolate', ['linear'], ['sqrt', ['abs', ['coalesce', ['feature-state', 't'], NO_DATA]]], 0, WIDTH_MIN, 1, WIDTH_MAX, 1.2, WIDTH_MIN * 0.8];
   }
   return ['interpolate', ['linear'], ['coalesce', ['feature-state', 't'], -1], -1, WIDTH_MIN * 0.8, 0, WIDTH_MIN, 1, WIDTH_MAX];
 }
@@ -94,9 +95,6 @@ const casingWidth = (view: ChangeView = 'scenario'): unknown[] => {
   const w = lineWidth(view);
   return ['interpolate', ['linear'], ['zoom'], 14, ['+', 1.2, ['*', 0.55, w]], 18, ['+', 1.8, ['*', 1.5, w]]];
 };
-/** Large decreases get gaps cut into the line, so direction shows without color. Opacity reads the same feature state as the color. */
-const DASH_FROM = -0.3;
-const dashOpacity = (): unknown[] => ['case', ['<', ['coalesce', ['feature-state', 't'], 0], DASH_FROM], ['case', ['>', ['coalesce', ['feature-state', 't'], 0], NO_DATA + 0.5], 1, 0], 0];
 const SEL_EDGE = { light: '#ffffff', dark: '#0b1118' };
 const OFFSET = ['interpolate', ['linear'], ['zoom'], 14, 1.2, 17, 3.5, 19, 6];
 
@@ -212,6 +210,8 @@ export function MapView(p: Props) {
   const lastDraw = useRef(0);
   const drawn = useRef<Float32Array>(new Float32Array(0));
   const drawTimer = useRef(0);
+  // Direction markers for the largest changes, local meters: x, y, +1 increase / -1 decrease.
+  const marks = useRef<number[]>([]);
   // Marked crossings and signal heads in local meters, computed once per area. Those outside the region are dropped.
   const fixtures = useMemo(() => {
     const net = bundle.network;
@@ -312,6 +312,19 @@ export function MapView(p: Props) {
         g.moveTo(sx - (dx / n) * half, sy - (dy / n) * half); g.lineTo(sx + (dx / n) * half, sy + (dy / n) * half);
       }
       g.stroke();
+    }
+    // largest changes: arrow up for an increase, down for a decrease, so direction does not rest on color
+    if (L.view === 'change' && marks.current.length) {
+      const m = marks.current, hs = Math.max(3.5, Math.min(6, 2.5 + pxPerM * 1.2));
+      g.lineWidth = 1.2; g.strokeStyle = '#0b1118'; g.fillStyle = '#ffffff';
+      g.beginPath();
+      for (let i = 0; i < m.length; i += 3) {
+        const sx = o.x + m[i] * ax + m[i + 1] * bx, sy = o.y + m[i] * ay + m[i + 1] * by;
+        if (sx < -10 || sy < -10 || sx > w + 10 || sy > h + 10) continue;
+        const d = m[i + 2] > 0 ? -1 : 1;
+        g.moveTo(sx, sy + d * hs); g.lineTo(sx + hs, sy - d * hs * 0.7); g.lineTo(sx - hs, sy - d * hs * 0.7); g.closePath();
+      }
+      g.fill(); g.stroke();
     }
     // signals: green = open ring, yellow = triangle, red = filled square
     const net = L.bundle.network, sg = frame.signals;
@@ -532,8 +545,6 @@ export function MapView(p: Props) {
         paint: { 'line-color': BN.color, 'line-opacity': bikeOpacity(BN.lane, 11.5, 14), 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 0.6, 14, 1.5, 18, 3] as never, 'line-offset': OFFSET as never } });
       map.addLayer({ id: 'links', type: 'line', source: 'links', layout: { 'line-cap': 'butt', 'line-join': 'round' },
         paint: { 'line-color': ramp(mode, live.current.view) as never, 'line-width': widthExpr(live.current.view) as never, 'line-offset': OFFSET as never } });
-      map.addLayer({ id: 'links-decrease', type: 'line', source: 'links', layout: { 'line-cap': 'butt', 'line-join': 'round', visibility: live.current.view === 'change' ? 'visible' : 'none' },
-        paint: { 'line-color': mode === 'dark' ? '#0b1118' : '#ffffff', 'line-opacity': dashOpacity() as never, 'line-dasharray': [1.4, 1.4], 'line-width': widthExpr('change') as never, 'line-offset': OFFSET as never } });
       const RC = ROUTE_COLORS[live.current.mode];
       const routeWidth = (a: number, b: number) => ['interpolate', ['linear'], ['zoom'], 14, a, 18, b] as never;
       map.addLayer({ id: 'routes-casing', type: 'line', source: 'routes', layout: { 'line-cap': 'round', 'line-join': 'round' },
@@ -610,7 +621,6 @@ export function MapView(p: Props) {
     map.setPaintProperty('sel-node-edge', 'circle-stroke-color', SEL_EDGE[mode]);
     map.setPaintProperty('links-casing', 'line-color', mode === 'dark' ? '#0b1118' : '#ffffff');
     map.setPaintProperty('links', 'line-color', ramp(mode, live.current.view) as never);
-    map.setPaintProperty('links-decrease', 'line-color', mode === 'dark' ? '#0b1118' : '#ffffff');
     map.setPaintProperty('bike-lane', 'line-color', BIKENET[mode].color);
     map.setPaintProperty('bike-route', 'line-color', BIKENET[mode].color);
     map.setPaintProperty('bike-lane', 'line-opacity', bikeOpacity(BIKENET[mode].lane, 11.5, 14));
@@ -663,6 +673,7 @@ export function MapView(p: Props) {
     const S = linkStatsView(ls), B = linkStatsView(p.baseStats);
     if (prevView.current !== p.view) { prevView.current = p.view; prevT.current = new Float32Array(0); }
     if (prevT.current.length !== links.length) prevT.current = new Float32Array(links.length).fill(-3);
+    const mk: number[] = [];
     for (let i = 0; i < links.length; i++) {
       if (!vis[i]) continue;
       const l = links[i];
@@ -672,7 +683,13 @@ export function MapView(p: Props) {
         prevT.current[i] = t;
         map.setFeatureState({ source: 'links', id: i }, { t });
       }
+      if (change && changeMark(prevT.current[i])) {
+        const q = pointAtLinkMeters(l, l.length / 2);
+        mk.push(q.x + Math.sin(q.heading) * 2, q.y - Math.cos(q.heading) * 2, prevT.current[i]);
+      }
     }
+    marks.current = mk;
+    schedule();
   }, [p.linkStats, p.baseStats, p.view, p.overlay, p.overlayMax, ready, bundle, clipped]);
 
   // ---- view switch: swap paint expressions once, not per update
@@ -683,7 +700,6 @@ export function MapView(p: Props) {
     map.setPaintProperty('links', 'line-color', ramp(mode, v) as never);
     map.setPaintProperty('links', 'line-width', widthExpr(v) as never);
     map.setPaintProperty('links-casing', 'line-width', casingWidth(v) as never);
-    map.setLayoutProperty('links-decrease', 'visibility', v === 'change' ? 'visible' : 'none');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p.view, ready]);
 

@@ -17,6 +17,28 @@ export const DEAD_BAND: Record<Overlay, number> = { cutthrough: DEAD_BAND_CUTTHR
 export const CHANGE_UNIT: Record<Overlay, string> = { cutthrough: 'veh/h', flow: 'veh/h', speed: 'mph' };
 export const CHANGE_NAME: Record<Overlay, string> = { cutthrough: 'Cut-through', flow: 'Flow', speed: 'Mean speed' };
 
+/** Perceptual size of a change intensity (0..1): square root, so mid-size changes are told apart from small ones. */
+export const changeMagnitude = (t: number): number => Math.sqrt(Math.min(1, Math.abs(t)));
+
+/** Intensity at or beyond which a street is marked with an arrow as well as color and width (magnitude 0.75 and up). */
+export const MARK_FROM_T = 0.5625;
+/** Direction marker for a street: '▲' increase, '▼' decrease, null when small, unchanged or without data. */
+export function changeMark(t: number): '▲' | '▼' | null {
+  if (t <= NO_DATA + 0.5 || Math.abs(t) < MARK_FROM_T) return null;
+  return t > 0 ? '▲' : '▼';
+}
+
+/** CSS clip-path for the legend bar: thin at the middle (no change), thick at both ends, on the same scale as line width. */
+export function legendClipPath(min = 0.3, steps = 10): string {
+  const up: string[] = [], down: string[] = [];
+  for (let i = 0; i <= steps; i++) {
+    const x = i / steps, h = min + (1 - min) * changeMagnitude(2 * x - 1);
+    const y0 = (50 - 50 * h).toFixed(1), y1 = (50 + 50 * h).toFixed(1), px = (x * 100).toFixed(1);
+    up.push(`${px}% ${y0}%`); down.unshift(`${px}% ${y1}%`);
+  }
+  return `polygon(${[...up, ...down].join(', ')})`;
+}
+
 export interface Agg { flow: number; cut: number; speed: number }
 
 /** Flow and cut-through summed, speed flow-weighted, over a set of directed links. */
@@ -79,7 +101,10 @@ export function readoutText(o: Overlay, base: Agg, scen: Agg): string {
   return `${CHANGE_NAME[o]}: ${plain(b, o)} → ${plain(s, o)} ${CHANGE_UNIT[o]} (${formatSigned(diffValue(o, base, scen), o)})`;
 }
 
-export const changeLabel = (o: Overlay): string => `Change in ${o === 'cutthrough' ? 'cut-through' : o === 'flow' ? 'flow' : 'speed'}, ${CHANGE_UNIT[o]}`;
+/** Street-level link statistics count motor vehicles only: bicycles are not counted per link and pedestrians are not on the street network, so the map change view is cars only. */
+export const CHANGE_MAP_MODES = 'cars';
+export const CHANGE_MAP_NOTE = 'The map shows cars only. The simulator reports walking and biking for the whole area, not street by street: see People walking and biking and Trips by mode in Results.';
+export const changeLabel = (o: Overlay): string => `Change in car ${o === 'cutthrough' ? 'cut-through' : o === 'flow' ? 'flow' : 'speed'}, ${CHANGE_UNIT[o]}`;
 
 /** Sort key helper: 'chg' orders by absolute change, other numeric keys by value. */
 export function compareRows<T extends { label: string; chg: number | null }>(key: keyof T | 'chg', dir: 1 | -1) {

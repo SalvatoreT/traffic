@@ -2,7 +2,7 @@ import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import type { AreaBundle, AreaEntry, ModeKey, ModeVisibility, Overlay } from '../types';
 import { formatClock } from '../lib/format';
 import { divergingGradient, rampStops, rampTicks, TOP_NOTE, type Mode } from '../lib/ramps';
-import { changeLabel, changeTicks, CHANGE_UNIT, DEAD_BAND, type MapView } from '../lib/change';
+import { changeLabel, CHANGE_MAP_NOTE, changeTicks, CHANGE_UNIT, DEAD_BAND, legendClipPath, type MapView } from '../lib/change';
 import { EXPERIMENTAL_NOTE, isExperimentalPeriod, RUN_SECONDS } from '../lib/run';
 import { speedNoteText } from '../lib/speed';
 import { usePeek } from './usePeek';
@@ -174,7 +174,7 @@ export function Legend(p: LegendProps) {
   const name = change ? changeLabel(p.overlay) : p.overlay === 'speed' ? 'Speed, % of limit' : p.overlay === 'flow' ? 'Flow, veh/h' : 'Cut-through, veh/h';
   const band = DEAD_BAND[p.overlay];
   const help = change
-    ? `Blue lines carry less than today; orange lines carry more. Dashed lines mark large decreases; solid lines are increases. Wider means a bigger change. Differences under ${band} ${CHANGE_UNIT[p.overlay]} count as noise and are shown as no change, in thin gray, as are streets with no traffic in either run. Colors show less and more, not better and worse. The scale tops out at ${changeTicks(p.overlay)[4].slice(1)} ${CHANGE_UNIT[p.overlay]}.`
+    ? `Blue lines carry less than today; orange lines carry more. The thicker the line, the bigger the change, in either direction; arrows mark the largest ones, up for more and down for less. Differences under ${band} ${CHANGE_UNIT[p.overlay]} count as noise and are shown as no change, in thin gray, as are streets with no traffic in either run. Colors show less and more, not better and worse. ${CHANGE_MAP_NOTE} The scale tops out at ${changeTicks(p.overlay)[4].slice(1)} ${CHANGE_UNIT[p.overlay]}.`
     : `${p.overlay === 'speed' ? 'Slower is darker and wider (more congested).' : `Higher is a wider line. ${TOP_NOTE[p.overlay]}`} Thin gray lines carry no vehicles.`;
 
   // Keep the map's attribution just above the row, whatever its height.
@@ -245,7 +245,8 @@ export function Legend(p: LegendProps) {
           </div>
           <ul className="keys" aria-label="Map symbols">
             {p.multimodal && <li><svg width="14" height="14" aria-hidden="true"><line x1="7" y1="1" x2="7" y2="13" stroke="var(--text)" strokeWidth="2" /></svg> Crossing (zoomed in)</li>}
-            {change && <li><svg width="30" height="14" aria-hidden="true"><line x1="1" y1="4" x2="29" y2="4" stroke="var(--text)" strokeWidth="3" /><line x1="1" y1="10" x2="29" y2="10" stroke="var(--text)" strokeWidth="3" strokeDasharray="4 4" /></svg> Solid: increase. Dashed: large decrease.</li>}
+            {change && <li><svg width="30" height="14" aria-hidden="true"><line x1="1" y1="10" x2="29" y2="10" stroke="var(--text)" strokeWidth="1.5" /><line x1="1" y1="4" x2="29" y2="4" stroke="var(--text)" strokeWidth="5" /></svg> Thicker line: bigger change, either direction</li>}
+            {change && <li><svg width="30" height="14" aria-hidden="true"><path d="M7 2 L12 11 L2 11Z" fill="#fff" stroke="#0b1118" /><path d="M22 12 L27 3 L17 3Z" fill="#fff" stroke="#0b1118" /></svg> Arrow: largest increase (up) or decrease (down)</li>}
             <li><svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="var(--surface)" stroke="#1f9d55" strokeWidth="2" /></svg> Signal green (ring)</li>
             <li><svg width="14" height="14" aria-hidden="true"><path d="M7 1 L13 12 L1 12Z" fill="#f5c400" stroke="var(--text)" /></svg> Yellow (triangle)</li>
             <li><svg width="14" height="14" aria-hidden="true"><rect x="2" y="2" width="10" height="10" fill="#d62728" stroke="var(--text)" /></svg> Red (square)</li>
@@ -269,7 +270,7 @@ export function Legend(p: LegendProps) {
         <div className="legend-ramp" role="img" aria-label={`${name}: from ${ticks[0]} to ${ticks[4]}${change ? ', zero is no change' : ''}`}>
           <span className="ramp-end">{ticks[0]}</span>
           <div className="ramp-col">
-            <div className="ramp-bar" style={{ background: grad }} />
+            <div className="ramp-bar" style={{ background: grad, clipPath: change ? legendClipPath() : undefined }} />
             {change ? (
               <div className="ramp-zero" aria-hidden="true">
                 <i className="ramp-zero-tick" />
