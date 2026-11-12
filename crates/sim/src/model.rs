@@ -228,7 +228,7 @@ pub struct Config {
 
 impl Default for Config {
     fn default() -> Self {
-        Config { seed: 1, period: String::new(), demand_scale: 1.0, select_links: Vec::new(), local_cost_factor: None, signal_adapt_min: None, motorway_gridlock_removal: false, ped_yield_marked: None, ped_yield_unmarked: None, lane_width_m: None }
+        Config { seed: 1, period: String::new(), demand_scale: 1.0, select_links: Vec::new(), local_cost_factor: None, reroute_share: None, signal_adapt_min: None, motorway_gridlock_removal: false, ped_yield_marked: None, ped_yield_unmarked: None, lane_width_m: None }
     }
 }
 
