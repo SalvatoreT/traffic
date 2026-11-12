@@ -580,6 +580,20 @@ const typeOf = (o: number, d: number): FlowType => (fwIdSet.has(o) || fwIdSet.ha
 // ---------- count-constrained fit (baseline-calibration, seventh round): static assignment, matrix adjustment to link counts, capacity guard ----------
 // Offered car trips are assigned to free-flow shortest paths (tools/lib/assign.ts mirrors the simulator's router); every count the pipeline holds becomes a
 // target volume on directed links (tools/lib/demand-fit.ts); flows are scaled until assigned volumes match [VanZuylen1980], [Willumsen1981]. Walking and biking are untouched.
+// Gates on one street within PAIR_M of each other that take the same count (same source text) split it: connected groups, keyed by the lowest node id.
+const gateGroup = (id: number): string => {
+  const seen = new Set([id]), st = [id];
+  const src = gates.find((g) => g.id === id)?.source;
+  while (st.length) {
+    const a = nodeById.get(st.pop()!)!;
+    for (const q of gates) {
+      if (seen.has(q.id) || q.source !== src || q.kind === 'ASSUMPTION') continue;
+      const b = nodeById.get(q.id)!;
+      if (Math.hypot(a.x - b.x, a.y - b.y) <= PAIR_M && [...linkNames(q.id)].some((nm) => linkNames(a.id).has(nm))) { seen.add(q.id); st.push(q.id); }
+    }
+  }
+  return String(Math.min(...seen));
+};
 let fitText = '';
 const fitResults: PeriodResult[] = [];
 const fc = cfg.countFit;
@@ -588,14 +602,14 @@ if (fc?.enabled) {
   const stations = buildStations({
     nodes: net.nodes as never, links: net.links as NetLinkIn[], periodIds, lastPeriod, periodFactors: pf, kFactor: cfg.kFactor, rampKFactor: rc.kFactor, center,
     inBbox: (x, y) => x >= rect.minX && x <= rect.maxX && y >= rect.minY && y <= rect.maxY,
-    streetKey, gates: gates.map((g) => ({ id: g.id, kind: g.kind, street: g.street, source: g.source, inT: g.inT, outT: g.outT })),
+    streetKey, gates: gates.map((g) => ({ id: g.id, kind: g.kind, street: g.street, source: g.source, inT: g.inT, outT: g.outT, group: gateGroup(g.id) })),
     tmcs: tmcs.map((c) => ({ id: c.id, x: c.x, y: c.y, legs: c.legs, legStreets: c.legStreets })),
     ramps: ramps.map((r) => { const v = rampVol.get(r)!; return { kind: r.kind, surface: r.surface, streets: r.streets, adt: v.adt, adtKind: v.kind, source: v.source }; }),
     overrides: (cfg.adtOverrides ?? []).map((o: { street: string; adt: number; factor?: number; lat: number; lon: number; source: string }) => { const [x, y] = toXY(o.lat, o.lon); return { street: o.street, adt: o.adt, factor: o.factor, x, y, source: o.source }; }),
     cfg: { tmcNodeMaxM: fc.tmcNodeMaxM, stationRadiusM: fc.stationRadiusM, weights: fc.weights, tolerancePct: fc.tolerancePct },
   }, stationNotes);
   const fitCfg: FitConfig = {
-    fit: { lo: fc.bounds.lo, hi: fc.bounds.hi, byType: fc.bounds.byType, maxIter: fc.maxIter, tol: fc.tol, damping: fc.damping, uncounted: fc.uncounted.rule, volumeWeightedMedian: fc.uncounted.volumeWeighted, stationary: fc.stationary ?? 1e-4 },
+    fit: { lo: fc.bounds.lo, hi: fc.bounds.hi, byType: fc.bounds.byType, maxIter: fc.maxIter, tol: fc.tol, damping: fc.damping, uncounted: fc.uncounted.rule, volumeWeightedMedian: fc.uncounted.volumeWeighted, stationary: fc.stationary ?? 1e-4, softStep: fc.softStep ?? 1e-3, stallWindow: fc.stallWindow ?? 25, stallGain: fc.stallGain ?? 0.002, blockedShare: fc.blockedShare ?? 0.8, band: 0, shareTol: fc.shareTol ?? 0.02 },
     draws: fc.draws, noise: fc.noise, guard: { enabled: fc.capacityGuard.enabled, excessShare: fc.capacityGuard.excessShare, weight: fc.capacityGuard.weight, capacity: fc.capacityGuard.capacity },
   };
   const flowsBy: Record<string, { origin: number; destination: number; vehPerHour: number }[]> = {};

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import type { AreaBundle, AreaEntry, ModeKey, ModeVisibility, Overlay } from '../types';
 import { formatClock } from '../lib/format';
-import { rampStops, type Mode } from '../lib/ramps';
+import { rampStops, rampTicks, TOP_NOTE, type Mode } from '../lib/ramps';
 import { EXPERIMENTAL_NOTE, isExperimentalPeriod, RUN_SECONDS } from '../lib/run';
 import { speedNoteText } from '../lib/speed';
 import { usePeek } from './usePeek';
@@ -130,7 +130,7 @@ export function Playback(p: PlaybackProps) {
 }
 
 interface LegendProps {
-  overlay: Overlay; onOverlay(o: Overlay): void; max: number; mode: Mode;
+  overlay: Overlay; onOverlay(o: Overlay): void; mode: Mode;
   source: 'scenario' | 'baseline'; onSource(s: 'scenario' | 'baseline'): void; canCompare: boolean;
   /** False when the sim build has no multimodal agents: only the car key is shown then. */
   multimodal: boolean;
@@ -164,11 +164,9 @@ export function Legend(p: LegendProps) {
   const extraId = useId(), tipId = useId();
   const stops = rampStops(p.mode);
   const grad = `linear-gradient(to right, ${stops.join(', ')})`;
-  const ticks = p.overlay === 'speed'
-    ? ['100%', '75%', '50%', '25%', '0%']
-    : [0, 0.25, 0.5, 0.75, 1].map((f) => (p.max < 8 ? String(Math.round(p.max * f * 100) / 100) : String(Math.round(p.max * f))));
+  const ticks = rampTicks(p.overlay);
   const name = p.overlay === 'speed' ? 'Speed, % of limit' : p.overlay === 'flow' ? 'Flow, veh/h' : 'Cut-through, veh/h';
-  const help = `${p.overlay === 'speed' ? 'Slower is darker and wider (more congested).' : 'Higher is a wider line.'} Thin gray lines carry no vehicles.`;
+  const help = `${p.overlay === 'speed' ? 'Slower is darker and wider (more congested).' : `Higher is a wider line. ${TOP_NOTE[p.overlay]}`} Thin gray lines carry no vehicles.`;
 
   // Keep the map's attribution just above the row, whatever its height.
   useEffect(() => {

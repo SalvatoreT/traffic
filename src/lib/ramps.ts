@@ -9,19 +9,6 @@ export function rampStops(mode: Mode): string[] {
 }
 export const resolveMode = (t: Theme, prefersDark: boolean): Mode => (t === 'auto' ? (prefersDark ? 'dark' : 'light') : t);
 
-export function niceMax(v: number): number {
-  if (!(v > 0)) return 1;
-  const p = Math.pow(10, Math.floor(Math.log10(v)));
-  const f = v / p;
-  return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p;
-}
-
-export function percentile(values: number[], p: number): number {
-  if (!values.length) return 0;
-  const a = [...values].sort((x, y) => x - y);
-  return a[Math.min(a.length - 1, Math.floor(p * (a.length - 1)))];
-}
-
 /** Normalized intensity 0..1 for a link given overlay. `limit` in m/s. Returns -1 for "no data". */
 export function intensity(overlay: Overlay, flow: number, speed: number, cut: number, limit: number, max: number): number {
   if (overlay === 'speed') {
@@ -37,18 +24,27 @@ export const WIDTH_MIN = 1.2;
 export const WIDTH_MAX = 9;
 export const widthFor = (t: number) => (t < 0 ? WIDTH_MIN * 0.8 : WIDTH_MIN + t * (WIDTH_MAX - WIDTH_MIN));
 
-/** Smallest upper bound per overlay, so a quiet network does not stretch the ramp to tiny values. */
-export const OVERLAY_FLOOR = { flow: 50, cutthrough: 20 } as const;
-export const SHRINK_EVERY_MS = 5000;
-export interface MaxState { max: number; changedAt: number }
-
 /**
- * Upper bound for the flow and cut-through ramps: 95th percentile of link values rounded up to a nice number.
- * Grows at once; shrinks at most once per SHRINK_EVERY_MS so the legend does not flicker.
+ * Fixed top of the flow and cut-through ramps, veh/h. Values above it clamp to the top color and the widest line, so colors and widths do not rescale as traffic changes.
+ * Flow: one signalized lane carries about 740 to 840 veh/h at a 0.5 green share (cases b1 and b2 in data/calibration/validation.md, citing [FHWA-SIG2004]); 800 is the round number near that.
+ * Cut-through: ASSUMPTION, 150 veh/h of through traffic on a local street. It is 1,500 veh/day, the preferred ceiling for shared bikeway streets in NACTO's Urban Bikeway Design Guide
+ * (read only as search-result summaries, not on the publisher's page, so not in docs/references.md), times a peak-hour share K of 0.10 (the README range is 0.09 to 0.10; see [FHWA-TMG2022] for K as a concept).
  */
-export function nextOverlayMax(values: number[], floor: number, prev: MaxState, now: number): MaxState {
-  const target = Math.max(floor, niceMax(percentile(values, 0.95)));
-  if (prev.max === 0 || target > prev.max) return { max: target, changedAt: now };
-  if (target < prev.max && now - prev.changedAt >= SHRINK_EVERY_MS) return { max: target, changedAt: now };
-  return prev;
+export const OVERLAY_TOP = { flow: 800, cutthrough: 150 } as const;
+
+/** Top-of-scale value for the overlay; speed is a fixed 0 to 100% of the limit. */
+export const overlayTop = (o: Overlay): number => (o === 'speed' ? 1 : OVERLAY_TOP[o]);
+
+/** Five legend labels from the low to the high end. The last carries a plus sign for flow and cut-through because larger values clamp to it. */
+export function rampTicks(overlay: Overlay): string[] {
+  if (overlay === 'speed') return ['100%', '75%', '50%', '25%', '0%'];
+  const top = OVERLAY_TOP[overlay];
+  const ticks = [0, 0.25, 0.5, 0.75, 1].map((f) => String(Math.round(top * f)));
+  ticks[4] = `${ticks[4]}+`;
+  return ticks;
 }
+
+export const TOP_NOTE: Record<'flow' | 'cutthrough', string> = {
+  flow: 'Top of the scale: 800 vehicles an hour, about what one signalized lane carries in the model.',
+  cutthrough: 'Top of the scale: 150 through vehicles an hour, about 1,500 a day. This is an assumption based on bikeway guidance for shared streets.',
+};

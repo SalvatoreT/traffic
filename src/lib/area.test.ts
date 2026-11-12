@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildFixture } from '../fixtures/area';
 import { buildIndex } from './naming';
-import { computeFocus, interventionInStudyArea, FOCUS_BUFFER_M } from './area';
+import { computeFocus, REGION_BUFFER_M } from './area';
 import { blockVisible, placeResults } from './picker';
 import { aggregateProgress } from '../data';
 import { nextSpeedShown, speedNoteText } from './speed';
@@ -24,10 +24,10 @@ describe('focus area', () => {
     far.links.forEach((l) => expect(f.link[l.id]).toBe(l.inStudyArea));
   });
   it('measures the buffer from the outline', () => {
-    // A node 100 m outside the outline is in focus at 150 m, out at 50 m.
+    // A node 100 m outside the outline is in focus at 250 m, out at 50 m.
     const out = net.nodes.find((n) => !n.inStudyArea)!;
     const moved: Network = { ...net, nodes: net.nodes.map((n) => (n.id === out.id ? { ...n, x: 1000, y: 1000 } : n)) };
-    expect(FOCUS_BUFFER_M).toBe(150);
+    expect(REGION_BUFFER_M).toBe(250);
     expect(computeFocus(moved).node[out.id]).toBe(false);
   });
   it('falls back to the study-area flags when there is no outline', () => {
@@ -42,48 +42,37 @@ describe('picker scope', () => {
     ...net,
     studyArea: net.studyArea.map(([lon, lat]) => {
       const c = net.origin;
-      return [c.lon + (lon - c.lon) * 0.4, c.lat + (lat - c.lat) * 0.4] as [number, number];
+      return [c.lon + (lon - c.lon) * 0.05, c.lat + (lat - c.lat) * 0.05] as [number, number];
     }),
     nodes: net.nodes.map((n) => ({ ...n, inStudyArea: Math.abs(n.x) < 80 && Math.abs(n.y) < 80 })),
     links: net.links.map((l) => ({ ...l, inStudyArea: Math.abs(l.geometry[0][0]) < 80 && Math.abs(l.geometry[0][1]) < 80 && Math.abs(l.geometry[1][0]) < 80 && Math.abs(l.geometry[1][1]) < 80 })),
   };
   const idx = buildIndex(small);
-  const base = { showService: true, showOutside: false };
-  it('lists fewer blocks by default than with outside streets included', () => {
-    const inside = placeResults(small, idx, base).blocks;
-    const all = placeResults(small, idx, { ...base, showOutside: true }).blocks;
-    expect(inside.length).toBeGreaterThan(0);
-    expect(inside.length).toBeLessThan(all.length);
-    expect(all.length).toBe(idx.blocks.length);
-    idx.blocks.forEach((b, i) => { if (b.inStudyArea) expect(inside.some((r) => r.id === i)).toBe(true); });
+  const base = { showService: true };
+  it('lists only blocks in the study area or the buffer around it', () => {
+    const listed = placeResults(small, idx, base).blocks;
+    expect(listed.length).toBeGreaterThan(0);
+    expect(listed.length).toBeLessThan(idx.blocks.length);
+    listed.forEach((r) => expect(idx.blocks[r.id].inFocus).toBe(true));
+    idx.blocks.forEach((b, i) => { if (b.inStudyArea) expect(listed.some((r) => r.id === i)).toBe(true); });
   });
   it('filters intersections the same way', () => {
-    expect(placeResults(small, idx, base).nodes.length).toBeLessThan(placeResults(small, idx, { ...base, showOutside: true }).nodes.length);
+    const nodes = placeResults(small, idx, base).nodes;
+    expect(nodes.length).toBeLessThan(idx.intersections.length);
+    nodes.forEach((r) => expect(idx.nodeInFocus[r.id]).toBe(true));
   });
   it('puts study-area items first', () => {
-    for (const items of Object.values(placeResults(small, idx, { ...base, showOutside: true }))) {
+    for (const items of Object.values(placeResults(small, idx, base))) {
       const firstOut = items.findIndex((i) => !i.study);
       if (firstOut >= 0) expect(items.slice(firstOut).every((i) => !i.study)).toBe(true);
     }
   });
-  it('hides service roads unless asked, even in the focus area', () => {
+  it('hides service roads unless asked, even in the visible region', () => {
     const svc = { ...idx.blocks[0], cls: 'service' as const, inFocus: true };
-    expect(blockVisible(svc, { showService: false, showOutside: false })).toBe(false);
-    expect(blockVisible(svc, { showService: true, showOutside: false })).toBe(true);
-    expect(blockVisible(svc, { showService: false, showOutside: false }, 'service')).toBe(true);
-    expect(blockVisible({ ...svc, cls: 'residential', inFocus: false }, { showService: true, showOutside: false })).toBe(false);
-  });
-});
-
-describe('interventionInStudyArea', () => {
-  it('uses the study-area flags of the targeted link or node', () => {
-    const inLink = net.links.find((l) => l.inStudyArea)!, outLink = net.links.find((l) => !l.inStudyArea)!;
-    expect(interventionInStudyArea({ type: 'speed_hump', link: inLink.id, position: 5 }, net)).toBe(true);
-    expect(interventionInStudyArea({ type: 'speed_hump', link: outLink.id, position: 5 }, net)).toBe(false);
-    const inNode = net.nodes.find((n) => n.inStudyArea)!, outNode = net.nodes.find((n) => !n.inStudyArea)!;
-    expect(interventionInStudyArea({ type: 'traffic_circle', node: inNode.id }, net)).toBe(true);
-    expect(interventionInStudyArea({ type: 'modal_filter', node: outNode.id }, net)).toBe(false);
-    expect(interventionInStudyArea({ type: 'turn_ban', fromLink: outLink.id, toLink: inLink.id }, net)).toBe(net.nodes[outLink.to].inStudyArea);
+    expect(blockVisible(svc, { showService: false })).toBe(false);
+    expect(blockVisible(svc, { showService: true })).toBe(true);
+    expect(blockVisible(svc, { showService: false }, 'service')).toBe(true);
+    expect(blockVisible({ ...svc, cls: 'residential', inFocus: false }, { showService: true })).toBe(false);
   });
 });
 

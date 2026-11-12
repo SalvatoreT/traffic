@@ -8,6 +8,8 @@ import { makeProjection, metersPerPixel } from '../lib/projection';
 import { pointAlong } from '../lib/geom';
 import { hitTest, selectionAnchor, type Selection } from '../lib/selection';
 import { PopoverFrame } from './Popover';
+import { FADE_TIERS, interventionInRegion, REGION_FEATHER_M, type Region } from '../lib/region';
+import { REGION_BUFFER_M } from '../lib/area';
 import { advance, elapsedSim } from '../lib/extrapolate';
 import { intensity, rampStops, WIDTH_MAX, WIDTH_MIN, type Mode } from '../lib/ramps';
 import type { NetIndex } from '../lib/naming';
@@ -19,6 +21,8 @@ maplibregl.setWorkerUrl(workerUrl);
 interface Props {
   bundle: AreaBundle;
   index: NetIndex;
+  /** The study area plus its buffer: everything the map draws or picks lies inside it. */
+  region: Region;
   mode: Mode;
   overlay: Overlay;
   overlayMax: number;
@@ -37,8 +41,8 @@ interface Props {
 }
 
 const KIND_STYLE = {
-  light: { bg: '#f1efe8', water: '#cfd8e0', minor: '#d8d3c6', major: '#b9b2a0', path: '#cdd5bf', study: '#0b5cad', wash: 0.6 },
-  dark: { bg: '#161b22', water: '#1d2a38', minor: '#2b323c', major: '#3d4654', path: '#27302a', study: '#7db6f5', wash: 0.7 },
+  light: { bg: '#f1efe8', water: '#cfd8e0', minor: '#d8d3c6', major: '#b9b2a0', path: '#cdd5bf', study: '#0b5cad' },
+  dark: { bg: '#161b22', water: '#1d2a38', minor: '#2b323c', major: '#3d4654', path: '#27302a', study: '#7db6f5' },
 };
 
 function ramp(mode: Mode): unknown[] {
@@ -78,20 +82,55 @@ const BADGE: Record<string, string> = {
   signal_timing: 'ST', one_way: '1W', turn_ban: 'TB', diagonal_diverter: 'DD',
 };
 
-/** A large rectangle with the study area cut out: a wash over the basemap outside the outline. */
-function outsideWash(b: AreaBundle) {
+/** Soft edge: stacked washes of the background color, each a large rectangle with a contour of the region cut out. Their alphas compound to k/N, so the edge goes from clear to opaque over REGION_FEATHER_M. */
+const FEATHER_STEPS = 5;
+const FADE_ALPHA = [0, 0.3, 0.55, 0.8, 1];
+function featherWash(b: AreaBundle, region: Region, k: number) {
   const { lon, lat } = b.network.origin;
+  const pr = makeProjection(b.network.origin);
   const d = 0.6;
   const outer: [number, number][] = [[lon - d, lat - d], [lon + d, lat - d], [lon + d, lat + d], [lon - d, lat + d], [lon - d, lat - d]];
-  const ring = b.network.studyArea;
-  const rings = ring && ring.length >= 3 ? [outer, ring] : [outer];
-  return { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: rings } };
+  const level = REGION_BUFFER_M - (REGION_FEATHER_M * (FEATHER_STEPS - k)) / FEATHER_STEPS;
+  const holes = region.contour(level).map((r) => r.map(([x, y]) => pr.toLonLat(x, y)));
+  return { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [outer, ...holes] } };
 }
+const featherAlpha = (k: number) => 1 / (FEATHER_STEPS - k + 1);
+/** Basemap and street lines cut to the region once, so nothing outside it is ever drawn. */
+function clipData(b: AreaBundle, region: Region) {
+  const pr = makeProjection(b.network.origin);
+  const toLL = (part: [number, number][]) => part.map(([x, y]) => pr.toLonLat(x, y));
+  const base: unknown[] = [];
+  for (const f of (b.basemap as unknown as { features: { properties: unknown; geometry: { coordinates: [number, number][] } }[] }).features) {
+    const local = f.geometry.coordinates.map(([lo, la]) => pr.toLocal(lo, la));
+    for (const part of region.clipLine(local)) base.push({ type: 'Feature', properties: f.properties, geometry: { type: 'LineString', coordinates: toLL(part) } });
+  }
+  const linkVisible = new Uint8Array(b.network.links.length);
+  const links: unknown[] = [];
+  for (const l of b.network.links) {
+    const parts = region.clipLine(l.geometry);
+    if (!parts.length) continue;
+    linkVisible[l.id] = 1;
+    links.push({
+      type: 'Feature', id: l.id, properties: { id: l.id, bikeLane: !!l.bikeLane, bikeRoute: !!l.bikeRoute && !l.bikeLane },
+      geometry: parts.length === 1 ? { type: 'LineString', coordinates: toLL(parts[0]) } : { type: 'MultiLineString', coordinates: parts.map(toLL) },
+    });
+  }
+  return { base: { type: 'FeatureCollection', features: base }, links: { type: 'FeatureCollection', features: links }, linkVisible };
+}
+const lineFeature = (region: Region, pr: ReturnType<typeof makeProjection>, g: [number, number][]) => {
+  const parts = region.clipLine(g).map((pt) => pt.map(([x, y]) => pr.toLonLat(x, y)));
+  return parts.map((c) => ({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: c } }));
+};
 const FRAME_MS = 32; // without extrapolation the vehicle layer redraws at most ~30 Hz
 /** Above this multiplier sim frames arrive often enough that extrapolating is unnecessary. */
 const EXTRAPOLATE_MAX_RATE = 5;
-interface DebugHook { positions: Float32Array; draws: number; drawMs: number; frameTime: number; extrapolated: boolean }
+interface DebugHook { signals: number; signalsDrawn: number; positions: Float32Array; draws: number; drawMs: number; frameTime: number; extrapolated: boolean }
 
+/** The region's bounding box, padded a little, as map bounds. */
+function regionBounds(region: Region, pr: ReturnType<typeof makeProjection>, padM: number): maplibregl.LngLatBounds {
+  const { minX, minY, maxX, maxY } = region.bbox;
+  return new maplibregl.LngLatBounds(pr.toLonLat(minX - padM, minY - padM), pr.toLonLat(maxX + padM, maxY + padM));
+}
 function studyBounds(b: AreaBundle): maplibregl.LngLatBoundsLike | null {
   const ring = b.network.studyArea;
   if (!ring || ring.length < 3) return null;
@@ -139,7 +178,7 @@ class FitControl implements maplibregl.IControl {
 }
 
 export function MapView(p: Props) {
-  const { bundle, mode } = p;
+  const { bundle, mode, region } = p;
   const proj = useMemo(() => makeProjection(bundle.network.origin), [bundle]);
   const box = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -157,22 +196,26 @@ export function MapView(p: Props) {
   const lastDraw = useRef(0);
   const drawn = useRef<Float32Array>(new Float32Array(0));
   const drawTimer = useRef(0);
-  // Marked crossings and signal heads in local meters, computed once per area.
+  // Marked crossings and signal heads in local meters, computed once per area. Those outside the region are dropped.
   const fixtures = useMemo(() => {
     const net = bundle.network;
-    const ticks: [number, number, number][] = [];
+    const ticks: [number, number, number, number][] = [];
     for (const l of net.links) for (const c of l.crossings ?? []) {
       const p = pointAlong(l.geometry, Math.min(c, l.length));
-      ticks.push([p.x, p.y, p.heading]);
+      const tr = region.tier(p.x, p.y);
+      if (tr) ticks.push([p.x, p.y, p.heading, tr]);
     }
     const sig = new Float32Array(net.links.length * 2);
+    const sigTier = new Uint8Array(net.links.length);
     for (const l of net.links) {
       const pp = pointAlong(l.geometry, Math.max(0, l.length - 5));
       sig[l.id * 2] = pp.x + Math.sin(pp.heading) * 3.5; // right of travel
       sig[l.id * 2 + 1] = pp.y - Math.cos(pp.heading) * 3.5;
+      sigTier[l.id] = region.tier(sig[l.id * 2], sig[l.id * 2 + 1]);
     }
-    return { ticks, sig };
-  }, [bundle]);
+    return { ticks, sig, sigTier };
+  }, [bundle, region]);
+  const clipped = useMemo(() => clipData(bundle, region), [bundle, region]);
 
   // ---- draw vehicles + signals on overlay canvas
   const draw = () => {
@@ -205,32 +248,45 @@ export function MapView(p: Props) {
       v = drawn.current;
     }
     const M = L.modes;
-    // One path per kind so each kind is a single fill and stroke.
-    const pCar = new Path2D(), pBike = new Path2D(), pPed = new Path2D();
+    // One path per kind and fade tier, so each is a single fill and stroke.
+    const mk = () => Array.from({ length: FADE_TIERS + 1 }, () => null as Path2D | null);
+    const pCar = mk(), pBike = mk(), pPed = mk();
+    const path = (set: (Path2D | null)[], t: number) => (set[t] ??= new Path2D());
     const rb = r * 1.25, rp = Math.max(1.3, r * 0.6);
+    const bb = L.region.bbox;
     for (let i = 0; i + 5 < v.length; i += 6) {
       const kind = v[i + 4];
       if (kind === KIND_BIKE ? !M.bicycle : kind === KIND_PED ? !M.pedestrian : !M.car) continue;
-      const sx = o.x + v[i] * ax + v[i + 1] * bx, sy = o.y + v[i] * ay + v[i + 1] * by;
+      const lx = v[i], ly = v[i + 1];
+      if (lx < bb.minX || lx > bb.maxX || ly < bb.minY || ly > bb.maxY) continue;
+      const sx = o.x + lx * ax + ly * bx, sy = o.y + lx * ay + ly * by;
       if (sx < -10 || sy < -10 || sx > w + 10 || sy > h + 10) continue;
+      const tr = L.region.tier(lx, ly);
+      if (!tr) continue;
       if (kind === KIND_BIKE) {
-        pBike.moveTo(sx, sy - rb); pBike.lineTo(sx + rb * 0.95, sy + rb * 0.7); pBike.lineTo(sx - rb * 0.95, sy + rb * 0.7); pBike.closePath();
+        const pp = path(pBike, tr);
+        pp.moveTo(sx, sy - rb); pp.lineTo(sx + rb * 0.95, sy + rb * 0.7); pp.lineTo(sx - rb * 0.95, sy + rb * 0.7); pp.closePath();
       } else if (kind === KIND_PED) {
-        pPed.rect(sx - rp, sy - rp, rp * 2, rp * 2);
+        path(pPed, tr).rect(sx - rp, sy - rp, rp * 2, rp * 2);
       } else {
-        pCar.moveTo(sx + r, sy); pCar.arc(sx, sy, r, 0, Math.PI * 2);
+        const pp = path(pCar, tr);
+        pp.moveTo(sx + r, sy); pp.arc(sx, sy, r, 0, Math.PI * 2);
       }
     }
-    g.lineWidth = 1; g.strokeStyle = C.ring;
-    g.fillStyle = C.car; g.fill(pCar); g.stroke(pCar);
-    g.lineWidth = 1; g.strokeStyle = C.ring;
-    g.fillStyle = C.bike; g.fill(pBike); g.stroke(pBike);
-    g.fillStyle = C.ped; g.lineWidth = 0.8; g.fill(pPed); g.stroke(pPed);
+    for (let t = 1; t <= FADE_TIERS; t++) {
+      g.globalAlpha = FADE_ALPHA[t];
+      g.strokeStyle = C.ring;
+      if (pCar[t]) { g.lineWidth = 1; g.fillStyle = C.car; g.fill(pCar[t]!); g.stroke(pCar[t]!); }
+      if (pBike[t]) { g.lineWidth = 1; g.fillStyle = C.bike; g.fill(pBike[t]!); g.stroke(pBike[t]!); }
+      if (pPed[t]) { g.fillStyle = C.ped; g.lineWidth = 0.8; g.fill(pPed[t]!); g.stroke(pPed[t]!); }
+    }
+    g.globalAlpha = 1;
     // marked crossings: short ticks across the street, only when zoomed in
     if (M.pedestrian && pxPerM >= 0.8 && fixtures.ticks.length) {
       g.strokeStyle = C.tick; g.lineWidth = 2; g.beginPath();
       const half = Math.max(4, 4 * pxPerM);
-      for (const [x, y, hd] of fixtures.ticks) {
+      for (const [x, y, hd, tk] of fixtures.ticks) {
+        if (tk < 2) continue;
         const sx = o.x + x * ax + y * bx, sy = o.y + x * ay + y * by;
         if (sx < -10 || sy < -10 || sx > w + 10 || sy > h + 10) continue;
         // Across the street: local direction (-sin, cos) mapped to screen.
@@ -244,19 +300,27 @@ export function MapView(p: Props) {
     // signals: green = open ring, yellow = triangle, red = filled square
     const net = L.bundle.network, sg = frame.signals;
     const sz = Math.max(4, Math.min(7, 3 + pxPerM * 1.6));
+    let sigDrawn = 0, sigTotal = 0;
     for (let li = 0; li < sg.length && li < net.links.length; li++) {
       const st = sg[li];
       if (!st) continue;
+      sigTotal++;
+      const stier = fixtures.sigTier[li];
+      if (!stier) continue;
       const x = fixtures.sig[li * 2], y = fixtures.sig[li * 2 + 1];
       const sx = o.x + x * ax + y * bx, sy = o.y + x * ay + y * by;
       if (sx < -10 || sy < -10 || sx > w + 10 || sy > h + 10) continue;
+      sigDrawn++;
+      g.globalAlpha = FADE_ALPHA[stier];
       g.lineWidth = 2;
       if (st === 1) { g.strokeStyle = '#1f9d55'; g.fillStyle = dark ? '#0b1118' : '#fff'; g.beginPath(); g.arc(sx, sy, sz, 0, 7); g.fill(); g.stroke(); }
       else if (st === 2) { g.strokeStyle = dark ? '#fff' : '#1a1a1a'; g.fillStyle = '#f5c400'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(sx, sy - sz); g.lineTo(sx + sz, sy + sz * 0.8); g.lineTo(sx - sz, sy + sz * 0.8); g.closePath(); g.fill(); g.stroke(); }
       else { g.strokeStyle = dark ? '#fff' : '#1a1a1a'; g.fillStyle = '#d62728'; g.lineWidth = 1.2; g.beginPath(); g.rect(sx - sz * 0.85, sy - sz * 0.85, sz * 1.7, sz * 1.7); g.fill(); g.stroke(); }
-    }    if (new URLSearchParams(location.search).has('debug')) {
-      const dbg = ((window as unknown as { __trafficDebug?: DebugHook }).__trafficDebug ??= { positions: v, draws: 0, drawMs: 0, frameTime: 0, extrapolated: false });
-      dbg.positions = v; dbg.draws++; dbg.drawMs += performance.now() - t0; dbg.frameTime = frame.time; dbg.extrapolated = animate;
+    }
+    g.globalAlpha = 1;
+    if (new URLSearchParams(location.search).has('debug')) {
+      const dbg = ((window as unknown as { __trafficDebug?: DebugHook }).__trafficDebug ??= { signals: 0, signalsDrawn: 0, positions: v, draws: 0, drawMs: 0, frameTime: 0, extrapolated: false });
+      dbg.positions = v; dbg.signals = sigTotal; dbg.signalsDrawn = sigDrawn; dbg.draws++; dbg.drawMs += performance.now() - t0; dbg.frameTime = frame.time; dbg.extrapolated = animate;
     }
     if (animate) schedule();
   };
@@ -277,11 +341,20 @@ export function MapView(p: Props) {
     const map = new maplibregl.Map({
       container: el,
       style: { version: 8, sources: {}, layers: [{ id: 'bg', type: 'background', paint: { 'background-color': KIND_STYLE.light.bg } }] },
-      center: b.entry.center, zoom: Math.min(b.entry.zoom, 14.5), minZoom: 12, maxZoom: 19.5,
+      center: b.entry.center, zoom: Math.min(b.entry.zoom, 14.5), minZoom: 11, maxZoom: 19.5,
+      maxBounds: regionBounds(region, proj, 60),
       attributionControl: false, dragRotate: false, pitchWithRotate: false, fadeDuration: 0,
       canvasContextAttributes: { antialias: true },
     } as maplibregl.MapOptions);
     mapRef.current = map;
+    if (new URLSearchParams(location.search).has('debug')) (window as unknown as { __trafficMap?: unknown }).__trafficMap = map;
+    // The region should roughly fill the map when zoomed out as far as allowed.
+    const limitZoom = () => {
+      if (el.clientWidth < 50 || el.clientHeight < 50) return;
+      const cam = map.cameraForBounds(regionBounds(region, proj, 0), { padding: 0 });
+      if (cam?.zoom !== undefined) map.setMinZoom(Math.max(8, cam.zoom - 0.05));
+    };
+    limitZoom();
     map.touchZoomRotate.disableRotation();
     map.addControl(new maplibregl.AttributionControl({
       compact: false,
@@ -316,19 +389,9 @@ export function MapView(p: Props) {
 
     map.on('load', () => {
       const pr = makeProjection(b.network.origin);
-      map.addSource('basemap', { type: 'geojson', data: b.basemap as never });
-      map.addSource('outside', { type: 'geojson', data: outsideWash(b) as never });
+      map.addSource('basemap', { type: 'geojson', data: clipped.base as never });
       map.addSource('study', { type: 'geojson', data: { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [b.network.studyArea] } } });
-      map.addSource('links', {
-        type: 'geojson',
-        data: {
-          type: 'FeatureCollection',
-          features: b.network.links.map((l) => ({
-            type: 'Feature', id: l.id, properties: { id: l.id, bikeLane: !!l.bikeLane, bikeRoute: !!l.bikeRoute && !l.bikeLane },
-            geometry: { type: 'LineString', coordinates: l.geometry.map(([x, y]) => pr.toLonLat(x, y)) },
-          })),
-        },
-      });
+      map.addSource('links', { type: 'geojson', data: clipped.links as never });
       map.addSource('hover', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
       map.addSource('selection', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
       const K = KIND_STYLE.light;
@@ -338,7 +401,6 @@ export function MapView(p: Props) {
       map.addLayer({ id: 'base-lines', type: 'line', source: 'basemap', filter: ['!', ['match', ['get', 'kind'], ['footway', 'path', 'cycleway', 'steps', 'pedestrian', 'track'], true, false]],
         layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: { 'line-color': ['case', major, K.major, K.minor], 'line-width': ['interpolate', ['linear'], ['zoom'], 12, 0.6, 18, ['case', major, 9, 5]] } });
-      map.addLayer({ id: 'outside-wash', type: 'fill', source: 'outside', paint: { 'fill-color': K.bg, 'fill-opacity': K.wash, 'fill-antialias': false } });
       map.addLayer({ id: 'study-fill', type: 'fill', source: 'study', paint: { 'fill-color': K.study, 'fill-opacity': 0.05 } });
       map.addLayer({ id: 'study-line', type: 'line', source: 'study', paint: { 'line-color': K.study, 'line-width': 2, 'line-dasharray': [4, 3] } });
       // Selected block: a wide outline plus accent band under the street, so the street's own color stays readable.
@@ -358,6 +420,10 @@ export function MapView(p: Props) {
         paint: { 'line-color': BN.color, 'line-opacity': bikeOpacity(BN.lane, 11.5, 14), 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 0.6, 14, 1.5, 18, 3] as never, 'line-offset': OFFSET as never } });
       map.addLayer({ id: 'links', type: 'line', source: 'links', layout: { 'line-cap': 'butt', 'line-join': 'round' },
         paint: { 'line-color': ramp(mode) as never, 'line-width': widthExpr() as never, 'line-offset': OFFSET as never } });
+      for (let k = 1; k <= FEATHER_STEPS; k++) {
+        map.addSource(`feather-${k}`, { type: 'geojson', data: featherWash(b, region, k) as never });
+        map.addLayer({ id: `feather-${k}`, type: 'fill', source: `feather-${k}`, paint: { 'fill-color': K.bg, 'fill-opacity': featherAlpha(k), 'fill-antialias': false } });
+      }
       map.addLayer({ id: 'sel-node-edge', type: 'circle', source: 'selection', filter: ['==', ['geometry-type'], 'Point'],
         paint: { 'circle-radius': 15, 'circle-color': K.study, 'circle-opacity': 0.18, 'circle-stroke-color': SEL_EDGE[mode], 'circle-stroke-width': 9 } });
       map.addLayer({ id: 'sel-node', type: 'circle', source: 'selection', filter: ['==', ['geometry-type'], 'Point'],
@@ -370,7 +436,7 @@ export function MapView(p: Props) {
     });
     map.on('move', schedule);
     map.on('resize', schedule);
-    const ro = new ResizeObserver(() => { map.resize(); if (!userMoved.current && el.clientWidth > 0) fitArea(map, b, false); reveal.current(false); schedule(); });
+    const ro = new ResizeObserver(() => { map.resize(); limitZoom(); if (!userMoved.current && el.clientWidth > 0) fitArea(map, b, false); reveal.current(false); schedule(); });
     ro.observe(el);
     return () => { ro.disconnect(); markers.current.forEach((m) => m.remove()); map.remove(); mapRef.current = null; setReady(false); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -386,8 +452,7 @@ export function MapView(p: Props) {
     map.setPaintProperty('bg', 'background-color', K.bg);
     map.setPaintProperty('base-paths', 'line-color', K.path);
     map.setPaintProperty('base-lines', 'line-color', ['case', major, K.major, K.minor]);
-    map.setPaintProperty('outside-wash', 'fill-color', K.bg);
-    map.setPaintProperty('outside-wash', 'fill-opacity', K.wash);
+    for (let k = 1; k <= FEATHER_STEPS; k++) map.setPaintProperty(`feather-${k}`, 'fill-color', K.bg);
     map.setPaintProperty('study-fill', 'fill-color', K.study);
     map.setPaintProperty('study-line', 'line-color', K.study);
     map.setPaintProperty('hover', 'line-color', K.study);
@@ -423,8 +488,10 @@ export function MapView(p: Props) {
     if (!map || !ready) return;
     const links = bundle.network.links;
     const ls = p.linkStats;
+    const vis = clipped.linkVisible;
     if (prevT.current.length !== links.length) prevT.current = new Float32Array(links.length).fill(-2);
     for (let i = 0; i < links.length; i++) {
+      if (!vis[i]) continue;
       const l = links[i];
       const t = ls ? intensity(p.overlay, ls[i * 4] ?? 0, ls[i * 4 + 1] ?? 0, ls[i * 4 + 2] ?? 0, l.speedLimit, p.overlayMax) : -1;
       if (Math.abs(prevT.current[i] - t) > 0.004) {
@@ -432,7 +499,7 @@ export function MapView(p: Props) {
         map.setFeatureState({ source: 'links', id: i }, { t });
       }
     }
-  }, [p.linkStats, p.overlay, p.overlayMax, ready, bundle]);
+  }, [p.linkStats, p.overlay, p.overlayMax, ready, bundle, clipped]);
 
   // ---- redraw on frames
   useEffect(() => {
@@ -450,7 +517,7 @@ export function MapView(p: Props) {
     const map = mapRef.current;
     if (!map || !ready) return;
     markers.current.forEach((m) => m.remove());
-    markers.current = p.interventions.map((iv) => {
+    markers.current = p.interventions.filter((iv) => interventionInRegion(iv, bundle.network, region)).map((iv) => {
       const [x, y] = interventionPoint(iv, bundle.network);
       const el = document.createElement('div');
       if (iv.type === 'diagonal_diverter') {
@@ -465,7 +532,7 @@ export function MapView(p: Props) {
       el.title = describeIntervention(iv, bundle.network, p.index);
       return new maplibregl.Marker({ element: el }).setLngLat(proj.toLonLat(x, y)).addTo(map);
     });
-  }, [p.interventions, ready, bundle, proj, p.index]);
+  }, [p.interventions, ready, bundle, proj, p.index, region]);
 
   // ---- selection highlight and keeping it in view
   const selKey = p.selection ? `${p.selection.kind}-${p.selection.kind === 'block' ? p.selection.block : p.selection.node}-${p.selection.via}` : '';
@@ -476,7 +543,7 @@ export function MapView(p: Props) {
     const net = bundle.network, sel = p.selection;
     const feats: unknown[] = [];
     if (sel?.kind === 'block') {
-      for (const id of p.index.blocks[sel.block].links) feats.push({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: net.links[id].geometry.map(([a, b]) => proj.toLonLat(a, b)) } });
+      for (const id of p.index.blocks[sel.block].links) feats.push(...lineFeature(region, proj, net.links[id].geometry));
     } else if (sel) {
       const n = net.nodes[sel.node];
       feats.push({ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: proj.toLonLat(n.x, n.y) } });
@@ -497,6 +564,7 @@ export function MapView(p: Props) {
     const find = (lngLat: maplibregl.LngLat) => {
       const L = live.current;
       const [x, y] = L.proj.toLocal(lngLat.lng, lngLat.lat);
+      if (!L.region.contains(x, y)) return { hit: null, x, y };
       const mpp = metersPerPixel(map.getZoom(), lngLat.lat);
       const coarse = window.matchMedia('(pointer: coarse)').matches;
       const hit = hitTest(L.bundle.network, x, y, { nodeTolM: (coarse ? 22 : 14) * mpp, linkTolM: (coarse ? 16 : 10) * mpp, nodeIds });
@@ -512,7 +580,7 @@ export function MapView(p: Props) {
       let text = '';
       if (hit?.kind === 'link') {
         const blk = L.index.blocks[L.index.blockOfLink[hit.link]];
-        for (const id of blk.links) feats.push({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: net.links[id].geometry.map(([a, b]) => L.proj.toLonLat(a, b)) } });
+        for (const id of blk.links) feats.push(...lineFeature(L.region, L.proj, net.links[id].geometry));
         text = blk.label;
       } else if (hit) {
         const n = net.nodes[hit.node];

@@ -28,12 +28,12 @@ export function runReducer(s: RunState, a: RunAction): RunState {
 /** Seconds the worker may step now so the clock never passes the end of the run. */
 export const clampStep = (time: number, want: number): number => Math.max(0, Math.min(want, RUN_SECONDS - time));
 
-/** The area's `defaultPeriod`, else `midday`, else the first period. */
-export function defaultPeriod(entry: Pick<AreaEntry, 'defaultPeriod' | 'calibration'>, periods: Pick<DemandPeriod, 'id'>[]): string {
+/** The area's `defaultPeriod` if it exists and is not experimental, else the first non-experimental period, else the first period. */
+export function defaultPeriod(entry: Pick<AreaEntry, 'defaultPeriod' | 'calibration' | 'experimentalPeriods'>, periods: Pick<DemandPeriod, 'id'>[]): string {
   const ids = periods.map((p) => p.id);
   const wanted = entry.defaultPeriod ?? entry.calibration?.defaultPeriod;
-  if (wanted && ids.includes(wanted)) return wanted;
-  return ids.includes('midday') ? 'midday' : ids[0] ?? '';
+  if (wanted && ids.includes(wanted) && !isExperimentalPeriod(entry, wanted)) return wanted;
+  return ids.find((id) => !isExperimentalPeriod(entry, id)) ?? ids[0] ?? '';
 }
 
 /** Periods named in `experimentalPeriods`; without that field, ids containing "peak" until the area is calibrated. */

@@ -6,14 +6,14 @@ import { nextSpeedShown } from './lib/speed';
 import { SOURCE_REPO_URL } from './config';
 import { SimClient, type StatsMsg } from './sim/client';
 import { buildIndex } from './lib/naming';
+import { buildRegion } from './lib/region';
 import { decodeMeta, decodeScenario, encodeScenario, nearestStreetName, type Unplaced } from './lib/hash';
 import { interventionTypeLabel } from './lib/describe';
 import { addInterventions } from './lib/scenario';
 import { selectionForIntervention, type Selection } from './lib/selection';
 import { interventionPoint } from './lib/describe';
-import { nextOverlayMax, OVERLAY_FLOOR, resolveMode, type MaxState } from './lib/ramps';
+import { overlayTop, resolveMode } from './lib/ramps';
 import { defaultPeriod, initialRun, runReducer } from './lib/run';
-import { linkStatsView } from './types';
 import { SelectionMenu, type Change, type Placement } from './components/SelectionMenu';
 import { Sheet } from './components/Sheet';
 import { Playback, Legend } from './components/Toolbar';
@@ -63,6 +63,7 @@ export function App() {
 function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): void }) {
   const { network, demand } = bundle;
   const index = useMemo(() => buildIndex(network), [network]);
+  const region = useMemo(() => buildRegion(network), [network]);
   // Read once: the hash is rewritten as soon as the scenario loads, so later renders must not decode it again.
   const [initial] = useState(() => ({ ...decodeMeta(location.hash), ...decodeScenario(network, location.hash) }));
 
@@ -85,7 +86,6 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   const drawerBtn = useRef<HTMLButtonElement>(null);
   const closeDrawer = useCallback(() => { setDrawerOpen(false); drawerBtn.current?.focus(); }, []);
   const [showService, setShowService] = useState(false);
-  const [showOutside, setShowOutside] = useState(false);
   const calStatus = bundle.entry.calibration?.status ?? 'uncalibrated';
   const calNote = bundle.entry.calibration?.note ?? 'Treat results as illustrations, not forecasts.';
   // Dismissal is remembered per note text, so a changed note shows again.
@@ -96,7 +96,8 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   const dismissCal = () => { setCalClosing(true); store.set(calKey, '1'); window.setTimeout(() => setCalDismissed(true), reduced ? 0 : 200); };
   const [sourceRef, setSourceRef] = useState<string | null>(null);
 
-  const periodId = demand.periods.some((p) => p.id === initial.period) ? initial.period! : defaultPeriod(bundle.entry, demand.periods);
+  const fallbackPeriod = defaultPeriod(bundle.entry, demand.periods);
+  const periodId = demand.periods.some((p) => p.id === initial.period) ? initial.period! : fallbackPeriod;
   const [period, setPeriod] = useState(periodId);
   const [scale, setScale] = useState(initial.demandScale ?? 1);
   const [speed, setSpeed] = useState(5);
@@ -173,9 +174,9 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
 
   // --- URL hash
   useEffect(() => {
-    const h = encodeScenario(network, interventions, { area: bundle.synthetic ? null : bundle.entry.id, period, demandScale: scale });
+    const h = encodeScenario(network, interventions, { area: bundle.synthetic ? null : bundle.entry.id, period: period === fallbackPeriod ? undefined : period, demandScale: scale });
     history.replaceState(null, '', `${location.pathname}${location.search}${h}`);
-  }, [bundle, network, period, scale, interventions]);
+  }, [bundle, network, period, fallbackPeriod, scale, interventions]);
   useEffect(() => {
     const f = () => {
       const st = decodeScenario(network, location.hash);
@@ -234,22 +235,10 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
     if (s) select(s, layout === 'medium' ? drawerBtn.current : undefined);
   }, [network, index, select, layout]);
 
-  // --- overlay scale (latched so the legend does not jitter)
+  // --- overlay values (fixed color scale, see OVERLAY_TOP)
   const shownStats = source === 'baseline' && stats?.comparing ? stats.baseline : stats?.scenario;
   const linkStats = shownStats?.linkStats ?? null;
-  const maxRef = useRef<{ flow: MaxState; cutthrough: MaxState }>({ flow: { max: 0, changedAt: 0 }, cutthrough: { max: 0, changedAt: 0 } });
-  const overlayMax = useMemo(() => {
-    if (overlay === 'speed') return 1;
-    const v = linkStatsView(linkStats);
-    const vals: number[] = [];
-    for (let i = 0; i < network.links.length; i++) {
-      const x = overlay === 'flow' ? v.flow(i) : v.cut(i);
-      if (x > 0) vals.push(x); // links with no traffic are not drawn, so they must not set the scale
-    }
-    const next = nextOverlayMax(vals, OVERLAY_FLOOR[overlay], maxRef.current[overlay], performance.now());
-    maxRef.current[overlay] = next;
-    return next.max;
-  }, [linkStats, overlay, network]);
+  const overlayMax = overlayTop(overlay);
 
   const base: Metrics | null = stats?.baseline.metrics ?? null;
   const scen: Metrics | null = stats?.scenario.metrics ?? null;
@@ -268,7 +257,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   );
   const scenarioPanel = (
     <>
-      <InterventionPanel bundle={bundle} index={index} showService={showService} onShowService={setShowService} showOutside={showOutside} onShowOutside={setShowOutside} interventions={interventions}
+      <InterventionPanel bundle={bundle} index={index} region={region} showService={showService} onShowService={setShowService} interventions={interventions}
         onRemove={onRemove} onClear={onClear} onChoose={select} onSelectIntervention={onSelectIntervention}
         menuTop={placement === 'sheet' ? menu : null} menuInline={placement === 'inline' ? menu : null} shareSlot={shareButton} />
       <div className="scn-notices" role="status" aria-live="polite">
@@ -371,14 +360,14 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
           <div className="map-area" hidden={!mapVisible}>
             <Suspense fallback={<p className="boot" role="status">Loading map…</p>}>
             <MapView
-              bundle={bundle} index={index} mode={mode} overlay={overlay} overlayMax={overlayMax} linkStats={linkStats}
+              bundle={bundle} index={index} region={region} mode={mode} overlay={overlay} overlayMax={overlayMax} linkStats={linkStats}
               client={client} interventions={interventions} selection={mapVisible ? selection : null} onHit={onHit}
               popover={placement === 'popover' ? menu : null}
               visible={mapVisible} reducedMotion={reduced}
               modes={multimodal ? modes : { ...modes, bicycle: false, pedestrian: false }} showBikeNet={bikeNet && multimodal}
             />
             </Suspense>
-            <Legend overlay={overlay} onOverlay={setOverlay} max={overlayMax} mode={mode} 
+            <Legend overlay={overlay} onOverlay={setOverlay} mode={mode} 
               source={source} onSource={setSource} canCompare={comparing}
               multimodal={multimodal} modes={modes} onModes={setModes} hasBikeNet={hasBikeNet} bikeNet={bikeNet} onBikeNet={setBikeNet} />
             {!engine && (
@@ -390,7 +379,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
             )}
           </div>
           {view === 'streets' && (
-            <StreetsTable bundle={bundle} index={index} showService={showService} onShowService={setShowService} showOutside={showOutside} onShowOutside={setShowOutside}
+            <StreetsTable bundle={bundle} index={index} showService={showService} onShowService={setShowService}
               scen={stats?.scenario.linkStats ?? null} base={stats?.baseline.linkStats ?? null} comparing={comparing}
               baseMetrics={base} scenMetrics={scen} />
           )}

@@ -180,10 +180,10 @@ export function linkNoise(draw: number, link: number, noise: number): number {
 }
 
 /** Shortest-path tree from `origin` over link states. Returns per-link arrival cost and predecessor link (-1 for first links). */
-export function treeFrom(g: Graph, origin: number, noiseOf: ((l: number) => number) | null): { dist: Float64Array; pred: Int32Array } {
+export function treeFrom(g: Graph, origin: number, noiseOf: ((l: number) => number) | null, cost: ArrayLike<number> = g.cost): { dist: Float64Array; pred: Int32Array } {
   const dist = new Float64Array(g.nLinks).fill(Infinity), pred = new Int32Array(g.nLinks).fill(-1);
   const heap = new MinHeap();
-  const c = (l: number) => g.cost[l] * (noiseOf ? noiseOf(l) : 1);
+  const c = (l: number) => cost[l] * (noiseOf ? noiseOf(l) : 1);
   for (const l of g.outLinks.get(origin) ?? []) { dist[l] = c(l); heap.push(dist[l], l); }
   while (heap.size) {
     const [d, a] = heap.pop();
@@ -200,31 +200,30 @@ export interface OdFlow { origin: number; destination: number }
 /** Sparse link shares per flow, CSR: flow k uses links[start[k] .. start[k+1]] with share (0..1] each; unroutable flows have none. */
 export interface Assignment { start: Int32Array; link: Int32Array; share: Float32Array; routable: Uint8Array; origin: Int32Array; destination: Int32Array }
 
-/**
- * Assign every flow to its free-flow generalized-cost shortest path(s). Node ids in flows and link `from`/`to` are node ids; link
- * indices in the result are positions in `links` (what `buildGraph` was given).
- */
-export function assign(g: Graph, flows: OdFlow[], draws = 1, noise = 0): Assignment {
-  const byOrigin = new Map<number, number[]>();
-  flows.forEach((f, k) => (byOrigin.get(f.origin) ?? byOrigin.set(f.origin, []).get(f.origin)!).push(k));
-  const accum: Map<number, number>[] = flows.map(() => new Map());
-  const routable = new Uint8Array(flows.length);
-  const ok = new Array<number>(flows.length).fill(0);
-  for (let dr = 0; dr < draws; dr++) {
-    const nz = noise > 0 ? (l: number) => linkNoise(dr, l, noise) : null;
-    for (const [o, ks] of byOrigin) {
-      const { dist, pred } = treeFrom(g, o, nz);
-      for (const k of ks) {
-        const d = flows[k].destination;
-        let best = -1, bd = Infinity;
-        for (const l of g.inLinks.get(d) ?? []) if (dist[l] < bd) { bd = dist[l]; best = l; }
-        if (best < 0 || !isFinite(bd)) continue;
-        ok[k]++;
-        const m = accum[k];
-        for (let l = best; l >= 0; l = pred[l]) m.set(l, (m.get(l) ?? 0) + 1);
-      }
+/** One all-or-nothing pass: the shortest path of every flow (links in reverse path order), or null when the destination cannot be reached. */
+function aonPaths(g: Graph, flows: OdFlow[], byOrigin: Map<number, number[]>, draw: number, noise: number, cost: ArrayLike<number>): (number[] | null)[] {
+  const out = new Array<number[] | null>(flows.length).fill(null);
+  const nz = noise > 0 ? (l: number) => linkNoise(draw, l, noise) : null;
+  for (const [o, ks] of byOrigin) {
+    const { dist, pred } = treeFrom(g, o, nz, cost);
+    for (const k of ks) {
+      let best = -1, bd = Infinity;
+      for (const l of g.inLinks.get(flows[k].destination) ?? []) if (dist[l] < bd) { bd = dist[l]; best = l; }
+      if (best < 0 || !isFinite(bd)) continue;
+      const p: number[] = [];
+      for (let l = best; l >= 0; l = pred[l]) p.push(l);
+      out[k] = p;
     }
   }
+  return out;
+}
+const groupByOrigin = (flows: OdFlow[]) => {
+  const byOrigin = new Map<number, number[]>();
+  flows.forEach((f, k) => (byOrigin.get(f.origin) ?? byOrigin.set(f.origin, []).get(f.origin)!).push(k));
+  return byOrigin;
+};
+function toAssignment(flows: OdFlow[], accum: Map<number, number>[], ok: number[]): Assignment {
+  const routable = new Uint8Array(flows.length);
   const start = new Int32Array(flows.length + 1);
   const link: number[] = [], share: number[] = [];
   flows.forEach((_, k) => {
@@ -233,6 +232,144 @@ export function assign(g: Graph, flows: OdFlow[], draws = 1, noise = 0): Assignm
   });
   start[flows.length] = link.length;
   return { start, link: Int32Array.from(link), share: Float32Array.from(share), routable, origin: Int32Array.from(flows.map((f) => f.origin)), destination: Int32Array.from(flows.map((f) => f.destination)) };
+}
+
+/**
+ * Assign every flow to its free-flow generalized-cost shortest path(s). Node ids in flows and link `from`/`to` are node ids; link
+ * indices in the result are positions in `links` (what `buildGraph` was given).
+ */
+export function assign(g: Graph, flows: OdFlow[], draws = 1, noise = 0): Assignment {
+  const byOrigin = groupByOrigin(flows);
+  const accum: Map<number, number>[] = flows.map(() => new Map());
+  const ok = new Array<number>(flows.length).fill(0);
+  for (let dr = 0; dr < draws; dr++) {
+    const paths = aonPaths(g, flows, byOrigin, dr, noise, g.cost);
+    paths.forEach((p, k) => { if (!p) return; ok[k]++; for (const l of p) accum[k].set(l, (accum[k].get(l) ?? 0) + 1); });
+  }
+  return toAssignment(flows, accum, ok);
+}
+
+/** Volume-delay function: link cost multiplier at volume x over capacity c, 1 + alpha (x / c)^beta. Form of the BPR function [Spiess1990]; alpha and beta are ASSUMPTION values (the usual 0.15 and 4). */
+export const bprFactor = (x: number, c: number, alpha: number, beta: number) => (c > 0 && isFinite(c) ? 1 + alpha * Math.pow(x / c, beta) : 1);
+
+export interface MsaOptions {
+  /** Passes averaged (the step of pass n is 1 / n [PowellSheffi1982]); 1 gives a single loading at the starting costs. */
+  iterations: number;
+  /** Noisy route walks per flow in each pass; the shares of a flow are the fractions of its walks that use a link. */
+  drawsPerPass: number;
+  alpha: number; beta: number;
+  /** Perceived-cost noise of a driver's walk, as in the simulator (a factor 1 +/- noise on each candidate link's cost-to-go). */
+  noise: number;
+  /** Capacity per link in veh/h (Infinity: no delay on the link). */
+  capacity: ArrayLike<number>;
+}
+export interface MsaResult extends Assignment {
+  /** Link volumes (veh/h) of the averaged assignment at the given flow volumes. */
+  linkVolume: Float64Array;
+  /** Relative change of the link volumes at the last pass, sum |x_n - x_(n-1)| / sum x_n. */
+  relChange: number;
+  passes: number;
+}
+
+interface Reverse { predStart: Int32Array; predMv: Int32Array }
+const reverseCache = new WeakMap<Graph, Reverse>();
+function reverseOf(g: Graph): Reverse {
+  let r = reverseCache.get(g);
+  if (r) return r;
+  const nm = g.mvTo.length, cnt = new Int32Array(g.nLinks + 1);
+  for (let m = 0; m < nm; m++) cnt[g.mvTo[m] + 1]++;
+  for (let l = 0; l < g.nLinks; l++) cnt[l + 1] += cnt[l];
+  const fill = cnt.slice(0, g.nLinks), predMv = new Int32Array(nm);
+  for (let m = 0; m < nm; m++) predMv[fill[g.mvTo[m]]++] = m;
+  r = { predStart: cnt, predMv };
+  reverseCache.set(g, r);
+  return r;
+}
+
+/** Cost-to-go from the start of every link to node `dest` (the simulator's per-destination table): link cost plus, per movement, its cost and the next link's cost-to-go. */
+export function costToGo(g: Graph, dest: number, cost: ArrayLike<number>): Float64Array {
+  const { predStart, predMv } = reverseOf(g);
+  const h = new Float64Array(g.nLinks).fill(Infinity);
+  const heap = new MinHeap();
+  for (const l of g.inLinks.get(dest) ?? []) { h[l] = cost[l]; heap.push(h[l], l); }
+  while (heap.size) {
+    const [hl, l] = heap.pop();
+    if (hl > h[l]) continue;
+    for (let i = predStart[l]; i < predStart[l + 1]; i++) {
+      const m = predMv[i], a = g.mvFrom[m];
+      const cand = cost[a] + g.mvCost[m] + hl;
+      if (cand < h[a]) { h[a] = cand; heap.push(cand, a); }
+    }
+  }
+  return h;
+}
+
+/**
+ * One driver's route (the simulator's rule, route.rs): at the origin and at every node take the candidate link with the least
+ * (movement cost + cost-to-go) x noise, the noise being a fixed factor 1 +/- `noise` per (driver, link). Returns the links in order, or null.
+ */
+function walkRoute(g: Graph, h: Float64Array, origin: number, dest: number, seed: number, noise: number): number[] | null {
+  let best = -1, bc = Infinity;
+  for (const b of g.outLinks.get(origin) ?? []) {
+    if (!isFinite(h[b])) continue;
+    const c = h[b] * linkNoise(seed, b, noise);
+    if (c < bc) { bc = c; best = b; }
+  }
+  if (best < 0) return null;
+  const route = [best];
+  for (let steps = 0; g.to[best] !== dest; steps++) {
+    if (steps > 4000) return null;
+    let nb = -1;
+    bc = Infinity;
+    for (let m = g.mvStart[best]; m < g.mvStart[best + 1]; m++) {
+      const b = g.mvTo[m];
+      if (!isFinite(h[b])) continue;
+      const c = (h[b] + g.mvCost[m]) * linkNoise(seed, b, noise);
+      if (c < bc) { bc = c; nb = b; }
+    }
+    if (nb < 0) return null;
+    route.push(nb); best = nb;
+  }
+  return route;
+}
+
+/**
+ * Stochastic capacity-restrained assignment: pass n loads every flow with `drawsPerPass` driver walks over the link costs
+ * g.cost x BPR(x / capacity), where x is the running average of the pass volumes (method of successive averages [PowellSheffi1982]); a flow's link shares are
+ * the fractions of all its walks that use each link. `volume` is the flow table that loads the links (veh/h per flow). With
+ * iterations 1 and alpha 0 this is the free-flow assignment of drivers that choose like the simulator's.
+ */
+export function assignMsa(g: Graph, flows: OdFlow[], volume: ArrayLike<number>, opt: MsaOptions): MsaResult {
+  const accum: Map<number, number>[] = flows.map(() => new Map());
+  const ok = new Array<number>(flows.length).fill(0);
+  const byDest = new Map<number, number[]>();
+  flows.forEach((f, k) => (byDest.get(f.destination) ?? byDest.set(f.destination, []).get(f.destination)!).push(k));
+  const cost = Float64Array.from(g.cost);
+  const x = new Float64Array(g.nLinks);
+  let rel = 1;
+  for (let n = 1; n <= opt.iterations; n++) {
+    const y = new Float64Array(g.nLinks);
+    for (const [d, ks] of byDest) {
+      const h = costToGo(g, d, cost);
+      for (const k of ks) {
+        for (let r = 0; r < opt.drawsPerPass; r++) {
+          const route = walkRoute(g, h, flows[k].origin, d, (k * 7919 + (n - 1) * opt.drawsPerPass + r + 1) | 0, opt.noise);
+          if (!route) break;
+          ok[k]++;
+          for (const l of route) { accum[k].set(l, (accum[k].get(l) ?? 0) + 1); y[l] += volume[k] / opt.drawsPerPass; }
+        }
+      }
+    }
+    let change = 0, tot = 0;
+    for (let l = 0; l < g.nLinks; l++) {
+      const nx = x[l] + (y[l] - x[l]) / n;
+      change += Math.abs(nx - x[l]); tot += nx;
+      x[l] = nx;
+    }
+    rel = n === 1 ? 1 : change / Math.max(tot, 1e-9);
+    for (let l = 0; l < g.nLinks; l++) cost[l] = g.cost[l] * bprFactor(x[l], opt.capacity[l], opt.alpha, opt.beta);
+  }
+  return { ...toAssignment(flows, accum, ok), linkVolume: x, relChange: rel, passes: opt.iterations };
 }
 
 /** Per-link volume of `v` (per flow) under an assignment. */

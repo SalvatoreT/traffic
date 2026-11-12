@@ -1,7 +1,7 @@
 import { type ReactNode, useId } from 'react';
 import type { AreaBundle, Intervention } from '../types';
 import type { NetIndex } from '../lib/naming';
-import { interventionInStudyArea } from '../lib/area';
+import { interventionInRegion, type Region } from '../lib/region';
 import { describeIntervention } from '../lib/describe';
 import type { Selection } from '../lib/selection';
 import { PlaceSearch } from './PlaceSearch';
@@ -9,7 +9,7 @@ import { PlaceSearch } from './PlaceSearch';
 interface Props {
   bundle: AreaBundle; index: NetIndex;
   showService: boolean; onShowService(v: boolean): void;
-  showOutside: boolean; onShowOutside(v: boolean): void;
+  region: Region;
   interventions: Intervention[];
   onRemove(i: number): void;
   onClear(): void;
@@ -45,7 +45,7 @@ export function InterventionPanel(p: Props) {
                   <span className={`iv-badge static iv-${iv.type}`} aria-hidden="true">{iv.type === 'speed_limit' ? Math.round(iv.speed * 2.23694) : BADGE[iv.type]}</span>
                   <span className="desc">
                     <button type="button" className="desc-btn" title="Select this place" onClick={() => p.onSelectIntervention(i)}>{d}</button>
-                    {!interventionInStudyArea(iv, B.network) && <>{' '}<span className="tag">outside study area</span></>}
+                    {!interventionInRegion(iv, B.network, p.region) && <>{' '}<span className="tag">outside the map</span></>}
                   </span>
                   <button type="button" className="btn small-btn" onClick={() => p.onRemove(i)} aria-label={`Remove: ${d}`}>Remove</button>
                 </li>
@@ -58,7 +58,7 @@ export function InterventionPanel(p: Props) {
           </div>
         </section>
       )}
-      <PlaceSearch bundle={B} index={X} showService={p.showService} onShowService={p.onShowService} showOutside={p.showOutside} onShowOutside={p.onShowOutside} onChoose={p.onChoose} />
+      <PlaceSearch bundle={B} index={X} showService={p.showService} onShowService={p.onShowService} onChoose={p.onChoose} />
       {p.menuInline}
     </div>
   );

@@ -9,7 +9,6 @@ const CAP = 30;
 interface Props {
   bundle: AreaBundle; index: NetIndex;
   showService: boolean; onShowService(v: boolean): void;
-  showOutside: boolean; onShowOutside(v: boolean): void;
   onChoose(s: Selection): void;
 }
 
@@ -20,7 +19,7 @@ export function PlaceSearch(p: Props) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
   const wrap = useRef<HTMLDivElement>(null);
-  const all = useMemo(() => placeResults(p.bundle.network, p.index, { showService: p.showService, showOutside: p.showOutside }), [p.bundle, p.index, p.showService, p.showOutside]);
+  const all = useMemo(() => placeResults(p.bundle.network, p.index, { showService: p.showService }), [p.bundle, p.index, p.showService]);
   const found = useMemo(() => ({
     blocks: all.blocks.filter((r) => matchesQuery(r.label, q)),
     nodes: all.nodes.filter((r) => matchesQuery(r.label, q)),
@@ -28,7 +27,7 @@ export function PlaceSearch(p: Props) {
   const shown = useMemo(() => ({ blocks: found.blocks.slice(0, CAP), nodes: found.nodes.slice(0, CAP) }), [found]);
   const flat: PlaceResult[] = useMemo(() => [...shown.blocks, ...shown.nodes], [shown]);
   const expanded = open && flat.length > 0;
-  useEffect(() => setActive(-1), [q, p.showService, p.showOutside]);
+  useEffect(() => setActive(-1), [q, p.showService]);
   useEffect(() => { if (active >= 0) document.getElementById(`${id}-o${active}`)?.scrollIntoView({ block: 'nearest' }); }, [active, id]);
 
   const choose = (r: PlaceResult) => {
@@ -57,7 +56,6 @@ export function PlaceSearch(p: Props) {
         value={q} onChange={(e) => { setQ(e.target.value); setOpen(true); }} onKeyDown={onKey} onFocus={() => { if (q) setOpen(true); }} />
       <div className="check-row">
         <label className="check"><input type="checkbox" checked={p.showService} onChange={(e) => p.onShowService(e.target.checked)} /> Show service roads</label>
-        <label className="check"><input type="checkbox" checked={p.showOutside} onChange={(e) => p.onShowOutside(e.target.checked)} /> Include streets outside the study area</label>
       </div>
       <p className="muted small" role="status">
         {q.trim() ? `${found.blocks.length} street block${found.blocks.length === 1 ? '' : 's'}, ${found.nodes.length} intersection${found.nodes.length === 1 ? '' : 's'}.${total > flat.length ? ` Showing the first ${CAP} of each. Keep typing to narrow.` : ''}` : ''}

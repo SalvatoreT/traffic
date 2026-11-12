@@ -18,11 +18,10 @@ interface Props {
   bundle: AreaBundle; index: NetIndex;
   scen: Float32Array | null; base: Float32Array | null; comparing: boolean;
   showService: boolean; onShowService(v: boolean): void;
-  showOutside: boolean; onShowOutside(v: boolean): void;
   baseMetrics?: Metrics | null; scenMetrics?: Metrics | null;
 }
 
-export function StreetsTable({ index, scen, base, comparing, showService, onShowService, showOutside, onShowOutside, baseMetrics, scenMetrics }: Props) {
+export function StreetsTable({ index, scen, base, comparing, showService, onShowService, baseMetrics, scenMetrics }: Props) {
   const walkBike = comparing && baseMetrics && scenMetrics ? vulnerableSentence(baseMetrics, scenMetrics) : '';
   const [sort, setSort] = useState<{ key: Key; dir: 1 | -1 }>({ key: 'ctS', dir: -1 });
   const [q, setQ] = useState('');
@@ -44,14 +43,14 @@ export function StreetsTable({ index, scen, base, comparing, showService, onShow
 
   const classes = useMemo(() => ['all', ...Array.from(new Set(index.blocks.map((b) => b.cls)))], [index]);
   const shown = useMemo(() => {
-    const f = rows.filter((r) => blockVisible(r.block, { showService, showOutside }, cls) && (cls === 'all' || r.cls === cls) && matchesQuery(r.label, q));
+    const f = rows.filter((r) => blockVisible(r.block, { showService }, cls) && (cls === 'all' || r.cls === cls) && matchesQuery(r.label, q));
     const { key, dir } = sort;
     return f.sort((a, b) => {
       const av = a[key], bv = b[key];
       const c = typeof av === 'string' ? av.localeCompare(bv as string) : (av as number) - (bv as number);
       return (c || a.label.localeCompare(b.label)) * dir;
     });
-  }, [rows, q, cls, sort, showService, showOutside]);
+  }, [rows, q, cls, sort, showService]);
 
   const th = (key: Key, label: string, sub?: string, rowSpan?: number) => (
     <th scope="col" rowSpan={rowSpan} aria-sort={sort.key === key ? (sort.dir === 1 ? 'ascending' : 'descending') : 'none'}>
@@ -71,7 +70,7 @@ export function StreetsTable({ index, scen, base, comparing, showService, onShow
     <div className="streets-view">
       <h2>Streets</h2>
       <p className="muted">
-        A text alternative to the map: one row per street block (both directions combined), limited to the study area and streets near it unless you include the rest. Flow and cut-through in veh/h,
+        A text alternative to the map: one row per street block (both directions combined), limited to the study area and the streets around it that the map shows. Flow and cut-through in veh/h,
         speed in mph, flow-weighted. {comparing ? '' : 'Scenario columns fill in once an intervention is added.'}
       </p>
       {walkBike && <p className="small">{walkBike}</p>}
@@ -79,7 +78,6 @@ export function StreetsTable({ index, scen, base, comparing, showService, onShow
         <label>Search streets <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="e.g. Oak" /></label>
         <label>Class <select value={cls} onChange={(e) => setCls(e.target.value)}>{classes.map((c) => <option key={c} value={c}>{c}</option>)}</select></label>
         <label className="check"><input type="checkbox" checked={showService} onChange={(e) => onShowService(e.target.checked)} /> Show service roads</label>
-        <label className="check"><input type="checkbox" checked={showOutside} onChange={(e) => onShowOutside(e.target.checked)} /> Include streets outside the study area</label>
         <span role="status" className="muted small">{shown.length} match{shown.length === 1 ? '' : 'es'}</span>
       </div>
       <div className="table-scroll" tabIndex={0} role="region" aria-label="Streets table, scrollable">

@@ -288,6 +288,8 @@ describe('unreadable links and meta', () => {
     expect(h).toBe('#v1;a=rockridge;p=pm_peak;d=1.2');
     expect(decodeMeta(h)).toEqual({ area: 'rockridge', period: 'pm_peak', demandScale: 1.2 });
     expect(decodeMeta('#a=x&p=y&d=2')).toEqual({});
+    // The app passes no period when it equals the default, so ordinary links do not pin one.
+    expect(encodeScenario(base, [], { area: 'rockridge', period: undefined, demandScale: 1.2 })).toBe('#v1;a=rockridge;d=1.2');
     expect(decodeMeta('#v1;a=bad area!')).toEqual({});
   });
   it('gives an empty hash for the baseline without an area', () => {

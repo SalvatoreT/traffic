@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { clampStep, defaultPeriod, initialRun, isExperimentalPeriod, RUN_SECONDS, runReducer, type RunState } from './run';
-import { nextOverlayMax, OVERLAY_FLOOR, SHRINK_EVERY_MS } from './ramps';
+import { OVERLAY_TOP, overlayTop, rampTicks, intensity } from './ramps';
 
 describe('run state', () => {
   it('runs until the boundary, then finishes and stops', () => {
@@ -38,11 +38,14 @@ describe('run state', () => {
 
 describe('periods', () => {
   const ps = [{ id: 'am_peak' }, { id: 'midday' }, { id: 'pm_peak' }];
-  it('prefers the area default, then midday, then the first', () => {
-    expect(defaultPeriod({ defaultPeriod: 'pm_peak' }, ps)).toBe('pm_peak');
-    expect(defaultPeriod({}, ps)).toBe('midday');
-    expect(defaultPeriod({}, [{ id: 'am_peak' }, { id: 'pm_peak' }])).toBe('am_peak');
-    expect(defaultPeriod({ defaultPeriod: 'gone' }, ps)).toBe('midday');
+  it('prefers a non-experimental area default, then the first non-experimental period, then the first', () => {
+    expect(defaultPeriod({ defaultPeriod: 'midday', experimentalPeriods: ['am_peak', 'pm_peak'] }, ps)).toBe('midday');
+    expect(defaultPeriod({ defaultPeriod: 'pm_peak', experimentalPeriods: ['am_peak', 'pm_peak'] }, ps)).toBe('midday');
+    expect(defaultPeriod({ experimentalPeriods: ['am_peak'] }, ps)).toBe('midday');
+    expect(defaultPeriod({ experimentalPeriods: ['am_peak', 'midday'] }, ps)).toBe('pm_peak');
+    expect(defaultPeriod({ calibration: { status: 'uncalibrated', defaultPeriod: 'am_peak' } }, [{ id: 'am_peak' }, { id: 'noon' }])).toBe('noon');
+    expect(defaultPeriod({ experimentalPeriods: ['am_peak', 'pm_peak'] }, [{ id: 'am_peak' }, { id: 'pm_peak' }])).toBe('am_peak');
+    expect(defaultPeriod({ defaultPeriod: 'gone', experimentalPeriods: [] }, ps)).toBe('am_peak');
   });
   it('labels experimental periods', () => {
     expect(isExperimentalPeriod({ experimentalPeriods: ['pm_peak'] }, 'pm_peak')).toBe(true);
@@ -53,19 +56,16 @@ describe('periods', () => {
   });
 });
 
-describe('overlay bound', () => {
-  const vals = (n: number, hi: number) => Array.from({ length: n }, (_, i) => (i / (n - 1)) * hi);
-  it('uses the 95th percentile rounded to a nice number, above the floor', () => {
-    expect(nextOverlayMax(vals(101, 1000), 20, { max: 0, changedAt: 0 }, 0).max).toBe(1000);
-    expect(nextOverlayMax(vals(101, 130), 20, { max: 0, changedAt: 0 }, 0).max).toBe(200);
+describe('fixed overlay scale', () => {
+  it('clamps values above the top to the top color and below zero to no data', () => {
+    expect(intensity('cutthrough', 0, 0, OVERLAY_TOP.cutthrough * 5, 11, overlayTop('cutthrough'))).toBe(1);
+    expect(intensity('flow', OVERLAY_TOP.flow / 2, 0, 0, 11, overlayTop('flow'))).toBe(0.5);
+    expect(intensity('flow', OVERLAY_TOP.flow * 3, 0, 0, 11, overlayTop('flow'))).toBe(1);
+    expect(intensity('flow', 0, 0, 0, 11, overlayTop('flow'))).toBe(-1);
   });
-  it('applies the floor', () => {
-    expect(nextOverlayMax([0, 1, 2], OVERLAY_FLOOR.cutthrough, { max: 0, changedAt: 0 }, 0).max).toBe(20);
-  });
-  it('grows at once but shrinks at most every few seconds', () => {
-    const hi = { max: 1000, changedAt: 0 };
-    expect(nextOverlayMax(vals(101, 100), 20, hi, 1000)).toBe(hi);
-    expect(nextOverlayMax(vals(101, 100), 20, hi, SHRINK_EVERY_MS).max).toBe(100);
-    expect(nextOverlayMax(vals(101, 5000), 20, hi, 1).max).toBe(5000);
+  it('labels the top of the flow and cut-through scales with a plus sign', () => {
+    expect(rampTicks('cutthrough')).toEqual(['0', '38', '75', '113', '150+']);
+    expect(rampTicks('flow')).toEqual(['0', '200', '400', '600', '800+']);
+    expect(rampTicks('speed')).toEqual(['100%', '75%', '50%', '25%', '0%']);
   });
 });

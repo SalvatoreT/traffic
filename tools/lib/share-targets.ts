@@ -1,0 +1,145 @@
+// Observed route shares (select-link and ramp via-street shares from the targets file) as ratio constraints over assigned flows. No I/O.
+// The definitions mirror crates/sim/src/bin/calibrate.rs so the static assignment and the simulator report the same quantity:
+//  - select link: (volume on the block from trips with a freeway origin or destination) / (volume on the block);
+//  - ramp via-street: (volume that uses the ramp and the named street) / (volume that uses the ramp).
+// A node is a freeway end when a motorway-class link touches it. Street names and blocks come from the targets file; nothing here names a street.
+import type { Assignment } from './assign';
+import type { Constraint } from './fit-counts';
+
+export interface ShareLink { id: number; from: number; to: number; name: string; class: string; length: number; geometry?: [number, number][]; inStudyArea?: boolean }
+export interface ShareNode { id: number; x: number; y: number }
+
+export interface Targets {
+  selectLink?: { street: string; direction: string; between?: string[]; from?: { via: string; share: number; pmPeakShare?: number }[]; to?: { via: string; share: number; pmPeakShare?: number }[] }[];
+  freewayRamp?: { location?: string; ontoFreewayFromNorth?: { via: string; share: number }[]; fromFreewayGoingNorth?: { via: string; share: number }[] };
+}
+
+const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
+const DIRS = ['N', 'E', 'S', 'W'];
+const WANT: Record<string, number> = { NB: 0, EB: 90, SB: 180, WB: 270 };
+const angDiff = (a: number, b: number) => { const d = Math.abs(a - b) % 360; return d > 180 ? 360 - d : d; };
+
+function bearingOf(l: ShareLink, nodes: Map<number, ShareNode>): number {
+  const a = l.geometry?.length ? l.geometry[0] : [nodes.get(l.from)!.x, nodes.get(l.from)!.y];
+  const b = l.geometry?.length ? l.geometry[l.geometry.length - 1] : [nodes.get(l.to)!.x, nodes.get(l.to)!.y];
+  return (((Math.atan2(b[0] - a[0], b[1] - a[1]) * 180) / Math.PI) % 360 + 360) % 360;
+}
+/** Nearest compass axis of travel on the link (the simulator's StreetVisit direction). */
+export const compassOf = (brg: number) => DIRS[Math.floor((brg + 45) / 90) % 4];
+
+/** Links of the named street between two cross streets in the stated direction of travel (the report's `resolve_block`), as indices into `links`. */
+export function resolveBlock(links: ShareLink[], nodes: Map<number, ShareNode>, street: string, dir: string, between: string[]): { links: number[]; note: string } {
+  const want = WANT[dir] ?? 270;
+  const streetLinks = links.map((_, i) => i).filter((i) => same(links[i].name, street) && links[i].class !== 'motorway' && angDiff(bearingOf(links[i], nodes), want) <= 75);
+  const fallback = (why: string) => ({ links: streetLinks.filter((i) => links[i].inStudyArea), note: `FALLBACK (${why}): all study-area ${street} ${dir} links` });
+  if (between.length !== 2) return fallback('no between pair');
+  const incident = new Map<number, number[]>();
+  links.forEach((l, i) => { for (const n of [l.from, l.to]) (incident.get(n) ?? incident.set(n, []).get(n)!).push(i); });
+  const crossNodes = (x: string) => [...incident].filter(([, ls]) => ls.some((i) => same(links[i].name, x)) && ls.some((i) => same(links[i].name, street))).map(([n]) => n);
+  const out = new Map<number, number[]>();
+  for (const i of streetLinks) (out.get(links[i].from) ?? out.set(links[i].from, []).get(links[i].from)!).push(i);
+  for (const [p, q] of [[0, 1], [1, 0]]) {
+    const a = crossNodes(between[p]), b = crossNodes(between[q]);
+    if (!a.length || !b.length) continue;
+    const dist = new Map<number, number>(), prev = new Map<number, number>();
+    for (const s of a) dist.set(s, 0);
+    const queue = [...a];
+    // Bellman-Ford style relaxation over the street's own directed links (the street graph is small).
+    while (queue.length) {
+      const n = queue.shift()!;
+      for (const i of out.get(n) ?? []) {
+        const m = links[i].to, nd = dist.get(n)! + links[i].length;
+        if (nd < (dist.get(m) ?? Infinity) - 1e-9) { dist.set(m, nd); prev.set(m, i); queue.push(m); }
+      }
+    }
+    let best: number | null = null;
+    for (const n of b) if (dist.has(n) && !a.includes(n) && (best === null || dist.get(n)! < dist.get(best)!)) best = n;
+    if (best !== null) {
+      const path: number[] = [];
+      let n = best;
+      while (prev.has(n)) { const i = prev.get(n)!; path.push(i); n = links[i].from; if (a.includes(n)) break; }
+      return { links: path.reverse(), note: `path ${between[p]} -> ${between[q]} (${dist.get(best)!.toFixed(0)} m)` };
+    }
+  }
+  return fallback('no path between the cross streets');
+}
+
+/** "Telegraph Avenue north of Alcatraz Avenue" -> "Telegraph Avenue"; a trailing NB / SB / EB / WB gives the direction. */
+export function parseVia(s: string): { freeway: boolean; name: string; dir?: string } {
+  if (same(s, 'freeway')) return { freeway: true, name: '' };
+  let base = s;
+  const low = s.toLowerCase();
+  for (const q of [' north of ', ' south of ', ' east of ', ' west of ']) { const i = low.indexOf(q); if (i >= 0) { base = s.slice(0, i); break; } }
+  for (const [suf, c] of [[' NB', 'N'], [' SB', 'S'], [' EB', 'E'], [' WB', 'W']] as const) if (base.endsWith(suf)) return { freeway: false, name: base.slice(0, -suf.length), dir: c };
+  return { freeway: false, name: base };
+}
+
+export interface ShareSpec { id: string; label: string; target: number; weight: number; kind: 'select' | 'ramp'; note: string; ratio: NonNullable<Constraint['ratio']> }
+
+/**
+ * Ratio constraints for one period. `weight` applies to every share (they come from a device sample, so it is set below the counts).
+ * `period` selects `pmPeakShare` when the target has one and the period is `pmPeriod`.
+ */
+export function buildShareConstraints(
+  nodes: ShareNode[], links: ShareLink[], targets: Targets, a: Assignment, period: string, pmPeriod: string, weight: number,
+): ShareSpec[] {
+  const nodeBy = new Map(nodes.map((n) => [n.id, n]));
+  const nFlows = a.routable.length;
+  const fwNode = new Set<number>();
+  for (const l of links) if (l.class === 'motorway') { fwNode.add(l.from); fwNode.add(l.to); }
+  const sumOver = (set: Set<number>): Float64Array => {
+    const d = new Float64Array(nFlows);
+    for (let k = 0; k < nFlows; k++) for (let i = a.start[k]; i < a.start[k + 1]; i++) if (set.has(a.link[i])) d[k] += a.share[i];
+    for (let k = 0; k < nFlows; k++) d[k] = Math.min(d[k], 1);
+    return d;
+  };
+  const out: ShareSpec[] = [];
+  const pack = (den: Float64Array, num: Float64Array) => {
+    const flows: number[] = [], dd: number[] = [], nn: number[] = [];
+    for (let k = 0; k < nFlows; k++) if (den[k] > 0) { flows.push(k); dd.push(den[k]); nn.push(Math.min(num[k], den[k])); }
+    return { flows: Int32Array.from(flows), den: Float64Array.from(dd), num: Float64Array.from(nn) };
+  };
+  for (const t of targets.selectLink ?? []) {
+    const blk = resolveBlock(links, nodeBy, t.street, t.direction, t.between ?? []);
+    if (!blk.links.length) continue;
+    const den = sumOver(new Set(blk.links));
+    for (const side of ['from', 'to'] as const) for (const e of t[side] ?? []) {
+      if (!parseVia(e.via).freeway) continue;
+      const num = new Float64Array(nFlows);
+      for (let k = 0; k < nFlows; k++) if (den[k] > 0 && fwNode.has(side === 'from' ? a.origin[k] : a.destination[k])) num[k] = den[k];
+      const target = period === pmPeriod && e.pmPeakShare !== undefined ? e.pmPeakShare : e.share;
+      out.push({ id: `share ${t.street} ${t.direction} ${side} freeway`, label: `${t.street} ${t.direction}, trips ${side === 'from' ? 'from' : 'to'} the freeway`, target, weight, kind: 'select', note: `block: ${blk.note}`, ratio: pack(den, num) });
+    }
+  }
+  const fr = targets.freewayRamp;
+  if (fr) {
+    const loc = (fr.location ?? '').toLowerCase();
+    const incident = new Map<number, number[]>();
+    links.forEach((l, i) => { for (const n of [l.from, l.to]) (incident.get(n) ?? incident.set(n, []).get(n)!).push(i); });
+    const ramps: { node: number; on: boolean; links: number[] }[] = [];
+    for (const [n, ls] of incident) {
+      const fw = ls.filter((i) => links[i].class === 'motorway');
+      if (!fw.length || !ls.some((i) => links[i].class !== 'motorway')) continue;
+      if (!ls.some((i) => links[i].name && loc.includes(links[i].name.toLowerCase()))) continue;
+      const on = fw.filter((i) => links[i].from === n), off = fw.filter((i) => links[i].to === n);
+      if (on.length) ramps.push({ node: n, on: true, links: on });
+      if (off.length) ramps.push({ node: n, on: false, links: off });
+    }
+    for (const [key, onRamp] of [['ontoFreewayFromNorth', true], ['fromFreewayGoingNorth', false]] as const) {
+      const rl = new Set(ramps.filter((r) => r.on === onRamp).flatMap((r) => r.links));
+      if (!rl.size) continue;
+      const den = sumOver(rl);
+      for (const e of fr[key] ?? []) {
+        const v = parseVia(e.via);
+        if (v.freeway) continue;
+        const street = new Set<number>();
+        links.forEach((l, i) => { if (l.class !== 'motorway' && same(l.name, v.name) && (!v.dir || compassOf(bearingOf(l, nodeBy)) === v.dir)) street.add(i); });
+        const ds = sumOver(street);
+        const num = new Float64Array(nFlows);
+        for (let k = 0; k < nFlows; k++) num[k] = Math.min(den[k], ds[k]);
+        out.push({ id: `share ramp ${onRamp ? 'onto' : 'from'} via ${e.via}`, label: `${onRamp ? 'Onto' : 'From'} the freeway at the ramps, via ${e.via}`, target: e.share, weight, kind: 'ramp', note: `${ramps.filter((r) => r.on === onRamp).length} ramp node(s) at "${fr.location}"; street visit anywhere on the path (joint use taken as the smaller of the two path shares)`, ratio: pack(den, num) });
+      }
+    }
+  }
+  return out;
+}

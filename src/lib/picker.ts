@@ -2,11 +2,11 @@ import type { Network } from '../types';
 import { type Block, type NetIndex } from './naming';
 
 export interface PlaceResult { key: string; label: string; study: boolean; kind: 'block' | 'node'; /** Block index or node id. */ id: number }
-export interface ScopeOptions { showService: boolean; showOutside: boolean }
+export interface ScopeOptions { showService: boolean }
 
-/** Whether a block is listed: focus area unless outside streets are included; service roads only when asked. */
+/** Whether a block is listed: only the visible region (study area plus buffer); service roads only when asked. */
 export function blockVisible(b: Block, o: ScopeOptions, cls?: string): boolean {
-  return (o.showOutside || b.inFocus) && (o.showService || b.cls !== 'service' || cls === 'service');
+  return b.inFocus && (o.showService || b.cls !== 'service' || cls === 'service');
 }
 
 /** Every place the search can find, study area first. */
@@ -16,7 +16,7 @@ export function placeResults(net: Network, idx: NetIndex, o: ScopeOptions): { bl
   idx.blocks.forEach((b, i) => { if (blockVisible(b, o)) blocks.push({ key: `b${i}`, label: b.label, study: b.inStudyArea, kind: 'block', id: i }); });
   const nodes: PlaceResult[] = [];
   for (const n of idx.intersections) {
-    if (!o.showOutside && !idx.nodeInFocus[n]) continue;
+    if (!idx.nodeInFocus[n]) continue;
     nodes.push({ key: `n${n}`, label: idx.nodeName[n], study: net.nodes[n].inStudyArea, kind: 'node', id: n });
   }
   return { blocks: blocks.sort(byStudy), nodes: nodes.sort(byStudy) };

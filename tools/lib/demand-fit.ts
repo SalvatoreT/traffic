@@ -2,6 +2,7 @@
 // (baseline-calibration, seventh round). Orchestration and report for tools/build-demand.ts. No I/O.
 import { assign, buildGraph, linkVolumes, type ALink, type ANode, type ATurnBan, type Graph } from './assign';
 import { assigned, fitToCounts, type Constraint, type FitOptions, type FlowType } from './fit-counts';
+import { buildShareConstraints, type ShareLink, type ShareSpec, type Targets } from './share-targets';
 
 export interface NetLinkIn extends ALink { name: string; lanes?: number; inStudyArea?: boolean }
 export interface FlowIn { origin: number; destination: number; vehPerHour: number; mode?: string }
@@ -21,7 +22,7 @@ export interface Station {
   tolPct: number;
 }
 
-export interface GateIn { id: number; kind: string; street: string | null; source: string; inT: Record<string, number>; outT: Record<string, number> }
+export interface GateIn { id: number; kind: string; street: string | null; source: string; inT: Record<string, number>; outT: Record<string, number>; /** Gates that split one count (same street, close together, same source) share a group key. */ group?: string }
 export interface TmcIn { id: string; x: number; y: number; legs: Record<string, { entering: number; leaving: number }>; legStreets: Record<string, string> }
 export interface RampIn { kind: 'off' | 'on'; surface: number; streets: string[]; adt: number; adtKind: string; source: string }
 export interface OverrideIn { street: string; adt: number; factor?: number; x: number; y: number; source: string }
@@ -70,12 +71,20 @@ export function buildStations(s: StationInputs, notes: string[]): Station[] {
   const W = s.cfg.weights, T = s.cfg.tolerancePct;
 
   // 1. Gates with count data: the volume entering / leaving the model at the gate is the volume on its outgoing / incoming links.
-  for (const g of s.gates) {
-    if (g.kind === 'ASSUMPTION') continue;
-    const o = outIdx.get(g.id) ?? [], i = inIdx.get(g.id) ?? [];
-    const basis = `DATA (${g.source})`;
-    if (o.length && s.periodIds.some((p) => g.inT[p] > 0)) out.push({ id: `gate ${g.id} in`, kind: 'gate', label: `gate ${g.id} ${nameOf(s, o[0])} entering`, basis, links: [], origins: [g.id], target: per((p) => g.inT[p]), weight: W.gate ?? 1, tolPct: T.gate ?? 10 });
-    if (i.length && s.periodIds.some((p) => g.outT[p] > 0)) out.push({ id: `gate ${g.id} out`, kind: 'gate', label: `gate ${g.id} ${nameOf(s, i[0])} leaving`, basis, links: [], destinations: [g.id], target: per((p) => g.outT[p]), weight: W.gate ?? 1, tolPct: T.gate ?? 10 });
+  // Gates that split one count (the build gives each its share of the street volume) are one station on the group: the fit may move volume
+  // between them, and the station keeps the count whole.
+  const groups = new Map<string, GateIn[]>();
+  for (const g of s.gates) if (g.kind !== 'ASSUMPTION') (groups.get(g.group ?? String(g.id)) ?? groups.set(g.group ?? String(g.id), []).get(g.group ?? String(g.id))!).push(g);
+  for (const [key, gs] of groups) {
+    const ids = gs.map((g) => g.id);
+    const first = gs[0];
+    const o = gs.filter((g) => (outIdx.get(g.id) ?? []).length), i = gs.filter((g) => (inIdx.get(g.id) ?? []).length);
+    const sumT = (list: GateIn[], dir: 'inT' | 'outT') => per((p) => list.reduce((a, g) => a + g[dir][p], 0));
+    const tag = gs.length > 1 ? `gates ${ids.join(' + ')}` : `gate ${first.id}`;
+    const basis = `DATA (${first.source})`;
+    const inT = sumT(o, 'inT'), outT = sumT(i, 'outT');
+    if (o.length && s.periodIds.some((p) => inT[p] > 0)) out.push({ id: gs.length > 1 ? `gate group ${key} in` : `gate ${first.id} in`, kind: 'gate', label: `${tag} ${nameOf(s, (outIdx.get(o[0].id) ?? [])[0])} entering`, basis, links: [], origins: o.map((g) => g.id), target: inT, weight: W.gate ?? 1, tolPct: T.gate ?? 10 });
+    if (i.length && s.periodIds.some((p) => outT[p] > 0)) out.push({ id: gs.length > 1 ? `gate group ${key} out` : `gate ${first.id} out`, kind: 'gate', label: `${tag} ${nameOf(s, (inIdx.get(i[0].id) ?? [])[0])} leaving`, basis, links: [], destinations: i.map((g) => g.id), target: outT, weight: W.gate ?? 1, tolPct: T.gate ?? 10 });
   }
 
   // 2. Turning-movement count legs at counted intersections inside the model: entering = incoming links of the leg, leaving = outgoing.
@@ -170,6 +179,8 @@ export function linkCapacity(l: NetLinkIn, node: ANode, minor: boolean, cap: Cap
 // ---------- the fit ----------
 export interface FitConfig {
   fit: FitOptions;
+  /** Observed route shares as soft ratio constraints (weight below the counts: they come from a device sample); omitted or `weight` 0 leaves them out. */
+  shares?: { targets: Targets; weight: number; pmPeriod: string };
   draws: number; noise: number;
   guard: { enabled: boolean; excessShare: number; weight: number; capacity: CapTable };
 }
@@ -188,6 +199,8 @@ export interface PeriodResult {
   guardRemoved: number;
   guardFlows: number;
   residualOver: { link: number; name: string; vol: number; limit: number }[];
+  /** Share constraints: target, share of the offered table, after the count-only fit, final. */
+  shareRows: { spec: ShareSpec; offered: number; afterFit: number; final: number; n: number }[];
   unroutable: number;
   graphBans: number;
   cons: number;
@@ -201,14 +214,17 @@ export function fitPeriod(
   const nodeBy = new Map(nodes.map((n) => [n.id, n]));
   const a = assign(g, flows, cfg.draws, cfg.noise);
   const v0 = flows.map((f) => f.vehPerHour);
-  const cons: Constraint[] = stations.filter((s) => (s.target[id] ?? 0) > 0).map((s) => ({ id: s.id, kind: s.kind, label: s.label, links: s.links, origins: s.origins, destinations: s.destinations, target: s.target[id], weight: s.weight }));
+  const countCons: Constraint[] = stations.filter((s) => (s.target[id] ?? 0) > 0).map((s) => ({ id: s.id, kind: s.kind, label: s.label, links: s.links, origins: s.origins, destinations: s.destinations, target: s.target[id], weight: s.weight }));
   const nL = links.length;
+  const specs: ShareSpec[] = cfg.shares && cfg.shares.weight > 0 ? buildShareConstraints(nodes, links as ShareLink[], cfg.shares.targets, a, id, cfg.shares.pmPeriod, cfg.shares.weight) : [];
+  const shareCons: Constraint[] = specs.map((q) => ({ id: q.id, kind: 'share', label: q.label, links: [], target: q.target, weight: q.weight, ratio: q.ratio }));
+  const cons: Constraint[] = [...countCons, ...shareCons];
   const sumBy = (f: ArrayLike<number>) => { const o: Record<string, number> = { through: 0, local: 0, ramp: 0 }; for (let k = 0; k < f.length; k++) o[types[k]] += f[k]; return o; };
   const exempt = new Set<number>();
   for (const c of cons) for (const l of c.links) exempt.add(l);
   const before = assigned(a, v0, cons, nL);
-  // Step 1: counts only (no guard): the "after count fit" column.
-  const r1 = fitToCounts(a, v0, types, cons, nL, cfg.fit);
+  // Step 1: counts only (no guard, no shares): the "after count fit" column.
+  const r1 = fitToCounts(a, v0, types, countCons, nL, cfg.fit);
   const f1 = v0.map((v, k) => v * r1.g[k]);
   const afterFit = assigned(a, f1, cons, nL);
   let rFinal = r1, fFinal = f1;
@@ -218,17 +234,17 @@ export function fitPeriod(
   const limit = new Float64Array(nL).fill(Infinity);
   const ruleOf: { cap: number; rule: string }[] = links.map((l, i) => linkCapacity(l, nodeBy.get(l.to)!, g.minor[i], cfg.guard.capacity));
   links.forEach((_, l) => { if (!exempt.has(l)) limit[l] = (1 + cfg.guard.excessShare) * ruleOf[l].cap; });
-  if (cfg.guard.enabled) {
+  if (cfg.guard.enabled || shareCons.length) {
     // Links the count-only solution puts over their limit.
     const V1 = linkVolumes(a, f1, nL);
     // Step 2: counts and the guard together. The guard is a set of soft upper limits with weight < 1 on uncounted links, so a count wins any conflict.
-    rFinal = fitToCounts(a, v0, types, cons, nL, cfg.fit, undefined, { limit, weight: cfg.guard.weight });
+    rFinal = fitToCounts(a, v0, types, cons, nL, cfg.fit, undefined, cfg.guard.enabled ? { limit, weight: cfg.guard.weight } : undefined);
     fFinal = v0.map((v, k) => v * rFinal.g[k]);
     const V2 = linkVolumes(a, fFinal, nL);
-    for (let l = 0; l < nL; l++) if (V1[l] > limit[l]) guardBound.push({ link: l, name: links[l].name || '(unnamed)', rule: ruleOf[l].rule, cap: ruleOf[l].cap, before: V1[l], after: V2[l] });
+    if (cfg.guard.enabled) for (let l = 0; l < nL; l++) if (V1[l] > limit[l]) guardBound.push({ link: l, name: links[l].name || '(unnamed)', rule: ruleOf[l].rule, cap: ruleOf[l].cap, before: V1[l], after: V2[l] });
     guardBound.sort((x, y) => y.before / y.cap - x.before / x.cap);
-    residualOver = [...V2.keys()].filter((l) => V2[l] > limit[l] * (1 + 1e-3)).map((l) => ({ link: l, name: links[l].name || '(unnamed)', vol: V2[l], limit: limit[l] })).sort((x, y) => y.vol / y.limit - x.vol / x.limit);
-    notes.push(`the guard cut ${rFinal.freeCut?.toFixed(0) ?? 0} veh/h from flows that touch no count (after the median rule)`);
+    if (cfg.guard.enabled) residualOver = [...V2.keys()].filter((l) => V2[l] > limit[l] * (1 + 1e-3)).map((l) => ({ link: l, name: links[l].name || '(unnamed)', vol: V2[l], limit: limit[l] })).sort((x, y) => y.vol / y.limit - x.vol / x.limit);
+    if (cfg.guard.enabled) notes.push(`the guard cut ${rFinal.freeCut?.toFixed(0) ?? 0} veh/h from flows that touch no count (after the median rule)`);
   }
   let guardFlows = 0;
   for (let k = 0; k < flows.length; k++) if (fFinal[k] < f1[k] * 0.999) guardFlows++;
@@ -239,9 +255,10 @@ export function fitPeriod(
   const totals: PeriodResult['totals'] = {};
   for (const t of ['through', 'local', 'ramp']) totals[t] = { start: t0[t], afterFit: t1[t], final: t2[t] };
   const byId = new Map(cons.map((c, i) => [c.id, i]));
+  const shareRows = specs.map((q) => { const i = byId.get(q.id)!; return { spec: q, offered: before[i], afterFit: afterFit[i], final: final[i], n: q.ratio.flows.length }; });
   const stationRows = stations.filter((s) => byId.has(s.id)).map((s) => { const i = byId.get(s.id)!; return { st: s, target: cons[i].target, before: before[i], afterFit: afterFit[i], final: final[i] }; });
   const guardRemoved = Object.values(totals).reduce((x, q) => x + q.afterFit - q.final, 0);
-  return { id, volume, totals, stationRows, fit: rFinal, gFinal: [...rFinal.g], counted: rFinal.counted, types, guardBound, guardRemoved, guardFlows, residualOver, unroutable: [...a.routable].filter((x) => !x).length, graphBans: g.banned, cons: cons.length, notes };
+  return { id, volume, totals, stationRows, fit: rFinal, gFinal: [...rFinal.g], counted: rFinal.counted, types, guardBound, guardRemoved, guardFlows, residualOver, shareRows, unroutable: [...a.routable].filter((x) => !x).length, graphBans: g.banned, cons: countCons.length, notes };
 }
 
 // ---------- report ----------
@@ -273,8 +290,11 @@ export function fitReport(area: string, results: PeriodResult[], flowsBy: Record
     L.push(`| ${r.id} | **all** | ${f0(s0)} | ${f0(s1)} | ${f0(s2)} | ${f0(s0 - s1)} | ${f0(s1 - s2)} | ${pctOf(s2, s0)} |`);
   }
   L.push('', '## Fit status and per-flow factors', '', 'Factor = final volume / offered volume of a flow. Percentiles are volume-weighted over the offered volume. "At bound" counts flows on a counted link whose factor sits on the lower or upper bound.', '');
-  L.push('| Period | Flows | Touch a count | Iterations | Stopped by | Worst station log error | Flows at lower bound | Flows at upper bound | Stations no flow crosses | Unroutable flows |', '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |');
-  for (const r of results) L.push(`| ${r.id} | ${flowsBy[r.id].length} | ${[...r.counted].filter(Boolean).length} | ${r.fit.iterations} | ${r.fit.maxLogErr < opt.fit.tol ? 'tolerance' : r.fit.stationary ? 'no factor moving' : 'iteration limit (conflicting counts, flows at bounds)'} | ${r.fit.maxLogErr.toFixed(3)} | ${r.fit.atLo} | ${r.fit.atHi} | ${r.fit.unreachable.length ? r.fit.unreachable.join('; ') : 'none'} | ${r.unroutable} |`);
+  L.push('| Period | Flows | Touch a count | Iterations | Stopped by | Worst error, unblocked stations | Worst error, all stations | Stations outside tolerance | Flows at lower bound | Flows at upper bound | Stations no flow crosses | Unroutable flows |', '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |');
+  const stopText = (x: PeriodResult['fit']) => (x.stoppedBy === 'tolerance' ? 'tolerance (blocked and tense stations excluded)' : x.stoppedBy === 'stalled' ? 'stalled (no gain over the window)' : x.stoppedBy === 'stationary' ? 'no factor moving' : 'iteration limit');
+  const rel = (e: number) => `${(100 * (Math.exp(Math.abs(e)) - 1)).toFixed(1)}%`;
+  for (const r of results) L.push(`| ${r.id} | ${flowsBy[r.id].length} | ${[...r.counted].filter(Boolean).length} | ${r.fit.iterations} | ${stopText(r.fit)} | ${rel(r.fit.maxLogErr)} | ${rel(r.fit.maxLogErrAll)} | ${r.fit.conflicts.length} | ${r.fit.atLo} | ${r.fit.atHi} | ${r.fit.unreachable.length ? r.fit.unreachable.join('; ') : 'none'} | ${r.unroutable} |`);
+  L.push('', 'Errors are relative (assigned / target - 1 in size). "Unblocked" leaves out stations that cannot move (their flows sit on a bound) or are in tension with another station; both kinds are listed under "Stations that cannot be met" below.');
   L.push('', '| Period | Group | Flows | p5 | p25 | median | p75 | p95 |', '| --- | --- | --- | --- | --- | --- | --- | --- |');
   for (const r of results) {
     const fl = flowsBy[r.id];
@@ -303,6 +323,15 @@ export function fitReport(area: string, results: PeriodResult[], flowsBy: Record
     L.push('', `## Stations, ${r.id}`, '', `${rows.length} stations with a target. Within +/-${opt.tolOk}%: before ${rows.filter((x) => Math.abs(x.before / x.target - 1) * 100 <= opt.tolOk).length}, after the fit ${rows.filter((x) => Math.abs(x.afterFit / x.target - 1) * 100 <= opt.tolOk).length}, final ${okAll}. Within their own tolerance (gates 10%, ramps 5%, others 15%): final ${rows.filter(tol).length}.`, '');
     L.push('| Station | Basis | Target | Assigned before | Ratio | After fit | Ratio | Final | Ratio | Own tolerance |', '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |');
     for (const x of rows.sort((p, q) => (p.st.kind === q.st.kind ? q.target - p.target : p.st.kind < q.st.kind ? -1 : 1))) L.push(`| ${x.st.label} | ${x.st.kind}${x.st.basis.includes('ASSUMPTION') ? ' (factor ASSUMPTION)' : ''} | ${f0(x.target)} | ${f0(x.before)} | ${(x.before / x.target).toFixed(2)} | ${f0(x.afterFit)} | ${(x.afterFit / x.target).toFixed(2)} | ${f0(x.final)} | ${(x.final / x.target).toFixed(2)} | ${tol(x) ? 'ok' : `OUTSIDE (${x.st.tolPct}%)`} |`);
+  }
+  L.push('', '## Stations that cannot be met', '', 'A station is listed when it ends more than 5% off its target. Pinned = share of its assigned volume on flows sitting on the bound it would need to move (lower bound when it is too high, upper bound when too low). Opposing = stations that pull the same flows the other way (size of the error, volume the two share).', '');
+  for (const r of results) {
+    const rows = r.fit.conflicts.filter((c) => Math.abs(Math.exp(c.logErr) - 1) > 0.05);
+    L.push(`### ${r.id}`, '');
+    if (!rows.length) { L.push('None.', ''); continue; }
+    L.push('| Station | Target | Assigned | Error | Pinned | Opposing stations |', '| --- | --- | --- | --- | --- | --- |');
+    for (const c of rows) L.push(`| ${c.label} | ${f0(c.target)} | ${f0(c.assigned)} | ${(100 * (c.assigned / c.target - 1)).toFixed(0)}% | ${c.bound === 'none' ? `${(100 * c.pinned).toFixed(0)}%` : `${(100 * c.pinned).toFixed(0)}% at the ${c.bound === 'hi' ? 'upper' : 'lower'} bound`} | ${c.opposing.map((o) => `${o.label} (${Number.isNaN(o.logErr) ? 'guard' : `${(100 * (Math.exp(-o.logErr) - 1)).toFixed(0)}%`}, ${f0(o.sharedVeh)} veh/h)`).join('; ') || '-'} |`);
+    L.push('');
   }
   L.push('', '## Capacity guard', '');
   for (const r of results) {

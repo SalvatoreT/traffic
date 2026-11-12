@@ -468,7 +468,7 @@
         }
       }
     },
-    "maxIter": 400,
+    "maxIter": 600,
     "tol": 0.01,
     "damping": 1,
     "draws": 5,
@@ -536,7 +536,12 @@
         }
       }
     },
-    "stationary": 0.0001
+    "stationary": 0.0001,
+    "softStep": 0.001,
+    "stallWindow": 25,
+    "stallGain": 0.002,
+    "blockedShare": 0.8,
+    "convergenceNote": "Stopping rule of the fit: every count station outside tolerance is either blocked (the flows it needs to move sit on a bound, share >= blockedShare) or in tension (another station outside tolerance the other way shares at least half of its flow, or the capacity guard pulls most of its flow down), and the volume-weighted mean relative step of the flows is below softStep; otherwise stop as stalled (worst log error of the other stations improved by less than stallGain over stallWindow iterations), or when no flow moves by more than `stationary`. Blocked and tense stations are listed in the fit report with what holds them back."
   },
   "audit": {
     "nearM": 400
