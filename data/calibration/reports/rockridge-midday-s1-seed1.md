@@ -28,12 +28,11 @@ Overall: **NOT STABLE**. Mean trip delay 291 s, mean trip time 712 s, completed 
 | 60 | 4550 | 3 | 12859 | 13 | 5.73 |
 ## Per-mode results
 
-Offered: 17333 car veh/h; 528 bicycle flows (580/h); 2000 pedestrian flows (1820/h); 0 bus routes running (0 dropped as unlinked, 0 runs blocked). Bicycle and pedestrian volumes are assumptions, not counts.
+Offered: 17333 car veh/h; 528 bicycle flows (580/h); 2000 pedestrian flows (1820/h). Bicycle and pedestrian volumes are assumptions, not counts.
 
 | Mode | In network | Completed | Mean time (s) | Other |
 | --- | --- | --- | --- | --- |
 | Car | 4550 | 12859 | 712 | |
-| Bus | 0 | 0 | 0 | mean speed 0.00 m/s |
 | Bicycle | 57 | 542 | 304 | |
 | Pedestrian | 245 | 1504 | 480 | mean crossing delay 6.2 s |
 

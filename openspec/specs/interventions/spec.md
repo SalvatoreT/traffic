@@ -13,11 +13,11 @@ A scenario SHALL be an ordered list of interventions (Intervention contract) app
 - **THEN** the simulated network returns to its prior behavior for that element
 
 ### Requirement: Modal filters
-A modal filter on a link or node SHALL prevent motor vehicles from passing through it while leaving access to both sides, and routes SHALL adapt.
+A modal filter on a link or node SHALL prevent cars from passing through it while leaving access to both sides, and routes SHALL adapt.
 
 #### Scenario: Filtered street
 - **WHEN** a modal filter is placed on a residential link used by through traffic
-- **THEN** no motor vehicle traverses it and affected trips re-route
+- **THEN** no car traverses it and affected trips re-route
 
 ### Requirement: Traffic calming
 Speed humps SHALL reduce vehicle speed locally at the hump, traffic circles SHALL replace a node's control with yield-on-entry at reduced negotiation speed [Rodegerdts2010], and speed-limit changes SHALL change desired speeds on the link; calming parameters SHALL cite their sources.
@@ -48,15 +48,15 @@ Because this version holds demand fixed, results SHALL be presented with a cavea
 - **THEN** the caveat and its citation are visible
 
 ### Requirement: Diagonal diverter
-A diagonal diverter at a four-leg intersection SHALL let motor vehicles turn only between legs on the same side of its barrier line, so that neither street can be driven straight through, while people walking and biking pass in any direction, and routes SHALL adapt.
+A diagonal diverter at a four-leg intersection SHALL let cars turn only between legs on the same side of its barrier line, so that neither street can be driven straight through, while people walking and biking pass in any direction, and routes SHALL adapt.
 
 #### Scenario: Straight through is blocked
 - **WHEN** a diagonal diverter is placed at a four-leg intersection
-- **THEN** no motor vehicle crosses the intersection straight ahead on either street, and each approach can only make the one turn the barrier allows
+- **THEN** no car crosses the intersection straight ahead on either street, and each approach can only make the one turn the barrier allows
 
 #### Scenario: Access is kept
 - **WHEN** a diagonal diverter is in place
-- **THEN** every street meeting the intersection can still be reached by motor vehicles from one of its neighbors
+- **THEN** every street meeting the intersection can still be reached by cars from one of its neighbors
 
 #### Scenario: Walking and biking
 - **WHEN** a cyclist or pedestrian reaches the diverter

@@ -9,7 +9,7 @@ const post = (m: FromWorker, tr: Transferable[] = []) => ctx.postMessage(m, tr);
 
 const STEP = 0.25;
 let Ctor: SimCtor | null = null;
-let network = '', demand = '', transit: string | undefined;
+let network = '', demand = '';
 let cfg = { seed: 1, period: '', demandScale: 1 };
 let interventions: Intervention[] = [];
 let scenario: SimLike | null = null;
@@ -24,7 +24,7 @@ let winSim = 0;
 const resetWindow = () => { winStart = performance.now(); winSim = 0; };
 let timer: ReturnType<typeof setTimeout> | null = null;
 
-const make = (): SimLike => new Ctor!(network, demand, JSON.stringify(cfg), transit);
+const make = (): SimLike => new Ctor!(network, demand, JSON.stringify(cfg));
 const dispose = (s: SimLike | null) => { try { s?.free?.(); } catch { /* ignore */ } };
 
 function rebuild() {
@@ -117,7 +117,7 @@ function tick() {
 }
 
 async function init(msg: Extract<ToWorker, { t: 'init' }>) {
-  network = msg.network; demand = msg.demand; transit = msg.transit;
+  network = msg.network; demand = msg.demand;
   cfg = { seed: msg.seed, period: msg.period, demandScale: msg.demandScale };
   interventions = msg.interventions; speed = msg.speed; running = msg.running;
   let engine: 'wasm' | 'mock' = 'mock';
@@ -131,9 +131,9 @@ async function init(msg: Extract<ToWorker, { t: 'init' }>) {
       await (mod.default as () => Promise<unknown>)();
       Ctor = mod[key] as SimCtor;
       // Smoke-test the constructor so a broken build falls back instead of failing mid-run.
-      const probe = new Ctor(network, demand, JSON.stringify(cfg), transit);
+      const probe = new Ctor(network, demand, JSON.stringify(cfg));
       probe.step(STEP);
-      // An older build ignores the transit argument and reports no `modes`; the UI hides mode sections then.
+      // An older build reports no `modes`; the UI hides mode sections then.
       probe.metrics();
       (probe as SimLike).free?.();
       engine = 'wasm';

@@ -1,4 +1,4 @@
-import type { AreaBundle, AreaEntry, Demand, GeoFC, Network, Transit } from './types';
+import type { AreaBundle, AreaEntry, Demand, GeoFC, Network } from './types';
 import { buildFixture } from './fixtures/area';
 
 export interface LoadProgress { loaded: number; total: number | null }
@@ -62,12 +62,11 @@ export async function loadArea(preferred?: string, forceFixture = false, onProgr
   if (!entry) return buildFixture();
 
   const base = (f: string) => (f.startsWith('/') || f.startsWith('http') ? f : `/data/${f}`);
-  const urls = { network: base(entry.network), demand: base(entry.demand), basemap: base(entry.basemap), transit: entry.transit ? base(entry.transit) : null };
-  const parts: Record<'network' | 'demand' | 'basemap' | 'transit', Part> = {
-    network: { loaded: 0, total: null }, demand: { loaded: 0, total: null }, basemap: { loaded: 0, total: null }, transit: { loaded: 0, total: null },
+  const urls = { network: base(entry.network), demand: base(entry.demand), basemap: base(entry.basemap) };
+  const parts: Record<'network' | 'demand' | 'basemap', Part> = {
+    network: { loaded: 0, total: null }, demand: { loaded: 0, total: null }, basemap: { loaded: 0, total: null },
   };
   const active = (['network', 'demand', 'basemap'] as const).map((k) => parts[k]);
-  if (urls.transit) active.push(parts.transit);
   let lastPost = 0;
   const report = () => {
     const now = performance.now();
@@ -76,16 +75,14 @@ export async function loadArea(preferred?: string, forceFixture = false, onProgr
     onProgress?.(aggregateProgress(active));
   };
   onProgress?.({ loaded: 0, total: null });
-  const [networkText, demandText, basemapText, transitText] = await Promise.all([
+  const [networkText, demandText, basemapText] = await Promise.all([
     getText(urls.network, parts.network, report),
     getText(urls.demand, parts.demand, report),
     getText(urls.basemap, parts.basemap, report),
-    urls.transit ? getText(urls.transit, parts.transit, report).catch((e: Error) => { console.info('No transit file:', e.message); return null; }) : null,
   ]);
   onProgress?.(aggregateProgress(active.map((p) => ({ loaded: p.total ?? p.loaded, total: p.total }))));
   const network = parse<Network>(urls.network, networkText);
   const demand = parse<Demand>(urls.demand, demandText);
   const basemap = parse<GeoFC>(urls.basemap, basemapText);
-  const transit = transitText ? parse<Transit>(urls.transit as string, transitText) : undefined;
-  return { entry, network, demand, basemap, synthetic: false, transit, raw: { network: networkText, demand: demandText, transit: transitText ?? undefined } };
+  return { entry, network, demand, basemap, synthetic: false, raw: { network: networkText, demand: demandText } };
 }

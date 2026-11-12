@@ -25,11 +25,6 @@ export interface ALocal {
   res: number;
   jobs: number;
 }
-export interface AStop {
-  node: number;
-  /** Buses per hour serving the stop, by period. */
-  freq: Record<string, number>;
-}
 export type Mode = 'pedestrian' | 'bicycle';
 export interface AFlow {
   origin: number;
@@ -50,9 +45,6 @@ interface ModeCfg {
 export interface ActiveCfg {
   pedestrian: ModeCfg & {
     commercialShare: number;
-    transitAccessShare: number;
-    maxWalkToStopM: number;
-    stopDecayM: number;
   };
   bicycle: ModeCfg & {
     throughFactor: number;
@@ -72,7 +64,6 @@ export interface ActiveInput {
   links: ALink[];
   locals: ALocal[];
   freewayGates: Set<number>;
-  stops: AStop[];
   periodIds: string[];
   /** Period used for scaling to counts. */
   scalePeriod: string;
@@ -93,7 +84,7 @@ export interface ModeReport {
   observed: number | null;
   after: number | null;
   factor: number;
-  perPeriod: Record<string, { total: number; flows: number; candidates: number; toGates: number; toStops: number; toCommercial: number; through: number }>;
+  perPeriod: Record<string, { total: number; flows: number; candidates: number; toGates: number; toCommercial: number; through: number }>;
 }
 
 interface Tree {
@@ -194,11 +185,11 @@ export function buildActiveFlows(inp: ActiveInput): { flows: Record<string, AFlo
     return total;
   };
 
-  type Raw = { flows: Map<string, number>; toGates: number; toStops: number; toCommercial: number; through: number };
+  type Raw = { flows: Map<string, number>; toGates: number; toCommercial: number; through: number };
   const rawFor = (mode: Mode, p: string): Raw => {
     const mc = cfg[mode];
     const flows = new Map<string, number>();
-    const stats = { toGates: 0, toStops: 0, toCommercial: 0, through: 0 };
+    const stats = { toGates: 0, toCommercial: 0, through: 0 };
     const isWalk = mode === 'pedestrian';
     const R = isWalk ? walk : bike;
     const dd = (a: number, b: number) => R.d(a, b);
@@ -230,15 +221,6 @@ export function buildActiveFlows(inp: ActiveInput): { flows: Record<string, AFlo
           .map((n) => ({ o, d: n.id, w: (1 + jobsNear(n)) * Math.exp(-dd(o, n.id) / mc.meanTripM) }));
         stats.toCommercial += spread(flows, internal * comShare, cc);
         if (!cc.length) spread(flows, internal * comShare, lc);
-        // access and egress legs of bus trips
-        const sc = (dir: 'out' | 'in') =>
-          inp.stops
-            .filter((s) => (s.freq[p] ?? 0) > 0)
-            .map((s) => ({ s, d: dir === 'out' ? dd(o, s.node) : dd(s.node, o) }))
-            .filter((x) => x.d <= cfg.pedestrian.maxWalkToStopM)
-            .map((x) => ({ o: dir === 'out' ? o : x.s.node, d: dir === 'out' ? x.s.node : o, w: x.s.freq[p] * Math.exp(-x.d / cfg.pedestrian.stopDecayM) }));
-        const base = (dir: 'out' | 'in') => (dir === 'out' ? out : inn) / mc.modeShare * cfg.pedestrian.transitAccessShare;
-        stats.toStops += spread(flows, base('out'), sc('out')) + spread(flows, base('in'), sc('in'));
       }
     }
     if (!isWalk) {
@@ -323,7 +305,7 @@ export function buildActiveFlows(inp: ActiveInput): { flows: Record<string, AFlo
         const [o, d] = x.key.split('>').map(Number);
         flows[p].push({ origin: o, destination: d, vehPerHour: Math.round(x.v * f * 100) / 100, mode });
       }
-      rep.perPeriod[p] = { total, flows: list.length, candidates: all.filter((x) => x.v >= cfg.minFlowPerHour).length, toGates: r.toGates * k, toStops: r.toStops * k, toCommercial: r.toCommercial * k, through: r.through * k };
+      rep.perPeriod[p] = { total, flows: list.length, candidates: all.filter((x) => x.v >= cfg.minFlowPerHour).length, toGates: r.toGates * k, toCommercial: r.toCommercial * k, through: r.through * k };
     }
     reports.push(rep);
   }

@@ -3,7 +3,7 @@ import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import type { AreaBundle, Intervention, ModeVisibility, Overlay } from '../types';
-import { KIND_BIKE, KIND_BUS, KIND_PED } from '../types';
+import { KIND_BIKE, KIND_PED } from '../types';
 import { makeProjection, metersPerPixel } from '../lib/projection';
 import { pointAlong } from '../lib/geom';
 import { hitTest, selectionAnchor, type Selection } from '../lib/selection';
@@ -61,8 +61,8 @@ const OFFSET = ['interpolate', ['linear'], ['zoom'], 14, 1.2, 17, 3.5, 19, 6];
 
 /** Colorblind-safe agent palette (Okabe-Ito derived), checked against both map backgrounds. Shape carries the kind too. */
 export const AGENT_COLORS = {
-  light: { car: '#1d5fc4', bus: '#a23b7a', bike: '#00785c', ped: '#a85f00', ring: '#ffffff', tick: '#4a4a4a' },
-  dark: { car: '#7db6f5', bus: '#e58fc0', bike: '#3ddbb0', ped: '#f2b84b', ring: '#0b1118', tick: '#d0d6de' },
+  light: { car: '#1d5fc4', bike: '#00785c', ped: '#a85f00', ring: '#ffffff', tick: '#4a4a4a' },
+  dark: { car: '#7db6f5', bike: '#3ddbb0', ped: '#f2b84b', ring: '#0b1118', tick: '#d0d6de' },
 };
 
 const BADGE: Record<string, string> = {
@@ -146,20 +146,12 @@ export function MapView(p: Props) {
   const hoverRef = useRef<{ link: number | null; node: number | null }>({ link: null, node: null });
   const markers = useRef<maplibregl.Marker[]>([]);
   const prevT = useRef<Float32Array>(new Float32Array(0));
-  const busBuf = useRef<Float32Array>(new Float32Array(384));
   const lastDraw = useRef(0);
   const drawn = useRef<Float32Array>(new Float32Array(0));
   const drawTimer = useRef(0);
-  // Bus stops and marked crossings in local meters, computed once per area.
+  // Marked crossings and signal heads in local meters, computed once per area.
   const fixtures = useMemo(() => {
     const net = bundle.network;
-    const stops: [number, number][] = [];
-    for (const r of bundle.transit?.routes ?? []) for (const st of r.stops) {
-      const l = net.links[st.link];
-      if (!l) continue;
-      const p = pointAlong(l.geometry, Math.min(st.position, l.length));
-      stops.push([p.x + Math.sin(p.heading) * 5, p.y - Math.cos(p.heading) * 5]);
-    }
     const ticks: [number, number, number][] = [];
     for (const l of net.links) for (const c of l.crossings ?? []) {
       const p = pointAlong(l.geometry, Math.min(c, l.length));
@@ -171,7 +163,7 @@ export function MapView(p: Props) {
       sig[l.id * 2] = pp.x + Math.sin(pp.heading) * 3.5; // right of travel
       sig[l.id * 2 + 1] = pp.y - Math.cos(pp.heading) * 3.5;
     }
-    return { stops, ticks, sig };
+    return { ticks, sig };
   }, [bundle]);
 
   // ---- draw vehicles + signals on overlay canvas
@@ -207,19 +199,13 @@ export function MapView(p: Props) {
     const M = L.modes;
     // One path per kind so each kind is a single fill and stroke.
     const pCar = new Path2D(), pBike = new Path2D(), pPed = new Path2D();
-    let nb = 0;
     const rb = r * 1.25, rp = Math.max(1.3, r * 0.6);
     for (let i = 0; i + 5 < v.length; i += 6) {
       const kind = v[i + 4];
-      if (kind === KIND_BUS ? !M.bus : kind === KIND_BIKE ? !M.bicycle : kind === KIND_PED ? !M.pedestrian : !M.car) continue;
+      if (kind === KIND_BIKE ? !M.bicycle : kind === KIND_PED ? !M.pedestrian : !M.car) continue;
       const sx = o.x + v[i] * ax + v[i + 1] * bx, sy = o.y + v[i] * ay + v[i + 1] * by;
       if (sx < -10 || sy < -10 || sx > w + 10 || sy > h + 10) continue;
-      if (kind === KIND_BUS) {
-        const c = Math.cos(v[i + 2]), sn = Math.sin(v[i + 2]);
-        if (nb + 3 > busBuf.current.length) { const g2 = new Float32Array(busBuf.current.length * 2); g2.set(busBuf.current); busBuf.current = g2; }
-        const bb = busBuf.current;
-        bb[nb++] = sx; bb[nb++] = sy; bb[nb++] = Math.atan2(c * ay + sn * by, c * ax + sn * bx);
-      } else if (kind === KIND_BIKE) {
+      if (kind === KIND_BIKE) {
         pBike.moveTo(sx, sy - rb); pBike.lineTo(sx + rb * 0.95, sy + rb * 0.7); pBike.lineTo(sx - rb * 0.95, sy + rb * 0.7); pBike.closePath();
       } else if (kind === KIND_PED) {
         pPed.rect(sx - rp, sy - rp, rp * 2, rp * 2);
@@ -229,33 +215,9 @@ export function MapView(p: Props) {
     }
     g.lineWidth = 1; g.strokeStyle = C.ring;
     g.fillStyle = C.car; g.fill(pCar); g.stroke(pCar);
-    // buses: rounded rectangles along the heading, 12 m long when the zoom allows
-    if (nb) {
-      const buses = busBuf.current;
-      const len = Math.max(10, Math.min(36, 12 * pxPerM)), wd = Math.max(5, Math.min(14, 2.6 * pxPerM));
-      g.fillStyle = C.bus; g.strokeStyle = C.ring; g.lineWidth = 1.2;
-      for (let k = 0; k < nb; k += 3) {
-        const ca = Math.cos(buses[k + 2]), sa = Math.sin(buses[k + 2]);
-        g.setTransform(dpr * ca, dpr * sa, -dpr * sa, dpr * ca, dpr * buses[k], dpr * buses[k + 1]);
-        g.beginPath(); g.roundRect(-len / 2, -wd / 2, len, wd, Math.min(3, wd / 2)); g.fill(); g.stroke();
-      }
-      g.setTransform(dpr, 0, 0, dpr, 0, 0);
-    }
     g.lineWidth = 1; g.strokeStyle = C.ring;
     g.fillStyle = C.bike; g.fill(pBike); g.stroke(pBike);
     g.fillStyle = C.ped; g.lineWidth = 0.8; g.fill(pPed); g.stroke(pPed);
-    // bus stops: hollow rounded squares
-    if (M.bus && fixtures.stops.length) {
-      const sz = Math.max(3, Math.min(5, 2 + pxPerM * 1.2));
-      g.fillStyle = dark ? '#0b1118' : '#ffffff'; g.strokeStyle = C.bus; g.lineWidth = 1.8;
-      g.beginPath();
-      for (const [x, y] of fixtures.stops) {
-        const sx = o.x + x * ax + y * bx, sy = o.y + x * ay + y * by;
-        if (sx < -10 || sy < -10 || sx > w + 10 || sy > h + 10) continue;
-        g.roundRect(sx - sz, sy - sz, sz * 2, sz * 2, 1.5);
-      }
-      g.fill(); g.stroke();
-    }
     // marked crossings: short ticks across the street, only when zoomed in
     if (M.pedestrian && pxPerM >= 0.8 && fixtures.ticks.length) {
       g.strokeStyle = C.tick; g.lineWidth = 2; g.beginPath();
@@ -342,7 +304,7 @@ export function MapView(p: Props) {
     };
     fitArea(map, b, false);
     const cv = map.getCanvas();
-    cv.setAttribute('aria-label', `Map of ${b.network.name}. Streets, cars, buses, bicycles, pedestrians and signals. Select a street or an intersection by clicking it, or find it by name in the Scenario panel. The same information is available in the Streets table.`);
+    cv.setAttribute('aria-label', `Map of ${b.network.name}. Streets, cars, bicycles, pedestrians and signals. Select a street or an intersection by clicking it, or find it by name in the Scenario panel. The same information is available in the Streets table.`);
 
     map.on('load', () => {
       const pr = makeProjection(b.network.origin);

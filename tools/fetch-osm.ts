@@ -11,7 +11,7 @@ const ENDPOINTS = [
 const box = ([minLon, minLat, maxLon, maxLat]: number[]) => `(${minLat},${minLon},${maxLat},${maxLon})`;
 
 // Bicycle route relations come last with members listed by id only (no geometry): the importer needs the way ids of
-// bicycle routes. Bus routes come from the GTFS feed (tools/fetch-transit.ts), so their relations are not fetched.
+// bicycle routes.
 const relationQuery = (bbox: number[]) => `[out:json][timeout:60];(relation[route=bicycle]${box(bbox)};relation[type=restriction]${box(bbox)};);out body;`;
 const query = (bbox: number[]) => {
   const b = box(bbox);

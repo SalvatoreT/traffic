@@ -26,7 +26,7 @@ Options: `--local-factor <x>` (override the residential/service perceived-cost m
 It prints a markdown report and writes `reports/<area>-<period>-s<scale>-seed<seed>.{md,json}`: stability criteria, vehicles in
 network every 5 min, modeled vs observed select-link shares (target blocks resolved from street name, direction and the
 two cross streets), ramp shares, top 15 links by delay, top 15 nodes by blocked time (with each signal's cycle and greens at the end of the run), gridlock removals and entry backlog by
-location, and flow per direction on the key streets. A full 60-minute run took about 5 s on the original small network; on the current model area (about 27,000 veh/h offered in the PM peak, 1,800 nodes) it takes about 60 s, and runs of different seeds are independent processes, so run them in parallel (three seeds took about 70 s on four cores). The report also has a per-mode table (cars, buses, cyclists, pedestrians: trips, mean time, crossing delay) and the surrogate-safety counts.
+location, and flow per direction on the key streets. A full 60-minute run took about 5 s on the original small network; on the current model area (about 27,000 veh/h offered in the PM peak, 1,800 nodes) it takes about 60 s, and runs of different seeds are independent processes, so run them in parallel (three seeds took about 70 s on four cores). The report also has a per-mode table (cars, cyclists, pedestrians: trips, mean time, crossing delay) and the surrogate-safety counts.
 
 The calibration record with every tuned parameter is `rockridge.record.md`. The demand audit (relevance of the offered trips to the study area, gate by gate, and the cordon check) is written by the demand builder to `data/demand/<area>.audit.md`; see `data/demand/README.md`.
 

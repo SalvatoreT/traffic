@@ -1,4 +1,4 @@
-//! Tests for buses, bicycles, pedestrians and the safety metrics (change multimodal-agents).
+//! Tests for bicycles, pedestrians and the safety metrics (change multimodal-agents).
 
 use super::*;
 use crate::sim::injury_risk;
@@ -15,22 +15,8 @@ fn flows_m(flows: &[(u32, u32, f64, FlowMode)]) -> Demand {
     }
 }
 
-fn sim_with(net: Network, flows: &[(u32, u32, f64, FlowMode)], c: Config, tf: Option<TransitFile>) -> Simulation {
-    Simulation::from_parts_transit(net, flows_m(flows), c, tf).unwrap()
-}
-
-fn route(links: &[u32], stops: &[(u32, f64, f64)], hw: f64) -> BusRoute {
-    BusRoute {
-        id: "r".into(),
-        name: "1".into(),
-        links: links.to_vec(),
-        stops: stops.iter().map(|&(l, p, d)| BusStop { link: l, position: p, name: "s".into(), dwell: d }).collect(),
-        headways: vec![Headway { period: "p".into(), seconds: hw }],
-    }
-}
-
-fn transit(routes: Vec<BusRoute>) -> TransitFile {
-    TransitFile { version: 1, area: "t".into(), routes }
+fn sim_with(net: Network, flows: &[(u32, u32, f64, FlowMode)], c: Config) -> Simulation {
+    Simulation::from_parts(net, flows_m(flows), c).unwrap()
 }
 
 /// n0 - n1 - n2 straight street, `lanes` lanes each way. Links: 0 = n0->n1, 1 = n1->n0, 2 = n1->n2, 3 = n2->n1.
@@ -42,10 +28,6 @@ fn street(len: f64, lanes: u32, limit: f64) -> Network {
     b.two_way(n0, n1, RoadClass::Residential, lanes, limit);
     b.two_way(n1, n2, RoadClass::Residential, lanes, limit);
     b.net()
-}
-
-fn find<T>(v: Vec<T>) -> T {
-    v.into_iter().next().expect("agent present")
 }
 
 // ------------------------------------------------------------------------------------------------ plumbing
@@ -64,8 +46,6 @@ fn older_files_load_and_new_fields_parse() {
     let n: Network = serde_json::from_str(net_json).unwrap();
     assert!(n.links[0].has_sidewalk() && !n.links[1].has_sidewalk(), "sidewalk defaults to true except on motorways");
     assert!(n.links[0].bike_lane && !n.links[1].bike_lane && n.nodes[1].marked_crossing);
-    let tj = r#"{"version":1,"area":"t","routes":[{"id":"6","name":"6","links":[0],"stops":[{"link":0,"position":50,"name":"x","dwell":15}],"headways":[{"period":"p","seconds":600}]}],"provenance":[]}"#;
-    assert!(Simulation::new_with_transit(net_json, dem_json, r#"{"period":"p"}"#, Some(tj)).is_ok());
 }
 
 #[test]
@@ -75,11 +55,11 @@ fn metrics_carry_the_per_mode_and_vulnerable_sections() {
     sim.test_place(f, 0, 50.0, 5.0, dest, false);
     run(&mut sim, 10.0, |_| {});
     let v: serde_json::Value = serde_json::from_str(&sim.metrics_json()).unwrap();
-    for k in ["car", "bus", "bicycle", "pedestrian"] {
+    for k in ["car", "bicycle", "pedestrian"] {
         assert!(v["modes"][k]["inNetwork"].is_number(), "modes.{k}.inNetwork");
     }
     assert!(v["modes"]["car"]["completedTrips"].is_number() && v["modes"]["car"]["meanTripTime"].is_number());
-    assert!(v["modes"]["bus"]["completedRuns"].is_number() && v["modes"]["bus"]["meanRunTime"].is_number() && v["modes"]["bus"]["meanSpeed"].is_number());
+    assert!(v["modes"].get("bus").is_none() && v.get("busRunsBlocked").is_none(), "buses are not simulated");
     assert!(v["modes"]["bicycle"]["completedTrips"].is_number() && v["modes"]["pedestrian"]["meanCrossingDelay"].is_number());
     for k in ["pedConflicts", "bikeConflicts", "closePasses", "pedInjuryRiskIndex", "bikeInjuryRiskIndex", "meanVehicleSpeedAtPedEncounter"] {
         assert!(v["vulnerable"][k].is_number(), "vulnerable.{k}");
@@ -117,175 +97,6 @@ fn bike_injury_risk_follows_lubbe_points() {
     assert!(injury_risk_bike(mph(30.0)) < injury_risk(mph(30.0)), "cyclists are less vulnerable than pedestrians at 30 mph");
 }
 
-// ------------------------------------------------------------------------------------------------ buses
-
-#[test]
-fn bus_dwells_in_lane_and_followers_wait_on_a_single_lane_street() {
-    let tf = transit(vec![route(&[0, 2], &[(0, 200.0, 40.0)], 900.0)]);
-    let mut sim = sim_with(street(400.0, 1, 11.2), &[], cfg(1, 1.0), Some(tf));
-    sim.test_set_bus_next_t(0, 1.0);
-    // Wait for the bus to stop at its stop.
-    let mut t_stop = None;
-    for _ in 0..(60.0 / DT) as usize {
-        sim.step(DT);
-        if let Some(b) = sim.test_kind(1).first() {
-            if b.3 < 0.05 && b.2 > 190.0 {
-                t_stop = Some(sim.time());
-                break;
-            }
-        }
-    }
-    let t_stop = t_stop.expect("bus reaches its stop");
-    let bus = find(sim.test_kind(1));
-    assert!((bus.2 - 200.0).abs() < 4.0, "bus stops at the stop mark: {}", bus.2);
-    let car = sim.test_place(0, 0, 110.0, 8.0, 2, false);
-    sim.test_set_drv(car, 1.0);
-    let uid = sim.test_veh_uid(car);
-    run(&mut sim, 20.0, |_| {});
-    let (_, cpos, cv, _) = sim.test_veh(car);
-    let bus_now = find(sim.test_kind(1));
-    assert!(bus_now.3 < 0.05, "bus is still dwelling");
-    assert!(cv < 0.5, "car waits behind the dwelling bus: {cv}");
-    assert!(cpos < bus_now.2 - 12.0 + 0.5, "car stays behind the bus's tail: {cpos} vs {}", bus_now.2);
-    // After the dwell the bus leaves and the car follows.
-    run(&mut sim, 40.0, |_| {});
-    let bus_after = find(sim.test_kind(1));
-    assert!(bus_after.2 > 230.0 || bus_after.1 != 0, "bus left the stop");
-    let still = sim.test_kind(0).iter().any(|c| c.0 == uid);
-    let moved = sim.test_kind(0).iter().find(|c| c.0 == uid).map_or(true, |c| c.1 != 0 || c.2 > cpos + 20.0);
-    assert!(moved || !still, "car moves once the bus has left");
-    assert!(sim.time() > t_stop + 59.0);
-}
-
-#[test]
-fn followers_change_lane_around_a_dwelling_bus_when_a_second_lane_is_free() {
-    let tf = transit(vec![route(&[0, 2], &[(0, 200.0, 60.0)], 900.0)]);
-    let mut sim = sim_with(street(400.0, 2, 11.2), &[], cfg(1, 1.0), Some(tf));
-    sim.test_set_bus_next_t(0, 1.0);
-    for _ in 0..(60.0 / DT) as usize {
-        sim.step(DT);
-        if sim.test_kind(1).first().map_or(false, |b| b.3 < 0.05 && b.2 > 190.0) {
-            break;
-        }
-    }
-    let bus = find(sim.test_kind(1));
-    let car = sim.test_place(0, bus.4 as usize, 120.0, 8.0, 2, false);
-    sim.test_set_drv(car, 1.0);
-    let uid = sim.test_veh_uid(car);
-    let mut passed = false;
-    run(&mut sim, 30.0, |s| {
-        if let Some(c) = s.test_kind(0).iter().find(|c| c.0 == uid) {
-            if c.1 != 0 || c.2 > 215.0 {
-                passed = true;
-            }
-        }
-    });
-    assert!(passed, "the car overtakes the dwelling bus using the other lane");
-    assert!(find(sim.test_kind(1)).3 < 0.05, "bus still dwells");
-}
-
-#[test]
-fn bus_completes_runs_at_headway_and_is_removed_at_the_end() {
-    let tf = transit(vec![route(&[0, 2], &[(0, 150.0, 20.0), (2, 100.0, 20.0)], 300.0)]);
-    let mut sim = sim_with(street(300.0, 1, 11.2), &[], cfg(1, 1.0), Some(tf));
-    run(&mut sim, 1800.0, |_| {});
-    let m = sim.metrics();
-    assert!(m.modes.bus.completed_runs >= 5, "runs completed: {}", m.modes.bus.completed_runs);
-    // 600 m at 11.2 m/s is 54 s; two 20 s dwells add 40 s.
-    assert!(m.modes.bus.mean_run_time > 85.0 && m.modes.bus.mean_run_time < 140.0, "{}", m.modes.bus.mean_run_time);
-    assert!(m.modes.bus.mean_speed > 4.0 && m.modes.bus.mean_speed < 8.0, "{}", m.modes.bus.mean_speed);
-    assert!(m.modes.bus.in_network <= 1);
-    assert_eq!(m.modes.car.in_network, 0);
-    // Buses count as motor vehicles in the legacy aggregates.
-    assert_eq!(m.completed_trips, m.modes.bus.completed_runs);
-    let mut kinds = Vec::new();
-    for _ in 0..2000 {
-        sim.step(DT);
-        for c in sim.vehicles().chunks(6) {
-            kinds.push(c[4]);
-        }
-    }
-    assert!(kinds.contains(&1.0), "kind 1 reported for buses");
-}
-
-#[test]
-fn bus_run_times_are_deterministic_and_headway_scales_service() {
-    let mk = |hw: f64| {
-        let tf = transit(vec![route(&[0, 2], &[], hw)]);
-        let mut s = sim_with(street(300.0, 1, 11.2), &[], cfg(5, 1.0), Some(tf));
-        step_n(&mut s, 1800.0);
-        s
-    };
-    let (a, b, c) = (mk(300.0), mk(300.0), mk(600.0));
-    assert_eq!(a.metrics_json(), b.metrics_json());
-    assert!(a.metrics().modes.bus.completed_runs > c.metrics().modes.bus.completed_runs);
-}
-
-#[test]
-fn route_without_a_headway_for_the_period_does_not_run_and_unlinked_routes_are_dropped() {
-    let mut r = route(&[0, 2], &[], 300.0);
-    r.headways[0].period = "other".into();
-    let bad = route(&[0, 3], &[], 300.0); // 0 ends at n1, 3 starts at n2: not connected
-    let mut sim = sim_with(street(300.0, 1, 11.2), &[], cfg(1, 1.0), Some(transit(vec![r, bad])));
-    step_n(&mut sim, 1200.0);
-    assert_eq!(sim.metrics().modes.bus.completed_runs, 0);
-    assert_eq!(sim.transit_report(), (0, 1, 0));
-}
-
-#[test]
-fn buses_pass_modal_filters_but_not_banned_turns_and_never_reroute() {
-    let tf = transit(vec![route(&[0, 2], &[], 300.0)]);
-    // Car trip through the same street for comparison.
-    let mut sim = sim_with(street(300.0, 1, 11.2), &[(0, 2, 300.0, FlowMode::Car)], cfg(1, 1.0), Some(tf.clone()));
-    sim.set_interventions(&iv(r#"[{"type":"modal_filter","link":2}]"#)).unwrap();
-    step_n(&mut sim, 1200.0);
-    let m = sim.metrics();
-    assert!(m.modes.bus.completed_runs >= 2, "buses pass the filter: {}", m.modes.bus.completed_runs);
-    assert_eq!(m.modes.car.completed_trips, 0, "cars cannot");
-    assert_eq!(m.modes.bus.bus_runs_blocked, 0);
-    // A node filter is passed as well.
-    let mut s2 = sim_with(street(300.0, 1, 11.2), &[], cfg(1, 1.0), Some(tf.clone()));
-    s2.set_interventions(&iv(r#"[{"type":"modal_filter","node":1}]"#)).unwrap();
-    step_n(&mut s2, 900.0);
-    assert!(s2.metrics().modes.bus.completed_runs >= 2);
-    // A turn ban on the route makes the route impossible: runs are dropped and counted.
-    let mut s3 = sim_with(street(300.0, 1, 11.2), &[], cfg(1, 1.0), Some(tf));
-    s3.set_interventions(&iv(r#"[{"type":"turn_ban","fromLink":0,"toLink":2}]"#)).unwrap();
-    step_n(&mut s3, 900.0);
-    let m3 = s3.metrics();
-    assert_eq!(m3.modes.bus.completed_runs, 0);
-    assert!(m3.modes.bus.bus_runs_blocked >= 2, "{}", m3.modes.bus.bus_runs_blocked);
-    assert_eq!(m3.modes.bus.in_network, 0);
-}
-
-#[test]
-fn bus_on_the_road_is_dropped_when_a_ban_makes_its_route_impossible() {
-    let tf = transit(vec![route(&[0, 2], &[], 900.0)]);
-    let mut sim = sim_with(street(300.0, 1, 11.2), &[], cfg(1, 1.0), Some(tf));
-    sim.test_set_bus_next_t(0, 1.0);
-    step_n(&mut sim, 10.0);
-    assert_eq!(sim.metrics().modes.bus.in_network, 1);
-    sim.set_interventions(&iv(r#"[{"type":"turn_ban","fromLink":0,"toLink":2}]"#)).unwrap();
-    assert_eq!(sim.metrics().modes.bus.in_network, 0);
-    assert_eq!(sim.metrics().modes.bus.bus_runs_blocked, 1);
-}
-
-#[test]
-fn speed_limits_and_humps_slow_buses() {
-    let run_with = |ivs: &str| {
-        let tf = transit(vec![route(&[0, 2], &[], 300.0)]);
-        let mut s = sim_with(street(300.0, 1, 11.2), &[], cfg(1, 1.0), Some(tf));
-        s.set_interventions(&iv(ivs)).unwrap();
-        step_n(&mut s, 1500.0);
-        s.metrics().modes.bus.mean_run_time
-    };
-    let base = run_with("[]");
-    let slow = run_with(r#"[{"type":"speed_limit","link":0,"speed":5.0},{"type":"speed_limit","link":2,"speed":5.0}]"#);
-    let hump = run_with(r#"[{"type":"speed_hump","link":0,"position":150.0}]"#);
-    assert!(slow > base + 20.0, "{slow} vs {base}");
-    assert!(hump > base + 3.0, "{hump} vs {base}");
-}
-
 // ------------------------------------------------------------------------------------------------ bicycles
 
 fn bike_street(lanes: u32, bike_lane: bool) -> Network {
@@ -299,7 +110,7 @@ fn bike_street(lanes: u32, bike_lane: bool) -> Network {
 #[test]
 fn cyclists_ride_at_their_own_speeds_and_arrive() {
     let (n0, n2) = (0u32, 2u32);
-    let mut sim = sim_with(bike_street(1, false), &[(n0, n2, 120.0, FlowMode::Bicycle)], cfg(2, 1.0), None);
+    let mut sim = sim_with(bike_street(1, false), &[(n0, n2, 120.0, FlowMode::Bicycle)], cfg(2, 1.0));
     let mut speeds: Vec<f32> = Vec::new();
     run(&mut sim, 1500.0, |s| {
         for b in s.test_kind(2) {
@@ -460,14 +271,13 @@ fn modal_filters_block_cars_but_cyclists_still_travel_through() {
         street(300.0, 1, 11.2),
         &[(0, 2, 200.0, FlowMode::Car), (0, 2, 100.0, FlowMode::Bicycle)],
         cfg(1, 1.0),
-        None,
     );
     sim.set_interventions(&iv(r#"[{"type":"modal_filter","link":2}]"#)).unwrap();
     step_n(&mut sim, 1200.0);
     let m = sim.metrics();
     assert_eq!(m.completed_trips, 0, "no car gets through");
     assert!(m.modes.bicycle.completed_trips > 5, "cyclists do: {}", m.modes.bicycle.completed_trips);
-    let mut s2 = sim_with(street(300.0, 1, 11.2), &[(0, 2, 100.0, FlowMode::Bicycle)], cfg(1, 1.0), None);
+    let mut s2 = sim_with(street(300.0, 1, 11.2), &[(0, 2, 100.0, FlowMode::Bicycle)], cfg(1, 1.0));
     s2.set_interventions(&iv(r#"[{"type":"modal_filter","node":1}]"#)).unwrap();
     step_n(&mut s2, 900.0);
     assert!(s2.metrics().modes.bicycle.completed_trips > 3, "also through a node filter");
@@ -484,7 +294,7 @@ fn cyclists_obey_one_way_streets() {
     b.two_way(a, m, RoadClass::Residential, 1, 11.2);
     b.two_way(m, c, RoadClass::Residential, 1, 11.2);
     let net = b.net();
-    let mut sim = sim_with(net, &[(a, c, 100.0, FlowMode::Bicycle)], cfg(1, 1.0), None);
+    let mut sim = sim_with(net, &[(a, c, 100.0, FlowMode::Bicycle)], cfg(1, 1.0));
     // one_way on the link c->a closes its reverse (a->c): the direct street is no longer available to a trip a->c.
     sim.set_interventions(&iv(&format!(r#"[{{"type":"one_way","link":{short_r}}}]"#))).unwrap();
     let mut on_short = false;
@@ -506,7 +316,7 @@ fn cyclists_prefer_bike_lanes_and_avoid_motorways() {
     let (lane_f, _) = b.two_way(a, m, RoadClass::Residential, 1, 11.2);
     b.two_way(m, c, RoadClass::Residential, 1, 11.2);
     b.links[lane_f as usize].bike_lane = true;
-    let mut sim = sim_with(b.net(), &[(a, c, 100.0, FlowMode::Bicycle)], cfg(1, 1.0), None);
+    let mut sim = sim_with(b.net(), &[(a, c, 100.0, FlowMode::Bicycle)], cfg(1, 1.0));
     let (mut lane_used, mut plain_used) = (false, false);
     run(&mut sim, 600.0, |s| {
         for b in s.test_kind(2) {
@@ -520,7 +330,7 @@ fn cyclists_prefer_bike_lanes_and_avoid_motorways() {
     let a = b.node(0.0, 0.0, Control::Uncontrolled, true);
     let c = b.node(300.0, 0.0, Control::Uncontrolled, true);
     b.two_way(a, c, RoadClass::Motorway, 2, 25.0);
-    let mut sim = sim_with(b.net(), &[(a, c, 100.0, FlowMode::Bicycle)], cfg(1, 1.0), None);
+    let mut sim = sim_with(b.net(), &[(a, c, 100.0, FlowMode::Bicycle)], cfg(1, 1.0));
     step_n(&mut sim, 300.0);
     assert_eq!(sim.metrics().modes.bicycle.in_network + sim.metrics().modes.bicycle.completed_trips, 0);
 }
@@ -529,7 +339,7 @@ fn cyclists_prefer_bike_lanes_and_avoid_motorways() {
 fn cyclists_obey_signals_and_all_way_stops() {
     let trip = |ctrl: Control| {
         let (net, c) = cross4(ctrl, RoadClass::Residential, false);
-        let mut sim = sim_with(net, &[(c.w, c.e, 90.0, FlowMode::Bicycle)], cfg(3, 1.0), None);
+        let mut sim = sim_with(net, &[(c.w, c.e, 90.0, FlowMode::Bicycle)], cfg(3, 1.0));
         let mut red_min_speed = f32::MAX;
         run(&mut sim, 1500.0, |s| {
             for b in s.test_kind(2) {
@@ -559,7 +369,7 @@ fn cyclists_and_cars_conflict_at_nodes_and_encounters_are_scored() {
         (c.n, c.s, 120.0, FlowMode::Bicycle),
         (c.w, c.e, 100.0, FlowMode::Bicycle),
     ];
-    let mut sim = sim_with(net, &flows, cfg(4, 1.0), None);
+    let mut sim = sim_with(net, &flows, cfg(4, 1.0));
     run(&mut sim, 1800.0, |_| {});
     let m = sim.metrics();
     assert!(m.modes.bicycle.completed_trips > 20);
@@ -571,7 +381,7 @@ fn cyclists_and_cars_conflict_at_nodes_and_encounters_are_scored() {
 fn traffic_circle_and_stop_changes_apply_to_cyclists() {
     let run_with = |ivs: &str| {
         let (net, c) = cross4(Control::Uncontrolled, RoadClass::Residential, false);
-        let mut sim = sim_with(net, &[(c.w, c.e, 90.0, FlowMode::Bicycle)], cfg(3, 1.0), None);
+        let mut sim = sim_with(net, &[(c.w, c.e, 90.0, FlowMode::Bicycle)], cfg(3, 1.0));
         sim.set_interventions(&iv(ivs)).unwrap();
         step_n(&mut sim, 1500.0);
         sim.metrics().modes.bicycle.mean_trip_time
@@ -592,7 +402,7 @@ fn ped_cross(ctrl: Control, marked: bool) -> (Network, Cross) {
 
 #[test]
 fn pedestrians_walk_sidewalks_at_a_sampled_speed() {
-    let mut sim = sim_with(street(300.0, 1, 11.2), &[(0, 2, 150.0, FlowMode::Pedestrian)], cfg(1, 1.0), None);
+    let mut sim = sim_with(street(300.0, 1, 11.2), &[(0, 2, 150.0, FlowMode::Pedestrian)], cfg(1, 1.0));
     run(&mut sim, 1500.0, |_| {});
     let m = sim.metrics();
     assert!(m.modes.pedestrian.completed_trips > 20, "{}", m.modes.pedestrian.completed_trips);
@@ -613,7 +423,7 @@ fn links_without_sidewalks_cannot_be_walked() {
     for l in net.links.iter_mut() {
         l.sidewalk = Some(false);
     }
-    let mut sim = sim_with(net, &[(0, 2, 150.0, FlowMode::Pedestrian)], cfg(1, 1.0), None);
+    let mut sim = sim_with(net, &[(0, 2, 150.0, FlowMode::Pedestrian)], cfg(1, 1.0));
     step_n(&mut sim, 600.0);
     let m = sim.metrics();
     assert_eq!(m.modes.pedestrian.completed_trips + m.modes.pedestrian.in_network, 0);
@@ -637,7 +447,7 @@ fn pedestrians_render_beside_the_road() {
 fn pedestrian_at_a_signal_crosses_with_the_phase_parallel_to_the_walk() {
     // W -> E along the south side crosses the minor street (S leg) at the signal.
     let (net, c) = ped_cross(Control::Signal, true);
-    let mut sim = sim_with(net, &[(c.w, c.e, 200.0, FlowMode::Pedestrian), (c.w, c.e, 400.0, FlowMode::Car), (c.s, c.n, 200.0, FlowMode::Car)], cfg(2, 1.0), None);
+    let mut sim = sim_with(net, &[(c.w, c.e, 200.0, FlowMode::Pedestrian), (c.w, c.e, 400.0, FlowMode::Car), (c.s, c.n, 200.0, FlowMode::Car)], cfg(2, 1.0));
     let mut starts = 0;
     let mut last = 0u32;
     let mut bad = 0;
@@ -781,7 +591,7 @@ fn yielding_lowers_pedestrian_waits_and_vehicle_speeds_at_encounters() {
         ];
         let mut cf = cfg(6, 1.0);
         cf.ped_yield_marked = Some(p);
-        let mut sim = sim_with(net, &flows, cf, None);
+        let mut sim = sim_with(net, &flows, cf);
         if let Some(l) = limit {
             let ivs: Vec<String> = [c.s_in, c.n_in].iter().map(|&k| format!(r#"{{"type":"speed_limit","link":{k},"speed":{l}}}"#)).collect();
             sim.set_interventions(&iv(&format!("[{}]", ivs.join(",")))).unwrap();
@@ -807,7 +617,7 @@ fn signal_change_applies_to_pedestrian_crossings_and_filters_do_not_stop_walkers
         let flows = [(c.w, c.e, 200.0, FlowMode::Pedestrian), (c.s, c.n, 100.0, FlowMode::Car), (c.w, c.e, 100.0, FlowMode::Car)];
         let mut cf = cfg(2, 1.0);
         cf.ped_yield_unmarked = Some(1.0);
-        let mut sim = sim_with(net, &flows, cf, None);
+        let mut sim = sim_with(net, &flows, cf);
         sim.set_interventions(&iv(ivs)).unwrap();
         step_n(&mut sim, 1800.0);
         sim.metrics()
@@ -833,8 +643,7 @@ fn all_modes_sim(seed: u64) -> Simulation {
         (c.w, c.e, 120.0, FlowMode::Pedestrian),
         (c.s, c.n, 120.0, FlowMode::Pedestrian),
     ];
-    let tf = transit(vec![route(&[c.w_in, c.e_out], &[(c.w_in, 100.0, 15.0)], 240.0)]);
-    sim_with(net, &flows, cfg(seed, 1.0), Some(tf))
+    sim_with(net, &flows, cfg(seed, 1.0))
 }
 
 #[test]
@@ -849,13 +658,13 @@ fn all_modes_run_deterministically_and_keep_lanes_consistent() {
     assert_eq!(a.vehicles(), b.vehicles());
     assert_ne!(a.metrics_json(), c.metrics_json());
     let m = a.metrics();
-    assert!(m.modes.car.completed_trips > 50 && m.modes.bus.completed_runs >= 3 && m.modes.bicycle.completed_trips > 5 && m.modes.pedestrian.completed_trips > 5, "{:?}", m.modes);
-    // Existing fields are motor vehicles: cars plus buses.
-    assert_eq!(m.completed_trips, m.modes.car.completed_trips + m.modes.bus.completed_runs);
-    assert_eq!(m.vehicles_in_network, m.modes.car.in_network + m.modes.bus.in_network);
+    assert!(m.modes.car.completed_trips > 50 && m.modes.bicycle.completed_trips > 5 && m.modes.pedestrian.completed_trips > 5, "{:?}", m.modes);
+    // Existing fields are motor vehicles: cars.
+    assert_eq!(m.completed_trips, m.modes.car.completed_trips);
+    assert_eq!(m.vehicles_in_network, m.modes.car.in_network);
     let kinds: std::collections::BTreeSet<u32> = a.vehicles().chunks(6).map(|c| c[4] as u32).collect();
     assert!(kinds.contains(&0) && kinds.contains(&3), "{kinds:?}");
-    // Reset reproduces the run, transit included.
+    // Reset reproduces the run.
     let first = a.metrics_json();
     a.reset();
     step_n(&mut a, 1500.0);
@@ -863,15 +672,13 @@ fn all_modes_run_deterministically_and_keep_lanes_consistent() {
 }
 
 #[test]
-fn json_constructor_runs_with_transit_text() {
+fn json_constructor_runs_all_modes() {
     let (net, c) = ped_cross(Control::Signal, true);
-    let tf = transit(vec![route(&[c.w_in, c.e_out], &[], 240.0)]);
     let nj = serde_json::to_string(&net).unwrap();
     let dj = serde_json::to_string(&flows_m(&[(c.w, c.e, 100.0, FlowMode::Car), (c.w, c.e, 60.0, FlowMode::Pedestrian)])).unwrap();
-    let tj = serde_json::to_string(&tf).unwrap();
-    let mut sim = Simulation::new_with_transit(&nj, &dj, r#"{"period":"p"}"#, Some(&tj)).unwrap();
+    let mut sim = Simulation::new(&nj, &dj, r#"{"period":"p"}"#).unwrap();
     step_n(&mut sim, 900.0);
-    assert!(sim.metrics().modes.bus.completed_runs >= 2);
+    assert!(sim.metrics().modes.pedestrian.completed_trips >= 2);
 }
 
 #[test]
@@ -911,7 +718,7 @@ fn perf_all_modes_grid() {
             }
         }
     }
-    let mut sim = sim_with(b.net(), &flows, cfg(1, 1.0), None);
+    let mut sim = sim_with(b.net(), &flows, cfg(1, 1.0));
     step_n(&mut sim, 900.0);
     let t0 = std::time::Instant::now();
     step_n(&mut sim, 300.0);
@@ -921,9 +728,9 @@ fn perf_all_modes_grid() {
 }
 
 #[test]
-fn humps_slow_buses_but_not_cyclists() {
+fn humps_do_not_slow_cyclists() {
     let bike_time = |ivs: &str| {
-        let mut s = sim_with(street(300.0, 1, 11.2), &[(0, 2, 100.0, FlowMode::Bicycle)], cfg(1, 1.0), None);
+        let mut s = sim_with(street(300.0, 1, 11.2), &[(0, 2, 100.0, FlowMode::Bicycle)], cfg(1, 1.0));
         s.set_interventions(&iv(ivs)).unwrap();
         step_n(&mut s, 1200.0);
         s.metrics().modes.bicycle.mean_trip_time

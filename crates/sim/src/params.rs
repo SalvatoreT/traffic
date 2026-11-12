@@ -80,21 +80,11 @@ pub const NBINS: usize = 10; // rolling window = 10 bins x 30 s = 5 min
 pub const BIN_S: f64 = 30.0;
 pub const HIST_BINS: usize = 160; // speed histogram, 0.25 m/s bins
 
-// --- multimodal agents (change multimodal-agents). Values without a verified source in docs/references.md are ASSUMPTION. Sources: [Fitzpatrick2006], [OBrien2022], [Bertulis2014], [Twaddle2016], [Beck2019], [CVC21760], [TCQSM3], [Lubbe2022]. ---
+// --- multimodal agents (change multimodal-agents). Values without a verified source in docs/references.md are ASSUMPTION. Sources: [Fitzpatrick2006], [OBrien2022], [Bertulis2014], [Twaddle2016], [Beck2019], [CVC21760], [Lubbe2022]. ---
+// Kind code 1 was the bus, which was withdrawn from the simulation; it stays unused so the codes of the other kinds do not change.
 pub const KIND_CAR: u8 = 0;
-pub const KIND_BUS: u8 = 1;
 pub const KIND_BIKE: u8 = 2;
 pub const KIND_PED: u8 = 3;
-
-// Buses (D2). Acceleration and comfortable deceleration are the 12 m (40 ft) diesel bus values of [TCQSM3] Chapter 6; time gap and
-// jam gap are the truck column of [Kesting2010] Table 1 (T = 2.0 s, s0 = 4.0 m).
-pub const BUS_LEN: f32 = 12.0; // m, design decision D2 (40 ft standard bus, [TCQSM3] Ch. 6)
-pub const BUS_A: f32 = 1.0; // m/s^2, was 0.7 ([Kesting2010] trucks). [TCQSM3] Ch. 6: 1.0 m/s^2 average to 40 km/h. IDM `a` is the initial rate, so the average along the run-up is lower
-pub const BUS_B: f32 = 1.2; // m/s^2, was 2.0 ([Kesting2010] trucks). [TCQSM3] Ch. 6: comfortable bus deceleration 1.2 m/s^2
-pub const BUS_T: f32 = 2.0; // s, [Kesting2010] Table 1 trucks; ASSUMPTION: a bus follows like a heavy vehicle
-pub const BUS_S0: f32 = 4.0; // m, [Kesting2010] Table 1 trucks; ASSUMPTION: a bus follows like a heavy vehicle
-pub const BUS_DWELL_DEFAULT_S: f32 = 20.0; // ASSUMPTION: used when a stop carries no dwell time; [TCQSM3] Eq. 6-5 gives door time 2-5 s plus passenger service time, and a worked example averages 17.5-18.4 s, but no measured distribution was found
-pub const BUS_SETTLE_M: f32 = 2.5; // ASSUMPTION: a bus within this distance of its stop mark and stopped begins dwelling
 
 // Bicycles (D3). [Twaddle2016] is sourced for desired speed only; its acceleration findings do not map onto the IDM parameters below.
 pub const BIKE_LEN: f32 = 1.8; // ASSUMPTION
@@ -164,4 +154,3 @@ pub const TEFFT_AIS4: [(f32, f32); 5] = [(17.1, 0.10), (24.9, 0.25), (33.0, 0.50
 /// data are German.
 pub const LUBBE_BIKE_MAIS3: [(f32, f32); 5] = [(27.03, 0.10), (35.67, 0.25), (44.31, 0.50), (52.96, 0.75), (61.60, 0.90)];
 pub const PED_EMERGENCY_B: f32 = 8.0; // ASSUMPTION m/s^2: hardest braking a driver uses to stop for a pedestrian already crossing
-pub const LC_GAP_M: f32 = 5.0; // ASSUMPTION: gap needed ahead of and behind a vehicle that changes lane around a dwelling bus

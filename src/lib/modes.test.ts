@@ -26,20 +26,20 @@ describe('mode formatting', () => {
   });
   it('decides direction per metric', () => {
     const delay = MODE_CARDS[0].metrics.find((d) => d.id === 'xdelay')!;
-    const speed = MODE_CARDS[1].metrics.find((d) => d.id === 'busSpeed')!;
+    const trips = MODE_CARDS[1].metrics.find((d) => d.id === 'carTrips')!;
     expect(formatDiff(10, 8, delay.kind, delay.lowerIsBetter).verdict).toBe('better');
-    expect(formatDiff(5, 4, speed.kind, speed.lowerIsBetter).verdict).toBe('worse');
+    expect(formatDiff(5, 4, trips.kind, trips.lowerIsBetter).verdict).toBe('worse');
   });
 });
 
 describe('mock multimodal output', () => {
   const m = run(120);
-  it('has all four kinds in the vehicle buffer', () => {
+  it('has car, bicycle and pedestrian kinds in the vehicle buffer', () => {
     const sim = new MockSimulation(JSON.stringify(bundle.network), JSON.stringify(bundle.demand), JSON.stringify({ seed: 1, period: bundle.demand.periods[0].id, demandScale: 1 }));
     const v = sim.vehicles();
     const kinds = new Set<number>();
     for (let i = 4; i < v.length; i += 6) kinds.add(v[i]);
-    expect([...kinds].sort()).toEqual([0, 1, 2, 3]);
+    expect([...kinds].sort()).toEqual([0, 2, 3]);
   });
   it('reports modes and vulnerable metrics', () => {
     expect(hasModes(m)).toBe(true);
@@ -68,8 +68,9 @@ describe('walking and biking summary', () => {
     expect(hasModes(old)).toBe(false);
   });
   it('flags empty modes', () => {
-    const none = { ...b, modes: { ...b.modes!, bus: { inNetwork: 0, completedRuns: 0, meanRunTime: 0, meanSpeed: 0 } } };
-    expect(emptyMode('bus', [none, none])).toMatch(/No buses/);
-    expect(emptyMode('bus', [b, b])).toBeNull();
+    const zero = { inNetwork: 0, completedTrips: 0, meanTripTime: 0 };
+    const none = { ...b, modes: { ...b.modes!, bicycle: zero, pedestrian: { ...zero, meanCrossingDelay: 0 } } };
+    expect(emptyMode('vulnerable', [none, none])).toMatch(/No people walking or biking/);
+    expect(emptyMode('vulnerable', [b, b])).toBeNull();
   });
 });

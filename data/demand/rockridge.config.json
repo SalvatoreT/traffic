@@ -379,7 +379,6 @@
     ],
     "excludeNote": "Rows that combine the 52nd St and MLK Jr Way (Grove St) ramps are dropped because per-street SEG rows (2016-2017 / 2012) exist for the same ramps and would double count."
   },
-  "transit": "public/data/rockridge.transit.json",
   "active": {
     "_note": "ASSUMPTION unless stated: walking and biking demand (design D6). Person trips use the car model's per-worker and per-job rates (local.*), then these mode shares. Volumes are persons per hour. Only the count scaling below uses data (DATA: Oakland pedestrian and bicycle counts at one intersection); everything else is uncounted. ACS commute mode shares were not retrievable (the Census API needs a key), so the shares are not derived from them.",
     "pedestrian": {
@@ -395,10 +394,6 @@
       "gateShareNote": "ASSUMPTION: share of walking trips leaving or entering the model at a gate.",
       "gateMaxM": 800,
       "gateMaxNote": "ASSUMPTION: gates beyond this network distance get no walking trips.",
-      "transitAccessShare": 0.05,
-      "transitAccessNote": "ASSUMPTION: share of person trips that are bus trips with a walking leg to or from a stop in the area; needs the transit file.",
-      "maxWalkToStopM": 400,
-      "stopDecayM": 200,
       "periodVolume": {
         "am_peak": 0.75,
         "midday": 0.9,

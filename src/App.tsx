@@ -61,7 +61,6 @@ export function App() {
 
 function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): void }) {
   const { network, demand } = bundle;
-  const transitJson = useMemo(() => (bundle.transit ? JSON.stringify(bundle.transit) : undefined), [bundle.transit]);
   const index = useMemo(() => buildIndex(network), [network]);
   // Read once: the hash is rewritten as soon as the scenario loads, so later renders must not decode it again.
   const [initial] = useState(() => ({ ...decodeMeta(location.hash), ...decodeScenario(network, location.hash) }));
@@ -104,8 +103,11 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   const [interventions, setInterventions] = useState<Intervention[]>(initial.interventions);
   const [overlay, setOverlay] = useState<Overlay>('cutthrough');
   const [modes, setModes] = useState<ModeVisibility>(() => {
-    const all: ModeVisibility = { car: true, bus: true, bicycle: true, pedestrian: true };
-    try { return { ...all, ...JSON.parse(store.get('modes') ?? '{}') }; } catch { return all; }
+    const all: ModeVisibility = { car: true, bicycle: true, pedestrian: true };
+    try {
+      const saved = JSON.parse(store.get('modes') ?? '{}');
+      return { car: saved.car ?? true, bicycle: saved.bicycle ?? true, pedestrian: saved.pedestrian ?? true };
+    } catch { return all; }
   });
   const [bikeNet, setBikeNet] = useState(() => store.get('bikeNet') === '1');
   useEffect(() => { store.set('modes', JSON.stringify(modes)); }, [modes]);
@@ -139,12 +141,12 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
     c.onError = (m) => setSimError(m);
     const f = first.current;
     c.send({
-      t: 'init', network: bundle.raw?.network ?? JSON.stringify(network), demand: bundle.raw?.demand ?? JSON.stringify(demand), transit: bundle.raw?.transit ?? transitJson, mock: FORCE_MOCK,
+      t: 'init', network: bundle.raw?.network ?? JSON.stringify(network), demand: bundle.raw?.demand ?? JSON.stringify(demand), mock: FORCE_MOCK,
       period: f.period, demandScale: f.scale, seed: 1, interventions: f.interventions, speed: f.speed, running: f.running,
     });
     setClient(c);
     return () => { c.terminate(); setClient(null); };
-  }, [network, demand, transitJson, bundle.raw]);
+  }, [network, demand, bundle.raw]);
   const firstRun = useRef(true);
   useEffect(() => { client?.send({ t: 'run', running }); setSlowSpeed(null); }, [running, client]);
   useEffect(() => { client?.send({ t: 'speed', speed }); setSlowSpeed(null); }, [speed, client]);
@@ -360,7 +362,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
               client={client} interventions={interventions} selection={mapVisible ? selection : null} onHit={onHit}
               popover={placement === 'popover' ? menu : null}
               visible={mapVisible} reducedMotion={reduced}
-              modes={multimodal ? modes : { ...modes, bus: false, bicycle: false, pedestrian: false }} showBikeNet={bikeNet && multimodal}
+              modes={multimodal ? modes : { ...modes, bicycle: false, pedestrian: false }} showBikeNet={bikeNet && multimodal}
             />
             </Suspense>
             <Legend overlay={overlay} onOverlay={setOverlay} max={overlayMax} mode={mode} 

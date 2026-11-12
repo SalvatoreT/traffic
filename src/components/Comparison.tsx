@@ -36,8 +36,8 @@ export function Comparison({ base, scen, comparing, scenarioCount, onRef }: Prop
       {CARDS.map((c) => <CardTable key={c.id} c={c} base={base} scen={scen} comparing={comparing} />)}
       {scen && !hasModes(scen) && (
         <section className="card" aria-labelledby="card-modes-na">
-          <h3 id="card-modes-na">Walking, biking and buses</h3>
-          <p className="muted small">Not available: this simulation build has no walking, biking or bus agents.</p>
+          <h3 id="card-modes-na">Walking and biking</h3>
+          <p className="muted small">Not available: this simulation build has no walking or biking agents.</p>
         </section>
       )}
       {hasModes(scen) && MODE_CARDS.map((c) => (

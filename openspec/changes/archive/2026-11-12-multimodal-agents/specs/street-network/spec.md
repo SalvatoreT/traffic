@@ -1,6 +1,6 @@
 ## ADDED Requirements
 
-### Requirement: Attributes for walking, biking and transit
+### Requirement: Attributes for walking and biking
 The importer SHALL record, from OpenStreetMap, which links have bike lanes or are bike routes, which have sidewalks, where marked crossings are, and SHALL keep these as optional fields so existing files remain valid.
 
 #### Scenario: Street with a bike lane

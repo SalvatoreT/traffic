@@ -7,7 +7,7 @@ export interface SimStats {
 
 export type ToWorker =
   | {
-      t: 'init'; network: string; demand: string; transit?: string; mock: boolean; period: string; demandScale: number;
+      t: 'init'; network: string; demand: string; mock: boolean; period: string; demandScale: number;
       seed: number; interventions: Intervention[]; speed: number; running: boolean;
     }
   | { t: 'run'; running: boolean }
@@ -41,5 +41,5 @@ export interface SimLike {
   reset(): void;
   free?(): void;
 }
-export interface SimCtor { new (network: string, demand: string, config: string, transit?: string): SimLike }
+export interface SimCtor { new (network: string, demand: string, config: string): SimLike }
 export const VEHICLE_STRIDE = 6;

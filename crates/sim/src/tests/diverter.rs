@@ -101,34 +101,6 @@ fn cyclists_pass_straight_through() {
 }
 
 #[test]
-fn buses_obey_the_diverter_and_runs_are_dropped_and_counted() {
-    let (net, c) = cross4(Control::Uncontrolled, RoadClass::Residential, false);
-    let mk = |links: Vec<u32>| TransitFile {
-        version: 1,
-        area: "t".into(),
-        routes: vec![BusRoute {
-            id: "r".into(),
-            name: "1".into(),
-            links,
-            stops: vec![],
-            headways: vec![Headway { period: "p".into(), seconds: 300.0 }],
-        }],
-    };
-    let mut through = Simulation::from_parts_transit(net.clone(), flows_m(&[]), cfg(1, 1.0), Some(mk(vec![c.w_in, c.e_out]))).unwrap();
-    through.set_interventions(&dd(c.c, 45.0)).unwrap();
-    step_n(&mut through, 900.0);
-    let m = through.metrics();
-    assert_eq!(m.modes.bus.completed_runs, 0);
-    assert!(m.modes.bus.bus_runs_blocked >= 2, "{}", m.modes.bus.bus_runs_blocked);
-    let mut turn = Simulation::from_parts_transit(net, flows_m(&[]), cfg(1, 1.0), Some(mk(vec![c.w_in, c.n_out]))).unwrap();
-    turn.set_interventions(&dd(c.c, 45.0)).unwrap();
-    step_n(&mut turn, 900.0);
-    let m = turn.metrics();
-    assert!(m.modes.bus.completed_runs >= 2, "turn is allowed: {}", m.modes.bus.completed_runs);
-    assert_eq!(m.modes.bus.bus_runs_blocked, 0);
-}
-
-#[test]
 fn one_way_leg_only_permits_the_movements_that_exist() {
     // North leg is one-way toward the node.
     let (net, c, pairs) = legs_net(&[0.0, 90.0, 180.0, 270.0], &[0]);

@@ -61,15 +61,6 @@ export const MODE_CARDS: CardDef[] = [
     ],
   },
   {
-    id: 'bus', title: 'Buses',
-    note: 'Run time and speed through the study area, from the published schedule. Dwell time at stops is an assumption.',
-    metrics: [
-      { id: 'busTime', label: 'Mean run time through the area', kind: 'minutes', lowerIsBetter: true, get: mv((m) => m.modes?.bus.meanRunTime) },
-      { id: 'busSpeed', label: 'Mean bus speed', kind: 'speed', lowerIsBetter: false, get: mv((m) => m.modes?.bus.meanSpeed) },
-      { id: 'busRuns', label: 'Completed runs', kind: 'count', lowerIsBetter: false, get: mv((m) => m.modes?.bus.completedRuns) },
-    ],
-  },
-  {
     id: 'modetrips', title: 'Trips by mode',
     note: 'Walking and biking volumes are assumed, not counted.',
     metrics: [
@@ -83,7 +74,7 @@ export const MODE_CARDS: CardDef[] = [
   },
 ];
 
-export type ModeCardId = 'vulnerable' | 'bus' | 'modetrips';
+export type ModeCardId = 'vulnerable' | 'modetrips';
 
 /** True when this metrics object comes from a multimodal sim build. */
 export const hasModes = (m: Metrics | null | undefined): boolean => !!m?.modes && !!m.vulnerable;
@@ -93,9 +84,6 @@ export function emptyMode(card: ModeCardId, ms: (Metrics | null)[]): string | nu
   const live = ms.filter((m): m is Metrics => !!m?.modes);
   if (!live.length) return null;
   const none = (f: (m: Metrics) => number) => live.every((m) => f(m) === 0);
-  if (card === 'bus' && none((m) => m.modes!.bus.inNetwork + m.modes!.bus.completedRuns)) {
-    return 'No buses are in the model for this area, so there are no bus results.';
-  }
   if (card === 'vulnerable' && none((m) => m.modes!.pedestrian.inNetwork + m.modes!.bicycle.inNetwork + m.modes!.pedestrian.completedTrips + m.modes!.bicycle.completedTrips)) {
     return 'No people walking or biking are in the model for this area, so there are no safety indicators.';
   }

@@ -136,13 +136,12 @@ interface LegendProps {
 }
 
 const MODE_KEYS: { id: ModeKey; label: string }[] = [
-  { id: 'car', label: 'Cars' }, { id: 'bus', label: 'Buses' }, { id: 'bicycle', label: 'Bikes' }, { id: 'pedestrian', label: 'People walking' },
+  { id: 'car', label: 'Cars' }, { id: 'bicycle', label: 'Bikes' }, { id: 'pedestrian', label: 'People walking' },
 ];
 function ModeSymbol({ id }: { id: ModeKey }) {
-  const c = `var(--${id === 'car' ? 'veh' : id === 'bus' ? 'bus' : id === 'bicycle' ? 'bike' : 'ped'})`;
+  const c = `var(--${id === 'car' ? 'veh' : id === 'bicycle' ? 'bike' : 'ped'})`;
   switch (id) {
     case 'car': return <svg width="16" height="16" aria-hidden="true"><circle cx="8" cy="8" r="4.5" fill={c} stroke="var(--veh-ring)" /></svg>;
-    case 'bus': return <svg width="22" height="16" aria-hidden="true"><rect x="1.5" y="4" width="19" height="8" rx="3" fill={c} stroke="var(--veh-ring)" strokeWidth="1.2" /></svg>;
     case 'bicycle': return <svg width="16" height="16" aria-hidden="true"><path d="M8 2 L14 12.5 L2 12.5Z" fill={c} stroke="var(--veh-ring)" strokeLinejoin="round" /></svg>;
     case 'pedestrian': return <svg width="16" height="16" aria-hidden="true"><rect x="4.5" y="4.5" width="7" height="7" fill={c} stroke="var(--veh-ring)" /></svg>;
   }
@@ -226,7 +225,6 @@ export function Legend(p: LegendProps) {
             )}
           </div>
           <ul className="keys" aria-label="Map symbols">
-            {p.multimodal && <li><svg width="14" height="14" aria-hidden="true"><rect x="2" y="2" width="10" height="10" rx="2" fill="var(--surface)" stroke="var(--bus)" strokeWidth="2" /></svg> Bus stop</li>}
             {p.multimodal && <li><svg width="14" height="14" aria-hidden="true"><line x1="7" y1="1" x2="7" y2="13" stroke="var(--text)" strokeWidth="2" /></svg> Crossing (zoomed in)</li>}
             <li><svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="var(--surface)" stroke="#1f9d55" strokeWidth="2" /></svg> Signal green (ring)</li>
             <li><svg width="14" height="14" aria-hidden="true"><path d="M7 1 L13 12 L1 12Z" fill="#f5c400" stroke="var(--text)" /></svg> Yellow (triangle)</li>

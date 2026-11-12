@@ -35,24 +35,12 @@ export interface DemandPeriod {
 export interface Provenance { source: string; url: string; note: string }
 export interface Demand { version: 1; area: string; periods: DemandPeriod[]; provenance: Provenance[] }
 
-export interface Transit {
-  version: 1; area: string;
-  routes: {
-    id: string; name: string; links: number[];
-    stops: { link: number; position: number; name: string; dwell: number }[];
-    headways: { period: string; seconds: number }[];
-  }[];
-  provenance: Provenance[];
-}
-
 export interface Calibration { status: 'uncalibrated' | 'calibrated'; note?: string }
 export interface AreaEntry {
   id: string; name: string; network: string; demand: string; basemap: string;
   center: [number, number]; zoom: number;
   /** Absent means uncalibrated. */
   calibration?: Calibration;
-  /** Transit file (routes, stops, headways); absent means no buses. */
-  transit?: string;
 }
 
 export type Intervention =
@@ -65,7 +53,7 @@ export type Intervention =
   | { type: 'signal_timing'; node: number; cycle: number }
   | { type: 'one_way'; link: number }
   | { type: 'turn_ban'; fromLink: number; toLink: number }
-  /** Barrier line through a four-leg intersection, degrees clockwise from north in [0, 180). Cars and buses may only turn between legs on the same side. */
+  /** Barrier line through a four-leg intersection, degrees clockwise from north in [0, 180). Cars may only turn between legs on the same side. */
   | { type: 'diagonal_diverter'; node: number; bearing: number };
 
 export interface Metrics {
@@ -89,7 +77,6 @@ export interface Metrics {
 
 export interface ModeMetrics {
   car: { inNetwork: number; completedTrips: number; meanTripTime: number };
-  bus: { inNetwork: number; completedRuns: number; meanRunTime: number; meanSpeed: number };
   bicycle: { inNetwork: number; completedTrips: number; meanTripTime: number };
   pedestrian: { inNetwork: number; completedTrips: number; meanTripTime: number; meanCrossingDelay: number };
 }
@@ -99,9 +86,9 @@ export interface VulnerableMetrics {
   meanVehicleSpeedAtPedEncounter: number;
 }
 
-/** Agent kind codes in the vehicle buffer (slot 4). */
-export const KIND_CAR = 0, KIND_BUS = 1, KIND_BIKE = 2, KIND_PED = 3;
-export type ModeKey = 'car' | 'bus' | 'bicycle' | 'pedestrian';
+/** Agent kind codes in the vehicle buffer (slot 4). Code 1 is retired and unused. */
+export const KIND_CAR = 0, KIND_BIKE = 2, KIND_PED = 3;
+export type ModeKey = 'car' | 'bicycle' | 'pedestrian';
 export type ModeVisibility = Record<ModeKey, boolean>;
 
 export type Overlay = 'flow' | 'speed' | 'cutthrough';
@@ -109,9 +96,9 @@ export type Theme = 'auto' | 'light' | 'dark';
 
 export interface AreaBundle {
   entry: AreaEntry; network: Network; demand: Demand;
-  basemap: GeoFC; synthetic: boolean; transit?: Transit;
+  basemap: GeoFC; synthetic: boolean;
   /** Source JSON text, handed to the worker as is so the main thread need not serialize it again. */
-  raw?: { network: string; demand: string; transit?: string };
+  raw?: { network: string; demand: string };
 }
 
 /** Link stats from the sim: stride 4 per link. */

@@ -20,13 +20,6 @@
       "inNetwork": 150,
       "meanTripTime": 390.35958675268876
     },
-    "bus": {
-      "busRunsBlocked": 0,
-      "completedRuns": 0,
-      "inNetwork": 0,
-      "meanRunTime": 0.0,
-      "meanSpeed": 0.0
-    },
     "car": {
       "completedTrips": 12519,
       "inNetwork": 13091,

@@ -3,19 +3,18 @@
  * when WASM fails to initialize. Vehicles drift along links; it is NOT a traffic model.
  */
 import type { Demand, Intervention, Metrics, Network } from '../types';
-import { KIND_BIKE, KIND_BUS, KIND_PED } from '../types';
+import { KIND_BIKE, KIND_PED } from '../types';
 import { pointAlong } from '../lib/geom';
 import { bannedMoves } from '../lib/diverter';
 import type { SimLike } from './protocol';
 
 interface V { link: number; s: number; v: number; ct: boolean; trip: number; born: number }
-/** Non-car agent: kind is KIND_BUS, KIND_BIKE or KIND_PED. */
-interface A { kind: number; link: number; s: number; v: number; born: number; hops: number }
+/** Non-car agent: kind is KIND_BIKE or KIND_PED. */
+interface A { kind: number; link: number; s: number; v: number; born: number }
 
 // Mock-only numbers: plausible magnitudes so the UI can be built, not a model.
-const MOCK_AGENTS = { bus: 6, bike: 140, ped: 1200 };
+const MOCK_AGENTS = { bike: 140, ped: 1200 };
 const MOCK_END_P = { bike: 0.04, ped: 0.05 };
-const BUS_RUN_HOPS = 12;
 
 export class MockSimulation implements SimLike {
   private net: Network;
@@ -25,7 +24,7 @@ export class MockSimulation implements SimLike {
   private rng = 1;
   private veh: V[] = [];
   private closed = new Set<number>();
-  /** Car movements `from-to` removed by diagonal diverters (cyclists, walkers and buses are not held by the mock). */
+  /** Car movements `from-to` removed by diagonal diverters (cyclists and walkers are not held by the mock). */
   private banned = new Set<string>();
   private limitScale = new Map<number, number>();
   private slow = new Set<number>();
@@ -45,14 +44,12 @@ export class MockSimulation implements SimLike {
   private carsOn: Uint16Array;
   private pedsOn: Uint16Array;
   private mm = {
-    bus: { runs: 0, timeSum: 0, dist: 0, moving: 0 },
     bike: { trips: 0, timeSum: 0 },
     ped: { trips: 0, timeSum: 0, delaySum: 0, delayN: 0 },
     pedConf: 0, bikeConf: 0, close: 0, pedRisk: 0, bikeRisk: 0, pedEnc: 0, pedEncSpeed: 0,
   };
 
-  // The optional fourth argument (transit JSON) is accepted for interface parity and ignored.
-  constructor(network: string, demand: string, config: string, _transit?: string) {
+  constructor(network: string, demand: string, config: string) {
     this.net = JSON.parse(network) as Network;
     const dem = JSON.parse(demand) as Demand;
     this.cfg = JSON.parse(config);
@@ -75,21 +72,19 @@ export class MockSimulation implements SimLike {
     this.t = 0; this.veh = []; this.dist = 0; this.ctDist = 0; this.completed = 0; this.tripTimeSum = 0; this.spawned = 0; this.ttc = 0;
     this.cross.fill(0); this.ctCross.fill(0); this.speedTime.fill(0); this.vehTime.fill(0);
     this.mm = {
-      bus: { runs: 0, timeSum: 0, dist: 0, moving: 0 }, bike: { trips: 0, timeSum: 0 },
+      bike: { trips: 0, timeSum: 0 },
       ped: { trips: 0, timeSum: 0, delaySum: 0, delayN: 0 },
       pedConf: 0, bikeConf: 0, close: 0, pedRisk: 0, bikeRisk: 0, pedEnc: 0, pedEncSpeed: 0,
     };
     this.agents = [];
-    const arterial = this.net.links.filter((l) => l.class !== 'residential' && l.class !== 'service');
     const scale = this.cfg.demandScale;
     const spawn = (kind: number, n: number, pool: Network['links']) => {
       for (let i = 0; i < n && pool.length; i++) {
         const l = pool[Math.floor(this.rand() * pool.length)];
-        this.agents.push({ kind, link: l.id, s: this.rand() * l.length, v: 0, born: this.t, hops: 0 });
+        this.agents.push({ kind, link: l.id, s: this.rand() * l.length, v: 0, born: this.t });
       }
     };
     const walkable = this.net.links.filter((l) => l.class !== 'motorway' && l.sidewalk !== false);
-    spawn(KIND_BUS, arterial.length ? MOCK_AGENTS.bus : 0, arterial);
     spawn(KIND_BIKE, Math.round(MOCK_AGENTS.bike * scale), this.net.links.filter((l) => l.class !== 'motorway'));
     spawn(KIND_PED, Math.round(MOCK_AGENTS.ped * scale), walkable);
     const open = this.net.links.filter((l) => !this.closed.has(l.id));
@@ -133,10 +128,9 @@ export class MockSimulation implements SimLike {
     for (const a of this.agents) {
       const l = links[a.link];
       const lim = l.speedLimit * (this.limitScale.get(a.link) ?? 1);
-      const target = a.kind === KIND_BUS ? lim * 0.55 : a.kind === KIND_BIKE ? Math.min(5, lim) : 1.3;
+      const target = a.kind === KIND_BIKE ? Math.min(5, lim) : 1.3;
       a.v += (target - a.v) * 0.2;
       a.s += a.v * dt;
-      if (a.kind === KIND_BUS) { m.bus.dist += a.v * dt; m.bus.moving += dt; }
       const cars = this.carsOn[a.link];
       if (cars > 0) {
         // Encounter exposure grows with cars and walkers or cyclists sharing a link; a mock stand-in.
@@ -149,16 +143,13 @@ export class MockSimulation implements SimLike {
         }
       }
       if (a.s < l.length) continue;
-      a.hops++;
-      const opts = this.out[l.to].filter((id) => a.kind === KIND_BUS ? links[id].class !== 'residential' || !this.out[l.to].some((o) => links[o].class !== 'residential') : true);
-      const pick = opts.length ? opts : this.out[l.to];
-      const ended = a.kind === KIND_BUS ? a.hops >= BUS_RUN_HOPS : this.rand() < (a.kind === KIND_BIKE ? MOCK_END_P.bike : MOCK_END_P.ped);
+      const pick = this.out[l.to];
+      const ended = this.rand() < (a.kind === KIND_BIKE ? MOCK_END_P.bike : MOCK_END_P.ped);
       if (ended) {
         const dur = this.t - a.born;
-        if (a.kind === KIND_BUS) { m.bus.runs++; m.bus.timeSum += dur; }
-        else if (a.kind === KIND_BIKE) { m.bike.trips++; m.bike.timeSum += dur; }
+        if (a.kind === KIND_BIKE) { m.bike.trips++; m.bike.timeSum += dur; }
         else { m.ped.trips++; m.ped.timeSum += dur; }
-        a.born = this.t; a.hops = 0;
+        a.born = this.t;
       }
       if (!pick.length) { a.s = 0; continue; }
       a.link = pick[Math.floor(this.rand() * pick.length)]; a.s = 0;
@@ -267,10 +258,6 @@ export class MockSimulation implements SimLike {
       arterialMeanSpeed: at > 0 ? as / at : 0,
       modes: {
         car: { inNetwork: this.veh.length, completedTrips: this.completed, meanTripTime: this.completed ? this.tripTimeSum / this.completed : 0 },
-        bus: {
-          inNetwork: this.agents.filter((g) => g.kind === KIND_BUS).length, completedRuns: mm.bus.runs,
-          meanRunTime: mm.bus.runs ? mm.bus.timeSum / mm.bus.runs : 0, meanSpeed: mm.bus.moving > 0 ? mm.bus.dist / mm.bus.moving : 0,
-        },
         bicycle: {
           inNetwork: this.agents.filter((g) => g.kind === KIND_BIKE).length, completedTrips: mm.bike.trips,
           meanTripTime: mm.bike.trips ? mm.bike.timeSum / mm.bike.trips : 0,

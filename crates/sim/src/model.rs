@@ -148,42 +148,6 @@ pub struct Flow {
     pub mode: FlowMode,
 }
 
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", default)]
-pub struct BusStop {
-    pub link: u32,
-    pub position: f64,
-    pub name: String,
-    /// Dwell time (s).
-    pub dwell: f64,
-}
-
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", default)]
-pub struct Headway {
-    pub period: String,
-    pub seconds: f64,
-}
-
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", default)]
-pub struct BusRoute {
-    pub id: String,
-    pub name: String,
-    pub links: Vec<u32>,
-    pub stops: Vec<BusStop>,
-    pub headways: Vec<Headway>,
-}
-
-/// `<area>.transit.json`.
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", default)]
-pub struct TransitFile {
-    pub version: u32,
-    pub area: String,
-    pub routes: Vec<BusRoute>,
-}
-
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Period {
@@ -311,17 +275,6 @@ pub struct CarMode {
 
 #[derive(Clone, Debug, Default, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct BusMode {
-    pub in_network: u64,
-    pub completed_runs: u64,
-    pub mean_run_time: f64,
-    pub mean_speed: f64,
-    /// Additive to the contract: runs dropped because an intervention made the route impossible.
-    pub bus_runs_blocked: u64,
-}
-
-#[derive(Clone, Debug, Default, Serialize)]
-#[serde(rename_all = "camelCase")]
 pub struct BikeMode {
     pub in_network: u64,
     pub completed_trips: u64,
@@ -341,7 +294,6 @@ pub struct PedMode {
 #[serde(rename_all = "camelCase")]
 pub struct Modes {
     pub car: CarMode,
-    pub bus: BusMode,
     pub bicycle: BikeMode,
     pub pedestrian: PedMode,
 }

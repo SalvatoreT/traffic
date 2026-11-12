@@ -1,12 +1,5 @@
 ## ADDED Requirements
 
-### Requirement: Buses
-The simulation SHALL run buses on fixed routes at scheduled headways, stopping in the travel lane at their stops for a dwell time, with followers queuing behind unless another lane is free.
-
-#### Scenario: Bus at a stop on a single-lane street
-- **WHEN** a bus dwells at a stop on a street with one lane in its direction
-- **THEN** vehicles behind it wait until it leaves
-
 ### Requirement: Bicycles
 The simulation SHALL model cyclists as agents with their own desired speeds that obey intersection control, use bike lanes where present, share the lane otherwise, and pass through modal filters.
 
@@ -15,7 +8,7 @@ The simulation SHALL model cyclists as agents with their own desired speeds that
 - **THEN** the car follows at the cyclist's speed until a gap in oncoming traffic lets it pass
 
 #### Scenario: Modal filter
-- **WHEN** a modal filter closes a street to motor vehicles
+- **WHEN** a modal filter closes a street to cars
 - **THEN** cyclists still travel through it
 
 ### Requirement: Pedestrians and crossings
@@ -30,14 +23,14 @@ The simulation SHALL model pedestrians walking beside links and crossing at inte
 - **THEN** the pedestrian waits and crosses during the phase parallel to the crossing
 
 ### Requirement: Safety metrics for people walking and biking
-The simulation SHALL report conflicts between motor vehicles and pedestrians or cyclists by post-encroachment time [Hayward1972, Mahmud2017], close passes of cyclists, and an injury-risk index from vehicle speed at each encounter ([Tefft2013] for pedestrians, [Lubbe2022] for cyclists), labeled as surrogate indicators.
+The simulation SHALL report conflicts between cars and pedestrians or cyclists by post-encroachment time [Hayward1972, Mahmud2017], close passes of cyclists, and an injury-risk index from vehicle speed at each encounter ([Tefft2013] for pedestrians, [Lubbe2022] for cyclists), labeled as surrogate indicators.
 
 #### Scenario: Slower traffic past a crossing
 - **WHEN** an intervention lowers vehicle speeds at a crossing that pedestrians use
 - **THEN** the pedestrian injury-risk index falls
 
 ### Requirement: Per-mode performance metrics
-The simulation SHALL report agents in the network, completed trips and mean trip time per mode, bus run time and speed, and mean pedestrian crossing delay, while existing aggregate metrics continue to count motor vehicles only.
+The simulation SHALL report agents in the network, completed trips and mean trip time per mode and mean pedestrian crossing delay, while existing aggregate metrics continue to count cars only.
 
 #### Scenario: Reading metrics
 - **WHEN** the UI requests metrics

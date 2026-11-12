@@ -182,7 +182,7 @@ fn osm_turn_ban_blocks_the_movement_and_respects_the_period() {
         let topo = Topo::new(net);
         let eff = Eff::derive(&topo, net, &[]);
         let i = topo.mvs.iter().position(|m| m.a == x.w_in && m.b == x.n_out).unwrap();
-        eff.mv_ok[i] && eff.bus_mv_ok[i]
+        eff.mv_ok[i]
     };
     assert!(allowed(&net));
     net.turn_bans.push(TurnBan { from: x.w_in, to: x.n_out, periods: vec![] });

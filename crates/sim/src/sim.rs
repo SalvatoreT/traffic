@@ -56,11 +56,6 @@ impl Drv {
 }
 
 impl Drv {
-    /// Heavy-vehicle IDM parameters for a bus [Kesting2010] Table 1 (trucks); length 12 m (design decision D2).
-    fn bus() -> Drv {
-        Drv { len: BUS_LEN, fcomp: 1.0, a: BUS_A, b: BUS_B, t_hw: BUS_T, s0: BUS_S0, gap_f: 1.0 }
-    }
-
     /// Cyclist IDM parameters; the desired speed is drawn separately (`bike_speed`). All ranges are ASSUMPTION.
     fn bike(rng: &mut Rng) -> Drv {
         Drv {
@@ -137,7 +132,7 @@ struct Veh {
     /// (name id, direction bucket) and the nominated links traversed as (link, index into the street list).
     sl_streets: Vec<(u32, u8)>,
     sl_hits: Vec<(u32, u32)>,
-    /// Agent kind: `KIND_CAR`, `KIND_BUS` or `KIND_BIKE`.
+    /// Agent kind: `KIND_CAR` or `KIND_BIKE`.
     kind: u8,
     /// Cyclist desired speed (m/s); unused for motor vehicles.
     v0_abs: f32,
@@ -147,10 +142,6 @@ struct Veh {
     ped_held: bool,
     pass_close: bool,
     pass_scored: bool,
-    /// Bus: route index, next stop to serve, remaining dwell (s), scheduled departure of the run.
-    bus_route: u32,
-    next_stop: u32,
-    dwell_left: f32,
 }
 
 impl Veh {
@@ -193,9 +184,6 @@ impl Veh {
             ped_held: false,
             pass_close: false,
             pass_scored: false,
-            bus_route: 0,
-            next_stop: 0,
-            dwell_left: 0.0,
         }
     }
     #[inline]
@@ -240,9 +228,6 @@ struct Stats {
     /// Per-mode results (multimodal-agents).
     car_completed: u64,
     car_tt_sum: f64,
-    bus_completed: u64,
-    bus_tt_sum: f64,
-    bus_dist_sum: f64,
     bike_completed: u64,
     bike_tt_sum: f64,
 }
@@ -355,10 +340,6 @@ pub struct Simulation {
     win_q0: Vec<u32>,
     next_adapt_t: f64,
     // ---- multimodal agents
-    transit_file: Option<TransitFile>,
-    buses: Vec<BusRt>,
-    bus_blocked: u64,
-    bus_dropped_routes: u64,
     n_bike: usize,
     bike_on: bool,
     bike_router: Router,
@@ -437,11 +418,6 @@ impl Simulation {
     // ------------------------------------------------------------------ construction
 
     pub fn new(network_json: &str, demand_json: &str, config_json: &str) -> Result<Simulation, String> {
-        Simulation::new_with_transit(network_json, demand_json, config_json, None)
-    }
-
-    /// As `new`, with the optional `<area>.transit.json` text.
-    pub fn new_with_transit(network_json: &str, demand_json: &str, config_json: &str, transit_json: Option<&str>) -> Result<Simulation, String> {
         let net: Network = serde_json::from_str(network_json).map_err(|e| format!("network: {e}"))?;
         let demand: Demand = serde_json::from_str(demand_json).map_err(|e| format!("demand: {e}"))?;
         let cfg: Config = if config_json.trim().is_empty() {
@@ -449,18 +425,10 @@ impl Simulation {
         } else {
             serde_json::from_str(config_json).map_err(|e| format!("config: {e}"))?
         };
-        let transit: Option<TransitFile> = match transit_json.map(str::trim) {
-            Some(t) if !t.is_empty() => Some(serde_json::from_str(t).map_err(|e| format!("transit: {e}"))?),
-            _ => None,
-        };
-        Simulation::from_parts_transit(net, demand, cfg, transit)
+        Simulation::from_parts(net, demand, cfg)
     }
 
-    pub fn from_parts(net: Network, demand: Demand, cfg: Config) -> Result<Simulation, String> {
-        Simulation::from_parts_transit(net, demand, cfg, None)
-    }
-
-    pub fn from_parts_transit(mut net: Network, demand: Demand, cfg: Config, transit: Option<TransitFile>) -> Result<Simulation, String> {
+    pub fn from_parts(mut net: Network, demand: Demand, cfg: Config) -> Result<Simulation, String> {
         net.turn_bans.retain(|b| b.periods.is_empty() || b.periods.iter().any(|p| *p == cfg.period));
         net.turn_bans.retain(|b| (b.from as usize) < net.links.len() && (b.to as usize) < net.links.len());
         for (i, l) in net.links.iter().enumerate() {
@@ -523,10 +491,6 @@ impl Simulation {
             win_exit: vec![0; nl],
             win_q0: vec![0; nl],
             next_adapt_t: 0.0,
-            transit_file: transit,
-            buses: Vec::new(),
-            bus_blocked: 0,
-            bus_dropped_routes: 0,
             n_bike: 0,
             bike_on: false,
             bike_router: Router::new(nn),
@@ -700,8 +664,7 @@ impl Simulation {
         let net = self.net.clone();
         let demand = self.demand.clone();
         let cfg = self.cfg.clone();
-        let transit = self.transit_file.clone();
-        if let Ok(mut s) = Simulation::from_parts_transit(net, demand, cfg, transit) {
+        if let Ok(mut s) = Simulation::from_parts(net, demand, cfg) {
             s.ivs = ivs;
             s.rebuild_effective();
             *self = s;
@@ -803,7 +766,7 @@ impl Simulation {
         self.sig_state.clone()
     }
 
-    /// Stride 6: x, y, heading (rad, atan2(dy, dx)), speed (m/s), kind (0 car, 1 bus, 2 bicycle, 3 pedestrian), flags (bit0 = through trip).
+    /// Stride 6: x, y, heading (rad, atan2(dy, dx)), speed (m/s), kind (0 car, 2 bicycle, 3 pedestrian; 1 is retired), flags (bit0 = through trip).
     pub fn vehicles(&self) -> Vec<f32> {
         let mut out = Vec::with_capacity(self.n_vehicles() * 6);
         for v in self.vehs.iter().filter(|v| v.alive) {
@@ -986,9 +949,7 @@ impl Simulation {
         self.generate_arrivals();
         self.try_spawns();
         self.try_spawn_bikes();
-        self.try_spawn_buses();
         self.update_peds();
-        self.bus_lane_changes();
         self.eval_heads();
         self.compute_accels();
         self.update_vehicles();
@@ -1642,9 +1603,9 @@ impl Simulation {
     // ------------------------------------------------------------------ dynamics
 
     fn compute_accels(&mut self) {
-        let any_modes = self.bike_on || self.ped_on || !self.buses.is_empty();
+        let any_modes = self.bike_on || self.ped_on;
         let lane_w = self.cfg.lane_width_m.unwrap_or(LANE_WIDTH_M) as f32;
-        let Simulation { lanes, vehs, eff, topo, st, net, world, buses, vuln, ped_on, bike_on, .. } = self;
+        let Simulation { lanes, vehs, eff, topo, st, net, world, vuln, ped_on, bike_on, .. } = self;
         let mut ttc_new = 0u64;
         for l in 0..topo.n_links {
             let nlanes = topo.nlanes(l);
@@ -1662,7 +1623,7 @@ impl Simulation {
                         (f32::INFINITY, 0.0, NONE_UID)
                     };
                     let ex = if any_modes {
-                        Ctx { topo, eff, net, lanes, vehs, world, buses, ped_on: *ped_on, bike_on: *bike_on, lane_w }.extras(vid, l, k)
+                        Ctx { topo, eff, net, lanes, vehs, world, ped_on: *ped_on, bike_on: *bike_on, lane_w }.extras(vid, l, k)
                     } else {
                         Extra::default()
                     };
@@ -1671,22 +1632,6 @@ impl Simulation {
                         veh.acc = 0.0;
                         veh.v = 0.0;
                         continue;
-                    }
-                    if veh.dwell_left > 0.0 {
-                        veh.dwell_left -= DT as f32;
-                        veh.acc = 0.0;
-                        veh.v = 0.0;
-                        continue;
-                    }
-                    if let Some(dw) = ex.dwell {
-                        veh.dwell_left = dw;
-                        veh.next_stop += 1;
-                        veh.acc = 0.0;
-                        veh.v = 0.0;
-                        continue;
-                    }
-                    if ex.skip_stop {
-                        veh.next_stop += 1;
                     }
                     if ex.ped_held {
                         veh.ped_held = true;
@@ -1709,7 +1654,7 @@ impl Simulation {
                     let d = &veh.drv;
                     let mut v0 = if kind == KIND_BIKE { veh.v0_abs.min(limit.max(2.0)) } else { (limit * d.fcomp).max(1.0) };
                     let mut a_req = f32::INFINITY; // kinematic braking needed to meet a speed constraint ahead
-                    // Speed humps slow cars and buses, not cyclists.
+                    // Speed humps slow cars, not cyclists.
                     let humps: &[f32] = if kind == KIND_BIKE { &[] } else { humps };
                     for &h in humps.iter() {
                         let dist = h - veh.pos;
@@ -1943,17 +1888,8 @@ impl Simulation {
         self.st.trip_time_sum += tt;
         self.st.delay_sum += tt - veh.ff_sum as f64;
         self.st.completed += 1;
-        match veh.kind {
-            KIND_BUS => {
-                self.st.bus_completed += 1;
-                self.st.bus_tt_sum += tt;
-                self.st.bus_dist_sum += self.buses[veh.bus_route as usize].len_m as f64;
-            }
-            _ => {
-                self.st.car_completed += 1;
-                self.st.car_tt_sum += tt;
-            }
-        }
+        self.st.car_completed += 1;
+        self.st.car_tt_sum += tt;
         if self.sl.is_some() {
             if let Some(r) = self.sl_record(&self.vehs[vid as usize], true) {
                 self.sl.as_mut().unwrap().records.push(r);
@@ -2101,7 +2037,6 @@ impl Simulation {
     /// Re-plan the remaining route of an on-link vehicle. Returns false (and removes the vehicle) if unroutable.
     fn replan_vehicle(&mut self, vid: u32, drop_if_fail: bool) -> bool {
         match self.vehs[vid as usize].kind {
-            KIND_BUS => return true, // buses never re-route
             KIND_BIKE => return self.replan_bike(vid),
             _ => {}
         }
@@ -2152,16 +2087,12 @@ impl Simulation {
             if !self.vehs[vid as usize].alive {
                 continue;
             }
-            if self.vehs[vid as usize].kind == KIND_BUS {
-                continue; // handled by `recheck_buses`
-            }
             if self.vehs[vid as usize].in_transit {
                 self.vehs[vid as usize].replan = true;
                 continue;
             }
             self.replan_vehicle(vid, true);
         }
-        self.recheck_buses();
     }
 
     fn epoch_update(&mut self) {
@@ -2375,11 +2306,7 @@ impl Simulation {
         id
     }
 
-    pub(crate) fn test_set_bus_next_t(&mut self, route: usize, t: f64) {
-        self.buses[route].next_t = t;
-    }
-
-    /// (uid, link, pos, v, lane) of every live agent of `kind` (0 car, 1 bus, 2 bicycle).
+    /// (uid, link, pos, v, lane) of every live agent of `kind` (0 car, 2 bicycle).
     pub(crate) fn test_kind(&self, kind: u8) -> Vec<(u32, u32, f32, f32, u8)> {
         self.vehs.iter().filter(|v| v.alive && v.kind == kind).map(|v| (v.uid, v.link, v.pos, v.v, v.lane)).collect()
     }

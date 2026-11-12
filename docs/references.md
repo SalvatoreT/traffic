@@ -508,7 +508,7 @@ Treat these as scenario-design inspiration. They are not validated sources.
 
 ---
 
-## 6. Multimodal microsimulation (cyclists, pedestrians, buses)
+## 6. Multimodal microsimulation (cyclists, pedestrians)
 
 **[Helbing1995]** [V] Helbing, D., Molnár, P. (1995). Social force model for pedestrian dynamics. *Physical Review E* 51, 4282–4286. DOI 10.1103/PhysRevE.51.4282. arXiv cond-mat/9805244.
 Acceleration toward a desired velocity plus repulsive terms from other pedestrians and borders. The basis for pedestrian and shared-space models.
@@ -544,7 +544,7 @@ Still **not found:** a verified 2018–2026 *review* of cyclist microsimulation.
 
 Still **not found:** a verified calibrated microsimulation rule set for pedestrians crossing *unsignalized neighborhood* streets with yielding drivers. A FHWA-style 27-mid-block-crossing gap-acceptance prototype and a WCTR 2010 discrete-choice model were seen only as search snippets and are not cited.
 
-**Pedestrian, cyclist and bus parameter sources (multimodal-agents, pass 3, 2026-11-12).** Network access reached Crossref, PubMed, the NACTO-hosted copy of TCRP 112 / NCHRP 562, the TRB chapter PDFs of TCRP 165, the FHWA site and several agency report PDFs. The California statute pages (leginfo, Justia, FindLaw) answered 403.
+**Pedestrian and cyclist parameter sources (multimodal-agents, pass 3, 2026-11-12).** Network access reached Crossref, PubMed, the NACTO-hosted copy of TCRP 112 / NCHRP 562, the FHWA site and several agency report PDFs. The California statute pages (leginfo, Justia, FindLaw) answered 403.
 
 **[Fitzpatrick2006]** [V] Fitzpatrick, K., Turner, S., Brewer, M., Carlson, P., Ullman, B., Trout, N., Park, E.S., Whitacre, J., Lalani, N., Lord, D. (2006). *Improving Pedestrian Safety at Unsignalized Crossings.* TCRP Report 112 / NCHRP Report 562. Transportation Research Board, Washington, DC. DOI 10.17226/13962 (Crossref; Crossref lists no authors, the author list is from the report's title page). Full text read from the PDF. Page numbers are the printed ones.
 Numbers taken:
@@ -576,30 +576,7 @@ Test-track overtaking of a robot cyclist, with an oncoming vehicle set to arrive
 
 **[CVC21760]** [V-partial] California Vehicle Code section 21760 ("Three Feet for Safety Act", added by AB 1371 in 2013, amended by AB 1909 in 2022). A driver overtaking a bicycle going the same way shall not pass with less than three feet between any part of the vehicle and any part of the bicycle or its operator. The statute text above comes from search-result summaries of the code; the official pages (leginfo, Justia, FindLaw) returned 403 and were not opened. Three feet is 0.9144 m.
 
-**[TCQSM3]** [V-partial] Kittelson & Associates, Inc., Parsons Brinckerhoff, KFH Group, Inc., Texas A&M Transportation Institute, Arup (2013). *Transit Capacity and Quality of Service Manual, Third Edition.* TCRP Report 165. Transportation Research Board, Washington, DC. DOI 10.17226/24766 (Crossref). Chapter 6 text read from the TRB chapter PDF; the numeric columns of its exhibit tables (for example Exhibit 6-4 passenger service times) did not survive text extraction and were not read.
-Numbers taken from running text:
-- Bus dwell time is the busiest door's passenger flow time plus door opening and closing time plus boarding lost time (Equation 6-5); door opening and closing time is "2-5 s typical".
-- Coefficient of variation of dwell times 0.4 to 0.8 across several U.S. cities, 0.6 recommended when there are no field data.
-- A typical 40-ft (12 m) diesel bus accelerates at 3.3 ft/s² (1.0 m/s²) to 25 mph (40 km/h) and decelerates comfortably at 4.0 ft/s² (1.2 m/s²) (Chapter 6, early in the Fundamentals section, about p. 6-3). Exhibit 6-2 lists other accelerations; its values were not read.
-- A worked calculation example gives average dwell times of 18.4 s (one street) and 17.5 s (another) for a downtown couplet. They are computed from the example's passenger counts, not measured distributions.
-No measured dwell-time distribution for a Bay Area route was found. The other dwell sources seen (TriMet, Pittsburgh, Chicago) were abstracts only and are not cited.
-
 Not found despite searching: a published rule for how many seconds of oncoming gap a driver needs before passing a cyclist on an urban two-lane street (only [Rasch2020] test-track conditions); a threshold speed difference for a "close pass"; a PET threshold validated for vehicle-pedestrian or vehicle-bicycle encounters; and a source for the 3.3 m urban lane width (the guides found state ranges of 10 to 12 ft in secondary summaries only).
-
-**Transit data and map matching (multimodal-agents data tasks, 2026-11-12):**
-
-**[Newson2009]** [V-meta] Newson, P., Krumm, J. (2009). Hidden Markov map matching through noise and sparseness. *Proceedings of the 17th ACM SIGSPATIAL International Conference on Advances in Geographic Information Systems*, pp. 336–343. DOI 10.1145/1653771.1653818 (Crossref confirms authors, title, venue, pages and year; full text not read). Cited for the idea of matching a noisy path to a road network with a hidden Markov model whose emission cost falls with distance to the road and whose transition cost compares path distance with route distance. `tools/lib/mapmatch.ts` is a simplified variant (squared-distance emission cost, absolute-difference transition cost, fixed default spreads, a heading filter and loop removal), not a reimplementation of the paper.
-
-**[GTFS]** [V] General Transit Feed Specification, Schedule reference (MobilityData / gtfs.org). `https://gtfs.org/documentation/schedule/reference/` (page resolves; lists routes.txt, trips.txt, stop_times.txt, shapes.txt, calendar.txt and calendar_dates.txt, the files read by `tools/build-transit.ts`). Specification, not a research paper.
-
-**[ACTransitGTFS]** [V-partial] AC Transit, Data and API Resource Center, "General Transit Feed Specification" section. `https://www.actransit.org/data-api-resource-center` (page resolves and states the agency generates the feed at least three times a year; the feed itself was not downloaded in this pass, so its version and date are not yet recorded).
-
-No source was found for bus dwell time per stop; `dwellSeconds` in `data/transit/rockridge.config.json` is an ASSUMPTION.
-
-**Buses and transit signal priority:**
-- Lin, Yang, Zou, Franz (2014). Transit signal priority control at signalized intersections: a comprehensive review. *Transportation Letters*. [V-partial] Seen in a snippet. Covers passive and active TSP and field benefits from 24 cities.
-- National Academies (2020). *Transit Signal Priority: Current State of the Practice.* [V-partial] Seen as a nap.edu result. The NASEM report number was not captured.
-- No peer-reviewed 2018–2022 TSP or bus-lane systematic review in *Transportation Research Part A/C* was found.
 
 ---
 

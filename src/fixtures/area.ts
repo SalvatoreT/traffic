@@ -1,4 +1,4 @@
-import type { AreaBundle, GeoFC, Demand, NetLink, NetNode, Network, Transit } from '../types';
+import type { AreaBundle, GeoFC, Demand, NetLink, NetNode, Network } from '../types';
 import { makeProjection } from '../lib/projection';
 
 /** Small synthetic study area used until/unless /data/*.json is available. Not real streets. */
@@ -54,23 +54,12 @@ export function buildFixture(): AreaBundle {
     bbox: [bb0[0], bb0[1], bb1[0], bb1[1]], studyArea, nodes, links,
   };
 
-  // Multimodal attributes for UI development: bike lanes on one street, a crossing on each inner block, one bus route.
+  // Multimodal attributes for UI development: bike lanes on one street, a crossing on each inner block.
   for (const l of links) {
     if (l.name === 'Cedar St' || l.name === 'Grove Way') l.bikeLane = true;
     else if (l.name === 'Elm St') l.bikeRoute = true;
     if (l.class === 'residential' && l.id % 4 < 2) l.crossings = [l.length / 2];
   }
-  const busLinks = links.filter((l) => l.name === 'North Edge Ave' && l.geometry[1][0] > l.geometry[0][0]).map((l) => l.id);
-  const transit: Transit = {
-    version: 1, area: 'fixture',
-    routes: [{
-      id: 'F1', name: 'F1', links: busLinks,
-      stops: busLinks.filter((_, i) => i % 2 === 0).map((id) => ({ link: id, position: links[id].length - 10, name: 'Fixture stop', dwell: 20 })),
-      headways: [{ period: 'am', seconds: 600 }, { period: 'pm', seconds: 600 }],
-    }],
-    provenance: [{ source: 'Synthetic fixture', url: 'https://www.openstreetmap.org/copyright', note: 'UI development only.' }],
-  };
-
   const gates = nodes.filter((n) => n.gate).map((n) => n.id);
   let seed = 12345;
   const rnd = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296);
@@ -105,6 +94,6 @@ export function buildFixture(): AreaBundle {
   };
   return {
     entry: { id: 'fixture', name: 'Fixture grid (synthetic)', network: '', demand: '', basemap: '', center: [ORIGIN.lon, ORIGIN.lat], zoom: 16 },
-    network, demand, basemap, synthetic: true, transit,
+    network, demand, basemap, synthetic: true,
   };
 }

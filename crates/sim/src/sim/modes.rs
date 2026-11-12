@@ -1,23 +1,6 @@
-//! Buses, bicycles and the safety surrogates (change multimodal-agents, decisions D2, D3, D5).
+//! Bicycles and the safety surrogates (change multimodal-agents, decisions D3, D5).
 
 use super::*;
-
-// ---------------------------------------------------------------------------------------------------- buses
-
-pub(super) struct StopRt {
-    /// Index into the route's link list of the link the stop is on.
-    pub link_idx: u32,
-    pub pos: f32,
-    pub dwell: f32,
-}
-
-pub(super) struct BusRt {
-    pub links: Vec<u32>,
-    pub stops: Vec<StopRt>,
-    pub headway: f64,
-    pub next_t: f64,
-    pub len_m: f32,
-}
 
 // ------------------------------------------------------------------------------------------------- safety
 
@@ -116,7 +99,7 @@ fn risk_from_points(p: &[(f32, f32); 5], v: f32) -> f32 {
 /// Extra longitudinal constraints on a vehicle beyond its queue leader and node control.
 #[derive(Default)]
 pub(super) struct Extra {
-    /// Distance to a virtual standing obstacle (bus stop mark, crosswalk stop line).
+    /// Distance to a virtual standing obstacle (the stop line of a mid-block crosswalk).
     pub obstacle: Option<f32>,
     /// A cyclist ahead on a shared link that the driver follows: (gap to its rear, its speed).
     pub bike_lead: Option<(f32, f32)>,
@@ -125,10 +108,6 @@ pub(super) struct Extra {
     /// The vehicle's front reached the rear of the cyclist it is passing: score the pass (speed difference, speed).
     pub score_pass: Option<(f32, f32)>,
     pub end_pass: bool,
-    /// Bus: begin dwelling now (dwell seconds).
-    pub dwell: Option<f32>,
-    /// Bus: the stop was passed without dwelling; move on to the next one.
-    pub skip_stop: bool,
     /// The vehicle is being held by a pedestrian at a mid-block crosswalk.
     pub ped_held: bool,
 }
@@ -140,7 +119,6 @@ pub(super) struct Ctx<'a> {
     pub lanes: &'a [VecDeque<u32>],
     pub vehs: &'a [Veh],
     pub world: &'a PedWorld,
-    pub buses: &'a [BusRt],
     pub ped_on: bool,
     pub bike_on: bool,
     pub lane_w: f32,
@@ -179,24 +157,6 @@ impl Ctx<'_> {
         let veh = &self.vehs[vid as usize];
         let mut ex = Extra::default();
         let mut obstacle = f32::INFINITY;
-
-        if veh.kind == KIND_BUS {
-            let rt = &self.buses[veh.bus_route as usize];
-            if let Some(stop) = rt.stops.get(veh.next_stop as usize) {
-                if stop.link_idx == veh.ridx {
-                    if veh.pos > stop.pos + BUS_SETTLE_M + 1.0 {
-                        ex.skip_stop = true;
-                    } else {
-                        if veh.v < 0.3 && (stop.pos - veh.pos).abs() < BUS_SETTLE_M + veh.drv.s0 {
-                            ex.dwell = Some(stop.dwell);
-                        }
-                        obstacle = obstacle.min((stop.pos + veh.drv.s0 - veh.pos).max(0.1));
-                    }
-                } else if stop.link_idx < veh.ridx {
-                    ex.skip_stop = true;
-                }
-            }
-        }
 
         if self.ped_on {
             for &(xp, xw) in &self.world.mid[l] {
@@ -278,51 +238,6 @@ impl Simulation {
             self.world = PedWorld::build(&self.net, &self.topo);
             self.set_yield_probabilities();
         }
-        self.buses.clear();
-        self.bus_dropped_routes = 0;
-        let Some(tf) = self.transit_file.as_ref() else { return };
-        let period_id = self
-            .demand
-            .periods
-            .iter()
-            .find(|p| p.id == self.cfg.period)
-            .or_else(|| self.demand.periods.first())
-            .map(|p| p.id.clone())
-            .unwrap_or_default();
-        let nl = self.topo.n_links as u32;
-        for (ri, r) in tf.routes.iter().enumerate() {
-            let linked = r.links.len() >= 1
-                && r.links.iter().all(|&l| l < nl)
-                && r.links.windows(2).all(|w| self.topo.find_mv(w[0], w[1]).is_some());
-            if !linked {
-                self.bus_dropped_routes += 1;
-                continue;
-            }
-            // No headway for the simulated period: the route does not run (service is data, not a default).
-            let Some(hw) = r.headways.iter().find(|h| h.period == period_id && h.seconds > 0.0) else { continue };
-            let mut stops: Vec<StopRt> = Vec::new();
-            for s in &r.stops {
-                let Some(idx) = r.links.iter().position(|&l| l == s.link) else { continue };
-                let l = s.link as usize;
-                let lo = self.topo.emerge_pos[l] + 1.0;
-                let hi = (self.topo.stop_pos[l] - 1.0).max(lo);
-                stops.push(StopRt {
-                    link_idx: idx as u32,
-                    pos: (s.position as f32).clamp(lo, hi),
-                    dwell: if s.dwell > 0.0 { s.dwell as f32 } else { BUS_DWELL_DEFAULT_S },
-                });
-            }
-            stops.sort_by(|a, b| (a.link_idx, a.pos).partial_cmp(&(b.link_idx, b.pos)).unwrap());
-            let len_m: f32 = r.links.iter().map(|&l| self.topo.length[l as usize]).sum();
-            // Deterministic offset so routes do not all depart together.
-            let off = (hash32(ri as u32, self.cfg.seed as u32) % 1000) as f64 / 1000.0 * hw.seconds;
-            self.buses.push(BusRt { links: r.links.clone(), stops, headway: hw.seconds, next_t: off, len_m });
-        }
-    }
-
-    /// Dropped transit routes (not linked in the network) and bus runs blocked by interventions.
-    pub fn transit_report(&self) -> (usize, u64, u64) {
-        (self.buses.len(), self.bus_dropped_routes, self.bus_blocked)
     }
 
     // ------------------------------------------------------------------ mode views
@@ -330,7 +245,6 @@ impl Simulation {
     #[inline]
     pub(super) fn mv_allowed(&self, kind: u8, mv: u32) -> bool {
         match kind {
-            KIND_BUS => self.eff.bus_mv_ok[mv as usize],
             KIND_BIKE => self.eff.bike_mv_ok[mv as usize],
             _ => self.eff.mv_ok[mv as usize],
         }
@@ -398,115 +312,6 @@ impl Simulation {
         }
     }
 
-    pub(super) fn bus_route_ok(&self, bi: usize) -> bool {
-        let r = &self.buses[bi];
-        !self.eff.oneway_closed[r.links[0] as usize]
-            && r.links.windows(2).all(|w| self.topo.find_mv(w[0], w[1]).map_or(false, |m| self.eff.bus_mv_ok[m as usize]))
-    }
-
-    pub(super) fn try_spawn_buses(&mut self) {
-        for bi in 0..self.buses.len() {
-            while self.buses[bi].next_t <= self.t {
-                if !self.bus_route_ok(bi) {
-                    self.bus_blocked += 1;
-                    self.buses[bi].next_t += self.buses[bi].headway;
-                    continue;
-                }
-                let links = &self.buses[bi].links;
-                let first = links[0];
-                let hint = self.mv_kind(first, links.get(1).copied());
-                let Some(lane) = self.pick_lane(first, hint, 0.0) else { break };
-                let route: Vec<u32> = links[1..].to_vec();
-                let last = *links.last().unwrap();
-                let t_sched = self.buses[bi].next_t;
-                self.buses[bi].next_t += self.buses[bi].headway;
-                let id = self.alloc_veh();
-                let uid = self.uid_next;
-                self.uid_next += 1;
-                let v0 = self.eff.limit[first as usize];
-                self.vehs[id as usize] = Veh {
-                    alive: true,
-                    kind: KIND_BUS,
-                    uid,
-                    link: first,
-                    lane: lane as u8,
-                    pos: self.topo.emerge_pos[first as usize],
-                    v: v0.min(4.0),
-                    drv: Drv::bus(),
-                    origin: self.topo.link_from[first as usize],
-                    dest: self.topo.link_to[last as usize],
-                    route,
-                    t_depart: t_sched,
-                    t_enter: self.t,
-                    bus_route: bi as u32,
-                    ..Veh::blank()
-                };
-                let idx = self.topo.qidx(first as usize, lane);
-                self.lanes[idx].push_back(id);
-                self.st.spawned += 1;
-            }
-        }
-    }
-
-    // ------------------------------------------------------------------ bus lane changes
-
-    /// A vehicle queued directly behind a dwelling bus moves to another through lane when the link has one with room
-    /// (D2: followers queue unless another lane is free).
-    pub(super) fn bus_lane_changes(&mut self) {
-        if self.buses.is_empty() {
-            return;
-        }
-        let mut moves: Vec<(u32, usize, usize, usize, usize)> = Vec::new();
-        for (bid, b) in self.vehs.iter().enumerate() {
-            if !b.alive || b.kind != KIND_BUS || b.in_transit || b.dwell_left <= 0.0 {
-                continue;
-            }
-            let l = b.link as usize;
-            let nmain = self.topo.nmain[l];
-            if nmain < 2 || (b.lane as usize) >= nmain {
-                continue;
-            }
-            let q = &self.lanes[self.topo.lane_base[l] as usize + b.lane as usize];
-            let Some(bi) = q.iter().position(|&x| x == bid as u32) else { continue };
-            let Some(&fid) = q.get(bi + 1) else { continue };
-            let f = &self.vehs[fid as usize];
-            if b.pos - b.drv.len - f.pos > 30.0 || f.pos > self.topo.stop_pos[l] - 15.0 {
-                continue;
-            }
-            for k2 in 0..nmain {
-                if k2 == b.lane as usize {
-                    continue;
-                }
-                let q2 = &self.lanes[self.topo.lane_base[l] as usize + k2];
-                // Insertion index keeps the queue ordered front (largest position) to back.
-                let ins = q2.iter().position(|&x| self.vehs[x as usize].pos <= f.pos).unwrap_or(q2.len());
-                let lead_ok = ins == 0 || {
-                    let a = &self.vehs[q2[ins - 1] as usize];
-                    a.pos - a.drv.len - f.pos >= LC_GAP_M
-                };
-                let back_ok = ins == q2.len() || {
-                    let c = &self.vehs[q2[ins] as usize];
-                    f.pos - f.drv.len - c.pos >= LC_GAP_M
-                };
-                let dwelling_ahead = ins > 0 && self.vehs[q2[ins - 1] as usize].dwell_left > 0.0;
-                if lead_ok && back_ok && !dwelling_ahead {
-                    moves.push((fid, l, b.lane as usize, k2, ins));
-                    break;
-                }
-            }
-        }
-        for (fid, l, from, to, ins) in moves {
-            let qf = self.topo.lane_base[l] as usize + from;
-            if let Some(p) = self.lanes[qf].iter().position(|&x| x == fid) {
-                self.lanes[qf].remove(p);
-                let qt = self.topo.lane_base[l] as usize + to;
-                let ins = ins.min(self.lanes[qt].len());
-                self.lanes[qt].insert(ins, fid);
-                self.vehs[fid as usize].lane = to as u8;
-            }
-        }
-    }
-
     // ------------------------------------------------------------------ replanning after interventions
 
     pub(super) fn replan_bike(&mut self, vid: u32) -> bool {
@@ -539,35 +344,6 @@ impl Simulation {
             self.lanes[qi].remove(p);
         }
         self.remove_vehicle(vid);
-    }
-
-    /// After a scenario change: a bus whose remaining route has become impossible (turn ban or one-way closure on it) is
-    /// dropped and counted. Modal filters do not affect buses (ASSUMPTION: buses pass filters).
-    pub(super) fn recheck_buses(&mut self) {
-        for vid in 0..self.vehs.len() as u32 {
-            let v = &self.vehs[vid as usize];
-            if !v.alive || v.kind != KIND_BUS {
-                continue;
-            }
-            let rt = &self.buses[v.bus_route as usize];
-            let cur = if v.in_transit { v.ridx.saturating_sub(1) } else { v.ridx } as usize;
-            let in_transit = v.in_transit;
-            let ok = rt.links[cur..].windows(2).all(|w| self.topo.find_mv(w[0], w[1]).map_or(false, |m| self.eff.bus_mv_ok[m as usize]));
-            let node = self.topo.link_to[rt.links[cur] as usize] as usize;
-            if !ok {
-                if in_transit {
-                    if let Some(p) = self.transit[node].iter().position(|t| t.veh == vid) {
-                        let t = self.transit[node].remove(p);
-                        let qi = self.topo.qidx(t.to_link as usize, t.lane as usize);
-                        self.reserved[qi] = (self.reserved[qi] - (BUS_LEN + 2.0)).max(0.0);
-                    }
-                    self.remove_vehicle(vid);
-                } else {
-                    self.drop_vehicle_on_link(vid);
-                }
-                self.bus_blocked += 1;
-            }
-        }
     }
 
     // ------------------------------------------------------------------ safety hooks
@@ -610,25 +386,11 @@ impl Simulation {
 
     pub(super) fn fill_mode_metrics(&self, m: &mut Metrics) {
         let st = &self.st;
-        let (mut cars, mut buses) = (0u64, 0u64);
-        for v in self.vehs.iter().filter(|v| v.alive) {
-            match v.kind {
-                KIND_CAR => cars += 1,
-                KIND_BUS => buses += 1,
-                _ => {}
-            }
-        }
+        let cars = self.vehs.iter().filter(|v| v.alive && v.kind == KIND_CAR).count() as u64;
         m.modes.car = CarMode {
             in_network: cars,
             completed_trips: st.car_completed,
             mean_trip_time: if st.car_completed > 0 { st.car_tt_sum / st.car_completed as f64 } else { 0.0 },
-        };
-        m.modes.bus = BusMode {
-            in_network: buses,
-            completed_runs: st.bus_completed,
-            mean_run_time: if st.bus_completed > 0 { st.bus_tt_sum / st.bus_completed as f64 } else { 0.0 },
-            mean_speed: if st.bus_tt_sum > 0.0 { st.bus_dist_sum / st.bus_tt_sum } else { 0.0 },
-            bus_runs_blocked: self.bus_blocked,
         };
         m.modes.bicycle = BikeMode {
             in_network: self.n_bike as u64,

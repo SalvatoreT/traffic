@@ -4,7 +4,7 @@
 // Methods: Furness/IPF balancing of the gate-to-gate matrix; gravity seeding; LODES [LODES]; freeway-ramp demand (DATA ramp ADT, ASSUMPTION destination choice).
 import { readFileSync, readdirSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { buildActiveFlows, parseActiveCounts, type AFlow, type AStop } from './lib/demand-active';
+import { buildActiveFlows, parseActiveCounts, type AFlow } from './lib/demand-active';
 import { discoverRamps, matchRampVolumes, type Ramp, type RampRow, type RampVolume } from './lib/demand-ramps';
 import { linkMetrics, perimeterGap, perimeterLength, perimeterPos, relevanceOf, Router, routeStat, sideOf, type Rect, type Relevance, type RouteStat } from './lib/demand-audit';
 import { makeProjection } from './lib/geo';
@@ -569,36 +569,23 @@ for (const p of cfg.periods as { id: string; label: string }[]) {
 interface ActiveSummary { lines: string[] }
 const activeSummary: ActiveSummary = { lines: [] };
 if (cfg.active) {
-  const transitPath: string | undefined = cfg.transit;
-  const transit = transitPath && existsSync(transitPath) ? JSON.parse(readFileSync(transitPath, 'utf8')) : null;
-  const linkById = new Map(net.links.map((l) => [l.id, l]));
-  const stopMap = new Map<number, AStop>();
-  for (const r of transit?.routes ?? []) {
-    for (const st of r.stops as { link: number; position: number }[]) {
-      const l = linkById.get(st.link);
-      if (!l) continue;
-      const node = st.position < (l as Link & { length: number }).length / 2 ? l.from : l.to;
-      const a = stopMap.get(node) ?? stopMap.set(node, { node, freq: {} }).get(node)!;
-      for (const h of r.headways as { period: string; seconds: number }[]) a.freq[h.period] = (a.freq[h.period] ?? 0) + 3600 / h.seconds;
-    }
-  }
   const dir = cfg.raw[cfg.streetCounts?.[0]?.source];
   const counts = dir && existsSync(dir) ? readdirSync(dir).filter((f) => f.includes(cfg.streetCounts[0].filePattern) && f.endsWith('.csv')).map((f) => parseActiveCounts(readFileSync(join(dir, f), 'utf8'))).filter((c) => c !== null) : [];
   const mean = (k: 'pedestrian' | 'bicycle') => (counts.length ? counts.reduce((a, c) => a + c![k], 0) / counts.length : null);
   const countNode = tmc ? net.nodes.reduce((b, n) => (Math.hypot(n.x - tx, n.y - ty) < Math.hypot(b.x - tx, b.y - ty) ? n : b), net.nodes[0]) : null;
   const res = buildActiveFlows({
     nodes: net.nodes, links: net.links, locals: [...localNodes.values()].map((b) => ({ node: b.node, res: b.res, jobs: b.jobs })),
-    freewayGates: freewayIds, stops: [...stopMap.values()], periodIds, scalePeriod: lastPeriod,
+    freewayGates: freewayIds, periodIds, scalePeriod: lastPeriod,
     originShare: lo.originShareResidents, destShare: lo.destShareJobs, tripsPerResident: lo.dailyTripsPerResidentWorker * lo.residentsPerWorker, tripsPerJob: lo.dailyTripsPerJob,
     cfg: cfg.active, count: countNode && counts.length ? { node: countNode.id, pedestrian: mean('pedestrian'), bicycle: mean('bicycle') } : null,
   });
   for (const per of outPeriods) per.flows.push(...(res.flows[per.id] as AFlow[]));
-  activeSummary.lines.push(`Pedestrian and bicycle flows (persons/h; ${transit ? `${stopMap.size} bus-stop nodes` : 'no transit file: bus-stop walking trips skipped'}; ${counts.length} Oakland counts)`);
+  activeSummary.lines.push(`Pedestrian and bicycle flows (persons/h; ${counts.length} Oakland counts)`);
   for (const r of res.reports) {
     activeSummary.lines.push(`  ${r.mode}: PM peak persons through the counted intersection ${r.prior === null ? 'n/a' : r.prior.toFixed(0)} before scaling, observed ${r.observed === null ? 'n/a' : r.observed.toFixed(0)}, factor ${r.factor.toFixed(3)}, in the final flow list ${r.after === null ? 'n/a' : r.after.toFixed(0)}`);
     for (const per of outPeriods) {
       const q = r.perPeriod[per.id];
-      activeSummary.lines.push(`    ${per.id.padEnd(9)} ${q.total.toFixed(0).padStart(5)}/h in ${String(q.flows).padStart(4)} flows of ${q.candidates} (to gates ${q.toGates.toFixed(0)}, to bus stops ${q.toStops.toFixed(0)}, to commercial streets ${q.toCommercial.toFixed(0)}, gate-to-gate ${q.through.toFixed(0)})`);
+      activeSummary.lines.push(`    ${per.id.padEnd(9)} ${q.total.toFixed(0).padStart(5)}/h in ${String(q.flows).padStart(4)} flows of ${q.candidates} (to gates ${q.toGates.toFixed(0)}, to commercial streets ${q.toCommercial.toFixed(0)}, gate-to-gate ${q.through.toFixed(0)})`);
     }
   }
   const tot = outPeriods.map((per) => `${per.id} ${per.flows.length}`).join(', ');
@@ -686,7 +673,7 @@ const provenance = [
   { source: 'Caltrans Traffic Volumes AADT (SR-13 Claremont Ave, Berkeley)', url: 'https://caltrans-gis.dot.ca.gov/arcgis/rest/services/CHhighway/Traffic_AADT/FeatureServer/0', note: 'DATA used as nearest-count ADT for the Claremont gate with an ASSUMPTION scaling factor; SR-24 AADT is context only.' },
   { source: 'Caltrans Ramp Volumes on the California State Freeway System, District 4 (ramp ADT, SR-24 ramps)', url: 'https://dot.ca.gov/programs/traffic-operations/census', note: `DATA: ramp ADT for the ramps found in the network (count year as listed in the build log; the Claremont and Telegraph ramps were last counted in 2012, no growth applied). ASSUMPTION: ramp peak-hour factor, local share of ramp trips, destination choice (gravity x direction plausibility toward the study area), per-gate ramp share cap. Freeway mainline through trips are excluded.` },
   { source: 'US Census LEHD LODES8 CA OD main JT00 2024 and ca_xwalk', url: 'https://lehd.ces.census.gov/data/lodes/LODES8/ca/', note: 'DATA. Resident workers and jobs per block in the bbox (nearest in-area residential node) and home/work direction mix by compass sector. Trip rates, mode share, peak-hour shares are ASSUMPTIONS.' },
-  ...(cfg.active ? [{ source: 'Walking and biking demand (pedestrian and bicycle flows, persons per hour)', url: 'data/demand/README.md', note: 'ASSUMPTION, not counts: synthesized from LODES resident workers and jobs per block with assumed mode shares, trip lengths, gate, commercial-street and bus-stop shares (config `active`). DATA: the volumes are scaled by one factor per mode so that PM peak-hour people passing Telegraph Ave & Alcatraz Ave match the mean of the Oakland pedestrian and bicycle counts there; the spatial pattern elsewhere is uncounted. Calibration against walking and biking counts has not been done.' }] : []),
+  ...(cfg.active ? [{ source: 'Walking and biking demand (pedestrian and bicycle flows, persons per hour)', url: 'data/demand/README.md', note: 'ASSUMPTION, not counts: synthesized from LODES resident workers and jobs per block with assumed mode shares, trip lengths, gate and commercial-street shares (config `active`). DATA: the volumes are scaled by one factor per mode so that PM peak-hour people passing Telegraph Ave & Alcatraz Ave match the mean of the Oakland pedestrian and bicycle counts there; the spatial pattern elsewhere is uncounted. Calibration against walking and biking counts has not been done.' }] : []),
   { source: 'Assumptions', url: 'data/demand/README.md', note: 'ASSUMPTION: K-factor, period volume factors, per-class default ADT, directional split, trip rates, gravity turning factors, sector-to-gate weights, local trip share capped per gate. Uncalibrated.' }
 ];
 

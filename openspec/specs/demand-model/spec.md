@@ -29,3 +29,17 @@ Demand SHALL distinguish trips passing through the area (gate to gate) from trip
 #### Scenario: Through trip
 - **WHEN** a flow has both origin and destination at gates
 - **THEN** it is eligible to be counted as cut-through when it uses local streets
+
+### Requirement: Mode per flow
+Each demand flow SHALL carry a mode of car, bicycle or pedestrian, defaulting to car when absent.
+
+#### Scenario: Loading older demand
+- **WHEN** a demand file has no mode on its flows
+- **THEN** all flows are treated as car trips
+
+### Requirement: Walking and biking demand labeled as assumptions
+Pedestrian and bicycle flows SHALL be synthesized from public data with every mode share, trip rate and trip-length value exposed in configuration and labeled as an assumption.
+
+#### Scenario: Reading provenance
+- **WHEN** someone reads the demand provenance
+- **THEN** walking and biking volumes are stated to be assumptions, not counts

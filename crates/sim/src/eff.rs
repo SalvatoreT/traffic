@@ -63,8 +63,6 @@ pub struct Eff {
     pub oneway_closed: Vec<bool>,
     /// Movement banned by a `turn_ban` intervention.
     pub mv_banned: Vec<bool>,
-    /// Bus view: modal filters do not apply, turn bans and one-way closures do (ASSUMPTION: buses pass filters).
-    pub bus_mv_ok: Vec<bool>,
     /// Bicycle view: no motorway links, one-way closures obeyed, modal filters and turn bans do not apply.
     pub bike_mv_ok: Vec<bool>,
     pub bike_link_ok: Vec<bool>,
@@ -249,7 +247,6 @@ impl Eff {
         let mut mv_vturn = vec![0.0; nm];
         let mut mv_ff = vec![0.0; nm];
         let mut mv_banned = vec![false; nm];
-        let mut bus_mv_ok = vec![true; nm];
         let mut bike_mv_ok = vec![true; nm];
         let mut bike_mv_cost = vec![0.0; nm];
         let mut bike_mv_vturn = vec![0.0; nm];
@@ -260,7 +257,6 @@ impl Eff {
             let banned_pair = banned.iter().any(|&(a, b)| a == m.a && b == m.b);
             mv_banned[i] = banned_pair;
             let osm_ban = osm_bans.contains(&(m.a, m.b));
-            bus_mv_ok[i] = !(banned_pair || osm_ban || oneway_closed[m.b as usize]);
             bike_mv_ok[i] = bike_link_ok[m.a as usize] && bike_link_ok[m.b as usize] && !(m.kind == K_UTURN && !dead_end);
             bike_mv_vturn[i] = if ctrl[n] == Control::TrafficCircle {
                 V_BIKE_CIRCLE
@@ -362,7 +358,6 @@ impl Eff {
             cycle_override,
             oneway_closed,
             mv_banned,
-            bus_mv_ok,
             bike_mv_ok,
             bike_link_ok,
             bike_mv_cost,

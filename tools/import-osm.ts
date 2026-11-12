@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { round6 } from './lib/geo';
 import { buildNetwork, CLASS_MAP } from './lib/network';
@@ -92,7 +92,6 @@ function main() {
       network: `/data/${cfg.id}.network.json`,
       demand: `/data/${cfg.id}.demand.json`,
       basemap: `/data/${cfg.id}.basemap.json`,
-      ...(existsSync(resolve(outDir, `${cfg.id}.transit.json`)) ? { transit: `/data/${cfg.id}.transit.json` } : {}),
       center,
       zoom: cfg.zoom ?? 15,
       ...(cfg.calibration ? { calibration: cfg.calibration } : {}),

@@ -46,7 +46,7 @@ The importer SHALL join graph nodes that form one real intersection into a singl
 - **THEN** those members are not joined
 
 ### Requirement: Turn restrictions
-The importer SHALL turn OSM `restriction` relations with one `via` node into banned motor-vehicle movements in the network (`turnBans`: link into the junction, link out of it), and the simulator SHALL not route cars or buses through them. A time-conditional restriction SHALL apply only in the demand periods whose hours it overlaps, as given by `periodWindows` in the area config.
+The importer SHALL turn OSM `restriction` relations with one `via` node into banned motor-vehicle movements in the network (`turnBans`: link into the junction, link out of it), and the simulator SHALL not route cars through them. A time-conditional restriction SHALL apply only in the demand periods whose hours it overlaps, as given by `periodWindows` in the area config.
 
 #### Scenario: No left turn
 - **WHEN** an OSM relation bans the left turn from one way onto another at a junction

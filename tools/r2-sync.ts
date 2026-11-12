@@ -7,7 +7,6 @@ const MANIFEST = "data/manifest.json";
 const MAPPINGS: { local: string; prefix: string; match?: RegExp }[] = [
   { local: "data/osm", prefix: "osm", match: /\.json$/ },
   { local: "data/demand/raw", prefix: "demand/raw" },
-  { local: "data/transit/raw", prefix: "transit/raw" },
   { local: "public/data", prefix: "areas" },
 ];
 
