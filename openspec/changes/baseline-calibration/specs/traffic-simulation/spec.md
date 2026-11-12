@@ -34,3 +34,13 @@ The simulation SHALL model signals, all-way stops, two-way stops, uncontrolled i
 #### Scenario: Lower-class approach without a sign
 - **WHEN** a two-way stop node has stop signs on some approaches and an unflagged approach of a lower road class than the best approach
 - **THEN** that approach yields like the flagged ones
+
+## ADDED Requirements
+
+### Requirement: Merges onto a multilane exit keep a time gap only
+Two movements that merge onto the same multilane exit link SHALL be allowed to cross the node together once the first will have cleared the merge area by the time the second reaches it, while a merge onto a single-lane exit SHALL block until the vehicle has left the node.
+
+#### Scenario: Two approaches, two exit lanes
+- **WHEN** two saturated single-lane approaches merge at an uncontrolled node onto a two-lane exit
+- **THEN** the exit passes at least 20% more vehicles than the same merge onto a single-lane exit
+

@@ -48,6 +48,8 @@
   ],
   "freewayRamp": {
     "location": "Claremont Avenue freeway on/off ramps",
+    "side": "north",
+    "sideNote": "The shares are for traffic coming from (on-ramp) or going to (off-ramp) the north of the ramps; a via street with \"north of X\" counts only its links north of X.",
     "period": "weekday peak hour",
     "ontoFreewayFromNorth": [
       { "via": "College Avenue", "share": 0.16 },

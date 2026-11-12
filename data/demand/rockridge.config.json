@@ -322,7 +322,11 @@
     "destination": {
       "_note": "ASSUMPTION: gravity over surface gates and local nodes, attraction x direction plausibility. Plausibility = exp(-(dTheta/sigma)^2) floored, where dTheta is the angle between the bearing ramp->destination and the bearing ramp->study-area center. No distance term. Street choice is left to the simulator.",
       "directionSigmaDeg": 90,
-      "directionFloor": 0.03
+      "directionFloor": 0.03,
+      "accessTauS": 300,
+      "pooling": "ramp",
+      "poolingNote": "Surface ends of ramp trips are drawn per ramp ('ramp') instead of once per mainline gate over every ramp the gate reaches ('gate'): ramps far apart that feed one gate (Claremont/Hudson and Miles on the WB gate, the Caldecott and Broadway Terrace ramps) were pooled, so trips from the whole west side were sent to the Claremont on-ramp. Each ramp keeps its own DATA volume, bearing and access time.",
+      "accessTauS_note": "ASSUMPTION: access decay of a ramp trip's surface end, exp(-t / accessTauS) with t the router's generalized cost in seconds from the surface end to the ramp (to it for an on-ramp, from it for an off-ramp). 150, 300 and 600 s were tried (baseline-calibration record, eighth round); 0 turns it off."
     },
     "aliases": [
       {
@@ -541,7 +545,23 @@
     "stallWindow": 25,
     "stallGain": 0.002,
     "blockedShare": 0.8,
-    "convergenceNote": "Stopping rule of the fit: every count station outside tolerance is either blocked (the flows it needs to move sit on a bound, share >= blockedShare) or in tension (another station outside tolerance the other way shares at least half of its flow, or the capacity guard pulls most of its flow down), and the volume-weighted mean relative step of the flows is below softStep; otherwise stop as stalled (worst log error of the other stations improved by less than stallGain over stallWindow iterations), or when no flow moves by more than `stationary`. Blocked and tense stations are listed in the fit report with what holds them back."
+    "convergenceNote": "Stopping rule of the fit: every count station outside tolerance is either blocked (the flows it needs to move sit on a bound, share >= blockedShare) or in tension (another station outside tolerance the other way shares at least half of its flow, or the capacity guard pulls most of its flow down), and the volume-weighted mean relative step of the flows is below softStep; otherwise stop as stalled (worst log error of the other stations improved by less than stallGain over stallWindow iterations), or when no flow moves by more than `stationary`. Blocked and tense stations are listed in the fit report with what holds them back.",
+    "assignment": {
+      "method": "msa",
+      "iterations": 10,
+      "drawsPerPass": 2,
+      "alpha": 0.15,
+      "beta": 4,
+      "noise": 0.08,
+      "rounds": 2,
+      "_note": "method 'free': the free-flow assignment over `draws` perturbed shortest paths (draws and noise above). Method 'msa': stochastic capacity-restrained assignment: each pass loads every flow with `drawsPerPass` driver walks (the simulator's rule: cost-to-go with a +/-noise factor per candidate link) over link costs x BPR(volume / capacity), volumes averaged over passes (method of successive averages [PowellSheffi1982]); BPR form [Spiess1990] with alpha 0.15 and beta 4 (ASSUMPTION: the usual values); capacities from capacityGuard.capacity; `rounds` > 1 refits the table and reassigns at its own volumes."
+    },
+    "shares": {
+      "enabled": true,
+      "weight": 0.5,
+      "targets": "data/calibration/rockridge.targets.json",
+      "_note": "Observed route shares (StreetLight select-link and ramp via-street shares) as ratio constraints in the same fit, weight below the counts' (1 to 2) because the shares come from a device sample (ASSUMPTION: 0.5). 0 or enabled false leaves them out."
+    }
   },
   "audit": {
     "nearM": 400

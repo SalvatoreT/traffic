@@ -67,3 +67,14 @@
 - [x] 10.7 Area `calibration` entry: `defaultPeriod` and `experimentalPeriods` in the type and copied by the importer
 - [ ] 10.8 Reach D4 in the PM and AM peaks at full demand (PM: removals 7 to 10 and 3% backlog at the SR-24 west-end mainline gate; AM: 0 to 5 removals)
 - [ ] 10.9 Reach D5 (the count fit moved the freeway-bound trips toward Hillegass Ave NB and away from Colby St SB; 1 of 4 PM headline shares within 10 points)
+
+## 11. Demand fit: convergence, observed shares, restrained assignment, ramp pools (eighth round)
+- [x] 11.1 Fit stopping rule: convergence on the unblocked count stations, stall detection, tension and blocked stations excluded and reported with the stations that oppose them (`tools/lib/fit-counts.ts`); the old criterion could never hold because three stations conflict; tests for conflicts, consistent stations and the bounds
+- [x] 11.2 Gate groups: gates that split one count are one station (`gate group <id>`), so the Tunnel Road pair is one station on the pair's trips
+- [x] 11.3 Observed route shares as ratio constraints (`tools/lib/share-targets.ts`, `countFit.shares`), headline select-link and Claremont ramp via-street shares, weight 0.5 below the counts; tests on the toy cross; report with and without
+- [x] 11.4 Assignment that follows the simulator's route choice (cost-to-go walks with per-driver noise) and averages passes over BPR link costs (`assignMsa`); [PowellSheffi1982] and [Spiess1990] verified through Crossref and added to `docs/references.md`; tests on a two-route toy network; before and after agreement with the simulator
+- [x] 11.5 Mechanism of the Telegraph Ave share of the Claremont on-ramp trips: ramp trips were drawn per mainline gate over the ramps it reaches, so the whole west side was sent to the one on-ramp that reaches the west-bound gate; drawn per ramp with an access decay now; the calibration report counts the ramp via shares over the trips from the north and resolves "north of Alcatraz Avenue" to its links
+- [x] 11.6 52nd St off-ramp at 0.47 of its count: found in the simulator's merge rule at the 52nd St merge (one vehicle at a time onto a multilane exit); rule changed and a validation case (i4) and a unit test added
+- [x] 11.7 SR-24 west-end stub: lane counts match OSM; lane choice by branch tried and not kept (no effect); the isolated gate run carries its counted volume, so the shortfall comes from the surface demand that shares the junctions behind the ramps
+- [x] 11.8 Re-run: PM, AM and midday at scale 1.0 (seeds 1 to 3), one 120-minute PM run, reports replaced, record, README, area `calibration` entry
+- [ ] 11.9 Reach D4 in the PM and AM peaks at full demand and D5 (see the record)

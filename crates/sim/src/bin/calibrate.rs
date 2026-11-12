@@ -122,6 +122,46 @@ enum Via {
     Street(String, Option<char>),
 }
 
+/// "Telegraph Avenue north of Alcatraz Avenue" -> ('N', "Alcatraz Avenue"): the side of the cross street the visited part of the street lies on.
+fn via_qualifier(s: &str) -> Option<(char, String)> {
+    let low = s.to_lowercase();
+    for (q, c) in [(" north of ", 'N'), (" south of ", 'S'), (" east of ", 'E'), (" west of ", 'W')] {
+        if let Some(i) = low.find(q) {
+            return Some((c, s[i + q.len()..].to_string()));
+        }
+    }
+    None
+}
+
+/// Links of `street` lying on side `side` of its crossing with `cross` (link midpoint beyond the crossing node along that compass axis).
+fn qualified_links(net: &Network, street: &str, side: char, cross: &str) -> Vec<u32> {
+    let nn = net.nodes.len();
+    let mut at: Vec<Vec<usize>> = vec![Vec::new(); nn];
+    for (l, k) in net.links.iter().enumerate() {
+        at[k.from as usize].push(l);
+        at[k.to as usize].push(l);
+    }
+    let Some(n) = (0..nn).find(|&n| at[n].iter().any(|&l| same(&net.links[l].name, street)) && at[n].iter().any(|&l| same(&net.links[l].name, cross))) else { return Vec::new() };
+    let (px, py) = (net.nodes[n].x, net.nodes[n].y);
+    (0..net.links.len())
+        .filter(|&l| {
+            let k = &net.links[l];
+            if !same(&k.name, street) || k.class == RoadClass::Motorway {
+                return false;
+            }
+            let (a, b) = (&net.nodes[k.from as usize], &net.nodes[k.to as usize]);
+            let (mx, my) = ((a.x + b.x) / 2.0, (a.y + b.y) / 2.0);
+            match side {
+                'N' => my > py,
+                'S' => my < py,
+                'E' => mx > px,
+                _ => mx < px,
+            }
+        })
+        .map(|l| l as u32)
+        .collect()
+}
+
 fn parse_via(s: &str) -> Via {
     if s.eq_ignore_ascii_case("freeway") {
         return Via::Freeway;
@@ -332,6 +372,20 @@ fn main() {
 
     let mut sel: Vec<u32> = tgts.iter().flat_map(|t| t.links.iter().copied()).collect();
     sel.extend(ramps.iter().flat_map(|r| r.links.iter().copied()));
+    // Qualified ramp via-streets ("Telegraph Avenue north of Alcatraz Avenue"): the street's links on that side are select links too.
+    let mut qual: HashMap<String, Vec<u32>> = HashMap::new();
+    for key in ["ontoFreewayFromNorth", "fromFreewayGoingNorth"] {
+        for e in targets["freewayRamp"][key].as_array().map(|v| v.as_slice()).unwrap_or(&[]) {
+            let via = e["via"].as_str().unwrap_or("");
+            if let Some((side, cross)) = via_qualifier(via) {
+                if let Via::Street(name, _) = parse_via(via) {
+                    let ls = qualified_links(&net, &name, side, &cross);
+                    sel.extend(ls.iter().copied());
+                    qual.insert(via.to_string(), ls);
+                }
+            }
+        }
+    }
     sel.sort_unstable();
     sel.dedup();
 
@@ -435,7 +489,9 @@ fn main() {
         .filter(|r| inc[r.node].iter().any(|&l| !net.links[l].name.is_empty() && loc.contains(&net.links[l].name.to_lowercase())))
         .map(|r| (r, r.links.iter().copied().collect()))
         .collect();
-    let mut ramp_rows: Vec<(&'static str, String, f64, f64, usize)> = Vec::new();
+    // Rows: direction, via, observed, modeled over all trips on the ramps, trips on the ramps, modeled over the trips from (to) the stated side with qualified streets, those trips.
+    let side_key = targets["freewayRamp"]["side"].as_str().and_then(|x| x.chars().next()).map(|c| c.to_ascii_uppercase());
+    let mut ramp_rows: Vec<(&'static str, String, f64, f64, usize, f64, usize)> = Vec::new();
     for (key, on) in [("ontoFreewayFromNorth", true), ("fromFreewayGoingNorth", false)] {
         let mine: Vec<(&SelectLinkRecord, usize, usize)> = recs
             .iter()
@@ -454,7 +510,37 @@ fn main() {
                     part.iter().any(|s| visit_matches(s, &name, dir))
                 })
                 .count();
-            ramp_rows.push((if on { "onto freeway" } else { "from freeway" }, via.to_string(), e["share"].as_f64().unwrap_or(0.0), if mine.is_empty() { f64::NAN } else { hit as f64 / mine.len() as f64 }, mine.len()));
+            // Refined: only trips whose surface end (origin for the on-ramp, destination for the off-ramp) lies on the stated side of the ramp,
+            // and a qualified street ("north of X") counts only on its links on that side, visited before the ramp (after it for the off-ramp).
+            let ql = qual.get(via);
+            let side_ok = |r: &SelectLinkRecord| -> bool {
+                let Some(sd) = side_key else { return true };
+                let ramp_node = r.hits.iter().find_map(|h| ramp_sets.iter().find(|(rp, s)| rp.on == on && s.contains(&h.0)).map(|(rp, _)| rp.node));
+                let Some(rn) = ramp_node else { return false };
+                let end = if on { r.origin } else { r.dest } as usize;
+                let (e, q) = (&net.nodes[end], &net.nodes[rn]);
+                match sd {
+                    'N' => e.y > q.y,
+                    'S' => e.y < q.y,
+                    'E' => e.x > q.x,
+                    _ => e.x < q.x,
+                }
+            };
+            let mine2: Vec<&(&SelectLinkRecord, usize, usize)> = mine.iter().filter(|(r, _, _)| side_ok(r)).collect();
+            let hit2 = mine2
+                .iter()
+                .filter(|(r, f, l)| {
+                    if let Some(ls) = ql {
+                        let is_ramp = |h: &(u32, usize)| ramp_sets.iter().any(|(rp, st)| rp.on == on && st.contains(&h.0));
+                        let first_ramp = r.hits.iter().position(is_ramp);
+                        let last_ramp = r.hits.iter().rposition(is_ramp);
+                        return if on { r.hits.iter().take(first_ramp.unwrap_or(0)).any(|h| ls.contains(&h.0)) } else { r.hits.iter().skip(last_ramp.map_or(r.hits.len(), |i| i + 1)).any(|h| ls.contains(&h.0)) };
+                    }
+                    let part = if on { &r.streets[..(*f + 1).min(r.streets.len())] } else { &r.streets[(*l).min(r.streets.len())..] };
+                    part.iter().any(|s| visit_matches(s, &name, dir))
+                })
+                .count();
+            ramp_rows.push((if on { "onto freeway" } else { "from freeway" }, via.to_string(), e["share"].as_f64().unwrap_or(0.0), if mine.is_empty() { f64::NAN } else { hit as f64 / mine.len() as f64 }, mine.len(), if mine2.is_empty() { f64::NAN } else { hit2 as f64 / mine2.len() as f64 }, mine2.len()));
         }
     }
 
@@ -559,10 +645,10 @@ fn main() {
     let _ = writeln!(md, "\nHeadline shares within tolerance: {head_ok} of {head_n}. Observed column uses the PM-peak share where one is given and the period is pm_peak. 'Via' shares are the fraction of select-link trips using that street before (from) or after (to) the block; freeway = origin / destination gate with a motorway-class link attached.\n");
     if !ramp_rows.is_empty() {
         let _ = writeln!(md, "## Claremont ramps: streets used before the on-ramp / after the off-ramp\n");
-        let _ = writeln!(md, "Observed shares are for traffic from/to the north only; modeled shares are over all trips on the ramps (so modeled is an upper bound for streets that serve both sides).\n");
-        let _ = writeln!(md, "| Direction | Via | Observed | Modeled | n ramp trips |\n| --- | --- | --- | --- | --- |");
-        for (k, v, o, mo, n) in &ramp_rows {
-            let _ = writeln!(md, "| {k} | {v} | {} | {} | {n} |", pct(*o), if mo.is_nan() { "n/a".into() } else { pct(*mo) });
+        let _ = writeln!(md, "Observed shares are for traffic from/to the north only. 'Modeled' is over all trips on the ramps and any visit to the street (an upper bound for streets that serve both sides). 'Modeled, side' counts only trips whose surface end lies on the side of the ramp stated in the targets file (`freewayRamp.side`), and for a street with a qualifier (\"north of X\") only its links on that side of X.\n");
+        let _ = writeln!(md, "| Direction | Via | Observed | Modeled | n ramp trips | Modeled, side | n side trips |\n| --- | --- | --- | --- | --- | --- | --- |");
+        for (k, v, o, mo, n, m2, n2) in &ramp_rows {
+            let _ = writeln!(md, "| {k} | {v} | {} | {} | {n} | {} | {n2} |", pct(*o), if mo.is_nan() { "n/a".into() } else { pct(*mo) }, if m2.is_nan() { "n/a".into() } else { pct(*m2) });
         }
         md.push('\n');
     }
@@ -641,7 +727,7 @@ fn main() {
                 "block": r.target, "side": r.side, "via": r.via, "observed": r.observed, "observedPm": r.observed_pm,
                 "modelled": if r.modeled.is_nan() { Value::Null } else { json!(r.modeled) }, "n": r.n, "headline": r.headline,
             })).collect::<Vec<_>>(),
-            "rampShares": ramp_rows.iter().map(|(k, v, o, mo, n)| json!({"direction": k, "via": v, "observed": o, "modelled": if mo.is_nan() { Value::Null } else { json!(mo) }, "n": n})).collect::<Vec<_>>(),
+            "rampShares": ramp_rows.iter().map(|(k, v, o, mo, n, m2, n2)| json!({"direction": k, "via": v, "observed": o, "modelled": if mo.is_nan() { Value::Null } else { json!(mo) }, "n": n, "modelledSide": if m2.is_nan() { Value::Null } else { json!(m2) }, "nSide": n2})).collect::<Vec<_>>(),
             "topLinks": link_idx.iter().take(15).map(|&l| json!({"link": l, "street": net.links[l].name, "delayVehH": d.link_delay_s[l] / 3600.0, "stoppedVehH": d.link_stopped_s[l] / 3600.0})).collect::<Vec<_>>(),
             "topNodes": node_idx.iter().take(15).map(|&n| json!({"node": n, "streets": street_label(&net, n, &inc), "control": ctrl_str(net.nodes[n].control), "blockedLaneH": d.node_wait_s[n] / 3600.0, "noSpaceLaneH": d.node_space_s[n] / 3600.0})).collect::<Vec<_>>(),
             "linkFlowVehPerHour": if args.link_flows { json!((0..net.links.len()).map(|l| ((d.link_exits[l] - exits0[l]) as f64 / elapsed_h).round()).collect::<Vec<_>>()) } else { Value::Null },

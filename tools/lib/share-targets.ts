@@ -11,7 +11,7 @@ export interface ShareNode { id: number; x: number; y: number }
 
 export interface Targets {
   selectLink?: { street: string; direction: string; between?: string[]; from?: { via: string; share: number; pmPeakShare?: number }[]; to?: { via: string; share: number; pmPeakShare?: number }[] }[];
-  freewayRamp?: { location?: string; ontoFreewayFromNorth?: { via: string; share: number }[]; fromFreewayGoingNorth?: { via: string; share: number }[] };
+  freewayRamp?: { location?: string; side?: string; ontoFreewayFromNorth?: { via: string; share: number }[]; fromFreewayGoingNorth?: { via: string; share: number }[] };
 }
 
 const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
@@ -74,6 +74,29 @@ export function parseVia(s: string): { freeway: boolean; name: string; dir?: str
   return { freeway: false, name: base };
 }
 
+/** "Telegraph Avenue north of Alcatraz Avenue" -> { side: 'N', cross: 'Alcatraz Avenue' }. */
+export function viaQualifier(s: string): { side: string; cross: string } | null {
+  const low = s.toLowerCase();
+  for (const [q, c] of [[' north of ', 'N'], [' south of ', 'S'], [' east of ', 'E'], [' west of ', 'W']] as const) { const i = low.indexOf(q); if (i >= 0) return { side: c, cross: s.slice(i + q.length) }; }
+  return null;
+}
+
+/** Links of `street` on side `side` of its crossing with `cross` (link midpoint beyond the crossing node along that compass axis). */
+export function qualifiedLinks(links: ShareLink[], nodes: Map<number, ShareNode>, street: string, side: string, cross: string): Set<number> {
+  const at = new Map<number, number[]>();
+  links.forEach((l, i) => { for (const n of [l.from, l.to]) (at.get(n) ?? at.set(n, []).get(n)!).push(i); });
+  let px: number | null = null, py = 0;
+  for (const [n, ls] of at) if (ls.some((i) => same(links[i].name, street)) && ls.some((i) => same(links[i].name, cross))) { px = nodes.get(n)!.x; py = nodes.get(n)!.y; break; }
+  const out = new Set<number>();
+  if (px === null) return out;
+  links.forEach((l, i) => {
+    if (l.class === 'motorway' || !same(l.name, street)) return;
+    const a = nodes.get(l.from)!, b = nodes.get(l.to)!, mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+    if (side === 'N' ? my > py : side === 'S' ? my < py : side === 'E' ? mx > px! : mx < px!) out.add(i);
+  });
+  return out;
+}
+
 export interface ShareSpec { id: string; label: string; target: number; weight: number; kind: 'select' | 'ramp'; note: string; ratio: NonNullable<Constraint['ratio']> }
 
 /**
@@ -125,19 +148,38 @@ export function buildShareConstraints(
       if (on.length) ramps.push({ node: n, on: true, links: on });
       if (off.length) ramps.push({ node: n, on: false, links: off });
     }
+    const sideKey = fr.side ? fr.side[0].toUpperCase() : null;
+    // Per flow, the share of its paths on a ramp of this direction, kept only when the flow's surface end (origin for the on-ramp, destination for the off-ramp)
+    // lies on the stated side of that ramp's node.
+    const rampDen = (onRamp: boolean): Float64Array => {
+      const d = new Float64Array(nFlows);
+      for (const r of ramps.filter((q) => q.on === onRamp)) {
+        const set = new Set(r.links), dr = sumOver(set), rn = nodeBy.get(r.node)!;
+        for (let k = 0; k < nFlows; k++) {
+          if (!(dr[k] > 0)) continue;
+          if (sideKey) {
+            const e = nodeBy.get(onRamp ? a.origin[k] : a.destination[k]);
+            if (!e || !(sideKey === 'N' ? e.y > rn.y : sideKey === 'S' ? e.y < rn.y : sideKey === 'E' ? e.x > rn.x : e.x < rn.x)) continue;
+          }
+          d[k] = Math.min(1, d[k] + dr[k]);
+        }
+      }
+      return d;
+    };
     for (const [key, onRamp] of [['ontoFreewayFromNorth', true], ['fromFreewayGoingNorth', false]] as const) {
-      const rl = new Set(ramps.filter((r) => r.on === onRamp).flatMap((r) => r.links));
-      if (!rl.size) continue;
-      const den = sumOver(rl);
+      if (!ramps.some((r) => r.on === onRamp)) continue;
+      const den = rampDen(onRamp);
       for (const e of fr[key] ?? []) {
         const v = parseVia(e.via);
         if (v.freeway) continue;
+        const q = viaQualifier(e.via);
         const street = new Set<number>();
-        links.forEach((l, i) => { if (l.class !== 'motorway' && same(l.name, v.name) && (!v.dir || compassOf(bearingOf(l, nodeBy)) === v.dir)) street.add(i); });
+        if (q) for (const i of qualifiedLinks(links, nodeBy, v.name, q.side, q.cross)) street.add(i);
+        else links.forEach((l, i) => { if (l.class !== 'motorway' && same(l.name, v.name) && (!v.dir || compassOf(bearingOf(l, nodeBy)) === v.dir)) street.add(i); });
         const ds = sumOver(street);
         const num = new Float64Array(nFlows);
         for (let k = 0; k < nFlows; k++) num[k] = Math.min(den[k], ds[k]);
-        out.push({ id: `share ramp ${onRamp ? 'onto' : 'from'} via ${e.via}`, label: `${onRamp ? 'Onto' : 'From'} the freeway at the ramps, via ${e.via}`, target: e.share, weight, kind: 'ramp', note: `${ramps.filter((r) => r.on === onRamp).length} ramp node(s) at "${fr.location}"; street visit anywhere on the path (joint use taken as the smaller of the two path shares)`, ratio: pack(den, num) });
+        out.push({ id: `share ramp ${onRamp ? 'onto' : 'from'} via ${e.via}`, label: `${onRamp ? 'Onto' : 'From'} the freeway at the ramps, via ${e.via}`, target: e.share, weight, kind: 'ramp', note: `${ramps.filter((r) => r.on === onRamp).length} ramp node(s) at "${fr.location}"${sideKey ? `, trips ${onRamp ? 'from' : 'to'} the ${fr.side}` : ''}; street used anywhere on the path (joint use taken as the smaller of the two path shares)`, ratio: pack(den, num) });
       }
     }
   }

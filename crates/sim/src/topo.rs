@@ -13,6 +13,9 @@ pub const LANE_OFFSET0: f64 = 1.8;
 pub const LANE_WIDTH: f64 = 3.2;
 
 pub const K_THROUGH: u8 = 0;
+/// Fraction of a movement's path after which a merge onto a multilane exit link no longer conflicts with the other merging movement.
+/// ASSUMPTION (the vehicles take different exit lanes; the full block of a single-lane merge ends where the lanes separate).
+const MERGE_MULTILANE_POS: f32 = 0.85;
 pub const K_LEFT: u8 = 1;
 pub const K_RIGHT: u8 = 2;
 pub const K_UTURN: u8 = 3;
@@ -310,7 +313,9 @@ impl Topo {
                     geo[i * cnt + j] = geometric_conflict(mi, mj);
                     circ[i * cnt + j] = circle_conflict(mi, mj);
                     if geo[i * cnt + j] {
-                        pgeo[i * cnt + j] = conflict_pos(mi, mj);
+                        // A merge onto a multilane exit link: the two streams take different exit lanes, so the entering vehicle only keeps a time gap to
+                        // the other at the end of its path instead of waiting until the node is empty (single-lane exits keep the full block).
+                        pgeo[i * cnt + j] = if mi.b == mj.b && self.nmain[mi.b as usize] >= 2 { MERGE_MULTILANE_POS } else { conflict_pos(mi, mj) };
                     }
                     if circ[i * cnt + j] {
                         pcirc[i * cnt + j] = circle_pos(mi, mj);

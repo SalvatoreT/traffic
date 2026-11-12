@@ -74,6 +74,8 @@ export interface FitResult {
   stoppedBy: 'tolerance' | 'stalled' | 'stationary' | 'iteration limit';
   /** Worst log error over the count stations, blocked ones included, and over the stations that are not blocked. */
   maxLogErrAll: number;
+  /** The unblocked station with the worst error at the end. */
+  worstFree: { id: string; label: string; logErr: number } | null;
   /** Stations still outside tolerance at the end, with what holds them back. */
   conflicts: Conflict[];
   /** Share constraints at the end: modeled and target share. */
@@ -190,8 +192,8 @@ export function fitToCounts(a: Assignment, v0: ArrayLike<number>, types: FlowTyp
     }
   };
   const logErr = (c: number) => (!isRatio[c] && cons[c].target > 0 && A[c] > 1e-9 ? Math.log(cons[c].target / A[c]) : 0);
-  // Stations in tension: outside tolerance, with another station outside tolerance the other way that shares at least half of their flow, so no
-  // table satisfies both. Found every 10 iterations from iteration 20 and kept out of the stopping test (they stay in the update and in `conflicts`).
+  // Stations in tension: outside tolerance, with other stations outside tolerance the other way (or the capacity guard) on their flows, in volume at least half
+  // of their shortfall. Found every 10 iterations from iteration 20 and kept out of the stopping test (they stay in the update and in `conflicts`).
   const tension = new Uint8Array(nC);
   const byFlowT: number[][] = [];
   { for (let k = 0; k < n; k++) byFlowT.push([]); for (let i = 0; i < kk.length; i++) byFlowT[kk[i]].push(i); }
@@ -217,8 +219,12 @@ export function fitToCounts(a: Assignment, v0: ArrayLike<number>, types: FlowTyp
         if (c2 === c || isRatio[c2] || Math.sign(logErr(c2)) === Math.sign(e) || Math.abs(logErr(c2)) <= opt.tol) continue;
         shared.set(c2, (shared.get(c2) ?? 0) + f[kk[i]] * Math.min(pp[i], pp[j]));
       }
-      for (const v of shared.values()) if (v >= 0.5 * A[c]) { tension[c] = 1; break; }
-      if (e > 0 && guard) { let g = 0; for (const i of triplesT[c]) if (pushed[kk[i]]) g += f[kk[i]] * pp[i]; if (g >= 0.5 * A[c]) tension[c] = 1; }
+      // The opposing stations, and the guard, pull this station's flows the other way: when that volume covers at least half of its shortfall the
+      // residual error is the balance between them, not slow convergence.
+      let opp = 0;
+      for (const v of shared.values()) opp += v;
+      if (e > 0 && guard) for (const i of triplesT[c]) if (pushed[kk[i]]) opp += f[kk[i]] * pp[i];
+      if (opp >= 0.5 * Math.abs(cons[c].target - A[c])) tension[c] = 1;
     }
   };
   const blocked = (c: number) => { if (tension[c]) return true; const e = logErr(c); return (e > opt.tol && pinHi[c] >= opt.blockedShare * A[c]) || (e < -opt.tol && pinLo[c] >= opt.blockedShare * A[c]); };
@@ -273,7 +279,8 @@ export function fitToCounts(a: Assignment, v0: ArrayLike<number>, types: FlowTyp
   aggregate();
   trace.push(hist[hist.length - 1] ?? 0);
   maxErrAll = 0; maxErrFree = 0;
-  for (let c = 0; c < nC; c++) { if (isRatio[c] || !(cons[c].target > 0)) continue; const e = Math.abs(logErr(c)); maxErrAll = Math.max(maxErrAll, e); if (!blocked(c)) maxErrFree = Math.max(maxErrFree, e); }
+  let worstFree: FitResult['worstFree'] = null;
+  for (let c = 0; c < nC; c++) { if (isRatio[c] || !(cons[c].target > 0)) continue; const e = Math.abs(logErr(c)); maxErrAll = Math.max(maxErrAll, e); if (!blocked(c) && e >= maxErrFree) { maxErrFree = e; worstFree = { id: cons[c].id, label: cons[c].label, logErr: logErr(c) }; } }
   for (let c = 0; c < nC; c++) if (cons[c].target > 0 && A[c] <= 1e-9) unreachable.add(c);
   // Stations still outside tolerance and the stations that pull the same flows the other way.
   const conflicts: Conflict[] = [];
@@ -332,7 +339,7 @@ export function fitToCounts(a: Assignment, v0: ArrayLike<number>, types: FlowTyp
   const g = Float64Array.from(f, (x, k) => (v0[k] > 0 ? x / v0[k] : 1));
   let atLo = 0, atHi = 0;
   for (let k = 0; k < n; k++) if (counted[k] && v0[k] > 0) { if (g[k] <= loB(k) * (1 + 1e-6)) atLo++; else if (g[k] >= hiB(k) * (1 - 1e-6)) atHi++; }
-  return { g, counted, iterations: it, converged: stoppedBy === 'tolerance' || stationary, stationary, stoppedBy, maxLogErr: maxErrFree, maxLogErrAll: maxErrAll, conflicts, shares, trace, stepTrace, atLo, atHi, unreachable: [...unreachable].map((i) => cons[i].id), medians, freeCut };
+  return { g, counted, iterations: it, converged: stoppedBy === 'tolerance' || stationary, stationary, stoppedBy, maxLogErr: maxErrFree, maxLogErrAll: maxErrAll, worstFree, conflicts, shares, trace, stepTrace, atLo, atHi, unreachable: [...unreachable].map((i) => cons[i].id), medians, freeCut };
 }
 
 export interface GuardLink { link: number; before: number; after: number; limit: number }

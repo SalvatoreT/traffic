@@ -317,6 +317,7 @@ function walkRoute(g: Graph, h: Float64Array, origin: number, dest: number, seed
   }
   if (best < 0) return null;
   const route = [best];
+  const seen = new Set<number>(route);
   for (let steps = 0; g.to[best] !== dest; steps++) {
     if (steps > 4000) return null;
     let nb = -1;
@@ -327,8 +328,9 @@ function walkRoute(g: Graph, h: Float64Array, origin: number, dest: number, seed
       const c = (h[b] + g.mvCost[m]) * linkNoise(seed, b, noise);
       if (c < bc) { bc = c; nb = b; }
     }
-    if (nb < 0) return null;
-    route.push(nb); best = nb;
+    // A noisy driver can turn back into a link already used (a loop); that walk is abandoned.
+    if (nb < 0 || seen.has(nb)) return null;
+    route.push(nb); best = nb; seen.add(nb);
   }
   return route;
 }
@@ -353,7 +355,8 @@ export function assignMsa(g: Graph, flows: OdFlow[], volume: ArrayLike<number>, 
       const h = costToGo(g, d, cost);
       for (const k of ks) {
         for (let r = 0; r < opt.drawsPerPass; r++) {
-          const route = walkRoute(g, h, flows[k].origin, d, (k * 7919 + (n - 1) * opt.drawsPerPass + r + 1) | 0, opt.noise);
+          // A driver whose noisy walk loops takes the plain shortest path instead (the noise-free walk cannot loop).
+          const route = walkRoute(g, h, flows[k].origin, d, (k * 7919 + (n - 1) * opt.drawsPerPass + r + 1) | 0, opt.noise) ?? walkRoute(g, h, flows[k].origin, d, 0, 0);
           if (!route) break;
           ok[k]++;
           for (const l of route) { accum[k].set(l, (accum[k].get(l) ?? 0) + 1); y[l] += volume[k] / opt.drawsPerPass; }

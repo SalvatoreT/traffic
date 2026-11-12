@@ -1413,3 +1413,27 @@ fn removing_each_intervention_restores_baseline() {
         }
     }
 }
+
+#[test]
+fn merge_onto_a_multilane_exit_passes_more_than_onto_a_single_lane() {
+    // Two single-lane approaches merge at an uncontrolled node onto one exit link. On a single-lane exit every crossing blocks the
+    // other until the vehicle has left the node; on a multilane exit the two streams use different lanes and only keep a time gap.
+    fn completed(exit_lanes: u32) -> u64 {
+        let mut b = B::default();
+        let c = b.node(0.0, 0.0, Control::Uncontrolled, false);
+        let w = b.node(-300.0, 0.0, Control::Uncontrolled, true);
+        let s = b.node(0.0, -300.0, Control::Uncontrolled, true);
+        let e = b.node(300.0, 0.0, Control::Uncontrolled, true);
+        b.link(w, c, RoadClass::Secondary, 1, 13.4, false);
+        b.link(s, c, RoadClass::Secondary, 1, 13.4, false);
+        b.link(c, e, RoadClass::Secondary, exit_lanes, 13.4, false);
+        let d = demand(&[(w, e, 1400.0), (s, e, 1400.0)]);
+        let mut sim = Simulation::from_parts(b.net(), d, cfg(5, 1.0)).unwrap();
+        for _ in 0..(600.0 / DT) as usize {
+            sim.step(DT);
+        }
+        sim.metrics().completed_trips
+    }
+    let (one, two) = (completed(1), completed(2));
+    assert!(two as f64 > 1.2 * one as f64, "multilane exit {two} against single lane {one}");
+}

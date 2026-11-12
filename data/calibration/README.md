@@ -9,6 +9,8 @@ Hillegass Ave and Colby St between Alcatraz Ave and Claremont Ave, provided by r
 Only summary percentages are recorded; the underlying deliverable is not redistributed.
 StreetLight samples connected devices, so the shares are estimates and not exact counts.
 
+The ramp section of the targets file says the via-street shares are for trips from (on-ramp) or to (off-ramp) the north of the ramps: `freewayRamp.side` names that side, and a via street with a qualifier such as "Telegraph Avenue north of Alcatraz Avenue" counts only its links on that side of the cross street. The same file drives two readers: the report below and the demand fit (`tools/lib/share-targets.ts`), which turns each headline and ramp share into a ratio constraint.
+
 Key finding: roughly half the traffic on both streets is traveling to or from the
 freeway ramps at Claremont Ave, and almost none of the northbound traffic ends up on
 College Ave. The model's baseline should show the same pattern before interventions
@@ -23,6 +25,7 @@ cargo run --release -p traffic-sim --bin calibrate -- --area rockridge --period 
 ```
 
 Options: `--local-factor <x>` (override the residential/service perceived-cost multiplier), `--reroute-share <x>` (share of drivers that re-route per 60 s epoch, 0 to 1, default 0.8), `--demand <path>` and `--network <path>` (read other files than `public/data/<area>.{demand,network}.json`, for A/B runs of variant demand), `--cars-only` and `--drop bicycle,pedestrian` (leave modes out), `--adapt-min <m>` (minutes between signal adaptations, default 5, 0 keeps the start-up plans), `--motorway-removal` (apply the gridlock breaker on ramps and the freeway stub too), `--warmup <min>` (flow tables ignore the first N minutes of runs of 30+ min, default 10), `--out <dir>`, `--no-write`, `--link-flows` (adds per-link flow to the JSON).
+The ramp table of the report has two modeled columns: all trips on the ramps with any visit to the street (the first definition, kept for comparison with earlier rounds) and the trips from (to) the side named in the targets file with qualified streets resolved to their links (`modelled` and `modelledSide` in the JSON; `nSide` is the trip count of the second).
 It prints a markdown report and writes `reports/<area>-<period>-s<scale>-seed<seed>.{md,json}`: stability criteria, vehicles in
 network every 5 min, modeled vs observed select-link shares (target blocks resolved from street name, direction and the
 two cross streets), ramp shares, top 15 links by delay, top 15 nodes by blocked time (with each signal's cycle and greens at the end of the run), gridlock removals and entry backlog by

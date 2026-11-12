@@ -111,3 +111,55 @@ After the count fit no uncounted link SHALL carry more than 110% of its capacity
 #### Scenario: Link above capacity
 - **WHEN** a free-flow assignment puts 1,200 veh/h on an all-way-stop approach whose capacity entry is 473 veh/h per approach
 - **THEN** the flows using it are scaled down toward 520 veh/h unless a count on the same flows prevents it, and the report lists the link, its rule, its capacity and the volume before and after
+
+### Requirement: The fit stops on a criterion and names the stations it cannot meet
+The count fit SHALL stop when every count station that can still move is within a configured tolerance, or when the worst error of those stations no longer improves, and the report SHALL give the iterations used, the reason it stopped and the final worst error. A station whose flows sit on the bound it would need to move, or that is held off its target by another station that shares its flows or by the capacity guard, SHALL be listed with the stations that pull the same flows the other way.
+
+#### Scenario: Two counts that cannot both hold
+- **WHEN** two stations share most of their flow and their targets differ by more than the tolerance
+- **THEN** the fit stops without using the iteration limit and the report lists both with their errors and the volume they share
+
+#### Scenario: A count on a bound
+- **WHEN** a station needs flows that already sit on the lower bound
+- **THEN** it is excluded from the stopping test and listed with the share of its volume that is pinned
+
+### Requirement: Gates that split one count are one station
+Gate nodes of one street that lie close together and take their volume from the same count SHALL be a single station on the group's generated and absorbed trips, so the fit may move volume between them.
+
+#### Scenario: Two gates on one road
+- **WHEN** two gate nodes of Tunnel Road 114 m apart take halves of one Caltrans count
+- **THEN** the fit has one entering and one leaving station for the pair with the full count as target
+
+### Requirement: Observed route shares are soft constraints
+The area's targets file SHALL be able to constrain the fit with the share of trips on a select link that have a freeway origin or destination and the share of trips on the ramps that also use a named street, each as a ratio constraint with a configured weight below the counts. Street names, blocks and sides SHALL come from the targets file, not from code.
+
+#### Scenario: Update rule
+- **WHEN** a share's modeled value differs from its target
+- **THEN** flows in its numerator are scaled by (target / modeled) and the rest of its denominator by ((1 - target) / (1 - modeled)), each to the power of the constraint weight
+
+#### Scenario: Share and count together
+- **WHEN** a count on a link and a share on the same link disagree
+- **THEN** the count wins in proportion to its larger weight and the report shows the residual of each
+
+#### Scenario: Report
+- **WHEN** the builder finishes
+- **THEN** the report gives each share before the fit, after the count-only fit and final, and says so when the shares are disabled
+
+### Requirement: The assignment follows the simulator's route choice and restrains capacity
+The static assignment SHALL choose routes like the simulator's drivers (the least cost-to-go over movements, with a per-driver perceived-cost factor on each candidate link) and SHALL be able to average several passes over link costs that grow with volume over capacity (method of successive averages, BPR form of the volume-delay function, capacities from the validation suite), citing verified entries of `docs/references.md`.
+
+#### Scenario: Loaded short route
+- **WHEN** a flow's short route is loaded beyond its capacity and a longer route is a little more costly
+- **THEN** the averaged assignment puts part of the flow on the longer route and conserves the volume
+
+#### Scenario: Light load
+- **WHEN** the volume is far below capacity
+- **THEN** the whole flow stays on the short route
+
+### Requirement: Ramp trips are drawn per ramp
+The surface end of a freeway-ramp trip SHALL be drawn from the ramp's own volume, bearing and access time (an exponential decay in the router's cost from the surface end to the ramp), and sent to the mainline gate or gates that ramp reaches, so that ramps far apart that share a mainline gate do not share a pool of trips.
+
+#### Scenario: Two ramps on one gate
+- **WHEN** two on-ramps 3 km apart both reach the same mainline gate
+- **THEN** each draws its trips near itself and the trips of one do not fill the other
+

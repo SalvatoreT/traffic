@@ -1,6 +1,6 @@
 // Count-constrained demand: count stations as link constraints, static assignment, matrix adjustment and the capacity guard
 // (baseline-calibration, seventh round). Orchestration and report for tools/build-demand.ts. No I/O.
-import { assign, buildGraph, linkVolumes, type ALink, type ANode, type ATurnBan, type Graph } from './assign';
+import { assign, assignMsa, buildGraph, linkVolumes, type ALink, type ANode, type ATurnBan, type Assignment, type Graph } from './assign';
 import { assigned, fitToCounts, type Constraint, type FitOptions, type FlowType } from './fit-counts';
 import { buildShareConstraints, type ShareLink, type ShareSpec, type Targets } from './share-targets';
 
@@ -177,8 +177,16 @@ export function linkCapacity(l: NetLinkIn, node: ANode, minor: boolean, cap: Cap
 }
 
 // ---------- the fit ----------
+export interface AssignConfig {
+  /** 'free': free-flow all-or-nothing paths over perturbed link costs; 'msa': stochastic capacity-restrained assignment by successive averages. */
+  method: 'free' | 'msa';
+  /** msa: passes, driver walks per flow and pass, BPR alpha and beta, walk noise, and how often the table is refitted and reassigned at its own volumes. */
+  iterations: number; drawsPerPass: number; alpha: number; beta: number; noise: number; rounds: number;
+}
+
 export interface FitConfig {
   fit: FitOptions;
+  assignment?: AssignConfig;
   /** Observed route shares as soft ratio constraints (weight below the counts: they come from a device sample); omitted or `weight` 0 leaves them out. */
   shares?: { targets: Targets; weight: number; pmPeriod: string };
   draws: number; noise: number;
@@ -212,46 +220,56 @@ export function fitPeriod(
 ): PeriodResult {
   const g: Graph = buildGraph(nodes, links, bans, id);
   const nodeBy = new Map(nodes.map((n) => [n.id, n]));
-  const a = assign(g, flows, cfg.draws, cfg.noise);
   const v0 = flows.map((f) => f.vehPerHour);
-  const countCons: Constraint[] = stations.filter((s) => (s.target[id] ?? 0) > 0).map((s) => ({ id: s.id, kind: s.kind, label: s.label, links: s.links, origins: s.origins, destinations: s.destinations, target: s.target[id], weight: s.weight }));
   const nL = links.length;
-  const specs: ShareSpec[] = cfg.shares && cfg.shares.weight > 0 ? buildShareConstraints(nodes, links as ShareLink[], cfg.shares.targets, a, id, cfg.shares.pmPeriod, cfg.shares.weight) : [];
-  const shareCons: Constraint[] = specs.map((q) => ({ id: q.id, kind: 'share', label: q.label, links: [], target: q.target, weight: q.weight, ratio: q.ratio }));
-  const cons: Constraint[] = [...countCons, ...shareCons];
+  const ruleOf: { cap: number; rule: string }[] = links.map((l, i) => linkCapacity(l, nodeBy.get(l.to)!, g.minor[i], cfg.guard.capacity));
+  const as = cfg.assignment ?? { method: 'free' as const, iterations: 1, drawsPerPass: cfg.draws, alpha: 0, beta: 4, noise: cfg.noise, rounds: 1 };
+  const assignAt = (vol: ArrayLike<number>): Assignment => (as.method === 'msa'
+    ? assignMsa(g, flows, vol, { iterations: as.iterations, drawsPerPass: as.drawsPerPass, alpha: as.alpha, beta: as.beta, noise: as.noise, capacity: ruleOf.map((r) => r.cap) })
+    : assign(g, flows, cfg.draws, cfg.noise));
+  const countCons: Constraint[] = stations.filter((s) => (s.target[id] ?? 0) > 0).map((s) => ({ id: s.id, kind: s.kind, label: s.label, links: s.links, origins: s.origins, destinations: s.destinations, target: s.target[id], weight: s.weight }));
   const sumBy = (f: ArrayLike<number>) => { const o: Record<string, number> = { through: 0, local: 0, ramp: 0 }; for (let k = 0; k < f.length; k++) o[types[k]] += f[k]; return o; };
   const exempt = new Set<number>();
-  for (const c of cons) for (const l of c.links) exempt.add(l);
-  const before = assigned(a, v0, cons, nL);
-  // Step 1: counts only (no guard, no shares): the "after count fit" column.
-  const r1 = fitToCounts(a, v0, types, countCons, nL, cfg.fit);
-  const f1 = v0.map((v, k) => v * r1.g[k]);
-  const afterFit = assigned(a, f1, cons, nL);
-  let rFinal = r1, fFinal = f1;
+  for (const c of countCons) for (const l of c.links) exempt.add(l);
+  const limit = new Float64Array(nL).fill(Infinity);
+  links.forEach((_, l) => { if (!exempt.has(l)) limit[l] = (1 + cfg.guard.excessShare) * ruleOf[l].cap; });
+  const rounds = as.method === 'msa' ? Math.max(1, as.rounds) : 1;
+  let a = assignAt(v0);
+  let cons: Constraint[] = countCons, specs: ShareSpec[] = [];
+  let r1!: ReturnType<typeof fitToCounts>, rFinal!: ReturnType<typeof fitToCounts>, f1: number[] = [], fFinal: number[] = [];
+  let before: number[] = [], afterFit: number[] = [], V1!: Float64Array;
+  for (let round = 1; round <= rounds; round++) {
+    if (round > 1) a = assignAt(fFinal.map((x, k) => (a.routable[k] ? x : v0[k])));
+    specs = cfg.shares && cfg.shares.weight > 0 ? buildShareConstraints(nodes, links as ShareLink[], cfg.shares.targets, a, id, cfg.shares.pmPeriod, cfg.shares.weight) : [];
+    const shareCons: Constraint[] = specs.map((q) => ({ id: q.id, kind: 'share', label: q.label, links: [], target: q.target, weight: q.weight, ratio: q.ratio }));
+    cons = [...countCons, ...shareCons];
+    before = assigned(a, v0, cons, nL);
+    // Counts only (no guard, no shares): the "after count fit" column.
+    r1 = fitToCounts(a, v0, types, countCons, nL, cfg.fit);
+    f1 = v0.map((v, k) => v * r1.g[k]);
+    afterFit = assigned(a, f1, cons, nL);
+    V1 = linkVolumes(a, f1, nL);
+    // Counts, guard and shares together. The guard is a set of soft upper limits with weight < 1 on uncounted links, so a count wins any conflict.
+    if (cfg.guard.enabled || shareCons.length) rFinal = fitToCounts(a, v0, types, cons, nL, cfg.fit, undefined, cfg.guard.enabled ? { limit, weight: cfg.guard.weight } : undefined);
+    else rFinal = r1;
+    fFinal = v0.map((v, k) => v * rFinal.g[k]);
+  }
   const guardBound: PeriodResult['guardBound'] = [];
   const notes: string[] = [];
   let residualOver: PeriodResult['residualOver'] = [];
-  const limit = new Float64Array(nL).fill(Infinity);
-  const ruleOf: { cap: number; rule: string }[] = links.map((l, i) => linkCapacity(l, nodeBy.get(l.to)!, g.minor[i], cfg.guard.capacity));
-  links.forEach((_, l) => { if (!exempt.has(l)) limit[l] = (1 + cfg.guard.excessShare) * ruleOf[l].cap; });
-  if (cfg.guard.enabled || shareCons.length) {
-    // Links the count-only solution puts over their limit.
-    const V1 = linkVolumes(a, f1, nL);
-    // Step 2: counts and the guard together. The guard is a set of soft upper limits with weight < 1 on uncounted links, so a count wins any conflict.
-    rFinal = fitToCounts(a, v0, types, cons, nL, cfg.fit, undefined, cfg.guard.enabled ? { limit, weight: cfg.guard.weight } : undefined);
-    fFinal = v0.map((v, k) => v * rFinal.g[k]);
+  if (as.method === 'msa') notes.push(`assignment by successive averages (${as.iterations} passes x ${as.drawsPerPass} driver walks, BPR alpha ${as.alpha} beta ${as.beta}, noise ${(as.noise * 100).toFixed(0)}%), ${rounds} round(s) with the table refitted and reassigned at its own volumes; relative link-volume change at the last pass ${(a as ReturnType<typeof assignMsa>).relChange?.toFixed(3)}`);
+  if (cfg.guard.enabled) {
     const V2 = linkVolumes(a, fFinal, nL);
-    if (cfg.guard.enabled) for (let l = 0; l < nL; l++) if (V1[l] > limit[l]) guardBound.push({ link: l, name: links[l].name || '(unnamed)', rule: ruleOf[l].rule, cap: ruleOf[l].cap, before: V1[l], after: V2[l] });
+    for (let l = 0; l < nL; l++) if (V1[l] > limit[l]) guardBound.push({ link: l, name: links[l].name || '(unnamed)', rule: ruleOf[l].rule, cap: ruleOf[l].cap, before: V1[l], after: V2[l] });
     guardBound.sort((x, y) => y.before / y.cap - x.before / x.cap);
-    if (cfg.guard.enabled) residualOver = [...V2.keys()].filter((l) => V2[l] > limit[l] * (1 + 1e-3)).map((l) => ({ link: l, name: links[l].name || '(unnamed)', vol: V2[l], limit: limit[l] })).sort((x, y) => y.vol / y.limit - x.vol / x.limit);
-    if (cfg.guard.enabled) notes.push(`the guard cut ${rFinal.freeCut?.toFixed(0) ?? 0} veh/h from flows that touch no count (after the median rule)`);
+    residualOver = [...V2.keys()].filter((l) => V2[l] > limit[l] * (1 + 1e-3)).map((l) => ({ link: l, name: links[l].name || '(unnamed)', vol: V2[l], limit: limit[l] })).sort((x, y) => y.vol / y.limit - x.vol / x.limit);
+    notes.push(`the guard cut ${rFinal.freeCut?.toFixed(0) ?? 0} veh/h from flows that touch no count (after the median rule)`);
   }
   let guardFlows = 0;
   for (let k = 0; k < flows.length; k++) if (fFinal[k] < f1[k] * 0.999) guardFlows++;
   const final = assigned(a, fFinal, cons, nL);
   const volume = fFinal.map((x, k) => (a.routable[k] ? x : v0[k]));
-  const tot = (f: ArrayLike<number>) => sumBy(f);
-  const t0 = tot(v0), t1 = tot(f1), t2 = tot(volume);
+  const t0 = sumBy(v0), t1 = sumBy(f1), t2 = sumBy(volume);
   const totals: PeriodResult['totals'] = {};
   for (const t of ['through', 'local', 'ramp']) totals[t] = { start: t0[t], afterFit: t1[t], final: t2[t] };
   const byId = new Map(cons.map((c, i) => [c.id, i]));
@@ -275,10 +293,11 @@ export function percentiles(vals: number[], w: number[], ps: number[]): number[]
   });
 }
 
-export function fitReport(area: string, results: PeriodResult[], flowsBy: Record<string, FlowIn[]>, opt: { fit: FitOptions; draws: number; noise: number; guardExcess: number; guardWeight: number; guardOn: boolean; tolOk: number }, stationNotes: string[], extra: string[]): string {
+export function fitReport(area: string, results: PeriodResult[], flowsBy: Record<string, FlowIn[]>, opt: { fit: FitOptions; draws: number; noise: number; guardExcess: number; guardWeight: number; guardOn: boolean; tolOk: number; shareWeight?: number; assignment?: AssignConfig }, stationNotes: string[], extra: string[]): string {
   const L: string[] = [];
   L.push(`# Count-constrained demand fit: ${area}`, '', 'Generated by `tools/build-demand.ts` (do not edit). Car trips only, veh/h. Method and assumptions: `data/demand/README.md`, section "Count-constrained demand".', '');
-  L.push(`Settings: factor bounds ${opt.fit.lo} to ${opt.fit.hi}, damping ${opt.fit.damping}, tolerance exp(${opt.fit.tol}), at most ${opt.fit.maxIter} iterations; flows that touch no count take the ${opt.fit.uncounted} factor${opt.fit.volumeWeightedMedian ? ' (volume-weighted median)' : ''}; static assignment over ${opt.draws} perturbed free-flow shortest paths (cost noise +/-${(opt.noise * 100).toFixed(0)}%); capacity guard ${opt.guardOn ? `on (limit = capacity x ${(1 + opt.guardExcess).toFixed(2)}, uncounted links only; an ASSUMPTION-labeled sanity rule, not data)` : 'off'}.`, '');
+  const asg = opt.assignment?.method === 'msa' ? `capacity-restrained assignment by successive averages (${opt.assignment.iterations} passes x ${opt.assignment.drawsPerPass} driver walks, BPR alpha ${opt.assignment.alpha} beta ${opt.assignment.beta}, walk noise +/-${(opt.assignment.noise * 100).toFixed(0)}%, ${opt.assignment.rounds} round(s))` : `static assignment over ${opt.draws} perturbed free-flow shortest paths (cost noise +/-${(opt.noise * 100).toFixed(0)}%)`;
+  L.push(`Settings: factor bounds ${opt.fit.lo} to ${opt.fit.hi}, damping ${opt.fit.damping}, tolerance ${(100 * (Math.exp(opt.fit.tol) - 1)).toFixed(1)}% on the unblocked count stations, at most ${opt.fit.maxIter} iterations; flows that touch no count take the ${opt.fit.uncounted} factor${opt.fit.volumeWeightedMedian ? ' (volume-weighted median)' : ''}; ${asg}; route-share constraints ${opt.shareWeight ? `on, weight ${opt.shareWeight} (counts 1 to 2)` : 'off'}; capacity guard ${opt.guardOn ? `on (limit = capacity x ${(1 + opt.guardExcess).toFixed(2)}, uncounted links only; an ASSUMPTION-labeled sanity rule, not data)` : 'off'}.`, '');
   L.push('## Offered car trips, before and after', '', '| Period | Type | Offered (build) | After count fit | After guard (final) | Removed by fit | Removed by guard | Final / offered |', '| --- | --- | --- | --- | --- | --- | --- | --- |');
   for (const r of results) {
     let s0 = 0, s1 = 0, s2 = 0;
@@ -306,6 +325,12 @@ export function fitReport(area: string, results: PeriodResult[], flowsBy: Record
     }
   }
   L.push('', `Uncounted-flow rule medians (factor given to flows touching no count, by type): ${results.map((r) => `${r.id} ${['through', 'local', 'ramp'].map((t) => `${t} ${r.fit.medians[t].toFixed(2)}`).join(', ')}`).join('; ')}. These are the medians of the counted flows before the guard's ceilings apply to them.`);
+  if (results.some((r) => r.shareRows.length)) {
+    L.push('', '## Route shares', '', 'Observed shares are StreetLight device-sample estimates (`data/calibration/README.md`). Modeled = share in the static assignment: offered table, after the count-only fit, final (counts, guard and shares together). "Flows" = flows that cross the select link or use the ramp. Select link: share of the link\'s volume from trips with a freeway end. Ramp: share of the volume using the ramp that also uses the named street (the shares are for trips from / to the north of the ramps).', '');
+    L.push('| Period | Share | Observed | Offered | Count-only fit | Final | Flows |', '| --- | --- | --- | --- | --- | --- | --- |');
+    const pc = (x: number) => (Number.isNaN(x) ? 'n/a' : `${(100 * x).toFixed(0)}%`);
+    for (const r of results) for (const q of r.shareRows) L.push(`| ${r.id} | ${q.spec.label} | ${pc(q.spec.target)} | ${pc(q.offered)} | ${pc(q.afterFit)} | ${pc(q.final)} | ${q.n} |`);
+  }
   L.push('', '## Station fit by family', '', 'Within own tolerance = gates 10%, ramps 5%, turning-movement legs and Caltrans stations 15%. Ramp totals are the sums over counted ramps of the assigned freeway-link volume against ADT x K (off = freeway to surface, on = surface to freeway).', '');
   L.push('| Period | Family | Stations | Within own tolerance | Within +/-' + opt.tolOk + '% | Sum of targets | Sum assigned before | Sum assigned after the fit | Sum assigned final | Final / target |', '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |');
   for (const r of results) {

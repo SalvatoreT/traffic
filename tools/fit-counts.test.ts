@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { assign, buildGraph, linkVolumes, type ALink, type ANode } from './lib/assign';
+import { assign, assignMsa, bprFactor, buildGraph, costToGo, linkVolumes, type ALink, type ANode } from './lib/assign';
 import { assigned, capacityGuard, DEFAULT_FIT, fitToCounts, type Constraint, type FlowType } from './lib/fit-counts';
 
 // Toy cross: west gate W(0), center C(1), east gate E(2), north gate N(3), 500 m legs on residential-free arterials (secondary, 13.4 m/s).
@@ -182,5 +182,115 @@ describe('gate counts by origin and destination', () => {
     const A = assigned(a, f, cons, 6);
     expect(A[0]).toBeCloseTo(300, 2);
     expect(A[1]).toBeCloseTo(100, 2);
+  });
+});
+
+describe('stopping and conflicts', () => {
+  const g = buildGraph(nodes, links, [], null);
+  // f0 W>E and f1 W>N share W>C (links index 0); two stations on W>C and C>E disagree about f0's volume only when f1 is absent
+  const a = assign(g, [{ origin: 0, destination: 2 }], 1);
+  it('stops on a pair of stations that cannot both be met and reports them as opposing', () => {
+    const cons: Constraint[] = [
+      { id: 'in', kind: 'tmc', label: 'W>C', links: [0], target: 150 },
+      { id: 'out', kind: 'tmc', label: 'C>E', links: [2], target: 100 },
+    ];
+    const r = fitToCounts(a, [100], ['through'], cons, 6, { ...DEFAULT_FIT, maxIter: 500 });
+    expect(['tolerance', 'stationary']).toContain(r.stoppedBy); // both are in tension: the loop ends well before the iteration limit
+    expect(r.iterations).toBeLessThan(100);
+    expect(r.conflicts.map((c) => c.id).sort()).toEqual(['in', 'out']);
+    const c = r.conflicts.find((x) => x.id === 'in')!;
+    expect(c.opposing[0].id).toBe('out');
+    // the compromise sits between the two targets, in proportion (geometric mean of 150 and 100)
+    const f = 100 * r.g[0];
+    expect(f).toBeGreaterThan(110);
+    expect(f).toBeLessThan(135);
+  });
+
+  it('converges within tolerance on consistent stations and reports no conflict', () => {
+    const od = [{ origin: 0, destination: 2 }, { origin: 3, destination: 2 }, { origin: 0, destination: 3 }, { origin: 3, destination: 0 }];
+    const a4 = assign(g, od);
+    const cons: Constraint[] = [{ id: 'east', kind: 'tmc', label: '', links: [2], target: 150 }, { id: 'west', kind: 'tmc', label: '', links: [0], target: 250 }];
+    const r = fitToCounts(a4, [100, 100, 100, 100], ['through', 'through', 'through', 'through'], cons, 6, { ...DEFAULT_FIT, tol: 1e-4 });
+    expect(r.stoppedBy).toBe('tolerance');
+    expect(r.conflicts).toHaveLength(0);
+    expect(r.maxLogErr).toBeLessThan(1e-4);
+  });
+});
+
+describe('share constraints', () => {
+  const g = buildGraph(nodes, links, [], null);
+  // f0 W>E and f1 N>E both cross C>E (link 2); the numerator group is the flows from the west gate (a stand-in for freeway origins)
+  const od = [{ origin: 0, destination: 2 }, { origin: 3, destination: 2 }];
+  const a = assign(g, od);
+  const share = (target: number, weight = 1): Constraint => ({ id: 'share', kind: 'share', label: '', links: [], target, weight, ratio: { flows: [0, 1], den: [1, 1], num: [1, 0] } });
+  const types: FlowType[] = ['through', 'through'];
+  it('scales the numerator flows by (target / modeled) and the complement by ((1 - target) / (1 - modeled))', () => {
+    const r = fitToCounts(a, [100, 100], types, [share(0.25)], 6, { ...DEFAULT_FIT, maxIter: 1 });
+    // modeled 0.5 -> numerator factor 0.25 / 0.5, complement factor 0.75 / 0.5 (one full step; a flow in only one group takes the whole correction)
+    expect(r.g[0]).toBeCloseTo(0.5, 9);
+    expect(r.g[1]).toBeCloseTo(1.5, 9);
+  });
+  it('reaches the target share, and with a count on the same link keeps the total', () => {
+    const count: Constraint = { id: 'east', kind: 'tmc', label: '', links: [2], target: 200 };
+    const r = fitToCounts(a, [100, 100], types, [count, share(0.25)], 6, { ...DEFAULT_FIT, tol: 1e-6, maxIter: 2000, softStep: 1e-7, stationary: 1e-9 });
+    const f = [100 * r.g[0], 100 * r.g[1]];
+    expect(f[0] + f[1]).toBeCloseTo(200, 0);
+    expect(f[0] / (f[0] + f[1])).toBeCloseTo(0.25, 1);
+    expect(r.shares[0].start).toBeCloseTo(0.5, 9);
+    expect(r.shares[0].modeled).toBeCloseTo(0.25, 1);
+  });
+  it('lets a count win a conflict with a lower-weight share', () => {
+    // the count asks for 300 on C>E from f0 + f1; the share asks for 1% from f0, which the count weight (2) outweighs
+    const count: Constraint = { id: 'east', kind: 'tmc', label: '', links: [2], target: 100, weight: 2 };
+    const r = fitToCounts(a, [100, 100], types, [count, share(0.9, 0.25)], 6, { ...DEFAULT_FIT, maxIter: 800 });
+    const f = [100 * r.g[0], 100 * r.g[1]];
+    expect(f[0] + f[1]).toBeGreaterThan(90);
+    expect(f[0] + f[1]).toBeLessThan(115);
+    expect(f[0] / (f[0] + f[1])).toBeGreaterThan(0.5); // moved toward the share
+  });
+  it('assigned() returns the modeled share for a ratio constraint', () => {
+    expect(assigned(a, [100, 300], [share(0.25)], 6)[0]).toBeCloseTo(0.25, 9);
+  });
+});
+
+describe('assignment by successive averages', () => {
+  // Two routes from node 0 to node 3: via 1 (shorter) and via 2 (about 10% longer).
+  const ns: ANode[] = [{ id: 0, x: 0, y: 0, control: 'uncontrolled' }, { id: 1, x: 500, y: 40, control: 'uncontrolled' }, { id: 2, x: 500, y: -80, control: 'uncontrolled' }, { id: 3, x: 1000, y: 0, control: 'uncontrolled' }];
+  const e = (id: number, f: number, t: number): ALink => ({ id, from: f, to: t, length: Math.hypot(ns[t].x - ns[f].x, ns[t].y - ns[f].y), speedLimit: 13, class: 'secondary', geometry: [[ns[f].x, ns[f].y], [ns[t].x, ns[t].y]] });
+  const ls = [e(0, 0, 1), e(1, 1, 3), e(2, 0, 2), e(3, 2, 3)];
+  const g = buildGraph(ns, ls, [], null);
+  const flows = [{ origin: 0, destination: 3 }];
+  const cap = [400, 400, Infinity, Infinity];
+  it('bprFactor is 1 at zero volume and 1 + alpha at capacity', () => {
+    expect(bprFactor(0, 100, 0.15, 4)).toBe(1);
+    expect(bprFactor(100, 100, 0.15, 4)).toBeCloseTo(1.15, 12);
+    expect(bprFactor(500, Infinity, 0.15, 4)).toBe(1);
+  });
+  it('costToGo matches the forward tree', () => {
+    const h = costToGo(g, 3, g.cost);
+    // from the start of link 0 the best way is 0 > 1: its cost plus movement cost plus link 1 cost
+    expect(h[0]).toBeLessThan(h[2]);
+    expect(isFinite(h[1]) && isFinite(h[3])).toBe(true);
+  });
+  it('without restraint every walk takes the shorter route', () => {
+    const r = assignMsa(g, flows, [1000], { iterations: 5, drawsPerPass: 2, alpha: 0, beta: 4, noise: 0, capacity: cap });
+    const v = linkVolumes(r, [1000], 4);
+    expect(v[0]).toBeCloseTo(1000, 6);
+    expect(v[2]).toBeCloseTo(0, 6);
+  });
+  it('with restraint a loaded short route sheds flow to the longer one and volume is conserved', () => {
+    const r = assignMsa(g, flows, [1000], { iterations: 40, drawsPerPass: 1, alpha: 0.15, beta: 4, noise: 0, capacity: cap });
+    const v = linkVolumes(r, [1000], 4);
+    expect(v[0] + v[2]).toBeCloseTo(1000, 3);
+    expect(v[1] + v[3]).toBeCloseTo(1000, 3);
+    expect(v[2]).toBeGreaterThan(150);
+    expect(v[0]).toBeGreaterThan(100); // the short route keeps a share: the longer one is only about 10% more costly
+    expect(r.linkVolume[0]).toBeCloseTo(v[0], 3);
+    // the averaged volumes settle: the last pass moved the link volumes by under 5%
+    expect(r.relChange).toBeLessThan(0.05);
+  });
+  it('a light load stays on the short route', () => {
+    const r = assignMsa(g, flows, [100], { iterations: 20, drawsPerPass: 1, alpha: 0.15, beta: 4, noise: 0, capacity: cap });
+    expect(linkVolumes(r, [100], 4)[0]).toBeCloseTo(100, 6);
   });
 });

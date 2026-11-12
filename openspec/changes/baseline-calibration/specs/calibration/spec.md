@@ -49,3 +49,11 @@ The area config SHALL be able to name the demand period the app opens with (`def
 #### Scenario: A period fails stability
 - **WHEN** the PM peak run at full demand fails the stability criterion
 - **THEN** the area config lists `pm_peak` under `experimentalPeriods` and the status stays `uncalibrated`
+
+### Requirement: Ramp shares use the side and qualifier of the targets file
+The calibration report SHALL compute a ramp via-street share both over all trips on the ramps and over the trips whose surface end lies on the side of the ramp named in the targets file, and a via street with a qualifier ("north of X") SHALL count only its links on that side of X.
+
+#### Scenario: Telegraph Avenue north of Alcatraz Avenue
+- **WHEN** the report resolves the via street "Telegraph Avenue north of Alcatraz Avenue"
+- **THEN** only Telegraph Avenue links north of its crossing with Alcatraz Avenue count as a visit
+

@@ -8,6 +8,7 @@ import { buildActiveFlows, parseActiveCounts, type AFlow } from './lib/demand-ac
 import { discoverRamps, matchRampVolumes, type Ramp, type RampRow, type RampVolume } from './lib/demand-ramps';
 import { linkMetrics, perimeterGap, perimeterLength, perimeterPos, relevanceOf, Router, routeStat, sideOf, type Rect, type Relevance, type RouteStat } from './lib/demand-audit';
 import { makeProjection } from './lib/geo';
+import { buildGraph, costToGo, treeFrom, type Graph } from './lib/assign';
 import { buildStations, fitPeriod, fitReport, type FitConfig, type NetLinkIn, type PeriodResult } from './lib/demand-fit';
 import type { FlowType } from './lib/fit-counts';
 
@@ -314,6 +315,23 @@ function gateWeights(sector: string, p: string, dir: 'in' | 'out') {
 
 // ---------- per period ----------
 const outPeriods: { id: string; label: string; flows: Flow[] }[] = [];
+// Ramp access time: seconds (the router's generalized cost) from a surface node to an on-ramp's surface node, or from an off-ramp's surface node to it. Tables are built per period and ramp.
+const accessGraph = new Map<string, Graph>();
+const accessTable = new Map<string, Float64Array>();
+const rampAccess = (r: Ramp, period: string): Float64Array => {
+  const key = `${period}|${r.kind}|${r.surface}`;
+  let t = accessTable.get(key);
+  if (t) return t;
+  let g = accessGraph.get(period);
+  if (!g) { g = buildGraph(net.nodes as never, net.links as never, net.turnBans ?? [], period); accessGraph.set(period, g); }
+  t = new Float64Array(net.nodes.length).fill(Infinity);
+  const idx = new Map(net.nodes.map((n, i) => [n.id, i]));
+  if (r.kind === 'on') { const h = costToGo(g, r.surface, g.cost); for (const n of net.nodes) for (const l of g.outLinks.get(n.id) ?? []) t[idx.get(n.id)!] = Math.min(t[idx.get(n.id)!], h[l]); }
+  else { const { dist } = treeFrom(g, r.surface, null); for (const n of net.nodes) for (const l of g.inLinks.get(n.id) ?? []) t[idx.get(n.id)!] = Math.min(t[idx.get(n.id)!], dist[l]); }
+  accessTable.set(key, t);
+  return t;
+};
+const nodeIndex = new Map(net.nodes.map((n, i) => [n.id, i]));
 const summary: { id: string; total: number; through: number; local: number; ramp: number; rampLocal: number; localInternal: number; dropped: number; fw: Map<number, { out: number; in: number }>; rampDest: Map<number, number> }[] = [];
 
 // Per-period totals by type from a final flow list (car flows only).
@@ -367,20 +385,30 @@ for (const p of cfg.periods as { id: string; label: string }[]) {
   // ramp, so the router picks the ramp. A gate's volume is the sum of the shares of the ramps it can reach (ramp ADT split equally
   // among the mainline gates that feed or take the ramp). Its surface ends are drawn with direction plausibility averaged over those
   // ramps weighted by volume, so a ramp's own bearing no longer pins a trip to that ramp.
-  for (const fg of fwGates) for (const kind of ['off', 'on'] as const) {
-    const rs = ramps.filter((r) => r.kind === kind && r.gates.includes(fg.id));
-    const parts = rs.map((r) => ({ r, vol: rampVeh(r, p.id) })).filter((q) => q.vol > 0);
+  // `destination.pooling` 'gate' draws the surface ends once per mainline gate over all the ramps it reaches; 'ramp' draws them per ramp (the
+  // ramp's own volume, bearing and access time) and sends them to the gate(s) that ramp reaches, so ramps far apart that share a gate are not pooled.
+  const units: { gid: number; kind: 'off' | 'on'; parts: { r: Ramp; vol: number }[] }[] = [];
+  if (dst.pooling === 'ramp') {
+    for (const r of [...ramps].sort((a, b) => rampVeh(b, p.id) - rampVeh(a, p.id))) for (const gid of r.gates) units.push({ gid, kind: r.kind, parts: [{ r, vol: rampVeh(r, p.id) }] });
+  } else {
+    for (const fg of fwGates) for (const kind of ['off', 'on'] as const) units.push({ gid: fg.id, kind, parts: ramps.filter((r) => r.kind === kind && r.gates.includes(fg.id)).map((r) => ({ r, vol: rampVeh(r, p.id) })) });
+  }
+  for (const { gid, kind, parts: allParts } of units) {
+    const parts = allParts.filter((q) => q.vol > 0);
     const vol = parts.reduce((a, q) => a + q.vol, 0);
-    const gid = fg.id;
     if (vol <= 0) continue;
-    const plaus = (x: number, y: number) => parts.reduce((a, q) => {
+    // Access decay: a surface end far (in router time) from the ramps this gate can reach is unlikely to use them (ASSUMPTION, accessTauS; 0 = off).
+    const tau: number = dst.accessTauS ?? 0;
+    const access = parts.map((q) => (tau > 0 ? rampAccess(q.r, p.id) : null));
+    const plaus = (x: number, y: number, node: number) => parts.reduce((a, q, qi) => {
       const rn = nodeById.get(q.r.surface)!;
       const pref = bearing(center[0], center[1], rn.x, rn.y); // inward: from the ramp toward the study-area center
-      return a + (q.vol / vol) * Math.max(dst.directionFloor, Math.exp(-((angDiff(bearing(x, y, rn.x, rn.y), pref) / dst.directionSigmaDeg) ** 2)));
+      const decay = access[qi] ? Math.exp(-access[qi]![nodeIndex.get(node)!] / tau) : 1;
+      return a + (q.vol / vol) * Math.max(dst.directionFloor, Math.exp(-((angDiff(bearing(x, y, rn.x, rn.y), pref) / dst.directionSigmaDeg) ** 2))) * decay;
     }, 0);
     const off = kind === 'off', side = off ? 'out' : 'in'; // ends at surface: gate outflow (off) or gate inflow (on)
-    const gc = gates.map((g) => { const n = nodeById.get(g.id)!; return { id: g.id, w: (off ? g.outT[p.id] : g.inT[p.id]) * plaus(n.x, n.y), room: capLeft.get(g.id)![side] }; }).filter((c) => c.w > 0 && c.room > 0 && (off ? routable(gid, c.id) : routable(c.id, gid)));
-    const lc = locList.map((b) => ({ id: b.node, w: (off ? blockTrips(b).inTotal : blockTrips(b).outTotal) * plaus(b.x, b.y) })).filter((c) => c.w > 0 && (off ? routable(gid, c.id) : routable(c.id, gid)));
+    const gc = gates.map((g) => { const n = nodeById.get(g.id)!; return { id: g.id, w: (off ? g.outT[p.id] : g.inT[p.id]) * plaus(n.x, n.y, g.id), room: capLeft.get(g.id)![side] }; }).filter((c) => c.w > 0 && c.room > 0 && (off ? routable(gid, c.id) : routable(c.id, gid)));
+    const lc = locList.map((b) => ({ id: b.node, w: (off ? blockTrips(b).inTotal : blockTrips(b).outTotal) * plaus(b.x, b.y, b.node) })).filter((c) => c.w > 0 && (off ? routable(gid, c.id) : routable(c.id, gid)));
     const lShare = lc.length ? rc.localShare : 0;
     // Gate part: water-filling so no gate exceeds its remaining ramp cap.
     const give = new Map<number, number>();
@@ -610,7 +638,10 @@ if (fc?.enabled) {
   }, stationNotes);
   const fitCfg: FitConfig = {
     fit: { lo: fc.bounds.lo, hi: fc.bounds.hi, byType: fc.bounds.byType, maxIter: fc.maxIter, tol: fc.tol, damping: fc.damping, uncounted: fc.uncounted.rule, volumeWeightedMedian: fc.uncounted.volumeWeighted, stationary: fc.stationary ?? 1e-4, softStep: fc.softStep ?? 1e-3, stallWindow: fc.stallWindow ?? 25, stallGain: fc.stallGain ?? 0.002, blockedShare: fc.blockedShare ?? 0.8, band: 0, shareTol: fc.shareTol ?? 0.02 },
-    draws: fc.draws, noise: fc.noise, guard: { enabled: fc.capacityGuard.enabled, excessShare: fc.capacityGuard.excessShare, weight: fc.capacityGuard.weight, capacity: fc.capacityGuard.capacity },
+    draws: fc.draws, noise: fc.noise,
+    assignment: fc.assignment ? { method: fc.assignment.method, iterations: fc.assignment.iterations, drawsPerPass: fc.assignment.drawsPerPass, alpha: fc.assignment.alpha, beta: fc.assignment.beta, noise: fc.assignment.noise, rounds: fc.assignment.rounds } : undefined,
+    shares: fc.shares?.enabled ? { targets: JSON.parse(readFileSync(fc.shares.targets, 'utf8')), weight: fc.shares.weight, pmPeriod: lastPeriod } : undefined,
+    guard: { enabled: fc.capacityGuard.enabled, excessShare: fc.capacityGuard.excessShare, weight: fc.capacityGuard.weight, capacity: fc.capacityGuard.capacity },
   };
   const flowsBy: Record<string, { origin: number; destination: number; vehPerHour: number }[]> = {};
   if (process.env.FIT_DUMP) writeFileSync(process.env.FIT_DUMP, JSON.stringify({ stations, periods: Object.fromEntries(outPeriods.map((q) => { const cars = q.flows.filter((f) => !f.mode); return [q.id, { flows: cars, types: cars.map((f) => typeOf(f.origin, f.destination)) }]; })) }));
@@ -623,7 +654,7 @@ if (fc?.enabled) {
     per.flows = [...cars.map((q, k) => ({ ...q, vehPerHour: Math.round(r.volume[k] * 100) / 100 })).filter((q) => q.vehPerHour >= 0.01), ...per.flows.filter((q) => q.mode)];
   }
   for (const s of summary) { const per = outPeriods.find((q) => q.id === s.id)!; Object.assign(s, summarizeFlows(per.flows)); }
-  fitText = fitReport(cfg.area, fitResults, flowsBy, { fit: fitCfg.fit, draws: fc.draws, noise: fc.noise, guardExcess: fc.capacityGuard.excessShare, guardWeight: fc.capacityGuard.weight, guardOn: fc.capacityGuard.enabled, tolOk: fc.tolerancePct.report }, stationNotes, []);
+  fitText = fitReport(cfg.area, fitResults, flowsBy, { fit: fitCfg.fit, draws: fc.draws, noise: fc.noise, guardExcess: fc.capacityGuard.excessShare, guardWeight: fc.capacityGuard.weight, guardOn: fc.capacityGuard.enabled, tolOk: fc.tolerancePct.report, shareWeight: fc.shares?.enabled ? fc.shares.weight : undefined, assignment: fitCfg.assignment }, stationNotes, []);
   if (fc.output) writeFileSync(fc.output, fitText);
 }
 
