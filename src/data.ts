@@ -1,4 +1,4 @@
-import type { AreaBundle, AreaEntry, Demand, GeoFC, Network } from './types';
+import type { AreaBundle, AreaEntry, Demand, GeoFC, Network, Transit } from './types';
 import { buildFixture } from './fixtures/area';
 
 async function getJson<T>(url: string): Promise<T> {
@@ -20,7 +20,11 @@ export async function loadArea(preferred?: string, forceFixture = false): Promis
           getJson<Demand>(base(entry.demand)),
           getJson<GeoFC>(base(entry.basemap)),
         ]);
-        return { entry, network, demand, basemap, synthetic: false };
+        let transit: Transit | undefined;
+        if (entry.transit) {
+          try { transit = await getJson<Transit>(base(entry.transit)); } catch (e) { console.info('No transit file:', (e as Error).message); }
+        }
+        return { entry, network, demand, basemap, synthetic: false, transit };
       }
     } catch (e) {
       console.info('Using synthetic fixture area:', (e as Error).message);

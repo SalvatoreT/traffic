@@ -1,7 +1,7 @@
 export const MPS_TO_MPH = 2.2369362920544;
 export const KM_TO_MI = 0.621371192;
 
-export type Kind = 'speed' | 'dist' | 'share' | 'minutes' | 'count' | 'flow';
+export type Kind = 'speed' | 'dist' | 'share' | 'minutes' | 'seconds' | 'count' | 'flow' | 'index';
 
 export const speedValue = (mps: number): number => mps * MPS_TO_MPH;
 
@@ -21,11 +21,13 @@ export function unitLabel(kind: Kind): string {
     case 'dist': return 'veh-mi';
     case 'share': return '%';
     case 'minutes': return 'min';
+    case 'seconds': return 's';
     case 'flow': return 'veh/h';
     default: return '';
   }
 }
 function digits(kind: Kind, x: number): number {
+  if (kind === 'index') return Math.abs(x) >= 100 ? 0 : Math.abs(x) >= 10 ? 1 : 2;
   if (kind === 'count' || kind === 'flow') return Math.abs(x) >= 100 || Number.isInteger(x) ? 0 : 1;
   return Math.abs(x) >= 100 ? 0 : 1;
 }

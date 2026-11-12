@@ -3,10 +3,18 @@
  * when WASM fails to initialize. Vehicles drift along links; it is NOT a traffic model.
  */
 import type { Demand, Intervention, Metrics, Network } from '../types';
+import { KIND_BIKE, KIND_BUS, KIND_PED } from '../types';
 import { pointAlong } from '../lib/geom';
 import type { SimLike } from './protocol';
 
 interface V { link: number; s: number; v: number; ct: boolean; trip: number; born: number }
+/** Non-car agent: kind is KIND_BUS, KIND_BIKE or KIND_PED. */
+interface A { kind: number; link: number; s: number; v: number; born: number; hops: number }
+
+// Mock-only numbers: plausible magnitudes so the UI can be built, not a model.
+const MOCK_AGENTS = { bus: 6, bike: 140, ped: 1200 };
+const MOCK_END_P = { bike: 0.04, ped: 0.05 };
+const BUS_RUN_HOPS = 12;
 
 export class MockSimulation implements SimLike {
   private net: Network;
@@ -30,8 +38,18 @@ export class MockSimulation implements SimLike {
   private target = 0;
   private out: number[][];
   private ttc = 0;
+  private agents: A[] = [];
+  private carsOn: Uint16Array;
+  private pedsOn: Uint16Array;
+  private mm = {
+    bus: { runs: 0, timeSum: 0, dist: 0, moving: 0 },
+    bike: { trips: 0, timeSum: 0 },
+    ped: { trips: 0, timeSum: 0, delaySum: 0, delayN: 0 },
+    pedConf: 0, bikeConf: 0, close: 0, pedRisk: 0, bikeRisk: 0, pedEnc: 0, pedEncSpeed: 0,
+  };
 
-  constructor(network: string, demand: string, config: string) {
+  // The optional fourth argument (transit JSON) is accepted for interface parity and ignored.
+  constructor(network: string, demand: string, config: string, _transit?: string) {
     this.net = JSON.parse(network) as Network;
     const dem = JSON.parse(demand) as Demand;
     this.cfg = JSON.parse(config);
@@ -40,6 +58,7 @@ export class MockSimulation implements SimLike {
     const L = this.net.links.length;
     this.cross = new Float64Array(L); this.ctCross = new Float64Array(L);
     this.speedTime = new Float64Array(L); this.vehTime = new Float64Array(L);
+    this.carsOn = new Uint16Array(L); this.pedsOn = new Uint16Array(L);
     this.out = Array.from({ length: this.net.nodes.length }, () => []);
     for (const l of this.net.links) this.out[l.from].push(l.id);
     this.target = Math.min(3000, Math.round(this.demandFlow * 0.12 * this.cfg.demandScale) + 30);
@@ -52,6 +71,24 @@ export class MockSimulation implements SimLike {
     this.rng = (this.cfg.seed | 0) + 1 || 1;
     this.t = 0; this.veh = []; this.dist = 0; this.ctDist = 0; this.completed = 0; this.tripTimeSum = 0; this.spawned = 0; this.ttc = 0;
     this.cross.fill(0); this.ctCross.fill(0); this.speedTime.fill(0); this.vehTime.fill(0);
+    this.mm = {
+      bus: { runs: 0, timeSum: 0, dist: 0, moving: 0 }, bike: { trips: 0, timeSum: 0 },
+      ped: { trips: 0, timeSum: 0, delaySum: 0, delayN: 0 },
+      pedConf: 0, bikeConf: 0, close: 0, pedRisk: 0, bikeRisk: 0, pedEnc: 0, pedEncSpeed: 0,
+    };
+    this.agents = [];
+    const arterial = this.net.links.filter((l) => l.class !== 'residential' && l.class !== 'service');
+    const scale = this.cfg.demandScale;
+    const spawn = (kind: number, n: number, pool: Network['links']) => {
+      for (let i = 0; i < n && pool.length; i++) {
+        const l = pool[Math.floor(this.rand() * pool.length)];
+        this.agents.push({ kind, link: l.id, s: this.rand() * l.length, v: 0, born: this.t, hops: 0 });
+      }
+    };
+    const walkable = this.net.links.filter((l) => l.class !== 'motorway' && l.sidewalk !== false);
+    spawn(KIND_BUS, arterial.length ? MOCK_AGENTS.bus : 0, arterial);
+    spawn(KIND_BIKE, Math.round(MOCK_AGENTS.bike * scale), this.net.links.filter((l) => l.class !== 'motorway'));
+    spawn(KIND_PED, Math.round(MOCK_AGENTS.ped * scale), walkable);
     const open = this.net.links.filter((l) => !this.closed.has(l.id));
     for (let i = 0; i < this.target && open.length; i++) {
       const l = open[Math.floor(this.rand() * open.length)];
@@ -80,6 +117,50 @@ export class MockSimulation implements SimLike {
     this.veh = this.veh.filter((v) => !this.closed.has(v.link));
   }
 
+  private stepAgents(dt: number) {
+    const links = this.net.links;
+    this.carsOn.fill(0); this.pedsOn.fill(0);
+    for (const v of this.veh) this.carsOn[v.link]++;
+    for (const a of this.agents) if (a.kind === KIND_PED) this.pedsOn[a.link]++;
+    const m = this.mm;
+    for (const a of this.agents) {
+      const l = links[a.link];
+      const lim = l.speedLimit * (this.limitScale.get(a.link) ?? 1);
+      const target = a.kind === KIND_BUS ? lim * 0.55 : a.kind === KIND_BIKE ? Math.min(5, lim) : 1.3;
+      a.v += (target - a.v) * 0.2;
+      a.s += a.v * dt;
+      if (a.kind === KIND_BUS) { m.bus.dist += a.v * dt; m.bus.moving += dt; }
+      const cars = this.carsOn[a.link];
+      if (cars > 0) {
+        // Encounter exposure grows with cars and walkers or cyclists sharing a link; a mock stand-in.
+        const carSpeed = lim * 0.7;
+        const exp = (cars / Math.max(l.length, 20)) * dt * (a.kind === KIND_PED ? 0.02 : a.kind === KIND_BIKE ? 0.06 : 0);
+        if (exp > 0) {
+          const risk = Math.pow(carSpeed / 11.2, 2.5);
+          if (a.kind === KIND_PED) { m.pedConf += exp; m.pedRisk += exp * risk; m.pedEnc += exp; m.pedEncSpeed += exp * carSpeed; }
+          else { m.bikeConf += exp; m.bikeRisk += exp * risk; if (!l.bikeLane) m.close += exp * 0.5; }
+        }
+      }
+      if (a.s < l.length) continue;
+      a.hops++;
+      const opts = this.out[l.to].filter((id) => a.kind === KIND_BUS ? links[id].class !== 'residential' || !this.out[l.to].some((o) => links[o].class !== 'residential') : true);
+      const pick = opts.length ? opts : this.out[l.to];
+      const ended = a.kind === KIND_BUS ? a.hops >= BUS_RUN_HOPS : this.rand() < (a.kind === KIND_BIKE ? MOCK_END_P.bike : MOCK_END_P.ped);
+      if (ended) {
+        const dur = this.t - a.born;
+        if (a.kind === KIND_BUS) { m.bus.runs++; m.bus.timeSum += dur; }
+        else if (a.kind === KIND_BIKE) { m.bike.trips++; m.bike.timeSum += dur; }
+        else { m.ped.trips++; m.ped.timeSum += dur; }
+        a.born = this.t; a.hops = 0;
+      }
+      if (!pick.length) { a.s = 0; continue; }
+      a.link = pick[Math.floor(this.rand() * pick.length)]; a.s = 0;
+      if (a.kind === KIND_PED) {
+        m.ped.delaySum += Math.min(40, 3 + 2.5 * this.carsOn[a.link]); m.ped.delayN++;
+      }
+    }
+  }
+
   step(seconds: number) {
     const n = Math.max(1, Math.round(seconds / 0.25));
     const dt = 0.25;
@@ -106,16 +187,25 @@ export class MockSimulation implements SimLike {
           } else { v.link = pick[Math.floor(this.rand() * pick.length)]; v.s = 0; }
         }
       }
+      this.stepAgents(dt);
     }
   }
 
   time() { return this.t; }
 
   vehicles(): Float32Array {
-    const a = new Float32Array(this.veh.length * 6);
+    const nv = this.veh.length;
+    const a = new Float32Array((nv + this.agents.length) * 6);
     this.veh.forEach((v, i) => {
       const p = pointAlong(this.net.links[v.link].geometry, v.s);
       a.set([p.x, p.y, p.heading, v.v, 0, v.ct ? 1 : 0], i * 6);
+    });
+    this.agents.forEach((g, i) => {
+      const p = pointAlong(this.net.links[g.link].geometry, g.s);
+      // Walkers use the sidewalk beside the link (right of travel), cyclists the lane edge.
+      const off = g.kind === KIND_PED ? 4.5 : g.kind === KIND_BIKE ? 1.6 : 0;
+      const ox = Math.sin(p.heading) * off, oy = -Math.cos(p.heading) * off;
+      a.set([p.x + ox, p.y + oy, p.heading, g.v, g.kind, 0], (nv + i) * 6);
     });
     return a;
   }
@@ -153,6 +243,7 @@ export class MockSimulation implements SimLike {
       if (l.class === 'residential') { ls += this.speedTime[i]; lt += this.vehTime[i]; if (this.vehTime[i] > 0) { const m = this.speedTime[i] / this.vehTime[i]; if (m > 8.9) over20 += this.vehTime[i]; if (m > 11.2) over25 += this.vehTime[i]; } }
       else { as += this.speedTime[i]; at += this.vehTime[i]; }
     }
+    const mm = this.mm;
     const meanLocal = lt > 0 ? ls / lt : 0;
     const m: Metrics = {
       time: this.t, vehiclesInNetwork: this.veh.length, spawned: this.spawned + this.veh.length, completedTrips: this.completed,
@@ -166,6 +257,27 @@ export class MockSimulation implements SimLike {
         shareAbove20mph: lt > 0 ? over20 / lt : 0, shareAbove25mph: lt > 0 ? over25 / lt : 0, ttcConflicts: this.ttc,
       },
       arterialMeanSpeed: at > 0 ? as / at : 0,
+      modes: {
+        car: { inNetwork: this.veh.length, completedTrips: this.completed, meanTripTime: this.completed ? this.tripTimeSum / this.completed : 0 },
+        bus: {
+          inNetwork: this.agents.filter((g) => g.kind === KIND_BUS).length, completedRuns: mm.bus.runs,
+          meanRunTime: mm.bus.runs ? mm.bus.timeSum / mm.bus.runs : 0, meanSpeed: mm.bus.moving > 0 ? mm.bus.dist / mm.bus.moving : 0,
+        },
+        bicycle: {
+          inNetwork: this.agents.filter((g) => g.kind === KIND_BIKE).length, completedTrips: mm.bike.trips,
+          meanTripTime: mm.bike.trips ? mm.bike.timeSum / mm.bike.trips : 0,
+        },
+        pedestrian: {
+          inNetwork: this.agents.filter((g) => g.kind === KIND_PED).length, completedTrips: mm.ped.trips,
+          meanTripTime: mm.ped.trips ? mm.ped.timeSum / mm.ped.trips : 0,
+          meanCrossingDelay: mm.ped.delayN ? mm.ped.delaySum / mm.ped.delayN : 0,
+        },
+      },
+      vulnerable: {
+        pedConflicts: Math.round(mm.pedConf), bikeConflicts: Math.round(mm.bikeConf), closePasses: Math.round(mm.close),
+        pedInjuryRiskIndex: mm.pedRisk, bikeInjuryRiskIndex: mm.bikeRisk,
+        meanVehicleSpeedAtPedEncounter: mm.pedEnc > 0 ? mm.pedEncSpeed / mm.pedEnc : 0,
+      },
     };
     return JSON.stringify(m);
   }

@@ -6,11 +6,20 @@ export interface NetNode {
   control: ControlType; gate: boolean; inStudyArea: boolean;
   /** Gate nodes only: whether traffic can enter / leave the study area here (absent = both). */
   canEnter?: boolean; canExit?: boolean;
+  markedCrossing?: boolean;
 }
 export interface NetLink {
   id: number; osmWayId: number; from: number; to: number; reverse: number | null;
   name: string; class: RoadClass; lanes: number; speedLimit: number; length: number;
   geometry: [number, number][]; stopAtEnd: boolean; humps: number[]; inStudyArea: boolean;
+  /** Dedicated bike lane or track in this direction. */
+  bikeLane?: boolean;
+  /** Signed bike route or bike boulevard. */
+  bikeRoute?: boolean;
+  /** Walkable alongside (default true except motorway). */
+  sidewalk?: boolean;
+  /** Marked mid-block crossings, meters from link start. */
+  crossings?: number[];
 }
 export interface Network {
   version: 1; id: string; name: string;
@@ -21,10 +30,20 @@ export interface Network {
 }
 export interface DemandPeriod {
   id: string; label: string;
-  flows: { origin: number; destination: number; vehPerHour: number }[];
+  flows: { origin: number; destination: number; vehPerHour: number; mode?: 'car' | 'bicycle' | 'pedestrian' }[];
 }
 export interface Provenance { source: string; url: string; note: string }
 export interface Demand { version: 1; area: string; periods: DemandPeriod[]; provenance: Provenance[] }
+
+export interface Transit {
+  version: 1; area: string;
+  routes: {
+    id: string; name: string; links: number[];
+    stops: { link: number; position: number; name: string; dwell: number }[];
+    headways: { period: string; seconds: number }[];
+  }[];
+  provenance: Provenance[];
+}
 
 export interface Calibration { status: 'uncalibrated' | 'calibrated'; note?: string }
 export interface AreaEntry {
@@ -32,6 +51,8 @@ export interface AreaEntry {
   center: [number, number]; zoom: number;
   /** Absent means uncalibrated. */
   calibration?: Calibration;
+  /** Transit file (routes, stops, headways); absent means no buses. */
+  transit?: string;
 }
 
 export type Intervention =
@@ -57,14 +78,34 @@ export interface Metrics {
   arterialMeanSpeed: number;
   /** Vehicles removed by the sim's gridlock breaker (absent in older sim builds). */
   gridlockRemoved?: number;
+  /** Per-mode results (absent in sim builds without multimodal support). */
+  modes?: ModeMetrics;
+  vulnerable?: VulnerableMetrics;
 }
+
+export interface ModeMetrics {
+  car: { inNetwork: number; completedTrips: number; meanTripTime: number };
+  bus: { inNetwork: number; completedRuns: number; meanRunTime: number; meanSpeed: number };
+  bicycle: { inNetwork: number; completedTrips: number; meanTripTime: number };
+  pedestrian: { inNetwork: number; completedTrips: number; meanTripTime: number; meanCrossingDelay: number };
+}
+export interface VulnerableMetrics {
+  pedConflicts: number; bikeConflicts: number; closePasses: number;
+  pedInjuryRiskIndex: number; bikeInjuryRiskIndex: number;
+  meanVehicleSpeedAtPedEncounter: number;
+}
+
+/** Agent kind codes in the vehicle buffer (slot 4). */
+export const KIND_CAR = 0, KIND_BUS = 1, KIND_BIKE = 2, KIND_PED = 3;
+export type ModeKey = 'car' | 'bus' | 'bicycle' | 'pedestrian';
+export type ModeVisibility = Record<ModeKey, boolean>;
 
 export type Overlay = 'flow' | 'speed' | 'cutthrough';
 export type Theme = 'auto' | 'light' | 'dark';
 
 export interface AreaBundle {
   entry: AreaEntry; network: Network; demand: Demand;
-  basemap: GeoFC; synthetic: boolean;
+  basemap: GeoFC; synthetic: boolean; transit?: Transit;
 }
 
 /** Link stats from the sim: stride 4 per link. */

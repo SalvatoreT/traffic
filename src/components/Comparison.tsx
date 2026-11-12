@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Metrics } from '../types';
-import { CARDS, networkHealth, summarize } from '../lib/metrics';
+import { CARDS, MODE_CARDS, emptyMode, hasModes, networkHealth, summarize, type CardDef, type ModeCardId } from '../lib/metrics';
 import { formatClock, formatDiff, formatValue } from '../lib/format';
 
 interface Props {
@@ -33,30 +33,15 @@ export function Comparison({ base, scen, comparing, scenarioCount, onRef }: Prop
         <p className="notice" role="note">Early results are noisy: let both runs reach at least 10 simulated minutes (use a faster speed).</p>
       )}
       {scen && <HealthLine scen={scen} base={comparing ? base : null} />}
-      {CARDS.map((c) => (
-        <section key={c.id} className="card" aria-labelledby={`card-${c.id}`}>
-          <h3 id={`card-${c.id}`}>{c.title}</h3>
-          {c.note && <p className="muted small">{c.note}</p>}
-          <table className="cmp">
-            <thead>
-              <tr><th scope="col">Metric</th><th scope="col">Baseline</th><th scope="col">Scenario</th><th scope="col">Change</th></tr>
-            </thead>
-            <tbody>
-              {c.metrics.map((d) => {
-                const b = base ? d.get(base) : undefined, s = scen ? d.get(scen) : undefined;
-                const df = formatDiff(b, s, d.kind, d.lowerIsBetter);
-                return (
-                  <tr key={d.id}>
-                    <th scope="row">{d.label}</th>
-                    <td>{formatValue(d.kind, b)}</td>
-                    <td>{formatValue(d.kind, s)}</td>
-                    <td className={`chg ${comparing ? df.verdict.replace(/ /g, '-') : 'neutral'}`}>{comparing ? df.text : '—'}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+      {CARDS.map((c) => <CardTable key={c.id} c={c} base={base} scen={scen} comparing={comparing} />)}
+      {scen && !hasModes(scen) && (
+        <section className="card" aria-labelledby="card-modes-na">
+          <h3 id="card-modes-na">Walking, biking and buses</h3>
+          <p className="muted small">Not available: this simulation build has no walking, biking or bus agents.</p>
         </section>
+      )}
+      {hasModes(scen) && MODE_CARDS.map((c) => (
+        <CardTable key={c.id} c={c} base={base} scen={scen} comparing={comparing} empty={emptyMode(c.id as ModeCardId, [base, scen])} />
       ))}
       <aside className="caveat" aria-label="Caveat about fixed demand">
         Trip demand is fixed in this version: the same trips are made before and after
@@ -67,6 +52,36 @@ export function Comparison({ base, scen, comparing, scenarioCount, onRef }: Prop
       </aside>
       <div className="sr-only" aria-live="polite" role="status">{announce}</div>
     </div>
+  );
+}
+
+function CardTable({ c, base, scen, comparing, empty }: { c: CardDef; base: Metrics | null; scen: Metrics | null; comparing: boolean; empty?: string | null }) {
+  return (
+    <section className="card" aria-labelledby={`card-${c.id}`}>
+      <h3 id={`card-${c.id}`}>{c.title}</h3>
+      {c.note && <p className="muted small">{c.note}</p>}
+      {empty ? <p className="notice" role="note">{empty}</p> : (
+        <table className="cmp">
+          <thead>
+            <tr><th scope="col">Metric</th><th scope="col">Baseline</th><th scope="col">Scenario</th><th scope="col">Change</th></tr>
+          </thead>
+          <tbody>
+            {c.metrics.map((d) => {
+              const b = base ? d.get(base) : undefined, s = scen ? d.get(scen) : undefined;
+              const df = formatDiff(b, s, d.kind, d.lowerIsBetter);
+              return (
+                <tr key={d.id}>
+                  <th scope="row">{d.label}</th>
+                  <td>{formatValue(d.kind, b)}</td>
+                  <td>{formatValue(d.kind, s)}</td>
+                  <td className={`chg ${comparing ? df.verdict.replace(/ /g, '-') : 'neutral'}`}>{comparing ? df.text : '—'}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
+    </section>
   );
 }
 

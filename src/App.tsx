@@ -113,7 +113,7 @@ function Simulator({ bundle }: { bundle: AreaBundle }) {
     c.onError = (m) => setSimError(m);
     const f = first.current;
     c.send({
-      t: 'init', network: JSON.stringify(network), demand: JSON.stringify(demand), mock: FORCE_MOCK,
+      t: 'init', network: JSON.stringify(network), demand: JSON.stringify(demand), transit: transitJson, mock: FORCE_MOCK,
       period: f.period, demandScale: f.scale, seed: 1, interventions: f.interventions, speed: f.speed, running: f.running,
     });
     setClient(c);

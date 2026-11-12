@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { AreaBundle, Overlay } from '../types';
+import type { AreaBundle, ModeKey, ModeVisibility, Overlay } from '../types';
 import { formatClock } from '../lib/format';
 import { rampStops, type Mode } from '../lib/ramps';
 
@@ -47,6 +47,23 @@ export function Playback(p: PlaybackProps) {
 interface LegendProps {
   overlay: Overlay; onOverlay(o: Overlay): void; max: number; mode: Mode;
   source: 'scenario' | 'baseline'; onSource(s: 'scenario' | 'baseline'): void; canCompare: boolean;
+  /** False when the sim build has no multimodal agents: only the car key is shown then. */
+  multimodal: boolean;
+  modes: ModeVisibility; onModes(m: ModeVisibility): void;
+  hasBikeNet: boolean; bikeNet: boolean; onBikeNet(v: boolean): void;
+}
+
+const MODE_KEYS: { id: ModeKey; label: string }[] = [
+  { id: 'car', label: 'Cars' }, { id: 'bus', label: 'Buses' }, { id: 'bicycle', label: 'Bikes' }, { id: 'pedestrian', label: 'People walking' },
+];
+function ModeSymbol({ id }: { id: ModeKey }) {
+  const c = `var(--${id === 'car' ? 'veh' : id === 'bus' ? 'bus' : id === 'bicycle' ? 'bike' : 'ped'})`;
+  switch (id) {
+    case 'car': return <svg width="16" height="16" aria-hidden="true"><circle cx="8" cy="8" r="4.5" fill={c} stroke="var(--veh-ring)" /></svg>;
+    case 'bus': return <svg width="22" height="16" aria-hidden="true"><rect x="1.5" y="4" width="19" height="8" rx="3" fill={c} stroke="var(--veh-ring)" strokeWidth="1.2" /></svg>;
+    case 'bicycle': return <svg width="16" height="16" aria-hidden="true"><path d="M8 2 L14 12.5 L2 12.5Z" fill={c} stroke="var(--veh-ring)" strokeLinejoin="round" /></svg>;
+    case 'pedestrian': return <svg width="16" height="16" aria-hidden="true"><rect x="4.5" y="4.5" width="7" height="7" fill={c} stroke="var(--veh-ring)" /></svg>;
+  }
 }
 
 const OVERLAYS: { id: Overlay; label: string }[] = [
@@ -80,9 +97,25 @@ export function Legend(p: LegendProps) {
         <div className="ramp-ticks" aria-hidden="false">{ticks.map((t, i) => <span key={i}>{t}</span>)}</div>
         <div className="muted small">{p.overlay === 'speed' ? 'Slower = darker/wider (more congested).' : 'Higher = wider line.'} Gray thin = no vehicles.</div>
       </div>
+      <fieldset className="modes">
+        <legend>Show on map</legend>
+        {MODE_KEYS.filter((m) => p.multimodal || m.id === 'car').map((m) => (
+          <label key={m.id} className={`check mode ${p.modes[m.id] ? '' : 'off'}`}>
+            <input type="checkbox" checked={p.modes[m.id]} onChange={(e) => p.onModes({ ...p.modes, [m.id]: e.target.checked })} />
+            <ModeSymbol id={m.id} /> {m.label}
+          </label>
+        ))}
+        {p.multimodal && p.hasBikeNet && (
+          <label className="check mode">
+            <input type="checkbox" checked={p.bikeNet} onChange={(e) => p.onBikeNet(e.target.checked)} />
+            <svg width="22" height="16" aria-hidden="true"><line x1="1" y1="8" x2="21" y2="8" stroke="var(--bike)" strokeWidth="4" strokeDasharray="5 3" /></svg> Bike network
+          </label>
+        )}
+      </fieldset>
       <ul className="keys" aria-label="Map symbols">
-        <li><svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="var(--veh)" stroke="var(--veh-ring)" /></svg> Vehicle</li>
-        <li><svg width="16" height="16" aria-hidden="true"><path d="M8 1 L15 8 L8 15 L1 8Z" fill="var(--thru)" stroke="var(--thru-ring)" strokeWidth="1.6" /></svg> Through trip (cut-through)</li>
+        <li><svg width="16" height="16" aria-hidden="true"><path d="M8 1 L15 8 L8 15 L1 8Z" fill="var(--thru)" stroke="var(--thru-ring)" strokeWidth="1.6" /></svg> Car on a through trip (cut-through)</li>
+        {p.multimodal && <li><svg width="14" height="14" aria-hidden="true"><rect x="2" y="2" width="10" height="10" rx="2" fill="var(--surface)" stroke="var(--bus)" strokeWidth="2" /></svg> Bus stop</li>}
+        {p.multimodal && <li><svg width="14" height="14" aria-hidden="true"><line x1="7" y1="1" x2="7" y2="13" stroke="var(--text)" strokeWidth="2" /></svg> Marked crossing (zoomed in)</li>}
         <li><svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="var(--surface)" stroke="#1f9d55" strokeWidth="2" /></svg> Signal green (ring)</li>
         <li><svg width="14" height="14" aria-hidden="true"><path d="M7 1 L13 12 L1 12Z" fill="#f5c400" stroke="var(--text)" /></svg> Yellow (triangle)</li>
         <li><svg width="14" height="14" aria-hidden="true"><rect x="2" y="2" width="10" height="10" fill="#d62728" stroke="var(--text)" /></svg> Red (square)</li>

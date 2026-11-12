@@ -1228,3 +1228,32 @@ fn vehicles_queued_on_a_motorway_stub_wait_instead_of_being_removed() {
     step_n(&mut sim, GRIDLOCK_REMOVE_S as f64 + 60.0);
     assert_eq!(sim.metrics().gridlock_removed, 1);
 }
+
+// ---------------------------------------------------------------- car-only regression (multimodal-agents)
+
+fn golden_signal_cross() -> Simulation {
+    let (net, c) = cross4(Control::Signal, RoadClass::Residential, false);
+    let d = demand(&[(c.w, c.e, 400.0), (c.e, c.w, 350.0), (c.s, c.n, 150.0), (c.n, c.s, 120.0), (c.w, c.s, 80.0), (c.s, c.w, 60.0)]);
+    Simulation::from_parts(net, d, cfg(3, 1.0)).unwrap()
+}
+
+/// Metrics JSON with the multimodal sections removed, so it compares with the pre-multimodal output.
+fn legacy_metrics(sim: &Simulation) -> String {
+    let mut v: serde_json::Value = serde_json::from_str(&sim.metrics_json()).unwrap();
+    let o = v.as_object_mut().unwrap();
+    o.remove("modes");
+    o.remove("vulnerable");
+    serde_json::to_string(&v).unwrap()
+}
+
+#[test]
+fn car_only_metrics_match_pre_multimodal_golden() {
+    let mut a = busy_corridor(7);
+    step_n(&mut a, 1800.0);
+    assert_eq!(legacy_metrics(&a), GOLDEN_CORRIDOR);
+    let mut b = golden_signal_cross();
+    step_n(&mut b, 1800.0);
+    assert_eq!(legacy_metrics(&b), GOLDEN_CROSS);
+}
+const GOLDEN_CORRIDOR: &str = r#"{"arterialMeanSpeed":5.433231493307917,"backlog":0,"completedTrips":521,"cutThrough":{"shareOfLocalVehKm":0.6339836786238884,"vehKm":100.98559865379332},"gridlockRemoved":0,"meanTripDelay":8.384775465409271,"meanTripTime":117.72515884497388,"safety":{"localMeanSpeed":8.709349302463082,"localP85Speed":11.23248003992016,"shareAbove20mph":0.5332095005258342,"shareAbove25mph":0.15732685032164662,"ttcConflicts":3},"spawned":558,"time":1800.0,"unroutableTrips":0,"vehKm":408.3957469768524,"vehiclesInNetwork":37}"#;
+const GOLDEN_CROSS: &str = r#"{"arterialMeanSpeed":7.54867544983693,"backlog":0,"completedTrips":550,"cutThrough":{"shareOfLocalVehKm":1.0,"vehKm":63.92283105659485},"gridlockRemoved":0,"meanTripDelay":17.96706181280725,"meanTripTime":55.36192410223595,"safety":{"localMeanSpeed":5.957030607316784,"localP85Speed":10.547747385358004,"shareAbove20mph":0.369393262609343,"shareAbove25mph":0.08289130839382096,"ttcConflicts":12},"spawned":572,"time":1800.0,"unroutableTrips":0,"vehKm":215.27309953260425,"vehiclesInNetwork":22}"#;
