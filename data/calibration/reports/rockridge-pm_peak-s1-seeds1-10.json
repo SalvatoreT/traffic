@@ -4,129 +4,129 @@
       "group": "health",
       "name": "gridlock removals",
       "stat": {
-        "ci95Hi": 3.859,
-        "ci95Lo": 1.141,
-        "max": 5.0,
-        "mean": 2.5,
+        "ci95Hi": 18.673,
+        "ci95Lo": 0.127,
+        "max": 39.0,
+        "mean": 9.4,
         "min": 0.0,
         "n": 10,
-        "sd": 1.9
+        "sd": 12.963
       },
       "unit": "vehicles",
       "values": [
-        2.0,
-        2.0,
-        5.0,
-        2.0,
+        25.0,
+        6.0,
         0.0,
-        4.0,
-        5.0,
-        0.0,
+        2.0,
+        12.0,
+        8.0,
         1.0,
-        4.0
+        0.0,
+        39.0,
+        1.0
       ]
     },
     {
       "group": "health",
       "name": "gridlock removals per hour",
       "stat": {
-        "ci95Hi": 3.859,
-        "ci95Lo": 1.141,
-        "max": 5.0,
-        "mean": 2.5,
+        "ci95Hi": 18.673,
+        "ci95Lo": 0.127,
+        "max": 39.0,
+        "mean": 9.4,
         "min": 0.0,
         "n": 10,
-        "sd": 1.9
+        "sd": 12.963
       },
       "unit": "veh/h",
       "values": [
-        2.0,
-        2.0,
-        5.0,
-        2.0,
+        25.0,
+        6.0,
         0.0,
-        4.0,
-        5.0,
-        0.0,
+        2.0,
+        12.0,
+        8.0,
         1.0,
-        4.0
+        0.0,
+        39.0,
+        1.0
       ]
     },
     {
       "group": "health",
       "name": "entry backlog",
       "stat": {
-        "ci95Hi": 4.788,
-        "ci95Lo": 2.966,
-        "max": 6.231,
-        "mean": 3.877,
-        "min": 2.04,
+        "ci95Hi": 2.133,
+        "ci95Lo": 1.057,
+        "max": 3.314,
+        "mean": 1.595,
+        "min": 0.897,
         "n": 10,
-        "sd": 1.274
+        "sd": 0.752
       },
       "unit": "% of spawned",
       "values": [
-        3.882,
-        2.04,
-        3.777,
-        6.231,
-        4.06,
-        5.256,
-        2.695,
-        4.236,
-        4.178,
-        2.418
+        1.296,
+        3.314,
+        0.897,
+        1.527,
+        2.328,
+        1.272,
+        1.064,
+        1.011,
+        1.239,
+        2.001
       ]
     },
     {
       "group": "health",
       "name": "backlog growth in the second half of the run",
       "stat": {
-        "ci95Hi": 3.849,
-        "ci95Lo": 2.2,
-        "max": 5.242,
-        "mean": 3.025,
-        "min": 1.779,
+        "ci95Hi": 1.518,
+        "ci95Lo": 0.416,
+        "max": 2.609,
+        "mean": 0.967,
+        "min": -0.013,
         "n": 10,
-        "sd": 1.153
+        "sd": 0.771
       },
       "unit": "points of spawned",
       "values": [
-        2.056,
-        1.795,
-        2.508,
-        5.242,
-        2.971,
-        4.124,
-        1.779,
-        3.316,
-        4.061,
-        2.396
+        0.654,
+        2.609,
+        -0.013,
+        0.519,
+        1.958,
+        0.837,
+        0.462,
+        0.846,
+        1.131,
+        0.664
       ]
     },
     {
       "group": "health",
       "name": "completed trips",
       "stat": {
-        "ci95Hi": 22091.073,
-        "ci95Lo": 21673.927,
-        "max": 22279.0,
-        "mean": 21882.5,
-        "min": 21521.0,
+        "ci95Hi": 22350.362,
+        "ci95Lo": 22050.438,
+        "max": 22452.0,
+        "mean": 22200.4,
+        "min": 21823.0,
         "n": 10,
-        "sd": 291.585
+        "sd": 209.646
       },
       "unit": "trips",
       "values": [
-        22070.0,
-        22201.0,
-        21603.0,
-        21588.0,
-        22279.0,
-        21521.0,
-        22020.0,
-        21741.0,
-        21640.0,
+        22452.0,
+        21823.0,
+        22302.0,
+        22172.0,
+        22138.0,
+        22366.0,
+        22400.0,
+        22299.0,
+        21890.0,
         22162.0
       ]
     },
@@ -134,971 +134,87 @@
       "group": "health",
       "name": "arterial mean speed",
       "stat": {
-        "ci95Hi": 7.602,
-        "ci95Lo": 7.328,
-        "max": 7.736,
-        "mean": 7.465,
-        "min": 7.137,
+        "ci95Hi": 7.552,
+        "ci95Lo": 7.278,
+        "max": 7.71,
+        "mean": 7.415,
+        "min": 7.147,
         "n": 10,
-        "sd": 0.191
+        "sd": 0.192
       },
       "unit": "m/s",
       "values": [
-        7.526,
-        7.736,
-        7.137,
-        7.145,
-        7.55,
-        7.515,
-        7.389,
-        7.579,
-        7.582,
-        7.489
+        7.638,
+        7.293,
+        7.554,
+        7.546,
+        7.147,
+        7.22,
+        7.458,
+        7.71,
+        7.281,
+        7.304
       ]
     },
     {
       "group": "health",
       "name": "arterial mean speed, last 15 min",
       "stat": {
-        "ci95Hi": 7.528,
-        "ci95Lo": 6.732,
-        "max": 8.078,
-        "mean": 7.13,
-        "min": 5.96,
+        "ci95Hi": 7.085,
+        "ci95Lo": 6.704,
+        "max": 7.199,
+        "mean": 6.895,
+        "min": 6.423,
         "n": 10,
-        "sd": 0.556
+        "sd": 0.267
       },
       "unit": "m/s",
       "values": [
-        7.022,
-        6.747,
-        5.96,
-        7.059,
-        8.078,
-        7.35,
-        7.167,
-        6.937,
-        7.562,
-        7.416
+        7.199,
+        7.049,
+        7.125,
+        6.806,
+        6.423,
+        6.925,
+        7.069,
+        7.102,
+        6.524,
+        6.725
       ]
     },
     {
       "group": "cut-through",
       "name": "local vehicle-miles, surface gates to the freeway",
       "stat": {
-        "ci95Hi": 9.506,
-        "ci95Lo": 6.295,
-        "max": 11.89,
-        "mean": 7.9,
-        "min": 4.585,
+        "ci95Hi": 9.813,
+        "ci95Lo": 7.091,
+        "max": 11.442,
+        "mean": 8.452,
+        "min": 6.201,
         "n": 10,
-        "sd": 2.244
+        "sd": 1.902
       },
       "unit": "veh-miles",
       "values": [
-        11.89,
-        4.585,
-        6.461,
-        6.748,
-        5.899,
-        7.168,
-        10.5,
-        9.368,
-        9.032,
-        7.355
+        11.442,
+        11.089,
+        7.89,
+        7.124,
+        7.066,
+        7.608,
+        9.916,
+        6.201,
+        6.592,
+        9.594
       ]
     },
     {
       "group": "cut-through",
       "name": "share of local vehicle-miles, surface gates to the freeway",
       "stat": {
-        "ci95Hi": 0.02,
+        "ci95Hi": 0.021,
         "ci95Lo": 0.014,
         "max": 0.025,
-        "mean": 0.017,
-        "min": 0.01,
-        "n": 10,
-        "sd": 0.005
-      },
-      "unit": "share",
-      "values": [
-        0.025,
-        0.01,
-        0.013,
-        0.015,
-        0.012,
-        0.016,
-        0.022,
-        0.02,
-        0.019,
-        0.015
-      ]
-    },
-    {
-      "group": "cut-through",
-      "name": "local vehicle-miles, freeway to the surface gates",
-      "stat": {
-        "ci95Hi": 17.176,
-        "ci95Lo": 14.38,
-        "max": 18.967,
-        "mean": 15.778,
-        "min": 13.105,
-        "n": 10,
-        "sd": 1.954
-      },
-      "unit": "veh-miles",
-      "values": [
-        18.489,
-        14.82,
-        18.967,
-        17.04,
-        15.713,
-        13.93,
-        14.107,
-        13.105,
-        16.506,
-        15.103
-      ]
-    },
-    {
-      "group": "cut-through",
-      "name": "share of local vehicle-miles, freeway to the surface gates",
-      "stat": {
-        "ci95Hi": 0.036,
-        "ci95Lo": 0.031,
-        "max": 0.039,
-        "mean": 0.034,
-        "min": 0.028,
-        "n": 10,
-        "sd": 0.004
-      },
-      "unit": "share",
-      "values": [
-        0.039,
-        0.033,
-        0.038,
-        0.038,
-        0.033,
-        0.032,
-        0.03,
-        0.028,
-        0.035,
-        0.031
-      ]
-    },
-    {
-      "group": "bypass",
-      "name": "corridor trips using the bypass, Hillegass Avenue vs College Avenue N",
-      "stat": {
-        "ci95Hi": 13.124,
-        "ci95Lo": 6.076,
-        "max": 18.0,
-        "mean": 9.6,
-        "min": 3.0,
-        "n": 10,
-        "sd": 4.926
-      },
-      "unit": "trips",
-      "values": [
-        18.0,
-        13.0,
-        10.0,
-        4.0,
-        6.0,
-        10.0,
-        3.0,
-        7.0,
-        9.0,
-        16.0
-      ]
-    },
-    {
-      "group": "bypass",
-      "name": "corridor trips, Hillegass Avenue vs College Avenue N",
-      "stat": {
-        "ci95Hi": 1174.132,
-        "ci95Lo": 1104.068,
-        "max": 1212.0,
-        "mean": 1139.1,
-        "min": 1054.0,
-        "n": 10,
-        "sd": 48.975
-      },
-      "unit": "trips",
-      "values": [
-        1181.0,
-        1212.0,
-        1078.0,
-        1054.0,
-        1180.0,
-        1111.0,
-        1170.0,
-        1128.0,
-        1139.0,
-        1138.0
-      ]
-    },
-    {
-      "group": "bypass",
-      "name": "corridor trips using the bypass, Hillegass Avenue vs College Avenue S",
-      "stat": {
-        "ci95Hi": 58.367,
-        "ci95Lo": 42.433,
-        "max": 66.0,
-        "mean": 50.4,
-        "min": 36.0,
-        "n": 10,
-        "sd": 11.138
-      },
-      "unit": "trips",
-      "values": [
-        49.0,
-        36.0,
-        61.0,
-        43.0,
-        66.0,
-        41.0,
-        57.0,
-        50.0,
-        37.0,
-        64.0
-      ]
-    },
-    {
-      "group": "bypass",
-      "name": "corridor trips, Hillegass Avenue vs College Avenue S",
-      "stat": {
-        "ci95Hi": 1101.769,
-        "ci95Lo": 1049.031,
-        "max": 1132.0,
-        "mean": 1075.4,
-        "min": 1015.0,
-        "n": 10,
-        "sd": 36.864
-      },
-      "unit": "trips",
-      "values": [
-        1072.0,
-        1054.0,
-        1042.0,
-        1084.0,
-        1132.0,
-        1063.0,
-        1112.0,
-        1060.0,
-        1015.0,
-        1120.0
-      ]
-    },
-    {
-      "group": "headline share",
-      "name": "Hillegass Avenue NB from freeway",
-      "stat": {
-        "ci95Hi": 0.677,
-        "ci95Lo": 0.619,
-        "max": 0.713,
-        "mean": 0.648,
-        "min": 0.56,
-        "n": 10,
-        "sd": 0.041
-      },
-      "unit": "share",
-      "values": [
-        0.653,
-        0.681,
-        0.641,
-        0.64,
-        0.625,
-        0.63,
-        0.663,
-        0.677,
-        0.713,
-        0.56
-      ]
-    },
-    {
-      "group": "share",
-      "name": "Hillegass Avenue NB to Benvenue Avenue",
-      "stat": {
-        "ci95Hi": 0.017,
-        "ci95Lo": 0.002,
-        "max": 0.032,
-        "mean": 0.01,
-        "min": 0.0,
-        "n": 10,
-        "sd": 0.01
-      },
-      "unit": "share",
-      "values": [
-        0.014,
-        0.032,
-        0.019,
-        0.0,
-        0.01,
-        0.012,
-        0.0,
-        0.01,
-        0.0,
-        0.0
-      ]
-    },
-    {
-      "group": "share",
-      "name": "Hillegass Avenue NB to College Avenue",
-      "stat": {
-        "ci95Hi": 0.066,
-        "ci95Lo": 0.036,
-        "max": 0.087,
-        "mean": 0.051,
-        "min": 0.025,
-        "n": 10,
-        "sd": 0.021
-      },
-      "unit": "share",
-      "values": [
-        0.042,
-        0.043,
-        0.029,
-        0.047,
-        0.087,
-        0.074,
-        0.038,
-        0.052,
-        0.025,
-        0.077
-      ]
-    },
-    {
-      "group": "share",
-      "name": "Hillegass Avenue NB to Alcatraz Avenue WB",
-      "stat": {
-        "ci95Hi": 0.221,
-        "ci95Lo": 0.163,
-        "max": 0.247,
-        "mean": 0.192,
-        "min": 0.128,
-        "n": 10,
-        "sd": 0.041
-      },
-      "unit": "share",
-      "values": [
-        0.236,
-        0.128,
-        0.175,
-        0.221,
-        0.163,
-        0.247,
-        0.2,
-        0.167,
-        0.15,
-        0.231
-      ]
-    },
-    {
-      "group": "headline share",
-      "name": "Colby Street NB from freeway",
-      "stat": {
-        "ci95Hi": 0.789,
-        "ci95Lo": 0.74,
-        "max": 0.81,
-        "mean": 0.764,
-        "min": 0.692,
-        "n": 10,
-        "sd": 0.034
-      },
-      "unit": "share",
-      "values": [
-        0.81,
-        0.771,
-        0.758,
-        0.692,
-        0.783,
-        0.75,
-        0.765,
-        0.74,
-        0.767,
-        0.809
-      ]
-    },
-    {
-      "group": "share",
-      "name": "Colby Street NB to Alcatraz Avenue WB",
-      "stat": {
-        "ci95Hi": 0.065,
-        "ci95Lo": 0.041,
-        "max": 0.073,
-        "mean": 0.053,
-        "min": 0.02,
-        "n": 10,
-        "sd": 0.017
-      },
-      "unit": "share",
-      "values": [
-        0.02,
-        0.048,
-        0.073,
-        0.07,
-        0.051,
-        0.066,
-        0.044,
-        0.046,
-        0.04,
-        0.072
-      ]
-    },
-    {
-      "group": "share",
-      "name": "Colby Street NB to Telegraph Avenue",
-      "stat": {
-        "ci95Hi": 0.272,
-        "ci95Lo": 0.225,
-        "max": 0.303,
-        "mean": 0.249,
-        "min": 0.21,
-        "n": 10,
-        "sd": 0.033
-      },
-      "unit": "share",
-      "values": [
-        0.21,
-        0.221,
-        0.269,
-        0.303,
-        0.297,
-        0.245,
-        0.213,
-        0.235,
-        0.257,
-        0.234
-      ]
-    },
-    {
-      "group": "share",
-      "name": "Colby Street NB to College Avenue",
-      "stat": {
-        "ci95Hi": 0.02,
-        "ci95Lo": 0.008,
-        "max": 0.03,
-        "mean": 0.014,
-        "min": 0.005,
-        "n": 10,
-        "sd": 0.008
-      },
-      "unit": "share",
-      "values": [
-        0.015,
-        0.013,
-        0.005,
-        0.03,
-        0.023,
-        0.015,
-        0.005,
-        0.015,
-        0.015,
-        0.005
-      ]
-    },
-    {
-      "group": "share",
-      "name": "Hillegass Avenue SB from Alcatraz Avenue WB",
-      "stat": {
-        "ci95Hi": 0.141,
-        "ci95Lo": 0.111,
-        "max": 0.151,
-        "mean": 0.126,
-        "min": 0.085,
-        "n": 10,
-        "sd": 0.021
-      },
-      "unit": "share",
-      "values": [
-        0.151,
-        0.14,
-        0.132,
-        0.124,
-        0.094,
-        0.141,
-        0.144,
-        0.13,
-        0.121,
-        0.085
-      ]
-    },
-    {
-      "group": "share",
-      "name": "Hillegass Avenue SB from Benvenue Avenue",
-      "stat": {
-        "ci95Hi": 0.048,
-        "ci95Lo": 0.033,
-        "max": 0.053,
-        "mean": 0.041,
-        "min": 0.023,
-        "n": 10,
-        "sd": 0.01
-      },
-      "unit": "share",
-      "values": [
-        0.052,
-        0.053,
-        0.05,
-        0.038,
-        0.023,
-        0.042,
-        0.039,
-        0.039,
-        0.047,
-        0.025
-      ]
-    },
-    {
-      "group": "share",
-      "name": "Hillegass Avenue SB from College Avenue",
-      "stat": {
-        "ci95Hi": 0.132,
-        "ci95Lo": 0.101,
-        "max": 0.155,
-        "mean": 0.117,
-        "min": 0.085,
-        "n": 10,
-        "sd": 0.022
-      },
-      "unit": "share",
-      "values": [
-        0.134,
-        0.14,
-        0.118,
-        0.108,
-        0.085,
-        0.155,
-        0.105,
-        0.091,
-        0.114,
-        0.12
-      ]
-    },
-    {
-      "group": "headline share",
-      "name": "Hillegass Avenue SB to freeway",
-      "stat": {
-        "ci95Hi": 0.726,
-        "ci95Lo": 0.668,
-        "max": 0.76,
-        "mean": 0.697,
-        "min": 0.633,
-        "n": 10,
-        "sd": 0.04
-      },
-      "unit": "share",
-      "values": [
-        0.703,
-        0.633,
-        0.677,
-        0.73,
-        0.709,
-        0.641,
-        0.729,
-        0.76,
-        0.678,
-        0.71
-      ]
-    },
-    {
-      "group": "share",
-      "name": "Colby Street SB from Alcatraz Avenue EB",
-      "stat": {
-        "ci95Hi": 0.11,
-        "ci95Lo": 0.085,
-        "max": 0.118,
-        "mean": 0.097,
-        "min": 0.06,
-        "n": 10,
-        "sd": 0.018
-      },
-      "unit": "share",
-      "values": [
-        0.087,
-        0.06,
-        0.1,
-        0.079,
-        0.109,
-        0.102,
-        0.118,
-        0.101,
-        0.104,
-        0.113
-      ]
-    },
-    {
-      "group": "share",
-      "name": "Colby Street SB from Alcatraz Avenue WB",
-      "stat": {
-        "ci95Hi": 0.376,
-        "ci95Lo": 0.327,
-        "max": 0.401,
-        "mean": 0.352,
-        "min": 0.301,
-        "n": 10,
-        "sd": 0.034
-      },
-      "unit": "share",
-      "values": [
-        0.384,
-        0.377,
-        0.401,
-        0.368,
-        0.312,
-        0.358,
-        0.345,
-        0.301,
-        0.312,
-        0.357
-      ]
-    },
-    {
-      "group": "share",
-      "name": "Colby Street SB from Telegraph Avenue",
-      "stat": {
-        "ci95Hi": 0.224,
-        "ci95Lo": 0.173,
-        "max": 0.276,
-        "mean": 0.198,
-        "min": 0.144,
-        "n": 10,
-        "sd": 0.035
-      },
-      "unit": "share",
-      "values": [
-        0.22,
-        0.144,
-        0.276,
-        0.189,
-        0.206,
-        0.207,
-        0.206,
-        0.192,
-        0.179,
-        0.163
-      ]
-    },
-    {
-      "group": "headline share",
-      "name": "Colby Street SB to freeway",
-      "stat": {
-        "ci95Hi": 0.739,
-        "ci95Lo": 0.69,
-        "max": 0.779,
-        "mean": 0.715,
-        "min": 0.668,
-        "n": 10,
-        "sd": 0.034
-      },
-      "unit": "share",
-      "values": [
-        0.702,
-        0.732,
-        0.668,
-        0.675,
-        0.691,
-        0.704,
-        0.714,
-        0.752,
-        0.779,
-        0.73
-      ]
-    },
-    {
-      "group": "share",
-      "name": "Colby Street SB to Forest Street",
-      "stat": {
-        "ci95Hi": 0.155,
-        "ci95Lo": 0.114,
-        "max": 0.171,
-        "mean": 0.134,
-        "min": 0.092,
-        "n": 10,
-        "sd": 0.028
-      },
-      "unit": "share",
-      "values": [
-        0.101,
-        0.092,
-        0.154,
-        0.161,
-        0.148,
-        0.108,
-        0.15,
-        0.171,
-        0.11,
-        0.147
-      ]
-    },
-    {
-      "group": "ramp share",
-      "name": "onto freeway via College Avenue",
-      "stat": {
-        "ci95Hi": 0.097,
-        "ci95Lo": 0.074,
-        "max": 0.108,
-        "mean": 0.085,
-        "min": 0.065,
-        "n": 10,
-        "sd": 0.016
-      },
-      "unit": "share",
-      "values": [
-        0.065,
-        0.099,
-        0.072,
-        0.099,
-        0.097,
-        0.096,
-        0.083,
-        0.069,
-        0.065,
-        0.108
-      ]
-    },
-    {
-      "group": "ramp share",
-      "name": "onto freeway via Hillegass Avenue",
-      "stat": {
-        "ci95Hi": 0.124,
-        "ci95Lo": 0.096,
-        "max": 0.143,
-        "mean": 0.11,
-        "min": 0.089,
-        "n": 10,
-        "sd": 0.019
-      },
-      "unit": "share",
-      "values": [
-        0.101,
-        0.092,
-        0.143,
-        0.107,
-        0.139,
-        0.094,
-        0.111,
-        0.101,
-        0.089,
-        0.126
-      ]
-    },
-    {
-      "group": "ramp share",
-      "name": "onto freeway via Martin Street",
-      "stat": {
-        "ci95Hi": 0.116,
-        "ci95Lo": 0.096,
-        "max": 0.13,
-        "mean": 0.106,
-        "min": 0.086,
-        "n": 10,
-        "sd": 0.013
-      },
-      "unit": "share",
-      "values": [
-        0.111,
-        0.099,
-        0.097,
-        0.118,
-        0.093,
-        0.13,
-        0.107,
-        0.119,
-        0.101,
-        0.086
-      ]
-    },
-    {
-      "group": "ramp share",
-      "name": "onto freeway via Colby Street",
-      "stat": {
-        "ci95Hi": 0.213,
-        "ci95Lo": 0.193,
-        "max": 0.216,
-        "mean": 0.203,
-        "min": 0.178,
-        "n": 10,
-        "sd": 0.014
-      },
-      "unit": "share",
-      "values": [
-        0.216,
-        0.189,
-        0.207,
-        0.178,
-        0.186,
-        0.214,
-        0.207,
-        0.205,
-        0.212,
-        0.215
-      ]
-    },
-    {
-      "group": "ramp share",
-      "name": "onto freeway via Telegraph Avenue north of Alcatraz Avenue",
-      "stat": {
-        "ci95Hi": 0.061,
-        "ci95Lo": 0.052,
-        "max": 0.064,
-        "mean": 0.056,
-        "min": 0.046,
-        "n": 10,
-        "sd": 0.007
-      },
-      "unit": "share",
-      "values": [
-        0.064,
-        0.046,
-        0.061,
-        0.048,
-        0.058,
-        0.064,
-        0.054,
-        0.063,
-        0.052,
-        0.053
-      ]
-    },
-    {
-      "group": "ramp share",
-      "name": "onto freeway via Benvenue Avenue",
-      "stat": {
-        "ci95Hi": 0.027,
-        "ci95Lo": 0.018,
-        "max": 0.032,
-        "mean": 0.023,
-        "min": 0.013,
-        "n": 10,
-        "sd": 0.006
-      },
-      "unit": "share",
-      "values": [
-        0.02,
-        0.031,
-        0.024,
-        0.032,
-        0.024,
-        0.025,
-        0.016,
-        0.013,
-        0.015,
-        0.026
-      ]
-    },
-    {
-      "group": "ramp share",
-      "name": "from freeway via College Avenue",
-      "stat": {
-        "ci95Hi": 0.058,
-        "ci95Lo": 0.042,
-        "max": 0.07,
-        "mean": 0.05,
-        "min": 0.036,
-        "n": 10,
-        "sd": 0.011
-      },
-      "unit": "share",
-      "values": [
-        0.046,
-        0.065,
-        0.045,
-        0.047,
-        0.057,
-        0.044,
-        0.046,
-        0.036,
-        0.042,
-        0.07
-      ]
-    },
-    {
-      "group": "ramp share",
-      "name": "from freeway via Martin Street",
-      "stat": {
-        "ci95Hi": 0.205,
-        "ci95Lo": 0.168,
-        "max": 0.233,
-        "mean": 0.187,
-        "min": 0.147,
-        "n": 10,
-        "sd": 0.026
-      },
-      "unit": "share",
-      "values": [
-        0.185,
-        0.165,
-        0.233,
-        0.147,
-        0.207,
-        0.158,
-        0.187,
-        0.182,
-        0.205,
-        0.199
-      ]
-    },
-    {
-      "group": "ramp share",
-      "name": "from freeway via Colby Street",
-      "stat": {
-        "ci95Hi": 0.099,
-        "ci95Lo": 0.079,
-        "max": 0.117,
-        "mean": 0.089,
-        "min": 0.074,
-        "n": 10,
-        "sd": 0.014
-      },
-      "unit": "share",
-      "values": [
-        0.088,
-        0.117,
-        0.085,
-        0.078,
-        0.089,
-        0.075,
-        0.074,
-        0.082,
-        0.099,
-        0.102
-      ]
-    },
-    {
-      "group": "ramp share",
-      "name": "from freeway via Hillegass Avenue",
-      "stat": {
-        "ci95Hi": 0.043,
-        "ci95Lo": 0.035,
-        "max": 0.047,
-        "mean": 0.039,
-        "min": 0.03,
-        "n": 10,
-        "sd": 0.006
-      },
-      "unit": "share",
-      "values": [
-        0.034,
-        0.047,
-        0.043,
-        0.03,
-        0.045,
-        0.04,
-        0.03,
-        0.041,
-        0.039,
-        0.039
-      ]
-    },
-    {
-      "group": "ramp share",
-      "name": "from freeway via Benvenue Avenue",
-      "stat": {
-        "ci95Hi": 0.02,
-        "ci95Lo": 0.015,
-        "max": 0.023,
         "mean": 0.017,
         "min": 0.012,
         "n": 10,
@@ -1106,380 +222,1264 @@
       },
       "unit": "share",
       "values": [
-        0.016,
+        0.025,
         0.023,
-        0.018,
+        0.016,
+        0.015,
+        0.014,
+        0.015,
+        0.02,
+        0.012,
+        0.014,
+        0.02
+      ]
+    },
+    {
+      "group": "cut-through",
+      "name": "local vehicle-miles, freeway to the surface gates",
+      "stat": {
+        "ci95Hi": 26.813,
+        "ci95Lo": 20.402,
+        "max": 31.995,
+        "mean": 23.608,
+        "min": 14.976,
+        "n": 10,
+        "sd": 4.481
+      },
+      "unit": "veh-miles",
+      "values": [
+        14.976,
+        28.118,
+        21.042,
+        23.577,
+        23.01,
+        31.995,
+        23.003,
+        24.414,
+        24.811,
+        21.132
+      ]
+    },
+    {
+      "group": "cut-through",
+      "name": "share of local vehicle-miles, freeway to the surface gates",
+      "stat": {
+        "ci95Hi": 0.054,
+        "ci95Lo": 0.042,
+        "max": 0.062,
+        "mean": 0.048,
+        "min": 0.033,
+        "n": 10,
+        "sd": 0.008
+      },
+      "unit": "share",
+      "values": [
+        0.033,
+        0.057,
+        0.043,
+        0.05,
+        0.044,
+        0.062,
+        0.046,
+        0.048,
+        0.052,
+        0.044
+      ]
+    },
+    {
+      "group": "bypass",
+      "name": "corridor trips using the bypass, Hillegass Avenue vs College Avenue N",
+      "stat": {
+        "ci95Hi": 13.278,
+        "ci95Lo": 3.122,
+        "max": 24.0,
+        "mean": 8.2,
+        "min": 2.0,
+        "n": 10,
+        "sd": 7.099
+      },
+      "unit": "trips",
+      "values": [
+        17.0,
+        6.0,
+        7.0,
+        4.0,
+        2.0,
+        2.0,
+        4.0,
+        24.0,
+        6.0,
+        10.0
+      ]
+    },
+    {
+      "group": "bypass",
+      "name": "corridor trips, Hillegass Avenue vs College Avenue N",
+      "stat": {
+        "ci95Hi": 1204.501,
+        "ci95Lo": 1143.099,
+        "max": 1226.0,
+        "mean": 1173.8,
+        "min": 1098.0,
+        "n": 10,
+        "sd": 42.921
+      },
+      "unit": "trips",
+      "values": [
+        1152.0,
+        1098.0,
+        1166.0,
+        1182.0,
+        1149.0,
+        1199.0,
+        1213.0,
+        1226.0,
+        1128.0,
+        1225.0
+      ]
+    },
+    {
+      "group": "bypass",
+      "name": "corridor trips using the bypass, Hillegass Avenue vs College Avenue S",
+      "stat": {
+        "ci95Hi": 26.012,
+        "ci95Lo": 17.188,
+        "max": 36.0,
+        "mean": 21.6,
+        "min": 13.0,
+        "n": 10,
+        "sd": 6.168
+      },
+      "unit": "trips",
+      "values": [
+        13.0,
+        24.0,
+        22.0,
+        22.0,
+        23.0,
+        20.0,
+        22.0,
+        15.0,
+        19.0,
+        36.0
+      ]
+    },
+    {
+      "group": "bypass",
+      "name": "corridor trips, Hillegass Avenue vs College Avenue S",
+      "stat": {
+        "ci95Hi": 1017.326,
+        "ci95Lo": 972.874,
+        "max": 1036.0,
+        "mean": 995.1,
+        "min": 956.0,
+        "n": 10,
+        "sd": 31.071
+      },
+      "unit": "trips",
+      "values": [
+        956.0,
+        1013.0,
+        979.0,
+        1036.0,
+        984.0,
+        1029.0,
+        1036.0,
+        965.0,
+        963.0,
+        990.0
+      ]
+    },
+    {
+      "group": "headline share",
+      "name": "Hillegass Avenue NB from freeway",
+      "stat": {
+        "ci95Hi": 0.69,
+        "ci95Lo": 0.642,
+        "max": 0.724,
+        "mean": 0.666,
+        "min": 0.613,
+        "n": 10,
+        "sd": 0.033
+      },
+      "unit": "share",
+      "values": [
+        0.687,
+        0.636,
+        0.699,
+        0.724,
+        0.662,
+        0.65,
+        0.636,
+        0.681,
+        0.675,
+        0.613
+      ]
+    },
+    {
+      "group": "share",
+      "name": "Hillegass Avenue NB to Benvenue Avenue",
+      "stat": {
+        "ci95Hi": 0.024,
+        "ci95Lo": 0.009,
+        "max": 0.042,
+        "mean": 0.016,
+        "min": 0.008,
+        "n": 10,
+        "sd": 0.011
+      },
+      "unit": "share",
+      "values": [
+        0.015,
         0.017,
+        0.024,
+        0.009,
+        0.008,
         0.017,
+        0.008,
+        0.014,
+        0.008,
+        0.042
+      ]
+    },
+    {
+      "group": "share",
+      "name": "Hillegass Avenue NB to College Avenue",
+      "stat": {
+        "ci95Hi": 0.081,
+        "ci95Lo": 0.059,
+        "max": 0.102,
+        "mean": 0.07,
+        "min": 0.051,
+        "n": 10,
+        "sd": 0.015
+      },
+      "unit": "share",
+      "values": [
+        0.082,
+        0.102,
+        0.065,
+        0.069,
+        0.06,
+        0.083,
+        0.051,
+        0.065,
+        0.056,
+        0.067
+      ]
+    },
+    {
+      "group": "share",
+      "name": "Hillegass Avenue NB to Alcatraz Avenue WB",
+      "stat": {
+        "ci95Hi": 0.287,
+        "ci95Lo": 0.224,
+        "max": 0.328,
+        "mean": 0.256,
+        "min": 0.203,
+        "n": 10,
+        "sd": 0.044
+      },
+      "unit": "share",
+      "values": [
+        0.269,
+        0.203,
+        0.228,
+        0.259,
+        0.233,
+        0.225,
+        0.212,
+        0.275,
+        0.325,
+        0.328
+      ]
+    },
+    {
+      "group": "headline share",
+      "name": "Colby Street NB from freeway",
+      "stat": {
+        "ci95Hi": 0.762,
+        "ci95Lo": 0.729,
+        "max": 0.779,
+        "mean": 0.745,
+        "min": 0.715,
+        "n": 10,
+        "sd": 0.023
+      },
+      "unit": "share",
+      "values": [
+        0.723,
+        0.768,
+        0.715,
+        0.732,
+        0.763,
+        0.754,
+        0.725,
+        0.779,
+        0.764,
+        0.728
+      ]
+    },
+    {
+      "group": "share",
+      "name": "Colby Street NB to Alcatraz Avenue WB",
+      "stat": {
+        "ci95Hi": 0.095,
+        "ci95Lo": 0.057,
+        "max": 0.143,
+        "mean": 0.076,
+        "min": 0.054,
+        "n": 10,
+        "sd": 0.026
+      },
+      "unit": "share",
+      "values": [
+        0.07,
+        0.059,
+        0.09,
+        0.081,
+        0.071,
+        0.054,
+        0.061,
+        0.059,
+        0.143,
+        0.069
+      ]
+    },
+    {
+      "group": "share",
+      "name": "Colby Street NB to Telegraph Avenue",
+      "stat": {
+        "ci95Hi": 0.248,
+        "ci95Lo": 0.196,
+        "max": 0.301,
+        "mean": 0.222,
+        "min": 0.197,
+        "n": 10,
+        "sd": 0.036
+      },
+      "unit": "share",
+      "values": [
+        0.197,
+        0.207,
+        0.199,
+        0.211,
+        0.237,
+        0.2,
+        0.201,
+        0.269,
+        0.301,
+        0.198
+      ]
+    },
+    {
+      "group": "share",
+      "name": "Colby Street NB to College Avenue",
+      "stat": {
+        "ci95Hi": 0.013,
+        "ci95Lo": 0.003,
+        "max": 0.022,
+        "mean": 0.008,
+        "min": 0.0,
+        "n": 10,
+        "sd": 0.007
+      },
+      "unit": "share",
+      "values": [
+        0.014,
+        0.005,
+        0.0,
+        0.01,
+        0.004,
+        0.008,
+        0.022,
+        0.008,
+        0.008,
+        0.0
+      ]
+    },
+    {
+      "group": "share",
+      "name": "Hillegass Avenue SB from Alcatraz Avenue WB",
+      "stat": {
+        "ci95Hi": 0.107,
+        "ci95Lo": 0.075,
+        "max": 0.129,
+        "mean": 0.091,
+        "min": 0.05,
+        "n": 10,
+        "sd": 0.023
+      },
+      "unit": "share",
+      "values": [
+        0.096,
+        0.106,
+        0.081,
+        0.114,
+        0.087,
+        0.095,
+        0.129,
+        0.05,
+        0.069,
+        0.084
+      ]
+    },
+    {
+      "group": "share",
+      "name": "Hillegass Avenue SB from Benvenue Avenue",
+      "stat": {
+        "ci95Hi": 0.036,
+        "ci95Lo": 0.021,
+        "max": 0.041,
+        "mean": 0.028,
+        "min": 0.005,
+        "n": 10,
+        "sd": 0.011
+      },
+      "unit": "share",
+      "values": [
+        0.032,
+        0.035,
+        0.028,
+        0.02,
+        0.037,
+        0.041,
+        0.038,
+        0.005,
+        0.022,
+        0.027
+      ]
+    },
+    {
+      "group": "share",
+      "name": "Hillegass Avenue SB from College Avenue",
+      "stat": {
+        "ci95Hi": 0.076,
+        "ci95Lo": 0.046,
+        "max": 0.089,
+        "mean": 0.061,
+        "min": 0.027,
+        "n": 10,
+        "sd": 0.021
+      },
+      "unit": "share",
+      "values": [
+        0.053,
+        0.079,
+        0.033,
+        0.089,
+        0.059,
+        0.081,
+        0.057,
+        0.027,
+        0.078,
+        0.049
+      ]
+    },
+    {
+      "group": "headline share",
+      "name": "Hillegass Avenue SB to freeway",
+      "stat": {
+        "ci95Hi": 0.815,
+        "ci95Lo": 0.751,
+        "max": 0.86,
+        "mean": 0.783,
+        "min": 0.718,
+        "n": 10,
+        "sd": 0.044
+      },
+      "unit": "share",
+      "values": [
+        0.819,
+        0.828,
+        0.787,
+        0.738,
+        0.767,
+        0.748,
+        0.718,
+        0.86,
+        0.801,
+        0.764
+      ]
+    },
+    {
+      "group": "share",
+      "name": "Colby Street SB from Alcatraz Avenue EB",
+      "stat": {
+        "ci95Hi": 0.135,
+        "ci95Lo": 0.083,
+        "max": 0.193,
+        "mean": 0.109,
+        "min": 0.074,
+        "n": 10,
+        "sd": 0.036
+      },
+      "unit": "share",
+      "values": [
+        0.089,
+        0.097,
+        0.11,
+        0.081,
+        0.136,
+        0.102,
+        0.078,
+        0.074,
+        0.129,
+        0.193
+      ]
+    },
+    {
+      "group": "share",
+      "name": "Colby Street SB from Alcatraz Avenue WB",
+      "stat": {
+        "ci95Hi": 0.353,
+        "ci95Lo": 0.295,
+        "max": 0.382,
+        "mean": 0.324,
+        "min": 0.258,
+        "n": 10,
+        "sd": 0.04
+      },
+      "unit": "share",
+      "values": [
+        0.349,
+        0.292,
+        0.338,
+        0.382,
+        0.272,
+        0.329,
+        0.371,
+        0.332,
+        0.317,
+        0.258
+      ]
+    },
+    {
+      "group": "share",
+      "name": "Colby Street SB from Telegraph Avenue",
+      "stat": {
+        "ci95Hi": 0.286,
+        "ci95Lo": 0.168,
+        "max": 0.422,
+        "mean": 0.227,
+        "min": 0.151,
+        "n": 10,
+        "sd": 0.082
+      },
+      "unit": "share",
+      "values": [
+        0.153,
+        0.225,
+        0.207,
+        0.151,
+        0.31,
+        0.214,
+        0.206,
+        0.173,
+        0.209,
+        0.422
+      ]
+    },
+    {
+      "group": "headline share",
+      "name": "Colby Street SB to freeway",
+      "stat": {
+        "ci95Hi": 0.723,
+        "ci95Lo": 0.623,
+        "max": 0.737,
+        "mean": 0.673,
+        "min": 0.506,
+        "n": 10,
+        "sd": 0.069
+      },
+      "unit": "share",
+      "values": [
+        0.737,
+        0.678,
+        0.722,
+        0.73,
+        0.623,
+        0.671,
+        0.701,
+        0.714,
+        0.647,
+        0.506
+      ]
+    },
+    {
+      "group": "share",
+      "name": "Colby Street SB to Forest Street",
+      "stat": {
+        "ci95Hi": 0.164,
+        "ci95Lo": 0.094,
+        "max": 0.214,
+        "mean": 0.129,
+        "min": 0.037,
+        "n": 10,
+        "sd": 0.049
+      },
+      "unit": "share",
+      "values": [
+        0.037,
+        0.12,
+        0.1,
+        0.088,
+        0.177,
+        0.132,
+        0.145,
+        0.134,
+        0.145,
+        0.214
+      ]
+    },
+    {
+      "group": "ramp share",
+      "name": "onto freeway via College Avenue",
+      "stat": {
+        "ci95Hi": 0.12,
+        "ci95Lo": 0.107,
+        "max": 0.128,
+        "mean": 0.114,
+        "min": 0.102,
+        "n": 10,
+        "sd": 0.009
+      },
+      "unit": "share",
+      "values": [
+        0.108,
+        0.123,
+        0.122,
+        0.112,
+        0.105,
+        0.128,
+        0.102,
+        0.121,
+        0.11,
+        0.106
+      ]
+    },
+    {
+      "group": "ramp share",
+      "name": "onto freeway via Hillegass Avenue",
+      "stat": {
+        "ci95Hi": 0.156,
+        "ci95Lo": 0.132,
+        "max": 0.177,
+        "mean": 0.144,
+        "min": 0.123,
+        "n": 10,
+        "sd": 0.017
+      },
+      "unit": "share",
+      "values": [
+        0.127,
+        0.163,
+        0.146,
+        0.123,
+        0.145,
+        0.137,
+        0.129,
+        0.154,
+        0.14,
+        0.177
+      ]
+    },
+    {
+      "group": "ramp share",
+      "name": "onto freeway via Martin Street",
+      "stat": {
+        "ci95Hi": 0.118,
+        "ci95Lo": 0.098,
+        "max": 0.126,
+        "mean": 0.108,
+        "min": 0.085,
+        "n": 10,
+        "sd": 0.014
+      },
+      "unit": "share",
+      "values": [
+        0.101,
+        0.085,
+        0.093,
+        0.113,
+        0.116,
+        0.124,
+        0.099,
+        0.119,
+        0.126,
+        0.102
+      ]
+    },
+    {
+      "group": "ramp share",
+      "name": "onto freeway via Colby Street",
+      "stat": {
+        "ci95Hi": 0.196,
+        "ci95Lo": 0.164,
+        "max": 0.218,
+        "mean": 0.18,
+        "min": 0.146,
+        "n": 10,
+        "sd": 0.023
+      },
+      "unit": "share",
+      "values": [
+        0.209,
+        0.175,
+        0.188,
+        0.185,
+        0.176,
+        0.174,
+        0.218,
+        0.182,
+        0.146,
+        0.147
+      ]
+    },
+    {
+      "group": "ramp share",
+      "name": "onto freeway via Telegraph Avenue north of Alcatraz Avenue",
+      "stat": {
+        "ci95Hi": 0.062,
+        "ci95Lo": 0.05,
+        "max": 0.066,
+        "mean": 0.056,
+        "min": 0.044,
+        "n": 10,
+        "sd": 0.008
+      },
+      "unit": "share",
+      "values": [
+        0.05,
+        0.057,
+        0.063,
+        0.066,
+        0.062,
+        0.066,
+        0.053,
+        0.048,
+        0.044,
+        0.051
+      ]
+    },
+    {
+      "group": "ramp share",
+      "name": "onto freeway via Benvenue Avenue",
+      "stat": {
+        "ci95Hi": 0.038,
+        "ci95Lo": 0.031,
+        "max": 0.041,
+        "mean": 0.035,
+        "min": 0.027,
+        "n": 10,
+        "sd": 0.004
+      },
+      "unit": "share",
+      "values": [
+        0.038,
+        0.041,
+        0.027,
+        0.033,
+        0.035,
+        0.03,
+        0.034,
+        0.04,
+        0.038,
+        0.03
+      ]
+    },
+    {
+      "group": "ramp share",
+      "name": "from freeway via College Avenue",
+      "stat": {
+        "ci95Hi": 0.047,
+        "ci95Lo": 0.038,
+        "max": 0.052,
+        "mean": 0.043,
+        "min": 0.032,
+        "n": 10,
+        "sd": 0.006
+      },
+      "unit": "share",
+      "values": [
+        0.052,
+        0.032,
+        0.038,
+        0.038,
+        0.043,
+        0.043,
+        0.04,
+        0.05,
+        0.045,
+        0.05
+      ]
+    },
+    {
+      "group": "ramp share",
+      "name": "from freeway via Martin Street",
+      "stat": {
+        "ci95Hi": 0.184,
+        "ci95Lo": 0.158,
+        "max": 0.195,
+        "mean": 0.171,
+        "min": 0.142,
+        "n": 10,
+        "sd": 0.018
+      },
+      "unit": "share",
+      "values": [
+        0.169,
+        0.177,
+        0.188,
+        0.151,
+        0.179,
+        0.191,
+        0.142,
+        0.161,
+        0.195,
+        0.158
+      ]
+    },
+    {
+      "group": "ramp share",
+      "name": "from freeway via Colby Street",
+      "stat": {
+        "ci95Hi": 0.14,
+        "ci95Lo": 0.111,
+        "max": 0.163,
+        "mean": 0.126,
+        "min": 0.103,
+        "n": 10,
+        "sd": 0.02
+      },
+      "unit": "share",
+      "values": [
+        0.126,
+        0.116,
+        0.127,
+        0.103,
+        0.111,
+        0.131,
+        0.118,
+        0.155,
+        0.163,
+        0.106
+      ]
+    },
+    {
+      "group": "ramp share",
+      "name": "from freeway via Hillegass Avenue",
+      "stat": {
+        "ci95Hi": 0.072,
+        "ci95Lo": 0.061,
+        "max": 0.078,
+        "mean": 0.067,
+        "min": 0.057,
+        "n": 10,
+        "sd": 0.007
+      },
+      "unit": "share",
+      "values": [
+        0.078,
+        0.057,
+        0.062,
+        0.069,
+        0.068,
+        0.064,
+        0.059,
+        0.077,
+        0.073,
+        0.061
+      ]
+    },
+    {
+      "group": "ramp share",
+      "name": "from freeway via Benvenue Avenue",
+      "stat": {
+        "ci95Hi": 0.016,
+        "ci95Lo": 0.012,
+        "max": 0.02,
+        "mean": 0.014,
+        "min": 0.009,
+        "n": 10,
+        "sd": 0.003
+      },
+      "unit": "share",
+      "values": [
+        0.02,
+        0.009,
+        0.015,
+        0.009,
+        0.014,
         0.016,
         0.012,
-        0.013,
         0.016,
-        0.023
+        0.016,
+        0.015
       ]
     },
     {
       "group": "corridor flow",
       "name": "Telegraph N median link flow",
       "stat": {
-        "ci95Hi": 1181.644,
-        "ci95Lo": 1089.716,
-        "max": 1225.2,
-        "mean": 1135.68,
-        "min": 1036.8,
+        "ci95Hi": 1270.897,
+        "ci95Lo": 1139.423,
+        "max": 1293.6,
+        "mean": 1205.16,
+        "min": 1009.2,
         "n": 10,
-        "sd": 64.257
+        "sd": 91.901
       },
       "unit": "veh/h",
       "values": [
-        1119.6,
-        1190.4,
-        1172.4,
-        1147.2,
-        1225.2,
-        1036.8,
-        1080.0,
-        1189.2,
-        1044.0,
-        1152.0
+        1156.8,
+        1293.6,
+        1288.8,
+        1281.6,
+        1132.8,
+        1234.8,
+        1233.6,
+        1009.2,
+        1148.4,
+        1272.0
       ]
     },
     {
       "group": "corridor flow",
       "name": "Telegraph S median link flow",
       "stat": {
-        "ci95Hi": 995.248,
-        "ci95Lo": 923.312,
-        "max": 1026.0,
-        "mean": 959.28,
-        "min": 890.4,
+        "ci95Hi": 1084.407,
+        "ci95Lo": 938.073,
+        "max": 1239.6,
+        "mean": 1011.24,
+        "min": 895.2,
         "n": 10,
-        "sd": 50.283
+        "sd": 102.288
       },
       "unit": "veh/h",
       "values": [
-        949.2,
-        913.2,
-        1010.4,
-        1026.0,
-        892.8,
-        990.0,
-        931.2,
-        890.4,
-        990.0,
-        999.6
+        968.4,
+        1042.8,
+        955.2,
+        1239.6,
+        1060.8,
+        1080.0,
+        1012.8,
+        898.8,
+        895.2,
+        958.8
       ]
     },
     {
       "group": "corridor flow",
       "name": "College N median link flow",
       "stat": {
-        "ci95Hi": 321.786,
-        "ci95Lo": 269.814,
-        "max": 350.4,
-        "mean": 295.8,
-        "min": 237.6,
+        "ci95Hi": 379.447,
+        "ci95Lo": 333.353,
+        "max": 406.8,
+        "mean": 356.4,
+        "min": 301.2,
         "n": 10,
-        "sd": 36.329
+        "sd": 32.219
       },
       "unit": "veh/h",
       "values": [
-        324.0,
-        327.6,
-        252.0,
-        350.4,
-        313.2,
-        237.6,
-        289.2,
-        271.2,
-        276.0,
-        316.8
+        406.8,
+        301.2,
+        326.4,
+        374.4,
+        348.0,
+        352.8,
+        340.8,
+        403.2,
+        352.8,
+        357.6
       ]
     },
     {
       "group": "corridor flow",
       "name": "College S median link flow",
       "stat": {
-        "ci95Hi": 554.121,
-        "ci95Lo": 486.039,
-        "max": 606.0,
-        "mean": 520.08,
-        "min": 469.2,
+        "ci95Hi": 648.129,
+        "ci95Lo": 586.911,
+        "max": 667.2,
+        "mean": 617.52,
+        "min": 525.6,
         "n": 10,
-        "sd": 47.589
+        "sd": 42.791
       },
       "unit": "veh/h",
       "values": [
-        475.2,
-        528.0,
-        472.8,
-        523.2,
-        606.0,
-        554.4,
-        528.0,
-        469.2,
-        472.8,
-        571.2
+        582.0,
+        661.2,
+        613.2,
+        595.2,
+        525.6,
+        655.2,
+        621.6,
+        615.6,
+        667.2,
+        638.4
       ]
     },
     {
       "group": "corridor flow",
       "name": "Claremont N median link flow",
       "stat": {
-        "ci95Hi": 481.083,
-        "ci95Lo": 428.517,
-        "max": 501.6,
-        "mean": 454.8,
-        "min": 392.4,
+        "ci95Hi": 554.745,
+        "ci95Lo": 446.295,
+        "max": 609.6,
+        "mean": 500.52,
+        "min": 370.8,
         "n": 10,
-        "sd": 36.743
+        "sd": 75.807
       },
       "unit": "veh/h",
       "values": [
-        434.4,
-        494.4,
-        453.6,
-        410.4,
-        501.6,
-        434.4,
-        481.2,
-        392.4,
-        486.0,
-        459.6
+        588.0,
+        370.8,
+        446.4,
+        463.2,
+        549.6,
+        452.4,
+        555.6,
+        609.6,
+        522.0,
+        447.6
       ]
     },
     {
       "group": "corridor flow",
       "name": "Claremont S median link flow",
       "stat": {
-        "ci95Hi": 814.423,
-        "ci95Lo": 744.617,
-        "max": 864.0,
-        "mean": 779.52,
-        "min": 721.2,
+        "ci95Hi": 910.533,
+        "ci95Lo": 837.147,
+        "max": 949.2,
+        "mean": 873.84,
+        "min": 776.4,
         "n": 10,
-        "sd": 48.794
+        "sd": 51.296
       },
       "unit": "veh/h",
       "values": [
-        768.0,
-        735.6,
-        806.4,
-        812.4,
-        864.0,
-        730.8,
-        808.8,
-        730.8,
-        721.2,
-        817.2
+        824.4,
+        895.2,
+        898.8,
+        848.4,
+        776.4,
+        861.6,
+        931.2,
+        855.6,
+        897.6,
+        949.2
       ]
     },
     {
       "group": "corridor flow",
       "name": "Alcatraz E median link flow",
       "stat": {
-        "ci95Hi": 514.721,
-        "ci95Lo": 457.279,
-        "max": 531.6,
-        "mean": 486.0,
-        "min": 417.6,
+        "ci95Hi": 536.844,
+        "ci95Lo": 489.156,
+        "max": 566.4,
+        "mean": 513.0,
+        "min": 464.4,
         "n": 10,
-        "sd": 40.152
+        "sd": 33.333
       },
       "unit": "veh/h",
       "values": [
-        462.0,
-        417.6,
-        518.4,
-        456.0,
-        510.0,
-        459.6,
-        531.6,
-        456.0,
-        517.2,
-        531.6
+        512.4,
+        566.4,
+        532.8,
+        478.8,
+        500.4,
+        486.0,
+        464.4,
+        520.8,
+        507.6,
+        560.4
       ]
     },
     {
       "group": "corridor flow",
       "name": "Alcatraz W median link flow",
       "stat": {
-        "ci95Hi": 472.771,
-        "ci95Lo": 441.149,
-        "max": 495.6,
-        "mean": 456.96,
-        "min": 434.4,
+        "ci95Hi": 532.414,
+        "ci95Lo": 459.506,
+        "max": 577.2,
+        "mean": 495.96,
+        "min": 374.4,
         "n": 10,
-        "sd": 22.104
+        "sd": 50.962
       },
       "unit": "veh/h",
       "values": [
-        436.8,
-        458.4,
-        451.2,
-        438.0,
-        435.6,
-        465.6,
-        465.6,
-        434.4,
-        495.6,
-        488.4
+        577.2,
+        525.6,
+        510.0,
+        499.2,
+        501.6,
+        374.4,
+        486.0,
+        472.8,
+        510.0,
+        502.8
       ]
     },
     {
       "group": "corridor flow",
       "name": "Hillegass N median link flow",
       "stat": {
-        "ci95Hi": 56.648,
-        "ci95Lo": 45.112,
-        "max": 64.8,
-        "mean": 50.88,
-        "min": 42.0,
+        "ci95Hi": 89.6,
+        "ci95Lo": 75.76,
+        "max": 97.2,
+        "mean": 82.68,
+        "min": 66.0,
         "n": 10,
-        "sd": 8.064
+        "sd": 9.674
       },
       "unit": "veh/h",
       "values": [
-        42.0,
-        54.0,
-        60.0,
-        42.0,
-        54.0,
-        54.0,
-        44.4,
-        51.6,
-        42.0,
-        64.8
+        93.6,
+        66.0,
+        79.2,
+        86.4,
+        90.0,
+        79.2,
+        81.6,
+        97.2,
+        82.8,
+        70.8
       ]
     },
     {
       "group": "corridor flow",
       "name": "Hillegass S median link flow",
       "stat": {
-        "ci95Hi": 128.328,
-        "ci95Lo": 98.712,
-        "max": 151.2,
-        "mean": 113.52,
-        "min": 87.6,
+        "ci95Hi": 167.973,
+        "ci95Lo": 133.947,
+        "max": 206.4,
+        "mean": 150.96,
+        "min": 120.0,
         "n": 10,
-        "sd": 20.701
+        "sd": 23.784
       },
       "unit": "veh/h",
       "values": [
-        114.0,
-        87.6,
-        141.6,
-        105.6,
-        151.2,
-        99.6,
-        111.6,
-        104.4,
-        92.4,
-        127.2
+        120.0,
+        156.0,
+        147.6,
+        132.0,
+        168.0,
+        138.0,
+        138.0,
+        147.6,
+        156.0,
+        206.4
       ]
     },
     {
       "group": "corridor flow",
       "name": "Colby N median link flow",
       "stat": {
-        "ci95Hi": 89.022,
-        "ci95Lo": 69.858,
-        "max": 109.2,
-        "mean": 79.44,
-        "min": 57.6,
+        "ci95Hi": 140.079,
+        "ci95Lo": 107.361,
+        "max": 172.8,
+        "mean": 123.72,
+        "min": 97.2,
         "n": 10,
-        "sd": 13.396
+        "sd": 22.87
       },
       "unit": "veh/h",
       "values": [
-        74.4,
-        109.2,
-        85.2,
-        80.4,
-        57.6,
-        73.2,
-        68.4,
-        79.2,
-        84.0,
-        82.8
+        122.4,
+        99.6,
+        121.2,
+        100.8,
+        128.4,
+        134.4,
+        118.8,
+        172.8,
+        141.6,
+        97.2
       ]
     },
     {
       "group": "corridor flow",
       "name": "Colby S median link flow",
       "stat": {
-        "ci95Hi": 228.381,
-        "ci95Lo": 194.739,
-        "max": 241.2,
-        "mean": 211.56,
-        "min": 171.6,
+        "ci95Hi": 213.102,
+        "ci95Lo": 176.178,
+        "max": 237.6,
+        "mean": 194.64,
+        "min": 150.0,
         "n": 10,
-        "sd": 23.515
+        "sd": 25.81
       },
       "unit": "veh/h",
       "values": [
-        202.8,
-        189.6,
-        241.2,
-        171.6,
+        226.8,
+        163.2,
+        187.2,
         200.4,
-        241.2,
-        230.4,
-        194.4,
-        216.0,
-        228.0
+        189.6,
+        196.8,
+        237.6,
+        198.0,
+        150.0,
+        196.8
       ]
     },
     {
       "group": "corridor flow",
       "name": "Martin E median link flow",
       "stat": {
-        "ci95Hi": 152.376,
-        "ci95Lo": 125.304,
+        "ci95Hi": 149.021,
+        "ci95Lo": 122.419,
         "max": 163.2,
-        "mean": 138.84,
+        "mean": 135.72,
         "min": 111.6,
         "n": 10,
-        "sd": 18.923
+        "sd": 18.594
       },
       "unit": "veh/h",
       "values": [
-        151.2,
+        118.8,
         111.6,
-        145.2,
+        128.4,
         147.6,
-        111.6,
         163.2,
-        147.6,
-        159.6,
-        127.2,
-        123.6
+        153.6,
+        134.4,
+        120.0,
+        158.4,
+        121.2
       ]
     },
     {
       "group": "corridor flow",
       "name": "Martin W median link flow",
       "stat": {
-        "ci95Hi": 238.371,
-        "ci95Lo": 187.149,
-        "max": 280.8,
-        "mean": 212.76,
-        "min": 156.0,
+        "ci95Hi": 230.157,
+        "ci95Lo": 190.323,
+        "max": 264.0,
+        "mean": 210.24,
+        "min": 174.0,
         "n": 10,
-        "sd": 35.804
+        "sd": 27.844
       },
       "unit": "veh/h",
       "values": [
-        200.4,
+        183.6,
+        214.8,
+        208.8,
+        174.0,
+        234.0,
+        236.4,
+        186.0,
         202.8,
-        280.8,
-        168.0,
-        214.8,
-        156.0,
-        214.8,
-        228.0,
-        247.2,
-        214.8
+        264.0,
+        198.0
       ]
     }
   ],
@@ -1498,21 +1498,17 @@
   ],
   "stability": {
     "backlogOk": false,
-    "backlogSeedsOk": 0,
+    "backlogSeedsOk": 7,
     "growthOk": false,
     "growthSeeds": [
-      1,
-      3,
-      4,
-      5,
-      6,
-      8,
-      9,
-      10
+      2
     ],
     "holds": false,
     "meanRemovalsPerHourOk": false,
-    "oldRuleSeedsPassing": [],
+    "oldRuleSeedsPassing": [
+      3,
+      8
+    ],
     "rule": {
       "backlogPct": 2.0,
       "maxMeanRemovalsPerHour": 1.0,
