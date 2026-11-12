@@ -503,50 +503,49 @@ impl Simulation {
         self.ped_begin_step(id);
     }
 
-    /// Expected walking time (s) from `origin` to `dest` at the mean speed, with the expected wait at each crosswalk; None when unroutable.
-    pub(super) fn ped_expected_time(&mut self, origin: u32, dest: u32) -> Option<f64> {
-        let steps = self.world.route(origin, dest)?;
-        Some(ped_step_times(&self.world, &steps, PED_V_MEAN as f32).iter().sum::<f64>())
-    }
-
-    /// Place one pedestrian of the flow `origin` to `dest` at a position drawn uniformly by time along its walk: on a sidewalk, or
-    /// waiting at the crosswalk of a crossing step. False when there is no route.
-    pub(super) fn prepop_ped(&mut self, rng: &mut Rng, origin: u32, dest: u32) -> bool {
-        let Some(steps) = self.world.route(origin, dest) else { return false };
-        let (v, gap_f) = (sample_speed(rng), sample_gap(rng));
-        let times = ped_step_times(&self.world, &steps, v);
-        let total: f64 = times.iter().sum();
-        if total <= 0.0 {
-            return false;
+    /// Place the pedestrians of the flow `origin` to `dest` that are already walking at time zero: Poisson with mean rate x expected walking
+    /// time at the mean speed (with the expected wait at each crosswalk), each at a position drawn uniformly by time along its own walk,
+    /// on a sidewalk or waiting at the crosswalk of a crossing step. Returns how many were placed.
+    pub(super) fn prepop_peds(&mut self, rng: &mut Rng, origin: u32, dest: u32, rate: f64) -> u64 {
+        let Some(steps) = self.world.route(origin, dest) else { return 0 };
+        let mean: f64 = ped_step_times(&self.world, &steps, PED_V_MEAN as f32).iter().sum();
+        let n = rng.poisson(rate * mean);
+        for _ in 0..n {
+            let (v, gap_f) = (sample_speed(rng), sample_gap(rng));
+            let times = ped_step_times(&self.world, &steps, v);
+            let total: f64 = times.iter().sum();
+            if total <= 0.0 {
+                continue;
+            }
+            let mut r = rng.f64() * total;
+            let mut si = steps.len() - 1;
+            for (i, t) in times.iter().enumerate() {
+                if r < *t {
+                    si = i;
+                    break;
+                }
+                r -= t;
+            }
+            let uid = self.uid_next;
+            self.uid_next += 1;
+            let (state, pos) = match steps[si] {
+                Step::Walk { from, to, .. } => (ST_WALK, from + (to - from) * (r / times[si].max(1e-9)).min(1.0) as f32),
+                Step::Cross { xw, .. } => {
+                    self.world.xws[xw as usize].waiting += 1;
+                    (ST_WAIT, 0.0)
+                }
+            };
+            let id = match self.world.free.pop() {
+                Some(i) => i as usize,
+                None => {
+                    self.world.peds.push(Ped { alive: false, uid: 0, v: 0.0, gap_f: 1.0, steps: Vec::new(), si: 0, pos: 0.0, state: ST_WALK, prog: 0.0, t_depart: 0.0, wait_t: 0.0, partial: false, skip_delay: false });
+                    self.world.peds.len() - 1
+                }
+            };
+            self.world.alive += 1;
+            self.world.peds[id] = Ped { alive: true, uid, v, gap_f, steps: steps.clone(), si, pos, state, prog: 0.0, t_depart: self.t, wait_t: 0.0, partial: true, skip_delay: state == ST_WAIT };
         }
-        let mut r = rng.f64() * total;
-        let mut si = steps.len() - 1;
-        for (i, t) in times.iter().enumerate() {
-            if r < *t {
-                si = i;
-                break;
-            }
-            r -= t;
-        }
-        let uid = self.uid_next;
-        self.uid_next += 1;
-        let (state, pos) = match steps[si] {
-            Step::Walk { from, to, .. } => (ST_WALK, from + (to - from) * (r / times[si].max(1e-9)).min(1.0) as f32),
-            Step::Cross { xw, .. } => {
-                self.world.xws[xw as usize].waiting += 1;
-                (ST_WAIT, 0.0)
-            }
-        };
-        let id = match self.world.free.pop() {
-            Some(i) => i as usize,
-            None => {
-                self.world.peds.push(Ped { alive: false, uid: 0, v: 0.0, gap_f: 1.0, steps: Vec::new(), si: 0, pos: 0.0, state: ST_WALK, prog: 0.0, t_depart: 0.0, wait_t: 0.0, partial: false, skip_delay: false });
-                self.world.peds.len() - 1
-            }
-        };
-        self.world.alive += 1;
-        self.world.peds[id] = Ped { alive: true, uid, v, gap_f, steps, si, pos, state, prog: 0.0, t_depart: self.t, wait_t: 0.0, partial: true, skip_delay: state == ST_WAIT };
-        true
+        n as u64
     }
 
     /// Set up the pedestrian's current step, or finish its trip.

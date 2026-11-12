@@ -39,6 +39,10 @@ impl Simulation {
         }
         eprintln!("settle {:?}", t_start.elapsed());
         self.t = 0.0;
+        self.update_costs();
+        if self.adapt_interval().is_finite() {
+            self.adapt_signals_over(INITIAL_SETTLE_S);
+        }
         self.reset_results();
     }
 
@@ -94,9 +98,11 @@ impl Simulation {
         }
     }
 
-    /// Per link of `route`: (free-flow time on the link, expected control delay at its end), both in s. `bike` is the cyclist's speed.
+    /// Per link of `route`: (free-flow time on the link, delay in front of its stop line), both in s. The delay is the expected control delay at
+    /// the node ahead, scaled up so that the route's total time is `INITIAL_CONGESTION` times its free-flow time with the control delay: the
+    /// extra time of a loaded network is queueing at nodes. `bike` is the cyclist's speed.
     fn initial_times(&self, route: &[u32], bike: Option<f32>) -> Vec<(f32, f32)> {
-        route
+        let mut times: Vec<(f32, f32)> = route
             .iter()
             .enumerate()
             .map(|(i, &l)| {
@@ -109,7 +115,13 @@ impl Simulation {
                     None => (self.eff.ff[l as usize], mv.map_or(0.0, |m| (self.eff.mv_cost[m as usize] - self.eff.mv_ff[m as usize]).max(0.0))),
                 }
             })
-            .collect()
+            .collect();
+        let (free, tail): (f32, f32) = times.iter().fold((0.0, 0.0), |a, t| (a.0 + t.0, a.1 + t.1));
+        let k = if tail > 1e-3 { 1.0 + (INITIAL_CONGESTION as f32 - 1.0) * (free + tail) / tail } else { 1.0 };
+        for t in times.iter_mut() {
+            t.1 *= k;
+        }
+        times
     }
 
     fn prepopulate(&mut self) {
@@ -117,26 +129,27 @@ impl Simulation {
         let mut lane_n = vec![0u32; nq];
         let mut cands: Vec<Cand> = Vec::new();
         let mut placed_peds = 0u64;
-        for k in 0..self.flows.len() {
+        let (mut t_ped, mut t_car) = (std::time::Duration::ZERO, std::time::Duration::ZERO);
+        // Grouped by destination so the per-destination cost tables are reused; each flow draws from its own stream.
+        let mut order: Vec<usize> = (0..self.flows.len()).collect();
+        order.sort_by_key(|&k| (self.flows[k].mode as u8, self.flows[k].dest, k));
+        for k in order {
             let (mode, origin, dest, rate, through) = {
                 let f = &self.flows[k];
                 (f.mode, f.origin, f.dest, f.rate, f.through)
             };
             let mut rng = Rng::stream(self.cfg.seed ^ INITIAL_STREAM, k as u64);
+            let tm = std::time::Instant::now();
             if mode == FlowMode::Pedestrian {
-                let Some(t) = self.ped_expected_time(origin, dest) else { continue };
-                for _ in 0..rng.poisson(rate * t) {
-                    if self.prepop_ped(&mut rng, origin, dest) {
-                        placed_peds += 1;
-                    }
-                }
+                placed_peds += self.prepop_peds(&mut rng, origin, dest, rate);
+                t_ped += tm.elapsed();
                 continue;
             }
             let bike = mode == FlowMode::Bicycle;
             let Some(r0) = self.initial_route(bike, origin, dest, NO_NOISE) else { continue };
             let v_mean = (BIKE_V_MEAN as f32).min(BIKE_COST_V * 1.2);
             let t0: f32 = self.initial_times(&r0, bike.then_some(v_mean)).iter().map(|t| t.0 + t.1).sum();
-            let n = rng.poisson(rate * t0 as f64 * INITIAL_CONGESTION);
+            let n = rng.poisson(rate * t0 as f64);
             for _ in 0..n {
                 let (drv, v0_abs, noise_seed) = if bike {
                     (Drv::bike(&mut rng), bike_speed(&mut rng), NO_NOISE)
@@ -177,17 +190,19 @@ impl Simulation {
                 self.uid_next += 1;
                 cands.push(Cand { q, lane, link: l as u32, pos, route, at, drv, bike, v0_abs, origin, dest, through, noise_seed, uid });
             }
+            t_car += tm.elapsed();
         }
+        eprintln!("ped {:?} car {:?}", t_ped, t_car);
         // Front of each lane first; ties by uid so the order does not depend on the sort.
-        let mut order: Vec<usize> = (0..cands.len()).collect();
-        order.sort_by(|&a, &b| {
+        let mut by_lane: Vec<usize> = (0..cands.len()).collect();
+        by_lane.sort_by(|&a, &b| {
             let (x, y) = (&cands[a], &cands[b]);
             x.q.cmp(&y.q).then(y.pos.partial_cmp(&x.pos).unwrap_or(std::cmp::Ordering::Equal)).then(x.uid.cmp(&y.uid))
         });
         let mut lead: Option<(usize, f32, f32)> = None; // lane, rear position, speed
         let mut placed = 0u64;
         let mut skipped = 0u64;
-        for &i in &order {
+        for &i in &by_lane {
             let c = &cands[i];
             let l = c.link as usize;
             if lead.map_or(true, |x| x.0 != c.q) {

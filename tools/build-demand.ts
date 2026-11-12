@@ -9,7 +9,7 @@ import { discoverRamps, matchRampVolumes, type Ramp, type RampRow, type RampVolu
 import { linkMetrics, perimeterGap, perimeterLength, perimeterPos, relevanceOf, Router, routeStat, sideOf, type Rect, type Relevance, type RouteStat } from './lib/demand-audit';
 import { makeProjection } from './lib/geo';
 import { buildGraph, costToGo, treeFrom, type Graph } from './lib/assign';
-import { buildStations, overusedRecords, fitPeriod, fitReport, type FitConfig, type NetLinkIn, type PeriodResult } from './lib/demand-fit';
+import { buildStations, corridorOf, markHoldout, overusedRecords, fitPeriod, fitReport, type FitConfig, type NetLinkIn, type PeriodResult } from './lib/demand-fit';
 import type { FlowType } from './lib/fit-counts';
 
 const cfgPath = process.argv[2] ?? 'data/demand/rockridge.config.json';
@@ -648,6 +648,11 @@ if (fc?.enabled) {
     overrides: (cfg.adtOverrides ?? []).map((o: { street: string; adt: number; factor?: number; lat: number; lon: number; source: string }) => { const [x, y] = toXY(o.lat, o.lon); return { street: o.street, adt: o.adt, factor: o.factor, x, y, source: o.source }; }),
     cfg: { tmcNodeMaxM: fc.tmcNodeMaxM, stationRadiusM: fc.stationRadiusM, weights: fc.weights, tolerancePct: fc.tolerancePct },
   }, stationNotes);
+  if (fc.validation?.enabled) {
+    const h = markHoldout(stations, lastPeriod, { fraction: fc.validation.fraction, minPerCorridor: fc.validation.minPerCorridor });
+    stationNotes.push(`validation set: ${h.held.length} of ${stations.length} stations are held out of the fit (about ${Math.round(100 * (fc.validation.fraction ?? 0.25))}% of each corridor, at least one per corridor; ${h.corridors.length} corridors: ${h.corridors.join(', ')}); they are reported separately`);
+  }
+  if (fc.stationsOutput) writeFileSync(fc.stationsOutput, JSON.stringify({ area: cfg.area, note: 'Count stations for the calibration report: links are indices into the network link list, targets are veh/h per period, held = validation only (excluded from the fit). Gate stations have no links.', stations: stations.map((q) => ({ id: q.id, kind: q.kind, label: q.label, corridor: corridorOf(q), held: !!q.held, links: q.links, target: Object.fromEntries(Object.entries(q.target).map(([k, v]) => [k, Math.round(v as number)])) })) }));
   const overused = overusedRecords(stations);
   if (overused.length) throw new Error(`a count is used by more than one station: ${overused.join('; ')}`);
   const fitCfg: FitConfig = {
@@ -655,6 +660,7 @@ if (fc?.enabled) {
     draws: fc.draws, noise: fc.noise,
     assignment: fc.assignment ? { method: fc.assignment.method, iterations: fc.assignment.iterations, drawsPerPass: fc.assignment.drawsPerPass, alpha: fc.assignment.alpha, beta: fc.assignment.beta, noise: fc.assignment.noise, rounds: fc.assignment.rounds } : undefined,
     measured: loadMeasured(fc),
+    implied: fc.implied?.enabled && fc.shares?.enabled ? { weight: fc.implied.weight } : undefined,
     shares: fc.shares?.enabled ? { targets: JSON.parse(readFileSync(fc.shares.targets, 'utf8')), weight: fc.shares.weight, pmPeriod: lastPeriod } : undefined,
     guard: { enabled: fc.capacityGuard.enabled, excessShare: fc.capacityGuard.excessShare, weight: fc.capacityGuard.weight, capacity: fc.capacityGuard.capacity },
   };

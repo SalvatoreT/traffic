@@ -567,7 +567,19 @@
       "weight": 0.5,
       "targets": "data/calibration/rockridge.targets.json",
       "_note": "Observed route shares (StreetLight select-link and ramp via-street shares) as ratio constraints in the same fit, weight below the counts' (1 to 2) because the shares come from a device sample (ASSUMPTION: 0.5). 0 or enabled false leaves them out."
-    }
+    },
+    "validation": {
+      "enabled": true,
+      "fraction": 0.25,
+      "minPerCorridor": 1,
+      "_note": "Hold-out of count stations (design D17, [WebTAG-M3.1] C.3.2 and 4.2.1; audit C2): within each corridor (the street of a gate, the intersection of a turning-movement count, the street of a Caltrans station, all freeway ramps together) the stations are ordered by size and every fourth is validation-only, never fewer than one per corridor. The largest count of a corridor stays in the fit. Deterministic, no draw."
+    },
+    "implied": {
+      "enabled": true,
+      "weight": 0.5,
+      "_note": "DERIVED volumes on the select-link blocks: ramp count x via-street share / freeway share of the street's traffic (tools/lib/share-targets.ts impliedVolumes). Soft constraint with the share weight, below the counts."
+    },
+    "stationsOutput": "data/demand/rockridge.stations.json"
   },
   "audit": {
     "nearM": 400

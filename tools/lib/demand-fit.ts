@@ -1,8 +1,9 @@
 // Count-constrained demand: count stations as link constraints, static assignment, matrix adjustment and the capacity guard
 // (baseline-calibration, seventh round). Orchestration and report for tools/build-demand.ts. No I/O.
+import { geh, withinBand, selectHoldout, corridors, evaluateCases, summarizeCases, type HoldoutOptions } from './acceptance';
 import { SIM_ROUTE_PARAMS, assign, assignMsa, buildGraph, linkVolumes, type ALink, type ANode, type ATurnBan, type Assignment, type Graph } from './assign';
 import { assigned, fitToCounts, type Constraint, type FitOptions, type FlowType } from './fit-counts';
-import { buildShareConstraints, type ShareLink, type ShareSpec, type Targets } from './share-targets';
+import { buildShareConstraints, impliedVolumes, type ImpliedVolume, type ShareLink, type ShareSpec, type Targets } from './share-targets';
 
 export interface NetLinkIn extends ALink { name: string; lanes?: number; inStudyArea?: boolean }
 export interface FlowIn { origin: number; destination: number; vehPerHour: number; mode?: string }
@@ -22,6 +23,8 @@ export interface Station {
   tolPct: number;
   /** The source records the target is derived from: a key per record and direction, and the share of that record this station carries (a record split over several stations carries shares that add to at most 1). */
   records: { key: string; share: number }[];
+  /** Validation-only: not a fit constraint, reported separately (design D17). */
+  held?: boolean;
 }
 
 export interface GateIn { id: number; kind: string; street: string | null; source: string; /** Source record of the count (TMC leg or Caltrans station) and the share of it this gate takes in each direction. */ record?: string; shareIn?: number; shareOut?: number; inT: Record<string, number>; outT: Record<string, number>; /** Gates that split one count (same street, close together, same source) share a group key. */ group?: string }
@@ -165,6 +168,22 @@ export function buildStations(s: StationInputs, notes: string[]): Station[] {
  * turning-movement leg, and the link station at that same station or leg) are one constraint: the station on the link, which measures every trip
  * at that place, is kept and the gate station is dropped (the gate's offered volume keeps the record as its start value).
  */
+/** The corridor a station belongs to, for the hold-out: the street of a gate, the intersection of a turning-movement count, the street of a Caltrans station, all freeway ramps together. */
+export function corridorOf(st: Station): string {
+  if (st.kind === 'ramp') return 'freeway ramps';
+  if (st.kind === 'tmc') return st.label.split(' ')[0];
+  if (st.kind === 'caltrans') return st.label.split(' station,')[0];
+  return st.label.replace(/^gates? [\d +]+ /, '').replace(/ (entering|leaving)$/, '');
+}
+
+/** Mark the validation stations (design D17). Selection is deterministic: see `selectHoldout`. Returns the corridors and the held-out ids. */
+export function markHoldout(stations: Station[], periodId: string, opt: HoldoutOptions): { corridors: string[]; held: string[] } {
+  const items = stations.map((s) => ({ id: s.id, corridor: corridorOf(s), target: s.target[periodId] ?? 0 }));
+  const h = selectHoldout(items, opt);
+  for (const s of stations) s.held = h.has(s.id);
+  return { corridors: corridors(items), held: [...h] };
+}
+
 export function dedupeStations(stations: Station[], notes: string[]): Station[] {
   const byKey = new Map<string, Station[]>();
   for (const st of stations) for (const r of st.records) (byKey.get(r.key) ?? byKey.set(r.key, []).get(r.key)!).push(st);
@@ -227,6 +246,8 @@ export interface FitConfig {
   assignment?: AssignConfig;
   /** Observed route shares as soft ratio constraints (weight below the counts: they come from a device sample); omitted or `weight` 0 leaves them out. */
   shares?: { targets: Targets; weight: number; pmPeriod: string };
+  /** Peak-hour volumes on the select-link blocks implied by the ramp counts and the observed shares (DERIVED), as soft volume constraints; weight below the counts. */
+  implied?: { weight: number };
   /** Measured mean delay per vehicle (s) on every link, per period, from a simulator run (`tools/cost-loop.ts`); omitted: free-flow and BPR costs only. */
   measured?: { delayS: Record<string, number[]>; alpha: number; source: string };
   draws: number; noise: number;
@@ -248,6 +269,9 @@ export interface PeriodResult {
   guardFlows: number;
   residualOver: { link: number; name: string; vol: number; limit: number }[];
   /** Share constraints: target, share of the offered table, after the count-only fit, final. */
+  /** Validation-only stations: assigned volume before, after the count fit and final (never fitted). */
+  heldRows: { st: Station; target: number; before: number; afterFit: number; final: number }[];
+  impliedRows: { iv: ImpliedVolume; before: number; afterFit: number; final: number }[];
   shareRows: { spec: ShareSpec; offered: number; afterFit: number; final: number; n: number }[];
   unroutable: number;
   graphBans: number;
@@ -275,7 +299,9 @@ export function fitPeriod(
   const assignAt = (vol: ArrayLike<number>): Assignment => (as.method === 'msa'
     ? assignMsa(g, flows, vol, { iterations: as.iterations, drawsPerPass: as.drawsPerPass, alpha: alphaUse, beta: as.beta, noise: as.noise, capacity: ruleOf.map((r) => r.cap), extraCost: extra })
     : assign(g, flows, cfg.draws, cfg.noise));
-  const countCons: Constraint[] = stations.filter((s) => (s.target[id] ?? 0) > 0).map((s) => ({ id: s.id, kind: s.kind, label: s.label, links: s.links, origins: s.origins, destinations: s.destinations, target: s.target[id], weight: s.weight }));
+  const toCons = (s: Station): Constraint => ({ id: s.id, kind: s.kind, label: s.label, links: s.links, origins: s.origins, destinations: s.destinations, target: s.target[id], weight: s.weight });
+  const heldCons: Constraint[] = stations.filter((s) => s.held && (s.target[id] ?? 0) > 0).map(toCons);
+  const countCons: Constraint[] = stations.filter((s) => !s.held && (s.target[id] ?? 0) > 0).map((s) => ({ id: s.id, kind: s.kind, label: s.label, links: s.links, origins: s.origins, destinations: s.destinations, target: s.target[id], weight: s.weight }));
   const sumBy = (f: ArrayLike<number>) => { const o: Record<string, number> = { through: 0, local: 0, ramp: 0 }; for (let k = 0; k < f.length; k++) o[types[k]] += f[k]; return o; };
   const exempt = new Set<number>();
   for (const c of countCons) for (const l of c.links) exempt.add(l);
@@ -284,13 +310,17 @@ export function fitPeriod(
   const rounds = as.method === 'msa' ? Math.max(1, as.rounds) : 1;
   let a = assignAt(v0);
   let cons: Constraint[] = countCons, specs: ShareSpec[] = [];
+  let implied: ImpliedVolume[] = [];
   let r1!: ReturnType<typeof fitToCounts>, rFinal!: ReturnType<typeof fitToCounts>, f1: number[] = [], fFinal: number[] = [];
   let before: number[] = [], afterFit: number[] = [], V1!: Float64Array;
   for (let round = 1; round <= rounds; round++) {
     if (round > 1) a = assignAt(fFinal.map((x, k) => (a.routable[k] ? x : v0[k])));
     specs = cfg.shares && cfg.shares.weight > 0 ? buildShareConstraints(nodes, links as ShareLink[], cfg.shares.targets, a, id, cfg.shares.pmPeriod, cfg.shares.weight) : [];
     const shareCons: Constraint[] = specs.map((q) => ({ id: q.id, kind: 'share', label: q.label, links: [], target: q.target, weight: q.weight, ratio: q.ratio }));
-    cons = [...countCons, ...shareCons];
+    const rampTargets = stations.filter((q) => q.kind === 'ramp' && (q.target[id] ?? 0) > 0).map((q) => ({ links: q.links, target: q.target[id] }));
+    implied = cfg.shares && cfg.implied && cfg.implied.weight > 0 ? impliedVolumes(nodes, links as ShareLink[], cfg.shares.targets, a, v0, id, cfg.shares.pmPeriod, rampTargets) : [];
+    const impliedCons: Constraint[] = implied.map((q) => ({ id: q.id, kind: 'derived', label: q.label, links: [q.link], target: q.target, weight: cfg.implied!.weight }));
+    cons = [...countCons, ...impliedCons, ...shareCons];
     before = assigned(a, v0, cons, nL);
     // Counts only (no guard, no shares): the "after count fit" column.
     r1 = fitToCounts(a, v0, types, countCons, nL, cfg.fit);
@@ -323,9 +353,12 @@ export function fitPeriod(
   for (const t of ['through', 'local', 'ramp']) totals[t] = { start: t0[t], afterFit: t1[t], final: t2[t] };
   const byId = new Map(cons.map((c, i) => [c.id, i]));
   const shareRows = specs.map((q) => { const i = byId.get(q.id)!; return { spec: q, offered: before[i], afterFit: afterFit[i], final: final[i], n: q.ratio.flows.length }; });
+  const impliedRows = implied.map((iv) => { const i = byId.get(iv.id)!; return { iv, before: before[i], afterFit: afterFit[i], final: final[i] }; });
+  const heldIdx = heldCons.length ? { b: assigned(a, v0, heldCons, nL), f1: assigned(a, f1, heldCons, nL), f: assigned(a, fFinal, heldCons, nL) } : null;
+  const heldRows = heldCons.map((c, i) => ({ st: stations.find((q) => q.id === c.id)!, target: c.target, before: heldIdx!.b[i], afterFit: heldIdx!.f1[i], final: heldIdx!.f[i] }));
   const stationRows = stations.filter((s) => byId.has(s.id)).map((s) => { const i = byId.get(s.id)!; return { st: s, target: cons[i].target, before: before[i], afterFit: afterFit[i], final: final[i] }; });
   const guardRemoved = Object.values(totals).reduce((x, q) => x + q.afterFit - q.final, 0);
-  return { id, volume, totals, stationRows, fit: rFinal, gFinal: [...rFinal.g], counted: rFinal.counted, types, guardBound, guardRemoved, guardFlows, residualOver, shareRows, unroutable: [...a.routable].filter((x) => !x).length, graphBans: g.banned, cons: countCons.length, notes, assignment: a };
+  return { id, volume, totals, stationRows, fit: rFinal, gFinal: [...rFinal.g], counted: rFinal.counted, types, guardBound, guardRemoved, guardFlows, residualOver, shareRows, heldRows, impliedRows, unroutable: [...a.routable].filter((x) => !x).length, graphBans: g.banned, cons: countCons.length, notes, assignment: a };
 }
 
 // ---------- report ----------
@@ -395,8 +428,26 @@ export function fitReport(area: string, results: PeriodResult[], flowsBy: Record
     const tol = (x: (typeof rows)[number]) => Math.abs(x.final / x.target - 1) * 100 <= x.st.tolPct;
     const okAll = rows.filter((x) => Math.abs(x.final / x.target - 1) * 100 <= opt.tolOk).length;
     L.push('', `## Stations, ${r.id}`, '', `${rows.length} stations with a target. Within +/-${opt.tolOk}%: before ${rows.filter((x) => Math.abs(x.before / x.target - 1) * 100 <= opt.tolOk).length}, after the fit ${rows.filter((x) => Math.abs(x.afterFit / x.target - 1) * 100 <= opt.tolOk).length}, final ${okAll}. Within their own tolerance (gates 10%, ramps 5%, others 15%): final ${rows.filter(tol).length}.`, '');
-    L.push('| Station | Basis | Target | Assigned before | Ratio | After fit | Ratio | Final | Ratio | Own tolerance |', '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |');
-    for (const x of rows.sort((p, q) => (p.st.kind === q.st.kind ? q.target - p.target : p.st.kind < q.st.kind ? -1 : 1))) L.push(`| ${x.st.label} | ${x.st.kind}${x.st.basis.includes('ASSUMPTION') ? ' (factor ASSUMPTION)' : ''} | ${f0(x.target)} | ${f0(x.before)} | ${(x.before / x.target).toFixed(2)} | ${f0(x.afterFit)} | ${(x.afterFit / x.target).toFixed(2)} | ${f0(x.final)} | ${(x.final / x.target).toFixed(2)} | ${tol(x) ? 'ok' : `OUTSIDE (${x.st.tolPct}%)`} |`);
+    L.push('| Station | Basis | Target | Assigned before | Ratio | After fit | Ratio | Final | Ratio | Own tolerance | GEH | GEH < 5 | Size band |', '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |');
+    for (const x of rows.sort((p, q) => (p.st.kind === q.st.kind ? q.target - p.target : p.st.kind < q.st.kind ? -1 : 1))) L.push(`| ${x.st.label} | ${x.st.kind}${x.st.basis.includes('ASSUMPTION') ? ' (factor ASSUMPTION)' : ''} | ${f0(x.target)} | ${f0(x.before)} | ${(x.before / x.target).toFixed(2)} | ${f0(x.afterFit)} | ${(x.afterFit / x.target).toFixed(2)} | ${f0(x.final)} | ${(x.final / x.target).toFixed(2)} | ${tol(x) ? 'ok' : `OUTSIDE (${x.st.tolPct}%)`} | ${geh(x.final, x.target).toFixed(1)} | ${geh(x.final, x.target) < 5 ? 'yes' : 'NO'} | ${withinBand(x.final, x.target) ? 'yes' : 'NO'} |`);
+    const fitted = evaluateCases(rows.map((x) => ({ id: x.st.id, modeled: x.final, counted: x.target })));
+    const fs = summarizeCases(fitted);
+    L.push('', `Fitted stations: GEH below 5 at ${fs.gehOk} of ${fs.n} (${(fs.gehShare * 100).toFixed(0)}%), size bands met at ${fs.bandOk} of ${fs.n} (${(fs.bandShare * 100).toFixed(0)}%); the published rule asks for more than 85% of cases (${fs.meets ? 'met' : 'not met'}). This is the static assignment against the counts it was fitted to, so it shows how far the fit could go; the simulator's own flows are scored in the calibration report.`);
+    if (r.heldRows.length) {
+      const hr = evaluateCases(r.heldRows.map((x) => ({ id: x.st.label, modeled: x.final, counted: x.target })));
+      const hs = summarizeCases(hr);
+      L.push('', `### Held-out stations, ${r.id}`, '', `${hs.n} validation stations, not in the fit: GEH below 5 at ${hs.gehOk} (${(hs.gehShare * 100).toFixed(0)}%), size bands met at ${hs.bandOk} (${(hs.bandShare * 100).toFixed(0)}%), mean GEH ${hs.meanGeh.toFixed(1)} (fitted stations ${fs.meanGeh.toFixed(1)}). Required: more than 85% of cases (${hs.meets ? 'met' : 'not met'}).`, '', '| Station | Corridor | Target | Assigned before | Final | Ratio | GEH | GEH < 5 | Size band |', '| --- | --- | --- | --- | --- | --- | --- | --- | --- |');
+      for (const x of [...r.heldRows].sort((p, q) => q.target - p.target)) L.push(`| ${x.st.label} | ${corridorOf(x.st)} | ${f0(x.target)} | ${f0(x.before)} | ${f0(x.final)} | ${(x.final / x.target).toFixed(2)} | ${geh(x.final, x.target).toFixed(1)} | ${geh(x.final, x.target) < 5 ? 'yes' : 'NO'} | ${withinBand(x.final, x.target) ? 'yes' : 'NO'} |`);
+    }
+  }
+  if (results.some((r) => r.impliedRows.length)) {
+    L.push('', '## Volumes implied by the ramp counts and the observed shares (DERIVED)', '', 'Freeway-related volume on a street = ramp volume x the street\'s share of the ramp trips; total volume = that / the share of the street\'s traffic that is freeway-related. The ramp via-street shares are of the trips from (to) the north side or of all ramp trips; the file does not say, so both readings are computed (B: side fraction from the offered table, A: all) and the soft target is the midpoint. Only the named ramps feed the numerator, so the totals are lower bounds when other ramps feed the street. Weight below the counts.', '');
+    for (const r of results) {
+      if (!r.impliedRows.length) continue;
+      L.push(`### ${r.id}`, '', '| Block | Arithmetic | Implied (B to A) | Target | Assigned before | After the count fit | Final |', '| --- | --- | --- | --- | --- | --- | --- |');
+      for (const x of r.impliedRows) L.push(`| ${x.iv.label} | ${x.iv.arithmetic} | ${f0(x.iv.volumeB)} to ${f0(x.iv.volumeA)} | ${f0(x.iv.target)} | ${f0(x.before)} | ${f0(x.afterFit)} | ${f0(x.final)} |`);
+      L.push('');
+    }
   }
   L.push('', '## Stations that cannot be met', '', 'A station is listed when it ends more than 5% off its target. Pinned = share of its assigned volume on flows sitting on the bound it would need to move (lower bound when it is too high, upper bound when too low). Opposing = stations that pull the same flows the other way (size of the error, volume the two share).', '');
   for (const r of results) {

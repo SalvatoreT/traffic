@@ -308,3 +308,36 @@ fn copy_detail(m: &Multi, src: &Path, prefix: &str, seed: u64, run: &Value) -> s
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn seed_lists() {
+        assert_eq!(parse_seeds("1-10").unwrap().len(), 10);
+        assert_eq!(parse_seeds("1,2,5").unwrap(), vec![1, 2, 5]);
+        assert_eq!(parse_seeds("1-3,9").unwrap(), vec![1, 2, 3, 9]);
+        assert!(parse_seeds("5-1").is_none());
+        assert!(parse_seeds("x").is_none());
+    }
+
+    #[test]
+    fn statistics_of_ten_values() {
+        let s = stat(&[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]);
+        assert_eq!(s.n, 10);
+        assert!((s.mean - 5.5).abs() < 1e-12);
+        assert!((s.sd - 3.0277).abs() < 1e-3);
+        assert_eq!((s.min, s.max), (1.0, 10.0));
+        assert!((s.hi - s.mean - 2.262 * s.sd / 10f64.sqrt()).abs() < 1e-9);
+        assert_eq!(stat(&[4.0]).sd, 0.0);
+        assert!(stat(&[]).mean.is_nan());
+    }
+
+    #[test]
+    fn growth_of_backlog_in_the_second_half() {
+        let run = json!({"minutes": 60.0, "health": {"spawned": 1000.0}, "series": [
+            {"tMin": 5.0, "backlog": 0.0}, {"tMin": 30.0, "backlog": 10.0}, {"tMin": 55.0, "backlog": 40.0}]});
+        assert!((series_growth(&run) - 3.0).abs() < 1e-9);
+    }
+}

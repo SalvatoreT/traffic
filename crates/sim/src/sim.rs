@@ -513,7 +513,7 @@ impl Simulation {
             tt_sum: vec![0.0; nl],
             tt_n: vec![0; nl],
             epoch: 0,
-            next_epoch_t: t0 + EPOCH_S,
+            next_epoch_t: EPOCH_S,
             st: Stats { hist: vec![0.0; HIST_BINS], ..Default::default() },
             bin_flow: vec![0.0; nl * NBINS],
             bin_ct: vec![0.0; nl * NBINS],
@@ -1130,8 +1130,12 @@ impl Simulation {
     /// Measure each signalized approach over the last window (stop-line crossings plus the growth of the standing queue,
     /// which is demand the signal did not serve), smooth it, and let every signal recompute its Webster splits.
     fn adapt_signals(&mut self) {
-        let window = self.adapt_interval();
-        self.next_adapt_t = self.t + window;
+        self.adapt_signals_over(self.adapt_interval());
+    }
+
+    /// `adapt_signals` for measurements gathered over `window` s.
+    fn adapt_signals_over(&mut self, window: f64) {
+        self.next_adapt_t = self.t + self.adapt_interval();
         for l in 0..self.topo.n_links {
             let n = self.topo.link_to[l] as usize;
             if self.eff.ctrl[n] != Control::Signal {
@@ -2317,6 +2321,27 @@ impl Simulation {
     }
 
     fn epoch_update(&mut self) {
+        self.update_costs();
+        for vid in 0..self.vehs.len() as u32 {
+            let v = &self.vehs[vid as usize];
+            if !v.alive || v.in_transit || v.kind != KIND_CAR {
+                continue;
+            }
+            if self.cfg.legacy_reroute {
+                // ASSUMPTION (old): a deterministic share of en-route vehicles re-plan each epoch.
+                if hash32(v.uid, self.epoch) % 1000 < self.cfg.guided_share.map_or(800, |r| (r.clamp(0.0, 1.0) * 1000.0).round() as u32) {
+                    self.replan_vehicle(vid, true);
+                }
+            } else if v.blocked_space && v.wait_t > BLOCKED_REROUTE_S {
+                self.replan_around_blocked(vid);
+            } else if v.guided {
+                self.consider_reroute(vid);
+            }
+        }
+    }
+
+    /// Fold the link times measured since the last update into the route costs and drop the cached routing tables.
+    fn update_costs(&mut self) {
         for l in 0..self.topo.n_links {
             if self.tt_n[l] > 0 {
                 let obs = self.tt_sum[l] / self.tt_n[l] as f32;
@@ -2342,22 +2367,6 @@ impl Simulation {
         }
         self.router.invalidate();
         self.epoch += 1;
-        for vid in 0..self.vehs.len() as u32 {
-            let v = &self.vehs[vid as usize];
-            if !v.alive || v.in_transit || v.kind != KIND_CAR {
-                continue;
-            }
-            if self.cfg.legacy_reroute {
-                // ASSUMPTION (old): a deterministic share of en-route vehicles re-plan each epoch.
-                if hash32(v.uid, self.epoch) % 1000 < self.cfg.guided_share.map_or(800, |r| (r.clamp(0.0, 1.0) * 1000.0).round() as u32) {
-                    self.replan_vehicle(vid, true);
-                }
-            } else if v.blocked_space && v.wait_t > BLOCKED_REROUTE_S {
-                self.replan_around_blocked(vid);
-            } else if v.guided {
-                self.consider_reroute(vid);
-            }
-        }
     }
 
     /// Cost of `route` (the links after `from`) as the driver perceives it: link and movement costs on current times, each link scaled by the
