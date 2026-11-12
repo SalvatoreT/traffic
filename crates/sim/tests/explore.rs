@@ -367,3 +367,90 @@ fn options_are_spread_and_drop_changes_within_noise() {
     let sizes: Vec<usize> = picks.iter().map(|p| finals[p.idx].set.len()).collect();
     assert!(sizes.windows(2).all(|w| w[0] <= w[1]));
 }
+
+// ---------------------------------------------------------------- reference resolver
+
+/// A four-way crossing of two named residential streets inside a ring of gates, plus a staggered pair of T-junctions.
+fn crossing() -> Study {
+    let mut b = B::default();
+    let c = b.node(0.0, 0.0, Control::TwoWayStop, false);
+    let n = b.node(0.0, 150.0, Control::Uncontrolled, true);
+    let s = b.node(0.0, -150.0, Control::Uncontrolled, true);
+    let e = b.node(150.0, 0.0, Control::Uncontrolled, true);
+    let w = b.node(-150.0, 0.0, Control::Uncontrolled, true);
+    b.two_way(c, n, "Oak Street", RoadClass::Residential, 11.2, true);
+    b.two_way(c, s, "Oak Street", RoadClass::Residential, 11.2, true);
+    b.two_way(c, e, "Elm Street", RoadClass::Residential, 11.2, true);
+    b.two_way(c, w, "Elm Street", RoadClass::Residential, 11.2, true);
+    // Staggered: Pine meets Oak's north end at two nodes.
+    let p1 = b.node(300.0, 100.0, Control::TwoWayStop, false);
+    let p2 = b.node(300.0, 130.0, Control::TwoWayStop, false);
+    b.two_way(p1, p2, "Cedar Street", RoadClass::Residential, 11.2, true);
+    b.two_way(p1, e, "Pine Street", RoadClass::Residential, 11.2, true);
+    b.two_way(p2, n, "Pine Street", RoadClass::Residential, 11.2, true);
+    let net = Network { version: 1, id: "t".into(), name: "t".into(), nodes: b.nodes, links: b.links, turn_bans: Vec::new() };
+    study_of(net)
+}
+
+#[test]
+fn references_resolve_by_street_names() {
+    use traffic_sim::explore::refs::{resolve, RefCfg};
+    let study = crossing();
+    let cfg = |v: Value| -> RefCfg { serde_json::from_value(serde_json::json!({"id": "x", "title": "t", "interventions": v})).unwrap() };
+    let ok = resolve(
+        &study,
+        &cfg(serde_json::json!([
+            { "type": "diagonal_diverter", "at": ["oak street", "Elm Street"], "connect": [["Oak Street", "south"], ["Elm Street", "west"]] },
+            { "type": "modal_filter", "on": "Oak Street", "between": ["Elm Street", "the-gate"] },
+        ])),
+    );
+    // The second item has no such block: a clear error naming the package and the entry.
+    let err = ok.unwrap_err();
+    assert!(err.contains("reference x intervention 2") && err.contains("no block of Oak Street"), "{err}");
+
+    let ivs = resolve(
+        &study,
+        &cfg(serde_json::json!([
+            { "type": "diagonal_diverter", "at": ["Oak Street", "Elm Street"], "connect": [["Oak Street", "south"], ["Elm Street", "west"]] },
+            { "type": "diagonal_diverter", "at": ["Oak Street", "Elm Street"], "connect": [["Oak Street", "north"], ["Elm Street", "west"]] },
+            { "type": "speed_limit", "on": "Elm Street", "between": ["Oak Street", "Elm Street"], "mph": 15 },
+        ])),
+    );
+    // Elm Street has no block between Oak and Elm (the far end is a gate): error from the third entry only.
+    assert!(ivs.unwrap_err().contains("intervention 3"));
+
+    let ivs = resolve(
+        &study,
+        &cfg(serde_json::json!([
+            { "type": "diagonal_diverter", "at": ["Oak Street", "Elm Street"], "connect": [["Oak Street", "south"], ["Elm Street", "west"]] },
+            { "type": "diagonal_diverter", "at": ["Oak Street", "Elm Street"], "connect": [["Oak Street", "north"], ["Elm Street", "west"]] },
+        ])),
+    )
+    .unwrap();
+    let node = ivs[0].node.unwrap();
+    // South with west stay connected: a driver going north turns left (west), and one coming from the north turns right... check with the simulator's helper.
+    let (s_in, w_out) = (study.net.links.iter().find(|l| l.to == node && l.from == 2).unwrap().id, study.net.links.iter().find(|l| l.from == node && l.to == 4).unwrap().id);
+    let ok0 = traffic_sim::diverter::permitted_movements(&study.topo, &study.net, node, ivs[0].bearing.unwrap()).unwrap();
+    assert!(ok0.contains(&(s_in, w_out)));
+    let n_in = study.net.links.iter().find(|l| l.to == node && l.from == 1).unwrap().id;
+    let ok1 = traffic_sim::diverter::permitted_movements(&study.topo, &study.net, node, ivs[1].bearing.unwrap()).unwrap();
+    assert!(ok1.contains(&(n_in, w_out)) && !ok1.contains(&(s_in, w_out)));
+    assert_ne!(ivs[0].bearing, ivs[1].bearing);
+}
+
+#[test]
+fn references_report_missing_and_ambiguous_places() {
+    use traffic_sim::explore::refs::{find_node, resolve_one};
+    let study = crossing();
+    let err = find_node(&study, &["Oak Street".into(), "Birch Street".into()]).unwrap_err();
+    assert!(err.contains("no node inside the study area"), "{err}");
+    let err = find_node(&study, &["Pine Street".into(), "Cedar Street".into()]).unwrap_err();
+    assert!(err.contains("2 nodes"), "{err}");
+    // Offset legs are not a four-leg node: the diverter is refused.
+    let v = serde_json::json!({ "type": "diagonal_diverter", "at": ["Cedar Street", "Pine Street"], "connect": [["Pine Street", "east"], ["Cedar Street", "south"]] });
+    assert!(resolve_one(&study, &v).is_err());
+    let v = serde_json::json!({ "type": "diagonal_diverter", "at": ["Oak Street", "Elm Street"], "connect": [["Oak Street", "south"], ["Oak Street", "north"]] });
+    assert!(resolve_one(&study, &v).is_err());
+    let v = serde_json::json!({ "type": "diagonal_diverter", "at": ["Oak Street", "Elm Street"], "connect": [["Oak Street", "south"], ["Maple Street", "west"]] });
+    assert!(resolve_one(&study, &v).unwrap_err().contains("no Maple Street leg"));
+}

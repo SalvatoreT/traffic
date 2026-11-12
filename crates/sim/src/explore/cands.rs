@@ -52,6 +52,7 @@ pub fn hotspots(study: &Study, records: &[SelectLinkRecord], hours: f64) -> Hots
     h
 }
 
+#[derive(Clone)]
 pub struct Cand {
     pub iv: Intervention,
     /// Short code: modal_filter, node_filter, diagonal_diverter, one_way, turn_ban, speed_hump, traffic_circle, speed_limit, control, signal_timing.

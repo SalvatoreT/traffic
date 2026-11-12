@@ -1,0 +1,26 @@
+[
+  {
+    "id": "earlier-62nd-diverters",
+    "title": "Diagonal diverters on 62nd Street at Hillegass and Colby",
+    "note": "A package proposed earlier that many residents did not support. Shown for comparison.",
+    "interventions": [
+      {
+        "type": "diagonal_diverter",
+        "at": [
+          "Hillegass Avenue",
+          "62nd Street"
+        ],
+        "connect": [
+          [
+            "Hillegass Avenue",
+            "south"
+          ],
+          [
+            "62nd Street",
+            "west"
+          ]
+        ]
+      }
+    ]
+  }
+]

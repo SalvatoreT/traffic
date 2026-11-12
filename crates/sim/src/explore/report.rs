@@ -1,6 +1,8 @@
 //! Recheck of the finalists, choice of the options to publish (design D4, D5), their titles and summaries, and the output files.
 
 use super::cands::{generate, Cand};
+use super::naming::describe;
+use super::refs::{resolve, RefCfg};
 use super::search::*;
 use super::*;
 use serde_json::{json, Value};
@@ -129,9 +131,10 @@ pub struct Pick {
     pub why: String,
 }
 
-/// Dead band for comparing two options' cut-through reduction (percent of baseline): twice the run-to-run spread of the baseline, at least `GOAL_NOISE_FLOOR_PCT`.
-pub fn goal_noise_pct(base_cv_pct: f64) -> f64 {
-    (NOISE_SIGMAS * base_cv_pct).max(GOAL_NOISE_FLOOR_PCT)
+/// Dead band for comparing two options' cut-through reduction (percent of baseline): twice the standard error of a mean over the
+/// seeds, from the baseline's run-to-run spread, at least `GOAL_NOISE_FLOOR_PCT`.
+pub fn goal_noise_pct(base_cv_pct: f64, n_seeds: usize) -> f64 {
+    (NOISE_SIGMAS * base_cv_pct / (n_seeds.max(1) as f64).sqrt()).max(GOAL_NOISE_FLOOR_PCT)
 }
 
 /// Choose up to `max` options from the rechecked finalists: no other finalist beats an option on reduction, harm and size; an option
@@ -342,6 +345,8 @@ pub struct Outcome {
     pub finals: Vec<Final>,
     pub picks: Vec<Pick>,
     pub base: Baseline,
+    /// Reference packages (config order) rechecked like the finalists.
+    pub ref_finals: Vec<Final>,
 }
 
 pub fn explore(study: &Study, p: &Params) -> Outcome {
@@ -360,12 +365,38 @@ pub fn explore(study: &Study, p: &Params) -> Outcome {
     eprintln!("rechecking {} finalist(s) over {} period(s) x {} seed(s) at {} min", fin_idx.len(), p.periods.len(), p.seeds.len(), p.minutes);
     let sets: Vec<Vec<u16>> = fin_idx.iter().map(|&i| state.evals[i].set.clone()).collect();
     let finals = recheck(&ctx, &sets);
-    let noise = goal_noise_pct(base_cv_pct(&base));
+    let noise = goal_noise_pct(base_cv_pct(&base), p.seeds.len());
     let (picks, notes) = select_options(&finals, p.options, noise);
+    // Reference packages join the candidate list after the search candidates, so the search's indices stay valid.
+    let mut all = cands.clone();
+    let mut ref_sets: Vec<Vec<u16>> = Vec::new();
+    for r in &p.references {
+        let ivs = resolve(study, r).unwrap_or_else(|e| panic!("{e}"));
+        let mut set = Vec::new();
+        for iv in ivs {
+            let kind: &'static str = match iv.ty.as_str() {
+                "modal_filter" if iv.node.is_some() => "node_filter",
+                "modal_filter" => "modal_filter",
+                "diagonal_diverter" => "diagonal_diverter",
+                "one_way" => "one_way",
+                "turn_ban" => "turn_ban",
+                "speed_hump" => "speed_hump",
+                "traffic_circle" => "traffic_circle",
+                "speed_limit" => "speed_limit",
+                "control" => "control",
+                _ => "signal_timing",
+            };
+            set.push(all.len() as u16);
+            all.push(Cand { label: describe(&study.net, &study.topo, &study.idx, &iv), key: format!("ref:{}:{}", r.id, all.len()), iv, kind, block: None, nodes: vec![], places: vec![], loc_score: 0.0 });
+        }
+        ref_sets.push(set);
+    }
+    let ctx_all = Ctx { study, p, cands: &all, base: &base };
+    let ref_finals = if ref_sets.is_empty() { Vec::new() } else { eprintln!("rechecking {} reference package(s)", ref_sets.len()); recheck(&ctx_all, &ref_sets) };
     eprintln!("chose {} option(s); total {:.0}s", picks.len(), t0.elapsed().as_secs_f64());
-    let json = build_json(study, p, &cands, &base, &finals, &picks);
-    let markdown = build_markdown(study, p, &ctx, &state, &finals, &picks, &notes, noise, &t0);
-    Outcome { json, markdown, cands, state, finals, picks, base }
+    let json = build_json(study, p, &all, &base, &finals, &picks, &ref_finals);
+    let markdown = build_markdown(study, p, &ctx_all, &state, &finals, &picks, &notes, noise, &t0, &ref_finals);
+    Outcome { json, markdown, cands, state, finals, picks, base, ref_finals }
 }
 
 /// Mean over periods of the baseline's coefficient of variation of cut-through over seeds (percent); 0 with one seed.
@@ -377,15 +408,14 @@ fn r1(x: f64) -> f64 {
     (x * 10.0).round() / 10.0
 }
 
-pub fn build_json(study: &Study, p: &Params, cands: &[Cand], base: &Baseline, finals: &[Final], picks: &[Pick]) -> Value {
-    let mut proposals = Vec::new();
-    for (n, pick) in picks.iter().enumerate() {
-        let f = &finals[pick.idx];
+pub fn build_json(study: &Study, p: &Params, cands: &[Cand], base: &Baseline, finals: &[Final], picks: &[Pick], ref_finals: &[Final]) -> Value {
+    let entry = |id: String, title: String, f: &Final, kind: &str, note: Option<&str>| -> Value {
         let ivs: Vec<Intervention> = f.set.iter().map(|&i| cands[i as usize].iv.clone()).collect();
         let by_period: serde_json::Map<String, Value> = p.periods.iter().zip(&f.by_period).map(|(name, (cut, harm))| (name.clone(), json!({"cutThroughChangePct": r1(*cut), "worstIncreaseVehPerHour": harm.round()}))).collect();
-        proposals.push(json!({
-            "id": format!("p{}", n + 1),
-            "title": title(cands, &f.set),
+        let mut v = json!({
+            "id": id,
+            "kind": kind,
+            "title": title,
             "summary": summary(study, cands, f),
             "link": study.encode(&ivs, Some(&p.periods[0])),
             "interventions": f.set.iter().map(|&i| json!({"type": cands[i as usize].iv.ty, "label": cands[i as usize].label})).collect::<Vec<_>>(),
@@ -398,7 +428,15 @@ pub fn build_json(study: &Study, p: &Params, cands: &[Cand], base: &Baseline, fi
                 "bikeConflictsChangePct": r1(f.bike_pct),
             },
             "byPeriod": by_period,
-        }));
+        });
+        if let Some(n) = note {
+            v["note"] = json!(n);
+        }
+        v
+    };
+    let mut proposals: Vec<Value> = picks.iter().enumerate().map(|(n, pick)| entry(format!("p{}", n + 1), title(cands, &finals[pick.idx].set), &finals[pick.idx], "search", None)).collect();
+    for (r, f) in p.references.iter().zip(ref_finals) {
+        proposals.push(entry(r.id.clone(), r.title.clone(), f, "reference", Some(&r.note)));
     }
     json!({
         "version": 1,
@@ -417,7 +455,7 @@ pub fn build_json(study: &Study, p: &Params, cands: &[Cand], base: &Baseline, fi
 }
 
 #[allow(clippy::too_many_arguments)]
-fn build_markdown(study: &Study, p: &Params, ctx: &Ctx, state: &SearchState, finals: &[Final], picks: &[Pick], notes: &[String], noise: f64, t0: &std::time::Instant) -> String {
+fn build_markdown(study: &Study, p: &Params, ctx: &Ctx, state: &SearchState, finals: &[Final], picks: &[Pick], notes: &[String], noise: f64, t0: &std::time::Instant, ref_finals: &[Final]) -> String {
     let (cands, base) = (ctx.cands, ctx.base);
     let mut md = String::new();
     let _ = writeln!(md, "# Proposals report: {}\n", study.area);
@@ -444,7 +482,7 @@ fn build_markdown(study: &Study, p: &Params, ctx: &Ctx, state: &SearchState, fin
     }
     let _ = writeln!(
         md,
-        "\nNoise band for \"traffic increased on a block\": max({} x the block's standard deviation of flow across seeds, {} veh/h). With one seed the band is the floor. Two options count as different in cut-through reduction when they differ by more than {:.1}%.\n",
+        "\nNoise band for \"traffic increased on a block\": max({} x the block's standard deviation of flow across seeds, {} veh/h). With one seed the band is the floor. Two options count as different in cut-through reduction when they differ by more than {:.1}% (twice the standard error of the seed mean).\n",
         NOISE_SIGMAS, NOISE_FLOOR_VEH_H, noise
     );
     let mut hb: Vec<usize> = (0..study.harm_blocks.len()).collect();
@@ -488,6 +526,15 @@ fn build_markdown(study: &Study, p: &Params, ctx: &Ctx, state: &SearchState, fin
     for (n, pick) in picks.iter().enumerate() {
         let f = &finals[pick.idx];
         let _ = writeln!(md, "{}. {} ({}). {}", n + 1, title(cands, &f.set), pick.why, summary(study, cands, f));
+    }
+    if !ref_finals.is_empty() {
+        let _ = writeln!(md, "\n## Reference packages\n");
+        for (r, f) in p.references.iter().zip(ref_finals) {
+            let _ = writeln!(md, "- {} ({}). {} {}", r.title, r.id, r.note, summary(study, cands, f));
+            if let Some(w) = &f.reject {
+                let _ = writeln!(md, "  Would be rejected as a search result: {w}.");
+            }
+        }
     }
     if picks.is_empty() {
         let _ = writeln!(md, "No rechecked package reduced cut-through beyond noise without a hard rejection, so nothing is proposed.");

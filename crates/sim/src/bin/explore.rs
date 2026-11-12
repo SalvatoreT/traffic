@@ -4,7 +4,7 @@
 //! cargo run --release -p traffic-sim --bin explore -- --area rockridge --periods pm_peak,am_peak --seeds 1,2,3 --beam 3 --depth 8 --candidates 40
 
 use std::path::{Path, PathBuf};
-use traffic_sim::explore::{report::explore, Params, Study};
+use traffic_sim::explore::{refs, report::explore, Params, Study};
 
 fn usage(msg: &str) -> ! {
     if !msg.is_empty() {
@@ -13,7 +13,8 @@ fn usage(msg: &str) -> ! {
     eprintln!(
         "usage: explore --area ID [--periods pm_peak,am_peak] [--seeds 1,2,3] [--beam 3] [--depth 8] [--candidates 40]\n\
          \x20              [--screen-minutes 30] [--minutes 60] [--budget-evals N] [--jobs N] [--harm-weight 0.1] [--expand 16]\n\
-         \x20              [--finalists 12] [--options 5] [--out public/data/ID.proposals.json] [--report data/proposals/ID.md]"
+         \x20              [--finalists 12] [--options 5] [--out public/data/ID.proposals.json] [--report data/proposals/ID.md]\n\
+         \x20              [--references data/proposals/ID.references.json]"
     );
     std::process::exit(if msg.is_empty() { 0 } else { 2 });
 }
@@ -21,7 +22,7 @@ fn usage(msg: &str) -> ! {
 fn main() {
     let argv: Vec<String> = std::env::args().skip(1).collect();
     let mut p = Params::new("rockridge");
-    let (mut out, mut report): (Option<PathBuf>, Option<PathBuf>) = (None, None);
+    let (mut out, mut report, mut references): (Option<PathBuf>, Option<PathBuf>, Option<PathBuf>) = (None, None, None);
     let mut i = 0;
     while i < argv.len() {
         let k = argv[i].as_str();
@@ -48,6 +49,7 @@ fn main() {
             "--options" => p.options = num("--options") as usize,
             "--out" => out = Some(PathBuf::from(v)),
             "--report" => report = Some(PathBuf::from(v)),
+            "--references" => references = Some(PathBuf::from(v)),
             _ => usage(&format!("unknown argument {k}")),
         }
         i += 1;
@@ -64,6 +66,13 @@ fn main() {
     }
     let out = out.unwrap_or_else(|| root.join(format!("public/data/{}.proposals.json", p.area)));
     let report = report.unwrap_or_else(|| root.join(format!("data/proposals/{}.md", p.area)));
+    let ref_path = references.clone().unwrap_or_else(|| root.join(format!("data/proposals/{}.references.json", p.area)));
+    if ref_path.exists() || references.is_some() {
+        p.references = refs::load(&ref_path).unwrap_or_else(|e| usage(&e));
+        for r in &p.references {
+            refs::resolve(&study, r).unwrap_or_else(|e| usage(&e));
+        }
+    }
     p.out = Some(out.clone());
     p.report = Some(report.clone());
     let o = explore(&study, &p);

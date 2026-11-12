@@ -5,6 +5,7 @@
 pub mod cands;
 pub mod link;
 pub mod naming;
+pub mod refs;
 pub mod report;
 pub mod search;
 pub mod util;
@@ -54,6 +55,8 @@ pub struct Params {
     pub expand: usize,
     pub finalists: usize,
     pub options: usize,
+    /// Hand-written packages to evaluate and publish alongside the search results.
+    pub references: Vec<refs::RefCfg>,
     pub out: Option<PathBuf>,
     pub report: Option<PathBuf>,
 }
@@ -75,6 +78,7 @@ impl Params {
             expand: 16,
             finalists: 12,
             options: 5,
+            references: Vec::new(),
             out: None,
             report: None,
         }
