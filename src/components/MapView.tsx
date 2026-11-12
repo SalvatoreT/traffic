@@ -8,6 +8,7 @@ import { makeProjection, metersPerPixel } from '../lib/projection';
 import { pointAlong } from '../lib/geom';
 import { hitTest, selectionAnchor, type Selection } from '../lib/selection';
 import { PopoverFrame } from './Popover';
+import { advance, elapsedSim } from '../lib/extrapolate';
 import { intensity, rampStops, WIDTH_MAX, WIDTH_MIN, type Mode } from '../lib/ramps';
 import type { NetIndex } from '../lib/naming';
 import { describeIntervention, interventionPoint } from '../lib/describe';
@@ -78,7 +79,10 @@ function outsideWash(b: AreaBundle) {
   const rings = ring && ring.length >= 3 ? [outer, ring] : [outer];
   return { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: rings } };
 }
-const FRAME_MS = 32; // vehicle layer redraws at most ~30 Hz
+const FRAME_MS = 32; // without extrapolation the vehicle layer redraws at most ~30 Hz
+/** Above this multiplier sim frames arrive often enough that extrapolating is unnecessary. */
+const EXTRAPOLATE_MAX_RATE = 5;
+interface DebugHook { positions: Float32Array; draws: number; drawMs: number; frameTime: number; extrapolated: boolean }
 
 function studyBounds(b: AreaBundle): maplibregl.LngLatBoundsLike | null {
   const ring = b.network.studyArea;
@@ -144,6 +148,7 @@ export function MapView(p: Props) {
   const prevT = useRef<Float32Array>(new Float32Array(0));
   const busBuf = useRef<Float32Array>(new Float32Array(384));
   const lastDraw = useRef(0);
+  const drawn = useRef<Float32Array>(new Float32Array(0));
   const drawTimer = useRef(0);
   // Bus stops and marked crossings in local meters, computed once per area.
   const fixtures = useMemo(() => {
@@ -172,7 +177,8 @@ export function MapView(p: Props) {
   // ---- draw vehicles + signals on overlay canvas
   const draw = () => {
     drawReq.current = 0;
-    lastDraw.current = performance.now();
+    const t0 = performance.now();
+    lastDraw.current = t0;
     const map = mapRef.current, cv = canvas.current, L = live.current;
     if (!map || !cv) return;
     const g = cv.getContext('2d');
@@ -191,7 +197,13 @@ export function MapView(p: Props) {
     const dark = L.mode === 'dark';
     const C = AGENT_COLORS[L.mode];
     const r = Math.max(2, Math.min(6, 1.2 + pxPerM * 2.2));
-    const v = frame.vehicles;
+    let v = frame.vehicles;
+    const animate = !L.reducedMotion && frame.rate > 0 && frame.rate <= EXTRAPOLATE_MAX_RATE;
+    if (animate) {
+      if (drawn.current.length !== v.length) drawn.current = new Float32Array(v.length);
+      advance(v, drawn.current, elapsedSim(performance.timeOrigin + t0, frame.wall, frame.rate));
+      v = drawn.current;
+    }
     const M = L.modes;
     // One path per kind so each kind is a single fill and stroke.
     const pCar = new Path2D(), pBike = new Path2D(), pPed = new Path2D();
@@ -272,11 +284,17 @@ export function MapView(p: Props) {
       if (st === 1) { g.strokeStyle = '#1f9d55'; g.fillStyle = dark ? '#0b1118' : '#fff'; g.beginPath(); g.arc(sx, sy, sz, 0, 7); g.fill(); g.stroke(); }
       else if (st === 2) { g.strokeStyle = dark ? '#fff' : '#1a1a1a'; g.fillStyle = '#f5c400'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(sx, sy - sz); g.lineTo(sx + sz, sy + sz * 0.8); g.lineTo(sx - sz, sy + sz * 0.8); g.closePath(); g.fill(); g.stroke(); }
       else { g.strokeStyle = dark ? '#fff' : '#1a1a1a'; g.fillStyle = '#d62728'; g.lineWidth = 1.2; g.beginPath(); g.rect(sx - sz * 0.85, sy - sz * 0.85, sz * 1.7, sz * 1.7); g.fill(); g.stroke(); }
+    }    if (new URLSearchParams(location.search).has('debug')) {
+      const dbg = ((window as unknown as { __trafficDebug?: DebugHook }).__trafficDebug ??= { positions: v, draws: 0, drawMs: 0, frameTime: 0, extrapolated: false });
+      dbg.positions = v; dbg.draws++; dbg.drawMs += performance.now() - t0; dbg.frameTime = frame.time; dbg.extrapolated = animate;
     }
+    if (animate) schedule();
   };
   const schedule = () => { if (!drawReq.current) drawReq.current = requestAnimationFrame(draw); };
   // New sim frames arrive faster than a map needs; map moves still redraw at once through `schedule`.
   const scheduleFrame = () => {
+    const f = live.current.client?.frame;
+    if (f && !live.current.reducedMotion && f.rate > 0 && f.rate <= EXTRAPOLATE_MAX_RATE) { schedule(); return; }
     const wait = FRAME_MS - (performance.now() - lastDraw.current);
     if (wait <= 0) schedule();
     else if (!drawTimer.current) drawTimer.current = window.setTimeout(() => { drawTimer.current = 0; schedule(); }, wait);

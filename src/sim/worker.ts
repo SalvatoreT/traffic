@@ -22,7 +22,7 @@ let lastStats = 0;
 let winStart = 0;
 let winSim = 0;
 const resetWindow = () => { winStart = performance.now(); winSim = 0; };
-let timer: ReturnType<typeof setInterval> | null = null;
+let timer: ReturnType<typeof setTimeout> | null = null;
 
 const make = (): SimLike => new Ctor!(network, demand, JSON.stringify(cfg), transit);
 const dispose = (s: SimLike | null) => { try { s?.free?.(); } catch { /* ignore */ } };
@@ -61,7 +61,7 @@ function postFrame() {
   if (!scenario) return;
   const vehicles = scenario.vehicles();
   const signals = scenario.signals();
-  post({ t: 'frame', time: scenario.time(), vehicles, signals }, [vehicles.buffer as ArrayBuffer, signals.buffer as ArrayBuffer]);
+  post({ t: 'frame', time: scenario.time(), vehicles, signals, wall: performance.timeOrigin + performance.now(), rate: running ? speed : 0 }, [vehicles.buffer as ArrayBuffer, signals.buffer as ArrayBuffer]);
 }
 function postStats() {
   if (!scenario) return;
@@ -77,17 +77,30 @@ function postStats() {
   lastStats = now;
 }
 
+/** At low multipliers one step is due every STEP/speed seconds; step on that steady cadence instead of in bursts. */
+const STEADY_MAX_SPEED = 7.5;
+let due = 0;
 function tick() {
+  timer = null;
   const now = performance.now();
   const dtWall = Math.min(0.1, (now - lastTick) / 1000);
   lastTick = now;
-  if (!scenario) return;
-  if (running) {
-    pending += dtWall * speed;
-    const n = Math.floor(pending / STEP);
-    if (n > 0) {
-      const secs = n * STEP;
-      pending -= secs;
+  let wait = 33;
+  if (scenario && running) {
+    const steady = speed <= STEADY_MAX_SPEED;
+    const interval = (STEP / speed) * 1000;
+    let secs = 0;
+    if (steady) {
+      if (due === 0 || now - due > 4 * interval) due = now;
+      if (now >= due - 1) { secs = STEP; due += interval; }
+      wait = Math.max(1, due - performance.now());
+    } else {
+      due = 0;
+      pending += dtWall * speed;
+      const n = Math.floor(pending / STEP);
+      if (n > 0) { secs = n * STEP; pending -= secs; }
+    }
+    if (secs > 0) {
       try {
         scenario.step(secs);
         baseline?.step(secs);
@@ -96,11 +109,11 @@ function tick() {
       } catch (e) {
         running = false;
         post({ t: 'error', message: `Simulation error: ${(e as Error).message ?? e}` });
-        return;
       }
     }
     if (now - lastStats >= 1000) postStats();
-  }
+  } else due = 0;
+  timer = setTimeout(tick, wait);
 }
 
 async function init(msg: Extract<ToWorker, { t: 'init' }>) {
@@ -133,7 +146,7 @@ async function init(msg: Extract<ToWorker, { t: 'init' }>) {
   post({ t: 'ready', engine, reason });
   lastTick = performance.now(); resetWindow();
   postFrame(); postStats();
-  if (!timer) timer = setInterval(tick, 33);
+  if (!timer) timer = setTimeout(tick, 33);
 }
 
 ctx.onmessage = (ev: MessageEvent<ToWorker>) => {
@@ -141,8 +154,8 @@ ctx.onmessage = (ev: MessageEvent<ToWorker>) => {
   try {
     switch (m.t) {
       case 'init': void init(m); break;
-      case 'run': running = m.running; lastTick = performance.now(); resetWindow(); break;
-      case 'speed': speed = m.speed; resetWindow(); break;
+      case 'run': running = m.running; lastTick = performance.now(); due = 0; resetWindow(); postFrame(); break;
+      case 'speed': speed = m.speed; due = 0; pending = 0; resetWindow(); postFrame(); break;
       case 'config':
         cfg = { ...cfg, period: m.period, demandScale: m.demandScale };
         rebuild(); pending = 0; resetWindow(); postFrame(); postStats(); break;

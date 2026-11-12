@@ -18,7 +18,13 @@ export type ToWorker =
 
 export type FromWorker =
   | { t: 'ready'; engine: 'wasm' | 'mock'; reason?: string }
-  | { t: 'frame'; time: number; vehicles: Float32Array; signals: Uint8Array }
+  | {
+      t: 'frame'; time: number; vehicles: Float32Array; signals: Uint8Array;
+      /** Wall-clock ms (`performance.timeOrigin + performance.now()`) at which `time` was produced. */
+      wall: number;
+      /** Sim seconds per wall second at that moment; 0 while paused. */
+      rate: number;
+    }
   /** `achievedSpeed`: sim seconds advanced per wall second over the last window while running (null when paused or just changed). */
   | { t: 'stats'; time: number; comparing: boolean; scenario: SimStats; baseline: SimStats; achievedSpeed: number | null }
   | { t: 'error'; message: string };
