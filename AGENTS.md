@@ -10,11 +10,11 @@ areas are data.
 
 | Path | What |
 | --- | --- |
-| `crates/sim` | Simulation core (Rust). Native lib + WASM build. No I/O, deterministic for a given seed. |
+| `crates/sim` | Simulation core (Rust). Native lib + WASM build. No I/O, deterministic for a given seed. Binaries: `validate` (primitive capacities vs published ranges), `calibrate` (baseline vs observed data). |
 | `src/` | React + TypeScript UI (Vite). MapLibre GL rendering; sim runs in a Web Worker. |
-| `worker/` | Cloudflare Worker entry (static assets + `/api/*`). |
-| `tools/` | Node/TS data pipeline: OSM import, demand generation. |
-| `data/` | Raw source extracts (OSM, counts) with provenance. |
+| `worker/` | Cloudflare Worker entry (static assets, `/data/*` from R2, authenticated `/api/data/<key>` upload in `worker/upload.ts`). |
+| `tools/` | Node/TS data pipeline: OSM import, demand fitting, R2 sync. |
+| `data/` | Source extracts (OSM, counts) with provenance; `data/areas` study-area configs, `data/calibration` targets, validation and calibration record. |
 | `public/data/` | Generated study-area files served to the app. |
 | `docs/references.md` | Bibliography. Source of truth for citation keys. |
 | `openspec/` | Specs (current truth) and changes (decision history). |
@@ -25,7 +25,22 @@ areas are data.
 - `npm run build`: WASM build, typecheck, production bundle
 - `npm test`: Rust unit tests + TS tests
 - `npm run data`: regenerate `public/data/*` from `data/*`
-- `npm run deploy`: `wrangler deploy`
+- `npm run data:fetch`: download source data from its origins
+- `npm run data:pull` / `npm run data:push`: sync `data/*` and `public/data/*` with the R2 bucket
+- `cargo run --release -p traffic-sim --bin validate`: validation suite (writes `data/calibration/validation.md`)
+- `cargo run --release -p traffic-sim --bin calibrate -- --area rockridge --period pm_peak`: calibration report against observed data
+- `npm run deploy`: build, then `wrangler deploy`
+
+## Publishing data
+
+Git holds nothing large (a pre-commit hook blocks files over 200 KB); data lives in the R2 bucket.
+Cloud sessions publish with `NODE_USE_ENV_PROXY=1 TRAFFIC_UPLOAD_URL=<site> npm run data:push`.
+The upload secret is a network secret, never an environment variable or a file. See `data/README.md`.
+
+## Calibration
+
+Tuning follows the order in `data/calibration/rockridge.record.md`: validate the simulator's
+primitives before tuning demand.
 
 ## Model delegation
 
