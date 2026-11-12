@@ -3,6 +3,7 @@ import * as pkg from './pkg/traffic_sim.js';
 import { MockSimulation } from './mock';
 import type { FromWorker, SimCtor, SimLike, SimStats, ToWorker } from './protocol';
 import type { Intervention, Metrics } from '../types';
+import { clampStep, isFinishedAt } from '../lib/run';
 
 const ctx = self as unknown as DedicatedWorkerGlobalScope;
 const post = (m: FromWorker, tr: Transferable[] = []) => ctx.postMessage(m, tr);
@@ -86,6 +87,7 @@ function tick() {
   const dtWall = Math.min(0.1, (now - lastTick) / 1000);
   lastTick = now;
   let wait = 33;
+  if (scenario && running && isFinishedAt(scenario.time())) { running = false; postStats(); }
   if (scenario && running) {
     const steady = speed <= STEADY_MAX_SPEED;
     const interval = (STEP / speed) * 1000;
@@ -100,12 +102,15 @@ function tick() {
       const n = Math.floor(pending / STEP);
       if (n > 0) { secs = n * STEP; pending -= secs; }
     }
+    // Never step past the end of the run, so baseline and scenario cover identical time.
+    secs = clampStep(scenario.time(), secs);
     if (secs > 0) {
       try {
         scenario.step(secs);
         baseline?.step(secs);
         winSim += secs;
         postFrame();
+        if (isFinishedAt(scenario.time())) { running = false; pending = 0; due = 0; postStats(); }
       } catch (e) {
         running = false;
         post({ t: 'error', message: `Simulation error: ${(e as Error).message ?? e}` });

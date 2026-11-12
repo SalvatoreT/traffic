@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import type { AreaBundle, Intervention, Metrics, ModeVisibility, Overlay, Theme } from './types';
 import { loadArea, type LoadProgress } from './data';
 import { Loading, LoadError } from './components/Loading';
@@ -11,7 +11,8 @@ import { interventionTypeLabel } from './lib/describe';
 import { addInterventions } from './lib/scenario';
 import { selectionForIntervention, type Selection } from './lib/selection';
 import { interventionPoint } from './lib/describe';
-import { niceMax, percentile, resolveMode } from './lib/ramps';
+import { nextOverlayMax, OVERLAY_FLOOR, resolveMode, type MaxState } from './lib/ramps';
+import { defaultPeriod, initialRun, RUN_SECONDS, runReducer } from './lib/run';
 import { linkStatsView } from './types';
 import { SelectionMenu, type Change, type Placement } from './components/SelectionMenu';
 import { Sheet } from './components/Sheet';
@@ -95,11 +96,13 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   const dismissCal = () => { setCalClosing(true); store.set(calKey, '1'); window.setTimeout(() => setCalDismissed(true), reduced ? 0 : 200); };
   const [sourceRef, setSourceRef] = useState<string | null>(null);
 
-  const periodId = demand.periods.some((p) => p.id === initial.period) ? initial.period! : demand.periods[0]?.id ?? '';
+  const periodId = demand.periods.some((p) => p.id === initial.period) ? initial.period! : defaultPeriod(bundle.entry, demand.periods);
   const [period, setPeriod] = useState(periodId);
   const [scale, setScale] = useState(initial.demandScale ?? 1);
   const [speed, setSpeed] = useState(5);
-  const [running, setRunning] = useState(!reduced);
+  const [run, dispatchRun] = useReducer(runReducer, !reduced, initialRun);
+  const { running, finished } = run;
+  const setRunning = useCallback((r: boolean) => { if (r !== running) dispatchRun({ type: 'toggle' }); }, [running]);
   const [interventions, setInterventions] = useState<Intervention[]>(initial.interventions);
   const [overlay, setOverlay] = useState<Overlay>('cutthrough');
   const [modes, setModes] = useState<ModeVisibility>(() => {
@@ -122,7 +125,6 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   const [simError, setSimError] = useState('');
   const [stats, setStats] = useState<StatsMsg | null>(null);
   const [slowSpeed, setSlowSpeed] = useState<number | null>(null);
-  const [clock, setClock] = useState(0);
   const [client, setClient] = useState<SimClient | null>(null);
   const [toast, setToast] = useState('');
   const toastTimer = useRef<number>(0);
@@ -137,7 +139,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   useEffect(() => {
     const c = new SimClient();
     c.onReady = (kind, reason) => setEngine({ kind, reason });
-    c.onStats = (s) => { setStats(s); setClock(s.time); setSlowSpeed((prev) => nextSpeedShown(prev, first.current.speed, s.achievedSpeed)); };
+    c.onStats = (s) => { setStats(s); dispatchRun({ type: 'time', time: s.time }); setSlowSpeed((prev) => nextSpeedShown(prev, first.current.speed, s.achievedSpeed)); };
     c.onError = (m) => setSimError(m);
     const f = first.current;
     c.send({
@@ -149,15 +151,23 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   }, [network, demand, bundle.raw]);
   const firstRun = useRef(true);
   useEffect(() => { client?.send({ t: 'run', running }); setSlowSpeed(null); }, [running, client]);
+  const wasFinished = useRef(false);
+  useEffect(() => {
+    if (finished && !wasFinished.current) say('Run finished.');
+    wasFinished.current = finished;
+  }, [finished, say]);
+  const runAgain = useCallback(() => { client?.send({ t: 'reset' }); dispatchRun({ type: 'restart' }); }, [client]);
   useEffect(() => { client?.send({ t: 'speed', speed }); setSlowSpeed(null); }, [speed, client]);
   useEffect(() => {
     if (firstRun.current) { firstRun.current = false; return; }
+    dispatchRun({ type: 'restart' });
     const id = window.setTimeout(() => client?.send({ t: 'config', period, demandScale: scale }), 250);
     return () => window.clearTimeout(id);
   }, [period, scale]); // eslint-disable-line
   const ivFirst = useRef(true);
   useEffect(() => {
     if (ivFirst.current) { ivFirst.current = false; return; }
+    dispatchRun({ type: 'restart' });
     client?.setInterventions(interventions);
   }, [interventions]); // eslint-disable-line
 
@@ -227,16 +237,15 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   // --- overlay scale (latched so the legend does not jitter)
   const shownStats = source === 'baseline' && stats?.comparing ? stats.baseline : stats?.scenario;
   const linkStats = shownStats?.linkStats ?? null;
-  const maxRef = useRef({ flow: 0, cutthrough: 0 });
+  const maxRef = useRef<{ flow: MaxState; cutthrough: MaxState }>({ flow: { max: 0, changedAt: 0 }, cutthrough: { max: 0, changedAt: 0 } });
   const overlayMax = useMemo(() => {
     if (overlay === 'speed') return 1;
     const v = linkStatsView(linkStats);
     const vals: number[] = [];
     for (let i = 0; i < network.links.length; i++) vals.push(overlay === 'flow' ? v.flow(i) : v.cut(i));
-    const m = niceMax(percentile(vals, 0.98));
-    const cur = maxRef.current[overlay];
-    if (m > cur || m < cur / 4) maxRef.current[overlay] = m;
-    return maxRef.current[overlay] || m;
+    const next = nextOverlayMax(vals, OVERLAY_FLOOR[overlay], maxRef.current[overlay], performance.now());
+    maxRef.current[overlay] = next;
+    return next.max;
   }, [linkStats, overlay, network]);
 
   const base: Metrics | null = stats?.baseline.metrics ?? null;
@@ -284,7 +293,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
     </>
   );
   const resultsPanel = (
-    <Comparison base={base} scen={scen} comparing={comparing} scenarioCount={interventions.length} onRef={(k) => { setSourceRef(k); setView('sources'); }} />
+    <Comparison base={base} scen={scen} comparing={comparing} finished={finished} scenarioCount={interventions.length} onRef={(k) => { setSourceRef(k); setView('sources'); }} />
   );
 
   return (
@@ -348,10 +357,11 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
           )}
           {view !== 'sources' && (
             <Playback
-              running={running} onToggle={() => setRunning((r) => !r)}
-              onReset={() => { client?.send({ t: 'reset' }); say('Simulation reset.'); }}
+              running={running} finished={finished} onToggle={() => (finished ? runAgain() : dispatchRun({ type: 'toggle' }))}
+              onReset={() => { client?.send({ t: 'reset' }); dispatchRun({ type: 'restart' }); say('Simulation reset.'); }}
+              entry={bundle.entry}
               speed={speed} onSpeed={setSpeed} periods={demand.periods} period={period} onPeriod={setPeriod}
-              scale={scale} onScale={setScale} time={clock} reducedMotion={reduced}
+              scale={scale} onScale={setScale} time={run.time} reducedMotion={reduced}
               achieved={running ? slowSpeed : null}
             />
           )}

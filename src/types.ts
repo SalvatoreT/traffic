@@ -41,6 +41,10 @@ export interface AreaEntry {
   center: [number, number]; zoom: number;
   /** Absent means uncalibrated. */
   calibration?: Calibration;
+  /** Period id selected on first load. */
+  defaultPeriod?: string;
+  /** Period ids shown as experimental (not calibrated). */
+  experimentalPeriods?: string[];
 }
 
 export type Intervention =

@@ -36,3 +36,19 @@ export function intensity(overlay: Overlay, flow: number, speed: number, cut: nu
 export const WIDTH_MIN = 1.2;
 export const WIDTH_MAX = 9;
 export const widthFor = (t: number) => (t < 0 ? WIDTH_MIN * 0.8 : WIDTH_MIN + t * (WIDTH_MAX - WIDTH_MIN));
+
+/** Smallest upper bound per overlay, so a quiet network does not stretch the ramp to tiny values. */
+export const OVERLAY_FLOOR = { flow: 50, cutthrough: 20 } as const;
+export const SHRINK_EVERY_MS = 5000;
+export interface MaxState { max: number; changedAt: number }
+
+/**
+ * Upper bound for the flow and cut-through ramps: 95th percentile of link values rounded up to a nice number.
+ * Grows at once; shrinks at most once per SHRINK_EVERY_MS so the legend does not flicker.
+ */
+export function nextOverlayMax(values: number[], floor: number, prev: MaxState, now: number): MaxState {
+  const target = Math.max(floor, niceMax(percentile(values, 0.95)));
+  if (prev.max === 0 || target > prev.max) return { max: target, changedAt: now };
+  if (target < prev.max && now - prev.changedAt >= SHRINK_EVERY_MS) return { max: target, changedAt: now };
+  return prev;
+}
