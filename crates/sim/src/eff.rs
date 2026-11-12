@@ -182,6 +182,13 @@ impl Eff {
                         for l in flagged {
                             minor[l as usize] = true;
                         }
+                        // An unflagged approach of a lower class than the best approach still yields (same rule as at an uncontrolled node).
+                        let minr = ins.iter().map(|&l| topo.rank[l as usize]).min().unwrap();
+                        for &l in ins {
+                            if topo.rank[l as usize] > minr {
+                                minor[l as usize] = true;
+                            }
+                        }
                     } else if !ins.is_empty() {
                         // ASSUMPTION: no stop sign flagged -> lowest-class approaches are the minor ones.
                         let maxr = ins.iter().map(|&l| topo.rank[l as usize]).max().unwrap();
@@ -223,6 +230,7 @@ impl Eff {
             .collect();
 
         let nm = topo.mvs.len();
+        let osm_bans: std::collections::HashSet<(u32, u32)> = net.turn_bans.iter().map(|b| (b.from, b.to)).collect();
         let mut mv_ok = vec![true; nm];
         let mut mv_cost = vec![0.0; nm];
         let mut mv_vturn = vec![0.0; nm];
@@ -238,7 +246,8 @@ impl Eff {
             let dead_end = topo.lm_cnt[m.a as usize] == 1;
             let banned_pair = banned.iter().any(|&(a, b)| a == m.a && b == m.b);
             mv_banned[i] = banned_pair;
-            bus_mv_ok[i] = !(banned_pair || oneway_closed[m.b as usize]);
+            let osm_ban = osm_bans.contains(&(m.a, m.b));
+            bus_mv_ok[i] = !(banned_pair || osm_ban || oneway_closed[m.b as usize]);
             bike_mv_ok[i] = bike_link_ok[m.a as usize] && bike_link_ok[m.b as usize] && !(m.kind == K_UTURN && !dead_end);
             bike_mv_vturn[i] = if ctrl[n] == Control::TrafficCircle {
                 V_BIKE_CIRCLE
@@ -251,6 +260,7 @@ impl Eff {
                 }
             };
             mv_ok[i] = !(banned_pair
+                || osm_ban
                 || node_filter[n]
                 || closed[m.b as usize]
                 || (m.kind == K_UTURN && !dead_end));

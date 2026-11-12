@@ -17,8 +17,10 @@ import type {
   Network,
   NodeControl,
   OsmNode,
+  OsmRelation,
   OsmWay,
   Overpass,
+  TurnBan,
 } from './types';
 
 export const CLASS_MAP: Record<string, LinkClass> = {
@@ -61,6 +63,8 @@ export const PARAMS = {
   gateEdgeM: 60,
   boundaryReachM: 8,
   junctionJoinRadiusM: 20,
+  /** Clusters of two or more signal nodes joined by short two-way links are one intersection up to this radius (offset signals on a wide junction, a five-leg crossing). */
+  signalJoinRadiusM: 40,
   /** A marked crosswalk within this distance of a junction belongs to the junction, not to the link. */
   crossingAtJunctionM: 15,
   minLinkM: 0.5,
@@ -92,6 +96,8 @@ interface Run {
 
 interface Link {
   osmWayId: number;
+  /** Every OSM way merged into this link (turn restrictions name ways, not links). */
+  ways: number[];
   from: number;
   to: number;
   rev: Link | null;
@@ -130,6 +136,11 @@ export interface BuildStats {
   joinedNodes: number;
   /** One entry per joined cluster: member count and the street names touching it. */
   joinedList: { size: number; streets: string[]; control: string }[];
+  /** Turn restrictions: bans written (always / time-conditional), relations skipped (via way, exempt, other types), relations that matched no links. */
+  turnBans: number;
+  turnBansTimed: number;
+  restrictionsSkipped: number;
+  restrictionsUnresolved: number;
 }
 
 function parseSpeed(v: string | undefined): number | null {
@@ -168,6 +179,10 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
     joinedClusters: 0,
     joinedNodes: 0,
     joinedList: [],
+    turnBans: 0,
+    turnBansTimed: 0,
+    restrictionsSkipped: 0,
+    restrictionsUnresolved: 0,
   };
   const [minLon, minLat, maxLon, maxLat] = cfg.bbox;
   const lon0 = (minLon + maxLon) / 2;
@@ -178,6 +193,7 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
   const ways: OsmWay[] = [];
   // Ways in bicycle route relations (the extract may have none; attributes then come from way tags only).
   const routeWays = new Set<number>();
+  const restrictions: OsmRelation[] = [];
   for (const e of osm.elements) {
     if (e.type === 'node') {
       const prev = nodes.get(e.id);
@@ -185,7 +201,7 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
     } else if (e.type === 'way') ways.push(e);
     else if (e.type === 'relation' && e.tags?.route === 'bicycle') {
       for (const m of e.members ?? []) if (m.type === 'way') routeWays.add(m.ref);
-    }
+    } else if (e.type === 'relation' && e.tags?.type === 'restriction') restrictions.push(e);
   }
   const inside = (n: OsmNode) => n.lat >= minLat && n.lat <= maxLat && n.lon >= minLon && n.lon <= maxLon;
   const nodeXY = new Map<number, Pt>();
@@ -379,6 +395,7 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
     if (!forward) idxs.reverse();
     return {
       osmWayId: run.way.id,
+      ways: [run.way.id],
       from: run.nodes[forward ? a : b],
       to: run.nodes[forward ? b : a],
       rev: null,
@@ -522,7 +539,9 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
   // junctions, ramp terminals) become one node at the cluster centroid. Members must be joined by a short non-freeway
   // link and share a street name (or both be signals). Clusters whose internal links are not strongly connected are
   // skipped, so the merged node never allows a movement the members did not allow.
+  const joinRemap = new Map<number, number>();
   const joinR = cfg.junctionJoinRadius ?? PARAMS.junctionJoinRadiusM;
+  const sigR = joinR > 0 ? Math.max(joinR, cfg.signalJoinRadius ?? PARAMS.signalJoinRadiusM) : 0;
   if (joinR > 0) {
     const liveLinks = links.filter((l) => l.alive);
     const touch = new Map<number, Link[]>();
@@ -535,7 +554,7 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
     const eligible = (id: number) =>
       !gateCand.has(id) &&
       !circle.has(id) &&
-      edgeDist(xyOf(id)) > PARAMS.gateEdgeM &&
+      edgeDist(xyOf(id)) > 2 &&
       (touch.get(id) ?? []).some((l) => l.cls !== 'motorway');
     const otherNames = (id: number, other: number) =>
       new Set(
@@ -546,7 +565,10 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
       );
     const d2 = (a: number, b: number) => Math.hypot(xyOf(a)[0] - xyOf(b)[0], xyOf(a)[1] - xyOf(b)[1]);
     const cands = liveLinks
-      .filter((l) => l.cls !== 'motorway' && l.from !== l.to && polylineLength(l.geometry) <= joinR && d2(l.from, l.to) <= joinR)
+      .filter((l) => {
+        const r = signal.has(l.from) && signal.has(l.to) ? sigR : joinR;
+        return l.cls !== 'motorway' && l.from !== l.to && polylineLength(l.geometry) <= r && d2(l.from, l.to) <= r;
+      })
       .filter((l) => eligible(l.from) && eligible(l.to))
       .filter((l) => {
         if (signal.has(l.from) && signal.has(l.to)) return true;
@@ -573,12 +595,13 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
       if (ra === rb) continue;
       const all = [...members.get(ra)!, ...members.get(rb)!];
       const c = centroidOf(all);
-      if (all.some((id) => Math.hypot(xyOf(id)[0] - c[0], xyOf(id)[1] - c[1]) > joinR)) continue;
+      const lim = all.filter((id) => signal.has(id)).length >= 2 ? sigR : joinR;
+      if (all.some((id) => Math.hypot(xyOf(id)[0] - c[0], xyOf(id)[1] - c[1]) > lim)) continue;
       parent.set(rb, ra);
       members.set(ra, all);
       members.delete(rb);
     }
-    const remap = new Map<number, number>();
+    const remap = joinRemap;
     // Only strongly connected parts of a candidate cluster are joined (a one-way stub stays a separate node).
     const sccs: number[][] = [];
     for (const all of members.values()) {
@@ -687,6 +710,7 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
     const lb = polylineLength(b.geometry);
     return {
       ...a,
+      ways: [...new Set([...a.ways, ...b.ways])],
       to: b.to,
       stopAtEnd: b.stopAtEnd,
       geometry: [...a.geometry, ...b.geometry.slice(1)],
@@ -911,6 +935,70 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
     return link;
   });
 
+
+  // Turn restrictions: OSM `restriction` relations with a from way, a via node and a to way ban a motor-vehicle movement between the
+  // links of those ways at that junction. `no_u_turn` is skipped (the simulator already forbids U-turns except at dead ends); via-way
+  // restrictions and ones that exempt motor cars are skipped; time-conditional ones apply to the demand periods whose window they overlap.
+  const turnBans: TurnBan[] = [];
+  const banKey = new Set<string>();
+  const addBan = (from: Link, to: Link, periods: string[]) => {
+    const f = linkIndex.get(from)!;
+    const t = linkIndex.get(to)!;
+    const k = `${f}>${t}|${periods.join(',')}`;
+    if (banKey.has(k)) return;
+    banKey.add(k);
+    turnBans.push(periods.length ? { from: f, to: t, periods } : { from: f, to: t });
+    if (periods.length) stats.turnBansTimed++;
+    else stats.turnBans++;
+  };
+  const windows = cfg.periodWindows ?? {};
+  const conditionalPeriods = (spec: string): string[] => {
+    const hit = new Set<string>();
+    for (const group of spec.split(';')) {
+      if (/\b(Su|Sa)\b/.test(group) && !/\bMo\b/.test(group) && !/\bFr\b/.test(group)) continue;
+      const times = [...group.matchAll(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/g)].map((m) => [+m[1] + +m[2] / 60, +m[3] + +m[4] / 60]);
+      for (const [id, [ps, pe]] of Object.entries(windows)) {
+        if (!times.length || times.some(([a, b]) => a < pe && b > ps)) hit.add(id);
+      }
+    }
+    return [...hit];
+  };
+  for (const r of restrictions) {
+    const t = r.tags ?? {};
+    const except = (t.except ?? '').split(';');
+    let kind = t.restriction;
+    let periods: string[] = [];
+    if (!kind && t['restriction:conditional']) {
+      const m = /^\s*(\w+)\s*@\s*\((.*)\)\s*$/.exec(t['restriction:conditional']);
+      if (m) {
+        kind = m[1];
+        periods = conditionalPeriods(m[2]);
+        if (!periods.length) {
+          stats.restrictionsSkipped++;
+          continue;
+        }
+      }
+    }
+    const via = (r.members ?? []).filter((m) => m.role === 'via');
+    const from = (r.members ?? []).find((m) => m.role === 'from' && m.type === 'way');
+    const to = (r.members ?? []).find((m) => m.role === 'to' && m.type === 'way');
+    if (!kind || !/^(no|only)_(left_turn|right_turn|straight_on)$/.test(kind) || except.some((e) => ['motorcar', 'motor_vehicle', 'vehicle'].includes(e)) || via.length !== 1 || via[0].type !== 'node' || !from || !to) {
+      stats.restrictionsSkipped++;
+      continue;
+    }
+    const viaG = joinRemap.get(alias.get(via[0].ref) ?? via[0].ref) ?? alias.get(via[0].ref) ?? via[0].ref;
+    const ins = finalLinks.filter((l) => l.to === viaG && l.ways.includes(from.ref));
+    const outs = finalLinks.filter((l) => l.from === viaG && l.ways.includes(to.ref));
+    if (!ins.length || !outs.length) {
+      stats.restrictionsUnresolved++;
+      continue;
+    }
+    for (const a of ins) {
+      if (kind.startsWith('no_')) for (const b of outs) a.rev !== b && addBan(a, b, periods);
+      else for (const o of finalLinks) if (o.from === viaG && !outs.includes(o) && a.rev !== o) addBan(a, o, periods);
+    }
+  }
+
   return {
     network: {
       version: 1,
@@ -921,6 +1009,7 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
       studyArea: cfg.studyArea,
       nodes: outNodes,
       links: outLinks,
+      ...(turnBans.length ? { turnBans } : {}),
     },
     stats,
   };

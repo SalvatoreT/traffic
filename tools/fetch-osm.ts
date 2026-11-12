@@ -12,10 +12,10 @@ const box = ([minLon, minLat, maxLon, maxLat]: number[]) => `(${minLat},${minLon
 
 // Bicycle route relations come last with members listed by id only (no geometry): the importer needs the way ids of
 // bicycle routes. Bus routes come from the GTFS feed (tools/fetch-transit.ts), so their relations are not fetched.
-const relationQuery = (bbox: number[]) => `[out:json][timeout:60];relation[route=bicycle]${box(bbox)};out body;`;
+const relationQuery = (bbox: number[]) => `[out:json][timeout:60];(relation[route=bicycle]${box(bbox)};relation[type=restriction]${box(bbox)};);out body;`;
 const query = (bbox: number[]) => {
   const b = box(bbox);
-  return `[out:json][timeout:90];(way[highway]${b};node[highway~"traffic_signals|stop|crossing|mini_roundabout"]${b};node[traffic_calming]${b};);out body;>;out skel qt;relation[route=bicycle]${b};out body;`;
+  return `[out:json][timeout:90];(way[highway]${b};node[highway~"traffic_signals|stop|crossing|mini_roundabout"]${b};node[traffic_calming]${b};);out body;>;out skel qt;(relation[route=bicycle]${b};relation[type=restriction]${b};);out body;`;
 };
 
 async function run(q: string): Promise<string> {
@@ -88,17 +88,40 @@ async function fetchViaApi(bbox: number[], nx = 8, ny = 5): Promise<string> {
     if (e.type === "way" && e.tags?.highway) out.push({ type: "way", id: e.id, nodes: e.nodes, tags: e.tags });
     else if (e.type === "node" && (wayNodes.has(e.id) || keepTag(e))) {
       out.push(keepTag(e) ? { type: "node", id: e.id, lat: e.lat, lon: e.lon, tags: e.tags } : { type: "node", id: e.id, lat: e.lat, lon: e.lon });
-    } else if (e.type === "relation" && e.tags?.route === "bicycle") out.push(e);
+    } else if (e.type === "relation" && (e.tags?.route === "bicycle" || e.tags?.type === "restriction")) out.push(e);
   }
   return JSON.stringify({ version: 0.6, generator: "OpenStreetMap API 0.6 /map (tiled), converted", elements: out });
 }
 
+// --restrictions: keep the stored ways, nodes and bicycle relations and add the turn-restriction relations (type=restriction) seen by the
+// map API tiles. Overpass needs no separate step: `relation[type=restriction]` can be added to its query.
+async function restrictionsViaApi(bbox: number[], nx = 8, ny = 5): Promise<El[]> {
+  const [minLon, minLat, maxLon, maxLat] = bbox;
+  const found = new Map<number, El>();
+  for (let i = 0; i < nx; i++) {
+    for (let j = 0; j < ny; j++) {
+      const tile = [minLon + ((maxLon - minLon) * i) / nx, minLat + ((maxLat - minLat) * j) / ny, minLon + ((maxLon - minLon) * (i + 1)) / nx, minLat + ((maxLat - minLat) * (j + 1)) / ny];
+      for (const e of await apiTile(tile)) if (e.type === "relation" && e.tags?.type === "restriction") found.set(e.id, e);
+    }
+  }
+  return [...found.values()];
+}
+
 const force = process.argv.includes("--force");
+const restrictionsOnly = process.argv.includes("--restrictions");
 const viaApi = process.argv.includes("--api");
 // --relations: keep the stored ways and nodes (so ids and the network stay identical) and refresh only the relations.
 const relationsOnly = process.argv.includes("--relations");
 for (const file of readdirSync("data/areas").filter((f) => f.endsWith(".json"))) {
   const area = JSON.parse(readFileSync(join("data/areas", file), "utf8"));
+  if (restrictionsOnly) {
+    const old = JSON.parse(readFileSync(area.extract, "utf8"));
+    const rel = await restrictionsViaApi(area.bbox);
+    old.elements = [...old.elements.filter((e: { type: string; tags?: Record<string, string> }) => !(e.type === "relation" && e.tags?.type === "restriction")), ...rel];
+    writeFileSync(area.extract, JSON.stringify(old));
+    console.log(`updated turn restrictions in ${area.extract} (${rel.length})`);
+    continue;
+  }
   if (relationsOnly) {
     const old = JSON.parse(readFileSync(area.extract, "utf8"));
     const rel = JSON.parse(await run(relationQuery(area.bbox)));

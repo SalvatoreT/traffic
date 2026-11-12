@@ -19,6 +19,8 @@ struct Args {
     seed: u64,
     warmup_min: f64,
     local_factor: Option<f64>,
+    /// `--reroute-share <x>`: share of drivers re-routing per epoch, 0 to 1 (default 0.8).
+    reroute_share: Option<f64>,
     adapt_min: Option<f64>,
     motorway_removal: bool,
     out: Option<PathBuf>,
@@ -36,7 +38,7 @@ struct Args {
 }
 
 fn parse_args() -> Args {
-    let mut a = Args { area: "rockridge".into(), period: "pm_peak".into(), minutes: 60.0, scale: 1.0, seed: 1, warmup_min: 10.0, local_factor: None, adapt_min: None, motorway_removal: false, out: None, write: true, link_flows: false, transit: None, cars_only: false, drop: Vec::new(), demand_path: None, network_path: None };
+    let mut a = Args { area: "rockridge".into(), period: "pm_peak".into(), minutes: 60.0, scale: 1.0, seed: 1, warmup_min: 10.0, local_factor: None, reroute_share: None, adapt_min: None, motorway_removal: false, out: None, write: true, link_flows: false, transit: None, cars_only: false, drop: Vec::new(), demand_path: None, network_path: None };
     let argv: Vec<String> = std::env::args().skip(1).collect();
     let mut i = 0;
     while i < argv.len() {
@@ -52,6 +54,7 @@ fn parse_args() -> Args {
             "--scale" => a.scale = val().parse().unwrap_or_else(|_| usage("bad --scale")),
             "--seed" => a.seed = val().parse().unwrap_or_else(|_| usage("bad --seed")),
             "--warmup" => a.warmup_min = val().parse().unwrap_or_else(|_| usage("bad --warmup")),
+            "--reroute-share" => a.reroute_share = Some(val().parse().unwrap_or_else(|_| usage("bad --reroute-share"))),
             "--local-factor" => a.local_factor = Some(val().parse().unwrap_or_else(|_| usage("bad --local-factor"))),
             "--adapt-min" => a.adapt_min = Some(val().parse().unwrap_or_else(|_| usage("bad --adapt-min"))),
             "--motorway-removal" => a.motorway_removal = true,
@@ -342,7 +345,7 @@ fn main() {
     sel.dedup();
 
     // ---- run
-    let cfg = Config { seed: args.seed, period: args.period.clone(), demand_scale: args.scale, select_links: sel, local_cost_factor: args.local_factor, signal_adapt_min: args.adapt_min, motorway_gridlock_removal: args.motorway_removal, ..Default::default() };
+    let cfg = Config { seed: args.seed, period: args.period.clone(), demand_scale: args.scale, select_links: sel, local_cost_factor: args.local_factor, reroute_share: args.reroute_share, signal_adapt_min: args.adapt_min, motorway_gridlock_removal: args.motorway_removal, ..Default::default() };
     let transit: Option<TransitFile> = args.transit.as_ref().map(|p| {
         let path = p.clone().unwrap_or_else(|| root.join(format!("public/data/{}.transit.json", args.area)));
         serde_json::from_str(&read(path)).expect("transit json")

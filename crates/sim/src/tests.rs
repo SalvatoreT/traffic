@@ -58,7 +58,7 @@ impl B {
     }
 
     fn net(self) -> Network {
-        Network { version: 1, id: "t".into(), name: "t".into(), nodes: self.nodes, links: self.links }
+        Network { version: 1, id: "t".into(), name: "t".into(), nodes: self.nodes, links: self.links, turn_bans: Vec::new() }
     }
 }
 
@@ -168,6 +168,40 @@ fn run(sim: &mut Simulation, secs: f64, mut f: impl FnMut(&Simulation)) {
 
 fn empty_sim(net: Network) -> Simulation {
     Simulation::from_parts(net, demand(&[]), cfg(1, 1.0)).unwrap()
+}
+
+// ---------------------------------------------------------------- turn restrictions
+
+#[test]
+fn osm_turn_ban_blocks_the_movement_and_respects_the_period() {
+    use crate::eff::Eff;
+    use crate::topo::Topo;
+    let (mut net, x) = cross4(Control::Uncontrolled, RoadClass::Secondary, false);
+    let allowed = |net: &Network| {
+        let topo = Topo::new(net);
+        let eff = Eff::derive(&topo, net, &[]);
+        let i = topo.mvs.iter().position(|m| m.a == x.w_in && m.b == x.n_out).unwrap();
+        eff.mv_ok[i] && eff.bus_mv_ok[i]
+    };
+    assert!(allowed(&net));
+    net.turn_bans.push(TurnBan { from: x.w_in, to: x.n_out, periods: vec![] });
+    assert!(!allowed(&net));
+    // Drivers detour through a dead-end U-turn at the east gate, so the trip takes longer; a ban for another period changes nothing.
+    let d = demand(&[(x.w, x.n, 300.0)]);
+    let mean_time = |net: Network| {
+        let mut s = Simulation::from_parts(net, d.clone(), cfg(1, 1.0)).unwrap();
+        step_n(&mut s, 600.0);
+        let m = s.metrics();
+        assert!(m.completed_trips > 20);
+        m.mean_trip_time
+    };
+    let banned = mean_time(net.clone());
+    net.turn_bans = vec![TurnBan { from: x.w_in, to: x.n_out, periods: vec!["other".into()] }];
+    let other = mean_time(net.clone());
+    net.turn_bans = vec![TurnBan { from: x.w_in, to: x.n_out, periods: vec!["p".into()] }];
+    let same = mean_time(net);
+    assert!(banned > other + 20.0, "{banned} vs {other}");
+    assert!((same - banned).abs() < 1e-6);
 }
 
 // ---------------------------------------------------------------- car-following

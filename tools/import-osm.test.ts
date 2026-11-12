@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { makeProjection, pointInPolygon } from './lib/geo';
+import { pointInPolygon } from './lib/geo';
 import { buildNetwork } from './lib/network';
 import type { AreaConfig, Network, Overpass } from './lib/types';
 
@@ -115,19 +115,27 @@ describe('rockridge network', () => {
   });
 
   it('joins short signal pairs into single nodes', () => {
-    // Excluded by design: nodes within the gate margin of the extract edge, and ramp terminals (one-way chains
-    // of signals along a freeway off-ramp, which cannot be joined without inventing movements).
+    // Excluded by design: ramp terminals and one-way chains (a one-way link between two signals cannot be joined without
+    // inventing movements). Two signals joined by a two-way link shorter than the signal join radius are one node,
+    // including near the extract edge.
     const sigs = new Set(net.nodes.filter((n) => n.control === 'signal').map((n) => n.id));
-    const proj = makeProjection(net.origin.lon, net.origin.lat);
-    const [x0, y0] = proj.fwd(net.bbox[0], net.bbox[1]);
-    const [x1, y1] = proj.fwd(net.bbox[2], net.bbox[3]);
-    const nearEdge = (id: number) => Math.min(net.nodes[id].x - x0, x1 - net.nodes[id].x, net.nodes[id].y - y0, y1 - net.nodes[id].y) <= 60;
     const touchesFreeway = (id: number) =>
       net.links.some((k) => (k.from === id || k.to === id) && [k.from, k.to].some((m) => net.links.some((f) => f.class === 'motorway' && (f.from === m || f.to === m))));
     for (const l of net.links) {
-      if ([l.from, l.to].some((id) => nearEdge(id) || touchesFreeway(id))) continue;
-      expect(sigs.has(l.from) && sigs.has(l.to) && l.length < 20, `link ${l.id}`).toBe(false);
+      if ([l.from, l.to].some((id) => touchesFreeway(id))) continue;
+      const twoWay = net.links.some((r) => r.from === l.to && r.to === l.from);
+      expect(sigs.has(l.from) && sigs.has(l.to) && twoWay && l.length < 40, `link ${l.id}`).toBe(false);
     }
+  });
+
+  it('applies OSM turn restrictions, time-conditional ones by demand period', () => {
+    const bans = net.turnBans ?? [];
+    expect(bans.length).toBeGreaterThan(30);
+    for (const b of bans) expect(net.links[b.from].to, `ban ${b.from}>${b.to}`).toBe(net.links[b.to].from);
+    const name = (id: number) => net.links[id].name;
+    // Ashby Ave to Hillegass Ave: no left or right turn, Mo-Fr 16:00-18:00.
+    expect(bans.some((b) => name(b.from) === 'Ashby Avenue' && name(b.to) === 'Hillegass Avenue' && b.periods?.join() === 'pm_peak')).toBe(true);
+    expect(bans.some((b) => b.periods?.includes('midday') && !b.periods.includes('pm_peak'))).toBe(false);
   });
 
   it('keeps the flared lane count of off-ramp terminals', () => {

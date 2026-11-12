@@ -41,6 +41,13 @@ export interface NetLink {
   crossings?: number[];
 }
 
+/** A motor-vehicle movement banned by an OSM turn restriction: `from` is the link into the junction, `to` the link out of it. `periods` lists the demand periods of a time-conditional ban. */
+export interface TurnBan {
+  from: number;
+  to: number;
+  periods?: string[];
+}
+
 export interface Network {
   version: 1;
   id: string;
@@ -50,6 +57,7 @@ export interface Network {
   studyArea: [number, number][];
   nodes: NetNode[];
   links: NetLink[];
+  turnBans?: TurnBan[];
 }
 
 /** A string matches OSM `name` or `ref`; an object matches the fields it gives (`class` is the OSM highway value). */
@@ -67,6 +75,10 @@ export interface AreaConfig {
   zoom?: number;
   /** Graph nodes within this distance (m) that form one intersection are joined into one node. Default 20; 0 turns it off. */
   junctionJoinRadius?: number;
+  /** Join radius (m) for clusters of two or more signal nodes; default 40. */
+  signalJoinRadius?: number;
+  /** Hours of day (start, end) of each demand period, used to apply time-conditional turn restrictions (e.g. `no_left_turn @ (Mo-Fr 16:00-18:00)`). */
+  periodWindows?: Record<string, [number, number]>;
   /** Baseline calibration status shown in the UI. */
   calibration?: { status: 'uncalibrated' | 'calibrated'; note?: string };
 }

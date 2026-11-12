@@ -403,7 +403,9 @@ impl Simulation {
         Simulation::from_parts_transit(net, demand, cfg, None)
     }
 
-    pub fn from_parts_transit(net: Network, demand: Demand, cfg: Config, transit: Option<TransitFile>) -> Result<Simulation, String> {
+    pub fn from_parts_transit(mut net: Network, demand: Demand, cfg: Config, transit: Option<TransitFile>) -> Result<Simulation, String> {
+        net.turn_bans.retain(|b| b.periods.is_empty() || b.periods.iter().any(|p| *p == cfg.period));
+        net.turn_bans.retain(|b| (b.from as usize) < net.links.len() && (b.to as usize) < net.links.len());
         for (i, l) in net.links.iter().enumerate() {
             if l.id as usize != i || l.from as usize >= net.nodes.len() || l.to as usize >= net.nodes.len() {
                 return Err(format!("link {i}: bad id or endpoint"));
@@ -2057,7 +2059,7 @@ impl Simulation {
                 continue;
             }
             // ASSUMPTION: a deterministic 30% share of en-route vehicles re-plan each epoch.
-            if hash32(v.uid, self.epoch) % 1000 < REROUTE_SHARE {
+            if hash32(v.uid, self.epoch) % 1000 < self.cfg.reroute_share.map_or(REROUTE_SHARE, |r| (r.clamp(0.0, 1.0) * 1000.0).round() as u32) {
                 self.replan_vehicle(vid, true);
             }
         }

@@ -98,6 +98,17 @@ impl Link {
     }
 }
 
+/// Additive: a motor-vehicle movement banned by an OSM `restriction` relation (`from` link into the junction, `to` link out of it).
+/// `periods` lists the demand periods in which a time-conditional ban applies; empty means always.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TurnBan {
+    pub from: u32,
+    pub to: u32,
+    #[serde(default)]
+    pub periods: Vec<String>,
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Network {
@@ -109,6 +120,8 @@ pub struct Network {
     pub name: String,
     pub nodes: Vec<Node>,
     pub links: Vec<Link>,
+    #[serde(default)]
+    pub turn_bans: Vec<TurnBan>,
 }
 
 /// Mode of a demand flow. Missing means car.
@@ -197,6 +210,8 @@ pub struct Config {
     pub select_links: Vec<u32>,
     /// Additive: perceived-cost multiplier for residential/service links in route choice (default `params::LOCAL_COST_FACTOR`).
     pub local_cost_factor: Option<f64>,
+    /// Additive: share of drivers that re-route at each 60 s epoch, 0 to 1 (default `params::REROUTE_SHARE`).
+    pub reroute_share: Option<f64>,
     /// Additive: minutes between signal split adaptations (default `params::ADAPT_INTERVAL_S`; 0 keeps the start-up splits).
     pub signal_adapt_min: Option<f64>,
     /// Additive: apply the gridlock breaker on motorway-class links too (default false: vehicles queued on a ramp or the
