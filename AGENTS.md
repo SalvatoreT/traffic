@@ -102,10 +102,12 @@ citation keys, or the required structure of OpenSpec spec files.
 
 ## Conventions
 
-- Never put people's names in the repository (code, docs, data, commit messages).
-  Published authors in `docs/references.md` citations and the copyright holder in
-  `LICENSE` are the only exceptions. Describe
-  private sources by role ("resident-provided count data"), not by person.
+- Never put the names of private individuals involved in the local effort in the
+  repository (code, docs, data, commit messages): residents, organizers, people named in
+  email or shared documents, and anyone whose involvement is not already public. Describe
+  such sources by role ("resident-provided count data"). Names that are public and easy
+  to look up are fine: published authors, the makers of tools and software we cite,
+  agencies and companies, and the copyright holder in `LICENSE`.
 - Minimal comments; citations are the exception.
 - SI units internally (m, s, m/s); convert at the UI boundary.
 - UI meets WCAG 2.2 AA: keyboard operable, visible focus, reduced-motion respected,
