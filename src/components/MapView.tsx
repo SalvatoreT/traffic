@@ -67,7 +67,7 @@ export const AGENT_COLORS = {
 
 const BADGE: Record<string, string> = {
   modal_filter: 'MF', speed_hump: 'SH', speed_limit: 'SL', traffic_circle: 'TC', control: 'IC',
-  signal_timing: 'ST', one_way: '1W', turn_ban: 'TB',
+  signal_timing: 'ST', one_way: '1W', turn_ban: 'TB', diagonal_diverter: 'DD',
 };
 
 /** A large rectangle with the study area cut out: a wash over the basemap outside the outline. */
@@ -480,8 +480,14 @@ export function MapView(p: Props) {
     markers.current = p.interventions.map((iv) => {
       const [x, y] = interventionPoint(iv, bundle.network);
       const el = document.createElement('div');
-      el.className = `iv-badge iv-${iv.type}`;
-      el.textContent = iv.type === 'speed_limit' ? String(Math.round(iv.speed * 2.23694)) : BADGE[iv.type];
+      if (iv.type === 'diagonal_diverter') {
+        // A thick barrier line along the diagonal, outlined in the opposite tone so it reads on light and dark basemaps.
+        el.className = 'iv-diverter';
+        el.innerHTML = `<svg width="44" height="44" viewBox="-22 -22 44 44" focusable="false"><g transform="rotate(${iv.bearing})"><line x1="0" y1="-17" x2="0" y2="17" class="iv-dd-halo"/><line x1="0" y1="-17" x2="0" y2="17" class="iv-dd-out"/><line x1="0" y1="-17" x2="0" y2="17" class="iv-dd-in"/></g></svg>`;
+      } else {
+        el.className = `iv-badge iv-${iv.type}`;
+        el.textContent = iv.type === 'speed_limit' ? String(Math.round(iv.speed * 2.23694)) : BADGE[iv.type];
+      }
       el.setAttribute('aria-hidden', 'true');
       el.title = describeIntervention(iv, bundle.network, p.index);
       return new maplibregl.Marker({ element: el }).setLngLat(proj.toLonLat(x, y)).addTo(map);

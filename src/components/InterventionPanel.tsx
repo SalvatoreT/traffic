@@ -23,7 +23,7 @@ interface Props {
 }
 
 const BADGE: Record<Intervention['type'], string> = {
-  modal_filter: 'MF', speed_hump: 'SH', speed_limit: '', traffic_circle: 'TC', control: 'IC', signal_timing: 'ST', one_way: '1W', turn_ban: 'TB',
+  modal_filter: 'MF', speed_hump: 'SH', speed_limit: '', traffic_circle: 'TC', control: 'IC', signal_timing: 'ST', one_way: '1W', turn_ban: 'TB', diagonal_diverter: 'DD',
 };
 
 export function InterventionPanel(p: Props) {

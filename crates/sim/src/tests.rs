@@ -1360,3 +1360,4 @@ const GOLDEN_CORRIDOR: &str = r#"{"arterialMeanSpeed":5.760706174508465,"backlog
 const GOLDEN_CROSS: &str = r#"{"arterialMeanSpeed":8.313011509983335,"backlog":0,"completedTrips":551,"cutThrough":{"shareOfLocalVehKm":1.0,"vehKm":64.10286659431458},"gridlockRemoved":0,"meanTripDelay":13.422630107903911,"meanTripTime":50.82705001554476,"safety":{"localMeanSpeed":6.375161500442407,"localP85Speed":11.414213947990543,"shareAbove20mph":0.4653576228161864,"shareAbove25mph":0.17064854910158778,"ttcConflicts":9},"spawned":572,"time":1800.0,"unroutableTrips":0,"vehKm":215.87383705997468,"vehiclesInNetwork":21}"#;
 
 mod modes;
+mod diverter;

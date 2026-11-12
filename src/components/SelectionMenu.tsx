@@ -155,6 +155,18 @@ export function SelectionMenu(p: Props) {
           <li><ChoiceGroup label="Set signal cycle"
             choices={a.cycles.map((c) => ({ key: String(c), label: `${c} s`, pick: () => apply({ add: [{ type: 'signal_timing', node, cycle: c }] }) }))} /></li>
         )}
+        {a.diverter.options.length > 0 && (
+          <li><ChoiceGroup label={a.diverter.switching ? 'Switch diagonal diverter' : 'Add diagonal diverter'}
+            hint="no through traffic for cars"
+            choices={a.diverter.options.map((o) => ({
+              key: String(o.bearing),
+              label: a.diverter.switching ? `Switch to ${o.label}` : o.label,
+              pick: () => apply(
+                { add: [{ type: 'diagonal_diverter', node, bearing: o.bearing }], remove: (iv) => iv.type === 'diagonal_diverter' && iv.node === node },
+                `${a.diverter.switching ? 'Switched to' : 'Added'} diagonal diverter at ${heading}, connecting ${o.label}.`,
+              ),
+            }))} /></li>
+        )}
         {a.turnBan.length > 0 && (
           <li><TurnBan options={a.turnBan}
             onPick={(fromLink, toLink, fl, tl) => apply({ add: [{ type: 'turn_ban', fromLink, toLink }] }, `Added turn ban at ${heading}: ${fl} may not turn ${tl}.`)} /></li>

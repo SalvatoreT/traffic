@@ -64,7 +64,9 @@ export type Intervention =
   | { type: 'control'; node: number; control: ControlType }
   | { type: 'signal_timing'; node: number; cycle: number }
   | { type: 'one_way'; link: number }
-  | { type: 'turn_ban'; fromLink: number; toLink: number };
+  | { type: 'turn_ban'; fromLink: number; toLink: number }
+  /** Barrier line through a four-leg intersection, degrees clockwise from north in [0, 180). Cars and buses may only turn between legs on the same side. */
+  | { type: 'diagonal_diverter'; node: number; bearing: number };
 
 export interface Metrics {
   time: number; vehiclesInNetwork: number; spawned: number; completedTrips: number;
@@ -78,6 +80,8 @@ export interface Metrics {
   arterialMeanSpeed: number;
   /** Vehicles removed by the sim's gridlock breaker (absent in older sim builds). */
   gridlockRemoved?: number;
+  /** Interventions the sim skipped as invalid, such as a diverter at a node that is not a four-leg intersection (absent when none). */
+  invalidInterventions?: number;
   /** Per-mode results (absent in sim builds without multimodal support). */
   modes?: ModeMetrics;
   vulnerable?: VulnerableMetrics;

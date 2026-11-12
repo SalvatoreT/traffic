@@ -121,6 +121,12 @@ main { flex: 1; min-height: 0; display: flex; }
 .iv-badge.iv-control, .iv-badge.iv-signal_timing { background: #d3f9d8; border-radius: 3px 12px 3px 12px; }
 .iv-badge.iv-one_way { background: #e5dbff; clip-path: none; border-radius: 12px 4px 4px 12px; }
 .iv-badge.iv-turn_ban { background: #ffe3e3; border-radius: 4px 12px 4px 4px; }
+.iv-diverter { width: 44px; height: 44px; pointer-events: none; }
+.iv-diverter svg { display: block; overflow: visible; filter: drop-shadow(0 1px 3px rgba(0, 0, 0, .4)); }
+.iv-dd-halo { stroke: #fff; stroke-width: 14px; stroke-linecap: butt; }
+.iv-dd-out { stroke: #111; stroke-width: 10px; stroke-linecap: butt; }
+.iv-dd-in { stroke: #ffd43b; stroke-width: 6px; stroke-linecap: butt; stroke-dasharray: 7 3; }
+.iv-badge.iv-diagonal_diverter { background: #ffd43b; border-radius: 4px; }
 .iv-badge.static { box-shadow: none; flex: none; }
 
 .results .card { border: 1px solid var(--border); border-radius: var(--radius); padding: .65rem .75rem; margin: .7rem 0; background: var(--surface); }

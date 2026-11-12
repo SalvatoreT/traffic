@@ -73,6 +73,8 @@ pub struct Eff {
     pub bike_link_cost: Vec<f32>,
     pub bike_w: Vec<f32>,
     pub bike_closed: Vec<bool>,
+    /// Interventions skipped as invalid (diagonal diverters that do not fit their node).
+    pub invalid_ivs: u64,
 }
 
 impl Eff {
@@ -91,6 +93,7 @@ impl Eff {
         let mut oneway_closed = vec![false; nl];
         let mut banned: Vec<(u32, u32)> = Vec::new();
         let mut cycle_override: Vec<Option<f32>> = vec![None; nn];
+        let mut invalid_ivs = 0u64;
         let valid_l = |l: Option<u32>| l.filter(|&x| (x as usize) < nl);
         let valid_n = |n: Option<u32>| n.filter(|&x| (x as usize) < nn);
         for iv in ivs {
@@ -152,6 +155,16 @@ impl Eff {
                 "turn_ban" => {
                     if let (Some(a), Some(b)) = (valid_l(iv.from_link), valid_l(iv.to_link)) {
                         banned.push((a, b));
+                    }
+                }
+                "diagonal_diverter" => {
+                    let res = match (valid_n(iv.node), iv.bearing) {
+                        (Some(n), Some(b)) => crate::diverter::banned_movements(topo, net, n, b.rem_euclid(180.0)),
+                        _ => Err(String::new()),
+                    };
+                    match res {
+                        Ok(bans) => banned.extend(bans),
+                        Err(_) => invalid_ivs += 1,
                     }
                 }
                 _ => {}
@@ -357,6 +370,7 @@ impl Eff {
             bike_link_cost,
             bike_w,
             bike_closed,
+            invalid_ivs,
         }
     }
 

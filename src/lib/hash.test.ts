@@ -109,6 +109,7 @@ describe('scenario links across differently indexed networks', () => {
     { type: 'signal_timing', node: nodeAt(A, ...grid(1, 1)).id, cycle: 80 },
     { type: 'one_way', link: oneWay.id },
     { type: 'turn_ban', fromLink: banFrom.id, toLink: banTo.id },
+    { type: 'diagonal_diverter', node: nodeAt(A, ...grid(3, 3)).id, bearing: 135 },
   ];
   // target network: junction merged, the hump's block split in two, everything re-indexed
   const T = reindex(splitPair(base, linkBetween(base, grid(4, 2), grid(4, 3)).id), 7);
@@ -131,7 +132,7 @@ describe('scenario links across differently indexed networks', () => {
   it('lands each intervention on the geometrically same block or intersection', () => {
     const near = (net: Network, id: number, x: number, y: number) => nearestOnPolyline(net.links[id].geometry, x, y).dist;
     const mid = (l: NetLink) => pointAlong(l.geometry, l.length / 2);
-    const [mf, mn, sl, sh, tc, ct, st, ow, tb] = dec.interventions;
+    const [mf, mn, sl, sh, tc, ct, st, ow, tb, dd] = dec.interventions;
     const m1 = mid(filtered);
     expect(mf.type === 'modal_filter' && 'link' in mf && near(T, mf.link, m1.x, m1.y)).toBeLessThan(1.5);
     expect(mn.type === 'modal_filter' && 'node' in mn && T.nodes[mn.node]).toMatchObject({ x: nodeAt(A, ...grid(3, 2)).x, y: nodeAt(A, ...grid(3, 2)).y });
@@ -160,6 +161,8 @@ describe('scenario links across differently indexed networks', () => {
     expect(T.nodes[T.links[t.fromLink].from]).toMatchObject({ x: grid(1, 2)[0], y: grid(1, 2)[1] });
     expect(T.links[t.toLink].from).toBe(J.id);
     expect(T.nodes[T.links[t.toLink].to]).toMatchObject({ x: grid(2, 1)[0], y: grid(2, 1)[1] });
+    // diagonal diverter: same intersection, same orientation
+    expect(dd).toEqual({ type: 'diagonal_diverter', node: nodeAt(T, ...grid(3, 3)).id, bearing: 135 });
   });
 
   it('is stable: decoding against the encoding network gives the same placement twice', () => {
@@ -231,6 +234,31 @@ describe('matching tolerances and directions', () => {
     const r = decodeScenario(base, encodeScenario(base, [{ type: 'speed_hump', link: l.id, position: 37.5 }]));
     expect(r.interventions[0]).toMatchObject({ type: 'speed_hump', link: l.id });
     expect((r.interventions[0] as { position: number }).position).toBeCloseTo(37.5, 0);
+  });
+});
+
+describe('diagonal diverter links', () => {
+  const at = nodeAt(base, ...grid(3, 3)).id;
+  it('encodes as dd, geohash and whole-degree bearing', () => {
+    const h = encodeScenario(base, [{ type: 'diagonal_diverter', node: at, bearing: 45 }]);
+    expect(h).toMatch(/^#v1;a=fixture;s=dd,[0-9b-hjkmnp-z]{10},45$/);
+    expect(decodeScenario(base, h).interventions).toEqual([{ type: 'diagonal_diverter', node: at, bearing: 45 }]);
+  });
+  it('keeps the orientation after the network is re-indexed', () => {
+    const T = reindex(base, 3);
+    for (const bearing of [0, 45, 135, 175]) {
+      const d = decodeScenario(T, encodeScenario(base, [{ type: 'diagonal_diverter', node: at, bearing }]));
+      expect(d.unplaced).toEqual([]);
+      expect(d.interventions).toEqual([{ type: 'diagonal_diverter', node: nodeAt(T, ...grid(3, 3)).id, bearing }]);
+    }
+  });
+  it('rejects bearings outside 0 to 179 and reports a missing intersection as unplaced', () => {
+    const good = encodeScenario(base, [{ type: 'diagonal_diverter', node: at, bearing: 45 }]);
+    expect(decodeScenario(base, good.replace(/,45$/, ',180')).invalid).toBe(true);
+    expect(decodeScenario(base, good.replace(/,45$/, ',-5')).invalid).toBe(true);
+    expect(decodeScenario(base, good.replace(/,45$/, ',x')).invalid).toBe(true);
+    const far = encodeScenario(base, [{ type: 'diagonal_diverter', node: at, bearing: 45 }]).replace(/dd,[0-9a-z]{10}/, 'dd,' + encodeGeohash(10, 10));
+    expect(decodeScenario(base, far).unplaced).toHaveLength(1);
   });
 });
 

@@ -11,6 +11,7 @@ import { nearestOnPolyline, pointAlong, polylineLength } from './geom';
  *   tc  traffic circle                 ct  control (s a t u c)
  *   st  signal cycle (s)               ow  one-way (kept direction, bearing in degrees)
  *   tb  turn ban (intersection, inbound bearing, outbound bearing)
+ *   dd  diagonal diverter (intersection, barrier bearing in whole degrees, 0 to 179)
  */
 export const HASH_VERSION = 'v1';
 export const LINK_TOLERANCE_M = 25;
@@ -27,7 +28,7 @@ const CONTROL_CODE: Record<ControlType, string> = { signal: 's', all_way_stop: '
 const CODE_CONTROL = Object.fromEntries(Object.entries(CONTROL_CODE).map(([k, v]) => [v, k])) as Record<string, ControlType>;
 const TYPE_OF_CODE: Record<string, Intervention['type']> = {
   mf: 'modal_filter', mn: 'modal_filter', sl: 'speed_limit', sh: 'speed_hump', tc: 'traffic_circle',
-  ct: 'control', st: 'signal_timing', ow: 'one_way', tb: 'turn_ban',
+  ct: 'control', st: 'signal_timing', ow: 'one_way', tb: 'turn_ban', dd: 'diagonal_diverter',
 };
 
 const num = (v: number, dp: number) => String(+v.toFixed(dp) || 0);
@@ -98,6 +99,7 @@ export function encodeScenario(net: Network, interventions: Intervention[], opts
         }
         break;
       }
+      case 'diagonal_diverter': { const p = nodePt(iv.node); if (p) s = `dd,${p},${Math.round(iv.bearing) % 180}`; break; }
       case 'turn_ban': {
         const a = net.links[iv.fromLink], b = net.links[iv.toLink];
         const p = a ? nodePt(a.to) : null;
@@ -176,6 +178,7 @@ const PARAMS_OK: Record<string, (f: string[]) => boolean> = {
   tb: (f) => isNum(Number(f[2]), 0, 360) && isNum(Number(f[3]), 0, 360),
   ct: (f) => Object.hasOwn(CODE_CONTROL, f[2]),
   st: (f) => isNum(Number(f[2]), 20, 240),
+  dd: (f) => /^\d{1,3}$/.test(f[2] ?? '') && isNum(Number(f[2]), 0, 179),
 };
 
 export function decodeScenario(net: Network, hash: string): DecodedScenario {
@@ -247,6 +250,7 @@ export function decodeScenario(net: Network, hash: string): DecodedScenario {
         else if (f[0] === 'tc') out.interventions.push({ type: 'traffic_circle', node: nid });
         else if (f[0] === 'ct' && CODE_CONTROL[f[2]]) out.interventions.push({ type: 'control', node: nid, control: CODE_CONTROL[f[2]] });
         else if (f[0] === 'st') out.interventions.push({ type: 'signal_timing', node: nid, cycle: p3 });
+        else if (f[0] === 'dd') out.interventions.push({ type: 'diagonal_diverter', node: nid, bearing: p3 });
       }
     }
   }

@@ -8,6 +8,7 @@ export function interventionKey(iv: Intervention): string {
     case 'traffic_circle': case 'control': case 'signal_timing': return `node-${iv.node}-${iv.type}`;
     case 'one_way': return `ow-${iv.link}`;
     case 'turn_ban': return `tb-${iv.fromLink}-${iv.toLink}`;
+    case 'diagonal_diverter': return `dd-${iv.node}`;
   }
 }
 

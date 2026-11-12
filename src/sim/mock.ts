@@ -5,6 +5,7 @@
 import type { Demand, Intervention, Metrics, Network } from '../types';
 import { KIND_BIKE, KIND_BUS, KIND_PED } from '../types';
 import { pointAlong } from '../lib/geom';
+import { bannedMoves } from '../lib/diverter';
 import type { SimLike } from './protocol';
 
 interface V { link: number; s: number; v: number; ct: boolean; trip: number; born: number }
@@ -24,6 +25,8 @@ export class MockSimulation implements SimLike {
   private rng = 1;
   private veh: V[] = [];
   private closed = new Set<number>();
+  /** Car movements `from-to` removed by diagonal diverters (cyclists, walkers and buses are not held by the mock). */
+  private banned = new Set<string>();
   private limitScale = new Map<number, number>();
   private slow = new Set<number>();
   private cross: Float64Array;
@@ -103,7 +106,7 @@ export class MockSimulation implements SimLike {
 
   setInterventions(json: string) {
     const list = JSON.parse(json) as Intervention[];
-    this.closed.clear(); this.limitScale.clear(); this.slow.clear();
+    this.closed.clear(); this.limitScale.clear(); this.slow.clear(); this.banned.clear();
     for (const iv of list) {
       const rev = (id: number) => this.net.links[id].reverse;
       if (iv.type === 'modal_filter' && 'link' in iv) { this.closed.add(iv.link); const r = rev(iv.link); if (r !== null) this.closed.add(r); }
@@ -112,6 +115,10 @@ export class MockSimulation implements SimLike {
       } else if (iv.type === 'one_way') { const r = rev(iv.link); if (r !== null) this.closed.add(r); }
       else if (iv.type === 'speed_limit') {
         for (const id of [iv.link, rev(iv.link)]) if (id !== null) this.limitScale.set(id, iv.speed / this.net.links[id].speedLimit);
+      } else if (iv.type === 'diagonal_diverter') {
+        const inc: number[][] = this.net.nodes.map(() => []);
+        for (const l of this.net.links) inc[l.to].push(l.id);
+        for (const m of bannedMoves(this.net, { incomingLinks: inc, outgoingLinks: this.out }, iv.node, iv.bearing)) this.banned.add(m);
       } else if (iv.type === 'speed_hump') { this.slow.add(iv.link); const r = rev(iv.link); if (r !== null) this.slow.add(r); }
     }
     this.veh = this.veh.filter((v) => !this.closed.has(v.link));
@@ -177,8 +184,9 @@ export class MockSimulation implements SimLike {
         if (v.ct) this.ctDist += (v.v * dt) / 1000;
         if (v.s >= l.length) {
           this.cross[v.link]++; if (v.ct) this.ctCross[v.link]++;
-          const opts = this.out[l.to].filter((id) => !this.closed.has(id) && this.net.links[id].to !== l.from);
-          const pick = opts.length ? opts : this.out[l.to].filter((id) => !this.closed.has(id));
+          const free = (id: number) => !this.closed.has(id) && !this.banned.has(`${v.link}-${id}`);
+          const opts = this.out[l.to].filter((id) => free(id) && this.net.links[id].to !== l.from);
+          const pick = opts.length ? opts : this.out[l.to].filter(free);
           if (!pick.length || this.rand() < 0.01) {
             this.completed++; this.tripTimeSum += this.t - v.born;
             const open = this.net.links.filter((x) => !this.closed.has(x.id));

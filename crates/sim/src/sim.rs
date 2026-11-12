@@ -877,6 +877,7 @@ impl Simulation {
             unroutable_trips: st.unroutable,
             veh_km: st.veh_m / 1000.0,
             gridlock_removed: st.gridlock_removed,
+            invalid_interventions: self.eff.invalid_ivs,
             ..Default::default()
         };
         if st.completed > 0 {

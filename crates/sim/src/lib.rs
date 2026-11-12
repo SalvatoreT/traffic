@@ -1,5 +1,6 @@
 //! Traffic simulation core. See `docs/references.md` for citation keys used in comments.
 
+pub mod diverter;
 pub mod eff;
 pub mod model;
 pub mod params;

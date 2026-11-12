@@ -2,6 +2,7 @@ import type { ControlType, Intervention, Network, NetLink } from '../types';
 import { MPS_TO_MPH } from './format';
 import { nearestOnPolyline, pickLink, pointAlong } from './geom';
 import { linkStreet, type NetIndex } from './naming';
+import { diverterOptions, pairingKey, type DiverterOption } from './diverter';
 
 /** Where a selection came from. Search results open the menu inline in the Scenario panel; the rest use a pop-up or the sheet. */
 export type SelectVia = 'map' | 'search' | 'list';
@@ -174,6 +175,8 @@ export interface NodeActions {
   /** Null unless the intersection is, or is being changed to, a signal. */
   cycles: number[] | null;
   turnBan: (TurnOption & { to: TurnOption[] })[];
+  /** Orientations offered at a four-leg intersection (the one already placed is left out); empty elsewhere. */
+  diverter: { options: DiverterOption[]; switching: boolean };
 }
 
 export function nodeActions(net: Network, idx: NetIndex, s: Extract<Selection, { kind: 'node' }>, ivs: Intervention[]): NodeActions {
@@ -189,11 +192,15 @@ export function nodeActions(net: Network, idx: NetIndex, s: Extract<Selection, {
       .map((t) => ({ link: t, label: `${linkCompass(net.links[t], 'start')}bound onto ${idx.linkName[t]}` }));
     return { link: from, label: `${linkCompass(f, 'end')}bound on ${idx.linkName[from]}`, to };
   }).filter((f) => f.to.length > 0);
+  const placed = ivs.find((iv): iv is Extract<Intervention, { type: 'diagonal_diverter' }> => iv.type === 'diagonal_diverter' && iv.node === node);
+  const placedKey = placed ? pairingKey(net, idx, node, placed.bearing) : null;
+  const diverter = { options: diverterOptions(net, idx, node).filter((o) => o.key !== placedKey), switching: !!placed };
   return {
     modalFilter: !ivs.some((iv) => iv.type === 'modal_filter' && 'node' in iv && iv.node === node),
     trafficCircle: current !== 'traffic_circle',
     control: { current, choices: CONTROL_CHOICES.filter((c) => c.value !== current) },
     cycles: cycles && cycles.length ? cycles : null,
     turnBan,
+    diverter,
   };
 }

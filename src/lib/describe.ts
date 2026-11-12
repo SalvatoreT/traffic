@@ -2,6 +2,7 @@ import type { AreaBundle, Intervention } from '../types';
 import type { NetIndex } from './naming';
 import { pointAlong } from './geom';
 import { controlLabel } from './selection';
+import { connectedLabel } from './diverter';
 
 export function describeIntervention(iv: Intervention, net: AreaBundle['network'], idx: NetIndex): string {
   const ln = (id: number) => idx.blocks[idx.blockOfLink[id]]?.label ?? `link ${id}`;
@@ -14,6 +15,10 @@ export function describeIntervention(iv: Intervention, net: AreaBundle['network'
     case 'control': return `${controlLabel(iv.control)} at ${nn(iv.node)}`;
     case 'signal_timing': return `Signal cycle ${iv.cycle} s at ${nn(iv.node)}`;
     case 'one_way': { const l = net.links[iv.link]; return `One-way on ${ln(iv.link)}, keeping ${idx.linkName[iv.link] ?? ''} toward ${idx.nodeName[l?.to ?? 0]}`; }
+    case 'diagonal_diverter': {
+      const c = connectedLabel(net, idx, iv.node, iv.bearing);
+      return `Diagonal diverter at ${nn(iv.node)}${c ? `, connecting ${c}` : ''}`;
+    }
     case 'turn_ban': {
       const a = net.links[iv.fromLink], b = net.links[iv.toLink];
       return `Turn ban at ${a ? nn(a.to) : '?'}: ${a ? idx.linkName[a.id] : '?'} to ${b ? idx.linkName[b.id] : '?'}`;
@@ -40,5 +45,6 @@ export function interventionPoint(iv: Intervention, net: AreaBundle['network']):
 const TYPE_LABEL: Record<Intervention['type'], string> = {
   modal_filter: 'Modal filter', speed_limit: 'Speed limit', speed_hump: 'Speed hump', traffic_circle: 'Traffic circle',
   control: 'Intersection control', signal_timing: 'Signal timing', one_way: 'One-way street', turn_ban: 'Turn ban',
+  diagonal_diverter: 'Diagonal diverter',
 };
 export const interventionTypeLabel = (t: Intervention['type']): string => TYPE_LABEL[t];

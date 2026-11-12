@@ -250,6 +250,8 @@ pub struct Intervention {
     pub cycle: Option<f64>,
     pub from_link: Option<u32>,
     pub to_link: Option<u32>,
+    /// Barrier line of a `diagonal_diverter`, degrees clockwise from north.
+    pub bearing: Option<f64>,
 }
 
 #[derive(Clone, Debug, Default, Serialize)]
@@ -269,6 +271,10 @@ pub struct Safety {
     pub ttc_conflicts: u64,
 }
 
+fn is_zero(n: &u64) -> bool {
+    *n == 0
+}
+
 #[derive(Clone, Debug, Default, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Metrics {
@@ -286,6 +292,9 @@ pub struct Metrics {
     pub arterial_mean_speed: f64,
     /// Additive field: vehicles removed by the gridlock breaker (see `sim.rs`, `GRIDLOCK_REMOVE_S`).
     pub gridlock_removed: u64,
+    /// Additive: interventions skipped as invalid (a diagonal diverter at a node that is not a four-leg intersection or with a bad bearing).
+    #[serde(skip_serializing_if = "is_zero")]
+    pub invalid_interventions: u64,
     /// Additive (multimodal-agents): per-mode results.
     pub modes: Modes,
     /// Additive: safety surrogates for people walking and biking.
