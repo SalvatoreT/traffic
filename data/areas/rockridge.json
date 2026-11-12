@@ -3,10 +3,10 @@
   "name": "Rockridge Trapezoid",
   "extract": "data/osm/rockridge.overpass.json",
   "bbox": [
-    -122.264,
-    37.836,
-    -122.248,
-    37.855
+    -122.3,
+    37.822,
+    -122.215,
+    37.87
   ],
   "boundary": [
     "Telegraph Avenue",
