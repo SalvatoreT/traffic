@@ -68,7 +68,9 @@ export function matchRampVolumes(
   for (const r of ramps) {
     const al = aliases.find((a) => a.kind === r.kind && r.streets.some((s) => s.toLowerCase().includes(a.street)) && (!a.at || Math.hypot(locate(r.surface)[0] - a.at[0], locate(r.surface)[1] - a.at[1]) <= (a.maxM ?? 150)));
     if (al) {
-      const g = groups.get(`alias|${al.street}|${al.kind}|${al.row}|${al.at?.join(',') ?? ''}`) ?? groups.set(`alias|${al.street}|${al.kind}|${al.row}|${al.at?.join(',') ?? ''}`, { ramps: [], rows: usable.filter((x) => x.desc.toUpperCase().includes(al.row.toUpperCase())), street: al.street }).get(`alias|${al.street}|${al.kind}|${al.row}|${al.at?.join(',') ?? ''}`)!;
+      // One Caltrans row is one count: every ramp that aliases to it shares the row (BUGFIX: two ramps at one interchange each took the full 7,800 ADT).
+      const key = `alias|${al.kind}|${al.row}`;
+      const g = groups.get(key) ?? groups.set(key, { ramps: [], rows: usable.filter((x) => x.desc.toUpperCase().includes(al.row.toUpperCase())), street: al.street }).get(key)!;
       g.ramps.push(r);
       continue;
     }

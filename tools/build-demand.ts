@@ -404,11 +404,41 @@ for (const p of cfg.periods as { id: string; label: string }[]) {
 
   // Prune: drop < min, cap count, renormalize to preserve total.
   for (const k of [...flowsMap.keys()]) { const [o, d] = k.split('>').map(Number); const ok = (nodeById.get(o)!.gate ? caps(o).canIn : true) && (nodeById.get(d)!.gate ? caps(d).canOut : true) && routable(o, d); if (!ok) { unroutableDropped += flowsMap.get(k)!; flowsMap.delete(k); } }
-  const totalBefore = [...flowsMap.values()].reduce((a, b) => a + b, 0);
-  let list = [...flowsMap].filter(([, v]) => v >= cfg.minFlowVehPerHour).sort((a, b) => b[1] - a[1]).slice(0, cfg.maxFlows);
-  const totalAfter = list.reduce((a, [, v]) => a + v, 0);
-  const f = totalAfter > 0 ? totalBefore / totalAfter : 1;
-  const flows: Flow[] = list.map(([k, v]) => { const [o, d] = k.split('>').map(Number); return { origin: o, destination: d, vehPerHour: Math.round(v * f * 100) / 100 }; });
+  // Pruning keeps the largest flows; each class (ramp, gate-to-gate through, local) is renormalized to its own pre-pruning total so that the
+  // tail cut cannot inflate one class at the expense of the accounting (BUGFIX: a single global factor scaled the ramp volume 23% above ADT x K).
+  const fwIds = new Set(fwGates.map((g) => g.id));
+  const clsOf = (k: string) => { const [o, d] = k.split('>').map(Number); return fwIds.has(o) || fwIds.has(d) ? 'ramp' : gates.some((g) => g.id === o) && gates.some((g) => g.id === d) ? 'through' : 'local'; };
+  const before: Record<string, number> = { ramp: 0, through: 0, local: 0 }, after: Record<string, number> = { ramp: 0, through: 0, local: 0 };
+  for (const [k, v] of flowsMap) before[clsOf(k)] += v;
+  // Thinning: flows at or above a threshold t are kept; a smaller flow v is kept with probability v/t and then carries t, so every origin's
+  // and destination's expected volume is unchanged (t is chosen so that about maxFlows flows remain). Seeded, so the file is reproducible.
+  const sorted = [...flowsMap].sort((a, b) => b[1] - a[1]);
+  let tLo = 0, tHi = sorted[0]?.[1] ?? 1;
+  for (let it = 0; it < 60; it++) { const t = (tLo + tHi) / 2; const n = sorted.reduce((a, [, v]) => a + Math.min(1, v / t), 0); if (n > cfg.maxFlows) tLo = t; else tHi = t; }
+  const tcut = Math.max(tHi, cfg.minFlowVehPerHour);
+  let seedState = 12345 + p.id.length * 977;
+  const rnd = () => { seedState = (seedState + 0x6d2b79f5) | 0; let z = Math.imul(seedState ^ (seedState >>> 15), 1 | seedState); z = (z + Math.imul(z ^ (z >>> 7), 61 | z)) ^ z; return ((z ^ (z >>> 14)) >>> 0) / 4294967296; };
+  let list: [string, number][] = [];
+  for (const [k, v] of sorted) { if (v >= tcut) list.push([k, v]); else if (rnd() < v / tcut) list.push([k, tcut]); }
+  for (const [k, v] of list) after[clsOf(k)] += v;
+  // Per class, iterative proportional fitting on the retained pairs restores each origin's and destination's pre-pruning volume
+  // (a gate's inflow stays equal to its target), then one factor restores the class total.
+  const keep = list.map(([k, v]) => ({ k, o: +k.split('>')[0], d: +k.split('>')[1], c: clsOf(k), v }));
+  const rowT = new Map<string, number>(), colT = new Map<string, number>();
+  for (const [k, v] of flowsMap) { const [o, d] = k.split('>').map(Number), c = clsOf(k); rowT.set(`${c}|${o}`, (rowT.get(`${c}|${o}`) ?? 0) + v); colT.set(`${c}|${d}`, (colT.get(`${c}|${d}`) ?? 0) + v); }
+  for (let it = 0; it < 40; it++) {
+    for (const side of ['o', 'd'] as const) {
+      const sums = new Map<string, number>();
+      for (const q of keep) sums.set(`${q.c}|${q[side]}`, (sums.get(`${q.c}|${q[side]}`) ?? 0) + q.v);
+      const tgt = side === 'o' ? rowT : colT;
+      for (const q of keep) { const s0 = sums.get(`${q.c}|${q[side]}`)!; if (s0 > 0) q.v *= tgt.get(`${q.c}|${q[side]}`)! / s0; }
+    }
+  }
+  const after2: Record<string, number> = { ramp: 0, through: 0, local: 0 };
+  for (const q of keep) after2[q.c] += q.v;
+  const fac: Record<string, number> = Object.fromEntries(Object.keys(before).map((c) => [c, after2[c] > 0 ? before[c] / after2[c] : 1]));
+  if (p.id === lastPeriod) throughDebug.push(`pruning kept ${(100 * (after.ramp + after.through + after.local) / (before.ramp + before.through + before.local)).toFixed(0)}% of the volume; after fitting, class total factors ramp ${fac.ramp.toFixed(3)}, through ${fac.through.toFixed(3)}, local ${fac.local.toFixed(3)}`);
+  const flows: Flow[] = keep.map((q) => ({ origin: q.o, destination: q.d, vehPerHour: Math.round(q.v * fac[q.c] * 100) / 100 }));
   const gateIds = new Set(gates.map((g) => g.id));
   let thrOut = 0, locOut = 0, rampOut = 0, rampLocal = 0;
   const fwPer = new Map<number, { out: number; in: number }>(fwGates.map((g) => [g.id, { out: 0, in: 0 }] as const));
@@ -423,7 +453,7 @@ for (const p of cfg.periods as { id: string; label: string }[]) {
     } else if (gateIds.has(fl.origin) && gateIds.has(fl.destination)) thrOut += fl.vehPerHour;
     else locOut += fl.vehPerHour;
   }
-  summary.push({ id: p.id, total: thrOut + locOut + rampOut, through: thrOut, local: locOut, ramp: rampOut, rampLocal, localInternal: internalTotal * f, dropped: flowsMap.size - list.length, fw: fwPer, rampDest });
+  summary.push({ id: p.id, total: thrOut + locOut + rampOut, through: thrOut, local: locOut, ramp: rampOut, rampLocal, localInternal: internalTotal, dropped: flowsMap.size - list.length, fw: fwPer, rampDest });
   outPeriods.push({ id: p.id, label: p.label, flows });
 }
 
@@ -517,6 +547,27 @@ for (const g of [...gates].sort((a, b) => b.inT[lastPeriod] + b.outT[lastPeriod]
 for (const c of tmcs) {
   console.log(`\nTMC ${c.id} legs (PM peak hour, avg): leg entering leaving`);
   for (const [l, v] of Object.entries(c.legs)) console.log(`  ${l}: ${v.entering.toFixed(0)} ${v.leaving.toFixed(0)}`);
+}
+// Accounting check (PM peak): modeled flow at each surface gate (origin = enters the model, destination = leaves it) against its target, and ramp totals against ADT x K.
+{
+  const pm = outPeriods.find((q) => q.id === lastPeriod)!.flows.filter((q) => !q.mode);
+  const mi = new Map<number, number>(), mo = new Map<number, number>();
+  for (const fl of pm) { mi.set(fl.origin, (mi.get(fl.origin) ?? 0) + fl.vehPerHour); mo.set(fl.destination, (mo.get(fl.destination) ?? 0) + fl.vehPerHour); }
+  const kinds = new Map<string, { tIn: number; mIn: number; tOut: number; mOut: number; n: number }>();
+  for (const g of gates) { const r = kinds.get(g.kind) ?? kinds.set(g.kind, { tIn: 0, mIn: 0, tOut: 0, mOut: 0, n: 0 }).get(g.kind)!; r.tIn += g.inT[lastPeriod]; r.mIn += mi.get(g.id) ?? 0; r.tOut += g.outT[lastPeriod]; r.mOut += mo.get(g.id) ?? 0; r.n++; }
+  console.log('\nGate accounting, PM peak (veh/h): kind, gates, target in / modeled in, target out / modeled out');
+  for (const [k, r] of kinds) console.log(`  ${k.padEnd(11)} ${String(r.n).padStart(3)}  in ${r.tIn.toFixed(0).padStart(6)} / ${r.mIn.toFixed(0).padStart(6)}  out ${r.tOut.toFixed(0).padStart(6)} / ${r.mOut.toFixed(0).padStart(6)}`);
+  console.log('Counted gates (DATA, DATA(adt)): gate street target_in modeled_in ratio | target_out modeled_out ratio');
+  for (const g of gates.filter((q) => q.kind !== 'ASSUMPTION').sort((a, b) => b.inT[lastPeriod] + b.outT[lastPeriod] - a.inT[lastPeriod] - a.outT[lastPeriod])) {
+    const ti = g.inT[lastPeriod], to = g.outT[lastPeriod], i = mi.get(g.id) ?? 0, o = mo.get(g.id) ?? 0;
+    console.log(`  ${String(g.id).padEnd(5)} ${(g.street ?? '-').padEnd(10)} ${ti.toFixed(0).padStart(5)} ${i.toFixed(0).padStart(5)} ${ti ? (i / ti).toFixed(2) : '-'} | ${to.toFixed(0).padStart(5)} ${o.toFixed(0).padStart(5)} ${to ? (o / to).toFixed(2) : '-'}`);
+  }
+  const expOff = ramps.filter((r) => r.kind === 'off').reduce((a, r) => a + (rampVol.get(r)!.adt * rc.kFactor * pf[lastPeriod].volume), 0);
+  const expOn = ramps.filter((r) => r.kind === 'on').reduce((a, r) => a + (rampVol.get(r)!.adt * rc.kFactor * pf[lastPeriod].volume), 0);
+  const fwIn = [...fwGates].reduce((a, g) => a + (mi.get(g.id) ?? 0), 0), fwOut = [...fwGates].reduce((a, g) => a + (mo.get(g.id) ?? 0), 0);
+  console.log(`Ramp totals, PM: modeled off-ramp trips (mainline gate origin) ${fwIn.toFixed(0)} vs sum of off-ramp ADT x K ${expOff.toFixed(0)}; on-ramp trips ${fwOut.toFixed(0)} vs ${expOn.toFixed(0)}`);
+  const nodeMi = [...mi].filter(([id]) => !gates.some((g) => g.id === id) && !fwGates.some((g) => g.id === id)).reduce((a, [, v]) => a + v, 0);
+  console.log(`Origins at local nodes ${nodeMi.toFixed(0)} veh/h`);
 }
 const byStreet = new Map<string, number>();
 for (const g of gates) byStreet.set(g.street ?? 'unnamed', (byStreet.get(g.street ?? 'unnamed') ?? 0) + g.inT[lastPeriod] + g.outT[lastPeriod]);

@@ -30,10 +30,13 @@ struct Args {
     cars_only: bool,
     /// `--drop bicycle,pedestrian`: drop the listed modes' flows.
     drop: Vec<String>,
+    /// `--demand PATH` / `--network PATH`: read these files instead of `public/data/<area>.{demand,network}.json` (for A/B runs of variant demand).
+    demand_path: Option<PathBuf>,
+    network_path: Option<PathBuf>,
 }
 
 fn parse_args() -> Args {
-    let mut a = Args { area: "rockridge".into(), period: "pm_peak".into(), minutes: 60.0, scale: 1.0, seed: 1, warmup_min: 10.0, local_factor: None, adapt_min: None, motorway_removal: false, out: None, write: true, link_flows: false, transit: None, cars_only: false, drop: Vec::new() };
+    let mut a = Args { area: "rockridge".into(), period: "pm_peak".into(), minutes: 60.0, scale: 1.0, seed: 1, warmup_min: 10.0, local_factor: None, adapt_min: None, motorway_removal: false, out: None, write: true, link_flows: false, transit: None, cars_only: false, drop: Vec::new(), demand_path: None, network_path: None };
     let argv: Vec<String> = std::env::args().skip(1).collect();
     let mut i = 0;
     while i < argv.len() {
@@ -56,6 +59,8 @@ fn parse_args() -> Args {
             "--no-write" => a.write = false,
             "--link-flows" => a.link_flows = true,
             "--cars-only" => a.cars_only = true,
+            "--demand" => a.demand_path = Some(PathBuf::from(val())),
+            "--network" => a.network_path = Some(PathBuf::from(val())),
             "--drop" => a.drop = val().split(',').map(String::from).collect(),
             "--transit" => {
                 let path = argv.get(i + 1).filter(|v| !v.starts_with("--")).cloned();
@@ -266,8 +271,8 @@ fn main() {
     let args = parse_args();
     let root = root();
     let read = |p: PathBuf| std::fs::read_to_string(&p).unwrap_or_else(|e| usage(&format!("cannot read {}: {e}", p.display())));
-    let net_json = read(root.join(format!("public/data/{}.network.json", args.area)));
-    let dem_json = read(root.join(format!("public/data/{}.demand.json", args.area)));
+    let net_json = read(args.network_path.clone().unwrap_or_else(|| root.join(format!("public/data/{}.network.json", args.area))));
+    let dem_json = read(args.demand_path.clone().unwrap_or_else(|| root.join(format!("public/data/{}.demand.json", args.area))));
     let targets: Value = serde_json::from_str(&read(root.join(format!("data/calibration/{}.targets.json", args.area)))).expect("targets json");
     let net: Network = serde_json::from_str(&net_json).expect("network");
     let mut demand: Demand = serde_json::from_str(&dem_json).expect("demand");
