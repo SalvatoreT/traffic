@@ -139,6 +139,8 @@ struct Veh {
     v0_abs: f32,
     /// Uid of the cyclist this driver is currently passing, and whether the pass has been scored.
     passing: u32,
+    /// The driver stopped or slowed for a pedestrian at the crosswalk it is about to pass (not scored as a conflict).
+    ped_held: bool,
     pass_close: bool,
     pass_scored: bool,
     /// Bus: route index, next stop to serve, remaining dwell (s), scheduled departure of the run.
@@ -183,6 +185,7 @@ impl Veh {
             kind: KIND_CAR,
             v0_abs: 0.0,
             passing: NONE_UID,
+            ped_held: false,
             pass_close: false,
             pass_scored: false,
             bus_route: 0,
@@ -1311,6 +1314,9 @@ impl Simulation {
             self.awsc[node].push(vid);
         }
         let (go, blocked) = self.permission(vid, l, d, v, ctrl);
+        if self.ped_on && !go && !self.vehs[vid as usize].ped_held && self.ped_block_head(vid, l, ctrl) {
+            self.vehs[vid as usize].ped_held = true;
+        }
         if waiting && !go {
             self.d_node_wait[node] += DT as f32;
             if blocked {
@@ -1564,6 +1570,9 @@ impl Simulation {
                     }
                     if ex.skip_stop {
                         veh.next_stop += 1;
+                    }
+                    if ex.ped_held {
+                        veh.ped_held = true;
                     }
                     if let Some((uid, close)) = ex.begin_pass {
                         veh.passing = uid;

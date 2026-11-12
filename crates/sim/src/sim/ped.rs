@@ -712,6 +712,11 @@ impl Simulation {
         true
     }
 
+    pub(super) fn ped_block_head(&self, vid: u32, l: usize, ctrl: Control) -> bool {
+        let veh = &self.vehs[vid as usize];
+        veh.next().map_or(false, |b| self.ped_block(veh, l as u32, b, ctrl))
+    }
+
     /// Must the head vehicle of link `l`, bound for link `b`, hold for a crosswalk? A pedestrian in the crosswalk always stops
     /// it; a waiting pedestrian stops it when the driver yields (not at signals, where pedestrians wait for their phase).
     pub(super) fn ped_block(&self, veh: &Veh, l: u32, b: u32, ctrl: Control) -> bool {
@@ -731,11 +736,15 @@ impl Simulation {
         false
     }
 
-    pub(super) fn xw_vehicle_pass(&mut self, xw: u32, uid: u32, speed: f32) {
+    pub(super) fn xw_vehicle_pass(&mut self, xw: u32, uid: u32, speed: f32, held: bool) {
         let t = self.t;
         let x = &mut self.world.xws[xw as usize];
         let pair = (uid, x.last_ped);
-        if x.last_ped != NONE_UID && x.last_pair != pair {
+        if held {
+            // The driver stopped for a pedestrian: exposure at its low speed, not a conflict.
+            x.last_pair = pair;
+            self.vuln.ped_exposure(speed);
+        } else if x.last_ped != NONE_UID && x.last_pair != pair {
             if x.crossing > 0 {
                 x.last_pair = pair;
                 self.vuln.ped_encounter(0.0, speed);
@@ -762,7 +771,8 @@ impl Simulation {
         for i in 0..self.world.mid[l].len() {
             let (xp, xw) = self.world.mid[l][i];
             if x0 < xp && x >= xp {
-                self.xw_vehicle_pass(xw, uid, v);
+                let held = std::mem::replace(&mut self.vehs[vid as usize].ped_held, false);
+                self.xw_vehicle_pass(xw, uid, v, held);
             }
         }
     }

@@ -124,7 +124,7 @@ pub const PASS_TIME_S: f32 = 5.0; // s: oncoming vehicle must be at least this f
 pub const PASS_MIN_CLEAR_M: f32 = 40.0; // m: and at least this far away, to pass using the opposing lane
 pub const PASS_MIN_LATERAL_M: f32 = 0.5; // m: least lateral room for passing inside one lane (one-way street)
 pub const CLOSE_PASS_CLEAR_M: f32 = 1.0; // m: lateral clearance below this is a close pass
-pub const CLOSE_PASS_DV: f32 = 6.0; // m/s: speed difference above this is a close pass
+pub const CLOSE_PASS_DV: f32 = 8.0; // m/s: speed difference above this (about 18 mph) is a close pass
 
 // Pedestrians (D4). Values below are ASSUMPTION: docs/references.md has no verified walking speed or yielding rate.
 pub const PED_V_MEAN: f64 = 1.3; // m/s
@@ -146,6 +146,7 @@ pub const PED_OFFSET_M: f64 = 3.8; // m beyond the outer lane center (rendering 
 
 // Safety (D5)
 pub const PET_THRESHOLD: f32 = 1.5; // s. ASSUMPTION: same adjustable value as the TTC threshold; PET definition [Mahmud2017]
+pub const PET_MOVING_V: f32 = 2.0; // m/s ASSUMPTION: a user who enters a conflict point slower than this had stopped for the other, which is yielding, not a conflict
 pub const PET_ENCOUNTER_S: f32 = 5.0; // ASSUMPTION: an encounter is a vehicle passing a conflict point within this PET
 /// Severe-injury (AIS 4+) risk of a struck pedestrian against impact speed (mph), the points reported in the abstract of
 /// [Tefft2013]. Between points the index interpolates linearly; below the first point it falls linearly to zero at 0 mph and

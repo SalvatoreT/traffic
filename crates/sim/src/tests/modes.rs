@@ -907,3 +907,16 @@ fn perf_all_modes_grid() {
     let m = sim.metrics();
     println!("cars={} bikes={} peds={} speedup={:.1}x wall={:.2}s", m.modes.car.in_network, m.modes.bicycle.in_network, m.modes.pedestrian.in_network, 300.0 / wall, wall);
 }
+
+#[test]
+fn humps_slow_buses_but_not_cyclists() {
+    let bike_time = |ivs: &str| {
+        let mut s = sim_with(street(300.0, 1, 11.2), &[(0, 2, 100.0, FlowMode::Bicycle)], cfg(1, 1.0), None);
+        s.set_interventions(&iv(ivs)).unwrap();
+        step_n(&mut s, 1200.0);
+        s.metrics().modes.bicycle.mean_trip_time
+    };
+    let base = bike_time("[]");
+    let hump = bike_time(r#"[{"type":"speed_hump","link":0,"position":150.0},{"type":"speed_hump","link":2,"position":150.0}]"#);
+    assert!((hump - base).abs() < 1.0, "cyclists ignore humps: {hump} vs {base}");
+}

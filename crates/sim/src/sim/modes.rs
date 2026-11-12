@@ -45,6 +45,13 @@ pub(super) struct Vuln {
 
 impl Vuln {
     /// A vehicle passed a crosswalk conflict point with post-encroachment time `pet` (s) while at speed `speed` (m/s).
+    /// A vehicle that stopped for the pedestrian passes the crosswalk afterwards: exposure at its (low) speed, never a conflict.
+    pub fn ped_exposure(&mut self, speed: f32) {
+        self.ped_enc += 1;
+        self.ped_risk_sum += injury_risk(speed) as f64;
+        self.ped_speed_sum += speed as f64;
+    }
+
     pub fn ped_encounter(&mut self, pet: f32, speed: f32) {
         if pet < PET_ENCOUNTER_S {
             self.ped_enc += 1;
@@ -56,11 +63,11 @@ impl Vuln {
         }
     }
 
-    pub fn bike_encounter(&mut self, pet: f32, speed: f32) {
+    pub fn bike_encounter(&mut self, pet: f32, speed: f32, moving: bool) {
         if pet < PET_ENCOUNTER_S {
             self.bike_enc += 1;
             self.bike_risk_sum += injury_risk(speed) as f64;
-            if pet < PET_THRESHOLD {
+            if pet < PET_THRESHOLD && moving {
                 self.bike_conf += 1;
             }
         }
@@ -115,6 +122,8 @@ pub(super) struct Extra {
     pub dwell: Option<f32>,
     /// Bus: the stop was passed without dwelling; move on to the next one.
     pub skip_stop: bool,
+    /// The vehicle is being held by a pedestrian at a mid-block crosswalk.
+    pub ped_held: bool,
 }
 
 pub(super) struct Ctx<'a> {
@@ -193,6 +202,7 @@ impl Ctx<'_> {
                 let yielding = x.yields(xw, veh.uid, veh.v, s);
                 if (x.crossing > 0 && stoppable) || yielding {
                     obstacle = obstacle.min(s.max(0.1));
+                    ex.ped_held = true;
                 }
             }
         }
@@ -563,9 +573,10 @@ impl Simulation {
             let b = self.topo.mvs[mv as usize].b;
             let (xa, xb) = (self.world.link_xw_in[a as usize], self.world.link_xw_out[b as usize]);
             let uid = self.vehs[vid as usize].uid;
+            let held = std::mem::replace(&mut self.vehs[vid as usize].ped_held, false);
             for x in [xa, xb] {
                 if x != NONE_UID {
-                    self.xw_vehicle_pass(x, uid, speed);
+                    self.xw_vehicle_pass(x, uid, speed, held);
                 }
             }
         }
@@ -580,7 +591,7 @@ impl Simulation {
                         // PET: time between the first user leaving the conflict area and the second arriving [Mahmud2017];
                         // the speed that matters is the motor vehicle's, whichever crossed second.
                         let pet = (now - e.t_out).max(0.0) as f32;
-                        self.vuln.bike_encounter(pet, if is_bike { e.speed } else { speed });
+                        self.vuln.bike_encounter(pet, if is_bike { e.speed } else { speed }, speed >= PET_MOVING_V);
                     }
                 }
                 log.push(LogEnt { t_out: now + t_total as f64, mv, bike: is_bike, speed });

@@ -5,12 +5,12 @@
 - [x] 1.4 Bibliography entries for new parameters
 
 ## 2. Simulation
-- [ ] 2.1 Agent kinds and parameters
-- [ ] 2.2 Buses: routes, stops, dwell
-- [ ] 2.3 Bicycles: lanes, sharing, passing
-- [ ] 2.4 Pedestrians: walking, crossings, yielding
-- [ ] 2.5 Safety and per-mode metrics
-- [ ] 2.6 WASM API and tests
+- [x] 2.1 Agent kinds and parameters
+- [x] 2.2 Buses: routes, stops, dwell
+- [x] 2.3 Bicycles: lanes, sharing, passing
+- [x] 2.4 Pedestrians: walking, crossings, yielding
+- [x] 2.5 Safety and per-mode metrics
+- [x] 2.6 WASM API and tests
 
 ## 3. UI
 - [x] 3.1 Per-mode rendering, legend and toggles
