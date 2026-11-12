@@ -19,7 +19,7 @@ describe('difference', () => {
   });
   it('reads link stats the same way as the overlay (4 floats per link)', () => {
     const b = stats([100, 8, 60, 0]), s = stats([40, 8, 10, 0]);
-    expect(linkChangeIntensity('cutthrough', b, s, 0)).toBeCloseTo(-50 / 150, 6);
+    expect(linkChangeIntensity('cutthrough', b, s, 0)).toBeCloseTo(-50 / 100, 6);
     expect(aggregate(b, [0]).cut).toBe(60);
   });
   it('flow-weights speed over both directions of a block', () => {
@@ -33,7 +33,7 @@ describe('dead band and clamping', () => {
     expect(changeIntensity('flow', A(500, 0), A(500 + DEAD_BAND.flow - 1, 0))).toBe(0);
     expect(changeIntensity('cutthrough', A(50, 50), A(50, 50 - 7))).toBe(0);
     expect(changeIntensity('cutthrough', A(50, 50), A(50, 50 + 7))).toBe(0);
-    expect(changeIntensity('cutthrough', A(50, 50), A(50, 50 + 8))).toBeCloseTo(8 / 150, 6);
+    expect(changeIntensity('cutthrough', A(50, 50), A(50, 50 + 8))).toBeCloseTo(8 / 100, 6);
   });
   it('clamps to the fixed top on both sides', () => {
     expect(changeIntensity('cutthrough', A(500, 400), A(500, 0))).toBe(-1);
@@ -61,7 +61,7 @@ describe('signed labels', () => {
     expect(formatSigned(1234, 'flow')).toBe('+1,234');
   });
   it('builds legend ticks and the readout', () => {
-    expect(changeTicks('cutthrough')).toEqual(['−150+', '−75', '0', '+75', '+150+']);
+    expect(changeTicks('cutthrough')).toEqual(['−100+', '−50', '0', '+50', '+100+']);
     expect(changeTicks('speed')[4]).toBe('+10+');
     expect(readoutText('cutthrough', A(80, 62), A(40, 18))).toBe('Cut-through: 62 → 18 veh/h (−44)');
   });

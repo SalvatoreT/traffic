@@ -64,7 +64,7 @@ describe('fixed overlay scale', () => {
     expect(intensity('flow', 0, 0, 0, 11, overlayTop('flow'))).toBe(-1);
   });
   it('labels the top of the flow and cut-through scales with a plus sign', () => {
-    expect(rampTicks('cutthrough')).toEqual(['0', '38', '75', '113', '150+']);
+    expect(rampTicks('cutthrough')).toEqual(['0', '25', '50', '75', '100+']);
     expect(rampTicks('flow')).toEqual(['0', '200', '400', '600', '800+']);
     expect(rampTicks('speed')).toEqual(['100%', '75%', '50%', '25%', '0%']);
   });

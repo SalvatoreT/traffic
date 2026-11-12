@@ -6,7 +6,7 @@ import { MPS_TO_MPH } from './format';
 export const NO_DATA = -2;
 
 /** Fixed top of the two-sided scale, in display units (veh/h; mph for speed). Cut-through and flow match the one-sided tops in ramps.ts [see OVERLAY_TOP]. Speed: ASSUMPTION, 10 mph. */
-export const CHANGE_TOP: Record<Overlay, number> = { cutthrough: 150, flow: 800, speed: 10 };
+export const CHANGE_TOP: Record<Overlay, number> = { cutthrough: 100, flow: 800, speed: 10 };
 
 /** Dead band half-width, display units. ASSUMPTION: 5% of the top, since seeded runs reshuffle arrivals and small differences are noise (design D4). */
 export const DEAD_BAND_CUTTHROUGH = 7.5;

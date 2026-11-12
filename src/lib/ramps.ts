@@ -27,10 +27,9 @@ export const widthFor = (t: number) => (t < 0 ? WIDTH_MIN * 0.8 : WIDTH_MIN + t 
 /**
  * Fixed top of the flow and cut-through ramps, veh/h. Values above it clamp to the top color and the widest line, so colors and widths do not rescale as traffic changes.
  * Flow: one signalized lane carries about 740 to 840 veh/h at a 0.5 green share (cases b1 and b2 in data/calibration/validation.md, citing [FHWA-SIG2004]); 800 is the round number near that.
- * Cut-through: ASSUMPTION, 150 veh/h of through traffic on a local street. It is 1,500 veh/day (top of the 1,000 to 1,500 veh/day range in [NACTO-AAA2017] for bicycle boulevards; that source also gives about 50 veh/h per direction, roughly 100 two-way, so 150 is the looser reading)
- * times a peak-hour share K of 0.10 (the README range is 0.09 to 0.10; see [FHWA-TMG2022] for K as a concept).
+ * Cut-through: 100 veh/h, both directions together. [NACTO-AAA2017] gives about 50 motor vehicles per hour per direction at the peak hour for a bicycle boulevard; ASSUMPTION: doubled for a two-way block, and used here as a through-traffic bound although the source sets it for bicycle comfort.
  */
-export const OVERLAY_TOP = { flow: 800, cutthrough: 150 } as const;
+export const OVERLAY_TOP = { flow: 800, cutthrough: 100 } as const;
 
 /** Top-of-scale value for the overlay; speed is a fixed 0 to 100% of the limit. */
 export const overlayTop = (o: Overlay): number => (o === 'speed' ? 1 : OVERLAY_TOP[o]);
@@ -46,7 +45,7 @@ export function rampTicks(overlay: Overlay): string[] {
 
 export const TOP_NOTE: Record<'flow' | 'cutthrough', string> = {
   flow: 'Top of the scale: 800 vehicles an hour, about what one signalized lane carries in the model.',
-  cutthrough: 'Top of the scale: 150 through vehicles an hour, about 1,500 a day. This is an assumption based on bikeway guidance for shared streets.',
+  cutthrough: 'Top of the scale: 100 through vehicles an hour, both directions together. Bikeway guidance for shared streets gives about 50 an hour each way at the peak; using it as a limit for through traffic is an assumption.',
 };
 
 /**
