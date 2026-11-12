@@ -3,13 +3,16 @@
   "source": {
     "id": "volunteer-count-2025-02-25",
     "description": "Manual turning-movement count by more than 50 resident volunteers for the neighborhood working group, Tuesday February 25, 2025.",
-    "periods": { "am": "08:00-09:00, 34 intersections", "pm": "17:00-18:00, 43 intersections" },
+    "periods": {
+      "am": "08:00-09:00, 34 intersections",
+      "pm": "17:00-18:00, 43 intersections"
+    },
     "method": "Volunteers tallied turning movements at each intersection for one hour. A car is counted once on each block it travels. Pedestrians, bicycles and signal queues were also logged.",
     "caveats": [
       "One day, one hour each period.",
       "Five Telegraph Avenue entries were not counted in the AM, so AM and PM totals compare only on the 13 entries counted in both (732 AM, 983 PM).",
       "Full-route shares are lower bounds: cars that turned off partway are not included.",
-      "Per-block volumes exist as map images and are not transcribed here yet."
+      "Per-block volumes, access points, route diagrams and example intersections were transcribed from the map images in the archive PDF (see the notes file for how they were read and where they are uncertain)."
     ]
   },
   "entering": {
@@ -17,60 +20,7091 @@
       "total": 1175,
       "accessPoints": 18,
       "bySide": [
-        { "side": "Claremont Avenue and Forest Street", "vehicles": 498 },
-        { "side": "Alcatraz Avenue at Colby Street and Hillegass Avenue", "vehicles": 360 },
-        { "side": "Telegraph Avenue", "vehicles": 248 },
-        { "side": "College Avenue", "vehicles": 61 }
+        {
+          "side": "Claremont Avenue and Forest Street",
+          "vehicles": 498
+        },
+        {
+          "side": "Alcatraz Avenue at Colby Street and Hillegass Avenue",
+          "vehicles": 360
+        },
+        {
+          "side": "Telegraph Avenue",
+          "vehicles": 248
+        },
+        {
+          "side": "College Avenue",
+          "vehicles": 61
+        }
       ],
       "fromClaremontOnto": [
-        { "street": "Colby Street", "vehicles": 182 },
-        { "street": "Martin Street", "vehicles": 164 },
-        { "street": "Hillegass Avenue", "vehicles": 94 },
-        { "street": "Forest Street", "vehicles": 58 },
-        { "street": "60th Street", "vehicles": 7 }
+        {
+          "street": "Colby Street",
+          "vehicles": 182
+        },
+        {
+          "street": "Martin Street",
+          "vehicles": 164
+        },
+        {
+          "street": "Hillegass Avenue",
+          "vehicles": 94
+        },
+        {
+          "street": "Forest Street",
+          "vehicles": 58
+        },
+        {
+          "street": "60th Street",
+          "vehicles": 7
+        }
       ]
     },
     "am": {
       "totalCounted": 732,
       "note": "Five Telegraph Avenue entries not counted.",
       "fromClaremontOnto": [
-        { "street": "Martin Street", "vehicles": 147 },
-        { "street": "Colby Street", "vehicles": 72 },
-        { "street": "Hillegass Avenue", "vehicles": 72 }
+        {
+          "street": "Martin Street",
+          "vehicles": 147
+        },
+        {
+          "street": "Colby Street",
+          "vehicles": 72
+        },
+        {
+          "street": "Hillegass Avenue",
+          "vehicles": 72
+        }
       ]
     }
   },
   "fullRoute": {
     "definition": "Cars that drive the whole street between Claremont Avenue and Alcatraz Avenue.",
     "rows": [
-      { "street": "Colby Street", "direction": "NB", "period": "am", "vehicles": 33, "shareOfEntering": 0.29 },
-      { "street": "Colby Street", "direction": "NB", "period": "pm", "vehicles": 102, "shareOfEntering": 0.56 },
-      { "street": "Colby Street", "direction": "SB", "period": "am", "vehicles": 46, "shareOfEntering": 0.42 },
-      { "street": "Colby Street", "direction": "SB", "period": "pm", "vehicles": 39, "shareOfEntering": 0.28 },
-      { "street": "Hillegass Avenue", "direction": "NB", "period": "am", "vehicles": 48, "shareOfEntering": 0.51 },
-      { "street": "Hillegass Avenue", "direction": "NB", "period": "pm", "vehicles": 34, "shareOfEntering": 0.47 },
-      { "street": "Hillegass Avenue", "direction": "SB", "period": "am", "vehicles": 36, "shareOfEntering": 0.49 },
-      { "street": "Hillegass Avenue", "direction": "SB", "period": "pm", "vehicles": 79, "shareOfEntering": 0.44 },
-      { "street": "Martin Street", "direction": "to Telegraph Avenue via 58th Street", "period": "am", "vehicles": 70, "shareOfEntering": 0.48 }
+      {
+        "street": "Colby Street",
+        "direction": "NB",
+        "period": "am",
+        "vehicles": 33,
+        "shareOfEntering": 0.29
+      },
+      {
+        "street": "Colby Street",
+        "direction": "NB",
+        "period": "pm",
+        "vehicles": 102,
+        "shareOfEntering": 0.56
+      },
+      {
+        "street": "Colby Street",
+        "direction": "SB",
+        "period": "am",
+        "vehicles": 46,
+        "shareOfEntering": 0.42
+      },
+      {
+        "street": "Colby Street",
+        "direction": "SB",
+        "period": "pm",
+        "vehicles": 39,
+        "shareOfEntering": 0.28
+      },
+      {
+        "street": "Hillegass Avenue",
+        "direction": "NB",
+        "period": "am",
+        "vehicles": 48,
+        "shareOfEntering": 0.51,
+        "note": "The route diagrams show the opposite period assignment for this direction: AM northbound entered with 72 cars and 34 drove the full route (47%); PM northbound entered with 94 cars and 48 drove the full route (51%). The summary table in the archive lists 48 (51%) under AM and 34 (47%) under PM."
+      },
+      {
+        "street": "Hillegass Avenue",
+        "direction": "NB",
+        "period": "pm",
+        "vehicles": 34,
+        "shareOfEntering": 0.47,
+        "note": "The route diagrams show the opposite period assignment for this direction: AM northbound entered with 72 cars and 34 drove the full route (47%); PM northbound entered with 94 cars and 48 drove the full route (51%). The summary table in the archive lists 48 (51%) under AM and 34 (47%) under PM."
+      },
+      {
+        "street": "Hillegass Avenue",
+        "direction": "SB",
+        "period": "am",
+        "vehicles": 36,
+        "shareOfEntering": 0.49
+      },
+      {
+        "street": "Hillegass Avenue",
+        "direction": "SB",
+        "period": "pm",
+        "vehicles": 79,
+        "shareOfEntering": 0.44
+      },
+      {
+        "street": "Martin Street",
+        "direction": "to Telegraph Avenue via 58th Street",
+        "period": "am",
+        "vehicles": 70,
+        "shareOfEntering": 0.48
+      }
     ]
   },
   "intersectionTurnVolumes": [
-    { "at": ["58th Street", "Martin Street"], "am": 209, "pm": 235 },
-    { "at": ["Ayala Avenue", "Forest Street"], "pm": 132 },
-    { "at": ["Martin Street", "Ayala Avenue"], "am": 73, "pm": 101 },
-    { "at": ["Hillegass Avenue", "62nd Street"], "pm": 71 },
-    { "at": ["Hillegass Avenue", "63rd Street"], "pm": 66 },
-    { "at": ["Colby Street", "63rd Street"], "am": 77 }
+    {
+      "at": [
+        "58th Street",
+        "Martin Street"
+      ],
+      "am": 209,
+      "pm": 235
+    },
+    {
+      "at": [
+        "Ayala Avenue",
+        "Forest Street"
+      ],
+      "pm": 132
+    },
+    {
+      "at": [
+        "Martin Street",
+        "Ayala Avenue"
+      ],
+      "am": 73,
+      "pm": 101
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "62nd Street"
+      ],
+      "pm": 71
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "63rd Street"
+      ],
+      "pm": 66
+    },
+    {
+      "at": [
+        "Colby Street",
+        "63rd Street"
+      ],
+      "am": 77
+    },
+    {
+      "at": [
+        "Canning Street",
+        "58th Street"
+      ],
+      "am": 85
+    },
+    {
+      "at": [
+        "Dana Street",
+        "63rd Street"
+      ],
+      "am": 77
+    },
+    {
+      "at": [
+        "Canning Street",
+        "63rd Street"
+      ],
+      "am": 66
+    },
+    {
+      "at": [
+        "McAuley Street",
+        "Ayala Avenue"
+      ],
+      "pm": 54
+    }
   ],
-  "alcatrazExits": { "towardTelegraph": 0.64, "towardCollege": 0.32, "straightAcross": 0.04 },
+  "alcatrazExits": {
+    "towardTelegraph": 0.64,
+    "towardCollege": 0.32,
+    "straightAcross": 0.04
+  },
   "signal": {
-    "at": ["Claremont Avenue", "Colby Street", "Forest Street"],
+    "at": [
+      "Claremont Avenue",
+      "Colby Street",
+      "Forest Street"
+    ],
     "approach": "Colby Street",
     "period": "am",
     "cycleSeconds": 79,
     "greenSeconds": 4,
-    "medianCarsPerCycle": { "am": 4, "pm": 3.5 },
+    "medianCarsPerCycle": {
+      "am": 4,
+      "pm": 3.5
+    },
     "maxQueue": 13
   },
-  "pedestrians": [{ "note": "88 people walking left Colby Street at Claremont Avenue in the AM hour." }]
+  "pedestrians": [
+    {
+      "note": "88 people walking left Colby Street at Claremont Avenue in the AM hour."
+    }
+  ],
+  "blocks": [
+    {
+      "street": "Dana Street",
+      "between": [
+        "North Street",
+        "Alcatraz Avenue"
+      ],
+      "direction": "SB",
+      "toward": "North Street",
+      "period": "am",
+      "vehicles": 45
+    },
+    {
+      "street": "Dana Street",
+      "between": [
+        "North Street",
+        "Alcatraz Avenue"
+      ],
+      "direction": "NB",
+      "toward": "Alcatraz Avenue",
+      "period": "am",
+      "vehicles": 22
+    },
+    {
+      "street": "Dana Street",
+      "between": [
+        "63rd Street",
+        "North Street"
+      ],
+      "direction": "SB",
+      "toward": "63rd Street",
+      "period": "am",
+      "vehicles": 62
+    },
+    {
+      "street": "Dana Street",
+      "between": [
+        "63rd Street",
+        "North Street"
+      ],
+      "direction": "NB",
+      "toward": "North Street",
+      "period": "am",
+      "vehicles": 15
+    },
+    {
+      "street": "Colby Street",
+      "between": [
+        "North Street",
+        "Alcatraz Avenue"
+      ],
+      "direction": "SB",
+      "toward": "North Street",
+      "period": "am",
+      "vehicles": 109
+    },
+    {
+      "street": "Colby Street",
+      "between": [
+        "North Street",
+        "Alcatraz Avenue"
+      ],
+      "direction": "NB",
+      "toward": "Alcatraz Avenue",
+      "period": "am",
+      "vehicles": 104
+    },
+    {
+      "street": "Colby Street",
+      "between": [
+        "63rd Street",
+        "63rd Street"
+      ],
+      "direction": "SB",
+      "toward": "63rd Street",
+      "period": "am",
+      "vehicles": 125,
+      "note": "Jog block: Colby between the north leg (North Street / 63rd Street east leg) and the 63rd Street west leg."
+    },
+    {
+      "street": "Colby Street",
+      "between": [
+        "63rd Street",
+        "63rd Street"
+      ],
+      "direction": "NB",
+      "toward": "63rd Street",
+      "period": "am",
+      "vehicles": 123
+    },
+    {
+      "street": "Colby Street",
+      "between": [
+        "62nd Street",
+        "63rd Street"
+      ],
+      "direction": "SB",
+      "toward": "62nd Street",
+      "period": "am",
+      "vehicles": 171
+    },
+    {
+      "street": "Colby Street",
+      "between": [
+        "62nd Street",
+        "63rd Street"
+      ],
+      "direction": "NB",
+      "toward": "63rd Street",
+      "period": "am",
+      "vehicles": 136
+    },
+    {
+      "street": "Colby Street",
+      "between": [
+        "61st Street",
+        "62nd Street"
+      ],
+      "direction": "SB",
+      "toward": "61st Street",
+      "period": "am",
+      "vehicles": 167
+    },
+    {
+      "street": "Colby Street",
+      "between": [
+        "61st Street",
+        "62nd Street"
+      ],
+      "direction": "NB",
+      "toward": "62nd Street",
+      "period": "am",
+      "vehicles": 134
+    },
+    {
+      "street": "Colby Street",
+      "between": [
+        "60th Street",
+        "61st Street"
+      ],
+      "direction": "SB",
+      "toward": "60th Street",
+      "period": "am",
+      "vehicles": 182
+    },
+    {
+      "street": "Colby Street",
+      "between": [
+        "60th Street",
+        "61st Street"
+      ],
+      "direction": "NB",
+      "toward": "61st Street",
+      "period": "am",
+      "vehicles": 144
+    },
+    {
+      "street": "Colby Street",
+      "between": [
+        "McAuley Street",
+        "60th Street"
+      ],
+      "direction": "SB",
+      "toward": "McAuley Street",
+      "period": "am",
+      "vehicles": 179
+    },
+    {
+      "street": "Colby Street",
+      "between": [
+        "McAuley Street",
+        "60th Street"
+      ],
+      "direction": "NB",
+      "toward": "60th Street",
+      "period": "am",
+      "vehicles": 141
+    },
+    {
+      "street": "Colby Street",
+      "between": [
+        "Forest Street / Claremont Avenue",
+        "McAuley Street"
+      ],
+      "direction": "SB",
+      "toward": "Forest Street / Claremont Avenue",
+      "period": "am",
+      "vehicles": 163
+    },
+    {
+      "street": "Colby Street",
+      "between": [
+        "Forest Street / Claremont Avenue",
+        "McAuley Street"
+      ],
+      "direction": "NB",
+      "toward": "McAuley Street",
+      "period": "am",
+      "vehicles": 130
+    },
+    {
+      "street": "North Street",
+      "between": [
+        "Colby Street",
+        "Dana Street"
+      ],
+      "direction": "WB",
+      "toward": "Dana Street",
+      "period": "am",
+      "vehicles": 25
+    },
+    {
+      "street": "North Street",
+      "between": [
+        "Colby Street",
+        "Dana Street"
+      ],
+      "direction": "EB",
+      "toward": "Colby Street",
+      "period": "am",
+      "vehicles": 12
+    },
+    {
+      "street": "63rd Street",
+      "between": [
+        "Colby Street",
+        "Dana Street"
+      ],
+      "direction": "WB",
+      "toward": "Dana Street",
+      "period": "am",
+      "vehicles": 22
+    },
+    {
+      "street": "63rd Street",
+      "between": [
+        "Colby Street",
+        "Dana Street"
+      ],
+      "direction": "EB",
+      "toward": "Colby Street",
+      "period": "am",
+      "vehicles": 56
+    },
+    {
+      "street": "63rd Street",
+      "between": [
+        "Dana Street",
+        "Canning Street"
+      ],
+      "direction": "WB",
+      "toward": "Canning Street",
+      "period": "am",
+      "vehicles": 64
+    },
+    {
+      "street": "63rd Street",
+      "between": [
+        "Dana Street",
+        "Canning Street"
+      ],
+      "direction": "EB",
+      "toward": "Dana Street",
+      "period": "am",
+      "vehicles": 60
+    },
+    {
+      "street": "63rd Street",
+      "between": [
+        "Canning Street",
+        "Telegraph Avenue"
+      ],
+      "direction": "WB",
+      "toward": "Telegraph Avenue",
+      "period": "am",
+      "vehicles": 46
+    },
+    {
+      "street": "63rd Street",
+      "between": [
+        "Canning Street",
+        "Telegraph Avenue"
+      ],
+      "direction": "EB",
+      "toward": "Canning Street",
+      "period": "am",
+      "vehicles": 40
+    },
+    {
+      "street": "63rd Street",
+      "between": [
+        "Hillegass Avenue",
+        "Colby Street"
+      ],
+      "direction": "WB",
+      "toward": "Colby Street",
+      "period": "am",
+      "vehicles": 13
+    },
+    {
+      "street": "63rd Street",
+      "between": [
+        "Hillegass Avenue",
+        "Colby Street"
+      ],
+      "direction": "EB",
+      "toward": "Hillegass Avenue",
+      "period": "am",
+      "vehicles": 13
+    },
+    {
+      "street": "63rd Street",
+      "between": [
+        "College Avenue",
+        "Hillegass Avenue"
+      ],
+      "direction": "WB",
+      "toward": "Hillegass Avenue",
+      "period": "am",
+      "vehicles": 40
+    },
+    {
+      "street": "63rd Street",
+      "between": [
+        "College Avenue",
+        "Hillegass Avenue"
+      ],
+      "direction": "EB",
+      "toward": "College Avenue",
+      "period": "am",
+      "vehicles": 12
+    },
+    {
+      "street": "62nd Street",
+      "between": [
+        "Canning Street",
+        "Telegraph Avenue"
+      ],
+      "direction": "WB",
+      "toward": "Telegraph Avenue",
+      "period": "am",
+      "vehicles": 19
+    },
+    {
+      "street": "62nd Street",
+      "between": [
+        "Canning Street",
+        "Telegraph Avenue"
+      ],
+      "direction": "EB",
+      "toward": "Canning Street",
+      "period": "am",
+      "vehicles": 12
+    },
+    {
+      "street": "62nd Street",
+      "between": [
+        "Colby Street",
+        "Canning Street"
+      ],
+      "direction": "WB",
+      "toward": "Canning Street",
+      "period": "am",
+      "vehicles": 16
+    },
+    {
+      "street": "62nd Street",
+      "between": [
+        "Colby Street",
+        "Canning Street"
+      ],
+      "direction": "EB",
+      "toward": "Colby Street",
+      "period": "am",
+      "vehicles": 12
+    },
+    {
+      "street": "62nd Street",
+      "between": [
+        "Hillegass Avenue",
+        "Colby Street"
+      ],
+      "direction": "WB",
+      "toward": "Colby Street",
+      "period": "am",
+      "vehicles": 17
+    },
+    {
+      "street": "62nd Street",
+      "between": [
+        "Hillegass Avenue",
+        "Colby Street"
+      ],
+      "direction": "EB",
+      "toward": "Hillegass Avenue",
+      "period": "am",
+      "vehicles": 16
+    },
+    {
+      "street": "62nd Street",
+      "between": [
+        "Florio Street / Claremont Avenue / +1",
+        "Hillegass Avenue"
+      ],
+      "direction": "WB",
+      "toward": "Hillegass Avenue",
+      "period": "am",
+      "vehicles": 39
+    },
+    {
+      "street": "62nd Street",
+      "between": [
+        "Florio Street / Claremont Avenue / +1",
+        "Hillegass Avenue"
+      ],
+      "direction": "EB",
+      "toward": "Florio Street / Claremont Avenue / +1",
+      "period": "am",
+      "vehicles": 39
+    },
+    {
+      "street": "Canning Street",
+      "between": [
+        "62nd Street",
+        "63rd Street"
+      ],
+      "direction": "NB",
+      "toward": "63rd Street",
+      "period": "am",
+      "vehicles": 34
+    },
+    {
+      "street": "Canning Street",
+      "between": [
+        "62nd Street",
+        "63rd Street"
+      ],
+      "direction": "SB",
+      "toward": "62nd Street",
+      "period": "am",
+      "vehicles": 32
+    },
+    {
+      "street": "Canning Street",
+      "between": [
+        "61st Street",
+        "62nd Street"
+      ],
+      "direction": "NB",
+      "toward": "62nd Street",
+      "period": "am",
+      "vehicles": 37
+    },
+    {
+      "street": "Canning Street",
+      "between": [
+        "61st Street",
+        "62nd Street"
+      ],
+      "direction": "SB",
+      "toward": "61st Street",
+      "period": "am",
+      "vehicles": 47
+    },
+    {
+      "street": "Canning Street",
+      "between": [
+        "60th Street",
+        "61st Street"
+      ],
+      "direction": "NB",
+      "toward": "61st Street",
+      "period": "am",
+      "vehicles": 41
+    },
+    {
+      "street": "Canning Street",
+      "between": [
+        "60th Street",
+        "61st Street"
+      ],
+      "direction": "SB",
+      "toward": "60th Street",
+      "period": "am",
+      "vehicles": 41
+    },
+    {
+      "street": "Canning Street",
+      "between": [
+        "McAuley Street",
+        "60th Street"
+      ],
+      "direction": "NB",
+      "toward": "60th Street",
+      "period": "am",
+      "vehicles": 42
+    },
+    {
+      "street": "Canning Street",
+      "between": [
+        "McAuley Street",
+        "60th Street"
+      ],
+      "direction": "SB",
+      "toward": "McAuley Street",
+      "period": "am",
+      "vehicles": 48
+    },
+    {
+      "street": "Canning Street",
+      "between": [
+        "59th Street",
+        "McAuley Street"
+      ],
+      "direction": "NB",
+      "toward": "McAuley Street",
+      "period": "am",
+      "vehicles": 48
+    },
+    {
+      "street": "Canning Street",
+      "between": [
+        "59th Street",
+        "McAuley Street"
+      ],
+      "direction": "SB",
+      "toward": "59th Street",
+      "period": "am",
+      "vehicles": 21
+    },
+    {
+      "street": "Canning Street",
+      "between": [
+        "58th Street",
+        "59th Street"
+      ],
+      "direction": "NB",
+      "toward": "59th Street",
+      "period": "am",
+      "vehicles": 59
+    },
+    {
+      "street": "Canning Street",
+      "between": [
+        "58th Street",
+        "59th Street"
+      ],
+      "direction": "SB",
+      "toward": "58th Street",
+      "period": "am",
+      "vehicles": 19
+    },
+    {
+      "street": "61st Street",
+      "between": [
+        "Canning Street",
+        "Telegraph Avenue"
+      ],
+      "direction": "WB",
+      "toward": "Telegraph Avenue",
+      "period": "am",
+      "vehicles": 20
+    },
+    {
+      "street": "61st Street",
+      "between": [
+        "Canning Street",
+        "Telegraph Avenue"
+      ],
+      "direction": "EB",
+      "toward": "Canning Street",
+      "period": "am",
+      "vehicles": 20
+    },
+    {
+      "street": "61st Street",
+      "between": [
+        "Canning Street",
+        "Colby Street"
+      ],
+      "direction": "WB",
+      "toward": "Canning Street",
+      "period": "am",
+      "vehicles": 16,
+      "note": "In the network this block is split into four links by park paths (no single block named \"61st Street between Canning Street and Colby Street\")."
+    },
+    {
+      "street": "61st Street",
+      "between": [
+        "Canning Street",
+        "Colby Street"
+      ],
+      "direction": "EB",
+      "toward": "Colby Street",
+      "period": "am",
+      "vehicles": 14,
+      "note": "In the network this block is split into four links by park paths (no single block named \"61st Street between Canning Street and Colby Street\")."
+    },
+    {
+      "street": "61st Street",
+      "between": [
+        "Hillegass Avenue",
+        "Colby Street"
+      ],
+      "direction": "WB",
+      "toward": "Colby Street",
+      "period": "am",
+      "vehicles": 9
+    },
+    {
+      "street": "61st Street",
+      "between": [
+        "Hillegass Avenue",
+        "Colby Street"
+      ],
+      "direction": "EB",
+      "toward": "Hillegass Avenue",
+      "period": "am",
+      "vehicles": 15
+    },
+    {
+      "street": "60th Street",
+      "between": [
+        "Canning Street",
+        "Telegraph Avenue"
+      ],
+      "direction": "WB",
+      "toward": "Telegraph Avenue",
+      "period": "am",
+      "vehicles": 19
+    },
+    {
+      "street": "60th Street",
+      "between": [
+        "Canning Street",
+        "Telegraph Avenue"
+      ],
+      "direction": "EB",
+      "toward": "Canning Street",
+      "period": "am",
+      "vehicles": 8
+    },
+    {
+      "street": "60th Street",
+      "between": [
+        "Howell Street",
+        "Canning Street"
+      ],
+      "direction": "WB",
+      "toward": "Canning Street",
+      "period": "am",
+      "vehicles": 19
+    },
+    {
+      "street": "60th Street",
+      "between": [
+        "Howell Street",
+        "Canning Street"
+      ],
+      "direction": "EB",
+      "toward": "Howell Street",
+      "period": "am",
+      "vehicles": 6
+    },
+    {
+      "street": "60th Street",
+      "between": [
+        "Colby Street",
+        "Howell Street"
+      ],
+      "direction": "WB",
+      "toward": "Howell Street",
+      "period": "am",
+      "vehicles": 13
+    },
+    {
+      "street": "60th Street",
+      "between": [
+        "Colby Street",
+        "Howell Street"
+      ],
+      "direction": "EB",
+      "toward": "Colby Street",
+      "period": "am",
+      "vehicles": 8
+    },
+    {
+      "street": "60th Street",
+      "between": [
+        "Hillegass Avenue / Claremont Avenue",
+        "Colby Street"
+      ],
+      "direction": "WB",
+      "toward": "Colby Street",
+      "period": "am",
+      "vehicles": 11
+    },
+    {
+      "street": "60th Street",
+      "between": [
+        "Hillegass Avenue / Claremont Avenue",
+        "Colby Street"
+      ],
+      "direction": "EB",
+      "toward": "Hillegass Avenue / Claremont Avenue",
+      "period": "am",
+      "vehicles": 4
+    },
+    {
+      "street": "Hillegass Avenue",
+      "between": [
+        "Alcatraz Avenue",
+        "63rd Street"
+      ],
+      "direction": "SB",
+      "toward": "63rd Street",
+      "period": "am",
+      "vehicles": 73
+    },
+    {
+      "street": "Hillegass Avenue",
+      "between": [
+        "Alcatraz Avenue",
+        "63rd Street"
+      ],
+      "direction": "NB",
+      "toward": "Alcatraz Avenue",
+      "period": "am",
+      "vehicles": 100
+    },
+    {
+      "street": "Hillegass Avenue",
+      "between": [
+        "63rd Street",
+        "62nd Street"
+      ],
+      "direction": "SB",
+      "toward": "62nd Street",
+      "period": "am",
+      "vehicles": 78
+    },
+    {
+      "street": "Hillegass Avenue",
+      "between": [
+        "63rd Street",
+        "62nd Street"
+      ],
+      "direction": "NB",
+      "toward": "63rd Street",
+      "period": "am",
+      "vehicles": 87
+    },
+    {
+      "street": "Hillegass Avenue",
+      "between": [
+        "62nd Street",
+        "61st Street"
+      ],
+      "direction": "SB",
+      "toward": "61st Street",
+      "period": "am",
+      "vehicles": 88
+    },
+    {
+      "street": "Hillegass Avenue",
+      "between": [
+        "62nd Street",
+        "61st Street"
+      ],
+      "direction": "NB",
+      "toward": "62nd Street",
+      "period": "am",
+      "vehicles": 82
+    },
+    {
+      "street": "Hillegass Avenue",
+      "between": [
+        "61st Street",
+        "60th Street / Claremont Avenue"
+      ],
+      "direction": "SB",
+      "toward": "60th Street / Claremont Avenue",
+      "period": "am",
+      "vehicles": 87
+    },
+    {
+      "street": "Hillegass Avenue",
+      "between": [
+        "61st Street",
+        "60th Street / Claremont Avenue"
+      ],
+      "direction": "NB",
+      "toward": "61st Street",
+      "period": "am",
+      "vehicles": 74
+    },
+    {
+      "street": "McAuley Street",
+      "between": [
+        "Colby Street",
+        "Ayala Avenue"
+      ],
+      "direction": "WB",
+      "toward": "Ayala Avenue",
+      "period": "am",
+      "vehicles": 16
+    },
+    {
+      "street": "McAuley Street",
+      "between": [
+        "Colby Street",
+        "Ayala Avenue"
+      ],
+      "direction": "EB",
+      "toward": "Colby Street",
+      "period": "am",
+      "vehicles": 18
+    },
+    {
+      "street": "McAuley Street",
+      "between": [
+        "Howell Street",
+        "Canning Street"
+      ],
+      "direction": "WB",
+      "toward": "Canning Street",
+      "period": "am",
+      "vehicles": 20
+    },
+    {
+      "street": "McAuley Street",
+      "between": [
+        "Howell Street",
+        "Canning Street"
+      ],
+      "direction": "EB",
+      "toward": "Howell Street",
+      "period": "am",
+      "vehicles": 4
+    },
+    {
+      "street": "McAuley Street",
+      "between": [
+        "Canning Street",
+        "Telegraph Avenue"
+      ],
+      "direction": "WB",
+      "toward": "Telegraph Avenue",
+      "period": "am",
+      "vehicles": 34
+    },
+    {
+      "street": "McAuley Street",
+      "between": [
+        "Canning Street",
+        "Telegraph Avenue"
+      ],
+      "direction": "EB",
+      "toward": "Canning Street",
+      "period": "am",
+      "vehicles": 7
+    },
+    {
+      "street": "59th Street",
+      "between": [
+        "Howell Street",
+        "Canning Street"
+      ],
+      "direction": "WB",
+      "toward": "Canning Street",
+      "period": "am",
+      "vehicles": 15
+    },
+    {
+      "street": "59th Street",
+      "between": [
+        "Howell Street",
+        "Canning Street"
+      ],
+      "direction": "EB",
+      "toward": "Howell Street",
+      "period": "am",
+      "vehicles": 17
+    },
+    {
+      "street": "59th Street",
+      "between": [
+        "Canning Street",
+        "Telegraph Avenue"
+      ],
+      "direction": "WB",
+      "toward": "Telegraph Avenue",
+      "period": "am",
+      "vehicles": 29
+    },
+    {
+      "street": "59th Street",
+      "between": [
+        "Canning Street",
+        "Telegraph Avenue"
+      ],
+      "direction": "EB",
+      "toward": "Canning Street",
+      "period": "am",
+      "vehicles": 22,
+      "uncertain": true,
+      "note": "Label sits between the 59th Street and 58th Street lines. Alternative: 58th Street between Vicente Street and Telegraph Avenue, eastbound, 22."
+    },
+    {
+      "street": "58th Street",
+      "between": [
+        "Hermann Street / Martin Street",
+        "Canning Street"
+      ],
+      "direction": "WB",
+      "toward": "Canning Street",
+      "period": "am",
+      "vehicles": 150
+    },
+    {
+      "street": "58th Street",
+      "between": [
+        "Hermann Street / Martin Street",
+        "Canning Street"
+      ],
+      "direction": "EB",
+      "toward": "Hermann Street / Martin Street",
+      "period": "am",
+      "vehicles": 28
+    },
+    {
+      "street": "58th Street",
+      "between": [
+        "Canning Street",
+        "Vicente Street"
+      ],
+      "direction": "EB",
+      "toward": "Canning Street",
+      "period": "am",
+      "vehicles": 7
+    },
+    {
+      "street": "58th Street",
+      "between": [
+        "Canning Street",
+        "Vicente Street"
+      ],
+      "direction": "WB",
+      "toward": "Vicente Street",
+      "period": "am",
+      "vehicles": 97,
+      "uncertain": true,
+      "note": "Label sits directly above the Vicente Street intersection. Alternative: 58th Street between Vicente Street and Telegraph Avenue, westbound, 97."
+    },
+    {
+      "street": "Hermann Street",
+      "between": [
+        "Ayala Avenue",
+        "Martin Street / 58th Street"
+      ],
+      "direction": "NB",
+      "toward": "Martin Street / 58th Street",
+      "period": "am",
+      "vehicles": 7
+    },
+    {
+      "street": "Hermann Street",
+      "between": [
+        "Ayala Avenue",
+        "Martin Street / 58th Street"
+      ],
+      "direction": "SB",
+      "toward": "Ayala Avenue",
+      "period": "am",
+      "vehicles": 3
+    },
+    {
+      "street": "Martin Street",
+      "between": [
+        "Ayala Avenue",
+        "Hermann Street / 58th Street"
+      ],
+      "direction": "WB",
+      "toward": "Hermann Street / 58th Street",
+      "period": "am",
+      "vehicles": 150,
+      "heading": "northwest"
+    },
+    {
+      "street": "Martin Street",
+      "between": [
+        "Ayala Avenue",
+        "Hermann Street / 58th Street"
+      ],
+      "direction": "EB",
+      "toward": "Ayala Avenue",
+      "period": "am",
+      "vehicles": 68,
+      "heading": "southeast"
+    },
+    {
+      "street": "Martin Street",
+      "between": [
+        "Claremont Avenue",
+        "Ayala Avenue"
+      ],
+      "direction": "WB",
+      "toward": "Ayala Avenue",
+      "period": "am",
+      "vehicles": 147,
+      "heading": "northwest"
+    },
+    {
+      "street": "Martin Street",
+      "between": [
+        "Claremont Avenue",
+        "Ayala Avenue"
+      ],
+      "direction": "EB",
+      "toward": "Claremont Avenue",
+      "period": "am",
+      "vehicles": 97,
+      "heading": "southeast"
+    },
+    {
+      "street": "Ayala Avenue",
+      "between": [
+        "Martin Street",
+        "Howell Street"
+      ],
+      "direction": "SB",
+      "toward": "Martin Street",
+      "period": "am",
+      "vehicles": 36,
+      "heading": "southwest"
+    },
+    {
+      "street": "Ayala Avenue",
+      "between": [
+        "Martin Street",
+        "Howell Street"
+      ],
+      "direction": "NB",
+      "toward": "Howell Street",
+      "period": "am",
+      "vehicles": 50,
+      "heading": "northeast"
+    },
+    {
+      "street": "Ayala Avenue",
+      "between": [
+        "Hermann Street",
+        "Martin Street"
+      ],
+      "direction": "SB",
+      "toward": "Hermann Street",
+      "period": "am",
+      "vehicles": 15,
+      "heading": "southwest"
+    },
+    {
+      "street": "Ayala Avenue",
+      "between": [
+        "Hermann Street",
+        "Martin Street"
+      ],
+      "direction": "NB",
+      "toward": "Martin Street",
+      "period": "am",
+      "vehicles": 36,
+      "heading": "northeast"
+    },
+    {
+      "street": "Forest Street",
+      "between": [
+        "Colby Street / Claremont Avenue",
+        "Ayala Avenue"
+      ],
+      "direction": "WB",
+      "toward": "Ayala Avenue",
+      "period": "am",
+      "vehicles": 60,
+      "heading": "northwest"
+    },
+    {
+      "street": "Forest Street",
+      "between": [
+        "Colby Street / Claremont Avenue",
+        "Ayala Avenue"
+      ],
+      "direction": "EB",
+      "toward": "Colby Street / Claremont Avenue",
+      "period": "am",
+      "vehicles": 50,
+      "heading": "southeast"
+    },
+    {
+      "street": "Dana Street",
+      "between": [
+        "North Street",
+        "Alcatraz Avenue"
+      ],
+      "direction": "SB",
+      "toward": "North Street",
+      "period": "pm",
+      "vehicles": 43
+    },
+    {
+      "street": "Dana Street",
+      "between": [
+        "North Street",
+        "Alcatraz Avenue"
+      ],
+      "direction": "NB",
+      "toward": "Alcatraz Avenue",
+      "period": "pm",
+      "vehicles": 7
+    },
+    {
+      "street": "Dana Street",
+      "between": [
+        "63rd Street",
+        "North Street"
+      ],
+      "direction": "SB",
+      "toward": "63rd Street",
+      "period": "pm",
+      "vehicles": 41
+    },
+    {
+      "street": "Dana Street",
+      "between": [
+        "63rd Street",
+        "North Street"
+      ],
+      "direction": "NB",
+      "toward": "North Street",
+      "period": "pm",
+      "vehicles": 11
+    },
+    {
+      "street": "Colby Street",
+      "between": [
+        "North Street",
+        "Alcatraz Avenue"
+      ],
+      "direction": "SB",
+      "toward": "North Street",
+      "period": "pm",
+      "vehicles": 139
+    },
+    {
+      "street": "Colby Street",
+      "between": [
+        "North Street",
+        "Alcatraz Avenue"
+      ],
+      "direction": "NB",
+      "toward": "Alcatraz Avenue",
+      "period": "pm",
+      "vehicles": 164
+    },
+    {
+      "street": "Colby Street",
+      "between": [
+        "63rd Street",
+        "63rd Street"
+      ],
+      "direction": "SB",
+      "toward": "63rd Street",
+      "period": "pm",
+      "vehicles": 156,
+      "note": "Jog block: Colby between the north leg (North Street / 63rd Street east leg) and the 63rd Street west leg."
+    },
+    {
+      "street": "Colby Street",
+      "between": [
+        "63rd Street",
+        "63rd Street"
+      ],
+      "direction": "NB",
+      "toward": "63rd Street",
+      "period": "pm",
+      "vehicles": 152
+    },
+    {
+      "street": "Colby Street",
+      "between": [
+        "62nd Street",
+        "63rd Street"
+      ],
+      "direction": "SB",
+      "toward": "62nd Street",
+      "period": "pm",
+      "vehicles": 162
+    },
+    {
+      "street": "Colby Street",
+      "between": [
+        "62nd Street",
+        "63rd Street"
+      ],
+      "direction": "NB",
+      "toward": "63rd Street",
+      "period": "pm",
+      "vehicles": 158
+    },
+    {
+      "street": "Colby Street",
+      "between": [
+        "61st Street",
+        "62nd Street"
+      ],
+      "direction": "SB",
+      "toward": "61st Street",
+      "period": "pm",
+      "vehicles": 160
+    },
+    {
+      "street": "Colby Street",
+      "between": [
+        "61st Street",
+        "62nd Street"
+      ],
+      "direction": "NB",
+      "toward": "62nd Street",
+      "period": "pm",
+      "vehicles": 174
+    },
+    {
+      "street": "Colby Street",
+      "between": [
+        "60th Street",
+        "61st Street"
+      ],
+      "direction": "SB",
+      "toward": "60th Street",
+      "period": "pm",
+      "vehicles": 159
+    },
+    {
+      "street": "Colby Street",
+      "between": [
+        "60th Street",
+        "61st Street"
+      ],
+      "direction": "NB",
+      "toward": "61st Street",
+      "period": "pm",
+      "vehicles": 179
+    },
+    {
+      "street": "Colby Street",
+      "between": [
+        "McAuley Street",
+        "60th Street"
+      ],
+      "direction": "SB",
+      "toward": "McAuley Street",
+      "period": "pm",
+      "vehicles": 170
+    },
+    {
+      "street": "Colby Street",
+      "between": [
+        "McAuley Street",
+        "60th Street"
+      ],
+      "direction": "NB",
+      "toward": "60th Street",
+      "period": "pm",
+      "vehicles": 182
+    },
+    {
+      "street": "Colby Street",
+      "between": [
+        "Forest Street / Claremont Avenue",
+        "McAuley Street"
+      ],
+      "direction": "SB",
+      "toward": "Forest Street / Claremont Avenue",
+      "period": "pm",
+      "vehicles": 162
+    },
+    {
+      "street": "Colby Street",
+      "between": [
+        "Forest Street / Claremont Avenue",
+        "McAuley Street"
+      ],
+      "direction": "NB",
+      "toward": "McAuley Street",
+      "period": "pm",
+      "vehicles": 189
+    },
+    {
+      "street": "North Street",
+      "between": [
+        "Colby Street",
+        "Dana Street"
+      ],
+      "direction": "WB",
+      "toward": "Dana Street",
+      "period": "pm",
+      "vehicles": 11
+    },
+    {
+      "street": "North Street",
+      "between": [
+        "Colby Street",
+        "Dana Street"
+      ],
+      "direction": "EB",
+      "toward": "Colby Street",
+      "period": "pm",
+      "vehicles": 10
+    },
+    {
+      "street": "63rd Street",
+      "between": [
+        "Colby Street",
+        "Dana Street"
+      ],
+      "direction": "WB",
+      "toward": "Dana Street",
+      "period": "pm",
+      "vehicles": 16
+    },
+    {
+      "street": "63rd Street",
+      "between": [
+        "Colby Street",
+        "Dana Street"
+      ],
+      "direction": "EB",
+      "toward": "Colby Street",
+      "period": "pm",
+      "vehicles": 28
+    },
+    {
+      "street": "63rd Street",
+      "between": [
+        "Dana Street",
+        "Canning Street"
+      ],
+      "direction": "WB",
+      "toward": "Canning Street",
+      "period": "pm",
+      "vehicles": 64
+    },
+    {
+      "street": "63rd Street",
+      "between": [
+        "Dana Street",
+        "Canning Street"
+      ],
+      "direction": "EB",
+      "toward": "Dana Street",
+      "period": "pm",
+      "vehicles": 60
+    },
+    {
+      "street": "63rd Street",
+      "between": [
+        "Canning Street",
+        "Telegraph Avenue"
+      ],
+      "direction": "WB",
+      "toward": "Telegraph Avenue",
+      "period": "pm",
+      "vehicles": 36
+    },
+    {
+      "street": "63rd Street",
+      "between": [
+        "Canning Street",
+        "Telegraph Avenue"
+      ],
+      "direction": "EB",
+      "toward": "Canning Street",
+      "period": "pm",
+      "vehicles": 27
+    },
+    {
+      "street": "63rd Street",
+      "between": [
+        "Hillegass Avenue",
+        "Colby Street"
+      ],
+      "direction": "WB",
+      "toward": "Colby Street",
+      "period": "pm",
+      "vehicles": 27
+    },
+    {
+      "street": "63rd Street",
+      "between": [
+        "Hillegass Avenue",
+        "Colby Street"
+      ],
+      "direction": "EB",
+      "toward": "Hillegass Avenue",
+      "period": "pm",
+      "vehicles": 7
+    },
+    {
+      "street": "63rd Street",
+      "between": [
+        "College Avenue",
+        "Hillegass Avenue"
+      ],
+      "direction": "WB",
+      "toward": "Hillegass Avenue",
+      "period": "pm",
+      "vehicles": 42
+    },
+    {
+      "street": "63rd Street",
+      "between": [
+        "College Avenue",
+        "Hillegass Avenue"
+      ],
+      "direction": "EB",
+      "toward": "College Avenue",
+      "period": "pm",
+      "vehicles": 22
+    },
+    {
+      "street": "62nd Street",
+      "between": [
+        "Canning Street",
+        "Telegraph Avenue"
+      ],
+      "direction": "WB",
+      "toward": "Telegraph Avenue",
+      "period": "pm",
+      "vehicles": 21
+    },
+    {
+      "street": "62nd Street",
+      "between": [
+        "Canning Street",
+        "Telegraph Avenue"
+      ],
+      "direction": "EB",
+      "toward": "Canning Street",
+      "period": "pm",
+      "vehicles": 9
+    },
+    {
+      "street": "62nd Street",
+      "between": [
+        "Colby Street",
+        "Canning Street"
+      ],
+      "direction": "WB",
+      "toward": "Canning Street",
+      "period": "pm",
+      "vehicles": 19
+    },
+    {
+      "street": "62nd Street",
+      "between": [
+        "Colby Street",
+        "Canning Street"
+      ],
+      "direction": "EB",
+      "toward": "Colby Street",
+      "period": "pm",
+      "vehicles": 11
+    },
+    {
+      "street": "62nd Street",
+      "between": [
+        "Hillegass Avenue",
+        "Colby Street"
+      ],
+      "direction": "WB",
+      "toward": "Colby Street",
+      "period": "pm",
+      "vehicles": 12
+    },
+    {
+      "street": "62nd Street",
+      "between": [
+        "Hillegass Avenue",
+        "Colby Street"
+      ],
+      "direction": "EB",
+      "toward": "Hillegass Avenue",
+      "period": "pm",
+      "vehicles": 16
+    },
+    {
+      "street": "62nd Street",
+      "between": [
+        "Florio Street / Claremont Avenue / +1",
+        "Hillegass Avenue"
+      ],
+      "direction": "WB",
+      "toward": "Hillegass Avenue",
+      "period": "pm",
+      "vehicles": 24
+    },
+    {
+      "street": "62nd Street",
+      "between": [
+        "Florio Street / Claremont Avenue / +1",
+        "Hillegass Avenue"
+      ],
+      "direction": "EB",
+      "toward": "Florio Street / Claremont Avenue / +1",
+      "period": "pm",
+      "vehicles": 59
+    },
+    {
+      "street": "Canning Street",
+      "between": [
+        "62nd Street",
+        "63rd Street"
+      ],
+      "direction": "NB",
+      "toward": "63rd Street",
+      "period": "pm",
+      "vehicles": 18
+    },
+    {
+      "street": "Canning Street",
+      "between": [
+        "62nd Street",
+        "63rd Street"
+      ],
+      "direction": "SB",
+      "toward": "62nd Street",
+      "period": "pm",
+      "vehicles": 29
+    },
+    {
+      "street": "Canning Street",
+      "between": [
+        "61st Street",
+        "62nd Street"
+      ],
+      "direction": "NB",
+      "toward": "62nd Street",
+      "period": "pm",
+      "vehicles": 29
+    },
+    {
+      "street": "Canning Street",
+      "between": [
+        "61st Street",
+        "62nd Street"
+      ],
+      "direction": "SB",
+      "toward": "61st Street",
+      "period": "pm",
+      "vehicles": 36
+    },
+    {
+      "street": "Canning Street",
+      "between": [
+        "60th Street",
+        "61st Street"
+      ],
+      "direction": "NB",
+      "toward": "61st Street",
+      "period": "pm",
+      "vehicles": 30
+    },
+    {
+      "street": "Canning Street",
+      "between": [
+        "60th Street",
+        "61st Street"
+      ],
+      "direction": "SB",
+      "toward": "60th Street",
+      "period": "pm",
+      "vehicles": 45
+    },
+    {
+      "street": "Canning Street",
+      "between": [
+        "McAuley Street",
+        "60th Street"
+      ],
+      "direction": "NB",
+      "toward": "60th Street",
+      "period": "pm",
+      "vehicles": 28
+    },
+    {
+      "street": "Canning Street",
+      "between": [
+        "McAuley Street",
+        "60th Street"
+      ],
+      "direction": "SB",
+      "toward": "McAuley Street",
+      "period": "pm",
+      "vehicles": 46
+    },
+    {
+      "street": "Canning Street",
+      "between": [
+        "59th Street",
+        "McAuley Street"
+      ],
+      "direction": "NB",
+      "toward": "McAuley Street",
+      "period": "pm",
+      "vehicles": 32
+    },
+    {
+      "street": "Canning Street",
+      "between": [
+        "59th Street",
+        "McAuley Street"
+      ],
+      "direction": "SB",
+      "toward": "59th Street",
+      "period": "pm",
+      "vehicles": 49
+    },
+    {
+      "street": "Canning Street",
+      "between": [
+        "58th Street",
+        "59th Street"
+      ],
+      "direction": "NB",
+      "toward": "59th Street",
+      "period": "pm",
+      "vehicles": 55,
+      "note": "No southbound label is shown on this block in the PM map."
+    },
+    {
+      "street": "61st Street",
+      "between": [
+        "Canning Street",
+        "Telegraph Avenue"
+      ],
+      "direction": "WB",
+      "toward": "Telegraph Avenue",
+      "period": "pm",
+      "vehicles": 29
+    },
+    {
+      "street": "61st Street",
+      "between": [
+        "Canning Street",
+        "Telegraph Avenue"
+      ],
+      "direction": "EB",
+      "toward": "Canning Street",
+      "period": "pm",
+      "vehicles": 29
+    },
+    {
+      "street": "61st Street",
+      "between": [
+        "Canning Street",
+        "Colby Street"
+      ],
+      "direction": "WB",
+      "toward": "Canning Street",
+      "period": "pm",
+      "vehicles": 8,
+      "note": "In the network this block is split into four links by park paths (no single block named \"61st Street between Canning Street and Colby Street\")."
+    },
+    {
+      "street": "61st Street",
+      "between": [
+        "Canning Street",
+        "Colby Street"
+      ],
+      "direction": "EB",
+      "toward": "Colby Street",
+      "period": "pm",
+      "vehicles": 13,
+      "note": "In the network this block is split into four links by park paths (no single block named \"61st Street between Canning Street and Colby Street\")."
+    },
+    {
+      "street": "61st Street",
+      "between": [
+        "Hillegass Avenue",
+        "Colby Street"
+      ],
+      "direction": "WB",
+      "toward": "Colby Street",
+      "period": "pm",
+      "vehicles": 12
+    },
+    {
+      "street": "61st Street",
+      "between": [
+        "Hillegass Avenue",
+        "Colby Street"
+      ],
+      "direction": "EB",
+      "toward": "Hillegass Avenue",
+      "period": "pm",
+      "vehicles": 11
+    },
+    {
+      "street": "60th Street",
+      "between": [
+        "Canning Street",
+        "Telegraph Avenue"
+      ],
+      "direction": "WB",
+      "toward": "Telegraph Avenue",
+      "period": "pm",
+      "vehicles": 27
+    },
+    {
+      "street": "60th Street",
+      "between": [
+        "Canning Street",
+        "Telegraph Avenue"
+      ],
+      "direction": "EB",
+      "toward": "Canning Street",
+      "period": "pm",
+      "vehicles": 27
+    },
+    {
+      "street": "60th Street",
+      "between": [
+        "Howell Street",
+        "Canning Street"
+      ],
+      "direction": "WB",
+      "toward": "Canning Street",
+      "period": "pm",
+      "vehicles": 25
+    },
+    {
+      "street": "60th Street",
+      "between": [
+        "Howell Street",
+        "Canning Street"
+      ],
+      "direction": "EB",
+      "toward": "Howell Street",
+      "period": "pm",
+      "vehicles": 23
+    },
+    {
+      "street": "60th Street",
+      "between": [
+        "Colby Street",
+        "Howell Street"
+      ],
+      "direction": "WB",
+      "toward": "Howell Street",
+      "period": "pm",
+      "vehicles": 14
+    },
+    {
+      "street": "60th Street",
+      "between": [
+        "Colby Street",
+        "Howell Street"
+      ],
+      "direction": "EB",
+      "toward": "Colby Street",
+      "period": "pm",
+      "vehicles": 15
+    },
+    {
+      "street": "60th Street",
+      "between": [
+        "Hillegass Avenue / Claremont Avenue",
+        "Colby Street"
+      ],
+      "direction": "WB",
+      "toward": "Colby Street",
+      "period": "pm",
+      "vehicles": 15
+    },
+    {
+      "street": "60th Street",
+      "between": [
+        "Hillegass Avenue / Claremont Avenue",
+        "Colby Street"
+      ],
+      "direction": "EB",
+      "toward": "Hillegass Avenue / Claremont Avenue",
+      "period": "pm",
+      "vehicles": 18
+    },
+    {
+      "street": "Hillegass Avenue",
+      "between": [
+        "Alcatraz Avenue",
+        "63rd Street"
+      ],
+      "direction": "SB",
+      "toward": "63rd Street",
+      "period": "pm",
+      "vehicles": 178
+    },
+    {
+      "street": "Hillegass Avenue",
+      "between": [
+        "Alcatraz Avenue",
+        "63rd Street"
+      ],
+      "direction": "NB",
+      "toward": "Alcatraz Avenue",
+      "period": "pm",
+      "vehicles": 109
+    },
+    {
+      "street": "Hillegass Avenue",
+      "between": [
+        "63rd Street",
+        "62nd Street"
+      ],
+      "direction": "SB",
+      "toward": "62nd Street",
+      "period": "pm",
+      "vehicles": 168
+    },
+    {
+      "street": "Hillegass Avenue",
+      "between": [
+        "63rd Street",
+        "62nd Street"
+      ],
+      "direction": "NB",
+      "toward": "63rd Street",
+      "period": "pm",
+      "vehicles": 93
+    },
+    {
+      "street": "Hillegass Avenue",
+      "between": [
+        "62nd Street",
+        "61st Street"
+      ],
+      "direction": "SB",
+      "toward": "61st Street",
+      "period": "pm",
+      "vehicles": 151
+    },
+    {
+      "street": "Hillegass Avenue",
+      "between": [
+        "62nd Street",
+        "61st Street"
+      ],
+      "direction": "NB",
+      "toward": "62nd Street",
+      "period": "pm",
+      "vehicles": 110
+    },
+    {
+      "street": "Hillegass Avenue",
+      "between": [
+        "61st Street",
+        "60th Street / Claremont Avenue"
+      ],
+      "direction": "SB",
+      "toward": "60th Street / Claremont Avenue",
+      "period": "pm",
+      "vehicles": 152
+    },
+    {
+      "street": "Hillegass Avenue",
+      "between": [
+        "61st Street",
+        "60th Street / Claremont Avenue"
+      ],
+      "direction": "NB",
+      "toward": "61st Street",
+      "period": "pm",
+      "vehicles": 114
+    },
+    {
+      "street": "Howell Street",
+      "between": [
+        "McAuley Street",
+        "60th Street"
+      ],
+      "direction": "SB",
+      "toward": "McAuley Street",
+      "period": "pm",
+      "vehicles": 16
+    },
+    {
+      "street": "Howell Street",
+      "between": [
+        "McAuley Street",
+        "60th Street"
+      ],
+      "direction": "NB",
+      "toward": "60th Street",
+      "period": "pm",
+      "vehicles": 6
+    },
+    {
+      "street": "Howell Street",
+      "between": [
+        "59th Street",
+        "McAuley Street"
+      ],
+      "direction": "SB",
+      "toward": "59th Street",
+      "period": "pm",
+      "vehicles": 17
+    },
+    {
+      "street": "Howell Street",
+      "between": [
+        "59th Street",
+        "McAuley Street"
+      ],
+      "direction": "NB",
+      "toward": "McAuley Street",
+      "period": "pm",
+      "vehicles": 7
+    },
+    {
+      "street": "McAuley Street",
+      "between": [
+        "Colby Street",
+        "Ayala Avenue"
+      ],
+      "direction": "WB",
+      "toward": "Ayala Avenue",
+      "period": "pm",
+      "vehicles": 24
+    },
+    {
+      "street": "McAuley Street",
+      "between": [
+        "Colby Street",
+        "Ayala Avenue"
+      ],
+      "direction": "EB",
+      "toward": "Colby Street",
+      "period": "pm",
+      "vehicles": 20
+    },
+    {
+      "street": "McAuley Street",
+      "between": [
+        "Ayala Avenue",
+        "Howell Street"
+      ],
+      "direction": "WB",
+      "toward": "Howell Street",
+      "period": "pm",
+      "vehicles": 34
+    },
+    {
+      "street": "McAuley Street",
+      "between": [
+        "Ayala Avenue",
+        "Howell Street"
+      ],
+      "direction": "EB",
+      "toward": "Ayala Avenue",
+      "period": "pm",
+      "vehicles": 15
+    },
+    {
+      "street": "McAuley Street",
+      "between": [
+        "Howell Street",
+        "Canning Street"
+      ],
+      "direction": "WB",
+      "toward": "Canning Street",
+      "period": "pm",
+      "vehicles": 31
+    },
+    {
+      "street": "McAuley Street",
+      "between": [
+        "Howell Street",
+        "Canning Street"
+      ],
+      "direction": "EB",
+      "toward": "Howell Street",
+      "period": "pm",
+      "vehicles": 12
+    },
+    {
+      "street": "McAuley Street",
+      "between": [
+        "Canning Street",
+        "Telegraph Avenue"
+      ],
+      "direction": "WB",
+      "toward": "Telegraph Avenue",
+      "period": "pm",
+      "vehicles": 33
+    },
+    {
+      "street": "McAuley Street",
+      "between": [
+        "Canning Street",
+        "Telegraph Avenue"
+      ],
+      "direction": "EB",
+      "toward": "Canning Street",
+      "period": "pm",
+      "vehicles": 14
+    },
+    {
+      "street": "59th Street",
+      "between": [
+        "Howell Street",
+        "Canning Street"
+      ],
+      "direction": "WB",
+      "toward": "Canning Street",
+      "period": "pm",
+      "vehicles": 18
+    },
+    {
+      "street": "59th Street",
+      "between": [
+        "Howell Street",
+        "Canning Street"
+      ],
+      "direction": "EB",
+      "toward": "Howell Street",
+      "period": "pm",
+      "vehicles": 14
+    },
+    {
+      "street": "59th Street",
+      "between": [
+        "Canning Street",
+        "Telegraph Avenue"
+      ],
+      "direction": "WB",
+      "toward": "Telegraph Avenue",
+      "period": "pm",
+      "vehicles": 50
+    },
+    {
+      "street": "59th Street",
+      "between": [
+        "Canning Street",
+        "Telegraph Avenue"
+      ],
+      "direction": "EB",
+      "toward": "Canning Street",
+      "period": "pm",
+      "vehicles": 20
+    },
+    {
+      "street": "58th Street",
+      "between": [
+        "Hermann Street / Martin Street",
+        "Canning Street"
+      ],
+      "direction": "WB",
+      "toward": "Canning Street",
+      "period": "pm",
+      "vehicles": 138
+    },
+    {
+      "street": "58th Street",
+      "between": [
+        "Hermann Street / Martin Street",
+        "Canning Street"
+      ],
+      "direction": "EB",
+      "toward": "Hermann Street / Martin Street",
+      "period": "pm",
+      "vehicles": 96
+    },
+    {
+      "street": "58th Street",
+      "between": [
+        "Vicente Street",
+        "Telegraph Avenue"
+      ],
+      "direction": "WB",
+      "toward": "Telegraph Avenue",
+      "period": "pm",
+      "vehicles": 88
+    },
+    {
+      "street": "58th Street",
+      "between": [
+        "Vicente Street",
+        "Telegraph Avenue"
+      ],
+      "direction": "EB",
+      "toward": "Vicente Street",
+      "period": "pm",
+      "vehicles": 65
+    },
+    {
+      "street": "57th Street",
+      "between": [
+        "Vicente Street",
+        "Telegraph Avenue"
+      ],
+      "direction": "WB",
+      "toward": "Telegraph Avenue",
+      "period": "pm",
+      "vehicles": 42
+    },
+    {
+      "street": "57th Street",
+      "between": [
+        "Vicente Street",
+        "Telegraph Avenue"
+      ],
+      "direction": "EB",
+      "toward": "Vicente Street",
+      "period": "pm",
+      "vehicles": 73
+    },
+    {
+      "street": "Hermann Street",
+      "between": [
+        "Ayala Avenue",
+        "Martin Street / 58th Street"
+      ],
+      "direction": "NB",
+      "toward": "Martin Street / 58th Street",
+      "period": "pm",
+      "vehicles": 5
+    },
+    {
+      "street": "Hermann Street",
+      "between": [
+        "Ayala Avenue",
+        "Martin Street / 58th Street"
+      ],
+      "direction": "SB",
+      "toward": "Ayala Avenue",
+      "period": "pm",
+      "vehicles": 7
+    },
+    {
+      "street": "Martin Street",
+      "between": [
+        "Ayala Avenue",
+        "Hermann Street / 58th Street"
+      ],
+      "direction": "WB",
+      "toward": "Hermann Street / 58th Street",
+      "period": "pm",
+      "vehicles": 135,
+      "heading": "northwest"
+    },
+    {
+      "street": "Martin Street",
+      "between": [
+        "Ayala Avenue",
+        "Hermann Street / 58th Street"
+      ],
+      "direction": "EB",
+      "toward": "Ayala Avenue",
+      "period": "pm",
+      "vehicles": 89,
+      "heading": "southeast"
+    },
+    {
+      "street": "Martin Street",
+      "between": [
+        "Claremont Avenue",
+        "Ayala Avenue"
+      ],
+      "direction": "WB",
+      "toward": "Ayala Avenue",
+      "period": "pm",
+      "vehicles": 164,
+      "heading": "northwest"
+    },
+    {
+      "street": "Martin Street",
+      "between": [
+        "Claremont Avenue",
+        "Ayala Avenue"
+      ],
+      "direction": "EB",
+      "toward": "Claremont Avenue",
+      "period": "pm",
+      "vehicles": 123,
+      "heading": "southeast"
+    },
+    {
+      "street": "Ayala Avenue",
+      "between": [
+        "Forest Street",
+        "McAuley Street"
+      ],
+      "direction": "SB",
+      "toward": "Forest Street",
+      "period": "pm",
+      "vehicles": 20
+    },
+    {
+      "street": "Ayala Avenue",
+      "between": [
+        "Forest Street",
+        "McAuley Street"
+      ],
+      "direction": "NB",
+      "toward": "McAuley Street",
+      "period": "pm",
+      "vehicles": 36
+    },
+    {
+      "street": "Ayala Avenue",
+      "between": [
+        "Howell Street",
+        "Forest Street"
+      ],
+      "direction": "SB",
+      "toward": "Howell Street",
+      "period": "pm",
+      "vehicles": 48,
+      "heading": "southwest"
+    },
+    {
+      "street": "Ayala Avenue",
+      "between": [
+        "Howell Street",
+        "Forest Street"
+      ],
+      "direction": "NB",
+      "toward": "Forest Street",
+      "period": "pm",
+      "vehicles": 64,
+      "heading": "northeast"
+    },
+    {
+      "street": "Ayala Avenue",
+      "between": [
+        "Martin Street",
+        "Howell Street"
+      ],
+      "direction": "SB",
+      "toward": "Martin Street",
+      "period": "pm",
+      "vehicles": 44,
+      "heading": "southwest"
+    },
+    {
+      "street": "Ayala Avenue",
+      "between": [
+        "Martin Street",
+        "Howell Street"
+      ],
+      "direction": "NB",
+      "toward": "Howell Street",
+      "period": "pm",
+      "vehicles": 60,
+      "heading": "northeast"
+    },
+    {
+      "street": "Ayala Avenue",
+      "between": [
+        "Hermann Street",
+        "Martin Street"
+      ],
+      "direction": "SB",
+      "toward": "Hermann Street",
+      "period": "pm",
+      "vehicles": 41,
+      "heading": "southwest"
+    },
+    {
+      "street": "Ayala Avenue",
+      "between": [
+        "Hermann Street",
+        "Martin Street"
+      ],
+      "direction": "NB",
+      "toward": "Martin Street",
+      "period": "pm",
+      "vehicles": 64,
+      "heading": "northeast"
+    },
+    {
+      "street": "Forest Street",
+      "between": [
+        "Colby Street / Claremont Avenue",
+        "Ayala Avenue"
+      ],
+      "direction": "WB",
+      "toward": "Ayala Avenue",
+      "period": "pm",
+      "vehicles": 66,
+      "heading": "northwest"
+    },
+    {
+      "street": "Forest Street",
+      "between": [
+        "Colby Street / Claremont Avenue",
+        "Ayala Avenue"
+      ],
+      "direction": "EB",
+      "toward": "Colby Street / Claremont Avenue",
+      "period": "pm",
+      "vehicles": 66,
+      "heading": "southeast"
+    }
+  ],
+  "blocksKey": {
+    "direction": "NB, SB, EB, WB from the map arrow color (green down = SB, blue up = NB, purple right = EB, orange left = WB). For diagonal streets the \"heading\" field gives the compass heading and \"toward\" the cross street at the downstream end.",
+    "between": "Cross streets named the way src/lib/naming.ts names blocks (order follows the first link of the block)."
+  },
+  "accessPoints": [
+    {
+      "at": [
+        "Alcatraz Avenue",
+        "Dana Street"
+      ],
+      "side": "Alcatraz Avenue at Colby Street and Hillegass Avenue",
+      "period": "am",
+      "in": 45,
+      "inSource": "sum of 37 + 8 turns from Alcatraz onto Dana (example intersection 4, page 40); equals the AM southbound Dana block volume",
+      "pin": "green (AM and PM recorded)"
+    },
+    {
+      "at": [
+        "Alcatraz Avenue",
+        "Dana Street"
+      ],
+      "side": "Alcatraz Avenue at Colby Street and Hillegass Avenue",
+      "period": "pm",
+      "in": 43,
+      "inSource": "derived: 360 group total minus Colby 139 minus Hillegass 178; equals the PM southbound Dana block volume",
+      "pin": "green (AM and PM recorded)"
+    },
+    {
+      "at": [
+        "Alcatraz Avenue",
+        "Colby Street"
+      ],
+      "side": "Alcatraz Avenue at Colby Street and Hillegass Avenue",
+      "period": "am",
+      "in": 109,
+      "inSource": "route diagram, page 25 (81 from west + 18 from east + 10 from north)",
+      "pin": "green (AM and PM recorded)"
+    },
+    {
+      "at": [
+        "Alcatraz Avenue",
+        "Colby Street"
+      ],
+      "side": "Alcatraz Avenue at Colby Street and Hillegass Avenue",
+      "period": "pm",
+      "in": 139,
+      "inSource": "route diagram, page 27 and example intersection 2 (76 + 50 + 13)",
+      "pin": "green (AM and PM recorded)"
+    },
+    {
+      "at": [
+        "Alcatraz Avenue",
+        "Hillegass Avenue"
+      ],
+      "side": "Alcatraz Avenue at Colby Street and Hillegass Avenue",
+      "period": "am",
+      "in": 73,
+      "inSource": "route diagram, page 29 (26 + 41 + 6)",
+      "pin": "green (AM and PM recorded)"
+    },
+    {
+      "at": [
+        "Alcatraz Avenue",
+        "Hillegass Avenue"
+      ],
+      "side": "Alcatraz Avenue at Colby Street and Hillegass Avenue",
+      "period": "pm",
+      "in": 178,
+      "inSource": "route diagram, page 31 and example intersection 2 (76 + 98 + 4)",
+      "pin": "green (AM and PM recorded)"
+    },
+    {
+      "at": [
+        "Claremont Avenue",
+        "Colby Street"
+      ],
+      "side": "Claremont Avenue and Forest Street",
+      "period": "am",
+      "in": 72,
+      "inSource": "text, Claremont turn-ins (the route diagram on page 24 shows 72 from Claremont + 43 crossing from Forest east of Claremont + 0 = 115 entering Colby)",
+      "pin": "green (AM and PM recorded)"
+    },
+    {
+      "at": [
+        "Claremont Avenue",
+        "Colby Street"
+      ],
+      "side": "Claremont Avenue and Forest Street",
+      "period": "pm",
+      "in": 182,
+      "inSource": "table on page 18 (route diagram page 26: 121 + 57 crossing from Forest + 4)",
+      "pin": "green (AM and PM recorded)"
+    },
+    {
+      "at": [
+        "Claremont Avenue",
+        "Martin Street"
+      ],
+      "side": "Claremont Avenue and Forest Street",
+      "period": "am",
+      "in": 147,
+      "inSource": "table/text, page 39 (145 + 2)",
+      "pin": "green (AM and PM recorded)"
+    },
+    {
+      "at": [
+        "Claremont Avenue",
+        "Martin Street"
+      ],
+      "side": "Claremont Avenue and Forest Street",
+      "period": "pm",
+      "in": 164,
+      "inSource": "table on page 18",
+      "pin": "green (AM and PM recorded)"
+    },
+    {
+      "at": [
+        "Claremont Avenue",
+        "Hillegass Avenue"
+      ],
+      "side": "Claremont Avenue and Forest Street",
+      "period": "am",
+      "in": 72,
+      "inSource": "text, route diagram page 28 (69 + 3)",
+      "pin": "green (AM and PM recorded)"
+    },
+    {
+      "at": [
+        "Claremont Avenue",
+        "Hillegass Avenue"
+      ],
+      "side": "Claremont Avenue and Forest Street",
+      "period": "pm",
+      "in": 94,
+      "inSource": "table on page 18; route diagram page 30 (87 + 7)",
+      "pin": "green (AM and PM recorded)"
+    },
+    {
+      "at": [
+        "Claremont Avenue",
+        "Forest Street"
+      ],
+      "side": "Claremont Avenue and Forest Street",
+      "period": "am",
+      "in": null,
+      "inSource": "not stated individually; the example intersection 1 diagram shows 95 cars from Forest east of Claremont (43 to Colby, 52 to Forest west of Claremont) in the AM",
+      "pin": "green (AM and PM recorded)",
+      "note": "Individual count is not in the archive; see inSource for a nearby figure."
+    },
+    {
+      "at": [
+        "Claremont Avenue",
+        "Forest Street"
+      ],
+      "side": "Claremont Avenue and Forest Street",
+      "period": "pm",
+      "in": 58,
+      "inSource": "table on page 18",
+      "pin": "green (AM and PM recorded)"
+    },
+    {
+      "at": [
+        "Claremont Avenue",
+        "60th Street"
+      ],
+      "side": "Claremont Avenue and Forest Street",
+      "period": "am",
+      "in": null,
+      "inSource": "not stated individually; the block map shows 4 eastbound on 60th Street between Claremont/Hillegass and Colby",
+      "pin": "green (AM and PM recorded)",
+      "note": "Individual count is not in the archive; see inSource for a nearby figure."
+    },
+    {
+      "at": [
+        "Claremont Avenue",
+        "60th Street"
+      ],
+      "side": "Claremont Avenue and Forest Street",
+      "period": "pm",
+      "in": 7,
+      "inSource": "table on page 18",
+      "pin": "green (AM and PM recorded)"
+    },
+    {
+      "at": [
+        "College Avenue",
+        "63rd Street"
+      ],
+      "side": "College Avenue",
+      "period": "am",
+      "in": null,
+      "inSource": "not stated individually; westbound 63rd Street block east of Hillegass shows 40 in the map",
+      "pin": "green (AM and PM recorded)",
+      "note": "Individual count is not in the archive; see inSource for a nearby figure."
+    },
+    {
+      "at": [
+        "College Avenue",
+        "63rd Street"
+      ],
+      "side": "College Avenue",
+      "period": "pm",
+      "in": null,
+      "inSource": "not stated individually; westbound 63rd Street block east of Hillegass shows 42 in the map",
+      "pin": "green (AM and PM recorded)",
+      "note": "Individual count is not in the archive; see inSource for a nearby figure."
+    },
+    {
+      "at": [
+        "College Avenue",
+        "62nd Street"
+      ],
+      "side": "College Avenue",
+      "period": "am",
+      "in": null,
+      "inSource": "not stated individually; westbound 62nd Street block east of Hillegass shows 39 in the map",
+      "pin": "green (AM and PM recorded)",
+      "note": "Individual count is not in the archive; see inSource for a nearby figure."
+    },
+    {
+      "at": [
+        "College Avenue",
+        "62nd Street"
+      ],
+      "side": "College Avenue",
+      "period": "pm",
+      "in": null,
+      "inSource": "not stated individually; westbound 62nd Street block east of Hillegass shows 24 in the map",
+      "pin": "green (AM and PM recorded)",
+      "note": "Individual count is not in the archive; see inSource for a nearby figure."
+    },
+    {
+      "at": [
+        "Telegraph Avenue",
+        "63rd Street"
+      ],
+      "side": "Telegraph Avenue",
+      "period": "am",
+      "in": null,
+      "inSource": "not stated individually; eastbound 63rd Street block shows 40 in the map",
+      "pin": "green (AM and PM recorded)",
+      "note": "Individual count is not in the archive; see inSource for a nearby figure."
+    },
+    {
+      "at": [
+        "Telegraph Avenue",
+        "63rd Street"
+      ],
+      "side": "Telegraph Avenue",
+      "period": "pm",
+      "in": null,
+      "inSource": "not stated individually; eastbound block shows 27 in the map",
+      "pin": "green (AM and PM recorded)",
+      "note": "Individual count is not in the archive; see inSource for a nearby figure."
+    },
+    {
+      "at": [
+        "Telegraph Avenue",
+        "62nd Street"
+      ],
+      "side": "Telegraph Avenue",
+      "period": "am",
+      "in": null,
+      "inSource": "not stated individually; eastbound block shows 12 in the map",
+      "pin": "green (AM and PM recorded)",
+      "note": "Individual count is not in the archive; see inSource for a nearby figure."
+    },
+    {
+      "at": [
+        "Telegraph Avenue",
+        "62nd Street"
+      ],
+      "side": "Telegraph Avenue",
+      "period": "pm",
+      "in": null,
+      "inSource": "not stated individually; eastbound block shows 9 in the map",
+      "pin": "green (AM and PM recorded)",
+      "note": "Individual count is not in the archive; see inSource for a nearby figure."
+    },
+    {
+      "at": [
+        "Telegraph Avenue",
+        "61st Street"
+      ],
+      "side": "Telegraph Avenue",
+      "period": "am",
+      "in": null,
+      "inSource": "not stated individually; eastbound block shows 20 in the map",
+      "pin": "green (AM and PM recorded)",
+      "note": "Individual count is not in the archive; see inSource for a nearby figure."
+    },
+    {
+      "at": [
+        "Telegraph Avenue",
+        "61st Street"
+      ],
+      "side": "Telegraph Avenue",
+      "period": "pm",
+      "in": null,
+      "inSource": "not stated individually; eastbound block shows 29 in the map",
+      "pin": "green (AM and PM recorded)",
+      "note": "Individual count is not in the archive; see inSource for a nearby figure."
+    },
+    {
+      "at": [
+        "Telegraph Avenue",
+        "60th Street"
+      ],
+      "side": "Telegraph Avenue",
+      "period": "pm",
+      "in": null,
+      "inSource": "not stated individually; eastbound block shows 27 in the map",
+      "pin": "orange (PM only)",
+      "note": "Individual count is not in the archive; see inSource for a nearby figure."
+    },
+    {
+      "at": [
+        "Telegraph Avenue",
+        "McAuley Street"
+      ],
+      "side": "Telegraph Avenue",
+      "period": "pm",
+      "in": null,
+      "inSource": "not stated individually; eastbound block shows 14 in the map",
+      "pin": "orange (PM only)",
+      "note": "Individual count is not in the archive; see inSource for a nearby figure."
+    },
+    {
+      "at": [
+        "Telegraph Avenue",
+        "59th Street"
+      ],
+      "side": "Telegraph Avenue",
+      "period": "pm",
+      "in": null,
+      "inSource": "not stated individually; eastbound block shows 20 in the map",
+      "pin": "orange (PM only)",
+      "note": "Individual count is not in the archive; see inSource for a nearby figure."
+    },
+    {
+      "at": [
+        "Telegraph Avenue",
+        "58th Street"
+      ],
+      "side": "Telegraph Avenue",
+      "period": "pm",
+      "in": null,
+      "inSource": "not stated individually; eastbound block shows 65 in the map",
+      "pin": "orange (PM only)",
+      "note": "Individual count is not in the archive; see inSource for a nearby figure."
+    },
+    {
+      "at": [
+        "Telegraph Avenue",
+        "57th Street"
+      ],
+      "side": "Telegraph Avenue",
+      "period": "pm",
+      "in": null,
+      "inSource": "not stated individually; eastbound block shows 73 in the map",
+      "pin": "orange (PM only)",
+      "note": "Individual count is not in the archive; see inSource for a nearby figure."
+    }
+  ],
+  "accessPointsNote": "The archive map shows 18 pins (13 green, AM and PM recorded; 5 orange, PM only) with no numbers on them. Pin positions are matched to intersections by street labels. The College Avenue pins could be College at 63rd Street or College at Alcatraz Avenue; the 63rd Street position is used.",
+  "turningMovements": [
+    {
+      "at": [
+        "Colby Street",
+        "Claremont Avenue"
+      ],
+      "period": "am",
+      "from": "Claremont Avenue from southwest",
+      "to": "Colby Street toward north",
+      "vehicles": 72,
+      "source": "route diagram, page 24",
+      "route": "Colby Street NB AM",
+      "kind": "turnOn"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "Claremont Avenue"
+      ],
+      "period": "am",
+      "from": "Forest Street from southeast",
+      "to": "Colby Street toward north",
+      "vehicles": 43,
+      "source": "route diagram, page 24",
+      "route": "Colby Street NB AM",
+      "kind": "turnOn"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "Claremont Avenue"
+      ],
+      "period": "am",
+      "from": "Claremont Avenue from northeast",
+      "to": "Colby Street toward north",
+      "vehicles": 0,
+      "source": "route diagram, page 24",
+      "route": "Colby Street NB AM",
+      "kind": "turnOn"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "McAuley Street"
+      ],
+      "period": "am",
+      "from": "Colby Street from south",
+      "to": "Colby Street toward north",
+      "vehicles": 128,
+      "source": "route diagram, page 24",
+      "kind": "straight",
+      "route": "Colby Street NB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "McAuley Street"
+      ],
+      "period": "am",
+      "from": "Colby Street from south",
+      "to": "McAuley Street toward west",
+      "vehicles": 2,
+      "source": "route diagram, page 24",
+      "kind": "turnOff",
+      "route": "Colby Street NB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "McAuley Street"
+      ],
+      "period": "am",
+      "from": "McAuley Street from west",
+      "to": "Colby Street toward north",
+      "vehicles": 13,
+      "source": "route diagram, page 24",
+      "kind": "turnOn",
+      "route": "Colby Street NB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "60th Street"
+      ],
+      "period": "am",
+      "from": "Colby Street from south",
+      "to": "Colby Street toward north",
+      "vehicles": 134,
+      "source": "route diagram, page 24",
+      "kind": "straight",
+      "route": "Colby Street NB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "60th Street"
+      ],
+      "period": "am",
+      "from": "Colby Street from south",
+      "to": "60th Street toward west",
+      "vehicles": 4,
+      "source": "route diagram, page 24",
+      "kind": "turnOff",
+      "route": "Colby Street NB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "60th Street"
+      ],
+      "period": "am",
+      "from": "Colby Street from south",
+      "to": "60th Street toward east",
+      "vehicles": 0,
+      "source": "route diagram, page 24",
+      "kind": "turnOff",
+      "route": "Colby Street NB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "60th Street"
+      ],
+      "period": "am",
+      "from": "60th Street from west",
+      "to": "Colby Street toward north",
+      "vehicles": 5,
+      "source": "route diagram, page 24",
+      "kind": "turnOn",
+      "route": "Colby Street NB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "60th Street"
+      ],
+      "period": "am",
+      "from": "60th Street from east",
+      "to": "Colby Street toward north",
+      "vehicles": 4,
+      "source": "route diagram, page 24",
+      "kind": "turnOn",
+      "route": "Colby Street NB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "61st Street"
+      ],
+      "period": "am",
+      "from": "Colby Street from south",
+      "to": "Colby Street toward north",
+      "vehicles": 133,
+      "source": "route diagram, page 24",
+      "kind": "straight",
+      "route": "Colby Street NB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "61st Street"
+      ],
+      "period": "am",
+      "from": "Colby Street from south",
+      "to": "61st Street toward west",
+      "vehicles": 5,
+      "source": "route diagram, page 24",
+      "kind": "turnOff",
+      "route": "Colby Street NB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "61st Street"
+      ],
+      "period": "am",
+      "from": "Colby Street from south",
+      "to": "61st Street toward east",
+      "vehicles": 6,
+      "source": "route diagram, page 24",
+      "kind": "turnOff",
+      "route": "Colby Street NB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "61st Street"
+      ],
+      "period": "am",
+      "from": "61st Street from west",
+      "to": "Colby Street toward north",
+      "vehicles": 0,
+      "source": "route diagram, page 24",
+      "kind": "turnOn",
+      "route": "Colby Street NB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "61st Street"
+      ],
+      "period": "am",
+      "from": "61st Street from east",
+      "to": "Colby Street toward north",
+      "vehicles": 1,
+      "source": "route diagram, page 24",
+      "kind": "turnOn",
+      "route": "Colby Street NB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "62nd Street"
+      ],
+      "period": "am",
+      "from": "Colby Street from south",
+      "to": "Colby Street toward north",
+      "vehicles": 127,
+      "source": "route diagram, page 24",
+      "kind": "straight",
+      "route": "Colby Street NB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "62nd Street"
+      ],
+      "period": "am",
+      "from": "Colby Street from south",
+      "to": "62nd Street toward west",
+      "vehicles": 5,
+      "source": "route diagram, page 24",
+      "kind": "turnOff",
+      "route": "Colby Street NB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "62nd Street"
+      ],
+      "period": "am",
+      "from": "Colby Street from south",
+      "to": "62nd Street toward east",
+      "vehicles": 1,
+      "source": "route diagram, page 24",
+      "kind": "turnOff",
+      "route": "Colby Street NB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "62nd Street"
+      ],
+      "period": "am",
+      "from": "62nd Street from west",
+      "to": "Colby Street toward north",
+      "vehicles": 3,
+      "source": "route diagram, page 24",
+      "kind": "turnOn",
+      "route": "Colby Street NB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "62nd Street"
+      ],
+      "period": "am",
+      "from": "62nd Street from east",
+      "to": "Colby Street toward north",
+      "vehicles": 4,
+      "source": "route diagram, page 24",
+      "kind": "turnOn",
+      "route": "Colby Street NB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "63rd Street"
+      ],
+      "period": "am",
+      "from": "Colby Street from south",
+      "to": "Colby Street toward north",
+      "vehicles": 115,
+      "source": "route diagram, page 24",
+      "kind": "straight",
+      "route": "Colby Street NB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "63rd Street"
+      ],
+      "period": "am",
+      "from": "Colby Street from south",
+      "to": "63rd Street toward west",
+      "vehicles": 21,
+      "source": "route diagram, page 24",
+      "kind": "turnOff",
+      "route": "Colby Street NB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "63rd Street"
+      ],
+      "period": "am",
+      "from": "63rd Street from west",
+      "to": "Colby Street toward north",
+      "vehicles": 8,
+      "source": "route diagram, page 24",
+      "kind": "turnOn",
+      "route": "Colby Street NB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "North Street / 63rd Street"
+      ],
+      "period": "am",
+      "from": "Colby Street from south",
+      "to": "Colby Street toward north",
+      "vehicles": 89,
+      "source": "route diagram, page 24",
+      "kind": "straight",
+      "route": "Colby Street NB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "North Street / 63rd Street"
+      ],
+      "period": "am",
+      "from": "Colby Street from south",
+      "to": "North Street toward west",
+      "vehicles": 18,
+      "source": "route diagram, page 24",
+      "kind": "turnOff",
+      "route": "Colby Street NB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "North Street / 63rd Street"
+      ],
+      "period": "am",
+      "from": "Colby Street from south",
+      "to": "63rd Street toward east",
+      "vehicles": 6,
+      "source": "route diagram, page 24",
+      "kind": "turnOff",
+      "route": "Colby Street NB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "North Street / 63rd Street"
+      ],
+      "period": "am",
+      "from": "North Street from west",
+      "to": "Colby Street toward north",
+      "vehicles": 1,
+      "source": "route diagram, page 24",
+      "kind": "turnOn",
+      "route": "Colby Street NB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "North Street / 63rd Street"
+      ],
+      "period": "am",
+      "from": "63rd Street from east",
+      "to": "Colby Street toward north",
+      "vehicles": 5,
+      "source": "route diagram, page 24",
+      "kind": "turnOn",
+      "route": "Colby Street NB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "Alcatraz Avenue"
+      ],
+      "period": "am",
+      "from": "Colby Street from south",
+      "to": "Alcatraz Avenue toward west",
+      "vehicles": 78,
+      "source": "route diagram, page 24",
+      "route": "Colby Street NB AM",
+      "kind": "turnOff"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "Alcatraz Avenue"
+      ],
+      "period": "am",
+      "from": "Colby Street from south",
+      "to": "straight to Colby north of Alcatraz",
+      "vehicles": 3,
+      "source": "route diagram, page 24",
+      "route": "Colby Street NB AM",
+      "kind": "straight"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "Alcatraz Avenue"
+      ],
+      "period": "am",
+      "from": "Colby Street from south",
+      "to": "Alcatraz Avenue toward east",
+      "vehicles": 23,
+      "source": "route diagram, page 24",
+      "route": "Colby Street NB AM",
+      "kind": "turnOff"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "Alcatraz Avenue"
+      ],
+      "period": "am",
+      "from": "Colby Street (Woolsey Street side) from north",
+      "to": "Colby Street toward south",
+      "vehicles": 10,
+      "source": "route diagram, page 25",
+      "route": "Colby Street SB AM",
+      "kind": "turnOn"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "Alcatraz Avenue"
+      ],
+      "period": "am",
+      "from": "Alcatraz Avenue from west",
+      "to": "Colby Street toward south",
+      "vehicles": 81,
+      "source": "route diagram, page 25",
+      "route": "Colby Street SB AM",
+      "kind": "turnOn"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "Alcatraz Avenue"
+      ],
+      "period": "am",
+      "from": "Alcatraz Avenue from east",
+      "to": "Colby Street toward south",
+      "vehicles": 18,
+      "source": "route diagram, page 25",
+      "route": "Colby Street SB AM",
+      "kind": "turnOn"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "North Street / 63rd Street"
+      ],
+      "period": "am",
+      "from": "Colby Street from north",
+      "to": "Colby Street toward south",
+      "vehicles": 102,
+      "source": "route diagram, page 25",
+      "kind": "straight",
+      "route": "Colby Street SB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "North Street / 63rd Street"
+      ],
+      "period": "am",
+      "from": "Colby Street from north",
+      "to": "North Street toward west",
+      "vehicles": 2,
+      "source": "route diagram, page 25",
+      "kind": "turnOff",
+      "route": "Colby Street SB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "North Street / 63rd Street"
+      ],
+      "period": "am",
+      "from": "Colby Street from north",
+      "to": "63rd Street toward east",
+      "vehicles": 5,
+      "source": "route diagram, page 25",
+      "kind": "turnOff",
+      "route": "Colby Street SB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "North Street / 63rd Street"
+      ],
+      "period": "am",
+      "from": "North Street from west",
+      "to": "Colby Street toward south",
+      "vehicles": 9,
+      "source": "route diagram, page 25",
+      "kind": "turnOn",
+      "route": "Colby Street SB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "North Street / 63rd Street"
+      ],
+      "period": "am",
+      "from": "63rd Street from east",
+      "to": "Colby Street toward south",
+      "vehicles": 3,
+      "source": "route diagram, page 25",
+      "kind": "turnOn",
+      "route": "Colby Street SB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "63rd Street"
+      ],
+      "period": "am",
+      "from": "Colby Street from north",
+      "to": "Colby Street toward south",
+      "vehicles": 124,
+      "source": "route diagram, page 25",
+      "kind": "straight",
+      "route": "Colby Street SB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "63rd Street"
+      ],
+      "period": "am",
+      "from": "Colby Street from north",
+      "to": "63rd Street toward west",
+      "vehicles": 1,
+      "source": "route diagram, page 25",
+      "kind": "turnOff",
+      "route": "Colby Street SB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "63rd Street"
+      ],
+      "period": "am",
+      "from": "63rd Street from west",
+      "to": "Colby Street toward south",
+      "vehicles": 47,
+      "source": "route diagram, page 25",
+      "kind": "turnOn",
+      "route": "Colby Street SB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "62nd Street"
+      ],
+      "period": "am",
+      "from": "Colby Street from north",
+      "to": "Colby Street toward south",
+      "vehicles": 152,
+      "source": "route diagram, page 25",
+      "kind": "straight",
+      "route": "Colby Street SB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "62nd Street"
+      ],
+      "period": "am",
+      "from": "Colby Street from north",
+      "to": "62nd Street toward west",
+      "vehicles": 6,
+      "source": "route diagram, page 25",
+      "kind": "turnOff",
+      "route": "Colby Street SB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "62nd Street"
+      ],
+      "period": "am",
+      "from": "Colby Street from north",
+      "to": "62nd Street toward east",
+      "vehicles": 5,
+      "source": "route diagram, page 25",
+      "kind": "turnOff",
+      "route": "Colby Street SB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "62nd Street"
+      ],
+      "period": "am",
+      "from": "62nd Street from west",
+      "to": "Colby Street toward south",
+      "vehicles": 7,
+      "source": "route diagram, page 25",
+      "kind": "turnOn",
+      "route": "Colby Street SB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "62nd Street"
+      ],
+      "period": "am",
+      "from": "62nd Street from east",
+      "to": "Colby Street toward south",
+      "vehicles": 8,
+      "source": "route diagram, page 25",
+      "kind": "turnOn",
+      "route": "Colby Street SB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "61st Street"
+      ],
+      "period": "am",
+      "from": "Colby Street from north",
+      "to": "Colby Street toward south",
+      "vehicles": 167,
+      "source": "route diagram, page 25",
+      "kind": "straight",
+      "route": "Colby Street SB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "61st Street"
+      ],
+      "period": "am",
+      "from": "Colby Street from north",
+      "to": "61st Street toward west",
+      "vehicles": 3,
+      "source": "route diagram, page 25",
+      "kind": "turnOff",
+      "route": "Colby Street SB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "61st Street"
+      ],
+      "period": "am",
+      "from": "Colby Street from north",
+      "to": "61st Street toward east",
+      "vehicles": 4,
+      "source": "route diagram, page 25",
+      "kind": "turnOff",
+      "route": "Colby Street SB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "61st Street"
+      ],
+      "period": "am",
+      "from": "61st Street from west",
+      "to": "Colby Street toward south",
+      "vehicles": 4,
+      "source": "route diagram, page 25",
+      "kind": "turnOn",
+      "route": "Colby Street SB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "61st Street"
+      ],
+      "period": "am",
+      "from": "61st Street from east",
+      "to": "Colby Street toward south",
+      "vehicles": 5,
+      "source": "route diagram, page 25",
+      "kind": "turnOn",
+      "route": "Colby Street SB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "60th Street"
+      ],
+      "period": "am",
+      "from": "Colby Street from north",
+      "to": "Colby Street toward south",
+      "vehicles": 174,
+      "source": "route diagram, page 25",
+      "kind": "straight",
+      "route": "Colby Street SB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "60th Street"
+      ],
+      "period": "am",
+      "from": "Colby Street from north",
+      "to": "60th Street toward west",
+      "vehicles": 5,
+      "source": "route diagram, page 25",
+      "kind": "turnOff",
+      "route": "Colby Street SB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "60th Street"
+      ],
+      "period": "am",
+      "from": "Colby Street from north",
+      "to": "60th Street toward east",
+      "vehicles": 3,
+      "source": "route diagram, page 25",
+      "kind": "turnOff",
+      "route": "Colby Street SB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "60th Street"
+      ],
+      "period": "am",
+      "from": "60th Street from west",
+      "to": "Colby Street toward south",
+      "vehicles": 2,
+      "source": "route diagram, page 25",
+      "kind": "turnOn",
+      "route": "Colby Street SB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "60th Street"
+      ],
+      "period": "am",
+      "from": "60th Street from east",
+      "to": "Colby Street toward south",
+      "vehicles": 3,
+      "source": "route diagram, page 25",
+      "kind": "turnOn",
+      "route": "Colby Street SB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "McAuley Street"
+      ],
+      "period": "am",
+      "from": "Colby Street from north",
+      "to": "Colby Street toward south",
+      "vehicles": 158,
+      "source": "route diagram, page 25",
+      "kind": "straight",
+      "route": "Colby Street SB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "McAuley Street"
+      ],
+      "period": "am",
+      "from": "Colby Street from north",
+      "to": "McAuley Street toward west",
+      "vehicles": 14,
+      "source": "route diagram, page 25",
+      "kind": "turnOff",
+      "route": "Colby Street SB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "McAuley Street"
+      ],
+      "period": "am",
+      "from": "McAuley Street from west",
+      "to": "Colby Street toward south",
+      "vehicles": 5,
+      "source": "route diagram, page 25",
+      "kind": "turnOn",
+      "route": "Colby Street SB AM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "Claremont Avenue"
+      ],
+      "period": "am",
+      "from": "Colby Street from north",
+      "to": "Claremont Avenue toward southwest (Telegraph side)",
+      "vehicles": 100,
+      "source": "route diagram, page 25",
+      "route": "Colby Street SB AM",
+      "kind": "turnOff"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "Claremont Avenue"
+      ],
+      "period": "am",
+      "from": "Colby Street from north",
+      "to": "Forest Street (straight, southeast)",
+      "vehicles": 67,
+      "source": "route diagram, page 25",
+      "route": "Colby Street SB AM",
+      "kind": "straight"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "Claremont Avenue"
+      ],
+      "period": "am",
+      "from": "Colby Street from north",
+      "to": "Claremont Avenue toward northeast (College side)",
+      "vehicles": 5,
+      "source": "route diagram, page 25",
+      "route": "Colby Street SB AM",
+      "kind": "turnOff"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "Claremont Avenue"
+      ],
+      "period": "pm",
+      "from": "Claremont Avenue from southwest",
+      "to": "Colby Street toward north",
+      "vehicles": 121,
+      "source": "route diagram, page 26",
+      "route": "Colby Street NB PM",
+      "kind": "turnOn"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "Claremont Avenue"
+      ],
+      "period": "pm",
+      "from": "Forest Street from southeast",
+      "to": "Colby Street toward north",
+      "vehicles": 57,
+      "source": "route diagram, page 26",
+      "route": "Colby Street NB PM",
+      "kind": "turnOn"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "Claremont Avenue"
+      ],
+      "period": "pm",
+      "from": "Claremont Avenue from northeast",
+      "to": "Colby Street toward north",
+      "vehicles": 4,
+      "source": "route diagram, page 26",
+      "route": "Colby Street NB PM",
+      "kind": "turnOn"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "McAuley Street"
+      ],
+      "period": "pm",
+      "from": "Colby Street from south",
+      "to": "Colby Street toward north",
+      "vehicles": 182,
+      "source": "route diagram, page 26",
+      "kind": "straight",
+      "route": "Colby Street NB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "McAuley Street"
+      ],
+      "period": "pm",
+      "from": "Colby Street from south",
+      "to": "McAuley Street toward west",
+      "vehicles": 7,
+      "source": "route diagram, page 26",
+      "kind": "turnOff",
+      "route": "Colby Street NB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "McAuley Street"
+      ],
+      "period": "pm",
+      "from": "McAuley Street from west",
+      "to": "Colby Street toward north",
+      "vehicles": 11,
+      "source": "route diagram, page 26",
+      "kind": "turnOn",
+      "route": "Colby Street NB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "60th Street"
+      ],
+      "period": "pm",
+      "from": "Colby Street from south",
+      "to": "Colby Street toward north",
+      "vehicles": 175,
+      "source": "route diagram, page 26",
+      "kind": "straight",
+      "route": "Colby Street NB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "60th Street"
+      ],
+      "period": "pm",
+      "from": "Colby Street from south",
+      "to": "60th Street toward west",
+      "vehicles": 3,
+      "source": "route diagram, page 26",
+      "kind": "turnOff",
+      "route": "Colby Street NB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "60th Street"
+      ],
+      "period": "pm",
+      "from": "Colby Street from south",
+      "to": "60th Street toward east",
+      "vehicles": 4,
+      "source": "route diagram, page 26",
+      "kind": "turnOff",
+      "route": "Colby Street NB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "60th Street"
+      ],
+      "period": "pm",
+      "from": "60th Street from west",
+      "to": "Colby Street toward north",
+      "vehicles": 0,
+      "source": "route diagram, page 26",
+      "kind": "turnOn",
+      "route": "Colby Street NB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "60th Street"
+      ],
+      "period": "pm",
+      "from": "60th Street from east",
+      "to": "Colby Street toward north",
+      "vehicles": 3,
+      "source": "route diagram, page 26",
+      "kind": "turnOn",
+      "route": "Colby Street NB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "61st Street"
+      ],
+      "period": "pm",
+      "from": "Colby Street from south",
+      "to": "Colby Street toward north",
+      "vehicles": 175,
+      "source": "route diagram, page 26",
+      "kind": "straight",
+      "route": "Colby Street NB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "61st Street"
+      ],
+      "period": "pm",
+      "from": "Colby Street from south",
+      "to": "61st Street toward west",
+      "vehicles": 3,
+      "source": "route diagram, page 26",
+      "kind": "turnOff",
+      "route": "Colby Street NB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "61st Street"
+      ],
+      "period": "pm",
+      "from": "Colby Street from south",
+      "to": "61st Street toward east",
+      "vehicles": 1,
+      "source": "route diagram, page 26",
+      "kind": "turnOff",
+      "route": "Colby Street NB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "61st Street"
+      ],
+      "period": "pm",
+      "from": "61st Street from west",
+      "to": "Colby Street toward north",
+      "vehicles": 2,
+      "source": "route diagram, page 26",
+      "kind": "turnOn",
+      "route": "Colby Street NB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "61st Street"
+      ],
+      "period": "pm",
+      "from": "61st Street from east",
+      "to": "Colby Street toward north",
+      "vehicles": 4,
+      "source": "route diagram, page 26",
+      "kind": "turnOn",
+      "route": "Colby Street NB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "62nd Street"
+      ],
+      "period": "pm",
+      "from": "Colby Street from south",
+      "to": "Colby Street toward north",
+      "vehicles": 162,
+      "source": "route diagram, page 26",
+      "kind": "straight",
+      "route": "Colby Street NB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "62nd Street"
+      ],
+      "period": "pm",
+      "from": "Colby Street from south",
+      "to": "62nd Street toward west",
+      "vehicles": 11,
+      "source": "route diagram, page 26",
+      "kind": "turnOff",
+      "route": "Colby Street NB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "62nd Street"
+      ],
+      "period": "pm",
+      "from": "Colby Street from south",
+      "to": "62nd Street toward east",
+      "vehicles": 1,
+      "source": "route diagram, page 26",
+      "kind": "turnOff",
+      "route": "Colby Street NB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "62nd Street"
+      ],
+      "period": "pm",
+      "from": "62nd Street from west",
+      "to": "Colby Street toward north",
+      "vehicles": 2,
+      "source": "route diagram, page 26",
+      "kind": "turnOn",
+      "route": "Colby Street NB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "62nd Street"
+      ],
+      "period": "pm",
+      "from": "62nd Street from east",
+      "to": "Colby Street toward north",
+      "vehicles": 3,
+      "source": "route diagram, page 26",
+      "kind": "turnOn",
+      "route": "Colby Street NB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "63rd Street"
+      ],
+      "period": "pm",
+      "from": "Colby Street from south",
+      "to": "Colby Street toward north",
+      "vehicles": 149,
+      "source": "route diagram, page 26",
+      "kind": "straight",
+      "route": "Colby Street NB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "63rd Street"
+      ],
+      "period": "pm",
+      "from": "Colby Street from south",
+      "to": "63rd Street toward west",
+      "vehicles": 9,
+      "source": "route diagram, page 26",
+      "kind": "turnOff",
+      "route": "Colby Street NB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "63rd Street"
+      ],
+      "period": "pm",
+      "from": "63rd Street from west",
+      "to": "Colby Street toward north",
+      "vehicles": 5,
+      "source": "route diagram, page 26",
+      "kind": "turnOn",
+      "route": "Colby Street NB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "North Street / 63rd Street"
+      ],
+      "period": "pm",
+      "from": "Colby Street from south",
+      "to": "Colby Street toward north",
+      "vehicles": 140,
+      "source": "route diagram, page 26",
+      "kind": "straight",
+      "route": "Colby Street NB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "North Street / 63rd Street"
+      ],
+      "period": "pm",
+      "from": "Colby Street from south",
+      "to": "North Street toward west",
+      "vehicles": 7,
+      "source": "route diagram, page 26",
+      "kind": "turnOff",
+      "route": "Colby Street NB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "North Street / 63rd Street"
+      ],
+      "period": "pm",
+      "from": "Colby Street from south",
+      "to": "63rd Street toward east",
+      "vehicles": 5,
+      "source": "route diagram, page 26",
+      "kind": "turnOff",
+      "route": "Colby Street NB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "North Street / 63rd Street"
+      ],
+      "period": "pm",
+      "from": "North Street from west",
+      "to": "Colby Street toward north",
+      "vehicles": 1,
+      "source": "route diagram, page 26",
+      "kind": "turnOn",
+      "route": "Colby Street NB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "North Street / 63rd Street"
+      ],
+      "period": "pm",
+      "from": "63rd Street from east",
+      "to": "Colby Street toward north",
+      "vehicles": 16,
+      "source": "route diagram, page 26",
+      "kind": "turnOn",
+      "route": "Colby Street NB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "Alcatraz Avenue"
+      ],
+      "period": "pm",
+      "from": "Colby Street from south",
+      "to": "Alcatraz Avenue toward west",
+      "vehicles": 131,
+      "source": "route diagram, page 26",
+      "route": "Colby Street NB PM",
+      "kind": "turnOff"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "Alcatraz Avenue"
+      ],
+      "period": "pm",
+      "from": "Colby Street from south",
+      "to": "straight to Colby north of Alcatraz",
+      "vehicles": 1,
+      "source": "route diagram, page 26",
+      "route": "Colby Street NB PM",
+      "kind": "straight"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "Alcatraz Avenue"
+      ],
+      "period": "pm",
+      "from": "Colby Street from south",
+      "to": "Alcatraz Avenue toward east",
+      "vehicles": 32,
+      "source": "route diagram, page 26",
+      "route": "Colby Street NB PM",
+      "kind": "turnOff"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "Alcatraz Avenue"
+      ],
+      "period": "pm",
+      "from": "Colby Street (Woolsey Street side) from north",
+      "to": "Colby Street toward south",
+      "vehicles": 13,
+      "source": "route diagram, page 27",
+      "route": "Colby Street SB PM",
+      "kind": "turnOn"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "Alcatraz Avenue"
+      ],
+      "period": "pm",
+      "from": "Alcatraz Avenue from west",
+      "to": "Colby Street toward south",
+      "vehicles": 76,
+      "source": "route diagram, page 27",
+      "route": "Colby Street SB PM",
+      "kind": "turnOn"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "Alcatraz Avenue"
+      ],
+      "period": "pm",
+      "from": "Alcatraz Avenue from east",
+      "to": "Colby Street toward south",
+      "vehicles": 50,
+      "source": "route diagram, page 27",
+      "route": "Colby Street SB PM",
+      "kind": "turnOn"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "North Street / 63rd Street"
+      ],
+      "period": "pm",
+      "from": "Colby Street from north",
+      "to": "Colby Street toward south",
+      "vehicles": 120,
+      "source": "route diagram, page 27",
+      "kind": "straight",
+      "route": "Colby Street SB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "North Street / 63rd Street"
+      ],
+      "period": "pm",
+      "from": "Colby Street from north",
+      "to": "North Street toward west",
+      "vehicles": 2,
+      "source": "route diagram, page 27",
+      "kind": "turnOff",
+      "route": "Colby Street SB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "North Street / 63rd Street"
+      ],
+      "period": "pm",
+      "from": "Colby Street from north",
+      "to": "63rd Street toward east",
+      "vehicles": 1,
+      "source": "route diagram, page 27",
+      "kind": "turnOff",
+      "route": "Colby Street SB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "North Street / 63rd Street"
+      ],
+      "period": "pm",
+      "from": "North Street from west",
+      "to": "Colby Street toward south",
+      "vehicles": 8,
+      "source": "route diagram, page 27",
+      "kind": "turnOn",
+      "route": "Colby Street SB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "North Street / 63rd Street"
+      ],
+      "period": "pm",
+      "from": "63rd Street from east",
+      "to": "Colby Street toward south",
+      "vehicles": 9,
+      "source": "route diagram, page 27",
+      "kind": "turnOn",
+      "route": "Colby Street SB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "63rd Street"
+      ],
+      "period": "pm",
+      "from": "Colby Street from north",
+      "to": "Colby Street toward south",
+      "vehicles": 149,
+      "source": "route diagram, page 27",
+      "kind": "straight",
+      "route": "Colby Street SB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "63rd Street"
+      ],
+      "period": "pm",
+      "from": "Colby Street from north",
+      "to": "63rd Street toward west",
+      "vehicles": 7,
+      "source": "route diagram, page 27",
+      "kind": "turnOff",
+      "route": "Colby Street SB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "63rd Street"
+      ],
+      "period": "pm",
+      "from": "63rd Street from west",
+      "to": "Colby Street toward south",
+      "vehicles": 23,
+      "source": "route diagram, page 27",
+      "kind": "turnOn",
+      "route": "Colby Street SB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "62nd Street"
+      ],
+      "period": "pm",
+      "from": "Colby Street from north",
+      "to": "Colby Street toward south",
+      "vehicles": 151,
+      "source": "route diagram, page 27",
+      "kind": "straight",
+      "route": "Colby Street SB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "62nd Street"
+      ],
+      "period": "pm",
+      "from": "Colby Street from north",
+      "to": "62nd Street toward west",
+      "vehicles": 3,
+      "source": "route diagram, page 27",
+      "kind": "turnOff",
+      "route": "Colby Street SB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "62nd Street"
+      ],
+      "period": "pm",
+      "from": "Colby Street from north",
+      "to": "62nd Street toward east",
+      "vehicles": 8,
+      "source": "route diagram, page 27",
+      "kind": "turnOff",
+      "route": "Colby Street SB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "62nd Street"
+      ],
+      "period": "pm",
+      "from": "62nd Street from west",
+      "to": "Colby Street toward south",
+      "vehicles": 4,
+      "source": "route diagram, page 27",
+      "kind": "turnOn",
+      "route": "Colby Street SB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "62nd Street"
+      ],
+      "period": "pm",
+      "from": "62nd Street from east",
+      "to": "Colby Street toward south",
+      "vehicles": 1,
+      "source": "route diagram, page 27",
+      "kind": "turnOn",
+      "route": "Colby Street SB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "61st Street"
+      ],
+      "period": "pm",
+      "from": "Colby Street from north",
+      "to": "Colby Street toward south",
+      "vehicles": 153,
+      "source": "route diagram, page 27",
+      "kind": "straight",
+      "route": "Colby Street SB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "61st Street"
+      ],
+      "period": "pm",
+      "from": "Colby Street from north",
+      "to": "61st Street toward west",
+      "vehicles": 3,
+      "source": "route diagram, page 27",
+      "kind": "turnOff",
+      "route": "Colby Street SB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "61st Street"
+      ],
+      "period": "pm",
+      "from": "Colby Street from north",
+      "to": "61st Street toward east",
+      "vehicles": 4,
+      "source": "route diagram, page 27",
+      "kind": "turnOff",
+      "route": "Colby Street SB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "61st Street"
+      ],
+      "period": "pm",
+      "from": "61st Street from west",
+      "to": "Colby Street toward south",
+      "vehicles": 5,
+      "source": "route diagram, page 27",
+      "kind": "turnOn",
+      "route": "Colby Street SB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "61st Street"
+      ],
+      "period": "pm",
+      "from": "61st Street from east",
+      "to": "Colby Street toward south",
+      "vehicles": 6,
+      "source": "route diagram, page 27",
+      "kind": "turnOn",
+      "route": "Colby Street SB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "60th Street"
+      ],
+      "period": "pm",
+      "from": "Colby Street from north",
+      "to": "Colby Street toward south",
+      "vehicles": 147,
+      "source": "route diagram, page 27",
+      "kind": "straight",
+      "route": "Colby Street SB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "60th Street"
+      ],
+      "period": "pm",
+      "from": "Colby Street from north",
+      "to": "60th Street toward west",
+      "vehicles": 6,
+      "source": "route diagram, page 27",
+      "kind": "turnOff",
+      "route": "Colby Street SB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "60th Street"
+      ],
+      "period": "pm",
+      "from": "Colby Street from north",
+      "to": "60th Street toward east",
+      "vehicles": 6,
+      "source": "route diagram, page 27",
+      "kind": "turnOff",
+      "route": "Colby Street SB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "60th Street"
+      ],
+      "period": "pm",
+      "from": "60th Street from west",
+      "to": "Colby Street toward south",
+      "vehicles": 7,
+      "source": "route diagram, page 27",
+      "kind": "turnOn",
+      "route": "Colby Street SB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "60th Street"
+      ],
+      "period": "pm",
+      "from": "60th Street from east",
+      "to": "Colby Street toward south",
+      "vehicles": 7,
+      "source": "route diagram, page 27",
+      "kind": "turnOn",
+      "route": "Colby Street SB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "McAuley Street"
+      ],
+      "period": "pm",
+      "from": "Colby Street from north",
+      "to": "Colby Street toward south",
+      "vehicles": 153,
+      "source": "route diagram, page 27",
+      "kind": "straight",
+      "route": "Colby Street SB PM",
+      "note": "The on-turn \"6\" is a low-confidence read. The table total of turns onto Colby (79) is 3 higher than the diagram sum (76), and the arrow below the node (162) and the map (162) are 3 higher than 153 + 6; a value of 9 would reconcile all three."
+    },
+    {
+      "at": [
+        "Colby Street",
+        "McAuley Street"
+      ],
+      "period": "pm",
+      "from": "Colby Street from north",
+      "to": "McAuley Street toward west",
+      "vehicles": 17,
+      "source": "route diagram, page 27",
+      "kind": "turnOff",
+      "route": "Colby Street SB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "McAuley Street"
+      ],
+      "period": "pm",
+      "from": "McAuley Street from west",
+      "to": "Colby Street toward south",
+      "vehicles": 6,
+      "source": "route diagram, page 27",
+      "kind": "turnOn",
+      "route": "Colby Street SB PM"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "Claremont Avenue"
+      ],
+      "period": "pm",
+      "from": "Colby Street from north",
+      "to": "Claremont Avenue toward southwest (Telegraph side)",
+      "vehicles": 84,
+      "source": "route diagram, page 27",
+      "route": "Colby Street SB PM",
+      "kind": "turnOff"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "Claremont Avenue"
+      ],
+      "period": "pm",
+      "from": "Colby Street from north",
+      "to": "Forest Street (straight, southeast)",
+      "vehicles": 59,
+      "source": "route diagram, page 27",
+      "route": "Colby Street SB PM",
+      "kind": "straight"
+    },
+    {
+      "at": [
+        "Colby Street",
+        "Claremont Avenue"
+      ],
+      "period": "pm",
+      "from": "Colby Street from north",
+      "to": "Claremont Avenue toward northeast (College side)",
+      "vehicles": 75,
+      "source": "route diagram, page 27",
+      "route": "Colby Street SB PM",
+      "kind": "turnOff"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "Claremont Avenue"
+      ],
+      "period": "am",
+      "from": "Claremont Avenue from southwest",
+      "to": "Hillegass Avenue toward north",
+      "vehicles": 69,
+      "source": "route diagram, page 28",
+      "route": "Hillegass Avenue NB AM",
+      "kind": "turnOn"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "Claremont Avenue"
+      ],
+      "period": "am",
+      "from": "Claremont Avenue from northeast",
+      "to": "Hillegass Avenue toward north",
+      "vehicles": 3,
+      "source": "route diagram, page 28",
+      "route": "Hillegass Avenue NB AM",
+      "kind": "turnOn"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "61st Street"
+      ],
+      "period": "am",
+      "from": "Hillegass Avenue from south",
+      "to": "Hillegass Avenue toward north",
+      "vehicles": 74,
+      "source": "route diagram, page 28",
+      "kind": "straight",
+      "route": "Hillegass Avenue NB AM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "61st Street"
+      ],
+      "period": "am",
+      "from": "Hillegass Avenue from south",
+      "to": "61st Street toward west",
+      "vehicles": 0,
+      "source": "route diagram, page 28",
+      "kind": "turnOff",
+      "route": "Hillegass Avenue NB AM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "61st Street"
+      ],
+      "period": "am",
+      "from": "61st Street from west",
+      "to": "Hillegass Avenue toward north",
+      "vehicles": 8,
+      "source": "route diagram, page 28",
+      "kind": "turnOn",
+      "route": "Hillegass Avenue NB AM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "62nd Street"
+      ],
+      "period": "am",
+      "from": "Hillegass Avenue from south",
+      "to": "Hillegass Avenue toward north",
+      "vehicles": 63,
+      "source": "route diagram, page 28",
+      "kind": "straight",
+      "route": "Hillegass Avenue NB AM",
+      "assumed": true
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "62nd Street"
+      ],
+      "period": "am",
+      "from": "Hillegass Avenue from south",
+      "to": "62nd Street toward west",
+      "vehicles": 5,
+      "source": "route diagram, page 28",
+      "kind": "turnOff",
+      "route": "Hillegass Avenue NB AM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "62nd Street"
+      ],
+      "period": "am",
+      "from": "Hillegass Avenue from south",
+      "to": "62nd Street toward east",
+      "vehicles": 14,
+      "source": "route diagram, page 28",
+      "kind": "turnOff",
+      "route": "Hillegass Avenue NB AM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "62nd Street"
+      ],
+      "period": "am",
+      "from": "62nd Street from west",
+      "to": "Hillegass Avenue toward north",
+      "vehicles": 3,
+      "source": "route diagram, page 28",
+      "kind": "turnOn",
+      "route": "Hillegass Avenue NB AM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "62nd Street"
+      ],
+      "period": "am",
+      "from": "62nd Street from east",
+      "to": "Hillegass Avenue toward north",
+      "vehicles": 21,
+      "source": "route diagram, page 28",
+      "kind": "turnOn",
+      "route": "Hillegass Avenue NB AM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "63rd Street"
+      ],
+      "period": "am",
+      "from": "Hillegass Avenue from south",
+      "to": "Hillegass Avenue toward north",
+      "vehicles": 68,
+      "source": "route diagram, page 28",
+      "kind": "straight",
+      "route": "Hillegass Avenue NB AM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "63rd Street"
+      ],
+      "period": "am",
+      "from": "Hillegass Avenue from south",
+      "to": "63rd Street toward west",
+      "vehicles": 5,
+      "source": "route diagram, page 28",
+      "kind": "turnOff",
+      "route": "Hillegass Avenue NB AM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "63rd Street"
+      ],
+      "period": "am",
+      "from": "Hillegass Avenue from south",
+      "to": "63rd Street toward east",
+      "vehicles": 5,
+      "source": "route diagram, page 28",
+      "kind": "turnOff",
+      "route": "Hillegass Avenue NB AM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "63rd Street"
+      ],
+      "period": "am",
+      "from": "63rd Street from west",
+      "to": "Hillegass Avenue toward north",
+      "vehicles": 4,
+      "source": "route diagram, page 28",
+      "kind": "turnOn",
+      "route": "Hillegass Avenue NB AM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "63rd Street"
+      ],
+      "period": "am",
+      "from": "63rd Street from east",
+      "to": "Hillegass Avenue toward north",
+      "vehicles": 20,
+      "source": "route diagram, page 28",
+      "kind": "turnOn",
+      "route": "Hillegass Avenue NB AM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "Alcatraz Avenue"
+      ],
+      "period": "am",
+      "from": "Hillegass Avenue from south",
+      "to": "Alcatraz Avenue toward west",
+      "vehicles": 42,
+      "source": "route diagram, page 28",
+      "route": "Hillegass Avenue NB AM",
+      "kind": "turnOff"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "Alcatraz Avenue"
+      ],
+      "period": "am",
+      "from": "Hillegass Avenue from south",
+      "to": "straight to Hillegass north of Alcatraz",
+      "vehicles": 5,
+      "source": "route diagram, page 28",
+      "route": "Hillegass Avenue NB AM",
+      "kind": "straight"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "Alcatraz Avenue"
+      ],
+      "period": "am",
+      "from": "Hillegass Avenue from south",
+      "to": "Alcatraz Avenue toward east",
+      "vehicles": 53,
+      "source": "route diagram, page 28",
+      "route": "Hillegass Avenue NB AM",
+      "kind": "turnOff"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "Alcatraz Avenue"
+      ],
+      "period": "am",
+      "from": "Hillegass Avenue (Woolsey Street side) from north",
+      "to": "Hillegass Avenue toward south",
+      "vehicles": 6,
+      "source": "route diagram, page 29",
+      "route": "Hillegass Avenue SB AM",
+      "kind": "turnOn"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "Alcatraz Avenue"
+      ],
+      "period": "am",
+      "from": "Alcatraz Avenue from west",
+      "to": "Hillegass Avenue toward south",
+      "vehicles": 26,
+      "source": "route diagram, page 29",
+      "route": "Hillegass Avenue SB AM",
+      "kind": "turnOn"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "Alcatraz Avenue"
+      ],
+      "period": "am",
+      "from": "Alcatraz Avenue from east",
+      "to": "Hillegass Avenue toward south",
+      "vehicles": 41,
+      "source": "route diagram, page 29",
+      "route": "Hillegass Avenue SB AM",
+      "kind": "turnOn"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "63rd Street"
+      ],
+      "period": "am",
+      "from": "Hillegass Avenue from north",
+      "to": "Hillegass Avenue toward south",
+      "vehicles": 59,
+      "source": "route diagram, page 29",
+      "kind": "straight",
+      "route": "Hillegass Avenue SB AM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "63rd Street"
+      ],
+      "period": "am",
+      "from": "Hillegass Avenue from north",
+      "to": "63rd Street toward west",
+      "vehicles": 2,
+      "source": "route diagram, page 29",
+      "kind": "turnOff",
+      "route": "Hillegass Avenue SB AM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "63rd Street"
+      ],
+      "period": "am",
+      "from": "Hillegass Avenue from north",
+      "to": "63rd Street toward east",
+      "vehicles": 5,
+      "source": "route diagram, page 29",
+      "kind": "turnOff",
+      "route": "Hillegass Avenue SB AM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "63rd Street"
+      ],
+      "period": "am",
+      "from": "63rd Street from west",
+      "to": "Hillegass Avenue toward south",
+      "vehicles": 4,
+      "source": "route diagram, page 29",
+      "kind": "turnOn",
+      "route": "Hillegass Avenue SB AM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "63rd Street"
+      ],
+      "period": "am",
+      "from": "63rd Street from east",
+      "to": "Hillegass Avenue toward south",
+      "vehicles": 15,
+      "source": "route diagram, page 29",
+      "kind": "turnOn",
+      "route": "Hillegass Avenue SB AM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "62nd Street"
+      ],
+      "period": "am",
+      "from": "Hillegass Avenue from north",
+      "to": "Hillegass Avenue toward south",
+      "vehicles": 60,
+      "source": "route diagram, page 29",
+      "kind": "straight",
+      "route": "Hillegass Avenue SB AM",
+      "assumed": true
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "62nd Street"
+      ],
+      "period": "am",
+      "from": "Hillegass Avenue from north",
+      "to": "62nd Street toward west",
+      "vehicles": 5,
+      "source": "route diagram, page 29",
+      "kind": "turnOff",
+      "route": "Hillegass Avenue SB AM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "62nd Street"
+      ],
+      "period": "am",
+      "from": "Hillegass Avenue from north",
+      "to": "62nd Street toward east",
+      "vehicles": 13,
+      "source": "route diagram, page 29",
+      "kind": "turnOff",
+      "route": "Hillegass Avenue SB AM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "62nd Street"
+      ],
+      "period": "am",
+      "from": "62nd Street from west",
+      "to": "Hillegass Avenue toward south",
+      "vehicles": 1,
+      "source": "route diagram, page 29",
+      "kind": "turnOn",
+      "route": "Hillegass Avenue SB AM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "62nd Street"
+      ],
+      "period": "am",
+      "from": "62nd Street from east",
+      "to": "Hillegass Avenue toward south",
+      "vehicles": 14,
+      "source": "route diagram, page 29",
+      "kind": "turnOn",
+      "route": "Hillegass Avenue SB AM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "61st Street"
+      ],
+      "period": "am",
+      "from": "Hillegass Avenue from north",
+      "to": "Hillegass Avenue toward south",
+      "vehicles": 85,
+      "source": "route diagram, page 29",
+      "kind": "straight",
+      "route": "Hillegass Avenue SB AM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "61st Street"
+      ],
+      "period": "am",
+      "from": "Hillegass Avenue from north",
+      "to": "61st Street toward west",
+      "vehicles": 3,
+      "source": "route diagram, page 29",
+      "kind": "turnOff",
+      "route": "Hillegass Avenue SB AM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "61st Street"
+      ],
+      "period": "am",
+      "from": "61st Street from west",
+      "to": "Hillegass Avenue toward south",
+      "vehicles": 2,
+      "source": "route diagram, page 29",
+      "kind": "turnOn",
+      "route": "Hillegass Avenue SB AM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "Claremont Avenue"
+      ],
+      "period": "am",
+      "from": "Hillegass Avenue from north",
+      "to": "Claremont Avenue toward southwest (Telegraph side)",
+      "vehicles": 82,
+      "source": "route diagram, page 29",
+      "route": "Hillegass Avenue SB AM",
+      "kind": "turnOff"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "Claremont Avenue"
+      ],
+      "period": "am",
+      "from": "Hillegass Avenue from north",
+      "to": "Claremont Avenue toward northeast (College side)",
+      "vehicles": 5,
+      "source": "route diagram, page 29",
+      "route": "Hillegass Avenue SB AM",
+      "kind": "turnOff"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "Claremont Avenue"
+      ],
+      "period": "am",
+      "from": "Hillegass Avenue from north",
+      "to": "60th Street toward west",
+      "vehicles": 2,
+      "source": "route diagram, page 29",
+      "route": "Hillegass Avenue SB AM",
+      "kind": "turnOff",
+      "note": "labeled \"2 (to 60th)\"; counted by the diagram as a destination along Hillegass"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "Claremont Avenue"
+      ],
+      "period": "pm",
+      "from": "Claremont Avenue from southwest",
+      "to": "Hillegass Avenue toward north",
+      "vehicles": 87,
+      "source": "route diagram, page 30",
+      "route": "Hillegass Avenue NB PM",
+      "kind": "turnOn"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "Claremont Avenue"
+      ],
+      "period": "pm",
+      "from": "Claremont Avenue from northeast",
+      "to": "Hillegass Avenue toward north",
+      "vehicles": 7,
+      "source": "route diagram, page 30",
+      "route": "Hillegass Avenue NB PM",
+      "kind": "turnOn"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "61st Street"
+      ],
+      "period": "pm",
+      "from": "Hillegass Avenue from south",
+      "to": "Hillegass Avenue toward north",
+      "vehicles": 108,
+      "source": "route diagram, page 30",
+      "kind": "straight",
+      "route": "Hillegass Avenue NB PM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "61st Street"
+      ],
+      "period": "pm",
+      "from": "Hillegass Avenue from south",
+      "to": "61st Street toward west",
+      "vehicles": 6,
+      "source": "route diagram, page 30",
+      "kind": "turnOff",
+      "route": "Hillegass Avenue NB PM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "61st Street"
+      ],
+      "period": "pm",
+      "from": "61st Street from west",
+      "to": "Hillegass Avenue toward north",
+      "vehicles": 4,
+      "source": "route diagram, page 30",
+      "kind": "turnOn",
+      "route": "Hillegass Avenue NB PM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "62nd Street"
+      ],
+      "period": "pm",
+      "from": "Hillegass Avenue from south",
+      "to": "Hillegass Avenue toward north",
+      "vehicles": 97,
+      "source": "route diagram, page 30",
+      "kind": "straight",
+      "route": "Hillegass Avenue NB PM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "62nd Street"
+      ],
+      "period": "pm",
+      "from": "Hillegass Avenue from south",
+      "to": "62nd Street toward west",
+      "vehicles": 3,
+      "source": "route diagram, page 30",
+      "kind": "turnOff",
+      "route": "Hillegass Avenue NB PM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "62nd Street"
+      ],
+      "period": "pm",
+      "from": "Hillegass Avenue from south",
+      "to": "62nd Street toward east",
+      "vehicles": 10,
+      "source": "route diagram, page 30",
+      "kind": "turnOff",
+      "route": "Hillegass Avenue NB PM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "62nd Street"
+      ],
+      "period": "pm",
+      "from": "62nd Street from west",
+      "to": "Hillegass Avenue toward north",
+      "vehicles": 0,
+      "source": "route diagram, page 30",
+      "kind": "turnOn",
+      "route": "Hillegass Avenue NB PM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "62nd Street"
+      ],
+      "period": "pm",
+      "from": "62nd Street from east",
+      "to": "Hillegass Avenue toward north",
+      "vehicles": 9,
+      "source": "route diagram, page 30",
+      "kind": "turnOn",
+      "route": "Hillegass Avenue NB PM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "63rd Street"
+      ],
+      "period": "pm",
+      "from": "Hillegass Avenue from south",
+      "to": "Hillegass Avenue toward north",
+      "vehicles": 81,
+      "source": "route diagram, page 30",
+      "kind": "straight",
+      "route": "Hillegass Avenue NB PM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "63rd Street"
+      ],
+      "period": "pm",
+      "from": "Hillegass Avenue from south",
+      "to": "63rd Street toward west",
+      "vehicles": 8,
+      "source": "route diagram, page 30",
+      "kind": "turnOff",
+      "route": "Hillegass Avenue NB PM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "63rd Street"
+      ],
+      "period": "pm",
+      "from": "Hillegass Avenue from south",
+      "to": "63rd Street toward east",
+      "vehicles": 4,
+      "source": "route diagram, page 30",
+      "kind": "turnOff",
+      "route": "Hillegass Avenue NB PM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "63rd Street"
+      ],
+      "period": "pm",
+      "from": "63rd Street from west",
+      "to": "Hillegass Avenue toward north",
+      "vehicles": 2,
+      "source": "route diagram, page 30",
+      "kind": "turnOn",
+      "route": "Hillegass Avenue NB PM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "63rd Street"
+      ],
+      "period": "pm",
+      "from": "63rd Street from east",
+      "to": "Hillegass Avenue toward north",
+      "vehicles": 14,
+      "source": "route diagram, page 30",
+      "kind": "turnOn",
+      "route": "Hillegass Avenue NB PM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "Alcatraz Avenue"
+      ],
+      "period": "pm",
+      "from": "Hillegass Avenue from south",
+      "to": "Alcatraz Avenue toward west",
+      "vehicles": 43,
+      "source": "route diagram, page 30",
+      "route": "Hillegass Avenue NB PM",
+      "kind": "turnOff"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "Alcatraz Avenue"
+      ],
+      "period": "pm",
+      "from": "Hillegass Avenue from south",
+      "to": "straight to Hillegass north of Alcatraz",
+      "vehicles": 12,
+      "source": "route diagram, page 30",
+      "route": "Hillegass Avenue NB PM",
+      "kind": "straight"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "Alcatraz Avenue"
+      ],
+      "period": "pm",
+      "from": "Hillegass Avenue from south",
+      "to": "Alcatraz Avenue toward east",
+      "vehicles": 54,
+      "source": "route diagram, page 30",
+      "route": "Hillegass Avenue NB PM",
+      "kind": "turnOff"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "Alcatraz Avenue"
+      ],
+      "period": "pm",
+      "from": "Hillegass Avenue (Woolsey Street side) from north",
+      "to": "Hillegass Avenue toward south",
+      "vehicles": 4,
+      "source": "route diagram, page 31",
+      "route": "Hillegass Avenue SB PM",
+      "kind": "turnOn"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "Alcatraz Avenue"
+      ],
+      "period": "pm",
+      "from": "Alcatraz Avenue from west",
+      "to": "Hillegass Avenue toward south",
+      "vehicles": 76,
+      "source": "route diagram, page 31",
+      "route": "Hillegass Avenue SB PM",
+      "kind": "turnOn"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "Alcatraz Avenue"
+      ],
+      "period": "pm",
+      "from": "Alcatraz Avenue from east",
+      "to": "Hillegass Avenue toward south",
+      "vehicles": 98,
+      "source": "route diagram, page 31",
+      "route": "Hillegass Avenue SB PM",
+      "kind": "turnOn"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "63rd Street"
+      ],
+      "period": "pm",
+      "from": "Hillegass Avenue from north",
+      "to": "Hillegass Avenue toward south",
+      "vehicles": 127,
+      "source": "route diagram, page 31",
+      "kind": "straight",
+      "route": "Hillegass Avenue SB PM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "63rd Street"
+      ],
+      "period": "pm",
+      "from": "Hillegass Avenue from north",
+      "to": "63rd Street toward west",
+      "vehicles": 7,
+      "source": "route diagram, page 31",
+      "kind": "turnOff",
+      "route": "Hillegass Avenue SB PM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "63rd Street"
+      ],
+      "period": "pm",
+      "from": "Hillegass Avenue from north",
+      "to": "63rd Street toward east",
+      "vehicles": 9,
+      "source": "route diagram, page 31",
+      "kind": "turnOff",
+      "route": "Hillegass Avenue SB PM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "63rd Street"
+      ],
+      "period": "pm",
+      "from": "63rd Street from west",
+      "to": "Hillegass Avenue toward south",
+      "vehicles": 4,
+      "source": "route diagram, page 31",
+      "kind": "turnOn",
+      "route": "Hillegass Avenue SB PM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "63rd Street"
+      ],
+      "period": "pm",
+      "from": "63rd Street from east",
+      "to": "Hillegass Avenue toward south",
+      "vehicles": 18,
+      "source": "route diagram, page 31",
+      "kind": "turnOn",
+      "route": "Hillegass Avenue SB PM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "62nd Street"
+      ],
+      "period": "pm",
+      "from": "Hillegass Avenue from north",
+      "to": "Hillegass Avenue toward south",
+      "vehicles": 130,
+      "source": "route diagram, page 31",
+      "kind": "straight",
+      "route": "Hillegass Avenue SB PM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "62nd Street"
+      ],
+      "period": "pm",
+      "from": "Hillegass Avenue from north",
+      "to": "62nd Street toward west",
+      "vehicles": 1,
+      "source": "route diagram, page 31",
+      "kind": "turnOff",
+      "route": "Hillegass Avenue SB PM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "62nd Street"
+      ],
+      "period": "pm",
+      "from": "Hillegass Avenue from north",
+      "to": "62nd Street toward east",
+      "vehicles": 37,
+      "source": "route diagram, page 31",
+      "kind": "turnOff",
+      "route": "Hillegass Avenue SB PM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "62nd Street"
+      ],
+      "period": "pm",
+      "from": "62nd Street from west",
+      "to": "Hillegass Avenue toward south",
+      "vehicles": 4,
+      "source": "route diagram, page 31",
+      "kind": "turnOn",
+      "route": "Hillegass Avenue SB PM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "62nd Street"
+      ],
+      "period": "pm",
+      "from": "62nd Street from east",
+      "to": "Hillegass Avenue toward south",
+      "vehicles": 7,
+      "source": "route diagram, page 31",
+      "kind": "turnOn",
+      "route": "Hillegass Avenue SB PM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "61st Street"
+      ],
+      "period": "pm",
+      "from": "Hillegass Avenue from north",
+      "to": "Hillegass Avenue toward south",
+      "vehicles": 146,
+      "source": "route diagram, page 31",
+      "kind": "straight",
+      "route": "Hillegass Avenue SB PM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "61st Street"
+      ],
+      "period": "pm",
+      "from": "Hillegass Avenue from north",
+      "to": "61st Street toward west",
+      "vehicles": 5,
+      "source": "route diagram, page 31",
+      "kind": "turnOff",
+      "route": "Hillegass Avenue SB PM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "61st Street"
+      ],
+      "period": "pm",
+      "from": "61st Street from west",
+      "to": "Hillegass Avenue toward south",
+      "vehicles": 11,
+      "source": "route diagram, page 31",
+      "kind": "turnOn",
+      "route": "Hillegass Avenue SB PM"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "Claremont Avenue"
+      ],
+      "period": "pm",
+      "from": "Hillegass Avenue from north",
+      "to": "Claremont Avenue toward southwest (Telegraph side)",
+      "vehicles": 143,
+      "source": "route diagram, page 31",
+      "route": "Hillegass Avenue SB PM",
+      "kind": "turnOff"
+    },
+    {
+      "at": [
+        "Hillegass Avenue",
+        "Claremont Avenue"
+      ],
+      "period": "pm",
+      "from": "Hillegass Avenue from north",
+      "to": "Claremont Avenue toward northeast (College side)",
+      "vehicles": 9,
+      "source": "route diagram, page 31",
+      "route": "Hillegass Avenue SB PM",
+      "kind": "turnOff"
+    },
+    {
+      "at": [
+        "Martin Street",
+        "Claremont Avenue"
+      ],
+      "period": "am",
+      "from": "Claremont Avenue from southwest (Telegraph side)",
+      "to": "Martin Street toward northwest",
+      "vehicles": 145,
+      "source": "route diagram, page 32",
+      "route": "Martin Street to Telegraph Avenue via 58th Street (AM, toward Telegraph)",
+      "kind": "turnOn"
+    },
+    {
+      "at": [
+        "Martin Street",
+        "Claremont Avenue"
+      ],
+      "period": "am",
+      "from": "Claremont Avenue from northeast (College side)",
+      "to": "Martin Street toward northwest",
+      "vehicles": 2,
+      "source": "route diagram, page 32",
+      "route": "Martin Street to Telegraph Avenue via 58th Street (AM, toward Telegraph)",
+      "kind": "turnOn"
+    },
+    {
+      "at": [
+        "Martin Street",
+        "Ayala Avenue"
+      ],
+      "period": "am",
+      "from": "Martin Street from southeast",
+      "to": "Martin Street toward northwest",
+      "vehicles": 137,
+      "source": "route diagram, page 32",
+      "route": "Martin Street to Telegraph Avenue via 58th Street (AM, toward Telegraph)",
+      "kind": "straight"
+    },
+    {
+      "at": [
+        "Martin Street",
+        "Ayala Avenue"
+      ],
+      "period": "am",
+      "from": "Martin Street from southeast",
+      "to": "Ayala Avenue toward southwest",
+      "vehicles": 5,
+      "source": "route diagram, page 32",
+      "route": "Martin Street to Telegraph Avenue via 58th Street (AM, toward Telegraph)",
+      "kind": "turnOff",
+      "note": "Diagram is rotated and crowded; which movement each number belongs to is partly inferred from the table totals and sums."
+    },
+    {
+      "at": [
+        "Martin Street",
+        "Ayala Avenue"
+      ],
+      "period": "am",
+      "from": "Martin Street from southeast",
+      "to": "Ayala Avenue toward northeast",
+      "vehicles": 16,
+      "source": "route diagram, page 32",
+      "route": "Martin Street to Telegraph Avenue via 58th Street (AM, toward Telegraph)",
+      "kind": "turnOff",
+      "note": "Diagram is rotated and crowded; which movement each number belongs to is partly inferred from the table totals and sums."
+    },
+    {
+      "at": [
+        "Martin Street",
+        "Ayala Avenue"
+      ],
+      "period": "am",
+      "from": "Ayala Avenue from northeast",
+      "to": "Martin Street toward northwest",
+      "vehicles": 13,
+      "source": "route diagram, page 32",
+      "route": "Martin Street to Telegraph Avenue via 58th Street (AM, toward Telegraph)",
+      "kind": "turnOn",
+      "note": "Diagram is rotated and crowded; which movement each number belongs to is partly inferred from the table totals and sums."
+    },
+    {
+      "at": [
+        "Martin Street",
+        "Ayala Avenue"
+      ],
+      "period": "am",
+      "from": "Ayala Avenue from southwest",
+      "to": "Martin Street toward northwest",
+      "vehicles": 0,
+      "source": "route diagram, page 32",
+      "route": "Martin Street to Telegraph Avenue via 58th Street (AM, toward Telegraph)",
+      "kind": "turnOn",
+      "note": "Diagram is rotated and crowded; which movement each number belongs to is partly inferred from the table totals and sums."
+    },
+    {
+      "at": [
+        "Martin Street",
+        "Hermann Street / 58th Street"
+      ],
+      "period": "am",
+      "from": "Martin Street from southeast",
+      "to": "Martin Street / 58th Street toward west (arriving)",
+      "vehicles": 148,
+      "source": "route diagram, page 32",
+      "route": "Martin Street to Telegraph Avenue via 58th Street (AM, toward Telegraph)",
+      "kind": "straight",
+      "note": "Diagram is rotated and crowded; which movement each number belongs to is partly inferred from the table totals and sums."
+    },
+    {
+      "at": [
+        "Martin Street",
+        "Hermann Street / 58th Street"
+      ],
+      "period": "am",
+      "from": "Martin Street from southeast",
+      "to": "turn off (Hermann Street or 58th Street, direction not legible)",
+      "vehicles": 52,
+      "source": "route diagram, page 32",
+      "route": "Martin Street to Telegraph Avenue via 58th Street (AM, toward Telegraph)",
+      "kind": "turnOff",
+      "note": "Diagram is rotated and crowded; which movement each number belongs to is partly inferred from the table totals and sums."
+    },
+    {
+      "at": [
+        "Martin Street",
+        "Hermann Street / 58th Street"
+      ],
+      "period": "am",
+      "from": "Martin Street from southeast",
+      "to": "turn off (second turn-off, direction not legible)",
+      "vehicles": 1,
+      "source": "route diagram, page 32",
+      "route": "Martin Street to Telegraph Avenue via 58th Street (AM, toward Telegraph)",
+      "kind": "turnOff",
+      "note": "Diagram is rotated and crowded; which movement each number belongs to is partly inferred from the table totals and sums."
+    },
+    {
+      "at": [
+        "Martin Street",
+        "Hermann Street / 58th Street"
+      ],
+      "period": "am",
+      "from": "Martin Street from southeast",
+      "to": "58th Street toward west",
+      "vehicles": 96,
+      "source": "route diagram, page 32",
+      "route": "Martin Street to Telegraph Avenue via 58th Street (AM, toward Telegraph)",
+      "kind": "straight",
+      "note": "Diagram is rotated and crowded; which movement each number belongs to is partly inferred from the table totals and sums."
+    },
+    {
+      "at": [
+        "Martin Street",
+        "Hermann Street / 58th Street"
+      ],
+      "period": "am",
+      "from": "side street",
+      "to": "58th Street toward west",
+      "vehicles": 1,
+      "source": "route diagram, page 32",
+      "route": "Martin Street to Telegraph Avenue via 58th Street (AM, toward Telegraph)",
+      "kind": "turnOn",
+      "note": "Diagram is rotated and crowded; which movement each number belongs to is partly inferred from the table totals and sums."
+    },
+    {
+      "at": [
+        "Martin Street",
+        "Hermann Street / 58th Street"
+      ],
+      "period": "am",
+      "from": "side street",
+      "to": "58th Street toward west",
+      "vehicles": 2,
+      "source": "route diagram, page 32",
+      "route": "Martin Street to Telegraph Avenue via 58th Street (AM, toward Telegraph)",
+      "kind": "turnOn",
+      "note": "Diagram is rotated and crowded; which movement each number belongs to is partly inferred from the table totals and sums. This \"2\" sits at the lower left of the node and may belong to the turn-on count."
+    },
+    {
+      "at": [
+        "58th Street",
+        "Telegraph Avenue"
+      ],
+      "period": "am",
+      "from": "58th Street from east",
+      "to": "Telegraph Avenue",
+      "vehicles": 97,
+      "source": "route diagram, page 32",
+      "route": "Martin Street to Telegraph Avenue via 58th Street (AM, toward Telegraph)",
+      "kind": "arrival",
+      "note": "Vehicles on the last block (blue arrow); includes the 1 vehicle that joined at the previous node."
+    },
+    {
+      "at": [
+        "Claremont Avenue",
+        "Colby Street / Forest Street"
+      ],
+      "period": "am",
+      "from": "Colby Street from north (Alcatraz side)",
+      "to": "Claremont Avenue toward southwest (Telegraph side)",
+      "vehicles": 100,
+      "source": "example intersection 1, page 37"
+    },
+    {
+      "at": [
+        "Claremont Avenue",
+        "Colby Street / Forest Street"
+      ],
+      "period": "am",
+      "from": "Colby Street from north (Alcatraz side)",
+      "to": "Forest Street (straight, southeast)",
+      "vehicles": 67,
+      "source": "example intersection 1, page 37"
+    },
+    {
+      "at": [
+        "Claremont Avenue",
+        "Colby Street / Forest Street"
+      ],
+      "period": "am",
+      "from": "Colby Street from north (Alcatraz side)",
+      "to": "Claremont Avenue toward northeast (College side)",
+      "vehicles": 5,
+      "source": "example intersection 1, page 37"
+    },
+    {
+      "at": [
+        "Claremont Avenue",
+        "Colby Street / Forest Street"
+      ],
+      "period": "am",
+      "from": "Claremont Avenue from northeast (College side)",
+      "to": "Colby Street toward northwest",
+      "vehicles": 0,
+      "source": "example intersection 1, page 37"
+    },
+    {
+      "at": [
+        "Claremont Avenue",
+        "Colby Street / Forest Street"
+      ],
+      "period": "am",
+      "from": "Claremont Avenue from northeast (College side)",
+      "to": "Forest Street (southeast)",
+      "vehicles": 5,
+      "source": "example intersection 1, page 37",
+      "note": "The figure labels this box \"to Forest\"; the straight-through and right-turn boxes are blacked out (not counted)."
+    },
+    {
+      "at": [
+        "Claremont Avenue",
+        "Colby Street / Forest Street"
+      ],
+      "period": "am",
+      "from": "Forest Street from southeast (College side)",
+      "to": "Colby Street toward northwest",
+      "vehicles": 43,
+      "source": "example intersection 1, page 37"
+    },
+    {
+      "at": [
+        "Claremont Avenue",
+        "Colby Street / Forest Street"
+      ],
+      "period": "am",
+      "from": "Forest Street from southeast (College side)",
+      "to": "Forest Street toward west (Ayala side)",
+      "vehicles": 52,
+      "source": "example intersection 1, page 37",
+      "note": "Labeled \"to Forest\"; other Forest approach boxes are blacked out."
+    },
+    {
+      "at": [
+        "Claremont Avenue",
+        "Colby Street / Forest Street"
+      ],
+      "period": "am",
+      "from": "Forest Street from west (Ayala side)",
+      "to": "Claremont Avenue toward northeast (College side)",
+      "vehicles": 11,
+      "source": "example intersection 1, page 37"
+    },
+    {
+      "at": [
+        "Claremont Avenue",
+        "Colby Street / Forest Street"
+      ],
+      "period": "am",
+      "from": "Forest Street from west (Ayala side)",
+      "to": "Forest Street toward southeast (across Claremont)",
+      "vehicles": 36,
+      "source": "example intersection 1, page 37"
+    },
+    {
+      "at": [
+        "Claremont Avenue",
+        "Colby Street / Forest Street"
+      ],
+      "period": "am",
+      "from": "Forest Street from west (Ayala side)",
+      "to": "Claremont Avenue toward southwest (Telegraph side)",
+      "vehicles": 4,
+      "source": "example intersection 1, page 37"
+    },
+    {
+      "at": [
+        "Claremont Avenue",
+        "Colby Street / Forest Street"
+      ],
+      "period": "am",
+      "from": "Claremont Avenue from southwest (Telegraph side)",
+      "to": "Forest Street toward west (Ayala side)",
+      "vehicles": 3,
+      "source": "example intersection 1, page 37"
+    },
+    {
+      "at": [
+        "Claremont Avenue",
+        "Colby Street / Forest Street"
+      ],
+      "period": "am",
+      "from": "Claremont Avenue from southwest (Telegraph side)",
+      "to": "Colby Street toward northwest",
+      "vehicles": 72,
+      "source": "example intersection 1, page 37"
+    },
+    {
+      "at": [
+        "Alcatraz Avenue",
+        "Colby Street"
+      ],
+      "period": "pm",
+      "from": "Colby Street from north (Woolsey Street side)",
+      "to": "Colby Street toward south",
+      "vehicles": 13,
+      "source": "example intersection 2, page 38"
+    },
+    {
+      "at": [
+        "Alcatraz Avenue",
+        "Colby Street"
+      ],
+      "period": "pm",
+      "from": "Alcatraz Avenue from west (Telegraph side)",
+      "to": "Colby Street toward south",
+      "vehicles": 76,
+      "source": "example intersection 2, page 38"
+    },
+    {
+      "at": [
+        "Alcatraz Avenue",
+        "Colby Street"
+      ],
+      "period": "pm",
+      "from": "Alcatraz Avenue from east (College side)",
+      "to": "Colby Street toward south",
+      "vehicles": 50,
+      "source": "example intersection 2, page 38"
+    },
+    {
+      "at": [
+        "Alcatraz Avenue",
+        "Colby Street"
+      ],
+      "period": "pm",
+      "from": "Colby Street from south (Claremont side)",
+      "to": "Alcatraz Avenue toward west (Telegraph side)",
+      "vehicles": 131,
+      "source": "example intersection 2, page 38"
+    },
+    {
+      "at": [
+        "Alcatraz Avenue",
+        "Colby Street"
+      ],
+      "period": "pm",
+      "from": "Colby Street from south (Claremont side)",
+      "to": "Colby Street toward north (Woolsey Street side)",
+      "vehicles": 1,
+      "source": "example intersection 2, page 38"
+    },
+    {
+      "at": [
+        "Alcatraz Avenue",
+        "Colby Street"
+      ],
+      "period": "pm",
+      "from": "Colby Street from south (Claremont side)",
+      "to": "Alcatraz Avenue toward east (College side)",
+      "vehicles": 32,
+      "source": "example intersection 2, page 38"
+    },
+    {
+      "at": [
+        "Alcatraz Avenue",
+        "Hillegass Avenue"
+      ],
+      "period": "pm",
+      "from": "Hillegass Avenue from north (Woolsey Street side)",
+      "to": "Hillegass Avenue toward south",
+      "vehicles": 4,
+      "source": "example intersection 2, page 38"
+    },
+    {
+      "at": [
+        "Alcatraz Avenue",
+        "Hillegass Avenue"
+      ],
+      "period": "pm",
+      "from": "Alcatraz Avenue from west (Telegraph side)",
+      "to": "Hillegass Avenue toward south",
+      "vehicles": 76,
+      "source": "example intersection 2, page 38"
+    },
+    {
+      "at": [
+        "Alcatraz Avenue",
+        "Hillegass Avenue"
+      ],
+      "period": "pm",
+      "from": "Alcatraz Avenue from east (College side)",
+      "to": "Hillegass Avenue toward south",
+      "vehicles": 98,
+      "source": "example intersection 2, page 38"
+    },
+    {
+      "at": [
+        "Alcatraz Avenue",
+        "Hillegass Avenue"
+      ],
+      "period": "pm",
+      "from": "Hillegass Avenue from south (Claremont side)",
+      "to": "Alcatraz Avenue toward west (Telegraph side)",
+      "vehicles": 43,
+      "source": "example intersection 2, page 38"
+    },
+    {
+      "at": [
+        "Alcatraz Avenue",
+        "Hillegass Avenue"
+      ],
+      "period": "pm",
+      "from": "Hillegass Avenue from south (Claremont side)",
+      "to": "Hillegass Avenue toward north (Woolsey Street side)",
+      "vehicles": 12,
+      "source": "example intersection 2, page 38"
+    },
+    {
+      "at": [
+        "Alcatraz Avenue",
+        "Hillegass Avenue"
+      ],
+      "period": "pm",
+      "from": "Hillegass Avenue from south (Claremont side)",
+      "to": "Alcatraz Avenue toward east (College side)",
+      "vehicles": 54,
+      "source": "example intersection 2, page 38"
+    },
+    {
+      "at": [
+        "Claremont Avenue",
+        "Martin Street"
+      ],
+      "period": "am",
+      "from": "Claremont Avenue from northeast (College side)",
+      "to": "Martin Street toward northwest",
+      "vehicles": 2,
+      "source": "example intersection 3, page 39"
+    },
+    {
+      "at": [
+        "Claremont Avenue",
+        "Martin Street"
+      ],
+      "period": "am",
+      "from": "Claremont Avenue from northeast (College side)",
+      "to": "Claremont Avenue toward southwest",
+      "vehicles": 553,
+      "source": "example intersection 3, page 39",
+      "kind": "straight"
+    },
+    {
+      "at": [
+        "Claremont Avenue",
+        "Martin Street"
+      ],
+      "period": "am",
+      "from": "Martin Street from northwest (Ayala side)",
+      "to": "Claremont Avenue toward northeast (College side)",
+      "vehicles": 0,
+      "source": "example intersection 3, page 39"
+    },
+    {
+      "at": [
+        "Claremont Avenue",
+        "Martin Street"
+      ],
+      "period": "am",
+      "from": "Martin Street from northwest (Ayala side)",
+      "to": "Claremont Avenue toward southwest (Telegraph side)",
+      "vehicles": 97,
+      "source": "example intersection 3, page 39"
+    },
+    {
+      "at": [
+        "Claremont Avenue",
+        "Martin Street"
+      ],
+      "period": "am",
+      "from": "Claremont Avenue from southwest (Telegraph side)",
+      "to": "Martin Street toward northwest",
+      "vehicles": 145,
+      "source": "example intersection 3, page 39"
+    },
+    {
+      "at": [
+        "Claremont Avenue",
+        "Martin Street"
+      ],
+      "period": "am",
+      "from": "Claremont Avenue from southwest (Telegraph side)",
+      "to": "Claremont Avenue toward northeast",
+      "vehicles": 661,
+      "source": "example intersection 3, page 39",
+      "kind": "straight"
+    },
+    {
+      "at": [
+        "Alcatraz Avenue",
+        "Dana Street"
+      ],
+      "period": "am",
+      "from": "Alcatraz Avenue from west (Telegraph side)",
+      "to": "Dana Street toward south",
+      "vehicles": 37,
+      "source": "example intersection 4, page 40"
+    },
+    {
+      "at": [
+        "Alcatraz Avenue",
+        "Dana Street"
+      ],
+      "period": "am",
+      "from": "Alcatraz Avenue from east (College side)",
+      "to": "Dana Street toward south",
+      "vehicles": 8,
+      "source": "example intersection 4, page 40"
+    },
+    {
+      "at": [
+        "Alcatraz Avenue",
+        "Dana Street"
+      ],
+      "period": "am",
+      "from": "Dana Street from south",
+      "to": "Alcatraz Avenue toward west (Telegraph side)",
+      "vehicles": 10,
+      "source": "example intersection 4, page 40",
+      "note": "Box sits under the Alcatraz row; the two boxes sum to 22, the northbound Dana volume on the block between North Street and Alcatraz Avenue in the AM map."
+    },
+    {
+      "at": [
+        "Alcatraz Avenue",
+        "Dana Street"
+      ],
+      "period": "am",
+      "from": "Dana Street from south",
+      "to": "Alcatraz Avenue toward east (College side)",
+      "vehicles": 12,
+      "source": "example intersection 4, page 40"
+    },
+    {
+      "at": [
+        "Dana Street",
+        "63rd Street"
+      ],
+      "period": "am",
+      "from": "Dana Street from north",
+      "to": "63rd Street toward west (Telegraph side)",
+      "vehicles": 25,
+      "source": "example intersection 4, page 40",
+      "note": "The two boxes sum to 62, the southbound Dana volume between North Street and 63rd Street in the AM map."
+    },
+    {
+      "at": [
+        "Dana Street",
+        "63rd Street"
+      ],
+      "period": "am",
+      "from": "Dana Street from north",
+      "to": "63rd Street toward east (Colby side)",
+      "vehicles": 37,
+      "source": "example intersection 4, page 40"
+    },
+    {
+      "at": [
+        "Dana Street",
+        "63rd Street"
+      ],
+      "period": "am",
+      "from": "63rd Street from west (Telegraph side)",
+      "to": "Dana Street toward north",
+      "vehicles": 9,
+      "source": "example intersection 4, page 40"
+    },
+    {
+      "at": [
+        "Dana Street",
+        "63rd Street"
+      ],
+      "period": "am",
+      "from": "63rd Street from west (Telegraph side)",
+      "to": "63rd Street toward east (straight)",
+      "vehicles": 31,
+      "source": "example intersection 4, page 40",
+      "kind": "straight"
+    },
+    {
+      "at": [
+        "Dana Street",
+        "63rd Street"
+      ],
+      "period": "am",
+      "from": "63rd Street from east (College side)",
+      "to": "Dana Street toward north",
+      "vehicles": 6,
+      "source": "example intersection 4, page 40"
+    },
+    {
+      "at": [
+        "Dana Street",
+        "63rd Street"
+      ],
+      "period": "am",
+      "from": "63rd Street from east (College side)",
+      "to": "63rd Street toward west (straight)",
+      "vehicles": 13,
+      "source": "example intersection 4, page 40",
+      "kind": "straight"
+    }
+  ],
+  "routeDiagrams": [
+    {
+      "id": "colby-am-nb",
+      "street": "Colby Street",
+      "direction": "NB",
+      "period": "am",
+      "page": 24,
+      "tableTotals": {
+        "enteringAtStart": 115,
+        "turnedOffRoute": 68,
+        "turnedOntoRoute": 44,
+        "destinationAlongRoute": 14,
+        "drivingEntireRoute": 33
+      },
+      "diagramSums": {
+        "turnedOffRoute": 68,
+        "turnedOntoRoute": 44,
+        "midBlockLeaving": 14
+      },
+      "blocks": [
+        {
+          "fromNode": 1,
+          "toNode": 2,
+          "vehiclesLeavingPreviousIntersection": 115,
+          "midBlockChange": 15,
+          "marginText": "+15"
+        },
+        {
+          "fromNode": 2,
+          "toNode": 3,
+          "vehiclesLeavingPreviousIntersection": 141,
+          "midBlockChange": -3,
+          "marginText": "(3)"
+        },
+        {
+          "fromNode": 3,
+          "toNode": 4,
+          "vehiclesLeavingPreviousIntersection": 143,
+          "midBlockChange": 1,
+          "marginText": "+1"
+        },
+        {
+          "fromNode": 4,
+          "toNode": 5,
+          "vehiclesLeavingPreviousIntersection": 134,
+          "midBlockChange": -1,
+          "marginText": "(1)"
+        },
+        {
+          "fromNode": 5,
+          "toNode": 6,
+          "vehiclesLeavingPreviousIntersection": 134,
+          "midBlockChange": 2,
+          "marginText": "+2"
+        },
+        {
+          "fromNode": 6,
+          "toNode": 7,
+          "vehiclesLeavingPreviousIntersection": 123,
+          "midBlockChange": -10,
+          "marginText": "(10)"
+        },
+        {
+          "fromNode": 7,
+          "toNode": 8,
+          "vehiclesLeavingPreviousIntersection": 95,
+          "midBlockChange": 9,
+          "marginText": "+9"
+        }
+      ]
+    },
+    {
+      "id": "colby-am-sb",
+      "street": "Colby Street",
+      "direction": "SB",
+      "period": "am",
+      "page": 25,
+      "tableTotals": {
+        "enteringAtStart": 109,
+        "turnedOffRoute": 48,
+        "turnedOntoRoute": 93,
+        "destinationAlongRoute": 15,
+        "drivingEntireRoute": 46
+      },
+      "diagramSums": {
+        "turnedOffRoute": 48,
+        "turnedOntoRoute": 93,
+        "midBlockLeaving": 15
+      },
+      "blocks": [
+        {
+          "fromNode": 1,
+          "toNode": 2,
+          "vehiclesLeavingPreviousIntersection": 109,
+          "midBlockChange": 0,
+          "marginText": "0"
+        },
+        {
+          "fromNode": 2,
+          "toNode": 3,
+          "vehiclesLeavingPreviousIntersection": 114,
+          "midBlockChange": 11,
+          "marginText": "+11"
+        },
+        {
+          "fromNode": 3,
+          "toNode": 4,
+          "vehiclesLeavingPreviousIntersection": 171,
+          "midBlockChange": -8,
+          "marginText": "(8)"
+        },
+        {
+          "fromNode": 4,
+          "toNode": 5,
+          "vehiclesLeavingPreviousIntersection": 167,
+          "midBlockChange": 7,
+          "marginText": "+7"
+        },
+        {
+          "fromNode": 5,
+          "toNode": 6,
+          "vehiclesLeavingPreviousIntersection": 176,
+          "midBlockChange": 6,
+          "marginText": "+6"
+        },
+        {
+          "fromNode": 6,
+          "toNode": 7,
+          "vehiclesLeavingPreviousIntersection": 179,
+          "midBlockChange": -7,
+          "marginText": "(7)"
+        },
+        {
+          "fromNode": 7,
+          "toNode": 8,
+          "vehiclesLeavingPreviousIntersection": 163,
+          "midBlockChange": 9,
+          "marginText": "+9"
+        }
+      ],
+      "unplacedMarginLabels": [
+        {
+          "value": 1,
+          "parenthesized": true,
+          "nearNode": 4
+        }
+      ]
+    },
+    {
+      "id": "colby-pm-nb",
+      "street": "Colby Street",
+      "direction": "NB",
+      "period": "pm",
+      "page": 26,
+      "tableTotals": {
+        "enteringAtStart": 182,
+        "turnedOffRoute": 51,
+        "turnedOntoRoute": 47,
+        "destinationAlongRoute": 29,
+        "drivingEntireRoute": 102
+      },
+      "diagramSums": {
+        "turnedOffRoute": 51,
+        "turnedOntoRoute": 47,
+        "midBlockLeaving": 29
+      },
+      "blocks": [
+        {
+          "fromNode": 1,
+          "toNode": 2,
+          "vehiclesLeavingPreviousIntersection": 182,
+          "midBlockChange": 7,
+          "marginText": "+7"
+        },
+        {
+          "fromNode": 2,
+          "toNode": 3,
+          "vehiclesLeavingPreviousIntersection": 193,
+          "midBlockChange": -11,
+          "marginText": "(11)"
+        },
+        {
+          "fromNode": 3,
+          "toNode": 4,
+          "vehiclesLeavingPreviousIntersection": 178,
+          "midBlockChange": 1,
+          "marginText": "+1"
+        },
+        {
+          "fromNode": 4,
+          "toNode": 5,
+          "vehiclesLeavingPreviousIntersection": 181,
+          "midBlockChange": -7,
+          "marginText": "(7)"
+        },
+        {
+          "fromNode": 5,
+          "toNode": 6,
+          "vehiclesLeavingPreviousIntersection": 167,
+          "midBlockChange": -9,
+          "marginText": "(9)"
+        },
+        {
+          "fromNode": 6,
+          "toNode": 7,
+          "vehiclesLeavingPreviousIntersection": 154,
+          "midBlockChange": -2,
+          "marginText": "(2)"
+        },
+        {
+          "fromNode": 7,
+          "toNode": 8,
+          "vehiclesLeavingPreviousIntersection": 157,
+          "midBlockChange": 7,
+          "marginText": "+7"
+        }
+      ]
+    },
+    {
+      "id": "colby-pm-sb",
+      "street": "Colby Street",
+      "direction": "SB",
+      "period": "pm",
+      "page": 27,
+      "tableTotals": {
+        "enteringAtStart": 139,
+        "turnedOffRoute": 57,
+        "turnedOntoRoute": 79,
+        "destinationAlongRoute": 43,
+        "drivingEntireRoute": 39
+      },
+      "diagramSums": {
+        "turnedOffRoute": 57,
+        "turnedOntoRoute": 76,
+        "midBlockLeaving": 43
+      },
+      "blocks": [
+        {
+          "fromNode": 1,
+          "toNode": 2,
+          "vehiclesLeavingPreviousIntersection": 139,
+          "midBlockChange": -16,
+          "marginText": "(16)"
+        },
+        {
+          "fromNode": 2,
+          "toNode": 3,
+          "vehiclesLeavingPreviousIntersection": 137,
+          "midBlockChange": 19,
+          "marginText": "+19"
+        },
+        {
+          "fromNode": 3,
+          "toNode": 4,
+          "vehiclesLeavingPreviousIntersection": 172,
+          "midBlockChange": -10,
+          "marginText": "(10)"
+        },
+        {
+          "fromNode": 4,
+          "toNode": 5,
+          "vehiclesLeavingPreviousIntersection": 156,
+          "midBlockChange": 4,
+          "marginText": "+4"
+        },
+        {
+          "fromNode": 5,
+          "toNode": 6,
+          "vehiclesLeavingPreviousIntersection": 164,
+          "midBlockChange": -5,
+          "marginText": "(5)"
+        },
+        {
+          "fromNode": 6,
+          "toNode": 7,
+          "vehiclesLeavingPreviousIntersection": 161,
+          "midBlockChange": 9,
+          "marginText": "+9"
+        },
+        {
+          "fromNode": 7,
+          "toNode": 8,
+          "vehiclesLeavingPreviousIntersection": 162,
+          "midBlockChange": -12,
+          "marginText": "(12)",
+          "blueVsNodeSum": "diagram arrow 162 vs node movements 159",
+          "marginVsArithmetic": "printed (12) vs implied +59"
+        }
+      ],
+      "reconciliation": [
+        "block 7->8: arrow 162 vs movements 159",
+        "block 7->8: margin printed (12) vs implied +59",
+        "table turnedOn 79 vs diagram sum 76"
+      ]
+    },
+    {
+      "id": "hillegass-am-nb",
+      "street": "Hillegass Avenue",
+      "direction": "NB",
+      "period": "am",
+      "page": 28,
+      "tableTotals": {
+        "enteringAtStart": 72,
+        "turnedOffRoute": 29,
+        "turnedOntoRoute": 56,
+        "destinationAlongRoute": 9,
+        "drivingEntireRoute": 34
+      },
+      "diagramSums": {
+        "turnedOffRoute": 29,
+        "turnedOntoRoute": 56,
+        "midBlockLeaving": 9
+      },
+      "blocks": [
+        {
+          "fromNode": 1,
+          "toNode": 2,
+          "vehiclesLeavingPreviousIntersection": 72,
+          "midBlockChange": 2,
+          "marginText": "+2"
+        },
+        {
+          "fromNode": 2,
+          "toNode": 3,
+          "vehiclesLeavingPreviousIntersection": 82,
+          "midBlockChange": 0,
+          "marginText": "0*"
+        },
+        {
+          "fromNode": 3,
+          "toNode": 4,
+          "vehiclesLeavingPreviousIntersection": 87,
+          "midBlockChange": -9,
+          "marginText": "(9)"
+        },
+        {
+          "fromNode": 4,
+          "toNode": 5,
+          "vehiclesLeavingPreviousIntersection": 92,
+          "midBlockChange": 8,
+          "marginText": "+8"
+        }
+      ],
+      "notes": [
+        "Straight-through movement at 62nd Street was not counted; the diagram assumes every car that does not turn continues straight and none park, so 63 is derived (the diagram footnote)."
+      ]
+    },
+    {
+      "id": "hillegass-am-sb",
+      "street": "Hillegass Avenue",
+      "direction": "SB",
+      "period": "am",
+      "page": 29,
+      "tableTotals": {
+        "enteringAtStart": 73,
+        "turnedOffRoute": 28,
+        "turnedOntoRoute": 36,
+        "destinationAlongRoute": 9,
+        "drivingEntireRoute": 36
+      },
+      "diagramSums": {
+        "turnedOffRoute": 28,
+        "turnedOntoRoute": 36,
+        "midBlockLeaving": 7
+      },
+      "blocks": [
+        {
+          "fromNode": 1,
+          "toNode": 2,
+          "vehiclesLeavingPreviousIntersection": 73,
+          "midBlockChange": -7,
+          "marginText": "(7)"
+        },
+        {
+          "fromNode": 2,
+          "toNode": 3,
+          "vehiclesLeavingPreviousIntersection": 78,
+          "midBlockChange": 0,
+          "marginText": "0*"
+        },
+        {
+          "fromNode": 3,
+          "toNode": 4,
+          "vehiclesLeavingPreviousIntersection": 75,
+          "midBlockChange": 13,
+          "marginText": "+13"
+        },
+        {
+          "fromNode": 4,
+          "toNode": 5,
+          "vehiclesLeavingPreviousIntersection": 87,
+          "midBlockChange": 0,
+          "marginText": "0"
+        }
+      ],
+      "notes": [
+        "Straight-through movement at 62nd Street is assumed (diagram footnote)."
+      ]
+    },
+    {
+      "id": "hillegass-pm-nb",
+      "street": "Hillegass Avenue",
+      "direction": "NB",
+      "period": "pm",
+      "page": 30,
+      "tableTotals": {
+        "enteringAtStart": 94,
+        "turnedOffRoute": 31,
+        "turnedOntoRoute": 29,
+        "destinationAlongRoute": 15,
+        "drivingEntireRoute": 48
+      },
+      "diagramSums": {
+        "turnedOffRoute": 31,
+        "turnedOntoRoute": 29,
+        "midBlockLeaving": 15
+      },
+      "blocks": [
+        {
+          "fromNode": 1,
+          "toNode": 2,
+          "vehiclesLeavingPreviousIntersection": 94,
+          "midBlockChange": 20,
+          "marginText": "+20"
+        },
+        {
+          "fromNode": 2,
+          "toNode": 3,
+          "vehiclesLeavingPreviousIntersection": 112,
+          "midBlockChange": -2,
+          "marginText": "(2)"
+        },
+        {
+          "fromNode": 3,
+          "toNode": 4,
+          "vehiclesLeavingPreviousIntersection": 106,
+          "midBlockChange": -13,
+          "marginText": "(13)"
+        },
+        {
+          "fromNode": 4,
+          "toNode": 5,
+          "vehiclesLeavingPreviousIntersection": 97,
+          "midBlockChange": 12,
+          "marginText": "+12"
+        }
+      ]
+    },
+    {
+      "id": "hillegass-pm-sb",
+      "street": "Hillegass Avenue",
+      "direction": "SB",
+      "period": "pm",
+      "page": 31,
+      "tableTotals": {
+        "enteringAtStart": 178,
+        "turnedOffRoute": 31,
+        "turnedOntoRoute": 44,
+        "destinationAlongRoute": 40,
+        "drivingEntireRoute": 79
+      },
+      "diagramSums": {
+        "turnedOffRoute": 59,
+        "turnedOntoRoute": 44,
+        "midBlockLeaving": 40
+      },
+      "blocks": [
+        {
+          "fromNode": 1,
+          "toNode": 2,
+          "vehiclesLeavingPreviousIntersection": 178,
+          "midBlockChange": -35,
+          "marginText": "(35)"
+        },
+        {
+          "fromNode": 2,
+          "toNode": 3,
+          "vehiclesLeavingPreviousIntersection": 149,
+          "midBlockChange": 19,
+          "marginText": "+19"
+        },
+        {
+          "fromNode": 3,
+          "toNode": 4,
+          "vehiclesLeavingPreviousIntersection": 141,
+          "midBlockChange": 10,
+          "marginText": "+10"
+        },
+        {
+          "fromNode": 4,
+          "toNode": 5,
+          "vehiclesLeavingPreviousIntersection": 157,
+          "midBlockChange": -5,
+          "marginText": "(5)"
+        }
+      ],
+      "totalsNote": "The table prints 31 for turns off Hillegass, but the diagram numbers sum to 59 (7+9+1+37+5), and 178-59-40 = 79 matches the printed full-route count. 31 looks like a typo for 59.",
+      "reconciliation": [
+        "table turnedOff 31 vs diagram sum 59"
+      ]
+    },
+    {
+      "id": "martin-am-toward-telegraph",
+      "route": "Martin Street from Claremont Avenue to Telegraph Avenue via 58th Street",
+      "period": "am",
+      "page": 32,
+      "tableTotals": {
+        "enteringAtStart": 147,
+        "turnedOffRoute": 74,
+        "turnedOntoRoute": 18,
+        "destinationAlongRoute": 3,
+        "drivingEntireRoute": 70
+      },
+      "diagramNumbers": {
+        "blocks": [
+          {
+            "fromNode": 1,
+            "toNode": 2,
+            "vehiclesLeavingPreviousIntersection": 147,
+            "midBlockChange": "+11 (implied: 137+5+16-147)"
+          },
+          {
+            "fromNode": 2,
+            "toNode": 3,
+            "vehiclesLeavingPreviousIntersection": 150,
+            "midBlockChange": "(1)"
+          },
+          {
+            "fromNode": 3,
+            "toNode": 4,
+            "vehiclesLeavingPreviousIntersection": 97,
+            "midBlockChange": "(2)"
+          }
+        ],
+        "nodes": "1 = Claremont Avenue at Martin Street, 2 = Martin Street at Ayala Avenue, 3 = Martin Street at Hermann Street and 58th Street, 4 = 58th Street at Telegraph Avenue",
+        "blueArrowNumbersAlsoReadAs": "150 appears twice (blocks 2-3 and again near node 3); the second likely repeats the same block."
+      },
+      "reconciliation": [
+        "Turn-offs 5+16+52+1 = 74 matches the table. Turn-ons 13+0+2+1 = 16 vs table 18; the 2 vehicles that entered from the College side (counted in the 147 entering) may be the difference."
+      ],
+      "notes": [
+        "Diagram is rotated and crowded; which movement each number belongs to is partly inferred from the table totals and sums."
+      ]
+    }
+  ],
+  "routeDiagramsKey": {
+    "semantics": "Inferred (the archive prints no legend). Numbers by an arrow between intersections: vehicles leaving the previous intersection onto that block. Green numbers at an intersection: straight-through and vehicles turning onto the route. Red: vehicles turning off the route. Margin numbers: plain = vehicles that join the route mid-block (net of the node sums); in parentheses = vehicles whose trip ends on that block.",
+    "checks": "Node sums reproduce the printed table totals for all routes except where listed in each reconciliation field.",
+    "sides": "west and east refer to the compass side of the route street; routes run north-south."
+  },
+  "pedestriansAndBicycles": [
+    {
+      "at": [
+        "Canning Street",
+        "59th Street"
+      ],
+      "period": "am",
+      "direction": "SB",
+      "pedestrians": 21,
+      "bicycles": 5,
+      "source": "Canning pedestrian and bike map, page 34"
+    },
+    {
+      "at": [
+        "Canning Street",
+        "59th Street"
+      ],
+      "period": "am",
+      "direction": "NB",
+      "pedestrians": 29,
+      "bicycles": 8,
+      "source": "Canning pedestrian and bike map, page 34"
+    },
+    {
+      "at": [
+        "Canning Street",
+        "McAuley Street"
+      ],
+      "period": "am",
+      "direction": "SB",
+      "pedestrians": 30,
+      "bicycles": 7,
+      "source": "Canning pedestrian and bike map, page 34"
+    },
+    {
+      "at": [
+        "Canning Street",
+        "McAuley Street"
+      ],
+      "period": "am",
+      "direction": "NB",
+      "pedestrians": 42,
+      "bicycles": 12,
+      "source": "Canning pedestrian and bike map, page 34"
+    },
+    {
+      "at": [
+        "Canning Street",
+        "60th Street"
+      ],
+      "period": "am",
+      "direction": "SB",
+      "pedestrians": 24,
+      "bicycles": 8,
+      "source": "Canning pedestrian and bike map, page 34"
+    },
+    {
+      "at": [
+        "Canning Street",
+        "60th Street"
+      ],
+      "period": "am",
+      "direction": "NB",
+      "pedestrians": 57,
+      "bicycles": 11,
+      "source": "Canning pedestrian and bike map, page 34"
+    },
+    {
+      "at": [
+        "Canning Street",
+        "61st Street"
+      ],
+      "period": "am",
+      "direction": "SB",
+      "pedestrians": 26,
+      "bicycles": 6,
+      "source": "Canning pedestrian and bike map, page 34"
+    },
+    {
+      "at": [
+        "Canning Street",
+        "61st Street"
+      ],
+      "period": "am",
+      "direction": "NB",
+      "pedestrians": 48,
+      "bicycles": 14,
+      "source": "Canning pedestrian and bike map, page 34"
+    },
+    {
+      "at": [
+        "Canning Street",
+        "62nd Street"
+      ],
+      "period": "am",
+      "direction": "SB",
+      "pedestrians": 23,
+      "bicycles": 5,
+      "source": "Canning pedestrian and bike map, page 34"
+    },
+    {
+      "at": [
+        "Canning Street",
+        "62nd Street"
+      ],
+      "period": "am",
+      "direction": "NB",
+      "pedestrians": 62,
+      "bicycles": 13,
+      "source": "Canning pedestrian and bike map, page 34"
+    },
+    {
+      "at": [
+        "Canning Street",
+        "63rd Street"
+      ],
+      "period": "am",
+      "direction": "SB",
+      "pedestrians": 29,
+      "bicycles": 6,
+      "source": "Canning pedestrian and bike map, page 34"
+    },
+    {
+      "at": [
+        "Canning Street",
+        "63rd Street"
+      ],
+      "period": "am",
+      "direction": "NB",
+      "pedestrians": 84,
+      "bicycles": 10,
+      "source": "Canning pedestrian and bike map, page 34"
+    },
+    {
+      "at": [
+        "63rd Street",
+        "Canning Street"
+      ],
+      "period": "am",
+      "direction": "WB",
+      "pedestrians": 20,
+      "bicycles": 2,
+      "source": "Canning pedestrian and bike map, page 34 (top of the diagram)"
+    },
+    {
+      "at": [
+        "63rd Street",
+        "Canning Street"
+      ],
+      "period": "am",
+      "direction": "EB",
+      "pedestrians": 25,
+      "bicycles": 1,
+      "source": "Canning pedestrian and bike map, page 34 (top of the diagram)"
+    },
+    {
+      "at": [
+        "Dana Street",
+        "Alcatraz Avenue"
+      ],
+      "period": "am",
+      "movement": "people in the crossing area",
+      "pedestrians": 65,
+      "source": "example intersection 4, page 40"
+    },
+    {
+      "at": [
+        "Dana Street",
+        "63rd Street"
+      ],
+      "period": "am",
+      "movement": "people in the crossing area",
+      "pedestrians": 84,
+      "source": "example intersection 4, page 40"
+    },
+    {
+      "at": [
+        "63rd Street",
+        "Canning Street / Dana Street"
+      ],
+      "period": "am",
+      "movement": "people on the 63rd Street approach west of Dana Street (icon to the left of the school)",
+      "pedestrians": 154,
+      "source": "example intersection 4, page 40",
+      "note": "The figure puts the 154 on the west approach; exact crossing is not labeled."
+    }
+  ],
+  "pedestriansAndBicyclesKey": "Canning map: green down arrow = southbound, blue up arrow = northbound, P = pedestrians, B = bicycles (inferred, no legend). Six pairs run from the south (marker 1 at 59th Street) to the north (top of the diagram, next to 63rd Street). Each pair sits just below its marker; the pairs may instead describe the block south of each cross street. Pedestrian northbound volume rises toward 63rd Street (29, 42, 57, 48, 62, 84), which the archive text confirms in words.",
+  "queues": [
+    {
+      "kind": "carsExitingPerLightCycle",
+      "period": "am",
+      "min": 1,
+      "median": 4,
+      "max": 7,
+      "mode": 4,
+      "source": "page 36 table"
+    },
+    {
+      "kind": "carsExitingPerLightCycle",
+      "period": "pm",
+      "min": 0,
+      "median": 3.5,
+      "max": 5,
+      "mode": 4,
+      "source": "page 36 table"
+    },
+    {
+      "kind": "maxQueueAtEndOfRed",
+      "period": "am",
+      "unit": "cars lined up right before the light turns green",
+      "valuesInTimeOrder": [
+        3,
+        3,
+        3,
+        2,
+        2,
+        4,
+        3,
+        3,
+        2,
+        4,
+        1,
+        3,
+        7,
+        4,
+        1,
+        6,
+        3,
+        4,
+        1,
+        5,
+        4,
+        3,
+        9,
+        10,
+        10,
+        10,
+        9,
+        11,
+        12,
+        12,
+        13,
+        10,
+        11,
+        10,
+        7,
+        7,
+        5,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        2,
+        1,
+        2
+      ],
+      "observations": 46,
+      "max": 13,
+      "source": "page 36 line chart; values recovered by tracing the line (one point per light cycle, axis not labeled)"
+    },
+    {
+      "kind": "maxQueueAtEndOfRed",
+      "period": "pm",
+      "unit": "cars lined up right before the light turns green",
+      "valuesInTimeOrder": [
+        11,
+        8,
+        12,
+        7,
+        5,
+        9,
+        8,
+        7,
+        10,
+        11,
+        9,
+        8,
+        6,
+        9,
+        8,
+        9,
+        7,
+        4,
+        3,
+        2,
+        1,
+        5,
+        1,
+        1,
+        1,
+        2,
+        3,
+        0,
+        6,
+        7,
+        9,
+        9,
+        10,
+        9,
+        8,
+        10,
+        14,
+        15,
+        13,
+        11,
+        12,
+        11,
+        13,
+        10
+      ],
+      "observations": 44,
+      "max": 15,
+      "source": "page 36 line chart; values recovered by tracing the line (one point per light cycle, axis not labeled)"
+    },
+    {
+      "kind": "signalTiming",
+      "period": "am",
+      "window": "08:00-09:00",
+      "cycleSeconds": 79,
+      "redSeconds": 75,
+      "greenSeconds": 4,
+      "source": "page 35 text"
+    },
+    {
+      "kind": "signalTiming",
+      "period": "from 09:00",
+      "cycleSeconds": 147,
+      "redSeconds": 137,
+      "greenSeconds": 10,
+      "source": "page 35 text"
+    },
+    {
+      "kind": "observationSummary",
+      "period": "am",
+      "averageCarsExitingPerCycle": 3.3,
+      "averageQueue": 3.3,
+      "maxQueue": 13,
+      "redLightRunners": 8,
+      "source": "example intersection 1 text, page 37"
+    }
+  ],
+  "queuesNote": "AM: 46 points at a 79 s cycle span 60.6 minutes. PM: 44 points; the PM cycle length is not stated.",
+  "projectContext": [
+    {
+      "item": "Neighbor outreach",
+      "value": "flyers to nearly 1,000 homes; hundreds signed up; 40+ volunteered for the working group and 60+ offered other help (update of January 18, 2025)"
+    },
+    {
+      "item": "Working group selection",
+      "value": "about 50 neighbors answered a short questionnaire (update of January 24, 2025)"
+    },
+    {
+      "item": "City schedule v2",
+      "value": "original installation January 7, 2025; kickoff January 28; check-ins February 5 and 19; plan review March 5; plan final March 19; install week of March 31 (three-month pause committed December 4, 2024)"
+    },
+    {
+      "item": "City budget",
+      "value": "$40,000 for the neighborhood alternative; four planters already held by the neighborhood"
+    },
+    {
+      "item": "Trial counts",
+      "value": "trial run planned on Hillegass Avenue 8:00-8:45 AM with 4 volunteers (update of February 7); proof-of-concept count held on a Monday morning in mid-February (update of February 16)"
+    },
+    {
+      "item": "Working group meetings",
+      "value": "six meetings in two months by March 26, 2025 (update of April 17); the city engineering plan was due April 9 and moved to April 30; open house of April 16 postponed"
+    }
+  ]
 }
