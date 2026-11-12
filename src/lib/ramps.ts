@@ -27,8 +27,8 @@ export const widthFor = (t: number) => (t < 0 ? WIDTH_MIN * 0.8 : WIDTH_MIN + t 
 /**
  * Fixed top of the flow and cut-through ramps, veh/h. Values above it clamp to the top color and the widest line, so colors and widths do not rescale as traffic changes.
  * Flow: one signalized lane carries about 740 to 840 veh/h at a 0.5 green share (cases b1 and b2 in data/calibration/validation.md, citing [FHWA-SIG2004]); 800 is the round number near that.
- * Cut-through: ASSUMPTION, 150 veh/h of through traffic on a local street. It is 1,500 veh/day, the preferred ceiling for shared bikeway streets in NACTO's Urban Bikeway Design Guide
- * (read only as search-result summaries, not on the publisher's page, so not in docs/references.md), times a peak-hour share K of 0.10 (the README range is 0.09 to 0.10; see [FHWA-TMG2022] for K as a concept).
+ * Cut-through: ASSUMPTION, 150 veh/h of through traffic on a local street. It is 1,500 veh/day (top of the 1,000 to 1,500 veh/day range in [NACTO-AAA2017] for bicycle boulevards; that source also gives about 50 veh/h per direction, roughly 100 two-way, so 150 is the looser reading)
+ * times a peak-hour share K of 0.10 (the README range is 0.09 to 0.10; see [FHWA-TMG2022] for K as a concept).
  */
 export const OVERLAY_TOP = { flow: 800, cutthrough: 150 } as const;
 
