@@ -167,8 +167,13 @@ fn run(sim: &mut Simulation, secs: f64, mut f: impl FnMut(&Simulation)) {
     }
 }
 
+/// Same as `cfg` but starting from an empty network: tests of one mechanism that need a known initial state, and the golden values.
+fn cfg_empty(seed: u64, scale: f64) -> Config {
+    Config { initial_load: false, ..cfg(seed, scale) }
+}
+
 fn empty_sim(net: Network) -> Simulation {
-    Simulation::from_parts(net, demand(&[]), cfg(1, 1.0)).unwrap()
+    Simulation::from_parts(net, demand(&[]), cfg_empty(1, 1.0)).unwrap()
 }
 
 // ---------------------------------------------------------------- turn restrictions
@@ -476,17 +481,22 @@ fn congestion_emerges_and_drivers_divert() {
 
 // ---------------------------------------------------------------- determinism and metrics
 
-fn busy_corridor(seed: u64) -> Simulation {
+fn busy_corridor_with(seed: u64, initial_load: bool) -> Simulation {
     let (net, c) = corridor(6.0, Control::Uncontrolled);
     let d = demand(&[(c.a[0], c.a[3], 500.0), (c.a[3], c.a[0], 400.0), (c.l[1], c.a[3], 200.0)]);
-    Simulation::from_parts(net, d, cfg(seed, 1.0)).unwrap()
+    Simulation::from_parts(net, d, Config { initial_load, ..cfg(seed, 1.0) }).unwrap()
+}
+
+/// Empty start: the golden values below date from before initial loading.
+fn busy_corridor(seed: u64) -> Simulation {
+    busy_corridor_with(seed, false)
 }
 
 #[test]
 fn repeat_run_is_identical() {
-    let mut a = busy_corridor(7);
-    let mut b = busy_corridor(7);
-    let mut c = busy_corridor(8);
+    let mut a = busy_corridor_with(7, true);
+    let mut b = busy_corridor_with(7, true);
+    let mut c = busy_corridor_with(8, true);
     step_n(&mut a, 3600.0);
     step_n(&mut b, 3600.0);
     step_n(&mut c, 3600.0);
@@ -752,9 +762,9 @@ fn stop_to_signal_runs_webster_plan() {
 fn one_way_closes_reverse_direction() {
     let (net, c) = corridor(6.0, Control::Uncontrolled);
     let d = demand(&[(c.a[0], c.a[3], 400.0), (c.a[3], c.a[0], 400.0)]);
-    let mut sim = Simulation::from_parts(net, d, cfg(9, 1.0)).unwrap();
     let (f, r) = c.loc[1];
-    sim.set_interventions(&iv(&format!("[{{\"type\":\"one_way\",\"link\":{f}}}]"))).unwrap();
+    let ivs: Vec<Intervention> = serde_json::from_str(&iv(&format!("[{{\"type\":\"one_way\",\"link\":{f}}}]"))).unwrap();
+    let mut sim = Simulation::from_parts(net, d, Config { interventions: ivs, ..cfg(9, 1.0) }).unwrap();
     assert!(sim.test_eff().closed[r as usize] && !sim.test_eff().closed[f as usize]);
     run(&mut sim, 900.0, |s| {
         assert!(s.test_lane_vehicles(r).is_empty());
@@ -1001,7 +1011,7 @@ fn select_link_records_origin_destination_and_streets() {
 #[test]
 fn select_link_in_flight_trips_include_planned_streets() {
     let (net, w, e, _s, ce, _sc) = select_net();
-    let mut c = cfg(5, 1.0);
+    let mut c = cfg_empty(5, 1.0);
     c.select_links = vec![0]; // first link w -> c
     let mut sim = Simulation::from_parts(net, demand(&[(w, e, 600.0)]), c).unwrap();
     sim.step(20.0);
@@ -1382,7 +1392,7 @@ fn permissive_left_capacity_follows_the_gap_acceptance_formula() {
 fn golden_signal_cross() -> Simulation {
     let (net, c) = cross4(Control::Signal, RoadClass::Residential, false);
     let d = demand(&[(c.w, c.e, 400.0), (c.e, c.w, 350.0), (c.s, c.n, 150.0), (c.n, c.s, 120.0), (c.w, c.s, 80.0), (c.s, c.w, 60.0)]);
-    Simulation::from_parts(net, d, cfg(3, 1.0)).unwrap()
+    Simulation::from_parts(net, d, cfg_empty(3, 1.0)).unwrap()
 }
 
 /// Metrics JSON with the multimodal sections removed, so it compares with the pre-multimodal output.
@@ -1391,6 +1401,8 @@ fn legacy_metrics(sim: &Simulation) -> String {
     let o = v.as_object_mut().unwrap();
     o.remove("modes");
     o.remove("vulnerable");
+    o.remove("initialAgents");
+    o.remove("initialSkipped");
     serde_json::to_string(&v).unwrap()
 }
 
@@ -1408,6 +1420,7 @@ const GOLDEN_CORRIDOR: &str = r#"{"arterialMeanSpeed":5.760706174508465,"backlog
 const GOLDEN_CROSS: &str = r#"{"arterialMeanSpeed":8.436836013936235,"backlog":0,"completedTrips":551,"cutThrough":{"shareOfLocalVehKm":1.0,"vehKm":64.3283925333023},"gridlockRemoved":0,"meanTripDelay":13.054209055272334,"meanTripTime":50.45862896291319,"safety":{"localMeanSpeed":6.385964968918798,"localP85Speed":11.4,"shareAbove20mph":0.4679799284578696,"shareAbove25mph":0.16921701112877582,"ttcConflicts":10},"spawned":572,"time":1800.0,"unroutableTrips":0,"vehKm":216.17522833824157,"vehiclesInNetwork":21}"#;
 
 mod modes;
+mod initial;
 mod diverter;
 mod route_choice;
 

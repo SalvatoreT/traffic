@@ -572,7 +572,8 @@
       "enabled": true,
       "fraction": 0.25,
       "minPerCorridor": 1,
-      "_note": "Hold-out of count stations (design D17, [WebTAG-M3.1] C.3.2 and 4.2.1; audit C2): within each corridor (the street of a gate, the intersection of a turning-movement count, the street of a Caltrans station, all freeway ramps together) the stations are ordered by size and every fourth is validation-only, never fewer than one per corridor. The largest count of a corridor stays in the fit. Deterministic, no draw."
+      "_note": "Hold-out of count stations (design D17, [WebTAG-M3.1] C.3.2 and 4.2.1; audit C2). Within each corridor (the street of a gate, the intersection of a turning-movement count, the street of a Caltrans station, all freeway ramps together) the stations are ordered by size and every fourth is validation-only, never fewer than one per corridor; the largest count of a corridor stays in the first fit. Deterministic, no draw. The build fits twice: without the validation stations (out-of-sample figures in the fit report; the demand of that fit goes to demandOutput for a simulator run) and on all counts (the demand that ships).",
+      "demandOutput": "target/validation/rockridge.demand.json"
     },
     "implied": {
       "enabled": true,

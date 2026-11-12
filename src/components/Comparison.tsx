@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Metrics } from '../types';
 import { CARDS, MODE_CARDS, emptyMode, hasModes, networkHealth, summarize, type CardDef, type ModeCardId } from '../lib/metrics';
-import { RUN_SECONDS } from '../lib/run';
+import { EARLY_SECONDS, RUN_SECONDS } from '../lib/run';
 import { formatClock, formatDiff, formatValue } from '../lib/format';
 
 interface Props {
@@ -35,8 +35,8 @@ export function Comparison({ base, scen, comparing, finished, scenarioCount, onR
           No interventions yet, so the scenario is the baseline. Add an intervention to see the differences.
         </p>
       )}
-      {comparing && !finished && elapsed < 600 && (
-        <p className="notice" role="note">Early results are noisy: let both runs reach at least 10 simulated minutes (use a faster speed).</p>
+      {comparing && !finished && elapsed < EARLY_SECONDS && (
+        <p className="notice" role="note">Early results are noisy: let both runs reach at least 5 simulated minutes (use a faster speed).</p>
       )}
       {scen && <HealthLine scen={scen} base={comparing ? base : null} />}
       {CARDS.map((c) => <CardTable key={c.id} c={c} base={base} scen={scen} comparing={comparing} />)}

@@ -634,6 +634,7 @@ function loadMeasured(fc: { assignment?: { measured?: { file: string; alpha: num
   return { delayS: j.delayS as Record<string, number[]>, alpha: m.alpha, source: `${m.file}, ${j.note}` };
 }
 let fitText = '';
+const cvFlows: Record<string, { origin: number; destination: number; vehPerHour: number }[]> = {};
 const fitResults: PeriodResult[] = [];
 const fc = cfg.countFit;
 const links = net.links;
@@ -650,9 +651,10 @@ if (fc?.enabled) {
   }, stationNotes);
   if (fc.validation?.enabled) {
     const h = markHoldout(stations, lastPeriod, { fraction: fc.validation.fraction, minPerCorridor: fc.validation.minPerCorridor });
-    stationNotes.push(`validation set: ${h.held.length} of ${stations.length} stations are held out of the fit (about ${Math.round(100 * (fc.validation.fraction ?? 0.25))}% of each corridor, at least one per corridor; ${h.corridors.length} corridors: ${h.corridors.join(', ')}); they are reported separately`);
+    stationNotes.push(`validation set: ${h.held.length} of ${stations.length} stations are held out of a cross-validation fit (about ${Math.round(100 * (fc.validation.fraction ?? 0.25))}% of each corridor, at least one per corridor; ${h.corridors.length} corridors: ${h.corridors.join(', ')}); they are reported separately`);
   }
   if (fc.stationsOutput) writeFileSync(fc.stationsOutput, JSON.stringify({ area: cfg.area, note: 'Count stations for the calibration report: links are indices into the network link list, targets are veh/h per period, held = validation only (excluded from the fit). Gate stations have no links.', stations: stations.map((q) => ({ id: q.id, kind: q.kind, label: q.label, corridor: corridorOf(q), held: !!q.held, links: q.links, target: Object.fromEntries(Object.entries(q.target).map(([k, v]) => [k, Math.round(v as number)])) })) }));
+  const heldIds = new Set(stations.filter((q) => q.held).map((q) => q.id));
   const overused = overusedRecords(stations);
   if (overused.length) throw new Error(`a count is used by more than one station: ${overused.join('; ')}`);
   const fitCfg: FitConfig = {
@@ -669,7 +671,16 @@ if (fc?.enabled) {
   for (const per of outPeriods) {
     const cars = per.flows.filter((q) => !q.mode);
     const types = cars.map((q) => typeOf(q.origin, q.destination));
+    // Cross-validation (design D17): a first fit without the validation stations gives the out-of-sample figures and, when `validation.demandOutput` is set, a demand file
+    // the simulator can be run on; the demand that ships is fitted on every count.
+    let cv: PeriodResult | null = null;
+    if (fc.validation?.enabled && stations.some((q) => q.held)) {
+      cv = fitPeriod(per.id, cars, types, stations, net.nodes as never, net.links as NetLinkIn[], net.turnBans ?? [], fitCfg);
+      cvFlows[per.id] = cars.map((q, k) => ({ ...q, vehPerHour: Math.round(cv!.volume[k] * 100) / 100 })).filter((q) => q.vehPerHour >= 0.01);
+      for (const q of stations) q.held = false;
+    }
     const r = fitPeriod(per.id, cars, types, stations, net.nodes as never, net.links as NetLinkIn[], net.turnBans ?? [], fitCfg);
+    if (cv) { r.heldRows = cv.heldRows; r.notes.push(`hold-out: the held-out stations are scored on a separate fit without them (${cv.cons} count constraints instead of ${r.cons}); the demand that ships is fitted on all counts`); for (const q of stations) q.held = heldIds.has(q.id); }
     fitResults.push(r);
     if (process.env.ASSIGN_DUMP && per.id === lastPeriod) {
       // Trips of every flow that loads one of the links in ASSIGN_LINKS (comma list of link ids), for the select-link comparison with the simulator.
@@ -803,6 +814,11 @@ const provenance = [
 const out = { version: 1, area: cfg.area, periods: outPeriods, provenance };
 mkdirSync(dirname(cfg.output), { recursive: true });
 writeFileSync(cfg.output, JSON.stringify(out));
+if (cfg.countFit?.validation?.demandOutput && Object.keys(cvFlows).length) {
+  const vOut = { ...out, periods: out.periods.map((q: { id: string; flows: { mode?: string }[] }) => ({ ...q, flows: [...(cvFlows[q.id] ?? q.flows.filter((f) => !f.mode)), ...q.flows.filter((f) => f.mode)] })) };
+  mkdirSync(dirname(cfg.countFit.validation.demandOutput), { recursive: true });
+  writeFileSync(cfg.countFit.validation.demandOutput, JSON.stringify(vOut));
+}
 
 // ---------- summary ----------
 console.log(`Demand for ${cfg.area}: ${gates.length} surface gates, ${fwGates.length} freeway gates, ${ramps.length} ramps, ${localNodes.size} local nodes (LODES ${lodes ? 'ok' : 'MISSING'}); TMC ${tmc ? 'ok' : 'MISSING'}`);

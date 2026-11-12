@@ -10,6 +10,7 @@ export class SimClient {
   onFrame: (() => void) | null = null;
   onStats: ((s: StatsMsg) => void) | null = null;
   onReady: ((engine: 'wasm' | 'mock', reason?: string) => void) | null = null;
+  onBusy: ((busy: boolean) => void) | null = null;
   onError: ((m: string) => void) | null = null;
 
   constructor() {
@@ -19,6 +20,7 @@ export class SimClient {
       if (m.t === 'frame') { this.frame = { time: m.time, vehicles: m.vehicles, signals: m.signals, wall: m.wall, rate: m.rate }; this.onFrame?.(); }
       else if (m.t === 'stats') this.onStats?.(m);
       else if (m.t === 'ready') this.onReady?.(m.engine, m.reason);
+      else if (m.t === 'busy') this.onBusy?.(m.busy);
       else if (m.t === 'error') this.onError?.(m.message);
     };
     this.worker.onerror = (e) => this.onError?.(`Worker failed: ${e.message}`);

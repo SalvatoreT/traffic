@@ -92,8 +92,8 @@ fn routes_and_cars_cannot_go_straight_through_either_street() {
 #[test]
 fn cyclists_pass_straight_through() {
     let (net, c) = cross4(Control::Uncontrolled, RoadClass::Residential, false);
-    let mut sim = Simulation::from_parts(net, flows_m(&[(c.w, c.e, 200.0, FlowMode::Bicycle), (c.w, c.e, 200.0, FlowMode::Car)]), cfg(4, 1.0)).unwrap();
-    sim.set_interventions(&dd(c.c, 45.0)).unwrap();
+    let ivs: Vec<Intervention> = serde_json::from_str(&dd(c.c, 45.0)).unwrap();
+    let mut sim = Simulation::from_parts(net, flows_m(&[(c.w, c.e, 200.0, FlowMode::Bicycle), (c.w, c.e, 200.0, FlowMode::Car)]), Config { interventions: ivs, ..cfg(4, 1.0) }).unwrap();
     run(&mut sim, 600.0, |_| {});
     let m = sim.metrics();
     assert!(m.modes.bicycle.completed_trips > 5, "cyclists cross: {}", m.modes.bicycle.completed_trips);

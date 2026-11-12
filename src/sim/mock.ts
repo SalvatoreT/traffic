@@ -18,7 +18,7 @@ const MOCK_END_P = { bike: 0.04, ped: 0.05 };
 
 export class MockSimulation implements SimLike {
   private net: Network;
-  private cfg: { seed: number; period: string; demandScale: number };
+  private cfg: { seed: number; period: string; demandScale: number; interventions?: Intervention[] };
   private demandFlow = 0;
   private t = 0;
   private rng = 1;
@@ -41,6 +41,7 @@ export class MockSimulation implements SimLike {
   private out: number[][];
   private ttc = 0;
   private agents: A[] = [];
+  private initialAgents = 0;
   private carsOn: Uint16Array;
   private pedsOn: Uint16Array;
   private mm = {
@@ -62,6 +63,8 @@ export class MockSimulation implements SimLike {
     this.out = Array.from({ length: this.net.nodes.length }, () => []);
     for (const l of this.net.links) this.out[l.from].push(l.id);
     this.target = Math.min(3000, Math.round(this.demandFlow * 0.12 * this.cfg.demandScale) + 30);
+    // Like the engine, start with the scenario in force and traffic already on the streets (reset places the agents).
+    if (this.cfg.interventions?.length) this.setInterventions(JSON.stringify(this.cfg.interventions));
     this.reset();
   }
 
@@ -92,6 +95,7 @@ export class MockSimulation implements SimLike {
       const l = open[Math.floor(this.rand() * open.length)];
       this.veh.push(this.make(l.id, this.rand() * l.length));
     }
+    this.initialAgents = this.veh.length + this.agents.length;
   }
 
   private make(link: number, s: number): V {
@@ -268,6 +272,7 @@ export class MockSimulation implements SimLike {
           meanCrossingDelay: mm.ped.delayN ? mm.ped.delaySum / mm.ped.delayN : 0,
         },
       },
+      initialAgents: this.initialAgents, initialSkipped: 0,
       vulnerable: {
         pedConflicts: Math.round(mm.pedConf), bikeConflicts: Math.round(mm.bikeConf), closePasses: Math.round(mm.close),
         pedInjuryRiskIndex: mm.pedRisk, bikeInjuryRiskIndex: mm.bikeRisk,

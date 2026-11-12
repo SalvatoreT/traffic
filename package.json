@@ -15,7 +15,9 @@
     "prepare": "git config core.hooksPath .githooks && sh scripts/install-skills.sh",
     "data:pull": "tsx tools/r2-sync.ts pull",
     "data:push": "tsx tools/r2-sync.ts push",
-    "data:fetch": "tsx tools/fetch-osm.ts && tsx tools/fetch-demand.ts"
+    "data:fetch": "tsx tools/fetch-osm.ts && tsx tools/fetch-demand.ts",
+    "cost-loop": "tsx tools/cost-loop.ts",
+    "assess": "tsx tools/assess.ts"
   },
   "dependencies": {
     "maplibre-gl": "^6.18.0",

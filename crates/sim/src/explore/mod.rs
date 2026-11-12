@@ -271,14 +271,11 @@ impl RunOut {
     }
 }
 
-/// Run the simulation headless. The first `min(600 s, 25%)` of the run is warm-up for the flow and speed figures; cut-through
+/// Run the simulation headless from an empty network (no initial loading: the search measures its own warm-up). The first `min(600 s, 25%)` of the run is warm-up for the flow and speed figures; cut-through
 /// vehicle-miles cover the whole run, as `metrics().cutThrough` does.
 pub fn run(study: &Study, ivs: &[Intervention], period: &str, seed: u64, minutes: f64, select_links: &[u32]) -> RunOut {
-    let cfg = Config { seed, period: period.into(), select_links: select_links.to_vec(), ..Default::default() };
+    let cfg = Config { seed, period: period.into(), select_links: select_links.to_vec(), interventions: ivs.to_vec(), initial_load: false, ..Default::default() };
     let mut sim = Simulation::from_parts(study.net.clone(), study.demand.clone(), cfg).expect("simulation");
-    if !ivs.is_empty() {
-        sim.set_interventions(&serde_json::to_string(ivs).expect("interventions json")).expect("interventions");
-    }
     let nl = study.net.links.len();
     let total = minutes * 60.0;
     let warm = (0.25 * total).min(600.0);

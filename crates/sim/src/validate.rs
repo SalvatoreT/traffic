@@ -146,8 +146,9 @@ pub fn demand_m(flows: &[(u32, u32, f64, FlowMode)]) -> Demand {
     }
 }
 
+/// The validation cases measure from an empty network (capacities, discharge, delay of the first vehicles), so they start without initial loading.
 pub fn cfg(seed: u64) -> Config {
-    Config { seed, period: "p".into(), demand_scale: 1.0, ..Default::default() }
+    Config { seed, period: "p".into(), demand_scale: 1.0, initial_load: false, ..Default::default() }
 }
 
 /// A running simulation that records the time of every stop-line crossing per link.

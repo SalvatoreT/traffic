@@ -2499,6 +2499,11 @@ impl Simulation {
         id
     }
 
+    /// Place the initial agents without the settle interval (the clock stays where it is).
+    pub(crate) fn test_prepopulate(&mut self) {
+        self.prepopulate();
+    }
+
     pub(crate) fn test_set_guided(&mut self, id: u32, guided: bool) {
         self.vehs[id as usize].guided = guided;
     }

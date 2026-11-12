@@ -13,7 +13,7 @@ import { addInterventions } from './lib/scenario';
 import { selectionForIntervention, type Selection } from './lib/selection';
 import { interventionPoint } from './lib/describe';
 import { overlayTop, resolveMode } from './lib/ramps';
-import { defaultPeriod, initialRun, runReducer } from './lib/run';
+import { defaultPeriod, EARLY_SECONDS, initialRun, runReducer } from './lib/run';
 import { SelectionMenu, type Change, type Placement } from './components/SelectionMenu';
 import { Sheet } from './components/Sheet';
 import { Playback, Legend } from './components/Toolbar';
@@ -145,6 +145,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
 
   const [engine, setEngine] = useState<{ kind: 'wasm' | 'mock'; reason?: string } | null>(null);
   const [simError, setSimError] = useState('');
+  const [building, setBuilding] = useState(true);
   const [stats, setStats] = useState<StatsMsg | null>(null);
   const [slowSpeed, setSlowSpeed] = useState<number | null>(null);
   const [client, setClient] = useState<SimClient | null>(null);
@@ -161,6 +162,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   useEffect(() => {
     const c = new SimClient();
     c.onReady = (kind, reason) => setEngine({ kind, reason });
+    c.onBusy = setBuilding;
     c.onStats = (s) => { setStats(s); dispatchRun({ type: 'time', time: s.time }); setSlowSpeed((prev) => nextSpeedShown(prev, first.current.speed, s.achievedSpeed)); };
     c.onError = (m) => setSimError(m);
     const f = first.current;
@@ -414,13 +416,13 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
             </Suspense>
             <Legend overlay={overlay} onOverlay={setOverlay} mode={mode} 
               source={source} onSource={setSource} canCompare={comparing}
-              view={mapView} onView={(v) => dispatchView({ type: 'choose', view: v })} canChange={interventions.length > 0} early={comparing && !finished && run.time < 600}
+              view={mapView} onView={(v) => dispatchView({ type: 'choose', view: v })} canChange={interventions.length > 0} early={comparing && !finished && run.time < EARLY_SECONDS}
               multimodal={multimodal} modes={modes} onModes={setModes} hasBikeNet={hasBikeNet} bikeNet={bikeNet} onBikeNet={setBikeNet} />
-            {!engine && (
+            {(!engine || building) && (
               <div className="map-cover">
                 {simError
                   ? <LoadError title="The simulation could not start." message={simError} onRetry={onRestart} />
-                  : <Loading label="Starting the simulation engine…" />}
+                  : <Loading label={building ? "Putting today's traffic on the streets…" : 'Starting the simulation engine…'} />}
               </div>
             )}
           </div>

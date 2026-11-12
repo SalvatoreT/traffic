@@ -33,6 +33,20 @@ location, and flow per direction on the key streets. A full 60-minute run took a
 
 The calibration record with every tuned parameter is `rockridge.record.md`. The demand audit (relevance of the offered trips to the study area, gate by gate, and the cordon check) is written by the demand builder to `data/demand/<area>.audit.md`; see `data/demand/README.md`.
 
+## Ten-seed runs and the assessment (decisions D16 to D18)
+
+Results are judged over the fixed seed list 1 to 10, never chosen. The binary runs them in parallel processes:
+
+```
+cargo run --release -p traffic-sim --bin calibrate -- --area rockridge --period pm_peak --minutes 60 --scale 1.0 --seeds 1-10 --jobs 4 [--keep-seeds DIR]
+```
+
+It writes `reports/<area>-<period>-s<scale>-seeds1-10.{md,json}` (the stability rule of `acceptance.stability` in the targets file, then every headline metric with mean, standard deviation, min, max and the 95% interval of the mean: removals, backlog, backlog growth, completed trips, arterial speed, cut-through vehicle-miles, each route share and ramp share, each corridor flow) and the first seed in full (`...-seed1.{md,json}`). `--keep-seeds` keeps every seed's report with per-link flows and delays. The stability rule is in `design.md` D16 with the old rule beside it; the judged window is the whole run (the start-up state is described in the record), with the first 10 minutes left out of the flow tables.
+
+`npm run assess` (`tools/assess.ts`) runs the seeds for all periods and writes `<area>.assessment.md`: the stability verdict per period, the route shares with intervals, the ramp via-street shares, the count stations scored on the simulator's link flows (GEH below 5 and the size bands, fitted and held-out; stations come from `data/demand/<area>.stations.json`), corridor ratios, and the suggested status. `--noise` also writes `public/data/<area>.noise.json`, the per-link standard deviation of flow over the seeds (integers in units of 0.5 veh/h), which the importer lists as `noise` in `areas.json`. `npm run cost-loop` is the damped feedback loop with the demand fit (`data/demand/README.md`, step 29); its result is `<area>.cost-loop.md`. `tools/route-consistency.ts` compares the router's penalties with the delays the simulator imposes (`<area>.route-consistency.md`).
+
+Acceptance criteria as published (sources `[WebTAG-M3.1]`, `[TfL-TMG4]`, `[Aimsun-Manual]` in `docs/references.md`; the table is in `docs/simulator-audit.md`): GEH = sqrt(2 (M - C)^2 / (M + C)); GEH below 5 in more than 85% of cases; within 100 veh/h below 700, within 15% from 700 to 2,700, within 400 above; the guidance says either criterion suffices, so both are reported. The held-out stations are about a quarter of the stations, at least one per corridor, never in the fit that is scored.
+
 ## Validation suite
 
 `validation.md` holds the benchmark of the simulator's own primitives, separate from the area fit. Each case is a tiny synthetic network with saturated demand (cars only unless the case adds pedestrians or cyclists) that measures one quantity against a published range:

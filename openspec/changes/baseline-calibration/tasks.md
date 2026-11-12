@@ -99,3 +99,22 @@
 - [x] 13.5 Reported patterns as diagnostics (`patterns` in the targets file): freeway through trips on local streets, bypass versus arterial by direction
 - [x] 13.6 Re-run PM, AM, midday (seeds 1 to 3) and 120 min PM; reports replaced; record round; README; area `calibration` entry (uncalibrated, PM experimental, default midday)
 - [ ] 13.7 D4 in the PM peak (all 3 seeds still have removals or backlog above 2%) and in AM (1 of 3); departure route realism against observed paths
+
+## 14. Ten seeds, standard acceptance tests, hold-out, damped loop (eleventh round)
+- [x] 14.1 `calibrate --seeds a-b --jobs N --keep-seeds DIR`: parallel seeds, mean, sd, min, max and 95% interval for every headline metric, stability verdict, first seed in full; Rust tests for the seed list and the statistics
+- [x] 14.2 D16: stability rule from seed means and shares of seeds, thresholds in the targets file, old rule shown beside it; D17 and D18 recorded in design.md
+- [x] 14.3 GEH, size bands, hold-out selection, seed statistics, per-link spread, successive averages of costs (`tools/lib/acceptance.ts`, `tools/acceptance.test.ts`)
+- [x] 14.4 Hold-out stations in the demand fit (cross-validation fit plus the shipped fit on all counts), GEH columns and fitted and held-out shares in `rockridge.fit.md`, station list in `rockridge.stations.json`
+- [x] 14.5 Implied select-link volumes from ramp counts and shares (DERIVED), soft constraints and report; resident observation in the targets file
+- [x] 14.6 `tools/assess.ts` (ten-seed assessment, station GEH on simulator flows, corridor ratios, noise file) and `tools/route-consistency.ts`; `noise` listed in `areas.json` by the importer
+- [x] 14.7 Damped cost loop (`tools/cost-loop.ts`): costs averaged over seeds and iterations, relative gap and share of links unchanged, stopping rule, keep-only-if-better
+- [ ] 14.8 Final ten-seed assessment of all periods, 120-minute PM run, area `calibration` entry, record round (see the record)
+- [ ] 14.9 Leave-one-corridor-out cross-validation (one fit per corridor; not run)
+- [ ] 14.10 Reach D4/D16 in the PM peak and D5 (see the record)
+
+## 15. Initial loading (D19)
+- [x] 15.1 `prepopulate` and settle at construction and reset (`initialLoad`, `interventions` in the config; `--no-initial-load` in the calibration CLI), `initialAgents` and `initialSkipped` in the metrics, results counted from zero, placed trips left out of the trip-time means
+- [x] 15.2 Check against a 15-minute cold warm-up on the real network (midday and PM, seeds 1 to 3; `initload` tool); placement tuned (`INITIAL_CONGESTION`, delay-weighted positions); numbers in the record
+- [x] 15.3 UI: "Putting today's traffic on the streets…" cover while the worker builds, scenario passed with the config, early-results caution shortened to five minutes; mock starts with agents
+- [x] 15.4 Rust tests (count, gaps and stop lines, closed links, determinism and reset, zero state, partial trips, other modes)
+- [ ] 15.5 Residential streets hold 20 to 30% fewer cars at time zero than after a warm-up (route choice moves onto them as arterials load); not corrected

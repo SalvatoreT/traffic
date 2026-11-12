@@ -15,11 +15,15 @@ fn flows_m(flows: &[(u32, u32, f64, FlowMode)]) -> Demand {
     }
 }
 
-fn sim_with(net: Network, flows: &[(u32, u32, f64, FlowMode)], c: Config) -> Simulation {
+pub(super) fn sim_with(net: Network, flows: &[(u32, u32, f64, FlowMode)], c: Config) -> Simulation {
     Simulation::from_parts(net, flows_m(flows), c).unwrap()
 }
 
 /// n0 - n1 - n2 straight street, `lanes` lanes each way. Links: 0 = n0->n1, 1 = n1->n0, 2 = n1->n2, 3 = n2->n1.
+pub(super) fn street_net_for_initial() -> Network {
+    street(300.0, 1, 11.2)
+}
+
 fn street(len: f64, lanes: u32, limit: f64) -> Network {
     let mut b = B::default();
     let n0 = b.node(0.0, 0.0, Control::Uncontrolled, true);
@@ -294,9 +298,9 @@ fn cyclists_obey_one_way_streets() {
     b.two_way(a, m, RoadClass::Residential, 1, 11.2);
     b.two_way(m, c, RoadClass::Residential, 1, 11.2);
     let net = b.net();
-    let mut sim = sim_with(net, &[(a, c, 100.0, FlowMode::Bicycle)], cfg(1, 1.0));
     // one_way on the link c->a closes its reverse (a->c): the direct street is no longer available to a trip a->c.
-    sim.set_interventions(&iv(&format!(r#"[{{"type":"one_way","link":{short_r}}}]"#))).unwrap();
+    let ivs: Vec<Intervention> = serde_json::from_str(&iv(&format!(r#"[{{"type":"one_way","link":{short_r}}}]"#))).unwrap();
+    let mut sim = sim_with(net, &[(a, c, 100.0, FlowMode::Bicycle)], Config { interventions: ivs, ..cfg(1, 1.0) });
     let mut on_short = false;
     run(&mut sim, 900.0, |s| {
         on_short |= s.test_kind(2).iter().any(|b| b.1 == short_f);

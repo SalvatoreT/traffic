@@ -81,6 +81,9 @@ export interface Metrics {
   /** Per-mode results (absent in sim builds without multimodal support). */
   modes?: ModeMetrics;
   vulnerable?: VulnerableMetrics;
+  /** Agents placed on the network at time zero by initial loading, and the ones that found no room (absent in older sim builds). */
+  initialAgents?: number;
+  initialSkipped?: number;
 }
 
 export interface ModeMetrics {

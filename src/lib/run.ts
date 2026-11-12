@@ -2,6 +2,8 @@ import type { AreaEntry, DemandPeriod } from '../types';
 
 /** One run covers one simulated hour of the chosen period. */
 export const RUN_SECONDS = 3600;
+/** Runs start with traffic already on the streets, so only the first few minutes are noisy (it was ten while the network filled from empty). */
+export const EARLY_SECONDS = 300;
 const EPS = 1e-6;
 
 export interface RunState { running: boolean; finished: boolean; time: number }

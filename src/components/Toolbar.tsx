@@ -139,7 +139,7 @@ interface LegendProps {
   hasBikeNet: boolean; bikeNet: boolean; onBikeNet(v: boolean): void;
   /** Map view: scenario values or change from baseline. The switch shows only when the scenario has interventions. */
   view: MapView; onView(v: MapView): void; canChange: boolean;
-  /** First 10 simulated minutes of a comparison: differences are noisy. */
+  /** First 5 simulated minutes of a comparison: differences are noisy. */
   early: boolean;
 }
 
@@ -258,7 +258,7 @@ export function Legend(p: LegendProps) {
         </button>
         <div className="legend-name">
           <span className="legend-title" id={`${tipId}-n`}>{name}</span>
-          {change && p.early && <span className="legend-early" title="Early results are noisy: wait for 10 simulated minutes.">Early, noisy</span>}
+          {change && p.early && <span className="legend-early" title="Early results are noisy: wait for 5 simulated minutes.">Early, noisy</span>}
           <span className={`legend-tip-wrap ${hush ? 'hush' : ''}`} onMouseLeave={() => { setHush(false); setTipOn(false); }} onBlur={() => { setHush(false); setTipOn(false); }}>
             <button type="button" className="legend-info" aria-label="About this legend" aria-describedby={tipId} aria-expanded={tipShown} onClick={() => { setHush(false); setTipOn((o) => !o); }}>
               <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="7" cy="7" r="6" /><path d="M7 6.2v3.8M7 3.8v.1" strokeLinecap="round" /></svg>

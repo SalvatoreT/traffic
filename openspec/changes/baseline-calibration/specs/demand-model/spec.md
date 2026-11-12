@@ -172,8 +172,26 @@ Every fit station SHALL name the source records its target comes from (a turning
 - **THEN** one station remains, on the link, and the gate group has no station of its own
 
 ### Requirement: Measured link delays can feed the assignment
-When the file named by `countFit.assignment.measured.file` exists for the same network, the static assignment SHALL add the simulator's mean delay per vehicle on each link (less the control delay the router already adds) to the free-flow cost. Without the file it SHALL use free-flow and BPR costs. `tools/cost-loop.ts` SHALL write the file from fixed-seed runs and skip with a message when the binary is not built.
+When the file named by `countFit.assignment.measured.file` exists for the same network, the static assignment SHALL add the simulator's mean delay per vehicle on each link (less the control delay the router already adds) to the free-flow cost. Without the file it SHALL use free-flow and BPR costs. `tools/cost-loop.ts` SHALL write the file from multi-seed runs, average the costs across iterations by the method of successive averages, report the relative gap of the costs and the share of links whose cost changed by under 1%, stop on a relative gap threshold or an iteration limit, keep an iteration only if it improves the headline-share error while the PM peak stays stable under the stability rule, and skip with a message when the binary is not built.
 
 #### Scenario: No binary
 - **WHEN** `target/release/calibrate` does not exist
 - **THEN** the loop exits without error and the build keeps its free-flow and BPR costs
+
+#### Scenario: Iteration that loses stability
+- **WHEN** an iteration makes the PM peak unstable under the stability rule or does not improve the share error
+- **THEN** the loop restores the demand built without measured delays and records why
+
+### Requirement: Validation stations are held out and reported separately
+When `countFit.validation` is enabled, the build SHALL mark about a quarter of the count stations as validation-only, deterministically, with at least one per corridor, fit once without them to report their GEH and size-band results as out-of-sample figures, and ship the demand fitted on every count.
+
+#### Scenario: Corridor coverage
+- **WHEN** the hold-out is selected
+- **THEN** every corridor has at least one validation station and the same stations are chosen on every build
+
+### Requirement: Implied select-link volumes
+When the targets file has ramp via-street shares and select-link freeway shares for the same street, the build SHALL derive the street's implied peak-hour volume from the ramp count, the via-street share and the freeway share, compute it under both readings of the ramp share's denominator, print the arithmetic in the fit report, and add the midpoint as a soft volume constraint with weight below the counts, labeled DERIVED.
+
+#### Scenario: Report
+- **WHEN** the fit report is generated
+- **THEN** each implied volume shows its range, its target and the modeled volume before and after the fit

@@ -89,6 +89,31 @@ Claremont Ave: checked end to end. OSM lanes (3 with one forward and one backwar
 
 Ramp junctions: after joining all four SR-24 terminals are single signalized nodes (Aileen/Telegraph and Clifton/Claremont off-ramps, Hudson/Claremont and 56th/Telegraph on-ramps) with 2-lane ramp approaches at 35 mph. Mean discharge in the PM peak (seeds 1 to 3, measured before the third round): Aileen off-ramp 584 veh/h (offered 656), Clifton off-ramp 914 veh/h (offered about 1,025), on-ramps 783 and 555 veh/h. That is 290 to 460 veh/h per lane averaged over the hour; the signal gives the ramp 30 to 45% of the cycle and the shortfall is downstream spill-back on Claremont and Telegraph, not the ramp signal itself. Before the third round the remaining gridlock removals were mostly vehicles queued on the 4-lane freeway stub behind the single-lane Clifton off-ramp (26 of about 45 removals over six seeds at scale 0.3). The third round checked the ramp lanes against OSM: the off-ramps are tagged one lane for most of their length and two lanes (turn lanes left | left;through;right at Clifton, left | right at Aileen) on the final way before the signal, and the importer keeps that per segment (a test covers it), so no lane count is lost. After step M the stub accounts for about one removal per run.
 
+## Initial loading: runs start with traffic on the streets (D19, change to the simulator)
+
+User report: at time 0 there was almost nothing on the map. The simulator started empty and filled over several minutes. It now places the agents already en route (Poisson count per flow from rate x free-flow trip time with the expected control delay x 1.3, positions uniform by travel time, queued in lane order with a gap), then settles for 120 s before the clock starts at 0 (`Config::initial_load`, default true; `calibrate --no-initial-load` switches it off and `--warmup` still applies). `INITIAL_CONGESTION` 1.3 and `INITIAL_SETTLE_S` 120 s are ASSUMPTIONS, tuned only on the vehicles on the network at time zero. The calibration reports above were all measured from an empty network and are not affected; a new run of `calibrate` starts loaded unless told otherwise.
+
+Check (`initload` tool, `cargo run --release -p traffic-sim --bin initload -- --period midday --seeds 1,2,3`): with initial loading at time 0 against a cold start stepped for 15 minutes, then the next 3600 s of each. Mean of seeds 1 to 3, demand files as of 2026-11-12, loaded / warmed up.
+
+| | Midday | PM peak |
+| --- | --- | --- |
+| Vehicles on the network at time 0 | 1350 / 1307 (+3%) | 2091 / 2173 (-4%) |
+| Inside the study area | 75 / 79 | 131 / 115 |
+| Mean speed (m/s) | 8.9 / 8.9 | 8.2 / 7.9 |
+| Standing cars at the 10 busiest signals | 67 / 64 | 135 / 161 |
+| Motorway, primary, secondary, tertiary, residential, service links | 173, 173, 338, 396, 264, 6 / 164, 140, 281, 394, 324, 6 | 261, 278, 513, 606, 429, 4 / 265, 237, 487, 607, 569, 8 |
+| Completed trips in the hour | 12,478 / 12,441 | 18,886 / 18,859 |
+| Cut-through veh-km | 105 / 112 (seed spread 14 / 3) | 179 / 194 (seed spread 12 / 23) |
+| Vehicle-km | 45,642 / 45,490 | 70,697 / 71,061 |
+| Mean trip delay (s) | 94 / 95 | 165 / 179 |
+| Mean trip time (s) | 417 / 426 | 489 / 511 |
+| Gridlock removals | 0 / 0 | 0.3 / 2.0 (seeds 0, 1, 0 against 1, 5, 0) |
+| Backlog at the end | 0 / 0 | 17 / 9 (seeds 2, 3, 47 against 0, 3, 23) |
+
+Vehicles on the network are within 5% in every seed (+4, +5, 0 midday; -3, -3, -5 PM). Completed trips, vehicle-km, delay and trip time are within seed noise in midday and within 8% in the PM, where the loaded run reads 8% lower on delay: the trips placed at time zero are left out of the means, and they are the long ones. What remains off: the placement uses free-flow routes, so residential streets hold 18 to 25% fewer cars at time zero than after a warm-up, when drivers have moved onto them, and primary and secondary streets 5 to 23% more. The settle interval corrects part of it. The standing queues at the busiest signals are 16% short in the PM.
+
+Time to build one simulation of the Rockridge network: 1.3 to 1.6 s native (release), 1.7 s (midday) and 1.9 s (PM peak) in the browser, against 0.3 to 0.4 s without initial loading. Placement takes about half and the settle interval the other half, so neither was shortened.
+
 ## Tenth round: drivers commit to a route (task 13)
 
 User report: cars wander through the neighborhood instead of heading for an endpoint, Berkeley traffic cuts through the Trapezoid to SR-24, and College Ave traffic bypasses on Hillegass Ave. Every trip already had an origin and destination. In the code, every 60 s epoch 80% of en-route cars re-planned from the current link and took the result whatever the gain (the share was raised from 30% to 80% in steps I, N and U as a stabilizer for gridlock that later fixes removed). Runs: 60 minutes at scale 1.0, mean of seeds 1 to 3, same code with `--legacy-reroute` for "before" (the new binary with the old route choice), so the comparison is like for like and includes the signal phase fix. Reports in `reports/` are seed 1 of the new state. `public/data/*` is unchanged (no demand change).

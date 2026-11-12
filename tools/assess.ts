@@ -19,7 +19,7 @@ const minutes = Number(arg('--minutes', '60'));
 const write = !process.argv.includes('--no-write');
 const reuse = process.argv.includes('--reuse') ? resolve(root, arg('--reuse', '')) : null;
 const outDir = resolve(root, arg('--out', 'data/calibration/reports'));
-const bin = resolve(root, 'target/release/calibrate');
+const bin = process.env.CALIBRATE_BIN ? resolve(process.env.CALIBRATE_BIN) : resolve(root, 'target/release/calibrate');
 if (!reuse && !existsSync(bin)) { console.log('assess: target/release/calibrate is not built (cargo build --release -p traffic-sim --bin calibrate); skipping'); process.exit(0); }
 
 const seeds: number[] = seedSpec.split(',').flatMap((p) => { const m = p.match(/^(\d+)-(\d+)$/); return m ? Array.from({ length: +m[2] - +m[1] + 1 }, (_, i) => +m[1] + i) : [+p]; });

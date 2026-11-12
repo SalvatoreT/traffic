@@ -1,5 +1,5 @@
 //! Check of initial loading against a cold warm-up on a real study area (change baseline-calibration).
-//! Usage: initload [--area rockridge] [--period midday] [--seeds 1,2,3] [--factor X] [--warmup 15] [--hour-s 3600]
+//! Usage: initload [--dir DIR with <area>.network.json and <area>.demand.json] [--area rockridge] [--period midday] [--seeds 1,2,3] [--factor X] [--warmup 15] [--hour-s 3600]
 //! Prints the state at time zero with initial loading against the state after a cold warm-up, and the headline metrics of the next hour.
 
 use std::path::PathBuf;
@@ -71,7 +71,8 @@ fn main() {
     let warm: f64 = get("--warmup", "15").parse::<f64>().unwrap() * 60.0;
     let hour_s: f64 = get("--hour-s", "3600").parse().unwrap();
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let rd = |n: &str| std::fs::read_to_string(root.join(format!("public/data/{area}.{n}.json"))).expect("read");
+    let dir = argv.iter().position(|a| a == "--dir").and_then(|i| argv.get(i + 1)).map_or(root.join("public/data"), PathBuf::from);
+    let rd = |n: &str| std::fs::read_to_string(dir.join(format!("{area}.{n}.json"))).expect("read");
     let (nj, dj) = (rd("network"), rd("demand"));
     let net: Network = serde_json::from_str(&nj).unwrap();
     let _: Demand = serde_json::from_str(&dj).unwrap();

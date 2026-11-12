@@ -25,31 +25,35 @@ let winSim = 0;
 const resetWindow = () => { winStart = performance.now(); winSim = 0; };
 let timer: ReturnType<typeof setTimeout> | null = null;
 
-const make = (): SimLike => new Ctor!(network, demand, JSON.stringify(cfg));
+/** Both runs start loaded: the engine places today's traffic and settles it before time zero. The scenario's interventions go in with the
+ * config so the placement already respects them; the baseline takes none. */
+const make = (ivs: Intervention[]): SimLike => new Ctor!(network, demand, JSON.stringify({ ...cfg, interventions: ivs }));
 const dispose = (s: SimLike | null) => { try { s?.free?.(); } catch { /* ignore */ } };
+
+/** Building a run steps a settle interval before time zero, which takes seconds: tell the page so it can show its cover. */
+function whileBuilding(work: () => void) {
+  post({ t: 'busy', busy: true });
+  try { work(); } finally { post({ t: 'busy', busy: false }); }
+}
 
 function rebuild() {
   dispose(scenario); dispose(baseline); baseline = null;
-  scenario = make();
-  applyInterventions();
-}
-function applyInterventions() {
-  if (!scenario) return;
-  scenario.setInterventions(JSON.stringify(interventions));
-  if (interventions.length) {
-    if (!baseline) baseline = make();
-  } else { dispose(baseline); baseline = null; }
+  scenario = make(interventions);
+  if (interventions.length) baseline = make([]);
 }
 /** Restart both runs from t=0 so elapsed time stays identical for the comparison. */
 function restart() {
   if (!scenario) return;
-  scenario.reset();
-  scenario.setInterventions(JSON.stringify(interventions));
-  if (interventions.length) {
-    if (baseline) baseline.reset(); else baseline = make();
-  } else { dispose(baseline); baseline = null; }
-  pending = 0; resetWindow();
-  postFrame(); postStats();
+  whileBuilding(() => {
+    // The scenario is set first: `reset` rebuilds the initial state with it in force.
+    scenario!.setInterventions(JSON.stringify(interventions));
+    scenario!.reset();
+    if (interventions.length) {
+      if (baseline) baseline.reset(); else baseline = make([]);
+    } else { dispose(baseline); baseline = null; }
+    pending = 0; resetWindow();
+    postFrame(); postStats();
+  });
 }
 
 function parseMetrics(s: SimLike): Metrics | null {
@@ -136,7 +140,7 @@ async function init(msg: Extract<ToWorker, { t: 'init' }>) {
       await (mod.default as () => Promise<unknown>)();
       Ctor = mod[key] as SimCtor;
       // Smoke-test the constructor so a broken build falls back instead of failing mid-run.
-      const probe = new Ctor(network, demand, JSON.stringify(cfg));
+      const probe = new Ctor(network, demand, JSON.stringify({ ...cfg, initialLoad: false }));
       probe.step(STEP);
       // An older build reports no `modes`; the UI hides mode sections then.
       probe.metrics();
@@ -147,10 +151,8 @@ async function init(msg: Extract<ToWorker, { t: 'init' }>) {
       Ctor = MockSimulation as unknown as SimCtor;
     }
   } else reason = 'mock requested';
-  rebuild();
+  whileBuilding(() => { rebuild(); lastTick = performance.now(); resetWindow(); postFrame(); postStats(); });
   post({ t: 'ready', engine, reason });
-  lastTick = performance.now(); resetWindow();
-  postFrame(); postStats();
   if (!timer) timer = setTimeout(tick, 33);
 }
 
@@ -163,7 +165,7 @@ ctx.onmessage = (ev: MessageEvent<ToWorker>) => {
       case 'speed': speed = m.speed; due = 0; pending = 0; resetWindow(); postFrame(); break;
       case 'config':
         cfg = { ...cfg, period: m.period, demandScale: m.demandScale };
-        rebuild(); pending = 0; resetWindow(); postFrame(); postStats(); break;
+        whileBuilding(() => { rebuild(); pending = 0; resetWindow(); postFrame(); postStats(); }); break;
       case 'interventions': interventions = m.list; restart(); break;
       case 'reset': restart(); break;
     }

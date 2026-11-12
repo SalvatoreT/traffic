@@ -15,11 +15,39 @@ The simulation SHALL be able to record, for nominated links, the origins, destin
 - **THEN** the share of traversing trips that originated at a freeway gate is reported
 
 ### Requirement: Stable baseline
-The published baseline SHALL run a 60-minute PM peak at full demand with no gridlock removals, backlog under 2% of spawned trips and arterial mean speed above 4 m/s.
+The published baseline SHALL be judged over the fixed seed list 1 to 10, on each period's 60-minute run at full demand: mean gridlock removals below 1.0 per hour, entry backlog below 2% of spawned trips in at least 9 of 10 seeds, no seed adding more than 2.0 points of spawned trips to the entry backlog in the second half of the run, and the seed mean of the arterial speed above 4 m/s. The thresholds SHALL be read from `acceptance.stability` of the area's targets file, and every report SHALL also show how many seeds pass the first rule (zero removals, backlog under 2%, speed above 4 m/s in every seed).
 
-#### Scenario: Full-demand run
-- **WHEN** the baseline runs for 60 simulated minutes at demand scale 1.0
-- **THEN** the stability thresholds are met
+#### Scenario: Full-demand runs over ten seeds
+- **WHEN** the baseline runs for 60 simulated minutes at demand scale 1.0 with seeds 1 to 10
+- **THEN** the report states, per check, the result and whether the rule holds, and one removal in one seed does not by itself change the verdict
+
+### Requirement: Multi-seed reports
+`calibrate --seeds <list> --jobs <n>` SHALL run the seeds as parallel processes and write a summary report (markdown and JSON) with, for removals, backlog, backlog growth, completed trips, arterial speed, cut-through vehicle-miles, each route share, each ramp share and each corridor flow, the mean, sample standard deviation, minimum, maximum and the 95% interval of the mean, plus the first seed's full report. `--keep-seeds <dir>` SHALL keep every seed's own report with per-link flows and delays.
+
+#### Scenario: Seed list
+- **WHEN** the binary is started with `--seeds 1-10`
+- **THEN** it reports ten seeds, lists them, and a failed seed is named on standard error and left out of the statistics
+
+### Requirement: Published flow criteria
+The assessment SHALL compute GEH, GEH below 5 in more than 85% of cases, and the flow size bands (within 100 veh/h below 700 veh/h, within 15% from 700 to 2,700, within 400 above 2,700) for every count station, in the demand fit report (static assignment) and in the assessment of the simulator's link flows, with pass or fail per station and the share passing, fitted and held-out reported separately.
+
+#### Scenario: Station table
+- **WHEN** the fit report or the assessment is generated
+- **THEN** every station row has its GEH, GEH pass and size-band pass, and each period states the share of fitted and of held-out stations passing
+
+### Requirement: Fit rule on seed means
+The headline select-link shares SHALL be judged on the seed means (within 10 points of observed) with their 95% intervals shown, and the area status SHALL be `calibrated` only when the stability rule holds in every period, the PM headline shares are within the tolerance and the fitted stations meet the flow criteria on the simulator's flows; `experimentalPeriods` SHALL list the periods that fail the stability rule.
+
+#### Scenario: One failing period
+- **WHEN** the stability rule fails in the PM peak and holds in the others
+- **THEN** the status is `uncalibrated` and `experimentalPeriods` is the PM peak
+
+### Requirement: Link-flow noise file
+The assessment SHALL write the per-link sample standard deviation of flow over the seeds, per period, to `public/data/<area>.noise.json` as integers in a stated unit, under 200 KB, and the importer SHALL list the file as `noise` in `areas.json` when it exists.
+
+#### Scenario: Compact file
+- **WHEN** the noise file is written for the Rockridge network
+- **THEN** it holds one integer per link per period and is smaller than 200 KB
 
 ### Requirement: Recorded fit
 Calibration results and every tuned parameter SHALL be recorded in the repository with the value before and after and the reason, and the UI SHALL state the baseline's calibration status.

@@ -1,4 +1,4 @@
-import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { round6 } from './lib/geo';
 import { buildNetwork, CLASS_MAP } from './lib/network';
@@ -100,6 +100,7 @@ function main() {
       center,
       zoom: cfg.zoom ?? 15,
       ...(cfg.calibration ? { calibration: cfg.calibration } : {}),
+      ...(existsSync(resolve(outDir, `${cfg.id}.noise.json`)) ? { noise: `/data/${cfg.id}.noise.json` } : {}),
     });
   }
   writeFileSync(resolve(outDir, 'areas.json'), JSON.stringify(manifest, null, 2) + '\n');

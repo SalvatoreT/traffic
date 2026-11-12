@@ -30,14 +30,11 @@ struct Cand {
 impl Simulation {
     /// Place the agents of the initial load and settle the network; the clock then reads 0 and all results are zeroed.
     pub(super) fn initial_load(&mut self) {
-        let t_start = std::time::Instant::now();
         self.prepopulate();
-        eprintln!("prepop {:?}", t_start.elapsed());
         let n = (INITIAL_SETTLE_S / DT).round() as usize;
         for _ in 0..n {
             self.step_once();
         }
-        eprintln!("settle {:?}", t_start.elapsed());
         self.t = 0.0;
         self.update_costs();
         if self.adapt_interval().is_finite() {
@@ -100,7 +97,7 @@ impl Simulation {
 
     /// Per link of `route`: (free-flow time on the link, delay in front of its stop line), both in s. The delay is the expected control delay at
     /// the node ahead, scaled up so that the route's total time is `INITIAL_CONGESTION` times its free-flow time with the control delay: the
-    /// extra time of a loaded network is queueing at nodes. `bike` is the cyclist's speed.
+    /// extra time of a loaded network is queueing at nodes (on a route with no control delay the free-flow time is scaled instead). `bike` is the cyclist's speed.
     fn initial_times(&self, route: &[u32], bike: Option<f32>) -> Vec<(f32, f32)> {
         let mut times: Vec<(f32, f32)> = route
             .iter()
@@ -117,19 +114,20 @@ impl Simulation {
             })
             .collect();
         let (free, tail): (f32, f32) = times.iter().fold((0.0, 0.0), |a, t| (a.0 + t.0, a.1 + t.1));
-        let k = if tail > 1e-3 { 1.0 + (INITIAL_CONGESTION as f32 - 1.0) * (free + tail) / tail } else { 1.0 };
-        for t in times.iter_mut() {
-            t.1 *= k;
+        if tail > 1e-3 {
+            let k = 1.0 + (INITIAL_CONGESTION as f32 - 1.0) * (free + tail) / tail;
+            times.iter_mut().for_each(|t| t.1 *= k);
+        } else {
+            times.iter_mut().for_each(|t| t.0 *= INITIAL_CONGESTION as f32);
         }
         times
     }
 
-    fn prepopulate(&mut self) {
+    pub(super) fn prepopulate(&mut self) {
         let nq = self.lanes.len();
         let mut lane_n = vec![0u32; nq];
         let mut cands: Vec<Cand> = Vec::new();
         let mut placed_peds = 0u64;
-        let (mut t_ped, mut t_car) = (std::time::Duration::ZERO, std::time::Duration::ZERO);
         // Grouped by destination so the per-destination cost tables are reused; each flow draws from its own stream.
         let mut order: Vec<usize> = (0..self.flows.len()).collect();
         order.sort_by_key(|&k| (self.flows[k].mode as u8, self.flows[k].dest, k));
@@ -139,10 +137,8 @@ impl Simulation {
                 (f.mode, f.origin, f.dest, f.rate, f.through)
             };
             let mut rng = Rng::stream(self.cfg.seed ^ INITIAL_STREAM, k as u64);
-            let tm = std::time::Instant::now();
             if mode == FlowMode::Pedestrian {
                 placed_peds += self.prepop_peds(&mut rng, origin, dest, rate);
-                t_ped += tm.elapsed();
                 continue;
             }
             let bike = mode == FlowMode::Bicycle;
@@ -190,9 +186,7 @@ impl Simulation {
                 self.uid_next += 1;
                 cands.push(Cand { q, lane, link: l as u32, pos, route, at, drv, bike, v0_abs, origin, dest, through, noise_seed, uid });
             }
-            t_car += tm.elapsed();
         }
-        eprintln!("ped {:?} car {:?}", t_ped, t_car);
         // Front of each lane first; ties by uid so the order does not depend on the sort.
         let mut by_lane: Vec<usize> = (0..cands.len()).collect();
         by_lane.sort_by(|&a, &b| {

@@ -84,3 +84,43 @@ When `Config::record_trips` is set the simulator SHALL record each completed car
 #### Scenario: Toy network
 - **WHEN** a trip follows the shortest route
 - **THEN** its detour ratio is 1 and it has no loop or reversal; a trip that leaves along a link, returns by its reverse and takes another branch has a detour ratio above 1.3, a reversal and a repeated node
+
+### Requirement: Runs start with agents already en route
+Unless `Config::initial_load` is false (default true), the simulator SHALL place agents already en route at construction and at every reset. For each flow of the active period the number placed is Poisson with mean rate times the expected free-flow trip time (control delay included) times `INITIAL_CONGESTION`, an assumption. Each agent takes a position drawn uniformly by travel time along its own route, with the rest of its route intact. The result depends only on the seed and the inputs.
+
+#### Scenario: Traffic at time zero
+- **WHEN** a simulation is constructed or reset with initial loading on
+- **THEN** its clock reads 0, it already holds agents on the network, and `initialAgents` and `initialSkipped` report how many were placed and how many found no room
+
+#### Scenario: Count follows rate and trip time
+- **WHEN** one flow runs over a route with a free-flow time T and rate r, over many seeds
+- **THEN** the mean number placed is r x T x `INITIAL_CONGESTION` within Poisson noise
+
+#### Scenario: Same seed, same state
+- **WHEN** two simulations are built from the same inputs and seed, or one is reset
+- **THEN** their initial states are identical
+
+### Requirement: Placed agents are safe and respect the scenario
+Agents SHALL be queued in lane order with a safe gap and a speed consistent with their leader, never beyond a stop line or inside a node. An agent with no room SHALL be shifted back or skipped and counted. The scenario's interventions SHALL be in force before placement, so no agent is placed on a link closed to it.
+
+#### Scenario: Gaps, stop lines and closures
+- **WHEN** agents are placed on a signalized network with a link closed by an intervention
+- **THEN** consecutive vehicles in a lane are at least a vehicle length plus the standstill gap apart, none is beyond a stop line, and none is on the closed link, at construction and after a reset that carried the scenario
+
+### Requirement: Settle interval before time zero
+After placing agents the simulator SHALL step a settle interval (`INITIAL_SETTLE_S`, an assumption) so signals hold queues and speeds are consistent, and the public clock SHALL then read 0.
+
+#### Scenario: Clock after settling
+- **WHEN** construction finishes
+- **THEN** the clock reads 0 and the first step advances it to the step length
+
+### Requirement: Results count from time zero and placed trips are partial
+Metrics, link statistics, diagnostics, select-link records, wandering records, safety and vulnerable-user counters SHALL start at zero at time zero. A placed agent's trip began earlier, so its trip time, delay and detour are partial: it SHALL count in completed trips, flows, vehicle-miles, cut-through, speeds and conflicts but not in the mean trip time, mean trip delay, mean crossing delay or wandering statistics.
+
+#### Scenario: Zero state
+- **WHEN** a loaded simulation is read at time zero
+- **THEN** spawned, completed trips, removals, vehicle-km, cut-through distance and link flows are all zero
+
+#### Scenario: Partial trips stay out of the means
+- **WHEN** placed agents finish their trips on a route whose free-flow time is T
+- **THEN** they count as completed trips and the mean trip time stays at or above T, because only trips that began after the placement enter it

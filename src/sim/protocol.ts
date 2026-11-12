@@ -18,6 +18,8 @@ export type ToWorker =
 
 export type FromWorker =
   | { t: 'ready'; engine: 'wasm' | 'mock'; reason?: string }
+  /** The worker is building the initial state of both runs (placing today's traffic and letting it settle), or has finished. */
+  | { t: 'busy'; busy: boolean }
   | {
       t: 'frame'; time: number; vehicles: Float32Array; signals: Uint8Array;
       /** Wall-clock ms (`performance.timeOrigin + performance.now()`) at which `time` was produced. */
