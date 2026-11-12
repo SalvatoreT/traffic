@@ -636,6 +636,7 @@ function loadMeasured(fc: { assignment?: { measured?: { file: string; alpha: num
 let fitText = '';
 const fitResults: PeriodResult[] = [];
 const fc = cfg.countFit;
+const links = net.links;
 if (fc?.enabled) {
   const stationNotes: string[] = [];
   const stations = buildStations({
@@ -664,6 +665,18 @@ if (fc?.enabled) {
     const types = cars.map((q) => typeOf(q.origin, q.destination));
     const r = fitPeriod(per.id, cars, types, stations, net.nodes as never, net.links as NetLinkIn[], net.turnBans ?? [], fitCfg);
     fitResults.push(r);
+    if (process.env.ASSIGN_DUMP && per.id === lastPeriod) {
+      // Trips of every flow that loads one of the links in ASSIGN_LINKS (comma list of link ids), for the select-link comparison with the simulator.
+      const want = new Set((process.env.ASSIGN_LINKS ?? '').split(',').filter(Boolean).map(Number));
+      const a = r.assignment;
+      const rows: { o: number; d: number; v: number; links: [number, number][] }[] = [];
+      for (let k = 0; k < cars.length; k++) {
+        const hit: [number, number][] = [];
+        for (let i = a.start[k]; i < a.start[k + 1]; i++) if (want.has(links[a.link[i]].id)) hit.push([links[a.link[i]].id, Math.round(a.share[i] * 1000) / 1000]);
+        if (hit.length) rows.push({ o: cars[k].origin, d: cars[k].destination, v: Math.round(r.volume[k] * 100) / 100, links: hit });
+      }
+      writeFileSync(process.env.ASSIGN_DUMP, JSON.stringify(rows));
+    }
     flowsBy[per.id] = cars.map((q) => ({ ...q }));
     per.flows = [...cars.map((q, k) => ({ ...q, vehPerHour: Math.round(r.volume[k] * 100) / 100 })).filter((q) => q.vehPerHour >= 0.01), ...per.flows.filter((q) => q.mode)];
   }

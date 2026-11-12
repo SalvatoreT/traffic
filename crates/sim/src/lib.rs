@@ -2,6 +2,7 @@
 
 pub mod diverter;
 pub mod eff;
+pub mod explore;
 pub mod model;
 pub mod params;
 pub mod rng;

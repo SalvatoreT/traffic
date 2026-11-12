@@ -210,6 +210,9 @@ struct Stats {
     unroutable: u64,
     gridlock_removed: u64,
     trip_time_sum: f64,
+    /// Completed car trips with an origin or destination node inside the study area, and their summed trip time (s).
+    inside_n: u64,
+    inside_tt_sum: f64,
     delay_sum: f64,
     veh_m: f64,
     ct_veh_m: f64,
@@ -879,6 +882,11 @@ impl Simulation {
         }
         self.fill_mode_metrics(&mut m);
         m
+    }
+
+    /// (completed car trips, summed trip time in s) for trips with an origin or destination inside the study area (search tool).
+    pub fn inside_trip_stats(&self) -> (u64, f64) {
+        (self.st.inside_n, self.st.inside_tt_sum)
     }
 
     pub fn metrics_json(&self) -> String {
@@ -1922,12 +1930,17 @@ impl Simulation {
         let ff = self.link_ff_for(l, self.vehs[vid as usize].drv.fcomp);
         let veh = &mut self.vehs[vid as usize];
         veh.ff_sum += ff;
+        let (origin, dest) = (veh.origin as usize, veh.dest as usize);
         let tt = self.t - veh.t_depart;
         self.st.trip_time_sum += tt;
         self.st.delay_sum += tt - veh.ff_sum as f64;
         self.st.completed += 1;
         self.st.car_completed += 1;
         self.st.car_tt_sum += tt;
+        if self.net.nodes[origin].in_study_area || self.net.nodes[dest].in_study_area {
+            self.st.inside_n += 1;
+            self.st.inside_tt_sum += tt;
+        }
         if self.sl.is_some() {
             if let Some(r) = self.sl_record(&self.vehs[vid as usize], true) {
                 self.sl.as_mut().unwrap().records.push(r);

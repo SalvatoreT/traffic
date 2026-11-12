@@ -27,6 +27,8 @@ struct Args {
     out: Option<PathBuf>,
     write: bool,
     link_flows: bool,
+    /// `--select-od PATH`: write the origin-destination pairs and trip counts of every headline select-link block to this JSON file.
+    select_od: Option<PathBuf>,
     /// `--cars-only`: drop bicycle and pedestrian flows for an A/B comparison.
     cars_only: bool,
     /// `--drop bicycle,pedestrian`: drop the listed modes' flows.
@@ -37,7 +39,7 @@ struct Args {
 }
 
 fn parse_args() -> Args {
-    let mut a = Args { area: "rockridge".into(), period: "pm_peak".into(), minutes: 60.0, scale: 1.0, seed: 1, warmup_min: 10.0, local_factor: None, reroute_share: None, adapt_min: None, motorway_removal: false, no_rtor: false, out: None, write: true, link_flows: false, cars_only: false, drop: Vec::new(), demand_path: None, network_path: None };
+    let mut a = Args { area: "rockridge".into(), period: "pm_peak".into(), minutes: 60.0, scale: 1.0, seed: 1, warmup_min: 10.0, local_factor: None, reroute_share: None, adapt_min: None, motorway_removal: false, no_rtor: false, out: None, write: true, link_flows: false, select_od: None, cars_only: false, drop: Vec::new(), demand_path: None, network_path: None };
     let argv: Vec<String> = std::env::args().skip(1).collect();
     let mut i = 0;
     while i < argv.len() {
@@ -58,6 +60,7 @@ fn parse_args() -> Args {
             "--adapt-min" => a.adapt_min = Some(val().parse().unwrap_or_else(|_| usage("bad --adapt-min"))),
             "--motorway-removal" => a.motorway_removal = true,
             "--no-rtor" => a.no_rtor = true,
+            "--select-od" => a.select_od = Some(PathBuf::from(val())),
             "--out" => a.out = Some(PathBuf::from(val())),
             "--no-write" => a.write = false,
             "--link-flows" => a.link_flows = true,
@@ -437,6 +440,23 @@ fn main() {
     let m = sim.metrics();
     let d = sim.diagnostics();
     let recs: Vec<SelectLinkRecord> = sim.select_link_records();
+
+    if let Some(path) = &args.select_od {
+        let blocks: Vec<Value> = tgts
+            .iter()
+            .map(|t| {
+                let set: std::collections::HashSet<u32> = t.links.iter().copied().collect();
+                let mut od: HashMap<(u32, u32), u32> = HashMap::new();
+                for r in recs.iter().filter(|r| r.hits.iter().any(|h| set.contains(&h.0))) {
+                    *od.entry((r.origin, r.dest)).or_insert(0) += 1;
+                }
+                let mut v: Vec<(u32, u32, u32)> = od.into_iter().map(|((o, d), n)| (o, d, n)).collect();
+                v.sort_unstable();
+                json!({"label": t.label, "links": t.links, "trips": v})
+            })
+            .collect();
+        std::fs::write(path, serde_json::to_string(&json!({"period": args.period, "seed": args.seed, "minutes": args.minutes, "blocks": blocks})).unwrap()).expect("write select-od");
+    }
 
     // ---- select-link shares
     let pm = args.period == "pm_peak";

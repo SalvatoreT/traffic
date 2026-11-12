@@ -1357,7 +1357,8 @@ fn car_only_metrics_match_pre_multimodal_golden() {
     assert_eq!(legacy_metrics(&b), GOLDEN_CROSS);
 }
 const GOLDEN_CORRIDOR: &str = r#"{"arterialMeanSpeed":5.760706174508465,"backlog":0,"completedTrips":526,"cutThrough":{"shareOfLocalVehKm":0.7881007592928926,"vehKm":217.1792367334366},"gridlockRemoved":0,"meanTripDelay":2.533018145631116,"meanTripTime":103.9518968024608,"safety":{"localMeanSpeed":9.707236835622696,"localP85Speed":11.633705738054609,"shareAbove20mph":0.7119069644509053,"shareAbove25mph":0.2279635258358663,"ttcConflicts":3},"spawned":558,"time":1800.0,"unroutableTrips":0,"vehKm":438.9261624879838,"vehiclesInNetwork":32}"#;
-const GOLDEN_CROSS: &str = r#"{"arterialMeanSpeed":8.313011509983335,"backlog":0,"completedTrips":551,"cutThrough":{"shareOfLocalVehKm":1.0,"vehKm":64.10286659431458},"gridlockRemoved":0,"meanTripDelay":13.422630107903911,"meanTripTime":50.82705001554476,"safety":{"localMeanSpeed":6.375161500442407,"localP85Speed":11.414213947990543,"shareAbove20mph":0.4653576228161864,"shareAbove25mph":0.17064854910158778,"ttcConflicts":9},"spawned":572,"time":1800.0,"unroutableTrips":0,"vehKm":215.87383705997468,"vehiclesInNetwork":21}"#;
+// Updated when right turn on red was added (ASSUMPTION, validation cases b10 and b11): the w->s flow turns right on red, so mean delay falls from 13.4 to 13.1 s.
+const GOLDEN_CROSS: &str = r#"{"arterialMeanSpeed":8.436836013936235,"backlog":0,"completedTrips":551,"cutThrough":{"shareOfLocalVehKm":1.0,"vehKm":64.3283925333023},"gridlockRemoved":0,"meanTripDelay":13.054209055272334,"meanTripTime":50.45862896291319,"safety":{"localMeanSpeed":6.385964968918798,"localP85Speed":11.4,"shareAbove20mph":0.4679799284578696,"shareAbove25mph":0.16921701112877582,"ttcConflicts":10},"spawned":572,"time":1800.0,"unroutableTrips":0,"vehKm":216.17522833824157,"vehiclesInNetwork":21}"#;
 
 mod modes;
 mod diverter;
@@ -1436,4 +1437,11 @@ fn merge_onto_a_multilane_exit_passes_more_than_onto_a_single_lane() {
     }
     let (one, two) = (completed(1), completed(2));
     assert!(two as f64 > 1.2 * one as f64, "multilane exit {two} against single lane {one}");
+}
+
+#[test]
+fn right_turn_on_red_raises_discharge_unless_the_cross_street_is_saturated() {
+    let (off, _) = crate::validate::rtor_cap(100.0, true, 1);
+    let (on, _) = crate::validate::rtor_cap(100.0, false, 1);
+    assert!(on > off * 1.08, "light cross traffic: {on} against {off} veh/h");
 }

@@ -253,6 +253,8 @@ export interface PeriodResult {
   graphBans: number;
   cons: number;
   notes: string[];
+  /** The assignment the table was last fitted to (flow k loads links `link[start[k] .. start[k+1]]` with `share`). */
+  assignment: Assignment;
 }
 
 export function fitPeriod(
@@ -323,7 +325,7 @@ export function fitPeriod(
   const shareRows = specs.map((q) => { const i = byId.get(q.id)!; return { spec: q, offered: before[i], afterFit: afterFit[i], final: final[i], n: q.ratio.flows.length }; });
   const stationRows = stations.filter((s) => byId.has(s.id)).map((s) => { const i = byId.get(s.id)!; return { st: s, target: cons[i].target, before: before[i], afterFit: afterFit[i], final: final[i] }; });
   const guardRemoved = Object.values(totals).reduce((x, q) => x + q.afterFit - q.final, 0);
-  return { id, volume, totals, stationRows, fit: rFinal, gFinal: [...rFinal.g], counted: rFinal.counted, types, guardBound, guardRemoved, guardFlows, residualOver, shareRows, unroutable: [...a.routable].filter((x) => !x).length, graphBans: g.banned, cons: countCons.length, notes };
+  return { id, volume, totals, stationRows, fit: rFinal, gFinal: [...rFinal.g], counted: rFinal.counted, types, guardBound, guardRemoved, guardFlows, residualOver, shareRows, unroutable: [...a.routable].filter((x) => !x).length, graphBans: g.banned, cons: countCons.length, notes, assignment: a };
 }
 
 // ---------- report ----------
