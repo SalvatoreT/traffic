@@ -106,6 +106,8 @@ export type Theme = 'auto' | 'light' | 'dark';
 export interface AreaBundle {
   entry: AreaEntry; network: Network; demand: Demand;
   basemap: GeoFC; synthetic: boolean; transit?: Transit;
+  /** Source JSON text, handed to the worker as is so the main thread need not serialize it again. */
+  raw?: { network: string; demand: string; transit?: string };
 }
 
 /** Link stats from the sim: stride 4 per link. */

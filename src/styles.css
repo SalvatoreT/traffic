@@ -210,3 +210,17 @@ input[type='checkbox'] { width: 18px; height: 18px; accent-color: var(--accent);
 
 .scn-notices .notice ul { margin: .25rem 0 .4rem; padding-left: 1.2rem; }
 .scn-notices .notice p { margin: 0 0 .3rem; }
+
+.check-row { display: flex; flex-direction: column; gap: 0; }
+.tag { display: inline-block; margin-left: .45rem; padding: 0 .45rem; border: 1px solid var(--border); border-radius: 999px; background: var(--surface-2); color: var(--muted); font-size: .75rem; white-space: nowrap; }
+.speed-note { color: var(--text); background: var(--surface-2); border-radius: 999px; padding: 0 .6rem; }
+.speed-note:empty { display: none; }
+.cal-line { gap: .6rem; }
+.cal-text { flex: 1; min-width: 0; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
+.notice.calm.cal-line { align-items: center; }
+.loading { padding: 2rem 1.25rem; min-height: 40vh; justify-content: center; display: flex; flex-direction: column; align-items: center; gap: .6rem; text-align: center; max-width: 60ch; margin: 0 auto; }
+.loading p { margin: 0; }
+.loading progress { width: min(320px, 80vw); height: 12px; accent-color: var(--accent); }
+.spinner { width: 28px; height: 28px; border-radius: 50%; border: 3px solid var(--border); border-top-color: var(--accent); animation: spin .9s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.map-cover { position: absolute; inset: 0; z-index: 8; display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--bg) 82%, transparent); }

@@ -1,4 +1,5 @@
 import type { Network, NetLink } from '../types';
+import { computeFocus } from './area';
 
 export interface Block {
   key: number;            // lowest link id in the block
@@ -9,6 +10,8 @@ export interface Block {
   lengthM: number;
   cls: NetLink['class'];
   inStudyArea: boolean;
+  /** In the study area or within the focus buffer of its outline. */
+  inFocus: boolean;
 }
 export interface NetIndex {
   linkName: string[];     // friendly per-link street name ("Unnamed service road off Oak St")
@@ -19,6 +22,7 @@ export interface NetIndex {
   incomingLinks: number[][];
   outgoingLinks: number[][];
   intersections: number[]; // node ids worth listing
+  nodeInFocus: boolean[];
 }
 
 export const UNNAMED = 'Unnamed road';
@@ -57,6 +61,7 @@ export function buildIndex(net: Network): NetIndex {
     return near.length ? `Unnamed ${kind} off ${near[0]}` : `Unnamed ${kind}`;
   });
 
+  const focus = computeFocus(net);
   const blocks: Block[] = [];
   const blockOfLink: number[] = new Array(net.links.length).fill(-1);
   for (const l of net.links) {
@@ -84,7 +89,7 @@ export function buildIndex(net: Network): NetIndex {
     blocks.push({
       key: ids[0], name, links: ids, a: first.from, b: first.to,
       label, lengthM: first.length, cls: first.class,
-      inStudyArea: first.inStudyArea,
+      inStudyArea: ids.some((id) => net.links[id].inStudyArea), inFocus: ids.some((id) => focus.link[id]),
     });
   }
   blocks.sort((p, q) => p.name.localeCompare(q.name) || p.key - q.key);
@@ -98,7 +103,7 @@ export function buildIndex(net: Network): NetIndex {
     if (neigh.size >= 3 || net.nodes[i].control === 'signal') intersections.push(i);
   }
   intersections.sort((p, q) => nodeName[p].localeCompare(nodeName[q]) || p - q);
-  return { linkName, nodeName, nodeStreets, blocks, blockOfLink, incomingLinks: incoming, outgoingLinks: outgoing, intersections };
+  return { linkName, nodeName, nodeStreets, blocks, blockOfLink, incomingLinks: incoming, outgoingLinks: outgoing, intersections, nodeInFocus: focus.node };
 }
 
 /** Directed description: "Oak St toward Elm St" */

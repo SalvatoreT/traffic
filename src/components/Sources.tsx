@@ -1,9 +1,9 @@
 import { useEffect, useRef } from 'react';
 import refs from '../../docs/references.md?raw';
-import type { Demand } from '../types';
+import type { Calibration, Demand } from '../types';
 import { Markdown } from './Markdown';
 
-export function Sources({ demand, synthetic, focusRef }: { demand: Demand; synthetic: boolean; focusRef?: string | null }) {
+export function Sources({ demand, synthetic, focusRef, calibration }: { demand: Demand; synthetic: boolean; focusRef?: string | null; calibration?: Calibration }) {
   const root = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (focusRef) root.current?.querySelector<HTMLElement>(`#ref-${CSS.escape(focusRef)}`)?.scrollIntoView({ block: 'start' });
@@ -11,6 +11,13 @@ export function Sources({ demand, synthetic, focusRef }: { demand: Demand; synth
   return (
     <div className="sources-view" ref={root}>
       <h2>Sources</h2>
+      {calibration && (
+        <section id="ref-calibration" aria-labelledby="cal-h" tabIndex={-1}>
+          <h3 id="cal-h">Calibration</h3>
+          <p>{calibration.status === 'calibrated' ? 'The baseline has been calibrated against observed traffic.' : 'The baseline is not yet calibrated against observed traffic, so treat results as illustrations and compare scenarios rather than reading absolute numbers.'}</p>
+          {calibration.note && <p className="muted">{calibration.note}</p>}
+        </section>
+      )}
       <section aria-labelledby="prov-h">
         <h3 id="prov-h">Data provenance{synthetic ? ' (synthetic development data)' : ''}</h3>
         <ul className="prov">

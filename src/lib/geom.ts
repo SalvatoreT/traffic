@@ -53,6 +53,8 @@ export function pickLink(net: Network, x: number, y: number, tol: number): NetLi
   let best: NetLink | null = null;
   let bestScore = Infinity;
   for (const l of net.links) {
+    // A polyline is at least as long as the distance from its start to any of its points, so far-off links are skipped cheaply.
+    if (Math.hypot(x - l.geometry[0][0], y - l.geometry[0][1]) > l.length * 1.1 + 5 + tol) continue;
     const h = nearestOnPolyline(l.geometry, x, y);
     if (h.dist > tol) continue;
     const score = h.dist + (l.reverse !== null && h.side < 0 ? tol * 0.01 : 0);

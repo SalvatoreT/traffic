@@ -35,8 +35,8 @@ interface Props {
 }
 
 const KIND_STYLE = {
-  light: { bg: '#f1efe8', water: '#cfd8e0', minor: '#d8d3c6', major: '#b9b2a0', path: '#cdd5bf', study: '#0b5cad' },
-  dark: { bg: '#161b22', water: '#1d2a38', minor: '#2b323c', major: '#3d4654', path: '#27302a', study: '#7db6f5' },
+  light: { bg: '#f1efe8', water: '#cfd8e0', minor: '#d8d3c6', major: '#b9b2a0', path: '#cdd5bf', study: '#0b5cad', wash: 0.6 },
+  dark: { bg: '#161b22', water: '#1d2a38', minor: '#2b323c', major: '#3d4654', path: '#27302a', study: '#7db6f5', wash: 0.7 },
 };
 
 function ramp(mode: Mode): unknown[] {
@@ -66,6 +66,17 @@ const BADGE: Record<string, string> = {
   modal_filter: 'MF', speed_hump: 'SH', speed_limit: 'SL', traffic_circle: 'TC', control: 'IC',
   signal_timing: 'ST', one_way: '1W', turn_ban: 'TB',
 };
+
+/** A large rectangle with the study area cut out: a wash over the basemap outside the outline. */
+function outsideWash(b: AreaBundle) {
+  const { lon, lat } = b.network.origin;
+  const d = 0.6;
+  const outer: [number, number][] = [[lon - d, lat - d], [lon + d, lat - d], [lon + d, lat + d], [lon - d, lat + d], [lon - d, lat - d]];
+  const ring = b.network.studyArea;
+  const rings = ring && ring.length >= 3 ? [outer, ring] : [outer];
+  return { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: rings } };
+}
+const FRAME_MS = 32; // vehicle layer redraws at most ~30 Hz
 
 function studyBounds(b: AreaBundle): maplibregl.LngLatBoundsLike | null {
   const ring = b.network.studyArea;
@@ -125,6 +136,9 @@ export function MapView(p: Props) {
   const hoverRef = useRef<{ link: number | null; node: number | null }>({ link: null, node: null });
   const markers = useRef<maplibregl.Marker[]>([]);
   const prevT = useRef<Float32Array>(new Float32Array(0));
+  const busBuf = useRef<Float32Array>(new Float32Array(384));
+  const lastDraw = useRef(0);
+  const drawTimer = useRef(0);
   // Bus stops and marked crossings in local meters, computed once per area.
   const fixtures = useMemo(() => {
     const net = bundle.network;
@@ -140,12 +154,19 @@ export function MapView(p: Props) {
       const p = pointAlong(l.geometry, Math.min(c, l.length));
       ticks.push([p.x, p.y, p.heading]);
     }
-    return { stops, ticks };
+    const sig = new Float32Array(net.links.length * 2);
+    for (const l of net.links) {
+      const pp = pointAlong(l.geometry, Math.max(0, l.length - 5));
+      sig[l.id * 2] = pp.x + Math.sin(pp.heading) * 3.5; // right of travel
+      sig[l.id * 2 + 1] = pp.y - Math.cos(pp.heading) * 3.5;
+    }
+    return { stops, ticks, sig };
   }, [bundle]);
 
   // ---- draw vehicles + signals on overlay canvas
   const draw = () => {
     drawReq.current = 0;
+    lastDraw.current = performance.now();
     const map = mapRef.current, cv = canvas.current, L = live.current;
     if (!map || !cv) return;
     const g = cv.getContext('2d');
@@ -168,7 +189,7 @@ export function MapView(p: Props) {
     const M = L.modes;
     // One path per kind so each kind is a single fill and stroke.
     const pCar = new Path2D(), pThru = new Path2D(), pBike = new Path2D(), pPed = new Path2D();
-    const buses: number[] = [];
+    let nb = 0;
     const rr = r * 1.45, rb = r * 1.25, rp = Math.max(1.3, r * 0.6);
     for (let i = 0; i + 5 < v.length; i += 6) {
       const kind = v[i + 4];
@@ -177,7 +198,9 @@ export function MapView(p: Props) {
       if (sx < -10 || sy < -10 || sx > w + 10 || sy > h + 10) continue;
       if (kind === KIND_BUS) {
         const c = Math.cos(v[i + 2]), sn = Math.sin(v[i + 2]);
-        buses.push(sx, sy, Math.atan2(c * ay + sn * by, c * ax + sn * bx));
+        if (nb + 3 > busBuf.current.length) { const g2 = new Float32Array(busBuf.current.length * 2); g2.set(busBuf.current); busBuf.current = g2; }
+        const bb = busBuf.current;
+        bb[nb++] = sx; bb[nb++] = sy; bb[nb++] = Math.atan2(c * ay + sn * by, c * ax + sn * bx);
       } else if (kind === KIND_BIKE) {
         pBike.moveTo(sx, sy - rb); pBike.lineTo(sx + rb * 0.95, sy + rb * 0.7); pBike.lineTo(sx - rb * 0.95, sy + rb * 0.7); pBike.closePath();
       } else if (kind === KIND_PED) {
@@ -194,10 +217,11 @@ export function MapView(p: Props) {
     g.fillStyle = dark ? '#ffa94d' : '#e8590c'; g.strokeStyle = dark ? '#ffffff' : '#1a0f05'; g.lineWidth = 1.6;
     g.fill(pThru); g.stroke(pThru);
     // buses: rounded rectangles along the heading, 12 m long when the zoom allows
-    if (buses.length) {
+    if (nb) {
+      const buses = busBuf.current;
       const len = Math.max(10, Math.min(36, 12 * pxPerM)), wd = Math.max(5, Math.min(14, 2.6 * pxPerM));
       g.fillStyle = C.bus; g.strokeStyle = C.ring; g.lineWidth = 1.2;
-      for (let k = 0; k < buses.length; k += 3) {
+      for (let k = 0; k < nb; k += 3) {
         const ca = Math.cos(buses[k + 2]), sa = Math.sin(buses[k + 2]);
         g.setTransform(dpr * ca, dpr * sa, -dpr * sa, dpr * ca, dpr * buses[k], dpr * buses[k + 1]);
         g.beginPath(); g.roundRect(-len / 2, -wd / 2, len, wd, Math.min(3, wd / 2)); g.fill(); g.stroke();
@@ -240,11 +264,9 @@ export function MapView(p: Props) {
     for (let li = 0; li < sg.length && li < net.links.length; li++) {
       const st = sg[li];
       if (!st) continue;
-      const link = net.links[li];
-      const pp = pointAlong(link.geometry, Math.max(0, link.length - 5));
-      const nx = Math.sin(pp.heading) * 3.5, ny = -Math.cos(pp.heading) * 3.5; // right of travel
-      const x = pp.x + nx, y = pp.y + ny;
+      const x = fixtures.sig[li * 2], y = fixtures.sig[li * 2 + 1];
       const sx = o.x + x * ax + y * bx, sy = o.y + x * ay + y * by;
+      if (sx < -10 || sy < -10 || sx > w + 10 || sy > h + 10) continue;
       g.lineWidth = 2;
       if (st === 1) { g.strokeStyle = '#1f9d55'; g.fillStyle = dark ? '#0b1118' : '#fff'; g.beginPath(); g.arc(sx, sy, sz, 0, 7); g.fill(); g.stroke(); }
       else if (st === 2) { g.strokeStyle = dark ? '#fff' : '#1a1a1a'; g.fillStyle = '#f5c400'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(sx, sy - sz); g.lineTo(sx + sz, sy + sz * 0.8); g.lineTo(sx - sz, sy + sz * 0.8); g.closePath(); g.fill(); g.stroke(); }
@@ -252,6 +274,12 @@ export function MapView(p: Props) {
     }
   };
   const schedule = () => { if (!drawReq.current) drawReq.current = requestAnimationFrame(draw); };
+  // New sim frames arrive faster than a map needs; map moves still redraw at once through `schedule`.
+  const scheduleFrame = () => {
+    const wait = FRAME_MS - (performance.now() - lastDraw.current);
+    if (wait <= 0) schedule();
+    else if (!drawTimer.current) drawTimer.current = window.setTimeout(() => { drawTimer.current = 0; schedule(); }, wait);
+  };
 
   // ---- create map once
   useEffect(() => {
@@ -283,6 +311,7 @@ export function MapView(p: Props) {
     map.on('load', () => {
       const pr = makeProjection(b.network.origin);
       map.addSource('basemap', { type: 'geojson', data: b.basemap as never });
+      map.addSource('outside', { type: 'geojson', data: outsideWash(b) as never });
       map.addSource('study', { type: 'geojson', data: { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [b.network.studyArea] } } });
       map.addSource('links', {
         type: 'geojson',
@@ -302,6 +331,7 @@ export function MapView(p: Props) {
       map.addLayer({ id: 'base-lines', type: 'line', source: 'basemap', filter: ['!', ['match', ['get', 'kind'], ['footway', 'path', 'cycleway', 'steps', 'pedestrian', 'track'], true, false]],
         layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: { 'line-color': ['case', major, K.major, K.minor], 'line-width': ['interpolate', ['linear'], ['zoom'], 12, 0.6, 18, ['case', major, 9, 5]] } });
+      map.addLayer({ id: 'outside-wash', type: 'fill', source: 'outside', paint: { 'fill-color': K.bg, 'fill-opacity': K.wash, 'fill-antialias': false } });
       map.addLayer({ id: 'study-fill', type: 'fill', source: 'study', paint: { 'fill-color': K.study, 'fill-opacity': 0.05 } });
       map.addLayer({ id: 'study-line', type: 'line', source: 'study', paint: { 'line-color': K.study, 'line-width': 2, 'line-dasharray': [4, 3] } });
       map.addLayer({ id: 'links-casing', type: 'line', source: 'links', layout: { 'line-cap': 'butt', 'line-join': 'round' },
@@ -337,6 +367,8 @@ export function MapView(p: Props) {
     map.setPaintProperty('bg', 'background-color', K.bg);
     map.setPaintProperty('base-paths', 'line-color', K.path);
     map.setPaintProperty('base-lines', 'line-color', ['case', major, K.major, K.minor]);
+    map.setPaintProperty('outside-wash', 'fill-color', K.bg);
+    map.setPaintProperty('outside-wash', 'fill-opacity', K.wash);
     map.setPaintProperty('study-fill', 'fill-color', K.study);
     map.setPaintProperty('study-line', 'line-color', K.study);
     map.setPaintProperty('hover', 'line-color', K.study);
@@ -364,8 +396,8 @@ export function MapView(p: Props) {
     const links = bundle.network.links;
     const ls = p.linkStats;
     if (prevT.current.length !== links.length) prevT.current = new Float32Array(links.length).fill(-2);
-    for (const l of links) {
-      const i = l.id;
+    for (let i = 0; i < links.length; i++) {
+      const l = links[i];
       const t = ls ? intensity(p.overlay, ls[i * 4] ?? 0, ls[i * 4 + 1] ?? 0, ls[i * 4 + 2] ?? 0, l.speedLimit, p.overlayMax) : -1;
       if (Math.abs(prevT.current[i] - t) > 0.004) {
         prevT.current[i] = t;
@@ -377,9 +409,9 @@ export function MapView(p: Props) {
   // ---- redraw on frames
   useEffect(() => {
     if (!p.client) return;
-    p.client.onFrame = schedule;
+    p.client.onFrame = scheduleFrame;
     schedule();
-    return () => { if (p.client) p.client.onFrame = null; };
+    return () => { if (p.client) p.client.onFrame = null; window.clearTimeout(drawTimer.current); drawTimer.current = 0; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p.client]);
   useEffect(() => { schedule(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [mode, p.visible, p.modes]);

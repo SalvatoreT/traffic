@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { AreaBundle, ModeKey, ModeVisibility, Overlay } from '../types';
 import { formatClock } from '../lib/format';
 import { rampStops, type Mode } from '../lib/ramps';
+import { speedNoteText } from '../lib/speed';
 
 export const SPEEDS = [1, 5, 20, 60];
 
@@ -10,6 +11,8 @@ interface PlaybackProps {
   speed: number; onSpeed(s: number): void;
   periods: AreaBundle['demand']['periods']; period: string; onPeriod(id: string): void;
   scale: number; onScale(v: number): void; time: number; reducedMotion: boolean;
+  /** Achieved speed to report when the sim runs well below the requested one; null otherwise. */
+  achieved?: number | null;
 }
 
 export function Playback(p: PlaybackProps) {
@@ -25,6 +28,7 @@ export function Playback(p: PlaybackProps) {
           <button key={s} type="button" className={p.speed === s ? 'on' : ''} aria-pressed={p.speed === s} onClick={() => p.onSpeed(s)}>{s}×</button>
         ))}
       </div>
+      <span className="speed-note small" role="status">{speedNoteText(p.speed, p.achieved ?? null)}</span>
       <button type="button" className="btn more-btn" aria-expanded={more} aria-controls="pb-extras" onClick={() => setMore((m) => !m)}>
         Period &amp; demand <span aria-hidden="true">{more ? '▴' : '▾'}</span>
       </button>

@@ -2,7 +2,7 @@ import type { Intervention } from '../types';
 import type { FromWorker, SimStats, ToWorker } from './protocol';
 
 export interface Frame { time: number; vehicles: Float32Array; signals: Uint8Array }
-export interface StatsMsg { time: number; comparing: boolean; scenario: SimStats; baseline: SimStats }
+export interface StatsMsg { time: number; comparing: boolean; scenario: SimStats; baseline: SimStats; achievedSpeed: number | null }
 
 export class SimClient {
   private worker: Worker;

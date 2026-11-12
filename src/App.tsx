@@ -1,6 +1,8 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { AreaBundle, Intervention, Metrics, ModeVisibility, Overlay, Theme } from './types';
-import { loadArea } from './data';
+import { loadArea, type LoadProgress } from './data';
+import { Loading, LoadError } from './components/Loading';
+import { nextSpeedShown } from './lib/speed';
 import { SOURCE_REPO_URL } from './config';
 import { SimClient, type StatsMsg } from './sim/client';
 import { buildIndex } from './lib/naming';
@@ -40,15 +42,21 @@ function useMedia(q: string): boolean {
 export function App() {
   const [bundle, setBundle] = useState<AreaBundle | null>(null);
   const [err, setErr] = useState('');
+  const [progress, setProgress] = useState<LoadProgress | null>(null);
+  const [attempt, setAttempt] = useState(0);
   useEffect(() => {
-    loadArea(decodeMeta(location.hash).area, query.get('fixture') === '1').then(setBundle, (e) => setErr(String(e)));
-  }, []);
-  if (err) return <p role="alert" className="boot">Could not load the study area: {err}</p>;
-  if (!bundle) return <p className="boot" role="status">Loading study area…</p>;
-  return <Simulator bundle={bundle} />;
+    let live = true;
+    setErr(''); setBundle(null); setProgress(null);
+    loadArea(decodeMeta(location.hash).area, query.get('fixture') === '1', (p) => { if (live) setProgress(p); })
+      .then((b) => { if (live) setBundle(b); }, (e) => { if (live) setErr(e instanceof Error ? e.message : String(e)); });
+    return () => { live = false; };
+  }, [attempt]);
+  if (err) return <LoadError title="Could not load the study area." message={err} onRetry={() => setAttempt((a) => a + 1)} />;
+  if (!bundle) return <Loading label="Loading study area data…" progress={progress} />;
+  return <Simulator key={attempt} bundle={bundle} onRestart={() => setAttempt((a) => a + 1)} />;
 }
 
-function Simulator({ bundle }: { bundle: AreaBundle }) {
+function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): void }) {
   const { network, demand } = bundle;
   const transitJson = useMemo(() => (bundle.transit ? JSON.stringify(bundle.transit) : undefined), [bundle.transit]);
   const index = useMemo(() => buildIndex(network), [network]);
@@ -75,6 +83,7 @@ function Simulator({ bundle }: { bundle: AreaBundle }) {
   const drawerBtn = useRef<HTMLButtonElement>(null);
   const closeDrawer = useCallback(() => { setDrawerOpen(false); drawerBtn.current?.focus(); }, []);
   const [showService, setShowService] = useState(false);
+  const [showOutside, setShowOutside] = useState(false);
   const calStatus = bundle.entry.calibration?.status ?? 'uncalibrated';
   const calKey = `calnote:${bundle.entry.id}`;
   const [calDismissed, setCalDismissed] = useState(() => store.get(calKey) === '1');
@@ -104,6 +113,7 @@ function Simulator({ bundle }: { bundle: AreaBundle }) {
   const [engine, setEngine] = useState<{ kind: 'wasm' | 'mock'; reason?: string } | null>(null);
   const [simError, setSimError] = useState('');
   const [stats, setStats] = useState<StatsMsg | null>(null);
+  const [slowSpeed, setSlowSpeed] = useState<number | null>(null);
   const [clock, setClock] = useState(0);
   const [client, setClient] = useState<SimClient | null>(null);
   const [toast, setToast] = useState('');
@@ -119,19 +129,19 @@ function Simulator({ bundle }: { bundle: AreaBundle }) {
   useEffect(() => {
     const c = new SimClient();
     c.onReady = (kind, reason) => setEngine({ kind, reason });
-    c.onStats = (s) => { setStats(s); setClock(s.time); };
+    c.onStats = (s) => { setStats(s); setClock(s.time); setSlowSpeed((prev) => nextSpeedShown(prev, first.current.speed, s.achievedSpeed)); };
     c.onError = (m) => setSimError(m);
     const f = first.current;
     c.send({
-      t: 'init', network: JSON.stringify(network), demand: JSON.stringify(demand), transit: transitJson, mock: FORCE_MOCK,
+      t: 'init', network: bundle.raw?.network ?? JSON.stringify(network), demand: bundle.raw?.demand ?? JSON.stringify(demand), transit: bundle.raw?.transit ?? transitJson, mock: FORCE_MOCK,
       period: f.period, demandScale: f.scale, seed: 1, interventions: f.interventions, speed: f.speed, running: f.running,
     });
     setClient(c);
     return () => { c.terminate(); setClient(null); };
-  }, [network, demand, transitJson]);
+  }, [network, demand, transitJson, bundle.raw]);
   const firstRun = useRef(true);
-  useEffect(() => { client?.send({ t: 'run', running }); }, [running, client]);
-  useEffect(() => { client?.send({ t: 'speed', speed }); }, [speed, client]);
+  useEffect(() => { client?.send({ t: 'run', running }); setSlowSpeed(null); }, [running, client]);
+  useEffect(() => { client?.send({ t: 'speed', speed }); setSlowSpeed(null); }, [speed, client]);
   useEffect(() => {
     if (firstRun.current) { firstRun.current = false; return; }
     const id = window.setTimeout(() => client?.send({ t: 'config', period, demandScale: scale }), 250);
@@ -194,7 +204,7 @@ function Simulator({ bundle }: { bundle: AreaBundle }) {
 
   const scenarioPanel = (
     <>
-      <InterventionPanel bundle={bundle} index={index} showService={showService} onShowService={setShowService} interventions={interventions}
+      <InterventionPanel bundle={bundle} index={index} showService={showService} onShowService={setShowService} showOutside={showOutside} onShowOutside={setShowOutside} interventions={interventions}
         onAdd={onAdd} onRemove={onRemove} onClear={onClear} onPickMode={onPickMode} registerPick={registerPick} />
       <div className="scn-notices" role="status" aria-live="polite">
         {notice.invalid && (
@@ -266,18 +276,21 @@ function Simulator({ bundle }: { bundle: AreaBundle }) {
           </aside>
         )}
         <div key="stage" className="stage">
-          {(bundle.synthetic || engine?.kind === 'mock' || simError || showCal) && (
+          {(bundle.synthetic || engine?.kind === 'mock' || (simError && engine) || showCal) && (
             <div className="banners">
               {showCal && (
-                <p className="notice calm" role="note">
-                  <span>Preview: the baseline is not yet calibrated against observed traffic, so treat results as illustrations.
-                    {bundle.entry.calibration?.note ? ` ${bundle.entry.calibration.note}` : ''}</span>
+                <p className="notice calm cal-line" role="note">
+                  <span className="cal-text">
+                    <strong>Preview, not yet calibrated.</strong>{' '}
+                    {bundle.entry.calibration?.note ?? 'Treat results as illustrations, not forecasts.'}
+                  </span>
+                  <button type="button" className="link" onClick={() => { setSourceRef('calibration'); setView('sources'); }}>Details</button>
                   <button type="button" className="btn small-btn" onClick={() => { setCalDismissed(true); store.set(calKey, '1'); }}>Dismiss</button>
                 </p>
               )}
               {bundle.synthetic && <p className="notice" role="note">Showing a synthetic fixture area because the study-area data files were not found.</p>}
               {engine?.kind === 'mock' && <p className="notice" role="note">Using the built-in mock simulation ({engine.reason}). Vehicle behavior and metrics are illustrative only.</p>}
-              {simError && <p className="notice err" role="alert">{simError}</p>}
+              {simError && engine && <p className="notice err" role="alert">{simError}</p>}
             </div>
           )}
           {view !== 'sources' && (
@@ -286,6 +299,7 @@ function Simulator({ bundle }: { bundle: AreaBundle }) {
               onReset={() => { client?.send({ t: 'reset' }); say('Simulation reset.'); }}
               speed={speed} onSpeed={setSpeed} periods={demand.periods} period={period} onPeriod={setPeriod}
               scale={scale} onScale={setScale} time={clock} reducedMotion={reduced}
+              achieved={running ? slowSpeed : null}
             />
           )}
           <div className="map-area" hidden={!mapVisible}>
@@ -301,13 +315,20 @@ function Simulator({ bundle }: { bundle: AreaBundle }) {
             <Legend overlay={overlay} onOverlay={setOverlay} max={overlayMax} mode={mode} 
               source={source} onSource={setSource} canCompare={comparing}
               multimodal={multimodal} modes={modes} onModes={setModes} hasBikeNet={hasBikeNet} bikeNet={bikeNet} onBikeNet={setBikeNet} />
+            {!engine && (
+              <div className="map-cover">
+                {simError
+                  ? <LoadError title="The simulation could not start." message={simError} onRetry={onRestart} />
+                  : <Loading label="Starting the simulation engine…" />}
+              </div>
+            )}
           </div>
           {view === 'streets' && (
-            <StreetsTable bundle={bundle} index={index} showService={showService} onShowService={setShowService}
+            <StreetsTable bundle={bundle} index={index} showService={showService} onShowService={setShowService} showOutside={showOutside} onShowOutside={setShowOutside}
               scen={stats?.scenario.linkStats ?? null} base={stats?.baseline.linkStats ?? null} comparing={comparing}
               baseMetrics={base} scenMetrics={scen} />
           )}
-          {view === 'sources' && <Suspense fallback={<p className="boot" role="status">Loading sources…</p>}><Sources demand={demand} synthetic={bundle.synthetic} focusRef={sourceRef} /></Suspense>}
+          {view === 'sources' && <Suspense fallback={<p className="boot" role="status">Loading sources…</p>}><Sources demand={demand} synthetic={bundle.synthetic} focusRef={sourceRef} calibration={bundle.synthetic ? undefined : { status: calStatus, note: bundle.entry.calibration?.note }} /></Suspense>}
         </div>
 
         {showPanel && !phone && (

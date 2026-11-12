@@ -1,6 +1,8 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { AreaBundle, ControlType, Intervention } from '../types';
-import { directedLabel, linkStreet, matchesQuery, type NetIndex } from '../lib/naming';
+import { linkStreet, matchesQuery, type NetIndex } from '../lib/naming';
+import { pickerItems } from '../lib/picker';
+import { interventionInStudyArea } from '../lib/area';
 import { describeIntervention } from '../lib/describe';
 import type { PickKind } from './MapView';
 
@@ -33,6 +35,7 @@ export interface PickHandlers { link(id: number): void; node(id: number): void }
 interface Props {
   bundle: AreaBundle; index: NetIndex;
   showService: boolean; onShowService(v: boolean): void;
+  showOutside: boolean; onShowOutside(v: boolean): void;
   interventions: Intervention[];
   onAdd(list: Intervention[], message: string): void;
   onRemove(i: number): void;
@@ -104,20 +107,9 @@ export function InterventionPanel(p: Props) {
   }, [tool]); // eslint-disable-line
 
   const items = useMemo(() => {
-    const out: { key: string; label: string; apply(): void; study: boolean }[] = [];
-    if (toolDef.target === 'block') {
-      for (const b of X.blocks) if (p.showService || b.cls !== 'service') out.push({ key: `b${b.key}`, label: b.label, apply: () => addForLink(b.links[0]), study: b.inStudyArea });
-    } else if (toolDef.target === 'dirlink') {
-      for (const l of B.network.links) if (l.reverse !== null) {
-        const b = X.blocks[X.blockOfLink[l.id]];
-        if (!p.showService && b.cls === 'service') continue;
-        out.push({ key: `d${l.id}`, label: `Keep ${directedLabel(B.network, X, l.id)} (${b.label})`, apply: () => addForLink(l.id), study: l.inStudyArea });
-      }
-    } else {
-      for (const n of X.intersections) out.push({ key: `n${n}`, label: X.nodeName[n], apply: () => addForNode(n), study: B.network.nodes[n].inStudyArea });
-    }
-    return out.sort((a, b) => Number(b.study) - Number(a.study));
-  }, [tool, X, B, limit, control, cycle, p.showService]); // eslint-disable-line
+    const raw = pickerItems(B.network, X, toolDef.target, { showService: p.showService, showOutside: p.showOutside });
+    return raw.map((it) => ({ ...it, apply: () => (it.kind === 'node' ? addForNode(it.id) : addForLink(it.id)) }));
+  }, [tool, X, B, limit, control, cycle, p.showService, p.showOutside]); // eslint-disable-line
 
   const filtered = useMemo(() => items.filter((i) => matchesQuery(i.label, q)), [items, q]);
   const [shown, setShown] = useState(80);
@@ -204,9 +196,12 @@ export function InterventionPanel(p: Props) {
           </label>
           <input id={`${listId}-q`} type="search" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={onSearchKey}
             placeholder="Type a street name" aria-describedby={`${listId}-help`} />
-          {toolDef.target !== 'node' && (
-            <label className="check"><input type="checkbox" checked={p.showService} onChange={(e) => p.onShowService(e.target.checked)} /> Show service roads</label>
-          )}
+          <div className="check-row">
+            {toolDef.target !== 'node' && (
+              <label className="check"><input type="checkbox" checked={p.showService} onChange={(e) => p.onShowService(e.target.checked)} /> Show service roads</label>
+            )}
+            <label className="check"><input type="checkbox" checked={p.showOutside} onChange={(e) => p.onShowOutside(e.target.checked)} /> Include streets outside the study area</label>
+          </div>
           <p className="muted small" aria-live="polite">{filtered.length} match{filtered.length === 1 ? '' : 'es'}. Press Enter or Space on an item to add it, or click the map.</p>
           <ul className="pick-list" ref={listRef} onKeyDown={onListKey} aria-label="Matching places">
             {filtered.slice(0, shown).map((it) => (
@@ -228,7 +223,7 @@ export function InterventionPanel(p: Props) {
               return (
                 <li key={i}>
                   <span className={`iv-badge static iv-${iv.type}`} aria-hidden="true">{iv.type === 'speed_limit' ? Math.round(iv.speed * 2.23694) : iv.type === 'modal_filter' ? 'MF' : iv.type === 'speed_hump' ? 'SH' : iv.type === 'traffic_circle' ? 'TC' : iv.type === 'control' ? 'IC' : iv.type === 'signal_timing' ? 'ST' : iv.type === 'one_way' ? '1W' : 'TB'}</span>
-                  <span className="desc">{d}</span>
+                  <span className="desc">{d}{!interventionInStudyArea(iv, B.network) && <>{" "}<span className="tag">outside study area</span></>}</span>
                   <button type="button" className="btn small-btn" onClick={() => p.onRemove(i)} aria-label={`Remove: ${d}`}>Remove</button>
                 </li>
               );

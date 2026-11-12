@@ -19,7 +19,8 @@ export type ToWorker =
 export type FromWorker =
   | { t: 'ready'; engine: 'wasm' | 'mock'; reason?: string }
   | { t: 'frame'; time: number; vehicles: Float32Array; signals: Uint8Array }
-  | { t: 'stats'; time: number; comparing: boolean; scenario: SimStats; baseline: SimStats }
+  /** `achievedSpeed`: sim seconds advanced per wall second over the last window while running (null when paused or just changed). */
+  | { t: 'stats'; time: number; comparing: boolean; scenario: SimStats; baseline: SimStats; achievedSpeed: number | null }
   | { t: 'error'; message: string };
 
 /** Shape shared by the WASM `Simulation` class and the TS mock. */

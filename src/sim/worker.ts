@@ -19,6 +19,9 @@ let running = false;
 let pending = 0;
 let lastTick = 0;
 let lastStats = 0;
+let winStart = 0;
+let winSim = 0;
+const resetWindow = () => { winStart = performance.now(); winSim = 0; };
 let timer: ReturnType<typeof setInterval> | null = null;
 
 const make = (): SimLike => new Ctor!(network, demand, JSON.stringify(cfg), transit);
@@ -44,7 +47,7 @@ function restart() {
   if (interventions.length) {
     if (baseline) baseline.reset(); else baseline = make();
   } else { dispose(baseline); baseline = null; }
-  pending = 0;
+  pending = 0; resetWindow();
   postFrame(); postStats();
 }
 
@@ -65,8 +68,13 @@ function postStats() {
   const sc = statsOf(scenario);
   const comparing = baseline !== null;
   const base = comparing ? statsOf(baseline) : sc;
-  post({ t: 'stats', time: scenario.time(), comparing, scenario: sc, baseline: base });
-  lastStats = performance.now();
+  const now = performance.now();
+  const achievedSpeed = running && now - winStart >= 900 ? winSim / ((now - winStart) / 1000) : null;
+  resetWindow();
+  const buffers = new Set<ArrayBuffer>();
+  for (const s of [sc, base]) if (s.linkStats) buffers.add(s.linkStats.buffer as ArrayBuffer);
+  post({ t: 'stats', time: scenario.time(), comparing, scenario: sc, baseline: base, achievedSpeed }, [...buffers]);
+  lastStats = now;
 }
 
 function tick() {
@@ -83,13 +91,14 @@ function tick() {
       try {
         scenario.step(secs);
         baseline?.step(secs);
+        winSim += secs;
+        postFrame();
       } catch (e) {
         running = false;
         post({ t: 'error', message: `Simulation error: ${(e as Error).message ?? e}` });
         return;
       }
     }
-    postFrame();
     if (now - lastStats >= 1000) postStats();
   }
 }
@@ -122,7 +131,7 @@ async function init(msg: Extract<ToWorker, { t: 'init' }>) {
   } else reason = 'mock requested';
   rebuild();
   post({ t: 'ready', engine, reason });
-  lastTick = performance.now();
+  lastTick = performance.now(); resetWindow();
   postFrame(); postStats();
   if (!timer) timer = setInterval(tick, 33);
 }
@@ -132,11 +141,11 @@ ctx.onmessage = (ev: MessageEvent<ToWorker>) => {
   try {
     switch (m.t) {
       case 'init': void init(m); break;
-      case 'run': running = m.running; lastTick = performance.now(); break;
-      case 'speed': speed = m.speed; break;
+      case 'run': running = m.running; lastTick = performance.now(); resetWindow(); break;
+      case 'speed': speed = m.speed; resetWindow(); break;
       case 'config':
         cfg = { ...cfg, period: m.period, demandScale: m.demandScale };
-        rebuild(); pending = 0; postFrame(); postStats(); break;
+        rebuild(); pending = 0; resetWindow(); postFrame(); postStats(); break;
       case 'interventions': interventions = m.list; restart(); break;
       case 'reset': restart(); break;
     }
