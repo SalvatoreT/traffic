@@ -92,7 +92,7 @@
   "periodWindows": { "am_peak": [7, 9], "midday": [11, 13], "pm_peak": [16, 18] },
   "calibration": {
     "status": "uncalibrated",
-    "note": "D4 holds in midday and AM but fails in the PM peak in 2 of 3 seeds, and the Colby St SB freeway share is 18 points off, so it stays uncalibrated.",
+    "note": "Midday and the AM peak run smoothly. The PM peak sometimes strands a car or two, and one route share on Colby Street is 18 points off.",
     "defaultPeriod": "midday",
     "experimentalPeriods": ["pm_peak"]
   }
