@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { AreaBundle, Overlay } from '../types';
 import { linkStatsView } from '../types';
 import type { Block, NetIndex } from '../lib/naming';
 import { matchesQuery } from '../lib/naming';
 import { blockVisible } from '../lib/picker';
 import { hoverHandlers, type Hover } from '../lib/highlight';
+import { rovingTarget, tabStop } from '../lib/roving';
 import { formatValue } from '../lib/format';
 import { vulnerableSentence } from '../lib/metrics';
 import type { Metrics } from '../types';
@@ -35,6 +36,12 @@ export function StreetsTable({ index, scen, base, comparing, overlay, showServic
   const [q, setQ] = useState('');
   const [cls, setCls] = useState('all');
   const [limit, setLimit] = useState(150);
+  const PAGE = 200;
+  const [stop, setStop] = useState<number | null>(null);
+  // First newly revealed row: animated in and focused, then forgotten.
+  const [reveal, setReveal] = useState<number | null>(null);
+  const [revealNote, setRevealNote] = useState('');
+  const rowEls = useRef(new Map<number, HTMLTableRowElement>());
 
   const rows = useMemo<Row[]>(() => {
     const S = linkStatsView(scen), B = linkStatsView(base ?? scen);
@@ -52,6 +59,34 @@ export function StreetsTable({ index, scen, base, comparing, overlay, showServic
     const f = rows.filter((r) => blockVisible(r.block, { showService }, cls) && (cls === 'all' || r.cls === cls) && matchesQuery(r.label, q));
     return f.sort(compareRows<Row>(active.key, active.dir));
   }, [rows, q, cls, active.key, active.dir, showService]);
+
+  const visible = shown.slice(0, limit);
+  const rowStop = tabStop(visible.map((r) => r.key), stop);
+
+  useEffect(() => {
+    if (reveal === null) return;
+    const first = visible[reveal];
+    if (first) { setStop(first.key); rowEls.current.get(first.key)?.focus(); }
+    const t = window.setTimeout(() => setReveal(null), 500);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reveal]);
+
+  const showMore = () => {
+    const next = Math.min(shown.length, limit + PAGE);
+    setRevealNote(`${next - limit} more streets shown, ${shown.length - next} remaining.`);
+    setReveal(limit);
+    setLimit(next);
+  };
+  const onRowKey = (e: React.KeyboardEvent<HTMLTableRowElement>, i: number) => {
+    if (e.target !== e.currentTarget || e.altKey || e.ctrlKey || e.metaKey) return;
+    const to = rovingTarget(e.key, i, visible.length);
+    if (to === null) return;
+    e.preventDefault();
+    const r = visible[to];
+    setStop(r.key);
+    rowEls.current.get(r.key)?.focus();
+  };
 
   const th = (key: Key, label: string, sub?: string, rowSpan?: number) => (
     <th scope="col" rowSpan={rowSpan} aria-sort={active.key === key ? (active.dir === 1 ? 'ascending' : 'descending') : 'none'}>
@@ -81,7 +116,7 @@ export function StreetsTable({ index, scen, base, comparing, overlay, showServic
         <label className="check"><input type="checkbox" checked={showService} onChange={(e) => onShowService(e.target.checked)} /> Show service roads</label>
         <span role="status" className="muted small">{shown.length} match{shown.length === 1 ? '' : 'es'}</span>
       </div>
-      <div className="table-scroll" tabIndex={0} role="region" aria-label="Streets table, scrollable">
+      <div className="table-scroll" role="region" aria-label="Streets table, scrollable">
         <table className="streets">
           <caption className="sr-only">Street blocks with flow, mean speed and cut-through flow, baseline versus scenario</caption>
           <thead>
@@ -100,8 +135,14 @@ export function StreetsTable({ index, scen, base, comparing, overlay, showServic
             </tr>
           </thead>
           <tbody>
-            {shown.slice(0, limit).map((r) => (
-              <tr key={r.key} tabIndex={0} aria-label={r.label} {...hoverHandlers(onHover, { kind: 'block', block: index.blockOfLink[r.key] })}>
+            {visible.map((r, i) => (
+              <tr
+                key={r.key} ref={(el) => { if (el) rowEls.current.set(r.key, el); else rowEls.current.delete(r.key); }}
+                tabIndex={r.key === rowStop ? 0 : -1} aria-label={r.label} className={reveal !== null && i >= reveal ? 'row-new' : undefined}
+                onKeyDown={(e) => onRowKey(e, i)}
+                {...hoverHandlers(onHover, { kind: 'block', block: index.blockOfLink[r.key] })}
+                onFocus={() => { setStop(r.key); onHover({ kind: 'block', block: index.blockOfLink[r.key] }); }}
+              >
                 <th scope="row">{r.label}</th>
                 <td>{r.cls}</td>
                 {cell(r.flowB, r.flowS, 'flow')}
@@ -113,7 +154,8 @@ export function StreetsTable({ index, scen, base, comparing, overlay, showServic
           </tbody>
         </table>
       </div>
-      {shown.length > limit && <button type="button" className="btn" onClick={() => setLimit((l) => l + 200)}>Show more ({shown.length - limit} remaining)</button>}
+      <span role="status" className="sr-only">{revealNote}</span>
+      {shown.length > limit && <button type="button" className="btn" onClick={showMore}>Show more ({shown.length - limit} remaining)</button>}
     </div>
   );
 }
