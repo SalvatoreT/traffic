@@ -39,6 +39,8 @@ export interface NetLink {
   sidewalk?: boolean;
   /** Marked mid-block crossings, meters from link start. */
   crossings?: number[];
+  /** Lanes marked left-turn only in the OSM `turn:lanes` tag at the end of this link (already counted in `lanes`). */
+  leftLanes?: number;
 }
 
 /** A motor-vehicle movement banned by an OSM turn restriction: `from` is the link into the junction, `to` the link out of it. `periods` lists the demand periods of a time-conditional ban. */

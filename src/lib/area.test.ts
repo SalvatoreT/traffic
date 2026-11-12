@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildFixture } from '../fixtures/area';
 import { buildIndex } from './naming';
 import { computeFocus, interventionInStudyArea, FOCUS_BUFFER_M } from './area';
-import { blockVisible, pickerItems } from './picker';
+import { blockVisible, placeResults } from './picker';
 import { aggregateProgress } from '../data';
 import { nextSpeedShown, speedNoteText } from './speed';
 import type { Network } from '../types';
@@ -50,21 +50,21 @@ describe('picker scope', () => {
   const idx = buildIndex(small);
   const base = { showService: true, showOutside: false };
   it('lists fewer blocks by default than with outside streets included', () => {
-    const inside = pickerItems(small, idx, 'block', base);
-    const all = pickerItems(small, idx, 'block', { ...base, showOutside: true });
+    const inside = placeResults(small, idx, base).blocks;
+    const all = placeResults(small, idx, { ...base, showOutside: true }).blocks;
     expect(inside.length).toBeGreaterThan(0);
     expect(inside.length).toBeLessThan(all.length);
     expect(all.length).toBe(idx.blocks.length);
-    idx.blocks.filter((b) => b.inStudyArea).forEach((b) => expect(inside.some((i) => i.id === b.links[0])).toBe(true));
+    idx.blocks.forEach((b, i) => { if (b.inStudyArea) expect(inside.some((r) => r.id === i)).toBe(true); });
   });
-  it('filters intersections and directed links the same way', () => {
-    expect(pickerItems(small, idx, 'node', base).length).toBeLessThan(pickerItems(small, idx, 'node', { ...base, showOutside: true }).length);
-    expect(pickerItems(small, idx, 'dirlink', base).length).toBeLessThan(pickerItems(small, idx, 'dirlink', { ...base, showOutside: true }).length);
+  it('filters intersections the same way', () => {
+    expect(placeResults(small, idx, base).nodes.length).toBeLessThan(placeResults(small, idx, { ...base, showOutside: true }).nodes.length);
   });
   it('puts study-area items first', () => {
-    const items = pickerItems(small, idx, 'block', { ...base, showOutside: true });
-    const firstOut = items.findIndex((i) => !i.study);
-    expect(items.slice(firstOut).every((i) => !i.study)).toBe(true);
+    for (const items of Object.values(placeResults(small, idx, { ...base, showOutside: true }))) {
+      const firstOut = items.findIndex((i) => !i.study);
+      if (firstOut >= 0) expect(items.slice(firstOut).every((i) => !i.study)).toBe(true);
+    }
   });
   it('hides service roads unless asked, even in the focus area', () => {
     const svc = { ...idx.blocks[0], cls: 'service' as const, inFocus: true };

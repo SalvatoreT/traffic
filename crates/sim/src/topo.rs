@@ -209,6 +209,10 @@ impl Topo {
             let left = self.mvs[ms..ms + mc].iter().any(|m| m.kind == K_LEFT);
             let other = self.mvs[ms..ms + mc].iter().any(|m| m.kind != K_LEFT && m.kind != K_UTURN);
             self.pocket[l] = left && other;
+            // OSM already counts a marked left-turn lane in `lanes`: the pocket takes it (the through lanes stay as tagged).
+            if self.pocket[l] && link.left_lanes > 0 && self.nmain[l] > link.left_lanes as usize {
+                self.nmain[l] -= 1;
+            }
         }
     }
 

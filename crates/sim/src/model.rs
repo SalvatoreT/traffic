@@ -90,6 +90,10 @@ pub struct Link {
     /// Additive: marked mid-block crossings, meters from the link start.
     #[serde(default)]
     pub crossings: Vec<f64>,
+    /// Additive: lanes marked left-turn only in the OSM `turn:lanes` tag at the end of this link. They are already counted in `lanes`, so the
+    /// left-turn pocket uses one of them instead of adding a lane.
+    #[serde(default)]
+    pub left_lanes: u32,
 }
 
 impl Link {

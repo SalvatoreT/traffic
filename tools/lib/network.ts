@@ -112,6 +112,8 @@ interface Link {
   bikeRoute: boolean;
   sidewalk: boolean;
   crossings: number[];
+  /** Lanes marked left-turn only in `turn:lanes` at the end of the link (0 when unknown). */
+  leftLanes: number;
   alive: boolean;
 }
 
@@ -389,6 +391,12 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
 
   const segsByRun = new Map<Run, Segment[]>();
   const links: Link[] = [];
+  // `turn:lanes` lists the lanes of a way from left to right and applies at the way's end in the direction of travel.
+  const endsAtWayEnd = (run: Run, a: number, b: number, forward: boolean) => (forward ? b === run.nodes.length - 1 : a === 0);
+  const leftLaneCount = (t: Record<string, string>, forward: boolean, twoWay: boolean): number => {
+    const spec = t[`turn:lanes:${forward ? 'forward' : 'backward'}`] ?? (twoWay ? undefined : t['turn:lanes']);
+    return spec ? spec.split('|').filter((x) => /^(sharp_|slight_)?left$/.test(x.trim())).length : 0;
+  };
   const mkLink = (run: Run, a: number, b: number, forward: boolean): Link => {
     const idxs: number[] = [];
     for (let i = a; i <= b; i++) idxs.push(i);
@@ -410,6 +418,7 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
       bikeRoute: run.bikeRoute,
       sidewalk: run.sidewalk,
       crossings: [],
+      leftLanes: endsAtWayEnd(run, a, b, forward) ? leftLaneCount(run.way.tags, forward, run.fwd && run.bwd) : 0,
       alive: true,
     };
   };
@@ -711,6 +720,7 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
     return {
       ...a,
       ways: [...new Set([...a.ways, ...b.ways])],
+      leftLanes: b.leftLanes,
       to: b.to,
       stopAtEnd: b.stopAtEnd,
       geometry: [...a.geometry, ...b.geometry.slice(1)],
@@ -928,6 +938,7 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
       inStudyArea: l.cls !== 'motorway' && (pointInPolygon(mid, studyPoly) || onBoundary(l, mid)),
       sidewalk: l.sidewalk,
     };
+    if (l.leftLanes > 0) link.leftLanes = l.leftLanes;
     if (l.bikeLane) link.bikeLane = true;
     if (l.bikeRoute) link.bikeRoute = true;
     const cr = [...new Set(l.crossings.filter((c) => c > 0 && c < length))].sort((a, b) => a - b);

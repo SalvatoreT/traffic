@@ -44,6 +44,7 @@ impl B {
             bike_route: false,
             sidewalk: None,
             crossings: vec![],
+            left_lanes: 0,
         });
         id
     }

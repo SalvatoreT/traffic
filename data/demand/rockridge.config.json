@@ -308,7 +308,7 @@
     "kFactorNote": "ASSUMPTION: peak-hour share of ramp ADT, same urban range as the arterial K-factor; period volume factors (periodFactors) apply on top.",
     "defaultAdt": 500,
     "defaultAdtNote": "ASSUMPTION: ADT of a ramp with no matching published count (minor connectors at the SR-13/SR-24 interchange, hillside ramps and the Broadway terminals east of Tunnel Road). The original four ramps never used it.",
-    "localShare": 0.3,
+    "localShare": 0.6,
     "localShareNote": "ASSUMPTION (calibration step E: 0.15 -> 0.30): share of ramp trips whose surface end is an in-area (LODES) node rather than a surface gate. These trips replace part of the block's external local trips.",
     "maxShareOfGate": 0.4,
     "maxShareOfGateNote": "ASSUMPTION: ramp trips use at most this share of a surface gate's in/outflow target (surface totals stay consistent; the Furness step fills the rest).",
@@ -372,7 +372,7 @@
     ],
     "excludeNote": "Rows that combine the 52nd St and MLK Jr Way (Grove St) ramps are dropped because per-street SEG rows (2016-2017 / 2012) exist for the same ramps and would double count."
   },
-  "assumedGateScale": 1.0,
+  "assumedGateScale": 0.5,
   "assumedGateScaleNote": "ASSUMPTION: single factor on all gate volumes that are not count-based (class-default ADT gates); count-based gates (TMC, Caltrans override) and ramp volumes are unscaled. Reset to 1.0 for the wider area (gates now sit on larger roads far from the study area); the earlier 0.35 was a stability workaround for gates close to the study area. Tuning follows in a later step.",
   "transit": "public/data/rockridge.transit.json",
   "active": {
