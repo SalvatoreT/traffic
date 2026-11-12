@@ -225,7 +225,7 @@ export function Legend(p: LegendProps) {
             {p.multimodal && p.hasBikeNet && (
               <label className="check mode">
                 <input type="checkbox" checked={p.bikeNet} onChange={(e) => p.onBikeNet(e.target.checked)} />
-                <svg width="22" height="16" aria-hidden="true"><line x1="1" y1="8" x2="21" y2="8" stroke="var(--bike)" strokeWidth="4" strokeDasharray="5 3" /></svg> Bike network
+                <svg width="30" height="16" aria-hidden="true"><line x1="1" y1="5" x2="29" y2="5" stroke="var(--bikenet)" strokeWidth="2" /><line x1="1" y1="11" x2="29" y2="11" stroke="var(--bikenet)" strokeWidth="2" strokeDasharray="4 3" /></svg> Bike network (lanes solid, routes dashed)
               </label>
             )}
           </div>

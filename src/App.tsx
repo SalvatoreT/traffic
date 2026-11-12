@@ -111,9 +111,10 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
       return { car: saved.car ?? true, bicycle: saved.bicycle ?? true, pedestrian: saved.pedestrian ?? true };
     } catch { return all; }
   });
-  const [bikeNet, setBikeNet] = useState(() => store.get('bikeNet') === '1');
+  // Key versioned (bikeNet2): the layer was on by default-ish before it was made quiet, so older saved choices are ignored.
+  const [bikeNet, setBikeNet] = useState(() => store.get('bikeNet2') === '1');
   useEffect(() => { store.set('modes', JSON.stringify(modes)); }, [modes]);
-  useEffect(() => { store.set('bikeNet', bikeNet ? '1' : '0'); }, [bikeNet]);
+  useEffect(() => { store.set('bikeNet2', bikeNet ? '1' : '0'); }, [bikeNet]);
   const hasBikeNet = useMemo(() => network.links.some((l) => l.bikeLane || l.bikeRoute), [network]);
   const [notice, setNotice] = useState<{ unplaced: Unplaced[]; invalid: boolean }>({ unplaced: [], invalid: false });
   // Set after mount so the polite live region exists before its content changes.

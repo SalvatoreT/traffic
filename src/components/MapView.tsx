@@ -65,6 +65,14 @@ export const AGENT_COLORS = {
   dark: { car: '#7db6f5', bike: '#3ddbb0', ped: '#f2b84b', ring: '#0b1118', tick: '#d0d6de' },
 };
 
+/** Quiet bike-network hue (muted violet): distinct from the viridis overlay ramp, the agent palette and the basemap. Opacities are design choices, not calibrated values. */
+export const BIKENET = {
+  light: { color: '#8a5a9e', lane: 0.55, route: 0.45 },
+  dark: { color: '#b79ac9', lane: 0.6, route: 0.5 },
+};
+const bikeOpacity = (base: number, from: number, to: number): never =>
+  ['interpolate', ['linear'], ['zoom'], from, 0, to, base] as never;
+
 const BADGE: Record<string, string> = {
   modal_filter: 'MF', speed_hump: 'SH', speed_limit: 'SL', traffic_circle: 'TC', control: 'IC',
   signal_timing: 'ST', one_way: '1W', turn_ban: 'TB', diagonal_diverter: 'DD',
@@ -341,12 +349,13 @@ export function MapView(p: Props) {
       map.addLayer({ id: 'links-casing', type: 'line', source: 'links', layout: { 'line-cap': 'butt', 'line-join': 'round' },
         paint: { 'line-color': mode === 'dark' ? '#0b1118' : '#ffffff', 'line-opacity': 0.85, 'line-width': casingWidth() as never, 'line-offset': OFFSET as never } });
       const bikeVis = live.current.showBikeNet ? 'visible' : 'none';
+      const BN = BIKENET[live.current.mode];
       map.addLayer({ id: 'bike-route', type: 'line', source: 'links', filter: ['get', 'bikeRoute'] as never,
         layout: { 'line-cap': 'butt', 'line-join': 'round', visibility: bikeVis },
-        paint: { 'line-color': AGENT_COLORS[live.current.mode].bike, 'line-opacity': 0.55, 'line-dasharray': [1, 2.5], 'line-width': ['interpolate', ['linear'], ['zoom'], 14, 3.5, 18, 8] as never, 'line-offset': OFFSET as never } });
+        paint: { 'line-color': BN.color, 'line-opacity': bikeOpacity(BN.route, 13, 14.5), 'line-dasharray': [2.5, 2.5], 'line-width': ['interpolate', ['linear'], ['zoom'], 14, 1.3, 18, 2.6] as never, 'line-offset': OFFSET as never } });
       map.addLayer({ id: 'bike-lane', type: 'line', source: 'links', filter: ['get', 'bikeLane'] as never,
         layout: { 'line-cap': 'butt', 'line-join': 'round', visibility: bikeVis },
-        paint: { 'line-color': AGENT_COLORS[live.current.mode].bike, 'line-opacity': 0.85, 'line-dasharray': [2, 1.2], 'line-width': ['interpolate', ['linear'], ['zoom'], 14, 4, 18, 9] as never, 'line-offset': OFFSET as never } });
+        paint: { 'line-color': BN.color, 'line-opacity': bikeOpacity(BN.lane, 11.5, 14), 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 0.6, 14, 1.5, 18, 3] as never, 'line-offset': OFFSET as never } });
       map.addLayer({ id: 'links', type: 'line', source: 'links', layout: { 'line-cap': 'butt', 'line-join': 'round' },
         paint: { 'line-color': ramp(mode) as never, 'line-width': widthExpr() as never, 'line-offset': OFFSET as never } });
       map.addLayer({ id: 'sel-node-edge', type: 'circle', source: 'selection', filter: ['==', ['geometry-type'], 'Point'],
@@ -391,8 +400,10 @@ export function MapView(p: Props) {
     map.setPaintProperty('sel-node-edge', 'circle-stroke-color', SEL_EDGE[mode]);
     map.setPaintProperty('links-casing', 'line-color', mode === 'dark' ? '#0b1118' : '#ffffff');
     map.setPaintProperty('links', 'line-color', ramp(mode) as never);
-    map.setPaintProperty('bike-lane', 'line-color', AGENT_COLORS[mode].bike);
-    map.setPaintProperty('bike-route', 'line-color', AGENT_COLORS[mode].bike);
+    map.setPaintProperty('bike-lane', 'line-color', BIKENET[mode].color);
+    map.setPaintProperty('bike-route', 'line-color', BIKENET[mode].color);
+    map.setPaintProperty('bike-lane', 'line-opacity', bikeOpacity(BIKENET[mode].lane, 11.5, 14));
+    map.setPaintProperty('bike-route', 'line-opacity', bikeOpacity(BIKENET[mode].route, 13, 14.5));
     };
     try { apply(); } catch { map.once('idle', () => { try { apply(); } catch { /* theme applies on next change */ } }); }
     schedule();
