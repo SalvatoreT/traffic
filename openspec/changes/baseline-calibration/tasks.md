@@ -77,7 +77,7 @@
 - [x] 11.6 52nd St off-ramp at 0.47 of its count: found in the simulator's merge rule at the 52nd St merge (one vehicle at a time onto a multilane exit); rule changed and a validation case (i4) and a unit test added
 - [x] 11.7 SR-24 west-end stub: lane counts match OSM; lane choice by branch tried and not kept (no effect); the isolated gate run carries its counted volume, so the shortfall comes from the surface demand that shares the junctions behind the ramps
 - [x] 11.8 Re-run: PM, AM and midday at scale 1.0 (seeds 1 to 3), one 120-minute PM run, reports replaced, record, README, area `calibration` entry
-- [x] 11.9 D4 reached in the ninth round (task 12); D5 still open (see 12.9)
+- [ ] 11.9 D4 and D5 (see 12.9)
 
 ## 12. Freeway-edge stubs, one count once, right turn on red, measured costs (ninth round)
 - [x] 12.1 Importer: freeway-edge stubs merged into one mainline gate per direction and end (`freewayGateMergeM`), parallel stub links joined, fork gates cleared; ramp reachability check with a warning and a list; tests on a synthetic fork and on Rockridge
@@ -87,5 +87,6 @@
 - [x] 12.5 Simulator: the adaptive plan counts the queue standing on every link feeding an unsignalized merge that the queue has reached; calibration report lists the phases of the five most blocked signals
 - [x] 12.6 Select-link comparison of assignment and simulator (`calibrate --select-od`, `ASSIGN_DUMP`), record
 - [x] 12.7 Cost loop (`tools/cost-loop.ts`, `linkMeanDelayS`, optional `countFit.assignment.measured`): run three iterations; shares 12.6, 9.9, 15.1 points off and PM removals 0, 4.7, 4.7, so iteration 0 is kept
-- [x] 12.8 Re-run: PM, AM and midday at scale 1.0 (seeds 1 to 3) and a 120-minute PM run; D4 holds in all three periods; reports replaced, `public/data/*` regenerated, record, READMEs, area `calibration` entry (`uncalibrated`, no experimental periods, default PM)
-- [ ] 12.9 Reach D5 (Colby St SB to the freeway is 21 points under, Hillegass Ave NB 13 over); long-peak entry backlog at two gates (120-minute run: 2.5%)
+- [x] 12.8 Re-run: PM, AM and midday at scale 1.0 (seeds 1 to 3) and a 120-minute PM run; reports replaced, `public/data/*` regenerated, record, READMEs, area `calibration` entry (`uncalibrated`, PM experimental, default midday); D4 holds in midday, fails in the PM peak in 2 of 3 seeds and in AM in 1 of 3
+- [x] 12.10 Staggered T-junction join (`staggeredJoinRadius`, 14 pairs, Colby St/62nd St), tests, README and spec; final numbers re-run on the resulting network
+- [ ] 12.9 Reach D4 in the PM peak in every seed and D5 (Colby St SB to the freeway is 18 points under); long-peak entry backlog at two gates (120-minute run: 2.6%)

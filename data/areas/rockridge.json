@@ -92,8 +92,8 @@
   "periodWindows": { "am_peak": [7, 9], "midday": [11, 13], "pm_peak": [16, 18] },
   "calibration": {
     "status": "uncalibrated",
-    "note": "D4 holds in all three periods; the PM headline freeway shares on Hillegass and Colby are 7 to 21 points off, so the baseline stays uncalibrated.",
-    "defaultPeriod": "pm_peak",
-    "experimentalPeriods": []
+    "note": "D4 holds in midday and AM but fails in the PM peak in 2 of 3 seeds, and the Colby St SB freeway share is 18 points off, so it stays uncalibrated.",
+    "defaultPeriod": "midday",
+    "experimentalPeriods": ["pm_peak"]
   }
 }

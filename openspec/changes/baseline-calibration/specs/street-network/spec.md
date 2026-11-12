@@ -103,3 +103,14 @@ The importer SHALL check that every on-ramp reaches a mainline exit gate and eve
 #### Scenario: Rockridge
 - **WHEN** the Rockridge network is imported
 - **THEN** the list of violating ramps is empty
+
+### Requirement: Staggered T-junctions of one cross street are one intersection
+Two T-junctions on an undivided street SHALL be joined into one node when their side-street legs carry the same name, leave on opposite sides of the through street, and their junction points lie within `staggeredJoinRadius` (default 35 m) along it, whatever the control. The general join radius is unchanged.
+
+#### Scenario: Same cross street, 29 m apart
+- **WHEN** a street named Cross Street meets Main Street from the north at one point and from the south 29 m along it
+- **THEN** the two junctions are one node with two Main Street and two Cross Street legs
+
+#### Scenario: Different names or 60 m apart
+- **WHEN** the two side streets have different names, or the same name at 60 m
+- **THEN** the junctions stay separate

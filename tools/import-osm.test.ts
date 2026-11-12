@@ -123,7 +123,7 @@ describe('rockridge network', () => {
   it('excludes the freeway from the study area and bounds it by the freeway', () => {
     expect(net.links.filter((l) => l.class === 'motorway').every((l) => !l.inStudyArea)).toBe(true);
     const inLocal = net.links.filter((l) => l.inStudyArea);
-    expect(inLocal.length).toBeGreaterThan(200);
+    expect(inLocal.length).toBeGreaterThan(190);
     expect(cfg.boundary?.at(-1)).toEqual({ ref: 'CA 24', class: 'motorway' });
     expect(inLocal.some((l) => l.name === 'Claremont Avenue')).toBe(true);
   });
@@ -361,7 +361,7 @@ describe('wider model area', () => {
   it('keeps the study area flags to the original streets', () => {
     const inside = names((l) => l.inStudyArea);
     for (const n of ['Ashby Avenue', 'Sacramento Street', 'Tunnel Road', 'Shattuck Avenue', '51st Street', '52nd Street']) expect(inside.has(n), n).toBe(false);
-    expect(net.links.filter((l) => l.inStudyArea).length).toBeGreaterThan(200);
+    expect(net.links.filter((l) => l.inStudyArea).length).toBeGreaterThan(190);
     expect(net.links.filter((l) => l.inStudyArea).length).toBeLessThan(215);
   });
 
@@ -484,5 +484,54 @@ describe('freeway-edge stubs (synthetic)', () => {
       expect(Math.hypot(e[0] - g[0].x, e[1] - g[0].y)).toBeLessThan(1);
     }
     expect(r.stats.freewayRampViolations).toEqual([]);
+  });
+});
+
+describe('staggered T-junctions (synthetic)', () => {
+  const lat0 = 37.84;
+  const lon0 = -122.26;
+  const d = 0.0001;
+  const nd = (id: number, dx: number, dy: number) => ({ type: 'node' as const, id, lon: lon0 + dx * d, lat: lat0 + dy * d });
+  const way = (id: number, name: string, nodes: number[]) => ({ type: 'way' as const, id, nodes, tags: { highway: 'residential', name } });
+  // Main St east-west; a north leg meets it at x=0 and a south leg at x=`off` (units of 8.8 m east-west).
+  const mk = (off: number, north: string, south: string) => {
+    const els: Overpass['elements'] = [
+      nd(1, -30, 0), nd(2, 0, 0), nd(3, off, 0), nd(4, 40, 0), nd(5, 0, 30), nd(6, off, -30),
+      way(10, 'Main Street', [1, 2, 3, 4]), way(11, north, [5, 2]), way(12, south, [6, 3]),
+    ];
+    const c: AreaConfig = {
+      id: 't', name: 't', extract: '', bbox: [lon0 - 50 * d, lat0 - 40 * d, lon0 + 50 * d, lat0 + 40 * d],
+      studyArea: [[lon0 - 5 * d, lat0 - 5 * d], [lon0 + 5 * d, lat0 - 5 * d], [lon0 + 5 * d, lat0 + 5 * d], [lon0 - 5 * d, lat0 - 5 * d]],
+    };
+    return buildNetwork(c, { elements: els }).network;
+  };
+  const tJunctions = (n: Network) => n.nodes.filter((x) => n.links.filter((l) => l.to === x.id).length >= 3);
+
+  it('joins two T-junctions 29 m apart when the side legs share a name and leave on opposite sides', () => {
+    const n = mk(3.3, 'Cross Street', 'Cross Street');
+    const j = tJunctions(n);
+    expect(j).toHaveLength(1);
+    const legs = n.links.filter((l) => l.to === j[0].id);
+    expect(legs.map((l) => l.name).sort()).toEqual(['Cross Street', 'Cross Street', 'Main Street', 'Main Street']);
+  });
+
+  it('does not join them when the side streets have different names', () => {
+    expect(tJunctions(mk(3.3, 'North Street', 'South Street'))).toHaveLength(2);
+  });
+
+  it('does not join same-named side streets 60 m apart', () => {
+    expect(tJunctions(mk(6.8, 'Cross Street', 'Cross Street'))).toHaveLength(2);
+  });
+});
+
+describe('Colby Street / 62nd Street', () => {
+  it('is one node with exactly four legs, two Colby Street and two 62nd Street', () => {
+    const hits = net.nodes.filter((n) => {
+      const ls = net.links.filter((l) => l.to === n.id);
+      return ls.some((l) => l.name === 'Colby Street') && ls.some((l) => l.name === '62nd Street');
+    });
+    expect(hits).toHaveLength(1);
+    const ins = net.links.filter((l) => l.to === hits[0].id).map((l) => l.name).sort();
+    expect(ins).toEqual(['62nd Street', '62nd Street', 'Colby Street', 'Colby Street']);
   });
 });
