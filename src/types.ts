@@ -45,6 +45,8 @@ export interface AreaEntry {
   defaultPeriod?: string;
   /** Period ids shown as experimental (not calibrated). */
   experimentalPeriods?: string[];
+  /** Proposals file; defaults to `/data/<id>.proposals.json`. */
+  proposals?: string;
 }
 
 export type Intervention =
