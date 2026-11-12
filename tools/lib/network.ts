@@ -61,6 +61,8 @@ export const PARAMS = {
   signalReachM: 30,
   stopReachM: 60,
   gateEdgeM: 60,
+  /** Mainline gates of one freeway direction whose stub ends lie within this distance (single linkage) are one gate. */
+  freewayGateMergeM: 80,
   boundaryReachM: 8,
   junctionJoinRadiusM: 20,
   /** Clusters of two or more signal nodes joined by short two-way links are one intersection up to this radius (offset signals on a wide junction, a five-leg crossing). */
@@ -145,6 +147,12 @@ export interface BuildStats {
   restrictionsUnresolved: number;
   /** Gates closer than `gateSignalWarnM` (default 60 m) to a signalized junction: a gate should sit mid-block, not inside a junction. */
   gatesNearSignal: { gate: number; distM: number; street: string }[];
+  /** Freeway-edge stubs merged into one gate: direction, the stub gates (OSM node ids), the gate that remains and the largest distance from the centroid. */
+  freewayGateMerges: { role: 'entry' | 'exit'; gates: number[]; into: number; spreadM: number }[];
+  /** Parallel stub links between the same two nodes joined into one link (lanes added). */
+  freewayStubLinksJoined: number;
+  /** Ramps that cannot reach a mainline exit gate (on-ramps) or cannot be reached from a mainline entry gate (off-ramps), by node id and surface street. */
+  freewayRampViolations: { kind: 'on' | 'off'; node: number; streets: string[] }[];
 }
 
 function parseSpeed(v: string | undefined): number | null {
@@ -188,6 +196,9 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
     restrictionsSkipped: 0,
     restrictionsUnresolved: 0,
     gatesNearSignal: [],
+    freewayGateMerges: [],
+    freewayStubLinksJoined: 0,
+    freewayRampViolations: [],
   };
   const [minLon, minLat, maxLon, maxLat] = cfg.bbox;
   const lon0 = (minLon + maxLon) / 2;
@@ -775,13 +786,17 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
   }
   const live = links.filter((l) => l.alive);
 
-  const deg = new Map<number, Set<number>>();
-  for (const l of live) {
-    for (const [p, q] of [[l.from, l.to], [l.to, l.from]]) {
-      if (!deg.has(p)) deg.set(p, new Set());
-      deg.get(p)!.add(q);
+  const degOf = () => {
+    const m = new Map<number, Set<number>>();
+    for (const l of live.filter((x) => x.alive)) {
+      for (const [p, q] of [[l.from, l.to], [l.to, l.from]]) {
+        if (!m.has(p)) m.set(p, new Set());
+        m.get(p)!.add(q);
+      }
     }
-  }
+    return m;
+  };
+  let deg = degOf();
   const gates = new Set<number>();
   for (const id of deg.keys()) {
     if (gateCand.has(id)) gates.add(id);
@@ -789,11 +804,107 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
   }
   stats.gateCandidates = gates.size;
 
+  // Freeway-edge stubs. The model boundary can cut one freeway carriageway into several stubs a few meters apart (a carriageway that
+  // forks or merges just outside the box), each with its own gate. Trips to (from) one stub could then reach only the ramps on that
+  // stub's branch. Mainline gates of one direction (all links freeway class, same flow direction, stub ends within `freewayGateMergeM`
+  // of each other along single linkage) are merged into one gate at their centroid, and parallel stub links between the same two
+  // nodes become one link with the lanes added. A fork node that is a gate only because its other branch was clipped is no longer one.
+  const mergeR = cfg.freewayGateMergeM ?? PARAMS.freewayGateMergeM;
+  if (mergeR > 0) {
+    const touchM = new Map<number, Link[]>();
+    for (const l of live) for (const id of [l.from, l.to]) (touchM.get(id) ?? touchM.set(id, []).get(id)!).push(l);
+    const fwGates = [...gates].filter((id) => (touchM.get(id) ?? []).length > 0 && touchM.get(id)!.every((l) => l.cls === 'motorway'));
+    const roleOf = (id: number) => {
+      const t = touchM.get(id)!;
+      const hasIn = t.some((l) => l.to === id);
+      const hasOut = t.some((l) => l.from === id);
+      return hasIn && hasOut ? 'through' : hasOut ? 'entry' : 'exit';
+    };
+    const dirOf = (id: number): Pt => {
+      const t = touchM.get(id)!.reduce((b, l) => (l.lanes > b.lanes ? l : b));
+      const g = t.geometry;
+      const [a, b] = t.from === id ? [g[0], g[1]] : [g[g.length - 2], g[g.length - 1]];
+      const len = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+      return [(b[0] - a[0]) / len, (b[1] - a[1]) / len];
+    };
+    const dist = (a: number, b: number) => Math.hypot(xyOf(a)[0] - xyOf(b)[0], xyOf(a)[1] - xyOf(b)[1]);
+    const par = new Map<number, number>(fwGates.map((id) => [id, id]));
+    const find = (x: number): number => (par.get(x) === x ? x : (par.set(x, find(par.get(x)!)), par.get(x)!));
+    for (let i = 0; i < fwGates.length; i++) {
+      for (let j = i + 1; j < fwGates.length; j++) {
+        const a = fwGates[i];
+        const b = fwGates[j];
+        const ra = roleOf(a);
+        const rb = roleOf(b);
+        let ok = false;
+        if (ra === rb && ra !== 'through') {
+          const da = dirOf(a);
+          const db = dirOf(b);
+          ok = dist(a, b) <= mergeR && da[0] * db[0] + da[1] * db[1] >= 0.7;
+        } else if (ra !== rb && (ra === 'through' || rb === 'through')) {
+          const [t, s] = ra === 'through' ? [a, b] : [b, a];
+          ok = live.some((l) => (roleOf(s) === 'exit' ? l.from === t && l.to === s : l.from === s && l.to === t) && polylineLength(l.geometry) <= mergeR);
+        }
+        if (ok) par.set(find(a), find(b));
+      }
+    }
+    const groups = new Map<number, number[]>();
+    for (const id of fwGates) (groups.get(find(id)) ?? groups.set(find(id), []).get(find(id))!).push(id);
+    const remapG = new Map<number, number>();
+    for (const members of groups.values()) {
+      if (members.length < 2) continue;
+      const stubs = members.filter((id) => roleOf(id) !== 'through');
+      for (const id of members.filter((m) => roleOf(m) === 'through')) (gates.delete(id), gateCand.delete(id));
+      if (stubs.length < 2) continue;
+      const c: Pt = [stubs.reduce((a, id) => a + xyOf(id)[0], 0) / stubs.length, stubs.reduce((a, id) => a + xyOf(id)[1], 0) / stubs.length];
+      const rep = stubs.reduce((b, id) => (Math.hypot(xyOf(id)[0] - c[0], xyOf(id)[1] - c[1]) < Math.hypot(xyOf(b)[0] - c[0], xyOf(b)[1] - c[1]) ? id : b));
+      const spread = Math.max(...stubs.map((id) => Math.hypot(xyOf(id)[0] - c[0], xyOf(id)[1] - c[1])));
+      nodeXY.set(rep, c);
+      for (const id of stubs) {
+        remapG.set(id, rep);
+        if (id !== rep) (gates.delete(id), gateCand.delete(id));
+      }
+      gates.add(rep);
+      gateCand.add(rep);
+      stats.freewayGateMerges.push({ role: roleOf(stubs[0]) as 'entry' | 'exit', gates: stubs, into: rep, spreadM: Math.round(spread) });
+    }
+    if (remapG.size) {
+      const touched = new Set<Link>();
+      for (const l of live) {
+        const nf = remapG.get(l.from);
+        const nt = remapG.get(l.to);
+        if (nf !== undefined) {
+          l.from = nf;
+          l.geometry = [nodeXY.get(nf)!, ...l.geometry.slice(1)];
+          touched.add(l);
+        }
+        if (nt !== undefined) {
+          l.to = nt;
+          l.geometry = [...l.geometry.slice(0, -1), nodeXY.get(nt)!];
+          touched.add(l);
+        }
+      }
+      const byEnds = new Map<string, Link[]>();
+      for (const l of touched) (byEnds.get(`${l.from}>${l.to}`) ?? byEnds.set(`${l.from}>${l.to}`, []).get(`${l.from}>${l.to}`)!).push(l);
+      for (const ls of byEnds.values()) {
+        if (ls.length < 2) continue;
+        const [keepL, ...rest] = ls.sort((a, b) => polylineLength(b.geometry) - polylineLength(a.geometry));
+        for (const o of rest) {
+          keepL.lanes += o.lanes;
+          keepL.ways = [...new Set([...keepL.ways, ...o.ways])];
+          o.alive = false;
+        }
+        stats.freewayStubLinksJoined += rest.length;
+      }
+      deg = degOf();
+    }
+  }
+
   const ids = [...deg.keys()];
   const idx = new Map(ids.map((id, i) => [id, i]));
   const adjF: number[][] = ids.map(() => []);
   const adjB: number[][] = ids.map(() => []);
-  for (const l of live) {
+  for (const l of live.filter((x) => x.alive)) {
     adjF[idx.get(l.from)!].push(idx.get(l.to)!);
     adjB[idx.get(l.to)!].push(idx.get(l.from)!);
   }
@@ -857,8 +968,8 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
   const kIn = reach(adjF, inGates, (i) => !!B[i] && !keep[i]);
   const keep0 = keep.slice();
   for (let i = 0; i < ids.length; i++) if ((kOut[i] && F[i] && !keep[i]) || (kIn[i] && B[i] && !keep[i])) keep[i] = 1;
-  const finalLinks = live.filter((l) => keep[idx.get(l.from)!] && keep[idx.get(l.to)!]);
-  stats.prunedLinks = live.length - finalLinks.length;
+  const finalLinks = live.filter((l) => l.alive && keep[idx.get(l.from)!] && keep[idx.get(l.to)!]);
+  stats.prunedLinks = live.filter((l) => l.alive).length - finalLinks.length;
 
   const used = new Set<number>();
   for (const l of finalLinks) (used.add(l.from), used.add(l.to));
@@ -1010,6 +1121,40 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
     for (const a of ins) {
       if (kind.startsWith('no_')) for (const b of outs) a.rev !== b && addBan(a, b, periods);
       else for (const o of finalLinks) if (o.from === viaG && !outs.includes(o) && a.rev !== o) addBan(a, o, periods);
+    }
+  }
+
+  // Freeway reachability check: an on-ramp (a surface node a freeway link leaves) must reach a mainline exit gate over freeway links, and an
+  // off-ramp (a freeway link arrives) must be reachable from a mainline entry gate. A freeway-class link that runs from one surface node to another (a ramp-to-ramp connector, such as Glenwood Glade to Broadway Terrace) is not a ramp. Violations are listed in the stats.
+  {
+    const fwOut = new Map<number, number[]>();
+    const fwIn = new Map<number, number[]>();
+    const surfTouch = new Set<number>();
+    for (const l of outLinks) {
+      if (l.class === 'motorway') {
+        (fwOut.get(l.from) ?? fwOut.set(l.from, []).get(l.from)!).push(l.to);
+        (fwIn.get(l.to) ?? fwIn.set(l.to, []).get(l.to)!).push(l.from);
+      } else (surfTouch.add(l.from), surfTouch.add(l.to));
+    }
+    const walk = (start: number, adj: Map<number, number[]>, goal: (id: number) => boolean) => {
+      const seen = new Set([start]);
+      const st = [start];
+      while (st.length) {
+        const u = st.pop()!;
+        for (const v of adj.get(u) ?? []) {
+          if (seen.has(v)) continue;
+          if (goal(v)) return true;
+          seen.add(v);
+          st.push(v);
+        }
+      }
+      return false;
+    };
+    const streetsAt = (id: number) => [...new Set(outLinks.filter((l) => l.class !== 'motorway' && (l.from === id || l.to === id)).map((l) => l.name).filter(Boolean))];
+    for (const n of outNodes) {
+      if (!surfTouch.has(n.id)) continue;
+      if (fwOut.has(n.id) && !walk(n.id, fwOut, (v) => surfTouch.has(v) || (outNodes[v].gate && !!outNodes[v].canExit))) stats.freewayRampViolations.push({ kind: 'on', node: n.id, streets: streetsAt(n.id) });
+      if (fwIn.has(n.id) && !walk(n.id, fwIn, (v) => surfTouch.has(v) || (outNodes[v].gate && !!outNodes[v].canEnter))) stats.freewayRampViolations.push({ kind: 'off', node: n.id, streets: streetsAt(n.id) });
     }
   }
 

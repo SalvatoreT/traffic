@@ -81,6 +81,8 @@ export interface AreaConfig {
   signalJoinRadius?: number;
   /** Importer warning distance (m, default 60): gates closer than this to a signalized junction are listed. */
   gateSignalWarnM?: number;
+  /** Freeway mainline gates of one direction whose stub ends lie within this distance (m, default 80) are merged into one gate; 0 turns it off. */
+  freewayGateMergeM?: number;
   /** Hours of day (start, end) of each demand period, used to apply time-conditional turn restrictions (e.g. `no_left_turn @ (Mo-Fr 16:00-18:00)`). */
   periodWindows?: Record<string, [number, number]>;
   /**

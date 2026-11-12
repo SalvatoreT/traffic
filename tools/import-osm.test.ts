@@ -394,3 +394,95 @@ describe('wider model area', () => {
     for (const n of ['Ashby Avenue', 'Sacramento Street', 'Shattuck Avenue', 'Telegraph Avenue', 'Tunnel Road', 'Broadway']) expect(gateStreets.has(n), n).toBe(true);
   });
 });
+
+describe('freeway-edge stubs', () => {
+  const stats = buildNetwork(cfg, osm).stats;
+  const mainline = net.nodes.filter((n) => n.gate && net.links.some((l) => (l.from === n.id || l.to === n.id) && l.class === 'motorway') && !net.links.some((l) => (l.from === n.id || l.to === n.id) && l.class !== 'motorway'));
+
+  it('merges stubs of one carriageway into one gate per direction and end', () => {
+    expect(stats.freewayGateMerges.length).toBeGreaterThanOrEqual(3);
+    for (const role of ['entry', 'exit'] as const) {
+      const g = mainline.filter((n) => (role === 'entry' ? n.canEnter : n.canExit));
+      for (const a of g) for (const b of g) {
+        if (a.id >= b.id) continue;
+        expect(Math.hypot(a.x - b.x, a.y - b.y), `${role} gates ${a.id} and ${b.id}`).toBeGreaterThan(80);
+      }
+    }
+  });
+
+  it('lets the Claremont, Hudson, Miles, 52nd St and MLK Jr Way on-ramps reach one west-end exit gate', () => {
+    const out = new Map<number, number[]>();
+    for (const l of net.links) if (l.class === 'motorway') (out.get(l.from) ?? out.set(l.from, []).get(l.from)!).push(l.to);
+    const reachExit = (s: number) => {
+      const seen = new Set([s]);
+      const st = [s];
+      while (st.length) for (const v of out.get(st.pop()!) ?? []) if (!seen.has(v)) (seen.add(v), st.push(v));
+      return [...seen].filter((v) => net.nodes[v].gate && net.nodes[v].canExit && !out.has(v));
+    };
+    const onRamp = (street: string) =>
+      net.nodes.filter(
+        (n) =>
+          net.links.some((l) => l.class === 'motorway' && l.from === n.id) &&
+          net.links.some((l) => l.class !== 'motorway' && l.name.includes(street) && (l.from === n.id || l.to === n.id)) &&
+          n.x < -900 && n.y < -900,
+      );
+    const gatesOf = (street: string) => new Set(onRamp(street).flatMap((n) => reachExit(n.id)));
+    const a = gatesOf('52nd Street');
+    expect(a.size).toBeGreaterThan(0);
+    for (const s of ['Martin Luther King', 'Miles', 'Hudson']) for (const g of gatesOf(s)) expect(a.has(g), s).toBe(true);
+  });
+
+  it('finds no on-ramp that cannot reach a mainline exit gate and no off-ramp that no entry gate feeds', () => {
+    expect(stats.freewayRampViolations).toEqual([]);
+  });
+});
+
+describe('freeway-edge stubs (synthetic)', () => {
+  const lat0 = 37.84;
+  const lon0 = -122.26;
+  const d = 0.0001;
+  const nd = (id: number, dx: number, dy: number) => ({ type: 'node' as const, id, lon: lon0 + dx * d, lat: lat0 + dy * d });
+  const fw = (id: number, nodes: number[], tags: Record<string, string> = {}) => ({ type: 'way' as const, id, nodes, tags: { highway: 'motorway', lanes: '2', ref: 'CA 1', oneway: 'yes', ...tags } });
+  const st = (id: number, name: string, nodes: number[]) => ({ type: 'way' as const, id, nodes, tags: { highway: 'residential', name } });
+  // Southbound freeway forks at node 12; both branches leave through the south edge three units (26 m) apart. A Street's on-ramp joins
+  // the west branch, B Street's the east branch. Entry stub at the north edge.
+  const els: Overpass['elements'] = [
+    nd(1, 0, 60), nd(11, 0, 30), nd(12, 0, 10), nd(13, 0, -10), nd(14, 0, -60), nd(15, 3, -10), nd(16, 3, -60), nd(17, 0, -35), nd(18, 3, -35),
+    nd(21, -40, -10), nd(22, -8, -10), nd(23, -8, -25), nd(24, 11, -25), nd(31, 40, -10), nd(32, 11, -10),
+    fw(100, [1, 11, 12, 13, 17, 14]),
+    fw(101, [12, 15, 18, 16]),
+    st(200, 'A Street', [21, 22]),
+    st(201, 'B Street', [31, 32]),
+    st(202, 'C Street', [22, 23, 24, 32]),
+    fw(300, [22, 13], { highway: 'motorway_link', lanes: '1', ref: '' }),
+    fw(301, [32, 15], { highway: 'motorway_link', lanes: '1', ref: '' }),
+  ];
+  const mk = (mergeM?: number) => {
+    const c: AreaConfig = {
+      id: 't', name: 't', extract: '', bbox: [lon0 - 40 * d, lat0 - 40 * d, lon0 + 40 * d, lat0 + 40 * d],
+      studyArea: [[lon0 - 5 * d, lat0 - 5 * d], [lon0 + 5 * d, lat0 - 5 * d], [lon0 + 5 * d, lat0 + 5 * d], [lon0 - 5 * d, lat0 + 5 * d], [lon0 - 5 * d, lat0 - 5 * d]],
+      ...(mergeM === undefined ? {} : { freewayGateMergeM: mergeM }),
+    };
+    return buildNetwork(c, { elements: els });
+  };
+  const exits = (n: Network) => n.nodes.filter((x) => x.gate && x.canExit && n.links.every((l) => l.class === 'motorway' || (l.from !== x.id && l.to !== x.id)));
+
+  it('has two exit stubs and the on-ramps reach one each when merging is off', () => {
+    expect(exits(mk(0).network)).toHaveLength(2);
+  });
+
+  it('merges the two stubs into one exit gate that both on-ramps reach', () => {
+    const r = mk();
+    const g = exits(r.network);
+    expect(g).toHaveLength(1);
+    expect(r.stats.freewayGateMerges).toHaveLength(1);
+    expect(r.stats.freewayGateMerges[0].role).toBe('exit');
+    const into = r.network.links.filter((l) => l.to === g[0].id);
+    expect(into).toHaveLength(2);
+    for (const l of into) {
+      const e = l.geometry.at(-1)!;
+      expect(Math.hypot(e[0] - g[0].x, e[1] - g[0].y)).toBeLessThan(1);
+    }
+    expect(r.stats.freewayRampViolations).toEqual([]);
+  });
+});

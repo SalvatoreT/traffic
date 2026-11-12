@@ -103,7 +103,8 @@ citation keys, or the required structure of OpenSpec spec files.
 ## Conventions
 
 - Never put people's names in the repository (code, docs, data, commit messages).
-  Published authors in `docs/references.md` citations are the only exception. Describe
+  Published authors in `docs/references.md` citations and the copyright holder in
+  `LICENSE` are the only exceptions. Describe
   private sources by role ("resident-provided count data"), not by person.
 - Minimal comments; citations are the exception.
 - SI units internally (m, s, m/s); convert at the UI boundary.

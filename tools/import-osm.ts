@@ -72,11 +72,16 @@ function main() {
     writeFileSync(resolve(outDir, `${cfg.id}.network.json`), JSON.stringify(network));
     writeFileSync(resolve(outDir, `${cfg.id}.basemap.json`), JSON.stringify(buildBasemap(cfg, osm)));
     console.log(summarize(network));
-    const { joinedList, gatesNearSignal, ...rest } = stats;
+    const { joinedList, gatesNearSignal, freewayGateMerges, freewayRampViolations, ...rest } = stats;
     console.log('stats:', JSON.stringify(rest));
     if (gatesNearSignal.length) {
       console.warn(`WARNING: ${gatesNearSignal.length} gate(s) within ${cfg.gateSignalWarnM ?? 60} m of a signalized junction (a gate should sit mid-block; move the bbox edge or accept the corridor):`);
       for (const g of gatesNearSignal) console.warn(`  gate ${g.gate} ${g.street || '(unnamed)'}: ${g.distM} m`);
+    }
+    for (const m of freewayGateMerges) console.log(`freeway ${m.role} gates merged: OSM nodes ${m.gates.join(', ')} -> ${m.into} (stubs within ${m.spreadM} m of their centroid)`);
+    if (freewayRampViolations.length) {
+      console.warn(`WARNING: ${freewayRampViolations.length} freeway ramp(s) cannot reach a mainline exit gate (on) or be reached from a mainline entry gate (off):`);
+      for (const v of freewayRampViolations) console.warn(`  ${v.kind}-ramp at node ${v.node} (${v.streets.join(' / ') || 'unnamed'})`);
     }
     const largest = [...joinedList].sort((a, b) => b.size - a.size || b.streets.length - a.streets.length).slice(0, 10);
     console.log(`joined clusters (largest ten of ${joinedList.length}):`);

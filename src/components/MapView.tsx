@@ -15,6 +15,10 @@ import { intensity, rampStops, WIDTH_MAX, WIDTH_MIN, type Mode } from '../lib/ra
 import type { NetIndex } from '../lib/naming';
 import { describeIntervention, interventionPoint } from '../lib/describe';
 import type { SimClient } from '../sim/client';
+import {
+  boxOfPoints, centerToShow, correctedCamera, fitCamera, hardBounds, insideRect, isAcceptable, minZoomFor, MIN_ZOOM_FLOOR,
+  unobscuredRect, type Camera, type GeoBox, type LngLat, type Obstacle, type Rect, type Size,
+} from '../lib/viewfit';
 
 maplibregl.setWorkerUrl(workerUrl);
 
@@ -126,39 +130,17 @@ const FRAME_MS = 32; // without extrapolation the vehicle layer redraws at most 
 const EXTRAPOLATE_MAX_RATE = 5;
 interface DebugHook { signals: number; signalsDrawn: number; positions: Float32Array; draws: number; drawMs: number; frameTime: number; extrapolated: boolean }
 
-/** The region's bounding box, padded a little, as map bounds. */
-function regionBounds(region: Region, pr: ReturnType<typeof makeProjection>, padM: number): maplibregl.LngLatBounds {
+/** The region's bounding box as a geographic box. */
+function regionGeoBox(region: Region, pr: ReturnType<typeof makeProjection>): GeoBox {
   const { minX, minY, maxX, maxY } = region.bbox;
-  return new maplibregl.LngLatBounds(pr.toLonLat(minX - padM, minY - padM), pr.toLonLat(maxX + padM, maxY + padM));
+  const [w, s] = pr.toLonLat(minX, minY), [e, n] = pr.toLonLat(maxX, maxY);
+  return { w, s, e, n };
 }
-function studyBounds(b: AreaBundle): maplibregl.LngLatBoundsLike | null {
-  const ring = b.network.studyArea;
-  if (!ring || ring.length < 3) return null;
-  const bb = new maplibregl.LngLatBounds();
-  for (const pt of ring) bb.extend(pt as [number, number]);
-  return bb;
-}
-/** Height of the phone sheet over the bottom of the map (0 elsewhere). The map never resizes for it; this only pads fit and center requests. */
-function sheetObstruction(opening: boolean): number {
-  if (!window.matchMedia('(max-width: 719.98px)').matches) return 0;
-  if (opening) return Math.round(window.innerHeight * 0.5);
-  return parseFloat(document.documentElement.style.getPropertyValue('--sheet-h')) || 96;
-}
-function fitPadding(map: maplibregl.Map) {
-  const c = map.getContainer();
-  const cr = c.getBoundingClientRect();
-  const w = cr.width;
-  const pad = { top: 36, bottom: 36, left: 36, right: 64 };
-  // The legend is a docked row over the map; only its collapsed height counts so the view does not refit when it expands.
-  pad.bottom = Math.max(pad.bottom, 56 + sheetObstruction(false));
-  void w;
-  return pad;
-}
-function fitArea(map: maplibregl.Map, b: AreaBundle, animate: boolean) {
-  const bounds = studyBounds(b);
-  if (!bounds) return;
-  map.fitBounds(bounds, { padding: fitPadding(map), maxZoom: 17.5, animate, duration: 400 });
-}
+const toBounds = (b: GeoBox) => new maplibregl.LngLatBounds([b.w, b.s], [b.e, b.n]);
+const PHONE_Q = '(max-width: 719.98px)';
+/** Settling waits this long after a gesture or layout change ends, so a new gesture can cancel it. */
+const SETTLE_MS = 140;
+const GLIDE_MS = 350;
 class FitControl implements maplibregl.IControl {
   private el: HTMLDivElement | null = null;
   constructor(private onFit: () => void) {}
@@ -341,49 +323,138 @@ export function MapView(p: Props) {
     const map = new maplibregl.Map({
       container: el,
       style: { version: 8, sources: {}, layers: [{ id: 'bg', type: 'background', paint: { 'background-color': KIND_STYLE.light.bg } }] },
-      center: b.entry.center, zoom: Math.min(b.entry.zoom, 14.5), minZoom: 11, maxZoom: 19.5,
-      maxBounds: regionBounds(region, proj, 60),
+      center: b.entry.center, zoom: Math.min(b.entry.zoom, 14.5), minZoom: MIN_ZOOM_FLOOR, maxZoom: 19.5,
       attributionControl: false, dragRotate: false, pitchWithRotate: false, fadeDuration: 0,
       canvasContextAttributes: { antialias: true },
     } as maplibregl.MapOptions);
     mapRef.current = map;
     if (new URLSearchParams(location.search).has('debug')) (window as unknown as { __trafficMap?: unknown }).__trafficMap = map;
-    // The region should roughly fill the map when zoomed out as far as allowed.
-    const limitZoom = () => {
-      if (el.clientWidth < 50 || el.clientHeight < 50) return;
-      const cam = map.cameraForBounds(regionBounds(region, proj, 0), { padding: 0 });
-      if (cam?.zoom !== undefined) map.setMinZoom(Math.max(8, cam.zoom - 0.05));
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const ring = (b.network.studyArea ?? []) as LngLat[];
+    const studyBox = ring.length >= 3 ? boxOfPoints(ring) : null;
+    const regionBox = regionGeoBox(region, proj);
+    const originalOf = (e: unknown) => (e as { originalEvent?: unknown }).originalEvent;
+
+    // The part of the canvas no overlay covers right now. Bars that grow with their content count at their current size;
+    // the legend counts at its collapsed row so expanding it does not move the view.
+    const measure = (sheetOverride?: number): { size: Size; unob: Rect } | null => {
+      const cr = el.getBoundingClientRect();
+      if (cr.width < 50 || cr.height < 50) return null;
+      const obs: Obstacle[] = [];
+      const area = el.parentElement;
+      const bar = document.querySelector('.toolbar')?.getBoundingClientRect();
+      if (bar && bar.height && bar.bottom > cr.top + 1 && bar.top < cr.bottom) obs.push({ rect: bar, edge: 'top' });
+      const row = area?.querySelector('.legend-row')?.getBoundingClientRect();
+      let rowTop = cr.bottom;
+      if (row && row.height) { rowTop = row.top; obs.push({ rect: row, edge: 'bottom' }); }
+      const attr = el.querySelector('.maplibregl-ctrl-attrib')?.getBoundingClientRect();
+      if (attr && attr.height) obs.push({ rect: { left: cr.left, right: cr.right, top: rowTop - attr.height, bottom: rowTop }, edge: 'bottom' });
+      const ctrls = el.querySelector('.maplibregl-ctrl-top-right')?.getBoundingClientRect();
+      if (ctrls && ctrls.width) obs.push({ rect: ctrls, edge: 'right' });
+      if (window.matchMedia(PHONE_Q).matches) {
+        const h = sheetOverride ?? (parseFloat(document.documentElement.style.getPropertyValue('--sheet-h')) || 96);
+        obs.push({ rect: { left: cr.left, right: cr.right, top: window.innerHeight - h, bottom: window.innerHeight }, edge: 'bottom' });
+      }
+      return { size: { w: cr.width, h: cr.height }, unob: unobscuredRect(cr, obs) };
     };
-    limitZoom();
+    const camera = (): Camera => ({ center: [map.getCenter().lng, map.getCenter().lat], zoom: map.getZoom() });
+    // Zoom range and the generous outer limit follow the layout; the soft limit itself is applied when a gesture ends.
+    const applyLimits = (m: { size: Size; unob: Rect }) => {
+      const minZ = minZoomFor(regionBox, m.size, m.unob);
+      map.setMinZoom(minZ);
+      map.setMaxBounds(toBounds(hardBounds(regionBox, minZ, m.size)));
+      map.fire('zoom'); // refreshes the zoom buttons' disabled state
+    };
+    let fitted = false, lastSize = '';
+    const fitTo = (m: { size: Size; unob: Rect }, animate: boolean) => {
+      applyLimits(m);
+      if (!studyBox) return;
+      const cam = fitCamera(studyBox, m.size, m.unob);
+      fitted = true;
+      userMoved.current = false;
+      if (animate && !reduce) map.easeTo({ center: cam.center, zoom: cam.zoom, duration: 400, essential: false });
+      else map.jumpTo({ center: cam.center, zoom: cam.zoom });
+    };
+    const fitNow = (animate: boolean) => { const m = measure(); if (m) fitTo(m, animate); };
+    const hiddenNow = (m: { unob: Rect }) => ring.some((pt) => !insideRect(map.project(pt as [number, number]), m.unob, 1));
+
+    let down = 0, userGesture = false, gliding = false, timer = 0;
+    const gestureActive = () => down > 0 || userGesture || !!document.querySelector('.sheet.dragging');
+    const cancelSettle = () => { window.clearTimeout(timer); timer = 0; if (gliding) { gliding = false; map.stop(); } };
+    const settle = () => {
+      const m = measure();
+      if (!m) return;
+      const c = camera(), t = correctedCamera(c, m.size, m.unob, regionBox);
+      if (t === c) return;
+      if (reduce) { map.jumpTo({ center: t.center }); return; }
+      gliding = true;
+      map.easeTo({ center: t.center, duration: GLIDE_MS, essential: false });
+    };
+    const later = (fn: () => void) => { window.clearTimeout(timer); timer = window.setTimeout(fn, SETTLE_MS); };
+    const onSettled = () => {
+      if (gestureActive()) { later(onSettled); return; }
+      settle();
+    };
+    const onLayout = () => {
+      if (gestureActive()) { later(onLayout); return; }
+      const m = measure();
+      if (!m) return;
+      const key = `${Math.round(m.size.w)}x${Math.round(m.size.h)}`;
+      const resized = key !== lastSize;
+      lastSize = key;
+      applyLimits(m);
+      if (!userMoved.current && (resized || !fitted || hiddenNow(m))) fitTo(m, false);
+      else settle();
+    };
+    const layoutLater = () => later(onLayout);
+    if (new URLSearchParams(location.search).has('debug')) {
+      (window as unknown as { __trafficView?: unknown }).__trafficView = {
+        measure: () => measure(), ring, regionBox, minZoom: () => map.getMinZoom(),
+        acceptable: () => { const m = measure(); return !!m && isAcceptable(camera(), m.size, m.unob, regionBox); },
+        userMoved: () => userMoved.current,
+      };
+    }
     map.touchZoomRotate.disableRotation();
     map.addControl(new maplibregl.AttributionControl({
       compact: false,
       customAttribution: '<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a>',
     }), 'bottom-right');
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
-    map.addControl(new FitControl(() => { userMoved.current = false; fitArea(map, b, !reduce); }), 'top-right');
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    map.on('dragstart', () => { userMoved.current = true; });
-    map.on('zoomstart', (e) => { if ((e as { originalEvent?: unknown }).originalEvent) userMoved.current = true; });
+    map.addControl(new FitControl(() => { cancelSettle(); fitNow(true); }), 'top-right');
+    map.on('movestart', (e) => { if (originalOf(e)) { userMoved.current = true; userGesture = true; cancelSettle(); } });
     // A pop-up whose place has been dragged out of view closes rather than clinging to the edge.
     map.on('moveend', (e) => {
+      gliding = false;
+      if (originalOf(e)) userGesture = false;
+      else if (userGesture && !map.isMoving()) userGesture = false;
+      later(onSettled);
       const L = live.current;
-      if (!(e as { originalEvent?: unknown }).originalEvent || !L.selection || !L.popover) return;
+      if (!originalOf(e) || !L.selection || !L.popover) return;
       const [x, y] = selectionAnchor(L.bundle.network, L.index, L.selection);
       const pt = map.project(L.proj.toLonLat(x, y)), c = map.getContainer();
       if (pt.x < 0 || pt.y < 0 || pt.x > c.clientWidth || pt.y > c.clientHeight) L.onHit(null);
     });
+    const press = () => { down++; cancelSettle(); };
+    const release = () => { down = Math.max(0, down - 1); };
+    el.addEventListener('pointerdown', press, { capture: true });
+    window.addEventListener('pointerup', release);
+    window.addEventListener('pointercancel', release);
     reveal.current = (force) => {
       const L = live.current;
       if (!L.selection) return;
       const [x, y] = selectionAnchor(L.bundle.network, L.index, L.selection);
       const ll = L.proj.toLonLat(x, y);
-      const obst = sheetObstruction(L.selection.via !== 'search');
-      const pt = map.project(ll), c = map.getContainer(), inset = 56;
-      const inside = pt.x >= inset && pt.y >= inset && pt.x <= c.clientWidth - inset && pt.y <= c.clientHeight - obst - inset - 40;
-      if (force || !inside) map.easeTo({ center: ll, padding: { top: 0, left: 0, right: 0, bottom: obst }, duration: reduce ? 0 : 350, essential: false });
+      const m = measure(L.selection.via !== 'search' ? Math.round(window.innerHeight * 0.5) : undefined);
+      if (!m) return;
+      const pt = map.project(ll), inset = 56, u = m.unob;
+      const inside = pt.x >= u.left + inset && pt.y >= u.top + inset && pt.x <= u.right - inset && pt.y <= u.bottom - inset;
+      if (force || !inside) {
+        userMoved.current = true;
+        map.easeTo({ center: centerToShow(ll, map.getZoom(), m.size, m.unob), duration: reduce ? 0 : 350, essential: false });
+      }
     };
-    fitArea(map, b, false);
+    fitNow(false);
+    lastSize = (() => { const m = measure(); return m ? `${Math.round(m.size.w)}x${Math.round(m.size.h)}` : ''; })();
     const cv = map.getCanvas();
     cv.setAttribute('aria-label', `Map of ${b.network.name}. Streets, cars, bicycles, pedestrians and signals. Select a street or an intersection by clicking it, or find it by name in the Scenario panel. The same information is available in the Streets table.`);
 
@@ -436,9 +507,20 @@ export function MapView(p: Props) {
     });
     map.on('move', schedule);
     map.on('resize', schedule);
-    const ro = new ResizeObserver(() => { map.resize(); limitZoom(); if (!userMoved.current && el.clientWidth > 0) fitArea(map, b, false); reveal.current(false); schedule(); });
+    const ro = new ResizeObserver(() => { map.resize(); layoutLater(); schedule(); });
     ro.observe(el);
-    return () => { ro.disconnect(); markers.current.forEach((m) => m.remove()); map.remove(); mapRef.current = null; setReady(false); };
+    const watched = ['.toolbar', '.legend-row', '.maplibregl-ctrl-top-right', '.maplibregl-ctrl-attrib']
+      .map((q) => (q === '.toolbar' ? document : el.parentElement ?? document).querySelector(q)).filter((n): n is Element => !!n);
+    watched.forEach((n) => ro.observe(n));
+    // The sheet publishes its height as a root style property.
+    const mo = new MutationObserver(layoutLater);
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['style'] });
+    return () => {
+      ro.disconnect(); mo.disconnect(); window.clearTimeout(timer);
+      el.removeEventListener('pointerdown', press, { capture: true });
+      window.removeEventListener('pointerup', release); window.removeEventListener('pointercancel', release);
+      markers.current.forEach((m) => m.remove()); map.remove(); mapRef.current = null; setReady(false);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bundle]);
 

@@ -328,6 +328,9 @@ input[type='checkbox'] { width: 18px; height: 18px; accent-color: var(--accent);
 .ramp-col { flex: 0 1 240px; width: 240px; min-width: 60px; }
 .ramp-end { flex: none; }
 @media (max-width: 719.98px) {
+  /* The expanded playback bar overlays the map like the peek does; the slot reserves only the collapsed row. */
+  .toolbar.pinned { position: absolute; }
+  .toolbar.open { box-shadow: var(--shadow); }
   .toolbar-row { padding: .25rem .5rem; gap: .3rem .4rem; }
   .toolbar-row .clock { font-size: .8rem; }
   .btn.primary.again { padding-left: .5rem; padding-right: .6rem; }
