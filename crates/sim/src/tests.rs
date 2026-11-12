@@ -1568,3 +1568,67 @@ fn right_turn_on_red_raises_discharge_unless_the_cross_street_is_saturated() {
     let (on, _) = crate::validate::rtor_cap(100.0, false, 1);
     assert!(on > off * 1.08, "light cross traffic: {on} against {off} veh/h");
 }
+
+#[test]
+fn a_fork_shares_its_lanes_out_by_branch_left_branch_in_the_left_lanes() {
+    let mut b = B::default();
+    let a = b.node(0.0, -300.0, Control::Uncontrolled, true);
+    let f = b.node(0.0, 0.0, Control::Uncontrolled, false);
+    let p = b.node(-60.0, 300.0, Control::Uncontrolled, true);
+    let q = b.node(60.0, 300.0, Control::Uncontrolled, true);
+    let into = b.link(a, f, RoadClass::Secondary, 3, 13.4, false);
+    let left = b.link(f, p, RoadClass::Secondary, 2, 13.4, false);
+    let right = b.link(f, q, RoadClass::Secondary, 2, 13.4, false);
+    let net = b.net();
+    let topo = crate::topo::Topo::new(&net);
+    let band = |to: u32| {
+        let ms = topo.lm_start[into as usize] as usize;
+        (ms..ms + topo.lm_cnt[into as usize] as usize).find(|&m| topo.mvs[m].b == to).map(|m| topo.fork_band[m]).unwrap()
+    };
+    assert_eq!(band(left), (0, 1));
+    assert_eq!(band(right), (1, 3));
+}
+
+#[test]
+fn a_sharp_turn_onto_a_street_of_another_name_is_a_turn_and_a_reversal_stays_banned() {
+    fn completed(same_name: bool) -> u64 {
+        let mut b = B::default();
+        let c = b.node(0.0, 0.0, Control::Uncontrolled, false);
+        let n = b.node(0.0, 200.0, Control::Uncontrolled, true);
+        let e = b.node(25.0, 55.0, Control::Uncontrolled, true);
+        let w = b.node(-200.0, 0.0, Control::Uncontrolled, true);
+        let (n_in, _) = b.two_way(n, c, RoadClass::Residential, 1, 11.2);
+        let (e_in, _) = b.two_way(e, c, RoadClass::Residential, 1, 11.2);
+        b.two_way(w, c, RoadClass::Residential, 1, 11.2);
+        b.links[n_in as usize].name = "North Street".into();
+        b.links[e_in as usize + 1].name = if same_name { "North Street".into() } else { "East Street".into() };
+        let d = demand(&[(n, e, 200.0)]);
+        let mut sim = Simulation::from_parts(b.net(), d, cfg(3, 1.0)).unwrap();
+        for _ in 0..(300.0 / DT) as usize {
+            sim.step(DT);
+        }
+        sim.metrics().completed_trips
+    }
+    assert!(completed(false) > 10, "a 155 degree turn onto another street is allowed");
+    assert_eq!(completed(true), 0, "the same street back the way it came is a U-turn");
+}
+
+#[test]
+fn a_gate_vehicle_that_cannot_enter_does_not_hold_back_one_that_can() {
+    let mut b = B::default();
+    let g = b.node(0.0, 0.0, Control::Uncontrolled, true);
+    let x1 = b.node(300.0, 0.0, Control::Uncontrolled, true);
+    let x2 = b.node(0.0, 300.0, Control::Uncontrolled, true);
+    let l1 = b.link(g, x1, RoadClass::Residential, 1, 5.0, false);
+    b.link(g, x2, RoadClass::Secondary, 1, 13.4, false);
+    let _ = l1;
+    let d = demand(&[(g, x1, 3000.0), (g, x2, 400.0)]);
+    let mut c = cfg(2, 1.0);
+    c.record_trips = true;
+    let mut sim = Simulation::from_parts(b.net(), d, c).unwrap();
+    for _ in 0..(900.0 / DT) as usize {
+        sim.step(DT);
+    }
+    let to_x2 = sim.trip_records().iter().filter(|t| t.dest == x2).count();
+    assert!(to_x2 as f64 > 0.8 * 400.0 * 900.0 / 3600.0, "{to_x2} trips reached the free branch");
+}
