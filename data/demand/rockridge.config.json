@@ -309,7 +309,7 @@
     "defaultAdt": 500,
     "defaultAdtNote": "ASSUMPTION: ADT of a ramp with no matching published count (minor connectors at the SR-13/SR-24 interchange, hillside ramps and the Broadway terminals east of Tunnel Road). The original four ramps never used it.",
     "localShare": 0.6,
-    "localShareNote": "ASSUMPTION (calibration step E: 0.15 -> 0.30): share of ramp trips whose surface end is an in-area (LODES) node rather than a surface gate. These trips replace part of the block's external local trips.",
+    "localShareNote": "ASSUMPTION (calibration step V: 0.30 -> 0.60, tested 0.30 / 0.45 / 0.60 / 0.75): share of ramp trips whose surface end is an in-area (LODES) node rather than a surface gate. The model area is 5.7 by 3.4 km, so most ramp trips end inside it. These trips replace part of the block's external local trips.",
     "maxShareOfGate": 0.4,
     "maxShareOfGateNote": "ASSUMPTION: ramp trips use at most this share of a surface gate's in/outflow target (surface totals stay consistent; the Furness step fills the rest).",
     "destination": {
@@ -373,7 +373,7 @@
     "excludeNote": "Rows that combine the 52nd St and MLK Jr Way (Grove St) ramps are dropped because per-street SEG rows (2016-2017 / 2012) exist for the same ramps and would double count."
   },
   "assumedGateScale": 0.5,
-  "assumedGateScaleNote": "ASSUMPTION: single factor on all gate volumes that are not count-based (class-default ADT gates); count-based gates (TMC, Caltrans override) and ramp volumes are unscaled. Reset to 1.0 for the wider area (gates now sit on larger roads far from the study area); the earlier 0.35 was a stability workaround for gates close to the study area. Tuning follows in a later step.",
+  "assumedGateScaleNote": "ASSUMPTION: single factor on all gate volumes that are not count-based (class-default ADT gates); count-based gates (TMC, Caltrans override) and ramp volumes are unscaled. 0.5 is a stability workaround, not an estimate: D4 fails at every value tested (0, 0.3, 0.5, 1.0), but at 0.5 the arterial speed stays above 4 m/s (calibration record, step T).",
   "transit": "public/data/rockridge.transit.json",
   "active": {
     "_note": "ASSUMPTION unless stated: walking and biking demand (design D6). Person trips use the car model's per-worker and per-job rates (local.*), then these mode shares. Volumes are persons per hour. Only the count scaling below uses data (DATA: Oakland pedestrian and bicycle counts at one intersection); everything else is uncounted. ACS commute mode shares were not retrievable (the Census API needs a key), so the shares are not derived from them.",

@@ -92,6 +92,6 @@
   "periodWindows": { "am_peak": [7, 9], "midday": [11, 13], "pm_peak": [16, 18] },
   "calibration": {
     "status": "uncalibrated",
-    "note": "Peak periods still lose a few vehicles per run to gridlock on Telegraph near the freeway ramps, and side-street volumes are scaled-down assumptions. One of four observed route shares is 17 points off; see data/calibration/rockridge.record.md."
+    "note": "Peak hours still gridlock about 170 trips an hour on arterials that average 9 mph (details in data/calibration/rockridge.record.md)."
   }
 }

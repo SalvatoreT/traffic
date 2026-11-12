@@ -26,3 +26,11 @@ The simulation SHALL model signals, all-way stops, two-way stops, uncontrolled i
 #### Scenario: Queue on a ramp
 - **WHEN** vehicles queue on a motorway-class link whose next link is also motorway class
 - **THEN** they wait and are not removed by the gridlock breaker, so the queue stays in the origin backlog
+
+#### Scenario: Banned movement
+- **WHEN** the network lists a turn ban for a link pair and the simulation runs in a period the ban applies to
+- **THEN** cars and buses never take that movement and route around it
+
+#### Scenario: Lower-class approach without a sign
+- **WHEN** a two-way stop node has stop signs on some approaches and an unflagged approach of a lower road class than the best approach
+- **THEN** that approach yields like the flagged ones

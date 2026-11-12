@@ -1,11 +1,12 @@
 # Rockridge baseline calibration record
 
-Run: `cargo run --release -p traffic-sim --bin calibrate -- --area rockridge --period pm_peak --minutes 60 --scale 1.0 --seed 1` (about 5 s).
-Reports for the final state (seed 1) are in `reports/` (all three periods). Every value below is an ASSUMPTION unless marked DATA.
+Run: `cargo run --release -p traffic-sim --bin calibrate -- --area rockridge --period pm_peak --minutes 60 --scale 1.0 --seed 1` (about 5 s on the original small network, about 1 min on the wider network of the fourth round).
+Reports for the final state (seed 1) are in `reports/` (all three periods; the wider network of the fourth round). Every value below is an ASSUMPTION unless marked DATA.
 Run-to-run noise from the chaotic congested regime is roughly +/-5% on completed trips, so single steps of that size are not significant.
 Steps C0 to C3 were measured on the step B2 demand (before F); D, E, F on the later demand. PM peak, scale 1.0, 60 min, seed 1.
 Headline shares are the four freeway shares, modeled (PM observed): Hillegass NB from freeway (47), Colby NB from (47), Hillegass SB to (68), Colby SB to (45).
 Speeds are in m/s; multiply by 2.237 for mph.
+Steps P to W belong to the fourth round (task 7.3, the wider network of 2,162 nodes and 5,401 links with all modes). They are measured on the PM peak, scale 1.0, 60 min, as the mean of seeds 1 to 3, and each step was measured on the demand and network of that step, so rows differ in more than the one change named. Step 7.1 is the untuned state at the start of the round (seed 1 only).
 Steps K to N belong to the third round (signals and ramp terminals), measured the same way on the final demand (seeds 1 to 3, PM peak). Steps G to J were measured on the second calibration round: the figures are the mean of seeds 1 to 3 (PM peak, scale 1.0, 60 min). The state before step G is the seed-1 row of step F. Seeds differ a lot at the same state (PM removals 8 to 54 across six seeds at one setting), so differences below about 10 removals are not significant.
 
 | Step | Change (before -> after) | Type | Reason | Completed trips/h | Gridlock removals | Backlog | Arterial speed (m/s) | Headline shares (%) |
@@ -32,6 +33,16 @@ Steps K to N belong to the third round (signals and ramp terminals), measured th
 | M | Measured approach demand includes the standing queue at the end of the window, also when it has spilled back over up to 3 single-feed links (`ADAPT_SPILL_HOPS`). Vehicles queued on a motorway-class link whose next link is also motorway class (ramp, or the freeway stub feeding it) are no longer removed by the gridlock breaker; they wait and the queue sits in the origin backlog (`motorwayGridlockRemoval` config, default false). Measured in the same state with and without that rule: removals PM 6.7 / AM 6.0 with the rule, 5.0 / 6.3 without (three seeds; the stub accounted for about one removal per run) | ASSUMPTION | Ramp discharge sets the pace of a ramp queue. Neither part changed the result beyond the seed spread | 5906 | 6.7 | 0.7% | 4.45 | 39 / 42 / 51 / 50 |
 | N | Re-route share re-checked at 30 / 50 / 80% with K to M in place (six seeds, PM removals / backlog / arterial speed): 27.0 / 3.2% / 3.85; 12.3 / 1.9% / 4.13; 7.5 / 1.0% / 4.45. Kept 80% | ASSUMPTION | No share reaches zero removals, and each cut roughly doubles them, so no lower share is defensible on D4 | 5906 | 6.7 | 0.7% | 4.45 | 39 / 42 / 51 / 50 |
 | O | `assumedGateScale` re-checked at 0 / 0.2 / 0.35 / 0.5 / 0.7 (PM removals, AM removals): 1.8 and 0.2 (six seeds); 6.8 and 1.5 (six seeds); 7.5 and 3.3 (six seeds); 21.7 and 25.3 (three seeds, backlog 1.5% and 1.2%, 3.75 m/s); 96.7 and 105.7 (three seeds, 5% backlog, 3.1 m/s). Kept 0.35 | ASSUMPTION | The target of 0.7 is out of reach: D4 fails at every scale above 0, and the removal count climbs steeply past 0.35. The floor of about 2 removals with zero non-count demand comes from the count-based gates and the ramps | 5906 | 6.7 | 0.7% | 4.45 | 39 / 42 / 51 / 50 |
+| 7.1 | Start of the fourth round: wider network, class-default ADTs, `assumedGateScale` 1.0, ramp demand at mainline gates (seed 1 only; offered 28.8k veh/h) | | | 9124 | 450 | 20.4% | 3.39 | 45 / 48 / 62 / 59 |
+| P | Demand accounting in `build-demand.ts`. (1) One Caltrans ramp row (EB ON FR BROADWAY, 7,800 ADT) was given in full to each of the two ramps that alias to it; ramps that alias to one row now share it (ramp trips 13,770 -> 13,068 veh/h, the sum of ramp ADT x K). (2) The cut to the 8,000 largest car flows was followed by one renormalizing factor for all trips, which inflated ramp trips by 23% (16,988 veh/h against 13,770 expected) and through trips by 21% and shrank local trips to a fifth of their volume. Now flows below the cut are thinned (a flow v is kept with probability v/t and carries t), each origin's and destination's volume is restored by fitting on the kept pairs [DemingStephan1940], and one factor per class restores the class total (ramp 1.01, through 1.00, local 1.12). Total offered stays 28,758 veh/h (it is the sum of the targets); the split became through 8,617, local 7,073, ramp 13,068 (was 9,827, 1,944, 16,988) | BUGFIX | Ramp trips must equal the counted ramp volume, and a gate's modeled inflow must equal its target | 10462 | 521 | 13.1% | 3.51 | 38 / 41 / 46 / 44 |
+| Q | Importer: signal clusters join up to 40 m (`signalJoinRadius`), and nodes near the extract edge join (edge margin 60 m -> 2 m). Signal nodes 123 -> 112; the West St/40th St, Harlan St/40th St, MLK Jr Way/55th St, MLK Jr Way/59th St and 65th St/San Pablo Ave pairs are one node each. One-way chains stay separate (see the area README) | BUGFIX | Two signals 11 to 40 m apart each held a vehicle; the south-edge pairs were excluded only because of the edge margin | 10093 | 510 | 12.9% | 3.47 | 49 / 32 / 43 / 30 |
+| R | Turn restrictions from OSM `restriction` relations (69 always-on bans, 11 timed bans for AM and PM peaks, mostly Ashby Ave) and the `turnBans` contract | BUGFIX | The importer read no restrictions; real bans change which streets ramp traffic can use [OSMRestriction] | 10279 | 520 | 12.7% | 3.49 | not recorded (reports overwritten) |
+| S | Two-way stop nodes: an unflagged approach of a lower class than the best approach now yields (Mather/Montgomery/Pleasant Valley: the residential Montgomery St leg had equal priority with the secondary through road) | BUGFIX | Same rule as at an uncontrolled node (step C4); removals at Gilbert St/Pleasant Valley Ave fell from 42 to 22 per run | 10772 | 428 | 12.1% | 3.66 | 47 / 34 / 45 / 26 |
+| T | `assumedGateScale` 1.0 -> 0.5 on the 125 gates with class-default ADT (the count-based gates and the ramps stay at their data values). Offered 28.8k -> 24.9k veh/h | ASSUMPTION | Stability workaround, not an estimate. D4 fails at every value including 0 (see "Gate scale check"); 0.5 is the highest of the values tested (0, 0.3, 0.5, 1.0) that leaves arterial speed above 4 m/s | 12088 | 146 | 11.0% | 4.37 | 54 / 40 / 51 / 35 |
+| U | Re-route share per 60 s epoch retested at 30 / 50 / 80% on the wider network (PM removals, backlog, speed): 335 / 11.5% / 4.09; 197 / 11.1% / 4.30; 146 / 11.0% / 4.37 | ASSUMPTION | Each cut raises the removals and none reaches zero, so no lower share holds. Kept 80% | 12088 | 146 | 11.0% | 4.37 | 54 / 40 / 51 / 35 |
+| V | `ramps.localShare` 0.30 -> 0.60. Tested 0.30 / 0.45 / 0.60 / 0.75 (headline shares 54 / 40 / 51 / 35, 51 / 34 / 61 / 43, 48 / 42 / 62 / 43, 53 / 44 / 61 / 46) | ASSUMPTION | The model area is now 5.7 by 3.4 km, so most ramp trips end inside it; 0.30 was set for a 1 km area. 0.60 brings all four headline shares within 10 points at this step and cuts the Colby St and College Ave ramp via-street shares to near the observed values | 11279 | 178 | 9.9% | 4.17 | 48 / 42 / 62 / 43 |
+| W | Left-turn pockets use the OSM left-turn lane where `turn:lanes` has one (`leftLanes`, 185 links, 112 at signals): the pocket takes one of the tagged lanes and adds none | BUGFIX | OSM lane counts already include marked turn lanes, so the class rule added a second one [OSMTurnLanes] | 11375 | 158 | 10.8% | 4.17 | 48 / 33 / 66 / 47 |
+| X | Final reports: the demand builder drops flows that round to 0.00 veh/h (a test caught one) | BUGFIX | Flow contract needs positive volumes | 11021 | 172 | 11.4% | 4.14 | 48 / 34 / 62 / 46 |
 
 Tried and not kept (PM, six seeds each, removals / backlog / arterial speed):
 - Signal green split by lane load (a left or right movement on a multilane approach gets its own lane in the Webster flow ratio): 33.5 / 2.2% / 4.00 against 30.2 / 3.5% / 4.06 for the plain per-lane split; AM got worse (22.7 against 14.0). Reverted.
@@ -50,7 +61,113 @@ Claremont Ave: checked end to end. OSM lanes (3 with one forward and one backwar
 
 Ramp junctions: after joining all four SR-24 terminals are single signalized nodes (Aileen/Telegraph and Clifton/Claremont off-ramps, Hudson/Claremont and 56th/Telegraph on-ramps) with 2-lane ramp approaches at 35 mph. Mean discharge in the PM peak (seeds 1 to 3, measured before the third round): Aileen off-ramp 584 veh/h (offered 656), Clifton off-ramp 914 veh/h (offered about 1,025), on-ramps 783 and 555 veh/h. That is 290 to 460 veh/h per lane averaged over the hour; the signal gives the ramp 30 to 45% of the cycle and the shortfall is downstream spill-back on Claremont and Telegraph, not the ramp signal itself. Before the third round the remaining gridlock removals were mostly vehicles queued on the 4-lane freeway stub behind the single-lane Clifton off-ramp (26 of about 45 removals over six seeds at scale 0.3). The third round checked the ramp lanes against OSM: the off-ramps are tagged one lane for most of their length and two lanes (turn lanes left | left;through;right at Clifton, left | right at Aileen) on the final way before the signal, and the importer keeps that per segment (a test covers it), so no lane count is lost. After step M the stub accounts for about one removal per run.
 
-## Final state, scale 1.0, mean of seeds 1 to 3
+## Fourth round: wider network, task 7.3
+
+### Demand accounting (step 1)
+
+Offered PM demand at the start was 28,758 veh/h: through (gate to gate) 9,827, local 1,944 (gate to block and block to block, before the fix; 7,073 after), ramp 16,988. The checks:
+
+- (a) Surface gate to freeway trips exist once. Mainline gates are not part of the gate-to-gate (Furness) step, ramp trips with a surface-gate end use at most 40% of that gate's target and are subtracted from the gate's through residual, and ramp trips with a local end replace part of that block's external trips. No double counting was found there.
+- (b) Gate inflow against target at the 18 counted gates (TMC and Caltrans AADT): 1.01 to 1.33 before step P (Ashby Ave 1.26, Telegraph Ave north 1.33), 1.01 to 1.03 after. Outflow is 0.80 to 0.84 of the count at all 18 after step P (0.77 to 0.82 with the thinning alone). The cause is the balancing step: the outflow targets (13,609 veh/h at scale 1.0, 11,530 at 0.5) exceed the inflow supply (8,617 and 8,572), and the outflow side is scaled to the supply for every gate, counted or not. Not changed.
+- (c) Class defaults: 125 gates (85 residential at 800 ADT, 15 tertiary at 5,000, 12 secondary at 9,000, 2 primary at 14,000, 11 service at 150) carry 7,712 veh/h in and 11,955 out at scale 1.0, 45% of all gate flow. Many residential gates are dead ends near the extract edge, where 800 ADT is a high value. The defaults stay at their documented values and the single factor of step T applies to them.
+- (d) The 14 ramps without a count use 500 ADT, 630 veh/h in total (4.8% of the ramp trips). Their ramp links carry 4 to 12 times ADT x K in the model (the PM seed-1 run: for example the CA 13 and Broadway ramps at the east end 180 to 470 veh/h against 45), because freeway trips from the SR-13 and east-end gates take the nearest exit. No count exists to replace the 500.
+- (e) Ramp volume in the demand file after step P: 6,703 veh/h leave the freeway (off-ramps, sum of ADT x K 6,786) and 6,365 enter it (on-ramps, 6,282). Before, 8,253 and 8,734 against 6,786 and 6,984.
+- Modeled ramp flows against ADT x K, PM seed 1, are far from the counts at the biggest ramps: MLK Jr Way off-ramp 0.34, 52nd St off-ramp 0.42, MLK Jr Way on-ramps 0.10 and 0.48, 52nd St on-ramp 0.82, Claremont/Clifton off-ramp 0.87, Claremont/Hudson on-ramp 0.79, Aileen St off-ramp 1.44 and 56th St on-ramp 1.45. The queue of the SR-24 west end (mainline gates 2123 and 2124) fills the origin backlog (about 1,500 trips, 5.9% of spawned trips).
+
+### Gate scale check (PM, step S model, scale 1.0)
+
+| `assumedGateScale` | Offered veh/h | Removals | Backlog | Arterial speed (m/s) | Seeds |
+| --- | --- | --- | --- | --- | --- |
+| 1.0 | 28,758 | 428 | 12.1% | 3.66 | 3 |
+| 0.5 | 24,902 | 146 | 11.0% | 4.37 | 3 |
+| 0.3 | 23,360 | 106 | 11.3% | 4.88 | 2 |
+| 0 | 21,045 | 54 | 12.0% | 5.50 | 2 |
+| 1.0, ramp K 0.045 (half the ramp trips) | 25,366 | 478 | 7.6% | 3.80 | 2 |
+| 0, ramp K 0.045 | 17,270 | 59 | 4.2% | 5.59 | 2 |
+
+D4 fails at every row. With the assumption gates at zero and half the ramp volume, 17k veh/h still gives about 60 removals and 4% backlog, so the limit is not the factor.
+
+### Stability (step 3), bottlenecks by classification
+
+Top nodes by blocked lane-hours, PM final state, mean of seeds 1 to 3, with the classification:
+
+| Node | Blocked (lane-h) | Class | Note |
+| --- | --- | --- | --- |
+| 52nd St/Shattuck Ave | 6.5 | model, data | Two-lane arterials at a 75 s signal fed by the SR-24 west-end ramps (MLK Jr Way and 52nd St off-ramps, 32,600 ADT from 2012 and 2017 ramp counts) |
+| 40th St/San Pablo Ave | 6.1 | data, importer | Counted gates (TMC legs at West St/40th St used up to 1.2 km away, Caltrans AADT on San Pablo Ave) on the south edge |
+| 40th St/West St | 5.9 | importer, data | The junction lies 6 to 17 m inside the extract edge, so its gates have no storage; 7 to 8 of about 170 removals per run are on its approaches (20 of about 430 before step T) |
+| 55th St/MLK Jr Way | 5.1 | model, data | Next to the SR-24 west-end ramps |
+| 40th St/Market St | 4.8 | data | Leg volumes from the 55th St/Market St count, 1 km away |
+| 52nd St/Claremont Ave/Telegraph Ave | 4.6 | importer, model | Five approaches, three phases (unchanged from the third round) |
+| 40th St/Adeline St | 4.5 | data, importer | South-edge corner |
+| Adeline St/Alcatraz Ave | 4.4 | model | Signal at a default-ADT gate street |
+| 62nd St/Claremont Ave/College Ave | 4.3 | model | Three phases at a 75 s cycle (unchanged) |
+| Market St/Stanford Ave | 4.3 | model | Two-phase signal with an uneven split (50 and 15 s in a sample run) |
+
+What the round fixed in the model and the importer is in steps P to S and W. After them the removals no longer concentrate in one place: the three largest links hold about 18 of 172 removals per run. The origin backlog ends in three places, which add up to 11% of spawned trips: the two SR-24 west-end mainline gates (1,505 trips, 5.9%), the south-edge gates on 40th St, West St and Telegraph Ave (about 725, 2.8%) and the Claremont and Market St gates (about 175). Without the first two, the backlog would still be above 2%.
+
+D4 is not met in any period. The limit is volume against capacity: at 17k veh/h with half the ramp trips and no assumption gates the baseline still loses about 60 trips to gridlock, and every gate scale at or above 0 fails. The factor of step T is a stability workaround, not an estimate.
+
+### Fit (step 4)
+
+PM headline shares, modeled / observed, mean of three seeds (six seeds for step W: 51 / 35 / 64 / 43):
+
+| Headline share | Start (seed 1) | After step X | Within +/-10 pp |
+| --- | --- | --- | --- |
+| Hillegass NB from freeway | 45 / 47 | 48 / 47 | yes (+1) |
+| Colby NB from freeway | 48 / 47 | 34 / 47 | no (-13) |
+| Hillegass SB to freeway (PM 68) | 62 / 68 | 62 / 68 | yes (-6) |
+| Colby SB to freeway | 59 / 45 | 46 / 45 | yes (+1) |
+
+Single-seed values move by about 10 points (Colby NB: 33, 34, 35 and 42 in different states), so the one miss is within the noise of the measurement. AM modeled 49 / 33 / 57 / 34 and midday 68 / 47 / 66 / 34 (observed values are the PM ones; Hillegass SB is 57 outside the PM peak).
+
+Ramp via-street shares of the Claremont ramps, PM, modeled / observed (observed covers traffic from or to the north only, modeled covers all ramp trips): onto the freeway via College Ave 22 / 16, Hillegass Ave 13 / 12, Martin St 13 / 10, Colby St 16 / 8, Telegraph Ave north of Alcatraz Ave 52 / 8, Benvenue Ave 2 / 5; from the freeway via College Ave 6 / 10, Martin St 16 / 10, Colby St 8 / 8, Hillegass Ave 8 / 5, Benvenue Ave 1 / 3. At the start (seed 1): onto the freeway via Colby St 34 / 8 and Telegraph Ave north 59 / 8; from the freeway via Martin St 19 / 10, Colby St 14 / 8, Hillegass Ave 12 / 5.
+
+Network data checked first, as asked. The study-area streets match OSM: one signal each at Claremont/Colby/Forest, Claremont/Hudson and Claremont/Clifton, and humps on Colby St and Hillegass Ave as tagged. The importer read no turn restrictions before this round. Now it reads 199 relations; near the study area only these apply: Clifton St to Claremont Ave (always), Ashby Ave to Hillegass Ave and to College Ave (peak periods), Telegraph Ave to 57th St (AM) and Racine St to Telegraph Ave. None of them sits on the obvious route between Telegraph Ave north of Alcatraz Ave and the Hudson ramp, so network data does not explain the over-use of Telegraph Ave. The likely source is demand: the north gates (Telegraph Ave and Ashby Ave, up to 40% of their volume can be ramp trips) are the nearest large origins for the Hudson on-ramp. That is a reading of the demand tables, not a measured cause. Parameters used: `ramps.localShare` (step V: College Ave 8 -> 19 against 16 observed, Colby St 9 -> 15 against 8) and, without effect beyond the noise, the local-street cost factor (1.0 and 1.6 against 1.25: headline 60 / 45 / 48 / 32 and 58 / 43 / 52 / 33, at localShare 0.3) and the per-gate ramp cap (0.2 against 0.4: 59 / 42 / 56 / 39 at localShare 0.6). A distance decay on ramp destination weights moved the local share of freeway-origin trips from 21% to 27% in the demand file and was not run in the simulator or kept. The Telegraph Ave north share is still 52 against 8: the comparison bases differ (see above) and the lever that would fix it is the origin mix of the north gates, which has no data.
+
+### Mid-block flows (step 5)
+
+PM, veh/h per direction of travel, median of mid-block links, mean of seeds 1 to 3 against the expected peak flow (the ratio in brackets):
+
+| Street | Direction | Modeled | Expected | Source of the expected value |
+| --- | --- | --- | --- | --- |
+| Telegraph Ave (study area) | N / S | 558 / 525 | 1,093 / 910 | TMC legs south of Alcatraz Ave (0.51 / 0.58) |
+| Alcatraz Ave | E / W | 334 / 322 | 618 / 521 | TMC legs, mean of the two sides (0.54 / 0.62) |
+| Claremont Ave | N / S | 239 / 640 | 635 | Caltrans AADT 23,500 x 0.6 x 0.09 / 2 (0.38 / 1.01) |
+| College Ave | N / S | 210 / 564 | about 540 | no count; ADT about 12,000 is an estimate (0.39 / 1.04) |
+| Ashby Ave | E / W | 664 / 546 | 1,260 | Caltrans AADT 28,000 x 0.09 / 2 (0.53 / 0.43) |
+| Shattuck Ave | N / S | 224 / 384 | 203 | class-default ADT 9,000 x 0.09 / 2 x 0.5 (1.1 / 1.9) |
+| Adeline St | N / S | 288 / 209 | 203 | same (1.4 / 1.0) |
+| 51st St | E / W | 328 / 756 | 203 | same (1.6 / 3.7) |
+
+Counted corridors carry about half their expected flow. Northbound Claremont Ave and College Ave are the weakest (0.38 and 0.39). 51st St westbound carries the traffic of the 52nd St and Telegraph Ave ramps and is far above the class default.
+
+### Walking and cycling (step 6)
+
+PM peak, seed 1 (AM and midday in the reports): cyclists 1,335 trips completed, 254 in the network, mean trip 466 s; pedestrians 2,460 trips completed, 428 in the network, mean trip 497 s, mean crossing delay 8.1 s (9.2 s AM, 5.7 s midday); 471 pedestrian conflicts, 598 bicycle conflicts and 1,055 close passes; mean vehicle speed at pedestrian encounters 1.9 m/s. There are no buses (no transit file). Checks: the numbers in the network are close to offered volume times trip time (pedestrians 3,066/h x 497 s = 423 against 428, cyclists 1,605/h x 466 s = 208 against 254), so nobody is stuck; crossing delays are seconds, not minutes; conflicts and close passes are not zero. Things to read with care: the bicycle count scaling sits at its lower clamp (factor 0.2; the prior is 776 cyclists at Telegraph Ave/Alcatraz Ave against 82 counted), so cyclists there stay about twice the count; the pedestrian count is one intersection; vehicle speeds at crossings reflect the congestion above; the conflict and injury figures are surrogates with no observed counterpart.
+
+### Final state, wider network, scale 1.0, mean of seeds 1 to 3
+
+| Period | Offered veh/h | Completed trips | Gridlock removals (seeds 1 / 2 / 3) | Backlog | Arterial speed (m/s) | Stable (D4) |
+| --- | --- | --- | --- | --- | --- | --- |
+| PM peak | 24,924 | 11,021 | 211 / 146 / 160 (mean 172) | 11.4% | 4.14 (9.3 mph) | no (removals, backlog) |
+| AM peak | 23,720 | 10,956 | 152 / 122 / 120 (mean 131) | 9.6% | 4.33 (9.7 mph) | no (removals, backlog) |
+| Midday | 16,182 | 10,944 | 14 / 28 / 22 (mean 21) | 3.0% | 6.26 (14.0 mph) | no (removals, backlog) |
+
+Offered PM demand by type, veh/h: gate to gate 8,572, with a local end 3,285 (gate to block and block to block), freeway ramp trips 13,068 (7,713 of them end at a block). Plus 1,605 cyclists and 3,066 pedestrians per hour (persons). Settings: `assumedGateScale` 0.5, re-route share 80%, `ramps.localShare` 0.60, local-street cost factor 1.25. D5 holds for three of four headline shares in the PM peak; the status stays uncalibrated. The reports in `reports/` are seed 1.
+
+### What remains off (fourth round)
+
+- D4 is not met in any period; the limits are listed above.
+- Modeled ramp volumes do not follow the ramp counts: the busiest SR-24 west-end ramps deliver 10 to 50% of ADT x K while hillside connectors without a count carry several times their assumed volume.
+- Counted corridors carry about half their expected flow (Telegraph Ave, Alcatraz Ave, Ashby Ave).
+- The south-edge corner (40th St, West St, San Pablo Ave, Telegraph Ave) is cut by the extract edge; moving the south edge a few hundred meters south would give the gates room, at the price of a new extract.
+- Ramp via-street share onto the freeway via Telegraph Ave north of Alcatraz Ave is 52% against 8%.
+- Signal control is still an approximation (see the third round), and the 14 ramps without a count use an assumed 500 ADT.
+
+## Third-round state on the narrow network (history)
+
+### Final state, scale 1.0, mean of seeds 1 to 3
 
 | Period | Offered veh/h | Completed trips | Gridlock removals (seeds 1 / 2 / 3) | Backlog | Arterial speed (m/s) | Stable (D4) |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -75,7 +192,7 @@ The via-street shares of freeway traffic that are not gated are further off than
 
 Hillegass SB to freeway (modeled 51, observed 68): the observed value is PM specific. The model's PM demand toward the on-ramps is symmetric between on- and off-ramps (the ramp ADT has no peak-hour direction), the residential gates on the north side offer under about 10 veh/h each (default residential ADT 300 x K 0.09 x scale 0.35), and the on-ramp trips in the model come from the Telegraph gate (533 veh/h), local nodes (484), the Alcatraz gate (226) and the Claremont gate (161). So Hillegass SB carries local trips from the blocks along it, and the share of those that end at an on-ramp is the one set by `ramps.localShare` (0.3), the LODES sector split and the route costs. A direction split by period moved the share by 1 point at the cost of 9 on the northbound share (see above), and `localShare` 0.45 and 0.6 moved it less than the seed spread. No general, documented demand parameter was changed.
 
-## What remains off
+### What remains off (third round)
 
 - D4 is not met: PM has 6.7 and AM 6.0 gridlock removals per run (three seeds; 7.5 and 3.3 over six), midday has none. Backlog and arterial speed pass in all three periods. `assumedGateScale` stays at 0.35. The target of 0.7 is out of reach: at 0.5 the PM and AM peaks have about 22 and 25 removals, at 0.7 about 100, and with the non-count gates at zero the PM peak still has 1.8 removals. The load that remains comes from the count-based gates and the ramps.
 - The removals concentrate on Telegraph between 55th and 59th, over six seeds in the PM peak: 13 on the southbound link ahead of the Aileen signal, 9 at Aileen/Telegraph, 4 at the 57th stop. Telegraph southbound is the underloaded direction (630 against 1302 northbound). In a queue snapshot at the time of a removal (seed 2) about half of the vehicles on the southbound approach to 56th Street want the left turn onto the EB on-ramp, which crosses a northbound through flow of about 950 veh/h as a permissive left, and the left-turners queue in the through lanes. A protected left phase cut removals at the cost of more lost time elsewhere (see "Tried and not kept") and was not kept.

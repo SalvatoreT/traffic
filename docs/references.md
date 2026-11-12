@@ -611,6 +611,12 @@ Reviews TTC, PET and related indicators, and their strengths and limitations.
 **[FHWA-SSAM2008]** [V] Federal Highway Administration (2008). *Surrogate Safety Assessment Model and Validation: Final Report.* FHWA-HRT-08-051, June 2008. Chapter 2 read at `https://www.fhwa.dot.gov/publications/research/safety/08051/02.cfm` (no DOI found).
 States that SSAM defaults to a TTC threshold of 1.5 s "as suggested in previous research", and defines PET as the time between the first vehicle last occupying a position and the second arriving at it, with zero meaning a collision. The chapter does not give a PET threshold; it attributes the use of one to Hydén. These cover vehicle-to-vehicle interactions only.
 
+### 7.3 Map data conventions (OpenStreetMap)
+
+**[OSMRestriction]** [V-meta] OpenStreetMap Wiki, "Relation:restriction". `https://wiki.openstreetmap.org/wiki/Relation:restriction` (wikitext fetched 2026-11-12, HTTP 200). Defines the restriction relation with a `from` way, a `via` node or way and a `to` way. The `restriction` values read there are `no_left_turn`, `no_right_turn`, `no_straight_on`, `no_u_turn` and the `only_*` forms. It also documents `restriction:conditional` for restrictions that hold only at certain times, with several values separated by semicolons. Used by the importer to ban motor-vehicle movements. Community documentation, not a standard.
+
+**[OSMTurnLanes]** [V-meta] OpenStreetMap Wiki, "Key:turn" (section "Indicated turns by lane"; `Key:turn:lanes` redirects there). `https://wiki.openstreetmap.org/wiki/Key:turn` (wikitext fetched 2026-11-12, HTTP 200). Describes `turn:lanes` as the indicated turn of each lane, with the `:forward` and `:backward` suffixes for a specific direction of a way. The page states that lane tagging does not replace turn restrictions. Its examples separate lanes with `|`, for example `turn:lanes:forward=left|through;right`. The importer only counts lanes marked left-turn only, so the order of lanes does not matter to it.
+
 ---
 
 ## 8. Emissions and fuel models

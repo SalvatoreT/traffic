@@ -36,3 +36,4 @@
 - [x] 7.1 Extend the extract, network and demand to the wider area; study area unchanged
 - [x] 7.2 Browser performance at the larger size
 - [ ] 7.3 Fine-tune round on the wider network with all modes
+- [ ] 7.4 Reach D4 on the wider network (SR-24 west-end ramp capacity, south-edge corner, spread-out gridlock)

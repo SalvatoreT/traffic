@@ -15,11 +15,23 @@ The importer SHALL record for each gate whether trips can enter and whether they
 - **THEN** it is flagged as exit-only
 
 ### Requirement: Junction joining
-The importer SHALL join graph nodes that form one real intersection into a single node at their centroid when they lie within `junctionJoinRadius` (default 20 m), are connected by short non-freeway links, and share a street name or are both signals.
+The importer SHALL join graph nodes that form one real intersection into a single node at their centroid when they lie within `junctionJoinRadius` (default 20 m), or within `signalJoinRadius` (default 40 m) for a cluster of two or more signals, are connected by short non-freeway links, and share a street name or are both signals.
 
 #### Scenario: Offset signalized crossing
 - **WHEN** two signal-tagged nodes 10 m apart on one street carry the north and south legs of one crossing
 - **THEN** the network has one signal node with four approaches and no link between the former nodes
+
+#### Scenario: Offset signals on a wide junction
+- **WHEN** two signal nodes 33 m apart are joined by two-way links and carry the two halves of one junction
+- **THEN** the network has one signal node
+
+#### Scenario: Signals at the extract edge
+- **WHEN** a signal pair lies within the former 60 m edge margin but neither node is a gate
+- **THEN** it is joined like any other pair
+
+#### Scenario: One-way chain of signals
+- **WHEN** two signals are joined only by a one-way link
+- **THEN** they stay separate nodes
 
 #### Scenario: Distinct intersections on a longer block
 - **WHEN** two intersections are more than the join radius apart
@@ -32,6 +44,32 @@ The importer SHALL join graph nodes that form one real intersection into a singl
 #### Scenario: No new movements
 - **WHEN** the members of a cluster are not strongly connected by their internal links, or the cluster contains a freeway link, a gate or a traffic circle
 - **THEN** those members are not joined
+
+### Requirement: Turn restrictions
+The importer SHALL turn OSM `restriction` relations with one `via` node into banned motor-vehicle movements in the network (`turnBans`: link into the junction, link out of it), and the simulator SHALL not route cars or buses through them. A time-conditional restriction SHALL apply only in the demand periods whose hours it overlaps, as given by `periodWindows` in the area config.
+
+#### Scenario: No left turn
+- **WHEN** an OSM relation bans the left turn from one way onto another at a junction
+- **THEN** the network has a ban from the link of the first way into the junction to the link of the second way out of it
+
+#### Scenario: Peak-hour ban
+- **WHEN** a relation carries `restriction:conditional=no_left_turn @ (Mo-Fr 16:00-18:00)`
+- **THEN** the ban applies in the `pm_peak` period and not in `am_peak` or `midday`
+
+#### Scenario: Only a straight movement
+- **WHEN** a relation says `only_straight_on`
+- **THEN** every other movement from that link at the junction is banned except the U-turn
+
+#### Scenario: Unsupported relation
+- **WHEN** a relation has a `via` way, several `via` members or exempts motor cars
+- **THEN** it is skipped and counted
+
+### Requirement: Marked left-turn lanes
+The importer SHALL record, for the end of each link, the number of lanes that OSM `turn:lanes` marks as left-turn only, and the simulator SHALL build the left-turn pocket from one of those lanes instead of adding a lane.
+
+#### Scenario: Tagged left lane
+- **WHEN** a signalized approach has `lanes=3` and `turn:lanes=left|through|through;right`
+- **THEN** the link has three lanes in total, one of them the left pocket
 
 ### Requirement: Study area from boundary streets
 The importer SHALL derive the study-area polygon from an ordered list of boundary streets, following each street's way geometry between the crossings with its neighbors in the list, and SHALL treat links lying on a boundary street as inside the study area, except motorway-class links.
