@@ -6,9 +6,9 @@
 - [ ] 1.5 Proposals file with provenance; tests
 
 ## 2. UI
-- [ ] 2.1 Proposals tab with option cards and open-on-map
-- [ ] 2.2 Exploratory, out-of-date and empty states
-- [ ] 2.3 Accessibility check
+- [x] 2.1 Proposals tab with option cards and open-on-map
+- [x] 2.2 Exploratory, out-of-date and empty states
+- [x] 2.3 Accessibility check
 
 ## 3. Run and publish
 - [ ] 3.1 Run the search on the current baseline

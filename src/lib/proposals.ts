@@ -116,7 +116,7 @@ export function cutThroughHeadline(c: Proposal['cutThrough']): { figure: string;
   return {
     figure: zero ? 'No change' : `${c.changePct < 0 ? MINUS : '+'}${num(c.changePct, dp)}%`,
     label: 'cut-through',
-    detail: `${num(c.baselineVehMi)} → ${num(c.scenarioVehMi)} veh-mi`,
+    detail: `${c.baselineVehMi.toFixed(1)} → ${c.scenarioVehMi.toFixed(1)} veh-mi`,
   };
 }
 

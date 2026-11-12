@@ -21,11 +21,13 @@ import { InterventionPanel } from './components/InterventionPanel';
 import { hasModes } from './lib/metrics';
 import { Comparison } from './components/Comparison';
 import { StreetsTable } from './components/StreetsTable';
+import { Proposals, useProposals } from './components/Proposals';
+import { linkHash, type Proposal } from './lib/proposals';
 import { effectiveView, initViewState, viewReducer } from './lib/change';
 const MapView = lazy(() => import('./components/MapView').then((m) => ({ default: m.MapView })));
 const Sources = lazy(() => import('./components/Sources').then((m) => ({ default: m.Sources })));
 
-type View = 'map' | 'streets' | 'sources';
+type View = 'map' | 'proposals' | 'streets' | 'sources';
 const store = {
   get(k: string) { try { return localStorage.getItem(k); } catch { return null; } },
   set(k: string, v: string) { try { localStorage.setItem(k, v); } catch { /* unavailable */ } },
@@ -192,6 +194,25 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
     return () => window.removeEventListener('hashchange', f);
   }, [network]);
 
+  // --- proposals
+  const proposals = useProposals(bundle, view === 'proposals');
+  const focusAfterOpen = useRef(false);
+  const onOpenProposal = useCallback((p: Proposal) => {
+    const d = decodeScenario(network, linkHash(p.link));
+    setInterventions(d.interventions);
+    setNotice({ unplaced: d.unplaced, invalid: d.invalid });
+    setView('map');
+    focusAfterOpen.current = true;
+    say(`Opened ${p.title} on the map.`);
+  }, [network, say]);
+  useEffect(() => {
+    if (view !== 'map' || !focusAfterOpen.current) return;
+    focusAfterOpen.current = false;
+    const h = document.getElementById('scenario-h');
+    const el = h && h.getClientRects().length > 0 ? h : document.getElementById('main');
+    el?.focus();
+  }, [view]);
+
   // --- interventions API
   const onApply = useCallback((change: Change, msg: string) => {
     setInterventions((cur) => addInterventions(change.remove ? cur.filter((x) => !change.remove!(x)) : cur, change.add));
@@ -251,7 +272,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   const comparing = !!stats?.comparing;
   const multimodal = hasModes(scen);
   const mapVisible = view === 'map';
-  const showPanel = view !== 'sources';
+  const showPanel = view === 'map' || view === 'streets';
   const placement: Placement | null = !selection ? null : selection.via === 'search' || !mapVisible ? 'inline' : phone ? 'sheet' : 'popover';
   const menu = selection && placement ? (
     <SelectionMenu bundle={bundle} index={index} selection={selection} interventions={interventions} placement={placement}
@@ -304,9 +325,9 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
           <h1>Traffic <span className="area">{bundle.entry.name}</span></h1>
         </div>
         <nav aria-label="Views">
-          {(['map', 'streets', 'sources'] as View[]).map((v) => (
+          {(['map', 'proposals', 'streets', 'sources'] as View[]).map((v) => (
             <button key={v} type="button" className="navbtn" aria-current={view === v ? 'page' : undefined} onClick={() => setView(v)}>
-              {v === 'map' ? 'Map' : v === 'streets' ? 'Streets' : 'Sources'}
+              {v === 'map' ? 'Map' : v === 'proposals' ? 'Proposals' : v === 'streets' ? 'Streets' : 'Sources'}
             </button>
           ))}
         </nav>
@@ -329,7 +350,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
           <aside key="left" id="scenario-panel" className={`side side-left ${drawerOpen ? 'open' : ''}`} aria-labelledby="scenario-h"
             onKeyDown={(e) => { if (e.key === 'Escape' && layout === 'medium' && drawerOpen) { e.stopPropagation(); closeDrawer(); } }}>
             <div className="side-head">
-              <h2 id="scenario-h">Scenario</h2>
+              <h2 id="scenario-h" tabIndex={-1}>Scenario</h2>
               {layout === 'medium' && <button type="button" className="btn small-btn" onClick={closeDrawer}>Close</button>}
             </div>
             <div className="side-body">{scenarioPanel}</div>
@@ -354,7 +375,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
               {simError && engine && <p className="notice err" role="alert">{simError}</p>}
             </div>
           )}
-          {view !== 'sources' && (
+          {showPanel && (
             <Playback
               running={running} finished={finished} onToggle={() => (finished ? runAgain() : dispatchRun({ type: 'toggle' }))}
               onReset={() => { client?.send({ t: 'reset' }); dispatchRun({ type: 'restart' }); say('Simulation reset.'); }}
@@ -391,6 +412,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
               scen={stats?.scenario.linkStats ?? null} base={baseStats} comparing={comparing} overlay={overlay}
               baseMetrics={base} scenMetrics={scen} />
           )}
+          {view === 'proposals' && <Proposals bundle={bundle} state={proposals.state} loaded={proposals.loaded} current={interventions} onOpen={onOpenProposal} />}
           {view === 'sources' && <Suspense fallback={<p className="boot" role="status">Loading sources…</p>}><Sources demand={demand} synthetic={bundle.synthetic} focusRef={sourceRef} calibration={bundle.synthetic ? undefined : { status: calStatus, note: bundle.entry.calibration?.note }} /></Suspense>}
         </div>
 

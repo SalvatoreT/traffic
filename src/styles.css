@@ -354,3 +354,35 @@ input[type='checkbox'] { width: 18px; height: 18px; accent-color: var(--accent);
   .legend-row.is-change .legend-ramp { flex: 1 1 100%; justify-content: center; padding-left: 2.6rem; }
   .legend-row.is-change .ramp-col { flex: 1 1 auto; max-width: 240px; }
 }
+
+/* Proposals */
+.proposals-view { padding: 1rem 1.25rem 2rem; max-width: 900px; }
+.proposals-view .lead { max-width: 70ch; }
+.prop-status .notice { max-width: 70ch; }
+.empty { border: 1px dashed var(--border); border-radius: var(--radius); padding: .5rem 1rem; max-width: 60ch; background: var(--surface); }
+.prop-list { list-style: none; margin: 1rem 0; padding: 0; display: grid; gap: 1rem; }
+.prop-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: .9rem 1.1rem 1rem; box-shadow: var(--shadow); }
+.prop-head { display: flex; flex-wrap: wrap; gap: .3rem .6rem; align-items: baseline; }
+.prop-head h3 { margin: 0; font-size: 1.1rem; }
+.tag { font-size: .78rem; font-weight: 600; border: 1px solid var(--border); border-radius: 999px; padding: .05rem .55rem; background: var(--surface-2); color: var(--text); }
+.prop-note { margin: .25rem 0 0; }
+.prop-sum { margin: .4rem 0 .8rem; max-width: 65ch; }
+.prop-figs { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; margin-bottom: .8rem; }
+.fig { background: var(--surface-2); border-radius: 8px; padding: .6rem .8rem; }
+.fig p { margin: 0; }
+.fig-num { font-size: 1.5rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.fig-sub { color: var(--muted); font-size: .88rem; font-variant-numeric: tabular-nums; margin-top: .15rem !important; }
+.prop-ivs { margin: 0 0 .8rem; padding-left: 1.2rem; }
+.prop-more { margin: 0 0 .9rem; }
+.prop-more summary { cursor: pointer; font-weight: 600; min-height: 24px; }
+.prop-more table { margin: .5rem 0; }
+.prop-more th, .prop-more td { text-align: left; padding: .25rem .5rem; border-bottom: 1px solid var(--border); }
+.prop-more h4 { margin: .9rem 0 .2rem; font-size: .95rem; }
+.ctx { margin: 0; } .ctx div { display: flex; justify-content: space-between; gap: 1rem; border-bottom: 1px solid var(--border); padding: .25rem .5rem; } .ctx dt, .ctx dd { margin: 0; } .ctx dd { font-variant-numeric: tabular-nums; }
+.prop-confirm { border-left: 4px solid var(--note-border); background: var(--note-bg); padding: .5rem .75rem; border-radius: 6px; }
+.prop-confirm p { margin: 0 0 .5rem; }
+.sec-h { margin-top: 1.8rem; }
+@media (max-width: 719.98px) {
+  .proposals-view { padding: 1rem 1rem 2rem; }
+  .prop-figs { grid-template-columns: 1fr; }
+}
