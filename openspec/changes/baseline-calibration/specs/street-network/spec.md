@@ -77,3 +77,15 @@ The importer SHALL derive the study-area polygon from an ordered list of boundar
 #### Scenario: Freeway edge
 - **WHEN** a boundary street is a dual-carriageway freeway
 - **THEN** the polygon edge follows the carriageway nearest the area and no vertex lies beyond it
+
+### Requirement: Gates sit mid-block
+The importer SHALL warn about every gate that lies within `gateSignalWarnM` (default 60 m) of a signalized junction, so that the model-area edges can be chosen where corridors leave the model mid-block, and the Rockridge model area SHALL have at most 3% of its gates on that list.
+
+#### Scenario: Gate next to a signal
+- **WHEN** a gate lies 22 m from a signalized junction
+- **THEN** the importer prints the gate, its street and the distance, and the network statistics list it
+
+#### Scenario: Edge through a junction
+- **WHEN** the model-area edge would cut a signalized junction or leave a gate inside one
+- **THEN** the area configuration moves the edge, and the area README gives the candidate edges that were compared
+

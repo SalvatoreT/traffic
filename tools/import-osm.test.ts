@@ -376,7 +376,7 @@ describe('wider model area', () => {
   it('stays a manageable size', () => {
     expect(net.links.length).toBeLessThan(7000);
     expect(net.nodes.length).toBeLessThan(3000);
-    expect(net.nodes.filter((n) => n.control === 'signal').length).toBeGreaterThan(100);
+    expect(net.nodes.filter((n) => n.control === 'signal').length).toBeGreaterThan(80);
   });
 
   it('keeps a gate on Ashby, Sacramento, Shattuck and Telegraph at the extract edge', () => {

@@ -43,6 +43,17 @@
 - [x] 8.2 Verify and add the sources the ranges need to `docs/references.md` ([FHWA-SIG2004], [FHWA-STM2008], [Treiber2014], [TxDOT-TSAP], [NCHRP08-135])
 - [x] 8.3 Fix the mechanisms found: turn-speed backstop, IIDM with cited urban means, gate entry speed, crossing conflicts that end at the conflict point, queue roll-up at stop signs; golden-metrics values replaced
 - [x] 8.4 Record the steps, describe the suite in the calibration README, update the area calibration note, restore `assumedGateScale` 1.0
-- [ ] 8.5 Remaining deviations: start-up lost time, adaptive plan on a saturated arterial, circle entry at high circulating flow, two-lane pocket overflow
+- [x] 8.5 Remaining deviations: the adaptive-plan case reframed and passing (c5, c6; the plan was right and the case wrong); start-up lost time, circle entry at high circulating flow and two-lane pocket overflow stay listed with their mechanisms
 - [ ] 8.6 Reach D4 at full demand (the PM peak is stable at demand scale 0.4, not above 0.45)
+
+## 9. Demand audit and gate placement (sixth round)
+- [x] 9.1 Demand audit: relevance of every trip to the study area, per-gate table, cordon check (`tools/lib/demand-audit.ts`, `data/demand/<area>.audit.md`)
+- [x] 9.2 Peripheral trips: corner-clipping drop and per-gate cap, config-driven and logged (`peripheral`)
+- [x] 9.3 Through-trip balancing keeps counted gates at their counts; no double counting found
+- [x] 9.4 Class default ADT from counted streets (`classDefaultFromCounts`), `assumedGateScale` removed
+- [x] 9.5 Adaptive plan on a saturated arterial: mechanism found, case c5 reframed, case c6 added
+- [x] 9.6 South and west edges moved inward, importer warning for gates within 60 m of a signal, LODES blocks outside the box dropped
+- [x] 9.7 Walking and biking count scaling without a clamp, fitted on the final flow list
+- [x] 9.8 Re-run: validation suite and all three periods at scale 1.0 (seeds 1 to 3), demand scales that meet D4, reports, record
+- [ ] 9.9 Reach D4 at full demand (met at 0.4 PM, 0.35 AM, 0.6 midday; the SR-24 west-end ramps and the arterial signals behind them limit it)
 
