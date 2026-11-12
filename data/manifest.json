@@ -5,6 +5,7 @@
     "areas/rockridge.basemap.json",
     "areas/rockridge.demand.json",
     "areas/rockridge.network.json",
+    "areas/rockridge.noise.json",
     "demand/raw/caltrans-aadt-bbox.json",
     "demand/raw/caltrans-ramp-adt-sr24.json",
     "demand/raw/lodes8-ca-2024-rockridge.json",
