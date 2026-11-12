@@ -541,8 +541,7 @@ pub fn run_all() -> Vec<Case> {
         };
         out.push(case(id, format!("{nm} (green share {gc:.2})"), "veh/h/lane", cap, lo, hi, src, format!("per lane, cycle 100 s, saturated; {note}")));
     }
-    // Right turn on red (ASSUMPTION: permitted at every signal after a stop; the legal basis, California Vehicle Code 21453, could not be read in this
-    // environment). Gap acceptance for the turn is the two-way-stop minor right (tc 6.2 s, tf 3.3 s [Brilon1999]); the stop costs the rest of the
+    // Right turn on red (ASSUMPTION: permitted at every signal after a stop; the legal basis is California Vehicle Code 21453 [CVC21453], 2010 text only; gap-acceptance treatment of RTOR: [Virkler1998], [Stewart1995], abstracts only). Gap acceptance for the turn is the two-way-stop minor right (tc 6.2 s, tf 3.3 s [Brilon1999]); the stop costs the rest of the
     // follow-up headway, so the red-time discharge is at most 3600 / tf = 1,090 veh/h.
     let (off, _gc0) = rtor_cap(100.0, true, 1);
     let (on, gc1) = rtor_cap(100.0, false, 1);

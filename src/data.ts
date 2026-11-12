@@ -1,5 +1,6 @@
 import type { AreaBundle, AreaEntry, Demand, GeoFC, Network } from './types';
 import { buildFixture } from './fixtures/area';
+import { straightenJunctionEnds } from './lib/junctionends';
 
 export interface LoadProgress { loaded: number; total: number | null }
 export type ProgressFn = (p: LoadProgress) => void;
@@ -81,8 +82,9 @@ export async function loadArea(preferred?: string, forceFixture = false, onProgr
     getText(urls.basemap, parts.basemap, report),
   ]);
   onProgress?.(aggregateProgress(active.map((p) => ({ loaded: p.total ?? p.loaded, total: p.total }))));
-  const network = parse<Network>(urls.network, networkText);
+  const parsed = parse<Network>(urls.network, networkText);
+  const { network, changed } = straightenJunctionEnds(parsed);
   const demand = parse<Demand>(urls.demand, demandText);
   const basemap = parse<GeoFC>(urls.basemap, basemapText);
-  return { entry, network, demand, basemap, synthetic: false, raw: { network: networkText, demand: demandText } };
+  return { entry, network, demand, basemap, synthetic: false, raw: { network: networkText, demand: demandText, simNetwork: changed > 0 ? JSON.stringify(network) : undefined } };
 }

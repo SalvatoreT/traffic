@@ -43,7 +43,7 @@ export function Markdown({ source, offset = 1 }: { source: string; offset?: numb
       const buf: string[] = []; i++;
       while (i < lines.length && !/^```/.test(lines[i])) buf.push(lines[i++]);
       i++;
-      nodes.push(<pre key={k++} tabIndex={0}><code>{buf.join('\n')}</code></pre>);
+      nodes.push(<pre key={k++} tabIndex={0} role="region" aria-label="Code block, scrollable"><code>{buf.join('\n')}</code></pre>);
       continue;
     }
     const h = /^(#{1,6})\s+(.*)$/.exec(line);

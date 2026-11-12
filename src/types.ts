@@ -112,7 +112,7 @@ export interface AreaBundle {
   entry: AreaEntry; network: Network; demand: Demand;
   basemap: GeoFC; synthetic: boolean;
   /** Source JSON text, handed to the worker as is so the main thread need not serialize it again. */
-  raw?: { network: string; demand: string };
+  raw?: { network: string; demand: string; /** Network text with merged-junction geometry straightened, for the simulator; absent when it equals `network`. The hash for proposals uses `network`. */ simNetwork?: string };
 }
 
 /** Link stats from the sim: stride 4 per link. */

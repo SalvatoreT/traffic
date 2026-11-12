@@ -1579,7 +1579,7 @@ impl Simulation {
         (self.conflict_free(vid, mv, ctrl, rtor), false)
     }
 
-    /// Right turn on red after a stop (ASSUMPTION: permitted at every signal, CVC 21453 not verified in this environment, see the validation
+    /// Right turn on red after a stop (ASSUMPTION: permitted at every signal; the after-stop rule and yield duty are in CVC 21453 [CVC21453], only the 2010 text was read; see the validation
     /// notes of case b10): a car whose next movement is a right turn and that has stood at the line for `STOP_DWELL` may go on red
     /// when `conflict_free` finds a gap (it yields to every conflicting movement, critical gap `TC_MINOR_RIGHT`).
     fn rtor_candidate(&self, veh: &Veh, l: usize) -> bool {

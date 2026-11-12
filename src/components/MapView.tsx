@@ -5,7 +5,7 @@ import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import type { AreaBundle, Intervention, ModeVisibility, Overlay } from '../types';
 import { KIND_BIKE, KIND_PED } from '../types';
 import { makeProjection, metersPerPixel } from '../lib/projection';
-import { pointAlong } from '../lib/geom';
+import { pointAtLinkMeters } from '../lib/junctionends';
 import { hoverTargets, type Hover } from '../lib/highlight';
 import { hitTest, selectionAnchor, type Selection } from '../lib/selection';
 import { PopoverFrame } from './Popover';
@@ -217,14 +217,14 @@ export function MapView(p: Props) {
     const net = bundle.network;
     const ticks: [number, number, number, number][] = [];
     for (const l of net.links) for (const c of l.crossings ?? []) {
-      const p = pointAlong(l.geometry, Math.min(c, l.length));
+      const p = pointAtLinkMeters(l, c);
       const tr = region.tier(p.x, p.y);
       if (tr) ticks.push([p.x, p.y, p.heading, tr]);
     }
     const sig = new Float32Array(net.links.length * 2);
     const sigTier = new Uint8Array(net.links.length);
     for (const l of net.links) {
-      const pp = pointAlong(l.geometry, Math.max(0, l.length - 5));
+      const pp = pointAtLinkMeters(l, Math.max(0, l.length - 5));
       sig[l.id * 2] = pp.x + Math.sin(pp.heading) * 3.5; // right of travel
       sig[l.id * 2 + 1] = pp.y - Math.cos(pp.heading) * 3.5;
       sigTier[l.id] = region.tier(sig[l.id * 2], sig[l.id * 2 + 1]);
