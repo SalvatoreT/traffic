@@ -15,6 +15,9 @@ pub struct SigPlan {
     pub always_green: bool,
     /// Critical flow ratio sum used by the plan (Webster), for diagnostics.
     pub ysum: f32,
+    /// Approaches held at red for the first seconds of their phase's green so that the left turns of the opposing approach
+    /// run unopposed (a protected left interval, set by `adapt_signals`): (link, seconds from the start of the green).
+    pub hold: Vec<(u32, f32)>,
     /// Plan that replaces this one at its `t0` (set by `adapt_signals`).
     pub next: Option<Box<SigNext>>,
 }
@@ -24,6 +27,7 @@ pub struct SigNext {
     pub cycle: f32,
     pub phases: Vec<(f32, f32)>,
     pub ysum: f32,
+    pub hold: Vec<(u32, f32)>,
 }
 
 impl SigPlan {
@@ -35,6 +39,7 @@ impl SigPlan {
             self.cycle = n.cycle;
             self.phases = n.phases;
             self.ysum = n.ysum;
+            self.hold = n.hold;
         }
     }
 }
@@ -394,19 +399,19 @@ impl Eff {
             }
             let groups = phase_groups(topo, net, &ins);
             if groups.len() < 2 {
-                self.sig[n] = Some(SigPlan { cycle: 60.0, t0: 0.0, phases: vec![(0.0, 60.0)], links: groups, always_green: true, ysum: 0.0, next: None });
+                self.sig[n] = Some(SigPlan { cycle: 60.0, t0: 0.0, phases: vec![(0.0, 60.0)], links: groups, always_green: true, ysum: 0.0, hold: Vec::new(), next: None });
                 continue;
             }
             let ys = group_flow_ratios(net, &groups, est_flow);
             let (cycle, phases, ysum) = self.plan_for(net, n, &groups, &ys, self.cycle_override[n]);
             let offset = ((n as f32 * 37.0) % 100.0) / 100.0 * cycle;
-            self.sig[n] = Some(SigPlan { cycle, t0: -(offset as f64), phases, links: groups, always_green: false, ysum, next: None });
+            self.sig[n] = Some(SigPlan { cycle, t0: -(offset as f64), phases, links: groups, always_green: false, ysum, hold: Vec::new(), next: None });
         }
     }
 
     /// Recompute the splits (and the cycle unless pinned by an intervention) of every signal from measured approach flows
     /// (veh/h). The new plan starts when the current cycle ends, so no phase is cut short.
-    pub fn adapt_signals(&mut self, net: &Network, flow: &[f32], t: f64) {
+    pub fn adapt_signals(&mut self, net: &Network, flow: &[f32], left: &[f32], t: f64) {
         for n in 0..self.sig.len() {
             let pin = self.cycle_override[n];
             let Some(p) = self.sig[n].as_mut() else { continue };
@@ -415,11 +420,57 @@ impl Eff {
             }
             let ys = group_flow_ratios(net, &p.links, flow);
             let (cycle, phases, ysum) = plan_with_observation(net, &self.period, n, &p.links, &ys, pin);
+            let hold = protected_left_holds(&p.links, &phases, cycle, flow, left);
             let k = ((t - p.t0) / p.cycle as f64).ceil().max(1.0);
             let start = p.t0 + k * p.cycle as f64;
-            p.next = Some(Box::new(SigNext { t0: start, cycle, phases, ysum }));
+            p.next = Some(Box::new(SigNext { t0: start, cycle, phases, ysum, hold }));
         }
     }
+}
+
+/// Protected left interval (ASSUMPTION: warrant and sizing; the case for the phase type is [FHWA-STM2008] chapter 4, which names left-turn and
+/// opposing volumes as the factors and the added lost time as the cost). Within a phase the approach whose left turns exceed what a permissive
+/// left can serve against the opposing through flow (HCM/Harders gap capacity [HCM7], critical gap and follow-up of the validation suite, plus the
+/// sneakers) gets its movements first while the other approaches of the phase are held at red; then the whole phase runs, left turns permissive.
+/// Returns (link, hold seconds) for the held approaches. Single lead only: the approach with the longest interval.
+fn protected_left_holds(groups: &[Vec<u32>], phases: &[(f32, f32)], cycle: f32, flow: &[f32], left: &[f32]) -> Vec<(u32, f32)> {
+    let mut out = Vec::new();
+    for (ph, links) in groups.iter().enumerate() {
+        if links.len() < 2 {
+            continue;
+        }
+        let g = phases[ph].1;
+        let mut best: Option<(usize, f32)> = None;
+        for (i, &a) in links.iter().enumerate() {
+            let ql = left[a as usize];
+            if ql < LEAD_MIN_FLOW {
+                continue;
+            }
+            let qo: f32 = links.iter().filter(|&&e| e != a).map(|&e| (flow[e as usize] - left[e as usize]).max(0.0)).sum();
+            let perm = if qo > 1.0 { qo * (-qo * TC_MAJOR_LEFT / 3600.0).exp() / (1.0 - (-qo * TF_MAJOR_LEFT / 3600.0).exp()) } else { SAT_FLOW };
+            let n_left = ql * cycle / 3600.0;
+            let n_perm = perm.min(SAT_FLOW) * g / 3600.0 + SNEAKERS as f32;
+            if n_left <= n_perm {
+                continue;
+            }
+            let hi = (LEAD_MAX_SHARE * g).min(g - MIN_GREEN);
+            if hi < LEAD_MIN_S {
+                continue;
+            }
+            let lead = (LEAD_LOST_S + (n_left - n_perm) * 3600.0 / SAT_FLOW).clamp(LEAD_MIN_S, hi);
+            if best.map_or(true, |b| lead > b.1) {
+                best = Some((i, lead));
+            }
+        }
+        if let Some((i, lead)) = best {
+            for (j, &e) in links.iter().enumerate() {
+                if j != i {
+                    out.push((e, lead));
+                }
+            }
+        }
+    }
+    out
 }
 
 /// Group the approaches of a signalized node into phases by street. Approaches with the same street name and a similar axis
@@ -605,6 +656,21 @@ impl Eff {
     /// Override the perceived-cost multiplier for residential/service links.
     pub fn set_local_factor(&mut self, net: &Network, f: f32) {
         self.route_w = net.links.iter().map(|l| class_weight(l.class, f)).collect();
+    }
+}
+
+/// Seconds since the green of a phase started (0 outside its green).
+pub fn phase_since_start(p: &SigPlan, phase: usize, t: f64) -> f32 {
+    if p.always_green {
+        return 0.0;
+    }
+    let tc = (t - p.t0).rem_euclid(p.cycle as f64) as f32;
+    let (start, g) = p.phases[phase];
+    let rel = (tc - start).rem_euclid(p.cycle);
+    if rel < g {
+        rel
+    } else {
+        0.0
     }
 }
 

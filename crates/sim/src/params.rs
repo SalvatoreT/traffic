@@ -26,6 +26,11 @@ pub const POCKET_VEH: usize = 3; // ASSUMPTION: left-turn pocket storage, vehicl
 pub const POCKET_LEN: f32 = 20.0; // ASSUMPTION: pocket storage length (m); a through-lane queue longer than this blocks pocket entry
 pub const POCKET_MIN_LINK_M: f32 = 40.0; // ASSUMPTION: shortest approach link that can hold a pocket
 pub const SNEAKERS: u8 = 2; // ASSUMPTION: permissive left-turners that may clear per signal cycle on yellow/all-red (HCM practice; [HCM7] value not verified in references.md)
+pub const TF_MAJOR_LEFT: f32 = 2.2; // follow-up time of a permissive left (s), the value of validation cases b3 to b9 [HCM7]
+pub const LEAD_MIN_FLOW: f32 = 60.0; // ASSUMPTION: smallest measured left flow (veh/h) of an approach that can get a protected left interval
+pub const LEAD_MIN_S: f32 = 6.0; // ASSUMPTION: shortest protected left interval (s); a shorter one serves too few vehicles to repay its lost time
+pub const LEAD_MAX_SHARE: f32 = 0.4; // ASSUMPTION: largest share of the phase green given to the protected left interval
+pub const LEAD_LOST_S: f32 = 2.0; // start-up lost time of the protected interval (s) [FHWA-STM2008] ("approximately 2 seconds")
 pub const LOCAL_COST_FACTOR: f32 = 1.25; // ASSUMPTION: perceived-cost multiplier for residential/service links in route choice (street hierarchy preference)
 
 // --- gap acceptance (s) [Brilon1999], [HCM7] via FHWA HPMS Table 11 in references.md 3.3 ---

@@ -1,7 +1,7 @@
 //! Simulation core: microscopic IDM traffic on directed links with node control, routing,
 //! interventions and metrics. Pure Rust, deterministic, no I/O.
 
-use crate::eff::{phase_since_green, phase_state, Eff};
+use crate::eff::{phase_since_green, phase_since_start, phase_state, Eff};
 use crate::model::*;
 use crate::params::*;
 use crate::rng::{hash32, Rng};
@@ -373,6 +373,8 @@ pub struct Simulation {
     adapt_flow: Vec<f32>,
     /// Stop-line crossings and standing vehicles at the start of the current adaptation window, per link.
     win_exit: Vec<u32>,
+    win_left: Vec<u32>,
+    adapt_left: Vec<f32>,
     win_q0: Vec<u32>,
     next_adapt_t: f64,
     // ---- multimodal agents
@@ -533,6 +535,8 @@ impl Simulation {
             d_node_space: vec![0.0; nn],
             adapt_flow: vec![0.0; nl],
             win_exit: vec![0; nl],
+            win_left: vec![0; nl],
+            adapt_left: vec![0.0; nl],
             win_q0: vec![0; nl],
             next_adapt_t: 0.0,
             n_bike: 0,
@@ -771,6 +775,8 @@ impl Simulation {
             self.adapt_flow = est;
         }
         self.win_exit.iter_mut().for_each(|x| *x = 0);
+        self.win_left.iter_mut().for_each(|x| *x = 0);
+        self.adapt_left.iter_mut().for_each(|x| *x = 0.0);
         self.next_adapt_t = self.t + self.adapt_interval();
         self.eff = eff;
         for l in 0..self.topo.n_links {
@@ -1146,12 +1152,17 @@ impl Simulation {
             let arrivals = self.win_exit[l] + q1.saturating_sub(self.win_q0[l]) + q1;
             let meas = arrivals as f32 * (3600.0 / window as f32);
             self.adapt_flow[l] = ADAPT_SMOOTH * meas + (1.0 - ADAPT_SMOOTH) * self.adapt_flow[l];
+            let share = if self.win_exit[l] > 0 { self.win_left[l] as f32 / self.win_exit[l] as f32 } else { 0.0 };
+            self.adapt_left[l] = ADAPT_SMOOTH * meas * share + (1.0 - ADAPT_SMOOTH) * self.adapt_left[l];
             self.win_q0[l] = q1;
             self.win_exit[l] = 0;
+            self.win_left[l] = 0;
         }
         let flow = std::mem::take(&mut self.adapt_flow);
-        self.eff.adapt_signals(&self.net, &flow, self.t);
+        let left = std::mem::take(&mut self.adapt_left);
+        self.eff.adapt_signals(&self.net, &flow, &left, self.t);
         self.adapt_flow = flow;
+        self.adapt_left = left;
     }
 
     fn update_signals(&mut self) {
@@ -1163,9 +1174,11 @@ impl Simulation {
                 for (ph, links) in p.links.iter().enumerate() {
                     let s = phase_state(p, ph, self.t);
                     let since = phase_since_green(p, ph, self.t);
+                    let started = if p.hold.is_empty() { 0.0 } else { phase_since_start(p, ph, self.t) };
                     for &l in links {
-                        self.sig_state[l as usize] = s;
-                        self.sig_since[l as usize] = since;
+                        let held = s == 1 && p.hold.iter().any(|&(h, secs)| h == l && started < secs);
+                        self.sig_state[l as usize] = if held { 3 } else { s };
+                        self.sig_since[l as usize] = if held { YELLOW + ALL_RED + 1.0 } else { since };
                         if s == 1 {
                             self.sneak[l as usize] = 0;
                         }
@@ -2098,6 +2111,9 @@ impl Simulation {
         }
         let after = veh.route.get(veh.ridx as usize + 1).copied();
         let Some(lane) = self.pick_lane_for(kind, b, self.mv_kind(b, after), NODE_CROSS_S) else { return false };
+        if self.topo.mvs[mv as usize].kind == K_LEFT {
+            self.win_left[l] += 1;
+        }
         if ctrl == Control::Signal && self.sig_state[l] >= 2 && self.topo.mvs[mv as usize].kind == K_LEFT {
             self.sneak[l] = self.sneak[l].saturating_add(1);
         }
@@ -2541,7 +2557,8 @@ impl Simulation {
 
     /// Feed measured approach flows (veh/h per link) to the signal adaptation at the current time.
     pub(crate) fn test_adapt_with(&mut self, flow: &[f32]) {
-        self.eff.adapt_signals(&self.net, flow, self.t);
+        let left = vec![0.0; flow.len()];
+        self.eff.adapt_signals(&self.net, flow, &left, self.t);
     }
 
     pub(crate) fn test_veh_uid(&self, id: u32) -> u32 {
