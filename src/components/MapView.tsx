@@ -14,6 +14,8 @@ import { advance, elapsedSim } from '../lib/extrapolate';
 import { divergingStops, intensity, rampStops, WIDTH_MAX, WIDTH_MIN, type Mode } from '../lib/ramps';
 import { linkChangeIntensity, NO_DATA, type MapView as ChangeView } from '../lib/change';
 import { linkStatsView } from '../types';
+import type { RouteCheck } from '../lib/throughroutes';
+import { CELL_COLORS, CELL_DASHES, ROUTE_COLORS } from '../lib/routestyle';
 import type { NetIndex } from '../lib/naming';
 import { describeIntervention, interventionPoint } from '../lib/describe';
 import type { SimClient } from '../sim/client';
@@ -39,6 +41,8 @@ interface Props {
   client: SimClient | null;
   interventions: Intervention[];
   selection: Selection | null;
+  /** Through-route overlay: routes and cells drawn only when `show`; `highlight` is drawn either way. */
+  routes?: { check: RouteCheck; show: boolean; highlight: string | null };
   /** A place chosen on the map, or null for empty map. */
   onHit(s: Selection | null): void;
   /** Menu shown as a pop-up tied to the selection (wide and mid-width layouts). */
@@ -488,6 +492,7 @@ export function MapView(p: Props) {
       map.addSource('links', { type: 'geojson', data: clipped.links as never });
       map.addSource('hover', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
       map.addSource('selection', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+      for (const id of ['cells', 'routes', 'route-hi']) map.addSource(id, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
       const K = KIND_STYLE.light;
       const major = ['match', ['get', 'kind'], ['motorway', 'trunk', 'primary', 'secondary', 'tertiary'], true, false] as never;
       map.addLayer({ id: 'base-paths', type: 'line', source: 'basemap', filter: ['match', ['get', 'kind'], ['footway', 'path', 'cycleway', 'steps', 'pedestrian', 'track'], true, false],
@@ -502,6 +507,10 @@ export function MapView(p: Props) {
         paint: { 'line-color': SEL_EDGE[mode], 'line-width': ['interpolate', ['linear'], ['zoom'], 14, 13, 18, 22] as never, 'line-offset': OFFSET as never } });
       map.addLayer({ id: 'sel-band', type: 'line', source: 'selection', filter: ['==', ['geometry-type'], 'LineString'], layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: { 'line-color': K.study, 'line-width': ['interpolate', ['linear'], ['zoom'], 14, 9, 18, 17] as never, 'line-offset': OFFSET as never } });
+      // Cells: a wide tinted band under the streets. Each cell gets its own dash pattern as well as its own hue.
+      CELL_DASHES.forEach((dash, k) => map.addLayer({ id: `cells-${k}`, type: 'line', source: 'cells', filter: ['==', ['get', 'pat'], k],
+        layout: { 'line-cap': 'butt', 'line-join': 'round' },
+        paint: { 'line-color': ['get', 'color'], 'line-opacity': 0.55, 'line-dasharray': dash as never, 'line-width': ['interpolate', ['linear'], ['zoom'], 14, 9, 18, 22] as never } }));
       map.addLayer({ id: 'links-casing', type: 'line', source: 'links', layout: { 'line-cap': 'butt', 'line-join': 'round' },
         paint: { 'line-color': mode === 'dark' ? '#0b1118' : '#ffffff', 'line-opacity': 0.85, 'line-width': casingWidth(live.current.view) as never, 'line-offset': OFFSET as never } });
       const bikeVis = live.current.showBikeNet ? 'visible' : 'none';
@@ -516,6 +525,16 @@ export function MapView(p: Props) {
         paint: { 'line-color': ramp(mode, live.current.view) as never, 'line-width': widthExpr(live.current.view) as never, 'line-offset': OFFSET as never } });
       map.addLayer({ id: 'links-decrease', type: 'line', source: 'links', layout: { 'line-cap': 'butt', 'line-join': 'round', visibility: live.current.view === 'change' ? 'visible' : 'none' },
         paint: { 'line-color': mode === 'dark' ? '#0b1118' : '#ffffff', 'line-opacity': dashOpacity() as never, 'line-dasharray': [1.4, 1.4], 'line-width': widthExpr('change') as never, 'line-offset': OFFSET as never } });
+      const RC = ROUTE_COLORS[live.current.mode];
+      const routeWidth = (a: number, b: number) => ['interpolate', ['linear'], ['zoom'], 14, a, 18, b] as never;
+      map.addLayer({ id: 'routes-casing', type: 'line', source: 'routes', layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: { 'line-color': RC.casing, 'line-width': routeWidth(5.5, 11), 'line-offset': OFFSET as never } });
+      map.addLayer({ id: 'routes', type: 'line', source: 'routes', layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: { 'line-color': RC.line, 'line-width': routeWidth(3, 6), 'line-offset': OFFSET as never } });
+      map.addLayer({ id: 'route-hi-casing', type: 'line', source: 'route-hi', layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: { 'line-color': RC.casing, 'line-width': routeWidth(11, 20), 'line-offset': OFFSET as never } });
+      map.addLayer({ id: 'route-hi', type: 'line', source: 'route-hi', layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: { 'line-color': RC.hi, 'line-width': routeWidth(7, 13), 'line-offset': OFFSET as never } });
       for (let k = 1; k <= FEATHER_STEPS; k++) {
         map.addSource(`feather-${k}`, { type: 'geojson', data: featherWash(b, region, k) as never });
         map.addLayer({ id: `feather-${k}`, type: 'fill', source: `feather-${k}`, paint: { 'fill-color': K.bg, 'fill-opacity': featherAlpha(k), 'fill-antialias': false } });
@@ -582,6 +601,30 @@ export function MapView(p: Props) {
     schedule();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, ready]);
+
+  // ---- through routes and cells
+  const rt = p.routes;
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    const net = bundle.network;
+    const empty = { type: 'FeatureCollection', features: [] as unknown[] };
+    const line = (ids: number[], props: Record<string, unknown>) => ids.map((id) => ({
+      type: 'Feature', properties: props, geometry: { type: 'LineString', coordinates: net.links[id].geometry.map(([x, y]) => proj.toLonLat(x, y)) },
+    }));
+    const set = (id: string, data: unknown) => (map.getSource(id) as maplibregl.GeoJSONSource | undefined)?.setData(data as never);
+    const CC = CELL_COLORS[mode], RC = ROUTE_COLORS[mode];
+    set('cells', rt?.show ? { ...empty, features: rt.check.cells.flatMap((c, i) => line(c.links, { color: CC[i % CC.length], pat: i % CELL_DASHES.length })) } : empty);
+    set('routes', rt?.show ? { ...empty, features: rt.check.routes.flatMap((r) => line(r.links, {})) } : empty);
+    const hot = rt?.highlight ? rt.check.routes.find((r) => r.id === rt.highlight) : undefined;
+    set('route-hi', hot ? { ...empty, features: line(hot.links, {}) } : empty);
+    try {
+      map.setPaintProperty('routes-casing', 'line-color', RC.casing);
+      map.setPaintProperty('routes', 'line-color', RC.line);
+      map.setPaintProperty('route-hi-casing', 'line-color', RC.casing);
+      map.setPaintProperty('route-hi', 'line-color', RC.hi);
+    } catch { /* layers exist once the map has loaded */ }
+  }, [rt?.check, rt?.show, rt?.highlight, mode, ready, bundle, proj]); // eslint-disable-line
 
   // ---- bike network layer
   useEffect(() => {

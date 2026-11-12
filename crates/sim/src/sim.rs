@@ -9,6 +9,7 @@ use crate::route::{self, Router, INF, NO_NOISE};
 use crate::topo::*;
 use std::collections::VecDeque;
 
+mod initial;
 mod modes;
 mod ped;
 
@@ -160,6 +161,8 @@ struct Veh {
     ped_held: bool,
     pass_close: bool,
     pass_scored: bool,
+    /// Placed by initial loading: its trip started before time zero, so its trip time and delay are partial.
+    preplaced: bool,
 }
 
 impl Veh {
@@ -206,6 +209,7 @@ impl Veh {
             ped_held: false,
             pass_close: false,
             pass_scored: false,
+            preplaced: false,
         }
     }
     #[inline]
@@ -255,6 +259,10 @@ struct Stats {
     car_tt_sum: f64,
     bike_completed: u64,
     bike_tt_sum: f64,
+    /// Completed trips whose full trip time is known (all but those placed by initial loading); the divisors of the mean trip statistics.
+    timed: u64,
+    car_timed: u64,
+    bike_timed: u64,
 }
 
 /// A street visited by a recorded trip (consecutive links with the same name collapse into one visit).
@@ -376,6 +384,9 @@ pub struct Simulation {
     vuln: Vuln,
     ped_on: bool,
     world: PedWorld,
+    /// Agents placed by initial loading and the ones that found no room.
+    init_agents: u64,
+    init_skipped: u64,
 }
 
 /// Improved IDM [Treiber2014]: the IDM with `s1 = 0` and `delta = 4` whose steady-state time gap is exactly `t_hw` (the plain IDM
@@ -471,15 +482,17 @@ impl Simulation {
         }
         let topo = Topo::new(&net);
         let eff = Eff::derive(&topo, &net, &[]);
+        let t0 = if cfg.initial_load { -INITIAL_SETTLE_S } else { 0.0 };
+        let ivs = cfg.interventions.clone();
         let nl = topo.n_links;
         let nn = topo.n_nodes;
         let mut s = Simulation {
             demand,
             cfg,
             eff,
-            ivs: Vec::new(),
+            ivs,
             flows: Vec::new(),
-            t: 0.0,
+            t: t0,
             pending_s: 0.0,
             step_n: 0,
             vehs: Vec::new(),
@@ -500,7 +513,7 @@ impl Simulation {
             tt_sum: vec![0.0; nl],
             tt_n: vec![0; nl],
             epoch: 0,
-            next_epoch_t: EPOCH_S,
+            next_epoch_t: t0 + EPOCH_S,
             st: Stats { hist: vec![0.0; HIST_BINS], ..Default::default() },
             bin_flow: vec![0.0; nl * NBINS],
             bin_ct: vec![0.0; nl * NBINS],
@@ -530,6 +543,8 @@ impl Simulation {
             vuln: Vuln::default(),
             ped_on: false,
             world: PedWorld::default(),
+            init_agents: 0,
+            init_skipped: 0,
             topo,
             net,
         };
@@ -537,6 +552,9 @@ impl Simulation {
         s.init_flows();
         s.init_modes();
         s.rebuild_effective();
+        if s.cfg.initial_load {
+            s.initial_load();
+        }
         Ok(s)
     }
 
@@ -701,6 +719,7 @@ impl Simulation {
             .find(|p| p.id == self.cfg.period)
             .or_else(|| self.demand.periods.first());
         let nn = self.net.nodes.len() as u32;
+        let t0 = self.t;
         if let Some(p) = period {
             for (k, f) in p.flows.iter().enumerate() {
                 let rate = f.veh_per_hour * self.cfg.demand_scale / 3600.0;
@@ -708,7 +727,7 @@ impl Simulation {
                     continue;
                 }
                 let mut rng = Rng::stream(self.cfg.seed, k as u64);
-                let next_t = rng.exp(rate);
+                let next_t = t0 + rng.exp(rate);
                 let through = self.net.nodes[f.origin as usize].gate && self.net.nodes[f.destination as usize].gate;
                 self.flows.push(FlowRt { mode: f.mode, origin: f.origin, dest: f.destination, rate, rng, next_t, through });
             }
@@ -717,13 +736,11 @@ impl Simulation {
 
     /// Discard all dynamic state and restart at t = 0, keeping inputs and the current scenario.
     pub fn reset(&mut self) {
-        let ivs = self.ivs.clone();
         let net = self.net.clone();
         let demand = self.demand.clone();
-        let cfg = self.cfg.clone();
-        if let Ok(mut s) = Simulation::from_parts(net, demand, cfg) {
-            s.ivs = ivs;
-            s.rebuild_effective();
+        let mut cfg = self.cfg.clone();
+        cfg.interventions = self.ivs.clone();
+        if let Ok(s) = Simulation::from_parts(net, demand, cfg) {
             *self = s;
         }
     }
@@ -902,11 +919,13 @@ impl Simulation {
             veh_km: st.veh_m / 1000.0,
             gridlock_removed: st.gridlock_removed,
             invalid_interventions: self.eff.invalid_ivs,
+            initial_agents: self.init_agents,
+            initial_skipped: self.init_skipped,
             ..Default::default()
         };
-        if st.completed > 0 {
-            m.mean_trip_time = st.trip_time_sum / st.completed as f64;
-            m.mean_trip_delay = st.delay_sum / st.completed as f64;
+        if st.timed > 0 {
+            m.mean_trip_time = st.trip_time_sum / st.timed as f64;
+            m.mean_trip_delay = st.delay_sum / st.timed as f64;
         }
         m.cut_through.veh_km = st.ct_veh_m / 1000.0;
         m.cut_through.share_of_local_veh_km = if st.local_veh_m > 0.0 { st.ct_veh_m / st.local_veh_m } else { 0.0 };
@@ -1976,7 +1995,10 @@ impl Simulation {
         if self.vehs[vid as usize].kind == KIND_BIKE {
             let tt = self.t - self.vehs[vid as usize].t_depart;
             self.st.bike_completed += 1;
-            self.st.bike_tt_sum += tt;
+            if !self.vehs[vid as usize].preplaced {
+                self.st.bike_timed += 1;
+                self.st.bike_tt_sum += tt;
+            }
             self.lanes[qi].pop_front();
             self.remove_vehicle(vid);
             return;
@@ -1987,16 +2009,23 @@ impl Simulation {
         veh.ff_sum += ff;
         let (origin, dest) = (veh.origin as usize, veh.dest as usize);
         let tt = self.t - veh.t_depart;
-        self.st.trip_time_sum += tt;
-        self.st.delay_sum += tt - veh.ff_sum as f64;
+        let pre = veh.preplaced;
+        let delay = tt - veh.ff_sum as f64;
         self.st.completed += 1;
         self.st.car_completed += 1;
-        self.st.car_tt_sum += tt;
-        if self.net.nodes[origin].in_study_area || self.net.nodes[dest].in_study_area {
-            self.st.inside_n += 1;
-            self.st.inside_tt_sum += tt;
+        // A trip placed by initial loading began before time zero: its trip time and delay are partial, so only flows count it.
+        if !pre {
+            self.st.timed += 1;
+            self.st.car_timed += 1;
+            self.st.trip_time_sum += tt;
+            self.st.delay_sum += delay;
+            self.st.car_tt_sum += tt;
+            if self.net.nodes[origin].in_study_area || self.net.nodes[dest].in_study_area {
+                self.st.inside_n += 1;
+                self.st.inside_tt_sum += tt;
+            }
         }
-        if self.cfg.record_trips {
+        if self.cfg.record_trips && !pre {
             let v = &self.vehs[vid as usize];
             self.trips.push(TripRecord { uid: v.uid, origin: v.origin, dest: v.dest, trail: v.trail.clone(), switches: v.switches, guided: v.guided });
         }

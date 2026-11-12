@@ -27,6 +27,8 @@ export interface Network {
   bbox: [number, number, number, number];
   studyArea: [number, number][];
   nodes: NetNode[]; links: NetLink[];
+  /** Turn restrictions from OpenStreetMap. A ban with `periods` applies only in those demand periods; one without applies always. */
+  turnBans?: { from: number; to: number; periods?: string[] }[];
 }
 export interface DemandPeriod {
   id: string; label: string;

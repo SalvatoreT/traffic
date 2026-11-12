@@ -5,6 +5,9 @@ import { interventionInRegion, type Region } from '../lib/region';
 import { describeIntervention } from '../lib/describe';
 import type { Selection } from '../lib/selection';
 import { PlaceSearch } from './PlaceSearch';
+import { ThroughRoutes } from './ThroughRoutes';
+import type { RouteCheck } from '../lib/throughroutes';
+import type { Mode } from '../lib/ramps';
 
 interface Props {
   bundle: AreaBundle; index: NetIndex;
@@ -20,6 +23,7 @@ interface Props {
   menuInline?: ReactNode;
   /** Rendered next to Clear all, only when the scenario has interventions. */
   shareSlot?: ReactNode;
+  routes: { check: RouteCheck; today: number; show: boolean; onShow(v: boolean): void; onHighlight(id: string | null): void; mode: Mode };
 }
 
 const BADGE: Record<Intervention['type'], string> = {
@@ -58,6 +62,8 @@ export function InterventionPanel(p: Props) {
           </div>
         </section>
       )}
+      <ThroughRoutes check={p.routes.check} today={p.routes.today} hasScenario={p.interventions.length > 0} show={p.routes.show} onShow={p.routes.onShow}
+        onHighlight={p.routes.onHighlight} mode={p.routes.mode} />
       <PlaceSearch bundle={B} index={X} showService={p.showService} onShowService={p.onShowService} onChoose={p.onChoose} />
       {p.menuInline}
     </div>

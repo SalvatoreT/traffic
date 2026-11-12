@@ -200,11 +200,17 @@ pub struct Config {
     pub lane_width_m: Option<f64>,
     /// Additive: forbid right turns on red (default false: a car that has stopped at a red may turn right when a gap allows, ASSUMPTION, see `Simulation::rtor_candidate`).
     pub no_right_turn_on_red: bool,
+    /// Additive: start with agents already en route (placed from the demand rates, then a short settle interval before time zero).
+    /// Default true; false starts from an empty network.
+    pub initial_load: bool,
+    /// Additive: interventions in force from construction, so the initial placement already respects them. `Simulation::reset` keeps the
+    /// scenario set by `set_interventions`.
+    pub interventions: Vec<Intervention>,
 }
 
 impl Default for Config {
     fn default() -> Self {
-        Config { seed: 1, period: String::new(), demand_scale: 1.0, select_links: Vec::new(), local_cost_factor: None, guided_share: None, switch_band: None, record_trips: false, legacy_reroute: false, signal_adapt_min: None, motorway_gridlock_removal: false, ped_yield_marked: None, ped_yield_unmarked: None, lane_width_m: None, no_right_turn_on_red: false }
+        Config { seed: 1, period: String::new(), demand_scale: 1.0, select_links: Vec::new(), local_cost_factor: None, guided_share: None, switch_band: None, record_trips: false, legacy_reroute: false, signal_adapt_min: None, motorway_gridlock_removal: false, ped_yield_marked: None, ped_yield_unmarked: None, lane_width_m: None, no_right_turn_on_red: false, initial_load: true, interventions: Vec::new() }
     }
 }
 
@@ -271,6 +277,9 @@ pub struct Metrics {
     pub modes: Modes,
     /// Additive: safety surrogates for people walking and biking.
     pub vulnerable: Vulnerable,
+    /// Additive: agents (cars, cyclists, pedestrians) placed on the network at time zero by initial loading, and the ones that found no room.
+    pub initial_agents: u64,
+    pub initial_skipped: u64,
 }
 
 #[derive(Clone, Debug, Default, Serialize)]

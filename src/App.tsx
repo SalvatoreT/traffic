@@ -23,6 +23,7 @@ import { Comparison } from './components/Comparison';
 import { StreetsTable } from './components/StreetsTable';
 import { Proposals, useProposals } from './components/Proposals';
 import { linkHash, type Proposal } from './lib/proposals';
+import { baselineCheck, checkThroughRoutes, routeHeadline } from './lib/throughroutes';
 import { effectiveView, initViewState, viewReducer } from './lib/change';
 const MapView = lazy(() => import('./components/MapView').then((m) => ({ default: m.MapView })));
 const Sources = lazy(() => import('./components/Sources').then((m) => ({ default: m.Sources })));
@@ -67,6 +68,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   const { network, demand } = bundle;
   const index = useMemo(() => buildIndex(network), [network]);
   const region = useMemo(() => buildRegion(network), [network]);
+  const todayRoutes = useMemo(() => baselineCheck(network, index), [network, index]);
   // Read once: the hash is rewritten as soon as the scenario loads, so later renders must not decode it again.
   const [initial] = useState(() => ({ ...decodeMeta(location.hash), ...decodeScenario(network, location.hash) }));
 
@@ -107,6 +109,18 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   const [run, dispatchRun] = useReducer(runReducer, !reduced, initialRun);
   const { running, finished } = run;
   const [interventions, setInterventions] = useState<Intervention[]>(initial.interventions);
+  const routeCheck = useMemo(() => (interventions.length === 0 ? todayRoutes : checkThroughRoutes(network, index, interventions)), [network, index, interventions, todayRoutes]);
+  const [showRoutes, setShowRoutes] = useState(false);
+  const [hotRoute, setHotRoute] = useState<string | null>(null);
+  // Said once per change in the count, after the first render, in its own polite region so it does not replace other messages.
+  const [routeNote, setRouteNote] = useState('');
+  const lastTotal = useRef(routeCheck.total);
+  useEffect(() => {
+    if (lastTotal.current === routeCheck.total) return;
+    lastTotal.current = routeCheck.total;
+    const id = window.setTimeout(() => setRouteNote(routeHeadline(routeCheck.total, todayRoutes.total, interventions.length > 0)), 600);
+    return () => window.clearTimeout(id);
+  }, [routeCheck.total, todayRoutes.total, interventions.length]);
   const [overlay, setOverlay] = useState<Overlay>('cutthrough');
   const [modes, setModes] = useState<ModeVisibility>(() => {
     const all: ModeVisibility = { car: true, bicycle: true, pedestrian: true };
@@ -287,7 +301,8 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
     <>
       <InterventionPanel bundle={bundle} index={index} region={region} showService={showService} onShowService={setShowService} interventions={interventions}
         onRemove={onRemove} onClear={onClear} onChoose={select} onSelectIntervention={onSelectIntervention}
-        menuTop={placement === 'sheet' ? menu : null} menuInline={placement === 'inline' ? menu : null} shareSlot={shareButton} />
+        menuTop={placement === 'sheet' ? menu : null} menuInline={placement === 'inline' ? menu : null} shareSlot={shareButton}
+        routes={{ check: routeCheck, today: todayRoutes.total, show: showRoutes, onShow: setShowRoutes, onHighlight: setHotRoute, mode }} />
       <div className="scn-notices" role="status" aria-live="polite">
         {notice.invalid && (
           <p className="notice" key="invalid">
@@ -320,6 +335,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
     <div className={`app layout-${layout}`} data-view={view}>
       <a className="skip" href="#main">Skip to main content</a>
       <p className="sr-only" role="status" aria-live="polite">{toast}</p>
+      <p className="sr-only" role="status" aria-live="polite">{routeNote}</p>
       <header className="top">
         <div className="brand">
           <h1>Traffic <span className="area">{bundle.entry.name}</span></h1>
@@ -390,6 +406,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
             <MapView
               bundle={bundle} index={index} region={region} mode={mode} overlay={overlay} overlayMax={overlayMax} linkStats={mapView === 'change' ? stats?.scenario.linkStats ?? null : linkStats} baseStats={baseStats} view={mapView}
               client={client} interventions={interventions} selection={mapVisible ? selection : null} onHit={onHit}
+              routes={{ check: routeCheck, show: showRoutes, highlight: hotRoute }}
               popover={placement === 'popover' ? menu : null}
               visible={mapVisible} reducedMotion={reduced}
               modes={multimodal ? modes : { ...modes, bicycle: false, pedestrian: false }} showBikeNet={bikeNet && multimodal}
@@ -412,7 +429,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
               scen={stats?.scenario.linkStats ?? null} base={baseStats} comparing={comparing} overlay={overlay}
               baseMetrics={base} scenMetrics={scen} />
           )}
-          {view === 'proposals' && <Proposals bundle={bundle} state={proposals.state} loaded={proposals.loaded} current={interventions} onOpen={onOpenProposal} />}
+          {view === 'proposals' && <Proposals bundle={bundle} index={index} today={todayRoutes.total} state={proposals.state} loaded={proposals.loaded} current={interventions} onOpen={onOpenProposal} />}
           {view === 'sources' && <Suspense fallback={<p className="boot" role="status">Loading sources…</p>}><Sources demand={demand} synthetic={bundle.synthetic} focusRef={sourceRef} calibration={bundle.synthetic ? undefined : { status: calStatus, note: bundle.entry.calibration?.note }} /></Suspense>}
         </div>
 

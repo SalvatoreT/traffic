@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import type { AreaBundle, Intervention } from '../types';
 import { decodeScenario } from '../lib/hash';
+import type { NetIndex } from '../lib/naming';
+import { checkThroughRoutes, ROUTE_CAVEAT } from '../lib/throughroutes';
 import { buildMockProposals } from '../fixtures/proposals';
 import {
   cutThroughHeadline, fetchProposals, formatComputed, harmHeadline, hashLoaded, linkHash, needsConfirm, openReducer,
@@ -38,12 +40,12 @@ export function useProposals(bundle: AreaBundle, active: boolean): { state: Prop
 }
 
 interface Props {
-  bundle: AreaBundle; state: ProposalsState; loaded: LoadedHashes;
+  bundle: AreaBundle; index: NetIndex; today: number; state: ProposalsState; loaded: LoadedHashes;
   current: Intervention[];
   onOpen(p: Proposal): void;
 }
 
-export function Proposals({ bundle, state, loaded, current, onOpen }: Props) {
+export function Proposals({ bundle, index, today, state, loaded, current, onOpen }: Props) {
   const periodLabel = useMemo(() => {
     const m = new Map(bundle.demand.periods.map((p) => [p.id, p.label]));
     return (id: string) => m.get(id) ?? id;
@@ -59,8 +61,16 @@ export function Proposals({ bundle, state, loaded, current, onOpen }: Props) {
     if (needsConfirm(current, next)) dispatch({ type: 'ask', id: p.id });
     else { dispatch({ type: 'done' }); onOpen(p); }
   };
+  // Decoding and checking is a few milliseconds per proposal, so it is done once per file.
+  const routeCounts = useMemo(() => {
+    const m = new Map<string, number>();
+    if (ready) for (const p of ready.proposals) {
+      try { m.set(p.id, checkThroughRoutes(bundle.network, index, decodeScenario(bundle.network, linkHash(p.link)).interventions).total); } catch { /* left out */ }
+    }
+    return m;
+  }, [ready, bundle.network, index]);
   const card = (p: Proposal, n: number | null) => (
-    <Card key={p.id} p={p} n={n} periodLabel={periodLabel} confirming={open.step === 'confirm' && open.id === p.id}
+    <Card key={p.id} p={p} n={n} routes={routeCounts.get(p.id) ?? null} today={today} periodLabel={periodLabel} confirming={open.step === 'confirm' && open.id === p.id}
       onRequest={() => request(p)} onCancel={() => dispatch({ type: 'cancel' })} onConfirm={() => { dispatch({ type: 'done' }); onOpen(p); }} />
   );
 
@@ -72,6 +82,7 @@ export function Proposals({ bundle, state, loaded, current, onOpen }: Props) {
         least traffic added to any one street inside the area. Harm means more traffic on any single residential or
         service block inside the area, counted only when it exceeds normal variation between runs.
       </p>
+      {state.status === 'ready' && <p className="muted small">Through routes: {ROUTE_CAVEAT}</p>}
       {state.status === 'idle' || state.status === 'loading' ? <p role="status" className="muted">Loading proposals…</p> : null}
       {state.status === 'none' && (
         <div className="empty" role="status">
@@ -113,8 +124,8 @@ export function Proposals({ bundle, state, loaded, current, onOpen }: Props) {
   );
 }
 
-function Card({ p, n, periodLabel, confirming, onRequest, onCancel, onConfirm }: {
-  p: Proposal; n: number | null; periodLabel(id: string): string; confirming: boolean;
+function Card({ p, n, routes, today, periodLabel, confirming, onRequest, onCancel, onConfirm }: {
+  p: Proposal; n: number | null; routes: number | null; today: number; periodLabel(id: string): string; confirming: boolean;
   onRequest(): void; onCancel(): void; onConfirm(): void;
 }) {
   const cut = cutThroughHeadline(p.cutThrough);
@@ -148,6 +159,7 @@ function Card({ p, n, periodLabel, confirming, onRequest, onCancel, onConfirm }:
           <p className="fig-sub">{harm.none ? 'Worst side effect' : <>Worst side effect{harm.blocks && <>. {harm.blocks}.</>}</>}</p>
         </div>
       </div>
+      {routes !== null && <p className="prop-routes">Through routes: <strong>{routes}</strong> ({today} today)</p>}
       <h4 className="sr-only">Changes</h4>
       <ul className="prop-ivs">{p.interventions.map((iv, i) => <li key={i}>{iv.label}</li>)}</ul>
       <details className="prop-more">

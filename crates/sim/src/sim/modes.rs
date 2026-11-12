@@ -390,12 +390,12 @@ impl Simulation {
         m.modes.car = CarMode {
             in_network: cars,
             completed_trips: st.car_completed,
-            mean_trip_time: if st.car_completed > 0 { st.car_tt_sum / st.car_completed as f64 } else { 0.0 },
+            mean_trip_time: if st.car_timed > 0 { st.car_tt_sum / st.car_timed as f64 } else { 0.0 },
         };
         m.modes.bicycle = BikeMode {
             in_network: self.n_bike as u64,
             completed_trips: st.bike_completed,
-            mean_trip_time: if st.bike_completed > 0 { st.bike_tt_sum / st.bike_completed as f64 } else { 0.0 },
+            mean_trip_time: if st.bike_timed > 0 { st.bike_tt_sum / st.bike_timed as f64 } else { 0.0 },
         };
         m.modes.pedestrian = self.world.mode_metrics();
         let v = &self.vuln;

@@ -167,3 +167,16 @@ pub const TEFFT_AIS4: [(f32, f32); 5] = [(17.1, 0.10), (24.9, 0.25), (33.0, 0.50
 /// data are German.
 pub const LUBBE_BIKE_MAIS3: [(f32, f32); 5] = [(27.03, 0.10), (35.67, 0.25), (44.31, 0.50), (52.96, 0.75), (61.60, 0.90)];
 pub const PED_EMERGENCY_B: f32 = 8.0; // ASSUMPTION m/s^2: hardest braking a driver uses to stop for a pedestrian already crossing
+
+// --- initial loading (change baseline-calibration). A run starts with agents already en route and a short settle interval before time zero. ---
+/// ASSUMPTION: simulated seconds stepped before time zero so signals hold queues and speeds are consistent with the placed agents.
+pub const INITIAL_SETTLE_S: f64 = 120.0;
+/// ASSUMPTION: expected trip time at time zero is the free-flow route time (including the expected control delay at each node, `DELAY_*`) times this factor.
+/// One value for all periods and modes, tuned so that the vehicles on the network at time zero match a 15-minute cold warm-up on the Rockridge network.
+pub const INITIAL_CONGESTION: f64 = 1.3;
+/// ASSUMPTION: least bumper gap (m) beyond the driver's standstill gap s0 when placing agents; an agent that does not fit behind its leader is shifted back, or skipped.
+pub const INITIAL_GAP_EXTRA_M: f32 = 0.5;
+/// ASSUMPTION: expected wait (s) at each crosswalk, added to the walking time of a pedestrian trip for the initial count; placed pedestrians that fall on a crossing step wait there.
+pub const INITIAL_PED_WAIT_S: f64 = 10.0;
+/// Sub-stream tag so the placement draws never touch the per-flow demand streams.
+pub const INITIAL_STREAM: u64 = 0x1A17_10AD_5EED_u64;

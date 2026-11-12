@@ -63,6 +63,25 @@ impl Rng {
     pub fn exp(&mut self, rate: f64) -> f64 {
         -(1.0 - self.f64()).max(1e-300).ln() / rate
     }
+
+    /// Poisson count with mean `lambda`: Knuth's product method below 30, the rounded normal approximation above.
+    pub fn poisson(&mut self, lambda: f64) -> u32 {
+        if lambda <= 0.0 {
+            return 0;
+        }
+        if lambda < 30.0 {
+            let limit = (-lambda).exp();
+            let (mut k, mut p) = (0u32, 1.0f64);
+            loop {
+                p *= self.f64();
+                if p <= limit {
+                    return k;
+                }
+                k += 1;
+            }
+        }
+        (lambda + lambda.sqrt() * self.normal()).round().max(0.0) as u32
+    }
 }
 
 /// Stateless 32-bit hash for per-(driver, link) perception noise and re-route draws.
