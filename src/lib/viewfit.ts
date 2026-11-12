@@ -18,7 +18,7 @@ export interface Camera { center: LngLat; zoom: number }
 const TILE = 512;
 /** Smallest unobscured size worth fitting into; below it the whole canvas is used. */
 export const MIN_UNOBSCURED_PX = 48;
-export const FIT_MARGIN_PX = 24;
+export const FIT_MARGIN_PX = 12;
 export const FIT_MAX_ZOOM = 17.5;
 /** Zoom-out allowance beyond the zoom that shows the whole buffered region. */
 export const MIN_ZOOM_SLACK = 0.35;
