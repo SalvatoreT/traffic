@@ -178,8 +178,12 @@ pub struct Config {
     pub select_links: Vec<u32>,
     /// Additive: perceived-cost multiplier for residential/service links in route choice (default `params::LOCAL_COST_FACTOR`).
     pub local_cost_factor: Option<f64>,
-    /// Additive: share of drivers that re-route at each 60 s epoch, 0 to 1 (default `params::REROUTE_SHARE`).
-    pub reroute_share: Option<f64>,
+    /// Additive: share of drivers that follow live guidance (re-evaluate their route every epoch), 0 to 1 (default `params::GUIDED_SHARE`).
+    pub guided_share: Option<f64>,
+    /// Additive: relative indifference band of route switching, e.g. 0.2 = the new remaining route must be 20% cheaper (default `params::SWITCH_BAND`).
+    pub switch_band: Option<f64>,
+    /// Additive: record every completed car trip (`Simulation::trip_records`) for the wandering metrics. Default false.
+    pub record_trips: bool,
     /// Additive: minutes between signal split adaptations (default `params::ADAPT_INTERVAL_S`; 0 keeps the start-up splits).
     pub signal_adapt_min: Option<f64>,
     /// Additive: apply the gridlock breaker on motorway-class links too (default false: vehicles queued on a ramp or the
@@ -198,7 +202,7 @@ pub struct Config {
 
 impl Default for Config {
     fn default() -> Self {
-        Config { seed: 1, period: String::new(), demand_scale: 1.0, select_links: Vec::new(), local_cost_factor: None, reroute_share: None, signal_adapt_min: None, motorway_gridlock_removal: false, ped_yield_marked: None, ped_yield_unmarked: None, lane_width_m: None, no_right_turn_on_red: false }
+        Config { seed: 1, period: String::new(), demand_scale: 1.0, select_links: Vec::new(), local_cost_factor: None, guided_share: None, switch_band: None, record_trips: false, signal_adapt_min: None, motorway_gridlock_removal: false, ped_yield_marked: None, ped_yield_unmarked: None, lane_width_m: None, no_right_turn_on_red: false }
     }
 }
 

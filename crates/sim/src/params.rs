@@ -58,6 +58,7 @@ pub const HUMP_FF_PENALTY: f32 = 3.0; // ASSUMPTION: s added to routing free-flo
 
 // --- routing [Wardrop1952], [Peeta2001] ---
 pub const EPOCH_S: f64 = 60.0; // cost-update / re-route period
+pub const GUIDED_SHARE: u32 = 800;
 pub const REROUTE_SHARE: u32 = 800; // per mille. ASSUMPTION: 80% re-route each epoch (calibration step I, was 30%: raising it cut PM gridlock removals from 30 to 10 per run)
 pub const EMA_ALPHA: f32 = 0.3; // ASSUMPTION
 pub const ROUTE_NOISE: f32 = 0.08; // ASSUMPTION: per-driver perceived-cost noise (+-8%)

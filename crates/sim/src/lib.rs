@@ -10,6 +10,7 @@ pub mod route;
 pub mod sim;
 pub mod topo;
 pub mod validate;
+pub mod wander;
 
 pub use model::{Config, Demand, Metrics, Network};
 pub use sim::Simulation;

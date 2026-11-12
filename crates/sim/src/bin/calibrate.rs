@@ -10,6 +10,7 @@ use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
 use traffic_sim::model::{Config, Control, Demand, FlowMode, Network, RoadClass};
 use traffic_sim::sim::{SelectLinkRecord, Simulation, StreetVisit};
+use traffic_sim::wander::{summarize, TripMetric, WanderStats};
 
 struct Args {
     area: String,
@@ -19,8 +20,10 @@ struct Args {
     seed: u64,
     warmup_min: f64,
     local_factor: Option<f64>,
-    /// `--reroute-share <x>`: share of drivers re-routing per epoch, 0 to 1 (default 0.8).
-    reroute_share: Option<f64>,
+    /// `--guided-share <x>`: share of drivers following live guidance, 0 to 1 (default `params::GUIDED_SHARE`; `--reroute-share` is the old name).
+    guided_share: Option<f64>,
+    /// `--switch-band <x>`: relative indifference band of route switching (default `params::SWITCH_BAND`).
+    switch_band: Option<f64>,
     adapt_min: Option<f64>,
     motorway_removal: bool,
     no_rtor: bool,
@@ -39,7 +42,7 @@ struct Args {
 }
 
 fn parse_args() -> Args {
-    let mut a = Args { area: "rockridge".into(), period: "pm_peak".into(), minutes: 60.0, scale: 1.0, seed: 1, warmup_min: 10.0, local_factor: None, reroute_share: None, adapt_min: None, motorway_removal: false, no_rtor: false, out: None, write: true, link_flows: false, select_od: None, cars_only: false, drop: Vec::new(), demand_path: None, network_path: None };
+    let mut a = Args { area: "rockridge".into(), period: "pm_peak".into(), minutes: 60.0, scale: 1.0, seed: 1, warmup_min: 10.0, local_factor: None, guided_share: None, switch_band: None, adapt_min: None, motorway_removal: false, no_rtor: false, out: None, write: true, link_flows: false, select_od: None, cars_only: false, drop: Vec::new(), demand_path: None, network_path: None };
     let argv: Vec<String> = std::env::args().skip(1).collect();
     let mut i = 0;
     while i < argv.len() {
@@ -55,7 +58,8 @@ fn parse_args() -> Args {
             "--scale" => a.scale = val().parse().unwrap_or_else(|_| usage("bad --scale")),
             "--seed" => a.seed = val().parse().unwrap_or_else(|_| usage("bad --seed")),
             "--warmup" => a.warmup_min = val().parse().unwrap_or_else(|_| usage("bad --warmup")),
-            "--reroute-share" => a.reroute_share = Some(val().parse().unwrap_or_else(|_| usage("bad --reroute-share"))),
+            "--guided-share" | "--reroute-share" => a.guided_share = Some(val().parse().unwrap_or_else(|_| usage("bad --guided-share"))),
+            "--switch-band" => a.switch_band = Some(val().parse().unwrap_or_else(|_| usage("bad --switch-band"))),
             "--local-factor" => a.local_factor = Some(val().parse().unwrap_or_else(|_| usage("bad --local-factor"))),
             "--adapt-min" => a.adapt_min = Some(val().parse().unwrap_or_else(|_| usage("bad --adapt-min"))),
             "--motorway-removal" => a.motorway_removal = true,
@@ -395,7 +399,7 @@ fn main() {
     sel.dedup();
 
     // ---- run
-    let cfg = Config { seed: args.seed, period: args.period.clone(), demand_scale: args.scale, select_links: sel, local_cost_factor: args.local_factor, reroute_share: args.reroute_share, signal_adapt_min: args.adapt_min, motorway_gridlock_removal: args.motorway_removal, no_right_turn_on_red: args.no_rtor, ..Default::default() };
+    let cfg = Config { seed: args.seed, period: args.period.clone(), demand_scale: args.scale, select_links: sel, local_cost_factor: args.local_factor, guided_share: args.guided_share, switch_band: args.switch_band, record_trips: true, signal_adapt_min: args.adapt_min, motorway_gridlock_removal: args.motorway_removal, no_right_turn_on_red: args.no_rtor, ..Default::default() };
     let mut sim = Simulation::from_parts(net.clone(), demand.clone(), cfg).expect("sim");
     let total_s = args.minutes * 60.0;
     let warm_s = if total_s >= 1800.0 { args.warmup_min * 60.0 } else { 0.0 };
@@ -568,6 +572,101 @@ fn main() {
         }
     }
 
+
+    // ---- wandering metrics and the two user-reported patterns
+    let tm: Vec<TripMetric> = sim.trip_metrics();
+    let trip_by_uid: HashMap<u32, &traffic_sim::sim::TripRecord> = sim.trip_records().iter().map(|r| (r.uid, r)).collect();
+    let is_gate = |n: u32| net.nodes[n as usize].gate;
+    let wander_rows: Vec<(&str, WanderStats)> = vec![
+        ("all trips", summarize(tm.iter())),
+        ("gate to gate", summarize(tm.iter().filter(|t| is_gate(t.origin) && is_gate(t.dest)))),
+        ("with a local end", summarize(tm.iter().filter(|t| !is_gate(t.origin) || !is_gate(t.dest)))),
+        ("guided drivers", summarize(tm.iter().filter(|t| t.guided))),
+        ("other drivers", summarize(tm.iter().filter(|t| !t.guided))),
+    ];
+    let mut fw_node = vec![false; nn];
+    for lk in &net.links {
+        if lk.class == RoadClass::Motorway {
+            fw_node[lk.from as usize] = true;
+            fw_node[lk.to as usize] = true;
+        }
+    }
+    let local_miles = |uid: u32| -> f64 {
+        trip_by_uid.get(&uid).map_or(0.0, |r| r.trail.iter().map(|&l| &net.links[l as usize]).filter(|lk| lk.in_study_area && matches!(lk.class, RoadClass::Residential | RoadClass::Service)).map(|lk| lk.length).sum::<f64>()) / 1609.344
+    };
+    let all_local: f64 = tm.iter().map(|t| local_miles(t.uid)).sum();
+    // (a) trips between the surface gates on one side of the ramps and the freeway mainline gates.
+    let pat_a = &targets["patterns"]["freewayThrough"];
+    let mut pat_a_rows: Vec<(&str, usize, f64, f64)> = Vec::new();
+    if let (Some(side), false) = (pat_a["surfaceSide"].as_str().and_then(|x| x.chars().next()).map(|c| c.to_ascii_uppercase()), ramp_sets.is_empty()) {
+        let (rx, ry) = (ramp_sets.iter().map(|(r, _)| net.nodes[r.node].x).sum::<f64>() / ramp_sets.len() as f64, ramp_sets.iter().map(|(r, _)| net.nodes[r.node].y).sum::<f64>() / ramp_sets.len() as f64);
+        let surface = |n: u32| {
+            let nd = &net.nodes[n as usize];
+            nd.gate && !fw_node[n as usize] && match side { 'N' => nd.y > ry, 'S' => nd.y < ry, 'E' => nd.x > rx, _ => nd.x < rx }
+        };
+        let mainline = |n: u32| net.nodes[n as usize].gate && fw_node[n as usize];
+        for (label, to_fw) in [("surface gates to the freeway", true), ("freeway to the surface gates", false)] {
+            let sel: Vec<&TripMetric> = tm.iter().filter(|t| if to_fw { surface(t.origin) && mainline(t.dest) } else { mainline(t.origin) && surface(t.dest) }).collect();
+            let miles: f64 = sel.iter().map(|t| local_miles(t.uid)).sum();
+            pat_a_rows.push((label, sel.len(), miles, if all_local > 0.0 { miles / all_local } else { 0.0 }));
+        }
+    }
+    // (b) corridor trips between the two ends of a bypass street and the arterial it parallels.
+    struct BypassRow {
+        bypass: String,
+        arterial: String,
+        min_blocks: usize,
+        dir: char,
+        trips: usize,
+        by_bypass: usize,
+        by_arterial: usize,
+        by_other: usize,
+        mean_bypass_blocks: f64,
+    }
+    let mut bypass_rows: Vec<BypassRow> = Vec::new();
+    for e in targets["patterns"]["bypass"].as_array().map(|v| v.as_slice()).unwrap_or(&[]) {
+        let (bn, an) = (e["bypass"].as_str().unwrap_or("").to_string(), e["arterial"].as_str().unwrap_or("").to_string());
+        let min_blocks = e["minBlocks"].as_u64().unwrap_or(3) as usize;
+        let span_share = e["minSpanShare"].as_f64().unwrap_or(0.6);
+        let ns = e["axis"].as_str().unwrap_or("NS") != "EW";
+        let coord = |n: u32| if ns { net.nodes[n as usize].y } else { net.nodes[n as usize].x };
+        let on_street = |l: u32, name: &str| same(&net.links[l as usize].name, name);
+        let corridor: Vec<usize> = (0..net.links.len()).filter(|&l| net.links[l].in_study_area && (on_street(l as u32, &bn) || on_street(l as u32, &an))).collect();
+        if corridor.is_empty() {
+            continue;
+        }
+        let lo = corridor.iter().flat_map(|&l| [coord(net.links[l].from), coord(net.links[l].to)]).fold(f64::INFINITY, f64::min);
+        let hi = corridor.iter().flat_map(|&l| [coord(net.links[l].from), coord(net.links[l].to)]).fold(f64::NEG_INFINITY, f64::max);
+        let span = hi - lo;
+        let in_c: std::collections::HashSet<u32> = corridor.iter().map(|&l| l as u32).collect();
+        let dirs: [char; 2] = if ns { ['N', 'S'] } else { ['E', 'W'] };
+        let mut acc: [(usize, usize, usize, usize, usize); 2] = [(0, 0, 0, 0, 0); 2];
+        for r in sim.trip_records() {
+            let cl: Vec<u32> = r.trail.iter().copied().filter(|l| in_c.contains(l)).collect();
+            let (Some(&f), Some(&la)) = (cl.first(), cl.last()) else { continue };
+            let d = coord(net.links[la as usize].to) - coord(net.links[f as usize].from);
+            if d.abs() < span_share * span {
+                continue;
+            }
+            let k = if d > 0.0 { 0 } else { 1 };
+            let nb = cl.iter().filter(|&&l| on_street(l, &bn)).count();
+            let na = cl.iter().filter(|&&l| on_street(l, &an)).count();
+            let a = &mut acc[k];
+            a.0 += 1;
+            a.4 += nb;
+            if nb >= min_blocks {
+                a.1 += 1;
+            } else if na >= min_blocks {
+                a.2 += 1;
+            } else {
+                a.3 += 1;
+            }
+        }
+        for (k, a) in acc.iter().enumerate() {
+            bypass_rows.push(BypassRow { bypass: bn.clone(), arterial: an.clone(), min_blocks, dir: dirs[k], trips: a.0, by_bypass: a.1, by_arterial: a.2, by_other: a.3, mean_bypass_blocks: if a.0 > 0 { a.4 as f64 / a.0 as f64 } else { 0.0 } });
+        }
+    }
+
     // ---- health
     let spawned = m.spawned.max(1) as f64;
     let backlog_pct = 100.0 * m.backlog as f64 / spawned;
@@ -634,6 +733,30 @@ fn main() {
     let _ = writeln!(md, "| t (min) | vehicles in network | backlog | completed | removals | arterial speed in interval (m/s) |\n| --- | --- | --- | --- | --- | --- |");
     for s in &series {
         let _ = writeln!(md, "| {:.0} | {} | {} | {} | {} | {:.2} |", s.t / 60.0, s.veh, s.backlog, s.completed, s.removed, s.art_speed);
+    }
+    let _ = writeln!(md, "## Wandering (completed car trips)\n");
+    let _ = writeln!(md, "Detour ratio = distance driven (link and movement lengths) over the shortest network distance from the trip's origin to its destination. A switch is a change of the remaining route while en route. Loops: the same link twice or the same node three or more times. Reversals: a link followed by its reverse within 200 m. 'Study-area vehicle-miles' are miles driven on links inside the study area; the last column is the share of them driven by trips with a detour ratio above 1.3. Guided drivers re-evaluate their route every epoch; the others keep their departure route unless it is blocked.\n");
+    let _ = writeln!(md, "| Trips | n | Switches per trip | With a switch | Mean detour | Median detour | Detour > 1.3 | Detour > 2 | Loops | Reversals | Study veh-miles | Of them by detour > 1.3 |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |");
+    for (lab, w) in &wander_rows {
+        let _ = writeln!(md, "| {lab} | {} | {:.2} | {} | {:.3} | {:.3} | {} | {} | {} | {} | {:.0} | {} |", w.trips, w.mean_switches, pct(w.share_switched), w.mean_detour, w.median_detour, pct(w.share_detour_high), pct(w.share_detour_very_high), pct(w.share_loops), pct(w.share_reversal), w.study_miles, pct(w.study_share_detour_high));
+    }
+    let _ = writeln!(md, "\n## Reported patterns (diagnostics; configured in the targets file under `patterns`)\n");
+    if !pat_a_rows.is_empty() {
+        let _ = writeln!(md, "(a) Trips between the surface gates on the {} side of the ramps and the freeway mainline gates, and the local-street (residential and service links in the study area) vehicle-miles they drive. Share = of all completed trips' local-street vehicle-miles ({:.0} miles). No observed counterpart exists for this quantity (the targets file has only the select-link shares above).\n", pat_a["surfaceSide"].as_str().unwrap_or("?"), all_local);
+        let _ = writeln!(md, "| Trips | n trips | Local-street veh-miles | Share of all local-street veh-miles |\n| --- | --- | --- | --- |");
+        for (lab, n, mi, sh) in &pat_a_rows {
+            let _ = writeln!(md, "| {lab} | {n} | {mi:.1} | {} |", pct(*sh));
+        }
+        md.push('\n');
+    }
+    if !bypass_rows.is_empty() {
+        let _ = writeln!(md, "(b) Corridor trips: completed trips whose links on the bypass street or its arterial span at least the configured share of the corridor's extent, by direction. 'Bypass' = at least N blocks (links) on the bypass street; 'arterial' = fewer bypass blocks and at least N on the arterial; 'other' = neither (a parallel street or a short use). No observed counterpart exists for these shares. The related observed values are in the select-link table above: northbound Hillegass Ave traffic rarely ends on College Ave (6%), 21 to 33% jogs to Benvenue Ave, and southbound freeway-bound drivers on College Ave commonly arrive via Ashby Ave and Benvenue Ave and jog to Hillegass Ave.\n");
+        let _ = writeln!(md, "| Bypass | Arterial | N | Direction | Corridor trips | Bypass | Arterial | Other | Mean bypass blocks |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- |");
+        for b in &bypass_rows {
+            let f = |x: usize| if b.trips > 0 { pct(x as f64 / b.trips as f64) } else { "n/a".into() };
+            let _ = writeln!(md, "| {} | {} | {} | {} | {} | {} | {} | {} | {:.1} |", b.bypass, b.arterial, b.min_blocks, b.dir, b.trips, f(b.by_bypass), f(b.by_arterial), f(b.by_other), b.mean_bypass_blocks);
+        }
+        md.push('\n');
     }
     let _ = writeln!(md, "## Per-mode results\n");
     let _ = writeln!(md, "Offered: {:.0} car veh/h; {} bicycle flows ({:.0}/h); {} pedestrian flows ({:.0}/h). Bicycle and pedestrian volumes are assumptions, not counts.\n", total_demand, bike_flows, bike_vph * args.scale, ped_flows, ped_vph * args.scale);
@@ -757,6 +880,9 @@ fn main() {
                 "arterialMeanSpeed": m.arterial_mean_speed, "arterialMeanSpeedLast15min": art_tail,
                 "meanTripDelay": m.mean_trip_delay, "meanTripTime": m.mean_trip_time, "completed": m.completed_trips, "unroutable": m.unroutable_trips,
             },
+            "wander": wander_rows.iter().map(|(lab, w)| json!({"set": lab, "trips": w.trips, "meanSwitches": w.mean_switches, "shareSwitched": w.share_switched, "meanDetour": w.mean_detour, "medianDetour": w.median_detour, "shareDetourOver1.3": w.share_detour_high, "shareDetourOver2": w.share_detour_very_high, "shareLoops": w.share_loops, "shareReversals": w.share_reversal, "studyMiles": w.study_miles, "studyMilesShareDetourOver1.3": w.study_share_detour_high})).collect::<Vec<_>>(),
+            "patternFreewayThrough": pat_a_rows.iter().map(|(l, n, mi, sh)| json!({"trips": l, "n": n, "localMiles": mi, "shareOfLocalMiles": sh})).collect::<Vec<_>>(),
+            "patternBypass": bypass_rows.iter().map(|b| json!({"bypass": b.bypass, "arterial": b.arterial, "minBlocks": b.min_blocks, "dir": b.dir.to_string(), "corridorTrips": b.trips, "bypass": b.by_bypass, "arterialOnly": b.by_arterial, "other": b.by_other, "meanBypassBlocks": b.mean_bypass_blocks})).collect::<Vec<_>>(),
             "modes": serde_json::to_value(&m.modes).unwrap_or(Value::Null),
             "vulnerable": serde_json::to_value(&m.vulnerable).unwrap_or(Value::Null),
             "series": series.iter().map(|s| json!({"tMin": s.t / 60.0, "vehicles": s.veh, "backlog": s.backlog, "completed": s.completed, "removed": s.removed, "arterialSpeed": s.art_speed})).collect::<Vec<_>>(),

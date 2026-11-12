@@ -86,6 +86,17 @@ struct Trip {
     drv: Drv,
 }
 
+/// One completed car trip (recorded when `Config::record_trips` is set): the links entered in order and the en-route route changes.
+#[derive(Clone, Debug)]
+pub struct TripRecord {
+    pub uid: u32,
+    pub origin: u32,
+    pub dest: u32,
+    pub trail: Vec<u32>,
+    pub switches: u16,
+    pub guided: bool,
+}
+
 struct FlowRt {
     mode: FlowMode,
     origin: u32,
@@ -126,6 +137,13 @@ struct Veh {
     registered: bool,
     ttc_leader: u32,
     replan: bool,
+    /// Links entered on this trip, in order (cars): the no-backtracking rule and the wandering metrics read it.
+    trail: Vec<u32>,
+    /// En-route route changes so far, and when the last one (or the departure) happened.
+    switches: u16,
+    last_switch_t: f64,
+    /// Follows live guidance (navigation app): re-evaluates its route at each epoch. Other drivers keep the departure route unless blocked.
+    guided: bool,
     tr_mv: u32,
     tr_frac: f32,
     /// Select-link recording (empty unless enabled): distinct consecutive named streets visited
@@ -174,6 +192,10 @@ impl Veh {
             registered: false,
             ttc_leader: NONE_UID,
             replan: false,
+            trail: Vec::new(),
+            switches: 0,
+            last_switch_t: 0.0,
+            guided: false,
             tr_mv: 0,
             tr_frac: 0.0,
             sl_streets: Vec::new(),
@@ -330,6 +352,7 @@ pub struct Simulation {
     cur_bin: usize,
     scratch: Vec<u32>,
     gridlock_log: Vec<(u32, f64)>,
+    trips: Vec<TripRecord>,
     sl: Option<SelectLinkState>,
     d_link_stopped: Vec<f32>,
     d_link_delay: Vec<f32>,
@@ -484,6 +507,7 @@ impl Simulation {
             cur_bin: 0,
             scratch: Vec::new(),
             gridlock_log: Vec::new(),
+            trips: Vec::new(),
             sl: None,
             d_link_stopped: vec![0.0; nl],
             d_link_delay: vec![0.0; nl],
@@ -553,10 +577,11 @@ impl Simulation {
 
     /// Select-link hook: vehicle `vid` has just entered link `l`.
     fn sl_enter(&mut self, vid: u32, l: u32) {
-        let Some(sl) = &self.sl else { return };
         if self.vehs[vid as usize].kind != KIND_CAR {
             return;
         }
+        self.vehs[vid as usize].trail.push(l);
+        let Some(sl) = &self.sl else { return };
         let sid = sl.street_of[l as usize];
         let is_sel = sl.is_sel[l as usize];
         let dir = sl.dir_of[l as usize];
@@ -612,6 +637,16 @@ impl Simulation {
             }
         }
         out
+    }
+
+    /// Completed car trips recorded so far (empty unless `Config::record_trips`).
+    pub fn trip_records(&self) -> &[TripRecord] {
+        &self.trips
+    }
+
+    /// Per-trip wandering metrics of the recorded trips (detour ratio against the shortest network distance, loops, reversals).
+    pub fn trip_metrics(&self) -> Vec<crate::wander::TripMetric> {
+        crate::wander::analyze(&self.topo, &self.eff, &self.net, &self.trips)
     }
 
     /// Current signal plans: (node, cycle s, sum of critical flow ratios, green s per phase).
@@ -1320,10 +1355,13 @@ impl Simulation {
                 };
                 let trip = self.backlog[n].pop_front().unwrap();
                 let id = self.alloc_veh();
+                let guided = self.is_guided(trip.noise_seed);
                 let veh = &mut self.vehs[id as usize];
                 let mut old = std::mem::replace(&mut veh.route, route);
                 old.clear();
                 self.scratch = old;
+                let mut trail = std::mem::take(&mut veh.trail);
+                trail.clear();
                 *veh = Veh {
                     alive: true,
                     uid: trip.uid,
@@ -1337,6 +1375,9 @@ impl Simulation {
                     through: trip.through,
                     noise_seed: trip.noise_seed,
                     route: std::mem::take(&mut veh.route),
+                    trail,
+                    guided,
+                    last_switch_t: self.t,
                     t_depart: trip.t_arr,
                     t_enter: self.t,
                     ..Veh::blank()
@@ -1941,6 +1982,10 @@ impl Simulation {
             self.st.inside_n += 1;
             self.st.inside_tt_sum += tt;
         }
+        if self.cfg.record_trips {
+            let v = &self.vehs[vid as usize];
+            self.trips.push(TripRecord { uid: v.uid, origin: v.origin, dest: v.dest, trail: v.trail.clone(), switches: v.switches, guided: v.guided });
+        }
         if self.sl.is_some() {
             if let Some(r) = self.sl_record(&self.vehs[vid as usize], true) {
                 self.sl.as_mut().unwrap().records.push(r);
@@ -2106,6 +2151,10 @@ impl Simulation {
         }
         if ok {
             let veh = &mut self.vehs[vid as usize];
+            if veh.route.get(veh.ridx as usize..) != Some(route.as_slice()) {
+                veh.switches = veh.switches.saturating_add(1);
+                veh.last_switch_t = self.t;
+            }
             let mut old = std::mem::replace(&mut veh.route, route);
             veh.ridx = 0;
             old.clear();
@@ -2118,6 +2167,11 @@ impl Simulation {
             }
             false
         }
+    }
+
+    fn is_guided(&self, seed: u32) -> bool {
+        let share = self.cfg.guided_share.map_or(GUIDED_SHARE, |r| (r.clamp(0.0, 1.0) * 1000.0).round() as u32);
+        hash32(seed, 0x6D1D_ED01) % 1000 < share
     }
 
     fn drop_vehicle_unroutable(&mut self, vid: u32) {
@@ -2178,7 +2232,7 @@ impl Simulation {
                 continue;
             }
             // ASSUMPTION: a deterministic 30% share of en-route vehicles re-plan each epoch.
-            if hash32(v.uid, self.epoch) % 1000 < self.cfg.reroute_share.map_or(REROUTE_SHARE, |r| (r.clamp(0.0, 1.0) * 1000.0).round() as u32) {
+            if hash32(v.uid, self.epoch) % 1000 < self.cfg.guided_share.map_or(REROUTE_SHARE, |r| (r.clamp(0.0, 1.0) * 1000.0).round() as u32) {
                 self.replan_vehicle(vid, true);
             }
         }
