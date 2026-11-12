@@ -24,6 +24,8 @@ struct Args {
     guided_share: Option<f64>,
     /// `--switch-band <x>`: relative indifference band of route switching (default `params::SWITCH_BAND`).
     switch_band: Option<f64>,
+    /// `--legacy-reroute`: the route choice before the commitment rules (A/B runs).
+    legacy_reroute: bool,
     adapt_min: Option<f64>,
     motorway_removal: bool,
     no_rtor: bool,
@@ -42,7 +44,7 @@ struct Args {
 }
 
 fn parse_args() -> Args {
-    let mut a = Args { area: "rockridge".into(), period: "pm_peak".into(), minutes: 60.0, scale: 1.0, seed: 1, warmup_min: 10.0, local_factor: None, guided_share: None, switch_band: None, adapt_min: None, motorway_removal: false, no_rtor: false, out: None, write: true, link_flows: false, select_od: None, cars_only: false, drop: Vec::new(), demand_path: None, network_path: None };
+    let mut a = Args { area: "rockridge".into(), period: "pm_peak".into(), minutes: 60.0, scale: 1.0, seed: 1, warmup_min: 10.0, local_factor: None, guided_share: None, switch_band: None, legacy_reroute: false, adapt_min: None, motorway_removal: false, no_rtor: false, out: None, write: true, link_flows: false, select_od: None, cars_only: false, drop: Vec::new(), demand_path: None, network_path: None };
     let argv: Vec<String> = std::env::args().skip(1).collect();
     let mut i = 0;
     while i < argv.len() {
@@ -59,6 +61,7 @@ fn parse_args() -> Args {
             "--seed" => a.seed = val().parse().unwrap_or_else(|_| usage("bad --seed")),
             "--warmup" => a.warmup_min = val().parse().unwrap_or_else(|_| usage("bad --warmup")),
             "--guided-share" | "--reroute-share" => a.guided_share = Some(val().parse().unwrap_or_else(|_| usage("bad --guided-share"))),
+            "--legacy-reroute" => a.legacy_reroute = true,
             "--switch-band" => a.switch_band = Some(val().parse().unwrap_or_else(|_| usage("bad --switch-band"))),
             "--local-factor" => a.local_factor = Some(val().parse().unwrap_or_else(|_| usage("bad --local-factor"))),
             "--adapt-min" => a.adapt_min = Some(val().parse().unwrap_or_else(|_| usage("bad --adapt-min"))),
@@ -403,7 +406,7 @@ fn main() {
     sel.dedup();
 
     // ---- run
-    let cfg = Config { seed: args.seed, period: args.period.clone(), demand_scale: args.scale, select_links: sel, local_cost_factor: args.local_factor, guided_share: args.guided_share, switch_band: args.switch_band, record_trips: true, signal_adapt_min: args.adapt_min, motorway_gridlock_removal: args.motorway_removal, no_right_turn_on_red: args.no_rtor, ..Default::default() };
+    let cfg = Config { seed: args.seed, period: args.period.clone(), demand_scale: args.scale, select_links: sel, local_cost_factor: args.local_factor, guided_share: args.guided_share, switch_band: args.switch_band, record_trips: true, legacy_reroute: args.legacy_reroute, signal_adapt_min: args.adapt_min, motorway_gridlock_removal: args.motorway_removal, no_right_turn_on_red: args.no_rtor, ..Default::default() };
     let mut sim = Simulation::from_parts(net.clone(), demand.clone(), cfg).expect("sim");
     let total_s = args.minutes * 60.0;
     let warm_s = if total_s >= 1800.0 { args.warmup_min * 60.0 } else { 0.0 };
@@ -581,6 +584,17 @@ fn main() {
     let tm: Vec<TripMetric> = sim.trip_metrics();
     let trip_by_uid: HashMap<u32, &traffic_sim::sim::TripRecord> = sim.trip_records().iter().map(|r| (r.uid, r)).collect();
     let is_gate = |n: u32| net.nodes[n as usize].gate;
+    if let Ok(path) = std::env::var("CAL_DUMP_TRIPS") {
+        // Debug: trips with a reversal or a detour above 1.3, with their link names.
+        let mut o = String::new();
+        for t in tm.iter().filter(|t| t.reversal || t.detour_ff > 1.3).take(6000) {
+            if let Some(r) = trip_by_uid.get(&t.uid) {
+                let names: Vec<String> = r.trail.iter().map(|&l| format!("{}:{}", l, net.links[l as usize].name)).collect();
+                let _ = writeln!(o, "uid {} o {} (gate {}) d {} (gate {}) detour {:.2} ff {:.2} study {:.0} driven {:.0} shortest {:.0} rev {} sw {} :: {}", t.uid, t.origin, is_gate(t.origin), t.dest, is_gate(t.dest), t.detour, t.detour_ff, t.study_m, t.driven_m, t.shortest_m, t.reversal, t.switches, names.join(" > "));
+            }
+        }
+        std::fs::write(path, o).ok();
+    }
     let wander_rows: Vec<(&str, WanderStats)> = vec![
         ("all trips", summarize(tm.iter())),
         ("gate to gate", summarize(tm.iter().filter(|t| is_gate(t.origin) && is_gate(t.dest)))),
@@ -739,10 +753,10 @@ fn main() {
         let _ = writeln!(md, "| {:.0} | {} | {} | {} | {} | {:.2} |", s.t / 60.0, s.veh, s.backlog, s.completed, s.removed, s.art_speed);
     }
     let _ = writeln!(md, "## Wandering (completed car trips)\n");
-    let _ = writeln!(md, "Detour ratio = distance driven (link and movement lengths) over the shortest network distance from the trip's origin to its destination. A switch is a change of the remaining route while en route. Loops: the same link twice or the same node three or more times. Reversals: a link followed by its reverse within 200 m. 'Study-area vehicle-miles' are miles driven on links inside the study area; the last column is the share of them driven by trips with a detour ratio above 1.3. Guided drivers re-evaluate their route every epoch; the others keep their departure route unless it is blocked.\n");
-    let _ = writeln!(md, "| Trips | n | Switches per trip | With a switch | Mean detour | Median detour | Detour > 1.3 | Detour > 2 | Loops | Reversals | Study veh-miles | Of them by detour > 1.3 |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |");
+    let _ = writeln!(md, "Detour ratio = distance driven (link and movement lengths) over the shortest network distance from the trip's origin to its destination. Detour against the free-flow route uses the time-shortest route with no congestion and no noise, which is what a purposeful driver without live information would follow (it differs from the shortest distance when a faster, longer road exists). A switch is a change of the remaining route while en route. Loops: the same link twice or the same node three or more times. Reversals: a link followed by its reverse within 200 m. 'Study-area vehicle-miles' are miles driven on links inside the study area; the last column is the share of them driven by trips with a detour ratio above 1.3. Guided drivers re-evaluate their route every epoch; the others keep their departure route unless it is blocked.\n");
+    let _ = writeln!(md, "| Trips | n | Switches per trip | With a switch | Mean detour | Median detour | Detour > 1.3 | Detour > 2 | Mean detour vs free-flow route | Vs free-flow route > 1.3 | Loops | Reversals | Study veh-miles | Of them by detour > 1.3 |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |");
     for (lab, w) in &wander_rows {
-        let _ = writeln!(md, "| {lab} | {} | {:.2} | {} | {:.3} | {:.3} | {} | {} | {} | {} | {:.0} | {} |", w.trips, w.mean_switches, pct1(w.share_switched), w.mean_detour, w.median_detour, pct1(w.share_detour_high), pct1(w.share_detour_very_high), pct1(w.share_loops), pct1(w.share_reversal), w.study_miles, pct1(w.study_share_detour_high));
+        let _ = writeln!(md, "| {lab} | {} | {:.2} | {} | {:.3} | {:.3} | {} | {} | {:.3} | {} | {} | {} | {:.0} | {} |", w.trips, w.mean_switches, pct1(w.share_switched), w.mean_detour, w.median_detour, pct1(w.share_detour_high), pct1(w.share_detour_very_high), w.mean_detour_ff, pct1(w.share_detour_ff_high), pct1(w.share_loops), pct1(w.share_reversal), w.study_miles, pct1(w.study_share_detour_high));
     }
     let _ = writeln!(md, "\n## Reported patterns (diagnostics; configured in the targets file under `patterns`)\n");
     if !pat_a_rows.is_empty() {
@@ -884,7 +898,7 @@ fn main() {
                 "arterialMeanSpeed": m.arterial_mean_speed, "arterialMeanSpeedLast15min": art_tail,
                 "meanTripDelay": m.mean_trip_delay, "meanTripTime": m.mean_trip_time, "completed": m.completed_trips, "unroutable": m.unroutable_trips,
             },
-            "wander": wander_rows.iter().map(|(lab, w)| json!({"set": lab, "trips": w.trips, "meanSwitches": w.mean_switches, "shareSwitched": w.share_switched, "meanDetour": w.mean_detour, "medianDetour": w.median_detour, "shareDetourOver1.3": w.share_detour_high, "shareDetourOver2": w.share_detour_very_high, "shareLoops": w.share_loops, "shareReversals": w.share_reversal, "studyMiles": w.study_miles, "studyMilesShareDetourOver1.3": w.study_share_detour_high})).collect::<Vec<_>>(),
+            "wander": wander_rows.iter().map(|(lab, w)| json!({"set": lab, "trips": w.trips, "meanSwitches": w.mean_switches, "shareSwitched": w.share_switched, "meanDetour": w.mean_detour, "medianDetour": w.median_detour, "meanDetourFreeFlow": w.mean_detour_ff, "shareDetourFreeFlowOver1.3": w.share_detour_ff_high, "shareDetourOver1.3": w.share_detour_high, "shareDetourOver2": w.share_detour_very_high, "shareLoops": w.share_loops, "shareReversals": w.share_reversal, "studyMiles": w.study_miles, "studyMilesShareDetourOver1.3": w.study_share_detour_high})).collect::<Vec<_>>(),
             "patternFreewayThrough": pat_a_rows.iter().map(|(l, n, mi, sh)| json!({"trips": l, "n": n, "localMiles": mi, "shareOfLocalMiles": sh})).collect::<Vec<_>>(),
             "patternBypass": bypass_rows.iter().map(|b| json!({"bypass": b.bypass, "arterial": b.arterial, "minBlocks": b.min_blocks, "dir": b.dir.to_string(), "corridorTrips": b.trips, "viaBypass": b.by_bypass, "arterialOnly": b.by_arterial, "other": b.by_other, "meanBypassBlocks": b.mean_bypass_blocks})).collect::<Vec<_>>(),
             "modes": serde_json::to_value(&m.modes).unwrap_or(Value::Null),

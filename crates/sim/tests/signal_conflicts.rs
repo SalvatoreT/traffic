@@ -36,9 +36,7 @@ fn run_period(net_json: &str, dem_json: &str, net: &serde_json::Value, period: &
         if net["nodes"][to as usize]["control"] != "signal" {
             continue;
         }
-        let g = l["geometry"].as_array().unwrap();
-        let (p, q) = (&g[g.len() - 2], &g[g.len() - 1]);
-        let heading = (q[1].as_f64().unwrap() - p[1].as_f64().unwrap()).atan2(q[0].as_f64().unwrap() - p[0].as_f64().unwrap());
+        let heading = sim.approach_heading(i as u32);
         by_node.entry(to).or_default().push(Appr { link: i, name: l["name"].as_str().unwrap_or("").to_string(), heading });
     }
     let nodes: Vec<u32> = {

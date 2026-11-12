@@ -1180,6 +1180,53 @@ fn skewed_junction_phases_follow_street_names() {
     assert!(ph[0] != ph[2] && ph[0] != ph[4] && ph[2] != ph[4], "{ph:?}");
 }
 
+/// Merged five-leg junction (two carriageways of one avenue, two legs of a bending street, one diagonal street):
+/// approaches share a phase only when their axes are within `PHASE_AXIS_DEG`, so crossing approaches never show green together.
+#[test]
+fn merged_five_leg_junction_never_gives_crossing_approaches_green_together() {
+    let mut b = B::default();
+    let c = b.node(0.0, 0.0, Control::Signal, false);
+    // (bearing of the leg from the node, name)
+    let legs: [(f64, &str); 5] = [(57.5, "Avenue"), (237.5, "Avenue"), (201.0, "Bend"), (270.0, "Bend"), (217.6, "Diagonal")];
+    let mut ins = Vec::new();
+    for (deg, name) in legs {
+        let a = deg.to_radians();
+        let g = b.node(200.0 * a.cos(), 200.0 * a.sin(), Control::Uncontrolled, true);
+        let (l_in, l_out) = b.two_way(g, c, RoadClass::Secondary, 1, 11.2);
+        b.links[l_in as usize].name = name.into();
+        b.links[l_out as usize].name = name.into();
+        ins.push(l_in);
+    }
+    let net = b.net();
+    let mut sim = Simulation::from_parts(net, demand(&[(1, 2, 300.0)]), cfg(1, 1.0)).unwrap();
+    let p = sim.test_eff().sig[c as usize].as_ref().expect("plan");
+    assert!(!p.always_green && p.phases.len() >= 3, "{:?}", p.links);
+    let head: Vec<f64> = ins.iter().map(|&l| sim.approach_heading(l)).collect();
+    let axial = |a: f64, b: f64| {
+        let d = (a - b).rem_euclid(std::f64::consts::PI);
+        (if d > std::f64::consts::FRAC_PI_2 { std::f64::consts::PI - d } else { d }).to_degrees()
+    };
+    for (pi, g) in p.links.iter().enumerate() {
+        for &x in g {
+            for &y in g {
+                let (i, j) = (ins.iter().position(|&l| l == x).unwrap(), ins.iter().position(|&l| l == y).unwrap());
+                assert!(axial(head[i], head[j]) < PHASE_AXIS_DEG, "phase {pi} mixes crossing approaches: {:?}", p.links);
+            }
+        }
+    }
+    assert_eq!(phase_of(p, ins[0]), phase_of(p, ins[1]), "both Avenue carriageways together");
+    let groups = p.links.clone();
+    run(&mut sim, 600.0, |s| {
+        let st = s.signals();
+        for g1 in 0..groups.len() {
+            for g2 in 0..g1 {
+                let green = |g: &Vec<u32>| g.iter().any(|&l| st[l as usize] == 1);
+                assert!(!(green(&groups[g1]) && green(&groups[g2])), "phases {g1} and {g2} green together at t={}", s.time());
+            }
+        }
+    });
+}
+
 #[test]
 fn unnamed_approaches_fall_back_to_bearing() {
     // 35 degrees off the main axis is a separate axis; 20 degrees is the same axis.
@@ -1362,6 +1409,7 @@ const GOLDEN_CROSS: &str = r#"{"arterialMeanSpeed":8.436836013936235,"backlog":0
 
 mod modes;
 mod diverter;
+mod route_choice;
 
 /// Removing any intervention restores the baseline effective state and signal output, including after a reset that carried the old list.
 #[test]

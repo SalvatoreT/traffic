@@ -184,6 +184,8 @@ pub struct Config {
     pub switch_band: Option<f64>,
     /// Additive: record every completed car trip (`Simulation::trip_records`) for the wandering metrics. Default false.
     pub record_trips: bool,
+    /// Additive, for A/B runs: the route choice before the commitment rules (80% of drivers re-plan every epoch and take whatever route results).
+    pub legacy_reroute: bool,
     /// Additive: minutes between signal split adaptations (default `params::ADAPT_INTERVAL_S`; 0 keeps the start-up splits).
     pub signal_adapt_min: Option<f64>,
     /// Additive: apply the gridlock breaker on motorway-class links too (default false: vehicles queued on a ramp or the
@@ -202,7 +204,7 @@ pub struct Config {
 
 impl Default for Config {
     fn default() -> Self {
-        Config { seed: 1, period: String::new(), demand_scale: 1.0, select_links: Vec::new(), local_cost_factor: None, guided_share: None, switch_band: None, record_trips: false, signal_adapt_min: None, motorway_gridlock_removal: false, ped_yield_marked: None, ped_yield_unmarked: None, lane_width_m: None, no_right_turn_on_red: false }
+        Config { seed: 1, period: String::new(), demand_scale: 1.0, select_links: Vec::new(), local_cost_factor: None, guided_share: None, switch_band: None, record_trips: false, legacy_reroute: false, signal_adapt_min: None, motorway_gridlock_removal: false, ped_yield_marked: None, ped_yield_unmarked: None, lane_width_m: None, no_right_turn_on_red: false }
     }
 }
 

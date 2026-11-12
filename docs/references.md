@@ -6,6 +6,7 @@ Compiled 2026-11-11. Second (verification) pass 2026-11-11.
 
 - Pass 1 (network blocked) verified entries only from search snippets. Pass 2 (this version, 2026-11-11) had `api.crossref.org`, `export.arxiv.org`/`arxiv.org/pdf`, NCBI eutils and several open pages (traffic-simulation.de, FHWA, LibreTexts) reachable. `doi.org` returned 403, and publisher sites (ScienceDirect, SAGE, TRB, NAP, TØI brage) were blocked or paywalled.
 - Pass 3 (2026-11-12) added the multimodal parameter sources in section 6 ([Fitzpatrick2006], [OBrien2022], [Twaddle2016] and others), [Lubbe2022] in 5.2 and [FHWA-SSAM2008] in 7.2. Each entry says whether the numbers were read in the source or only in an abstract.
+- Pass 4 (2026-11-12) added section 7.4, the documentation and guidance sources read for `docs/simulator-audit.md`. Hosts reachable with a plain HTTP client that day included sumo.dlr.de, matsim.org, gov.uk, content.tfl.gov.uk, ops.fhwa.dot.gov, docs.aimsun.com and a-b-street.github.io; web.archive.org, github.com and several PDF hosts (core.ac.uk, tandfonline) did not answer or returned 403.
 - What was checked, and how:
   - Every entry tagged V-partial or UNVERIFIED in pass 1 was re-resolved against Crossref (DOI lookup or bibliographic query) or the arXiv API. Fields were corrected from those records.
   - About 45 of the "V" entries were spot-checked against Crossref by DOI. All exist. Two had metadata errors (fixed): Marshall & Ferenchak 2019 (article no. 100539, not pp. 285-301) and the CityFlow page range.
@@ -338,6 +339,22 @@ A converging alternative to Frank–Wolfe. A later *Transportation Science* note
 
 **Practical v1 route choice** (design suggestion, no citation): iterative day-to-day updating with MSA-style blending, or perturbed shortest paths (stochastic user equilibrium via logit), on a network of a few hundred links, run client-side.
 
+### 4.2b Route-switching indifference bands and navigation-app use (added 2026-11-12)
+
+Checked on 2026-11-12: DOIs and bibliographic fields resolved through Crossref (`api.crossref.org`). Crossref returned abstracts only for [Mahmassani1987] and [Srinivasan2000]; for the others the content notes come from search-result descriptions and are marked. No source below gives an indifference band for short neighborhood trips, so the band in the simulator is an ASSUMPTION (`params::SWITCH_BAND`).
+
+**[Mahmassani1987]** [V-meta] Mahmassani, H.S., Chang, G.-L. (1987). On boundedly rational user equilibrium in transportation systems. *Transportation Science* 21(2), 89-99. DOI 10.1287/trsc.21.2.89 (Crossref). Abstract read: a boundedly rational user equilibrium holds when all users are satisfied with their current travel choices; properties and existence conditions are given for a single bottleneck and for several. Full text not read, so the indifference-band values of the experiments are not recorded here.
+
+**[Srinivasan2000]** [V-meta] Srinivasan, K.K., Mahmassani, H.S. (2000). Modeling inertia and compliance mechanisms in route choice behavior under real-time information. *Transportation Research Record* 1725, 45-53. DOI 10.3141/1725-07 (Crossref). Abstract read: route choice under real-time information is modeled through compliance with the information and inertia (the tendency to continue on the current path); both were supported by simulator-experiment data. Full text not read.
+
+**[Lou2010]** [V-meta] Lou, Y., Yin, Y., Lawphongpanich, S. (2010). Robust congestion pricing under boundedly rational user equilibrium. *Transportation Research Part B* 44(1), 15-28. DOI 10.1016/j.trb.2009.06.004 (Crossref). Bibliographic fields only; no abstract was returned and the text was not read.
+
+**[Di2016]** [V-meta] Di, X., Liu, H.X. (2016). Boundedly rational route choice behavior: A review of models and methodologies. *Transportation Research Part B* 85, 142-179. DOI 10.1016/j.trb.2016.01.002 (Crossref). Bibliographic fields only; the text was not read.
+
+**[Di2017]** [V-meta] Di, X., Liu, H.X., Zhu, S., Levinson, D.M. (2017). Indifference bands for boundedly rational route switching. *Transportation* 44(5), 1169-1194. DOI 10.1007/s11116-016-9699-1 (Crossref). From a search-result description, not the paper: travelers switch only when the time saving exceeds an indifference band, assumed lognormal across travelers, and estimated from GPS traces around the I-35W bridge replacement in Minneapolis. The estimated values were not obtained (the full-text copies found were blocked).
+
+**[Guin2021]** [V-partial] Guin, A., Hunter, M.P., Watkins, K.E. (STRIDE Project A brief). *How Do Drivers Change Their Routes When Using Navigation Apps?* University of Florida Transportation Institute, STRIDE Southeastern Transportation Research, Innovation, Development and Education Center. `https://stride.ce.ufl.edu/wp-content/uploads/sites/153/2021/08/Project-A-Brief-Part-I-Guin-Final-Accessible-3.pdf` (HTTP 200, two-page brief read in full on 2026-11-12). The year is taken from the upload path; Crossref has no record. Interview-administered questionnaire, N = 237, plus Google Location History traces of 27 drivers around an I-85 bridge closure in Atlanta. Reported: 46% of respondents used navigation apps for regular commute trips; first-time trips (78%) and infrequent trips (74%) are the trips for which drivers most often use apps; a 3 to 5 min time saving was required for users to accept a routing change; 46% of app users follow the suggested route on 80 to 99% of trips and another 25% on all trips. The brief notes a small location-data sample. Used for `params::GUIDED_SHARE` (46%, the commute figure; transfer to local trips in this area is an assumption).
+
 ### 4.3 Demand generation
 
 **[LODES]** [V-partial] US Census Bureau, LEHD Origin-Destination Employment Statistics (LODES), v8, block-level OD, RAC and WAC files. `https://lehd.ces.census.gov/data/lodes/LODES8/`. Technical documentation: LODESTechDoc8.4.pdf.
@@ -628,6 +645,52 @@ States that SSAM defaults to a TTC threshold of 1.5 s "as suggested in previous 
 **[OSMRestriction]** [V-meta] OpenStreetMap Wiki, "Relation:restriction". `https://wiki.openstreetmap.org/wiki/Relation:restriction` (wikitext fetched 2026-11-12, HTTP 200). Defines the restriction relation with a `from` way, a `via` node or way and a `to` way. The `restriction` values read there are `no_left_turn`, `no_right_turn`, `no_straight_on`, `no_u_turn` and the `only_*` forms. It also documents `restriction:conditional` for restrictions that hold only at certain times, with several values separated by semicolons. Used by the importer to ban motor-vehicle movements. Community documentation, not a standard.
 
 **[OSMTurnLanes]** [V-meta] OpenStreetMap Wiki, "Key:turn" (section "Indicated turns by lane"; `Key:turn:lanes` redirects there). `https://wiki.openstreetmap.org/wiki/Key:turn` (wikitext fetched 2026-11-12, HTTP 200). Describes `turn:lanes` as the indicated turn of each lane, with the `:forward` and `:backward` suffixes for a specific direction of a way. The page states that lane tagging does not replace turn restrictions. Its examples separate lanes with `|`, for example `turn:lanes:forward=left|through;right`. The importer only counts lanes marked left-turn only, so the order of lanes does not matter to it.
+
+### 7.4 Sources for the simulator audit (pass 4, 2026-11-12)
+
+Added for `docs/simulator-audit.md`. All pages and PDFs below were fetched on 2026-11-12 and the parts the audit uses were read; the tag says what was read. Software licenses are stated only where the project's own page states them. These are documentation and guidance, not peer-reviewed results, unless the entry says otherwise. No source code was opened.
+
+**[SUMO-Docs]** [V] Eclipse SUMO documentation, `https://sumo.dlr.de/docs/`. Pages read in full or in the relevant sections: Tools/Turns (route sampling from counts), Simulation/Calibrator, Demand/Dynamic_User_Assignment, Demand/Automatic_Routing, Simulation/Intersections, Simulation/Traffic_Lights, Simulation/Pedestrians, Simulation/Bicycles, Simulation/SublaneModel, Simulation/Meso, Simulation/Output/SSM_Device, Simulation/SaveAndLoad, Networks/Import/OpenStreetMap. The project home page (`https://eclipse.dev/sumo/`) states that SUMO is available under the Eclipse Public License 2.0 and the GNU General Public License 2.0. The reference paper is [Lopez2018].
+
+**[MATSim-Guide]** [V] *The Multi-Agent Transport Simulation MATSim*, "Extract of selected chapters to serve as user guide", compiled 2026-08-25, `https://matsim.org/files/book/partOne-latest.pdf` (linked from `https://www.matsim.org/the-book`). Read: chapter 1 (traffic flow model and co-evolutionary algorithm), chapter 4 (replanning strategies, QSim traffic dynamics, sample-size factors) and section 11.4 (counts). The book is released under CC BY 4.0 per the site; the software license is not stated on the pages read. The full book is [Horni2016]. The Cadyts chapter is not in the extract.
+
+**[Flotterod2011]** [V-meta] Flötteröd, G., Bierlaire, M., Nagel, K. (2011). Bayesian demand calibration for dynamic traffic simulations. *Transportation Science* 45(4), 541-561. DOI 10.1287/trsc.1100.0367 (Crossref). Not opened. Cited only for the existence of a count-based calibration scheme that the MATSim guide lists as "Cadyts integration"; its method is not described in the audit.
+
+**[Zhou2014DTALite]** [V-meta] Zhou, X., Taylor, J. (2014). DTALite: A queue-based mesoscopic traffic simulator for fast model evaluation and calibration. *Cogent Engineering* 1(1), 961345. DOI 10.1080/23311916.2014.961345 (Crossref). The PDF host returned HTTP 403, so the paper was not read. What the audit says about DTALite comes from [NDOT-DTA2017].
+
+**[NDOT-DTA2017]** [V] Nevada Department of Transportation (2017). *Development and Calibration of Regional Dynamic Traffic Assignment Models for the Estimation of Traffic Performance Measures in Nevada.* NDOT Research Report 557-14-803, February 2017. `https://rosap.ntl.bts.gov/view/dot/35062/dot_35062_DS1.pdf`. Read: the software overview, the intersection-modeling limitation and the origin-destination matrix estimation method of DTALite (section 4.8.1). DynusT is described there only in one paragraph.
+
+**[FHWA-TAT3-2019]** [V] Federal Highway Administration (2019). *Traffic Analysis Toolbox Volume III: Guidelines for Applying Traffic Microsimulation Modeling Software, 2019 Update to the 2004 Version.* FHWA-HOP-18-036, April 2019. `https://ops.fhwa.dot.gov/publications/fhwahop18036/fhwahop18036.pdf`. Chapter 5 (calibration criteria I to IV, representative days, variation envelopes) read in full. The 2004 version with its per-measure targets was not read; the 2004 targets in the audit come from a state manual and are marked secondary.
+
+**[TxDOT-TSP13]** [V-partial] Texas Department of Transportation, *Traffic Simulation Manual*, chapter 13 "Microsimulation Analysis", sections 13.5.2 and 13.5.2.4, `https://www.txdot.gov/manuals/des/tsp/chapter-13-microsimulation-analysis/13-5-calibration/13-5-2-acceptability-criteria.html`. Read for the GEH guideline table and for its summary of the FHWA criteria. One state's adaptation, secondary to [FHWA-TAT3-2019].
+
+**[WebTAG-M3.1]** [V] UK Department for Transport. *TAG Unit M3.1 Highway Assignment Modelling*, May 2026 version read, `https://assets.publishing.service.gov.uk/media/664dad464f29e1d07fadcc39/tag-m3-1-highway-assignment-modelling.pdf`. Read: sections 3.3 (flow and journey-time validation criteria), 3.4 (convergence), 4.2 (counts), 9.3, appendix C (microsimulation: calibration, validation, number of runs, warm-up). The GEH formula is an image in this PDF; its form is taken from [TfL-TMG4].
+
+**[TfL-TMG4]** [V] Transport for London (2021). *Traffic Modelling Guidelines, Version 4.0*, September 2021. `https://content.tfl.gov.uk/traffic-modelling-guidelines.pdf`. Read: the Vissim validation requirements (section 7.5), appendix II (GEH, formula and worked table), appendix IV (dynamic assignment convergence methods), the cyclist validation section and the guidance on retaining rat runs in assignment networks.
+
+**[Aimsun-Manual]** [V] Aimsun Next User Manual, `https://docs.aimsun.com/next/latest/UsersManual/`. Pages read: Dynamic Traffic Assignment (26.0.0), Stochastic Route Choice (latest), Dynamic User Equilibrium (22.0.4), Calibration and Validation of Aimsun Models (latest). Aimsun is commercial software; the pages state no license terms.
+
+**[ABStreet-Docs]** [V] A/B Street project documentation, `https://a-b-street.github.io/docs/` (read through the single-page version `print.html`): user guide, LTN tool description and technical details, traffic signal model, importing a city, scenario data format, project case studies and development notes (the section on gridlock). See also [ABStreet-LTN-Talk]. License as in the A/B Street entry in section 7.1.
+
+**[ABStreet-LTN-Talk]** [V] Carlino, D. (n.d.). A digital twin to design, analyse, and visualise low-traffic neighbourhoods. Conference talk slides (AI:UK), `https://dabreegster.github.io/talks/aiuk_ltn/slides.html`. The slides carry no date. Slides only: the content is outline-level.
+
+**[WWC-LTN-Guide]** [V] Walk Wheel Cycle Trust. *An introductory guide to low traffic neighbourhood design*, sections 5.1 "Design tools" and 5.2 "Filter locations". `https://www.walkwheelcycletrust.org.uk/our-services/infrastructure/an-introductory-guide-to-low-traffic-neighbourhood-design/an-introductory-guide-to-low-traffic-neighbourhood-design-contents/52-filter-locations/`. Design guidance from a UK walking and cycling charity, not research. Earlier editions were published under the name Sustrans.
+
+**[CityFlow-Docs]** [V] CityFlow project page and documentation, `https://cityflow-project.github.io/` and `https://cityflow.readthedocs.io/en/latest/`; the paper is [Zhang2019CF] (arXiv 1905.05217, text read). The project page states the Apache 2.0 license.
+
+**[Verbas2024]** [V] Verbas, O., Cokyasar, T., Veiga de Camargo, P., Gurumurthy, K.M., Zuniga-Garcia, N., Auld, J. (2024). Modeling transit in a fully integrated agent-based framework: Methodology and large-scale application. arXiv 2408.05176 (eess.SY). Preprint; abstract and reference list read. Used only to confirm what POLARIS is and that it uses a mesoscopic traffic flow model described elsewhere.
+
+**[FHWA-HRT13054]** [V] Federal Highway Administration (2013). *A Primer for Agent-Based Simulation and Modeling in Transportation Applications.* FHWA-HRT-13-054, November 2013, chapter 4 "Agent-Based Transportation Modeling Platforms". `https://www.fhwa.dot.gov/publications/research/ear/13054/005.cfm`. Read for the descriptions of TRANSIMS, MATSim and the feedback loops between route choice and simulation.
+
+**[FHWA-HRT11064]** [V-partial] Federal Highway Administration (2011). *Guide on the Consistent Application of Traffic Analysis Tools and Methods.* FHWA-HRT-11-064, chapter 7 (communication of results). `https://www.fhwa.dot.gov/publications/research/operations/11064/007.cfm`. Archived publication. The chapter title was not captured.
+
+**[GMNS-Spec]** [V] General Modeling Network Specification (GMNS), specification site, `https://zephyr-data-specs.github.io/GMNS/`. Table list read; field-level detail not read.
+
+**[CARLA-TM]** [V] CARLA Simulator documentation, "Traffic Manager", `https://carla.readthedocs.io/en/latest/adv_traffic_manager/`. Read for the architecture and the stated limits of junction priority.
+
+**[MOSAIC-Site]** [V-partial] Eclipse MOSAIC project page, `https://eclipse.dev/mosaic/`. Home page only (EPL 2.0 stated). It describes a co-simulation framework that couples other simulators; nothing about intersection or route-choice models was read.
+
+**[BEAM-Docs]** [V] BEAM documentation, "About BEAM", `https://beam.readthedocs.io/en/latest/about.html`. Read for the AgentSim and PhysSim structure and the within-day choice description. The project page is hosted by Berkeley Lab (`https://transportation.lbl.gov/beam/`).
 
 ---
 

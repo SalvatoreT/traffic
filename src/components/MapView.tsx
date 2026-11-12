@@ -149,7 +149,7 @@ const lineFeature = (region: Region, pr: ReturnType<typeof makeProjection>, g: [
 const FRAME_MS = 32; // without extrapolation the vehicle layer redraws at most ~30 Hz
 /** Above this multiplier sim frames arrive often enough that extrapolating is unnecessary. */
 const EXTRAPOLATE_MAX_RATE = 5;
-interface DebugHook { signals: number; signalsDrawn: number; positions: Float32Array; draws: number; drawMs: number; frameTime: number; extrapolated: boolean }
+interface DebugHook { signalBuf?: Uint8Array; signals: number; signalsDrawn: number; positions: Float32Array; draws: number; drawMs: number; frameTime: number; extrapolated: boolean }
 
 /** The region's bounding box as a geographic box. */
 function regionGeoBox(region: Region, pr: ReturnType<typeof makeProjection>): GeoBox {
@@ -324,7 +324,7 @@ export function MapView(p: Props) {
     g.globalAlpha = 1;
     if (new URLSearchParams(location.search).has('debug')) {
       const dbg = ((window as unknown as { __trafficDebug?: DebugHook }).__trafficDebug ??= { signals: 0, signalsDrawn: 0, positions: v, draws: 0, drawMs: 0, frameTime: 0, extrapolated: false });
-      dbg.positions = v; dbg.signals = sigTotal; dbg.signalsDrawn = sigDrawn; dbg.draws++; dbg.drawMs += performance.now() - t0; dbg.frameTime = frame.time; dbg.extrapolated = animate;
+      dbg.positions = v; dbg.signalBuf = sg; dbg.signals = sigTotal; dbg.signalsDrawn = sigDrawn; dbg.draws++; dbg.drawMs += performance.now() - t0; dbg.frameTime = frame.time; dbg.extrapolated = animate;
     }
     if (animate) schedule();
   };

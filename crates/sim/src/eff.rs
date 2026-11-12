@@ -417,7 +417,7 @@ impl Eff {
 /// Group the approaches of a signalized node into phases by street. Approaches with the same street name and a similar axis
 /// share a phase; approaches with different or missing names also share one when they lie on the same axis within
 /// `PHASE_AXIS_DEG` (a through road that changes name, or a parallel lane group). Streets are then ordered by importance
-/// (rank, link id) and at most `MAX_PHASES` remain: the two closest axes merge until that holds.
+/// (rank, link id).
 pub fn phase_groups(topo: &Topo, net: &Network, ins: &[u32]) -> Vec<Vec<u32>> {
     let heading = |l: u32| -> f64 {
         if topo.lm_cnt[l as usize] > 0 {
@@ -432,42 +432,34 @@ pub fn phase_groups(topo: &Topo, net: &Network, ins: &[u32]) -> Vec<Vec<u32>> {
     };
     let key = |l: u32| net.links[l as usize].name.trim().to_lowercase();
     let h: Vec<f64> = ins.iter().map(|&l| heading(l)).collect();
-    let mut parent: Vec<usize> = (0..ins.len()).collect();
-    fn find(p: &mut Vec<usize>, i: usize) -> usize {
-        let mut r = i;
-        while p[r] != r {
-            r = p[r];
-        }
-        let mut c = i;
-        while p[c] != r {
-            let nx = p[c];
-            p[c] = r;
-            c = nx;
-        }
-        r
-    }
-    for i in 0..ins.len() {
-        for j in 0..i {
-            let (ki, kj) = (key(ins[i]), key(ins[j]));
-            let a = axial(h[i], h[j]);
-            let same_street = !ki.is_empty() && ki == kj && a < PHASE_SAME_NAME_DEG;
-            if same_street || a < PHASE_AXIS_DEG {
-                let (ri, rj) = (find(&mut parent, i), find(&mut parent, j));
-                parent[ri.max(rj)] = ri.min(rj);
+    // Complete-linkage clustering: approaches share a phase only when every pair in the group is on one axis within
+    // `PHASE_AXIS_DEG`, so no two crossing movements get green together. Closest pairs merge first, and a same-name pair
+    // wins a tie against a pair of different streets.
+    let mut clusters: Vec<Vec<usize>> = (0..ins.len()).map(|i| vec![i]).collect();
+    loop {
+        let mut best: Option<(f64, usize, usize)> = None;
+        for i in 0..clusters.len() {
+            for j in i + 1..clusters.len() {
+                let mut worst = 0.0f64;
+                let mut named = true;
+                for &x in &clusters[i] {
+                    for &y in &clusters[j] {
+                        worst = worst.max(axial(h[x], h[y]));
+                        let (kx, ky) = (key(ins[x]), key(ins[y]));
+                        named &= !kx.is_empty() && kx == ky;
+                    }
+                }
+                if worst < PHASE_AXIS_DEG {
+                    let d = if named { worst - PHASE_AXIS_DEG } else { worst };
+                    if best.map_or(true, |b| d < b.0) {
+                        best = Some((d, i, j));
+                    }
+                }
             }
         }
-    }
-    let mut clusters: Vec<Vec<usize>> = Vec::new();
-    let mut roots: Vec<usize> = Vec::new();
-    for i in 0..ins.len() {
-        let r = find(&mut parent, i);
-        match roots.iter().position(|&x| x == r) {
-            Some(k) => clusters[k].push(i),
-            None => {
-                roots.push(r);
-                clusters.push(vec![i]);
-            }
-        }
+        let Some((_, i, j)) = best else { break };
+        let moved = clusters.remove(j);
+        clusters[i].extend(moved);
     }
     let order_key = |c: &Vec<usize>| c.iter().map(|&i| (topo.rank[ins[i] as usize], ins[i])).min().unwrap();
     clusters.sort_by_key(|c| order_key(c));

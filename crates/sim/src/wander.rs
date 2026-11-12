@@ -5,7 +5,7 @@
 
 use crate::eff::Eff;
 use crate::model::Network;
-use crate::route::{Modal, Router, INF};
+use crate::route::{first_link_m, walk_m, Modal, Router, INF, NO_NOISE};
 use crate::sim::TripRecord;
 use crate::topo::Topo;
 
@@ -23,6 +23,8 @@ pub struct TripMetric {
     pub driven_m: f32,
     pub shortest_m: f32,
     pub detour: f32,
+    /// Driven length over the length of the free-flow time-shortest route (the route a driver with no congestion and no noise would take).
+    pub detour_ff: f32,
     /// Driven length on links flagged `in_study_area` (m).
     pub study_m: f32,
     pub switches: u16,
@@ -66,6 +68,8 @@ pub fn analyze(topo: &Topo, eff: &Eff, net: &Network, recs: &[TripRecord]) -> Ve
     let ones = vec![1.0f32; topo.n_links];
     let modal = Modal { closed: &eff.closed, mv_ok: &eff.mv_ok, mv_cost: &mv_len, w: &ones };
     let mut router = Router::new(topo.n_nodes);
+    let mut router_ff = Router::new(topo.n_nodes);
+    let mut route_buf: Vec<u32> = Vec::new();
     let mut order: Vec<usize> = (0..recs.len()).collect();
     order.sort_by_key(|&i| recs[i].dest);
     let mut out: Vec<Option<TripMetric>> = vec![None; recs.len()];
@@ -79,8 +83,10 @@ pub fn analyze(topo: &Topo, eff: &Eff, net: &Network, recs: &[TripRecord]) -> Ve
         if r.dest != cur_dest {
             if cur_dest != u32::MAX {
                 router.tables[cur_dest as usize] = None;
+                router_ff.tables[cur_dest as usize] = None;
             }
             router.ensure_m(r.dest, topo, modal, &topo.length);
+            router_ff.ensure_m(r.dest, topo, eff.car_modal(), &eff.ff);
             cur_dest = r.dest;
         }
         let table = router.table(r.dest);
@@ -93,6 +99,14 @@ pub fn analyze(topo: &Topo, eff: &Eff, net: &Network, recs: &[TripRecord]) -> Ve
         let driven = trail_length(topo, &r.trail);
         if !shortest.is_finite() || shortest <= 0.0 {
             shortest = driven;
+        }
+        let mut ff_len = driven;
+        if let Some(b) = first_link_m(router_ff.table(r.dest), topo, eff.car_modal(), r.origin, NO_NOISE) {
+            route_buf.clear();
+            route_buf.push(b);
+            if walk_m(router_ff.table(r.dest), topo, eff.car_modal(), b, r.dest, NO_NOISE, &mut route_buf) {
+                ff_len = trail_length(topo, &route_buf);
+            }
         }
         let mut study = 0.0;
         for &l in &r.trail {
@@ -141,6 +155,7 @@ pub fn analyze(topo: &Topo, eff: &Eff, net: &Network, recs: &[TripRecord]) -> Ve
             driven_m: driven,
             shortest_m: shortest,
             detour: (driven / shortest).max(1.0),
+            detour_ff: driven / ff_len.max(1.0),
             study_m: study,
             switches: r.switches,
             guided: r.guided,
@@ -161,6 +176,9 @@ pub struct WanderStats {
     pub share_switched: f64,
     pub mean_detour: f64,
     pub median_detour: f64,
+    /// Detour against the free-flow time-shortest route: mean, and share above `DETOUR_HIGH`.
+    pub mean_detour_ff: f64,
+    pub share_detour_ff_high: f64,
     pub share_detour_high: f64,
     pub share_detour_very_high: f64,
     pub share_loops: f64,
@@ -190,6 +208,8 @@ pub fn summarize<'a>(it: impl Iterator<Item = &'a TripMetric>) -> WanderStats {
         share_switched: sh(&|t| t.switches > 0),
         mean_detour: v.iter().map(|t| t.detour as f64).sum::<f64>() / nf,
         median_detour: d[n / 2] as f64,
+        mean_detour_ff: v.iter().map(|t| t.detour_ff as f64).sum::<f64>() / nf,
+        share_detour_ff_high: sh(&|t| t.detour_ff > DETOUR_HIGH),
         share_detour_high: sh(&|t| t.detour > DETOUR_HIGH),
         share_detour_very_high: sh(&|t| t.detour > DETOUR_VERY_HIGH),
         share_loops: sh(&|t| t.looped()),

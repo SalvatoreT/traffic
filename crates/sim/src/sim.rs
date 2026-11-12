@@ -668,6 +668,16 @@ impl Simulation {
         self.eff.sig.get(node as usize).and_then(|p| p.as_ref()).map(|p| p.links.clone()).unwrap_or_default()
     }
 
+    /// Heading (rad) of an approach link at its stop line, as the phase grouping sees it.
+    pub fn approach_heading(&self, link: u32) -> f64 {
+        let l = link as usize;
+        if self.topo.lm_cnt[l] > 0 {
+            self.topo.mvs[self.topo.lm_start[l] as usize].h_in
+        } else {
+            self.topo.link_point(l, self.topo.length[l] as f64, 0.0).1
+        }
+    }
+
     /// Per-link / per-node diagnostics for calibration reports.
     pub fn diagnostics(&self) -> Diagnostics<'_> {
         Diagnostics {
@@ -2126,7 +2136,7 @@ impl Simulation {
                 self.sl_enter(vid, tr.to_link);
                 if self.vehs[vid as usize].replan {
                     self.vehs[vid as usize].replan = false;
-                    if self.vehs[vid as usize].kind == KIND_BIKE || self.route_blocked(vid) {
+                    if self.cfg.legacy_reroute || self.vehs[vid as usize].kind == KIND_BIKE || self.route_blocked(vid) {
                         self.replan_vehicle(vid, true);
                     }
                 }
@@ -2195,7 +2205,16 @@ impl Simulation {
 
     fn reroute_all(&mut self) {
         for vid in 0..self.vehs.len() as u32 {
-            if self.vehs[vid as usize].alive {
+            if !self.vehs[vid as usize].alive {
+                continue;
+            }
+            if self.cfg.legacy_reroute {
+                if self.vehs[vid as usize].in_transit {
+                    self.vehs[vid as usize].replan = true;
+                } else {
+                    self.replan_vehicle(vid, true);
+                }
+            } else {
                 self.reroute_if_blocked(vid);
             }
         }
@@ -2232,7 +2251,12 @@ impl Simulation {
             if !v.alive || v.in_transit || v.kind != KIND_CAR {
                 continue;
             }
-            if v.blocked_space && v.wait_t > BLOCKED_REROUTE_S {
+            if self.cfg.legacy_reroute {
+                // ASSUMPTION (old): a deterministic share of en-route vehicles re-plan each epoch.
+                if hash32(v.uid, self.epoch) % 1000 < self.cfg.guided_share.map_or(800, |r| (r.clamp(0.0, 1.0) * 1000.0).round() as u32) {
+                    self.replan_vehicle(vid, true);
+                }
+            } else if v.blocked_space && v.wait_t > BLOCKED_REROUTE_S {
                 self.replan_vehicle(vid, true);
             } else if v.guided {
                 self.consider_reroute(vid);
@@ -2368,6 +2392,35 @@ impl Simulation {
         self.lanes[qi].push_back(id);
         self.st.spawned += 1;
         id
+    }
+
+    pub(crate) fn test_set_guided(&mut self, id: u32, guided: bool) {
+        self.vehs[id as usize].guided = guided;
+    }
+
+    pub(crate) fn test_set_trail(&mut self, id: u32, trail: &[u32]) {
+        self.vehs[id as usize].trail = trail.to_vec();
+    }
+
+    pub(crate) fn test_route_of(&self, id: u32) -> Vec<u32> {
+        let v = &self.vehs[id as usize];
+        v.route[(v.ridx as usize).min(v.route.len())..].to_vec()
+    }
+
+    pub(crate) fn test_switches(&self, id: u32) -> u16 {
+        self.vehs[id as usize].switches
+    }
+
+    pub(crate) fn test_consider(&mut self, id: u32) {
+        self.consider_reroute(id);
+    }
+
+    pub(crate) fn test_advance_clock(&mut self, secs: f64) {
+        self.t += secs;
+    }
+
+    pub(crate) fn test_metrics(&self, recs: &[TripRecord]) -> Vec<crate::wander::TripMetric> {
+        crate::wander::analyze(&self.topo, &self.eff, &self.net, recs)
     }
 
     pub(crate) fn test_veh(&self, id: u32) -> (u32, f32, f32, bool) {
