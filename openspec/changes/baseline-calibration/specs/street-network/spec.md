@@ -89,3 +89,17 @@ The importer SHALL warn about every gate that lies within `gateSignalWarnM` (def
 - **WHEN** the model-area edge would cut a signalized junction or leave a gate inside one
 - **THEN** the area configuration moves the edge, and the area README gives the candidate edges that were compared
 
+
+### Requirement: Freeway-edge stubs are one gate
+Mainline gates of one freeway direction whose stub ends lie within `freewayGateMergeM` (default 80 m) of each other, with similar bearings and only freeway-class links, SHALL be merged into one gate at their centroid, so every ramp upstream or downstream of that freeway end reaches it. Parallel stub links between the same two nodes SHALL become one link with the lanes added. A fork node that was a gate only because its other branch was clipped SHALL stop being one. The importer SHALL list each merge.
+
+#### Scenario: A carriageway cut into two stubs
+- **WHEN** one freeway carriageway forks just inside the model edge and both branches leave through the edge 26 m apart
+- **THEN** the network has one exit gate with both branches ending in it, and an on-ramp onto either branch reaches it
+
+### Requirement: Every ramp reaches the mainline
+The importer SHALL check that every on-ramp reaches a mainline exit gate and every off-ramp is reachable from a mainline entry gate over freeway-class links, and SHALL warn and list each ramp that fails. A freeway-class link between two surface nodes is a connector and not a ramp.
+
+#### Scenario: Rockridge
+- **WHEN** the Rockridge network is imported
+- **THEN** the list of violating ramps is empty

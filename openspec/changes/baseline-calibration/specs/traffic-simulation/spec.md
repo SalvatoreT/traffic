@@ -44,3 +44,17 @@ Two movements that merge onto the same multilane exit link SHALL be allowed to c
 - **WHEN** two saturated single-lane approaches merge at an uncontrolled node onto a two-lane exit
 - **THEN** the exit passes at least 20% more vehicles than the same merge onto a single-lane exit
 
+
+### Requirement: Right turn on red after a stop
+A car whose next movement is a right turn and that has stood at the stop line of a signalized approach on red for the stop dwell SHALL be allowed to turn when no conflicting vehicle is in the node or within the critical gap of the minor-right turn, yielding to every conflicting movement. The rule is an ASSUMPTION (permitted at every signal; the legal text could not be read) and `Config::no_right_turn_on_red` turns it off.
+
+#### Scenario: Light cross traffic
+- **WHEN** a one-lane approach of right-turners faces 100 veh/h per lane of cross traffic
+- **THEN** its discharge is above the no-turn-on-red discharge by the amount the red time and the two-way-stop right-turn follow-up headway allow (validation case b10)
+
+### Requirement: A queue spilled back to an unsignalized merge counts as signal demand
+The standing queue credited to a signalized approach in the adaptive plan SHALL include the standing vehicles of every link feeding an unsignalized merge that the queue has reached, up to the spill hop limit.
+
+#### Scenario: Off-ramp merging ahead of a signal
+- **WHEN** an off-ramp and a street merge into the approach of a signal and the approach queue reaches the merge
+- **THEN** the ramp's standing vehicles count toward the approach's measured demand

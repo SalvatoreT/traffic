@@ -163,3 +163,17 @@ The surface end of a freeway-ramp trip SHALL be drawn from the ramp's own volume
 - **WHEN** two on-ramps 3 km apart both reach the same mainline gate
 - **THEN** each draws its trips near itself and the trips of one do not fill the other
 
+
+### Requirement: A count is used once
+Every fit station SHALL name the source records its target comes from (a turning-movement leg or a Caltrans station, with a direction) and the share of the record it carries. When a gate station and a link station carry the same record in the same direction, the link station SHALL be kept and the gate station dropped, with a note. The build SHALL fail when the shares of one record add to more than one across the stations.
+
+#### Scenario: Tunnel Road
+- **WHEN** the Caltrans AADT of Tunnel Road is both the count of the Tunnel Road gates and an in-area station
+- **THEN** one station remains, on the link, and the gate group has no station of its own
+
+### Requirement: Measured link delays can feed the assignment
+When the file named by `countFit.assignment.measured.file` exists and was written for the same number of links, the static assignment SHALL add the simulator's mean delay per vehicle on each link (less the control delay the router already adds at the link end) to the free-flow cost, with the BPR factor set by the configured alpha. Without the file the assignment SHALL use free-flow and BPR costs. `tools/cost-loop.ts` SHALL write the file from fixed-seed calibrate runs and SHALL skip with a message when the binary is not built.
+
+#### Scenario: No binary
+- **WHEN** `target/release/calibrate` does not exist
+- **THEN** the loop exits without error and the build keeps its free-flow and BPR costs

@@ -252,7 +252,7 @@ export function Legend(p: LegendProps) {
           </ul>
         </div>
       </div>
-      <div className="legend-row">
+      <div className={`legend-row ${change ? 'is-change' : ''}`}>
         <button type="button" className="btn bar-toggle icon-btn" aria-expanded={open} aria-controls={extraId} aria-label="Legend and layers" title="Legend and layers" onClick={() => dispatch({ type: 'toggle' })}>
           <Chevron up={!open} />
         </button>

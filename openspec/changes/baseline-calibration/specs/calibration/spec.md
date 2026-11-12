@@ -57,3 +57,10 @@ The calibration report SHALL compute a ramp via-street share both over all trips
 - **WHEN** the report resolves the via street "Telegraph Avenue north of Alcatraz Avenue"
 - **THEN** only Telegraph Avenue links north of its crossing with Alcatraz Avenue count as a visit
 
+
+### Requirement: Link delays and select-link pairs in the run output
+With `--link-flows` the run SHALL write the mean delay per exiting vehicle on every link after the warm-up (`linkMeanDelayS`), and with `--select-od PATH` the origin-destination pairs and trip counts of every headline select-link block. The report SHALL list the green and approach links of each phase of the five most blocked signals.
+
+#### Scenario: Cost loop
+- **WHEN** `tools/cost-loop.ts` runs with `--evaluate`
+- **THEN** it prints the headline-share error and PM stability after each outer iteration and stops when the share error improves by less than half a point
