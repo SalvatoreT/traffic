@@ -599,6 +599,7 @@ if (fc?.enabled) {
     draws: fc.draws, noise: fc.noise, guard: { enabled: fc.capacityGuard.enabled, excessShare: fc.capacityGuard.excessShare, weight: fc.capacityGuard.weight, capacity: fc.capacityGuard.capacity },
   };
   const flowsBy: Record<string, { origin: number; destination: number; vehPerHour: number }[]> = {};
+  if (process.env.FIT_DUMP) writeFileSync(process.env.FIT_DUMP, JSON.stringify({ stations, periods: Object.fromEntries(outPeriods.map((q) => { const cars = q.flows.filter((f) => !f.mode); return [q.id, { flows: cars, types: cars.map((f) => typeOf(f.origin, f.destination)) }]; })) }));
   for (const per of outPeriods) {
     const cars = per.flows.filter((q) => !q.mode);
     const types = cars.map((q) => typeOf(q.origin, q.destination));
