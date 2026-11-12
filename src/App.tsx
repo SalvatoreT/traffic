@@ -12,7 +12,7 @@ import { addInterventions } from './lib/scenario';
 import { selectionForIntervention, type Selection } from './lib/selection';
 import { interventionPoint } from './lib/describe';
 import { nextOverlayMax, OVERLAY_FLOOR, resolveMode, type MaxState } from './lib/ramps';
-import { defaultPeriod, initialRun, RUN_SECONDS, runReducer } from './lib/run';
+import { defaultPeriod, initialRun, runReducer } from './lib/run';
 import { linkStatsView } from './types';
 import { SelectionMenu, type Change, type Placement } from './components/SelectionMenu';
 import { Sheet } from './components/Sheet';
@@ -102,7 +102,6 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   const [speed, setSpeed] = useState(5);
   const [run, dispatchRun] = useReducer(runReducer, !reduced, initialRun);
   const { running, finished } = run;
-  const setRunning = useCallback((r: boolean) => { if (r !== running) dispatchRun({ type: 'toggle' }); }, [running]);
   const [interventions, setInterventions] = useState<Intervention[]>(initial.interventions);
   const [overlay, setOverlay] = useState<Overlay>('cutthrough');
   const [modes, setModes] = useState<ModeVisibility>(() => {

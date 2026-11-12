@@ -311,6 +311,11 @@ input[type='checkbox'] { width: 18px; height: 18px; accent-color: var(--accent);
 .toolbar.pinned { position: relative; }
 .toolbar-row { display: flex; align-items: center; gap: .4rem .6rem; padding: .3rem .6rem; min-height: 48px; min-width: 0; }
 .toolbar-row .clock { margin-left: auto; flex: none; font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+.toolbar-row { position: relative; }
+.run-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--surface-2); }
+.run-progress-fill { height: 100%; background: var(--accent, currentColor); }
+.btn.primary.again { display: inline-flex; align-items: center; gap: .4rem; flex: none; white-space: nowrap; }
+.period-note { flex-basis: 100%; margin: 0; color: var(--text); }
 .toolbar-row .speed-note { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .toolbar-extras, .legend-extras { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows .2s ease-out, opacity .2s ease-out, visibility 0s .2s; visibility: hidden; }
 .toolbar-extras.open, .legend-extras.open { grid-template-rows: 1fr; opacity: 1; visibility: visible; transition-delay: 0s; }

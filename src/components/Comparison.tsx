@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Metrics } from '../types';
 import { CARDS, MODE_CARDS, emptyMode, hasModes, networkHealth, summarize, type CardDef, type ModeCardId } from '../lib/metrics';
+import { RUN_SECONDS } from '../lib/run';
 import { formatClock, formatDiff, formatValue } from '../lib/format';
 
 interface Props {
-  base: Metrics | null; scen: Metrics | null; comparing: boolean; scenarioCount: number; onRef(key: string): void;
+  base: Metrics | null; scen: Metrics | null; comparing: boolean; finished: boolean; scenarioCount: number; onRef(key: string): void;
 }
 
-export function Comparison({ base, scen, comparing, scenarioCount, onRef }: Props) {
+export function Comparison({ base, scen, comparing, finished, scenarioCount, onRef }: Props) {
   // Throttled polite announcement: at most once per 20 s of wall time, only while a scenario exists.
   const [announce, setAnnounce] = useState('');
   const last = useRef(0);
@@ -21,15 +22,20 @@ export function Comparison({ base, scen, comparing, scenarioCount, onRef }: Prop
   return (
     <div className="results">
       <p className="muted small">
-        Baseline and scenario run side by side from the same seed, period and demand, so both show the same elapsed time
-        {scen ? <> (<strong>{formatClock(elapsed)}</strong> simulated)</> : null}. Editing the scenario restarts both runs.
+        Baseline and scenario run side by side from the same seed, period and demand, so both cover the same simulated time.
+        {scen ? (
+          finished
+            ? <> Results are for the <strong>full hour</strong>.</>
+            : <> Results are <strong>so far ({formatShort(elapsed)} of {formatShort(RUN_SECONDS)})</strong>.</>
+        ) : null}{' '}
+        Editing the scenario restarts both runs.
       </p>
       {!comparing && (
         <p className="notice" role="note">
           No interventions yet, so the scenario is the baseline. Add an intervention to see the differences.
         </p>
       )}
-      {comparing && elapsed < 600 && (
+      {comparing && !finished && elapsed < 600 && (
         <p className="notice" role="note">Early results are noisy: let both runs reach at least 10 simulated minutes (use a faster speed).</p>
       )}
       {scen && <HealthLine scen={scen} base={comparing ? base : null} />}
@@ -53,6 +59,12 @@ export function Comparison({ base, scen, comparing, scenarioCount, onRef }: Prop
       <div className="sr-only" aria-live="polite" role="status">{announce}</div>
     </div>
   );
+}
+
+/** Hours and minutes, e.g. 0:12 or 1:00. */
+function formatShort(seconds: number): string {
+  const m = Math.floor(Math.max(0, seconds) / 60);
+  return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`;
 }
 
 function CardTable({ c, base, scen, comparing, empty }: { c: CardDef; base: Metrics | null; scen: Metrics | null; comparing: boolean; empty?: string | null }) {

@@ -13,7 +13,19 @@ The UI SHALL show the study area's streets with moving vehicles, signal states a
 - **THEN** the Rockridge network loads and vehicles begin moving without further input
 
 ### Requirement: Playback control
-Users SHALL be able to pause, resume, change simulation speed, choose the time period and reset.
+Users SHALL be able to pause, resume, change simulation speed, choose the time period and reset. A run SHALL cover one simulated hour of the chosen period and then stop, with the baseline and the scenario covering identical time; the user SHALL be able to run it again.
+
+#### Scenario: Run reaches the end of the hour
+- **WHEN** the simulation clock reaches one simulated hour
+- **THEN** both runs stop stepping at exactly that time, the clock reads "1:00:00 of 1:00:00", Results are labeled as covering the full hour, "Run finished" is announced politely once, and the play control becomes "Run again"
+
+#### Scenario: Running again
+- **WHEN** the user chooses "Run again"
+- **THEN** both runs restart from zero with the same seed
+
+#### Scenario: Default and experimental periods
+- **WHEN** the app opens without a period in the link
+- **THEN** the area's default period is selected, else midday if present, else the first; periods the area marks experimental (or peak periods of an uncalibrated area) carry an "(experimental)" suffix and show a note when selected
 
 #### Scenario: Reduced motion
 - **WHEN** the user's system prefers reduced motion

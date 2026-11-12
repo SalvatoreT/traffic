@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
-import type { AreaBundle, ModeKey, ModeVisibility, Overlay } from '../types';
+import type { AreaBundle, AreaEntry, ModeKey, ModeVisibility, Overlay } from '../types';
 import { formatClock } from '../lib/format';
 import { rampStops, type Mode } from '../lib/ramps';
+import { EXPERIMENTAL_NOTE, isExperimentalPeriod, RUN_SECONDS } from '../lib/run';
 import { speedNoteText } from '../lib/speed';
 import { usePeek } from './usePeek';
 
 export const SPEEDS = [1, 5, 20, 60];
 
 interface PlaybackProps {
-  running: boolean; onToggle(): void; onReset(): void;
+  running: boolean; finished: boolean; entry: Pick<AreaEntry, 'experimentalPeriods' | 'calibration'>; onToggle(): void; onReset(): void;
   speed: number; onSpeed(s: number): void;
   periods: AreaBundle['demand']['periods']; period: string; onPeriod(id: string): void;
   scale: number; onScale(v: number): void; time: number; reducedMotion: boolean;
@@ -68,7 +69,10 @@ export function Playback(p: PlaybackProps) {
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-  const playLabel = p.running ? 'Pause simulation' : 'Play simulation';
+  const playLabel = p.finished ? 'Run again' : p.running ? 'Pause simulation' : 'Play simulation';
+  const shownTime = Math.min(RUN_SECONDS, p.time);
+  const progressText = `${formatClock(shownTime)} of ${formatClock(RUN_SECONDS)}`;
+  const experimental = isExperimentalPeriod(p.entry, p.period);
 
   return (
     <div className="bar-slot" ref={slot}>
@@ -78,8 +82,11 @@ export function Playback(p: PlaybackProps) {
           <button type="button" className="btn bar-toggle icon-btn" aria-expanded={open} aria-controls={extraId} aria-label="Playback controls" title="Playback controls" onClick={() => dispatch({ type: 'toggle' })}>
             <Chevron up={open} />
           </button>
-          <button type="button" className="btn primary icon-btn" onClick={p.onToggle} aria-label={playLabel} title={playLabel}>
-            <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor">{p.running ? <path d="M3 2h3.5v12H3zM9.5 2H13v12H9.5z" /> : <path d="M4 2l10 6-10 6z" />}</svg>
+          <button type="button" className={`btn primary ${p.finished ? 'again' : 'icon-btn'}`} onClick={p.onToggle} aria-label={playLabel} title={playLabel}>
+            <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor">
+              {p.finished ? <path d="M8 2a6 6 0 1 0 5.7 7.9l-1.9-.6A4 4 0 1 1 8 4v2.5l4-3.3L8 0z" /> : p.running ? <path d="M3 2h3.5v12H3zM9.5 2H13v12H9.5z" /> : <path d="M4 2l10 6-10 6z" />}
+            </svg>
+            {p.finished && <span>Run again</span>}
           </button>
           <div className="pb-pop-wrap" ref={speedRoot}>
             <button type="button" className="btn speed-btn" aria-expanded={speedMenu} aria-controls={speedId} aria-label={`Simulation speed ${p.speed} times`} title="Simulation speed" onClick={() => setSpeedMenu((o) => !o)}>
@@ -93,19 +100,26 @@ export function Playback(p: PlaybackProps) {
             </div>
           </div>
           <span className="speed-note small" role="status">{note}</span>
-          <span className="clock" aria-label={`Simulated time ${formatClock(p.time)}`}><span aria-hidden="true">⏱</span> {formatClock(p.time)}</span>
+          <span className="clock" aria-label={`Simulated time ${progressText}`}>
+            <span aria-hidden="true">{formatClock(shownTime)} / {formatClock(RUN_SECONDS)}</span>
+          </span>
+          <div className="run-progress" role="progressbar" aria-label="Run progress" aria-valuemin={0} aria-valuemax={RUN_SECONDS}
+            aria-valuenow={Math.floor(shownTime)} aria-valuetext={progressText}>
+            <div className="run-progress-fill" style={{ width: `${(shownTime / RUN_SECONDS) * 100}%` }} />
+          </div>
         </div>
         <div id={extraId} className={`toolbar-extras ${open ? 'open' : ''}`} inert={!open}>
           <div className="toolbar-extras-in">
             <label className="inline">Period
               <select value={p.period} onChange={(e) => p.onPeriod(e.target.value)}>
-                {p.periods.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
+                {p.periods.map((x) => <option key={x.id} value={x.id}>{x.label}{isExperimentalPeriod(p.entry, x.id) ? ' (experimental)' : ''}</option>)}
               </select>
             </label>
             <label className="inline">Demand <output>{Math.round(p.scale * 100)}%</output>
               <input type="range" min={0.5} max={1.5} step={0.05} value={p.scale} onChange={(e) => p.onScale(Number(e.target.value))} aria-valuetext={`${Math.round(p.scale * 100)} percent of estimated demand`} />
             </label>
             <button type="button" className="btn" onClick={p.onReset}>Reset</button>
+            {experimental && <p className="small period-note" role="note">{EXPERIMENTAL_NOTE}</p>}
             {p.reducedMotion && <span className="muted small">Paused at start (reduced motion preference).</span>}
           </div>
         </div>
