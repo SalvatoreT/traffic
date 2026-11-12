@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { AreaBundle, Intervention, Metrics, Overlay, Theme } from './types';
+import type { AreaBundle, Intervention, Metrics, ModeVisibility, Overlay, Theme } from './types';
 import { loadArea } from './data';
 import { SOURCE_REPO_URL } from './config';
 import { SimClient, type StatsMsg } from './sim/client';
@@ -12,6 +12,7 @@ import { linkStatsView } from './types';
 import type { PickKind } from './components/MapView';
 import { Playback, Legend } from './components/Toolbar';
 import { InterventionPanel, type PickHandlers } from './components/InterventionPanel';
+import { hasModes } from './lib/metrics';
 import { Comparison } from './components/Comparison';
 import { StreetsTable } from './components/StreetsTable';
 const MapView = lazy(() => import('./components/MapView').then((m) => ({ default: m.MapView })));
@@ -49,6 +50,7 @@ export function App() {
 
 function Simulator({ bundle }: { bundle: AreaBundle }) {
   const { network, demand } = bundle;
+  const transitJson = useMemo(() => (bundle.transit ? JSON.stringify(bundle.transit) : undefined), [bundle.transit]);
   const index = useMemo(() => buildIndex(network), [network]);
   // Read once: the hash is rewritten as soon as the scenario loads, so later renders must not decode it again.
   const [initial] = useState(() => ({ ...decodeMeta(location.hash), ...decodeScenario(network, location.hash) }));
@@ -86,6 +88,14 @@ function Simulator({ bundle }: { bundle: AreaBundle }) {
   const [running, setRunning] = useState(!reduced);
   const [interventions, setInterventions] = useState<Intervention[]>(initial.interventions);
   const [overlay, setOverlay] = useState<Overlay>('cutthrough');
+  const [modes, setModes] = useState<ModeVisibility>(() => {
+    const all: ModeVisibility = { car: true, bus: true, bicycle: true, pedestrian: true };
+    try { return { ...all, ...JSON.parse(store.get('modes') ?? '{}') }; } catch { return all; }
+  });
+  const [bikeNet, setBikeNet] = useState(() => store.get('bikeNet') !== '0');
+  useEffect(() => { store.set('modes', JSON.stringify(modes)); }, [modes]);
+  useEffect(() => { store.set('bikeNet', bikeNet ? '1' : '0'); }, [bikeNet]);
+  const hasBikeNet = useMemo(() => network.links.some((l) => l.bikeLane || l.bikeRoute), [network]);
   const [notice, setNotice] = useState<{ unplaced: Unplaced[]; legacy: boolean }>({ unplaced: [], legacy: false });
   // Set after mount so the polite live region exists before its content changes.
   useEffect(() => { setNotice({ unplaced: initial.unplaced, legacy: initial.legacy }); }, [initial]);
@@ -118,7 +128,7 @@ function Simulator({ bundle }: { bundle: AreaBundle }) {
     });
     setClient(c);
     return () => { c.terminate(); setClient(null); };
-  }, [network, demand]);
+  }, [network, demand, transitJson]);
   const firstRun = useRef(true);
   useEffect(() => { client?.send({ t: 'run', running }); }, [running, client]);
   useEffect(() => { client?.send({ t: 'speed', speed }); }, [speed, client]);
@@ -178,6 +188,7 @@ function Simulator({ bundle }: { bundle: AreaBundle }) {
   const base: Metrics | null = stats?.baseline.metrics ?? null;
   const scen: Metrics | null = stats?.scenario.metrics ?? null;
   const comparing = !!stats?.comparing;
+  const multimodal = hasModes(scen);
   const mapVisible = view === 'map';
   const showPanel = view !== 'sources';
 
@@ -284,14 +295,17 @@ function Simulator({ bundle }: { bundle: AreaBundle }) {
               client={client} interventions={interventions} pick={mapVisible ? pick.kind : null} pickDirectional={pick.dir}
               onPickLink={(id) => pickHandlers.current?.link(id)} onPickNode={(id) => pickHandlers.current?.node(id)}
               visible={mapVisible} reducedMotion={reduced}
+              modes={multimodal ? modes : { ...modes, bus: false, bicycle: false, pedestrian: false }} showBikeNet={bikeNet && multimodal}
             />
             </Suspense>
             <Legend overlay={overlay} onOverlay={setOverlay} max={overlayMax} mode={mode} 
-              source={source} onSource={setSource} canCompare={comparing} />
+              source={source} onSource={setSource} canCompare={comparing}
+              multimodal={multimodal} modes={modes} onModes={setModes} hasBikeNet={hasBikeNet} bikeNet={bikeNet} onBikeNet={setBikeNet} />
           </div>
           {view === 'streets' && (
             <StreetsTable bundle={bundle} index={index} showService={showService} onShowService={setShowService}
-              scen={stats?.scenario.linkStats ?? null} base={stats?.baseline.linkStats ?? null} comparing={comparing} />
+              scen={stats?.scenario.linkStats ?? null} base={stats?.baseline.linkStats ?? null} comparing={comparing}
+              baseMetrics={base} scenMetrics={scen} />
           )}
           {view === 'sources' && <Suspense fallback={<p className="boot" role="status">Loading sources…</p>}><Sources demand={demand} synthetic={bundle.synthetic} focusRef={sourceRef} /></Suspense>}
         </div>

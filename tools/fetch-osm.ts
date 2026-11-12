@@ -9,7 +9,9 @@ const ENDPOINTS = [
 
 function query([minLon, minLat, maxLon, maxLat]: number[]): string {
   const b = `(${minLat},${minLon},${maxLat},${maxLon})`;
-  return `[out:json][timeout:90];(way[highway]${b};node[highway~"traffic_signals|stop|crossing|mini_roundabout"]${b};node[traffic_calming]${b};);out body;>;out skel qt;`;
+  // Relations (bicycle and bus routes) come last with members listed by id only (no geometry): the importer needs
+  // the way ids of bicycle routes, and buses are matched from GTFS, so routes are kept only for provenance.
+  return `[out:json][timeout:90];(way[highway]${b};node[highway~"traffic_signals|stop|crossing|mini_roundabout"]${b};node[traffic_calming]${b};);out body;>;out skel qt;relation[route~"^(bicycle|bus)$"]${b};out body;`;
 }
 
 async function fetchExtract(bbox: number[]): Promise<string> {

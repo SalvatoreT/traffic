@@ -193,7 +193,7 @@ table.cmp td, table.cmp th[scope='row'] { font-variant-numeric: tabular-nums; }
   .legend { bottom: 54px; max-width: 220px; font-size: .78rem; padding: .35rem .45rem; gap: .3rem; }
   .legend .ramp .muted, .keys { display: none; }
   .modes { gap: .1rem .6rem; }
-  .modes legend { display: none; }
+  .modes legend { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .map-area { min-height: 50vh; }
   .stage { padding-bottom: 46px; }
   .sheet-handle { min-height: 44px !important; }

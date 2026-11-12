@@ -4,6 +4,8 @@ import { linkStatsView } from '../types';
 import type { NetIndex } from '../lib/naming';
 import { matchesQuery } from '../lib/naming';
 import { formatValue } from '../lib/format';
+import { vulnerableSentence } from '../lib/metrics';
+import type { Metrics } from '../types';
 
 type Key = 'name' | 'cls' | 'flowB' | 'flowS' | 'speedB' | 'speedS' | 'ctB' | 'ctS';
 interface Row {
@@ -15,9 +17,11 @@ interface Props {
   bundle: AreaBundle; index: NetIndex;
   scen: Float32Array | null; base: Float32Array | null; comparing: boolean;
   showService: boolean; onShowService(v: boolean): void;
+  baseMetrics?: Metrics | null; scenMetrics?: Metrics | null;
 }
 
-export function StreetsTable({ index, scen, base, comparing, showService, onShowService }: Props) {
+export function StreetsTable({ index, scen, base, comparing, showService, onShowService, baseMetrics, scenMetrics }: Props) {
+  const walkBike = comparing && baseMetrics && scenMetrics ? vulnerableSentence(baseMetrics, scenMetrics) : '';
   const [sort, setSort] = useState<{ key: Key; dir: 1 | -1 }>({ key: 'ctS', dir: -1 });
   const [q, setQ] = useState('');
   const [cls, setCls] = useState('all');
@@ -68,6 +72,7 @@ export function StreetsTable({ index, scen, base, comparing, showService, onShow
         A text alternative to the map: one row per street block (both directions combined). Flow and cut-through in veh/h,
         speed in mph, flow-weighted. {comparing ? '' : 'Scenario columns fill in once an intervention is added.'}
       </p>
+      {walkBike && <p className="small">{walkBike}</p>}
       <div className="filters">
         <label>Search streets <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="e.g. Oak" /></label>
         <label>Class <select value={cls} onChange={(e) => setCls(e.target.value)}>{classes.map((c) => <option key={c} value={c}>{c}</option>)}</select></label>
