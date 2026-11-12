@@ -130,11 +130,14 @@ pub struct Config {
     pub local_cost_factor: Option<f64>,
     /// Additive: minutes between signal split adaptations (default `params::ADAPT_INTERVAL_S`; 0 keeps the start-up splits).
     pub signal_adapt_min: Option<f64>,
+    /// Additive: apply the gridlock breaker on motorway-class links too (default false: vehicles queued on a ramp or the
+    /// freeway stub feeding it wait in the origin backlog).
+    pub motorway_gridlock_removal: bool,
 }
 
 impl Default for Config {
     fn default() -> Self {
-        Config { seed: 1, period: String::new(), demand_scale: 1.0, select_links: Vec::new(), local_cost_factor: None, signal_adapt_min: None }
+        Config { seed: 1, period: String::new(), demand_scale: 1.0, select_links: Vec::new(), local_cost_factor: None, signal_adapt_min: None, motorway_gridlock_removal: false }
     }
 }
 

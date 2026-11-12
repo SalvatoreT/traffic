@@ -20,13 +20,14 @@ struct Args {
     warmup_min: f64,
     local_factor: Option<f64>,
     adapt_min: Option<f64>,
+    motorway_removal: bool,
     out: Option<PathBuf>,
     write: bool,
     link_flows: bool,
 }
 
 fn parse_args() -> Args {
-    let mut a = Args { area: "rockridge".into(), period: "pm_peak".into(), minutes: 60.0, scale: 1.0, seed: 1, warmup_min: 10.0, local_factor: None, adapt_min: None, out: None, write: true, link_flows: false };
+    let mut a = Args { area: "rockridge".into(), period: "pm_peak".into(), minutes: 60.0, scale: 1.0, seed: 1, warmup_min: 10.0, local_factor: None, adapt_min: None, motorway_removal: false, out: None, write: true, link_flows: false };
     let argv: Vec<String> = std::env::args().skip(1).collect();
     let mut i = 0;
     while i < argv.len() {
@@ -44,6 +45,7 @@ fn parse_args() -> Args {
             "--warmup" => a.warmup_min = val().parse().unwrap_or_else(|_| usage("bad --warmup")),
             "--local-factor" => a.local_factor = Some(val().parse().unwrap_or_else(|_| usage("bad --local-factor"))),
             "--adapt-min" => a.adapt_min = Some(val().parse().unwrap_or_else(|_| usage("bad --adapt-min"))),
+            "--motorway-removal" => a.motorway_removal = true,
             "--out" => a.out = Some(PathBuf::from(val())),
             "--no-write" => a.write = false,
             "--link-flows" => a.link_flows = true,
@@ -59,7 +61,7 @@ fn usage(msg: &str) -> ! {
     if !msg.is_empty() {
         eprintln!("error: {msg}");
     }
-    eprintln!("usage: calibrate [--area rockridge] [--period pm_peak] [--minutes 60] [--scale 1.0] [--seed 1] [--warmup 10] [--adapt-min 5] [--out DIR] [--no-write] [--link-flows]");
+    eprintln!("usage: calibrate [--area rockridge] [--period pm_peak] [--minutes 60] [--scale 1.0] [--seed 1] [--warmup 10] [--adapt-min 5] [--motorway-removal] [--out DIR] [--no-write] [--link-flows]");
     std::process::exit(if msg.is_empty() { 0 } else { 2 });
 }
 
@@ -312,7 +314,7 @@ fn main() {
     sel.dedup();
 
     // ---- run
-    let cfg = Config { seed: args.seed, period: args.period.clone(), demand_scale: args.scale, select_links: sel, local_cost_factor: args.local_factor, signal_adapt_min: args.adapt_min };
+    let cfg = Config { seed: args.seed, period: args.period.clone(), demand_scale: args.scale, select_links: sel, local_cost_factor: args.local_factor, signal_adapt_min: args.adapt_min, motorway_gridlock_removal: args.motorway_removal };
     let mut sim = Simulation::from_parts(net.clone(), demand.clone(), cfg).expect("sim");
     let total_s = args.minutes * 60.0;
     let warm_s = if total_s >= 1800.0 { args.warmup_min * 60.0 } else { 0.0 };

@@ -481,7 +481,7 @@ impl Simulation {
         out
     }
 
-    /// Fixed-time signal plans: (node, cycle s, sum of critical flow ratios, green s per phase).
+    /// Current signal plans: (node, cycle s, sum of critical flow ratios, green s per phase).
     pub fn signal_plans(&self) -> Vec<(u32, f32, f32, Vec<f32>)> {
         self.eff
             .sig
@@ -846,6 +846,23 @@ impl Simulation {
             .sum()
     }
 
+    /// Standing vehicles waiting for the end of link `l`, including the queue that has spilled back onto the single link
+    /// feeding it (up to `ADAPT_SPILL_HOPS` links).
+    fn standing_queue(&self, l: usize) -> u32 {
+        let mut total = self.standing_on(l);
+        let mut cur = l;
+        for _ in 0..ADAPT_SPILL_HOPS {
+            let from = self.topo.link_from[cur] as usize;
+            let tail = (0..self.topo.nlanes(cur)).map(|k| self.queue_extent(cur, k)).fold(0.0, f32::max);
+            if self.topo.ins[from].len() != 1 || tail < self.topo.stop_pos[cur] - 10.0 {
+                break;
+            }
+            cur = self.topo.ins[from][0] as usize;
+            total += self.standing_on(cur);
+        }
+        total
+    }
+
     /// Measure each signalized approach over the last window (stop-line crossings plus the growth of the standing queue,
     /// which is demand the signal did not serve), smooth it, and let every signal recompute its Webster splits.
     fn adapt_signals(&mut self) {
@@ -856,8 +873,8 @@ impl Simulation {
             if self.eff.ctrl[n] != Control::Signal {
                 continue;
             }
-            let q1 = self.standing_on(l);
-            let arrivals = self.win_exit[l] + q1.saturating_sub(self.win_q0[l]);
+            let q1 = self.standing_queue(l);
+            let arrivals = self.win_exit[l] + q1.saturating_sub(self.win_q0[l]) + q1;
             let meas = arrivals as f32 * (3600.0 / window as f32);
             self.adapt_flow[l] = ADAPT_SMOOTH * meas + (1.0 - ADAPT_SMOOTH) * self.adapt_flow[l];
             self.win_q0[l] = q1;
@@ -1160,7 +1177,7 @@ impl Simulation {
             veh.go = go;
             veh.blocked_space = blocked;
             blocked && veh.wait_t > GRIDLOCK_REMOVE_S
-        };
+        } && !self.waits_on_motorway(vid, l);
         if remove {
             // Gridlock breaker: a vehicle waiting this long for downstream space is removed (counted).
             let idx = self.topo.lane_base[l] as usize + self.vehs[vid as usize].lane as usize;
@@ -1169,6 +1186,16 @@ impl Simulation {
             self.st.gridlock_removed += 1;
             self.gridlock_log.push((l as u32, self.t));
         }
+    }
+
+    /// Motorway-class link whose way forward is another motorway-class link (a ramp or the freeway stub feeding it): the
+    /// vehicle waits instead of being removed, so the queue stays in the origin backlog and is metered at the ramp's discharge
+    /// rate. `Config::motorway_gridlock_removal` turns this off.
+    fn waits_on_motorway(&self, vid: u32, l: usize) -> bool {
+        if self.cfg.motorway_gridlock_removal || self.net.links[l].class != RoadClass::Motorway {
+            return false;
+        }
+        self.vehs[vid as usize].next().map_or(false, |b| self.net.links[b as usize].class == RoadClass::Motorway)
     }
 
     /// (may enter node now, blocked only by downstream space)
@@ -1538,6 +1565,7 @@ impl Simulation {
         self.bin_flow[bi] += 1.0;
         self.d_link_exits[l] += 1;
         self.win_exit[l] += 1;
+
         let veh = &self.vehs[vid as usize];
         if veh.through && self.topo.is_local[l] {
             self.bin_ct[bi] += 1.0;

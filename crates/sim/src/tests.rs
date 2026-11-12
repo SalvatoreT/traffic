@@ -1194,3 +1194,37 @@ fn pinned_cycle_survives_adaptation() {
     let total: f32 = p.phases.iter().map(|ph| ph.1 + YELLOW + ALL_RED).sum();
     assert!((total - 100.0).abs() < 0.01);
 }
+
+#[test]
+fn vehicles_queued_on_a_motorway_stub_wait_instead_of_being_removed() {
+    let build = || {
+        let mut b = B::default();
+        let g = b.node(0.0, 0.0, Control::Uncontrolled, true);
+        let d = b.node(150.0, 0.0, Control::Uncontrolled, false);
+        let e = b.node(350.0, 0.0, Control::Uncontrolled, true);
+        let stub = b.link(g, d, RoadClass::Motorway, 3, 29.0, false);
+        let ramp = b.link(d, e, RoadClass::Motorway, 1, 15.6, false);
+        (b.net(), stub, ramp, e)
+    };
+    let jam = |sim: &mut Simulation, stub: u32, ramp: u32, e: u32| {
+        let mut p = 194.0;
+        while p > 10.0 {
+            sim.test_place(ramp, 0, p, 0.0, e, true);
+            p -= 7.5;
+        }
+        sim.test_place(stub, 0, 100.0, 5.0, e, false)
+    };
+    let (net, stub, ramp, e) = build();
+    let mut sim = empty_sim(net);
+    let v = jam(&mut sim, stub, ramp, e);
+    step_n(&mut sim, GRIDLOCK_REMOVE_S as f64 + 60.0);
+    assert_eq!(sim.metrics().gridlock_removed, 0);
+    assert!(sim.test_veh(v).3, "the queued vehicle is still in the network");
+    let (net, stub, ramp, e) = build();
+    let mut cfg = cfg(1, 1.0);
+    cfg.motorway_gridlock_removal = true;
+    let mut sim = Simulation::from_parts(net, demand(&[]), cfg).unwrap();
+    jam(&mut sim, stub, ramp, e);
+    step_n(&mut sim, GRIDLOCK_REMOVE_S as f64 + 60.0);
+    assert_eq!(sim.metrics().gridlock_removed, 1);
+}

@@ -16,6 +16,7 @@ pub const MAX_PHASES: usize = 4; // ASSUMPTION: phases per junction; streets bey
 pub const PHASE_AXIS_DEG: f64 = 30.0; // ASSUMPTION: approaches of different or unnamed streets on one axis within this angle share a phase
 pub const PHASE_SAME_NAME_DEG: f64 = 80.0; // ASSUMPTION: approaches with the same street name share a phase within this axis angle
 pub const ADAPT_INTERVAL_S: f64 = 300.0; // ASSUMPTION: signal splits are recomputed from measured flows every 5 min (approximates actuated/coordinated control)
+pub const ADAPT_SPILL_HOPS: usize = 3; // ASSUMPTION: links upstream that count toward a spilled-back queue
 pub const ADAPT_SMOOTH: f32 = 0.5; // ASSUMPTION: weight of the newest window in the smoothed approach flow
 pub const YELLOW_DECEL: f32 = 4.0; // ASSUMPTION: go on yellow if v^2/(2*4) > distance to line
 

@@ -91,6 +91,6 @@
   "zoom": 15,
   "calibration": {
     "status": "uncalibrated",
-    "note": "Peak periods still jam near the freeway ramps, side-street volumes are scaled-down assumptions, and one of four observed route shares is 20 points off. See data/calibration/rockridge.record.md."
+    "note": "Peak periods still lose a few vehicles per run to gridlock on Telegraph near the freeway ramps, and side-street volumes are scaled-down assumptions. One of four observed route shares is 17 points off; see data/calibration/rockridge.record.md."
   }
 }

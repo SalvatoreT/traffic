@@ -119,6 +119,17 @@ describe('rockridge network', () => {
     for (const l of net.links) expect(sigs.has(l.from) && sigs.has(l.to) && l.length < 20, `link ${l.id}`).toBe(false);
   });
 
+  it('keeps the flared lane count of off-ramp terminals', () => {
+    // OSM tags the off-ramps with lanes=1 for most of their length and lanes=2 on the way that ends at the signal.
+    const terminals = net.links.filter((l) => l.class === 'motorway' && net.nodes[l.to].control === 'signal');
+    expect(terminals.length).toBeGreaterThanOrEqual(2);
+    for (const l of terminals) {
+      expect(l.lanes).toBeGreaterThanOrEqual(2);
+      const feeders = net.links.filter((f) => f.to === l.from && f.class === 'motorway');
+      expect(feeders.some((f) => f.lanes < l.lanes)).toBe(true);
+    }
+  });
+
   it('flags study-area membership consistently', () => {
     const poly = cfg.studyArea;
     expect(poly[0]).toEqual(poly.at(-1));

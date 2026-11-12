@@ -1,14 +1,14 @@
 {
   "area": "rockridge",
   "health": {
-    "arterialMeanSpeed": 7.129717672938031,
-    "arterialMeanSpeedLast15min": 6.941426473445745,
+    "arterialMeanSpeed": 7.011264816360301,
+    "arterialMeanSpeedLast15min": 6.959142480583512,
     "backlog": 1,
     "backlogPct": 0.019992003198720514,
-    "completed": 4524,
+    "completed": 4488,
     "gridlockRemoved": 0,
-    "meanTripDelay": 109.67599826464094,
-    "meanTripTime": 312.6610621674447,
+    "meanTripDelay": 114.46841326573112,
+    "meanTripTime": 317.50309908741434,
     "spawned": 5002,
     "unroutable": 0
   },
@@ -19,56 +19,56 @@
   "rampShares": [
     {
       "direction": "onto freeway",
-      "modelled": 0.06469500924214418,
-      "n": 541,
+      "modelled": 0.022429906542056073,
+      "n": 535,
       "observed": 0.16,
       "via": "College Avenue"
     },
     {
       "direction": "onto freeway",
-      "modelled": 0.10905730129390019,
-      "n": 541,
+      "modelled": 0.13271028037383178,
+      "n": 535,
       "observed": 0.12,
       "via": "Hillegass Avenue"
     },
     {
       "direction": "onto freeway",
-      "modelled": 0.2088724584103512,
-      "n": 541,
+      "modelled": 0.20934579439252338,
+      "n": 535,
       "observed": 0.1,
       "via": "Martin Street"
     },
     {
       "direction": "onto freeway",
-      "modelled": 0.18853974121996303,
-      "n": 541,
+      "modelled": 0.2411214953271028,
+      "n": 535,
       "observed": 0.08,
       "via": "Colby Street"
     },
     {
       "direction": "onto freeway",
-      "modelled": 0.6247689463955638,
-      "n": 541,
+      "modelled": 0.611214953271028,
+      "n": 535,
       "observed": 0.08,
       "via": "Telegraph Avenue north of Alcatraz Avenue"
     },
     {
       "direction": "onto freeway",
       "modelled": 0.0,
-      "n": 541,
+      "n": 535,
       "observed": 0.05,
       "via": "Benvenue Avenue"
     },
     {
       "direction": "from freeway",
-      "modelled": 0.042232277526395176,
+      "modelled": 0.05279034690799397,
       "n": 663,
       "observed": 0.1,
       "via": "College Avenue"
     },
     {
       "direction": "from freeway",
-      "modelled": 0.23529411764705882,
+      "modelled": 0.27450980392156865,
       "n": 663,
       "observed": 0.1,
       "via": "Martin Street"
@@ -82,7 +82,7 @@
     },
     {
       "direction": "from freeway",
-      "modelled": 0.04072398190045249,
+      "modelled": 0.03770739064856712,
       "n": 663,
       "observed": 0.05,
       "via": "Hillegass Avenue"
@@ -99,108 +99,108 @@
   "seed": 1,
   "series": [
     {
-      "arterialSpeed": 7.685024236594105,
+      "arterialSpeed": 7.307827480095954,
       "backlog": 1,
-      "completed": 65,
+      "completed": 60,
       "removed": 0,
       "tMin": 5.0,
-      "vehicles": 322
+      "vehicles": 327
     },
     {
-      "arterialSpeed": 7.247364861463928,
+      "arterialSpeed": 7.076203958370687,
       "backlog": 2,
-      "completed": 398,
+      "completed": 386,
       "removed": 0,
       "tMin": 10.0,
-      "vehicles": 443
+      "vehicles": 455
     },
     {
-      "arterialSpeed": 7.034699064164024,
-      "backlog": 5,
-      "completed": 808,
+      "arterialSpeed": 6.75029700905059,
+      "backlog": 4,
+      "completed": 802,
       "removed": 0,
       "tMin": 15.0,
-      "vehicles": 428
+      "vehicles": 435
     },
     {
-      "arterialSpeed": 7.251854586152602,
-      "backlog": 6,
-      "completed": 1188,
+      "arterialSpeed": 7.172047982968211,
+      "backlog": 4,
+      "completed": 1180,
       "removed": 0,
       "tMin": 20.0,
-      "vehicles": 439
+      "vehicles": 449
     },
     {
-      "arterialSpeed": 7.350633984547719,
+      "arterialSpeed": 7.27168934071613,
       "backlog": 0,
-      "completed": 1612,
+      "completed": 1620,
       "removed": 0,
       "tMin": 25.0,
-      "vehicles": 454
+      "vehicles": 446
     },
     {
-      "arterialSpeed": 7.088292745817072,
+      "arterialSpeed": 6.992118615655493,
       "backlog": 2,
-      "completed": 2044,
+      "completed": 2041,
       "removed": 0,
       "tMin": 30.0,
-      "vehicles": 438
+      "vehicles": 441
     },
     {
-      "arterialSpeed": 6.876783501797923,
+      "arterialSpeed": 6.8587767820307635,
       "backlog": 3,
-      "completed": 2444,
+      "completed": 2455,
       "removed": 0,
       "tMin": 35.0,
-      "vehicles": 472
+      "vehicles": 461
     },
     {
-      "arterialSpeed": 7.366583326513777,
+      "arterialSpeed": 7.125153179338289,
       "backlog": 4,
-      "completed": 2858,
+      "completed": 2883,
       "removed": 0,
       "tMin": 40.0,
-      "vehicles": 449
+      "vehicles": 424
     },
     {
-      "arterialSpeed": 7.222064407755781,
+      "arterialSpeed": 6.923944174953726,
       "backlog": 2,
-      "completed": 3267,
+      "completed": 3271,
       "removed": 0,
       "tMin": 45.0,
-      "vehicles": 464
+      "vehicles": 460
     },
     {
-      "arterialSpeed": 6.750275772960818,
+      "arterialSpeed": 6.6593744113704245,
       "backlog": 1,
-      "completed": 3688,
+      "completed": 3680,
       "removed": 0,
       "tMin": 50.0,
-      "vehicles": 449
+      "vehicles": 457
     },
     {
-      "arterialSpeed": 6.853703621286664,
+      "arterialSpeed": 7.212603554218159,
       "backlog": 0,
-      "completed": 4116,
+      "completed": 4096,
       "removed": 0,
       "tMin": 55.0,
-      "vehicles": 448
+      "vehicles": 468
     },
     {
-      "arterialSpeed": 7.220300026089752,
+      "arterialSpeed": 7.005449476161951,
       "backlog": 1,
-      "completed": 4524,
+      "completed": 4488,
       "removed": 0,
       "tMin": 60.0,
-      "vehicles": 478
+      "vehicles": 514
     }
   ],
   "shares": [
     {
       "block": "Hillegass Avenue NB",
       "headline": true,
-      "modelled": 0.4246575342465753,
-      "n": 73,
+      "modelled": 0.4576271186440678,
+      "n": 59,
       "observed": 0.47,
       "observedPm": null,
       "side": "from",
@@ -210,7 +210,7 @@
       "block": "Hillegass Avenue NB",
       "headline": false,
       "modelled": 0.0,
-      "n": 73,
+      "n": 59,
       "observed": 0.21,
       "observedPm": 0.33,
       "side": "to",
@@ -219,8 +219,8 @@
     {
       "block": "Hillegass Avenue NB",
       "headline": false,
-      "modelled": 0.0273972602739726,
-      "n": 73,
+      "modelled": 0.01694915254237288,
+      "n": 59,
       "observed": 0.06,
       "observedPm": null,
       "side": "to",
@@ -229,8 +229,8 @@
     {
       "block": "Hillegass Avenue NB",
       "headline": false,
-      "modelled": 0.3561643835616438,
-      "n": 73,
+      "modelled": 0.3220338983050847,
+      "n": 59,
       "observed": 0.27,
       "observedPm": null,
       "side": "to",
@@ -239,8 +239,8 @@
     {
       "block": "Colby Street NB",
       "headline": true,
-      "modelled": 0.37888198757763975,
-      "n": 161,
+      "modelled": 0.3829787234042553,
+      "n": 141,
       "observed": 0.47,
       "observedPm": null,
       "side": "from",
@@ -249,8 +249,8 @@
     {
       "block": "Colby Street NB",
       "headline": false,
-      "modelled": 0.45962732919254656,
-      "n": 161,
+      "modelled": 0.475177304964539,
+      "n": 141,
       "observed": 0.48,
       "observedPm": null,
       "side": "to",
@@ -259,8 +259,8 @@
     {
       "block": "Colby Street NB",
       "headline": false,
-      "modelled": 0.40993788819875776,
-      "n": 161,
+      "modelled": 0.475177304964539,
+      "n": 141,
       "observed": 0.25,
       "observedPm": null,
       "side": "to",
@@ -269,8 +269,8 @@
     {
       "block": "Colby Street NB",
       "headline": false,
-      "modelled": 0.006211180124223602,
-      "n": 161,
+      "modelled": 0.03546099290780142,
+      "n": 141,
       "observed": 0.03,
       "observedPm": null,
       "side": "to",
@@ -279,8 +279,8 @@
     {
       "block": "Hillegass Avenue SB",
       "headline": false,
-      "modelled": 0.10638297872340426,
-      "n": 141,
+      "modelled": 0.15730337078651685,
+      "n": 178,
       "observed": 0.46,
       "observedPm": null,
       "side": "from",
@@ -290,7 +290,7 @@
       "block": "Hillegass Avenue SB",
       "headline": false,
       "modelled": 0.0,
-      "n": 141,
+      "n": 178,
       "observed": 0.26,
       "observedPm": null,
       "side": "from",
@@ -299,8 +299,8 @@
     {
       "block": "Hillegass Avenue SB",
       "headline": false,
-      "modelled": 0.0070921985815602835,
-      "n": 141,
+      "modelled": 0.011235955056179775,
+      "n": 178,
       "observed": 0.16,
       "observedPm": null,
       "side": "from",
@@ -309,8 +309,8 @@
     {
       "block": "Hillegass Avenue SB",
       "headline": true,
-      "modelled": 0.46099290780141844,
-      "n": 141,
+      "modelled": 0.47191011235955055,
+      "n": 178,
       "observed": 0.57,
       "observedPm": 0.68,
       "side": "to",
@@ -319,8 +319,8 @@
     {
       "block": "Colby Street SB",
       "headline": false,
-      "modelled": 0.5910931174089069,
-      "n": 247,
+      "modelled": 0.6151315789473685,
+      "n": 304,
       "observed": 0.43,
       "observedPm": null,
       "side": "from",
@@ -329,8 +329,8 @@
     {
       "block": "Colby Street SB",
       "headline": false,
-      "modelled": 0.06072874493927125,
-      "n": 247,
+      "modelled": 0.12171052631578948,
+      "n": 304,
       "observed": 0.46,
       "observedPm": null,
       "side": "from",
@@ -339,8 +339,8 @@
     {
       "block": "Colby Street SB",
       "headline": false,
-      "modelled": 0.5789473684210527,
-      "n": 247,
+      "modelled": 0.5592105263157895,
+      "n": 304,
       "observed": 0.22,
       "observedPm": null,
       "side": "from",
@@ -349,8 +349,8 @@
     {
       "block": "Colby Street SB",
       "headline": true,
-      "modelled": 0.4979757085020243,
-      "n": 247,
+      "modelled": 0.5296052631578947,
+      "n": 304,
       "observed": 0.45,
       "observedPm": null,
       "side": "to",
@@ -359,8 +359,8 @@
     {
       "block": "Colby Street SB",
       "headline": false,
-      "modelled": 0.18218623481781376,
-      "n": 247,
+      "modelled": 0.20394736842105263,
+      "n": 304,
       "observed": 0.34,
       "observedPm": null,
       "side": "to",
@@ -372,299 +372,299 @@
     {
       "dir": "N",
       "links": 12,
-      "maxVehPerHour": 1063.2,
-      "medianVehPerHour": 1009.1999999999999,
+      "maxVehPerHour": 1099.2,
+      "medianVehPerHour": 1035.6,
       "street": "Telegraph"
     },
     {
       "dir": "S",
       "links": 10,
-      "maxVehPerHour": 649.1999999999999,
-      "medianVehPerHour": 584.4,
+      "maxVehPerHour": 643.1999999999999,
+      "medianVehPerHour": 586.8,
       "street": "Telegraph"
     },
     {
       "dir": "N",
       "links": 3,
-      "maxVehPerHour": 121.19999999999999,
-      "medianVehPerHour": 121.19999999999999,
+      "maxVehPerHour": 117.6,
+      "medianVehPerHour": 117.6,
       "street": "College"
     },
     {
       "dir": "S",
       "links": 3,
-      "maxVehPerHour": 319.2,
-      "medianVehPerHour": 315.59999999999997,
+      "maxVehPerHour": 182.4,
+      "medianVehPerHour": 181.2,
       "street": "College"
     },
     {
       "dir": "N",
       "links": 6,
-      "maxVehPerHour": 667.1999999999999,
-      "medianVehPerHour": 440.4,
+      "maxVehPerHour": 693.6,
+      "medianVehPerHour": 422.4,
       "street": "Claremont"
     },
     {
       "dir": "S",
       "links": 7,
-      "maxVehPerHour": 984.0,
-      "medianVehPerHour": 556.8,
+      "maxVehPerHour": 939.5999999999999,
+      "medianVehPerHour": 526.8,
       "street": "Claremont"
     },
     {
       "dir": "E",
       "links": 7,
-      "maxVehPerHour": 380.4,
-      "medianVehPerHour": 351.59999999999997,
+      "maxVehPerHour": 417.59999999999997,
+      "medianVehPerHour": 345.59999999999997,
       "street": "Alcatraz"
     },
     {
       "dir": "W",
       "links": 7,
-      "maxVehPerHour": 180.0,
-      "medianVehPerHour": 170.4,
+      "maxVehPerHour": 211.2,
+      "medianVehPerHour": 165.6,
       "street": "Alcatraz"
     },
     {
       "dir": "N",
       "links": 4,
-      "maxVehPerHour": 63.599999999999994,
-      "medianVehPerHour": 43.199999999999996,
+      "maxVehPerHour": 42.0,
+      "medianVehPerHour": 40.8,
       "street": "Hillegass"
     },
     {
       "dir": "S",
       "links": 4,
-      "maxVehPerHour": 120.0,
-      "medianVehPerHour": 114.0,
+      "maxVehPerHour": 159.6,
+      "medianVehPerHour": 152.4,
       "street": "Hillegass"
     },
     {
       "dir": "N",
       "links": 7,
-      "maxVehPerHour": 128.4,
-      "medianVehPerHour": 85.2,
+      "maxVehPerHour": 115.19999999999999,
+      "medianVehPerHour": 74.39999999999999,
       "street": "Colby"
     },
     {
       "dir": "S",
       "links": 7,
-      "maxVehPerHour": 164.4,
-      "medianVehPerHour": 147.6,
+      "maxVehPerHour": 246.0,
+      "medianVehPerHour": 211.2,
       "street": "Colby"
     },
     {
       "dir": "E",
       "links": 2,
-      "maxVehPerHour": 153.6,
-      "medianVehPerHour": 153.6,
+      "maxVehPerHour": 168.0,
+      "medianVehPerHour": 168.0,
       "street": "Martin"
     },
     {
       "dir": "W",
       "links": 2,
-      "maxVehPerHour": 172.79999999999998,
-      "medianVehPerHour": 172.79999999999998,
+      "maxVehPerHour": 210.0,
+      "medianVehPerHour": 210.0,
       "street": "Martin"
     }
   ],
   "topLinks": [
     {
-      "delayVehH": 11.013701438903809,
+      "delayVehH": 10.276442527770996,
       "link": 497,
-      "stoppedVehH": 9.2409029006958,
+      "stoppedVehH": 8.49638843536377,
       "street": "Telegraph Avenue"
     },
     {
-      "delayVehH": 5.600080966949463,
+      "delayVehH": 5.801021575927734,
       "link": 602,
-      "stoppedVehH": 3.136805534362793,
+      "stoppedVehH": 3.057013988494873,
       "street": "Claremont Avenue"
     },
     {
-      "delayVehH": 5.428452014923096,
-      "link": 379,
-      "stoppedVehH": 4.0345139503479,
-      "street": ""
-    },
-    {
-      "delayVehH": 4.892773628234863,
+      "delayVehH": 5.0791335105896,
       "link": 494,
-      "stoppedVehH": 2.8390278816223145,
+      "stoppedVehH": 3.2352778911590576,
       "street": "Telegraph Avenue"
     },
     {
-      "delayVehH": 4.171241760253906,
+      "delayVehH": 4.433068752288818,
+      "link": 888,
+      "stoppedVehH": 3.4653472900390625,
+      "street": "Telegraph Avenue"
+    },
+    {
+      "delayVehH": 3.851349353790283,
       "link": 381,
-      "stoppedVehH": 2.735555648803711,
+      "stoppedVehH": 2.4495832920074463,
       "street": ""
     },
     {
-      "delayVehH": 3.7391324043273926,
-      "link": 844,
-      "stoppedVehH": 3.2367360591888428,
-      "street": "56th Street"
+      "delayVehH": 3.2590408325195312,
+      "link": 379,
+      "stoppedVehH": 2.19368052482605,
+      "street": ""
     },
     {
-      "delayVehH": 3.635770559310913,
-      "link": 633,
-      "stoppedVehH": 2.7748610973358154,
-      "street": "Telegraph Avenue"
-    },
-    {
-      "delayVehH": 3.3959972858428955,
-      "link": 46,
-      "stoppedVehH": 2.5610415935516357,
-      "street": "Martin Street"
-    },
-    {
-      "delayVehH": 2.9399023056030273,
+      "delayVehH": 3.00304913520813,
       "link": 50,
-      "stoppedVehH": 2.2020833492279053,
+      "stoppedVehH": 1.9856250286102295,
       "street": "Colby Street"
     },
     {
-      "delayVehH": 2.8959450721740723,
-      "link": 637,
-      "stoppedVehH": 1.8334722518920898,
-      "street": "Telegraph Avenue"
+      "delayVehH": 2.971006393432617,
+      "link": 46,
+      "stoppedVehH": 2.093888998031616,
+      "street": "Martin Street"
     },
     {
-      "delayVehH": 2.5894289016723633,
+      "delayVehH": 2.9636454582214355,
+      "link": 844,
+      "stoppedVehH": 2.529097318649292,
+      "street": "56th Street"
+    },
+    {
+      "delayVehH": 2.882598400115967,
       "link": 493,
-      "stoppedVehH": 1.1474305391311646,
+      "stoppedVehH": 1.429930567741394,
       "street": "Telegraph Avenue"
     },
     {
-      "delayVehH": 2.546656608581543,
-      "link": 723,
-      "stoppedVehH": 1.789722204208374,
+      "delayVehH": 2.8135297298431396,
+      "link": 633,
+      "stoppedVehH": 2.0107638835906982,
+      "street": "Telegraph Avenue"
+    },
+    {
+      "delayVehH": 2.731314182281494,
+      "link": 740,
+      "stoppedVehH": 2.118194341659546,
       "street": "Claremont Avenue"
     },
     {
-      "delayVehH": 2.47527813911438,
+      "delayVehH": 2.625591993331909,
+      "link": 617,
+      "stoppedVehH": 1.4977083206176758,
+      "street": "Telegraph Avenue"
+    },
+    {
+      "delayVehH": 2.554625988006592,
+      "link": 637,
+      "stoppedVehH": 1.6369444131851196,
+      "street": "Telegraph Avenue"
+    },
+    {
+      "delayVehH": 2.199364185333252,
       "link": 887,
-      "stoppedVehH": 1.3781249523162842,
+      "stoppedVehH": 1.320069432258606,
       "street": "Telegraph Avenue"
-    },
-    {
-      "delayVehH": 2.2676641941070557,
-      "link": 293,
-      "stoppedVehH": 1.5138888359069824,
-      "street": "Carberry Avenue"
-    },
-    {
-      "delayVehH": 2.231003522872925,
-      "link": 530,
-      "stoppedVehH": 1.4610416889190674,
-      "street": "Claremont Avenue"
     }
   ],
   "topNodes": [
     {
-      "blockedLaneH": 3.0947916507720947,
+      "blockedLaneH": 2.9965972900390625,
       "control": "signal",
-      "noSpaceLaneH": 0.04298610985279083,
-      "node": 310,
-      "streets": "Alcatraz Avenue / Telegraph Avenue"
-    },
-    {
-      "blockedLaneH": 2.4410417079925537,
-      "control": "signal",
-      "noSpaceLaneH": 0.003541666781529784,
-      "node": 38,
-      "streets": "Claremont Avenue / Colby Street / Forest Street"
-    },
-    {
-      "blockedLaneH": 2.1954166889190674,
-      "control": "signal",
-      "noSpaceLaneH": 0.00020833333837799728,
-      "node": 273,
-      "streets": "56th Street / Telegraph Avenue"
-    },
-    {
-      "blockedLaneH": 1.7370833158493042,
-      "control": "signal",
-      "noSpaceLaneH": 0.10270833224058151,
-      "node": 226,
-      "streets": "Aileen Street / Telegraph Avenue"
-    },
-    {
-      "blockedLaneH": 1.6851389408111572,
-      "control": "signal",
-      "noSpaceLaneH": 0.010277777910232544,
+      "noSpaceLaneH": 0.012013888917863369,
       "node": 48,
       "streets": "52nd Street / Claremont Avenue / Telegraph Avenue"
     },
     {
-      "blockedLaneH": 1.6267361640930176,
+      "blockedLaneH": 2.838749885559082,
       "control": "signal",
-      "noSpaceLaneH": 0.04993055388331413,
-      "node": 234,
-      "streets": "Claremont Avenue / Clifton Street"
+      "noSpaceLaneH": 0.02916666679084301,
+      "node": 310,
+      "streets": "Alcatraz Avenue / Telegraph Avenue"
     },
     {
-      "blockedLaneH": 1.4661110639572144,
+      "blockedLaneH": 2.3880555629730225,
       "control": "signal",
-      "noSpaceLaneH": 0.05069444328546524,
-      "node": 284,
-      "streets": "51st Street / Telegraph Avenue"
-    },
-    {
-      "blockedLaneH": 1.4083333015441895,
-      "control": "signal",
-      "noSpaceLaneH": 0.009027778171002865,
+      "noSpaceLaneH": 0.004861111287027597,
       "node": 70,
       "streets": "62nd Street / Claremont Avenue / College Avenue"
     },
     {
-      "blockedLaneH": 1.3259028196334839,
+      "blockedLaneH": 2.299861192703247,
       "control": "signal",
-      "noSpaceLaneH": 0.0012499999720603228,
-      "node": 213,
-      "streets": "Claremont Avenue / Hudson Street"
+      "noSpaceLaneH": 0.0009027777705341578,
+      "node": 273,
+      "streets": "56th Street / Telegraph Avenue"
     },
     {
-      "blockedLaneH": 1.187430500984192,
+      "blockedLaneH": 2.2763195037841797,
       "control": "signal",
-      "noSpaceLaneH": 0.015625,
+      "noSpaceLaneH": 0.0016666667070239782,
+      "node": 38,
+      "streets": "Claremont Avenue / Colby Street / Forest Street"
+    },
+    {
+      "blockedLaneH": 1.8434722423553467,
+      "control": "signal",
+      "noSpaceLaneH": 0.014097222127020359,
       "node": 265,
       "streets": "College Avenue / Hudson Street / Manila Avenue"
     },
     {
-      "blockedLaneH": 0.9195833206176758,
+      "blockedLaneH": 1.6313889026641846,
       "control": "signal",
-      "noSpaceLaneH": 0.0068055554293096066,
-      "node": 253,
-      "streets": "Alcatraz Avenue / College Avenue"
+      "noSpaceLaneH": 0.04027777910232544,
+      "node": 226,
+      "streets": "Aileen Street / Telegraph Avenue"
     },
     {
-      "blockedLaneH": 0.7764583230018616,
+      "blockedLaneH": 1.5913889408111572,
       "control": "signal",
-      "noSpaceLaneH": 0.00013888889225199819,
-      "node": 151,
-      "streets": "59th Street / Telegraph Avenue"
+      "noSpaceLaneH": 0.04270833358168602,
+      "node": 234,
+      "streets": "Claremont Avenue / Clifton Street"
     },
     {
-      "blockedLaneH": 0.700208306312561,
+      "blockedLaneH": 1.536805510520935,
       "control": "signal",
-      "noSpaceLaneH": 0.20173610746860504,
-      "node": 211,
-      "streets": "55th Street / Telegraph Avenue"
+      "noSpaceLaneH": 0.051527779549360275,
+      "node": 284,
+      "streets": "51st Street / Telegraph Avenue"
     },
     {
-      "blockedLaneH": 0.5863194465637207,
-      "control": "signal",
-      "noSpaceLaneH": 0.0009027777705341578,
-      "node": 327,
-      "streets": "Claremont Avenue / The Uplands"
-    },
-    {
-      "blockedLaneH": 0.5684722065925598,
+      "blockedLaneH": 1.4749305248260498,
       "control": "signal",
       "noSpaceLaneH": 0.0,
       "node": 57,
       "streets": "Auburn Avenue / Claremont Avenue / Mystic Street"
+    },
+    {
+      "blockedLaneH": 1.2020833492279053,
+      "control": "signal",
+      "noSpaceLaneH": 0.0011111111380159855,
+      "node": 213,
+      "streets": "Claremont Avenue / Hudson Street"
+    },
+    {
+      "blockedLaneH": 0.8795833587646484,
+      "control": "signal",
+      "noSpaceLaneH": 0.28166666626930237,
+      "node": 211,
+      "streets": "55th Street / Telegraph Avenue"
+    },
+    {
+      "blockedLaneH": 0.8295833468437195,
+      "control": "signal",
+      "noSpaceLaneH": 0.00027777778450399637,
+      "node": 151,
+      "streets": "59th Street / Telegraph Avenue"
+    },
+    {
+      "blockedLaneH": 0.6675694584846497,
+      "control": "signal",
+      "noSpaceLaneH": 0.004305555485188961,
+      "node": 253,
+      "streets": "Alcatraz Avenue / College Avenue"
+    },
+    {
+      "blockedLaneH": 0.6449305415153503,
+      "control": "signal",
+      "noSpaceLaneH": 0.0012499999720603228,
+      "node": 327,
+      "streets": "Claremont Avenue / The Uplands"
     }
   ]
 }
