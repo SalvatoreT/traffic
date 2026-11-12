@@ -328,7 +328,9 @@ input[type='checkbox'] { width: 18px; height: 18px; accent-color: var(--accent);
 .ramp-col { flex: 0 1 240px; width: 240px; min-width: 60px; }
 .ramp-end { flex: none; }
 @media (max-width: 719.98px) {
-  .toolbar-row { padding: .25rem .5rem; }
+  .toolbar-row { padding: .25rem .5rem; gap: .3rem .4rem; }
+  .toolbar-row .clock { font-size: .8rem; }
+  .btn.primary.again { padding-left: .5rem; padding-right: .6rem; }
   .legend-row { padding-left: .4rem; gap: .4rem; }
 }
 @media (prefers-reduced-motion: reduce) { .toolbar-extras, .legend-extras { transition: none !important; } }

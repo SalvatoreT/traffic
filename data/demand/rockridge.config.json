@@ -454,6 +454,84 @@
     "freewayVehPerHourPerLane": 2184,
     "_note": "Measured capacities of the validation suite (data/calibration/validation.md): a signalized lane at green share 0.5 (cases b1, b2) and a motorway lane at 65 mph (case i1)."
   },
+  "countFit": {
+    "enabled": true,
+    "_note": "Count-constrained demand (seventh round). Every count the pipeline holds is a target volume on directed links; OD flows are scaled so that a free-flow static assignment matches them. Citation for the method family: [VanZuylen1980], [Willumsen1981]. Targets for AM and midday are the PM counts scaled by periodFactors (ASSUMPTION).",
+    "bounds": {
+      "lo": 0.1,
+      "hi": 3,
+      "_note": "ASSUMPTION: limits on a flow's cumulative factor."
+    },
+    "maxIter": 400,
+    "tol": 0.01,
+    "damping": 1,
+    "draws": 5,
+    "noise": 0.08,
+    "drawsNote": "ASSUMPTION: each flow is split equally over this many free-flow shortest paths found with link costs perturbed by +/- noise (the simulator's perceived-cost noise is also 8%); 1 draw and 0 noise gives all-or-nothing assignment.",
+    "uncounted": {
+      "rule": "medianOfType",
+      "volumeWeighted": true,
+      "_note": "ASSUMPTION: a flow that passes no counted link takes the volume-weighted median factor of the counted flows of its type (through, local, ramp); alternatives: medianAll, one."
+    },
+    "tmcNodeMaxM": 80,
+    "stationRadiusM": 150,
+    "weights": {
+      "gate": 1,
+      "tmc": 1,
+      "caltrans": 1,
+      "ramp": 1,
+      "_note": "Weights of the constraint families in the geometric mean over the counted links of a flow's paths."
+    },
+    "tolerancePct": {
+      "gate": 10,
+      "tmc": 15,
+      "caltrans": 15,
+      "ramp": 5,
+      "report": 15
+    },
+    "output": "data/demand/rockridge.fit.md",
+    "capacityGuard": {
+      "enabled": true,
+      "excessShare": 0.1,
+      "weight": 0.5,
+      "_note": "ASSUMPTION-labeled sanity guard, not data: an uncounted link may carry at most capacity x (1 + excessShare); flows above are scaled down proportionally. Capacities are the simulator's own measured values from data/calibration/validation.md (cases named in each entry), per lane or per approach by the control at the link's end node. Counted links are exempt.",
+      "capacity": {
+        "signal": {
+          "perLane": 837,
+          "source": "validation b1, b2 (green share 0.5)"
+        },
+        "all_way_stop": {
+          "perApproach": 473,
+          "source": "validation d1"
+        },
+        "two_way_stop_minor": {
+          "perApproach": 574,
+          "source": "validation e4 (minor through, major 200 per direction)"
+        },
+        "two_way_stop_major": {
+          "perLane": 1656,
+          "source": "validation g1 (free single lane at 25 mph)"
+        },
+        "uncontrolled": {
+          "perLane": 1656,
+          "source": "validation g1"
+        },
+        "traffic_circle": {
+          "perApproach": 804,
+          "source": "validation f1 (circulating 200 veh/h)"
+        },
+        "motorway": {
+          "perLane": 2184,
+          "source": "validation i1"
+        },
+        "motorway_signal": {
+          "perLane": 500,
+          "source": "validation i2 (off-ramp terminal at a signal)"
+        }
+      }
+    },
+    "stationary": 0.0001
+  },
   "audit": {
     "nearM": 400
   }

@@ -8,13 +8,15 @@ import { buildActiveFlows, parseActiveCounts, type AFlow } from './lib/demand-ac
 import { discoverRamps, matchRampVolumes, type Ramp, type RampRow, type RampVolume } from './lib/demand-ramps';
 import { linkMetrics, perimeterGap, perimeterLength, perimeterPos, relevanceOf, Router, routeStat, sideOf, type Rect, type Relevance, type RouteStat } from './lib/demand-audit';
 import { makeProjection } from './lib/geo';
+import { buildStations, fitPeriod, fitReport, type FitConfig, type NetLinkIn, type PeriodResult } from './lib/demand-fit';
+import type { FlowType } from './lib/fit-counts';
 
 const cfgPath = process.argv[2] ?? 'data/demand/rockridge.config.json';
 const cfg = JSON.parse(readFileSync(cfgPath, 'utf8'));
 
 interface Node { id: number; x: number; y: number; gate: boolean; canEnter?: boolean; canExit?: boolean; inStudyArea: boolean }
-interface Link { id: number; from: number; to: number; name: string; class: string; length: number; lanes?: number; speedLimit?: number; geometry?: [number, number][]; inStudyArea: boolean; bikeLane?: boolean; bikeRoute?: boolean }
-interface Network { id: string; origin: { lon: number; lat: number }; studyArea: [number, number][]; nodes: Node[]; links: Link[] }
+interface Link { id: number; from: number; to: number; name: string; class: string; length: number; lanes?: number; speedLimit?: number; geometry?: [number, number][]; inStudyArea: boolean; bikeLane?: boolean; bikeRoute?: boolean; humps?: number[]; stopAtEnd?: boolean }
+interface Network { id: string; origin: { lon: number; lat: number }; studyArea: [number, number][]; nodes: (Node & { control: string })[]; links: Link[]; turnBans?: { from: number; to: number; periods?: string[] }[] }
 // `mode` is absent on car flows (default car). Pedestrian and bicycle flows are persons per hour in the same field.
 interface Flow { origin: number; destination: number; vehPerHour: number; mode?: 'car' | 'bicycle' | 'pedestrian' }
 
@@ -313,6 +315,26 @@ function gateWeights(sector: string, p: string, dir: 'in' | 'out') {
 // ---------- per period ----------
 const outPeriods: { id: string; label: string; flows: Flow[] }[] = [];
 const summary: { id: string; total: number; through: number; local: number; ramp: number; rampLocal: number; localInternal: number; dropped: number; fw: Map<number, { out: number; in: number }>; rampDest: Map<number, number> }[] = [];
+
+// Per-period totals by type from a final flow list (car flows only).
+function summarizeFlows(flows: Flow[]) {
+  const gateIds = new Set(gates.map((g) => g.id));
+  let thrOut = 0, locOut = 0, rampOut = 0, rampLocal = 0;
+  const fwPer = new Map<number, { out: number; in: number }>(fwGates.map((g) => [g.id, { out: 0, in: 0 }] as const));
+  const rampDest = new Map<number, number>(); // PM-style destination table: surface gate or local node id -> ramp-off veh/h
+  for (const fl of flows) {
+    if (fl.mode) continue;
+    const fo = fwPer.get(fl.origin), fd = fwPer.get(fl.destination);
+    if (fo || fd) {
+      rampOut += fl.vehPerHour;
+      if (fo) { fo.out += fl.vehPerHour; rampDest.set(fl.destination, (rampDest.get(fl.destination) ?? 0) + fl.vehPerHour); }
+      if (fd) fd.in += fl.vehPerHour;
+      if (!gateIds.has(fo ? fl.destination : fl.origin)) rampLocal += fl.vehPerHour;
+    } else if (gateIds.has(fl.origin) && gateIds.has(fl.destination)) thrOut += fl.vehPerHour;
+    else locOut += fl.vehPerHour;
+  }
+  return { total: thrOut + locOut + rampOut, through: thrOut, local: locOut, ramp: rampOut, rampLocal, fw: fwPer, rampDest };
+}
 let throughDebug: string[] = [];
 const periLog: string[] = [];
 let unroutableDropped = 0;
@@ -547,22 +569,47 @@ for (const p of cfg.periods as { id: string; label: string }[]) {
   const fac: Record<string, number> = Object.fromEntries(Object.keys(before).map((c) => [c, after2[c] > 0 ? before[c] / after2[c] : 1]));
   if (p.id === lastPeriod) throughDebug.push(`pruning kept ${(100 * (after.ramp + after.through + after.local) / (before.ramp + before.through + before.local)).toFixed(0)}% of the volume; after fitting, class total factors ramp ${fac.ramp.toFixed(3)}, through ${fac.through.toFixed(3)}, local ${fac.local.toFixed(3)}`);
   const flows: Flow[] = keep.map((q) => ({ origin: q.o, destination: q.d, vehPerHour: Math.round(q.v * fac[q.c] * 100) / 100 })).filter((q) => q.vehPerHour > 0);
-  const gateIds = new Set(gates.map((g) => g.id));
-  let thrOut = 0, locOut = 0, rampOut = 0, rampLocal = 0;
-  const fwPer = new Map<number, { out: number; in: number }>(fwGates.map((g) => [g.id, { out: 0, in: 0 }] as const));
-  const rampDest = new Map<number, number>(); // PM-style destination table: surface gate or local node id -> ramp-off veh/h
-  for (const fl of flows) {
-    const fo = fwPer.get(fl.origin), fd = fwPer.get(fl.destination);
-    if (fo || fd) {
-      rampOut += fl.vehPerHour;
-      if (fo) { fo.out += fl.vehPerHour; rampDest.set(fl.destination, (rampDest.get(fl.destination) ?? 0) + fl.vehPerHour); }
-      if (fd) fd.in += fl.vehPerHour;
-      if (!gateIds.has(fo ? fl.destination : fl.origin)) rampLocal += fl.vehPerHour;
-    } else if (gateIds.has(fl.origin) && gateIds.has(fl.destination)) thrOut += fl.vehPerHour;
-    else locOut += fl.vehPerHour;
-  }
-  summary.push({ id: p.id, total: thrOut + locOut + rampOut, through: thrOut, local: locOut, ramp: rampOut, rampLocal, localInternal: internalTotal, dropped: flowsMap.size - list.length, fw: fwPer, rampDest });
+  summary.push({ id: p.id, ...summarizeFlows(flows), localInternal: internalTotal, dropped: flowsMap.size - list.length });
   outPeriods.push({ id: p.id, label: p.label, flows });
+}
+
+const gateById = new Map(gates.map((g) => [g.id, g]));
+const fwIdSet = new Set(fwGates.map((g) => g.id));
+const typeOf = (o: number, d: number): FlowType => (fwIdSet.has(o) || fwIdSet.has(d) ? 'ramp' : gateById.has(o) && gateById.has(d) ? 'through' : 'local');
+
+// ---------- count-constrained fit (baseline-calibration, seventh round): static assignment, matrix adjustment to link counts, capacity guard ----------
+// Offered car trips are assigned to free-flow shortest paths (tools/lib/assign.ts mirrors the simulator's router); every count the pipeline holds becomes a
+// target volume on directed links (tools/lib/demand-fit.ts); flows are scaled until assigned volumes match [VanZuylen1980], [Willumsen1981]. Walking and biking are untouched.
+let fitText = '';
+const fitResults: PeriodResult[] = [];
+const fc = cfg.countFit;
+if (fc?.enabled) {
+  const stationNotes: string[] = [];
+  const stations = buildStations({
+    nodes: net.nodes as never, links: net.links as NetLinkIn[], periodIds, lastPeriod, periodFactors: pf, kFactor: cfg.kFactor, rampKFactor: rc.kFactor, center,
+    inBbox: (x, y) => x >= rect.minX && x <= rect.maxX && y >= rect.minY && y <= rect.maxY,
+    streetKey, gates: gates.map((g) => ({ id: g.id, kind: g.kind, street: g.street, source: g.source, inT: g.inT, outT: g.outT })),
+    tmcs: tmcs.map((c) => ({ id: c.id, x: c.x, y: c.y, legs: c.legs, legStreets: c.legStreets })),
+    ramps: ramps.map((r) => { const v = rampVol.get(r)!; return { kind: r.kind, surface: r.surface, streets: r.streets, adt: v.adt, adtKind: v.kind, source: v.source }; }),
+    overrides: (cfg.adtOverrides ?? []).map((o: { street: string; adt: number; factor?: number; lat: number; lon: number; source: string }) => { const [x, y] = toXY(o.lat, o.lon); return { street: o.street, adt: o.adt, factor: o.factor, x, y, source: o.source }; }),
+    cfg: { tmcNodeMaxM: fc.tmcNodeMaxM, stationRadiusM: fc.stationRadiusM, weights: fc.weights, tolerancePct: fc.tolerancePct },
+  }, stationNotes);
+  const fitCfg: FitConfig = {
+    fit: { lo: fc.bounds.lo, hi: fc.bounds.hi, maxIter: fc.maxIter, tol: fc.tol, damping: fc.damping, uncounted: fc.uncounted.rule, volumeWeightedMedian: fc.uncounted.volumeWeighted, stationary: fc.stationary ?? 1e-4 },
+    draws: fc.draws, noise: fc.noise, guard: { enabled: fc.capacityGuard.enabled, excessShare: fc.capacityGuard.excessShare, weight: fc.capacityGuard.weight, capacity: fc.capacityGuard.capacity },
+  };
+  const flowsBy: Record<string, { origin: number; destination: number; vehPerHour: number }[]> = {};
+  for (const per of outPeriods) {
+    const cars = per.flows.filter((q) => !q.mode);
+    const types = cars.map((q) => typeOf(q.origin, q.destination));
+    const r = fitPeriod(per.id, cars, types, stations, net.nodes as never, net.links as NetLinkIn[], net.turnBans ?? [], fitCfg);
+    fitResults.push(r);
+    flowsBy[per.id] = cars.map((q) => ({ ...q }));
+    per.flows = [...cars.map((q, k) => ({ ...q, vehPerHour: Math.round(r.volume[k] * 100) / 100 })).filter((q) => q.vehPerHour >= 0.01), ...per.flows.filter((q) => q.mode)];
+  }
+  for (const s of summary) { const per = outPeriods.find((q) => q.id === s.id)!; Object.assign(s, summarizeFlows(per.flows)); }
+  fitText = fitReport(cfg.area, fitResults, flowsBy, { fit: fitCfg.fit, draws: fc.draws, noise: fc.noise, guardExcess: fc.capacityGuard.excessShare, guardOn: fc.capacityGuard.enabled, tolOk: fc.tolerancePct.report }, stationNotes, []);
+  if (fc.output) writeFileSync(fc.output, fitText);
 }
 
 // ---------- walking and biking (design D6): ASSUMPTION shares and trip lengths; DATA only in the count scaling ----------
@@ -593,9 +640,6 @@ if (cfg.active) {
 }
 
 // ---------- demand audit: relevance of every car trip to the study area, and the cordon check ----------
-const gateById = new Map(gates.map((g) => [g.id, g]));
-const fwIdSet = new Set(fwGates.map((g) => g.id));
-const typeOf = (o: number, d: number) => (fwIdSet.has(o) || fwIdSet.has(d) ? 'ramp' : gateById.has(o) && gateById.has(d) ? 'through' : 'local');
 const relSum: Record<string, Record<string, Record<Relevance, number>>> = {};
 const gateRel = new Map<number, { in: number; out: number; inNear: number; outNear: number }>(gates.map((g) => [g.id, { in: 0, out: 0, inNear: 0, outNear: 0 }]));
 for (const per of outPeriods) {

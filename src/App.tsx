@@ -241,7 +241,10 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
     if (overlay === 'speed') return 1;
     const v = linkStatsView(linkStats);
     const vals: number[] = [];
-    for (let i = 0; i < network.links.length; i++) vals.push(overlay === 'flow' ? v.flow(i) : v.cut(i));
+    for (let i = 0; i < network.links.length; i++) {
+      const x = overlay === 'flow' ? v.flow(i) : v.cut(i);
+      if (x > 0) vals.push(x); // links with no traffic are not drawn, so they must not set the scale
+    }
     const next = nextOverlayMax(vals, OVERLAY_FLOOR[overlay], maxRef.current[overlay], performance.now());
     maxRef.current[overlay] = next;
     return next.max;

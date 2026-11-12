@@ -100,7 +100,8 @@ export function Playback(p: PlaybackProps) {
             </div>
           </div>
           <span className="speed-note small" role="status">{note}</span>
-          <span className="clock" aria-label={`Simulated time ${progressText}`}>
+          <span className="clock">
+            <span className="sr-only">Simulated time {progressText}</span>
             <span aria-hidden="true">{formatClock(shownTime)} / {formatClock(RUN_SECONDS)}</span>
           </span>
           <div className="run-progress" role="progressbar" aria-label="Run progress" aria-valuemin={0} aria-valuemax={RUN_SECONDS}

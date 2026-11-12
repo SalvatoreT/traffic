@@ -8,18 +8,18 @@ Relevance of a trip: (i) touches = its route uses a link of the study area or of
 
 | Period | Type | Touches | Near | Peripheral | Total | Peripheral share |
 | --- | --- | --- | --- | --- | --- | --- |
-| am_peak | through | 2147 | 1270 | 3716 | 7134 | 52% |
-| am_peak | local | 525 | 260 | 1555 | 2340 | 66% |
-| am_peak | ramp | 5116 | 2984 | 3008 | 11108 | 27% |
-| am_peak | **all** | 7789 | 4514 | 8278 | 20582 | 40% |
-| midday | through | 1960 | 1181 | 3230 | 6371 | 51% |
-| midday | local | 336 | 163 | 1019 | 1517 | 67% |
-| midday | ramp | 3700 | 2207 | 2196 | 8103 | 27% |
-| midday | **all** | 5995 | 3551 | 6445 | 15991 | 40% |
-| pm_peak | through | 3122 | 1858 | 5104 | 10084 | 51% |
-| pm_peak | local | 509 | 259 | 1513 | 2282 | 66% |
-| pm_peak | ramp | 5893 | 3634 | 3541 | 13068 | 27% |
-| pm_peak | **all** | 9524 | 5751 | 10159 | 25434 | 40% |
+| am_peak | through | 1463 | 288 | 4317 | 6068 | 71% |
+| am_peak | local | 528 | 220 | 2305 | 3053 | 75% |
+| am_peak | ramp | 2994 | 1468 | 4923 | 9385 | 52% |
+| am_peak | **all** | 4985 | 1976 | 11546 | 18507 | 62% |
+| midday | through | 1235 | 305 | 3920 | 5460 | 72% |
+| midday | local | 267 | 117 | 1253 | 1637 | 77% |
+| midday | ramp | 2251 | 947 | 3547 | 6744 | 53% |
+| midday | **all** | 3753 | 1369 | 8720 | 13841 | 63% |
+| pm_peak | through | 1689 | 390 | 5462 | 7541 | 72% |
+| pm_peak | local | 550 | 210 | 2093 | 2852 | 73% |
+| pm_peak | ramp | 3484 | 1596 | 5752 | 10832 | 53% |
+| pm_peak | **all** | 5723 | 2196 | 13306 | 21225 | 63% |
 
 ## Cordon: modeled gate flow against what the corridors can carry
 
@@ -29,10 +29,10 @@ A side total hides single corridors: many residential gates have spare capacity 
 
 | Side | Surface gates | Inflow | Inflow capacity | Ratio | Outflow | Outflow capacity | Ratio | Gate directions over capacity | Volume above capacity | Freeway gates in / capacity | Freeway gates out / capacity |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| north | 38 | 3984 | 43524 | 0.09 | 4050 | 42687 | 0.09 | 0 | 0 | - | - |
-| east | 15 | 1350 | 13392 | 0.10 | 1452 | 12555 | 0.12 | 0 | 0 | 1956 / 19656 | 2004 / 19656 |
-| south | 33 | 4303 | 39339 | 0.11 | 3994 | 37665 | 0.11 | 0 | 0 | 4797 / 19656 | 4311 / 19656 |
-| west | 33 | 3654 | 30132 | 0.12 | 3955 | 28458 | 0.14 | 0 | 0 | - | - |
+| north | 38 | 3554 | 43524 | 0.08 | 3172 | 42687 | 0.07 | 0 | 0 | - | - |
+| east | 15 | 405 | 13392 | 0.03 | 744 | 12555 | 0.06 | 0 | 0 | 1597 / 19656 | 1459 / 19656 |
+| south | 33 | 3163 | 39339 | 0.08 | 3418 | 37665 | 0.09 | 0 | 0 | 4341 / 19656 | 3435 / 19656 |
+| west | 33 | 2944 | 30132 | 0.10 | 3506 | 28458 | 0.12 | 0 | 0 | - | - |
 
 ## Gates (PM peak)
 
@@ -40,122 +40,122 @@ Daily volume is the ADT used (class default, Caltrans station) or, for count-bas
 
 | Gate | Side | Street | Class | Basis | Daily volume | In (target / modeled) | In capacity | Out (target / modeled) | Out capacity | Near share (%) |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1546 | west | Ashby Avenue | primary | DATA | 28000 | 1134 / 1129 | 1674 | 1386 / 1375 | 1674 | 27 |
-| 1257 | north | Ward Street | secondary | DATA | 21814 | 1064 / 1063 | 2511 | 900 / 892 | 2511 | 51 |
-| 1784 | north | Claremont Avenue | secondary | DATA | 14100 | 571 / 576 | 837 | 698 / 700 | 837 | 72 |
-| 448 | north | Tunnel Road | tertiary | DATA | 27000 | 547 / 551 | 1674 | 668 / 670 | 1674 | 76 |
-| 1009 | east | Tunnel Road | tertiary | DATA | 27000 | 547 / 551 | 837 | 668 / 670 | 837 | 75 |
-| 1636 | west | Alcatraz Avenue | tertiary | DATA | 12992 | 547 / 531 | 837 | 623 / 607 | 837 | 48 |
-| 976 | south | Market Street | tertiary | DATA | 11497 | 607 / 512 | 837 | 428 / 371 | 837 | 63 |
-| 1469 | west | San Pablo Avenue | primary | DATA | 20500 | 0 / 0 | 0 | 1015 / 883 | 1674 | 56 |
-| 1511 | south | San Pablo Avenue | primary | DATA | 20500 | 415 / 360 | 837 | 507 / 446 | 3348 | 52 |
-| 1749 | south | San Pablo Avenue | primary | DATA | 20500 | 923 / 814 | 1674 | 0 / 0 | 0 | 55 |
-| 1635 | west | San Pablo Avenue | primary | DATA | 20500 | 830 / 738 | 1674 | 0 / 0 | 0 | 56 |
-| 1363 | south | Adeline Street | secondary | ASSUMPTION | 9000 | 365 / 304 | 837 | 446 / 306 | 837 | 52 |
-| 1341 | south | Martin Luther King Junior Way | secondary | ASSUMPTION | 9000 | 365 / 350 | 1674 | 446 / 344 | 1674 | 49 |
-| 1723 | south | Telegraph Avenue | secondary | DATA | 8125 | 0 / 0 | 0 | 731 / 709 | 837 | 56 |
-| 1331 | south | Broadway | primary | ASSUMPTION | 14000 | 0 / 0 | 0 | 693 / 484 | 1674 | 19 |
-| 1582 | south | Broadway | primary | ASSUMPTION | 14000 | 567 / 519 | 1674 | 0 / 0 | 0 | 15 |
-| 1663 | south | Telegraph Avenue | secondary | DATA | 6097 | 549 / 526 | 1674 | 0 / 0 | 0 | 54 |
-| 194 | south | 43rd Street | tertiary | DATA | 5289 | 142 / 122 | 2511 | 335 / 290 | 2511 | 58 |
-| 1326 | north | Martin Luther King Junior Way | tertiary | ASSUMPTION | 5000 | 203 / 201 | 1674 | 248 / 201 | 1674 | 22 |
-| 1296 | north | College Avenue | tertiary | ASSUMPTION | 5000 | 203 / 202 | 837 | 248 / 203 | 837 | 44 |
-| 811 | north | Claremont Boulevard | tertiary | ASSUMPTION | 5000 | 203 / 204 | 837 | 248 / 204 | 837 | 73 |
-| 271 | east | Duncan Way | tertiary | ASSUMPTION | 5000 | 203 / 205 | 837 | 248 / 200 | 837 | 87 |
-| 39 | east | Broadway Terrace | tertiary | ASSUMPTION | 5000 | 203 / 205 | 837 | 248 / 200 | 837 | 86 |
-| 274 | west | Powell Street | secondary | ASSUMPTION | 9000 | 0 / 0 | 0 | 446 / 336 | 1674 | 56 |
-| 1445 | north | Shattuck Avenue | secondary | ASSUMPTION | 9000 | 0 / 0 | 0 | 446 / 364 | 1674 | 46 |
-| 1558 | south | Moraga Avenue | secondary | ASSUMPTION | 9000 | 182 / 185 | 837 | 223 / 180 | 837 | 68 |
-| 1191 | south | Pleasant Valley Avenue | secondary | ASSUMPTION | 9000 | 182 / 163 | 2511 | 223 / 153 | 837 | 17 |
-| 1206 | south | Pleasant Valley Avenue | secondary | ASSUMPTION | 9000 | 0 / 0 | 0 | 405 / 277 | 1674 | 18 |
-| 1440 | north | Shattuck Avenue | secondary | ASSUMPTION | 9000 | 365 / 364 | 2511 | 0 / 0 | 0 | 35 |
-| 1595 | west | Powell Street | secondary | ASSUMPTION | 9000 | 365 / 343 | 1674 | 0 / 0 | 0 | 56 |
-| 474 | west | 55th Street | residential | DATA | 3767 | 200 / 193 | 837 | 139 / 133 | 837 | 52 |
-| 1557 | south | Moraga Avenue | secondary | ASSUMPTION | 9000 | 122 / 123 | 1674 | 149 / 120 | 1674 | 67 |
-| 1559 | south | Harbord Drive | tertiary | ASSUMPTION | 5000 | 101 / 103 | 1674 | 124 / 100 | 1674 | 66 |
-| 399 | north | Parker Street | tertiary | ASSUMPTION | 5000 | 68 / 63 | 3348 | 83 / 63 | 1674 | 26 |
-| 1432 | north | Sacramento Street | tertiary | ASSUMPTION | 5000 | 68 / 64 | 837 | 83 / 65 | 2511 | 26 |
-| 6 | east | Broadway | residential | ASSUMPTION | 800 | 32 / 33 | 1674 | 40 / 32 | 837 | 94 |
-| 60 | east | Masonic Avenue | residential | ASSUMPTION | 800 | 32 / 33 | 837 | 40 / 32 | 837 | 90 |
-| 146 | west | Haskell Street | residential | ASSUMPTION | 800 | 32 / 33 | 837 | 40 / 30 | 837 | 38 |
-| 168 | west | 65th Street | residential | ASSUMPTION | 800 | 32 / 31 | 837 | 40 / 30 | 837 | 40 |
-| 222 | east | Ruthland Road | residential | ASSUMPTION | 800 | 32 / 31 | 837 | 40 / 32 | 837 | 88 |
-| 294 | south | Hilltop Crescent | residential | ASSUMPTION | 800 | 32 / 33 | 837 | 40 / 32 | 837 | 72 |
-| 327 | north | Regent Street | residential | ASSUMPTION | 800 | 32 / 31 | 837 | 40 / 33 | 837 | 45 |
-| 334 | south | Whitmore Street | residential | ASSUMPTION | 800 | 32 / 29 | 1674 | 40 / 27 | 837 | 14 |
-| 363 | east | Aquarius Way | residential | ASSUMPTION | 800 | 32 / 30 | 837 | 40 / 32 | 837 | 80 |
-| 372 | east | Fairlane Drive | residential | ASSUMPTION | 800 | 32 / 33 | 837 | 40 / 32 | 837 | 93 |
-| 433 | west | 62nd Street | residential | ASSUMPTION | 800 | 32 / 29 | 837 | 40 / 27 | 837 | 56 |
-| 506 | north | Benvenue Avenue | residential | ASSUMPTION | 800 | 32 / 32 | 837 | 40 / 32 | 837 | 39 |
-| 520 | north | Hillegass Avenue | residential | ASSUMPTION | 800 | 32 / 32 | 837 | 40 / 32 | 837 | 46 |
-| 532 | east | Pinewood Road | residential | ASSUMPTION | 800 | 32 / 32 | 837 | 40 / 32 | 837 | 92 |
-| 537 | west | 63rd Street | residential | ASSUMPTION | 800 | 32 / 30 | 837 | 40 / 30 | 837 | 50 |
-| 568 | north | Norfolk Road | residential | ASSUMPTION | 800 | 32 / 33 | 837 | 40 / 32 | 837 | 73 |
-| 569 | west | 67th Street | residential | ASSUMPTION | 800 | 72 / 69 | 837 | 0 / 0 | 0 | 39 |
-| 624 | south | Maxwelton Road | residential | ASSUMPTION | 800 | 32 / 33 | 837 | 40 / 32 | 837 | 67 |
-| 627 | west | Carrison Street | residential | ASSUMPTION | 800 | 32 / 31 | 837 | 40 / 30 | 837 | 30 |
-| 648 | east | Masonic Place | residential | ASSUMPTION | 800 | 32 / 33 | 837 | 40 / 30 | 837 | 84 |
-| 681 | west | Ward Street | residential | ASSUMPTION | 800 | 32 / 31 | 837 | 40 / 30 | 837 | 34 |
-| 691 | west | Salem Street | residential | ASSUMPTION | 800 | 32 / 31 | 837 | 40 / 30 | 837 | 45 |
-| 713 | west | Doyle Street | residential | ASSUMPTION | 800 | 32 / 30 | 837 | 40 / 30 | 837 | 58 |
-| 730 | north | Amito Avenue | residential | ASSUMPTION | 800 | 32 / 33 | 837 | 40 / 33 | 837 | 78 |
-| 731 | south | Whitmore Place | residential | ASSUMPTION | 800 | 32 / 29 | 837 | 40 / 28 | 837 | 24 |
-| 734 | north | Evergreen Lane | residential | ASSUMPTION | 800 | 32 / 33 | 837 | 40 / 32 | 837 | 75 |
-| 741 | east | Swainland Road | residential | ASSUMPTION | 800 | 32 / 33 | 837 | 40 / 32 | 837 | 92 |
-| 756 | east | Estates Drive | residential | ASSUMPTION | 800 | 32 / 33 | 837 | 40 / 32 | 837 | 83 |
-| 821 | north | Westmoorland Drive | residential | ASSUMPTION | 800 | 32 / 33 | 837 | 40 / 31 | 837 | 79 |
-| 1002 | north | Fulton Street | residential | ASSUMPTION | 800 | 32 / 31 | 837 | 40 / 32 | 837 | 38 |
-| 1014 | north | Piedmont Avenue | residential | ASSUMPTION | 800 | 32 / 32 | 837 | 40 / 32 | 837 | 40 |
-| 1056 | north | Dana Street | residential | ASSUMPTION | 800 | 32 / 32 | 837 | 40 / 32 | 837 | 45 |
-| 1063 | west | Stanford Avenue | residential | ASSUMPTION | 800 | 72 / 68 | 837 | 0 / 0 | 0 | 58 |
-| 1065 | west | Marshall Street | residential | ASSUMPTION | 800 | 0 / 0 | 837 | 72 / 51 | 837 | 62 |
-| 1070 | west | 59th Street | residential | ASSUMPTION | 800 | 32 / 29 | 837 | 40 / 28 | 837 | 61 |
-| 1071 | west | 54th Street | residential | ASSUMPTION | 800 | 32 / 30 | 837 | 40 / 30 | 837 | 55 |
-| 1083 | north | California Street | residential | ASSUMPTION | 800 | 32 / 32 | 837 | 40 / 31 | 837 | 21 |
-| 1100 | west | Derby Street | residential | ASSUMPTION | 800 | 32 / 30 | 837 | 40 / 31 | 837 | 26 |
-| 1123 | north | Milvia Street | residential | ASSUMPTION | 800 | 32 / 31 | 837 | 40 / 32 | 837 | 41 |
-| 1145 | north | Derby Street | residential | ASSUMPTION | 800 | 32 / 31 | 837 | 40 / 32 | 837 | 37 |
-| 1182 | east | Glenwood Glade | residential | ASSUMPTION | 800 | 32 / 33 | 837 | 40 / 32 | 837 | 91 |
-| 1248 | north | Ellsworth Street | residential | ASSUMPTION | 800 | 32 / 32 | 837 | 40 / 32 | 837 | 43 |
-| 1530 | west | Burnett Street | residential | ASSUMPTION | 800 | 32 / 31 | 837 | 40 / 30 | 837 | 19 |
-| 1534 | west | 66th Street | residential | ASSUMPTION | 800 | 32 / 31 | 837 | 40 / 30 | 837 | 41 |
-| 1538 | north | Oak Knoll Terrace | residential | ASSUMPTION | 800 | 32 / 31 | 837 | 40 / 33 | 837 | 75 |
-| 1540 | north | Palm Court | residential | ASSUMPTION | 800 | 32 / 37 | 837 | 40 / 31 | 837 | 46 |
-| 1547 | west | 61st Street | residential | ASSUMPTION | 800 | 32 / 28 | 837 | 40 / 27 | 837 | 58 |
-| 1574 | west | 45th Street | residential | ASSUMPTION | 800 | 32 / 30 | 1674 | 40 / 30 | 1674 | 51 |
-| 1727 | north | Alvarado Road | residential | ASSUMPTION | 800 | 32 / 33 | 837 | 40 / 33 | 837 | 70 |
-| 1733 | east | Mountain Boulevard | residential | ASSUMPTION | 800 | 32 / 33 | 837 | 40 / 32 | 837 | 87 |
-| 1764 | north | Buckingham Boulevard | residential | ASSUMPTION | 800 | 32 / 32 | 837 | 40 / 32 | 837 | 85 |
-| 1767 | east | Caldecott Lane | residential | ASSUMPTION | 800 | 32 / 33 | 837 | 40 / 32 | 837 | 87 |
-| 1785 | west | Herzog Street | residential | ASSUMPTION | 800 | 32 / 30 | 837 | 40 / 31 | 837 | 47 |
-| 1725 | west | Steve Dain Drive | residential | ASSUMPTION | 800 | 0 / 0 | 0 | 40 / 30 | 837 | 52 |
-| 143 | north | Gravatt Drive | residential | ASSUMPTION | 800 | 16 / 16 | 837 | 20 / 16 | 837 | 75 |
-| 144 | north | Gravatt Drive | residential | ASSUMPTION | 800 | 16 / 16 | 837 | 20 / 16 | 837 | 75 |
-| 483 | south | 42nd Street | residential | ASSUMPTION | 800 | 16 / 13 | 837 | 20 / 12 | 837 | 51 |
-| 484 | south | 42nd Street | residential | ASSUMPTION | 800 | 16 / 13 | 1674 | 20 / 14 | 1674 | 44 |
-| 704 | west | Boyer Street | residential | ASSUMPTION | 800 | 16 / 16 | 1674 | 20 / 14 | 1674 | 56 |
-| 705 | west | Boyer Street | residential | ASSUMPTION | 800 | 16 / 15 | 837 | 20 / 14 | 837 | 59 |
-| 1353 | north | Acton Street | residential | ASSUMPTION | 800 | 16 / 15 | 2511 | 20 / 15 | 2511 | 21 |
-| 1528 | north | Acton Street | residential | ASSUMPTION | 800 | 16 / 15 | 837 | 20 / 15 | 837 | 22 |
-| 1531 | west | Mabel Street | residential | ASSUMPTION | 800 | 16 / 15 | 837 | 20 / 15 | 837 | 18 |
-| 1532 | west | Mabel Street | residential | ASSUMPTION | 800 | 16 / 15 | 1674 | 20 / 15 | 1674 | 30 |
-| 1724 | west | Steve Dain Drive | residential | ASSUMPTION | 800 | 32 / 30 | 837 | 0 / 0 | 0 | 43 |
-| 1356 | north | Carleton Street | residential | ASSUMPTION | 800 | 11 / 10 | 837 | 13 / 11 | 837 | 8 |
-| 1094 | north | Grant Street | residential | ASSUMPTION | 800 | 11 / 10 | 2511 | 13 / 11 | 2511 | 15 |
-| 1078 | north | McGee Avenue | residential | ASSUMPTION | 800 | 11 / 11 | 2511 | 13 / 10 | 2511 | 20 |
-| 397 | north | Parker Street | residential | ASSUMPTION | 800 | 11 / 10 | 837 | 13 / 7 | 837 | 17 |
-| 196 | south | 43rd Street | residential | ASSUMPTION | 800 | 11 / 9 | 1674 | 13 / 8 | 1674 | 72 |
-| 193 | south | 43rd Street | residential | ASSUMPTION | 800 | 11 / 8 | 837 | 13 / 8 | 837 | 70 |
-| 24 | south | 44th Street | residential | ASSUMPTION | 800 | 8 / 6 | 837 | 10 / 6 | 837 | 42 |
-| 25 | south | 44th Street | residential | ASSUMPTION | 800 | 8 / 7 | 2511 | 10 / 7 | 2511 | 42 |
-| 26 | south | 44th Street | residential | ASSUMPTION | 800 | 8 / 6 | 2511 | 10 / 6 | 2511 | 63 |
-| 27 | south | 44th Street | residential | ASSUMPTION | 800 | 8 / 6 | 837 | 10 / 7 | 837 | 52 |
-| 1687 | south | (unnamed) | service | ASSUMPTION | 150 | 6 / 4 | 837 | 7 / 4 | 837 | 56 |
-| 1645 | north | (unnamed) | service | ASSUMPTION | 150 | 6 / 6 | 837 | 7 / 6 | 837 | 75 |
-| 1615 | south | (unnamed) | service | ASSUMPTION | 150 | 6 / 5 | 837 | 7 / 4 | 837 | 60 |
-| 1608 | south | (unnamed) | service | ASSUMPTION | 150 | 6 / 4 | 837 | 7 / 5 | 837 | 21 |
-| 1576 | south | (unnamed) | service | ASSUMPTION | 150 | 6 / 4 | 837 | 7 / 4 | 837 | 0 |
-| 1575 | west | (unnamed) | service | ASSUMPTION | 150 | 6 / 5 | 837 | 7 / 5 | 837 | 83 |
-| 1177 | north | (unnamed) | service | ASSUMPTION | 150 | 6 / 6 | 837 | 7 / 6 | 837 | 80 |
-| 1639 | south | (unnamed) | service | ASSUMPTION | 150 | 14 / 12 | 837 | 0 / 0 | 0 | 17 |
-| 1698 | south | (unnamed) | service | ASSUMPTION | 150 | 0 / 0 | 837 | 14 / 9 | 837 | 50 |
+| 269 | west | Ashby Avenue | primary | DATA | 28000 | 1134 / 1134 | 1674 | 1386 / 1386 | 1674 | 4 |
+| 966 | north | Ward Street | secondary | DATA | 21814 | 1064 / 997 | 2511 | 900 / 833 | 2511 | 42 |
+| 1793 | north | Claremont Avenue | secondary | DATA | 14100 | 571 / 512 | 837 | 698 / 480 | 837 | 60 |
+| 1580 | north | Tunnel Road | tertiary | DATA | 27000 | 547 / 71 | 1674 | 668 / 71 | 1674 | 53 |
+| 1751 | east | Tunnel Road | tertiary | DATA | 27000 | 547 / 201 | 837 | 668 / 448 | 837 | 36 |
+| 184 | west | Alcatraz Avenue | tertiary | DATA | 12992 | 547 / 469 | 837 | 623 / 465 | 837 | 14 |
+| 286 | south | Market Street | tertiary | DATA | 11497 | 607 / 463 | 837 | 428 / 322 | 837 | 58 |
+| 179 | west | San Pablo Avenue | primary | DATA | 20500 | 0 / 0 | 0 | 1015 / 1015 | 1674 | 19 |
+| 74 | south | San Pablo Avenue | primary | DATA | 20500 | 415 / 189 | 837 | 507 / 476 | 3348 | 20 |
+| 104 | south | San Pablo Avenue | primary | DATA | 20500 | 923 / 464 | 1674 | 0 / 0 | 0 | 20 |
+| 183 | west | San Pablo Avenue | primary | DATA | 20500 | 830 / 625 | 1674 | 0 / 0 | 0 | 22 |
+| 299 | south | Adeline Street | secondary | ASSUMPTION | 9000 | 365 / 103 | 837 | 446 / 226 | 837 | 21 |
+| 287 | south | Martin Luther King Junior Way | secondary | ASSUMPTION | 9000 | 365 / 172 | 1674 | 446 / 179 | 1674 | 35 |
+| 788 | south | Telegraph Avenue | secondary | DATA | 8125 | 0 / 0 | 0 | 731 / 731 | 837 | 39 |
+| 996 | south | Broadway | primary | ASSUMPTION | 14000 | 0 / 0 | 0 | 693 / 489 | 1674 | 11 |
+| 997 | south | Broadway | primary | ASSUMPTION | 14000 | 567 / 596 | 1674 | 0 / 0 | 0 | 19 |
+| 778 | south | Telegraph Avenue | secondary | DATA | 6097 | 549 / 548 | 1674 | 0 / 0 | 0 | 38 |
+| 306 | south | 43rd Street | tertiary | DATA | 5289 | 142 / 79 | 2511 | 335 / 265 | 2511 | 41 |
+| 1687 | east | Duncan Way | tertiary | ASSUMPTION | 5000 | 203 / 36 | 837 | 248 / 91 | 837 | 44 |
+| 1676 | east | Broadway Terrace | tertiary | ASSUMPTION | 5000 | 203 / 34 | 837 | 248 / 71 | 837 | 41 |
+| 1430 | north | Claremont Boulevard | tertiary | ASSUMPTION | 5000 | 203 / 213 | 837 | 248 / 311 | 837 | 65 |
+| 1250 | north | College Avenue | tertiary | ASSUMPTION | 5000 | 203 / 244 | 837 | 248 / 208 | 837 | 31 |
+| 590 | north | Martin Luther King Junior Way | tertiary | ASSUMPTION | 5000 | 203 / 251 | 1674 | 248 / 217 | 1674 | 2 |
+| 8 | west | Powell Street | secondary | ASSUMPTION | 9000 | 0 / 0 | 0 | 446 / 137 | 1674 | 38 |
+| 976 | north | Shattuck Avenue | secondary | ASSUMPTION | 9000 | 0 / 0 | 0 | 446 / 294 | 1674 | 18 |
+| 1707 | south | Moraga Avenue | secondary | ASSUMPTION | 9000 | 182 / 93 | 837 | 223 / 74 | 837 | 18 |
+| 994 | south | Pleasant Valley Avenue | secondary | ASSUMPTION | 9000 | 182 / 152 | 2511 | 223 / 143 | 837 | 13 |
+| 993 | south | Pleasant Valley Avenue | secondary | ASSUMPTION | 9000 | 0 / 0 | 0 | 405 / 278 | 1674 | 11 |
+| 89 | west | Powell Street | secondary | ASSUMPTION | 9000 | 365 / 119 | 1674 | 0 / 0 | 0 | 28 |
+| 975 | north | Shattuck Avenue | secondary | ASSUMPTION | 9000 | 365 / 366 | 2511 | 0 / 0 | 0 | 19 |
+| 14 | west | 55th Street | residential | DATA | 3767 | 200 / 200 | 837 | 139 / 139 | 837 | 30 |
+| 1551 | south | Harbord Drive | secondary | ASSUMPTION | 9000 | 122 / 58 | 1674 | 149 / 44 | 1674 | 18 |
+| 1550 | south | Harbord Drive | tertiary | ASSUMPTION | 5000 | 101 / 58 | 1674 | 124 / 39 | 1674 | 16 |
+| 216 | north | Parker Street | tertiary | ASSUMPTION | 5000 | 68 / 40 | 3348 | 83 / 50 | 1674 | 3 |
+| 256 | north | Sacramento Street | tertiary | ASSUMPTION | 5000 | 68 / 34 | 837 | 83 / 49 | 2511 | 3 |
+| 26 | west | Doyle Street | residential | ASSUMPTION | 800 | 32 / 23 | 837 | 40 / 14 | 837 | 22 |
+| 38 | west | Stanford Avenue | residential | ASSUMPTION | 800 | 72 / 24 | 837 | 0 / 0 | 0 | 22 |
+| 40 | west | Marshall Street | residential | ASSUMPTION | 800 | 0 / 0 | 837 | 72 / 21 | 837 | 50 |
+| 44 | west | 54th Street | residential | ASSUMPTION | 800 | 32 / 22 | 837 | 40 / 22 | 837 | 20 |
+| 86 | west | 45th Street | residential | ASSUMPTION | 800 | 32 / 21 | 1674 | 40 / 23 | 1674 | 23 |
+| 106 | west | Haskell Street | residential | ASSUMPTION | 800 | 32 / 18 | 837 | 40 / 14 | 837 | 6 |
+| 111 | west | 65th Street | residential | ASSUMPTION | 800 | 32 / 16 | 837 | 40 / 11 | 837 | 9 |
+| 133 | west | 62nd Street | residential | ASSUMPTION | 800 | 32 / 23 | 837 | 40 / 45 | 837 | 18 |
+| 139 | west | 63rd Street | residential | ASSUMPTION | 800 | 32 / 8 | 837 | 40 / 19 | 837 | 17 |
+| 144 | west | 67th Street | residential | ASSUMPTION | 800 | 72 / 40 | 837 | 0 / 0 | 0 | 5 |
+| 150 | west | Salem Street | residential | ASSUMPTION | 800 | 32 / 14 | 837 | 40 / 15 | 837 | 16 |
+| 157 | west | 59th Street | residential | ASSUMPTION | 800 | 32 / 16 | 837 | 40 / 12 | 837 | 26 |
+| 181 | west | 66th Street | residential | ASSUMPTION | 800 | 32 / 12 | 837 | 40 / 12 | 837 | 8 |
+| 182 | west | 61st Street | residential | ASSUMPTION | 800 | 32 / 16 | 837 | 40 / 22 | 837 | 22 |
+| 221 | west | Carrison Street | residential | ASSUMPTION | 800 | 32 / 22 | 837 | 40 / 11 | 837 | 5 |
+| 225 | west | Ward Street | residential | ASSUMPTION | 800 | 32 / 19 | 837 | 40 / 13 | 837 | 5 |
+| 237 | west | Derby Street | residential | ASSUMPTION | 800 | 32 / 14 | 837 | 40 / 16 | 837 | 4 |
+| 265 | west | Burnett Street | residential | ASSUMPTION | 800 | 32 / 17 | 837 | 40 / 19 | 837 | 2 |
+| 558 | north | California Street | residential | ASSUMPTION | 800 | 32 / 21 | 837 | 40 / 24 | 837 | 3 |
+| 566 | north | Milvia Street | residential | ASSUMPTION | 800 | 32 / 30 | 837 | 40 / 21 | 837 | 19 |
+| 924 | north | Fulton Street | residential | ASSUMPTION | 800 | 32 / 35 | 837 | 40 / 22 | 837 | 19 |
+| 941 | north | Dana Street | residential | ASSUMPTION | 800 | 32 / 51 | 837 | 40 / 47 | 837 | 36 |
+| 944 | north | Derby Street | residential | ASSUMPTION | 800 | 32 / 33 | 837 | 40 / 20 | 837 | 26 |
+| 951 | north | Ellsworth Street | residential | ASSUMPTION | 800 | 32 / 44 | 837 | 40 / 38 | 837 | 27 |
+| 1022 | south | Whitmore Street | residential | ASSUMPTION | 800 | 32 / 21 | 1674 | 40 / 24 | 837 | 21 |
+| 1035 | south | Whitmore Place | residential | ASSUMPTION | 800 | 32 / 43 | 837 | 40 / 27 | 837 | 13 |
+| 1199 | north | Regent Street | residential | ASSUMPTION | 800 | 32 / 58 | 837 | 40 / 36 | 837 | 31 |
+| 1209 | north | Benvenue Avenue | residential | ASSUMPTION | 800 | 32 / 52 | 837 | 40 / 34 | 837 | 27 |
+| 1211 | north | Hillegass Avenue | residential | ASSUMPTION | 800 | 32 / 47 | 837 | 40 / 36 | 837 | 33 |
+| 1231 | north | Piedmont Avenue | residential | ASSUMPTION | 800 | 32 / 40 | 837 | 40 / 31 | 837 | 26 |
+| 1254 | north | Oak Knoll Terrace | residential | ASSUMPTION | 800 | 32 / 33 | 837 | 40 / 46 | 837 | 66 |
+| 1256 | north | Palm Court | residential | ASSUMPTION | 800 | 32 / 38 | 837 | 40 / 34 | 837 | 28 |
+| 1426 | north | Evergreen Lane | residential | ASSUMPTION | 800 | 32 / 55 | 837 | 40 / 37 | 837 | 68 |
+| 1479 | north | Alvarado Road | residential | ASSUMPTION | 800 | 32 / 50 | 837 | 40 / 39 | 837 | 69 |
+| 1510 | south | Hilltop Crescent | residential | ASSUMPTION | 800 | 32 / 14 | 837 | 40 / 10 | 837 | 18 |
+| 1529 | south | Maxwelton Road | residential | ASSUMPTION | 800 | 32 / 24 | 837 | 40 / 10 | 837 | 16 |
+| 1654 | north | Amito Avenue | residential | ASSUMPTION | 800 | 32 / 59 | 837 | 40 / 43 | 837 | 71 |
+| 1682 | east | Masonic Avenue | residential | ASSUMPTION | 800 | 32 / 12 | 837 | 40 / 9 | 837 | 36 |
+| 1689 | east | Aquarius Way | residential | ASSUMPTION | 800 | 32 / 3 | 837 | 40 / 12 | 837 | 54 |
+| 1692 | east | Masonic Place | residential | ASSUMPTION | 800 | 32 / 12 | 837 | 40 / 15 | 837 | 20 |
+| 1693 | east | Estates Drive | residential | ASSUMPTION | 800 | 32 / 3 | 837 | 40 / 14 | 837 | 41 |
+| 1700 | east | Glenwood Glade | residential | ASSUMPTION | 800 | 32 / 5 | 837 | 40 / 12 | 837 | 42 |
+| 1708 | east | Mountain Boulevard | residential | ASSUMPTION | 800 | 32 / 6 | 837 | 40 / 7 | 837 | 42 |
+| 1710 | east | Ruthland Road | residential | ASSUMPTION | 800 | 32 / 5 | 837 | 40 / 18 | 837 | 20 |
+| 1714 | east | Fairlane Drive | residential | ASSUMPTION | 800 | 32 / 3 | 837 | 40 / 14 | 837 | 46 |
+| 1716 | east | Pinewood Road | residential | ASSUMPTION | 800 | 32 / 12 | 837 | 40 / 7 | 837 | 32 |
+| 1717 | east | Swainland Road | residential | ASSUMPTION | 800 | 32 / 7 | 837 | 40 / 7 | 837 | 72 |
+| 1729 | east | Broadway | residential | ASSUMPTION | 800 | 32 / 9 | 1674 | 40 / 7 | 837 | 40 |
+| 1734 | north | Norfolk Road | residential | ASSUMPTION | 800 | 32 / 15 | 837 | 40 / 13 | 837 | 17 |
+| 1740 | north | Westmoorland Drive | residential | ASSUMPTION | 800 | 32 / 23 | 837 | 40 / 12 | 837 | 12 |
+| 1758 | north | (unnamed) | residential | ASSUMPTION | 800 | 32 / 3 | 837 | 40 / 5 | 837 | 58 |
+| 1764 | west | Herzog Street | residential | ASSUMPTION | 800 | 32 / 14 | 837 | 40 / 13 | 837 | 6 |
+| 1798 | north | Buckingham Boulevard | residential | ASSUMPTION | 800 | 32 / 20 | 837 | 40 / 15 | 837 | 13 |
+| 1799 | east | Caldecott Lane | residential | ASSUMPTION | 800 | 32 / 56 | 837 | 40 / 11 | 837 | 88 |
+| 103 | west | Steve Dain Drive | residential | ASSUMPTION | 800 | 0 / 0 | 0 | 40 / 22 | 837 | 24 |
+| 24 | west | Boyer Street | residential | ASSUMPTION | 800 | 16 / 9 | 1674 | 20 / 9 | 1674 | 18 |
+| 25 | west | Boyer Street | residential | ASSUMPTION | 800 | 16 / 9 | 837 | 20 / 8 | 837 | 19 |
+| 246 | north | Acton Street | residential | ASSUMPTION | 800 | 16 / 5 | 2511 | 20 / 9 | 2511 | 5 |
+| 263 | north | Acton Street | residential | ASSUMPTION | 800 | 16 / 4 | 837 | 20 / 12 | 837 | 5 |
+| 266 | west | Mabel Street | residential | ASSUMPTION | 800 | 16 / 9 | 837 | 20 / 9 | 837 | 3 |
+| 267 | west | Mabel Street | residential | ASSUMPTION | 800 | 16 / 8 | 1674 | 20 / 7 | 1674 | 4 |
+| 310 | south | 42nd Street | residential | ASSUMPTION | 800 | 16 / 3 | 837 | 20 / 8 | 837 | 23 |
+| 311 | south | 42nd Street | residential | ASSUMPTION | 800 | 16 / 3 | 1674 | 20 / 12 | 1674 | 25 |
+| 1401 | north | Gravatt Drive | residential | ASSUMPTION | 800 | 16 / 27 | 837 | 20 / 19 | 837 | 47 |
+| 1402 | north | Gravatt Drive | residential | ASSUMPTION | 800 | 16 / 36 | 837 | 20 / 13 | 837 | 63 |
+| 102 | west | Steve Dain Drive | residential | ASSUMPTION | 800 | 32 / 22 | 837 | 0 / 0 | 0 | 11 |
+| 308 | south | 43rd Street | residential | ASSUMPTION | 800 | 11 / 5 | 1674 | 13 / 8 | 1674 | 50 |
+| 305 | south | 43rd Street | residential | ASSUMPTION | 800 | 11 / 12 | 837 | 13 / 6 | 837 | 37 |
+| 252 | north | Carleton Street | residential | ASSUMPTION | 800 | 11 / 11 | 837 | 13 / 16 | 837 | 1 |
+| 251 | north | Carleton Street | residential | ASSUMPTION | 800 | 11 / 12 | 2511 | 13 / 18 | 2511 | 1 |
+| 250 | north | Carleton Street | residential | ASSUMPTION | 800 | 11 / 14 | 2511 | 13 / 9 | 2511 | 2 |
+| 214 | north | Parker Street | residential | ASSUMPTION | 800 | 11 / 3 | 837 | 13 / 6 | 837 | 5 |
+| 618 | south | Shafter Avenue | residential | ASSUMPTION | 800 | 8 / 7 | 2511 | 10 / 5 | 2511 | 39 |
+| 621 | south | Webster Street | residential | ASSUMPTION | 800 | 8 / 9 | 2511 | 10 / 5 | 2511 | 44 |
+| 623 | south | 44th Street | residential | ASSUMPTION | 800 | 8 / 10 | 837 | 10 / 5 | 837 | 23 |
+| 624 | south | 44th Street | residential | ASSUMPTION | 800 | 8 / 10 | 837 | 10 / 11 | 837 | 70 |
+| 1454 | north | (unnamed) | service | ASSUMPTION | 150 | 6 / 6 | 837 | 7 / 4 | 837 | 65 |
+| 391 | south | (unnamed) | service | ASSUMPTION | 150 | 6 / 5 | 837 | 7 / 5 | 837 | 92 |
+| 384 | south | (unnamed) | service | ASSUMPTION | 150 | 6 / 2 | 837 | 7 / 5 | 837 | 20 |
+| 100 | south | (unnamed) | service | ASSUMPTION | 150 | 6 / 2 | 837 | 7 / 5 | 837 | 25 |
+| 88 | south | (unnamed) | service | ASSUMPTION | 150 | 6 / 2 | 837 | 7 / 1 | 837 | 18 |
+| 87 | west | (unnamed) | service | ASSUMPTION | 150 | 6 / 1 | 837 | 7 / 4 | 837 | 15 |
+| 784 | south | (unnamed) | service | ASSUMPTION | 150 | 0 / 0 | 837 | 14 / 6 | 837 | 24 |
+| 1079 | south | (unnamed) | service | ASSUMPTION | 150 | 14 / 20 | 837 | 0 / 0 | 0 | 27 |
