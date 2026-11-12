@@ -1,7 +1,7 @@
 # demand-model Specification
 
 ## Purpose
-TBD - created by archiving change rockridge-vehicle-microsim. Update Purpose after archive.
+How baseline travel demand for a study area is built from public data and what the simulator can rely on in a demand file.
 
 ## Requirements
 

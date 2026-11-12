@@ -96,9 +96,9 @@ function Simulator({ bundle }: { bundle: AreaBundle }) {
   useEffect(() => { store.set('modes', JSON.stringify(modes)); }, [modes]);
   useEffect(() => { store.set('bikeNet', bikeNet ? '1' : '0'); }, [bikeNet]);
   const hasBikeNet = useMemo(() => network.links.some((l) => l.bikeLane || l.bikeRoute), [network]);
-  const [notice, setNotice] = useState<{ unplaced: Unplaced[]; legacy: boolean }>({ unplaced: [], legacy: false });
+  const [notice, setNotice] = useState<{ unplaced: Unplaced[]; invalid: boolean }>({ unplaced: [], invalid: false });
   // Set after mount so the polite live region exists before its content changes.
-  useEffect(() => { setNotice({ unplaced: initial.unplaced, legacy: initial.legacy }); }, [initial]);
+  useEffect(() => { setNotice({ unplaced: initial.unplaced, invalid: initial.invalid }); }, [initial]);
   const [source, setSource] = useState<'scenario' | 'baseline'>('scenario');
 
   const [engine, setEngine] = useState<{ kind: 'wasm' | 'mock'; reason?: string } | null>(null);
@@ -151,7 +151,7 @@ function Simulator({ bundle }: { bundle: AreaBundle }) {
   useEffect(() => {
     const f = () => {
       const st = decodeScenario(network, location.hash);
-      setNotice({ unplaced: st.unplaced, legacy: st.legacy });
+      setNotice({ unplaced: st.unplaced, invalid: st.invalid });
       if (JSON.stringify(st.interventions) !== JSON.stringify(first.current.interventions)) setInterventions(st.interventions);
     };
     window.addEventListener('hashchange', f);
@@ -197,10 +197,10 @@ function Simulator({ bundle }: { bundle: AreaBundle }) {
       <InterventionPanel bundle={bundle} index={index} showService={showService} onShowService={setShowService} interventions={interventions}
         onAdd={onAdd} onRemove={onRemove} onClear={onClear} onPickMode={onPickMode} registerPick={registerPick} />
       <div className="scn-notices" role="status" aria-live="polite">
-        {notice.legacy && (
-          <p className="notice" key="legacy">
-            <span>This link was made before a map update and can't be restored. Starting from today's baseline.</span>
-            <button type="button" className="btn small-btn" onClick={() => setNotice((n) => ({ ...n, legacy: false }))}>Dismiss</button>
+        {notice.invalid && (
+          <p className="notice" key="invalid">
+            <span>This link couldn't be read, so the baseline is shown.</span>
+            <button type="button" className="btn small-btn" onClick={() => setNotice((n) => ({ ...n, invalid: false }))}>Dismiss</button>
           </p>
         )}
         {notice.unplaced.length > 0 && (

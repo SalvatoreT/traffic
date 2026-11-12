@@ -1,7 +1,7 @@
 # street-network Specification
 
 ## Purpose
-TBD - created by archiving change rockridge-vehicle-microsim. Update Purpose after archive.
+How a study area's street network is imported from OpenStreetMap and what the network file contains.
 
 ## Requirements
 

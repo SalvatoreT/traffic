@@ -1,7 +1,7 @@
 # traffic-simulation Specification
 
 ## Purpose
-TBD - created by archiving change rockridge-vehicle-microsim. Update Purpose after archive.
+How the simulation models vehicles, intersections and route choice, and which results it reports.
 
 ## Requirements
 

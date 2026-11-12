@@ -3,6 +3,7 @@ import { buildFixture } from '../fixtures/area';
 import { decodeMeta, decodeScenario, encodeScenario } from './hash';
 import { nearestOnPolyline, pointAlong } from './geom';
 import { makeProjection } from './projection';
+import { encodeGeohash } from './geohash';
 import type { Intervention, NetLink, NetNode, Network } from '../types';
 
 const base = buildFixture().network;
@@ -114,16 +115,16 @@ describe('scenario links across differently indexed networks', () => {
   const hash = encodeScenario(A, list);
   const dec = decodeScenario(T, hash);
 
-  it('uses a compact, URL-safe v2 format with the area id', () => {
-    expect(hash.startsWith('#v2;a=fixture;s=')).toBe(true);
+  it('uses a compact, URL-safe v1 format with the area id', () => {
+    expect(hash.startsWith('#v1;a=fixture;s=')).toBe(true);
     expect(hash).toMatch(/^#[A-Za-z0-9;=,.~_-]+$/);
-    expect(hash).not.toMatch(/\d\.\d{6}/);
+    expect(hash).toMatch(/^#v1;a=fixture;s=[a-z]{2},[0-9b-hjkmnp-z]{10}/);
     expect(hash.length).toBeLessThan(40 * list.length);
   });
 
   it('places every intervention', () => {
     expect(dec.unplaced).toEqual([]);
-    expect(dec.legacy).toBe(false);
+    expect(dec.invalid).toBe(false);
     expect(dec.interventions).toHaveLength(list.length);
   });
 
@@ -185,11 +186,11 @@ describe('scenario links across differently indexed networks', () => {
 
 describe('matching tolerances and directions', () => {
   const proj = makeProjection(base.origin);
-  const at = (x: number, y: number) => proj.toLonLat(x, y).map((v) => v.toFixed(5)).join(',');
+  const at = (x: number, y: number) => (([lon, lat]) => encodeGeohash(lat, lon))(proj.toLonLat(x, y));
 
   it('reports interventions with no match as unplaced and keeps the rest', () => {
     const [x, y] = grid(2, 2);
-    const h = `#v2;a=fixture;s=tc,${at(x, y)}~mf,${at(900, 900)}~tc,${at(x + 60, y + 60)}~st,${at(x, y)},80`;
+    const h = `#v1;a=fixture;s=tc,${at(x, y)}~mf,${at(900, 900)}~tc,${at(x + 60, y + 60)}~st,${at(x, y)},80`;
     const r = decodeScenario(base, h);
     expect(r.interventions.map((i) => i.type)).toEqual(['traffic_circle', 'signal_timing']);
     expect(r.unplaced.map((u) => u.type)).toEqual(['modal_filter', 'traffic_circle']);
@@ -200,8 +201,8 @@ describe('matching tolerances and directions', () => {
 
   it('accepts a point just inside the street tolerance', () => {
     const [x, y] = grid(2, 2);
-    expect(decodeScenario(base, `#v2;s=mf,${at(x + 60, y + 20)}`).interventions).toHaveLength(1);
-    expect(decodeScenario(base, `#v2;s=mf,${at(x + 60, y + 30)}`).unplaced).toHaveLength(1);
+    expect(decodeScenario(base, `#v1;s=mf,${at(x + 60, y + 20)}`).interventions).toHaveLength(1);
+    expect(decodeScenario(base, `#v1;s=mf,${at(x + 60, y + 30)}`).unplaced).toHaveLength(1);
   });
 
   it('tells the two directions of a two-way street apart by bearing', () => {
@@ -225,31 +226,41 @@ describe('matching tolerances and directions', () => {
     expect(decodeScenario(base, he).interventions).toEqual([{ type: 'modal_filter', link: e.id }]);
   });
 
-  it('survives a mid-block hump position and ignores malformed items', () => {
+  it('survives a mid-block hump position', () => {
     const l = linkBetween(base, grid(2, 2), grid(3, 2));
     const r = decodeScenario(base, encodeScenario(base, [{ type: 'speed_hump', link: l.id, position: 37.5 }]));
     expect(r.interventions[0]).toMatchObject({ type: 'speed_hump', link: l.id });
     expect((r.interventions[0] as { position: number }).position).toBeCloseTo(37.5, 0);
-    expect(decodeScenario(base, '#v2;s=zz,1,2~mf,abc,def~sl,0,0,999~tc').interventions).toEqual([]);
   });
 });
 
-describe('legacy and meta', () => {
-  it('flags the index-based format and returns no interventions', () => {
-    const r = decodeScenario(base, '#a=rockridge&p=pm_peak&i=W3sidHlwZSI6Im9uZV93YXkiLCJsaW5rIjoyfV0');
-    expect(r).toEqual({ interventions: [], unplaced: [], legacy: true });
+describe('unreadable links and meta', () => {
+  const ok = encodeGeohash(37.84, -122.25);
+  const bad = [
+    '#a=rockridge&p=pm_peak&i=W3sidHlwZSI6Im9uZV93YXkiLCJsaW5rIjoyfV0',
+    '#v2;a=fixture;s=mf,-122.25,37.84',
+    '#v1;a=elsewhere;s=mf,' + ok,
+    '#v1;a=fixture;s=zz,' + ok,
+    '#v1;a=fixture;s=mf,abc',
+    '#v1;a=fixture;s=mf,' + ok.toUpperCase(),
+    '#v1;a=fixture;s=sl,' + ok + ',999',
+    '#v1;a=fixture;s=ct,' + ok + ',x',
+    '#v1;a=fixture;s=mf,' + ok + '~tc',
+    '#%%garbage',
+  ];
+  it.each(bad)('flags %s and returns no interventions', (h) => {
+    expect(decodeScenario(base, h)).toEqual({ interventions: [], unplaced: [], invalid: true });
   });
   it('does not flag empty or area-only hashes', () => {
-    expect(decodeScenario(base, '').legacy).toBe(false);
-    expect(decodeScenario(base, '#a=rockridge&p=pm').legacy).toBe(false);
-    expect(decodeScenario(base, '#%%garbage').legacy).toBe(false);
+    expect(decodeScenario(base, '').invalid).toBe(false);
+    expect(decodeScenario(base, '#v1;a=fixture;p=am').invalid).toBe(false);
   });
-  it('reads area, period and demand from either format and writes them back', () => {
+  it('reads area, period and demand and writes them back', () => {
     const h = encodeScenario(base, [], { area: 'rockridge', period: 'pm_peak', demandScale: 1.2 });
-    expect(h).toBe('#v2;a=rockridge;p=pm_peak;d=1.2');
+    expect(h).toBe('#v1;a=rockridge;p=pm_peak;d=1.2');
     expect(decodeMeta(h)).toEqual({ area: 'rockridge', period: 'pm_peak', demandScale: 1.2 });
-    expect(decodeMeta('#a=x&p=y&d=2')).toEqual({ area: 'x', period: 'y', demandScale: 2 });
-    expect(decodeMeta('#v2;a=bad area!')).toEqual({});
+    expect(decodeMeta('#a=x&p=y&d=2')).toEqual({});
+    expect(decodeMeta('#v1;a=bad area!')).toEqual({});
   });
   it('gives an empty hash for the baseline without an area', () => {
     expect(encodeScenario(base, [], { area: null })).toBe('');

@@ -1,7 +1,7 @@
 # simulator-ui Specification
 
 ## Purpose
-TBD - created by archiving change rockridge-vehicle-microsim. Update Purpose after archive.
+What the web interface shows and lets people do: watch traffic, edit a scenario, compare it with the baseline and share it.
 
 ## Requirements
 
@@ -48,7 +48,7 @@ The UI SHALL provide a page listing the research references and data sources beh
 - **THEN** they see the bibliography and data provenance with links
 
 ### Requirement: Location-based scenario links
-Shareable scenario links SHALL encode each intervention by geographic location, with a bearing where direction matters, together with the area id and a format version, and SHALL NOT depend on network link or node indices.
+Shareable scenario links SHALL encode each intervention by geographic location (a 10-character geohash, about 1 m), with a bearing where direction matters, together with the area id and a format version, and SHALL NOT depend on network link or node indices.
 
 #### Scenario: Network regenerated
 - **WHEN** a link is opened after the street network has been rebuilt with different link and node indices
@@ -58,6 +58,6 @@ Shareable scenario links SHALL encode each intervention by geographic location, 
 - **WHEN** an intervention's location has no matching street or intersection within tolerance
 - **THEN** the rest of the scenario loads and the unplaced intervention is listed with an explanation
 
-#### Scenario: Old-format link
-- **WHEN** a link in the earlier index-based format is opened
-- **THEN** the app explains that the link predates a map update and starts from the baseline
+#### Scenario: Unreadable link
+- **WHEN** a link has an unknown version, an unknown area or a malformed item
+- **THEN** the baseline loads and a short dismissible notice says the link couldn't be read

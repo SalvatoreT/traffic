@@ -1,7 +1,7 @@
 # interventions Specification
 
 ## Purpose
-TBD - created by archiving change rockridge-vehicle-microsim. Update Purpose after archive.
+The changes a person can apply to a scenario and how each one alters the simulated network.
 
 ## Requirements
 

@@ -1,17 +1,18 @@
 import type { ControlType, Intervention, Network } from '../types';
 import { makeProjection } from './projection';
+import { decodeGeohash, encodeGeohash } from './geohash';
 import { nearestOnPolyline, pointAlong, polylineLength } from './geom';
 
 /**
- * Scenario links: `#v2;a=<area>;p=<period>;d=<scale>;s=<item>~<item>`
- * Each item is `code,lon,lat[,param...]` with 5-decimal coordinates and no network indices.
+ * Scenario links: `#v1;a=<area>;p=<period>;d=<scale>;s=<item>~<item>`
+ * Each item is `code,geohash[,param...]`: a 10-character geohash (about 1 m) and no network indices.
  *   mf  modal filter on a block        mn  modal filter at an intersection
  *   sl  speed limit (m/s)              sh  speed hump (the hump's own point)
  *   tc  traffic circle                 ct  control (s a t u c)
  *   st  signal cycle (s)               ow  one-way (kept direction, bearing in degrees)
  *   tb  turn ban (intersection, inbound bearing, outbound bearing)
  */
-export const HASH_VERSION = 'v2';
+export const HASH_VERSION = 'v1';
 export const LINK_TOLERANCE_M = 25;
 export const NODE_TOLERANCE_M = 30;
 export const BEARING_TOLERANCE_DEG = 45;
@@ -19,7 +20,7 @@ const MAX_ITEMS = 200;
 
 export interface HashMeta { area?: string; period?: string; demandScale?: number }
 export interface Unplaced { type: Intervention['type']; lon: number; lat: number; reason: string }
-export interface DecodedScenario { interventions: Intervention[]; unplaced: Unplaced[]; legacy: boolean }
+export interface DecodedScenario { interventions: Intervention[]; unplaced: Unplaced[]; invalid: boolean }
 export interface EncodeOptions { area?: string | null; period?: string; demandScale?: number }
 
 const CONTROL_CODE: Record<ControlType, string> = { signal: 's', all_way_stop: 'a', two_way_stop: 't', uncontrolled: 'u', traffic_circle: 'c' };
@@ -44,11 +45,8 @@ export function decodeMeta(hash: string): HashMeta {
   const out: HashMeta = {};
   const h = hash.replace(/^#/, '');
   const kv = new Map<string, string>();
-  if (h.startsWith(`${HASH_VERSION};`) || h === HASH_VERSION) {
-    for (const t of h.split(';').slice(1)) { const i = t.indexOf('='); if (i > 0) kv.set(t.slice(0, i), t.slice(i + 1)); }
-  } else {
-    try { new URLSearchParams(h).forEach((v, k) => kv.set(k, v)); } catch { /* ignore */ }
-  }
+  if (!h.startsWith(`${HASH_VERSION};`)) return out;
+  for (const t of h.split(';').slice(1)) { const i = t.indexOf('='); if (i > 0) kv.set(t.slice(0, i), t.slice(i + 1)); }
   const a = kv.get('a'); if (a && /^[\w.-]{1,64}$/.test(a)) out.area = a;
   const p = kv.get('p'); if (p && /^[\w.-]{1,64}$/.test(p)) out.period = p;
   if (kv.has('d')) { const d = Number(kv.get('d')); if (isNum(d, 0.1, 3)) out.demandScale = d; }
@@ -71,7 +69,7 @@ export function encodeScenario(net: Network, interventions: Intervention[], opts
   const pt = (xy: [number, number] | null) => {
     if (!xy) return null;
     const [lon, lat] = proj.toLonLat(xy[0], xy[1]);
-    return `${num(lon, 5)},${num(lat, 5)}`;
+    return encodeGeohash(lat, lon);
   };
   const nodePt = (id: number) => { const n = net.nodes[id]; return n ? pt([n.x, n.y]) : null; };
   const items: string[] = [];
@@ -171,27 +169,43 @@ export function nearestStreetName(net: Network, lon: number, lat: number, maxM =
   return best;
 }
 
+const PARAMS_OK: Record<string, (f: string[]) => boolean> = {
+  mf: () => true, mn: () => true, sh: () => true, tc: () => true,
+  sl: (f) => isNum(Number(f[2]), 1, 40),
+  ow: (f) => isNum(Number(f[2]), 0, 360),
+  tb: (f) => isNum(Number(f[2]), 0, 360) && isNum(Number(f[3]), 0, 360),
+  ct: (f) => Object.hasOwn(CODE_CONTROL, f[2]),
+  st: (f) => isNum(Number(f[2]), 20, 240),
+};
+
 export function decodeScenario(net: Network, hash: string): DecodedScenario {
-  const out: DecodedScenario = { interventions: [], unplaced: [], legacy: false };
+  const out: DecodedScenario = { interventions: [], unplaced: [], invalid: false };
   const h = hash.replace(/^#/, '');
   if (!h) return out;
-  if (!(h === HASH_VERSION || h.startsWith(`${HASH_VERSION};`))) {
-    try { out.legacy = new URLSearchParams(h).has('i'); } catch { /* malformed: treat as empty */ }
-    return out;
-  }
-  const sTok = h.split(';').find((t) => t.startsWith('s='));
+  const bad = (): DecodedScenario => ({ interventions: [], unplaced: [], invalid: true });
+  if (!(h === HASH_VERSION || h.startsWith(`${HASH_VERSION};`))) return bad();
+  const toks = h.split(';').slice(1);
+  const area = toks.find((t) => t.startsWith('a='));
+  if (area && area.slice(2) !== net.id) return bad();
+  const sTok = toks.find((t) => t.startsWith('s='));
   if (!sTok) return out;
-  const proj = makeProjection(net.origin);
-  for (const raw of sTok.slice(2).split('~').slice(0, MAX_ITEMS)) {
+  const rawItems = sTok.slice(2).split('~');
+  if (rawItems.length > MAX_ITEMS) return bad();
+  const items: { f: string[]; type: Intervention['type']; lon: number; lat: number }[] = [];
+  for (const raw of rawItems) {
     const f = raw.split(',');
     const type = TYPE_OF_CODE[f[0]];
-    const lon = Number(f[1]), lat = Number(f[2]);
-    if (!type || f.length < 3 || !isNum(lon, -180, 180) || !isNum(lat, -90, 90)) continue;
+    const g = f[1] === undefined ? null : decodeGeohash(f[1]);
+    if (!type || !g || f[1].length !== 10 || !PARAMS_OK[f[0]](f)) return bad();
+    items.push({ f, type, lon: g.lon, lat: g.lat });
+  }
+  const proj = makeProjection(net.origin);
+  for (const { f, type, lon, lat } of items) {
     const [x, y] = proj.toLocal(lon, lat);
     const miss = (reason: string) => out.unplaced.push({ type, lon, lat, reason });
     const noStreet = `No street within ${LINK_TOLERANCE_M} m of the original spot.`;
     const noNode = `No intersection within ${NODE_TOLERANCE_M} m of the original spot.`;
-    const p3 = Number(f[3]);
+    const p3 = Number(f[2]);
     switch (f[0]) {
       case 'mf': {
         const m = matchLink(net, x, y);
@@ -199,7 +213,6 @@ export function decodeScenario(net: Network, hash: string): DecodedScenario {
         break;
       }
       case 'sl': {
-        if (!isNum(p3, 1, 40)) break;
         const m = matchLink(net, x, y);
         if (m) out.interventions.push({ type: 'speed_limit', link: m.id, speed: p3 }); else miss(noStreet);
         break;
@@ -210,14 +223,12 @@ export function decodeScenario(net: Network, hash: string): DecodedScenario {
         break;
       }
       case 'ow': {
-        if (!isNum(p3, 0, 360)) break;
         const m = matchLink(net, x, y, p3);
         if (m) out.interventions.push({ type: 'one_way', link: m.id }); else miss(`No street within ${LINK_TOLERANCE_M} m running that way.`);
         break;
       }
       case 'tb': {
-        const bi = Number(f[3]), bo = Number(f[4]);
-        if (!isNum(bi, 0, 360) || !isNum(bo, 0, 360)) break;
+        const bi = Number(f[2]), bo = Number(f[3]);
         let found: Intervention | null = null;
         for (const nid of nodesNear(net, x, y)) {
           const inc = net.links.filter((l) => l.to === nid).map((l) => l.id);
@@ -234,8 +245,8 @@ export function decodeScenario(net: Network, hash: string): DecodedScenario {
         if (nid === undefined) { miss(noNode); break; }
         if (f[0] === 'mn') out.interventions.push({ type: 'modal_filter', node: nid });
         else if (f[0] === 'tc') out.interventions.push({ type: 'traffic_circle', node: nid });
-        else if (f[0] === 'ct' && CODE_CONTROL[f[3]]) out.interventions.push({ type: 'control', node: nid, control: CODE_CONTROL[f[3]] });
-        else if (f[0] === 'st' && isNum(p3, 20, 240)) out.interventions.push({ type: 'signal_timing', node: nid, cycle: p3 });
+        else if (f[0] === 'ct' && CODE_CONTROL[f[2]]) out.interventions.push({ type: 'control', node: nid, control: CODE_CONTROL[f[2]] });
+        else if (f[0] === 'st') out.interventions.push({ type: 'signal_timing', node: nid, cycle: p3 });
       }
     }
   }

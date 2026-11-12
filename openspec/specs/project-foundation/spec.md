@@ -1,7 +1,7 @@
 # project-foundation Specification
 
 ## Purpose
-TBD - created by archiving change rockridge-vehicle-microsim. Update Purpose after archive.
+How the project is built and deployed, and the conventions contributors and agents follow for research citations and workflow.
 
 ## Requirements
 
