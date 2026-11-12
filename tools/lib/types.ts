@@ -12,6 +12,8 @@ export interface NetNode {
   canEnter?: boolean;
   canExit?: boolean;
   inStudyArea: boolean;
+  /** A marked crosswalk sits at or within 15 m of this junction. */
+  markedCrossing?: boolean;
 }
 
 export interface NetLink {
@@ -29,6 +31,14 @@ export interface NetLink {
   stopAtEnd: boolean;
   humps: number[];
   inStudyArea: boolean;
+  /** Dedicated bike lane or track in this direction. */
+  bikeLane?: boolean;
+  /** Signed bike route or bike boulevard. */
+  bikeRoute?: boolean;
+  /** Walkable alongside (default true except motorway). Always written by the importer. */
+  sidewalk?: boolean;
+  /** Marked mid-block crossings, meters from link start. */
+  crossings?: number[];
 }
 
 export interface Network {
@@ -74,6 +84,12 @@ export interface OsmWay {
   nodes: number[];
   tags: Record<string, string>;
 }
+export interface OsmRelation {
+  type: 'relation';
+  id: number;
+  members?: { type: string; ref: number; role?: string }[];
+  tags?: Record<string, string>;
+}
 export interface Overpass {
-  elements: (OsmNode | OsmWay)[];
+  elements: (OsmNode | OsmWay | OsmRelation)[];
 }

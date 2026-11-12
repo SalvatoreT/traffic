@@ -8,6 +8,7 @@ import {
   round1,
   type Pt,
 } from './geo';
+import { bikeTags, hasSidewalk, isMarkedCrossing } from './attrs';
 import type {
   AreaConfig,
   LinkClass,
@@ -60,6 +61,8 @@ export const PARAMS = {
   gateEdgeM: 60,
   boundaryReachM: 8,
   junctionJoinRadiusM: 20,
+  /** A marked crosswalk within this distance of a junction belongs to the junction, not to the link. */
+  crossingAtJunctionM: 15,
   minLinkM: 0.5,
   mph: 0.44704,
   kph: 1 / 3.6,
@@ -81,6 +84,10 @@ interface Run {
   speedF: number;
   speedB: number;
   name: string;
+  bikeF: boolean;
+  bikeB: boolean;
+  bikeRoute: boolean;
+  sidewalk: boolean;
 }
 
 interface Link {
@@ -95,6 +102,10 @@ interface Link {
   geometry: Pt[];
   stopAtEnd: boolean;
   humps: number[];
+  bikeLane: boolean;
+  bikeRoute: boolean;
+  sidewalk: boolean;
+  crossings: number[];
   alive: boolean;
 }
 
@@ -165,11 +176,16 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
 
   const nodes = new Map<number, OsmNode>();
   const ways: OsmWay[] = [];
+  // Ways in bicycle route relations (the extract may have none; attributes then come from way tags only).
+  const routeWays = new Set<number>();
   for (const e of osm.elements) {
     if (e.type === 'node') {
       const prev = nodes.get(e.id);
       nodes.set(e.id, prev ? { ...e, tags: { ...prev.tags, ...e.tags } } : e);
     } else if (e.type === 'way') ways.push(e);
+    else if (e.type === 'relation' && e.tags?.route === 'bicycle') {
+      for (const m of e.members ?? []) if (m.type === 'way') routeWays.add(m.ref);
+    }
   }
   const inside = (n: OsmNode) => n.lat >= minLat && n.lat <= maxLat && n.lon >= minLon && n.lon <= maxLon;
   const nodeXY = new Map<number, Pt>();
@@ -241,6 +257,7 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
       parseSpeed(t[`maxspeed:${dir}`]) ?? parseSpeed(t.maxspeed) ?? fallbackMph * PARAMS.mph;
 
     let cur: number[] = [];
+    const bike = bikeTags(t, fwd, bwd);
     const flush = () => {
       if (cur.length >= 2) {
         const xy = cur.map(xyOf);
@@ -257,6 +274,10 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
           speedF: speed('forward'),
           speedB: speed('backward'),
           name: t.name ?? t.ref ?? '',
+          bikeF: bike.laneF,
+          bikeB: bike.laneB,
+          bikeRoute: bike.route || routeWays.has(way.id),
+          sidewalk: hasSidewalk(t, cls),
         });
       }
       cur = [];
@@ -368,6 +389,10 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
       geometry: idxs.map((i) => run.xy[i]),
       stopAtEnd: false,
       humps: [],
+      bikeLane: forward ? run.bikeF : run.bikeB,
+      bikeRoute: run.bikeRoute,
+      sidewalk: run.sidewalk,
+      crossings: [],
       alive: true,
     };
   };
@@ -410,6 +435,27 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
       const len = run.cum[seg.b] - run.cum[seg.a];
       seg.fwdLink?.humps.push(round1(d));
       seg.bwdLink?.humps.push(round1(len - d));
+    }
+  }
+
+  // Marked crosswalks: at or near a junction they mark the junction, farther along they are mid-block crossings.
+  const marked = new Set<number>();
+  for (const n of tagged((t) => isMarkedCrossing(t))) {
+    if (graph.has(n.id)) {
+      marked.add(n.id);
+      continue;
+    }
+    for (const { run, idx } of occ.get(n.id)!) {
+      const seg = segAt(run, idx, true);
+      if (!seg) continue;
+      const d = run.cum[idx] - run.cum[seg.a];
+      const len = run.cum[seg.b] - run.cum[seg.a];
+      if (Math.min(d, len - d) <= PARAMS.crossingAtJunctionM) {
+        marked.add(run.nodes[d <= len - d ? seg.a : seg.b]);
+        continue;
+      }
+      seg.fwdLink?.crossings.push(round1(d));
+      seg.bwdLink?.crossings.push(round1(len - d));
     }
   }
 
@@ -571,7 +617,9 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
       const isSignal = ids.some((id) => signal.has(id));
       const stopsAll = !isSignal && covered && ids.some((id) => allWay.has(id) || stopTargets.has(id));
       const streets = [...new Set((touch.get(rep) ?? []).concat(...ids.map((id) => touch.get(id) ?? [])).map((l) => l.name).filter((n) => n))].sort();
+      const wasMarked = ids.some((id) => marked.has(id));
       for (const id of ids) {
+        marked.delete(id);
         signal.delete(id);
         allWay.delete(id);
         stopTargets.delete(id);
@@ -580,6 +628,7 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
         remap.set(id, rep);
       }
       graph.add(rep);
+      if (wasMarked) marked.add(rep);
       if (isSignal) signal.add(rep);
       if (stopsAll) (allWay.add(rep), stopTargets.add(rep));
       else if (extIn.some((l) => l.stopAtEnd)) stopTargets.add(rep);
@@ -602,6 +651,7 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
         l.geometry = [nodeXY.get(nf)!, ...l.geometry.slice(1)];
         const shift = polylineLength(l.geometry) - before;
         l.humps = l.humps.map((h) => round1(Math.max(0.1, h + shift)));
+        l.crossings = l.crossings.map((h) => round1(Math.max(0.1, h + shift)));
       }
       if (nt !== undefined) {
         l.to = nt;
@@ -609,6 +659,7 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
       }
       const len = polylineLength(l.geometry);
       l.humps = l.humps.filter((h) => h < len - 0.1);
+      l.crossings = l.crossings.filter((h) => h < len - 0.1);
     }
   }
 
@@ -630,15 +681,24 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
       inTo.get(l.to)!.push(l);
     }
   };
-  const join = (a: Link, b: Link): Link => ({
-    ...a,
-    to: b.to,
-    stopAtEnd: b.stopAtEnd,
-    geometry: [...a.geometry, ...b.geometry.slice(1)],
-    humps: [...a.humps, ...b.humps.map((h) => round1(h + polylineLength(a.geometry)))],
-    rev: null,
-    alive: true,
-  });
+  // Merging keeps the topology (and so every id) unchanged: attributes of the merged link are length-weighted.
+  const join = (a: Link, b: Link): Link => {
+    const la = polylineLength(a.geometry);
+    const lb = polylineLength(b.geometry);
+    return {
+      ...a,
+      to: b.to,
+      stopAtEnd: b.stopAtEnd,
+      geometry: [...a.geometry, ...b.geometry.slice(1)],
+      humps: [...a.humps, ...b.humps.map((h) => round1(h + la))],
+      bikeLane: (a.bikeLane ? la : 0) + (b.bikeLane ? lb : 0) > (la + lb) / 2,
+      bikeRoute: (a.bikeRoute ? la : 0) + (b.bikeRoute ? lb : 0) > (la + lb) / 2,
+      sidewalk: (a.sidewalk ? la : 0) + (b.sidewalk ? lb : 0) >= (la + lb) / 2,
+      crossings: [...a.crossings, ...(marked.has(a.to) ? [round1(la)] : []), ...b.crossings.map((h) => round1(h + la))],
+      rev: null,
+      alive: true,
+    };
+  };
   let changed = true;
   while (changed) {
     changed = false;
@@ -812,6 +872,7 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
       gate: gates.has(id),
       inStudyArea: surfaceNodes.has(id) && (pointInPolygon(p, studyPoly) || (boundaryNodes.has(id) && distToRing(p, studyPoly) <= PARAMS.boundaryReachM)),
     };
+    if (marked.has(id)) node.markedCrossing = true;
     if (node.gate) {
       // Trips can enter at a gate with an outgoing link from which the main network is reachable, and leave at
       // one with an incoming link reachable from it.
@@ -826,7 +887,7 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
     const geometry = l.geometry.map((p): [number, number] => [round1(p[0]), round1(p[1])]);
     const length = round1(polylineLength(geometry));
     const mid = pointAlong(geometry, length / 2);
-    return {
+    const link: NetLink = {
       id: i,
       osmWayId: l.osmWayId,
       from: nodeIndex.get(l.from)!,
@@ -841,7 +902,13 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
       stopAtEnd: l.stopAtEnd,
       humps: [...l.humps].sort((a, b) => a - b),
       inStudyArea: l.cls !== 'motorway' && (pointInPolygon(mid, studyPoly) || onBoundary(l, mid)),
+      sidewalk: l.sidewalk,
     };
+    if (l.bikeLane) link.bikeLane = true;
+    if (l.bikeRoute) link.bikeRoute = true;
+    const cr = [...new Set(l.crossings.filter((c) => c > 0 && c < length))].sort((a, b) => a - b);
+    if (cr.length) link.crossings = cr;
+    return link;
   });
 
   return {

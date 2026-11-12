@@ -113,9 +113,9 @@ export function Legend(p: LegendProps) {
         )}
       </fieldset>
       <ul className="keys" aria-label="Map symbols">
-        <li><svg width="16" height="16" aria-hidden="true"><path d="M8 1 L15 8 L8 15 L1 8Z" fill="var(--thru)" stroke="var(--thru-ring)" strokeWidth="1.6" /></svg> Car on a through trip (cut-through)</li>
+        <li><svg width="16" height="16" aria-hidden="true"><path d="M8 1 L15 8 L8 15 L1 8Z" fill="var(--thru)" stroke="var(--thru-ring)" strokeWidth="1.6" /></svg> Through trip (car)</li>
         {p.multimodal && <li><svg width="14" height="14" aria-hidden="true"><rect x="2" y="2" width="10" height="10" rx="2" fill="var(--surface)" stroke="var(--bus)" strokeWidth="2" /></svg> Bus stop</li>}
-        {p.multimodal && <li><svg width="14" height="14" aria-hidden="true"><line x1="7" y1="1" x2="7" y2="13" stroke="var(--text)" strokeWidth="2" /></svg> Marked crossing (zoomed in)</li>}
+        {p.multimodal && <li><svg width="14" height="14" aria-hidden="true"><line x1="7" y1="1" x2="7" y2="13" stroke="var(--text)" strokeWidth="2" /></svg> Crossing (zoomed in)</li>}
         <li><svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="var(--surface)" stroke="#1f9d55" strokeWidth="2" /></svg> Signal green (ring)</li>
         <li><svg width="14" height="14" aria-hidden="true"><path d="M7 1 L13 12 L1 12Z" fill="#f5c400" stroke="var(--text)" /></svg> Yellow (triangle)</li>
         <li><svg width="14" height="14" aria-hidden="true"><rect x="2" y="2" width="10" height="10" fill="#d62728" stroke="var(--text)" /></svg> Red (square)</li>

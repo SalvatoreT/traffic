@@ -24,7 +24,7 @@ export function deriveStudyArea(osm: Overpass, boundary: BoundaryStreet[], bbox:
   const ways: OsmWay[] = [];
   for (const e of osm.elements) {
     if (e.type === 'node') nodes.set(e.id, e);
-    else if (DRIVABLE.test(e.tags?.highway ?? '')) ways.push(e);
+    else if (e.type === 'way' && DRIVABLE.test(e.tags?.highway ?? '')) ways.push(e);
   }
   const proj = makeProjection((bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2);
   const synth = new Map<number, Pt>();

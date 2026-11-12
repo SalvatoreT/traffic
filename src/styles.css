@@ -79,13 +79,15 @@ main { flex: 1; min-height: 0; display: flex; }
 .maplibregl-ctrl-attrib a { color: var(--accent) !important; }
 .maplibregl-ctrl-group button { width: 36px; height: 36px; }
 
-.legend { position: absolute; left: 10px; bottom: 34px; z-index: 5; background: color-mix(in srgb, var(--surface) 94%, transparent); border: 1px solid var(--border); border-radius: var(--radius); padding: .55rem .65rem; box-shadow: var(--shadow); max-width: 250px; display: flex; flex-direction: column; gap: .45rem; font-size: .85rem; }
+.legend { position: absolute; left: 10px; bottom: 34px; z-index: 5; background: color-mix(in srgb, var(--surface) 94%, transparent); border: 1px solid var(--border); border-radius: var(--radius); padding: .55rem .65rem; box-shadow: var(--shadow); max-width: 270px; display: flex; flex-direction: column; gap: .45rem; font-size: .85rem; }
 .ramp-title { font-weight: 600; margin-bottom: .2rem; }
 .ramp-bar { height: 10px; border-radius: 3px; border: 1px solid var(--border); }
 .ramp-ticks { display: flex; justify-content: space-between; font-variant-numeric: tabular-nums; margin-top: 2px; }
 .modes { border: 0; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0 .7rem; min-width: 0; }
+.modes legend { width: 100%; }
+.modes input { flex: none; }
 .modes legend { font-weight: 600; font-size: .8rem; padding: 0; margin-bottom: 2px; }
-.modes label.mode { margin: 0; min-height: 26px; display: inline-flex; align-items: center; gap: .3rem; }
+.modes label.mode { white-space: nowrap; margin: 0; min-height: 26px; display: inline-flex; align-items: center; gap: .3rem; }
 .modes label.off { opacity: .6; }
 .keys { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
 .keys li { display: flex; align-items: center; gap: .4rem; }
@@ -192,7 +194,6 @@ table.cmp td, table.cmp th[scope='row'] { font-variant-numeric: tabular-nums; }
   .grip { width: 44px; height: 5px; border-radius: 3px; background: var(--border); }
   .legend { bottom: 54px; max-width: 220px; font-size: .78rem; padding: .35rem .45rem; gap: .3rem; }
   .legend .ramp .muted, .keys { display: none; }
-  .modes { gap: .1rem .6rem; }
   .modes legend { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .map-area { min-height: 50vh; }
   .stage { padding-bottom: 46px; }

@@ -13,9 +13,9 @@
 - [ ] 2.6 WASM API and tests
 
 ## 3. UI
-- [ ] 3.1 Per-mode rendering, legend and toggles
-- [ ] 3.2 Results by mode with caveats
-- [ ] 3.3 Accessibility check
+- [x] 3.1 Per-mode rendering, legend and toggles
+- [x] 3.2 Results by mode with caveats
+- [x] 3.3 Accessibility check
 
 ## 4. Ship
 - [ ] 4.1 Performance check with all modes
