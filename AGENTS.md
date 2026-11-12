@@ -100,6 +100,12 @@ into `.claude/skills/humanizer/` (not vendored). Subagents that write prose are 
 load `.claude/skills/humanizer/SKILL.md` and apply it. It must not change facts, numbers,
 citation keys, or the required structure of OpenSpec spec files.
 
+## Asking the user
+
+When a decision is the user's to make, ask with the question tool (`AskUserQuestion`), with
+a recommended option first. Do not leave questions in prose at the end of a message: they
+get missed. Keep working on whatever does not depend on the answer.
+
 ## Conventions
 
 - Never put the names of private individuals involved in the local effort in the
