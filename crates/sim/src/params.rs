@@ -58,8 +58,21 @@ pub const HUMP_FF_PENALTY: f32 = 3.0; // ASSUMPTION: s added to routing free-flo
 
 // --- routing [Wardrop1952], [Peeta2001] ---
 pub const EPOCH_S: f64 = 60.0; // cost-update / re-route period
-pub const GUIDED_SHARE: u32 = 800;
-pub const REROUTE_SHARE: u32 = 800; // per mille. ASSUMPTION: 80% re-route each epoch (calibration step I, was 30%: raising it cut PM gridlock removals from 30 to 10 per run)
+/// Share of drivers that follow live guidance (a navigation app) and so re-evaluate their route at every epoch, per mille. The others keep
+/// the route chosen at departure unless it is blocked. 46% of surveyed drivers used navigation apps on regular commute trips, 74 to 78% on
+/// infrequent and first-time trips [Guin2021] (Atlanta, N = 237; transfer to this area is an ASSUMPTION).
+pub const GUIDED_SHARE: u32 = 460;
+/// Indifference band [Mahmassani1987], [Srinivasan2000], [Di2016]: a driver changes route en route only if the new remaining route is cheaper
+/// than the current one by more than this fraction. The sources establish the mechanism, not a value for neighborhood trips ([Guin2021] reports
+/// that a 3 to 5 min saving was needed to accept a routing change, on trips much longer than these), so the fraction is an ASSUMPTION.
+pub const SWITCH_BAND: f32 = 0.2;
+/// ASSUMPTION: absolute floor on the saving (s) that a switch needs, so short remaining routes do not flip on a few seconds.
+pub const SWITCH_MIN_GAIN_S: f32 = 30.0;
+/// ASSUMPTION: most voluntary route changes per trip, and least time between two (s).
+pub const MAX_SWITCHES: u16 = 2;
+pub const MIN_SWITCH_GAP_S: f64 = 120.0;
+/// ASSUMPTION: a driver whose next link has had no room for this long (s) re-routes whatever its class, backtracking allowed.
+pub const BLOCKED_REROUTE_S: f32 = 60.0;
 pub const EMA_ALPHA: f32 = 0.3; // ASSUMPTION
 pub const ROUTE_NOISE: f32 = 0.08; // ASSUMPTION: per-driver perceived-cost noise (+-8%)
 pub const TURN_RIGHT_S: f32 = 1.0; // ASSUMPTION: turn penalties for routing (s)

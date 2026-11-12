@@ -5,7 +5,7 @@ use crate::eff::{phase_since_green, phase_state, Eff};
 use crate::model::*;
 use crate::params::*;
 use crate::rng::{hash32, Rng};
-use crate::route::{self, Router, NO_NOISE};
+use crate::route::{self, Router, INF, NO_NOISE};
 use crate::topo::*;
 use std::collections::VecDeque;
 
@@ -353,6 +353,8 @@ pub struct Simulation {
     scratch: Vec<u32>,
     gridlock_log: Vec<(u32, f64)>,
     trips: Vec<TripRecord>,
+    node_stamp: Vec<u32>,
+    stamp_gen: u32,
     sl: Option<SelectLinkState>,
     d_link_stopped: Vec<f32>,
     d_link_delay: Vec<f32>,
@@ -508,6 +510,8 @@ impl Simulation {
             scratch: Vec::new(),
             gridlock_log: Vec::new(),
             trips: Vec::new(),
+            node_stamp: Vec::new(),
+            stamp_gen: 0,
             sl: None,
             d_link_stopped: vec![0.0; nl],
             d_link_delay: vec![0.0; nl],
@@ -2122,7 +2126,9 @@ impl Simulation {
                 self.sl_enter(vid, tr.to_link);
                 if self.vehs[vid as usize].replan {
                     self.vehs[vid as usize].replan = false;
-                    self.replan_vehicle(vid, true);
+                    if self.vehs[vid as usize].kind == KIND_BIKE || self.route_blocked(vid) {
+                        self.replan_vehicle(vid, true);
+                    }
                 }
             }
         }
@@ -2189,14 +2195,9 @@ impl Simulation {
 
     fn reroute_all(&mut self) {
         for vid in 0..self.vehs.len() as u32 {
-            if !self.vehs[vid as usize].alive {
-                continue;
+            if self.vehs[vid as usize].alive {
+                self.reroute_if_blocked(vid);
             }
-            if self.vehs[vid as usize].in_transit {
-                self.vehs[vid as usize].replan = true;
-                continue;
-            }
-            self.replan_vehicle(vid, true);
         }
     }
 
@@ -2231,11 +2232,108 @@ impl Simulation {
             if !v.alive || v.in_transit || v.kind != KIND_CAR {
                 continue;
             }
-            // ASSUMPTION: a deterministic 30% share of en-route vehicles re-plan each epoch.
-            if hash32(v.uid, self.epoch) % 1000 < self.cfg.guided_share.map_or(REROUTE_SHARE, |r| (r.clamp(0.0, 1.0) * 1000.0).round() as u32) {
+            if v.blocked_space && v.wait_t > BLOCKED_REROUTE_S {
+                self.replan_vehicle(vid, true);
+            } else if v.guided {
+                self.consider_reroute(vid);
+            }
+        }
+    }
+
+    /// Cost of `route` (the links after `from`) as the driver perceives it: link and movement costs on current times, each link scaled by the
+    /// driver's fixed per-link noise. INF when a link or movement is closed.
+    fn path_cost(&self, from: u32, route: &[u32], seed: u32) -> f32 {
+        let (mut prev, mut c) = (from, 0.0f32);
+        for &b in route {
+            let Some(mv) = self.topo.find_mv(prev, b) else { return INF };
+            if !self.eff.mv_ok[mv as usize] || self.eff.closed[b as usize] {
+                return INF;
+            }
+            c += (self.link_cost[b as usize] * self.eff.route_w[b as usize] + self.eff.mv_cost[mv as usize]) * route::noise(seed, b);
+            prev = b;
+        }
+        c
+    }
+
+    /// True when the remaining route of `vid` uses a closed link or a banned movement.
+    fn route_blocked(&self, vid: u32) -> bool {
+        let v = &self.vehs[vid as usize];
+        let from = if v.in_transit { v.route.get((v.ridx as usize).wrapping_sub(1)).copied().unwrap_or(v.link) } else { v.link };
+        let rest = &v.route[(v.ridx as usize).min(v.route.len())..];
+        self.path_cost(from, rest, NO_NOISE) == INF
+    }
+
+    /// After an intervention changes the network: a car whose route is no longer usable re-plans at once, whatever its class; the others
+    /// keep their route. Cyclists always re-plan.
+    fn reroute_if_blocked(&mut self, vid: u32) {
+        if self.vehs[vid as usize].kind == KIND_BIKE || self.route_blocked(vid) {
+            if self.vehs[vid as usize].in_transit {
+                self.vehs[vid as usize].replan = true;
+            } else {
                 self.replan_vehicle(vid, true);
             }
         }
+    }
+
+    /// Voluntary route change of a driver following guidance. The new route must be cheaper than the current one by more than the
+    /// indifference band, both costed with the driver's own noise on current link times; it must not backtrack (reverse onto the link
+    /// just left, or return to a node already visited on this trip); and the driver is limited to `MAX_SWITCHES` changes, `MIN_SWITCH_GAP_S`
+    /// apart. A blocked route is handled by `replan_vehicle` instead.
+    fn consider_reroute(&mut self, vid: u32) {
+        let (l, dest, seed, switches, last, route_len) = {
+            let v = &self.vehs[vid as usize];
+            (v.link, v.dest, v.noise_seed, v.switches, v.last_switch_t, v.route.len())
+        };
+        if switches >= MAX_SWITCHES || self.t - last < MIN_SWITCH_GAP_S || (self.vehs[vid as usize].ridx as usize) >= route_len {
+            return;
+        }
+        self.router.ensure(dest, &self.topo, &self.eff, &self.link_cost);
+        let table = self.router.table(dest);
+        let mut alt = std::mem::take(&mut self.scratch);
+        alt.clear();
+        let ok = route::walk(table, &self.topo, &self.eff, l, dest, seed, &mut alt);
+        let switch = ok && self.accept_switch(vid, &alt);
+        if switch {
+            let veh = &mut self.vehs[vid as usize];
+            let mut old = std::mem::replace(&mut veh.route, alt);
+            veh.ridx = 0;
+            veh.switches += 1;
+            veh.last_switch_t = self.t;
+            old.clear();
+            self.scratch = old;
+        } else {
+            self.scratch = alt;
+        }
+    }
+
+    fn accept_switch(&mut self, vid: u32, alt: &[u32]) -> bool {
+        let v = &self.vehs[vid as usize];
+        let cur = &v.route[(v.ridx as usize).min(v.route.len())..];
+        if cur == alt {
+            return false;
+        }
+        let cur_cost = self.path_cost(v.link, cur, v.noise_seed);
+        let alt_cost = self.path_cost(v.link, alt, v.noise_seed);
+        let band = self.cfg.switch_band.map_or(SWITCH_BAND, |b| b.max(0.0) as f32);
+        if !alt_cost.is_finite() || (cur_cost.is_finite() && cur_cost - alt_cost <= (band * cur_cost).max(SWITCH_MIN_GAIN_S)) {
+            return false;
+        }
+        // No backtracking: no node of the alternative may already be on this trip.
+        let mut stamp = std::mem::take(&mut self.node_stamp);
+        if stamp.len() < self.topo.n_nodes {
+            stamp.resize(self.topo.n_nodes, 0);
+        }
+        self.stamp_gen = self.stamp_gen.wrapping_add(1).max(1);
+        let g = self.stamp_gen;
+        if let Some(&f) = v.trail.first() {
+            stamp[self.topo.link_from[f as usize] as usize] = g;
+        }
+        for &t in &v.trail {
+            stamp[self.topo.link_to[t as usize] as usize] = g;
+        }
+        let back = alt.iter().any(|&b| stamp[self.topo.link_to[b as usize] as usize] == g);
+        self.node_stamp = stamp;
+        !back
     }
 }
 

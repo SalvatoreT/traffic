@@ -280,6 +280,10 @@ struct ShareRow {
     headline: bool,
 }
 
+fn pct1(x: f64) -> String {
+    format!("{:.1}%", 100.0 * x)
+}
+
 fn pct(x: f64) -> String {
     format!("{:.0}%", 100.0 * x)
 }
@@ -627,9 +631,10 @@ fn main() {
     for e in targets["patterns"]["bypass"].as_array().map(|v| v.as_slice()).unwrap_or(&[]) {
         let (bn, an) = (e["bypass"].as_str().unwrap_or("").to_string(), e["arterial"].as_str().unwrap_or("").to_string());
         let min_blocks = e["minBlocks"].as_u64().unwrap_or(3) as usize;
-        let span_share = e["minSpanShare"].as_f64().unwrap_or(0.6);
+        let lateral = e["lateralM"].as_f64().unwrap_or(1200.0);
         let ns = e["axis"].as_str().unwrap_or("NS") != "EW";
         let coord = |n: u32| if ns { net.nodes[n as usize].y } else { net.nodes[n as usize].x };
+        let side = |n: u32| if ns { net.nodes[n as usize].x } else { net.nodes[n as usize].y };
         let on_street = |l: u32, name: &str| same(&net.links[l as usize].name, name);
         let corridor: Vec<usize> = (0..net.links.len()).filter(|&l| net.links[l].in_study_area && (on_street(l as u32, &bn) || on_street(l as u32, &an))).collect();
         if corridor.is_empty() {
@@ -637,20 +642,19 @@ fn main() {
         }
         let lo = corridor.iter().flat_map(|&l| [coord(net.links[l].from), coord(net.links[l].to)]).fold(f64::INFINITY, f64::min);
         let hi = corridor.iter().flat_map(|&l| [coord(net.links[l].from), coord(net.links[l].to)]).fold(f64::NEG_INFINITY, f64::max);
-        let span = hi - lo;
+        let mid = corridor.iter().map(|&l| side(net.links[l].from)).sum::<f64>() / corridor.len() as f64;
         let in_c: std::collections::HashSet<u32> = corridor.iter().map(|&l| l as u32).collect();
         let dirs: [char; 2] = if ns { ['N', 'S'] } else { ['E', 'W'] };
         let mut acc: [(usize, usize, usize, usize, usize); 2] = [(0, 0, 0, 0, 0); 2];
         for r in sim.trip_records() {
-            let cl: Vec<u32> = r.trail.iter().copied().filter(|l| in_c.contains(l)).collect();
-            let (Some(&f), Some(&la)) = (cl.first(), cl.last()) else { continue };
-            let d = coord(net.links[la as usize].to) - coord(net.links[f as usize].from);
-            if d.abs() < span_share * span {
+            // The trip runs from beyond one end of the corridor's study-area extent to beyond the other, within `lateral` m of the corridor.
+            let (co, cd) = (coord(r.origin), coord(r.dest));
+            if (side(r.origin) - mid).abs() > lateral || (side(r.dest) - mid).abs() > lateral {
                 continue;
             }
-            let k = if d > 0.0 { 0 } else { 1 };
-            let nb = cl.iter().filter(|&&l| on_street(l, &bn)).count();
-            let na = cl.iter().filter(|&&l| on_street(l, &an)).count();
+            let k = if co <= lo && cd >= hi { 0 } else if co >= hi && cd <= lo { 1 } else { continue };
+            let nb = r.trail.iter().filter(|&&l| in_c.contains(&l) && on_street(l, &bn)).count();
+            let na = r.trail.iter().filter(|&&l| in_c.contains(&l) && on_street(l, &an)).count();
             let a = &mut acc[k];
             a.0 += 1;
             a.4 += nb;
@@ -738,7 +742,7 @@ fn main() {
     let _ = writeln!(md, "Detour ratio = distance driven (link and movement lengths) over the shortest network distance from the trip's origin to its destination. A switch is a change of the remaining route while en route. Loops: the same link twice or the same node three or more times. Reversals: a link followed by its reverse within 200 m. 'Study-area vehicle-miles' are miles driven on links inside the study area; the last column is the share of them driven by trips with a detour ratio above 1.3. Guided drivers re-evaluate their route every epoch; the others keep their departure route unless it is blocked.\n");
     let _ = writeln!(md, "| Trips | n | Switches per trip | With a switch | Mean detour | Median detour | Detour > 1.3 | Detour > 2 | Loops | Reversals | Study veh-miles | Of them by detour > 1.3 |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |");
     for (lab, w) in &wander_rows {
-        let _ = writeln!(md, "| {lab} | {} | {:.2} | {} | {:.3} | {:.3} | {} | {} | {} | {} | {:.0} | {} |", w.trips, w.mean_switches, pct(w.share_switched), w.mean_detour, w.median_detour, pct(w.share_detour_high), pct(w.share_detour_very_high), pct(w.share_loops), pct(w.share_reversal), w.study_miles, pct(w.study_share_detour_high));
+        let _ = writeln!(md, "| {lab} | {} | {:.2} | {} | {:.3} | {:.3} | {} | {} | {} | {} | {:.0} | {} |", w.trips, w.mean_switches, pct1(w.share_switched), w.mean_detour, w.median_detour, pct1(w.share_detour_high), pct1(w.share_detour_very_high), pct1(w.share_loops), pct1(w.share_reversal), w.study_miles, pct1(w.study_share_detour_high));
     }
     let _ = writeln!(md, "\n## Reported patterns (diagnostics; configured in the targets file under `patterns`)\n");
     if !pat_a_rows.is_empty() {
@@ -750,7 +754,7 @@ fn main() {
         md.push('\n');
     }
     if !bypass_rows.is_empty() {
-        let _ = writeln!(md, "(b) Corridor trips: completed trips whose links on the bypass street or its arterial span at least the configured share of the corridor's extent, by direction. 'Bypass' = at least N blocks (links) on the bypass street; 'arterial' = fewer bypass blocks and at least N on the arterial; 'other' = neither (a parallel street or a short use). No observed counterpart exists for these shares. The related observed values are in the select-link table above: northbound Hillegass Ave traffic rarely ends on College Ave (6%), 21 to 33% jogs to Benvenue Ave, and southbound freeway-bound drivers on College Ave commonly arrive via Ashby Ave and Benvenue Ave and jog to Hillegass Ave.\n");
+        let _ = writeln!(md, "(b) Corridor trips: completed trips from beyond one end of the corridor's study-area extent (the bypass street and its arterial together) to beyond the other end, within a lateral limit of the corridor, by direction. 'Bypass' = at least N blocks (links) on the bypass street; 'arterial' = fewer bypass blocks and at least N on the arterial; 'other' = neither (another street, the freeway or a short use); blocks are counted on the corridor's study-area links. No observed counterpart exists for these shares. The related observed values are in the select-link table above: northbound Hillegass Ave traffic rarely ends on College Ave (6%), 21 to 33% jogs to Benvenue Ave, and southbound freeway-bound drivers on College Ave commonly arrive via Ashby Ave and Benvenue Ave and jog to Hillegass Ave.\n");
         let _ = writeln!(md, "| Bypass | Arterial | N | Direction | Corridor trips | Bypass | Arterial | Other | Mean bypass blocks |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- |");
         for b in &bypass_rows {
             let f = |x: usize| if b.trips > 0 { pct(x as f64 / b.trips as f64) } else { "n/a".into() };
@@ -882,7 +886,7 @@ fn main() {
             },
             "wander": wander_rows.iter().map(|(lab, w)| json!({"set": lab, "trips": w.trips, "meanSwitches": w.mean_switches, "shareSwitched": w.share_switched, "meanDetour": w.mean_detour, "medianDetour": w.median_detour, "shareDetourOver1.3": w.share_detour_high, "shareDetourOver2": w.share_detour_very_high, "shareLoops": w.share_loops, "shareReversals": w.share_reversal, "studyMiles": w.study_miles, "studyMilesShareDetourOver1.3": w.study_share_detour_high})).collect::<Vec<_>>(),
             "patternFreewayThrough": pat_a_rows.iter().map(|(l, n, mi, sh)| json!({"trips": l, "n": n, "localMiles": mi, "shareOfLocalMiles": sh})).collect::<Vec<_>>(),
-            "patternBypass": bypass_rows.iter().map(|b| json!({"bypass": b.bypass, "arterial": b.arterial, "minBlocks": b.min_blocks, "dir": b.dir.to_string(), "corridorTrips": b.trips, "bypass": b.by_bypass, "arterialOnly": b.by_arterial, "other": b.by_other, "meanBypassBlocks": b.mean_bypass_blocks})).collect::<Vec<_>>(),
+            "patternBypass": bypass_rows.iter().map(|b| json!({"bypass": b.bypass, "arterial": b.arterial, "minBlocks": b.min_blocks, "dir": b.dir.to_string(), "corridorTrips": b.trips, "viaBypass": b.by_bypass, "arterialOnly": b.by_arterial, "other": b.by_other, "meanBypassBlocks": b.mean_bypass_blocks})).collect::<Vec<_>>(),
             "modes": serde_json::to_value(&m.modes).unwrap_or(Value::Null),
             "vulnerable": serde_json::to_value(&m.vulnerable).unwrap_or(Value::Null),
             "series": series.iter().map(|s| json!({"tMin": s.t / 60.0, "vehicles": s.veh, "backlog": s.backlog, "completed": s.completed, "removed": s.removed, "arterialSpeed": s.art_speed})).collect::<Vec<_>>(),

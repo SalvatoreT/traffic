@@ -67,6 +67,13 @@
       { "via": "Benvenue Avenue", "share": 0.03 }
     ]
   },
+  "patterns": {
+    "note": "Diagnostics of reported behavior, read by the calibrate report. They have no observed counterpart in the StreetLight figures; the related observed shares are the select-link rows (College Avenue 6% northbound from Hillegass Avenue, 21 to 33% to Benvenue Avenue).",
+    "freewayThrough": { "surfaceSide": "north", "description": "Trips between the surface gates north of the ramps and the freeway mainline gates, and the local-street vehicle-miles they drive." },
+    "bypass": [
+      { "bypass": "Hillegass Avenue", "arterial": "College Avenue", "axis": "NS", "minBlocks": 3, "lateralM": 1200 }
+    ]
+  },
   "qualitative": [
     "Little drop-off in freeway-bound and freeway-origin traffic between Claremont Avenue and Alcatraz Avenue: these trips continue through the neighborhood.",
     "Southbound freeway-bound drivers on College Avenue commonly arrive via Ashby Avenue and Benvenue Avenue, then jog to Hillegass Avenue.",
