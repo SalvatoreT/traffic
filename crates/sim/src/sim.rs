@@ -816,6 +816,9 @@ impl Simulation {
 
     fn update_signals(&mut self) {
         for n in 0..self.topo.n_nodes {
+            if let Some(p) = self.eff.sig[n].as_mut() {
+                p.roll(self.t);
+            }
             if let Some(p) = &self.eff.sig[n] {
                 for (ph, links) in p.links.iter().enumerate() {
                     let s = phase_state(p, ph, self.t);

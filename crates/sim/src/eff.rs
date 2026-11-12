@@ -6,13 +6,37 @@ use crate::topo::*;
 
 pub struct SigPlan {
     pub cycle: f32,
-    pub offset: f32,
+    /// Absolute time (s) at which a cycle of this plan starts.
+    pub t0: f64,
     /// (start, green) per phase within the cycle.
     pub phases: Vec<(f32, f32)>,
+    /// Approach links of each phase.
     pub links: Vec<Vec<u32>>,
     pub always_green: bool,
     /// Critical flow ratio sum used by the plan (Webster), for diagnostics.
     pub ysum: f32,
+    /// Plan that replaces this one at its `t0` (set by `adapt_signals`).
+    pub next: Option<Box<SigNext>>,
+}
+
+pub struct SigNext {
+    pub t0: f64,
+    pub cycle: f32,
+    pub phases: Vec<(f32, f32)>,
+    pub ysum: f32,
+}
+
+impl SigPlan {
+    /// Switch to the pending plan once its start time has come.
+    pub fn roll(&mut self, t: f64) {
+        if self.next.as_ref().map_or(false, |n| t >= n.t0) {
+            let n = self.next.take().unwrap();
+            self.t0 = n.t0;
+            self.cycle = n.cycle;
+            self.phases = n.phases;
+            self.ysum = n.ysum;
+        }
+    }
 }
 
 pub struct Eff {
@@ -258,106 +282,167 @@ impl Eff {
         }
     }
 
-    /// Build fixed-time plans for signalized nodes. `est_flow[l]` is the estimated approach flow (veh/h).
+    /// Build the start-up signal plans. `est_flow[l]` is the estimated approach flow (veh/h); `adapt_signals` replaces the
+    /// splits later from measured flows.
     pub fn plan_signals(&mut self, topo: &Topo, net: &Network, est_flow: &[f32]) {
         let nn = topo.n_nodes;
         for n in 0..nn {
             self.sig[n] = None;
         }
-        let is_sig = |s: &Eff, n: usize| s.ctrl[n] == Control::Signal;
-        let mut members: Vec<Vec<usize>> = vec![Vec::new(); nn];
         for n in 0..nn {
-            if is_sig(self, n) {
-                members[n].push(n);
-            }
-        }
-        for root in 0..nn {
-            if members[root].is_empty() {
+            if self.ctrl[n] != Control::Signal {
                 continue;
             }
-            let nodes = members[root].clone();
-            let ins: Vec<u32> = nodes
-                .iter()
-                .flat_map(|&n| topo.ins[n].iter().copied())
-                .filter(|&l| !self.closed[l as usize])
-                .collect();
+            let ins: Vec<u32> = topo.ins[n].iter().copied().filter(|&l| !self.closed[l as usize]).collect();
             if ins.is_empty() {
                 continue;
             }
-            let heading = |l: u32| -> f64 {
-                if topo.lm_cnt[l as usize] > 0 {
-                    topo.mvs[topo.lm_start[l as usize] as usize].h_in
-                } else {
-                    topo.link_point(l as usize, topo.length[l as usize] as f64, 0.0).1
-                }
-            };
-            let ref_l = *ins.iter().min_by_key(|&&l| (topo.rank[l as usize], l)).unwrap();
-            let hr = heading(ref_l);
-            let mut groups: [Vec<u32>; 2] = [Vec::new(), Vec::new()];
-            for &l in &ins {
-                let d = norm_angle(heading(l) - hr).abs();
-                let d = if d > std::f64::consts::FRAC_PI_2 { std::f64::consts::PI - d } else { d };
-                groups[if d < std::f64::consts::FRAC_PI_4 { 0 } else { 1 }].push(l);
-            }
-            let groups: Vec<Vec<u32>> = groups.into_iter().filter(|g| !g.is_empty()).collect();
-            let split = |g: &Vec<Vec<u32>>, n: usize| -> Vec<Vec<u32>> {
-                g.iter().map(|x| x.iter().copied().filter(|&l| topo.link_to[l as usize] as usize == n).collect()).collect()
-            };
+            let groups = phase_groups(topo, net, &ins);
             if groups.len() < 2 {
-                for &n in &nodes {
-                    self.sig[n] = Some(SigPlan { cycle: 60.0, offset: 0.0, phases: vec![(0.0, 60.0)], links: split(&groups, n), always_green: true, ysum: 0.0 });
-                }
+                self.sig[n] = Some(SigPlan { cycle: 60.0, t0: 0.0, phases: vec![(0.0, 60.0)], links: groups, always_green: true, ysum: 0.0, next: None });
                 continue;
             }
-            let ys: Vec<f32> = groups
-                .iter()
-                .map(|g| {
-                    g.iter()
-                        .map(|&l| est_flow[l as usize] / (SAT_FLOW * net.links[l as usize].lanes.max(1) as f32))
-                        .fold(0.0, f32::max)
-                })
-                .collect();
-            let np = groups.len() as f32;
-            let lost = np * (YELLOW + ALL_RED); // L = sum of intergreens [Webster1958]
-            let ysum: f32 = ys.iter().sum();
-            let cycle = if let Some(c) = nodes.iter().find_map(|&n| self.cycle_override[n]) {
-                c
-            } else {
-                let c = if ysum < 0.9 { (1.5 * lost + 5.0) / (1.0 - ysum) } else { CYCLE_MAX }; // [Webster1958]
-                ((c.clamp(CYCLE_MIN, CYCLE_MAX) / 5.0).ceil() * 5.0).min(CYCLE_MAX.max(CYCLE_MIN))
-            };
-            let avail = (cycle - lost).max(np * 5.0);
-            let mut green: Vec<f32> = if ysum > 1e-6 {
-                ys.iter().map(|&y| avail * y / ysum).collect()
-            } else {
-                vec![avail / np; groups.len()]
-            };
-            let minimum = MIN_GREEN.min(avail / np);
-            // Enforce the minimum green and re-share the remainder.
-            for _ in 0..2 {
-                let low: f32 = green.iter().filter(|&&g| g < minimum).count() as f32;
-                if low == 0.0 {
-                    break;
-                }
-                let fixed: f32 = low * minimum;
-                let rest: f32 = green.iter().filter(|&&g| g >= minimum).sum();
-                for g in green.iter_mut() {
-                    *g = if *g < minimum { minimum } else if rest > 0.0 { *g * (avail - fixed) / rest } else { *g };
-                }
+            let ys = group_flow_ratios(net, &groups, est_flow);
+            let (cycle, phases, ysum) = webster(&ys, self.cycle_override[n]);
+            let offset = ((n as f32 * 37.0) % 100.0) / 100.0 * cycle;
+            self.sig[n] = Some(SigPlan { cycle, t0: -(offset as f64), phases, links: groups, always_green: false, ysum, next: None });
+        }
+    }
+
+    /// Recompute the splits (and the cycle unless pinned by an intervention) of every signal from measured approach flows
+    /// (veh/h). The new plan starts when the current cycle ends, so no phase is cut short.
+    pub fn adapt_signals(&mut self, net: &Network, flow: &[f32], t: f64) {
+        for n in 0..self.sig.len() {
+            let pin = self.cycle_override[n];
+            let Some(p) = self.sig[n].as_mut() else { continue };
+            if p.always_green {
+                continue;
             }
-            let mut phases = Vec::new();
-            let mut t = 0.0;
-            for g in &green {
-                phases.push((t, *g));
-                t += g + YELLOW + ALL_RED;
-            }
-            let cyc = t.max(1.0);
-            let offset = ((root as f32 * 37.0) % 100.0) / 100.0 * cyc;
-            for &n in &nodes {
-                self.sig[n] = Some(SigPlan { cycle: cyc, offset, phases: phases.clone(), links: split(&groups, n), always_green: false, ysum });
+            let ys = group_flow_ratios(net, &p.links, flow);
+            let (cycle, phases, ysum) = webster(&ys, pin);
+            let k = ((t - p.t0) / p.cycle as f64).ceil().max(1.0);
+            let start = p.t0 + k * p.cycle as f64;
+            p.next = Some(Box::new(SigNext { t0: start, cycle, phases, ysum }));
+        }
+    }
+}
+
+/// Group the approaches of a signalized node into phases by street. Approaches with the same street name and a similar axis
+/// share a phase; approaches with different or missing names also share one when they lie on the same axis within
+/// `PHASE_AXIS_DEG` (a through road that changes name, or a parallel lane group). Streets are then ordered by importance
+/// (rank, link id) and at most `MAX_PHASES` remain: the two closest axes merge until that holds.
+pub fn phase_groups(topo: &Topo, net: &Network, ins: &[u32]) -> Vec<Vec<u32>> {
+    let heading = |l: u32| -> f64 {
+        if topo.lm_cnt[l as usize] > 0 {
+            topo.mvs[topo.lm_start[l as usize] as usize].h_in
+        } else {
+            topo.link_point(l as usize, topo.length[l as usize] as f64, 0.0).1
+        }
+    };
+    let axial = |a: f64, b: f64| -> f64 {
+        let d = norm_angle(a - b).abs();
+        (if d > std::f64::consts::FRAC_PI_2 { std::f64::consts::PI - d } else { d }).to_degrees()
+    };
+    let key = |l: u32| net.links[l as usize].name.trim().to_lowercase();
+    let h: Vec<f64> = ins.iter().map(|&l| heading(l)).collect();
+    let mut parent: Vec<usize> = (0..ins.len()).collect();
+    fn find(p: &mut Vec<usize>, i: usize) -> usize {
+        let mut r = i;
+        while p[r] != r {
+            r = p[r];
+        }
+        let mut c = i;
+        while p[c] != r {
+            let nx = p[c];
+            p[c] = r;
+            c = nx;
+        }
+        r
+    }
+    for i in 0..ins.len() {
+        for j in 0..i {
+            let (ki, kj) = (key(ins[i]), key(ins[j]));
+            let a = axial(h[i], h[j]);
+            let same_street = !ki.is_empty() && ki == kj && a < PHASE_SAME_NAME_DEG;
+            if same_street || a < PHASE_AXIS_DEG {
+                let (ri, rj) = (find(&mut parent, i), find(&mut parent, j));
+                parent[ri.max(rj)] = ri.min(rj);
             }
         }
     }
+    let mut clusters: Vec<Vec<usize>> = Vec::new();
+    let mut roots: Vec<usize> = Vec::new();
+    for i in 0..ins.len() {
+        let r = find(&mut parent, i);
+        match roots.iter().position(|&x| x == r) {
+            Some(k) => clusters[k].push(i),
+            None => {
+                roots.push(r);
+                clusters.push(vec![i]);
+            }
+        }
+    }
+    let order_key = |c: &Vec<usize>| c.iter().map(|&i| (topo.rank[ins[i] as usize], ins[i])).min().unwrap();
+    clusters.sort_by_key(|c| order_key(c));
+    let axis = |c: &Vec<usize>| h[*c.iter().min_by_key(|&&i| (topo.rank[ins[i] as usize], ins[i])).unwrap()];
+    while clusters.len() > MAX_PHASES {
+        let mut best = (f64::MAX, 0, 1);
+        for i in 0..clusters.len() {
+            for j in i + 1..clusters.len() {
+                let d = axial(axis(&clusters[i]), axis(&clusters[j]));
+                if d < best.0 {
+                    best = (d, i, j);
+                }
+            }
+        }
+        let moved = clusters.remove(best.2);
+        clusters[best.1].extend(moved);
+    }
+    clusters.into_iter().map(|c| c.into_iter().map(|i| ins[i]).collect()).collect()
+}
+
+/// Critical flow ratio of each phase: the largest per-lane ratio of flow to saturation flow among its approaches.
+fn group_flow_ratios(net: &Network, groups: &[Vec<u32>], flow: &[f32]) -> Vec<f32> {
+    groups
+        .iter()
+        .map(|g| g.iter().map(|&l| flow[l as usize] / (SAT_FLOW * net.links[l as usize].lanes.max(1) as f32)).fold(0.0, f32::max))
+        .collect()
+}
+
+/// Webster plan [Webster1958]: cycle C = (1.5 L + 5) / (1 - Y) clamped to CYCLE_MIN..CYCLE_MAX and rounded up to 5 s (or the
+/// pinned cycle), green split proportional to the critical flow ratios with a minimum green. Returns (cycle, (start, green)
+/// per phase, Y).
+pub fn webster(ys: &[f32], pinned: Option<f32>) -> (f32, Vec<(f32, f32)>, f32) {
+    let np = ys.len() as f32;
+    let lost = np * (YELLOW + ALL_RED); // L = sum of intergreens
+    let ysum: f32 = ys.iter().sum();
+    let cycle = if let Some(c) = pinned {
+        c
+    } else {
+        let c = if ysum < 0.9 { (1.5 * lost + 5.0) / (1.0 - ysum) } else { CYCLE_MAX };
+        (c.clamp(CYCLE_MIN, CYCLE_MAX) / 5.0).ceil() * 5.0
+    };
+    let avail = (cycle - lost).max(np * 5.0);
+    let mut green: Vec<f32> = if ysum > 1e-6 { ys.iter().map(|&y| avail * y / ysum).collect() } else { vec![avail / np; ys.len()] };
+    let minimum = MIN_GREEN.min(avail / np);
+    for _ in 0..2 {
+        let low = green.iter().filter(|&&g| g < minimum).count() as f32;
+        if low == 0.0 {
+            break;
+        }
+        let fixed = low * minimum;
+        let rest: f32 = green.iter().filter(|&&g| g >= minimum).sum();
+        for g in green.iter_mut() {
+            *g = if *g < minimum { minimum } else if rest > 0.0 { *g * (avail - fixed) / rest } else { *g };
+        }
+    }
+    let mut phases = Vec::new();
+    let mut t = 0.0;
+    for g in &green {
+        phases.push((t, *g));
+        t += g + YELLOW + ALL_RED;
+    }
+    (t.max(1.0), phases, ysum)
 }
 
 /// Signal state code (1 green, 2 yellow, 3 red) of a phase at time `t`.
@@ -365,7 +450,7 @@ pub fn phase_state(p: &SigPlan, phase: usize, t: f64) -> u8 {
     if p.always_green {
         return 1;
     }
-    let tc = ((t as f32) + p.offset).rem_euclid(p.cycle);
+    let tc = (t - p.t0).rem_euclid(p.cycle as f64) as f32;
     let (start, g) = p.phases[phase];
     let rel = (tc - start).rem_euclid(p.cycle);
     if rel < g {
@@ -398,7 +483,7 @@ pub fn phase_since_green(p: &SigPlan, phase: usize, t: f64) -> f32 {
     if p.always_green {
         return 0.0;
     }
-    let tc = ((t as f32) + p.offset).rem_euclid(p.cycle);
+    let tc = (t - p.t0).rem_euclid(p.cycle as f64) as f32;
     let (start, g) = p.phases[phase];
     ((tc - start).rem_euclid(p.cycle) - g).max(0.0)
 }
