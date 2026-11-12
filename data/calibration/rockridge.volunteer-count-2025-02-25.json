@@ -1,0 +1,76 @@
+{
+  "area": "rockridge",
+  "source": {
+    "id": "volunteer-count-2025-02-25",
+    "description": "Manual turning-movement count by more than 50 resident volunteers for the neighborhood working group, Tuesday February 25, 2025.",
+    "periods": { "am": "08:00-09:00, 34 intersections", "pm": "17:00-18:00, 43 intersections" },
+    "method": "Volunteers tallied turning movements at each intersection for one hour. A car is counted once on each block it travels. Pedestrians, bicycles and signal queues were also logged.",
+    "caveats": [
+      "One day, one hour each period.",
+      "Five Telegraph Avenue entries were not counted in the AM, so AM and PM totals compare only on the 13 entries counted in both (732 AM, 983 PM).",
+      "Full-route shares are lower bounds: cars that turned off partway are not included.",
+      "Per-block volumes exist as map images and are not transcribed here yet."
+    ]
+  },
+  "entering": {
+    "pm": {
+      "total": 1175,
+      "accessPoints": 18,
+      "bySide": [
+        { "side": "Claremont Avenue and Forest Street", "vehicles": 498 },
+        { "side": "Alcatraz Avenue at Colby Street and Hillegass Avenue", "vehicles": 360 },
+        { "side": "Telegraph Avenue", "vehicles": 248 },
+        { "side": "College Avenue", "vehicles": 61 }
+      ],
+      "fromClaremontOnto": [
+        { "street": "Colby Street", "vehicles": 182 },
+        { "street": "Martin Street", "vehicles": 164 },
+        { "street": "Hillegass Avenue", "vehicles": 94 },
+        { "street": "Forest Street", "vehicles": 58 },
+        { "street": "60th Street", "vehicles": 7 }
+      ]
+    },
+    "am": {
+      "totalCounted": 732,
+      "note": "Five Telegraph Avenue entries not counted.",
+      "fromClaremontOnto": [
+        { "street": "Martin Street", "vehicles": 147 },
+        { "street": "Colby Street", "vehicles": 72 },
+        { "street": "Hillegass Avenue", "vehicles": 72 }
+      ]
+    }
+  },
+  "fullRoute": {
+    "definition": "Cars that drive the whole street between Claremont Avenue and Alcatraz Avenue.",
+    "rows": [
+      { "street": "Colby Street", "direction": "NB", "period": "am", "vehicles": 33, "shareOfEntering": 0.29 },
+      { "street": "Colby Street", "direction": "NB", "period": "pm", "vehicles": 102, "shareOfEntering": 0.56 },
+      { "street": "Colby Street", "direction": "SB", "period": "am", "vehicles": 46, "shareOfEntering": 0.42 },
+      { "street": "Colby Street", "direction": "SB", "period": "pm", "vehicles": 39, "shareOfEntering": 0.28 },
+      { "street": "Hillegass Avenue", "direction": "NB", "period": "am", "vehicles": 48, "shareOfEntering": 0.51 },
+      { "street": "Hillegass Avenue", "direction": "NB", "period": "pm", "vehicles": 34, "shareOfEntering": 0.47 },
+      { "street": "Hillegass Avenue", "direction": "SB", "period": "am", "vehicles": 36, "shareOfEntering": 0.49 },
+      { "street": "Hillegass Avenue", "direction": "SB", "period": "pm", "vehicles": 79, "shareOfEntering": 0.44 },
+      { "street": "Martin Street", "direction": "to Telegraph Avenue via 58th Street", "period": "am", "vehicles": 70, "shareOfEntering": 0.48 }
+    ]
+  },
+  "intersectionTurnVolumes": [
+    { "at": ["58th Street", "Martin Street"], "am": 209, "pm": 235 },
+    { "at": ["Ayala Avenue", "Forest Street"], "pm": 132 },
+    { "at": ["Martin Street", "Ayala Avenue"], "am": 73, "pm": 101 },
+    { "at": ["Hillegass Avenue", "62nd Street"], "pm": 71 },
+    { "at": ["Hillegass Avenue", "63rd Street"], "pm": 66 },
+    { "at": ["Colby Street", "63rd Street"], "am": 77 }
+  ],
+  "alcatrazExits": { "towardTelegraph": 0.64, "towardCollege": 0.32, "straightAcross": 0.04 },
+  "signal": {
+    "at": ["Claremont Avenue", "Colby Street", "Forest Street"],
+    "approach": "Colby Street",
+    "period": "am",
+    "cycleSeconds": 79,
+    "greenSeconds": 4,
+    "medianCarsPerCycle": { "am": 4, "pm": 3.5 },
+    "maxQueue": 13
+  },
+  "pedestrians": [{ "note": "88 people walking left Colby Street at Claremont Avenue in the AM hour." }]
+}

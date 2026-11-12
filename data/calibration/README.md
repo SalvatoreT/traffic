@@ -58,3 +58,16 @@ cargo test --release -p traffic-sim --test validate                    # regress
 ```
 
 The cases are lettered: a saturation flow at a signal, b signalized approach capacity (through, left with and without a pocket, right), c two signals 100 and 200 m apart with fixed and adaptive plans (c5 and c6: vehicles served at a signal with a saturated arterial and a cross street, adaptive against start-up plan), d all-way stop, e two-way stop gap acceptance, f traffic circle entry, g single-lane link capacity, h gate insertion, i motorway lane, exit ramp and off-ramp terminal, j effect of pedestrians and cyclists, k junction traversal. The code is `crates/sim/src/validate.rs`; every expected range names a key of `docs/references.md` or is labeled ASSUMPTION. A run takes a few seconds. Add a case whenever a capacity rule in the simulator changes, and run the suite before tuning demand: a network that jams at half its counted flow has a low primitive somewhere.
+
+## Resident volunteer count, February 25, 2025
+
+`rockridge.volunteer-count-2025-02-25.json` holds figures from a manual turning-movement
+count done by more than 50 resident volunteers for the neighborhood working group on
+Tuesday, February 25, 2025, from 8 to 9 AM and 5 to 6 PM. It is the only measured data on
+the interior streets: how many cars enter by each side, how the traffic turning in from
+Claremont Avenue splits between Colby, Martin, Hillegass and Forest, and how many cars
+drive the whole of Colby Street and Hillegass Avenue between Claremont and Alcatraz.
+
+It is one day and one hour per period, so treat single figures as accurate to within
+perhaps 15 to 20 percent. The per-block volume maps from the same count are not
+transcribed yet.
