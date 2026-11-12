@@ -245,4 +245,19 @@ export function matchShape(index: LinkIndex, shape: Pt[], params: MatchParams = 
   return out;
 }
 
-const finish = (links: MLink[]): Matched => ({ links: links.map((l) => l.id), length: links.reduce((a, l) => a + l.length, 0) });
+/** Cuts out loops: when a link repeats, the path between its two visits is dropped (noise, not a real circuit). */
+function unloop(links: MLink[]): MLink[] {
+  const out: MLink[] = [];
+  const at = new Map<number, number>();
+  for (const l of links) {
+    const k = at.get(l.id);
+    if (k === undefined) (at.set(l.id, out.length), out.push(l));
+    else for (const r of out.splice(k + 1)) at.delete(r.id);
+  }
+  return out;
+}
+
+function finish(raw: MLink[]): Matched {
+  const links = unloop(raw);
+  return { links: links.map((l) => l.id), length: links.reduce((a, l) => a + l.length, 0) };
+}

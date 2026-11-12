@@ -1,6 +1,6 @@
 # Demand data and method (Rockridge)
 
-Regenerate everything: `NODE_USE_ENV_PROXY=1 npx tsx tools/fetch-demand.ts` (add `--force` to re-download; the env var is only needed behind an HTTP proxy), then `npx tsx tools/build-demand.ts`. Settings: `data/demand/rockridge.config.json`. Raw files (gitignored, stored in R2) were retrieved 2026-11-11.
+Regenerate everything: `NODE_USE_ENV_PROXY=1 npx tsx tools/fetch-demand.ts` (add `--force` to re-download; the env var is only needed behind an HTTP proxy), then `npx tsx tools/build-demand.ts` (run `tools/build-transit.ts` before it when a transit file should feed bus-stop walking trips). Settings: `data/demand/rockridge.config.json`. Raw files (gitignored, stored in R2) were retrieved 2026-11-11.
 
 ## Raw files (`data/demand/raw/`)
 
@@ -34,6 +34,22 @@ Regenerate everything: `NODE_USE_ENV_PROXY=1 npx tsx tools/fetch-demand.ts` (add
 11. Flows below 0.5 veh/h are dropped (max 4,000 flows) and totals renormalized.
 
 Results (veh/h, weekday; surface gate-to-gate "through" / local / freeway-ramp trips): AM 12,398 = 8,277 / 1,302 / 2,818 (23% ramp); midday 8,371 = 5,444 / 837 / 2,090 (25%); PM 12,819 = 8,030 / 1,470 / 3,319 (26%), of which 481 PM veh/h have a local end. Freeway gates PM: gate 422 out 1,034, gate 243 out 656, gate 418 in 936, gate 417 in 693. PM freeway-origin trips by destination sector (from the off-ramps): NE 40%, N 30%, E 15%, SE 8%, other 7%; ~3% end on College Ave gates. The through share, the ramp share and the destination mix are consequences of the assumptions above and are uncalibrated, so compare them against `data/calibration/` before trusting them. Run the tool for the ramp list, per-freeway-gate volumes and the per-gate target table.
+
+## Walking and biking demand (multimodal-agents design D6)
+
+Flows with `mode: 'pedestrian'` or `mode: 'bicycle'` are appended to each period's flow list after the car flows. Car flows have no `mode` field and are the same values as before (checked byte for byte against the previous output). The volume field is still called `vehPerHour`; for these modes it means persons per hour. Code: `tools/lib/demand-active.ts`, settings: `active` in `data/demand/rockridge.config.json`.
+
+DATA: PM peak-hour pedestrian crosswalk volumes and bicycle movement volumes at Telegraph Ave & Alcatraz Ave in the four Oakland count reports already in `data/demand/raw/oakland-multimodal/` (mean of the four: about 151 people on foot and 82 on bicycles; the 2021 report is lower than the earlier years). Each mode gets one scaling factor so that the modeled PM peak-hour people passing that intersection on shortest paths (trip ends included) equal the observed mean. The factor applies to all periods and places. A pedestrian passing through counts as one crossing, which slightly undercounts turning trips. Nothing else is counted: the spatial pattern away from that intersection is not validated, and the model has not been calibrated against walking or biking counts.
+
+ASSUMPTION: everything else, all labeled in the config.
+
+1. Person trips per resident worker and per job use the car model's rates (`local.*`) and its origin and destination shares by period. Mode share: 6% walking, 4% bicycle. These only set the prior level; the count scaling then fixes the level (prior at the counted intersection, PM peak: 133 pedestrians and 329 bicycles per hour, against 151 and 82 observed, so factors of 1.13 and 0.25).
+2. Pedestrians. Trips start at the LODES-based in-area nodes. 20% go to or from gates within 800 m of network distance; of the rest, 35% end on a primary or secondary street inside the study area (weighted by jobs within 200 m), and the remainder go to other in-area nodes. Destination weight falls off exponentially with network distance (mean 500 m, longest walk 1,200 m). Walking legs of bus trips (5% of person trips) go between in-area nodes and bus-stop nodes within 400 m, weighted by service frequency; they need `public/data/<area>.transit.json`, so they are absent until the transit file exists. Motorway links are not walkable.
+3. Bicycles. 45% of trips from in-area nodes go to or from gates (within 4 km, mean trip 2 km), the rest to other in-area nodes. Gate-to-gate through trips equal 50% of the in-area bicycle trips; a gate pair's weight is higher when its shortest path follows `bikeLane` and `bikeRoute` links (up to four times). Paths use a cost of 0.8 on bike-lane links and 0.9 on bike-route links.
+4. Period profile relative to the PM peak: pedestrians 0.75 (AM), 0.9 (midday); bicycles 0.9 (AM), 0.5 (midday).
+5. Flows under 0.05 persons per hour are dropped and the list is capped at 2,000 pedestrian and 1,500 bicycle flows per period (totals preserved). With cars (capped at 4,000), a period holds under 6,000 flows.
+
+Sources checked: the ACS commute mode-share tables (B08301) would give walking, bicycle and transit shares for the LODES tracts, but the Census API returned "Missing Key" without an API key and no token was available, so mode shares are assumptions. City of Berkeley and Alameda County bicycle and pedestrian counts were not searched in depth.
 
 ## Calibration changes (baseline-calibration tasks 3.x)
 

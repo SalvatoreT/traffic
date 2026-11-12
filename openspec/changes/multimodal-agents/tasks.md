@@ -1,8 +1,8 @@
 ## 1. Data
-- [ ] 1.1 Importer: bike, sidewalk and crossing attributes
-- [ ] 1.2 Transit fetch and `<area>.transit.json`
-- [ ] 1.3 Walking and biking demand with labeled assumptions
-- [ ] 1.4 Bibliography entries for new parameters
+- [x] 1.1 Importer: bike, sidewalk and crossing attributes
+- [ ] 1.2 Transit fetch and `<area>.transit.json` (tools and tests done; the GTFS download needs an agency token, see `data/transit/README.md`)
+- [x] 1.3 Walking and biking demand with labeled assumptions
+- [x] 1.4 Bibliography entries for new parameters
 
 ## 2. Simulation
 - [ ] 2.1 Agent kinds and parameters

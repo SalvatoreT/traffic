@@ -179,5 +179,73 @@
     }
   },
   "assumedGateScale": 0.35,
-  "assumedGateScaleNote": "ASSUMPTION (calibration steps F and J: 0.3 -> 0.35): single factor on all gate volumes that are not count-based (class-default ADT gates); count-based gates (TMC, Caltrans override) and ramp volumes are unscaled."
+  "assumedGateScaleNote": "ASSUMPTION (calibration steps F and J: 0.3 -> 0.35): single factor on all gate volumes that are not count-based (class-default ADT gates); count-based gates (TMC, Caltrans override) and ramp volumes are unscaled.",
+  "transit": "public/data/rockridge.transit.json",
+  "active": {
+    "_note": "ASSUMPTION unless stated: walking and biking demand (design D6). Person trips use the car model's per-worker and per-job rates (local.*), then these mode shares. Volumes are persons per hour. Only the count scaling below uses data (DATA: Oakland pedestrian and bicycle counts at one intersection); everything else is uncounted. ACS commute mode shares were not retrievable (the Census API needs a key), so the shares are not derived from them.",
+    "pedestrian": {
+      "modeShare": 0.06,
+      "modeShareNote": "ASSUMPTION: share of person trips made on foot; the observed count scaling overrides the absolute level.",
+      "meanTripM": 500,
+      "meanTripNote": "ASSUMPTION: mean of the exponential trip-length decay (network meters).",
+      "maxTripM": 1200,
+      "maxTripNote": "ASSUMPTION: longest walk to another in-area node.",
+      "commercialShare": 0.35,
+      "commercialShareNote": "ASSUMPTION: share of in-area walking trips ending on a primary or secondary street inside the study area (shops, services).",
+      "gateShare": 0.2,
+      "gateShareNote": "ASSUMPTION: share of walking trips leaving or entering the model at a gate.",
+      "gateMaxM": 800,
+      "gateMaxNote": "ASSUMPTION: gates beyond this network distance get no walking trips.",
+      "transitAccessShare": 0.05,
+      "transitAccessNote": "ASSUMPTION: share of person trips that are bus trips with a walking leg to or from a stop in the area; needs the transit file.",
+      "maxWalkToStopM": 400,
+      "stopDecayM": 200,
+      "periodVolume": {
+        "am_peak": 0.75,
+        "midday": 0.9,
+        "pm_peak": 1.0
+      },
+      "periodVolumeNote": "ASSUMPTION: hourly volume relative to the PM peak (the scaling period)."
+    },
+    "bicycle": {
+      "modeShare": 0.04,
+      "modeShareNote": "ASSUMPTION: share of person trips made by bicycle; the observed count scaling overrides the absolute level.",
+      "meanTripM": 2000,
+      "meanTripNote": "ASSUMPTION: mean of the exponential trip-length decay (network meters).",
+      "maxTripM": 5000,
+      "gateShare": 0.45,
+      "gateShareNote": "ASSUMPTION: share of cycling trips leaving or entering the model at a gate.",
+      "gateMaxM": 4000,
+      "throughFactor": 0.5,
+      "throughNote": "ASSUMPTION: gate-to-gate bicycle trips as a share of all trips starting at in-area nodes.",
+      "throughMinM": 500,
+      "routeBonus": 3,
+      "routeBonusNote": "ASSUMPTION: gate pairs whose shortest bike path runs along bike lanes and routes get up to 1 + routeBonus times the weight.",
+      "laneRouteCostFactor": 0.8,
+      "laneRouteCostNote": "ASSUMPTION: bike-path cost of a link with a bike lane (routes use the midpoint to 1); only steers which shortest path counts as the cyclist's.",
+      "periodVolume": {
+        "am_peak": 0.9,
+        "midday": 0.5,
+        "pm_peak": 1.0
+      },
+      "periodVolumeNote": "ASSUMPTION: hourly volume relative to the PM peak (the scaling period)."
+    },
+    "countScaling": {
+      "enabled": true,
+      "clampMin": 0.2,
+      "clampMax": 5,
+      "_note": "DATA: one factor per mode makes PM peak-hour persons passing the counted intersection (shortest paths, ends included) equal the mean of the Oakland counts (config streetCounts[0]); the factor is clamped to this range and applies to all periods and places."
+    },
+    "commercialClasses": [
+      "primary",
+      "secondary"
+    ],
+    "commercialJobsRadiusM": 200,
+    "minFlowPerHour": 0.05,
+    "maxFlows": {
+      "pedestrian": 2000,
+      "bicycle": 1500
+    },
+    "maxFlowsNote": "Keeps all modes together under about 6,000 flows per period (cars are capped at maxFlows above)."
+  }
 }

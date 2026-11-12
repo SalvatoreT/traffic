@@ -511,6 +511,16 @@ Still **not found:** a verified 2018–2026 *review* of cyclist microsimulation.
 
 Still **not found:** a verified calibrated microsimulation rule set for pedestrians crossing *unsignalized neighborhood* streets with yielding drivers. A FHWA-style 27-mid-block-crossing gap-acceptance prototype and a WCTR 2010 discrete-choice model were seen only as search snippets and are not cited.
 
+**Transit data and map matching (multimodal-agents data tasks, 2026-11-12):**
+
+**[Newson2009]** [V-meta] Newson, P., Krumm, J. (2009). Hidden Markov map matching through noise and sparseness. *Proceedings of the 17th ACM SIGSPATIAL International Conference on Advances in Geographic Information Systems*, pp. 336–343. DOI 10.1145/1653771.1653818 (Crossref confirms authors, title, venue, pages and year; full text not read). Cited for the idea of matching a noisy path to a road network with a hidden Markov model whose emission cost falls with distance to the road and whose transition cost compares path distance with route distance. `tools/lib/mapmatch.ts` is a simplified variant (squared-distance emission cost, absolute-difference transition cost, fixed default spreads, a heading filter and loop removal), not a reimplementation of the paper.
+
+**[GTFS]** [V] General Transit Feed Specification, Schedule reference (MobilityData / gtfs.org). `https://gtfs.org/documentation/schedule/reference/` (page resolves; lists routes.txt, trips.txt, stop_times.txt, shapes.txt, calendar.txt and calendar_dates.txt, the files read by `tools/build-transit.ts`). Specification, not a research paper.
+
+**[ACTransitGTFS]** [V-partial] AC Transit, Data and API Resource Center, "General Transit Feed Specification" section. `https://www.actransit.org/data-api-resource-center` (page resolves and states the agency generates the feed at least three times a year; the feed itself was not downloaded in this pass, so its version and date are not yet recorded).
+
+No source was found for bus dwell time per stop; `dwellSeconds` in `data/transit/rockridge.config.json` is an ASSUMPTION.
+
 **Buses and transit signal priority:**
 - Lin, Yang, Zou, Franz (2014). Transit signal priority control at signalized intersections: a comprehensive review. *Transportation Letters*. [V-partial] Seen in a snippet. Covers passive and active TSP and field benefits from 24 cities.
 - National Academies (2020). *Transit Signal Priority: Current State of the Practice.* [V-partial] Seen as a nap.edu result. The NASEM report number was not captured.

@@ -10,12 +10,12 @@
     "preview": "vite preview",
     "deploy": "npm run build && wrangler deploy",
     "cf-typegen": "wrangler types",
-    "data": "tsx tools/import-osm.ts && tsx tools/build-demand.ts",
+    "data": "tsx tools/import-osm.ts && tsx tools/build-transit.ts && tsx tools/build-demand.ts",
     "test": "cargo test --workspace && vitest run",
     "prepare": "git config core.hooksPath .githooks && sh scripts/install-skills.sh",
     "data:pull": "tsx tools/r2-sync.ts pull",
     "data:push": "tsx tools/r2-sync.ts push",
-    "data:fetch": "tsx tools/fetch-osm.ts && tsx tools/fetch-demand.ts"
+    "data:fetch": "tsx tools/fetch-osm.ts && tsx tools/fetch-demand.ts && tsx tools/fetch-transit.ts"
   },
   "dependencies": {
     "maplibre-gl": "^6.18.0",
