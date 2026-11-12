@@ -32,7 +32,7 @@
 - [x] 6.6 Headline shares and arterial flow ratios re-measured; ramp direction split tried and not kept
 - [ ] 6.7 Reach D4 (zero gridlock removals): remaining removals sit on Telegraph near the SR-24 ramps
 
-## 6. Wider model area
-- [ ] 6.1 Extend the extract, network and demand to the wider area; study area unchanged
-- [ ] 6.2 Browser performance at the larger size
-- [ ] 6.3 Fine-tune round on the wider network with all modes
+## 7. Wider model area
+- [ ] 7.1 Extend the extract, network and demand to the wider area; study area unchanged
+- [ ] 7.2 Browser performance at the larger size
+- [ ] 7.3 Fine-tune round on the wider network with all modes
