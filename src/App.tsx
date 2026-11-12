@@ -21,6 +21,7 @@ import { InterventionPanel } from './components/InterventionPanel';
 import { hasModes } from './lib/metrics';
 import { Comparison } from './components/Comparison';
 import { StreetsTable } from './components/StreetsTable';
+import { effectiveView, initViewState, viewReducer } from './lib/change';
 const MapView = lazy(() => import('./components/MapView').then((m) => ({ default: m.MapView })));
 const Sources = lazy(() => import('./components/Sources').then((m) => ({ default: m.Sources })));
 
@@ -121,6 +122,10 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   // Set after mount so the polite live region exists before its content changes.
   useEffect(() => { setNotice({ unplaced: initial.unplaced, invalid: initial.invalid }); }, [initial]);
   const [source, setSource] = useState<'scenario' | 'baseline'>('scenario');
+  const [viewState, dispatchView] = useReducer(viewReducer, undefined, () => initViewState(initial.interventions.length, store.get('changeView')));
+  useEffect(() => { dispatchView({ type: 'count', count: interventions.length }); }, [interventions.length]);
+  useEffect(() => { if (viewState.remembered) store.set('changeView', viewState.remembered); }, [viewState.remembered]);
+  const mapView = effectiveView(viewState);
 
   const [engine, setEngine] = useState<{ kind: 'wasm' | 'mock'; reason?: string } | null>(null);
   const [simError, setSimError] = useState('');
@@ -239,6 +244,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   const shownStats = source === 'baseline' && stats?.comparing ? stats.baseline : stats?.scenario;
   const linkStats = shownStats?.linkStats ?? null;
   const overlayMax = overlayTop(overlay);
+  const baseStats = stats?.baseline.linkStats ?? null;
 
   const base: Metrics | null = stats?.baseline.metrics ?? null;
   const scen: Metrics | null = stats?.scenario.metrics ?? null;
@@ -249,7 +255,8 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   const placement: Placement | null = !selection ? null : selection.via === 'search' || !mapVisible ? 'inline' : phone ? 'sheet' : 'popover';
   const menu = selection && placement ? (
     <SelectionMenu bundle={bundle} index={index} selection={selection} interventions={interventions} placement={placement}
-      onApply={onApply} onRemove={onRemove} onClose={clearSelection} />
+      onApply={onApply} onRemove={onRemove} onClose={clearSelection}
+      readout={comparing ? { overlay, scen: stats?.scenario.linkStats ?? null, base: baseStats } : null} />
   ) : null;
 
   const shareButton = (
@@ -360,7 +367,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
           <div className="map-area" hidden={!mapVisible}>
             <Suspense fallback={<p className="boot" role="status">Loading map…</p>}>
             <MapView
-              bundle={bundle} index={index} region={region} mode={mode} overlay={overlay} overlayMax={overlayMax} linkStats={linkStats}
+              bundle={bundle} index={index} region={region} mode={mode} overlay={overlay} overlayMax={overlayMax} linkStats={mapView === 'change' ? stats?.scenario.linkStats ?? null : linkStats} baseStats={baseStats} view={mapView}
               client={client} interventions={interventions} selection={mapVisible ? selection : null} onHit={onHit}
               popover={placement === 'popover' ? menu : null}
               visible={mapVisible} reducedMotion={reduced}
@@ -369,6 +376,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
             </Suspense>
             <Legend overlay={overlay} onOverlay={setOverlay} mode={mode} 
               source={source} onSource={setSource} canCompare={comparing}
+              view={mapView} onView={(v) => dispatchView({ type: 'choose', view: v })} canChange={interventions.length > 0} early={comparing && !finished && run.time < 600}
               multimodal={multimodal} modes={modes} onModes={setModes} hasBikeNet={hasBikeNet} bikeNet={bikeNet} onBikeNet={setBikeNet} />
             {!engine && (
               <div className="map-cover">
@@ -380,7 +388,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
           </div>
           {view === 'streets' && (
             <StreetsTable bundle={bundle} index={index} showService={showService} onShowService={setShowService}
-              scen={stats?.scenario.linkStats ?? null} base={stats?.baseline.linkStats ?? null} comparing={comparing}
+              scen={stats?.scenario.linkStats ?? null} base={baseStats} comparing={comparing} overlay={overlay}
               baseMetrics={base} scenMetrics={scen} />
           )}
           {view === 'sources' && <Suspense fallback={<p className="boot" role="status">Loading sources…</p>}><Sources demand={demand} synthetic={bundle.synthetic} focusRef={sourceRef} calibration={bundle.synthetic ? undefined : { status: calStatus, note: bundle.entry.calibration?.note }} /></Suspense>}

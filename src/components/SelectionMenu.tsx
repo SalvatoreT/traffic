@@ -2,6 +2,8 @@ import { type ReactNode, useCallback, useEffect, useId, useRef, useState } from 
 import type { AreaBundle, ControlType, Intervention } from '../types';
 import type { NetIndex } from '../lib/naming';
 import { describeIntervention } from '../lib/describe';
+import { aggregate, CHANGE_NAME, CHANGE_UNIT, diffValue, formatSigned, metricValue, readoutText } from '../lib/change';
+import { linkStatsView, type Overlay } from '../types';
 import {
   blockActions, humpPosition, interventionsAt, mphToMps, nodeActions, controlLabel, type Selection,
 } from '../lib/selection';
@@ -15,6 +17,8 @@ interface Props {
   onApply(change: Change, message: string): void;
   onRemove(i: number): void;
   onClose(): void;
+  /** Link stats for the today / with scenario / change line on a selected street; null without a scenario. */
+  readout?: { overlay: Overlay; scen: Float32Array | null; base: Float32Array | null } | null;
 }
 
 interface Choice { key: string; label: string; pick(): void }
@@ -185,6 +189,13 @@ export function SelectionMenu(p: Props) {
         <div>
           <h3 id={`${id}-t`} ref={title} tabIndex={-1} className="sel-title">{heading}</h3>
           <p id={`${id}-s`} className="sel-sub">{sub}</p>
+          {s.kind === 'block' && p.readout && (() => {
+            const blk = X.blocks[s.block], o = p.readout.overlay;
+            const b = aggregate(linkStatsView(p.readout.base), blk.links), c = aggregate(linkStatsView(p.readout.scen), blk.links);
+            const n = (v: number | null) => (v === null ? 'no traffic' : `${v.toFixed(o === 'speed' ? 1 : 0)} ${CHANGE_UNIT[o]}`);
+            const spoken = `${CHANGE_NAME[o]}: today ${n(metricValue(o, b))}, with scenario ${n(metricValue(o, c))}, change ${formatSigned(diffValue(o, b, c), o)} ${CHANGE_UNIT[o]}.`;
+            return <p className="sel-readout"><span aria-hidden="true">{readoutText(o, b, c)}<span className="sub"> (today → with scenario)</span></span><span className="sr-only">{spoken}</span></p>;
+          })()}
         </div>
         <button type="button" className="btn small-btn" onClick={p.onClose}>Close</button>
       </div>

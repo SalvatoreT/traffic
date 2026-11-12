@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import type { AreaBundle, AreaEntry, ModeKey, ModeVisibility, Overlay } from '../types';
 import { formatClock } from '../lib/format';
-import { rampStops, rampTicks, TOP_NOTE, type Mode } from '../lib/ramps';
+import { divergingGradient, rampStops, rampTicks, TOP_NOTE, type Mode } from '../lib/ramps';
+import { changeLabel, changeTicks, CHANGE_UNIT, DEAD_BAND, type MapView } from '../lib/change';
 import { EXPERIMENTAL_NOTE, isExperimentalPeriod, RUN_SECONDS } from '../lib/run';
 import { speedNoteText } from '../lib/speed';
 import { usePeek } from './usePeek';
@@ -136,6 +137,10 @@ interface LegendProps {
   multimodal: boolean;
   modes: ModeVisibility; onModes(m: ModeVisibility): void;
   hasBikeNet: boolean; bikeNet: boolean; onBikeNet(v: boolean): void;
+  /** Map view: scenario values or change from baseline. The switch shows only when the scenario has interventions. */
+  view: MapView; onView(v: MapView): void; canChange: boolean;
+  /** First 10 simulated minutes of a comparison: differences are noisy. */
+  early: boolean;
 }
 
 const MODE_KEYS: { id: ModeKey; label: string }[] = [
@@ -162,11 +167,15 @@ export function Legend(p: LegendProps) {
   const [hush, setHush] = useState(false);
   const root = useRef<HTMLDivElement>(null);
   const extraId = useId(), tipId = useId();
+  const change = p.canChange && p.view === 'change';
   const stops = rampStops(p.mode);
-  const grad = `linear-gradient(to right, ${stops.join(', ')})`;
-  const ticks = rampTicks(p.overlay);
-  const name = p.overlay === 'speed' ? 'Speed, % of limit' : p.overlay === 'flow' ? 'Flow, veh/h' : 'Cut-through, veh/h';
-  const help = `${p.overlay === 'speed' ? 'Slower is darker and wider (more congested).' : `Higher is a wider line. ${TOP_NOTE[p.overlay]}`} Thin gray lines carry no vehicles.`;
+  const grad = change ? divergingGradient(p.mode) : `linear-gradient(to right, ${stops.join(', ')})`;
+  const ticks = change ? changeTicks(p.overlay) : rampTicks(p.overlay);
+  const name = change ? changeLabel(p.overlay) : p.overlay === 'speed' ? 'Speed, % of limit' : p.overlay === 'flow' ? 'Flow, veh/h' : 'Cut-through, veh/h';
+  const band = DEAD_BAND[p.overlay];
+  const help = change
+    ? `Blue lines carry less than today; orange lines carry more. Dashed lines mark large decreases; solid lines are increases. Wider means a bigger change. Differences under ${band} ${CHANGE_UNIT[p.overlay]} count as noise and are shown as no change, in thin gray, as are streets with no traffic in either run. Colors show less and more, not better and worse. The scale tops out at ${changeTicks(p.overlay)[4].slice(1)} ${CHANGE_UNIT[p.overlay]}.`
+    : `${p.overlay === 'speed' ? 'Slower is darker and wider (more congested).' : `Higher is a wider line. ${TOP_NOTE[p.overlay]}`} Thin gray lines carry no vehicles.`;
 
   // Keep the map's attribution just above the row, whatever its height.
   useEffect(() => {
@@ -204,7 +213,14 @@ export function Legend(p: LegendProps) {
                 <button key={o.id} type="button" className={p.overlay === o.id ? 'on' : ''} aria-pressed={p.overlay === o.id} onClick={() => p.onOverlay(o.id)}>{o.label}</button>
               ))}
             </div>
-            {p.canCompare && (
+            {p.canChange && (
+              <div className="seg" role="group" aria-label="Map view">
+                {([['scenario', 'Scenario'], ['change', 'Change from baseline']] as const).map(([v, l]) => (
+                  <button key={v} type="button" className={p.view === v ? 'on' : ''} aria-pressed={p.view === v} onClick={() => p.onView(v)}>{l}</button>
+                ))}
+              </div>
+            )}
+            {p.canCompare && !change && (
               <div className="seg" role="group" aria-label="Overlay source">
                 {(['scenario', 'baseline'] as const).map((s) => (
                   <button key={s} type="button" className={p.source === s ? 'on' : ''} aria-pressed={p.source === s} onClick={() => p.onSource(s)}>{s === 'scenario' ? 'Scenario' : 'Baseline'}</button>
@@ -229,6 +245,7 @@ export function Legend(p: LegendProps) {
           </div>
           <ul className="keys" aria-label="Map symbols">
             {p.multimodal && <li><svg width="14" height="14" aria-hidden="true"><line x1="7" y1="1" x2="7" y2="13" stroke="var(--text)" strokeWidth="2" /></svg> Crossing (zoomed in)</li>}
+            {change && <li><svg width="30" height="14" aria-hidden="true"><line x1="1" y1="4" x2="29" y2="4" stroke="var(--text)" strokeWidth="3" /><line x1="1" y1="10" x2="29" y2="10" stroke="var(--text)" strokeWidth="3" strokeDasharray="4 4" /></svg> Solid: increase. Dashed: large decrease.</li>}
             <li><svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="var(--surface)" stroke="#1f9d55" strokeWidth="2" /></svg> Signal green (ring)</li>
             <li><svg width="14" height="14" aria-hidden="true"><path d="M7 1 L13 12 L1 12Z" fill="#f5c400" stroke="var(--text)" /></svg> Yellow (triangle)</li>
             <li><svg width="14" height="14" aria-hidden="true"><rect x="2" y="2" width="10" height="10" fill="#d62728" stroke="var(--text)" /></svg> Red (square)</li>
@@ -241,6 +258,7 @@ export function Legend(p: LegendProps) {
         </button>
         <div className="legend-name">
           <span className="legend-title" id={`${tipId}-n`}>{name}</span>
+          {change && p.early && <span className="legend-early" title="Early results are noisy: wait for 10 simulated minutes.">Early, noisy</span>}
           <span className={`legend-tip-wrap ${hush ? 'hush' : ''}`} onMouseLeave={() => { setHush(false); setTipOn(false); }} onBlur={() => { setHush(false); setTipOn(false); }}>
             <button type="button" className="legend-info" aria-label="About this legend" aria-describedby={tipId} aria-expanded={tipShown} onClick={() => { setHush(false); setTipOn((o) => !o); }}>
               <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="7" cy="7" r="6" /><path d="M7 6.2v3.8M7 3.8v.1" strokeLinecap="round" /></svg>
@@ -248,11 +266,18 @@ export function Legend(p: LegendProps) {
             <span id={tipId} role="tooltip" className={`legend-tip ${tipOn ? 'on' : ''}`}>{help}</span>
           </span>
         </div>
-        <div className="legend-ramp" role="img" aria-label={`${name}: from ${ticks[0]} to ${ticks[4]}`}>
+        <div className="legend-ramp" role="img" aria-label={`${name}: from ${ticks[0]} to ${ticks[4]}${change ? ', zero is no change' : ''}`}>
           <span className="ramp-end">{ticks[0]}</span>
           <div className="ramp-col">
             <div className="ramp-bar" style={{ background: grad }} />
-            <div className={`ramp-mid ${open ? 'open' : ''}`} aria-hidden="true"><div className="ramp-mid-in"><div className="ramp-mid-pad">{[1, 2, 3].map((i) => <span key={i} style={{ left: `${i * 25}%` }}>{ticks[i]}</span>)}</div></div></div>
+            {change ? (
+              <div className="ramp-zero" aria-hidden="true">
+                <i className="ramp-zero-tick" />
+                {[1, 2, 3].map((i) => <span key={i} className={i === 2 ? '' : `extra ${open ? 'open' : ''}`} style={{ left: `${i * 25}%` }}>{ticks[i]}</span>)}
+              </div>
+            ) : (
+              <div className={`ramp-mid ${open ? 'open' : ''}`} aria-hidden="true"><div className="ramp-mid-in"><div className="ramp-mid-pad">{[1, 2, 3].map((i) => <span key={i} style={{ left: `${i * 25}%` }}>{ticks[i]}</span>)}</div></div></div>
+            )}
           </div>
           <span className="ramp-end">{ticks[4]}</span>
         </div>

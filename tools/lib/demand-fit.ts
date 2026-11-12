@@ -1,6 +1,6 @@
 // Count-constrained demand: count stations as link constraints, static assignment, matrix adjustment and the capacity guard
 // (baseline-calibration, seventh round). Orchestration and report for tools/build-demand.ts. No I/O.
-import { assign, assignMsa, buildGraph, linkVolumes, type ALink, type ANode, type ATurnBan, type Assignment, type Graph } from './assign';
+import { SIM_ROUTE_PARAMS, assign, assignMsa, buildGraph, linkVolumes, type ALink, type ANode, type ATurnBan, type Assignment, type Graph } from './assign';
 import { assigned, fitToCounts, type Constraint, type FitOptions, type FlowType } from './fit-counts';
 import { buildShareConstraints, type ShareLink, type ShareSpec, type Targets } from './share-targets';
 
@@ -227,6 +227,8 @@ export interface FitConfig {
   assignment?: AssignConfig;
   /** Observed route shares as soft ratio constraints (weight below the counts: they come from a device sample); omitted or `weight` 0 leaves them out. */
   shares?: { targets: Targets; weight: number; pmPeriod: string };
+  /** Measured mean delay per vehicle (s) on every link, per period, from a simulator run (`tools/cost-loop.ts`); omitted: free-flow and BPR costs only. */
+  measured?: { delayS: Record<string, number[]>; alpha: number; source: string };
   draws: number; noise: number;
   guard: { enabled: boolean; excessShare: number; weight: number; capacity: CapTable };
 }
@@ -262,8 +264,14 @@ export function fitPeriod(
   const nL = links.length;
   const ruleOf: { cap: number; rule: string }[] = links.map((l, i) => linkCapacity(l, nodeBy.get(l.to)!, g.minor[i], cfg.guard.capacity));
   const as = cfg.assignment ?? { method: 'free' as const, iterations: 1, drawsPerPass: cfg.draws, alpha: 0, beta: 4, noise: cfg.noise, rounds: 1 };
+  // Measured delay: the simulator's mean time lost per vehicle on a link. The control delay the router already adds at the end of the link
+  // (signal 10 s, all-way stop 6 s, minor stop approach 5 s, circle 3 s) is taken out so a queue at a signal is not counted twice (ASSUMPTION).
+  const dl = cfg.measured?.delayS[id];
+  const ctrlS = (l: number) => { const c = nodeBy.get(links[l].to)!.control; return c === 'signal' ? SIM_ROUTE_PARAMS.delaySignalS : c === 'all_way_stop' ? SIM_ROUTE_PARAMS.delayAllwayS : c === 'two_way_stop' ? (g.minor[l] ? SIM_ROUTE_PARAMS.delayMinorS : 0) : c === 'traffic_circle' ? SIM_ROUTE_PARAMS.delayCircleS : 0; };
+  const extra = dl && dl.length === nL ? links.map((l, i) => Math.max(0, dl[i] - ctrlS(i)) * (l.class === 'residential' || l.class === 'service' ? SIM_ROUTE_PARAMS.localCostFactor : 1)) : undefined;
+  const alphaUse = extra && cfg.measured ? cfg.measured.alpha : as.alpha;
   const assignAt = (vol: ArrayLike<number>): Assignment => (as.method === 'msa'
-    ? assignMsa(g, flows, vol, { iterations: as.iterations, drawsPerPass: as.drawsPerPass, alpha: as.alpha, beta: as.beta, noise: as.noise, capacity: ruleOf.map((r) => r.cap) })
+    ? assignMsa(g, flows, vol, { iterations: as.iterations, drawsPerPass: as.drawsPerPass, alpha: alphaUse, beta: as.beta, noise: as.noise, capacity: ruleOf.map((r) => r.cap), extraCost: extra })
     : assign(g, flows, cfg.draws, cfg.noise));
   const countCons: Constraint[] = stations.filter((s) => (s.target[id] ?? 0) > 0).map((s) => ({ id: s.id, kind: s.kind, label: s.label, links: s.links, origins: s.origins, destinations: s.destinations, target: s.target[id], weight: s.weight }));
   const sumBy = (f: ArrayLike<number>) => { const o: Record<string, number> = { through: 0, local: 0, ramp: 0 }; for (let k = 0; k < f.length; k++) o[types[k]] += f[k]; return o; };
@@ -295,6 +303,7 @@ export function fitPeriod(
   const guardBound: PeriodResult['guardBound'] = [];
   const notes: string[] = [];
   let residualOver: PeriodResult['residualOver'] = [];
+  if (extra && cfg.measured) notes.push(`link costs include the simulator's measured delay per vehicle (${cfg.measured.source}; mean ${(extra.reduce((x, y) => x + y, 0) / nL).toFixed(1)} s per link after the control delay is removed, BPR alpha ${cfg.measured.alpha})`);
   if (as.method === 'msa') notes.push(`assignment by successive averages (${as.iterations} passes x ${as.drawsPerPass} driver walks, BPR alpha ${as.alpha} beta ${as.beta}, noise ${(as.noise * 100).toFixed(0)}%), ${rounds} round(s) with the table refitted and reassigned at its own volumes; relative link-volume change at the last pass ${(a as ReturnType<typeof assignMsa>).relChange?.toFixed(3)}`);
   if (cfg.guard.enabled) {
     const V2 = linkVolumes(a, fFinal, nL);

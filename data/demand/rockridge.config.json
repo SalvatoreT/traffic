@@ -554,6 +554,12 @@
       "beta": 4,
       "noise": 0.08,
       "rounds": 2,
+      "measured": {
+        "file": "data/demand/rockridge.linkdelays.json",
+        "alpha": 0.0,
+        "minFlowVehPerHour": 60,
+        "_note": "Outer loop (tools/cost-loop.ts): mean delay per vehicle on each link from a simulator run (seed 1) is added to the free-flow cost of the static assignment; the BPR factor is switched off (alpha 0) because the measured delay already contains the congestion. ASSUMPTION: the control delay the router adds at the link end is subtracted so queues at signals count once. The file is optional: without it, or for another network, the assignment uses free-flow and BPR costs."
+      },
       "_note": "method 'free': the free-flow assignment over `draws` perturbed shortest paths (draws and noise above). Method 'msa': stochastic capacity-restrained assignment: each pass loads every flow with `drawsPerPass` driver walks (the simulator's rule: cost-to-go with a +/-noise factor per candidate link) over link costs x BPR(volume / capacity), volumes averaged over passes (method of successive averages [PowellSheffi1982]); BPR form [Spiess1990] with alpha 0.15 and beta 4 (ASSUMPTION: the usual values); capacities from capacityGuard.capacity; `rounds` > 1 refits the table and reassigns at its own volumes."
     },
     "shares": {

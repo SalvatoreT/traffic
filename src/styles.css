@@ -334,3 +334,16 @@ input[type='checkbox'] { width: 18px; height: 18px; accent-color: var(--accent);
   .legend-row { padding-left: .4rem; gap: .4rem; }
 }
 @media (prefers-reduced-motion: reduce) { .toolbar-extras, .legend-extras { transition: none !important; } }
+
+/* Change view */
+.legend-early { flex: none; font-size: .72rem; font-weight: 600; padding: 0 .4rem; border: 1px solid var(--border); border-radius: 999px; color: var(--muted); white-space: nowrap; }
+.ramp-col { position: relative; }
+.ramp-zero { position: relative; height: 1rem; }
+.ramp-zero span { position: absolute; top: 3px; transform: translateX(-50%); font-size: .72rem; line-height: 1; }
+.ramp-zero span.extra { opacity: 0; visibility: hidden; transition: opacity .18s ease-out; }
+.ramp-zero span.extra.open { opacity: 1; visibility: visible; }
+.ramp-zero-tick { position: absolute; left: 50%; top: -12px; width: 2px; height: 14px; background: var(--text); transform: translateX(-50%); border-radius: 1px; }
+.sel-readout { margin: .35rem 0 0; font-size: .85rem; font-variant-numeric: tabular-nums; }
+.sel-readout .sub { color: var(--muted); }
+.streets .chg { font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) { .ramp-zero span.extra { transition: none; } }

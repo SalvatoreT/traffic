@@ -48,3 +48,23 @@ export const TOP_NOTE: Record<'flow' | 'cutthrough', string> = {
   flow: 'Top of the scale: 800 vehicles an hour, about what one signalized lane carries in the model.',
   cutthrough: 'Top of the scale: 150 through vehicles an hour, about 1,500 a day. This is an assumption based on bikeway guidance for shared streets.',
 };
+
+/**
+ * Diverging ramp for change from baseline: decrease blue, increase orange (a blue-orange pair stays distinguishable under deuteranopia and protanopia).
+ * Stops are [t, color] for t in 0..1 of the magnitude; zero is neutral gray, drawn thin. Hues are design choices, not calibrated values.
+ */
+const DIV = {
+  light: { neg: ['#6baed6', '#2171b5', '#08458a'], pos: ['#f5a05a', '#e0630f', '#a63a00'], zero: '#a8a291' },
+  dark: { neg: ['#3a74ad', '#5aa5ea', '#a6d3ff'], pos: ['#a8601f', '#f08a3c', '#ffc08a'], zero: '#4a5463' },
+};
+export const DIV_BAND_T = 0.05;
+export interface DivStop { t: number; color: string }
+/** Signed stops from -1 to 1. */
+export function divergingStops(mode: Mode): DivStop[] {
+  const d = DIV[mode];
+  const pos: DivStop[] = [{ t: DIV_BAND_T, color: d.pos[0] }, { t: 0.5, color: d.pos[1] }, { t: 1, color: d.pos[2] }];
+  const neg: DivStop[] = [{ t: -1, color: d.neg[2] }, { t: -0.5, color: d.neg[1] }, { t: -DIV_BAND_T, color: d.neg[0] }];
+  return [...neg, { t: 0, color: d.zero }, ...pos];
+}
+export const divergingGradient = (mode: Mode): string =>
+  `linear-gradient(to right, ${divergingStops(mode).map((s) => `${s.color} ${((s.t + 1) * 50).toFixed(1)}%`).join(', ')})`;

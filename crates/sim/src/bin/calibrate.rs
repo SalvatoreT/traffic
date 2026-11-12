@@ -409,6 +409,7 @@ fn main() {
     let mut series: Vec<Sample> = Vec::new();
     let (mut last_t, mut last_vs) = (0.0, 0.0);
     let mut exits0: Vec<u32> = vec![0; net.links.len()];
+    let mut delay0: Vec<f32> = vec![0.0; net.links.len()];
     let mut t = 0.0;
     let mut warmed = warm_s == 0.0;
     while t < total_s - 1e-9 {
@@ -417,6 +418,7 @@ fn main() {
         t += dt;
         if !warmed && t >= warm_s - 1e-9 {
             exits0 = sim.diagnostics().link_exits.to_vec();
+            delay0 = sim.diagnostics().link_delay_s.to_vec();
             warmed = true;
         }
         if (t % 300.0).abs() < 1e-6 || (t - total_s).abs() < 1e-9 {
@@ -745,6 +747,7 @@ fn main() {
             "rampShares": ramp_rows.iter().map(|(k, v, o, mo, n, m2, n2)| json!({"direction": k, "via": v, "observed": o, "modelled": if mo.is_nan() { Value::Null } else { json!(mo) }, "n": n, "modelledSide": if m2.is_nan() { Value::Null } else { json!(m2) }, "nSide": n2})).collect::<Vec<_>>(),
             "topLinks": link_idx.iter().take(15).map(|&l| json!({"link": l, "street": net.links[l].name, "delayVehH": d.link_delay_s[l] / 3600.0, "stoppedVehH": d.link_stopped_s[l] / 3600.0})).collect::<Vec<_>>(),
             "topNodes": node_idx.iter().take(15).map(|&n| json!({"node": n, "streets": street_label(&net, n, &inc), "control": ctrl_str(net.nodes[n].control), "blockedLaneH": d.node_wait_s[n] / 3600.0, "noSpaceLaneH": d.node_space_s[n] / 3600.0})).collect::<Vec<_>>(),
+            "linkMeanDelayS": if args.link_flows { json!((0..net.links.len()).map(|l| { let n = d.link_exits[l] - exits0[l]; if n == 0 { 0.0 } else { (((d.link_delay_s[l] - delay0[l]) as f64 / n as f64) * 10.0).round() / 10.0 } }).collect::<Vec<_>>()) } else { Value::Null },
             "linkFlowVehPerHour": if args.link_flows { json!((0..net.links.len()).map(|l| ((d.link_exits[l] - exits0[l]) as f64 / elapsed_h).round()).collect::<Vec<_>>()) } else { Value::Null },
             "streetFlows": flow_rows.iter().map(|(k, dch, n, med, max)| json!({"street": k, "dir": dch.to_string(), "links": n, "medianVehPerHour": med, "maxVehPerHour": max})).collect::<Vec<_>>(),
         });

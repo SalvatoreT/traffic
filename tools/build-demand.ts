@@ -625,6 +625,14 @@ const gateGroup = (id: number): string => {
   }
   return String(Math.min(...seen));
 };
+// Measured link delays (tools/cost-loop.ts writes them from a simulator run; absent or a different network: free-flow and BPR costs only).
+function loadMeasured(fc: { assignment?: { measured?: { file: string; alpha: number } } }) {
+  const m = fc.assignment?.measured;
+  if (!m || !existsSync(m.file)) return undefined;
+  const j = JSON.parse(readFileSync(m.file, 'utf8'));
+  if (j.links !== net.links.length) { console.warn(`${m.file}: written for ${j.links} links, the network has ${net.links.length}; measured delays skipped`); return undefined; }
+  return { delayS: j.delayS as Record<string, number[]>, alpha: m.alpha, source: `${m.file}, ${j.note}` };
+}
 let fitText = '';
 const fitResults: PeriodResult[] = [];
 const fc = cfg.countFit;
@@ -645,6 +653,7 @@ if (fc?.enabled) {
     fit: { lo: fc.bounds.lo, hi: fc.bounds.hi, byType: fc.bounds.byType, maxIter: fc.maxIter, tol: fc.tol, damping: fc.damping, uncounted: fc.uncounted.rule, volumeWeightedMedian: fc.uncounted.volumeWeighted, stationary: fc.stationary ?? 1e-4, softStep: fc.softStep ?? 1e-3, stallWindow: fc.stallWindow ?? 25, stallGain: fc.stallGain ?? 0.002, blockedShare: fc.blockedShare ?? 0.8, band: 0, shareTol: fc.shareTol ?? 0.02 },
     draws: fc.draws, noise: fc.noise,
     assignment: fc.assignment ? { method: fc.assignment.method, iterations: fc.assignment.iterations, drawsPerPass: fc.assignment.drawsPerPass, alpha: fc.assignment.alpha, beta: fc.assignment.beta, noise: fc.assignment.noise, rounds: fc.assignment.rounds } : undefined,
+    measured: loadMeasured(fc),
     shares: fc.shares?.enabled ? { targets: JSON.parse(readFileSync(fc.shares.targets, 'utf8')), weight: fc.shares.weight, pmPeriod: lastPeriod } : undefined,
     guard: { enabled: fc.capacityGuard.enabled, excessShare: fc.capacityGuard.excessShare, weight: fc.capacityGuard.weight, capacity: fc.capacityGuard.capacity },
   };

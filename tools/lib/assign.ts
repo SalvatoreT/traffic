@@ -262,6 +262,8 @@ export interface MsaOptions {
   noise: number;
   /** Capacity per link in veh/h (Infinity: no delay on the link). */
   capacity: ArrayLike<number>;
+  /** Extra perceived cost per link in seconds added to the free-flow cost before the volume-delay factor (measured delay from a simulator run, already weighted by class). */
+  extraCost?: ArrayLike<number>;
 }
 export interface MsaResult extends Assignment {
   /** Link volumes (veh/h) of the averaged assignment at the given flow volumes. */
@@ -346,7 +348,8 @@ export function assignMsa(g: Graph, flows: OdFlow[], volume: ArrayLike<number>, 
   const ok = new Array<number>(flows.length).fill(0);
   const byDest = new Map<number, number[]>();
   flows.forEach((f, k) => (byDest.get(f.destination) ?? byDest.set(f.destination, []).get(f.destination)!).push(k));
-  const cost = Float64Array.from(g.cost);
+  const base = Float64Array.from(g.cost, (c, l) => c + (opt.extraCost?.[l] ?? 0));
+  const cost = Float64Array.from(base);
   const x = new Float64Array(g.nLinks);
   let rel = 1;
   for (let n = 1; n <= opt.iterations; n++) {
@@ -370,7 +373,7 @@ export function assignMsa(g: Graph, flows: OdFlow[], volume: ArrayLike<number>, 
       x[l] = nx;
     }
     rel = n === 1 ? 1 : change / Math.max(tot, 1e-9);
-    for (let l = 0; l < g.nLinks; l++) cost[l] = g.cost[l] * bprFactor(x[l], opt.capacity[l], opt.alpha, opt.beta);
+    for (let l = 0; l < g.nLinks; l++) cost[l] = base[l] * bprFactor(x[l], opt.capacity[l], opt.alpha, opt.beta);
   }
   return { ...toAssignment(flows, accum, ok), linkVolume: x, relChange: rel, passes: opt.iterations };
 }

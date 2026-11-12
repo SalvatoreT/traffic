@@ -1001,19 +1001,33 @@ impl Simulation {
             .sum()
     }
 
-    /// Standing vehicles waiting for the end of link `l`, including the queue that has spilled back onto the single link
-    /// feeding it (up to `ADAPT_SPILL_HOPS` links).
+    /// Standing vehicles waiting for the end of link `l`, including the queue that has spilled back onto the links feeding it (up to
+    /// `ADAPT_SPILL_HOPS` links upstream). A queue that reaches the start of a link continues onto the link feeding it; at an unsignalized
+    /// merge every feeding link counts, because their standing vehicles wait for the same downstream link (the queue on an off-ramp that
+    /// merges with a street ahead of the signal is demand the signal has not served).
     fn standing_queue(&self, l: usize) -> u32 {
         let mut total = self.standing_on(l);
-        let mut cur = l;
+        let mut frontier = vec![l];
         for _ in 0..ADAPT_SPILL_HOPS {
-            let from = self.topo.link_from[cur] as usize;
-            let tail = (0..self.topo.nlanes(cur)).map(|k| self.queue_extent(cur, k)).fold(0.0, f32::max);
-            if self.topo.ins[from].len() != 1 || tail < self.topo.stop_pos[cur] - 10.0 {
+            let mut next = Vec::new();
+            for &cur in &frontier {
+                let from = self.topo.link_from[cur] as usize;
+                let tail = (0..self.topo.nlanes(cur)).map(|k| self.queue_extent(cur, k)).fold(0.0, f32::max);
+                if tail < self.topo.stop_pos[cur] - 10.0 || self.topo.ins[from].is_empty() {
+                    continue;
+                }
+                if self.topo.ins[from].len() != 1 && (self.eff.ctrl[from] == Control::Signal || self.topo.outs[from].len() != 1) {
+                    continue;
+                }
+                for &i in &self.topo.ins[from] {
+                    total += self.standing_on(i as usize);
+                    next.push(i as usize);
+                }
+            }
+            if next.is_empty() {
                 break;
             }
-            cur = self.topo.ins[from][0] as usize;
-            total += self.standing_on(cur);
+            frontier = next;
         }
         total
     }

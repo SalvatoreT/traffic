@@ -11,7 +11,9 @@ import { PopoverFrame } from './Popover';
 import { FADE_TIERS, interventionInRegion, REGION_FEATHER_M, type Region } from '../lib/region';
 import { REGION_BUFFER_M } from '../lib/area';
 import { advance, elapsedSim } from '../lib/extrapolate';
-import { intensity, rampStops, WIDTH_MAX, WIDTH_MIN, type Mode } from '../lib/ramps';
+import { divergingStops, intensity, rampStops, WIDTH_MAX, WIDTH_MIN, type Mode } from '../lib/ramps';
+import { linkChangeIntensity, NO_DATA, type MapView as ChangeView } from '../lib/change';
+import { linkStatsView } from '../types';
 import type { NetIndex } from '../lib/naming';
 import { describeIntervention, interventionPoint } from '../lib/describe';
 import type { SimClient } from '../sim/client';
@@ -31,6 +33,9 @@ interface Props {
   overlay: Overlay;
   overlayMax: number;
   linkStats: Float32Array | null;
+  /** Baseline link stats, used by the change view. */
+  baseStats: Float32Array | null;
+  view: ChangeView;
   client: SimClient | null;
   interventions: Intervention[];
   selection: Selection | null;
@@ -49,21 +54,37 @@ const KIND_STYLE = {
   dark: { bg: '#161b22', water: '#1d2a38', minor: '#2b323c', major: '#3d4654', path: '#27302a', study: '#7db6f5' },
 };
 
-function ramp(mode: Mode): unknown[] {
+const mutedFor = (mode: Mode) => (mode === 'dark' ? '#4a5463' : '#a8a291');
+function ramp(mode: Mode, view: ChangeView = 'scenario'): unknown[] {
+  const muted = mutedFor(mode);
+  if (view === 'change') {
+    const stops = divergingStops(mode).filter((x) => x.t !== 0).flatMap((x) => [x.t, x.color]);
+    // Streets with no traffic (-2) and the dead band (0) both draw as thin neutral gray.
+    const i0 = stops.indexOf(-0.05);
+    stops.splice(i0 + 2, 0, 0, muted);
+    return ['interpolate', ['linear'], ['coalesce', ['feature-state', 't'], NO_DATA], NO_DATA, muted, -1.01, muted, ...stops];
+  }
   const s = rampStops(mode);
-  const muted = mode === 'dark' ? '#4a5463' : '#a8a291';
   return ['interpolate', ['linear'], ['coalesce', ['feature-state', 't'], -1],
     -1, muted, -0.01, muted, 0, s[0], 0.25, s[1], 0.5, s[2], 0.75, s[3], 1, s[4]];
 }
-function widthExpr(): unknown[] {
-  const w = ['interpolate', ['linear'], ['coalesce', ['feature-state', 't'], -1],
-    -1, WIDTH_MIN * 0.8, 0, WIDTH_MIN, 1, WIDTH_MAX];
+function lineWidth(view: ChangeView): unknown[] {
+  if (view === 'change') {
+    return ['interpolate', ['linear'], ['abs', ['coalesce', ['feature-state', 't'], NO_DATA]], 0, WIDTH_MIN, 1, WIDTH_MAX, 1.001, WIDTH_MIN * 0.8];
+  }
+  return ['interpolate', ['linear'], ['coalesce', ['feature-state', 't'], -1], -1, WIDTH_MIN * 0.8, 0, WIDTH_MIN, 1, WIDTH_MAX];
+}
+function widthExpr(view: ChangeView = 'scenario'): unknown[] {
+  const w = lineWidth(view);
   return ['interpolate', ['linear'], ['zoom'], 14, ['*', 0.55, w], 18, ['*', 1.5, w]];
 }
-const casingWidth = (): unknown[] => {
-  const w = widthExpr() as unknown[];
-  return ['interpolate', ['linear'], ['zoom'], 14, ['+', 1.2, (w[4] as unknown[])], 18, ['+', 1.8, (w[6] as unknown[])]];
+const casingWidth = (view: ChangeView = 'scenario'): unknown[] => {
+  const w = lineWidth(view);
+  return ['interpolate', ['linear'], ['zoom'], 14, ['+', 1.2, ['*', 0.55, w]], 18, ['+', 1.8, ['*', 1.5, w]]];
 };
+/** Large decreases get gaps cut into the line, so direction shows without color. Opacity reads the same feature state as the color. */
+const DASH_FROM = -0.3;
+const dashOpacity = (): unknown[] => ['case', ['<', ['coalesce', ['feature-state', 't'], 0], DASH_FROM], ['case', ['>', ['coalesce', ['feature-state', 't'], 0], NO_DATA + 0.5], 1, 0], 0];
 const SEL_EDGE = { light: '#ffffff', dark: '#0b1118' };
 const OFFSET = ['interpolate', ['linear'], ['zoom'], 14, 1.2, 17, 3.5, 19, 6];
 
@@ -175,6 +196,7 @@ export function MapView(p: Props) {
   const hoverRef = useRef<{ link: number | null; node: number | null }>({ link: null, node: null });
   const markers = useRef<maplibregl.Marker[]>([]);
   const prevT = useRef<Float32Array>(new Float32Array(0));
+  const prevView = useRef<ChangeView>('scenario');
   const lastDraw = useRef(0);
   const drawn = useRef<Float32Array>(new Float32Array(0));
   const drawTimer = useRef(0);
@@ -481,7 +503,7 @@ export function MapView(p: Props) {
       map.addLayer({ id: 'sel-band', type: 'line', source: 'selection', filter: ['==', ['geometry-type'], 'LineString'], layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: { 'line-color': K.study, 'line-width': ['interpolate', ['linear'], ['zoom'], 14, 9, 18, 17] as never, 'line-offset': OFFSET as never } });
       map.addLayer({ id: 'links-casing', type: 'line', source: 'links', layout: { 'line-cap': 'butt', 'line-join': 'round' },
-        paint: { 'line-color': mode === 'dark' ? '#0b1118' : '#ffffff', 'line-opacity': 0.85, 'line-width': casingWidth() as never, 'line-offset': OFFSET as never } });
+        paint: { 'line-color': mode === 'dark' ? '#0b1118' : '#ffffff', 'line-opacity': 0.85, 'line-width': casingWidth(live.current.view) as never, 'line-offset': OFFSET as never } });
       const bikeVis = live.current.showBikeNet ? 'visible' : 'none';
       const BN = BIKENET[live.current.mode];
       map.addLayer({ id: 'bike-route', type: 'line', source: 'links', filter: ['get', 'bikeRoute'] as never,
@@ -491,7 +513,9 @@ export function MapView(p: Props) {
         layout: { 'line-cap': 'butt', 'line-join': 'round', visibility: bikeVis },
         paint: { 'line-color': BN.color, 'line-opacity': bikeOpacity(BN.lane, 11.5, 14), 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 0.6, 14, 1.5, 18, 3] as never, 'line-offset': OFFSET as never } });
       map.addLayer({ id: 'links', type: 'line', source: 'links', layout: { 'line-cap': 'butt', 'line-join': 'round' },
-        paint: { 'line-color': ramp(mode) as never, 'line-width': widthExpr() as never, 'line-offset': OFFSET as never } });
+        paint: { 'line-color': ramp(mode, live.current.view) as never, 'line-width': widthExpr(live.current.view) as never, 'line-offset': OFFSET as never } });
+      map.addLayer({ id: 'links-decrease', type: 'line', source: 'links', layout: { 'line-cap': 'butt', 'line-join': 'round', visibility: live.current.view === 'change' ? 'visible' : 'none' },
+        paint: { 'line-color': mode === 'dark' ? '#0b1118' : '#ffffff', 'line-opacity': dashOpacity() as never, 'line-dasharray': [1.4, 1.4], 'line-width': widthExpr('change') as never, 'line-offset': OFFSET as never } });
       for (let k = 1; k <= FEATHER_STEPS; k++) {
         map.addSource(`feather-${k}`, { type: 'geojson', data: featherWash(b, region, k) as never });
         map.addLayer({ id: `feather-${k}`, type: 'fill', source: `feather-${k}`, paint: { 'fill-color': K.bg, 'fill-opacity': featherAlpha(k), 'fill-antialias': false } });
@@ -547,7 +571,8 @@ export function MapView(p: Props) {
     map.setPaintProperty('sel-node-edge', 'circle-color', K.study);
     map.setPaintProperty('sel-node-edge', 'circle-stroke-color', SEL_EDGE[mode]);
     map.setPaintProperty('links-casing', 'line-color', mode === 'dark' ? '#0b1118' : '#ffffff');
-    map.setPaintProperty('links', 'line-color', ramp(mode) as never);
+    map.setPaintProperty('links', 'line-color', ramp(mode, live.current.view) as never);
+    map.setPaintProperty('links-decrease', 'line-color', mode === 'dark' ? '#0b1118' : '#ffffff');
     map.setPaintProperty('bike-lane', 'line-color', BIKENET[mode].color);
     map.setPaintProperty('bike-route', 'line-color', BIKENET[mode].color);
     map.setPaintProperty('bike-lane', 'line-opacity', bikeOpacity(BIKENET[mode].lane, 11.5, 14));
@@ -572,17 +597,33 @@ export function MapView(p: Props) {
     const links = bundle.network.links;
     const ls = p.linkStats;
     const vis = clipped.linkVisible;
-    if (prevT.current.length !== links.length) prevT.current = new Float32Array(links.length).fill(-2);
+    const change = p.view === 'change';
+    const S = linkStatsView(ls), B = linkStatsView(p.baseStats);
+    if (prevView.current !== p.view) { prevView.current = p.view; prevT.current = new Float32Array(0); }
+    if (prevT.current.length !== links.length) prevT.current = new Float32Array(links.length).fill(-3);
     for (let i = 0; i < links.length; i++) {
       if (!vis[i]) continue;
       const l = links[i];
-      const t = ls ? intensity(p.overlay, ls[i * 4] ?? 0, ls[i * 4 + 1] ?? 0, ls[i * 4 + 2] ?? 0, l.speedLimit, p.overlayMax) : -1;
+      const t = change ? (ls && p.baseStats ? linkChangeIntensity(p.overlay, B, S, i) : NO_DATA)
+        : ls ? intensity(p.overlay, ls[i * 4] ?? 0, ls[i * 4 + 1] ?? 0, ls[i * 4 + 2] ?? 0, l.speedLimit, p.overlayMax) : -1;
       if (Math.abs(prevT.current[i] - t) > 0.004) {
         prevT.current[i] = t;
         map.setFeatureState({ source: 'links', id: i }, { t });
       }
     }
-  }, [p.linkStats, p.overlay, p.overlayMax, ready, bundle, clipped]);
+  }, [p.linkStats, p.baseStats, p.view, p.overlay, p.overlayMax, ready, bundle, clipped]);
+
+  // ---- view switch: swap paint expressions once, not per update
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    const v = p.view;
+    map.setPaintProperty('links', 'line-color', ramp(mode, v) as never);
+    map.setPaintProperty('links', 'line-width', widthExpr(v) as never);
+    map.setPaintProperty('links-casing', 'line-width', casingWidth(v) as never);
+    map.setLayoutProperty('links-decrease', 'visibility', v === 'change' ? 'visible' : 'none');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [p.view, ready]);
 
   // ---- redraw on frames
   useEffect(() => {
