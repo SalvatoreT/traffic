@@ -40,7 +40,7 @@ export function pointAlong(g: [number, number][], s: number): { x: number; y: nu
 }
 
 /** Distance along a link used to measure how it leaves or reaches a node (m): beyond the footprint of a merged staggered junction. Same value as the simulator. */
-export const LEG_PROBE_M = 45;
+export const LEG_PROBE_M = 25;
 
 /**
  * Bearing (degrees clockwise from north, [0, 360)) of link `l` as it leaves its start node (`start`) or, reversed, as it leaves its end

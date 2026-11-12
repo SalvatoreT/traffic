@@ -105,7 +105,7 @@ pub struct Link {
 }
 
 /// Distance along a link used to measure how it leaves or reaches a node (m): beyond the footprint of a merged staggered junction.
-pub const LEG_PROBE_M: f64 = 45.0;
+pub const LEG_PROBE_M: f64 = 25.0;
 
 impl Link {
     pub fn has_sidewalk(&self) -> bool {

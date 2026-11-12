@@ -125,7 +125,7 @@ interface Link {
 }
 
 /** Distance along a link used to measure how it leaves or reaches a junction (m); same value as `LEG_PROBE_M` in the simulator and the UI. */
-const LEG_PROBE_M = 45;
+const LEG_PROBE_M = 25;
 
 /**
  * Bearing (degrees clockwise from north) of the chord from a link's end to the point `LEG_PROBE_M` along it, or to its far end if
