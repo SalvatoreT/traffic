@@ -50,6 +50,9 @@ pub struct Node {
     pub gate: bool,
     #[serde(default)]
     pub in_study_area: bool,
+    /// Additive (multimodal-agents): a marked pedestrian crossing at this intersection.
+    #[serde(default)]
+    pub marked_crossing: bool,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -75,6 +78,24 @@ pub struct Link {
     pub humps: Vec<f64>,
     #[serde(default)]
     pub in_study_area: bool,
+    /// Additive (multimodal-agents): dedicated bike lane or track in this direction.
+    #[serde(default)]
+    pub bike_lane: bool,
+    /// Additive: signed bike route or bike boulevard.
+    #[serde(default)]
+    pub bike_route: bool,
+    /// Additive: walkable alongside. Missing means true except on motorway-class links.
+    #[serde(default)]
+    pub sidewalk: Option<bool>,
+    /// Additive: marked mid-block crossings, meters from the link start.
+    #[serde(default)]
+    pub crossings: Vec<f64>,
+}
+
+impl Link {
+    pub fn has_sidewalk(&self) -> bool {
+        self.sidewalk.unwrap_or(self.class != RoadClass::Motorway)
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -90,12 +111,60 @@ pub struct Network {
     pub links: Vec<Link>,
 }
 
+/// Mode of a demand flow. Missing means car.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FlowMode {
+    #[default]
+    Car,
+    Bicycle,
+    Pedestrian,
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Flow {
     pub origin: u32,
     pub destination: u32,
     pub veh_per_hour: f64,
+    #[serde(default)]
+    pub mode: FlowMode,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct BusStop {
+    pub link: u32,
+    pub position: f64,
+    pub name: String,
+    /// Dwell time (s).
+    pub dwell: f64,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct Headway {
+    pub period: String,
+    pub seconds: f64,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct BusRoute {
+    pub id: String,
+    pub name: String,
+    pub links: Vec<u32>,
+    pub stops: Vec<BusStop>,
+    pub headways: Vec<Headway>,
+}
+
+/// `<area>.transit.json`.
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct TransitFile {
+    pub version: u32,
+    pub area: String,
+    pub routes: Vec<BusRoute>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -133,11 +202,18 @@ pub struct Config {
     /// Additive: apply the gridlock breaker on motorway-class links too (default false: vehicles queued on a ramp or the
     /// freeway stub feeding it wait in the origin backlog).
     pub motorway_gridlock_removal: bool,
+    /// Additive (multimodal-agents): probability a driver yields to a pedestrian waiting at a marked / unmarked crossing
+    /// (defaults `params::PED_YIELD_MARKED` / `PED_YIELD_UNMARKED`).
+    pub ped_yield_marked: Option<f64>,
+    pub ped_yield_unmarked: Option<f64>,
+    /// Additive: lane width (m) that decides whether a driver may pass a cyclist on a one-way single-lane street
+    /// (default `params::LANE_WIDTH_M`).
+    pub lane_width_m: Option<f64>,
 }
 
 impl Default for Config {
     fn default() -> Self {
-        Config { seed: 1, period: String::new(), demand_scale: 1.0, select_links: Vec::new(), local_cost_factor: None, signal_adapt_min: None, motorway_gridlock_removal: false }
+        Config { seed: 1, period: String::new(), demand_scale: 1.0, select_links: Vec::new(), local_cost_factor: None, signal_adapt_min: None, motorway_gridlock_removal: false, ped_yield_marked: None, ped_yield_unmarked: None, lane_width_m: None }
     }
 }
 
@@ -191,4 +267,64 @@ pub struct Metrics {
     pub arterial_mean_speed: f64,
     /// Additive field: vehicles removed by the gridlock breaker (see `sim.rs`, `GRIDLOCK_REMOVE_S`).
     pub gridlock_removed: u64,
+    /// Additive (multimodal-agents): per-mode results.
+    pub modes: Modes,
+    /// Additive: safety surrogates for people walking and biking.
+    pub vulnerable: Vulnerable,
+}
+
+#[derive(Clone, Debug, Default, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CarMode {
+    pub in_network: u64,
+    pub completed_trips: u64,
+    pub mean_trip_time: f64,
+}
+
+#[derive(Clone, Debug, Default, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BusMode {
+    pub in_network: u64,
+    pub completed_runs: u64,
+    pub mean_run_time: f64,
+    pub mean_speed: f64,
+    /// Additive to the contract: runs dropped because an intervention made the route impossible.
+    pub bus_runs_blocked: u64,
+}
+
+#[derive(Clone, Debug, Default, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BikeMode {
+    pub in_network: u64,
+    pub completed_trips: u64,
+    pub mean_trip_time: f64,
+}
+
+#[derive(Clone, Debug, Default, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PedMode {
+    pub in_network: u64,
+    pub completed_trips: u64,
+    pub mean_trip_time: f64,
+    pub mean_crossing_delay: f64,
+}
+
+#[derive(Clone, Debug, Default, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Modes {
+    pub car: CarMode,
+    pub bus: BusMode,
+    pub bicycle: BikeMode,
+    pub pedestrian: PedMode,
+}
+
+#[derive(Clone, Debug, Default, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Vulnerable {
+    pub ped_conflicts: u64,
+    pub bike_conflicts: u64,
+    pub close_passes: u64,
+    pub ped_injury_risk_index: f64,
+    pub bike_injury_risk_index: f64,
+    pub mean_vehicle_speed_at_ped_encounter: f64,
 }

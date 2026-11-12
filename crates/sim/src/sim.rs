@@ -9,6 +9,12 @@ use crate::route::{self, Router, NO_NOISE};
 use crate::topo::*;
 use std::collections::VecDeque;
 
+mod modes;
+mod ped;
+
+use modes::*;
+use ped::PedWorld;
+
 /// Minimum free room (m) between a link's entry point and the tail of its last vehicle before another
 /// vehicle may be admitted. ASSUMPTION.
 const ROOM_MIN: f32 = 4.0;
@@ -46,7 +52,34 @@ impl Drv {
     }
 }
 
+impl Drv {
+    /// Heavy-vehicle IDM parameters for a bus [Kesting2010] Table 1 (trucks); length 12 m (design decision D2).
+    fn bus() -> Drv {
+        Drv { len: BUS_LEN, fcomp: 1.0, a: BUS_A, b: BUS_B, t_hw: BUS_T, s0: BUS_S0, gap_f: 1.0 }
+    }
+
+    /// Cyclist IDM parameters; the desired speed is drawn separately (`bike_speed`). All ranges are ASSUMPTION.
+    fn bike(rng: &mut Rng) -> Drv {
+        Drv {
+            len: BIKE_LEN,
+            fcomp: 1.0,
+            a: rng.range(BIKE_A_RANGE.0, BIKE_A_RANGE.1) as f32,
+            b: rng.range(BIKE_B_RANGE.0, BIKE_B_RANGE.1) as f32,
+            t_hw: rng.range(BIKE_T_RANGE.0, BIKE_T_RANGE.1) as f32,
+            s0: BIKE_S0,
+            gap_f: (GAP_SIGMA * rng.normal()).exp() as f32,
+        }
+    }
+}
+
+/// Desired speed (m/s) of a cyclist, ASSUMPTION (see `params::BIKE_V_MEAN`).
+fn bike_speed(rng: &mut Rng) -> f32 {
+    (BIKE_V_MEAN + BIKE_V_SD * rng.normal()).clamp(BIKE_V_MIN, BIKE_V_MAX) as f32
+}
+
 struct Trip {
+    kind: u8,
+    v0_abs: f32,
     uid: u32,
     origin: u32,
     dest: u32,
@@ -57,6 +90,7 @@ struct Trip {
 }
 
 struct FlowRt {
+    mode: FlowMode,
     origin: u32,
     dest: u32,
     rate: f64, // veh/s
@@ -99,6 +133,21 @@ struct Veh {
     /// (name id, direction bucket) and the nominated links traversed as (link, index into the street list).
     sl_streets: Vec<(u32, u8)>,
     sl_hits: Vec<(u32, u32)>,
+    /// Agent kind: `KIND_CAR`, `KIND_BUS` or `KIND_BIKE`.
+    kind: u8,
+    /// Cyclist desired speed (m/s); unused for motor vehicles.
+    v0_abs: f32,
+    /// Crosswalk for which this driver last decided whether to yield, and the decision.
+    xw_dec: u32,
+    xw_yield: bool,
+    /// Uid of the cyclist this driver is currently passing, and whether the pass has been scored.
+    passing: u32,
+    pass_close: bool,
+    pass_scored: bool,
+    /// Bus: route index, next stop to serve, remaining dwell (s), scheduled departure of the run.
+    bus_route: u32,
+    next_stop: u32,
+    dwell_left: f32,
 }
 
 impl Veh {
@@ -134,6 +183,16 @@ impl Veh {
             tr_frac: 0.0,
             sl_streets: Vec::new(),
             sl_hits: Vec::new(),
+            kind: KIND_CAR,
+            v0_abs: 0.0,
+            xw_dec: NONE_UID,
+            xw_yield: false,
+            passing: NONE_UID,
+            pass_close: false,
+            pass_scored: false,
+            bus_route: 0,
+            next_stop: 0,
+            dwell_left: 0.0,
         }
     }
     #[inline]
@@ -175,6 +234,14 @@ struct Stats {
     /// Debug counters (used by tests).
     red_entries: u64,
     clamps: u64,
+    /// Per-mode results (multimodal-agents).
+    car_completed: u64,
+    car_tt_sum: f64,
+    bus_completed: u64,
+    bus_tt_sum: f64,
+    bus_dist_sum: f64,
+    bike_completed: u64,
+    bike_tt_sum: f64,
 }
 
 /// A street visited by a recorded trip (consecutive links with the same name collapse into one visit).
@@ -284,6 +351,19 @@ pub struct Simulation {
     win_exit: Vec<u32>,
     win_q0: Vec<u32>,
     next_adapt_t: f64,
+    // ---- multimodal agents
+    transit_file: Option<TransitFile>,
+    buses: Vec<BusRt>,
+    bus_blocked: u64,
+    bus_dropped_routes: u64,
+    n_bike: usize,
+    bike_on: bool,
+    bike_router: Router,
+    bike_backlog: Vec<VecDeque<Trip>>,
+    node_log: Vec<Vec<LogEnt>>,
+    vuln: Vuln,
+    ped_on: bool,
+    world: PedWorld,
 }
 
 fn idm(v: f32, v0: f32, s: f32, dv: f32, a: f32, b: f32, t_hw: f32, s0: f32) -> f32 {
@@ -302,6 +382,11 @@ impl Simulation {
     // ------------------------------------------------------------------ construction
 
     pub fn new(network_json: &str, demand_json: &str, config_json: &str) -> Result<Simulation, String> {
+        Simulation::new_with_transit(network_json, demand_json, config_json, None)
+    }
+
+    /// As `new`, with the optional `<area>.transit.json` text.
+    pub fn new_with_transit(network_json: &str, demand_json: &str, config_json: &str, transit_json: Option<&str>) -> Result<Simulation, String> {
         let net: Network = serde_json::from_str(network_json).map_err(|e| format!("network: {e}"))?;
         let demand: Demand = serde_json::from_str(demand_json).map_err(|e| format!("demand: {e}"))?;
         let cfg: Config = if config_json.trim().is_empty() {
@@ -309,10 +394,18 @@ impl Simulation {
         } else {
             serde_json::from_str(config_json).map_err(|e| format!("config: {e}"))?
         };
-        Simulation::from_parts(net, demand, cfg)
+        let transit: Option<TransitFile> = match transit_json.map(str::trim) {
+            Some(t) if !t.is_empty() => Some(serde_json::from_str(t).map_err(|e| format!("transit: {e}"))?),
+            _ => None,
+        };
+        Simulation::from_parts_transit(net, demand, cfg, transit)
     }
 
     pub fn from_parts(net: Network, demand: Demand, cfg: Config) -> Result<Simulation, String> {
+        Simulation::from_parts_transit(net, demand, cfg, None)
+    }
+
+    pub fn from_parts_transit(net: Network, demand: Demand, cfg: Config, transit: Option<TransitFile>) -> Result<Simulation, String> {
         for (i, l) in net.links.iter().enumerate() {
             if l.id as usize != i || l.from as usize >= net.nodes.len() || l.to as usize >= net.nodes.len() {
                 return Err(format!("link {i}: bad id or endpoint"));
@@ -340,8 +433,8 @@ impl Simulation {
             free: Vec::new(),
             uid_next: 0,
             n_alive: 0,
-            lanes: (0..topo.n_lanes).map(|_| VecDeque::new()).collect(),
-            reserved: vec![0.0; topo.n_lanes],
+            lanes: (0..topo.n_lanes + nl).map(|_| VecDeque::new()).collect(),
+            reserved: vec![0.0; topo.n_lanes + nl],
             transit: (0..nn).map(|_| Vec::new()).collect(),
             backlog: (0..nn).map(|_| VecDeque::new()).collect(),
             awsc: vec![Vec::new(); nn],
@@ -373,11 +466,24 @@ impl Simulation {
             win_exit: vec![0; nl],
             win_q0: vec![0; nl],
             next_adapt_t: 0.0,
+            transit_file: transit,
+            buses: Vec::new(),
+            bus_blocked: 0,
+            bus_dropped_routes: 0,
+            n_bike: 0,
+            bike_on: false,
+            bike_router: Router::new(nn),
+            bike_backlog: (0..nn).map(|_| VecDeque::new()).collect(),
+            node_log: (0..nn).map(|_| Vec::new()).collect(),
+            vuln: Vuln::default(),
+            ped_on: false,
+            world: PedWorld::default(),
             topo,
             net,
         };
         s.init_select_links();
         s.init_flows();
+        s.init_modes();
         s.rebuild_effective();
         Ok(s)
     }
@@ -424,6 +530,9 @@ impl Simulation {
     /// Select-link hook: vehicle `vid` has just entered link `l`.
     fn sl_enter(&mut self, vid: u32, l: u32) {
         let Some(sl) = &self.sl else { return };
+        if self.vehs[vid as usize].kind != KIND_CAR {
+            return;
+        }
         let sid = sl.street_of[l as usize];
         let is_sel = sl.is_sel[l as usize];
         let dir = sl.dir_of[l as usize];
@@ -523,7 +632,7 @@ impl Simulation {
                 let mut rng = Rng::stream(self.cfg.seed, k as u64);
                 let next_t = rng.exp(rate);
                 let through = self.net.nodes[f.origin as usize].gate && self.net.nodes[f.destination as usize].gate;
-                self.flows.push(FlowRt { origin: f.origin, dest: f.destination, rate, rng, next_t, through });
+                self.flows.push(FlowRt { mode: f.mode, origin: f.origin, dest: f.destination, rate, rng, next_t, through });
             }
         }
     }
@@ -534,7 +643,8 @@ impl Simulation {
         let net = self.net.clone();
         let demand = self.demand.clone();
         let cfg = self.cfg.clone();
-        if let Ok(mut s) = Simulation::from_parts(net, demand, cfg) {
+        let transit = self.transit_file.clone();
+        if let Ok(mut s) = Simulation::from_parts_transit(net, demand, cfg, transit) {
             s.ivs = ivs;
             s.rebuild_effective();
             *self = s;
@@ -586,7 +696,7 @@ impl Simulation {
     fn estimate_flows(&self, eff: &Eff) -> Vec<f32> {
         let mut est = vec![0.0f32; self.topo.n_links];
         let mut r = Router::new(self.topo.n_nodes);
-        let mut order: Vec<usize> = (0..self.flows.len()).collect();
+        let mut order: Vec<usize> = (0..self.flows.len()).filter(|&i| self.flows[i].mode == FlowMode::Car).collect();
         order.sort_by_key(|&i| (self.flows[i].dest, i));
         let mut route = Vec::new();
         let mut last_dest = u32::MAX;
@@ -625,8 +735,9 @@ impl Simulation {
         self.topo.n_links
     }
 
+    /// Agents currently drawn by `vehicles()` (motor vehicles, cyclists and pedestrians).
     pub fn n_vehicles(&self) -> usize {
-        self.n_alive
+        self.n_alive + self.n_bike + self.world.n_alive()
     }
 
     /// Per link: 0 n/a, 1 green, 2 yellow, 3 red (state at link end).
@@ -634,9 +745,9 @@ impl Simulation {
         self.sig_state.clone()
     }
 
-    /// Stride 6: x, y, heading (rad, atan2(dy, dx)), speed (m/s), kind (0 = car), flags (bit0 = through trip).
+    /// Stride 6: x, y, heading (rad, atan2(dy, dx)), speed (m/s), kind (0 car, 1 bus, 2 bicycle, 3 pedestrian), flags (bit0 = through trip).
     pub fn vehicles(&self) -> Vec<f32> {
-        let mut out = Vec::with_capacity(self.n_alive * 6);
+        let mut out = Vec::with_capacity(self.n_vehicles() * 6);
         for v in self.vehs.iter().filter(|v| v.alive) {
             let (p, h) = if v.in_transit {
                 let m = &self.topo.mvs[v.tr_mv as usize];
@@ -650,12 +761,22 @@ impl Simulation {
                 let dy = 2.0 * (1.0 - u) * (m.x[1] - m.p0[1]) + 2.0 * u * (m.p1[1] - m.x[1]);
                 ([x, y], dy.atan2(dx))
             } else {
-                let off = if (v.lane as usize) >= self.topo.nmain[v.link as usize] { LANE_OFFSET0 - 0.5 * LANE_WIDTH } else { LANE_OFFSET0 + LANE_WIDTH * v.lane as f64 };
+                let nm = self.topo.nmain[v.link as usize];
+                let off = if v.kind == KIND_BIKE {
+                    // Right edge of the road: outside the last lane on a bike lane, at its right edge when shared.
+                    let edge = LANE_OFFSET0 + LANE_WIDTH * (nm as f64 - 1.0);
+                    if self.net.links[v.link as usize].bike_lane { edge + 2.4 } else { edge + 1.1 }
+                } else if (v.lane as usize) >= nm {
+                    LANE_OFFSET0 - 0.5 * LANE_WIDTH
+                } else {
+                    LANE_OFFSET0 + LANE_WIDTH * v.lane as f64
+                };
                 let s = (v.pos - 0.5 * v.drv.len).max(0.0) as f64;
                 self.topo.link_point(v.link as usize, s, off)
             };
-            out.extend_from_slice(&[p[0] as f32, p[1] as f32, h as f32, v.v, 0.0, if v.through { 1.0 } else { 0.0 }]);
+            out.extend_from_slice(&[p[0] as f32, p[1] as f32, h as f32, v.v, v.kind as f32, if v.through { 1.0 } else { 0.0 }]);
         }
+        self.world.draw(&self.topo, &self.net, &mut out);
         out
     }
 
@@ -725,6 +846,7 @@ impl Simulation {
         if st.art_t > 0.0 {
             m.arterial_mean_speed = st.art_vs / st.art_t;
         }
+        self.fill_mode_metrics(&mut m);
         m
     }
 
@@ -915,9 +1037,27 @@ impl Simulation {
                 let f = &mut self.flows[fi];
                 let t_arr = f.next_t;
                 f.next_t += f.rng.exp(f.rate);
+                if f.mode == FlowMode::Pedestrian {
+                    let (o, d) = (f.origin, f.dest);
+                    let (v, gap_f) = (ped::sample_speed(&mut f.rng), ped::sample_gap(&mut f.rng));
+                    let uid = self.uid_next;
+                    self.uid_next += 1;
+                    self.spawn_ped(uid, o, d, t_arr, v, gap_f);
+                    continue;
+                }
+                if f.mode == FlowMode::Bicycle {
+                    let drv = Drv::bike(&mut f.rng);
+                    let v0_abs = bike_speed(&mut f.rng);
+                    let trip = Trip { kind: KIND_BIKE, v0_abs, uid: self.uid_next, origin: f.origin, dest: f.dest, t_arr, through: false, noise_seed: NO_NOISE, drv };
+                    self.uid_next += 1;
+                    self.bike_backlog[trip.origin as usize].push_back(trip);
+                    continue;
+                }
                 let drv = Drv::sample(&mut f.rng);
                 let noise_seed = f.rng.u32() & 0x7FFF_FFFF;
                 let trip = Trip {
+                    kind: KIND_CAR,
+                    v0_abs: 0.0,
                     uid: self.uid_next,
                     origin: f.origin,
                     dest: f.dest,
@@ -939,7 +1079,7 @@ impl Simulation {
     /// Room at the start of a lane, projecting the tail vehicle forward `horizon` s at its current speed (crossing a node takes
     /// a few seconds, during which a moving leader opens up the gap; a standing queue gains nothing).
     fn lane_room_ahead(&self, l: u32, lane: usize, horizon: f32) -> f32 {
-        let idx = self.topo.lane_base[l as usize] as usize + lane;
+        let idx = self.topo.qidx(l as usize, lane);
         let tail = match self.lanes[idx].back() {
             Some(&v) => {
                 let v = &self.vehs[v as usize];
@@ -1033,11 +1173,13 @@ impl Simulation {
 
     fn remove_vehicle(&mut self, id: u32) {
         let node;
+        let bike;
         {
             let v = &mut self.vehs[id as usize];
             if !v.alive {
                 return;
             }
+            bike = v.kind == KIND_BIKE;
             v.alive = false;
             v.route.clear();
             node = self.topo.link_to[v.link as usize] as usize;
@@ -1047,7 +1189,11 @@ impl Simulation {
             self.vehs[id as usize].registered = false;
         }
         self.free.push(id);
-        self.n_alive -= 1;
+        if bike {
+            self.n_bike -= 1;
+        } else {
+            self.n_alive -= 1;
+        }
     }
 
     fn try_spawns(&mut self) {
@@ -1123,8 +1269,8 @@ impl Simulation {
         for i in 0..nl {
             let l = if rev { nl - 1 - i } else { i };
             let nlanes = self.topo.nlanes(l);
-            for k in 0..nlanes {
-                let idx = self.topo.lane_base[l] as usize + k;
+            for k in 0..nlanes + self.bike_on as usize {
+                let idx = self.topo.qidx(l, k);
                 if let Some(&vid) = self.lanes[idx].front() {
                     self.eval_head(vid);
                 }
@@ -1165,6 +1311,9 @@ impl Simulation {
             self.vehs[vid as usize].registered = true;
             self.awsc[node].push(vid);
         }
+        if self.ped_on {
+            self.ped_decide_head(vid, l, ctrl);
+        }
         let (go, blocked) = self.permission(vid, l, d, v, ctrl);
         if waiting && !go {
             self.d_node_wait[node] += DT as f32;
@@ -1180,11 +1329,14 @@ impl Simulation {
         } && !self.waits_on_motorway(vid, l);
         if remove {
             // Gridlock breaker: a vehicle waiting this long for downstream space is removed (counted).
-            let idx = self.topo.lane_base[l] as usize + self.vehs[vid as usize].lane as usize;
+            let idx = self.topo.qidx(l, self.vehs[vid as usize].lane as usize);
             self.lanes[idx].pop_front();
+            let bike = self.vehs[vid as usize].kind == KIND_BIKE;
             self.remove_vehicle(vid);
-            self.st.gridlock_removed += 1;
-            self.gridlock_log.push((l as u32, self.t));
+            if !bike {
+                self.st.gridlock_removed += 1;
+                self.gridlock_log.push((l as u32, self.t));
+            }
         }
     }
 
@@ -1220,12 +1372,15 @@ impl Simulation {
         }
         let Some(b) = veh.next() else { return (true, false) };
         let Some(mv) = self.topo.find_mv(l as u32, b) else { return (false, false) };
-        if !self.eff.mv_ok[mv as usize] && !veh.replan {
+        if !self.mv_allowed(veh.kind, mv) && !veh.replan {
             // Banned/closed after the plan was made; will be re-planned. Hold.
             return (false, false);
         }
-        if self.pick_lane(b, None, NODE_CROSS_S).is_none() {
+        if self.pick_lane_for(veh.kind, b, None, NODE_CROSS_S).is_none() {
             return (false, true);
+        }
+        if self.ped_on && self.ped_block(veh, l as u32, b, ctrl) {
+            return (false, false);
         }
         (self.conflict_free(vid, mv, ctrl), false)
     }
@@ -1342,8 +1497,8 @@ impl Simulation {
                 continue;
             }
             let nlanes = self.topo.nlanes(e as usize);
-            for k in 0..nlanes {
-                let q = &self.lanes[self.topo.lane_base[e as usize] as usize + k];
+            for k in 0..nlanes + self.bike_on as usize {
+                let q = &self.lanes[self.topo.qidx(e as usize, k)];
                 for &x in q.iter().take(4) {
                     let xv = &self.vehs[x as usize];
                     let dx = (self.topo.stop_pos[e as usize] - xv.pos).max(0.0);

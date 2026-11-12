@@ -17,7 +17,7 @@ struct B {
 impl B {
     fn node(&mut self, x: f64, y: f64, control: Control, gate: bool) -> u32 {
         let id = self.nodes.len() as u32;
-        self.nodes.push(Node { id, osm_id: id as i64, x, y, control, gate, in_study_area: true });
+        self.nodes.push(Node { id, osm_id: id as i64, x, y, control, gate, in_study_area: true, marked_crossing: false });
         id
     }
 
@@ -40,6 +40,10 @@ impl B {
             stop_at_end: stop,
             humps: vec![],
             in_study_area: true,
+            bike_lane: false,
+            bike_route: false,
+            sidewalk: None,
+            crossings: vec![],
         });
         id
     }
@@ -65,7 +69,7 @@ fn demand(flows: &[(u32, u32, f64)]) -> Demand {
         periods: vec![Period {
             id: "p".into(),
             label: "p".into(),
-            flows: flows.iter().map(|&(o, d, v)| Flow { origin: o, destination: d, veh_per_hour: v }).collect(),
+            flows: flows.iter().map(|&(o, d, v)| Flow { origin: o, destination: d, veh_per_hour: v, mode: FlowMode::Car }).collect(),
         }],
     }
 }

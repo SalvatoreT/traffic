@@ -16,6 +16,25 @@ pub const INF: f32 = f32::INFINITY;
 /// Noise seed meaning "no perceived-cost noise".
 pub const NO_NOISE: u32 = u32::MAX;
 
+/// Per-mode view of the effective network used by the router: which links and movements are usable, movement costs and the
+/// perceived-cost weight of each link.
+#[derive(Clone, Copy)]
+pub struct Modal<'a> {
+    pub closed: &'a [bool],
+    pub mv_ok: &'a [bool],
+    pub mv_cost: &'a [f32],
+    pub w: &'a [f32],
+}
+
+impl Eff {
+    pub fn car_modal(&self) -> Modal<'_> {
+        Modal { closed: &self.closed, mv_ok: &self.mv_ok, mv_cost: &self.mv_cost, w: &self.route_w }
+    }
+    pub fn bike_modal(&self) -> Modal<'_> {
+        Modal { closed: &self.bike_closed, mv_ok: &self.bike_mv_ok, mv_cost: &self.bike_mv_cost, w: &self.bike_w }
+    }
+}
+
 pub struct Router {
     pub tables: Vec<Option<Vec<f32>>>,
     heap: BinaryHeap<Reverse<(u32, u32)>>,
@@ -42,6 +61,10 @@ impl Router {
     }
 
     pub fn ensure(&mut self, dest: u32, topo: &Topo, eff: &Eff, cost: &[f32]) {
+        self.ensure_m(dest, topo, eff.car_modal(), cost);
+    }
+
+    pub fn ensure_m(&mut self, dest: u32, topo: &Topo, eff: Modal<'_>, cost: &[f32]) {
         if self.tables[dest as usize].is_some() {
             return;
         }
@@ -49,7 +72,7 @@ impl Router {
         self.heap.clear();
         for l in 0..topo.n_links {
             if topo.link_to[l] == dest && !eff.closed[l] {
-                h[l] = cost[l] * eff.route_w[l];
+                h[l] = cost[l] * eff.w[l];
                 self.heap.push(Reverse((h[l].to_bits(), l as u32)));
             }
         }
@@ -66,7 +89,7 @@ impl Router {
                 if eff.closed[a] {
                     continue;
                 }
-                let cand = cost[a] * eff.route_w[a] + eff.mv_cost[mv as usize] + hl;
+                let cand = cost[a] * eff.w[a] + eff.mv_cost[mv as usize] + hl;
                 if cand < h[a] {
                     h[a] = cand;
                     self.heap.push(Reverse((cand.to_bits(), a as u32)));
@@ -84,6 +107,10 @@ impl Router {
 
 /// Choose the first link out of `origin` toward `dest`. Returns the link or None if unroutable.
 pub fn first_link(table: &[f32], topo: &Topo, eff: &Eff, origin: u32, seed: u32) -> Option<u32> {
+    first_link_m(table, topo, eff.car_modal(), origin, seed)
+}
+
+pub fn first_link_m(table: &[f32], topo: &Topo, eff: Modal<'_>, origin: u32, seed: u32) -> Option<u32> {
     let mut best: Option<(f32, u32)> = None;
     for &b in &topo.outs[origin as usize] {
         if eff.closed[b as usize] {
@@ -103,6 +130,10 @@ pub fn first_link(table: &[f32], topo: &Topo, eff: &Eff, origin: u32, seed: u32)
 
 /// Walk forward from the end of link `from` to `dest`, appending the following links to `route`.
 pub fn walk(table: &[f32], topo: &Topo, eff: &Eff, from: u32, dest: u32, seed: u32, route: &mut Vec<u32>) -> bool {
+    walk_m(table, topo, eff.car_modal(), from, dest, seed, route)
+}
+
+pub fn walk_m(table: &[f32], topo: &Topo, eff: Modal<'_>, from: u32, dest: u32, seed: u32, route: &mut Vec<u32>) -> bool {
     let mut l = from;
     let mut steps = 0;
     loop {

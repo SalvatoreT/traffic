@@ -176,6 +176,17 @@ impl Topo {
         t
     }
 
+    /// Index into the lane-queue array of lane `k` of link `l`. `k == nlanes(l)` is the link's bicycle queue, stored after all
+    /// motor lanes.
+    #[inline]
+    pub fn qidx(&self, l: usize, k: usize) -> usize {
+        if k < self.nmain[l] + self.pocket[l] as usize {
+            self.lane_base[l] as usize + k
+        } else {
+            self.n_lanes + l
+        }
+    }
+
     /// Total lanes of link `l` including a left-turn pocket.
     #[inline]
     pub fn nlanes(&self, l: usize) -> usize {

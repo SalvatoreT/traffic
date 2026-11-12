@@ -1,6 +1,6 @@
 //! Effective network state: baseline network + interventions. Rebuilt on `setInterventions`.
 
-use crate::model::{Control, Intervention, Network};
+use crate::model::{Control, Intervention, Network, RoadClass};
 use crate::params::*;
 use crate::topo::*;
 
@@ -59,6 +59,20 @@ pub struct Eff {
     pub route_w: Vec<f32>,
     pub sig: Vec<Option<SigPlan>>,
     pub cycle_override: Vec<Option<f32>>,
+    /// Links closed by a `one_way` intervention (everyone obeys); `closed` is the union with modal filters.
+    pub oneway_closed: Vec<bool>,
+    /// Movement banned by a `turn_ban` intervention.
+    pub mv_banned: Vec<bool>,
+    /// Bus view: modal filters do not apply, turn bans and one-way closures do (ASSUMPTION: buses pass filters).
+    pub bus_mv_ok: Vec<bool>,
+    /// Bicycle view: no motorway links, one-way closures obeyed, modal filters and turn bans do not apply.
+    pub bike_mv_ok: Vec<bool>,
+    pub bike_link_ok: Vec<bool>,
+    pub bike_mv_cost: Vec<f32>,
+    pub bike_mv_vturn: Vec<f32>,
+    pub bike_link_cost: Vec<f32>,
+    pub bike_w: Vec<f32>,
+    pub bike_closed: Vec<bool>,
 }
 
 impl Eff {
@@ -74,6 +88,7 @@ impl Eff {
             .collect();
         let mut ctrl: Vec<Control> = net.nodes.iter().map(|n| n.control).collect();
         let mut node_filter = vec![false; nn];
+        let mut oneway_closed = vec![false; nl];
         let mut banned: Vec<(u32, u32)> = Vec::new();
         let mut cycle_override: Vec<Option<f32>> = vec![None; nn];
         let valid_l = |l: Option<u32>| l.filter(|&x| (x as usize) < nl);
@@ -94,6 +109,7 @@ impl Eff {
                     if let Some(l) = valid_l(iv.link) {
                         if let Some(r) = net.links[l as usize].reverse {
                             closed[r as usize] = true;
+                            oneway_closed[r as usize] = true;
                         }
                     }
                 }
@@ -211,10 +227,29 @@ impl Eff {
         let mut mv_cost = vec![0.0; nm];
         let mut mv_vturn = vec![0.0; nm];
         let mut mv_ff = vec![0.0; nm];
+        let mut mv_banned = vec![false; nm];
+        let mut bus_mv_ok = vec![true; nm];
+        let mut bike_mv_ok = vec![true; nm];
+        let mut bike_mv_cost = vec![0.0; nm];
+        let mut bike_mv_vturn = vec![0.0; nm];
+        let bike_link_ok: Vec<bool> = (0..nl).map(|l| net.links[l].class != RoadClass::Motorway && !oneway_closed[l]).collect();
         for (i, m) in topo.mvs.iter().enumerate() {
             let n = m.node as usize;
             let dead_end = topo.lm_cnt[m.a as usize] == 1;
             let banned_pair = banned.iter().any(|&(a, b)| a == m.a && b == m.b);
+            mv_banned[i] = banned_pair;
+            bus_mv_ok[i] = !(banned_pair || oneway_closed[m.b as usize]);
+            bike_mv_ok[i] = bike_link_ok[m.a as usize] && bike_link_ok[m.b as usize] && !(m.kind == K_UTURN && !dead_end);
+            bike_mv_vturn[i] = if ctrl[n] == Control::TrafficCircle {
+                V_BIKE_CIRCLE
+            } else {
+                match m.kind {
+                    K_THROUGH => 1e3,
+                    K_RIGHT => V_BIKE_RIGHT,
+                    K_LEFT => V_BIKE_LEFT,
+                    _ => V_BIKE_UTURN,
+                }
+            };
             mv_ok[i] = !(banned_pair
                 || node_filter[n]
                 || closed[m.b as usize]
@@ -260,7 +295,30 @@ impl Eff {
                 Control::Uncontrolled => 0.0,
             };
             mv_cost[i] = c + mv_ff[i];
+            // Bicycle movement cost: same turn and control delays, ASSUMPTION: crossing time at bicycle turn speed.
+            let bt = bike_mv_vturn[i].min(BIKE_COST_V).max(1.0);
+            bike_mv_cost[i] = c + len / bt;
         }
+        let bike_link_cost: Vec<f32> = (0..nl).map(|l| topo.length[l] / BIKE_COST_V).collect();
+        let bike_w: Vec<f32> = net
+            .links
+            .iter()
+            .map(|l| {
+                if l.bike_lane {
+                    BIKE_COST_LANE
+                } else if l.bike_route {
+                    BIKE_COST_ROUTE
+                } else {
+                    match l.class {
+                        RoadClass::Primary => BIKE_COST_PRIMARY,
+                        RoadClass::Secondary => BIKE_COST_SECONDARY,
+                        RoadClass::Tertiary => BIKE_COST_TERTIARY,
+                        _ => 1.0,
+                    }
+                }
+            })
+            .collect();
+        let bike_closed: Vec<bool> = bike_link_ok.iter().map(|&ok| !ok).collect();
         Eff {
             closed,
             limit,
@@ -279,6 +337,16 @@ impl Eff {
             route_w: net.links.iter().map(|l| class_weight(l.class, LOCAL_COST_FACTOR)).collect(),
             sig: (0..nn).map(|_| None).collect(),
             cycle_override,
+            oneway_closed,
+            mv_banned,
+            bus_mv_ok,
+            bike_mv_ok,
+            bike_link_ok,
+            bike_mv_cost,
+            bike_mv_vturn,
+            bike_link_cost,
+            bike_w,
+            bike_closed,
         }
     }
 
