@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { pointInPolygon } from './lib/geo';
+import { makeProjection, pointInPolygon } from './lib/geo';
 import { buildNetwork } from './lib/network';
 import type { AreaConfig, Network, Overpass } from './lib/types';
 
@@ -115,8 +115,19 @@ describe('rockridge network', () => {
   });
 
   it('joins short signal pairs into single nodes', () => {
+    // Excluded by design: nodes within the gate margin of the extract edge, and ramp terminals (one-way chains
+    // of signals along a freeway off-ramp, which cannot be joined without inventing movements).
     const sigs = new Set(net.nodes.filter((n) => n.control === 'signal').map((n) => n.id));
-    for (const l of net.links) expect(sigs.has(l.from) && sigs.has(l.to) && l.length < 20, `link ${l.id}`).toBe(false);
+    const proj = makeProjection(net.origin.lon, net.origin.lat);
+    const [x0, y0] = proj.fwd(net.bbox[0], net.bbox[1]);
+    const [x1, y1] = proj.fwd(net.bbox[2], net.bbox[3]);
+    const nearEdge = (id: number) => Math.min(net.nodes[id].x - x0, x1 - net.nodes[id].x, net.nodes[id].y - y0, y1 - net.nodes[id].y) <= 60;
+    const touchesFreeway = (id: number) =>
+      net.links.some((k) => (k.from === id || k.to === id) && [k.from, k.to].some((m) => net.links.some((f) => f.class === 'motorway' && (f.from === m || f.to === m))));
+    for (const l of net.links) {
+      if ([l.from, l.to].some((id) => nearEdge(id) || touchesFreeway(id))) continue;
+      expect(sigs.has(l.from) && sigs.has(l.to) && l.length < 20, `link ${l.id}`).toBe(false);
+    }
   });
 
   it('keeps the flared lane count of off-ramp terminals', () => {
@@ -148,8 +159,8 @@ describe('rockridge circles and gates', () => {
       const outs = net.links.filter((l) => l.from === c.id);
       expect(ins.length).toBeGreaterThanOrEqual(3);
       expect(outs.length).toBeGreaterThanOrEqual(3);
-      // no short ring fragments: every approach is a real street segment
-      for (const l of ins) expect(l.length).toBeGreaterThan(20);
+      // no short ring fragments: every approach is a street segment (Berkeley's consecutive traffic circles leave 8 m stubs)
+      for (const l of ins) expect(l.length).toBeGreaterThan(5);
     }
   });
 
@@ -302,5 +313,52 @@ describe('junction joining (synthetic)', () => {
     const inner = junctions(net);
     expect(inner).toHaveLength(1);
     expect(inner[0].control).toBe('all_way_stop');
+  });
+});
+
+describe('wider model area', () => {
+  const names = (pred: (l: Network['links'][number]) => boolean) => new Set(net.links.filter(pred).map((l) => l.name));
+  const all = names(() => true);
+
+  it('reaches Ashby, Sacramento, Tunnel Road, Broadway and 51st/52nd Street', () => {
+    for (const n of ['Ashby Avenue', 'Sacramento Street', 'Tunnel Road', 'Broadway', '51st Street', '52nd Street', 'Shattuck Avenue', 'Martin Luther King Junior Way']) {
+      expect(all.has(n), n).toBe(true);
+    }
+  });
+
+  it('keeps the study area flags to the original streets', () => {
+    const inside = names((l) => l.inStudyArea);
+    for (const n of ['Ashby Avenue', 'Sacramento Street', 'Tunnel Road', 'Shattuck Avenue', '51st Street', '52nd Street']) expect(inside.has(n), n).toBe(false);
+    expect(net.links.filter((l) => l.inStudyArea).length).toBeGreaterThan(200);
+    expect(net.links.filter((l) => l.inStudyArea).length).toBeLessThan(215);
+  });
+
+  it('finds the SR-24 and SR-13 ramps, including 51st/52nd, Telegraph, Shattuck/MLK, Claremont and Broadway', () => {
+    const fw = new Set(net.links.filter((l) => l.class === 'motorway').flatMap((l) => [l.from, l.to]));
+    const ramps = net.nodes.filter((n) => fw.has(n.id) && net.links.some((l) => l.class !== 'motorway' && (l.from === n.id || l.to === n.id)));
+    const streets = new Set(ramps.flatMap((n) => net.links.filter((l) => l.class !== 'motorway' && (l.from === n.id || l.to === n.id)).map((l) => l.name)));
+    for (const s of ['52nd Street', 'Martin Luther King Junior Way', 'Telegraph Avenue', 'Claremont Avenue', 'Broadway']) expect(streets.has(s), s).toBe(true);
+    expect(ramps.length).toBeGreaterThanOrEqual(20);
+    expect(ramps.some((n) => net.links.some((l) => l.class === 'motorway' && l.to === n.id))).toBe(true);
+    expect(ramps.some((n) => net.links.some((l) => l.class === 'motorway' && l.from === n.id))).toBe(true);
+  });
+
+  it('puts freeway gates on SR-24 and SR-13 mainlines and keeps them out of the study area', () => {
+    const fwGates = gates.filter((g) => net.links.filter((l) => l.from === g.id || l.to === g.id).every((l) => l.class === 'motorway'));
+    expect(fwGates.length).toBeGreaterThanOrEqual(6);
+    expect(fwGates.some((g) => g.canEnter)).toBe(true);
+    expect(fwGates.some((g) => g.canExit)).toBe(true);
+    expect(fwGates.every((g) => !g.inStudyArea)).toBe(true);
+  });
+
+  it('stays a manageable size', () => {
+    expect(net.links.length).toBeLessThan(7000);
+    expect(net.nodes.length).toBeLessThan(3000);
+    expect(net.nodes.filter((n) => n.control === 'signal').length).toBeGreaterThan(100);
+  });
+
+  it('keeps a gate on Ashby, Sacramento, Shattuck and Telegraph at the extract edge', () => {
+    const gateStreets = new Set(gates.flatMap((g) => net.links.filter((l) => l.from === g.id || l.to === g.id).map((l) => l.name)));
+    for (const n of ['Ashby Avenue', 'Sacramento Street', 'Shattuck Avenue', 'Telegraph Avenue', 'Tunnel Road', 'Broadway']) expect(gateStreets.has(n), n).toBe(true);
   });
 });

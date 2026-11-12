@@ -54,7 +54,7 @@ const hhmm = (s: number) => `${String(Math.floor(s / 3600)).padStart(2, '0')}:${
 describe.skipIf(!existsSync(netPath))('transit from GTFS (synthetic feed on the Rockridge network)', () => {
   const net: Network = JSON.parse(readFileSync(netPath, 'utf8'));
   const proj = makeProjection(net.origin.lon, net.origin.lat);
-  // The longest chain of same-name arterial links.
+  // The longest chain of same-name links starting in the study area (the wider network has parallel carriageways that make a chain ambiguous).
   const chainFrom = (start: Network['links'][number]) => {
     const c = [start];
     for (;;) {
@@ -65,7 +65,7 @@ describe.skipIf(!existsSync(netPath))('transit from GTFS (synthetic feed on the 
     }
   };
   const chain = net.links
-    .filter((l) => l.class !== 'motorway' && l.name && l.length > 30)
+    .filter((l) => l.class !== 'motorway' && l.inStudyArea && l.name && l.length > 30)
     .map(chainFrom)
     .reduce((b, c) => (c.length > b.length ? c : b));
   const path: Pt[] = chain.flatMap((l, i) => (i ? l.geometry.slice(1) : l.geometry));

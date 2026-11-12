@@ -63,7 +63,7 @@ describe('study area outline', () => {
     expect(corners.length).toBeGreaterThanOrEqual(2);
     const [a, b] = [ring[5], ring[8]];
     const side = (p: Pt) => (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0]);
-    const interior = side([0, 0]);
+    const interior = side(proj.fwd(cfg.center![0], cfg.center![1]));
     for (const p of ring) {
       const off = (side(p) / dist(a, b)) * Math.sign(interior);
       expect(off).toBeGreaterThan(-15);
@@ -94,6 +94,6 @@ describe('study area outline', () => {
   });
 
   it('contains the center of the area', () => {
-    expect(pointInPolygon([0, 0], ring)).toBe(true);
+    expect(pointInPolygon(proj.fwd(cfg.center![0], cfg.center![1]), ring)).toBe(true);
   });
 });
