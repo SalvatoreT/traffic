@@ -3,10 +3,10 @@
   "network": "public/data/rockridge.network.json",
   "output": "public/data/rockridge.demand.json",
   "bbox": [
-    -122.264,
-    37.836,
-    -122.248,
-    37.855
+    -122.286,
+    37.83,
+    -122.22,
+    37.8605
   ],
   "raw": {
     "lodes": "data/demand/raw/lodes8-ca-2024-rockridge.json",
@@ -47,16 +47,16 @@
   "kFactorNote": "ASSUMPTION: peak-hour share of ADT for urban arterials (typically 0.08-0.10); not derived from local data.",
   "directionalSplitDefault": 0.5,
   "classDefaultAdt": {
-    "_note": "ASSUMPTION: per-class default two-way ADT when no count exists for the gate street (calibration steps B and F: residential 800 -> 300, tertiary 5000 -> 3000; the F factor assumedGateScale applies on top; uncalibrated).",
+    "_note": "ASSUMPTION: per-class default two-way ADT when no count exists for the gate street. Documented values (wider-area step: the earlier calibration cuts residential 800 -> 300 and tertiary 5000 -> 3000 are reverted; tuning follows in a later step); uncalibrated.",
     "primary": 14000,
     "secondary": 9000,
-    "tertiary": 3000,
-    "residential": 300,
+    "tertiary": 5000,
+    "residential": 800,
     "service": 150
   },
   "streetCounts": [
     {
-      "_note": "DATA: Oakland PM peak-hour turning-movement counts at Telegraph Ave & Alcatraz Ave (Quality Counts; 2018-09-11, 2018-09-12, 2019-09-10, 2021-09-29), averaged. Leg volumes entering/leaving the intersection are used for gates lying on that leg's street in that compass direction from the count intersection (N/E/S/W). ASSUMPTION: the south Telegraph gate (Claremont) reuses the S-leg volume as a proxy.",
+      "_note": "DATA: Oakland PM peak-hour turning-movement counts at Telegraph Ave & Alcatraz Ave (Quality Counts; 2018-09-11, 2018-09-12, 2019-09-10, 2021-09-29), averaged. Leg volumes entering/leaving the intersection are used for gates lying on that leg's street in that compass direction from the count intersection (N/E/S/W). A gate takes the leg of the nearest counted intersection on its street and compass direction (within maxLegDistM), so gates far from this intersection use it as a proxy.",
       "source": "oaklandTmc",
       "filePattern": "AlcatrazAve",
       "intersection": {
@@ -68,15 +68,101 @@
         "S": "telegraph",
         "E": "alcatraz",
         "W": "alcatraz"
-      }
+      },
+      "maxLegDistM": 2500
+    },
+    {
+      "_note": "DATA: Oakland PM peak-hour turning-movement counts at Telegraph Ave & 40th St (Quality Counts; 2018-09-11, 2018-09-12, 2019-09-10, 2021-09-29), averaged. Intersection lies ~90 m south of the model edge; the north leg serves the Telegraph Ave gate on the south edge.",
+      "source": "oaklandTmc",
+      "filePattern": [
+        "TelegraphAve_40thSt"
+      ],
+      "intersection": {
+        "lat": 37.82915,
+        "lon": -122.26447
+      },
+      "legStreets": {
+        "N": "telegraph",
+        "S": "telegraph",
+        "E": "40th",
+        "W": "40th"
+      },
+      "maxLegDistM": 2500
+    },
+    {
+      "_note": "DATA: Oakland PM peak-hour counts at West St & 40th St (same four count dates), averaged. Serves the West St and 40th St gates on the south edge.",
+      "source": "oaklandTmc",
+      "filePattern": [
+        "40thSt_WestSt",
+        "WestSt_40thSt"
+      ],
+      "intersection": {
+        "lat": 37.83015,
+        "lon": -122.27103
+      },
+      "legStreets": {
+        "N": "west",
+        "S": "west",
+        "E": "40th",
+        "W": "40th"
+      },
+      "maxLegDistM": 2500
+    },
+    {
+      "_note": "DATA: Oakland PM peak-hour counts at Market St & 55th St (same four count dates), averaged. Serves the Market St and 55th St gates.",
+      "source": "oaklandTmc",
+      "filePattern": [
+        "MarketSt_55thSt"
+      ],
+      "intersection": {
+        "lat": 37.83926,
+        "lon": -122.27393
+      },
+      "legStreets": {
+        "N": "market",
+        "S": "market",
+        "E": "55th",
+        "W": "55th"
+      },
+      "maxLegDistM": 2500
     }
   ],
   "adtOverrides": [
     {
       "street": "claremont",
       "adt": 23500,
-      "source": "Caltrans AADT 2023 (SR-13 Claremont Ave, Berkeley PM 10.79, ahead AADT 23500; BACK 32500). Context: nearest published State count, located ~1 km east/south-east of the Claremont/College gate; applied with ASSUMPTION of 0.6 factor because the SR-13 count is at Ashby/Tunnel Rd, not Claremont Ave itself.",
-      "factor": 0.6
+      "factor": 0.6,
+      "lat": 37.8581,
+      "lon": -122.2453,
+      "source": "SR-13 at Claremont Ave, Berkeley PM 10.79, ahead AADT 23,500 (back 32,500); the Claremont/College gate lies ~1 km away, so ASSUMPTION factor 0.6 attenuation."
+    },
+    {
+      "street": "ashby",
+      "adt": 28000,
+      "lat": 37.8522,
+      "lon": -122.2867,
+      "source": "SR-13 Ashby Ave at the SR-123 junction (San Pablo Ave), Berkeley PM 13.178, back AADT 28,000 (east side; ahead 43,500): applies to the Ashby Ave gate at the west edge (Caltrans 2023-24 count year)."
+    },
+    {
+      "street": "tunnel",
+      "adt": 27000,
+      "lat": 37.8581,
+      "lon": -122.2439,
+      "source": "SR-13 at Domingo Ave, Berkeley PM 10.69, back AADT 27,000 (east side; ahead 32,500): applies to the Tunnel Road gate east of the SR-24/SR-13 ramps (Caltrans 2023-24 count year)."
+    },
+    {
+      "street": "sanpablo",
+      "adt": 21700,
+      "lat": 37.8518,
+      "lon": -122.2866,
+      "source": "SR-123 San Pablo Ave at JCT RTE 13, Berkeley PM 1.906, back AADT 21,700 (ahead 22,800)."
+    },
+    {
+      "street": "sanpablo",
+      "adt": 20500,
+      "lat": 37.841,
+      "lon": -122.283,
+      "source": "SR-123 San Pablo Ave at Stanford Ave, Oakland PM 1.12, AADT 21,300 back / 19,700 ahead (mean 20,500)."
     }
   ],
   "streetMatch": {
@@ -91,10 +177,51 @@
       "college"
     ],
     "claremont": [
-      "claremont"
+      "claremont avenue",
+      "off to claremont",
+      "on fr claremont"
     ],
     "shattuck": [
       "shattuck"
+    ],
+    "ashby": [
+      "ashby avenue"
+    ],
+    "tunnel": [
+      "tunnel road"
+    ],
+    "sanpablo": [
+      "san pablo avenue"
+    ],
+    "west": [
+      "west street"
+    ],
+    "market": [
+      "market street"
+    ],
+    "40th": [
+      "40th street"
+    ],
+    "55th": [
+      "55th street"
+    ],
+    "mlk": [
+      "martin luther king",
+      "ml king",
+      "grove st"
+    ],
+    "52nd": [
+      "52nd"
+    ],
+    "sacramento": [
+      "sacramento street"
+    ],
+    "adeline": [
+      "adeline street"
+    ],
+    "broadwayterr": [
+      "broadway terrace",
+      "broadway terr"
     ]
   },
   "gravity": {
@@ -133,7 +260,7 @@
     "maxLocalShareOfGate": 0.5
   },
   "minFlowVehPerHour": 0.5,
-  "maxFlows": 4000,
+  "maxFlows": 8000,
   "lodes": {
     "year": 2024
   },
@@ -143,7 +270,19 @@
       "2018/2018.09.11-TelegraphAve&AlcatrazAve-pm.csv",
       "2018/2018.09.12-TelegraphAve&AlcatrazAve-pm.csv",
       "2019/TelegraphAve_AlcatrazAve_2019-09-10_PM.csv",
-      "2021/TelegraphAve_AlcatrazAve_PM_2021.csv"
+      "2021/TelegraphAve_AlcatrazAve_PM_2021.csv",
+      "2018/2018.09.11-TelegraphAve&40thSt-pm.csv",
+      "2018/2018.09.12-TelegraphAve&40thSt-pm.csv",
+      "2019/TelegraphAve_40thSt_2019-09-10_PM.csv",
+      "2021/TelegraphAve_40thSt_PM_2021.csv",
+      "2018/2018.09.11-40thSt&WestSt-pm.csv",
+      "2018/2018.09.12-40thSt&WestSt-pm.csv",
+      "2019/WestSt_40thSt_2019-09-10_PM.csv",
+      "2021/40thSt_WestSt_PM_2021.csv",
+      "2018/2018.09.11-MarketSt&55thSt-pm.csv",
+      "2018/2018.09.12-MarketSt&55thSt-pm.csv",
+      "2019/MarketSt_55thSt_2019-09-10_PM.csv",
+      "2021/MarketSt_55thSt_PM_2021.csv"
     ],
     "caltransQuery": "https://caltrans-gis.dot.ca.gov/arcgis/rest/services/CHhighway/Traffic_AADT/FeatureServer/0/query",
     "caltransPadDeg": 0.04,
@@ -155,7 +294,8 @@
       "https://dot.ca.gov/-/media/dot-media/programs/traffic-operations/documents/census/2024/2024-d4-ramp-adt-a11y.xlsx"
     ],
     "rampRoutes": [
-      "04-ALA-024"
+      "04-ALA-024",
+      "04-ALA-013"
     ]
   },
   "freewayClasses": [
@@ -166,8 +306,8 @@
     "_note": "Ramp demand. DATA: ramp ADT rows from Caltrans ramp-volume workbooks (raw.caltransRamps), matched to network ramps by street name (streetMatch) and type (OFF TO / ON FR); latest count year used, no growth applied (ASSUMPTION). Everything below is ASSUMPTION unless stated.",
     "kFactor": 0.09,
     "kFactorNote": "ASSUMPTION: peak-hour share of ramp ADT, same urban range as the arterial K-factor; period volume factors (periodFactors) apply on top.",
-    "defaultAdt": 3000,
-    "defaultAdtNote": "ASSUMPTION: ADT of a ramp with no matching published count.",
+    "defaultAdt": 500,
+    "defaultAdtNote": "ASSUMPTION: ADT of a ramp with no matching published count (minor connectors at the SR-13/SR-24 interchange, hillside ramps and the Broadway terminals east of Tunnel Road). The original four ramps never used it.",
     "localShare": 0.3,
     "localShareNote": "ASSUMPTION (calibration step E: 0.15 -> 0.30): share of ramp trips whose surface end is an in-area (LODES) node rather than a surface gate. These trips replace part of the block's external local trips.",
     "maxShareOfGate": 0.4,
@@ -176,10 +316,64 @@
       "_note": "ASSUMPTION: gravity over surface gates and local nodes, attraction x direction plausibility. Plausibility = exp(-(dTheta/sigma)^2) floored, where dTheta is the angle between the bearing ramp->destination and the bearing ramp->study-area center. No distance term. Street choice is left to the simulator.",
       "directionSigmaDeg": 90,
       "directionFloor": 0.03
-    }
+    },
+    "aliases": [
+      {
+        "street": "keith avenue",
+        "kind": "off",
+        "row": "EB OFF TO BROADWAY"
+      },
+      {
+        "street": "brookside avenue",
+        "kind": "on",
+        "row": "EB ON FR BROADWAY"
+      },
+      {
+        "street": "broadway",
+        "kind": "on",
+        "row": "EB ON FR BROADWAY",
+        "lat": 37.8488,
+        "lon": -122.242,
+        "maxM": 200
+      },
+      {
+        "street": "broadway",
+        "kind": "off",
+        "row": "WB OFF TO BROADWAY",
+        "lat": 37.8474,
+        "lon": -122.2445,
+        "maxM": 200
+      },
+      {
+        "street": "miles avenue",
+        "kind": "on",
+        "row": "WB ON FR PATTON"
+      },
+      {
+        "street": "miles avenue",
+        "kind": "off",
+        "row": "WB OFF TO COLLEGE"
+      },
+      {
+        "street": "caldecott lane",
+        "kind": "on",
+        "row": "WB ON FR CALDECOTT"
+      },
+      {
+        "street": "caldecott lane",
+        "kind": "off",
+        "row": "WB OFF TO CALDECOTT"
+      }
+    ],
+    "aliasNote": "ASSUMPTION: the Caltrans descriptions (EB OFF TO BROADWAY, WB OFF TO COLLEGE AVE, ...) are matched to ramp terminals by location, from OSM destination tags and postmile order, because the surface street names at the terminals (Keith Ave, Miles Ave, Brookside Ave, Broadway) differ. Verify against Caltrans ramp maps before relying on them.",
+    "excludeRows": [
+      "GROVE-52ND",
+      "ML KING JR/52ND"
+    ],
+    "excludeNote": "Rows that combine the 52nd St and MLK Jr Way (Grove St) ramps are dropped because per-street SEG rows (2016-2017 / 2012) exist for the same ramps and would double count."
   },
-  "assumedGateScale": 0.35,
-  "assumedGateScaleNote": "ASSUMPTION (calibration steps F and J: 0.3 -> 0.35): single factor on all gate volumes that are not count-based (class-default ADT gates); count-based gates (TMC, Caltrans override) and ramp volumes are unscaled.",
+  "assumedGateScale": 1.0,
+  "assumedGateScaleNote": "ASSUMPTION: single factor on all gate volumes that are not count-based (class-default ADT gates); count-based gates (TMC, Caltrans override) and ramp volumes are unscaled. Reset to 1.0 for the wider area (gates now sit on larger roads far from the study area); the earlier 0.35 was a stability workaround for gates close to the study area. Tuning follows in a later step.",
   "transit": "public/data/rockridge.transit.json",
   "active": {
     "_note": "ASSUMPTION unless stated: walking and biking demand (design D6). Person trips use the car model's per-worker and per-job rates (local.*), then these mode shares. Volumes are persons per hour. Only the count scaling below uses data (DATA: Oakland pedestrian and bicycle counts at one intersection); everything else is uncounted. ACS commute mode shares were not retrievable (the Census API needs a key), so the shares are not derived from them.",
@@ -246,6 +440,6 @@
       "pedestrian": 2000,
       "bicycle": 1500
     },
-    "maxFlowsNote": "Keeps all modes together under about 6,000 flows per period (cars are capped at maxFlows above)."
+    "maxFlowsNote": "Keeps all modes together under about 12,000 flows per period (cars are capped at maxFlows above, 8,000)."
   }
 }

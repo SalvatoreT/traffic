@@ -1,11 +1,9 @@
 # OSM extract
 
-`rockridge.overpass.json` (gitignored; R2 key `osm/rockridge.overpass.json`) is an Overpass API result fetched 2026-11-11 from
-`overpass.kumi.systems`, bbox `37.836,-122.264,37.855,-122.248`.
+`rockridge.overpass.json` (gitignored, 8.7 MB; R2 key `osm/rockridge.overpass.json`) covers the model area, bbox `37.830,-122.286,37.8605,-122.220`. It was fetched on 2026-11-12 through the OpenStreetMap map API (`api.openstreetmap.org/api/0.6/map.json`, 40 tiles), because every Overpass mirror reset or timed out that day. The result has the Overpass JSON shape: 15,313 highway ways, 62,905 nodes and 19 bicycle route relations.
 
-Query: all `way[highway]`; nodes tagged `highway~traffic_signals|stop|crossing|mini_roundabout`
-or `traffic_calming`; plus member nodes; plus `relation[route=bicycle]` (members by id, no geometry). Bus routes come from GTFS, not from OSM.
+Content: every `way[highway]` that touches the bbox with all its nodes, nodes tagged `highway~traffic_signals|stop|crossing|mini_roundabout` or `traffic_calming`, and `route=bicycle` relations (members by id). Bus routes come from GTFS, not from OSM. The map API returns relations that touch a tile, so the relation list can differ slightly from an Overpass fetch of the same bbox. The earlier extract (bbox `37.836,-122.264,37.855,-122.248`, Overpass, 2026-11-11) was replaced; way and node ids that lie in both are the same.
 
-The four bicycle route relations in the bbox were fetched from Overpass on 2026-11-12 (`maps.mail.ru` mirror; the main endpoints timed out) and added to the 2026-11-11 extract, leaving every way and node as it was. `npx tsx tools/fetch-osm.ts --relations` does the same refresh. The importer also works on an extract without relations, using way tags only.
+`npx tsx tools/fetch-osm.ts --force` refetches (Overpass first, map API after a failure), `--api` skips Overpass, `--relations` refreshes only the bicycle relations of an Overpass-style extract.
 
 © OpenStreetMap contributors, ODbL 1.0, https://www.openstreetmap.org/copyright

@@ -70,3 +70,5 @@ Gates move out to larger roads, more of which have counts, and displaced traffic
 another ramp. A regional assignment feeding a small window was considered and deferred:
 it generalizes better but is more than this needs now. Tuning resumes after the wider
 network is in place.
+
+Implementation notes (2026-11-12). The model area is bbox `-122.286, 37.830, -122.220, 37.8605`; the study-area polygon is unchanged. The OSM extract was fetched through the OpenStreetMap map API because no Overpass mirror answered. Ramp demand is generated between the freeway mainline gates and surface gates or in-area nodes, so the router chooses the ramp; the ramp ADT from Caltrans is kept as a check on the modeled ramp flows. `assumedGateScale` is 1.0 and the class defaults are back to their documented values, so the first run is untuned and gridlocks (PM, scale 1.0: 450 removals, 20% backlog). Tuning follows in task 7.3.

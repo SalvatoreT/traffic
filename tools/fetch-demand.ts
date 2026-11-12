@@ -29,7 +29,7 @@ async function caltrans() {
   const pad = fx.caltransPadDeg;
   const q = new URLSearchParams({
     geometry: [minLon - pad, minLat - pad, maxLon + pad, maxLat + pad].join(','), geometryType: 'esriGeometryEnvelope', inSR: '4326',
-    spatialRel: 'esriSpatialRelIntersects', outFields: '*', returnGeometry: 'false', f: 'json'
+    spatialRel: 'esriSpatialRelIntersects', outFields: '*', returnGeometry: 'true', outSR: '4326', f: 'json'
   });
   const r = await fetch(`${fx.caltransQuery}?${q}`);
   if (!r.ok) throw new Error(`Caltrans HTTP ${r.status}`);

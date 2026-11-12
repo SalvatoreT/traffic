@@ -33,6 +33,6 @@
 - [ ] 6.7 Reach D4 (zero gridlock removals): remaining removals sit on Telegraph near the SR-24 ramps
 
 ## 7. Wider model area
-- [ ] 7.1 Extend the extract, network and demand to the wider area; study area unchanged
-- [ ] 7.2 Browser performance at the larger size
+- [x] 7.1 Extend the extract, network and demand to the wider area; study area unchanged
+- [x] 7.2 Browser performance at the larger size
 - [ ] 7.3 Fine-tune round on the wider network with all modes

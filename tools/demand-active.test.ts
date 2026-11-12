@@ -102,12 +102,12 @@ describe('Oakland count parsing', () => {
 const demandPath = resolve(root, 'public/data/rockridge.demand.json');
 const netPath = resolve(root, 'public/data/rockridge.network.json');
 describe('generated demand file', () => {
-  it.skipIf(!existsSync(demandPath) || !existsSync(netPath))('follows the Flow contract and stays under 6,000 flows per period', () => {
+  it.skipIf(!existsSync(demandPath) || !existsSync(netPath))('follows the Flow contract and stays under 12,000 flows per period', () => {
     const d = JSON.parse(readFileSync(demandPath, 'utf8')) as { periods: { id: string; flows: { origin: number; destination: number; vehPerHour: number; mode?: string }[] }[]; provenance: { source: string; note: string }[] };
     const net = JSON.parse(readFileSync(netPath, 'utf8')) as { nodes: { id: number }[] };
     const ids = new Set(net.nodes.map((n) => n.id));
     for (const p of d.periods) {
-      expect(p.flows.length).toBeLessThan(6000);
+      expect(p.flows.length).toBeLessThan(12000);
       for (const f of p.flows) {
         expect([undefined, 'car', 'bicycle', 'pedestrian']).toContain(f.mode);
         expect(ids.has(f.origin) && ids.has(f.destination)).toBe(true);

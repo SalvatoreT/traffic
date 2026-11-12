@@ -26,6 +26,6 @@ Options: `--local-factor <x>` (override the residential/service perceived-cost m
 It prints a markdown report and writes `reports/<area>-<period>-s<scale>-seed<seed>.{md,json}`: stability criteria, vehicles in
 network every 5 min, modeled vs observed select-link shares (target blocks resolved from street name, direction and the
 two cross streets), ramp shares, top 15 links by delay, top 15 nodes by blocked time (with each signal's cycle and greens at the end of the run), gridlock removals and entry backlog by
-location, and flow per direction on the key streets. A full 60-minute run takes about 5 s.
+location, and flow per direction on the key streets. A full 60-minute run took about 5 s on the original small network; on the wider model area (28,759 veh/h offered, 2,183 nodes) it takes about 55 s.
 
 The calibration record with every tuned parameter is `rockridge.record.md`.

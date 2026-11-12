@@ -51,13 +51,14 @@ function streetKey(name: string): string | null {
   return null;
 }
 
-// ---------- DATA: Oakland turning-movement counts ----------
+// ---------- DATA: Oakland turning-movement counts (one entry per counted intersection) ----------
 interface LegVol { entering: number; leaving: number; files: number }
-function readTmc(): { legs: Record<string, LegVol>; files: string[]; peakHours: string[] } | null {
-  const sc = cfg.streetCounts?.[0];
+interface Count { id: string; legs: Record<string, LegVol>; files: string[]; peakHours: string[]; x: number; y: number; legStreets: Record<string, string>; maxLegDistM: number }
+function readTmc(sc: { source: string; filePattern: string | string[]; intersection: { lat: number; lon: number }; legStreets: Record<string, string>; maxLegDistM?: number }): Count | null {
   const dir = cfg.raw[sc?.source];
   if (!sc || !dir || !existsSync(dir)) return null;
-  const files = readdirSync(dir).filter((f) => f.includes(sc.filePattern) && f.endsWith('.csv'));
+  const pats = Array.isArray(sc.filePattern) ? sc.filePattern : [sc.filePattern];
+  const files = readdirSync(dir).filter((f) => pats.some((p) => f.includes(p)) && f.endsWith('.csv'));
   const legs: Record<string, LegVol> = {};
   const map: Record<string, [string, string]> = { N: ['SBEntering', 'NBLeaving'], S: ['NBEntering', 'SBLeaving'], E: ['WBEntering', 'EBLeaving'], W: ['EBEntering', 'WBLeaving'] };
   const peakHours: string[] = [];
@@ -76,10 +77,13 @@ function readTmc(): { legs: Record<string, LegVol>; files: string[]; peakHours: 
     }
   }
   for (const r of Object.values(legs)) { r.entering /= r.files; r.leaving /= r.files; }
-  return Object.keys(legs).length ? { legs, files, peakHours } : null;
+  const [x, y] = toXY(sc.intersection.lat, sc.intersection.lon);
+  return Object.keys(legs).length ? { id: pats[0], legs, files, peakHours, x, y, legStreets: sc.legStreets, maxLegDistM: sc.maxLegDistM ?? 2500 } : null;
 }
-const tmc = readTmc();
-const [tx, ty] = tmc ? toXY(cfg.streetCounts[0].intersection.lat, cfg.streetCounts[0].intersection.lon) : [0, 0];
+const tmcs: Count[] = (cfg.streetCounts ?? []).map(readTmc).filter((c: Count | null): c is Count => c !== null);
+// The first count (Telegraph Ave & Alcatraz Ave) is also the pedestrian and bicycle scaling point.
+const tmc = tmcs[0] ?? null;
+const [tx, ty] = tmc ? [tmc.x, tmc.y] : [0, 0];
 
 // ---------- gates: peak targets per period ----------
 interface Gate { id: number; street: string | null; cls: string; deg: number; source: string; kind: 'DATA' | 'DATA(adt)' | 'ASSUMPTION'; adt: number | null; pmIn: number; pmOut: number; inT: Record<string, number>; outT: Record<string, number>; locIn: Record<string, number>; locOut: Record<string, number> }
@@ -91,7 +95,6 @@ const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
 const { ramps, freewayGates: freewayIds } = discoverRamps(net.nodes, net.links, new Set<string>(cfg.freewayClasses ?? []));
 const nodeById = new Map(net.nodes.map((n) => [n.id, n]));
 const legGroups = new Map<string, { orig: number; dest: number }>();
-const legKey = (street: string | null, leg: string | null) => `${street}|${leg}`;
 // Origins must be enterable gates (canEnter), destinations exitable (canExit); falls back to link topology.
 const caps = (id: number) => {
   const ls = incident.get(id) ?? [];
@@ -113,7 +116,6 @@ const reachFrom = (o: number) => {
   return r;
 };
 const routable = (o: number, d: number) => o !== d && reachFrom(o).has(d);
-const legStreet = tmc ? cfg.streetCounts[0].legStreets : {};
 // One-way gate pairing: an enter-only gate and an exit-only gate within PAIR_M metres that share a street name.
 const PAIR_M = 250;
 const linkNames = (id: number) => new Set((incident.get(id) ?? []).filter((l) => l.name && l.class !== 'motorway').map((l) => l.name.toLowerCase()));
@@ -128,31 +130,57 @@ function hasGatePartner(n: Node, nIsIn: boolean): boolean {
     return [...linkNames(q.id)].some((nm) => names.has(nm));
   });
 }
-const gateLeg = (n: Node) => (tmc ? legOf(bearing(n.x, n.y, tx, ty)) : null);
-for (const n of net.nodes.filter((q) => q.gate && !freewayIds.has(q.id))) {
-  const street = (incident.get(n.id) ?? []).map((l) => streetKey(l.name)).find(Boolean) ?? null;
-  const leg = gateLeg(n);
-  if (tmc && street && leg && legStreet[leg] === street && tmc.legs[leg]) {
-    const c = caps(n.id), r = legGroups.get(legKey(street, leg)) ?? { orig: 0, dest: 0 };
-    r.orig += c.canIn ? 1 : 0; r.dest += c.canOut ? 1 : 0; legGroups.set(legKey(street, leg), r);
+// Gates on the same street within PAIR_M of each other: two-way gates count one each, an enter-only/exit-only pair counts one.
+function streetGroupSize(n: Node): number {
+  const names = linkNames(n.id);
+  if (!names.size) return 1;
+  let both = 0, ins = 0, outs = 0;
+  for (const q of surfaceGates) {
+    if (Math.hypot(q.x - n.x, q.y - n.y) > PAIR_M || ![...linkNames(q.id)].some((nm) => names.has(nm))) continue;
+    const c = caps(q.id);
+    if (c.canIn && c.canOut) both++; else if (c.canIn) ins++; else outs++;
+  }
+  return Math.max(1, both + Math.max(ins, outs));
+}
+// DATA assignment: a gate takes the leg volume of the nearest counted intersection whose leg street and compass direction match the gate's street and bearing.
+function countFor(n: Node, street: string | null): { c: Count; leg: string } | null {
+  if (!street) return null;
+  let best: { c: Count; leg: string; d: number } | null = null;
+  for (const c of tmcs) {
+    const leg = legOf(bearing(n.x, n.y, c.x, c.y));
+    const d = Math.hypot(n.x - c.x, n.y - c.y);
+    if (c.legStreets[leg] === street && c.legs[leg] && d <= c.maxLegDistM && (!best || d < best.d)) best = { c, leg, d };
+  }
+  return best;
+}
+const surfaceGates = net.nodes.filter((q) => q.gate && !freewayIds.has(q.id));
+const gateStreet = (n: Node) => (incident.get(n.id) ?? []).map((l) => streetKey(l.name)).find(Boolean) ?? null;
+for (const n of surfaceGates) {
+  const hit = countFor(n, gateStreet(n));
+  if (hit) {
+    const k = `${hit.c.id}|${hit.leg}`, c = caps(n.id), r = legGroups.get(k) ?? { orig: 0, dest: 0 };
+    r.orig += c.canIn ? 1 : 0; r.dest += c.canOut ? 1 : 0; legGroups.set(k, r);
   }
 }
-for (const n of net.nodes.filter((q) => q.gate && !freewayIds.has(q.id))) {
+for (const n of surfaceGates) {
   const links = incident.get(n.id) ?? [];
-  const street = links.map((l) => streetKey(l.name)).find(Boolean) ?? null;
+  const street = gateStreet(n);
   const cls = links.reduce((a, l) => (classRank[l.class] > (classRank[a] ?? 0) ? l.class : a), '') || 'residential';
   const { canIn, canOut } = caps(n.id);
   let pmIn: number, pmOut: number, kind: Gate['kind'], source: string, adt: number | null = null;
-  const leg = gateLeg(n);
-  if (tmc && street && leg && legStreet[leg] === street && tmc.legs[leg]) {
-    const grp = legGroups.get(legKey(street, leg))!;
-    pmIn = canIn ? tmc.legs[leg].entering / Math.max(1, grp.orig) : 0;
-    pmOut = canOut ? tmc.legs[leg].leaving / Math.max(1, grp.dest) : 0;
+  const hit = countFor(n, street);
+  if (hit) {
+    const grp = legGroups.get(`${hit.c.id}|${hit.leg}`)!;
+    pmIn = canIn ? hit.c.legs[hit.leg].entering / Math.max(1, grp.orig) : 0;
+    pmOut = canOut ? hit.c.legs[hit.leg].leaving / Math.max(1, grp.dest) : 0;
     kind = 'DATA';
-    source = `Oakland TMC ${leg}-leg avg of ${tmc.legs[leg].files} counts, shared by ${Math.max(grp.orig, grp.dest)} gate node(s)`;
+    source = `Oakland TMC ${hit.c.id} ${hit.leg}-leg avg of ${hit.c.legs[hit.leg].files} counts, ${Math.round(Math.hypot(n.x - hit.c.x, n.y - hit.c.y))} m away, shared by ${Math.max(grp.orig, grp.dest)} gate node(s)`;
   } else {
-    const ov = cfg.adtOverrides?.find((o: { street: string }) => o.street === street);
-    if (ov) { adt = ov.adt * (ov.factor ?? 1); kind = 'DATA(adt)'; source = 'Caltrans AADT override (scaled)'; }
+    // Nearest Caltrans station on the gate's street (entries with lat/lon), else the first entry for the street.
+    const cands = (cfg.adtOverrides ?? []).filter((o: { street: string }) => o.street === street);
+    const dOf = (o: { lat?: number; lon?: number }) => (o.lat === undefined ? 0 : Math.hypot(...(toXY(o.lat, o.lon!).map((v, i) => v - (i ? n.y : n.x)) as [number, number])));
+    const ov = cands.sort((a: object, b: object) => dOf(a) - dOf(b))[0];
+    if (ov) { adt = ov.adt * (ov.factor ?? 1); kind = 'DATA(adt)'; source = `Caltrans AADT: ${ov.source}`; }
     else { adt = cfg.classDefaultAdt[cls] ?? cfg.classDefaultAdt.residential; kind = 'ASSUMPTION'; source = `class default (${cls})`; }
     // F: single documented factor on all assumption-based (non-count) gate volumes; count-based gates and ramps are unaffected.
     const pk = adt! * cfg.kFactor * (kind === 'ASSUMPTION' ? cfg.assumedGateScale ?? 1 : 1);
@@ -160,9 +188,11 @@ for (const n of net.nodes.filter((q) => q.gate && !freewayIds.has(q.id))) {
     // close together). BUGFIX: each of the pair takes its directional share of the street volume, not all of it.
     // A one-way gate with no partner (genuinely one-way street) carries the whole volume in its direction.
     const paired = !(canIn && canOut) && hasGatePartner(n, canIn);
+    // Several gates of one street close together (a street split into two ways at the extract edge) share the street volume.
+    const pkn = pk / streetGroupSize(n);
     const share = pf[lastPeriod].inboundShare;
-    pmIn = canIn ? (canOut ? pk * share : paired ? pk * share : pk) : 0;
-    pmOut = canOut ? (canIn ? pk - pmIn : paired ? pk * (1 - share) : pk) : 0;
+    pmIn = canIn ? (canOut ? pkn * share : paired ? pkn * share : pkn) : 0;
+    pmOut = canOut ? (canIn ? pkn - pmIn : paired ? pkn * (1 - share) : pkn) : 0;
   }
   const g: Gate = { id: n.id, street, cls, deg: bearing(n.x, n.y), source, kind, adt, pmIn, pmOut, inT: {}, outT: {}, locIn: {}, locOut: {} };
   const sPm = pmIn / (pmIn + pmOut || 1);
@@ -178,7 +208,7 @@ if (!gates.length) { console.error('Network has no gate nodes'); process.exit(1)
 // ---------- freeway gates: ramp volumes (DATA: Caltrans ramp ADT; peak-hour factors ASSUMPTION) ----------
 const rampRows: RampRow[] = JSON.parse(readFileSync(cfg.raw.caltransRamps, 'utf8')).rows;
 const rc = cfg.ramps;
-const rampVol = matchRampVolumes(ramps, rampRows, cfg.streetMatch, streetKey, rc.defaultAdt, 'Caltrans ramp ADT');
+const rampVol = matchRampVolumes(ramps, rampRows, cfg.streetMatch, streetKey, rc.defaultAdt, 'Caltrans ramp ADT', (rc.aliases ?? []).map((a: { lat?: number; lon?: number }) => ({ ...a, at: a.lat === undefined ? undefined : toXY(a.lat, a.lon!) })), rc.excludeRows ?? [], (id) => [nodeById.get(id)!.x, nodeById.get(id)!.y]);
 const rampVeh = (r: Ramp, p: string) => (rampVol.get(r)!.adt * rc.kFactor * pf[p].volume) / r.gates.length;
 interface FwGate { id: number; deg: number; inT: Record<string, number>; outT: Record<string, number> }
 const fwGates: FwGate[] = [...freewayIds].map((id) => {
@@ -194,8 +224,9 @@ const gateName = (id: number) => (incident.get(id) ?? []).find((l) => l.name && 
 
 // ---------- LODES blocks -> local origin/destination nodes ----------
 const lodes = existsSync(cfg.raw.lodes) ? JSON.parse(readFileSync(cfg.raw.lodes, 'utf8')) : null;
-const resNodes = net.nodes.filter((n) => n.inStudyArea && !n.gate && (incident.get(n.id) ?? []).some((l) => l.class === 'residential'));
-const candNodes = resNodes.length ? resNodes : net.nodes.filter((n) => n.inStudyArea && !n.gate);
+// Blocks anywhere in the model area map to the nearest non-gate node on a residential street (the whole network, not only the study area).
+const resNodes = net.nodes.filter((n) => !n.gate && (incident.get(n.id) ?? []).some((l) => l.class === 'residential'));
+const candNodes = resNodes.length ? resNodes : net.nodes.filter((n) => !n.gate && (incident.get(n.id) ?? []).every((l) => l.class !== 'motorway'));
 const nearest = (x: number, y: number) => { let b = candNodes[0], bd = Infinity; for (const n of candNodes) { const d = (n.x - x) ** 2 + (n.y - y) ** 2; if (d < bd) { bd = d; b = n; } } return b; };
 
 interface LocalBlock { node: number; x: number; y: number; res: number; jobs: number; outSectors: Record<string, number>; inSectors: Record<string, number> }
@@ -258,13 +289,22 @@ for (const p of cfg.periods as { id: string; label: string }[]) {
   const rampAtBlock = new Map<number, { in: number; out: number }>(locList.map((b) => [b.node, { in: 0, out: 0 }] as [number, { in: number; out: number }]));
   const capLeft = new Map(gates.map((g) => [g.id, { in: g.inT[p.id] * rc.maxShareOfGate, out: g.outT[p.id] * rc.maxShareOfGate }] as [number, { in: number; out: number }]));
   const dst = rc.destination;
-  for (const r of ramps) for (const gid of r.gates) {
-    const vol = rampVeh(r, p.id);
+  // Ramp demand sits at the freeway mainline gates: origin (off-ramp traffic) or destination (on-ramp traffic) is the gate, not a
+  // ramp, so the router picks the ramp. A gate's volume is the sum of the shares of the ramps it can reach (ramp ADT split equally
+  // among the mainline gates that feed or take the ramp). Its surface ends are drawn with direction plausibility averaged over those
+  // ramps weighted by volume, so a ramp's own bearing no longer pins a trip to that ramp.
+  for (const fg of fwGates) for (const kind of ['off', 'on'] as const) {
+    const rs = ramps.filter((r) => r.kind === kind && r.gates.includes(fg.id));
+    const parts = rs.map((r) => ({ r, vol: rampVeh(r, p.id) })).filter((q) => q.vol > 0);
+    const vol = parts.reduce((a, q) => a + q.vol, 0);
+    const gid = fg.id;
     if (vol <= 0) continue;
-    const rn = nodeById.get(r.surface)!;
-    const pref = bearing(center[0], center[1], rn.x, rn.y); // inward: from the ramp toward the study-area center
-    const plaus = (x: number, y: number) => Math.max(dst.directionFloor, Math.exp(-((angDiff(bearing(x, y, rn.x, rn.y), pref) / dst.directionSigmaDeg) ** 2)));
-    const off = r.kind === 'off', side = off ? 'out' : 'in'; // ends at surface: gate outflow (off) or gate inflow (on)
+    const plaus = (x: number, y: number) => parts.reduce((a, q) => {
+      const rn = nodeById.get(q.r.surface)!;
+      const pref = bearing(center[0], center[1], rn.x, rn.y); // inward: from the ramp toward the study-area center
+      return a + (q.vol / vol) * Math.max(dst.directionFloor, Math.exp(-((angDiff(bearing(x, y, rn.x, rn.y), pref) / dst.directionSigmaDeg) ** 2)));
+    }, 0);
+    const off = kind === 'off', side = off ? 'out' : 'in'; // ends at surface: gate outflow (off) or gate inflow (on)
     const gc = gates.map((g) => { const n = nodeById.get(g.id)!; return { id: g.id, w: (off ? g.outT[p.id] : g.inT[p.id]) * plaus(n.x, n.y), room: capLeft.get(g.id)![side] }; }).filter((c) => c.w > 0 && c.room > 0 && (off ? routable(gid, c.id) : routable(c.id, gid)));
     const lc = locList.map((b) => ({ id: b.node, w: (off ? blockTrips(b).inTotal : blockTrips(b).outTotal) * plaus(b.x, b.y) })).filter((c) => c.w > 0 && (off ? routable(gid, c.id) : routable(c.id, gid)));
     const lShare = lc.length ? rc.localShare : 0;
@@ -474,9 +514,9 @@ console.log('gate  street       class        dir  target_in target_out  kind    
 for (const g of [...gates].sort((a, b) => b.inT[lastPeriod] + b.outT[lastPeriod] - a.inT[lastPeriod] - a.outT[lastPeriod])) {
   console.log(`${String(g.id).padEnd(5)} ${(g.street ?? '-').padEnd(12)} ${g.cls.padEnd(12)} ${String(Math.round(g.deg)).padStart(3)}  ${g.inT[lastPeriod].toFixed(0).padStart(9)} ${g.outT[lastPeriod].toFixed(0).padStart(10)}  ${g.kind.padEnd(11)} ${g.source}${g.adt ? ` ADT ${Math.round(g.adt)}` : ''}`);
 }
-if (tmc) {
-  console.log('\nTelegraph/Alcatraz TMC legs (PM peak hour, avg): leg entering leaving');
-  for (const [l, v] of Object.entries(tmc.legs)) console.log(`  ${l}: ${v.entering.toFixed(0)} ${v.leaving.toFixed(0)}`);
+for (const c of tmcs) {
+  console.log(`\nTMC ${c.id} legs (PM peak hour, avg): leg entering leaving`);
+  for (const [l, v] of Object.entries(c.legs)) console.log(`  ${l}: ${v.entering.toFixed(0)} ${v.leaving.toFixed(0)}`);
 }
 const byStreet = new Map<string, number>();
 for (const g of gates) byStreet.set(g.street ?? 'unnamed', (byStreet.get(g.street ?? 'unnamed') ?? 0) + g.inT[lastPeriod] + g.outT[lastPeriod]);

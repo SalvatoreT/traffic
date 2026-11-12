@@ -43,24 +43,45 @@ export function discoverRamps(nodes: RNode[], links: RLink[], freeway: Set<strin
   return { ramps, freewayGates };
 }
 
-// Match published ramp ADT rows to ramps by street key (config.streetMatch patterns found in the row description)
-// and type ('OFF TO' / 'ON FR'). Rows for the same street+type are summed and shared by the ramps of that street+type.
+// Match published ramp ADT rows to ramps and sum them. Two routes, in order:
+//  1. aliases: a ramp whose surface street names contain `street` (lower case) and whose kind equals `kind` takes the rows whose
+//     description contains `row` (upper case). Used where the network street name differs from the Caltrans description.
+//  2. street keys: config.streetMatch patterns found in the row description, and the ramp type ('OFF TO' / 'ON FR').
+// Rows for the same group are summed and shared by the ramps of the group. 'SEG' (segment) rows count only when they name exactly one
+// street key, so a combined row and its per-street rows are never both used; `exclude` drops rows by description substring.
+export interface RampAlias { street: string; kind: 'off' | 'on'; row: string; /** Optional location filter (metres, network frame): the ramp's surface node must lie within `maxM` of `at`. */ at?: [number, number]; maxM?: number }
 export function matchRampVolumes(
   ramps: Ramp[], rows: RampRow[], streetMatch: Record<string, string[]>, streetKey: (name: string) => string | null, defaultAdt: number, rowsLabel: string,
+  aliases: RampAlias[] = [], exclude: string[] = [], locate: (id: number) => [number, number] = () => [0, 0],
 ): Map<Ramp, RampVolume & { street: string | null }> {
-  const typeOf = (d: string) => (/^(SEG|DUM)\b/.test(d) ? null : /\bOFF TO\b/.test(d) ? 'off' : /\bON FR\b/.test(d) ? 'on' : null);
+  const keys = Object.keys(streetMatch).filter((k) => k[0] !== '_');
   const latest = (r: RampRow) => { const y = Math.max(...Object.keys(r.adt).map(Number)); return { year: y, adt: r.adt[y] }; };
-  const keyOf = (r: Ramp) => r.streets.map(streetKey).find((k) => k && Object.keys(streetMatch).includes(k)) ?? null;
-  const groups = new Map<string, Ramp[]>();
-  for (const r of ramps) { const k = keyOf(r); if (k) (groups.get(`${k}|${r.kind}`) ?? groups.set(`${k}|${r.kind}`, []).get(`${k}|${r.kind}`)!).push(r); }
+  const keyOf = (r: Ramp) => r.streets.map(streetKey).find((k) => k && keys.includes(k)) ?? null;
+  const usable = rows.filter((r) => !exclude.some((x) => r.desc.toUpperCase().includes(x.toUpperCase())));
+  const typeOf = (d: string) => (/^DUM\b/.test(d) ? null : /\bOFF\b/.test(d) ? 'off' : /\bON\b/.test(d) ? 'on' : null);
+  const seg = (d: string) => /^SEG\b/.test(d);
+  const keyHits = (desc: string) => keys.filter((k) => streetMatch[k].some((p) => desc.toLowerCase().includes(p)));
+  const describe = (hit: RampRow[]) => hit.map((h) => ({ h, ...latest(h) }));
+  const label = (parts: ReturnType<typeof describe>) => parts.map((p) => `${p.h.route} PM ${p.h.postmile} "${p.h.desc}" ${p.adt} (${p.year})`).join('; ');
   const out = new Map<Ramp, RampVolume & { street: string | null }>();
-  for (const [g, rs] of groups) {
-    const [key, kind] = g.split('|');
-    const hit = rows.filter((row) => typeOf(row.desc.toUpperCase()) === kind && streetMatch[key].some((p) => row.desc.toLowerCase().includes(p)));
-    if (!hit.length) continue;
-    const parts = hit.map((h) => ({ h, ...latest(h) }));
+  const groups = new Map<string, { ramps: Ramp[]; rows: RampRow[]; street: string | null }>();
+  for (const r of ramps) {
+    const al = aliases.find((a) => a.kind === r.kind && r.streets.some((s) => s.toLowerCase().includes(a.street)) && (!a.at || Math.hypot(locate(r.surface)[0] - a.at[0], locate(r.surface)[1] - a.at[1]) <= (a.maxM ?? 150)));
+    if (al) {
+      const g = groups.get(`alias|${al.street}|${al.kind}|${al.row}|${al.at?.join(',') ?? ''}`) ?? groups.set(`alias|${al.street}|${al.kind}|${al.row}|${al.at?.join(',') ?? ''}`, { ramps: [], rows: usable.filter((x) => x.desc.toUpperCase().includes(al.row.toUpperCase())), street: al.street }).get(`alias|${al.street}|${al.kind}|${al.row}|${al.at?.join(',') ?? ''}`)!;
+      g.ramps.push(r);
+      continue;
+    }
+    const k = keyOf(r);
+    if (!k) continue;
+    const g = groups.get(`key|${k}|${r.kind}`) ?? groups.set(`key|${k}|${r.kind}`, { ramps: [], rows: usable.filter((x) => { const d = x.desc.toUpperCase(); const hits = keyHits(x.desc); return typeOf(d.replace(/^SEG\s+/, '')) === r.kind && hits.includes(k) && (!seg(d) || hits.length === 1); }), street: k }).get(`key|${k}|${r.kind}`)!;
+    g.ramps.push(r);
+  }
+  for (const g of groups.values()) {
+    if (!g.rows.length) continue;
+    const parts = describe(g.rows);
     const total = parts.reduce((a, p) => a + p.adt, 0);
-    for (const r of rs) out.set(r, { adt: total / rs.length, kind: 'DATA', street: key, source: `${rowsLabel}: ${parts.map((p) => `${p.h.route} PM ${p.h.postmile} "${p.h.desc}" ${p.adt} (${p.year})`).join('; ')}${rs.length > 1 ? `, shared by ${rs.length} ramps` : ''}` });
+    for (const r of g.ramps) out.set(r, { adt: total / g.ramps.length, kind: 'DATA', street: g.street, source: `${rowsLabel}: ${label(parts)}${g.ramps.length > 1 ? `, shared by ${g.ramps.length} ramps` : ''}` });
   }
   for (const r of ramps) if (!out.has(r)) out.set(r, { adt: defaultAdt, kind: 'ASSUMPTION', street: keyOf(r), source: `no published ramp count matched; default ADT ${defaultAdt}` });
   return out;
