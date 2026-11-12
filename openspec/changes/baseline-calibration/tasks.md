@@ -98,4 +98,4 @@
 - [x] 13.4 Tests: near-equal routes do not flip, a clearly better route is taken once, no backtracking, blocked route re-plans for both classes, unaffected cars keep their route, detour/loop/reversal metrics on a toy network
 - [x] 13.5 Reported patterns as diagnostics (`patterns` in the targets file): freeway through trips on local streets, bypass versus arterial by direction
 - [x] 13.6 Re-run PM, AM, midday (seeds 1 to 3) and 120 min PM; reports replaced; record round; README; area `calibration` entry (uncalibrated, PM experimental, default midday)
-- [ ] 13.7 D4 in the PM peak (2 of 3 seeds still have removals) and in AM (1 of 3); departure route realism against observed paths
+- [ ] 13.7 D4 in the PM peak (all 3 seeds still have removals or backlog above 2%) and in AM (1 of 3); departure route realism against observed paths

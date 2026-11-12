@@ -1,6 +1,6 @@
 # Calibration report: rockridge pm_peak scale 1 seed 1 (60 min)
 
-Offered demand 23667 veh/h x scale 1 = 23667 veh/h. Run took 42.1 s wall clock. Flow tables use the window after a 10 min warm-up; select-link and health figures cover the whole run from an empty network.
+Offered demand 23667 veh/h x scale 1 = 23667 veh/h. Run took 29.1 s wall clock. Flow tables use the window after a 10 min warm-up; select-link and health figures cover the whole run from an empty network.
 
 ## Stability (design D4)
 
