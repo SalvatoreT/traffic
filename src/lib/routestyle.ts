@@ -7,7 +7,8 @@ export const CELL_COLORS: Record<Mode, string[]> = {
 };
 /** Dash arrays in line-width units; [1, 0] is solid. */
 export const CELL_DASHES: number[][] = [[1, 0], [3, 1.5], [1, 1.5], [5, 1.2, 1, 1.2]];
-export const ROUTE_COLORS: Record<Mode, { line: string; casing: string; hi: string }> = {
-  light: { line: '#c2255c', casing: '#ffffff', hi: '#c2255c' },
-  dark: { line: '#ff8fb8', casing: '#0b1118', hi: '#ff8fb8' },
+/** The highlighted route is wider, yellow and edged in the text color, so it stands out from the pink set by width and edge as well as hue. */
+export const ROUTE_COLORS: Record<Mode, { line: string; casing: string; hi: string; hiCasing: string }> = {
+  light: { line: '#c2255c', casing: '#ffffff', hi: '#ffe066', hiCasing: '#1b2430' },
+  dark: { line: '#ff8fb8', casing: '#0b1118', hi: '#ffe066', hiCasing: '#f4f6f9' },
 };

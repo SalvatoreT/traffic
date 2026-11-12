@@ -532,7 +532,7 @@ export function MapView(p: Props) {
       map.addLayer({ id: 'routes', type: 'line', source: 'routes', layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: { 'line-color': RC.line, 'line-width': routeWidth(3, 6), 'line-offset': OFFSET as never } });
       map.addLayer({ id: 'route-hi-casing', type: 'line', source: 'route-hi', layout: { 'line-cap': 'round', 'line-join': 'round' },
-        paint: { 'line-color': RC.casing, 'line-width': routeWidth(11, 20), 'line-offset': OFFSET as never } });
+        paint: { 'line-color': RC.hiCasing, 'line-width': routeWidth(11, 20), 'line-offset': OFFSET as never } });
       map.addLayer({ id: 'route-hi', type: 'line', source: 'route-hi', layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: { 'line-color': RC.hi, 'line-width': routeWidth(7, 13), 'line-offset': OFFSET as never } });
       for (let k = 1; k <= FEATHER_STEPS; k++) {
@@ -621,7 +621,7 @@ export function MapView(p: Props) {
     try {
       map.setPaintProperty('routes-casing', 'line-color', RC.casing);
       map.setPaintProperty('routes', 'line-color', RC.line);
-      map.setPaintProperty('route-hi-casing', 'line-color', RC.casing);
+      map.setPaintProperty('route-hi-casing', 'line-color', RC.hiCasing);
       map.setPaintProperty('route-hi', 'line-color', RC.hi);
     } catch { /* layers exist once the map has loaded */ }
   }, [rt?.check, rt?.show, rt?.highlight, mode, ready, bundle, proj]); // eslint-disable-line
