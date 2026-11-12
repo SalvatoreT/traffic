@@ -412,6 +412,7 @@ export function MapView(p: Props) {
         measure: () => measure(), ring, regionBox, minZoom: () => map.getMinZoom(),
         acceptable: () => { const m = measure(); return !!m && isAcceptable(camera(), m.size, m.unob, regionBox); },
         userMoved: () => userMoved.current,
+        project: (p: [number, number]) => { const q = map.project(p); return { x: q.x, y: q.y }; },
       };
     }
     map.touchZoomRotate.disableRotation();

@@ -18,7 +18,7 @@ export interface Camera { center: LngLat; zoom: number }
 const TILE = 512;
 /** Smallest unobscured size worth fitting into; below it the whole canvas is used. */
 export const MIN_UNOBSCURED_PX = 48;
-export const FIT_MARGIN_PX = 12;
+export const FIT_MARGIN_PX = 24;
 export const FIT_MAX_ZOOM = 17.5;
 /** Zoom-out allowance beyond the zoom that shows the whole buffered region. */
 export const MIN_ZOOM_SLACK = 0.35;
@@ -123,17 +123,25 @@ export function isAcceptable(cam: Camera, size: Size, unob: Rect, box: GeoBox, t
 export function correctedCamera(cam: Camera, size: Size, unob: Rect, box: GeoBox, tolFrac = CENTER_TOLERANCE, minOverlap = MIN_OVERLAP): Camera {
   const f = frame(cam, size, unob, box, tolFrac, minOverlap);
   if (okAt(f, f.px, f.py)) return cam;
-  let qx = Math.max(f.bx0 - f.tol, Math.min(f.bx1 + f.tol, f.px));
-  let qy = Math.max(f.by0 - f.tol, Math.min(f.by1 + f.tol, f.py));
+  // Aim strictly inside the tolerance box so float error cannot leave the point on its edge.
+  const cx = (f.bx0 + f.bx1) / 2, cy = (f.by0 + f.by1) / 2;
+  const ex = Math.min(0.5, f.tol / 2 + 1e-3, (f.bx1 - f.bx0) / 4), ey = Math.min(0.5, f.tol / 2 + 1e-3, (f.by1 - f.by0) / 4);
+  let qx = Math.max(f.bx0 - f.tol + ex, Math.min(f.bx1 + f.tol - ex, f.px));
+  let qy = Math.max(f.by0 - f.tol + ey, Math.min(f.by1 + f.tol - ey, f.py));
   if (!okAt(f, qx, qy)) {
-    // Slide toward the region's center until the overlap rule holds.
-    const cx = (f.bx0 + f.bx1) / 2, cy = (f.by0 + f.by1) / 2;
+    // Slide toward the region's center until the overlap rule holds, then step a little further in; bounded.
+    const sx = qx, sy = qy;
     let lo = 0, hi = 1;
-    for (let k = 0; k < 24; k++) {
+    for (let k = 0; k < 30; k++) {
       const t = (lo + hi) / 2;
-      if (okAt(f, qx + (cx - qx) * t, qy + (cy - qy) * t)) hi = t; else lo = t;
+      if (okAt(f, sx + (cx - sx) * t, sy + (cy - sy) * t)) hi = t; else lo = t;
     }
-    qx += (cx - qx) * hi; qy += (cy - qy) * hi;
+    let found = false;
+    for (let k = 0, t = Math.min(1, hi + 1e-4); k < 12; k++, t = Math.min(1, t + 0.01 * 2 ** k)) {
+      qx = sx + (cx - sx) * t; qy = sy + (cy - sy) * t;
+      if (okAt(f, qx, qy)) { found = true; break; }
+    }
+    if (!found) { qx = cx; qy = cy; }
   }
   const z = cam.zoom, u = offset(unob, size);
   return { center: [lngOfX(qx - u.x, z), latOfY(qy - u.y, z)], zoom: z };

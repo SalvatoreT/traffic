@@ -111,3 +111,39 @@ describe('soft bounds', () => {
     expect(boxOfPoints([[1, 2], [3, -1]])).toEqual({ w: 1, s: -1, e: 3, n: 2 });
   });
 });
+
+describe('correctedCamera property', () => {
+  const desk = { w: 1440, h: 900 };
+  const deskUnob: Rect = { left: 0, top: 0, right: 1440, bottom: 900 };
+  const setups = [
+    { name: 'phone', size, unob: unobPhone },
+    { name: 'desktop', size: desk, unob: unobscuredRect({ left: 0, top: 0, right: 1440, bottom: 900 }, [{ rect: { left: 0, top: 0, right: 320, bottom: 900 }, edge: 'left' }]) },
+    { name: 'desktop-full', size: desk, unob: deskUnob },
+  ];
+  const dirs: [number, number][] = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+  it('lands acceptably from far pans, and leaves acceptable cameras unchanged', () => {
+    for (const st of setups) for (const margin of [0, 12, 24, 40]) {
+      const minZ = minZoomFor(region, st.size, st.unob);
+      for (let z = minZ; z <= 19.001; z += 0.5) {
+        const fit = fitCamera(study, st.size, st.unob, { margin });
+        const base = { center: fit.center, zoom: z };
+        expect(correctedCamera(base, st.size, st.unob, region)).toBe(base);
+        for (const [dx, dy] of dirs) for (const d of [0.02, 0.05, 0.3]) {
+          const far = { center: [base.center[0] + dx * d, base.center[1] + dy * d] as [number, number], zoom: z };
+          const fixed = correctedCamera(far, st.size, st.unob, region);
+          expect(isAcceptable(fixed, st.size, st.unob, region), `${st.name} m${margin} z${z} ${dx},${dy},${d}`).toBe(true);
+          expect(correctedCamera(fixed, st.size, st.unob, region)).toBe(fixed);
+        }
+      }
+    }
+  });
+  it('lets the whole buffered region fit at the minimum zoom with the default margin', () => {
+    for (const st of setups) {
+      const z = minZoomFor(region, st.size, st.unob);
+      const cam = fitCamera(region, st.size, st.unob, { margin: 0, maxZoom: 22 });
+      expect(z).toBeLessThanOrEqual(cam.zoom);
+      const c = { center: cam.center, zoom: z };
+      for (const p of [[region.w, region.s], [region.e, region.n]] as [number, number][]) expect(insideRect(screenOf(c, st.size, p), st.unob)).toBe(true);
+    }
+  });
+});
