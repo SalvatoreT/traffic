@@ -1,19 +1,19 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import type { AreaBundle, Intervention, ModeVisibility, Overlay } from '../types';
 import { KIND_BIKE, KIND_BUS, KIND_PED } from '../types';
 import { makeProjection, metersPerPixel } from '../lib/projection';
-import { pickLink, pickNode, pointAlong } from '../lib/geom';
+import { pointAlong } from '../lib/geom';
+import { hitTest, selectionAnchor, type Selection } from '../lib/selection';
+import { PopoverFrame } from './Popover';
 import { intensity, rampStops, WIDTH_MAX, WIDTH_MIN, type Mode } from '../lib/ramps';
 import type { NetIndex } from '../lib/naming';
 import { describeIntervention, interventionPoint } from '../lib/describe';
 import type { SimClient } from '../sim/client';
 
 maplibregl.setWorkerUrl(workerUrl);
-
-export type PickKind = 'link' | 'node' | null;
 
 interface Props {
   bundle: AreaBundle;
@@ -24,10 +24,11 @@ interface Props {
   linkStats: Float32Array | null;
   client: SimClient | null;
   interventions: Intervention[];
-  pick: PickKind;
-  pickDirectional: boolean;
-  onPickLink(id: number): void;
-  onPickNode(id: number): void;
+  selection: Selection | null;
+  /** A place chosen on the map, or null for empty map. */
+  onHit(s: Selection | null): void;
+  /** Menu shown as a pop-up tied to the selection (wide and mid-width layouts). */
+  popover: ReactNode | null;
   visible: boolean;
   reducedMotion: boolean;
   modes: ModeVisibility;
@@ -54,6 +55,7 @@ const casingWidth = (): unknown[] => {
   const w = widthExpr() as unknown[];
   return ['interpolate', ['linear'], ['zoom'], 14, ['+', 1.2, (w[4] as unknown[])], 18, ['+', 1.8, (w[6] as unknown[])]];
 };
+const SEL_EDGE = { light: '#ffffff', dark: '#0b1118' };
 const OFFSET = ['interpolate', ['linear'], ['zoom'], 14, 1.2, 17, 3.5, 19, 6];
 
 /** Colorblind-safe agent palette (Okabe-Ito derived), checked against both map backgrounds. Shape carries the kind too. */
@@ -90,13 +92,9 @@ function fitPadding(map: maplibregl.Map) {
   const cr = c.getBoundingClientRect();
   const w = cr.width;
   const pad = { top: 36, bottom: 36, left: 36, right: 64 };
-  const lg = c.closest('.map-area')?.querySelector<HTMLElement>('.legend');
-  if (lg) {
-    const lr = lg.getBoundingClientRect();
-    // Keep the polygon clear of the legend: sidestep it on wide maps, sit above it on narrow ones.
-    if (w >= 640) pad.left = Math.max(pad.left, Math.round(lr.right - cr.left) + 16);
-    else { pad.bottom = Math.max(pad.bottom, Math.round(cr.bottom - lr.top) + 8); pad.top = 20; pad.left = pad.right = 20; }
-  }
+  // The legend is a docked row over the map; only its collapsed height counts so the view does not refit when it expands.
+  pad.bottom = Math.max(pad.bottom, 56);
+  void w;
   return pad;
 }
 function fitArea(map: maplibregl.Map, b: AreaBundle, animate: boolean) {
@@ -130,6 +128,8 @@ export function MapView(p: Props) {
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [ready, setReady] = useState(false);
   const [hoverText, setHoverText] = useState('');
+  const userMoved = useRef(false);
+  const reveal = useRef<(force: boolean) => void>(() => {});
   const live = useRef({ ...p, proj });
   live.current = { ...p, proj };
   const drawReq = useRef(0);
@@ -294,14 +294,30 @@ export function MapView(p: Props) {
       customAttribution: '<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a>',
     }), 'bottom-right');
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
-    map.addControl(new FitControl(() => { userMoved = false; fitArea(map, b, !reduce); }), 'top-right');
+    map.addControl(new FitControl(() => { userMoved.current = false; fitArea(map, b, !reduce); }), 'top-right');
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    let userMoved = false;
-    map.on('dragstart', () => { userMoved = true; });
-    map.on('zoomstart', (e) => { if ((e as { originalEvent?: unknown }).originalEvent) userMoved = true; });
+    map.on('dragstart', () => { userMoved.current = true; });
+    map.on('zoomstart', (e) => { if ((e as { originalEvent?: unknown }).originalEvent) userMoved.current = true; });
+    // A pop-up whose place has been dragged out of view closes rather than clinging to the edge.
+    map.on('moveend', (e) => {
+      const L = live.current;
+      if (!(e as { originalEvent?: unknown }).originalEvent || !L.selection || !L.popover) return;
+      const [x, y] = selectionAnchor(L.bundle.network, L.index, L.selection);
+      const pt = map.project(L.proj.toLonLat(x, y)), c = map.getContainer();
+      if (pt.x < 0 || pt.y < 0 || pt.x > c.clientWidth || pt.y > c.clientHeight) L.onHit(null);
+    });
+    reveal.current = (force) => {
+      const L = live.current;
+      if (!L.selection) return;
+      const [x, y] = selectionAnchor(L.bundle.network, L.index, L.selection);
+      const ll = L.proj.toLonLat(x, y);
+      const pt = map.project(ll), c = map.getContainer(), inset = 56;
+      const inside = pt.x >= inset && pt.y >= inset && pt.x <= c.clientWidth - inset && pt.y <= c.clientHeight - inset;
+      if (force || !inside) map.easeTo({ center: ll, duration: reduce ? 0 : 350, essential: false });
+    };
     fitArea(map, b, false);
     const cv = map.getCanvas();
-    cv.setAttribute('aria-label', `Map of ${b.network.name}. Streets, cars, buses, bicycles, pedestrians and signals. The same information and actions are available in the side panel and the Streets table.`);
+    cv.setAttribute('aria-label', `Map of ${b.network.name}. Streets, cars, buses, bicycles, pedestrians and signals. Select a street or an intersection by clicking it, or find it by name in the Scenario panel. The same information is available in the Streets table.`);
 
     map.on('load', () => {
       const pr = makeProjection(b.network.origin);
@@ -319,6 +335,7 @@ export function MapView(p: Props) {
         },
       });
       map.addSource('hover', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+      map.addSource('selection', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
       const K = KIND_STYLE.light;
       const major = ['match', ['get', 'kind'], ['motorway', 'trunk', 'primary', 'secondary', 'tertiary'], true, false] as never;
       map.addLayer({ id: 'base-paths', type: 'line', source: 'basemap', filter: ['match', ['get', 'kind'], ['footway', 'path', 'cycleway', 'steps', 'pedestrian', 'track'], true, false],
@@ -329,6 +346,11 @@ export function MapView(p: Props) {
       map.addLayer({ id: 'outside-wash', type: 'fill', source: 'outside', paint: { 'fill-color': K.bg, 'fill-opacity': K.wash, 'fill-antialias': false } });
       map.addLayer({ id: 'study-fill', type: 'fill', source: 'study', paint: { 'fill-color': K.study, 'fill-opacity': 0.05 } });
       map.addLayer({ id: 'study-line', type: 'line', source: 'study', paint: { 'line-color': K.study, 'line-width': 2, 'line-dasharray': [4, 3] } });
+      // Selected block: a wide outline plus accent band under the street, so the street's own color stays readable.
+      map.addLayer({ id: 'sel-edge', type: 'line', source: 'selection', filter: ['==', ['geometry-type'], 'LineString'], layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: { 'line-color': SEL_EDGE[mode], 'line-width': ['interpolate', ['linear'], ['zoom'], 14, 13, 18, 22] as never, 'line-offset': OFFSET as never } });
+      map.addLayer({ id: 'sel-band', type: 'line', source: 'selection', filter: ['==', ['geometry-type'], 'LineString'], layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: { 'line-color': K.study, 'line-width': ['interpolate', ['linear'], ['zoom'], 14, 9, 18, 17] as never, 'line-offset': OFFSET as never } });
       map.addLayer({ id: 'links-casing', type: 'line', source: 'links', layout: { 'line-cap': 'butt', 'line-join': 'round' },
         paint: { 'line-color': mode === 'dark' ? '#0b1118' : '#ffffff', 'line-opacity': 0.85, 'line-width': casingWidth() as never, 'line-offset': OFFSET as never } });
       const bikeVis = live.current.showBikeNet ? 'visible' : 'none';
@@ -340,13 +362,19 @@ export function MapView(p: Props) {
         paint: { 'line-color': AGENT_COLORS[live.current.mode].bike, 'line-opacity': 0.85, 'line-dasharray': [2, 1.2], 'line-width': ['interpolate', ['linear'], ['zoom'], 14, 4, 18, 9] as never, 'line-offset': OFFSET as never } });
       map.addLayer({ id: 'links', type: 'line', source: 'links', layout: { 'line-cap': 'butt', 'line-join': 'round' },
         paint: { 'line-color': ramp(mode) as never, 'line-width': widthExpr() as never, 'line-offset': OFFSET as never } });
+      map.addLayer({ id: 'sel-node-edge', type: 'circle', source: 'selection', filter: ['==', ['geometry-type'], 'Point'],
+        paint: { 'circle-radius': 15, 'circle-color': K.study, 'circle-opacity': 0.18, 'circle-stroke-color': SEL_EDGE[mode], 'circle-stroke-width': 9 } });
+      map.addLayer({ id: 'sel-node', type: 'circle', source: 'selection', filter: ['==', ['geometry-type'], 'Point'],
+        paint: { 'circle-radius': 15, 'circle-color': 'rgba(0,0,0,0)', 'circle-stroke-color': K.study, 'circle-stroke-width': 4 } });
+      map.addLayer({ id: 'hover-node', type: 'circle', source: 'hover', filter: ['==', ['geometry-type'], 'Point'],
+        paint: { 'circle-radius': 13, 'circle-color': K.study, 'circle-opacity': 0.25, 'circle-stroke-color': K.study, 'circle-stroke-width': 2, 'circle-stroke-opacity': 0.7 } });
       map.addLayer({ id: 'hover', type: 'line', source: 'hover', layout: { 'line-cap': 'round' },
         paint: { 'line-color': K.study, 'line-width': 7, 'line-opacity': 0.55, 'line-offset': OFFSET as never } });
       map.once('idle', () => setReady(true));
     });
     map.on('move', schedule);
     map.on('resize', schedule);
-    const ro = new ResizeObserver(() => { map.resize(); if (!userMoved && el.clientWidth > 0) fitArea(map, b, false); schedule(); });
+    const ro = new ResizeObserver(() => { map.resize(); if (!userMoved.current && el.clientWidth > 0) fitArea(map, b, false); reveal.current(false); schedule(); });
     ro.observe(el);
     return () => { ro.disconnect(); markers.current.forEach((m) => m.remove()); map.remove(); mapRef.current = null; setReady(false); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -367,6 +395,13 @@ export function MapView(p: Props) {
     map.setPaintProperty('study-fill', 'fill-color', K.study);
     map.setPaintProperty('study-line', 'line-color', K.study);
     map.setPaintProperty('hover', 'line-color', K.study);
+    map.setPaintProperty('hover-node', 'circle-color', K.study);
+    map.setPaintProperty('hover-node', 'circle-stroke-color', K.study);
+    map.setPaintProperty('sel-band', 'line-color', K.study);
+    map.setPaintProperty('sel-edge', 'line-color', SEL_EDGE[mode]);
+    map.setPaintProperty('sel-node', 'circle-stroke-color', K.study);
+    map.setPaintProperty('sel-node-edge', 'circle-color', K.study);
+    map.setPaintProperty('sel-node-edge', 'circle-stroke-color', SEL_EDGE[mode]);
     map.setPaintProperty('links-casing', 'line-color', mode === 'dark' ? '#0b1118' : '#ffffff');
     map.setPaintProperty('links', 'line-color', ramp(mode) as never);
     map.setPaintProperty('bike-lane', 'line-color', AGENT_COLORS[mode].bike);
@@ -428,61 +463,92 @@ export function MapView(p: Props) {
     });
   }, [p.interventions, ready, bundle, proj, p.index]);
 
+  // ---- selection highlight and keeping it in view
+  const selKey = p.selection ? `${p.selection.kind}-${p.selection.kind === 'block' ? p.selection.block : p.selection.node}-${p.selection.via}` : '';
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    const src = map.getSource('selection') as maplibregl.GeoJSONSource | undefined;
+    const net = bundle.network, sel = p.selection;
+    const feats: unknown[] = [];
+    if (sel?.kind === 'block') {
+      for (const id of p.index.blocks[sel.block].links) feats.push({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: net.links[id].geometry.map(([a, b]) => proj.toLonLat(a, b)) } });
+    } else if (sel) {
+      const n = net.nodes[sel.node];
+      feats.push({ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: proj.toLonLat(n.x, n.y) } });
+    }
+    src?.setData({ type: 'FeatureCollection', features: feats } as never);
+    if (sel) {
+      if (sel.via === 'map' && window.matchMedia('(max-width: 719.98px)').matches) userMoved.current = true;
+      reveal.current(sel.via !== 'map');
+    }
+  }, [selKey, ready]); // eslint-disable-line
+
   // ---- picking
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready) return;
     const cvs = map.getCanvas();
-    cvs.style.cursor = p.pick ? 'crosshair' : '';
+    const nodeIds = new Set(p.index.intersections);
     const find = (lngLat: maplibregl.LngLat) => {
       const L = live.current;
       const [x, y] = L.proj.toLocal(lngLat.lng, lngLat.lat);
       const mpp = metersPerPixel(map.getZoom(), lngLat.lat);
-      if (L.pick === 'node') return { node: pickNode(L.bundle.network, x, y, 18 * mpp), link: null as number | null };
-      const l = pickLink(L.bundle.network, x, y, 12 * mpp);
-      return { node: null, link: l ? l.id : null };
+      const coarse = window.matchMedia('(pointer: coarse)').matches;
+      const hit = hitTest(L.bundle.network, x, y, { nodeTolM: (coarse ? 22 : 14) * mpp, linkTolM: (coarse ? 16 : 10) * mpp, nodeIds });
+      return { hit, x, y };
     };
+    const hoverSrc = () => map.getSource('hover') as maplibregl.GeoJSONSource | undefined;
+    const clearHover = () => { hoverSrc()?.setData({ type: 'FeatureCollection', features: [] }); setHoverText(''); cvs.style.cursor = ''; };
     const move = (e: maplibregl.MapMouseEvent) => {
-      if (!live.current.pick) return;
-      const f = find(e.lngLat);
-      hoverRef.current = f;
-      const src = map.getSource('hover') as maplibregl.GeoJSONSource | undefined;
-      const net = live.current.bundle.network;
+      if ((e.originalEvent as MouseEvent).buttons) return;
+      const L = live.current, net = L.bundle.network;
+      const { hit } = find(e.lngLat);
       const feats: unknown[] = [];
       let text = '';
-      if (f.link !== null) {
-        const l = net.links[f.link];
-        const ids = live.current.pickDirectional || l.reverse === null ? [l.id] : [l.id, l.reverse];
-        for (const id of ids) feats.push({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: net.links[id].geometry.map(([a, b]) => live.current.proj.toLonLat(a, b)) } });
-        text = live.current.pickDirectional ? `${live.current.index.linkName[l.id]} → ${live.current.index.nodeName[l.to]}` : live.current.index.blocks[live.current.index.blockOfLink[f.link]]?.label ?? '';
-      } else if (f.node !== null) {
-        const n = net.nodes[f.node];
-        feats.push({ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: live.current.proj.toLonLat(n.x, n.y) } });
-        text = live.current.index.nodeName[f.node];
+      if (hit?.kind === 'link') {
+        const blk = L.index.blocks[L.index.blockOfLink[hit.link]];
+        for (const id of blk.links) feats.push({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: net.links[id].geometry.map(([a, b]) => L.proj.toLonLat(a, b)) } });
+        text = blk.label;
+      } else if (hit) {
+        const n = net.nodes[hit.node];
+        feats.push({ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: L.proj.toLonLat(n.x, n.y) } });
+        text = L.index.nodeName[hit.node];
       }
-      src?.setData({ type: 'FeatureCollection', features: feats } as never);
+      hoverSrc()?.setData({ type: 'FeatureCollection', features: feats } as never);
       setHoverText(text);
+      cvs.style.cursor = hit ? 'pointer' : '';
     };
+    // A click that ends a drag or pan is not a selection.
+    let down: { x: number; y: number } | null = null;
+    const press = (e: { point: { x: number; y: number } }) => { down = { x: e.point.x, y: e.point.y }; };
     const click = (e: maplibregl.MapMouseEvent) => {
-      if (!live.current.pick) return;
-      const f = find(e.lngLat);
-      if (f.link !== null) live.current.onPickLink(f.link);
-      else if (f.node !== null) live.current.onPickNode(f.node);
+      if (down && Math.hypot(e.point.x - down.x, e.point.y - down.y) > 6) return;
+      const L = live.current;
+      const { hit, x, y } = find(e.lngLat);
+      if (!hit) return L.onHit(null);
+      if (hit.kind === 'node') return L.onHit({ kind: 'node', node: hit.node, via: 'map' });
+      L.onHit({ kind: 'block', block: L.index.blockOfLink[hit.link], point: [x, y], nearLink: hit.link, via: 'map' });
     };
-    const leave = () => { (map.getSource('hover') as maplibregl.GeoJSONSource | undefined)?.setData({ type: 'FeatureCollection', features: [] }); setHoverText(''); };
-    map.on('mousemove', move); map.on('click', click); cvs.addEventListener('mouseleave', leave);
+    map.on('mousemove', move); map.on('mousedown', press); map.on('touchstart', press); map.on('click', click); cvs.addEventListener('mouseleave', clearHover);
     return () => {
-      map.off('mousemove', move); map.off('click', click); cvs.removeEventListener('mouseleave', leave);
-      (map.getSource('hover') as maplibregl.GeoJSONSource | undefined)?.setData({ type: 'FeatureCollection', features: [] });
-      setHoverText('');
+      map.off('mousemove', move); map.off('mousedown', press); map.off('touchstart', press); map.off('click', click); cvs.removeEventListener('mouseleave', clearHover);
+      clearHover();
     };
-  }, [p.pick, ready]);
+  }, [ready]); // eslint-disable-line
+
+  const anchor = useMemo(() => {
+    if (!p.selection) return null;
+    const [x, y] = selectionAnchor(bundle.network, p.index, p.selection);
+    return proj.toLonLat(x, y);
+  }, [selKey, p.selection && p.selection.kind === 'block' ? p.selection.point : null, bundle, proj, p.index]); // eslint-disable-line
 
   return (
     <div className="map-wrap" hidden={!p.visible}>
       <div ref={box} className="map" role="group" aria-label={`Interactive map of ${bundle.network.name}`} />
       <canvas ref={canvas} className="map-overlay" aria-hidden="true" />
-      {p.pick && hoverText && <div className="map-hint" aria-hidden="true">{hoverText}</div>}
+      {hoverText && !p.popover && <div className="map-hint" aria-hidden="true">{hoverText}</div>}
+      {p.popover && anchor && ready && mapRef.current && <PopoverFrame map={mapRef.current} anchor={anchor}>{p.popover}</PopoverFrame>}
     </div>
   );
 }

@@ -438,7 +438,7 @@ for (const p of cfg.periods as { id: string; label: string }[]) {
   for (const q of keep) after2[q.c] += q.v;
   const fac: Record<string, number> = Object.fromEntries(Object.keys(before).map((c) => [c, after2[c] > 0 ? before[c] / after2[c] : 1]));
   if (p.id === lastPeriod) throughDebug.push(`pruning kept ${(100 * (after.ramp + after.through + after.local) / (before.ramp + before.through + before.local)).toFixed(0)}% of the volume; after fitting, class total factors ramp ${fac.ramp.toFixed(3)}, through ${fac.through.toFixed(3)}, local ${fac.local.toFixed(3)}`);
-  const flows: Flow[] = keep.map((q) => ({ origin: q.o, destination: q.d, vehPerHour: Math.round(q.v * fac[q.c] * 100) / 100 }));
+  const flows: Flow[] = keep.map((q) => ({ origin: q.o, destination: q.d, vehPerHour: Math.round(q.v * fac[q.c] * 100) / 100 })).filter((q) => q.vehPerHour > 0);
   const gateIds = new Set(gates.map((g) => g.id));
   let thrOut = 0, locOut = 0, rampOut = 0, rampLocal = 0;
   const fwPer = new Map<number, { out: number; in: number }>(fwGates.map((g) => [g.id, { out: 0, in: 0 }] as const));

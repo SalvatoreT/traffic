@@ -84,9 +84,12 @@ describe('street block actions', () => {
     expect(blockActions(net, idx, blockSel(twoWay), ivs).hump).toBe('move');
   });
   it('offers no one-way on a block that already has a single direction', () => {
-    const oneWayBlock = idx.blocks.findIndex((b) => b.links.length === 1);
-    expect(oneWayBlock).toBeGreaterThanOrEqual(0);
-    expect(blockActions(net, idx, blockSel(oneWayBlock), []).oneWay).toEqual([]);
+    const [a, b] = idx.blocks[twoWay].links;
+    const oneDir = { ...net, links: net.links.map((l) => (l.id === a || l.id === b ? { ...l, reverse: null } : l)) };
+    const i2 = buildIndex(oneDir);
+    const sel = blockSel(i2.blockOfLink[a]);
+    expect(i2.blocks[sel.block].links).toEqual([a]);
+    expect(blockActions(oneDir, i2, sel, []).oneWay).toEqual([]);
   });
 });
 

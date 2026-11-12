@@ -9,12 +9,14 @@ import { buildIndex } from './lib/naming';
 import { decodeMeta, decodeScenario, encodeScenario, nearestStreetName, type Unplaced } from './lib/hash';
 import { interventionTypeLabel } from './lib/describe';
 import { addInterventions } from './lib/scenario';
+import { selectionForIntervention, type Selection } from './lib/selection';
+import { interventionPoint } from './lib/describe';
 import { niceMax, percentile, resolveMode } from './lib/ramps';
 import { linkStatsView } from './types';
-import type { PickKind } from './components/MapView';
+import { SelectionMenu, type Change, type Placement } from './components/SelectionMenu';
 import { Sheet } from './components/Sheet';
 import { Playback, Legend } from './components/Toolbar';
-import { InterventionPanel, type PickHandlers } from './components/InterventionPanel';
+import { InterventionPanel } from './components/InterventionPanel';
 import { hasModes } from './lib/metrics';
 import { Comparison } from './components/Comparison';
 import { StreetsTable } from './components/StreetsTable';
@@ -85,9 +87,13 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   const [showService, setShowService] = useState(false);
   const [showOutside, setShowOutside] = useState(false);
   const calStatus = bundle.entry.calibration?.status ?? 'uncalibrated';
-  const calKey = `calnote:${bundle.entry.id}`;
+  const calNote = bundle.entry.calibration?.note ?? 'Treat results as illustrations, not forecasts.';
+  // Dismissal is remembered per note text, so a changed note shows again.
+  const calKey = `calnote:${bundle.entry.id}:${calNote.length}:${calNote.slice(0, 24)}:${calNote.slice(-24)}`;
   const [calDismissed, setCalDismissed] = useState(() => store.get(calKey) === '1');
+  const [calClosing, setCalClosing] = useState(false);
   const showCal = calStatus !== 'calibrated' && !calDismissed && !bundle.synthetic;
+  const dismissCal = () => { setCalClosing(true); store.set(calKey, '1'); window.setTimeout(() => setCalDismissed(true), reduced ? 0 : 200); };
   const [sourceRef, setSourceRef] = useState<string | null>(null);
 
   const periodId = demand.periods.some((p) => p.id === initial.period) ? initial.period! : demand.periods[0]?.id ?? '';
@@ -169,16 +175,52 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   }, [network]);
 
   // --- interventions API
-  const onAdd = useCallback((list: Intervention[], msg: string) => {
-    if (list.length) setInterventions((cur) => addInterventions(cur, list));
+  const onApply = useCallback((change: Change, msg: string) => {
+    setInterventions((cur) => addInterventions(change.remove ? cur.filter((x) => !change.remove!(x)) : cur, change.add));
     say(msg);
   }, [say]);
   const onRemove = useCallback((i: number) => { setInterventions((c) => c.filter((_, j) => j !== i)); say('Intervention removed.'); }, [say]);
   const onClear = useCallback(() => { setInterventions([]); say('All interventions cleared.'); }, [say]);
-  const [pick, setPick] = useState<{ kind: PickKind; dir: boolean }>({ kind: null, dir: false });
-  const pickHandlers = useRef<PickHandlers | null>(null);
-  const registerPick = useCallback((h: PickHandlers | null) => { pickHandlers.current = h; }, []);
-  const onPickMode = useCallback((kind: PickKind, dir: boolean) => setPick({ kind, dir }), []);
+
+  // --- selection: pick a place first, then act on it
+  const [selection, setSelection] = useState<Selection | null>(null);
+  const selRef = useRef<Selection | null>(null);
+  selRef.current = selection;
+  const opener = useRef<HTMLElement | null>(null);
+  const [raiseSheet, setRaiseSheet] = useState(0);
+  const select = useCallback((s: Selection, from?: HTMLElement | null) => {
+    if (!selRef.current) opener.current = from ?? (document.activeElement as HTMLElement | null);
+    setSelection(s);
+    if (s.via !== 'search') {
+      setPanelTab('scenario');
+      setRaiseSheet((n) => n + 1);
+      if (s.via === 'map') setDrawerOpen(false);
+    }
+  }, []);
+  const clearSelection = useCallback(() => {
+    if (!selRef.current) return;
+    setSelection(null);
+    window.setTimeout(() => {
+      const el = opener.current;
+      const active = document.activeElement;
+      if (active && active !== document.body && !active.closest('.sel-menu')) return;
+      if (el?.isConnected && !el.closest('[inert]')) el.focus();
+      if (document.activeElement === document.body || document.activeElement?.closest('.sel-menu')) drawerBtn.current?.focus();
+    }, 0);
+  }, []);
+  useEffect(() => {
+    const f = (e: KeyboardEvent) => { if (e.key === 'Escape' && !e.defaultPrevented) clearSelection(); };
+    document.addEventListener('keydown', f);
+    return () => document.removeEventListener('keydown', f);
+  }, [clearSelection]);
+  const onHit = useCallback((s: Selection | null) => { if (s) select(s); else clearSelection(); }, [select, clearSelection]);
+  const onSelectIntervention = useCallback((i: number) => {
+    const iv = first.current.interventions[i];
+    if (!iv) return;
+    const pt = iv.type === 'speed_hump' ? interventionPoint(iv, network) : null;
+    const s = selectionForIntervention(network, index, iv, pt, 'list');
+    if (s) select(s, layout === 'medium' ? drawerBtn.current : undefined);
+  }, [network, index, select, layout]);
 
   // --- overlay scale (latched so the legend does not jitter)
   const shownStats = source === 'baseline' && stats?.comparing ? stats.baseline : stats?.scenario;
@@ -201,6 +243,11 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   const multimodal = hasModes(scen);
   const mapVisible = view === 'map';
   const showPanel = view !== 'sources';
+  const placement: Placement | null = !selection ? null : selection.via === 'search' || !mapVisible ? 'inline' : phone ? 'sheet' : 'popover';
+  const menu = selection && placement ? (
+    <SelectionMenu bundle={bundle} index={index} selection={selection} interventions={interventions} placement={placement}
+      onApply={onApply} onRemove={onRemove} onClose={clearSelection} />
+  ) : null;
 
   const shareButton = (
     <button type="button" className="btn" onClick={() => { navigator.clipboard?.writeText(location.href).then(() => say('Link to this scenario copied.'), () => say('Copy failed. The address bar already holds the link.')); }}>Copy link to this scenario</button>
@@ -208,7 +255,8 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   const scenarioPanel = (
     <>
       <InterventionPanel bundle={bundle} index={index} showService={showService} onShowService={setShowService} showOutside={showOutside} onShowOutside={setShowOutside} interventions={interventions}
-        onAdd={onAdd} onRemove={onRemove} onClear={onClear} onPickMode={onPickMode} registerPick={registerPick} shareSlot={shareButton} />
+        onRemove={onRemove} onClear={onClear} onChoose={select} onSelectIntervention={onSelectIntervention}
+        menuTop={placement === 'sheet' ? menu : null} menuInline={placement === 'inline' ? menu : null} shareSlot={shareButton} />
       <div className="scn-notices" role="status" aria-live="polite">
         {notice.invalid && (
           <p className="notice" key="invalid">
@@ -230,7 +278,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
         )}
       </div>
       {interventions.length === 0 && <div className="share">{shareButton}</div>}
-      <p className="toast" role="status">{toast}</p>
+      <p className="toast" aria-hidden="true">{toast}</p>
     </>
   );
   const resultsPanel = (
@@ -240,6 +288,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   return (
     <div className={`app layout-${layout}`} data-view={view}>
       <a className="skip" href="#main">Skip to main content</a>
+      <p className="sr-only" role="status" aria-live="polite">{toast}</p>
       <header className="top">
         <div className="brand">
           <h1>Traffic <span className="area">{bundle.entry.name}</span></h1>
@@ -280,14 +329,15 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
           {(bundle.synthetic || engine?.kind === 'mock' || (simError && engine) || showCal) && (
             <div className="banners">
               {showCal && (
-                <p className="notice calm cal-line" role="note">
-                  <span className="cal-text">
-                    <strong>Preview, not yet calibrated.</strong>{' '}
-                    {bundle.entry.calibration?.note ?? 'Treat results as illustrations, not forecasts.'}
-                  </span>
-                  <button type="button" className="link" onClick={() => { setSourceRef('calibration'); setView('sources'); }}>Details</button>
-                  <button type="button" className="btn small-btn" onClick={() => { setCalDismissed(true); store.set(calKey, '1'); }}>Dismiss</button>
-                </p>
+                <div className={`cal-collapse ${calClosing ? 'closing' : ''}`}>
+                  <p className="notice calm cal-line" role="note">
+                    <span className="cal-text" title={calNote}>
+                      <strong>Preview, not yet calibrated.</strong>{' '}{calNote}
+                    </span>
+                    <button type="button" className="link" onClick={() => { setSourceRef('calibration'); setView('sources'); }}>Details</button>
+                    <button type="button" className="btn small-btn" onClick={dismissCal}>Dismiss</button>
+                  </p>
+                </div>
               )}
               {bundle.synthetic && <p className="notice" role="note">Showing a synthetic fixture area because the study-area data files were not found.</p>}
               {engine?.kind === 'mock' && <p className="notice" role="note">Using the built-in mock simulation ({engine.reason}). Vehicle behavior and metrics are illustrative only.</p>}
@@ -307,8 +357,8 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
             <Suspense fallback={<p className="boot" role="status">Loading map…</p>}>
             <MapView
               bundle={bundle} index={index} mode={mode} overlay={overlay} overlayMax={overlayMax} linkStats={linkStats}
-              client={client} interventions={interventions} pick={mapVisible ? pick.kind : null} pickDirectional={pick.dir}
-              onPickLink={(id) => pickHandlers.current?.link(id)} onPickNode={(id) => pickHandlers.current?.node(id)}
+              client={client} interventions={interventions} selection={mapVisible ? selection : null} onHit={onHit}
+              popover={placement === 'popover' ? menu : null}
               visible={mapVisible} reducedMotion={reduced}
               modes={multimodal ? modes : { ...modes, bus: false, bicycle: false, pedestrian: false }} showBikeNet={bikeNet && multimodal}
             />
@@ -339,7 +389,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
           </aside>
         )}
         {showPanel && phone && (
-          <Sheet key="sheet" label="Scenario and results"
+          <Sheet key="sheet" label="Scenario and results" raise={raiseSheet}
             tabs={
               <div className="tabs" role="tablist" aria-label="Panel sections">
                 {(['scenario', 'results'] as const).map((t) => (

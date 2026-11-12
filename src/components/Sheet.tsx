@@ -12,7 +12,7 @@ function loadSnap(): Snap {
 interface Drag { id: number; y0: number; h0: number; active: boolean; samples: { t: number; h: number }[] }
 
 /** Phone bottom sheet with three snap positions, dragged from the handle, the header or (below full) the content. */
-export function Sheet({ label, tabs, children }: { label: string; tabs: ReactNode; children: ReactNode }) {
+export function Sheet({ label, tabs, children, raise = 0 }: { label: string; tabs: ReactNode; children: ReactNode; /** Bump to lift a collapsed sheet to half height. */ raise?: number }) {
   const [snap, setSnapState] = useState<Snap>(loadSnap);
   const [dragH, setDragH] = useState<number | null>(null);
   const [vh, setVh] = useState(() => window.innerHeight);
@@ -33,6 +33,7 @@ export function Sheet({ label, tabs, children }: { label: string; tabs: ReactNod
     return () => window.removeEventListener('resize', on);
   }, []);
   useEffect(() => { if (bodyRef.current) bodyRef.current.inert = snap === 0; }, [snap]);
+  useEffect(() => { if (raise > 0) setSnapState((s) => (s === 0 ? 1 : s)); }, [raise]);
   // The map area keeps clear of the sheet at peek and half; at full the sheet covers it anyway.
   useEffect(() => {
     const r = document.documentElement;
