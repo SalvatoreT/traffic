@@ -57,3 +57,16 @@ interface Node {
 - Motorway-class links, and nodes touched only by motorway links, are never `inStudyArea`. The study area is derived from an ordered `boundary` list of streets in the area config; Rockridge is bounded by Telegraph Ave, Alcatraz Ave, College Ave, Claremont Ave and the northern carriageway of SR-24. Links on a boundary street count as inside.
 - Config `selectLinks: number[]` (sim `Config`) enables select-link recording; empty by default.
 - Config `signalAdaptMin: number` (minutes between signal adaptations, default 5, 0 keeps the start-up plan) and `motorwayGridlockRemoval: boolean` (default false) are additive.
+
+### D6 Simulate a wider area than the study area
+Decided with the user on 2026-11-12. Round three sent 56% of freeway-bound trips down
+Telegraph from north of Alcatraz against 8% observed. Trips enter at gates fixed by
+assumption, so the choice a driver makes farther out (Shattuck to the 51st/52nd ramps,
+Ashby to Tunnel Road, or through the neighborhood to the Claremont ramps) was baked into
+demand. The simulated network now reaches Ashby Ave in the north, Sacramento St in the
+west, 51st/52nd St with the SR-24 ramps there in the south, and Tunnel Road to SR-13 and
+SR-24 in the east. The study area (outline, cut-through and safety metrics) is unchanged.
+Gates move out to larger roads, more of which have counts, and displaced traffic can use
+another ramp. A regional assignment feeding a small window was considered and deferred:
+it generalizes better but is more than this needs now. Tuning resumes after the wider
+network is in place.
