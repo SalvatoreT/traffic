@@ -1361,3 +1361,55 @@ const GOLDEN_CROSS: &str = r#"{"arterialMeanSpeed":8.313011509983335,"backlog":0
 
 mod modes;
 mod diverter;
+
+/// Removing any intervention restores the baseline effective state and signal output, including after a reset that carried the old list.
+#[test]
+fn removing_each_intervention_restores_baseline() {
+    let (net, x) = cross4(Control::TwoWayStop, RoadClass::Residential, true);
+    let (net_sig, _) = cross4(Control::Signal, RoadClass::Residential, true);
+    let d = || demand(&[(x.w, x.e, 400.0), (x.s, x.n, 200.0), (x.e, x.w, 300.0)]);
+    let c = x.c;
+    let cases: Vec<(&str, bool, String)> = vec![
+        ("signal", false, format!("[{{\"type\":\"control\",\"node\":{c},\"control\":\"signal\"}}]")),
+        ("circle", false, format!("[{{\"type\":\"traffic_circle\",\"node\":{c}}}]")),
+        ("cycle", true, format!("[{{\"type\":\"signal_timing\",\"node\":{c},\"cycle\":150}}]")),
+        ("limit", false, format!("[{{\"type\":\"speed_limit\",\"link\":{},\"speed\":5.0}}]", x.w_in)),
+        ("hump", false, format!("[{{\"type\":\"speed_hump\",\"link\":{},\"position\":100}}]", x.w_in)),
+        ("oneway", false, format!("[{{\"type\":\"one_way\",\"link\":{}}}]", x.w_in)),
+        ("turnban", false, format!("[{{\"type\":\"turn_ban\",\"fromLink\":{},\"toLink\":{}}}]", x.w_in, x.n_out)),
+        ("filter", false, format!("[{{\"type\":\"modal_filter\",\"link\":{}}}]", x.s_in)),
+        ("diverter", false, format!("[{{\"type\":\"diagonal_diverter\",\"node\":{c},\"bearing\":45}}]")),
+    ];
+    for (name, signalized, json) in cases {
+        for via_reset in [false, true] {
+            let base_net = if signalized { net_sig.clone() } else { net.clone() };
+            let mut base = Simulation::from_parts(base_net.clone(), d(), cfg(3, 1.0)).unwrap();
+            let mut sim = Simulation::from_parts(base_net, d(), cfg(3, 1.0)).unwrap();
+            sim.set_interventions(&json).unwrap();
+            step_n(&mut sim, 60.0);
+            if via_reset {
+                sim.reset();
+            }
+            sim.set_interventions("[]").unwrap();
+            step_n(&mut sim, 30.0);
+            step_n(&mut base, 0.0);
+            let (e, b) = (sim.test_eff(), base.test_eff());
+            assert_eq!(e.ctrl, b.ctrl, "{name} ctrl");
+            assert_eq!(e.closed, b.closed, "{name} closed");
+            assert_eq!(e.limit, b.limit, "{name} limit");
+            assert_eq!(e.humps, b.humps, "{name} humps");
+            assert_eq!(e.node_filter, b.node_filter, "{name} node_filter");
+            assert_eq!(e.mv_ok, b.mv_ok, "{name} mv_ok");
+            assert_eq!(e.mv_banned, b.mv_banned, "{name} mv_banned");
+            assert_eq!(e.oneway_closed, b.oneway_closed, "{name} oneway_closed");
+            assert_eq!(e.cycle_override, b.cycle_override, "{name} cycle_override");
+            assert_eq!(e.sig.iter().map(|s| s.is_some()).collect::<Vec<_>>(), b.sig.iter().map(|s| s.is_some()).collect::<Vec<_>>(), "{name} sig");
+            if !signalized {
+                assert!(sim.signals().iter().all(|&s| s == 0), "{name}: stale signal state {:?}", sim.signals());
+            } else {
+                let cyc = |s: &Simulation| s.test_eff().sig[x.c as usize].as_ref().unwrap().cycle;
+                assert_eq!(cyc(&sim), cyc(&base), "{name} cycle");
+            }
+        }
+    }
+}

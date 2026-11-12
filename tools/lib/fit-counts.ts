@@ -38,7 +38,7 @@ export interface FitOptions {
   volumeWeightedMedian: boolean;
   /** Stop also when no flow factor changes by more than this between iterations (the fit is at its bounds or in conflict). */
   stationary: number;
-  /** With soft terms (guard, share constraints) the fit also needs every flow's step below this before it stops on tolerance. */
+  /** With soft terms (guard, share constraints) the fit also needs the volume-weighted mean relative step of the flows below this before it stops on tolerance. */
   softStep: number;
   /** Stop as stalled when the worst log error of the unblocked stations improved by less than `stallGain` (absolute) over `stallWindow` iterations. */
   stallWindow: number; stallGain: number;
@@ -49,7 +49,7 @@ export interface FitOptions {
   /** Tolerance on a share constraint, in share points (modeled share minus target), for the report only. */
   shareTol: number;
 }
-export const DEFAULT_FIT: FitOptions = { lo: 0.1, hi: 3, maxIter: 400, tol: 0.01, damping: 1, uncounted: 'medianOfType', volumeWeightedMedian: true, stationary: 1e-4, softStep: 2e-3, stallWindow: 25, stallGain: 0.002, blockedShare: 0.8, band: 0, shareTol: 0.02 };
+export const DEFAULT_FIT: FitOptions = { lo: 0.1, hi: 3, maxIter: 400, tol: 0.01, damping: 1, uncounted: 'medianOfType', volumeWeightedMedian: true, stationary: 1e-4, softStep: 1e-3, stallWindow: 25, stallGain: 0.002, blockedShare: 0.8, band: 0, shareTol: 0.02 };
 
 /** Capacity guard as soft upper limits inside the fit: links with a finite `limit` whose volume exceeds it pull their flows down with `weight` (counts have weight 1 by default, so counts win a conflict). */
 export interface Guard { limit: ArrayLike<number>; weight: number }
@@ -197,8 +197,18 @@ export function fitToCounts(a: Assignment, v0: ArrayLike<number>, types: FlowTyp
   { for (let k = 0; k < n; k++) byFlowT.push([]); for (let i = 0; i < kk.length; i++) byFlowT[kk[i]].push(i); }
   const triplesT: number[][] = Array.from({ length: nC }, () => []);
   for (let i = 0; i < kk.length; i++) triplesT[cc[i]].push(i);
+  /** Flows on a link the guard currently pulls down (volume above its limit). */
+  const guardPushed = () => {
+    const out = new Uint8Array(n);
+    if (!guard) return out;
+    V.fill(0);
+    for (let k = 0; k < n; k++) for (let i = a.start[k]; i < a.start[k + 1]; i++) V[a.link[i]] += f[k] * a.share[i];
+    for (let k = 0; k < n; k++) for (let i = a.start[k]; i < a.start[k + 1]; i++) if (V[a.link[i]] > guard.limit[a.link[i]]) { out[k] = 1; break; }
+    return out;
+  };
   const markTension = () => {
     tension.fill(0);
+    const pushed = guardPushed();
     const openS = [...Array(nC).keys()].filter((c) => !isRatio[c] && cons[c].target > 0 && A[c] > 1e-9 && Math.abs(logErr(c)) > opt.tol);
     for (const c of openS) {
       const e = logErr(c), shared = new Map<number, number>();
@@ -208,6 +218,7 @@ export function fitToCounts(a: Assignment, v0: ArrayLike<number>, types: FlowTyp
         shared.set(c2, (shared.get(c2) ?? 0) + f[kk[i]] * Math.min(pp[i], pp[j]));
       }
       for (const v of shared.values()) if (v >= 0.5 * A[c]) { tension[c] = 1; break; }
+      if (e > 0 && guard) { let g = 0; for (const i of triplesT[c]) if (pushed[kk[i]]) g += f[kk[i]] * pp[i]; if (g >= 0.5 * A[c]) tension[c] = 1; }
     }
   };
   const blocked = (c: number) => { if (tension[c]) return true; const e = logErr(c); return (e > opt.tol && pinHi[c] >= opt.blockedShare * A[c]) || (e < -opt.tol && pinLo[c] >= opt.blockedShare * A[c]); };
@@ -246,14 +257,16 @@ export function fitToCounts(a: Assignment, v0: ArrayLike<number>, types: FlowTyp
       }
     }
     if (maxErrFree < opt.tol && !hasSoft) { stoppedBy = 'tolerance'; break; }
-    let change = 0;
+    let change = 0, drift = 0, vol = 0;
     for (let k = 0; k < n; k++) if (den[k] > 0) {
       const nfk = Math.min(Math.max(f[k] * Math.exp((opt.damping * num[k]) / den[k]), lo(k)), hi(k));
       change = Math.max(change, Math.abs(Math.log(nfk / Math.max(f[k], 1e-12))));
+      drift += Math.abs(nfk - f[k]); vol += f[k];
       f[k] = nfk;
     }
+    drift /= Math.max(vol, 1e-9);
     if (it % 10 === 0) stepTrace.push(change);
-    if (maxErrFree < opt.tol && change < opt.softStep) { stoppedBy = 'tolerance'; it++; break; }
+    if (maxErrFree < opt.tol && drift < opt.softStep) { stoppedBy = 'tolerance'; it++; break; }
     if (change < opt.stationary) { stationary = true; stoppedBy = 'stationary'; it++; break; }
     if (hist.length > opt.stallWindow && maxErrFree >= opt.tol && hist[hist.length - 1 - opt.stallWindow] - maxErrFree < opt.stallGain && change < 0.01) { stalled = true; stoppedBy = 'stalled'; it++; break; }
   }
@@ -265,6 +278,7 @@ export function fitToCounts(a: Assignment, v0: ArrayLike<number>, types: FlowTyp
   // Stations still outside tolerance and the stations that pull the same flows the other way.
   const conflicts: Conflict[] = [];
   const open = [...Array(nC).keys()].filter((c) => !isRatio[c] && cons[c].target > 0 && A[c] > 1e-9 && Math.abs(logErr(c)) > opt.tol);
+  const pushedEnd = guardPushed();
   if (open.length) {
     const byFlow = new Map<number, number[]>();
     for (let i = 0; i < kk.length; i++) (byFlow.get(kk[i]) ?? byFlow.set(kk[i], []).get(kk[i])!).push(i);
@@ -281,9 +295,11 @@ export function fitToCounts(a: Assignment, v0: ArrayLike<number>, types: FlowTyp
         shared.set(c2, (shared.get(c2) ?? 0) + f[kk[i]] * Math.min(pp[i], pp[j]));
       }
       const pinned = e > 0 ? pinHi[c] / A[c] : pinLo[c] / A[c];
+      let gv = 0;
+      if (e > 0 && guard) for (const i of triplesOf.get(c) ?? []) if (pushedEnd[kk[i]]) gv += f[kk[i]] * pp[i];
       conflicts.push({
         id: cons[c].id, label: cons[c].label, target: cons[c].target, assigned: A[c], logErr: e, pinned, bound: pinned >= opt.blockedShare ? (e > 0 ? 'hi' : 'lo') : 'none',
-        opposing: [...shared].sort((x, y) => y[1] - x[1]).slice(0, 3).map(([c2, v]) => ({ id: cons[c2].id, label: cons[c2].label, logErr: logErr(c2), sharedVeh: v })),
+        opposing: [...shared.entries(), ...(gv > 0 ? [[-1, gv] as [number, number]] : [])].sort((x, y) => y[1] - x[1]).slice(0, 3).map(([c2, v]) => (c2 < 0 ? { id: 'capacity guard', label: 'uncounted links over their limit', logErr: NaN, sharedVeh: v } : { id: cons[c2].id, label: cons[c2].label, logErr: logErr(c2), sharedVeh: v })),
       });
     }
     conflicts.sort((x, y) => Math.abs(y.logErr) - Math.abs(x.logErr));

@@ -710,6 +710,10 @@ impl Simulation {
             v.registered = false;
             v.stop_t = 0.0;
         }
+        // Links that lost their signal must not keep the old phase state.
+        self.sig_state.iter_mut().for_each(|x| *x = 0);
+        self.sig_since.iter_mut().for_each(|x| *x = 0.0);
+        self.sneak.iter_mut().for_each(|x| *x = 0);
         self.update_signals();
     }
 
