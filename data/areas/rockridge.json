@@ -92,7 +92,7 @@
   "periodWindows": { "am_peak": [7, 9], "midday": [11, 13], "pm_peak": [16, 18] },
   "calibration": {
     "status": "uncalibrated",
-    "note": "Midday and the AM peak run smoothly, the PM peak sometimes strands a car or two, and drivers now keep their route unless a much faster one opens.",
+    "note": "Midday and the morning peak run steadily, but the evening peak still strands a few cars and Hillegass Ave and Colby St carry fewer than residents report.",
     "defaultPeriod": "midday",
     "experimentalPeriods": ["pm_peak"]
   }

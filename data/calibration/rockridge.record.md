@@ -114,6 +114,86 @@ Vehicles on the network are within 5% in every seed (+4, +5, 0 midday; -3, -3, -
 
 Time to build one simulation of the Rockridge network: 1.3 to 1.6 s native (release), 1.7 s (midday) and 1.9 s (PM peak) in the browser, against 0.3 to 0.4 s without initial loading. Placement takes about half and the settle interval the other half, so neither was shortened.
 
+## Eleventh round: ten seeds, standard acceptance tests, hold-out, damped loop, implied volumes (task 14)
+
+Decisions of 2026-11-12 (design D16 to D18; source `docs/simulator-audit.md` C1 to C5, C8, I3, R1). All runs: 60 minutes at scale 1.0 unless stated, seeds 1 to 10, current tree. **The runs include the initial loading from the other agent's change (traffic already on the streets, then a short settle) as it stood in the tree on 2026-11-12 (default on; `--no-initial-load` gives the empty start of earlier rounds).** The binary was copied before the runs so every number below comes from one build. Earlier rounds used three seeds and an empty start, so their numbers are not comparable one to one. Reports in `reports/` are the ten-seed summary and seed 1 in full per period; `rockridge.assessment.md` holds every share, station and corridor table.
+
+### What was added
+
+`calibrate --seeds 1-10 --jobs 4` (mean, standard deviation, min, max, 95% interval of the mean for every headline metric; stability verdict by the new rule with the old rule beside it); stability rule D16; GEH, size bands, hold-out selection, seed statistics, successive averages and per-link spread in `tools/lib/acceptance.ts`; `tools/assess.ts` (assessment, station scoring on the simulator's flows, noise file); hold-out stations and implied volumes in the demand fit; `tools/route-consistency.ts`; the cost loop rebuilt. Tests: `tools/acceptance.test.ts` (GEH worked values from [TfL-TMG4] appendix II, bands at their limits, hold-out coverage, seed statistics, successive averages), Rust tests for the seed list and the statistics.
+
+### Stability under the new rule (D16), ten seeds
+
+| Period | Verdict | Removals per hour, mean (min to max) | Backlog under 2% | Backlog growth, second half | Arterial speed m/s | Old rule (zero removals in every seed) |
+| --- | --- | --- | --- | --- | --- | --- |
+| AM peak | holds | 0.40 (0 to 1) | 10 of 10 | none above 2 points | 9.00 | 6 of 10 seeds |
+| Midday | holds | 0.00 | 10 of 10 | none | 9.95 | 10 of 10 |
+| PM peak | fails | 3.40 (0 to 8) | 5 of 10 (mean 1.88%) | seed 3 | 7.92 | 1 of 10 |
+| PM peak, 120 minutes | fails | 4.15 (1.5 to 15.5) | 3 of 10 (mean 2.31%) | seed 1 | 7.70 | 0 of 10 |
+| PM peak, no initial load (sensitivity) | fails | 1.70 (0 to 7) | 9 of 10 | seed 7 | 8.15 | 3 of 10 (7 of 10 pass backlog and speed) |
+
+The new rule does what it was meant to: the AM peak, which the old rule called a failure in 4 of 10 seeds for one vehicle, holds, and the PM peak fails on the mean and on runaway growth, not on a single removal. The initial loading roughly doubles PM removals (1.7 to 3.4 per hour in the same demand), so the other agent's change matters for this verdict. Judged window: the whole 60 minutes (removals, backlog), flow tables after the first 10 minutes; no cool-down.
+
+### Route shares (modeled seed mean with 95% interval, observed in brackets; PM observed values)
+
+PM headline: Hillegass Ave NB from the freeway 65.1 (61.7 to 68.6) (47), Colby St NB from 39 (36 to 42) (47), Hillegass Ave SB to 65 (63 to 68) (68), Colby St SB to 30 (28 to 32) (45). Mean absolute error 10.9 points; two of four within 10 points (Hillegass NB +18, Colby SB -15), so D5 fails on the seed mean. AM 71 / 34 / 58 / 27 and midday 70 / 38 / 60 / 31 (observed values are the PM ones). Ramp via-street shares, PM, seed mean (observed): onto the freeway via College Ave 12.6 (16), Hillegass Ave 13.6 (12), Martin St 14.7 (10), Colby St 7.7 (8), Telegraph Ave north of Alcatraz Ave 12.0 (8), Benvenue Ave 4.6 (5); from the freeway via College Ave 8.5 (10), Martin St 16.5 (10), Colby St 8.9 (8), Hillegass Ave 5.9 (5), Benvenue Ave 3.0 (3). All within 7 points, ten of eleven within 5. The intervals are narrow (about 1 point) for the ramp shares and wide (3 to 4 points) for the select-link shares, so seed ranges of about 10 points in earlier rounds are consistent with this noise.
+
+### Count stations, GEH and size bands ([WebTAG-M3.1], [TfL-TMG4])
+
+Static assignment against the counts, shipped fit (all counts), PM: 48 of 50 stations GEH below 5 (96%), bands 50 of 50. AM 88%, midday 98%.
+Held-out stations (16 of 50, 9 corridors), out-of-sample, from the fit without them: PM GEH below 5 at 5 of 16 (31%), bands at 3 of 16, mean GEH 13.3 against 0.8 for the fitted ones; AM 19%, midday 19%. The held-out stations fit much worse than the fitted ones. The causes are visible in the table: flows that touch no count fall to the median factor of their type, which sits near the lower bound, so unconstrained ramps, gates and Caltrans stations come out 30 to 65% low (52nd St off-ramp 0.34, Ashby Ave gate entering 0.35, Tunnel Rd 0.30). Leaving a quarter of the counts out of the shipped fit would have lowered the PM demand by 19%, so the demand that ships uses all counts.
+The simulator's own flows (31 link-based stations, mean over seeds; 6 gate stations have no link), PM: GEH below 5 at 15 of 31 fitted (48%), 6 of 13 held-out (46%); bands 45% and 54%. These held-out stations were in the shipped fit, so this row is not out of sample. On the demand of the cross-validation fit (held-out stations excluded; `rockridge.assessment-validation.md`, ten seeds): fitted 17 of 31 (55%), held-out 1 of 13 (8%), mean GEH 5.5 against 14.6. AM: fitted 61%, held-out 46%; midday 68% and 69%. No period meets the 85% rule on the simulator's flows. The largest PM misses are the 52nd St off-ramp (604 against 1,278), Tunnel Rd outward (649 against 1,337), Market St/55th St north leg (321 against 816) and the Claremont/Clifton off-ramp (1,463 against 972); the simulator does not reproduce the fitted split between parallel ramps and arterials (drivers choose by cost; the ninth round found the same at the 52nd St ramp). Corridor ratios, PM (simulated over counted flow, 95% interval): Alcatraz Ave 0.92 (0.91 to 0.94), Claremont Ave 0.90, freeway ramps 1.02, Market St/55th St 0.68, San Pablo Ave 1.02, Tunnel Rd 0.63.
+
+### Volumes implied by the ramp counts and the shares (DERIVED), PM
+
+Arithmetic in `rockridge.fit.md`. Both readings of the ramp share's denominator (all ramp trips; trips from the north side, 87 to 89% of the ramp's offered trips) were computed: Hillegass Ave SB 139 to 156 veh/h (882 on-ramp veh/h x 12% / 68%), Colby St SB 140 to 157 (882 x 8% / 45%), Colby St NB 143 to 165 (972 off-ramp veh/h x 8% / 47%), Hillegass Ave NB 90 to 103 (972 x 5% / 47%). They are lower bounds if ramps other than Claremont feed the streets. Martin St and Benvenue Ave have a ramp share but no freeway share of their own traffic, so nothing is implied for them. The resident's observation (clearly more than about 100 veh/h on Hillegass Ave and Colby St in the PM peak) agrees with these figures. Modeled before the implied volumes entered the fit and after, in the static assignment (target, offered table, final): Hillegass SB 147, 71, 117; Hillegass NB 97, 68, 63; Colby SB 148, 6, 25; Colby NB 154, 14, 75. In the simulator, median mid-block flow (veh/h, PM): Hillegass Ave 57 N and 130 S, Colby St 32 N and 99 S, against 312 N and 397 S on College Ave. The soft constraint (weight 0.5) cannot reach the target on Colby St because almost no offered trip routes over it: the assignment keeps them on the arterials.
+
+### Why Hillegass Ave is used so little against College Ave (route consistency)
+
+`tools/route-consistency.ts`, PM seeds 1 to 3, flow-weighted delay per vehicle (time lost against the speed limit, stop and hump included) against what the router adds:
+
+| Link group | Routing constant (s) | Simulated delay (s) |
+| --- | --- | --- |
+| local street, ends at a two-way stop (minor approach) | 5 | 19.6 |
+| local street, ends at an all-way stop | 6 | 8.9 |
+| local street, one hump, no control | 3 | 9.0 (4.2 without a hump) |
+| arterial or collector, ends at a signal | 10 | 14.6 |
+
+Travel time between Alcatraz Ave and Claremont Ave (free-flow, routing cost, simulated, s): Hillegass Ave NB 434 m, 39, 71, 82; Hillegass Ave SB 39, 71, 68; College Ave NB 205 m, 23, 33, 35; College Ave SB 23, 33, 45; Colby St NB 680 m, 61, 102, 101. College Ave is shorter between the same cross streets (205 m against 434 m), and the router and the simulator agree on the ratio (routing 71 / 33 = 2.2, simulated 82 / 35 = 2.3 northbound). So routing penalties do not make Hillegass Ave less attractive than the simulator makes it; the inconsistency runs the other way: at two-way stops on local streets the router assumes 5 s and the simulator imposes about 20 s, and at signals 10 s against 15 s. Raising the router constants to match would send even fewer drivers to the local streets, which is opposite to the residents' observation, and the delay depends on the conflicting flow, so a single constant would be a tuning knob and not a consistency fix. Nothing was changed. The simulator has no parking maneuvers, no bus stops (the bus kind was withdrawn) and no side friction on College Ave beyond the signals and crossing pedestrians, so College Ave is probably faster in the model than in life; that is untested. The local-street cost factor (1.25, ASSUMPTION) was swept in the PM peak, seeds 1 to 3, with the demand unchanged:
+
+| Local factor | Hillegass N / S (veh/h) | Colby N / S | Headline shares | Removals per hour |
+| --- | --- | --- | --- | --- |
+| 1.25 (shipped) | 53 / 136 | 34 / 99 | 64 / 40 / 64 / 30 | 5.7 |
+| 1.0 | 77 / 155 | 52 / 226 | 58 / 24 / 57 / 23 | 4.7 |
+| 0.8 | 98 / 170 | 109 / 409 | 51 / 25 / 46 / 24 | 2.7 |
+
+Against the implied volumes (97 / 147 and 154 / 148) the volume error is 41% at 1.25, 36% at 1.0 and 56% at 0.8 (Colby St SB overshoots), while the headline share error grows from 10.6 to 16.8 points at 1.0. No factor fits volumes and shares together; the demand fit also assumes 1.25 in its assignment, so a different factor would need a refit. The factor stays at 1.25 (ASSUMPTION). The resident's expectation that many drivers use Hillegass Ave as a bypass is not reproduced: 1.5% (1.3 to 1.8) of northbound and 3.3% (2.9 to 3.6) of southbound corridor trips use it for three or more blocks, and cut-through between the surface gates and the freeway is 2.7% and 2.6% of local vehicle-miles. What would raise it is demand that has those paths in the offered table (the origin-destination pairs of Berkeley trips), which the data do not give.
+
+### Damped cost loop (D18)
+
+`npm run cost-loop`: costs averaged by successive averages (weight 1/n) over seeds 1 to 10 (PM) and 1 to 3 (others), stop on a relative gap under 0.10. PM, ten seeds each (iteration 0 is the shipped demand with free-flow and BPR costs):
+
+| Iteration | PM stable | Removals per hour | Seeds under 2% | Headline shares | Share error (points) | GEH below 5, fitted / held-out | Cost gap | Links within 1% |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 0 | no | 3.40 | 5 | 65 / 39 / 65 / 30 | 10.9 | 48% / 46% | - | - |
+| 1 | no | 2.50 | 4 | 64 / 42 / 82 / 58 | 12.2 | 65% / 38% | 0.270 | 76% |
+| 2 | no | 3.20 | 10 | 67 / 39 / 74 / 53 | 10.4 | 55% / 46% | 0.150 | 80% |
+| 3 | no | 5.70 | 2 | 65 / 46 / 76 / 56 | 9.5 | 65% / 31% | 0.082 | 83% |
+
+The cost vector converged (relative gap 0.27, 0.15, 0.08; 76% to 83% of links within 1%), and the share error stayed between 9.5 and 12.2 points with no swing of the size seen in the ninth round (12.6, 9.9, 15.1), so the averaging damps the oscillation. Iteration 3 is 1.4 points better than iteration 0 on shares, which is under the noise of the share (intervals of 3 to 4 points) and comes with more removals. The loop does not make the PM peak stable: removals stay at 2.5 to 5.7 per hour and iteration 3 has the most. The keep rule (share error at least 0.5 points better, PM stable under D16, GEH shares within 5 points of iteration 0) is met by no iteration, so the demand without measured delays stays and the delays file was removed. A first version of the loop stopped at iteration 1 because it treated "not stable" as a reason to stop even when iteration 0 was not stable; it was fixed and resumed from the stored iterations (`--resume 1`).
+
+### Calibration entry and verdict
+
+Status `uncalibrated`: stability holds in AM and midday and fails in the PM peak; the PM headline shares fail (2 of 4 within 10 points); the simulator's fitted stations meet neither the GEH nor the band rule in any period. `experimentalPeriods` is the PM peak, `defaultPeriod` midday. The public note says that the evening peak still strands a few cars and that Hillegass Ave and Colby St carry fewer cars than residents report. The noise file `public/data/rockridge.noise.json` (36 KB, integers in 0.5 veh/h) is listed as `noise` in `areas.json`.
+
+### What remains
+
+- PM stability (mean removals 3.4 per hour, 5 of 10 seeds under 2% backlog). Part of it comes from the initial loading (1.7 per hour without it); where the removals sit was not traced this round.
+- The simulator does not reproduce the fitted counts on the arterials and ramps (GEH below 5 at 48% of fitted stations in the PM peak, 8% to 46% of held-out ones): the split between parallel routes and the Market St/55th St and Tunnel Rd corridors.
+- Colby St and Hillegass Ave volumes are 25% to 80% under the implied ones; the offered table has no trips that would use them. Needs an origin-destination source for trips from Berkeley to the freeway.
+- Leave-one-corridor-out cross-validation was not run (one fit per corridor).
+- Held-out and fitted figures depend on single-day or ADT-derived counts; the intervals show simulator noise only.
+
 ## Tenth round: drivers commit to a route (task 13)
 
 User report: cars wander through the neighborhood instead of heading for an endpoint, Berkeley traffic cuts through the Trapezoid to SR-24, and College Ave traffic bypasses on Hillegass Ave. Every trip already had an origin and destination. In the code, every 60 s epoch 80% of en-route cars re-planned from the current link and took the result whatever the gain (the share was raised from 30% to 80% in steps I, N and U as a stabilizer for gridlock that later fixes removed). Runs: 60 minutes at scale 1.0, mean of seeds 1 to 3, same code with `--legacy-reroute` for "before" (the new binary with the old route choice), so the comparison is like for like and includes the signal phase fix. Reports in `reports/` are seed 1 of the new state. `public/data/*` is unchanged (no demand change).

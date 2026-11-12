@@ -22,6 +22,7 @@ const gapStop = Number(arg('--gap', '0.10'));
 const jobs = arg('--jobs', '4');
 const costSeeds = arg('--cost-seeds', '1-3');
 const scoreSeeds = arg('--score-seeds', '1-10');
+const resume = process.argv.includes('--resume') ? Number(arg('--resume', '0')) : -1;
 const cfgPath = resolve(root, arg('--config', 'data/demand/rockridge.config.json'));
 const cfg = JSON.parse(readFileSync(cfgPath, 'utf8'));
 const bin = process.env.CALIBRATE_BIN ? resolve(process.env.CALIBRATE_BIN) : resolve(root, 'target/release/calibrate');
@@ -72,19 +73,21 @@ function score(k: number, gap: number | null, unchanged: number | null, pmRuns: 
 }
 
 (async () => {
-  if (existsSync(delaysFile)) rmSync(delaysFile);
-  if (!build()) { console.error('cost-loop: build-demand failed'); process.exit(1); }
+  if (resume < 0) {
+    if (existsSync(delaysFile)) rmSync(delaysFile);
+    if (!build()) { console.error('cost-loop: build-demand failed'); process.exit(1); }
+  }
   let avg: Record<string, Float64Array> | null = null;
   history.push(null);
   let n = 0;
   for (let k = 0; k <= maxIter; k++) {
     const dir = join(work, `iter${k}`);
-    rmSync(dir, { recursive: true, force: true });
-    mkdirSync(dir, { recursive: true });
+    const replay = k <= resume;
+    if (!replay) { rmSync(dir, { recursive: true, force: true }); mkdirSync(dir, { recursive: true }); }
     const cost: Record<string, Float64Array> = {};
     for (const p of periods) {
       const seeds = p === pm ? scoreSeeds : costSeeds;
-      if (!simulate(p, seeds, dir)) { console.error(`cost-loop: calibrate failed for ${p}`); process.exit(1); }
+      if (!replay && !simulate(p, seeds, dir)) { console.error(`cost-loop: calibrate failed for ${p}`); process.exit(1); }
       cost[p] = meanDelay(readSeeds(dir, cfg.area, p, parse(seeds)));
     }
     const pmRuns = readSeeds(dir, cfg.area, pm, parse(scoreSeeds));
@@ -102,8 +105,9 @@ function score(k: number, gap: number | null, unchanged: number | null, pmRuns: 
     console.log(`iteration ${k}: PM stable ${row.stable}, removals ${row.meanRemovals.toFixed(2)}/h, headline error ${row.headErr.toFixed(1)} points (${row.heads}), GEH<5 fitted ${(row.fittedGeh * 100).toFixed(0)}% held ${(row.heldGeh * 100).toFixed(0)}%, cost gap ${gap === null ? '-' : gap.toFixed(3)}, unchanged ${unchanged === null ? '-' : (unchanged * 100).toFixed(0) + '%'}`);
     avg = next;
     if (k >= 1 && gap !== null && gap < gapStop) { console.log(`cost gap ${gap.toFixed(3)} below ${gapStop}: converged`); break; }
-    if (k >= 1 && !row.stable) { console.log('PM peak no longer stable under D16: stopping'); break; }
+    if (k >= 1 && rows[0].stable && !row.stable) { console.log('PM peak no longer stable under D16: stopping'); break; }
     if (k === maxIter) break;
+    if (k < resume) { history.push(Object.fromEntries(periods.map((p) => [p, [...next[p]].map((x) => Math.round(x * 10) / 10)]))); continue; }
     mkdirSync(resolve(delaysFile, '..'), { recursive: true });
     const delayS: Record<string, number[]> = {};
     for (const p of periods) delayS[p] = [...next[p]].map((x) => Math.round(x * 10) / 10);

@@ -108,9 +108,10 @@
 - [x] 14.5 Implied select-link volumes from ramp counts and shares (DERIVED), soft constraints and report; resident observation in the targets file
 - [x] 14.6 `tools/assess.ts` (ten-seed assessment, station GEH on simulator flows, corridor ratios, noise file) and `tools/route-consistency.ts`; `noise` listed in `areas.json` by the importer
 - [x] 14.7 Damped cost loop (`tools/cost-loop.ts`): costs averaged over seeds and iterations, relative gap and share of links unchanged, stopping rule, keep-only-if-better
-- [ ] 14.8 Final ten-seed assessment of all periods, 120-minute PM run, area `calibration` entry, record round (see the record)
+- [x] 14.8 Final ten-seed assessment of all periods, 120-minute PM run, validation-demand run, area `calibration` entry (uncalibrated, PM experimental, midday default), record round; damped loop run to convergence and not kept
 - [ ] 14.9 Leave-one-corridor-out cross-validation (one fit per corridor; not run)
-- [ ] 14.10 Reach D4/D16 in the PM peak and D5 (see the record)
+- [ ] 14.10 Reach D16 in the PM peak (mean 3.4 removals per hour; 1.7 without the initial loading) and D5 (Hillegass Ave NB +18, Colby St SB -15 points); simulator flows meet the GEH rule at 48% of fitted PM stations
+- [ ] 14.11 Hillegass Ave and Colby St volumes: 25% to 80% under the implied ones; needs trips from Berkeley in the offered table
 
 ## 15. Initial loading (D19)
 - [x] 15.1 `prepopulate` and settle at construction and reset (`initialLoad`, `interventions` in the config; `--no-initial-load` in the calibration CLI), `initialAgents` and `initialSkipped` in the metrics, results counted from zero, placed trips left out of the trip-time means

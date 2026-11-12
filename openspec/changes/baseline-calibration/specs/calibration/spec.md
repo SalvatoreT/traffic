@@ -15,11 +15,18 @@ The simulation SHALL be able to record, for nominated links, the origins, destin
 - **THEN** the share of traversing trips that originated at a freeway gate is reported
 
 ### Requirement: Stable baseline
-The published baseline SHALL be judged over the fixed seed list 1 to 10, on each period's 60-minute run at full demand: mean gridlock removals below 1.0 per hour, entry backlog below 2% of spawned trips in at least 9 of 10 seeds, no seed adding more than 2.0 points of spawned trips to the entry backlog in the second half of the run, and the seed mean of the arterial speed above 4 m/s. The thresholds SHALL be read from `acceptance.stability` of the area's targets file, and every report SHALL also show how many seeds pass the first rule (zero removals, backlog under 2%, speed above 4 m/s in every seed).
+The published baseline SHALL be judged over the fixed seed list 1 to 10 on each period's 60-minute run at full demand, with the thresholds read from the area's targets file. It is stable when the mean gridlock removals are below 1.0 per hour, the entry backlog is below 2% of spawned trips in at least 9 of 10 seeds, no seed adds more than 2.0 points of spawned trips to the backlog in the second half, and the seed mean of the arterial speed is above 4 m/s.
 
 #### Scenario: Full-demand runs over ten seeds
 - **WHEN** the baseline runs for 60 simulated minutes at demand scale 1.0 with seeds 1 to 10
 - **THEN** the report states, per check, the result and whether the rule holds, and one removal in one seed does not by itself change the verdict
+
+### Requirement: Old stability rule stays visible
+Every report SHALL show how many seeds pass the old rule (zero removals, backlog under 2%, arterial speed above 4 m/s in every seed).
+
+#### Scenario: Comparison
+- **WHEN** a multi-seed summary is written
+- **THEN** it states the number of seeds that pass the old rule beside the verdict of the new one
 
 ### Requirement: Multi-seed reports
 `calibrate --seeds <list> --jobs <n>` SHALL run the seeds as parallel processes and write a summary report (markdown and JSON) with, for removals, backlog, backlog growth, completed trips, arterial speed, cut-through vehicle-miles, each route share, each ramp share and each corridor flow, the mean, sample standard deviation, minimum, maximum and the 95% interval of the mean, plus the first seed's full report. `--keep-seeds <dir>` SHALL keep every seed's own report with per-link flows and delays.

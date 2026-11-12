@@ -113,3 +113,28 @@ describe('successive averages of costs', () => {
     expect(shareUnchanged([100, 100, 100, 0], [100.5, 103, 100, 0.05], 0.01, 0.1)).toBe(0.75);
   });
 });
+
+import { corridorOf, markHoldout, type Station } from './lib/demand-fit';
+describe('station corridors and hold-out marks', () => {
+  const mk = (id: string, kind: Station['kind'], label: string, t: number): Station => ({ id, kind, label, basis: 'DATA', links: [], target: { pm: t }, weight: 1, tolPct: 10, records: [] });
+  const sts = [
+    mk('g1', 'gate', 'gate 266 Ashby Avenue entering', 1134), mk('g2', 'gate', 'gate 266 Ashby Avenue leaving', 1386),
+    mk('t1', 'tmc', 'AlcatrazAve N leg entering', 1064), mk('t2', 'tmc', 'AlcatrazAve S leg entering', 1093), mk('t3', 'tmc', 'AlcatrazAve W leg leaving', 623),
+    mk('c1', 'caltrans', 'tunnel station, link 3494 inward (4 m from the station)', 1094),
+    mk('r1', 'ramp', 'off-ramp at node 727 (Martin Luther King Junior Way)', 1656), mk('r2', 'ramp', 'on-ramp at node 733 (52nd Street)', 1161), mk('r3', 'ramp', 'on-ramp at node 288 (MLK)', 869), mk('r4', 'ramp', 'on-ramp at node 1 (X)', 500),
+  ];
+  it('derives corridors from the station kind and label', () => {
+    expect(corridorOf(sts[0])).toBe('Ashby Avenue');
+    expect(corridorOf(sts[2])).toBe('AlcatrazAve');
+    expect(corridorOf(sts[5])).toBe('tunnel');
+    expect(corridorOf(sts[6])).toBe('freeway ramps');
+  });
+  it('marks at least one station per corridor and leaves the largest count of a multi-station corridor in the fit', () => {
+    const h = markHoldout(sts, 'pm', { fraction: 0.25 });
+    expect(h.corridors.length).toBe(4);
+    expect(sts.find((s) => s.id === 'c1')!.held).toBe(true); // single-station corridor is covered
+    expect(sts.filter((s) => s.kind === 'ramp').some((s) => s.held)).toBe(true);
+    expect(sts.find((s) => s.id === 'r1')!.held).toBe(false);
+    expect(h.held.length).toBeLessThan(sts.length / 2 + 1);
+  });
+});
