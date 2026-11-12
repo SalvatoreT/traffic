@@ -4,7 +4,7 @@
 //! (both directions) on any one local block, after subtracting the noise band, taken over the periods. Screening runs use one
 //! period, one seed and a shortened run; the finalists are rechecked elsewhere (`report`).
 
-use super::cands::{conflicts, hotspots, generate, Cand, Hotspots};
+use super::cands::{conflicts, hotspots, generate_with, Cand, Hotspots};
 use super::*;
 use std::collections::HashMap;
 use std::time::Instant;
@@ -473,5 +473,5 @@ pub fn pick_finalists(evals: &[Eval], cap: usize) -> Vec<usize> {
 }
 
 pub fn make_cands(study: &Study, base: &Baseline, p: &Params) -> Vec<Cand> {
-    generate(study, &base.hot, p.candidates)
+    generate_with(study, &base.hot, p.candidates, &p.profile)
 }

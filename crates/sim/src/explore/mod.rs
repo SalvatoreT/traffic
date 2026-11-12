@@ -5,6 +5,7 @@
 pub mod cands;
 pub mod link;
 pub mod naming;
+pub mod profile;
 pub mod refs;
 pub mod report;
 pub mod search;
@@ -57,6 +58,8 @@ pub struct Params {
     pub options: usize,
     /// Hand-written packages to evaluate and publish alongside the search results.
     pub references: Vec<refs::RefCfg>,
+    /// Limits on which interventions the search may use; the default has none.
+    pub profile: profile::Profile,
     pub out: Option<PathBuf>,
     pub report: Option<PathBuf>,
 }
@@ -79,6 +82,7 @@ impl Params {
             finalists: 12,
             options: 5,
             references: Vec::new(),
+            profile: profile::Profile::unconstrained(),
             out: None,
             report: None,
         }
@@ -106,6 +110,10 @@ pub struct Study {
     pub harm_blocks: Vec<usize>,
     /// Arterial streets that run through the study area: their flows and speeds are reported for information.
     pub bounding: Vec<Bounding>,
+    /// Per link: a non-local street inside the study area, that is, one of its bounding streets.
+    pub is_boundary: Vec<bool>,
+    /// Per node: an intersection with a bounding street.
+    pub boundary_node: Vec<bool>,
     /// In-study nodes that already lack a way in or out by car in the baseline network.
     pub base_fail: HashSet<u32>,
 }
@@ -144,7 +152,13 @@ impl Study {
             }
         }
         bounding.sort_by(|a, b| b.links.len().cmp(&a.links.len()).then_with(|| a.name.cmp(&b.name)));
-        let mut s = Study { area: area.into(), net, demand, origin, net_hash, demand_hash, calibration, topo, idx, is_local, harm_blocks, bounding, base_fail: HashSet::new() };
+        let is_boundary: Vec<bool> = net.links.iter().map(|l| l.in_study_area && !matches!(l.class, RoadClass::Residential | RoadClass::Service)).collect();
+        let mut boundary_node = vec![false; net.nodes.len()];
+        for l in net.links.iter().filter(|l| is_boundary[l.id as usize]) {
+            boundary_node[l.from as usize] = true;
+            boundary_node[l.to as usize] = true;
+        }
+        let mut s = Study { area: area.into(), net, demand, origin, net_hash, demand_hash, calibration, topo, idx, is_local, harm_blocks, bounding, is_boundary, boundary_node, base_fail: HashSet::new() };
         let eff = Eff::derive(&s.topo, &s.net, &[]);
         s.base_fail = stranded_nodes(&s, &eff).into_iter().collect();
         s

@@ -1,0 +1,16 @@
+[
+  {
+    "id": "charter",
+    "title": "Within the 2025 neighborhood pilot's limits",
+    "note": "Nothing on the four bounding streets or at their intersections, and only temporary measures: no speed humps and no traffic circles. Filters, diverters, turn bans, one-way streets, stop control and speed limits are treated as temporary, which is an assumption. Traffic moved onto the bounding streets is not counted as harm.",
+    "excludeTypes": ["speed_hump", "traffic_circle"],
+    "excludeBoundary": true
+  },
+  {
+    "id": "unconstrained",
+    "title": "Without those limits",
+    "note": "Every tool except new traffic lights, anywhere in the area. Shown for comparison.",
+    "excludeTypes": [],
+    "excludeBoundary": false
+  }
+]

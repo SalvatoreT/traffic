@@ -21,6 +21,29 @@ A proposal SHALL use only interventions the app offers, SHALL NOT add a traffic 
 ### Requirement: Published with provenance
 The proposals file SHALL record the network and demand it was computed on, the periods and seeds used, the date and the baseline's calibration status.
 
+#### Scenario: Group provenance
+- **WHEN** a proposals file holds more than one group
+- **THEN** each group records its own date, periods, seeds, hashes and calibration status
+
 #### Scenario: Baseline changes
 - **WHEN** the published network or demand differs from the one recorded in the proposals file
 - **THEN** the proposals are treated as out of date
+
+### Requirement: Constraint profiles
+The search SHALL accept a named profile from a per-area data file that excludes intervention types and, optionally, every intervention on a bounding street or at an intersection with one. A run SHALL write its results as one group of the proposals file, replacing only the group with the same id and keeping the others. A run without a profile SHALL write the unconstrained group. The harm definition SHALL NOT depend on the profile.
+
+#### Scenario: Limits of the 2025 neighborhood pilot
+- **WHEN** the search runs with the profile that excludes speed humps, traffic circles and the boundary
+- **THEN** no candidate or proposal contains a speed hump or traffic circle, or touches a bounding street or an intersection with one
+
+#### Scenario: Two runs, one file
+- **WHEN** the search runs once with a profile and once without
+- **THEN** the proposals file holds both groups, and rerunning either replaces only its own
+
+#### Scenario: Earlier single-list file
+- **WHEN** a profile run merges into a proposals file in the earlier format with one list
+- **THEN** that list is kept as the unconstrained group
+
+#### Scenario: Traffic moved onto a bounding street
+- **WHEN** a package adds traffic to a bounding street
+- **THEN** that increase is not counted as harm and is shown with the other bounding-street figures

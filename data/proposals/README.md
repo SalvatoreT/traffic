@@ -6,10 +6,23 @@
 cargo run --release -p traffic-sim --bin explore -- --area rockridge \
   --periods pm_peak,am_peak --seeds 1,2,3 --beam 3 --depth 8 --candidates 40 \
   [--screen-minutes 30] [--minutes 60] [--budget-evals N] [--jobs N] [--harm-weight 0.1] \
-  [--expand 16] [--finalists 12] [--options 5] [--out FILE] [--report FILE]
+  [--expand 16] [--finalists 12] [--options 5] [--out FILE] [--report FILE] \
+  [--profile ID] [--profiles FILE]
 ```
 
 The simulator results change whenever the network, the demand or the model changes, so rerun the search after any of them. The output is not meant to be edited by hand.
+
+## Profiles
+
+`data/proposals/<area>.profiles.json` lists constraint profiles: `{ id, title, note, excludeTypes, excludeBoundary }`. `--profile ID` removes the excluded intervention types from the candidates, and with `excludeBoundary` also every candidate on a bounding street or at an intersection with one (the non-residential, non-service links inside the study area, and the nodes they touch). A block that ends at a bounding street counts as at its intersection. Reference packages are skipped for a constrained profile. Without `--profile` the run is the unconstrained group, titled and described by the file's `unconstrained` entry if it has one.
+
+Each run writes only its own group in `public/data/<area>.proposals.json` (version 2, `groups` in the profiles file's order) and its own section in the report, and keeps the other groups. A file in the earlier single-list format counts as the unconstrained group. Run each profile separately:
+
+```
+cargo run --release -p traffic-sim --bin explore -- --area rockridge --periods pm_peak,am_peak --seeds 1,2,3 --profile charter
+```
+
+Do not start an unconstrained run from an older build while another run is writing: whichever finishes last rewrites the file in its own format.
 
 ## What it measures
 

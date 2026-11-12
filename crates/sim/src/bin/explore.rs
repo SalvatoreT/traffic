@@ -4,7 +4,7 @@
 //! cargo run --release -p traffic-sim --bin explore -- --area rockridge --periods pm_peak,am_peak --seeds 1,2,3 --beam 3 --depth 8 --candidates 40
 
 use std::path::{Path, PathBuf};
-use traffic_sim::explore::{refs, report::explore, Params, Study};
+use traffic_sim::explore::{profile, refs, report::explore, Params, Study};
 
 fn usage(msg: &str) -> ! {
     if !msg.is_empty() {
@@ -14,7 +14,7 @@ fn usage(msg: &str) -> ! {
         "usage: explore --area ID [--periods pm_peak,am_peak] [--seeds 1,2,3] [--beam 3] [--depth 8] [--candidates 40]\n\
          \x20              [--screen-minutes 30] [--minutes 60] [--budget-evals N] [--jobs N] [--harm-weight 0.1] [--expand 16]\n\
          \x20              [--finalists 12] [--options 5] [--out public/data/ID.proposals.json] [--report data/proposals/ID.md]\n\
-         \x20              [--references data/proposals/ID.references.json]"
+         \x20              [--references data/proposals/ID.references.json] [--profile ID] [--profiles data/proposals/AREA.profiles.json]"
     );
     std::process::exit(if msg.is_empty() { 0 } else { 2 });
 }
@@ -23,6 +23,7 @@ fn main() {
     let argv: Vec<String> = std::env::args().skip(1).collect();
     let mut p = Params::new("rockridge");
     let (mut out, mut report, mut references): (Option<PathBuf>, Option<PathBuf>, Option<PathBuf>) = (None, None, None);
+    let (mut profile_id, mut profiles_path): (Option<String>, Option<PathBuf>) = (None, None);
     let mut i = 0;
     while i < argv.len() {
         let k = argv[i].as_str();
@@ -50,6 +51,8 @@ fn main() {
             "--out" => out = Some(PathBuf::from(v)),
             "--report" => report = Some(PathBuf::from(v)),
             "--references" => references = Some(PathBuf::from(v)),
+            "--profile" => profile_id = Some(v.clone()),
+            "--profiles" => profiles_path = Some(PathBuf::from(v)),
             _ => usage(&format!("unknown argument {k}")),
         }
         i += 1;
@@ -66,8 +69,19 @@ fn main() {
     }
     let out = out.unwrap_or_else(|| root.join(format!("public/data/{}.proposals.json", p.area)));
     let report = report.unwrap_or_else(|| root.join(format!("data/proposals/{}.md", p.area)));
+    let profiles_file = profiles_path.clone().unwrap_or_else(|| root.join(format!("data/proposals/{}.profiles.json", p.area)));
+    let profiles = if profiles_file.exists() || profiles_path.is_some() {
+        profile::load(&profiles_file).unwrap_or_else(|e| usage(&e))
+    } else if profile_id.is_some() {
+        usage(&format!("no profiles file at {}", profiles_file.display()))
+    } else {
+        Vec::new()
+    };
+    p.profile = profile::choose(&profiles, profile_id.as_deref()).unwrap_or_else(|e| usage(&e));
+    let order = profile::order(&profiles);
+    let unconstrained = profile::choose(&profiles, None).unwrap_or_else(|e| usage(&e));
     let ref_path = references.clone().unwrap_or_else(|| root.join(format!("data/proposals/{}.references.json", p.area)));
-    if ref_path.exists() || references.is_some() {
+    if !p.profile.is_constrained() && (ref_path.exists() || references.is_some()) {
         p.references = refs::load(&ref_path).unwrap_or_else(|e| usage(&e));
         for r in &p.references {
             refs::resolve(&study, r).unwrap_or_else(|e| usage(&e));
@@ -81,7 +95,11 @@ fn main() {
             std::fs::create_dir_all(d).expect("create output directory");
         }
     }
-    std::fs::write(&out, serde_json::to_string_pretty(&o.json).unwrap() + "\n").expect("write proposals");
-    std::fs::write(&report, &o.markdown).expect("write report");
-    eprintln!("wrote {} and {}", out.display(), report.display());
+    let existing = std::fs::read_to_string(&out).ok().and_then(|t| serde_json::from_str::<serde_json::Value>(&t).ok());
+    let merged = profile::merge_file(existing.as_ref(), &p.area, o.json.clone(), &order, &unconstrained);
+    std::fs::write(&out, serde_json::to_string_pretty(&merged).unwrap() + "\n").expect("write proposals");
+    let section = profile::report_section(&o.markdown, &p.profile);
+    let old_report = std::fs::read_to_string(&report).ok();
+    std::fs::write(&report, profile::merge_report(old_report.as_deref(), &p.area, &section, &p.profile.id, &order, &unconstrained)).expect("write report");
+    eprintln!("wrote group {} to {} and {}", p.profile.id, out.display(), report.display());
 }

@@ -482,3 +482,96 @@ fn rockridge_reference_package_resolves_with_staggered_diverters() {
         assert!(label.contains("62nd Street (west)") || label.contains("62nd Street (southwest)"), "{label}");
     }
 }
+
+fn grid_with_boundary() -> Study {
+    let mut b = B::default();
+    let mut ids = Vec::new();
+    for j in 0..4 {
+        for i in 0..4 {
+            let edge = i == 0 || j == 0 || i == 3 || j == 3;
+            ids.push(b.node(i as f64 * 120.0, j as f64 * 120.0, if edge { Control::Uncontrolled } else { Control::TwoWayStop }, edge && i != 0 && j != 0));
+        }
+    }
+    for j in 0..4 {
+        for i in 0..4 {
+            let n = ids[j * 4 + i];
+            if i + 1 < 4 {
+                let (name, class) = if j == 0 { ("Main Street".to_string(), RoadClass::Secondary) } else { (format!("H{j}"), RoadClass::Residential) };
+                b.two_way(n, ids[j * 4 + i + 1], &name, class, 11.2, true);
+            }
+            if j + 1 < 4 {
+                b.two_way(n, ids[(j + 1) * 4 + i], &format!("V{i}"), RoadClass::Residential, 11.2, true);
+            }
+        }
+    }
+    study_of(Network { version: 1, id: "t".into(), name: "t".into(), nodes: b.nodes, links: b.links, turn_bans: Vec::new() })
+}
+
+#[test]
+fn a_constrained_profile_drops_types_and_boundary_places() {
+    use traffic_sim::explore::cands::generate_with;
+    use traffic_sim::explore::profile::Profile;
+    let study = grid_with_boundary();
+    let boundary: Vec<usize> = (0..study.net.nodes.len()).filter(|&n| study.boundary_node[n]).collect();
+    assert_eq!(boundary.len(), 4, "the four nodes of the secondary street");
+    let main = study.net.links.iter().position(|l| l.name == "Main Street").unwrap();
+    let mv = [((main as u32), study.net.links.iter().position(|l| l.name == "V1").unwrap() as u32)];
+    let mut mv_ct = std::collections::BTreeMap::new();
+    for k in mv {
+        mv_ct.insert(k, 10.0);
+    }
+    let hot = Hotspots { block_ct: vec![10.0; study.idx.blocks.len()], node_ct: vec![10.0; study.net.nodes.len()], mv_ct };
+    let open = generate_with(&study, &hot, 200, &Profile::unconstrained());
+    assert!(open.iter().any(|c| c.kind == "speed_hump") && open.iter().any(|c| c.kind == "traffic_circle"));
+    assert!(open.iter().any(|c| c.nodes.iter().any(|&n| study.boundary_node[n as usize])), "the unconstrained set reaches the boundary");
+    let charter = Profile { id: "charter".into(), title: "c".into(), note: String::new(), exclude_types: vec!["speed_hump".into(), "traffic_circle".into()], exclude_boundary: true };
+    let cands = generate_with(&study, &hot, 200, &charter);
+    assert!(!cands.is_empty());
+    for c in &cands {
+        assert!(c.iv.ty != "speed_hump" && c.iv.ty != "traffic_circle", "{}", c.label);
+        assert!(c.nodes.iter().all(|&n| !study.boundary_node[n as usize]), "{}", c.label);
+        for l in [c.iv.link, c.iv.from_link, c.iv.to_link].into_iter().flatten() {
+            assert!(!study.is_boundary[l as usize], "{}", c.label);
+        }
+        if let Some(n) = c.iv.node {
+            assert!(!study.boundary_node[n as usize], "{}", c.label);
+        }
+    }
+    assert!(!cands.iter().any(|c| c.kind == "turn_ban"), "the only turn ban offered comes off the bounding street");
+}
+
+#[test]
+fn harm_is_measured_on_inside_streets_only() {
+    let study = grid_with_boundary();
+    for &b in &study.harm_blocks {
+        assert!(study.idx.blocks[b].links.iter().all(|&l| !study.is_boundary[l as usize]));
+    }
+}
+
+#[test]
+fn profile_results_merge_into_one_file_and_one_report() {
+    use serde_json::json;
+    use traffic_sim::explore::profile::*;
+    let un = Profile::unconstrained();
+    let ord = vec!["charter".to_string(), UNCONSTRAINED.to_string()];
+    let old = json!({"version": 1, "area": "t", "computed": {"date": "d"}, "baseline": {}, "proposals": [{"id": "p1"}]});
+    let charter = json!({"id": "charter", "title": "c", "note": "", "computed": {}, "baseline": {}, "proposals": [{"id": "p1"}, {"id": "p2"}]});
+    let m = merge_file(Some(&old), "t", charter.clone(), &ord, &un);
+    assert_eq!(m["version"], 2);
+    let ids: Vec<&str> = m["groups"].as_array().unwrap().iter().map(|g| g["id"].as_str().unwrap()).collect();
+    assert_eq!(ids, ["charter", "unconstrained"]);
+    assert_eq!(m["groups"][1]["proposals"][0]["id"], "p1");
+    let again = json!({"id": "charter", "title": "c", "note": "", "computed": {}, "baseline": {}, "proposals": []});
+    let m2 = merge_file(Some(&m), "t", again, &ord, &un);
+    assert_eq!(m2["groups"].as_array().unwrap().len(), 2);
+    assert_eq!(m2["groups"][0]["proposals"].as_array().unwrap().len(), 0);
+    assert_eq!(m2["groups"][1]["proposals"][0]["id"], "p1");
+
+    let old_md = "# Proposals report: t\n\nGenerated.\n\n## Baseline\n\nx\n";
+    let ch = Profile { id: "charter".into(), title: "C".into(), ..Profile::unconstrained() };
+    let md = merge_report(Some(old_md), "t", &report_section("# Proposals report: t\n\nGen.\n\n## Baseline\n\ny\n", &ch), "charter", &ord, &un);
+    assert!(md.find("(charter)").unwrap() < md.find("(unconstrained)").unwrap());
+    assert!(md.contains("### Baseline\n\nx") && md.contains("### Baseline\n\ny"));
+    let md2 = merge_report(Some(&md), "t", &report_section("# T\n\nGen2.\n\n## Baseline\n\nz\n", &ch), "charter", &ord, &un);
+    assert!(md2.contains("Gen2.") && !md2.contains("\ny\n") && md2.contains("### Baseline\n\nx"));
+}

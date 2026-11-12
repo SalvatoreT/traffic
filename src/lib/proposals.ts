@@ -17,12 +17,19 @@ export interface Proposal {
   };
   byPeriod: Record<string, { cutThroughChangePct: number; worstIncreaseVehPerHour: number }>;
 }
-export interface Proposals {
-  version: 1; area: string;
+/** One ranked list: the packages found under one set of limits. */
+export interface ProposalGroup {
+  id: string; title: string; note: string;
   computed: { date: string; periods: string[]; seeds: number[]; networkHash: string; demandHash: string; calibration: string };
   baseline: { cutThroughVehMi: Record<string, number> };
   proposals: Proposal[];
 }
+export interface Proposals { version: 2; area: string; groups: ProposalGroup[] }
+
+export const UNCONSTRAINED_GROUP = {
+  id: 'unconstrained', title: 'Without limits',
+  note: 'Every tool except new traffic lights, anywhere in the area. Shown for comparison.',
+};
 
 export type ProposalsState =
   | { status: 'idle' | 'loading' }
@@ -32,12 +39,20 @@ export type ProposalsState =
 export const proposalsUrl = (entry: Pick<AreaEntry, 'id' | 'proposals'>): string =>
   entry.proposals ? (entry.proposals.startsWith('/') || entry.proposals.startsWith('http') ? entry.proposals : `/data/${entry.proposals}`) : `/data/${entry.id}.proposals.json`;
 
-/** A missing file, an SPA fallback page or a file of another version all mean "none computed yet". */
+/**
+ * A missing file, an SPA fallback page or a file of another version all mean "none computed yet".
+ * A version 1 file (one list, no groups) is read as the single unconstrained group.
+ */
 export function parseProposals(text: string): Proposals | null {
   try {
-    const f = JSON.parse(text) as Proposals;
-    if (f?.version !== 1 || !Array.isArray(f.proposals) || !f.computed) return null;
-    return f;
+    const f = JSON.parse(text) as { version?: number; area?: string; groups?: ProposalGroup[]; computed?: ProposalGroup['computed']; baseline?: ProposalGroup['baseline']; proposals?: Proposal[] };
+    if (f?.version === 1 && Array.isArray(f.proposals) && f.computed) {
+      return { version: 2, area: f.area ?? '', groups: [{ ...UNCONSTRAINED_GROUP, computed: f.computed, baseline: f.baseline ?? { cutThroughVehMi: {} }, proposals: f.proposals }] };
+    }
+    if (f?.version !== 2 || !Array.isArray(f.groups)) return null;
+    const groups = f.groups.filter((g) => g && typeof g.id === 'string' && Array.isArray(g.proposals) && g.computed)
+      .map((g) => ({ ...g, title: g.title || g.id, note: g.note ?? '' }));
+    return { version: 2, area: f.area ?? '', groups };
   } catch { return null; }
 }
 
@@ -72,7 +87,7 @@ export function hashMatches(recorded: string, actual: string): boolean {
 }
 
 /** Which inputs differ from what the file was computed on. An unknown actual hash is not treated as a difference. */
-export function staleInputs(computed: Pick<Proposals['computed'], 'networkHash' | 'demandHash'>, loaded: LoadedHashes): ('network' | 'demand')[] {
+export function staleInputs(computed: Pick<ProposalGroup['computed'], 'networkHash' | 'demandHash'>, loaded: LoadedHashes): ('network' | 'demand')[] {
   const out: ('network' | 'demand')[] = [];
   if (loaded.network !== null && !hashMatches(computed.networkHash, loaded.network)) out.push('network');
   if (loaded.demand !== null && !hashMatches(computed.demandHash, loaded.demand)) out.push('demand');
@@ -80,7 +95,7 @@ export function staleInputs(computed: Pick<Proposals['computed'], 'networkHash' 
 }
 
 export interface Notices { exploratory: boolean; stale: boolean; staleText: string }
-export function proposalNotices(computed: Proposals['computed'], loaded: LoadedHashes): Notices {
+export function proposalNotices(computed: ProposalGroup['computed'], loaded: LoadedHashes): Notices {
   const s = staleInputs(computed, loaded);
   const what = s.length === 2 ? 'street network and demand have' : s[0] === 'network' ? 'street network has' : 'demand has';
   return {
@@ -131,7 +146,7 @@ export function harmHeadline(h: Proposal['harm']): { figure: string; label: stri
   };
 }
 
-export function formatComputed(c: Proposals['computed'], periodLabel: (id: string) => string): string {
+export function formatComputed(c: ProposalGroup['computed'], periodLabel: (id: string) => string): string {
   const d = new Date(c.date);
   const when = Number.isNaN(d.getTime()) ? c.date : d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
   const periods = c.periods.map(periodLabel);
@@ -163,7 +178,9 @@ export function openReducer(s: OpenState, a: OpenAction): OpenState {
 export const linkHash = (link: string) => (link.startsWith('#') ? link : `#${link}`);
 
 /** Search options keep file order (fewest interventions to greatest reduction); reference entries are listed apart. */
-export function splitProposals(file: Proposals): { search: Proposal[]; reference: Proposal[] } {
+export function splitProposals(file: Pick<ProposalGroup, 'proposals'>): { search: Proposal[]; reference: Proposal[] } {
   const reference = file.proposals.filter((p) => p.kind === 'reference');
   return { search: file.proposals.filter((p) => p.kind !== 'reference'), reference };
 }
+
+export const allProposals = (file: Proposals): Proposal[] => file.groups.flatMap((g) => g.proposals);

@@ -3,6 +3,7 @@
 //! A package never adds a traffic signal: the only control change generated is an all-way stop.
 
 use super::naming::describe;
+use super::profile::Profile;
 use super::{Study, MPS_TO_MPH};
 use crate::diverter::{banned_movements, node_legs};
 use crate::model::{Control, Intervention, RoadClass};
@@ -85,6 +86,11 @@ pub fn mph_to_mps(mph: f64) -> f64 {
 }
 
 pub fn generate(study: &Study, hot: &Hotspots, n_loc: usize) -> Vec<Cand> {
+    generate_with(study, hot, n_loc, &Profile::unconstrained())
+}
+
+/// Candidates under a profile. Boundary locations are dropped before the top `n_loc` are taken, so a constrained search still gets `n_loc` locations.
+pub fn generate_with(study: &Study, hot: &Hotspots, n_loc: usize, profile: &Profile) -> Vec<Cand> {
     let (net, idx, topo) = (&study.net, &study.idx, &study.topo);
     let mut locs: Vec<(Loc, f64)> = Vec::new();
     for &b in &study.harm_blocks {
@@ -102,6 +108,12 @@ pub fn generate(study: &Study, hot: &Hotspots, n_loc: usize) -> Vec<Cand> {
         Loc::Block(b) => (0, *b as u32),
         Loc::Node(n) => (1, *n),
     };
+    if profile.exclude_boundary {
+        locs.retain(|(l, _)| match *l {
+            Loc::Block(b) => idx.blocks[b].links.iter().all(|&k| !study.is_boundary[k as usize]) && !study.boundary_node[idx.blocks[b].a as usize] && !study.boundary_node[idx.blocks[b].b as usize],
+            Loc::Node(n) => !study.boundary_node[n as usize],
+        });
+    }
     locs.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal).then_with(|| rank(&a.0).cmp(&rank(&b.0))));
     locs.truncate(n_loc);
 
@@ -217,10 +229,14 @@ pub fn generate(study: &Study, hot: &Hotspots, n_loc: usize) -> Vec<Cand> {
         let places = vec![idx.link_name[b as usize].clone()];
         let iv = Intervention { ty: "turn_ban".into(), from_link: Some(a), to_link: Some(b), ..Default::default() };
         let label = describe(net, topo, idx, &iv);
+        if profile.exclude_boundary && study.boundary_node[node as usize] {
+            continue;
+        }
         if keys.insert(format!("tb:{a}-{b}")) {
             out.push(Cand { iv, kind: "turn_ban", label, key: format!("tb:{a}-{b}"), block: None, nodes: vec![node], places, loc_score: v });
         }
     }
+    out.retain(|c| !profile.exclude_types.iter().any(|t| *t == c.iv.ty));
     out
 }
 

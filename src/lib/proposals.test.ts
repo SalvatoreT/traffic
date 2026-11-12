@@ -4,11 +4,12 @@ import { buildMockProposals } from '../fixtures/proposals';
 import { decodeScenario } from './hash';
 import {
   cutThroughHeadline, hashMatches, hashText, harmHeadline, linkHash, needsConfirm, openReducer, parseProposals,
-  proposalNotices, signedPct, splitProposals, staleInputs,
+  allProposals, proposalNotices, signedPct, splitProposals, staleInputs,
 } from './proposals';
 
 const net = buildFixture().network;
 const file = buildMockProposals(net, { networkHash: 'a'.repeat(64), demandHash: 'b'.repeat(64), calibration: 'uncalibrated' });
+const [charter, unc] = file.groups;
 
 describe('staleness', () => {
   it('matches full and truncated digests, case-insensitively', async () => {
@@ -30,11 +31,11 @@ describe('staleness', () => {
 describe('notices', () => {
   const hashes = { network: 'a'.repeat(64), demand: 'b'.repeat(64) };
   it('exploratory unless calibrated', () => {
-    expect(proposalNotices({ ...file.computed, calibration: 'uncalibrated' }, hashes).exploratory).toBe(true);
-    expect(proposalNotices({ ...file.computed, calibration: 'calibrated' }, hashes)).toMatchObject({ exploratory: false, stale: false });
+    expect(proposalNotices({ ...unc.computed, calibration: 'uncalibrated' }, hashes).exploratory).toBe(true);
+    expect(proposalNotices({ ...unc.computed, calibration: 'calibrated' }, hashes)).toMatchObject({ exploratory: false, stale: false });
   });
   it('stale says which input changed', () => {
-    const n = proposalNotices(file.computed, { network: 'c'.repeat(64), demand: hashes.demand });
+    const n = proposalNotices(unc.computed, { network: 'c'.repeat(64), demand: hashes.demand });
     expect(n.stale).toBe(true);
     expect(n.staleText).toMatch(/street network has changed/);
   });
@@ -61,32 +62,58 @@ describe('headline figures', () => {
 
 describe('sections', () => {
   it('lists search options in file order, reference entries apart', () => {
-    const { search, reference } = splitProposals(file);
+    const { search, reference } = splitProposals(unc);
     expect(search.map((p) => p.id)).toEqual(['one-filter', 'two-filters-hump', 'filters-limit', 'filters-diverter', 'widest']);
     expect(reference.map((p) => p.id)).toEqual(['earlier-62nd-diverters']);
     expect(reference[0].interventions).toHaveLength(2);
   });
   it('treats an absent kind as search', () => {
-    const f = { ...file, proposals: [{ ...file.proposals[0], kind: undefined }] };
+    const f = { proposals: [{ ...unc.proposals[0], kind: undefined }] };
     expect(splitProposals(f).search).toHaveLength(1);
   });
   it('rejects files that are not proposals', () => {
     expect(parseProposals('<html>')).toBeNull();
-    expect(parseProposals(JSON.stringify(file))?.proposals).toHaveLength(6);
+    expect(parseProposals('{"version":3}')).toBeNull();
+  });
+});
+
+describe('groups', () => {
+  it('keeps the file order, charter first', () => {
+    const f = parseProposals(JSON.stringify(file))!;
+    expect(f.groups.map((g) => g.id)).toEqual(['charter', 'unconstrained']);
+    expect(f.groups.map((g) => g.proposals.length)).toEqual([2, 6]);
+    expect(allProposals(f)).toHaveLength(8);
+  });
+  it('charter holds no hump or circle', () => {
+    for (const p of charter.proposals) for (const iv of p.interventions) expect(['speed_hump', 'traffic_circle']).not.toContain(iv.type);
+  });
+  it('reads a version 1 file as the unconstrained group', () => {
+    const v1 = { version: 1, area: 'x', computed: unc.computed, baseline: unc.baseline, proposals: unc.proposals };
+    const f = parseProposals(JSON.stringify(v1))!;
+    expect(f.groups).toHaveLength(1);
+    expect(f.groups[0]).toMatchObject({ id: 'unconstrained' });
+    expect(f.groups[0].title).not.toBe('');
+    expect(f.groups[0].proposals).toHaveLength(6);
+  });
+  it('tolerates an empty group and drops malformed ones', () => {
+    const f = parseProposals(JSON.stringify({ version: 2, area: 'x', groups: [{ ...charter, proposals: [] }, { id: 'bad' }, { ...unc, title: '' }] }))!;
+    expect(f.groups.map((g) => g.id)).toEqual(['charter', 'unconstrained']);
+    expect(f.groups[0].proposals).toHaveLength(0);
+    expect(f.groups[1].title).toBe('unconstrained');
   });
 });
 
 describe('open on the map', () => {
   it('decodes every fixture link against the network', () => {
-    for (const p of file.proposals) {
+    for (const p of allProposals(file)) {
       const d = decodeScenario(net, linkHash(p.link));
       expect(d.invalid).toBe(false);
       expect(d.interventions.length + d.unplaced.length).toBe(p.interventions.length);
     }
   });
   it('asks only when replacing a different, non-empty scenario', () => {
-    const a = decodeScenario(net, linkHash(file.proposals[0].link)).interventions;
-    const b = decodeScenario(net, linkHash(file.proposals[2].link)).interventions;
+    const a = decodeScenario(net, linkHash(unc.proposals[0].link)).interventions;
+    const b = decodeScenario(net, linkHash(unc.proposals[2].link)).interventions;
     expect(needsConfirm([], a)).toBe(false);
     expect(needsConfirm(a, a)).toBe(false);
     expect(needsConfirm(a, b)).toBe(true);

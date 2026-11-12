@@ -1,6 +1,6 @@
 //! Recheck of the finalists, choice of the options to publish (design D4, D5), their titles and summaries, and the output files.
 
-use super::cands::{generate, Cand};
+use super::cands::{generate_with, Cand};
 use super::naming::describe;
 use super::refs::{resolve, RefCfg};
 use super::search::*;
@@ -357,7 +357,7 @@ pub fn explore(study: &Study, p: &Params) -> Outcome {
     eprintln!("baseline: {} period(s) x {} seed(s) at {} min, plus {} screening run(s) at {} min", p.periods.len(), p.seeds.len(), p.minutes, p.seeds.len(), p.screen_minutes);
     let base = run_baseline(study, p);
     eprintln!("baseline done in {:.0}s; cut-through {}", t0.elapsed().as_secs_f64(), p.periods.iter().zip(&base.full).map(|(n, s)| format!("{n} {:.1} veh-mi", s.ct_mi)).collect::<Vec<_>>().join(", "));
-    let cands = generate(study, &base.hot, p.candidates);
+    let cands = generate_with(study, &base.hot, p.candidates, &p.profile);
     eprintln!("{} candidate interventions:", cands.len());
     for (i, c) in cands.iter().enumerate() {
         eprintln!("  {:3} [{}] {}", i + 1, c.kind, c.label);
@@ -442,8 +442,9 @@ pub fn build_json(study: &Study, p: &Params, cands: &[Cand], base: &Baseline, fi
         proposals.push(entry(r.id.clone(), r.title.clone(), f, "reference", Some(&r.note)));
     }
     json!({
-        "version": 1,
-        "area": study.area,
+        "id": p.profile.id,
+        "title": p.profile.title,
+        "note": p.profile.note,
         "computed": {
             "date": util::today_utc(),
             "periods": p.periods,

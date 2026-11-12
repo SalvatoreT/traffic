@@ -7,7 +7,7 @@ import { buildMockProposals } from '../fixtures/proposals';
 import {
   cutThroughHeadline, fetchProposals, formatComputed, harmHeadline, hashLoaded, linkHash, needsConfirm, openReducer,
   proposalNotices, proposalsUrl, signedNum, signedPct, splitProposals,
-  type LoadedHashes, type Proposal, type ProposalsState,
+  type LoadedHashes, type Proposal, type ProposalGroup, type ProposalsState,
 } from '../lib/proposals';
 
 const mockParam = new URLSearchParams(location.search).get('mockProposals');
@@ -53,25 +53,24 @@ export function Proposals({ bundle, index, today, state, loaded, current, onOpen
   const [open, dispatch] = useReducer(openReducer, { step: 'idle' });
 
   const ready = state.status === 'ready' ? state.file : null;
-  const notices = ready ? proposalNotices(ready.computed, loaded) : null;
-  const parts = ready ? splitProposals(ready) : null;
+  const gid = (g: ProposalGroup, p: Proposal) => `${g.id}-${p.id}`;
 
-  const request = (p: Proposal) => {
+  const request = (g: ProposalGroup, p: Proposal) => {
     const next = decodeScenario(bundle.network, linkHash(p.link)).interventions;
-    if (needsConfirm(current, next)) dispatch({ type: 'ask', id: p.id });
+    if (needsConfirm(current, next)) dispatch({ type: 'ask', id: gid(g, p) });
     else { dispatch({ type: 'done' }); onOpen(p); }
   };
   // Decoding and checking is a few milliseconds per proposal, so it is done once per file.
   const routeCounts = useMemo(() => {
     const m = new Map<string, number>();
-    if (ready) for (const p of ready.proposals) {
-      try { m.set(p.id, checkThroughRoutes(bundle.network, index, decodeScenario(bundle.network, linkHash(p.link)).interventions).total); } catch { /* left out */ }
+    if (ready) for (const g of ready.groups) for (const p of g.proposals) {
+      try { m.set(`${g.id}-${p.id}`, checkThroughRoutes(bundle.network, index, decodeScenario(bundle.network, linkHash(p.link)).interventions).total); } catch { /* left out */ }
     }
     return m;
   }, [ready, bundle.network, index]);
-  const card = (p: Proposal, n: number | null) => (
-    <Card key={p.id} p={p} n={n} routes={routeCounts.get(p.id) ?? null} today={today} periodLabel={periodLabel} confirming={open.step === 'confirm' && open.id === p.id}
-      onRequest={() => request(p)} onCancel={() => dispatch({ type: 'cancel' })} onConfirm={() => { dispatch({ type: 'done' }); onOpen(p); }} />
+  const card = (g: ProposalGroup, p: Proposal, n: number | null) => (
+    <Card key={p.id} p={p} hid={`prop-${gid(g, p)}`} n={n} routes={routeCounts.get(gid(g, p)) ?? null} today={today} periodLabel={periodLabel} confirming={open.step === 'confirm' && open.id === gid(g, p)}
+      onRequest={() => request(g, p)} onCancel={() => dispatch({ type: 'cancel' })} onConfirm={() => { dispatch({ type: 'done' }); onOpen(p); }} />
   );
 
   return (
@@ -90,42 +89,47 @@ export function Proposals({ bundle, index, today, state, loaded, current, onOpen
           <p className="muted">Until then, you can try interventions yourself on the Map.</p>
         </div>
       )}
-      {ready && notices && (
-        <div className="prop-status">
-          <p className="muted">{formatComputed(ready.computed, periodLabel)}</p>
-          {notices.exploratory && (
-            <p className="notice" role="note">
-              <strong>Exploratory.</strong> The baseline these were computed on is not calibrated against observed traffic yet, so read the figures as relative comparisons, not forecasts.
-            </p>
-          )}
-          {notices.stale && <p className="notice err" role="note"><strong>Out of date.</strong> {notices.staleText}</p>}
-        </div>
-      )}
-      {parts && (
-        <>
-          {parts.search.length > 0 && (
-            <ol className="prop-list" aria-label="Options, from fewest changes to greatest reduction">
-              {parts.search.map((p, i) => card(p, i + 1))}
-            </ol>
-          )}
-          {parts.reference.length > 0 && (
-            <section aria-labelledby="prop-ref-h" className="prop-ref">
-              <h3 id="prop-ref-h" className="sec-h">For comparison</h3>
-              {parts.search.length === 0 && <p className="muted">The search has not been run yet.</p>}
-              <ol className="prop-list">{parts.reference.map((p) => card(p, null))}</ol>
-            </section>
-          )}
-          {parts.search.length === 0 && parts.reference.length === 0 && (
-            <p className="muted" role="status">This file holds no options.</p>
-          )}
-        </>
-      )}
+      {ready && ready.groups.length === 0 && <p className="muted" role="status">This file holds no options.</p>}
+      {ready && ready.groups.map((g) => {
+        const notices = proposalNotices(g.computed, loaded);
+        const parts = splitProposals(g);
+        const hid = `prop-g-${g.id}`;
+        return (
+          <section key={g.id} aria-labelledby={`${hid}-h`} className="prop-group">
+            <h3 id={`${hid}-h`} className="prop-group-h">{g.title}</h3>
+            {g.note && <p className="prop-group-note">{g.note}</p>}
+            <div className="prop-status">
+              <p className="muted">{formatComputed(g.computed, periodLabel)}</p>
+              {notices.exploratory && (
+                <p className="notice" role="note">
+                  <strong>Exploratory.</strong> The baseline these were computed on is not calibrated against observed traffic yet, so read the figures as relative comparisons, not forecasts.
+                </p>
+              )}
+              {notices.stale && <p className="notice err" role="note"><strong>Out of date.</strong> {notices.staleText}</p>}
+            </div>
+            {parts.search.length > 0 && (
+              <ol className="prop-list" aria-label={`${g.title}: options, from fewest changes to greatest reduction`}>
+                {parts.search.map((p, i) => card(g, p, i + 1))}
+              </ol>
+            )}
+            {parts.reference.length > 0 && (
+              <section aria-labelledby={`${hid}-ref`} className="prop-ref">
+                <h4 id={`${hid}-ref`} className="sec-h">For comparison</h4>
+                <ol className="prop-list">{parts.reference.map((p) => card(g, p, null))}</ol>
+              </section>
+            )}
+            {parts.search.length === 0 && parts.reference.length === 0 && (
+              <p className="muted" role="status">No options were found under these limits.</p>
+            )}
+          </section>
+        );
+      })}
     </div>
   );
 }
 
-function Card({ p, n, routes, today, periodLabel, confirming, onRequest, onCancel, onConfirm }: {
-  p: Proposal; n: number | null; routes: number | null; today: number; periodLabel(id: string): string; confirming: boolean;
+function Card({ p, hid, n, routes, today, periodLabel, confirming, onRequest, onCancel, onConfirm }: {
+  p: Proposal; hid: string; n: number | null; routes: number | null; today: number; periodLabel(id: string): string; confirming: boolean;
   onRequest(): void; onCancel(): void; onConfirm(): void;
 }) {
   const cut = cutThroughHeadline(p.cutThrough);
@@ -138,13 +142,12 @@ function Card({ p, n, routes, today, periodLabel, confirming, onRequest, onCance
     else if (wasConfirming.current) openBtn.current?.focus();
     wasConfirming.current = confirming;
   }, [confirming]);
-  const hid = `prop-${p.id}`;
   const periods = Object.entries(p.byPeriod);
   const isRef = p.kind === 'reference';
   return (
     <li className="prop-card" aria-labelledby={`${hid}-h`}>
       <div className="prop-head">
-        <h3 id={`${hid}-h`}>{n !== null && <span className="prop-n">{n}. </span>}{p.title}</h3>
+        <h4 id={`${hid}-h`}>{n !== null && <span className="prop-n">{n}. </span>}{p.title}</h4>
         {isRef && <span className="tag">Earlier proposal</span>}
       </div>
       {isRef && p.note && <p className="muted prop-note">{p.note}</p>}
@@ -160,7 +163,7 @@ function Card({ p, n, routes, today, periodLabel, confirming, onRequest, onCance
         </div>
       </div>
       {routes !== null && <p className="prop-routes">Through routes: <strong>{routes}</strong> ({today} today)</p>}
-      <h4 className="sr-only">Changes</h4>
+      <h5 className="sr-only">Changes</h5>
       <ul className="prop-ivs">{p.interventions.map((iv, i) => <li key={i}>{iv.label}</li>)}</ul>
       <details className="prop-more">
         <summary>More detail</summary>
@@ -174,7 +177,7 @@ function Card({ p, n, routes, today, periodLabel, confirming, onRequest, onCance
             ))}
           </tbody>
         </table>
-        <h4>Bounding streets</h4>
+        <h5>Bounding streets</h5>
         <table>
           <caption className="sr-only">Change on the bounding streets, for information</caption>
           <thead><tr><th scope="col">Street</th><th scope="col">Traffic</th><th scope="col">Speed</th></tr></thead>
@@ -184,7 +187,7 @@ function Card({ p, n, routes, today, periodLabel, confirming, onRequest, onCance
             ))}
           </tbody>
         </table>
-        <h4>Inside the area</h4>
+        <h5>Inside the area</h5>
         <dl className="ctx">
           <div><dt>Trip time for trips starting or ending inside</dt><dd>{signedPct(p.context.insideTripTimeChangePct)}</dd></div>
           <div><dt>Walking conflicts</dt><dd>{signedPct(p.context.pedConflictsChangePct)}</dd></div>
