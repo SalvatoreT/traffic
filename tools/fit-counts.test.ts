@@ -85,7 +85,9 @@ describe('count fitting', () => {
 
   it('stops at the per-flow bounds and reports how many flows hit them', () => {
     const hi = fitToCounts(a, v0, types, [{ id: 'big', kind: 'tmc', label: 'C>E', links: [2], target: 2000 }], 6, { ...DEFAULT_FIT, hi: 3 });
-    expect(hi.maxLogErr).toBeGreaterThan(1); // 2000 asked, 600 reachable
+    expect(hi.maxLogErrAll).toBeGreaterThan(1); // 2000 asked, 600 reachable
+    expect(hi.conflicts[0]).toMatchObject({ id: 'big', bound: 'hi' });
+    expect(hi.maxLogErr).toBe(0); // blocked on its bound: nothing left to iterate
     expect(hi.atHi).toBe(2);
     expect(hi.g[0]).toBeCloseTo(3, 9);
     const lo = fitToCounts(a, v0, types, [{ id: 'small', kind: 'tmc', label: 'C>E', links: [2], target: 5 }], 6, { ...DEFAULT_FIT, lo: 0.1 });
