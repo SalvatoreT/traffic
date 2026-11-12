@@ -307,8 +307,8 @@ input[type='checkbox'] { width: 18px; height: 18px; accent-color: var(--accent);
 /* Collapsible bars: toggle on the left, hover/focus peek overlays the map */
 .bar-slot { position: relative; z-index: 9; min-height: var(--bar-row-h, 49px); flex: none; }
 .toolbar { position: absolute; left: 0; right: 0; top: 0; z-index: 9; background: var(--surface); border-bottom: 1px solid var(--border); }
-.toolbar.open:not(.pinned) { box-shadow: var(--shadow); }
-.toolbar.pinned { position: relative; }
+.toolbar.open { box-shadow: var(--shadow); }
+.toolbar.pinned { position: absolute; } /* the slot reserves only the collapsed row, so expanding overlays the map without resizing it */
 .toolbar-row { display: flex; align-items: center; gap: .4rem .6rem; padding: .3rem .6rem; min-height: 48px; min-width: 0; }
 .toolbar-row .clock { margin-left: auto; flex: none; font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
 .toolbar-row { position: relative; }
@@ -328,9 +328,6 @@ input[type='checkbox'] { width: 18px; height: 18px; accent-color: var(--accent);
 .ramp-col { flex: 0 1 240px; width: 240px; min-width: 60px; }
 .ramp-end { flex: none; }
 @media (max-width: 719.98px) {
-  /* The expanded playback bar overlays the map like the peek does; the slot reserves only the collapsed row. */
-  .toolbar.pinned { position: absolute; }
-  .toolbar.open { box-shadow: var(--shadow); }
   .toolbar-row { padding: .25rem .5rem; gap: .3rem .4rem; }
   .toolbar-row .clock { font-size: .8rem; }
   .btn.primary.again { padding-left: .5rem; padding-right: .6rem; }
