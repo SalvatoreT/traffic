@@ -55,7 +55,8 @@
     "service": 150
   },
   "classDefaultFromCounts": {
-    "minStreets": 3,
+    "minStreets": 9999,
+    "_decision": "Switched off on 2026-11-12 (minStreets set out of reach). Counted streets are the busiest of their class, so their median overstates uncounted gates: it raised tertiary from 5,000 to 12,200 ADT and made the baseline less stable (150 vs 88 vehicles removed per PM hour).",
     "_note": "DATA: the default ADT of a gate class is the median ADT of the counted streets of that class in this data set (a TMC leg's peak-hour entering plus leaving volume over K, or a Caltrans station ADT times its factor; one value per street) when at least `minStreets` such streets exist; otherwise the documented value above stays. Counted streets are the busiest of their class, so the median is a high estimate for the uncounted gates."
   },
   "streetCounts": [
