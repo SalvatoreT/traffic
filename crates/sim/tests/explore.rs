@@ -456,3 +456,29 @@ fn references_report_missing_and_ambiguous_places() {
     let v = serde_json::json!({ "type": "diagonal_diverter", "at": ["Oak Street", "Elm Street"], "connect": [["Oak Street", "south"], ["Maple Street", "west"]] });
     assert!(resolve_one(&study, &v).unwrap_err().contains("no Maple Street leg"));
 }
+
+
+#[test]
+fn rockridge_reference_package_resolves_with_staggered_diverters() {
+    use traffic_sim::explore::refs::{load, resolve};
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let Ok(study) = Study::load(&root, "rockridge") else {
+        eprintln!("skipped: generated rockridge data missing");
+        return;
+    };
+    let Ok(refs) = load(&root.join("data/proposals/rockridge.references.json")) else {
+        eprintln!("skipped: reference package missing");
+        return;
+    };
+    let pkg = refs.iter().find(|r| r.id == "earlier-62nd-diverters").expect("package");
+    let ivs = resolve(&study, pkg).unwrap_or_else(|e| panic!("{e}"));
+    assert_eq!(ivs.len(), 2);
+    for iv in &ivs {
+        assert_eq!(iv.ty, "diagonal_diverter");
+        let node = iv.node.unwrap();
+        let ok = traffic_sim::diverter::permitted_movements(&study.topo, &study.net, node, iv.bearing.unwrap()).expect("valid orientation");
+        assert_eq!(ok.len(), 4, "two L pairs, two directed movements each");
+        let label = describe(&study.net, &study.topo, &study.idx, iv);
+        assert!(label.contains("62nd Street (west)") || label.contains("62nd Street (southwest)"), "{label}");
+    }
+}

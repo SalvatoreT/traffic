@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import fs from 'node:fs';
 import { buildFixture } from '../fixtures/area';
 import { buildIndex } from './naming';
 import { bannedMoves, connectedLabel, diverterOptions, nodeLegs, pairingKey } from './diverter';
 import { nodeActions } from './selection';
 import { describeIntervention } from './describe';
+import { legBearing, pointAlong } from './geom';
 import type { Intervention, NetLink, NetNode, Network } from '../types';
 
 interface LegSpec { street: string; at: [number, number]; oneWay?: boolean; via?: [number, number][] }
@@ -80,6 +82,33 @@ describe('diagonal diverter options', () => {
     expect(connectedLabel(net, idx, 0, opts[0].bearing)).toBe(opts[0].label);
   });
 
+  it('uses the importer bearings at a merged staggered junction', () => {
+    // Two T-junctions 30 m apart merged into one node: each 62nd Street link runs 15 m along Hillegass Avenue before turning onto its street.
+    const net = star([
+      { street: 'Hillegass Avenue', at: [0, 200] }, { street: '62nd Street', at: [200, 15], via: [[0, 15]] },
+      { street: 'Hillegass Avenue', at: [0, -200] }, { street: '62nd Street', at: [-200, -15], via: [[0, -15]] },
+    ]);
+    const idx = buildIndex(net);
+    const dirs = [0, 90, 180, 270];
+    const set = (l: NetLink, out: boolean, brg: number) => { if (out) l.fromBearing = l.toBearing = brg; else l.fromBearing = l.toBearing = (brg + 180) % 360; };
+    net.links.forEach((l) => {
+      const leg = net.nodes[l.from].id === 0 ? l.to : l.from;
+      set(l, l.from === 0, dirs[leg - 1]);
+    });
+    const legs = nodeLegs(net, idx, 0);
+    const near = (a: number, b: number) => Math.min(Math.abs(a - b), 360 - Math.abs(a - b)) < 5;
+    for (const want of [0, 90, 180, 270]) expect(legs.some((l) => near(l.bearing, want))).toBe(true);
+    const opts = diverterOptions(net, idx, 0);
+    expect(opts).toHaveLength(2);
+    expect(opts.map((o) => o.label).join(' | ')).toContain('Hillegass Avenue (north) with 62nd Street (west)');
+    for (const o of opts) expect(bannedMoves(net, idx, 0, o.bearing).size).toBeGreaterThan(0);
+    // Without the importer's field the connector skews a side street, and the geometric rule (45 m chord) is only a fallback.
+    const bare = JSON.parse(JSON.stringify(net)) as Network;
+    for (const l of bare.links) { delete l.fromBearing; delete l.toBearing; }
+    const west = bare.links.find((l) => l.from === 0 && l.name === '62nd Street' && l.geometry[l.geometry.length - 1][0] < 0)!;
+    expect(Math.abs(legBearing(west, true) - 270)).toBeGreaterThan(5);
+  });
+
   it('names legs with eight-point directions when two share a quadrant', () => {
     const net = star([
       { street: 'A Street', at: [-10, 100] }, { street: 'B Street', at: [30, 90] },
@@ -141,4 +170,36 @@ describe('selection menu data', () => {
     const d = describeIntervention({ type: 'diagonal_diverter', node: 0, bearing: 45 }, net, idx);
     expect(d).toMatch(/^Diagonal diverter at .+, connecting Hillegass Avenue \(north\) with 62nd Street \(west\)/);
   });
+});
+
+
+const REAL = 'public/data/rockridge.network.json';
+describe.skipIf(!fs.existsSync(REAL))('real network staggered junctions', () => {
+  const net = JSON.parse(fs.readFileSync(REAL, 'utf8')) as Network;
+  const idx = buildIndex(net);
+  for (const through of ['Colby Street', 'Hillegass Avenue']) {
+    it(`${through} & 62nd Street has four legs on their streets and two L pairs per diagonal`, () => {
+      const node = net.nodes.find((n) => idx.nodeStreets[n.id].includes(through) && idx.nodeStreets[n.id].includes('62nd Street'))!;
+      expect(node).toBeDefined();
+      const legs = nodeLegs(net, idx, node.id);
+      expect(legs).toHaveLength(4);
+      for (const leg of legs) {
+        const out = leg.outs.length > 0;
+        const l = net.links[out ? leg.outs[0] : leg.ins[0]];
+        const g = out ? l.geometry : [...l.geometry].reverse();
+        const p = pointAlong(g, 60);
+        const want = ((Math.atan2(p.x - g[0][0], p.y - g[0][1]) * 180) / Math.PI + 360) % 360;
+        const d = Math.abs(leg.bearing - want);
+        expect(Math.min(d, 360 - d)).toBeLessThanOrEqual(25);
+      }
+      const opts = diverterOptions(net, idx, node.id);
+      expect(opts).toHaveLength(2);
+      expect(opts.map((o) => o.label).join(' | ')).toContain(`${through} (south) with 62nd Street (west)`);
+      for (const o of opts) {
+        const moves = bannedMoves(net, idx, node.id, o.bearing);
+        expect(moves.size).toBeGreaterThan(0);
+        expect(connectedLabel(net, idx, node.id, o.bearing)).toBe(o.label);
+      }
+    });
+  }
 });

@@ -226,3 +226,127 @@ fn hillegass_and_62nd_gives_two_l_pairs_for_each_diagonal() {
     }
     assert_eq!(pairings.len(), 2, "the two diagonals give two different pairings");
 }
+
+/// Two T-junctions of one cross street 30 m apart, merged into one node by the importer: each side-street link runs along the through street
+/// for 15 m before turning onto its own street, and carries the bearings the importer measured on the original geometry.
+fn merged_staggered(with_bearings: bool) -> (Network, u32, [u32; 4]) {
+    let mut b = B::default();
+    let c = b.node(0.0, 0.0, Control::Signal, false);
+    let n = b.node(0.0, 200.0, Control::Uncontrolled, true);
+    let s = b.node(0.0, -200.0, Control::Uncontrolled, true);
+    let w = b.node(-200.0, -15.0, Control::Uncontrolled, true);
+    let e = b.node(200.0, 15.0, Control::Uncontrolled, true);
+    let (n_in, _) = b.two_way(n, c, RoadClass::Residential, 1, 11.2);
+    let (s_in, _) = b.two_way(s, c, RoadClass::Residential, 1, 11.2);
+    let (w_in, w_out) = b.two_way(w, c, RoadClass::Residential, 1, 11.2);
+    let (e_in, e_out) = b.two_way(e, c, RoadClass::Residential, 1, 11.2);
+    let mut set = |l: u32, g: Vec<[f64; 2]>, from: f64, to: f64| {
+        let k = &mut b.links[l as usize];
+        k.length = g.windows(2).map(|w| (w[1][0] - w[0][0]).hypot(w[1][1] - w[0][1])).sum();
+        k.geometry = g;
+        if with_bearings {
+            k.from_bearing = Some(from);
+            k.to_bearing = Some(to);
+        }
+    };
+    set(w_in, vec![[-200.0, -15.0], [0.0, -15.0], [0.0, 0.0]], 90.0, 90.0);
+    set(w_out, vec![[0.0, 0.0], [0.0, -15.0], [-200.0, -15.0]], 270.0, 270.0);
+    set(e_in, vec![[200.0, 15.0], [0.0, 15.0], [0.0, 0.0]], 270.0, 270.0);
+    set(e_out, vec![[0.0, 0.0], [0.0, 15.0], [200.0, 15.0]], 90.0, 90.0);
+    (b.net(), c, [n_in, e_in, s_in, w_in])
+}
+
+#[test]
+fn merged_staggered_junction_legs_follow_the_streets_not_the_connector() {
+    let (net, c, [n_in, e_in, s_in, w_in]) = merged_staggered(true);
+    let topo = Topo::new(&net);
+    let legs = node_legs(&topo, &net, c);
+    assert_eq!(legs.len(), 4);
+    let want = [(n_in, 0.0), (e_in, 90.0), (s_in, 180.0), (w_in, 270.0)];
+    for (l, brg) in want {
+        let leg = legs.iter().find(|g| g.ins.contains(&l)).unwrap();
+        let d = (leg.bearing - brg).abs();
+        assert!(d.min(360.0 - d) < 5.0, "leg of link {l}: {} vs {brg}", leg.bearing);
+    }
+    // Both diagonals leave two L pairs, as at a plain four-way node.
+    for barrier in [45.0, 135.0] {
+        let ok = permitted_movements(&topo, &net, c, barrier).unwrap_or_else(|e| panic!("{barrier}: {e}"));
+        assert_eq!(ok.len(), 4, "{ok:?}");
+    }
+    // Southbound on the through street turning west is a right turn, and the side streets share one signal phase per axis.
+    let mv = topo.find_mv(n_in, net.links.iter().find(|l| l.from == c && l.to == 3).unwrap().id).unwrap();
+    assert_eq!(topo.mvs[mv as usize].kind, crate::topo::K_RIGHT);
+    let mut groups = crate::eff::phase_groups(&topo, &net, &topo.ins[c as usize].clone());
+    for g in groups.iter_mut() {
+        g.sort_unstable();
+    }
+    groups.sort();
+    let mut expect = vec![{ let mut v = vec![n_in, s_in]; v.sort_unstable(); v }, { let mut v = vec![e_in, w_in]; v.sort_unstable(); v }];
+    expect.sort();
+    assert_eq!(groups, expect);
+    // Without the importer's bearings the connector skews the side streets: the field is what makes the legs agree.
+    let (plain, c2, [_, _, _, w2]) = merged_staggered(false);
+    let topo2 = Topo::new(&plain);
+    let w_leg = node_legs(&topo2, &plain, c2).into_iter().find(|g| g.ins.contains(&w2)).unwrap();
+    assert!((w_leg.bearing - 270.0).abs() > 20.0, "{}", w_leg.bearing);
+}
+
+#[test]
+fn colby_and_hillegass_at_62nd_have_four_legs_on_their_streets() {
+    let Some(net) = load_rockridge() else {
+        eprintln!("skipped: public/data/rockridge.network.json missing");
+        return;
+    };
+    let topo = Topo::new(&net);
+    for through in ["Colby Street", "Hillegass Avenue"] {
+        let node = (0..net.nodes.len() as u32)
+            .find(|&n| {
+                let names: std::collections::HashSet<&str> = net.links.iter().filter(|l| l.to == n || l.from == n).map(|l| l.name.as_str()).collect();
+                names.contains(through) && names.contains("62nd Street")
+            })
+            .unwrap_or_else(|| panic!("{through} & 62nd Street node"));
+        let legs = node_legs(&topo, &net, node);
+        assert_eq!(legs.len(), 4, "{through}: {legs:?}");
+        let mut seen = std::collections::BTreeMap::new();
+        for leg in &legs {
+            // Direction of the street 60 m out, measured on the geometry from the node.
+            let (l, out) = match leg.outs.first() {
+                Some(&o) => (o, true),
+                None => (leg.ins[0], false),
+            };
+            let mut g = net.links[l as usize].geometry.clone();
+            if !out {
+                g.reverse();
+            }
+            let mut left = 60.0_f64.min(g.windows(2).map(|w| (w[1][0] - w[0][0]).hypot(w[1][1] - w[0][1])).sum());
+            let mut q = *g.last().unwrap();
+            for w in g.windows(2) {
+                let d = (w[1][0] - w[0][0]).hypot(w[1][1] - w[0][1]);
+                if d >= left && d > 1e-9 {
+                    q = [w[0][0] + (w[1][0] - w[0][0]) * left / d, w[0][1] + (w[1][1] - w[0][1]) * left / d];
+                    break;
+                }
+                left -= d;
+            }
+            let want = (q[0] - g[0][0]).atan2(q[1] - g[0][1]).to_degrees().rem_euclid(360.0);
+            let d = (leg.bearing - want).abs();
+            let d = d.min(360.0 - d);
+            assert!(d <= 25.0, "{through}: leg {:?} bearing {} vs street {want}", leg.ins, leg.bearing);
+            *seen.entry(net.links[l as usize].name.clone()).or_insert(0) += 1;
+        }
+        assert_eq!(seen.get(through), Some(&2), "{seen:?}");
+        assert_eq!(seen.get("62nd Street"), Some(&2), "{seen:?}");
+        let mut pairings = std::collections::BTreeSet::new();
+        for barrier in [20.0, 70.0, 110.0, 160.0] {
+            let Ok(got) = permitted_movements(&topo, &net, node, barrier) else { continue };
+            if got.len() != 4 {
+                continue;
+            }
+            let leg_of = |l: u32| legs.iter().position(|g| g.ins.contains(&l) || g.outs.contains(&l)).unwrap();
+            let pairs: std::collections::BTreeSet<(usize, usize)> = got.iter().map(|&(a, o)| (leg_of(a).min(leg_of(o)), leg_of(a).max(leg_of(o)))).collect();
+            assert_eq!(pairs.len(), 2, "{through} at {barrier}");
+            pairings.insert(pairs.into_iter().collect::<Vec<_>>());
+        }
+        assert_eq!(pairings.len(), 2, "{through}: both diagonal orientations give two L pairs");
+    }
+}
