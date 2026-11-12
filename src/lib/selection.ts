@@ -1,6 +1,6 @@
 import type { ControlType, Intervention, Network, NetLink } from '../types';
 import { MPS_TO_MPH } from './format';
-import { nearestOnPolyline, pickLink, pointAlong } from './geom';
+import { legBearing, nearestOnPolyline, pickLink, pointAlong } from './geom';
 import { linkStreet, type NetIndex } from './naming';
 import { diverterOptions, pairingKey, type DiverterOption } from './diverter';
 
@@ -61,10 +61,13 @@ export function compassOf(dx: number, dy: number): Compass {
   return 'West';
 }
 export function linkCompass(l: NetLink, part: 'all' | 'start' | 'end' = 'all'): Compass {
-  const g = l.geometry;
-  const a = part === 'end' ? g[g.length - 2] : g[0];
-  const b = part === 'start' ? g[1] : g[g.length - 1];
-  return compassOf(b[0] - a[0], b[1] - a[1]);
+  if (part === 'all') {
+    const g = l.geometry;
+    return compassOf(g[g.length - 1][0] - g[0][0], g[g.length - 1][1] - g[0][1]);
+  }
+  // How the street leaves / reaches its node, not the first / last segment (a merged staggered junction draws a connector there).
+  const b = (legBearing(l, part === 'start') + (part === 'end' ? 180 : 0)) * Math.PI / 180;
+  return compassOf(Math.sin(b), Math.cos(b));
 }
 
 /** The street(s) a link runs toward, e.g. "Alcatraz Avenue". */

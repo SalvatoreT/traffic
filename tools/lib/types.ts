@@ -28,6 +28,13 @@ export interface NetLink {
   speedLimit: number;
   length: number;
   geometry: [number, number][];
+  /**
+   * Direction (degrees clockwise from north) in which the link leaves its start node and arrives at its end node, as a driver
+   * experiences the street: the chord over the first / last 45 m of the way geometry, measured from where the link met the street
+   * before a junction join moved its end to the cluster centroid (ignoring the internal connector). Always written by the importer.
+   */
+  fromBearing?: number;
+  toBearing?: number;
   stopAtEnd: boolean;
   humps: number[];
   inStudyArea: boolean;

@@ -1,15 +1,14 @@
 import type { Network } from '../types';
 import type { NetIndex } from './naming';
 import { linkStreet } from './naming';
+import { legBearing } from './geom';
 
 /**
  * Diagonal diverter geometry. A barrier line through an intersection leaves two legs on each side; motor vehicles may only turn
  * between the two legs of a side. These helpers mirror the simulation's leg classification (`crates/sim/src/diverter.rs`):
- * a leg's direction is measured from the node along the first stretch of its link, so staggered legs classify by how they leave.
+ * a leg's direction is the link's own `legBearing`, which skips the connector of a merged staggered junction.
  */
 
-/** Distance along a link used to measure how a leg leaves the node (m). Same value as the simulation. */
-const PROBE_M = 15;
 /** A leg this close to the barrier line has no clear side (degrees). Same value as the simulation. */
 const ON_LINE_DEG = 2;
 
@@ -33,33 +32,6 @@ export interface DiverterOption {
 const norm360 = (d: number) => ((d % 360) + 360) % 360;
 const bearingOf = (dx: number, dy: number) => norm360((Math.atan2(dx, dy) * 180) / Math.PI);
 
-function pointAt(g: [number, number][], dist: number): [number, number] {
-  let left = dist;
-  for (let i = 0; i + 1 < g.length; i++) {
-    const d = Math.hypot(g[i + 1][0] - g[i][0], g[i + 1][1] - g[i][1]);
-    if (d >= left && d > 1e-9) {
-      const u = left / d;
-      return [g[i][0] + (g[i + 1][0] - g[i][0]) * u, g[i][1] + (g[i + 1][1] - g[i][1]) * u];
-    }
-    left -= d;
-  }
-  return g[g.length - 1];
-}
-
-function linkBearing(net: Network, node: number, link: number, outgoing: boolean): number {
-  const l = net.links[link];
-  let g: [number, number][] = l.geometry.length >= 2 ? l.geometry : [[net.nodes[l.from].x, net.nodes[l.from].y], [net.nodes[l.to].x, net.nodes[l.to].y]];
-  if (!outgoing) g = [...g].reverse();
-  const n = net.nodes[node];
-  let probe = PROBE_M;
-  for (;;) {
-    const p = pointAt(g, probe);
-    const dx = p[0] - n.x, dy = p[1] - n.y;
-    if (Math.hypot(dx, dy) >= 3 || probe >= 4 * PROBE_M) return bearingOf(dx, dy);
-    probe *= 2;
-  }
-}
-
 /** The street approaches of a node, merging the two directions of a two-way street. A one-way street counts once. */
 export function nodeLegs(net: Network, idx: Pick<NetIndex, 'incomingLinks' | 'outgoingLinks'>, node: number): Leg[] {
   const ins = idx.incomingLinks[node], outs = idx.outgoingLinks[node];
@@ -72,11 +44,11 @@ export function nodeLegs(net: Network, idx: Pick<NetIndex, 'incomingLinks' | 'ou
     if (pair !== undefined) used.add(pair);
     legs.push({
       ins: [a], outs: pair === undefined ? [] : [pair], street: linkStreet(net.links[pair ?? a]),
-      bearing: linkBearing(net, node, pair ?? a, pair !== undefined),
+      bearing: legBearing(net.links[pair ?? a], pair !== undefined),
     });
   }
   for (const o of outs) {
-    if (!used.has(o)) legs.push({ ins: [], outs: [o], street: linkStreet(net.links[o]), bearing: linkBearing(net, node, o, true) });
+    if (!used.has(o)) legs.push({ ins: [], outs: [o], street: linkStreet(net.links[o]), bearing: legBearing(net.links[o], true) });
   }
   return legs;
 }

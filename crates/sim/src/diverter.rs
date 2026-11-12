@@ -1,15 +1,12 @@
 //! Diagonal diverter: permitted motor movements at a four-leg node, derived from the barrier bearing.
 //!
 //! The barrier is a straight line through the node. A movement is permitted only between two different legs on the same side of it,
-//! so a four-leg node becomes two separate L-turns. Leg directions are measured from the node along the first stretch of each
-//! link's geometry, so curved or staggered legs (merged by the importer) classify by how they leave the intersection.
+//! so a four-leg node becomes two separate L-turns. Leg directions come from `Network::leg_bearing`, which measures how each link
+//! leaves the intersection beyond the footprint of a merged staggered junction.
 
 use crate::model::Network;
 use crate::topo::Topo;
 
-/// Distance along a link used to measure how a leg leaves the node (m). ASSUMPTION: long enough to skip the local junction
-/// geometry of staggered legs, short enough to stay on the first block.
-const LEG_PROBE_M: f64 = 15.0;
 /// A leg closer than this angle to the barrier line has no clear side (degrees). ASSUMPTION.
 const ON_LINE_DEG: f64 = 2.0;
 
@@ -22,40 +19,10 @@ pub struct Leg {
     pub bearing: f64,
 }
 
-fn bearing_deg(dx: f64, dy: f64) -> f64 {
-    dx.atan2(dy).to_degrees().rem_euclid(360.0)
-}
-
-/// Point `dist` meters along a polyline from its first point.
-fn point_along(pts: &[[f64; 2]], dist: f64) -> [f64; 2] {
-    let mut left = dist;
-    for w in pts.windows(2) {
-        let d = ((w[1][0] - w[0][0]).powi(2) + (w[1][1] - w[0][1]).powi(2)).sqrt();
-        if d >= left && d > 1e-9 {
-            let u = left / d;
-            return [w[0][0] + (w[1][0] - w[0][0]) * u, w[0][1] + (w[1][1] - w[0][1]) * u];
-        }
-        left -= d;
-    }
-    *pts.last().unwrap()
-}
-
-/// Bearing from the node along link `l` (leaving the node if `outgoing`, else the reverse of an approach).
-fn link_bearing(topo: &Topo, net: &Network, node: usize, l: u32, outgoing: bool) -> f64 {
-    let mut pts = topo.geo[l as usize].pts.clone();
-    if !outgoing {
-        pts.reverse();
-    }
-    let n = &net.nodes[node];
-    let mut probe = LEG_PROBE_M;
-    loop {
-        let p = point_along(&pts, probe);
-        let (dx, dy) = (p[0] - n.x, p[1] - n.y);
-        if dx.hypot(dy) >= 3.0 || probe >= 4.0 * LEG_PROBE_M {
-            return bearing_deg(dx, dy);
-        }
-        probe *= 2.0;
-    }
+/// Bearing from the node along link `l` (leaving the node if `outgoing`, else the reverse of an approach): the importer's
+/// per-link bearing, which ignores the connector of a merged staggered junction (`Network::leg_bearing`).
+fn link_bearing(net: &Network, l: u32, outgoing: bool) -> f64 {
+    net.leg_bearing(l, outgoing)
 }
 
 /// The legs of a node, merging the two directions of a two-way street. A one-way street is one leg.
@@ -78,15 +45,15 @@ pub fn node_legs(topo: &Topo, net: &Network, node: u32) -> Vec<Leg> {
         if let Some(k) = pair {
             out_used[k] = true;
             leg.outs.push(outs[k]);
-            leg.bearing = link_bearing(topo, net, n, outs[k], true);
+            leg.bearing = link_bearing(net, outs[k], true);
         } else {
-            leg.bearing = link_bearing(topo, net, n, a, false);
+            leg.bearing = link_bearing(net, a, false);
         }
         legs.push(leg);
     }
     for (k, &o) in outs.iter().enumerate() {
         if !out_used[k] {
-            legs.push(Leg { ins: vec![], outs: vec![o], bearing: link_bearing(topo, net, n, o, true) });
+            legs.push(Leg { ins: vec![], outs: vec![o], bearing: link_bearing(net, o, true) });
         }
     }
     legs

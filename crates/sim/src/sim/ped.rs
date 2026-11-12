@@ -7,6 +7,7 @@
 //! walk and cross steps at spawn.
 
 use super::*;
+use crate::topo::bearing_heading;
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
 
@@ -167,9 +168,9 @@ impl PedWorld {
         for n in 0..nn {
             let mut inc: Vec<(f64, u32)> = Vec::new();
             for &l in topo.ins[n].iter().chain(topo.outs[n].iter()) {
-                let g = &topo.geo[l as usize].pts;
-                let (p, q) = if topo.link_to[l as usize] as usize == n { (g[g.len() - 1], g[g.len() - 2]) } else { (g[0], g[1]) };
-                inc.push(((q[1] - p[1]).atan2(q[0] - p[0]).rem_euclid(std::f64::consts::TAU), l));
+                // Direction the street leaves the node (`Network::leg_bearing`), so a merged staggered junction's side streets sit on their own axis.
+                let leaving = net.leg_bearing(l, topo.link_to[l as usize] as usize != n);
+                inc.push((bearing_heading(leaving).rem_euclid(std::f64::consts::TAU), l));
             }
             inc.sort_by(|a, b| a.partial_cmp(b).unwrap());
             let mut legs: Vec<Leg> = Vec::new();

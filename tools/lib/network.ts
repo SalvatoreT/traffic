@@ -118,7 +118,28 @@ interface Link {
   crossings: number[];
   /** Lanes marked left-turn only in `turn:lanes` at the end of the link (0 when unknown). */
   leftLanes: number;
+  /** Where the link began / ended before the junction join moved that end to the cluster centroid. */
+  fromPt?: Pt;
+  toPt?: Pt;
   alive: boolean;
+}
+
+/** Distance along a link used to measure how it leaves or reaches a junction (m); same value as `LEG_PROBE_M` in the simulator and the UI. */
+const LEG_PROBE_M = 45;
+
+/**
+ * Bearing (degrees clockwise from north) of the chord from a link's end to the point `LEG_PROBE_M` along it, or to its far end if
+ * shorter, in the direction of travel. `anchor` replaces the end point itself (the position before a junction join moved it).
+ */
+function endBearing(geometry: Pt[], atStart: boolean, anchor?: Pt): number {
+  const g = atStart ? [...geometry] : [...geometry].reverse();
+  if (anchor) g[0] = anchor;
+  const q = pointAlong(g, Math.min(LEG_PROBE_M, polylineLength(g)));
+  const dx = q[0] - g[0][0];
+  const dy = q[1] - g[0][1];
+  if (Math.hypot(dx, dy) < 0.5) return 0;
+  const away = (Math.atan2(dx, dy) * 180) / Math.PI;
+  return round1((((atStart ? away : away + 180) % 360) + 360) % 360);
 }
 
 interface Segment {
@@ -723,6 +744,7 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
       }
       const before = polylineLength(l.geometry);
       if (nf !== undefined) {
+        l.fromPt = l.geometry[0];
         l.from = nf;
         l.geometry = [nodeXY.get(nf)!, ...l.geometry.slice(1)];
         const shift = polylineLength(l.geometry) - before;
@@ -730,6 +752,7 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
         l.crossings = l.crossings.map((h) => round1(Math.max(0.1, h + shift)));
       }
       if (nt !== undefined) {
+        l.toPt = l.geometry[l.geometry.length - 1];
         l.to = nt;
         l.geometry = [...l.geometry.slice(0, -1), nodeXY.get(nt)!];
       }
@@ -766,6 +789,7 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
       ways: [...new Set([...a.ways, ...b.ways])],
       leftLanes: b.leftLanes,
       to: b.to,
+      toPt: b.toPt,
       stopAtEnd: b.stopAtEnd,
       geometry: [...a.geometry, ...b.geometry.slice(1)],
       humps: [...a.humps, ...b.humps.map((h) => round1(h + la))],
@@ -1077,6 +1101,8 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
       speedLimit: Math.round(l.speed * 100) / 100,
       length,
       geometry,
+      fromBearing: endBearing(l.geometry, true, l.fromPt),
+      toBearing: endBearing(l.geometry, false, l.toPt),
       stopAtEnd: l.stopAtEnd,
       humps: [...l.humps].sort((a, b) => a - b),
       inStudyArea: l.cls !== 'motorway' && (pointInPolygon(mid, studyPoly) || onBoundary(l, mid)),

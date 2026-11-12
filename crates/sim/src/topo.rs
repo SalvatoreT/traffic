@@ -80,6 +80,11 @@ pub struct Topo {
     pub is_arterial: Vec<bool>,
 }
 
+/// Math heading (radians, counterclockwise from east) of a compass bearing (degrees clockwise from north).
+pub fn bearing_heading(bearing: f64) -> f64 {
+    norm_angle((90.0 - bearing).to_radians())
+}
+
 pub fn norm_angle(mut a: f64) -> f64 {
     while a > PI {
         a -= 2.0 * PI;
@@ -253,9 +258,13 @@ impl Topo {
             for &a in &ins {
                 self.lm_start[a as usize] = self.mvs.len() as u32;
                 let (pa, ha) = self.link_point(a as usize, self.stop_pos[a as usize] as f64, LANE_OFFSET0);
+                // The street's direction at the node (`Network::leg_bearing`), not the local geometry: a merged staggered junction draws its
+                // side-street links along the through street for the first stretch. The corner path below still follows the geometry.
+                let h_arrive = bearing_heading(net.leg_bearing(a, false) + 180.0);
                 for &b in &outs {
                     let (pb, hb) = self.link_point(b as usize, self.emerge_pos[b as usize] as f64, LANE_OFFSET0);
-                    let d = norm_angle(hb - ha);
+                    let h_leave = bearing_heading(net.leg_bearing(b, true));
+                    let d = norm_angle(h_leave - h_arrive);
                     let kind = if d.abs() > 2.6 {
                         K_UTURN
                     } else if d > 0.52 {
@@ -285,7 +294,7 @@ impl Topo {
                     let l2 = ((pb[0] - x[0]).powi(2) + (pb[1] - x[1]).powi(2)).sqrt();
                     let len = ((2.0 * chord + l1 + l2) / 3.0).max(4.0);
                     self.preds[b as usize].push(self.mvs.len() as u32);
-                    self.mvs.push(Mv { a, b, node: n as u32, kind, p0: pa, x, p1: pb, len: len as f32, h_in: ha, h_out: hb });
+                    self.mvs.push(Mv { a, b, node: n as u32, kind, p0: pa, x, p1: pb, len: len as f32, h_in: h_arrive, h_out: h_leave });
                 }
                 self.lm_cnt[a as usize] = self.mvs.len() as u32 - self.lm_start[a as usize];
             }

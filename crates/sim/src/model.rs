@@ -94,7 +94,18 @@ pub struct Link {
     /// left-turn pocket uses one of them instead of adding a lane.
     #[serde(default)]
     pub left_lanes: u32,
+    /// Additive: direction (degrees clockwise from north) in which the link leaves its start node, and in which it arrives at its end
+    /// node, as a driver experiences the street. The importer measures them on the way geometry before a junction join moved the link end to the
+    /// cluster centroid, so a side street of a merged staggered junction does not read as running along the through street. Missing: the
+    /// chord over the first / last `LEG_PROBE_M` of the geometry (`Network::leg_bearing`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub from_bearing: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub to_bearing: Option<f64>,
 }
+
+/// Distance along a link used to measure how it leaves or reaches a node (m): beyond the footprint of a merged staggered junction.
+pub const LEG_PROBE_M: f64 = 45.0;
 
 impl Link {
     pub fn has_sidewalk(&self) -> bool {
@@ -111,6 +122,42 @@ pub struct TurnBan {
     pub to: u32,
     #[serde(default)]
     pub periods: Vec<String>,
+}
+
+impl Network {
+    /// Bearing (degrees clockwise from north, [0, 360)) of link `l` as it leaves its start node (`start`) or, reversed, as it leaves its
+    /// end node: the direction from the node along the street. Uses the importer's `from_bearing` / `to_bearing` when present; else the chord
+    /// from the node to the point `LEG_PROBE_M` along the geometry (or to its far end if shorter).
+    pub fn leg_bearing(&self, l: u32, start: bool) -> f64 {
+        let k = &self.links[l as usize];
+        if start {
+            if let Some(b) = k.from_bearing {
+                return b.rem_euclid(360.0);
+            }
+        } else if let Some(b) = k.to_bearing {
+            return (b + 180.0).rem_euclid(360.0);
+        }
+        let mut pts: Vec<[f64; 2]> = k.geometry.clone();
+        if pts.len() < 2 {
+            let (a, b) = (&self.nodes[k.from as usize], &self.nodes[k.to as usize]);
+            pts = vec![[a.x, a.y], [b.x, b.y]];
+        }
+        if !start {
+            pts.reverse();
+        }
+        let mut left = LEG_PROBE_M;
+        let mut q = *pts.last().unwrap();
+        for w in pts.windows(2) {
+            let d = (w[1][0] - w[0][0]).hypot(w[1][1] - w[0][1]);
+            if d >= left && d > 1e-9 {
+                let u = left / d;
+                q = [w[0][0] + (w[1][0] - w[0][0]) * u, w[0][1] + (w[1][1] - w[0][1]) * u];
+                break;
+            }
+            left -= d;
+        }
+        (q[0] - pts[0][0]).atan2(q[1] - pts[0][1]).to_degrees().rem_euclid(360.0)
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

@@ -12,6 +12,9 @@ export interface NetLink {
   id: number; osmWayId: number; from: number; to: number; reverse: number | null;
   name: string; class: RoadClass; lanes: number; speedLimit: number; length: number;
   geometry: [number, number][]; stopAtEnd: boolean; humps: number[]; inStudyArea: boolean;
+  /** Direction (degrees clockwise from north) in which the link leaves its start node and arrives at its end node, as a driver experiences
+   *  the street; the importer measures it before a junction join moves the link end to the cluster centroid. Missing: see `linkBearing`. */
+  fromBearing?: number; toBearing?: number;
   /** Dedicated bike lane or track in this direction. */
   bikeLane?: boolean;
   /** Signed bike route or bike boulevard. */

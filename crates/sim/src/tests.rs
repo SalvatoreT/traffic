@@ -45,6 +45,8 @@ impl B {
             sidewalk: None,
             crossings: vec![],
             left_lanes: 0,
+            from_bearing: None,
+            to_bearing: None,
         });
         id
     }

@@ -39,6 +39,23 @@ export function pointAlong(g: [number, number][], s: number): { x: number; y: nu
   return { x: g[0][0], y: g[0][1], heading: 0 };
 }
 
+/** Distance along a link used to measure how it leaves or reaches a node (m): beyond the footprint of a merged staggered junction. Same value as the simulator. */
+export const LEG_PROBE_M = 45;
+
+/**
+ * Bearing (degrees clockwise from north, [0, 360)) of link `l` as it leaves its start node (`start`) or, reversed, as it leaves its end
+ * node: the direction from the node along the street. Uses the importer's `fromBearing` / `toBearing` (which ignore the connector of a merged
+ * staggered junction); else the chord from the link end to the point `LEG_PROBE_M` along the geometry, or to its far end if shorter.
+ * Mirrors `Network::leg_bearing` in the simulator.
+ */
+export function legBearing(l: NetLink, start: boolean): number {
+  const given = start ? l.fromBearing : l.toBearing;
+  if (given !== undefined) return (((start ? given : given + 180) % 360) + 360) % 360;
+  const g = start ? l.geometry : [...l.geometry].reverse();
+  const q = pointAlong(g, LEG_PROBE_M);
+  return ((((Math.atan2(q.x - g[0][0], q.y - g[0][1]) * 180) / Math.PI) % 360) + 360) % 360;
+}
+
 export function polylineLength(g: [number, number][]): number {
   let s = 0;
   for (let i = 0; i + 1 < g.length; i++) s += Math.hypot(g[i + 1][0] - g[i][0], g[i + 1][1] - g[i][1]);
