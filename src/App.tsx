@@ -4,7 +4,8 @@ import { loadArea } from './data';
 import { SOURCE_REPO_URL } from './config';
 import { SimClient, type StatsMsg } from './sim/client';
 import { buildIndex } from './lib/naming';
-import { decodeHash, encodeHash } from './lib/hash';
+import { decodeMeta, decodeScenario, encodeScenario, nearestStreetName, type Unplaced } from './lib/hash';
+import { interventionTypeLabel } from './lib/describe';
 import { addInterventions } from './lib/scenario';
 import { niceMax, percentile, resolveMode } from './lib/ramps';
 import { linkStatsView } from './types';
@@ -39,8 +40,7 @@ export function App() {
   const [bundle, setBundle] = useState<AreaBundle | null>(null);
   const [err, setErr] = useState('');
   useEffect(() => {
-    const h = new URLSearchParams(location.hash.replace(/^#/, ''));
-    loadArea(h.get('a') ?? undefined, query.get('fixture') === '1').then(setBundle, (e) => setErr(String(e)));
+    loadArea(decodeMeta(location.hash).area, query.get('fixture') === '1').then(setBundle, (e) => setErr(String(e)));
   }, []);
   if (err) return <p role="alert" className="boot">Could not load the study area: {err}</p>;
   if (!bundle) return <p className="boot" role="status">Loading study area…</p>;
@@ -50,7 +50,8 @@ export function App() {
 function Simulator({ bundle }: { bundle: AreaBundle }) {
   const { network, demand } = bundle;
   const index = useMemo(() => buildIndex(network), [network]);
-  const initial = useMemo(() => decodeHash(location.hash, { nodes: network.nodes.length, links: network.links.length }), [network]);
+  // Read once: the hash is rewritten as soon as the scenario loads, so later renders must not decode it again.
+  const [initial] = useState(() => ({ ...decodeMeta(location.hash), ...decodeScenario(network, location.hash) }));
 
   const reduced = useMedia('(prefers-reduced-motion: reduce)');
   const prefersDark = useMedia('(prefers-color-scheme: dark)');
@@ -85,6 +86,9 @@ function Simulator({ bundle }: { bundle: AreaBundle }) {
   const [running, setRunning] = useState(!reduced);
   const [interventions, setInterventions] = useState<Intervention[]>(initial.interventions);
   const [overlay, setOverlay] = useState<Overlay>('cutthrough');
+  const [notice, setNotice] = useState<{ unplaced: Unplaced[]; legacy: boolean }>({ unplaced: [], legacy: false });
+  // Set after mount so the polite live region exists before its content changes.
+  useEffect(() => { setNotice({ unplaced: initial.unplaced, legacy: initial.legacy }); }, [initial]);
   const [source, setSource] = useState<'scenario' | 'baseline'>('scenario');
 
   const [engine, setEngine] = useState<{ kind: 'wasm' | 'mock'; reason?: string } | null>(null);
@@ -131,12 +135,13 @@ function Simulator({ bundle }: { bundle: AreaBundle }) {
 
   // --- URL hash
   useEffect(() => {
-    const h = encodeHash({ area: bundle.synthetic ? undefined : bundle.entry.id, period, demandScale: scale, interventions });
+    const h = encodeScenario(network, interventions, { area: bundle.synthetic ? null : bundle.entry.id, period, demandScale: scale });
     history.replaceState(null, '', `${location.pathname}${location.search}${h}`);
-  }, [bundle, period, scale, interventions]);
+  }, [bundle, network, period, scale, interventions]);
   useEffect(() => {
     const f = () => {
-      const st = decodeHash(location.hash, { nodes: network.nodes.length, links: network.links.length });
+      const st = decodeScenario(network, location.hash);
+      setNotice({ unplaced: st.unplaced, legacy: st.legacy });
       if (JSON.stringify(st.interventions) !== JSON.stringify(first.current.interventions)) setInterventions(st.interventions);
     };
     window.addEventListener('hashchange', f);
@@ -180,6 +185,26 @@ function Simulator({ bundle }: { bundle: AreaBundle }) {
     <>
       <InterventionPanel bundle={bundle} index={index} showService={showService} onShowService={setShowService} interventions={interventions}
         onAdd={onAdd} onRemove={onRemove} onClear={onClear} onPickMode={onPickMode} registerPick={registerPick} />
+      <div className="scn-notices" role="status" aria-live="polite">
+        {notice.legacy && (
+          <p className="notice" key="legacy">
+            <span>This link was made before a map update and can't be restored. Starting from today's baseline.</span>
+            <button type="button" className="btn small-btn" onClick={() => setNotice((n) => ({ ...n, legacy: false }))}>Dismiss</button>
+          </p>
+        )}
+        {notice.unplaced.length > 0 && (
+          <div className="notice" key="unplaced">
+            <p>{notice.unplaced.length === 1 ? '1 intervention' : `${notice.unplaced.length} interventions`} couldn't be placed on the current map and {notice.unplaced.length === 1 ? 'was' : 'were'} left out:</p>
+            <ul>
+              {notice.unplaced.map((u, i) => {
+                const street = nearestStreetName(network, u.lon, u.lat);
+                return <li key={i}>{interventionTypeLabel(u.type)}{street ? `, near ${street}` : ''}. {u.reason}</li>;
+              })}
+            </ul>
+            <button type="button" className="btn small-btn" onClick={() => setNotice((n) => ({ ...n, unplaced: [] }))}>Dismiss</button>
+          </div>
+        )}
+      </div>
       <div className="share">
         <button type="button" className="btn" onClick={() => { navigator.clipboard?.writeText(location.href).then(() => say('Link to this scenario copied.'), () => say('Copy failed. The address bar already holds the link.')); }}>Copy link to this scenario</button>
       </div>

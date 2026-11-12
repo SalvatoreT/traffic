@@ -200,3 +200,6 @@ input[type='checkbox'] { width: 18px; height: 18px; accent-color: var(--accent);
 .notice.calm { background: var(--surface-2); border-left-color: var(--accent); display: flex; gap: .75rem; align-items: center; justify-content: space-between; }
 .notice.calm .btn { flex: none; }
 .fit-btn { display: flex; align-items: center; justify-content: center; color: #1b2430; }
+
+.scn-notices .notice ul { margin: .25rem 0 .4rem; padding-left: 1.2rem; }
+.scn-notices .notice p { margin: 0 0 .3rem; }

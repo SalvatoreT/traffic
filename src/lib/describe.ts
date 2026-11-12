@@ -35,3 +35,9 @@ export function interventionPoint(iv: Intervention, net: AreaBundle['network']):
     default: return node(iv.node);
   }
 }
+
+const TYPE_LABEL: Record<Intervention['type'], string> = {
+  modal_filter: 'Modal filter', speed_limit: 'Speed limit', speed_hump: 'Speed hump', traffic_circle: 'Traffic circle',
+  control: 'Intersection control', signal_timing: 'Signal timing', one_way: 'One-way street', turn_ban: 'Turn ban',
+};
+export const interventionTypeLabel = (t: Intervention['type']): string => TYPE_LABEL[t];

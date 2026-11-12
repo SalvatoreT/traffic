@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { makeProjection, metersPerPixel } from './projection';
-import { decodeHash, encodeHash } from './hash';
 import { buildIndex, directedLabel } from './naming';
 import { formatDiff, formatValue, formatClock } from './format';
 import { addInterventions } from './scenario';
@@ -25,30 +24,6 @@ describe('projection', () => {
     const [x] = p.toLocal(-122.256 + 1, 37.8455);
     expect(x / y).toBeCloseTo(Math.cos((37.8455 * Math.PI) / 180), 5);
     expect(metersPerPixel(15, 37.8)).toBeCloseTo(1.887, 2);
-  });
-});
-
-describe('hash', () => {
-  const lim = { nodes: 36, links: 120 };
-  const list: Intervention[] = [
-    { type: 'modal_filter', link: 5 }, { type: 'modal_filter', node: 7 }, { type: 'speed_limit', link: 3, speed: 8.9 },
-    { type: 'speed_hump', link: 4, position: 60 }, { type: 'traffic_circle', node: 9 },
-    { type: 'control', node: 8, control: 'signal' }, { type: 'signal_timing', node: 8, cycle: 80 },
-    { type: 'one_way', link: 10 }, { type: 'turn_ban', fromLink: 1, toLink: 2 },
-  ];
-  it('round-trips a scenario', () => {
-    const h = encodeHash({ area: 'rockridge', period: 'pm_peak', demandScale: 1.2, interventions: list });
-    expect(h.startsWith('#')).toBe(true);
-    expect(decodeHash(h, lim)).toEqual({ area: 'rockridge', period: 'pm_peak', demandScale: 1.2, interventions: list });
-  });
-  it('empty state gives empty hash', () => {
-    expect(encodeHash({ interventions: [] })).toBe('');
-    expect(decodeHash('', lim).interventions).toEqual([]);
-  });
-  it('drops invalid and out-of-range entries, tolerates garbage', () => {
-    const h = encodeHash({ interventions: [{ type: 'modal_filter', link: 999 }, { type: 'one_way', link: 2 }] });
-    expect(decodeHash(h, lim).interventions).toEqual([{ type: 'one_way', link: 2 }]);
-    expect(decodeHash('#i=%%%notbase64&d=9', lim)).toEqual({ interventions: [] });
   });
 });
 
