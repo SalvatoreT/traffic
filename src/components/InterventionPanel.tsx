@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { AreaBundle, ControlType, Intervention } from '../types';
 import { linkStreet, matchesQuery, type NetIndex } from '../lib/naming';
 import { pickerItems } from '../lib/picker';
@@ -42,6 +42,8 @@ interface Props {
   onClear(): void;
   onPickMode(kind: PickKind, directional: boolean): void;
   registerPick(h: PickHandlers | null): void;
+  /** Rendered next to Clear all, only when the scenario has interventions. */
+  shareSlot?: ReactNode;
 }
 
 export function InterventionPanel(p: Props) {
@@ -139,6 +141,29 @@ export function InterventionPanel(p: Props) {
 
   return (
     <div className="iv-panel">
+      {p.interventions.length === 0 ? (
+        <p className="muted scn-empty">No interventions yet. Pick a tool, then a street.</p>
+      ) : (
+        <section className="scn-top" aria-labelledby={`${listId}-scn`}>
+          <h3 className="scn-h" id={`${listId}-scn`}>Scenario <span className="count">{p.interventions.length}</span></h3>
+          <ol className="scn-list">
+            {p.interventions.map((iv, i) => {
+              const d = describeIntervention(iv, B.network, X);
+              return (
+                <li key={i}>
+                  <span className={`iv-badge static iv-${iv.type}`} aria-hidden="true">{iv.type === 'speed_limit' ? Math.round(iv.speed * 2.23694) : iv.type === 'modal_filter' ? 'MF' : iv.type === 'speed_hump' ? 'SH' : iv.type === 'traffic_circle' ? 'TC' : iv.type === 'control' ? 'IC' : iv.type === 'signal_timing' ? 'ST' : iv.type === 'one_way' ? '1W' : 'TB'}</span>
+                  <span className="desc">{d}{!interventionInStudyArea(iv, B.network) && <>{" "}<span className="tag">outside study area</span></>}</span>
+                  <button type="button" className="btn small-btn" onClick={() => p.onRemove(i)} aria-label={`Remove: ${d}`}>Remove</button>
+                </li>
+              );
+            })}
+          </ol>
+          <div className="scn-actions">
+            <button type="button" className="btn" onClick={p.onClear}>Clear all</button>
+            {p.shareSlot}
+          </div>
+        </section>
+      )}
       <fieldset className="tools">
         <legend>Tool</legend>
         <div className="tool-grid">
@@ -212,26 +237,6 @@ export function InterventionPanel(p: Props) {
         </div>
       )}
 
-      <h3 className="scn-h">Scenario <span className="count">{p.interventions.length}</span></h3>
-      {p.interventions.length === 0 ? (
-        <p className="muted">No interventions: the simulation shows today's baseline.</p>
-      ) : (
-        <>
-          <ol className="scn-list">
-            {p.interventions.map((iv, i) => {
-              const d = describeIntervention(iv, B.network, X);
-              return (
-                <li key={i}>
-                  <span className={`iv-badge static iv-${iv.type}`} aria-hidden="true">{iv.type === 'speed_limit' ? Math.round(iv.speed * 2.23694) : iv.type === 'modal_filter' ? 'MF' : iv.type === 'speed_hump' ? 'SH' : iv.type === 'traffic_circle' ? 'TC' : iv.type === 'control' ? 'IC' : iv.type === 'signal_timing' ? 'ST' : iv.type === 'one_way' ? '1W' : 'TB'}</span>
-                  <span className="desc">{d}{!interventionInStudyArea(iv, B.network) && <>{" "}<span className="tag">outside study area</span></>}</span>
-                  <button type="button" className="btn small-btn" onClick={() => p.onRemove(i)} aria-label={`Remove: ${d}`}>Remove</button>
-                </li>
-              );
-            })}
-          </ol>
-          <button type="button" className="btn" onClick={p.onClear}>Clear all</button>
-        </>
-      )}
     </div>
   );
 }

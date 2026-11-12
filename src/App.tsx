@@ -12,6 +12,7 @@ import { addInterventions } from './lib/scenario';
 import { niceMax, percentile, resolveMode } from './lib/ramps';
 import { linkStatsView } from './types';
 import type { PickKind } from './components/MapView';
+import { Sheet } from './components/Sheet';
 import { Playback, Legend } from './components/Toolbar';
 import { InterventionPanel, type PickHandlers } from './components/InterventionPanel';
 import { hasModes } from './lib/metrics';
@@ -78,7 +79,6 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
 
   const [view, setView] = useState<View>('map');
   const [panelTab, setPanelTab] = useState<'scenario' | 'results'>('scenario');
-  const [sheetOpen, setSheetOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const drawerBtn = useRef<HTMLButtonElement>(null);
   const closeDrawer = useCallback(() => { setDrawerOpen(false); drawerBtn.current?.focus(); }, []);
@@ -202,10 +202,13 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   const mapVisible = view === 'map';
   const showPanel = view !== 'sources';
 
+  const shareButton = (
+    <button type="button" className="btn" onClick={() => { navigator.clipboard?.writeText(location.href).then(() => say('Link to this scenario copied.'), () => say('Copy failed. The address bar already holds the link.')); }}>Copy link to this scenario</button>
+  );
   const scenarioPanel = (
     <>
       <InterventionPanel bundle={bundle} index={index} showService={showService} onShowService={setShowService} showOutside={showOutside} onShowOutside={setShowOutside} interventions={interventions}
-        onAdd={onAdd} onRemove={onRemove} onClear={onClear} onPickMode={onPickMode} registerPick={registerPick} />
+        onAdd={onAdd} onRemove={onRemove} onClear={onClear} onPickMode={onPickMode} registerPick={registerPick} shareSlot={shareButton} />
       <div className="scn-notices" role="status" aria-live="polite">
         {notice.invalid && (
           <p className="notice" key="invalid">
@@ -226,9 +229,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
           </div>
         )}
       </div>
-      <div className="share">
-        <button type="button" className="btn" onClick={() => { navigator.clipboard?.writeText(location.href).then(() => say('Link to this scenario copied.'), () => say('Copy failed. The address bar already holds the link.')); }}>Copy link to this scenario</button>
-      </div>
+      {interventions.length === 0 && <div className="share">{shareButton}</div>}
       <p className="toast" role="status">{toast}</p>
     </>
   );
@@ -338,26 +339,22 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
           </aside>
         )}
         {showPanel && phone && (
-          <aside key="sheet" className={`panel ${sheetOpen ? 'open' : ''}`} aria-label="Scenario and results">
-            <button type="button" className="sheet-handle" aria-expanded={sheetOpen} aria-controls="panel-body" onClick={() => setSheetOpen((o) => !o)}>
-              <span aria-hidden="true" className="grip" />
-              {sheetOpen ? 'Hide panel' : `Scenario & results (${interventions.length})`}
-            </button>
-            <div id="panel-body" className="panel-body">
-              <h2 className="sr-only">Scenario and results</h2>
+          <Sheet key="sheet" label="Scenario and results"
+            tabs={
               <div className="tabs" role="tablist" aria-label="Panel sections">
                 {(['scenario', 'results'] as const).map((t) => (
                   <button key={t} type="button" role="tab" id={`tab-${t}`} aria-selected={panelTab === t} aria-controls={`tabpanel-${t}`}
                     tabIndex={panelTab === t ? 0 : -1} onClick={() => setPanelTab(t)}
                     onKeyDown={(e) => { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { const n = panelTab === 'scenario' ? 'results' : 'scenario'; setPanelTab(n); document.getElementById(`tab-${n}`)?.focus(); } }}>
-                    {t === 'scenario' ? 'Scenario' : 'Results'}
+                    {t === 'scenario' ? `Scenario${interventions.length ? ` (${interventions.length})` : ''}` : 'Results'}
                   </button>
                 ))}
               </div>
-              <div role="tabpanel" id="tabpanel-scenario" aria-labelledby="tab-scenario" hidden={panelTab !== 'scenario'}>{scenarioPanel}</div>
-              <div role="tabpanel" id="tabpanel-results" aria-labelledby="tab-results" hidden={panelTab !== 'results'}>{resultsPanel}</div>
-            </div>
-          </aside>
+            }>
+            <h2 className="sr-only">Scenario and results</h2>
+            <div role="tabpanel" id="tabpanel-scenario" aria-labelledby="tab-scenario" hidden={panelTab !== 'scenario'}>{scenarioPanel}</div>
+            <div role="tabpanel" id="tabpanel-results" aria-labelledby="tab-results" hidden={panelTab !== 'results'}>{resultsPanel}</div>
+          </Sheet>
         )}
       </main>
       <footer className="foot">

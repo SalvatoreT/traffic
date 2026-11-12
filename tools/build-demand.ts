@@ -302,7 +302,7 @@ for (const p of cfg.periods as { id: string; label: string }[]) {
     const plaus = (x: number, y: number) => parts.reduce((a, q) => {
       const rn = nodeById.get(q.r.surface)!;
       const pref = bearing(center[0], center[1], rn.x, rn.y); // inward: from the ramp toward the study-area center
-      return a + (q.vol / vol) * Math.max(dst.directionFloor, Math.exp(-((angDiff(bearing(x, y, rn.x, rn.y), pref) / dst.directionSigmaDeg) ** 2)));
+      return a + (q.vol / vol) * Math.max(dst.directionFloor, Math.exp(-((angDiff(bearing(x, y, rn.x, rn.y), pref) / dst.directionSigmaDeg) ** 2))) * (dst.decayM ? Math.exp(-Math.hypot(x - rn.x, y - rn.y) / dst.decayM) : 1);
     }, 0);
     const off = kind === 'off', side = off ? 'out' : 'in'; // ends at surface: gate outflow (off) or gate inflow (on)
     const gc = gates.map((g) => { const n = nodeById.get(g.id)!; return { id: g.id, w: (off ? g.outT[p.id] : g.inT[p.id]) * plaus(n.x, n.y), room: capLeft.get(g.id)![side] }; }).filter((c) => c.w > 0 && c.room > 0 && (off ? routable(gid, c.id) : routable(c.id, gid)));
