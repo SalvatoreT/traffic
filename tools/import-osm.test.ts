@@ -142,6 +142,16 @@ describe('rockridge network', () => {
     }
   });
 
+  it('treats Hillegass Avenue / 62nd Street as one intersection with four approach streets', () => {
+    const touching = (id: number, name: string) => net.links.filter((l) => l.name === name && (l.from === id || l.to === id));
+    const both = net.nodes.filter((n) => touching(n.id, 'Hillegass Avenue').length && touching(n.id, '62nd Street').length);
+    expect(both).toHaveLength(1);
+    const id = both[0].id;
+    expect(touching(id, 'Hillegass Avenue').filter((l) => l.to === id)).toHaveLength(2);
+    expect(touching(id, '62nd Street').filter((l) => l.to === id)).toHaveLength(2);
+    expect(net.links.filter((l) => l.to === id)).toHaveLength(4);
+  });
+
   it('applies OSM turn restrictions, time-conditional ones by demand period', () => {
     const bans = net.turnBans ?? [];
     expect(bans.length).toBeGreaterThan(30);
