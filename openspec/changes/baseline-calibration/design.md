@@ -79,7 +79,7 @@ interface Node {
 - Motorway-class links, and nodes touched only by motorway links, are never `inStudyArea`. The study area is derived from an ordered `boundary` list of streets in the area config; Rockridge is bounded by Telegraph Ave, Alcatraz Ave, College Ave, Claremont Ave and the northern carriageway of SR-24. Links on a boundary street count as inside.
 - Config `selectLinks: number[]` (sim `Config`) enables select-link recording; empty by default.
 - Network `turnBans?: { from: number; to: number; periods?: string[] }[]`: motor-vehicle movements banned by OSM turn restrictions (link into the junction, link out of it). `periods` lists the demand periods of a time-conditional ban; the simulator drops the others at start-up. Link `leftLanes?: number`: lanes marked left-turn only in OSM `turn:lanes` at the end of the link.
-- Config `rerouteShare: number` (0 to 1, default 0.8) is additive.
+- Config `rerouteShare: number` (0 to 1, default 0.8) is additive. Replaced in the tenth round by `guidedShare` (share of drivers following live guidance), `switchBand`, `recordTrips` and `legacyReroute` (A/B runs); the old key is gone.
 - Config `signalAdaptMin: number` (minutes between signal adaptations, default 5, 0 keeps the start-up plan) and `motorwayGridlockRemoval: boolean` (default false) are additive.
 
 ### D6 Simulate a wider area than the study area
@@ -134,3 +134,15 @@ Decided on 2026-11-12 (lead's instruction); measured in the ninth round of the r
 - Simulator-measured link costs in the assignment: built and run for three iterations (shares 12.6, 9.9, 15.1 points off; PM removals 0, 4.7, 4.7). Stability came before share error, so the published demand does not use them and the mechanism stays optional.
 - Staggered T-junctions of a same-named cross street (35 m along the through street) are one intersection (user decision, via the lead); 14 pairs on Rockridge.
 - After that join D4 holds in midday, fails in the PM peak in 2 of 3 seeds and in AM in 1 of 3 (it held in all three periods before it). D5 fails on Colby St SB, so the status stays `uncalibrated`, the PM peak is experimental and midday is the default.
+
+### D15 Tenth round: drivers commit to a route (task 13)
+The user reported cars that wander through the neighborhood and expected Berkeley traffic cutting through to SR-24 and College Ave traffic bypassing on Hillegass Ave. Every trip already had an origin and destination. In the code, every 60 s epoch 80% of en-route cars re-planned from the current link and took the result whatever the gain (the share was raised from 30% to 80% in step I as a stabilizer for gridlock that other fixes have since removed). Measured first (step 13.1): about one route change per trip in the PM peak (43% of trips changed at least once, 60% of gate-to-gate trips), mean detour 1.115 against the shortest distance, 9% of trips above 1.3, 0.3% above 2, 0.1% looping, 6.6% with a reversal within 200 m.
+
+Decisions:
+- Indifference band: a guided driver switches only if the alternative remaining route is cheaper than the current one by more than 20% and more than 30 s. [Mahmassani1987], [Srinivasan2000] and [Di2016] establish the mechanism; [Guin2021] reports that 3 to 5 min of saving was needed to accept a rerouting on commute-length trips. No source gives a value for neighborhood trips, so 20% and 30 s are ASSUMPTIONS (`SWITCH_BAND`, `SWITCH_MIN_GAIN_S`; config `switchBand`).
+- Like with like: both costs use current link times and the driver's per-link noise, which was already fixed per trip (`noise(seed, link)`); the cost of a path is summed link by link.
+- No backtracking: an alternative may not touch a node already visited on the trip, which covers reversing onto the link just left and U-turns. A blocked route lifts the rule.
+- At most 2 voluntary changes per trip, at least 120 s apart (ASSUMPTION).
+- Two classes: 46% follow guidance [Guin2021] (regular commute trips; first-time trips 78%), the rest keep the departure route unless blocked. A blocked route is a closed link or banned movement on the remaining route (intervention), or a next link without room for 60 s (ASSUMPTION); both classes then re-plan from the current link.
+- Departure routing is unchanged (current measured link times). Local trip ends are nodes (nearest residential node to the census block); a trip ends on first arrival at its destination node, so it cannot circle; the metrics show no loops for trips with a local end.
+- The diagnostics (a) and (b) are configured in the targets file under `patterns`. They have no observed counterpart.
