@@ -1417,13 +1417,18 @@ impl Simulation {
     /// (may enter node now, blocked only by downstream space)
     fn permission(&self, vid: u32, l: usize, d: f32, v: f32, ctrl: Control) -> (bool, bool) {
         let veh = &self.vehs[vid as usize];
+        let mut rtor = false;
         match ctrl {
             Control::Signal => {
                 let st = self.sig_state[l];
                 if st >= 2 && !self.sneaker(veh, l, d, v) {
                     // [Webster1958]-style dilemma rule: continue on yellow only if a comfortable stop is impossible.
                     if st == 3 || !(v * v / (2.0 * YELLOW_DECEL) > d) {
-                        return (false, false);
+                        if st == 3 && self.rtor_candidate(veh, l) {
+                            rtor = true;
+                        } else {
+                            return (false, false);
+                        }
                     }
                 }
             }
@@ -1446,7 +1451,17 @@ impl Simulation {
         if self.ped_on && self.ped_block(veh, l as u32, b, ctrl) {
             return (false, false);
         }
-        (self.conflict_free(vid, mv, ctrl), false)
+        (self.conflict_free(vid, mv, ctrl, rtor), false)
+    }
+
+    /// Right turn on red after a stop (ASSUMPTION: permitted at every signal, CVC 21453 not verified in this environment, see the validation
+    /// notes of case b10): a car whose next movement is a right turn and that has stood at the line for `STOP_DWELL` may go on red
+    /// when `conflict_free` finds a gap (it yields to every conflicting movement, critical gap `TC_MINOR_RIGHT`).
+    fn rtor_candidate(&self, veh: &Veh, l: usize) -> bool {
+        !self.cfg.no_right_turn_on_red
+            && veh.kind == KIND_CAR
+            && veh.stop_t >= STOP_DWELL
+            && veh.next().and_then(|b| self.topo.find_mv(l as u32, b)).map_or(false, |m| self.topo.mvs[m as usize].kind == K_RIGHT)
     }
 
     /// Permissive-left "sneaker": a left-turner waiting at the stop line may clear on the yellow or all-red, up to SNEAKERS per
@@ -1540,7 +1555,7 @@ impl Simulation {
     }
 
     /// Gap-acceptance / priority / FIFO check for movement `mv` of vehicle `vid`.
-    fn conflict_free(&self, vid: u32, mv: u32, ctrl: Control) -> bool {
+    fn conflict_free(&self, vid: u32, mv: u32, ctrl: Control, rtor: bool) -> bool {
         let veh = &self.vehs[vid as usize];
         let node = self.topo.mvs[mv as usize].node as usize;
         let circle = ctrl == Control::TrafficCircle && !self.eff.ring_node[node];
@@ -1572,7 +1587,7 @@ impl Simulation {
             }
             return true;
         }
-        let tc = self.critical_gap(mv, ctrl, veh.drv.gap_f);
+        let tc = if rtor { TC_MINOR_RIGHT * veh.drv.gap_f } else { self.critical_gap(mv, ctrl, veh.drv.gap_f) };
         for &e in &self.topo.ins[node] {
             if e == l {
                 continue;
@@ -1595,7 +1610,7 @@ impl Simulation {
                     }
                     let Some(xb) = xv.next() else { continue };
                     let Some(mx) = self.topo.find_mv(e, xb) else { continue };
-                    if self.topo.conflicts(mv, mx, false) && self.yields(mv, mx, ctrl) {
+                    if self.topo.conflicts(mv, mx, false) && (rtor || self.yields(mv, mx, ctrl)) {
                         return false;
                     }
                 }

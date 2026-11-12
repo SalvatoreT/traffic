@@ -192,11 +192,13 @@ pub struct Config {
     /// Additive: lane width (m) that decides whether a driver may pass a cyclist on a one-way single-lane street
     /// (default `params::LANE_WIDTH_M`).
     pub lane_width_m: Option<f64>,
+    /// Additive: forbid right turns on red (default false: a car that has stopped at a red may turn right when a gap allows, ASSUMPTION, see `Simulation::rtor_candidate`).
+    pub no_right_turn_on_red: bool,
 }
 
 impl Default for Config {
     fn default() -> Self {
-        Config { seed: 1, period: String::new(), demand_scale: 1.0, select_links: Vec::new(), local_cost_factor: None, reroute_share: None, signal_adapt_min: None, motorway_gridlock_removal: false, ped_yield_marked: None, ped_yield_unmarked: None, lane_width_m: None }
+        Config { seed: 1, period: String::new(), demand_scale: 1.0, select_links: Vec::new(), local_cost_factor: None, reroute_share: None, signal_adapt_min: None, motorway_gridlock_removal: false, ped_yield_marked: None, ped_yield_unmarked: None, lane_width_m: None, no_right_turn_on_red: false }
     }
 }
 

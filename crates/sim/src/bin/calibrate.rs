@@ -23,6 +23,7 @@ struct Args {
     reroute_share: Option<f64>,
     adapt_min: Option<f64>,
     motorway_removal: bool,
+    no_rtor: bool,
     out: Option<PathBuf>,
     write: bool,
     link_flows: bool,
@@ -36,7 +37,7 @@ struct Args {
 }
 
 fn parse_args() -> Args {
-    let mut a = Args { area: "rockridge".into(), period: "pm_peak".into(), minutes: 60.0, scale: 1.0, seed: 1, warmup_min: 10.0, local_factor: None, reroute_share: None, adapt_min: None, motorway_removal: false, out: None, write: true, link_flows: false, cars_only: false, drop: Vec::new(), demand_path: None, network_path: None };
+    let mut a = Args { area: "rockridge".into(), period: "pm_peak".into(), minutes: 60.0, scale: 1.0, seed: 1, warmup_min: 10.0, local_factor: None, reroute_share: None, adapt_min: None, motorway_removal: false, no_rtor: false, out: None, write: true, link_flows: false, cars_only: false, drop: Vec::new(), demand_path: None, network_path: None };
     let argv: Vec<String> = std::env::args().skip(1).collect();
     let mut i = 0;
     while i < argv.len() {
@@ -56,6 +57,7 @@ fn parse_args() -> Args {
             "--local-factor" => a.local_factor = Some(val().parse().unwrap_or_else(|_| usage("bad --local-factor"))),
             "--adapt-min" => a.adapt_min = Some(val().parse().unwrap_or_else(|_| usage("bad --adapt-min"))),
             "--motorway-removal" => a.motorway_removal = true,
+            "--no-rtor" => a.no_rtor = true,
             "--out" => a.out = Some(PathBuf::from(val())),
             "--no-write" => a.write = false,
             "--link-flows" => a.link_flows = true,
@@ -75,7 +77,7 @@ fn usage(msg: &str) -> ! {
     if !msg.is_empty() {
         eprintln!("error: {msg}");
     }
-    eprintln!("usage: calibrate [--area rockridge] [--period pm_peak] [--minutes 60] [--scale 1.0] [--seed 1] [--warmup 10] [--adapt-min 5] [--motorway-removal] [--out DIR] [--no-write] [--link-flows] [--cars-only]");
+    eprintln!("usage: calibrate [--area rockridge] [--period pm_peak] [--minutes 60] [--scale 1.0] [--seed 1] [--warmup 10] [--adapt-min 5] [--motorway-removal] [--no-rtor] [--out DIR] [--no-write] [--link-flows] [--cars-only]");
     std::process::exit(if msg.is_empty() { 0 } else { 2 });
 }
 
@@ -390,7 +392,7 @@ fn main() {
     sel.dedup();
 
     // ---- run
-    let cfg = Config { seed: args.seed, period: args.period.clone(), demand_scale: args.scale, select_links: sel, local_cost_factor: args.local_factor, reroute_share: args.reroute_share, signal_adapt_min: args.adapt_min, motorway_gridlock_removal: args.motorway_removal, ..Default::default() };
+    let cfg = Config { seed: args.seed, period: args.period.clone(), demand_scale: args.scale, select_links: sel, local_cost_factor: args.local_factor, reroute_share: args.reroute_share, signal_adapt_min: args.adapt_min, motorway_gridlock_removal: args.motorway_removal, no_right_turn_on_red: args.no_rtor, ..Default::default() };
     let mut sim = Simulation::from_parts(net.clone(), demand.clone(), cfg).expect("sim");
     let total_s = args.minutes * 60.0;
     let warm_s = if total_s >= 1800.0 { args.warmup_min * 60.0 } else { 0.0 };

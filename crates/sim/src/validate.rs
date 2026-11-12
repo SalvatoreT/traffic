@@ -297,6 +297,17 @@ pub fn approach_cap(a: Appr, seed: u64, extra: &[(u32, u32, f64, FlowMode)], nod
     (r.rate(&[x.w_in], WARM, WARM + MEAS) / a.lanes as f64, gc)
 }
 
+/// Right turns on red: (discharge of a one-lane approach whose cars all turn right, veh/h; G/C of its phase) with `cross_q` veh/h per lane of
+/// cross-street traffic that the turn merges with, from the left. Cycle 100 s, saturated demand.
+pub fn rtor_cap(cross_q: f64, no_rtor: bool, seed: u64) -> (f64, f64) {
+    let (net, x) = cross(Control::Signal, RoadClass::Secondary, 1, RoadClass::Secondary, 1, false);
+    let fl = [(x.w, x.s, 4000.0, FlowMode::Car), (x.n, x.s, cross_q, FlowMode::Car), (x.s, x.n, cross_q, FlowMode::Car), (x.e, x.w, 1.0, FlowMode::Car)];
+    let mut r = Run::new(net, demand_m(&fl), Config { no_right_turn_on_red: no_rtor, signal_adapt_min: Some(0.0), ..cfg(seed) }).with_ivs(&pin(x.c, 100.0)).watching(&[x.w_in]);
+    r.advance(WARM + MEAS);
+    let gc = r.green_frac(x.w_in, WARM, WARM + MEAS);
+    (r.rate(&[x.w_in], WARM, WARM + MEAS), gc)
+}
+
 // ---------------------------------------------------------------- (c) two signals
 
 pub fn two_signals(d: f64, adaptive: bool, seed: u64) -> f64 {
@@ -527,6 +538,16 @@ pub fn run_all() -> Vec<Case> {
         };
         out.push(case(id, format!("{nm} (green share {gc:.2})"), "veh/h/lane", cap, lo, hi, src, format!("per lane, cycle 100 s, saturated; {note}")));
     }
+    // Right turn on red (ASSUMPTION: permitted at every signal after a stop; the legal basis, California Vehicle Code 21453, could not be read in this
+    // environment). Gap acceptance for the turn is the two-way-stop minor right (tc 6.2 s, tf 3.3 s [Brilon1999]); the stop costs the rest of the
+    // follow-up headway, so the red-time discharge is at most 3600 / tf = 1,090 veh/h.
+    let (off, gc0) = rtor_cap(100.0, true, 1);
+    let (on, gc1) = rtor_cap(100.0, false, 1);
+    let (lo10, hi10) = (1.0 + 0.5 * (1.0 - gc1) * 1090.0 / (2000.0 * gc1), 1.0 + (1.0 - gc1) * 1090.0 / (1500.0 * gc1));
+    out.push(case("b10", format!("Right turn on red, light cross traffic (100 veh/h/lane from the left): discharge over the no-turn-on-red discharge (green share {gc1:.2})"), "ratio", on / off, lo10, hi10, "ASSUMPTION", format!("{on:.0} against {off:.0} veh/h; bounds: red time (1 - G/C = {:.2}) at 0.5 to 1.0 of 1,090 veh/h on top of s x G/C with s 1,500 to 2,000 [FHWA-SIG2004]", 1.0 - gc1)));
+    let (sat, gcs) = rtor_cap(4000.0, false, 1);
+    let (sat_off, gcs0) = rtor_cap(4000.0, true, 1);
+    out.push(case("b11", format!("Right turn on red, saturated cross street (4,000 veh/h/lane from the left): discharge over the no-turn-on-red discharge (green share {gcs:.2})"), "ratio", sat / sat_off, 0.95, 1.15, "ASSUMPTION", format!("{sat:.0} against {sat_off:.0} veh/h (green share {gcs0:.2} without); the cross street's green is the red of the approach, so no gap opens")));
     let iso = [false, true].map(|ad| two_signals_served(1000.0, ad, 1));
     out.push(case("c5", "Adaptive plan over fixed plan, saturated arterial (4,000 veh/h per direction) with a 500 veh/h cross street: vehicles served at the first signal", "ratio", iso[1].1 / iso[0].1, 0.9, 1.1, "ASSUMPTION", format!("{:.0} against {:.0} veh/h on all four approaches; the start-up plan sizes the arterial phase for the uncapped 4,000 veh/h (flow ratio 1.11) and gives the cross street 16 s of a 90 s cycle, so it serves {:.0} of the {:.0} veh/h the cross street offers; the adaptive plan gives it 30 s and serves {:.0}, and the arterial through flow past the second signal falls from {:.0} to {:.0} veh/h as a consequence (not a defect of the adaptive plan)", iso[1].1, iso[0].1, iso[0].2, 1000.0, iso[1].2, iso[0].0, iso[1].0)));
     out.push(case("c6", "Adaptive plan: share of the cross-street demand (2 x 500 veh/h) served at the first signal", "share", iso[1].2 / 1000.0, 0.9, 1.1, "ASSUMPTION", format!("{:.0} against {:.0} veh/h with the fixed start-up plan", iso[1].2, iso[0].2)));

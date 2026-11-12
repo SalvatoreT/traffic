@@ -20,9 +20,11 @@ export interface Station {
   weight: number;
   /** Tolerance class for the report (percent): gates and ramps have their own, set by config. */
   tolPct: number;
+  /** The source records the target is derived from: a key per record and direction, and the share of that record this station carries (a record split over several stations carries shares that add to at most 1). */
+  records: { key: string; share: number }[];
 }
 
-export interface GateIn { id: number; kind: string; street: string | null; source: string; inT: Record<string, number>; outT: Record<string, number>; /** Gates that split one count (same street, close together, same source) share a group key. */ group?: string }
+export interface GateIn { id: number; kind: string; street: string | null; source: string; /** Source record of the count (TMC leg or Caltrans station) and the share of it this gate takes in each direction. */ record?: string; shareIn?: number; shareOut?: number; inT: Record<string, number>; outT: Record<string, number>; /** Gates that split one count (same street, close together, same source) share a group key. */ group?: string }
 export interface TmcIn { id: string; x: number; y: number; legs: Record<string, { entering: number; leaving: number }>; legStreets: Record<string, string> }
 export interface RampIn { kind: 'off' | 'on'; surface: number; streets: string[]; adt: number; adtKind: string; source: string }
 export interface OverrideIn { street: string; adt: number; factor?: number; x: number; y: number; source: string }
@@ -83,8 +85,9 @@ export function buildStations(s: StationInputs, notes: string[]): Station[] {
     const tag = gs.length > 1 ? `gates ${ids.join(' + ')}` : `gate ${first.id}`;
     const basis = `DATA (${first.source})`;
     const inT = sumT(o, 'inT'), outT = sumT(i, 'outT');
-    if (o.length && s.periodIds.some((p) => inT[p] > 0)) out.push({ id: gs.length > 1 ? `gate group ${key} in` : `gate ${first.id} in`, kind: 'gate', label: `${tag} ${nameOf(s, (outIdx.get(o[0].id) ?? [])[0])} entering`, basis, links: [], origins: o.map((g) => g.id), target: inT, weight: W.gate ?? 1, tolPct: T.gate ?? 10 });
-    if (i.length && s.periodIds.some((p) => outT[p] > 0)) out.push({ id: gs.length > 1 ? `gate group ${key} out` : `gate ${first.id} out`, kind: 'gate', label: `${tag} ${nameOf(s, (inIdx.get(i[0].id) ?? [])[0])} leaving`, basis, links: [], destinations: i.map((g) => g.id), target: outT, weight: W.gate ?? 1, tolPct: T.gate ?? 10 });
+    const rec = (list: GateIn[], dir: 'entering' | 'leaving') => (first.record ? [{ key: `${first.record}|${dir}`, share: list.reduce((a, g) => a + ((dir === 'entering' ? g.shareIn : g.shareOut) ?? 1), 0) }] : []);
+    if (o.length && s.periodIds.some((p) => inT[p] > 0)) out.push({ id: gs.length > 1 ? `gate group ${key} in` : `gate ${first.id} in`, kind: 'gate', label: `${tag} ${nameOf(s, (outIdx.get(o[0].id) ?? [])[0])} entering`, basis, links: [], origins: o.map((g) => g.id), target: inT, weight: W.gate ?? 1, tolPct: T.gate ?? 10, records: rec(o, 'entering') });
+    if (i.length && s.periodIds.some((p) => outT[p] > 0)) out.push({ id: gs.length > 1 ? `gate group ${key} out` : `gate ${first.id} out`, kind: 'gate', label: `${tag} ${nameOf(s, (inIdx.get(i[0].id) ?? [])[0])} leaving`, basis, links: [], destinations: i.map((g) => g.id), target: outT, weight: W.gate ?? 1, tolPct: T.gate ?? 10, records: rec(i, 'leaving') });
   }
 
   // 2. Turning-movement count legs at counted intersections inside the model: entering = incoming links of the leg, leaving = outgoing.
@@ -111,8 +114,8 @@ export function buildStations(s: StationInputs, notes: string[]): Station[] {
       const shares = (p: string) => (p === s.lastPeriod ? sPm : clamp(sPm + enterInward * (s.periodFactors[p].inboundShare - pfPm.inboundShare), 0.2, 0.8));
       const tot = (p: string) => (v.entering + v.leaving) * (s.periodFactors[p].volume / pfPm.volume);
       const basis = `DATA (Oakland TMC ${c.id}, ${leg}-leg at junction ${node.id})`;
-      if (ins.length) out.push({ id: `tmc ${c.id} ${leg} entering`, kind: 'tmc', label: `${c.id} ${leg} leg entering`, basis, links: ins, target: per((p) => tot(p) * shares(p)), weight: W.tmc ?? 1, tolPct: T.tmc ?? 15 });
-      if (outs.length) out.push({ id: `tmc ${c.id} ${leg} leaving`, kind: 'tmc', label: `${c.id} ${leg} leg leaving`, basis, links: outs, target: per((p) => tot(p) * (1 - shares(p))), weight: W.tmc ?? 1, tolPct: T.tmc ?? 15 });
+      if (ins.length) out.push({ id: `tmc ${c.id} ${leg} entering`, kind: 'tmc', label: `${c.id} ${leg} leg entering`, basis, links: ins, target: per((p) => tot(p) * shares(p)), weight: W.tmc ?? 1, tolPct: T.tmc ?? 15, records: [{ key: `tmc ${c.id}|${leg}|entering`, share: 1 }] });
+      if (outs.length) out.push({ id: `tmc ${c.id} ${leg} leaving`, kind: 'tmc', label: `${c.id} ${leg} leg leaving`, basis, links: outs, target: per((p) => tot(p) * (1 - shares(p))), weight: W.tmc ?? 1, tolPct: T.tmc ?? 15, records: [{ key: `tmc ${c.id}|${leg}|leaving`, share: 1 }] });
     }
   }
 
@@ -141,6 +144,7 @@ export function buildStations(s: StationInputs, notes: string[]): Station[] {
         id: `caltrans ${o.street} ${Math.round(o.x)},${Math.round(o.y)} ${k}`, kind: 'caltrans', label: `${o.street} station, link ${s.links[b.i].id} ${k}ward (${Math.round(b.d)} m from the station)`,
         basis: `DATA (Caltrans AADT ${Math.round(o.adt)}${factor !== 1 ? `, x ${factor} ASSUMPTION attenuation` : ''})`,
         links: [b.i], target: per((p) => o.adt * factor * s.kFactor * s.periodFactors[p].volume * share(p)), weight: W.caltrans ?? 1, tolPct: T.caltrans ?? 15,
+        records: [{ key: `ov ${o.source}|${k === 'in' ? 'entering' : 'leaving'}`, share: 1 }],
       });
     }
   }
@@ -151,9 +155,43 @@ export function buildStations(s: StationInputs, notes: string[]): Station[] {
     const idx = (r.kind === 'off' ? inIdx : outIdx).get(r.surface) ?? [];
     const ls = idx.filter((i) => s.links[i].class === 'motorway');
     if (!ls.length) continue;
-    out.push({ id: `ramp ${r.kind} ${r.surface}`, kind: 'ramp', label: `${r.kind}-ramp at node ${r.surface} (${r.streets.join(' / ') || 'unnamed'})`, basis: `DATA (Caltrans ramp ADT ${Math.round(r.adt)}; ${r.source})`, links: ls, target: per((p) => r.adt * s.rampKFactor * s.periodFactors[p].volume), weight: W.ramp ?? 1, tolPct: T.ramp ?? 5 });
+    out.push({ id: `ramp ${r.kind} ${r.surface}`, kind: 'ramp', label: `${r.kind}-ramp at node ${r.surface} (${r.streets.join(' / ') || 'unnamed'})`, basis: `DATA (Caltrans ramp ADT ${Math.round(r.adt)}; ${r.source})`, links: ls, target: per((p) => r.adt * s.rampKFactor * s.periodFactors[p].volume), weight: W.ramp ?? 1, tolPct: T.ramp ?? 5, records: [{ key: `ramp ${r.kind} ${r.surface}`, share: 1 }] });
   }
-  return out;
+  return dedupeStations(out, notes);
+}
+
+/**
+ * A count is used once. Two stations that carry the same source record in the same direction (a gate group fed by a Caltrans station or by a
+ * turning-movement leg, and the link station at that same station or leg) are one constraint: the station on the link, which measures every trip
+ * at that place, is kept and the gate station is dropped (the gate's offered volume keeps the record as its start value).
+ */
+export function dedupeStations(stations: Station[], notes: string[]): Station[] {
+  const byKey = new Map<string, Station[]>();
+  for (const st of stations) for (const r of st.records) (byKey.get(r.key) ?? byKey.set(r.key, []).get(r.key)!).push(st);
+  const drop = new Set<Station>();
+  for (const [key, sts] of byKey) {
+    if (sts.length < 2) continue;
+    const share = sts.reduce((a, st) => a + st.records.find((r) => r.key === key)!.share, 0);
+    if (share <= 1 + 1e-6) continue;
+    const link = sts.filter((st) => st.kind !== 'gate');
+    if (!link.length) continue;
+    for (const st of sts.filter((x) => x.kind === 'gate')) {
+      drop.add(st);
+      notes.push(`${st.label}: dropped, its count (${key.replace(/\|.*$/, '').slice(0, 60)}) is already the station ${link[0].label}; a count is used once`);
+    }
+  }
+  return stations.filter((st) => !drop.has(st));
+}
+
+/** Source records used by more than one station beyond their whole share (empty when every count is used once). */
+export function overusedRecords(stations: Station[]): string[] {
+  const sum = new Map<string, { share: number; ids: string[] }>();
+  for (const st of stations) for (const r of st.records) {
+    const e = sum.get(r.key) ?? sum.set(r.key, { share: 0, ids: [] }).get(r.key)!;
+    e.share += r.share;
+    e.ids.push(st.id);
+  }
+  return [...sum].filter(([, e]) => e.share > 1 + 1e-6).map(([k, e]) => `${k}: ${e.ids.join(', ')}`);
 }
 
 const nameOf = (s: StationInputs, i: number) => s.links[i].name || '(unnamed)';

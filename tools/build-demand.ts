@@ -9,7 +9,7 @@ import { discoverRamps, matchRampVolumes, type Ramp, type RampRow, type RampVolu
 import { linkMetrics, perimeterGap, perimeterLength, perimeterPos, relevanceOf, Router, routeStat, sideOf, type Rect, type Relevance, type RouteStat } from './lib/demand-audit';
 import { makeProjection } from './lib/geo';
 import { buildGraph, costToGo, treeFrom, type Graph } from './lib/assign';
-import { buildStations, fitPeriod, fitReport, type FitConfig, type NetLinkIn, type PeriodResult } from './lib/demand-fit';
+import { buildStations, overusedRecords, fitPeriod, fitReport, type FitConfig, type NetLinkIn, type PeriodResult } from './lib/demand-fit';
 import type { FlowType } from './lib/fit-counts';
 
 const cfgPath = process.argv[2] ?? 'data/demand/rockridge.config.json';
@@ -91,7 +91,7 @@ const tmc = tmcs[0] ?? null;
 const [tx, ty] = tmc ? [tmc.x, tmc.y] : [0, 0];
 
 // ---------- gates: peak targets per period ----------
-interface Gate { id: number; street: string | null; cls: string; deg: number; source: string; kind: 'DATA' | 'DATA(adt)' | 'ASSUMPTION'; adt: number | null; pmIn: number; pmOut: number; inT: Record<string, number>; outT: Record<string, number>; locIn: Record<string, number>; locOut: Record<string, number> }
+interface Gate { id: number; /** Source record of the count and this gate's share of it per direction (see demand-fit.ts, dedupeStations). */ record?: string; shareIn?: number; shareOut?: number; street: string | null; cls: string; deg: number; source: string; kind: 'DATA' | 'DATA(adt)' | 'ASSUMPTION'; adt: number | null; pmIn: number; pmOut: number; inT: Record<string, number>; outT: Record<string, number>; locIn: Record<string, number>; locOut: Record<string, number> }
 const gates: Gate[] = [];
 const pf = cfg.periodFactors;
 const pct = (a: number, b: number) => `${((100 * a) / (b || 1)).toFixed(0)}%`;
@@ -225,16 +225,19 @@ for (const n of surfaceGates) {
   const cls = gateClass(n);
   const { canIn, canOut } = caps(n.id);
   let pmIn: number, pmOut: number, kind: Gate['kind'], source: string, adt: number | null = null;
+  let record: string | undefined, shareIn = 1, shareOut = 1;
   const hit = countFor(n, street);
   if (hit) {
     const grp = legGroups.get(`${hit.c.id}|${hit.leg}`)!;
     pmIn = canIn ? hit.c.legs[hit.leg].entering / Math.max(1, grp.orig) : 0;
     pmOut = canOut ? hit.c.legs[hit.leg].leaving / Math.max(1, grp.dest) : 0;
     kind = 'DATA';
+    record = `tmc ${hit.c.id}|${hit.leg}`;
+    shareIn = 1 / Math.max(1, grp.orig); shareOut = 1 / Math.max(1, grp.dest);
     source = `Oakland TMC ${hit.c.id} ${hit.leg}-leg avg of ${hit.c.legs[hit.leg].files} counts, ${Math.round(Math.hypot(n.x - hit.c.x, n.y - hit.c.y))} m away, shared by ${Math.max(grp.orig, grp.dest)} gate node(s)`;
   } else {
     const ov = nearestOverride(n, street);
-    if (ov) { adt = ov.adt * (ov.factor ?? 1); kind = 'DATA(adt)'; source = `Caltrans AADT: ${ov.source}`; }
+    if (ov) { adt = ov.adt * (ov.factor ?? 1); kind = 'DATA(adt)'; source = `Caltrans AADT: ${ov.source}`; record = `ov ${ov.source}`; shareIn = shareOut = 1 / streetGroupSize(n); }
     else { adt = classAdt[cls] ?? classAdt.residential; kind = 'ASSUMPTION'; source = `class default (${cls})`; }
     const pk = adt! * cfg.kFactor;
     // A two-way street can appear as a pair of one-way gate nodes (one enter-only, one exit-only, same street,
@@ -247,7 +250,7 @@ for (const n of surfaceGates) {
     pmIn = canIn ? (canOut ? pkn * share : paired ? pkn * share : pkn) : 0;
     pmOut = canOut ? (canIn ? pkn - pmIn : paired ? pkn * (1 - share) : pkn) : 0;
   }
-  const g: Gate = { id: n.id, street, cls, deg: bearing(n.x, n.y), source, kind, adt, pmIn, pmOut, inT: {}, outT: {}, locIn: {}, locOut: {} };
+  const g: Gate = { id: n.id, record, shareIn, shareOut, street, cls, deg: bearing(n.x, n.y), source, kind, adt, pmIn, pmOut, inT: {}, outT: {}, locIn: {}, locOut: {} };
   const sPm = pmIn / (pmIn + pmOut || 1);
   for (const p of periodIds) {
     const tot = (pmIn + pmOut) * pf[p].volume;
@@ -630,12 +633,14 @@ if (fc?.enabled) {
   const stations = buildStations({
     nodes: net.nodes as never, links: net.links as NetLinkIn[], periodIds, lastPeriod, periodFactors: pf, kFactor: cfg.kFactor, rampKFactor: rc.kFactor, center,
     inBbox: (x, y) => x >= rect.minX && x <= rect.maxX && y >= rect.minY && y <= rect.maxY,
-    streetKey, gates: gates.map((g) => ({ id: g.id, kind: g.kind, street: g.street, source: g.source, inT: g.inT, outT: g.outT, group: gateGroup(g.id) })),
+    streetKey, gates: gates.map((g) => ({ id: g.id, kind: g.kind, street: g.street, source: g.source, record: g.record, shareIn: g.shareIn, shareOut: g.shareOut, inT: g.inT, outT: g.outT, group: gateGroup(g.id) })),
     tmcs: tmcs.map((c) => ({ id: c.id, x: c.x, y: c.y, legs: c.legs, legStreets: c.legStreets })),
     ramps: ramps.map((r) => { const v = rampVol.get(r)!; return { kind: r.kind, surface: r.surface, streets: r.streets, adt: v.adt, adtKind: v.kind, source: v.source }; }),
     overrides: (cfg.adtOverrides ?? []).map((o: { street: string; adt: number; factor?: number; lat: number; lon: number; source: string }) => { const [x, y] = toXY(o.lat, o.lon); return { street: o.street, adt: o.adt, factor: o.factor, x, y, source: o.source }; }),
     cfg: { tmcNodeMaxM: fc.tmcNodeMaxM, stationRadiusM: fc.stationRadiusM, weights: fc.weights, tolerancePct: fc.tolerancePct },
   }, stationNotes);
+  const overused = overusedRecords(stations);
+  if (overused.length) throw new Error(`a count is used by more than one station: ${overused.join('; ')}`);
   const fitCfg: FitConfig = {
     fit: { lo: fc.bounds.lo, hi: fc.bounds.hi, byType: fc.bounds.byType, maxIter: fc.maxIter, tol: fc.tol, damping: fc.damping, uncounted: fc.uncounted.rule, volumeWeightedMedian: fc.uncounted.volumeWeighted, stationary: fc.stationary ?? 1e-4, softStep: fc.softStep ?? 1e-3, stallWindow: fc.stallWindow ?? 25, stallGain: fc.stallGain ?? 0.002, blockedShare: fc.blockedShare ?? 0.8, band: 0, shareTol: fc.shareTol ?? 0.02 },
     draws: fc.draws, noise: fc.noise,
