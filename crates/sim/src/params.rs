@@ -118,7 +118,7 @@ pub const BIKE_COST_V: f32 = 4.5; // ASSUMPTION m/s: nominal speed for routing t
 pub const LANE_WIDTH_M: f64 = 3.3; // lane width (also used for crossing width, D4)
 pub const CAR_WIDTH_M: f32 = 1.8;
 pub const BIKE_WIDTH_M: f32 = 0.7;
-pub const PASS_DECISION_GAP: f32 = 12.0; // m: following gap at which a driver decides to pass
+pub const PASS_DECISION_GAP: f32 = 60.0; // m: distance at which a driver notices a cyclist ahead and decides to pass or follow
 pub const PASS_MIN_DV: f32 = 1.5; // m/s: desired-speed advantage that makes a driver want to pass
 pub const PASS_TIME_S: f32 = 5.0; // s: oncoming vehicle must be at least this far in time
 pub const PASS_MIN_CLEAR_M: f32 = 40.0; // m: and at least this far away, to pass using the opposing lane
@@ -151,3 +151,5 @@ pub const PET_ENCOUNTER_S: f32 = 5.0; // ASSUMPTION: an encounter is a vehicle p
 /// [Tefft2013]. Between points the index interpolates linearly; below the first point it falls linearly to zero at 0 mph and
 /// above the last it extends along the last segment, capped at 1 (interpolation choices are ours, not the paper's).
 pub const TEFFT_AIS4: [(f32, f32); 5] = [(17.1, 0.10), (24.9, 0.25), (33.0, 0.50), (40.8, 0.75), (48.1, 0.90)];
+pub const PED_EMERGENCY_B: f32 = 8.0; // ASSUMPTION m/s^2: hardest braking a driver uses to stop for a pedestrian already crossing
+pub const LC_GAP_M: f32 = 5.0; // ASSUMPTION: gap needed ahead of and behind a vehicle that changes lane around a dwelling bus

@@ -8,7 +8,7 @@ use std::cmp::Ordering;
 use std::collections::{BinaryHeap, HashMap};
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
-use traffic_sim::model::{Config, Control, Demand, Network, RoadClass};
+use traffic_sim::model::{Config, Control, Demand, FlowMode, Network, RoadClass, TransitFile};
 use traffic_sim::sim::{SelectLinkRecord, Simulation, StreetVisit};
 
 struct Args {
@@ -24,10 +24,16 @@ struct Args {
     out: Option<PathBuf>,
     write: bool,
     link_flows: bool,
+    /// `--transit [PATH]`: load bus service (default `public/data/<area>.transit.json`).
+    transit: Option<Option<PathBuf>>,
+    /// `--cars-only`: drop bicycle and pedestrian flows (and ignore transit) for an A/B comparison.
+    cars_only: bool,
+    /// `--drop bicycle,pedestrian`: drop the listed modes' flows.
+    drop: Vec<String>,
 }
 
 fn parse_args() -> Args {
-    let mut a = Args { area: "rockridge".into(), period: "pm_peak".into(), minutes: 60.0, scale: 1.0, seed: 1, warmup_min: 10.0, local_factor: None, adapt_min: None, motorway_removal: false, out: None, write: true, link_flows: false };
+    let mut a = Args { area: "rockridge".into(), period: "pm_peak".into(), minutes: 60.0, scale: 1.0, seed: 1, warmup_min: 10.0, local_factor: None, adapt_min: None, motorway_removal: false, out: None, write: true, link_flows: false, transit: None, cars_only: false, drop: Vec::new() };
     let argv: Vec<String> = std::env::args().skip(1).collect();
     let mut i = 0;
     while i < argv.len() {
@@ -49,6 +55,15 @@ fn parse_args() -> Args {
             "--out" => a.out = Some(PathBuf::from(val())),
             "--no-write" => a.write = false,
             "--link-flows" => a.link_flows = true,
+            "--cars-only" => a.cars_only = true,
+            "--drop" => a.drop = val().split(',').map(String::from).collect(),
+            "--transit" => {
+                let path = argv.get(i + 1).filter(|v| !v.starts_with("--")).cloned();
+                if path.is_some() {
+                    i += 1;
+                }
+                a.transit = Some(path.map(PathBuf::from));
+            }
             "-h" | "--help" => usage(""),
             _ => usage(&format!("unknown argument {k}")),
         }
@@ -61,7 +76,7 @@ fn usage(msg: &str) -> ! {
     if !msg.is_empty() {
         eprintln!("error: {msg}");
     }
-    eprintln!("usage: calibrate [--area rockridge] [--period pm_peak] [--minutes 60] [--scale 1.0] [--seed 1] [--warmup 10] [--adapt-min 5] [--motorway-removal] [--out DIR] [--no-write] [--link-flows]");
+    eprintln!("usage: calibrate [--area rockridge] [--period pm_peak] [--minutes 60] [--scale 1.0] [--seed 1] [--warmup 10] [--adapt-min 5] [--motorway-removal] [--out DIR] [--no-write] [--link-flows] [--transit [PATH]] [--cars-only]");
     std::process::exit(if msg.is_empty() { 0 } else { 2 });
 }
 
@@ -255,7 +270,15 @@ fn main() {
     let dem_json = read(root.join(format!("public/data/{}.demand.json", args.area)));
     let targets: Value = serde_json::from_str(&read(root.join(format!("data/calibration/{}.targets.json", args.area)))).expect("targets json");
     let net: Network = serde_json::from_str(&net_json).expect("network");
-    let demand: Demand = serde_json::from_str(&dem_json).expect("demand");
+    let mut demand: Demand = serde_json::from_str(&dem_json).expect("demand");
+    if args.cars_only {
+        for p in demand.periods.iter_mut() {
+            p.flows.retain(|f| f.mode == FlowMode::Car);
+        }
+    }
+    for p in demand.periods.iter_mut() {
+        p.flows.retain(|f| !args.drop.iter().any(|d| (d == "bicycle" && f.mode == FlowMode::Bicycle) || (d == "pedestrian" && f.mode == FlowMode::Pedestrian)));
+    }
     let nn = net.nodes.len();
     let mut inc: Vec<Vec<usize>> = vec![Vec::new(); nn];
     for (l, k) in net.links.iter().enumerate() {
@@ -315,7 +338,11 @@ fn main() {
 
     // ---- run
     let cfg = Config { seed: args.seed, period: args.period.clone(), demand_scale: args.scale, select_links: sel, local_cost_factor: args.local_factor, signal_adapt_min: args.adapt_min, motorway_gridlock_removal: args.motorway_removal, ..Default::default() };
-    let mut sim = Simulation::from_parts(net.clone(), demand.clone(), cfg).expect("sim");
+    let transit: Option<TransitFile> = args.transit.as_ref().map(|p| {
+        let path = p.clone().unwrap_or_else(|| root.join(format!("public/data/{}.transit.json", args.area)));
+        serde_json::from_str(&read(path)).expect("transit json")
+    });
+    let mut sim = Simulation::from_parts_transit(net.clone(), demand.clone(), cfg, transit).expect("sim");
     let total_s = args.minutes * 60.0;
     let warm_s = if total_s >= 1800.0 { args.warmup_min * 60.0 } else { 0.0 };
     let t0 = std::time::Instant::now();
@@ -472,11 +499,18 @@ fn main() {
 
     // ---- demand summary
     let period = demand.periods.iter().find(|p| p.id == args.period).or(demand.periods.first());
-    let total_demand: f64 = period.map(|p| p.flows.iter().map(|f| f.veh_per_hour).sum()).unwrap_or(0.0);
+    let total_demand: f64 = period.map(|p| p.flows.iter().filter(|f| f.mode == FlowMode::Car).map(|f| f.veh_per_hour).sum()).unwrap_or(0.0);
+    let mode_demand = |md: FlowMode| -> (usize, f64) {
+        period.map_or((0, 0.0), |p| p.flows.iter().filter(|f| f.mode == md).fold((0, 0.0), |a, f| (a.0 + 1, a.1 + f.veh_per_hour)))
+    };
+    let (bike_flows, bike_vph) = mode_demand(FlowMode::Bicycle);
+    let (ped_flows, ped_vph) = mode_demand(FlowMode::Pedestrian);
     let mut by_origin: HashMap<u32, f64> = HashMap::new();
     if let Some(p) = period {
         for f in &p.flows {
-            *by_origin.entry(f.origin).or_default() += f.veh_per_hour;
+            if f.mode == FlowMode::Car {
+                *by_origin.entry(f.origin).or_default() += f.veh_per_hour;
+            }
         }
     }
     let mut top_origins: Vec<(u32, f64)> = by_origin.into_iter().collect();
@@ -496,6 +530,16 @@ fn main() {
     for s in &series {
         let _ = writeln!(md, "| {:.0} | {} | {} | {} | {} | {:.2} |", s.t / 60.0, s.veh, s.backlog, s.completed, s.removed, s.art_speed);
     }
+    let (nb, dropped, blocked) = sim.transit_report();
+    let _ = writeln!(md, "## Per-mode results\n");
+    let _ = writeln!(md, "Offered: {:.0} car veh/h; {} bicycle flows ({:.0}/h); {} pedestrian flows ({:.0}/h); {} bus routes running ({} dropped as unlinked, {} runs blocked). Bicycle and pedestrian volumes are assumptions, not counts.\n", total_demand, bike_flows, bike_vph * args.scale, ped_flows, ped_vph * args.scale, nb, dropped, blocked);
+    let _ = writeln!(md, "| Mode | In network | Completed | Mean time (s) | Other |\n| --- | --- | --- | --- | --- |");
+    let _ = writeln!(md, "| Car | {} | {} | {:.0} | |", m.modes.car.in_network, m.modes.car.completed_trips, m.modes.car.mean_trip_time);
+    let _ = writeln!(md, "| Bus | {} | {} | {:.0} | mean speed {:.2} m/s |", m.modes.bus.in_network, m.modes.bus.completed_runs, m.modes.bus.mean_run_time, m.modes.bus.mean_speed);
+    let _ = writeln!(md, "| Bicycle | {} | {} | {:.0} | |", m.modes.bicycle.in_network, m.modes.bicycle.completed_trips, m.modes.bicycle.mean_trip_time);
+    let _ = writeln!(md, "| Pedestrian | {} | {} | {:.0} | mean crossing delay {:.1} s |", m.modes.pedestrian.in_network, m.modes.pedestrian.completed_trips, m.modes.pedestrian.mean_trip_time, m.modes.pedestrian.mean_crossing_delay);
+    let v = &m.vulnerable;
+    let _ = writeln!(md, "\nVulnerable road users (surrogate indicators): pedestrian conflicts {}, bicycle conflicts {}, close passes {}, pedestrian injury-risk index {:.3}, bicycle injury-risk index {:.3} (proxy), mean vehicle speed at pedestrian encounters {:.2} m/s.\n", v.ped_conflicts, v.bike_conflicts, v.close_passes, v.ped_injury_risk_index, v.bike_injury_risk_index, v.mean_vehicle_speed_at_ped_encounter);
     let _ = writeln!(md, "\n## Select-link shares: modeled vs observed (design D5: headline = freeway shares, tolerance +/-10 pp)\n");
     for n in &notes {
         let _ = writeln!(md, "- {n}");
@@ -597,6 +641,8 @@ fn main() {
                 "arterialMeanSpeed": m.arterial_mean_speed, "arterialMeanSpeedLast15min": art_tail,
                 "meanTripDelay": m.mean_trip_delay, "meanTripTime": m.mean_trip_time, "completed": m.completed_trips, "unroutable": m.unroutable_trips,
             },
+            "modes": serde_json::to_value(&m.modes).unwrap_or(Value::Null),
+            "vulnerable": serde_json::to_value(&m.vulnerable).unwrap_or(Value::Null),
             "series": series.iter().map(|s| json!({"tMin": s.t / 60.0, "vehicles": s.veh, "backlog": s.backlog, "completed": s.completed, "removed": s.removed, "arterialSpeed": s.art_speed})).collect::<Vec<_>>(),
             "shares": rows.iter().map(|r| json!({
                 "block": r.target, "side": r.side, "via": r.via, "observed": r.observed, "observedPm": r.observed_pm,

@@ -13,6 +13,7 @@ mod modes;
 mod ped;
 
 use modes::*;
+pub use modes::injury_risk;
 use ped::PedWorld;
 
 /// Minimum free room (m) between a link's entry point and the tail of its last vehicle before another
@@ -78,7 +79,6 @@ fn bike_speed(rng: &mut Rng) -> f32 {
 }
 
 struct Trip {
-    kind: u8,
     v0_abs: f32,
     uid: u32,
     origin: u32,
@@ -137,9 +137,6 @@ struct Veh {
     kind: u8,
     /// Cyclist desired speed (m/s); unused for motor vehicles.
     v0_abs: f32,
-    /// Crosswalk for which this driver last decided whether to yield, and the decision.
-    xw_dec: u32,
-    xw_yield: bool,
     /// Uid of the cyclist this driver is currently passing, and whether the pass has been scored.
     passing: u32,
     pass_close: bool,
@@ -185,8 +182,6 @@ impl Veh {
             sl_hits: Vec::new(),
             kind: KIND_CAR,
             v0_abs: 0.0,
-            xw_dec: NONE_UID,
-            xw_yield: false,
             passing: NONE_UID,
             pass_close: false,
             pass_scored: false,
@@ -682,6 +677,7 @@ impl Simulation {
             self.link_cost[l] = self.eff.ff[l].max(self.ema[l]);
         }
         self.router.invalidate();
+        self.bike_router.invalidate();
         for a in self.awsc.iter_mut() {
             a.clear();
         }
@@ -888,8 +884,8 @@ impl Simulation {
     pub fn check_invariants(&self) -> Result<(), String> {
         for l in 0..self.topo.n_links {
             let nl = self.topo.nlanes(l);
-            for k in 0..nl {
-                let q = &self.lanes[self.topo.lane_base[l] as usize + k];
+            for k in 0..nl + self.bike_on as usize {
+                let q = &self.lanes[self.topo.qidx(l, k)];
                 let mut prev: Option<&Veh> = None;
                 for &id in q {
                     let v = &self.vehs[id as usize];
@@ -926,6 +922,10 @@ impl Simulation {
         self.update_signals();
         self.generate_arrivals();
         self.try_spawns();
+        self.try_spawn_bikes();
+        self.try_spawn_buses();
+        self.update_peds();
+        self.bus_lane_changes();
         self.eval_heads();
         self.compute_accels();
         self.update_vehicles();
@@ -1048,7 +1048,7 @@ impl Simulation {
                 if f.mode == FlowMode::Bicycle {
                     let drv = Drv::bike(&mut f.rng);
                     let v0_abs = bike_speed(&mut f.rng);
-                    let trip = Trip { kind: KIND_BIKE, v0_abs, uid: self.uid_next, origin: f.origin, dest: f.dest, t_arr, through: false, noise_seed: NO_NOISE, drv };
+                    let trip = Trip { v0_abs, uid: self.uid_next, origin: f.origin, dest: f.dest, t_arr, through: false, noise_seed: NO_NOISE, drv };
                     self.uid_next += 1;
                     self.bike_backlog[trip.origin as usize].push_back(trip);
                     continue;
@@ -1056,7 +1056,6 @@ impl Simulation {
                 let drv = Drv::sample(&mut f.rng);
                 let noise_seed = f.rng.u32() & 0x7FFF_FFFF;
                 let trip = Trip {
-                    kind: KIND_CAR,
                     v0_abs: 0.0,
                     uid: self.uid_next,
                     origin: f.origin,
@@ -1311,9 +1310,6 @@ impl Simulation {
             self.vehs[vid as usize].registered = true;
             self.awsc[node].push(vid);
         }
-        if self.ped_on {
-            self.ped_decide_head(vid, l, ctrl);
-        }
         let (go, blocked) = self.permission(vid, l, d, v, ctrl);
         if waiting && !go {
             self.d_node_wait[node] += DT as f32;
@@ -1523,7 +1519,9 @@ impl Simulation {
     // ------------------------------------------------------------------ dynamics
 
     fn compute_accels(&mut self) {
-        let Simulation { lanes, vehs, eff, topo, st, .. } = self;
+        let any_modes = self.bike_on || self.ped_on || !self.buses.is_empty();
+        let lane_w = self.cfg.lane_width_m.unwrap_or(LANE_WIDTH_M) as f32;
+        let Simulation { lanes, vehs, eff, topo, st, net, world, buses, vuln, ped_on, bike_on, .. } = self;
         let mut ttc_new = 0u64;
         for l in 0..topo.n_links {
             let nlanes = topo.nlanes(l);
@@ -1531,8 +1529,8 @@ impl Simulation {
             let limit = eff.limit[l];
             let humps = &eff.humps[l];
             let res = topo.is_res_study[l];
-            for k in 0..nlanes {
-                let q = &lanes[topo.lane_base[l] as usize + k];
+            for k in 0..nlanes + *bike_on as usize {
+                let q = &lanes[topo.qidx(l, k)];
                 for (i, &vid) in q.iter().enumerate() {
                     let (lead_s, lead_v, lead_uid) = if i > 0 {
                         let ld = &vehs[q[i - 1] as usize];
@@ -1540,15 +1538,53 @@ impl Simulation {
                     } else {
                         (f32::INFINITY, 0.0, NONE_UID)
                     };
+                    let ex = if any_modes {
+                        Ctx { topo, eff, net, lanes, vehs, world, buses, ped_on: *ped_on, bike_on: *bike_on, lane_w }.extras(vid, l, k)
+                    } else {
+                        Extra::default()
+                    };
                     let veh = &mut vehs[vid as usize];
                     if veh.frozen {
                         veh.acc = 0.0;
                         veh.v = 0.0;
                         continue;
                     }
+                    if veh.dwell_left > 0.0 {
+                        veh.dwell_left -= DT as f32;
+                        veh.acc = 0.0;
+                        veh.v = 0.0;
+                        continue;
+                    }
+                    if let Some(dw) = ex.dwell {
+                        veh.dwell_left = dw;
+                        veh.next_stop += 1;
+                        veh.acc = 0.0;
+                        veh.v = 0.0;
+                        continue;
+                    }
+                    if ex.skip_stop {
+                        veh.next_stop += 1;
+                    }
+                    if let Some((uid, close)) = ex.begin_pass {
+                        veh.passing = uid;
+                        veh.pass_close = close;
+                        veh.pass_scored = false;
+                    }
+                    if let Some((dv, speed)) = ex.score_pass {
+                        veh.pass_scored = true;
+                        // ASSUMPTION thresholds (params::CLOSE_PASS_*): little lateral room or a large speed difference.
+                        let close = veh.pass_close || dv > CLOSE_PASS_DV;
+                        vuln.bike_pass(speed, close);
+                    }
+                    if ex.end_pass {
+                        veh.passing = NONE_UID;
+                    }
+                    let kind = veh.kind;
                     let d = &veh.drv;
-                    let mut v0 = (limit * d.fcomp).max(1.0);
+                    let mut v0 = if kind == KIND_BIKE { veh.v0_abs.min(limit.max(2.0)) } else { (limit * d.fcomp).max(1.0) };
                     let mut a_req = f32::INFINITY; // kinematic braking needed to meet a speed constraint ahead
+                    // Speed humps slow cars and buses, not cyclists.
+                    let humps: &[f32] = if kind == KIND_BIKE { &[] } else { humps };
                     for &h in humps.iter() {
                         let dist = h - veh.pos;
                         if dist.abs() > HUMP_ZONE {
@@ -1569,7 +1605,7 @@ impl Simulation {
                     if i == 0 {
                         if let Some(b) = veh.next() {
                             if let Some(mv) = topo.find_mv(l as u32, b) {
-                                let vt = eff.mv_vturn[mv as usize];
+                                let vt = if kind == KIND_BIKE { eff.bike_mv_vturn[mv as usize] } else { eff.mv_vturn[mv as usize] };
                                 let dd = (stop_pos - veh.pos).max(0.0);
                                 v0 = v0.min((vt * vt + 2.0 * d.b * dd).sqrt());
                                 if veh.v > vt {
@@ -1584,7 +1620,7 @@ impl Simulation {
                         s = lead_s - veh.pos;
                         vl = lead_v;
                         let dv = veh.v - vl;
-                        if dv > 0.0 && res {
+                        if dv > 0.0 && res && kind != KIND_BIKE {
                             let ttc = s / dv;
                             if ttc < TTC_THRESHOLD {
                                 if veh.ttc_leader != lead_uid {
@@ -1598,7 +1634,14 @@ impl Simulation {
                             veh.ttc_leader = NONE_UID;
                         }
                     }
-                    veh.acc = idm(veh.v, v0, s, veh.v - vl, d.a, d.b, d.t_hw, d.s0).min(a_req).max(-B_MAX);
+                    let mut acc = idm(veh.v, v0, s, veh.v - vl, d.a, d.b, d.t_hw, d.s0).min(a_req);
+                    if let Some(so) = ex.obstacle {
+                        acc = acc.min(idm(veh.v, v0, so, veh.v, d.a, d.b, d.t_hw, d.s0));
+                    }
+                    if let Some((gs, vb)) = ex.bike_lead {
+                        acc = acc.min(idm(veh.v, v0, gs, veh.v - vb, d.a, d.b, d.t_hw, d.s0));
+                    }
+                    veh.acc = acc.max(-B_MAX);
                 }
             }
         }
@@ -1614,8 +1657,8 @@ impl Simulation {
             let l = if rev { nl - 1 - i } else { i };
             let nlanes = self.topo.nlanes(l);
             let stop_pos = self.topo.stop_pos[l];
-            for k in 0..nlanes {
-                let qi = self.topo.lane_base[l] as usize + k;
+            for k in 0..nlanes + self.bike_on as usize {
+                let qi = self.topo.qidx(l, k);
                 let mut leader: Option<(f32, f32, f32)> = None; // pos, len, v
                 let mut idx = 0usize;
                 while idx < self.lanes[qi].len() {
@@ -1674,7 +1717,15 @@ impl Simulation {
                         veh.pos = x;
                         veh.v = v;
                     }
-                    // Statistics.
+                    if self.ped_on && !self.world.mid[l].is_empty() {
+                        self.mid_block_passes(vid, l, x0, x, v);
+                    }
+                    if self.vehs[vid as usize].kind == KIND_BIKE {
+                        leader = Some((x, self.vehs[vid as usize].drv.len, v));
+                        idx += 1;
+                        continue;
+                    }
+                    // Statistics (motor vehicles).
                     let bi = l * NBINS + cb;
                     if v < 1.0 {
                         self.d_link_stopped[l] += dt;
@@ -1716,6 +1767,9 @@ impl Simulation {
     }
 
     fn record_link_exit(&mut self, vid: u32, l: usize) {
+        if self.vehs[vid as usize].kind == KIND_BIKE {
+            return;
+        }
         let bi = l * NBINS + self.cur_bin;
         self.bin_flow[bi] += 1.0;
         self.d_link_exits[l] += 1;
@@ -1736,6 +1790,14 @@ impl Simulation {
 
     fn finish_trip(&mut self, vid: u32, qi: usize) {
         let l = self.vehs[vid as usize].link as usize;
+        if self.vehs[vid as usize].kind == KIND_BIKE {
+            let tt = self.t - self.vehs[vid as usize].t_depart;
+            self.st.bike_completed += 1;
+            self.st.bike_tt_sum += tt;
+            self.lanes[qi].pop_front();
+            self.remove_vehicle(vid);
+            return;
+        }
         self.record_link_exit(vid, l);
         let ff = self.link_ff_for(l, self.vehs[vid as usize].drv.fcomp);
         let veh = &mut self.vehs[vid as usize];
@@ -1744,6 +1806,17 @@ impl Simulation {
         self.st.trip_time_sum += tt;
         self.st.delay_sum += tt - veh.ff_sum as f64;
         self.st.completed += 1;
+        match veh.kind {
+            KIND_BUS => {
+                self.st.bus_completed += 1;
+                self.st.bus_tt_sum += tt;
+                self.st.bus_dist_sum += self.buses[veh.bus_route as usize].len_m as f64;
+            }
+            _ => {
+                self.st.car_completed += 1;
+                self.st.car_tt_sum += tt;
+            }
+        }
         if self.sl.is_some() {
             if let Some(r) = self.sl_record(&self.vehs[vid as usize], true) {
                 self.sl.as_mut().unwrap().records.push(r);
@@ -1758,9 +1831,10 @@ impl Simulation {
         let veh = &self.vehs[vid as usize];
         let Some(b) = veh.next() else { return false };
         let Some(mv) = self.topo.find_mv(l as u32, b) else { return false };
-        if !self.eff.mv_ok[mv as usize] && !veh.replan {
+        if !self.mv_allowed(veh.kind, mv) && !veh.replan {
             return false;
         }
+        let kind = veh.kind;
         let node = self.topo.link_to[l] as usize;
         let ctrl = self.eff.ctrl[node];
         if veh.wait_t < CONFLICT_FALLBACK_S {
@@ -1771,7 +1845,7 @@ impl Simulation {
             }
         }
         let after = veh.route.get(veh.ridx as usize + 1).copied();
-        let Some(lane) = self.pick_lane(b, self.mv_kind(b, after), NODE_CROSS_S) else { return false };
+        let Some(lane) = self.pick_lane_for(kind, b, self.mv_kind(b, after), NODE_CROSS_S) else { return false };
         if ctrl == Control::Signal && self.sig_state[l] >= 2 && self.topo.mvs[mv as usize].kind == K_LEFT {
             self.sneak[l] = self.sneak[l].saturating_add(1);
         }
@@ -1783,7 +1857,7 @@ impl Simulation {
         } else {
             self.topo.mvs[mv as usize].len
         };
-        let vt = self.eff.mv_vturn[mv as usize];
+        let vt = if kind == KIND_BIKE { self.eff.bike_mv_vturn[mv as usize] } else { self.eff.mv_vturn[mv as usize] };
         let (v, a, len, fcomp) = (veh.v, veh.drv.a, veh.drv.len, veh.drv.fcomp);
         let v_exit = vt.min((v * v + 2.0 * a * m_len).sqrt()).max(0.5);
         let t_total = (m_len / (0.5 * (v + v_exit)).max(1.0)).clamp(0.5, 12.0);
@@ -1809,9 +1883,14 @@ impl Simulation {
             self.awsc[node].retain(|&x| x != vid);
             self.vehs[vid as usize].registered = false;
         }
-        let tq = self.topo.lane_base[b as usize] as usize + lane;
+        let tq = self.topo.qidx(b as usize, lane);
         self.reserved[tq] += len + 2.0;
-        self.st.veh_m += m_len as f64;
+        if kind != KIND_BIKE {
+            self.st.veh_m += m_len as f64;
+        }
+        if self.ped_on || self.bike_on {
+            self.on_node_cross(vid, node, mv, t_total, ctrl == Control::TrafficCircle && !self.eff.ring_node[node], v);
+        }
         self.transit[node].push(Transit { veh: vid, mv, to_link: b, lane: lane as u8, t_left: t_total, t_total, v_exit });
         true
     }
@@ -1831,7 +1910,7 @@ impl Simulation {
                     continue;
                 }
                 // Emerge onto the target lane if there is physical room.
-                let qi = self.topo.lane_base[tr.to_link as usize] as usize + tr.lane as usize;
+                let qi = self.topo.qidx(tr.to_link as usize, tr.lane as usize);
                 let len = self.vehs[vid as usize].drv.len;
                 // Physical room, plus enough distance to brake at 4 m/s^2 if closing on the new leader.
                 let (gap, need) = match self.lanes[qi].back() {
@@ -1873,6 +1952,11 @@ impl Simulation {
 
     /// Re-plan the remaining route of an on-link vehicle. Returns false (and removes the vehicle) if unroutable.
     fn replan_vehicle(&mut self, vid: u32, drop_if_fail: bool) -> bool {
+        match self.vehs[vid as usize].kind {
+            KIND_BUS => return true, // buses never re-route
+            KIND_BIKE => return self.replan_bike(vid),
+            _ => {}
+        }
         let (l, dest, seed) = {
             let v = &self.vehs[vid as usize];
             (v.link, v.dest, v.noise_seed)
@@ -1907,7 +1991,7 @@ impl Simulation {
             let v = &self.vehs[vid as usize];
             (v.link as usize, v.lane as usize)
         };
-        let qi = self.topo.lane_base[l] as usize + lane;
+        let qi = self.topo.qidx(l, lane);
         if let Some(p) = self.lanes[qi].iter().position(|&x| x == vid) {
             self.lanes[qi].remove(p);
         }
@@ -1920,12 +2004,16 @@ impl Simulation {
             if !self.vehs[vid as usize].alive {
                 continue;
             }
+            if self.vehs[vid as usize].kind == KIND_BUS {
+                continue; // handled by `recheck_buses`
+            }
             if self.vehs[vid as usize].in_transit {
                 self.vehs[vid as usize].replan = true;
                 continue;
             }
             self.replan_vehicle(vid, true);
         }
+        self.recheck_buses();
     }
 
     fn epoch_update(&mut self) {
@@ -1956,7 +2044,7 @@ impl Simulation {
         self.epoch += 1;
         for vid in 0..self.vehs.len() as u32 {
             let v = &self.vehs[vid as usize];
-            if !v.alive || v.in_transit {
+            if !v.alive || v.in_transit || v.kind != KIND_CAR {
                 continue;
             }
             // ASSUMPTION: a deterministic 30% share of en-route vehicles re-plan each epoch.
@@ -2091,5 +2179,83 @@ impl Simulation {
 
     pub(crate) fn test_eff(&self) -> &Eff {
         &self.eff
+    }
+
+    /// Place a cyclist (desired speed 4.5 m/s) on `link`.
+    pub(crate) fn test_place_bike(&mut self, link: u32, pos: f32, v: f32, dest: u32) -> u32 {
+        self.bike_on = true;
+        let id = self.alloc_veh();
+        self.n_alive -= 1;
+        self.n_bike += 1;
+        let uid = self.uid_next;
+        self.uid_next += 1;
+        let mut route = Vec::new();
+        self.bike_router.ensure_m(dest, &self.topo, self.eff.bike_modal(), &self.eff.bike_link_cost);
+        let table = self.bike_router.table(dest);
+        route::walk_m(table, &self.topo, self.eff.bike_modal(), link, dest, NO_NOISE, &mut route);
+        let drv = Drv::bike(&mut Rng::stream(1, uid as u64));
+        self.vehs[id as usize] = Veh {
+            alive: true,
+            kind: KIND_BIKE,
+            v0_abs: 4.5,
+            uid,
+            link,
+            lane: self.topo.nlanes(link as usize) as u8,
+            pos,
+            v,
+            drv,
+            dest,
+            origin: self.topo.link_from[link as usize],
+            route,
+            t_depart: self.t,
+            t_enter: self.t,
+            ..Veh::blank()
+        };
+        let qi = self.topo.qidx(link as usize, self.topo.nlanes(link as usize));
+        self.lanes[qi].push_back(id);
+        id
+    }
+
+    pub(crate) fn test_set_bus_next_t(&mut self, route: usize, t: f64) {
+        self.buses[route].next_t = t;
+    }
+
+    /// (uid, link, pos, v, lane) of every live agent of `kind` (0 car, 1 bus, 2 bicycle).
+    pub(crate) fn test_kind(&self, kind: u8) -> Vec<(u32, u32, f32, f32, u8)> {
+        self.vehs.iter().filter(|v| v.alive && v.kind == kind).map(|v| (v.uid, v.link, v.pos, v.v, v.lane)).collect()
+    }
+
+    pub(crate) fn test_enable_peds(&mut self) {
+        self.ped_on = true;
+        self.world = PedWorld::build(&self.net, &self.topo);
+        self.set_yield_probabilities();
+    }
+
+    /// (node, leg index, crossing, waiting, width) per crosswalk.
+    pub(crate) fn test_xws(&self) -> Vec<(u32, usize, u32, u32, f32)> {
+        self.world.xws.iter().enumerate().map(|(i, x)| (x.node, i, x.crossing, x.waiting, x.width)).collect()
+    }
+
+    pub(crate) fn test_mid_xws(&self) -> Vec<(u32, u32, f32)> {
+        let mut out = Vec::new();
+        for (l, m) in self.world.mid.iter().enumerate() {
+            for &(p, x) in m {
+                out.push((l as u32, x, p));
+            }
+        }
+        out
+    }
+
+    pub(crate) fn test_spawn_ped(&mut self, origin: u32, dest: u32, v: f32) {
+        let uid = self.uid_next;
+        self.uid_next += 1;
+        self.spawn_ped(uid, origin, dest, self.t, v, 1.0);
+    }
+
+    /// Pedestrian walking toward the mid-block crosswalk `xw` on its first link, crossing it and walking on.
+    pub(crate) fn test_spawn_ped_mid(&mut self, xw: u32, v: f32) {
+        let uid = self.uid_next;
+        self.uid_next += 1;
+        self.spawn_ped_mid(uid, xw, v);
     }
 }

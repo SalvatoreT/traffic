@@ -10,8 +10,8 @@ pub struct WasmSimulation {
 #[wasm_bindgen(js_class = Simulation)]
 impl WasmSimulation {
     #[wasm_bindgen(constructor)]
-    pub fn new(network_json: &str, demand_json: &str, config_json: &str) -> Result<WasmSimulation, JsError> {
-        let inner = crate::sim::Simulation::new(network_json, demand_json, config_json)
+    pub fn new(network_json: &str, demand_json: &str, config_json: &str, transit_json: Option<String>) -> Result<WasmSimulation, JsError> {
+        let inner = crate::sim::Simulation::new_with_transit(network_json, demand_json, config_json, transit_json.as_deref())
             .map_err(|e| JsError::new(&e))?;
         Ok(WasmSimulation { inner })
     }

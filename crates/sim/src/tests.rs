@@ -1261,3 +1261,5 @@ fn car_only_metrics_match_pre_multimodal_golden() {
 }
 const GOLDEN_CORRIDOR: &str = r#"{"arterialMeanSpeed":5.433231493307917,"backlog":0,"completedTrips":521,"cutThrough":{"shareOfLocalVehKm":0.6339836786238884,"vehKm":100.98559865379332},"gridlockRemoved":0,"meanTripDelay":8.384775465409271,"meanTripTime":117.72515884497388,"safety":{"localMeanSpeed":8.709349302463082,"localP85Speed":11.23248003992016,"shareAbove20mph":0.5332095005258342,"shareAbove25mph":0.15732685032164662,"ttcConflicts":3},"spawned":558,"time":1800.0,"unroutableTrips":0,"vehKm":408.3957469768524,"vehiclesInNetwork":37}"#;
 const GOLDEN_CROSS: &str = r#"{"arterialMeanSpeed":7.54867544983693,"backlog":0,"completedTrips":550,"cutThrough":{"shareOfLocalVehKm":1.0,"vehKm":63.92283105659485},"gridlockRemoved":0,"meanTripDelay":17.96706181280725,"meanTripTime":55.36192410223595,"safety":{"localMeanSpeed":5.957030607316784,"localP85Speed":10.547747385358004,"shareAbove20mph":0.369393262609343,"shareAbove25mph":0.08289130839382096,"ttcConflicts":12},"spawned":572,"time":1800.0,"unroutableTrips":0,"vehKm":215.27309953260425,"vehiclesInNetwork":22}"#;
+
+mod modes;
