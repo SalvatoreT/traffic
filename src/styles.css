@@ -68,6 +68,8 @@ main { flex: 1; min-height: 0; display: flex; }
 .notice.err { border-color: var(--bad); }
 .map-area { flex: 1; min-height: 320px; position: relative; display: flex; }
 .map-area[hidden] { display: none; }
+.app[data-view='streets'] .map-area { position: sticky; top: 0; z-index: 5; border-bottom: 1px solid var(--border); flex: none; height: 36vh; min-height: 220px; }
+.app[data-view='streets'] .map-area .maplibregl-canvas { cursor: default; }
 .map-wrap { position: absolute; inset: 0; }
 .map-wrap[hidden] { display: none; }
 .map-wrap > .map { position: absolute; inset: 0; }
@@ -247,7 +249,7 @@ input[type='checkbox'] { width: 18px; height: 18px; accent-color: var(--accent);
 .pl-list[hidden] { display: none; }
 .pl-group { position: sticky; top: 0; background: var(--surface-2); font-size: .78rem; font-weight: 600; color: var(--muted); padding: .2rem .6rem; text-transform: uppercase; letter-spacing: .03em; }
 .pl-opt { min-height: 36px; display: flex; align-items: center; padding: .3rem .6rem; font-size: .9rem; cursor: pointer; border-top: 1px solid var(--border); }
-.pl-opt:hover { background: var(--surface-2); }
+.pl-opt:hover { background: var(--surface-2); outline: 2px dashed var(--focus); outline-offset: -3px; }
 .pl-opt.on { background: var(--accent); color: var(--accent-text); }
 @media (prefers-reduced-motion: reduce) { .popover .sel-menu { animation: none; } }
 .sel-here-d { min-width: 0; flex: 1; overflow-wrap: anywhere; }
@@ -404,3 +406,5 @@ input[type='checkbox'] { width: 18px; height: 18px; accent-color: var(--accent);
 .cell-list li { display: flex; align-items: center; gap: .55rem; font-size: .9rem; }
 .cell-swatch { flex: none; }
 .prop-routes { margin: 0 0 .8rem; }
+
+table.streets tbody tr:hover, table.streets tbody tr:focus-visible { background: var(--surface-2); outline: 3px solid var(--focus); outline-offset: -3px; }

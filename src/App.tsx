@@ -20,6 +20,7 @@ import { Playback, Legend } from './components/Toolbar';
 import { InterventionPanel } from './components/InterventionPanel';
 import { hasModes } from './lib/metrics';
 import { Comparison } from './components/Comparison';
+import type { Hover } from './lib/highlight';
 import { StreetsTable } from './components/StreetsTable';
 import { Proposals, useProposals } from './components/Proposals';
 import { linkHash, type Proposal } from './lib/proposals';
@@ -112,6 +113,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   const routeCheck = useMemo(() => (interventions.length === 0 ? todayRoutes : checkThroughRoutes(network, index, interventions)), [network, index, interventions, todayRoutes]);
   const [showRoutes, setShowRoutes] = useState(false);
   const [hotRoute, setHotRoute] = useState<string | null>(null);
+  const [hoverPlace, setHoverPlace] = useState<Hover | null>(null);
   // Said once per change in the count, after the first render, in its own polite region so it does not replace other messages.
   const [routeNote, setRouteNote] = useState('');
   const lastTotal = useRef(routeCheck.total);
@@ -288,6 +290,8 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   const comparing = !!stats?.comparing;
   const multimodal = hasModes(scen);
   const mapVisible = view === 'map';
+  useEffect(() => setHoverPlace(null), [view]);
+  const mapShown = mapVisible || view === 'streets';
   const showPanel = view === 'map' || view === 'streets';
   const placement: Placement | null = !selection ? null : selection.via === 'search' || !mapVisible ? 'inline' : phone ? 'sheet' : 'popover';
   const menu = selection && placement ? (
@@ -302,7 +306,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   const scenarioPanel = (
     <>
       <InterventionPanel bundle={bundle} index={index} region={region} showService={showService} onShowService={setShowService} interventions={interventions}
-        onRemove={onRemove} onClear={onClear} onChoose={select} onSelectIntervention={onSelectIntervention}
+        onRemove={onRemove} onClear={onClear} onChoose={select} onHover={setHoverPlace} onSelectIntervention={onSelectIntervention}
         menuTop={placement === 'sheet' ? menu : null} menuInline={placement === 'inline' ? menu : null} shareSlot={shareButton}
         routes={{ check: routeCheck, today: todayRoutes.total, show: showRoutes, onShow: setShowRoutes, onHighlight: setHotRoute, mode }} />
       <div className="scn-notices" role="status" aria-live="polite">
@@ -403,14 +407,14 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
               achieved={running ? slowSpeed : null}
             />
           )}
-          <div className="map-area" hidden={!mapVisible}>
+          <div className="map-area" hidden={!mapShown}>
             <Suspense fallback={<p className="boot" role="status">Loading map…</p>}>
             <MapView
               bundle={bundle} index={index} region={region} mode={mode} overlay={overlay} overlayMax={overlayMax} linkStats={mapView === 'change' ? stats?.scenario.linkStats ?? null : linkStats} baseStats={baseStats} view={mapView}
-              client={client} interventions={interventions} selection={mapVisible ? selection : null} onHit={onHit}
+              client={client} interventions={interventions} selection={mapVisible ? selection : null} onHit={onHit} hover={hoverPlace} interactive={mapVisible}
               routes={{ check: routeCheck, show: showRoutes, highlight: hotRoute }}
               popover={placement === 'popover' ? menu : null}
-              visible={mapVisible} reducedMotion={reduced}
+              visible={mapShown} reducedMotion={reduced}
               modes={multimodal ? modes : { ...modes, bicycle: false, pedestrian: false }} showBikeNet={bikeNet && multimodal}
             />
             </Suspense>
@@ -429,7 +433,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
           {view === 'streets' && (
             <StreetsTable bundle={bundle} index={index} showService={showService} onShowService={setShowService}
               scen={stats?.scenario.linkStats ?? null} base={baseStats} comparing={comparing} overlay={overlay}
-              baseMetrics={base} scenMetrics={scen} />
+              baseMetrics={base} scenMetrics={scen} onHover={setHoverPlace} />
           )}
           {view === 'proposals' && <Proposals bundle={bundle} index={index} today={todayRoutes.total} state={proposals.state} loaded={proposals.loaded} current={interventions} onOpen={onOpenProposal} />}
           {view === 'sources' && <Suspense fallback={<p className="boot" role="status">Loading sources…</p>}><Sources demand={demand} synthetic={bundle.synthetic} focusRef={sourceRef} calibration={bundle.synthetic ? undefined : { status: calStatus, note: bundle.entry.calibration?.note }} /></Suspense>}

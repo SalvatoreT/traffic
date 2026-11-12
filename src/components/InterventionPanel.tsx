@@ -4,6 +4,7 @@ import type { NetIndex } from '../lib/naming';
 import { interventionInRegion, type Region } from '../lib/region';
 import { describeIntervention } from '../lib/describe';
 import type { Selection } from '../lib/selection';
+import type { Hover } from '../lib/highlight';
 import { PlaceSearch } from './PlaceSearch';
 import { ThroughRoutes } from './ThroughRoutes';
 import type { RouteCheck } from '../lib/throughroutes';
@@ -17,6 +18,7 @@ interface Props {
   onRemove(i: number): void;
   onClear(): void;
   onChoose(s: Selection): void;
+  onHover(h: Hover | null): void;
   onSelectIntervention(i: number): void;
   /** Menu for the selected place when it lives in the panel: above everything on a phone, under the search box otherwise. */
   menuTop?: ReactNode;
@@ -64,7 +66,7 @@ export function InterventionPanel(p: Props) {
       )}
       <ThroughRoutes check={p.routes.check} today={p.routes.today} hasScenario={p.interventions.length > 0} show={p.routes.show} onShow={p.routes.onShow}
         onHighlight={p.routes.onHighlight} mode={p.routes.mode} />
-      <PlaceSearch bundle={B} index={X} showService={p.showService} onShowService={p.onShowService} onChoose={p.onChoose} />
+      <PlaceSearch bundle={B} index={X} showService={p.showService} onShowService={p.onShowService} onChoose={p.onChoose} onHover={p.onHover} />
       {p.menuInline}
     </div>
   );

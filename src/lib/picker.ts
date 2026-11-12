@@ -21,3 +21,15 @@ export function placeResults(net: Network, idx: NetIndex, o: ScopeOptions): { bl
   }
   return { blocks: blocks.sort(byStudy), nodes: nodes.sort(byStudy) };
 }
+
+export type ListEvent = 'type' | 'escape' | 'choose' | 'focus' | 'blur';
+
+/** Whether the result list has been dismissed. Only typing, Escape and choosing change it; focus and blur never do. */
+export function listDismissed(dismissed: boolean, ev: ListEvent): boolean {
+  if (ev === 'type') return false;
+  if (ev === 'escape' || ev === 'choose') return true;
+  return dismissed;
+}
+
+/** The list shows while there is a query and results, until dismissed. */
+export const listOpen = (query: string, dismissed: boolean, results: number): boolean => query.trim() !== '' && !dismissed && results > 0;

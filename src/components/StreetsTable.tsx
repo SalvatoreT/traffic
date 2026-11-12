@@ -4,6 +4,7 @@ import { linkStatsView } from '../types';
 import type { Block, NetIndex } from '../lib/naming';
 import { matchesQuery } from '../lib/naming';
 import { blockVisible } from '../lib/picker';
+import { hoverHandlers, type Hover } from '../lib/highlight';
 import { formatValue } from '../lib/format';
 import { vulnerableSentence } from '../lib/metrics';
 import type { Metrics } from '../types';
@@ -23,9 +24,10 @@ interface Props {
   showService: boolean; onShowService(v: boolean): void;
   overlay: Overlay;
   baseMetrics?: Metrics | null; scenMetrics?: Metrics | null;
+  onHover(h: Hover | null): void;
 }
 
-export function StreetsTable({ index, scen, base, comparing, overlay, showService, onShowService, baseMetrics, scenMetrics }: Props) {
+export function StreetsTable({ index, scen, base, comparing, overlay, showService, onShowService, baseMetrics, scenMetrics, onHover }: Props) {
   const walkBike = comparing && baseMetrics && scenMetrics ? vulnerableSentence(baseMetrics, scenMetrics) : '';
   const [sort, setSort] = useState<{ key: Key; dir: 1 | -1 } | null>(null);
   // Until a header is chosen: largest absolute change first when a scenario exists, else largest scenario cut-through.
@@ -99,7 +101,7 @@ export function StreetsTable({ index, scen, base, comparing, overlay, showServic
           </thead>
           <tbody>
             {shown.slice(0, limit).map((r) => (
-              <tr key={r.key}>
+              <tr key={r.key} tabIndex={0} aria-label={r.label} {...hoverHandlers(onHover, { kind: 'block', block: index.blockOfLink[r.key] })}>
                 <th scope="row">{r.label}</th>
                 <td>{r.cls}</td>
                 {cell(r.flowB, r.flowS, 'flow')}

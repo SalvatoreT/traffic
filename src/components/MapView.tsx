@@ -6,6 +6,7 @@ import type { AreaBundle, Intervention, ModeVisibility, Overlay } from '../types
 import { KIND_BIKE, KIND_PED } from '../types';
 import { makeProjection, metersPerPixel } from '../lib/projection';
 import { pointAlong } from '../lib/geom';
+import { hoverTargets, type Hover } from '../lib/highlight';
 import { hitTest, selectionAnchor, type Selection } from '../lib/selection';
 import { PopoverFrame } from './Popover';
 import { FADE_TIERS, interventionInRegion, REGION_FEATHER_M, type Region } from '../lib/region';
@@ -48,6 +49,10 @@ interface Props {
   /** Menu shown as a pop-up tied to the selection (wide and mid-width layouts). */
   popover: ReactNode | null;
   visible: boolean;
+  /** False when the map is only context (Streets view): clicks do not select. */
+  interactive: boolean;
+  /** Transient highlight from the search results or the streets table. */
+  hover: Hover | null;
   reducedMotion: boolean;
   modes: ModeVisibility;
   showBikeNet: boolean;
@@ -58,6 +63,9 @@ const KIND_STYLE = {
   dark: { bg: '#161b22', water: '#1d2a38', minor: '#2b323c', major: '#3d4654', path: '#27302a', study: '#7db6f5' },
 };
 
+// Dashed amber inside a dark (light mode) or light (dark mode) casing: shape and width differ from the solid blue selection.
+const HOVER_FILL = { light: '#f5a300', dark: '#ffc94d' };
+const HOVER_EDGE = { light: '#1a1a1a', dark: '#ffffff' };
 const mutedFor = (mode: Mode) => (mode === 'dark' ? '#4a5463' : '#a8a291');
 function ramp(mode: Mode, view: ChangeView = 'scenario'): unknown[] {
   const muted = mutedFor(mode);
@@ -491,6 +499,7 @@ export function MapView(p: Props) {
       map.addSource('study', { type: 'geojson', data: { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [b.network.studyArea] } } });
       map.addSource('links', { type: 'geojson', data: clipped.links as never });
       map.addSource('hover', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+      map.addSource('place-hover', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
       map.addSource('selection', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
       for (const id of ['cells', 'routes', 'route-hi']) map.addSource(id, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
       const K = KIND_STYLE.light;
@@ -547,6 +556,12 @@ export function MapView(p: Props) {
         paint: { 'circle-radius': 13, 'circle-color': K.study, 'circle-opacity': 0.25, 'circle-stroke-color': K.study, 'circle-stroke-width': 2, 'circle-stroke-opacity': 0.7 } });
       map.addLayer({ id: 'hover', type: 'line', source: 'hover', layout: { 'line-cap': 'round' },
         paint: { 'line-color': K.study, 'line-width': 7, 'line-opacity': 0.55, 'line-offset': OFFSET as never } });
+      map.addLayer({ id: 'place-hover-casing', type: 'line', source: 'place-hover', filter: ['==', ['geometry-type'], 'LineString'], layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: { 'line-color': HOVER_EDGE.light, 'line-width': 14, 'line-opacity': 0.95 } });
+      map.addLayer({ id: 'place-hover-line', type: 'line', source: 'place-hover', filter: ['==', ['geometry-type'], 'LineString'], layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: { 'line-color': HOVER_FILL.light, 'line-width': 8, 'line-dasharray': [2, 1] } });
+      map.addLayer({ id: 'place-hover-node', type: 'circle', source: 'place-hover', filter: ['==', ['geometry-type'], 'Point'],
+        paint: { 'circle-radius': 17, 'circle-color': HOVER_FILL.light, 'circle-opacity': 0.5, 'circle-stroke-color': HOVER_EDGE.light, 'circle-stroke-width': 5 } });
       map.once('idle', () => setReady(true));
     });
     map.on('move', schedule);
@@ -581,6 +596,10 @@ export function MapView(p: Props) {
     for (let k = 1; k <= FEATHER_STEPS; k++) map.setPaintProperty(`feather-${k}`, 'fill-color', K.bg);
     map.setPaintProperty('study-fill', 'fill-color', K.study);
     map.setPaintProperty('study-line', 'line-color', K.study);
+    map.setPaintProperty('place-hover-casing', 'line-color', HOVER_EDGE[mode]);
+    map.setPaintProperty('place-hover-line', 'line-color', HOVER_FILL[mode]);
+    map.setPaintProperty('place-hover-node', 'circle-color', HOVER_FILL[mode]);
+    map.setPaintProperty('place-hover-node', 'circle-stroke-color', HOVER_EDGE[mode]);
     map.setPaintProperty('hover', 'line-color', K.study);
     map.setPaintProperty('hover-node', 'circle-color', K.study);
     map.setPaintProperty('hover-node', 'circle-stroke-color', K.study);
@@ -722,6 +741,20 @@ export function MapView(p: Props) {
     }
   }, [selKey, ready]); // eslint-disable-line
 
+  // ---- transient highlight from the lists
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    const net = bundle.network, t = hoverTargets(p.index, p.hover);
+    const feats: unknown[] = [];
+    for (const id of t.links) feats.push(...lineFeature(region, proj, net.links[id].geometry));
+    if (t.node !== null) {
+      const n = net.nodes[t.node];
+      feats.push({ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: proj.toLonLat(n.x, n.y) } });
+    }
+    (map.getSource('place-hover') as maplibregl.GeoJSONSource | undefined)?.setData({ type: 'FeatureCollection', features: feats } as never);
+  }, [p.hover, ready, bundle, region, proj, p.index]);
+
   // ---- picking
   useEffect(() => {
     const map = mapRef.current;
@@ -762,6 +795,7 @@ export function MapView(p: Props) {
     let down: { x: number; y: number } | null = null;
     const press = (e: { point: { x: number; y: number } }) => { down = { x: e.point.x, y: e.point.y }; };
     const click = (e: maplibregl.MapMouseEvent) => {
+      if (!live.current.interactive) return;
       if (down && Math.hypot(e.point.x - down.x, e.point.y - down.y) > 6) return;
       const L = live.current;
       const { hit, x, y } = find(e.lngLat);
