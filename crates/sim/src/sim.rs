@@ -961,6 +961,25 @@ impl Simulation {
         serde_json::to_string(&self.metrics()).unwrap_or_else(|_| "{}".into())
     }
 
+    /// Per link: (cars on it, sum of their speeds in m/s, cars standing below 2 m/s). For calibration reports and the initial-load check.
+    #[doc(hidden)]
+    pub fn debug_link_load(&self) -> Vec<(u32, f32, u32)> {
+        (0..self.topo.n_links)
+            .map(|l| {
+                let (mut n, mut vs, mut st) = (0u32, 0.0f32, 0u32);
+                for k in 0..self.topo.nlanes(l) {
+                    for &id in &self.lanes[self.topo.lane_base[l] as usize + k] {
+                        let v = &self.vehs[id as usize];
+                        n += 1;
+                        vs += v.v;
+                        st += (v.v < 2.0) as u32;
+                    }
+                }
+                (n, vs, st)
+            })
+            .collect()
+    }
+
     #[doc(hidden)]
     pub fn debug_gridlock(&self) -> &[(u32, f64)] {
         &self.gridlock_log

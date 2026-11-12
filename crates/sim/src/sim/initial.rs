@@ -30,11 +30,14 @@ struct Cand {
 impl Simulation {
     /// Place the agents of the initial load and settle the network; the clock then reads 0 and all results are zeroed.
     pub(super) fn initial_load(&mut self) {
+        let t_start = std::time::Instant::now();
         self.prepopulate();
+        eprintln!("prepop {:?}", t_start.elapsed());
         let n = (INITIAL_SETTLE_S / DT).round() as usize;
         for _ in 0..n {
             self.step_once();
         }
+        eprintln!("settle {:?}", t_start.elapsed());
         self.t = 0.0;
         self.reset_results();
     }

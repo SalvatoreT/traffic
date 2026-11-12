@@ -3,6 +3,7 @@
 //!
 //! cargo run --release -p traffic-sim --bin calibrate -- --area rockridge --period pm_peak --minutes 60 --scale 1.0 --seed 1
 
+#[path = "calibrate/multi.rs"]
 mod multi;
 
 use serde_json::{json, Value};
@@ -45,10 +46,15 @@ struct Args {
     network_path: Option<PathBuf>,
     /// `--no-initial-load`: start from an empty network (the default places agents already en route, then settles).
     no_initial_load: bool,
+    /// `--seeds 1-10 --jobs N`: run these seeds as parallel child processes and write a summary across seeds plus the first seed in full.
+    seeds: Option<Vec<u64>>,
+    jobs: usize,
+    /// `--keep-seeds DIR`: keep every seed's own report (with per-link flows) in DIR.
+    keep_seeds: Option<PathBuf>,
 }
 
 fn parse_args() -> Args {
-    let mut a = Args { area: "rockridge".into(), period: "pm_peak".into(), minutes: 60.0, scale: 1.0, seed: 1, warmup_min: 10.0, local_factor: None, guided_share: None, switch_band: None, legacy_reroute: false, adapt_min: None, motorway_removal: false, no_rtor: false, out: None, write: true, link_flows: false, select_od: None, cars_only: false, drop: Vec::new(), demand_path: None, network_path: None, no_initial_load: false };
+    let mut a = Args { area: "rockridge".into(), period: "pm_peak".into(), minutes: 60.0, scale: 1.0, seed: 1, warmup_min: 10.0, local_factor: None, guided_share: None, switch_band: None, legacy_reroute: false, adapt_min: None, motorway_removal: false, no_rtor: false, out: None, write: true, link_flows: false, select_od: None, cars_only: false, drop: Vec::new(), demand_path: None, network_path: None, no_initial_load: false, seeds: None, jobs: 4, keep_seeds: None };
     let argv: Vec<String> = std::env::args().skip(1).collect();
     let mut i = 0;
     while i < argv.len() {
@@ -342,8 +348,8 @@ fn main() {
             i += 1;
         }
         let out = args.out.clone().unwrap_or_else(|| root.join("data/calibration/reports"));
-        let prefix = format!("{}-{}-s{}-seed", args.area, args.period, args.scale);
-        multi::run(multi::Multi { exe: std::env::current_exe().expect("exe"), base_args: base, seeds, jobs: args.jobs, out, keep: args.keep_seeds.clone(), stem_prefix: prefix.trim_end_matches("-seed").to_string() + "-seed", targets: &targets });
+        let prefix = format!("{}-{}-s{}", args.area, args.period, args.scale);
+        multi::run(multi::Multi { exe: std::env::current_exe().expect("exe"), base_args: base, seeds, jobs: args.jobs, out, keep: args.keep_seeds.clone(), stem_prefix: prefix, targets: &targets });
         return;
     }
     let read = |p: PathBuf| std::fs::read_to_string(&p).unwrap_or_else(|e| usage(&format!("cannot read {}: {e}", p.display())));

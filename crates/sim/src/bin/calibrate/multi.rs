@@ -249,7 +249,7 @@ pub fn run(m: Multi) {
         .collect();
 
     let (a, b) = (seeds[0], *seeds.last().unwrap());
-    let stem = format!("{}-seeds{}-{}", m.stem_prefix.rsplit_once("-seed").map(|x| x.0).unwrap_or(&m.stem_prefix), a, b);
+    let stem = format!("{}-seeds{}-{}", m.stem_prefix, a, b);
     let mut md = String::new();
     let _ = writeln!(md, "# {} over {} seeds ({})\n", m.stem_prefix, n, seeds.iter().map(|s| s.to_string()).collect::<Vec<_>>().join(", "));
     let _ = writeln!(md, "Seeds are the fixed list above, none chosen; each run is {minutes:.0} minutes from the same start. Interval = 95% interval of the mean (Student t, n - 1 degrees of freedom). Run-to-run noise only: demand is fixed, so day-to-day variation is not in these intervals.\n");
@@ -264,11 +264,12 @@ pub fn run(m: Multi) {
     let _ = writeln!(md, "| Group | Metric | Unit | Mean | SD | Min | Max | 95% interval |\n| --- | --- | --- | --- | --- | --- | --- | --- |");
     for mt in &metrics {
         let s = stat(&mt.vals);
-        let (f, scale) = if mt.unit == "share" { (|x: f64| format!("{:.1}", x), 100.0) } else { (|x: f64| format!("{:.2}", x), 1.0) };
+        let (dec, scale) = if mt.unit == "share" { (1usize, 100.0) } else { (2usize, 1.0) };
+        let f = |x: f64| format!("{:.*}", dec, x);
         let unit = if mt.unit == "share" { "%" } else { mt.unit };
         let _ = writeln!(md, "| {} | {} | {} | {} | {} | {} | {} | {} to {} |", mt.group, mt.name, unit, f(s.mean * scale), f(s.sd * scale), f(s.min * scale), f(s.max * scale), f(s.lo * scale), f(s.hi * scale));
     }
-    let _ = writeln!(md, "\nPer-seed detail: `{}-seed{}.md` (seed {} in full).", m.stem_prefix.rsplit_once("-seed").map(|x| x.0).unwrap_or(&m.stem_prefix), a, a);
+    let _ = writeln!(md, "\nPer-seed detail: `{}-seed{}.md` (seed {} in full).", m.stem_prefix, a, a);
     std::fs::create_dir_all(&m.out).ok();
     std::fs::write(m.out.join(format!("{stem}.md")), &md).expect("write summary md");
     let js = json!({
@@ -281,7 +282,7 @@ pub fn run(m: Multi) {
     });
     std::fs::write(m.out.join(format!("{stem}.json")), serde_json::to_string_pretty(&js).unwrap()).expect("write summary json");
     // First seed in full, without the per-link arrays.
-    let prefix = m.stem_prefix.rsplit_once("-seed").map(|x| x.0).unwrap_or(&m.stem_prefix).to_string();
+    let prefix = m.stem_prefix.clone();
     let src_dir = seeds_dir(&m);
     let _ = copy_detail(&m, &src_dir, &prefix, a, first);
     if m.keep.is_none() {
