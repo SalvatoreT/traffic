@@ -77,6 +77,8 @@ export interface AreaConfig {
   zoom?: number;
   /** Graph nodes within this distance (m) that form one intersection are joined into one node. Default 20; 0 turns it off. */
   junctionJoinRadius?: number;
+  /** Staggered T-junctions of a same-named cross street on opposite sides within this distance (m) along the through street are joined (default 35; 0 turns it off). */
+  staggeredJoinRadius?: number;
   /** Join radius (m) for clusters of two or more signal nodes; default 40. */
   signalJoinRadius?: number;
   /** Importer warning distance (m, default 60): gates closer than this to a signalized junction are listed. */

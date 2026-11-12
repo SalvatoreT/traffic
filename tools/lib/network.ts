@@ -61,6 +61,8 @@ export const PARAMS = {
   signalReachM: 30,
   stopReachM: 60,
   gateEdgeM: 60,
+  /** Two T-junctions of a same-named cross street on opposite sides of an undivided street within this distance (m) along it are one intersection. */
+  staggeredJoinRadiusM: 35,
   /** Mainline gates of one freeway direction whose stub ends lie within this distance (single linkage) are one gate. */
   freewayGateMergeM: 80,
   boundaryReachM: 8,
@@ -587,10 +589,38 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
           .filter((n) => n),
       );
     const d2 = (a: number, b: number) => Math.hypot(xyOf(a)[0] - xyOf(b)[0], xyOf(a)[1] - xyOf(b)[1]);
+    // Staggered T-junctions: the same cross street meets an undivided street at two offset points. The two junctions are one intersection
+    // when the side legs carry the same name, leave on opposite sides of the through street, and the junction points are within
+    // `staggeredJoinRadius` along it, whatever the control. Narrower than the general radius, so it is keyed on the cross street's name.
+    const stagR = cfg.staggeredJoinRadius ?? PARAMS.staggeredJoinRadiusM;
+    const staggered = (l: Link): boolean => {
+      if (stagR <= 0 || l.cls === 'motorway' || l.from === l.to || polylineLength(l.geometry) > stagR || d2(l.from, l.to) > stagR) return false;
+      const dv: Pt = [xyOf(l.to)[0] - xyOf(l.from)[0], xyOf(l.to)[1] - xyOf(l.from)[1]];
+      const dl = Math.hypot(dv[0], dv[1]) || 1;
+      const sideOf = (e: number): { name: string; side: number }[] | null => {
+        const legs = new Map<number, { name: string; side: number }>();
+        for (const k of touch.get(e) ?? []) {
+          const o = k.from === e ? k.to : k.from;
+          if (o === l.from || o === l.to) continue;
+          if (k.cls === 'motorway') return null;
+          const g = k.geometry;
+          const [a, b] = k.from === e ? [g[0], g[1]] : [g[g.length - 1], g[g.length - 2]];
+          const v: Pt = [b[0] - a[0], b[1] - a[1]];
+          const vl = Math.hypot(v[0], v[1]) || 1;
+          const cosT = (v[0] * dv[0] + v[1] * dv[1]) / (vl * dl);
+          if (Math.abs(cosT) > 0.85) continue; // the through street continuing
+          legs.set(o, { name: k.name, side: Math.sign(dv[0] * v[1] - dv[1] * v[0]) });
+        }
+        return legs.size === 1 ? [...legs.values()] : null;
+      };
+      const a = sideOf(l.from);
+      const b = sideOf(l.to);
+      return !!a && !!b && !!a[0].name && a[0].name === b[0].name && a[0].side !== 0 && a[0].side === -b[0].side;
+    };
     const cands = liveLinks
       .filter((l) => {
         const r = signal.has(l.from) && signal.has(l.to) ? sigR : joinR;
-        return l.cls !== 'motorway' && l.from !== l.to && polylineLength(l.geometry) <= r && d2(l.from, l.to) <= r;
+        return l.cls !== 'motorway' && l.from !== l.to && ((polylineLength(l.geometry) <= r && d2(l.from, l.to) <= r) || staggered(l));
       })
       .filter((l) => eligible(l.from) && eligible(l.to))
       .filter((l) => {
