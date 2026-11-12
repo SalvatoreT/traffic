@@ -421,6 +421,7 @@ impl Eff {
             let ys = group_flow_ratios(net, &p.links, flow);
             let (cycle, phases, ysum) = plan_with_observation(net, &self.period, n, &p.links, &ys, pin);
             let hold = protected_left_holds(&p.links, &phases, cycle, flow, left);
+            if std::env::var("DBGN").ok().and_then(|x| x.parse::<usize>().ok()) == Some(n) { eprintln!("adapt t={:.0} node {} cycle {:.0} phases {:?} flows {:?} left {:?} hold {:?}", t, n, cycle, phases, p.links.iter().map(|g| g.iter().map(|&l| flow[l as usize] as i32).collect::<Vec<_>>()).collect::<Vec<_>>(), p.links.iter().map(|g| g.iter().map(|&l| left[l as usize] as i32).collect::<Vec<_>>()).collect::<Vec<_>>(), hold); }
             let k = ((t - p.t0) / p.cycle as f64).ceil().max(1.0);
             let start = p.t0 + k * p.cycle as f64;
             p.next = Some(Box::new(SigNext { t0: start, cycle, phases, ysum, hold }));

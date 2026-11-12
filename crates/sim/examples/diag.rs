@@ -16,13 +16,13 @@ fn main() {
     let mut sim = Simulation::from_parts(net, dem, cfg).unwrap();
     println!("plans: {:?}", sim.signal_plans().into_iter().filter(|p| p.0 == node).collect::<Vec<_>>());
     println!("phase links: {:?}", sim.signal_phase_links(node));
-    for k in 0..40 {
+    for k in 0..60 {
         sim.step(30.0);
         let load = sim.debug_link_load();
         let sg = sim.signals();
         let s: Vec<String> = links.iter().map(|&l| format!("{}:{}n/{}st/s{}", l, load[l].0, load[l].2, sg[l])).collect();
         println!("t={:5} {}", (k + 1) * 30, s.join("  "));
-        if k % 4 == 3 && k < 24 { for l in sim.debug_stuck(0.0) { if links.iter().any(|x| l.starts_with(&format!("link {} ", x))) { println!("    {}", l); } } }
+        if k >= 50 && k < 54 { for l in sim.debug_stuck(0.0) { if links.iter().any(|x| l.starts_with(&format!("link {} ", x))) { println!("    {}", l); } } }
     }
     println!("plans: {:?}", sim.signal_plans().into_iter().filter(|p| p.0 == node).collect::<Vec<_>>());
 }
