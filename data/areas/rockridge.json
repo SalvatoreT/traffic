@@ -92,8 +92,8 @@
   "periodWindows": { "am_peak": [7, 9], "midday": [11, 13], "pm_peak": [16, 18] },
   "calibration": {
     "status": "uncalibrated",
-    "note": "Midday is stable; the PM peak backs up at the SR-24 west end, the AM peak is borderline, and the Hillegass and Colby freeway shares are 9 to 18 points off.",
-    "defaultPeriod": "midday",
-    "experimentalPeriods": ["pm_peak", "am_peak"]
+    "note": "D4 holds in all three periods; the PM headline freeway shares on Hillegass and Colby are 7 to 21 points off, so the baseline stays uncalibrated.",
+    "defaultPeriod": "pm_peak",
+    "experimentalPeriods": []
   }
 }

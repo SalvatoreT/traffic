@@ -45,3 +45,7 @@ From the rechecked finalists the tool keeps those that no other finalist beats o
 - `computed.networkHash` and `demandHash` are the first 16 hex characters of the SHA-256 of the file bytes of `public/data/<area>.network.json` and `<area>.demand.json`. `calibration` is the status in `public/data/areas.json`.
 
 Scenario links come from a Rust port of `src/lib/hash.ts`; `crates/sim/tests/fixtures/links.json` holds strings made by the TypeScript encoder (`npx tsx tools/gen-proposal-link-fixtures.ts`) that the Rust tests must match.
+
+## Reference packages
+
+`data/proposals/<area>.references.json` lists packages written by hand, evaluated by the same full recheck and published after the search options with `kind: "reference"` and a `note`. They skip the non-dominated filter and the option cap. Places are given by street name so the file survives network rebuilds: `{ "type": "modal_filter", "at": ["A", "B"] }` for a node, `{ "type": "modal_filter", "on": "A", "between": ["B", "C"] }` for a block, and for diverters `"connect": [["A", "south"], ["B", "west"]]` (a pair of legs that stay connected). The resolver fails with a clear message when the names match no node or more than one. Search entries have `kind: "search"`.

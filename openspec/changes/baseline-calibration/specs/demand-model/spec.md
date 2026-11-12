@@ -172,7 +172,7 @@ Every fit station SHALL name the source records its target comes from (a turning
 - **THEN** one station remains, on the link, and the gate group has no station of its own
 
 ### Requirement: Measured link delays can feed the assignment
-When the file named by `countFit.assignment.measured.file` exists and was written for the same number of links, the static assignment SHALL add the simulator's mean delay per vehicle on each link (less the control delay the router already adds at the link end) to the free-flow cost, with the BPR factor set by the configured alpha. Without the file the assignment SHALL use free-flow and BPR costs. `tools/cost-loop.ts` SHALL write the file from fixed-seed calibrate runs and SHALL skip with a message when the binary is not built.
+When the file named by `countFit.assignment.measured.file` exists for the same network, the static assignment SHALL add the simulator's mean delay per vehicle on each link (less the control delay the router already adds) to the free-flow cost. Without the file it SHALL use free-flow and BPR costs. `tools/cost-loop.ts` SHALL write the file from fixed-seed runs and skip with a message when the binary is not built.
 
 #### Scenario: No binary
 - **WHEN** `target/release/calibrate` does not exist

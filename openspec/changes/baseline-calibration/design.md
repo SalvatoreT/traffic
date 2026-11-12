@@ -122,3 +122,14 @@ Decided on 2026-11-12; steps AE to AL of the record. The lead's reading was that
 
 D4 is still not met at scale 1.0 (PM 150 removals, 5.9% backlog; AM 42 removals; midday 11 removals). It is met at scale 0.4 (PM), 0.35 (AM) and 0.6 (midday). The remaining limit is the interior: the SR-24 west-end ramps (32,600 ADT of DATA through one mainline gate) and the arterial signals behind them. D5 holds for two of four headline shares. The baseline stays uncalibrated.
 
+
+### D14 Ninth round: merge freeway-edge stubs, count once, right turn on red (task 12)
+Decided on 2026-11-12 (lead's instruction); measured in the ninth round of the record.
+
+- The model box cuts a freeway carriageway into stubs. Mainline gates of one direction within 80 m, with similar bearings and only freeway-class links, are one gate; so every ramp of that end reaches it. Options considered: extend each stub to one node (chosen, with the lanes of parallel stub links added) and join separate carriageways with a zero-length connector (not needed: at no end of SR-24 were the stubs separate roads that cars cannot move between). A check lists ramps that cannot reach a mainline gate.
+- Per-ramp pools in the demand stay: they were made for the split gate, but after the merge a gate pool would mix ramps 4.5 km apart.
+- A count is used once. When a gate station and a link station carry the same Caltrans or TMC record, the link station stays, because it measures all trips at that place; the gate keeps the record as its offered volume.
+- Right turn on red is allowed after a stop at every signal (ASSUMPTION; the California Vehicle Code text could not be read here). It is the largest single change in stability: PM removals 6 to 0.7 an hour on the same network. It yields to every conflicting movement with the minor-right critical gap.
+- The adaptive signal plan counts the queue on every link feeding an unsignalized merge that the queue reached, since an off-ramp merging ahead of a signal otherwise looked like no demand.
+- Simulator-measured link costs in the assignment: built and run for three iterations (shares 12.6, 9.9, 15.1 points off; PM removals 0, 4.7, 4.7). Stability came before share error, so the published demand does not use them and the mechanism stays optional.
+- D4 holds in all three periods at scale 1.0. D5 does not (two of four headline shares within 10 points), so the status stays `uncalibrated`.

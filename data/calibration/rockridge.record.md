@@ -6,6 +6,7 @@ Run-to-run noise from the chaotic congested regime is roughly +/-5% on completed
 Steps C0 to C3 were measured on the step B2 demand (before F); D, E, F on the later demand. PM peak, scale 1.0, 60 min, seed 1.
 Headline shares are the four freeway shares, modeled (PM observed): Hillegass NB from freeway (47), Colby NB from (47), Hillegass SB to (68), Colby SB to (45).
 Speeds are in m/s; multiply by 2.237 for mph.
+Steps AT to AY belong to the ninth round (task 12, freeway-edge stubs, one count once, right turn on red, measured costs): PM peak, scale 1.0, 60 min, mean of seeds 1 to 3.
 Steps AN to AS belong to the eighth round (task 11, fit convergence, observed route shares, restrained assignment, ramp pools, merge rule): PM peak, scale 1.0, 60 min, mean of seeds 1 to 3 unless a row says otherwise.
 Step AM belongs to the seventh round (task 10, count-constrained demand): PM peak, scale 1.0, 60 min, mean of seeds 1 to 3, measured on the demand of the sixth round (the row above it, AK) and on the fitted demand.
 Steps AE to AL (and the variant AKb) belong to the sixth round (task 9, demand audit and gate placement): PM peak, scale 1.0, 60 min, mean of seeds 1 to 3; AE to AJ were measured on the model area of the fourth round, AK on the new one.
@@ -87,6 +88,85 @@ Other measurements (final state, PM): the model now saturates at about 8k veh/h 
 Claremont Ave: checked end to end. OSM lanes (3 with one forward and one backward = a center turn lane, or 4 = two each) match the network: 1 lane per direction between Telegraph/52nd and Clifton, 2 lanes elsewhere, speed 25 mph, signals at Clifton, Hudson, Colby/Forest, College and 52nd. No missing lanes and no broken connection to the SR-24 ramps (Clifton off-ramp, Hudson on-ramp) or to College. The under-loading came from the 11 m signal pair at Colby/Forest and the ramp-terminal gridlock (step H), which held the corridor at 0.33 to 0.63 of the expected flow. After joining it is 0.54 (north-east bound) and 0.95 (south-west bound).
 
 Ramp junctions: after joining all four SR-24 terminals are single signalized nodes (Aileen/Telegraph and Clifton/Claremont off-ramps, Hudson/Claremont and 56th/Telegraph on-ramps) with 2-lane ramp approaches at 35 mph. Mean discharge in the PM peak (seeds 1 to 3, measured before the third round): Aileen off-ramp 584 veh/h (offered 656), Clifton off-ramp 914 veh/h (offered about 1,025), on-ramps 783 and 555 veh/h. That is 290 to 460 veh/h per lane averaged over the hour; the signal gives the ramp 30 to 45% of the cycle and the shortfall is downstream spill-back on Claremont and Telegraph, not the ramp signal itself. Before the third round the remaining gridlock removals were mostly vehicles queued on the 4-lane freeway stub behind the single-lane Clifton off-ramp (26 of about 45 removals over six seeds at scale 0.3). The third round checked the ramp lanes against OSM: the off-ramps are tagged one lane for most of their length and two lanes (turn lanes left | left;through;right at Clifton, left | right at Aileen) on the final way before the signal, and the importer keeps that per segment (a test covers it), so no lane count is lost. After step M the stub accounts for about one removal per run.
+
+## Ninth round: freeway-edge stubs, one count once, right turn on red, simulator-measured costs (task 12)
+
+PM peak, scale 1.0, 60 min, mean of seeds 1 to 3 unless a row says otherwise. Steps AT to AY. Method: `data/demand/README.md` steps 22 to 25; generated fit report: `data/demand/rockridge.fit.md`; reports of seed 1 in `reports/`.
+
+### The freeway edge (step AT)
+
+What was wrong. The model box cuts SR-24 at its south and east ends where the carriageways fork or merge just outside it. At the west end the importer made three eastbound entry stubs (two 2-lane stubs 8 m apart that join one 4-lane link, and a 3-lane stub 33 m away that serves only the 52nd St and Martin Luther King Jr Way ramps), and three westbound exit gates: the 2-lane stub of the Claremont/Hudson and Miles Ave side (with a fork node 68 m up that was a gate only because the other branch of the fork was clipped), and the 3-lane stub of the 52nd St and MLK Jr Way side, 29 m from it. A trip to one exit stub could reach only the ramps on its branch, so the Claremont/Hudson on-ramp was the only way to the 689-side gate from the west side, and all 4,854 veh/h of the eastbound entries had no choice of ramps. The east end had the same pattern (two entry stubs, two exit stubs).
+
+Fix (importer, general). Mainline gates of one direction whose links are all freeway class, with similar bearings and stub ends within `freewayGateMergeM` (80 m, single linkage), become one gate at their centroid; parallel stub links between the same two nodes become one link with the lanes added; a fork node that is a gate only because its other branch was clipped stops being one. Four merges on Rockridge (west entry 3 stubs to 1, west exit 2 to 1, east entry 2 to 1, east exit 2 to 1): 1,795 nodes and 4,478 links (1,800 and 4,480 before), 125 gates. The importer lists each merge and checks that every on-ramp reaches a mainline exit gate and every off-ramp is reachable from a mainline entry gate. The list is empty on Rockridge; a freeway-class link between two surface nodes (Glenwood Glade to Broadway Terrace) is a connector and not a ramp. Tests: `tools/import-osm.test.ts`, a synthetic fork (two exit stubs 26 m apart, one on-ramp onto each branch) and the Rockridge ramps.
+
+Demand workaround. Kept, with a different reason. The per-ramp pools and the 300 s access decay were made because two stubs split the ramps. With one gate the merged west-end gates reach 9 (exit) and 10 (entry) ramps up to 4.5 km apart, so a gate pool would again mix distant ramps. A/B on the merged network (PM seeds 1 to 3, same fit otherwise): per-ramp pools removals 0 / 0 / 0, backlog 1.3 / 0.9 / 1.0%; per-gate pools 1 / 2 / 0 and 1.5 / 1.0 / 0.5%; the headline shares differ by 1 to 3 points. The decay (ASSUMPTION) was not re-tested.
+
+### One count once (step AU)
+
+The Caltrans AADT of Tunnel Road was both the count of the two Tunnel Road gates and an in-area station on links 3521 to 3523 (4 m from the station). The same held for San Pablo Ave (station at Stanford Ave, which also fed the 43rd St and San Pablo Ave gate pairs) and Claremont Ave, and for the turning-movement counts: the Alcatraz Ave W, Ward St N and Market St S gates took the leg volumes of the two in-model counted intersections, which are also stations. Every station now carries its source records (record and direction, with the share it takes); when a gate station and a link station carry the same record in the same direction, the link station stays (it measures every trip at that place) and the gate station goes, with a note in the fit report; the build stops if the shares of one record add to more than one. Unit test: `tools/station-records.test.ts`. 16 gate stations were dropped, leaving 50 stations in each period (66 before); the gates keep the record as their offered volume. PM: 46 of 50 stations within 15% (63 of 66 before). The Caldecott Lane on-ramp (+80%) is still pinned at the lower bound; the Tunnel Road gate pair is no longer a station, and the Tunnel Road link station ends at 0.94 of its count.
+
+### Right turn on red (step AV)
+
+The simulator did not model it: at a red a car could not move at all (`permission`, signal branch). It is now allowed for a car that has stood at the line for the stop dwell (1 s, ASSUMPTION), whose next movement is a right turn, when no conflicting vehicle is in the node and no vehicle on a green approach would reach the conflict point within the minor-right critical gap (6.2 s, [Brilon1999] as in the stop-controlled cases e1 to e3); it yields to every conflicting movement. California allows the turn; the legal text (Vehicle Code 21453) could not be read here (the host is outside the session's allowed network), so the permission is an ASSUMPTION, at every signal, and no sign prohibitions are known. `calibrate --no-rtor` and `Config::no_right_turn_on_red` turn it off. Validation cases b10 (light cross traffic: discharge 1.15 times the no-turn-on-red discharge, range 1.09 to 1.24 from the red share and 3600 / tf with tf 3.3 s) and b11 (saturated cross street: 1.14, range 0.95 to 1.15, the turn gets no gap) pass; b7 and b8 (right-turners with a saturated cross street) are unchanged. The golden metrics of the signalized cross (right-turning flow) moved: mean delay 13.4 to 13.1 s.
+
+PM, old network and demand of the eighth round, seeds 1 to 3: with the rule removals 1 / 1 / 4 against 5 / 5 / 4, backlog 1.2 / 1.5 / 2.2% against 2.8%, arterial speed 8.0 against 7.45 m/s. On the new network and demand: with the rule 1 / 0 / 1 removals, backlog 1.5 / 0.9 / 1.5%, speed 8.73; without it 3 / 14 / 1, 1.6 / 1.9 / 1.4%, speed 8.09. The merge alone (no rule) changes backlog from 2.8% to 1.6% and does not change removals beyond the seed spread.
+
+### The 52nd St/Shattuck Ave queue (step AW)
+
+Where the queue is. After the merge and the rule the entry backlog is 144 trips at the merged west-end entry gate (615, offered 4,854 veh/h) and 174 at the San Pablo Ave west gate; the freeway stubs pass 4,605 veh/h. The 52nd St off-ramp (link 4219, 2 lanes, 513 m) still carries 554 to 609 veh/h against its count of 1,278, while the MLK Jr Way ramp carries 1,592 to 1,606 of 1,656: trips from the merged gate now choose the cheaper ramp, so the ramp split in the simulator differs from the one the static assignment fitted. The router makes that choice; no queue on the ramp explains it. The queue at the junction behind the ramp: the ramp (3 lanes after the 7 m link at node 740, where it merges with 52nd St from the west) feeds the 52nd St approach of the signal 52nd St/Shattuck Ave (node 693, 4 lanes, 53 m, 1 left lane), which holds 9.7 stopped vehicles and passes 740 veh/h. Geometry from OSM: that approach has 4 lanes, 3 on the exit; Shattuck Ave has 2 lanes on each approach and 1 lane out to the north.
+
+Signal plan. Phases (from `signal_plans()` and the new phase listing in the report): 52nd St both approaches 23 s, Shattuck Ave both approaches 42 s, cycle 75 s. The adaptive plan sizes a phase from the flow measured at the stop line plus the growth of the standing queue, and followed the queue upstream only along a single feeding link. Here the feeder of the approach is the 7 m link from the ramp merge, which has two feeders, so the ramp's standing vehicles were not demand for the signal. `standing_queue` now counts the standing vehicles of every link feeding an unsignalized merge that the queue has reached (up to 3 links upstream). The plan becomes 35 s for 52nd St and 30 s for Shattuck Ave, the approach passes 766 veh/h and the 52nd St ramp 609. PM seeds 1 to 3 with the change: removals 0 / 0 / 0, backlog 1.3 / 0.9 / 1.0%, against 1 / 0 / 1 and 1.5 / 0.9 / 1.5% without it; this is inside the seed spread and the change is kept because the plan is now sized from the demand that is waiting. The one removal that remained without it was at 60th St/Herzog St (all-way stop, far west, local streets), seeds 1 and 3, at 49 and 56 minutes.
+
+Counted ramp volume against the surface. The 52nd St ramp count (1,278 veh/h) plus the MLK Jr Way ramp (1,656) is 2,934 veh/h, and the two ramps together carry 2,200 to 2,215 in the simulator, 75% of it. The counted surface volumes at the corridor (Telegraph Ave 0.90 N and 1.16 S of its expected peak flow) do not show a shortfall at the junction. Where the other 25% leave the freeway was not traced.
+
+### Select-link volumes: assignment against simulator (step AX)
+
+Seed 1, PM, current demand; select-link records of the simulator (`calibrate --select-od`) against the static assignment's volumes on the same blocks (`ASSIGN_DUMP` and `ASSIGN_LINKS` in `build-demand.ts`). Trips counted by the simulator over the run, volumes in veh/h for the assignment.
+
+| Block | Simulator trips | Assignment veh/h | Ratio | Freeway-end share, simulator / assignment | OD pairs in common (volume) |
+| --- | --- | --- | --- | --- | --- |
+| Hillegass Ave NB | 91 | 63 | 1.4 | 58% / 47% | 47% |
+| Colby St NB | 82 | 51 | 1.6 | 37% / 55% | 38% |
+| Hillegass Ave SB | 141 | 85 | 1.7 | 69% / 77% | 58% |
+| Colby St SB | 158 | 46 | 3.4 | 22% / 61% | 35% |
+
+Before (eighth round): the assignment put 2 to 11 times less on these blocks. The gap closed before the loop below ran: with right turn on red and the merged gate the arterials flow, so fewer drivers leave them for local streets, and the offered table changed with the dedupe. What is left: the simulator's trips on Colby St SB are mostly interior (22% freeway end against 61% in the assignment): drivers from the Telegraph Ave/Ward St side (node 964, 14% of the block's trips) and from the Claremont Ave gate use it, which the assignment gives to the arterials; cost differences of a few seconds decide it in the simulator and the 8% per-driver noise does not reproduce it. Martin St from the freeway: 12% modeled against 10% observed (22 before).
+
+### Cost loop (step AY)
+
+`tools/cost-loop.ts`: simulate (fixed seed 1, all periods, in parallel) -> mean delay per vehicle on every link after the warm-up (`linkMeanDelayS`) -> `data/demand/rockridge.linkdelays.json` (50 KB) -> rebuild demand (the assignment adds the delay, less the control delay the router already adds at the link end, to the free-flow cost; BPR off) -> simulate. `--evaluate` scores PM seeds 1 to 3 after each iteration and stops when the headline-share error stops improving by 0.5 points. Without the binary it skips with a message.
+
+| Iteration | Headline share error (mean abs, points) | PM removals | Backlog |
+| --- | --- | --- | --- |
+| 0, free-flow and BPR costs | 12.6 | 0.0 | 1.1% |
+| 1, measured delays | 9.9 | 4.7 | 0.6% |
+| 2, measured delays again | 15.1 | 4.7 | 1.6% |
+
+The loop does not converge (error 12.6, 9.9, 15.1) and iteration 1 gives back stability (removals 0 to 4.7 an hour), so the shipped demand is iteration 0 and the delays file is not kept. The mechanism stays in the build for the next round: it is off when the file is absent. The cause of the lost stability was not traced (the table moves trips toward links that were fast in the previous run, which the next run then loads).
+
+### Final state, scale 1.0, mean of seeds 1 to 3 (seed 1 reports in `reports/`)
+
+| Period | Offered veh/h | Completed (before) | Removals (before; seeds) | Backlog (before) | Arterial speed m/s (before) | D4 |
+| --- | --- | --- | --- | --- | --- | --- |
+| PM peak | 23,944 | 20,415 (19,098) | 0 (4.7; 0 / 0 / 0) | 1.1% (2.8%) | 8.71 (7.45) | holds in 3 of 3 |
+| AM peak | 20,167 | 17,746 (17,459) | 0 (0.7; 0 / 0 / 0) | 0.0% (0.6%) | 9.96 (8.38) | holds in 3 of 3 |
+| Midday | 15,401 | 13,737 (13,361) | 0 (0; 0 / 0 / 0) | 0.0% (0.0%) | 10.29 (9.40) | holds in 3 of 3 |
+
+120-minute PM run (seed 1): vehicles in the network 3,290 at 60 min and 3,277 at 120, arterial speed 8.16 then 8.09 m/s (8.06 over the last 15 minutes), 0 removals in both hours, entry backlog 309 then 1,174 trips (2.5% of 46,892 spawned): 628 at the merged west-end entry gate (offered 4,854 veh/h) and 534 at the San Pablo Ave west gate (1,417 veh/h). Before: 4,319 and 5,261 vehicles, 31 removals, 1,890 waiting. The network no longer grows; the unserved demand at two gates does, by about 430 trips an hour in the second hour, so a longer peak would still back up at those gates (D4 is stated for 60 minutes).
+
+Headline freeway shares, PM, modeled (observed; before): Hillegass Ave NB from the freeway 60 (47; 59), Colby St NB from 38 (47; 33), Hillegass Ave SB to 61 (68; 59), Colby St SB to 24 (45; 27). Two of four within 10 points (Colby St NB -9, Hillegass Ave SB -7); mean absolute error 12.6 points (13 before). AM 53 / 36 / 60 / 31 and midday 57 / 43 / 57 / 22 (observed values are the PM ones). Ramp via-street shares, PM, north-side trips, modeled / observed: onto the freeway via College Ave 14 / 16, Hillegass Ave 11 / 12, Martin St 6 / 10, Colby St 6 / 8, Telegraph Ave north of Alcatraz Ave 11 / 8, Benvenue Ave 4 / 5; from the freeway via College Ave 7 / 10, Martin St 12 / 10, Colby St 9 / 8, Hillegass Ave 4 / 5, Benvenue Ave 2 / 3. All within 5 points. D5 (four headline shares within 10 points) does not hold, so the status stays `uncalibrated`; `experimentalPeriods` is empty and `defaultPeriod` is `pm_peak`.
+
+Corridor flows, PM, per direction, mean of seeds 1 to 3 over the expected peak flow (before in brackets): Telegraph Ave N 984 / 1,093 = 0.90 (0.83), S 1,056 / 910 = 1.16 (0.94); Alcatraz Ave E 478 / 618 = 0.77 (0.85), W 428 / 521 = 0.82 (0.75); Claremont Ave N 585 / 635 = 0.92 (0.76), S 645 / 635 = 1.02 (0.97); College Ave N 219 / 540 = 0.41 (0.54), S 430 / 540 = 0.80 (0.69). Station fit (static assignment): 46 of 50 PM stations within 15%.
+
+Validation suite: 45 of 58 cases pass; the 13 outside their ranges are the known deviations (a3, b9, c2, e2, e3, e6, e9, f2, f3, j6, j8, j9, j12), none new. b10 and b11 are new.
+
+### What remains off (ninth round)
+
+- D5: Colby St SB to the freeway is 24% against 45% (-21) and Hillegass Ave NB 60 against 47 (+13). The simulator uses Colby St SB for interior trips that the static assignment keeps on the arterials; the measured-delay loop did not fix this.
+- Entry backlog at two gates in a long peak: the merged SR-24 west-end gate (4,854 veh/h offered) and the San Pablo Ave west gate (1,417 veh/h), about 430 trips an hour in the second hour of a 120-minute run.
+- The 52nd St ramp carries 0.43 to 0.48 of its count in the simulator, the MLK Jr Way ramp 0.97: both ramps are reachable from the one gate now and drivers choose by cost.
+- Right turn on red is an ASSUMPTION at every signal; the legal basis and sign prohibitions (OSM has none read here) were not checked. The merge threshold (80 m), the stop dwell (1 s), the merge rule's 0.85 and the access decay of 300 s are ASSUMPTION values.
+- College Ave north is at 0.41 of its expected flow (0.27 to 0.51 in the other periods).
 
 ## Eighth round: fit convergence, route shares, restrained assignment, ramp pools (task 11)
 

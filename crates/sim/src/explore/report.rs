@@ -294,7 +294,7 @@ pub fn title(cands: &[Cand], set: &[u16]) -> String {
             }
         }
     }
-    let on = if places.len() > 3 { format!("{} and {} other streets", places[..2].join(", "), places.len() - 2) } else { list_and(&places) };
+    let on = if places.len() > 4 { format!("{} and {} other streets", places[..3].join(", "), places.len() - 3) } else { list_and(&places) };
     let (sing, plur) = noun(kind);
     let head = if cs.len() == 1 { capitalize(sing) } else { capitalize(&format!("{} {}", number_word(cs.len()), plur)) };
     let rest: usize = groups[1..].iter().map(|g| g.1.len()).sum();
@@ -321,8 +321,11 @@ pub fn summary(study: &Study, cands: &[Cand], f: &Final) -> String {
     let more = if n > 4 { format!(", and {} more", n - 4) } else { String::new() };
     let s1 = format!("It makes {} {}: {}{}.", number_word(n), if n == 1 { "change" } else { "changes" }, shown.join("; "), more);
     let s2 = format!(
-        "In the simulation it cuts cut-through traffic on local streets inside the study area by {:.0}%, from {:.0} to {:.0} vehicle-miles per peak hour.",
-        f.reduction_pct, f.base_mi, f.scen_mi
+        "In the simulation it {} cut-through traffic on local streets inside the study area by {:.0}%, from {:.0} to {:.0} vehicle-miles per peak hour.",
+        if f.reduction_pct >= 0.0 { "cuts" } else { "raises" },
+        f.reduction_pct.abs(),
+        f.base_mi,
+        f.scen_mi
     );
     let blk = &study.idx.blocks[study.harm_blocks[f.worst]];
     let s3 = if f.harm > 0.0 {

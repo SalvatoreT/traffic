@@ -77,4 +77,15 @@
 - [x] 11.6 52nd St off-ramp at 0.47 of its count: found in the simulator's merge rule at the 52nd St merge (one vehicle at a time onto a multilane exit); rule changed and a validation case (i4) and a unit test added
 - [x] 11.7 SR-24 west-end stub: lane counts match OSM; lane choice by branch tried and not kept (no effect); the isolated gate run carries its counted volume, so the shortfall comes from the surface demand that shares the junctions behind the ramps
 - [x] 11.8 Re-run: PM, AM and midday at scale 1.0 (seeds 1 to 3), one 120-minute PM run, reports replaced, record, README, area `calibration` entry
-- [ ] 11.9 Reach D4 in the PM and AM peaks at full demand and D5 (see the record)
+- [x] 11.9 D4 reached in the ninth round (task 12); D5 still open (see 12.9)
+
+## 12. Freeway-edge stubs, one count once, right turn on red, measured costs (ninth round)
+- [x] 12.1 Importer: freeway-edge stubs merged into one mainline gate per direction and end (`freewayGateMergeM`), parallel stub links joined, fork gates cleared; ramp reachability check with a warning and a list; tests on a synthetic fork and on Rockridge
+- [x] 12.2 Demand: per-ramp pools kept (the merged gate reaches 9 to 10 ramps up to 4.5 km apart); A/B recorded
+- [x] 12.3 Stations carry their source records; a gate station and a link station on the same record are one constraint (the link station stays); the build fails when a record is used more than once; test in `tools/station-records.test.ts`
+- [x] 12.4 Simulator: right turn on red after a stop (ASSUMPTION, switch `no_right_turn_on_red`), validation cases b10 and b11, golden metrics updated with the reason
+- [x] 12.5 Simulator: the adaptive plan counts the queue standing on every link feeding an unsignalized merge that the queue has reached; calibration report lists the phases of the five most blocked signals
+- [x] 12.6 Select-link comparison of assignment and simulator (`calibrate --select-od`, `ASSIGN_DUMP`), record
+- [x] 12.7 Cost loop (`tools/cost-loop.ts`, `linkMeanDelayS`, optional `countFit.assignment.measured`): run three iterations; shares 12.6, 9.9, 15.1 points off and PM removals 0, 4.7, 4.7, so iteration 0 is kept
+- [x] 12.8 Re-run: PM, AM and midday at scale 1.0 (seeds 1 to 3) and a 120-minute PM run; D4 holds in all three periods; reports replaced, `public/data/*` regenerated, record, READMEs, area `calibration` entry (`uncalibrated`, no experimental periods, default PM)
+- [ ] 12.9 Reach D5 (Colby St SB to the freeway is 21 points under, Hillegass Ave NB 13 over); long-peak entry backlog at two gates (120-minute run: 2.5%)

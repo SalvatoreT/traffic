@@ -91,7 +91,7 @@ The importer SHALL warn about every gate that lies within `gateSignalWarnM` (def
 
 
 ### Requirement: Freeway-edge stubs are one gate
-Mainline gates of one freeway direction whose stub ends lie within `freewayGateMergeM` (default 80 m) of each other, with similar bearings and only freeway-class links, SHALL be merged into one gate at their centroid, so every ramp upstream or downstream of that freeway end reaches it. Parallel stub links between the same two nodes SHALL become one link with the lanes added. A fork node that was a gate only because its other branch was clipped SHALL stop being one. The importer SHALL list each merge.
+Mainline gates of one freeway direction that lie within `freewayGateMergeM` (default 80 m) of each other, with similar bearings and only freeway-class links, SHALL be merged into one gate at their centroid, and parallel stub links between the same two nodes SHALL become one link with the lanes added. The importer SHALL list each merge.
 
 #### Scenario: A carriageway cut into two stubs
 - **WHEN** one freeway carriageway forks just inside the model edge and both branches leave through the edge 26 m apart
