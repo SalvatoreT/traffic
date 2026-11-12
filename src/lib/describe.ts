@@ -1,6 +1,7 @@
 import type { AreaBundle, Intervention } from '../types';
 import type { NetIndex } from './naming';
 import { pointAlong } from './geom';
+import { controlLabel } from './selection';
 
 export function describeIntervention(iv: Intervention, net: AreaBundle['network'], idx: NetIndex): string {
   const ln = (id: number) => idx.blocks[idx.blockOfLink[id]]?.label ?? `link ${id}`;
@@ -10,7 +11,7 @@ export function describeIntervention(iv: Intervention, net: AreaBundle['network'
     case 'speed_limit': return `Speed limit ${Math.round(iv.speed * 2.23694)} mph on ${ln(iv.link)}`;
     case 'speed_hump': return `Speed hump on ${ln(iv.link)}`;
     case 'traffic_circle': return `Traffic circle at ${nn(iv.node)}`;
-    case 'control': return `${iv.control.replace(/_/g, ' ')} at ${nn(iv.node)}`;
+    case 'control': return `${controlLabel(iv.control)} at ${nn(iv.node)}`;
     case 'signal_timing': return `Signal cycle ${iv.cycle} s at ${nn(iv.node)}`;
     case 'one_way': { const l = net.links[iv.link]; return `One-way on ${ln(iv.link)}, keeping ${idx.linkName[iv.link] ?? ''} toward ${idx.nodeName[l?.to ?? 0]}`; }
     case 'turn_ban': {

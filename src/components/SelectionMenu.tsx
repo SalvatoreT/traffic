@@ -53,7 +53,7 @@ function TurnBan({ options, onPick }: { options: TurnFrom[]; onPick(from: number
   const id = useId();
   const fromStillThere = from && options.find((o) => o.link === from.link);
   const step = fromStillThere ? 2 : 1;
-  useEffect(() => { box.current?.querySelector<HTMLButtonElement>('.sel-choice')?.focus(); }, [step]); // eslint-disable-line
+  useEffect(() => { if (open) box.current?.querySelector<HTMLButtonElement>('.sel-choice')?.focus(); }, [step, open]); // eslint-disable-line
   const finish = () => { setOpen(false); setFrom(null); btn.current?.focus(); };
   return (
     <>

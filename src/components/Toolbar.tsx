@@ -248,7 +248,7 @@ export function Legend(p: LegendProps) {
           <span className="ramp-end">{ticks[0]}</span>
           <div className="ramp-col">
             <div className="ramp-bar" style={{ background: grad }} />
-            <div className={`ramp-mid ${open ? 'open' : ''}`} aria-hidden="true"><div className="ramp-mid-in">{[1, 2, 3].map((i) => <span key={i} style={{ left: `${i * 25}%` }}>{ticks[i]}</span>)}</div></div>
+            <div className={`ramp-mid ${open ? 'open' : ''}`} aria-hidden="true"><div className="ramp-mid-in"><div className="ramp-mid-pad">{[1, 2, 3].map((i) => <span key={i} style={{ left: `${i * 25}%` }}>{ticks[i]}</span>)}</div></div></div>
           </div>
           <span className="ramp-end">{ticks[4]}</span>
         </div>

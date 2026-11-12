@@ -87,13 +87,19 @@ function studyBounds(b: AreaBundle): maplibregl.LngLatBoundsLike | null {
   for (const pt of ring) bb.extend(pt as [number, number]);
   return bb;
 }
+/** Height of the phone sheet over the bottom of the map (0 elsewhere). The map never resizes for it; this only pads fit and center requests. */
+function sheetObstruction(opening: boolean): number {
+  if (!window.matchMedia('(max-width: 719.98px)').matches) return 0;
+  if (opening) return Math.round(window.innerHeight * 0.5);
+  return parseFloat(document.documentElement.style.getPropertyValue('--sheet-h')) || 96;
+}
 function fitPadding(map: maplibregl.Map) {
   const c = map.getContainer();
   const cr = c.getBoundingClientRect();
   const w = cr.width;
   const pad = { top: 36, bottom: 36, left: 36, right: 64 };
   // The legend is a docked row over the map; only its collapsed height counts so the view does not refit when it expands.
-  pad.bottom = Math.max(pad.bottom, 56);
+  pad.bottom = Math.max(pad.bottom, 56 + sheetObstruction(false));
   void w;
   return pad;
 }
@@ -311,9 +317,10 @@ export function MapView(p: Props) {
       if (!L.selection) return;
       const [x, y] = selectionAnchor(L.bundle.network, L.index, L.selection);
       const ll = L.proj.toLonLat(x, y);
+      const obst = sheetObstruction(L.selection.via !== 'search');
       const pt = map.project(ll), c = map.getContainer(), inset = 56;
-      const inside = pt.x >= inset && pt.y >= inset && pt.x <= c.clientWidth - inset && pt.y <= c.clientHeight - inset;
-      if (force || !inside) map.easeTo({ center: ll, duration: reduce ? 0 : 350, essential: false });
+      const inside = pt.x >= inset && pt.y >= inset && pt.x <= c.clientWidth - inset && pt.y <= c.clientHeight - obst - inset - 40;
+      if (force || !inside) map.easeTo({ center: ll, padding: { top: 0, left: 0, right: 0, bottom: obst }, duration: reduce ? 0 : 350, essential: false });
     };
     fitArea(map, b, false);
     const cv = map.getCanvas();
