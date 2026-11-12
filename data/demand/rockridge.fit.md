@@ -8,346 +8,371 @@ Settings: factor bounds 0.1 to 3, damping 1, tolerance exp(0.01), at most 400 it
 
 | Period | Type | Offered (build) | After count fit | After guard (final) | Removed by fit | Removed by guard | Final / offered |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| am_peak | through | 7155 | 6989 | 6687 | 166 | 302 | 93% |
-| am_peak | local | 2340 | 3027 | 2881 | -688 | 146 | 123% |
-| am_peak | ramp | 11108 | 9511 | 9483 | 1597 | 27 | 85% |
-| am_peak | **all** | 20602 | 19527 | 19052 | 1075 | 475 | 92% |
-| midday | through | 6390 | 5912 | 5699 | 478 | 213 | 89% |
-| midday | local | 1517 | 1540 | 1588 | -22 | -48 | 105% |
-| midday | ramp | 8102 | 6783 | 6780 | 1319 | 4 | 84% |
-| midday | **all** | 16010 | 14235 | 14067 | 1775 | 168 | 88% |
-| pm_peak | through | 10113 | 9290 | 8423 | 823 | 867 | 83% |
-| pm_peak | local | 2282 | 2609 | 2268 | -328 | 341 | 99% |
-| pm_peak | ramp | 13068 | 11033 | 10981 | 2035 | 52 | 84% |
-| pm_peak | **all** | 25462 | 22932 | 21672 | 2530 | 1260 | 85% |
+| am_peak | through | 7155 | 6991 | 6651 | 164 | 340 | 93% |
+| am_peak | local | 2340 | 2497 | 2334 | -157 | 163 | 100% |
+| am_peak | ramp | 11108 | 11370 | 11357 | -263 | 14 | 102% |
+| am_peak | **all** | 20602 | 20859 | 20341 | -256 | 517 | 99% |
+| midday | through | 6390 | 5825 | 5640 | 565 | 185 | 88% |
+| midday | local | 1517 | 1585 | 1554 | -68 | 30 | 102% |
+| midday | ramp | 8102 | 8089 | 8088 | 13 | 1 | 100% |
+| midday | **all** | 16010 | 15499 | 15282 | 511 | 216 | 95% |
+| pm_peak | through | 10113 | 9238 | 8289 | 875 | 949 | 82% |
+| pm_peak | local | 2282 | 2396 | 2096 | -114 | 300 | 92% |
+| pm_peak | ramp | 13068 | 13258 | 13140 | -190 | 118 | 101% |
+| pm_peak | **all** | 25462 | 24891 | 23524 | 571 | 1367 | 92% |
 
 ## Fit status and per-flow factors
 
 Factor = final volume / offered volume of a flow. Percentiles are volume-weighted over the offered volume. "At bound" counts flows on a counted link whose factor sits on the lower or upper bound.
 
-| Period | Flows | Touch a count | Iterations | Converged | Worst station log error | Flows at lower bound | Flows at upper bound | Stations no flow crosses | Unroutable flows |
+| Period | Flows | Touch a count | Iterations | Stopped by | Worst station log error | Flows at lower bound | Flows at upper bound | Stations no flow crosses | Unroutable flows |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| am_peak | 7851 | 6530 | 400 | no | 0.909 | 2478 | 1002 | none | 0 |
-| midday | 8041 | 6702 | 400 | no | 0.875 | 2518 | 856 | none | 0 |
-| pm_peak | 7929 | 6642 | 400 | no | 1.269 | 2650 | 984 | none | 0 |
+| am_peak | 7851 | 6530 | 400 | iteration limit (conflicting counts, flows at bounds) | 0.855 | 1954 | 370 | none | 0 |
+| midday | 8041 | 6702 | 400 | iteration limit (conflicting counts, flows at bounds) | 0.875 | 1215 | 342 | none | 0 |
+| pm_peak | 7929 | 6642 | 400 | iteration limit (conflicting counts, flows at bounds) | 0.803 | 2238 | 461 | none | 0 |
 
 | Period | Group | Flows | p5 | p25 | median | p75 | p95 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| am_peak | counted through | 1372 | 0.10 | 0.10 | 0.57 | 1.31 | 3.00 |
-| am_peak | counted local | 970 | 0.10 | 0.10 | 1.11 | 2.95 | 3.00 |
-| am_peak | counted ramp | 4188 | 0.10 | 0.10 | 0.37 | 1.34 | 3.00 |
-| am_peak | uncounted through | 146 | 0.00 | 0.57 | 0.57 | 0.57 | 0.57 |
-| am_peak | uncounted local | 1056 | 1.11 | 1.11 | 1.11 | 1.11 | 1.11 |
-| am_peak | uncounted ramp | 119 | 0.37 | 0.37 | 0.37 | 0.37 | 0.37 |
-| midday | counted through | 1966 | 0.10 | 0.10 | 0.56 | 1.48 | 3.00 |
-| midday | counted local | 784 | 0.10 | 0.10 | 0.84 | 2.67 | 3.00 |
-| midday | counted ramp | 3952 | 0.10 | 0.10 | 0.30 | 1.18 | 3.00 |
-| midday | uncounted through | 344 | 0.09 | 0.56 | 0.56 | 0.56 | 0.56 |
-| midday | uncounted local | 888 | 0.84 | 0.84 | 0.84 | 0.84 | 0.84 |
-| midday | uncounted ramp | 107 | 0.30 | 0.30 | 0.30 | 0.30 | 0.30 |
-| pm_peak | counted through | 1943 | 0.10 | 0.10 | 0.41 | 1.23 | 3.00 |
-| pm_peak | counted local | 684 | 0.10 | 0.10 | 0.76 | 3.00 | 3.00 |
-| pm_peak | counted ramp | 4015 | 0.10 | 0.10 | 0.31 | 1.13 | 3.00 |
-| pm_peak | uncounted through | 325 | 0.00 | 0.10 | 0.21 | 0.41 | 0.41 |
-| pm_peak | uncounted local | 845 | 0.18 | 0.76 | 0.76 | 0.76 | 0.76 |
-| pm_peak | uncounted ramp | 117 | 0.00 | 0.31 | 0.31 | 0.31 | 0.31 |
+| am_peak | counted through | 1372 | 0.10 | 0.12 | 0.52 | 1.54 | 3.00 |
+| am_peak | counted local | 970 | 0.10 | 0.10 | 0.80 | 2.48 | 3.00 |
+| am_peak | counted ramp | 4188 | 0.10 | 0.10 | 0.38 | 0.96 | 4.77 |
+| am_peak | uncounted through | 146 | 0.05 | 0.41 | 0.52 | 0.52 | 0.52 |
+| am_peak | uncounted local | 1056 | 0.39 | 0.80 | 0.80 | 0.80 | 0.80 |
+| am_peak | uncounted ramp | 119 | 0.38 | 0.38 | 0.38 | 0.38 | 0.38 |
+| midday | counted through | 1966 | 0.10 | 0.10 | 0.57 | 1.47 | 2.95 |
+| midday | counted local | 784 | 0.10 | 0.11 | 0.83 | 2.48 | 3.00 |
+| midday | counted ramp | 3952 | 0.10 | 0.11 | 0.40 | 1.19 | 4.35 |
+| midday | uncounted through | 344 | 0.13 | 0.57 | 0.57 | 0.57 | 0.57 |
+| midday | uncounted local | 888 | 0.83 | 0.83 | 0.83 | 0.83 | 0.83 |
+| midday | uncounted ramp | 107 | 0.40 | 0.40 | 0.40 | 0.40 | 0.40 |
+| pm_peak | counted through | 1943 | 0.10 | 0.10 | 0.42 | 1.24 | 3.00 |
+| pm_peak | counted local | 684 | 0.10 | 0.10 | 0.71 | 2.93 | 3.00 |
+| pm_peak | counted ramp | 4015 | 0.10 | 0.10 | 0.41 | 1.06 | 3.71 |
+| pm_peak | uncounted through | 325 | 0.02 | 0.11 | 0.42 | 0.42 | 0.42 |
+| pm_peak | uncounted local | 845 | 0.10 | 0.71 | 0.71 | 0.71 | 0.71 |
+| pm_peak | uncounted ramp | 117 | 0.01 | 0.41 | 0.41 | 0.41 | 0.41 |
 
-Uncounted-flow rule medians (factor given to flows touching no count, by type): am_peak through 0.57, local 1.11, ramp 0.37; midday through 0.56, local 0.84, ramp 0.30; pm_peak through 0.41, local 0.76, ramp 0.31. These are the medians of the counted flows before the guard's ceilings apply to them.
+Uncounted-flow rule medians (factor given to flows touching no count, by type): am_peak through 0.52, local 0.80, ramp 0.38; midday through 0.57, local 0.83, ramp 0.40; pm_peak through 0.42, local 0.71, ramp 0.41. These are the medians of the counted flows before the guard's ceilings apply to them.
+
+## Station fit by family
+
+Within own tolerance = gates 10%, ramps 5%, turning-movement legs and Caltrans stations 15%. Ramp totals are the sums over counted ramps of the assigned freeway-link volume against ADT x K (off = freeway to surface, on = surface to freeway).
+
+| Period | Family | Stations | Within own tolerance | Within +/-15% | Sum of targets | Sum assigned before | Sum assigned after the fit | Sum assigned final | Final / target |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| am_peak | caltrans | 6 | 6 | 6 | 4712 | 3340 | 4712 | 4607 | 0.98 |
+| am_peak | gate entering | 13 | 11 | 11 | 8203 | 7715 | 7739 | 7665 | 0.93 |
+| am_peak | gate leaving | 12 | 12 | 12 | 5543 | 5314 | 5543 | 5542 | 1.00 |
+| am_peak | ramp off | 10 | 10 | 10 | 5424 | 8300 | 5424 | 5424 | 1.00 |
+| am_peak | ramp on | 12 | 11 | 11 | 5148 | 8799 | 5218 | 5220 | 1.01 |
+| am_peak | tmc | 16 | 16 | 16 | 8514 | 10090 | 8495 | 8438 | 0.99 |
+| midday | caltrans | 6 | 6 | 6 | 3437 | 2632 | 3437 | 3437 | 1.00 |
+| midday | gate entering | 13 | 11 | 11 | 5382 | 5091 | 5152 | 5151 | 0.96 |
+| midday | gate leaving | 12 | 12 | 12 | 4644 | 4454 | 4644 | 4644 | 1.00 |
+| midday | ramp off | 10 | 10 | 10 | 3956 | 6410 | 3956 | 3956 | 1.00 |
+| midday | ramp on | 12 | 11 | 11 | 3755 | 6855 | 3808 | 3808 | 1.01 |
+| midday | tmc | 16 | 16 | 16 | 6210 | 7959 | 6200 | 6199 | 1.00 |
+| pm_peak | caltrans | 6 | 6 | 6 | 5544 | 4224 | 5544 | 5479 | 0.99 |
+| pm_peak | gate entering | 13 | 11 | 11 | 8074 | 7659 | 7734 | 7615 | 0.94 |
+| pm_peak | gate leaving | 12 | 12 | 12 | 8097 | 7746 | 8097 | 8019 | 0.99 |
+| pm_peak | ramp off | 10 | 10 | 10 | 6381 | 10124 | 6381 | 6382 | 1.00 |
+| pm_peak | ramp on | 12 | 10 | 11 | 6057 | 10902 | 6118 | 6119 | 1.01 |
+| pm_peak | tmc | 16 | 16 | 16 | 10017 | 12741 | 9992 | 9942 | 0.99 |
 
 ## Stations, am_peak
 
-69 stations with a target. Within +/-15%: before 28, after the fit 55, final 55. Within their own tolerance (gates 10%, ramps 5%, others 15%): final 53.
+69 stations with a target. Within +/-15%: before 28, after the fit 66, final 66. Within their own tolerance (gates 10%, ramps 5%, others 15%): final 66.
 
 | Station | Basis | Target | Assigned before | Ratio | After fit | Ratio | Final | Ratio | Own tolerance |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| tunnel station, link 3523 inward (4 m from the station) | caltrans | 1198 | 383 | 0.32 | 1150 | 0.96 | 1096 | 0.92 | ok |
-| sanpablo station, link 115 inward (9 m from the station) | caltrans | 910 | 633 | 0.70 | 871 | 0.96 | 869 | 0.96 | ok |
-| tunnel station, link 3522 outward (4 m from the station) | caltrans | 868 | 323 | 0.37 | 867 | 1.00 | 866 | 1.00 | ok |
+| tunnel station, link 3523 inward (4 m from the station) | caltrans | 1198 | 383 | 0.32 | 1198 | 1.00 | 1097 | 0.92 | ok |
+| sanpablo station, link 115 inward (9 m from the station) | caltrans | 910 | 633 | 0.70 | 909 | 1.00 | 905 | 0.99 | ok |
+| tunnel station, link 3522 outward (4 m from the station) | caltrans | 868 | 323 | 0.37 | 868 | 1.00 | 867 | 1.00 | ok |
 | sanpablo station, link 111 outward (2 m from the station) | caltrans | 659 | 697 | 1.06 | 659 | 1.00 | 659 | 1.00 | ok |
 | claremont station, link 3507 inward (4 m from the station) | caltrans (factor ASSUMPTION) | 626 | 693 | 1.11 | 626 | 1.00 | 626 | 1.00 | ok |
 | claremont station, link 3506 outward (4 m from the station) | caltrans (factor ASSUMPTION) | 453 | 612 | 1.35 | 453 | 1.00 | 453 | 1.00 | ok |
 | gate 269 Ashby Avenue entering | gate | 1242 | 1234 | 0.99 | 1242 | 1.00 | 1242 | 1.00 | ok |
-| gate 966 Ward Street entering | gate | 1121 | 1114 | 0.99 | 1122 | 1.00 | 1123 | 1.00 | ok |
-| gate 269 Ashby Avenue leaving | gate | 900 | 893 | 0.99 | 900 | 1.00 | 900 | 1.00 | ok |
+| gate 966 Ward Street entering | gate | 1121 | 1114 | 0.99 | 1121 | 1.00 | 1122 | 1.00 | ok |
+| gate 269 Ashby Avenue leaving | gate | 900 | 893 | 0.99 | 900 | 1.00 | 899 | 1.00 | ok |
 | gate 179 San Pablo Avenue leaving | gate | 863 | 736 | 0.85 | 862 | 1.00 | 862 | 1.00 | ok |
-| gate 104 San Pablo Avenue entering | gate | 784 | 669 | 0.85 | 784 | 1.00 | 698 | 0.89 | OUTSIDE (10%) |
-| gate 183 San Pablo Avenue entering | gate | 706 | 620 | 0.88 | 736 | 1.04 | 738 | 1.05 | ok |
-| gate 286 Market Street entering | gate | 631 | 507 | 0.80 | 630 | 1.00 | 603 | 0.96 | ok |
-| gate 1793 Claremont Avenue entering | gate (factor ASSUMPTION) | 626 | 629 | 1.01 | 626 | 1.00 | 589 | 0.94 | ok |
+| gate 104 San Pablo Avenue entering | gate | 784 | 669 | 0.85 | 784 | 1.00 | 770 | 0.98 | ok |
+| gate 183 San Pablo Avenue entering | gate | 706 | 620 | 0.88 | 706 | 1.00 | 709 | 1.00 | ok |
+| gate 286 Market Street entering | gate | 631 | 507 | 0.80 | 630 | 1.00 | 613 | 0.97 | ok |
+| gate 1793 Claremont Avenue entering | gate (factor ASSUMPTION) | 626 | 629 | 1.01 | 626 | 1.00 | 588 | 0.94 | ok |
 | gate 788 Telegraph Avenue leaving | gate | 622 | 607 | 0.98 | 622 | 1.00 | 622 | 1.00 | ok |
-| gate 1580 Tunnel Road entering | gate | 599 | 602 | 1.01 | 241 | 0.40 | 241 | 0.40 | OUTSIDE (10%) |
-| gate 1751 Tunnel Road entering | gate | 599 | 602 | 1.01 | 241 | 0.40 | 241 | 0.40 | OUTSIDE (10%) |
+| gate 1580 Tunnel Road entering | gate | 599 | 602 | 1.01 | 367 | 0.61 | 367 | 0.61 | OUTSIDE (10%) |
+| gate 1751 Tunnel Road entering | gate | 599 | 602 | 1.01 | 366 | 0.61 | 366 | 0.61 | OUTSIDE (10%) |
 | gate 184 Alcatraz Avenue entering | gate | 594 | 572 | 0.96 | 594 | 1.00 | 594 | 1.00 | ok |
 | gate 966 Ward Street leaving | gate | 548 | 549 | 1.00 | 548 | 1.00 | 548 | 1.00 | ok |
 | gate 778 Telegraph Avenue entering | gate | 466 | 444 | 0.95 | 466 | 1.00 | 466 | 1.00 | ok |
-| gate 74 43rd Street entering | gate | 455 | 381 | 0.84 | 455 | 1.00 | 405 | 0.89 | OUTSIDE (10%) |
+| gate 74 43rd Street entering | gate | 455 | 381 | 0.84 | 455 | 1.00 | 447 | 0.98 | ok |
 | gate 1793 Claremont Avenue leaving | gate (factor ASSUMPTION) | 453 | 455 | 1.01 | 453 | 1.00 | 453 | 1.00 | ok |
-| gate 1580 Tunnel Road leaving | gate | 434 | 435 | 1.00 | 366 | 0.84 | 365 | 0.84 | OUTSIDE (10%) |
-| gate 1751 Tunnel Road leaving | gate | 434 | 435 | 1.00 | 366 | 0.84 | 365 | 0.84 | OUTSIDE (10%) |
+| gate 1580 Tunnel Road leaving | gate | 434 | 435 | 1.00 | 434 | 1.00 | 434 | 1.00 | ok |
+| gate 1751 Tunnel Road leaving | gate | 434 | 435 | 1.00 | 434 | 1.00 | 434 | 1.00 | ok |
 | gate 184 Alcatraz Avenue leaving | gate | 400 | 388 | 0.97 | 400 | 1.00 | 400 | 1.00 | ok |
 | gate 74 San Pablo Avenue leaving | gate | 329 | 304 | 0.92 | 329 | 1.00 | 329 | 1.00 | ok |
 | gate 286 Market Street leaving | gate | 249 | 223 | 0.89 | 249 | 1.00 | 249 | 1.00 | ok |
 | gate 306 43rd Street leaving | gate | 232 | 211 | 0.91 | 232 | 1.00 | 232 | 1.00 | ok |
-| gate 14 55th Street entering | gate | 207 | 198 | 0.96 | 207 | 1.00 | 207 | 1.00 | ok |
+| gate 14 55th Street entering | gate | 207 | 198 | 0.96 | 208 | 1.00 | 208 | 1.00 | ok |
 | gate 306 43rd Street entering | gate | 173 | 141 | 0.81 | 173 | 1.00 | 173 | 1.00 | ok |
 | gate 14 55th Street leaving | gate | 81 | 77 | 0.96 | 81 | 1.00 | 81 | 1.00 | ok |
-| off-ramp at node 734 (Martin Luther King Junior Way) | ramp | 1408 | 491 | 0.35 | 1369 | 0.97 | 1373 | 0.98 | ok |
+| off-ramp at node 734 (Martin Luther King Junior Way) | ramp | 1408 | 491 | 0.35 | 1408 | 1.00 | 1408 | 1.00 | ok |
 | off-ramp at node 742 (52nd Street) | ramp | 1086 | 1988 | 1.83 | 1086 | 1.00 | 1086 | 1.00 | ok |
 | on-ramp at node 740 (52nd Street) | ramp | 987 | 1848 | 1.87 | 987 | 1.00 | 987 | 1.00 | ok |
 | off-ramp at node 697 (Claremont Avenue / Clifton Street) | ramp | 826 | 1418 | 1.72 | 826 | 1.00 | 826 | 1.00 | ok |
-| on-ramp at node 856 (Claremont Avenue / Hudson Street) | ramp | 750 | 1136 | 1.52 | 750 | 1.00 | 750 | 1.00 | ok |
-| on-ramp at node 291 (Martin Luther King Junior Way) | ramp | 738 | 109 | 0.15 | 328 | 0.44 | 328 | 0.44 | OUTSIDE (5%) |
+| on-ramp at node 856 (Claremont Avenue / Hudson Street) | ramp | 750 | 1136 | 1.52 | 750 | 1.00 | 752 | 1.00 | ok |
+| on-ramp at node 291 (Martin Luther King Junior Way) | ramp | 738 | 109 | 0.15 | 738 | 1.00 | 738 | 1.00 | ok |
 | on-ramp at node 693 (Martin Luther King Junior Way) | ramp | 738 | 522 | 0.71 | 738 | 1.00 | 738 | 1.00 | ok |
-| on-ramp at node 716 (Telegraph Avenue / 56th Street) | ramp | 558 | 3029 | 5.42 | 663 | 1.19 | 664 | 1.19 | OUTSIDE (5%) |
-| off-ramp at node 717 (Telegraph Avenue / Aileen Street) | ramp | 528 | 2748 | 5.21 | 536 | 1.02 | 531 | 1.01 | ok |
-| off-ramp at node 1163 (Keith Avenue) | ramp | 405 | 228 | 0.56 | 342 | 0.84 | 341 | 0.84 | OUTSIDE (5%) |
-| on-ramp at node 1775 (Miles Avenue) | ramp | 306 | 196 | 0.64 | 301 | 0.98 | 304 | 0.99 | ok |
-| on-ramp at node 1343 (Brookside Avenue / Broadway) | ramp | 298 | 52 | 0.17 | 155 | 0.52 | 155 | 0.52 | OUTSIDE (5%) |
+| on-ramp at node 716 (Telegraph Avenue / 56th Street) | ramp | 558 | 3029 | 5.42 | 558 | 1.00 | 559 | 1.00 | ok |
+| off-ramp at node 717 (Telegraph Avenue / Aileen Street) | ramp | 528 | 2748 | 5.21 | 528 | 1.00 | 528 | 1.00 | ok |
+| off-ramp at node 1163 (Keith Avenue) | ramp | 405 | 228 | 0.56 | 405 | 1.00 | 405 | 1.00 | ok |
+| on-ramp at node 1775 (Miles Avenue) | ramp | 306 | 196 | 0.64 | 306 | 1.00 | 306 | 1.00 | ok |
+| on-ramp at node 1343 (Brookside Avenue / Broadway) | ramp | 298 | 52 | 0.17 | 298 | 1.00 | 298 | 1.00 | ok |
 | on-ramp at node 1352 (Broadway) | ramp | 298 | 187 | 0.63 | 298 | 1.00 | 298 | 1.00 | ok |
 | off-ramp at node 1588 (Broadway Terrace) | ramp | 270 | 523 | 1.94 | 270 | 1.00 | 270 | 1.00 | ok |
 | off-ramp at node 1609 (Broadway Terrace) | ramp | 270 | 522 | 1.93 | 270 | 1.00 | 270 | 1.00 | ok |
 | off-ramp at node 1382 (Broadway) | ramp | 268 | 219 | 0.82 | 268 | 1.00 | 268 | 1.00 | ok |
 | off-ramp at node 1777 (Miles Avenue) | ramp | 268 | 144 | 0.54 | 268 | 1.00 | 268 | 1.00 | ok |
-| on-ramp at node 1588 (Broadway Terrace) | ramp | 186 | 29 | 0.16 | 88 | 0.47 | 88 | 0.47 | OUTSIDE (5%) |
+| on-ramp at node 1588 (Broadway Terrace) | ramp | 186 | 29 | 0.16 | 186 | 1.00 | 186 | 1.00 | ok |
 | on-ramp at node 1701 (Glenwood Glade / Broadway Terrace / Pinewood Road) | ramp | 186 | 465 | 2.51 | 186 | 1.00 | 186 | 1.00 | ok |
-| off-ramp at node 1727 (Caldecott Lane) | ramp | 96 | 19 | 0.20 | 57 | 0.60 | 57 | 0.60 | OUTSIDE (5%) |
-| on-ramp at node 1727 (Caldecott Lane) | ramp | 52 | 11 | 0.22 | 34 | 0.67 | 34 | 0.67 | OUTSIDE (5%) |
-| on-ramp at node 1745 (Caldecott Lane) | ramp | 52 | 1214 | 23.51 | 128 | 2.48 | 128 | 2.48 | OUTSIDE (5%) |
-| AlcatrazAve N leg entering | tmc | 1121 | 606 | 0.54 | 1050 | 0.94 | 1049 | 0.94 | ok |
-| AlcatrazAve S leg leaving | tmc | 995 | 854 | 0.86 | 1061 | 1.07 | 1060 | 1.07 | ok |
-| MarketSt_55thSt N leg leaving | tmc | 859 | 1227 | 1.43 | 777 | 0.90 | 756 | 0.88 | ok |
-| AlcatrazAve S leg entering | tmc | 708 | 421 | 0.59 | 709 | 1.00 | 709 | 1.00 | ok |
-| AlcatrazAve W leg leaving | tmc | 659 | 344 | 0.52 | 593 | 0.90 | 594 | 0.90 | ok |
-| MarketSt_55thSt S leg entering | tmc | 631 | 641 | 1.02 | 698 | 1.11 | 651 | 1.03 | ok |
-| AlcatrazAve N leg leaving | tmc | 548 | 374 | 0.68 | 546 | 1.00 | 546 | 1.00 | ok |
-| MarketSt_55thSt E leg leaving | tmc | 529 | 872 | 1.65 | 478 | 0.90 | 465 | 0.88 | ok |
-| AlcatrazAve E leg entering | tmc | 477 | 350 | 0.73 | 530 | 1.11 | 530 | 1.11 | ok |
-| AlcatrazAve E leg leaving | tmc | 463 | 395 | 0.85 | 440 | 0.95 | 440 | 0.95 | ok |
-| MarketSt_55thSt N leg entering | tmc | 412 | 405 | 0.98 | 366 | 0.89 | 367 | 0.89 | ok |
-| AlcatrazAve W leg entering | tmc | 335 | 590 | 1.76 | 353 | 1.05 | 352 | 1.05 | ok |
-| MarketSt_55thSt S leg leaving | tmc | 249 | 472 | 1.89 | 280 | 1.13 | 279 | 1.12 | ok |
-| MarketSt_55thSt E leg entering | tmc | 241 | 1398 | 5.80 | 307 | 1.27 | 310 | 1.29 | OUTSIDE (15%) |
-| MarketSt_55thSt W leg entering | tmc | 207 | 634 | 3.06 | 229 | 1.11 | 236 | 1.14 | ok |
-| MarketSt_55thSt W leg leaving | tmc | 81 | 508 | 6.30 | 64 | 0.80 | 63 | 0.78 | OUTSIDE (15%) |
+| off-ramp at node 1727 (Caldecott Lane) | ramp | 96 | 19 | 0.20 | 96 | 1.00 | 96 | 1.00 | ok |
+| on-ramp at node 1727 (Caldecott Lane) | ramp | 52 | 11 | 0.22 | 52 | 1.00 | 52 | 1.00 | ok |
+| on-ramp at node 1745 (Caldecott Lane) | ramp | 52 | 1214 | 23.51 | 121 | 2.35 | 121 | 2.35 | OUTSIDE (5%) |
+| AlcatrazAve N leg entering | tmc | 1121 | 606 | 0.54 | 1050 | 0.94 | 1050 | 0.94 | ok |
+| AlcatrazAve S leg leaving | tmc | 995 | 854 | 0.86 | 1061 | 1.07 | 1061 | 1.07 | ok |
+| MarketSt_55thSt N leg leaving | tmc | 859 | 1227 | 1.43 | 795 | 0.93 | 774 | 0.90 | ok |
+| AlcatrazAve S leg entering | tmc | 708 | 421 | 0.59 | 744 | 1.05 | 744 | 1.05 | ok |
+| AlcatrazAve W leg leaving | tmc | 659 | 344 | 0.52 | 626 | 0.95 | 625 | 0.95 | ok |
+| MarketSt_55thSt S leg entering | tmc | 631 | 641 | 1.02 | 681 | 1.08 | 646 | 1.02 | ok |
+| AlcatrazAve N leg leaving | tmc | 548 | 374 | 0.68 | 521 | 0.95 | 521 | 0.95 | ok |
+| MarketSt_55thSt E leg leaving | tmc | 529 | 872 | 1.65 | 492 | 0.93 | 486 | 0.92 | ok |
+| AlcatrazAve E leg entering | tmc | 477 | 350 | 0.73 | 503 | 1.05 | 503 | 1.05 | ok |
+| AlcatrazAve E leg leaving | tmc | 463 | 395 | 0.85 | 441 | 0.95 | 441 | 0.95 | ok |
+| MarketSt_55thSt N leg entering | tmc | 412 | 405 | 0.98 | 433 | 1.05 | 430 | 1.04 | ok |
+| AlcatrazAve W leg entering | tmc | 335 | 590 | 1.76 | 352 | 1.05 | 352 | 1.05 | ok |
+| MarketSt_55thSt S leg leaving | tmc | 249 | 472 | 1.89 | 237 | 0.95 | 239 | 0.96 | ok |
+| MarketSt_55thSt E leg entering | tmc | 241 | 1398 | 5.80 | 261 | 1.08 | 268 | 1.11 | ok |
+| MarketSt_55thSt W leg entering | tmc | 207 | 634 | 3.06 | 224 | 1.08 | 227 | 1.09 | ok |
+| MarketSt_55thSt W leg leaving | tmc | 81 | 508 | 6.30 | 75 | 0.92 | 72 | 0.90 | ok |
 
 ## Stations, midday
 
-69 stations with a target. Within +/-15%: before 28, after the fit 57, final 57. Within their own tolerance (gates 10%, ramps 5%, others 15%): final 54.
+69 stations with a target. Within +/-15%: before 28, after the fit 66, final 66. Within their own tolerance (gates 10%, ramps 5%, others 15%): final 66.
 
 | Station | Basis | Target | Assigned before | Ratio | After fit | Ratio | Final | Ratio | Own tolerance |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | tunnel station, link 3523 inward (4 m from the station) | caltrans | 753 | 293 | 0.39 | 753 | 1.00 | 753 | 1.00 | ok |
 | tunnel station, link 3522 outward (4 m from the station) | caltrans | 753 | 288 | 0.38 | 753 | 1.00 | 753 | 1.00 | ok |
 | sanpablo station, link 115 inward (9 m from the station) | caltrans | 572 | 491 | 0.86 | 572 | 1.00 | 572 | 1.00 | ok |
-| sanpablo station, link 111 outward (2 m from the station) | caltrans | 572 | 525 | 0.92 | 571 | 1.00 | 571 | 1.00 | ok |
+| sanpablo station, link 111 outward (2 m from the station) | caltrans | 572 | 525 | 0.92 | 572 | 1.00 | 572 | 1.00 | ok |
 | claremont station, link 3507 inward (4 m from the station) | caltrans (factor ASSUMPTION) | 393 | 505 | 1.28 | 393 | 1.00 | 393 | 1.00 | ok |
 | claremont station, link 3506 outward (4 m from the station) | caltrans (factor ASSUMPTION) | 393 | 530 | 1.35 | 393 | 1.00 | 393 | 1.00 | ok |
 | gate 269 Ashby Avenue entering | gate | 781 | 777 | 0.99 | 781 | 1.00 | 781 | 1.00 | ok |
 | gate 269 Ashby Avenue leaving | gate | 781 | 775 | 0.99 | 781 | 1.00 | 781 | 1.00 | ok |
 | gate 966 Ward Street entering | gate | 720 | 717 | 0.99 | 720 | 1.00 | 720 | 1.00 | ok |
-| gate 179 San Pablo Avenue leaving | gate | 629 | 550 | 0.87 | 630 | 1.00 | 630 | 1.00 | ok |
-| gate 104 San Pablo Avenue entering | gate | 572 | 495 | 0.87 | 572 | 1.00 | 569 | 1.00 | ok |
+| gate 179 San Pablo Avenue leaving | gate | 629 | 550 | 0.87 | 629 | 1.00 | 629 | 1.00 | ok |
+| gate 104 San Pablo Avenue entering | gate | 572 | 495 | 0.87 | 572 | 1.00 | 571 | 1.00 | ok |
 | gate 183 San Pablo Avenue entering | gate | 515 | 459 | 0.89 | 515 | 1.00 | 515 | 1.00 | ok |
 | gate 966 Ward Street leaving | gate | 497 | 494 | 0.99 | 497 | 1.00 | 497 | 1.00 | ok |
 | gate 788 Telegraph Avenue leaving | gate | 453 | 440 | 0.97 | 453 | 1.00 | 453 | 1.00 | ok |
-| gate 286 Market Street entering | gate | 409 | 340 | 0.83 | 409 | 1.00 | 409 | 1.00 | ok |
+| gate 286 Market Street entering | gate | 409 | 340 | 0.83 | 408 | 1.00 | 408 | 1.00 | ok |
 | gate 1793 Claremont Avenue entering | gate (factor ASSUMPTION) | 393 | 396 | 1.01 | 393 | 1.00 | 393 | 1.00 | ok |
 | gate 1793 Claremont Avenue leaving | gate (factor ASSUMPTION) | 393 | 395 | 1.00 | 393 | 1.00 | 393 | 1.00 | ok |
-| gate 1580 Tunnel Road entering | gate | 377 | 379 | 1.01 | 170 | 0.45 | 170 | 0.45 | OUTSIDE (10%) |
-| gate 1580 Tunnel Road leaving | gate | 377 | 378 | 1.00 | 312 | 0.83 | 312 | 0.83 | OUTSIDE (10%) |
-| gate 1751 Tunnel Road entering | gate | 377 | 379 | 1.01 | 166 | 0.44 | 166 | 0.44 | OUTSIDE (10%) |
-| gate 1751 Tunnel Road leaving | gate | 377 | 378 | 1.00 | 312 | 0.83 | 312 | 0.83 | OUTSIDE (10%) |
+| gate 1580 Tunnel Road entering | gate | 377 | 379 | 1.01 | 265 | 0.70 | 265 | 0.70 | OUTSIDE (10%) |
+| gate 1580 Tunnel Road leaving | gate | 377 | 378 | 1.00 | 377 | 1.00 | 377 | 1.00 | ok |
+| gate 1751 Tunnel Road entering | gate | 377 | 379 | 1.01 | 258 | 0.68 | 258 | 0.68 | OUTSIDE (10%) |
+| gate 1751 Tunnel Road leaving | gate | 377 | 378 | 1.00 | 377 | 1.00 | 377 | 1.00 | ok |
 | gate 184 Alcatraz Avenue entering | gate | 375 | 365 | 0.97 | 375 | 1.00 | 375 | 1.00 | ok |
 | gate 184 Alcatraz Avenue leaving | gate | 350 | 342 | 0.98 | 350 | 1.00 | 350 | 1.00 | ok |
 | gate 778 Telegraph Avenue entering | gate | 340 | 324 | 0.95 | 340 | 1.00 | 340 | 1.00 | ok |
-| gate 74 43rd Street entering | gate | 286 | 244 | 0.85 | 286 | 1.00 | 285 | 1.00 | ok |
+| gate 74 43rd Street entering | gate | 286 | 244 | 0.85 | 286 | 1.00 | 286 | 1.00 | ok |
 | gate 74 San Pablo Avenue leaving | gate | 286 | 255 | 0.89 | 286 | 1.00 | 286 | 1.00 | ok |
 | gate 286 Market Street leaving | gate | 233 | 205 | 0.88 | 233 | 1.00 | 233 | 1.00 | ok |
 | gate 306 43rd Street leaving | gate | 193 | 170 | 0.88 | 193 | 1.00 | 193 | 1.00 | ok |
-| gate 14 55th Street entering | gate | 135 | 130 | 0.97 | 135 | 1.00 | 135 | 1.00 | ok |
+| gate 14 55th Street entering | gate | 135 | 130 | 0.97 | 135 | 1.01 | 135 | 1.01 | ok |
 | gate 306 43rd Street entering | gate | 102 | 86 | 0.84 | 102 | 1.00 | 102 | 1.00 | ok |
 | gate 14 55th Street leaving | gate | 76 | 73 | 0.96 | 76 | 1.00 | 76 | 1.00 | ok |
-| off-ramp at node 734 (Martin Luther King Junior Way) | ramp | 1027 | 372 | 0.36 | 1021 | 0.99 | 1021 | 0.99 | ok |
+| off-ramp at node 734 (Martin Luther King Junior Way) | ramp | 1027 | 372 | 0.36 | 1027 | 1.00 | 1027 | 1.00 | ok |
 | off-ramp at node 742 (52nd Street) | ramp | 792 | 1437 | 1.81 | 792 | 1.00 | 792 | 1.00 | ok |
 | on-ramp at node 740 (52nd Street) | ramp | 720 | 1357 | 1.89 | 720 | 1.00 | 720 | 1.00 | ok |
 | off-ramp at node 697 (Claremont Avenue / Clifton Street) | ramp | 603 | 1033 | 1.71 | 603 | 1.00 | 603 | 1.00 | ok |
 | on-ramp at node 856 (Claremont Avenue / Hudson Street) | ramp | 547 | 836 | 1.53 | 547 | 1.00 | 547 | 1.00 | ok |
-| on-ramp at node 291 (Martin Luther King Junior Way) | ramp | 538 | 83 | 0.15 | 248 | 0.46 | 248 | 0.46 | OUTSIDE (5%) |
+| on-ramp at node 291 (Martin Luther King Junior Way) | ramp | 538 | 83 | 0.15 | 538 | 1.00 | 538 | 1.00 | ok |
 | on-ramp at node 693 (Martin Luther King Junior Way) | ramp | 538 | 367 | 0.68 | 538 | 1.00 | 538 | 1.00 | ok |
-| on-ramp at node 716 (Telegraph Avenue / 56th Street) | ramp | 407 | 2461 | 6.04 | 492 | 1.21 | 492 | 1.21 | OUTSIDE (5%) |
-| off-ramp at node 717 (Telegraph Avenue / Aileen Street) | ramp | 385 | 2210 | 5.74 | 421 | 1.09 | 421 | 1.09 | OUTSIDE (5%) |
-| off-ramp at node 1163 (Keith Avenue) | ramp | 296 | 178 | 0.60 | 245 | 0.83 | 245 | 0.83 | OUTSIDE (5%) |
-| on-ramp at node 1775 (Miles Avenue) | ramp | 223 | 121 | 0.54 | 204 | 0.91 | 204 | 0.91 | OUTSIDE (5%) |
-| on-ramp at node 1343 (Brookside Avenue / Broadway) | ramp | 218 | 32 | 0.15 | 97 | 0.45 | 97 | 0.45 | OUTSIDE (5%) |
+| on-ramp at node 716 (Telegraph Avenue / 56th Street) | ramp | 407 | 2461 | 6.04 | 407 | 1.00 | 407 | 1.00 | ok |
+| off-ramp at node 717 (Telegraph Avenue / Aileen Street) | ramp | 385 | 2210 | 5.74 | 385 | 1.00 | 385 | 1.00 | ok |
+| off-ramp at node 1163 (Keith Avenue) | ramp | 296 | 178 | 0.60 | 296 | 1.00 | 296 | 1.00 | ok |
+| on-ramp at node 1775 (Miles Avenue) | ramp | 223 | 121 | 0.54 | 223 | 1.00 | 223 | 1.00 | ok |
+| on-ramp at node 1343 (Brookside Avenue / Broadway) | ramp | 218 | 32 | 0.15 | 218 | 1.00 | 218 | 1.00 | ok |
 | on-ramp at node 1352 (Broadway) | ramp | 218 | 151 | 0.70 | 218 | 1.00 | 218 | 1.00 | ok |
 | off-ramp at node 1588 (Broadway Terrace) | ramp | 197 | 452 | 2.30 | 197 | 1.00 | 197 | 1.00 | ok |
 | off-ramp at node 1609 (Broadway Terrace) | ramp | 197 | 457 | 2.33 | 197 | 1.00 | 197 | 1.00 | ok |
 | off-ramp at node 1382 (Broadway) | ramp | 195 | 152 | 0.78 | 195 | 1.00 | 195 | 1.00 | ok |
 | off-ramp at node 1777 (Miles Avenue) | ramp | 195 | 106 | 0.54 | 195 | 1.00 | 195 | 1.00 | ok |
-| on-ramp at node 1588 (Broadway Terrace) | ramp | 135 | 22 | 0.16 | 67 | 0.49 | 67 | 0.49 | OUTSIDE (5%) |
+| on-ramp at node 1588 (Broadway Terrace) | ramp | 135 | 22 | 0.16 | 135 | 1.00 | 135 | 1.00 | ok |
 | on-ramp at node 1701 (Glenwood Glade / Broadway Terrace / Pinewood Road) | ramp | 135 | 610 | 4.51 | 135 | 1.00 | 135 | 1.00 | ok |
-| off-ramp at node 1727 (Caldecott Lane) | ramp | 70 | 14 | 0.20 | 42 | 0.60 | 42 | 0.60 | OUTSIDE (5%) |
-| on-ramp at node 1727 (Caldecott Lane) | ramp | 38 | 18 | 0.48 | 34 | 0.91 | 34 | 0.91 | OUTSIDE (5%) |
+| off-ramp at node 1727 (Caldecott Lane) | ramp | 70 | 14 | 0.20 | 70 | 1.00 | 70 | 1.00 | ok |
+| on-ramp at node 1727 (Caldecott Lane) | ramp | 38 | 18 | 0.48 | 38 | 1.00 | 38 | 1.00 | ok |
 | on-ramp at node 1745 (Caldecott Lane) | ramp | 38 | 796 | 21.13 | 90 | 2.40 | 90 | 2.40 | OUTSIDE (5%) |
 | AlcatrazAve N leg entering | tmc | 720 | 479 | 0.66 | 669 | 0.93 | 669 | 0.93 | ok |
 | AlcatrazAve S leg leaving | tmc | 626 | 643 | 1.03 | 674 | 1.08 | 674 | 1.08 | ok |
-| AlcatrazAve S leg entering | tmc | 615 | 289 | 0.47 | 620 | 1.01 | 620 | 1.01 | ok |
-| MarketSt_55thSt N leg leaving | tmc | 553 | 945 | 1.71 | 509 | 0.92 | 509 | 0.92 | ok |
-| AlcatrazAve N leg leaving | tmc | 497 | 252 | 0.51 | 493 | 0.99 | 493 | 0.99 | ok |
-| AlcatrazAve W leg leaving | tmc | 422 | 291 | 0.69 | 379 | 0.90 | 379 | 0.90 | ok |
-| MarketSt_55thSt S leg entering | tmc | 409 | 471 | 1.15 | 443 | 1.09 | 443 | 1.09 | ok |
-| AlcatrazAve E leg leaving | tmc | 393 | 351 | 0.89 | 382 | 0.97 | 382 | 0.97 | ok |
-| MarketSt_55thSt N leg entering | tmc | 374 | 295 | 0.79 | 325 | 0.87 | 325 | 0.87 | ok |
-| MarketSt_55thSt E leg leaving | tmc | 341 | 708 | 2.08 | 314 | 0.92 | 314 | 0.92 | ok |
-| AlcatrazAve W leg entering | tmc | 303 | 477 | 1.58 | 311 | 1.03 | 311 | 1.03 | ok |
-| AlcatrazAve E leg entering | tmc | 293 | 292 | 1.00 | 327 | 1.12 | 327 | 1.12 | ok |
-| MarketSt_55thSt S leg leaving | tmc | 233 | 370 | 1.59 | 269 | 1.15 | 269 | 1.15 | OUTSIDE (15%) |
-| MarketSt_55thSt E leg entering | tmc | 221 | 1139 | 5.16 | 246 | 1.11 | 246 | 1.11 | ok |
-| MarketSt_55thSt W leg entering | tmc | 135 | 537 | 3.99 | 146 | 1.08 | 146 | 1.08 | ok |
-| MarketSt_55thSt W leg leaving | tmc | 76 | 420 | 5.55 | 68 | 0.90 | 68 | 0.90 | ok |
+| AlcatrazAve S leg entering | tmc | 615 | 289 | 0.47 | 642 | 1.04 | 641 | 1.04 | ok |
+| MarketSt_55thSt N leg leaving | tmc | 553 | 945 | 1.71 | 530 | 0.96 | 530 | 0.96 | ok |
+| AlcatrazAve N leg leaving | tmc | 497 | 252 | 0.51 | 477 | 0.96 | 477 | 0.96 | ok |
+| AlcatrazAve W leg leaving | tmc | 422 | 291 | 0.69 | 405 | 0.96 | 405 | 0.96 | ok |
+| MarketSt_55thSt S leg entering | tmc | 409 | 471 | 1.15 | 426 | 1.04 | 426 | 1.04 | ok |
+| AlcatrazAve E leg leaving | tmc | 393 | 351 | 0.89 | 377 | 0.96 | 377 | 0.96 | ok |
+| MarketSt_55thSt N leg entering | tmc | 374 | 295 | 0.79 | 371 | 0.99 | 370 | 0.99 | ok |
+| MarketSt_55thSt E leg leaving | tmc | 341 | 708 | 2.08 | 329 | 0.97 | 329 | 0.97 | ok |
+| AlcatrazAve W leg entering | tmc | 303 | 477 | 1.58 | 315 | 1.04 | 315 | 1.04 | ok |
+| AlcatrazAve E leg entering | tmc | 293 | 292 | 1.00 | 306 | 1.04 | 306 | 1.04 | ok |
+| MarketSt_55thSt S leg leaving | tmc | 233 | 370 | 1.59 | 235 | 1.01 | 236 | 1.01 | ok |
+| MarketSt_55thSt E leg entering | tmc | 221 | 1139 | 5.16 | 230 | 1.04 | 231 | 1.04 | ok |
+| MarketSt_55thSt W leg entering | tmc | 135 | 537 | 3.99 | 141 | 1.05 | 141 | 1.05 | ok |
+| MarketSt_55thSt W leg leaving | tmc | 76 | 420 | 5.55 | 73 | 0.96 | 72 | 0.96 | ok |
 
 ## Stations, pm_peak
 
-69 stations with a target. Within +/-15%: before 28, after the fit 57, final 57. Within their own tolerance (gates 10%, ramps 5%, others 15%): final 52.
+69 stations with a target. Within +/-15%: before 28, after the fit 66, final 66. Within their own tolerance (gates 10%, ramps 5%, others 15%): final 65.
 
 | Station | Basis | Target | Assigned before | Ratio | After fit | Ratio | Final | Ratio | Own tolerance |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| tunnel station, link 3522 outward (4 m from the station) | caltrans | 1337 | 488 | 0.36 | 1336 | 1.00 | 1304 | 0.98 | ok |
-| tunnel station, link 3523 inward (4 m from the station) | caltrans | 1094 | 423 | 0.39 | 1093 | 1.00 | 1030 | 0.94 | ok |
-| sanpablo station, link 111 outward (2 m from the station) | caltrans | 1015 | 865 | 0.85 | 1004 | 0.99 | 979 | 0.97 | ok |
-| sanpablo station, link 115 inward (9 m from the station) | caltrans | 830 | 794 | 0.96 | 830 | 1.00 | 829 | 1.00 | ok |
-| claremont station, link 3506 outward (4 m from the station) | caltrans (factor ASSUMPTION) | 698 | 883 | 1.27 | 698 | 1.00 | 698 | 1.00 | ok |
+| tunnel station, link 3522 outward (4 m from the station) | caltrans | 1337 | 488 | 0.36 | 1337 | 1.00 | 1336 | 1.00 | ok |
+| tunnel station, link 3523 inward (4 m from the station) | caltrans | 1094 | 423 | 0.39 | 1094 | 1.00 | 1033 | 0.94 | ok |
+| sanpablo station, link 111 outward (2 m from the station) | caltrans | 1015 | 865 | 0.85 | 1015 | 1.00 | 1013 | 1.00 | ok |
+| sanpablo station, link 115 inward (9 m from the station) | caltrans | 830 | 794 | 0.96 | 830 | 1.00 | 830 | 1.00 | ok |
+| claremont station, link 3506 outward (4 m from the station) | caltrans (factor ASSUMPTION) | 698 | 883 | 1.27 | 698 | 1.00 | 695 | 1.00 | ok |
 | claremont station, link 3507 inward (4 m from the station) | caltrans (factor ASSUMPTION) | 571 | 770 | 1.35 | 571 | 1.00 | 571 | 1.00 | ok |
-| gate 269 Ashby Avenue leaving | gate | 1386 | 1375 | 0.99 | 1386 | 1.00 | 1386 | 1.00 | ok |
-| gate 269 Ashby Avenue entering | gate | 1134 | 1128 | 0.99 | 1134 | 1.00 | 1132 | 1.00 | ok |
+| gate 269 Ashby Avenue leaving | gate | 1386 | 1375 | 0.99 | 1386 | 1.00 | 1385 | 1.00 | ok |
+| gate 269 Ashby Avenue entering | gate | 1134 | 1128 | 0.99 | 1134 | 1.00 | 1134 | 1.00 | ok |
 | gate 966 Ward Street entering | gate | 1064 | 1061 | 1.00 | 1064 | 1.00 | 1064 | 1.00 | ok |
-| gate 179 San Pablo Avenue leaving | gate | 1015 | 884 | 0.87 | 1019 | 1.00 | 1026 | 1.01 | ok |
-| gate 104 San Pablo Avenue entering | gate | 923 | 814 | 0.88 | 922 | 1.00 | 811 | 0.88 | OUTSIDE (10%) |
-| gate 966 Ward Street leaving | gate | 900 | 892 | 0.99 | 900 | 1.00 | 900 | 1.00 | ok |
-| gate 183 San Pablo Avenue entering | gate | 830 | 738 | 0.89 | 830 | 1.00 | 830 | 1.00 | ok |
+| gate 179 San Pablo Avenue leaving | gate | 1015 | 884 | 0.87 | 1015 | 1.00 | 1015 | 1.00 | ok |
+| gate 104 San Pablo Avenue entering | gate | 923 | 814 | 0.88 | 923 | 1.00 | 863 | 0.94 | ok |
+| gate 966 Ward Street leaving | gate | 900 | 892 | 0.99 | 899 | 1.00 | 900 | 1.00 | ok |
+| gate 183 San Pablo Avenue entering | gate | 830 | 738 | 0.89 | 830 | 1.00 | 831 | 1.00 | ok |
 | gate 788 Telegraph Avenue leaving | gate | 731 | 709 | 0.97 | 731 | 1.00 | 731 | 1.00 | ok |
-| gate 1793 Claremont Avenue leaving | gate (factor ASSUMPTION) | 698 | 700 | 1.00 | 698 | 1.00 | 642 | 0.92 | ok |
-| gate 1580 Tunnel Road leaving | gate | 668 | 670 | 1.00 | 543 | 0.81 | 530 | 0.79 | OUTSIDE (10%) |
-| gate 1751 Tunnel Road leaving | gate | 668 | 670 | 1.00 | 543 | 0.81 | 530 | 0.79 | OUTSIDE (10%) |
+| gate 1793 Claremont Avenue leaving | gate (factor ASSUMPTION) | 698 | 700 | 1.00 | 698 | 1.00 | 652 | 0.93 | ok |
+| gate 1580 Tunnel Road leaving | gate | 668 | 670 | 1.00 | 668 | 1.00 | 655 | 0.98 | ok |
+| gate 1751 Tunnel Road leaving | gate | 668 | 670 | 1.00 | 668 | 1.00 | 655 | 0.98 | ok |
 | gate 184 Alcatraz Avenue leaving | gate | 623 | 607 | 0.98 | 623 | 1.00 | 623 | 1.00 | ok |
-| gate 286 Market Street entering | gate | 607 | 512 | 0.84 | 607 | 1.00 | 583 | 0.96 | ok |
+| gate 286 Market Street entering | gate | 607 | 512 | 0.84 | 607 | 1.00 | 592 | 0.97 | ok |
 | gate 1793 Claremont Avenue entering | gate (factor ASSUMPTION) | 571 | 575 | 1.01 | 571 | 1.00 | 554 | 0.97 | ok |
-| gate 778 Telegraph Avenue entering | gate | 549 | 525 | 0.96 | 549 | 1.00 | 549 | 1.00 | ok |
-| gate 1580 Tunnel Road entering | gate | 547 | 550 | 1.01 | 232 | 0.42 | 231 | 0.42 | OUTSIDE (10%) |
-| gate 1751 Tunnel Road entering | gate | 547 | 550 | 1.01 | 231 | 0.42 | 231 | 0.42 | OUTSIDE (10%) |
-| gate 184 Alcatraz Avenue entering | gate | 547 | 531 | 0.97 | 546 | 1.00 | 546 | 1.00 | ok |
+| gate 778 Telegraph Avenue entering | gate | 549 | 525 | 0.96 | 549 | 1.00 | 548 | 1.00 | ok |
+| gate 1580 Tunnel Road entering | gate | 547 | 550 | 1.01 | 379 | 0.69 | 379 | 0.69 | OUTSIDE (10%) |
+| gate 1751 Tunnel Road entering | gate | 547 | 550 | 1.01 | 369 | 0.68 | 369 | 0.68 | OUTSIDE (10%) |
+| gate 184 Alcatraz Avenue entering | gate | 547 | 531 | 0.97 | 547 | 1.00 | 546 | 1.00 | ok |
 | gate 74 San Pablo Avenue leaving | gate | 507 | 447 | 0.88 | 507 | 1.00 | 507 | 1.00 | ok |
-| gate 286 Market Street leaving | gate | 428 | 371 | 0.87 | 427 | 1.00 | 412 | 0.96 | ok |
-| gate 74 43rd Street entering | gate | 415 | 360 | 0.87 | 415 | 1.00 | 363 | 0.87 | OUTSIDE (10%) |
+| gate 286 Market Street leaving | gate | 428 | 371 | 0.87 | 427 | 1.00 | 422 | 0.99 | ok |
+| gate 74 43rd Street entering | gate | 415 | 360 | 0.87 | 415 | 1.00 | 388 | 0.93 | ok |
 | gate 306 43rd Street leaving | gate | 335 | 290 | 0.87 | 334 | 1.00 | 334 | 1.00 | ok |
-| gate 14 55th Street entering | gate | 200 | 193 | 0.97 | 200 | 1.00 | 200 | 1.00 | ok |
-| gate 306 43rd Street entering | gate | 142 | 121 | 0.86 | 141 | 1.00 | 141 | 1.00 | ok |
+| gate 14 55th Street entering | gate | 200 | 193 | 0.97 | 205 | 1.03 | 205 | 1.03 | ok |
+| gate 306 43rd Street entering | gate | 142 | 121 | 0.86 | 142 | 1.00 | 141 | 1.00 | ok |
 | gate 14 55th Street leaving | gate | 139 | 133 | 0.96 | 139 | 1.00 | 139 | 1.00 | ok |
-| off-ramp at node 734 (Martin Luther King Junior Way) | ramp | 1656 | 635 | 0.38 | 1653 | 1.00 | 1646 | 0.99 | ok |
+| off-ramp at node 734 (Martin Luther King Junior Way) | ramp | 1656 | 635 | 0.38 | 1656 | 1.00 | 1656 | 1.00 | ok |
 | off-ramp at node 742 (52nd Street) | ramp | 1278 | 2289 | 1.79 | 1278 | 1.00 | 1278 | 1.00 | ok |
 | on-ramp at node 740 (52nd Street) | ramp | 1161 | 2186 | 1.88 | 1161 | 1.00 | 1161 | 1.00 | ok |
 | off-ramp at node 697 (Claremont Avenue / Clifton Street) | ramp | 972 | 1658 | 1.71 | 972 | 1.00 | 972 | 1.00 | ok |
 | on-ramp at node 856 (Claremont Avenue / Hudson Street) | ramp | 882 | 1347 | 1.53 | 882 | 1.00 | 882 | 1.00 | ok |
-| on-ramp at node 291 (Martin Luther King Junior Way) | ramp | 869 | 151 | 0.17 | 452 | 0.52 | 452 | 0.52 | OUTSIDE (5%) |
-| on-ramp at node 693 (Martin Luther King Junior Way) | ramp | 869 | 573 | 0.66 | 869 | 1.00 | 869 | 1.00 | ok |
-| on-ramp at node 716 (Telegraph Avenue / 56th Street) | ramp | 657 | 3938 | 5.99 | 809 | 1.23 | 796 | 1.21 | OUTSIDE (5%) |
-| off-ramp at node 717 (Telegraph Avenue / Aileen Street) | ramp | 621 | 3492 | 5.62 | 681 | 1.10 | 681 | 1.10 | OUTSIDE (5%) |
-| off-ramp at node 1163 (Keith Avenue) | ramp | 477 | 301 | 0.63 | 387 | 0.81 | 394 | 0.83 | OUTSIDE (5%) |
-| on-ramp at node 1775 (Miles Avenue) | ramp | 360 | 176 | 0.49 | 328 | 0.91 | 328 | 0.91 | OUTSIDE (5%) |
-| on-ramp at node 1343 (Brookside Avenue / Broadway) | ramp | 351 | 45 | 0.13 | 136 | 0.39 | 136 | 0.39 | OUTSIDE (5%) |
+| on-ramp at node 291 (Martin Luther King Junior Way) | ramp | 869 | 151 | 0.17 | 868 | 1.00 | 869 | 1.00 | ok |
+| on-ramp at node 693 (Martin Luther King Junior Way) | ramp | 869 | 573 | 0.66 | 868 | 1.00 | 868 | 1.00 | ok |
+| on-ramp at node 716 (Telegraph Avenue / 56th Street) | ramp | 657 | 3938 | 5.99 | 657 | 1.00 | 657 | 1.00 | ok |
+| off-ramp at node 717 (Telegraph Avenue / Aileen Street) | ramp | 621 | 3492 | 5.62 | 621 | 1.00 | 621 | 1.00 | ok |
+| off-ramp at node 1163 (Keith Avenue) | ramp | 477 | 301 | 0.63 | 477 | 1.00 | 477 | 1.00 | ok |
+| on-ramp at node 1775 (Miles Avenue) | ramp | 360 | 176 | 0.49 | 360 | 1.00 | 360 | 1.00 | ok |
+| on-ramp at node 1343 (Brookside Avenue / Broadway) | ramp | 351 | 45 | 0.13 | 351 | 1.00 | 351 | 1.00 | ok |
 | on-ramp at node 1352 (Broadway) | ramp | 351 | 278 | 0.79 | 351 | 1.00 | 351 | 1.00 | ok |
 | off-ramp at node 1588 (Broadway Terrace) | ramp | 317 | 652 | 2.06 | 317 | 1.00 | 317 | 1.00 | ok |
 | off-ramp at node 1609 (Broadway Terrace) | ramp | 317 | 701 | 2.21 | 317 | 1.00 | 317 | 1.00 | ok |
 | off-ramp at node 1382 (Broadway) | ramp | 315 | 207 | 0.66 | 315 | 1.00 | 315 | 1.00 | ok |
 | off-ramp at node 1777 (Miles Avenue) | ramp | 315 | 169 | 0.54 | 315 | 1.00 | 315 | 1.00 | ok |
-| on-ramp at node 1588 (Broadway Terrace) | ramp | 218 | 20 | 0.09 | 61 | 0.28 | 61 | 0.28 | OUTSIDE (5%) |
-| on-ramp at node 1701 (Glenwood Glade / Broadway Terrace / Pinewood Road) | ramp | 218 | 991 | 4.54 | 218 | 1.00 | 221 | 1.01 | ok |
-| off-ramp at node 1727 (Caldecott Lane) | ramp | 113 | 21 | 0.19 | 63 | 0.56 | 63 | 0.56 | OUTSIDE (5%) |
-| on-ramp at node 1727 (Caldecott Lane) | ramp | 61 | 31 | 0.51 | 55 | 0.91 | 55 | 0.91 | OUTSIDE (5%) |
-| on-ramp at node 1745 (Caldecott Lane) | ramp | 61 | 1167 | 19.21 | 144 | 2.36 | 144 | 2.36 | OUTSIDE (5%) |
-| AlcatrazAve S leg entering | tmc | 1093 | 424 | 0.39 | 1098 | 1.01 | 1098 | 1.00 | ok |
+| on-ramp at node 1588 (Broadway Terrace) | ramp | 218 | 20 | 0.09 | 205 | 0.94 | 205 | 0.94 | OUTSIDE (5%) |
+| on-ramp at node 1701 (Glenwood Glade / Broadway Terrace / Pinewood Road) | ramp | 218 | 991 | 4.54 | 218 | 1.00 | 218 | 1.00 | ok |
+| off-ramp at node 1727 (Caldecott Lane) | ramp | 113 | 21 | 0.19 | 113 | 1.00 | 114 | 1.01 | ok |
+| on-ramp at node 1727 (Caldecott Lane) | ramp | 61 | 31 | 0.51 | 61 | 1.00 | 61 | 1.00 | ok |
+| on-ramp at node 1745 (Caldecott Lane) | ramp | 61 | 1167 | 19.21 | 136 | 2.23 | 136 | 2.23 | OUTSIDE (5%) |
+| AlcatrazAve S leg entering | tmc | 1093 | 424 | 0.39 | 1128 | 1.03 | 1128 | 1.03 | ok |
 | AlcatrazAve N leg entering | tmc | 1064 | 905 | 0.85 | 992 | 0.93 | 992 | 0.93 | ok |
 | AlcatrazAve S leg leaving | tmc | 910 | 1126 | 1.24 | 975 | 1.07 | 975 | 1.07 | ok |
-| AlcatrazAve N leg leaving | tmc | 900 | 357 | 0.40 | 895 | 0.99 | 894 | 0.99 | ok |
-| MarketSt_55thSt N leg leaving | tmc | 816 | 1496 | 1.83 | 765 | 0.94 | 756 | 0.93 | ok |
-| AlcatrazAve E leg leaving | tmc | 689 | 582 | 0.85 | 685 | 0.99 | 685 | 0.99 | ok |
-| MarketSt_55thSt N leg entering | tmc | 679 | 469 | 0.69 | 577 | 0.85 | 570 | 0.84 | OUTSIDE (15%) |
-| AlcatrazAve W leg leaving | tmc | 623 | 439 | 0.70 | 554 | 0.89 | 554 | 0.89 | ok |
-| MarketSt_55thSt S leg entering | tmc | 607 | 738 | 1.21 | 648 | 1.07 | 607 | 1.00 | ok |
-| AlcatrazAve W leg entering | tmc | 547 | 737 | 1.35 | 549 | 1.01 | 549 | 1.00 | ok |
-| MarketSt_55thSt E leg leaving | tmc | 505 | 1110 | 2.20 | 473 | 0.94 | 467 | 0.93 | ok |
-| MarketSt_55thSt S leg leaving | tmc | 428 | 611 | 1.43 | 503 | 1.18 | 491 | 1.15 | ok |
-| AlcatrazAve E leg entering | tmc | 418 | 437 | 1.05 | 470 | 1.12 | 470 | 1.13 | ok |
-| MarketSt_55thSt E leg entering | tmc | 402 | 1791 | 4.46 | 432 | 1.08 | 446 | 1.11 | ok |
-| MarketSt_55thSt W leg entering | tmc | 200 | 869 | 4.35 | 213 | 1.07 | 216 | 1.08 | ok |
-| MarketSt_55thSt W leg leaving | tmc | 139 | 651 | 4.68 | 129 | 0.93 | 125 | 0.90 | ok |
+| AlcatrazAve N leg leaving | tmc | 900 | 357 | 0.40 | 871 | 0.97 | 871 | 0.97 | ok |
+| MarketSt_55thSt N leg leaving | tmc | 816 | 1496 | 1.83 | 794 | 0.97 | 781 | 0.96 | ok |
+| AlcatrazAve E leg leaving | tmc | 689 | 582 | 0.85 | 667 | 0.97 | 667 | 0.97 | ok |
+| MarketSt_55thSt N leg entering | tmc | 679 | 469 | 0.69 | 632 | 0.93 | 628 | 0.92 | ok |
+| AlcatrazAve W leg leaving | tmc | 623 | 439 | 0.70 | 602 | 0.97 | 602 | 0.97 | ok |
+| MarketSt_55thSt S leg entering | tmc | 607 | 738 | 1.21 | 625 | 1.03 | 595 | 0.98 | ok |
+| AlcatrazAve W leg entering | tmc | 547 | 737 | 1.35 | 564 | 1.03 | 563 | 1.03 | ok |
+| MarketSt_55thSt E leg leaving | tmc | 505 | 1110 | 2.20 | 492 | 0.97 | 486 | 0.96 | ok |
+| MarketSt_55thSt S leg leaving | tmc | 428 | 611 | 1.43 | 459 | 1.07 | 457 | 1.07 | ok |
+| AlcatrazAve E leg entering | tmc | 418 | 437 | 1.05 | 432 | 1.03 | 432 | 1.03 | ok |
+| MarketSt_55thSt E leg entering | tmc | 402 | 1791 | 4.46 | 413 | 1.03 | 421 | 1.05 | ok |
+| MarketSt_55thSt W leg entering | tmc | 200 | 869 | 4.35 | 210 | 1.05 | 212 | 1.06 | ok |
+| MarketSt_55thSt W leg leaving | tmc | 139 | 651 | 4.68 | 135 | 0.97 | 132 | 0.95 | ok |
 
 ## Capacity guard
 
 ### am_peak
 
-The guard removed 475 veh/h net compared with the count-only fit; 2989 flows are more than 0.1% smaller. Links the count-only solution puts above capacity x 1.10 (15), worst first, up to 20, with the volume after the guard:
+The guard removed 517 veh/h net compared with the count-only fit; 4418 flows are more than 0.1% smaller. Links the count-only solution puts above capacity x 1.10 (15), worst first, up to 20, with the volume after the guard:
 
 | Link | Street | Rule | Capacity | Assigned before | After |
 | --- | --- | --- | --- | --- | --- |
-| 752 | Adeline Street | all_way_stop | 473 | 1035 | 608 |
-| 599 | Adeline Street | all_way_stop | 473 | 974 | 558 |
-| 1105 | Arlington Avenue | all_way_stop | 473 | 886 | 523 |
-| 1107 | Arlington Avenue | two_way_stop_minor | 574 | 880 | 522 |
-| 4193 | Market Street | all_way_stop | 473 | 715 | 631 |
-| 585 | Market Street | all_way_stop | 473 | 670 | 568 |
-| 3421 | Tunnel Road | signal | 837 | 1153 | 1098 |
-| 3494 | Claremont Avenue | all_way_stop | 473 | 626 | 589 |
-| 1145 | Alcatraz Avenue | signal | 837 | 1084 | 915 |
-| 97 | 43rd Street | traffic_circle | 804 | 1018 | 790 |
-| 101 | 43rd Street | traffic_circle | 804 | 1016 | 789 |
-| 639 | 43rd Street | signal | 837 | 1019 | 791 |
-| 1779 | Shattuck Avenue | signal | 837 | 986 | 842 |
-| 3057 | College Avenue | all_way_stop | 473 | 554 | 513 |
-| 1688 | Shattuck Avenue | signal | 837 | 921 | 905 |
+| 752 | Adeline Street | all_way_stop | 473 | 1028 | 528 |
+| 599 | Adeline Street | all_way_stop | 473 | 945 | 462 |
+| 1105 | Arlington Avenue | all_way_stop | 473 | 883 | 523 |
+| 1107 | Arlington Avenue | two_way_stop_minor | 574 | 878 | 522 |
+| 4193 | Market Street | all_way_stop | 473 | 703 | 611 |
+| 3421 | Tunnel Road | signal | 837 | 1201 | 1097 |
+| 585 | Market Street | all_way_stop | 473 | 650 | 549 |
+| 3494 | Claremont Avenue | all_way_stop | 473 | 626 | 588 |
+| 1145 | Alcatraz Avenue | signal | 837 | 1093 | 923 |
+| 97 | 43rd Street | traffic_circle | 804 | 1013 | 894 |
+| 101 | 43rd Street | traffic_circle | 804 | 1011 | 893 |
+| 1779 | Shattuck Avenue | signal | 837 | 1046 | 899 |
+| 639 | 43rd Street | signal | 837 | 1014 | 895 |
+| 4200 | Stanford Avenue | signal | 837 | 938 | 649 |
+| 1688 | Shattuck Avenue | signal | 837 | 926 | 921 |
 
-After the final count refit 7 uncounted link(s) remain above their limit (worst: link 4193 Market Street 631 against 520; link 3421 Tunnel Road 1098 against 921; link 752 Adeline Street 608 against 520; link 3494 Claremont Avenue 589 against 520; link 585 Market Street 568 against 520); there a count (a counted flow that cannot go lower) won over the guard.
+After the final count refit 9 uncounted link(s) remain above their limit (worst: link 3421 Tunnel Road 1097 against 921; link 4193 Market Street 611 against 520; link 3494 Claremont Avenue 588 against 520; link 585 Market Street 549 against 520; link 752 Adeline Street 528 against 520); counted flows use them and the counts (weight 1) won over the guard (weight 0.5).
 
 ### midday
 
-The guard removed 168 veh/h net compared with the count-only fit; 2307 flows are more than 0.1% smaller. Links the count-only solution puts above capacity x 1.10 (3), worst first, up to 20, with the volume after the guard:
+The guard removed 216 veh/h net compared with the count-only fit; 4558 flows are more than 0.1% smaller. Links the count-only solution puts above capacity x 1.10 (3), worst first, up to 20, with the volume after the guard:
 
 | Link | Street | Rule | Capacity | Assigned before | After |
 | --- | --- | --- | --- | --- | --- |
-| 752 | Adeline Street | all_way_stop | 473 | 766 | 525 |
-| 599 | Adeline Street | all_way_stop | 473 | 729 | 494 |
-| 1105 | Arlington Avenue | all_way_stop | 473 | 598 | 520 |
+| 752 | Adeline Street | all_way_stop | 473 | 770 | 524 |
+| 599 | Adeline Street | all_way_stop | 473 | 714 | 473 |
+| 1105 | Arlington Avenue | all_way_stop | 473 | 605 | 521 |
 
-After the final count refit 1 uncounted link(s) remain above their limit (worst: link 752 Adeline Street 525 against 520); there a count (a counted flow that cannot go lower) won over the guard.
+After the final count refit 1 uncounted link(s) remain above their limit (worst: link 752 Adeline Street 524 against 520); counted flows use them and the counts (weight 1) won over the guard (weight 0.5).
 
 ### pm_peak
 
-The guard removed 1260 veh/h net compared with the count-only fit; 3145 flows are more than 0.1% smaller. Links the count-only solution puts above capacity x 1.10 (26), worst first, up to 20, with the volume after the guard:
+The guard removed 1367 veh/h net compared with the count-only fit; 4751 flows are more than 0.1% smaller. Links the count-only solution puts above capacity x 1.10 (27), worst first, up to 20, with the volume after the guard:
 
 | Link | Street | Rule | Capacity | Assigned before | After |
 | --- | --- | --- | --- | --- | --- |
-| 752 | Adeline Street | all_way_stop | 473 | 1200 | 618 |
-| 599 | Adeline Street | all_way_stop | 473 | 1136 | 560 |
-| 1105 | Arlington Avenue | all_way_stop | 473 | 908 | 523 |
-| 1688 | Shattuck Avenue | signal | 837 | 1414 | 923 |
-| 1107 | Arlington Avenue | two_way_stop_minor | 574 | 905 | 522 |
-| 582 | Market Street | all_way_stop | 473 | 716 | 559 |
-| 2044 | Shattuck Avenue | signal | 837 | 1261 | 811 |
-| 4193 | Market Street | all_way_stop | 473 | 694 | 607 |
-| 3057 | College Avenue | all_way_stop | 473 | 691 | 523 |
-| 3491 | Claremont Avenue | all_way_stop | 473 | 688 | 616 |
-| 1145 | Alcatraz Avenue | signal | 837 | 1213 | 926 |
-| 585 | Market Street | all_way_stop | 473 | 685 | 564 |
-| 97 | 43rd Street | traffic_circle | 804 | 1128 | 872 |
-| 101 | 43rd Street | traffic_circle | 804 | 1122 | 870 |
-| 639 | 43rd Street | signal | 837 | 1128 | 872 |
-| 1952 | 57th Street | all_way_stop | 473 | 631 | 522 |
-| 3054 | College Avenue | all_way_stop | 473 | 626 | 521 |
-| 3421 | Tunnel Road | signal | 837 | 1096 | 1032 |
-| 3455 | Ashby Avenue | signal | 837 | 1090 | 966 |
-| 4091 | Freeway Overpass | two_way_stop_minor | 574 | 727 | 681 |
+| 752 | Adeline Street | all_way_stop | 473 | 1225 | 530 |
+| 599 | Adeline Street | all_way_stop | 473 | 1132 | 447 |
+| 1105 | Arlington Avenue | all_way_stop | 473 | 909 | 523 |
+| 1688 | Shattuck Avenue | signal | 837 | 1475 | 924 |
+| 2044 | Shattuck Avenue | signal | 837 | 1332 | 867 |
+| 1107 | Arlington Avenue | two_way_stop_minor | 574 | 906 | 522 |
+| 1145 | Alcatraz Avenue | signal | 837 | 1235 | 925 |
+| 3491 | Claremont Avenue | all_way_stop | 473 | 691 | 607 |
+| 582 | Market Street | all_way_stop | 473 | 683 | 534 |
+| 4193 | Market Street | all_way_stop | 473 | 670 | 596 |
+| 585 | Market Street | all_way_stop | 473 | 665 | 541 |
+| 97 | 43rd Street | traffic_circle | 804 | 1128 | 929 |
+| 101 | 43rd Street | traffic_circle | 804 | 1122 | 929 |
+| 4091 | Freeway Overpass | two_way_stop_minor | 574 | 777 | 654 |
+| 639 | 43rd Street | signal | 837 | 1128 | 929 |
+| 4200 | Stanford Avenue | signal | 837 | 1112 | 709 |
+| 3421 | Tunnel Road | signal | 837 | 1097 | 1033 |
+| 782 | 52nd Street | all_way_stop | 473 | 620 | 495 |
+| 3057 | College Avenue | all_way_stop | 473 | 613 | 475 |
+| 1952 | 57th Street | all_way_stop | 473 | 610 | 465 |
 
-After the final count refit 19 uncounted link(s) remain above their limit (worst: link 752 Adeline Street 618 against 520; link 3491 Claremont Avenue 616 against 520; link 4193 Market Street 607 against 520; link 3421 Tunnel Road 1032 against 921; link 585 Market Street 564 against 520); there a count (a counted flow that cannot go lower) won over the guard.
+After the final count refit 19 uncounted link(s) remain above their limit (worst: link 3491 Claremont Avenue 607 against 520; link 4193 Market Street 596 against 520; link 3421 Tunnel Road 1033 against 921; link 3494 Claremont Avenue 554 against 520; link 97 43rd Street 929 against 884); counted flows use them and the counts (weight 1) won over the guard (weight 0.5).
 
 ## Notes
 
@@ -355,7 +380,7 @@ After the final count refit 19 uncounted link(s) remain above their limit (worst
 - TMC 40thSt_WestSt: no junction within 80 m (nearest 297 m); represented by its gates only
 - Caltrans station "SR-13 Ashby Ave at the SR-123 junction (San Pablo Ave), Berk" lies outside the model area; represented by its gates
 - Caltrans station "SR-123 San Pablo Ave at JCT RTE 13, Berkeley PM 1.906, back " lies outside the model area; represented by its gates
-- am_peak: the guard cut 68 veh/h from flows that touch no count (after the median rule)
-- midday: the guard cut 24 veh/h from flows that touch no count (after the median rule)
-- pm_peak: the guard cut 241 veh/h from flows that touch no count (after the median rule)
+- am_peak: the guard cut 70 veh/h from flows that touch no count (after the median rule)
+- midday: the guard cut 30 veh/h from flows that touch no count (after the median rule)
+- pm_peak: the guard cut 233 veh/h from flows that touch no count (after the median rule)
 

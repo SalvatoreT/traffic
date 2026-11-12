@@ -460,7 +460,13 @@
     "bounds": {
       "lo": 0.1,
       "hi": 3,
-      "_note": "ASSUMPTION: limits on a flow's cumulative factor."
+      "_note": "ASSUMPTION: limits on a flow's cumulative factor.",
+      "byType": {
+        "ramp": {
+          "lo": 0.1,
+          "hi": 10
+        }
+      }
     },
     "maxIter": 400,
     "tol": 0.01,
@@ -479,7 +485,7 @@
       "gate": 1,
       "tmc": 1,
       "caltrans": 1,
-      "ramp": 1,
+      "ramp": 2,
       "_note": "Weights of the constraint families in the geometric mean over the counted links of a flow's paths."
     },
     "tolerancePct": {

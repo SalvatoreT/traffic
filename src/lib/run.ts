@@ -29,15 +29,17 @@ export function runReducer(s: RunState, a: RunAction): RunState {
 export const clampStep = (time: number, want: number): number => Math.max(0, Math.min(want, RUN_SECONDS - time));
 
 /** The area's `defaultPeriod`, else `midday`, else the first period. */
-export function defaultPeriod(entry: Pick<AreaEntry, 'defaultPeriod'>, periods: Pick<DemandPeriod, 'id'>[]): string {
+export function defaultPeriod(entry: Pick<AreaEntry, 'defaultPeriod' | 'calibration'>, periods: Pick<DemandPeriod, 'id'>[]): string {
   const ids = periods.map((p) => p.id);
-  if (entry.defaultPeriod && ids.includes(entry.defaultPeriod)) return entry.defaultPeriod;
+  const wanted = entry.defaultPeriod ?? entry.calibration?.defaultPeriod;
+  if (wanted && ids.includes(wanted)) return wanted;
   return ids.includes('midday') ? 'midday' : ids[0] ?? '';
 }
 
 /** Periods named in `experimentalPeriods`; without that field, ids containing "peak" until the area is calibrated. */
 export function isExperimentalPeriod(entry: Pick<AreaEntry, 'experimentalPeriods' | 'calibration'>, id: string): boolean {
-  if (entry.experimentalPeriods) return entry.experimentalPeriods.includes(id);
+  const listed = entry.experimentalPeriods ?? entry.calibration?.experimentalPeriods;
+  if (listed) return listed.includes(id);
   return entry.calibration?.status !== 'calibrated' && id.includes('peak');
 }
 

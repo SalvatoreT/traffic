@@ -16,6 +16,8 @@ export interface Constraint { id: string; kind: string; label: string; links: nu
 export interface FitOptions {
   /** Bounds on a flow's cumulative factor relative to its starting volume. */
   lo: number; hi: number;
+  /** Own bounds for flows of a type (default: lo, hi). */
+  byType?: Partial<Record<FlowType, { lo: number; hi: number }>>;
   maxIter: number;
   /** Stop when every reachable constraint is within exp(tol) of its target (log ratio). */
   tol: number;
@@ -103,7 +105,8 @@ export function fitToCounts(a: Assignment, v0: ArrayLike<number>, types: FlowTyp
   const counted = new Uint8Array(n);
   for (const k of kk) counted[k] = 1;
   const f = Float64Array.from({ length: n }, (_, k) => v0[k]);
-  const lo = (k: number) => opt.lo * v0[k], hi = (k: number) => Math.min(opt.hi, ceil ? ceil[k] : Infinity) * v0[k];
+  const loB = (k: number) => opt.byType?.[types[k]]?.lo ?? opt.lo, hiB = (k: number) => opt.byType?.[types[k]]?.hi ?? opt.hi;
+  const lo = (k: number) => loB(k) * v0[k], hi = (k: number) => Math.min(hiB(k), ceil ? ceil[k] : Infinity) * v0[k];
   const w = cons.map((c) => c.weight ?? 1);
   let it = 0, maxErr = Infinity, stationary = false;
   const unreachable = new Set<number>();
@@ -161,12 +164,12 @@ export function fitToCounts(a: Assignment, v0: ArrayLike<number>, types: FlowTyp
     const free = Uint8Array.from(counted, (c) => 1 - c);
     const before = f.reduce((s, x, k) => s + (free[k] ? x : 0), 0);
     const m = capacityGuard(a, f, guard.limit, nLinks, 100, free).m;
-    for (let k = 0; k < n; k++) if (free[k]) f[k] = Math.max(f[k] * m[k], lo(k) * 0);
+    for (let k = 0; k < n; k++) if (free[k]) f[k] *= m[k];
     freeCut = before - f.reduce((s, x, k) => s + (free[k] ? x : 0), 0);
   }
   const g = Float64Array.from(f, (x, k) => (v0[k] > 0 ? x / v0[k] : 1));
   let atLo = 0, atHi = 0;
-  for (let k = 0; k < n; k++) if (counted[k] && v0[k] > 0) { if (g[k] <= opt.lo * (1 + 1e-6)) atLo++; else if (g[k] >= opt.hi * (1 - 1e-6)) atHi++; }
+  for (let k = 0; k < n; k++) if (counted[k] && v0[k] > 0) { if (g[k] <= loB(k) * (1 + 1e-6)) atLo++; else if (g[k] >= hiB(k) * (1 - 1e-6)) atHi++; }
   return { g, counted, iterations: it, converged: maxErr < opt.tol || stationary, stationary, maxLogErr: maxErr, atLo, atHi, unreachable: [...unreachable].map((i) => cons[i].id), medians, freeCut };
 }
 
@@ -175,7 +178,7 @@ export interface GuardResult { /** Multiplier per flow (<= 1). */ m: Float64Arra
 
 /**
  * Capacity sanity guard: for every link with a finite `limit` (exempt links carry Infinity) whose assigned volume exceeds it, scale
- * the flows using that link down by limit / volume; a flow on several such links takes the smallest ratio. Repeats until none exceeds.
+ * the flows using that link down by limit / volume; a flow on several such links takes the smallest ratio. Repeats until none exceeds. With `scalable`, only flows marked 1 move.
  */
 export function capacityGuard(a: Assignment, f: ArrayLike<number>, limit: ArrayLike<number>, nLinks: number, maxPass = 100, scalable?: ArrayLike<number>): GuardResult {
   const n = a.routable.length;

@@ -35,7 +35,7 @@ export interface DemandPeriod {
 export interface Provenance { source: string; url: string; note: string }
 export interface Demand { version: 1; area: string; periods: DemandPeriod[]; provenance: Provenance[] }
 
-export interface Calibration { status: 'uncalibrated' | 'calibrated'; note?: string }
+export interface Calibration { status: 'uncalibrated' | 'calibrated'; note?: string; defaultPeriod?: string; experimentalPeriods?: string[] }
 export interface AreaEntry {
   id: string; name: string; network: string; demand: string; basemap: string;
   center: [number, number]; zoom: number;

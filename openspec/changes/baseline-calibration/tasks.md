@@ -57,3 +57,13 @@
 - [x] 9.8 Re-run: validation suite and all three periods at scale 1.0 (seeds 1 to 3), demand scales that meet D4, reports, record
 - [ ] 9.9 Reach D4 at full demand (met at 0.4 PM, 0.35 AM, 0.6 midday; the SR-24 west-end ramps and the arterial signals behind them limit it)
 
+## 10. Count-constrained demand (seventh round)
+- [x] 10.1 Static free-flow assignment in `tools/lib/assign.ts` with the simulator router's generalized cost, one-ways, turn bans and per-period bans; tests on a toy network
+- [x] 10.2 Count stations as link constraints: gate counts, turning-movement legs, Caltrans AADT stations inside the model, ramp ADT (`tools/lib/demand-fit.ts`)
+- [x] 10.3 Matrix adjustment with per-flow bounds and the median rule for uncounted flows (`tools/lib/fit-counts.ts`); [VanZuylen1980] and [Willumsen1981] verified through Crossref and added to `docs/references.md`; tests for convergence on a toy case with two stations, for the bounds and for gate counts by origin and destination
+- [x] 10.4 Capacity guard from the validation suite's measured values, held in `countFit.capacityGuard.capacity`; counted links exempt; counts win a conflict
+- [x] 10.5 Fit report `data/demand/<area>.fit.md`: offered trips by type before and after, station ratio tables, factor distribution, flows at bounds, guard links, gate consistency
+- [x] 10.6 Re-run: three periods at scale 1.0, seeds 1 to 3, one 120-minute PM run, scale sweeps, reports replaced, record round, README method steps 12 to 16
+- [x] 10.7 Area `calibration` entry: `defaultPeriod` and `experimentalPeriods` in the type and copied by the importer
+- [ ] 10.8 Reach D4 in the PM and AM peaks at full demand (PM: removals 7 to 10 and 3% backlog at the SR-24 west-end mainline gate; AM: 0 to 5 removals)
+- [ ] 10.9 Reach D5 (the count fit moved the freeway-bound trips toward Hillegass Ave NB and away from Colby St SB; 1 of 4 PM headline shares within 10 points)

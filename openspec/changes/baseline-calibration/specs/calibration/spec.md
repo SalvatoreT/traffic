@@ -42,3 +42,10 @@ The project SHALL provide a command that runs benchmark cases on small synthetic
 #### Scenario: Known deviations are listed
 - **WHEN** a case is outside its range
 - **THEN** the regression test passes only if the case is on the documented list of known deviations
+
+### Requirement: Period status in the area manifest
+The area config SHALL be able to name the demand period the app opens with (`defaultPeriod`) and the periods whose baseline fails the stability criterion (`experimentalPeriods`), and the importer SHALL copy both into `areas.json`; the calibration status SHALL be `calibrated` only when the stability criterion and the headline shares hold in every period.
+
+#### Scenario: A period fails stability
+- **WHEN** the PM peak run at full demand fails the stability criterion
+- **THEN** the area config lists `pm_peak` under `experimentalPeriods` and the status stays `uncalibrated`

@@ -83,8 +83,11 @@ export interface AreaConfig {
   gateSignalWarnM?: number;
   /** Hours of day (start, end) of each demand period, used to apply time-conditional turn restrictions (e.g. `no_left_turn @ (Mo-Fr 16:00-18:00)`). */
   periodWindows?: Record<string, [number, number]>;
-  /** Baseline calibration status shown in the UI. */
-  calibration?: { status: 'uncalibrated' | 'calibrated'; note?: string };
+  /**
+   * Baseline calibration status shown in the UI. `defaultPeriod` is the demand period the app opens with; `experimentalPeriods` lists the
+   * periods whose baseline fails the stability criterion (D4), which the app labels experimental. The importer copies the object into areas.json.
+   */
+  calibration?: { status: 'uncalibrated' | 'calibrated'; note?: string; defaultPeriod?: string; experimentalPeriods?: string[] };
 }
 
 export interface OsmNode {

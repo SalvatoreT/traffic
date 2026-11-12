@@ -92,6 +92,8 @@
   "periodWindows": { "am_peak": [7, 9], "midday": [11, 13], "pm_peak": [16, 18] },
   "calibration": {
     "status": "uncalibrated",
-    "note": "PM peak at full demand still gridlocks (about 150 trips an hour; stable at 40% of demand), mostly near the SR-24 west-end ramps. See the calibration record."
+    "note": "Midday runs stably; the PM and AM peaks still back up at the SR-24 west end at full demand, and some freeway route shares miss their targets.",
+    "defaultPeriod": "midday",
+    "experimentalPeriods": ["pm_peak", "am_peak"]
   }
 }
