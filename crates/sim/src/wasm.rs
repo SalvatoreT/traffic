@@ -38,7 +38,7 @@ impl WasmSimulation {
 
     #[wasm_bindgen(js_name = linkStats)]
     pub fn link_stats(&self) -> Vec<f32> {
-        self.inner.link_stats()
+        self.inner.run_link_stats()
     }
 
     pub fn metrics(&self) -> String {

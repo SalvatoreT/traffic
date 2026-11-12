@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  aggregate, changeIntensity, changeMagnitude, changeMark, legendClipPath, changeTicks, CHANGE_TOP, compareRows, DEAD_BAND, diffValue, effectiveView, formatSigned, initViewState, linkChangeIntensity,
+  aggregate, changeIntensity, softChange, changeMagnitude, changeMark, legendClipPath, changeTicks, CHANGE_TOP, compareRows, DEAD_BAND, diffValue, effectiveView, formatSigned, initViewState, linkChangeIntensity,
   NO_DATA, readoutText, viewReducer,
 } from './change';
 import { linkStatsView } from '../types';
@@ -19,7 +19,7 @@ describe('difference', () => {
   });
   it('reads link stats the same way as the overlay (4 floats per link)', () => {
     const b = stats([100, 8, 60, 0]), s = stats([40, 8, 10, 0]);
-    expect(linkChangeIntensity('cutthrough', b, s, 0)).toBeCloseTo(-50 / 100, 6);
+    expect(linkChangeIntensity('cutthrough', b, s, 0)).toBeCloseTo(-(50 - DEAD_BAND.cutthrough) / (100 - DEAD_BAND.cutthrough), 6);
     expect(aggregate(b, [0]).cut).toBe(60);
   });
   it('flow-weights speed over both directions of a block', () => {
@@ -33,7 +33,15 @@ describe('dead band and clamping', () => {
     expect(changeIntensity('flow', A(500, 0), A(500 + DEAD_BAND.flow - 1, 0))).toBe(0);
     expect(changeIntensity('cutthrough', A(50, 50), A(50, 50 - 7))).toBe(0);
     expect(changeIntensity('cutthrough', A(50, 50), A(50, 50 + 7))).toBe(0);
-    expect(changeIntensity('cutthrough', A(50, 50), A(50, 50 + 8))).toBeCloseTo(8 / 100, 6);
+    expect(changeIntensity('cutthrough', A(50, 50), A(50, 50 + 8))).toBeCloseTo(0.5 / (100 - DEAD_BAND.cutthrough), 6);
+  });
+  it('has no jump at the edge of the band: the value rises from zero', () => {
+    for (const o of ['cutthrough', 'flow', 'speed'] as const) {
+      const b = DEAD_BAND[o];
+      expect(softChange(b, o)).toBe(0);
+      expect(softChange(b + 0.01 * CHANGE_TOP[o], o)).toBeLessThan(0.02);
+      expect(softChange(CHANGE_TOP[o], o)).toBe(1);
+    }
   });
   it('clamps to the fixed top on both sides', () => {
     expect(changeIntensity('cutthrough', A(500, 400), A(500, 0))).toBe(-1);

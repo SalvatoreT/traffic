@@ -6,7 +6,7 @@
 // Movement length uses the same corner/Bezier estimate as the simulator; the signal and stop delays are the fixed free-flow constants.
 import { readFileSync } from 'node:fs';
 export type Pt = [number, number];
-export interface ALink { id: number; from: number; to: number; length: number; speedLimit: number; geometry?: Pt[]; class: string; humps?: number[]; stopAtEnd?: boolean }
+export interface ALink { id: number; from: number; to: number; length: number; speedLimit: number; geometry?: Pt[]; class: string; humps?: number[]; stopAtEnd?: boolean; name?: string }
 export interface ANode { id: number; x: number; y: number; control: string }
 export interface ATurnBan { from: number; to: number; periods?: string[] }
 
@@ -108,7 +108,8 @@ export function buildGraph(nodes: ANode[], links: ALink[], bans: ATurnBan[], per
     for (const b of bs) {
       const B = linkPoint(geo[b], emergePos[b], 1.8);
       const d = normAngle(B.h - A.h);
-      const kind = Math.abs(d) > 2.6 ? 'u' : d > 0.52 ? 'l' : d < -0.52 ? 'r' : 't';
+      const sharp = Math.abs(d) <= 2.88 && !!links[a].name && !!links[b].name && links[a].name !== links[b].name;
+      const kind = Math.abs(d) > 2.6 && !sharp ? 'u' : d > 0.52 ? 'l' : d < -0.52 ? 'r' : 't';
       if (kind === 'u' && !deadEnd) continue;
       if (banSet.has(a * nl + b)) { nBanned++; continue; }
       const circle = node.control === 'traffic_circle';

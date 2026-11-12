@@ -9,6 +9,9 @@ import { pointAtLinkMeters } from '../lib/junctionends';
 import { hoverTargets, type Hover } from '../lib/highlight';
 import { hitTest, selectionAnchor, type Selection } from '../lib/selection';
 import { PopoverFrame } from './Popover';
+import { MapMenu } from './MapMenu';
+import { legendModel } from '../lib/legend';
+import { captionOf, composeImage, drawBadges, EXPORT_SCALE, exportFileName, FORMATS, type BadgeMark, type ImageFormat } from '../lib/mapexport';
 import { FADE_TIERS, interventionInRegion, REGION_FEATHER_M, type Region } from '../lib/region';
 import { REGION_BUFFER_M } from '../lib/area';
 import { advance, elapsedSim } from '../lib/extrapolate';
@@ -56,6 +59,12 @@ interface Props {
   reducedMotion: boolean;
   modes: ModeVisibility;
   showBikeNet: boolean;
+  /** Which run the lines show, and the period's name, for the exported image's caption. */
+  source: 'scenario' | 'baseline';
+  periodLabel: string;
+  /** The page calls this to download the map as an image; MapView fills it in. */
+  exportRef: { current: ((fmt: ImageFormat) => Promise<void>) | null };
+  onAnnounce(message: string): void;
 }
 
 const KIND_STYLE = {
@@ -190,6 +199,28 @@ class FitControl implements maplibregl.IControl {
   onRemove() { this.el?.remove(); this.el = null; }
 }
 
+/** The map's WebGL canvas as pixels at `scale` times its CSS size. Read inside the render event, while the frame is still in the buffer. */
+function grabMap(map: maplibregl.Map, w: number, h: number, scale: number): Promise<HTMLCanvasElement> {
+  const prev = map.getPixelRatio();
+  if (prev !== scale) map.setPixelRatio(scale);
+  return new Promise((resolve, reject) => {
+    let tries = 0;
+    const grab = () => {
+      const src = map.getCanvas();
+      if (src.width !== Math.round(w * scale) && tries++ < 8) { map.triggerRepaint(); map.once('render', grab); return; }
+      try {
+        const out = document.createElement('canvas');
+        out.width = Math.round(w * scale); out.height = Math.round(h * scale);
+        out.getContext('2d')!.drawImage(src, 0, 0, out.width, out.height);
+        resolve(out);
+      } catch (e) { reject(e); }
+      if (prev !== scale) window.setTimeout(() => map.setPixelRatio(prev), 0);
+    };
+    map.once('render', grab);
+    map.triggerRepaint();
+  });
+}
+
 export function MapView(p: Props) {
   const { bundle, mode, region } = p;
   const proj = useMemo(() => makeProjection(bundle.network.origin), [bundle]);
@@ -234,21 +265,11 @@ export function MapView(p: Props) {
   const clipped = useMemo(() => clipData(bundle, region), [bundle, region]);
 
   // ---- draw vehicles + signals on overlay canvas
-  const draw = () => {
-    drawReq.current = 0;
-    const t0 = performance.now();
-    lastDraw.current = t0;
-    const map = mapRef.current, cv = canvas.current, L = live.current;
-    if (!map || !cv) return;
-    const g = cv.getContext('2d');
-    if (!g) return;
-    const dpr = window.devicePixelRatio || 1;
-    const w = cv.clientWidth, h = cv.clientHeight;
-    if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
-    g.setTransform(dpr, 0, 0, dpr, 0, 0);
-    g.clearRect(0, 0, w, h);
+  /** Paints the agents, crossings, change arrows and signals; shared by the live canvas and the image export. */
+  const paintOverlay = (g: CanvasRenderingContext2D, w: number, h: number) => {
+    const map = mapRef.current, L = live.current;
     const frame = L.client?.frame;
-    if (!frame || !L.visible) return;
+    if (!map || !frame || !L.visible) return null;
     const P = L.proj;
     const o = map.project(P.toLonLat(0, 0)), ex = map.project(P.toLonLat(100, 0)), ey = map.project(P.toLonLat(0, 100));
     const ax = (ex.x - o.x) / 100, bx = (ey.x - o.x) / 100, ay = (ex.y - o.y) / 100, by = (ey.y - o.y) / 100;
@@ -260,7 +281,7 @@ export function MapView(p: Props) {
     const animate = !L.reducedMotion && frame.rate > 0 && frame.rate <= EXTRAPOLATE_MAX_RATE;
     if (animate) {
       if (drawn.current.length !== v.length) drawn.current = new Float32Array(v.length);
-      advance(v, drawn.current, elapsedSim(performance.timeOrigin + t0, frame.wall, frame.rate));
+      advance(v, drawn.current, elapsedSim(performance.timeOrigin + performance.now(), frame.wall, frame.rate));
       v = drawn.current;
     }
     const M = L.modes;
@@ -347,6 +368,24 @@ export function MapView(p: Props) {
       else { g.strokeStyle = dark ? '#fff' : '#1a1a1a'; g.fillStyle = '#d62728'; g.lineWidth = 1.2; g.beginPath(); g.rect(sx - sz * 0.85, sy - sz * 0.85, sz * 1.7, sz * 1.7); g.fill(); g.stroke(); }
     }
     g.globalAlpha = 1;
+    return { v, sg, sigTotal, sigDrawn, animate, frame };
+  };
+  const draw = () => {
+    drawReq.current = 0;
+    const t0 = performance.now();
+    lastDraw.current = t0;
+    const cv = canvas.current;
+    if (!mapRef.current || !cv) return;
+    const g = cv.getContext('2d');
+    if (!g) return;
+    const dpr = window.devicePixelRatio || 1;
+    const w = cv.clientWidth, h = cv.clientHeight;
+    if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, w, h);
+    const r = paintOverlay(g, w, h);
+    if (!r) return;
+    const { v, sg, sigTotal, sigDrawn, animate, frame } = r;
     if (new URLSearchParams(location.search).has('debug')) {
       const dbg = ((window as unknown as { __trafficDebug?: DebugHook }).__trafficDebug ??= { signals: 0, signalsDrawn: 0, positions: v, draws: 0, drawMs: 0, frameTime: 0, extrapolated: false });
       dbg.positions = v; dbg.signalBuf = sg; dbg.signals = sigTotal; dbg.signalsDrawn = sigDrawn; dbg.draws++; dbg.drawMs += performance.now() - t0; dbg.frameTime = frame.time; dbg.extrapolated = animate;
@@ -826,6 +865,69 @@ export function MapView(p: Props) {
     };
   }, [ready]); // eslint-disable-line
 
+  // ---- image export and context menu
+  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
+  const downloadImage = async (fmt: ImageFormat) => {
+    const map = mapRef.current;
+    if (!map) return;
+    const L = live.current;
+    try {
+      const w = map.getContainer().clientWidth, h = map.getContainer().clientHeight;
+      const base = await grabMap(map, w, h, EXPORT_SCALE);
+      const net = L.bundle.network;
+      const marks: BadgeMark[] = L.interventions.filter((iv) => interventionInRegion(iv, net, L.region)).map((iv) => {
+        const [x, y] = interventionPoint(iv, net);
+        const q = map.project(L.proj.toLonLat(x, y));
+        return { x: q.x, y: q.y, type: iv.type, bearing: iv.type === 'diagonal_diverter' ? iv.bearing : undefined, mph: iv.type === 'speed_limit' ? Math.round(iv.speed * 2.23694) : undefined };
+      });
+      const change = L.view === 'change';
+      const legend = legendModel(L.overlay, L.mode, change);
+      const css = getComputedStyle(document.documentElement);
+      const v = (n: string, d: string) => css.getPropertyValue(n).trim() || d;
+      const time = L.client?.frame?.time ?? 0;
+      const cv = composeImage({
+        base, width: w, height: h,
+        paintOnMap: (g) => { paintOverlay(g, w, h); drawBadges(g, marks); },
+        caption: captionOf({
+          area: net.name, period: L.periodLabel, time, shows: change ? 'change' : L.source, overlayName: legend.name,
+          interventions: L.interventions.map((iv) => describeIntervention(iv, net, L.index)),
+        }),
+        legend,
+        keys: { car: L.modes.car, bicycle: L.modes.bicycle, pedestrian: L.modes.pedestrian, agents: { car: AGENT_COLORS[L.mode].car, bike: AGENT_COLORS[L.mode].bike, ped: AGENT_COLORS[L.mode].ped, ring: AGENT_COLORS[L.mode].ring } },
+        theme: { surface: v('--surface', '#ffffff'), text: v('--text', '#1b2430'), muted: v('--muted', '#4a5565'), border: v('--border', '#c9c6bc') },
+      });
+      const blob = await new Promise<Blob | null>((res) => cv.toBlob(res, FORMATS[fmt].mime, 0.92));
+      if (!blob) throw new Error('The browser could not encode the image.');
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = exportFileName(net.name, L.periodLabel, time, fmt);
+      document.body.appendChild(a); a.click(); a.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 10000);
+      L.onAnnounce(`Map image downloaded as ${FORMATS[fmt].label}.`);
+    } catch (e) {
+      L.onAnnounce(`Could not download the map image: ${(e as Error).message}`);
+    }
+  };
+  useEffect(() => {
+    p.exportRef.current = downloadImage;
+    return () => { p.exportRef.current = null; };
+  });
+  // Only the map itself: its controls, pop-ups and the rest of the page keep the browser's own menu.
+  const onMapContext = (e: React.MouseEvent) => {
+    const t = e.target as HTMLElement;
+    if (!p.visible || !(box.current?.contains(t) || t === canvas.current) || t.closest('.maplibregl-ctrl')) return;
+    e.preventDefault();
+    setMenu({ x: e.clientX, y: e.clientY });
+  };
+  const onMapKey = (e: React.KeyboardEvent) => {
+    if (!(e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10'))) return;
+    const t = e.target as HTMLElement;
+    if (!box.current?.contains(t) || t.closest('.maplibregl-ctrl')) return;
+    e.preventDefault();
+    const r = box.current.getBoundingClientRect();
+    setMenu({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
+  };
+
   const anchor = useMemo(() => {
     if (!p.selection) return null;
     const [x, y] = selectionAnchor(bundle.network, p.index, p.selection);
@@ -833,10 +935,14 @@ export function MapView(p: Props) {
   }, [selKey, p.selection && p.selection.kind === 'block' ? p.selection.point : null, bundle, proj, p.index]); // eslint-disable-line
 
   return (
-    <div className="map-wrap" hidden={!p.visible}>
+    <div className="map-wrap" hidden={!p.visible} onContextMenu={onMapContext} onKeyDown={onMapKey}>
       <div ref={box} className="map" role="group" aria-label={`Interactive map of ${bundle.network.name}`} />
       <canvas ref={canvas} className="map-overlay" aria-hidden="true" />
       {hoverText && !p.popover && <div className="map-hint" aria-hidden="true">{hoverText}</div>}
+      {menu && (
+        <MapMenu at={menu} label="Map actions" onClose={() => setMenu(null)}
+          items={(['png', 'jpeg'] as ImageFormat[]).map((f) => ({ id: f, label: `Download map as ${FORMATS[f].label}`, onSelect: () => { void downloadImage(f); } }))} />
+      )}
       {p.popover && anchor && ready && mapRef.current && <PopoverFrame map={mapRef.current} anchor={anchor}>{p.popover}</PopoverFrame>}
     </div>
   );

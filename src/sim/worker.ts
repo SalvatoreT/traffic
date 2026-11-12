@@ -20,6 +20,7 @@ let running = false;
 let pending = 0;
 let lastTick = 0;
 let lastStats = 0;
+let epoch = 0;
 let winStart = 0;
 let winSim = 0;
 const resetWindow = () => { winStart = performance.now(); winSim = 0; };
@@ -66,7 +67,7 @@ function postFrame() {
   if (!scenario) return;
   const vehicles = scenario.vehicles();
   const signals = scenario.signals();
-  post({ t: 'frame', time: scenario.time(), vehicles, signals, wall: performance.timeOrigin + performance.now(), rate: running ? speed : 0 }, [vehicles.buffer as ArrayBuffer, signals.buffer as ArrayBuffer]);
+  post({ t: 'frame', time: scenario.time(), vehicles, signals, wall: performance.timeOrigin + performance.now(), rate: running && Number.isFinite(speed) ? speed : 0 }, [vehicles.buffer as ArrayBuffer, signals.buffer as ArrayBuffer]);
 }
 function postStats() {
   if (!scenario) return;
@@ -78,12 +79,14 @@ function postStats() {
   resetWindow();
   const buffers = new Set<ArrayBuffer>();
   for (const s of [sc, base]) if (s.linkStats) buffers.add(s.linkStats.buffer as ArrayBuffer);
-  post({ t: 'stats', time: scenario.time(), comparing, scenario: sc, baseline: base, achievedSpeed }, [...buffers]);
+  post({ t: 'stats', time: scenario.time(), comparing, scenario: sc, baseline: base, achievedSpeed, epoch }, [...buffers]);
   lastStats = now;
 }
 
 /** At low multipliers one step is due every STEP/speed seconds; step on that steady cadence instead of in bursts. */
 const STEADY_MAX_SPEED = 7.5;
+const INSTANT_SLICE_MS = 40;
+const INSTANT_CHUNK = 15;
 let due = 0;
 function tick() {
   timer = null;
@@ -92,7 +95,26 @@ function tick() {
   lastTick = now;
   let wait = 33;
   if (scenario && running && isFinishedAt(scenario.time())) { running = false; postStats(); }
-  if (scenario && running) {
+  if (scenario && running && !Number.isFinite(speed)) {
+    wait = 0;
+    try {
+      // Whole steps in time-boxed slices, so pausing or choosing another speed takes effect within a slice.
+      while (!isFinishedAt(scenario.time()) && performance.now() - now < INSTANT_SLICE_MS) {
+        const secs = clampStep(scenario.time(), INSTANT_CHUNK);
+        scenario.step(secs);
+        baseline?.step(secs);
+      }
+      lastTick = performance.now();
+      if (isFinishedAt(scenario.time())) { running = false; due = 0; pending = 0; postFrame(); postStats(); }
+      else {
+        post({ t: 'progress', time: scenario.time(), epoch });
+        if (lastTick - lastStats >= 1000) { postFrame(); postStats(); }
+      }
+    } catch (e) {
+      running = false;
+      post({ t: 'error', message: `Simulation error: ${(e as Error).message ?? e}` });
+    }
+  } else if (scenario && running) {
     const steady = speed <= STEADY_MAX_SPEED;
     const interval = (STEP / speed) * 1000;
     let secs = 0;
@@ -164,10 +186,11 @@ ctx.onmessage = (ev: MessageEvent<ToWorker>) => {
       case 'run': running = m.running; lastTick = performance.now(); due = 0; resetWindow(); postFrame(); break;
       case 'speed': speed = m.speed; due = 0; pending = 0; resetWindow(); postFrame(); break;
       case 'config':
+        epoch++;
         cfg = { ...cfg, period: m.period, demandScale: m.demandScale };
         whileBuilding(() => { rebuild(); pending = 0; resetWindow(); postFrame(); postStats(); }); break;
-      case 'interventions': interventions = m.list; restart(); break;
-      case 'reset': restart(); break;
+      case 'interventions': epoch++; interventions = m.list; restart(); break;
+      case 'reset': epoch++; restart(); break;
     }
   } catch (e) {
     post({ t: 'error', message: `Worker error: ${(e as Error).message ?? e}` });

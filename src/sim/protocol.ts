@@ -11,6 +11,7 @@ export type ToWorker =
       seed: number; interventions: Intervention[]; speed: number; running: boolean;
     }
   | { t: 'run'; running: boolean }
+  /** Sim seconds per wall second; `Infinity` runs both simulations to the end of the period without drawing frames. */
   | { t: 'speed'; speed: number }
   | { t: 'config'; period: string; demandScale: number }
   | { t: 'interventions'; list: Intervention[] }
@@ -28,7 +29,9 @@ export type FromWorker =
       rate: number;
     }
   /** `achievedSpeed`: sim seconds advanced per wall second over the last window while running (null when paused or just changed). */
-  | { t: 'stats'; time: number; comparing: boolean; scenario: SimStats; baseline: SimStats; achievedSpeed: number | null }
+  | { t: 'stats'; time: number; comparing: boolean; scenario: SimStats; baseline: SimStats; achievedSpeed: number | null; epoch: number }
+  /** Simulated time reached during an Instant run, which draws no frames. */
+  | { t: 'progress'; time: number; epoch: number }
   | { t: 'error'; message: string };
 
 /** Shape shared by the WASM `Simulation` class and the TS mock. */

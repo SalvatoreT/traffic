@@ -31,4 +31,5 @@ fn main() {
     println!("origins: {:?}", &o[..o.len().min(10)]);
     let m = sim.metrics();
     println!("completed {} removed {} backlog {}", m.completed_trips, m.gridlock_removed, m.backlog);
+    println!("removed at links: {:?}", sim.debug_gridlock().iter().map(|x| x.0).collect::<Vec<_>>());
 }

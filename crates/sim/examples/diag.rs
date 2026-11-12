@@ -22,7 +22,7 @@ fn main() {
         let sg = sim.signals();
         let s: Vec<String> = links.iter().map(|&l| format!("{}:{}n/{}st/s{}", l, load[l].0, load[l].2, sg[l])).collect();
         println!("t={:5} {}", (k + 1) * 30, s.join("  "));
-        if k >= 50 && k < 54 { for l in sim.debug_stuck(0.0) { if links.iter().any(|x| l.starts_with(&format!("link {} ", x))) { println!("    {}", l); } } }
+        if k >= 56 && k < 60 { for l in sim.debug_stuck(0.0) { if links.iter().any(|x| l.starts_with(&format!("link {} ", x))) { println!("    {}", l); } } }
     }
     println!("plans: {:?}", sim.signal_plans().into_iter().filter(|p| p.0 == node).collect::<Vec<_>>());
 }

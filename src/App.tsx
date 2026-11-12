@@ -2,7 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useReducer, useRef, us
 import type { AreaBundle, Intervention, Metrics, ModeVisibility, Overlay, Theme } from './types';
 import { loadArea, type LoadProgress } from './data';
 import { Loading, LoadError } from './components/Loading';
-import { nextSpeedShown } from './lib/speed';
+import { DEFAULT_SPEED, isInstant, nextSpeedShown } from './lib/speed';
 import { SOURCE_REPO_URL } from './config';
 import { SimClient, type StatsMsg } from './sim/client';
 import { buildIndex } from './lib/naming';
@@ -17,6 +17,7 @@ import { defaultPeriod, EARLY_SECONDS, initialRun, runReducer } from './lib/run'
 import { SelectionMenu, type Change, type Placement } from './components/SelectionMenu';
 import { Sheet } from './components/Sheet';
 import { Playback, Legend } from './components/Toolbar';
+import type { ImageFormat } from './lib/mapexport';
 import { InterventionPanel } from './components/InterventionPanel';
 import { hasModes } from './lib/metrics';
 import { Comparison } from './components/Comparison';
@@ -106,7 +107,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   const periodId = demand.periods.some((p) => p.id === initial.period) ? initial.period! : fallbackPeriod;
   const [period, setPeriod] = useState(periodId);
   const [scale, setScale] = useState(initial.demandScale ?? 1);
-  const [speed, setSpeed] = useState(5);
+  const [speed, setSpeed] = useState(DEFAULT_SPEED);
   const [run, dispatchRun] = useReducer(runReducer, !reduced, initialRun);
   const { running, finished } = run;
   const [interventions, setInterventions] = useState<Intervention[]>(initial.interventions);
@@ -151,6 +152,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   const [stats, setStats] = useState<StatsMsg | null>(null);
   const [slowSpeed, setSlowSpeed] = useState<number | null>(null);
   const [client, setClient] = useState<SimClient | null>(null);
+  const exportRef = useRef<((fmt: ImageFormat) => Promise<void>) | null>(null);
   const [toast, setToast] = useState('');
   const toastTimer = useRef<number>(0);
   const say = useCallback((m: string) => {
@@ -165,7 +167,8 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
     const c = new SimClient();
     c.onReady = (kind, reason) => setEngine({ kind, reason });
     c.onBusy = setBuilding;
-    c.onStats = (s) => { setStats(s); dispatchRun({ type: 'time', time: s.time }); setSlowSpeed((prev) => nextSpeedShown(prev, first.current.speed, s.achievedSpeed)); };
+    c.onStats = (s) => { setStats(s); dispatchRun({ type: 'time', time: s.time }); setSlowSpeed((prev) => (isInstant(first.current.speed) ? null : nextSpeedShown(prev, first.current.speed, s.achievedSpeed))); };
+    c.onProgress = (time) => dispatchRun({ type: 'time', time });
     c.onError = (m) => setSimError(m);
     const f = first.current;
     c.send({
@@ -402,6 +405,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
               running={running} finished={finished} onToggle={() => (finished ? runAgain() : dispatchRun({ type: 'toggle' }))}
               onReset={() => { client?.send({ t: 'reset' }); dispatchRun({ type: 'restart' }); say('Simulation reset.'); }}
               entry={bundle.entry}
+              onExport={() => { void exportRef.current?.('png'); }}
               speed={speed} onSpeed={setSpeed} periods={demand.periods} period={period} onPeriod={setPeriod}
               scale={scale} onScale={setScale} time={run.time} reducedMotion={reduced}
               achieved={running ? slowSpeed : null}
@@ -416,6 +420,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
               popover={placement === 'popover' ? menu : null}
               visible={mapShown} reducedMotion={reduced}
               modes={multimodal ? modes : { ...modes, bicycle: false, pedestrian: false }} showBikeNet={bikeNet && multimodal}
+              source={source} periodLabel={demand.periods.find((x) => x.id === period)?.label ?? period} exportRef={exportRef} onAnnounce={say}
             />
             </Suspense>
             <Legend overlay={overlay} onOverlay={setOverlay} mode={mode} 

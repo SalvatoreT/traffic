@@ -251,7 +251,7 @@ impl Simulation {
     }
 
     /// Lane choice on link `l` for an agent of `kind`: cyclists use the link's bicycle queue.
-    pub(super) fn pick_lane_for(&self, kind: u8, l: u32, hint: Option<u8>, horizon: f32) -> Option<usize> {
+    pub(super) fn pick_lane_for(&self, kind: u8, l: u32, hint: Option<u8>, after: Option<u32>, horizon: f32) -> Option<usize> {
         if kind == KIND_BIKE {
             let k = self.topo.nlanes(l as usize);
             if self.lane_room_ahead(l, k, horizon) >= self.room_need(l as usize) {
@@ -260,7 +260,7 @@ impl Simulation {
                 None
             }
         } else {
-            self.pick_lane(l, hint, horizon)
+            self.pick_lane(l, hint, after, horizon)
         }
     }
 
@@ -284,7 +284,7 @@ impl Simulation {
                     continue;
                 }
                 let b = first.unwrap();
-                let Some(lane) = self.pick_lane_for(KIND_BIKE, b, None, 0.0) else { break };
+                let Some(lane) = self.pick_lane_for(KIND_BIKE, b, None, None, 0.0) else { break };
                 let trip = self.bike_backlog[n].pop_front().unwrap();
                 let id = self.alloc_veh();
                 self.n_alive -= 1;

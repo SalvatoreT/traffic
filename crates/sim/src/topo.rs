@@ -2,7 +2,7 @@
 //! pairs at a node), movement paths and the movement conflict matrices.
 
 use crate::model::{Control, Network, RoadClass};
-use crate::params::POCKET_MIN_LINK_M;
+use crate::params::{FORK_LANES, POCKET_MIN_LINK_M, SHARP_TURN_MAX};
 use std::f64::consts::PI;
 
 /// Half-extent of the node area along each link (m): stop line is this far before the node center
@@ -74,6 +74,8 @@ pub struct Topo {
     pub nmain: Vec<usize>,
     /// Link ends in a left-turn pocket: one extra lane (index `nmain`) reserved for left-turners, with limited storage.
     pub pocket: Vec<bool>,
+    /// Per movement: lanes [lo, hi) a vehicle taking it uses on the approach, set where a link forks into two or more straight-ahead branches (`(0, 255)` elsewhere).
+    pub fork_band: Vec<(u8, u8)>,
     pub rank: Vec<u8>,
     pub is_local: Vec<bool>,        // residential/service inside the study area (cut-through domain)
     pub is_res_study: Vec<bool>,    // residential inside the study area (safety domain)
@@ -157,6 +159,7 @@ impl Topo {
             n_lanes: 0,
             nmain: net.links.iter().map(|l| l.lanes.max(1) as usize).collect(),
             pocket: vec![false; n_links],
+            fork_band: Vec::new(),
             rank: net.links.iter().map(|l| l.class.rank()).collect(),
             is_local: net
                 .links
@@ -181,6 +184,7 @@ impl Topo {
         };
         t.build_movements(net);
         t.build_pockets(net);
+        t.build_forks();
         let mut nl = 0usize;
         for l in 0..n_links {
             t.lane_base.push(nl as u32);
@@ -230,6 +234,35 @@ impl Topo {
         }
     }
 
+    /// Forks (ASSUMPTION): a multilane link whose end offers two or more straight-ahead branches (a freeway diverge, a Y junction) gives each branch
+    /// its own lanes, the leftmost branch the leftmost lanes, in proportion to the branches. Without it a queue for one branch fills every lane and
+    /// blocks the other branch's vehicles behind it.
+    fn build_forks(&mut self) {
+        self.fork_band = vec![(0, 255); self.mvs.len()];
+        if !FORK_LANES {
+            return;
+        }
+        for l in 0..self.n_links {
+            let lanes = self.nmain[l];
+            if lanes < 2 {
+                continue;
+            }
+            let ms = self.lm_start[l] as usize;
+            let mc = self.lm_cnt[l] as usize;
+            let mut br: Vec<(f64, usize)> = (ms..ms + mc).filter(|&m| self.mvs[m].kind == K_THROUGH).map(|m| (norm_angle(self.mvs[m].h_out - self.mvs[m].h_in), m)).collect();
+            let k = br.len();
+            if k < 2 {
+                continue;
+            }
+            br.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
+            for (i, &(_, m)) in br.iter().enumerate() {
+                let lo = (i * lanes / k).min(lanes - 1);
+                let hi = (((i + 1) * lanes + k - 1) / k).max(lo + 1).min(lanes);
+                self.fork_band[m] = (lo as u8, hi as u8);
+            }
+        }
+    }
+
     /// Point on link `l` at distance `s` (m, link coordinates) offset `off` m to the right. Returns (x, y, heading).
     pub fn link_point(&self, l: usize, s: f64, off: f64) -> ([f64; 2], f64) {
         let g = &self.geo[l];
@@ -265,7 +298,9 @@ impl Topo {
                     let (pb, hb) = self.link_point(b as usize, self.emerge_pos[b as usize] as f64, LANE_OFFSET0);
                     let h_leave = bearing_heading(net.leg_bearing(b, true));
                     let d = norm_angle(h_leave - h_arrive);
-                    let kind = if d.abs() > 2.6 {
+                    let (name_a, name_b) = (&net.links[a as usize].name, &net.links[b as usize].name);
+                    let sharp = d.abs() <= SHARP_TURN_MAX && !name_a.is_empty() && !name_b.is_empty() && name_a != name_b;
+                    let kind = if d.abs() > 2.6 && !sharp {
                         K_UTURN
                     } else if d > 0.52 {
                         K_LEFT

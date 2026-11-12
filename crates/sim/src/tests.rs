@@ -531,6 +531,39 @@ fn cut_through_on_local_street() {
     assert_eq!(s2.metrics().cut_through.veh_km, 0.0);
 }
 
+#[test]
+fn step_size_does_not_change_the_run() {
+    let mut a = busy_corridor(2);
+    let mut b = busy_corridor(2);
+    for _ in 0..(1200 * 4) {
+        a.step(0.25);
+    }
+    for _ in 0..80 {
+        b.step(15.0);
+    }
+    assert_eq!(a.time(), b.time());
+    assert_eq!(a.metrics_json(), b.metrics_json());
+    assert_eq!(a.run_link_stats(), b.run_link_stats());
+}
+
+#[test]
+fn run_link_stats_average_the_whole_run() {
+    let mut sim = busy_corridor(2);
+    let (net, c) = corridor(6.0, Control::Uncontrolled);
+    let _ = net;
+    let rate = |sim: &Simulation| -> f32 { c.loc.iter().flat_map(|&(f, r)| [f, r]).map(|l| sim.run_link_stats()[l as usize * 4 + 2]).sum() };
+    let mut seen = Vec::new();
+    for _ in 0..6 {
+        run(&mut sim, 300.0, |_| {});
+        seen.push(rate(&sim));
+    }
+    assert!(seen.iter().all(|&r| r > 0.0), "cut-through counted in every window: {seen:?}");
+    // A cumulative average cannot swing the way a 5 min window does: later values stay near the previous one.
+    for w in seen.windows(2).skip(1) {
+        assert!((w[1] - w[0]).abs() <= 0.5 * w[0], "run-so-far rate moves steadily: {seen:?}");
+    }
+}
+
 fn single_street(limit: f64) -> (Network, u32, u32) {
     let mut b = B::default();
     let n0 = b.node(0.0, 0.0, Control::Uncontrolled, true);

@@ -1,17 +1,20 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import type { AreaBundle, AreaEntry, ModeKey, ModeVisibility, Overlay } from '../types';
 import { formatClock } from '../lib/format';
-import { divergingGradient, rampStops, rampTicks, TOP_NOTE, type Mode } from '../lib/ramps';
-import { changeLabel, CHANGE_MAP_NOTE, changeTicks, CHANGE_UNIT, DEAD_BAND, legendClipPath, type MapView } from '../lib/change';
+import { divergingGradient, rampStops, TOP_NOTE, type Mode } from '../lib/ramps';
+import { legendModel } from '../lib/legend';
+import { CHANGE_MAP_NOTE, changeTicks, CHANGE_UNIT, DEAD_BAND, legendClipPath, type MapView } from '../lib/change';
 import { EXPERIMENTAL_NOTE, isExperimentalPeriod, RUN_SECONDS } from '../lib/run';
-import { speedNoteText } from '../lib/speed';
+import { INSTANT, isInstant, speedLabel, speedNoteText } from '../lib/speed';
 import { usePeek } from './usePeek';
 
-export const SPEEDS = [1, 5, 20, 60];
+export const SPEEDS = [1, 5, 20, 60, INSTANT];
 
 interface PlaybackProps {
   running: boolean; finished: boolean; entry: Pick<AreaEntry, 'experimentalPeriods' | 'calibration'>; onToggle(): void; onReset(): void;
   speed: number; onSpeed(s: number): void;
+  /** Downloads the map as an image. */
+  onExport(): void;
   periods: AreaBundle['demand']['periods']; period: string; onPeriod(id: string): void;
   scale: number; onScale(v: number): void; time: number; reducedMotion: boolean;
   /** Achieved speed to report when the sim runs well below the requested one; null otherwise. */
@@ -59,7 +62,8 @@ export function Playback(p: PlaybackProps) {
   useDismiss(speedMenu, closeSpeed, speedRoot);
   useEffect(() => { dispatch({ type: 'child', open: speedMenu }); }, [speedMenu, dispatch]);
   const speedId = useId(), extraId = useId();
-  const note = speedNoteText(p.speed, p.achieved ?? null);
+  const instantRunning = isInstant(p.speed) && p.running;
+  const note = instantRunning ? 'Running to the end of the hour' : isInstant(p.speed) ? '' : speedNoteText(p.speed, p.achieved ?? null);
   // The collapsed row's height is what the layout reserves; the extras overlay the map when peeking.
   useEffect(() => {
     const el = row.current, host = slot.current;
@@ -90,13 +94,13 @@ export function Playback(p: PlaybackProps) {
             {p.finished && <span>Run again</span>}
           </button>
           <div className="pb-pop-wrap" ref={speedRoot}>
-            <button type="button" className="btn speed-btn" aria-expanded={speedMenu} aria-controls={speedId} aria-label={`Simulation speed ${p.speed} times`} title="Simulation speed" onClick={() => setSpeedMenu((o) => !o)}>
-              {p.speed}× <Chevron up={speedMenu} />
+            <button type="button" className="btn speed-btn" aria-expanded={speedMenu} aria-controls={speedId} aria-label={isInstant(p.speed) ? 'Simulation speed: instant' : `Simulation speed ${p.speed} times`} title="Simulation speed" onClick={() => setSpeedMenu((o) => !o)}>
+              {speedLabel(p.speed)} <Chevron up={speedMenu} />
             </button>
             <div id={speedId} className={`pb-menu ${speedMenu ? 'open' : ''}`} inert={!speedMenu} role="group" aria-label="Simulation speed">
               {SPEEDS.map((s) => (
                 <button key={s} type="button" className={`pb-menu-item ${p.speed === s ? 'on' : ''}`} aria-pressed={p.speed === s}
-                  onClick={() => { p.onSpeed(s); setSpeedMenu(false); (speedRoot.current?.querySelector('.speed-btn') as HTMLElement | null)?.focus(); }}>{s}×</button>
+                  onClick={() => { p.onSpeed(s); setSpeedMenu(false); (speedRoot.current?.querySelector('.speed-btn') as HTMLElement | null)?.focus(); }}>{speedLabel(s)}</button>
               ))}
             </div>
           </div>
@@ -121,6 +125,7 @@ export function Playback(p: PlaybackProps) {
               <input type="range" min={0.5} max={1.5} step={0.05} value={p.scale} onChange={(e) => p.onScale(Number(e.target.value))} aria-valuetext={`${Math.round(p.scale * 100)} percent of estimated demand`} />
             </label>
             <button type="button" className="btn" onClick={p.onReset}>Reset</button>
+            <button type="button" className="btn" onClick={p.onExport}>Download map image</button>
             {experimental && <p className="small period-note" role="note">{EXPERIMENTAL_NOTE}</p>}
             {p.reducedMotion && <span className="muted small">Paused at start (reduced motion preference).</span>}
           </div>
@@ -168,14 +173,12 @@ export function Legend(p: LegendProps) {
   const root = useRef<HTMLDivElement>(null);
   const extraId = useId(), tipId = useId();
   const change = p.canChange && p.view === 'change';
-  const stops = rampStops(p.mode);
-  const grad = change ? divergingGradient(p.mode) : `linear-gradient(to right, ${stops.join(', ')})`;
-  const ticks = change ? changeTicks(p.overlay) : rampTicks(p.overlay);
-  const name = change ? changeLabel(p.overlay) : p.overlay === 'speed' ? 'Speed, % of limit' : p.overlay === 'flow' ? 'Flow, veh/h' : 'Cut-through, veh/h';
+  const grad = change ? divergingGradient(p.mode) : `linear-gradient(to right, ${rampStops(p.mode).join(', ')})`;
+  const { ticks, name } = legendModel(p.overlay, p.mode, change);
   const band = DEAD_BAND[p.overlay];
   const help = change
-    ? `Blue lines carry less than today; orange lines carry more. The thicker the line, the bigger the change, in either direction; arrows mark the largest ones, up for more and down for less. Differences under ${band} ${CHANGE_UNIT[p.overlay]} count as noise and are shown as no change, in thin gray, as are streets with no traffic in either run. Colors show less and more, not better and worse. ${CHANGE_MAP_NOTE} The scale tops out at ${changeTicks(p.overlay)[4].slice(1)} ${CHANGE_UNIT[p.overlay]}.`
-    : `${p.overlay === 'speed' ? 'Slower is darker and wider (more congested).' : `Higher is a wider line. ${TOP_NOTE[p.overlay]}`} Thin gray lines carry no vehicles.`;
+    ? `Blue lines carry less than today; orange lines carry more. The thicker the line, the bigger the change, in either direction; arrows mark the largest ones, up for more and down for less. Street values are averages over the simulated time so far, so colors settle as the run goes on. Differences under ${band} ${CHANGE_UNIT[p.overlay]} count as noise and are shown as no change, in thin gray, and larger ones fade in from there; streets with no traffic in either run are thin gray too. Colors show less and more, not better and worse. ${CHANGE_MAP_NOTE} The scale tops out at ${changeTicks(p.overlay)[4].slice(1)} ${CHANGE_UNIT[p.overlay]}.`
+    : `${p.overlay === 'speed' ? 'Slower is darker and wider (more congested).' : `Higher is a wider line. ${TOP_NOTE[p.overlay]}`} Thin gray lines carry no vehicles. Values are averages over the simulated time so far.`;
 
   // Keep the map's attribution just above the row, whatever its height.
   useEffect(() => {

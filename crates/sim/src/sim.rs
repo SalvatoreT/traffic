@@ -1,7 +1,7 @@
 //! Simulation core: microscopic IDM traffic on directed links with node control, routing,
 //! interventions and metrics. Pure Rust, deterministic, no I/O.
 
-use crate::eff::{phase_since_green, phase_since_start, phase_state, Eff};
+use crate::eff::{phase_since_green, phase_state, Eff};
 use crate::model::*;
 use crate::params::*;
 use crate::rng::{hash32, Rng};
@@ -354,6 +354,8 @@ pub struct Simulation {
     next_epoch_t: f64,
     st: Stats,
     bin_flow: Vec<f32>,
+    /// Per-link totals since t = 0 (not rolling): exits, cut-through exits, vehicle seconds, speed-weighted vehicle seconds.
+    cum: Vec<[f32; 4]>,
     bin_ct: Vec<f32>,
     bin_vt: Vec<f32>,
     bin_vs: Vec<f32>,
@@ -373,8 +375,6 @@ pub struct Simulation {
     adapt_flow: Vec<f32>,
     /// Stop-line crossings and standing vehicles at the start of the current adaptation window, per link.
     win_exit: Vec<u32>,
-    win_left: Vec<u32>,
-    adapt_left: Vec<f32>,
     win_q0: Vec<u32>,
     next_adapt_t: f64,
     // ---- multimodal agents
@@ -518,6 +518,7 @@ impl Simulation {
             next_epoch_t: EPOCH_S,
             st: Stats { hist: vec![0.0; HIST_BINS], ..Default::default() },
             bin_flow: vec![0.0; nl * NBINS],
+            cum: vec![[0.0; 4]; nl],
             bin_ct: vec![0.0; nl * NBINS],
             bin_vt: vec![0.0; nl * NBINS],
             bin_vs: vec![0.0; nl * NBINS],
@@ -535,8 +536,6 @@ impl Simulation {
             d_node_space: vec![0.0; nn],
             adapt_flow: vec![0.0; nl],
             win_exit: vec![0; nl],
-            win_left: vec![0; nl],
-            adapt_left: vec![0.0; nl],
             win_q0: vec![0; nl],
             next_adapt_t: 0.0,
             n_bike: 0,
@@ -775,8 +774,6 @@ impl Simulation {
             self.adapt_flow = est;
         }
         self.win_exit.iter_mut().for_each(|x| *x = 0);
-        self.win_left.iter_mut().for_each(|x| *x = 0);
-        self.adapt_left.iter_mut().for_each(|x| *x = 0.0);
         self.next_adapt_t = self.t + self.adapt_interval();
         self.eff = eff;
         for l in 0..self.topo.n_links {
@@ -908,6 +905,27 @@ impl Simulation {
             out[l * 4] = f * 3600.0 / window;
             out[l * 4 + 1] = if vt > 0.0 { vs / vt } else { self.eff.limit[l] };
             out[l * 4 + 2] = c * 3600.0 / window;
+            out[l * 4 + 3] = count as f32 / (self.topo.length[l] / 1000.0);
+        }
+        out
+    }
+
+    /// Same layout as `link_stats`, but averaged over the run so far (since t = 0) instead of the last 5 min, so a street's value
+    /// moves slowly and steadily as evidence accumulates. Density stays instantaneous.
+    pub fn run_link_stats(&self) -> Vec<f32> {
+        let nl = self.topo.n_links;
+        let mut out = vec![0.0f32; nl * 4];
+        let elapsed = self.t.max(1.0) as f32;
+        for l in 0..nl {
+            let c = &self.cum[l];
+            let nlanes = self.topo.nlanes(l);
+            let mut count = 0usize;
+            for k in 0..nlanes {
+                count += self.lanes[self.topo.lane_base[l] as usize + k].len();
+            }
+            out[l * 4] = c[0] * 3600.0 / elapsed;
+            out[l * 4 + 1] = if c[2] > 0.0 { c[3] / c[2] } else { self.eff.limit[l] };
+            out[l * 4 + 2] = c[1] * 3600.0 / elapsed;
             out[l * 4 + 3] = count as f32 / (self.topo.length[l] / 1000.0);
         }
         out
@@ -1152,17 +1170,12 @@ impl Simulation {
             let arrivals = self.win_exit[l] + q1.saturating_sub(self.win_q0[l]) + q1;
             let meas = arrivals as f32 * (3600.0 / window as f32);
             self.adapt_flow[l] = ADAPT_SMOOTH * meas + (1.0 - ADAPT_SMOOTH) * self.adapt_flow[l];
-            let share = if self.win_exit[l] > 0 { self.win_left[l] as f32 / self.win_exit[l] as f32 } else { 0.0 };
-            self.adapt_left[l] = ADAPT_SMOOTH * meas * share + (1.0 - ADAPT_SMOOTH) * self.adapt_left[l];
             self.win_q0[l] = q1;
             self.win_exit[l] = 0;
-            self.win_left[l] = 0;
         }
         let flow = std::mem::take(&mut self.adapt_flow);
-        let left = std::mem::take(&mut self.adapt_left);
-        self.eff.adapt_signals(&self.net, &flow, &left, self.t);
+        self.eff.adapt_signals(&self.net, &flow, self.t);
         self.adapt_flow = flow;
-        self.adapt_left = left;
     }
 
     fn update_signals(&mut self) {
@@ -1174,11 +1187,9 @@ impl Simulation {
                 for (ph, links) in p.links.iter().enumerate() {
                     let s = phase_state(p, ph, self.t);
                     let since = phase_since_green(p, ph, self.t);
-                    let started = if p.hold.is_empty() { 0.0 } else { phase_since_start(p, ph, self.t) };
                     for &l in links {
-                        let held = s == 1 && p.hold.iter().any(|&(h, secs)| h == l && started < secs);
-                        self.sig_state[l as usize] = if held { 3 } else { s };
-                        self.sig_since[l as usize] = if held { YELLOW + ALL_RED + 1.0 } else { since };
+                        self.sig_state[l as usize] = s;
+                        self.sig_since[l as usize] = since;
                         if s == 1 {
                             self.sneak[l as usize] = 0;
                         }
@@ -1285,10 +1296,23 @@ impl Simulation {
     /// Lane choice on entering link `l` for a vehicle whose next movement at its far end has kind `kind` [None = unknown/through].
     /// Left-turners use the left lane (or the pocket), right-turners the right lane, through traffic the lane with most room.
     /// Falls back to any lane with room. None only if no lane has room.
-    fn pick_lane(&self, l: u32, kind: Option<u8>, horizon: f32) -> Option<usize> {
+    fn pick_lane(&self, l: u32, kind: Option<u8>, after: Option<u32>, horizon: f32) -> Option<usize> {
         let lu = l as usize;
         let main = self.topo.nmain[lu];
         let need = self.room_need(lu);
+        if let Some(m) = after.and_then(|b| self.topo.find_mv(l, b)) {
+            let (lo, hi) = self.topo.fork_band[m as usize];
+            if hi != 255 {
+                let mut best: Option<(f32, usize)> = None;
+                for k in lo as usize..(hi as usize).min(main) {
+                    let r = self.lane_room_ahead(l, k, horizon);
+                    if r >= need && best.map_or(true, |(br, _)| r > br + 1e-4) {
+                        best = Some((r, k));
+                    }
+                }
+                return best.map(|b| b.1);
+            }
+        }
         if kind == Some(K_LEFT) && self.pocket_open(lu, need, horizon) {
             return Some(main);
         }
@@ -1387,8 +1411,11 @@ impl Simulation {
 
     fn try_spawns(&mut self) {
         for n in 0..self.topo.n_nodes {
-            for _ in 0..4 {
-                let Some(trip) = self.backlog[n].front() else { break };
+            let (mut spawned, mut idx) = (0, 0);
+            let mut blocked: [u32; SPAWN_LOOKAHEAD] = [u32::MAX; SPAWN_LOOKAHEAD];
+            let mut n_blocked = 0;
+            while spawned < 4 && idx < SPAWN_LOOKAHEAD {
+                let Some(trip) = self.backlog[n].get(idx) else { break };
                 let (dest, seed) = (trip.dest, trip.noise_seed);
                 self.router.ensure(dest, &self.topo, &self.eff, &self.link_cost);
                 let table = self.router.table(dest);
@@ -1409,21 +1436,27 @@ impl Simulation {
                 }
                 if !ok {
                     self.scratch = route;
-                    self.backlog[n].pop_front();
+                    self.backlog[n].remove(idx);
                     self.st.unroutable += 1;
                     continue;
                 }
                 let b = first.unwrap();
-                let Some(lane) = self.pick_lane(b, self.mv_kind(b, route.first().copied()), 0.0) else {
+                if blocked[..n_blocked].contains(&b) {
                     self.scratch = route;
-                    break;
-                };
-                let drv = self.backlog[n].front().unwrap().drv;
-                let Some(v_ins) = self.entry_speed(b, lane, &drv) else {
+                    idx += 1;
+                    continue;
+                }
+                let drv = self.backlog[n][idx].drv;
+                let entry = self.pick_lane(b, self.mv_kind(b, route.first().copied()), route.first().copied(), 0.0).and_then(|lane| self.entry_speed(b, lane, &drv).map(|v| (lane, v)));
+                let Some((lane, v_ins)) = entry else {
                     self.scratch = route;
-                    break;
+                    blocked[n_blocked] = b;
+                    n_blocked += 1;
+                    idx += 1;
+                    continue;
                 };
-                let trip = self.backlog[n].pop_front().unwrap();
+                spawned += 1;
+                let trip = self.backlog[n].remove(idx).unwrap();
                 let id = self.alloc_veh();
                 let guided = self.is_guided(trip.noise_seed);
                 let veh = &mut self.vehs[id as usize];
@@ -1583,7 +1616,7 @@ impl Simulation {
             // Banned/closed after the plan was made; will be re-planned. Hold.
             return (false, false);
         }
-        if self.pick_lane_for(veh.kind, b, None, NODE_CROSS_S).is_none() {
+        if self.pick_lane_for(veh.kind, b, None, veh.route.get(veh.ridx as usize + 1).copied(), NODE_CROSS_S).is_none() {
             return (false, true);
         }
         if self.ped_on && self.ped_block(veh, l as u32, b, ctrl) {
@@ -1972,6 +2005,10 @@ impl Simulation {
                     self.d_link_delay[l] += dt * (1.0 - v / self.eff.limit[l]).max(0.0);
                     self.bin_vt[bi] += dt;
                     self.bin_vs[bi] += v * dt;
+                    if self.t >= 0.0 {
+                        self.cum[l][2] += dt;
+                        self.cum[l][3] += v * dt;
+                    }
                     let st = &mut self.st;
                     st.veh_m += dist as f64;
                     let through = self.vehs[vid as usize].through;
@@ -2011,12 +2048,18 @@ impl Simulation {
         }
         let bi = l * NBINS + self.cur_bin;
         self.bin_flow[bi] += 1.0;
+        if self.t >= 0.0 {
+            self.cum[l][0] += 1.0;
+        }
         self.d_link_exits[l] += 1;
         self.win_exit[l] += 1;
 
         let veh = &self.vehs[vid as usize];
         if veh.through && self.topo.is_local[l] {
             self.bin_ct[bi] += 1.0;
+            if self.t >= 0.0 {
+                self.cum[l][1] += 1.0;
+            }
         }
         self.tt_sum[l] += (self.t - veh.t_enter) as f32;
         self.tt_n[l] += 1;
@@ -2110,10 +2153,7 @@ impl Simulation {
             }
         }
         let after = veh.route.get(veh.ridx as usize + 1).copied();
-        let Some(lane) = self.pick_lane_for(kind, b, self.mv_kind(b, after), NODE_CROSS_S) else { return false };
-        if self.topo.mvs[mv as usize].kind == K_LEFT {
-            self.win_left[l] += 1;
-        }
+        let Some(lane) = self.pick_lane_for(kind, b, self.mv_kind(b, after), after, NODE_CROSS_S) else { return false };
         if ctrl == Control::Signal && self.sig_state[l] >= 2 && self.topo.mvs[mv as usize].kind == K_LEFT {
             self.sneak[l] = self.sneak[l].saturating_add(1);
         }
@@ -2557,8 +2597,7 @@ impl Simulation {
 
     /// Feed measured approach flows (veh/h per link) to the signal adaptation at the current time.
     pub(crate) fn test_adapt_with(&mut self, flow: &[f32]) {
-        let left = vec![0.0; flow.len()];
-        self.eff.adapt_signals(&self.net, flow, &left, self.t);
+        self.eff.adapt_signals(&self.net, flow, self.t);
     }
 
     pub(crate) fn test_veh_uid(&self, id: u32) -> u32 {

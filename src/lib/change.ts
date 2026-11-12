@@ -64,13 +64,18 @@ export function diffValue(o: Overlay, base: Agg, scen: Agg): number | null {
   return (metricValue(o, scen) as number) - (metricValue(o, base) as number);
 }
 
-/** Signed map intensity in -1..1 (clamped, dead band to 0), or NO_DATA for streets with no traffic in either run. */
+/** Soft threshold: zero inside the noise band, then rising from zero to 1 at the top of the scale, so a value crossing the band changes color a little, never jumps between "no change" and a color. */
+export const softChange = (d: number, o: Overlay): number => {
+  const band = DEAD_BAND[o], mag = Math.max(0, Math.abs(d) - band) / (CHANGE_TOP[o] - band);
+  return mag === 0 ? 0 : Math.sign(d) * Math.min(1, mag);
+};
+
+/** Signed map intensity in -1..1 (soft noise band, clamped), or NO_DATA for streets with no traffic in either run. */
 export function changeIntensity(o: Overlay, base: Agg, scen: Agg): number {
   if (base.flow <= 0 && scen.flow <= 0 && base.cut <= 0 && scen.cut <= 0) return NO_DATA;
   const d = diffValue(o, base, scen);
   if (d === null) return NO_DATA;
-  if (Math.abs(d) < DEAD_BAND[o]) return 0;
-  return Math.max(-1, Math.min(1, d / CHANGE_TOP[o]));
+  return softChange(d, o);
 }
 
 /** Per-link difference for one link id. */

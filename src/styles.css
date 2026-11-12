@@ -412,3 +412,8 @@ input[type='checkbox'] { width: 18px; height: 18px; accent-color: var(--accent);
 .prop-routes { margin: 0 0 .8rem; }
 
 table.streets tbody tr:hover, table.streets tbody tr:focus-visible { background: var(--surface-2); outline: 3px solid var(--focus); outline-offset: -3px; }
+
+.map-menu { position: fixed; z-index: 40; display: flex; flex-direction: column; min-width: 13rem; padding: 3px; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow); }
+.map-menu-item { min-height: 36px; padding: .3rem .8rem; border: 0; border-radius: 6px; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.map-menu-item:hover, .map-menu-item:focus { background: var(--surface-2); }
+.map-menu-item:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
