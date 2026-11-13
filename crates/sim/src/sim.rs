@@ -2384,7 +2384,9 @@ impl Simulation {
             self.vehs[vid as usize].registered = false;
         }
         let tq = self.topo.qidx(b as usize, lane);
-        self.reserved[tq] += len + 2.0;
+        if RESERVE_EXIT_ROOM {
+            self.reserved[tq] += len + 2.0;
+        }
         if kind != KIND_BIKE {
             self.st.veh_m += m_len as f64;
         }
@@ -2427,7 +2429,9 @@ impl Simulation {
                     continue;
                 }
                 self.transit[n].remove(i);
-                self.reserved[qi] = (self.reserved[qi] - (len + 2.0)).max(0.0);
+                if RESERVE_EXIT_ROOM {
+                    self.reserved[qi] = (self.reserved[qi] - (len + 2.0)).max(0.0);
+                }
                 {
                     let veh = &mut self.vehs[vid as usize];
                     veh.in_transit = false;

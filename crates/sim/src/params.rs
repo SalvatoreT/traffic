@@ -21,6 +21,7 @@ pub const YELLOW_DECEL: f32 = 4.0; // ASSUMPTION: go on yellow if v^2/(2*4) > di
 
 // --- capacity realism (all ASSUMPTION: not sourced in docs/references.md) ---
 pub const NODE_CROSS_S: f32 = 2.0; // ASSUMPTION: s of leader motion credited when checking downstream room before a node crossing (crossing takes ~2-3 s)
+pub const RESERVE_EXIT_ROOM: bool = false; // ASSUMPTION: a vehicle crossing a node holds its length and a 2 m gap on the exit lane until it emerges, and the next vehicle checks the room left after that. Off: the next vehicle checks the room in front of the lane tail only, and `update_transit` still holds a vehicle in the node when the lane has no physical room. On, a 12 m left turn into a 32 m single-lane link discharged one car per 3 to 4 s
 pub const NODE_SAFE_S: f32 = 0.5; // ASSUMPTION: s to spare when an entering vehicle will reach a conflict point just after a crossing one has cleared it
 pub const POCKET_VEH: usize = 3; // ASSUMPTION: left-turn pocket storage, vehicles (~20 m); more lefts queue in the through lane
 pub const POCKET_LEN: f32 = 20.0; // ASSUMPTION: pocket storage length (m); a through-lane queue longer than this blocks pocket entry
