@@ -140,7 +140,8 @@ impl NameIndex {
                     name.clone()
                 }
             } else {
-                format!("{name} between {} and {}", end_text(first.from), end_text(first.to))
+                let (ea, eb) = (end_text(first.from), end_text(first.to));
+                if ea == eb { format!("{name} at {ea}") } else { format!("{name} between {ea} and {eb}") }
             };
             let idx = blocks.len();
             for &id in &ids {

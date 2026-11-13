@@ -82,7 +82,8 @@ export function buildIndex(net: Network): NetIndex {
       const farStreets = others(far).filter((s) => s !== base);
       label = dead >= 0 ? `${name} ${CUL_DE_SAC}` : farStreets.length ? `${name} to ${joinNames(farStreets, '')}` : name;
     } else {
-      label = `${name} between ${endText(first.from)} and ${endText(first.to)}`;
+      const ea = endText(first.from), eb = endText(first.to);
+      label = ea === eb ? `${name} at ${ea}` : `${name} between ${ea} and ${eb}`;
     }
     const idx = blocks.length;
     for (const id of ids) blockOfLink[id] = idx;
