@@ -165,6 +165,8 @@ pub const PED_GAP_SIGMA: f64 = 0.3; // ASSUMPTION: lognormal heterogeneity of th
 pub const PED_B_COMF: f32 = 3.0; // m/s^2: comfortable braking that decides whether a driver can still yield
 pub const PED_MIN_DECIDE_M: f32 = 6.0; // m
 pub const XW_STOP_M: f32 = 2.0; // m: vehicles stop this far before a mid-block crosswalk
+pub const PED_WALK_MIN_S: f32 = 7.0; // s: walk interval at typical pedestrian volume ([FHWA-STM2008] Table 5-8)
+pub const PED_CLEAR_V: f32 = 1.22; // m/s (4.0 ft/s): pedestrian clearance time = crossing distance / this ([FHWA-STM2008] section 5.3.3)
 pub const PED_STANDING_V: f32 = 0.3; // m/s: a vehicle slower than this is treated as standing
 pub const PED_MIDBLOCK_BONUS_M: f32 = 0.1; // m: tie-break that makes pedestrians use a marked mid-block crossing
 pub const PED_CORNER_M: f32 = 3.0; // m: corner walking distance at a node

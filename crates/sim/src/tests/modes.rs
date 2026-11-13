@@ -474,6 +474,40 @@ fn pedestrian_at_a_signal_crosses_with_the_phase_parallel_to_the_walk() {
     assert!(m.modes.pedestrian.completed_trips > 20);
 }
 
+#[test]
+fn pedestrians_at_a_signal_cross_a_street_only_while_it_has_no_green() {
+    // Pedestrians from every side, so some arrive along the very leg they cross. Each crosswalk is served with the phase of
+    // the parallel street [FHWA-STM2008], and nobody steps off once the clearance interval has begun, so no approach gets
+    // green with a pedestrian still in front of it.
+    let (net, c) = ped_cross(Control::Signal, true);
+    let ped = |o, d| (o, d, 120.0, FlowMode::Pedestrian);
+    let flows = [
+        ped(c.w, c.e), ped(c.e, c.w), ped(c.s, c.n), ped(c.n, c.s), ped(c.w, c.n), ped(c.n, c.e), ped(c.e, c.s), ped(c.s, c.w),
+        (c.w, c.e, 300.0, FlowMode::Car), (c.s, c.n, 200.0, FlowMode::Car),
+    ];
+    let mut sim = sim_with(net, &flows, cfg(3, 1.0));
+    let xws: Vec<(usize, Vec<u32>)> = sim.test_xws().iter().filter(|x| x.0 == c.c).map(|x| (x.1, sim.test_xw_in_links(x.1))).collect();
+    let mut last = vec![0u32; xws.len()];
+    let (mut starts, mut on_green, mut caught) = (0, 0, 0);
+    run(&mut sim, 1800.0, |s| {
+        let sig = s.signals();
+        let all = s.test_xws();
+        for (k, (i, ins)) in xws.iter().enumerate() {
+            let crossing = all[*i].2;
+            let green = ins.iter().any(|&l| sig[l as usize] == 1);
+            if crossing > last[k] {
+                starts += 1;
+                on_green += green as u32;
+            }
+            caught += (green && crossing > 0) as u32;
+            last[k] = crossing;
+        }
+    });
+    assert!(starts > 100, "pedestrians crossed: {starts}");
+    assert_eq!(on_green, 0, "nobody steps off in front of an approach that has green");
+    assert_eq!(caught, 0, "the crosswalk is clear when its approach gets green");
+}
+
 /// Street with one marked crossing at 200 m; xw index of the crossing.
 fn mid_block() -> (Simulation, u32) {
     let mut net = street(400.0, 1, 11.2);

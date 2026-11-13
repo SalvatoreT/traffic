@@ -1489,6 +1489,22 @@ fn permissive_left_capacity_follows_the_gap_acceptance_formula() {
     assert!(rate > 350.0, "left-turn discharge {rate} veh/h");
 }
 
+#[test]
+fn saturated_permissive_left_turners_do_not_starve_the_opposing_queue() {
+    // Both streams saturated: the left-turners (w -> n) must yield [FHWA-STM2008] (section 4.3.1), so the opposing through
+    // movement (e -> w) keeps most of the discharge it has alone. Left-turners used to enter ahead of each queue head that
+    // the turner before had held back.
+    let through = |left: f64| {
+        let (net, x) = crate::validate::cross(Control::Signal, RoadClass::Secondary, 1, RoadClass::Secondary, 1, false);
+        let fl = [(x.w, x.n, left, FlowMode::Car), (x.e, x.w, 4000.0, FlowMode::Car), (x.s, x.n, 300.0, FlowMode::Car)];
+        let mut r = crate::validate::Run::new(net, crate::validate::demand_m(&fl), cfg(1, 1.0));
+        r.advance(1500.0);
+        r.rate(&[x.e_in], 300.0, 1500.0)
+    };
+    let (alone, opposed) = (through(0.0), through(4000.0));
+    assert!(opposed > 0.9 * alone, "through discharge {opposed} veh/h with saturated left-turners against {alone} alone");
+}
+
 // ---------------------------------------------------------------- car-only regression (multimodal-agents)
 
 fn golden_signal_cross() -> Simulation {
@@ -1520,7 +1536,8 @@ fn car_only_metrics_match_pre_multimodal_golden() {
 // Updated with the gate scan (a blocked first link no longer holds back trips behind it): same trips, a few vehicle entries move by a step, so the means differ in the fourth digit.
 const GOLDEN_CORRIDOR: &str = r#"{"arterialMeanSpeed":5.760706174508465,"backlog":0,"completedTrips":526,"cutThrough":{"shareOfLocalVehKm":0.7880976571376884,"vehKm":217.17473578739165},"gridlockRemoved":0,"meanTripDelay":2.5301664346045,"meanTripTime":103.9490450914342,"safety":{"localMeanSpeed":9.706729512982832,"localP85Speed":11.633189839572193,"shareAbove20mph":0.7118290179633333,"shareAbove25mph":0.2278233444044085,"ttcConflicts":3},"spawned":558,"time":1800.0,"unroutableTrips":0,"vehKm":438.921536061287,"vehiclesInNetwork":32}"#;
 // Updated when right turn on red was added (ASSUMPTION, validation cases b10 and b11): the w->s flow turns right on red, so mean delay falls from 13.4 to 13.1 s.
-const GOLDEN_CROSS: &str = r#"{"arterialMeanSpeed":8.436836013936235,"backlog":0,"completedTrips":551,"cutThrough":{"shareOfLocalVehKm":1.0,"vehKm":64.3283925333023},"gridlockRemoved":0,"meanTripDelay":13.054209055272334,"meanTripTime":50.45862896291319,"safety":{"localMeanSpeed":6.385964968918798,"localP85Speed":11.4,"shareAbove20mph":0.4679799284578696,"shareAbove25mph":0.16921701112877582,"ttcConflicts":10},"spawned":572,"time":1800.0,"unroutableTrips":0,"vehKm":216.17522833824157,"vehiclesInNetwork":21}"#;
+// Updated with the queue-head rule (a permissive left-turner does not enter ahead of an opposing queue head rolling up to a green signal): the w->s left turns wait a little longer, so mean delay goes from 13.1 to 13.2 s.
+const GOLDEN_CROSS: &str = r#"{"arterialMeanSpeed":8.436215789416869,"backlog":0,"completedTrips":551,"cutThrough":{"shareOfLocalVehKm":1.0,"vehKm":64.23277345371247},"gridlockRemoved":0,"meanTripDelay":13.213464953638942,"meanTripTime":50.61788486127979,"safety":{"localMeanSpeed":6.3198577102774065,"localP85Speed":11.357907845579078,"shareAbove20mph":0.46223163285404767,"shareAbove25mph":0.16463955091589522,"ttcConflicts":10},"spawned":572,"time":1800.0,"unroutableTrips":0,"vehKm":216.02042885398865,"vehiclesInNetwork":21}"#;
 
 mod modes;
 mod initial;

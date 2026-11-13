@@ -123,6 +123,7 @@ struct Veh {
     origin: u32,
     dest: u32,
     through: bool,
+    ct_counted: bool,
     noise_seed: u32,
     route: Vec<u32>,
     ridx: u32,
@@ -181,6 +182,7 @@ impl Veh {
             origin: 0,
             dest: 0,
             through: false,
+            ct_counted: false,
             noise_seed: 0,
             route: Vec::new(),
             ridx: 0,
@@ -242,6 +244,7 @@ struct Stats {
     delay_sum: f64,
     veh_m: f64,
     ct_veh_m: f64,
+    ct_vehicles: u64,
     local_veh_m: f64,
     safety_t: f64,
     safety_vs: f64,
@@ -961,6 +964,8 @@ impl Simulation {
             m.mean_trip_delay = st.delay_sum / st.timed as f64;
         }
         m.cut_through.veh_km = st.ct_veh_m / 1000.0;
+        m.cut_through.vehicles = st.ct_vehicles;
+        m.cut_through.vehicles_per_hour = st.ct_vehicles as f64 * 3600.0 / self.t.max(1.0);
         m.cut_through.share_of_local_veh_km = if st.local_veh_m > 0.0 { st.ct_veh_m / st.local_veh_m } else { 0.0 };
         if st.safety_t > 0.0 {
             m.safety.local_mean_speed = st.safety_vs / st.safety_t;
@@ -1030,8 +1035,19 @@ impl Simulation {
                         K_UTURN => 'U',
                         _ => 'T',
                     });
-                    let ped = self.ped_on && self.ped_block_head(id, l, self.eff.ctrl[self.topo.link_to[l] as usize]);
-                    format!("next {:?} {kind} d {:.0} v {:.1} go {} space {} wait {:.0} ped {ped}", v.next(), self.topo.stop_pos[l] - v.pos, v.v, v.go, v.blocked_space, v.wait_t)
+                    let ctrl = self.eff.ctrl[self.topo.link_to[l] as usize];
+                    let ped = self.ped_on && self.ped_block_head(id, l, ctrl);
+                    // The movement inside the node that holds this head, as "in link>out link".
+                    let held = v.next().and_then(|b| self.topo.find_mv(l as u32, b)).and_then(|mv| {
+                        let node = self.topo.mvs[mv as usize].node as usize;
+                        let circle = ctrl == Control::TrafficCircle && !self.eff.ring_node[node];
+                        let t_mine = self.cross_profile(v, l, mv, ctrl).2;
+                        self.transit[node].iter().find(|tr| self.transit_blocks(mv, tr, circle, t_mine)).map(|tr| {
+                            let m = &self.topo.mvs[tr.mv as usize];
+                            format!(" held by {}>{}", m.a, m.b)
+                        })
+                    });
+                    format!("next {:?} {kind} d {:.0} v {:.1} go {} space {} wait {:.0} ped {ped}{}", v.next(), self.topo.stop_pos[l] - v.pos, v.v, v.go, v.blocked_space, v.wait_t, held.unwrap_or_default())
                 });
                 let xw = if self.ped_on { self.ped_debug_xw(l) } else { String::new() };
                 out.push(format!("link {l} lane {k} sig {} n {} standing {} {xw} head {}", self.sig_state[l], q.len(), standing, head.unwrap_or_default()));
@@ -1809,8 +1825,21 @@ impl Simulation {
                 }
                 for &x in q.iter().take(4) {
                     let xv = &self.vehs[x as usize];
-                    let dx = (self.topo.stop_pos[e as usize] - xv.pos).max(0.0) + self.topo.length[e as usize].min(R_NODE as f32 * 4.0).min(R_NODE as f32);
-                    let tx = dx / xv.v.max(MIN_APPROACH_SPEED);
+                    let d_line = (self.topo.stop_pos[e as usize] - xv.pos).max(0.0);
+                    let dx = d_line + self.topo.length[e as usize].min(R_NODE as f32 * 4.0).min(R_NODE as f32);
+                    let mut tx = dx / xv.v.max(MIN_APPROACH_SPEED);
+                    // A vehicle with a green signal that is slower than the limit is in a discharging queue: it arrives as soon as
+                    // its own acceleration (`a` of the car-following model [Treiber2014]) takes it there, not at its present
+                    // speed. Without this, permissive left-turners entered ahead of every vehicle that was rolling up to the
+                    // line, and the opposing queue, which they must yield to [FHWA-STM2008] (section 4.3.1), never discharged.
+                    if ctrl == Control::Signal && self.sig_state[e as usize] == 1 {
+                        let (v, vlim, a) = (xv.v, self.eff.limit[e as usize], xv.drv.a.max(0.5));
+                        if v < vlim {
+                            let d_acc = (vlim * vlim - v * v) / (2.0 * a);
+                            let t_kin = if dx <= d_acc { ((v * v + 2.0 * a * dx).sqrt() - v) / a } else { (vlim - v) / a + (dx - d_acc) / vlim };
+                            tx = tx.min(t_kin);
+                        }
+                    }
                     if tx > tc {
                         break;
                     }
@@ -2096,11 +2125,15 @@ impl Simulation {
         self.d_link_exits[l] += 1;
         self.win_exit[l] += 1;
 
-        let veh = &self.vehs[vid as usize];
+        let veh = &mut self.vehs[vid as usize];
         if veh.through && self.topo.is_local[l] {
             self.bin_ct[bi] += 1.0;
             if self.t >= 0.0 {
                 self.cum[l][1] += 1.0;
+                if !veh.ct_counted {
+                    veh.ct_counted = true;
+                    self.st.ct_vehicles += 1;
+                }
             }
         }
         self.tt_sum[l] += (self.t - veh.t_enter) as f32;
@@ -2790,6 +2823,11 @@ impl Simulation {
     /// (node, leg index, crossing, waiting, width) per crosswalk.
     pub(crate) fn test_xws(&self) -> Vec<(u32, usize, u32, u32, f32)> {
         self.world.xws.iter().enumerate().map(|(i, x)| (x.node, i, x.crossing, x.waiting, x.width)).collect()
+    }
+
+    /// Links whose vehicles approach crosswalk `i`.
+    pub(crate) fn test_xw_in_links(&self, i: usize) -> Vec<u32> {
+        self.world.xws[i].in_links.clone()
     }
 
     pub(crate) fn test_mid_xws(&self) -> Vec<(u32, u32, f32)> {

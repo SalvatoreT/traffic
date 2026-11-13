@@ -304,6 +304,9 @@ pub struct Intervention {
 #[derive(Clone, Debug, Default, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CutThrough {
+    /// Through vehicles (gate-to-gate trips) that have exited at least one local link since t = 0, each counted once.
+    pub vehicles: u64,
+    pub vehicles_per_hour: f64,
     pub veh_km: f64,
     pub share_of_local_veh_km: f64,
 }

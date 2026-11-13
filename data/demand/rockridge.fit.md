@@ -8,18 +8,18 @@ Settings: factor bounds 0.1 to 3, damping 1, tolerance 1.0% on the unblocked cou
 
 | Period | Type | Offered (build) | After count fit | After guard (final) | Removed by fit | Removed by guard | Final / offered |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| am_peak | through | 6644 | 6863 | 6250 | -219 | 613 | 94% |
-| am_peak | local | 3473 | 2926 | 2503 | 548 | 422 | 72% |
-| am_peak | ramp | 11108 | 11088 | 11355 | 20 | -267 | 102% |
-| am_peak | **all** | 21225 | 20876 | 20108 | 349 | 768 | 95% |
-| midday | through | 5977 | 4928 | 4975 | 1048 | -46 | 83% |
-| midday | local | 2442 | 1791 | 1766 | 651 | 24 | 72% |
-| midday | ramp | 8102 | 8051 | 8145 | 51 | -94 | 101% |
-| midday | **all** | 16520 | 14770 | 14886 | 1750 | -116 | 90% |
-| pm_peak | through | 9407 | 8613 | 7847 | 794 | 766 | 83% |
-| pm_peak | local | 3850 | 3370 | 3017 | 480 | 353 | 78% |
-| pm_peak | ramp | 13068 | 13082 | 13302 | -14 | -221 | 102% |
-| pm_peak | **all** | 26325 | 25065 | 24166 | 1260 | 899 | 92% |
+| am_peak | through | 6424 | 6175 | 6049 | 249 | 125 | 94% |
+| am_peak | local | 3473 | 2346 | 2622 | 1127 | -276 | 75% |
+| am_peak | ramp | 11108 | 11350 | 11357 | -242 | -7 | 102% |
+| am_peak | **all** | 21005 | 19871 | 20029 | 1134 | -158 | 95% |
+| midday | through | 5812 | 5210 | 5203 | 602 | 7 | 90% |
+| midday | local | 2441 | 2313 | 2231 | 129 | 81 | 91% |
+| midday | ramp | 8102 | 8035 | 8237 | 67 | -203 | 102% |
+| midday | **all** | 16355 | 15557 | 15671 | 798 | -114 | 96% |
+| pm_peak | through | 9158 | 7820 | 7542 | 1338 | 278 | 82% |
+| pm_peak | local | 3850 | 3339 | 3230 | 511 | 108 | 84% |
+| pm_peak | ramp | 13068 | 13118 | 13238 | -50 | -120 | 101% |
+| pm_peak | **all** | 26076 | 24277 | 24011 | 1799 | 266 | 92% |
 
 ## Fit status and per-flow factors
 
@@ -27,34 +27,34 @@ Factor = final volume / offered volume of a flow. Percentiles are volume-weighte
 
 | Period | Flows | Touch a count | Iterations | Stopped by | Worst error, unblocked stations | Worst error, all stations | Stations outside tolerance | Flows at lower bound | Flows at upper bound | Stations no flow crosses | Unroutable flows |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| am_peak | 7910 | 6179 | 478 | stalled (no gain over the window) | 19236.8% | 19236.8% | 143 | 3167 | 870 | count block 2649 | 0 |
-| midday | 8083 | 6434 | 487 | stalled (no gain over the window) | 1385.9% | 10444.2% | 152 | 3272 | 828 | count block 2649 | 0 |
-| pm_peak | 7923 | 6329 | 115 | tolerance (blocked and tense stations excluded) | 0.9% | 3951.6% | 151 | 2601 | 705 | count move 2621>2781 | 0 |
+| am_peak | 7915 | 6168 | 353 | stalled (no gain over the window) | 1003.1% | 3549.6% | 141 | 3169 | 808 | none | 0 |
+| midday | 8098 | 6436 | 94 | tolerance (blocked and tense stations excluded) | 0.8% | 24461.1% | 153 | 2548 | 672 | none | 0 |
+| pm_peak | 7934 | 6360 | 340 | stalled (no gain over the window) | 2140.5% | 3934.2% | 147 | 2987 | 832 | none | 0 |
 
 Errors are relative (assigned / target - 1 in size). "Unblocked" leaves out stations that cannot move (their flows sit on a bound) or are in tension with another station; both kinds are listed under "Stations that cannot be met" below.
 
 | Period | Group | Flows | p5 | p25 | median | p75 | p95 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| am_peak | counted through | 1269 | 0.10 | 0.10 | 0.16 | 1.99 | 3.00 |
-| am_peak | counted local | 2146 | 0.10 | 0.10 | 0.14 | 3.00 | 3.00 |
-| am_peak | counted ramp | 2764 | 0.10 | 0.10 | 0.25 | 1.14 | 4.17 |
-| am_peak | uncounted through | 132 | 0.11 | 0.14 | 0.16 | 0.16 | 0.16 |
-| am_peak | uncounted local | 1485 | 0.10 | 0.14 | 0.14 | 0.14 | 0.14 |
-| am_peak | uncounted ramp | 114 | 0.25 | 0.25 | 0.25 | 0.25 | 0.25 |
-| midday | counted through | 2066 | 0.10 | 0.10 | 0.10 | 1.73 | 3.00 |
-| midday | counted local | 1784 | 0.10 | 0.10 | 0.15 | 2.48 | 3.00 |
-| midday | counted ramp | 2584 | 0.10 | 0.10 | 0.48 | 1.36 | 3.39 |
-| midday | uncounted through | 297 | 0.10 | 0.10 | 0.10 | 0.10 | 0.10 |
-| midday | uncounted local | 1251 | 0.15 | 0.15 | 0.15 | 0.15 | 0.15 |
-| midday | uncounted ramp | 101 | 0.48 | 0.48 | 0.48 | 0.48 | 0.48 |
-| pm_peak | counted through | 2035 | 0.10 | 0.10 | 0.21 | 1.39 | 3.00 |
-| pm_peak | counted local | 1723 | 0.10 | 0.10 | 0.32 | 2.61 | 3.00 |
-| pm_peak | counted ramp | 2571 | 0.10 | 0.10 | 0.60 | 1.29 | 2.86 |
-| pm_peak | uncounted through | 283 | 0.04 | 0.08 | 0.21 | 0.21 | 0.21 |
-| pm_peak | uncounted local | 1204 | 0.07 | 0.32 | 0.32 | 0.32 | 0.32 |
-| pm_peak | uncounted ramp | 107 | 0.60 | 0.60 | 0.60 | 0.60 | 0.60 |
+| am_peak | counted through | 1347 | 0.10 | 0.10 | 0.10 | 2.13 | 3.00 |
+| am_peak | counted local | 2071 | 0.10 | 0.10 | 0.16 | 2.84 | 3.00 |
+| am_peak | counted ramp | 2750 | 0.10 | 0.10 | 0.29 | 1.30 | 3.69 |
+| am_peak | uncounted through | 163 | 0.07 | 0.10 | 0.10 | 0.10 | 0.10 |
+| am_peak | uncounted local | 1465 | 0.14 | 0.16 | 0.16 | 0.16 | 0.16 |
+| am_peak | uncounted ramp | 119 | 0.29 | 0.29 | 0.29 | 0.29 | 0.29 |
+| midday | counted through | 2069 | 0.10 | 0.10 | 0.31 | 1.58 | 3.00 |
+| midday | counted local | 1786 | 0.10 | 0.10 | 0.57 | 2.37 | 3.00 |
+| midday | counted ramp | 2581 | 0.10 | 0.10 | 0.77 | 1.42 | 2.65 |
+| midday | uncounted through | 281 | 0.31 | 0.31 | 0.31 | 0.31 | 0.31 |
+| midday | uncounted local | 1272 | 0.57 | 0.57 | 0.57 | 0.57 | 0.57 |
+| midday | uncounted ramp | 109 | 0.77 | 0.77 | 0.77 | 0.77 | 0.77 |
+| pm_peak | counted through | 2015 | 0.10 | 0.10 | 0.10 | 1.38 | 3.00 |
+| pm_peak | counted local | 1758 | 0.10 | 0.10 | 0.34 | 3.00 | 3.00 |
+| pm_peak | counted ramp | 2587 | 0.10 | 0.10 | 0.59 | 1.29 | 3.07 |
+| pm_peak | uncounted through | 266 | 0.05 | 0.10 | 0.10 | 0.10 | 0.10 |
+| pm_peak | uncounted local | 1206 | 0.17 | 0.34 | 0.34 | 0.34 | 0.34 |
+| pm_peak | uncounted ramp | 102 | 0.59 | 0.59 | 0.59 | 0.59 | 0.59 |
 
-Uncounted-flow rule medians (factor given to flows touching no count, by type): am_peak through 0.16, local 0.14, ramp 0.25; midday through 0.10, local 0.15, ramp 0.48; pm_peak through 0.21, local 0.32, ramp 0.60. These are the medians of the counted flows before the guard's ceilings apply to them.
+Uncounted-flow rule medians (factor given to flows touching no count, by type): am_peak through 0.10, local 0.16, ramp 0.29; midday through 0.31, local 0.57, ramp 0.77; pm_peak through 0.10, local 0.34, ramp 0.59. These are the medians of the counted flows before the guard's ceilings apply to them.
 
 ## Route shares
 
@@ -62,51 +62,51 @@ Observed shares are StreetLight device-sample estimates (`data/calibration/READM
 
 | Period | Share | Observed | Offered | Count-only fit | Final | Flows |
 | --- | --- | --- | --- | --- | --- | --- |
-| am_peak | Hillegass Avenue NB, trips from the freeway | 47% | 89% | 80% | 66% | 63 |
-| am_peak | Colby Street NB, trips from the freeway | 47% | 88% | 86% | 72% | 79 |
-| am_peak | Hillegass Avenue SB, trips to the freeway | 57% | 78% | 76% | 61% | 76 |
-| am_peak | Colby Street SB, trips to the freeway | 45% | 96% | 92% | 82% | 136 |
-| am_peak | Onto the freeway at the ramps, via College Avenue | 16% | 45% | 45% | 18% | 145 |
-| am_peak | Onto the freeway at the ramps, via Hillegass Avenue | 12% | 16% | 27% | 13% | 145 |
-| am_peak | Onto the freeway at the ramps, via Martin Street | 10% | 26% | 15% | 13% | 145 |
-| am_peak | Onto the freeway at the ramps, via Colby Street | 8% | 35% | 45% | 22% | 145 |
-| am_peak | Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue | 8% | 25% | 20% | 7% | 145 |
-| am_peak | Onto the freeway at the ramps, via Benvenue Avenue | 5% | 2% | 2% | 4% | 145 |
-| am_peak | From the freeway at the ramps, via College Avenue | 10% | 39% | 29% | 10% | 132 |
-| am_peak | From the freeway at the ramps, via Martin Street | 10% | 16% | 28% | 18% | 132 |
-| am_peak | From the freeway at the ramps, via Colby Street | 8% | 17% | 32% | 14% | 132 |
-| am_peak | From the freeway at the ramps, via Hillegass Avenue | 5% | 9% | 15% | 9% | 132 |
-| am_peak | From the freeway at the ramps, via Benvenue Avenue | 3% | 3% | 2% | 3% | 132 |
-| midday | Hillegass Avenue NB, trips from the freeway | 47% | 84% | 77% | 57% | 74 |
-| midday | Colby Street NB, trips from the freeway | 47% | 92% | 89% | 76% | 71 |
-| midday | Hillegass Avenue SB, trips to the freeway | 57% | 86% | 85% | 75% | 64 |
-| midday | Colby Street SB, trips to the freeway | 45% | 95% | 89% | 76% | 150 |
-| midday | Onto the freeway at the ramps, via College Avenue | 16% | 47% | 60% | 18% | 136 |
-| midday | Onto the freeway at the ramps, via Hillegass Avenue | 12% | 16% | 35% | 19% | 136 |
-| midday | Onto the freeway at the ramps, via Martin Street | 10% | 25% | 15% | 12% | 136 |
-| midday | Onto the freeway at the ramps, via Colby Street | 8% | 32% | 39% | 18% | 136 |
-| midday | Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue | 8% | 26% | 11% | 7% | 136 |
-| midday | Onto the freeway at the ramps, via Benvenue Avenue | 5% | 3% | 1% | 4% | 136 |
-| midday | From the freeway at the ramps, via College Avenue | 10% | 33% | 22% | 10% | 138 |
-| midday | From the freeway at the ramps, via Martin Street | 10% | 17% | 25% | 15% | 138 |
-| midday | From the freeway at the ramps, via Colby Street | 8% | 17% | 46% | 15% | 138 |
-| midday | From the freeway at the ramps, via Hillegass Avenue | 5% | 10% | 19% | 9% | 138 |
-| midday | From the freeway at the ramps, via Benvenue Avenue | 3% | 4% | 1% | 3% | 138 |
-| pm_peak | Hillegass Avenue NB, trips from the freeway | 47% | 86% | 82% | 63% | 78 |
-| pm_peak | Colby Street NB, trips from the freeway | 47% | 89% | 86% | 68% | 96 |
-| pm_peak | Hillegass Avenue SB, trips to the freeway | 68% | 88% | 88% | 80% | 54 |
-| pm_peak | Colby Street SB, trips to the freeway | 45% | 95% | 86% | 77% | 121 |
-| pm_peak | Onto the freeway at the ramps, via College Avenue | 16% | 52% | 64% | 24% | 132 |
-| pm_peak | Onto the freeway at the ramps, via Hillegass Avenue | 12% | 16% | 45% | 21% | 132 |
-| pm_peak | Onto the freeway at the ramps, via Martin Street | 10% | 24% | 15% | 12% | 132 |
-| pm_peak | Onto the freeway at the ramps, via Colby Street | 8% | 31% | 38% | 22% | 132 |
-| pm_peak | Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue | 8% | 28% | 18% | 11% | 132 |
-| pm_peak | Onto the freeway at the ramps, via Benvenue Avenue | 5% | 3% | 1% | 3% | 132 |
-| pm_peak | From the freeway at the ramps, via College Avenue | 10% | 27% | 17% | 10% | 137 |
-| pm_peak | From the freeway at the ramps, via Martin Street | 10% | 16% | 23% | 17% | 137 |
-| pm_peak | From the freeway at the ramps, via Colby Street | 8% | 19% | 36% | 17% | 137 |
-| pm_peak | From the freeway at the ramps, via Hillegass Avenue | 5% | 11% | 22% | 10% | 137 |
-| pm_peak | From the freeway at the ramps, via Benvenue Avenue | 3% | 2% | 1% | 3% | 137 |
+| am_peak | Hillegass Avenue NB, trips from the freeway | 47% | 84% | 77% | 58% | 48 |
+| am_peak | Colby Street NB, trips from the freeway | 47% | 90% | 91% | 80% | 89 |
+| am_peak | Hillegass Avenue SB, trips to the freeway | 57% | 80% | 75% | 66% | 69 |
+| am_peak | Colby Street SB, trips to the freeway | 45% | 92% | 81% | 69% | 151 |
+| am_peak | Onto the freeway at the ramps, via College Avenue | 16% | 46% | 42% | 19% | 142 |
+| am_peak | Onto the freeway at the ramps, via Hillegass Avenue | 12% | 15% | 25% | 15% | 142 |
+| am_peak | Onto the freeway at the ramps, via Martin Street | 10% | 26% | 16% | 12% | 142 |
+| am_peak | Onto the freeway at the ramps, via Colby Street | 8% | 35% | 33% | 21% | 142 |
+| am_peak | Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue | 8% | 26% | 17% | 9% | 142 |
+| am_peak | Onto the freeway at the ramps, via Benvenue Avenue | 5% | 2% | 3% | 4% | 142 |
+| am_peak | From the freeway at the ramps, via College Avenue | 10% | 40% | 34% | 11% | 132 |
+| am_peak | From the freeway at the ramps, via Martin Street | 10% | 15% | 26% | 18% | 132 |
+| am_peak | From the freeway at the ramps, via Colby Street | 8% | 16% | 30% | 16% | 132 |
+| am_peak | From the freeway at the ramps, via Hillegass Avenue | 5% | 9% | 17% | 9% | 132 |
+| am_peak | From the freeway at the ramps, via Benvenue Avenue | 3% | 3% | 1% | 3% | 132 |
+| midday | Hillegass Avenue NB, trips from the freeway | 47% | 82% | 71% | 56% | 81 |
+| midday | Colby Street NB, trips from the freeway | 47% | 89% | 89% | 76% | 73 |
+| midday | Hillegass Avenue SB, trips to the freeway | 57% | 83% | 84% | 73% | 63 |
+| midday | Colby Street SB, trips to the freeway | 45% | 96% | 86% | 76% | 131 |
+| midday | Onto the freeway at the ramps, via College Avenue | 16% | 47% | 53% | 19% | 138 |
+| midday | Onto the freeway at the ramps, via Hillegass Avenue | 12% | 17% | 39% | 20% | 138 |
+| midday | Onto the freeway at the ramps, via Martin Street | 10% | 26% | 16% | 12% | 138 |
+| midday | Onto the freeway at the ramps, via Colby Street | 8% | 32% | 36% | 19% | 138 |
+| midday | Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue | 8% | 27% | 17% | 7% | 138 |
+| midday | Onto the freeway at the ramps, via Benvenue Avenue | 5% | 3% | 1% | 4% | 138 |
+| midday | From the freeway at the ramps, via College Avenue | 10% | 35% | 34% | 11% | 134 |
+| midday | From the freeway at the ramps, via Martin Street | 10% | 16% | 27% | 17% | 134 |
+| midday | From the freeway at the ramps, via Colby Street | 8% | 16% | 33% | 15% | 134 |
+| midday | From the freeway at the ramps, via Hillegass Avenue | 5% | 10% | 16% | 9% | 134 |
+| midday | From the freeway at the ramps, via Benvenue Avenue | 3% | 4% | 4% | 3% | 134 |
+| pm_peak | Hillegass Avenue NB, trips from the freeway | 47% | 84% | 80% | 58% | 72 |
+| pm_peak | Colby Street NB, trips from the freeway | 47% | 91% | 91% | 79% | 80 |
+| pm_peak | Hillegass Avenue SB, trips to the freeway | 68% | 86% | 84% | 78% | 61 |
+| pm_peak | Colby Street SB, trips to the freeway | 45% | 95% | 89% | 72% | 129 |
+| pm_peak | Onto the freeway at the ramps, via College Avenue | 16% | 51% | 70% | 18% | 131 |
+| pm_peak | Onto the freeway at the ramps, via Hillegass Avenue | 12% | 15% | 38% | 21% | 131 |
+| pm_peak | Onto the freeway at the ramps, via Martin Street | 10% | 25% | 15% | 12% | 131 |
+| pm_peak | Onto the freeway at the ramps, via Colby Street | 8% | 35% | 54% | 22% | 131 |
+| pm_peak | Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue | 8% | 29% | 20% | 7% | 131 |
+| pm_peak | Onto the freeway at the ramps, via Benvenue Avenue | 5% | 3% | 2% | 3% | 131 |
+| pm_peak | From the freeway at the ramps, via College Avenue | 10% | 31% | 39% | 10% | 137 |
+| pm_peak | From the freeway at the ramps, via Martin Street | 10% | 18% | 27% | 17% | 137 |
+| pm_peak | From the freeway at the ramps, via Colby Street | 8% | 18% | 36% | 16% | 137 |
+| pm_peak | From the freeway at the ramps, via Hillegass Avenue | 5% | 11% | 22% | 9% | 137 |
+| pm_peak | From the freeway at the ramps, via Benvenue Avenue | 3% | 3% | 6% | 3% | 137 |
 
 ## Station fit by family
 
@@ -114,714 +114,714 @@ Within own tolerance = gates 10%, ramps 5%, turning-movement legs and Caltrans s
 
 | Period | Family | Stations | Within own tolerance | Within +/-15% | Sum of targets | Sum assigned before | Sum assigned after the fit | Sum assigned final | Final / target |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| am_peak | caltrans | 6 | 5 | 5 | 4712 | 2882 | 4428 | 4480 | 0.95 |
-| am_peak | count block | 96 | 44 | 38 | 5198 | 4119 | 4578 | 4249 | 0.82 |
-| am_peak | count move | 18 | 8 | 4 | 1171 | 1012 | 1066 | 940 | 0.80 |
-| am_peak | count route | 4 | 1 | 0 | 149 | 127 | 227 | 163 | 1.10 |
-| am_peak | gate entering | 3 | 3 | 3 | 1882 | 1825 | 1878 | 1884 | 1.00 |
-| am_peak | gate leaving | 3 | 3 | 3 | 1753 | 1714 | 1792 | 1753 | 1.00 |
-| am_peak | ramp off | 10 | 9 | 10 | 5424 | 7745 | 5403 | 5474 | 1.01 |
-| am_peak | ramp on | 12 | 8 | 9 | 5148 | 8252 | 5343 | 5364 | 1.04 |
-| am_peak | tmc | 16 | 15 | 15 | 8514 | 9503 | 8132 | 8128 | 0.95 |
-| midday | caltrans | 6 | 5 | 5 | 3437 | 2315 | 3363 | 3323 | 0.97 |
-| midday | count block | 110 | 43 | 35 | 4127 | 3771 | 3661 | 3179 | 0.77 |
-| midday | count move | 15 | 4 | 3 | 722 | 416 | 542 | 413 | 0.57 |
-| midday | count route | 4 | 1 | 1 | 166 | 92 | 202 | 115 | 0.69 |
-| midday | gate entering | 3 | 3 | 3 | 1224 | 1195 | 1224 | 1224 | 1.00 |
-| midday | gate leaving | 3 | 3 | 3 | 1427 | 1393 | 1427 | 1427 | 1.00 |
-| midday | ramp off | 10 | 9 | 10 | 3956 | 6009 | 3974 | 3991 | 1.01 |
-| midday | ramp on | 12 | 8 | 10 | 3755 | 6464 | 3850 | 3890 | 1.04 |
-| midday | tmc | 16 | 15 | 15 | 6210 | 7578 | 6102 | 6042 | 0.97 |
-| pm_peak | caltrans | 6 | 5 | 5 | 5544 | 3567 | 5386 | 5178 | 0.93 |
-| pm_peak | count block | 107 | 52 | 37 | 6511 | 6116 | 5957 | 5374 | 0.83 |
-| pm_peak | count move | 15 | 3 | 3 | 1164 | 701 | 905 | 685 | 0.59 |
-| pm_peak | count route | 4 | 2 | 1 | 268 | 144 | 375 | 227 | 0.85 |
-| pm_peak | gate entering | 3 | 3 | 3 | 1824 | 1787 | 1827 | 1828 | 1.00 |
-| pm_peak | gate leaving | 3 | 3 | 3 | 2452 | 2384 | 2454 | 2451 | 1.00 |
-| pm_peak | ramp off | 10 | 9 | 10 | 6381 | 9509 | 6398 | 6445 | 1.01 |
-| pm_peak | ramp on | 12 | 9 | 11 | 6057 | 10303 | 6187 | 6282 | 1.04 |
-| pm_peak | tmc | 16 | 16 | 16 | 10017 | 12114 | 9847 | 9769 | 0.98 |
+| am_peak | caltrans | 6 | 6 | 6 | 5432 | 2651 | 5345 | 5233 | 0.96 |
+| am_peak | count block | 96 | 46 | 38 | 5198 | 4055 | 4670 | 4268 | 0.82 |
+| am_peak | count move | 18 | 6 | 5 | 1171 | 967 | 1057 | 925 | 0.79 |
+| am_peak | count route | 4 | 2 | 1 | 149 | 116 | 248 | 177 | 1.19 |
+| am_peak | gate entering | 3 | 3 | 3 | 1882 | 1820 | 1882 | 1882 | 1.00 |
+| am_peak | gate leaving | 3 | 3 | 3 | 1753 | 1709 | 1753 | 1754 | 1.00 |
+| am_peak | ramp off | 10 | 9 | 10 | 5424 | 7834 | 5426 | 5480 | 1.01 |
+| am_peak | ramp on | 12 | 8 | 10 | 5148 | 8343 | 5310 | 5366 | 1.04 |
+| am_peak | tmc | 16 | 14 | 14 | 8514 | 9504 | 8235 | 8153 | 0.96 |
+| midday | caltrans | 6 | 6 | 6 | 3962 | 2207 | 3888 | 3916 | 0.99 |
+| midday | count block | 110 | 40 | 34 | 4127 | 3781 | 3638 | 3159 | 0.77 |
+| midday | count move | 15 | 6 | 5 | 722 | 426 | 555 | 427 | 0.59 |
+| midday | count route | 4 | 1 | 1 | 166 | 97 | 195 | 120 | 0.72 |
+| midday | gate entering | 3 | 3 | 3 | 1224 | 1193 | 1224 | 1225 | 1.00 |
+| midday | gate leaving | 3 | 3 | 3 | 1427 | 1391 | 1435 | 1427 | 1.00 |
+| midday | ramp off | 10 | 9 | 10 | 3956 | 6046 | 3950 | 3989 | 1.01 |
+| midday | ramp on | 12 | 8 | 10 | 3755 | 6484 | 3838 | 3885 | 1.03 |
+| midday | tmc | 16 | 15 | 15 | 6210 | 7498 | 6060 | 6032 | 0.97 |
+| pm_peak | caltrans | 6 | 6 | 6 | 6390 | 3437 | 6365 | 6302 | 0.99 |
+| pm_peak | count block | 107 | 56 | 48 | 6511 | 6237 | 5914 | 5409 | 0.83 |
+| pm_peak | count move | 15 | 6 | 4 | 1164 | 727 | 875 | 692 | 0.59 |
+| pm_peak | count route | 4 | 1 | 0 | 268 | 175 | 320 | 200 | 0.75 |
+| pm_peak | gate entering | 3 | 3 | 3 | 1824 | 1784 | 1825 | 1824 | 1.00 |
+| pm_peak | gate leaving | 3 | 3 | 3 | 2452 | 2377 | 2453 | 2452 | 1.00 |
+| pm_peak | ramp off | 10 | 9 | 10 | 6381 | 9515 | 6383 | 6437 | 1.01 |
+| pm_peak | ramp on | 12 | 9 | 11 | 6057 | 10305 | 6173 | 6246 | 1.03 |
+| pm_peak | tmc | 16 | 16 | 16 | 10017 | 12097 | 9893 | 9801 | 0.98 |
 
 ## Stations, am_peak
 
-168 stations with a target. Within +/-15%: before 30, after the fit 85, final 87. Within their own tolerance (gates 10%, ramps 5%, others 15%): final 96.
+168 stations with a target. Within +/-15%: before 21, after the fit 98, final 90. Within their own tolerance (gates 10%, ramps 5%, others 15%): final 97.
 
 | Station | Basis | Target | Assigned before | Ratio | After fit | Ratio | Final | Ratio | Own tolerance | GEH | GEH < 5 | Size band |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| tunnel station, link 3494 inward (5 m from the station) | caltrans | 1198 | 439 | 0.37 | 1119 | 0.93 | 1069 | 0.89 | ok | 3.8 | yes | yes |
-| sanpablo station, link 115 inward (11 m from the station) | caltrans | 910 | 432 | 0.47 | 765 | 0.84 | 898 | 0.99 | ok | 0.4 | yes | yes |
-| tunnel station, link 3493 outward (5 m from the station) | caltrans | 868 | 408 | 0.47 | 871 | 1.00 | 867 | 1.00 | ok | 0.0 | yes | yes |
-| sanpablo station, link 111 outward (0 m from the station) | caltrans | 659 | 760 | 1.15 | 675 | 1.02 | 658 | 1.00 | ok | 0.0 | yes | yes |
-| claremont station, link 3478 inward (4 m from the station) | caltrans (factor ASSUMPTION) | 626 | 668 | 1.07 | 624 | 1.00 | 625 | 1.00 | ok | 0.0 | yes | yes |
-| claremont station, link 3477 outward (4 m from the station) | caltrans (factor ASSUMPTION) | 453 | 176 | 0.39 | 375 | 0.83 | 362 | 0.80 | OUTSIDE (15%) | 4.5 | yes | yes |
-| Colby Street 60th Street to 61st Street, SB (link 2625) | count (factor ASSUMPTION) | 182 | 183 | 1.00 | 172 | 0.94 | 147 | 0.81 | ok | 2.7 | yes | yes |
-| Colby Street McAuley Street to 60th Street, SB (link 2623) | count (factor ASSUMPTION) | 179 | 188 | 1.05 | 176 | 0.98 | 148 | 0.82 | ok | 2.5 | yes | yes |
-| Colby Street 62nd Street to 63rd Street, SB (link 2629) | count (factor ASSUMPTION) | 171 | 110 | 0.64 | 150 | 0.88 | 131 | 0.76 | OUTSIDE (20%) | 3.3 | yes | yes |
-| Colby Street 61st Street to 62nd Street, SB (link 2627) | count (factor ASSUMPTION) | 167 | 123 | 0.73 | 156 | 0.93 | 136 | 0.81 | ok | 2.5 | yes | yes |
-| Colby Street Forest Street / Claremont Avenue to McAuley Street, SB (link 2621) | count (factor ASSUMPTION) | 163 | 206 | 1.27 | 173 | 1.06 | 145 | 0.89 | ok | 1.4 | yes | yes |
-| 58th Street Hermann Street / Martin Street to Canning Street, WB (link 2011) | count (factor ASSUMPTION) | 150 | 93 | 0.62 | 135 | 0.90 | 133 | 0.89 | ok | 1.4 | yes | yes |
-| Martin Street Ayala Avenue to Hermann Street / 58th Street, WB (link 1849) | count (factor ASSUMPTION) | 150 | 96 | 0.64 | 135 | 0.90 | 130 | 0.87 | ok | 1.7 | yes | yes |
-| Martin Street Claremont Avenue to Ayala Avenue, WB (link 1851) | count (factor ASSUMPTION) | 147 | 133 | 0.91 | 167 | 1.14 | 139 | 0.94 | ok | 0.7 | yes | yes |
-| Claremont Avenue from southwest (Telegraph side) to Martin Street toward northwest at Martin Street / Claremont Avenue | count | 145 | 130 | 0.90 | 165 | 1.14 | 136 | 0.94 | ok | 0.8 | yes | yes |
+| tunnel station, link 3494 inward (5 m from the station) | caltrans | 1198 | 416 | 0.35 | 1198 | 1.00 | 1097 | 0.92 | ok | 3.0 | yes | yes |
+| ashby station, link 3427 inward (4 m from the station) | caltrans | 1043 | 346 | 0.33 | 976 | 0.94 | 968 | 0.93 | ok | 2.3 | yes | yes |
+| sanpablo station, link 115 inward (11 m from the station) | caltrans | 910 | 425 | 0.47 | 890 | 0.98 | 888 | 0.98 | ok | 0.7 | yes | yes |
+| tunnel station, link 3493 outward (5 m from the station) | caltrans | 868 | 373 | 0.43 | 867 | 1.00 | 867 | 1.00 | ok | 0.0 | yes | yes |
+| ashby station, link 3426 outward (4 m from the station) | caltrans | 755 | 358 | 0.47 | 755 | 1.00 | 755 | 1.00 | ok | 0.0 | yes | yes |
+| sanpablo station, link 111 outward (0 m from the station) | caltrans | 659 | 733 | 1.11 | 659 | 1.00 | 658 | 1.00 | ok | 0.0 | yes | yes |
+| Colby Street 60th Street to 61st Street, SB (link 2625) | count (factor ASSUMPTION) | 182 | 176 | 0.97 | 171 | 0.94 | 152 | 0.83 | ok | 2.3 | yes | yes |
+| Colby Street McAuley Street to 60th Street, SB (link 2623) | count (factor ASSUMPTION) | 179 | 185 | 1.04 | 173 | 0.97 | 153 | 0.86 | ok | 2.0 | yes | yes |
+| Colby Street 62nd Street to 63rd Street, SB (link 2629) | count (factor ASSUMPTION) | 171 | 102 | 0.60 | 150 | 0.88 | 129 | 0.76 | OUTSIDE (20%) | 3.4 | yes | yes |
+| Colby Street 61st Street to 62nd Street, SB (link 2627) | count (factor ASSUMPTION) | 167 | 115 | 0.69 | 154 | 0.92 | 136 | 0.81 | ok | 2.5 | yes | yes |
+| Colby Street Forest Street / Claremont Avenue to McAuley Street, SB (link 2621) | count (factor ASSUMPTION) | 163 | 207 | 1.27 | 180 | 1.10 | 158 | 0.97 | ok | 0.4 | yes | yes |
+| 58th Street Hermann Street / Martin Street to Canning Street, WB (link 2011) | count (factor ASSUMPTION) | 150 | 83 | 0.55 | 142 | 0.95 | 132 | 0.88 | ok | 1.5 | yes | yes |
+| Martin Street Ayala Avenue to Hermann Street / 58th Street, WB (link 1849) | count (factor ASSUMPTION) | 150 | 86 | 0.57 | 140 | 0.94 | 131 | 0.87 | ok | 1.6 | yes | yes |
+| Martin Street Claremont Avenue to Ayala Avenue, WB (link 1851) | count (factor ASSUMPTION) | 147 | 123 | 0.84 | 157 | 1.07 | 139 | 0.95 | ok | 0.7 | yes | yes |
+| Claremont Avenue from southwest (Telegraph side) to Martin Street toward northwest at Martin Street / Claremont Avenue | count | 145 | 120 | 0.83 | 155 | 1.07 | 137 | 0.95 | ok | 0.7 | yes | yes |
 | Colby Street 60th Street to 61st Street, NB (link 2624) | count (factor ASSUMPTION) | 144 | 71 | 0.49 | 124 | 0.86 | 114 | 0.79 | OUTSIDE (20%) | 2.7 | yes | yes |
-| Colby Street McAuley Street to 60th Street, NB (link 2622) | count (factor ASSUMPTION) | 141 | 81 | 0.57 | 133 | 0.94 | 122 | 0.86 | ok | 1.7 | yes | yes |
-| Colby Street 62nd Street to 63rd Street, NB (link 2628) | count (factor ASSUMPTION) | 136 | 36 | 0.26 | 114 | 0.84 | 118 | 0.87 | ok | 1.6 | yes | yes |
-| Colby Street 61st Street to 62nd Street, NB (link 2626) | count (factor ASSUMPTION) | 134 | 41 | 0.31 | 115 | 0.86 | 101 | 0.75 | OUTSIDE (20%) | 3.0 | yes | yes |
-| Colby Street Forest Street / Claremont Avenue to McAuley Street, NB (link 2620) | count (factor ASSUMPTION) | 130 | 105 | 0.81 | 154 | 1.19 | 140 | 1.08 | ok | 0.9 | yes | yes |
-| Colby Street 63rd Street to 63rd Street, SB (link 2631) | count (factor ASSUMPTION) | 125 | 90 | 0.72 | 125 | 1.00 | 112 | 0.90 | ok | 1.2 | yes | yes |
-| Colby Street 63rd Street to 63rd Street, NB (link 2630) | count (factor ASSUMPTION) | 123 | 16 | 0.13 | 85 | 0.69 | 60 | 0.49 | OUTSIDE (20%) | 6.6 | NO | yes |
-| Colby Street North Street to Alcatraz Avenue, SB (link 2635) | count (factor ASSUMPTION) | 109 | 75 | 0.68 | 83 | 0.76 | 72 | 0.66 | OUTSIDE (20%) | 3.9 | yes | yes |
-| Colby Street North Street to Alcatraz Avenue, NB (link 2634) | count (factor ASSUMPTION) | 104 | 14 | 0.13 | 65 | 0.63 | 41 | 0.39 | OUTSIDE (20%) | 7.4 | NO | yes |
-| Hillegass Avenue Alcatraz Avenue to 63rd Street, NB (link 2699) | count (factor ASSUMPTION) | 100 | 36 | 0.36 | 79 | 0.79 | 81 | 0.81 | ok | 2.0 | yes | yes |
-| Colby Street from north to Claremont Avenue toward southwest (Telegraph side) at Colby Street / Claremont Avenue | count | 100 | 204 | 2.04 | 170 | 1.70 | 141 | 1.41 | OUTSIDE (20%) | 3.7 | yes | yes |
-| 58th Street Canning Street to Vicente Street, WB (link 2013) | count (factor ASSUMPTION) | 97 | 47 | 0.48 | 68 | 0.70 | 82 | 0.84 | ok | 1.6 | yes | yes |
-| Martin Street Claremont Avenue to Ayala Avenue, EB (link 1852) | count (factor ASSUMPTION) | 97 | 276 | 2.84 | 102 | 1.05 | 93 | 0.96 | ok | 0.4 | yes | yes |
-| Martin Street from northwest (Ayala side) to Claremont Avenue toward southwest (Telegraph side) at Claremont Avenue / Martin Street | count | 97 | 273 | 2.82 | 100 | 1.04 | 92 | 0.95 | ok | 0.5 | yes | yes |
-| Martin Street from southeast to 58th Street toward west at Martin Street / Hermann Street / 58th Street | count | 96 | 88 | 0.92 | 130 | 1.35 | 129 | 1.34 | OUTSIDE (20%) | 3.1 | yes | yes |
-| Hillegass Avenue 62nd Street to 61st Street, SB (link 2702) | count (factor ASSUMPTION) | 88 | 35 | 0.39 | 76 | 0.86 | 82 | 0.93 | ok | 0.7 | yes | yes |
-| Hillegass Avenue 63rd Street to 62nd Street, NB (link 2701) | count (factor ASSUMPTION) | 87 | 52 | 0.60 | 77 | 0.89 | 69 | 0.80 | OUTSIDE (20%) | 2.0 | yes | yes |
-| Hillegass Avenue 61st Street to 60th Street / Claremont Avenue, SB (link 2704) | count (factor ASSUMPTION) | 87 | 54 | 0.62 | 88 | 1.01 | 78 | 0.89 | ok | 1.0 | yes | yes |
-| Hillegass Avenue 62nd Street to 61st Street, NB (link 2703) | count (factor ASSUMPTION) | 82 | 54 | 0.66 | 80 | 0.97 | 71 | 0.87 | ok | 1.2 | yes | yes |
-| Hillegass Avenue from north to Claremont Avenue toward southwest (Telegraph side) at Hillegass Avenue / Claremont Avenue | count | 82 | 48 | 0.59 | 84 | 1.02 | 66 | 0.81 | ok | 1.8 | yes | yes |
-| Alcatraz Avenue from west to Colby Street toward south at Colby Street / Alcatraz Avenue | count | 81 | 14 | 0.18 | 11 | 0.13 | 8 | 0.10 | OUTSIDE (20%) | 10.9 | NO | yes |
-| Hillegass Avenue 63rd Street to 62nd Street, SB (link 2700) | count (factor ASSUMPTION) | 78 | 40 | 0.52 | 88 | 1.13 | 95 | 1.21 | OUTSIDE (20%) | 1.8 | yes | yes |
-| Colby Street from south to Alcatraz Avenue toward west at Colby Street / Alcatraz Avenue | count | 78 | 2 | 0.02 | 7 | 0.09 | 8 | 0.11 | OUTSIDE (20%) | 10.6 | NO | yes |
-| Hillegass Avenue 61st Street to 60th Street / Claremont Avenue, NB (link 2705) | count (factor ASSUMPTION) | 74 | 87 | 1.17 | 82 | 1.10 | 71 | 0.96 | ok | 0.3 | yes | yes |
-| Hillegass Avenue Alcatraz Avenue to 63rd Street, SB (link 2698) | count (factor ASSUMPTION) | 73 | 28 | 0.39 | 62 | 0.85 | 44 | 0.60 | OUTSIDE (20%) | 3.8 | yes | yes |
-| Claremont Avenue from southwest to Colby Street toward north at Colby Street / Claremont Avenue | count | 72 | 94 | 1.30 | 122 | 1.70 | 104 | 1.44 | OUTSIDE (20%) | 3.4 | yes | yes |
-| Claremont Avenue from southwest to Hillegass Avenue toward north at Hillegass Avenue / Claremont Avenue | count | 69 | 85 | 1.23 | 81 | 1.17 | 70 | 1.02 | ok | 0.2 | yes | yes |
-| Martin Street Ayala Avenue to Hermann Street / 58th Street, EB (link 1850) | count (factor ASSUMPTION) | 68 | 107 | 1.57 | 46 | 0.68 | 59 | 0.86 | ok | 1.2 | yes | yes |
-| 63rd Street Dana Street to Canning Street, WB (link 1881) | count (factor ASSUMPTION) | 64 | 21 | 0.33 | 58 | 0.90 | 55 | 0.86 | ok | 1.1 | yes | yes |
-| Dana Street 63rd Street to North Street, SB (link 1949) | count (factor ASSUMPTION) | 62 | 10 | 0.16 | 39 | 0.64 | 43 | 0.69 | OUTSIDE (20%) | 2.6 | yes | yes |
-| 63rd Street Dana Street to Canning Street, EB (link 1882) | count (factor ASSUMPTION) | 60 | 9 | 0.16 | 46 | 0.76 | 46 | 0.77 | OUTSIDE (20%) | 1.9 | yes | yes |
-| Forest Street Colby Street / Claremont Avenue to Ayala Avenue, WB (link 2725) | count (factor ASSUMPTION) | 60 | 22 | 0.37 | 57 | 0.96 | 60 | 1.00 | ok | 0.0 | yes | yes |
-| Canning Street 58th Street to 59th Street, NB (link 1918) | count (factor ASSUMPTION) | 59 | 47 | 0.80 | 67 | 1.13 | 53 | 0.89 | ok | 0.8 | yes | yes |
-| 63rd Street Colby Street to Dana Street, EB (link 1880) | count (factor ASSUMPTION) | 56 | 17 | 0.31 | 53 | 0.95 | 51 | 0.92 | ok | 0.6 | yes | yes |
-| Hillegass Avenue from south to Alcatraz Avenue toward east at Hillegass Avenue / Alcatraz Avenue | count | 53 | 0 | 0.00 | 0 | 0.01 | 0 | 0.01 | OUTSIDE (20%) | 10.2 | NO | yes |
-| Ayala Avenue Martin Street to Howell Street, NB (link 1855) | count (factor ASSUMPTION) | 50 | 34 | 0.68 | 44 | 0.89 | 38 | 0.77 | OUTSIDE (20%) | 1.8 | yes | yes |
-| Forest Street Colby Street / Claremont Avenue to Ayala Avenue, EB (link 2726) | count (factor ASSUMPTION) | 50 | 76 | 1.52 | 42 | 0.84 | 50 | 1.00 | ok | 0.0 | yes | yes |
-| Canning Street McAuley Street to 60th Street, SB (link 1923) | count (factor ASSUMPTION) | 48 | 51 | 1.06 | 24 | 0.49 | 18 | 0.37 | OUTSIDE (20%) | 5.3 | NO | yes |
-| Canning Street 59th Street to McAuley Street, NB (link 1920) | count (factor ASSUMPTION) | 48 | 24 | 0.51 | 42 | 0.89 | 41 | 0.86 | ok | 1.0 | yes | yes |
-| Canning Street 61st Street to 62nd Street, SB (link 1927) | count (factor ASSUMPTION) | 47 | 35 | 0.74 | 16 | 0.33 | 14 | 0.29 | OUTSIDE (20%) | 6.0 | NO | yes |
-| 63rd Street from west to Colby Street toward south at Colby Street / 63rd Street | count | 47 | 15 | 0.32 | 32 | 0.69 | 29 | 0.61 | OUTSIDE (20%) | 3.0 | yes | yes |
-| 63rd Street Canning Street to Telegraph Avenue, WB (link 1883) | count (factor ASSUMPTION) | 46 | 16 | 0.35 | 48 | 1.04 | 46 | 0.99 | ok | 0.1 | yes | yes |
-| Colby Street SB, whole street between Claremont Avenue and Alcatraz Avenue (links 2635 to 2621) | count | 46 | 72 | 1.57 | 79 | 1.71 | 68 | 1.47 | OUTSIDE (30%) | 2.9 | yes | yes |
-| Dana Street North Street to Alcatraz Avenue, SB (link 1951) | count (factor ASSUMPTION) | 45 | 6 | 0.14 | 11 | 0.24 | 12 | 0.27 | OUTSIDE (20%) | 6.1 | NO | yes |
-| Forest Street from southeast to Colby Street toward north at Colby Street / Claremont Avenue | count | 43 | 11 | 0.26 | 32 | 0.74 | 36 | 0.84 | ok | 1.1 | yes | yes |
-| Canning Street McAuley Street to 60th Street, NB (link 1922) | count (factor ASSUMPTION) | 42 | 11 | 0.27 | 19 | 0.45 | 13 | 0.32 | OUTSIDE (20%) | 5.5 | NO | yes |
-| Hillegass Avenue from south to Alcatraz Avenue toward west at Hillegass Avenue / Alcatraz Avenue | count | 42 | 15 | 0.37 | 55 | 1.30 | 34 | 0.80 | ok | 1.3 | yes | yes |
-| Canning Street 60th Street to 61st Street, NB (link 1924) | count (factor ASSUMPTION) | 41 | 1 | 0.02 | 4 | 0.09 | 5 | 0.11 | OUTSIDE (20%) | 7.6 | NO | yes |
-| Canning Street 60th Street to 61st Street, SB (link 1925) | count (factor ASSUMPTION) | 41 | 45 | 1.10 | 18 | 0.44 | 16 | 0.39 | OUTSIDE (20%) | 4.7 | yes | yes |
-| Alcatraz Avenue from east to Hillegass Avenue toward south at Hillegass Avenue / Alcatraz Avenue | count | 41 | 4 | 0.09 | 7 | 0.16 | 10 | 0.24 | OUTSIDE (20%) | 6.2 | NO | yes |
-| 63rd Street Canning Street to Telegraph Avenue, EB (link 1884) | count (factor ASSUMPTION) | 40 | 34 | 0.86 | 53 | 1.32 | 51 | 1.27 | OUTSIDE (20%) | 1.6 | yes | yes |
-| 63rd Street College Avenue to Hillegass Avenue, WB (link 2654) | count (factor ASSUMPTION) | 40 | 15 | 0.36 | 40 | 1.00 | 40 | 1.00 | ok | 0.0 | yes | yes |
-| 62nd Street Florio Street / Claremont Avenue / +1 to Hillegass Avenue, WB (link 2650) | count (factor ASSUMPTION) | 39 | 2 | 0.06 | 10 | 0.26 | 12 | 0.31 | OUTSIDE (20%) | 5.4 | NO | yes |
-| 62nd Street Florio Street / Claremont Avenue / +1 to Hillegass Avenue, EB (link 2651) | count (factor ASSUMPTION) | 39 | 9 | 0.22 | 18 | 0.45 | 19 | 0.49 | OUTSIDE (20%) | 3.7 | yes | yes |
-| Canning Street 61st Street to 62nd Street, NB (link 1926) | count (factor ASSUMPTION) | 37 | 1 | 0.03 | 4 | 0.12 | 5 | 0.15 | OUTSIDE (20%) | 6.8 | NO | yes |
-| Alcatraz Avenue from west (Telegraph side) to Dana Street toward south at Alcatraz Avenue / Dana Street | count | 37 | 4 | 0.11 | 6 | 0.17 | 5 | 0.14 | OUTSIDE (20%) | 6.9 | NO | yes |
-| Dana Street from north to 63rd Street toward east (Colby side) at Dana Street / 63rd Street | count | 37 | 4 | 0.11 | 14 | 0.38 | 17 | 0.46 | OUTSIDE (20%) | 3.8 | yes | yes |
-| Ayala Avenue Martin Street to Howell Street, SB (link 1856) | count (factor ASSUMPTION) | 36 | 140 | 3.88 | 39 | 1.09 | 34 | 0.94 | ok | 0.4 | yes | yes |
-| Ayala Avenue Hermann Street to Martin Street, NB (link 1853) | count (factor ASSUMPTION) | 36 | 47 | 1.31 | 38 | 1.05 | 40 | 1.11 | ok | 0.6 | yes | yes |
-| Hillegass Avenue SB, whole street between Claremont Avenue and Alcatraz Avenue (links 2698 to 2704) | count | 36 | 17 | 0.48 | 37 | 1.03 | 18 | 0.49 | OUTSIDE (30%) | 3.5 | yes | yes |
-| Canning Street 62nd Street to 63rd Street, NB (link 1928) | count (factor ASSUMPTION) | 34 | 0 | 0.01 | 2 | 0.07 | 3 | 0.09 | OUTSIDE (20%) | 7.2 | NO | yes |
-| McAuley Street Canning Street to Telegraph Avenue, WB (link 1958) | count (factor ASSUMPTION) | 34 | 27 | 0.80 | 40 | 1.17 | 41 | 1.20 | OUTSIDE (20%) | 1.1 | yes | yes |
-| Hillegass Avenue NB, whole street between Claremont Avenue and Alcatraz Avenue (links 2705 to 2699) | count | 34 | 28 | 0.82 | 60 | 1.76 | 52 | 1.54 | OUTSIDE (30%) | 2.8 | yes | yes |
-| Colby Street NB, whole street between Claremont Avenue and Alcatraz Avenue (links 2620 to 2634) | count | 33 | 10 | 0.30 | 52 | 1.56 | 26 | 0.78 | ok | 1.4 | yes | yes |
-| Canning Street 62nd Street to 63rd Street, SB (link 1929) | count (factor ASSUMPTION) | 32 | 30 | 0.93 | 20 | 0.62 | 18 | 0.56 | OUTSIDE (20%) | 2.8 | yes | yes |
-| 59th Street Canning Street to Telegraph Avenue, WB (link 1912) | count (factor ASSUMPTION) | 29 | 48 | 1.65 | 39 | 1.35 | 31 | 1.09 | ok | 0.5 | yes | yes |
-| 58th Street Hermann Street / Martin Street to Canning Street, EB (link 2012) | count (factor ASSUMPTION) | 28 | 102 | 3.65 | 21 | 0.75 | 19 | 0.69 | OUTSIDE (20%) | 1.8 | yes | yes |
-| Alcatraz Avenue from west to Hillegass Avenue toward south at Hillegass Avenue / Alcatraz Avenue | count | 26 | 15 | 0.57 | 26 | 1.02 | 31 | 1.19 | ok | 0.9 | yes | yes |
-| North Street Colby Street to Dana Street, WB (link 1930) | count (factor ASSUMPTION) | 25 | 1 | 0.03 | 4 | 0.16 | 4 | 0.14 | OUTSIDE (20%) | 5.7 | NO | yes |
-| Dana Street from north to 63rd Street toward west (Telegraph side) at Dana Street / 63rd Street | count | 25 | 5 | 0.19 | 23 | 0.92 | 24 | 0.94 | ok | 0.3 | yes | yes |
-| Dana Street North Street to Alcatraz Avenue, NB (link 1950) | count (factor ASSUMPTION) | 22 | 6 | 0.28 | 26 | 1.20 | 23 | 1.05 | ok | 0.2 | yes | yes |
-| 63rd Street Colby Street to Dana Street, WB (link 1879) | count (factor ASSUMPTION) | 22 | 22 | 1.00 | 32 | 1.45 | 31 | 1.43 | OUTSIDE (20%) | 1.8 | yes | yes |
-| 59th Street Canning Street to Telegraph Avenue, EB (link 1913) | count (factor ASSUMPTION) | 22 | 16 | 0.70 | 13 | 0.59 | 15 | 0.69 | OUTSIDE (20%) | 1.6 | yes | yes |
-| Canning Street 59th Street to McAuley Street, SB (link 1921) | count (factor ASSUMPTION) | 21 | 29 | 1.36 | 10 | 0.49 | 11 | 0.51 | OUTSIDE (20%) | 2.6 | yes | yes |
-| 61st Street Canning Street to Telegraph Avenue, WB (link 2039) | count (factor ASSUMPTION) | 20 | 29 | 1.45 | 21 | 1.05 | 25 | 1.26 | OUTSIDE (20%) | 1.1 | yes | yes |
-| 61st Street Canning Street to Telegraph Avenue, EB (link 2040) | count (factor ASSUMPTION) | 20 | 35 | 1.76 | 20 | 0.99 | 20 | 1.02 | ok | 0.1 | yes | yes |
-| McAuley Street Howell Street to Canning Street, WB (link 1956) | count (factor ASSUMPTION) | 20 | 8 | 0.40 | 9 | 0.47 | 11 | 0.56 | OUTSIDE (20%) | 2.3 | yes | yes |
-| 62nd Street Canning Street to Telegraph Avenue, WB (link 1871) | count (factor ASSUMPTION) | 19 | 8 | 0.42 | 23 | 1.21 | 26 | 1.37 | OUTSIDE (20%) | 1.5 | yes | yes |
-| Canning Street 58th Street to 59th Street, SB (link 1919) | count (factor ASSUMPTION) | 19 | 16 | 0.86 | 4 | 0.23 | 5 | 0.28 | OUTSIDE (20%) | 3.9 | yes | yes |
-| 60th Street Canning Street to Telegraph Avenue, WB (link 1893) | count (factor ASSUMPTION) | 19 | 24 | 1.27 | 26 | 1.38 | 23 | 1.23 | OUTSIDE (20%) | 1.0 | yes | yes |
-| 60th Street Howell Street to Canning Street, WB (link 1891) | count (factor ASSUMPTION) | 19 | 22 | 1.13 | 21 | 1.12 | 21 | 1.08 | ok | 0.4 | yes | yes |
-| McAuley Street Colby Street to Ayala Avenue, EB (link 1953) | count (factor ASSUMPTION) | 18 | 6 | 0.33 | 8 | 0.44 | 9 | 0.49 | OUTSIDE (20%) | 2.5 | yes | yes |
-| 62nd Street Hillegass Avenue to Colby Street, WB (link 2706) | count (factor ASSUMPTION) | 17 | 2 | 0.11 | 9 | 0.53 | 9 | 0.54 | OUTSIDE (20%) | 2.2 | yes | yes |
-| 59th Street Howell Street to Canning Street, EB (link 1911) | count (factor ASSUMPTION) | 17 | 25 | 1.48 | 17 | 0.98 | 18 | 1.05 | ok | 0.2 | yes | yes |
-| 62nd Street Colby Street to Canning Street, WB (link 1869) | count (factor ASSUMPTION) | 16 | 4 | 0.24 | 14 | 0.87 | 16 | 0.99 | ok | 0.1 | yes | yes |
-| 62nd Street Hillegass Avenue to Colby Street, EB (link 2707) | count (factor ASSUMPTION) | 16 | 1 | 0.04 | 1 | 0.09 | 2 | 0.11 | OUTSIDE (20%) | 4.8 | yes | yes |
-| McAuley Street Colby Street to Ayala Avenue, WB (link 1952) | count (factor ASSUMPTION) | 16 | 12 | 0.75 | 10 | 0.65 | 14 | 0.89 | ok | 0.5 | yes | yes |
-| Dana Street 63rd Street to North Street, NB (link 1948) | count (factor ASSUMPTION) | 15 | 12 | 0.82 | 16 | 1.07 | 15 | 1.00 | ok | 0.0 | yes | yes |
-| 61st Street Hillegass Avenue to Colby Street, EB (link 2649) | count (factor ASSUMPTION) | 15 | 0 | 0.00 | 0 | 0.00 | 0 | 0.00 | OUTSIDE (20%) | 5.5 | NO | yes |
-| 59th Street Howell Street to Canning Street, WB (link 1910) | count (factor ASSUMPTION) | 15 | 23 | 1.50 | 13 | 0.85 | 17 | 1.15 | ok | 0.6 | yes | yes |
-| Ayala Avenue Hermann Street to Martin Street, SB (link 1854) | count (factor ASSUMPTION) | 15 | 26 | 1.70 | 12 | 0.81 | 12 | 0.77 | OUTSIDE (20%) | 0.9 | yes | yes |
-| 63rd Street Hillegass Avenue to Colby Street, WB (link 2656) | count (factor ASSUMPTION) | 13 | 2 | 0.19 | 10 | 0.77 | 13 | 0.98 | ok | 0.1 | yes | yes |
-| 63rd Street Hillegass Avenue to Colby Street, EB (link 2657) | count (factor ASSUMPTION) | 13 | 1 | 0.07 | 3 | 0.21 | 3 | 0.21 | OUTSIDE (20%) | 3.7 | yes | yes |
-| 60th Street Colby Street to Howell Street, WB (link 1889) | count (factor ASSUMPTION) | 13 | 15 | 1.13 | 14 | 1.09 | 15 | 1.14 | ok | 0.5 | yes | yes |
-| North Street Colby Street to Dana Street, EB (link 1931) | count (factor ASSUMPTION) | 12 | 10 | 0.84 | 24 | 2.03 | 25 | 2.10 | OUTSIDE (20%) | 3.1 | yes | yes |
-| 63rd Street College Avenue to Hillegass Avenue, EB (link 2655) | count (factor ASSUMPTION) | 12 | 8 | 0.66 | 19 | 1.61 | 24 | 2.00 | OUTSIDE (20%) | 2.8 | yes | yes |
-| 62nd Street Canning Street to Telegraph Avenue, EB (link 1872) | count (factor ASSUMPTION) | 12 | 11 | 0.95 | 19 | 1.62 | 19 | 1.58 | OUTSIDE (20%) | 1.8 | yes | yes |
-| 62nd Street Colby Street to Canning Street, EB (link 1870) | count (factor ASSUMPTION) | 12 | 3 | 0.24 | 16 | 1.37 | 15 | 1.27 | OUTSIDE (20%) | 0.9 | yes | yes |
-| 60th Street Hillegass Avenue / Claremont Avenue to Colby Street, WB (link 1887) | count (factor ASSUMPTION) | 11 | 7 | 0.62 | 9 | 0.79 | 10 | 0.89 | ok | 0.4 | yes | yes |
-| 61st Street Hillegass Avenue to Colby Street, WB (link 2648) | count (factor ASSUMPTION) | 9 | 10 | 1.15 | 8 | 0.93 | 8 | 0.94 | ok | 0.2 | yes | yes |
-| 60th Street Canning Street to Telegraph Avenue, EB (link 1894) | count (factor ASSUMPTION) | 8 | 91 | 11.44 | 26 | 3.21 | 20 | 2.47 | OUTSIDE (20%) | 3.2 | yes | yes |
-| 60th Street Colby Street to Howell Street, EB (link 1890) | count (factor ASSUMPTION) | 8 | 7 | 0.87 | 7 | 0.83 | 7 | 0.86 | ok | 0.4 | yes | yes |
-| McAuley Street Canning Street to Telegraph Avenue, EB (link 1959) | count (factor ASSUMPTION) | 7 | 32 | 4.58 | 10 | 1.40 | 6 | 0.93 | ok | 0.2 | yes | yes |
-| 58th Street Canning Street to Vicente Street, EB (link 2014) | count (factor ASSUMPTION) | 7 | 87 | 12.38 | 17 | 2.42 | 15 | 2.17 | OUTSIDE (20%) | 2.5 | yes | yes |
-| Hermann Street Ayala Avenue to Martin Street / 58th Street, NB (link 1847) | count (factor ASSUMPTION) | 7 | 2 | 0.30 | 5 | 0.66 | 5 | 0.66 | OUTSIDE (20%) | 1.0 | yes | yes |
-| 60th Street Howell Street to Canning Street, EB (link 1892) | count (factor ASSUMPTION) | 6 | 94 | 15.60 | 31 | 5.12 | 24 | 3.97 | OUTSIDE (20%) | 4.6 | yes | yes |
-| 60th Street Hillegass Avenue / Claremont Avenue to Colby Street, EB (link 1888) | count (factor ASSUMPTION) | 4 | 4 | 0.99 | 7 | 1.65 | 9 | 2.36 | OUTSIDE (20%) | 2.1 | yes | yes |
-| McAuley Street Howell Street to Canning Street, EB (link 1957) | count (factor ASSUMPTION) | 4 | 48 | 12.11 | 16 | 4.07 | 12 | 2.90 | OUTSIDE (20%) | 2.7 | yes | yes |
-| Hermann Street Ayala Avenue to Martin Street / 58th Street, SB (link 1848) | count (factor ASSUMPTION) | 3 | 6 | 2.05 | 4 | 1.41 | 6 | 1.86 | OUTSIDE (20%) | 1.2 | yes | yes |
-| gate 266 Ashby Avenue entering | gate | 1242 | 1229 | 0.99 | 1239 | 1.00 | 1242 | 1.00 | ok | 0.0 | yes | yes |
-| gate 266 Ashby Avenue leaving | gate | 900 | 890 | 0.99 | 901 | 1.00 | 900 | 1.00 | ok | 0.0 | yes | yes |
-| gate 781 Telegraph Avenue leaving | gate | 622 | 611 | 0.98 | 659 | 1.06 | 622 | 1.00 | ok | 0.0 | yes | yes |
-| gate 771 Telegraph Avenue entering | gate | 466 | 452 | 0.97 | 465 | 1.00 | 468 | 1.00 | ok | 0.1 | yes | yes |
-| gate 303 43rd Street leaving | gate | 232 | 214 | 0.92 | 232 | 1.00 | 232 | 1.00 | ok | 0.0 | yes | yes |
-| gate 303 43rd Street entering | gate | 173 | 144 | 0.83 | 174 | 1.01 | 173 | 1.00 | ok | 0.0 | yes | yes |
-| off-ramp at node 727 (Martin Luther King Junior Way) | ramp | 1408 | 994 | 0.71 | 1401 | 1.00 | 1408 | 1.00 | ok | 0.0 | yes | yes |
-| off-ramp at node 735 (52nd Street) | ramp | 1086 | 1325 | 1.22 | 1084 | 1.00 | 1086 | 1.00 | ok | 0.0 | yes | yes |
-| on-ramp at node 733 (52nd Street) | ramp | 987 | 742 | 0.75 | 987 | 1.00 | 987 | 1.00 | ok | 0.0 | yes | yes |
-| off-ramp at node 691 (Claremont Avenue / Clifton Street) | ramp | 826 | 1201 | 1.45 | 837 | 1.01 | 871 | 1.05 | OUTSIDE (5%) | 1.5 | yes | yes |
-| on-ramp at node 845 (Claremont Avenue / Hudson Street) | ramp | 750 | 1280 | 1.71 | 750 | 1.00 | 792 | 1.06 | OUTSIDE (5%) | 1.5 | yes | yes |
-| on-ramp at node 288 (Martin Luther King Junior Way) | ramp | 738 | 319 | 0.43 | 737 | 1.00 | 738 | 1.00 | ok | 0.0 | yes | yes |
-| on-ramp at node 687 (Martin Luther King Junior Way) | ramp | 738 | 937 | 1.27 | 752 | 1.02 | 740 | 1.00 | ok | 0.1 | yes | yes |
-| on-ramp at node 709 (Telegraph Avenue / 56th Street) | ramp | 558 | 2538 | 4.54 | 651 | 1.17 | 659 | 1.18 | OUTSIDE (5%) | 4.1 | yes | NO |
-| off-ramp at node 710 (Telegraph Avenue / Aileen Street) | ramp | 528 | 2137 | 4.05 | 522 | 0.99 | 533 | 1.01 | ok | 0.2 | yes | yes |
-| off-ramp at node 1149 (Keith Avenue) | ramp | 405 | 251 | 0.62 | 405 | 1.00 | 405 | 1.00 | ok | 0.0 | yes | yes |
-| on-ramp at node 1756 (Miles Avenue) | ramp | 306 | 206 | 0.67 | 306 | 1.00 | 306 | 1.00 | ok | 0.0 | yes | yes |
-| on-ramp at node 1328 (Brookside Avenue / Broadway) | ramp | 298 | 42 | 0.14 | 298 | 1.00 | 298 | 1.00 | ok | 0.0 | yes | yes |
-| on-ramp at node 1336 (Broadway) | ramp | 298 | 202 | 0.68 | 297 | 1.00 | 298 | 1.00 | ok | 0.0 | yes | yes |
-| off-ramp at node 1572 (Broadway Terrace) | ramp | 270 | 498 | 1.85 | 266 | 0.99 | 270 | 1.00 | ok | 0.0 | yes | yes |
-| off-ramp at node 1593 (Broadway Terrace) | ramp | 270 | 515 | 1.91 | 266 | 0.99 | 270 | 1.00 | ok | 0.0 | yes | yes |
-| off-ramp at node 1366 (Broadway) | ramp | 268 | 261 | 0.98 | 265 | 0.99 | 268 | 1.00 | ok | 0.0 | yes | yes |
-| off-ramp at node 1758 (Miles Avenue) | ramp | 268 | 279 | 1.04 | 267 | 1.00 | 268 | 1.00 | ok | 0.0 | yes | yes |
-| on-ramp at node 1572 (Broadway Terrace) | ramp | 186 | 46 | 0.25 | 185 | 1.00 | 186 | 1.00 | ok | 0.0 | yes | yes |
-| on-ramp at node 1685 (Glenwood Glade / Broadway Terrace / Pinewood Road) | ramp | 186 | 585 | 3.15 | 195 | 1.05 | 189 | 1.02 | ok | 0.3 | yes | yes |
-| off-ramp at node 1711 (Caldecott Lane) | ramp | 96 | 285 | 2.98 | 90 | 0.94 | 96 | 1.00 | ok | 0.0 | yes | yes |
-| on-ramp at node 1711 (Caldecott Lane) | ramp | 52 | 246 | 4.76 | 68 | 1.33 | 60 | 1.15 | OUTSIDE (5%) | 1.1 | yes | yes |
-| on-ramp at node 1727 (Caldecott Lane) | ramp | 52 | 1108 | 21.46 | 117 | 2.26 | 111 | 2.15 | OUTSIDE (5%) | 6.6 | NO | yes |
-| AlcatrazAve N leg entering | tmc | 1121 | 467 | 0.42 | 900 | 0.80 | 931 | 0.83 | OUTSIDE (15%) | 5.9 | NO | NO |
-| AlcatrazAve S leg leaving | tmc | 995 | 494 | 0.50 | 809 | 0.81 | 859 | 0.86 | ok | 4.5 | yes | yes |
-| MarketSt_55thSt N leg leaving | tmc | 859 | 822 | 0.96 | 800 | 0.93 | 782 | 0.91 | ok | 2.7 | yes | yes |
-| AlcatrazAve S leg entering | tmc | 708 | 758 | 1.07 | 653 | 0.92 | 686 | 0.97 | ok | 0.8 | yes | yes |
-| AlcatrazAve W leg leaving | tmc | 659 | 607 | 0.92 | 644 | 0.98 | 651 | 0.99 | ok | 0.3 | yes | yes |
-| MarketSt_55thSt S leg entering | tmc | 631 | 503 | 0.80 | 661 | 1.05 | 642 | 1.02 | ok | 0.4 | yes | yes |
-| AlcatrazAve N leg leaving | tmc | 548 | 601 | 1.10 | 600 | 1.10 | 557 | 1.02 | ok | 0.4 | yes | yes |
-| MarketSt_55thSt E leg leaving | tmc | 529 | 1079 | 2.04 | 474 | 0.90 | 492 | 0.93 | ok | 1.7 | yes | yes |
-| AlcatrazAve E leg entering | tmc | 477 | 408 | 0.85 | 491 | 1.03 | 484 | 1.01 | ok | 0.3 | yes | yes |
-| AlcatrazAve E leg leaving | tmc | 463 | 345 | 0.75 | 411 | 0.89 | 415 | 0.90 | ok | 2.3 | yes | yes |
-| MarketSt_55thSt N leg entering | tmc | 412 | 633 | 1.54 | 436 | 1.06 | 438 | 1.06 | ok | 1.3 | yes | yes |
-| AlcatrazAve W leg entering | tmc | 335 | 415 | 1.24 | 420 | 1.25 | 382 | 1.14 | ok | 2.5 | yes | yes |
-| MarketSt_55thSt S leg leaving | tmc | 249 | 446 | 1.79 | 246 | 0.99 | 235 | 0.94 | ok | 0.9 | yes | yes |
-| MarketSt_55thSt E leg entering | tmc | 241 | 953 | 3.95 | 286 | 1.18 | 273 | 1.13 | ok | 2.0 | yes | yes |
-| MarketSt_55thSt W leg entering | tmc | 207 | 614 | 2.96 | 218 | 1.05 | 228 | 1.10 | ok | 1.4 | yes | yes |
-| MarketSt_55thSt W leg leaving | tmc | 81 | 357 | 4.42 | 82 | 1.01 | 74 | 0.91 | ok | 0.8 | yes | yes |
+| Colby Street McAuley Street to 60th Street, NB (link 2622) | count (factor ASSUMPTION) | 141 | 80 | 0.56 | 134 | 0.95 | 119 | 0.84 | ok | 2.0 | yes | yes |
+| Colby Street 62nd Street to 63rd Street, NB (link 2628) | count (factor ASSUMPTION) | 136 | 33 | 0.24 | 120 | 0.88 | 108 | 0.79 | OUTSIDE (20%) | 2.6 | yes | yes |
+| Colby Street 61st Street to 62nd Street, NB (link 2626) | count (factor ASSUMPTION) | 134 | 40 | 0.30 | 116 | 0.87 | 104 | 0.77 | OUTSIDE (20%) | 2.8 | yes | yes |
+| Colby Street Forest Street / Claremont Avenue to McAuley Street, NB (link 2620) | count (factor ASSUMPTION) | 130 | 107 | 0.82 | 158 | 1.22 | 138 | 1.06 | ok | 0.7 | yes | yes |
+| Colby Street 63rd Street to 63rd Street, SB (link 2631) | count (factor ASSUMPTION) | 125 | 83 | 0.67 | 119 | 0.96 | 106 | 0.85 | ok | 1.8 | yes | yes |
+| Colby Street 63rd Street to 63rd Street, NB (link 2630) | count (factor ASSUMPTION) | 123 | 15 | 0.12 | 101 | 0.82 | 57 | 0.46 | OUTSIDE (20%) | 7.0 | NO | yes |
+| Colby Street North Street to Alcatraz Avenue, SB (link 2635) | count (factor ASSUMPTION) | 109 | 69 | 0.64 | 90 | 0.82 | 76 | 0.70 | OUTSIDE (20%) | 3.4 | yes | yes |
+| Colby Street North Street to Alcatraz Avenue, NB (link 2634) | count (factor ASSUMPTION) | 104 | 12 | 0.11 | 77 | 0.74 | 33 | 0.31 | OUTSIDE (20%) | 8.6 | NO | yes |
+| Hillegass Avenue Alcatraz Avenue to 63rd Street, NB (link 2699) | count (factor ASSUMPTION) | 100 | 34 | 0.34 | 80 | 0.80 | 87 | 0.87 | ok | 1.3 | yes | yes |
+| Colby Street from north to Claremont Avenue toward southwest (Telegraph side) at Colby Street / Claremont Avenue | count | 100 | 198 | 1.98 | 166 | 1.66 | 139 | 1.39 | OUTSIDE (20%) | 3.6 | yes | yes |
+| 58th Street Canning Street to Vicente Street, WB (link 2013) | count (factor ASSUMPTION) | 97 | 37 | 0.38 | 88 | 0.91 | 85 | 0.87 | ok | 1.3 | yes | yes |
+| Martin Street Claremont Avenue to Ayala Avenue, EB (link 1852) | count (factor ASSUMPTION) | 97 | 266 | 2.74 | 102 | 1.05 | 93 | 0.96 | ok | 0.4 | yes | yes |
+| Martin Street from northwest (Ayala side) to Claremont Avenue toward southwest (Telegraph side) at Claremont Avenue / Martin Street | count | 97 | 262 | 2.71 | 100 | 1.03 | 91 | 0.94 | ok | 0.6 | yes | yes |
+| Martin Street from southeast to 58th Street toward west at Martin Street / Hermann Street / 58th Street | count | 96 | 79 | 0.82 | 139 | 1.45 | 129 | 1.34 | OUTSIDE (20%) | 3.1 | yes | yes |
+| Hillegass Avenue 62nd Street to 61st Street, SB (link 2702) | count (factor ASSUMPTION) | 88 | 35 | 0.39 | 75 | 0.85 | 80 | 0.91 | ok | 0.9 | yes | yes |
+| Hillegass Avenue 63rd Street to 62nd Street, NB (link 2701) | count (factor ASSUMPTION) | 87 | 51 | 0.58 | 79 | 0.91 | 70 | 0.81 | ok | 1.9 | yes | yes |
+| Hillegass Avenue 61st Street to 60th Street / Claremont Avenue, SB (link 2704) | count (factor ASSUMPTION) | 87 | 54 | 0.62 | 88 | 1.01 | 79 | 0.91 | ok | 0.9 | yes | yes |
+| Hillegass Avenue 62nd Street to 61st Street, NB (link 2703) | count (factor ASSUMPTION) | 82 | 53 | 0.65 | 81 | 0.99 | 72 | 0.88 | ok | 1.2 | yes | yes |
+| Hillegass Avenue from north to Claremont Avenue toward southwest (Telegraph side) at Hillegass Avenue / Claremont Avenue | count | 82 | 50 | 0.61 | 80 | 0.98 | 68 | 0.83 | ok | 1.6 | yes | yes |
+| Alcatraz Avenue from west to Colby Street toward south at Colby Street / Alcatraz Avenue | count | 81 | 14 | 0.17 | 11 | 0.14 | 8 | 0.10 | OUTSIDE (20%) | 10.9 | NO | yes |
+| Hillegass Avenue 63rd Street to 62nd Street, SB (link 2700) | count (factor ASSUMPTION) | 78 | 37 | 0.48 | 84 | 1.08 | 90 | 1.15 | ok | 1.3 | yes | yes |
+| Colby Street from south to Alcatraz Avenue toward west at Colby Street / Alcatraz Avenue | count | 78 | 1 | 0.01 | 3 | 0.04 | 3 | 0.04 | OUTSIDE (20%) | 11.7 | NO | yes |
+| Hillegass Avenue 61st Street to 60th Street / Claremont Avenue, NB (link 2705) | count (factor ASSUMPTION) | 74 | 85 | 1.15 | 79 | 1.07 | 74 | 1.00 | ok | 0.0 | yes | yes |
+| Hillegass Avenue Alcatraz Avenue to 63rd Street, SB (link 2698) | count (factor ASSUMPTION) | 73 | 25 | 0.35 | 71 | 0.97 | 63 | 0.86 | ok | 1.2 | yes | yes |
+| Claremont Avenue from southwest to Colby Street toward north at Colby Street / Claremont Avenue | count | 72 | 94 | 1.31 | 124 | 1.72 | 106 | 1.47 | OUTSIDE (20%) | 3.6 | yes | yes |
+| Claremont Avenue from southwest to Hillegass Avenue toward north at Hillegass Avenue / Claremont Avenue | count | 69 | 83 | 1.20 | 74 | 1.07 | 69 | 0.99 | ok | 0.1 | yes | yes |
+| Martin Street Ayala Avenue to Hermann Street / 58th Street, EB (link 1850) | count (factor ASSUMPTION) | 68 | 104 | 1.53 | 63 | 0.92 | 64 | 0.93 | ok | 0.6 | yes | yes |
+| 63rd Street Dana Street to Canning Street, WB (link 1881) | count (factor ASSUMPTION) | 64 | 21 | 0.33 | 61 | 0.96 | 63 | 0.98 | ok | 0.2 | yes | yes |
+| Dana Street 63rd Street to North Street, SB (link 1949) | count (factor ASSUMPTION) | 62 | 7 | 0.12 | 35 | 0.57 | 33 | 0.54 | OUTSIDE (20%) | 4.2 | yes | yes |
+| 63rd Street Dana Street to Canning Street, EB (link 1882) | count (factor ASSUMPTION) | 60 | 11 | 0.18 | 44 | 0.74 | 45 | 0.75 | OUTSIDE (20%) | 2.1 | yes | yes |
+| Forest Street Colby Street / Claremont Avenue to Ayala Avenue, WB (link 2725) | count (factor ASSUMPTION) | 60 | 26 | 0.43 | 60 | 1.00 | 60 | 1.00 | ok | 0.0 | yes | yes |
+| Canning Street 58th Street to 59th Street, NB (link 1918) | count (factor ASSUMPTION) | 59 | 48 | 0.81 | 55 | 0.93 | 48 | 0.81 | ok | 1.5 | yes | yes |
+| 63rd Street Colby Street to Dana Street, EB (link 1880) | count (factor ASSUMPTION) | 56 | 19 | 0.35 | 56 | 0.99 | 53 | 0.94 | ok | 0.4 | yes | yes |
+| Hillegass Avenue from south to Alcatraz Avenue toward east at Hillegass Avenue / Alcatraz Avenue | count | 53 | 2 | 0.03 | 4 | 0.08 | 5 | 0.09 | OUTSIDE (20%) | 9.0 | NO | yes |
+| Ayala Avenue Martin Street to Howell Street, NB (link 1855) | count (factor ASSUMPTION) | 50 | 31 | 0.63 | 45 | 0.91 | 43 | 0.86 | ok | 1.0 | yes | yes |
+| Forest Street Colby Street / Claremont Avenue to Ayala Avenue, EB (link 2726) | count (factor ASSUMPTION) | 50 | 92 | 1.83 | 50 | 1.00 | 49 | 0.99 | ok | 0.1 | yes | yes |
+| Canning Street McAuley Street to 60th Street, SB (link 1923) | count (factor ASSUMPTION) | 48 | 49 | 1.03 | 28 | 0.59 | 21 | 0.44 | OUTSIDE (20%) | 4.6 | yes | yes |
+| Canning Street 59th Street to McAuley Street, NB (link 1920) | count (factor ASSUMPTION) | 48 | 24 | 0.49 | 40 | 0.84 | 39 | 0.81 | ok | 1.4 | yes | yes |
+| Canning Street 61st Street to 62nd Street, SB (link 1927) | count (factor ASSUMPTION) | 47 | 37 | 0.79 | 21 | 0.45 | 18 | 0.38 | OUTSIDE (20%) | 5.1 | NO | yes |
+| 63rd Street from west to Colby Street toward south at Colby Street / 63rd Street | count | 47 | 17 | 0.36 | 43 | 0.92 | 36 | 0.77 | OUTSIDE (20%) | 1.7 | yes | yes |
+| 63rd Street Canning Street to Telegraph Avenue, WB (link 1883) | count (factor ASSUMPTION) | 46 | 19 | 0.41 | 55 | 1.19 | 56 | 1.22 | OUTSIDE (20%) | 1.4 | yes | yes |
+| Colby Street SB, whole street between Claremont Avenue and Alcatraz Avenue (links 2635 to 2621) | count | 46 | 63 | 1.37 | 74 | 1.60 | 63 | 1.36 | OUTSIDE (30%) | 2.3 | yes | yes |
+| Dana Street North Street to Alcatraz Avenue, SB (link 1951) | count (factor ASSUMPTION) | 45 | 4 | 0.10 | 12 | 0.27 | 8 | 0.18 | OUTSIDE (20%) | 7.1 | NO | yes |
+| Forest Street from southeast to Colby Street toward north at Colby Street / Claremont Avenue | count | 43 | 12 | 0.29 | 34 | 0.80 | 31 | 0.73 | OUTSIDE (20%) | 1.9 | yes | yes |
+| Canning Street McAuley Street to 60th Street, NB (link 1922) | count (factor ASSUMPTION) | 42 | 9 | 0.21 | 15 | 0.35 | 10 | 0.23 | OUTSIDE (20%) | 6.4 | NO | yes |
+| Hillegass Avenue from south to Alcatraz Avenue toward west at Hillegass Avenue / Alcatraz Avenue | count | 42 | 12 | 0.29 | 52 | 1.23 | 40 | 0.96 | ok | 0.3 | yes | yes |
+| Canning Street 60th Street to 61st Street, NB (link 1924) | count (factor ASSUMPTION) | 41 | 1 | 0.04 | 6 | 0.14 | 5 | 0.13 | OUTSIDE (20%) | 7.4 | NO | yes |
+| Canning Street 60th Street to 61st Street, SB (link 1925) | count (factor ASSUMPTION) | 41 | 49 | 1.20 | 20 | 0.50 | 20 | 0.48 | OUTSIDE (20%) | 3.9 | yes | yes |
+| Alcatraz Avenue from east to Hillegass Avenue toward south at Hillegass Avenue / Alcatraz Avenue | count | 41 | 4 | 0.10 | 14 | 0.35 | 11 | 0.26 | OUTSIDE (20%) | 6.0 | NO | yes |
+| 63rd Street Canning Street to Telegraph Avenue, EB (link 1884) | count (factor ASSUMPTION) | 40 | 41 | 1.03 | 52 | 1.31 | 51 | 1.27 | OUTSIDE (20%) | 1.6 | yes | yes |
+| 63rd Street College Avenue to Hillegass Avenue, WB (link 2654) | count (factor ASSUMPTION) | 40 | 15 | 0.37 | 40 | 1.00 | 40 | 1.00 | ok | 0.0 | yes | yes |
+| 62nd Street Florio Street / Claremont Avenue / +1 to Hillegass Avenue, WB (link 2650) | count (factor ASSUMPTION) | 39 | 3 | 0.08 | 13 | 0.32 | 13 | 0.32 | OUTSIDE (20%) | 5.2 | NO | yes |
+| 62nd Street Florio Street / Claremont Avenue / +1 to Hillegass Avenue, EB (link 2651) | count (factor ASSUMPTION) | 39 | 7 | 0.18 | 16 | 0.40 | 16 | 0.41 | OUTSIDE (20%) | 4.4 | yes | yes |
+| Canning Street 61st Street to 62nd Street, NB (link 1926) | count (factor ASSUMPTION) | 37 | 2 | 0.04 | 3 | 0.07 | 3 | 0.08 | OUTSIDE (20%) | 7.7 | NO | yes |
+| Alcatraz Avenue from west (Telegraph side) to Dana Street toward south at Alcatraz Avenue / Dana Street | count | 37 | 3 | 0.08 | 4 | 0.12 | 1 | 0.04 | OUTSIDE (20%) | 8.1 | NO | yes |
+| Dana Street from north to 63rd Street toward east (Colby side) at Dana Street / 63rd Street | count | 37 | 3 | 0.08 | 9 | 0.24 | 9 | 0.24 | OUTSIDE (20%) | 5.9 | NO | yes |
+| Ayala Avenue Martin Street to Howell Street, SB (link 1856) | count (factor ASSUMPTION) | 36 | 139 | 3.85 | 41 | 1.13 | 35 | 0.98 | ok | 0.1 | yes | yes |
+| Ayala Avenue Hermann Street to Martin Street, NB (link 1853) | count (factor ASSUMPTION) | 36 | 45 | 1.25 | 38 | 1.06 | 40 | 1.11 | ok | 0.7 | yes | yes |
+| Hillegass Avenue SB, whole street between Claremont Avenue and Alcatraz Avenue (links 2698 to 2704) | count | 36 | 18 | 0.49 | 49 | 1.37 | 42 | 1.16 | ok | 0.9 | yes | yes |
+| Canning Street 62nd Street to 63rd Street, NB (link 1928) | count (factor ASSUMPTION) | 34 | 1 | 0.02 | 3 | 0.07 | 3 | 0.08 | OUTSIDE (20%) | 7.3 | NO | yes |
+| McAuley Street Canning Street to Telegraph Avenue, WB (link 1958) | count (factor ASSUMPTION) | 34 | 26 | 0.78 | 43 | 1.25 | 41 | 1.19 | ok | 1.1 | yes | yes |
+| Hillegass Avenue NB, whole street between Claremont Avenue and Alcatraz Avenue (links 2705 to 2699) | count | 34 | 25 | 0.74 | 52 | 1.54 | 45 | 1.32 | OUTSIDE (30%) | 1.7 | yes | yes |
+| Colby Street NB, whole street between Claremont Avenue and Alcatraz Avenue (links 2620 to 2634) | count | 33 | 10 | 0.32 | 72 | 2.20 | 28 | 0.85 | ok | 0.9 | yes | yes |
+| Canning Street 62nd Street to 63rd Street, SB (link 1929) | count (factor ASSUMPTION) | 32 | 34 | 1.05 | 17 | 0.52 | 15 | 0.48 | OUTSIDE (20%) | 3.4 | yes | yes |
+| 59th Street Canning Street to Telegraph Avenue, WB (link 1912) | count (factor ASSUMPTION) | 29 | 49 | 1.70 | 33 | 1.14 | 32 | 1.11 | ok | 0.6 | yes | yes |
+| 58th Street Hermann Street / Martin Street to Canning Street, EB (link 2012) | count (factor ASSUMPTION) | 28 | 99 | 3.53 | 20 | 0.72 | 17 | 0.59 | OUTSIDE (20%) | 2.4 | yes | yes |
+| Alcatraz Avenue from west to Hillegass Avenue toward south at Hillegass Avenue / Alcatraz Avenue | count | 26 | 9 | 0.34 | 16 | 0.63 | 16 | 0.62 | OUTSIDE (20%) | 2.1 | yes | yes |
+| North Street Colby Street to Dana Street, WB (link 1930) | count (factor ASSUMPTION) | 25 | 2 | 0.09 | 8 | 0.32 | 7 | 0.30 | OUTSIDE (20%) | 4.3 | yes | yes |
+| Dana Street from north to 63rd Street toward west (Telegraph side) at Dana Street / 63rd Street | count | 25 | 4 | 0.18 | 26 | 1.05 | 25 | 0.98 | ok | 0.1 | yes | yes |
+| Dana Street North Street to Alcatraz Avenue, NB (link 1950) | count (factor ASSUMPTION) | 22 | 6 | 0.27 | 24 | 1.09 | 24 | 1.10 | ok | 0.4 | yes | yes |
+| 63rd Street Colby Street to Dana Street, WB (link 1879) | count (factor ASSUMPTION) | 22 | 23 | 1.03 | 30 | 1.36 | 34 | 1.55 | OUTSIDE (20%) | 2.3 | yes | yes |
+| 59th Street Canning Street to Telegraph Avenue, EB (link 1913) | count (factor ASSUMPTION) | 22 | 14 | 0.61 | 15 | 0.67 | 16 | 0.71 | OUTSIDE (20%) | 1.5 | yes | yes |
+| Canning Street 59th Street to McAuley Street, SB (link 1921) | count (factor ASSUMPTION) | 21 | 26 | 1.25 | 14 | 0.68 | 13 | 0.61 | OUTSIDE (20%) | 2.0 | yes | yes |
+| 61st Street Canning Street to Telegraph Avenue, WB (link 2039) | count (factor ASSUMPTION) | 20 | 23 | 1.17 | 23 | 1.16 | 26 | 1.30 | OUTSIDE (20%) | 1.2 | yes | yes |
+| 61st Street Canning Street to Telegraph Avenue, EB (link 2040) | count (factor ASSUMPTION) | 20 | 33 | 1.67 | 22 | 1.12 | 20 | 1.02 | ok | 0.1 | yes | yes |
+| McAuley Street Howell Street to Canning Street, WB (link 1956) | count (factor ASSUMPTION) | 20 | 6 | 0.29 | 9 | 0.44 | 9 | 0.47 | OUTSIDE (20%) | 2.8 | yes | yes |
+| 62nd Street Canning Street to Telegraph Avenue, WB (link 1871) | count (factor ASSUMPTION) | 19 | 9 | 0.48 | 19 | 1.01 | 19 | 1.01 | ok | 0.0 | yes | yes |
+| Canning Street 58th Street to 59th Street, SB (link 1919) | count (factor ASSUMPTION) | 19 | 14 | 0.73 | 6 | 0.31 | 4 | 0.23 | OUTSIDE (20%) | 4.3 | yes | yes |
+| 60th Street Canning Street to Telegraph Avenue, WB (link 1893) | count (factor ASSUMPTION) | 19 | 24 | 1.25 | 27 | 1.40 | 25 | 1.34 | OUTSIDE (20%) | 1.4 | yes | yes |
+| 60th Street Howell Street to Canning Street, WB (link 1891) | count (factor ASSUMPTION) | 19 | 17 | 0.92 | 21 | 1.09 | 19 | 0.99 | ok | 0.0 | yes | yes |
+| McAuley Street Colby Street to Ayala Avenue, EB (link 1953) | count (factor ASSUMPTION) | 18 | 7 | 0.39 | 10 | 0.58 | 7 | 0.39 | OUTSIDE (20%) | 3.1 | yes | yes |
+| 62nd Street Hillegass Avenue to Colby Street, WB (link 2706) | count (factor ASSUMPTION) | 17 | 2 | 0.13 | 10 | 0.61 | 10 | 0.60 | OUTSIDE (20%) | 1.9 | yes | yes |
+| 59th Street Howell Street to Canning Street, EB (link 1911) | count (factor ASSUMPTION) | 17 | 23 | 1.35 | 19 | 1.09 | 18 | 1.04 | ok | 0.1 | yes | yes |
+| 62nd Street Colby Street to Canning Street, WB (link 1869) | count (factor ASSUMPTION) | 16 | 6 | 0.37 | 20 | 1.24 | 21 | 1.28 | OUTSIDE (20%) | 1.1 | yes | yes |
+| 62nd Street Hillegass Avenue to Colby Street, EB (link 2707) | count (factor ASSUMPTION) | 16 | 1 | 0.05 | 2 | 0.14 | 2 | 0.14 | OUTSIDE (20%) | 4.5 | yes | yes |
+| McAuley Street Colby Street to Ayala Avenue, WB (link 1952) | count (factor ASSUMPTION) | 16 | 13 | 0.79 | 15 | 0.93 | 15 | 0.92 | ok | 0.3 | yes | yes |
+| Dana Street 63rd Street to North Street, NB (link 1948) | count (factor ASSUMPTION) | 15 | 8 | 0.55 | 15 | 1.03 | 16 | 1.05 | ok | 0.2 | yes | yes |
+| 61st Street Hillegass Avenue to Colby Street, EB (link 2649) | count (factor ASSUMPTION) | 15 | 0 | 0.01 | 0 | 0.03 | 0 | 0.03 | OUTSIDE (20%) | 5.3 | NO | yes |
+| 59th Street Howell Street to Canning Street, WB (link 1910) | count (factor ASSUMPTION) | 15 | 22 | 1.48 | 14 | 0.93 | 17 | 1.11 | ok | 0.4 | yes | yes |
+| Ayala Avenue Hermann Street to Martin Street, SB (link 1854) | count (factor ASSUMPTION) | 15 | 33 | 2.19 | 14 | 0.91 | 13 | 0.87 | ok | 0.5 | yes | yes |
+| 63rd Street Hillegass Avenue to Colby Street, WB (link 2656) | count (factor ASSUMPTION) | 13 | 3 | 0.23 | 12 | 0.89 | 13 | 1.00 | ok | 0.0 | yes | yes |
+| 63rd Street Hillegass Avenue to Colby Street, EB (link 2657) | count (factor ASSUMPTION) | 13 | 1 | 0.07 | 2 | 0.19 | 3 | 0.19 | OUTSIDE (20%) | 3.8 | yes | yes |
+| 60th Street Colby Street to Howell Street, WB (link 1889) | count (factor ASSUMPTION) | 13 | 14 | 1.11 | 16 | 1.22 | 13 | 0.98 | ok | 0.1 | yes | yes |
+| North Street Colby Street to Dana Street, EB (link 1931) | count (factor ASSUMPTION) | 12 | 8 | 0.71 | 21 | 1.72 | 21 | 1.74 | OUTSIDE (20%) | 2.2 | yes | yes |
+| 63rd Street College Avenue to Hillegass Avenue, EB (link 2655) | count (factor ASSUMPTION) | 12 | 8 | 0.69 | 19 | 1.62 | 22 | 1.87 | OUTSIDE (20%) | 2.5 | yes | yes |
+| 62nd Street Canning Street to Telegraph Avenue, EB (link 1872) | count (factor ASSUMPTION) | 12 | 9 | 0.72 | 18 | 1.46 | 16 | 1.34 | OUTSIDE (20%) | 1.1 | yes | yes |
+| 62nd Street Colby Street to Canning Street, EB (link 1870) | count (factor ASSUMPTION) | 12 | 3 | 0.26 | 14 | 1.17 | 15 | 1.23 | OUTSIDE (20%) | 0.7 | yes | yes |
+| 60th Street Hillegass Avenue / Claremont Avenue to Colby Street, WB (link 1887) | count (factor ASSUMPTION) | 11 | 7 | 0.60 | 6 | 0.59 | 8 | 0.75 | OUTSIDE (20%) | 0.9 | yes | yes |
+| 61st Street Hillegass Avenue to Colby Street, WB (link 2648) | count (factor ASSUMPTION) | 9 | 9 | 1.00 | 11 | 1.27 | 14 | 1.50 | OUTSIDE (20%) | 1.4 | yes | yes |
+| 60th Street Canning Street to Telegraph Avenue, EB (link 1894) | count (factor ASSUMPTION) | 8 | 106 | 13.23 | 27 | 3.40 | 23 | 2.87 | OUTSIDE (20%) | 3.8 | yes | yes |
+| 60th Street Colby Street to Howell Street, EB (link 1890) | count (factor ASSUMPTION) | 8 | 11 | 1.32 | 3 | 0.39 | 4 | 0.55 | OUTSIDE (20%) | 1.5 | yes | yes |
+| McAuley Street Canning Street to Telegraph Avenue, EB (link 1959) | count (factor ASSUMPTION) | 7 | 35 | 4.99 | 7 | 0.98 | 8 | 1.10 | ok | 0.2 | yes | yes |
+| 58th Street Canning Street to Vicente Street, EB (link 2014) | count (factor ASSUMPTION) | 7 | 86 | 12.35 | 15 | 2.13 | 13 | 1.90 | OUTSIDE (20%) | 2.0 | yes | yes |
+| Hermann Street Ayala Avenue to Martin Street / 58th Street, NB (link 1847) | count (factor ASSUMPTION) | 7 | 1 | 0.18 | 2 | 0.32 | 2 | 0.33 | OUTSIDE (20%) | 2.2 | yes | yes |
+| 60th Street Howell Street to Canning Street, EB (link 1892) | count (factor ASSUMPTION) | 6 | 107 | 17.83 | 22 | 3.75 | 19 | 3.13 | OUTSIDE (20%) | 3.6 | yes | yes |
+| 60th Street Hillegass Avenue / Claremont Avenue to Colby Street, EB (link 1888) | count (factor ASSUMPTION) | 4 | 2 | 0.43 | 2 | 0.57 | 4 | 0.92 | ok | 0.2 | yes | yes |
+| McAuley Street Howell Street to Canning Street, EB (link 1957) | count (factor ASSUMPTION) | 4 | 52 | 13.01 | 12 | 3.12 | 14 | 3.52 | OUTSIDE (20%) | 3.3 | yes | yes |
+| Hermann Street Ayala Avenue to Martin Street / 58th Street, SB (link 1848) | count (factor ASSUMPTION) | 3 | 4 | 1.35 | 4 | 1.23 | 5 | 1.54 | OUTSIDE (20%) | 0.8 | yes | yes |
+| gate 266 Ashby Avenue entering | gate | 1242 | 1227 | 0.99 | 1242 | 1.00 | 1242 | 1.00 | ok | 0.0 | yes | yes |
+| gate 266 Ashby Avenue leaving | gate | 900 | 888 | 0.99 | 900 | 1.00 | 899 | 1.00 | ok | 0.0 | yes | yes |
+| gate 781 Telegraph Avenue leaving | gate | 622 | 610 | 0.98 | 622 | 1.00 | 623 | 1.00 | ok | 0.1 | yes | yes |
+| gate 771 Telegraph Avenue entering | gate | 466 | 451 | 0.97 | 467 | 1.00 | 467 | 1.00 | ok | 0.0 | yes | yes |
+| gate 303 43rd Street leaving | gate | 232 | 211 | 0.91 | 232 | 1.00 | 232 | 1.00 | ok | 0.0 | yes | yes |
+| gate 303 43rd Street entering | gate | 173 | 142 | 0.82 | 173 | 1.00 | 173 | 1.00 | ok | 0.0 | yes | yes |
+| off-ramp at node 727 (Martin Luther King Junior Way) | ramp | 1408 | 1016 | 0.72 | 1407 | 1.00 | 1408 | 1.00 | ok | 0.0 | yes | yes |
+| off-ramp at node 735 (52nd Street) | ramp | 1086 | 1328 | 1.22 | 1086 | 1.00 | 1087 | 1.00 | ok | 0.0 | yes | yes |
+| on-ramp at node 733 (52nd Street) | ramp | 987 | 766 | 0.78 | 987 | 1.00 | 987 | 1.00 | ok | 0.0 | yes | yes |
+| off-ramp at node 691 (Claremont Avenue / Clifton Street) | ramp | 826 | 1172 | 1.42 | 826 | 1.00 | 876 | 1.06 | OUTSIDE (5%) | 1.7 | yes | yes |
+| on-ramp at node 845 (Claremont Avenue / Hudson Street) | ramp | 750 | 1246 | 1.66 | 750 | 1.00 | 794 | 1.06 | OUTSIDE (5%) | 1.6 | yes | yes |
+| on-ramp at node 288 (Martin Luther King Junior Way) | ramp | 738 | 332 | 0.45 | 738 | 1.00 | 738 | 1.00 | ok | 0.0 | yes | yes |
+| on-ramp at node 687 (Martin Luther King Junior Way) | ramp | 738 | 932 | 1.26 | 741 | 1.00 | 740 | 1.00 | ok | 0.1 | yes | yes |
+| on-ramp at node 709 (Telegraph Avenue / 56th Street) | ramp | 558 | 2568 | 4.60 | 646 | 1.16 | 655 | 1.17 | OUTSIDE (5%) | 3.9 | yes | yes |
+| off-ramp at node 710 (Telegraph Avenue / Aileen Street) | ramp | 528 | 2230 | 4.22 | 531 | 1.01 | 534 | 1.01 | ok | 0.3 | yes | yes |
+| off-ramp at node 1149 (Keith Avenue) | ramp | 405 | 253 | 0.62 | 405 | 1.00 | 405 | 1.00 | ok | 0.0 | yes | yes |
+| on-ramp at node 1756 (Miles Avenue) | ramp | 306 | 197 | 0.64 | 306 | 1.00 | 306 | 1.00 | ok | 0.0 | yes | yes |
+| on-ramp at node 1328 (Brookside Avenue / Broadway) | ramp | 298 | 39 | 0.13 | 296 | 0.99 | 298 | 1.00 | ok | 0.0 | yes | yes |
+| on-ramp at node 1336 (Broadway) | ramp | 298 | 204 | 0.68 | 298 | 1.00 | 298 | 1.00 | ok | 0.0 | yes | yes |
+| off-ramp at node 1572 (Broadway Terrace) | ramp | 270 | 500 | 1.85 | 270 | 1.00 | 270 | 1.00 | ok | 0.0 | yes | yes |
+| off-ramp at node 1593 (Broadway Terrace) | ramp | 270 | 517 | 1.92 | 270 | 1.00 | 270 | 1.00 | ok | 0.0 | yes | yes |
+| off-ramp at node 1366 (Broadway) | ramp | 268 | 252 | 0.94 | 268 | 1.00 | 268 | 1.00 | ok | 0.0 | yes | yes |
+| off-ramp at node 1758 (Miles Avenue) | ramp | 268 | 272 | 1.02 | 268 | 1.00 | 268 | 1.00 | ok | 0.0 | yes | yes |
+| on-ramp at node 1572 (Broadway Terrace) | ramp | 186 | 52 | 0.28 | 186 | 1.00 | 186 | 1.00 | ok | 0.0 | yes | yes |
+| on-ramp at node 1685 (Glenwood Glade / Broadway Terrace / Pinewood Road) | ramp | 186 | 612 | 3.30 | 192 | 1.03 | 192 | 1.04 | ok | 0.5 | yes | yes |
+| off-ramp at node 1711 (Caldecott Lane) | ramp | 96 | 294 | 3.07 | 96 | 1.00 | 96 | 1.00 | ok | 0.0 | yes | yes |
+| on-ramp at node 1711 (Caldecott Lane) | ramp | 52 | 265 | 5.13 | 58 | 1.12 | 58 | 1.13 | OUTSIDE (5%) | 0.9 | yes | yes |
+| on-ramp at node 1727 (Caldecott Lane) | ramp | 52 | 1131 | 21.90 | 113 | 2.19 | 114 | 2.20 | OUTSIDE (5%) | 6.8 | NO | yes |
+| AlcatrazAve N leg entering | tmc | 1121 | 512 | 0.46 | 984 | 0.88 | 975 | 0.87 | ok | 4.5 | yes | yes |
+| AlcatrazAve S leg leaving | tmc | 995 | 496 | 0.50 | 848 | 0.85 | 831 | 0.84 | OUTSIDE (15%) | 5.4 | NO | NO |
+| MarketSt_55thSt N leg leaving | tmc | 859 | 905 | 1.05 | 797 | 0.93 | 784 | 0.91 | ok | 2.6 | yes | yes |
+| AlcatrazAve S leg entering | tmc | 708 | 808 | 1.14 | 686 | 0.97 | 677 | 0.96 | ok | 1.2 | yes | yes |
+| AlcatrazAve W leg leaving | tmc | 659 | 441 | 0.67 | 665 | 1.01 | 665 | 1.01 | ok | 0.3 | yes | yes |
+| MarketSt_55thSt S leg entering | tmc | 631 | 528 | 0.84 | 678 | 1.08 | 636 | 1.01 | ok | 0.2 | yes | yes |
+| AlcatrazAve N leg leaving | tmc | 548 | 631 | 1.15 | 575 | 1.05 | 571 | 1.04 | ok | 1.0 | yes | yes |
+| MarketSt_55thSt E leg leaving | tmc | 529 | 1125 | 2.13 | 495 | 0.94 | 490 | 0.93 | ok | 1.7 | yes | yes |
+| AlcatrazAve E leg entering | tmc | 477 | 190 | 0.40 | 472 | 0.99 | 473 | 0.99 | ok | 0.2 | yes | yes |
+| AlcatrazAve E leg leaving | tmc | 463 | 294 | 0.63 | 422 | 0.91 | 424 | 0.92 | ok | 1.8 | yes | yes |
+| MarketSt_55thSt N leg entering | tmc | 412 | 665 | 1.62 | 433 | 1.05 | 440 | 1.07 | ok | 1.4 | yes | yes |
+| AlcatrazAve W leg entering | tmc | 335 | 352 | 1.05 | 368 | 1.10 | 367 | 1.09 | ok | 1.7 | yes | yes |
+| MarketSt_55thSt S leg leaving | tmc | 249 | 486 | 1.95 | 238 | 0.96 | 233 | 0.94 | ok | 1.0 | yes | yes |
+| MarketSt_55thSt E leg entering | tmc | 241 | 1028 | 4.26 | 261 | 1.08 | 271 | 1.12 | ok | 1.8 | yes | yes |
+| MarketSt_55thSt W leg entering | tmc | 207 | 670 | 3.23 | 235 | 1.13 | 239 | 1.15 | OUTSIDE (15%) | 2.1 | yes | yes |
+| MarketSt_55thSt W leg leaving | tmc | 81 | 374 | 4.63 | 76 | 0.94 | 78 | 0.97 | ok | 0.3 | yes | yes |
 
-Fitted stations: GEH below 5 at 149 of 168 (89%), size bands met at 166 of 168 (99%); the published rule asks for more than 85% of cases (met). This is the static assignment against the counts it was fitted to, so it shows how far the fit could go; the simulator's own flows are scored in the calibration report.
+Fitted stations: GEH below 5 at 150 of 168 (89%), size bands met at 167 of 168 (99%); the published rule asks for more than 85% of cases (met). This is the static assignment against the counts it was fitted to, so it shows how far the fit could go; the simulator's own flows are scored in the calibration report.
 
-Split by kind, GEH below 5 (size bands): interior blocks of the volunteer count fitted 84 of 96 (88%; bands 100%), held out 16 of 19 (84%; bands 100%, mean GEH 2.7); other stations (gates, ramps, Caltrans, turning-movement legs, movements and routes of the volunteer count) fitted 65 of 72 (90%; bands 97%), held out 4 of 16 (25%; bands 31%, mean GEH 13.7).
+Split by kind, GEH below 5 (size bands): interior blocks of the volunteer count fitted 86 of 96 (90%; bands 100%), held out 16 of 19 (84%; bands 100%, mean GEH 2.7); other stations (gates, ramps, Caltrans, turning-movement legs, movements and routes of the volunteer count) fitted 64 of 72 (89%; bands 99%), held out 4 of 16 (25%; bands 25%, mean GEH 15.5).
 
 ### Held-out stations, am_peak
 
-35 validation stations, not in the fit: GEH below 5 at 20 (57%), size bands met at 24 (69%), mean GEH 7.7 (fitted stations 2.0). Required: more than 85% of cases (not met).
+35 validation stations, not in the fit: GEH below 5 at 20 (57%), size bands met at 23 (66%), mean GEH 8.6 (fitted stations 2.0). Required: more than 85% of cases (not met).
 
 | Station | Corridor | Target | Assigned before | Final | Ratio | GEH | GEH < 5 | Size band |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| gate 266 Ashby Avenue entering | Ashby Avenue | 1242 | 1229 | 757 | 0.61 | 15.4 | NO | NO |
-| tunnel station, link 3494 inward (5 m from the station) | tunnel | 1198 | 458 | 154 | 0.13 | 40.1 | NO | NO |
-| AlcatrazAve N leg entering | AlcatrazAve | 1121 | 466 | 663 | 0.59 | 15.3 | NO | NO |
-| off-ramp at node 735 (52nd Street) | freeway ramps | 1086 | 1323 | 930 | 0.86 | 4.9 | yes | yes |
-| sanpablo station, link 115 inward (11 m from the station) | sanpablo | 910 | 433 | 280 | 0.31 | 25.8 | NO | NO |
-| on-ramp at node 288 (Martin Luther King Junior Way) | freeway ramps | 738 | 322 | 230 | 0.31 | 23.1 | NO | NO |
-| AlcatrazAve W leg leaving | AlcatrazAve | 659 | 622 | 446 | 0.68 | 9.1 | NO | NO |
-| claremont station, link 3478 inward (4 m from the station) | claremont | 626 | 677 | 500 | 0.80 | 5.3 | NO | NO |
-| gate 771 Telegraph Avenue entering | Telegraph Avenue | 466 | 452 | 530 | 1.14 | 2.8 | yes | yes |
-| MarketSt_55thSt N leg entering | MarketSt_55thSt | 412 | 642 | 486 | 1.18 | 3.5 | yes | yes |
-| off-ramp at node 1149 (Keith Avenue) | freeway ramps | 405 | 251 | 118 | 0.29 | 17.7 | NO | NO |
-| off-ramp at node 1572 (Broadway Terrace) | freeway ramps | 270 | 498 | 181 | 0.67 | 5.9 | NO | yes |
-| MarketSt_55thSt E leg entering | MarketSt_55thSt | 241 | 942 | 436 | 1.81 | 10.6 | NO | NO |
-| on-ramp at node 1572 (Broadway Terrace) | freeway ramps | 186 | 46 | 26 | 0.14 | 15.5 | NO | NO |
-| Colby Street McAuley Street to 60th Street, SB (link 2623) | Colby Street (volunteer count) | 179 | 188 | 143 | 0.80 | 2.8 | yes | yes |
-| gate 303 43rd Street entering | 43rd Street | 173 | 144 | 135 | 0.78 | 3.1 | yes | yes |
-| Colby Street McAuley Street to 60th Street, NB (link 2622) | Colby Street (volunteer count) | 141 | 81 | 116 | 0.82 | 2.2 | yes | yes |
-| Colby Street 63rd Street to 63rd Street, SB (link 2631) | Colby Street (volunteer count) | 125 | 90 | 109 | 0.87 | 1.5 | yes | yes |
-| Colby Street 63rd Street to 63rd Street, NB (link 2630) | Colby Street (volunteer count) | 123 | 16 | 55 | 0.45 | 7.2 | NO | yes |
-| Hillegass Avenue 62nd Street to 61st Street, SB (link 2702) | Hillegass Avenue (volunteer count) | 88 | 35 | 74 | 0.85 | 1.5 | yes | yes |
-| Hillegass Avenue 62nd Street to 61st Street, NB (link 2703) | Hillegass Avenue (volunteer count) | 82 | 54 | 69 | 0.85 | 1.5 | yes | yes |
-| 63rd Street Dana Street to Canning Street, WB (link 1881) | 63rd Street (volunteer count) | 64 | 21 | 59 | 0.92 | 0.7 | yes | yes |
-| 63rd Street Dana Street to Canning Street, EB (link 1882) | 63rd Street (volunteer count) | 60 | 9 | 35 | 0.58 | 3.7 | yes | yes |
-| on-ramp at node 1727 (Caldecott Lane) | freeway ramps | 52 | 1100 | 343 | 6.64 | 20.7 | NO | NO |
-| Ayala Avenue Martin Street to Howell Street, NB (link 1855) | Ayala Avenue (volunteer count) | 50 | 34 | 30 | 0.60 | 3.1 | yes | yes |
-| Canning Street 59th Street to McAuley Street, NB (link 1920) | Canning Street (volunteer count) | 48 | 24 | 38 | 0.80 | 1.4 | yes | yes |
-| Ayala Avenue Martin Street to Howell Street, SB (link 1856) | Ayala Avenue (volunteer count) | 36 | 140 | 34 | 0.94 | 0.3 | yes | yes |
-| Canning Street 59th Street to McAuley Street, SB (link 1921) | Canning Street (volunteer count) | 21 | 29 | 8 | 0.36 | 3.6 | yes | yes |
-| McAuley Street Howell Street to Canning Street, WB (link 1956) | McAuley Street (volunteer count) | 20 | 8 | 8 | 0.38 | 3.3 | yes | yes |
-| 60th Street Howell Street to Canning Street, WB (link 1891) | 60th Street (volunteer count) | 19 | 22 | 23 | 1.20 | 0.8 | yes | yes |
-| 62nd Street Colby Street to Canning Street, WB (link 1869) | 62nd Street (volunteer count) | 16 | 4 | 16 | 1.01 | 0.0 | yes | yes |
-| 62nd Street Colby Street to Canning Street, EB (link 1870) | 62nd Street (volunteer count) | 12 | 3 | 18 | 1.47 | 1.5 | yes | yes |
-| 58th Street Canning Street to Vicente Street, EB (link 2014) | 58th Street (volunteer count) | 7 | 87 | 29 | 4.15 | 5.2 | NO | yes |
-| 60th Street Howell Street to Canning Street, EB (link 1892) | 60th Street (volunteer count) | 6 | 94 | 31 | 5.13 | 5.8 | NO | yes |
-| McAuley Street Howell Street to Canning Street, EB (link 1957) | McAuley Street (volunteer count) | 4 | 49 | 20 | 4.96 | 4.6 | yes | yes |
+| gate 266 Ashby Avenue entering | Ashby Avenue | 1242 | 1227 | 801 | 0.64 | 13.8 | NO | NO |
+| tunnel station, link 3494 inward (5 m from the station) | tunnel | 1198 | 437 | 155 | 0.13 | 40.1 | NO | NO |
+| AlcatrazAve N leg entering | AlcatrazAve | 1121 | 504 | 766 | 0.68 | 11.6 | NO | NO |
+| off-ramp at node 735 (52nd Street) | freeway ramps | 1086 | 1329 | 937 | 0.86 | 4.7 | yes | yes |
+| ashby station, link 3427 inward (4 m from the station) | ashby | 1043 | 362 | 144 | 0.14 | 36.9 | NO | NO |
+| sanpablo station, link 115 inward (11 m from the station) | sanpablo | 910 | 425 | 217 | 0.24 | 29.2 | NO | NO |
+| on-ramp at node 288 (Martin Luther King Junior Way) | freeway ramps | 738 | 333 | 203 | 0.27 | 24.7 | NO | NO |
+| AlcatrazAve W leg leaving | AlcatrazAve | 659 | 449 | 532 | 0.81 | 5.2 | NO | NO |
+| gate 771 Telegraph Avenue entering | Telegraph Avenue | 466 | 451 | 448 | 0.96 | 0.9 | yes | yes |
+| MarketSt_55thSt N leg entering | MarketSt_55thSt | 412 | 672 | 481 | 1.17 | 3.3 | yes | yes |
+| off-ramp at node 1149 (Keith Avenue) | freeway ramps | 405 | 252 | 95 | 0.24 | 19.6 | NO | NO |
+| off-ramp at node 1572 (Broadway Terrace) | freeway ramps | 270 | 500 | 139 | 0.52 | 9.1 | NO | NO |
+| MarketSt_55thSt E leg entering | MarketSt_55thSt | 241 | 1003 | 428 | 1.77 | 10.2 | NO | NO |
+| on-ramp at node 1572 (Broadway Terrace) | freeway ramps | 186 | 52 | 23 | 0.13 | 15.9 | NO | NO |
+| Colby Street McAuley Street to 60th Street, SB (link 2623) | Colby Street (volunteer count) | 179 | 185 | 150 | 0.84 | 2.3 | yes | yes |
+| gate 303 43rd Street entering | 43rd Street | 173 | 142 | 122 | 0.71 | 4.2 | yes | yes |
+| Colby Street McAuley Street to 60th Street, NB (link 2622) | Colby Street (volunteer count) | 141 | 80 | 110 | 0.78 | 2.7 | yes | yes |
+| Colby Street 63rd Street to 63rd Street, SB (link 2631) | Colby Street (volunteer count) | 125 | 83 | 98 | 0.79 | 2.5 | yes | yes |
+| Colby Street 63rd Street to 63rd Street, NB (link 2630) | Colby Street (volunteer count) | 123 | 15 | 48 | 0.39 | 8.2 | NO | yes |
+| Hillegass Avenue 62nd Street to 61st Street, SB (link 2702) | Hillegass Avenue (volunteer count) | 88 | 35 | 76 | 0.86 | 1.4 | yes | yes |
+| Hillegass Avenue 62nd Street to 61st Street, NB (link 2703) | Hillegass Avenue (volunteer count) | 82 | 53 | 66 | 0.81 | 1.8 | yes | yes |
+| 63rd Street Dana Street to Canning Street, WB (link 1881) | 63rd Street (volunteer count) | 64 | 21 | 64 | 1.01 | 0.1 | yes | yes |
+| 63rd Street Dana Street to Canning Street, EB (link 1882) | 63rd Street (volunteer count) | 60 | 11 | 32 | 0.54 | 4.0 | yes | yes |
+| on-ramp at node 1727 (Caldecott Lane) | freeway ramps | 52 | 1124 | 310 | 6.01 | 19.2 | NO | NO |
+| Ayala Avenue Martin Street to Howell Street, NB (link 1855) | Ayala Avenue (volunteer count) | 50 | 31 | 29 | 0.59 | 3.3 | yes | yes |
+| Canning Street 59th Street to McAuley Street, NB (link 1920) | Canning Street (volunteer count) | 48 | 24 | 35 | 0.72 | 2.1 | yes | yes |
+| Ayala Avenue Martin Street to Howell Street, SB (link 1856) | Ayala Avenue (volunteer count) | 36 | 139 | 36 | 1.01 | 0.1 | yes | yes |
+| Canning Street 59th Street to McAuley Street, SB (link 1921) | Canning Street (volunteer count) | 21 | 26 | 12 | 0.55 | 2.3 | yes | yes |
+| McAuley Street Howell Street to Canning Street, WB (link 1956) | McAuley Street (volunteer count) | 20 | 6 | 8 | 0.39 | 3.3 | yes | yes |
+| 60th Street Howell Street to Canning Street, WB (link 1891) | 60th Street (volunteer count) | 19 | 17 | 19 | 0.98 | 0.1 | yes | yes |
+| 62nd Street Colby Street to Canning Street, WB (link 1869) | 62nd Street (volunteer count) | 16 | 6 | 21 | 1.31 | 1.1 | yes | yes |
+| 62nd Street Colby Street to Canning Street, EB (link 1870) | 62nd Street (volunteer count) | 12 | 3 | 16 | 1.33 | 1.1 | yes | yes |
+| 58th Street Canning Street to Vicente Street, EB (link 2014) | 58th Street (volunteer count) | 7 | 86 | 26 | 3.74 | 4.7 | yes | yes |
+| 60th Street Howell Street to Canning Street, EB (link 1892) | 60th Street (volunteer count) | 6 | 107 | 30 | 5.06 | 5.7 | NO | yes |
+| McAuley Street Howell Street to Canning Street, EB (link 1957) | McAuley Street (volunteer count) | 4 | 52 | 25 | 6.24 | 5.5 | NO | yes |
 
 ## Stations, midday
 
-179 stations with a target. Within +/-15%: before 34, after the fit 93, final 85. Within their own tolerance (gates 10%, ramps 5%, others 15%): final 91.
+179 stations with a target. Within +/-15%: before 34, after the fit 97, final 87. Within their own tolerance (gates 10%, ramps 5%, others 15%): final 91.
 
 | Station | Basis | Target | Assigned before | Ratio | After fit | Ratio | Final | Ratio | Own tolerance | GEH | GEH < 5 | Size band |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| tunnel station, link 3494 inward (5 m from the station) | caltrans | 753 | 356 | 0.47 | 750 | 1.00 | 739 | 0.98 | ok | 0.5 | yes | yes |
-| tunnel station, link 3493 outward (5 m from the station) | caltrans | 753 | 348 | 0.46 | 753 | 1.00 | 753 | 1.00 | ok | 0.0 | yes | yes |
-| sanpablo station, link 115 inward (11 m from the station) | caltrans | 572 | 338 | 0.59 | 545 | 0.95 | 550 | 0.96 | ok | 0.9 | yes | yes |
-| sanpablo station, link 111 outward (0 m from the station) | caltrans | 572 | 605 | 1.06 | 572 | 1.00 | 572 | 1.00 | ok | 0.0 | yes | yes |
-| claremont station, link 3478 inward (4 m from the station) | caltrans (factor ASSUMPTION) | 393 | 522 | 1.33 | 393 | 1.00 | 393 | 1.00 | ok | 0.0 | yes | yes |
-| claremont station, link 3477 outward (4 m from the station) | caltrans (factor ASSUMPTION) | 393 | 146 | 0.37 | 350 | 0.89 | 317 | 0.81 | OUTSIDE (15%) | 4.0 | yes | yes |
-| Colby Street Forest Street / Claremont Avenue to McAuley Street, NB (link 2620) | count (factor ASSUMPTION) | 117 | 105 | 0.89 | 129 | 1.10 | 100 | 0.85 | ok | 1.7 | yes | yes |
-| Colby Street McAuley Street to 60th Street, NB (link 2622) | count (factor ASSUMPTION) | 113 | 79 | 0.70 | 110 | 0.98 | 93 | 0.83 | ok | 1.9 | yes | yes |
-| Colby Street 60th Street to 61st Street, NB (link 2624) | count (factor ASSUMPTION) | 111 | 76 | 0.68 | 102 | 0.92 | 88 | 0.80 | OUTSIDE (20%) | 2.3 | yes | yes |
-| Hillegass Avenue Alcatraz Avenue to 63rd Street, SB (link 2698) | count (factor ASSUMPTION) | 110 | 20 | 0.18 | 87 | 0.79 | 26 | 0.24 | OUTSIDE (20%) | 10.2 | NO | yes |
-| Colby Street 61st Street to 62nd Street, NB (link 2626) | count (factor ASSUMPTION) | 108 | 43 | 0.39 | 86 | 0.80 | 73 | 0.68 | OUTSIDE (20%) | 3.7 | yes | yes |
-| Colby Street McAuley Street to 60th Street, SB (link 2623) | count (factor ASSUMPTION) | 105 | 123 | 1.16 | 96 | 0.91 | 81 | 0.77 | OUTSIDE (20%) | 2.5 | yes | yes |
-| Hillegass Avenue 63rd Street to 62nd Street, SB (link 2700) | count (factor ASSUMPTION) | 104 | 34 | 0.32 | 107 | 1.03 | 94 | 0.90 | ok | 1.0 | yes | yes |
-| Colby Street North Street to Alcatraz Avenue, NB (link 2634) | count (factor ASSUMPTION) | 102 | 11 | 0.11 | 62 | 0.61 | 35 | 0.34 | OUTSIDE (20%) | 8.1 | NO | yes |
-| Martin Street Claremont Avenue to Ayala Avenue, WB (link 1851) | count (factor ASSUMPTION) | 102 | 111 | 1.09 | 98 | 0.97 | 78 | 0.77 | OUTSIDE (20%) | 2.5 | yes | yes |
-| Colby Street 62nd Street to 63rd Street, SB (link 2629) | count (factor ASSUMPTION) | 100 | 69 | 0.69 | 85 | 0.84 | 68 | 0.68 | OUTSIDE (20%) | 3.5 | yes | yes |
-| Colby Street Forest Street / Claremont Avenue to McAuley Street, SB (link 2621) | count (factor ASSUMPTION) | 100 | 137 | 1.36 | 92 | 0.92 | 81 | 0.81 | ok | 2.0 | yes | yes |
-| Colby Street 61st Street to 62nd Street, SB (link 2627) | count (factor ASSUMPTION) | 99 | 77 | 0.77 | 83 | 0.83 | 66 | 0.67 | OUTSIDE (20%) | 3.6 | yes | yes |
-| Colby Street 60th Street to 61st Street, SB (link 2625) | count (factor ASSUMPTION) | 99 | 117 | 1.19 | 93 | 0.94 | 81 | 0.82 | ok | 1.9 | yes | yes |
-| Colby Street 62nd Street to 63rd Street, NB (link 2628) | count (factor ASSUMPTION) | 98 | 35 | 0.36 | 90 | 0.92 | 79 | 0.81 | ok | 2.0 | yes | yes |
-| Colby Street 63rd Street to 63rd Street, SB (link 2631) | count (factor ASSUMPTION) | 97 | 59 | 0.61 | 91 | 0.94 | 77 | 0.80 | OUTSIDE (20%) | 2.1 | yes | yes |
-| Colby Street 63rd Street to 63rd Street, NB (link 2630) | count (factor ASSUMPTION) | 94 | 13 | 0.14 | 82 | 0.87 | 54 | 0.57 | OUTSIDE (20%) | 4.7 | yes | yes |
-| Hillegass Avenue 61st Street to 60th Street / Claremont Avenue, SB (link 2704) | count (factor ASSUMPTION) | 94 | 49 | 0.52 | 92 | 0.97 | 82 | 0.87 | ok | 1.3 | yes | yes |
-| Hillegass Avenue 62nd Street to 61st Street, SB (link 2702) | count (factor ASSUMPTION) | 94 | 30 | 0.32 | 92 | 0.99 | 80 | 0.86 | ok | 1.4 | yes | yes |
-| Hillegass Avenue from north to Claremont Avenue toward southwest (Telegraph side) at Hillegass Avenue / Claremont Avenue | count | 89 | 45 | 0.51 | 86 | 0.97 | 75 | 0.85 | ok | 1.5 | yes | yes |
-| Colby Street North Street to Alcatraz Avenue, SB (link 2635) | count (factor ASSUMPTION) | 86 | 50 | 0.58 | 55 | 0.64 | 47 | 0.54 | OUTSIDE (20%) | 4.8 | yes | yes |
-| 58th Street Hermann Street / Martin Street to Canning Street, WB (link 2011) | count (factor ASSUMPTION) | 86 | 65 | 0.76 | 86 | 1.00 | 79 | 0.92 | ok | 0.7 | yes | yes |
-| Martin Street Ayala Avenue to Hermann Street / 58th Street, WB (link 1849) | count (factor ASSUMPTION) | 84 | 70 | 0.83 | 86 | 1.03 | 77 | 0.92 | ok | 0.8 | yes | yes |
-| Colby Street from south to Alcatraz Avenue toward west at Colby Street / Alcatraz Avenue | count | 81 | 1 | 0.01 | 6 | 0.07 | 5 | 0.07 | OUTSIDE (20%) | 11.5 | NO | yes |
-| Martin Street Claremont Avenue to Ayala Avenue, EB (link 1852) | count (factor ASSUMPTION) | 76 | 214 | 2.81 | 78 | 1.02 | 71 | 0.93 | ok | 0.6 | yes | yes |
-| Claremont Avenue from southwest to Colby Street toward north at Colby Street / Claremont Avenue | count | 75 | 94 | 1.26 | 94 | 1.26 | 73 | 0.98 | ok | 0.2 | yes | yes |
-| 58th Street Canning Street to Vicente Street, WB (link 2013) | count (factor ASSUMPTION) | 71 | 37 | 0.53 | 46 | 0.65 | 49 | 0.70 | OUTSIDE (20%) | 2.7 | yes | yes |
-| Hillegass Avenue 61st Street to 60th Street / Claremont Avenue, NB (link 2705) | count (factor ASSUMPTION) | 71 | 72 | 1.01 | 66 | 0.93 | 61 | 0.87 | ok | 1.2 | yes | yes |
-| Hillegass Avenue 62nd Street to 61st Street, NB (link 2703) | count (factor ASSUMPTION) | 68 | 43 | 0.63 | 59 | 0.86 | 51 | 0.74 | OUTSIDE (20%) | 2.3 | yes | yes |
-| Hillegass Avenue Alcatraz Avenue to 63rd Street, NB (link 2699) | count (factor ASSUMPTION) | 68 | 30 | 0.45 | 56 | 0.83 | 60 | 0.88 | ok | 1.0 | yes | yes |
-| Colby Street NB, whole street between Claremont Avenue and Alcatraz Avenue (links 2620 to 2634) | count | 63 | 10 | 0.16 | 56 | 0.89 | 29 | 0.45 | OUTSIDE (30%) | 5.1 | NO | yes |
-| Alcatraz Avenue from east to Hillegass Avenue toward south at Hillegass Avenue / Alcatraz Avenue | count | 61 | 4 | 0.06 | 15 | 0.25 | 6 | 0.10 | OUTSIDE (20%) | 9.5 | NO | yes |
-| 58th Street Hermann Street / Martin Street to Canning Street, EB (link 2012) | count (factor ASSUMPTION) | 60 | 70 | 1.17 | 19 | 0.33 | 18 | 0.31 | OUTSIDE (20%) | 6.6 | NO | yes |
-| Hillegass Avenue 63rd Street to 62nd Street, NB (link 2701) | count (factor ASSUMPTION) | 58 | 40 | 0.70 | 57 | 0.99 | 46 | 0.81 | ok | 1.5 | yes | yes |
-| Martin Street Ayala Avenue to Hermann Street / 58th Street, EB (link 1850) | count (factor ASSUMPTION) | 55 | 72 | 1.30 | 50 | 0.91 | 49 | 0.89 | ok | 0.8 | yes | yes |
-| 58th Street Vicente Street to Telegraph Avenue, WB (link 2015) | count (factor ASSUMPTION) | 55 | 30 | 0.55 | 38 | 0.70 | 28 | 0.51 | OUTSIDE (20%) | 4.2 | yes | yes |
-| Claremont Avenue from southwest to Hillegass Avenue toward north at Hillegass Avenue / Claremont Avenue | count | 54 | 68 | 1.27 | 61 | 1.13 | 56 | 1.04 | ok | 0.3 | yes | yes |
-| Colby Street from north to Claremont Avenue toward southwest (Telegraph side) at Colby Street / Claremont Avenue | count | 52 | 135 | 2.59 | 91 | 1.74 | 77 | 1.47 | OUTSIDE (20%) | 3.1 | yes | yes |
-| Hillegass Avenue SB, whole street between Claremont Avenue and Alcatraz Avenue (links 2698 to 2704) | count | 49 | 15 | 0.31 | 65 | 1.33 | 17 | 0.34 | OUTSIDE (30%) | 5.6 | NO | yes |
-| Alcatraz Avenue from west to Colby Street toward south at Colby Street / Alcatraz Avenue | count | 47 | 10 | 0.20 | 8 | 0.18 | 7 | 0.14 | OUTSIDE (20%) | 7.8 | NO | yes |
-| Alcatraz Avenue from west to Hillegass Avenue toward south at Hillegass Avenue / Alcatraz Avenue | count | 47 | 8 | 0.17 | 22 | 0.46 | 15 | 0.31 | OUTSIDE (20%) | 5.8 | NO | yes |
-| Colby Street from north to Claremont Avenue toward northeast (College side) at Colby Street / Claremont Avenue | count | 47 | 0 | 0.00 | 0 | 0.01 | 0 | 0.01 | OUTSIDE (20%) | 9.5 | NO | yes |
-| 57th Street Vicente Street to Telegraph Avenue, EB (link 1943) | count (factor ASSUMPTION) | 45 | 38 | 0.83 | 45 | 1.00 | 44 | 0.98 | ok | 0.2 | yes | yes |
-| Forest Street Colby Street / Claremont Avenue to Ayala Avenue, WB (link 2725) | count (factor ASSUMPTION) | 41 | 27 | 0.65 | 37 | 0.90 | 40 | 0.98 | ok | 0.1 | yes | yes |
-| Forest Street Colby Street / Claremont Avenue to Ayala Avenue, EB (link 2726) | count (factor ASSUMPTION) | 41 | 64 | 1.57 | 37 | 0.91 | 41 | 1.00 | ok | 0.0 | yes | yes |
-| 58th Street Vicente Street to Telegraph Avenue, EB (link 2016) | count (factor ASSUMPTION) | 40 | 54 | 1.33 | 40 | 0.99 | 39 | 0.96 | ok | 0.3 | yes | yes |
-| 63rd Street Dana Street to Canning Street, WB (link 1881) | count (factor ASSUMPTION) | 40 | 15 | 0.38 | 26 | 0.65 | 25 | 0.63 | OUTSIDE (20%) | 2.6 | yes | yes |
-| Ayala Avenue Hermann Street to Martin Street, NB (link 1853) | count (factor ASSUMPTION) | 40 | 39 | 0.99 | 39 | 0.97 | 41 | 1.04 | ok | 0.2 | yes | yes |
-| Ayala Avenue Howell Street to Forest Street, NB (link 2082) | count (factor ASSUMPTION) | 40 | 30 | 0.76 | 27 | 0.69 | 27 | 0.67 | OUTSIDE (20%) | 2.3 | yes | yes |
-| 63rd Street Dana Street to Canning Street, EB (link 1882) | count (factor ASSUMPTION) | 37 | 12 | 0.32 | 21 | 0.57 | 23 | 0.61 | OUTSIDE (20%) | 2.7 | yes | yes |
-| Ayala Avenue Martin Street to Howell Street, NB (link 1855) | count (factor ASSUMPTION) | 37 | 38 | 1.01 | 42 | 1.13 | 40 | 1.07 | ok | 0.4 | yes | yes |
-| 62nd Street Florio Street / Claremont Avenue / +1 to Hillegass Avenue, EB (link 2651) | count (factor ASSUMPTION) | 37 | 7 | 0.18 | 19 | 0.52 | 21 | 0.57 | OUTSIDE (20%) | 3.0 | yes | yes |
-| Forest Street from southeast to Colby Street toward north at Colby Street / Claremont Avenue | count | 35 | 10 | 0.30 | 34 | 0.97 | 27 | 0.75 | OUTSIDE (20%) | 1.6 | yes | yes |
-| Canning Street 58th Street to 59th Street, NB (link 1918) | count (factor ASSUMPTION) | 34 | 30 | 0.88 | 42 | 1.22 | 31 | 0.91 | ok | 0.5 | yes | yes |
-| Hillegass Avenue from south to Alcatraz Avenue toward east at Hillegass Avenue / Alcatraz Avenue | count | 33 | 1 | 0.02 | 4 | 0.13 | 4 | 0.12 | OUTSIDE (20%) | 6.8 | NO | yes |
-| 59th Street Canning Street to Telegraph Avenue, WB (link 1912) | count (factor ASSUMPTION) | 31 | 35 | 1.13 | 30 | 0.97 | 31 | 1.00 | ok | 0.0 | yes | yes |
-| Alcatraz Avenue from east to Colby Street toward south at Colby Street / Alcatraz Avenue | count | 31 | 16 | 0.51 | 40 | 1.29 | 18 | 0.59 | OUTSIDE (20%) | 2.5 | yes | yes |
-| Canning Street 59th Street to McAuley Street, SB (link 1921) | count (factor ASSUMPTION) | 30 | 20 | 0.67 | 8 | 0.28 | 4 | 0.15 | OUTSIDE (20%) | 6.2 | NO | yes |
-| Ayala Avenue Howell Street to Forest Street, SB (link 2083) | count (factor ASSUMPTION) | 30 | 24 | 0.80 | 21 | 0.71 | 23 | 0.76 | OUTSIDE (20%) | 1.4 | yes | yes |
-| Hillegass Avenue NB, whole street between Claremont Avenue and Alcatraz Avenue (links 2705 to 2699) | count | 30 | 23 | 0.76 | 36 | 1.23 | 34 | 1.13 | ok | 0.7 | yes | yes |
-| Canning Street McAuley Street to 60th Street, SB (link 1923) | count (factor ASSUMPTION) | 29 | 32 | 1.13 | 14 | 0.48 | 10 | 0.34 | OUTSIDE (20%) | 4.3 | yes | yes |
-| Canning Street 60th Street to 61st Street, SB (link 1925) | count (factor ASSUMPTION) | 28 | 43 | 1.54 | 16 | 0.57 | 11 | 0.39 | OUTSIDE (20%) | 3.8 | yes | yes |
-| Ayala Avenue Martin Street to Howell Street, SB (link 1856) | count (factor ASSUMPTION) | 27 | 126 | 4.63 | 38 | 1.40 | 30 | 1.11 | ok | 0.5 | yes | yes |
-| Dana Street North Street to Alcatraz Avenue, SB (link 1951) | count (factor ASSUMPTION) | 27 | 4 | 0.14 | 10 | 0.39 | 9 | 0.35 | OUTSIDE (20%) | 4.1 | yes | yes |
-| Hillegass Avenue from south to Alcatraz Avenue toward west at Hillegass Avenue / Alcatraz Avenue | count | 27 | 14 | 0.51 | 41 | 1.55 | 29 | 1.10 | ok | 0.5 | yes | yes |
-| 63rd Street College Avenue to Hillegass Avenue, WB (link 2654) | count (factor ASSUMPTION) | 26 | 14 | 0.53 | 26 | 0.99 | 26 | 1.00 | ok | 0.0 | yes | yes |
-| 57th Street Vicente Street to Telegraph Avenue, WB (link 1942) | count (factor ASSUMPTION) | 26 | 23 | 0.87 | 19 | 0.74 | 20 | 0.79 | OUTSIDE (20%) | 1.2 | yes | yes |
-| Dana Street 63rd Street to North Street, SB (link 1949) | count (factor ASSUMPTION) | 25 | 5 | 0.20 | 11 | 0.44 | 10 | 0.39 | OUTSIDE (20%) | 3.7 | yes | yes |
-| Ayala Avenue Hermann Street to Martin Street, SB (link 1854) | count (factor ASSUMPTION) | 25 | 27 | 1.04 | 24 | 0.93 | 20 | 0.79 | OUTSIDE (20%) | 1.1 | yes | yes |
-| Colby Street SB, whole street between Claremont Avenue and Alcatraz Avenue (links 2635 to 2621) | count | 24 | 44 | 1.83 | 44 | 1.81 | 36 | 1.48 | OUTSIDE (30%) | 2.1 | yes | yes |
-| Hillegass Avenue from north to 62nd Street toward east at Hillegass Avenue / 62nd Street | count | 23 | 4 | 0.16 | 15 | 0.66 | 15 | 0.64 | OUTSIDE (20%) | 1.9 | yes | yes |
-| 63rd Street Canning Street to Telegraph Avenue, WB (link 1883) | count (factor ASSUMPTION) | 22 | 13 | 0.57 | 23 | 1.05 | 22 | 1.01 | ok | 0.0 | yes | yes |
-| Canning Street 61st Street to 62nd Street, SB (link 1927) | count (factor ASSUMPTION) | 22 | 31 | 1.39 | 18 | 0.83 | 11 | 0.51 | OUTSIDE (20%) | 2.7 | yes | yes |
-| Ayala Avenue Forest Street to McAuley Street, NB (link 2831) | count (factor ASSUMPTION) | 22 | 22 | 1.00 | 26 | 1.16 | 24 | 1.10 | ok | 0.4 | yes | yes |
-| McAuley Street Ayala Avenue to Howell Street, WB (link 1954) | count (factor ASSUMPTION) | 21 | 15 | 0.72 | 18 | 0.86 | 15 | 0.69 | OUTSIDE (20%) | 1.5 | yes | yes |
-| McAuley Street Canning Street to Telegraph Avenue, WB (link 1958) | count (factor ASSUMPTION) | 20 | 21 | 1.04 | 25 | 1.23 | 20 | 0.98 | ok | 0.1 | yes | yes |
-| Canning Street 59th Street to McAuley Street, NB (link 1920) | count (factor ASSUMPTION) | 20 | 18 | 0.89 | 24 | 1.19 | 15 | 0.75 | OUTSIDE (20%) | 1.2 | yes | yes |
-| Colby Street from south to Alcatraz Avenue toward east at Colby Street / Alcatraz Avenue | count | 20 | 6 | 0.30 | 23 | 1.14 | 6 | 0.30 | OUTSIDE (20%) | 3.9 | yes | yes |
-| McAuley Street Howell Street to Canning Street, WB (link 1956) | count (factor ASSUMPTION) | 19 | 8 | 0.44 | 12 | 0.65 | 8 | 0.40 | OUTSIDE (20%) | 3.2 | yes | yes |
-| Canning Street 60th Street to 61st Street, NB (link 1924) | count (factor ASSUMPTION) | 19 | 3 | 0.16 | 11 | 0.59 | 2 | 0.08 | OUTSIDE (20%) | 5.4 | NO | yes |
-| Canning Street 62nd Street to 63rd Street, SB (link 1929) | count (factor ASSUMPTION) | 18 | 21 | 1.19 | 11 | 0.62 | 7 | 0.42 | OUTSIDE (20%) | 2.9 | yes | yes |
-| Canning Street 61st Street to 62nd Street, NB (link 1926) | count (factor ASSUMPTION) | 18 | 3 | 0.18 | 8 | 0.45 | 2 | 0.10 | OUTSIDE (20%) | 5.1 | NO | yes |
-| 61st Street Canning Street to Telegraph Avenue, WB (link 2039) | count (factor ASSUMPTION) | 18 | 16 | 0.91 | 15 | 0.82 | 16 | 0.90 | ok | 0.4 | yes | yes |
-| 61st Street Canning Street to Telegraph Avenue, EB (link 2040) | count (factor ASSUMPTION) | 18 | 32 | 1.79 | 18 | 1.00 | 17 | 0.96 | ok | 0.2 | yes | yes |
-| 63rd Street Colby Street to Dana Street, EB (link 1880) | count (factor ASSUMPTION) | 17 | 13 | 0.76 | 17 | 0.99 | 17 | 0.96 | ok | 0.2 | yes | yes |
-| Canning Street McAuley Street to 60th Street, NB (link 1922) | count (factor ASSUMPTION) | 17 | 4 | 0.25 | 10 | 0.59 | 2 | 0.13 | OUTSIDE (20%) | 4.8 | yes | yes |
-| 63rd Street Canning Street to Telegraph Avenue, EB (link 1884) | count (factor ASSUMPTION) | 17 | 31 | 1.83 | 30 | 1.77 | 27 | 1.58 | OUTSIDE (20%) | 2.1 | yes | yes |
-| 63rd Street Hillegass Avenue to Colby Street, WB (link 2656) | count (factor ASSUMPTION) | 17 | 3 | 0.18 | 18 | 1.09 | 19 | 1.14 | ok | 0.5 | yes | yes |
-| 60th Street Canning Street to Telegraph Avenue, WB (link 1893) | count (factor ASSUMPTION) | 17 | 11 | 0.67 | 13 | 0.78 | 14 | 0.86 | ok | 0.6 | yes | yes |
-| 60th Street Canning Street to Telegraph Avenue, EB (link 1894) | count (factor ASSUMPTION) | 17 | 82 | 4.89 | 23 | 1.36 | 19 | 1.12 | ok | 0.5 | yes | yes |
-| 60th Street Howell Street to Canning Street, WB (link 1891) | count (factor ASSUMPTION) | 16 | 8 | 0.51 | 13 | 0.86 | 13 | 0.82 | ok | 0.8 | yes | yes |
-| 62nd Street Florio Street / Claremont Avenue / +1 to Hillegass Avenue, WB (link 2650) | count (factor ASSUMPTION) | 15 | 3 | 0.20 | 8 | 0.53 | 9 | 0.57 | OUTSIDE (20%) | 1.9 | yes | yes |
-| McAuley Street Colby Street to Ayala Avenue, WB (link 1952) | count (factor ASSUMPTION) | 15 | 15 | 0.98 | 10 | 0.65 | 12 | 0.80 | OUTSIDE (20%) | 0.8 | yes | yes |
-| 60th Street Howell Street to Canning Street, EB (link 1892) | count (factor ASSUMPTION) | 14 | 90 | 6.35 | 24 | 1.71 | 19 | 1.34 | OUTSIDE (20%) | 1.2 | yes | yes |
-| Canning Street 58th Street to 59th Street, SB (link 1919) | count (factor ASSUMPTION) | 14 | 8 | 0.61 | 4 | 0.30 | 2 | 0.13 | OUTSIDE (20%) | 4.3 | yes | yes |
-| 63rd Street College Avenue to Hillegass Avenue, EB (link 2655) | count (factor ASSUMPTION) | 14 | 5 | 0.39 | 23 | 1.67 | 24 | 1.78 | OUTSIDE (20%) | 2.4 | yes | yes |
-| 62nd Street Canning Street to Telegraph Avenue, WB (link 1871) | count (factor ASSUMPTION) | 13 | 9 | 0.72 | 15 | 1.19 | 13 | 1.04 | ok | 0.1 | yes | yes |
-| McAuley Street Colby Street to Ayala Avenue, EB (link 1953) | count (factor ASSUMPTION) | 12 | 5 | 0.40 | 7 | 0.57 | 7 | 0.57 | OUTSIDE (20%) | 1.7 | yes | yes |
-| 59th Street Canning Street to Telegraph Avenue, EB (link 1913) | count (factor ASSUMPTION) | 12 | 12 | 0.93 | 6 | 0.45 | 7 | 0.56 | OUTSIDE (20%) | 1.7 | yes | yes |
-| Ayala Avenue Forest Street to McAuley Street, SB (link 2832) | count (factor ASSUMPTION) | 12 | 54 | 4.32 | 15 | 1.19 | 14 | 1.15 | ok | 0.5 | yes | yes |
-| 62nd Street Colby Street to Canning Street, WB (link 1869) | count (factor ASSUMPTION) | 12 | 4 | 0.36 | 7 | 0.63 | 12 | 1.05 | ok | 0.2 | yes | yes |
-| Canning Street 62nd Street to 63rd Street, NB (link 1928) | count (factor ASSUMPTION) | 11 | 0 | 0.01 | 0 | 0.04 | 1 | 0.08 | OUTSIDE (20%) | 4.2 | yes | yes |
-| 60th Street Hillegass Avenue / Claremont Avenue to Colby Street, EB (link 1888) | count (factor ASSUMPTION) | 11 | 1 | 0.08 | 3 | 0.23 | 3 | 0.22 | OUTSIDE (20%) | 3.3 | yes | yes |
-| 59th Street Howell Street to Canning Street, WB (link 1910) | count (factor ASSUMPTION) | 11 | 23 | 2.03 | 13 | 1.12 | 15 | 1.35 | OUTSIDE (20%) | 1.1 | yes | yes |
-| Howell Street 59th Street to McAuley Street, SB (link 2079) | count (factor ASSUMPTION) | 11 | 104 | 9.90 | 28 | 2.70 | 25 | 2.35 | OUTSIDE (20%) | 3.4 | yes | yes |
-| 63rd Street Colby Street to Dana Street, WB (link 1879) | count (factor ASSUMPTION) | 10 | 23 | 2.36 | 18 | 1.80 | 23 | 2.35 | OUTSIDE (20%) | 3.3 | yes | yes |
-| 62nd Street Hillegass Avenue to Colby Street, EB (link 2707) | count (factor ASSUMPTION) | 10 | 0 | 0.02 | 0 | 0.05 | 0 | 0.05 | OUTSIDE (20%) | 4.1 | yes | yes |
-| Howell Street McAuley Street to 60th Street, SB (link 2081) | count (factor ASSUMPTION) | 10 | 93 | 9.34 | 24 | 2.39 | 21 | 2.07 | OUTSIDE (20%) | 2.7 | yes | yes |
-| 60th Street Colby Street to Howell Street, EB (link 1890) | count (factor ASSUMPTION) | 9 | 5 | 0.52 | 4 | 0.45 | 3 | 0.31 | OUTSIDE (20%) | 2.6 | yes | yes |
-| 60th Street Hillegass Avenue / Claremont Avenue to Colby Street, WB (link 1887) | count (factor ASSUMPTION) | 9 | 7 | 0.72 | 6 | 0.61 | 5 | 0.57 | OUTSIDE (20%) | 1.5 | yes | yes |
-| McAuley Street Ayala Avenue to Howell Street, EB (link 1955) | count (factor ASSUMPTION) | 9 | 38 | 4.07 | 12 | 1.28 | 13 | 1.36 | OUTSIDE (20%) | 1.0 | yes | yes |
-| 60th Street Colby Street to Howell Street, WB (link 1889) | count (factor ASSUMPTION) | 9 | 8 | 0.96 | 12 | 1.39 | 10 | 1.20 | ok | 0.6 | yes | yes |
-| McAuley Street Canning Street to Telegraph Avenue, EB (link 1959) | count (factor ASSUMPTION) | 9 | 26 | 3.05 | 6 | 0.73 | 7 | 0.76 | OUTSIDE (20%) | 0.7 | yes | yes |
-| 59th Street Howell Street to Canning Street, EB (link 1911) | count (factor ASSUMPTION) | 9 | 23 | 2.66 | 11 | 1.22 | 10 | 1.12 | ok | 0.4 | yes | yes |
-| 62nd Street Hillegass Avenue to Colby Street, WB (link 2706) | count (factor ASSUMPTION) | 7 | 3 | 0.34 | 6 | 0.81 | 6 | 0.82 | ok | 0.5 | yes | yes |
-| 61st Street Hillegass Avenue to Colby Street, WB (link 2648) | count (factor ASSUMPTION) | 7 | 7 | 0.91 | 7 | 0.95 | 14 | 1.86 | OUTSIDE (20%) | 2.0 | yes | yes |
-| McAuley Street Howell Street to Canning Street, EB (link 1957) | count (factor ASSUMPTION) | 7 | 39 | 5.27 | 12 | 1.64 | 12 | 1.63 | OUTSIDE (20%) | 1.5 | yes | yes |
-| Dana Street 63rd Street to North Street, NB (link 1948) | count (factor ASSUMPTION) | 7 | 11 | 1.62 | 7 | 0.99 | 7 | 1.07 | ok | 0.2 | yes | yes |
-| North Street Colby Street to Dana Street, WB (link 1930) | count (factor ASSUMPTION) | 7 | 1 | 0.20 | 4 | 0.54 | 4 | 0.57 | OUTSIDE (20%) | 1.3 | yes | yes |
-| 62nd Street Colby Street to Canning Street, EB (link 1870) | count (factor ASSUMPTION) | 7 | 3 | 0.38 | 6 | 0.82 | 6 | 0.86 | ok | 0.4 | yes | yes |
-| 61st Street Hillegass Avenue to Colby Street, EB (link 2649) | count (factor ASSUMPTION) | 7 | 0 | 0.00 | 0 | 0.00 | 0 | 0.00 | OUTSIDE (20%) | 3.7 | yes | yes |
-| North Street Colby Street to Dana Street, EB (link 1931) | count (factor ASSUMPTION) | 6 | 6 | 0.90 | 9 | 1.44 | 9 | 1.46 | OUTSIDE (20%) | 1.0 | yes | yes |
-| 62nd Street Canning Street to Telegraph Avenue, EB (link 1872) | count (factor ASSUMPTION) | 6 | 14 | 2.56 | 13 | 2.39 | 10 | 1.80 | OUTSIDE (20%) | 1.6 | yes | yes |
-| 58th Street Canning Street to Vicente Street, EB (link 2014) | count (factor ASSUMPTION) | 5 | 64 | 12.52 | 17 | 3.36 | 18 | 3.51 | OUTSIDE (20%) | 3.8 | yes | yes |
-| Dana Street North Street to Alcatraz Avenue, NB (link 1950) | count (factor ASSUMPTION) | 4 | 5 | 1.22 | 10 | 2.35 | 10 | 2.34 | OUTSIDE (20%) | 2.2 | yes | yes |
-| 63rd Street Hillegass Avenue to Colby Street, EB (link 2657) | count (factor ASSUMPTION) | 4 | 0 | 0.05 | 1 | 0.13 | 1 | 0.13 | OUTSIDE (20%) | 2.4 | yes | yes |
-| Hermann Street Ayala Avenue to Martin Street / 58th Street, SB (link 1848) | count (factor ASSUMPTION) | 4 | 3 | 0.77 | 4 | 0.85 | 5 | 1.21 | OUTSIDE (20%) | 0.4 | yes | yes |
-| Howell Street 59th Street to McAuley Street, NB (link 2078) | count (factor ASSUMPTION) | 4 | 10 | 2.28 | 4 | 0.85 | 5 | 1.20 | OUTSIDE (20%) | 0.4 | yes | yes |
-| Howell Street McAuley Street to 60th Street, NB (link 2080) | count (factor ASSUMPTION) | 4 | 7 | 1.80 | 5 | 1.29 | 7 | 1.81 | OUTSIDE (20%) | 1.3 | yes | yes |
-| Hermann Street Ayala Avenue to Martin Street / 58th Street, NB (link 1847) | count (factor ASSUMPTION) | 3 | 1 | 0.20 | 1 | 0.29 | 1 | 0.29 | OUTSIDE (20%) | 1.6 | yes | yes |
-| gate 266 Ashby Avenue entering | gate | 781 | 775 | 0.99 | 781 | 1.00 | 781 | 1.00 | ok | 0.0 | yes | yes |
+| tunnel station, link 3494 inward (5 m from the station) | caltrans | 753 | 306 | 0.41 | 722 | 0.96 | 737 | 0.98 | ok | 0.6 | yes | yes |
+| tunnel station, link 3493 outward (5 m from the station) | caltrans | 753 | 330 | 0.44 | 754 | 1.00 | 753 | 1.00 | ok | 0.0 | yes | yes |
+| ashby station, link 3427 inward (4 m from the station) | caltrans | 656 | 307 | 0.47 | 654 | 1.00 | 656 | 1.00 | ok | 0.0 | yes | yes |
+| ashby station, link 3426 outward (4 m from the station) | caltrans | 656 | 329 | 0.50 | 656 | 1.00 | 655 | 1.00 | ok | 0.0 | yes | yes |
+| sanpablo station, link 115 inward (11 m from the station) | caltrans | 572 | 346 | 0.60 | 531 | 0.93 | 542 | 0.95 | ok | 1.3 | yes | yes |
+| sanpablo station, link 111 outward (0 m from the station) | caltrans | 572 | 589 | 1.03 | 570 | 1.00 | 571 | 1.00 | ok | 0.0 | yes | yes |
+| Colby Street Forest Street / Claremont Avenue to McAuley Street, NB (link 2620) | count (factor ASSUMPTION) | 117 | 106 | 0.90 | 133 | 1.14 | 101 | 0.87 | ok | 1.5 | yes | yes |
+| Colby Street McAuley Street to 60th Street, NB (link 2622) | count (factor ASSUMPTION) | 113 | 80 | 0.71 | 106 | 0.94 | 88 | 0.78 | OUTSIDE (20%) | 2.4 | yes | yes |
+| Colby Street 60th Street to 61st Street, NB (link 2624) | count (factor ASSUMPTION) | 111 | 79 | 0.71 | 104 | 0.93 | 87 | 0.79 | OUTSIDE (20%) | 2.4 | yes | yes |
+| Hillegass Avenue Alcatraz Avenue to 63rd Street, SB (link 2698) | count (factor ASSUMPTION) | 110 | 18 | 0.16 | 75 | 0.68 | 34 | 0.31 | OUTSIDE (20%) | 9.0 | NO | yes |
+| Colby Street 61st Street to 62nd Street, NB (link 2626) | count (factor ASSUMPTION) | 108 | 45 | 0.42 | 94 | 0.87 | 75 | 0.69 | OUTSIDE (20%) | 3.4 | yes | yes |
+| Colby Street McAuley Street to 60th Street, SB (link 2623) | count (factor ASSUMPTION) | 105 | 126 | 1.20 | 93 | 0.88 | 79 | 0.75 | OUTSIDE (20%) | 2.8 | yes | yes |
+| Hillegass Avenue 63rd Street to 62nd Street, SB (link 2700) | count (factor ASSUMPTION) | 104 | 32 | 0.31 | 109 | 1.04 | 92 | 0.89 | ok | 1.2 | yes | yes |
+| Colby Street North Street to Alcatraz Avenue, NB (link 2634) | count (factor ASSUMPTION) | 102 | 11 | 0.11 | 50 | 0.49 | 31 | 0.30 | OUTSIDE (20%) | 8.7 | NO | yes |
+| Martin Street Claremont Avenue to Ayala Avenue, WB (link 1851) | count (factor ASSUMPTION) | 102 | 107 | 1.05 | 110 | 1.08 | 79 | 0.78 | OUTSIDE (20%) | 2.4 | yes | yes |
+| Colby Street 62nd Street to 63rd Street, SB (link 2629) | count (factor ASSUMPTION) | 100 | 76 | 0.76 | 83 | 0.83 | 70 | 0.70 | OUTSIDE (20%) | 3.3 | yes | yes |
+| Colby Street Forest Street / Claremont Avenue to McAuley Street, SB (link 2621) | count (factor ASSUMPTION) | 100 | 141 | 1.40 | 91 | 0.90 | 76 | 0.75 | OUTSIDE (20%) | 2.6 | yes | yes |
+| Colby Street 61st Street to 62nd Street, SB (link 2627) | count (factor ASSUMPTION) | 99 | 86 | 0.86 | 86 | 0.87 | 73 | 0.74 | OUTSIDE (20%) | 2.8 | yes | yes |
+| Colby Street 60th Street to 61st Street, SB (link 2625) | count (factor ASSUMPTION) | 99 | 122 | 1.23 | 92 | 0.93 | 79 | 0.80 | OUTSIDE (20%) | 2.1 | yes | yes |
+| Colby Street 62nd Street to 63rd Street, NB (link 2628) | count (factor ASSUMPTION) | 98 | 37 | 0.38 | 89 | 0.91 | 78 | 0.80 | OUTSIDE (20%) | 2.1 | yes | yes |
+| Colby Street 63rd Street to 63rd Street, SB (link 2631) | count (factor ASSUMPTION) | 97 | 64 | 0.66 | 82 | 0.85 | 69 | 0.72 | OUTSIDE (20%) | 3.0 | yes | yes |
+| Colby Street 63rd Street to 63rd Street, NB (link 2630) | count (factor ASSUMPTION) | 94 | 15 | 0.16 | 73 | 0.77 | 58 | 0.61 | OUTSIDE (20%) | 4.2 | yes | yes |
+| Hillegass Avenue 61st Street to 60th Street / Claremont Avenue, SB (link 2704) | count (factor ASSUMPTION) | 94 | 47 | 0.50 | 96 | 1.02 | 78 | 0.83 | ok | 1.7 | yes | yes |
+| Hillegass Avenue 62nd Street to 61st Street, SB (link 2702) | count (factor ASSUMPTION) | 94 | 29 | 0.30 | 88 | 0.94 | 75 | 0.80 | ok | 2.0 | yes | yes |
+| Hillegass Avenue from north to Claremont Avenue toward southwest (Telegraph side) at Hillegass Avenue / Claremont Avenue | count | 89 | 46 | 0.52 | 94 | 1.06 | 77 | 0.86 | ok | 1.3 | yes | yes |
+| Colby Street North Street to Alcatraz Avenue, SB (link 2635) | count (factor ASSUMPTION) | 86 | 53 | 0.61 | 66 | 0.77 | 56 | 0.64 | OUTSIDE (20%) | 3.6 | yes | yes |
+| 58th Street Hermann Street / Martin Street to Canning Street, WB (link 2011) | count (factor ASSUMPTION) | 86 | 65 | 0.77 | 87 | 1.02 | 76 | 0.89 | ok | 1.0 | yes | yes |
+| Martin Street Ayala Avenue to Hermann Street / 58th Street, WB (link 1849) | count (factor ASSUMPTION) | 84 | 69 | 0.83 | 87 | 1.04 | 74 | 0.89 | ok | 1.0 | yes | yes |
+| Colby Street from south to Alcatraz Avenue toward west at Colby Street / Alcatraz Avenue | count | 81 | 1 | 0.01 | 4 | 0.05 | 4 | 0.05 | OUTSIDE (20%) | 11.9 | NO | yes |
+| Martin Street Claremont Avenue to Ayala Avenue, EB (link 1852) | count (factor ASSUMPTION) | 76 | 211 | 2.76 | 81 | 1.07 | 73 | 0.96 | ok | 0.4 | yes | yes |
+| Claremont Avenue from southwest to Colby Street toward north at Colby Street / Claremont Avenue | count | 75 | 94 | 1.25 | 101 | 1.34 | 71 | 0.95 | ok | 0.4 | yes | yes |
+| 58th Street Canning Street to Vicente Street, WB (link 2013) | count (factor ASSUMPTION) | 71 | 42 | 0.60 | 54 | 0.76 | 46 | 0.65 | OUTSIDE (20%) | 3.2 | yes | yes |
+| Hillegass Avenue 61st Street to 60th Street / Claremont Avenue, NB (link 2705) | count (factor ASSUMPTION) | 71 | 75 | 1.07 | 67 | 0.94 | 60 | 0.85 | ok | 1.3 | yes | yes |
+| Hillegass Avenue 62nd Street to 61st Street, NB (link 2703) | count (factor ASSUMPTION) | 68 | 46 | 0.68 | 60 | 0.87 | 54 | 0.79 | OUTSIDE (20%) | 1.9 | yes | yes |
+| Hillegass Avenue Alcatraz Avenue to 63rd Street, NB (link 2699) | count (factor ASSUMPTION) | 68 | 34 | 0.51 | 62 | 0.92 | 56 | 0.84 | ok | 1.4 | yes | yes |
+| Colby Street NB, whole street between Claremont Avenue and Alcatraz Avenue (links 2620 to 2634) | count | 63 | 9 | 0.14 | 44 | 0.69 | 24 | 0.37 | OUTSIDE (30%) | 6.0 | NO | yes |
+| Alcatraz Avenue from east to Hillegass Avenue toward south at Hillegass Avenue / Alcatraz Avenue | count | 61 | 3 | 0.06 | 7 | 0.12 | 5 | 0.09 | OUTSIDE (20%) | 9.7 | NO | yes |
+| 58th Street Hermann Street / Martin Street to Canning Street, EB (link 2012) | count (factor ASSUMPTION) | 60 | 72 | 1.21 | 25 | 0.41 | 19 | 0.32 | OUTSIDE (20%) | 6.5 | NO | yes |
+| Hillegass Avenue 63rd Street to 62nd Street, NB (link 2701) | count (factor ASSUMPTION) | 58 | 45 | 0.79 | 59 | 1.01 | 51 | 0.89 | ok | 0.9 | yes | yes |
+| Martin Street Ayala Avenue to Hermann Street / 58th Street, EB (link 1850) | count (factor ASSUMPTION) | 55 | 74 | 1.35 | 40 | 0.73 | 43 | 0.78 | OUTSIDE (20%) | 1.7 | yes | yes |
+| 58th Street Vicente Street to Telegraph Avenue, WB (link 2015) | count (factor ASSUMPTION) | 55 | 35 | 0.64 | 41 | 0.76 | 33 | 0.61 | OUTSIDE (20%) | 3.2 | yes | yes |
+| Claremont Avenue from southwest to Hillegass Avenue toward north at Hillegass Avenue / Claremont Avenue | count | 54 | 70 | 1.30 | 60 | 1.11 | 51 | 0.94 | ok | 0.4 | yes | yes |
+| Colby Street from north to Claremont Avenue toward southwest (Telegraph side) at Colby Street / Claremont Avenue | count | 52 | 139 | 2.66 | 88 | 1.69 | 72 | 1.39 | OUTSIDE (20%) | 2.6 | yes | yes |
+| Hillegass Avenue SB, whole street between Claremont Avenue and Alcatraz Avenue (links 2698 to 2704) | count | 49 | 13 | 0.27 | 57 | 1.16 | 21 | 0.44 | OUTSIDE (30%) | 4.6 | yes | yes |
+| Alcatraz Avenue from west to Colby Street toward south at Colby Street / Alcatraz Avenue | count | 47 | 12 | 0.25 | 13 | 0.28 | 13 | 0.27 | OUTSIDE (20%) | 6.3 | NO | yes |
+| Alcatraz Avenue from west to Hillegass Avenue toward south at Hillegass Avenue / Alcatraz Avenue | count | 47 | 7 | 0.14 | 19 | 0.40 | 14 | 0.29 | OUTSIDE (20%) | 6.0 | NO | yes |
+| Colby Street from north to Claremont Avenue toward northeast (College side) at Colby Street / Claremont Avenue | count | 47 | 0 | 0.00 | 0 | 0.00 | 0 | 0.00 | OUTSIDE (20%) | 9.6 | NO | yes |
+| 57th Street Vicente Street to Telegraph Avenue, EB (link 1943) | count (factor ASSUMPTION) | 45 | 39 | 0.86 | 46 | 1.01 | 45 | 1.00 | ok | 0.0 | yes | yes |
+| Forest Street Colby Street / Claremont Avenue to Ayala Avenue, WB (link 2725) | count (factor ASSUMPTION) | 41 | 29 | 0.72 | 36 | 0.89 | 42 | 1.02 | ok | 0.1 | yes | yes |
+| Forest Street Colby Street / Claremont Avenue to Ayala Avenue, EB (link 2726) | count (factor ASSUMPTION) | 41 | 57 | 1.38 | 31 | 0.77 | 32 | 0.77 | OUTSIDE (20%) | 1.6 | yes | yes |
+| 58th Street Vicente Street to Telegraph Avenue, EB (link 2016) | count (factor ASSUMPTION) | 40 | 54 | 1.33 | 33 | 0.83 | 39 | 0.97 | ok | 0.2 | yes | yes |
+| 63rd Street Dana Street to Canning Street, WB (link 1881) | count (factor ASSUMPTION) | 40 | 15 | 0.38 | 28 | 0.72 | 29 | 0.73 | OUTSIDE (20%) | 1.8 | yes | yes |
+| Ayala Avenue Hermann Street to Martin Street, NB (link 1853) | count (factor ASSUMPTION) | 40 | 38 | 0.97 | 38 | 0.97 | 38 | 0.96 | ok | 0.2 | yes | yes |
+| Ayala Avenue Howell Street to Forest Street, NB (link 2082) | count (factor ASSUMPTION) | 40 | 32 | 0.81 | 31 | 0.79 | 27 | 0.67 | OUTSIDE (20%) | 2.3 | yes | yes |
+| 63rd Street Dana Street to Canning Street, EB (link 1882) | count (factor ASSUMPTION) | 37 | 13 | 0.34 | 22 | 0.59 | 24 | 0.64 | OUTSIDE (20%) | 2.5 | yes | yes |
+| Ayala Avenue Martin Street to Howell Street, NB (link 1855) | count (factor ASSUMPTION) | 37 | 39 | 1.06 | 40 | 1.08 | 36 | 0.98 | ok | 0.2 | yes | yes |
+| 62nd Street Florio Street / Claremont Avenue / +1 to Hillegass Avenue, EB (link 2651) | count (factor ASSUMPTION) | 37 | 7 | 0.19 | 26 | 0.72 | 25 | 0.68 | OUTSIDE (20%) | 2.1 | yes | yes |
+| Forest Street from southeast to Colby Street toward north at Colby Street / Claremont Avenue | count | 35 | 12 | 0.33 | 33 | 0.92 | 30 | 0.85 | ok | 0.9 | yes | yes |
+| Canning Street 58th Street to 59th Street, NB (link 1918) | count (factor ASSUMPTION) | 34 | 24 | 0.71 | 35 | 1.01 | 31 | 0.92 | ok | 0.5 | yes | yes |
+| Hillegass Avenue from south to Alcatraz Avenue toward east at Hillegass Avenue / Alcatraz Avenue | count | 33 | 2 | 0.05 | 6 | 0.19 | 5 | 0.15 | OUTSIDE (20%) | 6.5 | NO | yes |
+| 59th Street Canning Street to Telegraph Avenue, WB (link 1912) | count (factor ASSUMPTION) | 31 | 30 | 0.97 | 28 | 0.90 | 27 | 0.86 | ok | 0.8 | yes | yes |
+| Alcatraz Avenue from east to Colby Street toward south at Colby Street / Alcatraz Avenue | count | 31 | 14 | 0.45 | 39 | 1.27 | 28 | 0.89 | ok | 0.6 | yes | yes |
+| Canning Street 59th Street to McAuley Street, SB (link 1921) | count (factor ASSUMPTION) | 30 | 17 | 0.56 | 8 | 0.25 | 7 | 0.22 | OUTSIDE (20%) | 5.5 | NO | yes |
+| Ayala Avenue Howell Street to Forest Street, SB (link 2083) | count (factor ASSUMPTION) | 30 | 28 | 0.93 | 25 | 0.84 | 28 | 0.94 | ok | 0.3 | yes | yes |
+| Hillegass Avenue NB, whole street between Claremont Avenue and Alcatraz Avenue (links 2705 to 2699) | count | 30 | 26 | 0.87 | 41 | 1.38 | 33 | 1.12 | ok | 0.6 | yes | yes |
+| Canning Street McAuley Street to 60th Street, SB (link 1923) | count (factor ASSUMPTION) | 29 | 33 | 1.16 | 16 | 0.57 | 14 | 0.50 | OUTSIDE (20%) | 3.1 | yes | yes |
+| Canning Street 60th Street to 61st Street, SB (link 1925) | count (factor ASSUMPTION) | 28 | 37 | 1.33 | 12 | 0.44 | 9 | 0.31 | OUTSIDE (20%) | 4.5 | yes | yes |
+| Ayala Avenue Martin Street to Howell Street, SB (link 1856) | count (factor ASSUMPTION) | 27 | 126 | 4.63 | 43 | 1.58 | 37 | 1.37 | OUTSIDE (20%) | 1.8 | yes | yes |
+| Dana Street North Street to Alcatraz Avenue, SB (link 1951) | count (factor ASSUMPTION) | 27 | 3 | 0.13 | 7 | 0.25 | 8 | 0.30 | OUTSIDE (20%) | 4.5 | yes | yes |
+| Hillegass Avenue from south to Alcatraz Avenue toward west at Hillegass Avenue / Alcatraz Avenue | count | 27 | 16 | 0.60 | 48 | 1.79 | 31 | 1.14 | ok | 0.7 | yes | yes |
+| 63rd Street College Avenue to Hillegass Avenue, WB (link 2654) | count (factor ASSUMPTION) | 26 | 15 | 0.56 | 26 | 0.99 | 26 | 0.99 | ok | 0.0 | yes | yes |
+| 57th Street Vicente Street to Telegraph Avenue, WB (link 1942) | count (factor ASSUMPTION) | 26 | 25 | 0.95 | 15 | 0.59 | 18 | 0.69 | OUTSIDE (20%) | 1.7 | yes | yes |
+| Dana Street 63rd Street to North Street, SB (link 1949) | count (factor ASSUMPTION) | 25 | 5 | 0.19 | 12 | 0.47 | 15 | 0.57 | OUTSIDE (20%) | 2.4 | yes | yes |
+| Ayala Avenue Hermann Street to Martin Street, SB (link 1854) | count (factor ASSUMPTION) | 25 | 26 | 1.04 | 23 | 0.91 | 19 | 0.76 | OUTSIDE (20%) | 1.3 | yes | yes |
+| Colby Street SB, whole street between Claremont Avenue and Alcatraz Avenue (links 2635 to 2621) | count | 24 | 48 | 2.00 | 54 | 2.23 | 42 | 1.73 | OUTSIDE (30%) | 3.1 | yes | yes |
+| Hillegass Avenue from north to 62nd Street toward east at Hillegass Avenue / 62nd Street | count | 23 | 4 | 0.19 | 21 | 0.92 | 18 | 0.80 | OUTSIDE (20%) | 1.0 | yes | yes |
+| 63rd Street Canning Street to Telegraph Avenue, WB (link 1883) | count (factor ASSUMPTION) | 22 | 13 | 0.59 | 26 | 1.15 | 26 | 1.18 | ok | 0.8 | yes | yes |
+| Canning Street 61st Street to 62nd Street, SB (link 1927) | count (factor ASSUMPTION) | 22 | 26 | 1.16 | 10 | 0.44 | 7 | 0.31 | OUTSIDE (20%) | 4.0 | yes | yes |
+| Ayala Avenue Forest Street to McAuley Street, NB (link 2831) | count (factor ASSUMPTION) | 22 | 24 | 1.09 | 25 | 1.14 | 22 | 1.00 | ok | 0.0 | yes | yes |
+| McAuley Street Ayala Avenue to Howell Street, WB (link 1954) | count (factor ASSUMPTION) | 21 | 18 | 0.83 | 14 | 0.69 | 14 | 0.66 | OUTSIDE (20%) | 1.7 | yes | yes |
+| McAuley Street Canning Street to Telegraph Avenue, WB (link 1958) | count (factor ASSUMPTION) | 20 | 21 | 1.04 | 23 | 1.11 | 20 | 0.98 | ok | 0.1 | yes | yes |
+| Canning Street 59th Street to McAuley Street, NB (link 1920) | count (factor ASSUMPTION) | 20 | 17 | 0.84 | 21 | 1.04 | 18 | 0.92 | ok | 0.4 | yes | yes |
+| Colby Street from south to Alcatraz Avenue toward east at Colby Street / Alcatraz Avenue | count | 20 | 6 | 0.32 | 22 | 1.10 | 9 | 0.44 | OUTSIDE (20%) | 2.9 | yes | yes |
+| McAuley Street Howell Street to Canning Street, WB (link 1956) | count (factor ASSUMPTION) | 19 | 6 | 0.32 | 6 | 0.29 | 4 | 0.22 | OUTSIDE (20%) | 4.4 | yes | yes |
+| Canning Street 60th Street to 61st Street, NB (link 1924) | count (factor ASSUMPTION) | 19 | 1 | 0.07 | 4 | 0.22 | 3 | 0.19 | OUTSIDE (20%) | 4.6 | yes | yes |
+| Canning Street 62nd Street to 63rd Street, SB (link 1929) | count (factor ASSUMPTION) | 18 | 21 | 1.19 | 9 | 0.52 | 6 | 0.31 | OUTSIDE (20%) | 3.6 | yes | yes |
+| Canning Street 61st Street to 62nd Street, NB (link 1926) | count (factor ASSUMPTION) | 18 | 1 | 0.07 | 2 | 0.13 | 4 | 0.24 | OUTSIDE (20%) | 4.1 | yes | yes |
+| 61st Street Canning Street to Telegraph Avenue, WB (link 2039) | count (factor ASSUMPTION) | 18 | 20 | 1.11 | 16 | 0.89 | 15 | 0.86 | ok | 0.6 | yes | yes |
+| 61st Street Canning Street to Telegraph Avenue, EB (link 2040) | count (factor ASSUMPTION) | 18 | 29 | 1.62 | 17 | 0.93 | 18 | 0.99 | ok | 0.1 | yes | yes |
+| 63rd Street Colby Street to Dana Street, EB (link 1880) | count (factor ASSUMPTION) | 17 | 14 | 0.81 | 19 | 1.10 | 17 | 0.99 | ok | 0.0 | yes | yes |
+| Canning Street McAuley Street to 60th Street, NB (link 1922) | count (factor ASSUMPTION) | 17 | 2 | 0.14 | 6 | 0.37 | 5 | 0.29 | OUTSIDE (20%) | 3.7 | yes | yes |
+| 63rd Street Canning Street to Telegraph Avenue, EB (link 1884) | count (factor ASSUMPTION) | 17 | 32 | 1.91 | 28 | 1.67 | 26 | 1.56 | OUTSIDE (20%) | 2.0 | yes | yes |
+| 63rd Street Hillegass Avenue to Colby Street, WB (link 2656) | count (factor ASSUMPTION) | 17 | 4 | 0.22 | 19 | 1.14 | 18 | 1.06 | ok | 0.2 | yes | yes |
+| 60th Street Canning Street to Telegraph Avenue, WB (link 1893) | count (factor ASSUMPTION) | 17 | 9 | 0.51 | 14 | 0.82 | 13 | 0.79 | OUTSIDE (20%) | 0.9 | yes | yes |
+| 60th Street Canning Street to Telegraph Avenue, EB (link 1894) | count (factor ASSUMPTION) | 17 | 84 | 5.04 | 26 | 1.56 | 19 | 1.13 | ok | 0.5 | yes | yes |
+| 60th Street Howell Street to Canning Street, WB (link 1891) | count (factor ASSUMPTION) | 16 | 8 | 0.54 | 15 | 0.95 | 15 | 0.98 | ok | 0.1 | yes | yes |
+| 62nd Street Florio Street / Claremont Avenue / +1 to Hillegass Avenue, WB (link 2650) | count (factor ASSUMPTION) | 15 | 4 | 0.24 | 8 | 0.53 | 8 | 0.55 | OUTSIDE (20%) | 2.0 | yes | yes |
+| McAuley Street Colby Street to Ayala Avenue, WB (link 1952) | count (factor ASSUMPTION) | 15 | 13 | 0.90 | 9 | 0.63 | 11 | 0.71 | OUTSIDE (20%) | 1.2 | yes | yes |
+| 60th Street Howell Street to Canning Street, EB (link 1892) | count (factor ASSUMPTION) | 14 | 89 | 6.27 | 25 | 1.79 | 17 | 1.18 | ok | 0.7 | yes | yes |
+| Canning Street 58th Street to 59th Street, SB (link 1919) | count (factor ASSUMPTION) | 14 | 10 | 0.72 | 4 | 0.28 | 2 | 0.14 | OUTSIDE (20%) | 4.2 | yes | yes |
+| 63rd Street College Avenue to Hillegass Avenue, EB (link 2655) | count (factor ASSUMPTION) | 14 | 7 | 0.48 | 24 | 1.73 | 22 | 1.59 | OUTSIDE (20%) | 1.9 | yes | yes |
+| 62nd Street Canning Street to Telegraph Avenue, WB (link 1871) | count (factor ASSUMPTION) | 13 | 5 | 0.41 | 9 | 0.67 | 13 | 0.98 | ok | 0.1 | yes | yes |
+| McAuley Street Colby Street to Ayala Avenue, EB (link 1953) | count (factor ASSUMPTION) | 12 | 5 | 0.42 | 8 | 0.68 | 7 | 0.56 | OUTSIDE (20%) | 1.7 | yes | yes |
+| 59th Street Canning Street to Telegraph Avenue, EB (link 1913) | count (factor ASSUMPTION) | 12 | 9 | 0.72 | 6 | 0.46 | 7 | 0.55 | OUTSIDE (20%) | 1.8 | yes | yes |
+| Ayala Avenue Forest Street to McAuley Street, SB (link 2832) | count (factor ASSUMPTION) | 12 | 47 | 3.81 | 16 | 1.29 | 14 | 1.13 | ok | 0.4 | yes | yes |
+| 62nd Street Colby Street to Canning Street, WB (link 1869) | count (factor ASSUMPTION) | 12 | 3 | 0.24 | 5 | 0.43 | 7 | 0.63 | OUTSIDE (20%) | 1.4 | yes | yes |
+| Canning Street 62nd Street to 63rd Street, NB (link 1928) | count (factor ASSUMPTION) | 11 | 0 | 0.01 | 0 | 0.03 | 0 | 0.03 | OUTSIDE (20%) | 4.5 | yes | yes |
+| 60th Street Hillegass Avenue / Claremont Avenue to Colby Street, EB (link 1888) | count (factor ASSUMPTION) | 11 | 1 | 0.11 | 3 | 0.29 | 4 | 0.33 | OUTSIDE (20%) | 2.7 | yes | yes |
+| 59th Street Howell Street to Canning Street, WB (link 1910) | count (factor ASSUMPTION) | 11 | 21 | 1.89 | 13 | 1.16 | 12 | 1.04 | ok | 0.1 | yes | yes |
+| Howell Street 59th Street to McAuley Street, SB (link 2079) | count (factor ASSUMPTION) | 11 | 107 | 10.17 | 30 | 2.80 | 23 | 2.16 | OUTSIDE (20%) | 3.0 | yes | yes |
+| 63rd Street Colby Street to Dana Street, WB (link 1879) | count (factor ASSUMPTION) | 10 | 23 | 2.35 | 20 | 2.06 | 22 | 2.18 | OUTSIDE (20%) | 2.9 | yes | yes |
+| 62nd Street Hillegass Avenue to Colby Street, EB (link 2707) | count (factor ASSUMPTION) | 10 | 1 | 0.07 | 2 | 0.20 | 2 | 0.20 | OUTSIDE (20%) | 3.2 | yes | yes |
+| Howell Street McAuley Street to 60th Street, SB (link 2081) | count (factor ASSUMPTION) | 10 | 88 | 8.91 | 24 | 2.44 | 16 | 1.65 | OUTSIDE (20%) | 1.8 | yes | yes |
+| 60th Street Colby Street to Howell Street, EB (link 1890) | count (factor ASSUMPTION) | 9 | 7 | 0.72 | 4 | 0.39 | 4 | 0.43 | OUTSIDE (20%) | 2.0 | yes | yes |
+| 60th Street Hillegass Avenue / Claremont Avenue to Colby Street, WB (link 1887) | count (factor ASSUMPTION) | 9 | 5 | 0.58 | 9 | 0.98 | 10 | 1.09 | ok | 0.3 | yes | yes |
+| McAuley Street Ayala Avenue to Howell Street, EB (link 1955) | count (factor ASSUMPTION) | 9 | 33 | 3.56 | 13 | 1.35 | 9 | 1.02 | ok | 0.1 | yes | yes |
+| 60th Street Colby Street to Howell Street, WB (link 1889) | count (factor ASSUMPTION) | 9 | 7 | 0.83 | 11 | 1.28 | 12 | 1.33 | OUTSIDE (20%) | 0.9 | yes | yes |
+| McAuley Street Canning Street to Telegraph Avenue, EB (link 1959) | count (factor ASSUMPTION) | 9 | 24 | 2.77 | 7 | 0.85 | 6 | 0.65 | OUTSIDE (20%) | 1.1 | yes | yes |
+| 59th Street Howell Street to Canning Street, EB (link 1911) | count (factor ASSUMPTION) | 9 | 15 | 1.70 | 8 | 0.96 | 10 | 1.13 | ok | 0.4 | yes | yes |
+| 62nd Street Hillegass Avenue to Colby Street, WB (link 2706) | count (factor ASSUMPTION) | 7 | 2 | 0.30 | 5 | 0.72 | 5 | 0.65 | OUTSIDE (20%) | 1.0 | yes | yes |
+| 61st Street Hillegass Avenue to Colby Street, WB (link 2648) | count (factor ASSUMPTION) | 7 | 7 | 0.99 | 10 | 1.39 | 13 | 1.78 | OUTSIDE (20%) | 1.8 | yes | yes |
+| McAuley Street Howell Street to Canning Street, EB (link 1957) | count (factor ASSUMPTION) | 7 | 39 | 5.23 | 13 | 1.76 | 11 | 1.41 | OUTSIDE (20%) | 1.0 | yes | yes |
+| Dana Street 63rd Street to North Street, NB (link 1948) | count (factor ASSUMPTION) | 7 | 11 | 1.64 | 7 | 0.99 | 7 | 0.96 | ok | 0.1 | yes | yes |
+| North Street Colby Street to Dana Street, WB (link 1930) | count (factor ASSUMPTION) | 7 | 2 | 0.29 | 6 | 0.87 | 8 | 1.22 | OUTSIDE (20%) | 0.5 | yes | yes |
+| 62nd Street Colby Street to Canning Street, EB (link 1870) | count (factor ASSUMPTION) | 7 | 3 | 0.42 | 7 | 0.98 | 5 | 0.80 | ok | 0.5 | yes | yes |
+| 61st Street Hillegass Avenue to Colby Street, EB (link 2649) | count (factor ASSUMPTION) | 7 | 1 | 0.07 | 2 | 0.22 | 2 | 0.22 | OUTSIDE (20%) | 2.6 | yes | yes |
+| North Street Colby Street to Dana Street, EB (link 1931) | count (factor ASSUMPTION) | 6 | 7 | 1.11 | 9 | 1.44 | 8 | 1.35 | OUTSIDE (20%) | 0.8 | yes | yes |
+| 62nd Street Canning Street to Telegraph Avenue, EB (link 1872) | count (factor ASSUMPTION) | 6 | 9 | 1.55 | 9 | 1.57 | 8 | 1.49 | OUTSIDE (20%) | 1.0 | yes | yes |
+| 58th Street Canning Street to Vicente Street, EB (link 2014) | count (factor ASSUMPTION) | 5 | 63 | 12.39 | 22 | 4.24 | 18 | 3.55 | OUTSIDE (20%) | 3.8 | yes | yes |
+| Dana Street North Street to Alcatraz Avenue, NB (link 1950) | count (factor ASSUMPTION) | 4 | 4 | 1.03 | 9 | 2.02 | 7 | 1.62 | OUTSIDE (20%) | 1.1 | yes | yes |
+| 63rd Street Hillegass Avenue to Colby Street, EB (link 2657) | count (factor ASSUMPTION) | 4 | 1 | 0.28 | 3 | 0.76 | 3 | 0.76 | OUTSIDE (20%) | 0.5 | yes | yes |
+| Hermann Street Ayala Avenue to Martin Street / 58th Street, SB (link 1848) | count (factor ASSUMPTION) | 4 | 3 | 0.65 | 3 | 0.70 | 4 | 0.98 | ok | 0.0 | yes | yes |
+| Howell Street 59th Street to McAuley Street, NB (link 2078) | count (factor ASSUMPTION) | 4 | 8 | 1.89 | 4 | 0.96 | 4 | 0.98 | ok | 0.0 | yes | yes |
+| Howell Street McAuley Street to 60th Street, NB (link 2080) | count (factor ASSUMPTION) | 4 | 7 | 1.76 | 5 | 1.38 | 6 | 1.65 | OUTSIDE (20%) | 1.1 | yes | yes |
+| Hermann Street Ayala Avenue to Martin Street / 58th Street, NB (link 1847) | count (factor ASSUMPTION) | 3 | 2 | 0.53 | 1 | 0.47 | 1 | 0.38 | OUTSIDE (20%) | 1.3 | yes | yes |
+| gate 266 Ashby Avenue entering | gate | 781 | 775 | 0.99 | 782 | 1.00 | 782 | 1.00 | ok | 0.0 | yes | yes |
 | gate 266 Ashby Avenue leaving | gate | 781 | 774 | 0.99 | 781 | 1.00 | 781 | 1.00 | ok | 0.0 | yes | yes |
-| gate 781 Telegraph Avenue leaving | gate | 453 | 445 | 0.98 | 454 | 1.00 | 454 | 1.00 | ok | 0.0 | yes | yes |
-| gate 771 Telegraph Avenue entering | gate | 340 | 331 | 0.97 | 340 | 1.00 | 340 | 1.00 | ok | 0.0 | yes | yes |
-| gate 303 43rd Street leaving | gate | 193 | 174 | 0.90 | 193 | 1.00 | 193 | 1.00 | ok | 0.0 | yes | yes |
-| gate 303 43rd Street entering | gate | 102 | 89 | 0.86 | 102 | 1.00 | 103 | 1.00 | ok | 0.0 | yes | yes |
-| off-ramp at node 727 (Martin Luther King Junior Way) | ramp | 1027 | 720 | 0.70 | 1027 | 1.00 | 1027 | 1.00 | ok | 0.0 | yes | yes |
-| off-ramp at node 735 (52nd Street) | ramp | 792 | 900 | 1.14 | 792 | 1.00 | 792 | 1.00 | ok | 0.0 | yes | yes |
-| on-ramp at node 733 (52nd Street) | ramp | 720 | 530 | 0.74 | 720 | 1.00 | 720 | 1.00 | ok | 0.0 | yes | yes |
-| off-ramp at node 691 (Claremont Avenue / Clifton Street) | ramp | 603 | 912 | 1.51 | 620 | 1.03 | 633 | 1.05 | OUTSIDE (5%) | 1.2 | yes | yes |
-| on-ramp at node 845 (Claremont Avenue / Hudson Street) | ramp | 547 | 988 | 1.81 | 556 | 1.02 | 577 | 1.06 | OUTSIDE (5%) | 1.3 | yes | yes |
-| on-ramp at node 288 (Martin Luther King Junior Way) | ramp | 538 | 255 | 0.47 | 538 | 1.00 | 538 | 1.00 | ok | 0.0 | yes | yes |
-| on-ramp at node 687 (Martin Luther King Junior Way) | ramp | 538 | 654 | 1.21 | 539 | 1.00 | 539 | 1.00 | ok | 0.0 | yes | yes |
-| on-ramp at node 709 (Telegraph Avenue / 56th Street) | ramp | 407 | 2058 | 5.05 | 455 | 1.12 | 471 | 1.16 | OUTSIDE (5%) | 3.0 | yes | yes |
-| off-ramp at node 710 (Telegraph Avenue / Aileen Street) | ramp | 385 | 1804 | 4.69 | 385 | 1.00 | 389 | 1.01 | ok | 0.2 | yes | yes |
-| off-ramp at node 1149 (Keith Avenue) | ramp | 296 | 202 | 0.68 | 296 | 1.00 | 296 | 1.00 | ok | 0.0 | yes | yes |
+| gate 781 Telegraph Avenue leaving | gate | 453 | 445 | 0.98 | 461 | 1.02 | 454 | 1.00 | ok | 0.0 | yes | yes |
+| gate 771 Telegraph Avenue entering | gate | 340 | 330 | 0.97 | 340 | 1.00 | 341 | 1.00 | ok | 0.0 | yes | yes |
+| gate 303 43rd Street leaving | gate | 193 | 173 | 0.90 | 193 | 1.00 | 192 | 1.00 | ok | 0.0 | yes | yes |
+| gate 303 43rd Street entering | gate | 102 | 88 | 0.86 | 103 | 1.00 | 103 | 1.00 | ok | 0.0 | yes | yes |
+| off-ramp at node 727 (Martin Luther King Junior Way) | ramp | 1027 | 743 | 0.72 | 1025 | 1.00 | 1026 | 1.00 | ok | 0.0 | yes | yes |
+| off-ramp at node 735 (52nd Street) | ramp | 792 | 917 | 1.16 | 793 | 1.00 | 792 | 1.00 | ok | 0.0 | yes | yes |
+| on-ramp at node 733 (52nd Street) | ramp | 720 | 543 | 0.75 | 720 | 1.00 | 720 | 1.00 | ok | 0.0 | yes | yes |
+| off-ramp at node 691 (Claremont Avenue / Clifton Street) | ramp | 603 | 877 | 1.45 | 603 | 1.00 | 634 | 1.05 | OUTSIDE (5%) | 1.3 | yes | yes |
+| on-ramp at node 845 (Claremont Avenue / Hudson Street) | ramp | 547 | 955 | 1.75 | 550 | 1.01 | 582 | 1.06 | OUTSIDE (5%) | 1.5 | yes | yes |
+| on-ramp at node 288 (Martin Luther King Junior Way) | ramp | 538 | 259 | 0.48 | 538 | 1.00 | 538 | 1.00 | ok | 0.0 | yes | yes |
+| on-ramp at node 687 (Martin Luther King Junior Way) | ramp | 538 | 661 | 1.23 | 540 | 1.00 | 539 | 1.00 | ok | 0.0 | yes | yes |
+| on-ramp at node 709 (Telegraph Avenue / 56th Street) | ramp | 407 | 2089 | 5.13 | 460 | 1.13 | 475 | 1.17 | OUTSIDE (5%) | 3.2 | yes | yes |
+| off-ramp at node 710 (Telegraph Avenue / Aileen Street) | ramp | 385 | 1830 | 4.75 | 384 | 1.00 | 387 | 1.01 | ok | 0.1 | yes | yes |
+| off-ramp at node 1149 (Keith Avenue) | ramp | 296 | 193 | 0.65 | 296 | 1.00 | 296 | 1.00 | ok | 0.0 | yes | yes |
 | on-ramp at node 1756 (Miles Avenue) | ramp | 223 | 143 | 0.64 | 223 | 1.00 | 223 | 1.00 | ok | 0.0 | yes | yes |
-| on-ramp at node 1328 (Brookside Avenue / Broadway) | ramp | 218 | 35 | 0.16 | 218 | 1.00 | 218 | 1.00 | ok | 0.0 | yes | yes |
-| on-ramp at node 1336 (Broadway) | ramp | 218 | 174 | 0.80 | 218 | 1.00 | 218 | 1.00 | ok | 0.0 | yes | yes |
-| off-ramp at node 1572 (Broadway Terrace) | ramp | 197 | 433 | 2.20 | 197 | 1.00 | 197 | 1.00 | ok | 0.0 | yes | yes |
-| off-ramp at node 1593 (Broadway Terrace) | ramp | 197 | 453 | 2.30 | 197 | 1.00 | 197 | 1.00 | ok | 0.0 | yes | yes |
-| off-ramp at node 1366 (Broadway) | ramp | 195 | 180 | 0.92 | 195 | 1.00 | 195 | 1.00 | ok | 0.0 | yes | yes |
-| off-ramp at node 1758 (Miles Avenue) | ramp | 195 | 200 | 1.02 | 196 | 1.00 | 195 | 1.00 | ok | 0.0 | yes | yes |
-| on-ramp at node 1572 (Broadway Terrace) | ramp | 135 | 28 | 0.21 | 135 | 1.00 | 135 | 1.00 | ok | 0.0 | yes | yes |
-| on-ramp at node 1685 (Glenwood Glade / Broadway Terrace / Pinewood Road) | ramp | 135 | 682 | 5.04 | 136 | 1.00 | 137 | 1.01 | ok | 0.1 | yes | yes |
-| off-ramp at node 1711 (Caldecott Lane) | ramp | 70 | 207 | 2.97 | 70 | 1.00 | 70 | 1.00 | ok | 0.0 | yes | yes |
-| on-ramp at node 1711 (Caldecott Lane) | ramp | 38 | 191 | 5.06 | 40 | 1.05 | 41 | 1.08 | OUTSIDE (5%) | 0.5 | yes | yes |
-| on-ramp at node 1727 (Caldecott Lane) | ramp | 38 | 726 | 19.28 | 73 | 1.93 | 73 | 1.93 | OUTSIDE (5%) | 4.7 | yes | yes |
-| AlcatrazAve N leg entering | tmc | 720 | 356 | 0.49 | 662 | 0.92 | 643 | 0.89 | ok | 3.0 | yes | yes |
-| AlcatrazAve S leg leaving | tmc | 626 | 356 | 0.57 | 545 | 0.87 | 525 | 0.84 | OUTSIDE (15%) | 4.2 | yes | NO |
-| AlcatrazAve S leg entering | tmc | 615 | 577 | 0.94 | 594 | 0.96 | 587 | 0.95 | ok | 1.2 | yes | yes |
-| MarketSt_55thSt N leg leaving | tmc | 553 | 681 | 1.23 | 530 | 0.96 | 526 | 0.95 | ok | 1.1 | yes | yes |
-| AlcatrazAve N leg leaving | tmc | 497 | 451 | 0.91 | 515 | 1.04 | 515 | 1.04 | ok | 0.8 | yes | yes |
-| AlcatrazAve W leg leaving | tmc | 422 | 494 | 1.17 | 436 | 1.03 | 435 | 1.03 | ok | 0.6 | yes | yes |
-| MarketSt_55thSt S leg entering | tmc | 409 | 420 | 1.03 | 426 | 1.04 | 429 | 1.05 | ok | 1.0 | yes | yes |
-| AlcatrazAve E leg leaving | tmc | 393 | 284 | 0.72 | 377 | 0.96 | 369 | 0.94 | ok | 1.2 | yes | yes |
-| MarketSt_55thSt N leg entering | tmc | 374 | 464 | 1.24 | 368 | 0.98 | 365 | 0.98 | ok | 0.5 | yes | yes |
-| MarketSt_55thSt E leg leaving | tmc | 341 | 864 | 2.53 | 339 | 0.99 | 339 | 1.00 | ok | 0.1 | yes | yes |
-| AlcatrazAve W leg entering | tmc | 303 | 324 | 1.07 | 332 | 1.10 | 328 | 1.08 | ok | 1.4 | yes | yes |
-| AlcatrazAve E leg entering | tmc | 293 | 328 | 1.12 | 285 | 0.97 | 286 | 0.98 | ok | 0.4 | yes | yes |
-| MarketSt_55thSt S leg leaving | tmc | 233 | 364 | 1.56 | 238 | 1.02 | 240 | 1.03 | ok | 0.4 | yes | yes |
-| MarketSt_55thSt E leg entering | tmc | 221 | 799 | 3.62 | 231 | 1.05 | 233 | 1.05 | ok | 0.8 | yes | yes |
-| MarketSt_55thSt W leg entering | tmc | 135 | 522 | 3.88 | 154 | 1.14 | 150 | 1.12 | ok | 1.3 | yes | yes |
-| MarketSt_55thSt W leg leaving | tmc | 76 | 296 | 3.91 | 73 | 0.96 | 72 | 0.95 | ok | 0.4 | yes | yes |
+| on-ramp at node 1328 (Brookside Avenue / Broadway) | ramp | 218 | 27 | 0.12 | 192 | 0.88 | 203 | 0.93 | OUTSIDE (5%) | 1.0 | yes | yes |
+| on-ramp at node 1336 (Broadway) | ramp | 218 | 172 | 0.79 | 219 | 1.01 | 219 | 1.01 | ok | 0.1 | yes | yes |
+| off-ramp at node 1572 (Broadway Terrace) | ramp | 197 | 440 | 2.23 | 196 | 0.99 | 197 | 1.00 | ok | 0.0 | yes | yes |
+| off-ramp at node 1593 (Broadway Terrace) | ramp | 197 | 452 | 2.30 | 195 | 0.99 | 197 | 1.00 | ok | 0.0 | yes | yes |
+| off-ramp at node 1366 (Broadway) | ramp | 195 | 184 | 0.94 | 194 | 1.00 | 195 | 1.00 | ok | 0.0 | yes | yes |
+| off-ramp at node 1758 (Miles Avenue) | ramp | 195 | 205 | 1.05 | 195 | 1.00 | 196 | 1.00 | ok | 0.0 | yes | yes |
+| on-ramp at node 1572 (Broadway Terrace) | ramp | 135 | 30 | 0.22 | 135 | 1.00 | 135 | 1.00 | ok | 0.0 | yes | yes |
+| on-ramp at node 1685 (Glenwood Glade / Broadway Terrace / Pinewood Road) | ramp | 135 | 680 | 5.02 | 140 | 1.03 | 137 | 1.01 | ok | 0.2 | yes | yes |
+| off-ramp at node 1711 (Caldecott Lane) | ramp | 70 | 206 | 2.96 | 68 | 0.98 | 70 | 1.00 | ok | 0.0 | yes | yes |
+| on-ramp at node 1711 (Caldecott Lane) | ramp | 38 | 188 | 5.00 | 44 | 1.17 | 39 | 1.04 | ok | 0.3 | yes | yes |
+| on-ramp at node 1727 (Caldecott Lane) | ramp | 38 | 737 | 19.57 | 76 | 2.01 | 74 | 1.97 | OUTSIDE (5%) | 4.9 | yes | yes |
+| AlcatrazAve N leg entering | tmc | 720 | 360 | 0.50 | 647 | 0.90 | 634 | 0.88 | ok | 3.3 | yes | yes |
+| AlcatrazAve S leg leaving | tmc | 626 | 349 | 0.56 | 530 | 0.85 | 524 | 0.84 | OUTSIDE (15%) | 4.3 | yes | NO |
+| AlcatrazAve S leg entering | tmc | 615 | 576 | 0.94 | 573 | 0.93 | 578 | 0.94 | ok | 1.6 | yes | yes |
+| MarketSt_55thSt N leg leaving | tmc | 553 | 677 | 1.22 | 531 | 0.96 | 530 | 0.96 | ok | 1.0 | yes | yes |
+| AlcatrazAve N leg leaving | tmc | 497 | 448 | 0.90 | 540 | 1.09 | 526 | 1.06 | ok | 1.3 | yes | yes |
+| AlcatrazAve W leg leaving | tmc | 422 | 449 | 1.06 | 435 | 1.03 | 433 | 1.03 | ok | 0.5 | yes | yes |
+| MarketSt_55thSt S leg entering | tmc | 409 | 415 | 1.02 | 421 | 1.03 | 424 | 1.04 | ok | 0.7 | yes | yes |
+| AlcatrazAve E leg leaving | tmc | 393 | 240 | 0.61 | 347 | 0.88 | 354 | 0.90 | ok | 2.0 | yes | yes |
+| MarketSt_55thSt N leg entering | tmc | 374 | 513 | 1.37 | 366 | 0.98 | 372 | 0.99 | ok | 0.1 | yes | yes |
+| MarketSt_55thSt E leg leaving | tmc | 341 | 895 | 2.63 | 328 | 0.96 | 336 | 0.99 | ok | 0.3 | yes | yes |
+| AlcatrazAve W leg entering | tmc | 303 | 283 | 0.93 | 345 | 1.14 | 337 | 1.11 | ok | 1.9 | yes | yes |
+| AlcatrazAve E leg entering | tmc | 293 | 268 | 0.91 | 287 | 0.98 | 289 | 0.98 | ok | 0.3 | yes | yes |
+| MarketSt_55thSt S leg leaving | tmc | 233 | 380 | 1.63 | 238 | 1.02 | 234 | 1.01 | ok | 0.1 | yes | yes |
+| MarketSt_55thSt E leg entering | tmc | 221 | 815 | 3.69 | 237 | 1.07 | 230 | 1.04 | ok | 0.6 | yes | yes |
+| MarketSt_55thSt W leg entering | tmc | 135 | 519 | 3.86 | 153 | 1.14 | 152 | 1.13 | ok | 1.5 | yes | yes |
+| MarketSt_55thSt W leg leaving | tmc | 76 | 311 | 4.11 | 81 | 1.06 | 78 | 1.03 | ok | 0.3 | yes | yes |
 
-Fitted stations: GEH below 5 at 165 of 179 (92%), size bands met at 178 of 179 (99%); the published rule asks for more than 85% of cases (met). This is the static assignment against the counts it was fitted to, so it shows how far the fit could go; the simulator's own flows are scored in the calibration report.
+Fitted stations: GEH below 5 at 168 of 179 (94%), size bands met at 178 of 179 (99%); the published rule asks for more than 85% of cases (met). This is the static assignment against the counts it was fitted to, so it shows how far the fit could go; the simulator's own flows are scored in the calibration report.
 
-Split by kind, GEH below 5 (size bands): interior blocks of the volunteer count fitted 104 of 110 (95%; bands 100%), held out 15 of 19 (79%; bands 100%, mean GEH 3.0); other stations (gates, ramps, Caltrans, turning-movement legs, movements and routes of the volunteer count) fitted 61 of 69 (88%; bands 99%), held out 6 of 16 (38%; bands 38%, mean GEH 10.2).
+Split by kind, GEH below 5 (size bands): interior blocks of the volunteer count fitted 106 of 110 (96%; bands 100%), held out 16 of 19 (84%; bands 100%, mean GEH 3.1); other stations (gates, ramps, Caltrans, turning-movement legs, movements and routes of the volunteer count) fitted 62 of 69 (90%; bands 99%), held out 6 of 16 (38%; bands 44%, mean GEH 10.4).
 
 ### Held-out stations, midday
 
-35 validation stations, not in the fit: GEH below 5 at 21 (60%), size bands met at 25 (71%), mean GEH 6.3 (fitted stations 1.9). Required: more than 85% of cases (not met).
+35 validation stations, not in the fit: GEH below 5 at 22 (63%), size bands met at 26 (74%), mean GEH 6.4 (fitted stations 1.8). Required: more than 85% of cases (not met).
 
 | Station | Corridor | Target | Assigned before | Final | Ratio | GEH | GEH < 5 | Size band |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| off-ramp at node 735 (52nd Street) | freeway ramps | 792 | 899 | 643 | 0.81 | 5.6 | NO | NO |
-| gate 266 Ashby Avenue entering | Ashby Avenue | 781 | 775 | 339 | 0.43 | 18.7 | NO | NO |
-| tunnel station, link 3494 inward (5 m from the station) | tunnel | 753 | 359 | 114 | 0.15 | 30.7 | NO | NO |
-| AlcatrazAve N leg entering | AlcatrazAve | 720 | 354 | 529 | 0.73 | 7.6 | NO | NO |
-| sanpablo station, link 115 inward (11 m from the station) | sanpablo | 572 | 344 | 141 | 0.25 | 22.8 | NO | NO |
-| on-ramp at node 288 (Martin Luther King Junior Way) | freeway ramps | 538 | 256 | 189 | 0.35 | 18.3 | NO | NO |
-| AlcatrazAve W leg leaving | AlcatrazAve | 422 | 495 | 391 | 0.92 | 1.6 | yes | yes |
-| claremont station, link 3478 inward (4 m from the station) | claremont | 393 | 522 | 445 | 1.13 | 2.5 | yes | yes |
-| MarketSt_55thSt N leg entering | MarketSt_55thSt | 374 | 473 | 326 | 0.87 | 2.6 | yes | yes |
-| gate 771 Telegraph Avenue entering | Telegraph Avenue | 340 | 331 | 337 | 0.99 | 0.2 | yes | yes |
-| off-ramp at node 1149 (Keith Avenue) | freeway ramps | 296 | 201 | 106 | 0.36 | 13.4 | NO | NO |
-| MarketSt_55thSt E leg entering | MarketSt_55thSt | 221 | 797 | 333 | 1.51 | 6.8 | NO | NO |
-| off-ramp at node 1572 (Broadway Terrace) | freeway ramps | 197 | 433 | 156 | 0.79 | 3.1 | yes | yes |
-| on-ramp at node 1572 (Broadway Terrace) | freeway ramps | 135 | 28 | 14 | 0.10 | 14.0 | NO | NO |
-| Colby Street McAuley Street to 60th Street, NB (link 2622) | Colby Street (volunteer count) | 113 | 79 | 88 | 0.78 | 2.5 | yes | yes |
-| Colby Street McAuley Street to 60th Street, SB (link 2623) | Colby Street (volunteer count) | 105 | 123 | 77 | 0.73 | 3.0 | yes | yes |
-| gate 303 43rd Street entering | 43rd Street | 102 | 89 | 93 | 0.90 | 1.0 | yes | yes |
-| Colby Street 63rd Street to 63rd Street, SB (link 2631) | Colby Street (volunteer count) | 97 | 59 | 64 | 0.66 | 3.6 | yes | yes |
-| Colby Street 63rd Street to 63rd Street, NB (link 2630) | Colby Street (volunteer count) | 94 | 13 | 43 | 0.46 | 6.2 | NO | yes |
-| Hillegass Avenue 62nd Street to 61st Street, SB (link 2702) | Hillegass Avenue (volunteer count) | 94 | 30 | 77 | 0.83 | 1.8 | yes | yes |
-| Hillegass Avenue 62nd Street to 61st Street, NB (link 2703) | Hillegass Avenue (volunteer count) | 68 | 43 | 47 | 0.68 | 2.9 | yes | yes |
-| 63rd Street Dana Street to Canning Street, WB (link 1881) | 63rd Street (volunteer count) | 40 | 15 | 25 | 0.63 | 2.6 | yes | yes |
-| on-ramp at node 1727 (Caldecott Lane) | freeway ramps | 38 | 726 | 202 | 5.36 | 15.0 | NO | NO |
-| 63rd Street Dana Street to Canning Street, EB (link 1882) | 63rd Street (volunteer count) | 37 | 12 | 12 | 0.33 | 5.0 | NO | yes |
-| Ayala Avenue Martin Street to Howell Street, NB (link 1855) | Ayala Avenue (volunteer count) | 37 | 38 | 40 | 1.07 | 0.4 | yes | yes |
-| Canning Street 59th Street to McAuley Street, SB (link 1921) | Canning Street (volunteer count) | 30 | 20 | 4 | 0.13 | 6.4 | NO | yes |
-| Ayala Avenue Martin Street to Howell Street, SB (link 1856) | Ayala Avenue (volunteer count) | 27 | 126 | 34 | 1.25 | 1.3 | yes | yes |
-| Canning Street 59th Street to McAuley Street, NB (link 1920) | Canning Street (volunteer count) | 20 | 18 | 13 | 0.65 | 1.7 | yes | yes |
-| McAuley Street Howell Street to Canning Street, WB (link 1956) | McAuley Street (volunteer count) | 19 | 8 | 5 | 0.28 | 4.0 | yes | yes |
-| 60th Street Howell Street to Canning Street, WB (link 1891) | 60th Street (volunteer count) | 16 | 8 | 12 | 0.75 | 1.1 | yes | yes |
-| 60th Street Howell Street to Canning Street, EB (link 1892) | 60th Street (volunteer count) | 14 | 91 | 20 | 1.38 | 1.3 | yes | yes |
-| 62nd Street Colby Street to Canning Street, WB (link 1869) | 62nd Street (volunteer count) | 12 | 4 | 12 | 0.98 | 0.1 | yes | yes |
-| McAuley Street Howell Street to Canning Street, EB (link 1957) | McAuley Street (volunteer count) | 7 | 39 | 17 | 2.27 | 2.7 | yes | yes |
-| 62nd Street Colby Street to Canning Street, EB (link 1870) | 62nd Street (volunteer count) | 7 | 3 | 6 | 0.91 | 0.2 | yes | yes |
-| 58th Street Canning Street to Vicente Street, EB (link 2014) | 58th Street (volunteer count) | 5 | 64 | 65 | 12.64 | 10.1 | NO | yes |
+| off-ramp at node 735 (52nd Street) | freeway ramps | 792 | 912 | 765 | 0.97 | 1.0 | yes | yes |
+| gate 266 Ashby Avenue entering | Ashby Avenue | 781 | 775 | 583 | 0.75 | 7.6 | NO | NO |
+| tunnel station, link 3494 inward (5 m from the station) | tunnel | 753 | 310 | 96 | 0.13 | 31.9 | NO | NO |
+| AlcatrazAve N leg entering | AlcatrazAve | 720 | 359 | 508 | 0.71 | 8.6 | NO | NO |
+| ashby station, link 3427 inward (4 m from the station) | ashby | 656 | 311 | 148 | 0.23 | 25.3 | NO | NO |
+| sanpablo station, link 115 inward (11 m from the station) | sanpablo | 572 | 348 | 193 | 0.34 | 19.4 | NO | NO |
+| on-ramp at node 288 (Martin Luther King Junior Way) | freeway ramps | 538 | 262 | 222 | 0.41 | 16.2 | NO | NO |
+| AlcatrazAve W leg leaving | AlcatrazAve | 422 | 451 | 362 | 0.86 | 3.0 | yes | yes |
+| MarketSt_55thSt N leg entering | MarketSt_55thSt | 374 | 515 | 358 | 0.96 | 0.9 | yes | yes |
+| gate 771 Telegraph Avenue entering | Telegraph Avenue | 340 | 330 | 349 | 1.03 | 0.5 | yes | yes |
+| off-ramp at node 1149 (Keith Avenue) | freeway ramps | 296 | 193 | 107 | 0.36 | 13.3 | NO | NO |
+| MarketSt_55thSt E leg entering | MarketSt_55thSt | 221 | 814 | 310 | 1.40 | 5.5 | NO | yes |
+| off-ramp at node 1572 (Broadway Terrace) | freeway ramps | 197 | 440 | 167 | 0.85 | 2.2 | yes | yes |
+| on-ramp at node 1572 (Broadway Terrace) | freeway ramps | 135 | 30 | 22 | 0.16 | 12.8 | NO | NO |
+| Colby Street McAuley Street to 60th Street, NB (link 2622) | Colby Street (volunteer count) | 113 | 80 | 81 | 0.72 | 3.2 | yes | yes |
+| Colby Street McAuley Street to 60th Street, SB (link 2623) | Colby Street (volunteer count) | 105 | 126 | 73 | 0.70 | 3.4 | yes | yes |
+| gate 303 43rd Street entering | 43rd Street | 102 | 88 | 85 | 0.83 | 1.8 | yes | yes |
+| Colby Street 63rd Street to 63rd Street, SB (link 2631) | Colby Street (volunteer count) | 97 | 64 | 58 | 0.60 | 4.4 | yes | yes |
+| Colby Street 63rd Street to 63rd Street, NB (link 2630) | Colby Street (volunteer count) | 94 | 15 | 41 | 0.44 | 6.4 | NO | yes |
+| Hillegass Avenue 62nd Street to 61st Street, SB (link 2702) | Hillegass Avenue (volunteer count) | 94 | 29 | 72 | 0.77 | 2.4 | yes | yes |
+| Hillegass Avenue 62nd Street to 61st Street, NB (link 2703) | Hillegass Avenue (volunteer count) | 68 | 46 | 50 | 0.74 | 2.3 | yes | yes |
+| 63rd Street Dana Street to Canning Street, WB (link 1881) | 63rd Street (volunteer count) | 40 | 15 | 28 | 0.70 | 2.0 | yes | yes |
+| on-ramp at node 1727 (Caldecott Lane) | freeway ramps | 38 | 737 | 236 | 6.27 | 17.0 | NO | NO |
+| 63rd Street Dana Street to Canning Street, EB (link 1882) | 63rd Street (volunteer count) | 37 | 13 | 14 | 0.37 | 4.6 | yes | yes |
+| Ayala Avenue Martin Street to Howell Street, NB (link 1855) | Ayala Avenue (volunteer count) | 37 | 39 | 34 | 0.91 | 0.6 | yes | yes |
+| Canning Street 59th Street to McAuley Street, SB (link 1921) | Canning Street (volunteer count) | 30 | 17 | 6 | 0.19 | 5.8 | NO | yes |
+| Ayala Avenue Martin Street to Howell Street, SB (link 1856) | Ayala Avenue (volunteer count) | 27 | 126 | 44 | 1.62 | 2.8 | yes | yes |
+| Canning Street 59th Street to McAuley Street, NB (link 1920) | Canning Street (volunteer count) | 20 | 17 | 18 | 0.90 | 0.5 | yes | yes |
+| McAuley Street Howell Street to Canning Street, WB (link 1956) | McAuley Street (volunteer count) | 19 | 6 | 4 | 0.18 | 4.7 | yes | yes |
+| 60th Street Howell Street to Canning Street, WB (link 1891) | 60th Street (volunteer count) | 16 | 8 | 15 | 0.94 | 0.2 | yes | yes |
+| 60th Street Howell Street to Canning Street, EB (link 1892) | 60th Street (volunteer count) | 14 | 89 | 17 | 1.19 | 0.7 | yes | yes |
+| 62nd Street Colby Street to Canning Street, WB (link 1869) | 62nd Street (volunteer count) | 12 | 3 | 7 | 0.55 | 1.7 | yes | yes |
+| McAuley Street Howell Street to Canning Street, EB (link 1957) | McAuley Street (volunteer count) | 7 | 39 | 14 | 1.94 | 2.1 | yes | yes |
+| 62nd Street Colby Street to Canning Street, EB (link 1870) | 62nd Street (volunteer count) | 7 | 3 | 4 | 0.65 | 1.0 | yes | yes |
+| 58th Street Canning Street to Vicente Street, EB (link 2014) | 58th Street (volunteer count) | 5 | 63 | 56 | 10.90 | 9.2 | NO | yes |
 
 ## Stations, pm_peak
 
-176 stations with a target. Within +/-15%: before 34, after the fit 104, final 89. Within their own tolerance (gates 10%, ramps 5%, others 15%): final 102.
+176 stations with a target. Within +/-15%: before 29, after the fit 102, final 101. Within their own tolerance (gates 10%, ramps 5%, others 15%): final 109.
 
 | Station | Basis | Target | Assigned before | Ratio | After fit | Ratio | Final | Ratio | Own tolerance | GEH | GEH < 5 | Size band |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| tunnel station, link 3493 outward (5 m from the station) | caltrans | 1337 | 561 | 0.42 | 1336 | 1.00 | 1336 | 1.00 | ok | 0.0 | yes | yes |
-| tunnel station, link 3494 inward (5 m from the station) | caltrans | 1094 | 498 | 0.46 | 1086 | 0.99 | 1027 | 0.94 | ok | 2.1 | yes | yes |
-| sanpablo station, link 111 outward (0 m from the station) | caltrans | 1015 | 959 | 0.95 | 1012 | 1.00 | 1007 | 0.99 | ok | 0.2 | yes | yes |
-| sanpablo station, link 115 inward (11 m from the station) | caltrans | 830 | 555 | 0.67 | 790 | 0.95 | 806 | 0.97 | ok | 0.8 | yes | yes |
-| claremont station, link 3477 outward (4 m from the station) | caltrans (factor ASSUMPTION) | 698 | 229 | 0.33 | 593 | 0.85 | 433 | 0.62 | OUTSIDE (15%) | 11.1 | NO | NO |
-| claremont station, link 3478 inward (4 m from the station) | caltrans (factor ASSUMPTION) | 571 | 763 | 1.34 | 568 | 1.00 | 569 | 1.00 | ok | 0.1 | yes | yes |
-| Colby Street Forest Street / Claremont Avenue to McAuley Street, NB (link 2620) | count (factor ASSUMPTION) | 189 | 218 | 1.15 | 225 | 1.19 | 188 | 0.99 | ok | 0.1 | yes | yes |
-| Colby Street McAuley Street to 60th Street, NB (link 2622) | count (factor ASSUMPTION) | 182 | 178 | 0.98 | 179 | 0.98 | 156 | 0.86 | ok | 2.0 | yes | yes |
-| Colby Street 60th Street to 61st Street, NB (link 2624) | count (factor ASSUMPTION) | 179 | 163 | 0.91 | 163 | 0.91 | 143 | 0.80 | ok | 2.8 | yes | yes |
-| Hillegass Avenue Alcatraz Avenue to 63rd Street, SB (link 2698) | count (factor ASSUMPTION) | 178 | 33 | 0.19 | 143 | 0.80 | 89 | 0.50 | OUTSIDE (20%) | 7.7 | NO | yes |
-| Colby Street 61st Street to 62nd Street, NB (link 2626) | count (factor ASSUMPTION) | 174 | 89 | 0.51 | 154 | 0.89 | 131 | 0.75 | OUTSIDE (20%) | 3.5 | yes | yes |
-| Colby Street McAuley Street to 60th Street, SB (link 2623) | count (factor ASSUMPTION) | 170 | 172 | 1.01 | 162 | 0.95 | 142 | 0.84 | ok | 2.2 | yes | yes |
-| Hillegass Avenue 63rd Street to 62nd Street, SB (link 2700) | count (factor ASSUMPTION) | 168 | 54 | 0.32 | 161 | 0.96 | 123 | 0.73 | OUTSIDE (20%) | 3.8 | yes | yes |
-| Colby Street North Street to Alcatraz Avenue, NB (link 2634) | count (factor ASSUMPTION) | 164 | 20 | 0.12 | 95 | 0.58 | 51 | 0.31 | OUTSIDE (20%) | 10.9 | NO | NO |
-| Martin Street Claremont Avenue to Ayala Avenue, WB (link 1851) | count (factor ASSUMPTION) | 164 | 187 | 1.14 | 163 | 0.99 | 136 | 0.83 | ok | 2.3 | yes | yes |
-| Colby Street 62nd Street to 63rd Street, SB (link 2629) | count (factor ASSUMPTION) | 162 | 92 | 0.57 | 146 | 0.90 | 128 | 0.79 | OUTSIDE (20%) | 2.9 | yes | yes |
-| Colby Street Forest Street / Claremont Avenue to McAuley Street, SB (link 2621) | count (factor ASSUMPTION) | 162 | 189 | 1.17 | 155 | 0.96 | 135 | 0.83 | ok | 2.2 | yes | yes |
-| Colby Street 61st Street to 62nd Street, SB (link 2627) | count (factor ASSUMPTION) | 160 | 103 | 0.64 | 146 | 0.92 | 128 | 0.80 | ok | 2.7 | yes | yes |
-| Colby Street 60th Street to 61st Street, SB (link 2625) | count (factor ASSUMPTION) | 159 | 158 | 0.99 | 158 | 0.99 | 139 | 0.87 | ok | 1.6 | yes | yes |
-| Colby Street 62nd Street to 63rd Street, NB (link 2628) | count (factor ASSUMPTION) | 158 | 72 | 0.45 | 153 | 0.97 | 139 | 0.88 | ok | 1.6 | yes | yes |
-| Colby Street 63rd Street to 63rd Street, SB (link 2631) | count (factor ASSUMPTION) | 156 | 80 | 0.51 | 151 | 0.97 | 133 | 0.86 | ok | 1.9 | yes | yes |
-| Colby Street 63rd Street to 63rd Street, NB (link 2630) | count (factor ASSUMPTION) | 152 | 27 | 0.18 | 133 | 0.88 | 96 | 0.63 | OUTSIDE (20%) | 5.0 | yes | yes |
-| Hillegass Avenue 61st Street to 60th Street / Claremont Avenue, SB (link 2704) | count (factor ASSUMPTION) | 152 | 75 | 0.49 | 152 | 1.00 | 117 | 0.77 | OUTSIDE (20%) | 3.0 | yes | yes |
-| Hillegass Avenue 62nd Street to 61st Street, SB (link 2702) | count (factor ASSUMPTION) | 151 | 51 | 0.34 | 145 | 0.96 | 110 | 0.73 | OUTSIDE (20%) | 3.6 | yes | yes |
-| Hillegass Avenue from north to Claremont Avenue toward southwest (Telegraph side) at Hillegass Avenue / Claremont Avenue | count | 143 | 73 | 0.51 | 144 | 1.01 | 108 | 0.75 | OUTSIDE (20%) | 3.2 | yes | yes |
-| Colby Street North Street to Alcatraz Avenue, SB (link 2635) | count (factor ASSUMPTION) | 139 | 68 | 0.49 | 122 | 0.88 | 89 | 0.64 | OUTSIDE (20%) | 4.7 | yes | yes |
-| 58th Street Hermann Street / Martin Street to Canning Street, WB (link 2011) | count (factor ASSUMPTION) | 138 | 98 | 0.71 | 137 | 0.99 | 133 | 0.97 | ok | 0.4 | yes | yes |
-| Martin Street Ayala Avenue to Hermann Street / 58th Street, WB (link 1849) | count (factor ASSUMPTION) | 135 | 109 | 0.81 | 132 | 0.98 | 125 | 0.92 | ok | 0.9 | yes | yes |
-| Colby Street from south to Alcatraz Avenue toward west at Colby Street / Alcatraz Avenue | count | 131 | 3 | 0.02 | 9 | 0.07 | 11 | 0.09 | OUTSIDE (20%) | 14.2 | NO | NO |
-| Martin Street Claremont Avenue to Ayala Avenue, EB (link 1852) | count (factor ASSUMPTION) | 123 | 347 | 2.82 | 131 | 1.07 | 121 | 0.98 | ok | 0.2 | yes | yes |
-| Claremont Avenue from southwest to Colby Street toward north at Colby Street / Claremont Avenue | count | 121 | 194 | 1.60 | 165 | 1.36 | 136 | 1.13 | ok | 1.3 | yes | yes |
-| Hillegass Avenue 61st Street to 60th Street / Claremont Avenue, NB (link 2705) | count (factor ASSUMPTION) | 114 | 125 | 1.09 | 109 | 0.95 | 106 | 0.93 | ok | 0.7 | yes | yes |
-| Hillegass Avenue 62nd Street to 61st Street, NB (link 2703) | count (factor ASSUMPTION) | 110 | 74 | 0.68 | 102 | 0.93 | 89 | 0.81 | ok | 2.1 | yes | yes |
-| Hillegass Avenue Alcatraz Avenue to 63rd Street, NB (link 2699) | count (factor ASSUMPTION) | 109 | 60 | 0.55 | 102 | 0.94 | 101 | 0.93 | ok | 0.8 | yes | yes |
-| Colby Street NB, whole street between Claremont Avenue and Alcatraz Avenue (links 2620 to 2634) | count | 102 | 16 | 0.16 | 86 | 0.84 | 36 | 0.35 | OUTSIDE (30%) | 7.9 | NO | yes |
-| Alcatraz Avenue from east to Hillegass Avenue toward south at Hillegass Avenue / Alcatraz Avenue | count | 98 | 9 | 0.09 | 28 | 0.29 | 9 | 0.09 | OUTSIDE (20%) | 12.2 | NO | yes |
-| 58th Street Hermann Street / Martin Street to Canning Street, EB (link 2012) | count (factor ASSUMPTION) | 96 | 136 | 1.42 | 90 | 0.94 | 93 | 0.97 | ok | 0.3 | yes | yes |
-| Hillegass Avenue 63rd Street to 62nd Street, NB (link 2701) | count (factor ASSUMPTION) | 93 | 71 | 0.77 | 91 | 0.98 | 75 | 0.81 | ok | 1.9 | yes | yes |
-| Martin Street Ayala Avenue to Hermann Street / 58th Street, EB (link 1850) | count (factor ASSUMPTION) | 89 | 136 | 1.53 | 82 | 0.93 | 84 | 0.94 | ok | 0.5 | yes | yes |
-| 58th Street Vicente Street to Telegraph Avenue, WB (link 2015) | count (factor ASSUMPTION) | 88 | 34 | 0.38 | 71 | 0.81 | 68 | 0.77 | OUTSIDE (20%) | 2.3 | yes | yes |
-| Claremont Avenue from southwest to Hillegass Avenue toward north at Hillegass Avenue / Claremont Avenue | count | 87 | 119 | 1.37 | 101 | 1.16 | 93 | 1.07 | ok | 0.7 | yes | yes |
-| Colby Street from north to Claremont Avenue toward southwest (Telegraph side) at Colby Street / Claremont Avenue | count | 84 | 186 | 2.22 | 151 | 1.79 | 129 | 1.53 | OUTSIDE (20%) | 4.3 | yes | yes |
-| Hillegass Avenue SB, whole street between Claremont Avenue and Alcatraz Avenue (links 2698 to 2704) | count | 79 | 23 | 0.30 | 110 | 1.40 | 64 | 0.81 | ok | 1.8 | yes | yes |
-| Alcatraz Avenue from west to Colby Street toward south at Colby Street / Alcatraz Avenue | count | 76 | 15 | 0.20 | 19 | 0.25 | 15 | 0.19 | OUTSIDE (20%) | 9.1 | NO | yes |
-| Alcatraz Avenue from west to Hillegass Avenue toward south at Hillegass Avenue / Alcatraz Avenue | count | 76 | 10 | 0.14 | 36 | 0.47 | 18 | 0.24 | OUTSIDE (20%) | 8.4 | NO | yes |
-| Colby Street from north to Claremont Avenue toward northeast (College side) at Colby Street / Claremont Avenue | count | 75 | 0 | 0.00 | 0 | 0.00 | 0 | 0.00 | OUTSIDE (20%) | 12.2 | NO | yes |
-| 57th Street Vicente Street to Telegraph Avenue, EB (link 1943) | count (factor ASSUMPTION) | 73 | 71 | 0.98 | 76 | 1.04 | 75 | 1.03 | ok | 0.2 | yes | yes |
-| Forest Street Colby Street / Claremont Avenue to Ayala Avenue, WB (link 2725) | count (factor ASSUMPTION) | 66 | 61 | 0.93 | 63 | 0.95 | 69 | 1.04 | ok | 0.3 | yes | yes |
-| Forest Street Colby Street / Claremont Avenue to Ayala Avenue, EB (link 2726) | count (factor ASSUMPTION) | 66 | 105 | 1.59 | 59 | 0.89 | 58 | 0.89 | ok | 1.0 | yes | yes |
-| 58th Street Vicente Street to Telegraph Avenue, EB (link 2016) | count (factor ASSUMPTION) | 65 | 110 | 1.69 | 67 | 1.04 | 66 | 1.02 | ok | 0.2 | yes | yes |
-| 63rd Street Dana Street to Canning Street, WB (link 1881) | count (factor ASSUMPTION) | 64 | 20 | 0.31 | 52 | 0.81 | 52 | 0.82 | ok | 1.5 | yes | yes |
-| Ayala Avenue Hermann Street to Martin Street, NB (link 1853) | count (factor ASSUMPTION) | 64 | 55 | 0.86 | 65 | 1.01 | 66 | 1.03 | ok | 0.2 | yes | yes |
-| Ayala Avenue Howell Street to Forest Street, NB (link 2082) | count (factor ASSUMPTION) | 64 | 44 | 0.69 | 39 | 0.61 | 41 | 0.63 | OUTSIDE (20%) | 3.2 | yes | yes |
-| 63rd Street Dana Street to Canning Street, EB (link 1882) | count (factor ASSUMPTION) | 60 | 25 | 0.42 | 37 | 0.62 | 38 | 0.63 | OUTSIDE (20%) | 3.2 | yes | yes |
-| Ayala Avenue Martin Street to Howell Street, NB (link 1855) | count (factor ASSUMPTION) | 60 | 53 | 0.88 | 61 | 1.02 | 59 | 0.98 | ok | 0.2 | yes | yes |
-| 62nd Street Florio Street / Claremont Avenue / +1 to Hillegass Avenue, EB (link 2651) | count (factor ASSUMPTION) | 59 | 9 | 0.16 | 32 | 0.55 | 35 | 0.59 | OUTSIDE (20%) | 3.5 | yes | yes |
-| Forest Street from southeast to Colby Street toward north at Colby Street / Claremont Avenue | count | 57 | 24 | 0.43 | 60 | 1.04 | 51 | 0.90 | ok | 0.8 | yes | yes |
-| Canning Street 58th Street to 59th Street, NB (link 1918) | count (factor ASSUMPTION) | 55 | 50 | 0.92 | 62 | 1.13 | 54 | 0.97 | ok | 0.2 | yes | yes |
-| Hillegass Avenue from south to Alcatraz Avenue toward east at Hillegass Avenue / Alcatraz Avenue | count | 54 | 2 | 0.03 | 4 | 0.08 | 7 | 0.13 | OUTSIDE (20%) | 8.6 | NO | yes |
-| 59th Street Canning Street to Telegraph Avenue, WB (link 1912) | count (factor ASSUMPTION) | 50 | 44 | 0.89 | 48 | 0.97 | 49 | 0.97 | ok | 0.2 | yes | yes |
-| Alcatraz Avenue from east to Colby Street toward south at Colby Street / Alcatraz Avenue | count | 50 | 17 | 0.35 | 56 | 1.12 | 20 | 0.40 | OUTSIDE (20%) | 5.1 | NO | yes |
-| Canning Street 59th Street to McAuley Street, SB (link 1921) | count (factor ASSUMPTION) | 49 | 35 | 0.71 | 16 | 0.33 | 12 | 0.25 | OUTSIDE (20%) | 6.6 | NO | yes |
-| Ayala Avenue Howell Street to Forest Street, SB (link 2083) | count (factor ASSUMPTION) | 48 | 40 | 0.83 | 37 | 0.78 | 40 | 0.83 | ok | 1.2 | yes | yes |
-| Hillegass Avenue NB, whole street between Claremont Avenue and Alcatraz Avenue (links 2705 to 2699) | count | 48 | 44 | 0.91 | 73 | 1.52 | 52 | 1.09 | ok | 0.6 | yes | yes |
-| Canning Street McAuley Street to 60th Street, SB (link 1923) | count (factor ASSUMPTION) | 46 | 81 | 1.76 | 27 | 0.58 | 22 | 0.48 | OUTSIDE (20%) | 4.1 | yes | yes |
-| Canning Street 60th Street to 61st Street, SB (link 1925) | count (factor ASSUMPTION) | 45 | 68 | 1.51 | 20 | 0.45 | 19 | 0.41 | OUTSIDE (20%) | 4.7 | yes | yes |
-| Ayala Avenue Martin Street to Howell Street, SB (link 1856) | count (factor ASSUMPTION) | 44 | 185 | 4.20 | 50 | 1.14 | 51 | 1.15 | ok | 0.9 | yes | yes |
-| Dana Street North Street to Alcatraz Avenue, SB (link 1951) | count (factor ASSUMPTION) | 43 | 5 | 0.12 | 12 | 0.28 | 11 | 0.25 | OUTSIDE (20%) | 6.2 | NO | yes |
-| Hillegass Avenue from south to Alcatraz Avenue toward west at Hillegass Avenue / Alcatraz Avenue | count | 43 | 31 | 0.72 | 78 | 1.81 | 58 | 1.35 | OUTSIDE (20%) | 2.1 | yes | yes |
-| 63rd Street College Avenue to Hillegass Avenue, WB (link 2654) | count (factor ASSUMPTION) | 42 | 25 | 0.59 | 42 | 1.00 | 42 | 1.00 | ok | 0.0 | yes | yes |
-| 57th Street Vicente Street to Telegraph Avenue, WB (link 1942) | count (factor ASSUMPTION) | 42 | 38 | 0.90 | 34 | 0.81 | 34 | 0.81 | ok | 1.3 | yes | yes |
-| Dana Street 63rd Street to North Street, SB (link 1949) | count (factor ASSUMPTION) | 41 | 6 | 0.16 | 20 | 0.50 | 20 | 0.50 | OUTSIDE (20%) | 3.7 | yes | yes |
-| Ayala Avenue Hermann Street to Martin Street, SB (link 1854) | count (factor ASSUMPTION) | 41 | 48 | 1.17 | 38 | 0.94 | 36 | 0.88 | ok | 0.8 | yes | yes |
-| Colby Street SB, whole street between Claremont Avenue and Alcatraz Avenue (links 2635 to 2621) | count | 39 | 61 | 1.55 | 106 | 2.73 | 75 | 1.93 | OUTSIDE (30%) | 4.8 | yes | yes |
-| Hillegass Avenue from north to 62nd Street toward east at Hillegass Avenue / 62nd Street | count | 37 | 5 | 0.14 | 20 | 0.54 | 18 | 0.48 | OUTSIDE (20%) | 3.6 | yes | yes |
-| 63rd Street Canning Street to Telegraph Avenue, WB (link 1883) | count (factor ASSUMPTION) | 36 | 18 | 0.49 | 46 | 1.27 | 45 | 1.24 | OUTSIDE (20%) | 1.4 | yes | yes |
-| Canning Street 61st Street to 62nd Street, SB (link 1927) | count (factor ASSUMPTION) | 36 | 44 | 1.21 | 14 | 0.40 | 14 | 0.40 | OUTSIDE (20%) | 4.3 | yes | yes |
-| Ayala Avenue Forest Street to McAuley Street, NB (link 2831) | count (factor ASSUMPTION) | 36 | 45 | 1.26 | 40 | 1.10 | 37 | 1.03 | ok | 0.2 | yes | yes |
-| McAuley Street Ayala Avenue to Howell Street, WB (link 1954) | count (factor ASSUMPTION) | 34 | 30 | 0.89 | 28 | 0.83 | 28 | 0.82 | ok | 1.1 | yes | yes |
-| McAuley Street Canning Street to Telegraph Avenue, WB (link 1958) | count (factor ASSUMPTION) | 33 | 48 | 1.45 | 37 | 1.11 | 34 | 1.03 | ok | 0.2 | yes | yes |
-| Canning Street 59th Street to McAuley Street, NB (link 1920) | count (factor ASSUMPTION) | 32 | 36 | 1.14 | 35 | 1.10 | 27 | 0.86 | ok | 0.8 | yes | yes |
-| Colby Street from south to Alcatraz Avenue toward east at Colby Street / Alcatraz Avenue | count | 32 | 12 | 0.38 | 35 | 1.09 | 12 | 0.37 | OUTSIDE (20%) | 4.3 | yes | yes |
-| McAuley Street Howell Street to Canning Street, WB (link 1956) | count (factor ASSUMPTION) | 31 | 9 | 0.30 | 15 | 0.47 | 14 | 0.46 | OUTSIDE (20%) | 3.5 | yes | yes |
-| Canning Street 60th Street to 61st Street, NB (link 1924) | count (factor ASSUMPTION) | 30 | 2 | 0.05 | 6 | 0.21 | 7 | 0.22 | OUTSIDE (20%) | 5.4 | NO | yes |
-| Canning Street 62nd Street to 63rd Street, SB (link 1929) | count (factor ASSUMPTION) | 29 | 36 | 1.24 | 16 | 0.56 | 16 | 0.55 | OUTSIDE (20%) | 2.7 | yes | yes |
-| Canning Street 61st Street to 62nd Street, NB (link 1926) | count (factor ASSUMPTION) | 29 | 2 | 0.08 | 7 | 0.25 | 7 | 0.26 | OUTSIDE (20%) | 5.1 | NO | yes |
-| 61st Street Canning Street to Telegraph Avenue, WB (link 2039) | count (factor ASSUMPTION) | 29 | 26 | 0.88 | 31 | 1.06 | 37 | 1.28 | OUTSIDE (20%) | 1.4 | yes | yes |
-| 61st Street Canning Street to Telegraph Avenue, EB (link 2040) | count (factor ASSUMPTION) | 29 | 62 | 2.15 | 29 | 1.00 | 29 | 0.99 | ok | 0.0 | yes | yes |
-| 63rd Street Colby Street to Dana Street, EB (link 1880) | count (factor ASSUMPTION) | 28 | 17 | 0.61 | 28 | 0.98 | 27 | 0.97 | ok | 0.2 | yes | yes |
-| Canning Street McAuley Street to 60th Street, NB (link 1922) | count (factor ASSUMPTION) | 28 | 3 | 0.11 | 14 | 0.49 | 8 | 0.30 | OUTSIDE (20%) | 4.6 | yes | yes |
-| 63rd Street Canning Street to Telegraph Avenue, EB (link 1884) | count (factor ASSUMPTION) | 27 | 58 | 2.16 | 44 | 1.63 | 43 | 1.59 | OUTSIDE (20%) | 2.7 | yes | yes |
-| 63rd Street Hillegass Avenue to Colby Street, WB (link 2656) | count (factor ASSUMPTION) | 27 | 7 | 0.24 | 25 | 0.93 | 33 | 1.22 | OUTSIDE (20%) | 1.1 | yes | yes |
-| 60th Street Canning Street to Telegraph Avenue, WB (link 1893) | count (factor ASSUMPTION) | 27 | 17 | 0.62 | 29 | 1.07 | 26 | 0.96 | ok | 0.2 | yes | yes |
-| 60th Street Canning Street to Telegraph Avenue, EB (link 1894) | count (factor ASSUMPTION) | 27 | 149 | 5.51 | 33 | 1.22 | 32 | 1.17 | ok | 0.9 | yes | yes |
-| 60th Street Howell Street to Canning Street, WB (link 1891) | count (factor ASSUMPTION) | 25 | 27 | 1.07 | 28 | 1.13 | 27 | 1.09 | ok | 0.4 | yes | yes |
-| 62nd Street Florio Street / Claremont Avenue / +1 to Hillegass Avenue, WB (link 2650) | count (factor ASSUMPTION) | 24 | 7 | 0.29 | 15 | 0.62 | 17 | 0.73 | OUTSIDE (20%) | 1.4 | yes | yes |
-| McAuley Street Colby Street to Ayala Avenue, WB (link 1952) | count (factor ASSUMPTION) | 24 | 19 | 0.81 | 18 | 0.74 | 18 | 0.77 | OUTSIDE (20%) | 1.2 | yes | yes |
-| 60th Street Howell Street to Canning Street, EB (link 1892) | count (factor ASSUMPTION) | 23 | 147 | 6.39 | 33 | 1.43 | 31 | 1.37 | OUTSIDE (20%) | 1.6 | yes | yes |
-| 63rd Street College Avenue to Hillegass Avenue, EB (link 2655) | count (factor ASSUMPTION) | 22 | 11 | 0.50 | 22 | 0.99 | 30 | 1.35 | OUTSIDE (20%) | 1.5 | yes | yes |
-| 62nd Street Canning Street to Telegraph Avenue, WB (link 1871) | count (factor ASSUMPTION) | 21 | 11 | 0.51 | 22 | 1.04 | 22 | 1.06 | ok | 0.3 | yes | yes |
-| McAuley Street Colby Street to Ayala Avenue, EB (link 1953) | count (factor ASSUMPTION) | 20 | 5 | 0.23 | 8 | 0.42 | 9 | 0.43 | OUTSIDE (20%) | 3.0 | yes | yes |
-| 59th Street Canning Street to Telegraph Avenue, EB (link 1913) | count (factor ASSUMPTION) | 20 | 15 | 0.75 | 8 | 0.41 | 8 | 0.41 | OUTSIDE (20%) | 3.2 | yes | yes |
-| Ayala Avenue Forest Street to McAuley Street, SB (link 2832) | count (factor ASSUMPTION) | 20 | 87 | 4.33 | 25 | 1.23 | 22 | 1.10 | ok | 0.4 | yes | yes |
-| 62nd Street Colby Street to Canning Street, WB (link 1869) | count (factor ASSUMPTION) | 19 | 4 | 0.24 | 13 | 0.69 | 14 | 0.74 | OUTSIDE (20%) | 1.2 | yes | yes |
-| Canning Street 62nd Street to 63rd Street, NB (link 1928) | count (factor ASSUMPTION) | 18 | 1 | 0.05 | 3 | 0.18 | 3 | 0.16 | OUTSIDE (20%) | 4.7 | yes | yes |
-| 60th Street Hillegass Avenue / Claremont Avenue to Colby Street, EB (link 1888) | count (factor ASSUMPTION) | 18 | 3 | 0.15 | 8 | 0.45 | 8 | 0.45 | OUTSIDE (20%) | 2.7 | yes | yes |
-| 59th Street Howell Street to Canning Street, WB (link 1910) | count (factor ASSUMPTION) | 18 | 27 | 1.49 | 21 | 1.14 | 21 | 1.19 | ok | 0.8 | yes | yes |
-| Howell Street 59th Street to McAuley Street, SB (link 2079) | count (factor ASSUMPTION) | 17 | 167 | 9.81 | 37 | 2.20 | 35 | 2.07 | OUTSIDE (20%) | 3.6 | yes | yes |
-| 63rd Street Colby Street to Dana Street, WB (link 1879) | count (factor ASSUMPTION) | 16 | 44 | 2.73 | 32 | 2.00 | 41 | 2.55 | OUTSIDE (20%) | 4.7 | yes | yes |
-| 62nd Street Hillegass Avenue to Colby Street, EB (link 2707) | count (factor ASSUMPTION) | 16 | 1 | 0.04 | 2 | 0.10 | 2 | 0.10 | OUTSIDE (20%) | 4.9 | yes | yes |
-| Howell Street McAuley Street to 60th Street, SB (link 2081) | count (factor ASSUMPTION) | 16 | 141 | 8.84 | 28 | 1.75 | 28 | 1.72 | OUTSIDE (20%) | 2.5 | yes | yes |
-| 60th Street Colby Street to Howell Street, EB (link 1890) | count (factor ASSUMPTION) | 15 | 10 | 0.68 | 9 | 0.62 | 9 | 0.61 | OUTSIDE (20%) | 1.7 | yes | yes |
-| 60th Street Hillegass Avenue / Claremont Avenue to Colby Street, WB (link 1887) | count (factor ASSUMPTION) | 15 | 16 | 1.06 | 11 | 0.72 | 12 | 0.80 | ok | 0.8 | yes | yes |
-| McAuley Street Ayala Avenue to Howell Street, EB (link 1955) | count (factor ASSUMPTION) | 15 | 74 | 4.92 | 21 | 1.38 | 20 | 1.34 | OUTSIDE (20%) | 1.2 | yes | yes |
-| 60th Street Colby Street to Howell Street, WB (link 1889) | count (factor ASSUMPTION) | 14 | 24 | 1.73 | 24 | 1.70 | 23 | 1.62 | OUTSIDE (20%) | 2.0 | yes | yes |
-| McAuley Street Canning Street to Telegraph Avenue, EB (link 1959) | count (factor ASSUMPTION) | 14 | 38 | 2.72 | 11 | 0.77 | 10 | 0.71 | OUTSIDE (20%) | 1.2 | yes | yes |
-| 59th Street Howell Street to Canning Street, EB (link 1911) | count (factor ASSUMPTION) | 14 | 30 | 2.13 | 20 | 1.41 | 18 | 1.26 | OUTSIDE (20%) | 0.9 | yes | yes |
-| 62nd Street Hillegass Avenue to Colby Street, WB (link 2706) | count (factor ASSUMPTION) | 12 | 5 | 0.42 | 11 | 0.93 | 11 | 0.90 | ok | 0.3 | yes | yes |
-| 61st Street Hillegass Avenue to Colby Street, WB (link 2648) | count (factor ASSUMPTION) | 12 | 14 | 1.14 | 23 | 1.95 | 31 | 2.57 | OUTSIDE (20%) | 4.1 | yes | yes |
-| McAuley Street Howell Street to Canning Street, EB (link 1957) | count (factor ASSUMPTION) | 12 | 79 | 6.60 | 21 | 1.77 | 19 | 1.56 | OUTSIDE (20%) | 1.7 | yes | yes |
-| Dana Street 63rd Street to North Street, NB (link 1948) | count (factor ASSUMPTION) | 11 | 23 | 2.07 | 10 | 0.95 | 13 | 1.14 | ok | 0.4 | yes | yes |
-| North Street Colby Street to Dana Street, WB (link 1930) | count (factor ASSUMPTION) | 11 | 6 | 0.50 | 7 | 0.61 | 9 | 0.85 | ok | 0.5 | yes | yes |
-| 62nd Street Colby Street to Canning Street, EB (link 1870) | count (factor ASSUMPTION) | 11 | 5 | 0.45 | 11 | 1.00 | 11 | 0.96 | ok | 0.1 | yes | yes |
-| 61st Street Hillegass Avenue to Colby Street, EB (link 2649) | count (factor ASSUMPTION) | 11 | 0 | 0.01 | 0 | 0.02 | 0 | 0.02 | OUTSIDE (20%) | 4.5 | yes | yes |
-| North Street Colby Street to Dana Street, EB (link 1931) | count (factor ASSUMPTION) | 10 | 9 | 0.92 | 12 | 1.20 | 13 | 1.31 | OUTSIDE (20%) | 0.9 | yes | yes |
-| 62nd Street Canning Street to Telegraph Avenue, EB (link 1872) | count (factor ASSUMPTION) | 9 | 17 | 1.92 | 14 | 1.56 | 13 | 1.41 | OUTSIDE (20%) | 1.1 | yes | yes |
-| Dana Street North Street to Alcatraz Avenue, NB (link 1950) | count (factor ASSUMPTION) | 7 | 8 | 1.08 | 15 | 2.10 | 18 | 2.59 | OUTSIDE (20%) | 3.1 | yes | yes |
-| 63rd Street Hillegass Avenue to Colby Street, EB (link 2657) | count (factor ASSUMPTION) | 7 | 0 | 0.03 | 0 | 0.07 | 0 | 0.07 | OUTSIDE (20%) | 3.4 | yes | yes |
-| Hermann Street Ayala Avenue to Martin Street / 58th Street, SB (link 1848) | count (factor ASSUMPTION) | 7 | 2 | 0.32 | 6 | 0.89 | 7 | 1.02 | ok | 0.1 | yes | yes |
-| Howell Street 59th Street to McAuley Street, NB (link 2078) | count (factor ASSUMPTION) | 7 | 18 | 2.59 | 7 | 1.03 | 7 | 1.03 | ok | 0.1 | yes | yes |
-| Howell Street McAuley Street to 60th Street, NB (link 2080) | count (factor ASSUMPTION) | 6 | 13 | 2.21 | 9 | 1.58 | 10 | 1.73 | OUTSIDE (20%) | 1.5 | yes | yes |
-| Hermann Street Ayala Avenue to Martin Street / 58th Street, NB (link 1847) | count (factor ASSUMPTION) | 5 | 1 | 0.18 | 2 | 0.46 | 2 | 0.49 | OUTSIDE (20%) | 1.3 | yes | yes |
-| gate 266 Ashby Avenue leaving | gate | 1386 | 1372 | 0.99 | 1384 | 1.00 | 1385 | 1.00 | ok | 0.0 | yes | yes |
+| tunnel station, link 3493 outward (5 m from the station) | caltrans | 1337 | 555 | 0.42 | 1337 | 1.00 | 1337 | 1.00 | ok | 0.0 | yes | yes |
+| ashby station, link 3426 outward (4 m from the station) | caltrans | 1163 | 482 | 0.41 | 1163 | 1.00 | 1163 | 1.00 | ok | 0.0 | yes | yes |
+| tunnel station, link 3494 inward (5 m from the station) | caltrans | 1094 | 475 | 0.43 | 1089 | 1.00 | 1031 | 0.94 | ok | 1.9 | yes | yes |
+| sanpablo station, link 111 outward (0 m from the station) | caltrans | 1015 | 952 | 0.94 | 1014 | 1.00 | 1012 | 1.00 | ok | 0.1 | yes | yes |
+| ashby station, link 3427 inward (4 m from the station) | caltrans | 952 | 463 | 0.49 | 952 | 1.00 | 952 | 1.00 | ok | 0.0 | yes | yes |
+| sanpablo station, link 115 inward (11 m from the station) | caltrans | 830 | 510 | 0.61 | 811 | 0.98 | 808 | 0.97 | ok | 0.8 | yes | yes |
+| Colby Street Forest Street / Claremont Avenue to McAuley Street, NB (link 2620) | count (factor ASSUMPTION) | 189 | 211 | 1.11 | 217 | 1.15 | 182 | 0.96 | ok | 0.5 | yes | yes |
+| Colby Street McAuley Street to 60th Street, NB (link 2622) | count (factor ASSUMPTION) | 182 | 163 | 0.89 | 172 | 0.95 | 161 | 0.88 | ok | 1.6 | yes | yes |
+| Colby Street 60th Street to 61st Street, NB (link 2624) | count (factor ASSUMPTION) | 179 | 157 | 0.88 | 165 | 0.92 | 153 | 0.85 | ok | 2.0 | yes | yes |
+| Hillegass Avenue Alcatraz Avenue to 63rd Street, SB (link 2698) | count (factor ASSUMPTION) | 178 | 27 | 0.15 | 104 | 0.58 | 50 | 0.28 | OUTSIDE (20%) | 12.0 | NO | NO |
+| Colby Street 61st Street to 62nd Street, NB (link 2626) | count (factor ASSUMPTION) | 174 | 88 | 0.50 | 153 | 0.88 | 132 | 0.76 | OUTSIDE (20%) | 3.4 | yes | yes |
+| Colby Street McAuley Street to 60th Street, SB (link 2623) | count (factor ASSUMPTION) | 170 | 190 | 1.12 | 162 | 0.95 | 141 | 0.83 | ok | 2.3 | yes | yes |
+| Hillegass Avenue 63rd Street to 62nd Street, SB (link 2700) | count (factor ASSUMPTION) | 168 | 54 | 0.32 | 162 | 0.96 | 150 | 0.89 | ok | 1.4 | yes | yes |
+| Colby Street North Street to Alcatraz Avenue, NB (link 2634) | count (factor ASSUMPTION) | 164 | 14 | 0.09 | 73 | 0.45 | 45 | 0.27 | OUTSIDE (20%) | 11.6 | NO | NO |
+| Martin Street Claremont Avenue to Ayala Avenue, WB (link 1851) | count (factor ASSUMPTION) | 164 | 197 | 1.20 | 164 | 1.00 | 136 | 0.83 | ok | 2.3 | yes | yes |
+| Colby Street 62nd Street to 63rd Street, SB (link 2629) | count (factor ASSUMPTION) | 162 | 124 | 0.76 | 142 | 0.88 | 126 | 0.78 | OUTSIDE (20%) | 3.0 | yes | yes |
+| Colby Street Forest Street / Claremont Avenue to McAuley Street, SB (link 2621) | count (factor ASSUMPTION) | 162 | 211 | 1.30 | 163 | 1.01 | 142 | 0.88 | ok | 1.6 | yes | yes |
+| Colby Street 61st Street to 62nd Street, SB (link 2627) | count (factor ASSUMPTION) | 160 | 135 | 0.84 | 146 | 0.91 | 129 | 0.81 | ok | 2.6 | yes | yes |
+| Colby Street 60th Street to 61st Street, SB (link 2625) | count (factor ASSUMPTION) | 159 | 186 | 1.17 | 160 | 1.00 | 141 | 0.89 | ok | 1.4 | yes | yes |
+| Colby Street 62nd Street to 63rd Street, NB (link 2628) | count (factor ASSUMPTION) | 158 | 68 | 0.43 | 154 | 0.98 | 135 | 0.85 | ok | 1.9 | yes | yes |
+| Colby Street 63rd Street to 63rd Street, SB (link 2631) | count (factor ASSUMPTION) | 156 | 109 | 0.70 | 143 | 0.91 | 140 | 0.90 | ok | 1.3 | yes | yes |
+| Colby Street 63rd Street to 63rd Street, NB (link 2630) | count (factor ASSUMPTION) | 152 | 21 | 0.14 | 124 | 0.82 | 95 | 0.63 | OUTSIDE (20%) | 5.1 | NO | yes |
+| Hillegass Avenue 61st Street to 60th Street / Claremont Avenue, SB (link 2704) | count (factor ASSUMPTION) | 152 | 78 | 0.52 | 156 | 1.03 | 135 | 0.89 | ok | 1.4 | yes | yes |
+| Hillegass Avenue 62nd Street to 61st Street, SB (link 2702) | count (factor ASSUMPTION) | 151 | 50 | 0.33 | 151 | 1.00 | 134 | 0.89 | ok | 1.4 | yes | yes |
+| Hillegass Avenue from north to Claremont Avenue toward southwest (Telegraph side) at Hillegass Avenue / Claremont Avenue | count | 143 | 73 | 0.51 | 140 | 0.98 | 119 | 0.83 | ok | 2.1 | yes | yes |
+| Colby Street North Street to Alcatraz Avenue, SB (link 2635) | count (factor ASSUMPTION) | 139 | 97 | 0.70 | 109 | 0.79 | 83 | 0.59 | OUTSIDE (20%) | 5.4 | NO | yes |
+| 58th Street Hermann Street / Martin Street to Canning Street, WB (link 2011) | count (factor ASSUMPTION) | 138 | 110 | 0.79 | 138 | 1.00 | 134 | 0.97 | ok | 0.3 | yes | yes |
+| Martin Street Ayala Avenue to Hermann Street / 58th Street, WB (link 1849) | count (factor ASSUMPTION) | 135 | 121 | 0.90 | 134 | 0.99 | 124 | 0.92 | ok | 1.0 | yes | yes |
+| Colby Street from south to Alcatraz Avenue toward west at Colby Street / Alcatraz Avenue | count | 131 | 1 | 0.01 | 5 | 0.04 | 6 | 0.04 | OUTSIDE (20%) | 15.1 | NO | NO |
+| Martin Street Claremont Avenue to Ayala Avenue, EB (link 1852) | count (factor ASSUMPTION) | 123 | 339 | 2.76 | 121 | 0.98 | 115 | 0.93 | ok | 0.8 | yes | yes |
+| Claremont Avenue from southwest to Colby Street toward north at Colby Street / Claremont Avenue | count | 121 | 187 | 1.55 | 162 | 1.34 | 134 | 1.11 | ok | 1.2 | yes | yes |
+| Hillegass Avenue 61st Street to 60th Street / Claremont Avenue, NB (link 2705) | count (factor ASSUMPTION) | 114 | 136 | 1.19 | 115 | 1.01 | 110 | 0.96 | ok | 0.4 | yes | yes |
+| Hillegass Avenue 62nd Street to 61st Street, NB (link 2703) | count (factor ASSUMPTION) | 110 | 82 | 0.74 | 104 | 0.95 | 92 | 0.83 | ok | 1.8 | yes | yes |
+| Hillegass Avenue Alcatraz Avenue to 63rd Street, NB (link 2699) | count (factor ASSUMPTION) | 109 | 62 | 0.57 | 103 | 0.95 | 100 | 0.92 | ok | 0.8 | yes | yes |
+| Colby Street NB, whole street between Claremont Avenue and Alcatraz Avenue (links 2620 to 2634) | count | 102 | 12 | 0.12 | 65 | 0.64 | 37 | 0.36 | OUTSIDE (30%) | 7.9 | NO | yes |
+| Alcatraz Avenue from east to Hillegass Avenue toward south at Hillegass Avenue / Alcatraz Avenue | count | 98 | 6 | 0.06 | 22 | 0.22 | 8 | 0.09 | OUTSIDE (20%) | 12.3 | NO | yes |
+| 58th Street Hermann Street / Martin Street to Canning Street, EB (link 2012) | count (factor ASSUMPTION) | 96 | 132 | 1.37 | 96 | 1.00 | 95 | 0.99 | ok | 0.1 | yes | yes |
+| Hillegass Avenue 63rd Street to 62nd Street, NB (link 2701) | count (factor ASSUMPTION) | 93 | 77 | 0.83 | 88 | 0.94 | 76 | 0.82 | ok | 1.9 | yes | yes |
+| Martin Street Ayala Avenue to Hermann Street / 58th Street, EB (link 1850) | count (factor ASSUMPTION) | 89 | 131 | 1.48 | 86 | 0.97 | 86 | 0.96 | ok | 0.3 | yes | yes |
+| 58th Street Vicente Street to Telegraph Avenue, WB (link 2015) | count (factor ASSUMPTION) | 88 | 45 | 0.51 | 76 | 0.87 | 69 | 0.79 | OUTSIDE (20%) | 2.1 | yes | yes |
+| Claremont Avenue from southwest to Hillegass Avenue toward north at Hillegass Avenue / Claremont Avenue | count | 87 | 126 | 1.45 | 106 | 1.22 | 99 | 1.14 | ok | 1.3 | yes | yes |
+| Colby Street from north to Claremont Avenue toward southwest (Telegraph side) at Colby Street / Claremont Avenue | count | 84 | 206 | 2.45 | 155 | 1.85 | 133 | 1.58 | OUTSIDE (20%) | 4.7 | yes | yes |
+| Hillegass Avenue SB, whole street between Claremont Avenue and Alcatraz Avenue (links 2698 to 2704) | count | 79 | 23 | 0.29 | 87 | 1.11 | 38 | 0.48 | OUTSIDE (30%) | 5.3 | NO | yes |
+| Alcatraz Avenue from west to Colby Street toward south at Colby Street / Alcatraz Avenue | count | 76 | 20 | 0.26 | 14 | 0.18 | 9 | 0.12 | OUTSIDE (20%) | 10.3 | NO | yes |
+| Alcatraz Avenue from west to Hillegass Avenue toward south at Hillegass Avenue / Alcatraz Avenue | count | 76 | 9 | 0.12 | 21 | 0.27 | 18 | 0.23 | OUTSIDE (20%) | 8.5 | NO | yes |
+| Colby Street from north to Claremont Avenue toward northeast (College side) at Colby Street / Claremont Avenue | count | 75 | 1 | 0.01 | 2 | 0.02 | 2 | 0.02 | OUTSIDE (20%) | 11.8 | NO | yes |
+| 57th Street Vicente Street to Telegraph Avenue, EB (link 1943) | count (factor ASSUMPTION) | 73 | 71 | 0.98 | 73 | 1.00 | 74 | 1.01 | ok | 0.1 | yes | yes |
+| Forest Street Colby Street / Claremont Avenue to Ayala Avenue, WB (link 2725) | count (factor ASSUMPTION) | 66 | 54 | 0.83 | 66 | 1.00 | 67 | 1.02 | ok | 0.1 | yes | yes |
+| Forest Street Colby Street / Claremont Avenue to Ayala Avenue, EB (link 2726) | count (factor ASSUMPTION) | 66 | 104 | 1.57 | 50 | 0.76 | 55 | 0.84 | ok | 1.3 | yes | yes |
+| 58th Street Vicente Street to Telegraph Avenue, EB (link 2016) | count (factor ASSUMPTION) | 65 | 112 | 1.73 | 65 | 0.99 | 64 | 0.99 | ok | 0.1 | yes | yes |
+| 63rd Street Dana Street to Canning Street, WB (link 1881) | count (factor ASSUMPTION) | 64 | 22 | 0.35 | 55 | 0.86 | 55 | 0.85 | ok | 1.2 | yes | yes |
+| Ayala Avenue Hermann Street to Martin Street, NB (link 1853) | count (factor ASSUMPTION) | 64 | 61 | 0.95 | 66 | 1.02 | 66 | 1.03 | ok | 0.3 | yes | yes |
+| Ayala Avenue Howell Street to Forest Street, NB (link 2082) | count (factor ASSUMPTION) | 64 | 35 | 0.55 | 34 | 0.53 | 36 | 0.56 | OUTSIDE (20%) | 4.0 | yes | yes |
+| 63rd Street Dana Street to Canning Street, EB (link 1882) | count (factor ASSUMPTION) | 60 | 25 | 0.41 | 37 | 0.61 | 37 | 0.62 | OUTSIDE (20%) | 3.3 | yes | yes |
+| Ayala Avenue Martin Street to Howell Street, NB (link 1855) | count (factor ASSUMPTION) | 60 | 66 | 1.10 | 66 | 1.09 | 62 | 1.03 | ok | 0.2 | yes | yes |
+| 62nd Street Florio Street / Claremont Avenue / +1 to Hillegass Avenue, EB (link 2651) | count (factor ASSUMPTION) | 59 | 11 | 0.19 | 37 | 0.63 | 41 | 0.70 | OUTSIDE (20%) | 2.5 | yes | yes |
+| Forest Street from southeast to Colby Street toward north at Colby Street / Claremont Avenue | count | 57 | 22 | 0.39 | 55 | 0.97 | 47 | 0.83 | ok | 1.3 | yes | yes |
+| Canning Street 58th Street to 59th Street, NB (link 1918) | count (factor ASSUMPTION) | 55 | 44 | 0.81 | 59 | 1.07 | 52 | 0.94 | ok | 0.4 | yes | yes |
+| Hillegass Avenue from south to Alcatraz Avenue toward east at Hillegass Avenue / Alcatraz Avenue | count | 54 | 1 | 0.02 | 1 | 0.02 | 3 | 0.06 | OUTSIDE (20%) | 9.5 | NO | yes |
+| 59th Street Canning Street to Telegraph Avenue, WB (link 1912) | count (factor ASSUMPTION) | 50 | 50 | 1.00 | 49 | 0.98 | 50 | 0.99 | ok | 0.1 | yes | yes |
+| Alcatraz Avenue from east to Colby Street toward south at Colby Street / Alcatraz Avenue | count | 50 | 27 | 0.54 | 71 | 1.43 | 45 | 0.90 | ok | 0.7 | yes | yes |
+| Canning Street 59th Street to McAuley Street, SB (link 1921) | count (factor ASSUMPTION) | 49 | 24 | 0.49 | 22 | 0.44 | 15 | 0.30 | OUTSIDE (20%) | 6.1 | NO | yes |
+| Ayala Avenue Howell Street to Forest Street, SB (link 2083) | count (factor ASSUMPTION) | 48 | 40 | 0.83 | 38 | 0.80 | 40 | 0.84 | ok | 1.2 | yes | yes |
+| Hillegass Avenue NB, whole street between Claremont Avenue and Alcatraz Avenue (links 2705 to 2699) | count | 48 | 49 | 1.03 | 72 | 1.49 | 56 | 1.18 | ok | 1.2 | yes | yes |
+| Canning Street McAuley Street to 60th Street, SB (link 1923) | count (factor ASSUMPTION) | 46 | 69 | 1.49 | 25 | 0.55 | 20 | 0.44 | OUTSIDE (20%) | 4.5 | yes | yes |
+| Canning Street 60th Street to 61st Street, SB (link 1925) | count (factor ASSUMPTION) | 45 | 78 | 1.73 | 23 | 0.50 | 21 | 0.47 | OUTSIDE (20%) | 4.2 | yes | yes |
+| Ayala Avenue Martin Street to Howell Street, SB (link 1856) | count (factor ASSUMPTION) | 44 | 185 | 4.21 | 57 | 1.29 | 54 | 1.23 | OUTSIDE (20%) | 1.4 | yes | yes |
+| Dana Street North Street to Alcatraz Avenue, SB (link 1951) | count (factor ASSUMPTION) | 43 | 5 | 0.12 | 22 | 0.50 | 15 | 0.34 | OUTSIDE (20%) | 5.2 | NO | yes |
+| Hillegass Avenue from south to Alcatraz Avenue toward west at Hillegass Avenue / Alcatraz Avenue | count | 43 | 34 | 0.79 | 84 | 1.96 | 44 | 1.02 | ok | 0.1 | yes | yes |
+| 63rd Street College Avenue to Hillegass Avenue, WB (link 2654) | count (factor ASSUMPTION) | 42 | 24 | 0.58 | 42 | 1.00 | 42 | 1.00 | ok | 0.0 | yes | yes |
+| 57th Street Vicente Street to Telegraph Avenue, WB (link 1942) | count (factor ASSUMPTION) | 42 | 36 | 0.85 | 36 | 0.87 | 40 | 0.94 | ok | 0.4 | yes | yes |
+| Dana Street 63rd Street to North Street, SB (link 1949) | count (factor ASSUMPTION) | 41 | 9 | 0.21 | 33 | 0.80 | 27 | 0.67 | OUTSIDE (20%) | 2.3 | yes | yes |
+| Ayala Avenue Hermann Street to Martin Street, SB (link 1854) | count (factor ASSUMPTION) | 41 | 43 | 1.04 | 41 | 1.00 | 37 | 0.89 | ok | 0.7 | yes | yes |
+| Colby Street SB, whole street between Claremont Avenue and Alcatraz Avenue (links 2635 to 2621) | count | 39 | 91 | 2.32 | 95 | 2.45 | 69 | 1.78 | OUTSIDE (30%) | 4.1 | yes | yes |
+| Hillegass Avenue from north to 62nd Street toward east at Hillegass Avenue / 62nd Street | count | 37 | 5 | 0.14 | 16 | 0.43 | 21 | 0.56 | OUTSIDE (20%) | 3.0 | yes | yes |
+| 63rd Street Canning Street to Telegraph Avenue, WB (link 1883) | count (factor ASSUMPTION) | 36 | 19 | 0.52 | 44 | 1.23 | 45 | 1.24 | OUTSIDE (20%) | 1.4 | yes | yes |
+| Canning Street 61st Street to 62nd Street, SB (link 1927) | count (factor ASSUMPTION) | 36 | 60 | 1.67 | 21 | 0.57 | 19 | 0.52 | OUTSIDE (20%) | 3.3 | yes | yes |
+| Ayala Avenue Forest Street to McAuley Street, NB (link 2831) | count (factor ASSUMPTION) | 36 | 44 | 1.21 | 41 | 1.13 | 40 | 1.11 | ok | 0.7 | yes | yes |
+| McAuley Street Ayala Avenue to Howell Street, WB (link 1954) | count (factor ASSUMPTION) | 34 | 21 | 0.61 | 31 | 0.90 | 31 | 0.90 | ok | 0.6 | yes | yes |
+| McAuley Street Canning Street to Telegraph Avenue, WB (link 1958) | count (factor ASSUMPTION) | 33 | 36 | 1.09 | 36 | 1.10 | 36 | 1.09 | ok | 0.5 | yes | yes |
+| Canning Street 59th Street to McAuley Street, NB (link 1920) | count (factor ASSUMPTION) | 32 | 30 | 0.93 | 35 | 1.10 | 29 | 0.91 | ok | 0.5 | yes | yes |
+| Colby Street from south to Alcatraz Avenue toward east at Colby Street / Alcatraz Avenue | count | 32 | 8 | 0.26 | 21 | 0.66 | 4 | 0.12 | OUTSIDE (20%) | 6.7 | NO | yes |
+| McAuley Street Howell Street to Canning Street, WB (link 1956) | count (factor ASSUMPTION) | 31 | 12 | 0.39 | 26 | 0.83 | 23 | 0.73 | OUTSIDE (20%) | 1.6 | yes | yes |
+| Canning Street 60th Street to 61st Street, NB (link 1924) | count (factor ASSUMPTION) | 30 | 2 | 0.07 | 10 | 0.34 | 7 | 0.22 | OUTSIDE (20%) | 5.4 | NO | yes |
+| Canning Street 62nd Street to 63rd Street, SB (link 1929) | count (factor ASSUMPTION) | 29 | 43 | 1.48 | 19 | 0.64 | 17 | 0.58 | OUTSIDE (20%) | 2.5 | yes | yes |
+| Canning Street 61st Street to 62nd Street, NB (link 1926) | count (factor ASSUMPTION) | 29 | 1 | 0.04 | 3 | 0.11 | 3 | 0.10 | OUTSIDE (20%) | 6.5 | NO | yes |
+| 61st Street Canning Street to Telegraph Avenue, WB (link 2039) | count (factor ASSUMPTION) | 29 | 27 | 0.93 | 35 | 1.20 | 33 | 1.13 | ok | 0.7 | yes | yes |
+| 61st Street Canning Street to Telegraph Avenue, EB (link 2040) | count (factor ASSUMPTION) | 29 | 53 | 1.84 | 29 | 1.00 | 29 | 0.99 | ok | 0.1 | yes | yes |
+| 63rd Street Colby Street to Dana Street, EB (link 1880) | count (factor ASSUMPTION) | 28 | 19 | 0.67 | 28 | 1.00 | 27 | 0.96 | ok | 0.2 | yes | yes |
+| Canning Street McAuley Street to 60th Street, NB (link 1922) | count (factor ASSUMPTION) | 28 | 3 | 0.12 | 22 | 0.79 | 13 | 0.45 | OUTSIDE (20%) | 3.4 | yes | yes |
+| 63rd Street Canning Street to Telegraph Avenue, EB (link 1884) | count (factor ASSUMPTION) | 27 | 64 | 2.37 | 44 | 1.63 | 43 | 1.61 | OUTSIDE (20%) | 2.8 | yes | yes |
+| 63rd Street Hillegass Avenue to Colby Street, WB (link 2656) | count (factor ASSUMPTION) | 27 | 8 | 0.29 | 33 | 1.22 | 36 | 1.34 | OUTSIDE (20%) | 1.6 | yes | yes |
+| 60th Street Canning Street to Telegraph Avenue, WB (link 1893) | count (factor ASSUMPTION) | 27 | 20 | 0.75 | 33 | 1.21 | 32 | 1.19 | ok | 1.0 | yes | yes |
+| 60th Street Canning Street to Telegraph Avenue, EB (link 1894) | count (factor ASSUMPTION) | 27 | 117 | 4.32 | 30 | 1.11 | 24 | 0.89 | ok | 0.6 | yes | yes |
+| 60th Street Howell Street to Canning Street, WB (link 1891) | count (factor ASSUMPTION) | 25 | 17 | 0.69 | 22 | 0.89 | 27 | 1.09 | ok | 0.4 | yes | yes |
+| 62nd Street Florio Street / Claremont Avenue / +1 to Hillegass Avenue, WB (link 2650) | count (factor ASSUMPTION) | 24 | 4 | 0.18 | 11 | 0.47 | 12 | 0.50 | OUTSIDE (20%) | 2.8 | yes | yes |
+| McAuley Street Colby Street to Ayala Avenue, WB (link 1952) | count (factor ASSUMPTION) | 24 | 23 | 0.97 | 18 | 0.74 | 22 | 0.92 | ok | 0.4 | yes | yes |
+| 60th Street Howell Street to Canning Street, EB (link 1892) | count (factor ASSUMPTION) | 23 | 124 | 5.40 | 29 | 1.24 | 26 | 1.11 | ok | 0.5 | yes | yes |
+| 63rd Street College Avenue to Hillegass Avenue, EB (link 2655) | count (factor ASSUMPTION) | 22 | 8 | 0.35 | 26 | 1.18 | 29 | 1.33 | OUTSIDE (20%) | 1.4 | yes | yes |
+| 62nd Street Canning Street to Telegraph Avenue, WB (link 1871) | count (factor ASSUMPTION) | 21 | 10 | 0.47 | 21 | 1.02 | 20 | 0.95 | ok | 0.2 | yes | yes |
+| McAuley Street Colby Street to Ayala Avenue, EB (link 1953) | count (factor ASSUMPTION) | 20 | 5 | 0.23 | 14 | 0.71 | 10 | 0.50 | OUTSIDE (20%) | 2.6 | yes | yes |
+| 59th Street Canning Street to Telegraph Avenue, EB (link 1913) | count (factor ASSUMPTION) | 20 | 25 | 1.26 | 9 | 0.43 | 12 | 0.62 | OUTSIDE (20%) | 1.9 | yes | yes |
+| Ayala Avenue Forest Street to McAuley Street, SB (link 2832) | count (factor ASSUMPTION) | 20 | 100 | 4.99 | 28 | 1.38 | 28 | 1.38 | OUTSIDE (20%) | 1.5 | yes | yes |
+| 62nd Street Colby Street to Canning Street, WB (link 1869) | count (factor ASSUMPTION) | 19 | 5 | 0.26 | 17 | 0.90 | 17 | 0.89 | ok | 0.5 | yes | yes |
+| Canning Street 62nd Street to 63rd Street, NB (link 1928) | count (factor ASSUMPTION) | 18 | 0 | 0.00 | 1 | 0.04 | 1 | 0.04 | OUTSIDE (20%) | 5.6 | NO | yes |
+| 60th Street Hillegass Avenue / Claremont Avenue to Colby Street, EB (link 1888) | count (factor ASSUMPTION) | 18 | 1 | 0.03 | 2 | 0.10 | 2 | 0.10 | OUTSIDE (20%) | 5.1 | NO | yes |
+| 59th Street Howell Street to Canning Street, WB (link 1910) | count (factor ASSUMPTION) | 18 | 30 | 1.69 | 18 | 0.98 | 19 | 1.03 | ok | 0.1 | yes | yes |
+| Howell Street 59th Street to McAuley Street, SB (link 2079) | count (factor ASSUMPTION) | 17 | 151 | 8.88 | 32 | 1.88 | 33 | 1.95 | OUTSIDE (20%) | 3.2 | yes | yes |
+| 63rd Street Colby Street to Dana Street, WB (link 1879) | count (factor ASSUMPTION) | 16 | 45 | 2.79 | 24 | 1.53 | 33 | 2.06 | OUTSIDE (20%) | 3.4 | yes | yes |
+| 62nd Street Hillegass Avenue to Colby Street, EB (link 2707) | count (factor ASSUMPTION) | 16 | 1 | 0.08 | 4 | 0.23 | 4 | 0.23 | OUTSIDE (20%) | 3.9 | yes | yes |
+| Howell Street McAuley Street to 60th Street, SB (link 2081) | count (factor ASSUMPTION) | 16 | 132 | 8.27 | 30 | 1.88 | 30 | 1.86 | OUTSIDE (20%) | 2.9 | yes | yes |
+| 60th Street Colby Street to Howell Street, EB (link 1890) | count (factor ASSUMPTION) | 15 | 3 | 0.17 | 4 | 0.25 | 2 | 0.16 | OUTSIDE (20%) | 4.3 | yes | yes |
+| 60th Street Hillegass Avenue / Claremont Avenue to Colby Street, WB (link 1887) | count (factor ASSUMPTION) | 15 | 16 | 1.08 | 10 | 0.68 | 10 | 0.69 | OUTSIDE (20%) | 1.3 | yes | yes |
+| McAuley Street Ayala Avenue to Howell Street, EB (link 1955) | count (factor ASSUMPTION) | 15 | 75 | 5.01 | 19 | 1.29 | 20 | 1.31 | OUTSIDE (20%) | 1.1 | yes | yes |
+| 60th Street Colby Street to Howell Street, WB (link 1889) | count (factor ASSUMPTION) | 14 | 20 | 1.42 | 17 | 1.19 | 19 | 1.37 | OUTSIDE (20%) | 1.3 | yes | yes |
+| McAuley Street Canning Street to Telegraph Avenue, EB (link 1959) | count (factor ASSUMPTION) | 14 | 36 | 2.56 | 11 | 0.75 | 9 | 0.64 | OUTSIDE (20%) | 1.5 | yes | yes |
+| 59th Street Howell Street to Canning Street, EB (link 1911) | count (factor ASSUMPTION) | 14 | 31 | 2.22 | 18 | 1.26 | 16 | 1.12 | ok | 0.4 | yes | yes |
+| 62nd Street Hillegass Avenue to Colby Street, WB (link 2706) | count (factor ASSUMPTION) | 12 | 2 | 0.20 | 6 | 0.46 | 6 | 0.49 | OUTSIDE (20%) | 2.1 | yes | yes |
+| 61st Street Hillegass Avenue to Colby Street, WB (link 2648) | count (factor ASSUMPTION) | 12 | 16 | 1.37 | 23 | 1.92 | 29 | 2.38 | OUTSIDE (20%) | 3.7 | yes | yes |
+| McAuley Street Howell Street to Canning Street, EB (link 1957) | count (factor ASSUMPTION) | 12 | 83 | 6.90 | 17 | 1.41 | 17 | 1.45 | OUTSIDE (20%) | 1.4 | yes | yes |
+| Dana Street 63rd Street to North Street, NB (link 1948) | count (factor ASSUMPTION) | 11 | 21 | 1.87 | 11 | 1.00 | 11 | 0.99 | ok | 0.0 | yes | yes |
+| North Street Colby Street to Dana Street, WB (link 1930) | count (factor ASSUMPTION) | 11 | 6 | 0.54 | 6 | 0.58 | 7 | 0.63 | OUTSIDE (20%) | 1.4 | yes | yes |
+| 62nd Street Colby Street to Canning Street, EB (link 1870) | count (factor ASSUMPTION) | 11 | 7 | 0.62 | 13 | 1.16 | 12 | 1.11 | ok | 0.4 | yes | yes |
+| 61st Street Hillegass Avenue to Colby Street, EB (link 2649) | count (factor ASSUMPTION) | 11 | 0 | 0.04 | 1 | 0.13 | 1 | 0.13 | OUTSIDE (20%) | 3.8 | yes | yes |
+| North Street Colby Street to Dana Street, EB (link 1931) | count (factor ASSUMPTION) | 10 | 7 | 0.72 | 10 | 1.03 | 11 | 1.07 | ok | 0.2 | yes | yes |
+| 62nd Street Canning Street to Telegraph Avenue, EB (link 1872) | count (factor ASSUMPTION) | 9 | 28 | 3.10 | 17 | 1.87 | 15 | 1.66 | OUTSIDE (20%) | 1.7 | yes | yes |
+| Dana Street North Street to Alcatraz Avenue, NB (link 1950) | count (factor ASSUMPTION) | 7 | 6 | 0.86 | 11 | 1.52 | 13 | 1.85 | OUTSIDE (20%) | 1.9 | yes | yes |
+| 63rd Street Hillegass Avenue to Colby Street, EB (link 2657) | count (factor ASSUMPTION) | 7 | 0 | 0.04 | 1 | 0.12 | 1 | 0.12 | OUTSIDE (20%) | 3.1 | yes | yes |
+| Hermann Street Ayala Avenue to Martin Street / 58th Street, SB (link 1848) | count (factor ASSUMPTION) | 7 | 3 | 0.37 | 6 | 0.92 | 6 | 0.86 | ok | 0.4 | yes | yes |
+| Howell Street 59th Street to McAuley Street, NB (link 2078) | count (factor ASSUMPTION) | 7 | 21 | 2.97 | 6 | 0.89 | 7 | 0.94 | ok | 0.2 | yes | yes |
+| Howell Street McAuley Street to 60th Street, NB (link 2080) | count (factor ASSUMPTION) | 6 | 14 | 2.27 | 7 | 1.18 | 9 | 1.50 | OUTSIDE (20%) | 1.1 | yes | yes |
+| Hermann Street Ayala Avenue to Martin Street / 58th Street, NB (link 1847) | count (factor ASSUMPTION) | 5 | 1 | 0.10 | 0 | 0.09 | 0 | 0.10 | OUTSIDE (20%) | 2.7 | yes | yes |
+| gate 266 Ashby Avenue leaving | gate | 1386 | 1370 | 0.99 | 1386 | 1.00 | 1386 | 1.00 | ok | 0.0 | yes | yes |
 | gate 266 Ashby Avenue entering | gate | 1134 | 1126 | 0.99 | 1135 | 1.00 | 1134 | 1.00 | ok | 0.0 | yes | yes |
-| gate 781 Telegraph Avenue leaving | gate | 731 | 716 | 0.98 | 736 | 1.01 | 733 | 1.00 | ok | 0.1 | yes | yes |
-| gate 771 Telegraph Avenue entering | gate | 549 | 536 | 0.98 | 550 | 1.00 | 552 | 1.01 | ok | 0.2 | yes | yes |
-| gate 303 43rd Street leaving | gate | 335 | 297 | 0.89 | 334 | 1.00 | 334 | 1.00 | ok | 0.0 | yes | yes |
-| gate 303 43rd Street entering | gate | 142 | 124 | 0.88 | 142 | 1.00 | 142 | 1.00 | ok | 0.0 | yes | yes |
-| off-ramp at node 727 (Martin Luther King Junior Way) | ramp | 1656 | 1187 | 0.72 | 1655 | 1.00 | 1656 | 1.00 | ok | 0.0 | yes | yes |
-| off-ramp at node 735 (52nd Street) | ramp | 1278 | 1413 | 1.11 | 1277 | 1.00 | 1278 | 1.00 | ok | 0.0 | yes | yes |
-| on-ramp at node 733 (52nd Street) | ramp | 1161 | 833 | 0.72 | 1161 | 1.00 | 1160 | 1.00 | ok | 0.0 | yes | yes |
-| off-ramp at node 691 (Claremont Avenue / Clifton Street) | ramp | 972 | 1460 | 1.50 | 992 | 1.02 | 1033 | 1.06 | OUTSIDE (5%) | 1.9 | yes | yes |
-| on-ramp at node 845 (Claremont Avenue / Hudson Street) | ramp | 882 | 1659 | 1.88 | 898 | 1.02 | 975 | 1.11 | OUTSIDE (5%) | 3.1 | yes | yes |
-| on-ramp at node 288 (Martin Luther King Junior Way) | ramp | 869 | 408 | 0.47 | 868 | 1.00 | 868 | 1.00 | ok | 0.0 | yes | yes |
-| on-ramp at node 687 (Martin Luther King Junior Way) | ramp | 869 | 1052 | 1.21 | 870 | 1.00 | 870 | 1.00 | ok | 0.0 | yes | yes |
-| on-ramp at node 709 (Telegraph Avenue / 56th Street) | ramp | 657 | 3281 | 4.99 | 734 | 1.12 | 745 | 1.13 | OUTSIDE (5%) | 3.3 | yes | yes |
-| off-ramp at node 710 (Telegraph Avenue / Aileen Street) | ramp | 621 | 2873 | 4.63 | 621 | 1.00 | 624 | 1.00 | ok | 0.1 | yes | yes |
-| off-ramp at node 1149 (Keith Avenue) | ramp | 477 | 329 | 0.69 | 477 | 1.00 | 477 | 1.00 | ok | 0.0 | yes | yes |
-| on-ramp at node 1756 (Miles Avenue) | ramp | 360 | 217 | 0.60 | 360 | 1.00 | 360 | 1.00 | ok | 0.0 | yes | yes |
-| on-ramp at node 1328 (Brookside Avenue / Broadway) | ramp | 351 | 49 | 0.14 | 331 | 0.94 | 344 | 0.98 | ok | 0.4 | yes | yes |
-| on-ramp at node 1336 (Broadway) | ramp | 351 | 287 | 0.82 | 355 | 1.01 | 353 | 1.01 | ok | 0.1 | yes | yes |
-| off-ramp at node 1572 (Broadway Terrace) | ramp | 317 | 627 | 1.98 | 317 | 1.00 | 317 | 1.00 | ok | 0.0 | yes | yes |
-| off-ramp at node 1593 (Broadway Terrace) | ramp | 317 | 678 | 2.14 | 317 | 1.00 | 317 | 1.00 | ok | 0.0 | yes | yes |
-| off-ramp at node 1366 (Broadway) | ramp | 315 | 258 | 0.82 | 314 | 1.00 | 315 | 1.00 | ok | 0.0 | yes | yes |
-| off-ramp at node 1758 (Miles Avenue) | ramp | 315 | 330 | 1.05 | 316 | 1.00 | 316 | 1.00 | ok | 0.1 | yes | yes |
-| on-ramp at node 1572 (Broadway Terrace) | ramp | 218 | 42 | 0.19 | 218 | 1.00 | 218 | 1.00 | ok | 0.0 | yes | yes |
-| on-ramp at node 1685 (Glenwood Glade / Broadway Terrace / Pinewood Road) | ramp | 218 | 1101 | 5.05 | 221 | 1.01 | 221 | 1.01 | ok | 0.2 | yes | yes |
-| off-ramp at node 1711 (Caldecott Lane) | ramp | 113 | 355 | 3.16 | 112 | 0.99 | 112 | 1.00 | ok | 0.0 | yes | yes |
-| on-ramp at node 1711 (Caldecott Lane) | ramp | 61 | 330 | 5.44 | 65 | 1.07 | 63 | 1.04 | ok | 0.3 | yes | yes |
-| on-ramp at node 1727 (Caldecott Lane) | ramp | 61 | 1046 | 17.21 | 106 | 1.74 | 105 | 1.73 | OUTSIDE (5%) | 4.9 | yes | yes |
-| AlcatrazAve S leg entering | tmc | 1093 | 901 | 0.82 | 1030 | 0.94 | 1041 | 0.95 | ok | 1.6 | yes | yes |
-| AlcatrazAve N leg entering | tmc | 1064 | 620 | 0.58 | 977 | 0.92 | 957 | 0.90 | ok | 3.4 | yes | yes |
-| AlcatrazAve S leg leaving | tmc | 910 | 610 | 0.67 | 794 | 0.87 | 788 | 0.87 | ok | 4.2 | yes | yes |
-| AlcatrazAve N leg leaving | tmc | 900 | 669 | 0.74 | 947 | 1.05 | 932 | 1.04 | ok | 1.1 | yes | yes |
-| MarketSt_55thSt N leg leaving | tmc | 816 | 1098 | 1.35 | 812 | 0.99 | 804 | 0.98 | ok | 0.5 | yes | yes |
-| AlcatrazAve E leg leaving | tmc | 689 | 473 | 0.69 | 639 | 0.93 | 637 | 0.92 | ok | 2.0 | yes | yes |
-| MarketSt_55thSt N leg entering | tmc | 679 | 723 | 1.07 | 642 | 0.95 | 649 | 0.96 | ok | 1.2 | yes | yes |
-| AlcatrazAve W leg leaving | tmc | 623 | 810 | 1.30 | 646 | 1.04 | 643 | 1.03 | ok | 0.8 | yes | yes |
-| MarketSt_55thSt S leg entering | tmc | 607 | 658 | 1.08 | 609 | 1.00 | 591 | 0.97 | ok | 0.7 | yes | yes |
-| AlcatrazAve W leg entering | tmc | 547 | 526 | 0.96 | 611 | 1.12 | 592 | 1.08 | ok | 1.9 | yes | yes |
-| MarketSt_55thSt E leg leaving | tmc | 505 | 1377 | 2.73 | 502 | 0.99 | 502 | 0.99 | ok | 0.1 | yes | yes |
-| MarketSt_55thSt S leg leaving | tmc | 428 | 574 | 1.34 | 451 | 1.06 | 447 | 1.05 | ok | 0.9 | yes | yes |
-| AlcatrazAve E leg entering | tmc | 418 | 515 | 1.23 | 408 | 0.98 | 411 | 0.98 | ok | 0.4 | yes | yes |
-| MarketSt_55thSt E leg entering | tmc | 402 | 1251 | 3.12 | 413 | 1.03 | 417 | 1.04 | ok | 0.8 | yes | yes |
-| MarketSt_55thSt W leg entering | tmc | 200 | 863 | 4.31 | 233 | 1.17 | 228 | 1.14 | ok | 1.9 | yes | yes |
-| MarketSt_55thSt W leg leaving | tmc | 139 | 445 | 3.20 | 132 | 0.95 | 132 | 0.95 | ok | 0.6 | yes | yes |
+| gate 781 Telegraph Avenue leaving | gate | 731 | 713 | 0.98 | 732 | 1.00 | 733 | 1.00 | ok | 0.1 | yes | yes |
+| gate 771 Telegraph Avenue entering | gate | 549 | 535 | 0.98 | 549 | 1.00 | 549 | 1.00 | ok | 0.0 | yes | yes |
+| gate 303 43rd Street leaving | gate | 335 | 294 | 0.88 | 334 | 1.00 | 334 | 1.00 | ok | 0.1 | yes | yes |
+| gate 303 43rd Street entering | gate | 142 | 123 | 0.87 | 141 | 1.00 | 141 | 1.00 | ok | 0.0 | yes | yes |
+| off-ramp at node 727 (Martin Luther King Junior Way) | ramp | 1656 | 1199 | 0.72 | 1656 | 1.00 | 1656 | 1.00 | ok | 0.0 | yes | yes |
+| off-ramp at node 735 (52nd Street) | ramp | 1278 | 1382 | 1.08 | 1278 | 1.00 | 1278 | 1.00 | ok | 0.0 | yes | yes |
+| on-ramp at node 733 (52nd Street) | ramp | 1161 | 824 | 0.71 | 1161 | 1.00 | 1161 | 1.00 | ok | 0.0 | yes | yes |
+| off-ramp at node 691 (Claremont Avenue / Clifton Street) | ramp | 972 | 1472 | 1.51 | 972 | 1.00 | 1024 | 1.05 | OUTSIDE (5%) | 1.6 | yes | yes |
+| on-ramp at node 845 (Claremont Avenue / Hudson Street) | ramp | 882 | 1621 | 1.84 | 903 | 1.02 | 949 | 1.08 | OUTSIDE (5%) | 2.2 | yes | yes |
+| on-ramp at node 288 (Martin Luther King Junior Way) | ramp | 869 | 449 | 0.52 | 868 | 1.00 | 869 | 1.00 | ok | 0.0 | yes | yes |
+| on-ramp at node 687 (Martin Luther King Junior Way) | ramp | 869 | 1043 | 1.20 | 869 | 1.00 | 869 | 1.00 | ok | 0.0 | yes | yes |
+| on-ramp at node 709 (Telegraph Avenue / 56th Street) | ramp | 657 | 3286 | 5.00 | 706 | 1.07 | 732 | 1.11 | OUTSIDE (5%) | 2.9 | yes | yes |
+| off-ramp at node 710 (Telegraph Avenue / Aileen Street) | ramp | 621 | 2875 | 4.63 | 622 | 1.00 | 625 | 1.01 | ok | 0.2 | yes | yes |
+| off-ramp at node 1149 (Keith Avenue) | ramp | 477 | 315 | 0.66 | 477 | 1.00 | 477 | 1.00 | ok | 0.0 | yes | yes |
+| on-ramp at node 1756 (Miles Avenue) | ramp | 360 | 202 | 0.56 | 360 | 1.00 | 360 | 1.00 | ok | 0.0 | yes | yes |
+| on-ramp at node 1328 (Brookside Avenue / Broadway) | ramp | 351 | 55 | 0.16 | 351 | 1.00 | 351 | 1.00 | ok | 0.0 | yes | yes |
+| on-ramp at node 1336 (Broadway) | ramp | 351 | 299 | 0.85 | 351 | 1.00 | 351 | 1.00 | ok | 0.0 | yes | yes |
+| off-ramp at node 1572 (Broadway Terrace) | ramp | 317 | 643 | 2.03 | 317 | 1.00 | 317 | 1.00 | ok | 0.0 | yes | yes |
+| off-ramp at node 1593 (Broadway Terrace) | ramp | 317 | 693 | 2.19 | 317 | 1.00 | 317 | 1.00 | ok | 0.0 | yes | yes |
+| off-ramp at node 1366 (Broadway) | ramp | 315 | 260 | 0.83 | 315 | 1.00 | 315 | 1.00 | ok | 0.0 | yes | yes |
+| off-ramp at node 1758 (Miles Avenue) | ramp | 315 | 326 | 1.03 | 316 | 1.00 | 315 | 1.00 | ok | 0.0 | yes | yes |
+| on-ramp at node 1572 (Broadway Terrace) | ramp | 218 | 45 | 0.21 | 218 | 1.00 | 218 | 1.00 | ok | 0.0 | yes | yes |
+| on-ramp at node 1685 (Glenwood Glade / Broadway Terrace / Pinewood Road) | ramp | 218 | 1109 | 5.08 | 219 | 1.01 | 219 | 1.00 | ok | 0.0 | yes | yes |
+| off-ramp at node 1711 (Caldecott Lane) | ramp | 113 | 349 | 3.10 | 112 | 1.00 | 112 | 1.00 | ok | 0.0 | yes | yes |
+| on-ramp at node 1711 (Caldecott Lane) | ramp | 61 | 324 | 5.34 | 62 | 1.01 | 61 | 1.01 | ok | 0.1 | yes | yes |
+| on-ramp at node 1727 (Caldecott Lane) | ramp | 61 | 1048 | 17.25 | 105 | 1.74 | 105 | 1.74 | OUTSIDE (5%) | 4.9 | yes | yes |
+| AlcatrazAve S leg entering | tmc | 1093 | 908 | 0.83 | 1064 | 0.97 | 1053 | 0.96 | ok | 1.2 | yes | yes |
+| AlcatrazAve N leg entering | tmc | 1064 | 630 | 0.59 | 994 | 0.93 | 954 | 0.90 | ok | 3.5 | yes | yes |
+| AlcatrazAve S leg leaving | tmc | 910 | 631 | 0.69 | 847 | 0.93 | 817 | 0.90 | ok | 3.2 | yes | yes |
+| AlcatrazAve N leg leaving | tmc | 900 | 682 | 0.76 | 923 | 1.03 | 922 | 1.02 | ok | 0.7 | yes | yes |
+| MarketSt_55thSt N leg leaving | tmc | 816 | 1142 | 1.40 | 809 | 0.99 | 800 | 0.98 | ok | 0.6 | yes | yes |
+| AlcatrazAve E leg leaving | tmc | 689 | 376 | 0.55 | 649 | 0.94 | 639 | 0.93 | ok | 1.9 | yes | yes |
+| MarketSt_55thSt N leg entering | tmc | 679 | 802 | 1.18 | 663 | 0.98 | 658 | 0.97 | ok | 0.8 | yes | yes |
+| AlcatrazAve W leg leaving | tmc | 623 | 727 | 1.17 | 633 | 1.02 | 634 | 1.02 | ok | 0.5 | yes | yes |
+| MarketSt_55thSt S leg entering | tmc | 607 | 677 | 1.11 | 613 | 1.01 | 603 | 0.99 | ok | 0.2 | yes | yes |
+| AlcatrazAve W leg entering | tmc | 547 | 441 | 0.81 | 581 | 1.06 | 590 | 1.08 | ok | 1.8 | yes | yes |
+| MarketSt_55thSt E leg leaving | tmc | 505 | 1413 | 2.80 | 511 | 1.01 | 514 | 1.02 | ok | 0.4 | yes | yes |
+| MarketSt_55thSt S leg leaving | tmc | 428 | 617 | 1.44 | 437 | 1.02 | 441 | 1.03 | ok | 0.6 | yes | yes |
+| AlcatrazAve E leg entering | tmc | 418 | 437 | 1.05 | 412 | 0.99 | 413 | 0.99 | ok | 0.2 | yes | yes |
+| MarketSt_55thSt E leg entering | tmc | 402 | 1296 | 3.23 | 406 | 1.01 | 414 | 1.03 | ok | 0.6 | yes | yes |
+| MarketSt_55thSt W leg entering | tmc | 200 | 860 | 4.30 | 213 | 1.07 | 214 | 1.07 | ok | 1.0 | yes | yes |
+| MarketSt_55thSt W leg leaving | tmc | 139 | 461 | 3.32 | 138 | 0.99 | 134 | 0.97 | ok | 0.4 | yes | yes |
 
-Fitted stations: GEH below 5 at 161 of 176 (91%), size bands met at 173 of 176 (98%); the published rule asks for more than 85% of cases (met). This is the static assignment against the counts it was fitted to, so it shows how far the fit could go; the simulator's own flows are scored in the calibration report.
+Fitted stations: GEH below 5 at 157 of 176 (89%), size bands met at 173 of 176 (98%); the published rule asks for more than 85% of cases (met). This is the static assignment against the counts it was fitted to, so it shows how far the fit could go; the simulator's own flows are scored in the calibration report.
 
-Split by kind, GEH below 5 (size bands): interior blocks of the volunteer count fitted 101 of 107 (94%; bands 99%), held out 14 of 18 (78%; bands 100%, mean GEH 3.2); other stations (gates, ramps, Caltrans, turning-movement legs, movements and routes of the volunteer count) fitted 60 of 69 (87%; bands 97%), held out 4 of 16 (25%; bands 25%, mean GEH 12.5).
+Split by kind, GEH below 5 (size bands): interior blocks of the volunteer count fitted 97 of 107 (91%; bands 98%), held out 14 of 18 (78%; bands 100%, mean GEH 2.8); other stations (gates, ramps, Caltrans, turning-movement legs, movements and routes of the volunteer count) fitted 60 of 69 (87%; bands 99%), held out 4 of 16 (25%; bands 31%, mean GEH 13.1).
 
 ### Held-out stations, pm_peak
 
-34 validation stations, not in the fit: GEH below 5 at 18 (53%), size bands met at 22 (65%), mean GEH 7.6 (fitted stations 2.2). Required: more than 85% of cases (not met).
+34 validation stations, not in the fit: GEH below 5 at 18 (53%), size bands met at 23 (68%), mean GEH 7.6 (fitted stations 2.0). Required: more than 85% of cases (not met).
 
 | Station | Corridor | Target | Assigned before | Final | Ratio | GEH | GEH < 5 | Size band |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| off-ramp at node 735 (52nd Street) | freeway ramps | 1278 | 1419 | 805 | 0.63 | 14.7 | NO | NO |
-| gate 266 Ashby Avenue entering | Ashby Avenue | 1134 | 1126 | 672 | 0.59 | 15.4 | NO | NO |
-| tunnel station, link 3494 inward (5 m from the station) | tunnel | 1094 | 553 | 180 | 0.16 | 36.2 | NO | NO |
-| AlcatrazAve N leg entering | AlcatrazAve | 1064 | 614 | 734 | 0.69 | 11.0 | NO | NO |
-| on-ramp at node 288 (Martin Luther King Junior Way) | freeway ramps | 869 | 414 | 342 | 0.39 | 21.4 | NO | NO |
-| sanpablo station, link 115 inward (11 m from the station) | sanpablo | 830 | 556 | 303 | 0.37 | 22.1 | NO | NO |
-| MarketSt_55thSt N leg entering | MarketSt_55thSt | 679 | 737 | 607 | 0.89 | 2.8 | yes | yes |
-| AlcatrazAve W leg leaving | AlcatrazAve | 623 | 782 | 493 | 0.79 | 5.5 | NO | NO |
-| claremont station, link 3478 inward (4 m from the station) | claremont | 571 | 768 | 451 | 0.79 | 5.3 | NO | NO |
-| gate 771 Telegraph Avenue entering | Telegraph Avenue | 549 | 536 | 521 | 0.95 | 1.2 | yes | yes |
-| off-ramp at node 1149 (Keith Avenue) | freeway ramps | 477 | 335 | 174 | 0.36 | 16.8 | NO | NO |
-| MarketSt_55thSt E leg entering | MarketSt_55thSt | 402 | 1238 | 492 | 1.23 | 4.3 | yes | yes |
-| off-ramp at node 1572 (Broadway Terrace) | freeway ramps | 317 | 627 | 188 | 0.59 | 8.1 | NO | NO |
-| on-ramp at node 1572 (Broadway Terrace) | freeway ramps | 218 | 42 | 17 | 0.08 | 18.6 | NO | NO |
-| Colby Street McAuley Street to 60th Street, NB (link 2622) | Colby Street (volunteer count) | 182 | 178 | 151 | 0.83 | 2.4 | yes | yes |
-| Colby Street McAuley Street to 60th Street, SB (link 2623) | Colby Street (volunteer count) | 170 | 172 | 137 | 0.81 | 2.6 | yes | yes |
-| Colby Street 63rd Street to 63rd Street, SB (link 2631) | Colby Street (volunteer count) | 156 | 79 | 111 | 0.71 | 3.9 | yes | yes |
-| Colby Street 63rd Street to 63rd Street, NB (link 2630) | Colby Street (volunteer count) | 152 | 27 | 68 | 0.44 | 8.1 | NO | yes |
-| Hillegass Avenue 62nd Street to 61st Street, SB (link 2702) | Hillegass Avenue (volunteer count) | 151 | 51 | 93 | 0.62 | 5.2 | NO | yes |
-| gate 303 43rd Street entering | 43rd Street | 142 | 124 | 110 | 0.78 | 2.8 | yes | yes |
-| Hillegass Avenue 62nd Street to 61st Street, NB (link 2703) | Hillegass Avenue (volunteer count) | 110 | 74 | 79 | 0.72 | 3.2 | yes | yes |
-| 63rd Street Dana Street to Canning Street, WB (link 1881) | 63rd Street (volunteer count) | 64 | 20 | 51 | 0.80 | 1.7 | yes | yes |
-| on-ramp at node 1727 (Caldecott Lane) | freeway ramps | 61 | 1007 | 231 | 3.81 | 14.1 | NO | NO |
-| 63rd Street Dana Street to Canning Street, EB (link 1882) | 63rd Street (volunteer count) | 60 | 25 | 20 | 0.34 | 6.3 | NO | yes |
-| Ayala Avenue Martin Street to Howell Street, NB (link 1855) | Ayala Avenue (volunteer count) | 60 | 52 | 52 | 0.87 | 1.1 | yes | yes |
-| Canning Street 59th Street to McAuley Street, SB (link 1921) | Canning Street (volunteer count) | 49 | 34 | 10 | 0.20 | 7.2 | NO | yes |
-| Ayala Avenue Martin Street to Howell Street, SB (link 1856) | Ayala Avenue (volunteer count) | 44 | 185 | 76 | 1.73 | 4.1 | yes | yes |
-| Canning Street 59th Street to McAuley Street, NB (link 1920) | Canning Street (volunteer count) | 32 | 36 | 27 | 0.84 | 0.9 | yes | yes |
-| McAuley Street Howell Street to Canning Street, WB (link 1956) | McAuley Street (volunteer count) | 31 | 9 | 13 | 0.43 | 3.7 | yes | yes |
-| 60th Street Howell Street to Canning Street, WB (link 1891) | 60th Street (volunteer count) | 25 | 27 | 26 | 1.03 | 0.2 | yes | yes |
-| 60th Street Howell Street to Canning Street, EB (link 1892) | 60th Street (volunteer count) | 23 | 148 | 31 | 1.36 | 1.6 | yes | yes |
-| 62nd Street Colby Street to Canning Street, WB (link 1869) | 62nd Street (volunteer count) | 19 | 4 | 12 | 0.63 | 1.8 | yes | yes |
-| McAuley Street Howell Street to Canning Street, EB (link 1957) | McAuley Street (volunteer count) | 12 | 79 | 23 | 1.92 | 2.6 | yes | yes |
-| 62nd Street Colby Street to Canning Street, EB (link 1870) | 62nd Street (volunteer count) | 11 | 5 | 10 | 0.89 | 0.4 | yes | yes |
+| off-ramp at node 735 (52nd Street) | freeway ramps | 1278 | 1384 | 1075 | 0.84 | 5.9 | NO | NO |
+| gate 266 Ashby Avenue entering | Ashby Avenue | 1134 | 1126 | 853 | 0.75 | 8.9 | NO | NO |
+| tunnel station, link 3494 inward (5 m from the station) | tunnel | 1094 | 489 | 151 | 0.14 | 37.8 | NO | NO |
+| AlcatrazAve N leg entering | AlcatrazAve | 1064 | 629 | 761 | 0.72 | 10.0 | NO | NO |
+| ashby station, link 3427 inward (4 m from the station) | ashby | 952 | 475 | 240 | 0.25 | 29.2 | NO | NO |
+| on-ramp at node 288 (Martin Luther King Junior Way) | freeway ramps | 869 | 451 | 403 | 0.46 | 18.5 | NO | NO |
+| sanpablo station, link 115 inward (11 m from the station) | sanpablo | 830 | 510 | 240 | 0.29 | 25.5 | NO | NO |
+| MarketSt_55thSt N leg entering | MarketSt_55thSt | 679 | 821 | 600 | 0.88 | 3.1 | yes | yes |
+| AlcatrazAve W leg leaving | AlcatrazAve | 623 | 727 | 489 | 0.78 | 5.7 | NO | NO |
+| gate 771 Telegraph Avenue entering | Telegraph Avenue | 549 | 535 | 507 | 0.92 | 1.8 | yes | yes |
+| off-ramp at node 1149 (Keith Avenue) | freeway ramps | 477 | 315 | 163 | 0.34 | 17.6 | NO | NO |
+| MarketSt_55thSt E leg entering | MarketSt_55thSt | 402 | 1265 | 495 | 1.23 | 4.4 | yes | yes |
+| off-ramp at node 1572 (Broadway Terrace) | freeway ramps | 317 | 643 | 229 | 0.72 | 5.3 | NO | yes |
+| on-ramp at node 1572 (Broadway Terrace) | freeway ramps | 218 | 45 | 27 | 0.12 | 17.3 | NO | NO |
+| Colby Street McAuley Street to 60th Street, NB (link 2622) | Colby Street (volunteer count) | 182 | 163 | 151 | 0.83 | 2.4 | yes | yes |
+| Colby Street McAuley Street to 60th Street, SB (link 2623) | Colby Street (volunteer count) | 170 | 189 | 133 | 0.78 | 3.0 | yes | yes |
+| Colby Street 63rd Street to 63rd Street, SB (link 2631) | Colby Street (volunteer count) | 156 | 108 | 110 | 0.71 | 4.0 | yes | yes |
+| Colby Street 63rd Street to 63rd Street, NB (link 2630) | Colby Street (volunteer count) | 152 | 21 | 67 | 0.44 | 8.1 | NO | yes |
+| Hillegass Avenue 62nd Street to 61st Street, SB (link 2702) | Hillegass Avenue (volunteer count) | 151 | 50 | 133 | 0.88 | 1.5 | yes | yes |
+| gate 303 43rd Street entering | 43rd Street | 142 | 123 | 129 | 0.91 | 1.1 | yes | yes |
+| Hillegass Avenue 62nd Street to 61st Street, NB (link 2703) | Hillegass Avenue (volunteer count) | 110 | 82 | 83 | 0.76 | 2.7 | yes | yes |
+| 63rd Street Dana Street to Canning Street, WB (link 1881) | 63rd Street (volunteer count) | 64 | 22 | 54 | 0.85 | 1.3 | yes | yes |
+| on-ramp at node 1727 (Caldecott Lane) | freeway ramps | 61 | 1041 | 280 | 4.60 | 16.8 | NO | NO |
+| 63rd Street Dana Street to Canning Street, EB (link 1882) | 63rd Street (volunteer count) | 60 | 24 | 20 | 0.34 | 6.2 | NO | yes |
+| Ayala Avenue Martin Street to Howell Street, NB (link 1855) | Ayala Avenue (volunteer count) | 60 | 67 | 61 | 1.01 | 0.1 | yes | yes |
+| Canning Street 59th Street to McAuley Street, SB (link 1921) | Canning Street (volunteer count) | 49 | 25 | 10 | 0.20 | 7.2 | NO | yes |
+| Ayala Avenue Martin Street to Howell Street, SB (link 1856) | Ayala Avenue (volunteer count) | 44 | 185 | 91 | 2.07 | 5.7 | NO | yes |
+| Canning Street 59th Street to McAuley Street, NB (link 1920) | Canning Street (volunteer count) | 32 | 30 | 29 | 0.90 | 0.6 | yes | yes |
+| McAuley Street Howell Street to Canning Street, WB (link 1956) | McAuley Street (volunteer count) | 31 | 12 | 19 | 0.61 | 2.4 | yes | yes |
+| 60th Street Howell Street to Canning Street, WB (link 1891) | 60th Street (volunteer count) | 25 | 16 | 23 | 0.94 | 0.3 | yes | yes |
+| 60th Street Howell Street to Canning Street, EB (link 1892) | 60th Street (volunteer count) | 23 | 124 | 27 | 1.18 | 0.8 | yes | yes |
+| 62nd Street Colby Street to Canning Street, WB (link 1869) | 62nd Street (volunteer count) | 19 | 5 | 18 | 0.97 | 0.1 | yes | yes |
+| McAuley Street Howell Street to Canning Street, EB (link 1957) | McAuley Street (volunteer count) | 12 | 82 | 24 | 1.98 | 2.8 | yes | yes |
+| 62nd Street Colby Street to Canning Street, EB (link 1870) | 62nd Street (volunteer count) | 11 | 7 | 13 | 1.14 | 0.5 | yes | yes |
 
 ## Volumes implied by the ramp counts and the observed shares (DERIVED)
 
@@ -831,28 +831,28 @@ Freeway-related volume on a street = ramp volume x the street's share of the ram
 
 | Block | Arithmetic | Implied (B to A) | Target | Assigned before | After the count fit | Final |
 | --- | --- | --- | --- | --- | --- | --- |
-| Hillegass Avenue SB, implied volume | 750 veh/h on-ramps x 12% via Hillegass Avenue (x 91% from the north side, reading B) = 82 to 90 freeway-related; / 57% freeway share = 143 to 158 veh/h | 143 to 158 | 150 | 35 | 76 | 82 |
-| Colby Street SB, implied volume | 750 veh/h on-ramps x 8% via Colby Street (x 91% from the north side, reading B) = 54 to 60 freeway-related; / 45% freeway share = 121 to 133 veh/h | 121 to 133 | 127 | 206 | 173 | 145 |
-| Colby Street NB, implied volume | 826 veh/h off-ramps x 8% via Colby Street (x 93% from the north side, reading B) = 62 to 66 freeway-related; / 47% freeway share = 131 to 141 veh/h | 131 to 141 | 136 | 105 | 154 | 140 |
-| Hillegass Avenue NB, implied volume | 826 veh/h off-ramps x 5% via Hillegass Avenue (x 93% from the north side, reading B) = 39 to 41 freeway-related; / 47% freeway share = 82 to 88 veh/h | 82 to 88 | 85 | 54 | 80 | 71 |
+| Hillegass Avenue SB, implied volume | 750 veh/h on-ramps x 12% via Hillegass Avenue (x 90% from the north side, reading B) = 81 to 90 freeway-related; / 57% freeway share = 143 to 158 veh/h | 143 to 158 | 150 | 35 | 75 | 80 |
+| Colby Street SB, implied volume | 750 veh/h on-ramps x 8% via Colby Street (x 90% from the north side, reading B) = 54 to 60 freeway-related; / 45% freeway share = 120 to 133 veh/h | 120 to 133 | 127 | 207 | 180 | 158 |
+| Colby Street NB, implied volume | 826 veh/h off-ramps x 8% via Colby Street (x 92% from the north side, reading B) = 61 to 66 freeway-related; / 47% freeway share = 129 to 141 veh/h | 129 to 141 | 135 | 107 | 158 | 138 |
+| Hillegass Avenue NB, implied volume | 826 veh/h off-ramps x 5% via Hillegass Avenue (x 92% from the north side, reading B) = 38 to 41 freeway-related; / 47% freeway share = 81 to 88 veh/h | 81 to 88 | 84 | 53 | 81 | 72 |
 
 ### midday
 
 | Block | Arithmetic | Implied (B to A) | Target | Assigned before | After the count fit | Final |
 | --- | --- | --- | --- | --- | --- | --- |
-| Hillegass Avenue SB, implied volume | 547 veh/h on-ramps x 12% via Hillegass Avenue (x 92% from the north side, reading B) = 60 to 66 freeway-related; / 57% freeway share = 106 to 115 veh/h | 106 to 115 | 110 | 30 | 92 | 80 |
-| Colby Street SB, implied volume | 547 veh/h on-ramps x 8% via Colby Street (x 92% from the north side, reading B) = 40 to 44 freeway-related; / 45% freeway share = 89 to 97 veh/h | 89 to 97 | 93 | 137 | 92 | 81 |
-| Colby Street NB, implied volume | 603 veh/h off-ramps x 8% via Colby Street (x 93% from the north side, reading B) = 45 to 48 freeway-related; / 47% freeway share = 95 to 103 veh/h | 95 to 103 | 99 | 105 | 129 | 100 |
-| Hillegass Avenue NB, implied volume | 603 veh/h off-ramps x 5% via Hillegass Avenue (x 93% from the north side, reading B) = 28 to 30 freeway-related; / 47% freeway share = 59 to 64 veh/h | 59 to 64 | 62 | 43 | 59 | 51 |
+| Hillegass Avenue SB, implied volume | 547 veh/h on-ramps x 12% via Hillegass Avenue (x 92% from the north side, reading B) = 60 to 66 freeway-related; / 57% freeway share = 106 to 115 veh/h | 106 to 115 | 110 | 29 | 88 | 75 |
+| Colby Street SB, implied volume | 547 veh/h on-ramps x 8% via Colby Street (x 92% from the north side, reading B) = 40 to 44 freeway-related; / 45% freeway share = 89 to 97 veh/h | 89 to 97 | 93 | 141 | 91 | 76 |
+| Colby Street NB, implied volume | 603 veh/h off-ramps x 8% via Colby Street (x 93% from the north side, reading B) = 45 to 48 freeway-related; / 47% freeway share = 95 to 103 veh/h | 95 to 103 | 99 | 106 | 133 | 101 |
+| Hillegass Avenue NB, implied volume | 603 veh/h off-ramps x 5% via Hillegass Avenue (x 93% from the north side, reading B) = 28 to 30 freeway-related; / 47% freeway share = 60 to 64 veh/h | 60 to 64 | 62 | 46 | 60 | 54 |
 
 ### pm_peak
 
 | Block | Arithmetic | Implied (B to A) | Target | Assigned before | After the count fit | Final |
 | --- | --- | --- | --- | --- | --- | --- |
-| Hillegass Avenue SB, implied volume | 882 veh/h on-ramps x 12% via Hillegass Avenue (x 92% from the north side, reading B) = 98 to 106 freeway-related; / 68% freeway share = 144 to 156 veh/h | 144 to 156 | 150 | 51 | 145 | 110 |
-| Colby Street SB, implied volume | 882 veh/h on-ramps x 8% via Colby Street (x 92% from the north side, reading B) = 65 to 71 freeway-related; / 45% freeway share = 145 to 157 veh/h | 145 to 157 | 151 | 189 | 155 | 135 |
-| Colby Street NB, implied volume | 972 veh/h off-ramps x 8% via Colby Street (x 93% from the north side, reading B) = 73 to 78 freeway-related; / 47% freeway share = 154 to 165 veh/h | 154 to 165 | 160 | 218 | 225 | 188 |
-| Hillegass Avenue NB, implied volume | 972 veh/h off-ramps x 5% via Hillegass Avenue (x 93% from the north side, reading B) = 45 to 49 freeway-related; / 47% freeway share = 96 to 103 veh/h | 96 to 103 | 100 | 74 | 102 | 89 |
+| Hillegass Avenue SB, implied volume | 882 veh/h on-ramps x 12% via Hillegass Avenue (x 93% from the north side, reading B) = 98 to 106 freeway-related; / 68% freeway share = 144 to 156 veh/h | 144 to 156 | 150 | 50 | 151 | 134 |
+| Colby Street SB, implied volume | 882 veh/h on-ramps x 8% via Colby Street (x 93% from the north side, reading B) = 65 to 71 freeway-related; / 45% freeway share = 145 to 157 veh/h | 145 to 157 | 151 | 211 | 163 | 142 |
+| Colby Street NB, implied volume | 972 veh/h off-ramps x 8% via Colby Street (x 93% from the north side, reading B) = 73 to 78 freeway-related; / 47% freeway share = 155 to 165 veh/h | 155 to 165 | 160 | 211 | 217 | 182 |
+| Hillegass Avenue NB, implied volume | 972 veh/h off-ramps x 5% via Hillegass Avenue (x 93% from the north side, reading B) = 45 to 49 freeway-related; / 47% freeway share = 97 to 103 veh/h | 97 to 103 | 100 | 82 | 104 | 92 |
 
 
 ## Who uses the interior streets: composition of the assigned traffic
@@ -861,18 +861,18 @@ Mean assigned volume per block (veh/h) on the links of a street inside the study
 
 | Period | Street | Direction | Links | Offered local-end | Offered through | Offered freeway | Offered total | Final local-end | Final through | Final freeway | Final total |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| am_peak | Colby Street | north half | 8 | 3 | 0 | 44 | 47 | 8 | 0 | 84 | 92 |
-| am_peak | Colby Street | south half | 8 | 3 | 0 | 129 | 132 | 8 | 1 | 115 | 123 |
-| am_peak | Hillegass Avenue | north half | 4 | 2 | 0 | 55 | 57 | 5 | 1 | 67 | 73 |
-| am_peak | Hillegass Avenue | south half | 4 | 8 | 1 | 30 | 39 | 24 | 2 | 48 | 74 |
-| midday | Colby Street | north half | 8 | 1 | 0 | 46 | 47 | 3 | 0 | 67 | 70 |
-| midday | Colby Street | south half | 8 | 2 | 0 | 83 | 86 | 7 | 1 | 61 | 69 |
-| midday | Hillegass Avenue | north half | 4 | 2 | 1 | 43 | 46 | 7 | 1 | 46 | 54 |
-| midday | Hillegass Avenue | south half | 4 | 4 | 1 | 29 | 33 | 11 | 2 | 58 | 71 |
-| pm_peak | Colby Street | north half | 8 | 3 | 0 | 95 | 99 | 9 | 1 | 110 | 120 |
-| pm_peak | Colby Street | south half | 8 | 3 | 2 | 113 | 117 | 8 | 4 | 112 | 124 |
-| pm_peak | Hillegass Avenue | north half | 4 | 2 | 1 | 79 | 83 | 7 | 1 | 85 | 93 |
-| pm_peak | Hillegass Avenue | south half | 4 | 4 | 2 | 48 | 53 | 12 | 5 | 93 | 110 |
+| am_peak | Colby Street | north half | 8 | 1 | 0 | 45 | 46 | 4 | 1 | 84 | 88 |
+| am_peak | Colby Street | south half | 8 | 6 | 1 | 120 | 127 | 14 | 2 | 110 | 126 |
+| am_peak | Hillegass Avenue | north half | 4 | 4 | 0 | 52 | 56 | 11 | 1 | 64 | 76 |
+| am_peak | Hillegass Avenue | south half | 4 | 7 | 1 | 30 | 38 | 22 | 1 | 55 | 78 |
+| midday | Colby Street | north half | 8 | 2 | 0 | 46 | 48 | 5 | 1 | 63 | 69 |
+| midday | Colby Street | south half | 8 | 2 | 1 | 88 | 91 | 7 | 2 | 61 | 70 |
+| midday | Hillegass Avenue | north half | 4 | 3 | 1 | 46 | 50 | 9 | 1 | 45 | 55 |
+| midday | Hillegass Avenue | south half | 4 | 3 | 1 | 27 | 31 | 8 | 4 | 57 | 70 |
+| pm_peak | Colby Street | north half | 8 | 2 | 0 | 90 | 92 | 5 | 0 | 113 | 119 |
+| pm_peak | Colby Street | south half | 8 | 3 | 1 | 140 | 144 | 8 | 4 | 112 | 124 |
+| pm_peak | Hillegass Avenue | north half | 4 | 3 | 1 | 85 | 89 | 8 | 1 | 86 | 94 |
+| pm_peak | Hillegass Avenue | south half | 4 | 6 | 1 | 45 | 52 | 19 | 3 | 95 | 117 |
 
 
 ## Stations that cannot be met
@@ -881,136 +881,129 @@ A station is listed when it ends more than 5% off its target. Pinned = share of 
 
 ### am_peak
 
-125 stations; the 20 furthest from their target are listed (the full list of every station is in the table of its period above).
+121 stations; the 20 furthest from their target are listed (the full list of every station is in the table of its period above).
 
 | Station | Target | Assigned | Error | Pinned | Opposing stations |
 | --- | --- | --- | --- | --- | --- |
-| Hillegass Avenue from south to Alcatraz Avenue toward east at Hillegass Avenue / Alcatraz Avenue | 53 | 0 | -99% | 65% | 63rd Street College Avenue to Hillegass Avenue, EB (link 2655) (100%, 0 veh/h); Hillegass Avenue 63rd Street to 62nd Street, SB (link 2700) (21%, 0 veh/h) |
-| Canning Street 62nd Street to 63rd Street, NB (link 1928) | 34 | 3 | -91% | 100% at the upper bound | Martin Street from southeast to 58th Street toward west at Martin Stre (34%, 3 veh/h); AlcatrazAve N leg leaving (2%, 3 veh/h) |
-| Alcatraz Avenue from west to Colby Street toward south at Colby Street / Alcatraz Avenue | 81 | 8 | -90% | 29% | 60th Street Canning Street to Telegraph Avenue, EB (link 1894) (147%, 7 veh/h); Colby Street SB, implied volume (14%, 7 veh/h) |
-| 62nd Street Hillegass Avenue to Colby Street, EB (link 2707) | 16 | 2 | -89% | 100% at the upper bound | AlcatrazAve W leg entering (14%, 1 veh/h); 63rd Street College Avenue to Hillegass Avenue, EB (link 2655) (100%, 1 veh/h) |
-| Colby Street from south to Alcatraz Avenue toward west at Colby Street / Alcatraz Avenue | 78 | 8 | -89% | 97% at the upper bound | AlcatrazAve E leg entering (1%, 7 veh/h); 63rd Street Colby Street to Dana Street, WB (link 1879) (43%, 6 veh/h) |
-| Canning Street 60th Street to 61st Street, NB (link 1924) | 41 | 5 | -89% | 89% at the upper bound | McAuley Street Canning Street to Telegraph Avenue, WB (link 1958) (20%, 4 veh/h); 59th Street Canning Street to Telegraph Avenue, WB (link 1912) (9%, 4 veh/h) |
-| North Street Colby Street to Dana Street, WB (link 1930) | 25 | 4 | -86% | 98% at the upper bound | AlcatrazAve E leg entering (1%, 4 veh/h); 63rd Street Colby Street to Dana Street, WB (link 1879) (43%, 3 veh/h) |
-| Alcatraz Avenue from west (Telegraph side) to Dana Street toward south at Alcatraz Avenue / Dana Street | 37 | 5 | -86% | 96% at the upper bound | AlcatrazAve W leg entering (14%, 3 veh/h); North Street Colby Street to Dana Street, EB (link 1931) (110%, 1 veh/h) |
-| Canning Street 61st Street to 62nd Street, NB (link 1926) | 37 | 5 | -85% | 78% | McAuley Street Canning Street to Telegraph Avenue, WB (link 1958) (20%, 4 veh/h); 59th Street Canning Street to Telegraph Avenue, WB (link 1912) (9%, 4 veh/h) |
-| 63rd Street Hillegass Avenue to Colby Street, EB (link 2657) | 13 | 3 | -79% | 100% at the upper bound | Claremont Avenue from southwest to Hillegass Avenue toward north at Hi (2%, 1 veh/h); Hillegass Avenue NB, whole street between Claremont Avenue and Alcatra (54%, 1 veh/h) |
-| Alcatraz Avenue from east to Hillegass Avenue toward south at Hillegass Avenue / Alcatraz Avenue | 41 | 10 | -76% | 98% at the upper bound | Hillegass Avenue 63rd Street to 62nd Street, SB (link 2700) (21%, 8 veh/h); AlcatrazAve E leg entering (1%, 6 veh/h) |
-| 60th Street Howell Street to Canning Street, EB (link 1892) | 6 | 24 | 297% | 36% | AlcatrazAve S leg leaving (-14%, 17 veh/h); Martin Street Claremont Avenue to Ayala Avenue, EB (link 1852) (-4%, 17 veh/h) |
-| Dana Street North Street to Alcatraz Avenue, SB (link 1951) | 45 | 12 | -73% | 60% | on-ramp at node 709 (Telegraph Avenue / 56th Street) (18%, 6 veh/h); 62nd Street Canning Street to Telegraph Avenue, WB (link 1871) (37%, 6 veh/h) |
-| Canning Street 58th Street to 59th Street, SB (link 1919) | 19 | 5 | -72% | 0% | on-ramp at node 845 (Claremont Avenue / Hudson Street) (6%, 4 veh/h); 60th Street Canning Street to Telegraph Avenue, EB (link 1894) (147%, 4 veh/h) |
-| Canning Street 61st Street to 62nd Street, SB (link 1927) | 47 | 14 | -71% | 62% | 60th Street Howell Street to Canning Street, EB (link 1892) (297%, 8 veh/h); on-ramp at node 845 (Claremont Avenue / Hudson Street) (6%, 8 veh/h) |
-| 62nd Street Florio Street / Claremont Avenue / +1 to Hillegass Avenue, WB (link 2650) | 39 | 12 | -69% | 34% | off-ramp at node 710 (Telegraph Avenue / Aileen Street) (1%, 10 veh/h); on-ramp at node 1711 (Caldecott Lane) (15%, 8 veh/h) |
-| Canning Street McAuley Street to 60th Street, NB (link 1922) | 42 | 13 | -68% | 44% | Martin Street from southeast to 58th Street toward west at Martin Stre (34%, 10 veh/h); AlcatrazAve N leg leaving (2%, 9 veh/h) |
-| McAuley Street Howell Street to Canning Street, EB (link 1957) | 4 | 12 | 190% | 35% | Martin Street Claremont Avenue to Ayala Avenue, EB (link 1852) (-4%, 9 veh/h); Martin Street from northwest (Ayala side) to Claremont Avenue toward s (-5%, 9 veh/h) |
-| Canning Street McAuley Street to 60th Street, SB (link 1923) | 48 | 18 | -63% | 24% | 60th Street Canning Street to Telegraph Avenue, EB (link 1894) (147%, 11 veh/h); on-ramp at node 845 (Claremont Avenue / Hudson Street) (6%, 10 veh/h) |
-| Canning Street 60th Street to 61st Street, SB (link 1925) | 41 | 16 | -61% | 44% | 60th Street Howell Street to Canning Street, EB (link 1892) (297%, 11 veh/h); on-ramp at node 845 (Claremont Avenue / Hudson Street) (6%, 11 veh/h) |
+| 61st Street Hillegass Avenue to Colby Street, EB (link 2649) | 15 | 0 | -97% | 100% at the upper bound | AlcatrazAve W leg entering (9%, 0 veh/h); Hillegass Avenue 63rd Street to 62nd Street, SB (link 2700) (15%, 0 veh/h) |
+| Alcatraz Avenue from west (Telegraph side) to Dana Street toward south at Alcatraz Avenue / Dana Street | 37 | 1 | -96% | 83% at the upper bound | North Street Colby Street to Dana Street, EB (link 1931) (74%, 1 veh/h); AlcatrazAve W leg entering (9%, 1 veh/h) |
+| Colby Street from south to Alcatraz Avenue toward west at Colby Street / Alcatraz Avenue | 78 | 3 | -96% | 99% at the upper bound | 63rd Street Colby Street to Dana Street, WB (link 1879) (55%, 2 veh/h); 63rd Street Canning Street to Telegraph Avenue, WB (link 1883) (22%, 2 veh/h) |
+| Canning Street 61st Street to 62nd Street, NB (link 1926) | 37 | 3 | -92% | 83% at the upper bound | 61st Street Canning Street to Telegraph Avenue, WB (link 2039) (30%, 2 veh/h); 62nd Street Canning Street to Telegraph Avenue, WB (link 1871) (1%, 2 veh/h) |
+| Canning Street 62nd Street to 63rd Street, NB (link 1928) | 34 | 3 | -92% | 93% at the upper bound | 63rd Street Canning Street to Telegraph Avenue, WB (link 1883) (22%, 3 veh/h); 61st Street Canning Street to Telegraph Avenue, WB (link 2039) (30%, 2 veh/h) |
+| Hillegass Avenue from south to Alcatraz Avenue toward east at Hillegass Avenue / Alcatraz Avenue | 53 | 5 | -91% | 54% | 63rd Street College Avenue to Hillegass Avenue, EB (link 2655) (87%, 4 veh/h); 63rd Street Colby Street to Dana Street, WB (link 1879) (55%, 3 veh/h) |
+| Alcatraz Avenue from west to Colby Street toward south at Colby Street / Alcatraz Avenue | 81 | 8 | -90% | 65% | 60th Street Canning Street to Telegraph Avenue, EB (link 1894) (187%, 4 veh/h); 60th Street Howell Street to Canning Street, EB (link 1892) (213%, 4 veh/h) |
+| Canning Street 60th Street to 61st Street, NB (link 1924) | 41 | 5 | -87% | 85% at the upper bound | 59th Street Canning Street to Telegraph Avenue, WB (link 1912) (11%, 5 veh/h); 60th Street Canning Street to Telegraph Avenue, WB (link 1893) (34%, 5 veh/h) |
+| 62nd Street Hillegass Avenue to Colby Street, EB (link 2707) | 16 | 2 | -86% | 100% at the upper bound | Colby Street SB, implied volume (25%, 2 veh/h); AlcatrazAve W leg entering (9%, 1 veh/h) |
+| Dana Street North Street to Alcatraz Avenue, SB (link 1951) | 45 | 8 | -82% | 75% | 63rd Street Canning Street to Telegraph Avenue, WB (link 1883) (22%, 6 veh/h); on-ramp at node 709 (Telegraph Avenue / 56th Street) (17%, 6 veh/h) |
+| 63rd Street Hillegass Avenue to Colby Street, EB (link 2657) | 13 | 3 | -81% | 98% at the upper bound | 63rd Street College Avenue to Hillegass Avenue, EB (link 2655) (87%, 2 veh/h); Colby Street SB, implied volume (25%, 1 veh/h) |
+| Canning Street McAuley Street to 60th Street, NB (link 1922) | 42 | 10 | -77% | 61% | 60th Street Canning Street to Telegraph Avenue, WB (link 1893) (34%, 9 veh/h); Martin Street from southeast to 58th Street toward west at Martin Stre (34%, 9 veh/h) |
+| Canning Street 58th Street to 59th Street, SB (link 1919) | 19 | 4 | -77% | 62% | on-ramp at node 845 (Claremont Avenue / Hudson Street) (6%, 4 veh/h); 60th Street Canning Street to Telegraph Avenue, EB (link 1894) (187%, 4 veh/h) |
+| Dana Street from north to 63rd Street toward east (Colby side) at Dana Street / 63rd Street | 37 | 9 | -76% | 4% | Colby Street SB, implied volume (25%, 9 veh/h); Colby Street from north to Claremont Avenue toward southwest (Telegrap (39%, 8 veh/h) |
+| Alcatraz Avenue from east to Hillegass Avenue toward south at Hillegass Avenue / Alcatraz Avenue | 41 | 11 | -74% | 98% at the upper bound | uncounted links over their limit (guard, 8 veh/h); Hillegass Avenue 63rd Street to 62nd Street, SB (link 2700) (15%, 3 veh/h) |
+| McAuley Street Howell Street to Canning Street, EB (link 1957) | 4 | 14 | 252% | 35% | Forest Street Colby Street / Claremont Avenue to Ayala Avenue, EB (lin (-1%, 12 veh/h); AlcatrazAve S leg leaving (-16%, 10 veh/h) |
+| North Street Colby Street to Dana Street, WB (link 1930) | 25 | 7 | -70% | 40% | 63rd Street Colby Street to Dana Street, WB (link 1879) (55%, 6 veh/h); Dana Street 63rd Street to North Street, NB (link 1948) (5%, 4 veh/h) |
+| Colby Street North Street to Alcatraz Avenue, NB (link 2634) | 104 | 33 | -69% | 57% | Colby Street Forest Street / Claremont Avenue to McAuley Street, NB (l (6%, 28 veh/h); Colby Street NB, implied volume (2%, 28 veh/h) |
+| 60th Street Howell Street to Canning Street, EB (link 1892) | 6 | 19 | 213% | 55% | AlcatrazAve S leg leaving (-16%, 13 veh/h); Martin Street Claremont Avenue to Ayala Avenue, EB (link 1852) (-4%, 12 veh/h) |
+| 62nd Street Florio Street / Claremont Avenue / +1 to Hillegass Avenue, WB (link 2650) | 39 | 13 | -68% | 88% at the upper bound | off-ramp at node 710 (Telegraph Avenue / Aileen Street) (1%, 11 veh/h); 62nd Street Canning Street to Telegraph Avenue, EB (link 1872) (34%, 9 veh/h) |
 
 ### midday
 
-128 stations; the 20 furthest from their target are listed (the full list of every station is in the table of its period above).
+126 stations; the 20 furthest from their target are listed (the full list of every station is in the table of its period above).
 
 | Station | Target | Assigned | Error | Pinned | Opposing stations |
 | --- | --- | --- | --- | --- | --- |
-| Colby Street from north to Claremont Avenue toward northeast (College side) at Colby Street / Claremont Avenue | 47 | 0 | -99% | 100% at the upper bound | AlcatrazAve W leg entering (8%, 0 veh/h); Ayala Avenue Forest Street to McAuley Street, NB (link 2831) (10%, 0 veh/h) |
-| 62nd Street Hillegass Avenue to Colby Street, EB (link 2707) | 10 | 0 | -95% | 100% at the upper bound | AlcatrazAve W leg entering (8%, 0 veh/h); 62nd Street Canning Street to Telegraph Avenue, EB (link 1872) (80%, 0 veh/h) |
-| Colby Street from south to Alcatraz Avenue toward west at Colby Street / Alcatraz Avenue | 81 | 5 | -93% | 63% | 63rd Street Colby Street to Dana Street, WB (link 1879) (135%, 4 veh/h); on-ramp at node 709 (Telegraph Avenue / 56th Street) (16%, 4 veh/h) |
-| Canning Street 62nd Street to 63rd Street, NB (link 1928) | 11 | 1 | -92% | 0% | on-ramp at node 709 (Telegraph Avenue / 56th Street) (16%, 1 veh/h); 62nd Street Colby Street to Canning Street, WB (link 1869) (5%, 1 veh/h) |
-| Canning Street 60th Street to 61st Street, NB (link 1924) | 19 | 2 | -92% | 75% | AlcatrazAve W leg leaving (3%, 1 veh/h); Howell Street McAuley Street to 60th Street, NB (link 2080) (81%, 1 veh/h) |
-| Alcatraz Avenue from east to Hillegass Avenue toward south at Hillegass Avenue / Alcatraz Avenue | 61 | 6 | -90% | 85% at the upper bound | AlcatrazAve W leg leaving (3%, 3 veh/h); MarketSt_55thSt E leg entering (5%, 2 veh/h) |
-| Canning Street 61st Street to 62nd Street, NB (link 1926) | 18 | 2 | -90% | 26% | 62nd Street Canning Street to Telegraph Avenue, WB (link 1871) (4%, 2 veh/h); 60th Street Colby Street to Howell Street, WB (link 1889) (20%, 1 veh/h) |
-| Hillegass Avenue from south to Alcatraz Avenue toward east at Hillegass Avenue / Alcatraz Avenue | 33 | 4 | -88% | 17% | 63rd Street College Avenue to Hillegass Avenue, EB (link 2655) (78%, 4 veh/h); Hillegass Avenue from south to Alcatraz Avenue toward west at Hillegas (10%, 3 veh/h) |
-| Canning Street 58th Street to 59th Street, SB (link 1919) | 14 | 2 | -87% | 14% | McAuley Street Howell Street to Canning Street, EB (link 1957) (63%, 2 veh/h); Colby Street from north to Claremont Avenue toward southwest (Telegrap (47%, 2 veh/h) |
-| Canning Street McAuley Street to 60th Street, NB (link 1922) | 17 | 2 | -87% | 38% | off-ramp at node 691 (Claremont Avenue / Clifton Street) (5%, 1 veh/h); 60th Street Colby Street to Howell Street, WB (link 1889) (20%, 1 veh/h) |
-| 63rd Street Hillegass Avenue to Colby Street, EB (link 2657) | 4 | 1 | -87% | 99% at the upper bound | AlcatrazAve W leg entering (8%, 0 veh/h); North Street Colby Street to Dana Street, EB (link 1931) (46%, 0 veh/h) |
-| Alcatraz Avenue from west to Colby Street toward south at Colby Street / Alcatraz Avenue | 47 | 7 | -86% | 58% | Colby Street SB, whole street between Claremont Avenue and Alcatraz Av (48%, 3 veh/h); 60th Street Canning Street to Telegraph Avenue, EB (link 1894) (12%, 3 veh/h) |
-| Canning Street 59th Street to McAuley Street, SB (link 1921) | 30 | 4 | -85% | 32% | Howell Street 59th Street to McAuley Street, SB (link 2079) (135%, 3 veh/h); Howell Street McAuley Street to 60th Street, SB (link 2081) (107%, 3 veh/h) |
-| 60th Street Hillegass Avenue / Claremont Avenue to Colby Street, EB (link 1888) | 11 | 3 | -78% | 97% at the upper bound | AlcatrazAve W leg entering (8%, 2 veh/h); 60th Street Canning Street to Telegraph Avenue, EB (link 1894) (12%, 2 veh/h) |
-| Hillegass Avenue Alcatraz Avenue to 63rd Street, SB (link 2698) | 110 | 26 | -76% | 72% | on-ramp at node 845 (Claremont Avenue / Hudson Street) (6%, 11 veh/h); AlcatrazAve W leg entering (8%, 10 veh/h) |
-| 58th Street Canning Street to Vicente Street, EB (link 2014) | 5 | 18 | 251% | 25% | 58th Street Hermann Street / Martin Street to Canning Street, EB (link (-69%, 17 veh/h); Martin Street Ayala Avenue to Hermann Street / 58th Street, EB (link 1 (-11%, 14 veh/h) |
-| Hermann Street Ayala Avenue to Martin Street / 58th Street, NB (link 1847) | 3 | 1 | -71% | 48% | Hermann Street Ayala Avenue to Martin Street / 58th Street, SB (link 1 (21%, 1 veh/h); on-ramp at node 709 (Telegraph Avenue / 56th Street) (16%, 0 veh/h) |
-| Colby Street from south to Alcatraz Avenue toward east at Colby Street / Alcatraz Avenue | 20 | 6 | -70% | 9% | Claremont Avenue from southwest to Hillegass Avenue toward north at Hi (4%, 5 veh/h); Hillegass Avenue NB, whole street between Claremont Avenue and Alcatra (13%, 5 veh/h) |
-| 58th Street Hermann Street / Martin Street to Canning Street, EB (link 2012) | 60 | 18 | -69% | 17% | 58th Street Canning Street to Vicente Street, EB (link 2014) (251%, 17 veh/h); on-ramp at node 845 (Claremont Avenue / Hudson Street) (6%, 9 veh/h) |
-| 60th Street Colby Street to Howell Street, EB (link 1890) | 9 | 3 | -69% | 79% | 60th Street Howell Street to Canning Street, EB (link 1892) (34%, 3 veh/h); 60th Street Canning Street to Telegraph Avenue, EB (link 1894) (12%, 2 veh/h) |
+| Colby Street from north to Claremont Avenue toward northeast (College side) at Colby Street / Claremont Avenue | 47 | 0 | -100% | 95% at the upper bound | AlcatrazAve W leg entering (11%, 0 veh/h); MarketSt_55thSt S leg entering (4%, 0 veh/h) |
+| Canning Street 62nd Street to 63rd Street, NB (link 1928) | 11 | 0 | -97% | 100% at the upper bound | AlcatrazAve N leg leaving (6%, 0 veh/h); MarketSt_55thSt S leg entering (4%, 0 veh/h) |
+| Colby Street from south to Alcatraz Avenue toward west at Colby Street / Alcatraz Avenue | 81 | 4 | -95% | 91% at the upper bound | 63rd Street Hillegass Avenue to Colby Street, WB (link 2656) (6%, 3 veh/h); Hillegass Avenue from south to Alcatraz Avenue toward west at Hillegas (14%, 3 veh/h) |
+| Alcatraz Avenue from east to Hillegass Avenue toward south at Hillegass Avenue / Alcatraz Avenue | 61 | 5 | -91% | 94% at the upper bound | uncounted links over their limit (guard, 4 veh/h); AlcatrazAve W leg leaving (3%, 2 veh/h) |
+| Canning Street 58th Street to 59th Street, SB (link 1919) | 14 | 2 | -86% | 4% | Ayala Avenue Martin Street to Howell Street, SB (link 1856) (37%, 2 veh/h); Howell Street 59th Street to McAuley Street, SB (link 2079) (116%, 2 veh/h) |
+| Hillegass Avenue from south to Alcatraz Avenue toward east at Hillegass Avenue / Alcatraz Avenue | 33 | 5 | -85% | 97% at the upper bound | 63rd Street College Avenue to Hillegass Avenue, EB (link 2655) (59%, 4 veh/h); on-ramp at node 709 (Telegraph Avenue / 56th Street) (17%, 4 veh/h) |
+| Canning Street 60th Street to 61st Street, NB (link 1924) | 19 | 3 | -81% | 57% | AlcatrazAve N leg leaving (6%, 3 veh/h); off-ramp at node 691 (Claremont Avenue / Clifton Street) (5%, 2 veh/h) |
+| 62nd Street Hillegass Avenue to Colby Street, EB (link 2707) | 10 | 2 | -80% | 100% at the upper bound | Dana Street North Street to Alcatraz Avenue, NB (link 1950) (62%, 1 veh/h); uncounted links over their limit (guard, 1 veh/h) |
+| Canning Street 59th Street to McAuley Street, SB (link 1921) | 30 | 7 | -78% | 15% | Howell Street 59th Street to McAuley Street, SB (link 2079) (116%, 6 veh/h); Ayala Avenue Martin Street to Howell Street, SB (link 1856) (37%, 5 veh/h) |
+| McAuley Street Howell Street to Canning Street, WB (link 1956) | 19 | 4 | -78% | 54% | Forest Street Colby Street / Claremont Avenue to Ayala Avenue, WB (lin (2%, 3 veh/h); 60th Street Colby Street to Howell Street, WB (link 1889) (33%, 2 veh/h) |
+| 61st Street Hillegass Avenue to Colby Street, EB (link 2649) | 7 | 2 | -78% | 100% at the upper bound | McAuley Street Ayala Avenue to Howell Street, EB (link 1955) (2%, 1 veh/h); Howell Street McAuley Street to 60th Street, NB (link 2080) (65%, 1 veh/h) |
+| Canning Street 61st Street to 62nd Street, NB (link 1926) | 18 | 4 | -76% | 44% | AlcatrazAve N leg leaving (6%, 2 veh/h); off-ramp at node 691 (Claremont Avenue / Clifton Street) (5%, 2 veh/h) |
+| Alcatraz Avenue from west to Colby Street toward south at Colby Street / Alcatraz Avenue | 47 | 13 | -73% | 45% | 60th Street Canning Street to Telegraph Avenue, EB (link 1894) (13%, 8 veh/h); AlcatrazAve W leg entering (11%, 8 veh/h) |
+| 58th Street Canning Street to Vicente Street, EB (link 2014) | 5 | 18 | 255% | 17% | 58th Street Hermann Street / Martin Street to Canning Street, EB (link (-68%, 17 veh/h); Martin Street Ayala Avenue to Hermann Street / 58th Street, EB (link 1 (-22%, 16 veh/h) |
+| Canning Street McAuley Street to 60th Street, NB (link 1922) | 17 | 5 | -71% | 3% | off-ramp at node 691 (Claremont Avenue / Clifton Street) (5%, 5 veh/h); AlcatrazAve N leg leaving (6%, 2 veh/h) |
+| Alcatraz Avenue from west to Hillegass Avenue toward south at Hillegass Avenue / Alcatraz Avenue | 47 | 14 | -71% | 38% | Colby Street SB, whole street between Claremont Avenue and Alcatraz Av (73%, 9 veh/h); Colby Street from north to Claremont Avenue toward southwest (Telegrap (39%, 9 veh/h) |
+| Dana Street North Street to Alcatraz Avenue, SB (link 1951) | 27 | 8 | -70% | 21% | 63rd Street Canning Street to Telegraph Avenue, WB (link 1883) (18%, 6 veh/h); on-ramp at node 709 (Telegraph Avenue / 56th Street) (17%, 6 veh/h) |
+| Colby Street North Street to Alcatraz Avenue, NB (link 2634) | 102 | 31 | -70% | 73% | off-ramp at node 691 (Claremont Avenue / Clifton Street) (5%, 25 veh/h); Colby Street NB, implied volume (2%, 24 veh/h) |
+| Hillegass Avenue Alcatraz Avenue to 63rd Street, SB (link 2698) | 110 | 34 | -69% | 39% | on-ramp at node 845 (Claremont Avenue / Hudson Street) (6%, 21 veh/h); Colby Street from north to Claremont Avenue toward southwest (Telegrap (39%, 10 veh/h) |
+| Canning Street 60th Street to 61st Street, SB (link 1925) | 28 | 9 | -69% | 25% | Howell Street 59th Street to McAuley Street, SB (link 2079) (116%, 7 veh/h); 60th Street Howell Street to Canning Street, EB (link 1892) (18%, 7 veh/h) |
 
 ### pm_peak
 
-120 stations; the 20 furthest from their target are listed (the full list of every station is in the table of its period above).
+123 stations; the 20 furthest from their target are listed (the full list of every station is in the table of its period above).
 
 | Station | Target | Assigned | Error | Pinned | Opposing stations |
 | --- | --- | --- | --- | --- | --- |
-| 61st Street Hillegass Avenue to Colby Street, EB (link 2649) | 11 | 0 | -98% | 100% at the upper bound | AlcatrazAve W leg entering (8%, 0 veh/h) |
-| 63rd Street Hillegass Avenue to Colby Street, EB (link 2657) | 7 | 0 | -93% | 86% at the upper bound | on-ramp at node 709 (Telegraph Avenue / 56th Street) (13%, 0 veh/h); AlcatrazAve W leg entering (8%, 0 veh/h) |
-| Colby Street from south to Alcatraz Avenue toward west at Colby Street / Alcatraz Avenue | 131 | 11 | -91% | 98% at the upper bound | 63rd Street Colby Street to Dana Street, WB (link 1879) (155%, 8 veh/h); 63rd Street Canning Street to Telegraph Avenue, WB (link 1883) (24%, 8 veh/h) |
-| Alcatraz Avenue from east to Hillegass Avenue toward south at Hillegass Avenue / Alcatraz Avenue | 98 | 9 | -91% | 93% at the upper bound | uncounted links over their limit (guard, 8 veh/h); AlcatrazAve W leg leaving (3%, 4 veh/h) |
-| 62nd Street Hillegass Avenue to Colby Street, EB (link 2707) | 16 | 2 | -90% | 99% at the upper bound | uncounted links over their limit (guard, 1 veh/h); AlcatrazAve W leg leaving (3%, 1 veh/h) |
-| Hillegass Avenue from south to Alcatraz Avenue toward east at Hillegass Avenue / Alcatraz Avenue | 54 | 7 | -87% | 20% | 63rd Street College Avenue to Hillegass Avenue, EB (link 2655) (35%, 7 veh/h); Hillegass Avenue from south to Alcatraz Avenue toward west at Hillegas (35%, 6 veh/h) |
-| Canning Street 62nd Street to 63rd Street, NB (link 1928) | 18 | 3 | -84% | 97% at the upper bound | 63rd Street Canning Street to Telegraph Avenue, WB (link 1883) (24%, 3 veh/h); 60th Street Colby Street to Howell Street, WB (link 1889) (62%, 2 veh/h) |
-| Alcatraz Avenue from west to Colby Street toward south at Colby Street / Alcatraz Avenue | 76 | 15 | -81% | 27% | Colby Street SB, whole street between Claremont Avenue and Alcatraz Av (93%, 11 veh/h); Colby Street from north to Claremont Avenue toward southwest (Telegrap (53%, 11 veh/h) |
-| Canning Street 60th Street to 61st Street, NB (link 1924) | 30 | 7 | -78% | 100% at the upper bound | Colby Street NB, implied volume (17%, 6 veh/h); 60th Street Howell Street to Canning Street, WB (link 1891) (9%, 5 veh/h) |
-| Alcatraz Avenue from west to Hillegass Avenue toward south at Hillegass Avenue / Alcatraz Avenue | 76 | 18 | -76% | 81% at the upper bound | AlcatrazAve W leg entering (8%, 8 veh/h); Colby Street SB, whole street between Claremont Avenue and Alcatraz Av (93%, 6 veh/h) |
-| Dana Street North Street to Alcatraz Avenue, SB (link 1951) | 43 | 11 | -75% | 44% | 63rd Street Canning Street to Telegraph Avenue, WB (link 1883) (24%, 5 veh/h); North Street Colby Street to Dana Street, EB (link 1931) (31%, 5 veh/h) |
-| Canning Street 59th Street to McAuley Street, SB (link 1921) | 49 | 12 | -75% | 10% | Howell Street 59th Street to McAuley Street, SB (link 2079) (107%, 9 veh/h); Ayala Avenue Martin Street to Howell Street, SB (link 1856) (15%, 9 veh/h) |
-| Canning Street 61st Street to 62nd Street, NB (link 1926) | 29 | 7 | -74% | 67% | 60th Street Howell Street to Canning Street, WB (link 1891) (9%, 6 veh/h); 60th Street Colby Street to Howell Street, WB (link 1889) (62%, 6 veh/h) |
-| Canning Street McAuley Street to 60th Street, NB (link 1922) | 28 | 8 | -70% | 85% at the upper bound | Colby Street NB, implied volume (17%, 6 veh/h); 60th Street Howell Street to Canning Street, WB (link 1891) (9%, 6 veh/h) |
-| Colby Street North Street to Alcatraz Avenue, NB (link 2634) | 164 | 51 | -69% | 79% | Colby Street NB, implied volume (17%, 36 veh/h); Claremont Avenue from southwest to Colby Street toward north at Colby  (13%, 36 veh/h) |
-| Colby Street NB, whole street between Claremont Avenue and Alcatraz Avenue (links 2620 to 2634) | 102 | 36 | -65% | 71% | Colby Street NB, implied volume (17%, 36 veh/h); Claremont Avenue from southwest to Colby Street toward north at Colby  (13%, 36 veh/h) |
-| Colby Street from south to Alcatraz Avenue toward east at Colby Street / Alcatraz Avenue | 32 | 12 | -63% | 26% | Claremont Avenue from southwest to Hillegass Avenue toward north at Hi (7%, 9 veh/h); Hillegass Avenue NB, whole street between Claremont Avenue and Alcatra (9%, 9 veh/h) |
-| Dana Street North Street to Alcatraz Avenue, NB (link 1950) | 7 | 18 | 159% | 2% | AlcatrazAve E leg entering (-2%, 17 veh/h); AlcatrazAve S leg leaving (-13%, 13 veh/h) |
-| 61st Street Hillegass Avenue to Colby Street, WB (link 2648) | 12 | 31 | 157% | 2% | 62nd Street Florio Street / Claremont Avenue / +1 to Hillegass Avenue, (-41%, 21 veh/h); Hillegass Avenue 62nd Street to 61st Street, NB (link 2703) (-19%, 17 veh/h) |
-| 63rd Street Colby Street to Dana Street, WB (link 1879) | 16 | 41 | 155% | 8% | 63rd Street Dana Street to Canning Street, WB (link 1881) (-18%, 32 veh/h); AlcatrazAve E leg entering (-2%, 25 veh/h) |
+| Colby Street from north to Claremont Avenue toward northeast (College side) at Colby Street / Claremont Avenue | 75 | 2 | -98% | 100% at the upper bound | uncounted links over their limit (guard, 2 veh/h); Ayala Avenue Forest Street to McAuley Street, NB (link 2831) (11%, 2 veh/h) |
+| Canning Street 62nd Street to 63rd Street, NB (link 1928) | 18 | 1 | -96% | 100% at the upper bound | Hillegass Avenue NB, whole street between Claremont Avenue and Alcatra (18%, 1 veh/h); AlcatrazAve N leg leaving (2%, 1 veh/h) |
+| Colby Street from south to Alcatraz Avenue toward west at Colby Street / Alcatraz Avenue | 131 | 6 | -96% | 60% | 63rd Street Colby Street to Dana Street, WB (link 1879) (106%, 4 veh/h); 63rd Street Hillegass Avenue to Colby Street, WB (link 2656) (34%, 4 veh/h) |
+| Hillegass Avenue from south to Alcatraz Avenue toward east at Hillegass Avenue / Alcatraz Avenue | 54 | 3 | -94% | 13% | Hillegass Avenue from south to Alcatraz Avenue toward west at Hillegas (2%, 3 veh/h); on-ramp at node 709 (Telegraph Avenue / 56th Street) (11%, 3 veh/h) |
+| Alcatraz Avenue from east to Hillegass Avenue toward south at Hillegass Avenue / Alcatraz Avenue | 98 | 8 | -91% | 96% at the upper bound | uncounted links over their limit (guard, 3 veh/h); AlcatrazAve W leg leaving (2%, 2 veh/h) |
+| Hermann Street Ayala Avenue to Martin Street / 58th Street, NB (link 1847) | 5 | 0 | -90% | 86% at the upper bound | Ayala Avenue Martin Street to Howell Street, NB (link 1855) (3%, 0 veh/h); uncounted links over their limit (guard, 0 veh/h) |
+| Canning Street 61st Street to 62nd Street, NB (link 1926) | 29 | 3 | -90% | 31% | 61st Street Canning Street to Telegraph Avenue, WB (link 2039) (13%, 2 veh/h); 60th Street Howell Street to Canning Street, WB (link 1891) (9%, 2 veh/h) |
+| 60th Street Hillegass Avenue / Claremont Avenue to Colby Street, EB (link 1888) | 18 | 2 | -90% | 100% at the upper bound | AlcatrazAve W leg entering (8%, 1 veh/h); 60th Street Howell Street to Canning Street, EB (link 1892) (11%, 1 veh/h) |
+| Alcatraz Avenue from west to Colby Street toward south at Colby Street / Alcatraz Avenue | 76 | 9 | -88% | 56% | 60th Street Howell Street to Canning Street, EB (link 1892) (11%, 6 veh/h); Colby Street SB, whole street between Claremont Avenue and Alcatraz Av (78%, 6 veh/h) |
+| Colby Street from south to Alcatraz Avenue toward east at Colby Street / Alcatraz Avenue | 32 | 4 | -88% | 70% | Hillegass Avenue NB, whole street between Claremont Avenue and Alcatra (18%, 1 veh/h); Claremont Avenue from southwest to Colby Street toward north at Colby  (11%, 1 veh/h) |
+| 63rd Street Hillegass Avenue to Colby Street, EB (link 2657) | 7 | 1 | -88% | 100% at the upper bound | AlcatrazAve W leg entering (8%, 1 veh/h); MarketSt_55thSt W leg entering (7%, 0 veh/h) |
+| 61st Street Hillegass Avenue to Colby Street, EB (link 2649) | 11 | 1 | -87% | 100% at the upper bound | - |
+| 60th Street Colby Street to Howell Street, EB (link 1890) | 15 | 2 | -84% | 66% | 60th Street Howell Street to Canning Street, EB (link 1892) (11%, 2 veh/h); McAuley Street Ayala Avenue to Howell Street, EB (link 1955) (31%, 1 veh/h) |
+| Canning Street 60th Street to 61st Street, NB (link 1924) | 30 | 7 | -78% | 99% at the upper bound | 61st Street Canning Street to Telegraph Avenue, WB (link 2039) (13%, 4 veh/h); Forest Street Colby Street / Claremont Avenue to Ayala Avenue, WB (lin (2%, 4 veh/h) |
+| 62nd Street Hillegass Avenue to Colby Street, EB (link 2707) | 16 | 4 | -77% | 100% at the upper bound | 62nd Street Colby Street to Canning Street, EB (link 1870) (11%, 1 veh/h); 62nd Street Canning Street to Telegraph Avenue, EB (link 1872) (66%, 1 veh/h) |
+| Alcatraz Avenue from west to Hillegass Avenue toward south at Hillegass Avenue / Alcatraz Avenue | 76 | 18 | -77% | 61% | Colby Street SB, whole street between Claremont Avenue and Alcatraz Av (78%, 7 veh/h); Colby Street from north to Claremont Avenue toward southwest (Telegrap (58%, 7 veh/h) |
+| Colby Street North Street to Alcatraz Avenue, NB (link 2634) | 164 | 45 | -73% | 92% at the upper bound | Colby Street NB, implied volume (14%, 37 veh/h); Claremont Avenue from southwest to Colby Street toward north at Colby  (11%, 36 veh/h) |
+| Hillegass Avenue Alcatraz Avenue to 63rd Street, SB (link 2698) | 178 | 50 | -72% | 52% | Colby Street from north to Claremont Avenue toward southwest (Telegrap (58%, 25 veh/h); on-ramp at node 845 (Claremont Avenue / Hudson Street) (8%, 25 veh/h) |
+| Canning Street 59th Street to McAuley Street, SB (link 1921) | 49 | 15 | -70% | 17% | Howell Street 59th Street to McAuley Street, SB (link 2079) (95%, 10 veh/h); on-ramp at node 709 (Telegraph Avenue / 56th Street) (11%, 9 veh/h) |
+| Dana Street North Street to Alcatraz Avenue, SB (link 1951) | 43 | 15 | -66% | 97% at the upper bound | 63rd Street Canning Street to Telegraph Avenue, WB (link 1883) (24%, 12 veh/h); on-ramp at node 709 (Telegraph Avenue / 56th Street) (11%, 12 veh/h) |
 
 
 ## Capacity guard
 
 ### am_peak
 
-The guard removed 768 veh/h net compared with the count-only fit; 4351 flows are more than 0.1% smaller. Links the count-only solution puts above capacity x 1.10 (10), worst first, up to 20, with the volume after the guard:
+The guard removed -158 veh/h net compared with the count-only fit; 1073 flows are more than 0.1% smaller. Links the count-only solution puts above capacity x 1.10 (8), worst first, up to 20, with the volume after the guard:
 
 | Link | Street | Rule | Capacity | Assigned before | After |
 | --- | --- | --- | --- | --- | --- |
-| 3462 | Claremont Avenue | all_way_stop | 473 | 869 | 634 |
-| 4163 | Market Street | all_way_stop | 473 | 707 | 592 |
-| 579 | Market Street | all_way_stop | 473 | 685 | 470 |
-| 776 | 52nd Street | all_way_stop | 473 | 661 | 516 |
-| 1768 | Shattuck Avenue | signal | 837 | 1162 | 923 |
-| 3392 | Tunnel Road | signal | 837 | 1119 | 1071 |
-| 3465 | Claremont Avenue | all_way_stop | 473 | 612 | 521 |
-| 2032 | Shattuck Avenue | signal | 837 | 1068 | 913 |
-| 958 | Stanford Avenue | signal | 837 | 1047 | 872 |
-| 2272 | Telegraph Avenue | signal | 1674 | 1942 | 1843 |
+| 4163 | Market Street | all_way_stop | 473 | 722 | 601 |
+| 3392 | Tunnel Road | signal | 837 | 1204 | 1097 |
+| 776 | 52nd Street | all_way_stop | 473 | 654 | 513 |
+| 1768 | Shattuck Avenue | signal | 837 | 1097 | 900 |
+| 2032 | Shattuck Avenue | signal | 837 | 1070 | 922 |
+| 579 | Market Street | all_way_stop | 473 | 598 | 503 |
+| 2272 | Telegraph Avenue | signal | 1674 | 2069 | 1847 |
+| 4441 | Ashby Avenue | signal | 837 | 932 | 930 |
 
-After the final count refit 5 uncounted link(s) remain above their limit (worst: link 3462 Claremont Avenue 634 against 520; link 3392 Tunnel Road 1071 against 921; link 4163 Market Street 592 against 520; link 1768 Shattuck Avenue 923 against 921; link 3465 Claremont Avenue 521 against 520); counted flows use them and the counts (weight 1) won over the guard (weight 0.5).
+After the final count refit 5 uncounted link(s) remain above their limit (worst: link 3392 Tunnel Road 1097 against 921; link 4163 Market Street 601 against 520; link 4441 Ashby Avenue 930 against 921; link 2272 Telegraph Avenue 1847 against 1841; link 2032 Shattuck Avenue 922 against 921); counted flows use them and the counts (weight 1) won over the guard (weight 0.5).
 
 ### midday
 
-The guard removed -116 veh/h net compared with the count-only fit; 3061 flows are more than 0.1% smaller. Links the count-only solution puts above capacity x 1.10 (1), worst first, up to 20, with the volume after the guard:
+The guard removed -114 veh/h net compared with the count-only fit; 3846 flows are more than 0.1% smaller. Links the count-only solution puts above capacity x 1.10 (0), worst first, up to 20, with the volume after the guard:
 
-| Link | Street | Rule | Capacity | Assigned before | After |
-| --- | --- | --- | --- | --- | --- |
-| 3462 | Claremont Avenue | all_way_stop | 473 | 856 | 621 |
 
-After the final count refit 1 uncounted link(s) remain above their limit (worst: link 3462 Claremont Avenue 621 against 520); counted flows use them and the counts (weight 1) won over the guard (weight 0.5).
+After the final count refit 0 uncounted link(s) remain above their limit; counted flows use them and the counts (weight 1) won over the guard (weight 0.5).
 
 ### pm_peak
 
-The guard removed 899 veh/h net compared with the count-only fit; 3624 flows are more than 0.1% smaller. Links the count-only solution puts above capacity x 1.10 (11), worst first, up to 20, with the volume after the guard:
+The guard removed 266 veh/h net compared with the count-only fit; 2684 flows are more than 0.1% smaller. Links the count-only solution puts above capacity x 1.10 (9), worst first, up to 20, with the volume after the guard:
 
 | Link | Street | Rule | Capacity | Assigned before | After |
 | --- | --- | --- | --- | --- | --- |
-| 3462 | Claremont Avenue | all_way_stop | 473 | 1343 | 802 |
-| 1768 | Shattuck Avenue | signal | 837 | 1384 | 929 |
-| 958 | Stanford Avenue | signal | 837 | 1295 | 923 |
-| 776 | 52nd Street | all_way_stop | 473 | 691 | 523 |
-| 2032 | Shattuck Avenue | signal | 837 | 1208 | 914 |
-| 3426 | Ashby Avenue | signal | 837 | 1195 | 910 |
-| 4163 | Market Street | all_way_stop | 473 | 616 | 563 |
-| 3392 | Tunnel Road | signal | 837 | 1086 | 1027 |
-| 579 | Market Street | all_way_stop | 473 | 597 | 516 |
-| 2272 | Telegraph Avenue | signal | 1674 | 1888 | 1834 |
-| 593 | Adeline Street | all_way_stop | 473 | 530 | 325 |
+| 1768 | Shattuck Avenue | signal | 837 | 1349 | 923 |
+| 958 | Stanford Avenue | signal | 837 | 1239 | 923 |
+| 776 | 52nd Street | all_way_stop | 473 | 677 | 523 |
+| 2032 | Shattuck Avenue | signal | 837 | 1162 | 897 |
+| 3392 | Tunnel Road | signal | 837 | 1089 | 1031 |
+| 4163 | Market Street | all_way_stop | 473 | 602 | 547 |
+| 3030 | College Avenue | all_way_stop | 473 | 544 | 519 |
+| 3462 | Claremont Avenue | all_way_stop | 473 | 525 | 516 |
+| 2272 | Telegraph Avenue | signal | 1674 | 1843 | 1838 |
 
-After the final count refit 6 uncounted link(s) remain above their limit (worst: link 3462 Claremont Avenue 802 against 520; link 3392 Tunnel Road 1027 against 921; link 4163 Market Street 563 against 520; link 1768 Shattuck Avenue 929 against 921; link 776 52nd Street 523 against 520); counted flows use them and the counts (weight 1) won over the guard (weight 0.5).
+After the final count refit 5 uncounted link(s) remain above their limit (worst: link 3392 Tunnel Road 1031 against 921; link 4163 Market Street 547 against 520; link 776 52nd Street 523 against 520; link 1768 Shattuck Avenue 923 against 921; link 958 Stanford Avenue 923 against 921); counted flows use them and the counts (weight 1) won over the guard (weight 0.5).
 
 ## Notes
 
@@ -1032,18 +1025,16 @@ After the final count refit 6 uncounted link(s) remain above their limit (worst:
 - gate 955 Ward Street leaving: dropped, its count (tmc AlcatrazAve) is already the station AlcatrazAve N leg leaving; a count is used once
 - gates 1564 + 1733 Tunnel Road entering: dropped, its count (ov SR-13 at Domingo Ave, Berkeley PM 10.69, back AADT 27,000) is already the station tunnel station, link 3494 inward (5 m from the station); a count is used once
 - gates 1564 + 1733 Tunnel Road leaving: dropped, its count (ov SR-13 at Domingo Ave, Berkeley PM 10.69, back AADT 27,000) is already the station tunnel station, link 3493 outward (5 m from the station); a count is used once
-- gate 1774 Claremont Avenue entering: dropped, its count (ov SR-13 at Claremont Ave, Berkeley PM 10.79, ahead AADT 23,) is already the station claremont station, link 3478 inward (4 m from the station); a count is used once
-- gate 1774 Claremont Avenue leaving: dropped, its count (ov SR-13 at Claremont Ave, Berkeley PM 10.79, ahead AADT 23,) is already the station claremont station, link 3477 outward (4 m from the station); a count is used once
 - volunteer count: 203 of 207 counted block values mapped to 110 directed links (19 held out), 22 turning movements and 4 whole-street routes as constraints
-- validation set: 16 of 186 stations are held out of a cross-validation fit (about 25% of each corridor, at least one per corridor; 9 corridors: 43rd Street, AlcatrazAve, Ashby Avenue, MarketSt_55thSt, Telegraph Avenue, claremont, freeway ramps, sanpablo, tunnel); they are reported separately
-- am_peak: assignment by successive averages (10 passes x 2 driver walks, BPR alpha 0.15 beta 4, noise 8%), 2 round(s) with the table refitted and reassigned at its own volumes; relative link-volume change at the last pass 0.012
-- am_peak: the guard cut 8 veh/h from flows that touch no count (after the median rule)
+- validation set: 16 of 186 stations are held out of a cross-validation fit (about 25% of each corridor, at least one per corridor; 9 corridors: 43rd Street, AlcatrazAve, Ashby Avenue, MarketSt_55thSt, Telegraph Avenue, ashby, freeway ramps, sanpablo, tunnel); they are reported separately
+- am_peak: assignment by successive averages (10 passes x 2 driver walks, BPR alpha 0.15 beta 4, noise 8%), 2 round(s) with the table refitted and reassigned at its own volumes; relative link-volume change at the last pass 0.014
+- am_peak: the guard cut 6 veh/h from flows that touch no count (after the median rule)
 - am_peak: hold-out: the held-out stations are scored on a separate fit without them (132 count constraints instead of 168); the demand that ships is fitted on all counts
 - midday: assignment by successive averages (10 passes x 2 driver walks, BPR alpha 0.15 beta 4, noise 8%), 2 round(s) with the table refitted and reassigned at its own volumes; relative link-volume change at the last pass 0.010
-- midday: the guard cut 2 veh/h from flows that touch no count (after the median rule)
+- midday: the guard cut 0 veh/h from flows that touch no count (after the median rule)
 - midday: hold-out: the held-out stations are scored on a separate fit without them (144 count constraints instead of 179); the demand that ships is fitted on all counts
-- pm_peak: assignment by successive averages (10 passes x 2 driver walks, BPR alpha 0.15 beta 4, noise 8%), 2 round(s) with the table refitted and reassigned at its own volumes; relative link-volume change at the last pass 0.011
-- pm_peak: the guard cut 69 veh/h from flows that touch no count (after the median rule)
+- pm_peak: assignment by successive averages (10 passes x 2 driver walks, BPR alpha 0.15 beta 4, noise 8%), 2 round(s) with the table refitted and reassigned at its own volumes; relative link-volume change at the last pass 0.012
+- pm_peak: the guard cut 36 veh/h from flows that touch no count (after the median rule)
 - pm_peak: hold-out: the held-out stations are scored on a separate fit without them (142 count constraints instead of 176); the demand that ships is fitted on all counts
 
 

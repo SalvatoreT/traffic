@@ -25,6 +25,8 @@ pub(super) fn sample_gap(rng: &mut Rng) -> f32 {
 
 pub(super) struct Xw {
     pub node: u32,
+    /// Index of the crossed leg among the node's legs (0 for a mid-block crossing).
+    pub leg: u32,
     pub width: f32,
     pub marked: bool,
     pub p_yield: f32,
@@ -57,7 +59,7 @@ impl Xw {
 #[derive(Clone, Copy)]
 pub(super) enum Step {
     Walk { link: u32, from: f32, to: f32 },
-    Cross { xw: u32, a_link: u32, a_pos: f32, b_link: u32, b_pos: f32, walk_leg: u32 },
+    Cross { xw: u32, a_link: u32, a_pos: f32, b_link: u32, b_pos: f32 },
 }
 
 const ST_WALK: u8 = 0;
@@ -97,7 +99,6 @@ struct Edge {
 }
 
 struct NodeEdge {
-    walk_leg: u32,
     xws: Vec<u32>,
 }
 
@@ -217,6 +218,7 @@ impl PedWorld {
                 let marked = net.nodes[n].marked_crossing;
                 w.xws.push(Xw {
                     node: n as u32,
+                    leg: k as u32,
                     width: lanes as f32 * PED_LANE_W,
                     marked,
                     p_yield: 0.0,
@@ -264,6 +266,7 @@ impl PedWorld {
             let id = w.xws.len() as u32;
             w.xws.push(Xw {
                 node: NONE_XW,
+                leg: 0,
                 width: (net.links[l as usize].lanes.max(1) + net.links[r as usize].lanes.max(1)) as f32 * PED_LANE_W,
                 marked: true,
                 p_yield: 0.0,
@@ -340,7 +343,7 @@ impl PedWorld {
             }
             w.node_states[n] = ends.iter().map(|e| e.0).collect();
             let crossable = |k: usize| legs[k].links.iter().any(|&l| net.links[l as usize].class != RoadClass::Motorway);
-            for &(sa, ca, la) in &ends {
+            for &(sa, ca, _) in &ends {
                 for &(sb, cb, _) in &ends {
                     if sa == sb || w.state_link[sa as usize] == w.state_link[sb as usize] {
                         continue;
@@ -368,7 +371,7 @@ impl PedWorld {
                     let xws: Vec<u32> = legs_crossed.iter().map(|&k| xbase[n] + k as u32).collect();
                     let cost: f32 = xws.iter().map(|&x| w.xws[x as usize].width).sum::<f32>() + PED_CORNER_M;
                     let ei = w.node_edges.len() as u32;
-                    w.node_edges.push(NodeEdge { walk_leg: la, xws });
+                    w.node_edges.push(NodeEdge { xws });
                     w.adj[sa as usize].push(Edge { to: sb, cost, kind: Kind::Node(ei) });
                 }
             }
@@ -438,11 +441,11 @@ impl PedWorld {
                     Some(Step::Walk { link, to, .. }) if *link == la && (*to - pa).abs() < 1e-3 => *to = pb,
                     _ => steps.push(Step::Walk { link: la, from: pa, to: pb }),
                 },
-                Kind::Mid(x) => steps.push(Step::Cross { xw: x, a_link: la, a_pos: pa, b_link: lb, b_pos: pb, walk_leg: 0 }),
+                Kind::Mid(x) => steps.push(Step::Cross { xw: x, a_link: la, a_pos: pa, b_link: lb, b_pos: pb }),
                 Kind::Node(ei) => {
                     let ne = &self.node_edges[ei as usize];
                     for &x in &ne.xws {
-                        steps.push(Step::Cross { xw: x, a_link: la, a_pos: pa, b_link: lb, b_pos: pb, walk_leg: ne.walk_leg });
+                        steps.push(Step::Cross { xw: x, a_link: la, a_pos: pa, b_link: lb, b_pos: pb });
                     }
                 }
             }
@@ -658,16 +661,17 @@ impl Simulation {
     }
 
     fn ped_try_start(&mut self, id: usize) {
-        let (xw, walk_leg, v, gap_f) = {
+        let (xw, v, gap_f) = {
             let p = &self.world.peds[id];
-            let Step::Cross { xw, walk_leg, .. } = p.steps[p.si] else { return };
-            (xw, walk_leg, p.v, p.gap_f)
+            let Step::Cross { xw, .. } = p.steps[p.si] else { return };
+            (xw, p.v, p.gap_f)
         };
         let node = self.world.xws[xw as usize].node;
         let ctrl = if node == NONE_XW { Control::Uncontrolled } else { self.eff.ctrl[node as usize] };
-        let ok = if node != NONE_XW && ctrl == Control::Signal && self.ped_phase_known(node, walk_leg) {
-            // At a signal: cross with the phase that serves the street being walked along, when no vehicle is in the crosswalk.
-            self.ped_phase_green(node, walk_leg) && !self.transit_over_xw(node, xw)
+        let walk_phase = if node != NONE_XW && ctrl == Control::Signal { self.ped_phase(node, xw) } else { None };
+        let ok = if let Some(ph) = walk_phase {
+            // At a signal: cross with the phase of the parallel street, in its walk interval, when no vehicle is in the crosswalk.
+            self.ped_walk_interval(node, xw, ph) && !self.transit_over_xw(node, xw)
         } else {
             let width = self.world.xws[xw as usize].width;
             let t_crit = width / v + PED_GAP_MARGIN_S * gap_f;
@@ -703,32 +707,31 @@ impl Simulation {
         }
     }
 
-    fn ped_phase_known(&self, node: u32, walk_leg: u32) -> bool {
-        self.ped_phase(node, walk_leg).is_some()
-    }
-
-    /// Phase of the signal at `node` serving the street whose leg is `walk_leg`: the phase holding one of its approach links,
-    /// else the phase whose approaches lie on the same axis within `PHASE_AXIS_DEG`.
-    fn ped_phase(&self, node: u32, walk_leg: u32) -> Option<usize> {
+    /// Phase of the signal at `node` in which pedestrians use crosswalk `xw`: the vehicular phase running parallel and adjacent
+    /// to it [FHWA-STM2008] (section 4.2), which is a phase of a neighboring leg that gives no green to the crossed leg.
+    /// None when every neighboring phase also serves the crossed leg; pedestrians then wait for a gap.
+    fn ped_phase(&self, node: u32, xw: u32) -> Option<usize> {
         let plan = self.eff.sig[node as usize].as_ref()?;
         if plan.always_green {
             return None;
         }
         let n = node as usize;
-        for (ph, links) in plan.links.iter().enumerate() {
-            if links.iter().any(|&l| self.topo.link_to[l as usize] as usize == n && self.world.leg_in[l as usize] == walk_leg) {
-                return Some(ph);
-            }
+        let x = &self.world.xws[xw as usize];
+        let phase_of = |l: u32| plan.links.iter().position(|ls| ls.contains(&l));
+        let own: Vec<usize> = x.in_links.iter().filter_map(|&l| phase_of(l)).collect();
+        let legs = &self.world.legs[n];
+        let m = legs.len();
+        if m < 2 {
+            return None;
         }
-        let ang = self.world.legs[n].get(walk_leg as usize)?.angle;
-        let axial = |a: f64, b: f64| {
-            let d = norm_angle(a - b).abs();
-            (if d > std::f64::consts::FRAC_PI_2 { std::f64::consts::PI - d } else { d }).to_degrees()
-        };
-        for (ph, links) in plan.links.iter().enumerate() {
-            for &l in links {
-                if let Some(leg) = self.world.legs[n].get(self.world.leg_in[l as usize] as usize) {
-                    if axial(leg.angle, ang) < PHASE_AXIS_DEG {
+        let k = x.leg as usize;
+        for adj in [(k + 1) % m, (k + m - 1) % m] {
+            for &l in &legs[adj].links {
+                if self.topo.link_to[l as usize] as usize != n {
+                    continue;
+                }
+                if let Some(ph) = phase_of(l) {
+                    if !own.contains(&ph) {
                         return Some(ph);
                     }
                 }
@@ -737,11 +740,18 @@ impl Simulation {
         None
     }
 
-    fn ped_phase_green(&self, node: u32, walk_leg: u32) -> bool {
-        match (self.ped_phase(node, walk_leg), self.eff.sig[node as usize].as_ref()) {
-            (Some(ph), Some(plan)) => phase_state(plan, ph, self.t) == 1,
-            _ => true,
+    /// The walk interval of phase `ph` for crosswalk `xw`: the phase is green and either enough green is left to clear the
+    /// crossing at `PED_CLEAR_V` or the green began less than `PED_WALK_MIN_S` ago. Once the clearance interval has begun
+    /// pedestrians do not enter [FHWA-STM2008] (section 5.3.3).
+    fn ped_walk_interval(&self, node: u32, xw: u32, ph: usize) -> bool {
+        let Some(plan) = self.eff.sig[node as usize].as_ref() else { return true };
+        let tc = (self.t - plan.t0).rem_euclid(plan.cycle as f64) as f32;
+        let (start, g) = plan.phases[ph];
+        let rel = (tc - start).rem_euclid(plan.cycle);
+        if rel >= g {
+            return false;
         }
+        rel < PED_WALK_MIN_S || g - rel >= self.world.xws[xw as usize].width / PED_CLEAR_V
     }
 
     /// A vehicle crossing the node is bound over this crosswalk (it enters or leaves over it).
@@ -881,7 +891,7 @@ impl Simulation {
         let pr = self.world.mid[r as usize].iter().find(|e| e.1 == xw).unwrap().0;
         let steps = vec![
             Step::Walk { link: l, from: 0.0, to: p },
-            Step::Cross { xw, a_link: l, a_pos: p, b_link: r, b_pos: pr, walk_leg: 0 },
+            Step::Cross { xw, a_link: l, a_pos: p, b_link: r, b_pos: pr },
             Step::Walk { link: r, from: pr, to: self.topo.length[r as usize] },
         ];
         let id = self.world.peds.len();
