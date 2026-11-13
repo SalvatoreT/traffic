@@ -92,9 +92,11 @@
   "periodWindows": { "am_peak": [7, 9], "midday": [11, 13], "pm_peak": [16, 18] },
   "calibration": {
     "status": "uncalibrated",
-    "note": "All three periods now run steadily, but freeway traffic makes up too much of what the model puts on Colby St and Hillegass Ave.",
+    "note": "Colby St and Hillegass Ave volumes are closer to counts, the PM peak is unsteady, and the 52nd St off-ramp carries 524 veh/h against 1,278 counted.",
     "defaultPeriod": "midday",
-    "experimentalPeriods": []
+    "experimentalPeriods": [
+      "pm_peak"
+    ]
   },
   "signalObservations": [
     {
