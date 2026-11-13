@@ -20,6 +20,9 @@ export function intensity(overlay: Overlay, flow: number, speed: number, cut: nu
   return v <= 0 ? -1 : Math.min(1, v / max);
 }
 
+/** Intensities are shown in steps of 1/250 of the scale, so a street's drawn value depends only on its stats, not on the updates that came before. */
+export const quantizeIntensity = (t: number): number => Math.round(t * 250) / 250;
+
 export const WIDTH_MIN = 1.2;
 export const WIDTH_MAX = 9;
 /** Line width (px, before zoom scaling) for a change intensity t in -1..1: thin near zero, thick at either end, on the same square-root scale as the colors. */

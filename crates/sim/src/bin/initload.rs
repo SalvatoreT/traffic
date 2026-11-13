@@ -78,6 +78,10 @@ fn main() {
     let _: Demand = serde_json::from_str(&dj).unwrap();
     let names = ["motorway", "primary", "secondary", "tertiary", "residential", "service"];
     let _ = RoadClass::Motorway;
+    if argv.iter().any(|a| a == "--occupancy") {
+        occupancy(&nj, &dj, &net, &period, &seeds);
+        return;
+    }
     for &seed in &seeds {
         let mk = |load: bool| {
             let cfg = Config { seed, period: period.clone(), initial_load: load, ..Default::default() };
@@ -115,5 +119,57 @@ fn main() {
         row("mean trip time (s)", ha.trip, hb.trip);
         row("removals", ha.removed, hb.removed);
         row("backlog at end", ha.backlog, hb.backlog);
+    }
+}
+
+/// Vehicles per link at time zero against the time average over minutes 20 to 60 of the same run, by link group.
+fn occupancy(nj: &str, dj: &str, net: &Network, period: &str, seeds: &[u64]) {
+    let group = |l: usize| -> usize {
+        let k = &net.links[l];
+        match (k.class, k.in_study_area) {
+            (RoadClass::Residential | RoadClass::Service, true) => 0,
+            (RoadClass::Residential | RoadClass::Service, false) => 1,
+            (RoadClass::Primary | RoadClass::Secondary | RoadClass::Tertiary, _) => 2,
+            _ => 3,
+        }
+    };
+    let names = ["local inside", "local outside", "arterial", "motorway/other"];
+    for &seed in seeds {
+        let cfg = Config { seed, period: period.into(), ..Default::default() };
+        let mut s = Simulation::from_parts(serde_json::from_str(nj).unwrap(), serde_json::from_str(dj).unwrap(), cfg).unwrap();
+        let sum = |load: &[(u32, f32, u32)]| {
+            let mut g = [0.0f64; 4];
+            load.iter().enumerate().for_each(|(l, x)| g[group(l)] += x.0 as f64);
+            g
+        };
+        let t0 = sum(&s.debug_link_load());
+        let mut avg = [0.0f64; 4];
+        let mut n = 0.0;
+        let mut win = [[0.0f64; 4]; 6];
+        let mut wn = [0.0f64; 6];
+        for sec in 1..=3600 {
+            s.step(1.0);
+            if sec % 10 == 0 {
+                let g = sum(&s.debug_link_load());
+                let w = match sec { 0..=300 => 0, 301..=600 => 1, 601..=1200 => 2, 1201..=1800 => 3, 1801..=2700 => 4, _ => 5 };
+                (0..4).for_each(|i| win[w][i] += g[i]);
+                wn[w] += 1.0;
+                if sec < 1200 { continue; }
+                (0..4).for_each(|i| avg[i] += g[i]);
+                n += 1.0;
+            }
+        }
+        let m = s.metrics();
+        print!("{period} seed {seed}: init {} skipped {} |", m.initial_agents, m.initial_skipped);
+        for i in 0..4 {
+            let a = avg[i] / n;
+            print!(" {} {:.0} vs {:.0} ({:+.0}%) |", names[i], t0[i], a, 100.0 * (t0[i] / a - 1.0));
+        }
+        println!();
+        if std::env::var("WINDOWS").is_ok() {
+            for w in 0..6 {
+                println!("   window {w}: {:?}", (0..4).map(|i| (win[w][i] / wn[w]).round()).collect::<Vec<_>>());
+            }
+        }
     }
 }

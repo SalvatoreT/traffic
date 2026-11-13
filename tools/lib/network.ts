@@ -1,4 +1,5 @@
 import { applySignalObservations } from './signal-obs';
+import { straightenLink } from '../../src/lib/junctionends';
 import {
   cumulative,
   distToRing,
@@ -1090,9 +1091,13 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
   });
 
   const outLinks: NetLink[] = finalLinks.map((l, i) => {
-    const geometry = l.geometry.map((p): [number, number] => [round1(p[0]), round1(p[1])]);
-    const length = round1(polylineLength(geometry));
-    const mid = pointAlong(geometry, length / 2);
+    const drawn = l.geometry.map((p): [number, number] => [round1(p[0]), round1(p[1])]);
+    const length = round1(polylineLength(drawn));
+    const mid = pointAlong(drawn, length / 2);
+    const fromBearing = endBearing(l.geometry, true, l.fromPt);
+    const toBearing = endBearing(l.geometry, false, l.toPt);
+    // Merged-junction connectors are removed here, once, so the simulator and the app read the same movement geometry; `length` stays.
+    const geometry = straightenLink({ geometry: drawn, fromBearing, toBearing }).map((p): [number, number] => [round1(p[0]), round1(p[1])]);
     const link: NetLink = {
       id: i,
       osmWayId: l.osmWayId,
@@ -1105,8 +1110,8 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
       speedLimit: Math.round(l.speed * 100) / 100,
       length,
       geometry,
-      fromBearing: endBearing(l.geometry, true, l.fromPt),
-      toBearing: endBearing(l.geometry, false, l.toPt),
+      fromBearing,
+      toBearing,
       stopAtEnd: l.stopAtEnd,
       humps: [...l.humps].sort((a, b) => a - b),
       inStudyArea: l.cls !== 'motorway' && (pointInPolygon(mid, studyPoly) || onBoundary(l, mid)),

@@ -43,6 +43,21 @@ impl Simulation {
         self.reset_results();
     }
 
+    /// Route costs of a loaded network: a pass with free-flow routes on the network without interventions (so a baseline and a scenario
+    /// run with the same seed route their placed agents alike), settled for `INITIAL_SETTLE_S`; its measured link times become the
+    /// costs the placement routes on. Free-flow routes put too few cars on the side streets, because drivers move onto them as the
+    /// arterials fill.
+    pub(super) fn adopt_loaded_costs(&mut self) {
+        let mut cfg = self.cfg.clone();
+        cfg.interventions = Vec::new();
+        let Ok(probe) = Simulation::build(self.net.clone(), self.demand.clone(), cfg, false) else { return };
+        self.ema = probe.ema;
+        for l in 0..self.topo.n_links {
+            self.link_cost[l] = self.eff.ff[l].max(self.ema[l]);
+        }
+        self.router.invalidate();
+    }
+
     /// Zero every result so that the run counts from time zero. State that drives the dynamics (queues, signal plans, route costs,
     /// the vehicles themselves) is kept.
     fn reset_results(&mut self) {

@@ -147,3 +147,18 @@ fn cyclists_and_pedestrians_are_placed_too() {
     assert!(kinds.contains(&2) && kinds.contains(&3), "{kinds:?}");
     s.check_invariants().unwrap();
 }
+
+/// Drivers move onto the side street as the signals on the arterial back up, so the placement routes on costs measured under load and
+/// puts more cars on the side street than free-flow routes do.
+#[test]
+fn placement_routes_on_loaded_costs() {
+    let (net, c) = corridor(11.2, Control::Signal);
+    let d = demand(&[(c.a[0], c.a[3], 1500.0), (c.a[3], c.a[0], 1500.0), (c.l[1], c.a[3], 150.0)]);
+    let local = |s: &Simulation| -> usize { c.loc.iter().flat_map(|&(f, r)| [f, r]).map(|l| s.test_lane_vehicles(l).len()).sum() };
+    let (mut loaded, mut free) = (0, 0);
+    for seed in 1..=12 {
+        loaded += local(&Simulation::from_parts(net.clone(), d.clone(), cfg(seed, 1.0)).unwrap());
+        free += local(&Simulation::test_build_free_flow(net.clone(), d.clone(), cfg(seed, 1.0)));
+    }
+    assert!(loaded > free + free / 10, "side-street cars at time zero: {loaded} with loaded costs, {free} with free-flow routes");
+}

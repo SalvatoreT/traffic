@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { changeWidthFor, divergingStops, WIDTH_MAX, WIDTH_MIN } from './ramps';
+import { changeWidthFor, divergingStops, intensity, quantizeIntensity, WIDTH_MAX, WIDTH_MIN } from './ramps';
 
 const lum = (h: string) => {
   const c = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
@@ -33,5 +33,23 @@ describe('change width', () => {
     expect(changeWidthFor(1)).toBe(WIDTH_MAX);
     expect(changeWidthFor(-1)).toBe(WIDTH_MAX);
     expect(changeWidthFor(0.25)).toBeGreaterThan(WIDTH_MIN + 0.25 * (WIDTH_MAX - WIDTH_MIN));
+  });
+});
+
+describe('drawn intensity', () => {
+  it('depends only on the final stats, not on the updates before them (Instant and 60x runs draw alike)', () => {
+    const drawn = (flows: number[]) => {
+      let prev = -3;
+      for (const f of flows) {
+        const t = quantizeIntensity(intensity('flow', f, 8, 0, 11, 350));
+        if (prev !== t) prev = t;
+      }
+      return prev;
+    };
+    const slow = Array.from({ length: 60 }, (_, i) => 20 + i * 0.5);
+    expect(drawn(slow)).toBe(drawn([slow[slow.length - 1]]));
+    expect(drawn([46, 50, 46.9])).toBe(drawn([46.9]));
+    expect(Math.abs(quantizeIntensity(0.1271) - 0.1271)).toBeLessThanOrEqual(0.002);
+    expect(quantizeIntensity(-1)).toBe(-1);
   });
 });

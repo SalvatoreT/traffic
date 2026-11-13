@@ -15,7 +15,7 @@ import { captionOf, composeImage, drawBadges, EXPORT_SCALE, exportFileName, FORM
 import { FADE_TIERS, interventionInRegion, REGION_FEATHER_M, type Region } from '../lib/region';
 import { REGION_BUFFER_M } from '../lib/area';
 import { advance, elapsedSim } from '../lib/extrapolate';
-import { divergingStops, intensity, rampStops, WIDTH_MAX, WIDTH_MIN, type Mode } from '../lib/ramps';
+import { divergingStops, intensity, quantizeIntensity, rampStops, WIDTH_MAX, WIDTH_MIN, type Mode } from '../lib/ramps';
 import { changeMark, linkChangeIntensity, NO_DATA, type MapView as ChangeView } from '../lib/change';
 import { linkStatsView } from '../types';
 import type { RouteCheck } from '../lib/throughroutes';
@@ -716,9 +716,9 @@ export function MapView(p: Props) {
     for (let i = 0; i < links.length; i++) {
       if (!vis[i]) continue;
       const l = links[i];
-      const t = change ? (ls && p.baseStats ? linkChangeIntensity(p.overlay, B, S, i) : NO_DATA)
-        : ls ? intensity(p.overlay, ls[i * 4] ?? 0, ls[i * 4 + 1] ?? 0, ls[i * 4 + 2] ?? 0, l.speedLimit, p.overlayMax) : -1;
-      if (Math.abs(prevT.current[i] - t) > 0.004) {
+      const t = quantizeIntensity(change ? (ls && p.baseStats ? linkChangeIntensity(p.overlay, B, S, i) : NO_DATA)
+        : ls ? intensity(p.overlay, ls[i * 4] ?? 0, ls[i * 4 + 1] ?? 0, ls[i * 4 + 2] ?? 0, l.speedLimit, p.overlayMax) : -1);
+      if (prevT.current[i] !== t) {
         prevT.current[i] = t;
         map.setFeatureState({ source: 'links', id: i }, { t });
       }

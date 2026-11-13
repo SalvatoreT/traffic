@@ -469,7 +469,12 @@ impl Simulation {
         Simulation::from_parts(net, demand, cfg)
     }
 
-    pub fn from_parts(mut net: Network, demand: Demand, cfg: Config) -> Result<Simulation, String> {
+    pub fn from_parts(net: Network, demand: Demand, cfg: Config) -> Result<Simulation, String> {
+        Self::build(net, demand, cfg, true)
+    }
+
+    /// `loaded_routes`: when initial loading is on, route the placed agents on link costs measured by a pass on the unmodified network.
+    fn build(mut net: Network, demand: Demand, cfg: Config, loaded_routes: bool) -> Result<Simulation, String> {
         net.turn_bans.retain(|b| b.periods.is_empty() || b.periods.iter().any(|p| *p == cfg.period));
         net.turn_bans.retain(|b| (b.from as usize) < net.links.len() && (b.to as usize) < net.links.len());
         for (i, l) in net.links.iter().enumerate() {
@@ -556,6 +561,9 @@ impl Simulation {
         s.init_modes();
         s.rebuild_effective();
         if s.cfg.initial_load {
+            if loaded_routes {
+                s.adopt_loaded_costs();
+            }
             s.initial_load();
         }
         Ok(s)
@@ -2552,6 +2560,11 @@ impl Simulation {
         self.lanes[qi].push_back(id);
         self.st.spawned += 1;
         id
+    }
+
+    /// Build with initial loading routed on free-flow costs (the placement before `adopt_loaded_costs`), for comparison in tests.
+    pub(crate) fn test_build_free_flow(net: Network, demand: Demand, cfg: Config) -> Simulation {
+        Self::build(net, demand, cfg, false).unwrap()
     }
 
     /// Place the initial agents without the settle interval (the clock stays where it is).

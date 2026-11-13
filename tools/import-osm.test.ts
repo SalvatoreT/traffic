@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { pointInPolygon } from './lib/geo';
 import { buildNetwork } from './lib/network';
+import { straightenJunctionEnds } from '../src/lib/junctionends';
 import type { AreaConfig, Network, Overpass } from './lib/types';
 
 const root = resolve(import.meta.dirname, '..');
@@ -35,6 +36,9 @@ describe('gate placement', () => {
 });
 
 describe('rockridge network', () => {
+  it('has junction ends straightened already, so the app step changes nothing', () => {
+    expect(straightenJunctionEnds(net).changed).toBe(0);
+  });
   it('has valid structure', () => {
     expect(net.version).toBe(1);
     net.nodes.forEach((n, i) => expect(n.id).toBe(i));

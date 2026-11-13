@@ -118,7 +118,7 @@
 - [x] 15.2 Check against a 15-minute cold warm-up on the real network (midday and PM, seeds 1 to 3; `initload` tool); placement tuned (`INITIAL_CONGESTION`, delay-weighted positions); numbers in the record
 - [x] 15.3 UI: "Putting today's traffic on the streets…" cover while the worker builds, scenario passed with the config, early-results caution shortened to five minutes; mock starts with agents
 - [x] 15.4 Rust tests (count, gaps and stop lines, closed links, determinism and reset, zero state, partial trips, other modes)
-- [ ] 15.5 Residential streets hold 20 to 30% fewer cars at time zero than after a warm-up (route choice moves onto them as arterials load); not corrected
+- [x] 15.5 Residential streets held 20 to 30% fewer cars at time zero than after a warm-up: corrected in 18.1 (D27)
 
 ## 16. Resident volunteer count as data, consistent router delays, observed signal timing (twelfth round)
 - [x] 16.1 Count loader (`tools/lib/volunteer-count.ts`, `tools/volunteer-count.test.ts`): blocks, turning movements, whole-street routes and entries mapped to directed links by street name, cross-street names and bearing; unmapped blocks listed with the reason
@@ -141,3 +141,8 @@
 - [x] 17.5 Ten-seed assessment of all periods, 120-minute PM run, cross-validation demand run
 - [ ] 17.6 52nd Street off-ramp at 555 against 1,278 veh/h: left turn into Shattuck Ave north and the single-lane street behind it; PM removals on Telegraph Ave north (Webster St) in single seeds; PM backlog under 2% in 7 of 10 seeds; AM mean removals 1.10
 - [ ] 17.7 Colby St turn toward Claremont Ave northeast (75 counted) has no flow in the demand; Telegraph Ave side entries 70% over
+
+## 18. Initial loading routed on loaded costs, overlay check, straight junction ends (fourteenth round)
+- [x] 18.1 Placement routes on link costs measured by a settled pass on the unmodified network (D27); `initload --occupancy` check of time zero against minutes 20 to 60 by link class; Rust test `placement_routes_on_loaded_costs`; calibrate midday seeds 1 to 3 unchanged beyond seed noise
+- [x] 18.2 Instant against 60x overlay check: worker link stats identical to the last bit; the drawn values differed because the overlay skipped updates under 0.004 (path dependent). Intensities are now quantized before the skip test (UI only, `quantizeIntensity`, test in `src/lib/ramps.test.ts`; D29)
+- [x] 18.3 Junction ends straightened once in the importer (`straightenLink` shared with the app, `tools/lib/network.ts`), so the offline tools and the app run the same movement geometry (D28); test in `tools/import-osm.test.ts`; network regenerated (1,005 links straightened, ids, lengths and topology unchanged), demand kept (a refit moves it by 3%, see D28), proposals stale by hash
