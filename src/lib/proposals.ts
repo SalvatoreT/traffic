@@ -135,12 +135,14 @@ export function signedNum(x: number, unit: string, dp = 1): string {
 }
 
 export function cutThroughHeadline(c: Proposal['cutThrough']): { figure: string; label: string; detail: string } {
+  const b = Math.round(c.baselineVehPerHour), s = Math.round(c.scenarioVehPerHour);
+  const d = s - b;
   const dp = pctDigits(c.changePct);
-  const zero = isZero(c.changePct, dp);
+  const pct = isZero(c.changePct, dp) ? '0%' : `${c.changePct < 0 ? MINUS : '+'}${num(c.changePct, dp)}%`;
   return {
-    figure: zero ? 'No change' : `${c.changePct < 0 ? MINUS : '+'}${num(c.changePct, dp)}%`,
-    label: 'cut-through',
-    detail: `${Math.round(c.baselineVehPerHour)} → ${Math.round(c.scenarioVehPerHour)} through vehicles an hour`,
+    figure: d === 0 ? 'No change' : `${d < 0 ? MINUS : '+'}${Math.abs(d)} cars an hour`,
+    label: 'cutting through',
+    detail: `${b} → ${s} through cars an hour (${pct})`,
   };
 }
 

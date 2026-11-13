@@ -43,7 +43,7 @@ describe('notices', () => {
 
 describe('headline figures', () => {
   it('formats the cut-through change', () => {
-    expect(cutThroughHeadline({ baselineVehPerHour: 118.4, scenarioVehPerHour: 73.1, changePct: -38.27 })).toEqual({ figure: '−38%', label: 'cut-through', detail: '118 → 73 through vehicles an hour' });
+    expect(cutThroughHeadline({ baselineVehPerHour: 118.4, scenarioVehPerHour: 73.1, changePct: -38.27 })).toEqual({ figure: '−45 cars an hour', label: 'cutting through', detail: '118 → 73 through cars an hour (−38%)' });
     expect(cutThroughHeadline({ baselineVehPerHour: 70, scenarioVehPerHour: 70, changePct: 0 }).figure).toBe('No change');
   });
   it('words the zero-harm case', () => {
