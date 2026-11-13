@@ -132,3 +132,12 @@
 - [ ] 16.9 PM and AM stability: the SR-24 mainline gate backs up (855 trips waiting on average in the PM) behind the 52nd Street off-ramp (371 s delay at 559 veh/h against 1,278 counted), the Claremont Ave and Clifton St off-ramp carries 1,400 against 972, and removals sit at Market St and 60th St; the baseline had moved before this round (4.2 removals per hour and 4.82% backlog on the eleventh round's demand at the start of the round). Needs a geometry check of the ramp terminals (lanes, short links around nodes 730 to 734) and a look at ramp choice
 - [ ] 16.10 Colby St: northbound 25% to 80% under its count and southbound 17% to 40% over, the turn from Colby St southbound toward the northeast at Claremont Ave (about 150 degrees) is not allowed, trips leave Colby St for the cross streets toward Telegraph Ave (1.4 to 3.7 times their counts), entries from Telegraph Ave are 72% over; the freeway-related share on Colby St is 72% to 76% against 47% observed. Needs origins and destinations of the Berkeley and Telegraph Ave side trips
 - [ ] 16.11 A second count day and more hours (`docs/data-needs.md` item 1) to set the tolerance from data and replace the scaled midday targets; a PM signal timing for Colby St at Claremont Ave
+
+## 17. The 52nd Street off-ramp, forks, gate queues, sharp turns (thirteenth round)
+- [x] 17.1 Geometry check of the SR-24 west-end ramp terminals against OSM, modeled against counted discharge for every ramp (record, thirteenth round)
+- [x] 17.2 Fork lanes (D23), gate scan (D24), sharp turns in the simulator and the router (D25), tests, golden corridor metrics updated and explained
+- [x] 17.3 Protected left interval built, measured over ten seeds, removed (D26)
+- [x] 17.4 Refit with `npm run data`; Colby St and Hillegass Ave blocks, entries, hold-out unchanged; validation suite unchanged (45 of 58)
+- [x] 17.5 Ten-seed assessment of all periods, 120-minute PM run, cross-validation demand run
+- [ ] 17.6 52nd Street off-ramp at 555 against 1,278 veh/h: left turn into Shattuck Ave north and the single-lane street behind it; PM removals on Telegraph Ave north (Webster St) in single seeds; PM backlog under 2% in 7 of 10 seeds; AM mean removals 1.10
+- [ ] 17.7 Colby St turn toward Claremont Ave northeast (75 counted) has no flow in the demand; Telegraph Ave side entries 70% over
