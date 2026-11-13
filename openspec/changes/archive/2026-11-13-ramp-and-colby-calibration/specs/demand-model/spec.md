@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Published intersection counts enter the fit as count stations
-The demand build SHALL read peak-hour turning-movement counts of intersections from a data file that names, for every count, its source document, count date, location, the street and bearing of each leg and the volumes by approach and movement. Each leg SHALL become a station on the links that carry it toward and away from the intersection, with the volume entering and leaving, and each left or right turn at or above a configured volume SHALL become a movement constraint at a lower weight. A period without a count SHALL get no target, except that midday MAY take the PM count times the ratio of the period volume factors at reduced weight, labeled as an assumption. The fit report SHALL list every leg that could not be placed on the network.
+The demand build SHALL read peak-hour turning-movement counts of intersections from a data file that names each count's source, date, location, legs and volumes by approach and movement. Each leg SHALL become a station for the volume entering and one for the volume leaving, and each left or right turn at or above a configured volume SHALL become a movement constraint at a lower weight. A period without a count SHALL get no target.
 
 #### Scenario: A counted intersection
 - **WHEN** the file holds the PM approach volumes of a four-leg intersection inside the model
@@ -17,3 +17,18 @@ Where a leg of a counted intersection is a freeway ramp that also has a publishe
 #### Scenario: Off-ramp with a count
 - **WHEN** an off-ramp has an ADT-based PM target of 1,278 veh/h and a counted PM peak hour of 1,024
 - **THEN** the fit targets 1,024 on the ramp link and the report notes the replaced value
+
+### Requirement: A census block loads the junctions around it
+The demand build SHALL assign the resident workers and jobs of a census block in equal parts to every non-gate node on a residential street within a configured distance of the block's centroid, and to the nearest such node when none is that close. The distance is an assumption.
+
+#### Scenario: Block between four corners
+- **WHEN** four residential-street junctions lie within the distance of a block's centroid
+- **THEN** each takes a quarter of the block's trip ends
+
+### Requirement: Fit report within the file size limit
+The fit report SHALL write the station tables of each period to a file of their own and point to them from the main report.
+
+#### Scenario: Three periods
+- **WHEN** the build writes the fit report for three periods
+- **THEN** there are three station files and the main report names them
+

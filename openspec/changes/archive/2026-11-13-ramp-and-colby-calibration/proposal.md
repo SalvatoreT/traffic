@@ -10,6 +10,7 @@ The baseline was archived on 2026-11-13 with two gaps listed as known limits: th
 - A crosswalk is served with the phase of the approach that runs beside it.
 - A left-turn lane marked along a link holds its left-turners for the whole link, drivers sort for a turn up to 150 m ahead and keep to that side of the road, and route costs use the measured time of the vehicles that made the same movement.
 - Drive-through lanes are no longer imported as streets.
+- Local trips start and end along a block instead of at the junction, and a census block loads the junctions around it instead of one (user decision of 2026-11-13). The factor bound of local flows goes from 3 to 10.
 - The record gets a seventeenth round with before and after figures, and the known-limits list is updated.
 
 ## Capabilities
