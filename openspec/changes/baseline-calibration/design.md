@@ -254,3 +254,9 @@ All figures are the PM peak over seeds 1 to 10 on the kept demand; the record ha
 
 ### D33 The demand is not refit on the straightened geometry (task 19)
 Rule set before the run: refit, run the ten seeds for all periods on both demand files with the final simulator, and ship the refit only if D16 holds in every period. The refit stops by stalling, as before, and moves the totals by about 3% (AM 20,844 to 20,108 veh/h, midday 15,340 to 14,886, PM 23,442 to 24,166). It carries more traffic on Colby St and Hillegass Ave in the PM (medians 160 northbound and 205 southbound on Colby St, 115 and 182 on Hillegass Ave), but the PM peak has 4.20 removals per hour (0 to 13) and an arterial speed of 7.14 m/s, against 0.70 and 7.94 on the kept demand. The kept demand stays. The network file and its hash did not change when the importer ran again.
+
+### D34 Counts first: the refit on the straightened geometry ships (user decision, 2026-11-13, task 20)
+D33 held the refit back because the PM peak failed the stability rule (4.20 removals per hour against 0.70). The user chose to ship it: it carries more traffic on Colby St and Hillegass Ave and brings the headline shares closer to the counts. The cost is accepted: PM fails D16 and is marked experimental again, and the area stays `uncalibrated`. The figures of the refit on the final simulator are in the fifteenth round of the record. The cross-validation demand was refit with it, so `rockridge.assessment-validation.md` matches the shipped demand.
+
+### D35 The 52nd St off-ramp at Shattuck Ave is labeled and left (user decision, 2026-11-13, task 20)
+After D26 and D32, six lane and gate variants did not bring the ramp near its count. Tuning stops until a turning count or a signal plan exists for 52nd St and Shattuck Ave. The gap (about 524 veh/h modeled against 1,278 counted) is stated as a known limit in the area's calibration note, which the app shows, and in the record. Task 19.8 stays open for the data.

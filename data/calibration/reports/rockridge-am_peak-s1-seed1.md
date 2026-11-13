@@ -1,100 +1,100 @@
 # Calibration report: rockridge am_peak scale 1 seed 1 (60 min)
 
-Offered demand 20845 veh/h x scale 1 = 20845 veh/h. Run took 21.9 s wall clock. Flow tables use the window after a 10 min warm-up; select-link and health figures cover the whole run from an empty network.
+Offered demand 20110 veh/h x scale 1 = 20110 veh/h. Run took 22.2 s wall clock. Flow tables use the window after a 10 min warm-up; select-link and health figures cover the whole run from an empty network.
 
 ## Stability (design D4)
 
 | Criterion | Threshold | Value | Result |
 | --- | --- | --- | --- |
 | Gridlock removals | 0 | 0 | pass |
-| Backlog / spawned | < 2% | 0.0% (0 of 20899) | pass |
-| Arterial mean speed (run) | > 4 m/s | 8.93 m/s (last 15 min 8.85) | pass |
+| Backlog / spawned | < 2% | 0.1% (14 of 20309) | pass |
+| Arterial mean speed (run) | > 4 m/s | 8.82 m/s (last 15 min 8.65) | pass |
 
-Overall: **STABLE**. Mean trip delay 129 s, mean trip time 423 s, completed 20881, unroutable 0.
+Overall: **STABLE**. Mean trip delay 133 s, mean trip time 433 s, completed 20010, unroutable 0.
 
 | t (min) | vehicles in network | backlog | completed | removals | arterial speed in interval (m/s) |
 | --- | --- | --- | --- | --- | --- |
-| 5 | 2459 | 0 | 1809 | 0 | 9.40 |
-| 10 | 2508 | 5 | 3499 | 0 | 8.96 |
-| 15 | 2487 | 1 | 5237 | 0 | 8.95 |
-| 20 | 2564 | 1 | 6881 | 0 | 8.85 |
-| 25 | 2448 | 18 | 8634 | 0 | 8.72 |
-| 30 | 2432 | 18 | 10415 | 0 | 9.11 |
-| 35 | 2563 | 21 | 12077 | 0 | 9.11 |
-| 40 | 2496 | 34 | 13849 | 0 | 8.85 |
-| 45 | 2594 | 13 | 15555 | 0 | 8.72 |
-| 50 | 2644 | 0 | 17279 | 0 | 8.62 |
-| 55 | 2609 | 1 | 19039 | 0 | 8.84 |
-| 60 | 2488 | 0 | 20881 | 0 | 9.09 |
+| 5 | 2309 | 0 | 1734 | 0 | 9.53 |
+| 10 | 2386 | 0 | 3351 | 0 | 9.36 |
+| 15 | 2464 | 4 | 4968 | 0 | 9.02 |
+| 20 | 2538 | 7 | 6597 | 0 | 8.53 |
+| 25 | 2555 | 7 | 8284 | 0 | 8.70 |
+| 30 | 2606 | 6 | 9970 | 0 | 8.87 |
+| 35 | 2625 | 3 | 11635 | 0 | 8.74 |
+| 40 | 2592 | 1 | 13335 | 0 | 8.58 |
+| 45 | 2562 | 1 | 15077 | 0 | 8.69 |
+| 50 | 2471 | 1 | 16821 | 0 | 9.11 |
+| 55 | 2521 | 2 | 18454 | 0 | 8.61 |
+| 60 | 2706 | 14 | 20010 | 0 | 8.22 |
 ## Wandering (completed car trips)
 
 Detour ratio = distance driven (link and movement lengths) over the shortest network distance from the trip's origin to its destination. Detour against the free-flow route uses the time-shortest route with no congestion and no noise, which is what a purposeful driver without live information would follow (it differs from the shortest distance when a faster, longer road exists). A switch is a change of the remaining route while en route. Loops: the same link twice or the same node three or more times. Reversals: a link followed by its reverse within 200 m. 'Study-area vehicle-miles' are miles driven on links inside the study area; the last column is the share of them driven by trips with a detour ratio above 1.3. Guided drivers re-evaluate their route every epoch; the others keep their departure route unless it is blocked.
 
 | Trips | n | Switches per trip | With a switch | Mean detour | Median detour | Detour > 1.3 | Detour > 2 | Mean detour vs free-flow route | Vs free-flow route > 1.3 | Loops | Reversals | Study veh-miles | Of them by detour > 1.3 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| all trips | 19132 | 0.02 | 1.9% | 1.107 | 1.068 | 8.3% | 0.2% | 1.035 | 3.4% | 0.0% | 6.8% | 2398 | 13.8% |
-| gate to gate | 9457 | 0.03 | 2.8% | 1.110 | 1.083 | 7.1% | 0.1% | 1.034 | 2.7% | 0.0% | 10.9% | 917 | 13.3% |
-| with a local end | 9675 | 0.01 | 0.9% | 1.104 | 1.044 | 9.5% | 0.4% | 1.036 | 4.1% | 0.0% | 2.7% | 1481 | 14.1% |
-| guided drivers | 8736 | 0.04 | 3.9% | 1.107 | 1.069 | 8.3% | 0.3% | 1.035 | 3.3% | 0.0% | 6.5% | 1086 | 12.7% |
-| other drivers | 10396 | 0.00 | 0.1% | 1.107 | 1.068 | 8.3% | 0.2% | 1.035 | 3.5% | 0.0% | 7.0% | 1313 | 14.7% |
+| all trips | 18251 | 0.03 | 2.8% | 1.111 | 1.070 | 9.0% | 0.3% | 1.043 | 4.3% | 0.0% | 6.8% | 2369 | 17.3% |
+| gate to gate | 9162 | 0.04 | 4.2% | 1.114 | 1.086 | 7.7% | 0.1% | 1.043 | 3.5% | 0.0% | 10.8% | 862 | 16.0% |
+| with a local end | 9089 | 0.01 | 1.3% | 1.107 | 1.044 | 10.3% | 0.5% | 1.043 | 5.2% | 0.0% | 2.7% | 1507 | 18.1% |
+| guided drivers | 8419 | 0.06 | 5.7% | 1.112 | 1.073 | 9.2% | 0.3% | 1.044 | 4.4% | 0.0% | 6.9% | 1112 | 17.5% |
+| other drivers | 9832 | 0.00 | 0.2% | 1.110 | 1.069 | 8.8% | 0.3% | 1.042 | 4.2% | 0.0% | 6.7% | 1257 | 17.2% |
 
 ## Reported patterns (diagnostics; configured in the targets file under `patterns`)
 
-(a) Trips between the surface gates on the north side of the ramps and the freeway mainline gates, and the local-street (residential and service links in the study area) vehicle-miles they drive. Share = of all completed trips' local-street vehicle-miles (384 miles). No observed counterpart exists for this quantity (the targets file has only the select-link shares above).
+(a) Trips between the surface gates on the north side of the ramps and the freeway mainline gates, and the local-street (residential and service links in the study area) vehicle-miles they drive. Share = of all completed trips' local-street vehicle-miles (404 miles). No observed counterpart exists for this quantity (the targets file has only the select-link shares above).
 
 | Trips | n trips | Local-street veh-miles | Share of all local-street veh-miles |
 | --- | --- | --- | --- |
-| surface gates to the freeway | 1050 | 8.0 | 2% |
-| freeway to the surface gates | 1248 | 10.8 | 3% |
+| surface gates to the freeway | 1105 | 16.8 | 4% |
+| freeway to the surface gates | 1063 | 6.4 | 2% |
 
 (b) Corridor trips: completed trips from beyond one end of the corridor's study-area extent (the bypass street and its arterial together) to beyond the other end, within a lateral limit of the corridor, by direction. 'Bypass' = at least N blocks (links) on the bypass street; 'arterial' = fewer bypass blocks and at least N on the arterial; 'other' = neither (another street, the freeway or a short use); blocks are counted on the corridor's study-area links. No observed counterpart exists for these shares. The related observed values are in the select-link table above: northbound Hillegass Ave traffic rarely ends on College Ave (6%), 21 to 33% jogs to Benvenue Ave, and southbound freeway-bound drivers on College Ave commonly arrive via Ashby Ave and Benvenue Ave and jog to Hillegass Ave.
 
 | Bypass | Arterial | N | Direction | Corridor trips | Bypass | Arterial | Other | Mean bypass blocks |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Hillegass Avenue | College Avenue | 3 | N | 954 | 0% | 10% | 90% | 0.0 |
-| Hillegass Avenue | College Avenue | 3 | S | 939 | 1% | 14% | 84% | 0.1 |
+| Hillegass Avenue | College Avenue | 3 | N | 939 | 0% | 9% | 91% | 0.0 |
+| Hillegass Avenue | College Avenue | 3 | S | 1046 | 1% | 16% | 83% | 0.0 |
 
 ## Per-mode results
 
-Offered: 20845 car veh/h; 1500 bicycle flows (1061/h); 2000 pedestrian flows (1540/h). Bicycle and pedestrian volumes are assumptions, not counts.
+Offered: 20110 car veh/h; 1500 bicycle flows (1061/h); 2000 pedestrian flows (1540/h). Bicycle and pedestrian volumes are assumptions, not counts.
 
 | Mode | In network | Completed | Mean time (s) | Other |
 | --- | --- | --- | --- | --- |
-| Car | 2488 | 20881 | 423 | |
-| Bicycle | 101 | 1067 | 347 | |
-| Pedestrian | 215 | 1453 | 479 | mean crossing delay 5.8 s |
+| Car | 2706 | 20010 | 433 | |
+| Bicycle | 105 | 1064 | 358 | |
+| Pedestrian | 197 | 1479 | 486 | mean crossing delay 5.6 s |
 
-Vulnerable road users (surrogate indicators): pedestrian conflicts 351, bicycle conflicts 1197, close passes 1402, pedestrian injury-risk index 0.052, bicycle injury-risk index 0.061 (proxy), mean vehicle speed at pedestrian encounters 2.60 m/s.
+Vulnerable road users (surrogate indicators): pedestrian conflicts 367, bicycle conflicts 1188, close passes 1126, pedestrian injury-risk index 0.054, bicycle injury-risk index 0.059 (proxy), mean vehicle speed at pedestrian encounters 2.69 m/s.
 
 
 ## Select-link shares: modeled vs observed (design D5: headline = freeway shares, tolerance +/-10 pp)
 
-- Hillegass Avenue NB: 4 links (path Claremont Avenue -> Alcatraz Avenue (434 m)), 108 trips (103 completed)
-- Colby Street NB: 8 links (path Claremont Avenue -> Alcatraz Avenue (680 m)), 180 trips (173 completed)
-- Hillegass Avenue SB: 4 links (path Alcatraz Avenue -> Claremont Avenue (433 m)), 159 trips (144 completed)
-- Colby Street SB: 8 links (path Alcatraz Avenue -> Claremont Avenue (680 m)), 248 trips (219 completed)
+- Hillegass Avenue NB: 4 links (path Claremont Avenue -> Alcatraz Avenue (434 m)), 90 trips (87 completed)
+- Colby Street NB: 8 links (path Claremont Avenue -> Alcatraz Avenue (680 m)), 192 trips (184 completed)
+- Hillegass Avenue SB: 4 links (path Alcatraz Avenue -> Claremont Avenue (433 m)), 164 trips (147 completed)
+- Colby Street SB: 8 links (path Alcatraz Avenue -> Claremont Avenue (680 m)), 294 trips (265 completed)
 
 | Block | Side | Via | Observed | Modeled | Diff (pp) | n trips | Headline |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Hillegass Avenue NB | from | freeway | 47% | 72% | +25 | 108 | OUTSIDE |
-| Hillegass Avenue NB | to | Benvenue Avenue | 21% (PM 33%) | 4% | -17 | 108 |  |
-| Hillegass Avenue NB | to | College Avenue | 6% | 9% | +3 | 108 |  |
-| Hillegass Avenue NB | to | Alcatraz Avenue WB | 27% | 23% | -4 | 108 |  |
-| Colby Street NB | from | freeway | 47% | 82% | +35 | 180 | OUTSIDE |
-| Colby Street NB | to | Alcatraz Avenue WB | 48% | 7% | -41 | 180 |  |
-| Colby Street NB | to | Telegraph Avenue | 25% | 12% | -13 | 180 |  |
-| Colby Street NB | to | College Avenue | 3% | 3% | -0 | 180 |  |
-| Hillegass Avenue SB | from | Alcatraz Avenue WB | 46% | 12% | -34 | 159 |  |
-| Hillegass Avenue SB | from | Benvenue Avenue | 26% | 1% | -25 | 159 |  |
-| Hillegass Avenue SB | from | College Avenue | 16% | 6% | -10 | 159 |  |
-| Hillegass Avenue SB | to | freeway | 57% (PM 68%) | 58% | +1 | 159 | within |
-| Colby Street SB | from | Alcatraz Avenue EB | 43% | 8% | -35 | 248 |  |
-| Colby Street SB | from | Alcatraz Avenue WB | 46% | 16% | -30 | 248 |  |
-| Colby Street SB | from | Telegraph Avenue | 22% | 23% | +1 | 248 |  |
-| Colby Street SB | to | freeway | 45% | 73% | +28 | 248 | OUTSIDE |
-| Colby Street SB | to | Forest Street | 34% | 10% | -24 | 248 |  |
+| Hillegass Avenue NB | from | freeway | 47% | 78% | +31 | 90 | OUTSIDE |
+| Hillegass Avenue NB | to | Benvenue Avenue | 21% (PM 33%) | 2% | -19 | 90 |  |
+| Hillegass Avenue NB | to | College Avenue | 6% | 9% | +3 | 90 |  |
+| Hillegass Avenue NB | to | Alcatraz Avenue WB | 27% | 17% | -10 | 90 |  |
+| Colby Street NB | from | freeway | 47% | 71% | +24 | 192 | OUTSIDE |
+| Colby Street NB | to | Alcatraz Avenue WB | 48% | 6% | -42 | 192 |  |
+| Colby Street NB | to | Telegraph Avenue | 25% | 20% | -5 | 192 |  |
+| Colby Street NB | to | College Avenue | 3% | 2% | -1 | 192 |  |
+| Hillegass Avenue SB | from | Alcatraz Avenue WB | 46% | 12% | -34 | 164 |  |
+| Hillegass Avenue SB | from | Benvenue Avenue | 26% | 3% | -23 | 164 |  |
+| Hillegass Avenue SB | from | College Avenue | 16% | 4% | -12 | 164 |  |
+| Hillegass Avenue SB | to | freeway | 57% (PM 68%) | 71% | +14 | 164 | OUTSIDE |
+| Colby Street SB | from | Alcatraz Avenue EB | 43% | 17% | -26 | 294 |  |
+| Colby Street SB | from | Alcatraz Avenue WB | 46% | 14% | -32 | 294 |  |
+| Colby Street SB | from | Telegraph Avenue | 22% | 26% | +4 | 294 |  |
+| Colby Street SB | to | freeway | 45% | 74% | +29 | 294 | OUTSIDE |
+| Colby Street SB | to | Forest Street | 34% | 5% | -29 | 294 |  |
 
-Headline shares within tolerance: 1 of 4. Observed column uses the PM-peak share where one is given and the period is pm_peak. 'Via' shares are the fraction of select-link trips using that street before (from) or after (to) the block; freeway = origin / destination gate with a motorway-class link attached.
+Headline shares within tolerance: 0 of 4. Observed column uses the PM-peak share where one is given and the period is pm_peak. 'Via' shares are the fraction of select-link trips using that street before (from) or after (to) the block; freeway = origin / destination gate with a motorway-class link attached.
 
 ## Claremont ramps: streets used before the on-ramp / after the off-ramp
 
@@ -102,37 +102,37 @@ Observed shares are for traffic from/to the north only. 'Modeled' is over all tr
 
 | Direction | Via | Observed | Modeled | n ramp trips | Modeled, side | n side trips |
 | --- | --- | --- | --- | --- | --- | --- |
-| onto freeway | College Avenue | 16% | 13% | 823 | 13% | 796 |
-| onto freeway | Hillegass Avenue | 12% | 11% | 823 | 11% | 796 |
-| onto freeway | Martin Street | 10% | 12% | 823 | 12% | 796 |
-| onto freeway | Colby Street | 8% | 19% | 823 | 20% | 796 |
-| onto freeway | Telegraph Avenue north of Alcatraz Avenue | 8% | 10% | 823 | 8% | 796 |
-| onto freeway | Benvenue Avenue | 5% | 2% | 823 | 2% | 796 |
-| from freeway | College Avenue | 10% | 7% | 1472 | 8% | 1266 |
-| from freeway | Martin Street | 10% | 14% | 1472 | 16% | 1266 |
-| from freeway | Colby Street | 8% | 9% | 1472 | 11% | 1266 |
-| from freeway | Hillegass Avenue | 5% | 6% | 1472 | 7% | 1266 |
-| from freeway | Benvenue Avenue | 3% | 2% | 1472 | 2% | 1266 |
+| onto freeway | College Avenue | 16% | 13% | 883 | 13% | 863 |
+| onto freeway | Hillegass Avenue | 12% | 13% | 883 | 13% | 863 |
+| onto freeway | Martin Street | 10% | 13% | 883 | 13% | 863 |
+| onto freeway | Colby Street | 8% | 20% | 883 | 21% | 863 |
+| onto freeway | Telegraph Avenue north of Alcatraz Avenue | 8% | 15% | 883 | 12% | 863 |
+| onto freeway | Benvenue Avenue | 5% | 4% | 883 | 4% | 863 |
+| from freeway | College Avenue | 10% | 8% | 1343 | 10% | 1102 |
+| from freeway | Martin Street | 10% | 13% | 1343 | 16% | 1102 |
+| from freeway | Colby Street | 8% | 10% | 1343 | 12% | 1102 |
+| from freeway | Hillegass Avenue | 5% | 5% | 1343 | 6% | 1102 |
+| from freeway | Benvenue Avenue | 3% | 2% | 1343 | 2% | 1102 |
 
 ## Top 15 links by delay
 
 | Link | Street | Class | Lanes | Len (m) | End node control | Delay (veh-h) | Stopped (veh-h) | Mean stopped veh | Flow (veh/h) |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 4208 | Grove Shafter Freeway | Motorway | 4 | 834 | uncontrolled | 18.43 | 0.75 | 0.7 | 2264 |
-| 1679 | 52nd Street | Secondary | 4 | 53 | signal | 12.21 | 10.59 | 10.6 | 517 |
-| 4191 | (unnamed) | Motorway | 2 | 513 | uncontrolled | 10.18 | 6.28 | 6.3 | 460 |
-| 4165 | Martin Luther King Junior Way | Secondary | 3 | 147 | uncontrolled | 9.20 | 6.58 | 6.6 | 1520 |
-| 728 | 55th Street | Tertiary | 1 | 238 | signal | 8.28 | 6.00 | 6.0 | 478 |
-| 4421 | Warren Freeway | Motorway | 2 | 744 | uncontrolled | 7.61 | 2.94 | 2.9 | 1139 |
-| 3465 | Claremont Avenue | Secondary | 1 | 93 | all_way_stop | 7.31 | 3.99 | 4.0 | 545 |
-| 115 | San Pablo Avenue | Primary | 3 | 54 | signal | 7.12 | 5.67 | 5.7 | 820 |
-| 4206 | (unnamed) | Motorway | 2 | 142 | uncontrolled | 6.97 | 0.46 | 0.5 | 1489 |
-| 2061 | Alcatraz Avenue | Tertiary | 1 | 202 | uncontrolled | 6.44 | 4.83 | 4.8 | 482 |
-| 498 | Sacramento Street | Tertiary | 3 | 55 | signal | 6.05 | 5.03 | 5.0 | 548 |
-| 1125 | Market Street | Secondary | 4 | 36 | signal | 5.80 | 5.22 | 5.2 | 502 |
-| 1109 | (unnamed) | Service | 1 | 110 | uncontrolled | 5.77 | 4.91 | 4.9 | 136 |
-| 778 | Martin Luther King Junior Way | Secondary | 4 | 32 | signal | 5.53 | 4.61 | 4.6 | 1530 |
-| 2272 | Telegraph Avenue | Secondary | 2 | 104 | signal | 5.34 | 2.77 | 2.8 | 1812 |
+| 4174 | Adeline Street | Secondary | 3 | 185 | signal | 12.26 | 8.28 | 8.3 | 848 |
+| 1679 | 52nd Street | Secondary | 4 | 53 | signal | 10.58 | 9.02 | 9.0 | 653 |
+| 728 | 55th Street | Tertiary | 1 | 238 | signal | 9.50 | 6.71 | 6.7 | 512 |
+| 1068 | Adeline Street | Secondary | 4 | 50 | signal | 8.53 | 7.38 | 7.4 | 678 |
+| 1042 | Martin Luther King Junior Way | Secondary | 3 | 79 | signal | 8.10 | 6.68 | 6.7 | 611 |
+| 4366 | Claremont Avenue | Secondary | 2 | 113 | signal | 7.89 | 6.13 | 6.1 | 451 |
+| 1139 | Alcatraz Avenue | Tertiary | 1 | 299 | signal | 7.21 | 5.15 | 5.1 | 335 |
+| 1125 | Market Street | Secondary | 4 | 36 | signal | 6.70 | 5.98 | 6.0 | 582 |
+| 115 | San Pablo Avenue | Primary | 3 | 54 | signal | 6.06 | 4.71 | 4.7 | 845 |
+| 2061 | Alcatraz Avenue | Tertiary | 1 | 202 | uncontrolled | 6.05 | 4.40 | 4.4 | 410 |
+| 2272 | Telegraph Avenue | Secondary | 2 | 104 | signal | 5.77 | 3.04 | 3.0 | 1963 |
+| 3426 | Ashby Avenue | Primary | 1 | 129 | signal | 5.65 | 3.74 | 3.7 | 571 |
+| 265 | 59th Street | Residential | 1 | 150 | two_way_stop | 5.54 | 4.74 | 4.7 | 104 |
+| 1067 | Adeline Street | Secondary | 3 | 132 | uncontrolled | 5.52 | 3.77 | 3.8 | 679 |
+| 498 | Sacramento Street | Tertiary | 3 | 55 | signal | 5.48 | 4.38 | 4.4 | 677 |
 
 ## Top 15 nodes by blocked time
 
@@ -140,60 +140,68 @@ Blocked time = lane-head seconds waiting at the stop line without permission (si
 
 | Node | Streets | Control | Gate | Blocked (lane-h) | of which no downstream space | Signal plan at end (cycle: greens) |
 | --- | --- | --- | --- | --- | --- | --- |
-| 454 | Market Street / Stanford Avenue | signal |  | 5.17 | 0.12 | 75 s: 50/15 |
-| 688 | 52nd Street / Shattuck Avenue | signal |  | 5.08 | 0.49 | 75 s: 21/44 |
-| 455 | Adeline Street / Alcatraz Avenue | signal |  | 4.21 | 0.12 | 75 s: 17/48 |
-| 339 | 52nd Street / Martin Luther King Junior Way | signal |  | 4.11 | 0.48 | 75 s: 50/15 |
-| 37 | San Pablo Avenue / Stanford Avenue | signal |  | 3.87 | 0.07 | 75 s: 29/36 |
-| 30 | 57th Street / Adeline Street / Market Street | signal |  | 3.27 | 0.02 | 75 s: 21/23/16 |
-| 185 | Alcatraz Avenue / Sacramento Street | signal |  | 2.97 | 0.03 | 75 s: 35/30 |
-| 863 | Alcatraz Avenue / Telegraph Avenue | signal |  | 2.87 | 0.05 | 75 s: 42/23 |
-| 1422 | Ashby Avenue / Claremont Avenue | signal |  | 2.69 | 0.11 | 75 s: 50/15 |
-| 237 | Ashby Avenue / Sacramento Street | signal |  | 2.65 | 0.01 | 75 s: 49/16 |
-| 340 | 55th Street / Martin Luther King Junior Way | signal |  | 2.62 | 0.00 | 75 s: 29/36 |
-| 1095 | 62nd Street / Claremont Avenue / College Avenue | signal |  | 2.55 | 0.00 | 75 s: 20/25/15 |
-| 487 | Adeline Street / Martin Luther King Junior Way / Stanford Avenue | signal |  | 2.51 | 0.02 | 75 s: 21/44 |
-| 509 | Alcatraz Avenue / Shattuck Avenue | signal |  | 2.39 | 0.06 | 75 s: 19/46 |
-| 956 | Ashby Avenue / Shattuck Avenue | signal |  | 2.24 | 0.00 | 75 s: 43/22 |
+| 454 | Market Street / Stanford Avenue | signal |  | 5.13 | 0.16 | 75 s: 50/15 |
+| 688 | 52nd Street / Shattuck Avenue | signal |  | 4.76 | 0.32 | 75 s: 27/38 |
+| 455 | Adeline Street / Alcatraz Avenue | signal |  | 4.57 | 0.56 | 75 s: 22/43 |
+| 339 | 52nd Street / Martin Luther King Junior Way | signal |  | 3.90 | 0.18 | 75 s: 35/30 |
+| 37 | San Pablo Avenue / Stanford Avenue | signal |  | 3.39 | 0.06 | 75 s: 30/35 |
+| 185 | Alcatraz Avenue / Sacramento Street | signal |  | 3.38 | 0.13 | 75 s: 31/34 |
+| 30 | 57th Street / Adeline Street / Market Street | signal |  | 3.17 | 0.02 | 75 s: 20/22/18 |
+| 487 | Adeline Street / Martin Luther King Junior Way / Stanford Avenue | signal |  | 3.09 | 0.06 | 75 s: 30/35 |
+| 863 | Alcatraz Avenue / Telegraph Avenue | signal |  | 2.88 | 0.05 | 75 s: 43/22 |
+| 1422 | Ashby Avenue / Claremont Avenue | signal |  | 2.87 | 0.34 | 75 s: 43/22 |
+| 1095 | 62nd Street / Claremont Avenue / College Avenue | signal |  | 2.82 | 0.01 | 75 s: 24/21/15 |
+| 237 | Ashby Avenue / Sacramento Street | signal |  | 2.77 | 0.02 | 75 s: 47/18 |
+| 340 | 55th Street / Martin Luther King Junior Way | signal |  | 2.50 | 0.02 | 75 s: 34/31 |
+| 509 | Alcatraz Avenue / Shattuck Avenue | signal |  | 2.46 | 0.10 | 75 s: 24/41 |
+| 592 | Adeline Street / Ashby Avenue | signal |  | 2.39 | 0.00 | 75 s: 47/18 |
 
 Phases of the five most blocked signals (green s: approach links with their lanes, link ids in brackets):
 
 - node 454: 50 s: Stanford Avenue 1L [958], Stanford Avenue 3L [1072]; 15 s: Market Street 4L [1125], Market Street 3L [1128]
-- node 688: 21 s: 52nd Street 4L [1679], 52nd Street 4L [1683]; 44 s: Shattuck Avenue 2L [1670], Shattuck Avenue 2L [1722]
-- node 455: 17 s: Adeline Street 4L [1066], Adeline Street 4L [1068]; 48 s: Alcatraz Avenue 2L [1065], Alcatraz Avenue 2L [1150]
-- node 339: 50 s: Martin Luther King Junior Way 4L [721], Martin Luther King Junior Way 4L [778]; 15 s: 52nd Street 2L [775], 52nd Street 1L [777]
-- node 37: 29 s: San Pablo Avenue 3L [114], San Pablo Avenue 3L [115]; 36 s: Stanford Avenue 3L [108], Stanford Avenue 2L [4140]
+- node 688: 27 s: 52nd Street 4L [1679], 52nd Street 4L [1683]; 38 s: Shattuck Avenue 2L [1670], Shattuck Avenue 2L [1722]
+- node 455: 22 s: Adeline Street 4L [1066], Adeline Street 4L [1068]; 43 s: Alcatraz Avenue 2L [1065], Alcatraz Avenue 2L [1150]
+- node 339: 35 s: Martin Luther King Junior Way 4L [721], Martin Luther King Junior Way 4L [778]; 30 s: 52nd Street 2L [775], 52nd Street 1L [777]
+- node 37: 30 s: San Pablo Avenue 3L [114], San Pablo Avenue 3L [115]; 35 s: Stanford Avenue 3L [108], Stanford Avenue 2L [4140]
+
+## Entry backlog by origin node at end of run (top 10)
+
+| Node | Streets | Trips waiting | Offered veh/h (before scale) |
+| --- | --- | --- | --- |
+| 955 | Telegraph Avenue / Ward Street | 11 | 2170 |
+| 403 | 65th Street / Shattuck Avenue | 2 | 12 |
+| 610 | Grove Shafter Freeway | 1 | 4100 |
 
 ## Flow on key streets (veh/h per direction, study-area links of 40 m or more)
 
 | Street | Direction of travel | Links | Median flow | Max flow |
 | --- | --- | --- | --- | --- |
-| Telegraph | N | 12 | 1000 | 1050 |
-| Telegraph | S | 10 | 1028 | 1082 |
-| College | N | 3 | 347 | 348 |
-| College | S | 3 | 392 | 396 |
-| Claremont | N | 6 | 618 | 1057 |
-| Claremont | S | 7 | 604 | 1067 |
-| Alcatraz | E | 6 | 470 | 475 |
-| Alcatraz | W | 6 | 457 | 502 |
-| Hillegass | N | 4 | 82 | 89 |
-| Hillegass | S | 4 | 98 | 119 |
-| Colby | N | 7 | 114 | 158 |
-| Colby | S | 7 | 166 | 184 |
-| Martin | E | 2 | 122 | 122 |
-| Martin | W | 2 | 218 | 218 |
+| Telegraph | N | 12 | 928 | 953 |
+| Telegraph | S | 10 | 1111 | 1174 |
+| College | N | 3 | 290 | 290 |
+| College | S | 3 | 388 | 391 |
+| Claremont | N | 6 | 600 | 1002 |
+| Claremont | S | 7 | 583 | 1056 |
+| Alcatraz | E | 6 | 460 | 475 |
+| Alcatraz | W | 6 | 373 | 421 |
+| Hillegass | N | 4 | 70 | 72 |
+| Hillegass | S | 4 | 109 | 121 |
+| Colby | N | 7 | 112 | 148 |
+| Colby | S | 7 | 182 | 200 |
+| Martin | E | 2 | 144 | 144 |
+| Martin | W | 2 | 192 | 192 |
 
 ## Largest demand origins (offered, before scale)
 
 | Node | Streets | Veh/h |
 | --- | --- | --- |
-| 610 | Grove Shafter Freeway | 4110 |
-| 955 | Telegraph Avenue / Ward Street | 2094 |
-| 1688 | Warren Freeway | 1413 |
-| 266 | Ashby Avenue | 1240 |
-| 183 | San Pablo Avenue | 1171 |
-| 104 | San Pablo Avenue | 554 |
-| 283 | Market Street | 533 |
-| 1774 | Claremont Avenue | 524 |
-| 771 | Telegraph Avenue | 467 |
-| 1735 | Grove Shafter Freeway | 333 |
+| 610 | Grove Shafter Freeway | 4100 |
+| 955 | Telegraph Avenue / Ward Street | 2170 |
+| 1688 | Warren Freeway | 1448 |
+| 266 | Ashby Avenue | 1242 |
+| 183 | San Pablo Avenue | 1124 |
+| 1774 | Claremont Avenue | 520 |
+| 104 | San Pablo Avenue | 479 |
+| 771 | Telegraph Avenue | 468 |
+| 283 | Market Street | 453 |
+| 74 | 43rd Street / San Pablo Avenue | 361 |
