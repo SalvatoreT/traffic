@@ -1771,6 +1771,7 @@ impl Simulation {
                 }
             }
         }
+        let impatient = veh.wait_t >= YIELD_COURTESY_S;
         if veh.wait_t >= YIELD_FALLBACK_S || (circle && !self.eff.ring_node[node]) {
             return true;
         }
@@ -1802,6 +1803,10 @@ impl Simulation {
             let nlanes = self.topo.nlanes(e as usize);
             for k in 0..nlanes + self.bike_on as usize {
                 let q = &self.lanes[self.topo.qidx(e as usize, k)];
+                // A lane whose head stands at the line with no room to leave is not coming: nobody waits for it.
+                if q.front().map_or(false, |&h| self.vehs[h as usize].blocked_space && self.vehs[h as usize].v < 0.2) {
+                    continue;
+                }
                 for &x in q.iter().take(4) {
                     let xv = &self.vehs[x as usize];
                     let dx = (self.topo.stop_pos[e as usize] - xv.pos).max(0.0) + self.topo.length[e as usize].min(R_NODE as f32 * 4.0).min(R_NODE as f32);
@@ -1815,6 +1820,10 @@ impl Simulation {
                     let Some(xb) = xv.next() else { continue };
                     let Some(mx) = self.topo.find_mv(e, xb) else { continue };
                     if self.topo.conflicts(mv, mx, false) && (rtor || self.yields(mv, mx, ctrl)) {
+                        // After `YIELD_COURTESY_S` a driver is let into a queue that crawls; a stream at speed still needs a real gap.
+                        if impatient && xv.v < QUEUE_V {
+                            continue;
+                        }
                         return false;
                     }
                 }

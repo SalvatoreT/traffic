@@ -823,8 +823,8 @@ impl Simulation {
             if x.crossing > 0 {
                 return true;
             }
-            // A driver who has stood at the line for `YIELD_FALLBACK_S` while nobody stepped off stops yielding (bounded wait, ASSUMPTION).
-            if ctrl != Control::Signal && veh.wait_t < YIELD_FALLBACK_S && x.yields(xw, veh.uid, veh.v, d) {
+            // A driver who has stood at the line for `YIELD_COURTESY_S` while nobody stepped off stops yielding (bounded wait, ASSUMPTION).
+            if ctrl != Control::Signal && veh.wait_t < YIELD_COURTESY_S && x.yields(xw, veh.uid, veh.v, d) {
                 return true;
             }
         }

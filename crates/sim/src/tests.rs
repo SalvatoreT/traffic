@@ -212,6 +212,46 @@ fn osm_turn_ban_blocks_the_movement_and_respects_the_period() {
     assert!((same - banned).abs() < 1e-6);
 }
 
+// ---------------------------------------------------------------- yielding to vehicles that are not coming
+
+/// Seconds until a car placed 8 m before the south stop line has left its link, with a major-street car from the west set up by `major`.
+fn minor_crossing_time(major: impl Fn(&mut Simulation, &Cross)) -> f64 {
+    let (net, x) = cross4(Control::TwoWayStop, RoadClass::Residential, true);
+    let mut sim = empty_sim(net);
+    major(&mut sim, &x);
+    let car = sim.test_place(x.s_in, 0, 186.0, 2.0, x.n, false);
+    let mut t = 0.0;
+    while t < 200.0 {
+        sim.step(DT);
+        t += DT;
+        let c = sim.test_veh(car);
+        if !c.3 || c.0 != x.s_in {
+            return t;
+        }
+    }
+    t
+}
+
+#[test]
+fn nobody_waits_for_a_lane_that_has_no_room_to_leave() {
+    // The major-street car stands at the line because the lane beyond the junction is full up to the node.
+    let blocked = minor_crossing_time(|sim, x| {
+        sim.test_place(x.e_out, 0, 11.0, 0.0, x.e, true);
+        sim.test_place(x.w_in, 0, 193.9, 0.0, x.e, false);
+    });
+    assert!(blocked < 15.0, "the minor-street car crossed after {blocked} s");
+}
+
+#[test]
+fn a_standing_queue_lets_one_in_after_the_courtesy_wait_and_not_before() {
+    // The major-street car stands 3 m short of the line with room ahead (frozen): it could come, so the minor car waits, but not for long.
+    let waited = minor_crossing_time(|sim, x| {
+        sim.test_place(x.w_in, 0, 191.0, 0.0, x.e, true);
+    });
+    let (lo, hi) = (crate::params::YIELD_COURTESY_S as f64, crate::params::YIELD_FALLBACK_S as f64);
+    assert!(waited >= lo && waited < lo + 10.0 && waited < hi, "crossed after {waited} s");
+}
+
 // ---------------------------------------------------------------- car-following
 
 fn line_net(limit: f64, len: f64) -> (Network, u32, u32) {
