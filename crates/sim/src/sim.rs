@@ -1825,21 +1825,8 @@ impl Simulation {
                 }
                 for &x in q.iter().take(4) {
                     let xv = &self.vehs[x as usize];
-                    let d_line = (self.topo.stop_pos[e as usize] - xv.pos).max(0.0);
-                    let dx = d_line + self.topo.length[e as usize].min(R_NODE as f32 * 4.0).min(R_NODE as f32);
-                    let mut tx = dx / xv.v.max(MIN_APPROACH_SPEED);
-                    // A vehicle with a green signal that is slower than the limit is in a discharging queue: it arrives as soon as
-                    // its own acceleration (`a` of the car-following model [Treiber2014]) takes it there, not at its present
-                    // speed. Without this, permissive left-turners entered ahead of every vehicle that was rolling up to the
-                    // line, and the opposing queue, which they must yield to [FHWA-STM2008] (section 4.3.1), never discharged.
-                    if ctrl == Control::Signal && self.sig_state[e as usize] == 1 {
-                        let (v, vlim, a) = (xv.v, self.eff.limit[e as usize], xv.drv.a.max(0.5));
-                        if v < vlim {
-                            let d_acc = (vlim * vlim - v * v) / (2.0 * a);
-                            let t_kin = if dx <= d_acc { ((v * v + 2.0 * a * dx).sqrt() - v) / a } else { (vlim - v) / a + (dx - d_acc) / vlim };
-                            tx = tx.min(t_kin);
-                        }
-                    }
+                    let dx = (self.topo.stop_pos[e as usize] - xv.pos).max(0.0) + self.topo.length[e as usize].min(R_NODE as f32 * 4.0).min(R_NODE as f32);
+                    let tx = dx / xv.v.max(MIN_APPROACH_SPEED);
                     if tx > tc {
                         break;
                     }
