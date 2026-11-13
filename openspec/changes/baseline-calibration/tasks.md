@@ -139,10 +139,24 @@
 - [x] 17.3 Protected left interval built, measured over ten seeds, removed (D26)
 - [x] 17.4 Refit with `npm run data`; Colby St and Hillegass Ave blocks, entries, hold-out unchanged; validation suite unchanged (45 of 58)
 - [x] 17.5 Ten-seed assessment of all periods, 120-minute PM run, cross-validation demand run
-- [ ] 17.6 52nd Street off-ramp at 555 against 1,278 veh/h: left turn into Shattuck Ave north and the single-lane street behind it; PM removals on Telegraph Ave north (Webster St) in single seeds; PM backlog under 2% in 7 of 10 seeds; AM mean removals 1.10
+- [x] 17.6 52nd Street off-ramp at 555 against 1,278 veh/h: left turn into Shattuck Ave north and the single-lane street behind it; PM removals on Telegraph Ave north (Webster St) in single seeds; PM backlog under 2% in 7 of 10 seeds; AM mean removals 1.10 (stability closed in 19.1 and 19.2; the ramp continues as 19.8)
 - [ ] 17.7 Colby St turn toward Claremont Ave northeast (75 counted) has no flow in the demand; Telegraph Ave side entries 70% over
 
 ## 18. Initial loading routed on loaded costs, overlay check, straight junction ends (fourteenth round)
 - [x] 18.1 Placement routes on link costs measured by a settled pass on the unmodified network (D27); `initload --occupancy` check of time zero against minutes 20 to 60 by link class; Rust test `placement_routes_on_loaded_costs`; calibrate midday seeds 1 to 3 unchanged beyond seed noise
 - [x] 18.2 Instant against 60x overlay check: worker link stats identical to the last bit; the drawn values differed because the overlay skipped updates under 0.004 (path dependent). Intensities are now quantized before the skip test (UI only, `quantizeIntensity`, test in `src/lib/ramps.test.ts`; D29)
 - [x] 18.3 Junction ends straightened once in the importer (`straightenLink` shared with the app, `tools/lib/network.ts`), so the offline tools and the app run the same movement geometry (D28); test in `tools/import-osm.test.ts`; network regenerated (1,005 links straightened, ids, lengths and topology unchanged), demand kept (a refit moves it by 3%, see D28), proposals stale by hash
+
+## 19. The Telegraph Ave lock, yielding, the 52nd Street ramp, refit decision (fourteenth round)
+- [x] 19.1 Trace of the PM gridlock on Telegraph Ave north (`CAL_TRACE` in `calibrate`, `debug_links`): a lock between pedestrians, yielding drivers and cars held in two nodes 25 m apart. No unmarked crosswalk at a node with two legs [CVC275], a yield to a pedestrian lapses after 45 s (D30); tests `a_two_leg_node_has_a_crosswalk_only_when_marked`, `a_yield_to_a_pedestrian_who_cannot_step_off_lapses`
+- [x] 19.2 Yield rules (D31): a lane with no room to leave is not waited for, entry ahead of crawling vehicles after `YIELD_COURTESY_S`, `YIELD_FALLBACK_S` 45 to 90 s; validation cases e6 and e9 pass (47 of 58), `KNOWN_DEVIATIONS` updated; tests `nobody_waits_for_a_lane_that_has_no_room_to_leave`, `a_standing_queue_lets_one_in_after_the_courtesy_wait_and_not_before`
+- [x] 19.3 52nd St off-ramp at Shattuck Ave: OSM tags of the junction read, six lane and gate variants and an unopposed left measured over ten seeds, none kept (D32); braking of cars held in a node measured and not kept
+- [x] 19.4 Colby St and Hillegass Ave: the northbound shortfall located at the left turn onto Alcatraz Ave (6 against 131 counted); controls match OSM; no change
+- [x] 19.5 Refit on the straightened geometry run and not shipped: PM 4.20 removals per hour against 0.70 on the kept demand (D33)
+- [x] 19.6 `calibrate --no-write` with `--seeds` writes no report files; test `no_write_keeps_seed_files_out_of_the_report_directory`
+- [x] 19.7 Ten-seed assessment of all periods, 120-minute PM run, reports, noise file, area `calibration` entry (uncalibrated, no experimental period, midday default), record round
+- [ ] 19.8 52nd St off-ramp at 524 against 1,278 veh/h and the Clifton St ramp at 1.6 times its count: turning count or signal plan at 52nd St and Shattuck Ave, lane choice that looks two links ahead with a protected left
+- [ ] 19.9 Headline shares 10 to 30 points too high; Colby St northbound loses its traffic before Alcatraz Ave; observed routes are needed (continues 13.7, 16.10, 17.7)
+- [ ] 19.10 `YIELD_FALLBACK_S` at 150 s fits the gap formula (e6 0.99, e9 0.90) and gives 1.30 PM removals per hour; find the minor approaches that need the 90 s floor. The 120-minute PM run has 1.15 removals per hour
+- [ ] 19.11 Rerun the cross-validation assessment (its demand file in `target/validation` belongs to the refit) and the proposal searches on this simulator
+- [ ] 19.12 Removals at MLK Jr Way and 52nd St (left-turners in all four lanes of a 32 m approach) and at Ward St and Dana St (U-turn at a gate stub)

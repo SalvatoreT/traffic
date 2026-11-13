@@ -92,9 +92,9 @@
   "periodWindows": { "am_peak": [7, 9], "midday": [11, 13], "pm_peak": [16, 18] },
   "calibration": {
     "status": "uncalibrated",
-    "note": "Colby St and Hillegass Ave now carry closer to what residents counted, and midday runs steadily, but the morning and evening peaks still strand a few cars.",
+    "note": "All three periods now run steadily, but freeway traffic makes up too much of what the model puts on Colby St and Hillegass Ave.",
     "defaultPeriod": "midday",
-    "experimentalPeriods": ["am_peak", "pm_peak"]
+    "experimentalPeriods": []
   },
   "signalObservations": [
     {

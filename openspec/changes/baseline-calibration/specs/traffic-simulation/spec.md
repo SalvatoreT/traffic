@@ -142,3 +142,21 @@ A signalized node MAY carry observed timings (periods, cycle, and the green of n
 #### Scenario: Reported against the observation
 - **WHEN** a calibration report is written for a period with an observed timing
 - **THEN** it shows the modeled cycle and green beside the observed values and the approach's discharge in vehicles per cycle
+
+### Requirement: Unmarked crosswalks exist only at intersections
+A node with two legs is a point along one street and SHALL NOT offer pedestrians a crossing unless it is marked [CVC275]. Nodes with three or more legs keep one crosswalk per leg, and a dead end keeps its way around the end.
+
+#### Scenario: Way split on an arterial
+- **WHEN** a pedestrian's walk needs the other side of a street at an unmarked node with two legs
+- **THEN** the walk crosses at the next intersection or marked crossing instead
+
+### Requirement: Yielding is bounded and ignores vehicles that cannot come
+A driver SHALL NOT wait for a conflicting lane whose head stands at the stop line with no room to leave. After the courtesy wait (45 s, ASSUMPTION) a driver SHALL enter ahead of conflicting vehicles that move slower than queue speed, and a driver yielding to a waiting pedestrian SHALL move on. A conflicting stream at speed SHALL be given a real gap until the fallback wait (90 s, ASSUMPTION).
+
+#### Scenario: Blocked major-street lane
+- **WHEN** the head of a major-street lane stands at the line because its exit is full
+- **THEN** a minor-street driver whose own exit has room crosses without waiting for it
+
+#### Scenario: Heavy cross flow at speed
+- **WHEN** a minor through movement or left turn faces 1,000 veh/h per direction on the major street
+- **THEN** its capacity is within the range of the gap-acceptance formula [Brilon1999] (validation cases e6 and e9)

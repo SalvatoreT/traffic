@@ -89,6 +89,128 @@ Claremont Ave: checked end to end. OSM lanes (3 with one forward and one backwar
 
 Ramp junctions: after joining all four SR-24 terminals are single signalized nodes (Aileen/Telegraph and Clifton/Claremont off-ramps, Hudson/Claremont and 56th/Telegraph on-ramps) with 2-lane ramp approaches at 35 mph. Mean discharge in the PM peak (seeds 1 to 3, measured before the third round): Aileen off-ramp 584 veh/h (offered 656), Clifton off-ramp 914 veh/h (offered about 1,025), on-ramps 783 and 555 veh/h. That is 290 to 460 veh/h per lane averaged over the hour; the signal gives the ramp 30 to 45% of the cycle and the shortfall is downstream spill-back on Claremont and Telegraph, not the ramp signal itself. Before the third round the remaining gridlock removals were mostly vehicles queued on the 4-lane freeway stub behind the single-lane Clifton off-ramp (26 of about 45 removals over six seeds at scale 0.3). The third round checked the ramp lanes against OSM: the off-ramps are tagged one lane for most of their length and two lanes (turn lanes left | left;through;right at Clifton, left | right at Aileen) on the final way before the signal, and the importer keeps that per segment (a test covers it), so no lane count is lost. After step M the stub accounts for about one removal per run.
 
+## Fourteenth round: the Telegraph Ave lock, yielding, the 52nd Street ramp again, refit decision (task 19)
+
+Decisions D30 to D33 in `design.md`. PM peak unless a row says otherwise, seeds 1 to 10, scale 1.0, 60 minutes, initial loading on, the demand file of the thirteenth round. The round starts from the simulator after D27 and D28 (placement on loaded costs, straightened junction ends), which had already moved the figures of the thirteenth round: PM 5.40 removals per hour with the backlog under 2% in all ten seeds (9.40 and 7 of 10 in the thirteenth round), AM 0.40 (1.10).
+
+### The gridlock on Telegraph Ave north (seed 9)
+
+Seed 9 had 34 removals on Telegraph Ave between Webster St and Ashby Ave, the first at minute 42. The new trace (`CAL_TRACE`, see the calibration README) shows what stood first. Between the two signals, 111 m apart, Telegraph Ave has two way-split nodes 25 m apart (nodes 967 and 968). From minute 38 the heads of the two 25 m links (2340 northbound, 2341 southbound) stand with room ahead, a green signal behind them and no conflicting car. Each is yielding to a pedestrian who waits at the crosswalk of its node. Neither pedestrian steps off, because a car is held inside each node: it was let in when the car ahead still moved, and it cannot leave the node while that car stands 8 m ahead. So the pedestrian at node 968 waits for the car in node 968, that car waits for the driver on link 2340, that driver yields to the pedestrian at node 967, who waits for the car in node 967, which waits for the driver on link 2341, who yields to the pedestrian at node 968. No signal phase is starved and nothing spills back at the start, and the demand has no part in it. The queues then grow back through both signals until vehicles are removed.
+
+Every node gave pedestrians a crosswalk on each leg, including nodes that are only a point along one street, so pedestrians crossed four and five lanes of Telegraph Ave at a way split with drivers yielding to them. And a driver yielded for as long as a pedestrian waited.
+
+| State | Removals per hour (min to max) | Backlog, seeds under 2% | Arterial speed (m/s) |
+| --- | --- | --- | --- |
+| Start of the round | 5.40 (0 to 34) | 0.72% (10 of 10) | 7.85 |
+| No unmarked crosswalk at a node with two legs [CVC275] | 0.80 (0 to 3) | 0.53% (10) | 7.90 |
+| And a yield to a pedestrian lapses after 45 s (D30) | 0.50 (0 to 2) | 0.58% (10) | 7.96 |
+| Test: a car held in a node brakes to 1 m/s (no pedestrian rules) | 1.70 (0 to 6) | 2.01% (6) | 7.29 |
+| Test: a car held in a node leaves at the speed it can stop from (no pedestrian rules) | 1.00 (0 to 3) | 0.94% (10) | 7.53 |
+| The same with both pedestrian rules | 1.70 (0 to 10) | 0.70% (10) | 7.57 |
+
+The braking tests were not kept: they lower the arterial speed and do not lower removals. A held car that leaves the node early waits on the link instead, where the wait counts in the link speed. AM with D30: 0.30 removals per hour (0.40 before); midday 0.00 in both.
+
+### Yielding and the stop-controlled capacities (D31)
+
+Looking for the cause of the low northbound volume on Colby St (below) led to the cross streets toward Telegraph Ave, which carry 1.4 to 2.1 times their counts, and from there to validation cases e6 and e9: a minor through movement and a minor left turn across 1,000 veh/h per direction ran at 108 and 88.5 veh/h against 61 and 45 from the gap formula [Brilon1999]. The cause is the bounded wait: after 45 s a driver entered whatever was coming, which is a floor of 80 veh/h per lane.
+
+| `YIELD_FALLBACK_S` and rules | e6 (range 45.5 to 75.8) | e9 (33.9 to 56.5) | PM removals per hour (min to max) |
+| --- | --- | --- | --- |
+| 45 s (before) | 108 | 88.5 | 0.50 (0 to 2) |
+| 90 s | 72.0 | 54.0 | 1.90 (0 to 5) |
+| 150 s | 60.0 | 40.5 | 6.80 (1 to 14) |
+| 45 s, a lane with no room to leave is not waited for | not run | not run | 0.40 (0 to 2) |
+| 90 s with that rule | not run | not run | 1.50 (0 to 4) |
+| 150 s with that rule | not run | not run | 4.10 (1 to 7) |
+| 150 s, that rule, and entry ahead of crawling vehicles after 45 s | 60.0 | 40.5 | 1.30 (0 to 2) |
+| 90 s with both rules (kept) | 72.0 | 54.0 | 0.70 (0 to 3) |
+| no fallback, both rules | not run | not run | 6.10 (2 to 10) |
+
+With a long fallback the removals sit where a minor street meets a queue: 10 of the 68 removals at 150 s are on 52nd St where it merges with its off-ramp (link 1686), 9 on 60th St at Market St. The old 45 s was doing the work of drivers who let someone into slow traffic, so that is now its own rule, and a stream at speed needs a real gap for 90 s. The validation suite goes from 45 to 47 of 58 cases. The Colby St volumes did not move with any of these (northbound median 131 to 143 veh/h), so the question that started this stays open.
+
+### The 52nd Street off-ramp at Shattuck Ave (node 688)
+
+OSM: the two carriageways of 52nd St cross Shattuck Ave at two signal nodes 16 m apart (506459075 and 53045875), joined by a two-lane piece of Shattuck Ave; the importer joins them into node 688. The eastbound approach (way 393902204) has four lanes tagged `left|||`, the westbound one `left|none||`, Shattuck Ave north of the junction one lane northbound and two southbound (`left;through|right`). The ramp (way 393902217) has two lanes tagged `right|right`. OSM carries no phasing. The lane counts in the network match. Two things differ from the tags: the tagged left lane stores 3 cars like an assumed pocket, and the ramp's vehicles all take the right lane because their one movement is a right turn.
+
+| Variant (each on top of D30) | Removals per hour | Backlog, seeds under 2% | 52nd St off-ramp veh/h (1,278 counted) | Clifton St off-ramp veh/h (972) |
+| --- | --- | --- | --- | --- |
+| D30 only | 0.50 | 0.58% (10) | 531 | 1,536 |
+| Tagged left lanes store the link length | 1.60 | 0.78% (10) | 527 | 1,536 |
+| And left-turners keep to the left lanes, drivers sort one link early | 2.60 | 1.04% (9) | 473 | 1,441 |
+| And the left turn at node 688 unopposed | 1.40 | 1.00% (9) | 561 | 1,415 |
+| Gate queues by fork branch | 1.20 | 0.53% (10) | 520 | 1,548 |
+| And a link end with one movement uses all its lanes | 0.80 | 0.40% (10) | 532 | 1,566 |
+| All six | 1.20 | 0.55% (10) | 576 | 1,458 |
+| One-movement rule alone | 0.90 | 0.66% (10) | 494 | 1,576 |
+
+None was kept. In the traces of seed 1 the ramp is not held at the signal all the time: for minutes at a stretch (30 to 36, 50 to 54) the ramp and the approach are empty, then the ramp fills to 65 cars per lane. Drivers at the freeway gate choose their exit on measured link times, the ramp's mean delay is about 230 s, and they leave by the MLK Jr Way and Clifton St ramps instead, which is why Clifton St carries 1.6 times its count. When the ramp is full, about half of its drivers want the left turn into the one lane of Shattuck Ave north. With left-turners confined to their lanes, they wait on the 7 m link behind the approach (link 1766) and block the through lanes there, so two of the four approach lanes stand empty. And with the left turn unopposed and two lanes to turn from, the single receiving lane can take about 12 cars in the 27 s green at 2.1 s per car. The count of 1,278 is an ADT times a peak-hour factor, and the split of the ramp's traffic at this signal comes from the demand fit with no turning count behind it. The mechanism left to test is a hard lane choice two links ahead together with a protected left; D26 measured the protected left alone.
+
+Ramp terminals, PM, seed mean (veh/h):
+
+| Ramp | Counted | Start of the round | End of the round |
+| --- | --- | --- | --- |
+| Off, 52nd St (node 735) | 1,278 | 477 | 524 |
+| Off, MLK Jr Way (727) | 1,656 | 1,470 | 1,488 |
+| On, 52nd St (733) | 1,161 | 1,307 | 1,315 |
+| On, MLK Jr Way (288 / 687, one count for both) | 869 | 444 / 1,113 | 431 / 1,124 |
+| Off, Clifton St / Claremont Ave (691) | 972 | 1,560 | 1,552 |
+| Off, Aileen St / Telegraph Ave (710) | 621 | 812 | 805 |
+| On, 56th St / Telegraph Ave (709) | 657 | 842 | 858 |
+| On, Hudson St / Claremont Ave (845) | 882 | 984 | 979 |
+| Off, Keith Ave (1149) | 477 | 527 | 523 |
+
+### Colby St, Hillegass Ave and the turn toward Claremont Ave northeast
+
+PM, seed mean against the volunteer count, at the end of the round (the thirteenth round in brackets):
+
+| Quantity | Counted | Modeled |
+| --- | --- | --- |
+| Colby St, median block NB / SB | 174 / 160 | 132 / 190 (125 / 199) |
+| Colby St, North St to Alcatraz Ave NB | 164 | 61 (60) |
+| Hillegass Ave, median block NB / SB | 110 / 168 | 98 / 142 (82 / 149) |
+| Colby St whole street NB / SB | 102 / 39 | 49 / 95 |
+| Colby St NB to Alcatraz Ave west | 131 | 6 |
+| Colby St SB to Claremont Ave northeast | 75 (doubtful reading) | 2 |
+| Entries from the Telegraph Ave side | 264 | 407 (448) |
+| Entries from Claremont Ave and Forest St | 505 | 630 (565) |
+
+The northbound shortfall on Colby St is at its north end. The count has 164 cars on the last block and 131 of them turning left onto Alcatraz Ave; the model has 61 and 6. In the model the northbound traffic leaves Colby St for 60th to 63rd St and reaches Telegraph Ave there. OSM tags the junction as the network has it: stop signs on Colby St and on Hillegass Ave, none on Alcatraz Ave. The last block has a mean delay of 25 s at 63 veh/h, and the gap formula gives a left turn across the 1,000 veh/h of Alcatraz Ave a capacity near 220 veh/h, so the counted 164 are possible but slow, and the router sends drivers where it is quicker. Nothing in the simulator was found wrong at this junction, and the yield rules of D31 did not move the volumes. The turn from Colby St southbound toward Claremont Ave northeast is open since D25 and carries 2 veh/h; no origin and destination pair in the demand has a use for it. Both stay open as questions about the routes drivers take, which the model has no observed paths for.
+
+### Refit on the straightened geometry (D33)
+
+Rule set before the runs: ship the refit only if D16 holds in all three periods with the final simulator. `npm run data` wrote the same network file (same hash) and a demand that differs by about 3% in total (AM 20,844 to 20,108 veh/h, midday 15,340 to 14,886, PM 23,442 to 24,166; the fit stops by stalling in every period).
+
+| Period | Kept demand: removals per hour, backlog, speed | Refit: removals per hour, backlog, speed |
+| --- | --- | --- |
+| PM peak | 0.70 (0 to 3), 0.50% (10 of 10), 7.94 | 4.20 (0 to 13), 0.79% (9 of 10), 7.14 |
+| AM peak | 0.00, 0.03% (10), 8.98 | 0.20 (0 to 2), 0.04% (10), 8.87 |
+| Midday | 0.00, 0.00% (10), 10.02 | 0.00, 0.00% (10), 9.89 |
+
+The refit puts more traffic on the two streets in the PM (Colby St medians 160 northbound and 205 southbound, Hillegass Ave 115 and 182) and brings the headline shares 2 to 5 points closer, but it fails D16 in the PM peak. The kept demand stays, and the fit reports in `data/demand` are the kept ones. The cross-validation demand in `target/validation` now belongs to the refit, so the out-of-sample assessment was not rerun; `rockridge.assessment-validation.md` is still the thirteenth round's.
+
+### Ten-seed assessment at the end of the round
+
+| Period | Start of the round: removals per hour / backlog (seeds under 2%) | End: removals per hour (min to max) | End: backlog (seeds under 2%) | Arterial speed (m/s) | Rule D16 |
+| --- | --- | --- | --- | --- | --- |
+| PM peak | 5.40 / 0.72% (10 of 10) | 0.70 (0 to 3) | 0.50% (10 of 10) | 7.94 | holds |
+| AM peak | 0.40 / 0.03% (10 of 10) | 0.00 | 0.03% (10 of 10) | 8.98 | holds |
+| Midday | 0.00 / 0.01% (10 of 10) | 0.00 | 0.00% (10 of 10) | 10.02 | holds |
+
+No seed adds more than 2 points of backlog in the second half. PM over 120 minutes: 1.15 removals per hour (0 to 2.5), backlog 0.96% with every seed under 2% (the worst at 1.98%), no runaway growth, 7.51 m/s; in the thirteenth round it was 12.90, 1.96% and 6 of 10. The two-hour run is reported beside the rule and is just over its removal limit.
+
+Headline shares, PM, modeled against observed: Hillegass Ave NB from the freeway 68.5 (47), Colby St NB from the freeway 77.0 (47), Hillegass Ave SB to the freeway 78.1 (68), Colby St SB to the freeway 70.1 (45). None is within 10 points; Hillegass Ave SB misses by 10.1 (it was 76.7 at the start of the round). Count stations on the simulator's flows, PM: fitted 87 of 120 with GEH below 5 (73%) and 104 in the size bands (87%, so the pooled rule is met by the bands); interior blocks 71 of 89 (80%) fitted and 14 of 18 (78%) held out; other stations 16 of 31 (52%) fitted and 5 of 13 (38%) held out.
+
+Status under D18: stability holds in every period, the share rule fails, so the area stays `uncalibrated`. No period fails D16, so none is marked experimental any more; midday stays the default.
+
+### What remains
+
+- The 52nd St off-ramp carries 524 of 1,278 veh/h and the Clifton St ramp 1.6 times its count. It needs a turning count or the signal plan at 52nd St and Shattuck Ave, and lane choice that looks further than one link.
+- The four headline shares are 10 to 30 points too high: the traffic on Colby St and Hillegass Ave is mostly freeway traffic in the model.
+- Colby St northbound loses its traffic before Alcatraz Ave; the Colby St turn toward Claremont Ave northeast has no flow.
+- `YIELD_FALLBACK_S` is 90 s because 150 s, which fits the gap formula better, costs stability. The PM peak passes D16 with 0.70 against 1.0 and the two-hour run does not.
+- Single removals recur at MLK Jr Way and 52nd St, where left-turners stand in all four lanes of a 32 m approach, and at Ward St and Dana St, where a car makes a U-turn at the gate stub.
+- The cross-validation run and the proposal searches have to be rerun on this simulator.
+
 ## Thirteenth round: the 52nd Street off-ramp, forks, gate queues, sharp turns (task 17)
 
 Decisions D23 to D25 in `design.md`. The question: why does the 52nd Street off-ramp discharge 559 veh/h in the simulator against 1,278 counted, and does it explain the PM failure of the ten-seed rule (2.5 removals per hour, 3.88% backlog)? PM peak, seeds 1 to 10, scale 1.0, 60 minutes, initial loading on.
