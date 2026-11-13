@@ -108,7 +108,7 @@ function tick() {
       if (isFinishedAt(scenario.time())) { running = false; due = 0; pending = 0; postFrame(); postStats(); }
       else {
         post({ t: 'progress', time: scenario.time(), epoch });
-        if (lastTick - lastStats >= 1000) { postFrame(); postStats(); }
+        if (lastTick - lastStats >= 1000) { postFrame(); lastStats = lastTick; }
       }
     } catch (e) {
       running = false;
@@ -183,8 +183,8 @@ ctx.onmessage = (ev: MessageEvent<ToWorker>) => {
   try {
     switch (m.t) {
       case 'init': void init(m); break;
-      case 'run': running = m.running; lastTick = performance.now(); due = 0; resetWindow(); postFrame(); break;
-      case 'speed': speed = m.speed; due = 0; pending = 0; resetWindow(); postFrame(); break;
+      case 'run': running = m.running; lastTick = performance.now(); due = 0; resetWindow(); postFrame(); postStats(); break;
+      case 'speed': speed = m.speed; due = 0; pending = 0; resetWindow(); postFrame(); postStats(); break;
       case 'config':
         epoch++;
         cfg = { ...cfg, period: m.period, demandScale: m.demandScale };

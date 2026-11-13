@@ -13,7 +13,7 @@ The UI SHALL show the study area's streets with moving vehicles, signal states a
 - **THEN** the Rockridge network loads and vehicles begin moving without further input
 
 ### Requirement: Playback control
-Users SHALL be able to pause, resume, change simulation speed, choose the time period and reset. Speeds SHALL be 1x, 5x, 20x, 60x and Instant, and a new session SHALL start at 20x. A run SHALL cover one simulated hour of the chosen period and then stop, with the baseline and the scenario covering identical time; the user SHALL be able to run it again.
+Users SHALL be able to pause, resume, change simulation speed, choose the time period and reset. Speeds SHALL be 1x, 5x, 20x, 60x and Max, and a new session SHALL start at 20x. A run SHALL cover one simulated hour of the chosen period and then stop, with the baseline and the scenario covering identical time; the user SHALL be able to run it again.
 
 #### Scenario: Run reaches the end of the hour
 - **WHEN** the simulation clock reaches one simulated hour
@@ -31,19 +31,19 @@ Users SHALL be able to pause, resume, change simulation speed, choose the time p
 - **WHEN** the user's system prefers reduced motion
 - **THEN** the simulation starts paused and the overlay conveys traffic state without animation
 
-#### Scenario: Instant
-- **WHEN** the user chooses Instant, with or without interventions
-- **THEN** both runs advance to the end of the hour without drawing every frame, the progress bar and a status note show how far they are, the page stays responsive, and when they finish the map shows the final state with the end-of-run results and overlays
+#### Scenario: Max
+- **WHEN** the user chooses Max, with or without interventions
+- **THEN** both runs advance to the end of the hour without drawing every frame, the progress bar and a status note show how far they are, the page stays responsive, the overlay and results are not redrawn from partial averages on the way, and when they finish the map shows the final state with the end-of-run results and overlays
 
-#### Scenario: Stopping an Instant run
-- **WHEN** the user pauses or chooses another speed during an Instant run
+#### Scenario: Stopping a Max run
+- **WHEN** the user pauses or chooses another speed during a Max run
 - **THEN** stepping stops within a fraction of a second at the time reached and continues from there at the chosen speed
 
 #### Scenario: Same results at any speed
-- **WHEN** the same period, demand, seed and scenario run at Instant and at 60x
+- **WHEN** the same period, demand, seed and scenario run at Max and at 60x
 - **THEN** the results and each street's overlay values at the end are identical
 
-#### Scenario: Instant and links
+#### Scenario: Max and links
 - **WHEN** a scenario link is created or opened
 - **THEN** it carries no speed and works as before
 

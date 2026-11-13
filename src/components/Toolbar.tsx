@@ -94,7 +94,7 @@ export function Playback(p: PlaybackProps) {
             {p.finished && <span>Run again</span>}
           </button>
           <div className="pb-pop-wrap" ref={speedRoot}>
-            <button type="button" className="btn speed-btn" aria-expanded={speedMenu} aria-controls={speedId} aria-label={isInstant(p.speed) ? 'Simulation speed: instant' : `Simulation speed ${p.speed} times`} title="Simulation speed" onClick={() => setSpeedMenu((o) => !o)}>
+            <button type="button" className="btn speed-btn" aria-expanded={speedMenu} aria-controls={speedId} aria-label={isInstant(p.speed) ? 'Simulation speed: maximum' : `Simulation speed ${p.speed} times`} title="Simulation speed" onClick={() => setSpeedMenu((o) => !o)}>
               {speedLabel(p.speed)} <Chevron up={speedMenu} />
             </button>
             <div id={speedId} className={`pb-menu ${speedMenu ? 'open' : ''}`} inert={!speedMenu} role="group" aria-label="Simulation speed">

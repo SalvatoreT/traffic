@@ -30,7 +30,7 @@ export type FromWorker =
     }
   /** `achievedSpeed`: sim seconds advanced per wall second over the last window while running (null when paused or just changed). */
   | { t: 'stats'; time: number; comparing: boolean; scenario: SimStats; baseline: SimStats; achievedSpeed: number | null; epoch: number }
-  /** Simulated time reached during an Instant run, which draws no frames. */
+  /** Simulated time reached during a Max run, which draws no frames. */
   | { t: 'progress'; time: number; epoch: number }
   | { t: 'error'; message: string };
 

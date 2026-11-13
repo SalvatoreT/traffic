@@ -26,5 +26,5 @@ export function speedNoteText(requested: number, shown: number | null): string {
 /** Speed value meaning "run to the end of the period without drawing frames". */
 export const INSTANT = Infinity;
 export const isInstant = (speed: number): boolean => speed === INSTANT;
-export const speedLabel = (speed: number): string => (isInstant(speed) ? 'Instant' : `${speed}×`);
+export const speedLabel = (speed: number): string => (isInstant(speed) ? 'Max' : `${speed}×`);
 export const DEFAULT_SPEED = 20;

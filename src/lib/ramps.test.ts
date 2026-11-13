@@ -37,7 +37,7 @@ describe('change width', () => {
 });
 
 describe('drawn intensity', () => {
-  it('depends only on the final stats, not on the updates before them (Instant and 60x runs draw alike)', () => {
+  it('depends only on the final stats, not on the updates before them (Max and 60x runs draw alike)', () => {
     const drawn = (flows: number[]) => {
       let prev = -3;
       for (const f of flows) {

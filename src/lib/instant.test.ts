@@ -16,12 +16,12 @@ function runTo(sim: ReturnType<typeof make>, chunk: number, end = RUN_SECONDS) {
 }
 
 describe('speeds', () => {
-  it('keeps 1, 5, 20 and 60 and adds Instant; opens at 20', () => {
+  it('keeps 1, 5, 20 and 60 and adds Max; opens at 20', () => {
     expect(SPEEDS).toEqual([1, 5, 20, 60, INSTANT]);
     expect(DEFAULT_SPEED).toBe(20);
     expect(isInstant(INSTANT)).toBe(true);
     expect(isInstant(60)).toBe(false);
-    expect(speedLabel(INSTANT)).toBe('Instant');
+    expect(speedLabel(INSTANT)).toBe('Max');
     expect(speedLabel(20)).toBe('20×');
   });
 });
