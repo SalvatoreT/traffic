@@ -118,6 +118,8 @@ pub struct Multi<'a> {
     pub jobs: usize,
     pub out: PathBuf,
     pub keep: Option<PathBuf>,
+    /// False for --no-write: print the summary and leave no report files (kept seeds stay).
+    pub write: bool,
     pub stem_prefix: String,
     pub targets: &'a Value,
 }
@@ -162,7 +164,16 @@ fn run_seeds(m: &Multi) -> Vec<(u64, Value)> {
 }
 
 fn seeds_dir(m: &Multi) -> PathBuf {
-    m.keep.clone().unwrap_or_else(|| m.out.join(".seeds-tmp"))
+    m.keep.clone().unwrap_or_else(|| scratch_dir(m.write, &m.out, std::process::id()))
+}
+
+/// Where per-seed reports go when they are not kept: beside the reports, or outside them for --no-write.
+fn scratch_dir(write: bool, out: &Path, pid: u32) -> PathBuf {
+    if write {
+        out.join(".seeds-tmp")
+    } else {
+        std::env::temp_dir().join(format!("calibrate-seeds-{pid}"))
+    }
 }
 
 fn num(v: &Value) -> f64 {
@@ -270,8 +281,6 @@ pub fn run(m: Multi) {
         let _ = writeln!(md, "| {} | {} | {} | {} | {} | {} | {} | {} to {} |", mt.group, mt.name, unit, f(s.mean * scale), f(s.sd * scale), f(s.min * scale), f(s.max * scale), f(s.lo * scale), f(s.hi * scale));
     }
     let _ = writeln!(md, "\nPer-seed detail: `{}-seed{}.md` (seed {} in full).", m.stem_prefix, a, a);
-    std::fs::create_dir_all(&m.out).ok();
-    std::fs::write(m.out.join(format!("{stem}.md")), &md).expect("write summary md");
     let js = json!({
         "seeds": seeds, "minutes": minutes,
         "stability": {
@@ -280,11 +289,14 @@ pub fn run(m: Multi) {
         },
         "metrics": metrics.iter().map(|mt| json!({"group": mt.group, "name": mt.name, "unit": mt.unit, "values": mt.vals.iter().map(|x| if x.is_finite() { json!((x * 1000.0).round() / 1000.0) } else { Value::Null }).collect::<Vec<_>>(), "stat": st_json(&stat(&mt.vals))})).collect::<Vec<_>>(),
     });
-    std::fs::write(m.out.join(format!("{stem}.json")), serde_json::to_string_pretty(&js).unwrap()).expect("write summary json");
-    // First seed in full, without the per-link arrays.
-    let prefix = m.stem_prefix.clone();
     let src_dir = seeds_dir(&m);
-    let _ = copy_detail(&m, &src_dir, &prefix, a, first);
+    if m.write {
+        std::fs::create_dir_all(&m.out).ok();
+        std::fs::write(m.out.join(format!("{stem}.md")), &md).expect("write summary md");
+        std::fs::write(m.out.join(format!("{stem}.json")), serde_json::to_string_pretty(&js).unwrap()).expect("write summary json");
+        // First seed in full, without the per-link arrays.
+        let _ = copy_detail(&m, &src_dir, &m.stem_prefix, a, first);
+    }
     if m.keep.is_none() {
         std::fs::remove_dir_all(&src_dir).ok();
     }
@@ -312,6 +324,13 @@ fn copy_detail(m: &Multi, src: &Path, prefix: &str, seed: u64, run: &Value) -> s
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn no_write_keeps_seed_files_out_of_the_report_directory() {
+        let out = Path::new("data/calibration/reports");
+        assert!(scratch_dir(true, out, 7).starts_with(out));
+        assert!(!scratch_dir(false, out, 7).starts_with(out));
+    }
 
     #[test]
     fn seed_lists() {

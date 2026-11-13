@@ -349,7 +349,7 @@ fn main() {
         }
         let out = args.out.clone().unwrap_or_else(|| root.join("data/calibration/reports"));
         let prefix = format!("{}-{}-s{}", args.area, args.period, args.scale);
-        multi::run(multi::Multi { exe: std::env::current_exe().expect("exe"), base_args: base, seeds, jobs: args.jobs, out, keep: args.keep_seeds.clone(), stem_prefix: prefix, targets: &targets });
+        multi::run(multi::Multi { exe: std::env::current_exe().expect("exe"), base_args: base, seeds, jobs: args.jobs, out, keep: args.keep_seeds.clone(), write: args.write, stem_prefix: prefix, targets: &targets });
         return;
     }
     let read = |p: PathBuf| std::fs::read_to_string(&p).unwrap_or_else(|e| usage(&format!("cannot read {}: {e}", p.display())));
