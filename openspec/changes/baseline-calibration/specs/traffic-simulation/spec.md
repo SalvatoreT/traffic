@@ -160,3 +160,18 @@ A driver SHALL NOT wait for a conflicting lane whose head stands at the stop lin
 #### Scenario: Heavy cross flow at speed
 - **WHEN** a minor through movement or left turn faces 1,000 veh/h per direction on the major street
 - **THEN** its capacity is within the range of the gap-acceptance formula [Brilon1999] (validation cases e6 and e9)
+
+### Requirement: Pedestrians at a signal cross in the walk interval of the parallel phase
+At a signal each crosswalk SHALL be served with the vehicular phase that runs parallel and adjacent to it, a phase of a neighboring leg that gives the crossed leg no green [FHWA-STM2008]. A pedestrian SHALL step off only in that phase's walk interval: enough green is left to clear the crossing at 1.22 m/s, or the green began less than 7 s ago [FHWA-STM2008].
+
+#### Scenario: Arriving along the street to be crossed
+- **WHEN** a pedestrian reaches a signal along the leg whose crosswalk they need
+- **THEN** they wait for the cross street's phase and do not step off while the crossed approach has green
+
+#### Scenario: Arriving late in the phase
+- **WHEN** a pedestrian reaches the curb after the clearance interval of the parallel phase has begun
+- **THEN** they wait for the next walk interval, and the crosswalk is clear when the crossed approach gets green
+
+#### Scenario: No phase without green for the crossed leg
+- **WHEN** every neighboring phase also serves the crossed leg
+- **THEN** the pedestrian waits for a gap as at an unsignalized crossing

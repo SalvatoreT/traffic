@@ -231,3 +231,10 @@ Every `holdoutEvery`-th counted block along each street and direction, ordered a
 #### Scenario: Out-of-sample interior blocks
 - **WHEN** the cross-validation fit runs without the held-out blocks
 - **THEN** the held-out interior blocks are scored on that fit, apart from the arterial, ramp and gate stations
+
+### Requirement: A count station sits on the street its record counts
+A state highway count SHALL constrain the highway's own links on the side of the cross street the record names (back or ahead), and SHALL NOT be applied to the cross street. A gate without a count of its own street SHALL take the class default as an ASSUMPTION.
+
+#### Scenario: Highway count named after a cross street
+- **WHEN** a Caltrans record for SR-13 is described as "Claremont Avenue" with an ahead AADT
+- **THEN** the station is the block of Ashby Avenue on the ahead side of Claremont Avenue, and the Claremont Avenue gate keeps its class default

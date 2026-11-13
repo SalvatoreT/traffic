@@ -260,3 +260,43 @@ D33 held the refit back because the PM peak failed the stability rule (4.20 remo
 
 ### D35 The 52nd St off-ramp at Shattuck Ave is labeled and left (user decision, 2026-11-13, task 20)
 After D26 and D32, six lane and gate variants did not bring the ramp near its count. Tuning stops until a turning count or a signal plan exists for 52nd St and Shattuck Ave. The gap (about 524 veh/h modeled against 1,278 counted) is stated as a known limit in the area's calibration note, which the app shows, and in the record. Task 19.8 stays open for the data.
+
+### D36 A highway count sits on the highway (sixteenth round, task 21)
+25 of the 42 PM removals over ten seeds on the shipped refit sat around Claremont Ave and Ashby Ave. The trace (`CAL_TRACE`, seed 1, minutes 8 to 12) leads back to the all-way stop at Claremont Ave and Russell St, which four single-lane approaches entered with 1,406 veh/h. The demand put it there. The Caltrans record "SR-13 at Claremont Ave" (ahead AADT 23,500, [CaltransAADT]) counts SR-13, and its ahead side is Ashby Ave west of Claremont Ave. Since the first rounds it had stood for Claremont Ave with an assumed factor of 0.6. On the wider network it became a station on the block of Claremont Ave next to the junction, and the rule that a count is used once (D14) dropped the gate's constraint in favor of that link. Most of the gate's traffic reaches it over a slip road and does not use the block, so the fit raised what did and nothing held the gate: 1,136 veh/h left by it in the PM peak against a target of 698.
+Decisions:
+- The record is a station on Ashby Ave on its ahead side (`adtOverrides`, street `ashby`, a point 65 m west of the junction so that the nearest-link rule picks that block), with no factor.
+- The Claremont Ave gate north of Ashby Ave has no count and takes the secondary class default of 9,000 ADT (ASSUMPTION).
+- PM peak, seeds 1 to 10, old simulator: 4.20 removals per hour before, 1.40 after. Demand hash a4952df61abc41fd (17c955264f97b476 before); the network file is unchanged.
+- D34 stands: the refit is not reverted, and this is a correction of one of its inputs.
+
+### D37 Pedestrians at a signal cross with the parallel phase, in its walk interval (task 21)
+Seed 1 of the PM peak grew its backlog in the second half because MLK Jr Way northbound at 52nd St lost a third of its discharge and the queue reached the MLK Jr Way off-ramp. The trace shows four lanes with a green signal and five or six pedestrians in the crosswalk in front of them for the whole green. Two causes, both in `ped.rs`: a pedestrian took the phase of the street they had walked along, so one who arrived along a leg and crossed that leg stepped off on its green; and a pedestrian stepped off at any moment of the green and was still crossing in the next phase.
+Decisions:
+- A crosswalk is served with the vehicular phase parallel and adjacent to it [FHWA-STM2008] (section 4.2.1): a phase of a neighboring leg that gives the crossed leg no green. Where no such phase exists the pedestrian waits for a gap.
+- A pedestrian steps off only while enough green is left for the clearance time, crossing width over 1.22 m/s (4.0 ft/s), or within the first 7 s of the green [FHWA-STM2008] (section 5.3.3, Table 5-8). The plans do not lengthen a green for pedestrians, so the 7 s keep a wide crossing usable under a short green (ASSUMPTION for that exception).
+- Test `pedestrians_at_a_signal_cross_a_street_only_while_it_has_no_green`. Validation 47 of 58, cases j2 and j3 at 0.87 and 0.79 (0.85 and 0.75).
+- With D36: PM 1.80 removals per hour (0 to 4), backlog under 2% in all ten seeds, no runaway seed, 7.60 m/s; AM 0.10; midday 0.00.
+
+### D38 Measured and not kept: the left-turner's gap test at signals (task 21)
+What is left in the PM peak starts where Adeline St, MLK Jr Way and Stanford Ave meet (node 487). MLK Jr Way traffic bound north turns 93 degrees left there across three lanes of Adeline St in a shared phase, and each left-turner enters in front of an Adeline St queue head that the turner before it held back, so Adeline St southbound carries 556 veh/h at 168 s of delay and backs up to Alcatraz Ave.
+- An arrival time that lets a vehicle with a green signal accelerate ([Treiber2014] `a`) frees Adeline St (1,154 veh/h) and starves MLK Jr Way northbound (355 veh/h), gives 2.10 PM removals per hour, and takes validation case b4 from 0.88 to 0.66 of the gap formula [Brilon1999]. Not kept: the validation suite comes first.
+- Treating a queue head within 10 m of a green signal as no gap gave 0.50 PM removals per hour on seeds 1 to 10 and 1.80 on seeds 11 to 20 (1.70 without it), with b4 failing at 0.84 and b9 passing at 0.86. Not kept: the gain was one draw of seeds. The further seeds were a check on the variant; the baseline is still judged on seeds 1 to 10 (D16).
+- The trace now names the movement that holds a head vehicle (`held by`), which is how this was found.
+
+### D39 Colby St northbound at Alcatraz Ave: no defect, a question of route times (task 21)
+The left turn onto Alcatraz Ave west (131 counted, 5 modeled), the last block (164, 57) and the turn toward Claremont Ave northeast (75, 0) are in the fit, the movements at weight 0.5 and the block at weight 1; the fit takes the flows on the left turn to its upper factor bound of 3 and stops at 6. The router's cost for the turn (19.9 s) follows the rule of every minor approach, and the simulator's delay there is 41 s. No PM trip in the demand has the left turn on its cheapest route; 26 veh/h are within 5% of their cheapest route and 140 veh/h within 10%, with a perceived-cost noise of 8%. The trips the count needs are freeway trips to Telegraph Ave north of Alcatraz Ave (about 165 veh/h within 10% to 13%), which the model sends up Telegraph Ave because free-flow times make it about 10% quicker. Nothing was changed: raising a cost on Telegraph Ave or lowering one on Colby St to meet the count would be a fit to one number with no travel time behind it.
+
+### D40 Known limits at the close of the change (task 21)
+The change is archived with the area `uncalibrated` and the PM peak experimental. Each limit names what would resolve it.
+1. PM stability. D16 fails on removals alone: 1.80 per hour over 60 minutes, 2.40 over 120. Most start at Adeline St, MLK Jr Way and Stanford Ave and at Adeline St and Alcatraz Ave (D38). Needs the signal phasing of both junctions and a turning count at the first. This closes the stability items of every round (D4 as first written is superseded by D16).
+2. Permissive left turns enter ahead of queued opposing vehicles, and without that their capacity is 0.66 of the gap formula (D38). Needs the follow-up headway and pocket rules checked against a saturation study or the HCM procedure, which is not verified in `docs/references.md`.
+3. The 52nd St off-ramp at Shattuck Ave: 473 veh/h against 1,278, and the Clifton St ramp at 1.6 times its count (D35). Needs a turning count or the signal plan.
+4. Headline freeway shares (D5): Hillegass Ave NB 71 against 47, Colby St NB 78 against 47, Colby St SB 61 against 45; Hillegass Ave SB is within 10 points. Needs origins and destinations or paths of the traffic on the two streets.
+5. Colby St northbound at Alcatraz Ave, the turn toward Claremont Ave northeast, and the cross streets to Telegraph Ave at 1.5 to 1.9 times their counts (D39). Needs PM travel times on Telegraph Ave between Aileen St and Alcatraz Ave, or the origins and destinations of the traffic on the last block of Colby St, and a recount of the Colby St exits at Claremont Ave.
+6. Ashby Ave at Claremont Ave carries 0.57 of the hourly volume derived from its AADT with K = 0.09. Needs a peak-hour count.
+7. Claremont Ave north of Ashby Ave has no count (D36).
+8. `YIELD_FALLBACK_S` is 90 s where 150 s fits the gap formula (D31). Needs observed delays on the stop-controlled approaches to Telegraph Ave and Market St.
+9. The interior streets have one count day and one hour per period, and the midday targets are scaled (D20). Needs a second count day and a midday hour.
+10. Leave-one-corridor-out cross-validation was not run (D17). It needs no data: nine fits and their seed runs.
+11. A U-turn at the gate stub of Dana St at Ward St takes part in single removals (D32).
+Publishing the regenerated data to R2 and rerunning the proposal searches on the new demand hash are done by the lead session after this change; both are outside it.
