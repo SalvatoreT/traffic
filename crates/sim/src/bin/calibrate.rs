@@ -380,6 +380,7 @@ fn main() {
         note: String,
         from: Vec<(String, f64, Option<f64>)>,
         to: Vec<(String, f64, Option<f64>)>,
+        observed_vph: Option<f64>,
     }
     let shares = |v: &Value| -> Vec<(String, f64, Option<f64>)> {
         v.as_array()
@@ -392,7 +393,7 @@ fn main() {
         let dir = t["direction"].as_str().unwrap_or("NB");
         let between: Vec<String> = t["between"].as_array().map(|a| a.iter().filter_map(|x| x.as_str().map(String::from)).collect()).unwrap_or_default();
         let (links, note) = resolve_block(&net, street, dir, &between);
-        tgts.push(Target { label: format!("{street} {dir}"), links, note, from: shares(&t["from"]), to: shares(&t["to"]) });
+        tgts.push(Target { label: format!("{street} {dir}"), links, note, from: shares(&t["from"]), to: shares(&t["to"]), observed_vph: t["observedVehPerHour"][if args.period == "pm_peak" { "pm_peak" } else { "am_peak" }].as_f64() });
     }
 
     // ---- freeway ramps: surface nodes touched by motorway-class and surface links
@@ -537,6 +538,7 @@ fn main() {
 
     // ---- select-link shares
     let pm = args.period == "pm_peak";
+    let pm_period = pm;
     let mut rows: Vec<ShareRow> = Vec::new();
     let mut notes: Vec<String> = Vec::new();
     for t in &tgts {
@@ -581,6 +583,21 @@ fn main() {
                 });
             }
         }
+    }
+
+    // ---- through cars on the counted blocks: modeled against observed volume times the observed freeway share
+    // Rows: block, observed volume (veh/h), freeway share, expected through (volume x share), modeled through cars per hour, modeled trips to or from a freeway per hour.
+    let mut through_rows: Vec<(String, f64, f64, f64, f64, f64)> = Vec::new();
+    for t in &tgts {
+        let Some(vol) = t.observed_vph else { continue };
+        let Some((_, share, pm)) = t.from.iter().chain(t.to.iter()).find(|(via, _, _)| matches!(parse_via(via), Via::Freeway)) else { continue };
+        let share = if pm_period { pm.unwrap_or(*share) } else { *share };
+        let set: std::collections::HashSet<u32> = t.links.iter().copied().collect();
+        let on: Vec<&SelectLinkRecord> = recs.iter().filter(|r| r.hits.iter().any(|h| set.contains(&h.0))).collect();
+        let per_h = 60.0 / args.minutes;
+        let thr = on.iter().filter(|r| r.through).count() as f64 * per_h;
+        let fw = on.iter().filter(|r| r.origin_freeway || r.dest_freeway).count() as f64 * per_h;
+        through_rows.push((t.label.clone(), vol, share, vol * share, thr, fw));
     }
 
     // ---- ramp shares
@@ -850,6 +867,12 @@ fn main() {
     let _ = writeln!(md, "| Pedestrian | {} | {} | {:.0} | mean crossing delay {:.1} s |", m.modes.pedestrian.in_network, m.modes.pedestrian.completed_trips, m.modes.pedestrian.mean_trip_time, m.modes.pedestrian.mean_crossing_delay);
     let v = &m.vulnerable;
     let _ = writeln!(md, "\nVulnerable road users (surrogate indicators): pedestrian conflicts {}, bicycle conflicts {}, close passes {}, pedestrian injury-risk index {:.3}, bicycle injury-risk index {:.3} (proxy), mean vehicle speed at pedestrian encounters {:.2} m/s.\n", v.ped_conflicts, v.bike_conflicts, v.close_passes, v.ped_injury_risk_index, v.bike_injury_risk_index, v.mean_vehicle_speed_at_ped_encounter);
+    let _ = writeln!(md, "\n## Through cars on the counted blocks (a car is through when neither trip end is in the study area)\n");
+    let _ = writeln!(md, "Expected = observed block volume times the observed freeway share of the street (the headline share of the targets file). Modeled through = select-link trips with no end in the study area, per hour. Modeled freeway = select-link trips from or to a freeway node, per hour.\n");
+    let _ = writeln!(md, "| Block | Observed volume (veh/h) | Observed freeway share | Expected through (veh/h) | Modeled through (veh/h) | Modeled freeway trips (veh/h) |\n| --- | --- | --- | --- | --- | --- |");
+    for (l, vol, sh, ex, thr, fw) in &through_rows {
+        let _ = writeln!(md, "| {l} | {vol:.0} | {} | {ex:.0} | {thr:.0} | {fw:.0} |", pct1(*sh));
+    }
     let _ = writeln!(md, "\n## Select-link shares: modeled vs observed (design D5: headline = freeway shares, tolerance +/-10 pp)\n");
     for n in &notes {
         let _ = writeln!(md, "- {n}");
@@ -970,6 +993,7 @@ fn main() {
             "modes": serde_json::to_value(&m.modes).unwrap_or(Value::Null),
             "vulnerable": serde_json::to_value(&m.vulnerable).unwrap_or(Value::Null),
             "series": series.iter().map(|s| json!({"tMin": s.t / 60.0, "vehicles": s.veh, "backlog": s.backlog, "completed": s.completed, "removed": s.removed, "arterialSpeed": s.art_speed})).collect::<Vec<_>>(),
+            "throughCheck": through_rows.iter().map(|(l, vol, sh, ex, thr, fw)| json!({"block": l, "observedVehPerHour": vol, "freewayShare": sh, "expectedThrough": ex, "modeledThrough": thr, "modeledFreewayTrips": fw})).collect::<Vec<_>>(),
             "shares": rows.iter().map(|r| json!({
                 "block": r.target, "side": r.side, "via": r.via, "observed": r.observed, "observedPm": r.observed_pm,
                 "modelled": if r.modeled.is_nan() { Value::Null } else { json!(r.modeled) }, "n": r.n, "headline": r.headline,

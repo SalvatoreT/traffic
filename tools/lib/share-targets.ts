@@ -10,7 +10,7 @@ export interface ShareLink { id: number; from: number; to: number; name: string;
 export interface ShareNode { id: number; x: number; y: number }
 
 export interface Targets {
-  selectLink?: { street: string; direction: string; between?: string[]; from?: { via: string; share: number; pmPeakShare?: number }[]; to?: { via: string; share: number; pmPeakShare?: number }[] }[];
+  selectLink?: { street: string; direction: string; between?: string[]; observedVehPerHour?: Record<string, number>; from?: { via: string; share: number; pmPeakShare?: number }[]; to?: { via: string; share: number; pmPeakShare?: number }[] }[];
   freewayRamp?: { location?: string; side?: string; ontoFreewayFromNorth?: { via: string; share: number }[]; fromFreewayGoingNorth?: { via: string; share: number }[] };
 }
 

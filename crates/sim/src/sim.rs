@@ -288,6 +288,8 @@ pub struct SelectLinkRecord {
     /// A motorway-class link is attached to the origin / destination node.
     pub origin_freeway: bool,
     pub dest_freeway: bool,
+    /// Neither trip end is in the study area.
+    pub through: bool,
     /// False for trips still in the network: their remaining planned route is appended to `streets`.
     pub completed: bool,
     /// Distinct consecutive named streets over the whole trip, in order (unnamed links are skipped).
@@ -662,6 +664,7 @@ impl Simulation {
             dest: v.dest,
             origin_freeway: sl.node_fw[v.origin as usize],
             dest_freeway: sl.node_fw[v.dest as usize],
+            through: v.through,
             completed,
             streets: streets
                 .iter()
