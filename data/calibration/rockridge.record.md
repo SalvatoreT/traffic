@@ -89,6 +89,97 @@ Claremont Ave: checked end to end. OSM lanes (3 with one forward and one backwar
 
 Ramp junctions: after joining all four SR-24 terminals are single signalized nodes (Aileen/Telegraph and Clifton/Claremont off-ramps, Hudson/Claremont and 56th/Telegraph on-ramps) with 2-lane ramp approaches at 35 mph. Mean discharge in the PM peak (seeds 1 to 3, measured before the third round): Aileen off-ramp 584 veh/h (offered 656), Clifton off-ramp 914 veh/h (offered about 1,025), on-ramps 783 and 555 veh/h. That is 290 to 460 veh/h per lane averaged over the hour; the signal gives the ramp 30 to 45% of the cycle and the shortfall is downstream spill-back on Claremont and Telegraph, not the ramp signal itself. Before the third round the remaining gridlock removals were mostly vehicles queued on the 4-lane freeway stub behind the single-lane Clifton off-ramp (26 of about 45 removals over six seeds at scale 0.3). The third round checked the ramp lanes against OSM: the off-ramps are tagged one lane for most of their length and two lanes (turn lanes left | left;through;right at Clifton, left | right at Aileen) on the final way before the signal, and the importer keeps that per segment (a test covers it), so no lane count is lost. After step M the stub accounts for about one removal per run.
 
+## Fifteenth round: the refit ships, the 52nd Street ramp is labeled (task 20)
+
+Decisions D34 and D35 in `design.md`, both the user's, 2026-11-13. D34 ships the demand refit on the straightened geometry that D33 had held back, and accepts that the PM peak fails the stability rule. D35 stops tuning the 52nd St off-ramp at Shattuck Ave until a turning count or a signal plan exists. The simulator and the network did not change in this round (network hash unchanged, validation suite unchanged at 47 of 58). `npm run data` refit the demand: the shipped file now hashes to 17c955264f97b476 (it was b09ae43bb933ef43) and offers AM 20,108, midday 14,886 and PM 24,166 veh/h. Seeds 1 to 10, scale 1.0, 60 minutes, initial loading on, as in the earlier rounds. The ten-seed figures reproduce the refit rows of the fourteenth round to the digit, so the run is deterministic. Older rounds moved to `rockridge.record-archive.md`.
+
+### Stability, before and after
+
+Before is the demand of the fourteenth round (kept), after is the shipped refit.
+
+| Period | Before: removals per hour (min to max) | Before: backlog (seeds under 2%) | Before: arterial speed (m/s) | After: removals per hour (min to max) | After: backlog (seeds under 2%) | After: arterial speed (m/s) | Rule D16 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| PM peak | 0.70 (0 to 3) | 0.50% (10 of 10) | 7.94 | 4.20 (0 to 13) | 0.79% (9 of 10) | 7.14 | fails |
+| AM peak | 0.00 | 0.03% (10 of 10) | 8.98 | 0.20 (0 to 2) | 0.04% (10 of 10) | 8.87 | holds |
+| Midday | 0.00 | 0.00% (10 of 10) | 10.02 | 0.00 | 0.00% (10 of 10) | 9.89 | holds |
+
+PM fails on both counts of the rule: the removals are above 1.0 per hour and seed 1 adds more than 2 points of backlog in the second half (the worst backlog is 2.66%). Completed PM trips per hour are 22,470 (22,672 before). PM is therefore marked experimental again; AM and midday hold and stay unmarked. The area stays `uncalibrated`.
+
+### Headline shares, PM
+
+Freeway shares, modeled against observed (10 points is the tolerance):
+
+| Share | Observed | Before | After |
+| --- | --- | --- | --- |
+| Hillegass Ave NB from the freeway | 47 | 68.5 | 66.7 |
+| Colby St NB from the freeway | 47 | 77.0 | 74.2 |
+| Hillegass Ave SB to the freeway | 68 | 78.1 | 73.2 (within 10) |
+| Colby St SB to the freeway | 45 | 70.1 | 67.0 |
+
+Mean absolute error 21.7 points before, 18.5 after; none of four within 10 points before, one of four after. The shares are still 20 to 27 points too high on three of the four.
+
+### Colby St and Hillegass Ave, PM
+
+Seed mean against the volunteer count:
+
+| Quantity | Counted | Before | After |
+| --- | --- | --- | --- |
+| Colby St, median block NB | 174 | 132 | 161 |
+| Colby St, median block SB | 160 | 190 | 205 |
+| Hillegass Ave, median block NB | 110 | 98 | 115 |
+| Hillegass Ave, median block SB | 168 | 142 | 182 |
+| Colby St, North St to Alcatraz Ave NB | 164 | 61 | 68 |
+| Colby St NB to Alcatraz Ave west | 131 | 6 | 9 |
+| Entries from Alcatraz Ave at Colby St and Hillegass Ave | 360 | 278 | 362 |
+| Corridor ratio, Colby St (modeled / counted, 14 blocks) | 1 | 0.95 | 1.08 |
+| Corridor ratio, Hillegass Ave (8 blocks) | 1 | 0.89 | 1.07 |
+
+The northbound medians now sit within 8% of the counts. The southbound blocks of Colby St run 1.2 to 1.4 times their counts. The north end of Colby St northbound still loses its traffic before Alcatraz Ave (68 against 164 counted, GEH 8.9), and the Colby St turn toward Claremont Ave northeast still carries 1 veh/h against 75.
+
+### Count stations, GEH, PM
+
+Simulator flows, GEH below 5 (size bands in brackets), mean GEH:
+
+| Set | Before | After |
+| --- | --- | --- |
+| All fitted, 120 stations | 87 (104) of 120, 73% (87%), 4.1 | 76 (102) of 120, 63% (85%), 4.6 |
+| All held out, 31 stations | 19 (23), 61% (74%), 5.2 | 18 (21), 58% (68%), 5.8 |
+| Interior blocks, fitted (89) | 71 (88), 80% (99%), 3.2 | 63 (88), 71% (99%), 3.6 |
+| Interior blocks, held out (18) | 14 (17), 78% (94%), 2.9 | 14 (17), 78% (94%), 3.3 |
+| Other stations, fitted (31) | 16 (16), 52% (52%), 6.5 | 13 (14), 42% (45%), 7.3 |
+| Other stations, held out (13) | 5 (6), 38% (46%), 8.3 | 4 (4), 31% (31%), 9.3 |
+
+The pooled fitted-station rule (more than 85% by GEH or size bands) held by the bands before (87%) and is now just short (85%, 102 of 120). The refit trades a few points of GEH across the arterials and ramps for the interior blocks it was after: counts closer on Colby St and Hillegass Ave, farther on the other stations.
+
+### Cross-validation assessment
+
+`rockridge.assessment-validation.md` was rerun on the cross-validation demand of this refit (held-out stations left out of the fit), so it matches the shipped demand. It was the thirteenth round's file before.
+
+| PM peak | Before (thirteenth-round demand) | After (this refit) |
+| --- | --- | --- |
+| Removals per hour (min to max) | 1.80 (0 to 7) | 1.20 (0 to 5) |
+| Backlog | 0.49% (10 of 10) | 0.06% (10 of 10) |
+| Fitted stations, GEH below 5 (size bands) | 87 (104) of 120 | 82 (105) of 120 |
+| Held out, GEH below 5 (size bands), mean GEH | 14 (19) of 31, 45% (61%), 7.9 | 14 (19) of 31, 45% (61%), 7.9 |
+| Interior held out | 11 of 18 (61%), 3.5 | 12 of 18 (67%), 3.6 |
+| Other held out | 3 of 13 (23%), 13.9 | 2 of 13 (15%), 13.8 |
+
+Out of sample the interior blocks hold up (67% by GEH, 94% by bands) and the other stations do not (15%). The cross-validation demand also fails D16 in the PM peak (1.20 per hour), so the instability belongs to the refit and its simulator, not to the held-out stations.
+
+### The 52nd Street off-ramp (D35)
+
+Unchanged by the refit: 524 veh/h modeled against 1,278 counted, and the Clifton St ramp at 1.6 times its count. D35 stops tuning here. The gap is stated as a known limit in the area's calibration note, which the app shows. It reopens when a turning count or the signal plan at 52nd St and Shattuck Ave exists (task 19.8).
+
+### Status under D18
+
+Stability fails in the PM peak and holds in AM and midday; the share rule fails. The area stays `uncalibrated`, `experimentalPeriods` is `["pm_peak"]`, midday stays the default. The `calibration.note` reads: "Colby St and Hillegass Ave volumes are closer to counts, the PM peak is unsteady, and the 52nd St off-ramp carries 524 veh/h against 1,278 counted."
+
+### What remains
+
+- Whatever makes the refit unsteady in the PM peak (4.20 removals per hour, 0 to 13) is not located; D33 and this round only measured it. Task 20.7.
+- `rockridge.assessment-120min.md` and the proposals in `data/proposals` belong to the earlier demand and are stale by hash; the proposal searches need a rerun on this demand.
+- The open items of the fourteenth round (headline shares, Colby St northbound at Alcatraz Ave, the Colby St turn toward Claremont Ave northeast, `YIELD_FALLBACK_S`) stand.
+
 ## Fourteenth round: the Telegraph Ave lock, yielding, the 52nd Street ramp again, refit decision (task 19)
 
 Decisions D30 to D33 in `design.md`. PM peak unless a row says otherwise, seeds 1 to 10, scale 1.0, 60 minutes, initial loading on, the demand file of the thirteenth round. The round starts from the simulator after D27 and D28 (placement on loaded costs, straightened junction ends), which had already moved the figures of the thirteenth round: PM 5.40 removals per hour with the backlog under 2% in all ten seeds (9.40 and 7 of 10 in the thirteenth round), AM 0.40 (1.10).

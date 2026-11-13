@@ -160,3 +160,12 @@
 - [ ] 19.10 `YIELD_FALLBACK_S` at 150 s fits the gap formula (e6 0.99, e9 0.90) and gives 1.30 PM removals per hour; find the minor approaches that need the 90 s floor. The 120-minute PM run has 1.15 removals per hour
 - [ ] 19.11 Rerun the cross-validation assessment (its demand file in `target/validation` belongs to the refit) and the proposal searches on this simulator
 - [ ] 19.12 Removals at MLK Jr Way and 52nd St (left-turners in all four lanes of a 32 m approach) and at Ward St and Dana St (U-turn at a gate stub)
+
+## 20. Ship the refit, label the 52nd Street ramp (fifteenth round)
+- [x] 20.1 Decisions D34 (counts first: ship the refit, PM experimental) and D35 (label and move on at the 52nd St off-ramp) recorded in `design.md`
+- [x] 20.2 Demand refit on the current simulator and straightened geometry with `npm run data` and kept (demand hash 17c955264f97b476; fit reports, audit and stations file regenerated)
+- [x] 20.3 Ten-seed assessment of all periods (PM fails D16 at 4.20 removals per hour, AM 0.20 and midday 0.00 hold), reports and noise file regenerated; cross-validation assessment rerun on the refit's cross-validation demand
+- [x] 20.4 Area `calibration` entry: `uncalibrated`, `experimentalPeriods` `["pm_peak"]`, note with the 52nd St gap; `public/data/*` regenerated
+- [x] 20.5 Record split: rounds one to ten moved unchanged to `rockridge.record-archive.md` (record under 200 KB), fifteenth round added at the top
+- [x] 20.6 `npm test`, `npm run build` and `openspec validate baseline-calibration --strict` green
+- [ ] 20.7 Find what makes the refit unsteady in the PM peak (4.20 removals per hour, 0 to 13) and rerun the 120-minute PM run and the proposal searches on this demand
