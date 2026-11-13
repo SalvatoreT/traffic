@@ -68,7 +68,7 @@
     ]
   },
   "acceptance": {
-    "note": "Thresholds of design decisions D16 to D18 (openspec/changes/baseline-calibration/design.md). Stability is judged over the fixed seed list below on seed means and seed shares; the old rule (zero removals in every seed, backlog under 2%, arterial speed above 4 m/s) is kept in the reports for comparison.",
+    "note": "Thresholds of design decisions D16 to D18 (openspec/changes/archive/2026-11-13-baseline-calibration/design.md). Stability is judged over the fixed seed list below on seed means and seed shares; the old rule (zero removals in every seed, backlog under 2%, arterial speed above 4 m/s) is kept in the reports for comparison.",
     "seeds": "1-10",
     "stability": {
       "maxMeanRemovalsPerHour": 1.0,

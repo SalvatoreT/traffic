@@ -27,11 +27,15 @@ Speed humps SHALL reduce vehicle speed locally at the hump, traffic circles SHAL
 - **THEN** vehicles slow to the hump crossing speed near it and the link's travel time increases
 
 ### Requirement: Intersection control changes
-Users SHALL be able to change a node's control type and a signal's cycle length.
+Users SHALL be able to change a node's control type and a signal's cycle length. A cycle length set by the user SHALL stay fixed while the green splits keep adapting to measured flows.
 
 #### Scenario: Stop to signal
 - **WHEN** a two-way stop is changed to a signal
-- **THEN** the node runs a Webster-derived fixed-time plan
+- **THEN** the node runs a Webster-derived plan whose splits adapt to measured flows
+
+#### Scenario: Pinned cycle
+- **WHEN** a user sets a signal's cycle to 100 seconds
+- **THEN** the cycle stays 100 seconds after later adaptations
 
 ### Requirement: One-way and turn restrictions
 Users SHALL be able to make a street one-way and ban a specific turn; routing SHALL respect both.
