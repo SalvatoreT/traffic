@@ -77,3 +77,24 @@ export function divergingStops(mode: Mode): DivStop[] {
 }
 export const divergingGradient = (mode: Mode): string =>
   `linear-gradient(to right, ${divergingStops(mode).map((s) => `${s.color} ${((s.t + 1) * 50).toFixed(1)}%`).join(', ')})`;
+
+export const mutedColor = (mode: Mode): string => (mode === 'dark' ? '#4a5463' : '#a8a291');
+
+const hexRgb = (h: string): number[] => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+const lerpStops = (stops: { t: number; color: string }[], t: number): string => {
+  if (t <= stops[0].t) return stops[0].color;
+  for (let i = 1; i < stops.length; i++) {
+    if (t <= stops[i].t) {
+      const a = stops[i - 1], b = stops[i], k = (t - a.t) / (b.t - a.t), ca = hexRgb(a.color), cb = hexRgb(b.color);
+      return `#${ca.map((v, j) => Math.round(v + (cb[j] - v) * k).toString(16).padStart(2, '0')).join('')}`;
+    }
+  }
+  return stops[stops.length - 1].color;
+};
+
+/** The color the map draws for a quantized intensity: the same stops the paint expressions use, linear in RGB. Negative sequential values and NO_DATA (-2) in the change view are the muted gray. */
+export function colorForIntensity(t: number, mode: Mode, change: boolean): string {
+  if (change) return t <= -1.5 ? mutedColor(mode) : lerpStops(divergingStops(mode), t);
+  if (t < 0) return mutedColor(mode);
+  return lerpStops(rampStops(mode).map((color, i) => ({ t: i / 4, color })), t);
+}

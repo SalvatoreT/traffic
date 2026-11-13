@@ -109,10 +109,14 @@ export function buildIndex(net: Network): NetIndex {
 
 /** Directed description: "Oak St toward Elm St" */
 export function directedLabel(net: Network, idx: NetIndex, linkId: number): string {
+  return `${idx.linkName[linkId]} ${towardLabel(net, idx, linkId)}`;
+}
+
+/** "toward Elm St": where a directed link leads. */
+export function towardLabel(net: Network, idx: NetIndex, linkId: number): string {
   const l = net.links[linkId];
-  const me = idx.linkName[linkId];
   const others = idx.nodeStreets[l.to].filter((s) => s !== linkStreet(l));
-  return `${me} toward ${joinNames(others, idx.nodeName[l.to])}`;
+  return `toward ${joinNames(others, idx.nodeName[l.to])}`;
 }
 
 export function matchesQuery(text: string, q: string): boolean {

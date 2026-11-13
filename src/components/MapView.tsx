@@ -15,12 +15,13 @@ import { captionOf, composeImage, drawBadges, EXPORT_SCALE, exportFileName, FORM
 import { FADE_TIERS, interventionInRegion, REGION_FEATHER_M, type Region } from '../lib/region';
 import { REGION_BUFFER_M } from '../lib/area';
 import { advance, elapsedSim } from '../lib/extrapolate';
-import { divergingStops, intensity, quantizeIntensity, rampStops, WIDTH_MAX, WIDTH_MIN, type Mode } from '../lib/ramps';
+import { divergingStops, intensity, mutedColor, quantizeIntensity, rampStops, WIDTH_MAX, WIDTH_MIN, type Mode } from '../lib/ramps';
 import { changeMark, linkChangeIntensity, NO_DATA, type MapView as ChangeView } from '../lib/change';
 import { linkStatsView } from '../types';
 import type { RouteCheck } from '../lib/throughroutes';
 import { CELL_COLORS, CELL_DASHES, ROUTE_COLORS } from '../lib/routestyle';
-import type { NetIndex } from '../lib/naming';
+import { towardLabel, type NetIndex } from '../lib/naming';
+import { hoverLine } from '../lib/hoverline';
 import { describeIntervention, interventionPoint } from '../lib/describe';
 import type { SimClient } from '../sim/client';
 import {
@@ -75,7 +76,7 @@ const KIND_STYLE = {
 // Dashed amber inside a dark (light mode) or light (dark mode) casing: shape and width differ from the solid blue selection.
 const HOVER_FILL = { light: '#f5a300', dark: '#ffc94d' };
 const HOVER_EDGE = { light: '#1a1a1a', dark: '#ffffff' };
-const mutedFor = (mode: Mode) => (mode === 'dark' ? '#4a5463' : '#a8a291');
+const mutedFor = mutedColor;
 function ramp(mode: Mode, view: ChangeView = 'scenario'): unknown[] {
   const muted = mutedFor(mode);
   if (view === 'change') {
@@ -229,6 +230,7 @@ export function MapView(p: Props) {
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [ready, setReady] = useState(false);
   const [hoverText, setHoverText] = useState('');
+  const [hoverLink, setHoverLink] = useState<number | null>(null);
   const userMoved = useRef(false);
   const reveal = useRef<(force: boolean) => void>(() => {});
   const live = useRef({ ...p, proj });
@@ -826,13 +828,14 @@ export function MapView(p: Props) {
       return { hit, x, y };
     };
     const hoverSrc = () => map.getSource('hover') as maplibregl.GeoJSONSource | undefined;
-    const clearHover = () => { hoverSrc()?.setData({ type: 'FeatureCollection', features: [] }); setHoverText(''); cvs.style.cursor = ''; };
+    const clearHover = () => { hoverSrc()?.setData({ type: 'FeatureCollection', features: [] }); setHoverText(''); setHoverLink(null); cvs.style.cursor = ''; };
     const move = (e: maplibregl.MapMouseEvent) => {
       if ((e.originalEvent as MouseEvent).buttons) return;
       const L = live.current, net = L.bundle.network;
       const { hit } = find(e.lngLat);
       const feats: unknown[] = [];
       let text = '';
+      setHoverLink(hit?.kind === 'link' ? hit.link : null);
       if (hit?.kind === 'link') {
         const blk = L.index.blocks[L.index.blockOfLink[hit.link]];
         for (const id of blk.links) feats.push(...lineFeature(L.region, L.proj, net.links[id].geometry));
@@ -934,11 +937,26 @@ export function MapView(p: Props) {
     return proj.toLonLat(x, y);
   }, [selKey, p.selection && p.selection.kind === 'block' ? p.selection.point : null, bundle, proj, p.index]); // eslint-disable-line
 
+  const line = useMemo(() => {
+    if (hoverLink === null) return null;
+    const net = bundle.network, blk = p.index.blocks[p.index.blockOfLink[hoverLink]];
+    return hoverLine({
+      overlay: p.overlay, change: p.view === 'change', mode, max: p.overlayMax, link: net.links[hoverLink],
+      stats: p.linkStats ? linkStatsView(p.linkStats) : null, base: p.baseStats ? linkStatsView(p.baseStats) : null,
+      direction: blk.links.length > 1 ? towardLabel(net, p.index, hoverLink) : null,
+    });
+  }, [hoverLink, p.linkStats, p.baseStats, p.view, p.overlay, p.overlayMax, mode, bundle, p.index]);
+
   return (
     <div className="map-wrap" hidden={!p.visible} onContextMenu={onMapContext} onKeyDown={onMapKey}>
       <div ref={box} className="map" role="group" aria-label={`Interactive map of ${bundle.network.name}`} />
       <canvas ref={canvas} className="map-overlay" aria-hidden="true" />
-      {hoverText && !p.popover && <div className="map-hint" aria-hidden="true">{hoverText}</div>}
+      {hoverText && !p.popover && (
+        <div className="map-hint" aria-hidden="true">
+          <div>{hoverText}</div>
+          {line && <div className="map-hint-metric">{line.color && <span className="swatch" style={{ background: line.color }} />}<span>{line.text}</span></div>}
+        </div>
+      )}
       {menu && (
         <MapMenu at={menu} label="Map actions" onClose={() => setMenu(null)}
           items={(['png', 'jpeg'] as ImageFormat[]).map((f) => ({ id: f, label: `Download map as ${FORMATS[f].label}`, onSelect: () => { void downloadImage(f); } }))} />
