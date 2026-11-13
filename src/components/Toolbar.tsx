@@ -68,10 +68,15 @@ export function Playback(p: PlaybackProps) {
   useEffect(() => {
     const el = row.current, host = slot.current;
     if (!el || !host) return;
-    const set = () => host.style.setProperty('--bar-row-h', `${el.offsetHeight}px`);
+    const bar = el.parentElement as HTMLElement;
+    const set = () => {
+      host.style.setProperty('--bar-row-h', `${el.offsetHeight}px`);
+      host.parentElement?.style.setProperty('--bar-over-h', `${Math.max(0, bar.offsetHeight - el.offsetHeight)}px`);
+    };
     set();
     const ro = new ResizeObserver(set);
     ro.observe(el);
+    ro.observe(bar);
     return () => ro.disconnect();
   }, []);
   const playLabel = p.finished ? 'Run again' : p.running ? 'Pause simulation' : 'Play simulation';
