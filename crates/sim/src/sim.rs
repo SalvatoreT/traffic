@@ -953,6 +953,11 @@ impl Simulation {
         out
     }
 
+    /// Cumulative through-vehicle exits per link (cars and trucks on in-study local links): the counters behind `run_link_stats` index 2.
+    pub fn cut_through_exits(&self) -> Vec<f32> {
+        self.cum.iter().map(|c| c[1]).collect()
+    }
+
     pub fn metrics(&self) -> Metrics {
         let st = &self.st;
         let backlog: usize = self.backlog.iter().map(|b| b.len()).sum();

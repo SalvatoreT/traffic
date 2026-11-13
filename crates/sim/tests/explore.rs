@@ -202,6 +202,36 @@ fn one_filter_removes_a_rat_run_without_harm() {
     let proposals = o.json["proposals"].as_array().unwrap();
     assert!(!proposals.is_empty());
     assert!(proposals[0]["link"].as_str().unwrap().starts_with("#v1;a=t;p=p;s="));
+
+    // Through cars are a subset of all cars on every block, and the file reports both measures under their own names.
+    for (t, a) in o.base.full[0].block_through.iter().zip(&o.base.full[0].block_flow) {
+        assert!(*t <= *a + 1e-3, "through {t} exceeds all traffic {a}");
+    }
+    assert!(o.base.full[0].block_through.iter().sum::<f64>() > 0.0);
+    let p0 = &proposals[0];
+    assert!(p0["harm"]["through"]["worstBlock"].is_string() && p0["harm"]["through"]["blocksAboveNoise"].is_u64());
+    assert!(p0["harm"].get("worstIncreaseVehPerHour").is_none());
+    let per = &p0["byPeriod"]["p"];
+    assert!(per["cutThrough"]["baselineVehPerHour"].as_f64().unwrap() > 5.0);
+    let all = &per["allTraffic"];
+    for k in ["baselineVehPerHour", "scenarioVehPerHour", "throughIncreaseVehPerHour"] {
+        assert!(all[k].is_number(), "{k}");
+    }
+    assert!(all["worstBlock"].is_string() && all["blocksAboveNoise"].is_u64());
+    assert!(f.by_period[0].block_through_inc <= f.by_period[0].block_scen - f.by_period[0].block_base + 1.0);
+    assert!(p0["summary"].as_str().unwrap().contains("through cars an hour"));
+}
+
+#[test]
+fn through_harm_picks_the_block_past_its_noise_band() {
+    use traffic_sim::explore::report::through_harm;
+    // Block 1 gains 40 (band 10), block 2 gains 15 (band 2 x 6 = 12): only block 1 and block 2 pass, block 1 is the worst.
+    let h = through_harm(&[2.0, 40.0, 15.0, -30.0], &[1.0, 1.0, 6.0, 1.0]);
+    assert_eq!((h.worst, h.blocks_above), (1, 2));
+    assert_eq!(h.increase, 40.0);
+    // Nothing beyond noise: the block with the largest raw increase is named and the count is zero.
+    let n = through_harm(&[3.0, 9.0, -4.0], &[0.0, 0.0, 0.0]);
+    assert_eq!((n.worst, n.blocks_above, n.increase), (1, 0, 9.0));
 }
 
 #[test]
@@ -350,6 +380,7 @@ fn options_are_spread_and_drop_changes_within_noise() {
         harm,
         worst: 0,
         blocks_above: 0,
+        through: traffic_sim::explore::report::ThroughHarm { worst: 0, increase: 0.0, blocks_above: 0 },
         by_period: vec![],
         bounding: vec![],
         inside_pct: 0.0,
@@ -557,7 +588,7 @@ fn profile_results_merge_into_one_file_and_one_report() {
     let old = json!({"version": 1, "area": "t", "computed": {"date": "d"}, "baseline": {}, "proposals": [{"id": "p1"}]});
     let charter = json!({"id": "charter", "title": "c", "note": "", "computed": {}, "baseline": {}, "proposals": [{"id": "p1"}, {"id": "p2"}]});
     let m = merge_file(Some(&old), "t", charter.clone(), &ord, &un);
-    assert_eq!(m["version"], 3);
+    assert_eq!(m["version"], 4);
     let ids: Vec<&str> = m["groups"].as_array().unwrap().iter().map(|g| g["id"].as_str().unwrap()).collect();
     assert_eq!(ids, ["charter", "unconstrained"]);
     assert_eq!(m["groups"][1]["proposals"][0]["id"], "p1");

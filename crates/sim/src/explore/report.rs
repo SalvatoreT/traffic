@@ -15,16 +15,52 @@ pub struct Final {
     pub base_vph: f64,
     pub scen_vph: f64,
     pub reduction_pct: f64,
+    /// Search penalty: the largest increase in ALL traffic (through and local trips) on one side-street block, after the noise band, over the periods.
     pub harm: f64,
-    /// Harm-block position of the worst block.
+    /// Harm-block position of the block behind `harm`.
     pub worst: usize,
+    /// Blocks whose all-traffic increase passes the noise band in any period.
     pub blocks_above: usize,
-    pub by_period: Vec<(f64, f64)>,
+    /// Through cars only, averaged over the periods: the block that gains the most, and how many gain beyond noise.
+    pub through: ThroughHarm,
+    pub by_period: Vec<PeriodRes>,
     pub bounding: Vec<(String, f64, f64)>,
     pub inside_pct: f64,
     pub ped_pct: f64,
     pub bike_pct: f64,
     pub score: f64,
+}
+
+/// The side-street block that gains the most through cars an hour, averaged over the periods.
+#[derive(Clone, Debug, PartialEq)]
+pub struct ThroughHarm {
+    /// Harm-block position.
+    pub worst: usize,
+    /// Raw mean increase on that block (cars an hour, both directions).
+    pub increase: f64,
+    pub blocks_above: usize,
+}
+
+/// One period's like-for-like figures: through cars across the area, and all traffic on the block that gains the most.
+#[derive(Clone, Debug, PartialEq)]
+pub struct PeriodRes {
+    pub base_through: f64,
+    pub scen_through: f64,
+    pub cut_pct: f64,
+    /// Harm-block position of the all-traffic worst block.
+    pub worst: usize,
+    pub block_base: f64,
+    pub block_scen: f64,
+    /// Through cars' share of the change on that block (scenario minus baseline).
+    pub block_through_inc: f64,
+    pub blocks_above: usize,
+}
+
+/// `inc` is the mean through-car increase per block over the periods and `sigma` the matching run-to-run spread. The worst block is the
+/// one with the largest increase past its noise band (else the largest raw increase); `increase` is that block's raw increase.
+pub fn through_harm(inc: &[f64], sigma: &[f64]) -> ThroughHarm {
+    let h = harm_calc(inc, sigma);
+    ThroughHarm { worst: h.worst, increase: inc.get(h.worst).copied().unwrap_or(0.0), blocks_above: h.n_above }
 }
 
 fn pct_change(base: f64, scen: f64) -> f64 {
@@ -82,6 +118,8 @@ fn compare(ctx: &Ctx, set: &[u16], stats: &[PeriodStat], reject: Option<String>)
     let (mut harm, mut worst, mut worst_key) = (0.0f64, 0usize, f64::NEG_INFINITY);
     let mut above = vec![false; nb];
     let mut by_period = Vec::new();
+    let mut through_inc = vec![0.0f64; nb];
+    let mut through_var = vec![0.0f64; nb];
     for pi in 0..np {
         let inc: Vec<f64> = (0..nb).map(|b| stats[pi].block_flow[b] - base.full[pi].block_flow[b]).collect();
         let h = harm_calc(&inc, &base.full[pi].block_sigma);
@@ -96,8 +134,23 @@ fn compare(ctx: &Ctx, set: &[u16], stats: &[PeriodStat], reject: Option<String>)
             harm = h.worst_adj;
             worst = h.worst;
         }
-        by_period.push((pct_change(base.full[pi].ct_vph, stats[pi].ct_vph), h.worst_adj));
+        for b in 0..nb {
+            through_inc[b] += (stats[pi].block_through[b] - base.full[pi].block_through[b]) / np as f64;
+            through_var[b] += base.full[pi].block_through_sigma[b].powi(2);
+        }
+        by_period.push(PeriodRes {
+            base_through: base.full[pi].ct_vph,
+            scen_through: stats[pi].ct_vph,
+            cut_pct: pct_change(base.full[pi].ct_vph, stats[pi].ct_vph),
+            worst: h.worst,
+            block_base: base.full[pi].block_flow[h.worst],
+            block_scen: stats[pi].block_flow[h.worst],
+            block_through_inc: stats[pi].block_through[h.worst] - base.full[pi].block_through[h.worst],
+            blocks_above: h.n_above,
+        });
     }
+    let through_sigma: Vec<f64> = through_var.iter().map(|v| v.sqrt() / np.max(1) as f64).collect();
+    let through = through_harm(&through_inc, &through_sigma);
     let mut bounding = Vec::new();
     for (k, s) in study.bounding.iter().enumerate() {
         let (fb, fs): (f64, f64) = (base.full.iter().map(|x| x.street_flow[k]).sum(), stats.iter().map(|x| x.street_flow[k]).sum());
@@ -115,6 +168,7 @@ fn compare(ctx: &Ctx, set: &[u16], stats: &[PeriodStat], reject: Option<String>)
         harm,
         worst,
         blocks_above: above.iter().filter(|&&a| a).count(),
+        through,
         by_period,
         bounding,
         inside_pct: pct_change(m(&|s| s.inside_s, &base.full), m(&|s| s.inside_s, stats)),
@@ -148,7 +202,7 @@ pub fn select_options(finals: &[Final], max: usize, noise_pct: f64) -> (Vec<Pick
                 notes[i] = format!("rejected: {w}");
                 false
             } else if finals[i].reduction_pct <= noise_pct {
-                notes[i] = format!("cut-through change {:+.1}% is not a reduction beyond noise ({:.1}%)", -finals[i].reduction_pct, noise_pct);
+                notes[i] = format!("through-car change {:+.1}% is not a reduction beyond noise ({:.1}%)", -finals[i].reduction_pct, noise_pct);
                 false
             } else {
                 true
@@ -313,7 +367,8 @@ fn lower_first(s: &str) -> String {
     }
 }
 
-/// Two or three plain sentences: what the package does, what it achieves and its worst side effect by street name.
+/// Two or three plain sentences: what the package does, what it achieves and where through cars gain the most. Every figure is a count
+/// of through cars an hour, so the sentences compare like with like; all-traffic changes are reported apart.
 pub fn summary(study: &Study, cands: &[Cand], f: &Final) -> String {
     let n = f.set.len();
     let labels: Vec<String> = f.set.iter().map(|&i| cands[i as usize].label.clone()).collect();
@@ -321,19 +376,19 @@ pub fn summary(study: &Study, cands: &[Cand], f: &Final) -> String {
     let more = if n > 4 { format!(", and {} more", n - 4) } else { String::new() };
     let s1 = format!("It makes {} {}: {}{}.", number_word(n), if n == 1 { "change" } else { "changes" }, shown.join("; "), more);
     let s2 = format!(
-        "In the simulation it {} cut-through traffic on local streets inside the study area by {:.0}%, from {:.0} to {:.0} through vehicles an hour.",
+        "In the simulation it {} through traffic on the area's side streets by {:.0}%, from {:.0} to {:.0} through cars an hour (average of the periods searched).",
         if f.reduction_pct >= 0.0 { "cuts" } else { "raises" },
         f.reduction_pct.abs(),
         f.base_vph,
         f.scen_vph
     );
-    let blk = &study.idx.blocks[study.harm_blocks[f.worst]];
-    let s3 = if f.harm > 0.0 {
-        let others = f.blocks_above.saturating_sub(1);
-        let tail = if others == 0 { String::new() } else { format!(", and {} other {} gain traffic beyond normal run-to-run variation", others, if others == 1 { "block" } else { "blocks" }) };
-        format!("The worst side effect is about {:.0} more vehicles an hour on {}{}.", f.harm, blk.label, tail)
+    let t = &f.through;
+    let s3 = if t.blocks_above > 0 {
+        let others = t.blocks_above - 1;
+        let tail = if others == 0 { String::new() } else { format!(", and {} other {} gain through cars beyond normal run-to-run variation", others, if others == 1 { "block" } else { "blocks" }) };
+        format!("The side-street block that gains the most through traffic is {}, about {:.0} more through cars an hour on average{}.", study.idx.blocks[study.harm_blocks[t.worst]].label, t.increase, tail)
     } else {
-        "No block inside the study area gains traffic beyond normal run-to-run variation.".to_string()
+        "No side-street block gains through traffic beyond normal run-to-run variation.".to_string()
     };
     format!("{s1} {s2} {s3}")
 }
@@ -414,7 +469,27 @@ fn r1(x: f64) -> f64 {
 pub fn build_json(study: &Study, p: &Params, cands: &[Cand], base: &Baseline, finals: &[Final], picks: &[Pick], ref_finals: &[Final]) -> Value {
     let entry = |id: String, title: String, f: &Final, kind: &str, note: Option<&str>| -> Value {
         let ivs: Vec<Intervention> = f.set.iter().map(|&i| cands[i as usize].iv.clone()).collect();
-        let by_period: serde_json::Map<String, Value> = p.periods.iter().zip(&f.by_period).map(|(name, (cut, harm))| (name.clone(), json!({"cutThroughChangePct": r1(*cut), "worstIncreaseVehPerHour": harm.round()}))).collect();
+        let block_label = |b: usize| study.idx.blocks[study.harm_blocks[b]].label.clone();
+        let by_period: serde_json::Map<String, Value> = p
+            .periods
+            .iter()
+            .zip(&f.by_period)
+            .map(|(name, r)| {
+                (
+                    name.clone(),
+                    json!({
+                        "cutThrough": {"baselineVehPerHour": r1(r.base_through), "scenarioVehPerHour": r1(r.scen_through), "changePct": r1(r.cut_pct)},
+                        "allTraffic": {
+                            "worstBlock": block_label(r.worst),
+                            "baselineVehPerHour": r1(r.block_base),
+                            "scenarioVehPerHour": r1(r.block_scen),
+                            "throughIncreaseVehPerHour": r1(r.block_through_inc),
+                            "blocksAboveNoise": r.blocks_above,
+                        },
+                    }),
+                )
+            })
+            .collect();
         let mut v = json!({
             "id": id,
             "kind": kind,
@@ -423,7 +498,7 @@ pub fn build_json(study: &Study, p: &Params, cands: &[Cand], base: &Baseline, fi
             "link": study.encode(&ivs, Some(&p.periods[0])),
             "interventions": f.set.iter().map(|&i| json!({"type": cands[i as usize].iv.ty, "label": cands[i as usize].label})).collect::<Vec<_>>(),
             "cutThrough": {"baselineVehPerHour": r1(f.base_vph), "scenarioVehPerHour": r1(f.scen_vph), "changePct": r1(-f.reduction_pct)},
-            "harm": {"worstBlock": study.idx.blocks[study.harm_blocks[f.worst]].label, "worstIncreaseVehPerHour": f.harm.round(), "blocksAboveNoise": f.blocks_above},
+            "harm": {"through": {"worstBlock": block_label(f.through.worst), "increaseVehPerHour": r1(f.through.increase), "blocksAboveNoise": f.through.blocks_above}},
             "context": {
                 "boundingStreets": f.bounding.iter().map(|(name, flow, speed)| json!({"name": name, "flowChangePct": r1(*flow), "speedChangeMph": r1(*speed)})).collect::<Vec<_>>(),
                 "insideTripTimeChangePct": r1(f.inside_pct),
@@ -480,25 +555,25 @@ fn build_markdown(study: &Study, p: &Params, ctx: &Ctx, state: &SearchState, fin
         p.jobs
     );
     let _ = writeln!(md, "## Baseline\n");
-    let _ = writeln!(md, "| Period | Cut-through (veh/h) | Run-to-run spread | Inside trip time (s) | Ped conflicts | Bike conflicts |\n| --- | --- | --- | --- | --- | --- |");
+    let _ = writeln!(md, "| Period | Through cars an hour, all side streets | Run-to-run spread | Inside trip time (s) | Ped conflicts | Bike conflicts |\n| --- | --- | --- | --- | --- | --- |");
     for (n, s) in p.periods.iter().zip(&base.full) {
         let _ = writeln!(md, "| {n} | {:.1} | {:.1}% | {:.0} | {:.0} | {:.0} |", s.ct_vph, s.ct_cv_pct, s.inside_s, s.ped_conflicts, s.bike_conflicts);
     }
     let _ = writeln!(
         md,
-        "\nNoise band for \"traffic increased on a block\": max({} x the block's standard deviation of flow across seeds, {} veh/h). With one seed the band is the floor. Two options count as different in cut-through reduction when they differ by more than {:.1}% (twice the standard error of the seed mean).\n",
+        "\nNoise band for \"traffic increased on a block\", for through cars and for all traffic alike: max({} x the block's standard deviation of flow across seeds, {} cars an hour). With one seed the band is the floor. Two options count as different in cut-through reduction when they differ by more than {:.1}% (twice the standard error of the seed mean).\n",
         NOISE_SIGMAS, NOISE_FLOOR_VEH_H, noise
     );
     let mut hb: Vec<usize> = (0..study.harm_blocks.len()).collect();
     hb.sort_by(|&a, &b| base.hot.block_ct[study.harm_blocks[b]].partial_cmp(&base.hot.block_ct[study.harm_blocks[a]]).unwrap_or(std::cmp::Ordering::Equal).then(a.cmp(&b)));
-    let _ = writeln!(md, "Blocks carrying the most cut-through in the baseline (trips per hour, select-link analysis):\n");
+    let _ = writeln!(md, "Blocks carrying the most through trips in the baseline (through trips an hour, select-link analysis):\n");
     for &b in hb.iter().take(8) {
         let blk = &study.idx.blocks[study.harm_blocks[b]];
         let _ = writeln!(md, "- {}: {:.0}", blk.label, base.hot.block_ct[study.harm_blocks[b]]);
     }
     let mut nodes: Vec<usize> = (0..study.net.nodes.len()).filter(|&n| base.hot.node_ct[n] > 0.0).collect();
     nodes.sort_by(|&a, &b| base.hot.node_ct[b].partial_cmp(&base.hot.node_ct[a]).unwrap_or(std::cmp::Ordering::Equal).then(a.cmp(&b)));
-    let _ = writeln!(md, "\nIntersections with the most cut-through movements (trips per hour):\n");
+    let _ = writeln!(md, "\nIntersections with the most through movements (through trips an hour):\n");
     for &n in nodes.iter().take(5) {
         let _ = writeln!(md, "- {}: {:.0}", study.idx.node_label(n as u32), base.hot.node_ct[n]);
     }
@@ -507,22 +582,28 @@ fn build_markdown(study: &Study, p: &Params, ctx: &Ctx, state: &SearchState, fin
         let _ = writeln!(md, "{}. {}", i + 1, c.label);
     }
     let _ = writeln!(md, "\n## Search\n");
-    let _ = writeln!(md, "Beam {}, depth {}, expand {}, harm weight {} points of reduction per veh/h, {} screening runs simulated{}.\n", p.beam, p.depth, p.expand, p.harm_weight, state.used, p.budget_evals.map(|b| format!(" (budget {b})")).unwrap_or_default());
+    let _ = writeln!(md, "Beam {}, depth {}, expand {}, harm weight {} points of reduction per car an hour of increase in all traffic on one block (the search ranks on all traffic, because residents experience all of it), {} screening runs simulated{}.\n", p.beam, p.depth, p.expand, p.harm_weight, state.used, p.budget_evals.map(|b| format!(" (budget {b})")).unwrap_or_default());
     for l in &state.log {
         let _ = writeln!(md, "- {l}");
     }
     let _ = writeln!(md, "\n## Finalists, rechecked at full length\n");
-    let _ = writeln!(md, "| # | Interventions | Cut-through change | Worst block (veh/h) | Blocks above noise | Outcome |\n| --- | --- | --- | --- | --- | --- |");
+    let _ = writeln!(
+        md,
+        "Through cars are counted on the area's side streets (each car once for the area; on a block, both directions). \"All traffic\" adds the local trips of people who live or drive there. Through figures average the periods searched; the ranking penalty is the largest all-traffic increase on one block in any period, past its noise band.\n"
+    );
+    let _ = writeln!(md, "| # | Interventions | Through cars an hour, area change (average of periods) | Block gaining the most through cars (cars an hour, average of periods) | Blocks gaining through cars beyond noise | Ranking penalty: all-traffic increase on one block (cars an hour, worst period) | Outcome |\n| --- | --- | --- | --- | --- | --- | --- |");
     for (i, f) in finals.iter().enumerate() {
         let _ = writeln!(
             md,
-            "| {} | {} | {:+.1}% | {} (+{:.0}) | {} | {} |",
+            "| {} | {} | {:+.1}% | {} (+{:.0}) | {} | {} (+{:.0}) | {} |",
             i + 1,
             f.set.iter().map(|&c| cands[c as usize].label.clone()).collect::<Vec<_>>().join("; "),
             -f.reduction_pct,
+            study.idx.blocks[study.harm_blocks[f.through.worst]].label,
+            f.through.increase,
+            f.through.blocks_above,
             study.idx.blocks[study.harm_blocks[f.worst]].label,
             f.harm,
-            f.blocks_above,
             notes[i]
         );
     }
@@ -530,6 +611,26 @@ fn build_markdown(study: &Study, p: &Params, ctx: &Ctx, state: &SearchState, fin
     for (n, pick) in picks.iter().enumerate() {
         let f = &finals[pick.idx];
         let _ = writeln!(md, "{}. {} ({}). {}", n + 1, title(cands, &f.set), pick.why, summary(study, cands, f));
+    }
+    if !picks.is_empty() {
+        let _ = writeln!(md, "\n### All traffic on side-street blocks, by period (through and local trips together)\n");
+        let _ = writeln!(md, "| Option | Period | Block that gains the most all-traffic cars | All cars an hour, before to after | Of the change, through cars | Blocks gaining all-traffic cars beyond noise |\n| --- | --- | --- | --- | --- | --- |");
+        for (n, pick) in picks.iter().enumerate() {
+            for (name, r) in p.periods.iter().zip(&finals[pick.idx].by_period) {
+                let _ = writeln!(
+                    md,
+                    "| {} | {} | {} | {:.0} to {:.0} | {:+.0} of {:+.0} | {} |",
+                    n + 1,
+                    name,
+                    study.idx.blocks[study.harm_blocks[r.worst]].label,
+                    r.block_base,
+                    r.block_scen,
+                    r.block_through_inc,
+                    r.block_scen - r.block_base,
+                    r.blocks_above
+                );
+            }
+        }
     }
     if !ref_finals.is_empty() {
         let _ = writeln!(md, "\n## Reference packages\n");

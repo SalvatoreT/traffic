@@ -1,7 +1,8 @@
 //! Baseline, scoring and beam search (design D1, D4).
 //!
-//! Goal: through vehicles per hour that use a local street, averaged over the periods searched. Harm: the largest increase in total flow
-//! (both directions) on any one local block, after subtracting the noise band, taken over the periods. Screening runs use one
+//! Goal: through vehicles per hour that use a local street, averaged over the periods searched. Harm (the ranking penalty): the largest
+//! increase in all traffic (through and local trips, both directions) on any one local block, after subtracting the noise band, taken
+//! over the periods. The published report also gives the like-for-like measure, through cars only (`report::through_harm`). Screening runs use one
 //! period, one seed and a shortened run; the finalists are rechecked elsewhere (`report`).
 
 use super::cands::{conflicts, hotspots, generate_with, Cand, Hotspots};
@@ -25,6 +26,10 @@ pub struct PeriodStat {
     pub block_flow: Vec<f64>,
     /// Standard deviation of the block flow over seeds.
     pub block_sigma: Vec<f64>,
+    /// Through cars per harm block (both directions), mean over seeds, from the per-link cut-through counters.
+    pub block_through: Vec<f64>,
+    /// Standard deviation of the block through flow over seeds.
+    pub block_through_sigma: Vec<f64>,
     /// Per bounding street: summed flow of its in-study links (veh/h) and flow-weighted mean speed (m/s).
     pub street_flow: Vec<f64>,
     pub street_speed: Vec<f64>,
@@ -40,6 +45,9 @@ pub fn period_stat(study: &Study, runs: &[&RunOut]) -> PeriodStat {
     let nb = study.harm_blocks.len();
     let block_flow: Vec<f64> = (0..nb).map(|b| per_run.iter().map(|v| v[b]).sum::<f64>() / n).collect();
     let block_sigma: Vec<f64> = (0..nb).map(|b| std_dev(&per_run.iter().map(|v| v[b]).collect::<Vec<_>>())).collect();
+    let per_run_through: Vec<Vec<f64>> = runs.iter().map(|r| block_flows(study, &r.through)).collect();
+    let block_through: Vec<f64> = (0..nb).map(|b| per_run_through.iter().map(|v| v[b]).sum::<f64>() / n).collect();
+    let block_through_sigma: Vec<f64> = (0..nb).map(|b| std_dev(&per_run_through.iter().map(|v| v[b]).collect::<Vec<_>>())).collect();
     let mut street_flow = Vec::new();
     let mut street_speed = Vec::new();
     for s in &study.bounding {
@@ -74,6 +82,8 @@ pub fn period_stat(study: &Study, runs: &[&RunOut]) -> PeriodStat {
         spawned: m(&|r| r.spawned as f64),
         block_flow,
         block_sigma,
+        block_through,
+        block_through_sigma,
         street_flow,
         street_speed,
     }

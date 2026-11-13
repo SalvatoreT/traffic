@@ -267,6 +267,8 @@ pub struct RunOut {
     pub bike_conflicts: u64,
     /// Veh/h per link over the window after warm-up (cars and trucks; every link).
     pub flow: Vec<f32>,
+    /// Veh/h per link of through vehicles (the per-link cut-through counters, same window as `flow`).
+    pub through: Vec<f32>,
     /// Mean of the sim's rolling 5-minute mean speed per link (m/s), sampled every 5 minutes after warm-up.
     pub speed: Vec<f32>,
     pub records: Vec<SelectLinkRecord>,
@@ -291,6 +293,7 @@ pub fn run(study: &Study, ivs: &[Intervention], period: &str, seed: u64, minutes
     let total = minutes * 60.0;
     let warm = (0.25 * total).min(600.0);
     let mut exits0: Vec<u32> = vec![0; nl];
+    let mut ct0: Vec<f32> = vec![0.0; nl];
     let mut warmed = warm == 0.0;
     let mut speed_sum = vec![0.0f32; nl];
     let mut n_samples = 0u32;
@@ -308,6 +311,7 @@ pub fn run(study: &Study, ivs: &[Intervention], period: &str, seed: u64, minutes
         t += dt;
         if !warmed && t >= warm - 1e-9 {
             exits0 = sim.diagnostics().link_exits.to_vec();
+            ct0 = sim.cut_through_exits();
             warmed = true;
         }
         if warmed && t >= next_sample - 1e-9 {
@@ -322,6 +326,7 @@ pub fn run(study: &Study, ivs: &[Intervention], period: &str, seed: u64, minutes
     }
     let hours = ((total - warm).max(1.0)) / 3600.0;
     let exits = sim.diagnostics().link_exits.to_vec();
+    let ct1 = sim.cut_through_exits();
     let m = sim.metrics();
     let (inside_n, inside_tt_s) = sim.inside_trip_stats();
     RunOut {
@@ -338,6 +343,7 @@ pub fn run(study: &Study, ivs: &[Intervention], period: &str, seed: u64, minutes
         ped_conflicts: m.vulnerable.ped_conflicts,
         bike_conflicts: m.vulnerable.bike_conflicts,
         flow: (0..nl).map(|l| ((exits[l] - exits0[l]) as f64 / hours) as f32).collect(),
+        through: (0..nl).map(|l| ((ct1[l] - ct0[l]) as f64 / hours) as f32).collect(),
         speed: speed_sum.iter().map(|s| s / n_samples as f32).collect(),
         records: if select_links.is_empty() { Vec::new() } else { sim.select_link_records() },
     }
