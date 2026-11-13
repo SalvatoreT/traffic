@@ -353,6 +353,10 @@ pub struct Simulation {
     ema: Vec<f32>,
     tt_sum: Vec<f32>,
     tt_n: Vec<u32>,
+    /// Time on the link of the vehicles that left it by each movement: sum and count since the last epoch, and the smoothed value (0: never measured).
+    mv_tt_sum: Vec<f32>,
+    mv_tt_n: Vec<u32>,
+    mv_ema: Vec<f32>,
     epoch: u32,
     next_epoch_t: f64,
     st: Stats,
@@ -522,6 +526,9 @@ impl Simulation {
             ema: vec![0.0; nl],
             tt_sum: vec![0.0; nl],
             tt_n: vec![0; nl],
+            mv_tt_sum: vec![0.0; topo.mvs.len()],
+            mv_tt_n: vec![0; topo.mvs.len()],
+            mv_ema: vec![0.0; topo.mvs.len()],
             epoch: 0,
             next_epoch_t: EPOCH_S,
             st: Stats { hist: vec![0.0; HIST_BINS], ..Default::default() },
@@ -790,6 +797,7 @@ impl Simulation {
         for l in 0..self.topo.n_links {
             self.link_cost[l] = self.eff.ff[l].max(self.ema[l]);
         }
+        self.apply_mv_times();
         self.router.invalidate();
         self.bike_router.invalidate();
         for a in self.awsc.iter_mut() {
@@ -1339,9 +1347,34 @@ impl Simulation {
             return false;
         }
         let main = self.topo.nmain[l];
+        if MARKED_LEFT_LANE && self.topo.left_marked[l] {
+            return self.lane_room_ahead(l as u32, main, horizon) >= need;
+        }
         self.lanes[self.topo.lane_base[l] as usize + main].len() < POCKET_VEH
             && self.lane_room_ahead(l as u32, main, horizon) >= need
             && self.queue_extent(l, 0) <= POCKET_LEN
+    }
+
+    /// The turn a driver entering link `l` sorts for, with `route` the links after `l`: the first left or right turn at a link end that
+    /// offers a choice, within `LANE_LOOKAHEAD_M` beyond the end of `l`. A link end with one movement (a ramp joining a street, a bend) says
+    /// nothing about lanes, so the search goes on past it. None when the next choice is to go straight on or lies further away.
+    fn lane_hint(&self, l: u32, route: &[u32]) -> Option<u8> {
+        let (mut cur, mut dist) = (l, 0.0f32);
+        for &nx in route {
+            let m = self.topo.find_mv(cur, nx)?;
+            let kind = self.topo.mvs[m as usize].kind;
+            let (ms, mc) = (self.topo.lm_start[cur as usize] as usize, self.topo.lm_cnt[cur as usize] as usize);
+            let choice = self.topo.mvs[ms..ms + mc].iter().filter(|x| x.kind != K_UTURN).count() > 1;
+            if choice || cur == l && LANE_LOOKAHEAD_M <= 0.0 {
+                return if kind == K_LEFT || kind == K_RIGHT || cur == l { Some(kind) } else { None };
+            }
+            dist += self.topo.length[nx as usize];
+            if dist > LANE_LOOKAHEAD_M {
+                return if cur == l { Some(kind) } else { None };
+            }
+            cur = nx;
+        }
+        None
     }
 
     /// Lane choice on entering link `l` for a vehicle whose next movement at its far end has kind `kind` [None = unknown/through].
@@ -1367,6 +1400,9 @@ impl Simulation {
         if kind == Some(K_LEFT) && self.pocket_open(lu, need, horizon) {
             return Some(main);
         }
+        if kind == Some(K_LEFT) && MARKED_LEFT_LANE && self.topo.left_marked[lu] && self.mv_kind(l, after) == Some(K_LEFT) {
+            return None;
+        }
         if main >= 2 {
             let pref = match kind {
                 Some(K_LEFT) => Some(0),
@@ -1376,6 +1412,20 @@ impl Simulation {
             if let Some(k) = pref {
                 if self.lane_room_ahead(l, k, horizon) >= need {
                     return Some(k);
+                }
+                if TURN_LANE_HALF {
+                    // A driver sorting for a turn keeps to that side of the road: the left (right) half of the lanes, the middle lane of an odd
+                    // number included. With no room there the driver waits and the lanes of the other side stay open for the others.
+                    let half = (main + 1) / 2;
+                    let (lo, hi) = if kind == Some(K_LEFT) { (0, half) } else { (main - half, main) };
+                    let mut best: Option<(f32, usize)> = None;
+                    for j in lo..hi {
+                        let r = self.lane_room_ahead(l, j, horizon);
+                        if r >= need && best.map_or(true, |(br, _)| r > br + 1e-4) {
+                            best = Some((r, j));
+                        }
+                    }
+                    return best.map(|b| b.1);
                 }
             }
         }
@@ -1497,7 +1547,7 @@ impl Simulation {
                     continue;
                 }
                 let drv = self.backlog[n][idx].drv;
-                let entry = self.pick_lane(b, self.mv_kind(b, route.first().copied()), route.first().copied(), 0.0).and_then(|lane| self.entry_speed(b, lane, &drv).map(|v| (lane, v)));
+                let entry = self.pick_lane(b, self.lane_hint(b, &route), route.first().copied(), 0.0).and_then(|lane| self.entry_speed(b, lane, &drv).map(|v| (lane, v)));
                 let Some((lane, v_ins)) = entry else {
                     self.scratch = route;
                     blocked.push(b);
@@ -1665,7 +1715,7 @@ impl Simulation {
             // Banned/closed after the plan was made; will be re-planned. Hold.
             return (false, false);
         }
-        if self.pick_lane_for(veh.kind, b, None, veh.route.get(veh.ridx as usize + 1).copied(), NODE_CROSS_S).is_none() {
+        if self.pick_lane_for(veh.kind, b, self.lane_hint(b, &veh.route[(veh.ridx as usize + 1).min(veh.route.len())..]), veh.route.get(veh.ridx as usize + 1).copied(), NODE_CROSS_S).is_none() {
             return (false, true);
         }
         if self.ped_on && self.ped_block(veh, l as u32, b, ctrl) {
@@ -2215,7 +2265,8 @@ impl Simulation {
             }
         }
         let after = veh.route.get(veh.ridx as usize + 1).copied();
-        let Some(lane) = self.pick_lane_for(kind, b, self.mv_kind(b, after), after, NODE_CROSS_S) else { return false };
+        let hint = self.lane_hint(b, &veh.route[(veh.ridx as usize + 1).min(veh.route.len())..]);
+        let Some(lane) = self.pick_lane_for(kind, b, hint, after, NODE_CROSS_S) else { return false };
         if ctrl == Control::Signal && self.sig_state[l] >= 2 && self.topo.mvs[mv as usize].kind == K_LEFT {
             self.sneak[l] = self.sneak[l].saturating_add(1);
         }
@@ -2224,8 +2275,13 @@ impl Simulation {
         }
         let (m_len, v_exit, t_total) = self.cross_profile(veh, l, mv, ctrl);
         let (v, len, fcomp) = (veh.v, veh.drv.len, veh.drv.fcomp);
+        let veh_t_enter = veh.t_enter;
         let _ = v;
         self.record_link_exit(vid, l);
+        if kind == KIND_CAR {
+            self.mv_tt_sum[mv as usize] += (self.t - veh_t_enter) as f32;
+            self.mv_tt_n[mv as usize] += 1;
+        }
         let ff = self.link_ff_for(l, fcomp) + self.eff.mv_ff[mv as usize];
         self.lanes[qi].pop_front();
         let ridx_next;
@@ -2484,8 +2540,35 @@ impl Simulation {
             self.tt_n[l] = 0;
             self.link_cost[l] = self.eff.ff[l].max(self.ema[l]);
         }
+        for m in 0..self.mv_ema.len() {
+            let a = self.topo.mvs[m].a as usize;
+            if self.mv_tt_n[m] > 0 {
+                let obs = self.mv_tt_sum[m] / self.mv_tt_n[m] as f32;
+                self.mv_ema[m] = if self.mv_ema[m] <= 0.0 { obs } else { (1.0 - EMA_ALPHA) * self.mv_ema[m] + EMA_ALPHA * obs };
+            } else if self.mv_ema[m] > 0.0 {
+                // Nobody took the movement this epoch: drift toward the time of the link as a whole.
+                self.mv_ema[m] = (1.0 - EMA_ALPHA) * self.mv_ema[m] + EMA_ALPHA * self.link_cost[a];
+            }
+            self.mv_tt_sum[m] = 0.0;
+            self.mv_tt_n[m] = 0;
+        }
+        self.apply_mv_times();
         self.router.invalidate();
         self.epoch += 1;
+    }
+
+    /// Route costs by turn: a link's measured time is the mean over everyone who left it, so a long wait in a left-turn lane made the
+    /// link look slow to drivers going straight on (and a free left look fast behind a through queue). Each movement's cost takes the
+    /// difference between the time of the vehicles that made that movement and the time of the link as a whole, where it was measured.
+    pub(crate) fn apply_mv_times(&mut self) {
+        if !ROUTE_COST_BY_TURN {
+            return;
+        }
+        for m in 0..self.mv_ema.len() {
+            let a = self.topo.mvs[m].a as usize;
+            let extra = if self.mv_ema[m] > 0.0 { self.mv_ema[m].max(self.eff.ff[a]) - self.link_cost[a] } else { 0.0 };
+            self.eff.mv_cost[m] = self.eff.mv_static[m] + extra * self.eff.route_w[a];
+        }
     }
 
     /// Cost of `route` (the links after `from`) as the driver perceives it: link and movement costs on current times, each link scaled by the

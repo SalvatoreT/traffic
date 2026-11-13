@@ -47,6 +47,8 @@ pub struct Eff {
     pub node_filter: Vec<bool>,
     pub mv_ok: Vec<bool>,
     pub mv_cost: Vec<f32>,
+    /// `mv_cost` as derived from the network and interventions; the simulation adds each movement's measured time to `mv_cost` (route costs by turn).
+    pub mv_static: Vec<f32>,
     pub mv_vturn: Vec<f32>,
     pub mv_ff: Vec<f32>,
     pub minor: Vec<bool>,
@@ -348,6 +350,7 @@ impl Eff {
             ctrl,
             node_filter,
             mv_ok,
+            mv_static: mv_cost.clone(),
             mv_cost,
             mv_vturn,
             mv_ff,
@@ -392,7 +395,7 @@ impl Eff {
             if ins.is_empty() {
                 continue;
             }
-            let groups = phase_groups(topo, net, &ins);
+            let groups = own_phases(net, &self.period, n, phase_groups(topo, net, &ins));
             if groups.len() < 2 {
                 self.sig[n] = Some(SigPlan { cycle: 60.0, t0: 0.0, phases: vec![(0.0, 60.0)], links: groups, always_green: true, ysum: 0.0, next: None });
                 continue;
@@ -486,6 +489,28 @@ pub fn phase_groups(topo: &Topo, net: &Network, ins: &[u32]) -> Vec<Vec<u32>> {
         clusters[best.1].extend(moved);
     }
     clusters.into_iter().map(|c| c.into_iter().map(|i| ins[i]).collect()).collect()
+}
+
+/// Observed phasing (DATA, `Node::signal_timing`): an approach marked `own_phase` in the run's period leaves the phase of its street
+/// and gets one of its own right after it, so all its movements run while the opposing approach waits. This is split phasing
+/// [FHWA-STM2008] (section 4.3.4); a protected left turn that leads or lags is represented the same way (ASSUMPTION).
+fn own_phases(net: &Network, period: &str, n: usize, groups: Vec<Vec<u32>>) -> Vec<Vec<u32>> {
+    let Some(obs) = net.nodes[n].signal_timing.iter().find(|o| o.periods.iter().any(|p| p == period)) else { return groups };
+    let mut out: Vec<Vec<u32>> = Vec::new();
+    for g in groups {
+        let mut rest = g.clone();
+        let mut own: Vec<Vec<u32>> = Vec::new();
+        for a in obs.greens.iter().filter(|a| a.own_phase) {
+            let mine: Vec<u32> = rest.iter().copied().filter(|l| a.links.contains(l)).collect();
+            if !mine.is_empty() && mine.len() < rest.len() {
+                rest.retain(|l| !mine.contains(l));
+                own.push(mine);
+            }
+        }
+        out.extend(own);
+        out.push(rest);
+    }
+    out
 }
 
 /// Critical flow ratio of each phase: the largest per-lane ratio of flow to saturation flow among its approaches.

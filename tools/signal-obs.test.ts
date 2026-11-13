@@ -14,6 +14,22 @@ describe('signal observations', () => {
     expect(nodes[0].signalTiming).toEqual([{ periods: ['am'], cycleS: 79, greens: [{ links: [0], greenS: 4 }], source: 'test' }]);
     expect(nodes[3].signalTiming).toBeUndefined();
   });
+  it('keeps to one side of a street by heading and merges approaches of one signal into one timing', () => {
+    const ns = [node(0, 'signal'), node(1, 'uncontrolled'), node(2, 'uncontrolled'), node(3, 'uncontrolled')];
+    const ls = [{ ...link(0, 1, 0, 'Main Street'), toBearing: 90 }, { ...link(1, 2, 0, 'Main Street'), toBearing: 270 }, { ...link(2, 3, 0, 'Pine Street'), toBearing: 0 }] as NetLink[];
+    const o = { at: ['Pine Street', 'Main Street'], approach: 'Main Street', periods: ['pm'], cycleSeconds: 110, source: 'doc' };
+    expect(applySignalObservations(ns, ls, [{ ...o, heading: 80, greenSeconds: 33.5, ownPhase: true }, { ...o, heading: 260, greenSeconds: 27.6, ownPhase: true }])).toEqual([]);
+    expect(ns[0].signalTiming).toEqual([{ periods: ['pm'], cycleS: 110, greens: [{ links: [0], greenS: 33.5, ownPhase: true }, { links: [1], greenS: 27.6, ownPhase: true }], source: 'doc' }]);
+  });
+  it('picks the nearest of several matching signals when the observation gives a location', () => {
+    const ns = [{ ...node(0, 'signal'), x: 0, y: 0 }, { ...node(1, 'signal'), x: 0, y: 500 }, node(2, 'uncontrolled')];
+    const ls = [{ ...link(0, 2, 0, 'Main Street'), toBearing: 180 }, { ...link(1, 2, 1, 'Main Street'), toBearing: 0 }] as NetLink[];
+    const o = { at: ['Main Street'], approach: 'Main Street', periods: ['pm'], cycleSeconds: 50, greenSeconds: 29, source: 'doc' };
+    expect(applySignalObservations(ns, ls, [o])).toHaveLength(1);
+    expect(applySignalObservations(ns, ls, [{ ...o, near: [490, 0] }], (lat, lon) => [lon, lat])).toEqual([]);
+    expect(ns[1].signalTiming?.[0].greens[0].links).toEqual([1]);
+    expect(ns[0].signalTiming).toBeUndefined();
+  });
   it('reports an observation that matches no signal', () => {
     expect(applySignalObservations(nodes, links, [{ ...obs, at: ['Pine Street', 'Elm Street'] }])).toHaveLength(1);
   });

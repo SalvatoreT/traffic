@@ -725,7 +725,9 @@ impl Simulation {
             return None;
         }
         let k = x.leg as usize;
-        for adj in [(k + 1) % m, (k + m - 1) % m] {
+        // Legs are in counter-clockwise order. Traffic keeps right, so the approach that runs beside this crosswalk arrives on the next leg
+        // clockwise; where the two neighboring approaches have phases of their own (split phasing, a protected left) that one is tried first.
+        for adj in [(k + m - 1) % m, (k + 1) % m] {
             for &l in &legs[adj].links {
                 if self.topo.link_to[l as usize] as usize != n {
                     continue;

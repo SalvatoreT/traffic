@@ -74,6 +74,8 @@ pub struct Topo {
     pub nmain: Vec<usize>,
     /// Link ends in a left-turn pocket: one extra lane (index `nmain`) reserved for left-turners, with limited storage.
     pub pocket: Vec<bool>,
+    /// The pocket is a left-turn lane marked along the link (`Link::left_lanes`), not the class-rule pocket.
+    pub left_marked: Vec<bool>,
     /// Per movement: lanes [lo, hi) a vehicle taking it uses on the approach, set where a link forks into two or more straight-ahead branches (`(0, 255)` elsewhere).
     pub fork_band: Vec<(u8, u8)>,
     pub rank: Vec<u8>,
@@ -159,6 +161,7 @@ impl Topo {
             n_lanes: 0,
             nmain: net.links.iter().map(|l| l.lanes.max(1) as usize).collect(),
             pocket: vec![false; n_links],
+            left_marked: vec![false; n_links],
             fork_band: Vec::new(),
             rank: net.links.iter().map(|l| l.class.rank()).collect(),
             is_local: net
@@ -230,6 +233,7 @@ impl Topo {
             // OSM already counts a marked left-turn lane in `lanes`: the pocket takes it (the through lanes stay as tagged).
             if self.pocket[l] && link.left_lanes > 0 && self.nmain[l] > link.left_lanes as usize {
                 self.nmain[l] -= 1;
+                self.left_marked[l] = true;
             }
         }
     }

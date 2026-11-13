@@ -47,6 +47,10 @@ It writes `reports/<area>-<period>-s<scale>-seeds1-10.{md,json}` (the stability 
 
 Acceptance criteria as published (sources `[WebTAG-M3.1]`, `[TfL-TMG4]`, `[Aimsun-Manual]` in `docs/references.md`; the table is in `docs/simulator-audit.md`): GEH = sqrt(2 (M - C)^2 / (M + C)); GEH below 5 in more than 85% of cases; within 100 veh/h below 700, within 15% from 700 to 2,700, within 400 above; the guidance says either criterion suffices, so both are reported. The held-out stations are about a quarter of the stations, at least one per corridor, never in the fit that is scored.
 
+## Observed arterial travel times
+
+`travelTimes` in the targets file lists arterial segments with observed weekday peak-period speeds from the Alameda CTC level-of-service monitoring ([ACTC-LOS2014] for 2012 and 2014, [ACTC-LOS2018] for 2016 and 2018; floating-car runs or commercial probe speeds): Telegraph Ave between 51st St and Russell St, Shattuck Ave between 51st St and Alcatraz Ave, College Ave between Miles Ave and Ashby Ave, each direction, AM and PM. `tools/assess.ts` finds the links of each segment by street and cross streets, adds the free-flow time and the mean delay per vehicle of every link (seed mean), scales the result to the published segment length and reports it beside the four observed years. The four years differ by up to a factor of 1.7 on one segment (College Ave northbound, 9.4 to 15.9 mph in the PM), so "inside the observed range" is a weak test. The speeds are a target for reading and are not fitted.
+
 ## Validation suite
 
 `validation.md` holds the benchmark of the simulator's own primitives, separate from the area fit. Each case is a tiny synthetic network with saturated demand (cars only unless the case adds pedestrians or cyclists) that measures one quantity against a published range:

@@ -6,10 +6,10 @@ Seeds are the fixed list above, none chosen; each run is 60 minutes from the sam
 
 | Check | Rule | Result | Pass |
 | --- | --- | --- | --- |
-| Removals | mean per hour below 1.00 | 1.80 (min 0.00, max 4.00) | NO |
+| Removals | mean per hour below 1.00 | 1.30 (min 0.00, max 3.00) | NO |
 | Entry backlog | below 2.0% in at least 90% of seeds | 10 of 10 seeds | yes |
 | Runaway growth | no seed adds more than 2.0 points of backlog in the second half | none | yes |
-| Arterial speed | mean above 4.0 m/s | 7.60 m/s | yes |
+| Arterial speed | mean above 4.0 m/s | 7.83 m/s | yes |
 
 **Verdict: not stable.** Old rule (zero removals, backlog under 2%, speed above 4 m/s, every seed): 3 of 10 seeds pass.
 
@@ -17,62 +17,62 @@ Seeds are the fixed list above, none chosen; each run is 60 minutes from the sam
 
 | Group | Metric | Unit | Mean | SD | Min | Max | 95% interval |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| health | gridlock removals | vehicles | 1.80 | 1.69 | 0.00 | 4.00 | 0.59 to 3.01 |
-| health | gridlock removals per hour | veh/h | 1.80 | 1.69 | 0.00 | 4.00 | 0.59 to 3.01 |
-| health | entry backlog | % of spawned | 0.54 | 0.22 | 0.13 | 0.86 | 0.38 to 0.70 |
-| health | backlog growth in the second half of the run | points of spawned | 0.40 | 0.16 | 0.05 | 0.61 | 0.29 to 0.52 |
-| health | completed trips | trips | 22880.50 | 171.96 | 22685.00 | 23269.00 | 22757.49 to 23003.51 |
-| health | arterial mean speed | m/s | 7.60 | 0.12 | 7.38 | 7.86 | 7.52 to 7.69 |
-| health | arterial mean speed, last 15 min | m/s | 7.15 | 0.21 | 6.91 | 7.48 | 6.99 to 7.30 |
-| cut-through | local vehicle-miles, surface gates to the freeway | veh-miles | 13.80 | 2.74 | 10.80 | 19.53 | 11.84 to 15.76 |
-| cut-through | share of local vehicle-miles, surface gates to the freeway | % | 2.6 | 0.5 | 2.0 | 3.6 | 2.3 to 3.0 |
-| cut-through | local vehicle-miles, freeway to the surface gates | veh-miles | 6.86 | 0.89 | 5.47 | 8.33 | 6.23 to 7.50 |
-| cut-through | share of local vehicle-miles, freeway to the surface gates | % | 1.3 | 0.2 | 1.0 | 1.6 | 1.2 to 1.4 |
-| bypass | corridor trips using the bypass, Hillegass Avenue vs College Avenue N | trips | 11.70 | 5.40 | 7.00 | 23.00 | 7.84 to 15.56 |
-| bypass | corridor trips, Hillegass Avenue vs College Avenue N | trips | 1154.90 | 38.94 | 1077.00 | 1208.00 | 1127.04 to 1182.76 |
-| bypass | corridor trips using the bypass, Hillegass Avenue vs College Avenue S | trips | 46.50 | 11.87 | 31.00 | 74.00 | 38.01 to 54.99 |
-| bypass | corridor trips, Hillegass Avenue vs College Avenue S | trips | 1137.70 | 49.91 | 1056.00 | 1200.00 | 1102.00 to 1173.40 |
-| headline share | Hillegass Avenue NB from freeway | % | 71.4 | 5.4 | 62.1 | 80.1 | 67.6 to 75.3 |
-| share | Hillegass Avenue NB to Benvenue Avenue | % | 1.9 | 0.9 | 0.6 | 3.6 | 1.2 to 2.6 |
-| share | Hillegass Avenue NB to College Avenue | % | 9.9 | 3.4 | 5.3 | 15.4 | 7.4 to 12.3 |
-| share | Hillegass Avenue NB to Alcatraz Avenue WB | % | 15.0 | 2.8 | 9.8 | 19.8 | 13.0 to 17.0 |
-| headline share | Colby Street NB from freeway | % | 78.1 | 1.8 | 73.8 | 80.8 | 76.9 to 79.4 |
-| share | Colby Street NB to Alcatraz Avenue WB | % | 6.3 | 2.3 | 3.6 | 10.4 | 4.6 to 7.9 |
-| share | Colby Street NB to Telegraph Avenue | % | 23.1 | 3.2 | 19.5 | 28.0 | 20.8 to 25.4 |
-| share | Colby Street NB to College Avenue | % | 1.1 | 0.7 | 0.4 | 2.6 | 0.7 to 1.6 |
-| share | Hillegass Avenue SB from Alcatraz Avenue WB | % | 9.6 | 2.0 | 5.1 | 12.1 | 8.2 to 11.1 |
-| share | Hillegass Avenue SB from Benvenue Avenue | % | 4.4 | 1.9 | 1.0 | 8.1 | 3.0 to 5.7 |
-| share | Hillegass Avenue SB from College Avenue | % | 7.2 | 1.4 | 5.3 | 10.3 | 6.2 to 8.2 |
-| headline share | Hillegass Avenue SB to freeway | % | 73.4 | 2.9 | 67.0 | 77.0 | 71.3 to 75.5 |
-| share | Colby Street SB from Alcatraz Avenue EB | % | 9.3 | 3.0 | 6.0 | 15.1 | 7.2 to 11.5 |
-| share | Colby Street SB from Alcatraz Avenue WB | % | 30.7 | 5.5 | 25.5 | 40.8 | 26.8 to 34.7 |
-| share | Colby Street SB from Telegraph Avenue | % | 28.0 | 4.0 | 21.1 | 35.4 | 25.1 to 30.9 |
-| headline share | Colby Street SB to freeway | % | 60.5 | 3.8 | 54.5 | 66.8 | 57.8 to 63.2 |
-| share | Colby Street SB to Forest Street | % | 16.0 | 3.3 | 11.3 | 22.0 | 13.6 to 18.4 |
-| ramp share | onto freeway via College Avenue | % | 12.0 | 1.7 | 9.5 | 14.5 | 10.8 to 13.3 |
-| ramp share | onto freeway via Hillegass Avenue | % | 18.5 | 1.8 | 15.3 | 21.2 | 17.2 to 19.7 |
-| ramp share | onto freeway via Martin Street | % | 13.1 | 2.0 | 10.8 | 16.5 | 11.6 to 14.5 |
-| ramp share | onto freeway via Colby Street | % | 17.3 | 1.2 | 15.6 | 19.7 | 16.4 to 18.1 |
-| ramp share | onto freeway via Telegraph Avenue north of Alcatraz Avenue | % | 8.3 | 1.2 | 5.9 | 10.0 | 7.5 to 9.2 |
-| ramp share | onto freeway via Benvenue Avenue | % | 3.4 | 0.7 | 2.4 | 4.6 | 2.9 to 3.9 |
-| ramp share | from freeway via College Avenue | % | 6.4 | 1.3 | 4.6 | 9.0 | 5.5 to 7.4 |
-| ramp share | from freeway via Martin Street | % | 18.3 | 1.8 | 16.0 | 21.4 | 17.1 to 19.6 |
-| ramp share | from freeway via Colby Street | % | 14.4 | 1.7 | 11.8 | 17.1 | 13.1 to 15.6 |
-| ramp share | from freeway via Hillegass Avenue | % | 8.2 | 0.9 | 6.6 | 9.7 | 7.5 to 8.8 |
-| ramp share | from freeway via Benvenue Avenue | % | 2.0 | 0.4 | 1.4 | 2.7 | 1.7 to 2.3 |
-| corridor flow | Telegraph N median link flow | veh/h | 1212.24 | 103.76 | 1018.80 | 1363.20 | 1138.02 to 1286.46 |
-| corridor flow | Telegraph S median link flow | veh/h | 865.56 | 54.24 | 753.60 | 952.80 | 826.77 to 904.35 |
-| corridor flow | College N median link flow | veh/h | 411.96 | 52.92 | 314.40 | 501.60 | 374.11 to 449.81 |
-| corridor flow | College S median link flow | veh/h | 747.36 | 36.20 | 709.20 | 802.80 | 721.46 to 773.26 |
-| corridor flow | Claremont N median link flow | veh/h | 592.32 | 50.02 | 508.80 | 684.00 | 556.54 to 628.10 |
-| corridor flow | Claremont S median link flow | veh/h | 789.00 | 47.72 | 722.40 | 837.60 | 754.87 to 823.13 |
-| corridor flow | Alcatraz E median link flow | veh/h | 523.56 | 44.79 | 466.80 | 604.80 | 491.52 to 555.60 |
-| corridor flow | Alcatraz W median link flow | veh/h | 460.44 | 49.76 | 378.00 | 540.00 | 424.84 to 496.04 |
-| corridor flow | Hillegass N median link flow | veh/h | 102.72 | 11.20 | 87.60 | 121.20 | 94.71 to 110.73 |
-| corridor flow | Hillegass S median link flow | veh/h | 190.08 | 24.40 | 165.60 | 240.00 | 172.63 to 207.53 |
-| corridor flow | Colby N median link flow | veh/h | 154.32 | 22.51 | 128.40 | 193.20 | 138.22 to 170.42 |
-| corridor flow | Colby S median link flow | veh/h | 200.04 | 21.11 | 174.00 | 228.00 | 184.94 to 215.14 |
-| corridor flow | Martin E median link flow | veh/h | 131.16 | 14.85 | 108.00 | 158.40 | 120.54 to 141.78 |
-| corridor flow | Martin W median link flow | veh/h | 240.24 | 29.70 | 199.20 | 301.20 | 218.99 to 261.49 |
+| health | gridlock removals | vehicles | 1.30 | 1.25 | 0.00 | 3.00 | 0.40 to 2.20 |
+| health | gridlock removals per hour | veh/h | 1.30 | 1.25 | 0.00 | 3.00 | 0.40 to 2.20 |
+| health | entry backlog | % of spawned | 0.14 | 0.15 | 0.02 | 0.45 | 0.03 to 0.24 |
+| health | backlog growth in the second half of the run | points of spawned | 0.06 | 0.13 | -0.04 | 0.39 | -0.04 to 0.15 |
+| health | completed trips | trips | 24395.70 | 160.76 | 24137.00 | 24625.00 | 24280.71 to 24510.69 |
+| health | arterial mean speed | m/s | 7.83 | 0.12 | 7.67 | 8.05 | 7.75 to 7.92 |
+| health | arterial mean speed, last 15 min | m/s | 7.60 | 0.18 | 7.31 | 7.82 | 7.47 to 7.72 |
+| cut-through | local vehicle-miles, surface gates to the freeway | veh-miles | 16.93 | 4.39 | 9.82 | 23.48 | 13.79 to 20.06 |
+| cut-through | share of local vehicle-miles, surface gates to the freeway | % | 3.3 | 0.8 | 1.9 | 4.4 | 2.7 to 3.8 |
+| cut-through | local vehicle-miles, freeway to the surface gates | veh-miles | 15.01 | 3.57 | 9.04 | 19.34 | 12.46 to 17.56 |
+| cut-through | share of local vehicle-miles, freeway to the surface gates | % | 2.9 | 0.6 | 1.9 | 3.7 | 2.4 to 3.3 |
+| bypass | corridor trips using the bypass, Hillegass Avenue vs College Avenue N | trips | 16.70 | 4.30 | 9.00 | 23.00 | 13.63 to 19.77 |
+| bypass | corridor trips, Hillegass Avenue vs College Avenue N | trips | 1282.60 | 37.97 | 1196.00 | 1331.00 | 1255.44 to 1309.76 |
+| bypass | corridor trips using the bypass, Hillegass Avenue vs College Avenue S | trips | 19.50 | 5.21 | 11.00 | 27.00 | 15.77 to 23.23 |
+| bypass | corridor trips, Hillegass Avenue vs College Avenue S | trips | 1225.70 | 40.49 | 1174.00 | 1285.00 | 1196.73 to 1254.67 |
+| headline share | Hillegass Avenue NB from freeway | % | 53.2 | 3.0 | 48.9 | 58.9 | 51.0 to 55.3 |
+| share | Hillegass Avenue NB to Benvenue Avenue | % | 1.3 | 0.7 | 0.0 | 2.5 | 0.8 to 1.7 |
+| share | Hillegass Avenue NB to College Avenue | % | 3.6 | 1.4 | 1.8 | 6.7 | 2.6 to 4.6 |
+| share | Hillegass Avenue NB to Alcatraz Avenue WB | % | 24.7 | 3.2 | 20.0 | 29.3 | 22.4 to 27.0 |
+| headline share | Colby Street NB from freeway | % | 63.9 | 2.5 | 60.5 | 68.3 | 62.2 to 65.7 |
+| share | Colby Street NB to Alcatraz Avenue WB | % | 14.8 | 3.5 | 9.7 | 20.3 | 12.3 to 17.3 |
+| share | Colby Street NB to Telegraph Avenue | % | 24.2 | 2.5 | 19.1 | 27.3 | 22.4 to 26.0 |
+| share | Colby Street NB to College Avenue | % | 0.9 | 0.6 | 0.0 | 1.8 | 0.5 to 1.3 |
+| share | Hillegass Avenue SB from Alcatraz Avenue WB | % | 9.8 | 2.0 | 6.7 | 14.2 | 8.3 to 11.2 |
+| share | Hillegass Avenue SB from Benvenue Avenue | % | 1.9 | 1.1 | 0.4 | 4.3 | 1.0 to 2.7 |
+| share | Hillegass Avenue SB from College Avenue | % | 5.6 | 1.5 | 2.7 | 7.1 | 4.5 to 6.6 |
+| headline share | Hillegass Avenue SB to freeway | % | 59.2 | 4.2 | 49.6 | 63.4 | 56.2 to 62.2 |
+| share | Colby Street SB from Alcatraz Avenue EB | % | 14.2 | 2.8 | 10.0 | 19.4 | 12.2 to 16.2 |
+| share | Colby Street SB from Alcatraz Avenue WB | % | 25.7 | 1.7 | 22.0 | 28.7 | 24.5 to 27.0 |
+| share | Colby Street SB from Telegraph Avenue | % | 25.5 | 3.3 | 20.9 | 30.8 | 23.1 to 27.8 |
+| headline share | Colby Street SB to freeway | % | 55.8 | 3.1 | 50.9 | 61.2 | 53.5 to 58.0 |
+| share | Colby Street SB to Forest Street | % | 11.7 | 3.1 | 8.8 | 19.6 | 9.5 to 14.0 |
+| ramp share | onto freeway via College Avenue | % | 17.5 | 3.7 | 13.5 | 24.9 | 14.9 to 20.1 |
+| ramp share | onto freeway via Hillegass Avenue | % | 20.9 | 2.4 | 16.5 | 24.2 | 19.2 to 22.6 |
+| ramp share | onto freeway via Martin Street | % | 20.7 | 2.1 | 17.3 | 23.4 | 19.2 to 22.2 |
+| ramp share | onto freeway via Colby Street | % | 25.0 | 2.9 | 20.7 | 28.9 | 22.9 to 27.0 |
+| ramp share | onto freeway via Telegraph Avenue north of Alcatraz Avenue | % | 13.0 | 2.7 | 8.8 | 16.5 | 11.0 to 14.9 |
+| ramp share | onto freeway via Benvenue Avenue | % | 2.0 | 0.7 | 0.9 | 3.1 | 1.5 to 2.5 |
+| ramp share | from freeway via College Avenue | % | 5.3 | 1.1 | 3.7 | 6.6 | 4.6 to 6.1 |
+| ramp share | from freeway via Martin Street | % | 25.3 | 2.4 | 21.2 | 27.9 | 23.6 to 27.0 |
+| ramp share | from freeway via Colby Street | % | 23.1 | 1.4 | 21.7 | 25.9 | 22.1 to 24.1 |
+| ramp share | from freeway via Hillegass Avenue | % | 9.1 | 0.8 | 8.0 | 10.3 | 8.5 to 9.6 |
+| ramp share | from freeway via Benvenue Avenue | % | 1.4 | 0.6 | 0.7 | 2.9 | 1.0 to 1.9 |
+| corridor flow | Telegraph N median link flow | veh/h | 1079.40 | 55.73 | 998.40 | 1162.80 | 1039.53 to 1119.27 |
+| corridor flow | Telegraph S median link flow | veh/h | 862.80 | 74.15 | 732.00 | 985.20 | 809.76 to 915.84 |
+| corridor flow | College N median link flow | veh/h | 416.52 | 37.47 | 373.20 | 498.00 | 389.72 to 443.32 |
+| corridor flow | College S median link flow | veh/h | 747.12 | 34.85 | 679.20 | 777.60 | 722.19 to 772.05 |
+| corridor flow | Claremont N median link flow | veh/h | 460.44 | 29.76 | 430.80 | 522.00 | 439.15 to 481.73 |
+| corridor flow | Claremont S median link flow | veh/h | 469.68 | 41.64 | 397.20 | 535.20 | 439.90 to 499.46 |
+| corridor flow | Alcatraz E median link flow | veh/h | 441.24 | 58.19 | 320.40 | 517.20 | 399.61 to 482.87 |
+| corridor flow | Alcatraz W median link flow | veh/h | 301.32 | 28.68 | 247.20 | 342.00 | 280.80 to 321.84 |
+| corridor flow | Hillegass N median link flow | veh/h | 99.12 | 9.45 | 76.80 | 109.20 | 92.36 to 105.88 |
+| corridor flow | Hillegass S median link flow | veh/h | 141.96 | 17.84 | 120.00 | 175.20 | 129.20 to 154.72 |
+| corridor flow | Colby N median link flow | veh/h | 141.48 | 12.22 | 123.60 | 163.20 | 132.74 to 150.22 |
+| corridor flow | Colby S median link flow | veh/h | 170.88 | 12.03 | 142.80 | 189.60 | 162.28 to 179.48 |
+| corridor flow | Martin E median link flow | veh/h | 191.52 | 14.26 | 165.60 | 205.20 | 181.32 to 201.72 |
+| corridor flow | Martin W median link flow | veh/h | 237.12 | 34.95 | 183.60 | 286.80 | 212.12 to 262.12 |
 
 Per-seed detail: `rockridge-pm_peak-s1-seed1.md` (seed 1 in full).

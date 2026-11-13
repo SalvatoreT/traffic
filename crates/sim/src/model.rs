@@ -75,6 +75,9 @@ pub struct ApproachGreen {
     /// Incoming links of the approach.
     pub links: Vec<u32>,
     pub green_s: f32,
+    /// The approach runs in a phase of its own (observed split phasing or protected left turn), so nothing opposes its left turns.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub own_phase: bool,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

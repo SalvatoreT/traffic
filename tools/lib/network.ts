@@ -77,7 +77,7 @@ export const PARAMS = {
   mph: 0.44704,
   kph: 1 / 3.6,
   humpTags: ['hump', 'bump', 'table', 'cushion'],
-  skipServices: ['parking_aisle', 'driveway'],
+  skipServices: ['parking_aisle', 'driveway', 'drive-through'],
   skipAccess: ['private', 'no'],
 };
 
@@ -1232,7 +1232,7 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
     if (best <= warnM) stats.gatesNearSignal.push({ gate: g.id, distM: Math.round(best), street: outLinks.find((l) => l.from === g.id || l.to === g.id)?.name ?? '' });
   }
 
-  for (const m of applySignalObservations(outNodes, outLinks, cfg.signalObservations ?? [])) stats.signalObservationsUnmatched.push(m);
+  for (const m of applySignalObservations(outNodes, outLinks, cfg.signalObservations ?? [], (lat, lon) => proj.fwd(lon, lat) as [number, number])) stats.signalObservationsUnmatched.push(m);
 
   return {
     network: {

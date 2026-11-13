@@ -91,5 +91,16 @@
     "Little drop-off in freeway-bound and freeway-origin traffic between Claremont Avenue and Alcatraz Avenue: these trips continue through the neighborhood.",
     "Southbound freeway-bound drivers on College Avenue commonly arrive via Ashby Avenue and Benvenue Avenue, then jog to Hillegass Avenue.",
     "Traffic on Martin Street and Colby Street is largely traveling between the freeway and Telegraph Avenue."
-  ]
+  ],
+  "travelTimes": {
+    "note": "DATA: average travel speed (mph) over arterial segments in the weekday peak periods, from the Alameda CTC level-of-service monitoring: floating-car runs (6 or 7 per segment) or commercial probe speeds, count years 2012 and 2014 [ACTC-LOS2014], 2016 and 2018 [ACTC-LOS2018]. The assessment compares the simulated time over the same segment (free-flow time plus mean link delay, seed mean) with the range of the four years. A target for reading, not a fit constraint.",
+    "segments": [
+      {"id": "Telegraph Ave NB, 51st St to Russell St", "street": "Telegraph Avenue", "from": "51st Street", "to": "Russell Street", "lengthMi": 1.41, "observedMph": {"pm_peak": {"2012": 16.8, "2014": 14.9, "2016": 12.1, "2018": 15.1}, "am_peak": {"2012": 16.4, "2014": 18.1, "2016": 16.3, "2018": 16.1}}},
+      {"id": "Telegraph Ave SB, Russell St to 51st St", "street": "Telegraph Avenue", "from": "Russell Street", "to": "51st Street", "lengthMi": 1.41, "observedMph": {"pm_peak": {"2012": 16.0, "2014": 16.9, "2016": 13.5, "2018": 16.4}, "am_peak": {"2012": 20.7, "2014": 19.7, "2016": 17.8, "2018": 17.9}}},
+      {"id": "Shattuck Ave NB, 51st St to Alcatraz Ave", "street": "Shattuck Avenue", "from": "51st Street", "to": "Alcatraz Avenue", "lengthMi": 0.81, "observedMph": {"pm_peak": {"2012": 20.3, "2014": 18.2, "2016": 16.4, "2018": 16.4}, "am_peak": {"2012": 22.4, "2014": 20.9, "2016": 18.2, "2018": 20.3}}},
+      {"id": "Shattuck Ave SB, Alcatraz Ave to 51st St", "street": "Shattuck Avenue", "from": "Alcatraz Avenue", "to": "51st Street", "lengthMi": 0.81, "observedMph": {"pm_peak": {"2012": 13.2, "2014": 18.5, "2016": 15.8, "2018": 17.3}, "am_peak": {"2012": 14.5, "2014": 18.1, "2016": 19.9, "2018": 19.7}}},
+      {"id": "College Ave NB, Miles Ave to Ashby Ave", "street": "College Avenue", "from": "Miles Avenue", "to": "Ashby Avenue", "lengthMi": 0.83, "observedMph": {"pm_peak": {"2012": 15.9, "2014": 15.5, "2016": 10.0, "2018": 9.4}, "am_peak": {"2012": 12.5, "2014": 16.5, "2016": 13.1, "2018": 12.8}}},
+      {"id": "College Ave SB, Ashby Ave to Miles Ave", "street": "College Avenue", "from": "Ashby Avenue", "to": "Miles Avenue", "lengthMi": 0.83, "observedMph": {"pm_peak": {"2012": 11.2, "2014": 14.8, "2016": 10.2, "2018": 11.6}, "am_peak": {"2012": 15.7, "2014": 18.9, "2016": 14.6, "2018": 15.0}}}
+    ]
+  }
 }

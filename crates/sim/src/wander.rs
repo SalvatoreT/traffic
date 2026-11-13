@@ -86,7 +86,7 @@ pub fn analyze(topo: &Topo, eff: &Eff, net: &Network, recs: &[TripRecord]) -> Ve
                 router_ff.tables[cur_dest as usize] = None;
             }
             router.ensure_m(r.dest, topo, modal, &topo.length);
-            router_ff.ensure_m(r.dest, topo, eff.car_modal(), &eff.ff);
+            router_ff.ensure_m(r.dest, topo, eff.static_modal(), &eff.ff);
             cur_dest = r.dest;
         }
         let table = router.table(r.dest);
@@ -101,10 +101,10 @@ pub fn analyze(topo: &Topo, eff: &Eff, net: &Network, recs: &[TripRecord]) -> Ve
             shortest = driven;
         }
         let mut ff_len = driven;
-        if let Some(b) = first_link_m(router_ff.table(r.dest), topo, eff.car_modal(), r.origin, NO_NOISE) {
+        if let Some(b) = first_link_m(router_ff.table(r.dest), topo, eff.static_modal(), r.origin, NO_NOISE) {
             route_buf.clear();
             route_buf.push(b);
-            if walk_m(router_ff.table(r.dest), topo, eff.car_modal(), b, r.dest, NO_NOISE, &mut route_buf) {
+            if walk_m(router_ff.table(r.dest), topo, eff.static_modal(), b, r.dest, NO_NOISE, &mut route_buf) {
                 ff_len = trail_length(topo, &route_buf);
             }
         }

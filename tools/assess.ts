@@ -6,7 +6,7 @@
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';
-import { corridorRatios, featureStats, headlineError, meanLinkFlow, noiseFile, rampStats, readSeeds, scoreStations, shareStats, type SeedRun, type StationFile } from './lib/assess';
+import { corridorRatios, featureStats, headlineError, meanLinkFlow, noiseFile, rampStats, readSeeds, scoreStations, shareStats, travelTimes, type SeedRun, type StationFile, type TravelNet } from './lib/assess';
 import { seedStat } from './lib/acceptance';
 
 const root = resolve(import.meta.dirname, '..');
@@ -28,6 +28,8 @@ const seeds: number[] = seedSpec.split(',').flatMap((p) => { const m = p.match(/
 const targets = JSON.parse(readFileSync(resolve(root, `data/calibration/${area}.targets.json`), 'utf8'));
 const stationsPath = resolve(root, `data/demand/${area}.stations.json`);
 const stations: StationFile | null = existsSync(stationsPath) ? JSON.parse(readFileSync(stationsPath, 'utf8')) : null;
+const netPath = resolve(root, `public/data/${area}.network.json`);
+const travelNet: TravelNet | null = targets.travelTimes?.segments?.length && existsSync(netPath) ? JSON.parse(readFileSync(netPath, 'utf8')) : null;
 const keep = reuse ?? resolve(root, 'target/assess-seeds', `${minutes}${suffix}`);
 if (!reuse) { rmSync(keep, { recursive: true, force: true }); mkdirSync(keep, { recursive: true }); }
 
@@ -117,6 +119,13 @@ for (const p of periods) {
     if (bad.length) {
       L.push('', 'Stations with GEH of 5 or more (largest 12), with the reason class of the miss to be explained in the record [WebTAG-M3.1] 3.3.12:', '', '| Station | Held out | Counted | Modeled | GEH | Class |', '| --- | --- | --- | --- | --- | --- |');
       for (const c of bad) L.push(`| ${c.label} | ${c.held ? 'yes' : 'no'} | ${Math.round(c.counted)} | ${Math.round(c.modeled)} | ${f(c.geh, 1)} | ${c.gehClass} |`);
+    }
+  }
+  if (travelNet) {
+    const tt = travelTimes(runs, travelNet, targets.travelTimes.segments, p);
+    if (tt.length) {
+      L.push('', 'Arterial travel times against the observed peak-period speeds [ACTC-LOS2014] [ACTC-LOS2018] (simulated: free-flow time plus the mean delay per vehicle on each link, scaled to the published segment length; observed: the four count years):', '', '| Segment | Free flow (s) | Simulated (s) | 95% interval | Simulated (mph) | Observed (mph) | Observed (s) | Inside the observed range |', '| --- | --- | --- | --- | --- | --- | --- | --- |');
+      for (const r of tt) L.push(`| ${r.id} | ${f(r.freeS, 0)} | ${f(r.modeledS, 0)} | ${f(r.lo, 0)} to ${f(r.hi, 0)} | ${f(r.modeledMph, 1)} | ${r.observedMph.join(', ')} | ${f(r.observedS[0], 0)} to ${f(r.observedS[1], 0)} | ${r.within ? 'yes' : r.modeledS < r.observedS[0] ? 'no, too fast' : 'no, too slow'} |`);
     }
   }
   const cut = runs[0]?.patternFreewayThrough ?? [];

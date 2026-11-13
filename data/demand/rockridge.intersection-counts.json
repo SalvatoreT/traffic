@@ -1,0 +1,847 @@
+{
+ "_note": "DATA: weekday peak-hour turning-movement counts at intersections in the model area, transcribed from the traffic appendices of two certified environmental impact reports (public documents of the City of Oakland). Volumes are vehicles per hour by approach (SB arrives on the N leg, WB on the E leg, NB on the S leg, EB on the W leg) and movement (L left, T through, R right, U U-turn), for the peak hour of each intersection. Leg bearings (from the intersection toward the leg) and coordinates are read from OpenStreetMap geometry and only serve to place each leg on the network. Provenance and method: data/demand/README.md, \"Seventeenth round\". No growth factor is applied (ASSUMPTION).",
+ "sources": {
+  "CHRCO-EIR2014": {
+   "citation": "[CHRCO-EIR2014]",
+   "document": "Children's Hospital and Research Center Oakland Campus Master Plan Project, Draft Environmental Impact Report (LSA Associates for the City of Oakland, August 2014, SCH 2013072058), Appendix C, transportation data: intersection count sheets (Thursday 2013-09-19, 7 to 9 AM and 3 to 6 PM, All Traffic Data Services) and Synchro worksheets by Fehr & Peers",
+   "url": "https://www.oaklandca.gov/files/assets/city/v/1/planning-amp-building/documents/dp/ceqa/2011-present/childrens-hospital-draft-environmental-impact-report-appendix-c.pdf",
+   "counts": "Peak-hour totals of the count sheets (AM from 8:00; PM from 16:45 or 17:00, each intersection its own peak hour)."
+  },
+  "SafewayCollege-DEIR2011": {
+   "citation": "[SafewayCollege-DEIR2011]",
+   "document": "Safeway Shopping Center, College and Claremont Avenues, Draft Environmental Impact Report (City of Oakland, July 2011, SCH 2009112008), Appendix: traffic count sheets (Tuesday 2010-03-16, 4 to 7 PM, peak hour from 5:15 PM, National Data & Surveying Services) and Synchro worksheets by Fehr & Peers",
+   "url": "https://www.oaklandca.gov/files/assets/city/v/1/planning-amp-building/documents/dp/ceqa/2011-present/college-avenue-safeway-deir_2024-05-10-203917_bvqg.pdf",
+   "counts": "Volumes of the \"Existing PM Peak Hour\" worksheets: the counts, plus the vehicles left in queue at the end of the hour on the approaches the report names (Ashby Ave and Claremont Ave eastbound; Alcatraz Ave and College Ave northbound and southbound), so they are demand volumes. No AM count exists."
+  }
+ },
+ "intersections": [
+  {
+   "id": "mlk-55th",
+   "label": "Martin Luther King Jr Way and 55th St",
+   "source": "CHRCO-EIR2014",
+   "date": "2013-09-19",
+   "lat": 37.839759,
+   "lon": -122.269692,
+   "legs": {
+    "N": {
+     "street": "Martin Luther King Junior Way",
+     "bearing": 351
+    },
+    "S": {
+     "street": "Martin Luther King Junior Way",
+     "bearing": 171
+    },
+    "E": {
+     "street": "55th Street",
+     "bearing": 80
+    },
+    "W": {
+     "street": "55th Street",
+     "bearing": 260
+    }
+   },
+   "volumes": {
+    "am": {
+     "SB": {
+      "L": 50,
+      "T": 1239,
+      "R": 27,
+      "U": 2
+     },
+     "WB": {
+      "L": 54,
+      "T": 217,
+      "R": 57
+     },
+     "NB": {
+      "L": 127,
+      "T": 1340,
+      "R": 49,
+      "U": 13
+     },
+     "EB": {
+      "L": 13,
+      "T": 170,
+      "R": 219
+     }
+    },
+    "pm": {
+     "SB": {
+      "L": 84,
+      "T": 1294,
+      "R": 14,
+      "U": 2
+     },
+     "WB": {
+      "L": 49,
+      "T": 137,
+      "R": 42
+     },
+     "NB": {
+      "L": 197,
+      "T": 1578,
+      "R": 87,
+      "U": 13
+     },
+     "EB": {
+      "L": 12,
+      "T": 247,
+      "R": 161
+     }
+    }
+   }
+  },
+  {
+   "id": "shattuck-55th",
+   "label": "Shattuck Ave and 55th St",
+   "source": "CHRCO-EIR2014",
+   "date": "2013-09-19",
+   "lat": 37.840421,
+   "lon": -122.264534,
+   "legs": {
+    "N": {
+     "street": "Shattuck Avenue",
+     "bearing": 354
+    },
+    "S": {
+     "street": "Shattuck Avenue",
+     "bearing": 174
+    },
+    "E": {
+     "street": "55th Street",
+     "bearing": 93
+    },
+    "W": {
+     "street": "55th Street",
+     "bearing": 263
+    }
+   },
+   "volumes": {
+    "am": {
+     "SB": {
+      "L": 25,
+      "T": 544,
+      "R": 28
+     },
+     "WB": {
+      "L": 25,
+      "T": 250,
+      "R": 31
+     },
+     "NB": {
+      "L": 28,
+      "T": 430,
+      "R": 24
+     },
+     "EB": {
+      "L": 50,
+      "T": 187,
+      "R": 40
+     }
+    },
+    "pm": {
+     "SB": {
+      "L": 18,
+      "T": 530,
+      "R": 24
+     },
+     "WB": {
+      "L": 16,
+      "T": 134,
+      "R": 36
+     },
+     "NB": {
+      "L": 27,
+      "T": 523,
+      "R": 33
+     },
+     "EB": {
+      "L": 70,
+      "T": 292,
+      "R": 43
+     }
+    }
+   }
+  },
+  {
+   "id": "telegraph-55th",
+   "label": "Telegraph Ave and 55th St",
+   "source": "CHRCO-EIR2014",
+   "date": "2013-09-19",
+   "lat": 37.840172,
+   "lon": -122.261908,
+   "legs": {
+    "N": {
+     "street": "Telegraph Avenue",
+     "bearing": 6
+    },
+    "S": {
+     "street": "Telegraph Avenue",
+     "bearing": 186
+    },
+    "E": {
+     "street": "55th Street",
+     "bearing": 101
+    },
+    "W": {
+     "street": "55th Street",
+     "bearing": 283
+    }
+   },
+   "volumes": {
+    "am": {
+     "SB": {
+      "L": 27,
+      "T": 806,
+      "R": 236
+     },
+     "WB": {
+      "L": 32,
+      "T": 10,
+      "R": 9
+     },
+     "NB": {
+      "L": 58,
+      "T": 715,
+      "R": 40
+     },
+     "EB": {
+      "L": 136,
+      "T": 14,
+      "R": 77
+     }
+    },
+    "pm": {
+     "SB": {
+      "L": 26,
+      "T": 978,
+      "R": 95
+     },
+     "WB": {
+      "L": 40,
+      "T": 11,
+      "R": 18
+     },
+     "NB": {
+      "L": 75,
+      "T": 941,
+      "R": 54
+     },
+     "EB": {
+      "L": 225,
+      "T": 18,
+      "R": 105
+     }
+    }
+   }
+  },
+  {
+   "id": "mlk-52nd",
+   "label": "Martin Luther King Jr Way and 52nd St",
+   "source": "CHRCO-EIR2014",
+   "date": "2013-09-19",
+   "lat": 37.837174,
+   "lon": -122.268516,
+   "legs": {
+    "N": {
+     "street": "Martin Luther King Junior Way",
+     "bearing": 328
+    },
+    "S": {
+     "street": "Martin Luther King Junior Way",
+     "bearing": 145
+    },
+    "E": {
+     "street": "52nd Street",
+     "bearing": 81
+    },
+    "W": {
+     "street": "52nd Street",
+     "bearing": 260
+    }
+   },
+   "volumes": {
+    "am": {
+     "SB": {
+      "L": 105,
+      "T": 1476
+     },
+     "WB": {
+      "L": 63,
+      "T": 80,
+      "R": 148
+     },
+     "NB": {
+      "L": 56,
+      "T": 1390,
+      "R": 132,
+      "U": 50
+     },
+     "EB": {
+      "L": 30,
+      "T": 85,
+      "R": 100
+     }
+    },
+    "pm": {
+     "SB": {
+      "L": 143,
+      "T": 1493,
+      "R": 1
+     },
+     "WB": {
+      "L": 125,
+      "T": 84,
+      "R": 191
+     },
+     "NB": {
+      "L": 74,
+      "T": 1663,
+      "R": 91,
+      "U": 42
+     },
+     "EB": {
+      "L": 65,
+      "T": 118,
+      "R": 95
+     }
+    }
+   }
+  },
+  {
+   "id": "sr24-52nd",
+   "label": "SR-24 ramps and 52nd St",
+   "source": "CHRCO-EIR2014",
+   "date": "2013-09-19",
+   "lat": 37.83771,
+   "lon": -122.26482,
+   "legs": {
+    "S": {
+     "ramp": true,
+     "bearing": 210
+    },
+    "N": {
+     "ramp": true,
+     "bearing": 281
+    },
+    "E": {
+     "street": "52nd Street",
+     "bearing": 81
+    },
+    "W": {
+     "street": "52nd Street",
+     "bearing": 259
+    }
+   },
+   "volumes": {
+    "am": {
+     "WB": {
+      "T": 366,
+      "R": 1076
+     },
+     "NB": {
+      "R": 898
+     },
+     "EB": {
+      "T": 231
+     }
+    },
+    "pm": {
+     "WB": {
+      "T": 364,
+      "R": 996
+     },
+     "NB": {
+      "R": 1024
+     },
+     "EB": {
+      "T": 423
+     }
+    }
+   },
+   "note": "The eastbound off-ramp is the northbound approach (stop controlled in 2013) and the westbound on-ramp leaves from the westbound approach by a right turn."
+  },
+  {
+   "id": "shattuck-52nd",
+   "label": "Shattuck Ave and 52nd St",
+   "source": "CHRCO-EIR2014",
+   "date": "2013-09-19",
+   "lat": 37.837783,
+   "lon": -122.264175,
+   "legs": {
+    "N": {
+     "street": "Shattuck Avenue",
+     "bearing": 355
+    },
+    "S": {
+     "street": "Shattuck Avenue",
+     "bearing": 174
+    },
+    "E": {
+     "street": "52nd Street",
+     "bearing": 82
+    },
+    "W": {
+     "street": "52nd Street",
+     "bearing": 260
+    }
+   },
+   "volumes": {
+    "am": {
+     "SB": {
+      "L": 96,
+      "T": 136,
+      "R": 376
+     },
+     "WB": {
+      "L": 21,
+      "T": 866,
+      "R": 82,
+      "U": 3
+     },
+     "NB": {
+      "L": 154,
+      "T": 123,
+      "R": 30
+     },
+     "EB": {
+      "L": 285,
+      "T": 691,
+      "R": 148,
+      "U": 40
+     }
+    },
+    "pm": {
+     "SB": {
+      "L": 140,
+      "T": 143,
+      "R": 346
+     },
+     "WB": {
+      "L": 35,
+      "T": 829,
+      "R": 129,
+      "U": 8
+     },
+     "NB": {
+      "L": 146,
+      "T": 207,
+      "R": 40
+     },
+     "EB": {
+      "L": 302,
+      "T": 913,
+      "R": 172,
+      "U": 40
+     }
+    }
+   }
+  },
+  {
+   "id": "telegraph-52nd-claremont",
+   "label": "Telegraph Ave, 52nd St and Claremont Ave",
+   "source": "CHRCO-EIR2014",
+   "date": "2013-09-19",
+   "lat": 37.83802,
+   "lon": -122.262201,
+   "legs": {
+    "N": {
+     "street": "Telegraph Avenue",
+     "bearing": 6
+    },
+    "S": {
+     "street": "Telegraph Avenue",
+     "bearing": 186
+    },
+    "E": {
+     "street": "Claremont Avenue",
+     "bearing": 82
+    },
+    "W": {
+     "street": "52nd Street",
+     "bearing": 261
+    }
+   },
+   "volumes": {
+    "am": {
+     "SB": {
+      "L": 64,
+      "T": 598,
+      "R": 269
+     },
+     "WB": {
+      "L": 94,
+      "T": 52,
+      "R": 154
+     },
+     "NB": {
+      "T": 665,
+      "R": 117
+     },
+     "EB": {
+      "L": 6,
+      "R": 6
+     }
+    },
+    "pm": {
+     "SB": {
+      "L": 107,
+      "T": 721,
+      "R": 293
+     },
+     "WB": {
+      "L": 88,
+      "T": 63,
+      "R": 155
+     },
+     "NB": {
+      "L": 8,
+      "T": 872,
+      "R": 244
+     },
+     "EB": {
+      "L": 13,
+      "T": 6,
+      "R": 21
+     }
+    }
+   }
+  },
+  {
+   "id": "telegraph-51st",
+   "label": "Telegraph Ave and 51st St",
+   "source": "CHRCO-EIR2014",
+   "date": "2013-09-19",
+   "lat": 37.837292,
+   "lon": -122.262302,
+   "legs": {
+    "N": {
+     "street": "Telegraph Avenue",
+     "bearing": 6
+    },
+    "S": {
+     "street": "Telegraph Avenue",
+     "bearing": 188
+    },
+    "E": {
+     "street": "51st Street",
+     "bearing": 100
+    },
+    "W": {
+     "street": "51st Street",
+     "bearing": 284
+    }
+   },
+   "volumes": {
+    "am": {
+     "SB": {
+      "L": 146,
+      "T": 511,
+      "R": 38,
+      "U": 1
+     },
+     "WB": {
+      "L": 99,
+      "T": 530,
+      "R": 238,
+      "U": 2
+     },
+     "NB": {
+      "L": 90,
+      "T": 320,
+      "R": 58
+     },
+     "EB": {
+      "L": 228,
+      "T": 488,
+      "R": 68
+     }
+    },
+    "pm": {
+     "SB": {
+      "L": 279,
+      "T": 514,
+      "R": 44
+     },
+     "WB": {
+      "L": 57,
+      "T": 459,
+      "R": 227
+     },
+     "NB": {
+      "L": 62,
+      "T": 578,
+      "R": 99
+     },
+     "EB": {
+      "L": 347,
+      "T": 638,
+      "R": 85
+     }
+    }
+   }
+  },
+  {
+   "id": "sr24-mlk",
+   "label": "SR-24 ramps and Martin Luther King Jr Way",
+   "source": "CHRCO-EIR2014",
+   "date": "2013-09-19",
+   "lat": 37.83554,
+   "lon": -122.26716,
+   "legs": {
+    "E": {
+     "ramp": true,
+     "bearing": 148
+    }
+   },
+   "volumes": {
+    "am": {
+     "SB": {
+      "L": 1417
+     },
+     "WB": {
+      "R": 1501
+     }
+    },
+    "pm": {
+     "SB": {
+      "L": 1547
+     },
+     "WB": {
+      "R": 1614
+     }
+    }
+   },
+   "note": "Only the ramp leg is used: the off-ramp is the westbound approach (all right turns) and the on-ramp takes the southbound left turns. The northbound right turn onto the freeway was counted as 0 here; it uses a separate ramp."
+  },
+  {
+   "id": "ashby-claremont",
+   "label": "Ashby Ave and Claremont Ave",
+   "source": "SafewayCollege-DEIR2011",
+   "date": "2010-03-16",
+   "lat": 37.858117,
+   "lon": -122.245337,
+   "legs": {
+    "N": {
+     "street": "Claremont Avenue",
+     "bearing": 30
+    },
+    "S": {
+     "street": "Claremont Avenue",
+     "bearing": 214
+    },
+    "E": {
+     "street": "Ashby Avenue",
+     "bearing": 88
+    },
+    "W": {
+     "street": "Ashby Avenue",
+     "bearing": 268
+    }
+   },
+   "volumes": {
+    "pm": {
+     "SB": {
+      "L": 272,
+      "T": 234,
+      "R": 43
+     },
+     "WB": {
+      "L": 89,
+      "T": 553,
+      "R": 239
+     },
+     "NB": {
+      "L": 53,
+      "T": 359,
+      "R": 165
+     },
+     "EB": {
+      "L": 99,
+      "T": 650,
+      "R": 34
+     }
+    }
+   }
+  },
+  {
+   "id": "alcatraz-college",
+   "label": "Alcatraz Ave and College Ave",
+   "source": "SafewayCollege-DEIR2011",
+   "date": "2010-03-16",
+   "lat": 37.851292,
+   "lon": -122.252495,
+   "legs": {
+    "N": {
+     "street": "College Avenue",
+     "bearing": 356
+    },
+    "S": {
+     "street": "College Avenue",
+     "bearing": 176
+    },
+    "E": {
+     "street": "Alcatraz Avenue",
+     "bearing": 72
+    },
+    "W": {
+     "street": "Alcatraz Avenue",
+     "bearing": 260
+    }
+   },
+   "volumes": {
+    "pm": {
+     "SB": {
+      "L": 41,
+      "T": 337,
+      "R": 87
+     },
+     "WB": {
+      "L": 5,
+      "T": 122,
+      "R": 23
+     },
+     "NB": {
+      "L": 128,
+      "T": 271,
+      "R": 24
+     },
+     "EB": {
+      "L": 60,
+      "T": 267,
+      "R": 183
+     }
+    }
+   }
+  },
+  {
+   "id": "alcatraz-claremont",
+   "label": "Alcatraz Ave and Claremont Ave",
+   "source": "SafewayCollege-DEIR2011",
+   "date": "2010-03-16",
+   "lat": 37.851871,
+   "lon": -122.250356,
+   "legs": {
+    "N": {
+     "street": "Claremont Avenue",
+     "bearing": 33
+    },
+    "S": {
+     "street": "Claremont Avenue",
+     "bearing": 213
+    },
+    "W": {
+     "street": "Alcatraz Avenue",
+     "bearing": 267
+    }
+   },
+   "volumes": {
+    "pm": {
+     "SB": {
+      "T": 351,
+      "R": 103
+     },
+     "NB": {
+      "L": 38,
+      "T": 521
+     },
+     "EB": {
+      "L": 233,
+      "R": 64
+     }
+    }
+   }
+  },
+  {
+   "id": "sr24-hudson-claremont",
+   "label": "SR-24 westbound on-ramp, Hudson St and Claremont Ave",
+   "source": "SafewayCollege-DEIR2011",
+   "date": "2010-03-16",
+   "lat": 37.842875,
+   "lon": -122.257558,
+   "legs": {
+    "N": {
+     "street": "Claremont Avenue",
+     "bearing": 33
+    },
+    "S": {
+     "street": "Claremont Avenue",
+     "bearing": 213
+    },
+    "E": {
+     "street": "Hudson Street",
+     "bearing": 111
+    },
+    "W": {
+     "ramp": true,
+     "bearing": 260
+    }
+   },
+   "volumes": {
+    "pm": {
+     "SB": {
+      "L": 49,
+      "T": 161,
+      "R": 465
+     },
+     "WB": {
+      "L": 20,
+      "T": 71,
+      "R": 81
+     },
+     "NB": {
+      "L": 62,
+      "T": 706,
+      "R": 88
+     }
+    }
+   }
+  },
+  {
+   "id": "sr24-clifton-claremont",
+   "label": "SR-24 eastbound off-ramp, Clifton St and Claremont Ave",
+   "source": "SafewayCollege-DEIR2011",
+   "date": "2010-03-16",
+   "lat": 37.841008,
+   "lon": -122.259056,
+   "legs": {
+    "N": {
+     "street": "Claremont Avenue",
+     "bearing": 33
+    },
+    "S": {
+     "street": "Claremont Avenue",
+     "bearing": 212
+    },
+    "E": {
+     "street": "Clifton Street",
+     "bearing": 119
+    },
+    "W": {
+     "ramp": true,
+     "bearing": 297
+    }
+   },
+   "volumes": {
+    "pm": {
+     "SB": {
+      "L": 12,
+      "T": 168
+     },
+     "WB": {
+      "R": 32
+     },
+     "NB": {
+      "T": 383,
+      "R": 67
+     },
+     "EB": {
+      "L": 442,
+      "T": 108,
+      "R": 67
+     }
+    }
+   }
+  }
+ ]
+}

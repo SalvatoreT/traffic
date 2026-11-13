@@ -25,6 +25,9 @@ pub const NODE_SAFE_S: f32 = 0.5; // ASSUMPTION: s to spare when an entering veh
 pub const POCKET_VEH: usize = 3; // ASSUMPTION: left-turn pocket storage, vehicles (~20 m); more lefts queue in the through lane
 pub const POCKET_LEN: f32 = 20.0; // ASSUMPTION: pocket storage length (m); a through-lane queue longer than this blocks pocket entry
 pub const POCKET_MIN_LINK_M: f32 = 40.0; // ASSUMPTION: shortest approach link that can hold a pocket
+pub const MARKED_LEFT_LANE: bool = true; // a left-turn lane marked on the link (OSM `turn:lanes`, [OSMTurnLanes]) holds left-turners along the whole link and they use no other lane; false restores the 3-car pocket rule for marked lanes
+pub const LANE_LOOKAHEAD_M: f32 = 150.0; // ASSUMPTION: a driver picks the lane for the next left or right turn this far ahead of it, across link ends that offer no choice; 0 looks only at the end of the link entered
+pub const TURN_LANE_HALF: bool = true; // ASSUMPTION: a driver sorting for a left (right) turn uses only the left (right) half of the lanes, the middle lane of an odd number included, and waits when they are full; false lets the driver take any lane with room
 pub const SNEAKERS: u8 = 2; // ASSUMPTION: permissive left-turners that may clear per signal cycle on yellow/all-red (HCM practice; [HCM7] value not verified in references.md)
 pub const SHARP_TURN_MAX: f64 = 2.88; // ASSUMPTION: rad (165 degrees); a turn between 149 and 165 degrees onto a street of another name is a sharp turn at an acute junction, not a U-turn
 pub const SPAWN_SCAN: usize = 512; // ASSUMPTION: a gate stands for a multilane road whose vehicles arrive side by side, so a waiting trip whose first link has no room does not hold back the trips behind it that use another first link; at most this many waiting trips are scanned per step, in order, and a trip never passes another on the same first link
@@ -77,6 +80,7 @@ pub const MIN_SWITCH_GAP_S: f64 = 120.0;
 /// ASSUMPTION: a driver whose next link has had no room for this long (s) re-routes whatever its class, backtracking allowed.
 pub const BLOCKED_REROUTE_S: f32 = 60.0;
 pub const EMA_ALPHA: f32 = 0.3; // ASSUMPTION
+pub const ROUTE_COST_BY_TURN: bool = true; // route costs use the measured link time of the vehicles that made the same movement at the link end, not the mean over all movements; false restores one time per link
 pub const ROUTE_NOISE: f32 = 0.08; // ASSUMPTION: per-driver perceived-cost noise (+-8%)
 pub const TURN_RIGHT_S: f32 = 1.0; // ASSUMPTION: turn penalties for routing (s)
 pub const TURN_LEFT_S: f32 = 4.0; // ASSUMPTION

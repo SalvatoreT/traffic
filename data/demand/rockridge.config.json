@@ -468,9 +468,13 @@
     "bounds": {
       "lo": 0.1,
       "hi": 3,
-      "_note": "ASSUMPTION: limits on a flow's cumulative factor.",
+      "_note": "ASSUMPTION: limits on a flow's cumulative factor. The matrix-estimation methods the fit follows ([VanZuylen1980], [Willumsen1981]) set no limit; the limits keep one count from rewriting a flow. Ramp flows go to 10 since the seventh round. Local flows go to 10 since the seventeenth: their prior comes from trip rates per resident worker that miss non-work trips, and inside the study area the volunteer count put the trip ends at 3.4 to 4.2 times that prior, above the old limit of 3.",
       "byType": {
         "ramp": {
+          "lo": 0.1,
+          "hi": 10
+        },
+        "local": {
           "lo": 0.1,
           "hi": 10
         }
@@ -642,5 +646,24 @@
         "reason": "the summary table lists 48 for AM and 34 for PM; the route diagrams, the access table and the block maps agree on AM 34 and PM 48, so the columns are taken as swapped"
       }
     ]
+  },
+  "intersectionCounts": {
+    "enabled": true,
+    "_note": "DATA: peak-hour turning-movement counts from published environmental impact reports (file below; data/demand/README.md, seventeenth round). Each leg gives a volume entering and leaving on its links (weight as a turning-movement leg), left and right turns of at least minMovementVeh are movement constraints (movementWeight, they restate part of the legs), and a counted ramp leg replaces the ramp ADT x K station (rampWeight). ASSUMPTION: no growth from the count year; midday takes the PM count times the ratio of the period volume factors at middayWeightFactor of the weight; a ramp without a count in a period keeps its ADT-based target scaled by the count ratio of the PM peak.",
+    "file": "data/demand/rockridge.intersection-counts.json",
+    "periods": {
+      "am": "am_peak",
+      "pm": "pm_peak",
+      "midday": "midday"
+    },
+    "weight": 1,
+    "rampWeight": 2,
+    "movementWeight": 0.5,
+    "minMovementVeh": 25,
+    "tolerancePct": 15,
+    "nodeMaxM": 80,
+    "bearingTolDeg": 60,
+    "middayFromPm": true,
+    "middayWeightFactor": 0.5
   }
 }

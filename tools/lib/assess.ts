@@ -112,3 +112,51 @@ export function featureStats(runs: SeedRun[], id: string) {
   const v = runs.map((r) => r.features?.find((x) => x.id === id)?.vehPerHour ?? NaN);
   return seedStat(v);
 }
+
+export interface TravelTimeSpec { id: string; street: string; from: string; to: string; lengthMi: number; observedMph: Record<string, Record<string, number>> }
+export interface TravelNet { nodes: { id: number }[]; links: { id: number; from: number; to: number; name: string; length: number; speedLimit: number }[] }
+export interface TravelTimeRow { id: string; lengthM: number; links: number; freeS: number; modeledS: number; lo: number; hi: number; modeledMph: number; observedMph: number[]; observedS: [number, number]; within: boolean }
+
+/** Links of `street` from its junction with `from` to its junction with `to` (shortest by length), or null. */
+export function streetPath(net: TravelNet, street: string, from: string, to: string): number[] | null {
+  const touch = new Map<string, Set<number>>();
+  for (const l of net.links) for (const n of [l.from, l.to]) (touch.get(l.name) ?? touch.set(l.name, new Set()).get(l.name)!).add(n);
+  const on = touch.get(street), A = touch.get(from), B = touch.get(to);
+  if (!on || !A || !B) return null;
+  const out = new Map<number, number[]>();
+  net.links.forEach((l, i) => { if (l.name === street) (out.get(l.from) ?? out.set(l.from, []).get(l.from)!).push(i); });
+  const dist = new Map<number, number>(), prev = new Map<number, number>();
+  const open = [...A].filter((n) => on.has(n));
+  for (const n of open) dist.set(n, 0);
+  while (open.length) {
+    open.sort((x, y) => dist.get(y)! - dist.get(x)!);
+    const n = open.pop()!;
+    for (const i of out.get(n) ?? []) {
+      const l = net.links[i], d = dist.get(n)! + l.length;
+      if (d < (dist.get(l.to) ?? Infinity)) { dist.set(l.to, d); prev.set(l.to, i); open.push(l.to); }
+    }
+  }
+  const ends = [...B].filter((n) => dist.has(n) && prev.has(n)).sort((x, y) => dist.get(x)! - dist.get(y)!);
+  if (!ends.length) return null;
+  const path: number[] = [];
+  for (let n = ends[0]; prev.has(n); n = net.links[prev.get(n)!].from) path.unshift(prev.get(n)!);
+  return path;
+}
+
+/** Simulated time over each observed segment: free-flow time plus the mean delay per vehicle of its links, per seed, against the observed speeds of the period. */
+export function travelTimes(runs: SeedRun[], net: TravelNet, specs: TravelTimeSpec[], period: string): TravelTimeRow[] {
+  const rows: TravelTimeRow[] = [];
+  for (const q of specs) {
+    const obs = Object.values(q.observedMph[period] ?? {});
+    const path = streetPath(net, q.street, q.from, q.to);
+    if (!path || !obs.length) continue;
+    const lengthM = path.reduce((a, i) => a + net.links[i].length, 0), freeS = path.reduce((a, i) => a + net.links[i].length / net.links[i].speedLimit, 0);
+    const st = seedStat(runs.filter((r) => r.linkMeanDelayS).map((r) => freeS + path.reduce((a, i) => a + r.linkMeanDelayS![i], 0)));
+    const sOf = (mph: number) => (q.lengthMi * 1609.344) / (mph / 2.23694);
+    const range: [number, number] = [sOf(Math.max(...obs)), sOf(Math.min(...obs))];
+    // The modeled speed uses the published segment length, so a small difference in where the network places the cross streets does not count.
+    const modeledS = st.mean * ((q.lengthMi * 1609.344) / lengthM);
+    rows.push({ id: q.id, lengthM, links: path.length, freeS, modeledS, lo: st.lo * ((q.lengthMi * 1609.344) / lengthM), hi: st.hi * ((q.lengthMi * 1609.344) / lengthM), modeledMph: ((q.lengthMi * 1609.344) / modeledS) * 2.23694, observedMph: obs, observedS: range, within: modeledS >= range[0] && modeledS <= range[1] });
+  }
+  return rows;
+}

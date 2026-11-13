@@ -282,7 +282,7 @@ pub fn approach_cap(a: Appr, seed: u64, extra: &[(u32, u32, f64, FlowMode)], nod
     nodes_fn(&mut net, &x);
     let q = 4000.0 * a.lanes as f64;
     let mut fl = vec![
-        (x.w, x.e, q * (1.0 - a.p_left - a.p_right), FlowMode::Car),
+        (x.w, x.e, (q * (1.0 - a.p_left - a.p_right)).max(1.0), FlowMode::Car),
         (x.s, x.n, q, FlowMode::Car),
         (x.n, x.s, q, FlowMode::Car),
     ];
@@ -524,6 +524,7 @@ pub fn run_all() -> Vec<Case> {
         ("b9", "2 lanes, 10% left, pocket, opposing 500/lane", Appr { lanes: 2, p_left: 0.1, opp: 500.0, ..base }, "Brilon1999"),
                 ("b5", "1 lane, 10% left, no pocket, opposing 500/lane", Appr { p_left: 0.1, pocket: false, opp: 500.0, ..base }, "ASSUMPTION"),
         ("b6", "1 lane, 20% left, no pocket, opposing 500/lane", Appr { p_left: 0.2, pocket: false, opp: 500.0, ..base }, "ASSUMPTION"),
+        ("b12", "1 lane, all left turns, no opposing traffic (a protected left)", Appr { p_left: 1.0, ..base }, "ASSUMPTION"),
         ("b7", "1 lane, 10% right", Appr { p_right: 0.1, ..base }, "ASSUMPTION"),
         ("b8", "1 lane, 20% right", Appr { p_right: 0.2, ..base }, "ASSUMPTION"),
     ] {
@@ -534,7 +535,7 @@ pub fn run_all() -> Vec<Case> {
             (0.8 * l, h, "min(permissive-left limit, through limit), s 1,800 to 1,900, lower bound 0.8 of it")
         } else if src == "ASSUMPTION" {
             let f = if a.pocket { (0.85, 1.0) } else if a.p_left > 0.15 { (0.40, 0.85) } else { (0.5, 0.9) };
-            let f = if a.p_right > 0.0 { (0.85, 1.0) } else { f };
+            let f = if a.p_right > 0.0 || a.p_left >= 1.0 { (0.85, 1.0) } else { f };
             (1500.0 * gc * f.0, 2000.0 * gc * f.1, "no verified adjustment factor: lower bound 0.85 (right), 0.40 to 0.5 (left, shared lane) of s x green share")
         } else {
             (1500.0 * gc, 2000.0 * gc, "s x green share, s observed 1,500 to 2,000 (ideal 1,900)")

@@ -92,7 +92,7 @@
   "periodWindows": { "am_peak": [7, 9], "midday": [11, 13], "pm_peak": [16, 18] },
   "calibration": {
     "status": "uncalibrated",
-    "note": "The PM peak still removes about two stuck vehicles per hour, and the 52nd St off-ramp carries 473 veh/h against 1,278 counted.",
+    "note": "The PM peak still removes about one stuck vehicle per hour, and the 52nd St off-ramp carries 538 veh/h against 1,024 counted.",
     "defaultPeriod": "midday",
     "experimentalPeriods": [
       "pm_peak"
@@ -122,6 +122,132 @@
       "cycleSeconds": 147,
       "greenSeconds": 10,
       "source": "same count, from 9 AM: cycle 147 s, red 137 s, green 10 s; applied to midday as an ASSUMPTION (the count has no midday hour)"
+    },
+    {
+      "at": ["Shattuck Avenue", "52nd Street"],
+      "approach": "52nd Street",
+      "heading": 80,
+      "ownPhase": true,
+      "periods": ["pm_peak"],
+      "cycleSeconds": 110,
+      "greenSeconds": 33.5,
+      "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing PM', 52nd Street & Shattuck Ave: actuated cycle 110 s; eastbound left protected with 33.5 s of green (eastbound through 57.2 s), westbound through 27.6 s. The eastbound approach is given a phase of its own with the protected-left green and the westbound approach one with its through green (ASSUMPTION: a lead-lag protected left shown as split phases, so the eastbound through loses the part of its green that overlaps the westbound one)"
+    },
+    {
+      "at": ["Shattuck Avenue", "52nd Street"],
+      "approach": "52nd Street",
+      "heading": 260,
+      "ownPhase": true,
+      "periods": ["pm_peak"],
+      "cycleSeconds": 110,
+      "greenSeconds": 27.6,
+      "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing PM', 52nd Street & Shattuck Ave: actuated cycle 110 s; eastbound left protected with 33.5 s of green (eastbound through 57.2 s), westbound through 27.6 s. The eastbound approach is given a phase of its own with the protected-left green and the westbound approach one with its through green (ASSUMPTION: a lead-lag protected left shown as split phases, so the eastbound through loses the part of its green that overlaps the westbound one)"
+    },
+    {
+      "at": ["Shattuck Avenue", "52nd Street"],
+      "approach": "52nd Street",
+      "heading": 80,
+      "ownPhase": true,
+      "periods": ["am_peak"],
+      "cycleSeconds": 90,
+      "greenSeconds": 21.5,
+      "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing AM', 52nd Street & Shattuck Ave: actuated cycle 90 s; eastbound left protected with 21.5 s of green (eastbound through 37.7 s), westbound through 19.4 s. The eastbound approach is given a phase of its own with the protected-left green and the westbound approach one with its through green (ASSUMPTION: a lead-lag protected left shown as split phases, so the eastbound through loses the part of its green that overlaps the westbound one)"
+    },
+    {
+      "at": ["Shattuck Avenue", "52nd Street"],
+      "approach": "52nd Street",
+      "heading": 260,
+      "ownPhase": true,
+      "periods": ["am_peak"],
+      "cycleSeconds": 90,
+      "greenSeconds": 19.4,
+      "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing AM', 52nd Street & Shattuck Ave: actuated cycle 90 s; eastbound left protected with 21.5 s of green (eastbound through 37.7 s), westbound through 19.4 s. The eastbound approach is given a phase of its own with the protected-left green and the westbound approach one with its through green (ASSUMPTION: a lead-lag protected left shown as split phases, so the eastbound through loses the part of its green that overlaps the westbound one)"
+    },
+    {
+      "at": ["Shattuck Avenue", "52nd Street"],
+      "approach": "52nd Street",
+      "heading": 80,
+      "ownPhase": true,
+      "periods": ["midday"],
+      "cycleSeconds": 110,
+      "greenSeconds": 33.5,
+      "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing PM', 52nd Street & Shattuck Ave: actuated cycle 110 s; eastbound left protected with 33.5 s of green (eastbound through 57.2 s), westbound through 27.6 s. The eastbound approach is given a phase of its own with the protected-left green and the westbound approach one with its through green (ASSUMPTION: a lead-lag protected left shown as split phases, so the eastbound through loses the part of its green that overlaps the westbound one); applied to midday as an ASSUMPTION (no midday worksheet)"
+    },
+    {
+      "at": ["Shattuck Avenue", "52nd Street"],
+      "approach": "52nd Street",
+      "heading": 260,
+      "ownPhase": true,
+      "periods": ["midday"],
+      "cycleSeconds": 110,
+      "greenSeconds": 27.6,
+      "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing PM', 52nd Street & Shattuck Ave: actuated cycle 110 s; eastbound left protected with 33.5 s of green (eastbound through 57.2 s), westbound through 27.6 s. The eastbound approach is given a phase of its own with the protected-left green and the westbound approach one with its through green (ASSUMPTION: a lead-lag protected left shown as split phases, so the eastbound through loses the part of its green that overlaps the westbound one); applied to midday as an ASSUMPTION (no midday worksheet)"
+    },
+    {
+      "at": ["Martin Luther King Junior Way"],
+      "near": [37.835195, -122.267011],
+      "approach": "Martin Luther King Junior Way",
+      "heading": 154,
+      "ownPhase": true,
+      "periods": ["pm_peak"],
+      "cycleSeconds": 50,
+      "greenSeconds": 29,
+      "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing PM', SB SR-24 On-Ramp & MLK Way & NB SR-24 Off-Ramp: cycle 50 s; the southbound stream that turns onto the on-ramp (1547 veh/h) has 29 s of green in a phase of its own and the northbound stream that crosses it (268 veh/h) 13 s"
+    },
+    {
+      "at": ["Martin Luther King Junior Way"],
+      "near": [37.835195, -122.267011],
+      "approach": "Martin Luther King Junior Way",
+      "heading": 11,
+      "ownPhase": true,
+      "periods": ["pm_peak"],
+      "cycleSeconds": 50,
+      "greenSeconds": 13,
+      "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing PM', SB SR-24 On-Ramp & MLK Way & NB SR-24 Off-Ramp: cycle 50 s; the southbound stream that turns onto the on-ramp (1547 veh/h) has 29 s of green in a phase of its own and the northbound stream that crosses it (268 veh/h) 13 s"
+    },
+    {
+      "at": ["Martin Luther King Junior Way"],
+      "near": [37.835195, -122.267011],
+      "approach": "Martin Luther King Junior Way",
+      "heading": 154,
+      "ownPhase": true,
+      "periods": ["am_peak"],
+      "cycleSeconds": 45,
+      "greenSeconds": 29,
+      "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing AM', SB SR-24 On-Ramp & MLK Way & NB SR-24 Off-Ramp: cycle 45 s; the southbound stream that turns onto the on-ramp (1417 veh/h) has 29 s of green in a phase of its own and the northbound stream that crosses it (148 veh/h) 8 s (the southbound green is the cycle less the northbound green and 8 s of lost time)"
+    },
+    {
+      "at": ["Martin Luther King Junior Way"],
+      "near": [37.835195, -122.267011],
+      "approach": "Martin Luther King Junior Way",
+      "heading": 11,
+      "ownPhase": true,
+      "periods": ["am_peak"],
+      "cycleSeconds": 45,
+      "greenSeconds": 8,
+      "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing AM', SB SR-24 On-Ramp & MLK Way & NB SR-24 Off-Ramp: cycle 45 s; the southbound stream that turns onto the on-ramp (1417 veh/h) has 29 s of green in a phase of its own and the northbound stream that crosses it (148 veh/h) 8 s (the southbound green is the cycle less the northbound green and 8 s of lost time)"
+    },
+    {
+      "at": ["Martin Luther King Junior Way"],
+      "near": [37.835195, -122.267011],
+      "approach": "Martin Luther King Junior Way",
+      "heading": 154,
+      "ownPhase": true,
+      "periods": ["midday"],
+      "cycleSeconds": 50,
+      "greenSeconds": 29,
+      "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing PM', SB SR-24 On-Ramp & MLK Way & NB SR-24 Off-Ramp: cycle 50 s; the southbound stream that turns onto the on-ramp (1547 veh/h) has 29 s of green in a phase of its own and the northbound stream that crosses it (268 veh/h) 13 s; applied to midday as an ASSUMPTION (no midday worksheet)"
+    },
+    {
+      "at": ["Martin Luther King Junior Way"],
+      "near": [37.835195, -122.267011],
+      "approach": "Martin Luther King Junior Way",
+      "heading": 11,
+      "ownPhase": true,
+      "periods": ["midday"],
+      "cycleSeconds": 50,
+      "greenSeconds": 13,
+      "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing PM', SB SR-24 On-Ramp & MLK Way & NB SR-24 Off-Ramp: cycle 50 s; the southbound stream that turns onto the on-ramp (1547 veh/h) has 29 s of green in a phase of its own and the northbound stream that crosses it (268 veh/h) 13 s; applied to midday as an ASSUMPTION (no midday worksheet)"
     }
   ]
 }

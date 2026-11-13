@@ -801,7 +801,7 @@ fn traffic_circle_replaces_control_and_caps_speed() {
 #[test]
 fn observed_signal_timing_sets_cycle_and_green_of_the_approach() {
     let (mut net, x) = cross4(Control::Signal, RoadClass::Residential, false);
-    net.nodes[x.c as usize].signal_timing = vec![SignalTiming { periods: vec!["p".into()], cycle_s: 79.0, greens: vec![ApproachGreen { links: vec![x.s_in], green_s: 4.0 }], source: "test".into() }];
+    net.nodes[x.c as usize].signal_timing = vec![SignalTiming { periods: vec!["p".into()], cycle_s: 79.0, greens: vec![ApproachGreen { links: vec![x.s_in], green_s: 4.0, own_phase: false }], source: "test".into() }];
     let d = demand(&[(x.w, x.e, 700.0), (x.e, x.w, 700.0), (x.s, x.n, 150.0), (x.n, x.s, 150.0)]);
     let mut sim = Simulation::from_parts(net.clone(), d, cfg(2, 1.0)).unwrap();
     {
@@ -823,6 +823,36 @@ fn observed_signal_timing_sets_cycle_and_green_of_the_approach() {
     sim.set_interventions("[]").unwrap();
     let p3 = sim.test_eff().sig[x.c as usize].as_ref().unwrap();
     assert!((p3.cycle - 79.0).abs() < 0.01, "the observation survives a rebuild");
+}
+
+#[test]
+fn observed_own_phase_separates_the_approach_from_the_opposing_one() {
+    let (mut net, x) = cross4(Control::Signal, RoadClass::Residential, false);
+    net.nodes[x.c as usize].signal_timing = vec![SignalTiming {
+        periods: vec!["p".into()],
+        cycle_s: 110.0,
+        greens: vec![ApproachGreen { links: vec![x.w_in], green_s: 33.5, own_phase: true }, ApproachGreen { links: vec![x.e_in], green_s: 27.5, own_phase: true }],
+        source: "test".into(),
+    }];
+    let d = demand(&[(x.w, x.e, 700.0), (x.e, x.w, 700.0), (x.w, x.n, 300.0), (x.s, x.n, 150.0), (x.n, x.s, 150.0)]);
+    let mut sim = Simulation::from_parts(net, d, cfg(2, 1.0)).unwrap();
+    let (w_ph, e_ph) = {
+        let p = sim.test_eff().sig[x.c as usize].as_ref().expect("signal plan");
+        assert_eq!(p.links.len(), 3, "west, east and the cross street: {:?}", p.links);
+        let w = p.links.iter().position(|g| g == &vec![x.w_in]).expect("the west approach alone");
+        let e = p.links.iter().position(|g| g == &vec![x.e_in]).expect("the east approach alone");
+        assert!((p.phases[w].1 - 33.5).abs() < 0.01 && (p.phases[e].1 - 27.5).abs() < 0.01, "{:?}", p.phases);
+        assert!((p.cycle - 110.0).abs() < 0.01);
+        (w, e)
+    };
+    assert_ne!(w_ph, e_ph);
+    // The two approaches never have green together, so the left turn from the west is unopposed.
+    let mut both = false;
+    run(&mut sim, 400.0, |s| {
+        let sg = s.signals();
+        both |= sg[x.w_in as usize] == 1 && sg[x.e_in as usize] == 1;
+    });
+    assert!(!both);
 }
 
 #[test]
@@ -1522,7 +1552,8 @@ fn car_only_metrics_match_pre_multimodal_golden() {
     assert_eq!(legacy_metrics(&b), GOLDEN_CROSS);
 }
 // Updated with the gate scan (a blocked first link no longer holds back trips behind it): same trips, a few vehicle entries move by a step, so the means differ in the fourth digit.
-const GOLDEN_CORRIDOR: &str = r#"{"arterialMeanSpeed":5.760706174508465,"backlog":0,"completedTrips":526,"cutThrough":{"shareOfLocalVehKm":0.7880976571376884,"vehKm":217.17473578739165},"gridlockRemoved":0,"meanTripDelay":2.5301664346045,"meanTripTime":103.9490450914342,"safety":{"localMeanSpeed":9.706729512982832,"localP85Speed":11.633189839572193,"shareAbove20mph":0.7118290179633333,"shareAbove25mph":0.2278233444044085,"ttcConflicts":3},"spawned":558,"time":1800.0,"unroutableTrips":0,"vehKm":438.921536061287,"vehiclesInNetwork":32}"#;
+// Updated with route costs by turning movement (ramp-and-colby-calibration): same trips completed, a few routes differ, so distances and means move in the third digit.
+const GOLDEN_CORRIDOR: &str = r#"{"arterialMeanSpeed":5.754580391407526,"backlog":0,"completedTrips":526,"cutThrough":{"shareOfLocalVehKm":0.7888020524803806,"vehKm":218.094702378273},"gridlockRemoved":0,"meanTripDelay":2.5821636012272275,"meanTripTime":103.94524281006537,"safety":{"localMeanSpeed":9.706052886837483,"localP85Speed":11.632857142857144,"shareAbove20mph":0.7113594858467374,"shareAbove25mph":0.2320977031678022,"ttcConflicts":3},"spawned":558,"time":1800.0,"unroutableTrips":0,"vehKm":439.1311396589279,"vehiclesInNetwork":32}"#;
 // Updated when right turn on red was added (ASSUMPTION, validation cases b10 and b11): the w->s flow turns right on red, so mean delay falls from 13.4 to 13.1 s.
 const GOLDEN_CROSS: &str = r#"{"arterialMeanSpeed":8.436836013936235,"backlog":0,"completedTrips":551,"cutThrough":{"shareOfLocalVehKm":1.0,"vehKm":64.3283925333023},"gridlockRemoved":0,"meanTripDelay":13.054209055272334,"meanTripTime":50.45862896291319,"safety":{"localMeanSpeed":6.385964968918798,"localP85Speed":11.4,"shareAbove20mph":0.4679799284578696,"shareAbove25mph":0.16921701112877582,"ttcConflicts":10},"spawned":572,"time":1800.0,"unroutableTrips":0,"vehKm":216.17522833824157,"vehiclesInNetwork":21}"#;
 

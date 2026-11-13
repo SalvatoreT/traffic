@@ -52,9 +52,11 @@ impl Simulation {
         cfg.interventions = Vec::new();
         let Ok(probe) = Simulation::build(self.net.clone(), self.demand.clone(), cfg, false) else { return };
         self.ema = probe.ema;
+        self.mv_ema = probe.mv_ema;
         for l in 0..self.topo.n_links {
             self.link_cost[l] = self.eff.ff[l].max(self.ema[l]);
         }
+        self.apply_mv_times();
         self.router.invalidate();
     }
 
@@ -124,7 +126,7 @@ impl Simulation {
                         let free = self.topo.length[l as usize] / v.min(self.eff.limit[l as usize]).max(1.0);
                         (free, mv.map_or(0.0, |m| self.eff.bike_mv_cost[m as usize]))
                     }
-                    None => (self.eff.ff[l as usize], mv.map_or(0.0, |m| (self.eff.mv_cost[m as usize] - self.eff.mv_ff[m as usize]).max(0.0))),
+                    None => (self.eff.ff[l as usize], mv.map_or(0.0, |m| (self.eff.mv_static[m as usize] - self.eff.mv_ff[m as usize]).max(0.0))),
                 }
             })
             .collect();

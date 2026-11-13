@@ -30,6 +30,10 @@ impl Eff {
     pub fn car_modal(&self) -> Modal<'_> {
         Modal { closed: &self.closed, mv_ok: &self.mv_ok, mv_cost: &self.mv_cost, w: &self.route_w }
     }
+    /// Car costs without the measured movement times a running simulation adds to `mv_cost`: for routing on free-flow link times.
+    pub fn static_modal(&self) -> Modal<'_> {
+        Modal { closed: &self.closed, mv_ok: &self.mv_ok, mv_cost: &self.mv_static, w: &self.route_w }
+    }
     pub fn bike_modal(&self) -> Modal<'_> {
         Modal { closed: &self.bike_closed, mv_ok: &self.bike_mv_ok, mv_cost: &self.bike_mv_cost, w: &self.bike_w }
     }
