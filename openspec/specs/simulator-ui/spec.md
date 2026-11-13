@@ -350,7 +350,7 @@ Export SHALL be available from a "Download map image" button in the playback con
 - **THEN** a polite message says which
 
 ### Requirement: Cut-through results
-The Results panel SHALL show cut-through as "Cut-through vehicles" in veh/h for baseline and scenario with the difference, defined as gate-to-gate trips that use at least one residential or service street inside the study area, counted once each. Distance units SHALL NOT appear in user-facing copy. A secondary row MAY show the through share of side-street driving, labeled so that it does not read as the headline.
+The Results panel SHALL show cut-through as "Cut-through vehicles" in veh/h for baseline and scenario with the difference, defined as trips with neither end inside the study area that use at least one residential or service street inside it, counted once each. Distance units SHALL NOT appear in user-facing copy. A secondary row MAY show the through share of side-street driving, labeled so that it does not read as the headline.
 
 #### Scenario: Comparing a scenario
 - **WHEN** a scenario has run

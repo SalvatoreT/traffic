@@ -11,7 +11,7 @@ export interface CardDef { id: string; title: string; note?: string; metrics: Me
 export const CARDS: CardDef[] = [
   {
     id: 'cut', title: 'Through traffic on side streets',
-    note: 'Through cars are gate-to-gate trips that use at least one residential or service street inside the study area, counted once each across all those streets together (cars an hour, averaged over the simulated time so far). The share is the part of all the distance driven on those streets, by every car, that is through traffic. It is a different measure from the car counts on a single street in the Streets table and on the map, which count every car on that block.',
+    note: 'Through cars are trips that neither start nor end in the study area and that use at least one residential or service street inside the study area, counted once each across all those streets together (cars an hour, averaged over the simulated time so far). The share is the part of all the distance driven on those streets, by every car, that is through traffic. It is a different measure from the car counts on a single street in the Streets table and on the map, which count every car on that block.',
     metrics: [
       { id: 'ctVeh', label: 'Through cars on all side streets', kind: 'flow', lowerIsBetter: true, get: (m) => m.cutThrough.vehiclesPerHour },
       { id: 'ctShare', label: 'Through cars\' share of distance driven on side streets', kind: 'share', lowerIsBetter: true, get: (m) => m.cutThrough.shareOfLocalVehKm },

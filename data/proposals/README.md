@@ -26,7 +26,7 @@ Do not start an unconstrained run from an older build while another run is writi
 
 ## What it measures
 
-Two kinds of car are counted, and every figure says which. **Through cars** are gate-to-gate trips, that is cars that cross the area without a trip that starts or ends in it. **All cars** are every car on a block, through cars and the local trips of people who start or end a trip in the area. Through cars are part of all cars. They are never added to them, and a through number is never compared with an all-cars number.
+Two kinds of car are counted, and every figure says which. **Through cars** are cars that cross the area without a trip that starts or ends in it. **All cars** are every car on a block, through cars and the local trips of people who start or end a trip in the area. Through cars are part of all cars. They are never added to them, and a through number is never compared with an all-cars number.
 
 - **Goal.** Through cars an hour across all the area's residential and service streets together (`metrics().cutThrough.vehiclesPerHour`), each car counted once, averaged over the periods.
 - **Side effect shown on the proposal card (like for like).** The side-street block that gains the most through cars an hour, both directions summed, averaged over the same periods and seeds as the goal. A block counts as gaining only past its noise band, `max(2 x the standard deviation of the block's baseline through flow across seeds, 10 cars an hour)`; for an average over periods the standard deviation is combined across the periods as independent. Both constants are in `explore/mod.rs`. With one seed there is no spread, so the band is the 10 cars an hour floor, which is too low for short runs; use at least two seeds for a run you publish.

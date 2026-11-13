@@ -71,7 +71,7 @@ export interface Metrics {
   time: number; vehiclesInNetwork: number; spawned: number; completedTrips: number;
   backlog: number; unroutableTrips: number; meanTripTime: number; meanTripDelay: number;
   vehKm: number;
-  /** `vehicles`: through (gate-to-gate) vehicles that used a local link, each counted once. `shareOfLocalVehKm`: through share of the distance driven on local links. */
+  /** `vehicles`: through vehicles (neither trip end in the study area) that used a local link, each counted once. `shareOfLocalVehKm`: through share of the distance driven on local links. */
   cutThrough: { vehicles: number; vehiclesPerHour: number; vehKm: number; shareOfLocalVehKm: number };
   safety: {
     localMeanSpeed: number; localP85Speed: number; shareAbove20mph: number;

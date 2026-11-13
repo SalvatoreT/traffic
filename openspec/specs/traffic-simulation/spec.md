@@ -66,7 +66,7 @@ Given the same network, demand, scenario and seed, the simulation SHALL produce 
 - **THEN** their metrics after one simulated hour are identical
 
 ### Requirement: Cut-through metrics
-The simulation SHALL report through-trip traffic on residential and service links inside the study area, per link and in aggregate. The aggregate headline SHALL be the number of through vehicles, in total and per hour, where a through vehicle is a gate-to-gate trip counted once, the first time it exits a residential or service link inside the study area. The simulation SHALL also report the share of vehicle-distance on those links that is through traffic, and MAY report the through distance for calibration tools.
+The simulation SHALL report through-trip traffic on residential and service links inside the study area, per link and in aggregate. The aggregate headline SHALL be the number of through vehicles, in total and per hour, where a through vehicle is a trip with neither end at a node inside the study area (whatever the extent of the modeled region around it), counted once, the first time it exits a residential or service link inside the study area. The simulation SHALL also report the share of vehicle-distance on those links that is through traffic, and MAY report the through distance for calibration tools.
 
 #### Scenario: Through trip on a local street
 - **WHEN** a gate-to-gate trip traverses a residential link in the study area
