@@ -221,6 +221,8 @@ input[type='checkbox'] { width: 18px; height: 18px; accent-color: var(--accent);
 .sel-menu { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text); padding: .6rem .7rem; margin: .6rem 0; box-shadow: var(--shadow); }
 .sel-menu.sel-sheet { margin: 0 0 .8rem; }
 .sel-head { display: flex; justify-content: space-between; align-items: flex-start; gap: .5rem; }
+.sel-head > .btn { flex: none; }
+.sel-head > div { min-width: 0; }
 .sel-title { margin: 0; font-size: 1rem; line-height: 1.25; }
 .sel-title:focus-visible { outline-offset: 3px; }
 .sel-sub { margin: .1rem 0 0; color: var(--muted); font-size: .85rem; }
