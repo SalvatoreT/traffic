@@ -112,11 +112,12 @@ export function directedLabel(net: Network, idx: NetIndex, linkId: number): stri
   return `${idx.linkName[linkId]} ${towardLabel(net, idx, linkId)}`;
 }
 
-/** "toward Elm St": where a directed link leads. */
+/** "toward Elm St": where a directed link leads, or "eastbound" when no other street meets its far end. */
 export function towardLabel(net: Network, idx: NetIndex, linkId: number): string {
   const l = net.links[linkId];
   const others = idx.nodeStreets[l.to].filter((s) => s !== linkStreet(l));
-  return `toward ${joinNames(others, idx.nodeName[l.to])}`;
+  if (others.length) return `toward ${joinNames(others, '')}`;
+  return `${['north', 'east', 'south', 'west'][Math.round((l.toBearing ?? 0) / 90) % 4]}bound`;
 }
 
 export function matchesQuery(text: string, q: string): boolean {

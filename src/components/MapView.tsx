@@ -941,10 +941,11 @@ export function MapView(p: Props) {
     if (hoverLink === null) return [];
     const net = bundle.network, blk = p.index.blocks[p.index.blockOfLink[hoverLink]];
     const stats = p.linkStats ? linkStatsView(p.linkStats) : null, base = p.baseStats ? linkStatsView(p.baseStats) : null;
-    return blk.links.map((id) => hoverLine({
-      overlay: p.overlay, change: p.view === 'change', mode, max: p.overlayMax, link: net.links[id], stats, base,
-      direction: blk.links.length > 1 ? towardLabel(net, p.index, id) : null,
-    }));
+    return blk.links.map((id) => {
+      const line = hoverLine({ overlay: p.overlay, change: p.view === 'change', mode, max: p.overlayMax, link: net.links[id], stats, base });
+      const cut = line.text.indexOf(': ');
+      return { color: line.color, name: line.text.slice(0, cut).replace(' on this block', ''), value: line.text.slice(cut + 2), direction: blk.links.length > 1 ? towardLabel(net, p.index, id) : null };
+    });
   }, [hoverLink, p.linkStats, p.baseStats, p.view, p.overlay, p.overlayMax, mode, bundle, p.index]);
 
   return (
@@ -954,7 +955,20 @@ export function MapView(p: Props) {
       {hoverText && !p.popover && (
         <div className="map-hint" aria-hidden="true">
           <div>{hoverText}</div>
-          {lines.map((line, i) => <div key={i} className="map-hint-metric">{line.color && <span className="swatch" style={{ background: line.color }} />}<span>{line.text}</span></div>)}
+          {lines.length > 0 && (
+            <div className="map-hint-metric">
+              <div className="map-hint-name">{lines[0].name}</div>
+              <div className="map-hint-rows">
+                {lines.map((line, i) => (
+                  <div key={i} className="map-hint-row">
+                    <span className="swatch" style={line.color ? { background: line.color } : { visibility: 'hidden' }} />
+                    <span className="map-hint-val">{line.value}</span>
+                    {line.direction && <span className="map-hint-dir">{line.direction}</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
       {menu && (

@@ -357,7 +357,7 @@ The Results panel SHALL show cut-through as "Cut-through vehicles" in veh/h for 
 - **THEN** the cut-through card shows vehicles per hour for baseline and scenario, the change, and the definition
 
 ### Requirement: Hover readout of the legend metric
-Hovering a street on the map SHALL show, under the block's name, one line per direction of the block, each with a color swatch, the metric the legend shows and its value with unit, for the legend's current overlay and view. Each line's value SHALL belong to its own direction, and each line SHALL name its direction when the block has two. The metric and value SHALL be text, the swatch SHALL be decorative with a border that keeps 3:1 contrast, and the line SHALL update as statistics update.
+Hovering a street on the map SHALL show, under the block's name, the metric the legend shows once and then one row per direction of the block, each with a color swatch, the value with unit and the direction, for the legend's current overlay and view. Each line's value SHALL belong to its own direction, and each line SHALL name its direction when the block has two. The metric and value SHALL be text, the swatch SHALL be decorative with a border that keeps 3:1 contrast, and the line SHALL update as statistics update.
 
 #### Scenario: Hovering a street while flow is shown
 - **WHEN** a user hovers a street and the legend shows flow
