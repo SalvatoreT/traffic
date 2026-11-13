@@ -937,14 +937,14 @@ export function MapView(p: Props) {
     return proj.toLonLat(x, y);
   }, [selKey, p.selection && p.selection.kind === 'block' ? p.selection.point : null, bundle, proj, p.index]); // eslint-disable-line
 
-  const line = useMemo(() => {
-    if (hoverLink === null) return null;
+  const lines = useMemo(() => {
+    if (hoverLink === null) return [];
     const net = bundle.network, blk = p.index.blocks[p.index.blockOfLink[hoverLink]];
-    return hoverLine({
-      overlay: p.overlay, change: p.view === 'change', mode, max: p.overlayMax, link: net.links[hoverLink],
-      stats: p.linkStats ? linkStatsView(p.linkStats) : null, base: p.baseStats ? linkStatsView(p.baseStats) : null,
-      direction: blk.links.length > 1 ? towardLabel(net, p.index, hoverLink) : null,
-    });
+    const stats = p.linkStats ? linkStatsView(p.linkStats) : null, base = p.baseStats ? linkStatsView(p.baseStats) : null;
+    return blk.links.map((id) => hoverLine({
+      overlay: p.overlay, change: p.view === 'change', mode, max: p.overlayMax, link: net.links[id], stats, base,
+      direction: blk.links.length > 1 ? towardLabel(net, p.index, id) : null,
+    }));
   }, [hoverLink, p.linkStats, p.baseStats, p.view, p.overlay, p.overlayMax, mode, bundle, p.index]);
 
   return (
@@ -954,7 +954,7 @@ export function MapView(p: Props) {
       {hoverText && !p.popover && (
         <div className="map-hint" aria-hidden="true">
           <div>{hoverText}</div>
-          {line && <div className="map-hint-metric">{line.color && <span className="swatch" style={{ background: line.color }} />}<span>{line.text}</span></div>}
+          {lines.map((line, i) => <div key={i} className="map-hint-metric">{line.color && <span className="swatch" style={{ background: line.color }} />}<span>{line.text}</span></div>)}
         </div>
       )}
       {menu && (
