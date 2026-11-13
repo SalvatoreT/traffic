@@ -1063,7 +1063,12 @@ impl Simulation {
                             format!(" held by {}>{}", m.a, m.b)
                         })
                     });
-                    format!("next {:?} {kind} d {:.0} v {:.1} go {} space {} wait {:.0} ped {ped}{}", v.next(), self.topo.stop_pos[l] - v.pos, v.v, v.go, v.blocked_space, v.wait_t, held.unwrap_or_default())
+                    let rooms = v.next().map(|b| {
+                        let hint = self.lane_hint(b, &v.route[(v.ridx as usize + 1).min(v.route.len())..]);
+                        let r: Vec<String> = (0..self.topo.nmain[b as usize]).map(|k| format!("{:.1}", self.lane_room_ahead(b, k, NODE_CROSS_S))).collect();
+                        format!(" hint {:?} rooms [{}] after {:?}", hint, r.join(" "), v.route.get(v.ridx as usize + 1))
+                    });
+                    format!("next {:?} {kind} d {:.0} v {:.1} go {} space {} wait {:.0} ped {ped}{}{}", v.next(), self.topo.stop_pos[l] - v.pos, v.v, v.go, v.blocked_space, v.wait_t, held.unwrap_or_default(), rooms.unwrap_or_default())
                 });
                 let xw = if self.ped_on { self.ped_debug_xw(l) } else { String::new() };
                 out.push(format!("link {l} lane {k} sig {} n {} standing {} {xw} head {}", self.sig_state[l], q.len(), standing, head.unwrap_or_default()));

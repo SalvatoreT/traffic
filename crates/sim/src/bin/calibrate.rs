@@ -485,7 +485,7 @@ fn main() {
         Some((p.first()?.parse().ok()?, p.get(1)?.parse::<f64>().ok()? * 60.0, p.get(2)?.parse::<f64>().ok()? * 60.0, p.get(3)?.split(',').filter_map(|x| x.parse().ok()).collect()))
     });
     while t < total_s - 1e-9 {
-        let dt = 5.0f64.min(total_s - t);
+        let dt = if trace.as_ref().map_or(false, |x| x.0 < 5.0 && t + 5.0 >= x.1 && t <= x.2) { 1.0f64 } else { 5.0f64 }.min(total_s - t);
         sim.step(dt);
         t += dt;
         if let Some((every, from, to, links)) = &trace {
