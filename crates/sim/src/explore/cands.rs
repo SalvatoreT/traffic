@@ -20,13 +20,13 @@ pub struct Hotspots {
     pub mv_ct: BTreeMap<(u32, u32), f64>,
 }
 
-/// Count cut-through trips (gate to gate) per block, node and movement from select-link records.
+/// Count cut-through trips (neither end inside the study area) per block, node and movement from select-link records.
 /// The records must have been recorded with every in-study non-motorway link nominated.
 pub fn hotspots(study: &Study, records: &[SelectLinkRecord], hours: f64) -> Hotspots {
     let net = &study.net;
     let mut h = Hotspots { block_ct: vec![0.0; study.idx.blocks.len()], node_ct: vec![0.0; net.nodes.len()], mv_ct: BTreeMap::new() };
     for r in records {
-        if !(net.nodes[r.origin as usize].gate && net.nodes[r.dest as usize].gate) {
+        if net.nodes[r.origin as usize].in_study_area || net.nodes[r.dest as usize].in_study_area {
             continue;
         }
         let mut seen: HashSet<usize> = HashSet::new();

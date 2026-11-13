@@ -752,7 +752,7 @@ impl Simulation {
                 }
                 let mut rng = Rng::stream(self.cfg.seed, k as u64);
                 let next_t = t0 + rng.exp(rate);
-                let through = self.net.nodes[f.origin as usize].gate && self.net.nodes[f.destination as usize].gate;
+                let through = !self.net.nodes[f.origin as usize].in_study_area && !self.net.nodes[f.destination as usize].in_study_area;
                 self.flows.push(FlowRt { mode: f.mode, origin: f.origin, dest: f.destination, rate, rng, next_t, through });
             }
         }
