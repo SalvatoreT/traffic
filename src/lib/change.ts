@@ -14,8 +14,8 @@ export const DEAD_BAND_FLOW = 40;
 export const DEAD_BAND_SPEED = 0.5;
 export const DEAD_BAND: Record<Overlay, number> = { cutthrough: DEAD_BAND_CUTTHROUGH, flow: DEAD_BAND_FLOW, speed: DEAD_BAND_SPEED };
 
-export const CHANGE_UNIT: Record<Overlay, string> = { cutthrough: 'veh/h', flow: 'veh/h', speed: 'mph' };
-export const CHANGE_NAME: Record<Overlay, string> = { cutthrough: 'Cut-through', flow: 'Flow', speed: 'Mean speed' };
+export const CHANGE_UNIT: Record<Overlay, string> = { cutthrough: 'cars an hour', flow: 'cars an hour', speed: 'mph' };
+export const CHANGE_NAME: Record<Overlay, string> = { cutthrough: 'Through cars on this block', flow: 'All cars on this block', speed: 'Mean speed' };
 
 /** Perceptual size of a change intensity (0..1): square root, so mid-size changes are told apart from small ones. */
 export const changeMagnitude = (t: number): number => Math.sqrt(Math.min(1, Math.abs(t)));
@@ -100,7 +100,7 @@ export function changeTicks(o: Overlay): string[] {
   return [`${MINUS}${t}+`, `${MINUS}${t / 2}`, '0', `+${t / 2}`, `+${t}+`];
 }
 
-/** "Cut-through: 62 → 18 veh/h (−44)". */
+/** "Through cars on this block: 62 → 18 cars an hour (−44)". */
 export function readoutText(o: Overlay, base: Agg, scen: Agg): string {
   const b = metricValue(o, base), s = metricValue(o, scen);
   return `${CHANGE_NAME[o]}: ${plain(b, o)} → ${plain(s, o)} ${CHANGE_UNIT[o]} (${formatSigned(diffValue(o, base, scen), o)})`;

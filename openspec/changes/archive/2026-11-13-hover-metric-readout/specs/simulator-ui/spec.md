@@ -5,7 +5,7 @@ Hovering a street on the map SHALL show, under the block's name, one line with a
 
 #### Scenario: Hovering a street while flow is shown
 - **WHEN** a user hovers a street and the legend shows flow
-- **THEN** the line reads "Flow: N veh/h" with a swatch in the color the map draws for that street
+- **THEN** the line reads "All cars on this block: N cars an hour" with a swatch in the color the map draws for that street
 
 #### Scenario: Hovering in the change view
 - **WHEN** a user hovers a street in the change view

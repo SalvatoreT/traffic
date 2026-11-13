@@ -71,7 +71,7 @@ describe('signed labels', () => {
   it('builds legend ticks and the readout', () => {
     expect(changeTicks('cutthrough')).toEqual(['−100+', '−50', '0', '+50', '+100+']);
     expect(changeTicks('speed')[4]).toBe('+10+');
-    expect(readoutText('cutthrough', A(80, 62), A(40, 18))).toBe('Cut-through: 62 → 18 veh/h (−44)');
+    expect(readoutText('cutthrough', A(80, 62), A(40, 18))).toBe('Through cars on this block: 62 → 18 cars an hour (−44)');
   });
 });
 

@@ -49,8 +49,8 @@ export function rampTicks(overlay: Overlay): string[] {
 }
 
 export const TOP_NOTE: Record<'flow' | 'cutthrough', string> = {
-  flow: 'Top of the scale: 800 vehicles an hour, about what one signalized lane carries in the model.',
-  cutthrough: 'Top of the scale: 100 through vehicles an hour, both directions together. Bikeway guidance for shared streets gives about 50 an hour each way at the peak; using it as a limit for through traffic is an assumption.',
+  flow: 'Top of the scale: 800 cars an hour, about what one signalized lane carries in the model.',
+  cutthrough: 'Top of the scale: 100 through cars an hour, both directions together. Bikeway guidance for shared streets gives about 50 an hour each way at the peak; using it as a limit for through traffic is an assumption.',
 };
 
 /**
