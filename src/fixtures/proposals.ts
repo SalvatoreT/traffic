@@ -16,14 +16,23 @@ export function buildMockProposals(network: Network, computed: { networkHash: st
   const mf = (k: number): Intervention => ({ type: 'modal_filter', link: L(k) });
   const dd = (k: number, bearing: number): Intervention => ({ type: 'diagonal_diverter', node: N(k), bearing });
   const sl = (k: number): Intervention => ({ type: 'speed_limit', link: L(k), speed: 6.7 });
+  const BLOCK = 'Colby Street between 63rd Street and North Street';
   const mk = (id: string, title: string, summary: string, ivs: Intervention[], cut: number, worst: number, blocks: number, extra: Partial<Proposal> = {}): Proposal => {
     const base = 118;
+    const period = (k: number, w: number) => {
+      const baseP = Math.round(base * (1 + (k - 1) * 0.04)), pct = cut * k;
+      const gain = w > 0 ? w * 2.2 : -3;
+      return {
+        cutThrough: { baselineVehPerHour: baseP, scenarioVehPerHour: +(baseP * (1 + pct / 100)).toFixed(1), changePct: +pct.toFixed(1) },
+        allTraffic: { worstBlock: BLOCK, baselineVehPerHour: 240, scenarioVehPerHour: +(240 + gain).toFixed(1), throughIncreaseVehPerHour: +(w * 0.4).toFixed(1), blocksAboveNoise: blocks },
+      };
+    };
     return {
       id, title, summary,
       link: encodeScenario(network, ivs, { area: network.id }),
       interventions: ivs.map((iv) => ({ type: iv.type, label: describeIntervention(iv, network, idx) })),
       cutThrough: { baselineVehPerHour: base, scenarioVehPerHour: +(base * (1 + cut / 100)).toFixed(1), changePct: cut },
-      harm: { worstBlock: worst > 0 ? 'Colby Street between 62nd Street and 63rd Street' : '', worstIncreaseVehPerHour: worst, blocksAboveNoise: blocks },
+      harm: { through: { worstBlock: worst > 0 ? BLOCK : '', increaseVehPerHour: +(worst * 0.4).toFixed(1), blocksAboveNoise: blocks } },
       context: {
         boundingStreets: [
           { name: 'Telegraph Avenue', flowChangePct: -cut / 12, speedChangeMph: -0.2 },
@@ -33,7 +42,7 @@ export function buildMockProposals(network: Network, computed: { networkHash: st
         ],
         insideTripTimeChangePct: Math.abs(cut) / 10, pedConflictsChangePct: cut / 5, bikeConflictsChangePct: cut / 6,
       },
-      byPeriod: { 'am-peak': { cutThroughChangePct: cut * 1.1, worstIncreaseVehPerHour: worst }, 'pm-peak': { cutThroughChangePct: cut * 0.9, worstIncreaseVehPerHour: Math.max(0, worst - 4) } },
+      byPeriod: { 'am-peak': period(1.1, worst), 'pm-peak': period(0.9, Math.max(0, worst - 4)) },
       ...extra,
     };
   };
@@ -43,7 +52,7 @@ export function buildMockProposals(network: Network, computed: { networkHash: st
     baseline: { cutThroughVehPerHour: { 'am-peak': 121, 'pm-peak': 115 } },
   };
   return {
-    version: 3, area: network.id,
+    version: 4, area: network.id,
     groups: [
       {
         id: 'charter', title: "Within the 2025 neighborhood pilot's limits", note: 'Nothing on the bounding streets or at their intersections, and only temporary measures.', ...meta,

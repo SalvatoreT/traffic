@@ -109,7 +109,7 @@ export function readoutText(o: Overlay, base: Agg, scen: Agg): string {
 /** Street-level link statistics count motor vehicles only: bicycles are not counted per link and pedestrians are not on the street network, so the map change view is cars only. */
 export const CHANGE_MAP_MODES = 'cars';
 export const CHANGE_MAP_NOTE = 'The map shows cars only. The simulator reports walking and biking for the whole area, not street by street: see People walking and biking and Trips by mode in Results.';
-export const changeLabel = (o: Overlay): string => `Change in car ${o === 'cutthrough' ? 'cut-through' : o === 'flow' ? 'flow' : 'speed'}, ${CHANGE_UNIT[o]}`;
+export const changeLabel = (o: Overlay): string => o === 'cutthrough' ? 'Change in cut-through: through cars on a block, cars an hour' : o === 'flow' ? 'Change in flow: all cars on a block, cars an hour' : `Change in car speed, ${CHANGE_UNIT[o]}`;
 
 /** Sort key helper: 'chg' orders by absolute change, other numeric keys by value. */
 export function compareRows<T extends { label: string; chg: number | null }>(key: keyof T | 'chg', dir: 1 | -1) {

@@ -5,7 +5,7 @@ import type { NetIndex } from '../lib/naming';
 import { checkThroughRoutes, ROUTE_CAVEAT } from '../lib/throughroutes';
 import { buildMockProposals } from '../fixtures/proposals';
 import {
-  cutThroughHeadline, fetchProposals, formatComputed, harmHeadline, hashLoaded, linkHash, needsConfirm, openReducer,
+  allTrafficNote, allTrafficRows, beforeAfterPct, cutThroughHeadline, fetchProposals, formatComputed, harmHeadline, periodsPhrase, hashLoaded, linkHash, needsConfirm, openReducer,
   proposalNotices, proposalsUrl, signedNum, signedPct, splitProposals,
   type LoadedHashes, type Proposal, type ProposalGroup, type ProposalsState,
 } from '../lib/proposals';
@@ -69,7 +69,7 @@ export function Proposals({ bundle, index, today, state, loaded, current, onOpen
     return m;
   }, [ready, bundle.network, index]);
   const card = (g: ProposalGroup, p: Proposal, n: number | null) => (
-    <Card key={p.id} p={p} hid={`prop-${gid(g, p)}`} n={n} routes={routeCounts.get(gid(g, p)) ?? null} today={today} periodLabel={periodLabel} confirming={open.step === 'confirm' && open.id === gid(g, p)}
+    <Card key={p.id} p={p} when={periodsPhrase(g.computed.periods, periodLabel)} hid={`prop-${gid(g, p)}`} n={n} routes={routeCounts.get(gid(g, p)) ?? null} today={today} periodLabel={periodLabel} confirming={open.step === 'confirm' && open.id === gid(g, p)}
       onRequest={() => request(g, p)} onCancel={() => dispatch({ type: 'cancel' })} onConfirm={() => { dispatch({ type: 'done' }); onOpen(p); }} />
   );
 
@@ -77,9 +77,12 @@ export function Proposals({ bundle, index, today, state, loaded, current, onOpen
     <div className="proposals-view">
       <h2>Proposals</h2>
       <p className="lead">
-        These are packages of changes found by searching the simulation for the most cut-through traffic removed with the
-        least traffic added to any one street inside the area. Harm means more traffic on any single residential or
-        service block inside the area, counted only when it exceeds normal variation between runs.
+        These are packages of changes found by searching the simulation for the most through traffic removed from the area's
+        side streets with the least traffic added to any one of them. The cards compare through cars with through cars:
+        the first figure is all the side streets together, the second is the one block that gains the most. The search
+        itself penalizes the largest rise in all traffic (through cars and local trips together) on any one block,
+        because residents experience all the cars on their street. Those all-traffic changes are in More detail on each card,
+        counted only when they exceed normal variation between runs.
       </p>
       {state.status === 'ready' && <p className="muted small">Through routes: {ROUTE_CAVEAT}</p>}
       {state.status === 'idle' || state.status === 'loading' ? <p role="status" className="muted">Loading proposals…</p> : null}
@@ -118,7 +121,7 @@ export function Proposals({ bundle, index, today, state, loaded, current, onOpen
                 <ol className="prop-list">{parts.reference.map((p) => card(g, p, null))}</ol>
               </section>
             )}
-            {g.legacy && <p className="notice err" role="note"><strong>Out of date.</strong> These options were computed with an earlier measure of cut-through, so they are not shown. They need to be computed again.</p>}
+            {g.legacy && <p className="notice err" role="note"><strong>Out of date.</strong> These options were computed before the figures were made like-for-like (through cars beside through cars), so they are not shown. They need to be computed again.</p>}
             {!g.legacy && parts.search.length === 0 && parts.reference.length === 0 && (
               <p className="muted" role="status">No options were found under these limits.</p>
             )}
@@ -129,12 +132,14 @@ export function Proposals({ bundle, index, today, state, loaded, current, onOpen
   );
 }
 
-function Card({ p, hid, n, routes, today, periodLabel, confirming, onRequest, onCancel, onConfirm }: {
-  p: Proposal; hid: string; n: number | null; routes: number | null; today: number; periodLabel(id: string): string; confirming: boolean;
+function Card({ p, when, hid, n, routes, today, periodLabel, confirming, onRequest, onCancel, onConfirm }: {
+  p: Proposal; when: string; hid: string; n: number | null; routes: number | null; today: number; periodLabel(id: string): string; confirming: boolean;
   onRequest(): void; onCancel(): void; onConfirm(): void;
 }) {
-  const cut = cutThroughHeadline(p.cutThrough);
-  const harm = harmHeadline(p.harm);
+  const cut = cutThroughHeadline(p.cutThrough, when);
+  const harm = harmHeadline(p.harm, when);
+  const allRows = allTrafficRows(p, periodLabel);
+  const allNote = allTrafficNote(allRows);
   const openBtn = useRef<HTMLButtonElement>(null);
   const confirmBtn = useRef<HTMLButtonElement>(null);
   const wasConfirming = useRef(false);
@@ -157,10 +162,11 @@ function Card({ p, hid, n, routes, today, periodLabel, confirming, onRequest, on
         <div className="fig">
           <p className="fig-main"><span className="fig-num">{cut.figure}</span> {cut.label}</p>
           <p className="fig-sub">{cut.detail}</p>
+          <p className="fig-sub">{cut.definition}</p>
         </div>
         <div className="fig">
-          <p className="fig-main"><span className="fig-num">{harm.none ? '' : harm.figure}</span>{harm.none ? harm.label : ` ${harm.label}`}</p>
-          <p className="fig-sub">{harm.none ? 'Worst side effect' : <>Worst side effect{harm.blocks && <>. {harm.blocks}.</>}</>}</p>
+          <p className="fig-main">{harm.none ? harm.label : <><span className="fig-num">{harm.figure}</span> {harm.label}</>}</p>
+          <p className="fig-sub">{harm.definition}</p>
         </div>
       </div>
       {routes !== null && <p className="prop-routes">Through routes: <strong>{routes}</strong> ({today} today)</p>}
@@ -168,20 +174,52 @@ function Card({ p, hid, n, routes, today, periodLabel, confirming, onRequest, on
       <ul className="prop-ivs">{p.interventions.map((iv, i) => <li key={i}>{iv.label}</li>)}</ul>
       <details className="prop-more">
         <summary>More detail</summary>
-        <p className="muted small">Reported for information. These figures were not part of the search goal.</p>
-        <table>
-          <caption className="sr-only">Cut-through and worst increase by period</caption>
-          <thead><tr><th scope="col">Period</th><th scope="col">Cut-through change</th><th scope="col">Worst increase on one block</th></tr></thead>
-          <tbody>
-            {periods.map(([id, v]) => (
-              <tr key={id}><th scope="row">{periodLabel(id)}</th><td>{signedPct(v.cutThroughChangePct)}</td><td>{signedNum(v.worstIncreaseVehPerHour, 'veh/h', 0)}</td></tr>
-            ))}
-          </tbody>
-        </table>
+        <h5>Through cars an hour, by period</h5>
+        <p className="muted small">Through cars on all the area's side streets together: before → after today's streets, with the change in parentheses.</p>
+        <div className="table-scroll" role="region" aria-label="Through cars by period, scrollable" tabIndex={0}>
+          <table>
+            <caption className="sr-only">Through cars an hour on the area's side streets, by period</caption>
+            <thead><tr><th scope="col">Period</th><th scope="col">Through cars an hour, before → after (change)</th></tr></thead>
+            <tbody>
+              {periods.map(([id, v]) => (
+                <tr key={id}><th scope="row">{periodLabel(id)}</th><td>{beforeAfterPct(v.cutThrough)}</td></tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <h5>All traffic on side-street blocks (through and local trips together)</h5>
+        <p className="muted small">
+          Every car on one block, both directions, including the local trips of people who start or end a trip in the area. For each period, the block that gains the most is named. This is the kind of change the search penalizes.
+        </p>
+        <div className="table-scroll" role="region" aria-label="All traffic on side-street blocks by period, scrollable" tabIndex={0}>
+          <table>
+            <caption className="sr-only">All cars an hour on the side-street block that gains the most, by period, split into through cars and local trips</caption>
+            <thead>
+              <tr>
+                <th scope="col">Period</th><th scope="col">Block that gains the most all traffic</th><th scope="col">All cars an hour, before → after</th>
+                <th scope="col">Of the change: through cars</th><th scope="col">Of the change: local trips</th><th scope="col">Blocks gaining all traffic beyond run-to-run variation</th>
+              </tr>
+            </thead>
+            <tbody>
+              {allRows.map((r) => (
+                <tr key={r.period}>
+                  <th scope="row">{r.period}</th>
+                  {r.block === null
+                    ? <><td>None beyond run-to-run variation</td><td>—</td><td>—</td><td>—</td></>
+                    : <><td>{r.block}</td><td>{Math.round(r.before)} → {Math.round(r.after)} ({signedNum(r.change, 'cars an hour', 0)})</td><td>{signedNum(r.through, 'cars an hour', 0)}</td><td>{signedNum(r.local, 'cars an hour', 0)}</td></>}
+                  <td>{r.blocksAbove}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {allNote && <p className="small">{allNote}</p>}
+        <p className="muted small">The figures below are reported for information. They were not part of the search goal.</p>
         <h5>Bounding streets</h5>
+        <p className="muted small">All cars on each street inside the area, change from today, average of the periods.</p>
         <table>
-          <caption className="sr-only">Change on the bounding streets, for information</caption>
-          <thead><tr><th scope="col">Street</th><th scope="col">Traffic</th><th scope="col">Speed</th></tr></thead>
+          <caption className="sr-only">Change in all cars and in mean speed on the bounding streets, for information</caption>
+          <thead><tr><th scope="col">Street</th><th scope="col">All cars, change</th><th scope="col">Mean speed, change</th></tr></thead>
           <tbody>
             {p.context.boundingStreets.map((b) => (
               <tr key={b.name}><th scope="row">{b.name}</th><td>{signedPct(b.flowChangePct)}</td><td>{signedNum(b.speedChangeMph, 'mph')}</td></tr>
@@ -189,6 +227,7 @@ function Card({ p, hid, n, routes, today, periodLabel, confirming, onRequest, on
           </tbody>
         </table>
         <h5>Inside the area</h5>
+        <p className="muted small">Change from today, average of the periods.</p>
         <dl className="ctx">
           <div><dt>Trip time for trips starting or ending inside</dt><dd>{signedPct(p.context.insideTripTimeChangePct)}</dd></div>
           <div><dt>Walking conflicts</dt><dd>{signedPct(p.context.pedConflictsChangePct)}</dd></div>

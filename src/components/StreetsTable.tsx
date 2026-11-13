@@ -9,7 +9,7 @@ import { rovingTarget, tabStop } from '../lib/roving';
 import { formatValue } from '../lib/format';
 import { vulnerableSentence } from '../lib/metrics';
 import type { Metrics } from '../types';
-import { aggregate, CHANGE_NAME, CHANGE_UNIT, compareRows, diffValue, formatSigned } from '../lib/change';
+import { aggregate, compareRows, diffValue, formatSigned } from '../lib/change';
 
 type Key = 'name' | 'cls' | 'chg' | 'flowB' | 'flowS' | 'speedB' | 'speedS' | 'ctB' | 'ctS';
 interface Row {
@@ -106,8 +106,7 @@ export function StreetsTable({ index, scen, base, comparing, overlay, showServic
     <div className="streets-view">
       <h2>Streets</h2>
       <p className="muted">
-        A text alternative to the map: one row per street block (both directions combined), limited to the study area and the streets around it that the map shows. Flow and cut-through in veh/h,
-        speed in mph, flow-weighted. The Change column is the scenario minus the baseline for the metric chosen on the map, and sorts by size of change. {comparing ? '' : 'Scenario columns fill in once an intervention is added.'}
+        A text alternative to the map: one row per street block (both directions combined), limited to the study area and the streets around it that the map shows. Each count is cars an hour on that one block, both directions: all cars (local trips included) and, separately, only the through cars among them, which cross the area without a trip that starts or ends in it. Through cars are always part of all cars, never added to them. Speed in mph, flow-weighted. The Change column is the scenario minus the baseline for the metric chosen on the map, and sorts by size of change. {comparing ? '' : 'Scenario columns fill in once an intervention is added.'}
       </p>
       {walkBike && <p className="small">{walkBike}</p>}
       <div className="filters">
@@ -118,17 +117,17 @@ export function StreetsTable({ index, scen, base, comparing, overlay, showServic
       </div>
       <div className="table-scroll" role="region" aria-label="Streets table, scrollable">
         <table className="streets">
-          <caption className="sr-only">Street blocks with flow, mean speed and cut-through flow, baseline versus scenario</caption>
+          <caption className="sr-only">Street blocks with all cars an hour, mean speed and through cars an hour, baseline versus scenario</caption>
           <thead>
             <tr>
               <th rowSpan={2} scope="col" aria-sort={active.key === 'name' ? (active.dir === 1 ? 'ascending' : 'descending') : 'none'}>
                 <button type="button" className="sort" onClick={() => setSort({ key: 'name', dir: active.key === 'name' && active.dir === 1 ? -1 : 1 })}>Street block{active.key === 'name' ? (active.dir === 1 ? ' ▲' : ' ▼') : ''}</button>
               </th>
               {th('cls', 'Class', undefined, 2)}
-              <th colSpan={2} scope="colgroup">Flow (veh/h)</th>
+              <th colSpan={2} scope="colgroup">All cars (cars an hour)</th>
               <th colSpan={2} scope="colgroup">Mean speed (mph)</th>
-              <th colSpan={2} scope="colgroup">Cut-through (veh/h)</th>
-              {th('chg', 'Change', `${CHANGE_NAME[overlay].toLowerCase()}, ${CHANGE_UNIT[overlay]}`, 2)}
+              <th colSpan={2} scope="colgroup">Through cars (cars an hour)</th>
+              {th('chg', 'Change', overlay === 'cutthrough' ? 'through cars an hour' : overlay === 'flow' ? 'all cars an hour' : 'mph', 2)}
             </tr>
             <tr>
               {th('flowB', 'Base')}{th('flowS', 'Scen.')}{th('speedB', 'Base')}{th('speedS', 'Scen.')}{th('ctB', 'Base')}{th('ctS', 'Scen.')}

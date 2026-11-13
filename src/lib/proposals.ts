@@ -8,14 +8,22 @@ export interface Proposal {
   kind?: 'search' | 'reference'; note?: string;
   link: string;
   interventions: { type: string; label: string }[];
-  cutThrough: { baselineVehPerHour: number; scenarioVehPerHour: number; changePct: number };
-  harm: { worstBlock: string; worstIncreaseVehPerHour: number; blocksAboveNoise: number };
+  /** Through cars an hour across the area's side streets, averaged over the searched periods. */
+  cutThrough: CutThrough;
+  /** The side-street block that gains the most THROUGH cars an hour (both directions), averaged over the same periods. */
+  harm: { through: { worstBlock: string; increaseVehPerHour: number; blocksAboveNoise: number } };
   context: {
     boundingStreets: { name: string; flowChangePct: number; speedChangeMph: number }[];
     insideTripTimeChangePct: number;
     pedConflictsChangePct: number; bikeConflictsChangePct: number;
   };
-  byPeriod: Record<string, { cutThroughChangePct: number; worstIncreaseVehPerHour: number }>;
+  byPeriod: Record<string, PeriodResult>;
+}
+export interface CutThrough { baselineVehPerHour: number; scenarioVehPerHour: number; changePct: number }
+/** One period. `allTraffic` counts every car on the one block that gains the most, local trips included. */
+export interface PeriodResult {
+  cutThrough: CutThrough;
+  allTraffic: { worstBlock: string; baselineVehPerHour: number; scenarioVehPerHour: number; throughIncreaseVehPerHour: number; blocksAboveNoise: number };
 }
 /** One ranked list: the packages found under one set of limits. */
 export interface ProposalGroup {
@@ -23,10 +31,10 @@ export interface ProposalGroup {
   computed: { date: string; periods: string[]; seeds: number[]; networkHash: string; demandHash: string; calibration: string };
   baseline: { cutThroughVehPerHour: Record<string, number> };
   proposals: Proposal[];
-  /** Computed with an earlier measure (vehicle-miles). Its options are not shown; they need to be computed again. */
+  /** Computed with an earlier measure (vehicle-miles, or an all-traffic worst block beside through cars). Its options are not shown; they need to be computed again. */
   legacy?: boolean;
 }
-export interface Proposals { version: 3; area: string; groups: ProposalGroup[] }
+export interface Proposals { version: 4; area: string; groups: ProposalGroup[] }
 
 export const UNCONSTRAINED_GROUP = {
   id: 'unconstrained', title: 'Without limits',
@@ -43,12 +51,16 @@ export const proposalsUrl = (entry: Pick<AreaEntry, 'id' | 'proposals'>): string
 
 /**
  * A missing file, an SPA fallback page or a file of another version all mean "none computed yet".
- * A version 1 file (one list, no groups) is read as the single unconstrained group. A group computed before the headline became a count of
- * vehicles (no `baselineVehPerHour`) is kept but marked `legacy` with no options, so it reads as out of date instead of failing.
+ * A version 1 file (one list, no groups) is read as the single unconstrained group. A group computed before the figures were like-for-like
+ * (no through-car count, or no through-car worst block, or no per-period all-traffic entry) is kept but marked `legacy` with no options,
+ * so it reads as out of date instead of failing.
  */
-const hasCount = (p: Proposal) => Number.isFinite(p?.cutThrough?.baselineVehPerHour) && Number.isFinite(p?.cutThrough?.scenarioVehPerHour);
+const finite = (x: unknown) => typeof x === 'number' && Number.isFinite(x);
+const hasCount = (c: CutThrough | undefined) => finite(c?.baselineVehPerHour) && finite(c?.scenarioVehPerHour) && finite(c?.changePct);
+const isCurrent = (p: Proposal) => hasCount(p?.cutThrough) && finite(p?.harm?.through?.increaseVehPerHour) && finite(p?.harm?.through?.blocksAboveNoise)
+  && Object.values(p.byPeriod ?? {}).every((v) => hasCount(v?.cutThrough) && finite(v?.allTraffic?.baselineVehPerHour) && finite(v?.allTraffic?.scenarioVehPerHour) && finite(v?.allTraffic?.throughIncreaseVehPerHour) && finite(v?.allTraffic?.blocksAboveNoise));
 function normalizeGroup(g: ProposalGroup): ProposalGroup {
-  if (g.proposals.every(hasCount)) return g;
+  if (g.proposals.every(isCurrent)) return g;
   return { ...g, legacy: true, proposals: [], baseline: { cutThroughVehPerHour: {} } };
 }
 
@@ -56,12 +68,12 @@ export function parseProposals(text: string): Proposals | null {
   try {
     const f = JSON.parse(text) as { version?: number; area?: string; groups?: ProposalGroup[]; computed?: ProposalGroup['computed']; baseline?: ProposalGroup['baseline']; proposals?: Proposal[] };
     if (f?.version === 1 && Array.isArray(f.proposals) && f.computed) {
-      return { version: 3, area: f.area ?? '', groups: [normalizeGroup({ ...UNCONSTRAINED_GROUP, computed: f.computed, baseline: f.baseline ?? { cutThroughVehPerHour: {} }, proposals: f.proposals })] };
+      return { version: 4, area: f.area ?? '', groups: [normalizeGroup({ ...UNCONSTRAINED_GROUP, computed: f.computed, baseline: f.baseline ?? { cutThroughVehPerHour: {} }, proposals: f.proposals })] };
     }
-    if (!(f?.version === 2 || f?.version === 3) || !Array.isArray(f.groups)) return null;
+    if (!(f?.version === 2 || f?.version === 3 || f?.version === 4) || !Array.isArray(f.groups)) return null;
     const groups = f.groups.filter((g) => g && typeof g.id === 'string' && Array.isArray(g.proposals) && g.computed)
       .map((g) => normalizeGroup({ ...g, title: g.title || g.id, note: g.note ?? '' }));
-    return { version: 3, area: f.area ?? '', groups };
+    return { version: 4, area: f.area ?? '', groups };
   } catch { return null; }
 }
 
@@ -134,7 +146,18 @@ export function signedNum(x: number, unit: string, dp = 1): string {
   return `${x < 0 ? MINUS : '+'}${num(x, dp)} ${unit}`;
 }
 
-export function cutThroughHeadline(c: Proposal['cutThrough']): { figure: string; label: string; detail: string } {
+/** "the PM peak", or "the average of the AM peak, PM peak and midday" when more than one period was searched. */
+export function periodsPhrase(periods: string[], periodLabel: (id: string) => string): string {
+  const names = periods.map(periodLabel);
+  if (names.length === 0) return 'the searched periods';
+  const list = names.length === 1 ? names[0] : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+  return names.length === 1 ? `the ${list}` : `the average of the ${list}`;
+}
+
+const carsWord = (n: number) => (n === 1 ? 'car' : 'cars');
+
+/** Figure 1: through cars an hour across all the area's side streets. `when` is a `periodsPhrase`. */
+export function cutThroughHeadline(c: CutThrough, when = 'the searched periods'): { figure: string; label: string; detail: string; definition: string } {
   const b = Math.round(c.baselineVehPerHour), s = Math.round(c.scenarioVehPerHour);
   const d = s - b;
   const dp = pctDigits(c.changePct);
@@ -143,18 +166,75 @@ export function cutThroughHeadline(c: Proposal['cutThrough']): { figure: string;
     figure: d === 0 ? 'No change' : `${d < 0 ? MINUS : '+'}${Math.abs(d)} cars an hour`,
     label: 'cutting through',
     detail: `${b} → ${s} through cars an hour (${pct})`,
+    definition: `Through cars on all of the area's side streets together: cars that cross the area without a trip that starts or ends in it. Each car is counted once. Shown for ${when}.`,
   };
 }
 
-export function harmHeadline(h: Proposal['harm']): { figure: string; label: string; none: boolean; blocks: string } {
-  const none = !(h.worstIncreaseVehPerHour > 0);
-  const n = h.blocksAboveNoise;
+/**
+ * Figure 2: the same kind of car as figure 1 (through cars an hour, same averaging), on the one side-street block that gains the most.
+ * It is shown only when the gain is past run-to-run variation.
+ */
+export function harmHeadline(h: Proposal['harm'], when = 'the searched periods'): { none: boolean; figure: string; label: string; definition: string } {
+  const t = h.through;
+  const n = t.blocksAboveNoise;
+  const none = !(n > 0 && Math.round(t.increaseVehPerHour) > 0);
+  const scope = `Through cars only, both directions of that one block, for ${when}.`;
+  if (none) {
+    return { none, figure: '', label: 'No block gains through traffic beyond run-to-run variation', definition: `Through cars only, counted block by block, for ${when}.` };
+  }
+  const others = n - 1;
+  const tail = others === 0 ? 'No other block gains beyond run-to-run variation.' : `${others} other ${others === 1 ? 'block' : 'blocks'} also ${others === 1 ? 'gains' : 'gain'} through cars beyond run-to-run variation.`;
   return {
     none,
-    figure: none ? 'None' : `+${num(h.worstIncreaseVehPerHour, 0)} veh/h`,
-    label: none ? 'No street gains traffic beyond normal variation' : `on ${h.worstBlock}`,
-    blocks: n > 0 ? (n === 1 ? '1 block gains traffic' : `${n} blocks gain traffic`) : '',
+    figure: `+${Math.round(t.increaseVehPerHour)} through ${carsWord(Math.round(t.increaseVehPerHour))} an hour`,
+    label: `on ${t.worstBlock}, the block that gains the most`,
+    definition: `${scope} ${tail}`,
   };
+}
+
+/** "128 → 101 (−21%)": cars an hour first, the percentage second. */
+export function beforeAfterPct(c: CutThrough): string {
+  return `${Math.round(c.baselineVehPerHour)} → ${Math.round(c.scenarioVehPerHour)} (${signedPct(c.changePct)})`;
+}
+
+export interface AllTrafficRow {
+  period: string; block: string | null;
+  /** Cars an hour on that block, all trips together. */
+  before: number; after: number;
+  /** Change in all cars, and its split into through cars and local trips (all cars minus through cars). */
+  change: number; through: number; local: number;
+  blocksAbove: number;
+}
+/** One row per period for the details table. A period with no block past run-to-run variation names none. */
+export function allTrafficRows(p: Proposal, periodLabel: (id: string) => string): AllTrafficRow[] {
+  return Object.entries(p.byPeriod).map(([id, v]) => {
+    const a = v.allTraffic;
+    const above = a.blocksAboveNoise > 0;
+    const change = a.scenarioVehPerHour - a.baselineVehPerHour;
+    return {
+      period: periodLabel(id), block: above ? a.worstBlock : null,
+      before: a.baselineVehPerHour, after: a.scenarioVehPerHour,
+      change, through: a.throughIncreaseVehPerHour, local: change - a.throughIncreaseVehPerHour,
+      blocksAbove: a.blocksAboveNoise,
+    };
+  });
+}
+
+/**
+ * The one sentence on what the extra cars are, built from the numbers: over the periods where a block gains beyond noise, the share of
+ * its gain that is through cars and the share that is local trips. It says "mostly local trips" only when local trips are most of the gain.
+ * The model holds the number of trips fixed, so a rise in local trips on a block is trips moving, not new traffic.
+ */
+export function allTrafficNote(rows: AllTrafficRow[]): string {
+  const r = rows.filter((x) => x.block !== null && x.change > 0);
+  const gain = r.reduce((t, x) => t + x.change, 0);
+  if (!(gain > 0)) return '';
+  const through = Math.round(100 * Math.min(1, Math.max(0, r.reduce((t, x) => t + x.through, 0) / gain)));
+  const local = 100 - through;
+  const lead = local >= 50
+    ? `Mostly local trips: about ${local}% of the extra cars on these blocks are local trips (people who start or end a trip in the area) taking another way around, and about ${through}% are through cars.`
+    : `About ${through}% of the extra cars on these blocks are through cars and about ${local}% are local trips (people who start or end a trip in the area).`;
+  return `${lead} The simulation keeps the number of trips fixed, so these are trips moving from one street to another, not new traffic.`;
 }
 
 export function formatComputed(c: ProposalGroup['computed'], periodLabel: (id: string) => string): string {

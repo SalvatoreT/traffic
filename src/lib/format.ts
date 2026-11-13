@@ -19,7 +19,7 @@ export function unitLabel(kind: Kind): string {
     case 'share': return '%';
     case 'minutes': return 'min';
     case 'seconds': return 's';
-    case 'flow': return 'veh/h';
+    case 'flow': return 'cars an hour';
     default: return '';
   }
 }

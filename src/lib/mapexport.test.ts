@@ -3,7 +3,7 @@ import { ATTRIBUTION, captionOf, exportFileName, wrapText } from './mapexport';
 import { legendModel } from './legend';
 
 describe('image caption', () => {
-  const base = { area: 'Rockridge Trapezoid', period: 'PM peak', time: 1830, shows: 'scenario' as const, overlayName: 'Flow, veh/h' };
+  const base = { area: 'Rockridge Trapezoid', period: 'PM peak', time: 1830, shows: 'scenario' as const, overlayName: 'Flow: all cars on a block, cars an hour' };
   it('names the area, period, simulated time and scenario', () => {
     const c = captionOf({ ...base, interventions: ['Modal filter on Martin St', 'Speed hump on Ayala Ave'] });
     expect(c.title).toBe('Rockridge Trapezoid, PM peak');
