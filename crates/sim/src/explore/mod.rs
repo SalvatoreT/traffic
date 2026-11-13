@@ -21,7 +21,6 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Mutex;
 
-pub const MI_PER_KM: f64 = 0.621371;
 pub const MPS_TO_MPH: f64 = 2.2369362920544;
 /// Dead band for "traffic increased on a block": `max(NOISE_SIGMAS x per-block standard deviation of flow across seeds, NOISE_FLOOR_VEH_H)`.
 pub const NOISE_SIGMAS: f64 = 2.0;
@@ -253,7 +252,8 @@ pub fn check_access(study: &Study, ivs: &[Intervention]) -> Result<(), String> {
 
 /// Results of one headless run.
 pub struct RunOut {
-    pub ct_km: f64,
+    /// Through vehicles per hour that use a local link (each counted once), over the whole run.
+    pub ct_vph: f64,
     pub veh_km: f64,
     pub inside_n: u64,
     pub inside_tt_s: f64,
@@ -273,9 +273,6 @@ pub struct RunOut {
 }
 
 impl RunOut {
-    pub fn ct_mi(&self) -> f64 {
-        self.ct_km * MI_PER_KM
-    }
     pub fn inside_mean_s(&self) -> f64 {
         if self.inside_n > 0 {
             self.inside_tt_s / self.inside_n as f64
@@ -286,7 +283,7 @@ impl RunOut {
 }
 
 /// Run the simulation headless from an empty network (no initial loading: the search measures its own warm-up). The first `min(600 s, 25%)` of the run is warm-up for the flow and speed figures; cut-through
-/// vehicle-miles cover the whole run, as `metrics().cutThrough` does.
+/// vehicles per hour cover the whole run, as `metrics().cutThrough` does.
 pub fn run(study: &Study, ivs: &[Intervention], period: &str, seed: u64, minutes: f64, select_links: &[u32]) -> RunOut {
     let cfg = Config { seed, period: period.into(), select_links: select_links.to_vec(), interventions: ivs.to_vec(), initial_load: false, ..Default::default() };
     let mut sim = Simulation::from_parts(study.net.clone(), study.demand.clone(), cfg).expect("simulation");
@@ -328,7 +325,7 @@ pub fn run(study: &Study, ivs: &[Intervention], period: &str, seed: u64, minutes
     let m = sim.metrics();
     let (inside_n, inside_tt_s) = sim.inside_trip_stats();
     RunOut {
-        ct_km: m.cut_through.veh_km,
+        ct_vph: m.cut_through.vehicles_per_hour,
         veh_km: m.veh_km,
         inside_n,
         inside_tt_s,

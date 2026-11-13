@@ -12,8 +12,8 @@ use std::fmt::Write as _;
 pub struct Final {
     pub set: Vec<u16>,
     pub reject: Option<String>,
-    pub base_mi: f64,
-    pub scen_mi: f64,
+    pub base_vph: f64,
+    pub scen_vph: f64,
     pub reduction_pct: f64,
     pub harm: f64,
     /// Harm-block position of the worst block.
@@ -77,8 +77,8 @@ fn compare(ctx: &Ctx, set: &[u16], stats: &[PeriodStat], reject: Option<String>)
     let (study, p, base) = (ctx.study, ctx.p, ctx.base);
     let np = stats.len();
     let nb = study.harm_blocks.len();
-    let base_mi = mean(&base.full.iter().map(|s| s.ct_mi).collect::<Vec<_>>());
-    let scen_mi = mean(&stats.iter().map(|s| s.ct_mi).collect::<Vec<_>>());
+    let base_vph = mean(&base.full.iter().map(|s| s.ct_vph).collect::<Vec<_>>());
+    let scen_vph = mean(&stats.iter().map(|s| s.ct_vph).collect::<Vec<_>>());
     let (mut harm, mut worst, mut worst_key) = (0.0f64, 0usize, f64::NEG_INFINITY);
     let mut above = vec![false; nb];
     let mut by_period = Vec::new();
@@ -96,7 +96,7 @@ fn compare(ctx: &Ctx, set: &[u16], stats: &[PeriodStat], reject: Option<String>)
             harm = h.worst_adj;
             worst = h.worst;
         }
-        by_period.push((pct_change(base.full[pi].ct_mi, stats[pi].ct_mi), h.worst_adj));
+        by_period.push((pct_change(base.full[pi].ct_vph, stats[pi].ct_vph), h.worst_adj));
     }
     let mut bounding = Vec::new();
     for (k, s) in study.bounding.iter().enumerate() {
@@ -105,12 +105,12 @@ fn compare(ctx: &Ctx, set: &[u16], stats: &[PeriodStat], reject: Option<String>)
         bounding.push((s.name.clone(), pct_change(fb, fs), dv * MPS_TO_MPH));
     }
     let m = |f: &dyn Fn(&PeriodStat) -> f64, s: &[PeriodStat]| mean(&s.iter().map(f).collect::<Vec<_>>());
-    let red = reduction_pct(base_mi, scen_mi);
+    let red = reduction_pct(base_vph, scen_vph);
     Final {
         set: set.to_vec(),
         reject,
-        base_mi,
-        scen_mi,
+        base_vph,
+        scen_vph,
         reduction_pct: red,
         harm,
         worst,
@@ -321,11 +321,11 @@ pub fn summary(study: &Study, cands: &[Cand], f: &Final) -> String {
     let more = if n > 4 { format!(", and {} more", n - 4) } else { String::new() };
     let s1 = format!("It makes {} {}: {}{}.", number_word(n), if n == 1 { "change" } else { "changes" }, shown.join("; "), more);
     let s2 = format!(
-        "In the simulation it {} cut-through traffic on local streets inside the study area by {:.0}%, from {:.0} to {:.0} vehicle-miles per peak hour.",
+        "In the simulation it {} cut-through traffic on local streets inside the study area by {:.0}%, from {:.0} to {:.0} through vehicles an hour.",
         if f.reduction_pct >= 0.0 { "cuts" } else { "raises" },
         f.reduction_pct.abs(),
-        f.base_mi,
-        f.scen_mi
+        f.base_vph,
+        f.scen_vph
     );
     let blk = &study.idx.blocks[study.harm_blocks[f.worst]];
     let s3 = if f.harm > 0.0 {
@@ -356,7 +356,7 @@ pub fn explore(study: &Study, p: &Params) -> Outcome {
     let t0 = std::time::Instant::now();
     eprintln!("baseline: {} period(s) x {} seed(s) at {} min, plus {} screening run(s) at {} min", p.periods.len(), p.seeds.len(), p.minutes, p.seeds.len(), p.screen_minutes);
     let base = run_baseline(study, p);
-    eprintln!("baseline done in {:.0}s; cut-through {}", t0.elapsed().as_secs_f64(), p.periods.iter().zip(&base.full).map(|(n, s)| format!("{n} {:.1} veh-mi", s.ct_mi)).collect::<Vec<_>>().join(", "));
+    eprintln!("baseline done in {:.0}s; cut-through {}", t0.elapsed().as_secs_f64(), p.periods.iter().zip(&base.full).map(|(n, s)| format!("{n} {:.0} veh/h", s.ct_vph)).collect::<Vec<_>>().join(", "));
     let cands = generate_with(study, &base.hot, p.candidates, &p.profile);
     eprintln!("{} candidate interventions:", cands.len());
     for (i, c) in cands.iter().enumerate() {
@@ -422,7 +422,7 @@ pub fn build_json(study: &Study, p: &Params, cands: &[Cand], base: &Baseline, fi
             "summary": summary(study, cands, f),
             "link": study.encode(&ivs, Some(&p.periods[0])),
             "interventions": f.set.iter().map(|&i| json!({"type": cands[i as usize].iv.ty, "label": cands[i as usize].label})).collect::<Vec<_>>(),
-            "cutThrough": {"baselineVehMi": r1(f.base_mi), "scenarioVehMi": r1(f.scen_mi), "changePct": r1(-f.reduction_pct)},
+            "cutThrough": {"baselineVehPerHour": r1(f.base_vph), "scenarioVehPerHour": r1(f.scen_vph), "changePct": r1(-f.reduction_pct)},
             "harm": {"worstBlock": study.idx.blocks[study.harm_blocks[f.worst]].label, "worstIncreaseVehPerHour": f.harm.round(), "blocksAboveNoise": f.blocks_above},
             "context": {
                 "boundingStreets": f.bounding.iter().map(|(name, flow, speed)| json!({"name": name, "flowChangePct": r1(*flow), "speedChangeMph": r1(*speed)})).collect::<Vec<_>>(),
@@ -453,7 +453,7 @@ pub fn build_json(study: &Study, p: &Params, cands: &[Cand], base: &Baseline, fi
             "demandHash": study.demand_hash,
             "calibration": study.calibration,
         },
-        "baseline": {"cutThroughVehMi": p.periods.iter().zip(&base.full).map(|(n, s)| (n.clone(), json!(r1(s.ct_mi)))).collect::<serde_json::Map<String, Value>>()},
+        "baseline": {"cutThroughVehPerHour": p.periods.iter().zip(&base.full).map(|(n, s)| (n.clone(), json!(r1(s.ct_vph)))).collect::<serde_json::Map<String, Value>>()},
         "proposals": proposals,
     })
 }
@@ -480,9 +480,9 @@ fn build_markdown(study: &Study, p: &Params, ctx: &Ctx, state: &SearchState, fin
         p.jobs
     );
     let _ = writeln!(md, "## Baseline\n");
-    let _ = writeln!(md, "| Period | Cut-through (veh-mi) | Run-to-run spread | Inside trip time (s) | Ped conflicts | Bike conflicts |\n| --- | --- | --- | --- | --- | --- |");
+    let _ = writeln!(md, "| Period | Cut-through (veh/h) | Run-to-run spread | Inside trip time (s) | Ped conflicts | Bike conflicts |\n| --- | --- | --- | --- | --- | --- |");
     for (n, s) in p.periods.iter().zip(&base.full) {
-        let _ = writeln!(md, "| {n} | {:.1} | {:.1}% | {:.0} | {:.0} | {:.0} |", s.ct_mi, s.ct_cv_pct, s.inside_s, s.ped_conflicts, s.bike_conflicts);
+        let _ = writeln!(md, "| {n} | {:.1} | {:.1}% | {:.0} | {:.0} | {:.0} |", s.ct_vph, s.ct_cv_pct, s.inside_s, s.ped_conflicts, s.bike_conflicts);
     }
     let _ = writeln!(
         md,

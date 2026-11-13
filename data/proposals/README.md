@@ -26,11 +26,11 @@ Do not start an unconstrained run from an older build while another run is writi
 
 ## What it measures
 
-- **Goal.** Cut-through vehicle-miles on in-study residential and service links (`metrics().cutThrough`), averaged over the periods.
+- **Goal.** Cut-through vehicles per hour (`metrics().cutThrough.vehiclesPerHour`): gate-to-gate trips that use at least one in-study residential or service link, each counted once, averaged over the periods.
 - **Harm.** The largest increase in total flow, both directions summed, on any one in-study residential or service block, in veh/h, taken over the periods. Each block's increase is reduced by its noise band, `max(2 x the standard deviation of the block's baseline flow across seeds, 10 veh/h)`, and floored at zero. Both constants are in `explore/mod.rs`. With one seed there is no spread, so the band is the 10 veh/h floor, which is too low for short runs; use at least two seeds for a run you publish.
 - **Context** (information only): flow and speed change on the arterials that run through the study area, mean time of trips that start or end inside it, and pedestrian and bicycle conflict counts.
 
-Flow figures use the window after a warm-up of the first 25% of the run, at most 10 minutes. Cut-through vehicle-miles cover the whole run from an empty network, the same as the metric in the app.
+Flow figures use the window after a warm-up of the first 25% of the run, at most 10 minutes. The cut-through count covers the whole run from an empty network and is divided by the run length, the same as the metric in the app.
 
 ## Candidates
 
@@ -50,7 +50,7 @@ From the rechecked finalists the tool keeps those that no other finalist beats o
 
 `public/data/<area>.proposals.json` follows the contract in the design. Interpretations worth knowing:
 
-- `cutThrough.changePct` is negative for a reduction. `baselineVehMi` and `scenarioVehMi` are vehicle-miles in the simulated hour, averaged over the periods and seeds.
+- `cutThrough.changePct` is negative for a reduction. `baselineVehPerHour` and `scenarioVehPerHour` are through vehicles an hour, averaged over the periods and seeds. The file is version 3; groups written by version 2 report vehicle-miles and the app shows them as out of date until they are computed again.
 - `harm.worstIncreaseVehPerHour` is after the noise band. `harm.worstBlock` is the block with the largest such increase over the periods; when every block is inside its band it names the block with the largest raw increase and the value is 0. `blocksAboveNoise` counts blocks past their band in any period.
 - `byPeriod[p].worstIncreaseVehPerHour` is the same figure for one period; the overall figure is the maximum over periods.
 - `context.boundingStreets` lists the named primary, secondary and tertiary streets with in-study links, summed over their in-study links. `flowChangePct` compares summed flow, `speedChangeMph` the flow-weighted mean speed.

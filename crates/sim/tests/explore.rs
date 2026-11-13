@@ -188,7 +188,7 @@ fn one_filter_removes_a_rat_run_without_harm() {
     let n = ratrun(false, false);
     let study = study_of(n.study_net);
     let o = explore(&study, &params(4));
-    let base = o.base.full[0].ct_mi;
+    let base = o.base.full[0].ct_vph;
     assert!(base > 5.0, "the rat run carries cut-through in the baseline: {base}");
     let b = best(&o);
     eprintln!("best: {} reduction {:.1}% harm {:.1}", label_of(&o, b), b.reduction_pct, b.harm);
@@ -333,7 +333,7 @@ fn recording_select_links_does_not_change_the_run() {
     let sel = traffic_sim::explore::search::nominated_links(&study);
     let a = traffic_sim::explore::run(&study, &[], "p", 3, 8.0, &[]);
     let b = traffic_sim::explore::run(&study, &[], "p", 3, 8.0, &sel);
-    assert_eq!(a.ct_km.to_bits(), b.ct_km.to_bits());
+    assert_eq!(a.ct_vph.to_bits(), b.ct_vph.to_bits());
     assert_eq!(a.flow, b.flow);
     assert!(!b.records.is_empty());
 }
@@ -344,8 +344,8 @@ fn options_are_spread_and_drop_changes_within_noise() {
     let mk = |n: usize, red: f64, harm: f64| Final {
         set: (0..n as u16).collect(),
         reject: None,
-        base_mi: 100.0,
-        scen_mi: 100.0 - red,
+        base_vph: 100.0,
+        scen_vph: 100.0 - red,
         reduction_pct: red,
         harm,
         worst: 0,
@@ -557,7 +557,7 @@ fn profile_results_merge_into_one_file_and_one_report() {
     let old = json!({"version": 1, "area": "t", "computed": {"date": "d"}, "baseline": {}, "proposals": [{"id": "p1"}]});
     let charter = json!({"id": "charter", "title": "c", "note": "", "computed": {}, "baseline": {}, "proposals": [{"id": "p1"}, {"id": "p2"}]});
     let m = merge_file(Some(&old), "t", charter.clone(), &ord, &un);
-    assert_eq!(m["version"], 2);
+    assert_eq!(m["version"], 3);
     let ids: Vec<&str> = m["groups"].as_array().unwrap().iter().map(|g| g["id"].as_str().unwrap()).collect();
     assert_eq!(ids, ["charter", "unconstrained"]);
     assert_eq!(m["groups"][1]["proposals"][0]["id"], "p1");

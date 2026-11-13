@@ -78,10 +78,10 @@ fn group_of_v1(old: &Value, fallback: &Profile) -> Value {
 }
 
 /// Put `group` into the proposals file `existing`, replacing the group with the same id and keeping the others.
-/// A file in the earlier single-group format (version 1) counts as the unconstrained group.
+/// A file in the earlier single-group format (version 1) counts as the unconstrained group. Version 2 groups report cut-through in vehicle-miles and are kept as they are; readers treat them as stale.
 pub fn merge_file(existing: Option<&Value>, area: &str, group: Value, order: &[String], unconstrained: &Profile) -> Value {
     let mut groups: Vec<Value> = match existing {
-        Some(v) if v["version"] == 2 => v["groups"].as_array().cloned().unwrap_or_default(),
+        Some(v) if v["version"] == 2 || v["version"] == 3 => v["groups"].as_array().cloned().unwrap_or_default(),
         Some(v) if v["version"] == 1 && v["proposals"].is_array() => vec![group_of_v1(v, unconstrained)],
         _ => Vec::new(),
     };
@@ -92,7 +92,7 @@ pub fn merge_file(existing: Option<&Value>, area: &str, group: Value, order: &[S
     }
     let rank = |g: &Value| order.iter().position(|o| g["id"] == o.as_str()).unwrap_or(order.len());
     groups.sort_by_key(rank);
-    json!({"version": 2, "area": area, "groups": groups})
+    json!({"version": 3, "area": area, "groups": groups})
 }
 
 fn marker(id: &str) -> String {

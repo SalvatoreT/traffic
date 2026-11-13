@@ -1505,6 +1505,10 @@ fn saturated_permissive_left_turners_do_not_starve_the_opposing_queue() {
     assert!(opposed > 0.9 * alone, "through discharge {opposed} veh/h with saturated left-turners against {alone} alone");
 }
 
+    if let Some(ct) = o.get_mut("cutThrough").and_then(|c| c.as_object_mut()) {
+        ct.remove("vehicles");
+        ct.remove("vehiclesPerHour");
+    }
 // ---------------------------------------------------------------- car-only regression (multimodal-agents)
 
 fn golden_signal_cross() -> Simulation {
@@ -1526,6 +1530,7 @@ fn legacy_metrics(sim: &Simulation) -> String {
 
 #[test]
 fn car_only_metrics_match_pre_multimodal_golden() {
+mod cut_through;
     let mut a = busy_corridor(7);
     step_n(&mut a, 1800.0);
     assert_eq!(legacy_metrics(&a), GOLDEN_CORRIDOR);

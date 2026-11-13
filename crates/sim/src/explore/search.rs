@@ -1,6 +1,6 @@
 //! Baseline, scoring and beam search (design D1, D4).
 //!
-//! Goal: cut-through vehicle-miles on local streets, averaged over the periods searched. Harm: the largest increase in total flow
+//! Goal: through vehicles per hour that use a local street, averaged over the periods searched. Harm: the largest increase in total flow
 //! (both directions) on any one local block, after subtracting the noise band, taken over the periods. Screening runs use one
 //! period, one seed and a shortened run; the finalists are rechecked elsewhere (`report`).
 
@@ -11,7 +11,7 @@ use std::time::Instant;
 
 /// One period's runs over the seeds, reduced to means.
 pub struct PeriodStat {
-    pub ct_mi: f64,
+    pub ct_vph: f64,
     /// Standard deviation of cut-through over the seeds, percent of the mean (0 with one seed).
     pub ct_cv_pct: f64,
     pub ped_conflicts: f64,
@@ -56,9 +56,9 @@ pub fn period_stat(study: &Study, runs: &[&RunOut]) -> PeriodStat {
     }
     let m = |g: &dyn Fn(&RunOut) -> f64| runs.iter().map(|r| g(r)).sum::<f64>() / n;
     PeriodStat {
-        ct_mi: m(&|r| r.ct_mi()),
+        ct_vph: m(&|r| r.ct_vph),
         ct_cv_pct: {
-            let v: Vec<f64> = runs.iter().map(|r| r.ct_mi()).collect();
+            let v: Vec<f64> = runs.iter().map(|r| r.ct_vph).collect();
             if mean(&v) > 0.0 {
                 100.0 * std_dev(&v) / mean(&v)
             } else {
@@ -110,11 +110,11 @@ pub fn run_baseline(study: &Study, p: &Params) -> Baseline {
     for (k, o) in outs.iter().enumerate() {
         let (pi, si) = if k < p.periods.len() * ns { (k / ns, k % ns) } else { (0, k - p.periods.len() * ns) };
         eprintln!(
-            "  baseline {} seed {} {:.0} min: cut-through {:.1} veh-mi, unroutable {}, gridlock removed {}, backlog {}",
+            "  baseline {} seed {} {:.0} min: cut-through {:.0} veh/h, unroutable {}, gridlock removed {}, backlog {}",
             p.periods[pi],
             p.seeds[si],
             if k < p.periods.len() * ns { p.minutes } else { p.screen_minutes },
-            o.ct_mi(),
+            o.ct_vph,
             o.unroutable,
             o.gridlock_removed,
             o.backlog
@@ -259,7 +259,7 @@ fn eval_screen(ctx: &Ctx, set: &[u16]) -> Eval {
     let scen_flow = block_flows(ctx.study, &out.flow);
     let inc: Vec<f64> = scen_flow.iter().zip(&base_flow).map(|(s, b)| s - b).collect();
     let h = harm_calc(&inc, &ctx.base.screen.block_sigma);
-    let red = reduction_pct(base_run.ct_mi(), out.ct_mi());
+    let red = reduction_pct(base_run.ct_vph, out.ct_vph);
     Eval { set: set.to_vec(), reject: None, reduction_pct: red, harm: h.worst_adj, worst: h.worst, inc: inc.iter().map(|&x| x as f32).collect(), score: score(p, red, h.worst_adj) }
 }
 
