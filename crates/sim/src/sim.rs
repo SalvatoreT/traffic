@@ -164,6 +164,8 @@ struct Veh {
     pass_scored: bool,
     /// Placed by initial loading: its trip started before time zero, so its trip time and delay are partial.
     preplaced: bool,
+    /// Entered its current link along the block (a local trip start) or leaves it there: its time on the link is not a traversal time.
+    mid_start: bool,
 }
 
 impl Veh {
@@ -212,6 +214,7 @@ impl Veh {
             pass_close: false,
             pass_scored: false,
             preplaced: false,
+            mid_start: false,
         }
     }
     #[inline]
@@ -1510,6 +1513,39 @@ impl Simulation {
         }
     }
 
+    /// Position along link `l` at which trip `uid` starts or ends when its end there is local (not a gate): between `MID_BLOCK_LO` and
+    /// 1 - `MID_BLOCK_LO` of the room between the junctions, fixed per trip and link. None on a block shorter than `MID_BLOCK_MIN_M`.
+    fn mid_block_pos(&self, uid: u32, l: usize) -> Option<f32> {
+        let (emerge, stop) = (self.topo.emerge_pos[l], self.topo.stop_pos[l]);
+        if stop - emerge < MID_BLOCK_MIN_M {
+            return None;
+        }
+        let u = hash32(uid, l as u32 ^ 0x4D49_4442) as f32 / u32::MAX as f32;
+        Some(emerge + (stop - emerge) * (MID_BLOCK_LO + (1.0 - 2.0 * MID_BLOCK_LO) * u))
+    }
+
+    /// Can a vehicle with parameters `drv` pull out from the curb into lane `lane` of link `b` at `pos`, from a standstill? The gap rule is
+    /// the one of gate insertion (`entry_speed`), applied to both neighbors: the IDM desired gap [Treiber2000] of the entering vehicle to
+    /// its leader and of the follower to the entering vehicle. Returns the index in the lane queue at which the vehicle goes.
+    fn curb_gap(&self, b: u32, lane: usize, pos: f32, drv: &Drv) -> Option<usize> {
+        let q = &self.lanes[self.topo.qidx(b as usize, lane)];
+        let at = q.iter().position(|&x| self.vehs[x as usize].pos < pos).unwrap_or(q.len());
+        if at > 0 {
+            let lead = &self.vehs[q[at - 1] as usize];
+            if lead.pos - lead.drv.len - pos < drv.s0 {
+                return None;
+            }
+        }
+        if let Some(&f) = q.get(at) {
+            let fo = &self.vehs[f as usize];
+            let need = fo.drv.s0 + fo.v * fo.drv.t_hw + fo.v * fo.v / (2.0 * (fo.drv.a * fo.drv.b).sqrt());
+            if pos - drv.len - fo.pos < need {
+                return None;
+            }
+        }
+        Some(at)
+    }
+
     fn try_spawns(&mut self) {
         for n in 0..self.topo.n_nodes {
             let (mut spawned, mut idx) = (0, 0);
@@ -1547,8 +1583,16 @@ impl Simulation {
                     continue;
                 }
                 let drv = self.backlog[n][idx].drv;
-                let entry = self.pick_lane(b, self.lane_hint(b, &route), route.first().copied(), 0.0).and_then(|lane| self.entry_speed(b, lane, &drv).map(|v| (lane, v)));
-                let Some((lane, v_ins)) = entry else {
+                // A trip that starts at a gate enters at the start of its first link. A local trip pulls out from the curb along the block.
+                let mid = if self.net.nodes[n].gate { None } else { self.mid_block_pos(self.backlog[n][idx].uid, b as usize) };
+                let entry = match mid {
+                    Some(pos) => {
+                        let lane = self.topo.nmain[b as usize] - 1;
+                        self.curb_gap(b, lane, pos, &drv).map(|at| (lane, 0.0, pos, Some(at)))
+                    }
+                    None => self.pick_lane(b, self.lane_hint(b, &route), route.first().copied(), 0.0).and_then(|lane| self.entry_speed(b, lane, &drv).map(|v| (lane, v, self.topo.emerge_pos[b as usize], None))),
+                };
+                let Some((lane, v_ins, pos_ins, at)) = entry else {
                     self.scratch = route;
                     blocked.push(b);
                     idx += 1;
@@ -1569,8 +1613,9 @@ impl Simulation {
                     uid: trip.uid,
                     link: b,
                     lane: lane as u8,
-                    pos: self.topo.emerge_pos[b as usize],
+                    pos: pos_ins,
                     v: v_ins,
+                    mid_start: at.is_some(),
                     drv: trip.drv,
                     origin: trip.origin,
                     dest: trip.dest,
@@ -1585,7 +1630,10 @@ impl Simulation {
                     ..Veh::blank()
                 };
                 let idx = self.topo.lane_base[b as usize] as usize + lane;
-                self.lanes[idx].push_back(id);
+                match at {
+                    Some(i) => self.lanes[idx].insert(i, id),
+                    None => self.lanes[idx].push_back(id),
+                }
                 self.st.spawned += 1;
                 self.sl_enter(id, b);
             }
@@ -2065,6 +2113,21 @@ impl Simulation {
                             self.st.clamps += 1;
                         }
                     }
+                    {
+                        // A trip whose destination is local leaves the road along its last block.
+                        let veh = &self.vehs[vid as usize];
+                        if veh.kind == KIND_CAR && veh.next().is_none() && !self.net.nodes[veh.dest as usize].gate && self.topo.link_to[l] == veh.dest {
+                            if let Some(ex) = self.mid_block_pos(veh.uid, l) {
+                                if x >= ex {
+                                    self.vehs[vid as usize].pos = x;
+                                    self.vehs[vid as usize].v = v;
+                                    self.vehs[vid as usize].mid_start = true;
+                                    self.finish_trip(vid, qi);
+                                    continue;
+                                }
+                            }
+                        }
+                    }
                     if idx == 0 {
                         let (go, nxt) = {
                             let veh = &self.vehs[vid as usize];
@@ -2173,8 +2236,12 @@ impl Simulation {
                 }
             }
         }
-        self.tt_sum[l] += (self.t - veh.t_enter) as f32;
-        self.tt_n[l] += 1;
+        if veh.mid_start {
+            veh.mid_start = false;
+        } else {
+            self.tt_sum[l] += (self.t - veh.t_enter) as f32;
+            self.tt_n[l] += 1;
+        }
     }
 
     fn link_ff_for(&self, l: usize, fcomp: f32) -> f32 {
@@ -2226,7 +2293,9 @@ impl Simulation {
                 self.sl.as_mut().unwrap().records.push(r);
             }
         }
-        self.lanes[qi].pop_front();
+        if let Some(i) = self.lanes[qi].iter().position(|&x| x == vid) {
+            self.lanes[qi].remove(i);
+        }
         self.remove_vehicle(vid);
     }
 
@@ -2276,9 +2345,10 @@ impl Simulation {
         let (m_len, v_exit, t_total) = self.cross_profile(veh, l, mv, ctrl);
         let (v, len, fcomp) = (veh.v, veh.drv.len, veh.drv.fcomp);
         let veh_t_enter = veh.t_enter;
+        let mid_started = veh.mid_start;
         let _ = v;
         self.record_link_exit(vid, l);
-        if kind == KIND_CAR {
+        if kind == KIND_CAR && !mid_started {
             self.mv_tt_sum[mv as usize] += (self.t - veh_t_enter) as f32;
             self.mv_tt_n[mv as usize] += 1;
         }

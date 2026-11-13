@@ -261,6 +261,8 @@
       "midday": 0.5,
       "pm_peak": 0.3
     },
+    "spreadRadiusM": 150,
+    "spreadRadiusNote": "ASSUMPTION: a census block loads every node on a residential street within this distance of its centroid, in equal parts (the nearest node when none is that close). Before the seventeenth round each block loaded only its nearest node, which put the trips of several blocks on one corner.",
     "internalShare": 0.2,
     "internalDecayM": 1000,
     "maxLocalShareOfGate": 0.5,

@@ -308,12 +308,18 @@ if (lodes) {
   for (const b of lodes.blocks) {
     if ((!b.resWorkers && !b.jobs) || !inBbox(b)) continue; // blocks outside the model area (the raw file was cut for a larger one) would map to the nearest edge node
     const [x, y] = toXY(b.lat, b.lon);
-    const nd = nearest(x, y);
-    const agg = localNodes.get(nd.id) ?? localNodes.set(nd.id, { node: nd.id, x: nd.x, y: nd.y, res: 0, jobs: 0, outSectors: {}, inSectors: {} }).get(nd.id)!;
-    agg.res += b.resWorkers; agg.jobs += b.jobs;
+    // A census block loads the network at every node on a residential street within `local.spreadRadiusM` of its centroid, in equal parts,
+    // and at the nearest one when none is that close: a block has frontage on all the streets around it, not on one corner.
+    const R = lo.spreadRadiusM ?? 0;
+    const near = R > 0 ? candNodes.filter((n) => Math.hypot(n.x - x, n.y - y) <= R) : [];
+    const targets = near.length ? near : [nearest(x, y)];
     const ex = byBlock.get(b.id);
-    for (const [s, n] of Object.entries(ex?.out ?? {})) agg.outSectors[s] = (agg.outSectors[s] ?? 0) + (n as number);
-    for (const [s, n] of Object.entries(ex?.in ?? {})) agg.inSectors[s] = (agg.inSectors[s] ?? 0) + (n as number);
+    for (const nd of targets) {
+      const agg = localNodes.get(nd.id) ?? localNodes.set(nd.id, { node: nd.id, x: nd.x, y: nd.y, res: 0, jobs: 0, outSectors: {}, inSectors: {} }).get(nd.id)!;
+      agg.res += b.resWorkers / targets.length; agg.jobs += b.jobs / targets.length;
+      for (const [s, n] of Object.entries(ex?.out ?? {})) agg.outSectors[s] = (agg.outSectors[s] ?? 0) + (n as number) / targets.length;
+      for (const [s, n] of Object.entries(ex?.in ?? {})) agg.inSectors[s] = (agg.inSectors[s] ?? 0) + (n as number) / targets.length;
+    }
   }
 }
 
@@ -883,9 +889,11 @@ const fwStat = new Map<string, { in: number; out: number; capIn: number; capOut:
 // ---------- provenance ----------
 const provenance = [
   { source: 'Oakland Annual Multi-Modal Counts, Raw Data (OakDOT), Telegraph Ave & Alcatraz Ave PM peak turning movements 2018/2019/2021', url: 'https://data.oaklandca.gov/d/amtg-eh64', note: tmc ? `DATA. Gate peak in/out volumes on Telegraph and Alcatraz legs; ${tmc.files.length} counts averaged (${tmc.peakHours.join('; ')}). Other periods scaled by ASSUMPTION factors (periodFactors).` : 'not available' },
-  { source: 'Caltrans Traffic Volumes AADT (SR-13 Claremont Ave, Berkeley)', url: 'https://caltrans-gis.dot.ca.gov/arcgis/rest/services/CHhighway/Traffic_AADT/FeatureServer/0', note: 'DATA used as nearest-count ADT for the Claremont gate with an ASSUMPTION scaling factor; SR-24 AADT is context only.' },
+  { source: 'Caltrans Traffic Volumes AADT (SR-13 Ashby Ave and Tunnel Rd, SR-123 San Pablo Ave)', url: 'https://caltrans-gis.dot.ca.gov/arcgis/rest/services/CHhighway/Traffic_AADT/FeatureServer/0', note: 'DATA: AADT stations as gate volumes and link targets, with an ASSUMPTION peak-hour factor and directional share; SR-24 AADT is context only.' },
   { source: 'Caltrans Ramp Volumes on the California State Freeway System, District 4 (ramp ADT, SR-24 ramps)', url: 'https://dot.ca.gov/programs/traffic-operations/census', note: `DATA: ramp ADT for the ramps found in the network (count year as listed in the build log; the Claremont and Telegraph ramps were last counted in 2012, no growth applied). ASSUMPTION: ramp peak-hour factor, local share of ramp trips, destination choice (gravity x direction plausibility toward the study area), per-gate ramp share cap. Freeway mainline through trips are excluded.` },
-  { source: 'US Census LEHD LODES8 CA OD main JT00 2024 and ca_xwalk', url: 'https://lehd.ces.census.gov/data/lodes/LODES8/ca/', note: 'DATA. Resident workers and jobs per block in the bbox (nearest in-area residential node) and home/work direction mix by compass sector. Trip rates, mode share, peak-hour shares are ASSUMPTIONS.' },
+  { source: 'US Census LEHD LODES8 CA OD main JT00 2024 and ca_xwalk', url: 'https://lehd.ces.census.gov/data/lodes/LODES8/ca/', note: 'DATA. Resident workers and jobs per block in the bbox and home/work direction mix by compass sector. ASSUMPTION: each block loads the residential-street junctions within 150 m of its centroid in equal parts; in the simulation these trips pull out from the curb along an adjoining block and leave the road along one, not at the junction. Trip rates, mode share, peak-hour shares are ASSUMPTIONS.' },
+  { source: "Children's Hospital and Research Center Oakland Campus Master Plan Project, Draft EIR (City of Oakland, 2014), Appendix C", url: 'https://www.oaklandca.gov/files/assets/city/v/1/planning-amp-building/documents/dp/ceqa/2011-present/childrens-hospital-draft-environmental-impact-report-appendix-c.pdf', note: 'DATA. AM and PM peak-hour turning-movement counts of 2013-09-19 at nine intersections (legs, turns, SR-24 ramps at 52nd St and Martin Luther King Jr Way) as targets of the count fit; observed signal timing at two signals. ASSUMPTION: no growth since the count.' },
+  { source: 'Safeway Shopping Center, College and Claremont Avenues, Draft EIR (City of Oakland, 2011)', url: 'https://www.oaklandca.gov/files/assets/city/v/1/planning-amp-building/documents/dp/ceqa/2011-present/college-avenue-safeway-deir_2024-05-10-203917_bvqg.pdf', note: 'DATA. PM peak-hour demand volumes of 2010-03-16 at five intersections (legs, turns, SR-24 ramps at Clifton St and Hudson St) as targets of the count fit. ASSUMPTION: no growth since the count.' },
   ...(cfg.active ? [{ source: 'Walking and biking demand (pedestrian and bicycle flows, persons per hour)', url: 'data/demand/README.md', note: 'ASSUMPTION, not counts: synthesized from LODES resident workers and jobs per block with assumed mode shares, trip lengths, gate and commercial-street shares (config `active`). DATA: the volumes are scaled by one factor per mode so that PM peak-hour people passing Telegraph Ave & Alcatraz Ave match the mean of the Oakland pedestrian and bicycle counts there; the spatial pattern elsewhere is uncounted. Calibration against walking and biking counts has not been done.' }] : []),
   { source: 'Assumptions', url: 'data/demand/README.md', note: 'ASSUMPTION: K-factor, period volume factors, per-class default ADT, directional split, trip rates, gravity turning factors, sector-to-gate weights, local trip share capped per gate. Uncalibrated.' }
 ];

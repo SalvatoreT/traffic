@@ -712,6 +712,69 @@ fn modal_filter_node_bans_all_movements() {
 }
 
 #[test]
+fn local_trips_start_and_end_along_the_block_and_never_cross_a_filtered_origin() {
+    let (net, c) = corridor(11.2, Control::Uncontrolled);
+    let home = c.l[1];
+    // Local trips from and to the interior node, and a gate-to-gate flow on the arterial.
+    let d = demand(&[(home, c.a[3], 300.0), (c.a[0], home, 300.0), (c.a[0], c.a[3], 300.0)]);
+    let mut sim = Simulation::from_parts(net.clone(), d, cfg(5, 1.0)).unwrap();
+    sim.set_interventions(&iv(&format!("[{{\"type\":\"modal_filter\",\"node\":{home}}}]"))).unwrap();
+    let outs: Vec<u32> = net.links.iter().filter(|l| l.from == home).map(|l| l.id).collect();
+    let ins: Vec<u32> = net.links.iter().filter(|l| l.to == home).map(|l| l.id).collect();
+    let gate_first: Vec<u32> = net.links.iter().filter(|l| l.from == c.a[0]).map(|l| l.id).collect();
+    let (emerge, stop) = { let t = sim.test_topo(); (t.emerge_pos.clone(), t.stop_pos.clone()) };
+    let mut seen_out = 0;
+    let mut first_at_gate = f32::MAX;
+    run(&mut sim, 1200.0, |s| {
+        assert!(s.test_transit(home as usize).is_empty(), "no car crosses the filtered node");
+        for &l in &outs {
+            for (_, pos, _) in s.test_lane_vehicles(l) {
+                seen_out += 1;
+                let lo = emerge[l as usize] + MID_BLOCK_LO * (stop[l as usize] - emerge[l as usize]);
+                assert!(pos >= lo - 0.01, "a trip from the node starts along the block, not at the junction: {pos} < {lo}");
+            }
+        }
+        for &l in &ins {
+            for (_, pos, _) in s.test_lane_vehicles(l) {
+                let hi = emerge[l as usize] + (1.0 - MID_BLOCK_LO) * (stop[l as usize] - emerge[l as usize]);
+                assert!(pos <= hi + 12.0, "a trip to the node leaves along the block: {pos} > {hi}");
+            }
+        }
+        for &l in &gate_first {
+            for (_, pos, _) in s.test_lane_vehicles(l) {
+                first_at_gate = first_at_gate.min(pos - emerge[l as usize]);
+            }
+        }
+    });
+    assert!(seen_out > 0);
+    assert!(first_at_gate < 6.0, "gate trips still enter at the start of their first link: {first_at_gate}");
+    let m: serde_json::Value = serde_json::from_str(&sim.metrics_json()).unwrap();
+    // Both local flows and the gate flow complete; only gate-to-gate trips can count as through vehicles.
+    assert!(m["completedTrips"].as_u64().unwrap() > 200, "{}", m["completedTrips"]);
+    assert_eq!(m["unroutableTrips"].as_u64().unwrap(), 0);
+    let through_only = {
+        let d2 = demand(&[(home, c.a[3], 300.0), (c.a[0], home, 300.0)]);
+        let mut s2 = Simulation::from_parts(net.clone(), d2, cfg(5, 1.0)).unwrap();
+        step_n(&mut s2, 1200.0);
+        let m2: serde_json::Value = serde_json::from_str(&s2.metrics_json()).unwrap();
+        m2["cutThrough"]["vehicles"].as_u64().unwrap()
+    };
+    assert_eq!(through_only, 0, "local trips are not through vehicles wherever they start");
+}
+
+#[test]
+fn mid_block_starts_are_deterministic_for_a_seed() {
+    let (net, c) = corridor(11.2, Control::Uncontrolled);
+    let d = demand(&[(c.l[1], c.a[3], 400.0), (c.a[0], c.l[2], 400.0), (c.a[0], c.a[3], 300.0)]);
+    let run_once = || {
+        let mut s = Simulation::from_parts(net.clone(), d.clone(), cfg(11, 1.0)).unwrap();
+        step_n(&mut s, 900.0);
+        s.metrics_json()
+    };
+    assert_eq!(run_once(), run_once());
+}
+
+#[test]
 fn speed_hump_slows_locally_and_adds_travel_time() {
     let travel = |hump: bool| {
         let (net, l0, dest) = line_net(11.2, 400.0);
@@ -1553,7 +1616,8 @@ fn car_only_metrics_match_pre_multimodal_golden() {
 }
 // Updated with the gate scan (a blocked first link no longer holds back trips behind it): same trips, a few vehicle entries move by a step, so the means differ in the fourth digit.
 // Updated with route costs by turning movement (ramp-and-colby-calibration): same trips completed, a few routes differ, so distances and means move in the third digit.
-const GOLDEN_CORRIDOR: &str = r#"{"arterialMeanSpeed":5.754580391407526,"backlog":0,"completedTrips":526,"cutThrough":{"shareOfLocalVehKm":0.7888020524803806,"vehKm":218.094702378273},"gridlockRemoved":0,"meanTripDelay":2.5821636012272275,"meanTripTime":103.94524281006537,"safety":{"localMeanSpeed":9.706052886837483,"localP85Speed":11.632857142857144,"shareAbove20mph":0.7113594858467374,"shareAbove25mph":0.2320977031678022,"ttcConflicts":3},"spawned":558,"time":1800.0,"unroutableTrips":0,"vehKm":439.1311396589279,"vehiclesInNetwork":32}"#;
+// Updated with mid-block loading of local trips (ramp-and-colby-calibration): trips with a local end start and end along the block, so their distances and times are shorter.
+const GOLDEN_CORRIDOR: &str = r#"{"arterialMeanSpeed":5.761866188712624,"backlog":0,"completedTrips":526,"cutThrough":{"shareOfLocalVehKm":0.8265136921133887,"vehKm":221.55133621311188},"gridlockRemoved":0,"meanTripDelay":1.5265894814562926,"meanTripTime":102.64914014846846,"safety":{"localMeanSpeed":9.557787342195216,"localP85Speed":11.596726314691152,"shareAbove20mph":0.689187382457016,"shareAbove25mph":0.22030786234435304,"ttcConflicts":0},"spawned":558,"time":1800.0,"unroutableTrips":0,"vehKm":428.1606337890625,"vehiclesInNetwork":32}"#;
 // Updated when right turn on red was added (ASSUMPTION, validation cases b10 and b11): the w->s flow turns right on red, so mean delay falls from 13.4 to 13.1 s.
 const GOLDEN_CROSS: &str = r#"{"arterialMeanSpeed":8.436836013936235,"backlog":0,"completedTrips":551,"cutThrough":{"shareOfLocalVehKm":1.0,"vehKm":64.3283925333023},"gridlockRemoved":0,"meanTripDelay":13.054209055272334,"meanTripTime":50.45862896291319,"safety":{"localMeanSpeed":6.385964968918798,"localP85Speed":11.4,"shareAbove20mph":0.4679799284578696,"shareAbove25mph":0.16921701112877582,"ttcConflicts":10},"spawned":572,"time":1800.0,"unroutableTrips":0,"vehKm":216.17522833824157,"vehiclesInNetwork":21}"#;
 
