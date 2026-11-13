@@ -1013,6 +1013,33 @@ impl Simulation {
             .collect()
     }
 
+    /// Diagnostics: one line per lane of each listed link (vehicles, standing, signal state, and the head's next link, flags and waits).
+    #[doc(hidden)]
+    pub fn debug_links(&self, links: &[u32]) -> Vec<String> {
+        let mut out = Vec::new();
+        for &l in links {
+            let l = l as usize;
+            for k in 0..self.topo.nlanes(l) {
+                let q = &self.lanes[self.topo.lane_base[l] as usize + k];
+                let standing = q.iter().filter(|&&v| self.vehs[v as usize].v < 2.0).count();
+                let head = q.front().map(|&id| {
+                    let v = &self.vehs[id as usize];
+                    let kind = self.mv_kind(l as u32, v.next()).map_or('-', |k| match k {
+                        K_LEFT => 'L',
+                        K_RIGHT => 'R',
+                        K_UTURN => 'U',
+                        _ => 'T',
+                    });
+                    let ped = self.ped_on && self.ped_block_head(id, l, self.eff.ctrl[self.topo.link_to[l] as usize]);
+                    format!("next {:?} {kind} d {:.0} v {:.1} go {} space {} wait {:.0} ped {ped}", v.next(), self.topo.stop_pos[l] - v.pos, v.v, v.go, v.blocked_space, v.wait_t)
+                });
+                let xw = if self.ped_on { self.ped_debug_xw(l) } else { String::new() };
+                out.push(format!("link {l} lane {k} sig {} n {} standing {} {xw} head {}", self.sig_state[l], q.len(), standing, head.unwrap_or_default()));
+            }
+        }
+        out
+    }
+
     #[doc(hidden)]
     pub fn debug_gridlock(&self) -> &[(u32, f64)] {
         &self.gridlock_log

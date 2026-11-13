@@ -360,6 +360,11 @@ impl PedWorld {
                         None
                     };
                     let Some(legs_crossed) = pick else { continue };
+                    // A node with two legs is a point along one street (a way split or a bend), not an intersection, so it has no
+                    // unmarked crosswalk ([CVC275]: sidewalk lines prolonged "at intersections"); pedestrians cross there only if it is marked.
+                    if m == 2 && !legs_crossed.is_empty() && !net.nodes[n].marked_crossing {
+                        continue;
+                    }
                     let xws: Vec<u32> = legs_crossed.iter().map(|&k| xbase[n] + k as u32).collect();
                     let cost: f32 = xws.iter().map(|&x| w.xws[x as usize].width).sum::<f32>() + PED_CORNER_M;
                     let ei = w.node_edges.len() as u32;
@@ -790,6 +795,17 @@ impl Simulation {
         true
     }
 
+    /// Diagnostics: pedestrians crossing and waiting at the crosswalk at the end of link `l`.
+    pub(super) fn ped_debug_xw(&self, l: usize) -> String {
+        match self.world.link_xw_in[l] {
+            NONE_XW => String::new(),
+            xw => {
+                let x = &self.world.xws[xw as usize];
+                format!("xw {} crossing {} waiting {} vehicle in the way {}", xw, x.crossing, x.waiting, x.node != NONE_XW && self.transit_over_xw(x.node, xw))
+            }
+        }
+    }
+
     pub(super) fn ped_block_head(&self, vid: u32, l: usize, ctrl: Control) -> bool {
         let veh = &self.vehs[vid as usize];
         veh.next().map_or(false, |b| self.ped_block(veh, l as u32, b, ctrl))
@@ -807,7 +823,8 @@ impl Simulation {
             if x.crossing > 0 {
                 return true;
             }
-            if ctrl != Control::Signal && x.yields(xw, veh.uid, veh.v, d) {
+            // A driver who has stood at the line for `YIELD_FALLBACK_S` while nobody stepped off stops yielding (bounded wait, ASSUMPTION).
+            if ctrl != Control::Signal && veh.wait_t < YIELD_FALLBACK_S && x.yields(xw, veh.uid, veh.v, d) {
                 return true;
             }
         }

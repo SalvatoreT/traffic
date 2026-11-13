@@ -634,6 +634,63 @@ fn signal_change_applies_to_pedestrian_crossings_and_filters_do_not_stop_walkers
     assert_eq!(filtered.completed_trips, 0);
 }
 
+#[test]
+fn a_two_leg_node_has_a_crosswalk_only_when_marked() {
+    // Sidewalks on link 0 (n0 -> n1) and link 3 (n2 -> n1) only: a walk from n0 to n2 has to cross the street at n1.
+    let run_with = |marked: bool| {
+        let mut net = street(150.0, 1, 11.2);
+        net.links[1].sidewalk = Some(false);
+        net.links[2].sidewalk = Some(false);
+        net.nodes[1].marked_crossing = marked;
+        let mut sim = sim_with(net, &[(0, 2, 150.0, FlowMode::Pedestrian)], cfg(1, 1.0));
+        step_n(&mut sim, 900.0);
+        sim.metrics().modes.pedestrian
+    };
+    let (plain, marked) = (run_with(false), run_with(true));
+    assert_eq!(plain.completed_trips + plain.in_network, 0, "a point along a street is not an intersection: no unmarked crosswalk [CVC275]");
+    assert!(marked.completed_trips > 10, "{}", marked.completed_trips);
+}
+
+#[test]
+fn a_yield_to_a_pedestrian_who_cannot_step_off_lapses() {
+    // n0 - n1 - n2 with a marked crossing at n1 and sidewalks that make the walk from n0 to n2 cross there. A car from n0 is held
+    // inside n1 because the lane beyond has no room, so the pedestrian cannot step off; a driver from n2 who yields to the
+    // pedestrian would stand for good, and with it everything behind.
+    let mut net = street(150.0, 1, 11.2);
+    net.links[1].sidewalk = Some(false);
+    net.links[2].sidewalk = Some(false);
+    net.nodes[1].marked_crossing = true;
+    let mut c = cfg_empty(1, 1.0);
+    c.ped_yield_marked = Some(1.0);
+    let mut sim = sim_with(net, &[(0, 2, 60.0, FlowMode::Pedestrian)], c);
+    while sim.test_xws().iter().all(|x| x.3 == 0) {
+        sim.step(DT);
+    }
+    // Too close to stop for the pedestrian, the first car enters the node; then the lane beyond fills up to the node.
+    let held = sim.test_place(0, 0, 143.0, 8.0, 2, false);
+    while sim.test_transit(1).is_empty() {
+        sim.step(DT);
+    }
+    sim.test_place(2, 0, 11.0, 0.0, 2, true);
+    let yielding = sim.test_place(3, 0, 100.0, 8.0, 0, false);
+    let (mut in_node, mut stood, mut left_at) = (false, 0.0f64, None);
+    for _ in 0..(120.0 / DT) as usize {
+        sim.step(DT);
+        in_node = !sim.test_transit(1).is_empty();
+        let y = sim.test_veh(yielding);
+        if y.3 && y.0 == 3 && y.2 < 0.2 {
+            stood += DT;
+        } else if (!y.3 || y.0 != 3) && left_at.is_none() {
+            left_at = Some(sim.time());
+        }
+    }
+    let _ = held;
+    assert!(in_node, "the first car is still held inside the node");
+    assert!(sim.test_xws().iter().any(|x| x.3 > 0), "the pedestrian is still waiting");
+    assert!(stood > 40.0, "the driver yielded first: stood {stood} s");
+    assert!(left_at.is_some(), "and went on after the bounded wait");
+}
+
 // ------------------------------------------------------------------------------------------------ all modes
 
 fn all_modes_sim(seed: u64) -> Simulation {

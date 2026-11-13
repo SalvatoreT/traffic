@@ -479,10 +479,23 @@ fn main() {
     let mut delay0: Vec<f32> = vec![0.0; net.links.len()];
     let mut t = 0.0;
     let mut warmed = warm_s == 0.0;
+    // CAL_TRACE="<every s>:<from min>:<to min>:<link,link,...>" prints the lanes of the listed links to stderr.
+    let trace: Option<(f64, f64, f64, Vec<u32>)> = std::env::var("CAL_TRACE").ok().and_then(|v| {
+        let p: Vec<&str> = v.split(':').collect();
+        Some((p.first()?.parse().ok()?, p.get(1)?.parse::<f64>().ok()? * 60.0, p.get(2)?.parse::<f64>().ok()? * 60.0, p.get(3)?.split(',').filter_map(|x| x.parse().ok()).collect()))
+    });
     while t < total_s - 1e-9 {
         let dt = 5.0f64.min(total_s - t);
         sim.step(dt);
         t += dt;
+        if let Some((every, from, to, links)) = &trace {
+            if t >= *from && t <= *to && (t % every).abs() < 1e-6 {
+                eprintln!("t {:.0} ({:.1} min)", t, t / 60.0);
+                for line in sim.debug_links(links) {
+                    eprintln!("  {line}");
+                }
+            }
+        }
         if !warmed && t >= warm_s - 1e-9 {
             exits0 = sim.diagnostics().link_exits.to_vec();
             delay0 = sim.diagnostics().link_delay_s.to_vec();
