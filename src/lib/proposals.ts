@@ -8,7 +8,7 @@ export interface Proposal {
   kind?: 'search' | 'reference'; note?: string;
   link: string;
   interventions: { type: string; label: string }[];
-  cutThrough: { baselineVehMi: number; scenarioVehMi: number; changePct: number };
+  cutThrough: { baselineVehPerHour: number; scenarioVehPerHour: number; changePct: number };
   harm: { worstBlock: string; worstIncreaseVehPerHour: number; blocksAboveNoise: number };
   context: {
     boundingStreets: { name: string; flowChangePct: number; speedChangeMph: number }[];
@@ -21,10 +21,12 @@ export interface Proposal {
 export interface ProposalGroup {
   id: string; title: string; note: string;
   computed: { date: string; periods: string[]; seeds: number[]; networkHash: string; demandHash: string; calibration: string };
-  baseline: { cutThroughVehMi: Record<string, number> };
+  baseline: { cutThroughVehPerHour: Record<string, number> };
   proposals: Proposal[];
+  /** Computed with an earlier measure (vehicle-miles). Its options are not shown; they need to be computed again. */
+  legacy?: boolean;
 }
-export interface Proposals { version: 2; area: string; groups: ProposalGroup[] }
+export interface Proposals { version: 3; area: string; groups: ProposalGroup[] }
 
 export const UNCONSTRAINED_GROUP = {
   id: 'unconstrained', title: 'Without limits',
@@ -41,18 +43,25 @@ export const proposalsUrl = (entry: Pick<AreaEntry, 'id' | 'proposals'>): string
 
 /**
  * A missing file, an SPA fallback page or a file of another version all mean "none computed yet".
- * A version 1 file (one list, no groups) is read as the single unconstrained group.
+ * A version 1 file (one list, no groups) is read as the single unconstrained group. A group computed before the headline became a count of
+ * vehicles (no `baselineVehPerHour`) is kept but marked `legacy` with no options, so it reads as out of date instead of failing.
  */
+const hasCount = (p: Proposal) => Number.isFinite(p?.cutThrough?.baselineVehPerHour) && Number.isFinite(p?.cutThrough?.scenarioVehPerHour);
+function normalizeGroup(g: ProposalGroup): ProposalGroup {
+  if (g.proposals.every(hasCount)) return g;
+  return { ...g, legacy: true, proposals: [], baseline: { cutThroughVehPerHour: {} } };
+}
+
 export function parseProposals(text: string): Proposals | null {
   try {
     const f = JSON.parse(text) as { version?: number; area?: string; groups?: ProposalGroup[]; computed?: ProposalGroup['computed']; baseline?: ProposalGroup['baseline']; proposals?: Proposal[] };
     if (f?.version === 1 && Array.isArray(f.proposals) && f.computed) {
-      return { version: 2, area: f.area ?? '', groups: [{ ...UNCONSTRAINED_GROUP, computed: f.computed, baseline: f.baseline ?? { cutThroughVehMi: {} }, proposals: f.proposals }] };
+      return { version: 3, area: f.area ?? '', groups: [normalizeGroup({ ...UNCONSTRAINED_GROUP, computed: f.computed, baseline: f.baseline ?? { cutThroughVehPerHour: {} }, proposals: f.proposals })] };
     }
-    if (f?.version !== 2 || !Array.isArray(f.groups)) return null;
+    if (!(f?.version === 2 || f?.version === 3) || !Array.isArray(f.groups)) return null;
     const groups = f.groups.filter((g) => g && typeof g.id === 'string' && Array.isArray(g.proposals) && g.computed)
-      .map((g) => ({ ...g, title: g.title || g.id, note: g.note ?? '' }));
-    return { version: 2, area: f.area ?? '', groups };
+      .map((g) => normalizeGroup({ ...g, title: g.title || g.id, note: g.note ?? '' }));
+    return { version: 3, area: f.area ?? '', groups };
   } catch { return null; }
 }
 
@@ -131,7 +140,7 @@ export function cutThroughHeadline(c: Proposal['cutThrough']): { figure: string;
   return {
     figure: zero ? 'No change' : `${c.changePct < 0 ? MINUS : '+'}${num(c.changePct, dp)}%`,
     label: 'cut-through',
-    detail: `${c.baselineVehMi.toFixed(1)} → ${c.scenarioVehMi.toFixed(1)} veh-mi`,
+    detail: `${Math.round(c.baselineVehPerHour)} → ${Math.round(c.scenarioVehPerHour)} through vehicles an hour`,
   };
 }
 

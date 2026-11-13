@@ -1,15 +1,13 @@
 export const MPS_TO_MPH = 2.2369362920544;
-export const KM_TO_MI = 0.621371192;
 
-export type Kind = 'speed' | 'dist' | 'share' | 'minutes' | 'seconds' | 'count' | 'flow' | 'index';
+export type Kind = 'speed' | 'share' | 'minutes' | 'seconds' | 'count' | 'flow' | 'index';
 
 export const speedValue = (mps: number): number => mps * MPS_TO_MPH;
 
-/** Convert an SI-ish metric (speed m/s, dist km, share 0..1, time s) to a display number (mph, miles). */
+/** Convert an SI-ish metric (speed m/s, share 0..1, time s) to a display number (mph, percent, minutes). */
 export function displayValue(kind: Kind, v: number): number {
   switch (kind) {
     case 'speed': return speedValue(v);
-    case 'dist': return v * KM_TO_MI;
     case 'share': return v * 100;
     case 'minutes': return v / 60;
     default: return v;
@@ -18,7 +16,6 @@ export function displayValue(kind: Kind, v: number): number {
 export function unitLabel(kind: Kind): string {
   switch (kind) {
     case 'speed': return 'mph';
-    case 'dist': return 'veh-mi';
     case 'share': return '%';
     case 'minutes': return 'min';
     case 'seconds': return 's';

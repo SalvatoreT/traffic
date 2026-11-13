@@ -48,7 +48,7 @@ describe('naming', () => {
 
 describe('diff formatting', () => {
   it('describes decreases as better when lower is better', () => {
-    const d = formatDiff(10, 6, 'dist', true);
+    const d = formatDiff(10, 6, 'flow', true);
     expect(d.verdict).toBe('better'); expect(d.arrow).toBe('↓'); expect(d.pct).toBeCloseTo(-40);
     expect(d.text).toContain('40% lower'); expect(d.text).toContain('better');
   });

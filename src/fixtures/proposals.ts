@@ -17,12 +17,12 @@ export function buildMockProposals(network: Network, computed: { networkHash: st
   const dd = (k: number, bearing: number): Intervention => ({ type: 'diagonal_diverter', node: N(k), bearing });
   const sl = (k: number): Intervention => ({ type: 'speed_limit', link: L(k), speed: 6.7 });
   const mk = (id: string, title: string, summary: string, ivs: Intervention[], cut: number, worst: number, blocks: number, extra: Partial<Proposal> = {}): Proposal => {
-    const base = 71.6;
+    const base = 118;
     return {
       id, title, summary,
       link: encodeScenario(network, ivs, { area: network.id }),
       interventions: ivs.map((iv) => ({ type: iv.type, label: describeIntervention(iv, network, idx) })),
-      cutThrough: { baselineVehMi: base, scenarioVehMi: +(base * (1 + cut / 100)).toFixed(1), changePct: cut },
+      cutThrough: { baselineVehPerHour: base, scenarioVehPerHour: +(base * (1 + cut / 100)).toFixed(1), changePct: cut },
       harm: { worstBlock: worst > 0 ? 'Colby Street between 62nd Street and 63rd Street' : '', worstIncreaseVehPerHour: worst, blocksAboveNoise: blocks },
       context: {
         boundingStreets: [
@@ -40,10 +40,10 @@ export function buildMockProposals(network: Network, computed: { networkHash: st
   const stale = variant === 'stale';
   const meta = {
     computed: { date: '2026-11-12', periods: ['am-peak', 'pm-peak'], seeds: [1, 2, 3, 4], ...computed, networkHash: stale ? 'deadbeefdeadbeef' : computed.networkHash },
-    baseline: { cutThroughVehMi: { 'am-peak': 74.1, 'pm-peak': 69.1 } },
+    baseline: { cutThroughVehPerHour: { 'am-peak': 121, 'pm-peak': 115 } },
   };
   return {
-    version: 2, area: network.id,
+    version: 3, area: network.id,
     groups: [
       {
         id: 'charter', title: "Within the 2025 neighborhood pilot's limits", note: 'Nothing on the bounding streets or at their intersections, and only temporary measures.', ...meta,

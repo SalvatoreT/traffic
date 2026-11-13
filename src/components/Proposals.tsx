@@ -118,7 +118,8 @@ export function Proposals({ bundle, index, today, state, loaded, current, onOpen
                 <ol className="prop-list">{parts.reference.map((p) => card(g, p, null))}</ol>
               </section>
             )}
-            {parts.search.length === 0 && parts.reference.length === 0 && (
+            {g.legacy && <p className="notice err" role="note"><strong>Out of date.</strong> These options were computed with an earlier measure of cut-through, so they are not shown. They need to be computed again.</p>}
+            {!g.legacy && parts.search.length === 0 && parts.reference.length === 0 && (
               <p className="muted" role="status">No options were found under these limits.</p>
             )}
           </section>

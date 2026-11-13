@@ -11,10 +11,10 @@ export interface CardDef { id: string; title: string; note?: string; metrics: Me
 export const CARDS: CardDef[] = [
   {
     id: 'cut', title: 'Cut-through traffic',
-    note: 'Gate-to-gate trips on residential and service streets inside the study area.',
+    note: 'Gate-to-gate trips that use at least one residential or service street inside the study area, counted once each. The share is the part of the distance driven on those streets that is through traffic.',
     metrics: [
-      { id: 'ctKm', label: 'Cut-through distance', kind: 'dist', lowerIsBetter: true, get: (m) => m.cutThrough.vehKm },
-      { id: 'ctShare', label: 'Share of local traffic', kind: 'share', lowerIsBetter: true, get: (m) => m.cutThrough.shareOfLocalVehKm },
+      { id: 'ctVeh', label: 'Cut-through vehicles', kind: 'flow', lowerIsBetter: true, get: (m) => m.cutThrough.vehiclesPerHour },
+      { id: 'ctShare', label: 'Through share of side-street driving', kind: 'share', lowerIsBetter: true, get: (m) => m.cutThrough.shareOfLocalVehKm },
     ],
   },
   {
@@ -106,7 +106,7 @@ export function vulnerableSentence(base: Metrics, scen: Metrics): string {
 }
 
 export function summarize(base: Metrics, scen: Metrics): string {
-  const pick = ['ctKm', 'meanSpeed', 'ttc', 'trip', 'art'];
+  const pick = ['ctVeh', 'meanSpeed', 'ttc', 'trip', 'art'];
   const parts: string[] = [];
   for (const c of CARDS) for (const d of c.metrics) {
     if (!pick.includes(d.id)) continue;

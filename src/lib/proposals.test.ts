@@ -43,8 +43,8 @@ describe('notices', () => {
 
 describe('headline figures', () => {
   it('formats the cut-through change', () => {
-    expect(cutThroughHeadline({ baselineVehMi: 71.6, scenarioVehMi: 44.2, changePct: -38.27 })).toEqual({ figure: '−38%', label: 'cut-through', detail: '71.6 → 44.2 veh-mi' });
-    expect(cutThroughHeadline({ baselineVehMi: 70, scenarioVehMi: 70, changePct: 0 }).figure).toBe('No change');
+    expect(cutThroughHeadline({ baselineVehPerHour: 118.4, scenarioVehPerHour: 73.1, changePct: -38.27 })).toEqual({ figure: '−38%', label: 'cut-through', detail: '118 → 73 through vehicles an hour' });
+    expect(cutThroughHeadline({ baselineVehPerHour: 70, scenarioVehPerHour: 70, changePct: 0 }).figure).toBe('No change');
   });
   it('words the zero-harm case', () => {
     const h = harmHeadline({ worstBlock: '', worstIncreaseVehPerHour: 0, blocksAboveNoise: 0 });
@@ -73,7 +73,7 @@ describe('sections', () => {
   });
   it('rejects files that are not proposals', () => {
     expect(parseProposals('<html>')).toBeNull();
-    expect(parseProposals('{"version":3}')).toBeNull();
+    expect(parseProposals('{"version":4}')).toBeNull();
   });
 });
 
@@ -94,6 +94,14 @@ describe('groups', () => {
     expect(f.groups[0]).toMatchObject({ id: 'unconstrained' });
     expect(f.groups[0].title).not.toBe('');
     expect(f.groups[0].proposals).toHaveLength(6);
+  });
+  it('keeps a group computed in vehicle-miles but marks it out of date', () => {
+    const old = { ...unc, proposals: unc.proposals.map((p) => ({ ...p, cutThrough: { baselineVehMi: 70, scenarioVehMi: 40, changePct: -43 } })) };
+    const f = parseProposals(JSON.stringify({ version: 2, area: 'x', groups: [old, charter] }))!;
+    expect(f.version).toBe(3);
+    expect(f.groups[0]).toMatchObject({ id: 'unconstrained', legacy: true, proposals: [] });
+    expect(f.groups[1].legacy).toBeUndefined();
+    expect(f.groups[1].proposals).toHaveLength(2);
   });
   it('tolerates an empty group and drops malformed ones', () => {
     const f = parseProposals(JSON.stringify({ version: 2, area: 'x', groups: [{ ...charter, proposals: [] }, { id: 'bad' }, { ...unc, title: '' }] }))!;

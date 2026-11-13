@@ -8,7 +8,7 @@ import { pointAlong } from '../lib/geom';
 import { bannedMoves } from '../lib/diverter';
 import type { SimLike } from './protocol';
 
-interface V { link: number; s: number; v: number; ct: boolean; trip: number; born: number }
+interface V { link: number; s: number; v: number; ct: boolean; ctCounted?: boolean; trip: number; born: number }
 /** Non-car agent: kind is KIND_BIKE or KIND_PED. */
 interface A { kind: number; link: number; s: number; v: number; born: number }
 
@@ -34,6 +34,7 @@ export class MockSimulation implements SimLike {
   private vehTime: Float64Array;
   private dist = 0;
   private ctDist = 0;
+  private ctVehicles = 0;
   private completed = 0;
   private tripTimeSum = 0;
   private spawned = 0;
@@ -72,7 +73,7 @@ export class MockSimulation implements SimLike {
 
   reset() {
     this.rng = (this.cfg.seed | 0) + 1 || 1;
-    this.t = 0; this.veh = []; this.dist = 0; this.ctDist = 0; this.completed = 0; this.tripTimeSum = 0; this.spawned = 0; this.ttc = 0;
+    this.t = 0; this.veh = []; this.dist = 0; this.ctDist = 0; this.ctVehicles = 0; this.completed = 0; this.tripTimeSum = 0; this.spawned = 0; this.ttc = 0;
     this.cross.fill(0); this.ctCross.fill(0); this.speedTime.fill(0); this.vehTime.fill(0);
     this.mm = {
       bike: { trips: 0, timeSum: 0 },
@@ -178,7 +179,8 @@ export class MockSimulation implements SimLike {
         this.dist += (v.v * dt) / 1000;
         if (v.ct) this.ctDist += (v.v * dt) / 1000;
         if (v.s >= l.length) {
-          this.cross[v.link]++; if (v.ct) this.ctCross[v.link]++;
+          this.cross[v.link]++;
+          if (v.ct) { this.ctCross[v.link]++; if (!v.ctCounted) { v.ctCounted = true; this.ctVehicles++; } }
           const free = (id: number) => !this.closed.has(id) && !this.banned.has(`${v.link}-${id}`);
           const opts = this.out[l.to].filter((id) => free(id) && this.net.links[id].to !== l.from);
           const pick = opts.length ? opts : this.out[l.to].filter(free);
@@ -254,7 +256,7 @@ export class MockSimulation implements SimLike {
       meanTripTime: this.completed ? this.tripTimeSum / this.completed : 0,
       meanTripDelay: this.completed ? (this.tripTimeSum / this.completed) * 0.25 : 0,
       vehKm: this.dist,
-      cutThrough: { vehKm: this.ctDist, shareOfLocalVehKm: this.dist > 0 ? this.ctDist / this.dist : 0 },
+      cutThrough: { vehicles: this.ctVehicles, vehiclesPerHour: this.ctVehicles * 3600 / Math.max(this.t, 1), vehKm: this.ctDist, shareOfLocalVehKm: this.dist > 0 ? this.ctDist / this.dist : 0 },
       safety: {
         localMeanSpeed: meanLocal, localP85Speed: meanLocal * 1.25,
         shareAbove20mph: lt > 0 ? over20 / lt : 0, shareAbove25mph: lt > 0 ? over25 / lt : 0, ttcConflicts: this.ttc,
