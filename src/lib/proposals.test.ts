@@ -45,7 +45,7 @@ describe('headline figures', () => {
   const when = 'the average of the AM peak, PM peak and Midday';
   it('formats the cut-through change and defines it', () => {
     const h = cutThroughHeadline({ baselineVehPerHour: 118.4, scenarioVehPerHour: 73.1, changePct: -38.27 }, when);
-    expect(h).toMatchObject({ figure: '−45 cars an hour', label: 'cutting through', detail: '118 → 73 through cars an hour (−38%)' });
+    expect(h).toMatchObject({ figure: '−45 cars an hour', label: 'cutting through, all side streets together', detail: '118 → 73 through cars an hour (−38%)' });
     expect(h.definition).toMatch(/Through cars on all of the area's side streets/);
     expect(h.definition).toContain(when);
     expect(cutThroughHeadline({ baselineVehPerHour: 70, scenarioVehPerHour: 70, changePct: 0 }).figure).toBe('No change');
@@ -57,7 +57,7 @@ describe('headline figures', () => {
   });
   it('names the block, counts through cars, and says what is counted', () => {
     const h = harmHeadline({ through: { worstBlock: 'Colby Street between 63rd Street and North Street', increaseVehPerHour: 12.4, blocksAboveNoise: 3 } }, when);
-    expect(h).toMatchObject({ none: false, figure: '+12 through cars an hour', label: 'on Colby Street between 63rd Street and North Street, the block that gains the most' });
+    expect(h).toMatchObject({ none: false, figure: '+12 through cars an hour', label: 'on one block: Colby Street between 63rd Street and North Street, the block that gains the most' });
     expect(h.definition).toContain('Through cars only, both directions of that one block');
     expect(h.definition).toContain(when);
     expect(h.definition).toContain('2 other blocks also gain through cars beyond run-to-run variation');

@@ -164,7 +164,7 @@ export function cutThroughHeadline(c: CutThrough, when = 'the searched periods')
   const pct = isZero(c.changePct, dp) ? '0%' : `${c.changePct < 0 ? MINUS : '+'}${num(c.changePct, dp)}%`;
   return {
     figure: d === 0 ? 'No change' : `${d < 0 ? MINUS : '+'}${Math.abs(d)} cars an hour`,
-    label: 'cutting through',
+    label: 'cutting through, all side streets together',
     detail: `${b} → ${s} through cars an hour (${pct})`,
     definition: `Through cars on all of the area's side streets together: cars that cross the area without a trip that starts or ends in it. Each car is counted once. Shown for ${when}.`,
   };
@@ -187,8 +187,8 @@ export function harmHeadline(h: Proposal['harm'], when = 'the searched periods')
   return {
     none,
     figure: `+${Math.round(t.increaseVehPerHour)} through ${carsWord(Math.round(t.increaseVehPerHour))} an hour`,
-    label: `on ${t.worstBlock}, the block that gains the most`,
-    definition: `${scope} ${tail}`,
+    label: `on one block: ${t.worstBlock}, the block that gains the most`,
+    definition: `Cars that still cut through take other streets, so one block can gain while the area total falls. ${scope} ${tail}`,
   };
 }
 
