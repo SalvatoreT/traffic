@@ -24,7 +24,7 @@ import { INTENT_COLORS } from '../lib/intents';
 import { towardLabel, type NetIndex } from '../lib/naming';
 import { hoverLine } from '../lib/hoverline';
 import { describeInterventionFull, interventionPoint } from '../lib/describe';
-import { blockBar, filterLegs, legBars, type Bar } from '../lib/blocked';
+import { barPx, blockBadgeOffset, blockBar, casingPx, filterLegs, legBars, type Bar } from '../lib/blocked';
 import type { SimClient } from '../sim/client';
 import {
   boxOfPoints, centerToShow, correctedCamera, fitCamera, hardBounds, insideRect, isAcceptable, minZoomFor, MIN_ZOOM_FLOOR,
@@ -165,6 +165,21 @@ function clipData(b: AreaBundle, region: Region) {
     });
   }
   return { base: { type: 'FeatureCollection', features: base }, links: { type: 'FeatureCollection', features: links }, linkVisible };
+}
+const BAR_PR = 4;
+/** The bar's drawn length at icon-size 1 (CSS px); the image is 55 x 15 CSS px, the 2.2 : 0.6 shape of a bar. */
+const BAR_REF_PX = 25;
+/** Dark bar, yellow dashes, white halo in 4 : 3 : 2 thickness, so the pattern shows on either basemap. */
+function barImage(): ImageData {
+  const w = 55 * BAR_PR, h = 15 * BAR_PR;
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d')!;
+  g.fillStyle = '#ffffff'; g.fillRect(0, 0, w, h);
+  g.fillStyle = '#111111'; g.fillRect(0, h * 0.125, w, h * 0.75);
+  g.fillStyle = '#ffd43b';
+  const dash = h * 0.5 * 1.5;
+  for (let x = (w - (2 * 3 - 1) * dash) / 2; x < w - 1; x += 2 * dash) g.fillRect(x, h * 0.25, dash, h * 0.5);
+  return g.getImageData(0, 0, w, h);
 }
 const lineFeature = (region: Region, pr: ReturnType<typeof makeProjection>, g: [number, number][]) => {
   const parts = region.clipLine(g).map((pt) => pt.map(([x, y]) => pr.toLonLat(x, y)));
@@ -596,12 +611,13 @@ export function MapView(p: Props) {
         paint: { 'line-color': BN.color, 'line-opacity': bikeOpacity(BN.lane, 11.5, 14), 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 0.6, 14, 1.5, 18, 3] as never, 'line-offset': OFFSET as never } });
       map.addLayer({ id: 'links', type: 'line', source: 'links', layout: { 'line-cap': 'butt', 'line-join': 'round' },
         paint: { 'line-color': ramp(mode, live.current.view) as never, 'line-width': widthExpr(live.current.view) as never, 'line-offset': OFFSET as never } });
-      // Barrier bars are ground features: widths follow the ground scale (doubling per zoom level, 1 m = 2^z / 123,600 px at this latitude), so they shrink with the roads.
-      const bar = (m: number) => ['interpolate', ['exponential', 2], ['zoom'], 10, m * 0.0083, 22, m * 33.9] as never;
-      const BAR = { layout: { 'line-cap': 'butt' as const }, source: 'blocked', type: 'line' as const };
-      map.addLayer({ ...BAR, id: 'blocked-halo', paint: { 'line-color': '#ffffff', 'line-width': bar(4) } });
-      map.addLayer({ ...BAR, id: 'blocked-edge', paint: { 'line-color': '#111111', 'line-width': bar(3) } });
-      map.addLayer({ ...BAR, id: 'blocked-tape', paint: { 'line-color': '#ffd43b', 'line-width': bar(2), 'line-dasharray': [1.5, 1.5] } });
+      // Barrier bars sit at a map point and turn with the street. Their size follows the road casing's own zoom stops, so they shrink with the roads.
+      map.addImage('barrier-bar', barImage(), { pixelRatio: BAR_PR });
+      const barSize = (z: number) => casingPx(z) / BAR_REF_PX;
+      map.addLayer({ id: 'blocked-bars', type: 'symbol', source: 'blocked',
+        layout: { 'icon-image': 'barrier-bar', 'icon-rotate': ['get', 'rot'], 'icon-rotation-alignment': 'map', 'icon-pitch-alignment': 'map',
+          'icon-allow-overlap': true, 'icon-ignore-placement': true,
+          'icon-size': ['interpolate', ['linear'], ['zoom'], 14, barSize(14), 18, barSize(18)] as never } });
       const RC = ROUTE_COLORS[live.current.mode];
       const routeWidth = (a: number, b: number) => ['interpolate', ['linear'], ['zoom'], 14, a, 18, b] as never;
       map.addLayer({ id: 'routes-casing', type: 'line', source: 'routes', layout: { 'line-cap': 'round', 'line-join': 'round' },
@@ -813,10 +829,10 @@ export function MapView(p: Props) {
       }
       el.setAttribute('aria-hidden', 'true');
       el.title = describeInterventionFull(iv, net, p.index);
-      out.push(new maplibregl.Marker({ element: el }).setLngLat(ll).addTo(map));
-      if (iv.type !== 'modal_filter') continue;
-      const bars: Bar[] = 'link' in iv ? [blockBar(net.links[iv.link])] : legBars(filterLegs(net, p.index, iv.node), iv.legs);
-      for (const b of bars) blocked.push({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: b.ends.map(([bx, by]) => proj.toLonLat(bx, by)) } });
+      const bars: Bar[] = iv.type !== 'modal_filter' ? [] : 'link' in iv ? [blockBar(net.links[iv.link])] : legBars(filterLegs(net, p.index, iv.node), iv.legs);
+      const shift = iv.type === 'modal_filter' && 'link' in iv ? blockBadgeOffset(bars[0].bearing) : [0, 0];
+      out.push(new maplibregl.Marker({ element: el, offset: shift as [number, number] }).setLngLat(ll).addTo(map));
+      for (const b of bars) blocked.push({ type: 'Feature', properties: { rot: b.bearing }, geometry: { type: 'Point', coordinates: proj.toLonLat(b.center[0], b.center[1]) } });
     }
     markers.current = out;
     (map.getSource('blocked') as maplibregl.GeoJSONSource | undefined)?.setData({ type: 'FeatureCollection', features: blocked } as never);
@@ -928,11 +944,12 @@ export function MapView(p: Props) {
         const q = map.project(L.proj.toLonLat(x, y));
         const bars: BadgeMark[] = iv.type === 'modal_filter'
           ? ('link' in iv ? [blockBar(net.links[iv.link])] : legBars(filterLegs(net, L.index, iv.node), iv.legs)).map((b) => {
-            const [e0, e1] = b.ends.map(([bx, by]) => map.project(L.proj.toLonLat(bx, by)));
-            return { x: e0.x, y: e0.y, x2: e1.x, y2: e1.y, type: 'leg' as const, bearing: b.bearing };
+            const c = map.project(L.proj.toLonLat(b.center[0], b.center[1])), sz = barPx(map.getZoom());
+            return { x: c.x, y: c.y, len: sz.length, thick: sz.thick, type: 'leg' as const, bearing: b.bearing };
           })
           : [];
-        return [...bars, { x: q.x, y: q.y, type: iv.type, bearing: iv.type === 'diagonal_diverter' ? iv.bearing : undefined, mph: iv.type === 'speed_limit' ? Math.round(iv.speed * 2.23694) : undefined }];
+        const [sx, sy] = iv.type === 'modal_filter' && 'link' in iv ? blockBadgeOffset(blockBar(net.links[iv.link]).bearing) : [0, 0];
+        return [...bars, { x: q.x + sx, y: q.y + sy, type: iv.type, bearing: iv.type === 'diagonal_diverter' ? iv.bearing : undefined, mph: iv.type === 'speed_limit' ? Math.round(iv.speed * 2.23694) : undefined }];
       });
       const change = L.view === 'change';
       const legend = legendModel(L.overlay, L.mode, change);

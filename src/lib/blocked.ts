@@ -1,12 +1,16 @@
 import type { Network } from '../types';
+import { WIDTH_MAX, WIDTH_MIN } from './ramps';
 import { pointAlong } from './geom';
 import { legDirections, nodeLegs } from './diverter';
 import { UNNAMED, type NetIndex } from './naming';
 
 /** A leg whose street mouth lies farther than this from the node point joins the node through a merged (offset) junction (m). */
 export const MERGED_OFFSET_M = 3;
-/** Ground length of a barrier bar: a bit wider than the drawn road (assumption: road width plus margin, not surveyed) (m). */
-export const BAR_LEN_M = 12;
+/** Bar length and thickness as multiples of the drawn base road casing width at the same zoom (design choice, not calibrated). */
+export const BAR_LEN_X = 2.2;
+export const BAR_THICK_X = 0.6;
+/** Flow-line width the bar is sized against: halfway between the thinnest and thickest drawn street. */
+export const BAR_REF_W = (WIDTH_MIN + WIDTH_MAX) / 2;
 /** How far past the mouth of a closed leg its bar sits, along the street (m). */
 export const BAR_AT_M = 8;
 
@@ -177,17 +181,31 @@ export const filterSentence = (t: FilterText): string => [t.lead, t.closed, t.ju
 export interface Bar {
   /** Where the bar crosses the street, local meters. */
   center: [number, number];
-  /** Ends of the bar, local meters. */
-  ends: [[number, number], [number, number]];
   /** Bearing of the street at the bar, degrees clockwise from north; the bar is at a right angle to it. */
   bearing: number;
 }
 
-/** A bar of ground length `len` across `path` at distance `s` along it, perpendicular to the street there. */
-export function barAcross(path: [number, number][], s: number, len = BAR_LEN_M): Bar {
+/** A bar across `path` at distance `s` along it. */
+export function barAcross(path: [number, number][], s: number): Bar {
   const p = pointAlong(path, Math.max(0, s));
-  const px = -Math.sin(p.heading) * len / 2, py = Math.cos(p.heading) * len / 2;
-  return { center: [p.x, p.y], ends: [[p.x - px, p.y - py], [p.x + px, p.y + py]], bearing: ((90 - (p.heading * 180) / Math.PI) % 360 + 360) % 360 };
+  return { center: [p.x, p.y], bearing: ((90 - (p.heading * 180) / Math.PI) % 360 + 360) % 360 };
+}
+
+/** The badge of a block filter sits this far (CSS px) along the street from its bar, so the badge does not cover the bar. */
+export const BLOCK_BADGE_GAP_PX = 24;
+/** Screen offset (x right, y down) of a block filter's badge from its bar, for a street of the given bearing. */
+export const blockBadgeOffset = (bearing: number): [number, number] => [Math.sin((bearing * Math.PI) / 180) * BLOCK_BADGE_GAP_PX, -Math.cos((bearing * Math.PI) / 180) * BLOCK_BADGE_GAP_PX];
+
+/** Drawn base road casing width (CSS px) at `zoom`: the same stops as the map's casing layer, held flat outside 14 to 18. */
+export function casingPx(zoom: number, w = BAR_REF_W): number {
+  const t = Math.max(0, Math.min(1, (zoom - 14) / 4));
+  return (1.2 + 0.55 * w) + t * ((1.8 + 1.5 * w) - (1.2 + 0.55 * w));
+}
+
+/** Bar length and thickness (CSS px) at `zoom`: they follow the drawn road. */
+export function barPx(zoom: number): { length: number; thick: number } {
+  const c = casingPx(zoom);
+  return { length: BAR_LEN_X * c, thick: BAR_THICK_X * c };
 }
 
 /** One bar per closed leg, `BAR_AT_M` along the street from that leg's own mouth. */

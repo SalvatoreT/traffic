@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { NetLink, NetNode, Network } from '../types';
 import { buildIndex } from './naming';
-import { closedLegs, filterChoices, filterLegs, filterSentence, filterText, streetFilters, legBars, blockBar, BAR_AT_M, BAR_LEN_M } from './blocked';
+import { closedLegs, filterChoices, filterLegs, filterSentence, filterText, streetFilters, legBars, blockBar, BAR_AT_M, barPx, casingPx } from './blocked';
 import { describeInterventionFull } from './describe';
 
 interface LegSpec { street: string; at: [number, number]; mouth?: [number, number] }
@@ -111,10 +111,10 @@ describe('filter wording', () => {
 });
 
 describe('barrier bars', () => {
-  const dot = (b: { ends: [[number, number], [number, number]] }, v: [number, number]) =>
-    ((b.ends[1][0] - b.ends[0][0]) * v[0] + (b.ends[1][1] - b.ends[0][1]) * v[1]) / BAR_LEN_M;
+  const across = (bearing: number): [number, number] => [Math.sin(((bearing + 90) * Math.PI) / 180), Math.cos(((bearing + 90) * Math.PI) / 180)];
+  const dot = (a: [number, number], b: [number, number]) => a[0] * b[0] + a[1] * b[1];
 
-  it('crosses each leg at a right angle, the stated distance out, at full length', () => {
+  it('crosses each leg at a right angle, the stated distance out', () => {
     const net = star([...cross(), { street: 'Diag Street', at: [70, 70] }]);
     const f = filterLegs(net, buildIndex(net), 0);
     const bars = legBars(f);
@@ -122,9 +122,8 @@ describe('barrier bars', () => {
     bars.forEach((b, i) => {
       const l = f.legs[i], d = Math.hypot(l.path[1][0] - l.path[0][0], l.path[1][1] - l.path[0][1]);
       const u: [number, number] = [(l.path[1][0] - l.path[0][0]) / d, (l.path[1][1] - l.path[0][1]) / d];
-      expect(dot(b, u)).toBeCloseTo(0, 6);
+      expect(dot(across(b.bearing), u)).toBeCloseTo(0, 6);
       expect(Math.hypot(b.center[0] - l.mouth[0], b.center[1] - l.mouth[1])).toBeCloseTo(BAR_AT_M);
-      expect(Math.hypot(b.ends[1][0] - b.ends[0][0], b.ends[1][1] - b.ends[0][1])).toBeCloseTo(BAR_LEN_M);
     });
   });
 
@@ -134,7 +133,7 @@ describe('barrier bars', () => {
     const ayala = legBars(f, f.legs.find((l) => l.street === 'Ayala Avenue')!.links)[0];
     expect(ayala.center[0]).toBeCloseTo(0);
     expect(ayala.center[1]).toBeCloseTo(20 + BAR_AT_M);
-    expect(Math.abs(dot(ayala, [0, 1]))).toBeLessThan(1e-9);
+    expect(dot(across(ayala.bearing), [0, 1])).toBeCloseTo(0, 6);
   });
 
   it('closes only the named legs', () => {
@@ -148,8 +147,17 @@ describe('barrier bars', () => {
     const b = blockBar({ geometry: [[0, 0], [60, 80]], length: 100 });
     expect(b.center[0]).toBeCloseTo(30);
     expect(b.center[1]).toBeCloseTo(40);
-    expect(dot(b, [0.6, 0.8])).toBeCloseTo(0, 6);
+    expect(dot(across(b.bearing), [0.6, 0.8])).toBeCloseTo(0, 6);
     expect(blockBar({ geometry: [[0, 0], [0, 100]], length: 100 }, 25).center[1]).toBeCloseTo(25);
+  });
+
+  it('sizes the bar from the road casing at every zoom', () => {
+    for (const z of [12, 14, 15, 16, 17, 18, 19]) {
+      const c = casingPx(z), s = barPx(z);
+      expect(s.length).toBeCloseTo(2.2 * c);
+      expect(s.thick).toBeCloseTo(0.6 * c);
+    }
+    expect(barPx(16).length).toBeLessThan(barPx(18).length);
   });
 });
 
