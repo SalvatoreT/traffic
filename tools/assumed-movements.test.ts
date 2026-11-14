@@ -46,4 +46,50 @@ describe('assumed movement flows', () => {
     expect(r.g[0]).toBe(1);
     expect(r.g[1]).toBeCloseTo(0.4, 2);
   });
+
+  describe('intents', () => {
+    // Origins 0 (group "north") and 5 (group "south"), destination 1 (group "fw") and 6 (group "west"); every pair can use the movement 2 -> 3.
+    const nodes2: ANode[] = [...nodes, { id: 4, x: 200, y: -60, control: 'uncontrolled' }, { id: 5, x: -100, y: 0, control: 'uncontrolled' }, { id: 6, x: 400, y: 60, control: 'uncontrolled' }];
+    const mk2 = (id: number, from: number, to: number): ALink => {
+      const a = nodes2[from], b = nodes2[to];
+      return { id, from, to, length: Math.hypot(b.x - a.x, b.y - a.y), speedLimit: 13.4, class: 'secondary', geometry: [[a.x, a.y], [b.x, b.y]] };
+    };
+    const links2: ALink[] = [mk2(0, 0, 2), mk2(1, 2, 1), mk2(2, 0, 3), mk2(3, 3, 1), mk2(4, 5, 0), mk2(5, 3, 6)];
+    const g2 = buildGraph(nodes2, links2, [], null);
+    const group = (n: number) => ({ 0: 'north', 5: 'south', 1: 'fw', 6: 'west' } as Record<number, string>)[n] ?? 'study-area';
+    const grp = { groupOf: group, expand: (r: string | string[]) => (Array.isArray(r) ? r : [r]).flatMap((x) => (x === 'any' ? ['north', 'south'] : [x])) };
+    const seed = [{ origin: 0, destination: 1, vehPerHour: 80 }, { origin: 5, destination: 1, vehPerHour: 40 }, { origin: 0, destination: 6, vehPerHour: 40 }];
+    const base = { ...cfg, maxDetour: 3 };
+    it('restricts candidates to flows between the groups of an intent and splits the volume by seed volume', () => {
+      const intents = [{ id: 'a', label: 'north to freeway', fromGroup: 'north', toGroup: 'fw', share: 0.5, basis: 'test' }, { id: 'b', label: 'any to freeway', fromGroup: 'any', toGroup: 'fw', vehPerHour: 20, basis: 'test' }];
+      const r = assumedMovementFlows({ ...base, intents }, 2, 3, 60, 'pm', seed, g2, () => false, grp);
+      const by = (o: number, d: number) => r.flows.filter((f) => f.origin === o && f.destination === d).reduce((s, f) => s + f.vehPerHour, 0);
+      expect(by(0, 6)).toBe(0);
+      // intent a: 30 veh/h, all on 0 -> 1 (the only flow between its groups); intent b: 20 veh/h over 0 -> 1 and 5 -> 1 in proportion 80 : 40
+      expect(by(0, 1)).toBeCloseTo(30 + 20 * 80 / 120, 2);
+      expect(by(5, 1)).toBeCloseTo(20 * 40 / 120, 2);
+      expect(r.flows.every((f) => f.via?.a === 2 && f.via?.b === 3)).toBe(true);
+      expect(r.report.intents!.map((i) => i.flows)).toEqual([1, 2]);
+      expect(r.report.throughVeh).toBeCloseTo(50, 2);
+    });
+    it('takes the assumed trips off the plain flow of the same pair, at most 80% of it', () => {
+      const intents = [{ id: 'a', label: 'north to freeway', fromGroup: 'north', toGroup: 'fw', share: 1, basis: 'test' }];
+      const r = assumedMovementFlows({ ...base, intents }, 2, 3, 100, 'pm', seed, g2, () => false, grp);
+      expect(r.flows).toHaveLength(1);
+      expect(r.flows[0].vehPerHour).toBeCloseTo(100, 2);
+      expect(r.carve.get(0)).toBeCloseTo(64, 2);
+    });
+    it('refuses intents that add up to more than the counted movement, or that set both share and volume', () => {
+      const big = [{ id: 'a', label: 'a', fromGroup: 'north', toGroup: 'fw', share: 0.7, basis: 't' }, { id: 'b', label: 'b', fromGroup: 'south', toGroup: 'fw', share: 0.5, basis: 't' }];
+      expect(() => assumedMovementFlows({ ...base, intents: big }, 2, 3, 60, 'pm', seed, g2, () => false, grp)).toThrow(/more than/);
+      const both = [{ id: 'a', label: 'a', fromGroup: 'north', toGroup: 'fw', share: 0.1, vehPerHour: 5, basis: 't' }];
+      expect(() => assumedMovementFlows({ ...base, intents: both }, 2, 3, 60, 'pm', seed, g2, () => false, grp)).toThrow(/exactly one/);
+    });
+    it('scales a volume given in veh/h with the movement count of the period, and reports an intent with no candidate flow', () => {
+      const intents = [{ id: 'a', label: 'a', fromGroup: 'north', toGroup: 'fw', vehPerHour: 20, basis: 't' }, { id: 'b', label: 'b', fromGroup: 'south', toGroup: 'west', share: 0.1, basis: 't' }];
+      const r = assumedMovementFlows({ ...base, intents }, 2, 3, 30, 'am', seed, g2, () => false, grp, 0.5);
+      expect(r.report.intents![0].assigned).toBeCloseTo(10, 2);
+      expect(r.report.intents![1].note).toMatch(/no candidate flow/);
+    });
+  });
 });

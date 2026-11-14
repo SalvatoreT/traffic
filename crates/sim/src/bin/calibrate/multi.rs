@@ -122,6 +122,8 @@ pub struct Multi<'a> {
     pub write: bool,
     pub stem_prefix: String,
     pub targets: &'a Value,
+    /// `data/demand/<area>.groups.json`: the approach groups of the intent map (absent: no map).
+    pub groups: Option<Value>,
 }
 
 fn run_seeds(m: &Multi) -> Vec<(u64, Value)> {
@@ -279,6 +281,13 @@ pub fn run(m: Multi) {
         let f = |x: f64| format!("{:.*}", dec, x);
         let unit = if mt.unit == "share" { "%" } else { mt.unit };
         let _ = writeln!(md, "| {} | {} | {} | {} | {} | {} | {} | {} to {} |", mt.group, mt.name, unit, f(s.mean * scale), f(s.sd * scale), f(s.min * scale), f(s.max * scale), f(s.lo * scale), f(s.hi * scale));
+    }
+    if let Some(gv) = &m.groups {
+        let per_seed: Vec<Vec<crate::intent::Row>> = runs.iter().map(|r| crate::intent::rows_from_json(&r.1["intentRows"])).collect();
+        if per_seed.iter().any(|r| !r.is_empty()) {
+            let groups = crate::intent::Groups::from_json(gv, None);
+            md.push_str(&crate::intent::report(&crate::intent::mean_rows(&per_seed), &groups, m.targets, runs.len(), first["period"].as_str() == Some("pm_peak")));
+        }
     }
     let _ = writeln!(md, "\nPer-seed detail: `{}-seed{}.md` (seed {} in full).", m.stem_prefix, a, a);
     let js = json!({

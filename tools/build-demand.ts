@@ -12,7 +12,8 @@ import { buildGraph, costToGo, treeFrom, type Graph } from './lib/assign';
 import { buildStations, corridorOf, markHoldout, overusedRecords, fitPeriod, fitReport, type FitConfig, type NetLinkIn, type PeriodResult } from './lib/demand-fit';
 import type { FlowType } from './lib/fit-counts';
 import { intersectionStations, type IxConfig, type IxFile } from './lib/intersection-counts';
-import { assumedMovementFlows, assumedReportLines, type AssumedMovementCfg, type AssumedReport } from './lib/assumed-movements';
+import { assumedMovementFlows, assumedReportLines, type AssumedMovementCfg, type AssumedReport, type Carve } from './lib/assumed-movements';
+import { deriveApproachGroups, expandGroups, groupOfNode, groupsFile, type ApproachGroups, type ApproachGroupsCfg } from './lib/approach-groups';
 import { countReportLines, countStations, mapMovement, nodeStreets, touchesHeld, tripEnds, type CountConfig, type CountFile, type CountReport, type TripEnds } from './lib/volunteer-count';
 
 const cfgPath = process.argv[2] ?? 'data/demand/rockridge.config.json';
@@ -104,6 +105,10 @@ const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
 // ---------- freeway topology (generic: freeway-class links, ramps = surface nodes touched by them) ----------
 const { ramps, freewayGates: freewayIds } = discoverRamps(net.nodes, net.links, new Set<string>(cfg.freewayClasses ?? []));
 const nodeById = new Map(net.nodes.map((n) => [n.id, n]));
+// Approach groups (round 21): where through cars come from and go to. Config: `approachGroups` of the area file; written beside the stations file for the calibrate report.
+const areaCfg = existsSync(`data/areas/${cfg.area}.json`) ? JSON.parse(readFileSync(`data/areas/${cfg.area}.json`, 'utf8')) : null;
+const groups: ApproachGroups | null = areaCfg?.approachGroups ? deriveApproachGroups(net.nodes, net.links, areaCfg.approachGroups as ApproachGroupsCfg) : null;
+if (groups && cfg.groupsOutput) writeFileSync(cfg.groupsOutput, JSON.stringify(groupsFile(cfg.area, groups)));
 const legGroups = new Map<string, { orig: number; dest: number }>();
 // Origins must be enterable gates (canEnter), destinations exitable (canExit); falls back to link topology.
 const caps = (id: number) => {
@@ -785,20 +790,31 @@ if (fc?.enabled) {
   const amCfg = cfg.assumedMovementFlows as { enabled: boolean; movements: AssumedMovementCfg[] } | undefined;
   if (amCfg?.enabled && countRes) {
     const ns = nodeStreets(net as never);
-    for (const mv of amCfg.movements) {
+    const maps = amCfg.movements.map((mv) => {
       const mm = mapMovement({ ...mv.count, period: 'pm', vehicles: 0 }, net as never, ns);
       if (mm.a === null || mm.b === null) throw new Error(`assumed movement ${mv.id}: ${mm.reason}`);
       const st = countRes.stations.find((q) => q.feature?.kind === 'move' && q.feature.a === mm.a && q.feature.b === mm.b);
       if (!st) throw new Error(`assumed movement ${mv.id}: no counted movement station for links ${mm.a} to ${mm.b}`);
-      for (const per of outPeriods) {
+      return { mv, a: mm.a, b: mm.b, st };
+    });
+    const grp = groups ? { groupOf: (id: number) => groupOfNode(groups, nodeById, id), expand: (ref: string | string[]) => expandGroups(groups, ref) } : undefined;
+    for (const per of outPeriods) {
+      const g = buildGraph(net.nodes as never, net.links as never, net.turnBans ?? [], per.id);
+      const seed = per.flows.filter((q) => !q.mode && !q.via);
+      const carves = new Map<number, number>();
+      for (const { mv, a, b, st } of maps) {
         const target = st.target[per.id] ?? 0;
         if (!(target > 0)) continue;
-        const g = buildGraph(net.nodes as never, net.links as never, net.turnBans ?? [], per.id);
-        const seed = per.flows.filter((q) => !q.mode && !q.via);
-        const r = assumedMovementFlows(mv, mm.a, mm.b, target, per.id, seed, g, (id) => !!nodeById.get(id)?.inStudyArea);
+        const pm = st.target[lastPeriod] || target;
+        const r = assumedMovementFlows(mv, a, b, target, per.id, seed, g, (id) => !!nodeById.get(id)?.inStudyArea, grp, target / pm);
         per.flows.push(...(r.flows as Flow[]));
         assumedReports.push(r.report);
+        for (const [k, v] of r.carve as Carve) carves.set(k, (carves.get(k) ?? 0) + v);
       }
+      // The plain flows give up the trips that assumed intent flows now carry (never more than 80% of a flow, over all movements together).
+      let carved = 0;
+      for (const [k, v] of carves) { const d = Math.min(v, 0.8 * seed[k].vehPerHour); seed[k].vehPerHour -= d; carved += d; }
+      if (carved > 0) stationNotes.push(`assumed movement intents, ${per.id}: ${carved.toFixed(1)} veh/h taken from plain flows between the same pairs`);
     }
     stationNotes.push(`assumed movement flows: ${assumedReports.map((r) => `${r.id} ${r.period} ${r.flows} flows, ${r.throughVeh.toFixed(0)} through and ${r.localVeh.toFixed(0)} local veh/h`).join('; ')}`);
   }
@@ -956,7 +972,7 @@ const provenance = [
   { source: "Children's Hospital and Research Center Oakland Campus Master Plan Project, Draft EIR (City of Oakland, 2014), Appendix C", url: 'https://www.oaklandca.gov/files/assets/city/v/1/planning-amp-building/documents/dp/ceqa/2011-present/childrens-hospital-draft-environmental-impact-report-appendix-c.pdf', note: 'DATA. AM and PM peak-hour turning-movement counts of 2013-09-19 at nine intersections (legs, turns, SR-24 ramps at 52nd St and Martin Luther King Jr Way) as targets of the count fit; observed signal timing at two signals. ASSUMPTION: no growth since the count.' },
   { source: 'Safeway Shopping Center, College and Claremont Avenues, Draft EIR (City of Oakland, 2011)', url: 'https://www.oaklandca.gov/files/assets/city/v/1/planning-amp-building/documents/dp/ceqa/2011-present/college-avenue-safeway-deir_2024-05-10-203917_bvqg.pdf', note: 'DATA. PM peak-hour demand volumes of 2010-03-16 at five intersections (legs, turns, SR-24 ramps at Clifton St and Hudson St) as targets of the count fit. ASSUMPTION: no growth since the count.' },
   ...(cfg.active ? [{ source: 'Walking and biking demand (pedestrian and bicycle flows, persons per hour)', url: 'data/demand/README.md', note: 'ASSUMPTION, not counts: synthesized from LODES resident workers and jobs per block with assumed mode shares, trip lengths, gate and commercial-street shares (config `active`). DATA: the volumes are scaled by one factor per mode so that PM peak-hour people passing Telegraph Ave & Alcatraz Ave match the mean of the Oakland pedestrian and bicycle counts there; the spatial pattern elsewhere is uncounted. Calibration against walking and biking counts has not been done.' }] : []),
-  ...(assumedReports.length ? [{ source: 'Assumed movement flows (trips that make a counted turning movement)', url: 'data/demand/README.md', note: `ASSUMPTION, not observed trips (owner decision 2026-11-14). Each turning count is real; the trips that make the movement are not. They are chosen from the trip table by a detour rule and given a through share, and the simulator routes them through the movement. ${assumedReports.filter((r) => r.period === lastPeriod).map((r) => { const m = (cfg.assumedMovementFlows.movements as AssumedMovementCfg[]).find((q) => q.id === r.id)!; return `${r.label}: ${r.target.toFixed(0)} veh/h counted in the PM peak, assumed trips with a route within ${m.maxDetour} times the best route, ${r.throughVeh.toFixed(0)} veh/h through cars and ${r.localVeh.toFixed(0)} veh/h with an end in the study area (through share ${m.throughShare}).`; }).join(' ')}` }] : []),
+  ...(assumedReports.length ? [{ source: 'Assumed movement flows (trips that make a counted turning movement)', url: 'data/demand/README.md', note: `ASSUMPTION, not observed trips (owner decisions of 2026-11-14). Each turning count is real; the trips that make the movement are not. They are chosen from the trip table by a detour rule and, since round 21, by the intent they serve (an origin group, a destination group and a volume, for example Telegraph Ave traffic using Colby St to reach SR-24), and the simulator routes them through the movement. ${assumedReports.filter((r) => r.period === lastPeriod).map((r) => { const m = (cfg.assumedMovementFlows.movements as AssumedMovementCfg[]).find((q) => q.id === r.id)!; return `${r.label}: ${r.target.toFixed(0)} veh/h counted in the PM peak, assumed trips with a route within ${m.maxDetour} times the best route, ${r.throughVeh.toFixed(0)} veh/h through cars and ${r.localVeh.toFixed(0)} veh/h with an end in the study area${r.intents ? ` (${r.intents.map((i) => `${i.label} ${i.assigned.toFixed(0)}`).join('; ')})` : ` (through share ${m.throughShare})`}.`; }).join(' ')}` }] : []),
   { source: 'Assumptions', url: 'data/demand/README.md', note: 'ASSUMPTION: K-factor, period volume factors, per-class default ADT, directional split, trip rates, gravity turning factors, sector-to-gate weights, local trip share capped per gate. Uncalibrated.' }
 ];
 

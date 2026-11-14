@@ -2,6 +2,7 @@
   "area": "rockridge",
   "network": "public/data/rockridge.network.json",
   "output": "public/data/rockridge.demand.json",
+  "groupsOutput": "data/demand/rockridge.groups.json",
   "bbox": [
     -122.2845,
     37.8325,
@@ -606,7 +607,7 @@
   },
   "assumedMovementFlows": {
     "enabled": true,
-    "_note": "ASSUMPTION (owner decision 2026-11-14, calibration round 20): a counted turning movement the trip table cannot reach gets flows that must make it, so the modeled movement matches the count. Each movement is read from the volunteer count (`count` names the junction, the approach and the exit as the count file words them; its station targets give the volume per period, so midday takes the PM count times the period ratio as every other count does). The flows are chosen from the seed table: a flow is a candidate when its route through the movement costs at most `maxDetour` times its best route at free flow (the simulator router's cost), and the volume is split over the candidates in proportion to their seed volume, `throughShare` of it over flows with no end in the study area. The flows carry a `via` movement, which the simulator honors by routing the trip to the movement's approach link, through the movement, and on to its destination (re-routing keeps the movement until it is made), and the fit pins their volume. Nothing here is area specific in code.",
+    "_note": "ASSUMPTION (owner decisions of 2026-11-14, calibration rounds 20 and 21): a counted turning movement the trip table cannot reach gets flows that must make it, so the modeled movement matches the count. Each movement is read from the volunteer count (`count` names the junction, the approach and the exit as the count file words them; its station targets give the volume per period, so midday takes the PM count times the period ratio as every other count does). The flows carry a `via` movement, which the simulator honors by routing the trip to the movement's approach link, through the movement, and on to its destination (re-routing keeps the movement until it is made), and the fit pins their volume. Round 21: the cars that make a movement are described by `intents`, each a named origin group, destination group and volume (a `share` of the movement's counted volume, or `vehPerHour` in the PM peak, scaled with the count in other periods). The groups are the approach groups of the area config (`approachGroups`; `study-area` is the study area's own nodes). The candidates of an intent are the flows of the seed table between its groups whose route through the movement costs at most `maxDetour` times their best route at free flow (the simulator router's cost) and does not loop; the intent's volume is split over them in proportion to their seed volume. The plain flow of each pair then gives up the trips its assumed flow carries (never more than 80% of it), and the fit rescales it to the counts, so total trips between the groups are not counted twice at the start of the fit. Intents of one movement add up to at most its counted volume. Every volume that is not a count is an ASSUMPTION; the data say which. Nothing here is area specific in code.",
     "movements": [
       {
         "id": "colby-nb-left-alcatraz-west",
@@ -620,11 +621,289 @@
           "to": "Alcatraz Avenue toward west"
         },
         "throughShare": 0.62,
-        "throughShareNote": "ASSUMPTION from DATA: the volunteer count has 102 cars driving all of Colby St northbound in the PM peak and 164 cars leaving it at Alcatraz Ave (131 left, 32 right, 1 straight); 102 / 164 = 0.62 of the exits are whole-street cars, which have no end in the study area. The left-turners are taken to have the same mix.",
+        "throughShareNote": "ASSUMPTION from DATA, as in round 20: the volunteer count has 102 cars driving all of Colby St northbound in the PM peak and 164 cars leaving it at Alcatraz Ave (131 left, 32 right, 1 straight); 102 / 164 = 0.62 of the exits are whole-street cars, which have no end in the study area. The intents keep this share (0.40 + 0.22 through, 0.38 local) and the 131 veh/h.",
         "maxDetour": 1.3,
-        "maxDetourNote": "ASSUMPTION: the router's route over Colby St cost 13% more than the one by Telegraph Ave in round 17 and the drivers' perceived-cost noise is 8% on each link, so a pair within 30% is one whose drivers could pick either.",
+        "maxDetourNote": "ASSUMPTION: as for the Colby St left turn (round 20): drivers' perceived-cost noise is 8% per link, so a pair within 30% of its best route is one whose drivers could pick either.",
         "minFlowVehPerHour": 0.5,
-        "countShare": 1
+        "countShare": 1,
+        "intents": [
+          {
+            "id": "offramp-to-west",
+            "label": "SR-24 off-ramp traffic using Colby St to reach Alcatraz Ave west, Telegraph Ave north and Ashby Ave",
+            "fromGroup": "sr24-off",
+            "toGroup": "west-side",
+            "share": 0.4,
+            "basis": "ASSUMPTION from DATA: 0.40 of the exits at Alcatraz Ave are freeway-origin through cars (65 of 164 veh/h; the block's freeway-origin trips 47% x 174 = 82, times 182 / (182 + 47) of its cars that entered at the south end)."
+          },
+          {
+            "id": "south-to-west",
+            "label": "Telegraph Ave and south-side traffic using Colby St to reach Alcatraz Ave west, Telegraph Ave north and Ashby Ave",
+            "fromGroup": "south-side",
+            "toGroup": "west-side",
+            "share": 0.22,
+            "basis": "ASSUMPTION: the rest of the through share (0.62 - 0.40). Only Telegraph Ave, the ramps and Forest St feed the south end of Colby St (4 of the 182 cars entering at the south end came from the northeast of Claremont Ave), so no through traffic is placed from the hills."
+          },
+          {
+            "id": "local-to-west",
+            "label": "Colby St and side-street residents leaving by Alcatraz Ave west",
+            "fromGroup": "study-area",
+            "toGroup": "west-side",
+            "share": 0.38,
+            "basis": "DATA-derived share: 1 - 0.62, the share of Colby St northbound exits that are not whole-street cars (102 of 164 are)."
+          }
+        ]
+      },
+      {
+        "id": "colby-nb-right-alcatraz-east",
+        "label": "Colby St northbound, right onto Alcatraz Ave eastbound",
+        "count": {
+          "at": [
+            "Colby Street",
+            "Alcatraz Avenue"
+          ],
+          "from": "Colby Street from south",
+          "to": "Alcatraz Avenue toward east"
+        },
+        "throughShare": 0.62,
+        "throughShareNote": "ASSUMPTION: the whole-street share of Colby St northbound exits (0.62) applies to the right turn as to the left turn.",
+        "maxDetour": 1.3,
+        "maxDetourNote": "ASSUMPTION: as for the Colby St left turn (round 20): drivers' perceived-cost noise is 8% per link, so a pair within 30% of its best route is one whose drivers could pick either.",
+        "minFlowVehPerHour": 0.5,
+        "countShare": 1,
+        "intents": [
+          {
+            "id": "offramp-to-east",
+            "label": "SR-24 off-ramp traffic using Colby St to reach College Ave and Berkeley",
+            "fromGroup": "sr24-off",
+            "toGroup": "east-side",
+            "share": 0.4,
+            "basis": "ASSUMPTION: the same freeway-origin share of exits as the left turn (0.40)."
+          },
+          {
+            "id": "south-to-east",
+            "label": "Telegraph Ave and south-side traffic using Colby St to reach College Ave and Berkeley",
+            "fromGroup": "south-side",
+            "toGroup": "east-side",
+            "share": 0.22,
+            "basis": "ASSUMPTION: the rest of the through share (0.62 - 0.40)."
+          },
+          {
+            "id": "local-to-east",
+            "label": "Colby St and side-street residents leaving by Alcatraz Ave east",
+            "fromGroup": "study-area",
+            "toGroup": "east-side",
+            "share": 0.38,
+            "basis": "DATA-derived share 0.38, as for the left turn."
+          }
+        ]
+      },
+      {
+        "id": "hillegass-nb-left-alcatraz-west",
+        "label": "Hillegass Ave northbound, left onto Alcatraz Ave westbound",
+        "count": {
+          "at": [
+            "Hillegass Avenue",
+            "Alcatraz Avenue"
+          ],
+          "from": "Hillegass Avenue from south",
+          "to": "Alcatraz Avenue toward west"
+        },
+        "throughShare": 0.44,
+        "throughShareNote": "ASSUMPTION from DATA: 48 cars drove all of Hillegass Ave northbound and 109 left it at Alcatraz Ave (43 west, 54 east, 12 straight): 48 / 109 = 0.44.",
+        "maxDetour": 1.3,
+        "maxDetourNote": "ASSUMPTION: as for the Colby St left turn (round 20): drivers' perceived-cost noise is 8% per link, so a pair within 30% of its best route is one whose drivers could pick either.",
+        "minFlowVehPerHour": 0.5,
+        "countShare": 1,
+        "intents": [
+          {
+            "id": "offramp-to-west",
+            "label": "SR-24 off-ramp traffic using Hillegass Ave to reach Alcatraz Ave west and Telegraph Ave north",
+            "fromGroup": "sr24-off",
+            "toGroup": "west-side",
+            "share": 0.37,
+            "basis": "ASSUMPTION from DATA: 0.37 of the exits at Alcatraz Ave are freeway-origin through cars (40 of 109 veh/h; 47% x 110 = 52 freeway-origin trips times 94 / (94 + 29))."
+          },
+          {
+            "id": "south-to-west",
+            "label": "Telegraph Ave and south-side traffic using Hillegass Ave to reach Alcatraz Ave west",
+            "fromGroup": "south-side",
+            "toGroup": "west-side",
+            "share": 0.07,
+            "basis": "ASSUMPTION: the rest of the through share (0.44 - 0.37)."
+          },
+          {
+            "id": "local-to-west",
+            "label": "Hillegass Ave and side-street residents leaving by Alcatraz Ave west",
+            "fromGroup": "study-area",
+            "toGroup": "west-side",
+            "share": 0.56,
+            "basis": "DATA-derived share: 1 - 0.44 (48 of the 109 exits are whole-street cars)."
+          }
+        ]
+      },
+      {
+        "id": "hillegass-nb-right-alcatraz-east",
+        "label": "Hillegass Ave northbound, right onto Alcatraz Ave eastbound",
+        "count": {
+          "at": [
+            "Hillegass Avenue",
+            "Alcatraz Avenue"
+          ],
+          "from": "Hillegass Avenue from south",
+          "to": "Alcatraz Avenue toward east"
+        },
+        "throughShare": 0.44,
+        "throughShareNote": "ASSUMPTION: the whole-street share of Hillegass Ave northbound exits (0.44) applies to this movement as to the left turn.",
+        "maxDetour": 1.3,
+        "maxDetourNote": "ASSUMPTION: as for the Colby St left turn (round 20): drivers' perceived-cost noise is 8% per link, so a pair within 30% of its best route is one whose drivers could pick either.",
+        "minFlowVehPerHour": 0.5,
+        "countShare": 1,
+        "intents": [
+          {
+            "id": "offramp-to-east",
+            "label": "SR-24 off-ramp traffic using Hillegass Ave to reach College Ave and Berkeley",
+            "fromGroup": "sr24-off",
+            "toGroup": "east-side",
+            "share": 0.37,
+            "basis": "ASSUMPTION: the same freeway-origin share of exits as the left turn (0.37)."
+          },
+          {
+            "id": "south-to-east",
+            "label": "Telegraph Ave and south-side traffic using Hillegass Ave to reach College Ave and Berkeley",
+            "fromGroup": "south-side",
+            "toGroup": "east-side",
+            "share": 0.07,
+            "basis": "ASSUMPTION: the rest of the through share (0.44 - 0.37)."
+          },
+          {
+            "id": "local-to-east",
+            "label": "Hillegass Ave and side-street residents leaving by Alcatraz Ave east",
+            "fromGroup": "study-area",
+            "toGroup": "east-side",
+            "share": 0.56,
+            "basis": "DATA-derived share 0.56, as for the left turn."
+          }
+        ]
+      },
+      {
+        "id": "alcatraz-west-hillegass-south",
+        "label": "Alcatraz Ave eastbound (from the Telegraph Ave side), right onto Hillegass Ave southbound",
+        "count": {
+          "at": [
+            "Hillegass Avenue",
+            "Alcatraz Avenue"
+          ],
+          "from": "Alcatraz Avenue from west",
+          "to": "Hillegass Avenue toward south"
+        },
+        "throughShare": 0.5,
+        "throughShareNote": "ASSUMPTION from DATA: freeway-bound through cars are half of the turn-ins (see the intent). The through share is not set from the whole-street count here because cars that turn off Hillegass Ave onto a side street on the way to the ramp are through cars too (79 cars drove the whole street, a lower bound).",
+        "maxDetour": 1.3,
+        "maxDetourNote": "ASSUMPTION: as for the Colby St left turn (round 20): drivers' perceived-cost noise is 8% per link, so a pair within 30% of its best route is one whose drivers could pick either.",
+        "minFlowVehPerHour": 0.5,
+        "countShare": 1,
+        "intents": [
+          {
+            "id": "west-to-freeway",
+            "label": "Telegraph Ave, Alcatraz Ave west and West Berkeley traffic turning onto Hillegass Ave to reach SR-24",
+            "fromGroup": "west-side",
+            "toGroup": "freeway-on",
+            "share": 0.5,
+            "basis": "ASSUMPTION from DATA: freeway-bound cars that did not join mid-street are 87 veh/h (68% x 160 = 109 freeway-bound trips on the block, times 178 / (178 + 44) of its cars that entered at the top), half of the 174 cars that turned in from Alcatraz Ave (76 + 98). The 0.50 is applied to each turn-in."
+          }
+        ]
+      },
+      {
+        "id": "alcatraz-east-hillegass-south",
+        "label": "Alcatraz Ave westbound (from the College Ave side), left onto Hillegass Ave southbound",
+        "count": {
+          "at": [
+            "Hillegass Avenue",
+            "Alcatraz Avenue"
+          ],
+          "from": "Alcatraz Avenue from east",
+          "to": "Hillegass Avenue toward south"
+        },
+        "throughShare": 0.5,
+        "throughShareNote": "ASSUMPTION from DATA: as for the turn-in from the west.",
+        "maxDetour": 1.3,
+        "maxDetourNote": "ASSUMPTION: as for the Colby St left turn (round 20): drivers' perceived-cost noise is 8% per link, so a pair within 30% of its best route is one whose drivers could pick either.",
+        "minFlowVehPerHour": 0.5,
+        "countShare": 1,
+        "intents": [
+          {
+            "id": "east-to-freeway",
+            "label": "College Ave and Berkeley traffic turning off Alcatraz Ave onto Hillegass Ave to reach SR-24",
+            "fromGroup": "east-side",
+            "toGroup": "freeway-on",
+            "share": 0.5,
+            "basis": "ASSUMPTION from DATA: freeway-bound cars that did not join mid-street are 87 veh/h (68% x 160 = 109 freeway-bound trips on the block, times 178 / (178 + 44) of its cars that entered at the top), half of the 174 cars that turned in from Alcatraz Ave (76 + 98). The 0.50 is applied to each turn-in."
+          }
+        ]
+      },
+      {
+        "id": "alcatraz-west-colby-south",
+        "label": "Alcatraz Ave eastbound (from the Telegraph Ave side), right onto Colby St southbound",
+        "count": {
+          "at": [
+            "Colby Street",
+            "Alcatraz Avenue"
+          ],
+          "from": "Alcatraz Avenue from west",
+          "to": "Colby Street toward south"
+        },
+        "throughShare": 0.365,
+        "throughShareNote": "ASSUMPTION from DATA: see the intents.",
+        "maxDetour": 1.3,
+        "maxDetourNote": "ASSUMPTION: as for the Colby St left turn (round 20): drivers' perceived-cost noise is 8% per link, so a pair within 30% of its best route is one whose drivers could pick either.",
+        "minFlowVehPerHour": 0.5,
+        "countShare": 1,
+        "intents": [
+          {
+            "id": "telegraph-to-freeway",
+            "label": "Southbound Telegraph Ave traffic using Colby St to reach SR-24",
+            "fromGroup": "telegraph-north",
+            "toGroup": "freeway-on",
+            "vehPerHour": 13,
+            "basis": "DATA-derived: 22% of Colby St southbound trips came by way of Telegraph Ave (the observed via share), 35 of the 76 turn-ins from the west; times 0.365 freeway-bound = 13 veh/h (PM). ASSUMPTION: the Telegraph Ave cars have the same freeway-bound share as the others."
+          },
+          {
+            "id": "west-to-freeway",
+            "label": "Alcatraz Ave west, Ashby Ave and West Berkeley traffic using Colby St to reach SR-24",
+            "fromGroup": "west-side-other",
+            "toGroup": "freeway-on",
+            "vehPerHour": 15,
+            "basis": "ASSUMPTION from DATA: the other 41 turn-ins from the west times 0.365 = 15 veh/h (PM)."
+          }
+        ]
+      },
+      {
+        "id": "alcatraz-east-colby-south",
+        "label": "Alcatraz Ave westbound (from the College Ave side), left onto Colby St southbound",
+        "count": {
+          "at": [
+            "Colby Street",
+            "Alcatraz Avenue"
+          ],
+          "from": "Alcatraz Avenue from east",
+          "to": "Colby Street toward south"
+        },
+        "throughShare": 0.365,
+        "throughShareNote": "ASSUMPTION from DATA: see the intent.",
+        "maxDetour": 1.3,
+        "maxDetourNote": "ASSUMPTION: as for the Colby St left turn (round 20): drivers' perceived-cost noise is 8% per link, so a pair within 30% of its best route is one whose drivers could pick either.",
+        "minFlowVehPerHour": 0.5,
+        "countShare": 1,
+        "intents": [
+          {
+            "id": "east-to-freeway",
+            "label": "College Ave and Berkeley traffic turning off Alcatraz Ave onto Colby St to reach SR-24",
+            "fromGroup": "east-side",
+            "toGroup": "freeway-on",
+            "vehPerHour": 18,
+            "basis": "ASSUMPTION from DATA: 50 turn-ins from the east times 0.365 freeway-bound = 18 veh/h (PM)."
+          }
+        ]
       }
     ]
   },

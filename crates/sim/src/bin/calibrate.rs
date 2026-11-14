@@ -3,6 +3,8 @@
 //!
 //! cargo run --release -p traffic-sim --bin calibrate -- --area rockridge --period pm_peak --minutes 60 --scale 1.0 --seed 1
 
+#[path = "calibrate/intent.rs"]
+mod intent;
 #[path = "calibrate/multi.rs"]
 mod multi;
 
@@ -349,7 +351,8 @@ fn main() {
         }
         let out = args.out.clone().unwrap_or_else(|| root.join("data/calibration/reports"));
         let prefix = format!("{}-{}-s{}", args.area, args.period, args.scale);
-        multi::run(multi::Multi { exe: std::env::current_exe().expect("exe"), base_args: base, seeds, jobs: args.jobs, out, keep: args.keep_seeds.clone(), write: args.write, stem_prefix: prefix, targets: &targets });
+        let groups: Option<Value> = std::fs::read_to_string(root.join(format!("data/demand/{}.groups.json", args.area))).ok().and_then(|t| serde_json::from_str(&t).ok());
+        multi::run(multi::Multi { exe: std::env::current_exe().expect("exe"), base_args: base, seeds, jobs: args.jobs, out, keep: args.keep_seeds.clone(), write: args.write, stem_prefix: prefix, targets: &targets, groups });
         return;
     }
     let read = |p: PathBuf| std::fs::read_to_string(&p).unwrap_or_else(|e| usage(&format!("cannot read {}: {e}", p.display())));
@@ -459,6 +462,9 @@ fn main() {
         }
     }
     sel.extend(feats.iter().flat_map(|f| [f.first, f.last]));
+    // Residential and service links inside the study area: a through trip that uses one is cut-through (intent map, round 21).
+    let study_local: Vec<u32> = (0..net.links.len()).filter(|&l| net.links[l].in_study_area && matches!(net.links[l].class, RoadClass::Residential | RoadClass::Service)).map(|l| l as u32).collect();
+    sel.extend(study_local.iter().copied());
     sel.sort_unstable();
     sel.dedup();
 
@@ -603,6 +609,27 @@ fn main() {
         // Range a through count can take: at least the cars that drove the whole street, at most the block volume less the cars that end along the street.
         let range = t.whole_street.map(|lo| (lo, (vol - t.end_along.unwrap_or(0.0)).max(lo)));
         through_rows.push((t.label.clone(), vol, share, vol * share, thr, fw, range));
+    }
+
+    // ---- intent map (round 21): through cars by origin group and destination group
+    let groups_v: Option<Value> = std::fs::read_to_string(root.join(format!("data/demand/{}.groups.json", args.area))).ok().and_then(|t| serde_json::from_str(&t).ok());
+    let mut intent_rows: Vec<intent::Row> = Vec::new();
+    let mut intent_groups: Option<intent::Groups> = None;
+    if let Some(gv) = &groups_v {
+        let groups = intent::Groups::from_json(gv, Some(&net));
+        let area_cfg: Value = std::fs::read_to_string(root.join(format!("data/areas/{}.json", args.area))).ok().and_then(|t| serde_json::from_str(&t).ok()).unwrap_or(Value::Null);
+        let near_m = targets["intentMap"]["arterialNearM"].as_f64().unwrap_or(400.0);
+        let mut alt = intent::Alt::new(&net, &intent::arterials_from_boundary(&area_cfg), near_m);
+        let per_h = 60.0 / args.minutes;
+        let mut sets: Vec<(String, std::collections::HashSet<u32>)> = tgts.iter().map(|t| (t.label.clone(), t.links.iter().copied().collect())).collect();
+        sets.push(("Study area, all residential and service streets".to_string(), study_local.iter().copied().collect()));
+        for (label, set) in &sets {
+            let trips: Vec<(u32, u32)> = recs.iter().filter(|r| r.through && r.hits.iter().any(|h| set.contains(&h.0))).map(|r| (r.origin, r.dest)).collect();
+            intent_rows.extend(intent::tally(label, &trips, per_h, &groups, &mut alt));
+        }
+        intent_groups = Some(groups);
+    } else {
+        eprintln!("no data/demand/{}.groups.json: intent map skipped (run npm run data)", args.area);
     }
 
     // ---- ramp shares
@@ -879,6 +906,9 @@ fn main() {
         let (rs, ok) = match range { Some((lo, hi)) => (format!("{lo:.0} to {hi:.0}"), if *thr >= *lo && *thr <= *hi { "yes" } else if *thr < *lo { "below" } else { "above" }), None => ("n/a".to_string(), "n/a") };
         let _ = writeln!(md, "| {l} | {vol:.0} | {} | {ex:.0} | {rs} | {thr:.0} | {ok} | {fw:.0} |", pct1(*sh));
     }
+    if let Some(g) = &intent_groups {
+        md.push_str(&intent::report(&intent_rows, g, &targets, 1, pm));
+    }
     let _ = writeln!(md, "\n## Select-link shares: modeled vs observed (design D5: headline = freeway shares, tolerance +/-10 pp)\n");
     for n in &notes {
         let _ = writeln!(md, "- {n}");
@@ -999,6 +1029,7 @@ fn main() {
             "modes": serde_json::to_value(&m.modes).unwrap_or(Value::Null),
             "vulnerable": serde_json::to_value(&m.vulnerable).unwrap_or(Value::Null),
             "series": series.iter().map(|s| json!({"tMin": s.t / 60.0, "vehicles": s.veh, "backlog": s.backlog, "completed": s.completed, "removed": s.removed, "arterialSpeed": s.art_speed})).collect::<Vec<_>>(),
+            "intentRows": intent::rows_json(&intent_rows),
             "throughCheck": through_rows.iter().map(|(l, vol, sh, ex, thr, fw, range)| json!({"block": l, "observedVehPerHour": vol, "freewayShare": sh, "observedFreewayEnd": ex, "expectedThroughLow": range.map(|r| r.0), "expectedThroughHigh": range.map(|r| r.1), "modeledThrough": thr, "modeledFreewayTrips": fw})).collect::<Vec<_>>(),
             "shares": rows.iter().map(|r| json!({
                 "block": r.target, "side": r.side, "via": r.via, "observed": r.observed, "observedPm": r.observed_pm,

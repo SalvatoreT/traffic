@@ -115,5 +115,166 @@
       {"id": "College Ave NB, Miles Ave to Ashby Ave", "street": "College Avenue", "from": "Miles Avenue", "to": "Ashby Avenue", "lengthMi": 0.83, "observedMph": {"pm_peak": {"2012": 15.9, "2014": 15.5, "2016": 10.0, "2018": 9.4}, "am_peak": {"2012": 12.5, "2014": 16.5, "2016": 13.1, "2018": 12.8}}},
       {"id": "College Ave SB, Ashby Ave to Miles Ave", "street": "College Avenue", "from": "Ashby Avenue", "to": "Miles Avenue", "lengthMi": 0.83, "observedMph": {"pm_peak": {"2012": 11.2, "2014": 14.8, "2016": 10.2, "2018": 11.6}, "am_peak": {"2012": 15.7, "2014": 18.9, "2016": 14.6, "2018": 15.0}}}
     ]
+  },
+  "intentMap": {
+    "_note": "Round 21. What the resident volunteer count of Feb 25, 2025 and the headline freeway shares imply about the intent of through cars (where they came from and where they were going) on the four counted blocks, PM peak. `from` and `to` are approach groups or sets of the area config. Implied veh/h are inferred from the counts with the stated ASSUMPTION shares; `low` and `high` bound them. Nothing here is a count of origins and destinations: no source gives those.",
+    "arterialNearM": 400,
+    "note": "Through = neither trip end is in the study area. Groups are the approach groups of the area config (data/areas); a node that is not a gate takes the group of the nearest surface gate (ASSUMPTION). The arterial is the one a trip would use on the shortest free-flow path with the study area's residential and service streets closed, where that path runs on a boundary street near the study area.",
+    "blocks": [
+      {
+        "block": "Colby Street NB",
+        "note": "Observed (PM): 182 cars entered at the south end, 102 drove the whole street, 164 left it at Alcatraz Ave (131 left, 32 right, 1 straight), and 47% of the block's trips came from a freeway (the headline share). ASSUMPTION: freeway-origin cars that do not end along the street are 65 veh/h (the 82 freeway-origin trips on the block, 47% of 174, times the 182 / (182 + 47) of its cars that entered at the south end rather than joining on the way), spread over the 164 exits in proportion (0.40); the other through cars come from the Telegraph Ave and south-side approaches that feed the street's south end. Ranges: low = 131 (32) x 0.47 x 0.62 (the whole-street share of exits), high = 131 (32) x 0.47.",
+        "intents": [
+          {
+            "id": "colby-nb-offramp-west",
+            "label": "SR-24 off-ramp traffic using Colby St to reach Alcatraz Ave west, Telegraph Ave north and Ashby Ave",
+            "from": "sr24-off",
+            "to": "west-side",
+            "low": 38,
+            "high": 62,
+            "implied": 52,
+            "basis": "OBSERVED turn count x ASSUMPTION share (131 left turns x 0.40)"
+          },
+          {
+            "id": "colby-nb-south-west",
+            "label": "Telegraph Ave and south-side traffic using Colby St to reach Alcatraz Ave west, Telegraph Ave north and Ashby Ave",
+            "from": "south-side",
+            "to": "west-side",
+            "low": 19,
+            "high": 43,
+            "implied": 29,
+            "basis": "ASSUMPTION: the through left-turners (131 x 0.62 = 81) that are not off-ramp traffic"
+          },
+          {
+            "id": "colby-nb-offramp-east",
+            "label": "SR-24 off-ramp traffic using Colby St to reach College Ave and Berkeley (right at Alcatraz Ave)",
+            "from": "sr24-off",
+            "to": "east-side",
+            "low": 9,
+            "high": 15,
+            "implied": 13,
+            "basis": "OBSERVED turn count x ASSUMPTION share (32 right turns x 0.40)"
+          },
+          {
+            "id": "colby-nb-south-east",
+            "label": "Telegraph Ave and south-side traffic using Colby St to reach College Ave and Berkeley",
+            "from": "south-side",
+            "to": "east-side",
+            "low": 5,
+            "high": 11,
+            "implied": 7,
+            "basis": "ASSUMPTION: the through right-turners (32 x 0.62 = 20) that are not off-ramp traffic"
+          }
+        ]
+      },
+      {
+        "block": "Hillegass Avenue NB",
+        "note": "Observed (PM): 94 cars entered at the south end, 48 drove the whole street, 109 left it at Alcatraz Ave (43 west, 54 east, 12 straight), and 47% of the block's trips came from a freeway. ASSUMPTION: freeway-origin through cars are 40 veh/h (52 freeway-origin trips times 94 / (94 + 29)), spread over the exits in proportion (0.37); the through share of exits is 48 / 109 = 0.44.",
+        "intents": [
+          {
+            "id": "hill-nb-offramp-west",
+            "label": "SR-24 off-ramp traffic using Hillegass Ave to reach Alcatraz Ave west and Telegraph Ave north",
+            "from": "sr24-off",
+            "to": "west-side",
+            "low": 9,
+            "high": 20,
+            "implied": 16,
+            "basis": "OBSERVED turn count x ASSUMPTION share (43 left turns x 0.37)"
+          },
+          {
+            "id": "hill-nb-offramp-east",
+            "label": "SR-24 off-ramp traffic using Hillegass Ave to reach College Ave and Berkeley",
+            "from": "sr24-off",
+            "to": "east-side",
+            "low": 11,
+            "high": 25,
+            "implied": 20,
+            "basis": "OBSERVED turn count x ASSUMPTION share (54 right turns x 0.37)"
+          },
+          {
+            "id": "hill-nb-south-west",
+            "label": "Telegraph Ave and south-side traffic using Hillegass Ave to reach Alcatraz Ave west",
+            "from": "south-side",
+            "to": "west-side",
+            "low": 0,
+            "high": 10,
+            "implied": 3,
+            "basis": "ASSUMPTION: through exits (43 x 0.44) that are not off-ramp traffic"
+          },
+          {
+            "id": "hill-nb-south-east",
+            "label": "Telegraph Ave and south-side traffic using Hillegass Ave to reach College Ave and Berkeley",
+            "from": "south-side",
+            "to": "east-side",
+            "low": 0,
+            "high": 13,
+            "implied": 4,
+            "basis": "ASSUMPTION: through exits (54 x 0.44) that are not off-ramp traffic"
+          }
+        ]
+      },
+      {
+        "block": "Hillegass Avenue SB",
+        "note": "Observed (PM): 178 cars entered at the top (76 turned in from Alcatraz Ave west, 98 from the east, 4 came straight from the north), 79 drove the whole street, and 68% of the block's trips (109 veh/h) went to a freeway. ASSUMPTION: freeway-bound cars that did not join mid-street are 87 veh/h (109 x 178 / (178 + 44)), half of the 174 turn-ins; low = the whole-street share of the turn-ins (0.45), high = the freeway-bound share without the mid-street correction (0.63).",
+        "intents": [
+          {
+            "id": "hill-sb-west-fwy",
+            "label": "Telegraph Ave, Alcatraz Ave west and West Berkeley traffic turning off Alcatraz Ave onto Hillegass Ave to reach SR-24",
+            "from": "west-side",
+            "to": "freeway-on",
+            "low": 34,
+            "high": 48,
+            "implied": 38,
+            "basis": "OBSERVED turn count x ASSUMPTION share (76 turn-ins x 0.50)"
+          },
+          {
+            "id": "hill-sb-east-fwy",
+            "label": "College Ave and Berkeley traffic turning off Alcatraz Ave (from the east) onto Hillegass Ave to reach SR-24",
+            "from": "east-side",
+            "to": "freeway-on",
+            "low": 44,
+            "high": 62,
+            "implied": 49,
+            "basis": "OBSERVED turn count x ASSUMPTION share (98 turn-ins x 0.50)"
+          }
+        ]
+      },
+      {
+        "block": "Colby Street SB",
+        "note": "Observed (PM): 139 cars entered at the top (76 from Alcatraz Ave west, 50 from the east, 13 from the north), 39 drove the whole street, 45% of the block's trips (72 veh/h) went to a freeway and 22% came by way of Telegraph Ave. ASSUMPTION: freeway-bound cars that did not join mid-street are 46 veh/h (72 x 139 / (139 + 79)), 0.365 of the 126 turn-ins; low = the whole-street share (0.31), high = the unadjusted freeway share (0.57). The Telegraph Ave cars are the 22% x 160 = 35 of the 76 west turn-ins.",
+        "intents": [
+          {
+            "id": "colby-sb-telegraph-fwy",
+            "label": "Southbound Telegraph Ave traffic using Colby St to reach SR-24",
+            "from": "telegraph-north",
+            "to": "freeway-on",
+            "low": 11,
+            "high": 20,
+            "implied": 13,
+            "basis": "OBSERVED turn count x ASSUMPTION share (35 Telegraph Ave cars x 0.365)"
+          },
+          {
+            "id": "colby-sb-west-fwy",
+            "label": "Alcatraz Ave west, Ashby Ave and West Berkeley traffic using Colby St to reach SR-24",
+            "from": "west-side-other",
+            "to": "freeway-on",
+            "low": 13,
+            "high": 23,
+            "implied": 15,
+            "basis": "OBSERVED turn count x ASSUMPTION share (41 other west turn-ins x 0.365)"
+          },
+          {
+            "id": "colby-sb-east-fwy",
+            "label": "College Ave and Berkeley traffic turning off Alcatraz Ave (from the east) onto Colby St to reach SR-24",
+            "from": "east-side",
+            "to": "freeway-on",
+            "low": 15,
+            "high": 29,
+            "implied": 18,
+            "basis": "OBSERVED turn count x ASSUMPTION share (50 east turn-ins x 0.365)"
+          }
+        ]
+      }
+    ]
   }
 }

@@ -90,6 +90,42 @@
   ],
   "zoom": 15,
   "periodWindows": { "am_peak": [7, 9], "midday": [11, 13], "pm_peak": [16, 18] },
+  "approachGroups": {
+    "_note": "Round 21. Named sets of outside nodes that say where a through car comes from or is going, in words a resident uses. Gates are placed by the first rule that matches (street names and classes at the gate, whether trips can only enter or only leave, and the compass bearing in degrees clockwise from north from the study area's center to the gate). Other outside nodes take the group of the nearest surface gate (ASSUMPTION). `overrides` (node id to group id) fix gates the rules place wrongly. `sets` are named unions. The reserved id `study-area` stands for the nodes inside the study area.",
+    "groups": [
+      { "id": "sr24-east-on", "label": "SR-24 eastbound on-ramps (toward the Caldecott Tunnel)", "match": { "classes": ["motorway"], "role": "exit", "sector": [30, 100] } },
+      { "id": "sr24-off-east", "label": "SR-24 westbound off-ramps (arriving from the Caldecott Tunnel)", "match": { "classes": ["motorway"], "role": "entry", "sector": [30, 100] } },
+      { "id": "sr13", "label": "SR-13 Warren Freeway (via SR-24 east)", "match": { "classes": ["motorway"], "sector": [100, 130] } },
+      { "id": "sr24-west-on", "label": "SR-24 westbound on-ramps (toward Oakland and I-980)", "match": { "classes": ["motorway"], "role": "exit", "sector": [150, 230] } },
+      { "id": "sr24-off-west", "label": "SR-24 eastbound off-ramps (arriving from Oakland and I-980)", "match": { "classes": ["motorway"], "role": "entry", "sector": [150, 230] } },
+      { "id": "telegraph-north", "label": "Telegraph Ave from the north (Berkeley)", "match": { "names": ["Telegraph Avenue"], "sector": [330, 30] } },
+      { "id": "telegraph-south", "label": "Telegraph Ave to the south (downtown Oakland)", "match": { "names": ["Telegraph Avenue"], "sector": [150, 230] } },
+      { "id": "college-north", "label": "College Ave from the north (Berkeley)", "match": { "names": ["College Avenue"], "sector": [330, 60] } },
+      { "id": "shattuck-north", "label": "Shattuck Ave from the north (Berkeley)", "match": { "names": ["Shattuck Avenue"] } },
+      { "id": "alcatraz-west", "label": "Alcatraz Ave from the west (Emeryville side)", "match": { "names": ["Alcatraz Avenue"], "sector": [230, 300] } },
+      { "id": "ashby-west", "label": "Ashby Ave from the west (Emeryville and I-80)", "match": { "names": ["Ashby Avenue"] } },
+      { "id": "san-pablo", "label": "San Pablo Ave (Emeryville and West Oakland)", "match": { "names": ["San Pablo Avenue"] } },
+      { "id": "claremont-hills", "label": "Claremont Ave and Tunnel Rd toward the hills", "match": { "names": ["Claremont Avenue", "Claremont Boulevard", "Tunnel Road"], "sector": [30, 70] } },
+      { "id": "berkeley-north", "label": "Berkeley side streets north of Alcatraz Ave (Dana, Regent, Hillegass, Benvenue)", "match": { "sector": [335, 30] } },
+      { "id": "berkeley-northwest", "label": "West Berkeley (Sacramento St, MLK Jr Way, Milvia St, Carleton St)", "match": { "sector": [290, 335] } },
+      { "id": "west-streets", "label": "Emeryville and West Oakland streets (55th to 67th Streets)", "match": { "sector": [235, 290] } },
+      { "id": "southwest-oakland", "label": "West Oakland to the southwest (Adeline St, Market St)", "match": { "sector": [190, 235] } },
+      { "id": "south-oakland", "label": "South-east Oakland (Broadway, Pleasant Valley Ave, Piedmont)", "match": { "sector": [150, 190] } },
+      { "id": "hills-northeast", "label": "Berkeley hills to the northeast (Evergreen Ln, Gravatt Dr)", "match": { "sector": [30, 80] } },
+      { "id": "hills-east", "label": "Oakland hills to the east (Broadway Terrace, Mountain Blvd, Moraga Ave)", "match": { "sector": [80, 150] } }
+    ],
+    "sets": {
+      "sr24-on": ["sr24-east-on", "sr24-west-on"],
+      "sr24-off": ["sr24-off-west", "sr24-off-east"],
+      "freeway-on": ["sr24-east-on", "sr24-west-on", "sr13"],
+      "freeway-off": ["sr24-off-west", "sr24-off-east", "sr13"],
+      "west-side": ["telegraph-north", "shattuck-north", "alcatraz-west", "ashby-west", "san-pablo", "west-streets", "berkeley-northwest"],
+      "west-side-other": ["shattuck-north", "alcatraz-west", "ashby-west", "san-pablo", "west-streets", "berkeley-northwest"],
+      "east-side": ["college-north", "berkeley-north", "claremont-hills", "hills-northeast"],
+      "south-side": ["telegraph-south", "southwest-oakland", "south-oakland"]
+    },
+    "overrides": {}
+  },
   "calibration": {
     "status": "uncalibrated",
     "note": "The 52nd St off-ramp carries 692 veh/h against 1,024 counted; PM headline freeway shares are 9 points off on average, Hillegass Ave SB 16.",
