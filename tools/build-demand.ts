@@ -766,7 +766,7 @@ if (fc?.enabled) {
           if (sib.length) { for (const p of periodIds) { const rest = Math.max(0, old.target[p] * (sib.length + 1) - (q.target[p] ?? 0)) / sib.length; for (const st of sib) st.target[p] = rest; } stationNotes.push(`${sib.map((st) => st.label).join(', ')}: shares the ADT row of the counted ramp above and takes the rest of it (${periodIds.map((p) => Math.round(sib[0].target[p])).join(' / ')} veh/h)`); }
         }
       }
-      stations.push({ id: q.id, kind: 'tmc', label: q.label, basis: q.basis, links: q.links, target: Object.fromEntries(periodIds.map((p) => [p, q.target[p] ?? 0])), weight: q.weight, tolPct: q.tolPct, records: [{ key: q.id, share: 1 }], feature: q.feature, weightByPeriod: q.weightByPeriod, corridor: q.corridor, source: q.source, year: q.year });
+      stations.push({ id: q.id, kind: 'tmc', label: q.label, basis: q.basis, links: q.links, target: Object.fromEntries(periodIds.map((p) => [p, q.target[p] ?? 0])), weight: q.weight, tolPct: q.tolPct, records: [{ key: q.id, share: 1 }], feature: q.feature, weightByPeriod: q.weightByPeriod, corridor: q.corridor, source: q.source, year: q.year, ramp: !!q.rampLinks });
     }
     stationNotes.push(`intersection counts: ${res.report.intersections} intersections give ${res.report.legs} leg volumes (${res.report.ramps} on ramps) and ${res.report.movements} turning movements`, ...res.report.notes);
   }

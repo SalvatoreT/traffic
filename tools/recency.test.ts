@@ -21,6 +21,14 @@ describe('recency of count sources', () => {
     expect(b.weightByPeriod).toEqual({ midday: 0.125 });
     expect(sum.sources.map((r) => [r.source, r.weight])).toEqual([['eir', 0.5], ['unknown', 0.5], ['volunteer', 1]]);
   });
+  it('keeps ramp stations at full weight when ramps are exempt, whatever their age', () => {
+    const r = { ...st('r', 'caltrans-ramp', 2012), kind: 'ramp' }, leg = { ...st('l', 'eir', 2013), ramp: true }, plain = st('p', 'eir', 2013);
+    applyRecency([r, leg, plain], { ...cfg, exemptRamps: true });
+    expect([r.weight, leg.weight, plain.weight]).toEqual([1, 1, 0.5]);
+    const r2 = { ...st('r', 'caltrans-ramp', 2012), kind: 'ramp' };
+    applyRecency([r2], cfg);
+    expect(r2.weight).toBe(0.5);
+  });
   it('holds a weight of 0 out of every fit', () => {
     const b = st('b', 'eir', 2010);
     applyRecency([b], { ...cfg, bands: [{ maxAgeYears: 10, weight: 1 }, { weight: 0 }] });

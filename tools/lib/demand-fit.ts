@@ -38,6 +38,8 @@ export interface Station {
   /** Source family (id used by the recency rule and the reports) and the count year of the source (mean of its count years); null when the year is not known. */
   source?: string;
   year?: number | null;
+  /** The count is of a freeway ramp (Caltrans ramp row or the ramp leg of an intersection count). */
+  ramp?: boolean;
   /** Taken out of every fit by the recency rule and scored as held out. */
   outOfFit?: boolean;
 }

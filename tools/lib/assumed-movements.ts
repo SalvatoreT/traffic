@@ -24,6 +24,8 @@ export interface AssumedMovementCfg {
   countShare?: number;
   /** Where the cars that make the movement come from and go to. When present they replace `throughShare`: only flows between the groups of an intent are candidates. */
   intents?: IntentCfg[];
+  /** Words the count file uses for a whole-street route (the street and direction) that ends at this movement; an intent with `wholeStreet` takes only candidates whose route to the movement drives that route from its first link (round 25, ASSUMPTION). */
+  wholeStreet?: string;
 }
 
 /** One intent of an assumed movement (ASSUMPTION unless `basis` says the volume is read from a count). Group ids, set ids or the reserved `study-area` (see tools/lib/approach-groups.ts). */
@@ -35,6 +37,8 @@ export interface IntentCfg {
   /** Veh/h in the PM peak; other periods scale with the movement's counted volume. */
   vehPerHour?: number;
   basis: string;
+  /** The cars of the intent drive the movement's whole-street route (the count's cars that drove the whole street): candidates must enter it at its first link. */
+  wholeStreet?: boolean;
 }
 
 /** What the intent code needs to know about groups. */
@@ -54,6 +58,9 @@ export interface AssumedReport {
 export type Carve = Map<number, number>;
 
 /** True when the shortest way on from link `b` to node `dest` (descending the cost-to-go `h`) enters a node of `seen` (the first leg), that is, the route through the movement loops. */
+/** A candidate flow of an assumed movement; `whole`: its route to the movement drives the movement's whole-street route from the first link. */
+type Cand = { k: number; detour: number; through: boolean; whole: boolean };
+
 function loops(g: Graph, h: Float64Array, b: number, dest: number, seen: Set<number>): boolean {
   let l = b;
   for (let steps = 0; steps < 4000; steps++) {
@@ -68,7 +75,7 @@ function loops(g: Graph, h: Float64Array, b: number, dest: number, seen: Set<num
 }
 
 /** The flows that make movement a -> b (link positions) with `target` veh/h in total, chosen from `seed`, and a report of the choice. */
-export function assumedMovementFlows(cfg: AssumedMovementCfg, a: number, b: number, target: number, period: string, seed: FlowIn[], g: Graph, inStudy: (node: number) => boolean, grp?: GroupCtx, ratio = 1): { flows: FlowIn[]; report: AssumedReport; carve: Carve } {
+export function assumedMovementFlows(cfg: AssumedMovementCfg, a: number, b: number, target: number, period: string, seed: FlowIn[], g: Graph, inStudy: (node: number) => boolean, grp?: GroupCtx, ratio = 1, firstLink?: number): { flows: FlowIn[]; report: AssumedReport; carve: Carve } {
   const carve: Carve = new Map();
   let mvCost = Infinity;
   for (let m = g.mvStart[a]; m < g.mvStart[a + 1]; m++) if (g.mvTo[m] === b) mvCost = g.mvCost[m];
@@ -77,13 +84,13 @@ export function assumedMovementFlows(cfg: AssumedMovementCfg, a: number, b: numb
   const byOrigin = new Map<number, number[]>();
   seed.forEach((f, k) => { if (f.mode || f.vehPerHour <= 0) return; (byOrigin.get(f.origin) ?? byOrigin.set(f.origin, []).get(f.origin)!).push(k); });
   const toGo = new Map<number, Float64Array>();
-  const cand: { k: number; detour: number; through: boolean }[] = [];
+  const cand: Cand[] = [];
   for (const [o, ks] of byOrigin) {
     const { dist, pred } = treeFrom(g, o, null);
     if (!isFinite(dist[a])) continue;
     // Nodes of the first leg (origin to the movement's approach link): a route that comes back to one of them loops.
-    const leg1 = new Set<number>();
-    for (let l = a; l >= 0; l = pred[l]) leg1.add(g.from[l]);
+    const leg1 = new Set<number>(), leg1Links = new Set<number>();
+    for (let l = a; l >= 0; l = pred[l]) { leg1.add(g.from[l]); leg1Links.add(l); }
     for (const k of ks) {
       const f = seed[k];
       const d = f.destination;
@@ -96,7 +103,7 @@ export function assumedMovementFlows(cfg: AssumedMovementCfg, a: number, b: numb
       const via = dist[a] + mvCost + h[b];
       const detour = via / direct;
       if (detour > cfg.maxDetour || loops(g, h, b, d, leg1)) continue;
-      cand.push({ k, detour, through: !inStudy(o) && !inStudy(d) });
+      cand.push({ k, detour, through: !inStudy(o) && !inStudy(d), whole: firstLink !== undefined && leg1Links.has(firstLink) });
     }
   }
   report.candidates = cand.length;
@@ -136,7 +143,7 @@ export function assumedMovementFlows(cfg: AssumedMovementCfg, a: number, b: numb
 }
 
 /** Intent flows: each intent takes the candidates between its groups and splits its volume over them in proportion to their seed volume. A pair that two intents share is one flow. */
-function intentFlows(cfg: AssumedMovementCfg, intents: IntentCfg[], cand: { k: number; detour: number; through: boolean }[], seed: FlowIn[], grp: GroupCtx, total: number, ratio: number, a: number, b: number, report: AssumedReport, carve: Carve): FlowIn[] {
+function intentFlows(cfg: AssumedMovementCfg, intents: IntentCfg[], cand: Cand[], seed: FlowIn[], grp: GroupCtx, total: number, ratio: number, a: number, b: number, report: AssumedReport, carve: Carve): FlowIn[] {
   const volumes = intents.map((it) => {
     if ((it.share === undefined) === (it.vehPerHour === undefined)) throw new Error(`assumed movement ${cfg.id}, intent ${it.id}: give exactly one of share and vehPerHour`);
     return it.share !== undefined ? it.share * total : it.vehPerHour! * ratio;
@@ -148,11 +155,11 @@ function intentFlows(cfg: AssumedMovementCfg, intents: IntentCfg[], cand: { k: n
   report.intents = [];
   intents.forEach((it, i) => {
     const from = new Set(grp.expand(it.fromGroup)), to = new Set(grp.expand(it.toGroup));
-    const c = cand.filter((x) => from.has(grp.groupOf(seed[x.k].origin)) && to.has(grp.groupOf(seed[x.k].destination)));
+    const c = cand.filter((x) => from.has(grp.groupOf(seed[x.k].origin)) && to.has(grp.groupOf(seed[x.k].destination)) && (!it.wholeStreet || x.whole));
     const ir: IntentReport = { id: it.id, label: it.label, volume: volumes[i], candidates: c.length, flows: 0, assigned: 0, carved: 0 };
     report.intents!.push(ir);
     if (volumes[i] <= 0) return;
-    if (!c.length) { ir.note = 'no candidate flow between these groups within the detour limit: the volume is not assigned'; return; }
+    if (!c.length) { ir.note = `no candidate flow between these groups within the detour limit${it.wholeStreet ? ' that drives the whole street' : ''}: the volume is not assigned`; return; }
     // Flows below the minimum drop out and the volume is restored over those that stay.
     const w = (x: { k: number }) => seed[x.k].vehPerHour;
     let keep = c;

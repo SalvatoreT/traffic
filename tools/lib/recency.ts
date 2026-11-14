@@ -12,8 +12,10 @@ export interface RecencyConfig {
   recentYears: number;
   /** Annual growth rate by source id applied to the target from the count year to the reference year; absent or 0 leaves the count as published. */
   growthPerYear?: Record<string, number>;
+  /** Ramp stations (Caltrans ramp rows and the ramp legs of intersection counts) keep full weight whatever their age: for the off-ramps they are the only evidence of the split (ASSUMPTION, round 25). */
+  exemptRamps?: boolean;
 }
-export interface Dated { id: string; source?: string; year?: number | null; weight: number; weightByPeriod?: Record<string, number>; target: Record<string, number>; held?: boolean; outOfFit?: boolean }
+export interface Dated { id: string; kind?: string; ramp?: boolean; source?: string; year?: number | null; weight: number; weightByPeriod?: Record<string, number>; target: Record<string, number>; held?: boolean; outOfFit?: boolean }
 
 export const ageOf = (year: number | null | undefined, referenceYear: number): number | null => (year == null ? null : Math.max(0, referenceYear - year));
 
@@ -32,7 +34,8 @@ export function applyRecency(stations: Dated[], cfg: RecencyConfig): RecencySumm
   const rows = new Map<string, RecencySummary['sources'][number]>();
   for (const st of stations) {
     const age = ageOf(st.year, cfg.referenceYear);
-    const w = bandWeight(age, cfg.bands);
+    const exempt = !!cfg.exemptRamps && (st.ramp === true || st.kind === 'ramp');
+    const w = exempt ? 1 : bandWeight(age, cfg.bands);
     const g = growthFactor(age, cfg.growthPerYear?.[st.source ?? ''] ?? 0);
     if (g !== 1) for (const p of Object.keys(st.target)) st.target[p] *= g;
     if (w === 0) { st.held = true; st.outOfFit = true; }
