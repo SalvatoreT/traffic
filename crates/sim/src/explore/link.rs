@@ -34,6 +34,26 @@ pub fn encode_geohash(lat: f64, lon: f64, length: usize) -> String {
     out
 }
 
+/// Center of a geohash cell as (lat, lon), or `None` for a character outside the alphabet.
+pub fn decode_geohash(hash: &str) -> Option<(f64, f64)> {
+    let (mut lat_lo, mut lat_hi, mut lon_lo, mut lon_hi, mut even) = (-90.0f64, 90.0f64, -180.0f64, 180.0f64, true);
+    for c in hash.bytes() {
+        let v = ALPHABET.iter().position(|&a| a == c)?;
+        for b in (0..5).rev() {
+            let bit = (v >> b) & 1 == 1;
+            let (lo, hi) = if even { (&mut lon_lo, &mut lon_hi) } else { (&mut lat_lo, &mut lat_hi) };
+            let m = (*lo + *hi) / 2.0;
+            if bit {
+                *lo = m;
+            } else {
+                *hi = m;
+            }
+            even = !even;
+        }
+    }
+    Some(((lat_lo + lat_hi) / 2.0, (lon_lo + lon_hi) / 2.0))
+}
+
 /// Local equirectangular projection about the network origin (`src/lib/projection.ts`).
 #[derive(Clone, Copy)]
 pub struct Proj {
@@ -52,6 +72,9 @@ impl Proj {
     }
     pub fn to_lon_lat(&self, x: f64, y: f64) -> (f64, f64) {
         (self.lon0 + x / self.kx, self.lat0 + y / self.ky)
+    }
+    pub fn to_local(&self, lon: f64, lat: f64) -> (f64, f64) {
+        ((lon - self.lon0) * self.kx, (lat - self.lat0) * self.ky)
     }
 }
 
@@ -85,11 +108,11 @@ fn js_round(x: f64) -> f64 {
     (x + 0.5).floor()
 }
 
-fn round5(b: f64) -> f64 {
+pub(crate) fn round5(b: f64) -> f64 {
     (js_round(b / 5.0) * 5.0) % 360.0
 }
 
-fn heading_at(g: &[[f64; 2]], s: f64) -> f64 {
+pub(crate) fn heading_at(g: &[[f64; 2]], s: f64) -> f64 {
     compass(point_along(g, s).2)
 }
 

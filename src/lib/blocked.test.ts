@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { NetLink, NetNode, Network } from '../types';
 import { buildIndex } from './naming';
-import { bearingVector, filterLegs, filterSentence, filterText, markOffset, MARK_MIN_PX, MARK_STEP_PX } from './blocked';
+import { bearingVector, closedLegs, filterChoices, filterLegs, filterSentence, filterText, markOffset, MARK_MIN_PX, MARK_STEP_PX, streetFilters } from './blocked';
 import { describeInterventionFull } from './describe';
 
 interface LegSpec { street: string; at: [number, number]; mouth?: [number, number] }
@@ -134,5 +134,61 @@ describe('mark placement', () => {
     const [x, y] = markOffset([10, 0], [0, -1]);
     expect(x).toBeCloseTo(10);
     expect(y).toBeLessThan(0);
+  });
+});
+
+describe('a filter on part of a junction', () => {
+  const merged = () => star([
+    { street: 'Ayala Avenue', at: [0, 100] }, { street: 'Ayala Avenue', at: [0, -100] },
+    { street: 'Martin Street', at: [100, 10], mouth: [0, 10] }, { street: 'Martin Street', at: [-100, -10], mouth: [0, -10] },
+  ]);
+
+  it('closes only the legs it names and says so', () => {
+    const net = merged(), idx = buildIndex(net);
+    const f = filterLegs(net, idx, 0);
+    const martin = streetFilters(f).find((s) => s.street === 'Martin Street')!;
+    expect(closedLegs(f, martin.links).map((l) => l.text)).toEqual(['Martin Street (east)', 'Martin Street (west)']);
+    const iv = { type: 'modal_filter', node: 0, legs: martin.links };
+    const t = filterText(iv, net, idx)!;
+    expect(t.lead).toBe('Cars cannot enter or leave this intersection on Martin Street.');
+    expect(t.closed).toBe('Closed to through cars: Martin Street (east), Martin Street (west).');
+    expect(t.junction).toBe('This junction combines Ayala Avenue and Martin Street, which meet up to about 20 m apart. The filter closes only the legs of Martin Street; Ayala Avenue stays open through the junction.');
+    expect(describeInterventionFull({ ...iv, type: 'modal_filter' }, net, idx)).toMatch(/^Modal filter on Martin Street at /);
+  });
+
+  it('without legs closes every leg as before', () => {
+    const net = merged(), idx = buildIndex(net);
+    const f = filterLegs(net, idx, 0);
+    expect(closedLegs(f, undefined)).toHaveLength(4);
+    expect(filterText({ type: 'modal_filter', node: 0 }, net, idx)!.junction).toMatch(/covers the whole junction and closes all 4 legs/);
+  });
+
+  it('offers a street only when two other legs stay connected', () => {
+    const net4 = star(cross()), net3 = star(cross().slice(0, 3));
+    expect(streetFilters(filterLegs(net4, buildIndex(net4), 0)).map((s) => s.street)).toEqual(['Ayala Avenue', 'Martin Street']);
+    expect(streetFilters(filterLegs(net3, buildIndex(net3), 0)).map((s) => s.street)).toEqual(['Martin Street']);
+    const one = star(cross().slice(0, 2));
+    expect(streetFilters(filterLegs(one, buildIndex(one), 0))).toEqual([]);
+  });
+
+  it('puts per-street options first and explains why at a consolidated junction, and the whole junction first at a plain one', () => {
+    const net = merged(), idx = buildIndex(net);
+    const c = filterChoices(net, idx, 0, []);
+    expect(c.merged && c.whole).toBe(true);
+    expect(c.streets.map((s) => s.label)).toEqual(['Filter Ayala Avenue here', 'Filter Martin Street here']);
+    expect(c.why).toMatch(/^This junction combines Ayala Avenue and Martin Street/);
+    expect(c.streets[1].closed).toBe('Closed to through cars: Martin Street (east), Martin Street (west).');
+    const plain = star(cross());
+    expect(filterChoices(plain, buildIndex(plain), 0, []).why).toBeNull();
+  });
+
+  it('leaves out what is already placed', () => {
+    const net = merged(), idx = buildIndex(net);
+    const martin = streetFilters(filterLegs(net, idx, 0)).find((s) => s.street === 'Martin Street')!;
+    const c = filterChoices(net, idx, 0, [{ type: 'modal_filter', node: 0, legs: martin.links }]);
+    expect(c.streets.map((s) => s.street)).toEqual(['Ayala Avenue']);
+    expect(c.whole).toBe(true);
+    const w = filterChoices(net, idx, 0, [{ type: 'modal_filter', node: 0 }]);
+    expect(w).toMatchObject({ whole: false, streets: [] });
   });
 });

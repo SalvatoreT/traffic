@@ -108,14 +108,29 @@ pub fn generate_with(study: &Study, hot: &Hotspots, n_loc: usize, profile: &Prof
         Loc::Block(b) => (0, *b as u32),
         Loc::Node(n) => (1, *n),
     };
-    if profile.exclude_boundary {
-        locs.retain(|(l, _)| match *l {
-            Loc::Block(b) => idx.blocks[b].links.iter().all(|&k| !study.is_boundary[k as usize]) && !study.boundary_node[idx.blocks[b].a as usize] && !study.boundary_node[idx.blocks[b].b as usize],
-            Loc::Node(n) => !study.boundary_node[n as usize],
-        });
-    }
+    let interior = |l: &Loc| match *l {
+        Loc::Block(b) => idx.blocks[b].links.iter().all(|&k| !study.is_boundary[k as usize]) && !study.boundary_node[idx.blocks[b].a as usize] && !study.boundary_node[idx.blocks[b].b as usize],
+        Loc::Node(n) => !study.boundary_node[n as usize],
+    };
     locs.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal).then_with(|| rank(&a.0).cmp(&rank(&b.0))));
-    locs.truncate(n_loc);
+    if profile.exclude_boundary {
+        locs.retain(|(l, _)| interior(l));
+        locs.truncate(n_loc);
+    } else {
+        // A looser profile keeps every location a stricter one gets: the top `n_loc` overall plus the top `n_loc` that are not on the boundary,
+        // so busy boundary locations cannot crowd out the interior ones a constrained search finds.
+        let mut interior_seen = 0;
+        let mut keep: Vec<bool> = vec![false; locs.len()];
+        for (i, (l, _)) in locs.iter().enumerate() {
+            if interior(l) {
+                interior_seen += 1;
+                keep[i] = interior_seen <= n_loc;
+            }
+            keep[i] |= i < n_loc;
+        }
+        let mut k = keep.into_iter();
+        locs.retain(|_| k.next().unwrap_or(false));
+    }
 
     let mut out: Vec<Cand> = Vec::new();
     let mut keys: HashSet<String> = HashSet::new();
@@ -290,4 +305,82 @@ pub fn conflicts(a: &Cand, b: &Cand) -> bool {
         return true;
     }
     false
+}
+
+/// Whether a profile permits an intervention: its type is not excluded and, when the profile keeps off the boundary, it touches no bounding street or its intersections.
+pub fn profile_allows(study: &Study, profile: &Profile, iv: &Intervention) -> bool {
+    if profile.exclude_types.iter().any(|t| *t == iv.ty) {
+        return false;
+    }
+    if !profile.exclude_boundary {
+        return true;
+    }
+    let (net, idx) = (&study.net, &study.idx);
+    let link_ok = |l: u32| (l as usize) < net.links.len() && !study.is_boundary[l as usize] && !study.boundary_node[net.links[l as usize].from as usize] && !study.boundary_node[net.links[l as usize].to as usize];
+    match (iv.link, iv.node, iv.from_link) {
+        (Some(l), _, _) => idx.blocks.get(idx.block_of_link.get(l as usize).copied().unwrap_or(usize::MAX)).map_or(false, |b| b.links.iter().all(|&k| link_ok(k))),
+        (_, Some(n), _) => (n as usize) < net.nodes.len() && !study.boundary_node[n as usize],
+        (_, _, Some(a)) => link_ok(a) && iv.to_link.map_or(false, link_ok),
+        _ => false,
+    }
+}
+
+/// Do two interventions do the same thing in the network? Equal up to the direction a block filter or hump is placed from, and the barrier bearings of a diverter that ban the same movements.
+pub fn same_intervention(study: &Study, a: &Intervention, b: &Intervention) -> bool {
+    if a.ty != b.ty {
+        return false;
+    }
+    let block = |l: Option<u32>| l.and_then(|l| study.idx.block_of_link.get(l as usize).copied());
+    let legs = |iv: &Intervention| -> Option<Vec<u32>> {
+        let all: Vec<u32> = node_legs(&study.topo, &study.net, iv.node?).iter().flat_map(|l| l.ins.iter().chain(l.outs.iter()).copied()).collect();
+        let mut v = iv.legs.clone().unwrap_or(all.clone());
+        v.sort_unstable();
+        v.dedup();
+        let mut all = all;
+        all.sort_unstable();
+        Some(if v == all { Vec::new() } else { v })
+    };
+    match a.ty.as_str() {
+        "modal_filter" if a.link.is_some() || b.link.is_some() => block(a.link).is_some() && block(a.link) == block(b.link),
+        "modal_filter" => a.node == b.node && legs(a) == legs(b),
+        "speed_hump" => block(a.link).is_some() && block(a.link) == block(b.link),
+        "speed_limit" => block(a.link).is_some() && block(a.link) == block(b.link) && (a.speed.unwrap_or(0.0) - b.speed.unwrap_or(0.0)).abs() < 0.02,
+        "one_way" => a.link == b.link,
+        "turn_ban" => a.from_link == b.from_link && a.to_link == b.to_link,
+        "control" => a.node == b.node && a.control == b.control,
+        "signal_timing" => a.node == b.node && a.cycle == b.cycle,
+        "diagonal_diverter" => {
+            a.node == b.node
+                && match (a.node, a.bearing, b.bearing) {
+                    (Some(n), Some(x), Some(y)) => banned_movements(&study.topo, &study.net, n, x).ok() == banned_movements(&study.topo, &study.net, n, y).ok(),
+                    _ => false,
+                }
+        }
+        _ => a.node == b.node,
+    }
+}
+
+/// Index of the candidate that does what `iv` does, adding one (kind, conflict keys and label as for generated candidates) when there is none.
+pub fn adopt(study: &Study, cands: &mut Vec<Cand>, iv: &Intervention) -> u16 {
+    if let Some(i) = cands.iter().position(|c| same_intervention(study, &c.iv, &iv)) {
+        return i as u16;
+    }
+    let (net, idx) = (&study.net, &study.idx);
+    let blk = iv.link.and_then(|l| idx.block_of_link.get(l as usize).copied());
+    let (kind, block, nodes, places): (&'static str, Option<usize>, Vec<u32>, Vec<String>) = match iv.ty.as_str() {
+        "modal_filter" if iv.node.is_some() => ("node_filter", None, vec![iv.node.unwrap()], idx.node_streets[iv.node.unwrap() as usize].clone()),
+        "modal_filter" => ("modal_filter", blk, blk.map(|b| vec![idx.blocks[b].a, idx.blocks[b].b]).unwrap_or_default(), blk.map(|b| vec![idx.blocks[b].name.clone()]).unwrap_or_default()),
+        "one_way" => ("one_way", blk, blk.map(|b| vec![idx.blocks[b].a, idx.blocks[b].b]).unwrap_or_default(), blk.map(|b| vec![idx.blocks[b].name.clone()]).unwrap_or_default()),
+        "speed_hump" => ("speed_hump", blk, blk.map(|b| vec![idx.blocks[b].a, idx.blocks[b].b]).unwrap_or_default(), blk.map(|b| vec![idx.blocks[b].name.clone()]).unwrap_or_default()),
+        "speed_limit" => ("speed_limit", blk, blk.map(|b| vec![idx.blocks[b].a, idx.blocks[b].b]).unwrap_or_default(), blk.map(|b| vec![idx.blocks[b].name.clone()]).unwrap_or_default()),
+        "turn_ban" => ("turn_ban", None, iv.from_link.map(|a| vec![net.links[a as usize].to]).unwrap_or_default(), iv.to_link.map(|b| vec![idx.link_name[b as usize].clone()]).unwrap_or_default()),
+        "diagonal_diverter" => ("diagonal_diverter", None, vec![iv.node.unwrap_or(0)], idx.node_streets.get(iv.node.unwrap_or(0) as usize).cloned().unwrap_or_default()),
+        "traffic_circle" => ("traffic_circle", None, vec![iv.node.unwrap_or(0)], idx.node_streets.get(iv.node.unwrap_or(0) as usize).cloned().unwrap_or_default()),
+        "control" => ("control", None, vec![iv.node.unwrap_or(0)], idx.node_streets.get(iv.node.unwrap_or(0) as usize).cloned().unwrap_or_default()),
+        _ => ("signal_timing", None, vec![iv.node.unwrap_or(0)], idx.node_streets.get(iv.node.unwrap_or(0) as usize).cloned().unwrap_or_default()),
+    };
+    let key = format!("seed:{}", serde_json::to_string(iv).unwrap_or_default());
+    let label = describe(net, &study.topo, idx, iv);
+    cands.push(Cand { iv: iv.clone(), kind, label, key, block, nodes, places, loc_score: 0.0 });
+    (cands.len() - 1) as u16
 }

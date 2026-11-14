@@ -1,6 +1,6 @@
 //! Recheck of the finalists, choice of the options to publish (design D4, D5), their titles and summaries, and the output files.
 
-use super::cands::{generate_with, Cand};
+use super::cands::{adopt, conflicts, generate_with, profile_allows, Cand};
 use super::naming::describe;
 use super::refs::{resolve, RefCfg};
 use super::search::*;
@@ -235,6 +235,17 @@ pub fn select_options(finals: &[Final], max: usize, noise_pct: f64) -> (Vec<Pick
             None => keep.push(i),
         }
     }
+    // Pareto-consistent listing: a larger package is listed only if it cuts through cars by more than every smaller one that is listed.
+    let mut by_size = keep.clone();
+    by_size.sort_by(|&a, &b| finals[a].set.len().cmp(&finals[b].set.len()).then(finals[b].reduction_pct.partial_cmp(&finals[a].reduction_pct).unwrap_or(std::cmp::Ordering::Equal)).then(a.cmp(&b)));
+    let mut consistent: Vec<usize> = Vec::new();
+    for &i in &by_size {
+        match consistent.iter().copied().find(|&j| finals[j].set.len() < finals[i].set.len() && finals[j].reduction_pct >= finals[i].reduction_pct) {
+            Some(j) => notes[i] = format!("not listed: smaller finalist {} cuts through cars at least as much", j + 1),
+            None => consistent.push(i),
+        }
+    }
+    let keep: Vec<usize> = keep.into_iter().filter(|i| consistent.contains(i)).collect();
     let by_score = |a: &usize, b: &usize| finals[*b].score.partial_cmp(&finals[*a].score).unwrap_or(std::cmp::Ordering::Equal).then(a.cmp(b));
     let mut picks: Vec<(usize, String)> = Vec::new();
     let mut by_s = keep.clone();
@@ -412,14 +423,15 @@ pub fn explore(study: &Study, p: &Params) -> Outcome {
     eprintln!("baseline: {} period(s) x {} seed(s) at {} min, plus {} screening run(s) at {} min", p.periods.len(), p.seeds.len(), p.minutes, p.seeds.len(), p.screen_minutes);
     let base = run_baseline(study, p);
     eprintln!("baseline done in {:.0}s; cut-through {}", t0.elapsed().as_secs_f64(), p.periods.iter().zip(&base.full).map(|(n, s)| format!("{n} {:.0} veh/h", s.ct_vph)).collect::<Vec<_>>().join(", "));
-    let cands = generate_with(study, &base.hot, p.candidates, &p.profile);
+    let mut cands = generate_with(study, &base.hot, p.candidates, &p.profile);
     eprintln!("{} candidate interventions:", cands.len());
     for (i, c) in cands.iter().enumerate() {
         eprintln!("  {:3} [{}] {}", i + 1, c.kind, c.label);
     }
+    let warm = adopt_warm_start(study, p, &mut cands);
     let ctx = Ctx { study, p, cands: &cands, base: &base };
-    let state = beam_search(&ctx);
-    let fin_idx = pick_finalists(&state.evals, p.finalists);
+    let state = beam_search(&ctx, &warm);
+    let fin_idx = pick_finalists(&state.evals, p.finalists, &warm);
     eprintln!("rechecking {} finalist(s) over {} period(s) x {} seed(s) at {} min", fin_idx.len(), p.periods.len(), p.seeds.len(), p.minutes);
     let sets: Vec<Vec<u16>> = fin_idx.iter().map(|&i| state.evals[i].set.clone()).collect();
     let finals = recheck(&ctx, &sets);
@@ -455,6 +467,36 @@ pub fn explore(study: &Study, p: &Params) -> Outcome {
     let json = build_json(study, p, &all, &base, &finals, &picks, &ref_finals);
     let markdown = build_markdown(study, p, &ctx_all, &state, &finals, &picks, &notes, noise, &t0, &ref_finals);
     Outcome { json, markdown, cands, state, finals, picks, base, ref_finals }
+}
+
+/// The warm-start packages as candidate sets: each intervention matched to a candidate or added as one. A package the profile does not allow,
+/// that cannot be combined (two interventions on one place), or that fails the access check is left out, with a line saying so.
+pub fn adopt_warm_start(study: &Study, p: &Params, cands: &mut Vec<Cand>) -> Vec<Vec<u16>> {
+    let mut out: Vec<Vec<u16>> = Vec::new();
+    for (k, pkg) in p.warm_start.iter().enumerate() {
+        if let Some(iv) = pkg.iter().find(|iv| !profile_allows(study, &p.profile, iv)) {
+            eprintln!("warm start package {}: not used, {} is not allowed under {}", k + 1, describe(&study.net, &study.topo, &study.idx, iv), p.profile.id);
+            continue;
+        }
+        let mut local = cands.clone();
+        let mut set: Vec<u16> = pkg.iter().map(|iv| adopt(study, &mut local, iv)).collect();
+        set.sort_unstable();
+        set.dedup();
+        let clash = set.iter().any(|&a| set.iter().any(|&b| a < b && conflicts(&local[a as usize], &local[b as usize])));
+        if clash {
+            eprintln!("warm start package {}: not used, two of its interventions share a place", k + 1);
+            continue;
+        }
+        if let Err(why) = check_access(study, &pkg.clone()) {
+            eprintln!("warm start package {}: not used, {why}", k + 1);
+            continue;
+        }
+        *cands = local;
+        if !out.contains(&set) {
+            out.push(set);
+        }
+    }
+    out
 }
 
 /// Mean over periods of the baseline's coefficient of variation of cut-through over seeds (percent); 0 with one seed.

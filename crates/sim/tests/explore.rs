@@ -607,3 +607,234 @@ fn profile_results_merge_into_one_file_and_one_report() {
     let md2 = merge_report(Some(&md), "t", &report_section("# T\n\nGen2.\n\n## Baseline\n\nz\n", &ch), "charter", &ord, &un);
     assert!(md2.contains("Gen2.") && !md2.contains("\ny\n") && md2.contains("### Baseline\n\nx"));
 }
+
+// ---------------------------------------------------------------- per-street filters
+
+fn hot_everywhere(study: &Study) -> Hotspots {
+    Hotspots { block_ct: vec![10.0; study.idx.blocks.len()], node_ct: vec![10.0; study.net.nodes.len()], mv_ct: Default::default() }
+}
+
+#[test]
+fn a_crossing_offers_a_filter_on_each_street_besides_the_whole_junction() {
+    use traffic_sim::explore::cands::{conflicts, generate_with};
+    use traffic_sim::explore::profile::Profile;
+    let study = crossing();
+    let cands = generate_with(&study, &hot_everywhere(&study), 200, &Profile::unconstrained());
+    let at_c: Vec<_> = cands.iter().filter(|c| c.kind == "node_filter" && c.nodes == vec![0]).collect();
+    let labels: Vec<&str> = at_c.iter().map(|c| c.label.as_str()).collect();
+    assert_eq!(at_c.len(), 3, "{labels:?}");
+    assert!(labels.contains(&"Modal filter at Elm Street & Oak Street"), "{labels:?}");
+    assert!(labels.contains(&"Modal filter on Elm Street at Elm Street & Oak Street"), "{labels:?}");
+    assert!(labels.contains(&"Modal filter on Oak Street at Elm Street & Oak Street"), "{labels:?}");
+    let oak = at_c.iter().find(|c| c.label.contains("on Oak Street")).unwrap();
+    let legs = oak.iv.legs.clone().unwrap();
+    assert_eq!(legs.len(), 4, "both legs of the street, both directions");
+    assert!(legs.iter().all(|&l| study.idx.link_name[l as usize] == "Oak Street"));
+    assert_eq!(oak.places, vec!["Oak Street".to_string()]);
+    for a in &at_c {
+        for b in &at_c {
+            assert!(conflicts(a, b) || a.key != b.key, "two filters at one junction never share a package");
+        }
+    }
+    // A package of the street filter closes only its legs.
+    assert_eq!(oak.kind, "node_filter");
+}
+
+#[test]
+fn a_t_junction_offers_only_the_side_street_alone() {
+    use traffic_sim::explore::cands::street_filters;
+    let mut b = B::default();
+    let c = b.node(0.0, 0.0, Control::TwoWayStop, false);
+    let w = b.node(-150.0, 0.0, Control::Uncontrolled, true);
+    let e = b.node(150.0, 0.0, Control::Uncontrolled, true);
+    let s = b.node(0.0, -150.0, Control::Uncontrolled, true);
+    b.two_way(c, w, "Elm Street", RoadClass::Residential, 11.2, true);
+    b.two_way(c, e, "Elm Street", RoadClass::Residential, 11.2, true);
+    b.two_way(c, s, "Oak Street", RoadClass::Residential, 11.2, true);
+    let study = study_of(Network { version: 1, id: "t".into(), name: "t".into(), nodes: b.nodes, links: b.links, turn_bans: Vec::new() });
+    let f = street_filters(&study, c);
+    assert_eq!(f.iter().map(|(n, _)| n.as_str()).collect::<Vec<_>>(), vec!["Oak Street"], "closing Elm Street would leave one leg: the whole junction");
+    assert_eq!(f[0].1.len(), 2);
+}
+
+#[test]
+fn per_street_filters_obey_the_profile_limits() {
+    use traffic_sim::explore::cands::generate_with;
+    use traffic_sim::explore::profile::Profile;
+    let study = grid_with_boundary();
+    let hot = hot_everywhere(&study);
+    let open = generate_with(&study, &hot, 200, &Profile::unconstrained());
+    assert!(open.iter().any(|c| c.iv.legs.is_some()), "the grid offers per-street filters");
+    let charter = Profile { id: "charter".into(), title: "c".into(), note: String::new(), exclude_types: vec!["speed_hump".into(), "traffic_circle".into()], exclude_boundary: true };
+    let cands = generate_with(&study, &hot, 200, &charter);
+    let legged: Vec<_> = cands.iter().filter(|c| c.iv.legs.is_some()).collect();
+    assert!(!legged.is_empty());
+    for c in legged {
+        let n = c.iv.node.unwrap();
+        assert!(!study.boundary_node[n as usize], "{}", c.label);
+        assert!(c.iv.legs.as_ref().unwrap().iter().all(|&l| !study.is_boundary[l as usize]), "{}", c.label);
+    }
+    let no_filters = Profile { id: "x".into(), title: "x".into(), note: String::new(), exclude_types: vec!["modal_filter".into()], exclude_boundary: false };
+    assert!(generate_with(&study, &hot, 200, &no_filters).iter().all(|c| c.iv.ty != "modal_filter"), "excluding modal filters drops the per-street kind too");
+}
+
+#[test]
+fn a_reference_can_name_one_street_of_a_junction() {
+    use traffic_sim::explore::refs::resolve_one;
+    let study = crossing();
+    let v: Value = serde_json::from_str(r#"{"type":"modal_filter","at":["Oak Street","Elm Street"],"street":"Oak Street"}"#).unwrap();
+    let iv = resolve_one(&study, &v).unwrap();
+    assert_eq!(iv.node, Some(0));
+    assert_eq!(iv.legs.as_ref().map(|l| l.len()), Some(4));
+    let bad: Value = serde_json::from_str(r#"{"type":"modal_filter","at":["Oak Street","Elm Street"],"street":"Pine Street"}"#).unwrap();
+    assert!(resolve_one(&study, &bad).is_err());
+}
+
+// ---------------------------------------------------------------- warm start and consistent options
+
+#[test]
+fn listed_options_beat_every_smaller_listed_option_on_through_cars() {
+    use traffic_sim::explore::report::{select_options, Final, ThroughHarm};
+    let mk = |n: usize, red: f64, harm: f64| Final {
+        set: (0..n as u16).collect(),
+        reject: None,
+        base_vph: 100.0,
+        scen_vph: 100.0 - red,
+        reduction_pct: red,
+        harm,
+        worst: 0,
+        blocks_above: 0,
+        through: ThroughHarm { worst: 0, increase: 0.0, blocks_above: 0 },
+        by_period: vec![],
+        bounding: vec![],
+        inside_pct: 0.0,
+        ped_pct: 0.0,
+        bike_pct: 0.0,
+        score: red - 0.1 * harm,
+    };
+    // The three-intervention package has less harm than the single one, so it is not dominated, but it cuts through cars less.
+    let finals = vec![mk(1, 49.0, 80.0), mk(3, 40.0, 0.0), mk(5, 90.0, 60.0), mk(4, 70.0, 10.0), mk(6, 80.0, 20.0)];
+    let (picks, notes) = select_options(&finals, 5, 1.0);
+    let listed: Vec<usize> = picks.iter().map(|p| p.idx).collect();
+    assert!(!listed.contains(&1), "{listed:?}");
+    assert!(notes[1].contains("not listed"), "{}", notes[1]);
+    assert!(!listed.contains(&4), "a larger package that cuts less than a smaller listed one is left out: {listed:?}");
+    for a in &picks {
+        for b in &picks {
+            let (x, y) = (&finals[a.idx], &finals[b.idx]);
+            if x.set.len() < y.set.len() {
+                assert!(y.reduction_pct > x.reduction_pct, "{} interventions cut {}%, {} cut {}%", x.set.len(), x.reduction_pct, y.set.len(), y.reduction_pct);
+            }
+        }
+    }
+    assert!(listed.contains(&2) && listed.contains(&0));
+}
+
+#[test]
+fn decoding_a_link_restores_the_interventions_that_wrote_it() {
+    let f = fixture();
+    let (net, origin) = fixture_net(&f);
+    let study = Study::from_parts("fixture", net.clone(), Demand { version: 1, area: "fixture".into(), intents: Vec::new(), periods: vec![] }, origin, "h".into(), "h".into(), "uncalibrated".into());
+    for c in f["cases"].as_array().unwrap() {
+        // Like the app, the decoder cannot place a one-way mark on the bend of a street that turns by more than 45 degrees there.
+        if c["name"] == "one-way both directions" {
+            continue;
+        }
+        let link = c["link"].as_str().unwrap();
+        let ivs = traffic_sim::explore::decode::decode_scenario(&net, &study.topo, origin, link).unwrap();
+        let period = c["period"].as_str();
+        assert_eq!(study.encode(&ivs, period), link.replace("a=fixture", &format!("a={}", study.area)), "case {}", c["name"]);
+    }
+    assert!(traffic_sim::explore::decode::decode_scenario(&net, &study.topo, origin, "#v1;a=fixture;s=mf,zzzzzzzzzz").is_err());
+    assert!(traffic_sim::explore::decode::decode_scenario(&net, &study.topo, origin, "#v1;a=fixture;s=tc,s00000000h").is_err(), "no intersection there");
+}
+
+#[test]
+fn a_looser_profile_keeps_every_location_a_stricter_one_gets() {
+    use traffic_sim::explore::cands::generate_with;
+    use traffic_sim::explore::profile::Profile;
+    let study = grid_with_boundary();
+    // The bounding street's nodes rank first, so a plain top-n cut would fill with them.
+    let mut node_ct = vec![1.0; study.net.nodes.len()];
+    for (n, ct) in node_ct.iter_mut().enumerate() {
+        if study.boundary_node[n] {
+            *ct = 100.0;
+        }
+    }
+    let hot = Hotspots { block_ct: vec![1.0; study.idx.blocks.len()], node_ct, mv_ct: Default::default() };
+    let charter = Profile { id: "charter".into(), title: "c".into(), note: String::new(), exclude_types: Vec::new(), exclude_boundary: true };
+    for n in [2, 4, 6] {
+        let strict = generate_with(&study, &hot, n, &charter);
+        let loose = generate_with(&study, &hot, n, &Profile::unconstrained());
+        let keys: std::collections::HashSet<&str> = loose.iter().map(|c| c.key.as_str()).collect();
+        assert!(!strict.is_empty());
+        for c in &strict {
+            assert!(keys.contains(c.key.as_str()), "n = {n}: {} is offered under the limits but not without them", c.label);
+        }
+    }
+}
+
+#[test]
+fn a_package_that_breaks_the_profile_is_not_used_as_a_warm_start() {
+    use traffic_sim::explore::cands::generate_with;
+    use traffic_sim::explore::profile::Profile;
+    use traffic_sim::explore::report::adopt_warm_start;
+    let study = grid_with_boundary();
+    let hot = hot_everywhere(&study);
+    let open = generate_with(&study, &hot, 200, &Profile::unconstrained());
+    let boundary = open.iter().find(|c| c.kind == "modal_filter" && c.nodes.iter().any(|&n| study.boundary_node[n as usize])).expect("a filter by the boundary");
+    let inside = open.iter().find(|c| c.kind == "node_filter" && c.nodes.iter().all(|&n| !study.boundary_node[n as usize]) && c.iv.legs.is_none()).expect("an inside filter");
+    let hump = open.iter().find(|c| c.kind == "speed_hump").expect("a hump");
+    let mut p = params(1);
+    p.profile = Profile { id: "charter".into(), title: "c".into(), note: String::new(), exclude_types: vec!["speed_hump".into()], exclude_boundary: true };
+    p.warm_start = vec![vec![inside.iv.clone()], vec![inside.iv.clone(), boundary.iv.clone()], vec![inside.iv.clone(), hump.iv.clone()]];
+    let mut cands = generate_with(&study, &hot, 200, &p.profile);
+    let n_before = cands.len();
+    let sets = adopt_warm_start(&study, &p, &mut cands);
+    assert_eq!(sets.len(), 1, "only the package that fits the limits is kept");
+    assert_eq!(cands.len(), n_before, "its intervention is already a candidate, so nothing is added");
+    assert_eq!(cands[sets[0][0] as usize].label, inside.label);
+}
+
+#[test]
+fn a_warm_start_package_outside_the_candidate_cap_is_screened_and_rechecked() {
+    let n = ratrun(true, false);
+    let (c_d, e_f) = (n.c_d, n.e_f);
+    let study = study_of(n.study_net);
+    let pair = vec![
+        traffic_sim::model::Intervention { ty: "modal_filter".into(), link: Some(c_d), ..Default::default() },
+        traffic_sim::model::Intervention { ty: "modal_filter".into(), link: Some(e_f), ..Default::default() },
+    ];
+    let mut p = params(2);
+    p.candidates = 1;
+    let plain = explore(&study, &p);
+    p.warm_start = vec![pair];
+    let warm = explore(&study, &p);
+    let sets: Vec<Vec<String>> = warm
+        .finals
+        .iter()
+        .map(|f| {
+            let mut v: Vec<String> = f.set.iter().map(|&i| warm.cands[i as usize].label.clone()).collect();
+            v.sort();
+            v
+        })
+        .collect();
+    assert!(sets.iter().any(|s| s.len() == 2 && s.iter().all(|l| l.starts_with("Modal filter on"))), "the warm package reaches the recheck: {sets:?}");
+    let top = |o: &Outcome| o.finals.iter().filter(|f| f.reject.is_none()).map(|f| f.reduction_pct).fold(f64::NEG_INFINITY, f64::max);
+    assert!(top(&warm) >= top(&plain) - 1e-9, "warm {} plain {}", top(&warm), top(&plain));
+    assert!(top(&warm) > 60.0, "the pair removes the rat runs: {}", top(&warm));
+}
+
+#[test]
+fn warm_packages_come_from_matching_groups_only() {
+    use serde_json::json;
+    let study = crossing();
+    let one = traffic_sim::model::Intervention { ty: "traffic_circle".into(), node: Some(0), ..Default::default() };
+    let link = study.encode(&[one], None);
+    let grp = |id: &str, net: &str, kind: &str| json!({"id": id, "computed": {"networkHash": net, "demandHash": study.demand_hash}, "proposals": [{"id": "p1", "kind": kind, "link": link}]});
+    let file = json!({"version": 4, "groups": [grp("charter", &study.net_hash, "search"), grp("old", "other", "search"), grp("ref", &study.net_hash, "reference"), grp("unconstrained", &study.net_hash, "search")]});
+    let got = traffic_sim::explore::profile::warm_packages(Some(&file), &study, "unconstrained");
+    assert_eq!(got.len(), 1, "the other group with the same hashes, search proposals only");
+    assert_eq!(got[0][0].ty, "traffic_circle");
+    assert!(traffic_sim::explore::profile::warm_packages(None, &study, "x").is_empty());
+}

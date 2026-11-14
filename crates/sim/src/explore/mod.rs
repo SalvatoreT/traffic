@@ -3,6 +3,7 @@
 //! The `explore` binary is a thin wrapper; the logic lives here so tests can run it on small synthetic networks.
 
 pub mod cands;
+pub mod decode;
 pub mod link;
 pub mod naming;
 pub mod profile;
@@ -59,6 +60,9 @@ pub struct Params {
     pub references: Vec<refs::RefCfg>,
     /// Limits on which interventions the search may use; the default has none.
     pub profile: profile::Profile,
+    /// Packages found by another search on the same inputs (for example under tighter limits). Those the profile allows are screened first,
+    /// extended in a beam of their own and always rechecked, so a looser search cannot end up worse than a stricter one.
+    pub warm_start: Vec<Vec<Intervention>>,
     pub out: Option<PathBuf>,
     pub report: Option<PathBuf>,
 }
@@ -82,6 +86,7 @@ impl Params {
             options: 5,
             references: Vec::new(),
             profile: profile::Profile::unconstrained(),
+            warm_start: Vec::new(),
             out: None,
             report: None,
         }

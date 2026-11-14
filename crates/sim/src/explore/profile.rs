@@ -4,6 +4,9 @@
 use serde::Deserialize;
 use serde_json::{json, Value};
 use std::path::Path;
+use super::decode::decode_scenario;
+use super::Study;
+use crate::model::Intervention;
 
 pub const UNCONSTRAINED: &str = "unconstrained";
 
@@ -93,6 +96,27 @@ pub fn merge_file(existing: Option<&Value>, area: &str, group: Value, order: &[S
     let rank = |g: &Value| order.iter().position(|o| g["id"] == o.as_str()).unwrap_or(order.len());
     groups.sort_by_key(rank);
     json!({"version": 4, "area": area, "groups": groups})
+}
+
+/// Packages published by the other groups of a proposals file that was computed on the study's inputs (same network and demand hashes),
+/// as intervention lists. Only the search's own picks count; a link that no longer decodes on this network is skipped with a line on stderr.
+pub fn warm_packages(existing: Option<&Value>, study: &Study, skip_id: &str) -> Vec<Vec<Intervention>> {
+    let Some(file) = existing else { return Vec::new() };
+    let mut out = Vec::new();
+    for g in file["groups"].as_array().into_iter().flatten() {
+        if g["id"] == skip_id || g["computed"]["networkHash"] != study.net_hash.as_str() || g["computed"]["demandHash"] != study.demand_hash.as_str() {
+            continue;
+        }
+        for pr in g["proposals"].as_array().into_iter().flatten().filter(|pr| pr["kind"] == "search") {
+            let Some(link) = pr["link"].as_str() else { continue };
+            match decode_scenario(&study.net, &study.topo, study.origin, link) {
+                Ok(ivs) if !ivs.is_empty() => out.push(ivs),
+                Ok(_) => {}
+                Err(e) => eprintln!("warm start: skipping {} of group {}: {e}", pr["id"], g["id"]),
+            }
+        }
+    }
+    out
 }
 
 fn marker(id: &str) -> String {

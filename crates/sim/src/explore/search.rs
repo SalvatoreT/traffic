@@ -364,12 +364,32 @@ fn best_valid(st: &SearchState) -> Option<usize> {
     (0..st.evals.len()).filter(|&i| st.evals[i].valid()).max_by(|&a, &b| st.evals[a].score.partial_cmp(&st.evals[b].score).unwrap_or(std::cmp::Ordering::Equal).then_with(|| b.cmp(&a)))
 }
 
+/// One line of descent in the beam search: its current beam and the best score it has reached.
+struct Lineage {
+    beam: Vec<usize>,
+    best: f64,
+    alive: bool,
+}
+
 /// Beam search: all single candidates first, then add one candidate at a time to each package in the beam.
-pub fn beam_search(ctx: &Ctx) -> SearchState {
+/// `warm` holds packages known from another search (candidate indices): they are screened first and extended in a beam of their own,
+/// beside the one that grows from the best singles, so a strong large package cannot crowd the small ones out of the beam.
+pub fn beam_search(ctx: &Ctx, warm: &[Vec<u16>]) -> SearchState {
     let mut st = SearchState::new();
     let n = ctx.cands.len();
     let singles: Vec<Vec<u16>> = (0..n as u16).map(|i| vec![i]).collect();
     eval_batch(ctx, &mut st, singles);
+    let warm: Vec<Vec<u16>> = warm
+        .iter()
+        .map(|w| {
+            let mut w = w.clone();
+            w.sort_unstable();
+            w.dedup();
+            w
+        })
+        .filter(|w| w.len() > 1)
+        .collect();
+    eval_batch(ctx, &mut st, warm.clone());
     // Single results by candidate index.
     fn single_eval(st: &SearchState, c: u16) -> Option<&Eval> {
         st.cache.get(&vec![c]).map(|&i| &st.evals[i])
@@ -383,56 +403,78 @@ pub fn beam_search(ctx: &Ctx) -> SearchState {
     progress(ctx, &mut st, 1, b);
     let top_singles: Vec<u16> = ranked.iter().copied().filter(|&c| single_eval(&st, c).unwrap().reduction_pct > 0.0).take(ctx.p.expand).collect();
     let usable: Vec<bool> = (0..n as u16).map(|c| single_eval(&st, c).map_or(false, |e| e.valid())).collect();
-    let mut beam: Vec<usize> = ranked.iter().take(ctx.p.beam).map(|&c| st.cache[&vec![c]]).collect();
-    let mut global_best = best_valid(&st).map_or(f64::NEG_INFINITY, |b| st.evals[b].score);
+    let single_best = ranked.first().map_or(f64::NEG_INFINITY, |&c| single_eval(&st, c).unwrap().score);
+    let mut lineages = vec![Lineage { beam: ranked.iter().take(ctx.p.beam).map(|&c| st.cache[&vec![c]]).collect(), best: single_best, alive: true }];
+    let mut warm_ok: Vec<usize> = warm.iter().filter_map(|w| st.cache.get(w).copied()).filter(|&i| st.evals[i].valid()).collect();
+    warm_ok.sort_by(|&a, &b| st.evals[b].score.partial_cmp(&st.evals[a].score).unwrap_or(std::cmp::Ordering::Equal).then(a.cmp(&b)));
+    if !warm_ok.is_empty() {
+        let best = st.evals[warm_ok[0]].score;
+        warm_ok.truncate(ctx.p.beam.max(warm_ok.len().min(ctx.p.beam * 2)));
+        lineages.push(Lineage { beam: warm_ok, best, alive: true });
+        let line = format!("warm start: {} package(s) from another search, best {:+.1}", lineages[1].beam.len(), best);
+        eprintln!("{line}");
+        st.log.push(line);
+    }
     for depth in 2..=ctx.p.depth {
-        if st.exhausted || beam.is_empty() {
+        if st.exhausted || lineages.iter().all(|l| !l.alive || l.beam.is_empty()) {
             break;
         }
-        let mut new_sets: Vec<Vec<u16>> = Vec::new();
-        for &bi in &beam {
-            let member = st.evals[bi].set.clone();
-            let mut ext: Vec<u16> = top_singles.clone();
-            // Repair moves: candidates on or next to the blocks this package pushed traffic onto.
-            let mut hot: Vec<usize> = (0..st.evals[bi].inc.len()).filter(|&b| st.evals[bi].inc[b] as f64 > NOISE_FLOOR_VEH_H).collect();
-            hot.sort_by(|&a, &b| st.evals[bi].inc[b].partial_cmp(&st.evals[bi].inc[a]).unwrap_or(std::cmp::Ordering::Equal).then(a.cmp(&b)));
-            for &hb in hot.iter().take(3) {
-                let blk = &ctx.study.idx.blocks[ctx.study.harm_blocks[hb]];
-                for c in 0..n as u16 {
-                    let cand = &ctx.cands[c as usize];
-                    let near = cand.block == Some(ctx.study.harm_blocks[hb]) || cand.nodes.iter().any(|&x| x == blk.a || x == blk.b);
-                    if near && usable[c as usize] && !ext.contains(&c) {
-                        ext.push(c);
+        let mut per_lineage: Vec<Vec<Vec<u16>>> = Vec::new();
+        for lin in lineages.iter() {
+            let mut new_sets: Vec<Vec<u16>> = Vec::new();
+            if lin.alive {
+                for &bi in &lin.beam {
+                    let member = st.evals[bi].set.clone();
+                    let mut ext: Vec<u16> = top_singles.clone();
+                    // Repair moves: candidates on or next to the blocks this package pushed traffic onto.
+                    let mut hot: Vec<usize> = (0..st.evals[bi].inc.len()).filter(|&b| st.evals[bi].inc[b] as f64 > NOISE_FLOOR_VEH_H).collect();
+                    hot.sort_by(|&a, &b| st.evals[bi].inc[b].partial_cmp(&st.evals[bi].inc[a]).unwrap_or(std::cmp::Ordering::Equal).then(a.cmp(&b)));
+                    for &hb in hot.iter().take(3) {
+                        let blk = &ctx.study.idx.blocks[ctx.study.harm_blocks[hb]];
+                        for c in 0..n as u16 {
+                            let cand = &ctx.cands[c as usize];
+                            let near = cand.block == Some(ctx.study.harm_blocks[hb]) || cand.nodes.iter().any(|&x| x == blk.a || x == blk.b);
+                            if near && usable[c as usize] && !ext.contains(&c) {
+                                ext.push(c);
+                            }
+                        }
+                    }
+                    for c in ext {
+                        if member.contains(&c) || member.iter().any(|&m| conflicts(&ctx.cands[m as usize], &ctx.cands[c as usize])) {
+                            continue;
+                        }
+                        let mut s = member.clone();
+                        s.push(c);
+                        s.sort_unstable();
+                        if !new_sets.contains(&s) {
+                            new_sets.push(s);
+                        }
                     }
                 }
             }
-            for c in ext {
-                if member.contains(&c) || member.iter().any(|&m| conflicts(&ctx.cands[m as usize], &ctx.cands[c as usize])) {
-                    continue;
-                }
-                let mut s = member.clone();
-                s.push(c);
-                s.sort_unstable();
-                if !new_sets.contains(&s) {
-                    new_sets.push(s);
-                }
-            }
+            per_lineage.push(new_sets);
         }
-        let before = st.evals.len();
-        eval_batch(ctx, &mut st, new_sets);
-        let mut level: Vec<usize> = (before..st.evals.len()).filter(|&i| st.evals[i].valid()).collect();
-        level.sort_by(|&a, &b| st.evals[b].score.partial_cmp(&st.evals[a].score).unwrap_or(std::cmp::Ordering::Equal).then(a.cmp(&b)));
+        eval_batch(ctx, &mut st, per_lineage.iter().flatten().cloned().collect());
         let b = best_valid(&st);
         progress(ctx, &mut st, depth, b);
-        let level_best = level.first().map_or(f64::NEG_INFINITY, |&i| st.evals[i].score);
-        if level_best <= global_best + 1e-9 {
-            st.log.push(format!("depth {depth}: no package beats the best so far; stopping"));
-            eprintln!("depth {depth}: no package beats the best so far; stopping");
-            break;
+        for (lin, sets) in lineages.iter_mut().zip(per_lineage) {
+            if !lin.alive {
+                continue;
+            }
+            let mut level: Vec<usize> = sets.iter().filter_map(|s| st.cache.get(s).copied()).filter(|&i| st.evals[i].valid()).collect();
+            level.sort_by(|&a, &b| st.evals[b].score.partial_cmp(&st.evals[a].score).unwrap_or(std::cmp::Ordering::Equal).then(a.cmp(&b)));
+            let level_best = level.first().map_or(f64::NEG_INFINITY, |&i| st.evals[i].score);
+            if level_best <= lin.best + 1e-9 {
+                let line = format!("depth {depth}: no package beats the best so far in this line; stopping it");
+                eprintln!("{line}");
+                st.log.push(line);
+                lin.alive = false;
+                continue;
+            }
+            lin.best = level_best;
+            level.truncate(ctx.p.beam);
+            lin.beam = level;
         }
-        global_best = level_best;
-        level.truncate(ctx.p.beam);
-        beam = level;
     }
     st
 }
@@ -456,8 +498,24 @@ pub fn non_dominated(evals: &[Eval]) -> Vec<usize> {
         .collect()
 }
 
-/// Up to `cap` finalists from the non-dominated set: the best by score, then the best at each size.
-pub fn pick_finalists(evals: &[Eval], cap: usize) -> Vec<usize> {
+/// Up to `cap` finalists from the non-dominated set: the best by score, then the best at each size. Screened warm-start packages that passed
+/// the access and run checks are always added, beyond `cap`: one-seed screening is noisy, so only the full recheck may drop them.
+pub fn pick_finalists(evals: &[Eval], cap: usize, warm: &[Vec<u16>]) -> Vec<usize> {
+    let mut out = pick_finalists_capped(evals, cap);
+    for w in warm {
+        let mut w = w.clone();
+        w.sort_unstable();
+        w.dedup();
+        if let Some(i) = (0..evals.len()).find(|&i| evals[i].set == w && evals[i].valid()) {
+            if !out.contains(&i) {
+                out.push(i);
+            }
+        }
+    }
+    out
+}
+
+fn pick_finalists_capped(evals: &[Eval], cap: usize) -> Vec<usize> {
     let mut nd = non_dominated(evals);
     nd.sort_by(|&a, &b| evals[b].score.partial_cmp(&evals[a].score).unwrap_or(std::cmp::Ordering::Equal).then(a.cmp(&b)));
     let mut out: Vec<usize> = nd.iter().copied().take(cap.div_ceil(2)).collect();

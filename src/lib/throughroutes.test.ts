@@ -107,6 +107,18 @@ describe('through routes', () => {
     expect(checkThroughRoutes(net, idx, [{ type: 'modal_filter', node: x }]).total).toBe(0);
   });
 
+  it('keeps the other street open when a filter closes only some legs of the junction', () => {
+    const { net, x } = cross();
+    const idx = buildIndex(net);
+    const legs = (street: string) => net.links.filter((l) => (l.from === x || l.to === x) && l.name === street).map((l) => l.id);
+    const mid = checkThroughRoutes(net, idx, [{ type: 'modal_filter', node: x, legs: legs('Mid Street') }]);
+    const cr = checkThroughRoutes(net, idx, [{ type: 'modal_filter', node: x, legs: legs('Cross Street') }]);
+    expect(mid.total).toBe(1);
+    expect(cr.total).toBe(1);
+    expect(mid.routes.every((r) => r.fromStreet === 'North Avenue' || r.fromStreet === 'South Avenue')).toBe(true);
+    expect(checkThroughRoutes(net, idx, [{ type: 'modal_filter', node: x, legs: [...legs('Mid Street'), ...legs('Cross Street')] }]).total).toBe(0);
+  });
+
   it('counts corner-cutting between adjacent bounding streets', () => {
     const b = new B();
     const w1 = b.n(0, 0), w0 = b.n(0, -100), n1 = b.n(300, 300), n0 = b.n(200, 300), n2 = b.n(400, 300), corner = b.n(0, 300);

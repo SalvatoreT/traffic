@@ -14,7 +14,7 @@ fn usage(msg: &str) -> ! {
         "usage: explore --area ID [--periods pm_peak,am_peak] [--seeds 1,2,3] [--beam 3] [--depth 8] [--candidates 40]\n\
          \x20              [--screen-minutes 30] [--minutes 60] [--budget-evals N] [--jobs N] [--harm-weight 0.1] [--expand 16]\n\
          \x20              [--finalists 12] [--options 5] [--out public/data/ID.proposals.json] [--report data/proposals/ID.md]\n\
-         \x20              [--references data/proposals/ID.references.json] [--profile ID] [--profiles data/proposals/AREA.profiles.json]"
+         \x20              [--references data/proposals/ID.references.json] [--profile ID[,ID...]|all] [--profiles data/proposals/AREA.profiles.json] [--no-warm-start]"
     );
     std::process::exit(if msg.is_empty() { 0 } else { 2 });
 }
@@ -24,11 +24,17 @@ fn main() {
     let mut p = Params::new("rockridge");
     let (mut out, mut report, mut references): (Option<PathBuf>, Option<PathBuf>, Option<PathBuf>) = (None, None, None);
     let (mut profile_id, mut profiles_path): (Option<String>, Option<PathBuf>) = (None, None);
+    let mut no_warm = false;
     let mut i = 0;
     while i < argv.len() {
         let k = argv[i].as_str();
         if k == "-h" || k == "--help" {
             usage("");
+        }
+        if k == "--no-warm-start" {
+            no_warm = true;
+            i += 1;
+            continue;
         }
         i += 1;
         let v = argv.get(i).cloned().unwrap_or_else(|| usage(&format!("{k} needs a value")));
@@ -77,29 +83,42 @@ fn main() {
     } else {
         Vec::new()
     };
-    p.profile = profile::choose(&profiles, profile_id.as_deref()).unwrap_or_else(|e| usage(&e));
     let order = profile::order(&profiles);
     let unconstrained = profile::choose(&profiles, None).unwrap_or_else(|e| usage(&e));
+    // `--profile all` runs every profile in file order (stricter limits first, the unconstrained group last); a comma list runs those in the order given.
+    let ids: Vec<Option<String>> = match profile_id.as_deref() {
+        Some("all") => order.iter().map(|i| Some(i.clone())).collect(),
+        Some(list) => list.split(',').map(|i| Some(i.trim().to_string())).collect(),
+        None => vec![None],
+    };
     let ref_path = references.clone().unwrap_or_else(|| root.join(format!("data/proposals/{}.references.json", p.area)));
-    if !p.profile.is_constrained() && (ref_path.exists() || references.is_some()) {
-        p.references = refs::load(&ref_path).unwrap_or_else(|e| usage(&e));
-        for r in &p.references {
-            refs::resolve(&study, r).unwrap_or_else(|e| usage(&e));
-        }
-    }
-    p.out = Some(out.clone());
-    p.report = Some(report.clone());
-    let o = explore(&study, &p);
     for path in [&out, &report] {
         if let Some(d) = path.parent() {
             std::fs::create_dir_all(d).expect("create output directory");
         }
     }
-    let existing = std::fs::read_to_string(&out).ok().and_then(|t| serde_json::from_str::<serde_json::Value>(&t).ok());
-    let merged = profile::merge_file(existing.as_ref(), &p.area, o.json.clone(), &order, &unconstrained);
-    std::fs::write(&out, serde_json::to_string_pretty(&merged).unwrap() + "\n").expect("write proposals");
-    let section = profile::report_section(&o.markdown, &p.profile);
-    let old_report = std::fs::read_to_string(&report).ok();
-    std::fs::write(&report, profile::merge_report(old_report.as_deref(), &p.area, &section, &p.profile.id, &order, &unconstrained)).expect("write report");
-    eprintln!("wrote group {} to {} and {}", p.profile.id, out.display(), report.display());
+    for id in ids {
+        p.profile = profile::choose(&profiles, id.as_deref().filter(|i| *i != profile::UNCONSTRAINED)).unwrap_or_else(|e| usage(&e));
+        p.references = Vec::new();
+        if !p.profile.is_constrained() && (ref_path.exists() || references.is_some()) {
+            p.references = refs::load(&ref_path).unwrap_or_else(|e| usage(&e));
+            for r in &p.references {
+                refs::resolve(&study, r).unwrap_or_else(|e| usage(&e));
+            }
+        }
+        p.out = Some(out.clone());
+        p.report = Some(report.clone());
+        let existing = std::fs::read_to_string(&out).ok().and_then(|t| serde_json::from_str::<serde_json::Value>(&t).ok());
+        p.warm_start = if no_warm { Vec::new() } else { profile::warm_packages(existing.as_ref(), &study, &p.profile.id) };
+        if !p.warm_start.is_empty() {
+            eprintln!("warm start: {} package(s) from the other group(s) of {}", p.warm_start.len(), out.display());
+        }
+        let o = explore(&study, &p);
+        let merged = profile::merge_file(existing.as_ref(), &p.area, o.json.clone(), &order, &unconstrained);
+        std::fs::write(&out, serde_json::to_string_pretty(&merged).unwrap() + "\n").expect("write proposals");
+        let section = profile::report_section(&o.markdown, &p.profile);
+        let old_report = std::fs::read_to_string(&report).ok();
+        std::fs::write(&report, profile::merge_report(old_report.as_deref(), &p.area, &section, &p.profile.id, &order, &unconstrained)).expect("write report");
+        eprintln!("wrote group {} to {} and {}", p.profile.id, out.display(), report.display());
+    }
 }

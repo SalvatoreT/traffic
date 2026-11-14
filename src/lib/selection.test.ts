@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildFixture } from '../fixtures/area';
 import { buildIndex } from './naming';
+import { addInterventions, interventionKey } from './scenario';
 import type { Intervention } from '../types';
 import {
   blockActions, compassOf, hitTest, interventionsAt, linkCompass, nodeActions, oneWayLabel, selectionForIntervention, towardName,
@@ -119,6 +120,24 @@ describe('intersection actions', () => {
     const f0 = a.turnBan[0], t0 = f0.to[0];
     const b = nodeActions(net, idx, nodeSel(stopNode), [{ type: 'turn_ban', fromLink: f0.link, toLink: t0.link }]);
     expect(b.turnBan.find((f) => f.link === f0.link)?.to.map((t) => t.link) ?? []).not.toContain(t0.link);
+  });
+  it('offers a filter on each street of an intersection, and keeps the whole-junction one', () => {
+    const f = nodeActions(net, idx, nodeSel(stopNode), []).filters;
+    expect(f.whole).toBe(true);
+    expect(f.streets.length).toBeGreaterThan(0);
+    const one = f.streets[0];
+    const after = nodeActions(net, idx, nodeSel(stopNode), [{ type: 'modal_filter', node: stopNode, legs: one.links }]);
+    expect(after.filters.streets.map((x) => x.street)).not.toContain(one.street);
+    expect(after.modalFilter).toBe(true);
+  });
+  it('keeps two filters at one junction apart in the scenario list', () => {
+    const [a, b] = nodeActions(net, idx, nodeSel(stopNode), []).filters.streets;
+    let list = addInterventions([], [{ type: 'modal_filter', node: stopNode, legs: a.links }]);
+    list = addInterventions(list, [{ type: 'modal_filter', node: stopNode, legs: b.links }]);
+    expect(list).toHaveLength(2);
+    list = addInterventions(list, [{ type: 'modal_filter', node: stopNode, legs: a.links }]);
+    expect(list).toHaveLength(2);
+    expect(interventionKey({ type: 'modal_filter', node: stopNode })).not.toBe(interventionKey(list[0]));
   });
   it('offers no modal filter where one exists', () => {
     expect(nodeActions(net, idx, nodeSel(stopNode), [{ type: 'modal_filter', node: stopNode }]).modalFilter).toBe(false);

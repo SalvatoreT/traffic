@@ -371,7 +371,7 @@ GEH below 5 by source and count year in the static assignment (midday; fitted = 
 | SafewayCollege-DEIR2011 | 2010 | 16 | 48 of 61 (79%) | 11 of 16 (69%) |
 | volunteer-count | 2025 | 1 | 128 of 129 (99%) | 18 of 19 (95%) |
 
-Station rule (GEH below 5 at more than 85% of stations): all sources fitted 313 of 346 (90%) (met), held out 59 of 78 (76%) (not met); recent sources only (age at most 5 years) fitted 139 of 140 (99%) (met), held out 18 of 24 (75%) (not met).
+Station rule (GEH below 5 at more than 85% of stations), judged on counts from the last 5 years: fitted 139 of 140 (99%) (met), held out 18 of 24 (75%) (not met). Older counts, reported beside it: fitted 174 of 206 (84%) (not met), held out 41 of 54 (76%) (not met). All counts: fitted 313 of 346 (90%) (met), held out 59 of 78 (76%) (not met).
 
 ### Held-out stations, midday
 
