@@ -241,6 +241,26 @@ pub fn connected_label(net: &Network, topo: &Topo, idx: &NameIndex, node: u32, b
     Some(pairs.iter().map(|p| format!("{} with {}", text(p.0), text(p.1))).collect::<Vec<_>>().join(", and "))
 }
 
+/// "northbound": the compass direction a link carries traffic, from the way it leaves its start (`compassWord`).
+pub fn compass_word(net: &Network, link: u32) -> String {
+    let i = ((net.leg_bearing(link, true) / 90.0).round() as usize) % 4;
+    format!("{}bound", ["north", "east", "south", "west"][i])
+}
+
+/// "toward 63rd Street": the streets that meet a link's far end, or `None` when none does (`headingTo`).
+pub fn heading_to(net: &Network, idx: &NameIndex, link: u32) -> Option<String> {
+    let l = &net.links[link as usize];
+    let own = link_street(&l.name);
+    let o: Vec<&String> = idx.node_streets[l.to as usize].iter().filter(|s| **s != own && s.as_str() != UNNAMED).collect();
+    let list = match o.len() {
+        0 => return None,
+        1 => o[0].clone(),
+        2 => format!("{} and {}", o[0], o[1]),
+        n => format!("{}, {} and {} more", o[0], o[1], n - 2),
+    };
+    Some(format!("toward {list}"))
+}
+
 /// The app's one-line description of an intervention (`describeIntervention`).
 pub fn describe(net: &Network, topo: &Topo, idx: &NameIndex, iv: &Intervention) -> String {
     let ln = |l: u32| idx.block_label(l);
@@ -258,8 +278,13 @@ pub fn describe(net: &Network, topo: &Topo, idx: &NameIndex, iv: &Intervention) 
         "signal_timing" => format!("Signal cycle {} s at {}", iv.cycle.unwrap_or(0.0), nn(iv.node.unwrap_or(0))),
         "one_way" => {
             let l = iv.link.unwrap_or(0);
-            let to = net.links.get(l as usize).map_or(0, |k| k.to);
-            format!("One-way on {}, keeping {} toward {}", ln(l), idx.link_name.get(l as usize).cloned().unwrap_or_default(), nn(to))
+            if (l as usize) >= net.links.len() {
+                return format!("One-way on {}", ln(l));
+            }
+            match heading_to(net, idx, l) {
+                Some(to) => format!("One-way {} on {} ({to})", compass_word(net, l), ln(l)),
+                None => format!("One-way {} on {}", compass_word(net, l), ln(l)),
+            }
         }
         "diagonal_diverter" => {
             let n = iv.node.unwrap_or(0);

@@ -1,5 +1,5 @@
 import type { AreaBundle, Intervention } from '../types';
-import type { NetIndex } from './naming';
+import { compassWord, headingTo, type NetIndex } from './naming';
 import { pointAlong } from './geom';
 import { controlLabel } from './selection';
 import { connectedLabel } from './diverter';
@@ -14,7 +14,7 @@ export function describeIntervention(iv: Intervention, net: AreaBundle['network'
     case 'traffic_circle': return `Traffic circle at ${nn(iv.node)}`;
     case 'control': return `${controlLabel(iv.control)} at ${nn(iv.node)}`;
     case 'signal_timing': return `Signal cycle ${iv.cycle} s at ${nn(iv.node)}`;
-    case 'one_way': { const l = net.links[iv.link]; return `One-way on ${ln(iv.link)}, keeping ${idx.linkName[iv.link] ?? ''} toward ${idx.nodeName[l?.to ?? 0]}`; }
+    case 'one_way': { if (!net.links[iv.link]) return `One-way on ${ln(iv.link)}`; const to = headingTo(idx, net, iv.link); return `One-way ${compassWord(net, iv.link)} on ${ln(iv.link)}${to ? ` (${to})` : ''}`; }
     case 'diagonal_diverter': {
       const c = connectedLabel(net, idx, iv.node, iv.bearing);
       return `Diagonal diverter at ${nn(iv.node)}${c ? `, connecting ${c}` : ''}`;

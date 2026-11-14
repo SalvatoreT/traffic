@@ -1,5 +1,6 @@
 import type { Network, NetLink } from '../types';
 import { computeFocus } from './area';
+import { legBearing } from './geom';
 
 export interface Block {
   key: number;            // lowest link id in the block
@@ -118,6 +119,20 @@ export function towardLabel(net: Network, idx: NetIndex, linkId: number): string
   const others = idx.nodeStreets[l.to].filter((s) => s !== linkStreet(l));
   if (others.length) return `toward ${joinNames(others, '')}`;
   return `${['north', 'east', 'south', 'west'][Math.round((l.toBearing ?? 0) / 90) % 4]}bound`;
+}
+
+/** "northbound": the compass direction a link carries traffic, from the way it leaves its start. */
+export function compassWord(net: Network, linkId: number): string {
+  return `${['north', 'east', 'south', 'west'][Math.round(legBearing(net.links[linkId], true) / 90) % 4]}bound`;
+}
+
+/** "toward 63rd Street": the streets that meet the far end of a link, in words ("A and B", "A, B and 1 more"); empty when none does. */
+export function headingTo(idx: NetIndex, net: Network, linkId: number): string {
+  const l = net.links[linkId];
+  const o = idx.nodeStreets[l.to].filter((s) => s !== linkStreet(l) && s !== UNNAMED);
+  if (o.length === 0) return '';
+  const list = o.length === 1 ? o[0] : o.length === 2 ? `${o[0]} and ${o[1]}` : `${o[0]}, ${o[1]} and ${o.length - 2} more`;
+  return `toward ${list}`;
 }
 
 export function matchesQuery(text: string, q: string): boolean {
