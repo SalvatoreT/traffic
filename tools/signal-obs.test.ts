@@ -21,6 +21,14 @@ describe('signal observations', () => {
     expect(applySignalObservations(ns, ls, [{ ...o, heading: 80, greenSeconds: 33.5, ownPhase: true }, { ...o, heading: 260, greenSeconds: 27.6, ownPhase: true }])).toEqual([]);
     expect(ns[0].signalTiming).toEqual([{ periods: ['pm'], cycleS: 110, greens: [{ links: [0], greenS: 33.5, ownPhase: true }, { links: [1], greenS: 27.6, ownPhase: true }], source: 'doc' }]);
   });
+  it('resolves the approach an approach runs with and reports a missing partner', () => {
+    const ns = [node(0, 'signal'), node(1, 'uncontrolled'), node(2, 'uncontrolled'), node(3, 'uncontrolled')];
+    const ls = [{ ...link(0, 1, 0, 'Main Street'), toBearing: 90 }, { ...link(1, 2, 0, 'Main Street'), toBearing: 270 }, { ...link(2, 3, 0, 'Pine Street'), toBearing: 0 }] as NetLink[];
+    const o = { at: ['Pine Street', 'Main Street'], approach: 'Main Street', periods: ['pm'], cycleSeconds: 110, source: 'doc' };
+    expect(applySignalObservations(ns, ls, [{ ...o, heading: 80, greenSeconds: 57.2, ownPhase: true, runsWithHeading: 260 }, { ...o, heading: 260, greenSeconds: 27.6, ownPhase: true }])).toEqual([]);
+    expect(ns[0].signalTiming?.[0].greens).toEqual([{ links: [0], greenS: 57.2, ownPhase: true, runsWith: [1] }, { links: [1], greenS: 27.6, ownPhase: true }]);
+    expect(applySignalObservations([node(0, 'signal'), node(1, 'uncontrolled'), node(2, 'uncontrolled')], ls.slice(0, 1), [{ ...o, heading: 80, greenSeconds: 57.2, runsWithHeading: 260 }])).toHaveLength(1);
+  });
   it('picks the nearest of several matching signals when the observation gives a location', () => {
     const ns = [{ ...node(0, 'signal'), x: 0, y: 0 }, { ...node(1, 'signal'), x: 0, y: 500 }, node(2, 'uncontrolled')];
     const ls = [{ ...link(0, 2, 0, 'Main Street'), toBearing: 180 }, { ...link(1, 2, 1, 'Main Street'), toBearing: 0 }] as NetLink[];

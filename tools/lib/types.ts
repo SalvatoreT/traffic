@@ -15,7 +15,7 @@ export interface NetNode {
   /** A marked crosswalk sits at or within 15 m of this junction. */
   markedCrossing?: boolean;
   /** Signal timing observed in the field (area config `signalObservations`): in the listed periods the cycle and the green of the listed approach links. */
-  signalTiming?: { periods: string[]; cycleS: number; greens: { links: number[]; greenS: number; ownPhase?: boolean }[]; source: string }[];
+  signalTiming?: { periods: string[]; cycleS: number; greens: { links: number[]; greenS: number; ownPhase?: boolean; runsWith?: number[] }[]; source: string }[];
 }
 
 export interface NetLink {

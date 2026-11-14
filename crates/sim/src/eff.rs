@@ -493,7 +493,8 @@ pub fn phase_groups(topo: &Topo, net: &Network, ins: &[u32]) -> Vec<Vec<u32>> {
 
 /// Observed phasing (DATA, `Node::signal_timing`): an approach marked `own_phase` in the run's period leaves the phase of its street
 /// and gets one of its own right after it, so all its movements run while the opposing approach waits. This is split phasing
-/// [FHWA-STM2008] (section 4.3.4); a protected left turn that leads or lags is represented the same way (ASSUMPTION).
+/// [FHWA-STM2008] (section 4.3.4). An approach that also lists `runs_with` (a protected left that leads the opposing through) is in its own phase and in the phase of that
+/// opposing approach as well, so it has its whole through green and the opposing approach keeps its own (ASSUMPTION: the lead-lag of a Synchro plan shown as two phases).
 fn own_phases(net: &Network, period: &str, n: usize, groups: Vec<Vec<u32>>) -> Vec<Vec<u32>> {
     let Some(obs) = net.nodes[n].signal_timing.iter().find(|o| o.periods.iter().any(|p| p == period)) else { return groups };
     let mut out: Vec<Vec<u32>> = Vec::new();
@@ -509,6 +510,15 @@ fn own_phases(net: &Network, period: &str, n: usize, groups: Vec<Vec<u32>>) -> V
         }
         out.extend(own);
         out.push(rest);
+    }
+    for a in obs.greens.iter().filter(|a| !a.runs_with.is_empty()) {
+        let alone = out.iter().any(|g| g.iter().all(|l| a.links.contains(l)) && g.iter().any(|l| a.links.contains(l)));
+        let Some(pi) = out.iter().position(|g| g.iter().any(|l| a.runs_with.contains(l)) && !g.iter().any(|l| a.links.contains(l))) else { continue };
+        if !alone {
+            continue;
+        }
+        let mine: Vec<u32> = a.links.iter().copied().filter(|l| out.iter().any(|g| g.contains(l))).collect();
+        out[pi].extend(mine);
     }
     out
 }
@@ -563,8 +573,12 @@ fn plan_with_observation(net: &Network, period: &str, n: usize, groups: &[Vec<u3
     let Some(obs) = net.nodes[n].signal_timing.iter().find(|o| o.periods.iter().any(|p| p == period)) else { return webster(ys, pin) };
     let mut fixed: Vec<Option<f32>> = vec![None; groups.len()];
     for a in &obs.greens {
-        if let Some(gi) = groups.iter().position(|g| g.iter().any(|l| a.links.contains(l))) {
-            fixed[gi] = Some(a.green_s);
+        let alone = !a.runs_with.is_empty();
+        let gi = groups.iter().position(|g| g.iter().any(|l| a.links.contains(l)) && !(alone && g.iter().any(|l| a.runs_with.contains(l))));
+        if let Some(gi) = gi {
+            // An approach that also runs with its partner keeps its whole through green: what it has alone is that less the partner's green.
+            let shared = if alone { obs.greens.iter().filter(|b| b.links.iter().any(|l| a.runs_with.contains(l))).map(|b| b.green_s).fold(0.0, f32::max) } else { 0.0 };
+            fixed[gi] = Some(if alone { (a.green_s - shared).max(5.0) } else { a.green_s });
         }
     }
     if fixed.iter().all(|f| f.is_none()) {

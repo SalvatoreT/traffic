@@ -78,6 +78,10 @@ pub struct ApproachGreen {
     /// The approach runs in a phase of its own (observed split phasing or protected left turn), so nothing opposes its left turns.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub own_phase: bool,
+    /// Incoming links of an approach this one also has green with (a leading protected left or a lagging through: the approach runs alone first, then with that opposing approach).
+    /// `green_s` is then the approach's whole through green and the phase it has alone lasts `green_s` less the partner's green.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub runs_with: Vec<u32>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

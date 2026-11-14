@@ -864,7 +864,7 @@ fn traffic_circle_replaces_control_and_caps_speed() {
 #[test]
 fn observed_signal_timing_sets_cycle_and_green_of_the_approach() {
     let (mut net, x) = cross4(Control::Signal, RoadClass::Residential, false);
-    net.nodes[x.c as usize].signal_timing = vec![SignalTiming { periods: vec!["p".into()], cycle_s: 79.0, greens: vec![ApproachGreen { links: vec![x.s_in], green_s: 4.0, own_phase: false }], source: "test".into() }];
+    net.nodes[x.c as usize].signal_timing = vec![SignalTiming { periods: vec!["p".into()], cycle_s: 79.0, greens: vec![ApproachGreen { links: vec![x.s_in], green_s: 4.0, own_phase: false, runs_with: Vec::new() }], source: "test".into() }];
     let d = demand(&[(x.w, x.e, 700.0), (x.e, x.w, 700.0), (x.s, x.n, 150.0), (x.n, x.s, 150.0)]);
     let mut sim = Simulation::from_parts(net.clone(), d, cfg(2, 1.0)).unwrap();
     {
@@ -894,7 +894,7 @@ fn observed_own_phase_separates_the_approach_from_the_opposing_one() {
     net.nodes[x.c as usize].signal_timing = vec![SignalTiming {
         periods: vec!["p".into()],
         cycle_s: 110.0,
-        greens: vec![ApproachGreen { links: vec![x.w_in], green_s: 33.5, own_phase: true }, ApproachGreen { links: vec![x.e_in], green_s: 27.5, own_phase: true }],
+        greens: vec![ApproachGreen { links: vec![x.w_in], green_s: 33.5, own_phase: true, runs_with: Vec::new() }, ApproachGreen { links: vec![x.e_in], green_s: 27.5, own_phase: true, runs_with: Vec::new() }],
         source: "test".into(),
     }];
     let d = demand(&[(x.w, x.e, 700.0), (x.e, x.w, 700.0), (x.w, x.n, 300.0), (x.s, x.n, 150.0), (x.n, x.s, 150.0)]);
@@ -916,6 +916,35 @@ fn observed_own_phase_separates_the_approach_from_the_opposing_one() {
         both |= sg[x.w_in as usize] == 1 && sg[x.e_in as usize] == 1;
     });
     assert!(!both);
+}
+
+#[test]
+fn observed_lead_lag_gives_the_leading_approach_both_phases() {
+    let (mut net, x) = cross4(Control::Signal, RoadClass::Residential, false);
+    net.nodes[x.c as usize].signal_timing = vec![SignalTiming {
+        periods: vec!["p".into()],
+        cycle_s: 110.0,
+        greens: vec![ApproachGreen { links: vec![x.w_in], green_s: 57.2, own_phase: true, runs_with: vec![x.e_in] }, ApproachGreen { links: vec![x.e_in], green_s: 27.6, own_phase: true, runs_with: Vec::new() }],
+        source: "test".into(),
+    }];
+    let d = demand(&[(x.w, x.e, 700.0), (x.e, x.w, 300.0), (x.w, x.n, 300.0), (x.s, x.n, 150.0), (x.n, x.s, 150.0)]);
+    let mut sim = Simulation::from_parts(net, d, cfg(2, 1.0)).unwrap();
+    {
+        let p = sim.test_eff().sig[x.c as usize].as_ref().expect("signal plan");
+        assert_eq!(p.links.len(), 3, "{:?}", p.links);
+        let alone = p.links.iter().position(|g| g == &vec![x.w_in]).expect("the west approach alone");
+        let both = p.links.iter().position(|g| g.contains(&x.w_in) && g.contains(&x.e_in)).expect("west and east together");
+        assert!((p.phases[alone].1 - 29.6).abs() < 0.01 && (p.phases[both].1 - 27.6).abs() < 0.01, "{:?}", p.phases);
+        assert!((p.cycle - 110.0).abs() < 0.01);
+    }
+    let (mut w_green, mut e_green, mut both_green) = (0, 0, 0);
+    run(&mut sim, 330.0, |s| {
+        let sg = s.signals();
+        w_green += (sg[x.w_in as usize] == 1) as u32;
+        e_green += (sg[x.e_in as usize] == 1) as u32;
+        both_green += (sg[x.w_in as usize] == 1 && sg[x.e_in as usize] == 1) as u32;
+    });
+    assert!(w_green as f32 > 1.8 * e_green as f32 && both_green > 0, "west {w_green}, east {e_green}, together {both_green}");
 }
 
 #[test]

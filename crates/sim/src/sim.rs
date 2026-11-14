@@ -1300,12 +1300,21 @@ impl Simulation {
                 p.roll(self.t);
             }
             if let Some(p) = &self.eff.sig[n] {
+                // An approach in two phases (observed lead-lag) shows the better of the two states.
+                for links in &p.links {
+                    for &l in links {
+                        self.sig_state[l as usize] = 3;
+                        self.sig_since[l as usize] = f32::MAX;
+                    }
+                }
                 for (ph, links) in p.links.iter().enumerate() {
                     let s = phase_state(p, ph, self.t);
                     let since = phase_since_green(p, ph, self.t);
                     for &l in links {
-                        self.sig_state[l as usize] = s;
-                        self.sig_since[l as usize] = since;
+                        if s < self.sig_state[l as usize] || (s == self.sig_state[l as usize] && since < self.sig_since[l as usize]) {
+                            self.sig_state[l as usize] = s;
+                            self.sig_since[l as usize] = since;
+                        }
                         if s == 1 {
                             self.sneak[l as usize] = 0;
                         }

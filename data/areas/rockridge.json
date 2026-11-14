@@ -164,10 +164,11 @@
       "approach": "52nd Street",
       "heading": 80,
       "ownPhase": true,
+      "runsWithHeading": 260,
       "periods": ["pm_peak"],
       "cycleSeconds": 110,
-      "greenSeconds": 33.5,
-      "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing PM', 52nd Street & Shattuck Ave: actuated cycle 110 s; eastbound left protected with 33.5 s of green (eastbound through 57.2 s), westbound through 27.6 s. The eastbound approach is given a phase of its own with the protected-left green and the westbound approach one with its through green (ASSUMPTION: a lead-lag protected left shown as split phases, so the eastbound through loses the part of its green that overlaps the westbound one)"
+      "greenSeconds": 57.2,
+      "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing PM', 52nd Street & Shattuck Ave: actuated cycle 110 s; eastbound left protected with 33.5 s of green (eastbound through 57.2 s), westbound through 27.6 s. The eastbound approach has green alone for its through green less the westbound green and together with the westbound approach for the rest (ASSUMPTION: the lead-lag of the worksheet shown as two phases; the protected left then lasts that shorter time alone and runs on the permissive green of the shared phase)"
     },
     {
       "at": ["Shattuck Avenue", "52nd Street"],
@@ -177,17 +178,18 @@
       "periods": ["pm_peak"],
       "cycleSeconds": 110,
       "greenSeconds": 27.6,
-      "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing PM', 52nd Street & Shattuck Ave: actuated cycle 110 s; eastbound left protected with 33.5 s of green (eastbound through 57.2 s), westbound through 27.6 s. The eastbound approach is given a phase of its own with the protected-left green and the westbound approach one with its through green (ASSUMPTION: a lead-lag protected left shown as split phases, so the eastbound through loses the part of its green that overlaps the westbound one)"
+      "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing PM', 52nd Street & Shattuck Ave: actuated cycle 110 s; eastbound left protected with 33.5 s of green (eastbound through 57.2 s), westbound through 27.6 s. The eastbound approach has green alone for its through green less the westbound green and together with the westbound approach for the rest (ASSUMPTION: the lead-lag of the worksheet shown as two phases; the protected left then lasts that shorter time alone and runs on the permissive green of the shared phase)"
     },
     {
       "at": ["Shattuck Avenue", "52nd Street"],
       "approach": "52nd Street",
       "heading": 80,
       "ownPhase": true,
+      "runsWithHeading": 260,
       "periods": ["am_peak"],
       "cycleSeconds": 90,
-      "greenSeconds": 21.5,
-      "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing AM', 52nd Street & Shattuck Ave: actuated cycle 90 s; eastbound left protected with 21.5 s of green (eastbound through 37.7 s), westbound through 19.4 s. The eastbound approach is given a phase of its own with the protected-left green and the westbound approach one with its through green (ASSUMPTION: a lead-lag protected left shown as split phases, so the eastbound through loses the part of its green that overlaps the westbound one)"
+      "greenSeconds": 37.7,
+      "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing AM', 52nd Street & Shattuck Ave: actuated cycle 90 s; eastbound left protected with 21.5 s of green (eastbound through 37.7 s), westbound through 19.4 s. The eastbound approach has green alone for its through green less the westbound green and together with the westbound approach for the rest (ASSUMPTION: the lead-lag of the worksheet shown as two phases; the protected left then lasts that shorter time alone and runs on the permissive green of the shared phase)"
     },
     {
       "at": ["Shattuck Avenue", "52nd Street"],
@@ -197,17 +199,18 @@
       "periods": ["am_peak"],
       "cycleSeconds": 90,
       "greenSeconds": 19.4,
-      "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing AM', 52nd Street & Shattuck Ave: actuated cycle 90 s; eastbound left protected with 21.5 s of green (eastbound through 37.7 s), westbound through 19.4 s. The eastbound approach is given a phase of its own with the protected-left green and the westbound approach one with its through green (ASSUMPTION: a lead-lag protected left shown as split phases, so the eastbound through loses the part of its green that overlaps the westbound one)"
+      "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing AM', 52nd Street & Shattuck Ave: actuated cycle 90 s; eastbound left protected with 21.5 s of green (eastbound through 37.7 s), westbound through 19.4 s. The eastbound approach has green alone for its through green less the westbound green and together with the westbound approach for the rest (ASSUMPTION: the lead-lag of the worksheet shown as two phases; the protected left then lasts that shorter time alone and runs on the permissive green of the shared phase)"
     },
     {
       "at": ["Shattuck Avenue", "52nd Street"],
       "approach": "52nd Street",
       "heading": 80,
       "ownPhase": true,
+      "runsWithHeading": 260,
       "periods": ["midday"],
       "cycleSeconds": 110,
-      "greenSeconds": 33.5,
-      "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing PM', 52nd Street & Shattuck Ave: actuated cycle 110 s; eastbound left protected with 33.5 s of green (eastbound through 57.2 s), westbound through 27.6 s. The eastbound approach is given a phase of its own with the protected-left green and the westbound approach one with its through green (ASSUMPTION: a lead-lag protected left shown as split phases, so the eastbound through loses the part of its green that overlaps the westbound one); applied to midday as an ASSUMPTION (no midday worksheet)"
+      "greenSeconds": 57.2,
+      "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing PM', 52nd Street & Shattuck Ave: actuated cycle 110 s; eastbound left protected with 33.5 s of green (eastbound through 57.2 s), westbound through 27.6 s. The eastbound approach has green alone for its through green less the westbound green and together with the westbound approach for the rest (ASSUMPTION: the lead-lag of the worksheet shown as two phases; the protected left then lasts that shorter time alone and runs on the permissive green of the shared phase); applied to midday as an ASSUMPTION (no midday worksheet)"
     },
     {
       "at": ["Shattuck Avenue", "52nd Street"],
@@ -217,7 +220,7 @@
       "periods": ["midday"],
       "cycleSeconds": 110,
       "greenSeconds": 27.6,
-      "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing PM', 52nd Street & Shattuck Ave: actuated cycle 110 s; eastbound left protected with 33.5 s of green (eastbound through 57.2 s), westbound through 27.6 s. The eastbound approach is given a phase of its own with the protected-left green and the westbound approach one with its through green (ASSUMPTION: a lead-lag protected left shown as split phases, so the eastbound through loses the part of its green that overlaps the westbound one); applied to midday as an ASSUMPTION (no midday worksheet)"
+      "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing PM', 52nd Street & Shattuck Ave: actuated cycle 110 s; eastbound left protected with 33.5 s of green (eastbound through 57.2 s), westbound through 27.6 s. The eastbound approach has green alone for its through green less the westbound green and together with the westbound approach for the rest (ASSUMPTION: the lead-lag of the worksheet shown as two phases; the protected left then lasts that shorter time alone and runs on the permissive green of the shared phase); applied to midday as an ASSUMPTION (no midday worksheet)"
     },
     {
       "at": ["Martin Luther King Junior Way"],

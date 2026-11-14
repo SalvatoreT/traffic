@@ -197,19 +197,19 @@ function intentFlows(cfg: AssumedMovementCfg, intents: IntentCfg[], cand: { k: n
 export interface MovementRef { cfg: AssumedMovementCfg; a: number; b: number }
 
 /**
- * Alternatives of an assumed flow (ASSUMPTION, change via-detour-fallback): when the simulator finds the movement too costly in a scenario (a turn ban, a diverter, a closure), the driver may
- * make the same kind of turn on a parallel street. The alternatives of a flow are the other configured movements that have an intent with the same origin group and destination group
- * as an intent of this movement that the flow's pair belongs to, in configuration order. Config data only: no street names are read here.
+ * Alternatives of an assumed flow (ASSUMPTION, changes via-detour-fallback and calibration-round-23): when the simulator finds the movement too costly in a scenario (a turn ban, a diverter, a closure),
+ * the driver may make the same kind of turn on a parallel street. The alternatives of a flow are the other configured movements that have an intent whose origin group and destination group
+ * (sets expanded) both contain the origin and destination groups of the flow's pair, in configuration order. The intents of two streets can name different sets for the same cars
+ * (a set of west-side origins against one of its members), so the match is on the pair and not on the intent's names. Config data only: no street names are read here.
  */
 export function withAlternatives(flows: FlowIn[], cur: MovementRef, all: MovementRef[], grp?: GroupCtx): FlowIn[] {
   if (!grp || !cur.cfg.intents?.length) return flows;
-  const key = (it: IntentCfg) => JSON.stringify([it.fromGroup, it.toGroup]);
-  const family = (it: IntentCfg) => all.filter((m) => !(m.a === cur.a && m.b === cur.b) && (m.cfg.intents ?? []).some((q) => key(q) === key(it)));
+  const covers = (it: IntentCfg, go: string, gd: string) => grp.expand(it.fromGroup).includes(go) && grp.expand(it.toGroup).includes(gd);
   return flows.map((f) => {
     if (!f.via) return f;
-    const mine = cur.cfg.intents!.filter((it) => grp.expand(it.fromGroup).includes(grp.groupOf(f.origin)) && grp.expand(it.toGroup).includes(grp.groupOf(f.destination)));
-    const alts: { a: number; b: number }[] = [];
-    for (const it of mine) for (const m of family(it)) if (!alts.some((x) => x.a === m.a && x.b === m.b)) alts.push({ a: m.a, b: m.b });
+    const go = grp.groupOf(f.origin), gd = grp.groupOf(f.destination);
+    if (!cur.cfg.intents!.some((it) => covers(it, go, gd))) return f;
+    const alts = all.filter((m) => !(m.a === cur.a && m.b === cur.b) && (m.cfg.intents ?? []).some((q) => covers(q, go, gd))).map((m) => ({ a: m.a, b: m.b }));
     return alts.length ? { ...f, via: { ...f.via, alternatives: alts } } : f;
   });
 }

@@ -104,6 +104,14 @@ describe('assumed movement flows', () => {
       const r = withAlternatives([flow], mvA, [mvA, mvB, mvC], grp);
       expect(r[0].via).toEqual({ a: 2, b: 3, maxDetour: 1.3, alternatives: [{ a: 4, b: 5 }] });
     });
+    it('matches on the pair when the two intents name different sets that overlap', () => {
+      const g2 = { groupOf: (n: number) => (n === 0 ? 'tele' : n === 1 ? 'fw' : 'other'), expand: (r: string | string[]) => (r === 'west' ? ['tele', 'oth'] : r === 'west-other' ? ['oth'] : Array.isArray(r) ? r : [r]) };
+      const mvW = { cfg: { ...cfg, id: 'W', intents: [{ ...it1, fromGroup: 'west' }] }, a: 2, b: 3 };
+      const mvT = { cfg: { ...cfg, id: 'T', intents: [{ ...it1, fromGroup: 'tele' }, { ...it1, id: 'o', fromGroup: 'west-other' }] }, a: 4, b: 5 };
+      expect(withAlternatives([flow], mvW, [mvW, mvT], g2)[0].via?.alternatives).toEqual([{ a: 4, b: 5 }]);
+      expect(withAlternatives([flow], mvT, [mvW, mvT], g2)[0].via?.alternatives).toEqual([{ a: 2, b: 3 }]);
+      expect(withAlternatives([{ ...flow, origin: 2 }], mvW, [mvW, mvT], g2)[0].via?.alternatives).toBeUndefined();
+    });
     it('leaves a flow outside the intent groups, or a movement without intents, unchanged', () => {
       expect(withAlternatives([{ ...flow, origin: 5 }], mvA, [mvA, mvB], grp)[0].via?.alternatives).toBeUndefined();
       expect(withAlternatives([flow], { ...mvA, cfg: cfg }, [mvA, mvB], grp)[0]).toBe(flow);
