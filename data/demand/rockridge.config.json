@@ -270,8 +270,9 @@
     "maxLocalShareOfGate": 0.5,
     "countCalibration": {
       "enabled": true,
-      "maxScale": 4,
-      "_note": "DATA-derived multiplier on the trip rates of blocks inside the study area: the external trip ends they offer are scaled to the ends the volunteer count implies (vehicles entering less the whole-street through cars; vehicles leaving less the same). The per-resident-worker rate above counts workers only (LODES resident workers), so it misses residents who do not work and non-work trips. Midday has no count: the mean of the AM and PM factors (ASSUMPTION). maxScale is a sanity cap (ASSUMPTION)."
+      "maxScale": 8,
+      "_note": "DATA-derived multiplier on the trip rates of blocks inside the study area: the external trip ends they offer are scaled to the ends the volunteer count implies (vehicles entering less the whole-street through cars; vehicles leaving less the same). The per-resident-worker rate above counts workers only (LODES resident workers), so it misses residents who do not work and non-work trips. Midday has no count: the mean of the AM and PM factors (ASSUMPTION). maxScale is a sanity cap (ASSUMPTION).",
+      "maxScaleNote": "ASSUMPTION: raised from 4 to 8 in round 19. With the side rule the study area's own blocks offer 174 and 132 external trip ends at the assumed rate and the count implies about 800, so the factors are 4.6 and 6.2."
     }
   },
   "minFlowVehPerHour": 0.5,
@@ -389,7 +390,8 @@
       "GROVE-52ND",
       "ML KING JR/52ND"
     ],
-    "excludeNote": "Rows that combine the 52nd St and MLK Jr Way (Grove St) ramps are dropped because per-street SEG rows (2016-2017 / 2012) exist for the same ramps and would double count."
+    "excludeNote": "Rows that combine the 52nd St and MLK Jr Way (Grove St) ramps are dropped because per-street SEG rows (2016-2017 / 2012) exist for the same ramps and would double count.",
+    "studyEndFreewayCapNote": "Optional (round 19, not set): at most this share of a study-area block's external trip ends pairs with a freeway. Tried at 0.5 and 0.7: headline shares fell to 30 to 53 points (below observed) and through cars fell, so it is off."
   },
   "active": {
     "_note": "ASSUMPTION unless stated: walking and biking demand (design D6). Person trips use the car model's per-worker and per-job rates (local.*), then these mode shares. Volumes are persons per hour. Only the count scaling below uses data (DATA: Oakland pedestrian and bicycle counts at one intersection); everything else is uncounted. ACS commute mode shares were not retrievable (the Census API needs a key), so the shares are not derived from them.",
@@ -576,9 +578,10 @@
     },
     "shares": {
       "enabled": true,
-      "weight": 0.5,
+      "weight": 3,
       "targets": "data/calibration/rockridge.targets.json",
-      "_note": "Observed route shares (StreetLight select-link and ramp via-street shares) as ratio constraints in the same fit, weight below the counts' (1 to 2) because the shares come from a device sample (ASSUMPTION: 0.5). 0 or enabled false leaves them out."
+      "_note": "Observed route shares (StreetLight select-link and ramp via-street shares) as ratio constraints in the same fit, weight below the counts' (1 to 2) because the shares come from a device sample (ASSUMPTION: 0.5). 0 or enabled false leaves them out.",
+      "_weightNote": "Round 19: 0.5 -> 3. At 1.5 and 3 the static route shares met their targets within 10 points; the extra weight changed little beyond 1.5 and PM removals held at 0.30 per hour at 3."
     },
     "validation": {
       "enabled": true,
@@ -615,7 +618,7 @@
     "tolerancePct": 20,
     "minMovementVeh": 25,
     "movementWeight": 0.5,
-    "routeWeight": 0.5,
+    "routeWeight": 1.0,
     "holdoutEvery": 4,
     "fullRouteEnds": [
       "Claremont Avenue",
@@ -649,7 +652,17 @@
         "pm": 48,
         "reason": "the summary table lists 48 for AM and 34 for PM; the route diagrams, the access table and the block maps agree on AM 34 and PM 48, so the columns are taken as swapped"
       }
-    ]
+    ],
+    "otherThrough": {
+      "entries": [
+        "Claremont Avenue / Martin Street",
+        "Claremont Avenue / Forest Street",
+        "Claremont Avenue / 60th Street",
+        "Alcatraz Avenue / Dana Street"
+      ],
+      "scale": 1,
+      "_note": "ASSUMPTION (round 19): entries of streets with no whole-street count take the through share of the counted whole streets (268 of 593 entering cars in the PM peak, 45%; Martin Street in the AM peak shows 48%), so the count-implied study-area trip ends (804 destinations and 817 origins in the PM peak, against 927 and 940 when only the counted streets were through) are not overstated. The rate-sheet check [PBC-TripRates2022]: 0.94 PM peak trips per detached dwelling, so these 1,621 ends need about 1,700 dwellings, against 1,368 resident workers in the study area (dwellings are not in the data held; 2020 census block housing units need an API key)."
+    }
   },
   "intersectionCounts": {
     "enabled": true,
