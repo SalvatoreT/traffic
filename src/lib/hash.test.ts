@@ -296,3 +296,51 @@ describe('unreadable links and meta', () => {
     expect(encodeScenario(base, [], { area: null })).toBe('');
   });
 });
+
+describe('modal filters on part of a junction', () => {
+  const nid = nodeAt(base, ...grid(3, 3)).id;
+  const legLinks = (net: Network, node: number, toward: (dx: number, dy: number) => boolean) =>
+    net.links.filter((l) => (l.from === node || l.to === node) && (() => {
+      const other = net.nodes[l.from === node ? l.to : l.from], me = net.nodes[node];
+      return toward(other.x - me.x, other.y - me.y);
+    })()).map((l) => l.id).sort((a, b) => a - b);
+  const eastWest = (net: Network, node: number) => legLinks(net, node, (dx, dy) => Math.abs(dx) > Math.abs(dy));
+  const iv = (net: Network, node: number): Intervention => ({ type: 'modal_filter', node, legs: eastWest(net, node) });
+
+  it('writes the closed legs as bearings after the geohash', () => {
+    const h = encodeScenario(base, [iv(base, nid)]);
+    expect(h).toMatch(/^#v1;a=fixture;s=mn,[0-9b-hjkmnp-z]{10},90\.270$/);
+  });
+
+  it('round-trips on the same network and after a re-index', () => {
+    const h = encodeScenario(base, [iv(base, nid)]);
+    expect(decodeScenario(base, h).interventions).toEqual([iv(base, nid)]);
+    const T = reindex(base, 5);
+    const tn = nodeAt(T, ...grid(3, 3)).id;
+    expect(decodeScenario(T, h)).toEqual({ interventions: [iv(T, tn)], unplaced: [], invalid: false });
+  });
+
+  it('keeps the old whole-junction link meaning every leg', () => {
+    const old = encodeScenario(base, [{ type: 'modal_filter', node: nid }]);
+    expect(old).toMatch(/^#v1;a=fixture;s=mn,[0-9b-hjkmnp-z]{10}$/);
+    expect(decodeScenario(base, old).interventions).toEqual([{ type: 'modal_filter', node: nid }]);
+    // a link written before legs existed
+    expect(decodeScenario(base, '#v1;a=fixture;s=mn,9q9p6177k0')).toEqual({ interventions: [{ type: 'modal_filter', node: nid }], unplaced: [], invalid: false });
+    // closing every leg is the same filter and encodes the same way
+    const all = legLinks(base, nid, () => true);
+    expect(encodeScenario(base, [{ type: 'modal_filter', node: nid, legs: all }])).toBe(old);
+  });
+
+  it('reports a closed street that no longer exists as unplaced, and rejects malformed bearings', () => {
+    const h = encodeScenario(base, [iv(base, nid)]);
+    const stale = h.replace(/,90\.270$/, ',0.90.180.270.45');
+    expect(decodeScenario(base, stale).unplaced).toHaveLength(1);
+    expect(decodeScenario(base, stale).interventions).toEqual([]);
+    for (const b of ['x', '400', '90.', '90..270', '-5']) expect(decodeScenario(base, h.replace(/,90\.270$/, `,${b}`)).invalid).toBe(true);
+  });
+
+  it('treats one street per junction and the whole junction as different items', () => {
+    const a = encodeScenario(base, [iv(base, nid), { type: 'modal_filter', node: nid }]);
+    expect(decodeScenario(base, a).interventions).toHaveLength(2);
+  });
+});

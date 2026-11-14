@@ -712,6 +712,75 @@ fn modal_filter_node_bans_all_movements() {
 }
 
 #[test]
+fn modal_filter_without_legs_still_closes_every_movement() {
+    let (net, x) = cross4(Control::Uncontrolled, RoadClass::Residential, false);
+    let mut sim = Simulation::from_parts(net, demand(&[(x.w, x.e, 300.0)]), cfg(1, 1.0)).unwrap();
+    sim.set_interventions(&format!("[{{\"type\":\"modal_filter\",\"node\":{}}}]", x.c)).unwrap();
+    let e = sim.test_eff();
+    assert!(e.node_filter[x.c as usize]);
+    assert!(e.mv_ok.iter().all(|&ok| !ok), "every movement at the node is closed");
+}
+
+#[test]
+fn modal_filter_with_legs_closes_only_movements_to_and_from_those_legs() {
+    let (net, x) = cross4(Control::Uncontrolled, RoadClass::Residential, false);
+    let sim = Simulation::from_parts(net.clone(), demand(&[(x.w, x.e, 300.0)]), cfg(1, 1.0)).unwrap();
+    let topo = sim.test_topo();
+    let mv = |a: u32, b: u32| topo.find_mv(a, b).unwrap() as usize;
+    // Close the north and south legs, as a filter on the minor street would.
+    let e = crate::eff::Eff::derive(topo, &net, &serde_json::from_str::<Vec<crate::model::Intervention>>(&format!(
+        "[{{\"type\":\"modal_filter\",\"node\":{},\"legs\":[{},{},{},{}]}}]", x.c, x.n_in, x.n_out, x.s_in, x.s_out)).unwrap());
+    assert!(!e.node_filter[x.c as usize]);
+    assert!(e.mv_ok[mv(x.w_in, x.e_out)] && e.mv_ok[mv(x.e_in, x.w_out)], "straight along the open street stays open");
+    for (a, b) in [(x.w_in, x.n_out), (x.w_in, x.s_out), (x.e_in, x.n_out), (x.e_in, x.s_out), (x.n_in, x.e_out), (x.n_in, x.w_out), (x.s_in, x.e_out), (x.s_in, x.w_out), (x.n_in, x.s_out), (x.s_in, x.n_out)] {
+        assert!(!e.mv_ok[mv(a, b)], "movement {a} -> {b} touches a closed leg");
+    }
+    // Closing the other street's legs leaves the minor street open.
+    let e = crate::eff::Eff::derive(topo, &net, &serde_json::from_str::<Vec<crate::model::Intervention>>(&format!(
+        "[{{\"type\":\"modal_filter\",\"node\":{},\"legs\":[{},{}]}}]", x.c, x.e_in, x.e_out)).unwrap());
+    assert!(e.mv_ok[mv(x.n_in, x.s_out)] && e.mv_ok[mv(x.s_in, x.n_out)] && e.mv_ok[mv(x.w_in, x.n_out)]);
+    assert!(!e.mv_ok[mv(x.w_in, x.e_out)] && !e.mv_ok[mv(x.n_in, x.e_out)] && !e.mv_ok[mv(x.e_in, x.s_out)]);
+    // Legs that do not touch the node are skipped as invalid and never widen into a whole-junction filter.
+    let e = crate::eff::Eff::derive(topo, &net, &serde_json::from_str::<Vec<crate::model::Intervention>>(&format!(
+        "[{{\"type\":\"modal_filter\",\"node\":{},\"legs\":[99999]}}]", x.c)).unwrap());
+    assert_eq!(e.invalid_ivs, 1);
+    assert!(e.mv_ok[mv(x.w_in, x.e_out)] && !e.node_filter[x.c as usize]);
+}
+
+#[test]
+fn leg_filter_keeps_the_open_street_flowing_and_cars_stay_off_the_closed_legs() {
+    let (net, x) = cross4(Control::Uncontrolled, RoadClass::Residential, false);
+    let d = demand(&[(x.w, x.e, 400.0), (x.e, x.w, 400.0)]);
+    let mut sim = Simulation::from_parts(net, d, cfg(3, 1.0)).unwrap();
+    sim.set_interventions(&format!("[{{\"type\":\"modal_filter\",\"node\":{},\"legs\":[{},{},{},{}]}}]", x.c, x.n_in, x.n_out, x.s_in, x.s_out)).unwrap();
+    let mut through = 0;
+    run(&mut sim, 600.0, |s| {
+        through += s.test_transit(x.c as usize).len();
+        for l in [x.n_in, x.n_out, x.s_in, x.s_out] {
+            assert!(s.test_lane_vehicles(l).is_empty(), "no car on a closed leg");
+        }
+    });
+    assert!(through > 0, "cars still cross the junction along the open street");
+    assert!(sim.metrics().completed_trips > 50);
+    assert_eq!(sim.metrics().unroutable_trips, 0);
+}
+
+#[test]
+fn via_movement_through_a_closed_leg_falls_back_to_the_plain_route() {
+    let (net, c) = corridor(20.0, Control::Uncontrolled);
+    let mv = (c.art[0].0, c.conn[1].0);
+    let dem = || via_demand_with(c.a[0], c.a[3], 300.0, mv, Some(5.0), &[]);
+    let open = via_trips(net.clone(), dem(), "[]");
+    assert!(open.len() > 20 && open.iter().all(|r| makes(r, mv)), "the movement is made while the leg is open");
+    let legs = format!("[{{\"type\":\"modal_filter\",\"node\":{},\"legs\":[{},{}]}}]", c.a[1], c.conn[1].0, c.conn[1].1);
+    let shut = via_trips(net.clone(), dem(), &legs);
+    assert!(shut.len() > 20, "trips complete on the plain route");
+    assert!(shut.iter().all(|r| !makes(r, mv) && !r.trail.contains(&c.conn[1].0)), "no trip uses the closed leg");
+    // The arterial through the same node was never closed.
+    assert!(shut.iter().all(|r| r.trail.contains(&c.art[0].0) && r.trail.contains(&c.art[1].0)));
+}
+
+#[test]
 fn local_trips_start_and_end_along_the_block_and_never_cross_a_filtered_origin() {
     let (net, c) = corridor(11.2, Control::Uncontrolled);
     let home = c.l[1];
@@ -1673,6 +1742,7 @@ fn removing_each_intervention_restores_baseline() {
         ("oneway", false, format!("[{{\"type\":\"one_way\",\"link\":{}}}]", x.w_in)),
         ("turnban", false, format!("[{{\"type\":\"turn_ban\",\"fromLink\":{},\"toLink\":{}}}]", x.w_in, x.n_out)),
         ("filter", false, format!("[{{\"type\":\"modal_filter\",\"link\":{}}}]", x.s_in)),
+        ("leg_filter", false, format!("[{{\"type\":\"modal_filter\",\"node\":{c},\"legs\":[{},{}]}}]", x.s_in, x.s_out)),
         ("diverter", false, format!("[{{\"type\":\"diagonal_diverter\",\"node\":{c},\"bearing\":45}}]")),
     ];
     for (name, signalized, json) in cases {
@@ -1694,6 +1764,8 @@ fn removing_each_intervention_restores_baseline() {
             assert_eq!(e.limit, b.limit, "{name} limit");
             assert_eq!(e.humps, b.humps, "{name} humps");
             assert_eq!(e.node_filter, b.node_filter, "{name} node_filter");
+            assert_eq!(e.leg_in_closed, b.leg_in_closed, "{name} leg_in_closed");
+            assert_eq!(e.leg_out_closed, b.leg_out_closed, "{name} leg_out_closed");
             assert_eq!(e.mv_ok, b.mv_ok, "{name} mv_ok");
             assert_eq!(e.mv_banned, b.mv_banned, "{name} mv_banned");
             assert_eq!(e.oneway_closed, b.oneway_closed, "{name} oneway_closed");

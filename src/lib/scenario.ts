@@ -2,7 +2,7 @@ import type { Intervention } from '../types';
 
 export function interventionKey(iv: Intervention): string {
   switch (iv.type) {
-    case 'modal_filter': return 'link' in iv ? `mf-l${iv.link}` : `mf-n${iv.node}`;
+    case 'modal_filter': return 'link' in iv ? `mf-l${iv.link}` : iv.legs ? `mf-n${iv.node}-${[...iv.legs].sort((a, b) => a - b).join('.')}` : `mf-n${iv.node}`;
     case 'speed_limit': return `sl-${iv.link}`;
     case 'speed_hump': return `sh-${iv.link}`;
     case 'traffic_circle': case 'control': case 'signal_timing': return `node-${iv.node}-${iv.type}`;

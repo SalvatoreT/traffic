@@ -45,6 +45,10 @@ pub struct Eff {
     pub humps: Vec<Vec<f32>>,
     pub ctrl: Vec<Control>,
     pub node_filter: Vec<bool>,
+    /// Links that arrive at a node through a leg closed by a leg-level `modal_filter` (cars cannot enter the junction from them).
+    pub leg_in_closed: Vec<bool>,
+    /// Links that leave a node through a closed leg (cars cannot leave the junction onto them).
+    pub leg_out_closed: Vec<bool>,
     pub mv_ok: Vec<bool>,
     pub mv_cost: Vec<f32>,
     /// `mv_cost` as derived from the network and interventions; the simulation adds each movement's measured time to `mv_cost` (route costs by turn).
@@ -92,6 +96,8 @@ impl Eff {
             .collect();
         let mut ctrl: Vec<Control> = net.nodes.iter().map(|n| n.control).collect();
         let mut node_filter = vec![false; nn];
+        let mut leg_in_closed = vec![false; nl];
+        let mut leg_out_closed = vec![false; nl];
         let mut oneway_closed = vec![false; nl];
         let mut banned: Vec<(u32, u32)> = Vec::new();
         let mut cycle_override: Vec<Option<f32>> = vec![None; nn];
@@ -107,7 +113,26 @@ impl Eff {
                             closed[r as usize] = true;
                         }
                     } else if let Some(n) = valid_n(iv.node) {
-                        node_filter[n as usize] = true;
+                        match &iv.legs {
+                            None => node_filter[n as usize] = true,
+                            Some(legs) => {
+                                let mut hit = false;
+                                for &l in legs.iter().filter(|&&l| (l as usize) < nl) {
+                                    let k = &net.links[l as usize];
+                                    if k.to == n {
+                                        leg_in_closed[l as usize] = true;
+                                        hit = true;
+                                    }
+                                    if k.from == n {
+                                        leg_out_closed[l as usize] = true;
+                                        hit = true;
+                                    }
+                                }
+                                if !hit {
+                                    invalid_ivs += 1;
+                                }
+                            }
+                        }
                     }
                 }
                 "one_way" => {
@@ -276,6 +301,8 @@ impl Eff {
             mv_ok[i] = !(banned_pair
                 || osm_ban
                 || node_filter[n]
+                || leg_in_closed[m.a as usize]
+                || leg_out_closed[m.b as usize]
                 || closed[m.b as usize]
                 || (m.kind == K_UTURN && !dead_end));
             let vlim = limit[m.a as usize].min(limit[m.b as usize]);
@@ -349,6 +376,8 @@ impl Eff {
             humps,
             ctrl,
             node_filter,
+            leg_in_closed,
+            leg_out_closed,
             mv_ok,
             mv_static: mv_cost.clone(),
             mv_cost,

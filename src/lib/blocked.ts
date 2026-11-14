@@ -21,6 +21,8 @@ export interface FilterLeg {
   mouth: [number, number];
   /** Distance from the node point to the mouth (m). */
   offsetM: number;
+  /** Every link on this leg, entering and leaving (what a modal filter's `legs` holds). */
+  links: number[];
 }
 
 export interface FilterLegs {
@@ -46,7 +48,7 @@ export function filterLegs(net: Network, idx: NetIndex, node: number): FilterLeg
     const g = link.geometry;
     const mouth = (out ? g[0] : g[g.length - 1]) as [number, number];
     const street = l.street === UNNAMED ? idx.linkName[link.id] : l.street;
-    return { street, direction: dirs[i], bearing: l.bearing, mouth, offsetM: Math.hypot(mouth[0] - n.x, mouth[1] - n.y) };
+    return { street, direction: dirs[i], bearing: l.bearing, mouth, offsetM: Math.hypot(mouth[0] - n.x, mouth[1] - n.y), links: [...l.ins, ...l.outs] };
   });
   base.sort((p, q) => p.street.localeCompare(q.street) || ((p.bearing + 45) % 360) - ((q.bearing + 45) % 360));
   const seen = new Map<string, number>();
@@ -66,12 +68,32 @@ export function filterLegs(net: Network, idx: NetIndex, node: number): FilterLeg
   return { legs, streets, merged: offset || legs.length > 4 || streets.length > 2, spreadM: offset ? Math.max(5, round5(spread)) : 0 };
 }
 
+/** The legs a filter closes: all of them, or those carrying a link in `legs`. */
+export function closedLegs(f: FilterLegs, legs?: number[]): FilterLeg[] {
+  return legs === undefined ? f.legs : f.legs.filter((l) => l.links.some((k) => legs.includes(k)));
+}
+
+export interface StreetFilter {
+  street: string;
+  legs: FilterLeg[];
+  /** Link ids for the intervention's `legs`. */
+  links: number[];
+}
+
+/** One option per street whose legs can be closed while at least two other legs stay connected; empty when the filter would be the whole junction anyway. */
+export function streetFilters(f: FilterLegs): StreetFilter[] {
+  const by = new Map<string, FilterLeg[]>();
+  for (const l of f.legs) by.set(l.street, [...(by.get(l.street) ?? []), l]);
+  if (by.size < 2) return [];
+  return [...by].filter(([, ls]) => f.legs.length - ls.length >= 2).map(([street, legs]) => ({ street, legs, links: legs.flatMap((l) => l.links) }));
+}
+
 export interface FilterText {
   /** "Cars cannot pass through this intersection." */
   lead: string;
   /** "Closed to through cars: Ayala Avenue (north), ..." */
   closed: string;
-  /** Present for a merged junction: what it combines and that the filter covers all of it. */
+  /** Present for a merged junction: what it combines and which part the filter covers. */
   junction: string | null;
   /** Said once: walking and cycling are unaffected. */
   people: string;
@@ -81,7 +103,7 @@ const list = (xs: string[]) => (xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1
 
 /** Plain-words account of what a modal filter closes; null for any other intervention. */
 export function filterText(
-  iv: { type: string; node?: number; link?: number },
+  iv: { type: string; node?: number; link?: number; legs?: number[] },
   net: Network, idx: NetIndex,
 ): FilterText | null {
   if (iv.type !== 'modal_filter') return null;
@@ -92,12 +114,20 @@ export function filterText(
     return { lead: 'Cars cannot drive along this block.', closed: `Closed to through cars: ${blk?.label ?? 'this block'}${both}.`, junction: null, people };
   }
   const f = filterLegs(net, idx, iv.node);
-  const n = f.legs.length;
+  const shut = closedLegs(f, iv.legs);
+  const partial = shut.length < f.legs.length;
+  const n = shut.length;
   const near = f.spreadM > 0 ? `, which meet up to about ${f.spreadM} m apart` : '';
-  const junction = f.merged
-    ? `This junction combines ${list(f.streets)}${near}. The filter covers the whole junction and closes ${n === 2 ? 'both legs' : `all ${n} legs`} to through cars.`
-    : null;
-  return { lead: 'Cars cannot pass through this intersection.', closed: `Closed to through cars: ${f.legs.map((l) => l.text).join(', ')}.`, junction, people };
+  const shutStreets = [...new Set(shut.map((l) => l.street))];
+  const open = f.streets.filter((s) => !shutStreets.includes(s));
+  let junction: string | null = null;
+  if (f.merged) {
+    junction = partial
+      ? `This junction combines ${list(f.streets)}${near}. The filter closes only the legs of ${list(shutStreets)}${open.length ? `; ${list(open)} stays open through the junction` : ''}.`
+      : `This junction combines ${list(f.streets)}${near}. The filter covers the whole junction and closes ${n === 2 ? 'both legs' : `all ${n} legs`} to through cars.`;
+  }
+  const lead = partial ? `Cars cannot enter or leave this intersection on ${list(shutStreets)}.` : 'Cars cannot pass through this intersection.';
+  return { lead, closed: `Closed to through cars: ${shut.map((l) => l.text).join(', ')}.`, junction, people };
 }
 
 export const filterSentence = (t: FilterText): string => [t.lead, t.closed, t.junction, t.people].filter(Boolean).join(' ');

@@ -56,7 +56,8 @@ export interface AreaEntry {
 
 export type Intervention =
   | { type: 'modal_filter'; link: number }
-  | { type: 'modal_filter'; node: number }
+  /** `legs`: ids of the links on each closed leg (both directions). Absent: the whole junction. */
+  | { type: 'modal_filter'; node: number; legs?: number[] }
   | { type: 'speed_limit'; link: number; speed: number }
   | { type: 'speed_hump'; link: number; position: number }
   | { type: 'traffic_circle'; node: number }

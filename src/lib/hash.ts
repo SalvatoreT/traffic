@@ -2,11 +2,13 @@ import type { ControlType, Intervention, Network } from '../types';
 import { makeProjection } from './projection';
 import { decodeGeohash, encodeGeohash } from './geohash';
 import { nearestOnPolyline, pointAlong, polylineLength } from './geom';
+import { nodeLegs } from './diverter';
 
 /**
  * Scenario links: `#v1;a=<area>;p=<period>;d=<scale>;s=<item>~<item>`
  * Each item is `code,geohash[,param...]`: a 10-character geohash (about 1 m) and no network indices.
- *   mf  modal filter on a block        mn  modal filter at an intersection
+ *   mf  modal filter on a block        mn  modal filter at an intersection; optional third field: bearings (whole degrees, joined by `.`)
+ *                                          of the legs it closes, as `90.270`; absent: every leg
  *   sl  speed limit (m/s)              sh  speed hump (the hump's own point)
  *   tc  traffic circle                 ct  control (s a t u c)
  *   st  signal cycle (s)               ow  one-way (kept direction, bearing in degrees)
@@ -30,6 +32,14 @@ const TYPE_OF_CODE: Record<string, Intervention['type']> = {
   mf: 'modal_filter', mn: 'modal_filter', sl: 'speed_limit', sh: 'speed_hump', tc: 'traffic_circle',
   ct: 'control', st: 'signal_timing', ow: 'one_way', tb: 'turn_ban', dd: 'diagonal_diverter',
 };
+
+/** The street approaches of a node, from the network alone. */
+function legsOf(net: Network, node: number) {
+  const incomingLinks: number[][] = [], outgoingLinks: number[][] = [];
+  incomingLinks[node] = net.links.filter((l) => l.to === node).map((l) => l.id);
+  outgoingLinks[node] = net.links.filter((l) => l.from === node).map((l) => l.id);
+  return nodeLegs(net, { incomingLinks, outgoingLinks }, node);
+}
 
 const num = (v: number, dp: number) => String(+v.toFixed(dp) || 0);
 const isNum = (v: number, lo: number, hi: number) => Number.isFinite(v) && v >= lo && v <= hi;
@@ -79,7 +89,12 @@ export function encodeScenario(net: Network, interventions: Intervention[], opts
     switch (iv.type) {
       case 'modal_filter': {
         const p = 'link' in iv ? pt(blockPoint(net, iv.link)) : nodePt(iv.node);
-        if (p) s = `${'link' in iv ? 'mf' : 'mn'},${p}`;
+        if (!p) break;
+        if ('link' in iv) { s = `mf,${p}`; break; }
+        const all = legsOf(net, iv.node);
+        const shut = iv.legs === undefined ? all : all.filter((l) => [...l.ins, ...l.outs].some((k) => iv.legs!.includes(k)));
+        if (shut.length === 0) break;
+        s = shut.length === all.length ? `mn,${p}` : `mn,${p},${shut.map((l) => round5(l.bearing)).sort((a, b) => a - b).join('.')}`;
         break;
       }
       case 'speed_limit': { const p = pt(blockPoint(net, iv.link)); if (p) s = `sl,${p},${num(iv.speed, 2)}`; break; }
@@ -172,7 +187,9 @@ export function nearestStreetName(net: Network, lon: number, lat: number, maxM =
 }
 
 const PARAMS_OK: Record<string, (f: string[]) => boolean> = {
-  mf: () => true, mn: () => true, sh: () => true, tc: () => true,
+  mf: () => true,
+  mn: (f) => f[2] === undefined || (/^\d{1,3}(\.\d{1,3})*$/.test(f[2]) && f[2].split('.').length <= 12 && f[2].split('.').every((b) => isNum(Number(b), 0, 359))),
+  sh: () => true, tc: () => true,
   sl: (f) => isNum(Number(f[2]), 1, 40),
   ow: (f) => isNum(Number(f[2]), 0, 360),
   tb: (f) => isNum(Number(f[2]), 0, 360) && isNum(Number(f[3]), 0, 360),
@@ -246,7 +263,20 @@ export function decodeScenario(net: Network, hash: string): DecodedScenario {
       default: {
         const nid = nodesNear(net, x, y)[0];
         if (nid === undefined) { miss(noNode); break; }
-        if (f[0] === 'mn') out.interventions.push({ type: 'modal_filter', node: nid });
+        if (f[0] === 'mn' && f[2] === undefined) out.interventions.push({ type: 'modal_filter', node: nid });
+        else if (f[0] === 'mn') {
+          const free = legsOf(net, nid);
+          const links: number[] = [];
+          for (const b of f[2].split('.').map(Number)) {
+            let k = -1, bd = BEARING_TOLERANCE_DEG;
+            free.forEach((l, i) => { const d = angDiff(l.bearing, b); if (d <= bd) { bd = d; k = i; } });
+            if (k < 0) { links.length = 0; break; }
+            links.push(...free[k].ins, ...free[k].outs);
+            free.splice(k, 1);
+          }
+          if (links.length) out.interventions.push({ type: 'modal_filter', node: nid, legs: links.sort((a, b) => a - b) });
+          else miss('A street that the filter closed no longer meets the nearest intersection.');
+        }
         else if (f[0] === 'tc') out.interventions.push({ type: 'traffic_circle', node: nid });
         else if (f[0] === 'ct' && CODE_CONTROL[f[2]]) out.interventions.push({ type: 'control', node: nid, control: CODE_CONTROL[f[2]] });
         else if (f[0] === 'st') out.interventions.push({ type: 'signal_timing', node: nid, cycle: p3 });
