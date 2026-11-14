@@ -5,6 +5,11 @@ import { controlLabel } from './selection';
 import { connectedLabel } from './diverter';
 import { closedLegs, closedLegsLabel, filterLegs, filterSentence, filterText } from './blocked';
 
+const atOthers = (streets: string[], shut: { street: string }[], fallback: string) => {
+  const o = streets.filter((st) => !shut.some((l) => l.street === st));
+  return o.length === 0 ? fallback : o.length === 1 ? o[0] : `${o.slice(0, -1).join(', ')} and ${o[o.length - 1]}`;
+};
+
 export function describeIntervention(iv: Intervention, net: AreaBundle['network'], idx: NetIndex): string {
   const ln = (id: number) => idx.blocks[idx.blockOfLink[id]]?.label ?? `link ${id}`;
   const nn = (id: number) => idx.nodeName[id] ?? `node ${id}`;
@@ -13,7 +18,7 @@ export function describeIntervention(iv: Intervention, net: AreaBundle['network'
       if ('link' in iv) return `Modal filter on ${ln(iv.link)}`;
       if (iv.legs === undefined) return `Modal filter at ${nn(iv.node)}`;
       const f = filterLegs(net, idx, iv.node), shut = closedLegs(f, iv.legs);
-      return shut.length === 0 || shut.length === f.legs.length ? `Modal filter at ${nn(iv.node)}` : `Modal filter on ${closedLegsLabel(f, shut)} at ${nn(iv.node)}`;
+      return shut.length === 0 || shut.length === f.legs.length ? `Modal filter at ${nn(iv.node)}` : `Modal filter on ${closedLegsLabel(f, shut)} at ${atOthers(f.streets, shut, nn(iv.node))}`;
     }
     case 'speed_limit': return `Speed limit ${Math.round(iv.speed * 2.23694)} mph on ${ln(iv.link)}`;
     case 'speed_hump': return `Speed hump on ${ln(iv.link)}`;

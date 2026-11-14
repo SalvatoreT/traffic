@@ -624,8 +624,8 @@ fn a_crossing_offers_a_filter_on_each_street_besides_the_whole_junction() {
     let labels: Vec<&str> = at_c.iter().map(|c| c.label.as_str()).collect();
     assert_eq!(at_c.len(), 3, "{labels:?}");
     assert!(labels.contains(&"Modal filter at Elm Street & Oak Street"), "{labels:?}");
-    assert!(labels.contains(&"Modal filter on Elm Street at Elm Street & Oak Street"), "{labels:?}");
-    assert!(labels.contains(&"Modal filter on Oak Street at Elm Street & Oak Street"), "{labels:?}");
+    assert!(labels.contains(&"Modal filter on Elm Street at Oak Street"), "{labels:?}");
+    assert!(labels.contains(&"Modal filter on Oak Street at Elm Street"), "{labels:?}");
     let oak = at_c.iter().find(|c| c.label.contains("on Oak Street")).unwrap();
     let legs = oak.iv.legs.clone().unwrap();
     assert_eq!(legs.len(), 4, "both legs of the street, both directions");

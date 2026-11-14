@@ -284,7 +284,11 @@ pub fn describe(net: &Network, topo: &Topo, idx: &NameIndex, iv: &Intervention) 
                         .collect();
                     names.sort_by(|a, b| locale_cmp(a, b));
                     names.dedup();
-                    format!("Modal filter on {} at {}", list_names(&names), nn(n))
+                    let mut others: Vec<String> = node_legs(topo, net, n).iter().filter_map(|l| l.outs.first().or(l.ins.first()).map(|&k| idx.link_name[k as usize].clone())).filter(|s| !names.contains(s) && !s.starts_with("Unnamed")).collect();
+                    others.sort_by(|a, b| locale_cmp(a, b));
+                    others.dedup();
+                    let at = if others.is_empty() { nn(n) } else { list_names(&others) };
+                    format!("Modal filter on {} at {}", list_names(&names), at)
                 }
                 None => format!("Modal filter at {}", nn(n)),
             },
