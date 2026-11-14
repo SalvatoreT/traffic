@@ -271,6 +271,9 @@
     "countCalibration": {
       "enabled": true,
       "maxScale": 8,
+      "neighborM": 250,
+      "neighborScale": 1,
+      "neighborNote": "ASSUMPTION (round 20): census blocks whose loading node lies outside the study area but within 250 m of it are the same neighborhood across the boundary street, and the assumed trip rate misses the same non-work trips there, so they take the study area's factor times neighborScale. The side rule of round 19 moved the trips of these blocks off the boundary corners, which are study-area nodes, and left them at the unscaled rate: cars entering Colby St, Hillegass Ave and Dana St from Alcatraz Ave fell from 325 to 136 veh/h against 360 counted. Tested 400 m x 1.0 (PM removals 3.0 per hour), 400 m x 0.5 (1.2) and 250 m x 1.0 (0.0).",
       "_note": "DATA-derived multiplier on the trip rates of blocks inside the study area: the external trip ends they offer are scaled to the ends the volunteer count implies (vehicles entering less the whole-street through cars; vehicles leaving less the same). The per-resident-worker rate above counts workers only (LODES resident workers), so it misses residents who do not work and non-work trips. Midday has no count: the mean of the AM and PM factors (ASSUMPTION). maxScale is a sanity cap (ASSUMPTION).",
       "maxScaleNote": "ASSUMPTION: raised from 4 to 8 in round 19. With the side rule the study area's own blocks offer 174 and 132 external trip ends at the assumed rate and the count implies about 800, so the factors are 4.6 and 6.2."
     }

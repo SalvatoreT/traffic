@@ -153,8 +153,8 @@ fn study_of(net: Network) -> Study {
             id: "p".into(),
             label: "p".into(),
             flows: vec![
-                Flow { origin: gw, destination: ge, veh_per_hour: 650.0, mode: FlowMode::Car },
-                Flow { origin: ge, destination: gw, veh_per_hour: 650.0, mode: FlowMode::Car },
+                Flow { origin: gw, destination: ge, veh_per_hour: 650.0, mode: FlowMode::Car, via: None },
+                Flow { origin: ge, destination: gw, veh_per_hour: 650.0, mode: FlowMode::Car, via: None },
             ],
         }],
     };
