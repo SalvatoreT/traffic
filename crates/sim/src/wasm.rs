@@ -2,6 +2,12 @@
 
 use wasm_bindgen::prelude::*;
 
+/// See `crate::FINGERPRINT`.
+#[wasm_bindgen(js_name = simulatorFingerprint)]
+pub fn simulator_fingerprint() -> String {
+    crate::FINGERPRINT.to_string()
+}
+
 #[wasm_bindgen(js_name = Simulation)]
 pub struct WasmSimulation {
     inner: crate::sim::Simulation,

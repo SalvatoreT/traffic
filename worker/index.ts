@@ -1,3 +1,4 @@
+import { isServableName } from "./paths";
 import { handleDataApi } from "./upload";
 
 interface Env {
@@ -7,9 +8,13 @@ interface Env {
 }
 
 async function serveData(req: Request, env: Env, name: string): Promise<Response> {
-  if (!/^[\w.-]+$/.test(name)) return new Response(null, { status: 400 });
+  if (!isServableName(name)) return new Response(null, { status: 400 });
   const object = await env.DATA.get(`areas/${name}`, { onlyIf: req.headers });
-  if (!object) return env.ASSETS.fetch(req);
+  if (!object) {
+    const res = await env.ASSETS.fetch(req);
+    // A result that is not stored is a plain 404, not the app page the single-page fallback would send.
+    return name.startsWith("results/") && !(res.headers.get("content-type") ?? "").includes("json") ? new Response(null, { status: 404 }) : res;
+  }
   const headers = new Headers({
     "content-type": "application/json; charset=utf-8",
     "cache-control": "public, max-age=300",

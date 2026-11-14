@@ -85,6 +85,16 @@ describe('assumed movement flows', () => {
       const both = [{ id: 'a', label: 'a', fromGroup: 'north', toGroup: 'fw', share: 0.1, vehPerHour: 5, basis: 't' }];
       expect(() => assumedMovementFlows({ ...base, intents: both }, 2, 3, 60, 'pm', seed, g2, () => false, grp)).toThrow(/exactly one/);
     });
+    it('takes only candidates that enter the whole-street route at its first link when the intent asks for it', () => {
+      const intents = [{ id: 'a', label: 'any to freeway', fromGroup: 'any', toGroup: 'fw', share: 1, basis: 't', wholeStreet: true }];
+      // link 4 (5 -> 0) is the first link of the route: only the flow from 5 reaches the movement 2 -> 3 over it
+      const r = assumedMovementFlows({ ...base, intents }, 2, 3, 60, 'pm', seed, g2, () => false, grp, 1, 4);
+      expect(r.flows.map((f) => [f.origin, f.destination])).toEqual([[5, 1]]);
+      expect(r.flows[0].vehPerHour).toBeCloseTo(60, 2);
+      const none = assumedMovementFlows({ ...base, intents }, 2, 3, 60, 'pm', seed, g2, () => false, grp, 1, 99);
+      expect(none.flows).toHaveLength(0);
+      expect(none.report.intents![0].note).toMatch(/whole street/);
+    });
     it('scales a volume given in veh/h with the movement count of the period, and reports an intent with no candidate flow', () => {
       const intents = [{ id: 'a', label: 'a', fromGroup: 'north', toGroup: 'fw', vehPerHour: 20, basis: 't' }, { id: 'b', label: 'b', fromGroup: 'south', toGroup: 'west', share: 0.1, basis: 't' }];
       const r = assumedMovementFlows({ ...base, intents }, 2, 3, 30, 'am', seed, g2, () => false, grp, 0.5);

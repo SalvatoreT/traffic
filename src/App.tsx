@@ -2,7 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useReducer, useRef, us
 import type { AreaBundle, Intervention, Metrics, ModeVisibility, Overlay, Theme } from './types';
 import { loadArea, type LoadProgress } from './data';
 import { Loading, LoadError } from './components/Loading';
-import { DEFAULT_SPEED, isInstant, nextSpeedShown } from './lib/speed';
+import { DEFAULT_SPEED, INSTANT, isInstant, nextSpeedShown } from './lib/speed';
 import { SOURCE_REPO_URL } from './config';
 import { SimClient, type StatsMsg } from './sim/client';
 import { buildIndex } from './lib/naming';
@@ -13,7 +13,7 @@ import { addInterventions } from './lib/scenario';
 import { selectionForIntervention, type Selection } from './lib/selection';
 import { interventionPoint } from './lib/describe';
 import { overlayTop, resolveMode } from './lib/ramps';
-import { defaultPeriod, EARLY_SECONDS, initialRun, runReducer } from './lib/run';
+import { defaultPeriod, EARLY_SECONDS, initialRun, RUN_SECONDS, runReducer } from './lib/run';
 import { SelectionMenu, type Change, type Placement } from './components/SelectionMenu';
 import { Sheet } from './components/Sheet';
 import { Playback, Legend } from './components/Toolbar';
@@ -24,7 +24,8 @@ import { Comparison } from './components/Comparison';
 import type { Hover } from './lib/highlight';
 import { StreetsTable } from './components/StreetsTable';
 import { Proposals, useProposals } from './components/Proposals';
-import { linkHash, type Proposal } from './lib/proposals';
+import { hashLoaded, linkHash, type LoadedHashes, type Proposal } from './lib/proposals';
+import { fetchResult, resultKey, STORED_NOTE, toStatsMsg, verdict, type StoredResult } from './lib/stored-results';
 import { IntentPanel } from './components/IntentPanel';
 import { intentPaths, segmentWidths } from './lib/intents';
 import { baselineCheck, checkThroughRoutes, routeHeadline } from './lib/throughroutes';
@@ -111,8 +112,12 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   const [period, setPeriod] = useState(periodId);
   const [scale, setScale] = useState(initial.demandScale ?? 1);
   const [speed, setSpeed] = useState(DEFAULT_SPEED);
-  const [run, dispatchRun] = useReducer(runReducer, !reduced, initialRun);
+  // A link that carries a scenario waits for the stored-result lookup; a miss then starts the run at Max.
+  const hasLinkScenario = initial.interventions.length > 0;
+  const [run, dispatchRun] = useReducer(runReducer, !reduced && !hasLinkScenario, initialRun);
   const { running, finished } = run;
+  const runRef = useRef(run);
+  runRef.current = run;
   const [interventions, setInterventions] = useState<Intervention[]>(initial.interventions);
   const routeCheck = useMemo(() => (interventions.length === 0 ? todayRoutes : checkThroughRoutes(network, index, interventions)), [network, index, interventions, todayRoutes]);
   const [showRoutes, setShowRoutes] = useState(false);
@@ -153,7 +158,17 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   const [engine, setEngine] = useState<{ kind: 'wasm' | 'mock'; reason?: string } | null>(null);
   const [simError, setSimError] = useState('');
   const [building, setBuilding] = useState(true);
-  const [stats, setStats] = useState<StatsMsg | null>(null);
+  const [liveStats, setStats] = useState<StatsMsg | null>(null);
+  const [fingerprint, setFingerprint] = useState<string | null | undefined>(undefined);
+  const [hashes, setHashes] = useState<LoadedHashes | null>(null);
+  // A stored result is tied to the exact scenario list, period and demand it was matched for; any change makes it stop applying at once.
+  const [storedFor, setStoredFor] = useState<{ result: StoredResult; interventions: Intervention[]; period: string; scale: number } | null>(null);
+  const stored = storedFor && storedFor.interventions === interventions && storedFor.period === period && storedFor.scale === scale ? storedFor.result : null;
+  const storedRef = useRef<StoredResult | null>(null);
+  storedRef.current = stored;
+  const storedMsg = useMemo(() => (stored ? toStatsMsg(stored) : null), [stored]);
+  const stats = storedMsg ?? liveStats;
+  const openedByLink = useRef(hasLinkScenario);
   const [slowSpeed, setSlowSpeed] = useState<number | null>(null);
   const [client, setClient] = useState<SimClient | null>(null);
   const exportRef = useRef<((fmt: ImageFormat) => Promise<void>) | null>(null);
@@ -171,8 +186,9 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
     const c = new SimClient();
     c.onReady = (kind, reason) => setEngine({ kind, reason });
     c.onBusy = setBuilding;
-    c.onStats = (s) => { setStats(s); dispatchRun({ type: 'time', time: s.time }); setSlowSpeed((prev) => (isInstant(first.current.speed) ? null : nextSpeedShown(prev, first.current.speed, s.achievedSpeed))); };
-    c.onProgress = (time) => dispatchRun({ type: 'time', time });
+    c.onVersion = setFingerprint;
+    c.onStats = (s) => { setStats(s); if (storedRef.current) return; dispatchRun({ type: 'time', time: s.time }); setSlowSpeed((prev) => (isInstant(first.current.speed) ? null : nextSpeedShown(prev, first.current.speed, s.achievedSpeed))); };
+    c.onProgress = (time) => { if (!storedRef.current) dispatchRun({ type: 'time', time }); };
     c.onError = (m) => setSimError(m);
     const f = first.current;
     c.send({
@@ -189,7 +205,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
     if (finished && !wasFinished.current) say('Run finished.');
     wasFinished.current = finished;
   }, [finished, say]);
-  const runAgain = useCallback(() => { client?.send({ t: 'reset' }); dispatchRun({ type: 'restart' }); }, [client]);
+  const runAgain = useCallback(() => { setStoredFor(null); client?.send({ t: 'reset' }); dispatchRun({ type: 'restart' }); }, [client]);
   useEffect(() => { client?.send({ t: 'speed', speed }); setSlowSpeed(null); }, [speed, client]);
   useEffect(() => {
     if (firstRun.current) { firstRun.current = false; return; }
@@ -204,16 +220,47 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
     client?.setInterventions(interventions);
   }, [interventions]); // eslint-disable-line
 
+  // --- stored results
+  useEffect(() => {
+    let live = true;
+    void hashLoaded(bundle.raw).then((h) => { if (live) setHashes(h); });
+    return () => { live = false; };
+  }, [bundle.raw]);
+  const startMax = useCallback(() => {
+    setSpeed(INSTANT);
+    if (!runRef.current.running && !runRef.current.finished) dispatchRun({ type: 'toggle' });
+  }, []);
+  useEffect(() => {
+    if (fingerprint === undefined || !hashes || bundle.synthetic) return;
+    const opened = openedByLink.current;
+    if (interventions.length === 0 || scale !== 1) { if (opened && interventions.length > 0) { openedByLink.current = false; startMax(); } return; }
+    let live = true;
+    void (async () => {
+      const key = await resultKey(network, interventions, period);
+      const r = await fetchResult(bundle.entry.id, key);
+      if (!live) return;
+      const loaded = { area: bundle.entry.id, networkHash: hashes.network, demandHash: hashes.demand, simulator: fingerprint };
+      if (r && verdict(r, { key, period, demandScale: scale }, loaded) === 'ok') {
+        openedByLink.current = false;
+        wasFinished.current = true;
+        setStoredFor({ result: r, interventions, period, scale });
+        dispatchRun({ type: 'time', time: RUN_SECONDS });
+        say(STORED_NOTE);
+      } else if (opened) { openedByLink.current = false; startMax(); }
+    })();
+    return () => { live = false; };
+  }, [fingerprint, hashes, bundle.synthetic, bundle.entry.id, network, interventions, period, scale, startMax, say]);
+
   // --- URL hash
   useEffect(() => {
-    const h = encodeScenario(network, interventions, { area: bundle.synthetic ? null : bundle.entry.id, period: period === fallbackPeriod ? undefined : period, demandScale: scale });
+    const h = encodeScenario(network, interventions, { area: bundle.synthetic ? null : bundle.entry.id, period: interventions.length === 0 && period === fallbackPeriod ? undefined : period, demandScale: scale });
     history.replaceState(null, '', `${location.pathname}${location.search}${h}`);
   }, [bundle, network, period, fallbackPeriod, scale, interventions]);
   useEffect(() => {
     const f = () => {
       const st = decodeScenario(network, location.hash);
       setNotice({ unplaced: st.unplaced, invalid: st.invalid });
-      if (JSON.stringify(st.interventions) !== JSON.stringify(first.current.interventions)) setInterventions(st.interventions);
+      if (JSON.stringify(st.interventions) !== JSON.stringify(first.current.interventions)) { openedByLink.current = true; setInterventions(st.interventions); }
     };
     window.addEventListener('hashchange', f);
     return () => window.removeEventListener('hashchange', f);
@@ -224,12 +271,16 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   const focusAfterOpen = useRef(false);
   const onOpenProposal = useCallback((p: Proposal) => {
     const d = decodeScenario(network, linkHash(p.link));
+    const wanted = p.picture?.period ?? decodeMeta(linkHash(p.link)).period;
+    if (wanted && demand.periods.some((x) => x.id === wanted)) setPeriod(wanted);
+    setScale(1);
+    openedByLink.current = true;
     setInterventions(d.interventions);
     setNotice({ unplaced: d.unplaced, invalid: d.invalid });
     setView('map');
     focusAfterOpen.current = true;
     say(`Opened ${p.title} on the map.`);
-  }, [network, say]);
+  }, [network, demand, say]);
   useEffect(() => {
     if (view !== 'map' || !focusAfterOpen.current) return;
     focusAfterOpen.current = false;
@@ -399,7 +450,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
           </aside>
         )}
         <div key="stage" className="stage">
-          {(bundle.synthetic || engine?.kind === 'mock' || (simError && engine) || showCal) && (
+          {(bundle.synthetic || engine?.kind === 'mock' || (simError && engine) || showCal || stored) && (
             <div className="banners">
               {showCal && (
                 <div className={`cal-collapse ${calClosing ? 'closing' : ''}`}>
@@ -415,12 +466,13 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
               {bundle.synthetic && <p className="notice" role="note">Showing a synthetic fixture area because the study-area data files were not found.</p>}
               {engine?.kind === 'mock' && <p className="notice" role="note">Using the built-in mock simulation ({engine.reason}). Vehicle behavior and metrics are illustrative only.</p>}
               {simError && engine && <p className="notice err" role="alert">{simError}</p>}
+              {stored && <p className="notice calm" role="note">{STORED_NOTE} Cars are not drawn in a stored result.</p>}
             </div>
           )}
           {showPanel && (
             <Playback
               running={running} finished={finished} onToggle={() => (finished ? runAgain() : dispatchRun({ type: 'toggle' }))}
-              onReset={() => { client?.send({ t: 'reset' }); dispatchRun({ type: 'restart' }); say('Simulation reset.'); }}
+              onReset={() => { setStoredFor(null); client?.send({ t: 'reset' }); dispatchRun({ type: 'restart' }); say('Simulation reset.'); }}
               entry={bundle.entry}
               onExport={() => { void exportRef.current?.('png'); }}
               speed={speed} onSpeed={setSpeed} periods={demand.periods} period={period} onPeriod={setPeriod}
@@ -432,7 +484,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
             <Suspense fallback={<p className="boot" role="status">Loading map…</p>}>
             <MapView
               bundle={bundle} index={index} region={region} mode={mode} overlay={overlay} overlayMax={overlayMax} linkStats={mapView === 'change' ? (withheld ? null : stats?.scenario.linkStats ?? null) : linkStats} baseStats={baseStats} view={mapView}
-              client={client} interventions={interventions} selection={mapVisible ? selection : null} onHit={onHit} hover={hoverPlace} interactive={mapVisible}
+              client={client} still={!!stored} interventions={interventions} selection={mapVisible ? selection : null} onHit={onHit} hover={hoverPlace} interactive={mapVisible}
               routes={{ check: routeCheck, show: showRoutes, highlight: hotRoute }}
               intentPaths={view === 'map' && intentPathsShown ? segmentWidths(intentPathsShown) : null}
               popover={placement === 'popover' ? menu : null}
@@ -445,7 +497,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
               source={source} onSource={setSource} canCompare={comparing}
               view={mapView} onView={(v) => dispatchView({ type: 'choose', view: v })} canChange={interventions.length > 0} early={comparing && !finished && run.time < EARLY_SECONDS}
               multimodal={multimodal} modes={modes} onModes={setModes} hasBikeNet={hasBikeNet} bikeNet={bikeNet} onBikeNet={setBikeNet} />
-            {(!engine || building) && (
+            {(!engine || building) && (!stored || simError) && (
               <div className="map-cover">
                 {simError
                   ? <LoadError title="The simulation could not start." message={simError} onRetry={onRestart} />

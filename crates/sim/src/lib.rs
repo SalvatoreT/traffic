@@ -15,6 +15,9 @@ pub mod wander;
 pub use model::{Config, Demand, Metrics, Network};
 pub use sim::Simulation;
 
+/// Hash of the simulator's sources, made by `build.rs`. Stored results record it so a viewer can tell they came from this code.
+pub const FINGERPRINT: &str = env!("SIM_FINGERPRINT");
+
 #[cfg(feature = "wasm")]
 mod wasm;
 

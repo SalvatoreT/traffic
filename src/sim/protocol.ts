@@ -20,6 +20,8 @@ export type ToWorker =
   | { t: 'reset' };
 
 export type FromWorker =
+  /** Hash of the simulator's sources (null for the mock or an older build), sent as soon as the engine loads, before the first build. */
+  | { t: 'version'; fingerprint: string | null }
   | { t: 'ready'; engine: 'wasm' | 'mock'; reason?: string }
   /** The worker is building the initial state of both runs (placing today's traffic and letting it settle), or has finished. */
   | { t: 'busy'; busy: boolean }

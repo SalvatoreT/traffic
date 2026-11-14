@@ -156,6 +156,7 @@ async function init(msg: Extract<ToWorker, { t: 'init' }>) {
   interventions = msg.interventions; speed = msg.speed; running = msg.running;
   let engine: 'wasm' | 'mock' = 'mock';
   let reason: string | undefined;
+  let fingerprint: string | null = null;
   Ctor = MockSimulation as unknown as SimCtor;
   if (!msg.mock) {
     try {
@@ -171,11 +172,14 @@ async function init(msg: Extract<ToWorker, { t: 'init' }>) {
       probe.metrics();
       (probe as SimLike).free?.();
       engine = 'wasm';
+      const fp = mod.simulatorFingerprint;
+      fingerprint = typeof fp === 'function' ? String((fp as () => string)()) : null;
     } catch (e) {
       reason = (e as Error).message ?? String(e);
       Ctor = MockSimulation as unknown as SimCtor;
     }
   } else reason = 'mock requested';
+  post({ t: 'version', fingerprint });
   whileBuilding(() => { rebuild(); lastTick = performance.now(); resetWindow(); postFrame(); postStats(); });
   post({ t: 'ready', engine, reason });
   if (!timer) timer = setTimeout(tick, 33);

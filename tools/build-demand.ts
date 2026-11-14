@@ -12,6 +12,7 @@ import { buildGraph, costToGo, treeFrom, type Graph } from './lib/assign';
 import { buildStations, corridorOf, markHoldout, overusedRecords, fitPeriod, fitReport, type FitConfig, type NetLinkIn, type PeriodResult } from './lib/demand-fit';
 import type { FlowType } from './lib/fit-counts';
 import { applyRecency, yearLabel, type RecencyConfig } from './lib/recency';
+import { offRampLinks, splitByRamp } from './lib/ramp-choice';
 import { intersectionStations, type IxConfig, type IxFile } from './lib/intersection-counts';
 import { assumedMovementFlows, assumedReportLines, withAlternatives, type AssumedMovementCfg, type AssumedReport, type Carve } from './lib/assumed-movements';
 import { annotateFlows, resolveIntents, type IntentFlow, type ThroughIntentsCfg } from './lib/through-intents';
@@ -278,6 +279,7 @@ const rampRows: RampRow[] = JSON.parse(readFileSync(cfg.raw.caltransRamps, 'utf8
 const rc = cfg.ramps;
 const rampVol = matchRampVolumes(ramps, rampRows, cfg.streetMatch, streetKey, rc.defaultAdt, 'Caltrans ramp ADT', (rc.aliases ?? []).map((a: { lat?: number; lon?: number }) => ({ ...a, at: a.lat === undefined ? undefined : toXY(a.lat, a.lon!) })), rc.excludeRows ?? [], (id) => [nodeById.get(id)!.x, nodeById.get(id)!.y]);
 const rampVeh = (r: Ramp, p: string) => (rampVol.get(r)!.adt * rc.kFactor * pf[p].volume) / r.gates.length;
+const offRamps = offRampLinks(ramps.filter((r) => r.kind === 'off').map((r) => r.surface), net.links as never, new Set<string>(cfg.freewayClasses ?? []));
 interface FwGate { id: number; deg: number; inT: Record<string, number>; outT: Record<string, number> }
 const fwGates: FwGate[] = [...freewayIds].map((id) => {
   const n = nodeById.get(id)!;
@@ -804,18 +806,24 @@ if (fc?.enabled) {
       if (mm.a === null || mm.b === null) throw new Error(`assumed movement ${mv.id}: ${mm.reason}`);
       const st = countRes.stations.find((q) => q.feature?.kind === 'move' && q.feature.a === mm.a && q.feature.b === mm.b);
       if (!st) throw new Error(`assumed movement ${mv.id}: no counted movement station for links ${mm.a} to ${mm.b}`);
-      return { mv, a: mm.a, b: mm.b, st };
+      let first: number | undefined;
+      if (mv.wholeStreet) {
+        const rt = countRes.stations.find((q) => q.family === 'route' && q.feature?.kind === 'path' && q.label.startsWith(`${mv.wholeStreet}, whole street`));
+        if (!rt || rt.feature?.kind !== 'path') throw new Error(`assumed movement ${mv.id}: no whole-street route count named "${mv.wholeStreet}"`);
+        first = rt.feature.first;
+      }
+      return { mv, a: mm.a, b: mm.b, st, first };
     });
     const grp = groups ? { groupOf: (id: number) => groupOfNode(groups, nodeById, id), expand: (ref: string | string[]) => expandGroups(groups, ref) } : undefined;
     for (const per of outPeriods) {
       const g = buildGraph(net.nodes as never, net.links as never, net.turnBans ?? [], per.id);
       const seed = per.flows.filter((q) => !q.mode && !q.via);
       const carves = new Map<number, number>();
-      for (const { mv, a, b, st } of maps) {
+      for (const { mv, a, b, st, first } of maps) {
         const target = st.target[per.id] ?? 0;
         if (!(target > 0)) continue;
         const pm = st.target[lastPeriod] || target;
-        const r = assumedMovementFlows(mv, a, b, target, per.id, seed, g, (id) => !!nodeById.get(id)?.inStudyArea, grp, target / pm);
+        const r = assumedMovementFlows(mv, a, b, target, per.id, seed, g, (id) => !!nodeById.get(id)?.inStudyArea, grp, target / pm, first);
         per.flows.push(...(withAlternatives(r.flows, { cfg: mv, a, b }, maps.map((q) => ({ cfg: q.mv, a: q.a, b: q.b })), grp) as Flow[]));
         assumedReports.push(r.report);
         for (const [k, v] of r.carve as Carve) carves.set(k, (carves.get(k) ?? 0) + v);
@@ -833,7 +841,8 @@ if (fc?.enabled) {
     // Cross-validation (design D17): a first fit without the validation stations gives the out-of-sample figures and, when `validation.demandOutput` is set, a demand file
     // the simulator can be run on; the demand that ships is fitted on every count.
     let cv: PeriodResult | null = null;
-    if (fc.validation?.enabled && stations.some((q) => q.held)) {
+    if (process.env.SKIP_CV && fc.validation?.enabled) for (const q of stations) { q.held = !!q.outOfFit; q.cvExclude = false; }
+    if (fc.validation?.enabled && stations.some((q) => q.held) && !process.env.SKIP_CV) {
       cv = fitPeriod(per.id, cars, types, stations, net.nodes as never, net.links as NetLinkIn[], net.turnBans ?? [], fitCfg);
       cvFlows[per.id] = cars.map((q, k) => viaOut({ ...q, vehPerHour: Math.round(cv!.volume[k] * 100) / 100 })).filter((q) => q.vehPerHour >= 0.01) as typeof cvFlows[string];
       for (const q of stations) { q.held = !!q.outOfFit; q.cvExclude = false; }
@@ -854,7 +863,13 @@ if (fc?.enabled) {
       writeFileSync(process.env.ASSIGN_DUMP, JSON.stringify(rows));
     }
     flowsBy[per.id] = cars.map((q) => ({ ...q }));
-    per.flows = [...cars.map((q, k) => ({ ...q, vehPerHour: Math.round(r.volume[k] * 100) / 100 })).filter((q) => q.vehPerHour >= 0.01), ...per.flows.filter((q) => q.mode)];
+    let carOut: Flow[] = cars.map((q, k) => ({ ...q, vehPerHour: r.volume[k] }));
+    if (rc.choice?.enabled) {
+      const sp = splitByRamp(cars as Flow[], r.volume, r.assignment, (k) => !cars[k].mode && fwIdSet.has(cars[k].origin) && !fwIdSet.has(cars[k].destination), offRamps, net.links.map((l: { from: number }) => l.from), net.links.map((l: { to: number }) => l.to), rc.choice);
+      carOut = sp.flows;
+      stationNotes.push(`ramp choice made upstream (ASSUMPTION), ${per.id}: ${sp.forced} off-ramp flows got a ramp movement, ${sp.divided} of them divided over two ramps or more; volume by ramp link ${[...sp.byRamp].sort((x, y) => y[1] - x[1]).map(([l, v]) => `${l} ${v.toFixed(0)}`).join(', ')} veh/h`);
+    }
+    per.flows = [...carOut.map((q) => ({ ...q, vehPerHour: Math.round(q.vehPerHour * 100) / 100 })).filter((q) => q.vehPerHour >= 0.01), ...per.flows.filter((q) => q.mode)];
   }
   for (const s of summary) { const per = outPeriods.find((q) => q.id === s.id)!; Object.assign(s, summarizeFlows(per.flows)); }
   fitText = fitReport(cfg.area, fitResults, flowsBy, { fit: fitCfg.fit, draws: fc.draws, noise: fc.noise, guardExcess: fc.capacityGuard.excessShare, guardWeight: fc.capacityGuard.weight, guardOn: fc.capacityGuard.enabled, tolOk: fc.tolerancePct.report, shareWeight: fc.shares?.enabled ? fc.shares.weight : undefined, assignment: fitCfg.assignment, links: net.links, composition: fc.composition, recency: fc.recency?.enabled ? { referenceYear: fc.recency.referenceYear, recentYears: fc.recency.recentYears } : undefined }, stationNotes, [...(countRep ? countReportLines(countRep) : []), ...localScaleLines(), ...(assumedReports.length ? assumedReportLines(assumedReports, (id) => `${gateName(id)} (${id})`) : [])]);

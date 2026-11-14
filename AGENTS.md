@@ -26,6 +26,7 @@ areas are data.
 - `npm test`: Rust unit tests + TS tests
 - `npm run data`: regenerate `public/data/*` from `data/*`
 - `npm run data:fetch`: download source data from its origins
+- `npm run data:results`: precompute the finished hour of every published proposal for each period (needs `npm run wasm`; see `data/README.md`)
 - `npm run data:pull` / `npm run data:push`: sync `data/*` and `public/data/*` with the R2 bucket
 - `cargo run --release -p traffic-sim --bin validate`: validation suite (writes `data/calibration/validation.md`)
 - `cargo run --release -p traffic-sim --bin calibrate -- --area rockridge --period pm_peak`: calibration report against observed data
