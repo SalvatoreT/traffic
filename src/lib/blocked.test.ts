@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { NetLink, NetNode, Network } from '../types';
 import { buildIndex } from './naming';
-import { bearingVector, closedLegs, filterChoices, filterLegs, filterSentence, filterText, markOffset, MARK_MIN_PX, MARK_STEP_PX, streetFilters } from './blocked';
+import { closedLegs, filterChoices, filterLegs, filterSentence, filterText, streetFilters, legBars, blockBar, BAR_AT_M, BAR_LEN_M } from './blocked';
 import { describeInterventionFull } from './describe';
 
 interface LegSpec { street: string; at: [number, number]; mouth?: [number, number] }
@@ -110,30 +110,46 @@ describe('filter wording', () => {
   });
 });
 
-describe('mark placement', () => {
-  it('points the unit vector the way a compass bearing leaves the node on screen', () => {
-    const close = (v: [number, number], x: number, y: number) => { expect(v[0]).toBeCloseTo(x); expect(v[1]).toBeCloseTo(y); };
-    close(bearingVector(0), 0, -1);
-    close(bearingVector(90), 1, 0);
-    close(bearingVector(180), 0, 1);
+describe('barrier bars', () => {
+  const dot = (b: { ends: [[number, number], [number, number]] }, v: [number, number]) =>
+    ((b.ends[1][0] - b.ends[0][0]) * v[0] + (b.ends[1][1] - b.ends[0][1]) * v[1]) / BAR_LEN_M;
+
+  it('crosses each leg at a right angle, the stated distance out, at full length', () => {
+    const net = star([...cross(), { street: 'Diag Street', at: [70, 70] }]);
+    const f = filterLegs(net, buildIndex(net), 0);
+    const bars = legBars(f);
+    expect(bars).toHaveLength(f.legs.length);
+    bars.forEach((b, i) => {
+      const l = f.legs[i], d = Math.hypot(l.path[1][0] - l.path[0][0], l.path[1][1] - l.path[0][1]);
+      const u: [number, number] = [(l.path[1][0] - l.path[0][0]) / d, (l.path[1][1] - l.path[0][1]) / d];
+      expect(dot(b, u)).toBeCloseTo(0, 6);
+      expect(Math.hypot(b.center[0] - l.mouth[0], b.center[1] - l.mouth[1])).toBeCloseTo(BAR_AT_M);
+      expect(Math.hypot(b.ends[1][0] - b.ends[0][0], b.ends[1][1] - b.ends[0][1])).toBeCloseTo(BAR_LEN_M);
+    });
   });
 
-  it('pushes a mark out to the minimum distance when the mouth is at the node', () => {
-    const [x, y] = markOffset([0, 0], [0, -1]);
-    expect(x).toBeCloseTo(0);
-    expect(Math.hypot(x, y)).toBeCloseTo(MARK_MIN_PX);
+  it('measures from the mouth of a leg that starts away from the node', () => {
+    const net = star([{ street: 'Ayala Avenue', at: [0, 100], mouth: [0, 20] }, { street: 'Martin Street', at: [100, 0] }]);
+    const f = filterLegs(net, buildIndex(net), 0);
+    const ayala = legBars(f, f.legs.find((l) => l.street === 'Ayala Avenue')!.links)[0];
+    expect(ayala.center[0]).toBeCloseTo(0);
+    expect(ayala.center[1]).toBeCloseTo(20 + BAR_AT_M);
+    expect(Math.abs(dot(ayala, [0, 1]))).toBeLessThan(1e-9);
   });
 
-  it('keeps a mouth that is already far out and steps past it', () => {
-    const [x, y] = markOffset([0, -100], [0, -1]);
-    expect(x).toBeCloseTo(0);
-    expect(y).toBeCloseTo(-100 - MARK_STEP_PX);
+  it('closes only the named legs', () => {
+    const net = star(cross());
+    const f = filterLegs(net, buildIndex(net), 0);
+    const o = streetFilters(f)[0];
+    expect(legBars(f, o.links)).toHaveLength(o.legs.length);
   });
 
-  it('keeps a displaced mouth on its own street', () => {
-    const [x, y] = markOffset([10, 0], [0, -1]);
-    expect(x).toBeCloseTo(10);
-    expect(y).toBeLessThan(0);
+  it('puts a block bar at the midpoint, across the block', () => {
+    const b = blockBar({ geometry: [[0, 0], [60, 80]], length: 100 });
+    expect(b.center[0]).toBeCloseTo(30);
+    expect(b.center[1]).toBeCloseTo(40);
+    expect(dot(b, [0.6, 0.8])).toBeCloseTo(0, 6);
+    expect(blockBar({ geometry: [[0, 0], [0, 100]], length: 100 }, 25).center[1]).toBeCloseTo(25);
   });
 });
 

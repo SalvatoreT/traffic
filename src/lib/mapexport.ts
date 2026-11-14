@@ -1,3 +1,4 @@
+import { BAR_LEN_M } from './blocked';
 import type { Intervention } from '../types';
 import { changeMagnitude } from './change';
 import { formatClock } from './format';
@@ -74,8 +75,8 @@ const BADGE_STYLE: Record<Intervention['type'], { fill: string; edge: string; in
   turn_ban: { fill: '#ffe3e3', edge: '#111', ink: '#111', radius: [4, 12, 4, 4] },
 };
 
-/** `leg` is a closed-to-cars bar at the mouth of a street a filter closes; `bearing` is the street's, and the bar crosses it. */
-export interface BadgeMark { x: number; y: number; type: Intervention['type'] | 'leg'; bearing?: number; mph?: number }
+/** `leg` is a closed-to-cars bar across a street, from (x, y) to (x2, y2): ground-anchored, so its width follows the map scale (`px` px per meter). */
+export interface BadgeMark { x: number; y: number; x2?: number; y2?: number; type: Intervention['type'] | 'leg'; bearing?: number; mph?: number }
 
 function roundedRect(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: [number, number, number, number]) {
   const [tl, tr, br, bl] = r;
@@ -97,9 +98,12 @@ export function drawBadges(g: CanvasRenderingContext2D, marks: BadgeMark[]) {
       continue;
     }
     if (m.type === 'leg') {
-      g.save(); g.translate(m.x, m.y); g.rotate((((m.bearing ?? 0) + 90) * Math.PI) / 180); g.lineCap = 'butt';
-      const bar = (w: number, c: string, dash: number[] = []) => { g.setLineDash(dash); g.lineWidth = w; g.strokeStyle = c; g.beginPath(); g.moveTo(0, -12); g.lineTo(0, 12); g.stroke(); };
-      bar(14, '#fff'); bar(10, '#111'); bar(6, '#ffd43b', [7, 3]);
+      if (m.x2 === undefined || m.y2 === undefined) continue;
+      const x2 = m.x2, y2 = m.y2;
+      const k = Math.hypot(x2 - m.x, y2 - m.y) / BAR_LEN_M;
+      g.save(); g.lineCap = 'butt';
+      const bar = (w: number, c: string, dash: number[] = []) => { g.setLineDash(dash.map((d) => d * w)); g.lineWidth = w; g.strokeStyle = c; g.beginPath(); g.moveTo(m.x, m.y); g.lineTo(x2, y2); g.stroke(); };
+      bar(4 * k, '#fff'); bar(3 * k, '#111'); bar(2 * k, '#ffd43b', [1.5, 1.5]);
       g.restore();
       continue;
     }

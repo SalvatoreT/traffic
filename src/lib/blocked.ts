@@ -1,12 +1,14 @@
 import type { Network } from '../types';
+import { pointAlong } from './geom';
 import { legDirections, nodeLegs } from './diverter';
 import { UNNAMED, type NetIndex } from './naming';
 
 /** A leg whose street mouth lies farther than this from the node point joins the node through a merged (offset) junction (m). */
 export const MERGED_OFFSET_M = 3;
-/** Closest a leg mark sits to the filter badge on screen, and the step it moves out from the mouth (CSS px). */
-export const MARK_MIN_PX = 36;
-export const MARK_STEP_PX = 6;
+/** Ground length of a barrier bar: a bit wider than the drawn road (assumption: road width plus margin, not surveyed) (m). */
+export const BAR_LEN_M = 12;
+/** How far past the mouth of a closed leg its bar sits, along the street (m). */
+export const BAR_AT_M = 8;
 
 export interface FilterLeg {
   /** Street name; an unnamed road is described by what it is off. */
@@ -21,6 +23,8 @@ export interface FilterLeg {
   mouth: [number, number];
   /** Distance from the node point to the mouth (m). */
   offsetM: number;
+  /** The street leaving the mouth, local meters, mouth first. */
+  path: [number, number][];
   /** Every link on this leg, entering and leaving (what a modal filter's `legs` holds). */
   links: number[];
 }
@@ -48,7 +52,7 @@ export function filterLegs(net: Network, idx: NetIndex, node: number): FilterLeg
     const g = link.geometry;
     const mouth = (out ? g[0] : g[g.length - 1]) as [number, number];
     const street = l.street === UNNAMED ? idx.linkName[link.id] : l.street;
-    return { street, direction: dirs[i], bearing: l.bearing, mouth, offsetM: Math.hypot(mouth[0] - n.x, mouth[1] - n.y), links: [...l.ins, ...l.outs] };
+    return { street, direction: dirs[i], bearing: l.bearing, mouth, offsetM: Math.hypot(mouth[0] - n.x, mouth[1] - n.y), path: (out ? g : [...g].reverse()) as [number, number][], links: [...l.ins, ...l.outs] };
   });
   base.sort((p, q) => p.street.localeCompare(q.street) || ((p.bearing + 45) % 360) - ((q.bearing + 45) % 360));
   const seen = new Map<string, number>();
@@ -170,14 +174,28 @@ export function filterText(
 
 export const filterSentence = (t: FilterText): string => [t.lead, t.closed, t.junction, t.people].filter(Boolean).join(' ');
 
-/** Where a leg mark sits, in CSS px from the node's screen position: at the mouth, pushed out along the leg so it clears the badge. */
-export function markOffset(mouthPx: [number, number], dir: [number, number], minPx = MARK_MIN_PX, stepPx = MARK_STEP_PX): [number, number] {
-  const gap = Math.max(stepPx, minPx - Math.hypot(mouthPx[0], mouthPx[1]));
-  return [mouthPx[0] + dir[0] * gap, mouthPx[1] + dir[1] * gap];
+export interface Bar {
+  /** Where the bar crosses the street, local meters. */
+  center: [number, number];
+  /** Ends of the bar, local meters. */
+  ends: [[number, number], [number, number]];
+  /** Bearing of the street at the bar, degrees clockwise from north; the bar is at a right angle to it. */
+  bearing: number;
 }
 
-/** Unit screen vector (x right, y down) of a compass bearing. */
-export const bearingVector = (bearing: number): [number, number] => {
-  const r = (bearing * Math.PI) / 180;
-  return [Math.sin(r), -Math.cos(r)];
-};
+/** A bar of ground length `len` across `path` at distance `s` along it, perpendicular to the street there. */
+export function barAcross(path: [number, number][], s: number, len = BAR_LEN_M): Bar {
+  const p = pointAlong(path, Math.max(0, s));
+  const px = -Math.sin(p.heading) * len / 2, py = Math.cos(p.heading) * len / 2;
+  return { center: [p.x, p.y], ends: [[p.x - px, p.y - py], [p.x + px, p.y + py]], bearing: ((90 - (p.heading * 180) / Math.PI) % 360 + 360) % 360 };
+}
+
+/** One bar per closed leg, `BAR_AT_M` along the street from that leg's own mouth. */
+export function legBars(f: FilterLegs, legs?: number[]): Bar[] {
+  return closedLegs(f, legs).map((l) => barAcross(l.path, BAR_AT_M));
+}
+
+/** The bar of a block filter: across the link at `position` along it, else at its midpoint. */
+export function blockBar(link: { geometry: [number, number][]; length: number }, position?: number): Bar {
+  return barAcross(link.geometry, position ?? link.length / 2);
+}
