@@ -10,6 +10,6 @@
 - [x] 2.4 Unit tests
 
 ## 3. Verify and ship
-- [ ] 3.1 `npm test`, `npx tsc --noEmit -p .`
-- [ ] 3.2 Browser check: desktop and phone, light and dark
-- [ ] 3.3 Update `data/proposals/README.md`, archive the change, commit and push
+- [x] 3.1 `npm test`, `npx tsc --noEmit -p .`
+- [x] 3.2 Browser check: desktop and phone, light and dark
+- [x] 3.3 Update `data/proposals/README.md`, archive the change, commit and push

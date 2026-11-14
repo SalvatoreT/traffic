@@ -4,7 +4,7 @@
 //! cargo run --release -p traffic-sim --bin explore -- --area rockridge --periods pm_peak,am_peak --seeds 1,2,3 --beam 3 --depth 8 --candidates 40
 
 use std::path::{Path, PathBuf};
-use traffic_sim::explore::{annotate, profile, refs, report::explore, Params, Study};
+use traffic_sim::explore::{annotate, profile, refs, report::explore, util, Params, Study};
 
 fn usage(msg: &str) -> ! {
     if !msg.is_empty() {
@@ -86,7 +86,7 @@ fn main() {
         let mut file: serde_json::Value = serde_json::from_str(&text).unwrap_or_else(|e| usage(&format!("{}: {e}", out.display())));
         let t0 = std::time::Instant::now();
         let s = annotate::annotate(&study, &mut file, p.minutes, p.jobs).unwrap_or_else(|e| usage(&e));
-        std::fs::write(&out, serde_json::to_string_pretty(&file).unwrap() + "\n").expect("write proposals");
+        std::fs::write(&out, util::pretty_json(&file)).expect("write proposals");
         eprintln!("annotated {} package(s) in {} group(s) from {} run(s) in {:.0}s; wrote {}", s.packages, s.groups, s.runs, t0.elapsed().as_secs_f64(), out.display());
         return;
     }
@@ -131,7 +131,7 @@ fn main() {
         }
         let o = explore(&study, &p);
         let merged = profile::merge_file(existing.as_ref(), &p.area, o.json.clone(), &order, &unconstrained);
-        std::fs::write(&out, serde_json::to_string_pretty(&merged).unwrap() + "\n").expect("write proposals");
+        std::fs::write(&out, util::pretty_json(&merged)).expect("write proposals");
         let section = profile::report_section(&o.markdown, &p.profile);
         let old_report = std::fs::read_to_string(&report).ok();
         std::fs::write(&report, profile::merge_report(old_report.as_deref(), &p.area, &section, &p.profile.id, &order, &unconstrained)).expect("write report");

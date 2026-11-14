@@ -63,9 +63,10 @@ export function ProposalPicture({ net, index, p, ivs, mode, periodLabel, searche
   const facts = useMemo(() => (pic ? pictureFacts(p, pic, index) : null), [p, pic, index]);
   const model = useMemo(() => (pic && facts ? buildPicture(net, index, p, pic, ivs, facts) : null), [net, index, p, pic, ivs, facts]);
   if (!pic || !facts || !model) return null;
-  const when = periodLabel(pic.period);
+  const short = (id: string) => periodLabel(id).replace(/\s*\(.*\)\s*$/, '');
+  const when = short(pic.period);
   const alt = pictureAlt(p, pic, facts, when);
-  const note = periodNote(searchedPeriods.map(periodLabel), when);
+  const note = periodNote(searchedPeriods.map(short), when);
   const mismatch = mismatchNote(facts, when);
   const { view, unit } = model;
   const text = 'var(--text)', halo = 'var(--surface-2)';

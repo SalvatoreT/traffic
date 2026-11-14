@@ -263,6 +263,16 @@ fn proposals_carry_a_picture_and_annotate_reproduces_it() {
 }
 
 #[test]
+fn number_arrays_print_on_one_line_and_read_back_the_same() {
+    let v = serde_json::json!({"a": [1, 2, 3], "b": ["x", "y"], "c": {"d": [1.5, -2], "e": []}, "f": [[1, 2], [3]]});
+    let t = traffic_sim::explore::util::pretty_json(&v);
+    assert!(t.contains("\"a\": [1, 2, 3],"), "{t}");
+    assert!(t.contains("\"d\": [1.5, -2]"), "{t}");
+    assert!(t.contains("\"b\": [\n"), "{t}");
+    assert_eq!(serde_json::from_str::<serde_json::Value>(&t).unwrap(), v);
+}
+
+#[test]
 fn annotate_refuses_a_file_computed_on_other_inputs() {
     use traffic_sim::explore::annotate::annotate;
     let n = ratrun(false, false);

@@ -87,3 +87,37 @@ mod tests {
         assert_eq!(civil(20_516), "2026-03-04");
     }
 }
+
+/// Pretty JSON with each array of plain numbers on one line, so the per-link arrays of a picture stay a few lines long.
+pub fn pretty_json(v: &serde_json::Value) -> String {
+    let text = serde_json::to_string_pretty(v).expect("serialize json");
+    let lines: Vec<&str> = text.lines().collect();
+    let is_num = |l: &str| {
+        let t = l.trim().trim_end_matches(',');
+        !t.is_empty() && t.parse::<f64>().is_ok()
+    };
+    let mut out = String::with_capacity(text.len());
+    let mut i = 0;
+    while i < lines.len() {
+        let l = lines[i];
+        if l.trim_end().ends_with('[') {
+            let mut j = i + 1;
+            while j < lines.len() && is_num(lines[j]) {
+                j += 1;
+            }
+            let close = lines.get(j).map(|c| c.trim()).unwrap_or("");
+            if j > i + 1 && (close == "]" || close == "],") {
+                out.push_str(l.trim_end());
+                out.push_str(&lines[i + 1..j].iter().map(|n| n.trim().trim_end_matches(',')).collect::<Vec<_>>().join(", "));
+                out.push_str(close);
+                out.push('\n');
+                i = j + 1;
+                continue;
+            }
+        }
+        out.push_str(l);
+        out.push('\n');
+        i += 1;
+    }
+    out
+}
