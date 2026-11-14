@@ -77,7 +77,7 @@ export function ProposalPicture({ net, index, p, ivs, areaName, areaId, status, 
       </div>
       {png && <p className="prop-pic-dl"><a className="btn" href={png.url} download={file}>Download image<span className="sr-only">: {p.title}</span></a> <span className="muted small">PNG, light colors, ready to send.</span></p>}
       <figcaption>
-        <p className="prop-pic-cap"><strong>{pictureCaption(when)}</strong></p>
+        <p className="sr-only">{pictureCaption(when)}</p>
         {note && <p className="prop-pic-note">{note}</p>}
         {mismatch && <p className="prop-pic-note">{mismatch}</p>}
         <details className="prop-pic-legend">

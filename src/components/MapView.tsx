@@ -46,6 +46,8 @@ interface Props {
   baseStats: Float32Array | null;
   view: ChangeView;
   client: SimClient | null;
+  /** A stored, finished result is shown: no cars or signals are drawn, only the layers and marks. */
+  still?: boolean;
   interventions: Intervention[];
   selection: Selection | null;
   /** Through-route overlay: routes and cells drawn only when `show`; `highlight` is drawn either way. */
@@ -71,6 +73,9 @@ interface Props {
   exportRef: { current: ((fmt: ImageFormat) => Promise<void>) | null };
   onAnnounce(message: string): void;
 }
+
+const STILL_TIME = 3600;
+const STILL_FRAME = { time: 0, vehicles: new Float32Array(0), signals: new Uint8Array(0), wall: 0, rate: 0 };
 
 const KIND_STYLE = {
   light: { bg: '#f1efe8', water: '#cfd8e0', minor: '#d8d3c6', major: '#b9b2a0', path: '#cdd5bf', study: '#0b5cad' },
@@ -291,7 +296,7 @@ export function MapView(p: Props) {
   /** Paints the agents, crossings, change arrows and signals; shared by the live canvas and the image export. */
   const paintOverlay = (g: CanvasRenderingContext2D, w: number, h: number) => {
     const map = mapRef.current, L = live.current;
-    const frame = L.client?.frame;
+    const frame = L.still ? STILL_FRAME : L.client?.frame;
     if (!map || !frame || !L.visible) return null;
     const P = L.proj;
     const o = map.project(P.toLonLat(0, 0)), ex = map.project(P.toLonLat(100, 0)), ey = map.project(P.toLonLat(0, 100));
@@ -806,7 +811,7 @@ export function MapView(p: Props) {
     return () => { if (p.client) p.client.onFrame = null; window.clearTimeout(drawTimer.current); drawTimer.current = 0; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p.client]);
-  useEffect(() => { schedule(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [mode, p.visible, p.modes]);
+  useEffect(() => { schedule(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [mode, p.visible, p.modes, p.still]);
   useEffect(() => { if (p.visible) mapRef.current?.resize(); }, [p.visible]);
 
   // ---- intervention markers
@@ -988,7 +993,7 @@ export function MapView(p: Props) {
       const legend = legendModel(L.overlay, L.mode, change);
       const css = getComputedStyle(document.documentElement);
       const v = (n: string, d: string) => css.getPropertyValue(n).trim() || d;
-      const time = L.client?.frame?.time ?? 0;
+      const time = L.still ? STILL_TIME : (L.client?.frame?.time ?? 0);
       const cv = composeImage({
         base, width: w, height: h,
         paintOnMap: (g) => { paintOverlay(g, w, h); drawBadges(g, marks); },
