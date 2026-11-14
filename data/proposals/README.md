@@ -10,6 +10,14 @@ cargo run --release -p traffic-sim --bin explore -- --area rockridge \
   [--profile ID] [--profiles FILE]
 ```
 
+To add the pictures the cards draw to a file that was written without them, without searching again:
+
+```
+cargo run --release -p traffic-sim --bin explore -- --area rockridge --annotate --jobs 4
+```
+
+It reads `public/data/<area>.proposals.json` (or `--out FILE`), stops if any group was computed on a different network or demand, re-simulates only the baseline and the published packages for each group's picture period, and writes `picture` into every package. It does not write the report. The run length comes from `computed.minutes`, else `--minutes` (default 60); seeds come from the group.
+
 The simulator results change whenever the network, the demand or the model changes, so rerun the search after any of them. The output is not meant to be edited by hand.
 
 ## Profiles
@@ -57,6 +65,7 @@ From the rechecked finalists the tool keeps those that no other finalist beats o
 - `harm.through.worstBlock` is the block that gains the most through cars an hour, averaged over the periods (with no block past its noise band, the block with the largest raw gain). `increaseVehPerHour` is that block's raw average gain in through cars, both directions. `blocksAboveNoise` counts blocks past their band. When it is 0 the app says no block gains through traffic beyond run-to-run variation and shows no number.
 - `byPeriod[p].cutThrough` is the same triple as the overall `cutThrough` for one period. `byPeriod[p].allTraffic` is about all cars, not through cars: `worstBlock` is the block with the largest all-traffic increase in that period (past its band, else the largest raw one), `baselineVehPerHour` and `scenarioVehPerHour` its all-car flow, `throughIncreaseVehPerHour` how much of the change is through cars (the difference of the block's through flow), and `blocksAboveNoise` how many blocks gain all traffic beyond noise in that period. The local trips' share of the change is all-car change minus `throughIncreaseVehPerHour`.
 - `context.boundingStreets` lists the named primary, secondary and tertiary streets with in-study links, summed over their in-study links. `flowChangePct` compares summed flow, `speedChangeMph` the flow-weighted mean speed.
+- `picture` holds, for one period, the through cars an hour on each link that has any, today (`base`) and with the package (`scen`), parallel to `links` (link ids), integers, averaged over the group's seeds with the same counters and window as the block figures. The period is the PM peak when it was searched, else the first period. The card draws the change on each block (both directions summed) with the interventions on top. It is absent from files written before pictures; the card then shows none. `computed.minutes` is the run length the group used.
 - `link` opens the package on the first searched period.
 - `computed.networkHash` and `demandHash` are the first 16 hex characters of the SHA-256 of the file bytes of `public/data/<area>.network.json` and `<area>.demand.json`. `calibration` is the status in `public/data/areas.json`.
 
