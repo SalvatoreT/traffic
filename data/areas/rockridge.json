@@ -128,7 +128,7 @@
   },
   "calibration": {
     "status": "uncalibrated",
-    "note": "The 52nd St off-ramp carries 692 veh/h against 1,024 counted; PM headline freeway shares are 9 points off on average, Hillegass Ave SB 16.",
+    "note": "PM headline shares are within 10 points, but the 52nd St off-ramp carries 683 veh/h against 1,024 and 68% of fitted PM stations pass GEH 5 against 85%.",
     "defaultPeriod": "midday",
     "experimentalPeriods": [
       "pm_peak"

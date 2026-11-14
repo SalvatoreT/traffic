@@ -286,6 +286,9 @@ pub fn report(rows: &[Row], groups: &Groups, targets: &Value, seeds: usize, pm: 
         let _ = writeln!(md, "### {block}\n");
         let spec = map["blocks"].as_array().and_then(|a| a.iter().find(|b| b["block"].as_str() == Some(block)));
         let sel = targets["selectLink"].as_array().and_then(|a| a.iter().find(|t| format!("{} {}", t["street"].as_str().unwrap_or(""), t["direction"].as_str().unwrap_or("")) == *block));
+        if sel.is_none() {
+            let _ = writeln!(md, "Model: {total:.0} through cars per hour.\n");
+        }
         if let Some(t) = sel {
             let key = if pm { "pm_peak" } else { "am_peak" };
             let g = |k: &str| t[k][key].as_f64();
@@ -396,5 +399,32 @@ mod tests {
         assert_eq!(a[0].label, "Telegraph Avenue");
         assert_eq!(a[1].label, "SR-24");
         assert!(a[1].motorway);
+    }
+
+    fn net() -> Network {
+        // O (0) and D (1) outside; the study node 2 sits beside the arterial. The local way O -> 3 -> D is shorter but its links are residential inside the study area.
+        let node = |id: u32, x: f64, y: f64, study: bool| json!({"id": id, "x": x, "y": y, "control": "uncontrolled", "inStudyArea": study});
+        let link = |id: u32, from: u32, to: u32, name: &str, class: &str, len: f64, study: bool| json!({"id": id, "from": from, "to": to, "name": name, "class": class, "lanes": 1, "speedLimit": 10.0, "length": len, "geometry": [[0.0, 0.0], [1.0, 1.0]], "inStudyArea": study});
+        serde_json::from_value(json!({
+            "nodes": [node(0, 0.0, 0.0, false), node(1, 1000.0, 0.0, false), node(2, 500.0, 100.0, true), node(3, 500.0, 50.0, true)],
+            "links": [
+                link(0, 0, 1, "Telegraph Avenue", "primary", 1000.0, false),
+                link(1, 0, 3, "Colby Street", "residential", 480.0, true),
+                link(2, 3, 1, "Colby Street", "residential", 480.0, true),
+            ],
+        }))
+        .unwrap()
+    }
+
+    #[test]
+    fn the_arterial_is_found_with_the_study_areas_local_streets_closed() {
+        let arts = arterials_from_boundary(&json!({"boundary": ["Telegraph Avenue"]}));
+        let mut alt = Alt::new(&net(), &arts, 600.0);
+        assert_eq!(alt.label(0, 1), "Telegraph Avenue");
+        // no way back: the label says so instead of panicking
+        assert_eq!(alt.label(1, 0), "no route without the local streets");
+        // a path that runs on no boundary street near the study area
+        let far = Alt::new(&net(), &arts, 1.0).compute(0, 1);
+        assert_eq!(far, "none near the study area");
     }
 }

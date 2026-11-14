@@ -1,6 +1,6 @@
 ## Context
 
-PM peak, ten seeds, scale 1.0. Before: network c05a22fc9ebe8816, demand 259ceb1f64135196 (round 20). The model's purpose is through-car numbers on the residential streets of the study area, Hillegass Ave and Colby St most.
+PM peak, ten seeds, scale 1.0. Before: network c05a22fc9ebe8816, demand 259ceb1f64135196 (round 20). After: network c05a22fc9ebe8816 (unchanged), demand 67f09a8c56c92603. The model's purpose is through-car numbers on the residential streets of the study area, Hillegass Ave and Colby St most.
 
 ## Decisions
 
@@ -18,6 +18,10 @@ D6. Double counting. The plain flow of each pair gives up the trips its assumed 
 
 D7. Colby St northbound left, re-expressed. 131 veh/h and the 0.62 through share kept: 0.40 SR-24 off-ramp traffic to the west side of Alcatraz Ave, 0.22 Telegraph Ave and south-side traffic, 0.38 local residents leaving. Round 20's candidates included Tunnel Rd gates (hills) that the count does not support (4 veh/h enter Colby St from the northeast); intents remove them.
 
-D8. Movements added: the Colby St northbound right turn onto Alcatraz Ave, both Hillegass Ave northbound turn-outs, the four southbound turn-ins from Alcatraz Ave (Hillegass Ave from the west and east, Colby St from the west and east). Dana St is left out (not a counted block of the headline). All the volumes are ASSUMPTION shares of counted movements. AM and midday take the same shares (as in round 20).
+D8. Tried and not kept: east side turns by the observed via shares. The count says 33% of Hillegass Ave northbound trips go on to Benvenue Ave and 6% to College Ave, and 26% of Hillegass Ave southbound trips came by way of Benvenue Ave and 16% by way of College Ave. In the first build the cars turning east at Alcatraz Ave from Hillegass Ave northbound were placed on all east-side destinations by seed volume, and the share of Hillegass Ave northbound trips reaching College Ave rose from 6% to 16%. The variant put the northbound east turns on the Berkeley side-street group and split the southbound turn-in from the east into Berkeley side streets (0.31 of the movement) and College Ave (0.19). PM, ten seeds: removals 1.3 per hour (13 in total against 4), so D16 fails; headline error 5.6 points with 3 of 4 within 10 (4 of 4 before); Hillegass Ave northbound trips reaching College Ave 20.6% and Benvenue Ave 10.4% (the routes to the Berkeley side-street gates use College Ave), Hillegass Ave southbound from Benvenue Ave 4.8% (observed 26%). Not kept.
 
-D9. Stability. If the PM, AM or midday removals per hour reach 1.0 (D16) the volumes are backed off until D16 holds, and the record says by how much.
+D9. Movements added: the Colby St northbound right turn onto Alcatraz Ave, both Hillegass Ave northbound turn-outs, the four southbound turn-ins from Alcatraz Ave (Hillegass Ave from the west and east, Colby St from the west and east). Dana St is left out (not a counted block of the headline). All the volumes are ASSUMPTION shares of counted movements. AM and midday take the same shares (as in round 20).
+
+D10. Stability. If the PM, AM or midday removals per hour reach 1.0 (D16) the volumes are backed off until D16 holds, and the record says by how much.
+
+D11. Result. PM, ten seeds: through cars on Hillegass Ave SB 24 to 111 (observed 79 to 120), Colby St SB 54 to 109 (39 to 117), Hillegass Ave NB 53 to 72 (48 to 95), Colby St NB 121 to 149 (102 to 145); headline error 9.2 to 4.7 points, 4 of 4 within 10; Alcatraz Ave entries 189 to 259 (360); PM removals 0.40 per hour, AM 0.00, midday 0.00, so D16 holds and no volume was backed off. The station rule is not met (PM fitted 68% below GEH 5 against 85%), so the area stays `uncalibrated`. `experimentalPeriods` stays `["pm_peak"]` pending the owner.
