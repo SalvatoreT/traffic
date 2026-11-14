@@ -89,6 +89,105 @@ Claremont Ave: checked end to end. OSM lanes (3 with one forward and one backwar
 
 Ramp junctions: after joining all four SR-24 terminals are single signalized nodes (Aileen/Telegraph and Clifton/Claremont off-ramps, Hudson/Claremont and 56th/Telegraph on-ramps) with 2-lane ramp approaches at 35 mph. Mean discharge in the PM peak (seeds 1 to 3, measured before the third round): Aileen off-ramp 584 veh/h (offered 656), Clifton off-ramp 914 veh/h (offered about 1,025), on-ramps 783 and 555 veh/h. That is 290 to 460 veh/h per lane averaged over the hour; the signal gives the ramp 30 to 45% of the cycle and the shortfall is downstream spill-back on Claremont and Telegraph, not the ramp signal itself. Before the third round the remaining gridlock removals were mostly vehicles queued on the 4-lane freeway stub behind the single-lane Clifton off-ramp (26 of about 45 removals over six seeds at scale 0.3). The third round checked the ramp lanes against OSM: the off-ramps are tagged one lane for most of their length and two lanes (turn lanes left | left;through;right at Clifton, left | right at Aileen) on the final way before the signal, and the importer keeps that per segment (a test covers it), so no lane count is lost. After step M the stub accounts for about one removal per run.
 
+## Twenty-fourth round: count recency, the Ashby Ave slip link (change count-recency-weights)
+
+PM peak, seeds 1 to 10 (AM and midday also 1 to 10), scale 1.0, 60 minutes. Before: network 5fe8241a6ba1e306, demand 222fb062e8e5dc1c (rebuilt at the start of the round: same hash). After: network 5fe8241a6ba1e306 (unchanged), demand 74a9882dd4286e12. The simulator did not change. Decisions are in `openspec/changes/archive/*-count-recency-weights/design.md`.
+
+The owner's decision: "Let's make sure the newer data is more important than the 2010/2013 data". Every count station now carries its source and count year, and the fit multiplies the weight of a station by a band weight of its age (`countFit.recency` in the area config, reference year 2026, one band edge at 10 years, ASSUMPTION).
+
+### Count years
+
+| Source | Count year | Where it comes from | Age (years) | PM stations in the fit |
+| --- | --- | --- | --- | --- |
+| Resident volunteer count | 2025 | Count date, 2025-02-25 | 1 | 126 |
+| Caltrans AADT (SR-13, SR-123) | 2024 | Count year 2023-24 of the service, set as 2024 in the config | 2 | 8 |
+| Caltrans ramp ADT, latest row | 2024 (3 stations), 2012 (13) | Latest year of the published row; the Claremont and Telegraph rows only have 2012 | 2 and 14 | 3 and 13 |
+| OakDOT turning-movement counts | 2019 (mean of 2018, 2018, 2019, 2021) | Year prefix of the file names | 7 | 20 |
+| Children's Hospital EIR counts | 2013 | Count date, 2013-09-19 | 13 | 112 |
+| Safeway EIR counts | 2010 | Count date, 2010-03-16 | 16 | 61 |
+
+No source lacks a date. A station whose year is null would take the last band (treated as old).
+
+### Settings tested
+
+The weight multiplies the station weight of every station older than 10 years (the 2010 and 2013 intersection counts and the 2012 ramp rows). PM peak, seeds 1 to 10:
+
+| Old counts at | Removals per hour | Through cars HSB / CSB / HNB / CNB | Headline shares | Error | 52nd St / Clifton St off-ramps | Fitted / held out below GEH 5 | Recent sources fitted | Volunteer count fitted |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Round 23 state | 0.40 | 111 / 103 / 74 / 146 | 47.8 / 37.7 / 61.0 / 40.5 | 5.4 | 899 / 828 | 131 / 34 | not reported | not reported |
+| 1.0 (slip link only) | 0.20 | 112 / 109 / 68 / 142 | 49.9 / 38.6 / 62.4 / 40.7 | 5.3 | 881 / 882 | 133 / 35 | 82 of 94 | 80 of 89 |
+| 0.5 (kept) | 0.10 | 110 / 97 / 66 / 139 | 50.1 / 37.7 / 64.6 / 41.9 | 4.7 | 900 / 883 | 130 / 35 | 82 of 94 | 80 of 89 |
+| 0.25 | 0.20 | 111 / 96 / 65 / 138 | 50.3 / 39.0 / 64.8 / 42.9 | 4.2 | 903 / 937 | 129 / 33 | 82 of 94 | 79 of 89 |
+| 0 (held out only) | 4.70 | 141 / 153 / 75 / 149 | 50.3 / 43.0 / 60.2 / 41.5 | 4.7 | 624 / 1,150 | 80 of 106 / 48 of 139 | 71 of 94 | 68 of 89 |
+
+Observed through cars 79-120 / 39-117 / 48-95 / 102-145. D5 and D16 hold at 1.0, 0.5 and 0.25. Held out only fails D16 (4.70 removals per hour), puts Hillegass Ave SB and Colby St SB above their ranges and takes the Telegraph Ave travel times to 393 / 408 s: the old counts include the 2012 Claremont and Telegraph ramp rows and the ramp legs of the 52nd St, Martin Luther King Jr Way and Clifton St counts, and the ramp flows lose their anchor. It is rejected.
+
+In the static fit (fit report, PM) the weights do what they should where counts disagree: the volunteer count's assigned volume over its counts is 0.885 at 1.0, 0.900 at 0.5, 0.915 at 0.25 and 0.959 with the old counts held out, while the 2010 Safeway counts go from 1.013 to 1.035, 1.065 and unscored. The fit meets nearly every count either way (the weights decide only in tension), so the change in pass rates is small. In the simulator the recent sources are at the same pass count at 1.0 and 0.5 (82 of 94), and the Safeway counts lose 3 of 26 passes (14, 11, 10 at 1.0, 0.5, 0.25). Down-weighting old counts does not raise the pass rate of any group in the simulator; its measurable cost is those 3 stations, and its measurable gain is a lower headline error (5.3, 4.7, 4.2) and removals (0.20, 0.10, 0.20, inside the seed spread).
+
+Kept: 0.5. It follows the owner's decision with a middle value, holds D5 and D16, keeps the four through blocks inside their ranges (Colby St NB 139: 3 under the 1.0 value, and 7 under the round 23 value, which was 1 above its range), and costs 3 stations of 190 against 1.0. 1.0 is not kept because it ignores the decision; 0.25 is not kept because the Clifton St ramp moves to 937 against 617 counted for no station gain.
+
+### Growth from the count year
+
+Not applied. A published trend would have to show that traffic grew since 2010 or 2013. The sources held do not. The Caltrans ramp ADT workbooks [CaltransRampADT] give eight SR-24 and SR-13 rows with two counts at least three years apart: changes of -2.1 to +1.0% a year, median -0.8%, no consistent sign (the Grove-52nd St ramps, the nearest to the study area, fell 4.4% and 5.7% from 2012 to 2019). The OakDOT counts [OaklandTMC] at Telegraph Ave and Alcatraz Ave fall from 3,263 (mean of the two 2018 counts) to 3,130 (2019) and 2,827 vehicles entering (2021, a pandemic year); at Market St and 55th St from 1,970 to 1,846 and 1,765. The Alameda CTC monitoring reports [ACTC-LOS2018] are speeds, not volumes. No source gives a rate for the arterials, and a positive rate would run against the counts above, so none was invented. The config has `growthPerYear` by source id (empty); a unit test covers the rule.
+
+### Ashby Ave and Claremont Ave: the slip link
+
+Link 3449 (OSM way 435129990, a one-way `primary_link`) leaves Ashby Ave 37 m east of the signal and joins Claremont Ave 43 m north-east of it. The Synchro worksheet of the Safeway study [SafewayCollege-DEIR2011] (PDF page 482) counts the westbound right turn (239 vph) in the signalized westbound lane group, with no separate right-turn lane, so the count is of vehicles that turn right by either path. The station mapping used only the signal's own links: the north leg leaving was link 3446 (198 modeled against 697 counted) and the east leg entering link 3426 alone, so the vehicles on the slip were missing from both. An unnamed one-way link that leaves the leg's street where the approach link starts, or joins it where the exit link ends, with its other end within the node radius, is now part of the leg (`mapLeg`; no street name in code). The north leg leaving is [3446, 3449] (697) and the east leg entering [3426, 3449] (881). The westbound approach to the north leg (239) can use the slip and has no movement station now (the fit report lists it); the other movement stations keep their single links. The Ashby Ave and Claremont Ave corridor ratio on the simulator's flows goes from 0.88 to 1.01. The round 23 note that the eastbound approach could turn onto the slip stands: the router has a sharp turn from link 3425 onto 3449, not verified on the street and left as it was.
+
+### Result
+
+| PM peak, seeds 1 to 10 | Target | Before | After |
+| --- | --- | --- | --- |
+| Through cars Hillegass Ave SB / Colby St SB / Hillegass Ave NB / Colby St NB | 79-120 / 39-117 / 48-95 / 102-145 | 111 / 103 / 74 / 146 | 110 / 97 / 66 / 139 |
+| Headline shares Hillegass Ave NB from / Colby St NB from / Hillegass Ave SB to / Colby St SB to | 47 / 47 / 68 / 45 | 47.8 / 37.7 / 61.0 / 40.5 | 50.1 / 37.7 / 64.6 / 41.9 |
+| Mean headline error, points (D5, within 10) | | 5.4 (4 of 4) | 4.7 (4 of 4) |
+| Removals per hour PM / AM / midday (D16: below 1.0) | below 1 | 0.40 / 0.00 / 0.00 | 0.10 / 0.00 / 0.00 |
+| Alcatraz Ave entries at Colby St, Hillegass Ave, Dana St | 360 | 251 | 255 |
+| 52nd St off-ramp / Clifton St off-ramp, veh/h | 1,024 / 617 | 899 / 828 | 900 / 883 |
+| Telegraph Ave NB / SB travel time, s (observed 302-420 / 300-376) | | 298 / 306 | 300 / 307 |
+| Completed trips per hour, arterial speed (m/s) | | 24,558, 9.31 | 24,468, 9.41 |
+| Stations below GEH 5, PM fitted (190) / held out (55) | 85% | 131 (69%) / 34 (62%) | 130 (68%) / 35 (64%) |
+| Stations below GEH 5, AM fitted (153) / held out (47) | 85% | 103 (67%) / 33 (70%) | 104 (68%) / 31 (66%) |
+| Stations below GEH 5, midday fitted (192) / held out (56) | 85% | 148 (77%) / 44 (79%) | 149 (78%) / 39 (70%) |
+| Off-ramps AM and midday, 52nd St / Clifton St (counted 898 / 524 and 635 / 383) | | 807 / 696 and 750 / 477 | 834 / 763 and 737 / 505 |
+
+The through-car and share changes are inside the seed spread (the interval of a ten-seed mean is about 4 veh/h and 2 points). The held-out column of the assessment labels the stations; they are in the shipped fit, so it is not out of sample (the fit report's held-out figures are).
+
+### Stations by source and count year
+
+Simulator flows, mean over seeds 1 to 10 (kept setting; below GEH 5, fitted / held out). Ages are from the reference year 2026.
+
+| Source | Count year | PM | AM | Midday |
+| --- | --- | --- | --- | --- |
+| Volunteer count | 2025 | 80 of 89 / 16 of 18 | 69 of 77 / 17 of 19 | 88 of 91 / 19 of 19 |
+| Caltrans AADT | 2024 | 1 of 3 / 2 of 3 | 3 of 3 / 3 of 3 | 3 of 3 / 2 of 3 |
+| Caltrans ramp ADT | 2024 | 1 of 2 / 1 of 1 | 1 of 2 / 1 of 1 | 1 of 2 / 1 of 1 |
+| OakDOT counts | 2019 | 9 of 12 / 2 of 4 | 9 of 12 / 1 of 4 | 10 of 12 / 3 of 4 |
+| Children's Hospital EIR | 2013 | 22 of 48 / 8 of 16 | 16 of 48 / 8 of 16 | 20 of 48 / 5 of 16 |
+| Caltrans ramp ADT | 2012 | 6 of 10 / 0 of 3 | 6 of 10 / 1 of 3 | 8 of 10 / 1 of 3 |
+| Safeway EIR | 2010 | 11 of 26 / 6 of 10 | 0 of 1 / 0 of 1 | 19 of 26 / 8 of 10 |
+
+The fit report (`data/demand/rockridge.fit.md` and the station files) has the same table for the static assignment, fitted and held out, per period.
+
+### Rules and status
+
+The station rule (more than 85% of stations below GEH 5) is reported as written, for all sources and for sources counted in the last five years (age 5 or less, which here is the volunteer count, the Caltrans AADT and the 2024 ramp rows):
+
+| Period | All sources fitted | All sources held out | Recent sources fitted | Recent sources held out |
+| --- | --- | --- | --- | --- |
+| PM | 130 of 190 (68%), not met | 35 of 55 (64%), not met | 82 of 94 (87%), met | 19 of 22 (86%), met |
+| AM | 104 of 153 (68%), not met | 31 of 47 (66%), not met | 73 of 82 (89%), met | 21 of 23 (91%), met |
+| Midday | 149 of 192 (78%), not met | 39 of 56 (70%), not met | 92 of 96 (96%), met | 22 of 23 (96%), met |
+
+An honest reading: the rule is not met overall, and it is met on the recent sources in all three periods, with or without the weights (PM recent sources are 82 of 94 at weight 1.0 as well). The recent set is dominated by one hour of one day of resident counting (89 of the 94 PM stations, 90% pass); the other recent sources are 3 Caltrans AADT stations and 2 ramp stations, 1 of 3 and 1 of 2 below GEH 5. The older sources (age 7 and more) pass 48 of 96 in the PM (50%) and are the failures of the rule. The weights do not close that gap: the counts of 2010 and 2013 are 20 to 45% above what the fit reaches, and the median factor of the counted flows is still at its lower bound (see the fit report). Whether the rule should apply to recent sources only is the owner's call: that is a change of the published rule [WebTAG-M3.1], it would also discard the 2018 to 2021 counts of the city (age 7), and it rests on one day. It was not made. `status` stays `uncalibrated` and `experimentalPeriods` stays `["pm_peak"]`; D16 and D5 hold.
+
+### What remains
+
+1. The station rule: 60 of 190 PM stations fail, 48 of them at sources aged 7 years or more. The trip table is larger than the counts support (lower bound median factor); a fit that scales the whole table down, or a seed table with a smaller local share, is the next test.
+2. The Clifton St off-ramp is 883 against 617 counted; the 52nd St off-ramp is 900 against 1,024 (unchanged by this round).
+3. Claremont Crescent needs the real lane layout of Ashby Ave at Claremont Ave; the sharp turn from Ashby Ave eastbound onto the slip link is not verified on the street.
+4. Whether the rule should apply to recent sources only (owner).
+
 ## Twenty-third round: lead-lag at 52nd St and Shattuck Ave, alternatives by pair, ramp split, stations (change calibration-round-23)
 
 PM peak, seeds 1 to 10 (removals also 11 to 20), scale 1.0, 60 minutes. Before: network c05a22fc9ebe8816, demand 8efd5df07ab6557a. After: network 5fe8241a6ba1e306 (changed: the signal observations at 52nd St and Shattuck Ave), demand 222fb062e8e5dc1c (changed: `via.alternatives` of 10 more PM flows, volumes identical). The simulator changed (an approach can be in two phases). Decisions are in `openspec/changes/archive/*-calibration-round-23/design.md`. The "before" column was measured again on the round 22 files at the start of this round and matches round 22.

@@ -157,3 +157,10 @@ The targets file MAY list, per counted block, the intents the volunteer count an
 #### Scenario: Intent below its range
 - **WHEN** the model carries 26 veh/h on an intent implied at 38 to 62
 - **THEN** the report marks it below
+
+### Requirement: Station results are reported by source and count year
+The demand fit report and the assessment SHALL list, for each period, the number of stations below GEH 5 per source and count year, fitted and held out, and SHALL state the station rule (more than 85% below GEH 5) for all sources and, separately, for sources counted within `recentYears` of the reference year. The rule SHALL NOT be redefined; whether it applies to recent sources only is the owner's decision.
+
+#### Scenario: Recent sources
+- **WHEN** a period's stations are scored
+- **THEN** the report gives the pass counts for all stations and for the stations of age at most `recentYears`, fitted and held out

@@ -9,7 +9,7 @@ Seeds are the fixed list above, none chosen; each run is 60 minutes from the sam
 | Removals | mean per hour below 1.00 | 0.00 (min 0.00, max 0.00) | yes |
 | Entry backlog | below 2.0% in at least 90% of seeds | 10 of 10 seeds | yes |
 | Runaway growth | no seed adds more than 2.0 points of backlog in the second half | none | yes |
-| Arterial speed | mean above 4.0 m/s | 9.69 m/s | yes |
+| Arterial speed | mean above 4.0 m/s | 9.73 m/s | yes |
 
 **Verdict: stable.** Old rule (zero removals, backlog under 2%, speed above 4 m/s, every seed): 10 of 10 seeds pass.
 
@@ -19,61 +19,61 @@ Seeds are the fixed list above, none chosen; each run is 60 minutes from the sam
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | health | gridlock removals | vehicles | 0.00 | 0.00 | 0.00 | 0.00 | 0.00 to 0.00 |
 | health | gridlock removals per hour | veh/h | 0.00 | 0.00 | 0.00 | 0.00 | 0.00 to 0.00 |
-| health | entry backlog | % of spawned | 0.01 | 0.01 | 0.00 | 0.03 | 0.00 to 0.02 |
-| health | backlog growth in the second half of the run | points of spawned | -0.00 | 0.01 | -0.02 | 0.02 | -0.01 to 0.01 |
-| health | completed trips | trips | 21545.90 | 125.71 | 21353.00 | 21741.00 | 21455.98 to 21635.82 |
-| health | arterial mean speed | m/s | 9.69 | 0.06 | 9.60 | 9.78 | 9.65 to 9.73 |
-| health | arterial mean speed, last 15 min | m/s | 9.75 | 0.13 | 9.48 | 9.86 | 9.66 to 9.84 |
-| cut-through | local vehicle-miles, surface gates to the freeway | veh-miles | 23.29 | 3.16 | 20.13 | 30.32 | 21.03 to 25.56 |
-| cut-through | share of local vehicle-miles, surface gates to the freeway | % | 6.9 | 0.9 | 5.7 | 8.8 | 6.3 to 7.6 |
-| cut-through | local vehicle-miles, freeway to the surface gates | veh-miles | 18.51 | 2.99 | 13.77 | 23.96 | 16.37 to 20.65 |
-| cut-through | share of local vehicle-miles, freeway to the surface gates | % | 5.5 | 0.9 | 4.3 | 7.0 | 4.9 to 6.1 |
-| bypass | corridor trips using the bypass, Hillegass Avenue vs College Avenue N | trips | 34.40 | 6.74 | 22.00 | 43.00 | 29.58 to 39.22 |
-| bypass | corridor trips, Hillegass Avenue vs College Avenue N | trips | 865.00 | 20.35 | 830.00 | 905.00 | 850.45 to 879.55 |
-| bypass | corridor trips using the bypass, Hillegass Avenue vs College Avenue S | trips | 32.70 | 6.22 | 22.00 | 42.00 | 28.25 to 37.15 |
-| bypass | corridor trips, Hillegass Avenue vs College Avenue S | trips | 1063.20 | 33.73 | 1020.00 | 1115.00 | 1039.07 to 1087.33 |
-| headline share | Hillegass Avenue NB from freeway | % | 49.5 | 4.5 | 44.6 | 57.4 | 46.2 to 52.7 |
-| share | Hillegass Avenue NB to Benvenue Avenue | % | 8.4 | 2.3 | 4.9 | 11.2 | 6.7 to 10.1 |
-| share | Hillegass Avenue NB to College Avenue | % | 15.4 | 3.1 | 11.6 | 20.1 | 13.2 to 17.5 |
-| share | Hillegass Avenue NB to Alcatraz Avenue WB | % | 34.8 | 3.7 | 30.1 | 40.8 | 32.1 to 37.5 |
-| headline share | Colby Street NB from freeway | % | 43.6 | 2.6 | 39.3 | 47.2 | 41.7 to 45.5 |
-| share | Colby Street NB to Alcatraz Avenue WB | % | 53.9 | 2.2 | 50.2 | 57.5 | 52.3 to 55.5 |
-| share | Colby Street NB to Telegraph Avenue | % | 35.2 | 3.3 | 30.1 | 39.8 | 32.9 to 37.6 |
-| share | Colby Street NB to College Avenue | % | 3.7 | 1.1 | 2.0 | 5.9 | 2.9 to 4.5 |
-| share | Hillegass Avenue SB from Alcatraz Avenue WB | % | 22.1 | 4.2 | 15.4 | 28.3 | 19.1 to 25.2 |
-| share | Hillegass Avenue SB from Benvenue Avenue | % | 1.6 | 0.7 | 0.8 | 2.6 | 1.1 to 2.2 |
-| share | Hillegass Avenue SB from College Avenue | % | 11.1 | 3.3 | 6.0 | 16.2 | 8.8 to 13.4 |
-| headline share | Hillegass Avenue SB to freeway | % | 65.2 | 4.9 | 56.9 | 75.2 | 61.7 to 68.7 |
-| share | Colby Street SB from Alcatraz Avenue EB | % | 24.1 | 3.9 | 17.2 | 30.3 | 21.3 to 26.9 |
-| share | Colby Street SB from Alcatraz Avenue WB | % | 8.0 | 1.6 | 6.1 | 11.8 | 6.9 to 9.1 |
-| share | Colby Street SB from Telegraph Avenue | % | 19.9 | 3.4 | 14.4 | 25.6 | 17.5 to 22.3 |
-| headline share | Colby Street SB to freeway | % | 50.1 | 2.2 | 45.9 | 52.3 | 48.4 to 51.7 |
-| share | Colby Street SB to Forest Street | % | 10.4 | 1.8 | 7.4 | 12.5 | 9.1 to 11.6 |
-| ramp share | onto freeway via College Avenue | % | 13.3 | 1.4 | 10.7 | 15.4 | 12.3 to 14.3 |
-| ramp share | onto freeway via Hillegass Avenue | % | 13.4 | 1.5 | 10.6 | 15.1 | 12.3 to 14.5 |
-| ramp share | onto freeway via Martin Street | % | 15.2 | 1.9 | 10.6 | 17.4 | 13.8 to 16.5 |
-| ramp share | onto freeway via Colby Street | % | 14.6 | 1.9 | 11.3 | 17.5 | 13.2 to 16.0 |
-| ramp share | onto freeway via Telegraph Avenue north of Alcatraz Avenue | % | 9.3 | 1.3 | 7.4 | 11.8 | 8.4 to 10.2 |
-| ramp share | onto freeway via Benvenue Avenue | % | 4.5 | 0.8 | 3.1 | 5.5 | 3.9 to 5.0 |
-| ramp share | from freeway via College Avenue | % | 10.3 | 1.1 | 8.8 | 12.0 | 9.5 to 11.1 |
-| ramp share | from freeway via Martin Street | % | 11.1 | 0.8 | 9.6 | 12.4 | 10.5 to 11.7 |
-| ramp share | from freeway via Colby Street | % | 12.5 | 1.3 | 10.4 | 14.4 | 11.5 to 13.4 |
-| ramp share | from freeway via Hillegass Avenue | % | 6.7 | 1.3 | 4.5 | 8.7 | 5.8 to 7.6 |
-| ramp share | from freeway via Benvenue Avenue | % | 2.5 | 0.7 | 1.6 | 3.8 | 1.9 to 3.0 |
-| corridor flow | Telegraph N median link flow | veh/h | 733.32 | 42.67 | 661.20 | 796.80 | 702.80 to 763.84 |
-| corridor flow | Telegraph S median link flow | veh/h | 632.88 | 45.97 | 562.80 | 697.20 | 599.99 to 665.77 |
-| corridor flow | College N median link flow | veh/h | 161.04 | 22.32 | 130.80 | 194.40 | 145.07 to 177.01 |
-| corridor flow | College S median link flow | veh/h | 323.16 | 22.05 | 286.80 | 352.80 | 307.38 to 338.94 |
-| corridor flow | Claremont N median link flow | veh/h | 345.24 | 30.22 | 303.60 | 387.60 | 323.62 to 366.86 |
-| corridor flow | Claremont S median link flow | veh/h | 381.24 | 25.53 | 333.60 | 409.20 | 362.98 to 399.50 |
-| corridor flow | Alcatraz E median link flow | veh/h | 350.28 | 21.27 | 314.40 | 386.40 | 335.07 to 365.49 |
-| corridor flow | Alcatraz W median link flow | veh/h | 378.72 | 34.09 | 319.20 | 424.80 | 354.34 to 403.10 |
-| corridor flow | Hillegass N median link flow | veh/h | 84.84 | 11.44 | 66.00 | 100.80 | 76.66 to 93.02 |
-| corridor flow | Hillegass S median link flow | veh/h | 69.24 | 6.20 | 61.20 | 79.20 | 64.81 to 73.67 |
-| corridor flow | Colby N median link flow | veh/h | 108.72 | 10.40 | 96.00 | 128.40 | 101.28 to 116.16 |
-| corridor flow | Colby S median link flow | veh/h | 118.44 | 18.56 | 84.00 | 142.80 | 105.17 to 131.71 |
-| corridor flow | Martin E median link flow | veh/h | 106.68 | 11.32 | 80.40 | 123.60 | 98.58 to 114.78 |
-| corridor flow | Martin W median link flow | veh/h | 109.44 | 10.80 | 91.20 | 129.60 | 101.71 to 117.17 |
+| health | entry backlog | % of spawned | 0.01 | 0.01 | 0.00 | 0.03 | 0.01 to 0.02 |
+| health | backlog growth in the second half of the run | points of spawned | -0.00 | 0.01 | -0.01 | 0.01 | -0.01 to 0.01 |
+| health | completed trips | trips | 21581.70 | 131.29 | 21352.00 | 21717.00 | 21487.79 to 21675.61 |
+| health | arterial mean speed | m/s | 9.73 | 0.07 | 9.58 | 9.81 | 9.68 to 9.78 |
+| health | arterial mean speed, last 15 min | m/s | 9.74 | 0.09 | 9.64 | 9.92 | 9.68 to 9.81 |
+| cut-through | local vehicle-miles, surface gates to the freeway | veh-miles | 23.80 | 2.20 | 20.89 | 27.73 | 22.23 to 25.37 |
+| cut-through | share of local vehicle-miles, surface gates to the freeway | % | 6.9 | 0.4 | 6.4 | 7.8 | 6.6 to 7.3 |
+| cut-through | local vehicle-miles, freeway to the surface gates | veh-miles | 18.18 | 2.02 | 15.12 | 20.81 | 16.74 to 19.63 |
+| cut-through | share of local vehicle-miles, freeway to the surface gates | % | 5.3 | 0.6 | 4.5 | 6.2 | 4.9 to 5.7 |
+| bypass | corridor trips using the bypass, Hillegass Avenue vs College Avenue N | trips | 36.20 | 4.83 | 30.00 | 46.00 | 32.75 to 39.65 |
+| bypass | corridor trips, Hillegass Avenue vs College Avenue N | trips | 891.60 | 29.13 | 832.00 | 921.00 | 870.76 to 912.44 |
+| bypass | corridor trips using the bypass, Hillegass Avenue vs College Avenue S | trips | 30.80 | 4.02 | 26.00 | 40.00 | 27.92 to 33.68 |
+| bypass | corridor trips, Hillegass Avenue vs College Avenue S | trips | 1115.40 | 37.84 | 1059.00 | 1163.00 | 1088.33 to 1142.47 |
+| headline share | Hillegass Avenue NB from freeway | % | 50.4 | 5.4 | 42.4 | 59.4 | 46.5 to 54.3 |
+| share | Hillegass Avenue NB to Benvenue Avenue | % | 8.3 | 2.9 | 2.9 | 12.4 | 6.2 to 10.4 |
+| share | Hillegass Avenue NB to College Avenue | % | 16.2 | 3.7 | 12.4 | 21.6 | 13.5 to 18.9 |
+| share | Hillegass Avenue NB to Alcatraz Avenue WB | % | 36.6 | 3.0 | 33.1 | 43.0 | 34.5 to 38.8 |
+| headline share | Colby Street NB from freeway | % | 43.6 | 3.0 | 37.6 | 46.5 | 41.5 to 45.7 |
+| share | Colby Street NB to Alcatraz Avenue WB | % | 54.4 | 3.2 | 48.8 | 58.4 | 52.1 to 56.7 |
+| share | Colby Street NB to Telegraph Avenue | % | 34.1 | 4.7 | 27.1 | 43.4 | 30.7 to 37.5 |
+| share | Colby Street NB to College Avenue | % | 3.2 | 1.3 | 1.6 | 5.2 | 2.3 to 4.2 |
+| share | Hillegass Avenue SB from Alcatraz Avenue WB | % | 23.3 | 4.6 | 14.4 | 29.2 | 19.9 to 26.6 |
+| share | Hillegass Avenue SB from Benvenue Avenue | % | 2.2 | 1.8 | 0.0 | 4.9 | 0.9 to 3.4 |
+| share | Hillegass Avenue SB from College Avenue | % | 12.5 | 3.0 | 6.4 | 16.7 | 10.3 to 14.6 |
+| headline share | Hillegass Avenue SB to freeway | % | 69.8 | 3.0 | 64.8 | 74.2 | 67.6 to 71.9 |
+| share | Colby Street SB from Alcatraz Avenue EB | % | 25.5 | 2.7 | 21.4 | 30.3 | 23.6 to 27.4 |
+| share | Colby Street SB from Alcatraz Avenue WB | % | 7.2 | 2.0 | 3.4 | 9.3 | 5.8 to 8.6 |
+| share | Colby Street SB from Telegraph Avenue | % | 17.6 | 2.4 | 13.5 | 21.4 | 15.9 to 19.4 |
+| headline share | Colby Street SB to freeway | % | 53.4 | 2.9 | 48.7 | 56.9 | 51.3 to 55.4 |
+| share | Colby Street SB to Forest Street | % | 8.3 | 1.7 | 6.3 | 11.5 | 7.1 to 9.6 |
+| ramp share | onto freeway via College Avenue | % | 13.5 | 1.7 | 9.9 | 15.5 | 12.3 to 14.7 |
+| ramp share | onto freeway via Hillegass Avenue | % | 13.2 | 1.0 | 11.3 | 14.5 | 12.4 to 13.9 |
+| ramp share | onto freeway via Martin Street | % | 13.8 | 1.7 | 11.0 | 16.6 | 12.6 to 15.0 |
+| ramp share | onto freeway via Colby Street | % | 13.5 | 1.6 | 11.4 | 16.7 | 12.3 to 14.6 |
+| ramp share | onto freeway via Telegraph Avenue north of Alcatraz Avenue | % | 8.1 | 0.9 | 6.7 | 9.5 | 7.5 to 8.7 |
+| ramp share | onto freeway via Benvenue Avenue | % | 4.5 | 0.7 | 3.5 | 5.4 | 4.0 to 5.1 |
+| ramp share | from freeway via College Avenue | % | 10.4 | 1.2 | 8.8 | 12.2 | 9.6 to 11.3 |
+| ramp share | from freeway via Martin Street | % | 10.5 | 1.5 | 8.0 | 12.9 | 9.4 to 11.6 |
+| ramp share | from freeway via Colby Street | % | 11.7 | 1.4 | 9.7 | 14.5 | 10.7 to 12.6 |
+| ramp share | from freeway via Hillegass Avenue | % | 6.7 | 0.8 | 5.3 | 8.1 | 6.1 to 7.3 |
+| ramp share | from freeway via Benvenue Avenue | % | 2.5 | 0.6 | 1.8 | 3.4 | 2.1 to 2.9 |
+| corridor flow | Telegraph N median link flow | veh/h | 753.60 | 39.44 | 704.40 | 806.40 | 725.39 to 781.81 |
+| corridor flow | Telegraph S median link flow | veh/h | 708.36 | 79.44 | 642.00 | 913.20 | 651.53 to 765.19 |
+| corridor flow | College N median link flow | veh/h | 181.08 | 16.41 | 153.60 | 200.40 | 169.34 to 192.82 |
+| corridor flow | College S median link flow | veh/h | 326.76 | 23.55 | 276.00 | 358.80 | 309.91 to 343.61 |
+| corridor flow | Claremont N median link flow | veh/h | 375.96 | 26.20 | 332.40 | 404.40 | 357.22 to 394.70 |
+| corridor flow | Claremont S median link flow | veh/h | 413.40 | 27.02 | 358.80 | 439.20 | 394.07 to 432.73 |
+| corridor flow | Alcatraz E median link flow | veh/h | 342.24 | 31.63 | 301.20 | 406.80 | 319.62 to 364.86 |
+| corridor flow | Alcatraz W median link flow | veh/h | 409.32 | 24.00 | 367.20 | 436.80 | 392.16 to 426.48 |
+| corridor flow | Hillegass N median link flow | veh/h | 82.80 | 10.20 | 69.60 | 102.00 | 75.51 to 90.09 |
+| corridor flow | Hillegass S median link flow | veh/h | 72.60 | 7.23 | 60.00 | 81.60 | 67.43 to 77.77 |
+| corridor flow | Colby N median link flow | veh/h | 109.92 | 11.62 | 85.20 | 132.00 | 101.61 to 118.23 |
+| corridor flow | Colby S median link flow | veh/h | 118.68 | 13.10 | 94.80 | 135.60 | 109.31 to 128.05 |
+| corridor flow | Martin E median link flow | veh/h | 104.40 | 8.22 | 93.60 | 120.00 | 98.52 to 110.28 |
+| corridor flow | Martin W median link flow | veh/h | 111.96 | 13.19 | 96.00 | 136.80 | 102.52 to 121.40 |
 
 ## Intent map: through cars by where they come from and where they are going
 
@@ -87,32 +87,32 @@ Observed (PM): 182 cars entered at the south end, 102 drove the whole street, 16
 
 | Intent | Basis | Implied veh/h | Model veh/h | Position |
 | --- | --- | --- | --- | --- |
-| SR-24 off-ramp traffic using Colby St to reach Alcatraz Ave west, Telegraph Ave north and Ashby Ave | OBSERVED turn count x ASSUMPTION share (131 left turns x 0.40) | 52 (38 to 62) | 31 | below |
-| Telegraph Ave and south-side traffic using Colby St to reach Alcatraz Ave west, Telegraph Ave north and Ashby Ave | ASSUMPTION: the through left-turners (131 x 0.62 = 81) that are not off-ramp traffic | 29 (19 to 43) | 43 | within |
-| SR-24 off-ramp traffic using Colby St to reach College Ave and Berkeley (right at Alcatraz Ave) | OBSERVED turn count x ASSUMPTION share (32 right turns x 0.40) | 13 (9 to 15) | 5 | below |
+| SR-24 off-ramp traffic using Colby St to reach Alcatraz Ave west, Telegraph Ave north and Ashby Ave | OBSERVED turn count x ASSUMPTION share (131 left turns x 0.40) | 52 (38 to 62) | 30 | below |
+| Telegraph Ave and south-side traffic using Colby St to reach Alcatraz Ave west, Telegraph Ave north and Ashby Ave | ASSUMPTION: the through left-turners (131 x 0.62 = 81) that are not off-ramp traffic | 29 (19 to 43) | 41 | within |
+| SR-24 off-ramp traffic using Colby St to reach College Ave and Berkeley (right at Alcatraz Ave) | OBSERVED turn count x ASSUMPTION share (32 right turns x 0.40) | 13 (9 to 15) | 4 | below |
 | Telegraph Ave and south-side traffic using Colby St to reach College Ave and Berkeley | ASSUMPTION: the through right-turners (32 x 0.62 = 20) that are not off-ramp traffic | 7 (5 to 11) | 2 | below |
-| Intents listed, together | | 101 (71 to 131) | 82 | |
+| Intents listed, together | | 101 (71 to 131) | 77 | |
 | Other through cars (no intent listed) | | | 2 | |
 
-Model through cars by origin and destination group (largest 12 of 35 pairs):
+Model through cars by origin and destination group (largest 12 of 33 pairs):
 
 | From | To | Model veh/h | Arterial otherwise used (free flow, local streets closed) |
 | --- | --- | --- | --- |
-| SR-24 eastbound off-ramps (arriving from Oakland and I-980) | Telegraph Ave from the north (Berkeley) | 20.1 | Telegraph Avenue |
-| South-east Oakland (Broadway, Pleasant Valley Ave, Piedmont) | West Berkeley (Sacramento St, MLK Jr Way, Milvia St, Carleton St) | 10.2 | Claremont Avenue |
-| South-east Oakland (Broadway, Pleasant Valley Ave, Piedmont) | Emeryville and West Oakland streets (55th to 67th Streets) | 7.8 | Claremont Avenue |
-| Telegraph Ave to the south (downtown Oakland) | Telegraph Ave from the north (Berkeley) | 6.6 | Telegraph Avenue |
-| West Oakland to the southwest (Adeline St, Market St) | Telegraph Ave from the north (Berkeley) | 5.9 | Telegraph Avenue |
-| SR-24 eastbound off-ramps (arriving from Oakland and I-980) | Berkeley side streets north of Alcatraz Ave (Dana, Regent, Hillegass, Benvenue) | 5.0 | Telegraph Avenue |
-| South-east Oakland (Broadway, Pleasant Valley Ave, Piedmont) | Alcatraz Ave from the west (Emeryville side) | 4.0 | Claremont Avenue |
-| SR-24 westbound off-ramps (arriving from the Caldecott Tunnel) | Ashby Ave from the west (Emeryville and I-80) | 3.6 | SR-24 then Telegraph Avenue |
-| South-east Oakland (Broadway, Pleasant Valley Ave, Piedmont) | Ashby Ave from the west (Emeryville and I-80) | 3.4 | Claremont Avenue |
-| SR-24 westbound off-ramps (arriving from the Caldecott Tunnel) | Telegraph Ave from the north (Berkeley) | 3.3 | none near the study area |
-| South-east Oakland (Broadway, Pleasant Valley Ave, Piedmont) | Telegraph Ave from the north (Berkeley) | 3.2 | College Avenue |
-| SR-24 westbound off-ramps (arriving from the Caldecott Tunnel) | Shattuck Ave from the north (Berkeley) | 1.9 | SR-24 then Telegraph Avenue then Alcatraz Avenue |
-| other pairs | | 8.6 | |
+| SR-24 eastbound off-ramps (arriving from Oakland and I-980) | Telegraph Ave from the north (Berkeley) | 18.7 | Telegraph Avenue |
+| Telegraph Ave to the south (downtown Oakland) | Telegraph Ave from the north (Berkeley) | 8.8 | Telegraph Avenue |
+| South-east Oakland (Broadway, Pleasant Valley Ave, Piedmont) | West Berkeley (Sacramento St, MLK Jr Way, Milvia St, Carleton St) | 8.2 | Claremont Avenue |
+| South-east Oakland (Broadway, Pleasant Valley Ave, Piedmont) | Emeryville and West Oakland streets (55th to 67th Streets) | 6.6 | Claremont Avenue |
+| West Oakland to the southwest (Adeline St, Market St) | Telegraph Ave from the north (Berkeley) | 4.9 | Telegraph Avenue |
+| SR-24 westbound off-ramps (arriving from the Caldecott Tunnel) | Telegraph Ave from the north (Berkeley) | 4.6 | none near the study area |
+| SR-24 eastbound off-ramps (arriving from Oakland and I-980) | Berkeley side streets north of Alcatraz Ave (Dana, Regent, Hillegass, Benvenue) | 3.8 | Telegraph Avenue |
+| SR-24 westbound off-ramps (arriving from the Caldecott Tunnel) | Ashby Ave from the west (Emeryville and I-80) | 3.4 | SR-24 then Telegraph Avenue |
+| South-east Oakland (Broadway, Pleasant Valley Ave, Piedmont) | Alcatraz Ave from the west (Emeryville side) | 3.2 | Claremont Avenue |
+| South-east Oakland (Broadway, Pleasant Valley Ave, Piedmont) | Telegraph Ave from the north (Berkeley) | 3.1 | College Avenue |
+| South-east Oakland (Broadway, Pleasant Valley Ave, Piedmont) | Ashby Ave from the west (Emeryville and I-80) | 3.0 | Claremont Avenue |
+| South-east Oakland (Broadway, Pleasant Valley Ave, Piedmont) | San Pablo Ave (Emeryville and West Oakland) | 2.7 | Claremont Avenue |
+| other pairs | | 8.0 | |
 
-By the arterial these cars would otherwise use: Telegraph Avenue 40 veh/h; Claremont Avenue 28 veh/h; SR-24 then Telegraph Avenue 5 veh/h; none near the study area 4 veh/h; College Avenue 3 veh/h; SR-24 then Telegraph Avenue then Alcatraz Avenue 2 veh/h.
+By the arterial these cars would otherwise use: Telegraph Avenue 38 veh/h; Claremont Avenue 24 veh/h; none near the study area 5 veh/h; SR-24 then Telegraph Avenue 4 veh/h; College Avenue 3 veh/h; SR-24 then Telegraph Avenue then Alcatraz Avenue 3 veh/h.
 
 ### Hillegass Avenue NB
 
@@ -120,32 +120,32 @@ Observed (PM): 94 cars entered at the south end, 48 drove the whole street, 109 
 
 | Intent | Basis | Implied veh/h | Model veh/h | Position |
 | --- | --- | --- | --- | --- |
-| SR-24 off-ramp traffic using Hillegass Ave to reach Alcatraz Ave west and Telegraph Ave north | OBSERVED turn count x ASSUMPTION share (43 left turns x 0.37) | 16 (9 to 20) | 14 | within |
-| SR-24 off-ramp traffic using Hillegass Ave to reach College Ave and Berkeley | OBSERVED turn count x ASSUMPTION share (54 right turns x 0.37) | 20 (11 to 25) | 24 | within |
+| SR-24 off-ramp traffic using Hillegass Ave to reach Alcatraz Ave west and Telegraph Ave north | OBSERVED turn count x ASSUMPTION share (43 left turns x 0.37) | 16 (9 to 20) | 15 | within |
+| SR-24 off-ramp traffic using Hillegass Ave to reach College Ave and Berkeley | OBSERVED turn count x ASSUMPTION share (54 right turns x 0.37) | 20 (11 to 25) | 26 | above |
 | Telegraph Ave and south-side traffic using Hillegass Ave to reach Alcatraz Ave west | ASSUMPTION: through exits (43 x 0.44) that are not off-ramp traffic | 3 (0 to 10) | 10 | within |
-| Telegraph Ave and south-side traffic using Hillegass Ave to reach College Ave and Berkeley | ASSUMPTION: through exits (54 x 0.44) that are not off-ramp traffic | 4 (0 to 13) | 6 | within |
-| Intents listed, together | | 43 (20 to 68) | 54 | |
+| Telegraph Ave and south-side traffic using Hillegass Ave to reach College Ave and Berkeley | ASSUMPTION: through exits (54 x 0.44) that are not off-ramp traffic | 4 (0 to 13) | 4 | within |
+| Intents listed, together | | 43 (20 to 68) | 56 | |
 | Other through cars (no intent listed) | | | 2 | |
 
-Model through cars by origin and destination group (largest 12 of 40 pairs):
+Model through cars by origin and destination group (largest 12 of 45 pairs):
 
 | From | To | Model veh/h | Arterial otherwise used (free flow, local streets closed) |
 | --- | --- | --- | --- |
-| SR-24 eastbound off-ramps (arriving from Oakland and I-980) | Claremont Ave and Tunnel Rd toward the hills | 13.0 | SR-24 |
-| SR-24 eastbound off-ramps (arriving from Oakland and I-980) | Telegraph Ave from the north (Berkeley) | 8.6 | Telegraph Avenue |
-| SR-24 eastbound off-ramps (arriving from Oakland and I-980) | Berkeley side streets north of Alcatraz Ave (Dana, Regent, Hillegass, Benvenue) | 6.0 | SR-24 then Claremont Avenue |
-| SR-24 eastbound off-ramps (arriving from Oakland and I-980) | College Ave from the north (Berkeley) | 4.8 | SR-24 then Claremont Avenue then College Avenue |
-| South-east Oakland (Broadway, Pleasant Valley Ave, Piedmont) | Emeryville and West Oakland streets (55th to 67th Streets) | 4.0 | College Avenue then Alcatraz Avenue |
-| SR-24 westbound off-ramps (arriving from the Caldecott Tunnel) | Telegraph Ave from the north (Berkeley) | 2.2 | none near the study area |
-| South-east Oakland (Broadway, Pleasant Valley Ave, Piedmont) | West Berkeley (Sacramento St, MLK Jr Way, Milvia St, Carleton St) | 2.1 | Claremont Avenue |
+| SR-24 eastbound off-ramps (arriving from Oakland and I-980) | Claremont Ave and Tunnel Rd toward the hills | 13.6 | SR-24 |
+| SR-24 eastbound off-ramps (arriving from Oakland and I-980) | Telegraph Ave from the north (Berkeley) | 8.3 | Telegraph Avenue |
+| SR-24 eastbound off-ramps (arriving from Oakland and I-980) | Berkeley side streets north of Alcatraz Ave (Dana, Regent, Hillegass, Benvenue) | 7.9 | SR-24 then Claremont Avenue |
+| SR-24 eastbound off-ramps (arriving from Oakland and I-980) | College Ave from the north (Berkeley) | 4.7 | SR-24 then Claremont Avenue then College Avenue |
+| South-east Oakland (Broadway, Pleasant Valley Ave, Piedmont) | Emeryville and West Oakland streets (55th to 67th Streets) | 2.9 | College Avenue then Alcatraz Avenue |
+| South-east Oakland (Broadway, Pleasant Valley Ave, Piedmont) | West Berkeley (Sacramento St, MLK Jr Way, Milvia St, Carleton St) | 2.3 | Claremont Avenue |
+| SR-24 westbound off-ramps (arriving from the Caldecott Tunnel) | San Pablo Ave (Emeryville and West Oakland) | 1.9 | SR-24 |
+| South-east Oakland (Broadway, Pleasant Valley Ave, Piedmont) | Telegraph Ave from the north (Berkeley) | 1.5 | College Avenue |
 | SR-24 westbound off-ramps (arriving from the Caldecott Tunnel) | Ashby Ave from the west (Emeryville and I-80) | 1.5 | SR-24 then Telegraph Avenue |
-| West Oakland to the southwest (Adeline St, Market St) | Berkeley side streets north of Alcatraz Ave (Dana, Regent, Hillegass, Benvenue) | 1.1 | Telegraph Avenue |
-| South-east Oakland (Broadway, Pleasant Valley Ave, Piedmont) | Berkeley side streets north of Alcatraz Ave (Dana, Regent, Hillegass, Benvenue) | 1.0 | Telegraph Avenue |
-| West Oakland to the southwest (Adeline St, Market St) | Claremont Ave and Tunnel Rd toward the hills | 1.0 | Claremont Avenue |
-| SR-24 westbound off-ramps (arriving from the Caldecott Tunnel) | Shattuck Ave from the north (Berkeley) | 1.0 | SR-24 then Telegraph Avenue then Alcatraz Avenue |
-| other pairs | | 9.9 | |
+| SR-24 westbound off-ramps (arriving from the Caldecott Tunnel) | Telegraph Ave from the north (Berkeley) | 1.4 | none near the study area |
+| South-east Oakland (Broadway, Pleasant Valley Ave, Piedmont) | Ashby Ave from the west (Emeryville and I-80) | 1.1 | Claremont Avenue |
+| SR-24 westbound off-ramps (arriving from the Caldecott Tunnel) | Alcatraz Ave from the west (Emeryville side) | 1.0 | SR-24 then Telegraph Avenue |
+| other pairs | | 9.4 | |
 
-By the arterial these cars would otherwise use: SR-24 14 veh/h; Telegraph Avenue 12 veh/h; Claremont Avenue 6 veh/h; SR-24 then Claremont Avenue 6 veh/h; SR-24 then Claremont Avenue then College Avenue 5 veh/h; College Avenue then Alcatraz Avenue 4 veh/h.
+By the arterial these cars would otherwise use: SR-24 16 veh/h; Telegraph Avenue 11 veh/h; SR-24 then Claremont Avenue 8 veh/h; Claremont Avenue 6 veh/h; SR-24 then Claremont Avenue then College Avenue 5 veh/h; College Avenue then Alcatraz Avenue 3 veh/h.
 
 ### Hillegass Avenue SB
 
@@ -153,30 +153,30 @@ Observed (PM): 178 cars entered at the top (76 turned in from Alcatraz Ave west,
 
 | Intent | Basis | Implied veh/h | Model veh/h | Position |
 | --- | --- | --- | --- | --- |
-| Telegraph Ave, Alcatraz Ave west and West Berkeley traffic turning off Alcatraz Ave onto Hillegass Ave to reach SR-24 | OBSERVED turn count x ASSUMPTION share (76 turn-ins x 0.50) | 38 (34 to 48) | 15 | below |
-| College Ave and Berkeley traffic turning off Alcatraz Ave (from the east) onto Hillegass Ave to reach SR-24 | OBSERVED turn count x ASSUMPTION share (98 turn-ins x 0.50) | 49 (44 to 62) | 20 | below |
+| Telegraph Ave, Alcatraz Ave west and West Berkeley traffic turning off Alcatraz Ave onto Hillegass Ave to reach SR-24 | OBSERVED turn count x ASSUMPTION share (76 turn-ins x 0.50) | 38 (34 to 48) | 14 | below |
+| College Ave and Berkeley traffic turning off Alcatraz Ave (from the east) onto Hillegass Ave to reach SR-24 | OBSERVED turn count x ASSUMPTION share (98 turn-ins x 0.50) | 49 (44 to 62) | 21 | below |
 | Intents listed, together | | 87 (78 to 110) | 35 | |
 | Other through cars (no intent listed) | | | 18 | |
 
-Model through cars by origin and destination group (largest 12 of 25 pairs):
+Model through cars by origin and destination group (largest 12 of 27 pairs):
 
 | From | To | Model veh/h | Arterial otherwise used (free flow, local streets closed) |
 | --- | --- | --- | --- |
-| Telegraph Ave from the north (Berkeley) | SR-24 westbound on-ramps (toward Oakland and I-980) | 14.9 | Telegraph Avenue |
-| Claremont Ave and Tunnel Rd toward the hills | SR-24 westbound on-ramps (toward Oakland and I-980) | 10.3 | Claremont Avenue then SR-24 |
-| Berkeley side streets north of Alcatraz Ave (Dana, Regent, Hillegass, Benvenue) | South-east Oakland (Broadway, Pleasant Valley Ave, Piedmont) | 9.1 | Alcatraz Avenue then College Avenue then Claremont Avenue |
-| College Ave from the north (Berkeley) | SR-24 westbound on-ramps (toward Oakland and I-980) | 5.3 | College Avenue then Claremont Avenue then SR-24 |
-| Berkeley side streets north of Alcatraz Ave (Dana, Regent, Hillegass, Benvenue) | SR-24 westbound on-ramps (toward Oakland and I-980) | 3.9 | Claremont Avenue then SR-24 |
+| Telegraph Ave from the north (Berkeley) | SR-24 westbound on-ramps (toward Oakland and I-980) | 13.3 | Telegraph Avenue |
+| Claremont Ave and Tunnel Rd toward the hills | SR-24 westbound on-ramps (toward Oakland and I-980) | 10.8 | Claremont Avenue then SR-24 |
+| Berkeley side streets north of Alcatraz Ave (Dana, Regent, Hillegass, Benvenue) | South-east Oakland (Broadway, Pleasant Valley Ave, Piedmont) | 8.1 | Telegraph Avenue |
+| College Ave from the north (Berkeley) | SR-24 westbound on-ramps (toward Oakland and I-980) | 5.9 | College Avenue then Claremont Avenue then SR-24 |
+| Berkeley side streets north of Alcatraz Ave (Dana, Regent, Hillegass, Benvenue) | SR-24 westbound on-ramps (toward Oakland and I-980) | 4.3 | Claremont Avenue then SR-24 |
+| Berkeley side streets north of Alcatraz Ave (Dana, Regent, Hillegass, Benvenue) | West Oakland to the southwest (Adeline St, Market St) | 3.0 | Alcatraz Avenue then Telegraph Avenue |
 | Berkeley side streets north of Alcatraz Ave (Dana, Regent, Hillegass, Benvenue) | Telegraph Ave to the south (downtown Oakland) | 2.7 | Telegraph Avenue |
-| Berkeley side streets north of Alcatraz Ave (Dana, Regent, Hillegass, Benvenue) | West Oakland to the southwest (Adeline St, Market St) | 1.7 | Alcatraz Avenue then Telegraph Avenue |
-| College Ave from the north (Berkeley) | Telegraph Ave to the south (downtown Oakland) | 1.2 | Telegraph Avenue |
-| Berkeley side streets north of Alcatraz Ave (Dana, Regent, Hillegass, Benvenue) | Berkeley hills to the northeast (Evergreen Ln, Gravatt Dr) | 0.7 | Alcatraz Avenue then Claremont Avenue |
-| Telegraph Ave from the north (Berkeley) | South-east Oakland (Broadway, Pleasant Valley Ave, Piedmont) | 0.7 | College Avenue |
+| Berkeley side streets north of Alcatraz Ave (Dana, Regent, Hillegass, Benvenue) | Berkeley hills to the northeast (Evergreen Ln, Gravatt Dr) | 1.0 | Alcatraz Avenue then Claremont Avenue |
+| College Ave from the north (Berkeley) | Telegraph Ave to the south (downtown Oakland) | 0.7 | Telegraph Avenue |
+| Berkeley side streets north of Alcatraz Ave (Dana, Regent, Hillegass, Benvenue) | SR-13 Warren Freeway (via SR-24 east) | 0.4 | Alcatraz Avenue then College Avenue |
+| Telegraph Ave from the north (Berkeley) | South-east Oakland (Broadway, Pleasant Valley Ave, Piedmont) | 0.4 | College Avenue |
 | Alcatraz Ave from the west (Emeryville side) | Berkeley hills to the northeast (Evergreen Ln, Gravatt Dr) | 0.3 | Alcatraz Avenue then Claremont Avenue |
-| College Ave from the north (Berkeley) | South-east Oakland (Broadway, Pleasant Valley Ave, Piedmont) | 0.3 | College Avenue then Claremont Avenue |
-| other pairs | | 1.6 | |
+| other pairs | | 2.1 | |
 
-By the arterial these cars would otherwise use: Telegraph Avenue 19 veh/h; Claremont Avenue then SR-24 14 veh/h; Alcatraz Avenue then College Avenue then Claremont Avenue 9 veh/h; College Avenue then Claremont Avenue then SR-24 5 veh/h; Alcatraz Avenue then Telegraph Avenue 2 veh/h; Alcatraz Avenue then Claremont Avenue 2 veh/h.
+By the arterial these cars would otherwise use: Telegraph Avenue 25 veh/h; Claremont Avenue then SR-24 15 veh/h; College Avenue then Claremont Avenue then SR-24 6 veh/h; Alcatraz Avenue then Telegraph Avenue 3 veh/h; Alcatraz Avenue then Claremont Avenue 1 veh/h; Alcatraz Avenue then College Avenue 1 veh/h.
 
 ### Colby Street SB
 
@@ -185,58 +185,58 @@ Observed (PM): 139 cars entered at the top (76 from Alcatraz Ave west, 50 from t
 | Intent | Basis | Implied veh/h | Model veh/h | Position |
 | --- | --- | --- | --- | --- |
 | Southbound Telegraph Ave traffic using Colby St to reach SR-24 | OBSERVED turn count x ASSUMPTION share (35 Telegraph Ave cars x 0.365) | 13 (11 to 20) | 18 | within |
-| Alcatraz Ave west, Ashby Ave and West Berkeley traffic using Colby St to reach SR-24 | OBSERVED turn count x ASSUMPTION share (41 other west turn-ins x 0.365) | 15 (13 to 23) | 14 | within |
+| Alcatraz Ave west, Ashby Ave and West Berkeley traffic using Colby St to reach SR-24 | OBSERVED turn count x ASSUMPTION share (41 other west turn-ins x 0.365) | 15 (13 to 23) | 16 | within |
 | College Ave and Berkeley traffic turning off Alcatraz Ave (from the east) onto Colby St to reach SR-24 | OBSERVED turn count x ASSUMPTION share (50 east turn-ins x 0.365) | 18 (15 to 29) | 17 | within |
-| Intents listed, together | | 46 (39 to 72) | 48 | |
-| Other through cars (no intent listed) | | | 32 | |
+| Intents listed, together | | 46 (39 to 72) | 51 | |
+| Other through cars (no intent listed) | | | 27 | |
 
 Model through cars by origin and destination group (largest 12 of 42 pairs):
 
 | From | To | Model veh/h | Arterial otherwise used (free flow, local streets closed) |
 | --- | --- | --- | --- |
-| Telegraph Ave from the north (Berkeley) | SR-24 westbound on-ramps (toward Oakland and I-980) | 16.4 | Telegraph Avenue |
-| Berkeley side streets north of Alcatraz Ave (Dana, Regent, Hillegass, Benvenue) | SR-24 westbound on-ramps (toward Oakland and I-980) | 15.1 | Telegraph Avenue |
-| Berkeley side streets north of Alcatraz Ave (Dana, Regent, Hillegass, Benvenue) | South-east Oakland (Broadway, Pleasant Valley Ave, Piedmont) | 12.9 | Alcatraz Avenue then College Avenue then Claremont Avenue |
-| Shattuck Ave from the north (Berkeley) | SR-24 westbound on-ramps (toward Oakland and I-980) | 6.2 | none near the study area |
-| Berkeley side streets north of Alcatraz Ave (Dana, Regent, Hillegass, Benvenue) | Telegraph Ave to the south (downtown Oakland) | 5.7 | Telegraph Avenue |
-| Berkeley side streets north of Alcatraz Ave (Dana, Regent, Hillegass, Benvenue) | West Oakland to the southwest (Adeline St, Market St) | 2.8 | Alcatraz Avenue then Telegraph Avenue |
-| Berkeley side streets north of Alcatraz Ave (Dana, Regent, Hillegass, Benvenue) | Berkeley side streets north of Alcatraz Ave (Dana, Regent, Hillegass, Benvenue) | 2.7 | Telegraph Avenue then Alcatraz Avenue then Claremont Avenue |
-| Ashby Ave from the west (Emeryville and I-80) | SR-13 Warren Freeway (via SR-24 east) | 2.6 | SR-24 |
-| Ashby Ave from the west (Emeryville and I-80) | SR-24 eastbound on-ramps (toward the Caldecott Tunnel) | 2.0 | SR-24 |
-| College Ave from the north (Berkeley) | Telegraph Ave to the south (downtown Oakland) | 1.7 | Telegraph Avenue |
-| Alcatraz Ave from the west (Emeryville side) | SR-13 Warren Freeway (via SR-24 east) | 1.5 | SR-24 |
-| Telegraph Ave from the north (Berkeley) | SR-24 eastbound on-ramps (toward the Caldecott Tunnel) | 1.4 | none near the study area |
-| other pairs | | 9.4 | |
+| Telegraph Ave from the north (Berkeley) | SR-24 westbound on-ramps (toward Oakland and I-980) | 16.5 | Telegraph Avenue |
+| Berkeley side streets north of Alcatraz Ave (Dana, Regent, Hillegass, Benvenue) | SR-24 westbound on-ramps (toward Oakland and I-980) | 15.3 | Telegraph Avenue |
+| Berkeley side streets north of Alcatraz Ave (Dana, Regent, Hillegass, Benvenue) | South-east Oakland (Broadway, Pleasant Valley Ave, Piedmont) | 11.2 | Alcatraz Avenue then College Avenue then Claremont Avenue |
+| Shattuck Ave from the north (Berkeley) | SR-24 westbound on-ramps (toward Oakland and I-980) | 7.9 | none near the study area |
+| Berkeley side streets north of Alcatraz Ave (Dana, Regent, Hillegass, Benvenue) | Telegraph Ave to the south (downtown Oakland) | 4.1 | Telegraph Avenue |
+| Berkeley side streets north of Alcatraz Ave (Dana, Regent, Hillegass, Benvenue) | West Oakland to the southwest (Adeline St, Market St) | 2.9 | Alcatraz Avenue then Telegraph Avenue |
+| Ashby Ave from the west (Emeryville and I-80) | SR-24 eastbound on-ramps (toward the Caldecott Tunnel) | 2.5 | SR-24 |
+| Ashby Ave from the west (Emeryville and I-80) | SR-13 Warren Freeway (via SR-24 east) | 2.2 | SR-24 |
+| Alcatraz Ave from the west (Emeryville side) | SR-13 Warren Freeway (via SR-24 east) | 2.1 | SR-24 |
+| Berkeley side streets north of Alcatraz Ave (Dana, Regent, Hillegass, Benvenue) | Berkeley side streets north of Alcatraz Ave (Dana, Regent, Hillegass, Benvenue) | 2.1 | Telegraph Avenue then Alcatraz Avenue then Claremont Avenue |
+| Alcatraz Ave from the west (Emeryville side) | SR-24 eastbound on-ramps (toward the Caldecott Tunnel) | 1.5 | SR-24 |
+| Telegraph Ave from the north (Berkeley) | SR-24 eastbound on-ramps (toward the Caldecott Tunnel) | 1.5 | none near the study area |
+| other pairs | | 9.0 | |
 
-By the arterial these cars would otherwise use: Telegraph Avenue 40 veh/h; Alcatraz Avenue then College Avenue then Claremont Avenue 14 veh/h; none near the study area 8 veh/h; SR-24 7 veh/h; Alcatraz Avenue then Telegraph Avenue 3 veh/h; Telegraph Avenue then Alcatraz Avenue then Claremont Avenue 3 veh/h.
+By the arterial these cars would otherwise use: Telegraph Avenue 37 veh/h; Alcatraz Avenue then College Avenue then Claremont Avenue 12 veh/h; none near the study area 10 veh/h; SR-24 8 veh/h; Alcatraz Avenue then Telegraph Avenue 3 veh/h; Telegraph Avenue then Alcatraz Avenue then Claremont Avenue 2 veh/h.
 
 ### Study area, all residential and service streets
 
-Model: 451 through cars per hour.
+Model: 437 through cars per hour.
 
-Model through cars by origin and destination group (largest 12 of 107 pairs):
+Model through cars by origin and destination group (largest 12 of 100 pairs):
 
 | From | To | Model veh/h | Arterial otherwise used (free flow, local streets closed) |
 | --- | --- | --- | --- |
-| Telegraph Ave from the north (Berkeley) | SR-24 westbound on-ramps (toward Oakland and I-980) | 37.9 | Telegraph Avenue |
-| South-east Oakland (Broadway, Pleasant Valley Ave, Piedmont) | West Berkeley (Sacramento St, MLK Jr Way, Milvia St, Carleton St) | 33.8 | Claremont Avenue |
-| Berkeley side streets north of Alcatraz Ave (Dana, Regent, Hillegass, Benvenue) | SR-24 westbound on-ramps (toward Oakland and I-980) | 33.7 | Telegraph Avenue |
-| SR-24 eastbound off-ramps (arriving from Oakland and I-980) | Telegraph Ave from the north (Berkeley) | 30.3 | Telegraph Avenue |
-| SR-24 eastbound off-ramps (arriving from Oakland and I-980) | Berkeley side streets north of Alcatraz Ave (Dana, Regent, Hillegass, Benvenue) | 27.6 | Telegraph Avenue |
-| Berkeley side streets north of Alcatraz Ave (Dana, Regent, Hillegass, Benvenue) | South-east Oakland (Broadway, Pleasant Valley Ave, Piedmont) | 23.9 | Alcatraz Avenue then College Avenue then Claremont Avenue |
-| South-east Oakland (Broadway, Pleasant Valley Ave, Piedmont) | Emeryville and West Oakland streets (55th to 67th Streets) | 21.9 | Claremont Avenue |
-| Telegraph Ave to the south (downtown Oakland) | South-east Oakland (Broadway, Pleasant Valley Ave, Piedmont) | 20.1 | Telegraph Avenue then Claremont Avenue |
-| Telegraph Ave to the south (downtown Oakland) | SR-24 westbound on-ramps (toward Oakland and I-980) | 19.8 | Telegraph Avenue |
-| South-east Oakland (Broadway, Pleasant Valley Ave, Piedmont) | Telegraph Ave to the south (downtown Oakland) | 19.7 | Claremont Avenue then Telegraph Avenue |
-| SR-24 eastbound off-ramps (arriving from Oakland and I-980) | Claremont Ave and Tunnel Rd toward the hills | 13.1 | SR-24 |
-| Claremont Ave and Tunnel Rd toward the hills | SR-24 westbound on-ramps (toward Oakland and I-980) | 10.3 | Claremont Avenue then SR-24 |
-| other pairs | | 158.5 | |
+| Telegraph Ave from the north (Berkeley) | SR-24 westbound on-ramps (toward Oakland and I-980) | 36.1 | Telegraph Avenue |
+| Berkeley side streets north of Alcatraz Ave (Dana, Regent, Hillegass, Benvenue) | SR-24 westbound on-ramps (toward Oakland and I-980) | 35.0 | Telegraph Avenue |
+| South-east Oakland (Broadway, Pleasant Valley Ave, Piedmont) | West Berkeley (Sacramento St, MLK Jr Way, Milvia St, Carleton St) | 29.6 | Claremont Avenue |
+| SR-24 eastbound off-ramps (arriving from Oakland and I-980) | Telegraph Ave from the north (Berkeley) | 28.8 | Telegraph Avenue |
+| SR-24 eastbound off-ramps (arriving from Oakland and I-980) | Berkeley side streets north of Alcatraz Ave (Dana, Regent, Hillegass, Benvenue) | 26.4 | Telegraph Avenue |
+| Berkeley side streets north of Alcatraz Ave (Dana, Regent, Hillegass, Benvenue) | South-east Oakland (Broadway, Pleasant Valley Ave, Piedmont) | 22.4 | Alcatraz Avenue then College Avenue then Claremont Avenue |
+| South-east Oakland (Broadway, Pleasant Valley Ave, Piedmont) | Emeryville and West Oakland streets (55th to 67th Streets) | 20.5 | Claremont Avenue |
+| Telegraph Ave to the south (downtown Oakland) | South-east Oakland (Broadway, Pleasant Valley Ave, Piedmont) | 18.2 | Telegraph Avenue then Alcatraz Avenue then College Avenue |
+| Telegraph Ave to the south (downtown Oakland) | SR-24 westbound on-ramps (toward Oakland and I-980) | 17.3 | Telegraph Avenue |
+| South-east Oakland (Broadway, Pleasant Valley Ave, Piedmont) | Telegraph Ave to the south (downtown Oakland) | 16.9 | Claremont Avenue then Telegraph Avenue |
+| SR-24 eastbound off-ramps (arriving from Oakland and I-980) | Claremont Ave and Tunnel Rd toward the hills | 13.7 | SR-24 |
+| South-east Oakland (Broadway, Pleasant Valley Ave, Piedmont) | San Pablo Ave (Emeryville and West Oakland) | 11.4 | Claremont Avenue |
+| other pairs | | 160.8 | |
 
-By the arterial these cars would otherwise use: Telegraph Avenue 186 veh/h; Claremont Avenue 85 veh/h; Alcatraz Avenue then College Avenue then Claremont Avenue 29 veh/h; SR-24 25 veh/h; Telegraph Avenue then Claremont Avenue 20 veh/h; Claremont Avenue then Telegraph Avenue 20 veh/h.
+By the arterial these cars would otherwise use: Telegraph Avenue 176 veh/h; Claremont Avenue 82 veh/h; SR-24 28 veh/h; Alcatraz Avenue then College Avenue then Claremont Avenue 26 veh/h; Telegraph Avenue then Alcatraz Avenue then College Avenue 18 veh/h; none near the study area 18 veh/h.
 
-By origin group: South-east Oakland (Broadway, Pleasant Valley Ave, Piedmont) 116; Berkeley side streets north of Alcatraz Ave (Dana, Regent, Hillegass, Benvenue) 81; SR-24 eastbound off-ramps (arriving from Oakland and I-980) 77; Telegraph Ave to the south (downtown Oakland) 50; Telegraph Ave from the north (Berkeley) 42; SR-24 westbound off-ramps (arriving from the Caldecott Tunnel) 18; Claremont Ave and Tunnel Rd toward the hills 14; West Oakland to the southwest (Adeline St, Market St) 10; College Ave from the north (Berkeley) 10; Emeryville and West Oakland streets (55th to 67th Streets) 8.
+By origin group: South-east Oakland (Broadway, Pleasant Valley Ave, Piedmont) 110; Berkeley side streets north of Alcatraz Ave (Dana, Regent, Hillegass, Benvenue) 84; SR-24 eastbound off-ramps (arriving from Oakland and I-980) 74; Telegraph Ave to the south (downtown Oakland) 47; Telegraph Ave from the north (Berkeley) 41; SR-24 westbound off-ramps (arriving from the Caldecott Tunnel) 18; Claremont Ave and Tunnel Rd toward the hills 15; West Oakland to the southwest (Adeline St, Market St) 9; College Ave from the north (Berkeley) 9; Shattuck Ave from the north (Berkeley) 8.
 
-By destination group: SR-24 westbound on-ramps (toward Oakland and I-980) 114; Telegraph Ave from the north (Berkeley) 57; South-east Oakland (Broadway, Pleasant Valley Ave, Piedmont) 52; Berkeley side streets north of Alcatraz Ave (Dana, Regent, Hillegass, Benvenue) 42; West Berkeley (Sacramento St, MLK Jr Way, Milvia St, Carleton St) 35; Telegraph Ave to the south (downtown Oakland) 30; Emeryville and West Oakland streets (55th to 67th Streets) 25; Claremont Ave and Tunnel Rd toward the hills 23; Ashby Ave from the west (Emeryville and I-80) 15; Alcatraz Ave from the west (Emeryville side) 11.
+By destination group: SR-24 westbound on-ramps (toward Oakland and I-980) 113; Telegraph Ave from the north (Berkeley) 58; South-east Oakland (Broadway, Pleasant Valley Ave, Piedmont) 48; Berkeley side streets north of Alcatraz Ave (Dana, Regent, Hillegass, Benvenue) 40; West Berkeley (Sacramento St, MLK Jr Way, Milvia St, Carleton St) 31; Telegraph Ave to the south (downtown Oakland) 25; Emeryville and West Oakland streets (55th to 67th Streets) 24; Claremont Ave and Tunnel Rd toward the hills 21; San Pablo Ave (Emeryville and West Oakland) 17; Ashby Ave from the west (Emeryville and I-80) 15.
 
 
 Per-seed detail: `rockridge-am_peak-s1-seed1.md` (seed 1 in full).

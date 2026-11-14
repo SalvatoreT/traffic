@@ -17,6 +17,8 @@ export interface IxConfig {
   nodeMaxM: number; bearingTolDeg: number; middayFromPm?: boolean; middayWeightFactor?: number; freewayClass: string;
 }
 export interface IxNet { nodes: { id: number; x: number; y: number }[]; links: { id: number; from: number; to: number; name: string; class: string; fromBearing?: number; toBearing?: number }[] }
+/** `in` and `out` hold the leg's links including slip links; `inBase` and `outBase` the links of the leg's own street, and `inSlip` and `outSlip` the slip links added. */
+export interface IxLegLinks { in: number[]; out: number[]; inBase: number[]; outBase: number[]; inSlip: number[]; outSlip: number[] }
 export interface IxStation {
   id: string; label: string; basis: string; corridor: string; links: number[]; feature?: Feature; target: Record<string, number>; weight: number; weightByPeriod?: Record<string, number>; tolPct: number;
   /** Set on a leg that is a ramp: the links whose ADT-based station this count replaces. */
@@ -32,7 +34,7 @@ const APPROACH: Record<string, { leg: 'N' | 'E' | 'S' | 'W'; L: 'N' | 'E' | 'S' 
 const angDiff = (a: number, b: number) => Math.abs(((a - b + 540) % 360) - 180);
 
 /** The links that carry a leg toward (`in`) and away from (`out`) the counted intersection: of the leg's street (or ramps), ending or starting within `maxM` of the point, heading along the leg; the nearest end wins. */
-export function mapLeg(leg: IxLeg, p: [number, number], net: IxNet, nodes: Map<number, { x: number; y: number }>, cfg: Pick<IxConfig, 'nodeMaxM' | 'bearingTolDeg' | 'freewayClass'>): { in: number[]; out: number[] } {
+export function mapLeg(leg: IxLeg, p: [number, number], net: IxNet, nodes: Map<number, { x: number; y: number }>, cfg: Pick<IxConfig, 'nodeMaxM' | 'bearingTolDeg' | 'freewayClass'>): IxLegLinks {
   const ok = (l: IxNet['links'][number]) => (leg.ramp ? l.class === cfg.freewayClass : l.class !== cfg.freewayClass && l.name === leg.street);
   const pick = (end: 'to' | 'from') => {
     let best: number[] = [], bd = Infinity, at = -1;
@@ -46,7 +48,18 @@ export function mapLeg(leg: IxLeg, p: [number, number], net: IxNet, nodes: Map<n
     }
     return best;
   };
-  return { in: pick('to'), out: pick('from') };
+  const inBase = pick('to'), outBase = pick('from');
+  // Slip links: an unnamed one-way link that leaves the leg's street where its approach link starts (inbound) or joins it where its exit link ends (outbound),
+  // with its other end within `nodeMaxM` of the intersection. Its vehicles are counted on the leg but never touch the leg's link at the intersection.
+  const oneWay = (l: IxNet['links'][number]) => !net.links.some((o) => o.from === l.to && o.to === l.from);
+  const slip = (base: number[], end: 'from' | 'to') => {
+    if (leg.ramp || !base.length) return [] as number[];
+    const at = new Set(base.map((id) => net.links.find((l) => l.id === id)![end]));
+    const other = end === 'from' ? 'to' : 'from';
+    return net.links.filter((l) => !base.includes(l.id) && !l.name && l.class !== cfg.freewayClass && at.has(l[end]) && oneWay(l) && (() => { const n = nodes.get(l[other])!; return Math.hypot(n.x - p[0], n.y - p[1]) <= cfg.nodeMaxM; })()).map((l) => l.id);
+  };
+  const inSlip = slip(inBase, 'from'), outSlip = slip(outBase, 'to');
+  return { in: [...inBase, ...inSlip], out: [...outBase, ...outSlip], inBase, outBase, inSlip, outSlip };
 }
 
 /** Count stations of every counted intersection. Periods without a count get no target; midday may take the PM count times `middayFactor` at reduced weight (ASSUMPTION). */
@@ -58,7 +71,7 @@ export function intersectionStations(file: IxFile, net: IxNet, cfg: IxConfig, to
   const mid = cfg.middayFromPm && middayFactor !== null ? cfg.periods.midday : undefined;
   for (const c of file.intersections) {
     const p = toXY(c.lat, c.lon);
-    const legs = Object.fromEntries(Object.entries(c.legs).map(([k, leg]) => [k, mapLeg(leg!, p, net, nodes, cfg)])) as Record<string, { in: number[]; out: number[] }>;
+    const legs = Object.fromEntries(Object.entries(c.legs).map(([k, leg]) => [k, mapLeg(leg!, p, net, nodes, cfg)])) as Record<string, IxLegLinks>;
     const src = file.sources[c.source];
     const corridor = `intersection count ${c.id}`;
     const year = /^(\d{4})-/.test(c.date) ? Number(c.date.slice(0, 4)) : null;
@@ -76,8 +89,9 @@ export function intersectionStations(file: IxFile, net: IxNet, cfg: IxConfig, to
           ((enter[A.leg] ??= {})[period] ??= 0); enter[A.leg][period] += v;
           ((leave[toLeg] ??= {})[period] ??= 0); leave[toLeg][period] += v;
           if (k === 'T' || k === 'U' || v < cfg.minMovementVeh) continue;
-          const a = legs[A.leg]?.in, b = legs[toLeg]?.out;
+          const a = legs[A.leg]?.inBase, b = legs[toLeg]?.outBase;
           if (a?.length !== 1 || b?.length !== 1) continue;
+          if (legs[A.leg].inSlip.some((l) => legs[toLeg].outSlip.includes(l))) { rep.notes.push(`intersection count ${c.id}: the ${ap} approach to the ${toLeg} leg (${v} veh/h) can use a slip link, so no movement constraint is made for it; the leg stations carry it`); continue; }
           const key = `${a[0]}>${b[0]}`;
           (moves.get(key) ?? moves.set(key, { a: a[0], b: b[0], from: ap, to: toLeg, t: {} }).get(key)!).t[period] = v;
         }

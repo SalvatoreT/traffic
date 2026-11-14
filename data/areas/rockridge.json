@@ -128,7 +128,7 @@
   },
   "calibration": {
     "status": "uncalibrated",
-    "note": "Shares within 10 points and stable in all periods, but 69% of fitted PM stations pass GEH 5 against 85%; the 52nd St off-ramp carries 899 veh/h, 1,024 counted.",
+    "note": "Shares and stability hold, but 68% of fitted PM stations pass GEH 5 against 85% (87% for recent counts), and the 52nd St off-ramp has 900 of 1,024.",
     "defaultPeriod": "midday",
     "experimentalPeriods": [
       "pm_peak"

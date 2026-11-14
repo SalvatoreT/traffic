@@ -29,10 +29,10 @@ describe('published intersection counts', () => {
   const net = cross(), nodes = new Map(net.nodes.map((n) => [n.id, n]));
   it('places a leg on the links of its street that end and start nearest the point, by bearing', () => {
     const w = mapLeg({ street: 'Fig Lane', bearing: 270 }, [0, 0], net, nodes, cfg);
-    expect(w).toEqual({ in: [8], out: [9] });
+    expect(w).toMatchObject({ in: [8], out: [9], inSlip: [], outSlip: [] });
     const r = mapLeg({ ramp: true, bearing: 212 }, [-10, 0], net, nodes, cfg);
-    expect(r).toEqual({ in: [10], out: [] });
-    expect(mapLeg({ street: 'Elm Way', bearing: 0 }, [0, 0], net, nodes, cfg)).toEqual({ in: [], out: [] });
+    expect(r).toMatchObject({ in: [10], out: [] });
+    expect(mapLeg({ street: 'Elm Way', bearing: 0 }, [0, 0], net, nodes, cfg)).toMatchObject({ in: [], out: [] });
   });
   it('turns movements into leg volumes and turn constraints, per counted period', () => {
     const { stations, report } = intersectionStations(file(), net, cfg, toXY, 0.6);
@@ -64,5 +64,24 @@ describe('published intersection counts', () => {
     const { report, stations } = intersectionStations(f, net, cfg, toXY, null);
     expect(report.notes.some((n) => /no entering link for the N leg \(Elm Way\)/.test(n))).toBe(true);
     expect(stations.some((s) => s.id === 'ix oak-fig N entering')).toBe(false);
+  });
+  it('counts a slip link on both legs it joins and drops the movement that can bypass the signal', () => {
+    const ns = [{ id: 0, x: 0, y: 0 }, { id: 1, x: 0, y: 100 }, { id: 2, x: 100, y: 0 }, { id: 7, x: 40, y: 0 }, { id: 8, x: 0, y: 40 }];
+    const links: IxNet['links'] = [];
+    const add = (from: number, to: number, name: string, brg: number, cls = 'tertiary') => links.push({ id: links.length, from, to, name, class: cls, fromBearing: brg, toBearing: brg });
+    add(8, 0, 'Oak Road', 180); add(0, 8, 'Oak Road', 0); add(1, 8, 'Oak Road', 180); add(8, 1, 'Oak Road', 0);
+    add(7, 0, 'Fig Lane', 270); add(0, 7, 'Fig Lane', 90); add(2, 7, 'Fig Lane', 270); add(7, 2, 'Fig Lane', 90);
+    add(7, 8, '', 315);
+    const sn: IxNet = { nodes: ns, links }, nm = new Map(ns.map((n) => [n.id, n]));
+    expect(mapLeg({ street: 'Fig Lane', bearing: 90 }, [0, 0], sn, nm, cfg)).toMatchObject({ in: [4, 8], inBase: [4], inSlip: [8], out: [5], outSlip: [] });
+    expect(mapLeg({ street: 'Oak Road', bearing: 0 }, [0, 0], sn, nm, cfg)).toMatchObject({ out: [1, 8], outSlip: [8], in: [0], inSlip: [] });
+    const f: IxFile = { sources: file().sources, intersections: [{ id: 'slip', label: 'Slip', source: 'doc', date: '2020-01-01', lat: 0, lon: 0, legs: { N: { street: 'Oak Road', bearing: 0 }, E: { street: 'Fig Lane', bearing: 90 } }, volumes: { pm: { WB: { T: 500, R: 240 }, SB: { L: 60 } } } }] };
+    const { stations, report } = intersectionStations(f, sn, cfg, toXY, null);
+    const by = new Map(stations.map((s) => [s.id, s]));
+    expect(by.get('ix slip E entering')).toMatchObject({ links: [4, 8], target: { pm_peak: 740 } });
+    expect(by.get('ix slip N leaving')).toMatchObject({ links: [1, 8], target: { pm_peak: 240 } });
+    expect([...by.keys()].some((k) => k.startsWith('ix slip move 4>'))).toBe(false);
+    expect(report.notes.some((n) => /slip link/.test(n))).toBe(true);
+    expect(by.get('ix slip move 0>5')).toBeDefined();
   });
 });

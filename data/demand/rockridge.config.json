@@ -479,6 +479,18 @@
   },
   "countFit": {
     "enabled": true,
+    "recency": {
+      "enabled": true,
+      "_note": "ASSUMPTION (round 24, owner decision of 2026-11-14: the newer data is more important than the 2010 and 2013 data). Every station carries the count year of its source (derived from the file names, count dates and release years in the provenance; a source without a known year is treated as old). A station's weight is multiplied by the weight of the first band whose maxAgeYears is at least its age (reference year minus count year); a weight of 0 takes the station out of the fit and scores it as held out. The 10-year edge and the old-band weight are not from a study: they separate the 2010 and 2013 environmental-review counts and the 2012 ramp counts (age 13 to 16) from the 2018 to 2025 sources (age 1 to 8) and were tested at 1, 0.5, 0.25 and 0 (data/calibration/rockridge.record.md, twenty-fourth round). recentYears only sets what the reports call recent.",
+      "referenceYear": 2026,
+      "recentYears": 5,
+      "bands": [
+        { "maxAgeYears": 10, "weight": 1 },
+        { "weight": 0.5 }
+      ],
+      "growthPerYear": {},
+      "growthNote": "No growth from the count year: the published counts held (Caltrans SR-24 ramp ADT 2012 to 2019 and 2024; OakDOT counts at Telegraph Ave and Alcatraz Ave 2018 to 2021) are flat or lower, so there is no verified rate to apply. The key maps a source id (oakland-tmc, caltrans-aadt, caltrans-ramp, volunteer-count, CHRCO-EIR2014, SafewayCollege-DEIR2011) to an annual rate; empty means none."
+    },
     "_note": "Count-constrained demand (seventh round). Every count the pipeline holds is a target volume on directed links; OD flows are scaled so that a free-flow static assignment matches them. Citation for the method family: [VanZuylen1980], [Willumsen1981]. Targets for AM and midday are the PM counts scaled by periodFactors (ASSUMPTION).",
     "bounds": {
       "lo": 0.1,
