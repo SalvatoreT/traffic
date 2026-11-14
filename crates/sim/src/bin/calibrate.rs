@@ -710,6 +710,19 @@ fn main() {
         }
         std::fs::write(path, o).ok();
     }
+    if let Ok(path) = std::env::var("CAL_DUMP_RAMP_TRIPS") {
+        // Debug: one line per completed trip that used a link of CAL_RAMP_LINKS (comma separated): origin, destination, the ramp link, guided or not.
+        let ramps: Vec<u32> = std::env::var("CAL_RAMP_LINKS").unwrap_or_default().split(',').filter_map(|x| x.trim().parse().ok()).collect();
+        let mut o = String::new();
+        for t in tm.iter() {
+            if let Some(r) = trip_by_uid.get(&t.uid) {
+                if let Some(l) = r.trail.iter().find(|l| ramps.contains(l)) {
+                    let _ = writeln!(o, "{} {} {} {} {}", t.origin, t.dest, l, t.guided as u8, r.switches);
+                }
+            }
+        }
+        std::fs::write(path, o).ok();
+    }
     let wander_rows: Vec<(&str, WanderStats)> = vec![
         ("all trips", summarize(tm.iter())),
         ("gate to gate", summarize(tm.iter().filter(|t| is_gate(t.origin) && is_gate(t.dest)))),
