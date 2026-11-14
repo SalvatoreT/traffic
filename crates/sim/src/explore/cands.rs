@@ -180,6 +180,11 @@ pub fn generate_with(study: &Study, hot: &Hotspots, n_loc: usize, profile: &Prof
                 if all_local && legs >= 3 {
                     let v = Intervention { ty: "modal_filter".into(), node: Some(n), ..Default::default() };
                     add(&mut out, v, "node_filter", format!("mn:n{n}"), None, nodes.clone(), places.clone(), *score);
+                    for (street, links) in street_filters(study, n) {
+                        let key = format!("mn:n{n}:l{}", links.iter().map(|l| l.to_string()).collect::<Vec<_>>().join("."));
+                        let v = Intervention { ty: "modal_filter".into(), node: Some(n), legs: Some(links), ..Default::default() };
+                        add(&mut out, v, "node_filter", key, None, nodes.clone(), vec![street], *score);
+                    }
                 }
                 if all_local && legs == 4 {
                     // Sweep the barrier bearing and keep one bearing per distinct set of banned movements (the two orientations).
@@ -238,6 +243,31 @@ pub fn generate_with(study: &Study, hot: &Hotspots, n_loc: usize, profile: &Prof
     }
     out.retain(|c| !profile.exclude_types.iter().any(|t| *t == c.iv.ty));
     out
+}
+
+/// The per-street filters a node offers: for each street, the links of all its legs, when closing them leaves at least two other legs connected
+/// (otherwise the filter is the whole junction). Streets are in name order; a node on a single street offers none.
+pub fn street_filters(study: &Study, node: u32) -> Vec<(String, Vec<u32>)> {
+    let legs = node_legs(&study.topo, &study.net, node);
+    let mut by: BTreeMap<String, Vec<u32>> = BTreeMap::new();
+    let mut count: BTreeMap<String, usize> = BTreeMap::new();
+    for leg in &legs {
+        let first = leg.outs.first().or(leg.ins.first()).copied();
+        let Some(first) = first else { continue };
+        let name = study.idx.link_name[first as usize].clone();
+        by.entry(name.clone()).or_default().extend(leg.ins.iter().chain(leg.outs.iter()).copied());
+        *count.entry(name).or_default() += 1;
+    }
+    if by.len() < 2 {
+        return Vec::new();
+    }
+    by.into_iter()
+        .filter(|(name, _)| legs.len() - count[name] >= 2)
+        .map(|(name, mut links)| {
+            links.sort_unstable();
+            (name, links)
+        })
+        .collect()
 }
 
 /// Two candidates may not appear in one package.

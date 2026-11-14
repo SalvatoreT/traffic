@@ -69,10 +69,11 @@ fn demand(flows: &[(u32, u32, f64)]) -> Demand {
     Demand {
         version: 1,
         area: "t".into(),
+        intents: Vec::new(),
         periods: vec![Period {
             id: "p".into(),
             label: "p".into(),
-            flows: flows.iter().map(|&(o, d, v)| Flow { origin: o, destination: d, veh_per_hour: v, mode: FlowMode::Car, via: None }).collect(),
+            flows: flows.iter().map(|&(o, d, v)| Flow { origin: o, destination: d, veh_per_hour: v, mode: FlowMode::Car, via: None, intent: None }).collect(),
         }],
     }
 }
@@ -1726,6 +1727,7 @@ mod initial;
 mod diverter;
 mod route_choice;
 mod cut_through;
+mod intent;
 
 /// Removing any intervention restores the baseline effective state and signal output, including after a reset that carried the old list.
 #[test]

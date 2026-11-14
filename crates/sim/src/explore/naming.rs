@@ -45,6 +45,13 @@ fn link_street(name: &str) -> String {
     }
 }
 
+fn list_names(names: &[String]) -> String {
+    match names.len() {
+        0 | 1 => names.join(""),
+        n => format!("{} and {}", names[..n - 1].join(", "), names[n - 1]),
+    }
+}
+
 fn join_names(names: &[String], fallback: &str) -> String {
     match names.len() {
         0 => fallback.into(),
@@ -268,7 +275,19 @@ pub fn describe(net: &Network, topo: &Topo, idx: &NameIndex, iv: &Intervention) 
     match iv.ty.as_str() {
         "modal_filter" => match (iv.link, iv.node) {
             (Some(l), _) => format!("Modal filter on {}", ln(l)),
-            (None, Some(n)) => format!("Modal filter at {}", nn(n)),
+            (None, Some(n)) => match iv.legs.as_ref().filter(|_| (n as usize) < net.nodes.len()) {
+                Some(legs) => {
+                    let mut names: Vec<String> = node_legs(topo, net, n)
+                        .iter()
+                        .filter(|l| l.ins.iter().chain(l.outs.iter()).any(|k| legs.contains(k)))
+                        .filter_map(|l| l.outs.first().or(l.ins.first()).map(|&k| idx.link_name[k as usize].clone()))
+                        .collect();
+                    names.sort_by(|a, b| locale_cmp(a, b));
+                    names.dedup();
+                    format!("Modal filter on {} at {}", list_names(&names), nn(n))
+                }
+                None => format!("Modal filter at {}", nn(n)),
+            },
             _ => "Modal filter".into(),
         },
         "speed_limit" => format!("Speed limit {} mph on {}", js_round(iv.speed.unwrap_or(0.0) * 2.23694), ln(iv.link.unwrap_or(0))),

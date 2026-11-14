@@ -39,7 +39,7 @@ fn links_match_the_typescript_encoder() {
 fn labels_match_the_app() {
     let f = fixture();
     let (net, origin) = fixture_net(&f);
-    let study = Study::from_parts("fixture", net.clone(), Demand { version: 1, area: "fixture".into(), periods: vec![] }, origin, "h".into(), "h".into(), "uncalibrated".into());
+    let study = Study::from_parts("fixture", net.clone(), Demand { version: 1, area: "fixture".into(), intents: vec![], periods: vec![] }, origin, "h".into(), "h".into(), "uncalibrated".into());
     let idx = NameIndex::new(&net);
     for b in f["blockLabels"].as_array().unwrap() {
         let key = b["key"].as_u64().unwrap() as u32;
@@ -149,12 +149,13 @@ fn study_of(net: Network) -> Study {
     let demand = Demand {
         version: 1,
         area: "t".into(),
+        intents: Vec::new(),
         periods: vec![Period {
             id: "p".into(),
             label: "p".into(),
             flows: vec![
-                Flow { origin: gw, destination: ge, veh_per_hour: 650.0, mode: FlowMode::Car, via: None },
-                Flow { origin: ge, destination: gw, veh_per_hour: 650.0, mode: FlowMode::Car, via: None },
+                Flow { origin: gw, destination: ge, veh_per_hour: 650.0, mode: FlowMode::Car, via: None, intent: None },
+                Flow { origin: ge, destination: gw, veh_per_hour: 650.0, mode: FlowMode::Car, via: None, intent: None },
             ],
         }],
     };

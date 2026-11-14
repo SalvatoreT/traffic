@@ -41,6 +41,12 @@ impl WasmSimulation {
         self.inner.run_link_stats()
     }
 
+    /// Stride 3: intent slot, link id, cumulative through vehicles (see `Simulation::intent_links`).
+    #[wasm_bindgen(js_name = intentLinks)]
+    pub fn intent_links(&self) -> Vec<f32> {
+        self.inner.intent_links()
+    }
+
     pub fn metrics(&self) -> String {
         self.inner.metrics_json()
     }

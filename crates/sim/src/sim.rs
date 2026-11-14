@@ -83,6 +83,7 @@ struct Trip {
     dest: u32,
     t_arr: f64,
     through: bool,
+    intent: u16,
     noise_seed: u32,
     drv: Drv,
     /// Assumed movement (link a, link b) this trip must make (ASSUMPTION, demand flow `via`).
@@ -103,6 +104,8 @@ pub struct TripRecord {
 }
 
 const NO_PLAN: u32 = u32::MAX;
+/// Intent slot of a vehicle that is not a through car.
+pub(crate) const NO_INTENT: u16 = u16::MAX;
 
 /// The assumed movements of one `via` flow (ASSUMPTION): the primary first, then the alternatives (same turn family on parallel streets), and the detour tolerance.
 struct ViaPlan {
@@ -124,6 +127,7 @@ struct FlowRt {
     rng: Rng,
     next_t: f64,
     through: bool,
+    intent: u16,
     via: Option<(u32, u32)>,
     vplan: u32,
 }
@@ -143,6 +147,8 @@ struct Veh {
     origin: u32,
     dest: u32,
     through: bool,
+    /// Intent slot of a through car (`Simulation::n_intents` is "other"); `NO_INTENT` otherwise.
+    intent: u16,
     /// Assumed movement not yet made: replans run through it first.
     via: Option<(u32, u32)>,
     vplan: u32,
@@ -207,6 +213,7 @@ impl Veh {
             origin: 0,
             dest: 0,
             through: false,
+            intent: NO_INTENT,
             via: None,
             vplan: NO_PLAN,
             ct_counted: false,
@@ -273,6 +280,9 @@ struct Stats {
     veh_m: f64,
     ct_veh_m: f64,
     ct_vehicles: u64,
+    /// Through vehicles per intent slot (demand intents, then "other"), and the links they used: slot * links + link. Sized on first use.
+    intent_veh: Vec<u64>,
+    intent_link: Vec<f32>,
     local_veh_m: f64,
     safety_t: f64,
     safety_vs: f64,
@@ -796,7 +806,9 @@ impl Simulation {
                     vplan = self.via_plans.len() as u32;
                     self.via_plans.push(ViaPlan { moves, max_detour: v.max_detour.unwrap_or(VIA_MAX_DETOUR) as f32 });
                 }
-                self.flows.push(FlowRt { mode: f.mode, origin: f.origin, dest: f.destination, rate, rng, next_t, through, via, vplan });
+                let n_int = self.demand.intents.len();
+                let intent = if through && n_int > 0 { f.intent.map_or(n_int, |i| (i as usize).min(n_int)) as u16 } else { NO_INTENT };
+                self.flows.push(FlowRt { mode: f.mode, origin: f.origin, dest: f.destination, rate, rng, next_t, through, intent, via, vplan });
             }
         }
     }
@@ -1027,6 +1039,13 @@ impl Simulation {
         m.cut_through.vehicles = st.ct_vehicles;
         m.cut_through.vehicles_per_hour = st.ct_vehicles as f64 * 3600.0 / self.t.max(1.0);
         m.cut_through.share_of_local_veh_km = if st.local_veh_m > 0.0 { st.ct_veh_m / st.local_veh_m } else { 0.0 };
+        if !self.demand.intents.is_empty() {
+            let hours = self.t.max(1.0) / 3600.0;
+            for (k, d) in self.demand.intents.iter().map(|d| d.id.as_str()).chain(std::iter::once("other")).enumerate() {
+                let n = st.intent_veh.get(k).copied().unwrap_or(0);
+                m.cut_through.by_intent.push(IntentCount { id: d.to_string(), vehicles: n, vehicles_per_hour: n as f64 / hours });
+            }
+        }
         if st.safety_t > 0.0 {
             m.safety.local_mean_speed = st.safety_vs / st.safety_t;
             m.safety.share_above_20mph = st.above20 / st.safety_t;
@@ -1344,7 +1363,7 @@ impl Simulation {
                 if f.mode == FlowMode::Bicycle {
                     let drv = Drv::bike(&mut f.rng);
                     let v0_abs = bike_speed(&mut f.rng);
-                    let trip = Trip { v0_abs, uid: self.uid_next, origin: f.origin, dest: f.dest, t_arr, through: false, noise_seed: NO_NOISE, drv, via: None, vplan: NO_PLAN };
+                    let trip = Trip { v0_abs, uid: self.uid_next, origin: f.origin, dest: f.dest, t_arr, through: false, intent: NO_INTENT, noise_seed: NO_NOISE, drv, via: None, vplan: NO_PLAN };
                     self.uid_next += 1;
                     self.bike_backlog[trip.origin as usize].push_back(trip);
                     continue;
@@ -1358,6 +1377,7 @@ impl Simulation {
                     dest: f.dest,
                     t_arr,
                     through: f.through,
+                    intent: f.intent,
                     noise_seed,
                     drv,
                     via: f.via,
@@ -1695,6 +1715,7 @@ impl Simulation {
                     origin: trip.origin,
                     dest: trip.dest,
                     through: trip.through,
+                    intent: trip.intent,
                     via,
                     vplan,
                     noise_seed: trip.noise_seed,
@@ -2303,12 +2324,14 @@ impl Simulation {
         self.win_exit[l] += 1;
 
         let veh = &mut self.vehs[vid as usize];
+        let mut newly = false;
         if veh.through && self.topo.is_local[l] {
             self.bin_ct[bi] += 1.0;
             if self.t >= 0.0 {
                 self.cum[l][1] += 1.0;
                 if !veh.ct_counted {
                     veh.ct_counted = true;
+                    newly = true;
                     self.st.ct_vehicles += 1;
                 }
             }
@@ -2319,6 +2342,49 @@ impl Simulation {
             self.tt_sum[l] += (self.t - veh.t_enter) as f32;
             self.tt_n[l] += 1;
         }
+        if self.t >= 0.0 && self.vehs[vid as usize].ct_counted {
+            self.tally_intent(vid, l, newly);
+        }
+    }
+
+    /// Through car `vid` leaves link `l`. The first time it is counted (the moment `ct_vehicles` counts it) its intent gets one vehicle and
+    /// every link it has entered so far; each later exit adds that link.
+    fn tally_intent(&mut self, vid: u32, l: usize, newly: bool) {
+        let i = self.vehs[vid as usize].intent;
+        if i == NO_INTENT {
+            return;
+        }
+        let (slots, nl) = (self.demand.intents.len() + 1, self.topo.n_links);
+        if self.st.intent_veh.is_empty() {
+            self.st.intent_veh = vec![0; slots];
+            self.st.intent_link = vec![0.0; slots * nl];
+        }
+        let base = i as usize * nl;
+        if newly {
+            self.st.intent_veh[i as usize] += 1;
+            let trail = &self.vehs[vid as usize].trail;
+            for &k in trail {
+                self.st.intent_link[base + k as usize] += 1.0;
+            }
+            if trail.last() != Some(&(l as u32)) {
+                self.st.intent_link[base + l] += 1.0;
+            }
+        } else {
+            self.st.intent_link[base + l] += 1.0;
+        }
+    }
+
+    /// Stride 3: intent slot (the demand's intents in order, then "other"), link id, cumulative through vehicles that left the link since t = 0. Only nonzero entries.
+    /// Divide by the elapsed hours (`metrics().time / 3600`) for vehicles an hour, the window the through-car figure uses.
+    pub fn intent_links(&self) -> Vec<f32> {
+        let nl = self.topo.n_links;
+        let mut out = Vec::new();
+        for (k, &c) in self.st.intent_link.iter().enumerate() {
+            if c > 0.0 {
+                out.extend_from_slice(&[(k / nl) as f32, (k % nl) as f32, c]);
+            }
+        }
+        out
     }
 
     fn link_ff_for(&self, l: usize, fcomp: f32) -> f32 {

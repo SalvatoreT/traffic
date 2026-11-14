@@ -225,6 +225,9 @@ pub struct Flow {
     /// Additive (calibration round 20, ASSUMPTION): the trips of this flow make the movement from link `from` onto link `to` on the way. Their route runs to `from`, takes the movement, then runs to the destination. Dropped when the movement is not usable.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub via: Option<Via>,
+    /// Additive (cut-through intent view): index into `Demand::intents` of the intent a through trip of this flow serves. Absent: the trip counts under "other".
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub intent: Option<u32>,
 }
 
 /// A movement a flow must make: link ids (equal to link positions).
@@ -264,6 +267,15 @@ pub struct Demand {
     #[serde(default)]
     pub area: String,
     pub periods: Vec<Period>,
+    /// Additive (cut-through intent view): the named reasons through cars are tallied under, in the order flows index them.
+    #[serde(default)]
+    pub intents: Vec<IntentDef>,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct IntentDef {
+    pub id: String,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -342,6 +354,17 @@ pub struct CutThrough {
     pub vehicles_per_hour: f64,
     pub veh_km: f64,
     pub share_of_local_veh_km: f64,
+    /// Additive (cut-through intent view): the same through vehicles split by the intent of their flow, one entry per demand intent and a last entry `other`. Empty when the demand has no intents.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub by_intent: Vec<IntentCount>,
+}
+
+#[derive(Clone, Debug, Default, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IntentCount {
+    pub id: String,
+    pub vehicles: u64,
+    pub vehicles_per_hour: f64,
 }
 
 #[derive(Clone, Debug, Default, Serialize)]

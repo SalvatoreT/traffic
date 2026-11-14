@@ -143,7 +143,13 @@ pub fn resolve_one(study: &Study, v: &Value) -> Result<Intervention, String> {
     match ty {
         "modal_filter" => {
             if v.get("at").is_some() {
-                iv.node = Some(node()?);
+                let n = node()?;
+                iv.node = Some(n);
+                if let Some(street) = v["street"].as_str() {
+                    let offered = super::cands::street_filters(study, n);
+                    let (_, links) = offered.into_iter().find(|(name, _)| same(name, street)).ok_or_else(|| format!("no filter on {street} alone at {}", study.idx.node_label(n)))?;
+                    iv.legs = Some(links);
+                }
             } else {
                 iv.link = Some(study.idx.blocks[block()?].links[0]);
             }

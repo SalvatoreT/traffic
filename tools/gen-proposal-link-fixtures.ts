@@ -31,6 +31,10 @@ const ivSets: { name: string; ivs: Intervention[]; period?: string; demandScale?
   { name: 'modal filter on a straight block', ivs: [{ type: 'modal_filter', link: L([2, 1], [3, 1]).id }] },
   { name: 'modal filter on a bent block, reverse link', ivs: [{ type: 'modal_filter', link: L([3, 2], [2, 2]).id }] },
   { name: 'modal filter at a node', ivs: [{ type: 'modal_filter', node: nodeAt(3, 3).id }] },
+  {
+    name: 'modal filter on one street at a node',
+    ivs: [{ type: 'modal_filter', node: nodeAt(3, 3).id, legs: net.links.filter((l) => (l.from === nodeAt(3, 3).id || l.to === nodeAt(3, 3).id) && Math.abs(net.nodes[l.from === nodeAt(3, 3).id ? l.to : l.from].y - nodeAt(3, 3).y) < 1e-6).map((l) => l.id).sort((a, b) => a - b) }],
+  },
   { name: 'speed limits', ivs: [{ type: 'speed_limit', link: L([1, 3], [1, 4]).id, speed: 6.71 }, { type: 'speed_limit', link: L([2, 4], [3, 4]).id, speed: 8.94 }] },
   { name: 'speed hump', ivs: [{ type: 'speed_hump', link: L([2, 2], [3, 2]).id, position: 61.3 }] },
   { name: 'traffic circle and controls', ivs: [{ type: 'traffic_circle', node: nodeAt(2, 2).id }, { type: 'control', node: nodeAt(3, 2).id, control: 'all_way_stop' }, { type: 'control', node: nodeAt(2, 3).id, control: 'uncontrolled' }] },

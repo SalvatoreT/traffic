@@ -23,6 +23,7 @@ struct Cand {
     origin: u32,
     dest: u32,
     through: bool,
+    intent: u16,
     noise_seed: u32,
     uid: u32,
 }
@@ -149,9 +150,9 @@ impl Simulation {
         let mut order: Vec<usize> = (0..self.flows.len()).collect();
         order.sort_by_key(|&k| (self.flows[k].mode as u8, self.flows[k].dest, k));
         for k in order {
-            let (mode, origin, dest, rate, through) = {
+            let (mode, origin, dest, rate, through, intent) = {
                 let f = &self.flows[k];
-                (f.mode, f.origin, f.dest, f.rate, f.through)
+                (f.mode, f.origin, f.dest, f.rate, f.through, f.intent)
             };
             let mut rng = Rng::stream(self.cfg.seed ^ INITIAL_STREAM, k as u64);
             if mode == FlowMode::Pedestrian {
@@ -201,7 +202,7 @@ impl Simulation {
                 lane_n[q] += 1;
                 let uid = self.uid_next;
                 self.uid_next += 1;
-                cands.push(Cand { q, lane, link: l as u32, pos, route, at, drv, bike, v0_abs, origin, dest, through, noise_seed, uid });
+                cands.push(Cand { q, lane, link: l as u32, pos, route, at, drv, bike, v0_abs, origin, dest, through, intent, noise_seed, uid });
             }
         }
         // Front of each lane first; ties by uid so the order does not depend on the sort.
@@ -300,6 +301,7 @@ impl Simulation {
             origin: c.origin,
             dest: c.dest,
             through: c.through,
+            intent: c.intent,
             noise_seed: c.noise_seed,
             route: rest,
             guided,
