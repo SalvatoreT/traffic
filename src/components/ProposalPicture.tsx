@@ -26,7 +26,7 @@ function useNear(ref: React.RefObject<Element | null>): boolean {
 
 interface Props {
   net: Network; index: NetIndex; p: Proposal; ivs: Intervention[];
-  areaName: string; areaId: string; status: string; number: number | null;
+  areaName: string; areaId: string; status: string; openUrl: string;
   periodLabel(id: string): string; searchedPeriods: string[];
 }
 
@@ -34,17 +34,17 @@ interface Props {
  * The card's picture, shown as a real image (a PNG) so it can be saved, copied or sent like any other: the proposal's name and changes, the through-car
  * figures for the period it shows and for the card's average, the map, its legend and where it came from. It is drawn the same, in light colors, in either theme.
  */
-export function ProposalPicture({ net, index, p, ivs, areaName, areaId, status, number, periodLabel, searchedPeriods }: Props) {
+export function ProposalPicture({ net, index, p, ivs, areaName, areaId, status, openUrl, periodLabel, searchedPeriods }: Props) {
   const pic = p.picture;
   const facts = useMemo(() => (pic ? pictureFacts(p, pic, index) : null), [p, pic, index]);
   const model = useMemo(() => (pic && facts ? buildPicture(net, index, p, pic, ivs, facts) : null), [net, index, p, pic, ivs, facts]);
   const short = (id: string) => periodLabel(id).replace(/\s*\(.*\)\s*$/, '');
   const share = useMemo(() => {
     if (!pic || !facts || !model) return null;
-    const input = shareInputFor({ areaName, status, p, pic, facts, model, searched: searchedPeriods, periodLabel, shortLabel: short, caption: '', number });
+    const input = shareInputFor({ areaName, status, p, pic, facts, model, searched: searchedPeriods, periodLabel, shortLabel: short, caption: '', openUrl });
     return { input, image: buildShareSvg(input, canvasMeasure()) };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pic, facts, model, areaName, status, p, searchedPeriods, number]);
+  }, [pic, facts, model, areaName, status, p, searchedPeriods, openUrl]);
   const box = useRef<HTMLDivElement>(null);
   const near = useNear(box);
   const [png, setPng] = useState<{ url: string } | null>(null);
@@ -66,7 +66,8 @@ export function ProposalPicture({ net, index, p, ivs, areaName, areaId, status, 
   const mismatch = mismatchNote(facts, when);
   const kinds = new Set(model.marks.map((m) => m.kind));
   const badgeTypes = [...new Set(model.marks.flatMap((m) => (m.kind === 'badge' ? [m.type] : [])))];
-  const file = `${areaId}-proposal-${number ?? p.id}-${pic.period.replace(/_/g, '-')}.png`.toLowerCase().replace(/[^a-z0-9.-]+/g, '-');
+  const slug = (t: string) => t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60).replace(/-+$/, '');
+  const file = `${slug(areaId)}-${slug(p.title) || slug(p.id)}-${slug(pic.period)}.png`;
   const { width, height } = share.image;
   return (
     <figure className="prop-pic">

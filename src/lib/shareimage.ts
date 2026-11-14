@@ -1,3 +1,4 @@
+import qrcode from 'qrcode-generator';
 import { changeTicks, DEAD_BAND_CUTTHROUGH } from './change';
 import { BADGE_STYLE, BADGE_TEXT, ATTRIBUTION } from './mapexport';
 import type { Mark, PictureFacts, PictureModel } from './picture';
@@ -34,11 +35,24 @@ export interface ShareInput {
   keys: { kind: 'bar' | 'pin' | 'pin-dashed' | 'text'; text: string }[];
   status: string;
   model: PictureModel;
+  /** Absolute address of the proposal on the map; drawn as a QR code. */
+  openUrl: string;
 }
 
 export interface LaidLine { text: string; x: number; y: number; size: number; width: number }
 export interface Section { name: string; top: number; bottom: number }
-export interface ShareImage { svg: string; width: number; height: number; lines: LaidLine[]; sections: Section[] }
+export interface ShareImage { svg: string; width: number; height: number; lines: LaidLine[]; sections: Section[]; qr: { x: number; y: number; size: number; modules: number } }
+
+/** Layout px per QR module: 6 px in the PNG at `SHARE_SCALE` 2, enough for a phone to read. Error correction M, quiet zone of 4 modules. */
+export const QR_MODULE = 3;
+const QR_QUIET = 4;
+export function qrMatrix(url: string): boolean[][] {
+  const q = qrcode(0, 'M');
+  q.addData(url, 'Byte');
+  q.make();
+  const n = q.getModuleCount();
+  return Array.from({ length: n }, (_, r) => Array.from({ length: n }, (_, c) => q.isDark(r, c)));
+}
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const n1 = (v: number) => (Math.round(v * 100) / 100).toString();
@@ -189,15 +203,27 @@ export function buildShareSvg(inp: ShareInput, measure: Measure): ShareImage {
   y += 12; top = y;
   out.push(`<line x1="${MARGIN}" y1="${n1(y)}" x2="${SHARE_W - MARGIN}" y2="${n1(y)}" stroke="${RULE}"/>`);
   y += 14;
-  y += para(`Simulation result, not a forecast. ${inp.status}`, MARGIN, INNER, 22, 400, MUTED) + 4;
-  y += para(`${inp.areaName}. ${ATTRIBUTION}.`, MARGIN, INNER, 22, 400, MUTED) + 4;
-  y += para(SITE_URL, MARGIN, INNER, 24, 700, INK);
+  const qrm = qrMatrix(inp.openUrl);
+  const qrSize = (qrm.length + 2 * QR_QUIET) * QR_MODULE;
+  const qrX = SHARE_W - MARGIN - qrSize, qrY = y;
+  const leftW = qrX - MARGIN - 24;
+  y += para(`Simulation result, not a forecast. ${inp.status}`, MARGIN, leftW, 22, 400, MUTED) + 4;
+  y += para(`${inp.areaName}. ${ATTRIBUTION}.`, MARGIN, leftW, 22, 400, MUTED) + 4;
+  y += para(SITE_URL, MARGIN, leftW, 24, 700, INK);
+  const left = y;
+  y = qrY + qrSize + 6;
+  const qrPath = qrm.flatMap((row, r) => row.map((d, c) => (d ? `M${qrX + (c + QR_QUIET) * QR_MODULE} ${qrY + (r + QR_QUIET) * QR_MODULE}h${QR_MODULE}v${QR_MODULE}h-${QR_MODULE}z` : ''))).join('');
+  out.push(`<rect x="${qrX}" y="${qrY}" width="${qrSize}" height="${qrSize}" fill="#fff" stroke="${RULE}"/><path d="${qrPath}" fill="#000" shape-rendering="crispEdges"/>`);
+  const labelLines = wrapText('Open this proposal in the simulator', 20, 700, qrSize, measure);
+  labelLines.forEach((l, i) => text(l, qrX + qrSize / 2, y + 18 + i * 25, 20, 700, INK, 'middle'));
+  y += labelLines.length * 25 + 4;
+  y = Math.max(y, left);
   section('footer', top);
   y += MARGIN - 6;
 
   const height = Math.ceil(y);
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${SHARE_W}" height="${height}" viewBox="0 0 ${SHARE_W} ${height}" font-family="${esc(FONT)}"><rect width="${SHARE_W}" height="${height}" fill="${PAPER}"/>${out.join('')}</svg>`;
-  return { svg, width: SHARE_W, height, lines, sections };
+  return { svg, width: SHARE_W, height, lines, sections, qr: { x: qrX, y: qrY, size: qrSize, modules: qrm.length } };
 }
 
 /** Text width in px for a canvas-capable browser, with the same font stack the SVG uses. */
@@ -230,7 +256,7 @@ const through = (b: number, s: number, pct: number) => `${Math.round(b)} → ${M
 /** The text of a card's shareable picture. `periodLabel` gives a period's full label, with its hours. */
 export function shareInputFor(a: {
   areaName: string; status: string; p: Proposal; pic: ProposalPicture; facts: PictureFacts; model: PictureModel; searched: string[];
-  periodLabel(id: string): string; shortLabel(id: string): string; caption: string; number: number | null;
+  periodLabel(id: string): string; shortLabel(id: string): string; caption: string; openUrl: string;
 }): ShareInput {
   const { p, pic, facts } = a;
   const when = hoursOnly(a.periodLabel(pic.period));
@@ -250,8 +276,8 @@ export function shareInputFor(a: {
   if (kinds.has('diverter')) keys.push({ kind: 'text', text: 'Striped line across a junction: diagonal diverter.' });
   if (kinds.has('arrow')) keys.push({ kind: 'text', text: 'Arrow: one-way street, in the direction shown.' });
   return {
-    areaName: a.areaName, title: `${a.number !== null ? `${a.number}. ` : ''}${p.title}`, changes: p.interventions.map((iv) => iv.label),
-    period: when, periodFigure, averageFigure, caption: `${when}: change in through cars an hour on each block, proposal vs. today`, keys, status: a.status, model: a.model,
+    areaName: a.areaName, title: p.title, changes: p.interventions.map((iv) => iv.label),
+    period: when, periodFigure, averageFigure, caption: `${when}: change in through cars an hour on each block, proposal vs. today`, keys, status: a.status, model: a.model, openUrl: a.openUrl,
   };
 }
 

@@ -57,11 +57,15 @@ Each proposal card whose proposal carries picture data SHALL show, directly afte
 ## ADDED Requirements
 
 ### Requirement: Picture stands on its own when shared
-The picture's PNG SHALL carry the proposal's title, its list of changes, the period it shows with its hours, the legend with numbers and the cues that are not color (the barrier bar, the outlined block), the through cars on all side streets for the picture's period before and after with the percent change, and, when more than one period was searched, the same for the card's average, a note that the figures are a simulation result with the area's calibration status, the area name, the OpenStreetMap attribution and the site address. No text SHALL overlap or run past the edge, at any number of changes.
+The picture's PNG SHALL carry the proposal's title, its list of changes, the period it shows with its hours, the legend with numbers and the cues that are not color (the barrier bar, the outlined block), the through cars on all side streets for the picture's period before and after with the percent change, and, when more than one period was searched, the same for the card's average, a note that the figures are a simulation result with the area's calibration status, the area name, the OpenStreetMap attribution, the site address and a QR code, with a short label, that opens the proposal on the map. The title SHALL carry no number. The QR code SHALL encode the absolute link, use error correction M or higher, keep a quiet zone of 4 modules, draw dark modules on white in either theme and take at least 3 px a module in the file, without covering the map, legend or text. No text SHALL overlap or run past the edge, at any number of changes.
 
 #### Scenario: Saved and sent
 - **WHEN** a person saves the picture or follows Download image
 - **THEN** the file is the same PNG, named for the area, the proposal and the period, and shows everything above
+
+#### Scenario: Scanning
+- **WHEN** the QR code in the saved file is decoded
+- **THEN** it gives the address the card's Open on the map control uses
 
 #### Scenario: One period searched
 - **WHEN** only the picture's period was searched

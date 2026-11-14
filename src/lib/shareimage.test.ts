@@ -3,7 +3,7 @@ import { buildFixture } from '../fixtures/area';
 import { buildMockProposals } from '../fixtures/proposals';
 import { buildIndex } from './naming';
 import { buildPicture, pictureFacts } from './picture';
-import { buildShareSvg, shareAlt, shareInputFor, SHARE_W, wrapText, type Measure } from './shareimage';
+import { buildShareSvg, qrMatrix, QR_MODULE, shareAlt, shareInputFor, SHARE_SCALE, SHARE_W, wrapText, type Measure } from './shareimage';
 import type { Proposal, ProposalPicture } from './proposals';
 
 const net = buildFixture().network;
@@ -25,15 +25,15 @@ function build(searched: string[], changes = 2) {
   };
   const facts = pictureFacts(p, pic, index);
   const model = buildPicture(net, index, p, pic, [], facts);
-  const input = shareInputFor({ areaName: 'Test Area', status: 'Calibrated, with limits.', p, pic, facts, model, searched, periodLabel: label, shortLabel: short, caption: '', number: 3 });
+  const input = shareInputFor({ areaName: 'Test Area', status: 'Calibrated, with limits.', p, pic, facts, model, searched, periodLabel: label, shortLabel: short, caption: '', openUrl: 'https://example.org/#v1;a=test;p=pm_peak;s=mn,9q9p642ut2~mf,9q9p3cqyux' });
   return { input, img: buildShareSvg(input, measure) };
 }
 
 describe('shareable picture', () => {
   it('carries the title, changes, period, legend, both figures, status, attribution and site', () => {
     const { img } = build(['pm_peak', 'am_peak', 'midday']);
-    for (const t of ['3. Filter on Martin and Ayala', 'Modal filter at Street 0 &amp; Avenue 0', 'PM peak (16:00-18:00 weekday)', '610 → 130 an hour (−78.7%)'.replace('−78.7%', '−79%'),
-      '445 → 94 an hour (−79%)', 'Average of PM peak, AM peak and Midday', 'Calibrated, with limits.', '© OpenStreetMap contributors', 'traffic.transit.directory', 'Cars an hour. Blue: fewer through cars']) {
+    for (const t of ['Filter on Martin and Ayala', 'Modal filter at Street 0 &amp; Avenue 0', 'PM peak (16:00-18:00 weekday)', '610 → 130 an hour (−78.7%)'.replace('−78.7%', '−79%'),
+      '445 → 94 an hour (−79%)', 'Average of PM peak, AM peak and Midday', 'Calibrated,', 'limits.', '© OpenStreetMap contributors', 'traffic.transit.directory', 'Cars an hour. Blue: fewer through cars', 'simulator']) {
       expect(img.svg, t).toContain(t);
     }
     expect(img.svg).toMatch(/^<svg xmlns="http:\/\/www.w3.org\/2000\/svg"/);
@@ -49,6 +49,22 @@ describe('shareable picture', () => {
       for (let i = 1; i < img.sections.length; i++) expect(img.sections[i].top).toBeGreaterThanOrEqual(img.sections[i - 1].bottom);
       expect(img.sections[img.sections.length - 1].bottom).toBeLessThanOrEqual(img.height);
     }
+  });
+  it('has no number in the title', () => {
+    expect(build(['pm_peak']).input.title).toBe('Filter on Martin and Ayala');
+  });
+  it('draws a QR code of the open link in clear space at the bottom right', () => {
+    const { img, input } = build(['pm_peak', 'am_peak']);
+    const m = qrMatrix(input.openUrl);
+    expect(m.length).toBeGreaterThanOrEqual(21);
+    expect(QR_MODULE * SHARE_SCALE).toBeGreaterThanOrEqual(5);
+    const q = img.qr, footer = img.sections.find((s) => s.name === 'footer')!;
+    expect(q.size).toBe((q.modules + 8) * QR_MODULE);
+    expect(q.x + q.size).toBe(SHARE_W - 32);
+    expect(q.y).toBeGreaterThanOrEqual(footer.top);
+    expect(q.y + q.size).toBeLessThanOrEqual(footer.bottom);
+    for (const l of img.lines) if (l.y >= q.y && l.y <= q.y + q.size && l.x < q.x) expect(l.x + l.width, l.text).toBeLessThanOrEqual(q.x - 8);
+    for (const s of img.sections) if (s.name !== 'footer') expect(s.bottom).toBeLessThanOrEqual(q.y);
   });
   it('grows with the number of changes', () => {
     expect(build(['pm_peak'], 8).img.height).toBeGreaterThan(build(['pm_peak'], 1).img.height);

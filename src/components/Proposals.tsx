@@ -182,7 +182,7 @@ function Card({ p, when, hid, n, routes, ivs, searched, bundle, index, mode, tod
       <div className={hasPic ? 'prop-body has-pic' : 'prop-body'}>
         {hasPic && (
           <div className="prop-side">
-            <ProposalPicture net={bundle.network} index={index} p={p} ivs={ivs ?? []} areaName={bundle.entry.name} areaId={bundle.entry.id} status={calStatusText} number={n} periodLabel={periodLabel} searchedPeriods={searched} />
+            <ProposalPicture net={bundle.network} index={index} p={p} ivs={ivs ?? []} areaName={bundle.entry.name} areaId={bundle.entry.id} status={calStatusText} openUrl={`${location.origin}/${linkHash(p.link)}`} periodLabel={periodLabel} searchedPeriods={searched} />
             {action}
           </div>
         )}
