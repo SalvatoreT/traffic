@@ -218,6 +218,16 @@ pub struct Flow {
     pub veh_per_hour: f64,
     #[serde(default)]
     pub mode: FlowMode,
+    /// Additive (calibration round 20, ASSUMPTION): the trips of this flow make the movement from link `from` onto link `to` on the way. Their route runs to `from`, takes the movement, then runs to the destination. Dropped when the movement is not usable.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub via: Option<Via>,
+}
+
+/// A movement a flow must make: link ids (equal to link positions).
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+pub struct Via {
+    pub from: u32,
+    pub to: u32,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

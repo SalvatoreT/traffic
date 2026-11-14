@@ -22,6 +22,7 @@ const gapStop = Number(arg('--gap', '0.10'));
 const jobs = arg('--jobs', '4');
 const costSeeds = arg('--cost-seeds', '1-3');
 const scoreSeeds = arg('--score-seeds', '1-10');
+const objective = arg('--objective', 'share');
 const resume = process.argv.includes('--resume') ? Number(arg('--resume', '0')) : -1;
 const cfgPath = resolve(root, arg('--config', 'data/demand/rockridge.config.json'));
 const cfg = JSON.parse(readFileSync(cfgPath, 'utf8'));
@@ -53,9 +54,18 @@ function meanDelay(runs: SeedRun[]): Float64Array {
   return out;
 }
 
-interface Row { k: number; stable: boolean; meanRemovals: number; backlogMean: number; backlogSeedsOk: number; completed: number; headErr: number; rampErr: number; heads: string; fittedGeh: number; heldGeh: number; fittedBand: number; heldBand: number; intFitGeh: number; intHeldGeh: number; gap: number | null; unchanged: number | null }
+interface Row { rampCountErr: number; k: number; stable: boolean; meanRemovals: number; backlogMean: number; backlogSeedsOk: number; completed: number; headErr: number; rampErr: number; heads: string; fittedGeh: number; heldGeh: number; fittedBand: number; heldBand: number; intFitGeh: number; intHeldGeh: number; gap: number | null; unchanged: number | null }
 const rows: Row[] = [];
 const history: (Record<string, number[]> | null)[] = [];
+
+/** Counted ramps: stations of a turning-movement count whose leg is a ramp entering the junction (the off-ramps). Mean absolute error of the simulator's ramp flow in veh/h against the count. */
+function rampCountError(runs: SeedRun[]): number {
+  const st: StationFile = JSON.parse(readFileSync(stationsFile, 'utf8'));
+  const ramps = st.stations.filter((q) => q.kind === 'tmc' && q.links.length === 1 && /ramp \(.\ leg\) entering/.test(q.label) && (q.target[pm] ?? 0) > 0);
+  const w = runs.filter((r) => r.linkFlowVehPerHour);
+  if (!ramps.length || !w.length) return NaN;
+  return ramps.reduce((a, q) => a + Math.abs(w.reduce((b, r) => b + r.linkFlowVehPerHour![q.links[0]], 0) / w.length - q.target[pm]), 0) / ramps.length;
+}
 
 function score(k: number, gap: number | null, unchanged: number | null, pmRuns: SeedRun[], summaryDir: string): Row {
   const sum = JSON.parse(readFileSync(join(summaryDir, `${cfg.area}-${pm}-s1-seeds${parse(scoreSeeds)[0]}-${parse(scoreSeeds).slice(-1)[0]}.json`), 'utf8'));
@@ -66,7 +76,7 @@ function score(k: number, gap: number | null, unchanged: number | null, pmRuns: 
   const rem = sum.metrics.find((m: { name: string }) => m.name === 'gridlock removals per hour').stat.mean;
   const bl = pmRuns.map((r) => r.health.backlogPct);
   return {
-    k, stable: sum.stability.holds, meanRemovals: rem, backlogMean: bl.reduce((a, b) => a + b, 0) / bl.length, backlogSeedsOk: sum.stability.backlogSeedsOk,
+    rampCountErr: rampCountError(pmRuns), k, stable: sum.stability.holds, meanRemovals: rem, backlogMean: bl.reduce((a, b) => a + b, 0) / bl.length, backlogSeedsOk: sum.stability.backlogSeedsOk,
     completed: pmRuns.reduce((a, r) => a + r.health.completed, 0) / pmRuns.length, headErr: headlineError(ss), rampErr: rs.reduce((a, q) => a + Math.abs(q.errPoints), 0) / Math.max(1, rs.length),
     heads: ss.filter((q) => q.headline).map((q) => (q.mean * 100).toFixed(0)).join(' / '), fittedGeh: sc.fitted.gehShare, heldGeh: sc.held.gehShare, intFitGeh: sc.interior.fitted.gehShare, intHeldGeh: sc.interior.held.gehShare, fittedBand: sc.fitted.bandShare, heldBand: sc.held.bandShare, gap, unchanged,
   };
@@ -121,12 +131,14 @@ function score(k: number, gap: number | null, unchanged: number | null, pmRuns: 
   for (const r of rows.slice(1)) {
     // Twelfth round: the PM baseline is not stable, so "stable" cannot be the test. An iteration is kept when the baseline's removals, backlog and headline-share error are
     // not worse (the share error within 0.5 points) and no GEH share falls by more than 5 points, interior blocks included; the best has the least removals plus backlog.
-    const ok = (r.stable || !base.stable) && r.meanRemovals <= base.meanRemovals && r.backlogMean <= base.backlogMean && r.headErr <= base.headErr + 0.5 && r.fittedGeh >= base.fittedGeh - 0.05 && r.heldGeh >= base.heldGeh - 0.05 && r.intFitGeh >= base.intFitGeh - 0.05 && r.intHeldGeh >= base.intHeldGeh - 0.05;
-    if (ok && r.meanRemovals + r.backlogMean < rows[best].meanRemovals + rows[best].backlogMean) best = r.k;
+    // Round 20 (`--objective ramp`): an iteration is kept when the counted off-ramps move toward their counts and the PM removals stay below 1.0 per hour (D16), with the headline-share error not worse by more than 0.5 points.
+    const rampOk = objective === 'ramp' && r.meanRemovals < 1.0 && r.backlogMean <= Math.max(base.backlogMean, 0.5) && r.rampCountErr < base.rampCountErr - 25 && r.headErr <= base.headErr + 0.5;
+    const ok = (objective === 'ramp' ? rampOk : (r.stable || !base.stable) && r.meanRemovals <= base.meanRemovals && r.backlogMean <= base.backlogMean && r.headErr <= base.headErr + 0.5) && r.fittedGeh >= base.fittedGeh - 0.05 && r.heldGeh >= base.heldGeh - 0.05 && r.intFitGeh >= base.intFitGeh - 0.05 && r.intHeldGeh >= base.intHeldGeh - 0.05;
+    if (ok && (objective === 'ramp' ? r.rampCountErr < rows[best].rampCountErr : r.meanRemovals + r.backlogMean < rows[best].meanRemovals + rows[best].backlogMean)) best = r.k;
   }
   const lines = ['# Cost loop', '', `Generated by \`tools/cost-loop.ts\`. PM peak scored over seeds ${scoreSeeds}; delays of the other periods averaged over seeds ${costSeeds}; successive averages with weight 1/n; stop on a relative cost gap under ${gapStop}.`, '',
-    '| Iteration | PM stable (D16) | Removals per hour | Backlog mean % | Seeds under 2% | Completed | Headline shares (modeled, observed 47 / 47 / 68 / 45) | Headline error (points) | Ramp error (points) | GEH<5 fitted | GEH<5 held out | Bands fitted | Bands held out | Interior GEH<5 fitted | Interior GEH<5 held out | Cost gap | Links unchanged < 1% |', '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
-    ...rows.map((r) => `| ${r.k} | ${r.stable ? 'yes' : 'no'} | ${r.meanRemovals.toFixed(2)} | ${r.backlogMean.toFixed(2)} | ${r.backlogSeedsOk} | ${Math.round(r.completed)} | ${r.heads} | ${r.headErr.toFixed(1)} | ${r.rampErr.toFixed(1)} | ${(r.fittedGeh * 100).toFixed(0)}% | ${(r.heldGeh * 100).toFixed(0)}% | ${(r.fittedBand * 100).toFixed(0)}% | ${(r.heldBand * 100).toFixed(0)}% | ${(r.intFitGeh * 100).toFixed(0)}% | ${(r.intHeldGeh * 100).toFixed(0)}% | ${r.gap === null ? '-' : r.gap.toFixed(3)} | ${r.unchanged === null ? '-' : (r.unchanged * 100).toFixed(0) + '%'} |`),
+    '| Iteration | PM stable (D16) | Removals per hour | Backlog mean % | Seeds under 2% | Completed | Headline shares (modeled, observed 47 / 47 / 68 / 45) | Headline error (points) | Ramp error (points) | Ramp count error (veh/h) | GEH<5 fitted | GEH<5 held out | Bands fitted | Bands held out | Interior GEH<5 fitted | Interior GEH<5 held out | Cost gap | Links unchanged < 1% |', '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+    ...rows.map((r) => `| ${r.k} | ${r.stable ? 'yes' : 'no'} | ${r.meanRemovals.toFixed(2)} | ${r.backlogMean.toFixed(2)} | ${r.backlogSeedsOk} | ${Math.round(r.completed)} | ${r.heads} | ${r.headErr.toFixed(1)} | ${r.rampErr.toFixed(1)} | ${r.rampCountErr.toFixed(0)} | ${(r.fittedGeh * 100).toFixed(0)}% | ${(r.heldGeh * 100).toFixed(0)}% | ${(r.fittedBand * 100).toFixed(0)}% | ${(r.heldBand * 100).toFixed(0)}% | ${(r.intFitGeh * 100).toFixed(0)}% | ${(r.intHeldGeh * 100).toFixed(0)}% | ${r.gap === null ? '-' : r.gap.toFixed(3)} | ${r.unchanged === null ? '-' : (r.unchanged * 100).toFixed(0) + '%'} |`),
     '', best === 0 ? 'Result: no iteration had fewer removals and less backlog than the free-flow and BPR costs with the headline-share error within 0.5 points and no GEH share down by more than 5 points; the demand keeps its free-flow and BPR costs and the delays file is removed.' : `Result: iteration ${best} is kept (measured delays in \`${measured.file}\`).`, ''];
   writeFileSync(resolve(root, `data/calibration/${cfg.area}.cost-loop.md`), lines.join('\n'));
   if (best === 0) { if (existsSync(delaysFile)) rmSync(delaysFile); }

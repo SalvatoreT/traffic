@@ -12,7 +12,8 @@ import { buildGraph, costToGo, treeFrom, type Graph } from './lib/assign';
 import { buildStations, corridorOf, markHoldout, overusedRecords, fitPeriod, fitReport, type FitConfig, type NetLinkIn, type PeriodResult } from './lib/demand-fit';
 import type { FlowType } from './lib/fit-counts';
 import { intersectionStations, type IxConfig, type IxFile } from './lib/intersection-counts';
-import { countReportLines, countStations, touchesHeld, tripEnds, type CountConfig, type CountFile, type CountReport, type TripEnds } from './lib/volunteer-count';
+import { assumedMovementFlows, assumedReportLines, type AssumedMovementCfg, type AssumedReport } from './lib/assumed-movements';
+import { countReportLines, countStations, mapMovement, nodeStreets, touchesHeld, tripEnds, type CountConfig, type CountFile, type CountReport, type TripEnds } from './lib/volunteer-count';
 
 const cfgPath = process.argv[2] ?? 'data/demand/rockridge.config.json';
 const cfg = JSON.parse(readFileSync(cfgPath, 'utf8'));
@@ -21,7 +22,8 @@ interface Node { id: number; x: number; y: number; gate: boolean; canEnter?: boo
 interface Link { id: number; from: number; to: number; name: string; class: string; length: number; lanes?: number; speedLimit?: number; geometry?: [number, number][]; inStudyArea: boolean; bikeLane?: boolean; bikeRoute?: boolean; humps?: number[]; stopAtEnd?: boolean }
 interface Network { id: string; origin: { lon: number; lat: number }; studyArea: [number, number][]; nodes: (Node & { control: string })[]; links: Link[]; turnBans?: { from: number; to: number; periods?: string[] }[] }
 // `mode` is absent on car flows (default car). Pedestrian and bicycle flows are persons per hour in the same field.
-interface Flow { origin: number; destination: number; vehPerHour: number; mode?: 'car' | 'bicycle' | 'pedestrian' }
+const viaOut = (f: Flow) => { if (!f.via) return f; const { via, ...r } = f; return { ...r, via: { from: via.a, to: via.b } }; };
+interface Flow { origin: number; destination: number; vehPerHour: number; mode?: 'car' | 'bicycle' | 'pedestrian'; via?: { a: number; b: number } }
 
 const missing = [cfg.network, cfg.raw.lodes, cfg.raw.caltrans, cfg.raw.caltransRamps, cfg.raw.oaklandTmc].filter((f: string) => !existsSync(f));
 if (missing.length) {
@@ -403,12 +405,25 @@ for (const p of cfg.periods as { id: string; label: string }[]) {
   const rawLocal: { o: number; d: number; v: number; gateO?: Gate; gateD?: Gate }[] = [];
   const blockTrips0 = (b: LocalBlock) => trips0(b, p.id);
   const inArea = (b: LocalBlock) => nodeById.get(b.node)!.inStudyArea;
+  // `neighborM`: nodes outside the study area within this distance of it are the same neighborhood across the boundary street; the assumed trip rate misses the same
+  // non-work trips there (ASSUMPTION), so they take `neighborScale` times the study-area factor.
+  const nbrM = lo.countCalibration?.neighborM ?? 0;
+  const areaNodes = nbrM > 0 ? net.nodes.filter((n) => n.inStudyArea) : [];
+  const nbrNear = new Map<number, boolean>();
+  const isNeighbor = (b: LocalBlock) => {
+    if (!nbrM || inArea(b)) return false;
+    let v = nbrNear.get(b.node);
+    if (v === undefined) { const q = nodeById.get(b.node)!; v = areaNodes.some((n) => Math.hypot(n.x - q.x, n.y - q.y) <= nbrM); nbrNear.set(b.node, v); }
+    return v;
+  };
   const blockTrips = (b: LocalBlock) => {
     const t = blockTrips0(b);
-    if (!lo.countCalibration?.enabled || !countEnds || !inArea(b)) return t;
+    const nb = isNeighbor(b);
+    if (!lo.countCalibration?.enabled || !countEnds || (!inArea(b) && !nb)) return t;
     const cap = lo.countCalibration.maxScale ?? 4;
     const counted = [vc!.periods.am, vc!.periods.pm].map((x) => localScale[x]).filter(Boolean);
-    const f = (k: 'o' | 'd') => Math.min(localScale[p.id]?.[k] ?? counted.reduce((a, x) => a + x[k], 0) / counted.length, cap);
+    const sc = nb ? lo.countCalibration.neighborScale ?? 1 : 1;
+    const f = (k: 'o' | 'd') => Math.min(localScale[p.id]?.[k] ?? counted.reduce((a, x) => a + x[k], 0) / counted.length, cap) * sc;
     return { outTotal: t.outTotal * f('o'), inTotal: t.inTotal * f('d') };
   };
 
@@ -765,6 +780,28 @@ if (fc?.enabled) {
   };
   const flowsBy: Record<string, { origin: number; destination: number; vehPerHour: number }[]> = {};
   if (process.env.FIT_DUMP) writeFileSync(process.env.FIT_DUMP, JSON.stringify({ stations, periods: Object.fromEntries(outPeriods.map((q) => { const cars = q.flows.filter((f) => !f.mode); return [q.id, { flows: cars, types: cars.map((f) => typeOf(f.origin, f.destination)) }]; })) }));
+  // Assumed movement flows (ASSUMPTION, round 20): counted turning movements the trip table cannot reach get flows that must make them (tools/lib/assumed-movements.ts).
+  const assumedReports: AssumedReport[] = [];
+  const amCfg = cfg.assumedMovementFlows as { enabled: boolean; movements: AssumedMovementCfg[] } | undefined;
+  if (amCfg?.enabled && countRes) {
+    const ns = nodeStreets(net as never);
+    for (const mv of amCfg.movements) {
+      const mm = mapMovement({ ...mv.count, period: 'pm', vehicles: 0 }, net as never, ns);
+      if (mm.a === null || mm.b === null) throw new Error(`assumed movement ${mv.id}: ${mm.reason}`);
+      const st = countRes.stations.find((q) => q.feature?.kind === 'move' && q.feature.a === mm.a && q.feature.b === mm.b);
+      if (!st) throw new Error(`assumed movement ${mv.id}: no counted movement station for links ${mm.a} to ${mm.b}`);
+      for (const per of outPeriods) {
+        const target = st.target[per.id] ?? 0;
+        if (!(target > 0)) continue;
+        const g = buildGraph(net.nodes as never, net.links as never, net.turnBans ?? [], per.id);
+        const seed = per.flows.filter((q) => !q.mode && !q.via);
+        const r = assumedMovementFlows(mv, mm.a, mm.b, target, per.id, seed, g, (id) => !!nodeById.get(id)?.inStudyArea);
+        per.flows.push(...(r.flows as Flow[]));
+        assumedReports.push(r.report);
+      }
+    }
+    stationNotes.push(`assumed movement flows: ${assumedReports.map((r) => `${r.id} ${r.period} ${r.flows} flows, ${r.throughVeh.toFixed(0)} through and ${r.localVeh.toFixed(0)} local veh/h`).join('; ')}`);
+  }
   for (const per of outPeriods) {
     const cars = per.flows.filter((q) => !q.mode);
     const types = cars.map((q) => typeOf(q.origin, q.destination));
@@ -773,7 +810,7 @@ if (fc?.enabled) {
     let cv: PeriodResult | null = null;
     if (fc.validation?.enabled && stations.some((q) => q.held)) {
       cv = fitPeriod(per.id, cars, types, stations, net.nodes as never, net.links as NetLinkIn[], net.turnBans ?? [], fitCfg);
-      cvFlows[per.id] = cars.map((q, k) => ({ ...q, vehPerHour: Math.round(cv!.volume[k] * 100) / 100 })).filter((q) => q.vehPerHour >= 0.01);
+      cvFlows[per.id] = cars.map((q, k) => viaOut({ ...q, vehPerHour: Math.round(cv!.volume[k] * 100) / 100 })).filter((q) => q.vehPerHour >= 0.01) as typeof cvFlows[string];
       for (const q of stations) { q.held = false; q.cvExclude = false; }
     }
     const r = fitPeriod(per.id, cars, types, stations, net.nodes as never, net.links as NetLinkIn[], net.turnBans ?? [], fitCfg);
@@ -795,7 +832,7 @@ if (fc?.enabled) {
     per.flows = [...cars.map((q, k) => ({ ...q, vehPerHour: Math.round(r.volume[k] * 100) / 100 })).filter((q) => q.vehPerHour >= 0.01), ...per.flows.filter((q) => q.mode)];
   }
   for (const s of summary) { const per = outPeriods.find((q) => q.id === s.id)!; Object.assign(s, summarizeFlows(per.flows)); }
-  fitText = fitReport(cfg.area, fitResults, flowsBy, { fit: fitCfg.fit, draws: fc.draws, noise: fc.noise, guardExcess: fc.capacityGuard.excessShare, guardWeight: fc.capacityGuard.weight, guardOn: fc.capacityGuard.enabled, tolOk: fc.tolerancePct.report, shareWeight: fc.shares?.enabled ? fc.shares.weight : undefined, assignment: fitCfg.assignment, links: net.links, composition: fc.composition }, stationNotes, [...(countRep ? countReportLines(countRep) : []), ...localScaleLines()]);
+  fitText = fitReport(cfg.area, fitResults, flowsBy, { fit: fitCfg.fit, draws: fc.draws, noise: fc.noise, guardExcess: fc.capacityGuard.excessShare, guardWeight: fc.capacityGuard.weight, guardOn: fc.capacityGuard.enabled, tolOk: fc.tolerancePct.report, shareWeight: fc.shares?.enabled ? fc.shares.weight : undefined, assignment: fitCfg.assignment, links: net.links, composition: fc.composition }, stationNotes, [...(countRep ? countReportLines(countRep) : []), ...localScaleLines(), ...(assumedReports.length ? assumedReportLines(assumedReports, (id) => `${gateName(id)} (${id})`) : [])]);
   if (fc.output) {
     // The station tables of each period go to a file of their own, so that no report outgrows the repository's file size limit.
     const parts = fitText.split(/^(?=## )/m);
@@ -922,7 +959,7 @@ const provenance = [
   { source: 'Assumptions', url: 'data/demand/README.md', note: 'ASSUMPTION: K-factor, period volume factors, per-class default ADT, directional split, trip rates, gravity turning factors, sector-to-gate weights, local trip share capped per gate. Uncalibrated.' }
 ];
 
-const out = { version: 1, area: cfg.area, periods: outPeriods, provenance };
+const out = { version: 1, area: cfg.area, periods: outPeriods.map((q) => ({ ...q, flows: q.flows.map(viaOut) })), provenance };
 mkdirSync(dirname(cfg.output), { recursive: true });
 writeFileSync(cfg.output, JSON.stringify(out));
 if (cfg.countFit?.validation?.demandOutput && Object.keys(cvFlows).length) {

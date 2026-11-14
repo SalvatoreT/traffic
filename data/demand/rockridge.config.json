@@ -601,6 +601,30 @@
       "Hillegass Avenue"
     ]
   },
+  "assumedMovementFlows": {
+    "enabled": true,
+    "_note": "ASSUMPTION (owner decision 2026-11-14, calibration round 20): a counted turning movement the trip table cannot reach gets flows that must make it, so the modeled movement matches the count. Each movement is read from the volunteer count (`count` names the junction, the approach and the exit as the count file words them; its station targets give the volume per period, so midday takes the PM count times the period ratio as every other count does). The flows are chosen from the seed table: a flow is a candidate when its route through the movement costs at most `maxDetour` times its best route at free flow (the simulator router's cost), and the volume is split over the candidates in proportion to their seed volume, `throughShare` of it over flows with no end in the study area. The flows carry a `via` movement, which the simulator honors by routing the trip to the movement's approach link, through the movement, and on to its destination (re-routing keeps the movement until it is made), and the fit pins their volume. Nothing here is area specific in code.",
+    "movements": [
+      {
+        "id": "colby-nb-left-alcatraz-west",
+        "label": "Colby St northbound, left onto Alcatraz Ave westbound",
+        "count": {
+          "at": [
+            "Colby Street",
+            "Alcatraz Avenue"
+          ],
+          "from": "Colby Street from south",
+          "to": "Alcatraz Avenue toward west"
+        },
+        "throughShare": 0.62,
+        "throughShareNote": "ASSUMPTION from DATA: the volunteer count has 102 cars driving all of Colby St northbound in the PM peak and 164 cars leaving it at Alcatraz Ave (131 left, 32 right, 1 straight); 102 / 164 = 0.62 of the exits are whole-street cars, which have no end in the study area. The left-turners are taken to have the same mix.",
+        "maxDetour": 1.3,
+        "maxDetourNote": "ASSUMPTION: the router's route over Colby St cost 13% more than the one by Telegraph Ave in round 17 and the drivers' perceived-cost noise is 8% on each link, so a pair within 30% is one whose drivers could pick either.",
+        "minFlowVehPerHour": 0.5,
+        "countShare": 1
+      }
+    ]
+  },
   "audit": {
     "nearM": 400
   },

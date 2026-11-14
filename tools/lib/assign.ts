@@ -199,7 +199,8 @@ export function treeFrom(g: Graph, origin: number, noiseOf: ((l: number) => numb
   return { dist, pred };
 }
 
-export interface OdFlow { origin: number; destination: number }
+/** `via`: the flow must make the movement from link `a` onto link `b` (link positions): an assumed movement flow, the simulator's `via` (calibration round 20, ASSUMPTION). */
+export interface OdFlow { origin: number; destination: number; via?: { a: number; b: number } }
 /**
  * A route property a count can constrain: a turning movement (link `a` followed at once by link `b`) or a path (the route uses link `first` and later link `last`),
  * with link indices as positions in the link list given to `buildGraph`.
@@ -268,6 +269,7 @@ function toAssignment(flows: OdFlow[], accum: Map<number, number>[], ok: number[
  * indices in the result are positions in `links` (what `buildGraph` was given).
  */
 export function assign(g: Graph, flows: OdFlow[], draws = 1, noise = 0, feats: Feature[] = []): Assignment {
+  if (flows.some((f) => f.via)) throw new Error('assign: flows with a via movement need the msa assignment');
   const byOrigin = groupByOrigin(flows);
   const accum: Map<number, number>[] = flows.map(() => new Map());
   const fAccum: Map<number, number>[] = flows.map(() => new Map());
@@ -344,20 +346,63 @@ export function costToGo(g: Graph, dest: number, cost: ArrayLike<number>): Float
   return h;
 }
 
+/** Cost-to-go from the start of every link to the start of link `target` (the first leg of a flow that must make a movement from it). */
+export function costToLink(g: Graph, target: number, cost: ArrayLike<number>): Float64Array {
+  const { predStart, predMv } = reverseOf(g);
+  const h = new Float64Array(g.nLinks).fill(Infinity);
+  const heap = new MinHeap();
+  h[target] = cost[target]; heap.push(h[target], target);
+  while (heap.size) {
+    const [hl, l] = heap.pop();
+    if (hl > h[l]) continue;
+    for (let i = predStart[l]; i < predStart[l + 1]; i++) {
+      const m = predMv[i], a = g.mvFrom[m];
+      const cand = cost[a] + g.mvCost[m] + hl;
+      if (cand < h[a]) { h[a] = cand; heap.push(cand, a); }
+    }
+  }
+  return h;
+}
+
+/** Walk from the end of link `from` until link `target` is entered (links after `from`, `target` included), by the same rule as `walkRoute`. */
+function walkToLink(g: Graph, h: Float64Array, from: number, target: number, seed: number, noise: number, route: number[], seen: Set<number>): boolean {
+  let best = from;
+  for (let steps = 0; best !== target; steps++) {
+    if (steps > 4000) return false;
+    let nb = -1, bc = Infinity;
+    for (let m = g.mvStart[best]; m < g.mvStart[best + 1]; m++) {
+      const b = g.mvTo[m];
+      if (!isFinite(h[b])) continue;
+      const c = (h[b] + g.mvCost[m]) * linkNoise(seed, b, noise);
+      if (c < bc) { bc = c; nb = b; }
+    }
+    if (nb < 0 || seen.has(nb)) return false;
+    route.push(nb); best = nb; seen.add(nb);
+  }
+  return true;
+}
+
 /**
  * One driver's route (the simulator's rule, route.rs): at the origin and at every node take the candidate link with the least
  * (movement cost + cost-to-go) x noise, the noise being a fixed factor 1 +/- `noise` per (driver, link). Returns the links in order, or null.
  */
-function walkRoute(g: Graph, h: Float64Array, origin: number, dest: number, seed: number, noise: number): number[] | null {
+function walkRoute(g: Graph, h: Float64Array, origin: number, dest: number, seed: number, noise: number, via?: { a: number; b: number; h1: Float64Array }): number[] | null {
   let best = -1, bc = Infinity;
+  const h0 = via ? via.h1 : h;
   for (const b of g.outLinks.get(origin) ?? []) {
-    if (!isFinite(h[b])) continue;
-    const c = h[b] * linkNoise(seed, b, noise);
+    if (!isFinite(h0[b])) continue;
+    const c = h0[b] * linkNoise(seed, b, noise);
     if (c < bc) { bc = c; best = b; }
   }
   if (best < 0) return null;
   const route = [best];
   const seen = new Set<number>(route);
+  if (via) {
+    // Assumed movement: run to link a, take the movement to b, then on to the destination.
+    if (!walkToLink(g, via.h1, best, via.a, seed, noise, route, seen)) return null;
+    if (seen.has(via.b)) return null;
+    route.push(via.b); seen.add(via.b); best = via.b;
+  }
   for (let steps = 0; g.to[best] !== dest; steps++) {
     if (steps > 4000) return null;
     let nb = -1;
@@ -388,18 +433,22 @@ export function assignMsa(g: Graph, flows: OdFlow[], volume: ArrayLike<number>, 
   const ok = new Array<number>(flows.length).fill(0);
   const byDest = new Map<number, number[]>();
   flows.forEach((f, k) => (byDest.get(f.destination) ?? byDest.set(f.destination, []).get(f.destination)!).push(k));
+  const viaLinks = [...new Set(flows.flatMap((f) => (f.via ? [f.via.a] : [])))];
   const base = Float64Array.from(g.cost, (c, l) => c + (opt.extraCost?.[l] ?? 0));
   const cost = Float64Array.from(base);
   const x = new Float64Array(g.nLinks);
   let rel = 1;
   for (let n = 1; n <= opt.iterations; n++) {
     const y = new Float64Array(g.nLinks);
+    const toLink = new Map<number, Float64Array>(viaLinks.map((a) => [a, costToLink(g, a, cost)]));
     for (const [d, ks] of byDest) {
       const h = costToGo(g, d, cost);
       for (const k of ks) {
+        const fv = flows[k].via;
+        const via = fv ? { a: fv.a, b: fv.b, h1: toLink.get(fv.a)! } : undefined;
         for (let r = 0; r < opt.drawsPerPass; r++) {
           // A driver whose noisy walk loops takes the plain shortest path instead (the noise-free walk cannot loop).
-          const route = walkRoute(g, h, flows[k].origin, d, (k * 7919 + (n - 1) * opt.drawsPerPass + r + 1) | 0, opt.noise) ?? walkRoute(g, h, flows[k].origin, d, 0, 0);
+          const route = walkRoute(g, h, flows[k].origin, d, (k * 7919 + (n - 1) * opt.drawsPerPass + r + 1) | 0, opt.noise, via) ?? walkRoute(g, h, flows[k].origin, d, 0, 0, via) ?? (via ? walkRoute(g, h, flows[k].origin, d, 0, 0) : null);
           if (!route) break;
           ok[k]++;
           for (const l of route) { accum[k].set(l, (accum[k].get(l) ?? 0) + 1); y[l] += volume[k] / opt.drawsPerPass; }

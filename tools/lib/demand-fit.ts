@@ -6,7 +6,8 @@ import { assigned, fitToCounts, type Constraint, type FitOptions, type FlowType 
 import { buildShareConstraints, impliedVolumes, type ImpliedVolume, type ShareLink, type ShareSpec, type Targets } from './share-targets';
 
 export interface NetLinkIn extends ALink { name: string; lanes?: number; inStudyArea?: boolean }
-export interface FlowIn { origin: number; destination: number; vehPerHour: number; mode?: string }
+/** `via`: an assumed movement flow (link positions a, b); its volume is pinned in the fit. */
+export interface FlowIn { origin: number; destination: number; vehPerHour: number; mode?: string; via?: { a: number; b: number } }
 
 export interface Station {
   id: string;
@@ -297,6 +298,7 @@ export function fitPeriod(
   const g: Graph = buildGraph(nodes, links, bans, id);
   const nodeBy = new Map(nodes.map((n) => [n.id, n]));
   const v0 = flows.map((f) => f.vehPerHour);
+  const fitOpt: FitOptions = flows.some((f) => f.via) ? { ...cfg.fit, pinned: flows.map((f) => (f.via ? 1 : 0)) } : cfg.fit;
   const nL = links.length;
   const ruleOf: { cap: number; rule: string }[] = links.map((l, i) => linkCapacity(l, nodeBy.get(l.to)!, g.minor[i], cfg.guard.capacity));
   const as = cfg.assignment ?? { method: 'free' as const, iterations: 1, drawsPerPass: cfg.draws, alpha: 0, beta: 4, noise: cfg.noise, rounds: 1 };
@@ -335,12 +337,12 @@ export function fitPeriod(
     cons = [...countCons, ...impliedCons, ...shareCons];
     before = assigned(a, v0, cons, nL);
     // Counts only (no guard, no shares): the "after count fit" column.
-    r1 = fitToCounts(a, v0, types, countCons, nL, cfg.fit);
+    r1 = fitToCounts(a, v0, types, countCons, nL, fitOpt);
     f1 = v0.map((v, k) => v * r1.g[k]);
     afterFit = assigned(a, f1, cons, nL);
     V1 = linkVolumes(a, f1, nL);
     // Counts, guard and shares together. The guard is a set of soft upper limits with weight < 1 on uncounted links, so a count wins any conflict.
-    if (cfg.guard.enabled || shareCons.length) rFinal = fitToCounts(a, v0, types, cons, nL, cfg.fit, undefined, cfg.guard.enabled ? { limit, weight: cfg.guard.weight } : undefined);
+    if (cfg.guard.enabled || shareCons.length) rFinal = fitToCounts(a, v0, types, cons, nL, fitOpt, undefined, cfg.guard.enabled ? { limit, weight: cfg.guard.weight } : undefined);
     else rFinal = r1;
     fFinal = v0.map((v, k) => v * rFinal.g[k]);
   }

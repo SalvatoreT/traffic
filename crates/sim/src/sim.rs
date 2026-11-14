@@ -85,6 +85,8 @@ struct Trip {
     through: bool,
     noise_seed: u32,
     drv: Drv,
+    /// Assumed movement (link a, link b) this trip must make (ASSUMPTION, demand flow `via`).
+    via: Option<(u32, u32)>,
 }
 
 /// One completed car trip (recorded when `Config::record_trips` is set): the links entered in order and the en-route route changes.
@@ -106,6 +108,7 @@ struct FlowRt {
     rng: Rng,
     next_t: f64,
     through: bool,
+    via: Option<(u32, u32)>,
 }
 
 #[allow(dead_code)]
@@ -123,6 +126,8 @@ struct Veh {
     origin: u32,
     dest: u32,
     through: bool,
+    /// Assumed movement not yet made: replans run through it first.
+    via: Option<(u32, u32)>,
     ct_counted: bool,
     noise_seed: u32,
     route: Vec<u32>,
@@ -184,6 +189,7 @@ impl Veh {
             origin: 0,
             dest: 0,
             through: false,
+            via: None,
             ct_counted: false,
             noise_seed: 0,
             route: Vec::new(),
@@ -756,7 +762,8 @@ impl Simulation {
                 let mut rng = Rng::stream(self.cfg.seed, k as u64);
                 let next_t = t0 + rng.exp(rate);
                 let through = !self.net.nodes[f.origin as usize].in_study_area && !self.net.nodes[f.destination as usize].in_study_area;
-                self.flows.push(FlowRt { mode: f.mode, origin: f.origin, dest: f.destination, rate, rng, next_t, through });
+                let via = f.via.and_then(|v| (v.from < self.topo.n_links as u32 && v.to < self.topo.n_links as u32 && self.topo.find_mv(v.from, v.to).is_some()).then_some((v.from, v.to)));
+                self.flows.push(FlowRt { mode: f.mode, origin: f.origin, dest: f.destination, rate, rng, next_t, through, via });
             }
         }
     }
@@ -1294,7 +1301,7 @@ impl Simulation {
                 if f.mode == FlowMode::Bicycle {
                     let drv = Drv::bike(&mut f.rng);
                     let v0_abs = bike_speed(&mut f.rng);
-                    let trip = Trip { v0_abs, uid: self.uid_next, origin: f.origin, dest: f.dest, t_arr, through: false, noise_seed: NO_NOISE, drv };
+                    let trip = Trip { v0_abs, uid: self.uid_next, origin: f.origin, dest: f.dest, t_arr, through: false, noise_seed: NO_NOISE, drv, via: None };
                     self.uid_next += 1;
                     self.bike_backlog[trip.origin as usize].push_back(trip);
                     continue;
@@ -1310,6 +1317,7 @@ impl Simulation {
                     through: f.through,
                     noise_seed,
                     drv,
+                    via: f.via,
                 };
                 self.uid_next += 1;
                 self.backlog[trip.origin as usize].push_back(trip);
@@ -1566,20 +1574,36 @@ impl Simulation {
             while spawned < 4 && idx < SPAWN_SCAN && blocked.len() < self.topo.outs[n].len() {
                 let Some(trip) = self.backlog[n].get(idx) else { break };
                 let (dest, seed) = (trip.dest, trip.noise_seed);
+                let via = self.usable_via(trip.via);
                 self.router.ensure(dest, &self.topo, &self.eff, &self.link_cost);
                 let table = self.router.table(dest);
                 let mut route = std::mem::take(&mut self.scratch);
                 route.clear();
                 let mut first = route::first_link(table, &self.topo, &self.eff, n as u32, seed);
                 let mut ok = false;
-                if let Some(b) = first {
-                    ok = route::walk(table, &self.topo, &self.eff, b, dest, seed, &mut route);
-                    if !ok {
-                        route.clear();
-                        first = route::first_link(table, &self.topo, &self.eff, n as u32, NO_NOISE);
-                        if let Some(b2) = first {
-                            ok = route::walk(table, &self.topo, &self.eff, b2, dest, NO_NOISE, &mut route);
-                            first = Some(b2);
+                if let Some((a, _)) = via {
+                    self.router.ensure_link(a, &self.topo, &self.eff, &self.link_cost);
+                    let ta = &self.router.link_tables[&a];
+                    if let Some(b) = route::first_link(ta, &self.topo, &self.eff, n as u32, seed) {
+                        if self.walk_via(b, dest, seed, via, &mut route) {
+                            first = Some(b);
+                            ok = true;
+                        } else {
+                            route.clear();
+                        }
+                    }
+                }
+                let table = self.router.table(dest);
+                if !ok {
+                    if let Some(b) = first {
+                        ok = route::walk(table, &self.topo, &self.eff, b, dest, seed, &mut route);
+                        if !ok {
+                            route.clear();
+                            first = route::first_link(table, &self.topo, &self.eff, n as u32, NO_NOISE);
+                            if let Some(b2) = first {
+                                ok = route::walk(table, &self.topo, &self.eff, b2, dest, NO_NOISE, &mut route);
+                                first = Some(b2);
+                            }
                         }
                     }
                 }
@@ -1633,6 +1657,7 @@ impl Simulation {
                     origin: trip.origin,
                     dest: trip.dest,
                     through: trip.through,
+                    via: via.filter(|_| true),
                     noise_seed: trip.noise_seed,
                     route: std::mem::take(&mut veh.route),
                     trail,
@@ -2439,6 +2464,9 @@ impl Simulation {
                     let veh = &mut self.vehs[vid as usize];
                     veh.in_transit = false;
                     veh.link = tr.to_link;
+                    if veh.via.map_or(false, |(_, b)| b == tr.to_link) {
+                        veh.via = None;
+                    }
                     veh.lane = tr.lane;
                     veh.pos = self.topo.emerge_pos[tr.to_link as usize];
                     veh.v = tr.v_exit;
@@ -2461,23 +2489,51 @@ impl Simulation {
     // ------------------------------------------------------------------ routing epochs
 
     /// Re-plan the remaining route of an on-link vehicle. Returns false (and removes the vehicle) if unroutable.
+    /// The assumed movement of a trip when it can still be made: the movement exists and is open, and its exit link is open.
+    fn usable_via(&self, via: Option<(u32, u32)>) -> Option<(u32, u32)> {
+        let (a, b) = via?;
+        let m = self.topo.find_mv(a, b)?;
+        (self.eff.mv_ok[m as usize] && !self.eff.closed[a as usize] && !self.eff.closed[b as usize]).then_some((a, b))
+    }
+
+    /// Route from link `l` (not included) to `dest`. With an assumed movement (a, b) pending the route first runs to link `a`, takes the movement to `b`, then runs on to `dest`
+    /// (ASSUMPTION: the trips that make a counted movement the router never picks, calibration round 20). Falls back to the plain route when `a` cannot be reached.
+    fn walk_via(&mut self, l: u32, dest: u32, seed: u32, via: Option<(u32, u32)>, route: &mut Vec<u32>) -> bool {
+        self.router.ensure(dest, &self.topo, &self.eff, &self.link_cost);
+        if let Some((a, b)) = via {
+            let mark = route.len();
+            let mut ok = true;
+            if l != a {
+                self.router.ensure_link(a, &self.topo, &self.eff, &self.link_cost);
+                ok = route::walk_to_link(&self.router.link_tables[&a], &self.topo, &self.eff, l, a, seed, route);
+            }
+            if ok {
+                route.push(b);
+                if route::walk(self.router.table(dest), &self.topo, &self.eff, b, dest, seed, route) {
+                    return true;
+                }
+            }
+            route.truncate(mark);
+        }
+        route::walk(self.router.table(dest), &self.topo, &self.eff, l, dest, seed, route)
+    }
+
     fn replan_vehicle(&mut self, vid: u32, drop_if_fail: bool) -> bool {
         match self.vehs[vid as usize].kind {
             KIND_BIKE => return self.replan_bike(vid),
             _ => {}
         }
-        let (l, dest, seed) = {
+        let (l, dest, seed, via) = {
             let v = &self.vehs[vid as usize];
-            (v.link, v.dest, v.noise_seed)
+            (v.link, v.dest, v.noise_seed, v.via)
         };
-        self.router.ensure(dest, &self.topo, &self.eff, &self.link_cost);
-        let table = self.router.table(dest);
+        let via = self.usable_via(via);
         let mut route = std::mem::take(&mut self.scratch);
         route.clear();
-        let mut ok = route::walk(table, &self.topo, &self.eff, l, dest, seed, &mut route);
+        let mut ok = self.walk_via(l, dest, seed, via, &mut route);
         if !ok {
             route.clear();
-            ok = route::walk(table, &self.topo, &self.eff, l, dest, NO_NOISE, &mut route);
+            ok = self.walk_via(l, dest, NO_NOISE, via, &mut route);
         }
         if ok {
             let veh = &mut self.vehs[vid as usize];
@@ -2702,7 +2758,7 @@ impl Simulation {
             let v = &self.vehs[vid as usize];
             (v.link, v.dest, v.noise_seed, v.switches, v.last_switch_t, v.route.len())
         };
-        if switches >= MAX_SWITCHES || self.t - last < MIN_SWITCH_GAP_S || (self.vehs[vid as usize].ridx as usize) >= route_len {
+        if switches >= MAX_SWITCHES || self.t - last < MIN_SWITCH_GAP_S || (self.vehs[vid as usize].ridx as usize) >= route_len || self.vehs[vid as usize].via.is_some() {
             return;
         }
         self.router.ensure(dest, &self.topo, &self.eff, &self.link_cost);

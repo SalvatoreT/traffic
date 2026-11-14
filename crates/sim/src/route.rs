@@ -10,7 +10,7 @@ use crate::params::*;
 use crate::rng::hash32;
 use crate::topo::Topo;
 use std::cmp::Reverse;
-use std::collections::BinaryHeap;
+use std::collections::{BinaryHeap, HashMap};
 
 pub const INF: f32 = f32::INFINITY;
 /// Noise seed meaning "no perceived-cost noise".
@@ -41,6 +41,8 @@ impl Eff {
 
 pub struct Router {
     pub tables: Vec<Option<Vec<f32>>>,
+    /// Cost-to-go to the start of one link (the first leg of a trip that must make an assumed movement), cached per link for one cost epoch.
+    pub link_tables: HashMap<u32, Vec<f32>>,
     heap: BinaryHeap<Reverse<(u32, u32)>>,
 }
 
@@ -55,13 +57,49 @@ pub fn noise(seed: u32, link: u32) -> f32 {
 
 impl Router {
     pub fn new(n_nodes: usize) -> Router {
-        Router { tables: (0..n_nodes).map(|_| None).collect(), heap: BinaryHeap::new() }
+        Router { tables: (0..n_nodes).map(|_| None).collect(), link_tables: HashMap::new(), heap: BinaryHeap::new() }
     }
 
     pub fn invalidate(&mut self) {
         for t in self.tables.iter_mut() {
             *t = None;
         }
+        self.link_tables.clear();
+    }
+
+    /// Cost-to-go from the start of every link to the start of link `target` (the table of a trip's first leg when it must pass `target`).
+    pub fn ensure_link(&mut self, target: u32, topo: &Topo, eff: &Eff, cost: &[f32]) {
+        if self.link_tables.contains_key(&target) {
+            return;
+        }
+        let m = eff.car_modal();
+        let mut h = vec![INF; topo.n_links];
+        self.heap.clear();
+        if !m.closed[target as usize] {
+            h[target as usize] = cost[target as usize] * m.w[target as usize];
+            self.heap.push(Reverse((h[target as usize].to_bits(), target)));
+        }
+        while let Some(Reverse((bits, l))) = self.heap.pop() {
+            let hl = f32::from_bits(bits);
+            if hl > h[l as usize] {
+                continue;
+            }
+            for &mv in &topo.preds[l as usize] {
+                if !m.mv_ok[mv as usize] {
+                    continue;
+                }
+                let a = topo.mvs[mv as usize].a as usize;
+                if m.closed[a] {
+                    continue;
+                }
+                let cand = cost[a] * m.w[a] + m.mv_cost[mv as usize] + hl;
+                if cand < h[a] {
+                    h[a] = cand;
+                    self.heap.push(Reverse((cand.to_bits(), a as u32)));
+                }
+            }
+        }
+        self.link_tables.insert(target, h);
     }
 
     pub fn ensure(&mut self, dest: u32, topo: &Topo, eff: &Eff, cost: &[f32]) {
@@ -173,4 +211,36 @@ pub fn walk_m(table: &[f32], topo: &Topo, eff: Modal<'_>, from: u32, dest: u32, 
             return false;
         }
     }
+}
+
+/// Walk forward from the end of link `from` until link `target` is entered, appending the links after `from` (including `target`) to `route`.
+pub fn walk_to_link(table: &[f32], topo: &Topo, eff: &Eff, from: u32, target: u32, seed: u32, route: &mut Vec<u32>) -> bool {
+    let m = eff.car_modal();
+    let (mut l, mut steps) = (from, 0);
+    while l != target {
+        let ms = topo.lm_start[l as usize];
+        let mut best: Option<(f32, u32)> = None;
+        for mv in ms..ms + topo.lm_cnt[l as usize] {
+            if !m.mv_ok[mv as usize] {
+                continue;
+            }
+            let b = topo.mvs[mv as usize].b;
+            let h = table[b as usize];
+            if !h.is_finite() {
+                continue;
+            }
+            let c = (h + m.mv_cost[mv as usize]) * noise(seed, b);
+            if best.map_or(true, |(bc, _)| c < bc) {
+                best = Some((c, b));
+            }
+        }
+        let Some((_, b)) = best else { return false };
+        route.push(b);
+        l = b;
+        steps += 1;
+        if steps > 4000 {
+            return false;
+        }
+    }
+    true
 }

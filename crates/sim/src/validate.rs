@@ -144,7 +144,7 @@ pub fn demand_m(flows: &[(u32, u32, f64, FlowMode)]) -> Demand {
     Demand {
         version: 1,
         area: "v".into(),
-        periods: vec![Period { id: "p".into(), label: "p".into(), flows: flows.iter().map(|&(o, d, v, m)| Flow { origin: o, destination: d, veh_per_hour: v, mode: m }).collect() }],
+        periods: vec![Period { id: "p".into(), label: "p".into(), flows: flows.iter().map(|&(o, d, v, m)| Flow { origin: o, destination: d, veh_per_hour: v, mode: m, via: None }).collect() }],
     }
 }
 

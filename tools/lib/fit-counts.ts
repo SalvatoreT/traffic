@@ -50,6 +50,8 @@ export interface FitOptions {
   band: number;
   /** Tolerance on a share constraint, in share points (modeled share minus target), for the report only. */
   shareTol: number;
+  /** Flows held at their starting volume (1 = pinned): the assumed movement flows, whose volume is a decision and not an estimate (ASSUMPTION, round 20). */
+  pinned?: ArrayLike<number>;
 }
 export const DEFAULT_FIT: FitOptions = { lo: 0.1, hi: 3, maxIter: 400, tol: 0.01, damping: 1, uncounted: 'medianOfType', volumeWeightedMedian: true, stationary: 1e-4, softStep: 1e-3, stallWindow: 25, stallGain: 0.002, blockedShare: 0.8, band: 0, shareTol: 0.02 };
 
@@ -172,7 +174,8 @@ export function fitToCounts(a: Assignment, v0: ArrayLike<number>, types: FlowTyp
   const counted = new Uint8Array(n);
   for (let i = 0; i < kk.length; i++) if (!cons[cc[i]].ratio) counted[kk[i]] = 1;
   const f = Float64Array.from({ length: n }, (_, k) => v0[k]);
-  const loB = (k: number) => opt.byType?.[types[k]]?.lo ?? opt.lo, hiB = (k: number) => opt.byType?.[types[k]]?.hi ?? opt.hi;
+  const pin = (k: number) => !!opt.pinned && opt.pinned[k] === 1;
+  const loB = (k: number) => (pin(k) ? 1 : opt.byType?.[types[k]]?.lo ?? opt.lo), hiB = (k: number) => (pin(k) ? 1 : opt.byType?.[types[k]]?.hi ?? opt.hi);
   const lo = (k: number) => loB(k) * v0[k], hi = (k: number) => Math.min(hiB(k), ceil ? ceil[k] : Infinity) * v0[k];
   const w = cons.map((c) => c.weight ?? 1);
   const isRatio = cons.map((c) => !!c.ratio);
@@ -320,7 +323,7 @@ export function fitToCounts(a: Assignment, v0: ArrayLike<number>, types: FlowTyp
   // Median factor of counted flows, by type.
   const medians: Record<string, number> = {};
   const med = (sel: (k: number) => boolean) => {
-    const ks = [...Array(n).keys()].filter((k) => counted[k] && a.routable[k] && v0[k] > 0 && sel(k));
+    const ks = [...Array(n).keys()].filter((k) => counted[k] && !pin(k) && a.routable[k] && v0[k] > 0 && sel(k));
     return weightedMedian(ks.map((k) => f[k] / v0[k]), ks.map((k) => (opt.volumeWeightedMedian ? v0[k] : 1)));
   };
   for (const t of ['through', 'local', 'ramp'] as FlowType[]) medians[t] = med((k) => types[k] === t);
@@ -335,7 +338,7 @@ export function fitToCounts(a: Assignment, v0: ArrayLike<number>, types: FlowTyp
   // Flows that touch no count are free to follow the guard exactly: scale them down until no guarded link is over its limit (counted flows stay).
   let freeCut = 0;
   if (guard) {
-    const free = Uint8Array.from(touched, (c) => 1 - c);
+    const free = Uint8Array.from(touched, (c, k) => (pin(k) ? 0 : 1 - c));
     const before = f.reduce((s, x, k) => s + (free[k] ? x : 0), 0);
     const m = capacityGuard(a, f, guard.limit, nLinks, 100, free).m;
     for (let k = 0; k < n; k++) if (free[k]) f[k] *= m[k];

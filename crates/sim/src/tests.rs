@@ -72,7 +72,7 @@ fn demand(flows: &[(u32, u32, f64)]) -> Demand {
         periods: vec![Period {
             id: "p".into(),
             label: "p".into(),
-            flows: flows.iter().map(|&(o, d, v)| Flow { origin: o, destination: d, veh_per_hour: v, mode: FlowMode::Car }).collect(),
+            flows: flows.iter().map(|&(o, d, v)| Flow { origin: o, destination: d, veh_per_hour: v, mode: FlowMode::Car, via: None }).collect(),
         }],
     }
 }
@@ -1775,4 +1775,43 @@ fn a_gate_vehicle_that_cannot_enter_does_not_hold_back_one_that_can() {
     }
     let to_x2 = sim.trip_records().iter().filter(|t| t.dest == x2).count();
     assert!(to_x2 as f64 > 0.8 * 400.0 * 900.0 / 3600.0, "{to_x2} trips reached the free branch");
+}
+
+fn via_demand(origin: u32, dest: u32, v: f64, from: u32, to: u32) -> Demand {
+    let mut d = demand(&[(origin, dest, v)]);
+    d.periods[0].flows[0].via = Some(Via { from, to });
+    d
+}
+
+#[test]
+fn flow_with_via_makes_the_movement_and_falls_back_when_it_is_banned() {
+    // A fast arterial: the plain route stays on it. The flow must turn off at the first junction onto the connector to the local row.
+    let (net, c) = corridor(20.0, Control::Uncontrolled);
+    let (a_fwd, _) = c.art[0];
+    let (conn_down, _) = c.conn[1];
+    let plain = {
+        let sim = Simulation::from_parts(net.clone(), demand(&[(c.a[0], c.a[3], 300.0)]), cfg(1, 1.0)).unwrap();
+        let mut s = sim;
+        s.test_route_for(c.a[0], c.a[3], NO_NOISE).unwrap()
+    };
+    assert!(!plain.contains(&conn_down), "the plain route stays on the arterial");
+    let made = |recs: &[crate::sim::TripRecord]| recs.iter().filter(|r| r.trail.windows(2).any(|w| w[0] == a_fwd && w[1] == conn_down)).count();
+    let mut cf = cfg(1, 1.0);
+    cf.record_trips = true;
+    let mut sim = Simulation::from_parts(net.clone(), via_demand(c.a[0], c.a[3], 300.0, a_fwd, conn_down), cf.clone()).unwrap();
+    run(&mut sim, 600.0, |_| {});
+    let recs = sim.trip_records();
+    assert!(recs.len() > 20, "trips complete");
+    assert_eq!(made(recs), recs.len(), "every trip of the flow makes the movement");
+    // With the movement banned the via is dropped and the trips take the plain route.
+    let mut base = Simulation::from_parts(net.clone(), demand(&[(c.a[0], c.a[3], 300.0)]), cf.clone()).unwrap();
+    run(&mut base, 600.0, |_| {});
+    let plain_made = made(base.trip_records());
+    let mut cf2 = cf;
+    cf2.interventions = serde_json::from_str(&format!("[{{\"type\":\"turn_ban\",\"fromLink\":{a_fwd},\"toLink\":{conn_down}}}]")).unwrap();
+    let mut sim = Simulation::from_parts(net, via_demand(c.a[0], c.a[3], 300.0, a_fwd, conn_down), cf2).unwrap();
+    run(&mut sim, 600.0, |_| {});
+    let recs = sim.trip_records();
+    assert!(recs.len() > 20, "trips complete: {}", recs.len());
+    assert!(made(recs) <= plain_made, "no more trips make the banned movement ({}) than without the flow ({plain_made})", made(recs));
 }
