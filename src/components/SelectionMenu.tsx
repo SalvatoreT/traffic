@@ -2,6 +2,7 @@ import { type ReactNode, useCallback, useEffect, useId, useRef, useState } from 
 import type { AreaBundle, ControlType, Intervention } from '../types';
 import type { NetIndex } from '../lib/naming';
 import { describeIntervention } from '../lib/describe';
+import { filterSentence, filterText } from '../lib/blocked';
 import { aggregate, CHANGE_NAME, CHANGE_UNIT, diffValue, formatSigned, metricValue, readoutText } from '../lib/change';
 import { linkStatsView, type Overlay } from '../types';
 import {
@@ -149,7 +150,10 @@ export function SelectionMenu(p: Props) {
     const dropCycle = (c: ControlType) => (c === 'signal' ? undefined : (iv: Intervention) => iv.type === 'signal_timing' && iv.node === node);
     actions = (
       <>
-        {a.modalFilter && <li><button type="button" className="sel-act" onClick={() => apply({ add: [{ type: 'modal_filter', node }] })}>Add modal filter (no through traffic)</button></li>}
+        {a.modalFilter && (() => {
+          const ft = filterText({ type: 'modal_filter', node }, net, X);
+          return <li><button type="button" className="sel-act" onClick={() => apply({ add: [{ type: 'modal_filter', node }] })}>Add modal filter (no through traffic)</button>{ft && <p className="iv-more">{ft.closed}{ft.junction ? ` ${ft.junction}` : ''}</p>}</li>;
+        })()}
         {a.trafficCircle && <li><button type="button" className="sel-act" onClick={() => apply({ add: [{ type: 'traffic_circle', node }], remove: dropCycle('traffic_circle') })}>Add traffic circle</button></li>}
         {a.control.choices.length > 0 && (
           <li><ChoiceGroup label="Change control" hint={`now ${controlLabel(a.control.current).toLowerCase()}`}
@@ -205,9 +209,10 @@ export function SelectionMenu(p: Props) {
           <ul className="sel-here">
             {here.map((i) => {
               const d = describeIntervention(ivs[i], net, X);
+              const ft = filterText(ivs[i], net, X);
               return (
                 <li key={i}>
-                  <span className="sel-here-d">{d}</span>
+                  <span className="sel-here-d">{d}{ft && <span className="iv-more">{filterSentence(ft)}</span>}</span>
                   <button type="button" className="btn small-btn" aria-label={`Remove: ${d}`} onClick={() => { p.onRemove(i); keepFocus(); }}>Remove</button>
                 </li>
               );

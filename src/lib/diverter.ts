@@ -74,7 +74,7 @@ export function sidesOf(legs: Leg[], barrier: number): [number[], number[]] | nu
 const CARD4 = ['north', 'east', 'south', 'west'];
 const CARD8 = ['north', 'northeast', 'east', 'southeast', 'south', 'southwest', 'west', 'northwest'];
 /** Compass names for the legs: four points, or eight when two legs would share a name. */
-function legDirections(legs: Leg[]): string[] {
+export function legDirections(legs: Pick<Leg, 'bearing'>[]): string[] {
   const four = legs.map((l) => CARD4[Math.floor(((l.bearing + 45) % 360) / 90)]);
   if (new Set(four).size === legs.length) return four;
   return legs.map((l) => CARD8[Math.floor(((l.bearing + 22.5) % 360) / 45)]);

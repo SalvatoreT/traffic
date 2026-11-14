@@ -3,6 +3,7 @@ import type { AreaBundle, Intervention } from '../types';
 import type { NetIndex } from '../lib/naming';
 import { interventionInRegion, type Region } from '../lib/region';
 import { describeIntervention } from '../lib/describe';
+import { filterSentence, filterText } from '../lib/blocked';
 import type { Selection } from '../lib/selection';
 import type { Hover } from '../lib/highlight';
 import { PlaceSearch } from './PlaceSearch';
@@ -46,12 +47,14 @@ export function InterventionPanel(p: Props) {
           <ol className="scn-list">
             {p.interventions.map((iv, i) => {
               const d = describeIntervention(iv, B.network, X);
+              const ft = filterText(iv, B.network, X);
               return (
                 <li key={i}>
                   <span className={`iv-badge static iv-${iv.type}`} aria-hidden="true">{iv.type === 'speed_limit' ? Math.round(iv.speed * 2.23694) : BADGE[iv.type]}</span>
                   <span className="desc">
                     <button type="button" className="desc-btn" title="Select this place" onClick={() => p.onSelectIntervention(i)}>{d}</button>
                     {!interventionInRegion(iv, B.network, p.region) && <>{' '}<span className="tag">outside the map</span></>}
+                    {ft && <span className="iv-more">{filterSentence(ft)}</span>}
                   </span>
                   <button type="button" className="btn small-btn" onClick={() => p.onRemove(i)} aria-label={`Remove: ${d}`}>Remove</button>
                 </li>

@@ -74,7 +74,8 @@ const BADGE_STYLE: Record<Intervention['type'], { fill: string; edge: string; in
   turn_ban: { fill: '#ffe3e3', edge: '#111', ink: '#111', radius: [4, 12, 4, 4] },
 };
 
-export interface BadgeMark { x: number; y: number; type: Intervention['type']; bearing?: number; mph?: number }
+/** `leg` is a closed-to-cars bar at the mouth of a street a filter closes; `bearing` is the street's, and the bar crosses it. */
+export interface BadgeMark { x: number; y: number; type: Intervention['type'] | 'leg'; bearing?: number; mph?: number }
 
 function roundedRect(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: [number, number, number, number]) {
   const [tl, tr, br, bl] = r;
@@ -92,6 +93,13 @@ export function drawBadges(g: CanvasRenderingContext2D, marks: BadgeMark[]) {
       g.save(); g.translate(m.x, m.y); g.rotate(((m.bearing ?? 0) * Math.PI) / 180); g.lineCap = 'butt';
       const line = (w: number, c: string, dash: number[] = []) => { g.setLineDash(dash); g.lineWidth = w; g.strokeStyle = c; g.beginPath(); g.moveTo(0, -17); g.lineTo(0, 17); g.stroke(); };
       line(14, '#fff'); line(10, '#111'); line(6, '#ffd43b', [7, 3]);
+      g.restore();
+      continue;
+    }
+    if (m.type === 'leg') {
+      g.save(); g.translate(m.x, m.y); g.rotate((((m.bearing ?? 0) + 90) * Math.PI) / 180); g.lineCap = 'butt';
+      const bar = (w: number, c: string, dash: number[] = []) => { g.setLineDash(dash); g.lineWidth = w; g.strokeStyle = c; g.beginPath(); g.moveTo(0, -12); g.lineTo(0, 12); g.stroke(); };
+      bar(14, '#fff'); bar(10, '#111'); bar(6, '#ffd43b', [7, 3]);
       g.restore();
       continue;
     }

@@ -3,6 +3,7 @@ import { compassWord, headingTo, type NetIndex } from './naming';
 import { pointAlong } from './geom';
 import { controlLabel } from './selection';
 import { connectedLabel } from './diverter';
+import { filterSentence, filterText } from './blocked';
 
 export function describeIntervention(iv: Intervention, net: AreaBundle['network'], idx: NetIndex): string {
   const ln = (id: number) => idx.blocks[idx.blockOfLink[id]]?.label ?? `link ${id}`;
@@ -24,6 +25,14 @@ export function describeIntervention(iv: Intervention, net: AreaBundle['network'
       return `Turn ban at ${a ? nn(a.to) : '?'}: ${a ? idx.linkName[a.id] : '?'} to ${b ? idx.linkName[b.id] : '?'}`;
     }
   }
+}
+/** The short label, and for a modal filter what it closes: "Modal filter at A & B: cars cannot pass through this intersection. Closed to through cars: ...". */
+export function describeInterventionFull(iv: Intervention, net: AreaBundle['network'], idx: NetIndex): string {
+  const short = describeIntervention(iv, net, idx);
+  const t = filterText(iv, net, idx);
+  if (!t) return short;
+  const s = filterSentence(t);
+  return `${short}: ${s.charAt(0).toLowerCase()}${s.slice(1)}`;
 }
 export function interventionPoint(iv: Intervention, net: AreaBundle['network']): [number, number] {
   const node = (id: number): [number, number] => [net.nodes[id]?.x ?? 0, net.nodes[id]?.y ?? 0];

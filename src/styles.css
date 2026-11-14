@@ -129,6 +129,9 @@ main { flex: 1; min-height: 0; display: flex; }
 .iv-badge.iv-turn_ban { background: #ffe3e3; border-radius: 4px 12px 4px 4px; }
 .iv-diverter { width: 44px; height: 44px; pointer-events: none; }
 .iv-diverter svg { display: block; overflow: visible; filter: drop-shadow(0 1px 3px rgba(0, 0, 0, .4)); }
+.iv-more { display: block; margin-top: .2rem; font-size: .82rem; color: var(--muted); }
+.iv-leg { width: 30px; height: 30px; pointer-events: none; }
+.iv-leg svg { display: block; overflow: visible; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .4)); }
 .iv-dd-halo { stroke: #fff; stroke-width: 14px; stroke-linecap: butt; }
 .iv-dd-out { stroke: #111; stroke-width: 10px; stroke-linecap: butt; }
 .iv-dd-in { stroke: #ffd43b; stroke-width: 6px; stroke-linecap: butt; stroke-dasharray: 7 3; }

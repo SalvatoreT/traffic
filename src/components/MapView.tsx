@@ -22,7 +22,8 @@ import type { RouteCheck } from '../lib/throughroutes';
 import { CELL_COLORS, CELL_DASHES, ROUTE_COLORS } from '../lib/routestyle';
 import { towardLabel, type NetIndex } from '../lib/naming';
 import { hoverLine } from '../lib/hoverline';
-import { describeIntervention, interventionPoint } from '../lib/describe';
+import { describeInterventionFull, interventionPoint } from '../lib/describe';
+import { bearingVector, filterLegs, markOffset } from '../lib/blocked';
 import type { SimClient } from '../sim/client';
 import {
   boxOfPoints, centerToShow, correctedCamera, fitCamera, hardBounds, insideRect, isAcceptable, minZoomFor, MIN_ZOOM_FLOOR,
@@ -558,6 +559,7 @@ export function MapView(p: Props) {
       map.addSource('study', { type: 'geojson', data: { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [b.network.studyArea] } } });
       map.addSource('links', { type: 'geojson', data: clipped.links as never });
       map.addSource('hover', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+      map.addSource('blocked', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
       map.addSource('place-hover', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
       map.addSource('selection', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
       for (const id of ['cells', 'routes', 'route-hi']) map.addSource(id, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
@@ -591,6 +593,11 @@ export function MapView(p: Props) {
         paint: { 'line-color': BN.color, 'line-opacity': bikeOpacity(BN.lane, 11.5, 14), 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 0.6, 14, 1.5, 18, 3] as never, 'line-offset': OFFSET as never } });
       map.addLayer({ id: 'links', type: 'line', source: 'links', layout: { 'line-cap': 'butt', 'line-join': 'round' },
         paint: { 'line-color': ramp(mode, live.current.view) as never, 'line-width': widthExpr(live.current.view) as never, 'line-offset': OFFSET as never } });
+      // A filtered block: striped barrier tape along it (dark edge plus yellow dashes, so the pattern shows on either basemap).
+      map.addLayer({ id: 'blocked-edge', type: 'line', source: 'blocked', layout: { 'line-cap': 'butt', 'line-join': 'round' },
+        paint: { 'line-color': '#111111', 'line-width': ['interpolate', ['linear'], ['zoom'], 14, 5, 18, 10] as never, 'line-offset': OFFSET as never } });
+      map.addLayer({ id: 'blocked-tape', type: 'line', source: 'blocked', layout: { 'line-cap': 'butt', 'line-join': 'round' },
+        paint: { 'line-color': '#ffd43b', 'line-width': ['interpolate', ['linear'], ['zoom'], 14, 2.6, 18, 6] as never, 'line-dasharray': [1.4, 1.4], 'line-offset': OFFSET as never } });
       const RC = ROUTE_COLORS[live.current.mode];
       const routeWidth = (a: number, b: number) => ['interpolate', ['linear'], ['zoom'], 14, a, 18, b] as never;
       map.addLayer({ id: 'routes-casing', type: 'line', source: 'routes', layout: { 'line-cap': 'round', 'line-join': 'round' },
@@ -765,8 +772,13 @@ export function MapView(p: Props) {
     const map = mapRef.current;
     if (!map || !ready) return;
     markers.current.forEach((m) => m.remove());
-    markers.current = p.interventions.filter((iv) => interventionInRegion(iv, bundle.network, region)).map((iv) => {
-      const [x, y] = interventionPoint(iv, bundle.network);
+    const net = bundle.network;
+    const placers: (() => void)[] = [];
+    const out: maplibregl.Marker[] = [];
+    const blocked: unknown[] = [];
+    for (const iv of p.interventions.filter((v) => interventionInRegion(v, net, region))) {
+      const [x, y] = interventionPoint(iv, net);
+      const ll = proj.toLonLat(x, y);
       const el = document.createElement('div');
       if (iv.type === 'diagonal_diverter') {
         // A thick barrier line along the diagonal, outlined in the opposite tone so it reads on light and dark basemaps.
@@ -777,9 +789,35 @@ export function MapView(p: Props) {
         el.textContent = iv.type === 'speed_limit' ? String(Math.round(iv.speed * 2.23694)) : BADGE[iv.type];
       }
       el.setAttribute('aria-hidden', 'true');
-      el.title = describeIntervention(iv, bundle.network, p.index);
-      return new maplibregl.Marker({ element: el }).setLngLat(proj.toLonLat(x, y)).addTo(map);
-    });
+      el.title = describeInterventionFull(iv, net, p.index);
+      out.push(new maplibregl.Marker({ element: el }).setLngLat(ll).addTo(map));
+      if (iv.type !== 'modal_filter') continue;
+      if ('link' in iv) {
+        for (const id of p.index.blocks[p.index.blockOfLink[iv.link]]?.links ?? [iv.link]) blocked.push(...lineFeature(region, proj, net.links[id].geometry));
+        continue;
+      }
+      // A bar across the mouth of every leg the filter closes, pushed out along the leg far enough to clear the badge.
+      for (const leg of filterLegs(net, p.index, iv.node).legs) {
+        const bar = document.createElement('div');
+        bar.className = 'iv-leg';
+        bar.setAttribute('aria-hidden', 'true');
+        bar.innerHTML = `<svg width="30" height="30" viewBox="-15 -15 30 30" focusable="false"><g transform="rotate(${Math.round(leg.bearing + 90)})"><line x1="0" y1="-12" x2="0" y2="12" class="iv-dd-halo"/><line x1="0" y1="-12" x2="0" y2="12" class="iv-dd-out"/><line x1="0" y1="-12" x2="0" y2="12" class="iv-dd-in"/></g></svg>`;
+        const mk = new maplibregl.Marker({ element: bar }).setLngLat(ll).addTo(map);
+        const mouth = proj.toLonLat(leg.mouth[0], leg.mouth[1]);
+        const place = () => {
+          const a = map.project(ll), b = map.project(mouth);
+          mk.setOffset(markOffset([b.x - a.x, b.y - a.y], bearingVector(leg.bearing)));
+        };
+        place();
+        placers.push(place);
+        out.push(mk);
+      }
+    }
+    markers.current = out;
+    (map.getSource('blocked') as maplibregl.GeoJSONSource | undefined)?.setData({ type: 'FeatureCollection', features: blocked } as never);
+    const replace = () => placers.forEach((f) => f());
+    if (placers.length) map.on('zoom', replace);
+    return () => { map.off('zoom', replace); };
   }, [p.interventions, ready, bundle, proj, p.index, region]);
 
   // ---- selection highlight and keeping it in view
@@ -883,10 +921,17 @@ export function MapView(p: Props) {
       const w = map.getContainer().clientWidth, h = map.getContainer().clientHeight;
       const base = await grabMap(map, w, h, EXPORT_SCALE);
       const net = L.bundle.network;
-      const marks: BadgeMark[] = L.interventions.filter((iv) => interventionInRegion(iv, net, L.region)).map((iv) => {
+      const marks: BadgeMark[] = L.interventions.filter((iv) => interventionInRegion(iv, net, L.region)).flatMap((iv) => {
         const [x, y] = interventionPoint(iv, net);
         const q = map.project(L.proj.toLonLat(x, y));
-        return { x: q.x, y: q.y, type: iv.type, bearing: iv.type === 'diagonal_diverter' ? iv.bearing : undefined, mph: iv.type === 'speed_limit' ? Math.round(iv.speed * 2.23694) : undefined };
+        const bars: BadgeMark[] = iv.type === 'modal_filter' && 'node' in iv
+          ? filterLegs(net, L.index, iv.node).legs.map((leg) => {
+            const m = map.project(L.proj.toLonLat(leg.mouth[0], leg.mouth[1]));
+            const [dx, dy] = markOffset([m.x - q.x, m.y - q.y], bearingVector(leg.bearing));
+            return { x: q.x + dx, y: q.y + dy, type: 'leg' as const, bearing: leg.bearing };
+          })
+          : [];
+        return [...bars, { x: q.x, y: q.y, type: iv.type, bearing: iv.type === 'diagonal_diverter' ? iv.bearing : undefined, mph: iv.type === 'speed_limit' ? Math.round(iv.speed * 2.23694) : undefined }];
       });
       const change = L.view === 'change';
       const legend = legendModel(L.overlay, L.mode, change);
@@ -898,7 +943,7 @@ export function MapView(p: Props) {
         paintOnMap: (g) => { paintOverlay(g, w, h); drawBadges(g, marks); },
         caption: captionOf({
           area: net.name, period: L.periodLabel, time, shows: change ? 'change' : L.source, overlayName: legend.name,
-          interventions: L.interventions.map((iv) => describeIntervention(iv, net, L.index)),
+          interventions: L.interventions.map((iv) => describeInterventionFull(iv, net, L.index)),
         }),
         legend,
         keys: { car: L.modes.car, bicycle: L.modes.bicycle, pedestrian: L.modes.pedestrian, agents: { car: AGENT_COLORS[L.mode].car, bike: AGENT_COLORS[L.mode].bike, ped: AGENT_COLORS[L.mode].ped, ring: AGENT_COLORS[L.mode].ring } },
