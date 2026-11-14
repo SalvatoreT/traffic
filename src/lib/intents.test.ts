@@ -70,6 +70,6 @@ describe('describePaths', () => {
   });
   it('says so when no side street is on the path', () => {
     const idx = buildIndex(net);
-    expect(describePaths(net, idx, { id: 'a', total: 50, maxVph: 50, segments: [{ link: 0, vph: 50 }] })).toMatch(/No typical path yet/);
+    expect(describePaths(net, idx, { id: 'a', total: 50, maxVph: 50, segments: [{ link: 0, vph: 50 }] })).toMatch(/No typical path/);
   });
 });
