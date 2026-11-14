@@ -261,6 +261,8 @@
       "midday": 0.5,
       "pm_peak": 0.3
     },
+    "sideRule": true,
+    "sideRuleNote": "ASSUMPTION (round 19): a census block loads only nodes on its own side of the study-area boundary (polygon or boundary street counts as inside; a block is inside when its centroid is in the polygon). Before, blocks across a boundary street loaded the boundary corners, which are study-area nodes, so cars bound for places across Alcatraz Ave and Telegraph Ave ended at the corner and were not through cars.",
     "spreadRadiusM": 150,
     "spreadRadiusNote": "ASSUMPTION: a census block loads every node on a residential street within this distance of its centroid, in equal parts (the nearest node when none is that close). Before the seventeenth round each block loaded only its nearest node, which put the trips of several blocks on one corner.",
     "internalShare": 0.2,

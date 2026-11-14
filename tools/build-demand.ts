@@ -7,7 +7,7 @@ import { dirname, join } from 'node:path';
 import { buildActiveFlows, parseActiveCounts, type AFlow } from './lib/demand-active';
 import { discoverRamps, matchRampVolumes, type Ramp, type RampRow, type RampVolume } from './lib/demand-ramps';
 import { linkMetrics, perimeterGap, perimeterLength, perimeterPos, relevanceOf, Router, routeStat, sideOf, type Rect, type Relevance, type RouteStat } from './lib/demand-audit';
-import { makeProjection } from './lib/geo';
+import { makeProjection, pointInPolygon } from './lib/geo';
 import { buildGraph, costToGo, treeFrom, type Graph } from './lib/assign';
 import { buildStations, corridorOf, markHoldout, overusedRecords, fitPeriod, fitReport, type FitConfig, type NetLinkIn, type PeriodResult } from './lib/demand-fit';
 import type { FlowType } from './lib/fit-counts';
@@ -285,7 +285,7 @@ const lodes = existsSync(cfg.raw.lodes) ? JSON.parse(readFileSync(cfg.raw.lodes,
 // Blocks anywhere in the model area map to the nearest non-gate node on a residential street (the whole network, not only the study area).
 const resNodes = net.nodes.filter((n) => !n.gate && (incident.get(n.id) ?? []).some((l) => l.class === 'residential'));
 const candNodes = resNodes.length ? resNodes : net.nodes.filter((n) => !n.gate && (incident.get(n.id) ?? []).every((l) => l.class !== 'motorway'));
-const nearest = (x: number, y: number) => { let b = candNodes[0], bd = Infinity; for (const n of candNodes) { const d = (n.x - x) ** 2 + (n.y - y) ** 2; if (d < bd) { bd = d; b = n; } } return b; };
+const nearestIn = (pool: typeof candNodes, x: number, y: number) => { let b = pool[0], bd = Infinity; for (const n of pool) { const d = (n.x - x) ** 2 + (n.y - y) ** 2; if (d < bd) { bd = d; b = n; } } return b; };
 
 interface LocalBlock { node: number; x: number; y: number; res: number; jobs: number; outSectors: Record<string, number>; inSectors: Record<string, number> }
 const localNodes = new Map<number, LocalBlock>();
@@ -310,9 +310,13 @@ if (lodes) {
     const [x, y] = toXY(b.lat, b.lon);
     // A census block loads the network at every node on a residential street within `local.spreadRadiusM` of its centroid, in equal parts,
     // and at the nearest one when none is that close: a block has frontage on all the streets around it, not on one corner.
+    // `sideRule`: a block loads only nodes on its own side of the study-area boundary (inside means the polygon or a boundary street), so
+    // blocks across Alcatraz Ave or Telegraph Ave do not load the boundary corners and do not look like study-area trip ends.
     const R = lo.spreadRadiusM ?? 0;
-    const near = R > 0 ? candNodes.filter((n) => Math.hypot(n.x - x, n.y - y) <= R) : [];
-    const targets = near.length ? near : [nearest(x, y)];
+    const sameSide = lo.sideRule && poly.length ? candNodes.filter((n) => n.inStudyArea === pointInPolygon([x, y], poly)) : candNodes;
+    const pool = sameSide.length ? sameSide : candNodes;
+    const near = R > 0 ? pool.filter((n) => Math.hypot(n.x - x, n.y - y) <= R) : [];
+    const targets = near.length ? near : [nearestIn(pool, x, y)];
     const ex = byBlock.get(b.id);
     for (const nd of targets) {
       const agg = localNodes.get(nd.id) ?? localNodes.set(nd.id, { node: nd.id, x: nd.x, y: nd.y, res: 0, jobs: 0, outSectors: {}, inSectors: {} }).get(nd.id)!;
