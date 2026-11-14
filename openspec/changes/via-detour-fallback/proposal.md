@@ -4,9 +4,9 @@ The owner opened a scenario with modal filters at Martin St and Ayala Ave and at
 
 ## What Changes
 
-- A `via` movement is made only while the route through it costs at most a tolerance times the plain route in the current network (after interventions). The tolerance is `via.maxDetour` in the demand file, written by the builder from the movement's `maxDetour`; 1.3 applies when absent (ASSUMPTION).
+- A `via` movement is made only while the route through it costs at most a tolerance times the plain route in the current network (after interventions), judged on free-flow costs. The tolerance is `via.maxDetour` in the demand file, written by the builder from the movement's `maxDetour`; 1.3 applies when absent (ASSUMPTION).
 - A via flow may carry `via.alternatives`, an ordered list of other movements of the same turn family on parallel streets, chosen by the builder from config: movements with an intent of the same origin and destination groups (ASSUMPTION). When the primary fails, the driver takes the cheapest alternative that passes, else the plain route.
-- A via route that would visit a node twice fails the check.
+- A via route that passes a node twice that the plain route does not fails the check.
 - The check runs at spawn and at every re-plan before the movement is made.
 
 ## Impact

@@ -905,7 +905,8 @@
           }
         ]
       }
-    ]
+    ],
+    "_alternativesNote": "ASSUMPTION (via-detour-fallback): the builder writes `via.maxDetour` (each movement's `maxDetour`) and `via.alternatives` (the other movements that have an intent with the same fromGroup and toGroup as an intent of the flow's movement) on every assumed flow. The simulator makes the movement only while the route through it costs at most `maxDetour` times the plain route in the current network and passes no node twice, else it takes the cheapest alternative that passes, else the plain route. Nothing here is area specific in code."
   },
   "audit": {
     "nearM": 400

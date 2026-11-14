@@ -399,7 +399,7 @@ Study-area blocks only. The count implies trip ends as vehicles entering (leavin
 
 ## Assumed movement flows (ASSUMPTION)
 
-A counted turning movement that the trip table cannot reach gets flows that must make it. Candidates are the flows of the seed table whose route through the movement costs at most the detour limit times their best route; the counted volume is split over them in proportion to their seed volume, with the stated share over flows that have no end in the study area (through cars). Their volume is pinned in the fit.
+A counted turning movement that the trip table cannot reach gets flows that must make it. Candidates are the flows of the seed table whose route through the movement costs at most the detour limit times their best route; the counted volume is split over them in proportion to their seed volume, with the stated share over flows that have no end in the study area (through cars). Their volume is pinned in the fit. Each flow carries the movement's detour tolerance and, where the movement has intents, the alternative movements of the same turn family (ASSUMPTION); the simulator keeps the movement only while its detour in the current network stays within the tolerance.
 
 | Movement | Period | Counted (veh/h) | Candidate flows (through / local) | Candidate volume | Assumed flows | Through (veh/h) | Local (veh/h) | Median detour | Largest detour used |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |

@@ -69,10 +69,13 @@ impl Router {
 
     /// Cost-to-go from the start of every link to the start of link `target` (the table of a trip's first leg when it must pass `target`).
     pub fn ensure_link(&mut self, target: u32, topo: &Topo, eff: &Eff, cost: &[f32]) {
+        self.ensure_link_m(target, topo, eff.car_modal(), cost);
+    }
+
+    pub fn ensure_link_m(&mut self, target: u32, topo: &Topo, m: Modal<'_>, cost: &[f32]) {
         if self.link_tables.contains_key(&target) {
             return;
         }
-        let m = eff.car_modal();
         let mut h = vec![INF; topo.n_links];
         self.heap.clear();
         if !m.closed[target as usize] {

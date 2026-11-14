@@ -419,6 +419,8 @@ pub struct Simulation {
     n_bike: usize,
     bike_on: bool,
     bike_router: Router,
+    /// Free-flow tables for the detour check of assumed movements (ASSUMPTION: the tolerance is judged on free-flow costs, as the builder chose the flows, so congestion alone does not drop a counted movement).
+    via_router: Router,
     bike_backlog: Vec<VecDeque<Trip>>,
     node_log: Vec<Vec<LogEnt>>,
     vuln: Vuln,
@@ -588,6 +590,7 @@ impl Simulation {
             n_bike: 0,
             bike_on: false,
             bike_router: Router::new(nn),
+            via_router: Router::new(nn),
             bike_backlog: (0..nn).map(|_| VecDeque::new()).collect(),
             node_log: (0..nn).map(|_| Vec::new()).collect(),
             vuln: Vuln::default(),
@@ -843,6 +846,7 @@ impl Simulation {
         self.apply_mv_times();
         self.router.invalidate();
         self.bike_router.invalidate();
+        self.via_router.invalidate();
         for a in self.awsc.iter_mut() {
             a.clear();
         }
@@ -2545,7 +2549,7 @@ impl Simulation {
     }
 
     /// Cheapest cost-to-go over the first steps from `start` (the first link out of a node, or the movements out of a link) in cost table `tab`.
-    fn start_cost(&self, start: Start, tab: &[f32]) -> f32 {
+    fn start_cost(&self, start: Start, tab: &[f32], mvc: &[f32]) -> f32 {
         let mut best = INF;
         match start {
             Start::Node(n) => {
@@ -2559,7 +2563,7 @@ impl Simulation {
                 let ms = self.topo.lm_start[l as usize];
                 for m in ms..ms + self.topo.lm_cnt[l as usize] {
                     if self.eff.mv_ok[m as usize] {
-                        best = best.min(self.eff.mv_cost[m as usize] + tab[self.topo.mvs[m as usize].b as usize]);
+                        best = best.min(mvc[m as usize] + tab[self.topo.mvs[m as usize].b as usize]);
                     }
                 }
             }
@@ -2567,8 +2571,45 @@ impl Simulation {
         best
     }
 
+    /// Nodes that appear more than once in `nodes`.
+    fn repeated(mut nodes: Vec<u32>) -> Vec<u32> {
+        nodes.sort_unstable();
+        let mut out: Vec<u32> = Vec::new();
+        for w in nodes.windows(2) {
+            if w[0] == w[1] && out.last() != Some(&w[0]) {
+                out.push(w[0]);
+            }
+        }
+        out
+    }
+
+    /// Nodes the plain route from `start` passes twice: a loop of the plain route is not blamed on an assumed movement.
+    fn plain_repeats(&mut self, start: Start, dest: u32, seed: u32) -> Vec<u32> {
+        self.router.ensure(dest, &self.topo, &self.eff, &self.link_cost);
+        let table = self.router.table(dest);
+        let mut r: Vec<u32> = Vec::new();
+        let mut nodes: Vec<u32> = Vec::new();
+        let from = match start {
+            Start::Node(n) => {
+                nodes.push(n);
+                let Some(f) = route::first_link(table, &self.topo, &self.eff, n, seed) else { return Vec::new() };
+                nodes.push(self.topo.link_to[f as usize]);
+                f
+            }
+            Start::Link(l) => {
+                nodes.push(self.topo.link_to[l as usize]);
+                l
+            }
+        };
+        if !route::walk(table, &self.topo, &self.eff, from, dest, seed, &mut r) {
+            return Vec::new();
+        }
+        nodes.extend(r.iter().map(|&l| self.topo.link_to[l as usize]));
+        Self::repeated(nodes)
+    }
+
     /// Choose the assumed movement a trip makes from `start` (ASSUMPTION). A movement counts only while the route through it costs at most the plan's detour
-    /// tolerance times the plain route in the current network and visits no node twice. The primary movement is taken when it counts, else the cheapest
+    /// tolerance times the plain route on free-flow costs in the current network and passes no node that the plain route does not pass twice. The primary movement is taken when it counts, else the cheapest
     /// alternative that counts, else none (the plain route). On success `route` holds the links after the first one (`Start::Node`: after the returned first link;
     /// `Start::Link`: after that link).
     fn pick_via(&mut self, start: Start, dest: u32, seed: u32, plan: u32, route: &mut Vec<u32>) -> Option<((u32, u32), Option<u32>)> {
@@ -2579,25 +2620,28 @@ impl Simulation {
             let p = &self.via_plans[plan as usize];
             (p.moves.clone(), p.max_detour)
         };
-        self.router.ensure(dest, &self.topo, &self.eff, &self.link_cost);
-        let plain = self.start_cost(start, self.router.table(dest));
+        self.via_router.ensure_m(dest, &self.topo, self.eff.static_modal(), &self.eff.ff);
+        let plain = self.start_cost(start, self.via_router.table(dest), &self.eff.mv_static);
         let mut ranked: Vec<(f32, (u32, u32))> = Vec::new();
         for (k, &mv) in moves.iter().enumerate() {
             let Some((a, b)) = self.usable_via(Some(mv)) else { continue };
-            self.router.ensure_link(a, &self.topo, &self.eff, &self.link_cost);
+            self.via_router.ensure_link_m(a, &self.topo, self.eff.static_modal(), &self.eff.ff);
             let to_a = match start {
                 Start::Link(l) if l == a => 0.0,
-                _ => self.start_cost(start, &self.router.link_tables[&a]),
+                _ => self.start_cost(start, &self.via_router.link_tables[&a], &self.eff.mv_static),
             };
-            let mvc = self.eff.mv_cost[self.topo.find_mv(a, b).unwrap() as usize];
-            let cost = to_a + mvc + self.router.table(dest)[b as usize];
+            let mvc = self.eff.mv_static[self.topo.find_mv(a, b).unwrap() as usize];
+            let cost = to_a + mvc + self.via_router.table(dest)[b as usize];
             if cost.is_finite() && (!plain.is_finite() || cost <= max * plain) {
                 ranked.push((if k == 0 { f32::NEG_INFINITY } else { cost }, (a, b)));
             }
         }
         ranked.sort_by(|x, y| x.0.total_cmp(&y.0));
+        let mut plain_looped: Option<Vec<u32>> = None;
         for (_, (a, b)) in ranked {
             let mut r: Vec<u32> = Vec::new();
+            self.router.ensure(dest, &self.topo, &self.eff, &self.link_cost);
+            self.router.ensure_link(a, &self.topo, &self.eff, &self.link_cost);
             let first = match start {
                 Start::Node(n) => {
                     let Some(f) = route::first_link(&self.router.link_tables[&a], &self.topo, &self.eff, n, seed) else { continue };
@@ -2627,11 +2671,12 @@ impl Simulation {
                 nodes.push(self.topo.link_to[from as usize]);
             }
             nodes.extend(r.iter().map(|&l| self.topo.link_to[l as usize]));
-            let n_all = nodes.len();
-            nodes.sort_unstable();
-            nodes.dedup();
-            if nodes.len() != n_all {
-                continue;
+            let looped = Self::repeated(nodes);
+            if !looped.is_empty() {
+                let plain_looped = plain_looped.get_or_insert_with(|| self.plain_repeats(start, dest, seed));
+                if looped.iter().any(|n| !plain_looped.contains(n)) {
+                    continue;
+                }
             }
             route.extend_from_slice(&r);
             return Some(((a, b), first));
