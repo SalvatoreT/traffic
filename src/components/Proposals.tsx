@@ -159,6 +159,7 @@ function Card({ p, when, hid, n, routes, ivs, searched, bundle, index, mode, tod
   }, [confirming]);
   const periods = Object.entries(p.byPeriod);
   const isRef = p.kind === 'reference';
+  const calStatusText = bundle.entry.calibration?.status === 'calibrated' ? 'Calibrated, with limits.' : 'Preview, not yet calibrated.';
   const hasPic = !!p.picture && ivs !== null;
   const action = (
     confirming ? (
@@ -179,13 +180,13 @@ function Card({ p, when, hid, n, routes, ivs, searched, bundle, index, mode, tod
       </div>
       {isRef && p.note && <p className="muted prop-note">{p.note}</p>}
       <div className={hasPic ? 'prop-body has-pic' : 'prop-body'}>
-        <p className="prop-sum">{p.summary}</p>
         {hasPic && (
           <div className="prop-side">
-            <ProposalPicture net={bundle.network} index={index} p={p} ivs={ivs ?? []} mode={mode} periodLabel={periodLabel} searchedPeriods={searched} />
+            <ProposalPicture net={bundle.network} index={index} p={p} ivs={ivs ?? []} areaName={bundle.entry.name} areaId={bundle.entry.id} status={calStatusText} number={n} periodLabel={periodLabel} searchedPeriods={searched} />
             {action}
           </div>
         )}
+        <p className="prop-sum">{p.summary}</p>
         <div className="prop-main">
           <div className="prop-figs">
             <div className="fig">

@@ -191,51 +191,27 @@ export function barAcross(path: [number, number][], s: number): Bar {
   return { center: [p.x, p.y], bearing: ((90 - (p.heading * 180) / Math.PI) % 360 + 360) % 360 };
 }
 
-/** Intervention badge size (CSS px): small at the fitted overview, full size from `BADGE_FULL_ZOOM` (design choice, not calibrated). */
-export const BADGE_MIN_PX = 16;
-export const BADGE_MAX_PX = 26;
-export const BADGE_SMALL_ZOOM = 14;
-export const BADGE_FULL_ZOOM = 16.5;
-/** Smallest pointer target (CSS px), WCAG 2.2 SC 2.5.8: a small badge gets a transparent hit area of this size. */
-export const HIT_PX = 24;
-/** Clear space (CSS px) between a badge and the bar it sits beside. */
-export const BAR_CLEAR_PX = 2;
-
-export function badgePx(zoom: number): number {
-  const t = Math.max(0, Math.min(1, (zoom - BADGE_SMALL_ZOOM) / (BADGE_FULL_ZOOM - BADGE_SMALL_ZOOM)));
-  return BADGE_MIN_PX + t * (BADGE_MAX_PX - BADGE_MIN_PX);
-}
-
-/** Badge label size and border width (CSS px) for a badge of `size`. */
-export function badgeFont(size: number): { font: number; border: number } {
-  const t = (size - BADGE_MIN_PX) / (BADGE_MAX_PX - BADGE_MIN_PX);
-  return { font: 8.5 + 2.5 * t, border: size < 22 ? 1.5 : 2 };
-}
-
-/** The badge of a block filter sits this far (CSS px) along the street from its bar, so the badge does not cover the bar. */
-export const blockBadgeGap = (zoom: number): number => (24 * badgePx(zoom)) / BADGE_MAX_PX;
-/** Screen offset (x right, y down) of a block filter's badge from its bar, for a street of the given bearing. */
-export function blockBadgeOffset(bearing: number, zoom: number = BADGE_FULL_ZOOM): [number, number] {
-  const g = blockBadgeGap(zoom);
-  return [Math.sin((bearing * Math.PI) / 180) * g, -Math.cos((bearing * Math.PI) / 180) * g];
-}
-
 /** Drawn base road casing width (CSS px) at `zoom`: the same stops as the map's casing layer, held flat outside 14 to 18. */
 export function casingPx(zoom: number, w = BAR_REF_W): number {
   const t = Math.max(0, Math.min(1, (zoom - 14) / 4));
   return (1.2 + 0.55 * w) + t * ((1.8 + 1.5 * w) - (1.2 + 0.55 * w));
 }
 
-/** Bar length and thickness (CSS px) at `zoom`: they follow the drawn road. */
+/** Smallest on-screen bar (CSS px): a filter is drawn by its bar alone, so the bar stays legible at the fitted overview. Same 2.2 : 0.6 shape as the drawn bar. */
+export const BAR_MIN_LEN_PX = 15;
+/** Clear space (CSS px) between a bar and the neighboring bars of the same junction. */
+export const BAR_CLEAR_PX = 2;
+
+/** Bar length and thickness (CSS px) at `zoom`: they follow the drawn road, down to a minimum size. */
 export function barPx(zoom: number): { length: number; thick: number } {
-  const c = casingPx(zoom);
-  return { length: BAR_LEN_X * c, thick: BAR_THICK_X * c };
+  const length = Math.max(BAR_MIN_LEN_PX, BAR_LEN_X * casingPx(zoom));
+  return { length, thick: (length * BAR_THICK_X) / BAR_LEN_X };
 }
 
-/** Distance along a leg (m) to its bar at `zoom`: `BAR_AT_M`, or farther when the badge at the junction would cover it. */
+/** Distance along a leg (m) to its bar at `zoom`: `BAR_AT_M`, or farther when the bars of neighboring legs would otherwise run into each other. */
 export function barAtM(zoom: number, metersPerPx: number): number {
-  const clear = badgePx(zoom) / 2 + barPx(zoom).thick / 2 + BAR_CLEAR_PX;
-  return Math.max(BAR_AT_M, clear * metersPerPx);
+  const b = barPx(zoom);
+  return Math.max(BAR_AT_M, (b.length / 2 + b.thick / 2 + BAR_CLEAR_PX) * metersPerPx);
 }
 
 /** One bar per closed leg, `atM` along the street from that leg's own mouth. */

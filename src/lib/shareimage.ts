@@ -1,0 +1,261 @@
+import { changeTicks, DEAD_BAND_CUTTHROUGH } from './change';
+import { BADGE_STYLE, BADGE_TEXT, ATTRIBUTION } from './mapexport';
+import type { Mark, PictureFacts, PictureModel } from './picture';
+import { signedPct, type Proposal, type ProposalPicture } from './proposals';
+import { changeWidthFor, colorForIntensity, divergingStops, mutedColor } from './ramps';
+
+/** Layout width of the shared picture in px; it is rasterized at `SHARE_SCALE` times this. Fixed light colors, so it reads the same wherever it is sent. */
+export const SHARE_W = 800;
+export const SHARE_SCALE = 2;
+export const SITE_URL = 'traffic.transit.directory';
+export const FONT = "system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
+
+const MARGIN = 32;
+const INNER = SHARE_W - 2 * MARGIN;
+const INK = '#1b2430', MUTED = '#4a5565', PAPER = '#ffffff', MAP_BG = '#f1efe8', RULE = '#c9c6bc', BOX = '#eef1f5';
+const WIDTH_SCALE = 0.62;
+
+export type Measure = (text: string, size: number, weight: number) => number;
+
+export interface ShareHeadline { label: string; figures: string }
+
+export interface ShareInput {
+  areaName: string;
+  title: string;
+  changes: string[];
+  /** The picture's period with its hours, "PM peak (16:00-18:00 weekday)". */
+  period: string;
+  /** The picture's period, like for like with the map. */
+  periodFigure: ShareHeadline;
+  /** The card's average over the searched periods; null when the picture's period is the only one. */
+  averageFigure: ShareHeadline | null;
+  caption: string;
+  /** Sentences under the legend ramp, in order, each drawn with the swatch of its kind. */
+  keys: { kind: 'bar' | 'pin' | 'pin-dashed' | 'text'; text: string }[];
+  status: string;
+  model: PictureModel;
+}
+
+export interface LaidLine { text: string; x: number; y: number; size: number; width: number }
+export interface Section { name: string; top: number; bottom: number }
+export interface ShareImage { svg: string; width: number; height: number; lines: LaidLine[]; sections: Section[] }
+
+const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const n1 = (v: number) => (Math.round(v * 100) / 100).toString();
+
+/** Greedy word wrap to `maxW`; a word wider than the line stands alone. */
+export function wrapText(text: string, size: number, weight: number, maxW: number, measure: Measure): string[] {
+  const out: string[] = [];
+  let line = '';
+  for (const word of text.split(/\s+/).filter(Boolean)) {
+    const next = line ? `${line} ${word}` : word;
+    if (line && measure(next, size, weight) > maxW) { out.push(line); line = word; } else line = next;
+  }
+  if (line) out.push(line);
+  return out;
+}
+
+function markSvg(m: Mark, unit: number, bar: { len: number; thick: number }): string {
+  if (m.kind === 'bar') {
+    const L = bar.len, T = bar.thick, dash = T * 0.5 * 1.5;
+    return `<g transform="translate(${n1(m.x)} ${n1(m.y)}) rotate(${n1(m.bearing)})"><rect x="${n1(-L / 2)}" y="${n1(-T / 2)}" width="${n1(L)}" height="${n1(T)}" fill="#fff"/><rect x="${n1(-L / 2)}" y="${n1(-T * 0.375)}" width="${n1(L)}" height="${n1(T * 0.75)}" fill="#111"/><line x1="${n1(-L / 2)}" y1="0" x2="${n1(L / 2)}" y2="0" stroke="#ffd43b" stroke-width="${n1(T * 0.5)}" stroke-dasharray="${n1(dash)} ${n1(dash)}"/></g>`;
+  }
+  if (m.kind === 'diverter') {
+    const h = 9.5 * unit, k = 0.55 * unit;
+    const ln = (w: number, c: string, d = '') => `<line x1="0" y1="${n1(-h)}" x2="0" y2="${n1(h)}" stroke="${c}" stroke-width="${n1(w * k)}"${d}/>`;
+    return `<g transform="translate(${n1(m.x)} ${n1(m.y)}) rotate(${n1(m.bearing)})">${ln(14, '#fff')}${ln(10, '#111')}${ln(6, '#ffd43b', ` stroke-dasharray="${n1(7 * k)} ${n1(3 * k)}"`)}</g>`;
+  }
+  if (m.kind === 'arrow') {
+    return `<g transform="translate(${n1(m.x)} ${n1(m.y)}) rotate(${n1(m.bearing)}) scale(${n1(unit)})"><path d="M0 -8 L5.5 4.5 L0 2 L-5.5 4.5 Z" fill="#111" stroke="#fff" stroke-width="1.6" stroke-linejoin="round" paint-order="stroke"/></g>`;
+  }
+  const st = BADGE_STYLE[m.type];
+  const label = m.text || BADGE_TEXT[m.type];
+  const w = Math.max(17, label.length * 6.4 + 7), h = 15;
+  const r = st.radius === 'round' ? h / 2 : Math.min(...st.radius, h / 2);
+  return `<g transform="translate(${n1(m.x)} ${n1(m.y)}) scale(${n1(unit)})"><rect x="${n1(-w / 2)}" y="${n1(-h / 2)}" width="${n1(w)}" height="${n1(h)}" rx="${n1(r)}" fill="${st.fill}" stroke="${st.edge}" stroke-width="1.4"/><text x="0" y="0.5" text-anchor="middle" dominant-baseline="central" font-size="8.5" font-weight="700" fill="${st.ink}">${esc(label)}</text></g>`;
+}
+
+/** The map as SVG in its own coordinates (meters, y down), light colors. */
+function mapSvg(model: PictureModel): string {
+  const { unit } = model;
+  const muted = mutedColor('light');
+  const fontSize = 10.5 * unit;
+  const parts: string[] = [];
+  parts.push(`<rect x="${n1(model.view.x)}" y="${n1(model.view.y)}" width="${n1(model.view.w)}" height="${n1(model.view.h)}" fill="${MAP_BG}"/>`);
+  parts.push(`<path d="${model.minor}" fill="none" stroke="${muted}" stroke-width="${n1(unit)}" stroke-linecap="round" stroke-linejoin="round"/>`);
+  parts.push(`<path d="${model.major}" fill="none" stroke="${muted}" stroke-width="${n1(2 * unit)}" stroke-linecap="round" stroke-linejoin="round"/>`);
+  parts.push(`<path d="${model.outline}" fill="none" stroke="${INK}" stroke-width="${n1(1.4 * unit)}" stroke-dasharray="${n1(6 * unit)} ${n1(4 * unit)}" opacity="0.75"/>`);
+  for (const q of model.pins) parts.push(`<path d="${q.d}" fill="none" stroke="${INK}" stroke-width="${n1(9 * unit)}" stroke-linecap="round" stroke-linejoin="round"${q.dashed ? ` stroke-dasharray="${n1(5 * unit)} ${n1(4 * unit)}"` : ''}/>`);
+  for (const q of model.pins) parts.push(`<path d="${q.d}" fill="none" stroke="${MAP_BG}" stroke-width="${n1(6.5 * unit)}" stroke-linecap="round" stroke-linejoin="round"/>`);
+  for (const b of model.blocks) parts.push(`<path d="${b.d}" fill="none" stroke="${colorForIntensity(b.t, 'light', true)}" stroke-width="${n1(changeWidthFor(b.t) * WIDTH_SCALE * unit)}" stroke-linecap="round" stroke-linejoin="round"/>`);
+  for (const nm of model.names) parts.push(`<text x="0" y="0" transform="translate(${n1(nm.x)} ${n1(nm.y)}) rotate(${n1(nm.angle)})" text-anchor="middle" dy="${n1(-3.5 * unit)}" font-size="${n1(fontSize)}" font-weight="600" fill="${INK}" stroke="${MAP_BG}" stroke-width="${n1(3 * unit)}" paint-order="stroke" stroke-linejoin="round">${esc(nm.text)}</text>`);
+  for (const m of model.marks) parts.push(markSvg(m, unit, model.bar));
+  for (const q of model.pins) parts.push(`<text x="${n1(q.x)}" y="${n1(q.y)}" text-anchor="${q.end ? 'end' : 'start'}" font-size="${n1(fontSize * 1.15)}" font-weight="700" fill="${INK}" stroke="${MAP_BG}" stroke-width="${n1(3.5 * unit)}" paint-order="stroke" stroke-linejoin="round">${esc(q.text)}</text>`);
+  return parts.join('');
+}
+
+/**
+ * The picture as one self-contained SVG: title, changes, the through-car figures for the picture's period and for the card's average, the map,
+ * legend with its non-color cues, status, attribution and site. Text is laid out here with `measure`, so every line fits and no block overlaps.
+ */
+export function buildShareSvg(inp: ShareInput, measure: Measure): ShareImage {
+  const out: string[] = [];
+  const lines: LaidLine[] = [];
+  const sections: Section[] = [];
+  let y = MARGIN;
+
+  const text = (t: string, x: number, baseline: number, size: number, weight: number, fill: string, anchor = 'start') => {
+    const w = measure(t, size, weight);
+    lines.push({ text: t, x: anchor === 'end' ? x - w : anchor === 'middle' ? x - w / 2 : x, y: baseline, size, width: w });
+    out.push(`<text x="${n1(x)}" y="${n1(baseline)}" font-size="${size}" font-weight="${weight}" fill="${fill}" text-anchor="${anchor}">${esc(t)}</text>`);
+  };
+  /** Wrapped paragraph; returns the height used. */
+  const para = (t: string, x: number, maxW: number, size: number, weight: number, fill: string, lead = 1.32): number => {
+    const ls = wrapText(t, size, weight, maxW, measure);
+    ls.forEach((l, i) => text(l, x, y + size * 0.95 + i * size * lead, size, weight, fill));
+    return ls.length * size * lead;
+  };
+  const section = (name: string, from: number) => sections.push({ name, top: from, bottom: y });
+
+  let top = y;
+  y += para(inp.areaName, MARGIN, INNER, 22, 600, MUTED);
+  y += 6;
+  y += para(inp.title, MARGIN, INNER, 36, 700, INK, 1.2);
+  section('title', top);
+
+  if (inp.changes.length) {
+    y += 14; top = y;
+    y += para('Changes in this proposal', MARGIN, INNER, 22, 700, MUTED) + 4;
+    for (const c of inp.changes) {
+      const ls = wrapText(c, 24, 400, INNER - 26, measure);
+      text('•', MARGIN + 4, y + 23, 24, 400, INK);
+      ls.forEach((l, i) => text(l, MARGIN + 26, y + 23 + i * 31, 24, 400, INK));
+      y += ls.length * 31 + 3;
+    }
+    section('changes', top);
+  }
+
+  y += 16; top = y;
+  const boxX = MARGIN, boxY = y, pad = 20;
+  const boxIdx = out.length;
+  y += pad;
+  const figure = (f: ShareHeadline, big: boolean) => {
+    y += para(f.label, MARGIN + pad, INNER - 2 * pad, 22, 400, MUTED);
+    y += 2;
+    y += para(f.figures, MARGIN + pad, INNER - 2 * pad, big ? 34 : 28, 700, INK, 1.2);
+  };
+  figure(inp.periodFigure, true);
+  if (inp.averageFigure) { y += 12; figure(inp.averageFigure, false); }
+  y += pad;
+  out.splice(boxIdx, 0, `<rect x="${boxX}" y="${boxY}" width="${INNER}" height="${n1(y - boxY)}" rx="10" fill="${BOX}"/>`);
+  section('figures', top);
+
+  y += 18; top = y;
+  const mh = (INNER * inp.model.view.h) / inp.model.view.w;
+  const v = inp.model.view;
+  out.push(`<clipPath id="mapclip"><rect x="${MARGIN}" y="${n1(y)}" width="${INNER}" height="${n1(mh)}" rx="10"/></clipPath>`);
+  out.push(`<g clip-path="url(#mapclip)"><svg x="${MARGIN}" y="${n1(y)}" width="${INNER}" height="${n1(mh)}" viewBox="${n1(v.x)} ${n1(v.y)} ${n1(v.w)} ${n1(v.h)}" preserveAspectRatio="xMidYMid meet">${mapSvg(inp.model)}</svg></g>`);
+  out.push(`<rect x="${MARGIN + 0.5}" y="${n1(y + 0.5)}" width="${INNER - 1}" height="${n1(mh - 1)}" rx="10" fill="none" stroke="${RULE}"/>`);
+  y += mh;
+  section('map', top);
+
+  y += 14; top = y;
+  y += para(inp.caption, MARGIN, INNER, 24, 700, INK) + 10;
+  // ramp
+  const ticks = changeTicks('cutthrough');
+  out.push(`<defs><linearGradient id="ramp" x1="0" x2="1" y1="0" y2="0">${divergingStops('light').map((s) => `<stop offset="${((s.t + 1) * 50).toFixed(1)}%" stop-color="${s.color}"/>`).join('')}</linearGradient></defs>`);
+  out.push(`<rect x="${MARGIN}" y="${n1(y)}" width="${INNER}" height="18" rx="3" fill="url(#ramp)" stroke="${RULE}"/>`);
+  y += 18 + 22;
+  ticks.forEach((t, i) => {
+    const x = MARGIN + (INNER * i) / (ticks.length - 1);
+    text(t, x, y, 22, 400, INK, i === 0 ? 'start' : i === ticks.length - 1 ? 'end' : 'middle');
+  });
+  y += 12;
+  y += para(`Cars an hour. Blue: fewer through cars. Orange: more. Thin gray: within normal run-to-run variation (about ${Math.round(DEAD_BAND_CUTTHROUGH)} cars an hour).`, MARGIN, INNER, 22, 400, MUTED) + 6;
+  for (const k of inp.keys) {
+    const sw = k.kind === 'text' ? 0 : 52;
+    const ls = wrapText(k.text, 22, 400, INNER - (sw ? sw + 12 : 0), measure);
+    const h = ls.length * 29;
+    if (k.kind === 'bar') out.push(`<g transform="translate(${MARGIN + 22} ${n1(y + 14)})"><rect x="-22" y="-6" width="44" height="12" fill="#fff"/><rect x="-22" y="-4.5" width="44" height="9" fill="#111"/><line x1="-22" y1="0" x2="22" y2="0" stroke="#ffd43b" stroke-width="6" stroke-dasharray="9 9"/></g>`);
+    if (k.kind === 'pin' || k.kind === 'pin-dashed') {
+      const d = k.kind === 'pin-dashed' ? ' stroke-dasharray="7 6"' : '';
+      out.push(`<line x1="${MARGIN}" y1="${n1(y + 14)}" x2="${MARGIN + 44}" y2="${n1(y + 14)}" stroke="${INK}" stroke-width="12" stroke-linecap="round"${d}/><line x1="${MARGIN}" y1="${n1(y + 14)}" x2="${MARGIN + 44}" y2="${n1(y + 14)}" stroke="${colorForIntensity(0.7, 'light', true)}" stroke-width="7" stroke-linecap="round"/>`);
+    }
+    ls.forEach((l, i) => text(l, MARGIN + (sw ? sw + 12 : 0), y + 21 + i * 29, 22, 400, MUTED));
+    y += Math.max(h, 28) + 6;
+  }
+  section('legend', top);
+
+  y += 12; top = y;
+  out.push(`<line x1="${MARGIN}" y1="${n1(y)}" x2="${SHARE_W - MARGIN}" y2="${n1(y)}" stroke="${RULE}"/>`);
+  y += 14;
+  y += para(`Simulation result, not a forecast. ${inp.status}`, MARGIN, INNER, 22, 400, MUTED) + 4;
+  y += para(`${inp.areaName}. ${ATTRIBUTION}.`, MARGIN, INNER, 22, 400, MUTED) + 4;
+  y += para(SITE_URL, MARGIN, INNER, 24, 700, INK);
+  section('footer', top);
+  y += MARGIN - 6;
+
+  const height = Math.ceil(y);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${SHARE_W}" height="${height}" viewBox="0 0 ${SHARE_W} ${height}" font-family="${esc(FONT)}"><rect width="${SHARE_W}" height="${height}" fill="${PAPER}"/>${out.join('')}</svg>`;
+  return { svg, width: SHARE_W, height, lines, sections };
+}
+
+/** Text width in px for a canvas-capable browser, with the same font stack the SVG uses. */
+export function canvasMeasure(): Measure {
+  const g = document.createElement('canvas').getContext('2d')!;
+  return (t, size, weight) => { g.font = `${weight} ${size}px ${FONT}`; return g.measureText(t).width; };
+}
+
+/** Rasterizes the SVG to a PNG at `SHARE_SCALE` times its size. */
+export async function svgToPng(img: ShareImage): Promise<Blob> {
+  const url = URL.createObjectURL(new Blob([img.svg], { type: 'image/svg+xml;charset=utf-8' }));
+  try {
+    const el = new Image();
+    el.decoding = 'async';
+    await new Promise<void>((res, rej) => { el.onload = () => res(); el.onerror = () => rej(new Error('The picture could not be drawn.')); el.src = url; });
+    const c = document.createElement('canvas');
+    c.width = img.width * SHARE_SCALE; c.height = img.height * SHARE_SCALE;
+    const g = c.getContext('2d')!;
+    g.fillStyle = PAPER; g.fillRect(0, 0, c.width, c.height);
+    g.drawImage(el, 0, 0, c.width, c.height);
+    const blob = await new Promise<Blob | null>((res) => c.toBlob(res, 'image/png'));
+    if (!blob) throw new Error('The browser could not encode the picture.');
+    return blob;
+  } finally { URL.revokeObjectURL(url); }
+}
+
+const hoursOnly = (label: string) => label.replace(/,\s*hourly rate/i, '');
+const through = (b: number, s: number, pct: number) => `${Math.round(b)} → ${Math.round(s)} an hour (${signedPct(pct)})`;
+
+/** The text of a card's shareable picture. `periodLabel` gives a period's full label, with its hours. */
+export function shareInputFor(a: {
+  areaName: string; status: string; p: Proposal; pic: ProposalPicture; facts: PictureFacts; model: PictureModel; searched: string[];
+  periodLabel(id: string): string; shortLabel(id: string): string; caption: string; number: number | null;
+}): ShareInput {
+  const { p, pic, facts } = a;
+  const when = hoursOnly(a.periodLabel(pic.period));
+  const r = p.byPeriod[pic.period]?.cutThrough ?? p.cutThrough;
+  const periodFigure = { label: `Through cars on all the area's side streets, ${when}, the period this picture shows`, figures: through(r.baselineVehPerHour, r.scenarioVehPerHour, r.changePct) };
+  const names = a.searched.map(a.shortLabel);
+  const list = names.length <= 1 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+  const averageFigure = names.length > 1
+    ? { label: `Average of ${list}, all side streets`, figures: through(p.cutThrough.baselineVehPerHour, p.cutThrough.scenarioVehPerHour, p.cutThrough.changePct) }
+    : null;
+  const keys: ShareInput['keys'] = [];
+  const kinds = new Set(a.model.marks.map((m) => m.kind));
+  if (kinds.has('bar')) keys.push({ kind: 'bar', text: 'Yellow and black bar across a street: closed to through cars.' });
+  const pins = a.model.pins;
+  if (pins.length > 0 && facts.named) keys.push({ kind: 'pin', text: `Outlined, labeled ${pins[0].text}: ${facts.named.label}, the block the proposal gains the most on, averaged over the periods searched.` });
+  if (pins.length > 1 && facts.gain) keys.push({ kind: 'pin-dashed', text: `Dashed outline, labeled ${pins[1].text}: ${facts.gain.label}, the biggest gain in the ${a.shortLabel(pic.period)}.` });
+  if (kinds.has('diverter')) keys.push({ kind: 'text', text: 'Striped line across a junction: diagonal diverter.' });
+  if (kinds.has('arrow')) keys.push({ kind: 'text', text: 'Arrow: one-way street, in the direction shown.' });
+  return {
+    areaName: a.areaName, title: `${a.number !== null ? `${a.number}. ` : ''}${p.title}`, changes: p.interventions.map((iv) => iv.label),
+    period: when, periodFigure, averageFigure, caption: `${when}: change in through cars an hour on each block, proposal vs. today`, keys, status: a.status, model: a.model,
+  };
+}
+
+/** The picture's text alternative, with the proposal's name and its changes. */
+export function shareAlt(title: string, changes: string[], alt: string): string {
+  return `${title}. Changes: ${changes.join('; ')}. ${alt}`;
+}

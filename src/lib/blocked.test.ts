@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { NetLink, NetNode, Network } from '../types';
 import { buildIndex } from './naming';
-import { closedLegs, filterChoices, filterLegs, filterSentence, filterText, streetFilters, legBars, blockBar, BAR_AT_M, barPx, casingPx, badgePx, badgeFont, barAtM, blockBadgeOffset, BADGE_MIN_PX, BADGE_MAX_PX, BADGE_FULL_ZOOM } from './blocked';
+import { closedLegs, filterChoices, filterLegs, filterSentence, filterText, streetFilters, legBars, blockBar, BAR_AT_M, barPx, casingPx, barAtM, BAR_MIN_LEN_PX, BAR_CLEAR_PX } from './blocked';
 import { describeInterventionFull } from './describe';
 
 interface LegSpec { street: string; at: [number, number]; mouth?: [number, number] }
@@ -151,34 +151,43 @@ describe('barrier bars', () => {
     expect(blockBar({ geometry: [[0, 0], [0, 100]], length: 100 }, 25).center[1]).toBeCloseTo(25);
   });
 
-  it('sizes the bar from the road casing at every zoom', () => {
-    for (const z of [12, 14, 15, 16, 17, 18, 19]) {
+  it('follows the drawn road when that is larger than the minimum', () => {
+    for (const z of [16, 17, 18, 19]) {
       const c = casingPx(z), s = barPx(z);
-      expect(s.length).toBeCloseTo(2.2 * c);
-      expect(s.thick).toBeCloseTo(0.6 * c);
+      if (2.2 * c > BAR_MIN_LEN_PX) { expect(s.length).toBeCloseTo(2.2 * c); expect(s.thick).toBeCloseTo(0.6 * c); }
     }
-    expect(barPx(16).length).toBeLessThan(barPx(18).length);
+    expect(barPx(16).length).toBeLessThanOrEqual(barPx(19).length);
   });
 });
 
-describe('badges and bars across zoom', () => {
-  it('shrinks badges toward the overview and reaches full size by z16.5', () => {
-    expect(badgePx(12)).toBe(BADGE_MIN_PX);
-    expect(badgePx(14)).toBe(BADGE_MIN_PX);
-    expect(badgePx(BADGE_FULL_ZOOM)).toBe(BADGE_MAX_PX);
-    expect(badgePx(19)).toBe(BADGE_MAX_PX);
-    expect(badgePx(15)).toBeGreaterThan(BADGE_MIN_PX);
-    expect(badgePx(15)).toBeLessThan(badgePx(16));
-    expect(badgeFont(BADGE_MAX_PX).font).toBeCloseTo(11);
-    expect(badgeFont(BADGE_MIN_PX).font).toBeGreaterThanOrEqual(8);
+describe('bars at every zoom', () => {
+  it('draws no bar smaller than the minimum, and keeps the 2.2 : 0.6 shape', () => {
+    for (const z of [10, 12, 14, 15, 16, 17, 18, 19]) {
+      const s = barPx(z);
+      expect(s.length).toBeGreaterThanOrEqual(BAR_MIN_LEN_PX);
+      expect(s.thick / s.length).toBeCloseTo(0.6 / 2.2);
+    }
+    expect(barPx(12).length).toBe(BAR_MIN_LEN_PX);
   });
 
-  it('keeps the bar 8 m out when the badge is clear of it, and moves it outside the badge when it is not', () => {
+  it('keeps the bar 8 m out when neighboring bars are clear of it, and moves it out when they are not', () => {
     expect(barAtM(18, 0.15)).toBe(BAR_AT_M);
-    const z = 14, mpp = 3.77;
+    const z = 14, mpp = 3.77, b = barPx(z);
     const at = barAtM(z, mpp);
     expect(at).toBeGreaterThan(BAR_AT_M);
-    expect(at / mpp).toBeCloseTo(badgePx(z) / 2 + barPx(z).thick / 2 + 2);
+    expect(at / mpp).toBeCloseTo(b.length / 2 + b.thick / 2 + BAR_CLEAR_PX);
+  });
+
+  it('puts the bars of a four-leg junction clear of each other on screen at the overview', () => {
+    const net = star(cross());
+    const f = filterLegs(net, buildIndex(net), 0);
+    const z = 14, mpp = 3.77, b = barPx(z);
+    const bars = legBars(f, undefined, barAtM(z, mpp));
+    for (const p of bars) for (const q of bars) {
+      if (p === q) continue;
+      const dx = Math.abs(p.center[0] - q.center[0]) / mpp, dy = Math.abs(p.center[1] - q.center[1]) / mpp;
+      expect(Math.max(dx, dy)).toBeGreaterThanOrEqual(b.thick);
+    }
   });
 
   it('places leg bars the requested distance along the street', () => {
@@ -188,13 +197,6 @@ describe('badges and bars across zoom', () => {
       const l = f.legs[i];
       expect(Math.hypot(b.center[0] - l.mouth[0], b.center[1] - l.mouth[1])).toBeCloseTo(30);
     });
-  });
-
-  it('scales the block-filter badge offset with the badge', () => {
-    const small = blockBadgeOffset(0, 14), big = blockBadgeOffset(0, 17);
-    expect(Math.hypot(...small)).toBeLessThan(Math.hypot(...big));
-    expect(Math.hypot(...big)).toBeCloseTo(24);
-    expect(big[1]).toBeLessThan(0);
   });
 });
 

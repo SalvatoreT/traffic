@@ -3,7 +3,6 @@ import { changeMagnitude } from './change';
 import { formatClock } from './format';
 import type { LegendModel } from './legend';
 import { RUN_SECONDS } from './run';
-import { BADGE_MAX_PX, badgeFont } from './blocked';
 
 export const ATTRIBUTION = '© OpenStreetMap contributors';
 export type ImageFormat = 'png' | 'jpeg';
@@ -76,7 +75,7 @@ export const BADGE_STYLE: Record<Intervention['type'], { fill: string; edge: str
 };
 
 /** `leg` is a closed-to-cars bar across a street, centered on (x, y), `len` by `thick` CSS px, turned so it crosses the street whose bearing is `bearing`. */
-export interface BadgeMark { x: number; y: number; len?: number; thick?: number; type: Intervention['type'] | 'leg'; bearing?: number; mph?: number; size?: number }
+export interface BadgeMark { x: number; y: number; len?: number; thick?: number; type: Intervention['type'] | 'leg'; bearing?: number; mph?: number }
 
 function roundedRect(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: [number, number, number, number]) {
   const [tl, tr, br, bl] = r;
@@ -111,13 +110,12 @@ export function drawBadges(g: CanvasRenderingContext2D, marks: BadgeMark[]) {
     }
     const st = BADGE_STYLE[m.type];
     const label = m.type === 'speed_limit' && m.mph !== undefined ? String(m.mph) : BADGE_TEXT[m.type];
-    const h = m.size ?? BADGE_MAX_PX, bf = badgeFont(h);
-    g.font = `700 ${bf.font}px system-ui, sans-serif`;
-    const w = Math.max(h, g.measureText(label).width + 12 * (h / BADGE_MAX_PX));
+    g.font = '700 11px system-ui, sans-serif';
+    const w = Math.max(26, g.measureText(label).width + 12), h = 26;
     g.save(); g.shadowColor = 'rgba(0,0,0,.35)'; g.shadowBlur = 4; g.shadowOffsetY = 1;
-    roundedRect(g, m.x - w / 2 + 1, m.y - h / 2 + 1, w - 2, h - 2, st.radius === 'round' ? [h / 2, h / 2, h / 2, h / 2] : (st.radius.map((r) => (r * h) / BADGE_MAX_PX) as [number, number, number, number]));
+    roundedRect(g, m.x - w / 2 + 1, m.y - h / 2 + 1, w - 2, h - 2, st.radius === 'round' ? [12, 12, 12, 12] : st.radius);
     g.fillStyle = st.fill; g.fill(); g.restore();
-    g.lineWidth = bf.border; g.strokeStyle = st.edge; g.stroke();
+    g.lineWidth = 2; g.strokeStyle = st.edge; g.stroke();
     g.fillStyle = st.ink; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(label, m.x, m.y + 0.5);
   }
 }

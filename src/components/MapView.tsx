@@ -24,7 +24,7 @@ import { INTENT_COLORS, INTENT_DASH } from '../lib/intents';
 import { towardLabel, type NetIndex } from '../lib/naming';
 import { hoverLine } from '../lib/hoverline';
 import { describeInterventionFull, interventionPoint } from '../lib/describe';
-import { badgeFont, badgePx, barAtM, barPx, blockBadgeOffset, blockBar, casingPx, filterLegs, legBars, type Bar } from '../lib/blocked';
+import { barAtM, barPx, blockBar, filterLegs, legBars, type Bar } from '../lib/blocked';
 import type { SimClient } from '../sim/client';
 import {
   boxOfPoints, centerToShow, correctedCamera, fitCamera, hardBounds, insideRect, isAcceptable, minZoomFor, MIN_ZOOM_FLOOR,
@@ -167,8 +167,10 @@ function clipData(b: AreaBundle, region: Region) {
   return { base: { type: 'FeatureCollection', features: base }, links: { type: 'FeatureCollection', features: links }, linkVisible };
 }
 const BAR_PR = 4;
-/** The bar's drawn length at icon-size 1 (CSS px); the image is 55 x 15 CSS px, the 2.2 : 0.6 shape of a bar. */
-const BAR_REF_PX = 25;
+/** Zoom stops of the bar's size curve: the road-scaled size with a floor is piecewise linear between these. */
+const BAR_STOPS = [10, 14, 14.5, 15, 15.5, 16, 17, 18, 22];
+/** The bar image is 55 x 15 CSS px at icon-size 1, the 2.2 : 0.6 shape of a bar. */
+const BAR_IMG_PX = 55;
 /** Dark bar, yellow dashes, white halo in 4 : 3 : 2 thickness, so the pattern shows on either basemap. */
 function barImage(): ImageData {
   const w = 55 * BAR_PR, h = 15 * BAR_PR;
@@ -613,11 +615,11 @@ export function MapView(p: Props) {
         paint: { 'line-color': ramp(mode, live.current.view) as never, 'line-width': widthExpr(live.current.view) as never, 'line-offset': OFFSET as never } });
       // Barrier bars sit at a map point and turn with the street. Their size follows the road casing's own zoom stops, so they shrink with the roads.
       map.addImage('barrier-bar', barImage(), { pixelRatio: BAR_PR });
-      const barSize = (z: number) => casingPx(z) / BAR_REF_PX;
+      const barSize = (z: number) => barPx(z).length / BAR_IMG_PX;
       map.addLayer({ id: 'blocked-bars', type: 'symbol', source: 'blocked',
         layout: { 'icon-image': 'barrier-bar', 'icon-rotate': ['get', 'rot'], 'icon-rotation-alignment': 'map', 'icon-pitch-alignment': 'map',
           'icon-allow-overlap': true, 'icon-ignore-placement': true,
-          'icon-size': ['interpolate', ['linear'], ['zoom'], 14, barSize(14), 18, barSize(18)] as never } });
+          'icon-size': ['interpolate', ['linear'], ['zoom'], ...BAR_STOPS.flatMap((z) => [z, barSize(z)])] as never } });
       const RC = ROUTE_COLORS[live.current.mode];
       const routeWidth = (a: number, b: number) => ['interpolate', ['linear'], ['zoom'], 14, a, 18, b] as never;
       map.addLayer({ id: 'routes-casing', type: 'line', source: 'routes', layout: { 'line-cap': 'round', 'line-join': 'round' },
@@ -814,44 +816,51 @@ export function MapView(p: Props) {
     markers.current.forEach((m) => m.remove());
     const net = bundle.network;
     const out: maplibregl.Marker[] = [];
-    const items: { iv: Intervention; marker: maplibregl.Marker; leg: ReturnType<typeof filterLegs> | null }[] = [];
+    const filters: { iv: Extract<Intervention, { type: 'modal_filter' }>; legs: ReturnType<typeof filterLegs> | null }[] = [];
     for (const iv of p.interventions.filter((v) => interventionInRegion(v, net, region))) {
       const [x, y] = interventionPoint(iv, net);
       const ll = proj.toLonLat(x, y);
-      const el = document.createElement('div');
-      if (iv.type === 'diagonal_diverter') {
+      const el = document.createElement(iv.type === 'modal_filter' ? 'button' : 'div');
+      const title = describeInterventionFull(iv, net, p.index);
+      if (iv.type === 'modal_filter') {
+        // The bars are the drawing; this invisible control keeps the filter reachable by keyboard, pointer and touch (24 CSS px, WCAG 2.2 SC 2.5.8).
+        el.className = 'iv-hit';
+        (el as HTMLButtonElement).type = 'button';
+        el.setAttribute('aria-label', title);
+        el.onclick = () => {
+          const L = live.current;
+          if ('link' in iv) L.onHit({ kind: 'block', block: L.index.blockOfLink[iv.link], point: [x, y], nearLink: iv.link, via: 'map' });
+          else L.onHit({ kind: 'node', node: iv.node, via: 'map' });
+        };
+        filters.push({ iv, legs: 'node' in iv ? filterLegs(net, p.index, iv.node) : null });
+      } else if (iv.type === 'diagonal_diverter') {
         // A thick barrier line along the diagonal, outlined in the opposite tone so it reads on light and dark basemaps.
         el.className = 'iv-diverter';
         el.innerHTML = `<svg width="44" height="44" viewBox="-22 -22 44 44" focusable="false"><g transform="rotate(${iv.bearing})"><line x1="0" y1="-17" x2="0" y2="17" class="iv-dd-halo"/><line x1="0" y1="-17" x2="0" y2="17" class="iv-dd-out"/><line x1="0" y1="-17" x2="0" y2="17" class="iv-dd-in"/></g></svg>`;
+        el.setAttribute('aria-hidden', 'true');
       } else {
         el.className = `iv-badge iv-${iv.type}`;
         el.textContent = iv.type === 'speed_limit' ? String(Math.round(iv.speed * 2.23694)) : BADGE[iv.type];
+        el.setAttribute('aria-hidden', 'true');
       }
-      el.setAttribute('aria-hidden', 'true');
-      el.title = describeInterventionFull(iv, net, p.index);
-      const marker = new maplibregl.Marker({ element: el }).setLngLat(ll).addTo(map);
-      out.push(marker);
-      items.push({ iv, marker, leg: iv.type === 'modal_filter' && 'node' in iv ? filterLegs(net, p.index, iv.node) : null });
+      el.title = title;
+      out.push(new maplibregl.Marker({ element: el }).setLngLat(ll).addTo(map));
     }
     markers.current = out;
-    // Badge size, block-badge offset and bar distance all follow the zoom; the bars stay on their streets just outside the badge.
-    const layout = () => {
-      const z = map.getZoom(), size = badgePx(z), bf = badgeFont(size), mpp = metersPerPixel(z, map.getCenter().lat);
-      const st = map.getContainer().style;
-      st.setProperty('--iv-s', `${size}px`); st.setProperty('--iv-f', `${bf.font}px`); st.setProperty('--iv-b', `${bf.border}px`);
-      const at = barAtM(z, mpp);
-      const blocked: unknown[] = [];
-      for (const { iv, marker, leg } of items) {
-        if (iv.type !== 'modal_filter') continue;
-        const bars: Bar[] = 'link' in iv ? [blockBar(net.links[iv.link])] : legBars(leg!, iv.legs, at);
-        if ('link' in iv) marker.setOffset(blockBadgeOffset(bars[0].bearing, z));
-        for (const b of bars) blocked.push({ type: 'Feature', properties: { rot: b.bearing }, geometry: { type: 'Point', coordinates: proj.toLonLat(b.center[0], b.center[1]) } });
+    // A leg's bar sits at least 8 m out, and farther when the bars of the junction's other legs would touch it at this zoom; it stays on its street.
+    const place = () => {
+      const z = map.getZoom(), at = barAtM(z, metersPerPixel(z, map.getCenter().lat));
+      const feats: unknown[] = [];
+      for (const { iv, legs } of filters) {
+        const bars: Bar[] = 'link' in iv ? [blockBar(net.links[iv.link])] : legBars(legs!, iv.legs, at);
+        const props = 'link' in iv ? { link: iv.link } : { node: iv.node };
+        for (const b of bars) feats.push({ type: 'Feature', properties: { rot: b.bearing, ...props }, geometry: { type: 'Point', coordinates: proj.toLonLat(b.center[0], b.center[1]) } });
       }
-      (map.getSource('blocked') as maplibregl.GeoJSONSource | undefined)?.setData({ type: 'FeatureCollection', features: blocked } as never);
+      (map.getSource('blocked') as maplibregl.GeoJSONSource | undefined)?.setData({ type: 'FeatureCollection', features: feats } as never);
     };
-    layout();
+    place();
     let last = map.getZoom();
-    const onZoom = () => { const z = map.getZoom(); if (Math.abs(z - last) < 0.04) return; last = z; layout(); };
+    const onZoom = () => { const z = map.getZoom(); if (Math.abs(z - last) < 0.04) return; last = z; place(); };
     map.on('zoom', onZoom);
     return () => { map.off('zoom', onZoom); };
   }, [p.interventions, ready, bundle, proj, p.index, region]);
@@ -935,6 +944,12 @@ export function MapView(p: Props) {
       if (!live.current.interactive) return;
       if (down && Math.hypot(e.point.x - down.x, e.point.y - down.y) > 6) return;
       const L = live.current;
+      const bar = map.queryRenderedFeatures([[e.point.x - 8, e.point.y - 8], [e.point.x + 8, e.point.y + 8]], { layers: ['blocked-bars'] })[0]?.properties;
+      if (bar) {
+        if (typeof bar.node === 'number') return L.onHit({ kind: 'node', node: bar.node, via: 'map' });
+        const [bx, by] = L.proj.toLocal(e.lngLat.lng, e.lngLat.lat);
+        return L.onHit({ kind: 'block', block: L.index.blockOfLink[bar.link], point: [bx, by], nearLink: bar.link, via: 'map' });
+      }
       const { hit, x, y } = find(e.lngLat);
       if (!hit) return L.onHit(null);
       if (hit.kind === 'node') return L.onHit({ kind: 'node', node: hit.node, via: 'map' });
@@ -957,17 +972,17 @@ export function MapView(p: Props) {
       const w = map.getContainer().clientWidth, h = map.getContainer().clientHeight;
       const base = await grabMap(map, w, h, EXPORT_SCALE);
       const net = L.bundle.network;
-      const marks: BadgeMark[] = L.interventions.filter((iv) => interventionInRegion(iv, net, L.region)).flatMap((iv) => {
+      const marks: BadgeMark[] = L.interventions.filter((iv) => interventionInRegion(iv, net, L.region)).flatMap((iv): BadgeMark[] => {
         const [x, y] = interventionPoint(iv, net);
         const q = map.project(L.proj.toLonLat(x, y));
-        const bars: BadgeMark[] = iv.type === 'modal_filter'
-          ? ('link' in iv ? [blockBar(net.links[iv.link])] : legBars(filterLegs(net, L.index, iv.node), iv.legs, barAtM(map.getZoom(), metersPerPixel(map.getZoom(), map.getCenter().lat)))).map((b) => {
-            const c = map.project(L.proj.toLonLat(b.center[0], b.center[1])), sz = barPx(map.getZoom());
+        if (iv.type === 'modal_filter') {
+          const z = map.getZoom(), sz = barPx(z);
+          return ('link' in iv ? [blockBar(net.links[iv.link])] : legBars(filterLegs(net, L.index, iv.node), iv.legs, barAtM(z, metersPerPixel(z, map.getCenter().lat)))).map((b) => {
+            const c = map.project(L.proj.toLonLat(b.center[0], b.center[1]));
             return { x: c.x, y: c.y, len: sz.length, thick: sz.thick, type: 'leg' as const, bearing: b.bearing };
-          })
-          : [];
-        const [sx, sy] = iv.type === 'modal_filter' && 'link' in iv ? blockBadgeOffset(blockBar(net.links[iv.link]).bearing, map.getZoom()) : [0, 0];
-        return [...bars, { x: q.x + sx, y: q.y + sy, size: badgePx(map.getZoom()), type: iv.type, bearing: iv.type === 'diagonal_diverter' ? iv.bearing : undefined, mph: iv.type === 'speed_limit' ? Math.round(iv.speed * 2.23694) : undefined }];
+          });
+        }
+        return [{ x: q.x, y: q.y, type: iv.type, bearing: iv.type === 'diagonal_diverter' ? iv.bearing : undefined, mph: iv.type === 'speed_limit' ? Math.round(iv.speed * 2.23694) : undefined }];
       });
       const change = L.view === 'change';
       const legend = legendModel(L.overlay, L.mode, change);
