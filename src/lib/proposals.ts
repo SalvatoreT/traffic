@@ -18,7 +18,14 @@ export interface Proposal {
     pedConflictsChangePct: number; bikeConflictsChangePct: number;
   };
   byPeriod: Record<string, PeriodResult>;
+  /** Per-link through cars for the card's picture. Absent in files written before pictures; the card then shows none. */
+  picture?: ProposalPicture;
 }
+/**
+ * Through cars an hour on the links that carry any, in one period, averaged over the search's seeds: today (`base`) and with the package (`scen`),
+ * parallel to `links` (link ids). Links with no through cars in either column are left out.
+ */
+export interface ProposalPicture { period: string; links: number[]; base: number[]; scen: number[] }
 export interface CutThrough { baselineVehPerHour: number; scenarioVehPerHour: number; changePct: number }
 /** One period. `allTraffic` counts every car on the one block that gains the most, local trips included. */
 export interface PeriodResult {
@@ -28,7 +35,7 @@ export interface PeriodResult {
 /** One ranked list: the packages found under one set of limits. */
 export interface ProposalGroup {
   id: string; title: string; note: string;
-  computed: { date: string; periods: string[]; seeds: number[]; networkHash: string; demandHash: string; calibration: string };
+  computed: { date: string; periods: string[]; seeds: number[]; minutes?: number; networkHash: string; demandHash: string; calibration: string };
   baseline: { cutThroughVehPerHour: Record<string, number> };
   proposals: Proposal[];
   /** Computed with an earlier measure (vehicle-miles, or an all-traffic worst block beside through cars). Its options are not shown; they need to be computed again. */
@@ -59,8 +66,19 @@ const finite = (x: unknown) => typeof x === 'number' && Number.isFinite(x);
 const hasCount = (c: CutThrough | undefined) => finite(c?.baselineVehPerHour) && finite(c?.scenarioVehPerHour) && finite(c?.changePct);
 const isCurrent = (p: Proposal) => hasCount(p?.cutThrough) && finite(p?.harm?.through?.increaseVehPerHour) && finite(p?.harm?.through?.blocksAboveNoise)
   && Object.values(p.byPeriod ?? {}).every((v) => hasCount(v?.cutThrough) && finite(v?.allTraffic?.baselineVehPerHour) && finite(v?.allTraffic?.scenarioVehPerHour) && finite(v?.allTraffic?.throughIncreaseVehPerHour) && finite(v?.allTraffic?.blocksAboveNoise));
+const isPicture = (x: unknown): x is ProposalPicture => {
+  const q = x as ProposalPicture | undefined;
+  const nums = (a: unknown) => Array.isArray(a) && a.every(finite);
+  return typeof q?.period === 'string' && nums(q.links) && nums(q.base) && nums(q.scen) && q.links.length === q.base.length && q.links.length === q.scen.length;
+};
+/** A malformed picture is dropped, so the card shows none instead of a broken one. */
+const withValidPicture = (p: Proposal): Proposal => {
+  if (p.picture === undefined || isPicture(p.picture)) return p;
+  const { picture: _dropped, ...rest } = p;
+  return rest;
+};
 function normalizeGroup(g: ProposalGroup): ProposalGroup {
-  if (g.proposals.every(isCurrent)) return g;
+  if (g.proposals.every(isCurrent)) return { ...g, proposals: g.proposals.map(withValidPicture) };
   return { ...g, legacy: true, proposals: [], baseline: { cutThroughVehPerHour: {} } };
 }
 

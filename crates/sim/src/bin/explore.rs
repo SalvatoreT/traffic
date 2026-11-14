@@ -4,7 +4,7 @@
 //! cargo run --release -p traffic-sim --bin explore -- --area rockridge --periods pm_peak,am_peak --seeds 1,2,3 --beam 3 --depth 8 --candidates 40
 
 use std::path::{Path, PathBuf};
-use traffic_sim::explore::{profile, refs, report::explore, Params, Study};
+use traffic_sim::explore::{annotate, profile, refs, report::explore, Params, Study};
 
 fn usage(msg: &str) -> ! {
     if !msg.is_empty() {
@@ -14,7 +14,8 @@ fn usage(msg: &str) -> ! {
         "usage: explore --area ID [--periods pm_peak,am_peak] [--seeds 1,2,3] [--beam 3] [--depth 8] [--candidates 40]\n\
          \x20              [--screen-minutes 30] [--minutes 60] [--budget-evals N] [--jobs N] [--harm-weight 0.1] [--expand 16]\n\
          \x20              [--finalists 12] [--options 5] [--out public/data/ID.proposals.json] [--report data/proposals/ID.md]\n\
-         \x20              [--references data/proposals/ID.references.json] [--profile ID[,ID...]|all] [--profiles data/proposals/AREA.profiles.json] [--no-warm-start]"
+         \x20              [--references data/proposals/ID.references.json] [--profile ID[,ID...]|all] [--profiles data/proposals/AREA.profiles.json] [--no-warm-start]\n\
+         \x20              [--annotate]   add per-link pictures to the existing --out file (re-simulates the published packages; no search)"
     );
     std::process::exit(if msg.is_empty() { 0 } else { 2 });
 }
@@ -25,6 +26,7 @@ fn main() {
     let (mut out, mut report, mut references): (Option<PathBuf>, Option<PathBuf>, Option<PathBuf>) = (None, None, None);
     let (mut profile_id, mut profiles_path): (Option<String>, Option<PathBuf>) = (None, None);
     let mut no_warm = false;
+    let mut annotate = false;
     let mut i = 0;
     while i < argv.len() {
         let k = argv[i].as_str();
@@ -33,6 +35,11 @@ fn main() {
         }
         if k == "--no-warm-start" {
             no_warm = true;
+            i += 1;
+            continue;
+        }
+        if k == "--annotate" {
+            annotate = true;
             i += 1;
             continue;
         }
@@ -74,6 +81,15 @@ fn main() {
         }
     }
     let out = out.unwrap_or_else(|| root.join(format!("public/data/{}.proposals.json", p.area)));
+    if annotate {
+        let text = std::fs::read_to_string(&out).unwrap_or_else(|e| usage(&format!("cannot read {}: {e}", out.display())));
+        let mut file: serde_json::Value = serde_json::from_str(&text).unwrap_or_else(|e| usage(&format!("{}: {e}", out.display())));
+        let t0 = std::time::Instant::now();
+        let s = annotate::annotate(&study, &mut file, p.minutes, p.jobs).unwrap_or_else(|e| usage(&e));
+        std::fs::write(&out, serde_json::to_string_pretty(&file).unwrap() + "\n").expect("write proposals");
+        eprintln!("annotated {} package(s) in {} group(s) from {} run(s) in {:.0}s; wrote {}", s.packages, s.groups, s.runs, t0.elapsed().as_secs_f64(), out.display());
+        return;
+    }
     let report = report.unwrap_or_else(|| root.join(format!("data/proposals/{}.md", p.area)));
     let profiles_file = profiles_path.clone().unwrap_or_else(|| root.join(format!("data/proposals/{}.profiles.json", p.area)));
     let profiles = if profiles_file.exists() || profiles_path.is_some() {

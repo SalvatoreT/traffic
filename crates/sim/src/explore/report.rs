@@ -29,6 +29,45 @@ pub struct Final {
     pub ped_pct: f64,
     pub bike_pct: f64,
     pub score: f64,
+    /// Through cars per link in the picture's period, today and with the package.
+    pub picture: Option<Picture>,
+}
+
+/// The period the proposal card's picture shows when it was searched.
+pub const PICTURE_PERIOD: &str = "pm_peak";
+
+/// Through cars an hour on each link in one period (the per-link counters behind the map's cut-through layer), averaged over the seeds,
+/// today and with a package. The proposal card draws the change. Only links with a nonzero count in either column are kept.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Picture {
+    pub period: String,
+    pub links: Vec<u32>,
+    pub base: Vec<i32>,
+    pub scen: Vec<i32>,
+}
+
+impl Picture {
+    pub fn new(period: &str, base: &[f64], scen: &[f64]) -> Picture {
+        let mut p = Picture { period: period.into(), links: Vec::new(), base: Vec::new(), scen: Vec::new() };
+        for l in 0..base.len().min(scen.len()) {
+            let (b, s) = (base[l].round() as i32, scen[l].round() as i32);
+            if b != 0 || s != 0 {
+                p.links.push(l as u32);
+                p.base.push(b);
+                p.scen.push(s);
+            }
+        }
+        p
+    }
+
+    pub fn to_json(&self) -> Value {
+        json!({"period": self.period, "links": self.links, "base": self.base, "scen": self.scen})
+    }
+}
+
+/// Index of the period the picture shows: the PM peak if it was searched, else the first period.
+pub fn picture_period(periods: &[String]) -> usize {
+    periods.iter().position(|p| p == PICTURE_PERIOD).unwrap_or(0)
 }
 
 /// The side-street block that gains the most through cars an hour, averaged over the periods.
@@ -175,6 +214,10 @@ fn compare(ctx: &Ctx, set: &[u16], stats: &[PeriodStat], reject: Option<String>)
         ped_pct: pct_change(m(&|s| s.ped_conflicts, &base.full), m(&|s| s.ped_conflicts, stats)),
         bike_pct: pct_change(m(&|s| s.bike_conflicts, &base.full), m(&|s| s.bike_conflicts, stats)),
         score: score(p, red, harm),
+        picture: {
+            let pi = picture_period(&p.periods);
+            Some(Picture::new(&p.periods[pi], &base.full[pi].link_through, &stats[pi].link_through))
+        },
     }
 }
 
@@ -552,6 +595,9 @@ pub fn build_json(study: &Study, p: &Params, cands: &[Cand], base: &Baseline, fi
         if let Some(n) = note {
             v["note"] = json!(n);
         }
+        if let Some(pic) = &f.picture {
+            v["picture"] = pic.to_json();
+        }
         v
     };
     let mut proposals: Vec<Value> = picks.iter().enumerate().map(|(n, pick)| entry(format!("p{}", n + 1), title(cands, &finals[pick.idx].set), &finals[pick.idx], "search", None)).collect();
@@ -566,6 +612,7 @@ pub fn build_json(study: &Study, p: &Params, cands: &[Cand], base: &Baseline, fi
             "date": util::today_utc(),
             "periods": p.periods,
             "seeds": p.seeds,
+            "minutes": p.minutes,
             "networkHash": study.net_hash,
             "demandHash": study.demand_hash,
             "calibration": study.calibration,

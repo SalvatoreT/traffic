@@ -57,12 +57,12 @@ export function wrapText(measure: (s: string) => number, text: string, maxWidth:
   return out;
 }
 
-const BADGE_TEXT: Record<Intervention['type'], string> = {
+export const BADGE_TEXT: Record<Intervention['type'], string> = {
   modal_filter: 'MF', speed_hump: 'SH', speed_limit: 'SL', traffic_circle: 'TC', control: 'IC',
   signal_timing: 'ST', one_way: '1W', turn_ban: 'TB', diagonal_diverter: 'DD',
 };
 // Same fills, outlines and corner shapes as the .iv-badge rules in styles.css.
-const BADGE_STYLE: Record<Intervention['type'], { fill: string; edge: string; ink: string; radius: [number, number, number, number] | 'round' }> = {
+export const BADGE_STYLE: Record<Intervention['type'], { fill: string; edge: string; ink: string; radius: [number, number, number, number] | 'round' }> = {
   modal_filter: { fill: '#ffd43b', edge: '#111', ink: '#111', radius: [4, 4, 4, 4] },
   diagonal_diverter: { fill: '#ffd43b', edge: '#111', ink: '#111', radius: [4, 4, 4, 4] },
   speed_hump: { fill: '#fff', edge: '#c92a2a', ink: '#c92a2a', radius: 'round' },

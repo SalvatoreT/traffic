@@ -1,0 +1,83 @@
+//! `explore --annotate`: add the per-link through-car arrays the proposal card draws to an existing proposals file, by re-simulating only
+//! the published packages for one period with the search's seeds and run length. No search is repeated.
+
+use super::decode::decode_scenario;
+use super::report::{picture_period, Picture};
+use super::*;
+use serde_json::Value;
+use std::collections::HashMap;
+
+/// What `annotate` did, for the line on stderr.
+#[derive(Debug, PartialEq)]
+pub struct Summary {
+    pub groups: usize,
+    pub packages: usize,
+    pub runs: usize,
+}
+
+struct Task {
+    ivs: Vec<Intervention>,
+    period: String,
+    seed: u64,
+    minutes: f64,
+}
+
+/// Rewrite `file` so each package of each group carries a `picture`. Every group must have been computed on the study's network and
+/// demand; otherwise nothing is changed and the error names the group. `default_minutes` is the run length for a group whose
+/// `computed.minutes` is absent (files written before it was recorded).
+pub fn annotate(study: &Study, file: &mut Value, default_minutes: f64, jobs: usize) -> Result<Summary, String> {
+    let groups = file["groups"].as_array().ok_or("the file has no groups")?.clone();
+    let mut tasks: Vec<Task> = Vec::new();
+    let mut base_at: HashMap<(String, u64, u64), usize> = HashMap::new();
+    // Per group, per package: the task index of each seed's scenario run; per group: the baseline task index of each seed.
+    let mut plan: Vec<(String, Vec<usize>, Vec<Vec<usize>>)> = Vec::new();
+    for g in &groups {
+        let id = g["id"].as_str().unwrap_or_default();
+        let c = &g["computed"];
+        if c["networkHash"] != study.net_hash.as_str() || c["demandHash"] != study.demand_hash.as_str() {
+            return Err(format!("group {id} was computed on another network or demand (file {} / {}, current {} / {}); run the search again", c["networkHash"], c["demandHash"], study.net_hash, study.demand_hash));
+        }
+        let periods: Vec<String> = c["periods"].as_array().ok_or_else(|| format!("group {id} has no periods"))?.iter().filter_map(|v| v.as_str().map(String::from)).collect();
+        let seeds: Vec<u64> = c["seeds"].as_array().ok_or_else(|| format!("group {id} has no seeds"))?.iter().filter_map(|v| v.as_u64()).collect();
+        if periods.is_empty() || seeds.is_empty() {
+            return Err(format!("group {id} has no periods or seeds"));
+        }
+        let period = periods[picture_period(&periods)].clone();
+        let minutes = c["minutes"].as_f64().unwrap_or(default_minutes);
+        let mut base_ids = Vec::new();
+        for &s in &seeds {
+            let key = (period.clone(), s, minutes.to_bits());
+            let t = *base_at.entry(key).or_insert_with(|| {
+                tasks.push(Task { ivs: Vec::new(), period: period.clone(), seed: s, minutes });
+                tasks.len() - 1
+            });
+            base_ids.push(t);
+        }
+        let mut per_pkg = Vec::new();
+        for pr in g["proposals"].as_array().into_iter().flatten() {
+            let link = pr["link"].as_str().ok_or_else(|| format!("a package of group {id} has no link"))?;
+            let ivs = decode_scenario(&study.net, &study.topo, study.origin, link).map_err(|e| format!("package {} of group {id}: {e}", pr["id"]))?;
+            let mut ids = Vec::new();
+            for &s in &seeds {
+                tasks.push(Task { ivs: ivs.clone(), period: period.clone(), seed: s, minutes });
+                ids.push(tasks.len() - 1);
+            }
+            per_pkg.push(ids);
+        }
+        plan.push((period, base_ids, per_pkg));
+    }
+    eprintln!("annotating {} group(s): {} simulation run(s) on {} job(s)", groups.len(), tasks.len(), jobs);
+    let outs = parallel_map(jobs, &tasks, |t| run(study, &t.ivs, &t.period, t.seed, t.minutes, &[]));
+    let nl = study.net.links.len();
+    let mean_through = |ids: &[usize]| -> Vec<f64> { (0..nl).map(|l| ids.iter().map(|&i| outs[i].through[l] as f64).sum::<f64>() / ids.len().max(1) as f64).collect() };
+    let mut packages = 0;
+    for (gi, (period, base_ids, per_pkg)) in plan.iter().enumerate() {
+        let base = mean_through(base_ids);
+        let props = file["groups"][gi]["proposals"].as_array_mut().expect("proposals");
+        for (pr, ids) in props.iter_mut().zip(per_pkg) {
+            pr["picture"] = Picture::new(period, &base, &mean_through(ids)).to_json();
+            packages += 1;
+        }
+    }
+    Ok(Summary { groups: groups.len(), packages, runs: tasks.len() })
+}

@@ -30,6 +30,8 @@ pub struct PeriodStat {
     pub block_through: Vec<f64>,
     /// Standard deviation of the block through flow over seeds.
     pub block_through_sigma: Vec<f64>,
+    /// Through cars per link (directed), mean over seeds: what the map's cut-through layer draws.
+    pub link_through: Vec<f64>,
     /// Per bounding street: summed flow of its in-study links (veh/h) and flow-weighted mean speed (m/s).
     pub street_flow: Vec<f64>,
     pub street_speed: Vec<f64>,
@@ -48,6 +50,7 @@ pub fn period_stat(study: &Study, runs: &[&RunOut]) -> PeriodStat {
     let per_run_through: Vec<Vec<f64>> = runs.iter().map(|r| block_flows(study, &r.through)).collect();
     let block_through: Vec<f64> = (0..nb).map(|b| per_run_through.iter().map(|v| v[b]).sum::<f64>() / n).collect();
     let block_through_sigma: Vec<f64> = (0..nb).map(|b| std_dev(&per_run_through.iter().map(|v| v[b]).collect::<Vec<_>>())).collect();
+    let link_through: Vec<f64> = (0..study.net.links.len()).map(|l| runs.iter().map(|r| r.through[l] as f64).sum::<f64>() / n).collect();
     let mut street_flow = Vec::new();
     let mut street_speed = Vec::new();
     for s in &study.bounding {
@@ -84,6 +87,7 @@ pub fn period_stat(study: &Study, runs: &[&RunOut]) -> PeriodStat {
         block_sigma,
         block_through,
         block_through_sigma,
+        link_through,
         street_flow,
         street_speed,
     }

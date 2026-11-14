@@ -458,7 +458,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
               scen={withheld ? null : stats?.scenario.linkStats ?? null} base={baseStats} comparing={comparing} overlay={overlay} withheld={withheld}
               baseMetrics={base} scenMetrics={scen} onHover={setHoverPlace} />
           )}
-          {view === 'proposals' && <Proposals bundle={bundle} index={index} today={todayRoutes.total} state={proposals.state} loaded={proposals.loaded} current={interventions} onOpen={onOpenProposal} />}
+          {view === 'proposals' && <Proposals bundle={bundle} index={index} today={todayRoutes.total} state={proposals.state} loaded={proposals.loaded} mode={mode} current={interventions} onOpen={onOpenProposal} />}
           {view === 'sources' && <Suspense fallback={<p className="boot" role="status">Loading sources…</p>}><Sources demand={demand} synthetic={bundle.synthetic} focusRef={sourceRef} calibration={bundle.synthetic ? undefined : { status: calStatus, note: bundle.entry.calibration?.note }} /></Suspense>}
         </div>
 

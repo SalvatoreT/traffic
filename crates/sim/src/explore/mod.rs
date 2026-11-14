@@ -2,6 +2,7 @@
 //! without piling it onto one neighbor's street. See `openspec/changes/proposals/` (design D1 to D6) and `data/proposals/README.md`.
 //! The `explore` binary is a thin wrapper; the logic lives here so tests can run it on small synthetic networks.
 
+pub mod annotate;
 pub mod cands;
 pub mod decode;
 pub mod link;

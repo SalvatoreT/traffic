@@ -223,6 +223,57 @@ fn one_filter_removes_a_rat_run_without_harm() {
     assert!(p0["summary"].as_str().unwrap().contains("through cars an hour"));
 }
 
+fn picture_arrays(pr: &Value) -> (Vec<i64>, Vec<i64>, Vec<i64>) {
+    let get = |k: &str| pr["picture"][k].as_array().unwrap().iter().map(|v| v.as_i64().unwrap()).collect::<Vec<_>>();
+    (get("links"), get("base"), get("scen"))
+}
+
+#[test]
+fn proposals_carry_a_picture_and_annotate_reproduces_it() {
+    use traffic_sim::explore::annotate::annotate;
+    let n = ratrun(false, false);
+    let study = study_of(n.study_net);
+    let p = params(2);
+    let o = explore(&study, &p);
+    let proposals = o.json["proposals"].as_array().unwrap();
+    assert!(!proposals.is_empty());
+    assert_eq!(o.json["computed"]["minutes"], 12.0);
+    for pr in proposals {
+        let pic = &pr["picture"];
+        assert_eq!(pic["period"], "p", "the first period when the PM peak was not searched");
+        let (links, base, scen) = picture_arrays(pr);
+        assert!(!links.is_empty() && links.len() == base.len() && links.len() == scen.len());
+        assert!(links.windows(2).all(|w| w[0] < w[1]), "links in id order, each once");
+        assert!(base.iter().zip(&scen).all(|(b, s)| *b != 0 || *s != 0), "zeros are omitted");
+    }
+    let (_, base, scen) = picture_arrays(&proposals[0]);
+    assert!(base.iter().sum::<i64>() > scen.iter().sum::<i64>(), "the rat run's filter takes through cars off its links");
+    // The file is annotated by a second path with no search: same numbers, whatever `--jobs`.
+    let mut file = serde_json::json!({"version": 4, "area": "t", "groups": [o.json.clone()]});
+    for pr in file["groups"][0]["proposals"].as_array_mut().unwrap() {
+        pr.as_object_mut().unwrap().remove("picture");
+    }
+    let s = annotate(&study, &mut file, 12.0, 1).unwrap();
+    assert_eq!((s.groups, s.packages), (1, proposals.len()));
+    assert_eq!(file["groups"][0]["proposals"], o.json["proposals"], "annotate gives the search's own arrays");
+    // A file computed without the run length falls back to the default length.
+    file["groups"][0]["computed"].as_object_mut().unwrap().remove("minutes");
+    annotate(&study, &mut file, 12.0, 2).unwrap();
+    assert_eq!(file["groups"][0]["proposals"], o.json["proposals"]);
+}
+
+#[test]
+fn annotate_refuses_a_file_computed_on_other_inputs() {
+    use traffic_sim::explore::annotate::annotate;
+    let n = ratrun(false, false);
+    let study = study_of(n.study_net);
+    let mut file = serde_json::json!({"version": 4, "area": "t", "groups": [{"id": "g", "computed": {"periods": ["p"], "seeds": [1], "networkHash": "other", "demandHash": "h"}, "proposals": []}]});
+    let before = file.clone();
+    let e = annotate(&study, &mut file, 12.0, 1).unwrap_err();
+    assert!(e.contains("another network or demand"), "{e}");
+    assert_eq!(file, before);
+}
+
 #[test]
 fn through_harm_picks_the_block_past_its_noise_band() {
     use traffic_sim::explore::report::through_harm;
@@ -388,6 +439,7 @@ fn options_are_spread_and_drop_changes_within_noise() {
         ped_pct: 0.0,
         bike_pct: 0.0,
         score: red - 0.1 * harm,
+        picture: None,
     };
     let finals = vec![mk(1, 20.0, 0.0), mk(2, 20.5, 0.0), mk(2, 45.0, 20.0), mk(3, 60.0, 30.0), mk(4, 62.0, 90.0), mk(1, 5.0, 60.0), mk(5, 80.0, 40.0), mk(3, 3.0, 0.0)];
     let (picks, notes) = select_options(&finals, 4, 1.5);
@@ -711,6 +763,7 @@ fn listed_options_beat_every_smaller_listed_option_on_through_cars() {
         ped_pct: 0.0,
         bike_pct: 0.0,
         score: red - 0.1 * harm,
+        picture: None,
     };
     // The three-intervention package has less harm than the single one, so it is not dominated, but it cuts through cars less.
     let finals = vec![mk(1, 49.0, 80.0), mk(3, 40.0, 0.0), mk(5, 90.0, 60.0), mk(4, 70.0, 10.0), mk(6, 80.0, 20.0)];

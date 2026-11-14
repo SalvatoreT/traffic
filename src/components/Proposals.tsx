@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import type { AreaBundle, Intervention } from '../types';
 import { decodeScenario } from '../lib/hash';
+import type { Mode } from '../lib/ramps';
+import { ProposalPicture } from './ProposalPicture';
 import type { NetIndex } from '../lib/naming';
 import { checkThroughRoutes, ROUTE_CAVEAT } from '../lib/throughroutes';
 import { buildMockProposals } from '../fixtures/proposals';
@@ -40,12 +42,12 @@ export function useProposals(bundle: AreaBundle, active: boolean): { state: Prop
 }
 
 interface Props {
-  bundle: AreaBundle; index: NetIndex; today: number; state: ProposalsState; loaded: LoadedHashes;
+  bundle: AreaBundle; index: NetIndex; today: number; state: ProposalsState; loaded: LoadedHashes; mode: Mode;
   current: Intervention[];
   onOpen(p: Proposal): void;
 }
 
-export function Proposals({ bundle, index, today, state, loaded, current, onOpen }: Props) {
+export function Proposals({ bundle, index, today, state, loaded, mode, current, onOpen }: Props) {
   const periodLabel = useMemo(() => {
     const m = new Map(bundle.demand.periods.map((p) => [p.id, p.label]));
     return (id: string) => m.get(id) ?? id;
@@ -61,15 +63,22 @@ export function Proposals({ bundle, index, today, state, loaded, current, onOpen
     else { dispatch({ type: 'done' }); onOpen(p); }
   };
   // Decoding and checking is a few milliseconds per proposal, so it is done once per file.
-  const routeCounts = useMemo(() => {
-    const m = new Map<string, number>();
+  const decoded = useMemo(() => {
+    const m = new Map<string, Intervention[]>();
     if (ready) for (const g of ready.groups) for (const p of g.proposals) {
-      try { m.set(`${g.id}-${p.id}`, checkThroughRoutes(bundle.network, index, decodeScenario(bundle.network, linkHash(p.link)).interventions).total); } catch { /* left out */ }
+      try { m.set(`${g.id}-${p.id}`, decodeScenario(bundle.network, linkHash(p.link)).interventions); } catch { /* left out */ }
     }
     return m;
-  }, [ready, bundle.network, index]);
+  }, [ready, bundle.network]);
+  const routeCounts = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const [k, ivs] of decoded) {
+      try { m.set(k, checkThroughRoutes(bundle.network, index, ivs).total); } catch { /* left out */ }
+    }
+    return m;
+  }, [decoded, bundle.network, index]);
   const card = (g: ProposalGroup, p: Proposal, n: number | null) => (
-    <Card key={p.id} p={p} when={periodsPhrase(g.computed.periods, periodLabel)} hid={`prop-${gid(g, p)}`} n={n} routes={routeCounts.get(gid(g, p)) ?? null} today={today} periodLabel={periodLabel} confirming={open.step === 'confirm' && open.id === gid(g, p)}
+    <Card key={p.id} p={p} when={periodsPhrase(g.computed.periods, periodLabel)} hid={`prop-${gid(g, p)}`} n={n} routes={routeCounts.get(gid(g, p)) ?? null} ivs={decoded.get(gid(g, p)) ?? null} searched={g.computed.periods} bundle={bundle} index={index} mode={mode} today={today} periodLabel={periodLabel} confirming={open.step === 'confirm' && open.id === gid(g, p)}
       onRequest={() => request(g, p)} onCancel={() => dispatch({ type: 'cancel' })} onConfirm={() => { dispatch({ type: 'done' }); onOpen(p); }} />
   );
 
@@ -132,8 +141,8 @@ export function Proposals({ bundle, index, today, state, loaded, current, onOpen
   );
 }
 
-function Card({ p, when, hid, n, routes, today, periodLabel, confirming, onRequest, onCancel, onConfirm }: {
-  p: Proposal; when: string; hid: string; n: number | null; routes: number | null; today: number; periodLabel(id: string): string; confirming: boolean;
+function Card({ p, when, hid, n, routes, ivs, searched, bundle, index, mode, today, periodLabel, confirming, onRequest, onCancel, onConfirm }: {
+  p: Proposal; when: string; hid: string; n: number | null; routes: number | null; ivs: Intervention[] | null; searched: string[]; bundle: AreaBundle; index: NetIndex; mode: Mode; today: number; periodLabel(id: string): string; confirming: boolean;
   onRequest(): void; onCancel(): void; onConfirm(): void;
 }) {
   const cut = cutThroughHeadline(p.cutThrough, when);
@@ -150,6 +159,18 @@ function Card({ p, when, hid, n, routes, today, periodLabel, confirming, onReque
   }, [confirming]);
   const periods = Object.entries(p.byPeriod);
   const isRef = p.kind === 'reference';
+  const hasPic = !!p.picture && ivs !== null;
+  const action = (
+    confirming ? (
+      <div className="prop-confirm" role="group" aria-label="Replace current scenario?">
+        <p><strong>Replace current scenario?</strong> Your interventions on the map will be swapped for this package.</p>
+        <button ref={confirmBtn} type="button" className="btn primary" onClick={onConfirm}>Replace and open</button>{' '}
+        <button type="button" className="btn" onClick={onCancel}>Cancel</button>
+      </div>
+    ) : (
+      <button ref={openBtn} type="button" className="btn primary" onClick={onRequest}>Open on the map<span className="sr-only">: {p.title}</span></button>
+    )
+  );
   return (
     <li className="prop-card" aria-labelledby={`${hid}-h`}>
       <div className="prop-head">
@@ -157,21 +178,31 @@ function Card({ p, when, hid, n, routes, today, periodLabel, confirming, onReque
         {isRef && <span className="tag">Earlier proposal</span>}
       </div>
       {isRef && p.note && <p className="muted prop-note">{p.note}</p>}
-      <p className="prop-sum">{p.summary}</p>
-      <div className="prop-figs">
-        <div className="fig">
-          <p className="fig-main"><span className="fig-num">{cut.figure}</span> {cut.label}</p>
-          <p className="fig-sub">{cut.detail}</p>
-          <p className="fig-sub">{cut.definition}</p>
+      <div className={hasPic ? 'prop-body has-pic' : 'prop-body'}>
+        <div className="prop-main">
+          <p className="prop-sum">{p.summary}</p>
+          <div className="prop-figs">
+            <div className="fig">
+              <p className="fig-main"><span className="fig-num">{cut.figure}</span> {cut.label}</p>
+              <p className="fig-sub">{cut.detail}</p>
+              <p className="fig-sub">{cut.definition}</p>
+            </div>
+            <div className="fig">
+              <p className="fig-main">{harm.none ? harm.label : <><span className="fig-num">{harm.figure}</span> {harm.label}</>}</p>
+              <p className="fig-sub">{harm.definition}</p>
+            </div>
+          </div>
+          {routes !== null && <p className="prop-routes">Through routes: <strong>{routes}</strong> ({today} today)</p>}
+          <h5 className="sr-only">Changes</h5>
+          <ul className="prop-ivs">{p.interventions.map((iv, i) => <li key={i}>{iv.label}</li>)}</ul>
         </div>
-        <div className="fig">
-          <p className="fig-main">{harm.none ? harm.label : <><span className="fig-num">{harm.figure}</span> {harm.label}</>}</p>
-          <p className="fig-sub">{harm.definition}</p>
-        </div>
+        {hasPic && (
+          <div className="prop-side">
+            <ProposalPicture net={bundle.network} index={index} p={p} ivs={ivs ?? []} mode={mode} periodLabel={periodLabel} searchedPeriods={searched} />
+            {action}
+          </div>
+        )}
       </div>
-      {routes !== null && <p className="prop-routes">Through routes: <strong>{routes}</strong> ({today} today)</p>}
-      <h5 className="sr-only">Changes</h5>
-      <ul className="prop-ivs">{p.interventions.map((iv, i) => <li key={i}>{iv.label}</li>)}</ul>
       <details className="prop-more">
         <summary>More detail</summary>
         <h5>Through cars an hour, by period</h5>
@@ -234,15 +265,7 @@ function Card({ p, when, hid, n, routes, today, periodLabel, confirming, onReque
           <div><dt>Biking conflicts</dt><dd>{signedPct(p.context.bikeConflictsChangePct)}</dd></div>
         </dl>
       </details>
-      {confirming ? (
-        <div className="prop-confirm" role="group" aria-label="Replace current scenario?">
-          <p><strong>Replace current scenario?</strong> Your interventions on the map will be swapped for this package.</p>
-          <button ref={confirmBtn} type="button" className="btn primary" onClick={onConfirm}>Replace and open</button>{' '}
-          <button type="button" className="btn" onClick={onCancel}>Cancel</button>
-        </div>
-      ) : (
-        <button ref={openBtn} type="button" className="btn primary" onClick={onRequest}>Open on the map<span className="sr-only">: {p.title}</span></button>
-      )}
+      {!hasPic && action}
     </li>
   );
 }
