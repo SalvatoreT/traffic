@@ -713,6 +713,7 @@ const localScaleLines = (): string[] => {
   return L;
 };
 let fitText = '';
+const assumedReports: AssumedReport[] = [];
 const cvFlows: Record<string, { origin: number; destination: number; vehPerHour: number }[]> = {};
 const fitResults: PeriodResult[] = [];
 const fc = cfg.countFit;
@@ -781,7 +782,6 @@ if (fc?.enabled) {
   const flowsBy: Record<string, { origin: number; destination: number; vehPerHour: number }[]> = {};
   if (process.env.FIT_DUMP) writeFileSync(process.env.FIT_DUMP, JSON.stringify({ stations, periods: Object.fromEntries(outPeriods.map((q) => { const cars = q.flows.filter((f) => !f.mode); return [q.id, { flows: cars, types: cars.map((f) => typeOf(f.origin, f.destination)) }]; })) }));
   // Assumed movement flows (ASSUMPTION, round 20): counted turning movements the trip table cannot reach get flows that must make them (tools/lib/assumed-movements.ts).
-  const assumedReports: AssumedReport[] = [];
   const amCfg = cfg.assumedMovementFlows as { enabled: boolean; movements: AssumedMovementCfg[] } | undefined;
   if (amCfg?.enabled && countRes) {
     const ns = nodeStreets(net as never);
@@ -956,6 +956,7 @@ const provenance = [
   { source: "Children's Hospital and Research Center Oakland Campus Master Plan Project, Draft EIR (City of Oakland, 2014), Appendix C", url: 'https://www.oaklandca.gov/files/assets/city/v/1/planning-amp-building/documents/dp/ceqa/2011-present/childrens-hospital-draft-environmental-impact-report-appendix-c.pdf', note: 'DATA. AM and PM peak-hour turning-movement counts of 2013-09-19 at nine intersections (legs, turns, SR-24 ramps at 52nd St and Martin Luther King Jr Way) as targets of the count fit; observed signal timing at two signals. ASSUMPTION: no growth since the count.' },
   { source: 'Safeway Shopping Center, College and Claremont Avenues, Draft EIR (City of Oakland, 2011)', url: 'https://www.oaklandca.gov/files/assets/city/v/1/planning-amp-building/documents/dp/ceqa/2011-present/college-avenue-safeway-deir_2024-05-10-203917_bvqg.pdf', note: 'DATA. PM peak-hour demand volumes of 2010-03-16 at five intersections (legs, turns, SR-24 ramps at Clifton St and Hudson St) as targets of the count fit. ASSUMPTION: no growth since the count.' },
   ...(cfg.active ? [{ source: 'Walking and biking demand (pedestrian and bicycle flows, persons per hour)', url: 'data/demand/README.md', note: 'ASSUMPTION, not counts: synthesized from LODES resident workers and jobs per block with assumed mode shares, trip lengths, gate and commercial-street shares (config `active`). DATA: the volumes are scaled by one factor per mode so that PM peak-hour people passing Telegraph Ave & Alcatraz Ave match the mean of the Oakland pedestrian and bicycle counts there; the spatial pattern elsewhere is uncounted. Calibration against walking and biking counts has not been done.' }] : []),
+  ...(assumedReports.length ? [{ source: 'Assumed movement flows (trips that make a counted turning movement)', url: 'data/demand/README.md', note: `ASSUMPTION, not observed trips (owner decision 2026-11-14). Each turning count is real; the trips that make the movement are not. They are chosen from the trip table by a detour rule and given a through share, and the simulator routes them through the movement. ${assumedReports.filter((r) => r.period === lastPeriod).map((r) => { const m = (cfg.assumedMovementFlows.movements as AssumedMovementCfg[]).find((q) => q.id === r.id)!; return `${r.label}: ${r.target.toFixed(0)} veh/h counted in the PM peak, assumed trips with a route within ${m.maxDetour} times the best route, ${r.throughVeh.toFixed(0)} veh/h through cars and ${r.localVeh.toFixed(0)} veh/h with an end in the study area (through share ${m.throughShare}).`; }).join(' ')}` }] : []),
   { source: 'Assumptions', url: 'data/demand/README.md', note: 'ASSUMPTION: K-factor, period volume factors, per-class default ADT, directional split, trip rates, gravity turning factors, sector-to-gate weights, local trip share capped per gate. Uncalibrated.' }
 ];
 

@@ -92,7 +92,7 @@
   "periodWindows": { "am_peak": [7, 9], "midday": [11, 13], "pm_peak": [16, 18] },
   "calibration": {
     "status": "uncalibrated",
-    "note": "The 52nd St off-ramp carries 653 veh/h against 1,024 counted; PM headline freeway shares are 9 points off on average, Colby St SB 21.",
+    "note": "The 52nd St off-ramp carries 692 veh/h against 1,024 counted; PM headline freeway shares are 9 points off on average, Hillegass Ave SB 16.",
     "defaultPeriod": "midday",
     "experimentalPeriods": [
       "pm_peak"
