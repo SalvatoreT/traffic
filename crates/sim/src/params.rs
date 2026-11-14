@@ -37,6 +37,8 @@ pub const SPAWN_SCAN: usize = 512; // ASSUMPTION: a gate stands for a multilane 
 pub const FORK_LANES: bool = true; // ASSUMPTION: lanes of a link that forks into several straight-ahead branches are shared out by branch, left branch in the left lanes (OSM `turn:lanes` is not read for this)
 pub const LOCAL_COST_FACTOR: f32 = 1.25; // ASSUMPTION: perceived-cost multiplier for residential/service links in route choice (street hierarchy preference)
 
+pub const VIA_MAX_DETOUR: f64 = 1.3; // ASSUMPTION: default tolerance of an assumed movement (`via`): it is made while the route through it costs at most this multiple of the plain route in the current network; the demand file carries the value that built the flows
+
 // --- gap acceptance (s) [Brilon1999], [HCM7] via FHWA HPMS Table 11 in references.md 3.3 ---
 pub const TC_MINOR_RIGHT: f32 = 6.2;
 pub const TC_MINOR_THROUGH: f32 = 6.5;

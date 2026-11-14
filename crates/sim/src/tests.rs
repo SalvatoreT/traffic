@@ -1778,9 +1778,72 @@ fn a_gate_vehicle_that_cannot_enter_does_not_hold_back_one_that_can() {
 }
 
 fn via_demand(origin: u32, dest: u32, v: f64, from: u32, to: u32) -> Demand {
+    via_demand_with(origin, dest, v, (from, to), Some(5.0), &[])
+}
+
+fn via_demand_with(origin: u32, dest: u32, v: f64, mv: (u32, u32), max_detour: Option<f64>, alts: &[(u32, u32)]) -> Demand {
     let mut d = demand(&[(origin, dest, v)]);
-    d.periods[0].flows[0].via = Some(Via { from, to });
+    d.periods[0].flows[0].via = Some(Via { from: mv.0, to: mv.1, max_detour, alternatives: alts.iter().map(|&(from, to)| ViaMove { from, to }).collect() });
     d
+}
+
+fn via_trips(net: Network, dem: Demand, ivs: &str) -> Vec<crate::sim::TripRecord> {
+    let mut cf = cfg_empty(1, 1.0);
+    cf.record_trips = true;
+    cf.interventions = serde_json::from_str(ivs).unwrap();
+    let mut sim = Simulation::from_parts(net, dem, cf).unwrap();
+    run(&mut sim, 600.0, |_| {});
+    sim.trip_records().to_vec()
+}
+
+fn makes(r: &crate::sim::TripRecord, mv: (u32, u32)) -> bool {
+    r.trail.windows(2).any(|w| w[0] == mv.0 && w[1] == mv.1)
+}
+
+fn visits_a_node_twice(net: &Network, r: &crate::sim::TripRecord) -> bool {
+    let mut nodes: Vec<u32> = vec![net.links[r.trail[0] as usize].from];
+    nodes.extend(r.trail.iter().map(|&l| net.links[l as usize].to));
+    let n = nodes.len();
+    nodes.sort_unstable();
+    nodes.dedup();
+    nodes.len() != n
+}
+
+#[test]
+fn via_is_kept_within_its_detour_tolerance_and_dropped_beyond_it() {
+    let (net, c) = corridor(20.0, Control::Uncontrolled);
+    let mv = (c.art[0].0, c.conn[1].0);
+    let kept = via_trips(net.clone(), via_demand_with(c.a[0], c.a[3], 300.0, mv, Some(5.0), &[]), "[]");
+    assert!(kept.len() > 20 && kept.iter().all(|r| makes(r, mv)), "every trip makes a movement within the tolerance");
+    // The local row costs about twice the arterial: the default tolerance of 1.3 rejects it and the trips stay on the arterial.
+    let dropped = via_trips(net, via_demand_with(c.a[0], c.a[3], 300.0, mv, None, &[]), "[]");
+    assert!(dropped.len() > 20 && dropped.iter().all(|r| !makes(r, mv)), "no trip makes a movement beyond the tolerance");
+}
+
+#[test]
+fn blocked_via_takes_the_alternative_first_then_the_plain_route() {
+    let (net, c) = corridor(20.0, Control::Uncontrolled);
+    let primary = (c.art[0].0, c.conn[1].0);
+    let alt = (c.art[1].0, c.conn[2].0);
+    let ban = |m: (u32, u32)| format!("{{\"type\":\"turn_ban\",\"fromLink\":{},\"toLink\":{}}}", m.0, m.1);
+    let dem = || via_demand_with(c.a[0], c.a[3], 300.0, primary, Some(5.0), &[alt]);
+    let open = via_trips(net.clone(), dem(), "[]");
+    assert!(open.iter().all(|r| makes(r, primary)), "the primary movement is made while it is open");
+    let one = via_trips(net.clone(), dem(), &format!("[{}]", ban(primary)));
+    assert!(one.len() > 20 && one.iter().all(|r| makes(r, alt) && !makes(r, primary)), "the alternative is made when the primary is banned");
+    let both = via_trips(net.clone(), dem(), &format!("[{},{}]", ban(primary), ban(alt)));
+    assert!(both.len() > 20 && both.iter().all(|r| !makes(r, alt) && !makes(r, primary)), "with both banned the trips take the plain route");
+    assert!(both.iter().all(|r| !r.trail.contains(&c.conn[1].0) && !r.trail.contains(&c.conn[2].0)), "the plain route stays on the arterial");
+}
+
+#[test]
+fn via_never_loops_back_through_a_node() {
+    let (net, c) = corridor(20.0, Control::Uncontrolled);
+    // The movement from the local row back onto the arterial toward the origin can only be reached by passing the origin node again.
+    let mv = (c.conn[1].1, c.art[0].1);
+    let recs = via_trips(net.clone(), via_demand_with(c.a[0], c.a[3], 300.0, mv, Some(20.0), &[]), "[]");
+    assert!(recs.len() > 20, "trips complete");
+    assert!(recs.iter().all(|r| !makes(r, mv) && !visits_a_node_twice(&net, r)), "a via route that would loop is dropped for the plain route");
 }
 
 #[test]

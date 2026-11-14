@@ -224,10 +224,23 @@ pub struct Flow {
 }
 
 /// A movement a flow must make: link ids (equal to link positions).
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ViaMove {
+    pub from: u32,
+    pub to: u32,
+}
+
+/// An assumed movement a flow makes while its detour stays within `max_detour` times the plain route in the current network (ASSUMPTION).
+/// `alternatives` are the movements of the same turn family on parallel streets (ASSUMPTION), tried in the order given by cost when the primary fails.
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
 pub struct Via {
     pub from: u32,
     pub to: u32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_detour: Option<f64>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub alternatives: Vec<ViaMove>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

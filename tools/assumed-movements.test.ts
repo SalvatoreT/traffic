@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { assignMsa, buildGraph, type ALink, type ANode } from './lib/assign';
-import { assumedMovementFlows } from './lib/assumed-movements';
+import { assumedMovementFlows, withAlternatives } from './lib/assumed-movements';
 import { fitToCounts, type Constraint, type FlowType } from './lib/fit-counts';
 
 // Two ways from O (0) to D (1): the direct arterial (links 0 and 1 through X) and a slightly longer way over Y (links 2 and 3, the movement 2 -> 3).
@@ -90,6 +90,23 @@ describe('assumed movement flows', () => {
       const r = assumedMovementFlows({ ...base, intents }, 2, 3, 30, 'am', seed, g2, () => false, grp, 0.5);
       expect(r.report.intents![0].assigned).toBeCloseTo(10, 2);
       expect(r.report.intents![1].note).toMatch(/no candidate flow/);
+    });
+  });
+
+  describe('alternatives (ASSUMPTION)', () => {
+    const grp = { groupOf: (n: number) => (n === 0 ? 'north' : n === 1 ? 'fw' : 'other'), expand: (r: string | string[]) => (Array.isArray(r) ? r : [r]) };
+    const it1 = { id: 'a', label: 'a', fromGroup: 'north', toGroup: 'fw', share: 0.5, basis: 't' };
+    const mvA = { cfg: { ...cfg, id: 'A', intents: [it1] }, a: 2, b: 3 };
+    const mvB = { cfg: { ...cfg, id: 'B', intents: [{ ...it1, id: 'b' }] }, a: 4, b: 5 };
+    const mvC = { cfg: { ...cfg, id: 'C', intents: [{ ...it1, id: 'c', fromGroup: 'south' }] }, a: 6, b: 7 };
+    const flow = { origin: 0, destination: 1, vehPerHour: 10, via: { a: 2, b: 3, maxDetour: 1.3 } };
+    it('lists the other movements with an intent of the same groups, in configuration order', () => {
+      const r = withAlternatives([flow], mvA, [mvA, mvB, mvC], grp);
+      expect(r[0].via).toEqual({ a: 2, b: 3, maxDetour: 1.3, alternatives: [{ a: 4, b: 5 }] });
+    });
+    it('leaves a flow outside the intent groups, or a movement without intents, unchanged', () => {
+      expect(withAlternatives([{ ...flow, origin: 5 }], mvA, [mvA, mvB], grp)[0].via?.alternatives).toBeUndefined();
+      expect(withAlternatives([flow], { ...mvA, cfg: cfg }, [mvA, mvB], grp)[0]).toBe(flow);
     });
   });
 });

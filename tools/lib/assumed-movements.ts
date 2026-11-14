@@ -123,7 +123,7 @@ export function assumedMovementFlows(cfg: AssumedMovementCfg, a: number, b: numb
   const flows: FlowIn[] = keep.map((c) => {
     const f = seed[c.k];
     const v = c.through ? sT * total * f.vehPerHour / wTk : (1 - sT) * total * f.vehPerHour / wLk;
-    return { origin: f.origin, destination: f.destination, vehPerHour: Math.round(v * 1000) / 1000, via: { a, b } };
+    return { origin: f.origin, destination: f.destination, vehPerHour: Math.round(v * 1000) / 1000, via: { a, b, maxDetour: cfg.maxDetour } };
   });
   report.flows = flows.length;
   report.throughVeh = keep.reduce((s, c, i) => s + (c.through ? flows[i].vehPerHour : 0), 0);
@@ -178,7 +178,7 @@ function intentFlows(cfg: AssumedMovementCfg, intents: IntentCfg[], cand: { k: n
     const f = seed[k];
     const vv = Math.round(v * 1000) / 1000;
     if (vv <= 0) continue;
-    flows.push({ origin: f.origin, destination: f.destination, vehPerHour: vv, via: { a, b } });
+    flows.push({ origin: f.origin, destination: f.destination, vehPerHour: vv, via: { a, b, maxDetour: cfg.maxDetour } });
     if (grp.groupOf(f.origin) !== STUDY_GROUP && grp.groupOf(f.destination) !== STUDY_GROUP) through += vv;
     // The assumed flow now carries these trips: the plain flow of the same pair gives them up, at most 80% of it.
     carve.set(k, Math.min(vv, 0.8 * f.vehPerHour));
@@ -191,6 +191,27 @@ function intentFlows(cfg: AssumedMovementCfg, intents: IntentCfg[], cand: { k: n
   report.topOrigins = top('origin');
   report.topDestinations = top('destination');
   return flows;
+}
+
+/** An assumed movement with the link positions it was resolved to. */
+export interface MovementRef { cfg: AssumedMovementCfg; a: number; b: number }
+
+/**
+ * Alternatives of an assumed flow (ASSUMPTION, change via-detour-fallback): when the simulator finds the movement too costly in a scenario (a turn ban, a diverter, a closure), the driver may
+ * make the same kind of turn on a parallel street. The alternatives of a flow are the other configured movements that have an intent with the same origin group and destination group
+ * as an intent of this movement that the flow's pair belongs to, in configuration order. Config data only: no street names are read here.
+ */
+export function withAlternatives(flows: FlowIn[], cur: MovementRef, all: MovementRef[], grp?: GroupCtx): FlowIn[] {
+  if (!grp || !cur.cfg.intents?.length) return flows;
+  const key = (it: IntentCfg) => JSON.stringify([it.fromGroup, it.toGroup]);
+  const family = (it: IntentCfg) => all.filter((m) => !(m.a === cur.a && m.b === cur.b) && (m.cfg.intents ?? []).some((q) => key(q) === key(it)));
+  return flows.map((f) => {
+    if (!f.via) return f;
+    const mine = cur.cfg.intents!.filter((it) => grp.expand(it.fromGroup).includes(grp.groupOf(f.origin)) && grp.expand(it.toGroup).includes(grp.groupOf(f.destination)));
+    const alts: { a: number; b: number }[] = [];
+    for (const it of mine) for (const m of family(it)) if (!alts.some((x) => x.a === m.a && x.b === m.b)) alts.push({ a: m.a, b: m.b });
+    return alts.length ? { ...f, via: { ...f.via, alternatives: alts } } : f;
+  });
 }
 
 export function assumedReportLines(rs: AssumedReport[], nodeLabel: (id: number) => string): string[] {

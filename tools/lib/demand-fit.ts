@@ -6,8 +6,8 @@ import { assigned, fitToCounts, type Constraint, type FitOptions, type FlowType 
 import { buildShareConstraints, impliedVolumes, type ImpliedVolume, type ShareLink, type ShareSpec, type Targets } from './share-targets';
 
 export interface NetLinkIn extends ALink { name: string; lanes?: number; inStudyArea?: boolean }
-/** `via`: an assumed movement flow (link positions a, b); its volume is pinned in the fit. */
-export interface FlowIn { origin: number; destination: number; vehPerHour: number; mode?: string; via?: { a: number; b: number } }
+/** `via`: an assumed movement flow (link positions a, b); its volume is pinned in the fit. `maxDetour` and `alternatives` are read by the simulator (ASSUMPTION). */
+export interface FlowIn { origin: number; destination: number; vehPerHour: number; mode?: string; via?: { a: number; b: number; maxDetour?: number; alternatives?: { a: number; b: number }[] } }
 
 export interface Station {
   id: string;

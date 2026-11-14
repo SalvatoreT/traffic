@@ -12,7 +12,7 @@ import { buildGraph, costToGo, treeFrom, type Graph } from './lib/assign';
 import { buildStations, corridorOf, markHoldout, overusedRecords, fitPeriod, fitReport, type FitConfig, type NetLinkIn, type PeriodResult } from './lib/demand-fit';
 import type { FlowType } from './lib/fit-counts';
 import { intersectionStations, type IxConfig, type IxFile } from './lib/intersection-counts';
-import { assumedMovementFlows, assumedReportLines, type AssumedMovementCfg, type AssumedReport, type Carve } from './lib/assumed-movements';
+import { assumedMovementFlows, assumedReportLines, withAlternatives, type AssumedMovementCfg, type AssumedReport, type Carve } from './lib/assumed-movements';
 import { deriveApproachGroups, expandGroups, groupOfNode, groupsFile, type ApproachGroups, type ApproachGroupsCfg } from './lib/approach-groups';
 import { countReportLines, countStations, mapMovement, nodeStreets, touchesHeld, tripEnds, type CountConfig, type CountFile, type CountReport, type TripEnds } from './lib/volunteer-count';
 
@@ -23,8 +23,8 @@ interface Node { id: number; x: number; y: number; gate: boolean; canEnter?: boo
 interface Link { id: number; from: number; to: number; name: string; class: string; length: number; lanes?: number; speedLimit?: number; geometry?: [number, number][]; inStudyArea: boolean; bikeLane?: boolean; bikeRoute?: boolean; humps?: number[]; stopAtEnd?: boolean }
 interface Network { id: string; origin: { lon: number; lat: number }; studyArea: [number, number][]; nodes: (Node & { control: string })[]; links: Link[]; turnBans?: { from: number; to: number; periods?: string[] }[] }
 // `mode` is absent on car flows (default car). Pedestrian and bicycle flows are persons per hour in the same field.
-const viaOut = (f: Flow) => { if (!f.via) return f; const { via, ...r } = f; return { ...r, via: { from: via.a, to: via.b } }; };
-interface Flow { origin: number; destination: number; vehPerHour: number; mode?: 'car' | 'bicycle' | 'pedestrian'; via?: { a: number; b: number } }
+const viaOut = (f: Flow) => { if (!f.via) return f; const { via, ...r } = f; return { ...r, via: { from: via.a, to: via.b, ...(via.maxDetour !== undefined ? { maxDetour: via.maxDetour } : {}), ...(via.alternatives?.length ? { alternatives: via.alternatives.map((x) => ({ from: x.a, to: x.b })) } : {}) } }; };
+interface Flow { origin: number; destination: number; vehPerHour: number; mode?: 'car' | 'bicycle' | 'pedestrian'; via?: { a: number; b: number; maxDetour?: number; alternatives?: { a: number; b: number }[] } }
 
 const missing = [cfg.network, cfg.raw.lodes, cfg.raw.caltrans, cfg.raw.caltransRamps, cfg.raw.oaklandTmc].filter((f: string) => !existsSync(f));
 if (missing.length) {
@@ -807,7 +807,7 @@ if (fc?.enabled) {
         if (!(target > 0)) continue;
         const pm = st.target[lastPeriod] || target;
         const r = assumedMovementFlows(mv, a, b, target, per.id, seed, g, (id) => !!nodeById.get(id)?.inStudyArea, grp, target / pm);
-        per.flows.push(...(r.flows as Flow[]));
+        per.flows.push(...(withAlternatives(r.flows, { cfg: mv, a, b }, maps.map((q) => ({ cfg: q.mv, a: q.a, b: q.b })), grp) as Flow[]));
         assumedReports.push(r.report);
         for (const [k, v] of r.carve as Carve) carves.set(k, (carves.get(k) ?? 0) + v);
       }
