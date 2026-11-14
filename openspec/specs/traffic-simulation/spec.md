@@ -361,3 +361,10 @@ When an observation lists the approach an approach also runs with, the plan SHAL
 #### Scenario: Eastbound through 57.2 s, westbound 27.6 s
 - **WHEN** an approach with 57.2 s of green runs with an opposing approach of 27.6 s in a 110 s cycle
 - **THEN** the plan has three phases, the first with the approach alone for 29.6 s, the second with both for 27.6 s and the third with the cross street, and the approach has green for 57.2 s of the cycle
+
+### Requirement: Through cars by intent
+The simulator SHALL tally each through car once under the intent of its flow, or under "other", at the moment the through count counts it, and SHALL report cars an hour per intent in `cutThrough.byIntent` (the demand's intents in order, then `other`; they sum to the through count). It SHALL expose the cumulative number of those cars that left each link, per intent. Results SHALL be deterministic for a seed.
+
+#### Scenario: Rows add up
+- **WHEN** a run has through cars
+- **THEN** the per-intent vehicles sum to `cutThrough.vehicles`
