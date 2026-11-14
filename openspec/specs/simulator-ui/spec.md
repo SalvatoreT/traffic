@@ -33,7 +33,7 @@ Users SHALL be able to pause, resume, change simulation speed, choose the time p
 
 #### Scenario: Max
 - **WHEN** the user chooses Max, with or without interventions
-- **THEN** both runs advance to the end of the hour without drawing every frame, the progress bar and a status note show how far they are, the page stays responsive, the overlay and results are not redrawn from partial averages on the way, and when they finish the map shows the final state with the end-of-run results and overlays
+- **THEN** both runs advance to the end of the hour without drawing every frame, the progress bar and a status note show how far they are, the page stays responsive, the overlay and results are not redrawn from partial averages on the way, the Results panel and Streets table say in a status message that figures appear when the run finishes instead of showing zeros, and when they finish the map shows the final state with the end-of-run results and overlays
 
 #### Scenario: Stopping a Max run
 - **WHEN** the user pauses or chooses another speed during a Max run

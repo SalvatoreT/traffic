@@ -5,10 +5,10 @@ import { EARLY_SECONDS, RUN_SECONDS } from '../lib/run';
 import { formatClock, formatDiff, formatValue } from '../lib/format';
 
 interface Props {
-  base: Metrics | null; scen: Metrics | null; comparing: boolean; finished: boolean; scenarioCount: number; onRef(key: string): void;
+  base: Metrics | null; scen: Metrics | null; comparing: boolean; finished: boolean; withheld?: boolean; scenarioCount: number; onRef(key: string): void;
 }
 
-export function Comparison({ base, scen, comparing, finished, scenarioCount, onRef }: Props) {
+export function Comparison({ base, scen, comparing, finished, withheld = false, scenarioCount, onRef }: Props) {
   // Throttled polite announcement: at most once per 20 s of wall time, only while a scenario exists.
   const [announce, setAnnounce] = useState('');
   const last = useRef(0);
@@ -23,13 +23,17 @@ export function Comparison({ base, scen, comparing, finished, scenarioCount, onR
     <div className="results">
       <p className="muted small">
         Baseline and scenario run side by side from the same seed, period and demand, so both cover the same simulated time.
-        {scen ? (
+        {scen && !withheld ? (
           finished
             ? <> Results are for the <strong>full hour</strong>.</>
             : <> Results are <strong>so far ({formatShort(elapsed)} of {formatShort(RUN_SECONDS)})</strong>.</>
         ) : null}{' '}
         Editing the scenario restarts both runs.
       </p>
+      <div role="status" className="results-wait">
+        {withheld && <p className="notice">Results appear when the run finishes. At Max speed the run goes straight to the end of the hour, so there are no partial figures to show.</p>}
+      </div>
+      {withheld ? null : <>
       {!comparing && (
         <p className="notice" role="note">
           No interventions yet, so the scenario is the baseline. Add an intervention to see the differences.
@@ -49,6 +53,7 @@ export function Comparison({ base, scen, comparing, finished, scenarioCount, onR
       {hasModes(scen) && MODE_CARDS.map((c) => (
         <CardTable key={c.id} c={c} base={base} scen={scen} comparing={comparing} empty={emptyMode(c.id as ModeCardId, [base, scen])} />
       ))}
+      </>}
       <aside className="caveat" aria-label="Caveat about fixed demand">
         Trip demand is fixed in this version: the same trips are made before and after
         every change. Real schemes also remove some traffic. A meta-analysis of London low-traffic neighborhoods found traffic

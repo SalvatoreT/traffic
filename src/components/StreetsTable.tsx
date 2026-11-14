@@ -26,9 +26,10 @@ interface Props {
   overlay: Overlay;
   baseMetrics?: Metrics | null; scenMetrics?: Metrics | null;
   onHover(h: Hover | null): void;
+  withheld?: boolean;
 }
 
-export function StreetsTable({ index, scen, base, comparing, overlay, showService, onShowService, baseMetrics, scenMetrics, onHover }: Props) {
+export function StreetsTable({ index, scen, base, comparing, overlay, showService, onShowService, baseMetrics, scenMetrics, onHover, withheld = false }: Props) {
   const walkBike = comparing && baseMetrics && scenMetrics ? vulnerableSentence(baseMetrics, scenMetrics) : '';
   const [sort, setSort] = useState<{ key: Key; dir: 1 | -1 } | null>(null);
   // Until a header is chosen: largest absolute change first when a scenario exists, else largest scenario cut-through.
@@ -108,6 +109,7 @@ export function StreetsTable({ index, scen, base, comparing, overlay, showServic
       <p className="muted">
         A text alternative to the map: one row per street block (both directions combined), limited to the study area and the streets around it that the map shows. Each count is cars an hour on that one block, both directions: all cars (local trips included) and, separately, only the through cars among them, which cross the area without a trip that starts or ends in it. Through cars are always part of all cars, never added to them. Speed in mph, flow-weighted. The Change column is the scenario minus the baseline for the metric chosen on the map, and sorts by size of change. {comparing ? '' : 'Scenario columns fill in once an intervention is added.'}
       </p>
+      <div role="status">{withheld && <p className="notice">Street figures appear when the run finishes.</p>}</div>
       {walkBike && <p className="small">{walkBike}</p>}
       <div className="filters">
         <label>Search streets <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="e.g. Oak" /></label>

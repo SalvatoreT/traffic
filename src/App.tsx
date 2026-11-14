@@ -283,15 +283,16 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   }, [network, index, select, layout]);
 
   // --- overlay values (fixed color scale, see OVERLAY_TOP)
+  const withheld = running && isInstant(speed) && !finished;
   const shownStats = source === 'baseline' && stats?.comparing ? stats.baseline : stats?.scenario;
-  const linkStats = shownStats?.linkStats ?? null;
+  const linkStats = withheld ? null : shownStats?.linkStats ?? null;
   const overlayMax = overlayTop(overlay);
-  const baseStats = stats?.baseline.linkStats ?? null;
+  const baseStats = withheld ? null : stats?.baseline.linkStats ?? null;
 
-  const base: Metrics | null = stats?.baseline.metrics ?? null;
-  const scen: Metrics | null = stats?.scenario.metrics ?? null;
+  const base: Metrics | null = withheld ? null : stats?.baseline.metrics ?? null;
+  const scen: Metrics | null = withheld ? null : stats?.scenario.metrics ?? null;
   const comparing = !!stats?.comparing;
-  const multimodal = hasModes(scen);
+  const multimodal = hasModes(stats?.scenario.metrics ?? null);
   const mapVisible = view === 'map';
   useEffect(() => setHoverPlace(null), [view]);
   const mapShown = mapVisible || view === 'streets';
@@ -300,7 +301,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   const menu = selection && placement ? (
     <SelectionMenu bundle={bundle} index={index} selection={selection} interventions={interventions} placement={placement}
       onApply={onApply} onRemove={onRemove} onClose={clearSelection}
-      readout={comparing ? { overlay, scen: stats?.scenario.linkStats ?? null, base: baseStats } : null} />
+      readout={comparing && !withheld ? { overlay, scen: stats?.scenario.linkStats ?? null, base: baseStats } : null} />
   ) : null;
 
   const shareButton = (
@@ -337,7 +338,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
     </>
   );
   const resultsPanel = (
-    <Comparison base={base} scen={scen} comparing={comparing} finished={finished} scenarioCount={interventions.length} onRef={(k) => { setSourceRef(k); setView('sources'); }} />
+    <Comparison base={base} scen={scen} comparing={comparing} finished={finished} withheld={withheld} scenarioCount={interventions.length} onRef={(k) => { setSourceRef(k); setView('sources'); }} />
   );
 
   return (
@@ -414,7 +415,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
           <div className="map-area" hidden={!mapShown}>
             <Suspense fallback={<p className="boot" role="status">Loading map…</p>}>
             <MapView
-              bundle={bundle} index={index} region={region} mode={mode} overlay={overlay} overlayMax={overlayMax} linkStats={mapView === 'change' ? stats?.scenario.linkStats ?? null : linkStats} baseStats={baseStats} view={mapView}
+              bundle={bundle} index={index} region={region} mode={mode} overlay={overlay} overlayMax={overlayMax} linkStats={mapView === 'change' ? (withheld ? null : stats?.scenario.linkStats ?? null) : linkStats} baseStats={baseStats} view={mapView}
               client={client} interventions={interventions} selection={mapVisible ? selection : null} onHit={onHit} hover={hoverPlace} interactive={mapVisible}
               routes={{ check: routeCheck, show: showRoutes, highlight: hotRoute }}
               popover={placement === 'popover' ? menu : null}
@@ -437,7 +438,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
           </div>
           {view === 'streets' && (
             <StreetsTable bundle={bundle} index={index} showService={showService} onShowService={setShowService}
-              scen={stats?.scenario.linkStats ?? null} base={baseStats} comparing={comparing} overlay={overlay}
+              scen={withheld ? null : stats?.scenario.linkStats ?? null} base={baseStats} comparing={comparing} overlay={overlay} withheld={withheld}
               baseMetrics={base} scenMetrics={scen} onHover={setHoverPlace} />
           )}
           {view === 'proposals' && <Proposals bundle={bundle} index={index} today={todayRoutes.total} state={proposals.state} loaded={proposals.loaded} current={interventions} onOpen={onOpenProposal} />}
