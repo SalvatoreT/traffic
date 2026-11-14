@@ -11,10 +11,12 @@ export const BASIS_HELP: Record<DemandIntent['basis'], string> = {
   assumed: 'No count limits this flow. It comes from the trip table and the fit to the arterial counts.',
 };
 
+/** Violet and dashed: neither hue is on the blue-orange change scale or the viridis flow scale, and no overlay line is dashed this thickly, so the highlight cannot be read as a traffic value. */
 export const INTENT_COLORS: Record<Mode, { line: string; casing: string }> = {
-  light: { line: '#d9480f', casing: '#ffffff' },
-  dark: { line: '#ffa94d', casing: '#1f1208' },
+  light: { line: '#7a1fc2', casing: '#ffffff' },
+  dark: { line: '#e4ccff', casing: '#2a0a4d' },
 };
+export const INTENT_DASH: [number, number] = [2.4, 1.2];
 
 /** The paths are drawn at this many pixels per car an hour (clamped), so a wider line is always a heavier flow, for every intent alike. ASSUMPTION: display scale. */
 export const PX_PER_VPH = 0.1;

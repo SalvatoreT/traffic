@@ -723,6 +723,20 @@ fn main() {
         }
         std::fs::write(path, o).ok();
     }
+    if let Ok(path) = std::env::var("CAL_DUMP_PATH_TRIPS") {
+        // Debug: one line per completed trip that used any link of CAL_PATH_LINKS: uid, origin, destination, guided, then the whole trail.
+        let wanted: std::collections::HashSet<u32> = std::env::var("CAL_PATH_LINKS").unwrap_or_default().split(',').filter_map(|x| x.trim().parse().ok()).collect();
+        let mut o = String::new();
+        for t in tm.iter() {
+            if let Some(r) = trip_by_uid.get(&t.uid) {
+                if r.trail.iter().any(|l| wanted.contains(l)) {
+                    let trail: Vec<String> = r.trail.iter().map(|l| l.to_string()).collect();
+                    let _ = writeln!(o, "{} {} {} {} {}", t.uid, t.origin, t.dest, t.guided as u8, trail.join(","));
+                }
+            }
+        }
+        std::fs::write(path, o).ok();
+    }
     let wander_rows: Vec<(&str, WanderStats)> = vec![
         ("all trips", summarize(tm.iter())),
         ("gate to gate", summarize(tm.iter().filter(|t| is_gate(t.origin) && is_gate(t.dest)))),

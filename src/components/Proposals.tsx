@@ -179,8 +179,14 @@ function Card({ p, when, hid, n, routes, ivs, searched, bundle, index, mode, tod
       </div>
       {isRef && p.note && <p className="muted prop-note">{p.note}</p>}
       <div className={hasPic ? 'prop-body has-pic' : 'prop-body'}>
+        <p className="prop-sum">{p.summary}</p>
+        {hasPic && (
+          <div className="prop-side">
+            <ProposalPicture net={bundle.network} index={index} p={p} ivs={ivs ?? []} mode={mode} periodLabel={periodLabel} searchedPeriods={searched} />
+            {action}
+          </div>
+        )}
         <div className="prop-main">
-          <p className="prop-sum">{p.summary}</p>
           <div className="prop-figs">
             <div className="fig">
               <p className="fig-main"><span className="fig-num">{cut.figure}</span> {cut.label}</p>
@@ -196,12 +202,6 @@ function Card({ p, when, hid, n, routes, ivs, searched, bundle, index, mode, tod
           <h5 className="sr-only">Changes</h5>
           <ul className="prop-ivs">{p.interventions.map((iv, i) => <li key={i}>{iv.label}</li>)}</ul>
         </div>
-        {hasPic && (
-          <div className="prop-side">
-            <ProposalPicture net={bundle.network} index={index} p={p} ivs={ivs ?? []} mode={mode} periodLabel={periodLabel} searchedPeriods={searched} />
-            {action}
-          </div>
-        )}
       </div>
       <details className="prop-more">
         <summary>More detail</summary>

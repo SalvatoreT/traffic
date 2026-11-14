@@ -77,7 +77,7 @@ export function IntentPanel({ defs, base, scen, comparing, net, idx, selected, o
             <p>{paths && paths.segments.length ? <>{text} <span className="muted">(for {run})</span></> : 'No typical path: few or none of these cars have crossed the side streets in this run.'}</p>
             {paths && paths.maxVph > 0 && (
               <p className="muted small">
-                Line width shows cars an hour of this reason on each street: the widest line is {Math.round(paths.maxVph)} an hour. Only streets with at least 8% of this reason's cars are drawn.
+                Drawn as a dashed violet line, which no traffic color uses. Line width shows cars an hour of this reason on each street: the widest line is {Math.round(paths.maxVph)} an hour. Only streets with at least 8% of this reason's cars are drawn.
                 {def.avoids ? ` Cars of this kind would otherwise use ${def.avoids}, by the model's shortest route.` : ''}
                 {phone ? ' Drag the sheet down to see the map.' : ''}
               </p>

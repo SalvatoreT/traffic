@@ -20,11 +20,11 @@ import { changeMark, linkChangeIntensity, NO_DATA, type MapView as ChangeView } 
 import { linkStatsView } from '../types';
 import type { RouteCheck } from '../lib/throughroutes';
 import { CELL_COLORS, CELL_DASHES, ROUTE_COLORS } from '../lib/routestyle';
-import { INTENT_COLORS } from '../lib/intents';
+import { INTENT_COLORS, INTENT_DASH } from '../lib/intents';
 import { towardLabel, type NetIndex } from '../lib/naming';
 import { hoverLine } from '../lib/hoverline';
 import { describeInterventionFull, interventionPoint } from '../lib/describe';
-import { barPx, blockBadgeOffset, blockBar, casingPx, filterLegs, legBars, type Bar } from '../lib/blocked';
+import { badgeFont, badgePx, barAtM, barPx, blockBadgeOffset, blockBar, casingPx, filterLegs, legBars, type Bar } from '../lib/blocked';
 import type { SimClient } from '../sim/client';
 import {
   boxOfPoints, centerToShow, correctedCamera, fitCamera, hardBounds, insideRect, isAcceptable, minZoomFor, MIN_ZOOM_FLOOR,
@@ -632,8 +632,8 @@ export function MapView(p: Props) {
       const intentWidth = (f: number) => ['interpolate', ['linear'], ['zoom'], 14, ['*', ['get', 'w'], f], 18, ['*', ['get', 'w'], 2 * f]] as never;
       map.addLayer({ id: 'intent-casing', type: 'line', source: 'intent-paths', layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: { 'line-color': IC.casing, 'line-width': intentWidth(1.5), 'line-opacity': 0.9, 'line-offset': OFFSET as never } });
-      map.addLayer({ id: 'intent-line', type: 'line', source: 'intent-paths', layout: { 'line-cap': 'round', 'line-join': 'round' },
-        paint: { 'line-color': IC.line, 'line-width': intentWidth(1), 'line-opacity': 0.92, 'line-offset': OFFSET as never } });
+      map.addLayer({ id: 'intent-line', type: 'line', source: 'intent-paths', layout: { 'line-cap': 'butt', 'line-join': 'round' },
+        paint: { 'line-color': IC.line, 'line-dasharray': INTENT_DASH as never, 'line-width': intentWidth(1), 'line-opacity': 0.92, 'line-offset': OFFSET as never } });
       for (let k = 1; k <= FEATHER_STEPS; k++) {
         map.addSource(`feather-${k}`, { type: 'geojson', data: featherWash(b, region, k) as never });
         map.addLayer({ id: `feather-${k}`, type: 'fill', source: `feather-${k}`, paint: { 'fill-color': K.bg, 'fill-opacity': featherAlpha(k), 'fill-antialias': false } });
@@ -814,7 +814,7 @@ export function MapView(p: Props) {
     markers.current.forEach((m) => m.remove());
     const net = bundle.network;
     const out: maplibregl.Marker[] = [];
-    const blocked: unknown[] = [];
+    const items: { iv: Intervention; marker: maplibregl.Marker; leg: ReturnType<typeof filterLegs> | null }[] = [];
     for (const iv of p.interventions.filter((v) => interventionInRegion(v, net, region))) {
       const [x, y] = interventionPoint(iv, net);
       const ll = proj.toLonLat(x, y);
@@ -829,13 +829,31 @@ export function MapView(p: Props) {
       }
       el.setAttribute('aria-hidden', 'true');
       el.title = describeInterventionFull(iv, net, p.index);
-      const bars: Bar[] = iv.type !== 'modal_filter' ? [] : 'link' in iv ? [blockBar(net.links[iv.link])] : legBars(filterLegs(net, p.index, iv.node), iv.legs);
-      const shift = iv.type === 'modal_filter' && 'link' in iv ? blockBadgeOffset(bars[0].bearing) : [0, 0];
-      out.push(new maplibregl.Marker({ element: el, offset: shift as [number, number] }).setLngLat(ll).addTo(map));
-      for (const b of bars) blocked.push({ type: 'Feature', properties: { rot: b.bearing }, geometry: { type: 'Point', coordinates: proj.toLonLat(b.center[0], b.center[1]) } });
+      const marker = new maplibregl.Marker({ element: el }).setLngLat(ll).addTo(map);
+      out.push(marker);
+      items.push({ iv, marker, leg: iv.type === 'modal_filter' && 'node' in iv ? filterLegs(net, p.index, iv.node) : null });
     }
     markers.current = out;
-    (map.getSource('blocked') as maplibregl.GeoJSONSource | undefined)?.setData({ type: 'FeatureCollection', features: blocked } as never);
+    // Badge size, block-badge offset and bar distance all follow the zoom; the bars stay on their streets just outside the badge.
+    const layout = () => {
+      const z = map.getZoom(), size = badgePx(z), bf = badgeFont(size), mpp = metersPerPixel(z, map.getCenter().lat);
+      const st = map.getContainer().style;
+      st.setProperty('--iv-s', `${size}px`); st.setProperty('--iv-f', `${bf.font}px`); st.setProperty('--iv-b', `${bf.border}px`);
+      const at = barAtM(z, mpp);
+      const blocked: unknown[] = [];
+      for (const { iv, marker, leg } of items) {
+        if (iv.type !== 'modal_filter') continue;
+        const bars: Bar[] = 'link' in iv ? [blockBar(net.links[iv.link])] : legBars(leg!, iv.legs, at);
+        if ('link' in iv) marker.setOffset(blockBadgeOffset(bars[0].bearing, z));
+        for (const b of bars) blocked.push({ type: 'Feature', properties: { rot: b.bearing }, geometry: { type: 'Point', coordinates: proj.toLonLat(b.center[0], b.center[1]) } });
+      }
+      (map.getSource('blocked') as maplibregl.GeoJSONSource | undefined)?.setData({ type: 'FeatureCollection', features: blocked } as never);
+    };
+    layout();
+    let last = map.getZoom();
+    const onZoom = () => { const z = map.getZoom(); if (Math.abs(z - last) < 0.04) return; last = z; layout(); };
+    map.on('zoom', onZoom);
+    return () => { map.off('zoom', onZoom); };
   }, [p.interventions, ready, bundle, proj, p.index, region]);
 
   // ---- selection highlight and keeping it in view
@@ -943,13 +961,13 @@ export function MapView(p: Props) {
         const [x, y] = interventionPoint(iv, net);
         const q = map.project(L.proj.toLonLat(x, y));
         const bars: BadgeMark[] = iv.type === 'modal_filter'
-          ? ('link' in iv ? [blockBar(net.links[iv.link])] : legBars(filterLegs(net, L.index, iv.node), iv.legs)).map((b) => {
+          ? ('link' in iv ? [blockBar(net.links[iv.link])] : legBars(filterLegs(net, L.index, iv.node), iv.legs, barAtM(map.getZoom(), metersPerPixel(map.getZoom(), map.getCenter().lat)))).map((b) => {
             const c = map.project(L.proj.toLonLat(b.center[0], b.center[1])), sz = barPx(map.getZoom());
             return { x: c.x, y: c.y, len: sz.length, thick: sz.thick, type: 'leg' as const, bearing: b.bearing };
           })
           : [];
-        const [sx, sy] = iv.type === 'modal_filter' && 'link' in iv ? blockBadgeOffset(blockBar(net.links[iv.link]).bearing) : [0, 0];
-        return [...bars, { x: q.x + sx, y: q.y + sy, type: iv.type, bearing: iv.type === 'diagonal_diverter' ? iv.bearing : undefined, mph: iv.type === 'speed_limit' ? Math.round(iv.speed * 2.23694) : undefined }];
+        const [sx, sy] = iv.type === 'modal_filter' && 'link' in iv ? blockBadgeOffset(blockBar(net.links[iv.link]).bearing, map.getZoom()) : [0, 0];
+        return [...bars, { x: q.x + sx, y: q.y + sy, size: badgePx(map.getZoom()), type: iv.type, bearing: iv.type === 'diagonal_diverter' ? iv.bearing : undefined, mph: iv.type === 'speed_limit' ? Math.round(iv.speed * 2.23694) : undefined }];
       });
       const change = L.view === 'change';
       const legend = legendModel(L.overlay, L.mode, change);
