@@ -38,7 +38,9 @@ export interface DemandPeriod {
   flows: { origin: number; destination: number; vehPerHour: number; mode?: 'car' | 'bicycle' | 'pedestrian' }[];
 }
 export interface Provenance { source: string; url: string; note: string }
-export interface Demand { version: 1; area: string; periods: DemandPeriod[]; provenance: Provenance[] }
+/** A named reason through cars cross the study area (area config `throughIntents`), in the order the simulator tallies them. */
+export interface DemandIntent { id: string; label: string; avoids?: string; basis: 'observed' | 'assumed'; note: string }
+export interface Demand { version: 1; area: string; periods: DemandPeriod[]; provenance: Provenance[]; intents?: DemandIntent[] }
 
 export interface Calibration { status: 'uncalibrated' | 'calibrated'; note?: string; defaultPeriod?: string; experimentalPeriods?: string[] }
 export interface AreaEntry {
@@ -73,7 +75,9 @@ export interface Metrics {
   backlog: number; unroutableTrips: number; meanTripTime: number; meanTripDelay: number;
   vehKm: number;
   /** `vehicles`: through vehicles (neither trip end in the study area) that used a local link, each counted once. `shareOfLocalVehKm`: through share of the distance driven on local links. */
-  cutThrough: { vehicles: number; vehiclesPerHour: number; vehKm: number; shareOfLocalVehKm: number };
+  cutThrough: { vehicles: number; vehiclesPerHour: number; vehKm: number; shareOfLocalVehKm: number;
+    /** The same through vehicles by intent: one entry per demand intent, in order, then `other`. Absent when the demand has no intents. */
+    byIntent?: { id: string; vehicles: number; vehiclesPerHour: number }[] };
   safety: {
     localMeanSpeed: number; localP85Speed: number; shareAbove20mph: number;
     shareAbove25mph: number; ttcConflicts: number;

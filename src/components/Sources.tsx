@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import refs from '../../docs/references.md?raw';
 import type { Calibration, Demand } from '../types';
 import { Markdown } from './Markdown';
+import { IntentSources } from './IntentSources';
 import { calibrationCaveat } from '../lib/caveat';
 
 export function Sources({ demand, synthetic, focusRef, calibration }: { demand: Demand; synthetic: boolean; focusRef?: string | null; calibration?: Calibration }) {
@@ -34,6 +35,7 @@ export function Sources({ demand, synthetic, focusRef, calibration }: { demand: 
         </ul>
         <p className="muted small">Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a> (ODbL).</p>
       </section>
+      <IntentSources demand={demand} />
       <section aria-labelledby="bib-h">
         <h3 id="bib-h">Research references</h3>
         <Markdown source={refs} offset={3} />

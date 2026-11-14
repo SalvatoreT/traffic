@@ -61,7 +61,7 @@ function parseMetrics(s: SimLike): Metrics | null {
   try { return JSON.parse(s.metrics()) as Metrics; } catch { return null; }
 }
 function statsOf(s: SimLike | null): SimStats {
-  return s ? { metrics: parseMetrics(s), linkStats: s.linkStats() } : { metrics: null, linkStats: null };
+  return s ? { metrics: parseMetrics(s), linkStats: s.linkStats(), intentLinks: s.intentLinks?.() ?? null } : { metrics: null, linkStats: null, intentLinks: null };
 }
 function postFrame() {
   if (!scenario) return;
@@ -78,7 +78,10 @@ function postStats() {
   const achievedSpeed = running && now - winStart >= 900 ? winSim / ((now - winStart) / 1000) : null;
   resetWindow();
   const buffers = new Set<ArrayBuffer>();
-  for (const s of [sc, base]) if (s.linkStats) buffers.add(s.linkStats.buffer as ArrayBuffer);
+  for (const s of [sc, base]) {
+    if (s.linkStats) buffers.add(s.linkStats.buffer as ArrayBuffer);
+    if (s.intentLinks) buffers.add(s.intentLinks.buffer as ArrayBuffer);
+  }
   post({ t: 'stats', time: scenario.time(), comparing, scenario: sc, baseline: base, achievedSpeed, epoch }, [...buffers]);
   lastStats = now;
 }

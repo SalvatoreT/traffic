@@ -14,6 +14,7 @@ import type { FlowType } from './lib/fit-counts';
 import { applyRecency, yearLabel, type RecencyConfig } from './lib/recency';
 import { intersectionStations, type IxConfig, type IxFile } from './lib/intersection-counts';
 import { assumedMovementFlows, assumedReportLines, withAlternatives, type AssumedMovementCfg, type AssumedReport, type Carve } from './lib/assumed-movements';
+import { annotateFlows, resolveIntents, type IntentFlow, type ThroughIntentsCfg } from './lib/through-intents';
 import { deriveApproachGroups, expandGroups, groupOfNode, groupsFile, type ApproachGroups, type ApproachGroupsCfg } from './lib/approach-groups';
 import { countReportLines, countStations, mapMovement, nodeStreets, touchesHeld, tripEnds, type CountConfig, type CountFile, type CountReport, type TripEnds } from './lib/volunteer-count';
 
@@ -984,7 +985,15 @@ const provenance = [
   { source: 'Assumptions', url: 'data/demand/README.md', note: 'ASSUMPTION: K-factor, period volume factors, per-class default ADT, directional split, trip rates, gravity turning factors, sector-to-gate weights, local trip share capped per gate. Uncalibrated.' }
 ];
 
-const out = { version: 1, area: cfg.area, periods: outPeriods.map((q) => ({ ...q, flows: q.flows.map(viaOut) })), provenance };
+// Cut-through intents (area config `throughIntents`): each car flow gets the index of the intent its origin and destination groups name. Volumes are not touched.
+const intentRes = groups && areaCfg?.throughIntents ? resolveIntents(areaCfg.throughIntents as ThroughIntentsCfg, groups) : [];
+if (intentRes.length) {
+  for (const per of outPeriods) {
+    const vol = annotateFlows(per.flows as IntentFlow[], intentRes, (id) => groupOfNode(groups!, nodeById, id));
+    console.log(`Intent flows ${per.id}: ${intentRes.map((r, k) => `${r.out.id} ${vol[k].toFixed(0)}`).join(', ')}, none ${vol[intentRes.length].toFixed(0)} veh/h (all flows, through or not)`);
+  }
+}
+const out = { version: 1, area: cfg.area, ...(intentRes.length ? { intents: intentRes.map((r) => r.out) } : {}), periods: outPeriods.map((q) => ({ ...q, flows: q.flows.map(viaOut) })), provenance };
 mkdirSync(dirname(cfg.output), { recursive: true });
 writeFileSync(cfg.output, JSON.stringify(out));
 if (cfg.countFit?.validation?.demandOutput && Object.keys(cvFlows).length) {

@@ -20,6 +20,7 @@ import { changeMark, linkChangeIntensity, NO_DATA, type MapView as ChangeView } 
 import { linkStatsView } from '../types';
 import type { RouteCheck } from '../lib/throughroutes';
 import { CELL_COLORS, CELL_DASHES, ROUTE_COLORS } from '../lib/routestyle';
+import { INTENT_COLORS } from '../lib/intents';
 import { towardLabel, type NetIndex } from '../lib/naming';
 import { hoverLine } from '../lib/hoverline';
 import { describeInterventionFull, interventionPoint } from '../lib/describe';
@@ -49,6 +50,8 @@ interface Props {
   selection: Selection | null;
   /** Through-route overlay: routes and cells drawn only when `show`; `highlight` is drawn either way. */
   routes?: { check: RouteCheck; show: boolean; highlight: string | null };
+  /** Typical path of the chosen cut-through intent: links with cars an hour and the line width in pixels. */
+  intentPaths?: { link: number; vph: number; w: number }[] | null;
   /** A place chosen on the map, or null for empty map. */
   onHit(s: Selection | null): void;
   /** Menu shown as a pop-up tied to the selection (wide and mid-width layouts). */
@@ -562,7 +565,7 @@ export function MapView(p: Props) {
       map.addSource('blocked', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
       map.addSource('place-hover', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
       map.addSource('selection', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-      for (const id of ['cells', 'routes', 'route-hi']) map.addSource(id, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+      for (const id of ['cells', 'routes', 'route-hi', 'intent-paths']) map.addSource(id, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
       const K = KIND_STYLE.light;
       const major = ['match', ['get', 'kind'], ['motorway', 'trunk', 'primary', 'secondary', 'tertiary'], true, false] as never;
       map.addLayer({ id: 'base-paths', type: 'line', source: 'basemap', filter: ['match', ['get', 'kind'], ['footway', 'path', 'cycleway', 'steps', 'pedestrian', 'track'], true, false],
@@ -608,6 +611,12 @@ export function MapView(p: Props) {
         paint: { 'line-color': RC.hiCasing, 'line-width': routeWidth(11, 20), 'line-offset': OFFSET as never } });
       map.addLayer({ id: 'route-hi', type: 'line', source: 'route-hi', layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: { 'line-color': RC.hi, 'line-width': routeWidth(7, 13), 'line-offset': OFFSET as never } });
+      const IC = INTENT_COLORS[live.current.mode];
+      const intentWidth = (f: number) => ['interpolate', ['linear'], ['zoom'], 14, ['*', ['get', 'w'], f], 18, ['*', ['get', 'w'], 2 * f]] as never;
+      map.addLayer({ id: 'intent-casing', type: 'line', source: 'intent-paths', layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: { 'line-color': IC.casing, 'line-width': intentWidth(1.5), 'line-opacity': 0.9, 'line-offset': OFFSET as never } });
+      map.addLayer({ id: 'intent-line', type: 'line', source: 'intent-paths', layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: { 'line-color': IC.line, 'line-width': intentWidth(1), 'line-opacity': 0.92, 'line-offset': OFFSET as never } });
       for (let k = 1; k <= FEATHER_STEPS; k++) {
         map.addSource(`feather-${k}`, { type: 'geojson', data: featherWash(b, region, k) as never });
         map.addLayer({ id: `feather-${k}`, type: 'fill', source: `feather-${k}`, paint: { 'fill-color': K.bg, 'fill-opacity': featherAlpha(k), 'fill-antialias': false } });
@@ -707,6 +716,20 @@ export function MapView(p: Props) {
       map.setPaintProperty('route-hi', 'line-color', RC.hi);
     } catch { /* layers exist once the map has loaded */ }
   }, [rt?.check, rt?.show, rt?.highlight, mode, ready, bundle, proj]); // eslint-disable-line
+
+  // ---- typical path of the chosen cut-through intent
+  const ip = p.intentPaths;
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    const net = bundle.network;
+    const features = (ip ?? []).map((s) => ({ type: 'Feature', properties: { w: s.w, vph: s.vph }, geometry: { type: 'LineString', coordinates: net.links[s.link].geometry.map(([x, y]) => proj.toLonLat(x, y)) } }));
+    (map.getSource('intent-paths') as maplibregl.GeoJSONSource | undefined)?.setData({ type: 'FeatureCollection', features } as never);
+    try {
+      map.setPaintProperty('intent-line', 'line-color', INTENT_COLORS[mode].line);
+      map.setPaintProperty('intent-casing', 'line-color', INTENT_COLORS[mode].casing);
+    } catch { /* layers exist once the map has loaded */ }
+  }, [ip, mode, ready, bundle, proj]); // eslint-disable-line
 
   // ---- bike network layer
   useEffect(() => {

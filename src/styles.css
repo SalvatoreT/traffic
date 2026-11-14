@@ -434,3 +434,23 @@ table.streets tbody tr:hover, table.streets tbody tr:focus-visible { background:
 .map-menu-item { min-height: 36px; padding: .3rem .8rem; border: 0; border-radius: 6px; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .map-menu-item:hover, .map-menu-item:focus { background: var(--surface-2); }
 .map-menu-item:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+
+/* Why cars cut through */
+.intents p { margin: .35rem 0; }
+table.intent-table, .intent-table thead, .intent-table tbody, .intent-table tfoot { display: block; width: 100%; }
+.intent-table tr { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 .5rem; padding: .4rem .2rem; border-top: 1px solid var(--border); }
+.intent-table th[scope='row'] { grid-column: 1 / -1; text-align: left; font-weight: 400; }
+.intent-table td::before { content: attr(data-label) ' '; display: block; font-size: .72rem; color: var(--muted); }
+table.intent-table tfoot tr { border-top: 2px solid var(--border); } table.intent-table tfoot th, table.intent-table tfoot td { font-weight: 600; }
+table.intent-table td { text-align: left; font-variant-numeric: tabular-nums; }
+.intent-btn { display: block; width: 100%; min-height: 32px; padding: .2rem .35rem; margin: -.2rem -.35rem .15rem; text-align: left; font: inherit; color: var(--text); background: none; border: 1px solid transparent; border-radius: 6px; cursor: pointer; }
+.intent-btn:hover { background: var(--surface-2); }
+.intent-btn[aria-pressed='true'] { background: var(--surface-2); border-color: var(--accent); font-weight: 600; }
+.intent-btn[aria-pressed='true']::before { content: '\25B6\00a0'; }
+.intent-on { background: var(--surface-2); }
+.badge { display: inline-block; padding: 0 .4rem; border: 1px solid var(--border); border-radius: 999px; font-size: .75rem; line-height: 1.5; color: var(--muted); white-space: nowrap; }
+.badge-observed { border-style: solid; color: var(--text); font-weight: 600; }
+.badge-assumed { border-style: dashed; }
+.intent-card { border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 6px; padding: .4rem .65rem; margin-top: .5rem; background: var(--surface); }
+.intent-card p { margin: .3rem 0; }
+@media (prefers-reduced-motion: no-preference) { .intent-btn { transition: background-color .12s; } }

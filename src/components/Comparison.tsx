@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Metrics } from '../types';
 import { CARDS, MODE_CARDS, emptyMode, hasModes, networkHealth, summarize, type CardDef, type ModeCardId } from '../lib/metrics';
 import { EARLY_SECONDS, RUN_SECONDS } from '../lib/run';
@@ -6,9 +6,11 @@ import { formatClock, formatDiff, formatValue } from '../lib/format';
 
 interface Props {
   base: Metrics | null; scen: Metrics | null; comparing: boolean; finished: boolean; withheld?: boolean; scenarioCount: number; onRef(key: string): void;
+  /** Rendered after the through-traffic card. */
+  intents?: ReactNode;
 }
 
-export function Comparison({ base, scen, comparing, finished, withheld = false, scenarioCount, onRef }: Props) {
+export function Comparison({ base, scen, comparing, finished, withheld = false, scenarioCount, onRef, intents }: Props) {
   // Throttled polite announcement: at most once per 20 s of wall time, only while a scenario exists.
   const [announce, setAnnounce] = useState('');
   const last = useRef(0);
@@ -43,7 +45,7 @@ export function Comparison({ base, scen, comparing, finished, withheld = false, 
         <p className="notice" role="note">Early results are noisy: let both runs reach at least 5 simulated minutes (use a faster speed).</p>
       )}
       {scen && <HealthLine scen={scen} base={comparing ? base : null} />}
-      {CARDS.map((c) => <CardTable key={c.id} c={c} base={base} scen={scen} comparing={comparing} />)}
+      {CARDS.map((c) => <Fragment key={c.id}><CardTable c={c} base={base} scen={scen} comparing={comparing} />{c.id === 'cut' && intents}</Fragment>)}
       {scen && !hasModes(scen) && (
         <section className="card" aria-labelledby="card-modes-na">
           <h3 id="card-modes-na">Walking and biking</h3>

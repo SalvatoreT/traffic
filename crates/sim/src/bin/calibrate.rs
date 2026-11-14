@@ -922,6 +922,10 @@ fn main() {
     if let Some(g) = &intent_groups {
         md.push_str(&intent::report(&intent_rows, g, &targets, 1, pm));
     }
+    if !m.cut_through.by_intent.is_empty() {
+        let area_cfg: Value = std::fs::read_to_string(root.join(format!("data/areas/{}.json", args.area))).ok().and_then(|t| serde_json::from_str(&t).ok()).unwrap_or(Value::Null);
+        md.push_str(&intent::by_intent_section(&m.cut_through, &area_cfg["throughIntents"]["intents"]));
+    }
     let _ = writeln!(md, "\n## Select-link shares: modeled vs observed (design D5: headline = freeway shares, tolerance +/-10 pp)\n");
     for n in &notes {
         let _ = writeln!(md, "- {n}");

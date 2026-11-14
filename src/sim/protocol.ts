@@ -3,6 +3,8 @@ import type { Intervention, Metrics } from '../types';
 export interface SimStats {
   metrics: Metrics | null;
   linkStats: Float32Array | null;
+  /** Stride 3: intent slot, link id, cumulative through vehicles that left the link. Null when the build or the demand has no intents. */
+  intentLinks?: Float32Array | null;
 }
 
 export type ToWorker =
@@ -42,6 +44,7 @@ export interface SimLike {
   vehicles(): Float32Array;
   signals(): Uint8Array;
   linkStats(): Float32Array;
+  intentLinks?(): Float32Array;
   metrics(): string;
   reset(): void;
   free?(): void;

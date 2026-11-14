@@ -126,6 +126,83 @@
     },
     "overrides": {}
   },
+  "throughIntents": {
+    "_note": "Cut-through intent view. Hypotheses about why a car crosses the study area without an end in it, in words a resident uses. A through trip that uses a residential or service street of the study area is tallied under the first intent whose fromGroups holds its origin group and whose toGroups holds its destination group; any other goes under Other. Groups and sets are those of approachGroups. basis `observed`: a volunteer or agency count of a turning movement or a freeway share limits how many cars the model sends this way; where they come from and why is still the model's assumption. basis `assumed`: no count limits it. `avoids` is the arterial the trip would otherwise use on the shortest free-flow route with the side streets closed (an assumption of the calibrate report, not a driver survey).",
+    "intents": [
+      {
+        "id": "berkeley-to-sr24",
+        "label": "Berkeley and College Ave traffic using Hillegass Ave, Colby St and nearby side streets to reach the SR-24 on-ramps",
+        "fromGroups": ["berkeley-north", "college-north", "shattuck-north", "berkeley-northwest"],
+        "toGroups": ["freeway-on"],
+        "avoids": "Telegraph Ave",
+        "basis": "observed",
+        "note": "Counted turns from Alcatraz Ave onto Hillegass Ave and Colby St southbound (the volunteer count of Feb 25, 2025) and the freeway share of those blocks limit the volume. That these cars come from Berkeley and College Ave, not only from Alcatraz Ave, and that they are bypassing Telegraph Ave is an assumption."
+      },
+      {
+        "id": "telegraph-to-sr24",
+        "label": "Southbound Telegraph Ave and west-side traffic turning off Alcatraz Ave onto Colby St or Hillegass Ave to reach the SR-24 on-ramps",
+        "fromGroups": ["telegraph-north", "alcatraz-west", "ashby-west", "san-pablo", "west-streets"],
+        "toGroups": ["freeway-on"],
+        "avoids": "Telegraph Ave",
+        "basis": "observed",
+        "note": "The count shows 22% of Colby St southbound trips came by way of Telegraph Ave, and the counted turn-ins from the west side of Alcatraz Ave times the freeway share limit the volume. Which approach group the cars started from is an assumption."
+      },
+      {
+        "id": "sr24-to-north",
+        "label": "SR-24 off-ramp traffic using Colby St, Hillegass Ave and nearby side streets to reach Berkeley and Telegraph Ave north",
+        "fromGroups": ["freeway-off"],
+        "toGroups": ["telegraph-north", "berkeley-north", "college-north", "shattuck-north", "berkeley-northwest"],
+        "avoids": "Telegraph Ave",
+        "basis": "observed",
+        "note": "Counted northbound exits at Alcatraz Ave from Colby St (164 an hour) and Hillegass Ave (109 an hour) and the share of those blocks' trips that came from a freeway (47% and 37%) limit the volume. How many of those cars were bound for Berkeley rather than Alcatraz Ave west is an assumption."
+      },
+      {
+        "id": "sr24-to-west-hills",
+        "label": "SR-24 off-ramp traffic using side streets to reach Alcatraz Ave west, Ashby Ave and Claremont Ave toward the hills",
+        "fromGroups": ["freeway-off"],
+        "toGroups": ["claremont-hills", "hills-northeast", "hills-east", "alcatraz-west", "ashby-west", "san-pablo", "west-streets"],
+        "avoids": "SR-24",
+        "basis": "assumed",
+        "note": "Counted left turns from Colby St onto Alcatraz Ave bound the west-side part. The model sends no more than that count allows; the choice of destination, and any trip to the hills, is an assumption (only 4 an hour were counted entering Colby St from the northeast)."
+      },
+      {
+        "id": "south-to-north",
+        "label": "Downtown, south and west Oakland traffic using side streets to reach Berkeley and Telegraph Ave north",
+        "fromGroups": ["south-side"],
+        "toGroups": ["telegraph-north", "berkeley-north", "college-north", "shattuck-north", "berkeley-northwest"],
+        "avoids": "Telegraph Ave",
+        "basis": "assumed",
+        "note": "No count says where northbound cars on the side streets began. The origin is the trip table's, placed by the demand fit to the arterial counts."
+      },
+      {
+        "id": "north-to-south",
+        "label": "Berkeley and Telegraph Ave north traffic using side streets to reach downtown, south and west Oakland",
+        "fromGroups": ["telegraph-north", "berkeley-north", "college-north", "shattuck-north", "berkeley-northwest"],
+        "toGroups": ["south-side"],
+        "avoids": "Telegraph Ave",
+        "basis": "assumed",
+        "note": "No count says where southbound cars on the side streets were going. The destination is the trip table's, placed by the demand fit to the arterial counts."
+      },
+      {
+        "id": "oakland-crosstown",
+        "label": "Oakland cross-town traffic (West Oakland, Broadway, Piedmont, Emeryville) using side streets near Claremont Ave and Telegraph Ave",
+        "fromGroups": ["south-side"],
+        "toGroups": ["south-side", "west-streets", "alcatraz-west", "ashby-west", "san-pablo", "claremont-hills", "hills-northeast", "hills-east"],
+        "avoids": "Claremont Ave and Telegraph Ave",
+        "basis": "assumed",
+        "note": "Trips that begin and end south or west of the study area. The trip table and the demand fit place them; no count says why they use the side streets."
+      },
+      {
+        "id": "hills-and-south-to-sr24",
+        "label": "Claremont Ave, hills and south Oakland traffic using side streets to reach the SR-24 on-ramps",
+        "fromGroups": ["claremont-hills", "hills-northeast", "hills-east", "south-side"],
+        "toGroups": ["freeway-on"],
+        "avoids": "Claremont Ave",
+        "basis": "assumed",
+        "note": "The trip table and the demand fit place these trips; no count limits how many use the side streets."
+      }
+    ]
+  },
   "calibration": {
     "status": "calibrated",
     "note": "Checked on counts from the last five years (87% of PM stations pass GEH 5), which are mostly one day of counting; older counts pass 50%.",

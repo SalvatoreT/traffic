@@ -357,6 +357,27 @@ pub fn report(rows: &[Row], groups: &Groups, targets: &Value, seeds: usize, pm: 
     md
 }
 
+/// Markdown table of the simulator's own through-car tally by cut-through intent (area config `throughIntents`), cars an hour over the run, with the share of all through cars.
+pub fn by_intent_section(ct: &traffic_sim::model::CutThrough, defs: &Value) -> String {
+    let mut md = String::new();
+    let total = ct.vehicles_per_hour;
+    let _ = writeln!(md, "\n## Through cars by intent (cut-through intent view)\n");
+    let _ = writeln!(md, "A through car is tallied once, under the first intent whose origin and destination groups hold its trip ends, at the moment the through count counts it. Cars an hour over the run, the same window as the through-car figure ({total:.0} an hour).\n");
+    let _ = writeln!(md, "| Intent | Basis | Cars an hour | Share |\n| --- | --- | --- | --- |");
+    let mut listed = 0.0;
+    for c in &ct.by_intent {
+        let def = defs.as_array().and_then(|a| a.iter().find(|d| d["id"].as_str() == Some(c.id.as_str())));
+        let label = def.and_then(|d| d["label"].as_str()).unwrap_or(if c.id == "other" { "Other (no intent listed)" } else { c.id.as_str() });
+        let basis = def.and_then(|d| d["basis"].as_str()).unwrap_or("");
+        if c.id != "other" {
+            listed += c.vehicles_per_hour;
+        }
+        let _ = writeln!(md, "| {label} | {basis} | {:.0} | {:.0}% |", c.vehicles_per_hour, if total > 0.0 { 100.0 * c.vehicles_per_hour / total } else { 0.0 });
+    }
+    let _ = writeln!(md, "\nIntents listed cover {:.0}% of through cars.\n", if total > 0.0 { 100.0 * listed / total } else { 0.0 });
+    md
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

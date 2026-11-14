@@ -25,6 +25,8 @@ import type { Hover } from './lib/highlight';
 import { StreetsTable } from './components/StreetsTable';
 import { Proposals, useProposals } from './components/Proposals';
 import { linkHash, type Proposal } from './lib/proposals';
+import { IntentPanel } from './components/IntentPanel';
+import { intentPaths, segmentWidths } from './lib/intents';
 import { baselineCheck, checkThroughRoutes, routeHeadline } from './lib/throughroutes';
 import { effectiveView, initViewState, viewReducer } from './lib/change';
 import { showCalibrationBanner } from './lib/caveat';
@@ -142,6 +144,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   // Set after mount so the polite live region exists before its content changes.
   useEffect(() => { setNotice({ unplaced: initial.unplaced, invalid: initial.invalid }); }, [initial]);
   const [source, setSource] = useState<'scenario' | 'baseline'>('scenario');
+  const [intentSel, setIntentSel] = useState<string | null>(null);
   const [viewState, dispatchView] = useReducer(viewReducer, undefined, () => initViewState(initial.interventions.length, store.get('changeView')));
   useEffect(() => { dispatchView({ type: 'count', count: interventions.length }); }, [interventions.length]);
   useEffect(() => { if (viewState.remembered) store.set('changeView', viewState.remembered); }, [viewState.remembered]);
@@ -294,6 +297,14 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   const scen: Metrics | null = withheld ? null : stats?.scenario.metrics ?? null;
   const comparing = !!stats?.comparing;
   const multimodal = hasModes(stats?.scenario.metrics ?? null);
+  const intentDefs = demand.intents;
+  const intentRun = comparing && source === 'baseline' ? stats?.baseline : stats?.scenario;
+  const intentPathsShown = useMemo(() => {
+    const slot = intentSel && intentDefs ? intentDefs.findIndex((d) => d.id === intentSel) : -1;
+    const m = withheld ? null : intentRun?.metrics;
+    if (slot < 0 || !m?.cutThrough.byIntent) return null;
+    return intentPaths(intentRun?.intentLinks, slot, intentSel!, m.time, m.cutThrough.byIntent[slot]?.vehiclesPerHour ?? 0);
+  }, [intentSel, intentDefs, intentRun, withheld]);
   const mapVisible = view === 'map';
   useEffect(() => setHoverPlace(null), [view]);
   const mapShown = mapVisible || view === 'streets';
@@ -339,7 +350,11 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
     </>
   );
   const resultsPanel = (
-    <Comparison base={base} scen={scen} comparing={comparing} finished={finished} withheld={withheld} scenarioCount={interventions.length} onRef={(k) => { setSourceRef(k); setView('sources'); }} />
+    <Comparison base={base} scen={scen} comparing={comparing} finished={finished} withheld={withheld} scenarioCount={interventions.length} onRef={(k) => { setSourceRef(k); setView('sources'); }}
+      intents={intentDefs?.length ? (
+        <IntentPanel defs={intentDefs} base={base} scen={scen} comparing={comparing} net={bundle.network} idx={index} selected={intentSel} onSelect={setIntentSel}
+          paths={intentPathsShown} pathsFrom={comparing ? source : 'scenario'} phone={phone} onSources={() => { setSourceRef('intents'); setView('sources'); }} />
+      ) : undefined} />
   );
 
   return (
@@ -419,6 +434,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
               bundle={bundle} index={index} region={region} mode={mode} overlay={overlay} overlayMax={overlayMax} linkStats={mapView === 'change' ? (withheld ? null : stats?.scenario.linkStats ?? null) : linkStats} baseStats={baseStats} view={mapView}
               client={client} interventions={interventions} selection={mapVisible ? selection : null} onHit={onHit} hover={hoverPlace} interactive={mapVisible}
               routes={{ check: routeCheck, show: showRoutes, highlight: hotRoute }}
+              intentPaths={view === 'map' && intentPathsShown ? segmentWidths(intentPathsShown) : null}
               popover={placement === 'popover' ? menu : null}
               visible={mapShown} reducedMotion={reduced}
               modes={multimodal ? modes : { ...modes, bicycle: false, pedestrian: false }} showBikeNet={bikeNet && multimodal}
