@@ -182,3 +182,14 @@ The importer SHALL leave out service ways tagged as parking aisles, driveways or
 #### Scenario: A drive-through between two streets
 - **WHEN** a way tagged `service=drive-through` connects two streets
 - **THEN** the network has no link for it and no route can pass through it
+
+### Requirement: An observation can name the approach it runs with
+An observation of the area config MAY give `runsWithHeading`, the compass direction of travel of another approach of the same street at the same signal. The importer SHALL list that approach's incoming links as `runsWith` in the approach's green, and SHALL warn about an observation whose partner matches no link.
+
+#### Scenario: Partner found
+- **WHEN** two observations of one street at a signal have headings 80 and 260 and the first gives `runsWithHeading` 260
+- **THEN** the first approach's green lists the links of the second as `runsWith`
+
+#### Scenario: No partner
+- **WHEN** no incoming link of the street travels in the named direction
+- **THEN** the observation is reported as not applied

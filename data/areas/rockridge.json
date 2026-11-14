@@ -128,7 +128,7 @@
   },
   "calibration": {
     "status": "uncalibrated",
-    "note": "PM headline shares are within 10 points, but the 52nd St off-ramp carries 683 veh/h against 1,024 and 68% of fitted PM stations pass GEH 5 against 85%.",
+    "note": "Shares within 10 points and stable in all periods, but 69% of fitted PM stations pass GEH 5 against 85%; the 52nd St off-ramp carries 899 veh/h, 1,024 counted.",
     "defaultPeriod": "midday",
     "experimentalPeriods": [
       "pm_peak"
@@ -287,110 +287,6 @@
       "cycleSeconds": 50,
       "greenSeconds": 13,
       "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing PM', SB SR-24 On-Ramp & MLK Way & NB SR-24 Off-Ramp: cycle 50 s; the southbound stream that turns onto the on-ramp (1547 veh/h) has 29 s of green in a phase of its own and the northbound stream that crosses it (268 veh/h) 13 s; applied to midday as an ASSUMPTION (no midday worksheet)"
-    },
-    {
-      "at": ["Ashby Avenue", "Claremont Avenue"],
-      "approach": "Ashby Avenue",
-      "periods": ["pm_peak"],
-      "cycleSeconds": 100,
-      "greenSeconds": 50.5,
-      "source": "[SafewayCollege-DEIR2011] 'Existing PM Peak Hour' Synchro 7 worksheet (count of 2010-03-16, 5:15 to 6:15 PM), Ashby Avenue & Claremont Avenue: actuated cycle 100 s; Ashby Avenue eastbound and westbound together 50.5 s of green; the two Claremont Avenue legs are split phases of 17.0 s and 17.5 s"
-    },
-    {
-      "at": ["Ashby Avenue", "Claremont Avenue"],
-      "approach": "Claremont Avenue",
-      "heading": 34,
-      "ownPhase": true,
-      "periods": ["pm_peak"],
-      "cycleSeconds": 100,
-      "greenSeconds": 17.0,
-      "source": "[SafewayCollege-DEIR2011] 'Existing PM Peak Hour' Synchro 7 worksheet (count of 2010-03-16, 5:15 to 6:15 PM), Ashby Avenue & Claremont Avenue: actuated cycle 100 s; the Claremont Avenue approach from the southwest has a split phase of 17.0 s"
-    },
-    {
-      "at": ["Ashby Avenue", "Claremont Avenue"],
-      "approach": "Claremont Avenue",
-      "heading": 210,
-      "ownPhase": true,
-      "periods": ["pm_peak"],
-      "cycleSeconds": 100,
-      "greenSeconds": 17.5,
-      "source": "[SafewayCollege-DEIR2011] 'Existing PM Peak Hour' Synchro 7 worksheet (count of 2010-03-16, 5:15 to 6:15 PM), Ashby Avenue & Claremont Avenue: actuated cycle 100 s; the Claremont Avenue approach from the northeast has a split phase of 17.5 s"
-    },
-    {
-      "at": ["Alcatraz Avenue", "Telegraph Avenue"],
-      "approach": "Alcatraz Avenue",
-      "periods": ["pm_peak"],
-      "cycleSeconds": 95,
-      "greenSeconds": 31.9,
-      "source": "[SafewayCollege-DEIR2011] 'Existing PM Peak Hour' Synchro 7 worksheet (count of 2010-03-16, 5:15 to 6:15 PM), Alcatraz Avenue & Telegraph Avenue: actuated cycle 95 s; Alcatraz Avenue eastbound and westbound together 31.9 s of green; Telegraph Avenue takes the rest (33.8 and 33.4 s of through green with protected left phases of 14.2 and 13.8 s)"
-    },
-    {
-      "at": ["55th Street", "Shattuck Avenue"],
-      "approach": "55th Street",
-      "periods": ["pm_peak"],
-      "cycleSeconds": 80,
-      "greenSeconds": 29.0,
-      "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing PM' (counts of 2013), 55th Street & Shattuck Ave: actuated cycle 80 s; 55th Street eastbound and westbound together 29.0 s of green; Shattuck Avenue 43.0 s"
-    },
-    {
-      "at": ["55th Street", "Telegraph Avenue"],
-      "approach": "55th Street",
-      "periods": ["pm_peak"],
-      "cycleSeconds": 90,
-      "greenSeconds": 27.4,
-      "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing PM' (counts of 2013), 55th Street & Telegraph Ave: actuated cycle 90 s; 55th Street eastbound and westbound together 27.4 s of green; Telegraph Avenue 53.6 s"
-    },
-    {
-      "at": ["52nd Street", "Martin Luther King Junior Way"],
-      "approach": "52nd Street",
-      "periods": ["pm_peak"],
-      "cycleSeconds": 100,
-      "greenSeconds": 25.2,
-      "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing PM' (counts of 2013), MLK Way & 52nd Street: actuated cycle 100 s; 52nd Street eastbound and westbound together 25.2 s of green; Martin Luther King Jr Way takes the rest (43.8 and 50.0 s of through green with protected left phases)"
-    },
-    {
-      "at": ["Claremont Avenue", "Clifton Street"],
-      "approach": "Claremont Avenue",
-      "periods": ["pm_peak"],
-      "cycleSeconds": 80,
-      "greenSeconds": 21.0,
-      "source": "[SafewayCollege-DEIR2011] 'Existing PM Peak Hour' Synchro 7 worksheet (count of 2010-03-16, 5:15 to 6:15 PM), SR 24 EB Off-ramp & Claremont Avenue: actuated cycle 80 s; Claremont Avenue northbound and southbound together 21.0 s of green; the off-ramp and Clifton Street 52.0 s"
-    },
-    {
-      "at": ["Claremont Avenue", "Hudson Street"],
-      "approach": "Hudson Street",
-      "periods": ["pm_peak"],
-      "cycleSeconds": 80,
-      "greenSeconds": 25.0,
-      "source": "[SafewayCollege-DEIR2011] 'Existing PM Peak Hour' Synchro 7 worksheet (count of 2010-03-16, 5:15 to 6:15 PM), Highway 24 WB On-ramp & Claremont Avenue: actuated cycle 80 s; the on-ramp street (Hudson Street) 25.0 s of green; Claremont Avenue 47.0 s"
-    },
-    {
-      "at": ["College Avenue", "Claremont Avenue", "62nd Street"],
-      "approach": "College Avenue",
-      "periods": ["pm_peak"],
-      "cycleSeconds": 110,
-      "greenSeconds": 41.0,
-      "source": "[SafewayCollege-DEIR2011] 'Existing PM Peak Hour' Synchro 7 worksheet (count of 2010-03-16, 5:15 to 6:15 PM), College Ave & Claremont Avenue: actuated cycle 110 s; College Avenue northbound and southbound together 41.0 s of green; the two Claremont Avenue legs are split phases of 19.0 s and the cross street has 15.0 s"
-    },
-    {
-      "at": ["52nd Street", "Claremont Avenue", "Telegraph Avenue"],
-      "approach": "52nd Street",
-      "heading": 81,
-      "ownPhase": true,
-      "periods": ["pm_peak"],
-      "cycleSeconds": 100,
-      "greenSeconds": 4.6,
-      "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing PM' (counts of 2013), Telegraph Ave & 52nd Street/Claremont Ave: actuated cycle 100 s; the 52nd Street approach is a split phase of 4.6 s"
-    },
-    {
-      "at": ["52nd Street", "Claremont Avenue", "Telegraph Avenue"],
-      "approach": "Claremont Avenue",
-      "heading": 262,
-      "ownPhase": true,
-      "periods": ["pm_peak"],
-      "cycleSeconds": 100,
-      "greenSeconds": 16.9,
-      "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing PM' (counts of 2013), Telegraph Ave & 52nd Street/Claremont Ave: actuated cycle 100 s; the Claremont Avenue approach is a split phase of 16.9 s; Telegraph Avenue takes the rest (51.2 s northbound, 65.0 s southbound with a protected left lead of 9.3 s)"
     }
   ]
 }
