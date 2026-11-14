@@ -7,10 +7,10 @@
 ## 3. App
 - [x] 3.1 `streetFilters`, `filterChoices`, closed-leg text and description in `blocked.ts`, `describe.ts`
 - [x] 3.2 Intersection menu choices, marks and export show only closed legs; through-route check honors legs
-- [ ] 3.3 Browser check at 1280 px and phone width
+- [x] 3.3 Browser check at 1280 px and phone width
 ## 4. Proposal search
 - [x] 4.1 Per-street candidates, naming, reference `street`; tests incl. pilot profile
 ## 5. Measure
-- [ ] 5.1 Owner scenario, whole junction against per-street variants
+- [x] 5.1 Owner scenario, whole junction against per-street variants
 ## 6. Check
-- [ ] 6.1 `npm test`, `tsc`
+- [x] 6.1 `npm test`, `tsc`

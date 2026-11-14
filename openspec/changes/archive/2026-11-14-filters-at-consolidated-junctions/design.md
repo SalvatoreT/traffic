@@ -45,6 +45,14 @@ What changes, in plain words:
 - In the owner's six-filter scenario the choice makes no visible difference: 35, 40, 37 and 41 through cars an hour for the four combinations (spread between seeds 5 to 9), against 291 without either junction filter and 598 today. The other four filters and the block filter already cut every through route that Ayala straight travel served, so the straight movement carries almost nothing (2 trips an hour at the node, against 80 today). Closing the other street instead (Ayala and Howell legs) leaves 277 through cars an hour, almost as many as with no filter at these two junctions.
 - Reading: the whole-junction filter overstates the effect of a one-street filter at a consolidated junction when nothing else closes the main street's other connections. The distortion is real but depends on what else is in the scenario.
 
+## Browser check
+
+Playwright at 1280 px and iPhone 13: at Ayala Avenue and Martin Street the menu opens with the three choices (Ayala, Martin, whole), the merged-junction line and each choice's closed legs. "Filter Martin Street here" gave two bars on the Martin Street legs, the list text above, and the link `mn,9q9p3cq6m9,120.300`, which reloads to the same two bars.
+
+## Proposal search
+
+Candidate counts on the reduced run (10 locations): the pilot profile list went from 34 to 43 with 9 per-street filters (about 26 percent more); the unconstrained list is 66 with the interior-location rule of the next change. Per-street candidates add one to two per intersection offered.
+
 ## Risks
 
 - Link ids are not stable across rebuilds; the link text (bearings) is the stored form. A scenario kept as a list of interventions in memory is only valid for the network it was built on, as before.

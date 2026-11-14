@@ -7,5 +7,5 @@
 ## 2. Tests
 - [x] 2.1 Unit and integration tests
 ## 3. Verify
-- [ ] 3.1 Reduced search, pilot then unconstrained, same seeds and period
-- [ ] 3.2 `npm test`
+- [x] 3.1 Reduced search, pilot then unconstrained, same seeds and period
+- [x] 3.2 `npm test`

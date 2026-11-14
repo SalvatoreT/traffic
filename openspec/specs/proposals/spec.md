@@ -68,3 +68,44 @@ The search SHALL accept a named profile from a per-area data file that excludes 
 #### Scenario: Traffic moved onto a bounding street
 - **WHEN** a package adds traffic to a bounding street
 - **THEN** that increase is not counted as harm and is shown with the other bounding-street figures
+
+### Requirement: Per-street filter candidates
+The search SHALL offer, at each intersection where it offers a whole-junction filter, a filter on each single street when closing that street leaves at least two other legs connected, labeled "Modal filter on <street> at <intersection>". Such a candidate SHALL conflict with every other intervention on the same intersection, and a constraint profile SHALL apply to it as to the whole-junction filter.
+
+#### Scenario: Four-way crossing
+- **WHEN** candidates are generated for a crossing of two residential streets
+- **THEN** the whole-junction filter and one filter per street are offered, and no package holds two of them
+
+#### Scenario: T-junction
+- **WHEN** candidates are generated for a T-junction
+- **THEN** only the side street is offered alone, because closing the through street would leave a single leg
+
+#### Scenario: Pilot limits
+- **WHEN** the pilot profile excludes intersections with a bounding street or an intervention type
+- **THEN** no per-street filter is offered at those intersections or of that type
+
+### Requirement: A looser search is never worse than a stricter one
+When a proposals file already holds a group computed on the same network and demand, a search with a profile SHALL start from that group's chosen packages that the profile allows: screen them, extend them in a beam of their own and recheck them with the other finalists. A profile that does not keep off the boundary SHALL offer every location a profile that does would offer. Within one invocation, a later profile SHALL start from the groups the earlier ones wrote.
+
+#### Scenario: Pilot packages seed the unconstrained search
+- **WHEN** the unconstrained search runs after the pilot profile on the same inputs
+- **THEN** every package the pilot group chose is rechecked in the unconstrained run, and the unconstrained group's best option cuts through cars at least as much as the pilot group's
+
+#### Scenario: Package that breaks the limits
+- **WHEN** a seed package holds an intervention the current profile excludes, or one on a bounding street
+- **THEN** that package is left out of the start and a line on stderr says why
+
+#### Scenario: Different inputs
+- **WHEN** the file's group was computed on another network or demand hash
+- **THEN** its packages are not used
+
+#### Scenario: Candidate cap
+- **WHEN** the busiest locations include many on bounding streets
+- **THEN** the unconstrained candidate list still holds the top locations that are off the boundary
+
+### Requirement: Consistent chosen options
+The options chosen for a group SHALL be listed from fewest interventions to most, and a package SHALL be listed only if it cuts through cars by more than every smaller package listed.
+
+#### Scenario: More changes, less effect
+- **WHEN** a finalist has more interventions than another finalist and cuts through cars less
+- **THEN** it is not listed, and its note says a smaller finalist cuts through cars at least as much
