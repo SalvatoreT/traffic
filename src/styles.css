@@ -141,6 +141,7 @@ th, td { text-align: left; padding: .3rem .4rem; border-bottom: 1px solid var(--
 thead th { font-weight: 600; background: var(--surface-2); }
 table.cmp td, table.cmp th[scope='row'] { font-variant-numeric: tabular-nums; }
 table.cmp th, table.cmp td { overflow-wrap: anywhere; }
+table.cmp thead th { overflow-wrap: normal; white-space: nowrap; }
 .chg.better { color: var(--good); background: var(--good-bg); font-weight: 600; }
 .chg.worse { color: var(--bad); background: var(--bad-bg); font-weight: 600; }
 .caveat { border-left: 4px solid var(--note-border); background: var(--note-bg); padding: .6rem .8rem; border-radius: 6px; font-size: .88rem; margin-top: 1rem; }
