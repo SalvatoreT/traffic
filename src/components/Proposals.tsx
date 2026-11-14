@@ -192,7 +192,7 @@ function Card({ p, when, hid, n, routes, today, periodLabel, confirming, onReque
           Every car on one block, both directions, including the local trips of people who start or end a trip in the area. For each period, the block that gains the most is named. This is the kind of change the search penalizes.
         </p>
         <div className="table-scroll" role="region" aria-label="All traffic on side-street blocks by period, scrollable" tabIndex={0}>
-          <table>
+          <table className="wide">
             <caption className="sr-only">All cars an hour on the side-street block that gains the most, by period, split into through cars and local trips</caption>
             <thead>
               <tr>
