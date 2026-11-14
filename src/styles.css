@@ -363,11 +363,13 @@ input[type='checkbox'] { width: 18px; height: 18px; accent-color: var(--accent);
 .streets .chg { font-variant-numeric: tabular-nums; }
 @media (prefers-reduced-motion: reduce) { .ramp-zero span.extra { transition: none; } }
 @media (max-width: 719.98px) {
-  .legend-row.is-change { flex-wrap: wrap; row-gap: 0; padding-bottom: .15rem; }
-  .legend-row.is-change .legend-name { flex: 1 1 0; min-width: 0; }
-  .legend-row.is-change .legend-title { white-space: normal; }
-  .legend-row.is-change .legend-ramp { flex: 1 1 100%; justify-content: center; padding-left: 2.6rem; }
-  .legend-row.is-change .ramp-col { flex: 1 1 auto; max-width: 240px; }
+  .legend-row { flex-wrap: wrap; row-gap: 0; padding-bottom: .15rem; }
+  .legend-row .legend-name { flex: 1 1 0; min-width: 0; }
+  .legend-row .legend-title { white-space: normal; }
+  .legend-row .legend-ramp { flex: 1 1 100%; justify-content: center; padding-left: 2.6rem; }
+  .legend-row .ramp-col { flex: 1 1 auto; max-width: 240px; }
+  .legend-name, .legend-tip-wrap { position: static; }
+  .legend-tip { left: .5rem; right: .5rem; width: auto; max-width: none; }
 }
 
 /* Proposals */
