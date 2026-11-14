@@ -423,15 +423,19 @@ export function MapView(p: Props) {
     const regionBox = regionGeoBox(region, proj);
     const originalOf = (e: unknown) => (e as { originalEvent?: unknown }).originalEvent;
 
-    // The part of the canvas no overlay covers right now. Bars that grow with their content count at their current size;
-    // the legend counts at its collapsed row so expanding it does not move the view.
+    // The part of the canvas no overlay covers right now. The toolbar and the legend count at their collapsed rows,
+    // so expanding either does not move the view.
     const measure = (sheetOverride?: number): { size: Size; unob: Rect } | null => {
       const cr = el.getBoundingClientRect();
       if (cr.width < 50 || cr.height < 50) return null;
       const obs: Obstacle[] = [];
       const area = el.parentElement;
-      const bar = document.querySelector('.toolbar')?.getBoundingClientRect();
-      if (bar && bar.height && bar.bottom > cr.top + 1 && bar.top < cr.bottom) obs.push({ rect: bar, edge: 'top' });
+      const barEl = document.querySelector<HTMLElement>('.toolbar');
+      const barBox = barEl?.getBoundingClientRect();
+      const slotBox = barEl?.closest('.bar-slot')?.getBoundingClientRect();
+      const over = barBox && slotBox ? Math.max(0, barBox.bottom - slotBox.bottom) : 0;
+      const bar = barBox && { left: barBox.left, right: barBox.right, top: barBox.top, bottom: barBox.bottom - over, height: barBox.height - over };
+      if (bar && bar.height > 0 && bar.bottom > cr.top + 1 && bar.top < cr.bottom) obs.push({ rect: bar, edge: 'top' });
       const row = area?.querySelector('.legend-row')?.getBoundingClientRect();
       let rowTop = cr.bottom;
       if (row && row.height) { rowTop = row.top; obs.push({ rect: row, edge: 'bottom' }); }
@@ -500,6 +504,7 @@ export function MapView(p: Props) {
         measure: () => measure(), ring, regionBox, minZoom: () => map.getMinZoom(),
         acceptable: () => { const m = measure(); return !!m && isAcceptable(camera(), m.size, m.unob, regionBox); },
         userMoved: () => userMoved.current,
+        zoom: () => map.getZoom(),
         project: (p: [number, number]) => { const q = map.project(p); return { x: q.x, y: q.y }; },
       };
     }
