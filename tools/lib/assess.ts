@@ -18,7 +18,7 @@ export interface SeedRun {
 }
 
 export interface StationFile {
-  stations: { id: string; kind: string; label: string; corridor: string; held: boolean; links: number[]; target: Record<string, number>; feature?: { kind: string } }[];
+  stations: { id: string; kind: string; label: string; corridor: string; held: boolean; source?: string | null; year?: number | null; links: number[]; target: Record<string, number>; feature?: { kind: string } }[];
   /** Interior links that start at a surface arterial, with the vehicles the volunteer count recorded entering there (per period id). */
   entries?: { side: string; label: string; link: number; counted: Record<string, number | null> }[];
 }
@@ -57,7 +57,7 @@ export function rampStats(runs: SeedRun[]): RampStat[] {
 /** Mean absolute error of the headline shares, in points, on the seed means. */
 export const headlineError = (ss: ShareStat[]): number => { const h = ss.filter((q) => q.headline); return h.length ? h.reduce((a, q) => a + Math.abs(q.errPoints), 0) / h.length : NaN; };
 
-export interface StationScore { period: string; fitted: AcceptanceSummary; held: AcceptanceSummary; interior: { fitted: AcceptanceSummary; held: AcceptanceSummary }; other: { fitted: AcceptanceSummary; held: AcceptanceSummary }; cases: (CaseResult & { corridor: string; label: string; kind: string; stationId: string })[]; skippedWithoutLinks: number }
+export interface StationScore { period: string; fitted: AcceptanceSummary; held: AcceptanceSummary; interior: { fitted: AcceptanceSummary; held: AcceptanceSummary }; other: { fitted: AcceptanceSummary; held: AcceptanceSummary }; cases: (CaseResult & { corridor: string; label: string; kind: string; stationId: string; source?: string; year: number | null })[]; skippedWithoutLinks: number }
 
 /** GEH and size bands of the simulator's link flows (mean over the seeds) against the count targets of link-based stations; gate stations have no link and are skipped. */
 export function scoreStations(runs: SeedRun[], file: StationFile, period: string): StationScore {
@@ -70,7 +70,7 @@ export function scoreStations(runs: SeedRun[], file: StationFile, period: string
     if (!st.links.length) { skipped++; continue; }
     const modeled = withFlows.length ? withFlows.reduce((a, r) => a + st.links.reduce((b, l) => b + (r.linkFlowVehPerHour![l] ?? 0), 0), 0) / withFlows.length : NaN;
     const [c] = evaluateCases([{ id: st.id, modeled, counted: target, held: st.held }]);
-    cases.push({ ...c, corridor: st.corridor, label: st.label, kind: st.kind, stationId: st.id });
+    cases.push({ ...c, corridor: st.corridor, label: st.label, kind: st.kind, stationId: st.id, source: st.source ?? undefined, year: st.year ?? null });
   }
   const part = (sel: (c: (typeof cases)[number]) => boolean) => ({ fitted: summarizeCases(cases.filter((c) => sel(c) && !c.held)), held: summarizeCases(cases.filter((c) => sel(c) && c.held)) });
   return { period, fitted: summarizeCases(cases.filter((c) => !c.held)), held: summarizeCases(cases.filter((c) => c.held)), interior: part((c) => c.kind === 'count'), other: part((c) => c.kind !== 'count'), cases, skippedWithoutLinks: skipped };

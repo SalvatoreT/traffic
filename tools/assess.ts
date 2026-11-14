@@ -8,6 +8,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node
 import { resolve, join } from 'node:path';
 import { corridorRatios, featureStats, headlineError, meanLinkFlow, noiseFile, rampStats, readSeeds, scoreStations, shareStats, travelTimes, type SeedRun, type StationFile, type TravelNet } from './lib/assess';
 import { seedStat } from './lib/acceptance';
+import { recentSplit, sourceYearLines } from './lib/recency';
 
 const root = resolve(import.meta.dirname, '..');
 const arg = (k: string, d: string) => { const i = process.argv.indexOf(k); return i >= 0 ? process.argv[i + 1] : d; };
@@ -28,6 +29,8 @@ const seeds: number[] = seedSpec.split(',').flatMap((p) => { const m = p.match(/
 const targets = JSON.parse(readFileSync(resolve(root, `data/calibration/${area}.targets.json`), 'utf8'));
 const stationsPath = resolve(root, `data/demand/${area}.stations.json`);
 const stations: StationFile | null = existsSync(stationsPath) ? JSON.parse(readFileSync(stationsPath, 'utf8')) : null;
+const demandCfg = JSON.parse(readFileSync(resolve(root, `data/demand/${area}.config.json`), 'utf8'));
+const recencyCfg: { referenceYear: number; recentYears: number } | null = demandCfg.countFit?.recency?.enabled ? demandCfg.countFit.recency : null;
 const netPath = resolve(root, `public/data/${area}.network.json`);
 const travelNet: TravelNet | null = targets.travelTimes?.segments?.length && existsSync(netPath) ? JSON.parse(readFileSync(netPath, 'utf8')) : null;
 const keep = reuse ?? resolve(root, 'target/assess-seeds', `${minutes}${suffix}`);
@@ -37,6 +40,7 @@ const pct = (x: number, d = 1) => (Number.isFinite(x) ? (x * 100).toFixed(d) : '
 const f = (x: number, d = 2) => (Number.isFinite(x) ? x.toFixed(d) : '-');
 const L: string[] = [];
 const byPeriod: Record<string, SeedRun[]> = {};
+const stationRuleLines: string[] = [];
 const verdicts: Record<string, { stable: boolean; d5: boolean | null; flow: boolean | null }> = {};
 const rule = targets.acceptance?.stability ?? {};
 
@@ -64,6 +68,10 @@ for (const p of periods) {
   const sc = stations ? scoreStations(runs, stations, p) : null;
   const flow = sc && p === 'pm_peak' ? sc.fitted.meets : null;
   verdicts[p] = { stable, d5, flow };
+  if (sc && recencyCfg) {
+    const part = (held: boolean) => { const sp = recentSplit(sc.cases.filter((c) => !!c.held === held).map((c) => ({ year: c.year, c })), recencyCfg.referenceYear, recencyCfg.recentYears); const t = (b: { n: number; ok: number }) => `${b.ok} of ${b.n} (${pct(b.n ? b.ok / b.n : NaN, 0)}%)`; return `${held ? 'held out' : 'fitted'} all ${held ? sc.held.gehOk : sc.fitted.gehOk} of ${held ? sc.held.n : sc.fitted.n} (${pct(held ? sc.held.gehShare : sc.fitted.gehShare, 0)}%), recent sources ${t(sp.recent)}, older ${t(sp.older)}`; };
+    stationRuleLines.push(`${p}: ${part(false)}; ${part(true)}`);
+  }
 
   L.push(`## ${p}`, '');
   L.push(`**Stability rule (D16): ${stable ? 'holds' : 'fails'}.** Mean removals ${f(rem.mean)} per hour (min ${f(rem.min)}, max ${f(rem.max)}; rule below ${rule.maxMeanRemovalsPerHour ?? 1}); backlog under ${rule.backlogPct ?? 2}% in ${blOk} of ${n} seeds (mean ${f(seedStat(bl).mean)}%, max ${f(Math.max(...bl))}%); backlog growth in the second half: ${stableFromRust ? (stableFromRust.growthSeeds.length ? `seeds ${stableFromRust.growthSeeds.join(', ')} exceed ${rule.maxSecondHalfBacklogGrowthPct ?? 2} points` : 'no seed above the limit') : '-'}; arterial speed ${f(speed.mean)} m/s (${f(speed.lo)} to ${f(speed.hi)}); completed trips ${Math.round(done.mean)} (${Math.round(done.lo)} to ${Math.round(done.hi)}). The old rule (zero removals in every seed) passes in ${stableFromRust ? stableFromRust.oldRuleSeedsPassing.length : '-'} of ${n} seeds.`, '');
@@ -76,6 +84,7 @@ for (const p of periods) {
   if (sc) {
     L.push('', `Count stations, simulator flows (mean over seeds) against the counts [WebTAG-M3.1] [TfL-TMG4]; ${sc.skippedWithoutLinks} gate stations have no link and are scored only in the demand fit report:`, '', '| Set | Stations | GEH < 5 | Size bands | Mean GEH | Rule (more than 85%) |', '| --- | --- | --- | --- | --- | --- |');
     for (const [name, s] of [['fitted', sc.fitted], ['held out', sc.held]] as const) L.push(`| ${name} | ${s.n} | ${s.gehOk} (${pct(s.gehShare, 0)}%) | ${s.bandOk} (${pct(s.bandShare, 0)}%) | ${f(s.meanGeh, 1)} | ${s.meets ? 'met' : 'not met'} |`);
+    if (recencyCfg) L.push('', 'Count stations by source and count year, simulator flows (the station file lists the source and count year of each station):', '', ...sourceYearLines(sc.cases.map((c) => ({ source: c.source, year: c.year, c })), recencyCfg));
     L.push('', 'Interior streets (volunteer-count blocks) against the other stations (arterials, ramps, Caltrans and turning-movement counts), simulator flows:', '', '| Group | Set | Stations | GEH < 5 | Size bands | Mean GEH |', '| --- | --- | --- | --- | --- | --- |');
     for (const [gname, g] of [['interior blocks', sc.interior], ['other stations', sc.other]] as const) for (const [name, s] of [['fitted', g.fitted], ['held out', g.held]] as const) L.push(`| ${gname} | ${name} | ${s.n} | ${s.gehOk} (${pct(s.gehShare, 0)}%) | ${s.bandOk} (${pct(s.bandShare, 0)}%) | ${f(s.meanGeh, 1)} |`);
     const streetsOf = [...new Set<string>((targets.selectLink ?? []).map((t: { street: string }) => t.street))];
@@ -138,7 +147,7 @@ for (const p of periods) {
 const allStable = periods.every((p) => verdicts[p].stable);
 const pm = verdicts['pm_peak'];
 const calibrated = allStable && (pm ? pm.d5 === true && pm.flow === true : false);
-L.push('## Verdict', '', `Stability by period: ${periods.map((p) => `${p} ${verdicts[p].stable ? 'holds' : 'fails'}`).join(', ')}. PM share rule (D5): ${pm?.d5 == null ? '-' : pm.d5 ? 'holds' : 'fails'}. PM station flow rule on the fitted stations: ${pm?.flow == null ? '-' : pm.flow ? 'met' : 'not met'}. Suggested status: **${calibrated ? 'calibrated' : 'uncalibrated'}**; experimental periods: ${periods.filter((p) => !verdicts[p].stable).join(', ') || 'none'}.`, '');
+L.push('## Verdict', '', `Stability by period: ${periods.map((p) => `${p} ${verdicts[p].stable ? 'holds' : 'fails'}`).join(', ')}. PM share rule (D5): ${pm?.d5 == null ? '-' : pm.d5 ? 'holds' : 'fails'}. PM station flow rule on the fitted stations: ${pm?.flow == null ? '-' : pm.flow ? 'met' : 'not met'}. Station rule (GEH below 5, more than 85%), all sources and sources counted within the last ${recencyCfg?.recentYears ?? 5} years: ${stationRuleLines.join(' | ') || '-'}. The rule is not redefined; whether it applies to recent sources only is the owner's call. Suggested status: **${calibrated ? 'calibrated' : 'uncalibrated'}**; experimental periods: ${periods.filter((p) => !verdicts[p].stable).join(', ') || 'none'}.`, '');
 console.log(L.join('\n'));
 if (write && !reuse || (write && reuse)) writeFileSync(resolve(root, `data/calibration/${area}.assessment${minutes === 60 ? '' : `-${minutes}min`}${suffix ? `-${suffix}` : ''}.md`), L.join('\n') + '\n');
 if (process.argv.includes('--noise') && write) {

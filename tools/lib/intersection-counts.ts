@@ -21,6 +21,8 @@ export interface IxStation {
   id: string; label: string; basis: string; corridor: string; links: number[]; feature?: Feature; target: Record<string, number>; weight: number; weightByPeriod?: Record<string, number>; tolPct: number;
   /** Set on a leg that is a ramp: the links whose ADT-based station this count replaces. */
   rampLinks?: number[];
+  /** Source id and the year of the count date. */
+  source: string; year: number | null;
 }
 export interface IxReport { intersections: number; legs: number; movements: number; ramps: number; notes: string[] }
 
@@ -59,6 +61,7 @@ export function intersectionStations(file: IxFile, net: IxNet, cfg: IxConfig, to
     const legs = Object.fromEntries(Object.entries(c.legs).map(([k, leg]) => [k, mapLeg(leg!, p, net, nodes, cfg)])) as Record<string, { in: number[]; out: number[] }>;
     const src = file.sources[c.source];
     const corridor = `intersection count ${c.id}`;
+    const year = /^(\d{4})-/.test(c.date) ? Number(c.date.slice(0, 4)) : null;
     const enter: Record<string, Record<string, number>> = {}, leave: Record<string, Record<string, number>> = {};
     const moves = new Map<string, { a: number; b: number; from: string; to: string; t: Record<string, number> }>();
     for (const [cp, byApproach] of Object.entries(c.volumes)) {
@@ -92,7 +95,7 @@ export function intersectionStations(file: IxFile, net: IxNet, cfg: IxConfig, to
         const ramp = !!leg!.ramp;
         stations.push({
           id: `ix ${c.id} ${k} ${dir}`, label: `${c.label}, ${ramp ? 'ramp' : leg!.street} (${k} leg) ${dir}`, basis, corridor, links: ls, target: withMid(vol),
-          weight: ramp ? cfg.rampWeight : cfg.weight, weightByPeriod: wMid(ramp ? cfg.rampWeight : cfg.weight), tolPct: cfg.tolerancePct, rampLinks: ramp ? ls : undefined,
+          weight: ramp ? cfg.rampWeight : cfg.weight, weightByPeriod: wMid(ramp ? cfg.rampWeight : cfg.weight), tolPct: cfg.tolerancePct, rampLinks: ramp ? ls : undefined, source: c.source, year,
         });
         rep.legs++; if (ramp) rep.ramps++;
         used = true;
@@ -102,7 +105,7 @@ export function intersectionStations(file: IxFile, net: IxNet, cfg: IxConfig, to
       const adjacent = linkOf.get(e.a)!.to === linkOf.get(e.b)!.from;
       stations.push({
         id: `ix ${c.id} move ${key}`, label: `${c.label}, ${e.from} approach to the ${e.to} leg`, basis, corridor, links: [],
-        feature: adjacent ? { kind: 'move', a: e.a, b: e.b } : { kind: 'path', first: e.a, last: e.b }, target: withMid(e.t), weight: cfg.movementWeight, weightByPeriod: wMid(cfg.movementWeight), tolPct: cfg.tolerancePct * 1.5,
+        feature: adjacent ? { kind: 'move', a: e.a, b: e.b } : { kind: 'path', first: e.a, last: e.b }, target: withMid(e.t), weight: cfg.movementWeight, weightByPeriod: wMid(cfg.movementWeight), tolPct: cfg.tolerancePct * 1.5, source: c.source, year,
       });
       rep.movements++;
     }

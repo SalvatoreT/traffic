@@ -137,6 +137,7 @@
     {
       "street": "ashby",
       "adt": 23500,
+      "year": 2024,
       "lat": 37.85805,
       "lon": -122.24606,
       "source": "SR-13 at Claremont Ave, Berkeley PM 10.79, ahead AADT 23,500 (back 32,500): the ahead side of SR-13 is Ashby Ave west of Claremont Ave, so the station sits on that block, 65 m west of the junction (Caltrans 2023-24 count year). Until the sixteenth round this record was applied to Claremont Ave with a factor of 0.6."
@@ -144,6 +145,7 @@
     {
       "street": "ashby",
       "adt": 28000,
+      "year": 2024,
       "lat": 37.8522,
       "lon": -122.2867,
       "source": "SR-13 Ashby Ave at the SR-123 junction (San Pablo Ave), Berkeley PM 13.178, back AADT 28,000 (east side; ahead 43,500): applies to the Ashby Ave gate at the west edge (Caltrans 2023-24 count year)."
@@ -151,6 +153,7 @@
     {
       "street": "tunnel",
       "adt": 27000,
+      "year": 2024,
       "lat": 37.8581,
       "lon": -122.2439,
       "source": "SR-13 at Domingo Ave, Berkeley PM 10.69, back AADT 27,000 (east side; ahead 32,500): applies to the Tunnel Road gate east of the SR-24/SR-13 ramps (Caltrans 2023-24 count year)."
@@ -158,6 +161,7 @@
     {
       "street": "sanpablo",
       "adt": 21700,
+      "year": 2024,
       "lat": 37.8518,
       "lon": -122.2866,
       "source": "SR-123 San Pablo Ave at JCT RTE 13, Berkeley PM 1.906, back AADT 21,700 (ahead 22,800)."
@@ -165,6 +169,7 @@
     {
       "street": "sanpablo",
       "adt": 20500,
+      "year": 2024,
       "lat": 37.841,
       "lon": -122.283,
       "source": "SR-123 San Pablo Ave at Stanford Ave, Oakland PM 1.12, AADT 21,300 back / 19,700 ahead (mean 20,500)."

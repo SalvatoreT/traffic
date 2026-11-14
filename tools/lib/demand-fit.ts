@@ -3,6 +3,7 @@
 import { geh, withinBand, selectHoldout, corridors, evaluateCases, summarizeCases, type HoldoutOptions } from './acceptance';
 import { SIM_ROUTE_PARAMS, assign, assignMsa, buildGraph, linkVolumes, type ALink, type ANode, type ATurnBan, type Assignment, type Feature, type Graph } from './assign';
 import { assigned, fitToCounts, type Constraint, type FitOptions, type FlowType } from './fit-counts';
+import { sourceYearLines, type RecencyConfig } from './recency';
 import { buildShareConstraints, impliedVolumes, type ImpliedVolume, type ShareLink, type ShareSpec, type Targets } from './share-targets';
 
 export interface NetLinkIn extends ALink { name: string; lanes?: number; inStudyArea?: boolean }
@@ -34,12 +35,17 @@ export interface Station {
   weightByPeriod?: Record<string, number>;
   /** Corridor for the hold-out and the corridor ratios, when the station brings its own (volunteer-count blocks: their street). */
   corridor?: string;
+  /** Source family (id used by the recency rule and the reports) and the count year of the source (mean of its count years); null when the year is not known. */
+  source?: string;
+  year?: number | null;
+  /** Taken out of every fit by the recency rule and scored as held out. */
+  outOfFit?: boolean;
 }
 
-export interface GateIn { id: number; kind: string; street: string | null; source: string; /** Source record of the count (TMC leg or Caltrans station) and the share of it this gate takes in each direction. */ record?: string; shareIn?: number; shareOut?: number; inT: Record<string, number>; outT: Record<string, number>; /** Gates that split one count (same street, close together, same source) share a group key. */ group?: string }
-export interface TmcIn { id: string; x: number; y: number; legs: Record<string, { entering: number; leaving: number }>; legStreets: Record<string, string> }
-export interface RampIn { kind: 'off' | 'on'; surface: number; streets: string[]; adt: number; adtKind: string; source: string }
-export interface OverrideIn { street: string; adt: number; factor?: number; x: number; y: number; source: string }
+export interface GateIn { id: number; kind: string; street: string | null; source: string; /** Source record of the count (TMC leg or Caltrans station) and the share of it this gate takes in each direction. */ record?: string; sourceId?: string; year?: number | null; shareIn?: number; shareOut?: number; inT: Record<string, number>; outT: Record<string, number>; /** Gates that split one count (same street, close together, same source) share a group key. */ group?: string }
+export interface TmcIn { id: string; year?: number | null; x: number; y: number; legs: Record<string, { entering: number; leaving: number }>; legStreets: Record<string, string> }
+export interface RampIn { kind: 'off' | 'on'; surface: number; streets: string[]; adt: number; adtKind: string; source: string; year?: number | null }
+export interface OverrideIn { street: string; adt: number; factor?: number; x: number; y: number; source: string; year?: number | null }
 
 export interface StationInputs {
   nodes: (ANode & { gate: boolean })[];
@@ -98,8 +104,8 @@ export function buildStations(s: StationInputs, notes: string[]): Station[] {
     const basis = `DATA (${first.source})`;
     const inT = sumT(o, 'inT'), outT = sumT(i, 'outT');
     const rec = (list: GateIn[], dir: 'entering' | 'leaving') => (first.record ? [{ key: `${first.record}|${dir}`, share: list.reduce((a, g) => a + ((dir === 'entering' ? g.shareIn : g.shareOut) ?? 1), 0) }] : []);
-    if (o.length && s.periodIds.some((p) => inT[p] > 0)) out.push({ id: gs.length > 1 ? `gate group ${key} in` : `gate ${first.id} in`, kind: 'gate', label: `${tag} ${nameOf(s, (outIdx.get(o[0].id) ?? [])[0])} entering`, basis, links: [], origins: o.map((g) => g.id), target: inT, weight: W.gate ?? 1, tolPct: T.gate ?? 10, records: rec(o, 'entering') });
-    if (i.length && s.periodIds.some((p) => outT[p] > 0)) out.push({ id: gs.length > 1 ? `gate group ${key} out` : `gate ${first.id} out`, kind: 'gate', label: `${tag} ${nameOf(s, (inIdx.get(i[0].id) ?? [])[0])} leaving`, basis, links: [], destinations: i.map((g) => g.id), target: outT, weight: W.gate ?? 1, tolPct: T.gate ?? 10, records: rec(i, 'leaving') });
+    if (o.length && s.periodIds.some((p) => inT[p] > 0)) out.push({ id: gs.length > 1 ? `gate group ${key} in` : `gate ${first.id} in`, kind: 'gate', label: `${tag} ${nameOf(s, (outIdx.get(o[0].id) ?? [])[0])} entering`, basis, links: [], origins: o.map((g) => g.id), target: inT, weight: W.gate ?? 1, tolPct: T.gate ?? 10, records: rec(o, 'entering'), source: first.sourceId, year: first.year });
+    if (i.length && s.periodIds.some((p) => outT[p] > 0)) out.push({ id: gs.length > 1 ? `gate group ${key} out` : `gate ${first.id} out`, kind: 'gate', label: `${tag} ${nameOf(s, (inIdx.get(i[0].id) ?? [])[0])} leaving`, basis, links: [], destinations: i.map((g) => g.id), target: outT, weight: W.gate ?? 1, tolPct: T.gate ?? 10, records: rec(i, 'leaving'), source: first.sourceId, year: first.year });
   }
 
   // 2. Turning-movement count legs at counted intersections inside the model: entering = incoming links of the leg, leaving = outgoing.
@@ -126,8 +132,8 @@ export function buildStations(s: StationInputs, notes: string[]): Station[] {
       const shares = (p: string) => (p === s.lastPeriod ? sPm : clamp(sPm + enterInward * (s.periodFactors[p].inboundShare - pfPm.inboundShare), 0.2, 0.8));
       const tot = (p: string) => (v.entering + v.leaving) * (s.periodFactors[p].volume / pfPm.volume);
       const basis = `DATA (Oakland TMC ${c.id}, ${leg}-leg at junction ${node.id})`;
-      if (ins.length) out.push({ id: `tmc ${c.id} ${leg} entering`, kind: 'tmc', label: `${c.id} ${leg} leg entering`, basis, links: ins, target: per((p) => tot(p) * shares(p)), weight: W.tmc ?? 1, tolPct: T.tmc ?? 15, records: [{ key: `tmc ${c.id}|${leg}|entering`, share: 1 }] });
-      if (outs.length) out.push({ id: `tmc ${c.id} ${leg} leaving`, kind: 'tmc', label: `${c.id} ${leg} leg leaving`, basis, links: outs, target: per((p) => tot(p) * (1 - shares(p))), weight: W.tmc ?? 1, tolPct: T.tmc ?? 15, records: [{ key: `tmc ${c.id}|${leg}|leaving`, share: 1 }] });
+      if (ins.length) out.push({ id: `tmc ${c.id} ${leg} entering`, kind: 'tmc', label: `${c.id} ${leg} leg entering`, basis, links: ins, target: per((p) => tot(p) * shares(p)), weight: W.tmc ?? 1, tolPct: T.tmc ?? 15, records: [{ key: `tmc ${c.id}|${leg}|entering`, share: 1 }], source: 'oakland-tmc', year: c.year });
+      if (outs.length) out.push({ id: `tmc ${c.id} ${leg} leaving`, kind: 'tmc', label: `${c.id} ${leg} leg leaving`, basis, links: outs, target: per((p) => tot(p) * (1 - shares(p))), weight: W.tmc ?? 1, tolPct: T.tmc ?? 15, records: [{ key: `tmc ${c.id}|${leg}|leaving`, share: 1 }], source: 'oakland-tmc', year: c.year });
     }
   }
 
@@ -156,7 +162,7 @@ export function buildStations(s: StationInputs, notes: string[]): Station[] {
         id: `caltrans ${o.street} ${Math.round(o.x)},${Math.round(o.y)} ${k}`, kind: 'caltrans', label: `${o.street} station, link ${s.links[b.i].id} ${k}ward (${Math.round(b.d)} m from the station)`,
         basis: `DATA (Caltrans AADT ${Math.round(o.adt)}${factor !== 1 ? `, x ${factor} ASSUMPTION attenuation` : ''})`,
         links: [b.i], target: per((p) => o.adt * factor * s.kFactor * s.periodFactors[p].volume * share(p)), weight: W.caltrans ?? 1, tolPct: T.caltrans ?? 15,
-        records: [{ key: `ov ${o.source}|${k === 'in' ? 'entering' : 'leaving'}`, share: 1 }],
+        records: [{ key: `ov ${o.source}|${k === 'in' ? 'entering' : 'leaving'}`, share: 1 }], source: 'caltrans-aadt', year: o.year,
       });
     }
   }
@@ -167,7 +173,7 @@ export function buildStations(s: StationInputs, notes: string[]): Station[] {
     const idx = (r.kind === 'off' ? inIdx : outIdx).get(r.surface) ?? [];
     const ls = idx.filter((i) => s.links[i].class === 'motorway');
     if (!ls.length) continue;
-    out.push({ id: `ramp ${r.kind} ${r.surface}`, kind: 'ramp', label: `${r.kind}-ramp at node ${r.surface} (${r.streets.join(' / ') || 'unnamed'})`, basis: `DATA (Caltrans ramp ADT ${Math.round(r.adt)}; ${r.source})`, links: ls, target: per((p) => r.adt * s.rampKFactor * s.periodFactors[p].volume), weight: W.ramp ?? 1, tolPct: T.ramp ?? 5, records: [{ key: `ramp ${r.kind} ${r.surface}`, share: 1 }] });
+    out.push({ id: `ramp ${r.kind} ${r.surface}`, kind: 'ramp', label: `${r.kind}-ramp at node ${r.surface} (${r.streets.join(' / ') || 'unnamed'})`, basis: `DATA (Caltrans ramp ADT ${Math.round(r.adt)}; ${r.source})`, links: ls, target: per((p) => r.adt * s.rampKFactor * s.periodFactors[p].volume), weight: W.ramp ?? 1, tolPct: T.ramp ?? 5, records: [{ key: `ramp ${r.kind} ${r.surface}`, share: 1 }], source: 'caltrans-ramp', year: r.year });
   }
   return dedupeStations(out, notes);
 }
@@ -389,7 +395,7 @@ export function percentiles(vals: number[], w: number[], ps: number[]): number[]
   });
 }
 
-export function fitReport(area: string, results: PeriodResult[], flowsBy: Record<string, FlowIn[]>, opt: { fit: FitOptions; draws: number; noise: number; guardExcess: number; guardWeight: number; guardOn: boolean; tolOk: number; shareWeight?: number; assignment?: AssignConfig; links?: { name: string; fromBearing?: number; inStudyArea?: boolean }[]; composition?: string[] }, stationNotes: string[], extra: string[]): string {
+export function fitReport(area: string, results: PeriodResult[], flowsBy: Record<string, FlowIn[]>, opt: { fit: FitOptions; draws: number; noise: number; guardExcess: number; guardWeight: number; guardOn: boolean; tolOk: number; shareWeight?: number; assignment?: AssignConfig; links?: { name: string; fromBearing?: number; inStudyArea?: boolean }[]; composition?: string[]; recency?: Pick<RecencyConfig, 'referenceYear' | 'recentYears'> }, stationNotes: string[], extra: string[]): string {
   const L: string[] = [];
   L.push(`# Count-constrained demand fit: ${area}`, '', 'Generated by `tools/build-demand.ts` (do not edit). Car trips only, veh/h. Method and assumptions: `data/demand/README.md`, section "Count-constrained demand".', '');
   const asg = opt.assignment?.method === 'msa' ? `capacity-restrained assignment by successive averages (${opt.assignment.iterations} passes x ${opt.assignment.drawsPerPass} driver walks, BPR alpha ${opt.assignment.alpha} beta ${opt.assignment.beta}, walk noise +/-${(opt.assignment.noise * 100).toFixed(0)}%, ${opt.assignment.rounds} round(s))` : `static assignment over ${opt.draws} perturbed free-flow shortest paths (cost noise +/-${(opt.noise * 100).toFixed(0)}%)`;
@@ -453,6 +459,10 @@ export function fitReport(area: string, results: PeriodResult[], flowsBy: Record
       const fi = sp(rows.filter(isBlock)), fo = sp(rows.filter((x) => !isBlock(x)));
       const hi = sp(r.heldRows.filter(isBlock)), ho = sp(r.heldRows.filter((x) => !isBlock(x)));
       L.push('', `Split by kind, GEH below 5 (size bands): interior blocks of the volunteer count fitted ${fi.gehOk} of ${fi.n} (${(fi.gehShare * 100).toFixed(0)}%; bands ${(fi.bandShare * 100).toFixed(0)}%), held out ${hi.gehOk} of ${hi.n} (${(hi.gehShare * 100).toFixed(0)}%; bands ${(hi.bandShare * 100).toFixed(0)}%, mean GEH ${hi.meanGeh.toFixed(1)}); other stations (gates, ramps, Caltrans, turning-movement legs, movements and routes of the volunteer count) fitted ${fo.gehOk} of ${fo.n} (${(fo.gehShare * 100).toFixed(0)}%; bands ${(fo.bandShare * 100).toFixed(0)}%), held out ${ho.gehOk} of ${ho.n} (${(ho.gehShare * 100).toFixed(0)}%; bands ${(ho.bandShare * 100).toFixed(0)}%, mean GEH ${ho.meanGeh.toFixed(1)}).`);
+    }
+    if (opt.recency) {
+      const tag = (x: { st: Station; final: number; target: number }, held: boolean) => ({ source: x.st.source, year: x.st.year, c: { gehOk: geh(x.final, x.target) < 5, held } });
+      L.push('', `GEH below 5 by source and count year in the static assignment (${r.id}; fitted = in the fit that ships, held out = scored on the fit without them):`, '', ...sourceYearLines([...rows.map((x) => tag(x, false)), ...r.heldRows.map((x) => tag(x, true))], opt.recency));
     }
     if (r.heldRows.length) {
       const hr = evaluateCases(r.heldRows.map((x) => ({ id: x.st.label, modeled: x.final, counted: x.target })));
