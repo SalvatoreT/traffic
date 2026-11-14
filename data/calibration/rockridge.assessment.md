@@ -65,7 +65,7 @@ Count stations by source and count year, simulator flows (the station file lists
 | SafewayCollege-DEIR2011 | 2010 | 16 | 0 of 1 (0%) | 0 of 1 (0%) |
 | volunteer-count | 2025 | 1 | 69 of 77 (90%) | 17 of 19 (89%) |
 
-Station rule (GEH below 5 at more than 85% of stations): all sources fitted 104 of 153 (68%) (not met), held out 31 of 47 (66%) (not met); recent sources only (age at most 5 years) fitted 73 of 82 (89%) (met), held out 21 of 23 (91%) (met).
+Station rule (GEH below 5 at more than 85% of stations), judged on counts from the last 5 years: fitted 73 of 82 (89%) (met), held out 21 of 23 (91%) (met). Older counts, reported beside it: fitted 31 of 71 (44%) (not met), held out 10 of 24 (42%) (not met). All counts: fitted 104 of 153 (68%) (not met), held out 31 of 47 (66%) (not met).
 
 Interior streets (volunteer-count blocks) against the other stations (arterials, ramps, Caltrans and turning-movement counts), simulator flows:
 
@@ -364,7 +364,7 @@ Count stations by source and count year, simulator flows (the station file lists
 | SafewayCollege-DEIR2011 | 2010 | 16 | 19 of 26 (73%) | 8 of 10 (80%) |
 | volunteer-count | 2025 | 1 | 88 of 91 (97%) | 19 of 19 (100%) |
 
-Station rule (GEH below 5 at more than 85% of stations): all sources fitted 149 of 192 (78%) (not met), held out 39 of 56 (70%) (not met); recent sources only (age at most 5 years) fitted 92 of 96 (96%) (met), held out 22 of 23 (96%) (met).
+Station rule (GEH below 5 at more than 85% of stations), judged on counts from the last 5 years: fitted 92 of 96 (96%) (met), held out 22 of 23 (96%) (met). Older counts, reported beside it: fitted 57 of 96 (59%) (not met), held out 17 of 33 (52%) (not met). All counts: fitted 149 of 192 (78%) (not met), held out 39 of 56 (70%) (not met).
 
 Interior streets (volunteer-count blocks) against the other stations (arterials, ramps, Caltrans and turning-movement counts), simulator flows:
 
@@ -651,7 +651,7 @@ Count stations by source and count year, simulator flows (the station file lists
 | SafewayCollege-DEIR2011 | 2010 | 16 | 11 of 26 (42%) | 6 of 10 (60%) |
 | volunteer-count | 2025 | 1 | 80 of 89 (90%) | 16 of 18 (89%) |
 
-Station rule (GEH below 5 at more than 85% of stations): all sources fitted 130 of 190 (68%) (not met), held out 35 of 55 (64%) (not met); recent sources only (age at most 5 years) fitted 82 of 94 (87%) (met), held out 19 of 22 (86%) (met).
+Station rule (GEH below 5 at more than 85% of stations), judged on counts from the last 5 years: fitted 82 of 94 (87%) (met), held out 19 of 22 (86%) (met). Older counts, reported beside it: fitted 48 of 96 (50%) (not met), held out 16 of 33 (48%) (not met). All counts: fitted 130 of 190 (68%) (not met), held out 35 of 55 (64%) (not met).
 
 Interior streets (volunteer-count blocks) against the other stations (arterials, ramps, Caltrans and turning-movement counts), simulator flows:
 
@@ -919,5 +919,24 @@ Bypass of the arterial (reported pattern b):
 
 ## Verdict
 
-Stability by period: am_peak holds, midday holds, pm_peak holds. PM share rule (D5): holds. PM station flow rule on the fitted stations: not met. Station rule (GEH below 5, more than 85%), all sources and sources counted within the last 5 years: am_peak: fitted all 104 of 153 (68%), recent sources 73 of 82 (89%), older 31 of 71 (44%); held out all 31 of 47 (66%), recent sources 21 of 23 (91%), older 10 of 24 (42%) | midday: fitted all 149 of 192 (78%), recent sources 92 of 96 (96%), older 57 of 96 (59%); held out all 39 of 56 (70%), recent sources 22 of 23 (96%), older 17 of 33 (52%) | pm_peak: fitted all 130 of 190 (68%), recent sources 82 of 94 (87%), older 48 of 96 (50%); held out all 35 of 55 (64%), recent sources 19 of 22 (86%), older 16 of 33 (48%). The rule is not redefined; whether it applies to recent sources only is the owner's call. Suggested status: **uncalibrated**; experimental periods: none.
+Status rules, per period. D16 stability; D5 headline shares (PM peak only, the other periods have no observed shares); the station rule (GEH below 5 at more than 85% of stations) judged on counts from the last 5 years, fitted and held out; the through-car check (modeled through cars inside the observed range on each counted block, PM peak only: the other periods have no whole-street counts).
+
+| Period | D16 | D5 | Station rule, recent counts, fitted | Station rule, recent counts, held out | Through cars | Older counts, fitted / held out |
+| --- | --- | --- | --- | --- | --- | --- |
+| am_peak | pass | not gated | 73 of 82 (89%), pass | 21 of 23 (91%), pass | no target | 31 of 71 (44%) / 10 of 24 (42%) |
+| midday | pass | not gated | 92 of 96 (96%), pass | 22 of 23 (96%), pass | no target | 57 of 96 (59%) / 17 of 33 (52%) |
+| pm_peak | pass | pass | 82 of 94 (87%), pass | 19 of 22 (86%), pass | pass | 48 of 96 (50%) / 16 of 33 (48%) |
+
+Through cars per hour, seed mean against the observed range:
+
+| Period | Block | Modeled | Observed range | Inside |
+| --- | --- | --- | --- | --- |
+| pm_peak | Hillegass Avenue NB | 66 | 48 to 95 | yes |
+| pm_peak | Colby Street NB | 139 | 102 to 145 | yes |
+| pm_peak | Hillegass Avenue SB | 110 | 79 to 120 | yes |
+| pm_peak | Colby Street SB | 97 | 39 to 117 | yes |
+
+Where the recent pass rate comes from: am_peak: 96 of 105 recent stations come from one source (volunteer-count); midday: 110 of 119 recent stations come from one source (volunteer-count); pm_peak: 107 of 116 recent stations come from one source (volunteer-count). A source counted on a single day carries one hour of that day. The older counts pass less: am_peak 31 of 71 (44%) fitted, midday 57 of 96 (59%) fitted, pm_peak 48 of 96 (50%) fitted. All counts together: am_peak 104 of 153 (68%) fitted, 31 of 47 (66%) held out; midday 149 of 192 (78%) fitted, 39 of 56 (70%) held out; pm_peak 130 of 190 (68%) fitted, 35 of 55 (64%) held out.
+
+Suggested status: **calibrated**; experimental periods: none.
 

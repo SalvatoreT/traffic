@@ -111,7 +111,7 @@ export class MockSimulation implements SimLike {
       const rev = (id: number) => this.net.links[id].reverse;
       if (iv.type === 'modal_filter' && 'link' in iv) { this.closed.add(iv.link); const r = rev(iv.link); if (r !== null) this.closed.add(r); }
       else if (iv.type === 'modal_filter' && 'node' in iv) {
-        for (const l of this.net.links) if (l.from === iv.node || l.to === iv.node) this.closed.add(l.id);
+        for (const l of this.net.links) if ((l.from === iv.node || l.to === iv.node) && (!iv.legs || iv.legs.includes(l.id))) this.closed.add(l.id);
       } else if (iv.type === 'one_way') { const r = rev(iv.link); if (r !== null) this.closed.add(r); }
       else if (iv.type === 'speed_limit') {
         for (const id of [iv.link, rev(iv.link)]) if (id !== null) this.limitScale.set(id, iv.speed / this.net.links[id].speedLimit);

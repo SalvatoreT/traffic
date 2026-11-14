@@ -718,7 +718,8 @@ fn modal_filter_without_legs_still_closes_every_movement() {
     sim.set_interventions(&format!("[{{\"type\":\"modal_filter\",\"node\":{}}}]", x.c)).unwrap();
     let e = sim.test_eff();
     assert!(e.node_filter[x.c as usize]);
-    assert!(e.mv_ok.iter().all(|&ok| !ok), "every movement at the node is closed");
+    let topo = sim.test_topo();
+    assert!(topo.mvs.iter().enumerate().filter(|(_, m)| m.node == x.c).all(|(i, _)| !e.mv_ok[i]), "every movement at the node is closed");
 }
 
 #[test]

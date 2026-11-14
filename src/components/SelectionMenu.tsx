@@ -22,11 +22,11 @@ interface Props {
   readout?: { overlay: Overlay; scen: Float32Array | null; base: Float32Array | null } | null;
 }
 
-interface Choice { key: string; label: string; pick(): void }
+interface Choice { key: string; label: string; detail?: string; pick(): void }
 
 /** A button that reveals a few choices. Picking one applies it, folds the list and returns focus to the button. */
-function ChoiceGroup({ label, hint, choices }: { label: string; hint?: string; choices: Choice[] }) {
-  const [open, setOpen] = useState(false);
+function ChoiceGroup({ label, hint, note, defaultOpen, choices }: { label: string; hint?: string; note?: string | null; defaultOpen?: boolean; choices: Choice[] }) {
+  const [open, setOpen] = useState(!!defaultOpen);
   const btn = useRef<HTMLButtonElement>(null);
   const id = useId();
   return (
@@ -36,10 +36,12 @@ function ChoiceGroup({ label, hint, choices }: { label: string; hint?: string; c
       </button>
       <div id={id} className={`collapse ${open ? 'open' : ''}`} inert={!open}>
         <div>
+          {note && <p className="iv-more" id={`${id}-note`}>{note}</p>}
           <ul className="sel-choices">
             {choices.map((c) => (
               <li key={c.key}>
-                <button type="button" className="sel-choice" onClick={() => { c.pick(); setOpen(false); btn.current?.focus(); }}>{c.label}</button>
+                <button type="button" className="sel-choice" aria-describedby={c.detail ? `${id}-${c.key}` : undefined} onClick={() => { c.pick(); setOpen(false); btn.current?.focus(); }}>{c.label}</button>
+                {c.detail && <span className="iv-more" id={`${id}-${c.key}`}>{c.detail}</span>}
               </li>
             ))}
           </ul>
@@ -151,8 +153,21 @@ export function SelectionMenu(p: Props) {
     actions = (
       <>
         {a.modalFilter && (() => {
-          const ft = filterText({ type: 'modal_filter', node }, net, X);
-          return <li><button type="button" className="sel-act" onClick={() => apply({ add: [{ type: 'modal_filter', node }] })}>Add modal filter (no through traffic)</button>{ft && <p className="iv-more">{ft.closed}{ft.junction ? ` ${ft.junction}` : ''}</p>}</li>;
+          const F = a.filters;
+          const dropLegs = (iv: Intervention) => iv.type === 'modal_filter' && 'node' in iv && iv.node === node && iv.legs !== undefined;
+          if (F.streets.length === 0) {
+            return <li><button type="button" className="sel-act" onClick={() => apply({ add: [{ type: 'modal_filter', node }] })}>Add modal filter (no through traffic)</button>{F.wholeClosed && <p className="iv-more">{F.wholeClosed}</p>}</li>;
+          }
+          const streets: Choice[] = F.streets.map((o) => ({
+            key: o.links.join('.'), label: o.label, detail: o.closed,
+            pick: () => apply({ add: [{ type: 'modal_filter', node, legs: o.links }] }, `Added: Modal filter on ${o.street} at ${heading}.`),
+          }));
+          const whole: Choice[] = F.whole ? [{
+            key: 'whole', label: 'Filter the whole intersection', detail: F.wholeClosed,
+            pick: () => apply({ add: [{ type: 'modal_filter', node }], remove: dropLegs }),
+          }] : [];
+          return <li><ChoiceGroup label="Add modal filter" hint="no through traffic for cars" note={F.why} defaultOpen={F.merged}
+            choices={F.merged ? [...streets, ...whole] : [...whole, ...streets]} /></li>;
         })()}
         {a.trafficCircle && <li><button type="button" className="sel-act" onClick={() => apply({ add: [{ type: 'traffic_circle', node }], remove: dropCycle('traffic_circle') })}>Add traffic circle</button></li>}
         {a.control.choices.length > 0 && (

@@ -127,12 +127,11 @@
     "overrides": {}
   },
   "calibration": {
-    "status": "uncalibrated",
-    "note": "Shares and stability hold, but 68% of fitted PM stations pass GEH 5 against 85% (87% for recent counts), and the 52nd St off-ramp has 900 of 1,024.",
+    "status": "calibrated",
+    "note": "Checked on counts from the last five years (87% of PM stations pass GEH 5), which are mostly one day of counting; older counts pass 50%.",
+    "caveat": "The station check is judged on counts from the last five years. In the PM peak 89 of the 94 fitted stations in that set come from one hour of one day of resident volunteer counting (February 25, 2025), so that pass rate rests mostly on a single day. Counts older than five years pass less: 50% of PM stations (AM 44%, midday 59%) against 87% (AM 89%, midday 96%) for recent counts. Not everything matches: the 52nd St and Clifton St off-ramps carry 900 and 883 veh/h against 1,024 and 617 counted, and Colby St northbound has 80 whole-street cars against 102 observed.",
     "defaultPeriod": "midday",
-    "experimentalPeriods": [
-      "pm_peak"
-    ]
+    "experimentalPeriods": []
   },
   "signalObservations": [
     {

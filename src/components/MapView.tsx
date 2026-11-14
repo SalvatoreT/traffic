@@ -23,7 +23,7 @@ import { CELL_COLORS, CELL_DASHES, ROUTE_COLORS } from '../lib/routestyle';
 import { towardLabel, type NetIndex } from '../lib/naming';
 import { hoverLine } from '../lib/hoverline';
 import { describeInterventionFull, interventionPoint } from '../lib/describe';
-import { bearingVector, filterLegs, markOffset } from '../lib/blocked';
+import { bearingVector, closedLegs, filterLegs, markOffset } from '../lib/blocked';
 import type { SimClient } from '../sim/client';
 import {
   boxOfPoints, centerToShow, correctedCamera, fitCamera, hardBounds, insideRect, isAcceptable, minZoomFor, MIN_ZOOM_FLOOR,
@@ -797,7 +797,7 @@ export function MapView(p: Props) {
         continue;
       }
       // A bar across the mouth of every leg the filter closes, pushed out along the leg far enough to clear the badge.
-      for (const leg of filterLegs(net, p.index, iv.node).legs) {
+      for (const leg of closedLegs(filterLegs(net, p.index, iv.node), iv.legs)) {
         const bar = document.createElement('div');
         bar.className = 'iv-leg';
         bar.setAttribute('aria-hidden', 'true');
@@ -925,7 +925,7 @@ export function MapView(p: Props) {
         const [x, y] = interventionPoint(iv, net);
         const q = map.project(L.proj.toLonLat(x, y));
         const bars: BadgeMark[] = iv.type === 'modal_filter' && 'node' in iv
-          ? filterLegs(net, L.index, iv.node).legs.map((leg) => {
+          ? closedLegs(filterLegs(net, L.index, iv.node), iv.legs).map((leg) => {
             const m = map.project(L.proj.toLonLat(leg.mouth[0], leg.mouth[1]));
             const [dx, dy] = markOffset([m.x - q.x, m.y - q.y], bearingVector(leg.bearing));
             return { x: q.x + dx, y: q.y + dy, type: 'leg' as const, bearing: leg.bearing };

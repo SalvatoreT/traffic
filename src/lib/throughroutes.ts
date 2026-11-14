@@ -90,19 +90,30 @@ interface Graph {
   closed: boolean[];
   banned: Set<number>;
   filteredNode: Set<number>;
+  /** Links through which cars may not enter / leave a junction whose filter closes only some legs. */
+  legIn: Set<number>;
+  legOut: Set<number>;
 }
 function effective(net: Network, idx: NetIndex, ivs: Intervention[], base: Base): Graph {
   const nl = base.nl, nn = net.nodes.length;
   const closed: boolean[] = new Array(nl).fill(false);
   const banned = new Set(base.alwaysBans);
   const filteredNode = new Set<number>();
+  const legIn = new Set<number>(), legOut = new Set<number>();
   for (const iv of ivs) {
     switch (iv.type) {
       case 'modal_filter':
         if ('link' in iv) {
           const l = net.links[iv.link];
           if (l) { closed[l.id] = true; if (l.reverse !== null) closed[l.reverse] = true; }
-        } else if (iv.node >= 0 && iv.node < nn) filteredNode.add(iv.node);
+        } else if (iv.node >= 0 && iv.node < nn) {
+          if (iv.legs === undefined) filteredNode.add(iv.node);
+          else for (const id of iv.legs) {
+            const l = net.links[id];
+            if (l?.to === iv.node) legIn.add(id);
+            if (l?.from === iv.node) legOut.add(id);
+          }
+        }
         break;
       case 'one_way': {
         const l = net.links[iv.link];
@@ -121,7 +132,7 @@ function effective(net: Network, idx: NetIndex, ivs: Intervention[], base: Base)
       default: break;
     }
   }
-  return { closed, banned, filteredNode };
+  return { closed, banned, filteredNode, legIn, legOut };
 }
 
 class Heap {
@@ -172,12 +183,12 @@ function viaStreets(net: Network, idx: NetIndex, links: number[], skip: string[]
 export function checkThroughRoutes(net: Network, idx: NetIndex, ivs: Intervention[]): RouteCheck {
   const base = baseOf(net);
   const { interior, nl } = base;
-  const { closed, banned, filteredNode } = effective(net, idx, ivs, base);
+  const { closed, banned, filteredNode, legIn, legOut } = effective(net, idx, ivs, base);
   const links = net.links;
   const open = (id: number) => !closed[id];
   /** Can a car go from link a to link b at their shared node? U-turns are left out, as a through route never needs one. */
   const move = (a: number, b: number) =>
-    open(a) && open(b) && links[a].reverse !== b && !filteredNode.has(links[a].to) && !banned.has(a * nl + b);
+    open(a) && open(b) && links[a].reverse !== b && !filteredNode.has(links[a].to) && !legIn.has(a) && !legOut.has(b) && !banned.has(a * nl + b);
 
   // Cells: interior links joined by any allowed movement, in either direction.
   const parent = new Int32Array(nl).fill(-1);

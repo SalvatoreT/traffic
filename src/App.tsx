@@ -27,6 +27,7 @@ import { Proposals, useProposals } from './components/Proposals';
 import { linkHash, type Proposal } from './lib/proposals';
 import { baselineCheck, checkThroughRoutes, routeHeadline } from './lib/throughroutes';
 import { effectiveView, initViewState, viewReducer } from './lib/change';
+import { showCalibrationBanner } from './lib/caveat';
 const MapView = lazy(() => import('./components/MapView').then((m) => ({ default: m.MapView })));
 const Sources = lazy(() => import('./components/Sources').then((m) => ({ default: m.Sources })));
 
@@ -99,7 +100,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   const calKey = `calnote:${bundle.entry.id}:${calNote.length}:${calNote.slice(0, 24)}:${calNote.slice(-24)}`;
   const [calDismissed, setCalDismissed] = useState(() => store.get(calKey) === '1');
   const [calClosing, setCalClosing] = useState(false);
-  const showCal = calStatus !== 'calibrated' && !calDismissed && !bundle.synthetic;
+  const showCal = showCalibrationBanner(bundle.entry.calibration) && !calDismissed && !bundle.synthetic;
   const dismissCal = () => { setCalClosing(true); store.set(calKey, '1'); window.setTimeout(() => setCalDismissed(true), reduced ? 0 : 200); };
   const [sourceRef, setSourceRef] = useState<string | null>(null);
 
@@ -389,7 +390,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
                 <div className={`cal-collapse ${calClosing ? 'closing' : ''}`}>
                   <p className="notice calm cal-line" role="note">
                     <span className="cal-text" title={calNote}>
-                      <strong>Preview, not yet calibrated.</strong>{' '}{calNote}
+                      <strong>{calStatus === 'calibrated' ? 'Calibrated, with limits.' : 'Preview, not yet calibrated.'}</strong>{' '}{calNote}
                     </span>
                     <button type="button" className="link" onClick={() => { setSourceRef('calibration'); setView('sources'); }}>Details</button>
                     <button type="button" className="btn small-btn" onClick={dismissCal}>Dismiss</button>

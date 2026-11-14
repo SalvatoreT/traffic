@@ -3,13 +3,18 @@ import { compassWord, headingTo, type NetIndex } from './naming';
 import { pointAlong } from './geom';
 import { controlLabel } from './selection';
 import { connectedLabel } from './diverter';
-import { filterSentence, filterText } from './blocked';
+import { closedLegs, closedLegsLabel, filterLegs, filterSentence, filterText } from './blocked';
 
 export function describeIntervention(iv: Intervention, net: AreaBundle['network'], idx: NetIndex): string {
   const ln = (id: number) => idx.blocks[idx.blockOfLink[id]]?.label ?? `link ${id}`;
   const nn = (id: number) => idx.nodeName[id] ?? `node ${id}`;
   switch (iv.type) {
-    case 'modal_filter': return 'link' in iv ? `Modal filter on ${ln(iv.link)}` : `Modal filter at ${nn(iv.node)}`;
+    case 'modal_filter': {
+      if ('link' in iv) return `Modal filter on ${ln(iv.link)}`;
+      if (iv.legs === undefined) return `Modal filter at ${nn(iv.node)}`;
+      const f = filterLegs(net, idx, iv.node), shut = closedLegs(f, iv.legs);
+      return shut.length === 0 || shut.length === f.legs.length ? `Modal filter at ${nn(iv.node)}` : `Modal filter on ${closedLegsLabel(f, shut)} at ${nn(iv.node)}`;
+    }
     case 'speed_limit': return `Speed limit ${Math.round(iv.speed * 2.23694)} mph on ${ln(iv.link)}`;
     case 'speed_hump': return `Speed hump on ${ln(iv.link)}`;
     case 'traffic_circle': return `Traffic circle at ${nn(iv.node)}`;

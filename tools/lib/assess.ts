@@ -13,6 +13,7 @@ export interface SeedRun {
   linkMeanDelayS: number[] | null;
   features?: { id: string; label: string; kind: string; trips: number; vehPerHour: number }[];
   observedSignals?: { node: number; applies?: boolean; streets: string; cycleS: number; greenS: number[]; observedCycleS: number; approaches: { links: number[]; observedGreenS: number; modeledGreenS: number | null; exitsPerHour: number }[] }[];
+  throughCheck?: { block: string; expectedThroughLow: number | null; expectedThroughHigh: number | null; modeledThrough: number }[];
   patternBypass?: { bypass: string; arterial: string; dir: string; corridorTrips: number; viaBypass: number }[];
   patternFreewayThrough?: { trips: string; localMiles: number; shareOfLocalMiles: number }[];
 }
@@ -159,4 +160,16 @@ export function travelTimes(runs: SeedRun[], net: TravelNet, specs: TravelTimeSp
     rows.push({ id: q.id, lengthM, links: path.length, freeS, modeledS, lo: st.lo * ((q.lengthMi * 1609.344) / lengthM), hi: st.hi * ((q.lengthMi * 1609.344) / lengthM), modeledMph: ((q.lengthMi * 1609.344) / modeledS) * 2.23694, observedMph: obs, observedS: range, within: modeledS >= range[0] && modeledS <= range[1] });
   }
   return rows;
+}
+
+/** Through cars per block, seed mean, against the observed range (whole-street cars to block volume less the freeway end); only blocks with a range. */
+export function throughStats(runs: SeedRun[]): { block: string; low: number; high: number; mean: number; inside: boolean }[] {
+  const first = runs.find((r) => r.throughCheck?.length);
+  if (!first) return [];
+  return first.throughCheck!.flatMap((t, i) => {
+    if (t.expectedThroughLow == null || t.expectedThroughHigh == null) return [];
+    const vals = runs.map((r) => r.throughCheck?.[i]?.modeledThrough ?? NaN).filter(Number.isFinite);
+    const mean = vals.reduce((a, b) => a + b, 0) / (vals.length || 1);
+    return [{ block: t.block, low: t.expectedThroughLow, high: t.expectedThroughHigh, mean, inside: mean >= t.expectedThroughLow && mean <= t.expectedThroughHigh }];
+  });
 }

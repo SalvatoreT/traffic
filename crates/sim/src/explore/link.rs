@@ -3,6 +3,8 @@
 //! links carry no network indices. Fixtures in `tests/fixtures/links.json` come from the TypeScript encoder.
 
 use crate::model::{Control, Intervention, Network};
+use crate::diverter::node_legs;
+use crate::topo::Topo;
 
 const ALPHABET: &[u8] = b"0123456789bcdefghjkmnpqrstuvwxyz";
 const EARTH_R: f64 = 6371008.8;
@@ -134,11 +136,24 @@ pub fn encode_scenario(net: &Network, origin: (f64, f64), ivs: &[Intervention], 
     };
     let node_pt = |id: u32| pt(net.nodes.get(id as usize).map(|n| (n.x, n.y)));
     let mut items: Vec<String> = Vec::new();
+    let mut topo: Option<Topo> = None;
     for iv in ivs {
         let s: Option<String> = match iv.ty.as_str() {
             "modal_filter" => {
                 if let Some(l) = iv.link {
                     pt(block_point(net, l)).map(|p| format!("mf,{p}"))
+                } else if let (Some(n), Some(legs)) = (iv.node, iv.legs.as_ref()) {
+                    // The closed legs by bearing, the way the app writes them; a filter on every leg is the plain `mn`.
+                    let topo = topo.get_or_insert_with(|| Topo::new(net));
+                    let all = node_legs(topo, net, n);
+                    let mut shut: Vec<f64> = all.iter().filter(|l| l.ins.iter().chain(l.outs.iter()).any(|k| legs.contains(k))).map(|l| round5(l.bearing)).collect();
+                    let whole = shut.len() == all.len();
+                    shut.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+                    match (node_pt(n), shut.is_empty()) {
+                        (Some(p), false) if whole => Some(format!("mn,{p}")),
+                        (Some(p), false) => Some(format!("mn,{p},{}", shut.iter().map(|b| num(*b, 0)).collect::<Vec<_>>().join("."))),
+                        _ => None,
+                    }
                 } else {
                     iv.node.and_then(node_pt).map(|p| format!("mn,{p}"))
                 }

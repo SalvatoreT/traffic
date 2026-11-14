@@ -330,6 +330,7 @@ pub struct Intervention {
     /// Barrier line of a `diagonal_diverter`, degrees clockwise from north.
     pub bearing: Option<f64>,
     /// Node `modal_filter` only: links on the closed legs. Cars cannot enter or leave the node on them; other movements stay open. Absent: every leg.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub legs: Option<Vec<u32>>,
 }
 

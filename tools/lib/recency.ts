@@ -76,14 +76,32 @@ export function recentSplit<T extends CaseLike>(items: { year?: number | null; c
 const pct = (a: number, n: number) => (n ? `${Math.round((100 * a) / n)}%` : '-');
 const cell = (b: { n: number; ok: number }) => (b.n ? `${b.ok} of ${b.n} (${pct(b.ok, b.n)})` : '-');
 
-/** Report lines: GEH below 5 per source and count year, fitted and held out, then the station rule overall and for recent sources. */
+export interface RuleSplit { all: { fitted: Tally; held: Tally }; recent: { fitted: Tally; held: Tally }; older: { fitted: Tally; held: Tally } }
+export type Tally = { n: number; ok: number };
+
+/** Pass counts of the stations of a period: all, recent (age at most `recentYears`) and older, each fitted and held out. A station with no year is older. */
+export function ruleSplit<T extends CaseLike>(items: { year?: number | null; c: T }[], cfg: { referenceYear: number; recentYears: number }): RuleSplit {
+  const t = (): { fitted: Tally; held: Tally } => ({ fitted: { n: 0, ok: 0 }, held: { n: 0, ok: 0 } });
+  const out: RuleSplit = { all: t(), recent: t(), older: t() };
+  for (const { year, c } of items) {
+    const age = ageOf(year, cfg.referenceYear);
+    const group = age !== null && age <= cfg.recentYears ? out.recent : out.older;
+    for (const g of [out.all, group]) { const b = c.held ? g.held : g.fitted; b.n++; if (c.gehOk) b.ok++; }
+  }
+  return out;
+}
+
+/** The station rule is judged on the recent counts: more than `rule` of them below GEH 5, fitted and held out. */
+export const recentRuleMet = (r: RuleSplit, rule = 0.85): boolean => [r.recent.fitted, r.recent.held].every((b) => b.n > 0 && b.ok / b.n > rule);
+
+/** Report lines: GEH below 5 per source and count year, fitted and held out, then the station rule judged on recent counts with the pass rate of older counts beside it. */
 export function sourceYearLines<T extends CaseLike>(items: { source?: string; year?: number | null; c: T }[], cfg: { referenceYear: number; recentYears: number; rule?: number }): string[] {
   const rule = cfg.rule ?? 0.85;
   const L = ['| Source | Count year | Age (years) | Fitted: GEH < 5 | Held out: GEH < 5 |', '| --- | --- | --- | --- | --- |'];
   for (const r of groupBySourceYear(items)) L.push(`| ${r.source} | ${yearLabel(r.year)} | ${r.year == null ? 'unknown, treated as old' : (cfg.referenceYear - r.year).toFixed(1).replace(/\.0$/, '')} | ${cell(r.fitted)} | ${cell(r.held)} |`);
-  const verdict = (b: { n: number; ok: number }) => (b.n ? (b.ok / b.n > rule ? 'met' : 'not met') : '-');
-  const all = (held: boolean) => { const b = { n: 0, ok: 0 }; for (const { c } of items) if (!!c.held === held) { b.n++; if (c.gehOk) b.ok++; } return b; };
-  const rec = (held: boolean) => { const b = { n: 0, ok: 0 }; for (const { year, c } of items) { const age = ageOf(year, cfg.referenceYear); if (!!c.held === held && age !== null && age <= cfg.recentYears) { b.n++; if (c.gehOk) b.ok++; } } return b; };
-  L.push('', `Station rule (GEH below 5 at more than ${Math.round(rule * 100)}% of stations): all sources fitted ${cell(all(false))} (${verdict(all(false))}), held out ${cell(all(true))} (${verdict(all(true))}); recent sources only (age at most ${cfg.recentYears} years) fitted ${cell(rec(false))} (${verdict(rec(false))}), held out ${cell(rec(true))} (${verdict(rec(true))}).`);
+  const verdict = (b: Tally) => (b.n ? (b.ok / b.n > rule ? 'met' : 'not met') : '-');
+  const r = ruleSplit(items, cfg);
+  const both = (g: { fitted: Tally; held: Tally }) => `fitted ${cell(g.fitted)} (${verdict(g.fitted)}), held out ${cell(g.held)} (${verdict(g.held)})`;
+  L.push('', `Station rule (GEH below 5 at more than ${Math.round(rule * 100)}% of stations), judged on counts from the last ${cfg.recentYears} years: ${both(r.recent)}. Older counts, reported beside it: ${both(r.older)}. All counts: ${both(r.all)}.`);
   return L;
 }

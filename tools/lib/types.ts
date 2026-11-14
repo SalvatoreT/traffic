@@ -102,7 +102,7 @@ export interface AreaConfig {
    * Baseline calibration status shown in the UI. `defaultPeriod` is the demand period the app opens with; `experimentalPeriods` lists the
    * periods whose baseline fails the stability criterion (D4), which the app labels experimental. The importer copies the object into areas.json.
    */
-  calibration?: { status: 'uncalibrated' | 'calibrated'; note?: string; defaultPeriod?: string; experimentalPeriods?: string[] };
+  calibration?: { status: 'uncalibrated' | 'calibrated'; note?: string; /** Limits of the calibration, in full sentences, shown on the Sources page and beside the banner. */ caveat?: string; defaultPeriod?: string; experimentalPeriods?: string[] };
 }
 
 export interface OsmNode {

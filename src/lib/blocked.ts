@@ -88,6 +88,44 @@ export function streetFilters(f: FilterLegs): StreetFilter[] {
   return [...by].filter(([, ls]) => f.legs.length - ls.length >= 2).map(([street, legs]) => ({ street, legs, links: legs.flatMap((l) => l.links) }));
 }
 
+/** "Martin Street" when the closed legs are all the legs of their streets, else the legs by name. */
+export function closedLegsLabel(f: FilterLegs, shut: FilterLeg[]): string {
+  const whole = [...new Set(shut.map((l) => l.street))].every((st) => f.legs.filter((l) => l.street === st).every((l) => shut.includes(l)));
+  return list(whole ? [...new Set(shut.map((l) => l.street))] : shut.map((l) => l.text));
+}
+
+export interface FilterChoices {
+  /** Whole-junction filter is on offer (none placed yet). */
+  whole: boolean;
+  /** Per-street filters on offer, leaving at least two other legs connected. */
+  streets: (StreetFilter & { label: string; closed: string })[];
+  merged: boolean;
+  /** Why per-street filters are suggested first at a consolidated junction. */
+  why: string | null;
+  /** Closed-leg preview of the whole-junction filter. */
+  wholeClosed: string;
+}
+
+/** The modal filters the app offers at an intersection, given what is already placed there. */
+export function filterChoices(net: Network, idx: NetIndex, node: number, ivs: { type: string; node?: number; legs?: number[] }[]): FilterChoices {
+  const f = filterLegs(net, idx, node);
+  const here = ivs.filter((iv) => iv.type === 'modal_filter' && iv.node === node);
+  const hasWhole = here.some((iv) => iv.legs === undefined);
+  const placed = new Set(here.filter((iv) => iv.legs).map((iv) => [...iv.legs!].sort((a, b) => a - b).join('.')));
+  const streets = hasWhole ? [] : streetFilters(f)
+    .filter((o) => !placed.has([...o.links].sort((a, b) => a - b).join('.')))
+    .map((o) => {
+      const t = filterText({ type: 'modal_filter', node, legs: o.links }, net, idx);
+      return { ...o, links: [...o.links].sort((a, b) => a - b), label: `Filter ${o.street} here`, closed: t?.closed ?? '' };
+    });
+  const all = streetFilters(f).length > 0;
+  const near = f.spreadM > 0 ? `, which meet up to about ${f.spreadM} m apart` : '';
+  const why = f.merged && all
+    ? `This junction combines ${list(f.streets)}${near}. A filter on one street closes only that street's legs; the others stay connected.`
+    : null;
+  return { whole: !hasWhole, streets, merged: f.merged, why, wholeClosed: filterText({ type: 'modal_filter', node }, net, idx)?.closed ?? '' };
+}
+
 export interface FilterText {
   /** "Cars cannot pass through this intersection." */
   lead: string;

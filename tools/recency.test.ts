@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ageOf, applyRecency, bandWeight, groupBySourceYear, growthFactor, recentSplit, sourceYearLines, type Dated, type RecencyConfig } from './lib/recency';
+import { recentRuleMet, ruleSplit, ageOf, applyRecency, bandWeight, groupBySourceYear, growthFactor, recentSplit, sourceYearLines, type Dated, type RecencyConfig } from './lib/recency';
 
 const cfg: RecencyConfig = { enabled: true, referenceYear: 2026, recentYears: 5, bands: [{ maxAgeYears: 10, weight: 1 }, { weight: 0.5 }] };
 const st = (id: string, source: string, year: number | null, weight = 1): Dated => ({ id, source, year, weight, target: { pm_peak: 100 } });
@@ -35,7 +35,7 @@ describe('recency of count sources', () => {
     expect(b.target.pm_peak).toBe(100);
   });
   it('scores per source and year and splits the rule into recent and older sources', () => {
-    const items = [
+    const items: { source?: string; year?: number | null; c: { gehOk: boolean; held?: boolean } }[] = [
       { source: 'v', year: 2025, c: { gehOk: true } }, { source: 'v', year: 2025, c: { gehOk: false, held: true } },
       { source: 'eir', year: 2013, c: { gehOk: false } }, { source: 'eir', year: 2013, c: { gehOk: true } }, { source: 'x', year: null, c: { gehOk: false } },
     ];
@@ -47,6 +47,14 @@ describe('recency of count sources', () => {
     const text = sourceYearLines(items, { referenceYear: 2026, recentYears: 5 }).join('\n');
     expect(text).toContain('| eir | 2013 | 13 | 1 of 2 (50%) | - |');
     expect(text).toContain('unknown, treated as old');
-    expect(text).toContain('recent sources only (age at most 5 years) fitted 1 of 1 (100%)');
+    expect(text).toContain('judged on counts from the last 5 years: fitted 1 of 1 (100%) (met), held out 1 of 1 (0%)'.replace('1 of 1 (0%)', '0 of 1 (0%)'));
+    expect(text).toContain('Older counts, reported beside it: fitted 1 of 3 (33%) (not met)');
+  });
+  it('judges the station rule on recent counts, both sets', () => {
+    const mk = (year: number, ok: boolean, held = false) => ({ year, c: { gehOk: ok, held } });
+    const good = [mk(2025, true), mk(2025, true, true), mk(2013, false), mk(2013, false, true)];
+    expect(recentRuleMet(ruleSplit(good, { referenceYear: 2026, recentYears: 5 }))).toBe(true);
+    expect(recentRuleMet(ruleSplit([mk(2025, true), mk(2025, false, true)], { referenceYear: 2026, recentYears: 5 }))).toBe(false);
+    expect(recentRuleMet(ruleSplit([mk(2013, true)], { referenceYear: 2026, recentYears: 5 }))).toBe(false);
   });
 });
