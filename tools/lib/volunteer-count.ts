@@ -11,6 +11,7 @@ export interface CountFile {
   source: { id: string; description?: string };
   entering?: { pm?: { total: number; bySide: { side: string; vehicles: number }[]; fromClaremontOnto?: { street: string; vehicles: number }[] }; am?: { totalCounted: number } };
   fullRoute?: { definition?: string; rows: CountFullRoute[] };
+  routeDiagrams?: { street: string; direction: string; period: string; tableTotals: { enteringAtStart: number; drivingEntireRoute: number } }[];
   alcatrazExits?: { towardTelegraph: number; towardCollege: number; straightAcross: number };
   signal?: { at: string[]; approach: string; period: string; cycleSeconds: number; greenSeconds: number; medianCarsPerCycle?: Record<string, number>; maxQueue?: number };
   blocks: CountBlock[];
@@ -47,6 +48,12 @@ export interface CountConfig {
   /** Midday has no count: its targets are the PM count times this factor (the ratio of the periods' hourly volumes in `periodFactors`). ASSUMPTION. */
   middayFromPm: boolean;
   middayWeightFactor: number;
+  /**
+   * Entries of streets with no whole-street count take the through share the counted whole streets show (cars that drove the whole street over cars that entered it),
+   * so `through` is not only the counted streets. ASSUMPTION (the one other street with a through reading, Martin Street in the AM peak, gives 48% against 40% to 45%).
+   * `entries` are substrings of the entry labels in the report; `scale` multiplies the share (1 = the counted streets' share, 0 or the key absent = off).
+   */
+  otherThrough?: { entries: string[]; scale: number };
 }
 
 export interface BlockMapping { block: CountBlock; link: number | null; approx: boolean; reason?: string }
@@ -342,7 +349,7 @@ export interface TripEnds { entries: number; exits: number; through: number; des
  * without stopping, so they are no trip end), and the same for vehicles leaving (volume of the reverse link of every entry link). A lower bound on `through` (only the
  * counted streets), so an upper bound on the ends. Midday has no count: the mean of the two counted periods' ratios to the offered ends is the caller's choice.
  */
-export function tripEnds(file: CountFile, res: { stations: CountStation[]; report: CountReport }, net: CNet, periods: PeriodMap): Record<string, TripEnds> {
+export function tripEnds(file: CountFile, res: { stations: CountStation[]; report: CountReport }, net: CNet, periods: PeriodMap, cfg?: Pick<CountConfig, 'otherThrough'>): Record<string, TripEnds> {
   const rev = new Map(net.links.map((l) => [l.id, (l as CLink & { reverse?: number | null }).reverse ?? null]));
   const blk = new Map(res.stations.filter((s) => s.family === 'block').map((s) => [s.links[0], s]));
   const out: Record<string, TripEnds> = {};
@@ -350,7 +357,18 @@ export function tripEnds(file: CountFile, res: { stations: CountStation[]; repor
     const id = periods[p];
     let entries = 0, exits = 0;
     for (const e of res.report.entries) { entries += e.counted[id] ?? 0; const r = rev.get(e.link); exits += (r !== null && r !== undefined ? blk.get(r)?.target[id] : 0) ?? 0; }
-    const through = res.stations.filter((s) => s.family === 'route').reduce((a, s) => a + (s.target[id] ?? 0), 0);
+    const counted = res.stations.filter((s) => s.family === 'route').reduce((a, s) => a + (s.target[id] ?? 0), 0);
+    let extra = 0;
+    const ot = cfg?.otherThrough;
+    if (ot && ot.scale > 0 && file.routeDiagrams) {
+      const rows = file.routeDiagrams.filter((r) => r.period === p && r.tableTotals.drivingEntireRoute > 0);
+      const enter = rows.reduce((a, r) => a + r.tableTotals.enteringAtStart, 0);
+      const share = enter > 0 ? rows.reduce((a, r) => a + r.tableTotals.drivingEntireRoute, 0) / enter : 0;
+      let base = 0;
+      for (const e of res.report.entries) if (ot.entries.some((k) => e.label.includes(k))) base += e.counted[id] ?? 0;
+      extra = share * ot.scale * base;
+    }
+    const through = counted + extra;
     out[id] = { entries, exits, through, destinations: Math.max(0, entries - through), origins: Math.max(0, exits - through) };
   }
   return out;

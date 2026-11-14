@@ -294,7 +294,7 @@ const lo = cfg.local;
 const vc = cfg.volunteerCount as (CountConfig & { enabled: boolean; periods: { am: string; pm: string; midday?: string } }) | undefined;
 const countFile: CountFile | null = vc?.enabled ? JSON.parse(readFileSync(vc.file, 'utf8')) : null;
 const countRes = countFile ? countStations(countFile, net as never, vc!, vc!.periods, Object.fromEntries(periodIds.map((p) => [p, cfg.periodFactors[p].volume]))) : null;
-const countEnds: Record<string, TripEnds> | null = countFile && countRes ? tripEnds(countFile, countRes, net as never, vc!.periods) : null;
+const countEnds: Record<string, TripEnds> | null = countFile && countRes ? tripEnds(countFile, countRes, net as never, vc!.periods, vc) : null;
 /** Multiplier on the trip rates of blocks inside the study area, per period and side (origins / destinations); filled in the period loop from the count-implied trip ends. */
 const localScale: Record<string, { o: number; d: number; rawO: number; rawD: number; targetO: number; targetD: number }> = {};
 if (lodes) {
@@ -448,7 +448,14 @@ for (const p of cfg.periods as { id: string; label: string }[]) {
     }, 0);
     const off = kind === 'off', side = off ? 'out' : 'in'; // ends at surface: gate outflow (off) or gate inflow (on)
     const gc = gates.map((g) => { const n = nodeById.get(g.id)!; return { id: g.id, w: (off ? g.outT[p.id] : g.inT[p.id]) * plaus(n.x, n.y, g.id), room: capLeft.get(g.id)![side] }; }).filter((c) => c.w > 0 && c.room > 0 && (off ? routable(gid, c.id) : routable(c.id, gid)));
-    const lc = locList.map((b) => ({ id: b.node, w: (off ? blockTrips(b).inTotal : blockTrips(b).outTotal) * plaus(b.x, b.y, b.node) })).filter((c) => c.w > 0 && (off ? routable(gid, c.id) : routable(c.id, gid)));
+    // `studyEndFreewayCap`: at most this share of a study-area block's external trip ends pairs with a freeway (ASSUMPTION; the observed freeway share of trips on the
+    // counted blocks is 45 to 68%), so the rest of the ends go to surface gates and nodes and the streets' remaining volume has to be non-freeway traffic.
+    const lc = locList.map((b) => {
+      const t = off ? blockTrips(b).inTotal : blockTrips(b).outTotal;
+      const capped = rc.studyEndFreewayCap !== undefined && nodeById.get(b.node)!.inStudyArea;
+      const room = capped ? Math.max(0, rc.studyEndFreewayCap * lo.externalShareOfResidentTrips * t - rampAtBlock.get(b.node)![off ? 'in' : 'out']) : Infinity;
+      return { id: b.node, w: t * plaus(b.x, b.y, b.node), room };
+    }).filter((c) => c.w > 0 && c.room > 0 && (off ? routable(gid, c.id) : routable(c.id, gid)));
     const lShare = lc.length ? rc.localShare : 0;
     // Gate part: water-filling so no gate exceeds its remaining ramp cap.
     const give = new Map<number, number>();
@@ -470,11 +477,24 @@ for (const p of cfg.periods as { id: string; label: string }[]) {
       rampFlows.set(off ? `${gid}>${id}` : `${id}>${gid}`, (rampFlows.get(off ? `${gid}>${id}` : `${id}>${gid}`) ?? 0) + v);
       capLeft.get(id)![side] -= v; rampAtGate.get(id)![side] += v;
     }
-    const lw = lc.reduce((a, c) => a + c.w, 0);
-    if (lw > 0) for (const c of lc) {
-      const v = (lVol * c.w) / lw, k = off ? `${gid}>${c.id}` : `${c.id}>${gid}`;
+    // Water-filling over the local candidates so no capped block takes more than its room.
+    const lGive = new Map<number, number>();
+    let remL = lVol, actL = lc.slice();
+    for (let it = 0; it < 50 && remL > 1e-6 && actL.length; it++) {
+      const sw = actL.reduce((a, c) => a + c.w, 0);
+      let used = 0;
+      const next: typeof actL = [];
+      for (const c of actL) {
+        const x = (remL * c.w) / sw, room = c.room - (lGive.get(c.id) ?? 0), y = Math.min(x, room);
+        lGive.set(c.id, (lGive.get(c.id) ?? 0) + y); used += y;
+        if (x < room - 1e-9) next.push(c);
+      }
+      remL -= used; actL = next;
+    }
+    for (const [id, v] of lGive) {
+      const k = off ? `${gid}>${id}` : `${id}>${gid}`;
       rampFlows.set(k, (rampFlows.get(k) ?? 0) + v);
-      rampAtBlock.get(c.id)![off ? 'in' : 'out'] += v;
+      rampAtBlock.get(id)![off ? 'in' : 'out'] += v;
     }
   }
 
