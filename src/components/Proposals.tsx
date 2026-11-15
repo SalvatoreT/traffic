@@ -113,7 +113,14 @@ export function Proposals({ bundle, index, today, state, loaded, mode, current, 
           <p className="muted">Until then, you can try interventions yourself on the Map.</p>
         </div>
       )}
-      {ready && ready.groups.length === 0 && <p className="muted" role="status">This file holds no options.</p>}
+      {ready && ready.withdrawn && (
+        <div className="empty" role="status">
+          <p><strong>The proposals have been withdrawn for now.</strong></p>
+          <p>{ready.withdrawn}</p>
+          <p className="muted">Until new ones are published, you can try interventions yourself on the Map.</p>
+        </div>
+      )}
+      {ready && !ready.withdrawn && ready.groups.length === 0 && <p className="muted" role="status">This file holds no options.</p>}
       {ready && ready.groups.map((g) => {
         const notices = proposalNotices(g.computed, loaded);
         const parts = splitProposals(g);

@@ -40,17 +40,22 @@ function wrangler(args: string[], capture = false): string {
   }) as string;
 }
 
+// `push --only key,prefix/` uploads just those keys and leaves the manifest alone.
+const ONLY = process.argv.includes("--only") ? process.argv[process.argv.indexOf("--only") + 1].split(",") : null;
+
 async function push() {
   const keys: string[] = [];
   for (const m of MAPPINGS) {
     for (const file of walk(m.local)) {
       if (m.match && !m.match.test(file)) continue;
       const key = `${m.prefix}/${relative(m.local, file)}`;
+      if (ONLY && !ONLY.some((o) => key === o || (o.endsWith("/") && key.startsWith(o)))) continue;
       if (SITE) await sitePut(key, file);
       else wrangler(["r2", "object", "put", `${BUCKET}/${key}`, "--file", file, "--remote"]);
       keys.push(key);
     }
   }
+  if (ONLY) return;
   writeFileSync(MANIFEST, JSON.stringify({ bucket: BUCKET, keys: keys.sort() }, null, 2) + "\n");
 }
 

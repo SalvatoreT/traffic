@@ -199,6 +199,10 @@ export function proposalsMd(i: LlmsInput): string {
   const file = i.proposals;
   const out: string[] = [header(i, { title: `Traffic: ${i.area.name}, proposals`, human: '/proposals', json: [`/data/${i.area.id}.proposals.json`] })];
   out.push('## About these proposals', '', PROPOSALS_LEAD, '', `Each package has a share link (\`/p/<slug>\`, the address to give people) and a scenario link. Open either in the app, or run the scenario link yourself with \`npm run simulate -- --link "<link>"\` (see ${abs(i, '/run-locally.md')}). The numbers below were computed by the proposal search, averaged over several seeds, which is why a single local run at seed 1 can differ.`, '');
+  if (file?.withdrawn) {
+    out.push('**The proposals have been withdrawn for now.**', '', file.withdrawn, '');
+    return out.join('\n');
+  }
   if (!file || file.groups.length === 0) {
     out.push('No proposals have been computed for this area yet.', '');
     return out.join('\n');
