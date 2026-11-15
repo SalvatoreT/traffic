@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cycleSnap, decideSnap, nearestSnap, snapHeights, stepSnap } from './sheet';
+import { PEEK_PX, cycleSnap, decideSnap, fitSheetRect, nearestSnap, snapHeights, stepSnap } from './sheet';
 
 const H = snapHeights(800); // 96, 400, 720
 describe('bottom sheet snapping', () => {
@@ -30,5 +30,11 @@ describe('bottom sheet snapping', () => {
     expect(stepSnap(1, 'End')).toBe(2);
     expect(stepSnap(2, 'Home')).toBe(0);
     expect(cycleSnap(2)).toBe(0);
+  });
+});
+
+describe('fitSheetRect', () => {
+  it('always covers the collapsed height', () => {
+    expect(fitSheetRect(0, 390, 844)).toEqual({ left: 0, right: 390, top: 844 - PEEK_PX, bottom: 844 });
   });
 });

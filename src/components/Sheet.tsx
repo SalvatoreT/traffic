@@ -34,12 +34,6 @@ export function Sheet({ label, tabs, children, raise = 0 }: { label: string; tab
   }, []);
   useEffect(() => { if (bodyRef.current) bodyRef.current.inert = snap === 0; }, [snap]);
   useEffect(() => { if (raise > 0) setSnapState((s) => (s === 0 ? 1 : s)); }, [raise]);
-  // The map area keeps clear of the sheet at peek and half; at full the sheet covers it anyway.
-  useEffect(() => {
-    const r = document.documentElement;
-    r.style.setProperty('--sheet-h', `${Math.min(heights[snap], heights[1])}px`);
-    return () => { r.style.removeProperty('--sheet-h'); };
-  }, [snap, vh]); // eslint-disable-line
 
   const height = dragH ?? heights[snap];
   const down = (e: PointerEvent<HTMLElement>) => {

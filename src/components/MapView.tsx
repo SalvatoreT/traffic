@@ -11,6 +11,7 @@ import { hitTest, selectionAnchor, type Selection } from '../lib/selection';
 import { PopoverFrame } from './Popover';
 import { MapMenu } from './MapMenu';
 import { legendModel, mapSymbols } from '../lib/legend';
+import { fitSheetRect } from '../lib/sheet';
 import { BADGE_TEXT, captionOf, composeImage, drawBadges, EXPORT_SCALE, exportFileName, FORMATS, type BadgeMark, type ImageFormat } from '../lib/mapexport';
 import { FADE_TIERS, interventionInRegion, REGION_FEATHER_M, type Region } from '../lib/region';
 import { REGION_BUFFER_M } from '../lib/area';
@@ -457,8 +458,8 @@ export function MapView(p: Props) {
     const regionBox = regionGeoBox(region, proj);
     const originalOf = (e: unknown) => (e as { originalEvent?: unknown }).originalEvent;
 
-    // The part of the canvas no overlay covers right now. The toolbar and the legend count at their collapsed rows,
-    // so expanding either does not move the view.
+    // The part of the canvas no overlay covers right now. The toolbar, the legend and the sheet count at their collapsed sizes,
+    // so expanding any of them does not move the view.
     const measure = (sheetOverride?: number): { size: Size; unob: Rect } | null => {
       const cr = el.getBoundingClientRect();
       if (cr.width < 50 || cr.height < 50) return null;
@@ -478,8 +479,9 @@ export function MapView(p: Props) {
       const ctrls = el.querySelector('.maplibregl-ctrl-top-right')?.getBoundingClientRect();
       if (ctrls && ctrls.width) obs.push({ rect: ctrls, edge: 'right' });
       if (window.matchMedia(PHONE_Q).matches) {
-        const h = sheetOverride ?? (parseFloat(document.documentElement.style.getPropertyValue('--sheet-h')) || 96);
-        obs.push({ rect: { left: cr.left, right: cr.right, top: window.innerHeight - h, bottom: window.innerHeight }, edge: 'bottom' });
+        const r = fitSheetRect(cr.left, cr.right, window.innerHeight);
+        if (sheetOverride) r.top = window.innerHeight - sheetOverride;
+        obs.push({ rect: r, edge: 'bottom' });
       }
       return { size: { w: cr.width, h: cr.height }, unob: unobscuredRect(cr, obs) };
     };
@@ -676,11 +678,8 @@ export function MapView(p: Props) {
     const watched = ['.toolbar', '.legend-row', '.maplibregl-ctrl-top-right', '.maplibregl-ctrl-attrib']
       .map((q) => (q === '.toolbar' ? document : el.parentElement ?? document).querySelector(q)).filter((n): n is Element => !!n);
     watched.forEach((n) => ro.observe(n));
-    // The sheet publishes its height as a root style property.
-    const mo = new MutationObserver(layoutLater);
-    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['style'] });
     return () => {
-      ro.disconnect(); mo.disconnect(); window.clearTimeout(timer);
+      ro.disconnect(); window.clearTimeout(timer);
       el.removeEventListener('pointerdown', press, { capture: true });
       window.removeEventListener('pointerup', release); window.removeEventListener('pointercancel', release);
       markers.current.forEach((m) => m.remove()); map.remove(); mapRef.current = null; setReady(false);

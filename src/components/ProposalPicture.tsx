@@ -55,17 +55,25 @@ export function ProposalPicture({ net, index, p, ivs, areaName, areaId, status, 
   const near = useNear(box);
   const [png, setPng] = useState<{ url: string; ext: string } | null>(null);
   const [failed, setFailed] = useState(false);
+  // Keyed on the drawn content, not on object identity: a parent re-render with equal inputs must not redraw, and the old picture stays up until its replacement is ready.
+  const svg = share?.image.svg ?? null;
+  const latest = useRef(share?.image ?? null);
+  latest.current = share?.image ?? null;
   useEffect(() => {
-    if (!near || !share) return;
-    setPng(null); setFailed(false);
-    let dead = false, made: string | null = null;
-    svgToPng(share.image).then((b) => {
+    const img = latest.current;
+    if (!near || !img) return;
+    setFailed(false);
+    let dead = false;
+    svgToPng(img).then((b) => {
       if (dead) return;
-      made = URL.createObjectURL(b);
-      setPng({ url: made, ext: b.type === 'image/jpeg' ? 'jpg' : 'png' });
+      const url = URL.createObjectURL(b);
+      setPng((prev) => { if (prev) URL.revokeObjectURL(prev.url); return { url, ext: b.type === 'image/jpeg' ? 'jpg' : 'png' }; });
     }, () => { if (!dead) setFailed(true); });
-    return () => { dead = true; if (made) URL.revokeObjectURL(made); };
-  }, [near, share]);
+    return () => { dead = true; };
+  }, [near, svg]);
+  const shown = useRef<string | null>(null);
+  shown.current = png?.url ?? null;
+  useEffect(() => () => { if (shown.current) URL.revokeObjectURL(shown.current); }, []);
   if (!pic || !facts || !model || !share) return null;
   const when = short(pic.period);
   const alt = shareAlt(share.input.title, share.input.changes, pictureAlt(p, pic, facts, when));

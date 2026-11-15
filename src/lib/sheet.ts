@@ -36,3 +36,8 @@ export function stepSnap(s: Snap, key: string): Snap {
 }
 
 export function cycleSnap(s: Snap): Snap { return ((s + 1) % 3) as Snap; }
+
+/** The strip the sheet covers for fitting the map: always its collapsed height, so raising or lowering the sheet never moves the view. */
+export function fitSheetRect(left: number, right: number, viewportH: number) {
+  return { left, right, top: viewportH - PEEK_PX, bottom: viewportH };
+}

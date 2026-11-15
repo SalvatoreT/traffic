@@ -40,6 +40,10 @@ pub const TC_MINOR_RIGHT: f32 = 6.2;
 pub const TC_MINOR_THROUGH: f32 = 6.5;
 pub const TC_MINOR_LEFT: f32 = 7.1;
 pub const TC_MAJOR_LEFT: f32 = 4.1;
+/// Critical headway at a circle entry (s): the single-lane entry model 1130 exp(-0.001 v_c) of [Rodegerdts2007] read in the Siegloch
+/// form c = (3600 / t_f) exp(-v_c (t_c - t_f / 2) / 3600) gives t_f = 3600 / 1130 = 3.19 s and t_c = 3.6 + t_f / 2 = 5.19 s.
+pub const TC_CIRCLE: f32 = 5.19;
+pub const TF_CIRCLE: f32 = 3.19;
 pub const TC_UNCONTROLLED: f32 = 3.5; // ASSUMPTION: "short" critical gap, yield-to-right junctions
 pub const GAP_SIGMA: f64 = 0.15; // ASSUMPTION: lognormal heterogeneity of critical gap [Brilon1999] design choice
 pub const MIN_APPROACH_SPEED: f32 = 2.0; // ASSUMPTION: floor in arrival-time estimate (m/s)
