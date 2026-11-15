@@ -463,7 +463,7 @@ Scenario links SHALL write the closed legs of a node filter as bearings after th
 - **THEN** that filter is listed as unplaced and the rest of the scenario loads
 
 ### Requirement: Picture on each proposal card
-Each proposal card whose proposal carries picture data SHALL show, directly after the card's title and before its summary, figures and list of changes, the picture of the change in through cars an hour on each block in the picture's period, package minus today, as an image (`img`) of a PNG that can be saved like any image, with a text alternative and a Download image link. The picture SHALL use the scale of the map's Change in cut-through view and draw the package's changes on the streets. It SHALL follow no animation and look the same in light and dark themes. On wide screens it MAY sit beside the text; on narrow screens it stacks above it. The reading order SHALL match the visual order. The control for opening the package on the map SHALL stay with the picture.
+Each proposal card whose proposal carries picture data SHALL show, directly after the card's title and before its summary, figures and list of changes, the picture of the change in through cars an hour on each block in the picture's period, package minus today, as an image (`img`) of a JPEG that can be saved like any image, with a text alternative and a Download image link. The picture SHALL use the scale of the map's Change in cut-through view and draw the package's changes on the streets. It SHALL follow no animation and look the same in light and dark themes. On wide screens it MAY sit beside the text; on narrow screens it stacks above it. The reading order SHALL match the visual order. The control for opening the package on the map SHALL stay with the picture.
 
 #### Scenario: Card with a picture
 - **WHEN** a proposal carries picture data
@@ -537,11 +537,11 @@ A scenario link that carries interventions SHALL name its period. A link without
 - **THEN** the map shows its stored result for the picture's period
 
 ### Requirement: Picture stands on its own when shared
-The picture's PNG SHALL carry the proposal's title, its list of changes, the period it shows with its hours, the legend with numbers and the cues that are not color (the barrier bar, the outlined block), the through cars on all side streets for the picture's period before and after with the percent change, and, when more than one period was searched, the same for the card's average, a note that the figures are a simulation result with the area's calibration status, the area name, the OpenStreetMap attribution, the site address and a QR code, with a short label, that opens the proposal on the map. The title SHALL carry no number. The QR code SHALL encode the absolute link, use error correction M or higher, keep a quiet zone of 4 modules, draw dark modules on white in either theme and take at least 3 px a module in the file, without covering the map, legend or text. No text SHALL overlap or run past the edge, at any number of changes.
+The picture's JPEG SHALL carry the proposal's title, its list of changes, the period it shows with its hours, the legend with numbers and the cues that are not color (the barrier bar, the outlined block), the through cars on all side streets for the picture's period before and after with the percent change, and, when more than one period was searched, the same for the card's average, a note that the figures are a simulation result with the area's calibration status, the area name, the OpenStreetMap attribution, the site address and a QR code, with a short label, that opens the proposal on the map. The title SHALL carry no number. The QR code SHALL encode the absolute link, use error correction M or higher, keep a quiet zone of 4 modules, draw dark modules on white in either theme and take at least 3 px a module in the file, without covering the map, legend or text. No text SHALL overlap or run past the edge, at any number of changes.
 
 #### Scenario: Saved and sent
 - **WHEN** a person saves the picture or follows Download image
-- **THEN** the file is the same PNG, named for the area, the proposal and the period, and shows everything above
+- **THEN** the file is the same JPEG, named for the area, the proposal and the period, and shows everything above
 
 #### Scenario: Scanning
 - **WHEN** the QR code in the saved file is decoded

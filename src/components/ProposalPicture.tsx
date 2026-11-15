@@ -28,7 +28,7 @@ interface Props {
 }
 
 /**
- * The card's picture, shown as a real image (a PNG) so it can be saved, copied or sent like any other: the proposal's name and changes, the through-car
+ * The card's picture, shown as a real image (a JPEG) so it can be saved, copied or sent like any other: the proposal's name and changes, the through-car
  * figures for the period it shows and for the card's average, the map, its legend and where it came from. It is drawn the same, in light colors, in either theme.
  */
 export function ProposalPicture({ net, index, p, ivs, areaName, areaId, status, openUrl, periodLabel, searchedPeriods }: Props) {
@@ -67,7 +67,7 @@ export function ProposalPicture({ net, index, p, ivs, areaName, areaId, status, 
   const controls = [...new Set(ivs.flatMap((iv) => (iv.type === 'control' ? [controlLabel(iv.control).toLowerCase()] : [])))];
   const badgeName = (t: Intervention['type']) => (t === 'control' && controls.length ? `${BADGE_NAME.control} (${controls.join(', ')})` : BADGE_NAME[t]);
   const slug = (t: string) => t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60).replace(/-+$/, '');
-  const file = `${slug(areaId)}-${slug(p.title) || slug(p.id)}-${slug(pic.period)}.png`;
+  const file = `${slug(areaId)}-${slug(p.title) || slug(p.id)}-${slug(pic.period)}.jpg`;
   const { width, height } = share.image;
   return (
     <figure className="prop-pic">

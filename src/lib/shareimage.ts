@@ -232,7 +232,10 @@ export function canvasMeasure(): Measure {
   return (t, size, weight) => { g.font = `${weight} ${size}px ${FONT}`; return g.measureText(t).width; };
 }
 
-/** Rasterizes the SVG to a PNG at `SHARE_SCALE` times its size. */
+/** High enough that small text and the QR code stay sharp. */
+export const SHARE_QUALITY = 0.86;
+
+/** Rasterizes the SVG to a JPEG at `SHARE_SCALE` times its size, on the paper color since JPEG has no transparency. */
 export async function svgToPng(img: ShareImage): Promise<Blob> {
   const url = URL.createObjectURL(new Blob([img.svg], { type: 'image/svg+xml;charset=utf-8' }));
   try {
@@ -244,7 +247,7 @@ export async function svgToPng(img: ShareImage): Promise<Blob> {
     const g = c.getContext('2d')!;
     g.fillStyle = PAPER; g.fillRect(0, 0, c.width, c.height);
     g.drawImage(el, 0, 0, c.width, c.height);
-    const blob = await new Promise<Blob | null>((res) => c.toBlob(res, 'image/png'));
+    const blob = await new Promise<Blob | null>((res) => c.toBlob(res, 'image/jpeg', SHARE_QUALITY));
     if (!blob) throw new Error('The browser could not encode the picture.');
     return blob;
   } finally { URL.revokeObjectURL(url); }
