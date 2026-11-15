@@ -9,6 +9,7 @@ fn flows_m(flows: &[(u32, u32, f64, FlowMode)]) -> Demand {
         version: 1,
         area: "t".into(),
         intents: Vec::new(),
+        ramps: Vec::new(),
         periods: vec![Period {
             id: "p".into(),
             label: "p".into(),

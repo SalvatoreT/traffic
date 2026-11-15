@@ -53,6 +53,12 @@ impl WasmSimulation {
         self.inner.intent_links()
     }
 
+    /// Stride 3: intent slot, origin node, cumulative through vehicles (see `Simulation::intent_origins`).
+    #[wasm_bindgen(js_name = intentOrigins)]
+    pub fn intent_origins(&self) -> Vec<f32> {
+        self.inner.intent_origins()
+    }
+
     pub fn metrics(&self) -> String {
         self.inner.metrics_json()
     }

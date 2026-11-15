@@ -270,12 +270,28 @@ pub struct Demand {
     /// Additive (cut-through intent view): the named reasons through cars are tallied under, in the order flows index them.
     #[serde(default)]
     pub intents: Vec<IntentDef>,
+    /// Additive: the freeway ramps the intents' `onRamp` / `offRamp` refer to.
+    #[serde(default)]
+    pub ramps: Vec<RampDef>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct IntentDef {
     pub id: String,
+    /// Matches a through car whose planned route enters this on-ramp (a `ramps` id), or any on-ramp no intent lists (`"other"`).
+    pub on_ramp: Option<String>,
+    /// Matches a through car that has driven this off-ramp (a `ramps` id), or any off-ramp no intent lists (`"other"`).
+    pub off_ramp: Option<String>,
+}
+
+/// A freeway ramp, derived from the network by the builder: the freeway-class links of one chain, entered from (`on`) or ending at (`off`) a surface street.
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct RampDef {
+    pub id: String,
+    pub kind: String,
+    pub links: Vec<u32>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

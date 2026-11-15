@@ -335,6 +335,10 @@ impl Simulation {
             preplaced: true,
             ..Veh::blank()
         };
+        if !c.bike {
+            let off = c.route[..=c.at].iter().map(|&l| self.link_off[l as usize]).find(|&r| r != 0).unwrap_or(0);
+            self.vehs[id as usize].off_ramp = off;
+        }
         let (q, link, bike) = (c.q, c.link, c.bike);
         self.lanes[q].push_back(id);
         if !bike {

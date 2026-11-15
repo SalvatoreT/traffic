@@ -39,7 +39,7 @@ fn links_match_the_typescript_encoder() {
 fn labels_match_the_app() {
     let f = fixture();
     let (net, origin) = fixture_net(&f);
-    let study = Study::from_parts("fixture", net.clone(), Demand { version: 1, area: "fixture".into(), intents: vec![], periods: vec![] }, origin, "h".into(), "h".into(), "uncalibrated".into());
+    let study = Study::from_parts("fixture", net.clone(), Demand { version: 1, area: "fixture".into(), intents: vec![], ramps: vec![], periods: vec![] }, origin, "h".into(), "h".into(), "uncalibrated".into());
     let idx = NameIndex::new(&net);
     for b in f["blockLabels"].as_array().unwrap() {
         let key = b["key"].as_u64().unwrap() as u32;
@@ -150,6 +150,7 @@ fn study_of(net: Network) -> Study {
         version: 1,
         area: "t".into(),
         intents: Vec::new(),
+        ramps: Vec::new(),
         periods: vec![Period {
             id: "p".into(),
             label: "p".into(),
@@ -801,7 +802,7 @@ fn listed_options_beat_every_smaller_listed_option_on_through_cars() {
 fn decoding_a_link_restores_the_interventions_that_wrote_it() {
     let f = fixture();
     let (net, origin) = fixture_net(&f);
-    let study = Study::from_parts("fixture", net.clone(), Demand { version: 1, area: "fixture".into(), intents: Vec::new(), periods: vec![] }, origin, "h".into(), "h".into(), "uncalibrated".into());
+    let study = Study::from_parts("fixture", net.clone(), Demand { version: 1, area: "fixture".into(), intents: Vec::new(), ramps: Vec::new(), periods: vec![] }, origin, "h".into(), "h".into(), "uncalibrated".into());
     for c in f["cases"].as_array().unwrap() {
         // Like the app, the decoder cannot place a one-way mark on the bend of a street that turns by more than 45 degrees there.
         if c["name"] == "one-way both directions" {

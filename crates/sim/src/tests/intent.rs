@@ -8,7 +8,7 @@ fn run_intents(secs: f64, flows: &[(usize, usize, f64, Option<u32>)], n_intents:
     for (f, spec) in d.periods[0].flows.iter_mut().zip(flows) {
         f.intent = spec.3;
     }
-    d.intents = (0..n_intents).map(|i| IntentDef { id: format!("i{i}") }).collect();
+    d.intents = (0..n_intents).map(|i| IntentDef { id: format!("i{i}"), ..Default::default() }).collect();
     let mut sim = Simulation::from_parts(net, d, cfg_empty(3, 1.0)).unwrap();
     run(&mut sim, secs, |_| {});
     (sim, c)
@@ -63,7 +63,7 @@ fn intent_links_agree_with_the_exit_counter_on_local_links() {
     let mut d = demand(&[(c.a[0], c.a[3], 400.0), (c.a[3], c.a[0], 300.0)]);
     d.periods[0].flows[0].intent = Some(0);
     d.periods[0].flows[1].intent = Some(1);
-    d.intents = (0..2).map(|i| IntentDef { id: format!("i{i}") }).collect();
+    d.intents = (0..2).map(|i| IntentDef { id: format!("i{i}"), ..Default::default() }).collect();
     let mut sim = Simulation::from_parts(net, d, cfg(3, 1.0)).unwrap();
     assert!(sim.metrics().initial_agents > 10);
     run(&mut sim, 900.0, |_| {});

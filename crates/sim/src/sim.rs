@@ -107,6 +107,17 @@ const NO_PLAN: u32 = u32::MAX;
 /// Intent slot of a vehicle that is not a through car.
 pub(crate) const NO_INTENT: u16 = u16::MAX;
 
+/// How a demand intent matches a through car, in the order of the intents (the first match wins).
+#[derive(Clone, Copy, Debug)]
+enum IntentRule {
+    /// The intent its flow carries (origin and destination groups, set by the builder).
+    Od,
+    OnRamp(u16),
+    OnOther,
+    OffRamp(u16),
+    OffOther,
+}
+
 /// The assumed movements of one `via` flow (ASSUMPTION): the primary first, then the alternatives (same turn family on parallel streets), and the detour tolerance.
 struct ViaPlan {
     moves: Vec<(u32, u32)>,
@@ -152,6 +163,9 @@ struct Veh {
     via: Option<(u32, u32)>,
     vplan: u32,
     ct_counted: bool,
+    /// Ramp (index + 1 in `Demand::ramps`) the car had planned when it was counted, and the off-ramp it has driven (0 for none).
+    on_ramp: u16,
+    off_ramp: u16,
     noise_seed: u32,
     route: Vec<u32>,
     ridx: u32,
@@ -218,6 +232,8 @@ impl Veh {
             via: None,
             vplan: NO_PLAN,
             ct_counted: false,
+            on_ramp: 0,
+            off_ramp: 0,
             noise_seed: 0,
             route: Vec::new(),
             ridx: 0,
@@ -285,6 +301,11 @@ struct Stats {
     /// Through vehicles per intent slot (demand intents, then "other"), and the links they used: slot * links + link. Sized on first use.
     intent_veh: Vec<u64>,
     intent_link: Vec<f32>,
+    /// Through vehicles per (intent slot, origin node): where each reason's cars come from.
+    intent_origin: std::collections::BTreeMap<(u16, u32), f32>,
+    /// Counted through cars whose planned on-ramp was checked at the end of their trip, and how many drove another one (or none).
+    on_ramp_checked: u64,
+    on_ramp_changed: u64,
     local_veh_m: f64,
     safety_t: f64,
     safety_vs: f64,
@@ -440,6 +461,11 @@ pub struct Simulation {
     /// Agents placed by initial loading and the ones that found no room.
     init_agents: u64,
     init_skipped: u64,
+    intent_rules: Vec<IntentRule>,
+    link_on: Vec<u16>,
+    link_off: Vec<u16>,
+    on_listed: Vec<bool>,
+    off_listed: Vec<bool>,
 }
 
 /// Improved IDM [Treiber2014]: the IDM with `s1 = 0` and `delta = 4` whose steady-state time gap is exactly `t_hw` (the plain IDM
@@ -607,11 +633,17 @@ impl Simulation {
             world: PedWorld::default(),
             init_agents: 0,
             init_skipped: 0,
+            intent_rules: Vec::new(),
+            link_on: Vec::new(),
+            link_off: Vec::new(),
+            on_listed: Vec::new(),
+            off_listed: Vec::new(),
             topo,
             net,
         };
         s.init_select_links();
         s.init_flows();
+        s.init_intent_rules();
         s.init_modes();
         s.rebuild_effective();
         if s.cfg.initial_load {
@@ -668,6 +700,9 @@ impl Simulation {
             return;
         }
         self.vehs[vid as usize].trail.push(l);
+        if let Some(&r) = self.link_off.get(l as usize).filter(|&&r| r != 0) {
+            self.vehs[vid as usize].off_ramp = r;
+        }
         let Some(sl) = &self.sl else { return };
         let sid = sl.street_of[l as usize];
         let is_sel = sl.is_sel[l as usize];
@@ -774,6 +809,66 @@ impl Simulation {
             art_vs: self.st.art_vs,
             node_backlog: self.backlog.iter().map(|b| b.len() as u32).collect(),
         }
+    }
+
+    /// Ramps and matching rules of the demand's intents (`onRamp`, `offRamp`; an intent with neither takes the cars of its flows).
+    fn init_intent_rules(&mut self) {
+        let nl = self.topo.n_links;
+        let (mut on, mut off) = (vec![0u16; nl], vec![0u16; nl]);
+        let ids: std::collections::HashMap<&str, (u16, bool)> = self.demand.ramps.iter().enumerate().map(|(i, r)| (r.id.as_str(), (i as u16, r.kind == "on"))).collect();
+        for (i, r) in self.demand.ramps.iter().enumerate() {
+            for &l in r.links.iter().filter(|&&l| (l as usize) < nl) {
+                if r.kind == "on" {
+                    on[l as usize] = i as u16 + 1;
+                } else {
+                    off[l as usize] = i as u16 + 1;
+                }
+            }
+        }
+        let (mut on_listed, mut off_listed) = (vec![false; self.demand.ramps.len()], vec![false; self.demand.ramps.len()]);
+        let mut rules = Vec::new();
+        for d in &self.demand.intents {
+            let rule = match (d.on_ramp.as_deref(), d.off_ramp.as_deref()) {
+                (Some("other"), _) => IntentRule::OnOther,
+                (Some(id), _) => ids.get(id).filter(|r| r.1).map_or(IntentRule::Od, |r| {
+                    on_listed[r.0 as usize] = true;
+                    IntentRule::OnRamp(r.0)
+                }),
+                (None, Some("other")) => IntentRule::OffOther,
+                (None, Some(id)) => ids.get(id).filter(|r| !r.1).map_or(IntentRule::Od, |r| {
+                    off_listed[r.0 as usize] = true;
+                    IntentRule::OffRamp(r.0)
+                }),
+                (None, None) => IntentRule::Od,
+            };
+            rules.push(rule);
+        }
+        self.intent_rules = rules;
+        self.link_on = on;
+        self.link_off = off;
+        self.on_listed = on_listed;
+        self.off_listed = off_listed;
+    }
+
+    /// The intent slot of a through car at the moment it is counted: the first intent that matches the on-ramp on its planned route, the off-ramp it has driven, or its flow's intent.
+    fn classify_intent(&self, vid: u32) -> (u16, u16) {
+        let v = &self.vehs[vid as usize];
+        let ahead = v.route.get(v.ridx as usize..).unwrap_or(&[]);
+        let on = ahead.iter().map(|&l| self.link_on[l as usize]).find(|&r| r != 0).unwrap_or(0);
+        let off = v.off_ramp;
+        for (k, r) in self.intent_rules.iter().enumerate() {
+            let hit = match *r {
+                IntentRule::Od => v.intent == k as u16,
+                IntentRule::OnRamp(i) => on == i + 1,
+                IntentRule::OnOther => on != 0 && !self.on_listed[on as usize - 1],
+                IntentRule::OffRamp(i) => off == i + 1,
+                IntentRule::OffOther => off != 0 && !self.off_listed[off as usize - 1],
+            };
+            if hit {
+                return (k as u16, on);
+            }
+        }
+        (self.intent_rules.len() as u16, on)
     }
 
     fn init_flows(&mut self) {
@@ -2348,10 +2443,17 @@ impl Simulation {
     /// Through car `vid` leaves link `l`. The first time it is counted (the moment `ct_vehicles` counts it) its intent gets one vehicle and
     /// every link it has entered so far; each later exit adds that link.
     fn tally_intent(&mut self, vid: u32, l: usize, newly: bool) {
-        let i = self.vehs[vid as usize].intent;
-        if i == NO_INTENT {
+        if self.vehs[vid as usize].intent == NO_INTENT {
             return;
         }
+        if newly {
+            let (slot, on) = self.classify_intent(vid);
+            let veh = &mut self.vehs[vid as usize];
+            veh.intent = slot;
+            veh.on_ramp = on;
+            *self.st.intent_origin.entry((slot, veh.origin)).or_insert(0.0) += 1.0;
+        }
+        let i = self.vehs[vid as usize].intent;
         let (slots, nl) = (self.demand.intents.len() + 1, self.topo.n_links);
         if self.st.intent_veh.is_empty() {
             self.st.intent_veh = vec![0; slots];
@@ -2370,6 +2472,16 @@ impl Simulation {
         } else {
             self.st.intent_link[base + l] += 1.0;
         }
+    }
+
+    /// Stride 3: intent slot, origin node, cumulative through vehicles counted since t = 0. Only nonzero entries.
+    pub fn intent_origins(&self) -> Vec<f32> {
+        self.st.intent_origin.iter().flat_map(|(&(s, o), &n)| [s as f32, o as f32, n]).collect()
+    }
+
+    /// (counted through cars whose trip ended and that had planned an on-ramp, how many of them drove another route to the freeway or none).
+    pub fn on_ramp_plan_check(&self) -> (u64, u64) {
+        (self.st.on_ramp_checked, self.st.on_ramp_changed)
     }
 
     /// Stride 3: intent slot (the demand's intents in order, then "other"), link id, cumulative through vehicles that left the link since t = 0. Only nonzero entries.
@@ -2406,6 +2518,12 @@ impl Simulation {
         self.record_link_exit(vid, l);
         let ff = self.link_ff_for(l, self.vehs[vid as usize].drv.fcomp);
         let veh = &mut self.vehs[vid as usize];
+        if veh.on_ramp != 0 {
+            self.st.on_ramp_checked += 1;
+            if !veh.trail.iter().any(|&k| self.link_on[k as usize] == veh.on_ramp) {
+                self.st.on_ramp_changed += 1;
+            }
+        }
         veh.ff_sum += ff;
         let (origin, dest) = (veh.origin as usize, veh.dest as usize);
         let tt = self.t - veh.t_depart;

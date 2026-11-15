@@ -764,7 +764,7 @@ if (fc?.enabled) {
     for (const q of res.stations) {
       if (q.rampLinks) {
         const i = stations.findIndex((st) => st.kind === 'ramp' && st.links.length === q.rampLinks!.length && st.links.every((l) => q.rampLinks!.includes(l)));
-        if (i >= 0) { stationNotes.push(`${stations[i].label}: its ADT x K station (${periodIds.map((p) => Math.round(stations[i].target[p])).join(' / ')} veh/h) is replaced by the peak-hour count ${q.label} (${periodIds.map((p) => Math.round(q.target[p] ?? 0)).join(' / ')}); a counted hour comes before an assumed K`); const old = stations[i], r = (q.target[ic.periods.pm] ?? 0) / (old.target[ic.periods.pm] || 1); for (const p of periodIds) if (!q.target[p] && r > 0) q.target[p] = old.target[p] * r; stations.splice(i, 1);
+        if (i >= 0) { stationNotes.push(`${stations[i].label}: its ADT x K station (${periodIds.map((p) => Math.round(stations[i].target[p])).join(' / ')} veh/h) is replaced by the peak-hour count ${q.label} (${periodIds.map((p) => Math.round(q.target[p] ?? 0)).join(' / ')}); a counted hour comes before an assumed K`); const old = stations[i], r = (q.target[ic.periods.pm] ?? 0) / (old.target[ic.periods.pm] || 1); for (const p of periodIds) if (!q.target[p] && r > 0) { q.target[p] = old.target[p] * r; (q.derived ??= []).push(p); } stations.splice(i, 1);
           // Ramps that share one published ADT row each took an equal part of it. With one of them counted, the others share what the row leaves.
           const sib = stations.filter((st) => st.kind === 'ramp' && st.basis === old.basis);
           if (sib.length) { for (const p of periodIds) { const rest = Math.max(0, old.target[p] * (sib.length + 1) - (q.target[p] ?? 0)) / sib.length; for (const st of sib) st.target[p] = rest; } stationNotes.push(`${sib.map((st) => st.label).join(', ')}: shares the ADT row of the counted ramp above and takes the rest of it (${periodIds.map((p) => Math.round(sib[0].target[p])).join(' / ')} veh/h)`); }
@@ -774,6 +774,8 @@ if (fc?.enabled) {
     }
     stationNotes.push(`intersection counts: ${res.report.intersections} intersections give ${res.report.legs} leg volumes (${res.report.ramps} on ramps) and ${res.report.movements} turning movements`, ...res.report.notes);
   }
+  // Targets of the other periods of an ADT-based or gate station are the PM value times the period factors (ASSUMPTION), not counts: the station rule leaves them out.
+  for (const q of stations) if (q.kind === 'caltrans' || q.kind === 'ramp' || q.kind === 'gate') q.derived = [...new Set([...(q.derived ?? []), ...periodIds.filter((p) => p !== lastPeriod && (q.target[p] ?? 0) > 0)])];
   if (fc.validation?.enabled) {
     const h = markHoldout(stations, lastPeriod, { fraction: fc.validation.fraction, minPerCorridor: fc.validation.minPerCorridor });
     stationNotes.push(`validation set: ${h.held.length} of ${stations.length} stations are held out of a cross-validation fit (about ${Math.round(100 * (fc.validation.fraction ?? 0.25))}% of each corridor, at least one per corridor; ${h.corridors.length} corridors: ${h.corridors.join(', ')}); they are reported separately`);
