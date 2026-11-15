@@ -1632,6 +1632,7 @@ impl Simulation {
         for n in 0..self.topo.n_nodes {
             let (mut spawned, mut idx) = (0, 0);
             let mut blocked: Vec<u32> = Vec::new();
+            // ASSUMPTION: at most 4 trips enter the network per node per step (a gate stands for a multilane road with side-by-side arrivals); no source.
             while spawned < 4 && idx < SPAWN_SCAN && blocked.len() < self.topo.outs[n].len() {
                 let Some(trip) = self.backlog[n].get(idx) else { break };
                 let (dest, seed) = (trip.dest, trip.noise_seed);
@@ -2578,7 +2579,6 @@ impl Simulation {
 
     // ------------------------------------------------------------------ routing epochs
 
-    /// Re-plan the remaining route of an on-link vehicle. Returns false (and removes the vehicle) if unroutable.
     /// The assumed movement of a trip when it can still be made: the movement exists and is open, and its exit link is open.
     fn usable_via(&self, via: Option<(u32, u32)>) -> Option<(u32, u32)> {
         let (a, b) = via?;
@@ -2744,6 +2744,7 @@ impl Simulation {
         None
     }
 
+    /// Re-plan the remaining route of an on-link vehicle. Returns false (and removes the vehicle) if unroutable and `drop_if_fail`.
     fn replan_vehicle(&mut self, vid: u32, drop_if_fail: bool) -> bool {
         match self.vehs[vid as usize].kind {
             KIND_BIKE => return self.replan_bike(vid),

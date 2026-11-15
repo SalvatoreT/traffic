@@ -31,6 +31,10 @@ pub struct Final {
     pub score: f64,
     /// Through cars per link in the picture's period, today and with the package.
     pub picture: Option<Picture>,
+    /// A package carried over from a stricter group: always rechecked, and never dropped as within noise of a simpler one, so a looser profile's best is never worse than the stricter group's.
+    pub forced: bool,
+    /// Why the package fails the access check (it strands a block); set for reference packages, which are reported either way.
+    pub access: Option<String>,
 }
 
 /// The period the proposal card's picture shows when it was searched.
@@ -218,6 +222,8 @@ fn compare(ctx: &Ctx, set: &[u16], stats: &[PeriodStat], reject: Option<String>)
             let pi = picture_period(&p.periods);
             Some(Picture::new(&p.periods[pi], &base.full[pi].link_through, &stats[pi].link_through))
         },
+        forced: false,
+        access: None,
     }
 }
 
@@ -269,7 +275,7 @@ pub fn select_options(finals: &[Final], max: usize, noise_pct: f64) -> (Vec<Pick
     let mut keep: Vec<usize> = Vec::new();
     for &i in &nd {
         let a = &finals[i];
-        let simpler = nd.iter().copied().find(|&j| {
+        let simpler = nd.iter().copied().filter(|_| !a.forced).find(|&j| {
             let b = &finals[j];
             b.set.len() < a.set.len() && a.reduction_pct <= b.reduction_pct + noise_pct && a.harm >= b.harm - NOISE_FLOOR_VEH_H
         });
@@ -476,8 +482,24 @@ pub fn explore(study: &Study, p: &Params) -> Outcome {
     let state = beam_search(&ctx, &warm);
     let fin_idx = pick_finalists(&state.evals, p.finalists, &warm);
     eprintln!("rechecking {} finalist(s) over {} period(s) x {} seed(s) at {} min", fin_idx.len(), p.periods.len(), p.seeds.len(), p.minutes);
-    let sets: Vec<Vec<u16>> = fin_idx.iter().map(|&i| state.evals[i].set.clone()).collect();
-    let finals = recheck(&ctx, &sets);
+    let mut sets: Vec<Vec<u16>> = fin_idx.iter().map(|&i| state.evals[i].set.clone()).collect();
+    // Packages from a stricter group are rechecked whatever one-seed screening or the budget said.
+    let forced: Vec<Vec<u16>> = warm
+        .iter()
+        .map(|w| {
+            let mut w = w.clone();
+            w.sort_unstable();
+            w.dedup();
+            w
+        })
+        .collect();
+    for w in &forced {
+        if !sets.contains(w) {
+            sets.push(w.clone());
+        }
+    }
+    let mut finals = recheck(&ctx, &sets);
+    finals.iter_mut().for_each(|f| f.forced = forced.contains(&f.set));
     let noise = goal_noise_pct(base_cv_pct(&base), p.seeds.len());
     let (picks, notes) = select_options(&finals, p.options, noise);
     // Reference packages join the candidate list after the search candidates, so the search's indices stay valid.
@@ -505,7 +527,10 @@ pub fn explore(study: &Study, p: &Params) -> Outcome {
         ref_sets.push(set);
     }
     let ctx_all = Ctx { study, p, cands: &all, base: &base };
-    let ref_finals = if ref_sets.is_empty() { Vec::new() } else { eprintln!("rechecking {} reference package(s)", ref_sets.len()); recheck(&ctx_all, &ref_sets) };
+    let mut ref_finals = if ref_sets.is_empty() { Vec::new() } else { eprintln!("rechecking {} reference package(s)", ref_sets.len()); recheck(&ctx_all, &ref_sets) };
+    for f in ref_finals.iter_mut() {
+        f.access = check_access(study, &ctx_all.ivs(&f.set)).err();
+    }
     eprintln!("chose {} option(s); total {:.0}s", picks.len(), t0.elapsed().as_secs_f64());
     let json = build_json(study, p, &all, &base, &finals, &picks, &ref_finals);
     let markdown = build_markdown(study, p, &ctx_all, &state, &finals, &picks, &notes, noise, &t0, &ref_finals);
@@ -595,6 +620,9 @@ pub fn build_json(study: &Study, p: &Params, cands: &[Cand], base: &Baseline, fi
         if let Some(n) = note {
             v["note"] = json!(n);
         }
+        if let Some(w) = &f.access {
+            v["accessProblem"] = json!(w);
+        }
         if let Some(pic) = &f.picture {
             v["picture"] = pic.to_json();
         }
@@ -613,6 +641,10 @@ pub fn build_json(study: &Study, p: &Params, cands: &[Cand], base: &Baseline, fi
             "periods": p.periods,
             "seeds": p.seeds,
             "minutes": p.minutes,
+            "screenMinutes": p.screen_minutes,
+            "initialLoad": true,
+            "settleSeconds": crate::params::INITIAL_SETTLE_S,
+            "window": "From t = 0 over `minutes` simulated minutes, after the initial load and settle interval: the run the app and the stored results make. Published figures come from the rechecks only; screening runs are the same run at `screenMinutes`.",
             "networkHash": study.net_hash,
             "demandHash": study.demand_hash,
             "calibration": study.calibration,
@@ -727,6 +759,9 @@ fn build_markdown(study: &Study, p: &Params, ctx: &Ctx, state: &SearchState, fin
             let _ = writeln!(md, "- {} ({}). {} {}", r.title, r.id, r.note, summary(study, cands, f));
             if let Some(w) = &f.reject {
                 let _ = writeln!(md, "  Would be rejected as a search result: {w}.");
+            }
+            if let Some(w) = &f.access {
+                let _ = writeln!(md, "  Fails the access check: {w}.");
             }
         }
     }

@@ -309,9 +309,9 @@ fn a_filter_that_shifts_traffic_next_door_loses_to_a_two_filter_package() {
     let single = |c: u16| &o.state.evals[o.state.cache[&vec![c]]];
     let (s1, s2) = (single(f1), single(f2));
     eprintln!("single filters: R1 -{:.1}% harm {:.0}; R2 -{:.1}% harm {:.0}", s1.reduction_pct, s1.harm, s2.reduction_pct, s2.harm);
-    // One of the two routes carries the traffic; closing it pushes the traffic onto the other, and the harm shows it.
+    // The two routes share the traffic (the loaded start routes on measured costs); closing one pushes its share onto the other, and the harm shows it.
     let worst_single = if s1.harm > s2.harm { s1 } else { s2 };
-    assert!(worst_single.harm > 50.0, "diverted traffic is harm: {}", worst_single.harm);
+    assert!(worst_single.harm > 10.0, "diverted traffic is harm: {}", worst_single.harm);
     let mut pair = vec![f1, f2];
     pair.sort_unstable();
     let pe = &o.state.evals[*o.state.cache.get(&pair).expect("the two-filter package was evaluated")];
@@ -450,6 +450,8 @@ fn options_are_spread_and_drop_changes_within_noise() {
         bike_pct: 0.0,
         score: red - 0.1 * harm,
         picture: None,
+        forced: false,
+        access: None,
     };
     let finals = vec![mk(1, 20.0, 0.0), mk(2, 20.5, 0.0), mk(2, 45.0, 20.0), mk(3, 60.0, 30.0), mk(4, 62.0, 90.0), mk(1, 5.0, 60.0), mk(5, 80.0, 40.0), mk(3, 3.0, 0.0)];
     let (picks, notes) = select_options(&finals, 4, 1.5);
@@ -774,6 +776,8 @@ fn listed_options_beat_every_smaller_listed_option_on_through_cars() {
         bike_pct: 0.0,
         score: red - 0.1 * harm,
         picture: None,
+        forced: false,
+        access: None,
     };
     // The three-intervention package has less harm than the single one, so it is not dominated, but it cuts through cars less.
     let finals = vec![mk(1, 49.0, 80.0), mk(3, 40.0, 0.0), mk(5, 90.0, 60.0), mk(4, 70.0, 10.0), mk(6, 80.0, 20.0)];
@@ -936,4 +940,81 @@ fn every_candidate_round_trips_to_the_same_effective_network() {
             assert!(same, "{} ({}) changes after the link round trip (west_first {west_first})", c.label, c.kind);
         }
     }
+}
+
+/// The search's run is the app's run: a loaded start, the same settle interval and counters, every figure over the run from t = 0.
+#[test]
+fn the_search_run_equals_a_direct_run_as_the_app_does_it() {
+    use traffic_sim::explore::run;
+    use traffic_sim::{Config, Simulation};
+    let n = ratrun(true, false);
+    let c_d = n.c_d;
+    let study = study_of(n.study_net);
+    let iv = Intervention { ty: "modal_filter".into(), link: Some(c_d), ..Default::default() };
+    for ivs in [Vec::new(), vec![iv]] {
+        let minutes = 10.0;
+        let got = run(&study, &ivs, "p", 7, minutes, &[]);
+        let cfg = Config { seed: 7, period: "p".into(), interventions: ivs.clone(), ..Default::default() };
+        let mut sim = Simulation::from_parts(study.net.clone(), study.demand.clone(), cfg).unwrap();
+        let mut t = 0.0;
+        while t < minutes * 60.0 - 1e-9 {
+            sim.step(5.0);
+            t += 5.0;
+        }
+        let m = sim.metrics();
+        assert!(m.initial_agents > 0);
+        assert_eq!(got.ct_vph, m.cut_through.vehicles_per_hour);
+        assert_eq!((got.spawned, got.completed, got.veh_km), (m.spawned, m.completed_trips, m.veh_km));
+        let (exits, ct) = (sim.diagnostics().link_exits.to_vec(), sim.cut_through_exits());
+        let hours = minutes / 60.0;
+        for l in 0..exits.len() {
+            assert_eq!(got.flow[l], (exits[l] as f64 / hours) as f32, "flow on link {l}");
+            assert_eq!(got.through[l], (ct[l] as f64 / hours) as f32, "through cars on link {l}");
+        }
+    }
+}
+
+/// A package from a stricter group is rechecked even when the screening budget is spent, and it is not dropped as within noise of a simpler one.
+#[test]
+fn a_stricter_groups_package_is_always_rechecked_and_never_dropped_as_noise() {
+    let n = ratrun(true, false);
+    let (c_d, e_f) = (n.c_d, n.e_f);
+    let study = study_of(n.study_net);
+    let pair = vec![
+        traffic_sim::model::Intervention { ty: "modal_filter".into(), link: Some(c_d), ..Default::default() },
+        traffic_sim::model::Intervention { ty: "modal_filter".into(), link: Some(e_f), ..Default::default() },
+    ];
+    let mut p = params(2);
+    p.candidates = 12;
+    p.budget_evals = Some(1);
+    p.warm_start = vec![pair];
+    let o = explore(&study, &p);
+    assert!(o.state.exhausted, "the budget ran out");
+    let f = o.finals.iter().find(|f| f.set.len() == 2 && f.forced).expect("the stricter group's package is rechecked");
+    assert!(f.reject.is_none() && f.reduction_pct > 60.0, "{}", f.reduction_pct);
+    // Dropping within noise is not applied to it: with a huge noise band it still stands where a plain finalist of its size would go.
+    let (_, notes) = traffic_sim::explore::report::select_options(&o.finals, 6, 1000.0);
+    let i = o.finals.iter().position(|g| g.forced).unwrap();
+    assert!(!notes[i].contains("within noise of simpler"), "{}", notes[i]);
+}
+
+/// A reference package that strands a block is still reported, with the access problem flagged on it.
+#[test]
+fn a_reference_that_strands_a_block_is_flagged_not_dropped() {
+    use traffic_sim::explore::refs::RefCfg;
+    let n = ratrun(false, true);
+    let study = study_of(n.study_net);
+    let mut p = params(2);
+    p.references = vec![
+        serde_json::from_value::<RefCfg>(serde_json::json!({"id": "stub", "title": "Close the court", "interventions": [{ "type": "modal_filter", "on": "Maple Court", "between": ["Birch Street", "Maple Court"] }]})).unwrap(),
+        serde_json::from_value::<RefCfg>(serde_json::json!({"id": "birch", "title": "Close Birch", "interventions": [{ "type": "modal_filter", "on": "Birch Street", "between": ["Cedar Street", "Fir Street"] }]})).unwrap(),
+    ];
+    let o = explore(&study, &p);
+    assert_eq!(o.ref_finals.len(), 2);
+    assert!(o.ref_finals[0].access.as_deref().map_or(false, |w| w.contains("strands")), "{:?}", o.ref_finals[0].access);
+    assert!(o.ref_finals[1].access.is_none());
+    let props = o.json["proposals"].as_array().unwrap();
+    let stub = props.iter().find(|x| x["id"] == "stub").expect("the reference is published");
+    assert!(stub["accessProblem"].as_str().is_some());
+    assert!(props.iter().find(|x| x["id"] == "birch").unwrap().get("accessProblem").is_none());
 }

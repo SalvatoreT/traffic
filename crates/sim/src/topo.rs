@@ -301,6 +301,7 @@ impl Topo {
                     let d = norm_angle(h_leave - h_arrive);
                     let (name_a, name_b) = (&net.links[a as usize].name, &net.links[b as usize].name);
                     let sharp = d.abs() <= SHARP_TURN_MAX && !name_a.is_empty() && !name_b.is_empty() && name_a != name_b;
+                    // ASSUMPTION: turn classes by the change of heading: beyond 2.6 rad (149 degrees) a U-turn, beyond 0.52 rad (30 degrees) a left or right turn, else straight on; no source gives these cut-offs.
                     let kind = if d.abs() > 2.6 && !sharp {
                         K_UTURN
                     } else if d > 0.52 {

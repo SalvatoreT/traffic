@@ -9,10 +9,10 @@ pub const MIN_GAP: f32 = 0.1; // hard overlap guard (m)
 pub const YELLOW: f32 = 3.5; // ASSUMPTION: within 3-4 s
 pub const ALL_RED: f32 = 1.5; // ASSUMPTION
 pub const SAT_FLOW: f32 = 1800.0; // veh/h/lane, Webster-era value for the signal plan flow ratios; the ideal HCM value is 1,900 and the observed range 1,500 to 2,000 [FHWA-SIG2004]
-pub const CYCLE_MIN: f32 = 75.0; // ASSUMPTION: adaptive cycle range 60-120 s (urban arterial plans)
+pub const CYCLE_MIN: f32 = 75.0; // ASSUMPTION: adaptive cycle range 75-120 s (urban arterial plans); the spec and `CYCLE_MAX` state the same range
 pub const CYCLE_MAX: f32 = 120.0; // ASSUMPTION
 pub const MIN_GREEN: f32 = 15.0; // ASSUMPTION
-pub const MAX_PHASES: usize = 6; // ASSUMPTION: phases per junction; legs beyond this share a phase with the closest axis (only then can crossing movements share green)
+pub const MAX_PHASES: usize = 6; // ASSUMPTION: at most this many phases per junction (the signals in the Rockridge data need three; the cap serves areas with six-leg junctions); legs beyond this share a phase with the closest axis (only then can crossing movements share green)
 pub const PHASE_AXIS_DEG: f64 = 30.0; // ASSUMPTION: approaches share a phase only when every pair is on one axis within this angle (crossing movements never share green)
 pub const ADAPT_INTERVAL_S: f64 = 300.0; // ASSUMPTION: signal splits are recomputed from measured flows every 5 min (approximates actuated/coordinated control)
 pub const ADAPT_SPILL_HOPS: usize = 3; // ASSUMPTION: links upstream that count toward a spilled-back queue
@@ -49,7 +49,7 @@ pub const YIELD_COURTESY_S: f32 = 45.0; // ASSUMPTION: after this wait a driver 
 pub const YIELD_FALLBACK_S: f32 = 90.0; // ASSUMPTION: bounded-wait deadlock guard: drop approach-gap/FIFO checks. It puts a floor of 3600 / this value (40 veh/h) under every yielding lane; at 45 s the floor of 80 veh/h was above the published capacity at heavy cross flow (validation cases e6, e9 against [Brilon1999])
 pub const CONFLICT_FALLBACK_S: f32 = 120.0; // ASSUMPTION: drop in-node conflict check as well
 pub const GRIDLOCK_REMOVE_S: f32 = 180.0; // ASSUMPTION: remove vehicle blocked by no downstream space this long
-pub const DECISION_HORIZON: f32 = 100.0; // m: heads farther than this ignore node control
+pub const DECISION_HORIZON: f32 = 100.0; // m: heads farther than this ignore node control ASSUMPTION: no source for the distance
 
 // --- node crossing (m/s) ---
 pub const V_RIGHT: f32 = 4.0; // ASSUMPTION: a_lat ~ 2 m/s^2, r ~ 8 m
@@ -60,11 +60,11 @@ pub const R_CIRCLE: f64 = 7.0; // ASSUMPTION: central-island + circulating radiu
 
 // --- speed humps ---
 pub const HUMP_V: f32 = 5.5; // ASSUMPTION: crossing speed (~12 mph); no peer-reviewed value in references.md 5.2
-pub const HUMP_ZONE: f32 = 60.0; // m: influence-zone cut-off (cap formula reaches v0 earlier)
+pub const HUMP_ZONE: f32 = 60.0; // m: influence-zone cut-off (cap formula reaches v0 earlier) ASSUMPTION: cut-off of the numerical influence zone, not a measured distance
 pub const HUMP_FF_PENALTY: f32 = 3.0; // ASSUMPTION: s added to routing free-flow time per hump
 
 // --- routing [Wardrop1952], [Peeta2001] ---
-pub const EPOCH_S: f64 = 60.0; // cost-update / re-route period
+pub const EPOCH_S: f64 = 60.0; // cost-update / re-route period ASSUMPTION: one minute; no source
 /// Share of drivers that follow live guidance (a navigation app) and so re-evaluate their route at every epoch, per mille. The others keep
 /// the route chosen at departure unless it is blocked. 46% of surveyed drivers used navigation apps on regular commute trips, 74 to 78% on
 /// infrequent and first-time trips [Guin2021] (Atlanta, N = 237; transfer to this area is an ASSUMPTION).
@@ -143,13 +143,13 @@ pub const BIKE_COST_V: f32 = 4.5; // ASSUMPTION m/s: nominal speed for routing t
 
 // Passing a cyclist on a shared link (D3). ASSUMPTION unless a key is given.
 pub const LANE_WIDTH_M: f64 = 3.3; // ASSUMPTION: lane width (also used for crossing width, D4); no published urban residential value was read (10-12 ft ranges seen in secondary summaries only)
-pub const CAR_WIDTH_M: f32 = 1.8;
-pub const BIKE_WIDTH_M: f32 = 0.7;
-pub const PASS_DECISION_GAP: f32 = 60.0; // m: distance at which a driver notices a cyclist ahead and decides to pass or follow
-pub const PASS_MIN_DV: f32 = 1.5; // m/s: desired-speed advantage that makes a driver want to pass
+pub const CAR_WIDTH_M: f32 = 1.8; // ASSUMPTION: no source read
+pub const BIKE_WIDTH_M: f32 = 0.7; // ASSUMPTION: no source read
+pub const PASS_DECISION_GAP: f32 = 60.0; // m: distance at which a driver notices a cyclist ahead and decides to pass or follow ASSUMPTION: no published value read
+pub const PASS_MIN_DV: f32 = 1.5; // m/s: desired-speed advantage that makes a driver want to pass ASSUMPTION: no published value read
 pub const PASS_TIME_S: f32 = 5.0; // s: oncoming vehicle must be at least this far in time. ASSUMPTION: [Rasch2020] tested 6 s and 9 s gaps on a test track and reports no acceptance threshold
-pub const PASS_MIN_CLEAR_M: f32 = 40.0; // m: and at least this far away, to pass using the opposing lane
-pub const PASS_MIN_LATERAL_M: f32 = 0.5; // m: least lateral room for passing inside one lane (one-way street)
+pub const PASS_MIN_CLEAR_M: f32 = 40.0; // m: and at least this far away, to pass using the opposing lane ASSUMPTION: no published value read
+pub const PASS_MIN_LATERAL_M: f32 = 0.5; // m: least lateral room for passing inside one lane (one-way street) ASSUMPTION: no published value read
 pub const CLOSE_PASS_CLEAR_M: f32 = 0.9144; // m, was 1.0: three feet, the legal minimum in [CVC21760]. [Beck2019] counts passes under 100 cm (5.9% of 18,527); [Hamm2026] measured mean clearances of 2.2-3.0 m
 pub const CLOSE_PASS_DV: f32 = 8.0; // ASSUMPTION m/s: speed difference above this (about 18 mph) is a close pass; [Hamm2026] mean passing speeds are 10 m/s (residential) to 15 m/s but give no threshold
 
@@ -166,15 +166,15 @@ pub const PED_YIELD_UNMARKED: f64 = 0.08; // was 0.3. [OBrien2022] Tables 4-1 to
 pub const PED_LANE_W: f32 = 3.3; // ASSUMPTION: m per lane: crossing width = lanes (both directions) x this ([Fitzpatrick2006] Table 11 uses 12 ft = 3.66 m for HCM examples)
 pub const PED_GAP_MARGIN_S: f32 = 3.0; // s, was 2.0. Start-up time of the HCM pedestrian critical gap, width / speed + 3 s ([Fitzpatrick2006] Table 11, HCM Eq. 18-17)
 pub const PED_GAP_SIGMA: f64 = 0.3; // ASSUMPTION: lognormal heterogeneity of the margin (some pedestrians accept short gaps); [Brewer2006] saw 85th percentile accepted gaps of 5.3-9.4 s, below the critical gap for 3.5 ft/s
-pub const PED_B_COMF: f32 = 3.0; // m/s^2: comfortable braking that decides whether a driver can still yield
-pub const PED_MIN_DECIDE_M: f32 = 6.0; // m
-pub const XW_STOP_M: f32 = 2.0; // m: vehicles stop this far before a mid-block crosswalk
+pub const PED_B_COMF: f32 = 3.0; // m/s^2: comfortable braking that decides whether a driver can still yield ASSUMPTION: no source read
+pub const PED_MIN_DECIDE_M: f32 = 6.0; // m ASSUMPTION: no source read
+pub const XW_STOP_M: f32 = 2.0; // m: vehicles stop this far before a mid-block crosswalk ASSUMPTION: no source read
 pub const PED_WALK_MIN_S: f32 = 7.0; // s: walk interval at typical pedestrian volume ([FHWA-STM2008] Table 5-8)
 pub const PED_CLEAR_V: f32 = 1.22; // m/s (4.0 ft/s): pedestrian clearance time = crossing distance / this ([FHWA-STM2008] section 5.3.3)
-pub const PED_STANDING_V: f32 = 0.3; // m/s: a vehicle slower than this is treated as standing
-pub const PED_MIDBLOCK_BONUS_M: f32 = 0.1; // m: tie-break that makes pedestrians use a marked mid-block crossing
-pub const PED_CORNER_M: f32 = 3.0; // m: corner walking distance at a node
-pub const PED_OFFSET_M: f64 = 3.8; // m beyond the outer lane center (rendering only)
+pub const PED_STANDING_V: f32 = 0.3; // m/s: a vehicle slower than this is treated as standing ASSUMPTION: no source read
+pub const PED_MIDBLOCK_BONUS_M: f32 = 0.1; // m: tie-break that makes pedestrians use a marked mid-block crossing ASSUMPTION: no source read
+pub const PED_CORNER_M: f32 = 3.0; // m: corner walking distance at a node ASSUMPTION: no source read
+pub const PED_OFFSET_M: f64 = 3.8; // m beyond the outer lane center (rendering only) ASSUMPTION: no source read
 
 // Safety (D5)
 pub const PET_THRESHOLD: f32 = 1.5; // s. ASSUMPTION: same adjustable value as the TTC threshold; no PET threshold for pedestrian or bicycle encounters was found. PET definition [FHWA-SSAM2008], [Mahmud2017]

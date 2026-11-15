@@ -41,7 +41,7 @@ impl Eff {
 
 pub struct Router {
     pub tables: Vec<Option<Vec<f32>>>,
-    /// Cost-to-go to the start of one link (the first leg of a trip that must make an assumed movement), cached per link for one cost epoch.
+    /// Cost-to-go from the start of every link through one target link (the first leg of a trip that must make an assumed movement), each entry including the cost of the link itself and of the target link, cached per target for one cost epoch.
     pub link_tables: HashMap<u32, Vec<f32>>,
     heap: BinaryHeap<Reverse<(u32, u32)>>,
 }
@@ -67,7 +67,7 @@ impl Router {
         self.link_tables.clear();
     }
 
-    /// Cost-to-go from the start of every link to the start of link `target` (the table of a trip's first leg when it must pass `target`).
+    /// Cost-to-go from the start of every link through link `target`, the target's own cost included (the table of a trip's first leg when it must pass `target`).
     pub fn ensure_link(&mut self, target: u32, topo: &Topo, eff: &Eff, cost: &[f32]) {
         self.ensure_link_m(target, topo, eff.car_modal(), cost);
     }

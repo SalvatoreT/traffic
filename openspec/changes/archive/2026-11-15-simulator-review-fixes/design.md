@@ -1,0 +1,22 @@
+## Context
+
+The review's probe and outputs are kept with the session. Lead decisions below were given with the task; the rationale is recorded here.
+
+## Decisions
+
+1. **One run definition.** The published numbers come from the same run the app makes: `Config::initial_load` true, the `INITIAL_SETTLE_S` interval inside construction, clock at 0, counters from t = 0 over the full simulated hour. The empty start biased any package that delays through cars (count is about rate times (T minus lag)) and the warm-up window mismatched the per-block figures. `explore::run` always starts loaded and reports rates over the elapsed window; screening only shortens `minutes`. The group's `computed` block records `initialLoad`, `settleSeconds`, `minutes`, `screenMinutes`, `seeds` and a sentence naming the window. Screening never feeds published figures: the recheck does.
+2. **One deterministic math implementation.** `libm` (pure Rust) for `exp`, `ln`, `powf`, `sin`, `cos`, `atan2`, `hypot`. `sqrt`, `abs`, `floor`, `round`, `rem_euclid`, `to_degrees`, `to_radians` and `powi(2)` are exact or a single multiplication on every target. A full PM hour (seed 1) gives identical metrics, vehicle positions, link stats and intent usage natively and in WASM. Time for one native PM hour was 34 s before and after.
+3. **Placement follows the flow's assumed movement.** `pick_via` routes a placed car of a via flow from its origin; the car keeps `via` when its position is before the movement's exit link. The expected count uses the same route.
+4. **A skipped assumed movement is dropped.** `replan_around_blocked` clears `via` when the new route does not contain the movement. The no-loop rule also refuses routes through a junction the car has already driven through (ASSUMPTION: a car that has passed a junction and finds its way blocked waits rather than circling).
+5. **Per-intent link usage counts links left at t >= 0.** Each vehicle records `trail_from`, the first trail entry left at or after time zero, set when results are zeroed.
+6. **Hump candidates are fixed points of the link round trip.** The decoder may pick the opposite direction of a block, so the candidate starts from the decoder's answer until encode then decode returns it unchanged. A test checks every candidate type against its decoded effective network.
+7. **Stricter-group packages are forced finalists.** They are rechecked outside the screening budget and exempt from the within-noise drop (`Final::forced`).
+8. **A leg named by one direction closes both** (the link's `reverse` is closed on the other side).
+9. **Reference packages run the access check** and report the result as `accessProblem` (JSON) and a line in the report. They are never excluded.
+10. **Fingerprint.** The `.rs` files of the simulator's module tree (not `bin/`, `explore/`, tests, the WASM glue, `validate.rs`, `wander.rs`), `data/*.json`, and the `Cargo.lock` entries of the non-optional dependencies and what they pull in. Comments and whitespace are hashed as written (not made insensitive). With decision 2 the target no longer matters, so it is not part of the hash. The logic lives in `crates/sim/fingerprint.rs`, shared by `build.rs` and a test that uses a temp directory.
+11. **Spec and comment fixes.** `MAX_PHASES` stays 6: the signals in the Rockridge data need three phases at most, and the cap serves areas with six-leg junctions, so the spec said four by mistake and now says six (ASSUMPTION). `CYCLE_MIN` comment says 75 to 120 s. Link-table comments say the tables include the target link's own cost. The re-plan doc comment moves to `replan_vehicle`.
+12. **Cleanup.** Removed `RESERVE_EXIT_ROOM`, `MARKED_LEFT_LANE`, `TURN_LANE_HALF`, `FORK_LANES`, `ROUTE_COST_BY_TURN`, the legacy re-route path, `calibrate --legacy-reroute`, the `WINDOWS` switch of `initload`, silenced variables and the blanket `dead_code` allowance on `Veh`. PM, AM and midday seed 1 gave identical metrics, link stats, intent usage and exit counters before and after. No reference in `docs/references.md` supports `DECISION_HORIZON`, `HUMP_ZONE`, `EPOCH_S`, the `PASS_*` values, the remaining pedestrian values, `XW_STOP_M`, `PED_CORNER_M`, `CAR_WIDTH_M`, `BIKE_WIDTH_M`, the four spawns per node and step, or the turn-class cut-offs, so each is labeled ASSUMPTION.
+
+## Risks
+
+Results shift: libm changes the last bits of every run, and items 3 to 5 change behavior. The baseline shift is recorded in the task list. Stored results and proposals must be regenerated.
