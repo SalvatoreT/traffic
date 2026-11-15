@@ -1,4 +1,5 @@
 import { isServableName } from "./paths";
+import { serveText, textRoute } from "./llms";
 import { handleDataApi } from "./upload";
 
 interface Env {
@@ -52,6 +53,8 @@ export default {
       const name = decoded(url.pathname.slice(6));
       return name === null ? tagged(new Response(null, { status: 400 })) : serveData(req, env, name);
     }
+    const text = textRoute(url.pathname);
+    if (text) return serveText(req, env, text);
     return new Response(null, { status: 404 });
   },
 };

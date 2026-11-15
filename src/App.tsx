@@ -642,7 +642,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
           <span>Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>.</span>{' '}
           <button type="button" className="link" onClick={() => go('sources')}>Sources &amp; assumptions</button>
         </span>
-        <a className="foot-right" href={SOURCE_REPO_URL} target="_blank" rel="noopener noreferrer">Source on GitHub</a>
+        <span className="foot-right"><a href="/llms.txt">For AI agents</a>{' · '}<a href={SOURCE_REPO_URL} target="_blank" rel="noopener noreferrer">Source on GitHub</a></span>
       </footer>
     </div>
     </NavContext.Provider>

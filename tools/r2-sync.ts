@@ -1,6 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
+import { contentType } from "./lib/content-type";
 import { walk } from "./lib/walk";
 
 const BUCKET = "traffic-data";
@@ -13,12 +14,6 @@ const MAPPINGS: { local: string; prefix: string; match?: RegExp }[] = [
 
 const SITE = process.env.TRAFFIC_UPLOAD_URL?.replace(/\/$/, "");
 const TOKEN = process.env.TRAFFIC_UPLOAD_TOKEN ?? "proxy-injected";
-
-function contentType(file: string): string {
-  if (file.endsWith(".json")) return "application/json; charset=utf-8";
-  if (file.endsWith(".csv")) return "text/csv; charset=utf-8";
-  return "application/octet-stream";
-}
 
 async function sitePut(key: string, file: string) {
   const body = readFileSync(file);

@@ -1,0 +1,6 @@
+# Everything on the site may be crawled. The text version of every page, for language models, is indexed at /llms.txt.
+User-agent: *
+Allow: /
+Disallow: /api/
+
+# For language models: /llms.txt (the whole text in one file: /llms-full.txt)
