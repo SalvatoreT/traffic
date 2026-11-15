@@ -136,7 +136,7 @@ The proposals file is version 5. The reader still accepts versions 2 to 4. A ver
 
 ### Cost
 
-The final comparison needs 10 seeds instead of 3, and the recheck runs every finalist, known package and reference over every period and seed, so a recheck costs about 3.3 times more. Screening and the beam are unchanged. See the task notes for measured times. Run profiles in separate invocations to keep each command under a time limit.
+The final comparison needs 10 seeds instead of 3. The recheck runs every finalist, known package and reference over every period and seed, so it costs about 3.3 times more; screening and the beam are unchanged. Measured on 2026-11-15 on a shared 4-core machine (smoke run: one period, beam 2, depth 2, 10 seeds, 20-minute runs): about 0.9 core-seconds per simulated minute under load, and 0.54 in the last published run of 5,578 s on 4 jobs for one group (1,233 screening runs at 20 minutes, about 30 packages rechecked on 3 periods and 3 seeds at 60 minutes). With 10 seeds the same group needs about 54,000 simulated minutes of rechecking instead of 16,200, so roughly 2 hours of rechecking alone and about 3 hours for the group, above the 2-hour limit of one background command. Ways to fit: run each profile in its own command (already supported), lower `--finalists`, `--budget-evals` or the beam, or hold the seeds file below its cap of 20. The smoke run itself took 23 minutes. A staged recheck (three seeds to shortlist, ten for the survivors) would cut the cost further but changes which packages reach the final comparison, so it is left as a decision for the person running the search.
 
 ### Remaining limits
 
