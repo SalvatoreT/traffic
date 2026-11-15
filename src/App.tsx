@@ -358,7 +358,8 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   }, [intentSel, intentDefs, intentRun, withheld]);
   const mapVisible = view === 'map';
   useEffect(() => setHoverPlace(null), [view]);
-  const mapShown = mapVisible || view === 'streets';
+  // On phones the Streets tab is a full-height table; each row's Show on map button opens the Map tab on that block.
+  const mapShown = mapVisible || (view === 'streets' && !phone);
   const showPanel = view === 'map' || view === 'streets';
   const placement: Placement | null = !selection ? null : selection.via === 'search' || !mapVisible ? 'inline' : phone ? 'sheet' : 'popover';
   const menu = selection && placement ? (
@@ -508,7 +509,8 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
           {view === 'streets' && (
             <StreetsTable bundle={bundle} index={index} showService={showService} onShowService={setShowService}
               scen={withheld ? null : stats?.scenario.linkStats ?? null} base={baseStats} comparing={comparing} overlay={overlay} withheld={withheld}
-              baseMetrics={base} scenMetrics={scen} onHover={setHoverPlace} />
+              baseMetrics={base} scenMetrics={scen} onHover={setHoverPlace}
+              phone={phone} onShowOnMap={(block) => { setHoverPlace(null); select({ kind: 'block', block, point: null, nearLink: null, via: 'list' }); setView('map'); }} />
           )}
           {view === 'proposals' && <Proposals bundle={bundle} index={index} today={todayRoutes.total} state={proposals.state} loaded={proposals.loaded} mode={mode} current={interventions} onOpen={onOpenProposal} />}
           {view === 'sources' && <Suspense fallback={<p className="boot" role="status">Loading sources…</p>}><Sources demand={demand} synthetic={bundle.synthetic} focusRef={sourceRef} calibration={bundle.synthetic ? undefined : { status: calStatus, note: bundle.entry.calibration?.note }} /></Suspense>}
@@ -520,7 +522,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
             <div className="side-body">{resultsPanel}</div>
           </aside>
         )}
-        {showPanel && phone && (
+        {view === 'map' && phone && (
           <Sheet key="sheet" label="Scenario and results" raise={raiseSheet}
             tabs={
               <div className="tabs" role="tablist" aria-label="Panel sections">

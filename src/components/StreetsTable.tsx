@@ -10,8 +10,7 @@ import { formatValue } from '../lib/format';
 import { vulnerableSentence } from '../lib/metrics';
 import type { Metrics } from '../types';
 import { aggregate, compareRows, diffValue, formatSigned } from '../lib/change';
-
-type Key = 'name' | 'cls' | 'chg' | 'flowB' | 'flowS' | 'speedB' | 'speedS' | 'ctB' | 'ctS';
+import { changeUnit, defaultSort, sortChoices, type StreetKey as Key } from '../lib/streetcols';
 interface Row {
   key: number; block: Block; name: string; label: string; cls: string;
   flowB: number; flowS: number; speedB: number; speedS: number; ctB: number; ctS: number;
@@ -27,13 +26,16 @@ interface Props {
   baseMetrics?: Metrics | null; scenMetrics?: Metrics | null;
   onHover(h: Hover | null): void;
   withheld?: boolean;
+  /** Phone layout: one card per block, a sort menu in place of header buttons, and a Show on map button per row. */
+  phone?: boolean;
+  onShowOnMap?(block: number): void;
 }
 
-export function StreetsTable({ index, scen, base, comparing, overlay, showService, onShowService, baseMetrics, scenMetrics, onHover, withheld = false }: Props) {
+export function StreetsTable({ index, scen, base, comparing, overlay, showService, onShowService, baseMetrics, scenMetrics, onHover, withheld = false, phone = false, onShowOnMap }: Props) {
   const walkBike = comparing && baseMetrics && scenMetrics ? vulnerableSentence(baseMetrics, scenMetrics) : '';
   const [sort, setSort] = useState<{ key: Key; dir: 1 | -1 } | null>(null);
   // Until a header is chosen: largest absolute change first when a scenario exists, else largest scenario cut-through.
-  const active: { key: Key; dir: 1 | -1 } = sort ?? (comparing ? { key: 'chg', dir: -1 } : { key: 'ctS', dir: -1 });
+  const active: { key: Key; dir: 1 | -1 } = sort && (comparing || !(sort.key === 'chg' || sort.key.endsWith('S'))) ? sort : defaultSort(comparing);
   const [q, setQ] = useState('');
   const [cls, setCls] = useState('all');
   const [limit, setLimit] = useState(150);
@@ -89,51 +91,71 @@ export function StreetsTable({ index, scen, base, comparing, overlay, showServic
     rowEls.current.get(r.key)?.focus();
   };
 
+  const toggle = (key: Key) => setSort({ key, dir: active.key === key ? (active.dir === 1 ? -1 : 1) : key === 'name' || key === 'cls' ? 1 : -1 });
+  const arrow = (key: Key) => (active.key === key ? (active.dir === 1 ? ' ▲' : ' ▼') : '');
+  const ariaSort = (key: Key) => (active.key === key ? (active.dir === 1 ? 'ascending' : 'descending') : 'none');
   const th = (key: Key, label: string, sub?: string, rowSpan?: number) => (
-    <th scope="col" rowSpan={rowSpan} aria-sort={active.key === key ? (active.dir === 1 ? 'ascending' : 'descending') : 'none'}>
-      <button type="button" className="sort" onClick={() => setSort({ key, dir: active.key === key ? (active.dir === 1 ? -1 : 1) : key === 'name' || key === 'cls' ? 1 : -1 })}>
+    <th scope="col" rowSpan={rowSpan} aria-sort={ariaSort(key)}>
+      <button type="button" className="sort" onClick={() => toggle(key)}>
         {label}{sub && <span className="sub"> {sub}</span>}
-        <span aria-hidden="true">{active.key === key ? (active.dir === 1 ? ' ▲' : ' ▼') : ''}</span>
+        <span aria-hidden="true">{arrow(key)}</span>
       </button>
     </th>
   );
-  const cell = (b: number, s: number, kind: 'flow' | 'speed') => (
+  const group = (label: string) => <th colSpan={comparing ? 2 : 1} scope="colgroup">{label}</th>;
+  const val = (kind: 'flow' | 'speed', b: number, s: number, label: string) => (
     <>
-      <td>{formatValue(kind, b, false)}</td>
-      <td>{comparing ? formatValue(kind, s, false) : '—'}</td>
+      <td data-label={comparing ? `${label}, base` : label}>{formatValue(kind, b, false)}</td>
+      {comparing && <td data-label={`${label}, scenario`}>{formatValue(kind, s, false)}</td>}
     </>
   );
+  const choices = sortChoices(comparing, overlay);
+  const intro = (
+    <p className="muted">
+      A text alternative to the map: one row per street block (both directions combined), limited to the study area and the streets around it that the map shows. Each count is cars an hour on that one block, both directions: all cars (local trips included) and, separately, only the through cars among them, which cross the area without a trip that starts or ends in it. Through cars are always part of all cars, never added to them. Speed in mph, flow-weighted.{comparing ? ' The Change column is the scenario minus the baseline for the metric chosen on the map, and sorts by size of change.' : ''}
+    </p>
+  );
   return (
-    <div className="streets-view">
+    <div className={`streets-view ${phone ? 'phone' : ''}`}>
       <h2>Streets</h2>
-      <p className="muted">
-        A text alternative to the map: one row per street block (both directions combined), limited to the study area and the streets around it that the map shows. Each count is cars an hour on that one block, both directions: all cars (local trips included) and, separately, only the through cars among them, which cross the area without a trip that starts or ends in it. Through cars are always part of all cars, never added to them. Speed in mph, flow-weighted. The Change column is the scenario minus the baseline for the metric chosen on the map, and sorts by size of change. {comparing ? '' : 'Scenario columns fill in once an intervention is added.'}
-      </p>
+      {phone ? <details className="streets-about"><summary>About these figures</summary>{intro}</details> : intro}
+      {!comparing && <p className="small streets-note">Add a change on the Map tab to compare.</p>}
       <div role="status">{withheld && <p className="notice">Street figures appear when the run finishes.</p>}</div>
       {walkBike && <p className="small">{walkBike}</p>}
       <div className="filters">
         <label>Search streets <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="e.g. Oak" /></label>
         <label>Class <select value={cls} onChange={(e) => setCls(e.target.value)}>{classes.map((c) => <option key={c} value={c}>{c}</option>)}</select></label>
+        {phone && (
+          <span className="sort-pick">
+            <label>Sort by <select value={active.key} onChange={(e) => setSort({ key: e.target.value as Key, dir: e.target.value === 'name' || e.target.value === 'cls' ? 1 : -1 })}>{choices.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}</select></label>
+            <button type="button" className="btn" aria-label={active.dir === 1 ? 'Sorted ascending, switch to descending' : 'Sorted descending, switch to ascending'} onClick={() => setSort({ key: active.key, dir: active.dir === 1 ? -1 : 1 })}>{active.dir === 1 ? '▲' : '▼'}</button>
+          </span>
+        )}
         <label className="check"><input type="checkbox" checked={showService} onChange={(e) => onShowService(e.target.checked)} /> Show service roads</label>
         <span role="status" className="muted small">{shown.length} match{shown.length === 1 ? '' : 'es'}</span>
       </div>
       <div className="table-scroll" role="region" aria-label="Streets table, scrollable">
-        <table className="streets">
-          <caption className="sr-only">Street blocks with all cars an hour, mean speed and through cars an hour, baseline versus scenario</caption>
+        <table className={`streets ${phone ? 'cards' : ''} ${comparing ? 'two-row' : ''}`}>
+          <caption className="sr-only">Street blocks with all cars an hour, mean speed and through cars an hour{comparing ? ', baseline versus scenario' : ''}</caption>
           <thead>
             <tr>
-              <th rowSpan={2} scope="col" aria-sort={active.key === 'name' ? (active.dir === 1 ? 'ascending' : 'descending') : 'none'}>
-                <button type="button" className="sort" onClick={() => setSort({ key: 'name', dir: active.key === 'name' && active.dir === 1 ? -1 : 1 })}>Street block{active.key === 'name' ? (active.dir === 1 ? ' ▲' : ' ▼') : ''}</button>
+              <th rowSpan={comparing ? 2 : 1} scope="col" aria-sort={ariaSort('name')}>
+                {phone ? 'Street block' : <button type="button" className="sort" onClick={() => toggle('name')}>Street block{arrow('name')}</button>}
               </th>
-              {th('cls', 'Class', undefined, 2)}
-              <th colSpan={2} scope="colgroup">All cars (cars an hour)</th>
-              <th colSpan={2} scope="colgroup">Mean speed (mph)</th>
-              <th colSpan={2} scope="colgroup">Through cars (cars an hour)</th>
-              {th('chg', 'Change', overlay === 'cutthrough' ? 'through cars an hour' : overlay === 'flow' ? 'all cars an hour' : 'mph', 2)}
+              {phone ? <th rowSpan={comparing ? 2 : 1} scope="col">Class</th> : th('cls', 'Class', undefined, comparing ? 2 : 1)}
+              {group('All cars, cars an hour')}
+              {group('Mean speed, mph')}
+              {group('Through cars, cars an hour')}
+              {comparing && (phone ? <th rowSpan={2} scope="col">Change, {changeUnit(overlay)}</th> : th('chg', 'Change,', changeUnit(overlay), 2))}
+              {phone && <th rowSpan={comparing ? 2 : 1} scope="col">Show on map</th>}
             </tr>
-            <tr>
-              {th('flowB', 'Base')}{th('flowS', 'Scen.')}{th('speedB', 'Base')}{th('speedS', 'Scen.')}{th('ctB', 'Base')}{th('ctS', 'Scen.')}
-            </tr>
+            {comparing && (
+              <tr>
+                {phone
+                  ? ['Base', 'Scenario', 'Base', 'Scenario', 'Base', 'Scenario'].map((l, i) => <th key={i} scope="col">{l}</th>)
+                  : <>{th('flowB', 'Base')}{th('flowS', 'Scen.')}{th('speedB', 'Base')}{th('speedS', 'Scen.')}{th('ctB', 'Base')}{th('ctS', 'Scen.')}</>}
+              </tr>
+            )}
           </thead>
           <tbody>
             {visible.map((r, i) => (
@@ -145,11 +167,16 @@ export function StreetsTable({ index, scen, base, comparing, overlay, showServic
                 onFocus={() => { setStop(r.key); onHover({ kind: 'block', block: index.blockOfLink[r.key] }); }}
               >
                 <th scope="row">{r.label}</th>
-                <td>{r.cls}</td>
-                {cell(r.flowB, r.flowS, 'flow')}
-                {cell(r.speedB, r.speedS, 'speed')}
-                {cell(r.ctB, r.ctS, 'flow')}
-                <td className="chg">{comparing ? formatSigned(r.chg, overlay) : '—'}</td>
+                <td className="cls">{r.cls}</td>
+                {val('flow', r.flowB, r.flowS, 'All cars an hour')}
+                {val('speed', r.speedB, r.speedS, 'Mean speed, mph')}
+                {val('flow', r.ctB, r.ctS, 'Through cars an hour')}
+                {comparing && <td className="chg" data-label={`Change, ${changeUnit(overlay)}`}>{formatSigned(r.chg, overlay)}</td>}
+                {phone && (
+                  <td className="act">
+                    <button type="button" className="btn small-btn" tabIndex={r.key === rowStop ? 0 : -1} aria-label={`Show ${r.label} on the map`} onClick={() => onShowOnMap?.(index.blockOfLink[r.key])}>Show on map</button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
