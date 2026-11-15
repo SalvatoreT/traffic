@@ -125,3 +125,11 @@ describe('freeway ramp reasons', () => {
     expect(endsSentence({ onRamp: 'x' }, null)).toBe('');
   });
 });
+
+describe('byCars', () => {
+  it('lists the busiest first, keeps ties in the given order and the catch-all last', async () => {
+    const { byCars, OTHER_ID } = await import('./intents');
+    const rows = [{ id: 'a', n: 5 }, { id: OTHER_ID, n: 99 }, { id: 'b', n: 9 }, { id: 'c', n: 5 }];
+    expect(byCars(rows, (r) => r.n)).toEqual(['b', 'a', 'c', OTHER_ID]);
+  });
+});

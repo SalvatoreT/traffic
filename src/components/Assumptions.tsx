@@ -7,7 +7,7 @@ import { buildIntentMap } from '../lib/intentmap';
 import { IntentMap } from './IntentMap';
 import { OverviewMap, TurnMap } from './TurnMap';
 import { buildOverview, buildTurnMap } from '../lib/turnmap';
-import { BASIS_HELP, BASIS_TEXT, OTHER_ID, describePaths, endsSentence, isLocal, rampOfIntent, rampPoint } from '../lib/intents';
+import { BASIS_HELP, BASIS_TEXT, OTHER_ID, byCars, describePaths, endsSentence, isLocal, rampOfIntent, rampPoint } from '../lib/intents';
 import { ATTRIBUTION } from '../lib/mapexport';
 import type { NetIndex } from '../lib/naming';
 import { buildBaseMap } from '../lib/picture';
@@ -208,6 +208,8 @@ function Reasons({ defs, bundle, index, mode, baseline, status, order, first, pe
   const net = bundle.network;
   const base = useMemo(() => buildBaseMap(net), [net]);
   const file = status === 'ok' ? baseline : null;
+  const cars = (d: DemandIntent) => (file && first ? baselineIntent(file, first, defs, d.id)?.vph ?? 0 : 0);
+  const sorted = file && first ? byCars(defs, cars).map((i) => defs.find((d) => d.id === i)!) : defs;
   const other = file && first ? file.periods[first]?.byIntent.find((b) => b.id === OTHER_ID) : undefined;
   return (
     <section id="ref-intents" aria-labelledby="intents-h" tabIndex={-1}>
@@ -221,18 +223,9 @@ function Reasons({ defs, bundle, index, mode, baseline, status, order, first, pe
         {other && ` Through cars that fit none of the reasons are tallied as Other: ${Math.round(other.vehiclesPerHour)} an hour.`}
       </p>
       {status !== 'ok' && <p className="muted" role="status">{STATUS_NOTE[status]}</p>}
-      {defs.reduce<{ title?: string; items: DemandIntent[] }[]>((acc, d) => {
-        if (!acc.length || d.section !== acc[acc.length - 1].title) acc.push({ title: d.section, items: [] });
-        acc[acc.length - 1].items.push(d);
-        return acc;
-      }, []).map((g) => (
-        <Fragment key={g.title ?? 'reasons'}>
-          {g.title && <h4 className="reason-section">{g.title}</h4>}
-          <ul className="reasons">
-            {g.items.map((d) => <ReasonCard key={d.id} d={d} net={net} index={index} mode={mode} base={base} file={file} order={order} first={first} periodName={periodName} defs={defs} ramps={bundle.demand.ramps} />)}
-          </ul>
-        </Fragment>
-      ))}
+      <ul className="reasons">
+        {sorted.map((d) => <ReasonCard key={d.id} d={d} net={net} index={index} mode={mode} base={base} file={file} order={order} first={first} periodName={periodName} defs={defs} ramps={bundle.demand.ramps} />)}
+      </ul>
     </section>
   );
 }
@@ -254,7 +247,7 @@ function ReasonCard({ d, net, index, mode, base, file, order, first, periodName,
       <div className="reason-head">
         <h4>{d.label}</h4>
       </div>
-      <p><span className={`badge badge-${d.basis}`} title={BASIS_HELP[d.basis]}>{BASIS_TEXT[d.basis]}</span></p>
+      <p><span className={`badge badge-${d.basis}`} title={BASIS_HELP[d.basis]}>{BASIS_TEXT[d.basis]}</span>{d.section && <span className="intent-sec"> {d.section}</span>}</p>
       <p className="reason-note">{d.note}</p>
       {lead?.ends && endsSentence(d, lead.ends) && <p className="reason-ends">{endsSentence(d, lead.ends)}</p>}
       {d.avoids && <p>Would otherwise use {d.avoids}, by the model’s shortest route with the side streets closed.</p>}

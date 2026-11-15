@@ -518,3 +518,4 @@ table.intent-table td { text-align: left; font-variant-numeric: tabular-nums; }
   .streets.cards td.act .btn { min-height: 36px; }
   .streets.cards tbody tr:hover, .streets.cards tbody tr:focus-visible { background: var(--surface); }
 }
+.intent-sec { display: block; font-size: .8rem; font-weight: 400; color: var(--muted); }

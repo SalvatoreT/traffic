@@ -90,6 +90,11 @@ export function intentTable(defs: DemandIntent[] | undefined, base: Metrics | nu
   return { rows, baseTotal: sum(b), scenTotal: sum(s), changeTotal: b ? sum(s)! - sum(b)! : null };
 }
 
+/** Ids ordered by cars an hour, most first; ties keep the given order and the catch-all row stays last. */
+export function byCars<T extends { id: string }>(rows: T[], cars: (r: T) => number): string[] {
+  return rows.map((r, i) => ({ r, i })).sort((x, y) => (+(x.r.id === OTHER_ID) - +(y.r.id === OTHER_ID)) || cars(y.r) - cars(x.r) || x.i - y.i).map((x) => x.r.id);
+}
+
 export interface Segment { link: number; vph: number }
 export interface IntentPaths {
   id: string;

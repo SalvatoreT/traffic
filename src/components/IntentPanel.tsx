@@ -2,7 +2,7 @@ import { Fragment, useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { DemandIntent, DemandRamp, Metrics, Network } from '../types';
 import type { NetIndex } from '../lib/naming';
 import { EARLY_NOTE } from '../lib/run';
-import { BASIS_HELP, BASIS_TEXT, OTHER_ID, describePaths, intentTable, rampOfIntent, type IntentPaths } from '../lib/intents';
+import { BASIS_HELP, BASIS_TEXT, OTHER_ID, byCars, describePaths, intentTable, rampOfIntent, type IntentPaths } from '../lib/intents';
 
 interface Props {
   defs: DemandIntent[];
@@ -43,7 +43,13 @@ export function IntentPanel({ defs, ramps, base, scen, comparing, net, idx, sele
     if (first.current) { first.current = false; return; }
     setSaid(def ? `${def.label} is shown on the map.` : 'Map highlight turned off.');
   }, [selected]); // eslint-disable-line
+  // Rows are listed by baseline cars an hour. The order is set once the early minutes have passed and again when the run ends, so rows do not jump while it plays.
+  const order = useRef<{ key: string; ids: string[] } | null>(null);
   if (!table) return null;
+  const stage = !running ? `done|${table.baseTotal}|${table.scenTotal}` : early ? 'early' : 'run';
+  if (stage === 'early') order.current = null;
+  else if (order.current?.key !== stage) order.current = { key: stage, ids: byCars(table.rows, (r) => r.base ?? r.scen ?? 0) };
+  const rows = order.current ? order.current.ids.map((i) => table.rows.find((r) => r.id === i)!) : table.rows;
   const run = comparing ? (pathsFrom === 'scenario' ? 'the scenario' : 'the baseline') : 'today’s traffic';
   return (
     <section className="card intents" aria-labelledby={`${id}-h`}>
@@ -64,19 +70,18 @@ export function IntentPanel({ defs, ramps, base, scen, comparing, net, idx, sele
           <tr><th scope="col">Reason</th><th scope="col">Baseline</th><th scope="col">Scenario</th><th scope="col">Change</th></tr>
         </thead>
         <tbody>
-          {table.rows.map((r, i) => {
+          {rows.map((r) => {
             const d = defs.find((x) => x.id === r.id);
             const on = selected === r.id;
-            const heading = r.section && r.section !== table.rows[i - 1]?.section;
             return (
               <Fragment key={r.id}>
-              {heading && <tr role="row" className="intent-section"><th scope="colgroup" colSpan={4}>{r.section}</th></tr>}
               <tr role="row" className={on ? 'intent-on' : undefined}>
                 <th scope="row">
                   {r.id === OTHER_ID ? <span>{r.label}</span> : (
                     <button type="button" className="intent-btn" aria-pressed={on} onClick={() => onSelect(on ? null : r.id)}>{r.label}</button>
                   )}
                   {d && <span className={`badge badge-${d.basis}`} title={BASIS_HELP[d.basis]}>{BASIS_TEXT[d.basis]}</span>}
+                  {r.section && <span className="intent-sec">{r.section}</span>}
                   {on && <span className="sr-only"> (shown on the map)</span>}
                 </th>
                 <td data-label="Baseline">{num(r.base)}</td>
