@@ -494,3 +494,51 @@ export function checkStored(x: unknown, want: { network: string | null; demand: 
   if (!c || !p || scenarioKey(c) !== scenarioKey(want.closure) || scenarioKey(p) !== scenarioKey(want.package)) return { ok: false, reason: 'made for other scenarios' };
   return { ok: true, result: r };
 }
+
+// ---------------------------------------------------------------- where displaced through cars go (closure sweep)
+
+/** Through trips (neither end in the study area) of the baseline that drove the closure in the window, and where they went with it. */
+export interface Displacement {
+  displaced: number;
+  /** Mutually exclusive: drives a study-area residential or service block it did not drive in the baseline; does not (arterials and
+   *  streets it already used); still waiting to start; removed; found no route; not paired. */
+  local: number; arterialOnly: number; pending: number; removed: number; unroutable: number; unmatched: number;
+  /** Followed trips per newly driven local block (block index): the bypasses they took. */
+  byBlock: Map<number, number>;
+  /** Followed trips per route near the closure in the scenario. */
+  routes: Map<string, number>;
+}
+
+export function displacement(o: {
+  baseline: TraceRun; scenario: TraceRun; selector: Selector; seconds: number; geo: Geo; centers: [number, number][];
+  isLocal: boolean[]; blockOf: number[];
+}): Displacement {
+  const B = parseTrace(o.baseline), S = parseTrace(o.scenario);
+  const sel = new Set(o.selector.movements.map(([a, b]) => `${a}>${b}`));
+  const selLinks = new Set(o.selector.links);
+  const closedBlocks = new Set(o.selector.links.map((l) => o.blockOf[l]));
+  const d: Displacement = { displaced: 0, local: 0, arterialOnly: 0, pending: 0, removed: 0, unroutable: 0, unmatched: 0, byBlock: new Map(), routes: new Map() };
+  for (let i = 0; i < B.reqs.length; i++) {
+    const r = B.reqs[i];
+    if (r.stratum !== 0 || !r.detail || o.geo.inStudy[r.origin] || o.geo.inStudy[r.dest]) continue;
+    if (!traverses(B, i, sel, selLinks, o.seconds)) continue;
+    d.displaced++;
+    const j = S.byKey.get(key(r));
+    if (j === undefined || !sameRequest(r, S.reqs[j]) || !S.reqs[j].detail) { d.unmatched++; continue; }
+    const s = S.reqs[j];
+    if (s.state === 'pending') { d.pending++; continue; }
+    if (s.state === 'unroutable') { d.unroutable++; continue; }
+    const path = Array.from(S.links.subarray(S.off[j], S.off[j + 1]));
+    if (s.state === 'active' && s.cur >= 0) path.push(s.cur);
+    const k = localPart(o.geo, o.centers, path).key || FAR_ROUTE;
+    d.routes.set(k, (d.routes.get(k) ?? 0) + 1);
+    // Local blocks the trip drives now and did not drive in the baseline: where it reappears.
+    const before = new Set(Array.from(B.links.subarray(B.off[i], B.off[i + 1])).map((l) => o.blockOf[l]));
+    const blocks = new Set(path.filter((l) => o.isLocal[l]).map((l) => o.blockOf[l]).filter((b) => b >= 0 && !closedBlocks.has(b) && !before.has(b)));
+    if (s.state === 'removed') d.removed++;
+    else if (blocks.size) d.local++;
+    else d.arterialOnly++;
+    if (s.state !== 'removed') for (const b of blocks) d.byBlock.set(b, (d.byBlock.get(b) ?? 0) + 1);
+  }
+  return d;
+}

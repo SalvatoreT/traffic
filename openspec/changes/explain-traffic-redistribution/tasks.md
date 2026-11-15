@@ -23,6 +23,6 @@
 
 - [x] 4.1 Verify cohort/outcome conservation, exact passage reconciliation, attribute-mismatch handling, and every truncated/partial result state.
 - [x] 4.2 Prove tracing on/off does not change the final implementation's runs and verify native/WASM diagnostic parity.
-- [ ] 4.3 Rerun the historical Colby/North question on the repaired engine and current inputs with the established seed policy; report updated routes, all-car effects, health, and limitations without tuning toward old numbers.
+- [x] 4.3 Rerun the historical Colby/North question on the repaired engine and current inputs with the established seed policy; report updated routes, all-car effects, health, and limitations without tuning toward old numbers.
 - [x] 4.4 Verify keyboard, screen-reader, non-color, and narrow-screen use; document CLI commands and diagnostic limits.
 - [ ] 4.5 Validate the completed OpenSpec strictly and archive only after implementation and verification.

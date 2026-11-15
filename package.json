@@ -24,6 +24,7 @@
     "data:llms": "tsx tools/build-llms.ts",
     "data:previews": "tsx tools/build-previews.ts",
     "simulate": "tsx tools/simulate.ts",
+    "simulate:sweep": "tsx tools/redistribution-sweep.ts",
     "data:fetch": "tsx tools/fetch-osm.ts && tsx tools/fetch-demand.ts",
     "cost-loop": "tsx tools/cost-loop.ts",
     "assess": "tsx tools/assess.ts",

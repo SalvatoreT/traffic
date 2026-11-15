@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Intervention } from '../types';
-import { analyzeSeed, checkStored, COMPARISONS, localRoute, OUTCOMES, REQ_STRIDE, REDISTRIBUTION_SCHEMA, DIAGNOSTIC_METHOD, type Geo, type Role, type TraceRun } from './redistribution';
+import { analyzeSeed, checkStored, displacement, COMPARISONS, localRoute, OUTCOMES, REQ_STRIDE, REDISTRIBUTION_SCHEMA, DIAGNOSTIC_METHOD, type Geo, type Role, type TraceRun } from './redistribution';
 
 // Six links on a small graph: nodes 0, 4 and 5 are gates outside the study area, 1 to 3 inside. Link i runs from linkFrom[i] to linkTo[i].
 const geo: Geo = {
@@ -113,6 +113,17 @@ describe('redistribution accounting', () => {
     expect(side?.partial.closure).toBe(1);
     expect(side?.partial.package).toBe(1);
     expect(a.routeChanged.closure).toEqual({ changed: 2, same: 0, unknown: 1 });
+  });
+});
+
+describe('closure sweep', () => {
+  it('follows displaced through trips to the local blocks they newly drive', () => {
+    const d = displacement({ baseline, scenario: closure, selector: { kind: 'direct', movements: [[1, 2]], links: [] }, seconds: 600, geo, centers: [[200, 0]],
+      isLocal: [false, true, true, false, true, true], blockOf: [0, 1, 2, 3, 4, 5] });
+    expect(d.displaced).toBe(2);
+    expect(d).toMatchObject({ local: 2, arterialOnly: 0, pending: 0, removed: 0, unmatched: 0 });
+    expect(d.byBlock.get(4)).toBe(2);
+    expect(d.byBlock.has(1)).toBe(false);
   });
 });
 
