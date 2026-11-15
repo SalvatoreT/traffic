@@ -6,7 +6,7 @@ import { createHash } from 'node:crypto';
 import type { Metrics } from '../src/types';
 import { buildIndex } from '../src/lib/naming';
 import { base64ToF32, f32ToBase64 } from '../src/lib/stored-results';
-import { CliError, DEFAULT_DATA_DIR, EXIT, loadAreaFiles, repoRoot, type AreaFiles } from './lib/agent-area';
+import { CliError, DATA_HELP, DEFAULT_DATA_DIR, EXIT, loadAreaFiles, repoRoot, type AreaFiles } from './lib/agent-area';
 import { findPlaces, type Place } from './lib/describe-network';
 import { buildReport, parseArgs, parseInterventionsJson, resolvePeriod, scenarioFromLink, type Args, type Scenario } from './lib/simulate-report';
 import { loadEngine, runFor, type Engine, type HourStats } from './lib/run-result';
@@ -80,7 +80,11 @@ function baselineFor(e: Engine, files: AreaFiles, a: { period: string; seed: num
     } catch { /* run again */ }
   }
   log(`Baseline: simulating ${a.seconds / 60} minutes of ${a.period}...`);
-  const s = runFor(e, files.simNetwork, files.demandText, { period: a.period, interventions: [], seed: a.seed, seconds: a.seconds, demandScale: a.demandScale });
+  let s: HourStats;
+  try { s = runFor(e, files.simNetwork, files.demandText, { period: a.period, interventions: [], seed: a.seed, seconds: a.seconds, demandScale: a.demandScale }); } catch (err) {
+    // The engine refuses network data it cannot run as stated (a signal whose observed greens and clearance do not add up to its cycle).
+    throw new CliError(`The baseline cannot run on these data files: ${(err as Error).message ?? err}\n${DATA_HELP}`, EXIT.data);
+  }
   if (!a.noCache) {
     try { mkdirSync(join(repoRoot, 'node_modules/.cache/traffic-simulate'), { recursive: true }); writeFileSync(path, JSON.stringify({ metrics: s.metrics, linkStats: f32ToBase64(s.linkStats) })); } catch { /* a read-only checkout is fine */ }
   }
@@ -122,7 +126,9 @@ async function simulate(files: AreaFiles, a: Args) {
   let scen: HourStats = base;
   if (scenario.interventions.length) {
     log(`Scenario: simulating ${scenario.interventions.length} intervention${scenario.interventions.length === 1 ? '' : 's'}...`);
-    scen = runFor(e, files.simNetwork, files.demandText, { period: period.id, interventions: scenario.interventions, seed: a.seed, seconds, demandScale });
+    try { scen = runFor(e, files.simNetwork, files.demandText, { period: period.id, interventions: scenario.interventions, seed: a.seed, seconds, demandScale }); } catch (err) {
+      throw new CliError(`The scenario cannot run: ${(err as Error).message ?? err}`, EXIT.usage);
+    }
   }
   return buildReport({
     area: files.entry, network: files.network, demand: files.demand, index: buildIndex(files.network), hashes: files.hashes, simulator: e.fingerprint,

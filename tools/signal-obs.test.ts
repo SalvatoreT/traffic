@@ -38,6 +38,15 @@ describe('signal observations', () => {
     expect(ns[1].signalTiming?.[0].greens[0].links).toEqual([1]);
     expect(ns[0].signalTiming).toBeUndefined();
   });
+  it('carries an observed clearance interval and reports approaches of one timing that disagree on it', () => {
+    const ns = [node(0, 'signal'), node(1, 'uncontrolled'), node(2, 'uncontrolled')];
+    const ls = [{ ...link(0, 1, 0, 'Main Street'), toBearing: 90 }, { ...link(1, 2, 0, 'Main Street'), toBearing: 270 }] as NetLink[];
+    const o = { at: ['Main Street'], approach: 'Main Street', periods: ['pm'], cycleSeconds: 50, ownPhase: true, clearanceSeconds: 4, source: 'doc' };
+    expect(applySignalObservations(ns, ls, [{ ...o, heading: 90, greenSeconds: 29 }, { ...o, heading: 270, greenSeconds: 13 }])).toEqual([]);
+    expect(ns[0].signalTiming).toEqual([{ periods: ['pm'], cycleS: 50, greens: [{ links: [0], greenS: 29, ownPhase: true }, { links: [1], greenS: 13, ownPhase: true }], source: 'doc', clearanceS: 4 }]);
+    const ns2 = [node(0, 'signal'), node(1, 'uncontrolled'), node(2, 'uncontrolled')];
+    expect(applySignalObservations(ns2, ls, [{ ...o, heading: 90, greenSeconds: 29 }, { ...o, heading: 270, greenSeconds: 13, clearanceSeconds: undefined }])).toHaveLength(1);
+  });
   it('reports an observation that matches no signal', () => {
     expect(applySignalObservations(nodes, links, [{ ...obs, at: ['Pine Street', 'Elm Street'] }])).toHaveLength(1);
   });

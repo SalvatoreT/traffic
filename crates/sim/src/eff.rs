@@ -19,6 +19,31 @@ pub struct SigPlan {
     pub next: Option<Box<SigNext>>,
 }
 
+/// A signal plan whose durations do not add up: the phase greens and clearance intervals need `required` s and the cycle is `cycle` s.
+#[derive(Clone, Debug, PartialEq)]
+pub struct SignalIssue {
+    pub node: u32,
+    pub period: String,
+    /// The cycle came from a `signal_timing` intervention (false: from an observed timing).
+    pub requested: bool,
+    pub cycle: f32,
+    pub required: f32,
+    /// Source of the observed timing, if any.
+    pub source: String,
+    pub reason: String,
+}
+
+impl std::fmt::Display for SignalIssue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let what = if self.requested { "requested" } else { "observed" };
+        write!(f, "signal at node {} ({}): the {what} cycle of {:.1} s {}", self.node, self.period, self.cycle, self.reason)?;
+        if !self.source.is_empty() {
+            write!(f, " [observed timing: {}]", self.source)?;
+        }
+        Ok(())
+    }
+}
+
 pub struct SigNext {
     pub t0: f64,
     pub cycle: f32,
@@ -79,6 +104,8 @@ pub struct Eff {
     pub bike_closed: Vec<bool>,
     /// Interventions skipped as invalid (diagonal diverters that do not fit their node).
     pub invalid_ivs: u64,
+    /// Signal plans rejected by `plan_signals` because their durations do not fit their cycle.
+    pub issues: Vec<SignalIssue>,
     /// Demand period of the run: selects the observed signal timing of a node (`Node::signal_timing`).
     pub period: String,
 }
@@ -182,7 +209,7 @@ impl Eff {
                 }
                 "signal_timing" => {
                     if let (Some(n), Some(c)) = (valid_n(iv.node), iv.cycle) {
-                        cycle_override[n as usize] = Some((c as f32).clamp(30.0, 180.0));
+                        cycle_override[n as usize] = Some(c as f32);
                     }
                 }
                 "turn_ban" => {
@@ -407,11 +434,12 @@ impl Eff {
             bike_w,
             bike_closed,
             invalid_ivs,
+            issues: Vec::new(),
             period: String::new(),
         }
     }
 
-    fn plan_for(&self, net: &Network, n: usize, groups: &[Vec<u32>], ys: &[f32], pin: Option<f32>) -> (f32, Vec<(f32, f32)>, f32) {
+    fn plan_for(&self, net: &Network, n: usize, groups: &[Vec<u32>], ys: &[f32], pin: Option<f32>) -> Result<(f32, Vec<(f32, f32)>, f32), SignalIssue> {
         plan_with_observation(net, &self.period, n, groups, ys, pin)
     }
 
@@ -422,6 +450,7 @@ impl Eff {
         for n in 0..nn {
             self.sig[n] = None;
         }
+        self.issues.clear();
         for n in 0..nn {
             if self.ctrl[n] != Control::Signal {
                 continue;
@@ -436,7 +465,13 @@ impl Eff {
                 continue;
             }
             let ys = group_flow_ratios(net, &groups, est_flow);
-            let (cycle, phases, ysum) = self.plan_for(net, n, &groups, &ys, self.cycle_override[n]);
+            let (cycle, phases, ysum) = match self.plan_for(net, n, &groups, &ys, self.cycle_override[n]) {
+                Ok(p) => p,
+                Err(e) => {
+                    self.issues.push(e);
+                    continue;
+                }
+            };
             let offset = ((n as f32 * 37.0) % 100.0) / 100.0 * cycle;
             self.sig[n] = Some(SigPlan { cycle, t0: -(offset as f64), phases, links: groups, always_green: false, ysum, next: None });
         }
@@ -452,7 +487,8 @@ impl Eff {
                 continue;
             }
             let ys = group_flow_ratios(net, &p.links, flow);
-            let (cycle, phases, ysum) = plan_with_observation(net, &self.period, n, &p.links, &ys, pin);
+            // The durations that decide whether a plan fits do not depend on flows, so a plan accepted at the start stays valid.
+            let Ok((cycle, phases, ysum)) = plan_with_observation(net, &self.period, n, &p.links, &ys, pin) else { continue };
             let k = ((t - p.t0) / p.cycle as f64).ceil().max(1.0);
             let start = p.t0 + k * p.cycle as f64;
             p.next = Some(Box::new(SigNext { t0: start, cycle, phases, ysum }));
@@ -568,18 +604,28 @@ fn group_flow_ratios(net: &Network, groups: &[Vec<u32>], flow: &[f32]) -> Vec<f3
 
 /// Webster plan [Webster1958]: cycle C = (1.5 L + 5) / (1 - Y) clamped to CYCLE_MIN..CYCLE_MAX and rounded up to 5 s (or the
 /// pinned cycle), green split proportional to the critical flow ratios with a minimum green. Returns (cycle, (start, green)
-/// per phase, Y).
+/// per phase, Y). A pinned cycle shorter than the clearance intervals and `GREEN_FLOOR_S` per phase is not stretched: the plan comes
+/// out longer than the pin, which `plan_with_observation` reports as an issue.
 pub fn webster(ys: &[f32], pinned: Option<f32>) -> (f32, Vec<(f32, f32)>, f32) {
+    webster_with(ys, pinned, YELLOW + ALL_RED)
+}
+
+/// Shortest green of a phase a plan can hold (s). Below it a plan is rejected rather than stretched. ASSUMPTION: the floor the
+/// allocators always used.
+pub const GREEN_FLOOR_S: f32 = 5.0;
+
+fn webster_with(ys: &[f32], pinned: Option<f32>, clearance: f32) -> (f32, Vec<(f32, f32)>, f32) {
     let np = ys.len() as f32;
-    let lost = np * (YELLOW + ALL_RED); // L = sum of intergreens
+    let lost = np * clearance; // L = sum of intergreens
     let ysum: f32 = ys.iter().sum();
     let cycle = if let Some(c) = pinned {
         c
     } else {
         let c = if ysum < 0.9 { (1.5 * lost + 5.0) / (1.0 - ysum) } else { CYCLE_MAX };
-        (c.clamp(CYCLE_MIN, CYCLE_MAX) / 5.0).ceil() * 5.0
+        // Unpinned, the model chooses the cycle, so it is long enough for the phases.
+        ((c.clamp(CYCLE_MIN, CYCLE_MAX).max(lost + np * GREEN_FLOOR_S)) / 5.0).ceil() * 5.0
     };
-    let avail = (cycle - lost).max(np * 5.0);
+    let avail = (cycle - lost).max(np * GREEN_FLOOR_S);
     let mut green: Vec<f32> = if ysum > 1e-6 { ys.iter().map(|&y| avail * y / ysum).collect() } else { vec![avail / np; ys.len()] };
     let minimum = MIN_GREEN.min(avail / np);
     for _ in 0..2 {
@@ -597,15 +643,56 @@ pub fn webster(ys: &[f32], pinned: Option<f32>) -> (f32, Vec<(f32, f32)>, f32) {
     let mut t = 0.0;
     for g in &green {
         phases.push((t, *g));
-        t += g + YELLOW + ALL_RED;
+        t += g + clearance;
     }
     (t.max(1.0), phases, ysum)
 }
 
-/// Plan of a signal: Webster from the flow ratios, or, when the node has an observed timing for the run's period, the observed cycle with the observed approaches' green
-/// fixed (the phase that holds their links) and the other phases sharing the rest of the cycle by flow ratio, with the usual minimum green.
-fn plan_with_observation(net: &Network, period: &str, n: usize, groups: &[Vec<u32>], ys: &[f32], pin: Option<f32>) -> (f32, Vec<(f32, f32)>, f32) {
-    let Some(obs) = net.nodes[n].signal_timing.iter().find(|o| o.periods.iter().any(|p| p == period)) else { return webster(ys, pin) };
+/// Plan of a signal. An explicit cycle (`pin`, a `signal_timing` intervention) wins over an observed timing: the observed phase
+/// structure (`groups`, from `own_phases`) stays, its green durations are released, and the requested cycle is split by flow
+/// ratio [Webster1958]. Otherwise, when the node has an observed timing for the run's period, the observed cycle holds with the
+/// observed approaches' greens fixed (the phase that holds their links) and the other phases sharing the rest of the cycle by flow
+/// ratio, with the usual minimum green. Clearance after each phase is the observation's `clearance_s` when given, else
+/// `YELLOW + ALL_RED`. A plan whose greens and clearance intervals do not add up to its cycle is returned as an issue, never
+/// stretched or shortened.
+fn plan_with_observation(net: &Network, period: &str, n: usize, groups: &[Vec<u32>], ys: &[f32], pin: Option<f32>) -> Result<(f32, Vec<(f32, f32)>, f32), SignalIssue> {
+    let obs = net.nodes[n].signal_timing.iter().find(|o| o.periods.iter().any(|p| p == period));
+    let issue = |requested: bool, cycle: f32, required: f32, reason: String| SignalIssue {
+        node: n as u32,
+        period: period.to_string(),
+        requested,
+        cycle,
+        required,
+        source: obs.map_or(String::new(), |o| o.source.clone()),
+        reason,
+    };
+    let clearance = match obs.and_then(|o| o.clearance_s) {
+        Some(c) if c.is_finite() && c >= YELLOW && c <= 3.0 * (YELLOW + ALL_RED) => c,
+        Some(c) => return Err(issue(false, obs.map_or(0.0, |o| o.cycle_s), 0.0, format!("has a clearance interval of {c} s, outside {YELLOW} to {} s", 3.0 * (YELLOW + ALL_RED)))),
+        None => YELLOW + ALL_RED,
+    };
+    let np = ys.len() as f32;
+    let lost = np * clearance;
+    let check = |requested: bool, declared: f32, plan: (f32, Vec<(f32, f32)>, f32)| {
+        if (plan.0 - declared).abs() > 1e-2 {
+            return Err(issue(requested, declared, plan.0, format!("cannot hold its {} phases: their greens and clearance intervals need {:.1} s", ys.len(), plan.0)));
+        }
+        Ok(plan)
+    };
+    let in_range = |requested: bool, c: f32| {
+        if !(c.is_finite() && (30.0..=180.0).contains(&c)) {
+            return Err(issue(requested, c, 0.0, "is outside the supported 30 to 180 s".into()));
+        }
+        Ok(())
+    };
+    if let Some(c) = pin {
+        in_range(true, c)?;
+        if c + 1e-3 < lost + np * GREEN_FLOOR_S {
+            return Err(issue(true, c, lost + np * GREEN_FLOOR_S, format!("cannot hold its {} phases: {GREEN_FLOOR_S} s of green and {clearance} s of clearance each need {:.1} s", ys.len(), lost + np * GREEN_FLOOR_S)));
+        }
+        return check(true, c, webster_with(ys, Some(c), clearance));
+    }
+    let Some(obs) = obs else { return Ok(webster_with(ys, None, clearance)) };
     let mut fixed: Vec<Option<f32>> = vec![None; groups.len()];
     for a in &obs.greens {
         let alone = !a.runs_with.is_empty();
@@ -613,18 +700,21 @@ fn plan_with_observation(net: &Network, period: &str, n: usize, groups: &[Vec<u3
         if let Some(gi) = gi {
             // An approach that also runs with its partner keeps its whole through green: what it has alone is that less the partner's green.
             let shared = if alone { obs.greens.iter().filter(|b| b.links.iter().any(|l| a.runs_with.contains(l))).map(|b| b.green_s).fold(0.0, f32::max) } else { 0.0 };
-            fixed[gi] = Some(if alone { (a.green_s - shared).max(5.0) } else { a.green_s });
+            fixed[gi] = Some(if alone { (a.green_s - shared).max(GREEN_FLOOR_S) } else { a.green_s });
         }
     }
     if fixed.iter().all(|f| f.is_none()) {
-        return webster(ys, pin);
+        return Ok(webster_with(ys, None, clearance));
     }
-    let np = ys.len() as f32;
-    let lost = np * (YELLOW + ALL_RED);
-    let cycle = obs.cycle_s.clamp(30.0, 180.0);
+    let cycle = obs.cycle_s;
+    in_range(false, cycle)?;
     let spent: f32 = fixed.iter().flatten().sum();
     let nfree = fixed.iter().filter(|f| f.is_none()).count() as f32;
-    let avail = (cycle - lost - spent).max(nfree * 5.0);
+    let required = lost + spent + nfree * GREEN_FLOOR_S;
+    if cycle + 1e-3 < required {
+        return Err(issue(false, cycle, required, format!("cannot hold its {} phases: the observed greens ({spent:.1} s), {clearance} s of clearance after each phase and {GREEN_FLOOR_S} s for each other phase need {required:.1} s", ys.len())));
+    }
+    let avail = cycle - lost - spent;
     let ysum_free: f32 = ys.iter().zip(&fixed).filter(|(_, f)| f.is_none()).map(|(y, _)| *y).sum();
     let minimum = MIN_GREEN.min(avail / nfree.max(1.0));
     let mut green: Vec<f32> = ys.iter().zip(&fixed).map(|(y, f)| f.unwrap_or(if ysum_free > 1e-6 { avail * y / ysum_free } else { avail / nfree.max(1.0) })).collect();
@@ -644,9 +734,9 @@ fn plan_with_observation(net: &Network, period: &str, n: usize, groups: &[Vec<u3
     let mut t = 0.0;
     for g in &green {
         phases.push((t, *g));
-        t += g + YELLOW + ALL_RED;
+        t += g + clearance;
     }
-    (t.max(1.0), phases, ys.iter().sum())
+    check(false, cycle, (t.max(1.0), phases, ys.iter().sum()))
 }
 
 /// Signal state code (1 green, 2 yellow, 3 red) of a phase at time `t`.

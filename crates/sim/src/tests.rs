@@ -955,7 +955,7 @@ fn traffic_circle_replaces_control_and_caps_speed() {
 #[test]
 fn observed_signal_timing_sets_cycle_and_green_of_the_approach() {
     let (mut net, x) = cross4(Control::Signal, RoadClass::Residential, false);
-    net.nodes[x.c as usize].signal_timing = vec![SignalTiming { periods: vec!["p".into()], cycle_s: 79.0, greens: vec![ApproachGreen { links: vec![x.s_in], green_s: 4.0, own_phase: false, runs_with: Vec::new() }], source: "test".into() }];
+    net.nodes[x.c as usize].signal_timing = vec![SignalTiming { periods: vec!["p".into()], cycle_s: 79.0, greens: vec![ApproachGreen { links: vec![x.s_in], green_s: 4.0, own_phase: false, runs_with: Vec::new() }], source: "test".into(), clearance_s: None }];
     let d = demand(&[(x.w, x.e, 700.0), (x.e, x.w, 700.0), (x.s, x.n, 150.0), (x.n, x.s, 150.0)]);
     let mut sim = Simulation::from_parts(net.clone(), d, cfg(2, 1.0)).unwrap();
     {
@@ -987,6 +987,7 @@ fn observed_own_phase_separates_the_approach_from_the_opposing_one() {
         cycle_s: 110.0,
         greens: vec![ApproachGreen { links: vec![x.w_in], green_s: 33.5, own_phase: true, runs_with: Vec::new() }, ApproachGreen { links: vec![x.e_in], green_s: 27.5, own_phase: true, runs_with: Vec::new() }],
         source: "test".into(),
+        clearance_s: None,
     }];
     let d = demand(&[(x.w, x.e, 700.0), (x.e, x.w, 700.0), (x.w, x.n, 300.0), (x.s, x.n, 150.0), (x.n, x.s, 150.0)]);
     let mut sim = Simulation::from_parts(net, d, cfg(2, 1.0)).unwrap();
@@ -1017,6 +1018,7 @@ fn observed_lead_lag_gives_the_leading_approach_both_phases() {
         cycle_s: 110.0,
         greens: vec![ApproachGreen { links: vec![x.w_in], green_s: 57.2, own_phase: true, runs_with: vec![x.e_in] }, ApproachGreen { links: vec![x.e_in], green_s: 27.6, own_phase: true, runs_with: Vec::new() }],
         source: "test".into(),
+        clearance_s: None,
     }];
     let d = demand(&[(x.w, x.e, 700.0), (x.e, x.w, 300.0), (x.w, x.n, 300.0), (x.s, x.n, 150.0), (x.n, x.s, 150.0)]);
     let mut sim = Simulation::from_parts(net, d, cfg(2, 1.0)).unwrap();
@@ -1754,6 +1756,7 @@ mod cut_through;
 mod intent;
 mod junction;
 mod local_trips;
+mod signals;
 
 /// Removing any intervention restores the baseline effective state and signal output, including after a reset that carried the old list.
 #[test]

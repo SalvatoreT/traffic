@@ -726,6 +726,7 @@ impl Simulation {
         s.init_intent_rules();
         s.init_modes();
         s.rebuild_effective();
+        s.signal_check()?;
         if s.cfg.initial_load {
             if loaded_routes {
                 s.adopt_loaded_costs();
@@ -1047,17 +1048,35 @@ impl Simulation {
         }
     }
 
-    /// Replace the scenario with the given interventions JSON (array).
+    /// Replace the scenario with the given interventions JSON (array). A scenario whose signal timing cannot run (`eff::SignalIssue`)
+    /// is refused and the previous one stays in force.
     pub fn set_interventions(&mut self, json: &str) -> Result<(), String> {
         let ivs: Vec<Intervention> = if json.trim().is_empty() {
             Vec::new()
         } else {
             serde_json::from_str(json).map_err(|e| format!("interventions: {e}"))?
         };
-        self.ivs = ivs;
+        let old = std::mem::replace(&mut self.ivs, ivs);
         self.rebuild_effective();
+        if let Err(e) = self.signal_check() {
+            self.ivs = old;
+            self.rebuild_effective();
+            return Err(e);
+        }
         self.reroute_all();
         Ok(())
+    }
+
+    /// Signal plans that could not be built because their greens and clearance intervals do not fit their cycle.
+    pub fn signal_issues(&self) -> &[crate::eff::SignalIssue] {
+        &self.eff.issues
+    }
+
+    fn signal_check(&self) -> Result<(), String> {
+        if self.eff.issues.is_empty() {
+            return Ok(());
+        }
+        Err(format!("signal timing: {}", self.eff.issues.iter().map(|i| i.to_string()).collect::<Vec<_>>().join("; ")))
     }
 
     fn rebuild_effective(&mut self) {
@@ -1290,6 +1309,10 @@ impl Simulation {
         }
         self.fill_mode_metrics(&mut m);
         m.junction_recovery = self.recovery_stats();
+        m.retimed_signals = (0..self.topo.n_nodes)
+            .filter(|&n| self.eff.cycle_override[n].is_some() && self.eff.sig[n].is_some() && self.net.nodes[n].signal_timing.iter().any(|o| o.periods.iter().any(|p| *p == self.cfg.period)))
+            .map(|n| n as u32)
+            .collect();
         m
     }
 

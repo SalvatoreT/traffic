@@ -261,7 +261,7 @@ export function buildReport(i: ReportInput) {
       interventions: i.interventions.map((iv) => ({ ...iv, label: describeIntervention(iv, net, idx) })),
       unplacedInterventions: unplaced,
       hashes: { network: i.hashes.network.slice(0, 16), demand: i.hashes.demand.slice(0, 16), simulator: i.simulator },
-      notes: i.notes,
+      notes: [...i.notes, ...(scen.metrics.retimedSignals?.length ? [`The scenario retimes the observed signal timing at node${scen.metrics.retimedSignals.length === 1 ? '' : 's'} ${scen.metrics.retimedSignals.join(', ')}: the requested cycle replaces the observed one, and the greens are split by flow within it.`] : [])],
     },
     calibration: { status: cal?.status ?? 'uncalibrated', note: cal?.note ?? null, caveat: (cal as { caveat?: string } | undefined)?.caveat ?? null },
     headline: {

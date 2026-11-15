@@ -18,6 +18,8 @@ export interface SignalObservation {
   ownPhase?: boolean;
   /** Compass direction of travel of another approach at the same signal that this one also has green with: a protected left that leads the opposing through. `greenSeconds` is then this approach's whole through green. */
   runsWithHeading?: number;
+  /** Clearance interval (yellow and all-red) after each phase, when the source gives one. Observations of one timing must agree on it. */
+  clearanceSeconds?: number;
   source: string;
 }
 
@@ -45,7 +47,8 @@ export function applySignalObservations(nodes: NetNode[], links: NetLink[], obs:
     const green = { links: ins, greenS: o.greenSeconds, ...(o.ownPhase ? { ownPhase: true } : {}), ...(runsWith.length ? { runsWith } : {}) };
     // Observations of one signal in the same periods and cycle are one timing with several approaches.
     const same = (node.signalTiming ??= []).find((t) => t.cycleS === o.cycleSeconds && t.periods.join() === o.periods.join());
-    if (same) { same.greens.push(green); if (!same.source.includes(o.source)) same.source += `; ${o.source}`; } else node.signalTiming.push({ periods: o.periods, cycleS: o.cycleSeconds, greens: [green], source: o.source });
+    if (same && same.clearanceS !== o.clearanceSeconds) { misses.push(`${o.at.join(' / ')} (${o.approach}): clearance ${o.clearanceSeconds ?? 'default'} s differs from ${same.clearanceS ?? 'default'} s of the same timing`); continue; }
+    if (same) { same.greens.push(green); if (!same.source.includes(o.source)) same.source += `; ${o.source}`; } else node.signalTiming.push({ periods: o.periods, cycleS: o.cycleSeconds, greens: [green], source: o.source, ...(o.clearanceSeconds !== undefined ? { clearanceS: o.clearanceSeconds } : {}) });
   }
   return misses;
 }

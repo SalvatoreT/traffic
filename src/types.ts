@@ -101,7 +101,13 @@ export interface Metrics {
   /** Agents placed on the network at time zero by initial loading, and the ones that found no room (absent in older sim builds). */
   initialAgents?: number;
   initialSkipped?: number;
+  /** Signals whose observed timing the scenario replaces with an explicit cycle (absent when none). */
+  retimedSignals?: number[];
+  /** Use of the junction recovery rules: policy, node entries, and per reason the head-seconds invoked and blocked and the admissions (absent in older sim builds). */
+  junctionRecovery?: { policy: string; crossings: number; courtesy: RecoveryReason; yieldFallback: RecoveryReason; conflictBypass: RecoveryReason; heldRemovals: number };
 }
+
+export interface RecoveryReason { invokedS: number; blockedS: number; admissions: number; initAdmissions: number }
 
 export interface ModeMetrics {
   car: { inNetwork: number; completedTrips: number; meanTripTime: number };

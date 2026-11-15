@@ -38,16 +38,20 @@ function whileBuilding(work: () => void) {
 }
 
 function rebuild() {
-  dispose(scenario); dispose(baseline); baseline = null;
+  dispose(scenario); dispose(baseline); baseline = null; scenario = null;
   scenario = make(interventions);
   if (interventions.length) baseline = make([]);
 }
 /** Restart both runs from t=0 so elapsed time stays identical for the comparison. */
 function restart() {
-  if (!scenario) return;
+  if (!scenario) { whileBuilding(() => { rebuild(); pending = 0; resetWindow(); postFrame(); postStats(); }); return; }
   whileBuilding(() => {
-    // The scenario is set first: `reset` rebuilds the initial state with it in force.
-    scenario!.setInterventions(JSON.stringify(interventions));
+    // The scenario is set first: `reset` rebuilds the initial state with it in force. A scenario the engine refuses (a signal cycle
+    // too short for its phases) leaves no run, so no result is shown as if it had run; the error message says why.
+    try { scenario!.setInterventions(JSON.stringify(interventions)); } catch (e) {
+      dispose(scenario); dispose(baseline); scenario = null; baseline = null; running = false;
+      throw e;
+    }
     scenario!.reset();
     if (interventions.length) {
       if (baseline) baseline.reset(); else baseline = make([]);

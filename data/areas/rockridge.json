@@ -344,7 +344,8 @@
       "periods": ["pm_peak"],
       "cycleSeconds": 50,
       "greenSeconds": 29,
-      "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing PM', SB SR-24 On-Ramp & MLK Way & NB SR-24 Off-Ramp: cycle 50 s; the southbound stream that turns onto the on-ramp (1547 veh/h) has 29 s of green in a phase of its own and the northbound stream that crosses it (268 veh/h) 13 s"
+      "clearanceSeconds": 4,
+      "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing PM', SB SR-24 On-Ramp & MLK Way & NB SR-24 Off-Ramp: cycle 50 s; the southbound stream that turns onto the on-ramp (1547 veh/h) has 29 s of green in a phase of its own and the northbound stream that crosses it (268 veh/h) 13 s; clearance time 4.0 s after each phase, and effective green equal to the actuated green, so 29 + 13 + 2 x 4 = 50 s"
     },
     {
       "at": ["Martin Luther King Junior Way"],
@@ -355,7 +356,8 @@
       "periods": ["pm_peak"],
       "cycleSeconds": 50,
       "greenSeconds": 13,
-      "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing PM', SB SR-24 On-Ramp & MLK Way & NB SR-24 Off-Ramp: cycle 50 s; the southbound stream that turns onto the on-ramp (1547 veh/h) has 29 s of green in a phase of its own and the northbound stream that crosses it (268 veh/h) 13 s"
+      "clearanceSeconds": 4,
+      "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing PM', SB SR-24 On-Ramp & MLK Way & NB SR-24 Off-Ramp: cycle 50 s; the southbound stream that turns onto the on-ramp (1547 veh/h) has 29 s of green in a phase of its own and the northbound stream that crosses it (268 veh/h) 13 s; clearance time 4.0 s after each phase, and effective green equal to the actuated green, so 29 + 13 + 2 x 4 = 50 s"
     },
     {
       "at": ["Martin Luther King Junior Way"],
@@ -366,7 +368,8 @@
       "periods": ["am_peak"],
       "cycleSeconds": 45,
       "greenSeconds": 29,
-      "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing AM', SB SR-24 On-Ramp & MLK Way & NB SR-24 Off-Ramp: cycle 45 s; the southbound stream that turns onto the on-ramp (1417 veh/h) has 29 s of green in a phase of its own and the northbound stream that crosses it (148 veh/h) 8 s (the southbound green is the cycle less the northbound green and 8 s of lost time)"
+      "clearanceSeconds": 4,
+      "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing AM', SB SR-24 On-Ramp & MLK Way & NB SR-24 Off-Ramp: cycle 45 s; the southbound stream that turns onto the on-ramp (1417 veh/h) has 29 s of green in a phase of its own and the northbound stream that crosses it (148 veh/h) 8 s (the southbound green is the cycle less the northbound green and 8 s of lost time); clearance time 4.0 s after each phase, and effective green equal to the actuated green, so 29 + 8 + 2 x 4 = 45 s"
     },
     {
       "at": ["Martin Luther King Junior Way"],
@@ -377,7 +380,8 @@
       "periods": ["am_peak"],
       "cycleSeconds": 45,
       "greenSeconds": 8,
-      "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing AM', SB SR-24 On-Ramp & MLK Way & NB SR-24 Off-Ramp: cycle 45 s; the southbound stream that turns onto the on-ramp (1417 veh/h) has 29 s of green in a phase of its own and the northbound stream that crosses it (148 veh/h) 8 s (the southbound green is the cycle less the northbound green and 8 s of lost time)"
+      "clearanceSeconds": 4,
+      "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing AM', SB SR-24 On-Ramp & MLK Way & NB SR-24 Off-Ramp: cycle 45 s; the southbound stream that turns onto the on-ramp (1417 veh/h) has 29 s of green in a phase of its own and the northbound stream that crosses it (148 veh/h) 8 s (the southbound green is the cycle less the northbound green and 8 s of lost time); clearance time 4.0 s after each phase, and effective green equal to the actuated green, so 29 + 8 + 2 x 4 = 45 s"
     },
     {
       "at": ["Martin Luther King Junior Way"],
@@ -388,7 +392,8 @@
       "periods": ["midday"],
       "cycleSeconds": 50,
       "greenSeconds": 29,
-      "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing PM', SB SR-24 On-Ramp & MLK Way & NB SR-24 Off-Ramp: cycle 50 s; the southbound stream that turns onto the on-ramp (1547 veh/h) has 29 s of green in a phase of its own and the northbound stream that crosses it (268 veh/h) 13 s; applied to midday as an ASSUMPTION (no midday worksheet)"
+      "clearanceSeconds": 4,
+      "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing PM', SB SR-24 On-Ramp & MLK Way & NB SR-24 Off-Ramp: cycle 50 s; the southbound stream that turns onto the on-ramp (1547 veh/h) has 29 s of green in a phase of its own and the northbound stream that crosses it (268 veh/h) 13 s; clearance time 4.0 s after each phase, and effective green equal to the actuated green, so 29 + 13 + 2 x 4 = 50 s; applied to midday as an ASSUMPTION (no midday worksheet)"
     },
     {
       "at": ["Martin Luther King Junior Way"],
@@ -399,7 +404,8 @@
       "periods": ["midday"],
       "cycleSeconds": 50,
       "greenSeconds": 13,
-      "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing PM', SB SR-24 On-Ramp & MLK Way & NB SR-24 Off-Ramp: cycle 50 s; the southbound stream that turns onto the on-ramp (1547 veh/h) has 29 s of green in a phase of its own and the northbound stream that crosses it (268 veh/h) 13 s; applied to midday as an ASSUMPTION (no midday worksheet)"
+      "clearanceSeconds": 4,
+      "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing PM', SB SR-24 On-Ramp & MLK Way & NB SR-24 Off-Ramp: cycle 50 s; the southbound stream that turns onto the on-ramp (1547 veh/h) has 29 s of green in a phase of its own and the northbound stream that crosses it (268 veh/h) 13 s; clearance time 4.0 s after each phase, and effective green equal to the actuated green, so 29 + 13 + 2 x 4 = 50 s; applied to midday as an ASSUMPTION (no midday worksheet)"
     }
   ]
 }

@@ -75,3 +75,45 @@ Use synthetic fixtures for precedence and invalid duration budgets, and a Rockri
 ## Risks and limits
 
 Rejecting invalid observations will initially stop runs that currently accept them, including the known ramp fixture. Reconcile those data in the same implementation change. The repair can alter queues and route choices outside the study area, so its effect on the Rockridge study area needs measurement. Phase topology and green allocation remain model assumptions where field timing is incomplete.
+
+## Implementation, 2026-11-15
+
+### Confirmation
+
+Both findings reproduce with the probe in this design on the published network (SHA-256 `5fe8241a…`), using the engine after `repair-local-trip-measurement-integrity`. With 100 vehicles/hour on every link, node 1069 (Colby St / Claremont Ave) ran 79 s for no request, 100 s and 150 s, and node 680 ran 110 s for all three. Node 679 (the MLK Way ramp signal) ran 52 s against a declared 50 s in PM and midday, and 47 s against 45 s in AM. A 40 s request was also ignored at all three. A second silent change came up: `Eff::derive` clamped any requested cycle to 30 to 180 s, so a request of 240 s, which the CLI accepts, ran at 180 s.
+
+### The ramp worksheet (task 1.3)
+
+The Synchro worksheet in [CHRCO-EIR2014] Appendix C ("SB SR-24 On-Ramp & MLK Way & NB SR-24 Off-Ramp", Existing PM and Existing AM) lists, for both phases, an actuated green G equal to the effective green g (PM: 13.0 s for the northbound stream in phase 2, 29.0 s for the southbound on-ramp stream in phase 6; AM: 8.0 s and 29.0 s), a total lost time of 4.0 s per lane group, and a clearance time of 4.0 s per phase. It gives the cycle as 50.0 s (AM 45.0 s) with a sum of lost time of 8.0 s. Following the convention the worksheet uses [FHWA-STM2008], effective green is the displayed green plus the clearance less the lost time, here G + 4 − 4 = G. The cycle is the sum of displayed greens and clearance intervals: 29 + 13 + 2 × 4 = 50 s and 29 + 8 + 2 × 4 = 45 s. The observation's greens are displayed greens, which is what the simulator's phase green means. The mismatch is the clearance: the source has 4.0 s, the simulator's global `YELLOW + ALL_RED` is 5.0 s. The worksheet does not split the 4.0 s into yellow and all-red.
+
+### What changed
+
+1. Explicit cycle precedence. A `signal_timing` intervention sets the executed cycle at a node with an observed timing. The observed phase structure stays (own phases and shared approaches, from `own_phases`); the observed greens are released and the requested cycle is split by flow ratio [Webster1958]. The cycle stays through adaptation and the observation returns when the intervention is removed (test `an_explicit_cycle_overrides_the_observed_one_and_keeps_its_phases`). `Metrics::retimedSignals` lists the observed signals a scenario retimes, and the CLI report says so in its notes.
+
+2. One duration budget for every plan. `plan_with_observation` returns a `SignalIssue` instead of a plan whose greens and clearance intervals do not add up to its cycle, whether the cycle is observed or requested. The issue names the node, period, cycle, required duration and observation source. An observed timing whose fixed greens leave room the other phases cannot fill, or overrun it, is rejected the same way. A requested cycle outside 30 to 180 s is rejected instead of clamped. Unpinned Webster plans pick a cycle at least as long as their phases need. The shortest green a phase can be given, 5 s (`GREEN_FLOOR_S`), was the floor the allocators already used and stays an assumption.
+
+3. Diagnostics reach every caller. `Simulation::new` returns the issue as an error, and `set_interventions` refuses the scenario and keeps the previous one. WASM callers get it as the thrown error message. `npm run simulate` exits with code 3 when the data cannot run and code 2 when the scenario cannot. The app's worker drops both runs when the engine refuses a scenario, so no result is shown for it, and the error appears in the app's alert.
+
+4. Observation-specific clearance. `SignalTiming` has an optional `clearanceS`, used for every phase of that plan in allocation and validation; yellow stays `YELLOW` and the rest of the interval is all-red. Values outside 3.5 to 15 s are rejected. The six MLK Way ramp observations in `data/areas/rockridge.json` now carry `clearanceSeconds: 4` with the worksheet reading in their source, and `tools/lib/signal-obs.ts` copies it into the network, refusing to merge approaches of one timing that disagree on it. The global clearance constant is unchanged.
+
+### Data needed before Rockridge runs
+
+The published network was generated before `clearanceS` existed, so this engine refuses it: node 679's plans need 52 s and 47 s. The network must be regenerated from the updated area config (`npm run data`) before results are produced or published. For the tests and measurements here, the local `public/data/rockridge.network.json` was patched with `clearanceS: 4` on node 679's three timings and nothing else, which is what the import produces from the committed config apart from the longer source text. Its SHA-256 changed from `5fe8241a6ba1e3068db2a84bed6cf523f4bcd4057f0234d1cc0e2527aa7d2352` to `730c28deef079d62aa34cbf3df1c4b0089e53fbe786f1c2605effe528bd56033`.
+
+### Effect on Rockridge runs
+
+Native one-hour runs as in the other two changes, before = the engine after `repair-local-trip-measurement-integrity` on the unpatched network (node 679 at 52 and 47 s), after = this change on the patched network. Mean over seeds; "Colby retimed" asks for a 100 s cycle at node 1069, which the old engine ignored, so its before column is the baseline.
+
+| Period | Scenario | Seeds | Through cars/h | Removed | Mean delay, s | Hillegass N/S, Colby N/S |
+|---|---|---|---|---|---|---|
+| PM | baseline | 1-3 | 1234 → 1205 (± 189) | 12.3 → 10.7 | 224.9 → 224.7 | 77/227, 140/175 → 75/228, 134/181 |
+| PM | three filters | 1-3 | 689 → 680 (± 82) | 14.3 → 11.0 | 232.6 → 231.2 | 20/6, 86/78 → 14/5, 94/77 |
+| PM | Colby retimed to 100 s | 1-3 | 1234 → 1195 (± 131) | 12.3 → 9.7 | 224.9 → 222.8 | 77/227, 140/175 → 74/213, 131/212 |
+| AM | baseline | 1-2 | 567 → 582 | 4.0 → 2.5 | 171.5 → 170.5 | 72/84, 70/83 → 68/84, 74/88 |
+| Midday | baseline | 1-2 | 422 → 423 | 0.5 → 0 | 109.4 → 110.6 | 48/75, 69/62 → 44/75, 70/60 |
+
+The 2 s shorter ramp cycle moves the baselines by less than their seed spread. The retiming at Colby St now takes effect: against this engine's baseline, the busiest southbound block of Colby St gains 31 through cars an hour on average (+38, +57 and -2 by seed) and the busiest northbound block loses 3.
+
+### Checks (tasks 3.1, 3.2)
+
+`tests::signals` covers precedence, adaptation and removal; own and shared phase structures; the 50 s two-phase plan with and without the 4 s clearance; an observed cycle longer than its fixed phases; infeasible and out-of-range requests at construction and in `set_interventions`; and generic plans. `tools/signal-obs.test.ts` covers the clearance field. Native and WASM agree on the patched data. All three observed Rockridge signals now run their declared cycles in every period (node 679: 50, 45 and 50 s), and requests of 40, 100 and 150 s run as asked at all three.

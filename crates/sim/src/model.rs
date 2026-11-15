@@ -67,6 +67,9 @@ pub struct SignalTiming {
     pub greens: Vec<ApproachGreen>,
     #[serde(default)]
     pub source: String,
+    /// Clearance interval (yellow and all-red) after each phase, when the source gives one; the plan uses `YELLOW + ALL_RED` otherwise.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub clearance_s: Option<f32>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -445,6 +448,9 @@ pub struct Metrics {
     pub initial_skipped: u64,
     /// Additive: use of the junction recovery rules (see `JunctionRecoveryStats`).
     pub junction_recovery: JunctionRecoveryStats,
+    /// Additive: signals whose observed timing for the period is replaced by a `signal_timing` intervention (the scenario retimes them).
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub retimed_signals: Vec<u32>,
 }
 
 /// How often junction recovery rules decided an entry. Head-seconds and admissions count from t = 0; `init_*` count the settle interval
