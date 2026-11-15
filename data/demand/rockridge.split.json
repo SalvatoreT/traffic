@@ -1,0 +1,3523 @@
+{
+ "version": 1,
+ "area": "rockridge",
+ "rule": {
+  "name": "group-every-kth-by-hash",
+  "fraction": 0.25,
+  "minPerCorridor": 1,
+  "salt": "rockridge-split-v1"
+ },
+ "groups": [
+  {
+   "id": "count block 1823",
+   "corridor": "Hermann Street (volunteer count)",
+   "observations": [
+    "count block 1823"
+   ],
+   "stations": [
+    "count block 1823"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1824",
+   "corridor": "Hermann Street (volunteer count)",
+   "observations": [
+    "count block 1824"
+   ],
+   "stations": [
+    "count block 1824"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1825",
+   "corridor": "Martin Street (volunteer count)",
+   "observations": [
+    "count block 1825"
+   ],
+   "stations": [
+    "count block 1825"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1826",
+   "corridor": "Martin Street (volunteer count)",
+   "observations": [
+    "count block 1826"
+   ],
+   "stations": [
+    "count block 1826"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1827",
+   "corridor": "Martin Street (volunteer count)",
+   "observations": [
+    "count block 1827"
+   ],
+   "stations": [
+    "count block 1827"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1828",
+   "corridor": "Martin Street (volunteer count)",
+   "observations": [
+    "count block 1828"
+   ],
+   "stations": [
+    "count block 1828"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1829",
+   "corridor": "Ayala Avenue (volunteer count)",
+   "observations": [
+    "count block 1829"
+   ],
+   "stations": [
+    "count block 1829"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1830",
+   "corridor": "Ayala Avenue (volunteer count)",
+   "observations": [
+    "count block 1830"
+   ],
+   "stations": [
+    "count block 1830"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1831",
+   "corridor": "Ayala Avenue (volunteer count)",
+   "observations": [
+    "count block 1831"
+   ],
+   "stations": [
+    "count block 1831"
+   ],
+   "held": true
+  },
+  {
+   "id": "count block 1832",
+   "corridor": "Ayala Avenue (volunteer count)",
+   "observations": [
+    "count block 1832"
+   ],
+   "stations": [
+    "count block 1832"
+   ],
+   "held": true
+  },
+  {
+   "id": "count block 1845",
+   "corridor": "62nd Street (volunteer count)",
+   "observations": [
+    "count block 1845"
+   ],
+   "stations": [
+    "count block 1845"
+   ],
+   "held": true
+  },
+  {
+   "id": "count block 1846",
+   "corridor": "62nd Street (volunteer count)",
+   "observations": [
+    "count block 1846"
+   ],
+   "stations": [
+    "count block 1846"
+   ],
+   "held": true
+  },
+  {
+   "id": "count block 1847",
+   "corridor": "62nd Street (volunteer count)",
+   "observations": [
+    "count block 1847"
+   ],
+   "stations": [
+    "count block 1847"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1848",
+   "corridor": "62nd Street (volunteer count)",
+   "observations": [
+    "count block 1848"
+   ],
+   "stations": [
+    "count block 1848"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1855",
+   "corridor": "63rd Street (volunteer count)",
+   "observations": [
+    "count block 1855"
+   ],
+   "stations": [
+    "count block 1855"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1856",
+   "corridor": "63rd Street (volunteer count)",
+   "observations": [
+    "count block 1856"
+   ],
+   "stations": [
+    "count block 1856"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1857",
+   "corridor": "63rd Street (volunteer count)",
+   "observations": [
+    "count block 1857"
+   ],
+   "stations": [
+    "count block 1857"
+   ],
+   "held": true
+  },
+  {
+   "id": "count block 1858",
+   "corridor": "63rd Street (volunteer count)",
+   "observations": [
+    "count block 1858"
+   ],
+   "stations": [
+    "count block 1858"
+   ],
+   "held": true
+  },
+  {
+   "id": "count block 1859",
+   "corridor": "63rd Street (volunteer count)",
+   "observations": [
+    "count block 1859"
+   ],
+   "stations": [
+    "count block 1859"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1860",
+   "corridor": "63rd Street (volunteer count)",
+   "observations": [
+    "count block 1860"
+   ],
+   "stations": [
+    "count block 1860"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1863",
+   "corridor": "60th Street (volunteer count)",
+   "observations": [
+    "count block 1863"
+   ],
+   "stations": [
+    "count block 1863"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1864",
+   "corridor": "60th Street (volunteer count)",
+   "observations": [
+    "count block 1864"
+   ],
+   "stations": [
+    "count block 1864"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1865",
+   "corridor": "60th Street (volunteer count)",
+   "observations": [
+    "count block 1865"
+   ],
+   "stations": [
+    "count block 1865"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1866",
+   "corridor": "60th Street (volunteer count)",
+   "observations": [
+    "count block 1866"
+   ],
+   "stations": [
+    "count block 1866"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1867",
+   "corridor": "60th Street (volunteer count)",
+   "observations": [
+    "count block 1867"
+   ],
+   "stations": [
+    "count block 1867"
+   ],
+   "held": true
+  },
+  {
+   "id": "count block 1868",
+   "corridor": "60th Street (volunteer count)",
+   "observations": [
+    "count block 1868"
+   ],
+   "stations": [
+    "count block 1868"
+   ],
+   "held": true
+  },
+  {
+   "id": "count block 1869",
+   "corridor": "60th Street (volunteer count)",
+   "observations": [
+    "count block 1869"
+   ],
+   "stations": [
+    "count block 1869"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1870",
+   "corridor": "60th Street (volunteer count)",
+   "observations": [
+    "count block 1870"
+   ],
+   "stations": [
+    "count block 1870"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1886",
+   "corridor": "59th Street (volunteer count)",
+   "observations": [
+    "count block 1886"
+   ],
+   "stations": [
+    "count block 1886"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1887",
+   "corridor": "59th Street (volunteer count)",
+   "observations": [
+    "count block 1887"
+   ],
+   "stations": [
+    "count block 1887"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1888",
+   "corridor": "59th Street (volunteer count)",
+   "observations": [
+    "count block 1888"
+   ],
+   "stations": [
+    "count block 1888"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1889",
+   "corridor": "59th Street (volunteer count)",
+   "observations": [
+    "count block 1889"
+   ],
+   "stations": [
+    "count block 1889"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1894",
+   "corridor": "Canning Street (volunteer count)",
+   "observations": [
+    "count block 1894"
+   ],
+   "stations": [
+    "count block 1894"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1895",
+   "corridor": "Canning Street (volunteer count)",
+   "observations": [
+    "count block 1895"
+   ],
+   "stations": [
+    "count block 1895"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1896",
+   "corridor": "Canning Street (volunteer count)",
+   "observations": [
+    "count block 1896"
+   ],
+   "stations": [
+    "count block 1896"
+   ],
+   "held": true
+  },
+  {
+   "id": "count block 1897",
+   "corridor": "Canning Street (volunteer count)",
+   "observations": [
+    "count block 1897"
+   ],
+   "stations": [
+    "count block 1897"
+   ],
+   "held": true
+  },
+  {
+   "id": "count block 1898",
+   "corridor": "Canning Street (volunteer count)",
+   "observations": [
+    "count block 1898"
+   ],
+   "stations": [
+    "count block 1898"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1899",
+   "corridor": "Canning Street (volunteer count)",
+   "observations": [
+    "count block 1899"
+   ],
+   "stations": [
+    "count block 1899"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1900",
+   "corridor": "Canning Street (volunteer count)",
+   "observations": [
+    "count block 1900"
+   ],
+   "stations": [
+    "count block 1900"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1901",
+   "corridor": "Canning Street (volunteer count)",
+   "observations": [
+    "count block 1901"
+   ],
+   "stations": [
+    "count block 1901"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1902",
+   "corridor": "Canning Street (volunteer count)",
+   "observations": [
+    "count block 1902"
+   ],
+   "stations": [
+    "count block 1902"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1903",
+   "corridor": "Canning Street (volunteer count)",
+   "observations": [
+    "count block 1903"
+   ],
+   "stations": [
+    "count block 1903"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1904",
+   "corridor": "Canning Street (volunteer count)",
+   "observations": [
+    "count block 1904"
+   ],
+   "stations": [
+    "count block 1904"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1905",
+   "corridor": "Canning Street (volunteer count)",
+   "observations": [
+    "count block 1905"
+   ],
+   "stations": [
+    "count block 1905"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1906",
+   "corridor": "North Street (volunteer count)",
+   "observations": [
+    "count block 1906"
+   ],
+   "stations": [
+    "count block 1906"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1907",
+   "corridor": "North Street (volunteer count)",
+   "observations": [
+    "count block 1907"
+   ],
+   "stations": [
+    "count block 1907"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1918",
+   "corridor": "57th Street (volunteer count)",
+   "observations": [
+    "count block 1918"
+   ],
+   "stations": [
+    "count block 1918"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1919",
+   "corridor": "57th Street (volunteer count)",
+   "observations": [
+    "count block 1919"
+   ],
+   "stations": [
+    "count block 1919"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1924",
+   "corridor": "Dana Street (volunteer count)",
+   "observations": [
+    "count block 1924"
+   ],
+   "stations": [
+    "count block 1924"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1925",
+   "corridor": "Dana Street (volunteer count)",
+   "observations": [
+    "count block 1925"
+   ],
+   "stations": [
+    "count block 1925"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1926",
+   "corridor": "Dana Street (volunteer count)",
+   "observations": [
+    "count block 1926"
+   ],
+   "stations": [
+    "count block 1926"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1927",
+   "corridor": "Dana Street (volunteer count)",
+   "observations": [
+    "count block 1927"
+   ],
+   "stations": [
+    "count block 1927"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1928",
+   "corridor": "McAuley Street (volunteer count)",
+   "observations": [
+    "count block 1928"
+   ],
+   "stations": [
+    "count block 1928"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1929",
+   "corridor": "McAuley Street (volunteer count)",
+   "observations": [
+    "count block 1929"
+   ],
+   "stations": [
+    "count block 1929"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1930",
+   "corridor": "McAuley Street (volunteer count)",
+   "observations": [
+    "count block 1930"
+   ],
+   "stations": [
+    "count block 1930"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1931",
+   "corridor": "McAuley Street (volunteer count)",
+   "observations": [
+    "count block 1931"
+   ],
+   "stations": [
+    "count block 1931"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1932",
+   "corridor": "McAuley Street (volunteer count)",
+   "observations": [
+    "count block 1932"
+   ],
+   "stations": [
+    "count block 1932"
+   ],
+   "held": true
+  },
+  {
+   "id": "count block 1933",
+   "corridor": "McAuley Street (volunteer count)",
+   "observations": [
+    "count block 1933"
+   ],
+   "stations": [
+    "count block 1933"
+   ],
+   "held": true
+  },
+  {
+   "id": "count block 1934",
+   "corridor": "McAuley Street (volunteer count)",
+   "observations": [
+    "count block 1934"
+   ],
+   "stations": [
+    "count block 1934"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1935",
+   "corridor": "McAuley Street (volunteer count)",
+   "observations": [
+    "count block 1935"
+   ],
+   "stations": [
+    "count block 1935"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1987",
+   "corridor": "58th Street (volunteer count)",
+   "observations": [
+    "count block 1987"
+   ],
+   "stations": [
+    "count block 1987"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1988",
+   "corridor": "58th Street (volunteer count)",
+   "observations": [
+    "count block 1988"
+   ],
+   "stations": [
+    "count block 1988"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1989",
+   "corridor": "58th Street (volunteer count)",
+   "observations": [
+    "count block 1989"
+   ],
+   "stations": [
+    "count block 1989"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1990",
+   "corridor": "58th Street (volunteer count)",
+   "observations": [
+    "count block 1990"
+   ],
+   "stations": [
+    "count block 1990"
+   ],
+   "held": true
+  },
+  {
+   "id": "count block 1991",
+   "corridor": "58th Street (volunteer count)",
+   "observations": [
+    "count block 1991"
+   ],
+   "stations": [
+    "count block 1991"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 1992",
+   "corridor": "58th Street (volunteer count)",
+   "observations": [
+    "count block 1992"
+   ],
+   "stations": [
+    "count block 1992"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 2015",
+   "corridor": "61st Street (volunteer count)",
+   "observations": [
+    "count block 2015"
+   ],
+   "stations": [
+    "count block 2015"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 2016",
+   "corridor": "61st Street (volunteer count)",
+   "observations": [
+    "count block 2016"
+   ],
+   "stations": [
+    "count block 2016"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 2054",
+   "corridor": "Howell Street (volunteer count)",
+   "observations": [
+    "count block 2054"
+   ],
+   "stations": [
+    "count block 2054"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 2055",
+   "corridor": "Howell Street (volunteer count)",
+   "observations": [
+    "count block 2055"
+   ],
+   "stations": [
+    "count block 2055"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 2056",
+   "corridor": "Howell Street (volunteer count)",
+   "observations": [
+    "count block 2056"
+   ],
+   "stations": [
+    "count block 2056"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 2057",
+   "corridor": "Howell Street (volunteer count)",
+   "observations": [
+    "count block 2057"
+   ],
+   "stations": [
+    "count block 2057"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 2058",
+   "corridor": "Ayala Avenue (volunteer count)",
+   "observations": [
+    "count block 2058"
+   ],
+   "stations": [
+    "count block 2058"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 2059",
+   "corridor": "Ayala Avenue (volunteer count)",
+   "observations": [
+    "count block 2059"
+   ],
+   "stations": [
+    "count block 2059"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 2591",
+   "corridor": "Colby Street (volunteer count)",
+   "observations": [
+    "count block 2591"
+   ],
+   "stations": [
+    "count block 2591"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 2592",
+   "corridor": "Colby Street (volunteer count)",
+   "observations": [
+    "count block 2592"
+   ],
+   "stations": [
+    "count block 2592"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 2593",
+   "corridor": "Colby Street (volunteer count)",
+   "observations": [
+    "count block 2593"
+   ],
+   "stations": [
+    "count block 2593"
+   ],
+   "held": true
+  },
+  {
+   "id": "count block 2594",
+   "corridor": "Colby Street (volunteer count)",
+   "observations": [
+    "count block 2594"
+   ],
+   "stations": [
+    "count block 2594"
+   ],
+   "held": true
+  },
+  {
+   "id": "count block 2595",
+   "corridor": "Colby Street (volunteer count)",
+   "observations": [
+    "count block 2595"
+   ],
+   "stations": [
+    "count block 2595"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 2596",
+   "corridor": "Colby Street (volunteer count)",
+   "observations": [
+    "count block 2596"
+   ],
+   "stations": [
+    "count block 2596"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 2597",
+   "corridor": "Colby Street (volunteer count)",
+   "observations": [
+    "count block 2597"
+   ],
+   "stations": [
+    "count block 2597"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 2598",
+   "corridor": "Colby Street (volunteer count)",
+   "observations": [
+    "count block 2598"
+   ],
+   "stations": [
+    "count block 2598"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 2599",
+   "corridor": "Colby Street (volunteer count)",
+   "observations": [
+    "count block 2599"
+   ],
+   "stations": [
+    "count block 2599"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 2600",
+   "corridor": "Colby Street (volunteer count)",
+   "observations": [
+    "count block 2600"
+   ],
+   "stations": [
+    "count block 2600"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 2601",
+   "corridor": "Colby Street (volunteer count)",
+   "observations": [
+    "count block 2601"
+   ],
+   "stations": [
+    "count block 2601"
+   ],
+   "held": true
+  },
+  {
+   "id": "count block 2602",
+   "corridor": "Colby Street (volunteer count)",
+   "observations": [
+    "count block 2602"
+   ],
+   "stations": [
+    "count block 2602"
+   ],
+   "held": true
+  },
+  {
+   "id": "count block 2605",
+   "corridor": "Colby Street (volunteer count)",
+   "observations": [
+    "count block 2605"
+   ],
+   "stations": [
+    "count block 2605"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 2606",
+   "corridor": "Colby Street (volunteer count)",
+   "observations": [
+    "count block 2606"
+   ],
+   "stations": [
+    "count block 2606"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 2619",
+   "corridor": "61st Street (volunteer count)",
+   "observations": [
+    "count block 2619"
+   ],
+   "stations": [
+    "count block 2619"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 2620",
+   "corridor": "61st Street (volunteer count)",
+   "observations": [
+    "count block 2620"
+   ],
+   "stations": [
+    "count block 2620"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 2621",
+   "corridor": "62nd Street (volunteer count)",
+   "observations": [
+    "count block 2621"
+   ],
+   "stations": [
+    "count block 2621"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 2622",
+   "corridor": "62nd Street (volunteer count)",
+   "observations": [
+    "count block 2622"
+   ],
+   "stations": [
+    "count block 2622"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 2625",
+   "corridor": "63rd Street (volunteer count)",
+   "observations": [
+    "count block 2625"
+   ],
+   "stations": [
+    "count block 2625"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 2626",
+   "corridor": "63rd Street (volunteer count)",
+   "observations": [
+    "count block 2626"
+   ],
+   "stations": [
+    "count block 2626"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 2627",
+   "corridor": "63rd Street (volunteer count)",
+   "observations": [
+    "count block 2627"
+   ],
+   "stations": [
+    "count block 2627"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 2628",
+   "corridor": "63rd Street (volunteer count)",
+   "observations": [
+    "count block 2628"
+   ],
+   "stations": [
+    "count block 2628"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 2669",
+   "corridor": "Hillegass Avenue (volunteer count)",
+   "observations": [
+    "count block 2669"
+   ],
+   "stations": [
+    "count block 2669"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 2670",
+   "corridor": "Hillegass Avenue (volunteer count)",
+   "observations": [
+    "count block 2670"
+   ],
+   "stations": [
+    "count block 2670"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 2671",
+   "corridor": "Hillegass Avenue (volunteer count)",
+   "observations": [
+    "count block 2671"
+   ],
+   "stations": [
+    "count block 2671"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 2672",
+   "corridor": "Hillegass Avenue (volunteer count)",
+   "observations": [
+    "count block 2672"
+   ],
+   "stations": [
+    "count block 2672"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 2673",
+   "corridor": "Hillegass Avenue (volunteer count)",
+   "observations": [
+    "count block 2673"
+   ],
+   "stations": [
+    "count block 2673"
+   ],
+   "held": true
+  },
+  {
+   "id": "count block 2674",
+   "corridor": "Hillegass Avenue (volunteer count)",
+   "observations": [
+    "count block 2674"
+   ],
+   "stations": [
+    "count block 2674"
+   ],
+   "held": true
+  },
+  {
+   "id": "count block 2675",
+   "corridor": "Hillegass Avenue (volunteer count)",
+   "observations": [
+    "count block 2675"
+   ],
+   "stations": [
+    "count block 2675"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 2676",
+   "corridor": "Hillegass Avenue (volunteer count)",
+   "observations": [
+    "count block 2676"
+   ],
+   "stations": [
+    "count block 2676"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 2677",
+   "corridor": "62nd Street (volunteer count)",
+   "observations": [
+    "count block 2677"
+   ],
+   "stations": [
+    "count block 2677"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 2678",
+   "corridor": "62nd Street (volunteer count)",
+   "observations": [
+    "count block 2678"
+   ],
+   "stations": [
+    "count block 2678"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 2696",
+   "corridor": "Forest Street (volunteer count)",
+   "observations": [
+    "count block 2696"
+   ],
+   "stations": [
+    "count block 2696"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 2697",
+   "corridor": "Forest Street (volunteer count)",
+   "observations": [
+    "count block 2697"
+   ],
+   "stations": [
+    "count block 2697"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 2800",
+   "corridor": "Ayala Avenue (volunteer count)",
+   "observations": [
+    "count block 2800"
+   ],
+   "stations": [
+    "count block 2800"
+   ],
+   "held": false
+  },
+  {
+   "id": "count block 2801",
+   "corridor": "Ayala Avenue (volunteer count)",
+   "observations": [
+    "count block 2801"
+   ],
+   "stations": [
+    "count block 2801"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix alcatraz-claremont move 2794>2956",
+   "corridor": "intersection count alcatraz-claremont",
+   "observations": [
+    "ix alcatraz-claremont move 2794>2956"
+   ],
+   "stations": [
+    "ix alcatraz-claremont move 2794>2956"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix alcatraz-claremont move 2797>2956",
+   "corridor": "intersection count alcatraz-claremont",
+   "observations": [
+    "ix alcatraz-claremont move 2797>2956"
+   ],
+   "stations": [
+    "ix alcatraz-claremont move 2797>2956"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix alcatraz-claremont move 2955>2795",
+   "corridor": "intersection count alcatraz-claremont",
+   "observations": [
+    "ix alcatraz-claremont move 2955>2795"
+   ],
+   "stations": [
+    "ix alcatraz-claremont move 2955>2795"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix alcatraz-claremont move 2955>2796",
+   "corridor": "intersection count alcatraz-claremont",
+   "observations": [
+    "ix alcatraz-claremont move 2955>2796"
+   ],
+   "stations": [
+    "ix alcatraz-claremont move 2955>2796"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix alcatraz-claremont N entering",
+   "corridor": "intersection count alcatraz-claremont",
+   "observations": [
+    "ix alcatraz-claremont N entering"
+   ],
+   "stations": [
+    "ix alcatraz-claremont N entering"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix alcatraz-claremont N leaving",
+   "corridor": "intersection count alcatraz-claremont",
+   "observations": [
+    "ix alcatraz-claremont N leaving"
+   ],
+   "stations": [
+    "ix alcatraz-claremont N leaving"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix alcatraz-claremont S entering",
+   "corridor": "intersection count alcatraz-claremont",
+   "observations": [
+    "ix alcatraz-claremont S entering"
+   ],
+   "stations": [
+    "ix alcatraz-claremont S entering"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix alcatraz-claremont S leaving",
+   "corridor": "intersection count alcatraz-claremont",
+   "observations": [
+    "ix alcatraz-claremont S leaving"
+   ],
+   "stations": [
+    "ix alcatraz-claremont S leaving"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix alcatraz-claremont W entering",
+   "corridor": "intersection count alcatraz-claremont",
+   "observations": [
+    "ix alcatraz-claremont W entering"
+   ],
+   "stations": [
+    "ix alcatraz-claremont W entering"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix alcatraz-claremont W leaving",
+   "corridor": "intersection count alcatraz-claremont",
+   "observations": [
+    "ix alcatraz-claremont W leaving"
+   ],
+   "stations": [
+    "ix alcatraz-claremont W leaving"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix alcatraz-college E entering",
+   "corridor": "intersection count alcatraz-college",
+   "observations": [
+    "ix alcatraz-college E entering"
+   ],
+   "stations": [
+    "ix alcatraz-college E entering"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix alcatraz-college E leaving",
+   "corridor": "intersection count alcatraz-college",
+   "observations": [
+    "ix alcatraz-college E leaving"
+   ],
+   "stations": [
+    "ix alcatraz-college E leaving"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix alcatraz-college move 2805>4239",
+   "corridor": "intersection count alcatraz-college",
+   "observations": [
+    "ix alcatraz-college move 2805>4239"
+   ],
+   "stations": [
+    "ix alcatraz-college move 2805>4239"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix alcatraz-college move 3008>2955",
+   "corridor": "intersection count alcatraz-college",
+   "observations": [
+    "ix alcatraz-college move 3008>2955"
+   ],
+   "stations": [
+    "ix alcatraz-college move 3008>2955"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix alcatraz-college move 3008>4239",
+   "corridor": "intersection count alcatraz-college",
+   "observations": [
+    "ix alcatraz-college move 3008>4239"
+   ],
+   "stations": [
+    "ix alcatraz-college move 3008>4239"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix alcatraz-college move 4238>2804",
+   "corridor": "intersection count alcatraz-college",
+   "observations": [
+    "ix alcatraz-college move 4238>2804"
+   ],
+   "stations": [
+    "ix alcatraz-college move 4238>2804"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix alcatraz-college move 4238>3009",
+   "corridor": "intersection count alcatraz-college",
+   "observations": [
+    "ix alcatraz-college move 4238>3009"
+   ],
+   "stations": [
+    "ix alcatraz-college move 4238>3009"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix alcatraz-college N entering",
+   "corridor": "intersection count alcatraz-college",
+   "observations": [
+    "ix alcatraz-college N entering"
+   ],
+   "stations": [
+    "ix alcatraz-college N entering"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix alcatraz-college N leaving",
+   "corridor": "intersection count alcatraz-college",
+   "observations": [
+    "ix alcatraz-college N leaving"
+   ],
+   "stations": [
+    "ix alcatraz-college N leaving"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix alcatraz-college S entering",
+   "corridor": "intersection count alcatraz-college",
+   "observations": [
+    "ix alcatraz-college S entering"
+   ],
+   "stations": [
+    "ix alcatraz-college S entering"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix alcatraz-college S leaving",
+   "corridor": "intersection count alcatraz-college",
+   "observations": [
+    "ix alcatraz-college S leaving"
+   ],
+   "stations": [
+    "ix alcatraz-college S leaving"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix alcatraz-college W entering",
+   "corridor": "intersection count alcatraz-college",
+   "observations": [
+    "ix alcatraz-college W entering"
+   ],
+   "stations": [
+    "ix alcatraz-college W entering"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix alcatraz-college W leaving",
+   "corridor": "intersection count alcatraz-college",
+   "observations": [
+    "ix alcatraz-college W leaving"
+   ],
+   "stations": [
+    "ix alcatraz-college W leaving"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix ashby-claremont E entering",
+   "corridor": "intersection count ashby-claremont",
+   "observations": [
+    "ix ashby-claremont E entering"
+   ],
+   "stations": [
+    "ix ashby-claremont E entering"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix ashby-claremont E leaving",
+   "corridor": "intersection count ashby-claremont",
+   "observations": [
+    "ix ashby-claremont E leaving"
+   ],
+   "stations": [
+    "ix ashby-claremont E leaving"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix ashby-claremont move 3395>3446",
+   "corridor": "intersection count ashby-claremont",
+   "observations": [
+    "ix ashby-claremont move 3395>3446"
+   ],
+   "stations": [
+    "ix ashby-claremont move 3395>3446"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix ashby-claremont move 3395>4328",
+   "corridor": "intersection count ashby-claremont",
+   "observations": [
+    "ix ashby-claremont move 3395>4328"
+   ],
+   "stations": [
+    "ix ashby-claremont move 3395>4328"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix ashby-claremont move 3426>4328",
+   "corridor": "intersection count ashby-claremont",
+   "observations": [
+    "ix ashby-claremont move 3426>4328"
+   ],
+   "stations": [
+    "ix ashby-claremont move 3426>4328"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix ashby-claremont move 3447>3396",
+   "corridor": "intersection count ashby-claremont",
+   "observations": [
+    "ix ashby-claremont move 3447>3396"
+   ],
+   "stations": [
+    "ix ashby-claremont move 3447>3396"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix ashby-claremont move 3447>3425",
+   "corridor": "intersection count ashby-claremont",
+   "observations": [
+    "ix ashby-claremont move 3447>3425"
+   ],
+   "stations": [
+    "ix ashby-claremont move 3447>3425"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix ashby-claremont move 4329>3396",
+   "corridor": "intersection count ashby-claremont",
+   "observations": [
+    "ix ashby-claremont move 4329>3396"
+   ],
+   "stations": [
+    "ix ashby-claremont move 4329>3396"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix ashby-claremont move 4329>3425",
+   "corridor": "intersection count ashby-claremont",
+   "observations": [
+    "ix ashby-claremont move 4329>3425"
+   ],
+   "stations": [
+    "ix ashby-claremont move 4329>3425"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix ashby-claremont N entering",
+   "corridor": "intersection count ashby-claremont",
+   "observations": [
+    "ix ashby-claremont N entering"
+   ],
+   "stations": [
+    "ix ashby-claremont N entering"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix ashby-claremont N leaving",
+   "corridor": "intersection count ashby-claremont",
+   "observations": [
+    "ix ashby-claremont N leaving"
+   ],
+   "stations": [
+    "ix ashby-claremont N leaving"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix ashby-claremont S entering",
+   "corridor": "intersection count ashby-claremont",
+   "observations": [
+    "ix ashby-claremont S entering"
+   ],
+   "stations": [
+    "ix ashby-claremont S entering"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix ashby-claremont S leaving",
+   "corridor": "intersection count ashby-claremont",
+   "observations": [
+    "ix ashby-claremont S leaving"
+   ],
+   "stations": [
+    "ix ashby-claremont S leaving"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix ashby-claremont W entering",
+   "corridor": "intersection count ashby-claremont",
+   "observations": [
+    "ix ashby-claremont W entering"
+   ],
+   "stations": [
+    "ix ashby-claremont W entering"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix ashby-claremont W leaving",
+   "corridor": "intersection count ashby-claremont",
+   "observations": [
+    "ix ashby-claremont W leaving"
+   ],
+   "stations": [
+    "ix ashby-claremont W leaving"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix mlk-52nd E entering",
+   "corridor": "intersection count mlk-52nd",
+   "observations": [
+    "ix mlk-52nd E entering"
+   ],
+   "stations": [
+    "ix mlk-52nd E entering"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix mlk-52nd E leaving",
+   "corridor": "intersection count mlk-52nd",
+   "observations": [
+    "ix mlk-52nd E leaving"
+   ],
+   "stations": [
+    "ix mlk-52nd E leaving"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix mlk-52nd move 704>4131",
+   "corridor": "intersection count mlk-52nd",
+   "observations": [
+    "ix mlk-52nd move 704>4131"
+   ],
+   "stations": [
+    "ix mlk-52nd move 704>4131"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix mlk-52nd move 758>811",
+   "corridor": "intersection count mlk-52nd",
+   "observations": [
+    "ix mlk-52nd move 758>811"
+   ],
+   "stations": [
+    "ix mlk-52nd move 758>811"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix mlk-52nd move 758>831",
+   "corridor": "intersection count mlk-52nd",
+   "observations": [
+    "ix mlk-52nd move 758>831"
+   ],
+   "stations": [
+    "ix mlk-52nd move 758>831"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix mlk-52nd move 760>811",
+   "corridor": "intersection count mlk-52nd",
+   "observations": [
+    "ix mlk-52nd move 760>811"
+   ],
+   "stations": [
+    "ix mlk-52nd move 760>811"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix mlk-52nd move 760>831",
+   "corridor": "intersection count mlk-52nd",
+   "observations": [
+    "ix mlk-52nd move 760>831"
+   ],
+   "stations": [
+    "ix mlk-52nd move 760>831"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix mlk-52nd move 761>4131",
+   "corridor": "intersection count mlk-52nd",
+   "observations": [
+    "ix mlk-52nd move 761>4131"
+   ],
+   "stations": [
+    "ix mlk-52nd move 761>4131"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix mlk-52nd move 761>759",
+   "corridor": "intersection count mlk-52nd",
+   "observations": [
+    "ix mlk-52nd move 761>759"
+   ],
+   "stations": [
+    "ix mlk-52nd move 761>759"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix mlk-52nd N entering",
+   "corridor": "intersection count mlk-52nd",
+   "observations": [
+    "ix mlk-52nd N entering"
+   ],
+   "stations": [
+    "ix mlk-52nd N entering"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix mlk-52nd N leaving",
+   "corridor": "intersection count mlk-52nd",
+   "observations": [
+    "ix mlk-52nd N leaving"
+   ],
+   "stations": [
+    "ix mlk-52nd N leaving"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix mlk-52nd S entering",
+   "corridor": "intersection count mlk-52nd",
+   "observations": [
+    "ix mlk-52nd S entering"
+   ],
+   "stations": [
+    "ix mlk-52nd S entering"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix mlk-52nd S leaving",
+   "corridor": "intersection count mlk-52nd",
+   "observations": [
+    "ix mlk-52nd S leaving"
+   ],
+   "stations": [
+    "ix mlk-52nd S leaving"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix mlk-52nd W entering",
+   "corridor": "intersection count mlk-52nd",
+   "observations": [
+    "ix mlk-52nd W entering"
+   ],
+   "stations": [
+    "ix mlk-52nd W entering"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix mlk-52nd W leaving",
+   "corridor": "intersection count mlk-52nd",
+   "observations": [
+    "ix mlk-52nd W leaving"
+   ],
+   "stations": [
+    "ix mlk-52nd W leaving"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix mlk-55th E entering",
+   "corridor": "intersection count mlk-55th",
+   "observations": [
+    "ix mlk-55th E entering"
+   ],
+   "stations": [
+    "ix mlk-55th E entering"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix mlk-55th E leaving",
+   "corridor": "intersection count mlk-55th",
+   "observations": [
+    "ix mlk-55th E leaving"
+   ],
+   "stations": [
+    "ix mlk-55th E leaving"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix mlk-55th move 712>705",
+   "corridor": "intersection count mlk-55th",
+   "observations": [
+    "ix mlk-55th move 712>705"
+   ],
+   "stations": [
+    "ix mlk-55th move 712>705"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix mlk-55th move 712>765",
+   "corridor": "intersection count mlk-55th",
+   "observations": [
+    "ix mlk-55th move 712>765"
+   ],
+   "stations": [
+    "ix mlk-55th move 712>765"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix mlk-55th move 715>765",
+   "corridor": "intersection count mlk-55th",
+   "observations": [
+    "ix mlk-55th move 715>765"
+   ],
+   "stations": [
+    "ix mlk-55th move 715>765"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix mlk-55th move 764>713",
+   "corridor": "intersection count mlk-55th",
+   "observations": [
+    "ix mlk-55th move 764>713"
+   ],
+   "stations": [
+    "ix mlk-55th move 764>713"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix mlk-55th move 764>714",
+   "corridor": "intersection count mlk-55th",
+   "observations": [
+    "ix mlk-55th move 764>714"
+   ],
+   "stations": [
+    "ix mlk-55th move 764>714"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix mlk-55th move 834>713",
+   "corridor": "intersection count mlk-55th",
+   "observations": [
+    "ix mlk-55th move 834>713"
+   ],
+   "stations": [
+    "ix mlk-55th move 834>713"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix mlk-55th move 834>714",
+   "corridor": "intersection count mlk-55th",
+   "observations": [
+    "ix mlk-55th move 834>714"
+   ],
+   "stations": [
+    "ix mlk-55th move 834>714"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix mlk-55th N entering",
+   "corridor": "intersection count mlk-55th",
+   "observations": [
+    "ix mlk-55th N entering"
+   ],
+   "stations": [
+    "ix mlk-55th N entering"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix mlk-55th N leaving",
+   "corridor": "intersection count mlk-55th",
+   "observations": [
+    "ix mlk-55th N leaving"
+   ],
+   "stations": [
+    "ix mlk-55th N leaving"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix mlk-55th S entering",
+   "corridor": "intersection count mlk-55th",
+   "observations": [
+    "ix mlk-55th S entering"
+   ],
+   "stations": [
+    "ix mlk-55th S entering"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix mlk-55th S leaving",
+   "corridor": "intersection count mlk-55th",
+   "observations": [
+    "ix mlk-55th S leaving"
+   ],
+   "stations": [
+    "ix mlk-55th S leaving"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix mlk-55th W entering",
+   "corridor": "intersection count mlk-55th",
+   "observations": [
+    "ix mlk-55th W entering"
+   ],
+   "stations": [
+    "ix mlk-55th W entering"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix mlk-55th W leaving",
+   "corridor": "intersection count mlk-55th",
+   "observations": [
+    "ix mlk-55th W leaving"
+   ],
+   "stations": [
+    "ix mlk-55th W leaving"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix shattuck-52nd E entering",
+   "corridor": "intersection count shattuck-52nd",
+   "observations": [
+    "ix shattuck-52nd E entering"
+   ],
+   "stations": [
+    "ix shattuck-52nd E entering"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix shattuck-52nd E leaving",
+   "corridor": "intersection count shattuck-52nd",
+   "observations": [
+    "ix shattuck-52nd E leaving"
+   ],
+   "stations": [
+    "ix shattuck-52nd E leaving"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix shattuck-52nd move 1653>1571",
+   "corridor": "intersection count shattuck-52nd",
+   "observations": [
+    "ix shattuck-52nd move 1653>1571"
+   ],
+   "stations": [
+    "ix shattuck-52nd move 1653>1571"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix shattuck-52nd move 1653>1663",
+   "corridor": "intersection count shattuck-52nd",
+   "observations": [
+    "ix shattuck-52nd move 1653>1663"
+   ],
+   "stations": [
+    "ix shattuck-52nd move 1653>1663"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix shattuck-52nd move 1662>1652",
+   "corridor": "intersection count shattuck-52nd",
+   "observations": [
+    "ix shattuck-52nd move 1662>1652"
+   ],
+   "stations": [
+    "ix shattuck-52nd move 1662>1652"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix shattuck-52nd move 1662>1706",
+   "corridor": "intersection count shattuck-52nd",
+   "observations": [
+    "ix shattuck-52nd move 1662>1706"
+   ],
+   "stations": [
+    "ix shattuck-52nd move 1662>1706"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix shattuck-52nd move 1666>1652",
+   "corridor": "intersection count shattuck-52nd",
+   "observations": [
+    "ix shattuck-52nd move 1666>1652"
+   ],
+   "stations": [
+    "ix shattuck-52nd move 1666>1652"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix shattuck-52nd move 1666>1706",
+   "corridor": "intersection count shattuck-52nd",
+   "observations": [
+    "ix shattuck-52nd move 1666>1706"
+   ],
+   "stations": [
+    "ix shattuck-52nd move 1666>1706"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix shattuck-52nd move 1705>1571",
+   "corridor": "intersection count shattuck-52nd",
+   "observations": [
+    "ix shattuck-52nd move 1705>1571"
+   ],
+   "stations": [
+    "ix shattuck-52nd move 1705>1571"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix shattuck-52nd move 1705>1663",
+   "corridor": "intersection count shattuck-52nd",
+   "observations": [
+    "ix shattuck-52nd move 1705>1663"
+   ],
+   "stations": [
+    "ix shattuck-52nd move 1705>1663"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix shattuck-52nd N entering",
+   "corridor": "intersection count shattuck-52nd",
+   "observations": [
+    "ix shattuck-52nd N entering"
+   ],
+   "stations": [
+    "ix shattuck-52nd N entering"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix shattuck-52nd N leaving",
+   "corridor": "intersection count shattuck-52nd",
+   "observations": [
+    "ix shattuck-52nd N leaving"
+   ],
+   "stations": [
+    "ix shattuck-52nd N leaving"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix shattuck-52nd S entering",
+   "corridor": "intersection count shattuck-52nd",
+   "observations": [
+    "ix shattuck-52nd S entering"
+   ],
+   "stations": [
+    "ix shattuck-52nd S entering"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix shattuck-52nd S leaving",
+   "corridor": "intersection count shattuck-52nd",
+   "observations": [
+    "ix shattuck-52nd S leaving"
+   ],
+   "stations": [
+    "ix shattuck-52nd S leaving"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix shattuck-52nd W entering",
+   "corridor": "intersection count shattuck-52nd",
+   "observations": [
+    "ix shattuck-52nd W entering"
+   ],
+   "stations": [
+    "ix shattuck-52nd W entering"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix shattuck-52nd W leaving",
+   "corridor": "intersection count shattuck-52nd",
+   "observations": [
+    "ix shattuck-52nd W leaving"
+   ],
+   "stations": [
+    "ix shattuck-52nd W leaving"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix shattuck-55th E entering",
+   "corridor": "intersection count shattuck-55th",
+   "observations": [
+    "ix shattuck-55th E entering"
+   ],
+   "stations": [
+    "ix shattuck-55th E entering"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix shattuck-55th E leaving",
+   "corridor": "intersection count shattuck-55th",
+   "observations": [
+    "ix shattuck-55th E leaving"
+   ],
+   "stations": [
+    "ix shattuck-55th E leaving"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix shattuck-55th move 1577>1661",
+   "corridor": "intersection count shattuck-55th",
+   "observations": [
+    "ix shattuck-55th move 1577>1661"
+   ],
+   "stations": [
+    "ix shattuck-55th move 1577>1661"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix shattuck-55th move 1577>1750",
+   "corridor": "intersection count shattuck-55th",
+   "observations": [
+    "ix shattuck-55th move 1577>1750"
+   ],
+   "stations": [
+    "ix shattuck-55th move 1577>1750"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix shattuck-55th move 1660>1578",
+   "corridor": "intersection count shattuck-55th",
+   "observations": [
+    "ix shattuck-55th move 1660>1578"
+   ],
+   "stations": [
+    "ix shattuck-55th move 1660>1578"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix shattuck-55th move 1660>710",
+   "corridor": "intersection count shattuck-55th",
+   "observations": [
+    "ix shattuck-55th move 1660>710"
+   ],
+   "stations": [
+    "ix shattuck-55th move 1660>710"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix shattuck-55th move 1751>1578",
+   "corridor": "intersection count shattuck-55th",
+   "observations": [
+    "ix shattuck-55th move 1751>1578"
+   ],
+   "stations": [
+    "ix shattuck-55th move 1751>1578"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix shattuck-55th move 1751>710",
+   "corridor": "intersection count shattuck-55th",
+   "observations": [
+    "ix shattuck-55th move 1751>710"
+   ],
+   "stations": [
+    "ix shattuck-55th move 1751>710"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix shattuck-55th move 711>1661",
+   "corridor": "intersection count shattuck-55th",
+   "observations": [
+    "ix shattuck-55th move 711>1661"
+   ],
+   "stations": [
+    "ix shattuck-55th move 711>1661"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix shattuck-55th move 711>1750",
+   "corridor": "intersection count shattuck-55th",
+   "observations": [
+    "ix shattuck-55th move 711>1750"
+   ],
+   "stations": [
+    "ix shattuck-55th move 711>1750"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix shattuck-55th N entering",
+   "corridor": "intersection count shattuck-55th",
+   "observations": [
+    "ix shattuck-55th N entering"
+   ],
+   "stations": [
+    "ix shattuck-55th N entering"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix shattuck-55th N leaving",
+   "corridor": "intersection count shattuck-55th",
+   "observations": [
+    "ix shattuck-55th N leaving"
+   ],
+   "stations": [
+    "ix shattuck-55th N leaving"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix shattuck-55th S entering",
+   "corridor": "intersection count shattuck-55th",
+   "observations": [
+    "ix shattuck-55th S entering"
+   ],
+   "stations": [
+    "ix shattuck-55th S entering"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix shattuck-55th S leaving",
+   "corridor": "intersection count shattuck-55th",
+   "observations": [
+    "ix shattuck-55th S leaving"
+   ],
+   "stations": [
+    "ix shattuck-55th S leaving"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix shattuck-55th W entering",
+   "corridor": "intersection count shattuck-55th",
+   "observations": [
+    "ix shattuck-55th W entering"
+   ],
+   "stations": [
+    "ix shattuck-55th W entering"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix shattuck-55th W leaving",
+   "corridor": "intersection count shattuck-55th",
+   "observations": [
+    "ix shattuck-55th W leaving"
+   ],
+   "stations": [
+    "ix shattuck-55th W leaving"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix sr24-52nd E entering",
+   "corridor": "intersection count sr24-52nd",
+   "observations": [
+    "ix sr24-52nd E entering"
+   ],
+   "stations": [
+    "ix sr24-52nd E entering"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix sr24-52nd E leaving",
+   "corridor": "intersection count sr24-52nd",
+   "observations": [
+    "ix sr24-52nd E leaving"
+   ],
+   "stations": [
+    "ix sr24-52nd E leaving"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix sr24-52nd move 1665>4165",
+   "corridor": "intersection count sr24-52nd",
+   "observations": [
+    "ix sr24-52nd move 1665>4165"
+   ],
+   "stations": [
+    "ix sr24-52nd move 1665>4165"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix sr24-52nd move 4160>1749",
+   "corridor": "intersection count sr24-52nd",
+   "observations": [
+    "ix sr24-52nd move 4160>1749"
+   ],
+   "stations": [
+    "ix sr24-52nd move 4160>1749"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix sr24-52nd N leaving",
+   "corridor": "intersection count sr24-52nd",
+   "observations": [
+    "ix sr24-52nd N leaving"
+   ],
+   "stations": [
+    "ix sr24-52nd N leaving"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix sr24-52nd S entering",
+   "corridor": "intersection count sr24-52nd",
+   "observations": [
+    "ix sr24-52nd S entering"
+   ],
+   "stations": [
+    "ix sr24-52nd S entering"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix sr24-52nd W entering",
+   "corridor": "intersection count sr24-52nd",
+   "observations": [
+    "ix sr24-52nd W entering"
+   ],
+   "stations": [
+    "ix sr24-52nd W entering"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix sr24-52nd W leaving",
+   "corridor": "intersection count sr24-52nd",
+   "observations": [
+    "ix sr24-52nd W leaving"
+   ],
+   "stations": [
+    "ix sr24-52nd W leaving"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix sr24-clifton-claremont E entering",
+   "corridor": "intersection count sr24-clifton-claremont",
+   "observations": [
+    "ix sr24-clifton-claremont E entering"
+   ],
+   "stations": [
+    "ix sr24-clifton-claremont E entering"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix sr24-clifton-claremont E leaving",
+   "corridor": "intersection count sr24-clifton-claremont",
+   "observations": [
+    "ix sr24-clifton-claremont E leaving"
+   ],
+   "stations": [
+    "ix sr24-clifton-claremont E leaving"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix sr24-clifton-claremont move 1573>1599",
+   "corridor": "intersection count sr24-clifton-claremont",
+   "observations": [
+    "ix sr24-clifton-claremont move 1573>1599"
+   ],
+   "stations": [
+    "ix sr24-clifton-claremont move 1573>1599"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix sr24-clifton-claremont move 1573>1632",
+   "corridor": "intersection count sr24-clifton-claremont",
+   "observations": [
+    "ix sr24-clifton-claremont move 1573>1632"
+   ],
+   "stations": [
+    "ix sr24-clifton-claremont move 1573>1632"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix sr24-clifton-claremont move 1600>1771",
+   "corridor": "intersection count sr24-clifton-claremont",
+   "observations": [
+    "ix sr24-clifton-claremont move 1600>1771"
+   ],
+   "stations": [
+    "ix sr24-clifton-claremont move 1600>1771"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix sr24-clifton-claremont move 1770>1632",
+   "corridor": "intersection count sr24-clifton-claremont",
+   "observations": [
+    "ix sr24-clifton-claremont move 1770>1632"
+   ],
+   "stations": [
+    "ix sr24-clifton-claremont move 1770>1632"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix sr24-clifton-claremont N entering",
+   "corridor": "intersection count sr24-clifton-claremont",
+   "observations": [
+    "ix sr24-clifton-claremont N entering"
+   ],
+   "stations": [
+    "ix sr24-clifton-claremont N entering"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix sr24-clifton-claremont N leaving",
+   "corridor": "intersection count sr24-clifton-claremont",
+   "observations": [
+    "ix sr24-clifton-claremont N leaving"
+   ],
+   "stations": [
+    "ix sr24-clifton-claremont N leaving"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix sr24-clifton-claremont S entering",
+   "corridor": "intersection count sr24-clifton-claremont",
+   "observations": [
+    "ix sr24-clifton-claremont S entering"
+   ],
+   "stations": [
+    "ix sr24-clifton-claremont S entering"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix sr24-clifton-claremont S leaving",
+   "corridor": "intersection count sr24-clifton-claremont",
+   "observations": [
+    "ix sr24-clifton-claremont S leaving"
+   ],
+   "stations": [
+    "ix sr24-clifton-claremont S leaving"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix sr24-clifton-claremont W entering",
+   "corridor": "intersection count sr24-clifton-claremont",
+   "observations": [
+    "ix sr24-clifton-claremont W entering"
+   ],
+   "stations": [
+    "ix sr24-clifton-claremont W entering"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix sr24-hudson-claremont E entering",
+   "corridor": "intersection count sr24-hudson-claremont",
+   "observations": [
+    "ix sr24-hudson-claremont E entering"
+   ],
+   "stations": [
+    "ix sr24-hudson-claremont E entering"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix sr24-hudson-claremont E leaving",
+   "corridor": "intersection count sr24-hudson-claremont",
+   "observations": [
+    "ix sr24-hudson-claremont E leaving"
+   ],
+   "stations": [
+    "ix sr24-hudson-claremont E leaving"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix sr24-hudson-claremont move 2021>1938",
+   "corridor": "intersection count sr24-hudson-claremont",
+   "observations": [
+    "ix sr24-hudson-claremont move 2021>1938"
+   ],
+   "stations": [
+    "ix sr24-hudson-claremont move 2021>1938"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix sr24-hudson-claremont move 2021>2818",
+   "corridor": "intersection count sr24-hudson-claremont",
+   "observations": [
+    "ix sr24-hudson-claremont move 2021>2818"
+   ],
+   "stations": [
+    "ix sr24-hudson-claremont move 2021>2818"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix sr24-hudson-claremont move 2817>2812",
+   "corridor": "intersection count sr24-hudson-claremont",
+   "observations": [
+    "ix sr24-hudson-claremont move 2817>2812"
+   ],
+   "stations": [
+    "ix sr24-hudson-claremont move 2817>2812"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix sr24-hudson-claremont move 4187>1938",
+   "corridor": "intersection count sr24-hudson-claremont",
+   "observations": [
+    "ix sr24-hudson-claremont move 4187>1938"
+   ],
+   "stations": [
+    "ix sr24-hudson-claremont move 4187>1938"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix sr24-hudson-claremont move 4187>2818",
+   "corridor": "intersection count sr24-hudson-claremont",
+   "observations": [
+    "ix sr24-hudson-claremont move 4187>2818"
+   ],
+   "stations": [
+    "ix sr24-hudson-claremont move 4187>2818"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix sr24-hudson-claremont N entering",
+   "corridor": "intersection count sr24-hudson-claremont",
+   "observations": [
+    "ix sr24-hudson-claremont N entering"
+   ],
+   "stations": [
+    "ix sr24-hudson-claremont N entering"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix sr24-hudson-claremont N leaving",
+   "corridor": "intersection count sr24-hudson-claremont",
+   "observations": [
+    "ix sr24-hudson-claremont N leaving"
+   ],
+   "stations": [
+    "ix sr24-hudson-claremont N leaving"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix sr24-hudson-claremont S entering",
+   "corridor": "intersection count sr24-hudson-claremont",
+   "observations": [
+    "ix sr24-hudson-claremont S entering"
+   ],
+   "stations": [
+    "ix sr24-hudson-claremont S entering"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix sr24-hudson-claremont S leaving",
+   "corridor": "intersection count sr24-hudson-claremont",
+   "observations": [
+    "ix sr24-hudson-claremont S leaving"
+   ],
+   "stations": [
+    "ix sr24-hudson-claremont S leaving"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix sr24-hudson-claremont W leaving",
+   "corridor": "intersection count sr24-hudson-claremont",
+   "observations": [
+    "ix sr24-hudson-claremont W leaving"
+   ],
+   "stations": [
+    "ix sr24-hudson-claremont W leaving"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix sr24-mlk E entering",
+   "corridor": "intersection count sr24-mlk",
+   "observations": [
+    "ix sr24-mlk E entering"
+   ],
+   "stations": [
+    "ix sr24-mlk E entering"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix sr24-mlk E leaving",
+   "corridor": "intersection count sr24-mlk",
+   "observations": [
+    "ix sr24-mlk E leaving"
+   ],
+   "stations": [
+    "ix sr24-mlk E leaving"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix telegraph-51st E entering",
+   "corridor": "intersection count telegraph-51st",
+   "observations": [
+    "ix telegraph-51st E entering"
+   ],
+   "stations": [
+    "ix telegraph-51st E entering"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix telegraph-51st E leaving",
+   "corridor": "intersection count telegraph-51st",
+   "observations": [
+    "ix telegraph-51st E leaving"
+   ],
+   "stations": [
+    "ix telegraph-51st E leaving"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix telegraph-51st move 1629>1704",
+   "corridor": "intersection count telegraph-51st",
+   "observations": [
+    "ix telegraph-51st move 1629>1704"
+   ],
+   "stations": [
+    "ix telegraph-51st move 1629>1704"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix telegraph-51st move 1629>1764",
+   "corridor": "intersection count telegraph-51st",
+   "observations": [
+    "ix telegraph-51st move 1629>1764"
+   ],
+   "stations": [
+    "ix telegraph-51st move 1629>1764"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix telegraph-51st move 1700>1628",
+   "corridor": "intersection count telegraph-51st",
+   "observations": [
+    "ix telegraph-51st move 1700>1628"
+   ],
+   "stations": [
+    "ix telegraph-51st move 1700>1628"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix telegraph-51st move 1700>4171",
+   "corridor": "intersection count telegraph-51st",
+   "observations": [
+    "ix telegraph-51st move 1700>4171"
+   ],
+   "stations": [
+    "ix telegraph-51st move 1700>4171"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix telegraph-51st move 1763>1628",
+   "corridor": "intersection count telegraph-51st",
+   "observations": [
+    "ix telegraph-51st move 1763>1628"
+   ],
+   "stations": [
+    "ix telegraph-51st move 1763>1628"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix telegraph-51st move 1763>4171",
+   "corridor": "intersection count telegraph-51st",
+   "observations": [
+    "ix telegraph-51st move 1763>4171"
+   ],
+   "stations": [
+    "ix telegraph-51st move 1763>4171"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix telegraph-51st move 4170>1704",
+   "corridor": "intersection count telegraph-51st",
+   "observations": [
+    "ix telegraph-51st move 4170>1704"
+   ],
+   "stations": [
+    "ix telegraph-51st move 4170>1704"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix telegraph-51st move 4170>1764",
+   "corridor": "intersection count telegraph-51st",
+   "observations": [
+    "ix telegraph-51st move 4170>1764"
+   ],
+   "stations": [
+    "ix telegraph-51st move 4170>1764"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix telegraph-51st N entering",
+   "corridor": "intersection count telegraph-51st",
+   "observations": [
+    "ix telegraph-51st N entering"
+   ],
+   "stations": [
+    "ix telegraph-51st N entering"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix telegraph-51st N leaving",
+   "corridor": "intersection count telegraph-51st",
+   "observations": [
+    "ix telegraph-51st N leaving"
+   ],
+   "stations": [
+    "ix telegraph-51st N leaving"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix telegraph-51st S entering",
+   "corridor": "intersection count telegraph-51st",
+   "observations": [
+    "ix telegraph-51st S entering"
+   ],
+   "stations": [
+    "ix telegraph-51st S entering"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix telegraph-51st S leaving",
+   "corridor": "intersection count telegraph-51st",
+   "observations": [
+    "ix telegraph-51st S leaving"
+   ],
+   "stations": [
+    "ix telegraph-51st S leaving"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix telegraph-51st W entering",
+   "corridor": "intersection count telegraph-51st",
+   "observations": [
+    "ix telegraph-51st W entering"
+   ],
+   "stations": [
+    "ix telegraph-51st W entering"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix telegraph-51st W leaving",
+   "corridor": "intersection count telegraph-51st",
+   "observations": [
+    "ix telegraph-51st W leaving"
+   ],
+   "stations": [
+    "ix telegraph-51st W leaving"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix telegraph-52nd-claremont E entering",
+   "corridor": "intersection count telegraph-52nd-claremont",
+   "observations": [
+    "ix telegraph-52nd-claremont E entering"
+   ],
+   "stations": [
+    "ix telegraph-52nd-claremont E entering"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix telegraph-52nd-claremont E leaving",
+   "corridor": "intersection count telegraph-52nd-claremont",
+   "observations": [
+    "ix telegraph-52nd-claremont E leaving"
+   ],
+   "stations": [
+    "ix telegraph-52nd-claremont E leaving"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix telegraph-52nd-claremont move 1630>1462",
+   "corridor": "intersection count telegraph-52nd-claremont",
+   "observations": [
+    "ix telegraph-52nd-claremont move 1630>1462"
+   ],
+   "stations": [
+    "ix telegraph-52nd-claremont move 1630>1462"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix telegraph-52nd-claremont move 1630>1647",
+   "corridor": "intersection count telegraph-52nd-claremont",
+   "observations": [
+    "ix telegraph-52nd-claremont move 1630>1647"
+   ],
+   "stations": [
+    "ix telegraph-52nd-claremont move 1630>1647"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix telegraph-52nd-claremont move 1646>1631",
+   "corridor": "intersection count telegraph-52nd-claremont",
+   "observations": [
+    "ix telegraph-52nd-claremont move 1646>1631"
+   ],
+   "stations": [
+    "ix telegraph-52nd-claremont move 1646>1631"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix telegraph-52nd-claremont move 1646>4170",
+   "corridor": "intersection count telegraph-52nd-claremont",
+   "observations": [
+    "ix telegraph-52nd-claremont move 1646>4170"
+   ],
+   "stations": [
+    "ix telegraph-52nd-claremont move 1646>4170"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix telegraph-52nd-claremont move 4171>1647",
+   "corridor": "intersection count telegraph-52nd-claremont",
+   "observations": [
+    "ix telegraph-52nd-claremont move 4171>1647"
+   ],
+   "stations": [
+    "ix telegraph-52nd-claremont move 4171>1647"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix telegraph-52nd-claremont N entering",
+   "corridor": "intersection count telegraph-52nd-claremont",
+   "observations": [
+    "ix telegraph-52nd-claremont N entering"
+   ],
+   "stations": [
+    "ix telegraph-52nd-claremont N entering"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix telegraph-52nd-claremont N leaving",
+   "corridor": "intersection count telegraph-52nd-claremont",
+   "observations": [
+    "ix telegraph-52nd-claremont N leaving"
+   ],
+   "stations": [
+    "ix telegraph-52nd-claremont N leaving"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix telegraph-52nd-claremont S entering",
+   "corridor": "intersection count telegraph-52nd-claremont",
+   "observations": [
+    "ix telegraph-52nd-claremont S entering"
+   ],
+   "stations": [
+    "ix telegraph-52nd-claremont S entering"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix telegraph-52nd-claremont S leaving",
+   "corridor": "intersection count telegraph-52nd-claremont",
+   "observations": [
+    "ix telegraph-52nd-claremont S leaving"
+   ],
+   "stations": [
+    "ix telegraph-52nd-claremont S leaving"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix telegraph-52nd-claremont W entering",
+   "corridor": "intersection count telegraph-52nd-claremont",
+   "observations": [
+    "ix telegraph-52nd-claremont W entering"
+   ],
+   "stations": [
+    "ix telegraph-52nd-claremont W entering"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix telegraph-52nd-claremont W leaving",
+   "corridor": "intersection count telegraph-52nd-claremont",
+   "observations": [
+    "ix telegraph-52nd-claremont W leaving"
+   ],
+   "stations": [
+    "ix telegraph-52nd-claremont W leaving"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix telegraph-55th E entering",
+   "corridor": "intersection count telegraph-55th",
+   "observations": [
+    "ix telegraph-55th E entering"
+   ],
+   "stations": [
+    "ix telegraph-55th E entering"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix telegraph-55th E leaving",
+   "corridor": "intersection count telegraph-55th",
+   "observations": [
+    "ix telegraph-55th E leaving"
+   ],
+   "stations": [
+    "ix telegraph-55th E leaving"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix telegraph-55th move 1564>1676",
+   "corridor": "intersection count telegraph-55th",
+   "observations": [
+    "ix telegraph-55th move 1564>1676"
+   ],
+   "stations": [
+    "ix telegraph-55th move 1564>1676"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix telegraph-55th move 1576>1676",
+   "corridor": "intersection count telegraph-55th",
+   "observations": [
+    "ix telegraph-55th move 1576>1676"
+   ],
+   "stations": [
+    "ix telegraph-55th move 1576>1676"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix telegraph-55th move 1576>1679",
+   "corridor": "intersection count telegraph-55th",
+   "observations": [
+    "ix telegraph-55th move 1576>1679"
+   ],
+   "stations": [
+    "ix telegraph-55th move 1576>1679"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix telegraph-55th move 1677>1565",
+   "corridor": "intersection count telegraph-55th",
+   "observations": [
+    "ix telegraph-55th move 1677>1565"
+   ],
+   "stations": [
+    "ix telegraph-55th move 1677>1565"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix telegraph-55th move 1677>1575",
+   "corridor": "intersection count telegraph-55th",
+   "observations": [
+    "ix telegraph-55th move 1677>1575"
+   ],
+   "stations": [
+    "ix telegraph-55th move 1677>1575"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix telegraph-55th move 1678>1565",
+   "corridor": "intersection count telegraph-55th",
+   "observations": [
+    "ix telegraph-55th move 1678>1565"
+   ],
+   "stations": [
+    "ix telegraph-55th move 1678>1565"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix telegraph-55th move 1678>1575",
+   "corridor": "intersection count telegraph-55th",
+   "observations": [
+    "ix telegraph-55th move 1678>1575"
+   ],
+   "stations": [
+    "ix telegraph-55th move 1678>1575"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix telegraph-55th N entering",
+   "corridor": "intersection count telegraph-55th",
+   "observations": [
+    "ix telegraph-55th N entering"
+   ],
+   "stations": [
+    "ix telegraph-55th N entering"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix telegraph-55th N leaving",
+   "corridor": "intersection count telegraph-55th",
+   "observations": [
+    "ix telegraph-55th N leaving"
+   ],
+   "stations": [
+    "ix telegraph-55th N leaving"
+   ],
+   "held": true
+  },
+  {
+   "id": "ix telegraph-55th S entering",
+   "corridor": "intersection count telegraph-55th",
+   "observations": [
+    "ix telegraph-55th S entering"
+   ],
+   "stations": [
+    "ix telegraph-55th S entering"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix telegraph-55th S leaving",
+   "corridor": "intersection count telegraph-55th",
+   "observations": [
+    "ix telegraph-55th S leaving"
+   ],
+   "stations": [
+    "ix telegraph-55th S leaving"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix telegraph-55th W entering",
+   "corridor": "intersection count telegraph-55th",
+   "observations": [
+    "ix telegraph-55th W entering"
+   ],
+   "stations": [
+    "ix telegraph-55th W entering"
+   ],
+   "held": false
+  },
+  {
+   "id": "ix telegraph-55th W leaving",
+   "corridor": "intersection count telegraph-55th",
+   "observations": [
+    "ix telegraph-55th W leaving"
+   ],
+   "stations": [
+    "ix telegraph-55th W leaving"
+   ],
+   "held": false
+  },
+  {
+   "id": "ov SR-123 San Pablo Ave at Stanford Ave, Oakland PM 1.12, AADT 21,300 back / 19,700 ahead (mean 20,500).",
+   "corridor": "sanpablo",
+   "observations": [
+    "ov SR-123 San Pablo Ave at Stanford Ave, Oakland PM 1.12, AADT 21,300 back / 19,700 ahead (mean 20,500)."
+   ],
+   "stations": [
+    "caltrans sanpablo -2703,-608 in",
+    "caltrans sanpablo -2703,-608 out"
+   ],
+   "held": true
+  },
+  {
+   "id": "ov SR-13 Ashby Ave at the SR-123 junction (San Pablo Ave), Berkeley PM 13.178, back AADT 28,000 (east side; ahead 43,500): applies to the Ashby Ave gate at the west edge (Caltrans 2023-24 count year).",
+   "corridor": "Ashby Avenue",
+   "observations": [
+    "ov SR-13 Ashby Ave at the SR-123 junction (San Pablo Ave), Berkeley PM 13.178, back AADT 28,000 (east side; ahead 43,500): applies to the Ashby Ave gate at the west edge (Caltrans 2023-24 count year)."
+   ],
+   "stations": [
+    "gate 265 in",
+    "gate 265 out"
+   ],
+   "held": true
+  },
+  {
+   "id": "ov SR-13 at Claremont Ave, Berkeley PM 10.79, ahead AADT 23,500 (back 32,500): the ahead side of SR-13 is Ashby Ave west of Claremont Ave, so the station sits on that block, 65 m west of the junction (Caltrans 2023-24 count year). Until the sixteenth round this record was applied to Claremont Ave with a factor of 0.6.",
+   "corridor": "ashby",
+   "observations": [
+    "ov SR-13 at Claremont Ave, Berkeley PM 10.79, ahead AADT 23,500 (back 32,500): the ahead side of SR-13 is Ashby Ave west of Claremont Ave, so the station sits on that block, 65 m west of the junction (Caltrans 2023-24 count year). Until the sixteenth round this record was applied to Claremont Ave with a factor of 0.6."
+   ],
+   "stations": [
+    "caltrans ashby 544,1277 in",
+    "caltrans ashby 544,1277 out"
+   ],
+   "held": true
+  },
+  {
+   "id": "ov SR-13 at Domingo Ave, Berkeley PM 10.69, back AADT 27,000 (east side; ahead 32,500): applies to the Tunnel Road gate east of the SR-24/SR-13 ramps (Caltrans 2023-24 count year).",
+   "corridor": "tunnel",
+   "observations": [
+    "ov SR-13 at Domingo Ave, Berkeley PM 10.69, back AADT 27,000 (east side; ahead 32,500): applies to the Tunnel Road gate east of the SR-24/SR-13 ramps (Caltrans 2023-24 count year)."
+   ],
+   "stations": [
+    "caltrans tunnel 734,1282 in",
+    "caltrans tunnel 734,1282 out"
+   ],
+   "held": true
+  },
+  {
+   "id": "ramp-row 04-ALA-013 PM 8.869 \"NB OFF TO BROADWAY TERR.\"",
+   "corridor": "freeway ramps",
+   "observations": [
+    "ramp-row 04-ALA-013 PM 8.869 \"NB OFF TO BROADWAY TERR.\"",
+    "ramp-row 04-ALA-013 PM R9.199 \"SB OFF TO BROADWAY TERR.\""
+   ],
+   "stations": [
+    "ramp off 1556",
+    "ramp off 1577"
+   ],
+   "held": true
+  },
+  {
+   "id": "ramp-row 04-ALA-013 PM R9.176 \"NB ON FR BROADWAY TERR.\"",
+   "corridor": "freeway ramps",
+   "observations": [
+    "ramp-row 04-ALA-013 PM R9.176 \"NB ON FR BROADWAY TERR.\""
+   ],
+   "stations": [
+    "ramp on 1556",
+    "ramp on 1669"
+   ],
+   "held": true
+  },
+  {
+   "id": "ramp-row 04-ALA-024 PM R2.503 \"SEG WB ON FR GROVE ST.\"",
+   "corridor": "freeway ramps",
+   "observations": [
+    "ramp-row 04-ALA-024 PM R2.503 \"SEG WB ON FR GROVE ST.\""
+   ],
+   "stations": [
+    "ramp on 280"
+   ],
+   "held": false
+  },
+  {
+   "id": "ramp-row 04-ALA-024 PM R3.250 \"EB ON FR TELEGRAPH\"",
+   "corridor": "freeway ramps",
+   "observations": [
+    "ramp-row 04-ALA-024 PM R3.250 \"EB ON FR TELEGRAPH\""
+   ],
+   "stations": [
+    "ramp on 701"
+   ],
+   "held": true
+  },
+  {
+   "id": "ramp-row 04-ALA-024 PM R3.360 \"WB OFF TO TELEGRAPH AVE.\"",
+   "corridor": "freeway ramps",
+   "observations": [
+    "ramp-row 04-ALA-024 PM R3.360 \"WB OFF TO TELEGRAPH AVE.\""
+   ],
+   "stations": [
+    "ramp off 702"
+   ],
+   "held": false
+  },
+  {
+   "id": "ramp-row 04-ALA-024 PM R3.973 \"EB OFF TO BROADWAY\"",
+   "corridor": "freeway ramps",
+   "observations": [
+    "ramp-row 04-ALA-024 PM R3.973 \"EB OFF TO BROADWAY\""
+   ],
+   "stations": [
+    "ramp off 1133"
+   ],
+   "held": false
+  },
+  {
+   "id": "ramp-row 04-ALA-024 PM R3.980 \"WB ON FR PATTON ST.\"",
+   "corridor": "freeway ramps",
+   "observations": [
+    "ramp-row 04-ALA-024 PM R3.980 \"WB ON FR PATTON ST.\""
+   ],
+   "stations": [
+    "ramp on 1741"
+   ],
+   "held": false
+  },
+  {
+   "id": "ramp-row 04-ALA-024 PM R4.190 \"WB OFF TO COLLEGE AVE\"",
+   "corridor": "freeway ramps",
+   "observations": [
+    "ramp-row 04-ALA-024 PM R4.190 \"WB OFF TO COLLEGE AVE\""
+   ],
+   "stations": [
+    "ramp off 1743"
+   ],
+   "held": false
+  },
+  {
+   "id": "ramp-row 04-ALA-024 PM R4.391 \"EB ON FR BROADWAY\"",
+   "corridor": "freeway ramps",
+   "observations": [
+    "ramp-row 04-ALA-024 PM R4.391 \"EB ON FR BROADWAY\""
+   ],
+   "stations": [
+    "ramp on 1312",
+    "ramp on 1320"
+   ],
+   "held": false
+  },
+  {
+   "id": "ramp-row 04-ALA-024 PM R4.412 \"WB OFF TO BROADWAY\"",
+   "corridor": "freeway ramps",
+   "observations": [
+    "ramp-row 04-ALA-024 PM R4.412 \"WB OFF TO BROADWAY\""
+   ],
+   "stations": [
+    "ramp off 1350"
+   ],
+   "held": false
+  },
+  {
+   "id": "ramp-row 04-ALA-024 PM R5.584 \"WB ON FR CALDECOTT LANE\"",
+   "corridor": "freeway ramps",
+   "observations": [
+    "ramp-row 04-ALA-024 PM R5.584 \"WB ON FR CALDECOTT LANE\""
+   ],
+   "stations": [
+    "ramp on 1695",
+    "ramp on 1711"
+   ],
+   "held": false
+  },
+  {
+   "id": "ramp-row 04-ALA-024 PM R5.682 \"WB OFF TO CALDECOTT LN.\"",
+   "corridor": "freeway ramps",
+   "observations": [
+    "ramp-row 04-ALA-024 PM R5.682 \"WB OFF TO CALDECOTT LN.\""
+   ],
+   "stations": [
+    "ramp off 1695"
+   ],
+   "held": false
+  },
+  {
+   "id": "tmc 40thSt_WestSt|N",
+   "corridor": "43rd Street",
+   "observations": [
+    "tmc 40thSt_WestSt|N"
+   ],
+   "stations": [
+    "gate 295 in",
+    "gate 295 out"
+   ],
+   "held": true
+  },
+  {
+   "id": "tmc AlcatrazAve|E",
+   "corridor": "AlcatrazAve",
+   "observations": [
+    "tmc AlcatrazAve|E"
+   ],
+   "stations": [
+    "tmc AlcatrazAve E entering",
+    "tmc AlcatrazAve E leaving"
+   ],
+   "held": true
+  },
+  {
+   "id": "tmc AlcatrazAve|N",
+   "corridor": "AlcatrazAve",
+   "observations": [
+    "tmc AlcatrazAve|N"
+   ],
+   "stations": [
+    "tmc AlcatrazAve N entering",
+    "tmc AlcatrazAve N leaving"
+   ],
+   "held": false
+  },
+  {
+   "id": "tmc AlcatrazAve|S",
+   "corridor": "AlcatrazAve",
+   "observations": [
+    "tmc AlcatrazAve|S"
+   ],
+   "stations": [
+    "tmc AlcatrazAve S entering",
+    "tmc AlcatrazAve S leaving"
+   ],
+   "held": false
+  },
+  {
+   "id": "tmc AlcatrazAve|W",
+   "corridor": "AlcatrazAve",
+   "observations": [
+    "tmc AlcatrazAve|W"
+   ],
+   "stations": [
+    "tmc AlcatrazAve W entering",
+    "tmc AlcatrazAve W leaving"
+   ],
+   "held": false
+  },
+  {
+   "id": "tmc MarketSt_55thSt|E",
+   "corridor": "MarketSt_55thSt",
+   "observations": [
+    "tmc MarketSt_55thSt|E"
+   ],
+   "stations": [
+    "tmc MarketSt_55thSt E entering",
+    "tmc MarketSt_55thSt E leaving"
+   ],
+   "held": false
+  },
+  {
+   "id": "tmc MarketSt_55thSt|N",
+   "corridor": "MarketSt_55thSt",
+   "observations": [
+    "tmc MarketSt_55thSt|N"
+   ],
+   "stations": [
+    "tmc MarketSt_55thSt N entering",
+    "tmc MarketSt_55thSt N leaving"
+   ],
+   "held": false
+  },
+  {
+   "id": "tmc MarketSt_55thSt|S",
+   "corridor": "MarketSt_55thSt",
+   "observations": [
+    "tmc MarketSt_55thSt|S"
+   ],
+   "stations": [
+    "tmc MarketSt_55thSt S entering",
+    "tmc MarketSt_55thSt S leaving"
+   ],
+   "held": false
+  },
+  {
+   "id": "tmc MarketSt_55thSt|W",
+   "corridor": "MarketSt_55thSt",
+   "observations": [
+    "tmc MarketSt_55thSt|W"
+   ],
+   "stations": [
+    "tmc MarketSt_55thSt W entering",
+    "tmc MarketSt_55thSt W leaving"
+   ],
+   "held": true
+  },
+  {
+   "id": "tmc TelegraphAve_40thSt|N",
+   "corridor": "Telegraph Avenue",
+   "observations": [
+    "tmc TelegraphAve_40thSt|N"
+   ],
+   "stations": [
+    "gate 1735 out",
+    "gate 763 in"
+   ],
+   "held": true
+  }
+ ],
+ "withheldAggregates": [
+  {
+   "station": "count move 1925>1857",
+   "reason": "turning movement: covers its two links",
+   "blocks": [
+    1857
+   ]
+  },
+  {
+   "station": "count route 2591>2605",
+   "reason": "whole-street route: covers every block of the street between its ends",
+   "blocks": [
+    2593,
+    2594,
+    2601,
+    2602
+   ]
+  },
+  {
+   "station": "count route 2606>2592",
+   "reason": "whole-street route: covers every block of the street between its ends",
+   "blocks": [
+    2593,
+    2594,
+    2601,
+    2602
+   ]
+  },
+  {
+   "station": "count route 2669>2675",
+   "reason": "whole-street route: covers every block of the street between its ends",
+   "blocks": [
+    2673,
+    2674
+   ]
+  },
+  {
+   "station": "count route 2676>2670",
+   "reason": "whole-street route: covers every block of the street between its ends",
+   "blocks": [
+    2673,
+    2674
+   ]
+  }
+ ],
+ "retained": [
+  "Legs and movements of one intersection obey flow conservation (their published volumes are not independent rows), and a whole-street route can follow detours off its street; neither is a shared source row, so the split does not group them.",
+  "Several observations were taken on one day or in one environmental study; evidence from one counting day does not establish performance on other days [FHWA-TAT3-2019]."
+ ]
+}

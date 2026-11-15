@@ -325,7 +325,7 @@ After the final count refit 2 uncounted link(s) remain above their limit (worst:
 - off-ramp at node 683 (Claremont Avenue / Clifton Street): its ADT x K station (826 / 603 / 972 veh/h) is replaced by the peak-hour count SR-24 eastbound off-ramp, Clifton St and Claremont Ave, ramp (W leg) entering (0 / 383 / 617); a counted hour comes before an assumed K
 - intersection counts: 14 intersections give 100 leg volumes (6 on ramps) and 77 turning movements
 - intersection count ashby-claremont: the WB approach to the N leg (239 veh/h) can use a slip link, so no movement constraint is made for it; the leg stations carry it
-- validation set: 60 of 357 stations are held out of a cross-validation fit (about 25% of each corridor, at least one per corridor; 23 corridors: 43rd Street, AlcatrazAve, Ashby Avenue, MarketSt_55thSt, Telegraph Avenue, ashby, freeway ramps, intersection count alcatraz-claremont, intersection count alcatraz-college, intersection count ashby-claremont, intersection count mlk-52nd, intersection count mlk-55th, intersection count shattuck-52nd, intersection count shattuck-55th, intersection count sr24-52nd, intersection count sr24-clifton-claremont, intersection count sr24-hudson-claremont, intersection count sr24-mlk, intersection count telegraph-51st, intersection count telegraph-52nd-claremont, intersection count telegraph-55th, sanpablo, tunnel); they are reported separately
+- validation set (frozen split be72380b485e, rule group-every-kth-by-hash): 86 of 357 stations in 76 dependency groups are held out of the cross-validation demand, which is built from the training view with their observations removed (about 25% of each corridor, at least one per corridor); 5 aggregate counts overlapping held blocks are left out of that demand and are not scored; they are reported separately
 - recency weights (ASSUMPTION, reference year 2026): caltrans-aadt 2024: 8 stations, weight x1; caltrans-ramp 2012: 13 stations, weight x1 (ramp stations, exempt from the age bands); caltrans-ramp 2024: 3 stations, weight x1; CHRCO-EIR2014 2013: 112 stations, weight x0.5; CHRCO-EIR2014 2013: 4 stations, weight x1 (ramp stations, exempt from the age bands); oakland-tmc 2019: 20 stations, weight x1; SafewayCollege-DEIR2011 2010: 59 stations, weight x0.5; SafewayCollege-DEIR2011 2010: 2 stations, weight x1 (ramp stations, exempt from the age bands); volunteer-count 2025: 136 stations, weight x1
 - assumed movement intents, am_peak: 192.3 veh/h taken from plain flows between the same pairs
 - assumed movements, am_peak (ASSUMPTION, round 26): 318.3 veh/h taken from plain flows of other pairs whose best route makes a counted turn that the pinned flows already fill
@@ -339,13 +339,10 @@ After the final count refit 2 uncounted link(s) remain above their limit (worst:
 - ramp choice made upstream (ASSUMPTION), pm_peak: 1360 off-ramp flows got a ramp movement, 353 of them divided over two ramps or more; volume by ramp link 4161 1637, 4160 1019, 1573 727, 4277 471, 3753 424, 1945 368, 4289 264, 4280 241, 3744 180, 3984 141, 4362 99, 3778 62, 4063 19, 4081 1, 3975 0 veh/h
 - am_peak: assignment by successive averages (10 passes x 2 driver walks, BPR alpha 0.15 beta 4, noise 8%), 2 round(s) with the table refitted and reassigned at its own volumes; relative link-volume change at the last pass 0.009
 - am_peak: the guard cut 3 veh/h from flows that touch no count (after the median rule)
-- am_peak: hold-out: the held-out stations are scored on a separate fit without them (213 count constraints instead of 278); the demand that ships is fitted on all counts
 - midday: assignment by successive averages (10 passes x 2 driver walks, BPR alpha 0.15 beta 4, noise 8%), 2 round(s) with the table refitted and reassigned at its own volumes; relative link-volume change at the last pass 0.008
 - midday: the guard cut 0 veh/h from flows that touch no count (after the median rule)
-- midday: hold-out: the held-out stations are scored on a separate fit without them (268 count constraints instead of 346); the demand that ships is fitted on all counts
 - pm_peak: assignment by successive averages (10 passes x 2 driver walks, BPR alpha 0.15 beta 4, noise 8%), 2 round(s) with the table refitted and reassigned at its own volumes; relative link-volume change at the last pass 0.010
 - pm_peak: the guard cut 4 veh/h from flows that touch no count (after the median rule)
-- pm_peak: hold-out: the held-out stations are scored on a separate fit without them (266 count constraints instead of 343); the demand that ships is fitted on all counts
 
 
 ## Resident volunteer count: what was mapped
@@ -389,7 +386,7 @@ Entry links (interior links that start at a surface arterial), counted vehicles 
 | Telegraph Avenue | Telegraph Avenue / 57th Street | 1919 | pm_peak 73 |
 
 - full route Hillegass Avenue NB: the summary table lists 48 for AM and 34 for PM; the route diagrams, the access table and the block maps agree on AM 34 and PM 48, so the columns are taken as swapped
-- 110 block stations (19 held out); movement and route stations whose links lie on a held-out block are left out of the cross-validation fit
+- 110 block stations (19 held out); movement and route stations whose support (the links they cover, a whole street included) lies on a held-out block are left out of the training view
 
 ## Local trip ends scaled to the volunteer count
 
