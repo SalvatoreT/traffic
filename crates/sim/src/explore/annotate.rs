@@ -2,6 +2,7 @@
 //! the published packages for one period with the search's seeds and run length. No search is repeated.
 
 use super::decode::decode_scenario;
+use super::provenance::{check, Evidence};
 use super::report::{picture_period, Picture};
 use super::*;
 use serde_json::Value;
@@ -23,9 +24,10 @@ struct Task {
 }
 
 /// Rewrite `file` so each package of each group carries a `picture`. Every group must have been computed on the study's network and
-/// demand; otherwise nothing is changed and the error names the group. `default_minutes` is the run length for a group whose
-/// `computed.minutes` is absent (files written before it was recorded).
-pub fn annotate(study: &Study, file: &mut Value, default_minutes: f64, jobs: usize) -> Result<Summary, String> {
+/// demand, by this simulator and under this reporting method, and must record its run settings; otherwise nothing is changed and the
+/// error names the group. A group without that provenance needs a full recomputation: its figures are never given pictures from
+/// another engine. The numeric figures and their provenance are left as they are.
+pub fn annotate(study: &Study, file: &mut Value, jobs: usize) -> Result<Summary, String> {
     let groups = file["groups"].as_array().ok_or("the file has no groups")?.clone();
     let mut tasks: Vec<Task> = Vec::new();
     let mut base_at: HashMap<(String, u64, u64), usize> = HashMap::new();
@@ -34,8 +36,10 @@ pub fn annotate(study: &Study, file: &mut Value, default_minutes: f64, jobs: usi
     for g in &groups {
         let id = g["id"].as_str().unwrap_or_default();
         let c = &g["computed"];
-        if c["networkHash"] != study.net_hash.as_str() || c["demandHash"] != study.demand_hash.as_str() {
-            return Err(format!("group {id} was computed on another network or demand (file {} / {}, current {} / {}); run the search again", c["networkHash"], c["demandHash"], study.net_hash, study.demand_hash));
+        match check(c, &study.net_hash, &study.demand_hash, crate::FINGERPRINT) {
+            Evidence::Current => {}
+            Evidence::Unverified(missing) => return Err(format!("group {id} does not record {}, so its figures cannot be matched to this simulator; run the search again", missing.join(", "))),
+            Evidence::Stale(why) => return Err(format!("group {id} was computed with other inputs or another method: {}; run the search again", why.join("; "))),
         }
         let periods: Vec<String> = c["periods"].as_array().ok_or_else(|| format!("group {id} has no periods"))?.iter().filter_map(|v| v.as_str().map(String::from)).collect();
         let seeds: Vec<u64> = c["seeds"].as_array().ok_or_else(|| format!("group {id} has no seeds"))?.iter().filter_map(|v| v.as_u64()).collect();
@@ -43,7 +47,7 @@ pub fn annotate(study: &Study, file: &mut Value, default_minutes: f64, jobs: usi
             return Err(format!("group {id} has no periods or seeds"));
         }
         let period = periods[picture_period(&periods)].clone();
-        let minutes = c["minutes"].as_f64().unwrap_or(default_minutes);
+        let minutes = c["minutes"].as_f64().ok_or_else(|| format!("group {id} has no run length"))?;
         let mut base_ids = Vec::new();
         for &s in &seeds {
             let key = (period.clone(), s, minutes.to_bits());

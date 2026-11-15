@@ -33,8 +33,10 @@ export function blockChanges(pic: ProposalPicture, index: NetIndex): BlockChange
 export const blockIntensity = (delta: number): number => softChange(delta, 'cutthrough');
 
 export interface PictureFacts {
-  /** The block the card names as gaining the most, as the picture's period sees it; null when the card names none or the name is not on this network. */
+  /** The block the card names, as the picture's period sees it; null when the card names none or the name is not on this network. */
   named: BlockChange | null;
+  /** `largest`: the block with the largest raw through-car increase. `flagged`: a version 4 file's block, chosen by the search's noise rule, which may not be the largest. */
+  namedKind: 'largest' | 'flagged';
   /** Largest drop and largest gain in the picture's period; null when no block moves that way. */
   drop: BlockChange | null;
   gain: BlockChange | null;
@@ -45,14 +47,16 @@ export function pictureFacts(p: Proposal, pic: ProposalPicture, index: NetIndex)
   const drop = changes.reduce<BlockChange | null>((m, c) => (Math.round(c.delta) < 0 && (!m || c.delta < m.delta) ? c : m), null);
   const gain = changes.reduce<BlockChange | null>((m, c) => (Math.round(c.delta) > 0 && (!m || c.delta > m.delta) ? c : m), null);
   const t = p.harm.through;
+  const namedKind = t.largestIncrease ? 'largest' : 'flagged';
+  const nameBlock = t.largestIncrease ? (Math.round(t.largestIncrease.increaseVehPerHour) > 0 ? t.largestIncrease.block : null) : (t.blocksAboveBand > 0 && Math.round(t.adjustedPenalty.increaseVehPerHour ?? 0) > 0 ? t.adjustedPenalty.block : null);
   let named: BlockChange | null = null;
-  if (t.blocksAboveNoise > 0 && Math.round(t.increaseVehPerHour) > 0 && t.worstBlock) {
-    const ids = index.blocks.flatMap((b, i) => (b.label === t.worstBlock ? [i] : []));
+  if (nameBlock) {
+    const ids = index.blocks.flatMap((b, i) => (b.label === nameBlock ? [i] : []));
     const hit = ids.map((i) => changes.find((c) => c.block === i)).find((c) => c);
     const first = ids[0];
     named = hit ?? (first === undefined ? null : { block: first, label: index.blocks[first].label, base: 0, scen: 0, delta: 0 });
   }
-  return { named, drop, gain };
+  return { named, namedKind, drop, gain };
 }
 
 export function pictureCaption(periodLabel: string): string {

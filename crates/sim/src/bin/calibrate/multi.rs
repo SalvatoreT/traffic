@@ -290,7 +290,16 @@ pub fn run(m: Multi) {
         }
     }
     let _ = writeln!(md, "\nPer-seed detail: `{}-seed{}.md` (seed {} in full).", m.stem_prefix, a, a);
+    // The summary names the runs it summarizes by content hash, and repeats the manifest of the first so that nothing is judged from a summary of other runs.
+    let run_hashes: Vec<Value> = seeds
+        .iter()
+        .map(|s| {
+            let p = seeds_dir(&m).join(format!("{}-seed{}.json", m.stem_prefix, s));
+            json!({"seed": s, "sha256": std::fs::read(&p).map(|b| crate::sha256::sha256_hex(&b)).ok()})
+        })
+        .collect();
     let js = json!({
+        "manifest": {"schema": 1, "summaryOf": run_hashes, "run": first["manifest"].clone()},
         "seeds": seeds, "minutes": minutes,
         "stability": {
             "rule": {"maxMeanRemovalsPerHour": stab.max_mean_removals_per_hour, "backlogPct": stab.backlog_pct, "minSeedsShare": stab.min_seeds_share, "maxSecondHalfBacklogGrowthPct": stab.max_second_half_growth_pct, "minArterialSpeed": stab.min_arterial_speed},

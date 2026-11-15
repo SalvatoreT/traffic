@@ -2,6 +2,7 @@
 // full-route counts onto directed network links by street name, cross-street names and bearing. No street names live here; the file and the area config carry them.
 // No I/O.
 import type { Feature } from './assign';
+import { blockObservation, routeSupportLinks } from './lineage';
 
 export interface CountBlock { street: string; between: [string, string]; direction: string; toward?: string; period: 'am' | 'pm'; vehicles: number; heading?: string; uncertain?: boolean; note?: string }
 export interface CountMovement { source?: string; at: string[]; period: 'am' | 'pm'; from: string; to: string; vehicles: number; kind?: string; route?: string; assumed?: boolean; note?: string }
@@ -167,8 +168,10 @@ export interface CountStation {
   note?: string;
   corridor: string;
   uncertain?: boolean;
-  /** Movement and route stations: the block links they touch (for the cross-validation fit). */
+  /** Movement and route stations: the end links they touch. */
   touches?: number[];
+  /** Movement and route stations: every directed link the observation covers. A turning movement covers its two links; a whole-street count covers each block of the street between its ends. */
+  support?: number[];
 }
 
 /** The counted volume of one turning movement (links `a` to `b`) per count period, whatever its size: the largest of the rows that map to it (the count fit drops movements below `minMovementVeh`). */
@@ -192,7 +195,8 @@ export interface CountReport {
 /** Period ids the count covers and the period the count hour belongs to. */
 export interface PeriodMap { am: string; pm: string; midday?: string }
 
-export function countStations(file: CountFile, net: CNet, cfg: CountConfig, periods: PeriodMap, volume: Record<string, number>): { stations: CountStation[]; report: CountReport } {
+/** `withheld`: station ids the training view leaves out (held blocks and the aggregates that overlap them). Structure, mapping and the held flags are computed on the whole file first, so the same blocks are held in both views. */
+export function countStations(file: CountFile, net: CNet, cfg: CountConfig, periods: PeriodMap, volume: Record<string, number>, withheld?: Set<string>): { stations: CountStation[]; report: CountReport } {
   const nodes = new Map(net.nodes.map((n) => [n.id, n]));
   const ns = nodeStreets(net);
   const notes: string[] = [];
@@ -280,7 +284,7 @@ export function countStations(file: CountFile, net: CNet, cfg: CountConfig, peri
     stations.push({
       id: `count move ${k}`, family: 'movement', label: `${e.from} to ${e.to} at ${e.at.join(' / ')}`, corridor: 'turning movements (volunteer count)',
       basis: `DATA (volunteer count of ${file.source.id}, turning movement${e.am ? ` AM ${e.am}` : ''}${e.pm ? ` PM ${e.pm}` : ''})`,
-      links: [], feature: { kind: 'move', a: e.a, b: e.b }, target, weight: cfg.movementWeight * (e.low ? cfg.uncertainFactor : 1), tolPct: cfg.tolerancePct, held: false, touches: [e.a, e.b], ...(mid && target[mid] ? { derived: [mid] } : {}),
+      links: [], feature: { kind: 'move', a: e.a, b: e.b }, target, weight: cfg.movementWeight * (e.low ? cfg.uncertainFactor : 1), tolPct: cfg.tolerancePct, held: false, touches: [e.a, e.b], support: [e.a, e.b], ...(mid && target[mid] ? { derived: [mid] } : {}),
     });
   }
 
@@ -312,7 +316,7 @@ export function countStations(file: CountFile, net: CNet, cfg: CountConfig, peri
     stations.push({
       id: `count route ${f.id}>${l.id}`, family: 'route', label: `${e.street} ${e.direction}, whole street between ${endA} and ${endB} (links ${f.id} to ${l.id})`, corridor: 'full routes (volunteer count)',
       basis: `DATA (volunteer count of ${file.source.id}, full-route count${e.am ? ` AM ${e.am}` : ''}${e.pm ? ` PM ${e.pm}` : ''})`,
-      links: [], feature: { kind: 'path', first: f.id, last: l.id }, target, weight: cfg.routeWeight, tolPct: cfg.tolerancePct * 1.5, held: false, touches: [f.id, l.id], ...(mid && target[mid] ? { derived: [mid] } : {}),
+      links: [], feature: { kind: 'path', first: f.id, last: l.id }, target, weight: cfg.routeWeight, tolPct: cfg.tolerancePct * 1.5, held: false, touches: [f.id, l.id], support: routeSupportLinks(net, f.id, l.id), ...(mid && target[mid] ? { derived: [mid] } : {}),
     });
   }
 
@@ -325,17 +329,17 @@ export function countStations(file: CountFile, net: CNet, cfg: CountConfig, peri
     const link = cands.length === 1 ? cands[0].id : null;
     if (link === null) { notes.push(`entry ${a.at.join(' / ')}: ${cands.length ? 'several' : 'no'} link(s) of ${st} start at ${art}`); continue; }
     const hit = rep.entries.find((x) => x.link === link);
-    const blk = byLink.get(link);
+    const blk = withheld?.has(blockObservation(link)) ? undefined : byLink.get(link);
     const counted: Record<string, number | null> = { [per(a.period)]: a.in ?? (a.period === 'pm' ? blk?.pm?.vehicles ?? null : blk?.am?.vehicles ?? null) };
     if (hit) { Object.assign(hit.counted, counted); continue; }
     rep.entries.push({ side: a.side, label: `${a.at.join(' / ')}`, link, counted, source: a.inSource ?? (a.in == null && blk ? 'block count of the entry block' : '') });
   }
-  rep.notes.push(`${blockLinks.size} block stations (${heldLinks.size} held out); movement and route stations whose links lie on a held-out block are left out of the cross-validation fit`);
-  return { stations, report: rep };
+  rep.notes.push(`${blockLinks.size} block stations (${heldLinks.size} held out); movement and route stations whose support (the links they cover, a whole street included) lies on a held-out block are left out of the training view`);
+  return { stations: withheld ? stations.filter((s) => !withheld.has(s.id)) : stations, report: rep };
 }
 
-/** Links of a station that lie on a held-out block (for the cross-validation fit). */
-export const touchesHeld = (s: CountStation, held: Set<number>): boolean => (s.touches ?? []).some((l) => held.has(l));
+/** Whether a movement or route station covers a held-out block. */
+export const overlapsHeld = (s: CountStation, held: Set<number>): boolean => (s.support ?? s.touches ?? []).some((l) => held.has(l));
 
 /** The count's mapping onto the network as report lines for the demand fit report. */
 export function countReportLines(r: CountReport): string[] {

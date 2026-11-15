@@ -2,12 +2,20 @@ import type { Intervention, Network } from '../types';
 import { buildIndex } from '../lib/naming';
 import { describeIntervention } from '../lib/describe';
 import { encodeScenario } from '../lib/hash';
-import type { Proposal, Proposals } from '../lib/proposals';
+import { REPORT_METHOD, type Effect, type Proposal, type Proposals } from '../lib/proposals';
 
-type Variant = 'fresh' | 'stale';
+/** `legacy` is the version 4 shape: figures only, with no provenance, intervals or largest-increase block. */
+type Variant = 'fresh' | 'stale' | 'legacy';
+
+const SEEDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+/** An effect with a symmetric interval around `mean`, its status read from the interval the way the search does. */
+const eff = (mean: number, half: number, n = SEEDS.length): Effect => {
+  const lo = mean - half, hi = mean + half;
+  return { n, mean, sd: +(half * Math.sqrt(n) / 2.262).toFixed(2), interval: [+lo.toFixed(2), +hi.toFixed(2)], status: n < 10 ? 'insufficient' : lo > 0 ? 'increase' : hi < 0 ? 'decrease' : 'unresolved' };
+};
 
 /** Plausible values in the published shape, with links encoded against whatever network is loaded. Dev and tests only. */
-export function buildMockProposals(network: Network, computed: { networkHash: string; demandHash: string; calibration: string }, variant: Variant = 'fresh'): Proposals {
+export function buildMockProposals(network: Network, computed: { networkHash: string; demandHash: string; calibration: string; simulator?: string }, variant: Variant = 'fresh'): Proposals {
   const idx = buildIndex(network);
   const inside = network.links.filter((l) => l.inStudyArea && l.length > 30 && (l.reverse === null || l.id < l.reverse));
   const nodes = network.nodes.filter((n) => n.inStudyArea && !n.gate);
@@ -19,20 +27,37 @@ export function buildMockProposals(network: Network, computed: { networkHash: st
   const BLOCK = 'Colby Street between 63rd Street and North Street';
   const mk = (id: string, title: string, summary: string, ivs: Intervention[], cut: number, worst: number, blocks: number, extra: Partial<Proposal> = {}): Proposal => {
     const base = 118;
+    const legacy = variant === 'legacy';
     const period = (k: number, w: number) => {
       const baseP = Math.round(base * (1 + (k - 1) * 0.04)), pct = cut * k;
+      const scenP = +(baseP * (1 + pct / 100)).toFixed(1);
       const gain = w > 0 ? w * 2.2 : -3;
+      const cutThrough = { baselineVehPerHour: baseP, scenarioVehPerHour: scenP, changePct: +pct.toFixed(1) };
+      if (legacy) return { cutThrough, allTraffic: { worstBlock: BLOCK, baselineVehPerHour: 240, scenarioVehPerHour: +(240 + gain).toFixed(1), throughIncreaseVehPerHour: +(w * 0.4).toFixed(1), blocksAboveNoise: blocks } };
       return {
-        cutThrough: { baselineVehPerHour: baseP, scenarioVehPerHour: +(baseP * (1 + pct / 100)).toFixed(1), changePct: +pct.toFixed(1) },
-        allTraffic: { worstBlock: BLOCK, baselineVehPerHour: 240, scenarioVehPerHour: +(240 + gain).toFixed(1), throughIncreaseVehPerHour: +(w * 0.4).toFixed(1), blocksAboveNoise: blocks },
+        cutThrough: { ...cutThrough, effect: eff(+(scenP - baseP).toFixed(1), 6) },
+        allTraffic: {
+          largestIncrease: { block: BLOCK, baselineVehPerHour: 240, scenarioVehPerHour: +(240 + gain).toFixed(1), increaseVehPerHour: +gain.toFixed(1), throughIncreaseVehPerHour: +(w * 0.4).toFixed(1), effect: eff(+gain.toFixed(1), w > 0 ? Math.max(2, w * 0.6) : 4) },
+          adjustedPenalty: { block: blocks > 0 ? BLOCK : null, penaltyVehPerHour: blocks > 0 ? +(w * 0.8).toFixed(1) : 0 },
+          blocksAboveBand: blocks,
+        },
       };
     };
+    const through = legacy
+      ? { worstBlock: worst > 0 ? BLOCK : '', increaseVehPerHour: +(worst * 0.4).toFixed(1), blocksAboveNoise: blocks }
+      : {
+        largestIncrease: { block: BLOCK, baselineVehPerHour: 14, scenarioVehPerHour: +(14 + worst * 0.4).toFixed(1), increaseVehPerHour: +(worst * 0.4).toFixed(1), effect: eff(+(worst * 0.4).toFixed(1), worst > 0 ? Math.max(2, worst * 0.3) : 3) },
+        adjustedPenalty: { block: blocks > 0 ? BLOCK : null, penaltyVehPerHour: blocks > 0 ? +(worst * 0.8).toFixed(1) : 0 },
+        blocksAboveBand: blocks, blocksResolvedIncrease: Math.min(blocks, 2),
+      };
     return {
       id, title, summary,
       link: encodeScenario(network, ivs, { area: network.id }),
       interventions: ivs.map((iv) => ({ type: iv.type, label: describeIntervention(iv, network, idx) })),
-      cutThrough: { baselineVehPerHour: base, scenarioVehPerHour: +(base * (1 + cut / 100)).toFixed(1), changePct: cut },
-      harm: { through: { worstBlock: worst > 0 ? BLOCK : '', increaseVehPerHour: +(worst * 0.4).toFixed(1), blocksAboveNoise: blocks } },
+      cutThrough: legacy
+        ? { baselineVehPerHour: base, scenarioVehPerHour: +(base * (1 + cut / 100)).toFixed(1), changePct: cut }
+        : { baselineVehPerHour: base, scenarioVehPerHour: +(base * (1 + cut / 100)).toFixed(1), changePct: cut, effect: eff(+(base * cut / 100).toFixed(1), 5), changePctEffect: eff(cut, 4) },
+      harm: { through } as Proposal['harm'],
       context: {
         boundingStreets: [
           { name: 'Telegraph Avenue', flowChangePct: -cut / 12, speedChangeMph: -0.2 },
@@ -42,17 +67,25 @@ export function buildMockProposals(network: Network, computed: { networkHash: st
         ],
         insideTripTimeChangePct: Math.abs(cut) / 10, pedConflictsChangePct: cut / 5, bikeConflictsChangePct: cut / 6,
       },
-      byPeriod: { 'am-peak': period(1.1, worst), 'pm-peak': period(0.9, Math.max(0, worst - 4)) },
+      byPeriod: { 'am-peak': period(1.1, worst), 'pm-peak': period(0.9, Math.max(0, worst - 4)) } as Proposal['byPeriod'],
+      ...(legacy ? {} : { evidence: { role: 'selection' as const, seeds: SEEDS, baselineVehPerHour: { 'am-peak': SEEDS.map(() => base), 'pm-peak': SEEDS.map(() => base) }, scenarioVehPerHour: { 'am-peak': SEEDS.map(() => base * (1 + cut / 100)), 'pm-peak': SEEDS.map(() => base * (1 + cut / 100)) } } }),
       ...extra,
     };
   };
-  const stale = variant === 'stale';
+  const stale = variant === 'stale', legacy = variant === 'legacy';
+  const { simulator, ...inputs } = computed;
   const meta = {
-    computed: { date: '2026-11-12', periods: ['am-peak', 'pm-peak'], seeds: [1, 2, 3, 4], ...computed, networkHash: stale ? 'deadbeefdeadbeef' : computed.networkHash },
+    computed: {
+      date: '2026-11-12', periods: ['am-peak', 'pm-peak'], seeds: legacy ? [1, 2, 3, 4] : SEEDS, minutes: 60, ...inputs, networkHash: stale ? 'deadbeefdeadbeef' : computed.networkHash,
+      ...(legacy ? {} : {
+        simulator: simulator ?? 'mocksimulator0001', reportMethod: REPORT_METHOD, sourceRevision: '0123456789ab', settings: { beam: 3, depth: 8, minutes: 60 },
+        estimation: { method: 'Student t interval on per-seed differences', level: 0.95, minPairs: 10, aggregation: 'Equal-weight mean of the periods within each seed.', scope: 'Seed variability only.', maximum: 'Chosen after looking at all blocks.', practicalFloors: 'Assumed dead bands.', selection: { estimates: 'exploratory' as const, discoverySeeds: SEEDS, confirmationSeeds: [], shortlist: [] } },
+      }),
+    },
     baseline: { cutThroughVehPerHour: { 'am-peak': 121, 'pm-peak': 115 } },
   };
   return {
-    version: 4, area: network.id,
+    version: legacy ? 4 : 5, area: network.id,
     groups: [
       {
         id: 'charter', title: "Within the 2025 neighborhood pilot's limits", note: 'Nothing on the bounding streets or at their intersections, and only temporary measures.', ...meta,

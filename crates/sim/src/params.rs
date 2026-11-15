@@ -47,7 +47,8 @@ pub const QUEUE_V: f32 = 2.0; // ASSUMPTION: a vehicle following another below t
 pub const STOP_DWELL: f32 = 1.0; // ASSUMPTION: s stopped before a stop-sign driver may go (discharge headway 3-4 s [HCM7] UNVERIFIED)
 pub const YIELD_COURTESY_S: f32 = 45.0; // ASSUMPTION: after this wait a driver enters ahead of conflicting vehicles slower than `QUEUE_V` (drivers in a crawling queue let one in), and a driver yielding to a pedestrian who does not step off moves on
 pub const YIELD_FALLBACK_S: f32 = 90.0; // ASSUMPTION: bounded-wait deadlock guard: drop approach-gap/FIFO checks. It puts a floor of 3600 / this value (40 veh/h) under every yielding lane; at 45 s the floor of 80 veh/h was above the published capacity at heavy cross flow (validation cases e6, e9 against [Brilon1999])
-pub const CONFLICT_FALLBACK_S: f32 = 120.0; // ASSUMPTION: drop in-node conflict check as well
+pub const CONFLICT_FALLBACK_S: f32 = 120.0; // ASSUMPTION (`JunctionRecovery::Historical` only): drop the in-node conflict check as well. Other policies keep it and report the waits it would have cut short
+pub const RECOVERY_LOG_MAX: usize = 4096; // detailed junction recovery events kept per run; later ones are counted only
 pub const GRIDLOCK_REMOVE_S: f32 = 180.0; // ASSUMPTION: remove vehicle blocked by no downstream space this long
 pub const DECISION_HORIZON: f32 = 100.0; // m: heads farther than this ignore node control ASSUMPTION: no source for the distance
 

@@ -4,9 +4,16 @@ import { DEAD_BAND_CUTTHROUGH } from '../lib/change';
 import { BADGE_NAME, BADGE_TEXT, ATTRIBUTION } from '../lib/mapexport';
 import type { NetIndex } from '../lib/naming';
 import { buildPicture, mismatchNote, periodNote, pictureAlt, pictureCaption, pictureFacts } from '../lib/picture';
-import type { Proposal } from '../lib/proposals';
+import type { EvidenceStatus, Proposal } from '../lib/proposals';
 import { controlLabel } from '../lib/selection';
 import { canvasMeasure, buildShareSvg, shareAlt, shareInputFor, svgToPng, SHARE_SCALE } from '../lib/shareimage';
+
+/** Said inside the exported picture itself, so a saved copy cannot be read as current evidence when it is not. */
+function evidenceSuffix(e: EvidenceStatus): string {
+  if (e.state === 'stale') return ' Out of date: computed on other inputs than the ones in use.';
+  if (e.state === 'unverified') return ' Provenance not verified: computed before the simulator version was recorded, or it could not be checked.';
+  return '';
+}
 
 /** Renders once the card nears the screen: a picture is a few hundred kilobytes of canvas work and a file can hold dozens. */
 function useNear(ref: React.RefObject<Element | null>): boolean {
@@ -25,23 +32,25 @@ interface Props {
   net: Network; index: NetIndex; p: Proposal; ivs: Intervention[];
   areaName: string; areaId: string; status: string; openUrl: string;
   periodLabel(id: string): string; searchedPeriods: string[];
+  /** The seeds behind the card's figures, and whether those figures may be shown as current. */
+  runs: number[]; evidence: EvidenceStatus;
 }
 
 /**
  * The card's picture, shown as a real image (a JPEG) so it can be saved, copied or sent like any other: the proposal's name and changes, the through-car
  * figures for the period it shows and for the card's average, the map, its legend and where it came from. It is drawn the same, in light colors, in either theme.
  */
-export function ProposalPicture({ net, index, p, ivs, areaName, areaId, status, openUrl, periodLabel, searchedPeriods }: Props) {
+export function ProposalPicture({ net, index, p, ivs, areaName, areaId, status, openUrl, periodLabel, searchedPeriods, runs, evidence }: Props) {
   const pic = p.picture;
   const facts = useMemo(() => (pic ? pictureFacts(p, pic, index) : null), [p, pic, index]);
   const model = useMemo(() => (pic && facts ? buildPicture(net, index, p, pic, ivs, facts) : null), [net, index, p, pic, ivs, facts]);
   const short = (id: string) => periodLabel(id).replace(/\s*\(.*\)\s*$/, '');
   const share = useMemo(() => {
     if (!pic || !facts || !model) return null;
-    const input = shareInputFor({ areaName, status, p, pic, facts, model, searched: searchedPeriods, periodLabel, shortLabel: short, caption: '', openUrl });
+    const input = shareInputFor({ areaName, status: `${status}${evidenceSuffix(evidence)}`, p, pic, facts, model, searched: searchedPeriods, periodLabel, shortLabel: short, caption: '', openUrl, runs });
     return { input, image: buildShareSvg(input, canvasMeasure()) };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pic, facts, model, areaName, status, p, searchedPeriods, openUrl]);
+  }, [pic, facts, model, areaName, status, p, searchedPeriods, openUrl, runs, evidence]);
   const box = useRef<HTMLDivElement>(null);
   const near = useNear(box);
   const [png, setPng] = useState<{ url: string; ext: string } | null>(null);
@@ -86,7 +95,7 @@ export function ProposalPicture({ net, index, p, ivs, areaName, areaId, status, 
           <p className="prop-pic-key">Scale: cars an hour. Blue: fewer through cars. Orange: more. Thin gray: within normal run-to-run variation (about {Math.round(DEAD_BAND_CUTTHROUGH)} cars an hour). The scale is the one on the map's Change in cut-through view, from -100 or fewer to +100 or more.</p>
           {model.pins.length > 0 && (
             <ul className="prop-pic-pins">
-              {facts.named && <li><strong>Outlined, labeled {model.pins[0].text}:</strong> {facts.named.label}, the block the card names as gaining the most.</li>}
+              {facts.named && <li><strong>Outlined, labeled {model.pins[0].text}:</strong> {facts.named.label}, {facts.namedKind === 'largest' ? 'the block with the largest through-car increase, as the card says.' : 'the block the search flagged with an assumed noise band, which need not have the largest increase.'}</li>}
               {model.pins.length > 1 && facts.gain && <li><strong>Dashed outline, labeled {model.pins[1].text}:</strong> {facts.gain.label}, the biggest gain in the {when}.</li>}
             </ul>
           )}

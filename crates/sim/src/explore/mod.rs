@@ -8,7 +8,9 @@ pub mod check;
 pub mod decode;
 pub mod link;
 pub mod naming;
+pub mod paired;
 pub mod profile;
+pub mod provenance;
 pub mod refs;
 pub mod report;
 pub mod search;
@@ -43,7 +45,14 @@ pub const BACKLOG_SHARE: f64 = 0.05;
 pub struct Params {
     pub area: String,
     pub periods: Vec<String>,
+    /// Seeds of the baseline and the rechecks. Screening uses the first. The final comparison pairs runs on these seeds, so it needs at least
+    /// `paired::MIN_PAIRS` of them to make statements about effects; with fewer it reports insufficient evidence.
     pub seeds: Vec<u64>,
+    /// Seeds for an independent confirmation of the chosen options. Empty means no confirmation, and the estimates are labeled exploratory.
+    /// They must not overlap `seeds`.
+    pub confirm_seeds: Vec<u64>,
+    /// Git revision of the source the search ran from (`unknown` when it cannot be read).
+    pub source_revision: String,
     pub beam: usize,
     /// Most interventions in a package: the beam stops growing packages at this size, and a known package with more is dropped.
     pub depth: usize,
@@ -79,7 +88,9 @@ impl Params {
         Params {
             area: area.into(),
             periods: vec!["pm_peak".into()],
-            seeds: vec![1],
+            seeds: (1..=paired::MIN_PAIRS as u64).collect(),
+            confirm_seeds: Vec::new(),
+            source_revision: "unknown".into(),
             beam: 3,
             depth: 8,
             candidates: 40,

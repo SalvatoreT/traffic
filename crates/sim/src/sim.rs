@@ -212,6 +212,8 @@ struct Veh {
     preplaced: bool,
     /// Entered its current link along the block (a local trip start) or leaves it there: its time on the link is not a traversal time.
     mid_start: bool,
+    /// Recovery reasons (`REC_*`) the current permission to enter depends on.
+    go_rec: u8,
 }
 
 impl Veh {
@@ -267,6 +269,7 @@ impl Veh {
             pass_scored: false,
             preplaced: false,
             mid_start: false,
+            go_rec: 0,
         }
     }
     #[inline]
@@ -284,6 +287,31 @@ struct Transit {
     t_left: f32,
     t_total: f32,
     v_exit: f32,
+}
+
+/// Junction recovery reasons, as bits and as indices into `Stats::rec`.
+const REC_COURTESY: u8 = 1;
+const REC_YIELD: u8 = 2;
+const REC_BYPASS: u8 = 4;
+const REC_NAMES: [&str; 4] = ["courtesy", "yieldFallback", "conflictBypass", "heldRemoval"];
+
+#[derive(Default, Clone, Copy)]
+struct RecAcc {
+    invoked_s: f64,
+    blocked_s: f64,
+    admissions: u64,
+    init_admissions: u64,
+}
+
+/// One junction recovery event (`Simulation::recovery_events`): an entry that needed a recovery reason, or a vehicle removed from a node.
+#[derive(Clone, Debug, PartialEq)]
+pub struct RecoveryEvent {
+    pub t: f64,
+    pub node: u32,
+    pub from_link: u32,
+    pub to_link: u32,
+    pub wait_s: f32,
+    pub reason: &'static str,
 }
 
 #[derive(Default)]
@@ -329,6 +357,13 @@ struct Stats {
     timed: u64,
     car_timed: u64,
     bike_timed: u64,
+    /// Junction recovery, by reason bit (courtesy, yield fallback, conflict bypass).
+    rec: [RecAcc; 3],
+    crossings: u64,
+    init_crossings: u64,
+    held_removed: u64,
+    init_held_removed: u64,
+    rec_dropped: u64,
 }
 
 /// A street visited by a recorded trip (consecutive links with the same name collapse into one visit).
@@ -468,6 +503,9 @@ pub struct Simulation {
     link_off: Vec<u16>,
     on_listed: Vec<bool>,
     off_listed: Vec<bool>,
+    /// Junction recovery events (bounded by `RECOVERY_LOG_MAX`) and, per node, measured admissions by reason and held removals.
+    rec_log: Vec<RecoveryEvent>,
+    rec_node: Vec<[u32; 4]>,
 }
 
 /// Improved IDM [Treiber2014]: the IDM with `s1 = 0` and `delta = 4` whose steady-state time gap is exactly `t_hw` (the plain IDM
@@ -640,6 +678,8 @@ impl Simulation {
             link_off: Vec::new(),
             on_listed: Vec::new(),
             off_listed: Vec::new(),
+            rec_log: Vec::new(),
+            rec_node: vec![[0; 4]; nn],
             topo,
             net,
         };
@@ -1205,7 +1245,45 @@ impl Simulation {
             m.arterial_mean_speed = st.art_vs / st.art_t;
         }
         self.fill_mode_metrics(&mut m);
+        m.junction_recovery = self.recovery_stats();
         m
+    }
+
+    fn recovery_stats(&self) -> JunctionRecoveryStats {
+        let st = &self.st;
+        let r = |a: &RecAcc| RecoveryReason { invoked_s: a.invoked_s, blocked_s: a.blocked_s, admissions: a.admissions, init_admissions: a.init_admissions };
+        JunctionRecoveryStats {
+            policy: serde_json::to_value(self.cfg.junction_recovery).ok().and_then(|v| v.as_str().map(String::from)).unwrap_or_default(),
+            crossings: st.crossings,
+            init_crossings: st.init_crossings,
+            courtesy: r(&st.rec[0]),
+            yield_fallback: r(&st.rec[1]),
+            conflict_bypass: r(&st.rec[2]),
+            held_removals: st.held_removed,
+            init_held_removals: st.init_held_removed,
+            events_dropped: st.rec_dropped,
+        }
+    }
+
+    /// Junction recovery events in time order, at most `RECOVERY_LOG_MAX` (see `JunctionRecoveryStats::events_dropped`).
+    pub fn recovery_events(&self) -> &[RecoveryEvent] {
+        &self.rec_log
+    }
+
+    /// Per node since t = 0: admissions by courtesy, yield fallback and conflict bypass, and vehicles removed while held in the node.
+    pub fn recovery_by_node(&self) -> &[[u32; 4]] {
+        &self.rec_node
+    }
+
+    fn log_recovery(&mut self, node: usize, from_link: u32, to_link: u32, wait_s: f32, reason: usize) {
+        if self.t >= 0.0 {
+            self.rec_node[node][reason] += 1;
+        }
+        if self.rec_log.len() < RECOVERY_LOG_MAX {
+            self.rec_log.push(RecoveryEvent { t: self.t, node: node as u32, from_link, to_link, wait_s, reason: REC_NAMES[reason] });
+        } else {
+            self.st.rec_dropped += 1;
+        }
     }
 
     /// (completed car trips, summed trip time in s) for trips with an origin or destination inside the study area (search tool).
@@ -1279,6 +1357,18 @@ impl Simulation {
         out
     }
 
+    /// Diagnostics: vehicles held at the end of a node crossing by a full exit for more than `min_s` s, as (node, from link, to link, held s).
+    #[doc(hidden)]
+    pub fn debug_held(&self, min_s: f32) -> Vec<(u32, u32, u32, f32)> {
+        let mut out = Vec::new();
+        for (n, trs) in self.transit.iter().enumerate() {
+            for tr in trs.iter().filter(|tr| -tr.t_left > min_s) {
+                out.push((n as u32, self.topo.mvs[tr.mv as usize].a, tr.to_link, -tr.t_left));
+            }
+        }
+        out
+    }
+
     #[doc(hidden)]
     pub fn debug_gridlock(&self) -> &[(u32, f64)] {
         &self.gridlock_log
@@ -1309,18 +1399,25 @@ impl Simulation {
         out
     }
 
-    /// Check physical invariants: lanes ordered and non-overlapping, node transit bookkeeping consistent.
+    /// Check physical invariants: lanes ordered and non-overlapping; every live car and cyclist in exactly one lane or one node transit
+    /// record that agrees with its state; and no two vehicles in a node at a shared conflict point at once.
     pub fn check_invariants(&self) -> Result<(), String> {
+        let mut seen = vec![0u8; self.vehs.len()];
         for l in 0..self.topo.n_links {
             let nl = self.topo.nlanes(l);
             for k in 0..nl + self.bike_on as usize {
-                let q = &self.lanes[self.topo.qidx(l, k)];
+                let qi = self.topo.qidx(l, k);
+                let q = &self.lanes[qi];
                 let mut prev: Option<&Veh> = None;
                 for &id in q {
                     let v = &self.vehs[id as usize];
                     if !v.alive || v.in_transit {
                         return Err(format!("link {l}: dead/transit vehicle {id} in lane"));
                     }
+                    if v.link as usize != l || self.topo.qidx(l, v.lane as usize) != qi {
+                        return Err(format!("link {l} lane {k}: vehicle {id} records link {} lane {}", v.link, v.lane));
+                    }
+                    seen[id as usize] += 1;
                     if v.pos > self.topo.stop_pos[l] + 0.01 {
                         return Err(format!("link {l}: vehicle {id} beyond stop line ({})", v.pos));
                     }
@@ -1331,6 +1428,60 @@ impl Simulation {
                         }
                     }
                     prev = Some(v);
+                }
+            }
+        }
+        for (n, trs) in self.transit.iter().enumerate() {
+            for tr in trs {
+                let v = &self.vehs[tr.veh as usize];
+                let m = &self.topo.mvs[tr.mv as usize];
+                if !v.alive || !v.in_transit {
+                    return Err(format!("node {n}: transit record of vehicle {} that is not crossing (alive {}, in transit {})", tr.veh, v.alive, v.in_transit));
+                }
+                if m.node as usize != n || m.b != tr.to_link || m.a != v.link || v.tr_mv != tr.mv {
+                    return Err(format!("node {n}: vehicle {} crosses movement {}>{} at node {} but records link {}, exit {}, movement {}", tr.veh, m.a, m.b, m.node, v.link, tr.to_link, v.tr_mv));
+                }
+                if !(tr.t_total > 0.0) || tr.t_left > tr.t_total {
+                    return Err(format!("node {n}: vehicle {} has crossing time {} with {} left", tr.veh, tr.t_total, tr.t_left));
+                }
+                seen[tr.veh as usize] += 1;
+            }
+        }
+        for (id, v) in self.vehs.iter().enumerate() {
+            if v.alive && seen[id] != 1 {
+                return Err(format!("vehicle {id} (in transit {}) is held in {} lanes or nodes", v.in_transit, seen[id]));
+            }
+        }
+        self.check_node_occupancy()
+    }
+
+    /// Part of the path of the vehicle in `tr` that its body covers now, as fractions of its movement: the head moves at the planned
+    /// crossing rate and stops at the end of the path while the exit is full.
+    fn transit_extent(&self, tr: &Transit) -> (f32, f32) {
+        let head = ((tr.t_total - tr.t_left) / tr.t_total).clamp(0.0, 1.0);
+        let tail = self.vehs[tr.veh as usize].drv.len / self.topo.mvs[tr.mv as usize].len.max(4.0);
+        (head - tail, head)
+    }
+
+    /// No two crossing vehicles cover their shared conflict point at the same time, and no two share a single-lane merge. Movements that
+    /// cross geometrically but at different times are legal.
+    fn check_node_occupancy(&self) -> Result<(), String> {
+        for (n, trs) in self.transit.iter().enumerate() {
+            let circle = self.eff.ctrl[n] == Control::TrafficCircle && !self.eff.ring_node[n];
+            for (i, a) in trs.iter().enumerate() {
+                for b in &trs[i + 1..] {
+                    if !self.topo.conflicts(a.mv, b.mv, circle) && !self.topo.conflicts(b.mv, a.mv, circle) {
+                        continue;
+                    }
+                    let (pa, pb) = (self.topo.conflict_pos(b.mv, a.mv, circle), self.topo.conflict_pos(a.mv, b.mv, circle));
+                    let (ea, eb) = (self.transit_extent(a), self.transit_extent(b));
+                    let covers = |p: f32, e: (f32, f32)| p >= e.0 && p <= e.1;
+                    if (pa < 0.0 && pb < 0.0) || (pa >= 0.0 && pb >= 0.0 && covers(pa, ea) && covers(pb, eb)) {
+                        return Err(format!(
+                            "node {n} at t={:.2}: vehicles {} ({:.2}-{:.2} of movement {}) and {} ({:.2}-{:.2} of movement {}) share a conflict point at {:.2} / {:.2}",
+                            self.t, a.veh, ea.0, ea.1, a.mv, b.veh, eb.0, eb.1, b.mv, pa, pb
+                        ));
+                    }
                 }
             }
         }
@@ -1534,6 +1685,9 @@ impl Simulation {
 
     /// Room at the start of a lane, projecting the tail vehicle forward `horizon` s at its current speed (crossing a node takes
     /// a few seconds, during which a moving leader opens up the gap; a standing queue gains nothing).
+    /// A vehicle that has finished crossing the upstream node toward this lane but is held at its entry by a full lane stands at the
+    /// entry: the lane has no room until it moves on (not under `JunctionRecovery::Historical`, where any number of vehicles could cross
+    /// toward a full lane and wait in the node).
     fn lane_room_ahead(&self, l: u32, lane: usize, horizon: f32) -> f32 {
         let idx = self.topo.qidx(l as usize, lane);
         let tail = match self.lanes[idx].back() {
@@ -1543,6 +1697,11 @@ impl Simulation {
             }
             None => self.topo.length[l as usize],
         };
+        if self.cfg.junction_recovery != JunctionRecovery::Historical
+            && self.transit[self.topo.link_from[l as usize] as usize].iter().any(|tr| tr.t_left <= 0.0 && tr.to_link == l && self.topo.qidx(l as usize, tr.lane as usize) == idx)
+        {
+            return 0.0;
+        }
         tail - self.topo.emerge_pos[l as usize]
     }
 
@@ -1901,6 +2060,7 @@ impl Simulation {
         if d > DECISION_HORIZON {
             let veh = &mut self.vehs[vid as usize];
             veh.go = true;
+            veh.go_rec = 0;
             veh.stop_t = 0.0;
             veh.wait_t = 0.0;
             veh.blocked_space = false;
@@ -1929,7 +2089,18 @@ impl Simulation {
             self.vehs[vid as usize].registered = true;
             self.awsc[node].push(vid);
         }
-        let (go, blocked) = self.permission(vid, l, d, v, ctrl);
+        let (go, blocked, rec) = self.permission(vid, l, d, v, ctrl);
+        self.vehs[vid as usize].go_rec = if go { rec } else { 0 };
+        if rec != 0 && self.t >= 0.0 {
+            for (i, a) in self.st.rec.iter_mut().enumerate() {
+                if rec & (1 << i) != 0 {
+                    a.invoked_s += DT;
+                    if !go {
+                        a.blocked_s += DT;
+                    }
+                }
+            }
+        }
         if self.ped_on && !go && !self.vehs[vid as usize].ped_held && self.ped_block_head(vid, l, ctrl) {
             self.vehs[vid as usize].ped_held = true;
         }
@@ -1968,8 +2139,8 @@ impl Simulation {
         self.vehs[vid as usize].next().map_or(false, |b| self.net.links[b as usize].class == RoadClass::Motorway)
     }
 
-    /// (may enter node now, blocked only by downstream space)
-    fn permission(&self, vid: u32, l: usize, d: f32, v: f32, ctrl: Control) -> (bool, bool) {
+    /// (may enter node now, blocked only by downstream space, recovery reasons invoked: see `conflict_free`)
+    fn permission(&self, vid: u32, l: usize, d: f32, v: f32, ctrl: Control) -> (bool, bool, u8) {
         let veh = &self.vehs[vid as usize];
         let mut rtor = false;
         match ctrl {
@@ -1981,31 +2152,32 @@ impl Simulation {
                         if st == 3 && self.rtor_candidate(veh, l) {
                             rtor = true;
                         } else {
-                            return (false, false);
+                            return (false, false, 0);
                         }
                     }
                 }
             }
             Control::AllWayStop | Control::TwoWayStop => {
                 if self.eff.must_stop[l] && veh.stop_t < STOP_DWELL {
-                    return (false, false);
+                    return (false, false, 0);
                 }
             }
             _ => {}
         }
-        let Some(b) = veh.next() else { return (true, false) };
-        let Some(mv) = self.topo.find_mv(l as u32, b) else { return (false, false) };
+        let Some(b) = veh.next() else { return (true, false, 0) };
+        let Some(mv) = self.topo.find_mv(l as u32, b) else { return (false, false, 0) };
         if !self.mv_allowed(veh.kind, mv) && !veh.replan {
             // Banned/closed after the plan was made; will be re-planned. Hold.
-            return (false, false);
+            return (false, false, 0);
         }
         if self.pick_lane_for(veh.kind, b, self.lane_hint(b, &veh.route[(veh.ridx as usize + 1).min(veh.route.len())..]), veh.route.get(veh.ridx as usize + 1).copied(), NODE_CROSS_S).is_none() {
-            return (false, true);
+            return (false, true, 0);
         }
         if self.ped_on && self.ped_block(veh, l as u32, b, ctrl) {
-            return (false, false);
+            return (false, false, 0);
         }
-        (self.conflict_free(vid, mv, ctrl, rtor), false)
+        let (ok, rec) = self.conflict_free(vid, mv, ctrl, rtor);
+        (ok, false, rec)
     }
 
     /// Right turn on red after a stop (ASSUMPTION: permitted at every signal; the after-stop rule and yield duty are in CVC 21453 [CVC21453], only the 2010 text was read; see the validation
@@ -2093,7 +2265,7 @@ impl Simulation {
     /// only at a point: the entering vehicle may start once the crossing one will have cleared that point (tail included) by the time
     /// it gets there, `NODE_SAFE_S` to spare. A merge onto the same exit lane blocks until the vehicle has left the node. Holding every
     /// conflicting movement for the whole crossing (3 to 4 s from a standing start) cut stop-controlled and permissive-left capacity
-    /// by a third.
+    /// by a third. A vehicle held at the end of its path by a full exit stays where it is: it blocks every point its body still covers.
     fn transit_blocks(&self, mv: u32, tr: &Transit, circle: bool, t_mine: f32) -> bool {
         if !self.topo.conflicts(mv, tr.mv, circle) {
             return false;
@@ -2103,28 +2275,65 @@ impl Simulation {
             return true;
         }
         let tail = self.vehs[tr.veh as usize].drv.len / self.topo.mvs[tr.mv as usize].len.max(4.0);
-        let clear_in = (pos + tail) * tr.t_total - (tr.t_total - tr.t_left);
+        let historical = self.cfg.junction_recovery == JunctionRecovery::Historical;
+        if !historical && tr.t_left <= 0.0 && pos + tail > 1.0 {
+            return true;
+        }
+        let elapsed = if historical { tr.t_total - tr.t_left } else { (tr.t_total - tr.t_left).min(tr.t_total) };
+        let clear_in = (pos + tail) * tr.t_total - elapsed;
         let arrive = if circle { 0.0 } else { self.topo.conflict_pos(tr.mv, mv, false).max(0.0) * t_mine };
         clear_in > arrive - NODE_SAFE_S
     }
 
-    /// Gap-acceptance / priority / FIFO check for movement `mv` of vehicle `vid`.
-    fn conflict_free(&self, vid: u32, mv: u32, ctrl: Control, rtor: bool) -> bool {
-        let veh = &self.vehs[vid as usize];
+    /// Does any vehicle in the node block movement `mv` of vehicle `veh` (`transit_blocks`)?
+    fn node_occupied(&self, veh: &Veh, mv: u32, ctrl: Control) -> bool {
         let node = self.topo.mvs[mv as usize].node as usize;
         let circle = ctrl == Control::TrafficCircle && !self.eff.ring_node[node];
         let t_mine = self.cross_profile(veh, veh.link as usize, mv, ctrl).2;
-        if veh.wait_t < CONFLICT_FALLBACK_S {
-            for tr in &self.transit[node] {
-                if self.transit_blocks(mv, tr, circle, t_mine) {
-                    return false;
-                }
+        self.transit[node].iter().any(|tr| self.transit_blocks(mv, tr, circle, t_mine))
+    }
+
+    /// Physical, gap-acceptance, priority and FIFO check for movement `mv` of vehicle `vid`: (may enter, recovery reasons invoked).
+    /// A reason (`REC_*`) is invoked when its wait threshold is reached and the ordinary rule refuses entry; when the result is true the
+    /// entry depends on it. Courtesy and the yield fallback change priority only. Physical exclusion (`node_occupied`) holds whatever the
+    /// wait, except under `JunctionRecovery::Historical`, which skips it after `CONFLICT_FALLBACK_S`.
+    fn conflict_free(&self, vid: u32, mv: u32, ctrl: Control, rtor: bool) -> (bool, u8) {
+        let veh = &self.vehs[vid as usize];
+        let node = self.topo.mvs[mv as usize].node as usize;
+        let policy = self.cfg.junction_recovery;
+        let mut rec = 0u8;
+        if self.node_occupied(veh, mv, ctrl) {
+            if veh.wait_t < CONFLICT_FALLBACK_S {
+                return (false, 0);
+            }
+            rec |= REC_BYPASS;
+            if policy != JunctionRecovery::Historical {
+                return (false, rec);
             }
         }
-        let impatient = veh.wait_t >= YIELD_COURTESY_S;
-        if veh.wait_t >= YIELD_FALLBACK_S || (circle && !self.eff.ring_node[node]) {
-            return true;
+        if ctrl == Control::TrafficCircle && !self.eff.ring_node[node] {
+            return (true, rec);
         }
+        let behavioral = policy != JunctionRecovery::NoBehavioral;
+        let courtesy = behavioral && veh.wait_t >= YIELD_COURTESY_S;
+        if behavioral && veh.wait_t >= YIELD_FALLBACK_S {
+            if !self.priority_free(vid, mv, ctrl, rtor, false).0 {
+                rec |= if self.priority_free(vid, mv, ctrl, rtor, courtesy).0 { REC_COURTESY } else { REC_YIELD };
+            }
+            return (true, rec);
+        }
+        let (ok, used) = self.priority_free(vid, mv, ctrl, rtor, courtesy);
+        if used {
+            rec |= REC_COURTESY;
+        }
+        (ok, rec)
+    }
+
+    /// Approach-gap, priority and stop-order check of `conflict_free`: (may enter, entered only because `courtesy` let it pass a
+    /// conflicting vehicle slower than `QUEUE_V`).
+    fn priority_free(&self, vid: u32, mv: u32, ctrl: Control, rtor: bool, courtesy: bool) -> (bool, bool) {
+        let veh = &self.vehs[vid as usize];
+        let node = self.topo.mvs[mv as usize].node as usize;
         let l = veh.link;
         if ctrl == Control::AllWayStop {
             for &w in &self.awsc[node] {
@@ -2135,13 +2344,14 @@ impl Simulation {
                 if let Some(wb) = wv.next() {
                     if let Some(mw) = self.topo.find_mv(wv.link, wb) {
                         if self.topo.conflicts(mv, mw, false) {
-                            return false;
+                            return (false, false);
                         }
                     }
                 }
             }
-            return true;
+            return (true, false);
         }
+        let mut used = false;
         let tc = if rtor { TC_MINOR_RIGHT * veh.drv.gap_f } else { self.critical_gap(mv, ctrl, veh.drv.gap_f) };
         for &e in &self.topo.ins[node] {
             if e == l {
@@ -2171,15 +2381,16 @@ impl Simulation {
                     let Some(mx) = self.topo.find_mv(e, xb) else { continue };
                     if self.topo.conflicts(mv, mx, false) && (rtor || self.yields(mv, mx, ctrl)) {
                         // After `YIELD_COURTESY_S` a driver is let into a queue that crawls; a stream at speed still needs a real gap.
-                        if impatient && xv.v < QUEUE_V {
+                        if courtesy && xv.v < QUEUE_V {
+                            used = true;
                             continue;
                         }
-                        return false;
+                        return (false, used);
                     }
                 }
             }
         }
-        true
+        (true, used)
     }
 
     // ------------------------------------------------------------------ dynamics
@@ -2628,15 +2839,14 @@ impl Simulation {
         let kind = veh.kind;
         let node = self.topo.link_to[l] as usize;
         let ctrl = self.eff.ctrl[node];
-        if veh.wait_t < CONFLICT_FALLBACK_S {
-            let circle = ctrl == Control::TrafficCircle && !self.eff.ring_node[node];
-            let t_mine = self.cross_profile(veh, l, mv, ctrl).2;
-            for tr in &self.transit[node] {
-                if self.transit_blocks(mv, tr, circle, t_mine) {
-                    return false;
-                }
+        let mut rec = veh.go_rec;
+        if self.node_occupied(veh, mv, ctrl) {
+            if veh.wait_t < CONFLICT_FALLBACK_S || self.cfg.junction_recovery != JunctionRecovery::Historical {
+                return false;
             }
+            rec |= REC_BYPASS;
         }
+        let wait = veh.wait_t;
         let after = veh.route.get(veh.ridx as usize + 1).copied();
         let hint = self.lane_hint(b, &veh.route[(veh.ridx as usize + 1).min(veh.route.len())..]);
         let Some(lane) = self.pick_lane_for(kind, b, hint, after, NODE_CROSS_S) else { return false };
@@ -2676,11 +2886,55 @@ impl Simulation {
         if kind != KIND_BIKE {
             self.st.veh_m += m_len as f64;
         }
+        self.vehs[vid as usize].go_rec = 0;
+        let measured = self.t >= 0.0;
+        if measured {
+            self.st.crossings += 1;
+        } else {
+            self.st.init_crossings += 1;
+        }
+        for i in 0..3 {
+            if rec & (1 << i) != 0 {
+                if measured {
+                    self.st.rec[i].admissions += 1;
+                } else {
+                    self.st.rec[i].init_admissions += 1;
+                }
+                self.log_recovery(node, l as u32, b, wait, i);
+            }
+        }
         if self.ped_on || self.bike_on {
             self.on_node_cross(vid, node, mv, t_total, ctrl == Control::TrafficCircle && !self.eff.ring_node[node], v);
         }
         self.transit[node].push(Transit { veh: vid, mv, to_link: b, lane: lane as u8, t_left: t_total, t_total, v_exit });
         true
+    }
+
+    /// A vehicle held at the end of its path by a full exit for `GRIDLOCK_REMOVE_S` is removed (not under `JunctionRecovery::Historical`;
+    /// motorway-to-motorway movements wait, as in `waits_on_motorway`).
+    fn held_too_long(&self, tr: &Transit) -> bool {
+        if self.cfg.junction_recovery == JunctionRecovery::Historical || -tr.t_left <= GRIDLOCK_REMOVE_S {
+            return false;
+        }
+        let a = self.topo.mvs[tr.mv as usize].a as usize;
+        self.cfg.motorway_gridlock_removal || self.net.links[a].class != RoadClass::Motorway || self.net.links[tr.to_link as usize].class != RoadClass::Motorway
+    }
+
+    fn remove_held(&mut self, n: usize, tr: &Transit) {
+        let vid = tr.veh;
+        let (from, bike) = (self.topo.mvs[tr.mv as usize].a, self.vehs[vid as usize].kind == KIND_BIKE);
+        self.vehs[vid as usize].in_transit = false;
+        self.remove_vehicle(vid);
+        if !bike {
+            self.st.gridlock_removed += 1;
+            self.gridlock_log.push((from, self.t));
+        }
+        if self.t >= 0.0 {
+            self.st.held_removed += 1;
+        } else {
+            self.st.init_held_removed += 1;
+        }
+        self.log_recovery(n, from, tr.to_link, -tr.t_left, 3);
     }
 
     fn update_transit(&mut self) {
@@ -2709,6 +2963,11 @@ impl Simulation {
                     None => (1e9, 0.0),
                 };
                 if gap < need {
+                    if self.held_too_long(&tr) {
+                        self.transit[n].remove(i);
+                        self.remove_held(n, &tr);
+                        continue;
+                    }
                     self.transit[n][i] = tr;
                     i += 1;
                     continue;

@@ -90,7 +90,7 @@ impl Paired {
 
     pub fn status(&self) -> Status {
         match (self.n >= MIN_PAIRS, self.interval()) {
-            (true, Some((lo, hi))) if lo > 0.0 => Status::Positive,
+            (true, Some((lo, _))) if lo > 0.0 => Status::Positive,
             (true, Some((_, hi))) if hi < 0.0 => Status::Negative,
             (true, Some(_)) => Status::Unresolved,
             _ => Status::Insufficient,
@@ -102,8 +102,14 @@ impl Paired {
         Paired { n: self.n, mean: self.mean * k, sd: self.sd * k.abs(), half: self.half.map(|h| h * k.abs()) }
     }
 
-    pub fn to_json(&self) -> Value {
-        let mut v = json!({"n": self.n, "mean": r2(self.mean), "sd": r2(self.sd), "status": self.status().as_str()});
+    /// Published form. `pos` and `neg` name a resolved positive and a resolved negative effect for the quantity (for example `increase` and `decrease`).
+    pub fn to_json(&self, pos: &str, neg: &str) -> Value {
+        let status = match self.status() {
+            Status::Positive => pos,
+            Status::Negative => neg,
+            other => other.as_str(),
+        };
+        let mut v = json!({"n": self.n, "mean": r2(self.mean), "sd": r2(self.sd), "status": status});
         if let Some((lo, hi)) = self.interval() {
             v["interval"] = json!([r2(lo), r2(hi)]);
         }

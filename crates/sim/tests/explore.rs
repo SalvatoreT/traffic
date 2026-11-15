@@ -4,7 +4,8 @@
 use serde_json::Value;
 use traffic_sim::explore::cands::{generate, Hotspots};
 use traffic_sim::explore::naming::{describe, NameIndex};
-use traffic_sim::explore::report::{explore, Outcome};
+use traffic_sim::explore::paired::{option_gain, CtPairs, Paired, Status};
+use traffic_sim::explore::report::{beats, explore, reduces, Final, Origin, Outcome};
 use traffic_sim::explore::search::Eval;
 use traffic_sim::explore::{check_access, Params, Study};
 use traffic_sim::model::*;
@@ -177,6 +178,37 @@ fn params(jobs: usize) -> Params {
     p
 }
 
+/// A final comparison with only means behind it (no seed pairs): the evidence is insufficient, so the practical floor alone screens it.
+fn fixture_final(n: usize, red: f64, harm: f64, prior: bool) -> Final {
+    Final {
+        set: (0..n as u16).collect(),
+        base_vph: 100.0,
+        scen_vph: 100.0 - red,
+        reduction_pct: red,
+        harm,
+        score: red - 0.1 * harm,
+        origin: if prior { Origin { kind: "seed", added: "2026-11-01".into(), note: String::new() } } else { Origin::search() },
+        prior,
+        ..Final::default()
+    }
+}
+
+/// A final comparison with one period and one scenario value per seed (seeds 1, 2, ...), against a baseline of 100 through cars an hour on every seed.
+fn paired_final(n: usize, scen: &[f64], harm: f64, prior: bool) -> Final {
+    let seeds: Vec<u64> = (1..=scen.len() as u64).collect();
+    let mean = scen.iter().sum::<f64>() / scen.len() as f64;
+    let mut f = fixture_final(n, 100.0 - mean, harm, prior);
+    f.scen_vph = mean;
+    f.pairs = CtPairs::new(&seeds, vec![vec![100.0; scen.len()]], vec![scen.to_vec()]).unwrap();
+    f.effect = f.pairs.effect();
+    f
+}
+
+/// Ten values with the given mean whose spread is `amp`, alternating around it. `phase` flips the alternation.
+fn wobble(mean: f64, amp: f64, phase: bool) -> Vec<f64> {
+    (0..10).map(|i| mean + if (i % 2 == 0) == phase { amp } else { -amp }).collect()
+}
+
 fn label_of(o: &Outcome, e: &Eval) -> String {
     e.set.iter().map(|&i| o.cands[i as usize].label.clone()).collect::<Vec<_>>().join("; ")
 }
@@ -211,15 +243,17 @@ fn one_filter_removes_a_rat_run_without_harm() {
     }
     assert!(o.base.full[0].block_through.iter().sum::<f64>() > 0.0);
     let p0 = &proposals[0];
-    assert!(p0["harm"]["through"]["worstBlock"].is_string() && p0["harm"]["through"]["blocksAboveNoise"].is_u64());
-    assert!(p0["harm"].get("worstIncreaseVehPerHour").is_none());
+    let t = &p0["harm"]["through"];
+    assert!(t["largestIncrease"]["block"].is_string() && t["blocksAboveBand"].is_u64() && t["blocksResolvedIncrease"].is_u64());
+    assert!(t["largestIncrease"]["increaseVehPerHour"].is_number() && t["adjustedPenalty"]["penaltyVehPerHour"].is_number());
+    assert!(t.get("worstBlock").is_none() && p0["harm"].get("worstIncreaseVehPerHour").is_none(), "the old single worst-block field is gone");
     let per = &p0["byPeriod"]["p"];
     assert!(per["cutThrough"]["baselineVehPerHour"].as_f64().unwrap() > 5.0);
     let all = &per["allTraffic"];
-    for k in ["baselineVehPerHour", "scenarioVehPerHour", "throughIncreaseVehPerHour"] {
-        assert!(all[k].is_number(), "{k}");
+    for k in ["baselineVehPerHour", "scenarioVehPerHour", "increaseVehPerHour", "throughIncreaseVehPerHour"] {
+        assert!(all["largestIncrease"][k].is_number(), "{k}");
     }
-    assert!(all["worstBlock"].is_string() && all["blocksAboveNoise"].is_u64());
+    assert!(all["largestIncrease"]["block"].is_string() && all["blocksAboveBand"].is_u64() && all["adjustedPenalty"]["penaltyVehPerHour"].is_number());
     assert!(f.by_period[0].block_through_inc <= f.by_period[0].block_scen - f.by_period[0].block_base + 1.0);
     assert!(p0["summary"].as_str().unwrap().contains("through cars an hour"));
 }
@@ -250,17 +284,16 @@ fn proposals_carry_a_picture_and_annotate_reproduces_it() {
     let (_, base, scen) = picture_arrays(&proposals[0]);
     assert!(base.iter().sum::<i64>() > scen.iter().sum::<i64>(), "the rat run's filter takes through cars off its links");
     // The file is annotated by a second path with no search: same numbers, whatever `--jobs`.
-    let mut file = serde_json::json!({"version": 4, "area": "t", "groups": [o.json.clone()]});
+    let mut file = serde_json::json!({"version": 5, "area": "t", "groups": [o.json.clone()]});
     for pr in file["groups"][0]["proposals"].as_array_mut().unwrap() {
         pr.as_object_mut().unwrap().remove("picture");
     }
-    let s = annotate(&study, &mut file, 12.0, 1).unwrap();
+    let s = annotate(&study, &mut file, 1).unwrap();
     assert_eq!((s.groups, s.packages), (1, proposals.len()));
     assert_eq!(file["groups"][0]["proposals"], o.json["proposals"], "annotate gives the search's own arrays");
-    // A file computed without the run length falls back to the default length.
-    file["groups"][0]["computed"].as_object_mut().unwrap().remove("minutes");
-    annotate(&study, &mut file, 12.0, 2).unwrap();
+    annotate(&study, &mut file, 2).unwrap();
     assert_eq!(file["groups"][0]["proposals"], o.json["proposals"]);
+    assert_eq!(file["groups"][0]["computed"], o.json["computed"], "provenance and figures are left as they were");
 }
 
 #[test]
@@ -273,28 +306,101 @@ fn number_arrays_print_on_one_line_and_read_back_the_same() {
     assert_eq!(serde_json::from_str::<serde_json::Value>(&t).unwrap(), v);
 }
 
-#[test]
-fn annotate_refuses_a_file_computed_on_other_inputs() {
+/// A group that annotate must refuse: nothing in the file changes, and the message names the group.
+fn assert_refused(study: &Study, group: Value, needle: &str) {
     use traffic_sim::explore::annotate::annotate;
-    let n = ratrun(false, false);
-    let study = study_of(n.study_net);
-    let mut file = serde_json::json!({"version": 4, "area": "t", "groups": [{"id": "g", "computed": {"periods": ["p"], "seeds": [1], "networkHash": "other", "demandHash": "h"}, "proposals": []}]});
+    let mut file = serde_json::json!({"version": 5, "area": "t", "groups": [group]});
     let before = file.clone();
-    let e = annotate(&study, &mut file, 12.0, 1).unwrap_err();
-    assert!(e.contains("another network or demand"), "{e}");
+    let e = annotate(study, &mut file, 1).unwrap_err();
+    assert!(e.contains("group g") && e.contains(needle), "{e}");
     assert_eq!(file, before);
 }
 
 #[test]
-fn through_harm_picks_the_block_past_its_noise_band() {
+fn annotate_refuses_groups_that_do_not_match_this_engine_and_data() {
+    let n = ratrun(false, false);
+    let study = study_of(n.study_net);
+    let o = explore(&study, &params(2));
+    let mut g = o.json.clone();
+    g["id"] = "g".into();
+    // Other data.
+    let mut other = g.clone();
+    other["computed"]["networkHash"] = "other".into();
+    assert_refused(&study, other, "network");
+    // The audit's R1: network and demand are unchanged but the engine is not. The old file accepted this and drew new pictures beside old figures.
+    let mut code = g.clone();
+    code["computed"]["simulator"] = "old-engine".into();
+    assert_refused(&study, code, "simulator");
+    // The estimator changed.
+    let mut method = g.clone();
+    method["computed"]["reportMethod"] = "paired-t-0".into();
+    assert_refused(&study, method, "reporting method");
+    // Older groups lack provenance and are not given the current engine's.
+    for key in ["simulator", "reportMethod", "settings", "minutes"] {
+        let mut legacy = g.clone();
+        legacy["computed"].as_object_mut().unwrap().remove(key);
+        assert_refused(&study, legacy, key);
+    }
+    // The numbers and the pictures carry one fingerprint: what the search writes is the current engine's.
+    assert_eq!(o.json["computed"]["simulator"], traffic_sim::FINGERPRINT);
+    assert_eq!(o.json["computed"]["reportMethod"], traffic_sim::explore::paired::REPORT_METHOD);
+    assert!(o.json["computed"]["settings"]["beam"].is_u64() && o.json["computed"]["sourceRevision"].is_string());
+}
+
+#[test]
+fn a_file_with_one_bad_group_is_left_whole() {
+    use traffic_sim::explore::annotate::annotate;
+    let n = ratrun(false, false);
+    let study = study_of(n.study_net);
+    let o = explore(&study, &params(2));
+    let mut bad = o.json.clone();
+    bad["id"] = "g".into();
+    bad["computed"]["simulator"] = "old-engine".into();
+    let mut file = serde_json::json!({"version": 5, "area": "t", "groups": [o.json.clone(), bad]});
+    for g in file["groups"].as_array_mut().unwrap() {
+        for pr in g["proposals"].as_array_mut().unwrap() {
+            pr.as_object_mut().unwrap().remove("picture");
+        }
+    }
+    let before = file.clone();
+    assert!(annotate(&study, &mut file, 1).is_err());
+    assert_eq!(file, before, "no group gains a picture when another is refused");
+}
+
+#[test]
+fn through_harm_reports_the_raw_maximum_and_the_penalty_block_apart() {
     use traffic_sim::explore::report::through_harm;
-    // Block 1 gains 40 (band 10), block 2 gains 15 (band 2 x 6 = 12): only block 1 and block 2 pass, block 1 is the worst.
+    // Block 1 gains 40 (band 10), block 2 gains 15 (band 2 x 6 = 12): blocks 1 and 2 pass their bands; block 1 is both the raw maximum and the penalty block.
     let h = through_harm(&[2.0, 40.0, 15.0, -30.0], &[1.0, 1.0, 6.0, 1.0]);
-    assert_eq!((h.worst, h.blocks_above), (1, 2));
-    assert_eq!(h.increase, 40.0);
-    // Nothing beyond noise: the block with the largest raw increase is named and the count is zero.
+    assert_eq!((h.worst, h.blocks_above, h.penalty_block), (1, 2, Some(1)));
+    assert_eq!((h.increase, h.penalty), (40.0, 30.0));
+    // Nothing beyond noise: the raw maximum is still named, there is no penalty block and the count is zero.
     let n = through_harm(&[3.0, 9.0, -4.0], &[0.0, 0.0, 0.0]);
-    assert_eq!((n.worst, n.blocks_above, n.increase), (1, 0, 9.0));
+    assert_eq!((n.worst, n.blocks_above, n.increase, n.penalty_block, n.penalty), (1, 0, 9.0, None, 0.0));
+}
+
+/// The audit's R2: block A gains 100 cars an hour with a band of 80, block B gains 50 with a band of 10. B has the larger gain past
+/// its band, A has the larger raw gain. The old report named B and gave its 50 as "the block that gains the most".
+#[test]
+fn the_largest_raw_increase_is_not_the_penalty_block() {
+    use traffic_sim::explore::report::through_harm;
+    use traffic_sim::explore::search::harm_calc;
+    let (inc, sigma) = ([100.0, 50.0], [40.0, 0.0]);
+    let h = harm_calc(&inc, &sigma);
+    assert_eq!((h.worst, h.worst_adj, h.n_above, h.adj_block), (1, 40.0, 2, Some(1)));
+    assert_eq!((h.raw_worst, h.raw_increase), (0, 100.0));
+    let t = through_harm(&inc, &sigma);
+    assert_eq!((t.worst, t.increase), (0, 100.0), "the named maximum is the raw maximum");
+    assert_eq!((t.penalty_block, t.penalty), (Some(1), 40.0));
+}
+
+#[test]
+fn equal_raw_increases_go_to_the_lowest_block() {
+    use traffic_sim::explore::report::through_harm;
+    let t = through_harm(&[7.0, 12.0, 12.0, 3.0], &[0.0; 4]);
+    assert_eq!((t.worst, t.increase), (1, 12.0));
+    let t = through_harm(&[12.0, 12.0], &[0.0, 0.0]);
+    assert_eq!(t.worst, 0);
 }
 
 #[test]
@@ -433,36 +539,15 @@ fn recording_select_links_does_not_change_the_run() {
 
 #[test]
 fn options_are_spread_and_drop_changes_within_noise() {
-    use traffic_sim::explore::report::{select_options, Final};
-    let mk = |n: usize, red: f64, harm: f64| Final {
-        set: (0..n as u16).collect(),
-        reject: None,
-        base_vph: 100.0,
-        scen_vph: 100.0 - red,
-        reduction_pct: red,
-        harm,
-        worst: 0,
-        blocks_above: 0,
-        through: traffic_sim::explore::report::ThroughHarm { worst: 0, increase: 0.0, blocks_above: 0 },
-        by_period: vec![],
-        bounding: vec![],
-        inside_pct: 0.0,
-        ped_pct: 0.0,
-        bike_pct: 0.0,
-        score: red - 0.1 * harm,
-        picture: None,
-        forced: false,
-        access: None,
-        origin: traffic_sim::explore::report::Origin::search(),
-        prior: false,
-    };
+    use traffic_sim::explore::report::select_options;
+    let mk = |n: usize, red: f64, harm: f64| fixture_final(n, red, harm, false);
     let finals = vec![mk(1, 20.0, 0.0), mk(2, 20.5, 0.0), mk(2, 45.0, 20.0), mk(3, 60.0, 30.0), mk(4, 62.0, 90.0), mk(1, 5.0, 60.0), mk(5, 80.0, 40.0), mk(3, 3.0, 0.0)];
-    let (picks, notes) = select_options(&finals, 4, 1.5);
+    let (picks, notes) = select_options(&finals, 4);
     let chosen: Vec<usize> = picks.iter().map(|p| p.idx).collect();
     assert!(chosen.contains(&0), "best single stays: {chosen:?}");
     assert!(chosen.contains(&6), "best overall (score 76) stays: {chosen:?}");
-    assert!(!chosen.contains(&1), "within noise of a simpler option");
-    assert!(notes[1].contains("within noise of simpler"), "{}", notes[1]);
+    assert!(!chosen.contains(&1), "no better than a simpler option");
+    assert!(notes[1].contains("does not beat simpler"), "{}", notes[1]);
     assert!(notes[5].contains("dominated"), "{}", notes[5]);
     assert_eq!(chosen.len(), 4);
     let sizes: Vec<usize> = picks.iter().map(|p| finals[p.idx].set.len()).collect();
@@ -761,32 +846,11 @@ fn a_reference_can_name_one_street_of_a_junction() {
 
 #[test]
 fn listed_options_beat_every_smaller_listed_option_on_through_cars() {
-    use traffic_sim::explore::report::{select_options, Final, ThroughHarm};
-    let mk = |n: usize, red: f64, harm: f64| Final {
-        set: (0..n as u16).collect(),
-        reject: None,
-        base_vph: 100.0,
-        scen_vph: 100.0 - red,
-        reduction_pct: red,
-        harm,
-        worst: 0,
-        blocks_above: 0,
-        through: ThroughHarm { worst: 0, increase: 0.0, blocks_above: 0 },
-        by_period: vec![],
-        bounding: vec![],
-        inside_pct: 0.0,
-        ped_pct: 0.0,
-        bike_pct: 0.0,
-        score: red - 0.1 * harm,
-        picture: None,
-        forced: false,
-        access: None,
-        origin: traffic_sim::explore::report::Origin::search(),
-        prior: false,
-    };
+    use traffic_sim::explore::report::select_options;
+    let mk = |n: usize, red: f64, harm: f64| fixture_final(n, red, harm, false);
     // The three-intervention package has less harm than the single one, so it is not dominated, but it cuts through cars less.
     let finals = vec![mk(1, 49.0, 80.0), mk(3, 40.0, 0.0), mk(5, 90.0, 60.0), mk(4, 70.0, 10.0), mk(6, 80.0, 20.0)];
-    let (picks, notes) = select_options(&finals, 5, 1.0);
+    let (picks, notes) = select_options(&finals, 5);
     let listed: Vec<usize> = picks.iter().map(|p| p.idx).collect();
     assert!(!listed.contains(&1), "{listed:?}");
     assert!(notes[1].contains("not listed"), "{}", notes[1]);
@@ -997,10 +1061,10 @@ fn a_stricter_groups_package_is_always_rechecked_and_never_dropped_as_noise() {
     assert!(o.state.exhausted, "the budget ran out");
     let f = o.finals.iter().find(|f| f.set.len() == 2 && f.forced).expect("the stricter group's package is rechecked");
     assert!(f.reject.is_none() && f.reduction_pct > 60.0, "{}", f.reduction_pct);
-    // Dropping within noise is not applied to it: with a huge noise band it still stands where a plain finalist of its size would go.
-    let (_, notes) = traffic_sim::explore::report::select_options(&o.finals, 6, 1000.0);
+    // Dropping as no better than a simpler package is not applied to it.
+    let (_, notes) = traffic_sim::explore::report::select_options(&o.finals, 6);
     let i = o.finals.iter().position(|g| g.forced).unwrap();
-    assert!(!notes[i].contains("within noise of simpler"), "{}", notes[i]);
+    assert!(!notes[i].contains("does not beat simpler"), "{}", notes[i]);
 }
 
 /// A reference package that strands a block is still reported, with the access problem flagged on it.
@@ -1215,51 +1279,52 @@ fn known_packages_are_rechecked_eligible_and_reported_with_their_origin() {
 }
 
 #[test]
-fn an_option_published_before_is_kept_over_a_new_one_within_noise() {
-    use traffic_sim::explore::report::{select_options, Final, Origin, ThroughHarm};
-    let mk = |n: usize, red: f64, harm: f64, prior: bool| Final {
-        set: (0..n as u16).collect(),
-        reject: None,
-        base_vph: 100.0,
-        scen_vph: 100.0 - red,
-        reduction_pct: red,
-        harm,
-        worst: 0,
-        blocks_above: 0,
-        through: ThroughHarm { worst: 0, increase: 0.0, blocks_above: 0 },
-        by_period: vec![],
-        bounding: vec![],
-        inside_pct: 0.0,
-        ped_pct: 0.0,
-        bike_pct: 0.0,
-        score: red - 0.1 * harm,
-        picture: None,
-        forced: false,
-        access: None,
-        origin: if prior { Origin { kind: "seed", added: "2026-11-01".into(), note: String::new() } } else { Origin::search() },
-        prior,
-    };
-    // Finalist 1 is a new package that beats the published one (0) by 2 points of through cars, inside a 5-point noise band.
-    let finals = vec![mk(4, 70.0, 10.0, true), mk(4, 72.0, 10.0, false), mk(1, 30.0, 0.0, false), mk(2, 50.0, 5.0, false)];
-    let (picks, notes) = select_options(&finals, 4, 5.0);
+fn an_option_published_before_is_kept_over_a_new_one_it_is_not_beaten_by() {
+    use traffic_sim::explore::report::select_options;
+    let mk = |n: usize, red: f64, harm: f64, prior: bool| fixture_final(n, red, harm, prior);
+    // With no seed pairs only the 1-point practical floor screens: a new package 0.5 point ahead of the published one does not beat it.
+    let finals = vec![mk(4, 70.0, 10.0, true), mk(4, 70.5, 10.0, false), mk(1, 30.0, 0.0, false), mk(2, 50.0, 5.0, false)];
+    let (picks, notes) = select_options(&finals, 4);
     let chosen: Vec<usize> = picks.iter().map(|p| p.idx).collect();
     assert!(chosen.contains(&0) && !chosen.contains(&1), "{chosen:?}");
-    assert!(notes[1].contains("an earlier search published"), "{}", notes[1]);
-    // A new package that wins by more than the noise band replaces it.
+    assert!(notes[1].contains("which an earlier search published"), "{}", notes[1]);
+    // A new package that wins by more than the floor replaces it.
     let finals = vec![mk(4, 70.0, 10.0, true), mk(4, 80.0, 10.0, false), mk(1, 30.0, 0.0, false)];
-    let (picks, notes) = select_options(&finals, 4, 5.0);
+    let (picks, notes) = select_options(&finals, 4);
     let chosen: Vec<usize> = picks.iter().map(|p| p.idx).collect();
     assert!(chosen.contains(&1) && !chosen.contains(&0), "{chosen:?}");
     assert!(notes[0].contains("dominated"), "{}", notes[0]);
     // A new package with much less harm is not dropped for a published one that has more.
     let finals = vec![mk(4, 70.0, 90.0, true), mk(4, 72.0, 5.0, false), mk(1, 30.0, 0.0, false)];
-    let (picks, _) = select_options(&finals, 4, 5.0);
+    let (picks, _) = select_options(&finals, 4);
     assert!(picks.iter().any(|p| p.idx == 1));
     // The lightest option is always listed, even when no single intervention is.
     let finals = vec![mk(2, 40.0, 0.0, false), mk(5, 90.0, 10.0, false)];
-    let (picks, _) = select_options(&finals, 4, 5.0);
+    let (picks, _) = select_options(&finals, 4);
     assert_eq!(picks[0].idx, 0);
     assert!(picks[0].why.contains("lightest"), "{}", picks[0].why);
+}
+
+/// Task 2.6: stability is decided by the paired comparison on the same seeds, not by a band from the baseline's spread.
+#[test]
+fn retention_uses_the_paired_difference_between_options() {
+    use traffic_sim::explore::report::select_options;
+    // Both new packages are 2 points ahead of the published one on average. One leads on every seed; the other's lead flips sign.
+    let published = paired_final(4, &wobble(30.0, 10.0, true), 10.0, true);
+    let steady: Vec<f64> = wobble(30.0, 10.0, true).iter().map(|x| x - 2.0).collect();
+    let flips = wobble(28.0, 10.0, false);
+    let (a, b) = (paired_final(4, &steady, 10.0, false), paired_final(4, &flips, 10.0, false));
+    assert!((a.reduction_pct - b.reduction_pct).abs() < 1e-9, "the same 2-point mean lead");
+    assert!(beats(&a, &published), "a lead on every seed is resolved");
+    assert!(!beats(&b, &published), "the same mean lead with the sign flipping is unresolved");
+    let light = paired_final(1, &wobble(80.0, 1.0, true), 0.0, false);
+    let (picks, notes) = select_options(&[published.clone(), a.clone(), light.clone()], 4);
+    let chosen: Vec<usize> = picks.iter().map(|p| p.idx).collect();
+    assert!(chosen.contains(&1) && !chosen.contains(&0), "the steady lead replaces the published option: {chosen:?} {notes:?}");
+    let (picks, notes) = select_options(&[published, b, light], 4);
+    let chosen: Vec<usize> = picks.iter().map(|p| p.idx).collect();
+    assert!(chosen.contains(&0) && !chosen.contains(&1), "the unresolved lead leaves the published option: {chosen:?}");
+    assert!(notes[1].contains("which an earlier search published"), "{}", notes[1]);
 }
 
 /// Candidates offered without limits include every candidate offered under them, with the seeds on the list too, and the group without
@@ -1347,4 +1412,128 @@ fn a_known_package_larger_than_the_search_depth_is_dropped() {
     assert!(o.known.dropped[0].reason.contains("more than the search depth of 2"), "{}", o.known.dropped[0].reason);
     assert!(o.state.evals.iter().all(|e| e.set.len() <= 2));
     assert!(o.finals.iter().all(|f| f.set.len() <= 2));
+}
+
+// ---------------------------------------------------------------- paired uncertainty (audit finding R3)
+
+/// Baseline flows [100, 100, 100, ...] against scenario flows with the same mean but different spread. The baseline spread is zero in both,
+/// so the old band classified both increases the same way.
+#[test]
+fn equal_means_with_different_paired_spread_get_different_summaries() {
+    use traffic_sim::explore::search::harm_calc;
+    assert_eq!(harm_calc(&[20.0], &[0.0]).n_above, 1, "the old rule saw only the baseline spread: both are 'above the band'");
+    let steady = vec![20.0; 10];
+    let wide = wobble(20.0, 40.0, true);
+    let (a, b) = (Paired::of(&steady), Paired::of(&wide));
+    assert!((a.mean - b.mean).abs() < 1e-9);
+    assert_eq!(a.status(), Status::Positive);
+    assert_eq!(b.status(), Status::Unresolved);
+    assert!(b.half.unwrap() > 10.0 && a.half.unwrap() < 1e-9);
+}
+
+#[test]
+fn period_aggregation_pairs_by_seed_and_cancels_what_cancels() {
+    // Two periods whose scenario effect swings oppositely from seed to seed. Per period the effect is unresolved; the equal-weight mean of
+    // the periods within each seed (the published headline) is constant, and its interval says so.
+    let seeds: Vec<u64> = (1..=10).collect();
+    let swing: Vec<f64> = (0..10).map(|i| if i % 2 == 0 { 15.0 } else { -15.0 }).collect();
+    let base = vec![vec![100.0; 10], vec![100.0; 10]];
+    let scen = vec![swing.iter().map(|d| 90.0 + d).collect(), swing.iter().map(|d| 90.0 - d).collect()];
+    let c = CtPairs::new(&seeds, base, scen).unwrap();
+    assert_eq!(c.period_effect(0).status(), Status::Unresolved);
+    assert_eq!(c.period_effect(1).status(), Status::Unresolved);
+    let e = c.effect();
+    assert_eq!(e.status(), Status::Negative);
+    assert!((e.mean + 10.0).abs() < 1e-9 && e.sd < 1e-9);
+}
+
+#[test]
+fn one_seed_or_missing_pairs_give_insufficient_evidence_not_zero_variance() {
+    let seeds = [1u64, 2, 3];
+    assert!(CtPairs::new(&seeds, vec![vec![100.0, 100.0, 100.0]], vec![vec![90.0, 90.0]]).is_err(), "a scenario run is missing");
+    assert!(CtPairs::new(&seeds, vec![vec![100.0, 100.0]], vec![vec![90.0, 90.0, 90.0]]).is_err(), "a baseline run is missing");
+    let one = CtPairs::new(&[1], vec![vec![100.0]], vec![vec![60.0]]).unwrap();
+    let e = one.effect();
+    assert_eq!((e.n, e.half, e.status()), (1, None, Status::Insufficient));
+    let few = CtPairs::new(&seeds, vec![vec![100.0; 3]], vec![vec![60.0, 61.0, 59.0]]).unwrap().effect();
+    assert_eq!(few.status(), Status::Insufficient, "an interval exists but three seeds make no statement");
+    // Options paired on other seeds are not comparable.
+    let a = CtPairs::new(&[1, 2], vec![vec![100.0; 2]], vec![vec![60.0; 2]]).unwrap();
+    let b = CtPairs::new(&[3, 4], vec![vec![100.0; 2]], vec![vec![60.0; 2]]).unwrap();
+    assert!(option_gain(&a, &b).is_none());
+    // With too few pairs only the floor screens a reduction, and the package is still reported.
+    let f = fixture_final(1, 5.0, 0.0, false);
+    assert!(reduces(&f));
+    assert!(!reduces(&fixture_final(1, 0.5, 0.0, false)));
+}
+
+#[test]
+fn an_unresolved_reduction_is_not_an_established_one() {
+    // A mean cut of 10% that swings between a 40% cut and a 20% rise across ten seeds.
+    let scen: Vec<f64> = (0..10).map(|i| if i % 2 == 0 { 60.0 } else { 120.0 }).collect();
+    let f = paired_final(1, &scen, 0.0, false);
+    assert!((f.reduction_pct - 10.0).abs() < 1e-9);
+    assert_eq!(f.effect.status(), Status::Unresolved);
+    assert!(!reduces(&f));
+    let (picks, notes) = traffic_sim::explore::report::select_options(&[f], 3);
+    assert!(picks.is_empty() && notes[0].contains("not an established reduction"), "{notes:?}");
+}
+
+#[test]
+fn the_search_estimates_come_from_paired_runs_and_say_so() {
+    let n = ratrun(false, false);
+    let study = study_of(n.study_net);
+    let mut p = params(2);
+    p.seeds = (1..=10).collect();
+    p.minutes = 6.0;
+    p.screen_minutes = 4.0;
+    p.candidates = 6;
+    p.depth = 1;
+    p.beam = 2;
+    let o = explore(&study, &p);
+    assert!(!o.picks.is_empty());
+    let pr = &o.json["proposals"][0];
+    let e = &pr["cutThrough"]["effect"];
+    assert_eq!(e["n"], 10);
+    assert_eq!(e["status"], "decrease", "{e}");
+    assert!(e["interval"][1].as_f64().unwrap() < 0.0);
+    assert_eq!(pr["evidence"]["role"], "selection");
+    assert_eq!(pr["evidence"]["seeds"].as_array().unwrap().len(), 10);
+    assert_eq!(o.json["computed"]["estimation"]["selection"]["estimates"], "exploratory");
+    assert_eq!(o.json["computed"]["estimation"]["minPairs"], 10);
+    assert!(o.json["computed"]["estimation"]["scope"].as_str().unwrap().contains("calibration"));
+    let f = &o.shown[0];
+    assert_eq!(f.effect, f.pairs.effect());
+    assert_eq!(f.pairs.seeds, p.seeds);
+    // The raw maximum's before and after values are those of the block it names.
+    let t = &f.through;
+    assert!((t.scen - t.base - t.increase).abs() < 1e-6, "{} {} {}", t.base, t.scen, t.increase);
+    assert!((t.effect.mean - t.increase).abs() < 1e-6);
+}
+
+#[test]
+fn a_frozen_shortlist_on_unused_seeds_is_a_confirmation() {
+    let n = ratrun(false, false);
+    let study = study_of(n.study_net);
+    let mut p = params(2);
+    p.seeds = vec![1, 2];
+    p.confirm_seeds = (101..=110).collect();
+    p.minutes = 6.0;
+    p.screen_minutes = 4.0;
+    p.candidates = 6;
+    p.depth = 1;
+    p.beam = 2;
+    let o = explore(&study, &p);
+    assert!(!o.picks.is_empty());
+    let c = &o.json["computed"];
+    assert_eq!(c["seeds"], serde_json::json!((101..=110).collect::<Vec<u64>>()));
+    let sel = &c["estimation"]["selection"];
+    assert_eq!(sel["estimates"], "confirmation");
+    assert_eq!(sel["discoverySeeds"], serde_json::json!([1, 2]));
+    assert_eq!(sel["confirmationSeeds"].as_array().unwrap().len(), 10);
+    assert_eq!(sel["shortlist"].as_array().unwrap().len(), o.picks.len());
+    let pr = &o.json["proposals"][0];
+    assert_eq!(pr["evidence"]["role"], "confirmation");
+    assert_eq!(pr["cutThrough"]["effect"]["n"], 10);
+    assert!(o.shown.iter().all(|f| f.pairs.seeds.iter().all(|s| *s > 100)));
 }

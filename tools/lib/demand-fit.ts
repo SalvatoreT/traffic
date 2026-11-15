@@ -1,9 +1,10 @@
 // Count-constrained demand: count stations as link constraints, static assignment, matrix adjustment and the capacity guard
 // (baseline-calibration, seventh round). Orchestration and report for tools/build-demand.ts. No I/O.
-import { geh, withinBand, selectHoldout, corridors, evaluateCases, summarizeCases, type HoldoutOptions } from './acceptance';
+import { geh, withinBand, evaluateCases, summarizeCases } from './acceptance';
 import { SIM_ROUTE_PARAMS, assign, assignMsa, buildGraph, linkVolumes, type ALink, type ANode, type ATurnBan, type Assignment, type Feature, type Graph } from './assign';
 import { assigned, fitToCounts, type Constraint, type FitOptions, type FlowType } from './fit-counts';
 import { sourceYearLines, type RecencyConfig } from './recency';
+import { heldStationIds, observationOfKey, type SplitManifest, type SplitStation } from './lineage';
 import { buildShareConstraints, impliedVolumes, type ImpliedVolume, type ShareLink, type ShareSpec, type Targets } from './share-targets';
 
 export interface NetLinkIn extends ALink { name: string; lanes?: number; inStudyArea?: boolean }
@@ -44,11 +45,18 @@ export interface Station {
   ramp?: boolean;
   /** Taken out of every fit by the recency rule and scored as held out. */
   outOfFit?: boolean;
+  /** Source observations the target derives from (lineage.ts); defaults to the record keys without direction. */
+  observations?: string[];
+}
+
+/** Source observations of a station: stations that share one are one dependency group in the validation split. */
+export function stationObservations(st: Pick<Station, 'records' | 'observations'>): string[] {
+  return st.observations?.length ? st.observations : [...new Set(st.records.map((r) => observationOfKey(r.key)))];
 }
 
 export interface GateIn { id: number; kind: string; street: string | null; source: string; /** Source record of the count (TMC leg or Caltrans station) and the share of it this gate takes in each direction. */ record?: string; sourceId?: string; year?: number | null; shareIn?: number; shareOut?: number; inT: Record<string, number>; outT: Record<string, number>; /** Gates that split one count (same street, close together, same source) share a group key. */ group?: string }
 export interface TmcIn { id: string; year?: number | null; x: number; y: number; legs: Record<string, { entering: number; leaving: number }>; legStreets: Record<string, string> }
-export interface RampIn { kind: 'off' | 'on'; surface: number; streets: string[]; adt: number; adtKind: string; source: string; year?: number | null }
+export interface RampIn { kind: 'off' | 'on'; surface: number; streets: string[]; adt: number; adtKind: string; source: string; /** Source-observation ids of the published rows (lineage.ts). */ rows?: string[]; year?: number | null }
 export interface OverrideIn { street: string; adt: number; factor?: number; x: number; y: number; source: string; year?: number | null }
 
 export interface StationInputs {
@@ -177,7 +185,7 @@ export function buildStations(s: StationInputs, notes: string[]): Station[] {
     const idx = (r.kind === 'off' ? inIdx : outIdx).get(r.surface) ?? [];
     const ls = idx.filter((i) => s.links[i].class === 'motorway');
     if (!ls.length) continue;
-    out.push({ id: `ramp ${r.kind} ${r.surface}`, kind: 'ramp', label: `${r.kind}-ramp at node ${r.surface} (${r.streets.join(' / ') || 'unnamed'})`, basis: `DATA (Caltrans ramp ADT ${Math.round(r.adt)}; ${r.source})`, links: ls, target: per((p) => r.adt * s.rampKFactor * s.periodFactors[p].volume), weight: W.ramp ?? 1, tolPct: T.ramp ?? 5, records: [{ key: `ramp ${r.kind} ${r.surface}`, share: 1 }], source: 'caltrans-ramp', year: r.year });
+    out.push({ id: `ramp ${r.kind} ${r.surface}`, kind: 'ramp', label: `${r.kind}-ramp at node ${r.surface} (${r.streets.join(' / ') || 'unnamed'})`, basis: `DATA (Caltrans ramp ADT ${Math.round(r.adt)}; ${r.source})`, links: ls, target: per((p) => r.adt * s.rampKFactor * s.periodFactors[p].volume), weight: W.ramp ?? 1, tolPct: T.ramp ?? 5, records: [{ key: `ramp ${r.kind} ${r.surface}`, share: 1 }], source: 'caltrans-ramp', year: r.year, ...(r.rows?.length ? { observations: r.rows } : {}) });
   }
   return dedupeStations(out, notes);
 }
@@ -196,13 +204,16 @@ export function corridorOf(st: Station): string {
   return st.label.replace(/^gates? [\d +]+ /, '').replace(/ (entering|leaving)$/, '');
 }
 
-/** Mark the validation stations (design D17). Selection is deterministic: see `selectHoldout`. Returns the corridors and the held-out ids. */
-export function markHoldout(stations: Station[], periodId: string, opt: HoldoutOptions): { corridors: string[]; held: string[] } {
-  // Count stations come with their own validation set (every fourth block along a street): not ranked here.
-  const items = stations.filter((s) => s.kind !== 'count').map((s) => ({ id: s.id, corridor: corridorOf(s), target: s.target[periodId] ?? 0 }));
-  const h = selectHoldout(items, opt);
-  for (const s of stations) if (s.kind !== 'count') s.held = h.has(s.id);
-  return { corridors: corridors(items), held: [...h] };
+/** What the validation split sees of a station: ids, corridor and source observations, never values (lineage.ts). */
+export function splitStationOf(st: Station): SplitStation {
+  return { id: st.id, corridor: corridorOf(st), observations: stationObservations(st) };
+}
+
+/** Mark the validation stations from a frozen split manifest (design D17; protect-calibration-evidence D1). Returns the held ids. */
+export function applySplit(stations: Station[], manifest: SplitManifest): string[] {
+  const held = heldStationIds(manifest);
+  for (const s of stations) { s.held = held.has(s.id); s.cvExclude = false; }
+  return stations.filter((s) => s.held).map((s) => s.id);
 }
 
 export function dedupeStations(stations: Station[], notes: string[]): Station[] {

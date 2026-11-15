@@ -1,47 +1,110 @@
 import type { AreaEntry, Intervention } from '../types';
 import { interventionKey } from './scenario';
 
-/** Published by the proposals search tool. Shape is the contract in openspec/changes/proposals/design.md. */
+/**
+ * What a seed interval says about the sign of an effect. `increase` and `decrease` are resolved: the 95% interval over seeds lies on one side of
+ * zero. `unresolved`: it includes zero. `insufficient`: fewer than 10 seed pairs, so no statement.
+ */
+export type EffectStatus = 'increase' | 'decrease' | 'unresolved' | 'insufficient';
+/** A paired effect (scenario minus baseline on the same period and seed): mean, spread, runs and the interval over seeds. Cars an hour unless stated. */
+export interface Effect { n: number; mean: number; sd: number; interval?: [number, number]; status: EffectStatus }
+/** One side-street block and its increase, averaged over the stated runs. `effect` is absent in files written before intervals were recorded. */
+export interface BlockIncrease {
+  block: string; baselineVehPerHour: number; scenarioVehPerHour: number; increaseVehPerHour: number;
+  /** All-traffic rows only: the part of the change that is through cars. */
+  throughIncreaseVehPerHour?: number; effect?: Effect;
+}
+/**
+ * The block behind the search's ranking penalty: its largest increase past an assumed noise band. It is not "the block that gains the most":
+ * a block with a wide band can have a smaller raw increase. `penaltyVehPerHour` is null in version 4 files, which recorded only this block.
+ */
+export interface AdjustedPenalty {
+  block: string | null; penaltyVehPerHour: number | null;
+  /** Version 4 only: what the file recorded on that block. */
+  baselineVehPerHour?: number; scenarioVehPerHour?: number; increaseVehPerHour?: number; throughIncreaseVehPerHour?: number;
+}
+export interface ThroughHarm {
+  /** Absent in version 4 files, whose single worst block was chosen by the noise rule. */
+  largestIncrease?: BlockIncrease;
+  adjustedPenalty: AdjustedPenalty;
+  /** Blocks past the assumed noise band. */
+  blocksAboveBand: number;
+  /** Blocks whose seed interval is above zero. Absent in version 4 files. */
+  blocksResolvedIncrease?: number;
+}
 export interface Proposal {
   id: string; title: string; summary: string;
   /** Absent means "search". Reference entries are hand-defined packages evaluated with the same metrics. */
   kind?: 'search' | 'reference'; note?: string;
   link: string;
   interventions: { type: string; label: string }[];
-  /** Through cars an hour across the area's side streets, averaged over the searched periods. */
+  /** Through cars an hour across the area's side streets, averaged over the searched periods and the seeds. */
   cutThrough: CutThrough;
-  /** The side-street block that gains the most THROUGH cars an hour (both directions), averaged over the same periods. */
-  harm: { through: { worstBlock: string; increaseVehPerHour: number; blocksAboveNoise: number } };
+  /** Through cars only, averaged over the same periods and seeds. */
+  harm: { through: ThroughHarm };
   context: {
     boundingStreets: { name: string; flowChangePct: number; speedChangeMph: number }[];
     insideTripTimeChangePct: number;
     pedConflictsChangePct: number; bikeConflictsChangePct: number;
   };
   byPeriod: Record<string, PeriodResult>;
+  /** The runs behind the figures. Absent in files written before it was recorded. */
+  evidence?: ProposalEvidence;
   /** Per-link through cars for the card's picture. Absent in files written before pictures; the card then shows none. */
   picture?: ProposalPicture;
+}
+/**
+ * `selection`: the runs that chose this option also estimate it, so the intervals are exploratory. `confirmation`: a frozen shortlist rerun on seeds
+ * that took no part in choosing. `reference`: a hand-defined package, not a candidate for the options.
+ */
+export interface ProposalEvidence {
+  role: 'selection' | 'confirmation' | 'reference'; seeds: number[];
+  /** Through cars an hour per seed, by period. */
+  baselineVehPerHour: Record<string, number[]>; scenarioVehPerHour: Record<string, number[]>;
 }
 /**
  * Through cars an hour on the links that carry any, in one period, averaged over the search's seeds: today (`base`) and with the package (`scen`),
  * parallel to `links` (link ids). Links with no through cars in either column are left out.
  */
 export interface ProposalPicture { period: string; links: number[]; base: number[]; scen: number[] }
-export interface CutThrough { baselineVehPerHour: number; scenarioVehPerHour: number; changePct: number }
-/** One period. `allTraffic` counts every car on the one block that gains the most, local trips included. */
+export interface CutThrough {
+  baselineVehPerHour: number; scenarioVehPerHour: number; changePct: number;
+  /** Scenario minus baseline in through cars an hour, paired by seed. */
+  effect?: Effect;
+  /** The same change in percent of the baseline mean. */
+  changePctEffect?: Effect | null;
+}
+/** One period. `allTraffic` counts every car on the one block with the largest raw increase, local trips included. */
 export interface PeriodResult {
   cutThrough: CutThrough;
-  allTraffic: { worstBlock: string; baselineVehPerHour: number; scenarioVehPerHour: number; throughIncreaseVehPerHour: number; blocksAboveNoise: number };
+  allTraffic: { largestIncrease?: BlockIncrease; adjustedPenalty: AdjustedPenalty; blocksAboveBand: number };
+}
+/** How an option's cut in through cars compares with the next simpler option's on the same seeds, in points of the baseline. */
+export type ComparisonStatus = 'better' | 'worse' | 'unresolved' | 'insufficient';
+export interface ComparisonEffect extends Omit<Effect, 'status'> { status: ComparisonStatus }
+export interface OptionComparison { option: string; against: string; extraCutVehPerHour: ComparisonEffect; extraCutPoints?: ComparisonEffect }
+/** What a group records about how its figures were made. Every field after `calibration` is absent in version 4 files. */
+export interface Computed {
+  date: string; periods: string[]; seeds: number[]; minutes?: number; networkHash: string; demandHash: string; calibration: string;
+  simulator?: string; reportMethod?: string; sourceRevision?: string;
+  settings?: Record<string, unknown>;
+  estimation?: {
+    method: string; level: number; minPairs: number; aggregation: string; scope: string; maximum: string; practicalFloors: string;
+    selection: { estimates: 'exploratory' | 'confirmation'; discoverySeeds: number[]; confirmationSeeds: number[]; shortlist: string[] };
+  };
 }
 /** One ranked list: the packages found under one set of limits. */
 export interface ProposalGroup {
   id: string; title: string; note: string;
-  computed: { date: string; periods: string[]; seeds: number[]; minutes?: number; networkHash: string; demandHash: string; calibration: string };
+  computed: Computed;
   baseline: { cutThroughVehPerHour: Record<string, number> };
+  optionComparisons?: OptionComparison[];
   proposals: Proposal[];
   /** Computed with an earlier measure (vehicle-miles, or an all-traffic worst block beside through cars). Its options are not shown; they need to be computed again. */
   legacy?: boolean;
 }
-export interface Proposals { version: 4; area: string; groups: ProposalGroup[] }
+/** Version 5 records provenance and paired intervals. Version 4 is still read: its figures are shown and marked as lacking that evidence. */
+export interface Proposals { version: 4 | 5; area: string; groups: ProposalGroup[] }
 
 export const UNCONSTRAINED_GROUP = {
   id: 'unconstrained', title: 'Without limits',
@@ -60,12 +123,41 @@ export const proposalsUrl = (entry: Pick<AreaEntry, 'id' | 'proposals'>): string
  * A missing file, an SPA fallback page or a file of another version all mean "none computed yet".
  * A version 1 file (one list, no groups) is read as the single unconstrained group. A group computed before the figures were like-for-like
  * (no through-car count, or no through-car worst block, or no per-period all-traffic entry) is kept but marked `legacy` with no options,
- * so it reads as out of date instead of failing.
+ * so it reads as out of date instead of failing. A version 4 group (like-for-like, but no provenance, intervals or raw maximum) is read into the
+ * current shape: its one worst block becomes the adjusted-penalty block, and it has no largest-increase block, so no reader can present it as one.
  */
 const finite = (x: unknown) => typeof x === 'number' && Number.isFinite(x);
 const hasCount = (c: CutThrough | undefined) => finite(c?.baselineVehPerHour) && finite(c?.scenarioVehPerHour) && finite(c?.changePct);
-const isCurrent = (p: Proposal) => hasCount(p?.cutThrough) && finite(p?.harm?.through?.increaseVehPerHour) && finite(p?.harm?.through?.blocksAboveNoise)
-  && Object.values(p.byPeriod ?? {}).every((v) => hasCount(v?.cutThrough) && finite(v?.allTraffic?.baselineVehPerHour) && finite(v?.allTraffic?.scenarioVehPerHour) && finite(v?.allTraffic?.throughIncreaseVehPerHour) && finite(v?.allTraffic?.blocksAboveNoise));
+interface V4Harm { worstBlock?: unknown; increaseVehPerHour?: unknown; blocksAboveNoise?: unknown }
+interface V4All { worstBlock?: unknown; baselineVehPerHour?: unknown; scenarioVehPerHour?: unknown; throughIncreaseVehPerHour?: unknown; blocksAboveNoise?: unknown }
+const isBlockIncrease = (b: BlockIncrease | undefined) => !!b && typeof b.block === 'string' && finite(b.baselineVehPerHour) && finite(b.scenarioVehPerHour) && finite(b.increaseVehPerHour);
+const isV5Through = (t: ThroughHarm | undefined) => isBlockIncrease(t?.largestIncrease) && finite(t?.blocksAboveBand) && typeof t?.adjustedPenalty === 'object';
+const isV4Through = (t: V4Harm | undefined) => finite(t?.increaseVehPerHour) && finite(t?.blocksAboveNoise);
+const isV5All = (a: PeriodResult['allTraffic'] | undefined) => !!a && isBlockIncrease(a.largestIncrease) && finite(a.blocksAboveBand);
+const isV4All = (a: V4All | undefined) => finite(a?.baselineVehPerHour) && finite(a?.scenarioVehPerHour) && finite(a?.throughIncreaseVehPerHour) && finite(a?.blocksAboveNoise);
+const isCurrent = (p: Proposal) => {
+  if (!hasCount(p?.cutThrough)) return false;
+  const t = p.harm?.through;
+  const v5 = isV5Through(t);
+  if (!v5 && !isV4Through(t as V4Harm)) return false;
+  return Object.values(p.byPeriod ?? {}).every((v) => hasCount(v?.cutThrough) && (v5 ? isV5All(v?.allTraffic) : isV4All(v?.allTraffic as V4All)));
+};
+const fromV4 = (p: Proposal): Proposal => {
+  if (isV5Through(p.harm.through)) return p;
+  const t = p.harm.through as unknown as V4Harm;
+  const byPeriod: Record<string, PeriodResult> = {};
+  for (const [id, v] of Object.entries(p.byPeriod)) {
+    const a = v.allTraffic as unknown as V4All;
+    byPeriod[id] = { cutThrough: v.cutThrough, allTraffic: {
+      adjustedPenalty: { block: typeof a.worstBlock === 'string' ? a.worstBlock : null, penaltyVehPerHour: null, baselineVehPerHour: a.baselineVehPerHour as number, scenarioVehPerHour: a.scenarioVehPerHour as number, throughIncreaseVehPerHour: a.throughIncreaseVehPerHour as number },
+      blocksAboveBand: a.blocksAboveNoise as number,
+    } };
+  }
+  return { ...p, byPeriod, harm: { through: {
+    adjustedPenalty: { block: typeof t.worstBlock === 'string' ? t.worstBlock : null, penaltyVehPerHour: null, increaseVehPerHour: t.increaseVehPerHour as number },
+    blocksAboveBand: t.blocksAboveNoise as number,
+  } } };
+};
 const isPicture = (x: unknown): x is ProposalPicture => {
   const q = x as ProposalPicture | undefined;
   const nums = (a: unknown) => Array.isArray(a) && a.every(finite);
@@ -78,7 +170,7 @@ const withValidPicture = (p: Proposal): Proposal => {
   return rest;
 };
 function normalizeGroup(g: ProposalGroup): ProposalGroup {
-  if (g.proposals.every(isCurrent)) return { ...g, proposals: g.proposals.map(withValidPicture) };
+  if (g.proposals.every(isCurrent)) return { ...g, proposals: g.proposals.map((p) => withValidPicture(fromV4(p))) };
   return { ...g, legacy: true, proposals: [], baseline: { cutThroughVehPerHour: {} } };
 }
 
@@ -88,10 +180,10 @@ export function parseProposals(text: string): Proposals | null {
     if (f?.version === 1 && Array.isArray(f.proposals) && f.computed) {
       return { version: 4, area: f.area ?? '', groups: [normalizeGroup({ ...UNCONSTRAINED_GROUP, computed: f.computed, baseline: f.baseline ?? { cutThroughVehPerHour: {} }, proposals: f.proposals })] };
     }
-    if (!(f?.version === 2 || f?.version === 3 || f?.version === 4) || !Array.isArray(f.groups)) return null;
+    if (!(f?.version === 2 || f?.version === 3 || f?.version === 4 || f?.version === 5) || !Array.isArray(f.groups)) return null;
     const groups = f.groups.filter((g) => g && typeof g.id === 'string' && Array.isArray(g.proposals) && g.computed)
       .map((g) => normalizeGroup({ ...g, title: g.title || g.id, note: g.note ?? '' }));
-    return { version: 4, area: f.area ?? '', groups };
+    return { version: f.version === 5 ? 5 : 4, area: f.area ?? '', groups };
   } catch { return null; }
 }
 
@@ -113,7 +205,8 @@ export async function hashText(text: string): Promise<string> {
   return Array.from(new Uint8Array(d), (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-export interface LoadedHashes { network: string | null; demand: string | null }
+/** What the reader has loaded. `simulator` is the fingerprint of the engine in use; absent or null means the reader could not read it. */
+export interface LoadedHashes { network: string | null; demand: string | null; simulator?: string | null }
 export async function hashLoaded(raw: { network: string; demand: string } | undefined): Promise<LoadedHashes> {
   if (!raw || !globalThis.crypto?.subtle) return { network: null, demand: null };
   try { return { network: await hashText(raw.network), demand: await hashText(raw.demand) }; } catch { return { network: null, demand: null }; }
@@ -133,14 +226,61 @@ export function staleInputs(computed: Pick<ProposalGroup['computed'], 'networkHa
   return out;
 }
 
-export interface Notices { exploratory: boolean; stale: boolean; staleText: string }
+/** The version of the reporting method this reader understands: the pairing, the interval and the selection rules. Written by the search as `computed.reportMethod`. */
+export const REPORT_METHOD = 'paired-t-1';
+
+export type EvidenceState = 'current' | 'stale' | 'unverified';
+export interface EvidenceStatus {
+  state: EvidenceState;
+  /** What differs from the reader's current inputs: the figures describe other runs. */
+  stale: ('network' | 'demand' | 'simulator' | 'method')[];
+  /** Provenance the group does not record. The current engine's is never assumed for it. */
+  missing: ('simulator' | 'method' | 'settings')[];
+  /** Recorded provenance the reader could not check, because it does not know the simulator in use. */
+  unchecked: 'simulator'[];
+}
+
+/**
+ * The one definition of "may these figures be shown as current": the app's cards, the text pages, the preview cards and the exported pictures all
+ * ask it. The Rust annotator applies the same rule (`explore/provenance.rs`). Stale wins over unverified: a mismatch is a known difference.
+ */
+export function evidenceStatus(computed: ProposalGroup['computed'], loaded: LoadedHashes): EvidenceStatus {
+  const stale: EvidenceStatus['stale'] = [...staleInputs(computed, loaded)];
+  const missing: EvidenceStatus['missing'] = [];
+  const unchecked: EvidenceStatus['unchecked'] = [];
+  if (!computed.simulator) missing.push('simulator');
+  else if (typeof loaded.simulator === 'string' && loaded.simulator !== computed.simulator) stale.push('simulator');
+  else if (typeof loaded.simulator !== 'string') unchecked.push('simulator');
+  if (!computed.reportMethod) missing.push('method');
+  else if (computed.reportMethod !== REPORT_METHOD) stale.push('method');
+  if (!computed.settings || typeof computed.settings !== 'object') missing.push('settings');
+  return { state: stale.length > 0 ? 'stale' : missing.length > 0 || unchecked.length > 0 ? 'unverified' : 'current', stale, missing, unchecked };
+}
+
+export interface Notices { exploratory: boolean; stale: boolean; staleText: string; unverified: boolean; unverifiedText: string; evidence: EvidenceStatus }
+const STALE_WORDS: Record<EvidenceStatus['stale'][number], string> = { network: 'street network', demand: 'demand', simulator: 'simulator code', method: 'reporting method' };
+const listWords = (a: string[]) => (a.length <= 1 ? a.join('') : `${a.slice(0, -1).join(', ')} and ${a[a.length - 1]}`);
+export function staleSentence(e: EvidenceStatus): string {
+  if (e.stale.length === 0) return '';
+  const what = listWords(e.stale.map((k) => STALE_WORDS[k]));
+  return `The ${what} ${e.stale.length > 1 ? 'have' : 'has'} changed since these options were computed, so the numbers are out of date.`;
+}
+export function unverifiedSentence(e: EvidenceStatus): string {
+  if (e.missing.length > 0) {
+    return 'These figures were computed before the simulator version, reporting method and run settings were recorded, and they carry no uncertainty intervals. They cannot be checked against the simulator in use. Compute them again before relying on them.';
+  }
+  if (e.unchecked.length > 0) return 'The simulator version in use could not be read here, so these figures could not be checked against it.';
+  return '';
+}
 export function proposalNotices(computed: ProposalGroup['computed'], loaded: LoadedHashes): Notices {
-  const s = staleInputs(computed, loaded);
-  const what = s.length === 2 ? 'street network and demand have' : s[0] === 'network' ? 'street network has' : 'demand has';
+  const evidence = evidenceStatus(computed, loaded);
   return {
     exploratory: computed.calibration !== 'calibrated',
-    stale: s.length > 0,
-    staleText: s.length ? `The ${what} changed since these options were computed, so the numbers are out of date.` : '',
+    stale: evidence.state === 'stale',
+    staleText: staleSentence(evidence),
+    unverified: evidence.state === 'unverified',
+    unverifiedText: unverifiedSentence(evidence),
+    evidence,
   };
 }
 
@@ -174,39 +314,91 @@ export function periodsPhrase(periods: string[], periodLabel: (id: string) => st
 
 const carsWord = (n: number) => (n === 1 ? 'car' : 'cars');
 
-/** Figure 1: through cars an hour across all the area's side streets. `when` is a `periodsPhrase`. */
-export function cutThroughHeadline(c: CutThrough, when = 'the searched periods'): { figure: string; label: string; detail: string; definition: string } {
+/** Fewest seed pairs for which the file makes a statement about an effect. Mirrors `MIN_PAIRS` in `explore/paired.rs`. */
+export const MIN_RUNS = 10;
+const runsWord = (n: number) => `${n} ${n === 1 ? 'run' : 'runs'}`;
+const sg = (x: number, dp = 0, unit = '') => `${x < 0 ? MINUS : '+'}${num(x, dp)}${unit}`;
+
+/**
+ * One sentence on a paired effect: its 95% interval over seeds and what that resolves. `unit` is appended to each end ("%" or " through cars an hour").
+ * A missing effect says no interval was recorded; fewer than ten runs say so and make no claim.
+ */
+export function intervalText(e: Effect | null | undefined, unit = ' through cars an hour', dp = 0): string {
+  if (!e) return 'No uncertainty interval was recorded for this figure.';
+  if (e.status === 'insufficient' || !e.interval) {
+    return `${runsWord(e.n)} ${e.n === 1 ? 'is' : 'are'} too few for an interval (at least ${MIN_RUNS} are needed), so this figure does not say whether the change is more than run-to-run variation.`;
+  }
+  const [lo, hi] = e.interval;
+  const range = `95% interval ${sg(lo, dp, unit)} to ${sg(hi, dp, unit)} over ${runsWord(e.n)}`;
+  const verdict = e.status === 'decrease' ? 'the fall is resolved from run-to-run variation' : e.status === 'increase' ? 'the rise is resolved from run-to-run variation' : 'the interval includes zero, so the sign of the change is not resolved';
+  return `${range}: ${verdict}.`;
+}
+
+/** "mean of 10 runs (seeds 1 to 10)" for a seed list; a single run is said to be one run. */
+export function seedsPhrase(seeds: number[]): string {
+  const n = seeds.length;
+  if (n === 0) return 'an unrecorded number of runs';
+  if (n === 1) return `one run (seed ${seeds[0]})`;
+  const consecutive = seeds.every((x, i) => i === 0 || x === seeds[i - 1] + 1);
+  return `mean of ${n} runs (${consecutive ? `seeds ${seeds[0]} to ${seeds[n - 1]}` : `seeds ${seeds.join(', ')}`})`;
+}
+
+/** Figure 1: through cars an hour across all the area's side streets. `when` is a `periodsPhrase`; `runs` the seeds behind the mean. */
+export function cutThroughHeadline(c: CutThrough, when = 'the searched periods', runs?: number[]): { figure: string; label: string; detail: string; definition: string; interval: string } {
   const b = Math.round(c.baselineVehPerHour), s = Math.round(c.scenarioVehPerHour);
   const d = s - b;
   const dp = pctDigits(c.changePct);
   const pct = isZero(c.changePct, dp) ? '0%' : `${c.changePct < 0 ? MINUS : '+'}${num(c.changePct, dp)}%`;
+  const basis = runs && runs.length > 0 ? `${seedsPhrase(runs)} per period` : 'averaged over the runs';
   return {
     figure: d === 0 ? 'No change' : `${d < 0 ? MINUS : '+'}${Math.abs(d)} cars an hour`,
     label: 'cutting through, all side streets together',
     detail: `${b} → ${s} through cars an hour (${pct})`,
-    definition: `Through cars on all of the area's side streets together: cars that cross the area without a trip that starts or ends in it. Each car is counted once. Shown for ${when}.`,
+    definition: `Through cars on all of the area's side streets together: cars that cross the area without a trip that starts or ends in it. Each car is counted once. Shown for ${when}; ${basis}.`,
+    interval: c.changePctEffect !== undefined || c.effect !== undefined ? intervalText(c.changePctEffect ?? undefined, '%', 1) : intervalText(undefined),
   };
 }
 
 /**
- * Figure 2: the same kind of car as figure 1 (through cars an hour, same averaging), on the one side-street block that gains the most.
- * It is shown only when the gain is past run-to-run variation.
+ * Figure 2: the same kind of car as figure 1 (through cars an hour, same averaging), on the one side-street block with the largest raw increase.
+ * A raw maximum is never turned into "none": with no gain it says so, and an increase the seeds do not resolve is shown with that status.
+ * A version 4 file recorded only the block the search's noise rule picked, which can differ from the largest increase, and says so.
  */
-export function harmHeadline(h: Proposal['harm'], when = 'the searched periods'): { none: boolean; figure: string; label: string; definition: string } {
+export function harmHeadline(h: Proposal['harm'], when = 'the searched periods'): { none: boolean; figure: string; label: string; definition: string; status: 'resolved' | 'unresolved' | 'insufficient' | 'unrecorded' | 'none' } {
   const t = h.through;
-  const n = t.blocksAboveNoise;
-  const none = !(n > 0 && Math.round(t.increaseVehPerHour) > 0);
+  const big = t.largestIncrease;
   const scope = `Through cars only, both directions of that one block, for ${when}.`;
-  if (none) {
-    return { none, figure: '', label: 'No block gains through traffic beyond run-to-run variation', definition: `Through cars only, counted block by block, for ${when}.` };
+  if (!big) {
+    const pen = t.adjustedPenalty;
+    const inc = pen.increaseVehPerHour ?? 0;
+    const flagged = t.blocksAboveBand > 0 && Math.round(inc) > 0 && pen.block;
+    const note = 'This file predates the block with the largest increase: its one block is the one the search flagged with an assumed noise band, so another block may have gained more through cars. No interval was recorded.';
+    if (!flagged) {
+      return { none: true, status: 'unrecorded', figure: '', label: 'No block passes the search\'s noise band for through cars', definition: `${scope} The band is an assumed dead band, not a measured uncertainty. ${note}` };
+    }
+    return {
+      none: false, status: 'unrecorded', figure: `+${Math.round(inc)} through ${carsWord(Math.round(inc))} an hour`, label: `on one block: ${pen.block}, flagged by the search's noise rule`,
+      definition: `${scope} ${note}`,
+    };
   }
-  const others = n - 1;
-  const tail = others === 0 ? 'No other block gains beyond run-to-run variation.' : `${others} other ${others === 1 ? 'block' : 'blocks'} also ${others === 1 ? 'gains' : 'gain'} through cars beyond run-to-run variation.`;
+  const inc = Math.round(big.increaseVehPerHour);
+  const e = big.effect;
+  const resolved = t.blocksResolvedIncrease ?? 0;
+  const status = !e ? 'unrecorded' : e.status === 'increase' ? 'resolved' : e.status === 'insufficient' ? 'insufficient' : 'unresolved';
+  const tail = e && e.n >= MIN_RUNS && resolved > 0 ? ` ${resolved} ${resolved === 1 ? 'block has' : 'blocks have'} a rise resolved from run-to-run variation.` : '';
+  const choice = ' The block was picked after looking at all of them, so its interval is not adjusted for that choice.';
+  if (inc <= 0) {
+    return {
+      none: true, status: 'none', figure: '', label: `No block gains through cars on average; the largest change is ${sg(big.increaseVehPerHour, 0)} on ${big.block}`,
+      definition: `${scope} This compares averages only.${tail}`,
+    };
+  }
+  const interval = e ? ` ${intervalText(e)}` : ' No interval was recorded.';
   return {
-    none,
-    figure: `+${Math.round(t.increaseVehPerHour)} through ${carsWord(Math.round(t.increaseVehPerHour))} an hour`,
-    label: `on one block: ${t.worstBlock}, the block that gains the most`,
-    definition: `Cars that still cut through take other streets, so one block can gain while the area total falls. ${scope} ${tail}`,
+    none: false, status,
+    figure: `+${inc} through ${carsWord(inc)} an hour`,
+    label: `on one block: ${big.block}, the block with the largest increase`,
+    definition: `Cars that still cut through take other streets, so one block can gain while the area total falls. ${scope}${interval}${e ? choice : ''}${tail}`,
   };
 }
 
@@ -216,30 +408,48 @@ export function beforeAfterPct(c: CutThrough): string {
 }
 
 export interface AllTrafficRow {
-  period: string; block: string | null;
+  period: string;
+  /** The block with the largest raw all-traffic increase in the period. Null for a version 4 file whose noise rule flagged no block. */
+  block: string | null;
   /** Cars an hour on that block, all trips together. */
   before: number; after: number;
   /** Change in all cars, and its split into through cars and local trips (all cars minus through cars). */
   change: number; through: number; local: number;
+  /** Blocks past the assumed noise band. */
   blocksAbove: number;
+  /** The paired interval of the change, when the file records one. */
+  interval: string;
+  /** The block behind the search's ranking penalty and what the penalty is after its noise band. */
+  penaltyBlock: string | null; penalty: number | null;
+  /** The row is a version 4 figure: its block is the one the noise rule flagged. */
+  flagged: boolean;
 }
-/** One row per period for the details table. A period with no block past run-to-run variation names none. */
+/** One row per period for the details table. */
 export function allTrafficRows(p: Proposal, periodLabel: (id: string) => string): AllTrafficRow[] {
   return Object.entries(p.byPeriod).map(([id, v]) => {
     const a = v.allTraffic;
-    const above = a.blocksAboveNoise > 0;
-    const change = a.scenarioVehPerHour - a.baselineVehPerHour;
+    const big = a.largestIncrease;
+    const pen = a.adjustedPenalty;
+    if (big) {
+      const through = big.throughIncreaseVehPerHour ?? 0;
+      return {
+        period: periodLabel(id), block: big.block, before: big.baselineVehPerHour, after: big.scenarioVehPerHour,
+        change: big.scenarioVehPerHour - big.baselineVehPerHour, through, local: big.scenarioVehPerHour - big.baselineVehPerHour - through,
+        blocksAbove: a.blocksAboveBand, interval: intervalText(big.effect, ' cars an hour'), penaltyBlock: pen.block, penalty: pen.penaltyVehPerHour, flagged: false,
+      };
+    }
+    const above = a.blocksAboveBand > 0;
+    const before = pen.baselineVehPerHour ?? 0, after = pen.scenarioVehPerHour ?? 0, through = pen.throughIncreaseVehPerHour ?? 0;
+    const change = after - before;
     return {
-      period: periodLabel(id), block: above ? a.worstBlock : null,
-      before: a.baselineVehPerHour, after: a.scenarioVehPerHour,
-      change, through: a.throughIncreaseVehPerHour, local: change - a.throughIncreaseVehPerHour,
-      blocksAbove: a.blocksAboveNoise,
+      period: periodLabel(id), block: above ? pen.block : null, before, after, change, through, local: change - through, blocksAbove: a.blocksAboveBand,
+      interval: intervalText(undefined), penaltyBlock: pen.block, penalty: pen.penaltyVehPerHour, flagged: true,
     };
   });
 }
 
 /**
- * The one sentence on what the extra cars are, built from the numbers: over the periods where a block gains beyond noise, the share of
+ * The one sentence on what the extra cars are, built from the numbers: over the periods where the named block gains, the share of
  * its gain that is through cars and the share that is local trips. It says "mostly local trips" only when local trips are most of the gain.
  * The model holds the number of trips fixed, so a rise in local trips on a block is trips moving, not new traffic.
  */
@@ -255,13 +465,46 @@ export function allTrafficNote(rows: AllTrafficRow[]): string {
   return `${lead} The simulation keeps the number of trips fixed, so these are trips moving from one street to another, not new traffic.`;
 }
 
+/** What the runs behind a card's figures were for: choosing the option too (exploratory), a confirmation on unused seeds, or a reference. */
+export function evidenceNote(p: Proposal, g: Pick<ProposalGroup, 'computed'>): string {
+  const role = p.evidence?.role;
+  const sel = g.computed.estimation?.selection;
+  if (role === 'confirmation') return `Confirmation: a shortlist frozen before these runs, rerun on seeds ${seedRange(p.evidence?.seeds ?? [])} that took no part in choosing the options.`;
+  if (role === 'reference') return 'A hand-defined package, not a candidate for the options. It was run on the same seeds as the search.';
+  if (role === 'selection' || sel?.estimates === 'exploratory') return 'Exploratory estimate: the same runs that chose this option produced these figures, so the intervals are not an independent confirmation.';
+  return 'It is not recorded whether the runs that produced these figures also chose the option.';
+}
+const seedRange = (s: number[]) => (s.length === 0 ? '(not recorded)' : s.every((x, i) => i === 0 || x === s[i - 1] + 1) ? `${s[0]} to ${s[s.length - 1]}` : s.join(', '));
+
+/** The scope every interval carries. */
+export const INTERVAL_SCOPE = 'Intervals cover run-to-run variation (random seeds) with the network, demand and model fixed. They do not cover calibration error, demand error or day-to-day variation in real traffic.';
+
+/** How option `c.option` compares with the next simpler option: points of through cars cut, paired on the same seeds. */
+export function comparisonText(c: OptionComparison, label: (id: string) => string): string {
+  const e = c.extraCutPoints;
+  const who = `${label(c.option)} against ${label(c.against)}`;
+  if (!e || e.status === 'insufficient' || !e.interval) return `${who}: not enough runs to compare (at least ${MIN_RUNS} paired runs are needed).`;
+  const [lo, hi] = e.interval;
+  const range = `95% interval ${sg(lo, 1)} to ${sg(hi, 1)} points over ${runsWord(e.n)}`;
+  if (e.status === 'unresolved') return `${who}: the difference in through cars cut is not resolved (${sg(e.mean, 1)} points; ${range}).`;
+  return `${who}: cuts ${num(e.mean, 1)} ${e.mean >= 0 ? 'more' : 'fewer'} points of through cars (${range}).`;
+}
+
 export function formatComputed(c: ProposalGroup['computed'], periodLabel: (id: string) => string): string {
   const d = new Date(c.date);
   const when = Number.isNaN(d.getTime()) ? c.date : d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
   const periods = c.periods.map(periodLabel);
   const list = periods.length <= 1 ? periods.join('') : `${periods.slice(0, -1).join(', ')} and ${periods[periods.length - 1]}`;
   const n = c.seeds.length;
-  return `Computed ${when} for ${list || 'the searched periods'}, averaged over ${n} simulation ${n === 1 ? 'run' : 'runs'} with different random seeds.`;
+  return `Computed ${when} for ${list || 'the searched periods'}: ${seedsPhrase(c.seeds)} of the simulation per period${n > 1 ? ', each run with a different random seed' : ''}${c.minutes ? `, ${c.minutes} simulated minutes each` : ''}.`;
+}
+
+/** The recorded provenance of a group on one line, for the text pages and the card's detail. Absent fields are said to be absent. */
+export function provenanceLine(c: ProposalGroup['computed']): string {
+  const rev = c.sourceRevision ? `, source revision ${c.sourceRevision}` : '';
+  return c.simulator && c.reportMethod
+    ? `Simulator ${c.simulator.slice(0, 12)}, reporting method ${c.reportMethod}${rev}.`
+    : 'Simulator version, reporting method and run settings were not recorded for this group.';
 }
 
 // --- opening on the map

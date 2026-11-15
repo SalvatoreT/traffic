@@ -11,7 +11,8 @@ fn usage(msg: &str) -> ! {
         eprintln!("error: {msg}");
     }
     eprintln!(
-        "usage: explore --area ID [--periods pm_peak,am_peak] [--seeds 1,2,3] [--beam 3] [--depth 8] [--candidates 40]\n\
+        "usage: explore --area ID [--periods pm_peak,am_peak] [--seeds 1-10] [--beam 3] [--depth 8] [--candidates 40]\n\
+         \x20              [--confirm-seeds 101-110]   (seeds accept lists or ranges: 1-10)\n\
          \x20              [--screen-minutes 30] [--minutes 60] [--budget-evals N] [--jobs N] [--harm-weight 0.1] [--expand 16]\n\
          \x20              [--finalists 12] [--options 5] [--out public/data/ID.proposals.json] [--report data/proposals/ID.md]\n\
          \x20              [--references data/proposals/ID.references.json] [--profile ID[,ID...]|all] [--profiles data/proposals/AREA.profiles.json] [--no-warm-start]\n\
@@ -21,6 +22,21 @@ fn usage(msg: &str) -> ! {
          \x20              [--annotate]   add per-link pictures to the existing --out file (re-simulates the published packages; no search)"
     );
     std::process::exit(if msg.is_empty() { 0 } else { 2 });
+}
+
+/// `1,2,3`, or a range `1-10` (consecutive values: a continuous range with a fixed increment, as [TfL-TMG4, 7.5.1] expects).
+fn seed_list(v: &str, what: &str) -> Vec<u64> {
+    let bad = || usage(&format!("bad {what}"));
+    match v.split_once('-') {
+        Some((a, b)) => {
+            let (a, b): (u64, u64) = (a.parse().unwrap_or_else(|_| bad()), b.parse().unwrap_or_else(|_| bad()));
+            if a > b {
+                bad();
+            }
+            (a..=b).collect()
+        }
+        None => v.split(',').map(|s| s.parse().unwrap_or_else(|_| bad())).collect(),
+    }
 }
 
 fn main() {
@@ -77,7 +93,8 @@ fn main() {
         match k {
             "--area" => p.area = v.clone(),
             "--periods" => p.periods = v.split(',').map(String::from).collect(),
-            "--seeds" => p.seeds = v.split(',').map(|s| s.parse().unwrap_or_else(|_| usage("bad --seeds"))).collect(),
+            "--seeds" => p.seeds = seed_list(&v, "--seeds"),
+            "--confirm-seeds" => p.confirm_seeds = seed_list(&v, "--confirm-seeds"),
             "--beam" => p.beam = num("--beam") as usize,
             "--depth" => p.depth = num("--depth") as usize,
             "--candidates" => p.candidates = num("--candidates") as usize,
@@ -108,7 +125,11 @@ fn main() {
     if p.periods.is_empty() || p.seeds.is_empty() || p.beam == 0 || p.depth == 0 {
         usage("periods, seeds, beam and depth must be non-empty / positive");
     }
+    if p.confirm_seeds.iter().any(|s| p.seeds.contains(s)) {
+        usage("--confirm-seeds must not overlap --seeds: confirmation needs seeds that took no part in the search");
+    }
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    p.source_revision = traffic_sim::explore::provenance::source_revision(&root);
     let study = Study::load(&root, &p.area).unwrap_or_else(|e| usage(&e));
     for per in &p.periods {
         if !study.demand.periods.iter().any(|d| &d.id == per) {
@@ -166,7 +187,7 @@ fn main() {
         let text = std::fs::read_to_string(&out).unwrap_or_else(|e| usage(&format!("cannot read {}: {e}", out.display())));
         let mut file: serde_json::Value = serde_json::from_str(&text).unwrap_or_else(|e| usage(&format!("{}: {e}", out.display())));
         let t0 = std::time::Instant::now();
-        let s = annotate::annotate(&study, &mut file, p.minutes, p.jobs).unwrap_or_else(|e| usage(&e));
+        let s = annotate::annotate(&study, &mut file, p.jobs).unwrap_or_else(|e| usage(&e));
         std::fs::write(&out, util::pretty_json(&file)).expect("write proposals");
         eprintln!("annotated {} package(s) in {} group(s) from {} run(s) in {:.0}s; wrote {}", s.packages, s.groups, s.runs, t0.elapsed().as_secs_f64(), out.display());
         return;

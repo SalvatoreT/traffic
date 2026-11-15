@@ -334,11 +334,29 @@ pub struct Config {
     /// Additive: interventions in force from construction, so the initial placement already respects them. `Simulation::reset` keeps the
     /// scenario set by `set_interventions`.
     pub interventions: Vec<Intervention>,
+    /// Additive: how waiting at a junction is relieved (default `physical`). `historical` and `no_behavioral` exist for sensitivity checks.
+    pub junction_recovery: JunctionRecovery,
+}
+
+/// Junction recovery policy. Every policy except `historical` keeps physical conflict exclusion regardless of the wait.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum JunctionRecovery {
+    /// Production: courtesy (`YIELD_COURTESY_S`) and the approach-gap/stop-order fallback (`YIELD_FALLBACK_S`) change priority only; a
+    /// crossing never starts while a vehicle in the node occupies the conflict point; a vehicle held in the node by a full exit for
+    /// `GRIDLOCK_REMOVE_S` is removed and counted (ASSUMPTION, the gridlock breaker's rule applied inside the node).
+    #[default]
+    Physical,
+    /// `Physical` without the courtesy and approach-gap/stop-order fallback (diagnostic).
+    NoBehavioral,
+    /// The engine before 2026-11-15 (diagnostic): the in-node conflict check is skipped after `CONFLICT_FALLBACK_S`, a vehicle held at
+    /// its exit counts as gone once its planned crossing time has passed, and nothing removes it.
+    Historical,
 }
 
 impl Default for Config {
     fn default() -> Self {
-        Config { seed: 1, period: String::new(), demand_scale: 1.0, select_links: Vec::new(), local_cost_factor: None, guided_share: None, switch_band: None, record_trips: false, signal_adapt_min: None, motorway_gridlock_removal: false, ped_yield_marked: None, ped_yield_unmarked: None, lane_width_m: None, no_right_turn_on_red: false, initial_load: true, interventions: Vec::new() }
+        Config { seed: 1, period: String::new(), demand_scale: 1.0, select_links: Vec::new(), local_cost_factor: None, guided_share: None, switch_band: None, record_trips: false, signal_adapt_min: None, motorway_gridlock_removal: false, ped_yield_marked: None, ped_yield_unmarked: None, lane_width_m: None, no_right_turn_on_red: false, initial_load: true, interventions: Vec::new(), junction_recovery: JunctionRecovery::Physical }
     }
 }
 
@@ -425,6 +443,42 @@ pub struct Metrics {
     /// Additive: agents (cars, cyclists, pedestrians) placed on the network at time zero by initial loading, and the ones that found no room.
     pub initial_agents: u64,
     pub initial_skipped: u64,
+    /// Additive: use of the junction recovery rules (see `JunctionRecoveryStats`).
+    pub junction_recovery: JunctionRecoveryStats,
+}
+
+/// How often junction recovery rules decided an entry. Head-seconds and admissions count from t = 0; `init_*` count the settle interval
+/// before it. A reason is invoked when the head's wait has reached its threshold and the ordinary rule would refuse entry.
+#[derive(Clone, Debug, Default, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct JunctionRecoveryStats {
+    pub policy: String,
+    /// Node entries by cars and cyclists: the denominator of the admission shares.
+    pub crossings: u64,
+    pub init_crossings: u64,
+    /// After `YIELD_COURTESY_S`: entry ahead of a conflicting vehicle slower than `QUEUE_V`.
+    pub courtesy: RecoveryReason,
+    /// After `YIELD_FALLBACK_S`: entry without the approach-gap and stop-order checks.
+    pub yield_fallback: RecoveryReason,
+    /// After `CONFLICT_FALLBACK_S`: entry while a vehicle in the node still occupies the conflict point. Admissions occur only under `historical`.
+    pub conflict_bypass: RecoveryReason,
+    /// Vehicles removed after being held in a node by a full exit for `GRIDLOCK_REMOVE_S` (included in `gridlock_removed` for cars).
+    pub held_removals: u64,
+    pub init_held_removals: u64,
+    /// Detailed events beyond the stored limit (`Simulation::recovery_events`).
+    pub events_dropped: u64,
+}
+
+#[derive(Clone, Debug, Default, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RecoveryReason {
+    /// Head-seconds with the reason invoked.
+    pub invoked_s: f64,
+    /// Part of `invoked_s` in which the head still could not enter.
+    pub blocked_s: f64,
+    /// Entries the ordinary rule would have refused, each counted once when the crossing starts.
+    pub admissions: u64,
+    pub init_admissions: u64,
 }
 
 #[derive(Clone, Debug, Default, Serialize)]

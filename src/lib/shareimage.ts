@@ -2,7 +2,7 @@ import qrcode from 'qrcode-generator';
 import { changeTicks, DEAD_BAND_CUTTHROUGH } from './change';
 import { BADGE_STYLE, BADGE_TEXT, ATTRIBUTION } from './mapexport';
 import type { Mark, PictureFacts, PictureModel } from './picture';
-import { signedPct, type Proposal, type ProposalPicture } from './proposals';
+import { seedsPhrase, signedPct, type Proposal, type ProposalPicture } from './proposals';
 import { changeWidthFor, colorForIntensity, divergingStops, mutedColor, widthFor } from './ramps';
 
 /** Layout width of the shared picture in px; it is rasterized at `SHARE_SCALE` times this. Fixed light colors, so it reads the same wherever it is sent. */
@@ -291,21 +291,24 @@ const through = (b: number, s: number, pct: number) => `${Math.round(b)} → ${M
 export function shareInputFor(a: {
   areaName: string; status: string; p: Proposal; pic: ProposalPicture; facts: PictureFacts; model: PictureModel; searched: string[];
   periodLabel(id: string): string; shortLabel(id: string): string; caption: string; openUrl: string;
+  /** The seeds behind the figures, so the picture says whether they are a mean and over how many runs. */
+  runs?: number[];
 }): ShareInput {
   const { p, pic, facts } = a;
   const when = hoursOnly(a.periodLabel(pic.period));
   const r = p.byPeriod[pic.period]?.cutThrough;
-  const periodFigure = r ? { label: `Through cars on all the area's side streets, ${when}, the period this picture shows`, figures: through(r.baselineVehPerHour, r.scenarioVehPerHour, r.changePct) } : null;
+  const basis = a.runs && a.runs.length > 0 ? `, ${seedsPhrase(a.runs)}` : '';
+  const periodFigure = r ? { label: `Through cars on all the area's side streets, ${when}, the period this picture shows${basis}`, figures: through(r.baselineVehPerHour, r.scenarioVehPerHour, r.changePct) } : null;
   const names = a.searched.map(a.shortLabel);
   const list = names.length <= 1 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
   const averageFigure = names.length > 1 || (!periodFigure && names.length === 1)
-    ? { label: `Average of ${list}, all side streets`, figures: through(p.cutThrough.baselineVehPerHour, p.cutThrough.scenarioVehPerHour, p.cutThrough.changePct) }
+    ? { label: `Average of ${list}, all side streets${basis}`, figures: through(p.cutThrough.baselineVehPerHour, p.cutThrough.scenarioVehPerHour, p.cutThrough.changePct) }
     : null;
   const keys: ShareInput['keys'] = [];
   const kinds = new Set(a.model.marks.map((m) => m.kind));
   if (kinds.has('bar')) keys.push({ kind: 'bar', text: 'Yellow and black bar across a street: closed to through cars.' });
   const pins = a.model.pins;
-  if (pins.length > 0 && facts.named) keys.push({ kind: 'pin', text: `Outlined, labeled ${pins[0].text}: ${facts.named.label}, the block the proposal gains the most on, averaged over the periods searched.` });
+  if (pins.length > 0 && facts.named) keys.push({ kind: 'pin', text: `Outlined, labeled ${pins[0].text}: ${facts.named.label}, ${facts.namedKind === 'largest' ? 'the block with the largest through-car increase' : "the block the search flagged with an assumed noise band, which need not have the largest increase"}, averaged over the periods searched.` });
   if (pins.length > 1 && facts.gain) keys.push({ kind: 'pin-dashed', text: `Dashed outline, labeled ${pins[1].text}: ${facts.gain.label}, the biggest gain in the ${a.shortLabel(pic.period)}.` });
   if (kinds.has('diverter')) keys.push({ kind: 'text', text: 'Striped line across a junction: diagonal diverter.' });
   if (kinds.has('arrow')) keys.push({ kind: 'text', text: 'Arrow: one-way street, in the direction shown.' });

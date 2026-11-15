@@ -35,6 +35,16 @@ pub struct PeriodStat {
     /// Per bounding street: summed flow of its in-study links (veh/h) and flow-weighted mean speed (m/s).
     pub street_flow: Vec<f64>,
     pub street_speed: Vec<f64>,
+    /// The runs behind these means, in seed order, so a comparison can pair them by seed.
+    pub runs: Vec<RunRec>,
+}
+
+/// What a final comparison keeps of one run: through cars an hour, and the flow and through flow on each harm block.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct RunRec {
+    pub ct_vph: f64,
+    pub block_flow: Vec<f64>,
+    pub block_through: Vec<f64>,
 }
 
 pub fn block_flows(study: &Study, flow: &[f32]) -> Vec<f64> {
@@ -90,6 +100,7 @@ pub fn period_stat(study: &Study, runs: &[&RunOut]) -> PeriodStat {
         link_through,
         street_flow,
         street_speed,
+        runs: runs.iter().zip(per_run).zip(per_run_through).map(|((r, bf), bt)| RunRec { ct_vph: r.ct_vph, block_flow: bf, block_through: bt }).collect(),
     }
 }
 
@@ -150,6 +161,15 @@ pub fn run_baseline(study: &Study, p: &Params) -> Baseline {
     Baseline { full, screen_runs, screen, hot }
 }
 
+/// The baseline for a confirmation: the full-length runs over `p.seeds` for every period, with no screening runs and no select-link records.
+pub fn run_baseline_full(study: &Study, p: &Params) -> Baseline {
+    let ns = p.seeds.len();
+    let jobs: Vec<(usize, usize)> = (0..p.periods.len()).flat_map(|pi| (0..ns).map(move |si| (pi, si))).collect();
+    let outs = parallel_map(p.jobs, &jobs, |&(pi, si)| run(study, &[], &p.periods[pi], p.seeds[si], p.minutes, &[]));
+    let full: Vec<PeriodStat> = (0..p.periods.len()).map(|pi| period_stat(study, &outs[pi * ns..(pi + 1) * ns].iter().collect::<Vec<_>>())).collect();
+    Baseline { full, screen_runs: Vec::new(), screen: period_stat(study, &[]), hot: hotspots(study, &[], 1.0) }
+}
+
 /// Reason a scenario run is rejected against the baseline run it is paired with, if any.
 pub fn run_reject(scen_unroutable: f64, scen_gridlock: f64, scen_backlog: f64, base: &PeriodStatLite) -> Option<String> {
     if scen_unroutable > base.unroutable + 1e-9 {
@@ -178,18 +198,25 @@ impl PeriodStat {
 }
 
 pub struct HarmRes {
-    /// Largest increase after subtracting the noise band, floored at 0 (veh/h).
+    /// The search penalty: the largest increase after subtracting the noise band, floored at 0 (veh/h).
     pub worst_adj: f64,
-    /// Harm-block position of the worst block: the largest adjusted increase, else the largest raw increase.
+    /// Harm-block position of the block behind the penalty. When no block passes its band the penalty is 0 and this is the raw-maximum block.
     pub worst: usize,
+    /// The block behind the penalty, or `None` when no block passes its band.
+    pub adj_block: Option<usize>,
+    /// Blocks whose increase passes the noise band.
     pub n_above: usize,
+    /// Harm-block position of the largest raw increase, whatever its band. Ties go to the lowest position.
+    pub raw_worst: usize,
+    pub raw_increase: f64,
 }
 
-/// Harm of one period: `inc` is scenario minus baseline block flow, `sigma` the baseline's spread over seeds.
+/// Harm of one period: `inc` is scenario minus baseline block flow, `sigma` the baseline's spread over seeds. The penalty block (largest
+/// increase past its band) and the raw-maximum block are reported apart: a block with a wide band can have the larger raw increase.
 pub fn harm_calc(inc: &[f64], sigma: &[f64]) -> HarmRes {
     let band = |b: usize| (NOISE_SIGMAS * sigma[b]).max(NOISE_FLOOR_VEH_H);
-    let (mut worst_adj, mut worst, mut n_above) = (0.0f64, 0usize, 0usize);
-    let (mut worst_raw, mut worst_raw_i) = (f64::NEG_INFINITY, 0usize);
+    let (mut worst_adj, mut adj_block, mut n_above) = (0.0f64, None, 0usize);
+    let (mut raw_increase, mut raw_worst) = (f64::NEG_INFINITY, 0usize);
     for b in 0..inc.len() {
         let adj = inc[b] - band(b);
         if adj > 0.0 {
@@ -197,17 +224,14 @@ pub fn harm_calc(inc: &[f64], sigma: &[f64]) -> HarmRes {
         }
         if adj > worst_adj {
             worst_adj = adj;
-            worst = b;
+            adj_block = Some(b);
         }
-        if inc[b] > worst_raw {
-            worst_raw = inc[b];
-            worst_raw_i = b;
+        if inc[b] > raw_increase {
+            raw_increase = inc[b];
+            raw_worst = b;
         }
     }
-    if worst_adj <= 0.0 {
-        worst = worst_raw_i;
-    }
-    HarmRes { worst_adj, worst, n_above }
+    HarmRes { worst_adj, worst: adj_block.unwrap_or(raw_worst), adj_block, n_above, raw_worst, raw_increase: if inc.is_empty() { 0.0 } else { raw_increase } }
 }
 
 pub fn reduction_pct(base: f64, scen: f64) -> f64 {

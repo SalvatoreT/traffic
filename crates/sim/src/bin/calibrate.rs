@@ -7,6 +7,10 @@
 mod intent;
 #[path = "calibrate/multi.rs"]
 mod multi;
+#[path = "support/report_manifest.rs"]
+mod report_manifest;
+#[path = "support/sha256.rs"]
+mod sha256;
 
 use serde_json::{json, Value};
 use std::cmp::Ordering;
@@ -330,6 +334,42 @@ fn ctrl_str(c: Control) -> &'static str {
     }
 }
 
+/// What a report needs to say about itself so that an assessment can tell whether runs belong together (change protect-calibration-evidence, D3).
+fn run_manifest(args: &Args, root: &Path, net_path: &Path, dem_path: &Path, dem_json: &str) -> Value {
+    #[derive(serde::Deserialize)]
+    struct Built {
+        build: Option<Value>,
+    }
+    let build = serde_json::from_str::<Built>(dem_json).ok().and_then(|b| b.build);
+    let a = &args.area;
+    let split_rel = format!("data/demand/{a}.split.json");
+    json!({
+        "schema": report_manifest::SCHEMA,
+        "simulator": report_manifest::simulator(root),
+        "inputs": {
+            "network": report_manifest::input_at(root, net_path),
+            "demand": report_manifest::input_at(root, dem_path),
+            "demandBuild": build,
+            "targets": report_manifest::input(root, &format!("data/calibration/{a}.targets.json")),
+            "stations": report_manifest::input(root, &format!("data/demand/{a}.stations.json")),
+            "split": report_manifest::input(root, &split_rel),
+            "demandConfig": report_manifest::input(root, &format!("data/demand/{a}.config.json")),
+            "areaConfig": report_manifest::input(root, &format!("data/areas/{a}.json")),
+            "groups": report_manifest::input(root, &format!("data/demand/{a}.groups.json")),
+        },
+        "run": {
+            "area": args.area, "period": args.period, "scale": args.scale, "seed": args.seed, "minutes": args.minutes,
+            "warmupMin": args.warmup_min,
+            "measurementWindow": {"fromMin": if args.minutes >= 30.0 { args.warmup_min } else { 0.0 }, "toMin": args.minutes},
+            "initialLoad": !args.no_initial_load,
+            "settings": {
+                "localFactor": args.local_factor, "guidedShare": args.guided_share, "switchBand": args.switch_band, "adaptMin": args.adapt_min,
+                "motorwayRemoval": args.motorway_removal, "noRtor": args.no_rtor, "carsOnly": args.cars_only, "drop": args.drop,
+            },
+        },
+    })
+}
+
 fn main() {
     let args = parse_args();
     let root = root();
@@ -353,8 +393,10 @@ fn main() {
         return;
     }
     let read = |p: PathBuf| std::fs::read_to_string(&p).unwrap_or_else(|e| usage(&format!("cannot read {}: {e}", p.display())));
-    let net_json = read(args.network_path.clone().unwrap_or_else(|| root.join(format!("public/data/{}.network.json", args.area))));
-    let dem_json = read(args.demand_path.clone().unwrap_or_else(|| root.join(format!("public/data/{}.demand.json", args.area))));
+    let net_path = args.network_path.clone().unwrap_or_else(|| root.join(format!("public/data/{}.network.json", args.area)));
+    let dem_path = args.demand_path.clone().unwrap_or_else(|| root.join(format!("public/data/{}.demand.json", args.area)));
+    let net_json = read(net_path.clone());
+    let dem_json = read(dem_path.clone());
     let targets: Value = serde_json::from_str(&read(root.join(format!("data/calibration/{}.targets.json", args.area)))).expect("targets json");
     let net: Network = serde_json::from_str(&net_json).expect("network");
     let mut demand: Demand = serde_json::from_str(&dem_json).expect("demand");
@@ -1044,6 +1086,7 @@ fn main() {
         std::fs::write(dir.join(format!("{stem}.md")), &md).expect("write md");
         let js = json!({
             "area": args.area, "period": args.period, "scale": args.scale, "seed": args.seed, "minutes": args.minutes,
+            "manifest": run_manifest(&args, &root, &net_path, &dem_path, &dem_json),
             "offeredVehPerHour": total_demand * args.scale,
             "stable": stable,
             "health": {

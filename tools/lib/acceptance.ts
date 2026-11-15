@@ -1,4 +1,4 @@
-// Published acceptance statistics, hold-out selection, seed summaries and the damped cost average used by the calibration tools.
+// Published acceptance statistics, seed summaries and the damped cost average used by the calibration tools.
 //
 // Flow criteria, as stated in docs/simulator-audit.md "Standard acceptance criteria, as published":
 //  - GEH = sqrt(2 (M - C)^2 / (M + C)) for hourly flows M (modeled) and C (counted) [TfL-TMG4] appendix II; GEH below 5 in more than 85% of cases [WebTAG-M3.1] 3.3.10 to 3.3.12.
@@ -50,31 +50,7 @@ export function summarizeCases(rs: CaseResult[]): AcceptanceSummary {
   return { n, gehOk, bandOk, either: c((r) => r.gehOk || r.bandOk), both: c((r) => r.gehOk && r.bandOk), gehShare: n ? gehOk / n : 0, bandShare: n ? bandOk / n : 0, meets: n > 0 && (gehOk / n > SHARE_REQUIRED || bandOk / n > SHARE_REQUIRED), meanGeh: n ? rs.reduce((a, r) => a + r.geh, 0) / n : 0 };
 }
 
-// ---------- hold-out selection ----------
-export interface HoldoutStation { id: string; corridor: string; target: number }
-export interface HoldoutOptions { /** Share of each corridor's stations held out (default 0.25). */ fraction?: number; /** Every corridor keeps at least this many held-out stations (default 1). */ minPerCorridor?: number }
-
-/**
- * Deterministic validation set: within each corridor the stations are ordered by descending target (ties by id) and every k-th one is held out, k = round(1 / fraction),
- * starting at position 1 so the largest count of a corridor stays in the fit; a corridor with a single station gives it up (so every corridor is covered at least once).
- * No random draw, so the same stations are held out whenever the station list is the same.
- */
-export function selectHoldout(stations: HoldoutStation[], opt: HoldoutOptions = {}): Set<string> {
-  const k = Math.max(2, Math.round(1 / (opt.fraction ?? 0.25)));
-  const min = opt.minPerCorridor ?? 1;
-  const by = new Map<string, HoldoutStation[]>();
-  for (const s of stations) (by.get(s.corridor) ?? by.set(s.corridor, []).get(s.corridor)!).push(s);
-  const out = new Set<string>();
-  for (const [, list] of by) {
-    list.sort((a, b) => b.target - a.target || a.id.localeCompare(b.id));
-    const picked = list.filter((_, i) => i % k === 1);
-    for (let i = list.length - 1; picked.length < Math.min(min, list.length) && i >= 0; i--) if (!picked.includes(list[i])) picked.push(list[i]);
-    for (const s of picked) out.add(s.id);
-  }
-  return out;
-}
-
-export function corridors(stations: HoldoutStation[]): string[] { return [...new Set(stations.map((s) => s.corridor))].sort(); }
+// Hold-out selection moved to lineage.ts (group-level, chosen from ids and corridors only).
 
 // ---------- seed summaries ----------
 const T975 = [12.706, 4.303, 3.182, 2.776, 2.571, 2.447, 2.365, 2.306, 2.262, 2.228, 2.201, 2.179, 2.160, 2.145, 2.131, 2.120, 2.110, 2.101, 2.093, 2.086, 2.080, 2.074, 2.069, 2.064, 2.060, 2.056, 2.052, 2.048, 2.045, 2.042];

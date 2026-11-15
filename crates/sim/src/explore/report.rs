@@ -2,6 +2,7 @@
 
 use super::cands::{adopt, conflicts, generate_with, profile_allows, Cand};
 use super::naming::describe;
+use super::paired::{option_gain, CtPairs, Paired, Status, LEVEL, MIN_PAIRS, REPORT_METHOD};
 use super::refs::resolve;
 use super::seeds::{self, Dropped};
 use super::search::*;
@@ -10,6 +11,7 @@ use serde_json::{json, Value};
 use std::fmt::Write as _;
 
 /// A finalist rerun over every period and seed at full length.
+#[derive(Clone)]
 pub struct Final {
     pub set: Vec<u16>,
     pub reject: Option<String>,
@@ -22,8 +24,16 @@ pub struct Final {
     pub worst: usize,
     /// Blocks whose all-traffic increase passes the noise band in any period.
     pub blocks_above: usize,
-    /// Through cars only, averaged over the periods: the block that gains the most, and how many gain beyond noise.
+    /// Through cars only, averaged over the periods: the block with the largest raw increase (apart from the search penalty's block),
+    /// and how many blocks gain beyond the noise band or beyond their seed interval.
     pub through: ThroughHarm,
+    /// Scenario minus baseline through cars an hour, area-wide and averaged over the periods within each seed, paired by seed.
+    pub effect: Paired,
+    /// The per-period, per-seed through cars an hour behind `effect`, kept for option-to-option comparisons.
+    pub pairs: CtPairs,
+    /// What the runs behind this package did in the choice of options: `selection` (they chose the options and estimate them),
+    /// `confirmation` (a frozen shortlist on seeds not used to choose) or `reference` (not a candidate for the options).
+    pub role: &'static str,
     pub by_period: Vec<PeriodRes>,
     pub bounding: Vec<(String, f64, f64)>,
     pub inside_pct: f64,
@@ -118,36 +128,64 @@ pub fn picture_period(periods: &[String]) -> usize {
     periods.iter().position(|p| p == PICTURE_PERIOD).unwrap_or(0)
 }
 
-/// The side-street block that gains the most through cars an hour, averaged over the periods.
+/// Through cars on side-street blocks, averaged over the periods. The raw maximum (`worst`, `increase`) and the search penalty
+/// (`penalty_block`, `penalty`) are different quantities and may name different blocks.
 #[derive(Clone, Debug, PartialEq)]
 pub struct ThroughHarm {
-    /// Harm-block position.
+    /// Harm-block position of the block with the largest raw mean increase (cars an hour, both directions). Ties go to the lowest position.
     pub worst: usize,
-    /// Raw mean increase on that block (cars an hour, both directions).
+    /// Raw mean increase on that block.
     pub increase: f64,
+    /// Through cars an hour on that block before and after, mean over seeds and periods.
+    pub base: f64,
+    pub scen: f64,
+    /// Scenario minus baseline on that block, paired by seed. Chosen after seeing the data among many blocks, so the interval is not adjusted for that choice.
+    pub effect: Paired,
+    /// The block the noise-adjusted rule picks (largest increase past its band) and its penalty after the band; none when no block passes its band.
+    pub penalty_block: Option<usize>,
+    pub penalty: f64,
+    /// Blocks whose increase passes the noise band (an assumed dead band).
     pub blocks_above: usize,
+    /// Blocks whose seed interval is above zero.
+    pub blocks_resolved: usize,
 }
 
-/// One period's like-for-like figures: through cars across the area, and all traffic on the block that gains the most.
+/// One period's like-for-like figures: through cars across the area, and all traffic on the block with the largest raw increase.
 #[derive(Clone, Debug, PartialEq)]
 pub struct PeriodRes {
     pub base_through: f64,
     pub scen_through: f64,
     pub cut_pct: f64,
-    /// Harm-block position of the all-traffic worst block.
+    pub effect: Paired,
+    /// Harm-block position of the all-traffic block with the largest raw increase in this period.
     pub worst: usize,
     pub block_base: f64,
     pub block_scen: f64,
     /// Through cars' share of the change on that block (scenario minus baseline).
     pub block_through_inc: f64,
+    /// All-traffic change on that block, paired by seed.
+    pub block_effect: Paired,
+    /// The block behind the search penalty in this period and the penalty after the noise band; none when no block passes its band.
+    pub penalty_block: Option<usize>,
+    pub penalty: f64,
     pub blocks_above: usize,
 }
 
-/// `inc` is the mean through-car increase per block over the periods and `sigma` the matching run-to-run spread. The worst block is the
-/// one with the largest increase past its noise band (else the largest raw increase); `increase` is that block's raw increase.
+/// `inc` is the mean through-car increase per block over the periods and `sigma` the matching run-to-run spread. The raw maximum is the
+/// block with the largest increase; the penalty block is the one with the largest increase past its noise band. Both are reported.
 pub fn through_harm(inc: &[f64], sigma: &[f64]) -> ThroughHarm {
     let h = harm_calc(inc, sigma);
-    ThroughHarm { worst: h.worst, increase: inc.get(h.worst).copied().unwrap_or(0.0), blocks_above: h.n_above }
+    ThroughHarm {
+        worst: h.raw_worst,
+        increase: h.raw_increase,
+        base: 0.0,
+        scen: 0.0,
+        effect: Paired::none(),
+        penalty_block: h.adj_block,
+        penalty: h.worst_adj,
+        blocks_above: h.n_above,
+        blocks_resolved: 0,
+    }
 }
 
 fn pct_change(base: f64, scen: f64) -> f64 {
@@ -195,11 +233,17 @@ pub fn recheck(ctx: &Ctx, sets: &[Vec<u16>]) -> Vec<Final> {
     finals
 }
 
-/// Compare a package's per-period statistics with the baseline's.
+/// Compare a package's per-period statistics with the baseline's. Runs are paired by seed within each period.
 fn compare(ctx: &Ctx, set: &[u16], stats: &[PeriodStat], reject: Option<String>) -> Final {
     let (study, p, base) = (ctx.study, ctx.p, ctx.base);
-    let np = stats.len();
+    let (np, ns) = (stats.len(), p.seeds.len());
     let nb = study.harm_blocks.len();
+    let pairs = CtPairs::new(
+        &p.seeds,
+        base.full.iter().map(|s| s.runs.iter().map(|r| r.ct_vph).collect()).collect(),
+        stats.iter().map(|s| s.runs.iter().map(|r| r.ct_vph).collect()).collect(),
+    )
+    .unwrap_or_else(|e| panic!("final comparison needs one baseline and one scenario run per period and seed: {e}"));
     let base_vph = mean(&base.full.iter().map(|s| s.ct_vph).collect::<Vec<_>>());
     let scen_vph = mean(&stats.iter().map(|s| s.ct_vph).collect::<Vec<_>>());
     let (mut harm, mut worst, mut worst_key) = (0.0f64, 0usize, f64::NEG_INFINITY);
@@ -207,6 +251,9 @@ fn compare(ctx: &Ctx, set: &[u16], stats: &[PeriodStat], reject: Option<String>)
     let mut by_period = Vec::new();
     let mut through_inc = vec![0.0f64; nb];
     let mut through_var = vec![0.0f64; nb];
+    let mut through_base = vec![0.0f64; nb];
+    let mut through_scen = vec![0.0f64; nb];
+    let mut through_seed = vec![vec![0.0f64; ns]; nb];
     for pi in 0..np {
         let inc: Vec<f64> = (0..nb).map(|b| stats[pi].block_flow[b] - base.full[pi].block_flow[b]).collect();
         let h = harm_calc(&inc, &base.full[pi].block_sigma);
@@ -223,21 +270,38 @@ fn compare(ctx: &Ctx, set: &[u16], stats: &[PeriodStat], reject: Option<String>)
         }
         for b in 0..nb {
             through_inc[b] += (stats[pi].block_through[b] - base.full[pi].block_through[b]) / np as f64;
+            through_base[b] += base.full[pi].block_through[b] / np as f64;
+            through_scen[b] += stats[pi].block_through[b] / np as f64;
             through_var[b] += base.full[pi].block_through_sigma[b].powi(2);
+            for s in 0..ns {
+                through_seed[b][s] += (stats[pi].runs[s].block_through[b] - base.full[pi].runs[s].block_through[b]) / np as f64;
+            }
         }
+        let raw = h.raw_worst;
         by_period.push(PeriodRes {
             base_through: base.full[pi].ct_vph,
             scen_through: stats[pi].ct_vph,
             cut_pct: pct_change(base.full[pi].ct_vph, stats[pi].ct_vph),
-            worst: h.worst,
-            block_base: base.full[pi].block_flow[h.worst],
-            block_scen: stats[pi].block_flow[h.worst],
-            block_through_inc: stats[pi].block_through[h.worst] - base.full[pi].block_through[h.worst],
+            effect: pairs.period_effect(pi),
+            worst: raw,
+            block_base: base.full[pi].block_flow[raw],
+            block_scen: stats[pi].block_flow[raw],
+            block_through_inc: stats[pi].block_through[raw] - base.full[pi].block_through[raw],
+            block_effect: Paired::of(&(0..ns).map(|s| stats[pi].runs[s].block_flow[raw] - base.full[pi].runs[s].block_flow[raw]).collect::<Vec<_>>()),
+            penalty_block: h.adj_block,
+            penalty: h.worst_adj,
             blocks_above: h.n_above,
         });
     }
     let through_sigma: Vec<f64> = through_var.iter().map(|v| v.sqrt() / np.max(1) as f64).collect();
-    let through = through_harm(&through_inc, &through_sigma);
+    let mut through = through_harm(&through_inc, &through_sigma);
+    if nb > 0 {
+        let w = through.worst;
+        through.base = through_base[w];
+        through.scen = through_scen[w];
+        through.effect = Paired::of(&through_seed[w]);
+        through.blocks_resolved = through_seed.iter().filter(|v| Paired::of(v).status() == Status::Positive).count();
+    }
     let mut bounding = Vec::new();
     for (k, s) in study.bounding.iter().enumerate() {
         let (fb, fs): (f64, f64) = (base.full.iter().map(|x| x.street_flow[k]).sum(), stats.iter().map(|x| x.street_flow[k]).sum());
@@ -256,6 +320,9 @@ fn compare(ctx: &Ctx, set: &[u16], stats: &[PeriodStat], reject: Option<String>)
         worst,
         blocks_above: above.iter().filter(|&&a| a).count(),
         through,
+        effect: pairs.effect(),
+        pairs,
+        role: "selection",
         by_period,
         bounding,
         inside_pct: pct_change(m(&|s| s.inside_s, &base.full), m(&|s| s.inside_s, stats)),
@@ -273,6 +340,37 @@ fn compare(ctx: &Ctx, set: &[u16], stats: &[PeriodStat], reject: Option<String>)
     }
 }
 
+impl Default for Final {
+    /// An empty comparison (no runs, no evidence): the base for fixtures and tests.
+    fn default() -> Final {
+        Final {
+            set: Vec::new(),
+            reject: None,
+            base_vph: 0.0,
+            scen_vph: 0.0,
+            reduction_pct: 0.0,
+            harm: 0.0,
+            worst: 0,
+            blocks_above: 0,
+            through: through_harm(&[], &[]),
+            effect: Paired::none(),
+            pairs: CtPairs::default(),
+            role: "selection",
+            by_period: Vec::new(),
+            bounding: Vec::new(),
+            inside_pct: 0.0,
+            ped_pct: 0.0,
+            bike_pct: 0.0,
+            score: 0.0,
+            picture: None,
+            forced: false,
+            access: None,
+            origin: Origin::search(),
+            prior: false,
+        }
+    }
+}
+
 // ---------------------------------------------------------------- choosing the options
 
 pub struct Pick {
@@ -280,32 +378,54 @@ pub struct Pick {
     pub why: String,
 }
 
-/// Dead band for comparing two options' cut-through reduction (percent of baseline): twice the standard error of a mean over the
-/// seeds, from the baseline's run-to-run spread, at least `GOAL_NOISE_FLOOR_PCT`.
-pub fn goal_noise_pct(base_cv_pct: f64, n_seeds: usize) -> f64 {
-    (NOISE_SIGMAS * base_cv_pct / (n_seeds.max(1) as f64).sqrt()).max(GOAL_NOISE_FLOOR_PCT)
+/// Whether a package's through-car reduction is established. With at least `MIN_PAIRS` seed pairs the interval of the paired
+/// per-seed change must lie below zero; with fewer the evidence is insufficient and only the practical floor `GOAL_NOISE_FLOOR_PCT`
+/// (an assumption, not an uncertainty measure) screens it.
+pub fn reduces(f: &Final) -> bool {
+    f.reduction_pct > GOAL_NOISE_FLOOR_PCT && (f.effect.n < MIN_PAIRS || f.effect.status() == Status::Negative)
+}
+
+/// Whether `a` cuts through cars by more than `b` does. The comparison pairs the two packages' runs on the same seeds; `a` beats `b` when
+/// the interval of the per-seed gain is above zero and the gain is at least `GOAL_NOISE_FLOOR_PCT` points of the baseline. With fewer than
+/// `MIN_PAIRS` pairs, or runs that are not the same pairs, there is no interval and only the practical floor on the means applies.
+pub fn beats(a: &Final, b: &Final) -> bool {
+    let floor_only = a.reduction_pct - b.reduction_pct > GOAL_NOISE_FLOOR_PCT;
+    match option_gain(&a.pairs, &b.pairs) {
+        Some(g) if g.n >= MIN_PAIRS => {
+            let base = a.pairs.base_mean();
+            let pts = if base > 0.0 { 100.0 * g.mean / base } else { 0.0 };
+            g.status() == Status::Positive && pts >= GOAL_NOISE_FLOOR_PCT
+        }
+        _ => floor_only,
+    }
 }
 
 /// Choose up to `max` options from the rechecked finalists: no other finalist beats an option on reduction, harm and size; an option
-/// whose reduction is within noise of a simpler one is dropped; the best single and the best overall always stay; the rest are
-/// spread from fewest interventions to greatest reduction. Returns the picks (ordered by size, then reduction) and a note per finalist.
-pub fn select_options(finals: &[Final], max: usize, noise_pct: f64) -> (Vec<Pick>, Vec<String>) {
+/// that does not beat a simpler one on through cars (paired on seeds, see `beats`) is dropped; the best single and the best overall always
+/// stay; the rest are spread from fewest interventions to greatest reduction. Returns the picks (ordered by size, then reduction) and a
+/// note per finalist.
+pub fn select_options(finals: &[Final], max: usize) -> (Vec<Pick>, Vec<String>) {
     let mut notes: Vec<String> = vec![String::new(); finals.len()];
     let ok: Vec<usize> = (0..finals.len())
         .filter(|&i| {
             if let Some(w) = &finals[i].reject {
                 notes[i] = format!("rejected: {w}");
                 false
-            } else if finals[i].reduction_pct <= noise_pct {
-                notes[i] = format!("through-car change {:+.1}% is not a reduction beyond noise ({:.1}%)", -finals[i].reduction_pct, noise_pct);
+            } else if !reduces(&finals[i]) {
+                notes[i] = format!(
+                    "through-car change {:+.1}% is not an established reduction ({}; practical floor {:.1}%)",
+                    -finals[i].reduction_pct,
+                    if finals[i].effect.n < MIN_PAIRS { format!("{} seed pair(s), fewer than {MIN_PAIRS}", finals[i].effect.n) } else { format!("seed interval {}", finals[i].effect.status().as_str()) },
+                    GOAL_NOISE_FLOOR_PCT
+                );
                 false
             } else {
                 true
             }
         })
         .collect();
-    // Stability: a package no earlier search published is dropped when one that was published is within noise of it on through cars and
-    // no worse on harm or size, so two runs on near-identical inputs publish the same list.
+    // Stability: a package no earlier search published is dropped when one that was published is not beaten by it on through cars and
+    // is no worse on harm or size, so two runs on near-identical inputs publish the same list.
     let published: Vec<usize> = ok.iter().copied().filter(|&i| finals[i].prior).collect();
     let mut ok = ok;
     ok.retain(|&i| {
@@ -315,26 +435,23 @@ pub fn select_options(finals: &[Final], max: usize, noise_pct: f64) -> (Vec<Pick
         }
         match published.iter().copied().find(|&j| {
             let b = &finals[j];
-            b.reduction_pct >= a.reduction_pct - noise_pct && b.harm <= a.harm + NOISE_FLOOR_VEH_H && b.set.len() <= a.set.len()
+            !beats(a, b) && b.harm <= a.harm + NOISE_FLOOR_VEH_H && b.set.len() <= a.set.len()
         }) {
             Some(j) => {
-                notes[i] = format!("within noise of finalist {}, which an earlier search published: kept that one so the list does not churn", j + 1);
+                notes[i] = format!("does not beat finalist {}, which an earlier search published, on through cars: kept that one so the list does not churn", j + 1);
                 false
             }
             None => true,
         }
     });
-    // A package an earlier search published is dominated by a new one only when the new one beats it on through cars by more than noise.
+    // A package an earlier search published is dominated by a new one only when the new one beats it on through cars (`beats`).
     let dominated = |i: usize| {
         let a = &finals[i];
         ok.iter().copied().find(|&j| {
             let b = &finals[j];
-            let margin = if a.prior && !b.prior { noise_pct } else { 0.0 };
-            j != i
-                && b.reduction_pct >= a.reduction_pct + margin
-                && b.harm <= a.harm
-                && b.set.len() <= a.set.len()
-                && (b.reduction_pct > a.reduction_pct + margin || b.harm < a.harm || b.set.len() < a.set.len())
+            let at_least = if a.prior && !b.prior { beats(b, a) } else { b.reduction_pct >= a.reduction_pct };
+            let ahead = if a.prior && !b.prior { beats(b, a) } else { b.reduction_pct > a.reduction_pct };
+            j != i && at_least && b.harm <= a.harm && b.set.len() <= a.set.len() && (ahead || b.harm < a.harm || b.set.len() < a.set.len())
         })
     };
     let mut nd: Vec<usize> = Vec::new();
@@ -349,10 +466,10 @@ pub fn select_options(finals: &[Final], max: usize, noise_pct: f64) -> (Vec<Pick
         let a = &finals[i];
         let simpler = nd.iter().copied().filter(|_| !a.forced).find(|&j| {
             let b = &finals[j];
-            b.set.len() < a.set.len() && a.reduction_pct <= b.reduction_pct + noise_pct && a.harm >= b.harm - NOISE_FLOOR_VEH_H
+            b.set.len() < a.set.len() && !beats(a, b) && a.harm >= b.harm - NOISE_FLOOR_VEH_H
         });
         match simpler {
-            Some(j) => notes[i] = format!("reduction within noise of simpler finalist {}", j + 1),
+            Some(j) => notes[i] = format!("does not beat simpler finalist {} on through cars", j + 1),
             None => keep.push(i),
         }
     }
@@ -500,6 +617,15 @@ fn lower_first(s: &str) -> String {
     }
 }
 
+/// "95% interval -31 to -12 over 10 seeds", "not enough seeds for an interval (3, at least 10 needed)" or "one seed". Cars an hour, signed.
+pub fn interval_phrase(e: &Paired) -> String {
+    match e.interval() {
+        _ if e.n < MIN_PAIRS => format!("{} seed{} is not enough for an interval; at least {MIN_PAIRS} are needed", e.n, if e.n == 1 { "" } else { "s" }),
+        Some((lo, hi)) => format!("{:.0}% interval {:+.0} to {:+.0} over {} seeds", 100.0 * LEVEL, lo, hi, e.n),
+        None => "no interval".to_string(),
+    }
+}
+
 /// Two or three plain sentences: what the package does, what it achieves and where through cars gain the most. Every figure is a count
 /// of through cars an hour, so the sentences compare like with like; all-traffic changes are reported apart.
 pub fn summary(study: &Study, cands: &[Cand], f: &Final) -> String {
@@ -508,20 +634,31 @@ pub fn summary(study: &Study, cands: &[Cand], f: &Final) -> String {
     let shown: Vec<String> = labels.iter().take(4).enumerate().map(|(k, l)| if k == 0 { l.clone() } else { lower_first(l) }).collect();
     let more = if n > 4 { format!(", and {} more", n - 4) } else { String::new() };
     let s1 = format!("It makes {} {}: {}{}.", number_word(n), if n == 1 { "change" } else { "changes" }, shown.join("; "), more);
+    let seeds = f.effect.n;
     let s2 = format!(
-        "In the simulation it {} through traffic on the area's side streets by {:.0}%, from {:.0} to {:.0} through cars an hour (average of the periods searched).",
+        "In the simulation it {} through traffic on the area's side streets by {:.0}%, from {:.0} to {:.0} through cars an hour (mean of {} seed{} and of the periods searched; {}).",
         if f.reduction_pct >= 0.0 { "cuts" } else { "raises" },
         f.reduction_pct.abs(),
         f.base_vph,
-        f.scen_vph
+        f.scen_vph,
+        seeds,
+        if seeds == 1 { "" } else { "s" },
+        interval_phrase(&f.effect)
     );
     let t = &f.through;
-    let s3 = if t.blocks_above > 0 {
-        let others = t.blocks_above - 1;
-        let tail = if others == 0 { String::new() } else { format!(", and {} other {} gain through cars beyond normal run-to-run variation", others, if others == 1 { "block" } else { "blocks" }) };
-        format!("The side-street block that gains the most through traffic is {}, about {:.0} more through cars an hour on average{}.", study.idx.blocks[study.harm_blocks[t.worst]].label, t.increase, tail)
+    let label = |b: usize| study.harm_blocks.get(b).map(|&h| study.idx.blocks[h].label.clone()).unwrap_or_default();
+    let s3 = if study.harm_blocks.is_empty() {
+        String::new()
+    } else if t.increase.round() > 0.0 {
+        let status = match t.effect.status() {
+            Status::Positive => format!("resolved from seed variation: {}", interval_phrase(&t.effect)),
+            Status::Unresolved => format!("not resolved from seed variation: {}", interval_phrase(&t.effect)),
+            _ => interval_phrase(&t.effect),
+        };
+        let others = if t.effect.n >= MIN_PAIRS && t.blocks_resolved > 1 { format!(" {} blocks in all have an increase resolved from seed variation.", t.blocks_resolved) } else { String::new() };
+        format!("The side-street block with the largest increase in through traffic is {}, about {:.0} more through cars an hour on average ({}).{}", label(t.worst), t.increase, status, others)
     } else {
-        "No side-street block gains through traffic beyond normal run-to-run variation.".to_string()
+        format!("No side-street block gains through cars on average; the largest change is {:+.0} through cars an hour on {}.", t.increase, label(t.worst))
     };
     format!("{s1} {s2} {s3}")
 }
@@ -535,6 +672,8 @@ pub struct Outcome {
     pub state: SearchState,
     pub finals: Vec<Final>,
     pub picks: Vec<Pick>,
+    /// The chosen options' final comparisons in pick order, from the confirmation runs when there were any, else the finalists' own.
+    pub shown: Vec<Final>,
     pub base: Baseline,
     /// Reference packages (config order) rechecked like the finalists.
     pub ref_finals: Vec<Final>,
@@ -605,8 +744,7 @@ pub fn explore(study: &Study, p: &Params) -> Outcome {
             f.prior = !e.last_published.is_empty();
         }
     }
-    let noise = goal_noise_pct(base_cv_pct(&base), p.seeds.len());
-    let (picks, notes) = select_options(&finals, p.options, noise);
+    let (picks, notes) = select_options(&finals, p.options);
     // Reference packages join the candidate list after the search candidates, so the search's indices stay valid.
     let mut all = cands.clone();
     let mut ref_sets: Vec<Vec<u16>> = Vec::new();
@@ -631,33 +769,57 @@ pub fn explore(study: &Study, p: &Params) -> Outcome {
         }
         ref_sets.push(set);
     }
-    let ctx_all = Ctx { study, p, cands: &all, base: &base };
+    // The shortlist is frozen here. With confirmation seeds, the chosen options and the references are rerun on seeds that took no part
+    // in screening, rechecking or choosing, and those runs are what is published; otherwise the published estimates come from the runs that
+    // chose them and are labeled exploratory.
+    let (pc, base_c);
+    let (est_p, est_base): (&Params, &Baseline) = if p.confirm_seeds.is_empty() {
+        (p, &base)
+    } else {
+        pc = Params { seeds: p.confirm_seeds.clone(), ..p.clone() };
+        eprintln!("confirming {} chosen option(s) and {} reference(s) on {} unused seed(s) per period", picks.len(), ref_sets.len(), pc.seeds.len());
+        base_c = run_baseline_full(study, &pc);
+        (&pc, &base_c)
+    };
+    let ctx_all = Ctx { study, p: est_p, cands: &all, base: est_base };
+    let shown: Vec<Final> = if p.confirm_seeds.is_empty() {
+        picks.iter().map(|pk| finals[pk.idx].clone()).collect()
+    } else {
+        let mut cf = recheck(&ctx_all, &picks.iter().map(|pk| finals[pk.idx].set.clone()).collect::<Vec<_>>());
+        for (f, pk) in cf.iter_mut().zip(&picks) {
+            let o = &finals[pk.idx];
+            f.origin = o.origin.clone();
+            f.prior = o.prior;
+            f.forced = o.forced;
+            f.role = "confirmation";
+        }
+        cf
+    };
     let mut ref_finals = if ref_sets.is_empty() { Vec::new() } else { eprintln!("rechecking {} reference package(s)", ref_sets.len()); recheck(&ctx_all, &ref_sets) };
     for f in ref_finals.iter_mut() {
         f.access = check_access(study, &ctx_all.ivs(&f.set)).err();
+        f.role = "reference";
     }
     eprintln!("chose {} option(s); total {:.0}s", picks.len(), t0.elapsed().as_secs_f64());
-    let json = build_json(study, p, &all, &base, &finals, &picks, &ref_finals, &known);
-    let markdown = build_markdown(study, p, &ctx_all, &state, &finals, &picks, &notes, noise, &t0, &ref_finals, &known);
+    let json = build_json(study, p, &all, est_base, &shown, &ref_finals, &known, &Estimation { seeds: est_p.seeds.clone(), confirmed: !p.confirm_seeds.is_empty() });
+    let markdown = build_markdown(study, p, &ctx_all, &state, &finals, &picks, &notes, &t0, &ref_finals, &known, &shown);
     let today = util::today_utc();
     let published: Vec<seeds::Entry> = picks
         .iter()
-        .map(|pk| {
-            let f = &finals[pk.idx];
-            seeds::Entry {
-                link: study.encode(&ctx.ivs(&f.set), Some(&p.periods[0])),
-                source: seeds::SOURCE_SEARCH.into(),
-                note: String::new(),
-                added: today.clone(),
-                last_published: today.clone(),
-                group: p.profile.id.clone(),
-                size: f.set.len(),
-                change_pct: Some(r1(-f.reduction_pct)),
-                score: Some(r1(f.score)),
-            }
+        .zip(&shown)
+        .map(|(_, f)| seeds::Entry {
+            link: study.encode(&ctx.ivs(&f.set), Some(&p.periods[0])),
+            source: seeds::SOURCE_SEARCH.into(),
+            note: String::new(),
+            added: today.clone(),
+            last_published: today.clone(),
+            group: p.profile.id.clone(),
+            size: f.set.len(),
+            change_pct: Some(r1(-f.reduction_pct)),
+            score: Some(r1(f.score)),
         })
         .collect();
-    Outcome { json, markdown, cands, state, finals, picks, base, ref_finals, known, published }
+    Outcome { json, markdown, cands, state, finals, picks, shown, base, ref_finals, known, published }
 }
 
 /// Candidate sets for packages of interventions: each intervention matched to a candidate or added as one. A package the profile does not allow,
@@ -706,20 +868,55 @@ pub fn adopt_warm_start(study: &Study, p: &Params, cands: &mut Vec<Cand>) -> Vec
     out
 }
 
-/// Mean over periods of the baseline's coefficient of variation of cut-through over seeds (percent); 0 with one seed.
-fn base_cv_pct(base: &Baseline) -> f64 {
-    mean(&base.full.iter().map(|s| s.ct_cv_pct).collect::<Vec<_>>())
-}
-
 fn r1(x: f64) -> f64 {
     (x * 10.0).round() / 10.0
 }
 
+/// Which seeds the published estimates come from, and whether they were kept apart from the runs that chose the options.
+pub struct Estimation {
+    pub seeds: Vec<u64>,
+    pub confirmed: bool,
+}
+
+fn effect_json(e: &Paired) -> Value {
+    e.to_json("increase", "decrease")
+}
+
+/// The shared `computed` block fields that say what made the figures (design D1 and D2 of `proposal-evidence-integrity`).
+fn provenance_json(p: &Params, est: &Estimation, shortlist: &[String]) -> Value {
+    json!({
+        "simulator": crate::FINGERPRINT,
+        "reportMethod": REPORT_METHOD,
+        "sourceRevision": p.source_revision,
+        "settings": {
+            "beam": p.beam, "depth": p.depth, "candidates": p.candidates, "expand": p.expand, "finalists": p.finalists, "options": p.options,
+            "harmWeight": p.harm_weight, "budgetEvals": p.budget_evals, "profile": p.profile.id,
+            "noiseSigmas": NOISE_SIGMAS, "noiseFloorVehPerHour": NOISE_FLOOR_VEH_H, "goalFloorPct": GOAL_NOISE_FLOOR_PCT,
+        },
+        "estimation": {
+            "method": "Student t interval on per-seed differences, scenario minus baseline on the same period and seed",
+            "level": LEVEL,
+            "minPairs": MIN_PAIRS,
+            "aggregation": "Equal-weight mean of the periods within each seed, then paired by seed. Percent changes divide by the baseline mean.",
+            "scope": "Seed variability with the network, demand and model fixed. It does not cover calibration error, demand error or day-to-day variation in real traffic.",
+            "maximum": "The block with the largest raw increase is chosen after looking at all blocks, so its interval is not adjusted for that choice.",
+            "practicalFloors": "The noise band, its floor and the reduction floor are assumed dead bands for screening. They are not uncertainty intervals.",
+            "selection": {
+                "estimates": if est.confirmed { "confirmation" } else { "exploratory" },
+                "discoverySeeds": p.seeds,
+                "confirmationSeeds": if est.confirmed { json!(est.seeds) } else { json!([]) },
+                "shortlist": shortlist,
+            },
+        },
+    })
+}
+
 #[allow(clippy::too_many_arguments)]
-pub fn build_json(study: &Study, p: &Params, cands: &[Cand], base: &Baseline, finals: &[Final], picks: &[Pick], ref_finals: &[Final], known: &KnownSummary) -> Value {
+pub fn build_json(study: &Study, p: &Params, cands: &[Cand], base: &Baseline, shown: &[Final], ref_finals: &[Final], known: &KnownSummary, est: &Estimation) -> Value {
+    let block_label = |b: usize| study.idx.blocks[study.harm_blocks[b]].label.clone();
+    let opt_label = |b: Option<usize>| b.map(block_label).map(Value::from).unwrap_or(Value::Null);
     let entry = |id: String, title: String, f: &Final, kind: &str, note: Option<&str>| -> Value {
         let ivs: Vec<Intervention> = f.set.iter().map(|&i| cands[i as usize].iv.clone()).collect();
-        let block_label = |b: usize| study.idx.blocks[study.harm_blocks[b]].label.clone();
         let by_period: serde_json::Map<String, Value> = p
             .periods
             .iter()
@@ -728,18 +925,26 @@ pub fn build_json(study: &Study, p: &Params, cands: &[Cand], base: &Baseline, fi
                 (
                     name.clone(),
                     json!({
-                        "cutThrough": {"baselineVehPerHour": r1(r.base_through), "scenarioVehPerHour": r1(r.scen_through), "changePct": r1(r.cut_pct)},
+                        "cutThrough": {"baselineVehPerHour": r1(r.base_through), "scenarioVehPerHour": r1(r.scen_through), "changePct": r1(r.cut_pct), "effect": effect_json(&r.effect)},
                         "allTraffic": {
-                            "worstBlock": block_label(r.worst),
-                            "baselineVehPerHour": r1(r.block_base),
-                            "scenarioVehPerHour": r1(r.block_scen),
-                            "throughIncreaseVehPerHour": r1(r.block_through_inc),
-                            "blocksAboveNoise": r.blocks_above,
+                            "largestIncrease": {
+                                "block": block_label(r.worst),
+                                "baselineVehPerHour": r1(r.block_base),
+                                "scenarioVehPerHour": r1(r.block_scen),
+                                "increaseVehPerHour": r1(r.block_scen - r.block_base),
+                                "throughIncreaseVehPerHour": r1(r.block_through_inc),
+                                "effect": effect_json(&r.block_effect),
+                            },
+                            "adjustedPenalty": {"block": opt_label(r.penalty_block), "penaltyVehPerHour": r1(r.penalty)},
+                            "blocksAboveBand": r.blocks_above,
                         },
                     }),
                 )
             })
             .collect();
+        let t = &f.through;
+        let per = |sel: &dyn Fn(&CtPairs) -> &Vec<Vec<f64>>| -> serde_json::Map<String, Value> { p.periods.iter().zip(sel(&f.pairs)).map(|(n, v)| (n.clone(), json!(v.iter().map(|x| r1(*x)).collect::<Vec<_>>()))).collect() };
+        let base_mean = f.pairs.base_mean();
         let mut v = json!({
             "id": id,
             "kind": kind,
@@ -748,8 +953,20 @@ pub fn build_json(study: &Study, p: &Params, cands: &[Cand], base: &Baseline, fi
             "summary": summary(study, cands, f),
             "link": study.encode(&ivs, Some(&p.periods[0])),
             "interventions": f.set.iter().map(|&i| json!({"type": cands[i as usize].iv.ty, "label": cands[i as usize].label})).collect::<Vec<_>>(),
-            "cutThrough": {"baselineVehPerHour": r1(f.base_vph), "scenarioVehPerHour": r1(f.scen_vph), "changePct": r1(-f.reduction_pct)},
-            "harm": {"through": {"worstBlock": block_label(f.through.worst), "increaseVehPerHour": r1(f.through.increase), "blocksAboveNoise": f.through.blocks_above}},
+            "cutThrough": {
+                "baselineVehPerHour": r1(f.base_vph), "scenarioVehPerHour": r1(f.scen_vph), "changePct": r1(-f.reduction_pct),
+                "effect": effect_json(&f.effect),
+                "changePctEffect": if base_mean > 0.0 { effect_json(&f.effect.scaled(100.0 / base_mean)) } else { Value::Null },
+            },
+            "harm": {"through": {
+                "largestIncrease": {
+                    "block": block_label(t.worst), "baselineVehPerHour": r1(t.base), "scenarioVehPerHour": r1(t.scen), "increaseVehPerHour": r1(t.increase),
+                    "effect": effect_json(&t.effect),
+                },
+                "adjustedPenalty": {"block": opt_label(t.penalty_block), "penaltyVehPerHour": r1(t.penalty)},
+                "blocksAboveBand": t.blocks_above,
+                "blocksResolvedIncrease": t.blocks_resolved,
+            }},
             "context": {
                 "boundingStreets": f.bounding.iter().map(|(name, flow, speed)| json!({"name": name, "flowChangePct": r1(*flow), "speedChangeMph": r1(*speed)})).collect::<Vec<_>>(),
                 "insideTripTimeChangePct": r1(f.inside_pct),
@@ -757,6 +974,12 @@ pub fn build_json(study: &Study, p: &Params, cands: &[Cand], base: &Baseline, fi
                 "bikeConflictsChangePct": r1(f.bike_pct),
             },
             "byPeriod": by_period,
+            "evidence": {
+                "role": f.role,
+                "seeds": f.pairs.seeds,
+                "baselineVehPerHour": per(&|c| &c.base),
+                "scenarioVehPerHour": per(&|c| &c.scen),
+            },
         });
         if let Some(n) = note {
             v["note"] = json!(n);
@@ -769,47 +992,71 @@ pub fn build_json(study: &Study, p: &Params, cands: &[Cand], base: &Baseline, fi
         }
         v
     };
-    let mut proposals: Vec<Value> = picks.iter().enumerate().map(|(n, pick)| entry(format!("p{}", n + 1), title(cands, &finals[pick.idx].set), &finals[pick.idx], "search", None)).collect();
+    let mut proposals: Vec<Value> = shown.iter().enumerate().map(|(n, f)| entry(format!("p{}", n + 1), title(cands, &f.set), f, "search", None)).collect();
     for (r, f) in p.references.iter().zip(ref_finals) {
         proposals.push(entry(r.id.clone(), r.title.clone(), f, "reference", Some(&r.note)));
+    }
+    // Each option against the next simpler one on the same seeds: how many more points of through cars it cuts.
+    let comparisons: Vec<Value> = shown
+        .windows(2)
+        .enumerate()
+        .map(|(k, w)| {
+            let (lo, hi) = (&w[0], &w[1]);
+            let base_mean = hi.pairs.base_mean();
+            match option_gain(&hi.pairs, &lo.pairs) {
+                Some(g) if base_mean > 0.0 => json!({
+                    "option": format!("p{}", k + 2), "against": format!("p{}", k + 1),
+                    "extraCutVehPerHour": g.to_json("better", "worse"),
+                    "extraCutPoints": g.scaled(100.0 / base_mean).to_json("better", "worse"),
+                }),
+                _ => json!({"option": format!("p{}", k + 2), "against": format!("p{}", k + 1), "extraCutVehPerHour": {"n": 0, "status": "insufficient"}}),
+            }
+        })
+        .collect();
+    let shortlist: Vec<String> = shown.iter().map(|f| study.encode(&f.set.iter().map(|&i| cands[i as usize].iv.clone()).collect::<Vec<_>>(), Some(&p.periods[0]))).collect();
+    let mut computed = json!({
+        "date": util::today_utc(),
+        "periods": p.periods,
+        "seeds": est.seeds,
+        "minutes": p.minutes,
+        "screenMinutes": p.screen_minutes,
+        "initialLoad": true,
+        "settleSeconds": crate::params::INITIAL_SETTLE_S,
+        "window": "From t = 0 over `minutes` simulated minutes, after the initial load and settle interval: the run the app and the stored results make. Published figures come from the rechecks only; screening runs are the same run at `screenMinutes`.",
+        "networkHash": study.net_hash,
+        "demandHash": study.demand_hash,
+        "calibration": study.calibration,
+        "knownPackages": {
+            "loaded": known.loaded,
+            "rechecked": known.rechecked,
+            "dropped": known.dropped.len(),
+            "droppedBy": seeds::reason_counts(&known.dropped).into_iter().map(|(reason, count)| json!({"reason": reason, "count": count})).collect::<Vec<_>>(),
+            "droppedPackages": known.dropped.iter().map(|d| json!({"link": d.link, "reason": d.reason})).collect::<Vec<_>>(),
+        },
+    });
+    for (k, v) in provenance_json(p, est, &shortlist).as_object().expect("object") {
+        computed[k] = v.clone();
     }
     json!({
         "id": p.profile.id,
         "title": p.profile.title,
         "note": p.profile.note,
-        "computed": {
-            "date": util::today_utc(),
-            "periods": p.periods,
-            "seeds": p.seeds,
-            "minutes": p.minutes,
-            "screenMinutes": p.screen_minutes,
-            "initialLoad": true,
-            "settleSeconds": crate::params::INITIAL_SETTLE_S,
-            "window": "From t = 0 over `minutes` simulated minutes, after the initial load and settle interval: the run the app and the stored results make. Published figures come from the rechecks only; screening runs are the same run at `screenMinutes`.",
-            "networkHash": study.net_hash,
-            "demandHash": study.demand_hash,
-            "calibration": study.calibration,
-            "knownPackages": {
-                "loaded": known.loaded,
-                "rechecked": known.rechecked,
-                "dropped": known.dropped.len(),
-                "droppedBy": seeds::reason_counts(&known.dropped).into_iter().map(|(reason, count)| json!({"reason": reason, "count": count})).collect::<Vec<_>>(),
-                "droppedPackages": known.dropped.iter().map(|d| json!({"link": d.link, "reason": d.reason})).collect::<Vec<_>>(),
-            },
-        },
+        "computed": computed,
         "baseline": {"cutThroughVehPerHour": p.periods.iter().zip(&base.full).map(|(n, s)| (n.clone(), json!(r1(s.ct_vph)))).collect::<serde_json::Map<String, Value>>()},
+        "optionComparisons": comparisons,
         "proposals": proposals,
     })
 }
 
 #[allow(clippy::too_many_arguments)]
-fn build_markdown(study: &Study, p: &Params, ctx: &Ctx, state: &SearchState, finals: &[Final], picks: &[Pick], notes: &[String], noise: f64, t0: &std::time::Instant, ref_finals: &[Final], known: &KnownSummary) -> String {
+fn build_markdown(study: &Study, p: &Params, ctx: &Ctx, state: &SearchState, finals: &[Final], picks: &[Pick], notes: &[String], t0: &std::time::Instant, ref_finals: &[Final], known: &KnownSummary, shown: &[Final]) -> String {
     let (cands, base) = (ctx.cands, ctx.base);
     let mut md = String::new();
+    let confirmed = !p.confirm_seeds.is_empty();
     let _ = writeln!(md, "# Proposals report: {}\n", study.area);
     let _ = writeln!(
         md,
-        "Generated by `cargo run --release -p traffic-sim --bin explore` on {}. Periods {}, seeds {}, {} min runs; screening on {} / seed {} at {} min. Network hash {}, demand hash {}, baseline calibration status: {}. Wall time {:.0} s on {} job(s).\n",
+        "Generated by `cargo run --release -p traffic-sim --bin explore` on {}. Periods {}, discovery seeds {}, {} min runs; screening on {} / seed {} at {} min. Network hash {}, demand hash {}, simulator {}, reporting method {}, source revision {}, baseline calibration status: {}. Wall time {:.0} s on {} job(s).\n",
         util::today_utc(),
         p.periods.join(", "),
         p.seeds.iter().map(|s| s.to_string()).collect::<Vec<_>>().join(", "),
@@ -819,19 +1066,33 @@ fn build_markdown(study: &Study, p: &Params, ctx: &Ctx, state: &SearchState, fin
         p.screen_minutes,
         study.net_hash,
         study.demand_hash,
+        crate::FINGERPRINT,
+        REPORT_METHOD,
+        p.source_revision,
         study.calibration,
         t0.elapsed().as_secs_f64(),
         p.jobs
     );
+    let _ = writeln!(
+        md,
+        "Estimates of the chosen options: {}. Intervals are {:.0}% Student t intervals on per-seed differences (scenario minus baseline on the same period and seed), made only from at least {} seeds. They cover seed variability with the network, demand and model fixed; they do not cover calibration error, demand error or day-to-day variation in real traffic.\n",
+        if confirmed {
+            format!("confirmation: the shortlist was frozen and rerun on seeds {} that took no part in screening, rechecking or choosing", p.confirm_seeds.iter().map(|s| s.to_string()).collect::<Vec<_>>().join(", "))
+        } else {
+            "exploratory: the runs that chose the options also estimate them, so the intervals are not an independent confirmation".to_string()
+        },
+        100.0 * LEVEL,
+        MIN_PAIRS
+    );
     let _ = writeln!(md, "## Baseline\n");
-    let _ = writeln!(md, "| Period | Through cars an hour, all side streets | Run-to-run spread | Inside trip time (s) | Ped conflicts | Bike conflicts |\n| --- | --- | --- | --- | --- | --- |");
+    let _ = writeln!(md, "| Period | Through cars an hour, all side streets | Seed-to-seed spread (SD as % of mean) | Inside trip time (s) | Ped conflicts | Bike conflicts |\n| --- | --- | --- | --- | --- | --- |");
     for (n, s) in p.periods.iter().zip(&base.full) {
         let _ = writeln!(md, "| {n} | {:.1} | {:.1}% | {:.0} | {:.0} | {:.0} |", s.ct_vph, s.ct_cv_pct, s.inside_s, s.ped_conflicts, s.bike_conflicts);
     }
     let _ = writeln!(
         md,
-        "\nNoise band for \"traffic increased on a block\", for through cars and for all traffic alike: max({} x the block's standard deviation of flow across seeds, {} cars an hour). With one seed the band is the floor. Two options count as different in cut-through reduction when they differ by more than {:.1}% (twice the standard error of the seed mean).\n",
-        NOISE_SIGMAS, NOISE_FLOOR_VEH_H, noise
+        "\nPractical floors (assumptions, not uncertainty intervals): the search's noise band for \"traffic increased on a block\", for through cars and for all traffic alike, is max({} x the block's standard deviation of flow across seeds, {} cars an hour); an option counts as cutting through cars only above {:.1}% of the baseline. Whether an effect or a difference between options is resolved is decided by the paired interval, not by these floors.\n",
+        NOISE_SIGMAS, NOISE_FLOOR_VEH_H, GOAL_NOISE_FLOOR_PCT
     );
     let mut hb: Vec<usize> = (0..study.harm_blocks.len()).collect();
     hb.sort_by(|&a, &b| base.hot.block_ct[study.harm_blocks[b]].partial_cmp(&base.hot.block_ct[study.harm_blocks[a]]).unwrap_or(std::cmp::Ordering::Equal).then(a.cmp(&b)));
@@ -867,49 +1128,69 @@ fn build_markdown(study: &Study, p: &Params, ctx: &Ctx, state: &SearchState, fin
     for d in &known.dropped {
         let _ = writeln!(md, "- Dropped: `{}`: {}", d.link, d.reason);
     }
+    let blk = |b: usize| study.harm_blocks.get(b).map(|&h| study.idx.blocks[h].label.clone()).unwrap_or_else(|| "none".into());
     let _ = writeln!(md, "\n## Finalists, rechecked at full length\n");
     let _ = writeln!(
         md,
-        "Through cars are counted on the area's side streets (each car once for the area; on a block, both directions). \"All traffic\" adds the local trips of people who live or drive there. Through figures average the periods searched; the ranking penalty is the largest all-traffic increase on one block in any period, past its noise band.\n"
+        "Through cars are counted on the area's side streets (each car once for the area; on a block, both directions). \"All traffic\" adds the local trips of people who live or drive there. Through figures are means over the {} discovery seeds and the periods searched. The block with the largest raw increase and the block behind the ranking penalty are different quantities and may differ: the penalty is the largest all-traffic increase on one block in any period after subtracting its assumed noise band.\n",
+        p.seeds.len()
     );
-    let _ = writeln!(md, "| # | Interventions | Source | Through cars an hour, area change (average of periods) | Block gaining the most through cars (cars an hour, average of periods) | Blocks gaining through cars beyond noise | Ranking penalty: all-traffic increase on one block (cars an hour, worst period) | Outcome |\n| --- | --- | --- | --- | --- | --- | --- | --- |");
+    let _ = writeln!(md, "| # | Interventions | Source | Through cars an hour, area change (mean of periods and seeds) | Seed interval of that change | Block with the largest through-car increase (cars an hour) | Its interval | Blocks with a resolved through-car increase | Ranking penalty: block and all-traffic increase past its band (cars an hour, worst period) | Outcome |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |");
     for (i, f) in finals.iter().enumerate() {
         let _ = writeln!(
             md,
-            "| {} | {} | {} | {:+.1}% | {} (+{:.0}) | {} | {} (+{:.0}) | {} |",
+            "| {} | {} | {} | {:+.1}% | {} | {} ({:+.0}) | {} | {} | {} ({:+.0}) | {} |",
             i + 1,
             f.set.iter().map(|&c| cands[c as usize].label.clone()).collect::<Vec<_>>().join("; "),
             f.origin.kind,
             -f.reduction_pct,
-            study.idx.blocks[study.harm_blocks[f.through.worst]].label,
+            interval_phrase(&f.effect),
+            blk(f.through.worst),
             f.through.increase,
-            f.through.blocks_above,
-            study.idx.blocks[study.harm_blocks[f.worst]].label,
+            interval_phrase(&f.through.effect),
+            f.through.blocks_resolved,
+            f.through.penalty_block.map(blk).unwrap_or_else(|| "none past its band".into()),
             f.harm,
             notes[i]
         );
     }
     let _ = writeln!(md, "\n## Chosen options\n");
-    for (n, pick) in picks.iter().enumerate() {
-        let f = &finals[pick.idx];
-        let _ = writeln!(md, "{}. {} ({}; source: {}). {}", n + 1, title(cands, &f.set), pick.why, f.origin.phrase(), summary(study, cands, f));
+    for (n, (pick, f)) in picks.iter().zip(shown).enumerate() {
+        let _ = writeln!(md, "{}. {} ({}; source: {}; estimates: {}). {}", n + 1, title(cands, &f.set), pick.why, f.origin.phrase(), f.role, summary(study, cands, f));
+    }
+    for (k, w) in shown.windows(2).enumerate() {
+        let c = match option_gain(&w[1].pairs, &w[0].pairs) {
+            Some(g) if w[1].pairs.base_mean() > 0.0 => {
+                let pts = g.scaled(100.0 / w[1].pairs.base_mean());
+                match (g.status(), pts.interval()) {
+                    (Status::Positive, Some((lo, hi))) => format!("cuts through cars by {:.1} more points (interval {:.1} to {:.1} over {} seeds)", pts.mean, lo, hi, pts.n),
+                    (Status::Negative, Some((lo, hi))) => format!("cuts through cars by {:.1} fewer points (interval {:.1} to {:.1} over {} seeds)", -pts.mean, -hi, -lo, pts.n),
+                    (Status::Unresolved, Some((lo, hi))) => format!("is not resolved from option {}: {:+.1} points (interval {:.1} to {:.1} over {} seeds)", k + 1, pts.mean, lo, hi, pts.n),
+                    _ => format!("has insufficient evidence against option {}: {} seed pair(s), at least {MIN_PAIRS} needed", k + 1, g.n),
+                }
+            }
+            _ => format!("cannot be compared with option {}: the runs are not the same seed pairs", k + 1),
+        };
+        let _ = writeln!(md, "- Option {} {c} than option {}, paired on the same seeds.", k + 2, k + 1);
     }
     if !picks.is_empty() {
         let _ = writeln!(md, "\n### All traffic on side-street blocks, by period (through and local trips together)\n");
-        let _ = writeln!(md, "| Option | Period | Block that gains the most all-traffic cars | All cars an hour, before to after | Of the change, through cars | Blocks gaining all-traffic cars beyond noise |\n| --- | --- | --- | --- | --- | --- |");
-        for (n, pick) in picks.iter().enumerate() {
-            for (name, r) in p.periods.iter().zip(&finals[pick.idx].by_period) {
+        let _ = writeln!(md, "| Option | Period | Block with the largest all-traffic increase | All cars an hour, before to after | Of the change, through cars | Seed interval of the change | Ranking penalty block and value past its band |\n| --- | --- | --- | --- | --- | --- | --- |");
+        for (n, f) in shown.iter().enumerate() {
+            for (name, r) in p.periods.iter().zip(&f.by_period) {
                 let _ = writeln!(
                     md,
-                    "| {} | {} | {} | {:.0} to {:.0} | {:+.0} of {:+.0} | {} |",
+                    "| {} | {} | {} | {:.0} to {:.0} | {:+.0} of {:+.0} | {} | {} ({:+.0}) |",
                     n + 1,
                     name,
-                    study.idx.blocks[study.harm_blocks[r.worst]].label,
+                    blk(r.worst),
                     r.block_base,
                     r.block_scen,
                     r.block_through_inc,
                     r.block_scen - r.block_base,
-                    r.blocks_above
+                    interval_phrase(&r.block_effect),
+                    r.penalty_block.map(blk).unwrap_or_else(|| "none past its band".into()),
+                    r.penalty
                 );
             }
         }
@@ -927,7 +1208,7 @@ fn build_markdown(study: &Study, p: &Params, ctx: &Ctx, state: &SearchState, fin
         }
     }
     if picks.is_empty() {
-        let _ = writeln!(md, "No rechecked package reduced cut-through beyond noise without a hard rejection, so nothing is proposed.");
+        let _ = writeln!(md, "No rechecked package reduced cut-through by an established amount without a hard rejection, so nothing is proposed.");
     }
     md
 }
