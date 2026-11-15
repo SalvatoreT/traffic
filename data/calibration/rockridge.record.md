@@ -89,6 +89,153 @@ Claremont Ave: checked end to end. OSM lanes (3 with one forward and one backwar
 
 Ramp junctions: after joining all four SR-24 terminals are single signalized nodes (Aileen/Telegraph and Clifton/Claremont off-ramps, Hudson/Claremont and 56th/Telegraph on-ramps) with 2-lane ramp approaches at 35 mph. Mean discharge in the PM peak (seeds 1 to 3, measured before the third round): Aileen off-ramp 584 veh/h (offered 656), Clifton off-ramp 914 veh/h (offered about 1,025), on-ramps 783 and 555 veh/h. That is 290 to 460 veh/h per lane averaged over the hour; the signal gives the ramp 30 to 45% of the cycle and the shortfall is downstream spill-back on Claremont and Telegraph, not the ramp signal itself. Before the third round the remaining gridlock removals were mostly vehicles queued on the 4-lane freeway stub behind the single-lane Clifton off-ramp (26 of about 45 removals over six seeds at scale 0.3). The third round checked the ramp lanes against OSM: the off-ramps are tagged one lane for most of their length and two lanes (turn lanes left | left;through;right at Clifton, left | right at Aileen) on the final way before the signal, and the importer keeps that per segment (a test covers it), so no lane count is lost. After step M the stub accounts for about one removal per run.
 
+## Twenty-fifth round: Colby St NB whole-street cars, the off-ramp split, older counts (change calibration-round-25)
+
+PM peak, seeds 1 to 10 (AM and midday also 1 to 10), scale 1.0, 60 minutes. Before: network 5fe8241a6ba1e306, demand 74a9882dd4286e12 (rebuilt at the start of the round with the cross-validation fit skipped, `SKIP_CV=1`: the same flows). After: network 5fe8241a6ba1e306 (unchanged), demand 8695ddc28b152c35. The simulator did not change; `calibrate` gained a debug dump of the trails of trips that use given links. The "before" column was measured again on the round 24 files and matches round 24. Decisions are in `openspec/changes/archive/*-calibration-round-25/design.md`.
+
+Three changes are kept, all in the demand builder: ramp choice made upstream (`ramps.choice`), full weight for ramp counts (`countFit.recency.exemptRamps`) and whole-street intents for Colby St northbound (`wholeStreet`, with the through intents at 0.47 and 0.15 of the exits). Each is an ASSUMPTION and is labeled so in the config. The other tests of the round (lower bound 0.05, lower local trip rates, the two changes taken apart) are under "Tried and not kept".
+
+### Result
+
+| PM peak, seeds 1 to 10 | Target | Before | After |
+| --- | --- | --- | --- |
+| Through cars Hillegass Ave SB / Colby St SB / Hillegass Ave NB / Colby St NB | 79-120 / 39-117 / 48-95 / 102-145 | 110 / 97 / 66 / 139 | 104 / 100 / 73 / 138 |
+| Whole-street cars, same four blocks | 79 / 39 / 48 / 102 | 75 / 47 / 41 / 80 | 70 / 46 / 46 / 95 |
+| Headline shares Hillegass Ave NB from / Colby St NB from / Hillegass Ave SB to / Colby St SB to | 47 / 47 / 68 / 45 | 50.1 / 37.7 / 64.6 / 41.9 | 54.6 / 42.7 / 63.2 / 40.8 |
+| Mean headline error, points (D5, within 10) | | 4.7 (4 of 4) | 5.2 (4 of 4; Hillegass Ave NB is 7.6 high) |
+| Removals per hour PM / AM / midday (D16: below 1.0) | below 1 | 0.10 / 0.00 / 0.00 | 0.00 / 0.00 / 0.00 |
+| Alcatraz Ave entries at Colby St, Hillegass Ave, Dana St | 360 | 255 | 242 |
+| Colby St entries at Claremont Ave / Forest St (counted 182 / 58) | | 157 / 48 | 187 / 56 |
+| 52nd St off-ramp / Clifton St off-ramp, PM (counted 1,024 / 617) | | 900 / 883 | 1,001 / 733 |
+| Same, AM (898 / 524) and midday (635 / 383) | | 834 / 763 and 737 / 505 | 892 / 626 and 670 / 480 |
+| Telegraph Ave NB / SB travel time, s (observed 302-420 / 300-376) | | 300 / 307 | 298 / 306 |
+| Completed trips per hour, arterial speed (m/s) | | 24,468, 9.41 | 24,485, 9.37 |
+| Recent counts below GEH 5, PM fitted / held out | above 85% | 82 of 94 (87%) / 19 of 22 (86%) | 84 of 94 (89%) / 19 of 22 (86%) |
+| Same, AM | | 73 of 82 (89%) / 21 of 23 (91%) | 73 of 82 (89%) / 22 of 23 (96%) |
+| Same, midday | | 92 of 96 (96%) / 22 of 23 (96%) | 90 of 96 (94%) / 22 of 23 (96%) |
+| Older counts below GEH 5, PM fitted / held out | reported | 48 of 96 (50%) / 16 of 33 (48%) | 52 of 96 (54%) / 18 of 33 (55%) |
+| Same, AM | | 31 of 71 (44%) / 10 of 24 (42%) | 29 of 71 (41%) / 13 of 24 (54%) |
+| Same, midday | | 57 of 96 (59%) / 17 of 33 (52%) | 54 of 96 (56%) / 21 of 33 (64%) |
+| All counts below GEH 5, PM fitted / held out | | 130 of 190 (68%) / 35 of 55 (64%) | 136 of 190 (72%) / 37 of 55 (67%) |
+
+The interval of a ten-seed mean is about 4 veh/h on the through cars and 2 points on the shares, so the through-car changes and the Alcatraz Ave entries (255 to 242) are inside the seed spread except Colby St entries and whole-street cars, which move by more. The older counts together (fitted and held out) go from 64 to 70 of 129 in the PM, 41 to 42 of 95 in the AM and 74 to 75 of 129 at midday: only the PM gain is outside the noise (the AM and midday fitted figures fall by 2 and 3 stations).
+
+### 1. Colby St northbound: where the whole-street cars were lost
+
+The count has 182 cars entering at the south end (121 from Claremont Ave, 57 from Forest St, 4 other), 102 driving the whole street, 51 turning off and 29 ending along it; 47 turn on from side streets and about 15 start on the street. The model had 80 whole-street cars, 157 and 48 entries at Claremont Ave and Forest St (counted 182 and 58) and 187 cars on the last block against 164 counted.
+
+The trails of Colby St northbound (`CAL_DUMP_PATH_TRIPS`, seeds 1 and 2 of the round 24 state, per 60-minute run) say where it goes wrong:
+
+| Cars | Per run | Whole street |
+| --- | --- | --- |
+| Entered at the south end, SR-24 off-ramp origin, through | 40.5 | 38.5 |
+| Entered at the south end, Telegraph Ave and south side, through | 42.0 | 24.0 |
+| Entered at the south end, with a local end (SR-24 36.0, south side 21.0) | 57.0 | 8.5 |
+| Joined from a side street, local end | 77.0 | |
+| Joined from a side street, through | 29.5 | |
+
+1. The entries at the south end are short by 14% (both movements 0.86 of the count) and the model has 106 cars joining from side streets where the count has about 62. The through cars (neither end in the study area) that join are the assumed through intents: they must make the left or right turn at Alcatraz Ave, and the cheapest way to that turn for a car from Telegraph Ave or the ramps is often 63rd St, which reaches the north end of Colby St. 29.5 through cars per run joined that way, mostly by 63rd St, and 18 of the 42 south-side through cars left Colby St early to Telegraph Ave. The intents assume 101 veh/h through cars; 62 per run (70 per hour) drove the whole street.
+2. Mid-block loss to side streets exists but is not the main loss. Of the cars that entered at the south end, 49% left before Alcatraz Ave (count: 44%), which the turn-off counts allow (51 and 29).
+3. The assumed volumes are not too large. The through intents add up to 101 veh/h against 102 whole-street cars counted, and the exits at Alcatraz Ave were right (166 against 163 counted). The shortfall is in the route taken to the turn, not in the volume.
+
+The fix. An assumed movement can name the volunteer count's whole-street route (`wholeStreet`), and its through intents take only seed flows whose route to the turn enters Colby St at its first link. The candidates of the off-ramp intent fall from 34 to 3 flows and those of the south-side intent from 96 to 82 (PM). On the old demand this alone (C in the table below) gave 103 whole-street cars and the entries 178 and 49, with the freeway share at 37.2% (0.2 inside the limit), so the freeway cars were the next gap: the street's freeway share is 0.47 of its trips and the intents had put 65 of the 102 whole-street cars on the ramps. Taking every freeway-origin trip of the street to be a whole-street car (the upper end of the round 21 range, 77 of 163 exits) gives 0.47 and 0.15 for the two through intents; the 0.38 local share is unchanged, so the intents still add up to the counted exits. With the ramp choice (part 2) the freeway share is 42.7% (4.3 below observed, was 9.3), whole-street cars 95 (observed 102) and the entry at Claremont Ave 187 (182).
+
+What did not work or remains: 95 against 102 is inside the ten-seed interval of the model but not at the count; Hillegass Ave NB's freeway share went up (50.1 to 54.6, 7.6 above observed) with the ramp choice and is the largest headline error; the Alcatraz Ave entries fell 13 (255 to 242). The Colby St SB left turn onto Claremont Ave toward College Ave (75 counted, 1 modeled) is unchanged.
+
+### 2. The off-ramp split
+
+(a) Delays. Model delay per approach (PM, seed mean of the link delay, the round 24 state) against the Existing PM worksheets of [SafewayCollege-DEIR2011] and [CHRCO-EIR2014] (HCM approach delay, s; read in the PDFs on 2026-11-15):
+
+| Approach | Model | Worksheet |
+| --- | --- | --- |
+| Clifton St ramp (EB) / Clifton St (WB) at Claremont Ave | 10.7 / 8.3 | 7.2 / 5.4 |
+| Claremont Ave NB / SB at Clifton St | 22.3 / 16.8 | 27.7 / 23.7 |
+| Claremont Ave NB / SB at Hudson St | 7.2 / 4.9 | 12.7 / 20.9 |
+| Hudson St (WB) at Claremont Ave | 25.4 | 22.5 |
+| Claremont Ave NB / SB at Ashby Ave | 36.1 / 36.1 | 70.3 / 45.5 |
+| Telegraph Ave EB / WB / NB / SB at 51st St | 16.9 / 18.1 / 13.0 / 25.0 | 37.2 / 47.2 / 35.7 / 63.0 |
+| 52nd St EB / WB / NB / SB at Shattuck Ave | 15.3 / 21.3 / 27.9 / 10.0 | 21.8 / 42.7 / 33.6 / 59.2 |
+| Telegraph Ave NB / SB at 52nd St and Claremont Ave | 15.8 / 7.1 | 11.6 / 13.3 |
+
+Most approaches are faster in the model than in their worksheets, and the shortfall is largest on the 52nd St path. At Telegraph Ave and 51st St it is 20 to 38 s on all four approaches (the 37 s and 47 s of round 23 are the eastbound and westbound approaches), at Shattuck Ave and 52nd St 6.5 s on the eastbound approach the ramp trips use and 21 s westbound, and at Telegraph Ave, 52nd St and Claremont Ave the eastbound 52nd St approach has 87 s in the worksheet against 15.8 s. On the Clifton St path the shortfall is 5 to 7 s on Claremont Ave at Clifton St (the ramp approach is 3.5 s too slow, 10.7 against 7.2), 5 to 16 s at Hudson St and 9 to 34 s at Ashby Ave. The 52nd St ramp approach has 12.9 s in the model; the worksheet of the ramp and 52nd St (unsignalized) gives an average delay of 7.5 s. Correcting the delays would make the 52nd St path dearer relative to the Clifton St path, the opposite of what the counts need (1,024 on 52nd St, 617 on Clifton St). The costs do not explain the split. The Claremont Crescent merge has no worksheet and was not changed.
+
+(b) Destination mix. Clifton St ramp trips by destination group (per 60-minute run, round 24 state): south Oakland 403, Berkeley north 164, study area 131, Telegraph Ave north 50, Claremont hills 33, College Ave north 25; the 52nd St ramp: south Oakland 434, Telegraph Ave south 204, Berkeley north 121, Berkeley northwest 61. South Oakland is split 52 to 48 between the ramps, which is what two paths within 1.4 s give. The count at the Clifton St terminal (SafewayCollege 2010) says otherwise: of 617 cars, 442 turn north on Claremont Ave, 67 south and the rest go straight on to Clifton St. The model sent 193 south (2.9 times the count) and 484 north. The 2010 count and the 2013 count at 52nd St therefore put the south Oakland trips on the 52nd St ramp; the model put half of them on the Clifton St ramp because that is where its router sent them.
+
+The static fit already agreed with the counts: its assignment has 63 south and 504 north at the Clifton St terminal, 1,045 on the 52nd St ramp and 752 on the Clifton St ramp (22% over; weight 0.5 for counts of 2010 and 2013). The simulator did not follow it because the ramp is chosen by the simulator's costs, not the fit's. Two changes:
+
+- Ramp counts keep full weight (`exemptRamps`). The Claremont Ave and Telegraph Ave ramp counts are all older than 10 years: the 52nd St count is of 2013, the Clifton St count of 2010 and the Caltrans rows of 2012. They are the only ramp evidence, so down-weighting them removes the anchor of the split. The static fit now has 1,015 on the 52nd St ramp and 631 on the Clifton St ramp (counted 1,024 and 617). Should the ramp counts be exempt? Yes: they are the only ramp evidence. What the exemption does in the simulator on its own is in the table of variants.
+- Ramp choice made upstream (`ramps.choice`). Each off-ramp flow is divided over the ramps its final static assignment uses and carries the ramp as its `via` (1,432 PM flows, 411 of them divided over two ramps or more). The simulator keeps the ramp while it costs at most 1.3 times the plain route. In the simulator the Clifton St terminal now has 63 south (67 counted), 472 north (442) and 733 on the ramp (617), the 52nd St ramp 1,001 (1,024) and the Telegraph Ave and Aileen St off-ramp 670 (Caltrans 621). In AM the ramps carry 892 / 626 against 898 / 524 counted (834 / 763 before) and at midday 670 / 480 against 635 / 383 (737 / 505).
+
+The Clifton St ramp is still 116 over its count in the PM (the static assignment has 631). A destination mix that sends the south Oakland trips to the 52nd St ramp is now an assumption of the fit and not a result of the router: a scenario that makes the Clifton St path much cheaper does not move these trips until the detour test (1.3) fails.
+
+### 3. Older counts: is the trip table too large?
+
+The hypothesis. The median factor of the counted flows sits at the lower bound 0.10, so the seed table is larger than the counts support. Measured on the seed flows (`FIT_DUMP`) and the final demand (PM):
+
+| Flows | Seed veh/h | Final veh/h | Flows at the lower bound | Seed volume at the bound |
+| --- | --- | --- | --- | --- |
+| Through | 8,459 | 4,542 | 1,191 of 1,814 (66%) | 5,822 (69%) |
+| Local | 6,175 | 8,588 | 1,888 of 3,431 (55%) | 3,742 (61%) |
+| Ramp | 13,068 | 11,674 | 1,215 of 2,659 (46%) | 6,033 (46%) |
+
+(AM: through 49% of flows at the bound, local 26%, ramp 34%.) The through seed is cut to 54%, almost all of it on pairs to and from the hills: San Pablo Ave to Claremont hills 422 to 110 veh/h (91% of its seed at the bound), southwest Oakland to Claremont hills 250 to 77, West Berkeley to Claremont hills 250 to 63, Claremont hills to San Pablo Ave 249 to 25, to southwest Oakland 184 to 18. Southwest Oakland to Ashby Ave west goes up (176 to 208). The local seed is too small, not too large: it is raised by 40%.
+
+What the failing older stations show:
+
+1. The static assignment meets the older counts. In the PM it has 170 of 206 older stations below GEH 5 (83%) and carries 0.98 of the 2013 counts and 1.04 of the 2010 counts, while the simulator passes 54% and carries 0.84 and 0.94 of them. Per source, simulator over static: 0.86 for the 2013 counts, 0.91 for the 2010 counts, 0.90 for the city counts, 1.00 for the ramps. The shortfall is between the static assignment and the simulator, not in the size of the table.
+2. It sits on the west side. Simulator over count by corridor (PM, after this round): Telegraph Ave and 51st St 0.72, Market St and 55th St 0.80, MLK Way and 55th St 0.79, SR-24 ramps and 52nd St 0.83, MLK Way and 52nd St 0.83, Telegraph Ave, 52nd St and Claremont Ave 0.82, Shattuck Ave and 52nd St 0.87; the corridors north and east are at 0.95 to 1.03. Telegraph Ave northbound at 52nd St has 614 against 1,124 counted, at 51st St 434 against 739; the static fit itself reaches 846 and 496 there (it cannot meet those counts against the gate counts of 2018 and 2019). The ramp choice gives back some of it: the older counts pass 64 of 129 before and 70 after (PM), the 52nd St corridor stations 1 to 2 each.
+3. Turns and approach totals fail alike. PM older leg totals (entering and leaving volumes by leg and ramps): 61 of 116 below GEH 5 (53%), model at 0.87 of the counts; older turning movements: 39 of 73 (53%), 0.84, with 13 of 17 passing under 50 veh/h and 26 of 56 above. So it is not the 2010 and 2013 turn splits: the approach totals fail as often. The counts of 2013 fail most (47% of legs and 52% of movements).
+4. The seed is not the cause. Lower bound 0.05 (ramp and local 0.05 as well) leaves the older counts where they were (63 of 129 against 64); local trip rates cut to 60% lower them (55 of 129) and break the guards (table of variants). Raising through flows is not supported: the through table is already cut to 54%, and the fit raises the pairs the older counts need.
+
+What is left, and why it stays: the older counts are 2010 and 2013 counts of an area where the gates' 2018 to 2021 counts are lower, the median change of the published ramp series is -0.8% a year, and the simulator delivers 0.84 of the static volumes on the west side. A growth rate would make the older counts agree better (a rate of -0.8% a year takes 13 years to 0.90), but round 24 found no verified rate for the arterials and this round did not add one. The delivery gap of the simulator on the west corridors (a feedback loop on volumes, like the cost loop of round 20) is the next test.
+
+### Tried and not kept
+
+PM, ten seeds; through cars Hillegass Ave SB / Colby St SB / Hillegass Ave NB / Colby St NB, shares as above, removals, ramps, whole-street cars on Colby St NB, recent counts fitted / held out, older counts fitted:
+
+| Variant | Through cars | Shares | Removals | Ramps | Colby NB whole | Recent | Older |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Round 24 state | 110 / 97 / 66 / 139 | 50.1 / 37.7 / 64.6 / 41.9 | 0.10 | 900 / 883 | 80 | 82 / 94, 19 / 22 | 48 of 96 |
+| Ramp counts at full weight only | 108 / 104 / 65 / 140 | 50.4 / 37.3 / 63.4 / 41.8 | 0.10 | 878 / 849 | 80 | 80 / 94, 20 / 22 | 47 of 96 |
+| Ramp choice only (ramp counts at weight 0.5) | 105 / 103 / 71 / 136 | 54.5 / 41.1 / 61.5 / 42.6 | 0.40 | 1,019 / 754 | 83 | 82 / 94, 19 / 22 | 52 of 96 |
+| Ramp counts at full weight and ramp choice | 99 / 98 / 70 / 136 | 53.9 / 39.3 / 61.5 / 42.4 | 0.30 | 1,007 / 708 | 81 | 82 / 94, 19 / 22 | 52 of 96 |
+| Whole-street intents only (0.40 and 0.22) | 104 / 99 / 65 / 143 | 50.8 / 37.2 / 63.0 / 42.0 | 0.00 | 905 / 904 | 103 | 85 / 94, 19 / 22 | 47 of 96 |
+| Both, intents at 0.40 and 0.22 | 113 / 104 / 70 / 132 | 54.6 / 38.7 / 60.6 / 40.5 | 0.10 | 1,012 / 719 | 89 | 84 / 94, 19 / 22 | 55 of 96 |
+| Both, intents at 0.47 and 0.15 (kept) | 104 / 100 / 73 / 138 | 54.6 / 42.7 / 63.2 / 40.8 | 0.00 | 1,001 / 733 | 95 | 84 / 94, 19 / 22 | 52 of 96 |
+| Lower bound 0.05 (round 24 state) | 104 / 89 / 69 / 132 | 50.4 / 38.0 / 61.6 / 40.5 | 0.00 | 910 / 872 | 79 | 85 / 94, 20 / 22 | 48 of 96 |
+| Kept state with local trip rates at 60% | 103 / 118 / 65 / 129 | 47.5 / 51.5 / 83.3 / 68.6 | 0.10 | 1,023 / 778 | 94 | 78 / 94, 16 / 22 | 45 of 96 |
+
+The ramp choice does the work on the ramps (1,019 / 754 alone). Full ramp weights alone change the static fit (1,015 / 631) and leave the simulator where it was (878 / 849); with the choice they take the Clifton St ramp from 754 to 708 and the PM removals from 0.40 to 0.30 (733 and 0.00 in the kept state, which also has the whole-street intents). The ramp choice alone raises the Hillegass Ave NB freeway share by 4.4 points (50.1 to 54.5), and that stays. The whole-street intents alone make the Colby St NB freeway share worse (37.2%, 0.2 inside the limit); with the 0.47 and 0.15 intents the shares and the whole-street cars are the best of the set. The older-count passes are 52 to 55 of 96 in every variant with the ramp choice, so the choice among them rests on the Colby St figures and the shares. The lower bound 0.05 does not raise the older counts and is not kept. Local trip rates at 60% break D5 (Hillegass Ave SB to the freeway 83%, Colby St SB 69%), the through-car check (Colby St SB 118 against 39 to 117) and the recent station rule (16 of 22 held out), which is what the fit's raising of the local table by 40% says.
+
+Not tried: growth from the count year (round 24), a feedback loop on volumes (above), Hillegass Ave NB whole-street intents (its whole-street cars, 46 against 48, are right).
+
+### Owner's scenario checks (PM, seeds 1 to 3)
+
+Run with `diag63` (the 63rd St scenario of round 22: filters at Martin St and Ayala Ave and at Ayala Ave and Forest St, diagonal diverters at 62nd St and Colby St and at 63rd St and Hillegass Ave) and `mf` (six filters), each on the round 24 demand and on this round's:
+
+| Scenario | Round 24 demand | Round 25 demand |
+| --- | --- | --- |
+| 63rd St, all blocks, veh/h | 1,072 to 1,181 (+10%) | 993 to 1,056 (+6%) |
+| 63rd St, Telegraph Ave to Canning St (EB), through cars | 41 to 64 | 18 to 33 |
+| Assumed-flow trips with a node visited twice, base to scenario | 8.2% to 8.7% | 7.6% to 8.1% |
+| Ramp-flow trips with a node visited twice | | 1.4% to 1.6% (every trip makes its ramp movement) |
+| Six filters: local street flow, veh-km/h | 803 to 321 | 748 to 308 |
+| Six filters: assumed-flow trips with a node visited twice | 8.2% to 9.4% | 7.6% to 8.5% |
+
+No via-trip loops: the repeated-node share rises by about 0.5 points in the 63rd St scenario and 0.9 in the six-filter scenario on both demands. The base flow on the east blocks of 63rd St falls (65 to 48 on the Telegraph Ave to Canning St block) because the whole-street intents no longer send the through cars up Colby St from 63rd St, and the rise in the scenario is smaller (+63 veh/h against +109).
+
+### Rules and status
+
+D16 holds in all three periods (PM, AM and midday 0.00 removals per hour). D5 holds (4 of 4, mean error 5.2; Hillegass Ave NB 7.6 high). The through cars are inside the observed ranges on all four blocks (Colby St NB 138 of 102 to 145). The station rule on counts from the last five years holds in all three periods, fitted and held out (PM 89% and 86%, AM 89% and 96%, midday 94% and 96%); the PM held-out margin is the same thin 19 of 22. The assessment prescribes `calibrated` with no experimental period, and `status` stays `calibrated`. The calibration note and caveat carry the new numbers. Older counts pass 54% in the PM (AM 41%, midday 56%), the recent set is still mostly one hour of one day (107 of the 116 PM stations), and the caveat lists the remaining mismatches.
+
+### What remains
+
+1. Older counts: the simulator carries 0.84 of what the static assignment gives on the west corridors (Telegraph Ave and 51st St 0.72 of the count), and the static fit does not meet Telegraph Ave northbound at 52nd and 51st either. A feedback loop on volumes, or a growth rate for the older counts if the owner supplies a source, are the next tests.
+2. The Clifton St off-ramp is 733 against 617 in the PM and 626 against 524 in the AM; the 52nd St ramp is within 3% in the PM and the AM.
+3. Hillegass Ave NB freeway share 54.6 against 47 and the Alcatraz Ave entries (242 against 360, Dana St 5 against 43).
+4. The delays at Telegraph Ave and 51st St (17 to 25 s against 37 to 63 s) and at Claremont Ave and Ashby Ave are below their worksheets; no change was made because the split does not depend on them.
+5. Claremont Crescent needs the real lane layout of Ashby Ave at Claremont Ave; the sharp turn from Ashby Ave eastbound onto the slip link is not verified.
+
 ## Twenty-fourth round: count recency, the Ashby Ave slip link (change count-recency-weights)
 
 PM peak, seeds 1 to 10 (AM and midday also 1 to 10), scale 1.0, 60 minutes. Before: network 5fe8241a6ba1e306, demand 222fb062e8e5dc1c (rebuilt at the start of the round: same hash). After: network 5fe8241a6ba1e306 (unchanged), demand 74a9882dd4286e12. The simulator did not change. Decisions are in `openspec/changes/archive/*-count-recency-weights/design.md`.
