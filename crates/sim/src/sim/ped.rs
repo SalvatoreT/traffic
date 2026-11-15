@@ -20,7 +20,7 @@ pub(super) fn sample_speed(rng: &mut Rng) -> f32 {
 
 /// Lognormal multiplier on the 3 s start-up margin of the critical gap ([Fitzpatrick2006] Table 11); the spread is ASSUMPTION.
 pub(super) fn sample_gap(rng: &mut Rng) -> f32 {
-    (PED_GAP_SIGMA * rng.normal()).exp() as f32
+    libm::exp(PED_GAP_SIGMA * rng.normal()) as f32
 }
 
 pub(super) struct Xw {
@@ -465,7 +465,7 @@ impl PedWorld {
                     let (pa, _) = topo.link_point(*a_link as usize, *a_pos as f64, off(*a_link));
                     let (pb, _) = topo.link_point(*b_link as usize, *b_pos as f64, off(*b_link));
                     let u = if p.state == ST_CROSS { p.prog as f64 } else { 0.0 };
-                    ([pa[0] + (pb[0] - pa[0]) * u, pa[1] + (pb[1] - pa[1]) * u], (pb[1] - pa[1]).atan2(pb[0] - pa[0]))
+                    ([pa[0] + (pb[0] - pa[0]) * u, pa[1] + (pb[1] - pa[1]) * u], libm::atan2(pb[1] - pa[1], pb[0] - pa[0]))
                 }
                 None => continue,
             };

@@ -278,9 +278,9 @@ impl Topo {
         let u = ((gs - g.cum[i]) / seg).clamp(0.0, 1.0);
         let dx = p1[0] - p0[0];
         let dy = p1[1] - p0[1];
-        let h = dy.atan2(dx);
-        let x = p0[0] + dx * u + off * h.sin();
-        let y = p0[1] + dy * u - off * h.cos();
+        let h = libm::atan2(dy, dx);
+        let x = p0[0] + dx * u + off * libm::sin(h);
+        let y = p0[1] + dy * u - off * libm::cos(h);
         ([x, y], h)
     }
 
@@ -311,8 +311,8 @@ impl Topo {
                         K_THROUGH
                     };
                     // Intersection of the in-ray and out-ray gives the corner / Bezier control point.
-                    let (cx, cy) = (ha.cos(), ha.sin());
-                    let (dx, dy) = (hb.cos(), hb.sin());
+                    let (cx, cy) = (libm::cos(ha), libm::sin(ha));
+                    let (dx, dy) = (libm::cos(hb), libm::sin(hb));
                     let det = cx * (-dy) - cy * (-dx);
                     let chord = ((pb[0] - pa[0]).powi(2) + (pb[1] - pa[1]).powi(2)).sqrt();
                     let mut x = [(pa[0] + pb[0]) * 0.5, (pa[1] + pb[1]) * 0.5];

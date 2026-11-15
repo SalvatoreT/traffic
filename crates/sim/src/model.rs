@@ -177,7 +177,7 @@ impl Network {
         let mut left = LEG_PROBE_M;
         let mut q = *pts.last().unwrap();
         for w in pts.windows(2) {
-            let d = (w[1][0] - w[0][0]).hypot(w[1][1] - w[0][1]);
+            let d = libm::hypot(w[1][0] - w[0][0], w[1][1] - w[0][1]);
             if d >= left && d > 1e-9 {
                 let u = left / d;
                 q = [w[0][0] + (w[1][0] - w[0][0]) * u, w[0][1] + (w[1][1] - w[0][1]) * u];
@@ -185,7 +185,7 @@ impl Network {
             }
             left -= d;
         }
-        (q[0] - pts[0][0]).atan2(q[1] - pts[0][1]).to_degrees().rem_euclid(360.0)
+        libm::atan2(q[0] - pts[0][0], q[1] - pts[0][1]).to_degrees().rem_euclid(360.0)
     }
 }
 

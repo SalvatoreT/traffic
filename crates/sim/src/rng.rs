@@ -56,12 +56,12 @@ impl Rng {
     pub fn normal(&mut self) -> f64 {
         let u1 = (1.0 - self.f64()).max(1e-300);
         let u2 = self.f64();
-        (-2.0 * u1.ln()).sqrt() * (std::f64::consts::TAU * u2).cos()
+        (-2.0 * libm::log(u1)).sqrt() * libm::cos(std::f64::consts::TAU * u2)
     }
 
     /// Exponential with the given rate (events per unit).
     pub fn exp(&mut self, rate: f64) -> f64 {
-        -(1.0 - self.f64()).max(1e-300).ln() / rate
+        -libm::log((1.0 - self.f64()).max(1e-300)) / rate
     }
 
     /// Poisson count with mean `lambda`: Knuth's product method below 30, the rounded normal approximation above.
@@ -70,7 +70,7 @@ impl Rng {
             return 0;
         }
         if lambda < 30.0 {
-            let limit = (-lambda).exp();
+            let limit = libm::exp(-lambda);
             let (mut k, mut p) = (0u32, 1.0f64);
             loop {
                 p *= self.f64();

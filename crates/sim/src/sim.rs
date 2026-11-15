@@ -51,7 +51,7 @@ impl Drv {
             t_hw: rng.range(0.9, 1.5) as f32,
             // [Treiber2000] / [Kesting2010] s0 = 2 m.
             s0: rng.range(1.5, 2.5) as f32,
-            gap_f: (GAP_SIGMA * rng.normal()).exp() as f32,
+            gap_f: libm::exp(GAP_SIGMA * rng.normal()) as f32,
         }
     }
 }
@@ -66,7 +66,7 @@ impl Drv {
             b: rng.range(BIKE_B_RANGE.0, BIKE_B_RANGE.1) as f32,
             t_hw: rng.range(BIKE_T_RANGE.0, BIKE_T_RANGE.1) as f32,
             s0: BIKE_S0,
-            gap_f: (GAP_SIGMA * rng.normal()).exp() as f32,
+            gap_f: libm::exp(GAP_SIGMA * rng.normal()) as f32,
         }
     }
 }
@@ -459,7 +459,7 @@ fn idm(v: f32, v0: f32, s: f32, dv: f32, a: f32, b: f32, t_hw: f32, s0: f32) -> 
         } else if a_free < 1e-4 {
             a_free
         } else {
-            a_free * (1.0 - z.powf(2.0 * a / a_free))
+            a_free * (1.0 - libm::powf(z, 2.0 * a / a_free))
         }
     } else if z >= 1.0 {
         a_free + a * (1.0 - z * z)
@@ -649,7 +649,7 @@ impl Simulation {
                 street_of.push(id as u32);
             }
             let (a, b) = (l.geometry.first().copied().unwrap_or([0.0, 0.0]), l.geometry.last().copied().unwrap_or([0.0, 1.0]));
-            let brg = (b[0] - a[0]).atan2(b[1] - a[1]).to_degrees().rem_euclid(360.0);
+            let brg = libm::atan2(b[0] - a[0], b[1] - a[1]).to_degrees().rem_euclid(360.0);
             dir_of.push((((brg + 45.0) / 90.0) as usize % 4) as u8);
         }
         let mut node_fw = vec![false; self.net.nodes.len()];
@@ -939,7 +939,7 @@ impl Simulation {
                 let y = w0 * m.p0[1] + w1 * m.x[1] + w2 * m.p1[1];
                 let dx = 2.0 * (1.0 - u) * (m.x[0] - m.p0[0]) + 2.0 * u * (m.p1[0] - m.x[0]);
                 let dy = 2.0 * (1.0 - u) * (m.x[1] - m.p0[1]) + 2.0 * u * (m.p1[1] - m.x[1]);
-                ([x, y], dy.atan2(dx))
+                ([x, y], libm::atan2(dy, dx))
             } else {
                 let nm = self.topo.nmain[v.link as usize];
                 let off = if v.kind == KIND_BIKE {

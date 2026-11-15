@@ -61,8 +61,8 @@ pub fn node_legs(topo: &Topo, net: &Network, node: u32) -> Vec<Leg> {
 
 /// Side of the barrier line (bearing `barrier`, degrees) a leg with bearing `leg` lies on: `Some(true/false)`, or `None` on the line.
 fn side(leg: f64, barrier: f64) -> Option<bool> {
-    let s = (leg - barrier).to_radians().sin();
-    if s.abs() < ON_LINE_DEG.to_radians().sin() {
+    let s = libm::sin((leg - barrier).to_radians());
+    if s.abs() < libm::sin(ON_LINE_DEG.to_radians()) {
         None
     } else {
         Some(s > 0.0)
