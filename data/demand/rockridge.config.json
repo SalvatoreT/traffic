@@ -337,6 +337,12 @@
     "localShareNote": "ASSUMPTION (calibration step V: 0.30 -> 0.60, tested 0.30 / 0.45 / 0.60 / 0.75): share of ramp trips whose surface end is an in-area (LODES) node rather than a surface gate. The model area is 5.7 by 3.4 km, so most ramp trips end inside it. These trips replace part of the block's external local trips.",
     "maxShareOfGate": 0.4,
     "maxShareOfGateNote": "ASSUMPTION: ramp trips use at most this share of a surface gate's in/outflow target (surface totals stay consistent; the Furness step fills the rest).",
+    "choice": {
+      "enabled": true,
+      "maxDetour": 1.3,
+      "minShare": 0.1,
+      "_note": "ASSUMPTION (round 25): ramp choice made upstream. The simulator picks the off-ramp of a trip from the mainline gate by its own costs, and the two Claremont Ave ramps differ by seconds for most destinations, so the split between them followed noise and queues (52nd St 900, Clifton St 883 against 1,024 and 617 counted). The count fit already divides each off-ramp flow over the ramps its final assignment uses, and that assignment meets the ramp counts and the counts downstream of each terminal. The builder splits each off-ramp flow by those shares and writes the ramp as the flow's `via`. maxDetour: the simulator keeps the ramp while its route costs at most this multiple of the plain route, else it tries the flow's other ramps, then the plain route (as for assumed movements). minShare: a ramp that carries less of a flow is dropped and its trips go to the others."
+    },
     "destination": {
       "_note": "ASSUMPTION: gravity over surface gates and local nodes, attraction x direction plausibility. Plausibility = exp(-(dTheta/sigma)^2) floored, where dTheta is the angle between the bearing ramp->destination and the bearing ramp->study-area center. No distance term. Street choice is left to the simulator.",
       "directionSigmaDeg": 90,
@@ -488,6 +494,8 @@
         { "maxAgeYears": 10, "weight": 1 },
         { "weight": 0.5 }
       ],
+      "exemptRamps": true,
+      "exemptRampsNote": "ASSUMPTION (round 25): freeway ramp counts keep full weight whatever their age. The two Claremont Ave off-ramps have no count newer than 2010 and 2013 (52nd St 1,024, Clifton St 617) and the Caltrans rows of the Telegraph Ave and Claremont Ave ramps are of 2012, so they are the only evidence of the ramp split. Down-weighted to 0.5 the static fit put 1,045 and 752 on the two ramps; at full weight it puts 1,015 and 631.",
       "growthPerYear": {},
       "growthNote": "No growth from the count year: the published counts held (Caltrans SR-24 ramp ADT 2012 to 2019 and 2024; OakDOT counts at Telegraph Ave and Alcatraz Ave 2018 to 2021) are flat or lower, so there is no verified rate to apply. The key maps a source id (oakland-tmc, caltrans-aadt, caltrans-ramp, volunteer-count, CHRCO-EIR2014, SafewayCollege-DEIR2011) to an annual rate; empty means none."
     },
@@ -637,8 +645,10 @@
           "from": "Colby Street from south",
           "to": "Alcatraz Avenue toward west"
         },
+        "wholeStreet": "Colby Street NB",
+        "wholeStreetNote": "ASSUMPTION (round 25): the through intents (SR-24 off-ramp and south-side traffic) take only seed flows whose route to this movement drives Colby St northbound from its first link. The count has 102 cars driving the whole street and the model had 80: the through flows reached the Alcatraz Ave turn from 63rd St and the other side streets, which the count says the whole-street cars do not (182 entered at the south end).",
         "throughShare": 0.62,
-        "throughShareNote": "ASSUMPTION from DATA, as in round 20: the volunteer count has 102 cars driving all of Colby St northbound in the PM peak and 164 cars leaving it at Alcatraz Ave (131 left, 32 right, 1 straight); 102 / 164 = 0.62 of the exits are whole-street cars, which have no end in the study area. The intents keep this share (0.40 + 0.22 through, 0.38 local) and the 131 veh/h.",
+        "throughShareNote": "ASSUMPTION from DATA, as in round 20: the volunteer count has 102 cars driving all of Colby St northbound in the PM peak and 164 cars leaving it at Alcatraz Ave (131 left, 32 right, 1 straight); 102 / 164 = 0.62 of the exits are whole-street cars, which have no end in the study area. The intents keep this share (0.47 + 0.15 through since round 25, 0.38 local) and the 131 veh/h.",
         "maxDetour": 1.3,
         "maxDetourNote": "ASSUMPTION: as for the Colby St left turn (round 20): drivers' perceived-cost noise is 8% per link, so a pair within 30% of its best route is one whose drivers could pick either.",
         "minFlowVehPerHour": 0.5,
@@ -646,19 +656,21 @@
         "intents": [
           {
             "id": "offramp-to-west",
+            "wholeStreet": true,
             "label": "SR-24 off-ramp traffic using Colby St to reach Alcatraz Ave west, Telegraph Ave north and Ashby Ave",
             "fromGroup": "sr24-off",
             "toGroup": "west-side",
-            "share": 0.4,
-            "basis": "ASSUMPTION from DATA: 0.40 of the exits at Alcatraz Ave are freeway-origin through cars (65 of 164 veh/h; the block's freeway-origin trips 47% x 174 = 82, times 182 / (182 + 47) of its cars that entered at the south end)."
+            "share": 0.47,
+            "basis": "ASSUMPTION from DATA: 0.47 of the exits at Alcatraz Ave are freeway-origin whole-street cars (77 of 163 veh/h). The street's freeway share is 0.47 of its trips; this takes every freeway-origin trip of the street to be a whole-street car, the upper end of the round 21 range (low 38 to 62 for the left turn, 0.40 in round 21, 65 veh/h with the mid-street correction 182 / (182 + 47)). It raises the modeled Colby St NB freeway share from 38.7 to 42.7% against 47. The through intents add up to 0.62, the counted whole-street share."
           },
           {
             "id": "south-to-west",
+            "wholeStreet": true,
             "label": "Telegraph Ave and south-side traffic using Colby St to reach Alcatraz Ave west, Telegraph Ave north and Ashby Ave",
             "fromGroup": "south-side",
             "toGroup": "west-side",
-            "share": 0.22,
-            "basis": "ASSUMPTION: the rest of the through share (0.62 - 0.40). Only Telegraph Ave, the ramps and Forest St feed the south end of Colby St (4 of the 182 cars entering at the south end came from the northeast of Claremont Ave), so no through traffic is placed from the hills."
+            "share": 0.15,
+            "basis": "ASSUMPTION: the rest of the through share (0.62 - 0.47). Only Telegraph Ave, the ramps and Forest St feed the south end of Colby St (4 of the 182 cars entering at the south end came from the northeast of Claremont Ave), so no through traffic is placed from the hills."
           },
           {
             "id": "local-to-west",
@@ -681,6 +693,8 @@
           "from": "Colby Street from south",
           "to": "Alcatraz Avenue toward east"
         },
+        "wholeStreet": "Colby Street NB",
+        "wholeStreetNote": "ASSUMPTION (round 25): the through intents (SR-24 off-ramp and south-side traffic) take only seed flows whose route to this movement drives Colby St northbound from its first link. The count has 102 cars driving the whole street and the model had 80: the through flows reached the Alcatraz Ave turn from 63rd St and the other side streets, which the count says the whole-street cars do not (182 entered at the south end).",
         "throughShare": 0.62,
         "throughShareNote": "ASSUMPTION: the whole-street share of Colby St northbound exits (0.62) applies to the right turn as to the left turn.",
         "maxDetour": 1.3,
@@ -690,19 +704,21 @@
         "intents": [
           {
             "id": "offramp-to-east",
+            "wholeStreet": true,
             "label": "SR-24 off-ramp traffic using Colby St to reach College Ave and Berkeley",
             "fromGroup": "sr24-off",
             "toGroup": "east-side",
-            "share": 0.4,
-            "basis": "ASSUMPTION: the same freeway-origin share of exits as the left turn (0.40)."
+            "share": 0.47,
+            "basis": "ASSUMPTION: the same freeway-origin share of exits as the left turn (0.47)."
           },
           {
             "id": "south-to-east",
+            "wholeStreet": true,
             "label": "Telegraph Ave and south-side traffic using Colby St to reach College Ave and Berkeley",
             "fromGroup": "south-side",
             "toGroup": "east-side",
-            "share": 0.22,
-            "basis": "ASSUMPTION: the rest of the through share (0.62 - 0.40)."
+            "share": 0.15,
+            "basis": "ASSUMPTION: the rest of the through share (0.62 - 0.47)."
           },
           {
             "id": "local-to-east",
