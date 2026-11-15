@@ -14,10 +14,10 @@ import type { FlowType } from './lib/fit-counts';
 import { applyRecency, yearLabel, type RecencyConfig } from './lib/recency';
 import { offRampLinks, splitByRamp } from './lib/ramp-choice';
 import { intersectionStations, type IxConfig, type IxFile } from './lib/intersection-counts';
-import { assumedMovementFlows, assumedReportLines, withAlternatives, type AssumedMovementCfg, type AssumedReport, type Carve } from './lib/assumed-movements';
+import { assumedMovementFlows, assumedReportLines, belowMinReport, withAlternatives, type AssumedMovementCfg, type AssumedReport, type Carve } from './lib/assumed-movements';
 import { annotateFlows, resolveIntents, type IntentFlow, type ThroughIntentsCfg } from './lib/through-intents';
 import { deriveApproachGroups, expandGroups, groupOfNode, groupsFile, type ApproachGroups, type ApproachGroupsCfg } from './lib/approach-groups';
-import { countReportLines, countStations, mapMovement, nodeStreets, touchesHeld, tripEnds, type CountConfig, type CountFile, type CountReport, type TripEnds } from './lib/volunteer-count';
+import { countReportLines, countStations, mapMovement, nodeStreets, rawMovementCounts, touchesHeld, tripEnds, type CountConfig, type CountFile, type CountReport, type TripEnds } from './lib/volunteer-count';
 
 const cfgPath = process.argv[2] ?? 'data/demand/rockridge.config.json';
 const cfg = JSON.parse(readFileSync(cfgPath, 'utf8'));
@@ -813,26 +813,35 @@ if (fc?.enabled) {
         if (!rt || rt.feature?.kind !== 'path') throw new Error(`assumed movement ${mv.id}: no whole-street route count named "${mv.wholeStreet}"`);
         first = rt.feature.first;
       }
-      return { mv, a: mm.a, b: mm.b, st, first };
+      return { mv, a: mm.a, b: mm.b, st, first, raw: rawMovementCounts(countFile!, net as never, ns, mm.a, mm.b) };
     });
     const grp = groups ? { groupOf: (id: number) => groupOfNode(groups, nodeById, id), expand: (ref: string | string[]) => expandGroups(groups, ref) } : undefined;
     for (const per of outPeriods) {
       const g = buildGraph(net.nodes as never, net.links as never, net.turnBans ?? [], per.id);
       const seed = per.flows.filter((q) => !q.mode && !q.via);
-      const carves = new Map<number, number>();
-      for (const { mv, a, b, st, first } of maps) {
+      const carves = new Map<number, number>(), hard = new Map<number, number>();
+      for (const { mv, a, b, st, first, raw } of maps) {
         const target = st.target[per.id] ?? 0;
-        if (!(target > 0)) continue;
+        if (!(target > 0)) {
+          const below = per.id === vc!.periods.am ? raw.am : per.id === vc!.periods.pm ? raw.pm : 0;
+          if (below > 0) assumedReports.push(belowMinReport(mv, per.id, below, vc!.minMovementVeh));
+          continue;
+        }
         const pm = st.target[lastPeriod] || target;
         const r = assumedMovementFlows(mv, a, b, target, per.id, seed, g, (id) => !!nodeById.get(id)?.inStudyArea, grp, target / pm, first);
         per.flows.push(...(withAlternatives(r.flows, { cfg: mv, a, b }, maps.map((q) => ({ cfg: q.mv, a: q.a, b: q.b })), grp) as Flow[]));
         assumedReports.push(r.report);
         for (const [k, v] of r.carve as Carve) carves.set(k, (carves.get(k) ?? 0) + v);
+        for (const [k, v] of r.hardCarve as Carve) hard.set(k, (hard.get(k) ?? 0) + v);
       }
       // The plain flows give up the trips that assumed intent flows now carry (never more than 80% of a flow, over all movements together).
-      let carved = 0;
+      let carved = 0, cutNatural = 0;
       for (const [k, v] of carves) { const d = Math.min(v, 0.8 * seed[k].vehPerHour); seed[k].vehPerHour -= d; carved += d; }
+      // Plain flows of other pairs that make a turn on their best route give up what the pinned flows already carry of its count (round 26).
+      for (const [k, v] of hard) { const d = Math.min(v, seed[k].vehPerHour); seed[k].vehPerHour -= d; cutNatural += d; }
+      if (cutNatural > 0) per.flows = per.flows.filter((q) => q.mode || q.via || q.vehPerHour > 1e-6);
       if (carved > 0) stationNotes.push(`assumed movement intents, ${per.id}: ${carved.toFixed(1)} veh/h taken from plain flows between the same pairs`);
+      if (cutNatural > 0) stationNotes.push(`assumed movements, ${per.id} (ASSUMPTION, round 26): ${cutNatural.toFixed(1)} veh/h taken from plain flows of other pairs whose best route makes a counted turn that the pinned flows already fill`);
     }
     stationNotes.push(`assumed movement flows: ${assumedReports.map((r) => `${r.id} ${r.period} ${r.flows} flows, ${r.throughVeh.toFixed(0)} through and ${r.localVeh.toFixed(0)} local veh/h`).join('; ')}`);
   }

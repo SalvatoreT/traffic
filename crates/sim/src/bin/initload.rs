@@ -77,7 +77,6 @@ fn main() {
     let net: Network = serde_json::from_str(&nj).unwrap();
     let _: Demand = serde_json::from_str(&dj).unwrap();
     let names = ["motorway", "primary", "secondary", "tertiary", "residential", "service"];
-    let _ = RoadClass::Motorway;
     if argv.iter().any(|a| a == "--occupancy") {
         occupancy(&nj, &dj, &net, &period, &seeds);
         return;
@@ -145,15 +144,10 @@ fn occupancy(nj: &str, dj: &str, net: &Network, period: &str, seeds: &[u64]) {
         let t0 = sum(&s.debug_link_load());
         let mut avg = [0.0f64; 4];
         let mut n = 0.0;
-        let mut win = [[0.0f64; 4]; 6];
-        let mut wn = [0.0f64; 6];
         for sec in 1..=3600 {
             s.step(1.0);
             if sec % 10 == 0 {
                 let g = sum(&s.debug_link_load());
-                let w = match sec { 0..=300 => 0, 301..=600 => 1, 601..=1200 => 2, 1201..=1800 => 3, 1801..=2700 => 4, _ => 5 };
-                (0..4).for_each(|i| win[w][i] += g[i]);
-                wn[w] += 1.0;
                 if sec < 1200 { continue; }
                 (0..4).for_each(|i| avg[i] += g[i]);
                 n += 1.0;
@@ -166,10 +160,5 @@ fn occupancy(nj: &str, dj: &str, net: &Network, period: &str, seeds: &[u64]) {
             print!(" {} {:.0} vs {:.0} ({:+.0}%) |", names[i], t0[i], a, 100.0 * (t0[i] / a - 1.0));
         }
         println!();
-        if std::env::var("WINDOWS").is_ok() {
-            for w in 0..6 {
-                println!("   window {w}: {:?}", (0..4).map(|i| (win[w][i] / wn[w]).round()).collect::<Vec<_>>());
-            }
-        }
     }
 }

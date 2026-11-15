@@ -14,14 +14,14 @@ const labels: Record<string, string> = { pm_peak: 'PM peak (16:00-18:00 weekday,
 const label = (id: string) => labels[id] ?? id;
 const short = (id: string) => label(id).replace(/\s*\(.*\)\s*$/, '');
 
-function build(searched: string[], changes = 2) {
+function build(searched: string[], changes = 2, withPeriod = true) {
   const inside = net.links.filter((l) => l.inStudyArea);
   const pic: ProposalPicture = { period: 'pm_peak', links: inside.slice(0, 4).map((l) => l.id), base: [40, 30, 20, 10], scen: [5, 5, 25, 10] };
   const p: Proposal = {
     ...mock, title: 'Filter on Martin and Ayala', picture: pic,
     interventions: Array.from({ length: changes }, (_, i) => ({ type: 'modal_filter', label: `Modal filter at Street ${i} & Avenue ${i}` })),
     cutThrough: { baselineVehPerHour: 445, scenarioVehPerHour: 94, changePct: -78.9 },
-    byPeriod: { ...mock.byPeriod, pm_peak: { ...mock.byPeriod[Object.keys(mock.byPeriod)[0]], cutThrough: { baselineVehPerHour: 610, scenarioVehPerHour: 130, changePct: -78.7 } } },
+    byPeriod: !withPeriod ? {} : { ...mock.byPeriod, pm_peak: { ...mock.byPeriod[Object.keys(mock.byPeriod)[0]], cutThrough: { baselineVehPerHour: 610, scenarioVehPerHour: 130, changePct: -78.7 } } },
   };
   const facts = pictureFacts(p, pic, index);
   const model = buildPicture(net, index, p, pic, [], facts);
@@ -37,6 +37,13 @@ describe('shareable picture', () => {
       expect(img.svg, t).toContain(t);
     }
     expect(img.svg).toMatch(/^<svg xmlns="http:\/\/www.w3.org\/2000\/svg"/);
+  });
+  it('does not label the average as the picture\'s period when that period has no result', () => {
+    const { input, img } = build(['pm_peak', 'am_peak'], 2, false);
+    expect(input.periodFigure).toBeNull();
+    expect(img.svg).not.toContain('the period this picture shows');
+    expect(img.svg).toContain('Average of PM peak and AM peak');
+    expect(build(['pm_peak'], 2, false).input.periodFigure).toBeNull();
   });
   it('leaves out the average line when only the picture\'s period was searched', () => {
     const { img } = build(['pm_peak']);

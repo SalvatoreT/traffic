@@ -2,7 +2,7 @@
 
 use super::cands::{adopt, conflicts, generate_with, profile_allows, Cand};
 use super::naming::describe;
-use super::refs::{resolve, RefCfg};
+use super::refs::resolve;
 use super::search::*;
 use super::*;
 use serde_json::{json, Value};

@@ -953,7 +953,7 @@ impl Simulation {
             };
             out.extend_from_slice(&[p[0] as f32, p[1] as f32, h as f32, v.v, v.kind as f32, if v.through { 1.0 } else { 0.0 }]);
         }
-        self.world.draw(&self.topo, &self.net, &mut out);
+        self.world.draw(&self.topo, &mut out);
         out
     }
 
@@ -2480,7 +2480,7 @@ impl Simulation {
             self.st.red_entries += 1;
         }
         let (m_len, v_exit, t_total) = self.cross_profile(veh, l, mv, ctrl);
-        let (v, len, fcomp) = (veh.v, veh.drv.len, veh.drv.fcomp);
+        let (v, fcomp) = (veh.v, veh.drv.fcomp);
         let veh_t_enter = veh.t_enter;
         let mid_started = veh.mid_start;
         self.record_link_exit(vid, l);
@@ -2532,7 +2532,6 @@ impl Simulation {
                 }
                 // Emerge onto the target lane if there is physical room.
                 let qi = self.topo.qidx(tr.to_link as usize, tr.lane as usize);
-                let len = self.vehs[vid as usize].drv.len;
                 // Physical room, plus enough distance to brake at 4 m/s^2 if closing on the new leader.
                 let (gap, need) = match self.lanes[qi].back() {
                     Some(&b) => {

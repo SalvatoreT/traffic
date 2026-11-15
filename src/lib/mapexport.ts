@@ -67,9 +67,9 @@ export const BADGE_NAME: Record<Intervention['type'], string> = {
   signal_timing: 'signal timing', one_way: 'one-way street', turn_ban: 'turn ban', diagonal_diverter: 'diagonal diverter',
 };
 // Same fills, outlines and corner shapes as the .iv-badge rules in styles.css.
-export const BADGE_STYLE: Record<Intervention['type'], { fill: string; edge: string; ink: string; radius: [number, number, number, number] | 'round' }> = {
-  modal_filter: { fill: '#ffd43b', edge: '#111', ink: '#111', radius: [4, 4, 4, 4] },
-  diagonal_diverter: { fill: '#ffd43b', edge: '#111', ink: '#111', radius: [4, 4, 4, 4] },
+/** Types drawn as a lettered badge: a modal filter is a bar and a diverter a striped line, neither a badge. */
+export type BadgedType = Exclude<Intervention['type'], 'modal_filter' | 'diagonal_diverter'>;
+export const BADGE_STYLE: Record<BadgedType, { fill: string; edge: string; ink: string; radius: [number, number, number, number] | 'round' }> = {
   speed_hump: { fill: '#fff', edge: '#c92a2a', ink: '#c92a2a', radius: 'round' },
   speed_limit: { fill: '#fff', edge: '#c92a2a', ink: '#c92a2a', radius: 'round' },
   traffic_circle: { fill: '#d0ebff', edge: '#111', ink: '#111', radius: 'round' },
@@ -80,7 +80,7 @@ export const BADGE_STYLE: Record<Intervention['type'], { fill: string; edge: str
 };
 
 /** `leg` is a closed-to-cars bar across a street, centered on (x, y), `len` by `thick` CSS px, turned so it crosses the street whose bearing is `bearing`. */
-export interface BadgeMark { x: number; y: number; len?: number; thick?: number; type: Intervention['type'] | 'leg'; bearing?: number; mph?: number }
+export interface BadgeMark { x: number; y: number; len?: number; thick?: number; type: BadgedType | 'diagonal_diverter' | 'leg'; bearing?: number; mph?: number }
 
 function roundedRect(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: [number, number, number, number]) {
   const [tl, tr, br, bl] = r;

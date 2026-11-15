@@ -7,7 +7,7 @@ import { hashText } from './proposals';
 const net = buildFixture().network;
 const a: Intervention = { type: 'modal_filter', link: 0 };
 const b: Intervention = { type: 'speed_limit', link: 6, speed: 8.9 };
-const metrics = { time: 3600 } as unknown as StoredResult['scenario']['metrics'];
+const metrics = { time: 3600, vehiclesInNetwork: 1, spawned: 2, completedTrips: 3, backlog: 0, meanTripTime: 4, meanTripDelay: 1, vehKm: 5, arterialMeanSpeed: 8, cutThrough: { vehicles: 1, vehiclesPerHour: 2, vehKm: 0, shareOfLocalVehKm: 0 }, safety: { localMeanSpeed: 5 } } as unknown as StoredResult['scenario']['metrics'];
 const stats = (v: number[]) => ({ metrics, linkStats: f32ToBase64(new Float32Array(v)) });
 
 const result = (over: Partial<StoredResult> = {}): StoredResult => ({
@@ -84,5 +84,16 @@ describe('parseResult', () => {
     expect(parseResult('<!doctype html><title>app</title>')).toBeNull();
     expect(parseResult('{}')).toBeNull();
     expect(parseResult(JSON.stringify({ ...result(), scenario: { metrics: null, linkStats: 1 } }))).toBeNull();
+  });
+  it('rejects a damaged file instead of throwing later: bad base64, wrong lengths, a partial metrics object', () => {
+    const net4 = { links: [{}, {}] };
+    const ok = result({ scenario: stats([1, 2, 3, 4, 5, 6, 7, 8]), baseline: stats([1, 2, 3, 4, 5, 6, 7, 8]) });
+    expect(parseResult(JSON.stringify(ok), net4)?.key).toBe('k1');
+    expect(parseResult(JSON.stringify({ ...ok, scenario: { ...ok.scenario, linkStats: '!!not base64!!' } }))).toBeNull();
+    expect(parseResult(JSON.stringify({ ...ok, scenario: { ...ok.scenario, linkStats: f32ToBase64(new Float32Array([1, 2, 3, 4])) } }), net4)).toBeNull();
+    expect(parseResult(JSON.stringify(ok), { links: [{}, {}, {}] })).toBeNull();
+    expect(parseResult(JSON.stringify({ ...ok, baseline: { ...ok.baseline, intentLinks: f32ToBase64(new Float32Array([1, 2])) } }))).toBeNull();
+    expect(parseResult(JSON.stringify({ ...ok, scenario: { ...ok.scenario, metrics: { time: 3600 } } }))).toBeNull();
+    expect(parseResult(JSON.stringify({ ...ok, seconds: 'x' }))).toBeNull();
   });
 });

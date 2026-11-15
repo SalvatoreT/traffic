@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { clampStep, defaultPeriod, initialRun, isExperimentalPeriod, RUN_SECONDS, runReducer, type RunState } from './run';
+import { clampStep, defaultPeriod, EARLY_SECONDS, initialRun, isEarly, isExperimentalPeriod, RUN_SECONDS, runReducer, type RunState } from './run';
 import { OVERLAY_TOP, overlayTop, rampTicks, intensity } from './ramps';
 
 describe('run state', () => {
@@ -67,5 +67,14 @@ describe('fixed overlay scale', () => {
     expect(rampTicks('cutthrough')).toEqual(['0', '25', '50', '75', '100+']);
     expect(rampTicks('flow')).toEqual(['0', '200', '400', '600', '800+']);
     expect(rampTicks('speed')).toEqual(['100%', '75%', '50%', '25%', '0%']);
+  });
+});
+
+describe('early figures', () => {
+  it('are early until the run reaches five minutes or finishes', () => {
+    expect(isEarly(false, 0)).toBe(true);
+    expect(isEarly(false, EARLY_SECONDS - 1)).toBe(true);
+    expect(isEarly(false, EARLY_SECONDS)).toBe(false);
+    expect(isEarly(true, RUN_SECONDS)).toBe(false);
   });
 });

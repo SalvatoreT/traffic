@@ -99,7 +99,7 @@ function decodedBytes(b64: string): number {
 }
 const LINK_STRIDE = 4, INTENT_STRIDE = 3;
 /** Link stats cover every link of the network; intent links are whole rows. With no network given only the encoding is checked. */
-function isStats(s: unknown, net?: Pick<Network, 'links'>): s is StoredStats {
+function isStats(s: unknown, net?: { links: readonly unknown[] }): s is StoredStats {
   if (!isObj(s) || !isMetrics(s.metrics) || typeof s.linkStats !== 'string') return false;
   if (s.intentLinks !== undefined && typeof s.intentLinks !== 'string') return false;
   const link = decodedBytes(s.linkStats);
@@ -112,7 +112,7 @@ function isStats(s: unknown, net?: Pick<Network, 'links'>): s is StoredStats {
   return true;
 }
 /** Anything that is not a well-formed result of this version (a missing file served as the app page, an older format, a damaged file) reads as none. */
-export function parseResult(text: string, net?: Pick<Network, 'links'>): StoredResult | null {
+export function parseResult(text: string, net?: { links: readonly unknown[] }): StoredResult | null {
   try {
     const r = JSON.parse(text) as StoredResult;
     const ok = r?.version === RESULT_VERSION && typeof r.key === 'string' && typeof r.period === 'string' && typeof r.area === 'string'
@@ -122,7 +122,7 @@ export function parseResult(text: string, net?: Pick<Network, 'links'>): StoredR
   } catch { return null; }
 }
 
-export async function fetchResult(area: string, key: string, net?: Pick<Network, 'links'>): Promise<StoredResult | null> {
+export async function fetchResult(area: string, key: string, net?: { links: readonly unknown[] }): Promise<StoredResult | null> {
   try {
     const r = await fetch(resultUrl(area, key));
     if (!r.ok) return null;

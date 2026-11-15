@@ -103,7 +103,6 @@ struct NodeEdge {
 }
 
 struct Leg {
-    angle: f64,
     links: Vec<u32>,
 }
 
@@ -193,7 +192,7 @@ impl PedWorld {
                     let (a, l) = inc[(start + i) % m];
                     let new_leg = prev.is_nan() || (a - prev).rem_euclid(std::f64::consts::TAU) > LEG_GAP_RAD;
                     if new_leg {
-                        legs.push(Leg { angle: a, links: Vec::new() });
+                        legs.push(Leg { links: Vec::new() });
                     }
                     legs.last_mut().unwrap().links.push(l);
                     prev = a;
@@ -454,9 +453,8 @@ impl PedWorld {
         Some(steps)
     }
 
-    pub fn draw(&self, topo: &Topo, net: &Network, out: &mut Vec<f32>) {
+    pub fn draw(&self, topo: &Topo, out: &mut Vec<f32>) {
         let off = |l: u32| LANE_OFFSET0 + LANE_WIDTH * (topo.nmain[l as usize] as f64 - 1.0) + PED_OFFSET_M;
-        let _ = net;
         for p in self.peds.iter().filter(|p| p.alive) {
             let (xy, h) = match p.steps.get(p.si) {
                 Some(Step::Walk { link, from, to }) => {

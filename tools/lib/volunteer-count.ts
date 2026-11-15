@@ -171,6 +171,16 @@ export interface CountStation {
   touches?: number[];
 }
 
+/** The counted volume of one turning movement (links `a` to `b`) per count period, whatever its size: the largest of the rows that map to it (the count fit drops movements below `minMovementVeh`). */
+export function rawMovementCounts(file: CountFile, net: CNet, ns: Map<number, Set<string>>, a: number, b: number, nodes?: Map<number, CNode>): Record<'am' | 'pm', number> {
+  const out = { am: 0, pm: 0 };
+  for (const m of file.turningMovements) {
+    const mm = mapMovement(m, net, ns, nodes);
+    if (mm.a === a && mm.b === b) out[m.period] = Math.max(out[m.period], m.vehicles);
+  }
+  return out;
+}
+
 export interface CountReport {
   blocks: { total: number; mapped: number; exact: number; approx: number; fitted: number; held: number; unmapped: { street: string; between: string; direction: string; period: string; vehicles: number; reason: string }[]; duplicates: string[] };
   movements: { total: number; mapped: number; used: number; belowMin: number; unmapped: number; straight: number; lowConfidence: number };

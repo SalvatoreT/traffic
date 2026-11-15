@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { assignMsa, buildGraph, type ALink, type ANode } from './lib/assign';
-import { assumedMovementFlows, withAlternatives } from './lib/assumed-movements';
+import { assumedMovementFlows, belowMinReport, withAlternatives, type IntentCfg } from './lib/assumed-movements';
 import { fitToCounts, type Constraint, type FlowType } from './lib/fit-counts';
 
 // Two ways from O (0) to D (1): the direct arterial (links 0 and 1 through X) and a slightly longer way over Y (links 2 and 3, the movement 2 -> 3).
@@ -13,25 +13,50 @@ const mk = (id: number, from: number, to: number): ALink => {
   return { id, from, to, length: Math.hypot(b.x - a.x, b.y - a.y), speedLimit: 13.4, class: 'secondary', geometry: [[a.x, a.y], [b.x, b.y]] };
 };
 const links: ALink[] = [mk(0, 0, 2), mk(1, 2, 1), mk(2, 0, 3), mk(3, 3, 1)];
-const cfg = { id: 'm', label: 'test movement', count: { at: [], from: '', to: '' }, throughShare: 0.5, maxDetour: 1.3, minFlowVehPerHour: 0.5 };
+const cfg = { id: 'm', label: 'test movement', count: { at: [], from: '', to: '' }, maxDetour: 1.3, minFlowVehPerHour: 0.5, intents: [] as IntentCfg[] };
+const oneGroup = { groupOf: (n: number) => (n === 0 ? 'north' : n === 1 ? 'fw' : 'study-area'), expand: (r: string | string[]) => (Array.isArray(r) ? r : [r]) };
+const toFw = [{ id: 'a', label: 'north to freeway', fromGroup: 'north', toGroup: 'fw', share: 1, basis: 'test' }];
 
 describe('assumed movement flows', () => {
   const g = buildGraph(nodes, links, [], null);
-  it('splits the count over candidate flows by detour, through and local', () => {
+  it('splits the count over the candidate flows of an intent and reports the movement as through when neither end is in the study area', () => {
     const seed = [{ origin: 0, destination: 1, vehPerHour: 80 }, { origin: 1, destination: 0, vehPerHour: 80 }];
-    const r = assumedMovementFlows(cfg, 2, 3, 60, 'pm', seed, g, (n) => n === 0);
+    const r = assumedMovementFlows({ ...cfg, intents: toFw }, 2, 3, 60, 'pm', seed, g, () => false, oneGroup);
     expect(r.flows).toHaveLength(1);
     expect(r.flows[0]).toMatchObject({ origin: 0, destination: 1, via: { a: 2, b: 3 } });
-    // the only candidate has an end inside, so the whole volume is local and the report says so
     expect(r.flows[0].vehPerHour).toBeCloseTo(60, 1);
-    expect(r.report.localVeh).toBeCloseTo(60, 1);
-    expect(r.report.note).toMatch(/no through candidates/);
-    const t = assumedMovementFlows(cfg, 2, 3, 60, 'pm', seed, g, () => false);
-    expect(t.report.throughVeh).toBeCloseTo(60, 1);
+    expect(r.report.throughVeh).toBeCloseTo(60, 1);
+    expect(() => assumedMovementFlows(cfg, 2, 3, 60, 'pm', seed, g, () => false, oneGroup)).toThrow(/at least one intent/);
   });
   it('drops pairs whose detour exceeds the limit', () => {
-    const r = assumedMovementFlows({ ...cfg, maxDetour: 1.0 }, 2, 3, 60, 'pm', [{ origin: 0, destination: 1, vehPerHour: 80 }], g, () => false);
+    const r = assumedMovementFlows({ ...cfg, maxDetour: 1.0, intents: toFw }, 2, 3, 60, 'pm', [{ origin: 0, destination: 1, vehPerHour: 80 }], g, () => false, oneGroup);
     expect(r.flows).toHaveLength(0);
+  });
+  it('cuts plain flows of other pairs that make the turn on their best route to what the pinned flows leave of the count', () => {
+    const seed = [{ origin: 0, destination: 1, vehPerHour: 80 }, { origin: 1, destination: 0, vehPerHour: 80 }];
+    const half = assumedMovementFlows({ ...cfg, naturalDetour: 1.2, intents: [{ ...toFw[0], share: 0.5 }] }, 2, 3, 60, 'pm', seed, g, () => false, oneGroup);
+    // the pair's own plain flow keeps 80 - 30 = 50, the count leaves room for 30: 20 veh/h more come off
+    expect(half.carve.get(0)).toBeCloseTo(30, 2);
+    expect(half.hardCarve.get(0)).toBeCloseTo(20, 2);
+    expect(half.report.natural).toMatchObject({ flows: 1 });
+    expect(half.report.natural!.after).toBeCloseTo(30, 2);
+    const full = assumedMovementFlows({ ...cfg, naturalDetour: 1.2, intents: toFw }, 2, 3, 60, 'pm', seed, g, () => false, oneGroup);
+    expect(full.report.natural!.after).toBe(0);
+    expect(full.hardCarve.get(0)).toBeCloseTo(80 - (full.carve.get(0) ?? 0), 2);
+  });
+  it('leaves a flow alone whose best route is not through the turn (detour above the natural limit)', () => {
+    const r = assumedMovementFlows({ ...cfg, intents: [{ ...toFw[0], share: 0.5 }] }, 2, 3, 60, 'pm', [{ origin: 0, destination: 1, vehPerHour: 80 }], g, () => false, oneGroup);
+    expect(r.hardCarve.size).toBe(0);
+  });
+  it('leaves the plain flows alone when the count has room for them', () => {
+    const seed = [{ origin: 0, destination: 1, vehPerHour: 10 }];
+    const r = assumedMovementFlows({ ...cfg, naturalDetour: 1.2, intents: [{ ...toFw[0], share: 0.2 }] }, 2, 3, 60, 'pm', seed, g, () => false, oneGroup);
+    expect(r.hardCarve.size).toBe(0);
+  });
+  it('reports a movement counted below the minimum as counted, with no trips assigned', () => {
+    const r = belowMinReport(cfg, 'am', 20, 25);
+    expect(r).toMatchObject({ target: 20, flows: 0, belowMin: 20 });
+    expect(r.note).toMatch(/counted 20 veh\/h, below .* 25 veh\/h/);
   });
   it('routes a via flow through the movement in the assignment and holds its volume in the fit', () => {
     const flows = [{ origin: 0, destination: 1, via: { a: 2, b: 3 } }, { origin: 0, destination: 1 }];
@@ -121,6 +146,12 @@ describe('assumed movement flows', () => {
       expect(withAlternatives([flow], mvW, [mvW, mvT], g2)[0].via?.alternatives).toEqual([{ a: 4, b: 5 }]);
       expect(withAlternatives([flow], mvT, [mvW, mvT], g2)[0].via?.alternatives).toEqual([{ a: 2, b: 3 }]);
       expect(withAlternatives([{ ...flow, origin: 2 }], mvW, [mvW, mvT], g2)[0].via?.alternatives).toBeUndefined();
+    });
+    it('gives no alternative to a trip with an end in the study area', () => {
+      const g3 = { groupOf: (n: number) => (n === 0 ? 'study-area' : n === 1 ? 'fw' : 'other'), expand: (r: string | string[]) => (Array.isArray(r) ? r : [r]) };
+      const local = { id: 'l', label: 'l', fromGroup: 'study-area', toGroup: 'fw', share: 0.5, basis: 't' };
+      const a = { cfg: { ...cfg, id: 'A', intents: [local] }, a: 2, b: 3 }, b = { cfg: { ...cfg, id: 'B', intents: [{ ...local, id: 'l2' }] }, a: 4, b: 5 };
+      expect(withAlternatives([flow], a, [a, b], g3)[0].via?.alternatives).toBeUndefined();
     });
     it('leaves a flow outside the intent groups, or a movement without intents, unchanged', () => {
       expect(withAlternatives([{ ...flow, origin: 5 }], mvA, [mvA, mvB], grp)[0].via?.alternatives).toBeUndefined();

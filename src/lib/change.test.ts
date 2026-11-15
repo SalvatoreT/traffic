@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
-  aggregate, changeIntensity, softChange, changeMagnitude, changeMark, legendClipPath, changeTicks, CHANGE_TOP, compareRows, DEAD_BAND, diffValue, effectiveView, formatSigned, initViewState, linkChangeIntensity,
+  aggregate, changeIntensity, softChange, changeMagnitude, changeMark, legendClipPath, changeTicks, CHANGE_TOP, compareRows, DEAD_BAND, diffValue, effectiveView, formatSigned, initViewState, linkChangeIntensity, linkIntensity, changeLabel,
   NO_DATA, readoutText, viewReducer,
 } from './change';
 import { linkStatsView } from '../types';
+import { legendModel } from './legend';
 
 const A = (flow: number, cut: number, speed = 8) => ({ flow, cut, speed });
 const stats = (...rows: number[][]) => linkStatsView(new Float32Array(rows.flat()));
@@ -138,5 +139,41 @@ describe('change view encoding', () => {
     expect(topAt(50)).toBeGreaterThan(topAt(0));
     expect(topAt(50)).toBeGreaterThan(topAt(100));
     expect(topAt(0)).toBeCloseTo(topAt(100), 5);
+  });
+});
+
+describe('cut-through colors a block from both directions', () => {
+  // Two directions of one block, 4 numbers per link (flow, speed, cut, density).
+  const v = (a: number, b: number) => linkStatsView(new Float32Array([0, 0, a, 0, 0, 0, b, 0]));
+  const f = (a: number, b: number) => linkStatsView(new Float32Array([a, 8, 0, 0, b, 8, 0, 0]));
+  it('gives both directions of a block the same change intensity, the sum against the same band and top', () => {
+    const base = v(60, 40), scen = v(10, 10);
+    const a = linkChangeIntensity('cutthrough', base, scen, 0, [0, 1]);
+    const b = linkChangeIntensity('cutthrough', base, scen, 1, [0, 1]);
+    expect(a).toBe(b);
+    expect(a).toBeCloseTo(-(80 - 7.5) / (100 - 7.5), 6);
+    expect(linkChangeIntensity('cutthrough', base, scen, 0)).not.toBe(a);
+  });
+  it('stays inside the dead band when the two directions together move less than 7.5', () => {
+    expect(linkChangeIntensity('cutthrough', v(30, 30), v(33, 32), 0, [0, 1])).toBe(0);
+  });
+  it('colors the scenario view from the block total too', () => {
+    const s = v(30, 30);
+    expect(linkIntensity('cutthrough', s, 0, 11, 100, [0, 1])).toBeCloseTo(0.6, 6);
+    expect(linkIntensity('cutthrough', s, 1, 11, 100, [0, 1])).toBeCloseTo(0.6, 6);
+    expect(linkIntensity('cutthrough', s, 0, 11, 100)).toBeCloseTo(0.3, 6);
+  });
+  it('keeps flow and speed per direction', () => {
+    const base = f(100, 700), scen = f(100, 100);
+    expect(linkChangeIntensity('flow', base, scen, 0, [0, 1])).toBe(0);
+    expect(linkChangeIntensity('flow', base, scen, 1, [0, 1])).toBeLessThan(-0.5);
+    expect(linkIntensity('flow', f(400, 0), 0, 11, 800, [0, 1])).toBeCloseTo(0.5, 6);
+  });
+  it('says in the legend what is colored', () => {
+    expect(changeLabel('cutthrough')).toContain('both directions');
+    expect(changeLabel('flow')).toContain('each direction');
+    expect(legendModel('cutthrough', 'light', false).name).toContain('both directions');
+    expect(legendModel('flow', 'light', false).name).toContain('each direction');
+    expect(legendModel('speed', 'light', false).name).toContain('each direction');
   });
 });

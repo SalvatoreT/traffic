@@ -29,8 +29,6 @@ struct Args {
     guided_share: Option<f64>,
     /// `--switch-band <x>`: relative indifference band of route switching (default `params::SWITCH_BAND`).
     switch_band: Option<f64>,
-    /// `--legacy-reroute`: the route choice before the commitment rules (A/B runs).
-    legacy_reroute: bool,
     adapt_min: Option<f64>,
     motorway_removal: bool,
     no_rtor: bool,
@@ -56,7 +54,7 @@ struct Args {
 }
 
 fn parse_args() -> Args {
-    let mut a = Args { area: "rockridge".into(), period: "pm_peak".into(), minutes: 60.0, scale: 1.0, seed: 1, warmup_min: 10.0, local_factor: None, guided_share: None, switch_band: None, legacy_reroute: false, adapt_min: None, motorway_removal: false, no_rtor: false, out: None, write: true, link_flows: false, select_od: None, cars_only: false, drop: Vec::new(), demand_path: None, network_path: None, no_initial_load: false, seeds: None, jobs: 4, keep_seeds: None };
+    let mut a = Args { area: "rockridge".into(), period: "pm_peak".into(), minutes: 60.0, scale: 1.0, seed: 1, warmup_min: 10.0, local_factor: None, guided_share: None, switch_band: None, adapt_min: None, motorway_removal: false, no_rtor: false, out: None, write: true, link_flows: false, select_od: None, cars_only: false, drop: Vec::new(), demand_path: None, network_path: None, no_initial_load: false, seeds: None, jobs: 4, keep_seeds: None };
     let argv: Vec<String> = std::env::args().skip(1).collect();
     let mut i = 0;
     while i < argv.len() {
@@ -73,7 +71,6 @@ fn parse_args() -> Args {
             "--seed" => a.seed = val().parse().unwrap_or_else(|_| usage("bad --seed")),
             "--warmup" => a.warmup_min = val().parse().unwrap_or_else(|_| usage("bad --warmup")),
             "--guided-share" | "--reroute-share" => a.guided_share = Some(val().parse().unwrap_or_else(|_| usage("bad --guided-share"))),
-            "--legacy-reroute" => a.legacy_reroute = true,
             "--switch-band" => a.switch_band = Some(val().parse().unwrap_or_else(|_| usage("bad --switch-band"))),
             "--local-factor" => a.local_factor = Some(val().parse().unwrap_or_else(|_| usage("bad --local-factor"))),
             "--adapt-min" => a.adapt_min = Some(val().parse().unwrap_or_else(|_| usage("bad --adapt-min"))),
@@ -469,7 +466,7 @@ fn main() {
     sel.dedup();
 
     // ---- run
-    let cfg = Config { seed: args.seed, period: args.period.clone(), demand_scale: args.scale, select_links: sel, local_cost_factor: args.local_factor, guided_share: args.guided_share, switch_band: args.switch_band, record_trips: true, legacy_reroute: args.legacy_reroute, signal_adapt_min: args.adapt_min, motorway_gridlock_removal: args.motorway_removal, no_right_turn_on_red: args.no_rtor, initial_load: !args.no_initial_load, ..Default::default() };
+    let cfg = Config { seed: args.seed, period: args.period.clone(), demand_scale: args.scale, select_links: sel, local_cost_factor: args.local_factor, guided_share: args.guided_share, switch_band: args.switch_band, record_trips: true, signal_adapt_min: args.adapt_min, motorway_gridlock_removal: args.motorway_removal, no_right_turn_on_red: args.no_rtor, initial_load: !args.no_initial_load, ..Default::default() };
     let mut sim = Simulation::from_parts(net.clone(), demand.clone(), cfg).expect("sim");
     let total_s = args.minutes * 60.0;
     let warm_s = if total_s >= 1800.0 { args.warmup_min * 60.0 } else { 0.0 };

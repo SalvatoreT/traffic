@@ -1,5 +1,5 @@
 import type { Intervention, Overlay } from '../types';
-import { BADGE_NAME, BADGE_TEXT } from './mapexport';
+import { BADGE_NAME, BADGE_TEXT, type BadgedType } from './mapexport';
 import { changeLabel, changeTicks } from './change';
 import { divergingStops, rampStops, rampTicks, type Mode } from './ramps';
 
@@ -29,14 +29,14 @@ export interface MapSymbols {
   bar: boolean;
   diverter: boolean;
   /** Types drawn as a lettered badge, in a fixed order. */
-  badges: Intervention['type'][];
+  badges: BadgedType[];
   /** The violet dashed line of a chosen reason cars cut through. */
   reason: boolean;
 }
-const BADGED: Intervention['type'][] = ['speed_hump', 'speed_limit', 'traffic_circle', 'control', 'signal_timing', 'one_way', 'turn_ban'];
+const BADGED: BadgedType[] = ['speed_hump', 'speed_limit', 'traffic_circle', 'control', 'signal_timing', 'one_way', 'turn_ban'];
 
 export function mapSymbols(ivs: readonly Pick<Intervention, 'type'>[], reason: boolean): MapSymbols {
   const types = new Set(ivs.map((iv) => iv.type));
   return { bar: types.has('modal_filter'), diverter: types.has('diagonal_diverter'), badges: BADGED.filter((t) => types.has(t)), reason };
 }
-export const badgeKey = (t: Intervention['type']): { text: string; name: string } => ({ text: BADGE_TEXT[t], name: BADGE_NAME[t] });
+export const badgeKey = (t: BadgedType): { text: string; name: string } => ({ text: BADGE_TEXT[t], name: BADGE_NAME[t] });

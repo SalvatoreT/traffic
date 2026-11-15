@@ -1,5 +1,6 @@
 import type { Intervention, Network } from '../types';
 import { DEAD_BAND_CUTTHROUGH, softChange } from './change';
+import type { BadgedType } from './mapexport';
 import { barPx, blockBar, filterLegs, legBars } from './blocked';
 import { pointAlong } from './geom';
 import { pointAtLinkMeters } from './junctionends';
@@ -97,7 +98,7 @@ export type Mark =
   | { kind: 'bar'; x: number; y: number; bearing: number }
   | { kind: 'diverter'; x: number; y: number; bearing: number }
   | { kind: 'arrow'; x: number; y: number; bearing: number }
-  | { kind: 'badge'; type: Intervention['type']; x: number; y: number; text: string };
+  | { kind: 'badge'; type: BadgedType; x: number; y: number; text: string };
 export interface StreetName { text: string; x: number; y: number; angle: number }
 export interface Pin { x: number; y: number; text: string; end: boolean; d: string; dashed: boolean }
 

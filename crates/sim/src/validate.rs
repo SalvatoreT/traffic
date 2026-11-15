@@ -330,7 +330,7 @@ pub fn two_signals_served(d: f64, adaptive: bool, seed: u64) -> (f64, f64, f64) 
     let n2 = b.node(d, 300.0, Control::Uncontrolled, true);
     let sg2 = b.node(d, -300.0, Control::Uncontrolled, true);
     let (w1, _) = b.two_way(w, s1, RoadClass::Secondary, 2, V25);
-    let (m12, m21) = b.two_way(s1, s2, RoadClass::Secondary, 2, V25);
+    let (_, m21) = b.two_way(s1, s2, RoadClass::Secondary, 2, V25);
     let (m2e, _) = b.two_way(s2, e, RoadClass::Secondary, 2, V25);
     let mut cross = Vec::new();
     for (k, (a, c)) in [(n1, s1), (sg1, s1), (n2, s2), (sg2, s2)].into_iter().enumerate() {
@@ -604,8 +604,6 @@ pub fn run_all() -> Vec<Case> {
     let turn = Appr { p_left: 0.1, p_right: 0.15, opp: 500.0, ..base };
     let (b1, _) = approach_cap(turn, 1, &[], |_, _| {});
     for (i, ped) in [100.0, 300.0, 600.0].into_iter().enumerate() {
-        let fl = |_: &Cross| ();
-        let _ = fl;
         let ids = ["j1", "j2", "j3"];
         let (c, _) = approach_cap_modes(turn, 1, ped, 0.0);
         out.push(case(ids[i], format!("Signal, 1 lane, 10% left 15% right: capacity with {ped:.0} pedestrians/h per crosswalk"), "capacity share", c / b1, 0.6, 1.0, "ASSUMPTION", format!("{c:.0} against {b1:.0} veh/h/lane; no verified HCM pedestrian factor, floor 0.6 is a guess")));
@@ -647,8 +645,7 @@ fn mode_flows(x: &Cross, ped: f64, bike: f64, bike_from: &[(u32, u32)]) -> Vec<(
 /// Signalized approach capacity with pedestrians crossing at marked crosswalks and cyclists sharing the west approach lane.
 pub fn approach_cap_modes(a: Appr, seed: u64, ped: f64, bike: f64) -> (f64, f64) {
     let class = if a.pocket { RoadClass::Secondary } else { RoadClass::Residential };
-    let (net, x) = cross(Control::Signal, class, a.lanes, RoadClass::Secondary, a.lanes, false);
-    let _ = net;
+    let (_, x) = cross(Control::Signal, class, a.lanes, RoadClass::Secondary, a.lanes, false);
     approach_cap(a, seed, &mode_flows(&x, ped, bike, &[(x.w, x.e)]), |n, x| n.nodes[x.c as usize].marked_crossing = true)
 }
 

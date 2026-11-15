@@ -59,6 +59,13 @@ describe('picture words', () => {
     expect(alt).toContain(`biggest drop is on ${index.blocks[loss].label}`);
     expect(alt).toContain(`biggest gain is on ${index.blocks[gain].label}: +24`);
   });
+  it('leaves the card\'s average out of the picture\'s alt text when its period has no result', () => {
+    const { pic, gain } = makePic();
+    const p = withPic(pic, index.blocks[gain].label, 20);
+    const alt = pictureAlt({ ...p, byPeriod: {} }, pic, pictureFacts(p, pic, index), 'PM peak');
+    expect(alt).not.toContain('In the area');
+    expect(alt).toContain('biggest drop');
+  });
   it('is quiet when the picture agrees with the card, and plain when it does not', () => {
     const { pic, loss, gain } = makePic();
     const agree = pictureFacts(withPic(pic, index.blocks[gain].label, 20), pic, index);
