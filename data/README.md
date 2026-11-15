@@ -68,3 +68,5 @@ TRAFFIC_UPLOAD_URL=https://<site> TRAFFIC_UPLOAD_TOKEN=<secret> npm run data:pul
 In a cloud session the secret is stored as a network secret for the site's host, so
 `TRAFFIC_UPLOAD_TOKEN` is left unset and the proxy fills in the header. Behind a proxy,
 Node needs `NODE_USE_ENV_PROXY=1`.
+
+The same endpoint also accepts keys under `jobs/`, which `npm run shard` uses to split simulation batches across sessions (`docs/sharded-runs.md`). Those objects are not served at `/data`.

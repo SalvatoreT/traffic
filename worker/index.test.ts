@@ -36,6 +36,14 @@ describe("/data", () => {
       expect(r.headers.get("x-content-type-options")).toBe("nosniff");
     }
   });
+  it("does not serve a job object under /data", async () => {
+    const e = env({ "jobs/j1/inputs.json": { body: '{"secret":1}', etag: '"j"' } });
+    for (const path of ["/data/jobs/j1/inputs.json", "/data/j1/inputs.json"]) {
+      const r = await get(path, e);
+      expect([400, 404]).toContain(r.status);
+      expect(await r.text()).not.toContain("secret");
+    }
+  });
   it("returns a 404 JSON error for a missing file, not the app page", async () => {
     for (const path of ["/data/missing.json", "/data/results/rockridge/nope.json"]) {
       const r = await get(path, env());

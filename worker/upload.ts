@@ -5,7 +5,7 @@ export interface UploadEnv {
 
 export const UPLOAD_HEADER = "x-upload-token";
 export const MAX_UPLOAD_BYTES = 64 * 1024 * 1024;
-const PREFIXES = ["areas/", "osm/", "demand/"];
+const PREFIXES = ["areas/", "osm/", "demand/", "jobs/"];
 
 export function isAllowedKey(key: string): boolean {
   if (key.length > 256 || !/^[\w.\-/]+$/.test(key)) return false;

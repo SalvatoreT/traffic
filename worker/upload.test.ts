@@ -34,9 +34,11 @@ describe("isAllowedKey", () => {
     expect(isAllowedKey("areas/results/rockridge/0123456789abcdef.json")).toBe(true);
     expect(isAllowedKey("areas/og/home-0a1b2c3d.jpg")).toBe(true);
     expect(isAllowedKey("areas/og/index.json")).toBe(true);
+    expect(isAllowedKey("jobs/job-1/inputs.json")).toBe(true);
+    expect(isAllowedKey("jobs/job-1/assess/s1/cv/rockridge-pm_peak-s1-seed3.json")).toBe(true);
   });
   it("rejects everything else", () => {
-    for (const key of ["", "areas/", "other/x.json", "areas/../secret", "areas//x", "/areas/x", "areas/x y", "areas/%2e%2e/x", "a".repeat(300)]) {
+    for (const key of ["", "areas/", "jobs/", "jobs", "jobs/../areas/x", "jobs//x", "jobs/a b", "other/x.json", "areas/../secret", "areas//x", "/areas/x", "areas/x y", "areas/%2e%2e/x", "a".repeat(300)]) {
       expect(isAllowedKey(key)).toBe(false);
     }
   });
@@ -77,6 +79,16 @@ describe("handleDataApi", () => {
     const get = await handleDataApi(request("GET", "areas/x.json", { token: "right" }), env, "areas/x.json");
     expect(await get.text()).toBe('{"a":1}');
     expect((await handleDataApi(request("GET", "areas/missing.json", { token: "right" }), env, "areas/missing.json")).status).toBe(404);
+  });
+
+  it("keeps job objects behind the secret", async () => {
+    const { bucket, store } = fakeBucket();
+    const env: UploadEnv = { DATA: bucket, UPLOAD_TOKEN: "right" };
+    expect((await handleDataApi(request("PUT", "jobs/j1/inputs.json", { body: "{}" }), env, "jobs/j1/inputs.json")).status).toBe(401);
+    expect(store.size).toBe(0);
+    expect((await handleDataApi(request("PUT", "jobs/j1/inputs.json", { token: "right", body: "{}" }), env, "jobs/j1/inputs.json")).status).toBe(200);
+    expect((await handleDataApi(request("GET", "jobs/j1/inputs.json", { token: "right" }), env, "jobs/j1/inputs.json")).status).toBe(200);
+    expect((await handleDataApi(request("GET", "jobs/j1/inputs.json"), env, "jobs/j1/inputs.json")).status).toBe(401);
   });
 
   it("enforces key, size and method rules", async () => {

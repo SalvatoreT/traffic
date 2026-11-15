@@ -17,6 +17,7 @@ areas are data.
 | `data/` | Source extracts (OSM, counts) with provenance; `data/areas` study-area configs, `data/calibration` targets, validation and calibration record. |
 | `public/data/` | Generated study-area files served to the app. |
 | `docs/references.md` | Bibliography. Source of truth for citation keys. |
+| `docs/sharded-runs.md` | Runbook for splitting batches across child sessions (`tools/shard.ts`). |
 | `docs/scenario-links.md`, `docs/data-files.md`, `docs/run-locally.md` | Guides for agents and visitors; the one source the generated text pages include verbatim. |
 | `openspec/` | Specs (current truth) and changes (decision history). |
 
@@ -32,6 +33,7 @@ areas are data.
 - `npm run data:assumptions`: write the Assumptions tab table from the demand config and fit report
 - `npm run data:results`: precompute the finished hour of every published proposal for each period (needs `npm run wasm`; see `data/README.md`)
 - `npm run simulate -- --link "<url or #v1;...>"`: run one scenario headless and print JSON (`--find "<streets>"` looks up places; needs `npm run wasm` and the data; see `docs/run-locally.md`)
+- `npm run shard -- <inputs|assess|explore> ...`: split a heavy batch across child sessions and merge the results (`docs/sharded-runs.md`)
 - `npm run data:download`: fetch the published `/data` files over plain HTTPS (`--all` adds proposals, assumptions, results)
 - `npm run data:llms`: write `public/data/llms/*` (`llms.txt`, `llms-full.txt`, `<tab>.md`) from the data and `docs/`; run after `data:results` and before `data:push`
 - `npm run data:previews`: write `public/data/og/*` (link-preview cards and `index.json`); run after `data:results` and `data:llms`, before `data:push`
