@@ -89,6 +89,65 @@ Claremont Ave: checked end to end. OSM lanes (3 with one forward and one backwar
 
 Ramp junctions: after joining all four SR-24 terminals are single signalized nodes (Aileen/Telegraph and Clifton/Claremont off-ramps, Hudson/Claremont and 56th/Telegraph on-ramps) with 2-lane ramp approaches at 35 mph. Mean discharge in the PM peak (seeds 1 to 3, measured before the third round): Aileen off-ramp 584 veh/h (offered 656), Clifton off-ramp 914 veh/h (offered about 1,025), on-ramps 783 and 555 veh/h. That is 290 to 460 veh/h per lane averaged over the hour; the signal gives the ramp 30 to 45% of the cycle and the shortfall is downstream spill-back on Claremont and Telegraph, not the ramp signal itself. Before the third round the remaining gridlock removals were mostly vehicles queued on the 4-lane freeway stub behind the single-lane Clifton off-ramp (26 of about 45 removals over six seeds at scale 0.3). The third round checked the ramp lanes against OSM: the off-ramps are tagged one lane for most of their length and two lanes (turn lanes left | left;through;right at Clifton, left | right at Aileen) on the final way before the signal, and the importer keeps that per segment (a test covers it), so no lane count is lost. After step M the stub accounts for about one removal per run.
 
+## Twenty-sixth round: review fixes to the demand and the verdict (change calibration-round-26)
+
+PM peak, AM and midday, seeds 1 to 10, scale 1.0, 60 minutes, `calibrate` built from commit 068e927 (the libm commit of the simulator fixes; interim results on the earlier binary agreed within seed spread). Before: network 5fe8241a6ba1e306, demand 8695ddc28b152c35 (round 25). After: network 5fe8241a6ba1e306 (unchanged), demand 6f2e5661ad6e3ba9 (rebuilt twice: same hash). Cross-validation demand f9c66e8df7b39d1d. Decisions are in `openspec/changes/archive/*-calibration-round-26/design.md`. No parameter was tuned toward a verdict: the checks were corrected and the status is what they say, `uncalibrated` (the area was `calibrated` before).
+
+### What was wrong, reproduced
+
+1. The held-out rule was in sample. The shipped demand is fitted with every station, so the PM validation stations scored 19 of 22 there. The assessment now runs the same ten seeds on the cross-validation demand (the fit without them, with the same ramp split and intent annotation as the shipped file) and scores them there.
+2. Midday has no counts. Every midday target is the PM count times 0.62 (so is the AM or midday target of an ADT-based station and of a ramp with no AM count). The stations carry `derived` and the rule skips them: midday has no judged stations (232 of its 248 scored stations are derived; the other 16 have no recent count), and the verdict says "midday is checked for stability only". The caveat quotes no midday rates.
+3. The AM trip ends counted five Telegraph Ave entries (60th, McAuley, 59th, 58th, 57th St; 199 veh/h together in the PM) as zero. They now take the PM count times 0.74 (entering) and the exits of 58th and 57th St the PM count times 0.78 (ASSUMPTION).
+4. Plain flows of other pairs that make a counted turn kept at least 0.1 of their volume on top of the pinned flows. They now give up volume to the count (ASSUMPTION, `naturalDetour` 1.05): 375 veh/h PM from 137 flows (AM 318, midday 224).
+5. Chained freeway links (3981 to 3984 to 3979; 4057 to 4081 to 4083 to 4077) divided flows into parts of one physical route. PM off-ramp flows divided: 353 of 1,344 (before 411 of 1,432).
+6. Local intent flows had the other street's turn as an alternative; only through flows have alternatives now.
+
+### Result
+
+| PM peak, seeds 1 to 10 | Target | Before | After |
+| --- | --- | --- | --- |
+| Through cars Hillegass Ave SB / Colby St SB / Hillegass Ave NB / Colby St NB | 79-120 / 39-117 / 48-95 / 102-145 | 104 / 100 / 73 / 138 | 109 / 110 / 70 / 151 (Colby St NB outside) |
+| Whole-street cars, same four blocks | 79 / 39 / 48 / 102 | 70 / 46 / 46 / 95 | 69 / 54 / 44 / 98 |
+| Headline shares Hillegass Ave NB from / Colby St NB from / Hillegass Ave SB to / Colby St SB to | 47 / 47 / 68 / 45 | 54.6 / 42.7 / 63.2 / 40.8 | 53.9 / 41.9 / 65.1 / 43.2 |
+| Mean headline error, points (D5) | within 10 | 5.2 (4 of 4) | 4.1 (4 of 4) |
+| Removals per hour PM / AM / midday (D16: below 1.0) | below 1 | 0.00 / 0.00 / 0.00 | 0.00 / 0.00 / 0.00 |
+| 52nd St off-ramp / Clifton St off-ramp, PM (counted 1,024 / 617) | | 1,001 / 733 | 1,043 / 726 |
+| Same, AM (898 / 524) and midday (635 / 383) | | 892 / 626 and 670 / 480 | 881 / 638 and 650 / 466 |
+| Alcatraz Ave entries at Colby St, Hillegass Ave, Dana St, PM | 360 | 242 | 233 |
+| Hillegass Ave NB left turn onto Alcatraz Ave, PM / AM / midday (counted 43 / 42 / 27) | | 56 (PM only) | 48 / 47 / 34 |
+| Colby St NB left turn onto Alcatraz Ave, PM / AM / midday (counted 131 / 78 / 81) | | 134 (PM only) | 132 / 80 / 84 |
+| AM local trip ends implied by the count, destinations / origins (veh/h) | | 479 / 584 | 627 / 686 |
+| AM trips in the demand after the fit, local / through (veh/h) | | 6,741 / 4,667 | 7,815 / 4,124 |
+| Recent counts below GEH 5, PM fitted / held out in sample / held out out of sample | above 85% | 84 of 94 (89%) / 19 of 22 (86%) / not measured | 85 of 94 (90%) / 20 of 22 (91%) / 17 of 22 (77%) |
+| Same, AM | | 73 of 82 (89%) / 22 of 23 (96%) / not measured | 71 of 77 (92%) / 19 of 19 (100%) / 17 of 19 (89%) |
+| Midday | | 90 of 96 (94%) / 22 of 23 (96%) | no midday counts; stability only |
+| Older counts below GEH 5, PM fitted / held out out of sample | reported | 52 of 96 (54%) / not measured | 50 of 96 (52%) / 14 of 33 (42%) |
+| Same, AM | | 29 of 71 (41%) / not measured | 28 of 60 (47%) / 7 of 20 (35%) |
+
+The AM sim reports no through-car check (the targets file has only PM whole-street counts), so AM through cars are known from the demand only: 5,826 to 5,587 veh/h offered and 4,667 to 4,124 after the fit. The ten-seed interval is about 4 veh/h on the through cars and 2 points on the shares.
+
+### Verdict under the corrected rules
+
+| Period | D16 | D5 | Station rule, recent, fitted | Station rule, recent, held out (out of sample) | Through cars |
+| --- | --- | --- | --- | --- | --- |
+| AM peak | holds | not gated | 71 of 77, pass | 17 of 19 (89%), pass | no target |
+| Midday | holds | not gated | no counts | no counts | no target |
+| PM peak | holds | holds | 85 of 94, pass | 17 of 22 (77%), fail | fail: Colby St NB 151 against 102 to 145 |
+
+Status `uncalibrated`, no experimental period. Two checks fail in the PM peak. The held-out stations pass 77% on a fit that did not see them, against 91% on the fit that did, which is the over-fit the in-sample figure hid. Colby St northbound has 151 through cars against an upper bound of 145; it was 138 before. The cause was not investigated: the whole-street cars (98 against 102) and the freeway share (41.9% against 47) are close to their counts, so the extra cars end along the street or join it, which the changed local trip rates and the natural-flow cut both touch. The minimum for judging the held-out rule is 10 recent stations (ASSUMPTION): AM has 19 and PM 22.
+
+### Assumed flows from the SR-24 off-ramps: not fixed
+
+18 assumed flows from the mainline gates (PM 113 veh/h, AM 72, midday 70, 2% of the 5,734 PM off-ramp veh/h) carry the Colby St or Hillegass Ave movement as `via`, so the ramp split skips them and the simulator chooses their ramp. A two-stage `via` needs a change in `crates/sim`.
+
+### Scenario regression, no via loops
+
+63rd St scenario (two filters, two diverters) and the six-filter scenario (proposal p5), PM peak, seeds 1 to 3, no gridlock removals, no unroutable trips, no invalid interventions. Share of assumed-flow trips that visit a node twice, baseline / scenario: 7.9% / 8.4% (63rd St) and 7.9% / 9.2% (six filters), round 25 7.6% / 8.1% and 7.6% / 8.5%; the share that still makes the blocked movement falls from 23% to 7% and 0%. Ramp flows: 1.4% / 1.6% and 1.4% / 1.5% revisits.
+
+### What remains
+
+The Alcatraz Ave entries (233 against 360), the Alcatraz Ave turn-ins onto Colby St and Hillegass Ave southbound (45 and 31 against 76 and 50, 54 against 98) and the 52nd St and Martin Luther King Jr Way movements stay low; the natural-flow cut removes trips that the turn-ins also used. Older counts pass 52% (PM) and 47% (AM) fitted and 42% and 35% held out. Colby St northbound through cars are above their range.
+
 ## Twenty-fifth round: Colby St NB whole-street cars, the off-ramp split, older counts (change calibration-round-25)
 
 PM peak, seeds 1 to 10 (AM and midday also 1 to 10), scale 1.0, 60 minutes. Before: network 5fe8241a6ba1e306, demand 74a9882dd4286e12 (rebuilt at the start of the round with the cross-validation fit skipped, `SKIP_CV=1`: the same flows). After: network 5fe8241a6ba1e306 (unchanged), demand 8695ddc28b152c35. The simulator did not change; `calibrate` gained a debug dump of the trails of trips that use given links. The "before" column was measured again on the round 24 files and matches round 24. Decisions are in `openspec/changes/archive/*-calibration-round-25/design.md`.

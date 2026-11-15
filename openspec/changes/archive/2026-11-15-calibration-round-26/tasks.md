@@ -17,5 +17,5 @@
 - [x] 3.2 Atomic result files; R2 sync skips symlinks and `*.tmp`
 
 ## 4. Measure
-- [ ] 4.1 Rebuild, ten seeds in all periods on the final simulator, status and caveat
-- [ ] 4.2 Scenario regression checks (63rd St, six filters)
+- [x] 4.1 Rebuild, ten seeds in all periods on the final simulator, status and caveat
+- [x] 4.2 Scenario regression checks (63rd St, six filters)
