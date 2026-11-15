@@ -109,6 +109,11 @@ pub fn record(file: &mut SeedFile, published: Vec<Entry>, today: &str) {
     enforce_cap(file, today);
 }
 
+/// How strong a seed looks: its search score, else its through-car reduction, else nothing.
+fn strength(e: &Entry) -> f64 {
+    e.score.or(e.change_pct.map(|c| -c)).unwrap_or(f64::NEG_INFINITY)
+}
+
 /// Append a package unless the file already has it. Returns whether it was added.
 pub fn add(file: &mut SeedFile, e: Entry) -> bool {
     if file.seeds.iter().any(|x| key(&x.link) == key(&e.link)) {
@@ -128,7 +133,7 @@ pub fn enforce_cap(file: &mut SeedFile, today: &str) {
                 let (x, y) = (&file.seeds[a], &file.seeds[b]);
                 x.last_published
                     .cmp(&y.last_published)
-                    .then(x.score.unwrap_or(f64::NEG_INFINITY).partial_cmp(&y.score.unwrap_or(f64::NEG_INFINITY)).unwrap_or(std::cmp::Ordering::Equal))
+                    .then(strength(x).partial_cmp(&strength(y)).unwrap_or(std::cmp::Ordering::Equal))
                     .then(a.cmp(&b))
             });
         match drop {

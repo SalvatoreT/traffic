@@ -1290,3 +1290,42 @@ fn the_unconstrained_search_offers_everything_charter_does_and_is_never_worse() 
     let lc = loose.finals.iter().filter(|f| f.reject.is_none()).map(|f| f.reduction_pct).fold(f64::NEG_INFINITY, f64::max);
     assert!(lc >= sc - 1e-9, "without limits {lc} is worse than with them {sc}");
 }
+
+#[test]
+fn partial_packages_are_ranked_with_the_harm_weight_phased_in() {
+    use traffic_sim::explore::search::{rank_value, rank_weight, Eval};
+    let mut p = params(1);
+    p.depth = 6;
+    p.harm_weight = 0.1;
+    assert_eq!(rank_weight(&p, 1), 0.0);
+    assert!((rank_weight(&p, 6) - 0.1).abs() < 1e-12 && (rank_weight(&p, 9) - 0.1).abs() < 1e-12);
+    assert!(rank_weight(&p, 2) > 0.0 && rank_weight(&p, 3) > rank_weight(&p, 2) && rank_weight(&p, 5) < 0.1);
+    let mk = |n: usize, red: f64, harm: f64| Eval { set: (0..n as u16).collect(), reject: None, reduction_pct: red, harm, worst: 0, inc: Vec::new(), score: red - 0.1 * harm };
+    // A filter that cuts through cars the most but displaces them ranks above a mild measure while it stands alone, and below it once the package is whole.
+    let (bold, mild) = (|n| mk(n, 14.0, 94.0), |n| mk(n, 9.5, 2.0));
+    assert!(rank_value(&p, &bold(1)) > rank_value(&p, &mild(1)));
+    assert!(rank_value(&p, &bold(6)) < rank_value(&p, &mild(6)));
+    assert!(bold(1).score < mild(1).score, "the published score always uses the full weight");
+}
+
+#[test]
+fn the_beam_takes_one_variant_per_place() {
+    use traffic_sim::explore::search::{distinct_places, places_of, Ctx};
+    let study = ratrun_study();
+    let mut p = params(2);
+    p.candidates = 12;
+    p.depth = 2;
+    let o = explore(&study, &p);
+    let ctx = Ctx { study: &study, p: &p, cands: &o.cands, base: &o.base };
+    let singles: Vec<usize> = (0..o.state.evals.len()).filter(|&i| o.state.evals[i].set.len() == 1 && o.state.evals[i].valid()).collect();
+    let places: Vec<_> = singles.iter().map(|&i| places_of(&ctx, &o.state.evals[i].set)).collect();
+    assert!(places.iter().enumerate().any(|(i, a)| places[..i].contains(a)), "the block offers a filter, one-ways and a limit at one place");
+    let kept = distinct_places(&ctx, &o.state, &singles, 100);
+    let kept_places: Vec<_> = kept.iter().map(|&i| places_of(&ctx, &o.state.evals[i].set)).collect();
+    for (i, a) in kept_places.iter().enumerate() {
+        assert!(!kept_places[..i].contains(a), "one package per set of places");
+    }
+    assert!(kept.len() < singles.len());
+    assert_eq!(kept[0], singles[0], "the best-ranked variant is the one kept");
+    assert_eq!(distinct_places(&ctx, &o.state, &singles, 2).len(), 2, "the width still applies");
+}

@@ -394,6 +394,40 @@ fn rank_order(p: &Params, st: &SearchState, v: &mut Vec<usize>) {
     v.sort_by(|&a, &b| rank_value(p, &st.evals[b]).partial_cmp(&rank_value(p, &st.evals[a])).unwrap_or(std::cmp::Ordering::Equal).then(a.cmp(&b)));
 }
 
+/// Where a candidate acts: its block, else its intersection(s). Candidates that act at one place are variants of one another (a filter on the
+/// whole junction, one on a single street, a diverter, an all-way stop).
+fn place_key(c: &Cand) -> String {
+    match c.block {
+        Some(b) => format!("b{b}"),
+        None => format!("n{}", c.nodes.iter().map(|n| n.to_string()).collect::<Vec<_>>().join(".")),
+    }
+}
+
+/// The places a package acts at, sorted: two packages with the same places differ only in which variant sits at each.
+pub fn places_of(ctx: &Ctx, set: &[u16]) -> Vec<String> {
+    let mut v: Vec<String> = set.iter().map(|&c| place_key(&ctx.cands[c as usize])).collect();
+    v.sort_unstable();
+    v
+}
+
+/// The first `width` of `ranked` (evaluation indices, best first) with at most one package per set of places, so variants of one
+/// intervention at one place do not fill the beam or the list of singles an extension tries.
+pub fn distinct_places(ctx: &Ctx, st: &SearchState, ranked: &[usize], width: usize) -> Vec<usize> {
+    let mut seen: Vec<Vec<String>> = Vec::new();
+    let mut out = Vec::new();
+    for &i in ranked {
+        if out.len() >= width {
+            break;
+        }
+        let k = places_of(ctx, &st.evals[i].set);
+        if !seen.contains(&k) {
+            seen.push(k);
+            out.push(i);
+        }
+    }
+    out
+}
+
 /// A package known from earlier (another group's search or the seeds file) and the packages one intervention smaller than it.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Family {
@@ -434,9 +468,11 @@ pub fn beam_search(ctx: &Ctx, known: &[Family]) -> SearchState {
     });
     let b = best_valid(&st);
     progress(ctx, &mut st, 1, b);
-    let top_singles: Vec<u16> = ranked.iter().copied().filter(|&c| single_eval(&st, c).unwrap().reduction_pct > 0.0).take(ctx.p.expand).collect();
+    let positive: Vec<usize> = ranked.iter().filter(|&&c| single_eval(&st, c).unwrap().reduction_pct > 0.0).map(|&c| st.cache[&vec![c]]).collect();
+    let top_singles: Vec<u16> = distinct_places(ctx, &st, &positive, ctx.p.expand).into_iter().map(|i| st.evals[i].set[0]).collect();
     let usable: Vec<bool> = (0..n as u16).map(|c| single_eval(&st, c).map_or(false, |e| e.valid())).collect();
-    let mut lineages = vec![Lineage { beam: ranked.iter().take(ctx.p.beam).map(|&c| st.cache[&vec![c]]).collect(), alive: true }];
+    let all_ranked: Vec<usize> = ranked.iter().map(|&c| st.cache[&vec![c]]).collect();
+    let mut lineages = vec![Lineage { beam: distinct_places(ctx, &st, &all_ranked, ctx.p.beam), alive: true }];
     let mut families: Vec<Vec<usize>> = known
         .iter()
         .map(|f| {
@@ -469,6 +505,7 @@ pub fn beam_search(ctx: &Ctx, known: &[Family]) -> SearchState {
     }
     if !start.is_empty() {
         rank_order(ctx.p, &st, &mut start);
+        let start = distinct_places(ctx, &st, &start, usize::MAX);
         let best = st.evals[start[0]].score;
         let line = format!("known packages: {} famil(ies) screened, {} starting point(s) for the beam, best {:+.1}", families.len(), start.len(), best);
         lineages.push(Lineage { beam: start, alive: true });
@@ -535,8 +572,7 @@ pub fn beam_search(ctx: &Ctx, known: &[Family]) -> SearchState {
                 lin.alive = false;
                 continue;
             }
-            level.truncate(ctx.p.beam);
-            lin.beam = level;
+            lin.beam = distinct_places(ctx, &st, &level, ctx.p.beam);
         }
     }
     st

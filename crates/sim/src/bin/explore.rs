@@ -120,14 +120,14 @@ fn main() {
         let known_file = known_path.clone().unwrap_or_else(|| root.join(format!("data/proposals/{}.seeds.json", p.area)));
         let mut f = seeds::load(&known_file, &p.area).unwrap_or_else(|e| usage(&e));
         let today = util::today_utc();
-        let mut entry = |link: String, source: &str, note: String, date: String, group: String| {
+        let mut entry = |link: String, source: &str, note: String, date: String, group: String, change: Option<f64>| {
             let ivs = traffic_sim::explore::decode::decode_scenario(&study.net, &study.topo, study.origin, &link).unwrap_or_else(|e| usage(&format!("{link}: {e}")));
-            let e = seeds::Entry { link, source: source.into(), note, added: date.clone(), last_published: if source == seeds::SOURCE_HAND { seed_published.clone() } else { date }, group, size: ivs.len(), change_pct: None, score: None };
+            let e = seeds::Entry { link, source: source.into(), note, added: date.clone(), last_published: if source == seeds::SOURCE_HAND { seed_published.clone() } else { date }, group, size: ivs.len(), change_pct: change, score: None };
             let added = seeds::add(&mut f, e.clone());
             eprintln!("{} {}", if added { "added" } else { "already there:" }, e.link);
         };
         for l in &add_seed {
-            entry(l.clone(), seeds::SOURCE_HAND, seed_note.clone(), today.clone(), String::new());
+            entry(l.clone(), seeds::SOURCE_HAND, seed_note.clone(), today.clone(), String::new(), None);
         }
         for path in &seed_files {
             let file: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(path).unwrap_or_else(|e| usage(&format!("{}: {e}", path.display())))).unwrap_or_else(|e| usage(&format!("{}: {e}", path.display())));
@@ -136,7 +136,7 @@ fn main() {
                     let Some(link) = pr["link"].as_str() else { continue };
                     let date = g["computed"]["date"].as_str().unwrap_or(&today).to_string();
                     let note = format!("published by an earlier search (group {}, option {}, {} through-car change {}%)", g["id"].as_str().unwrap_or(""), pr["id"].as_str().unwrap_or(""), date, pr["cutThrough"]["changePct"]);
-                    entry(link.to_string(), seeds::SOURCE_SEARCH, note, date, g["id"].as_str().unwrap_or("").to_string());
+                    entry(link.to_string(), seeds::SOURCE_SEARCH, note, date, g["id"].as_str().unwrap_or("").to_string(), pr["cutThrough"]["changePct"].as_f64());
                 }
             }
         }
@@ -145,7 +145,7 @@ fn main() {
             let pkgs: Vec<Vec<String>> = list.iter().map(|v| v["labels"].as_array().map(|a| a.iter().filter_map(|x| x.as_str().map(String::from)).collect()).unwrap_or_default()).collect();
             for (v, r) in list.iter().zip(traffic_sim::explore::check::links_from_labels(&study, &pkgs)) {
                 match r {
-                    Ok(link) => entry(link, seeds::SOURCE_SEARCH, v["note"].as_str().unwrap_or("").into(), v["date"].as_str().unwrap_or(&today).into(), v["group"].as_str().unwrap_or("").into()),
+                    Ok(link) => entry(link, seeds::SOURCE_SEARCH, v["note"].as_str().unwrap_or("").into(), v["date"].as_str().unwrap_or(&today).into(), v["group"].as_str().unwrap_or("").into(), None),
                     Err(why) => eprintln!("skipped: {why}"),
                 }
             }
