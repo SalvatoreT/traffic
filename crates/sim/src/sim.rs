@@ -1435,7 +1435,7 @@ impl Simulation {
             return false;
         }
         let main = self.topo.nmain[l];
-        if MARKED_LEFT_LANE && self.topo.left_marked[l] {
+        if self.topo.left_marked[l] {
             return self.lane_room_ahead(l as u32, main, horizon) >= need;
         }
         self.lanes[self.topo.lane_base[l] as usize + main].len() < POCKET_VEH
@@ -1488,7 +1488,7 @@ impl Simulation {
         if kind == Some(K_LEFT) && self.pocket_open(lu, need, horizon) {
             return Some(main);
         }
-        if kind == Some(K_LEFT) && MARKED_LEFT_LANE && self.topo.left_marked[lu] && self.mv_kind(l, after) == Some(K_LEFT) {
+        if kind == Some(K_LEFT) && self.topo.left_marked[lu] && self.mv_kind(l, after) == Some(K_LEFT) {
             return None;
         }
         if main >= 2 {
@@ -1501,20 +1501,18 @@ impl Simulation {
                 if self.lane_room_ahead(l, k, horizon) >= need {
                     return Some(k);
                 }
-                if TURN_LANE_HALF {
-                    // A driver sorting for a turn keeps to that side of the road: the left (right) half of the lanes, the middle lane of an odd
-                    // number included. With no room there the driver waits and the lanes of the other side stay open for the others.
-                    let half = (main + 1) / 2;
-                    let (lo, hi) = if kind == Some(K_LEFT) { (0, half) } else { (main - half, main) };
-                    let mut best: Option<(f32, usize)> = None;
-                    for j in lo..hi {
-                        let r = self.lane_room_ahead(l, j, horizon);
-                        if r >= need && best.map_or(true, |(br, _)| r > br + 1e-4) {
-                            best = Some((r, j));
-                        }
+                // A driver sorting for a turn keeps to that side of the road: the left (right) half of the lanes, the middle lane of an odd
+                // number included. With no room there the driver waits and the lanes of the other side stay open for the others.
+                let half = (main + 1) / 2;
+                let (lo, hi) = if kind == Some(K_LEFT) { (0, half) } else { (main - half, main) };
+                let mut best: Option<(f32, usize)> = None;
+                for j in lo..hi {
+                    let r = self.lane_room_ahead(l, j, horizon);
+                    if r >= need && best.map_or(true, |(br, _)| r > br + 1e-4) {
+                        best = Some((r, j));
                     }
-                    return best.map(|b| b.1);
                 }
+                return best.map(|b| b.1);
             }
         }
         let mut best: Option<(f32, usize)> = None;
