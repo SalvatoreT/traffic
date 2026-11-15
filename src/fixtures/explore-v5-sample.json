@@ -1,0 +1,877 @@
+{
+ "area": "rockridge",
+ "groups": [
+  {
+   "baseline": {
+    "cutThroughVehPerHour": {
+     "pm_peak": 1248.3
+    }
+   },
+   "computed": {
+    "calibration": "uncalibrated",
+    "date": "2026-11-15",
+    "demandHash": "8ef2c6578dfbb9fc",
+    "estimation": {
+     "aggregation": "Equal-weight mean of the periods within each seed, then paired by seed. Percent changes divide by the baseline mean.",
+     "level": 0.95,
+     "maximum": "The block with the largest raw increase is chosen after looking at all blocks, so its interval is not adjusted for that choice.",
+     "method": "Student t interval on per-seed differences, scenario minus baseline on the same period and seed",
+     "minPairs": 10,
+     "practicalFloors": "The noise band, its floor and the reduction floor are assumed dead bands for screening. They are not uncertainty intervals.",
+     "scope": "Seed variability with the network, demand and model fixed. It does not cover calibration error, demand error or day-to-day variation in real traffic.",
+     "selection": {
+      "confirmationSeeds": [],
+      "discoverySeeds": [
+       1,
+       2,
+       3,
+       4,
+       5,
+       6,
+       7,
+       8,
+       9,
+       10
+      ],
+      "estimates": "exploratory",
+      "shortlist": [
+       "#v1;a=rockridge;p=pm_peak;s=ow,9q9p3fr726,355",
+       "#v1;a=rockridge;p=pm_peak;s=mn,9q9p3fprdr",
+       "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2~mn,9q9p3fprdr"
+      ]
+     }
+    },
+    "initialLoad": true,
+    "knownPackages": {
+     "dropped": 0,
+     "droppedBy": [],
+     "droppedPackages": [],
+     "loaded": 0,
+     "rechecked": 0
+    },
+    "minutes": 20.0,
+    "networkHash": "5fe8241a6ba1e306",
+    "periods": [
+     "pm_peak"
+    ],
+    "reportMethod": "paired-t-1",
+    "screenMinutes": 10.0,
+    "seeds": [
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10
+    ],
+    "settings": {
+     "beam": 2,
+     "budgetEvals": null,
+     "candidates": 8,
+     "depth": 2,
+     "expand": 4,
+     "finalists": 3,
+     "goalFloorPct": 1.0,
+     "harmWeight": 0.1,
+     "noiseFloorVehPerHour": 10.0,
+     "noiseSigmas": 2.0,
+     "options": 3,
+     "profile": "unconstrained"
+    },
+    "settleSeconds": 120.0,
+    "simulator": "a6c786d47bfe954ba0cb14b4dacd4251",
+    "sourceRevision": "sample",
+    "window": "From t = 0 over `minutes` simulated minutes, after the initial load and settle interval: the run the app and the stored results make. Published figures come from the rechecks only; screening runs are the same run at `screenMinutes`."
+   },
+   "id": "unconstrained",
+   "note": "Every tool except new traffic lights, anywhere in the area. Shown for comparison.",
+   "optionComparisons": [
+    {
+     "against": "p1",
+     "extraCutPoints": {
+      "interval": [
+       -2.69,
+       4.56
+      ],
+      "mean": 0.94,
+      "n": 10,
+      "sd": 5.07,
+      "status": "unresolved"
+     },
+     "extraCutVehPerHour": {
+      "interval": [
+       -33.58,
+       56.98
+      ],
+      "mean": 11.7,
+      "n": 10,
+      "sd": 63.3,
+      "status": "unresolved"
+     },
+     "option": "p2"
+    },
+    {
+     "against": "p2",
+     "extraCutPoints": {
+      "interval": [
+       18.17,
+       31.0
+      ],
+      "mean": 24.59,
+      "n": 10,
+      "sd": 8.97,
+      "status": "better"
+     },
+     "extraCutVehPerHour": {
+      "interval": [
+       226.85,
+       386.95
+      ],
+      "mean": 306.9,
+      "n": 10,
+      "sd": 111.91,
+      "status": "better"
+     },
+     "option": "p3"
+    }
+   ],
+   "proposals": [
+    {
+     "byPeriod": {
+      "pm_peak": {
+       "allTraffic": {
+        "adjustedPenalty": {
+         "block": "Dana Street between 63rd Street and North Street",
+         "penaltyVehPerHour": 15.9
+        },
+        "blocksAboveBand": 1,
+        "largestIncrease": {
+         "baselineVehPerHour": 388.5,
+         "block": "Hillegass Avenue between Alcatraz Avenue and 63rd Street",
+         "effect": {
+          "interval": [
+           57.21,
+           102.99
+          ],
+          "mean": 80.1,
+          "n": 10,
+          "sd": 32.0,
+          "status": "increase"
+         },
+         "increaseVehPerHour": 80.1,
+         "scenarioVehPerHour": 468.6,
+         "throughIncreaseVehPerHour": 68.1
+        }
+       },
+       "cutThrough": {
+        "baselineVehPerHour": 1248.3,
+        "changePct": -6.4,
+        "effect": {
+         "interval": [
+          -131.28,
+          -28.92
+         ],
+         "mean": -80.1,
+         "n": 10,
+         "sd": 71.55,
+         "status": "decrease"
+        },
+        "scenarioVehPerHour": 1168.2
+       }
+      }
+     },
+     "context": {
+      "bikeConflictsChangePct": -1.1,
+      "boundingStreets": [
+       {
+        "flowChangePct": 4.1,
+        "name": "Telegraph Avenue",
+        "speedChangeMph": -0.4
+       },
+       {
+        "flowChangePct": 1.3,
+        "name": "Alcatraz Avenue",
+        "speedChangeMph": -0.3
+       },
+       {
+        "flowChangePct": -0.4,
+        "name": "Claremont Avenue",
+        "speedChangeMph": -0.2
+       },
+       {
+        "flowChangePct": 0.7,
+        "name": "College Avenue",
+        "speedChangeMph": -0.2
+       }
+      ],
+      "insideTripTimeChangePct": -0.5,
+      "pedConflictsChangePct": 0.1
+     },
+     "cutThrough": {
+      "baselineVehPerHour": 1248.3,
+      "changePct": -6.4,
+      "changePctEffect": {
+       "interval": [
+        -10.52,
+        -2.32
+       ],
+       "mean": -6.42,
+       "n": 10,
+       "sd": 5.73,
+       "status": "decrease"
+      },
+      "effect": {
+       "interval": [
+        -131.28,
+        -28.92
+       ],
+       "mean": -80.1,
+       "n": 10,
+       "sd": 71.55,
+       "status": "decrease"
+      },
+      "scenarioVehPerHour": 1168.2
+     },
+     "evidence": {
+      "baselineVehPerHour": {
+       "pm_peak": [
+        1146.0,
+        1647.0,
+        1290.0,
+        1161.0,
+        1281.0,
+        1191.0,
+        1392.0,
+        1095.0,
+        1056.0,
+        1224.0
+       ]
+      },
+      "role": "selection",
+      "scenarioVehPerHour": {
+       "pm_peak": [
+        1146.0,
+        1530.0,
+        1086.0,
+        1095.0,
+        1320.0,
+        1134.0,
+        1224.0,
+        1032.0,
+        972.0,
+        1143.0
+       ]
+      },
+      "seeds": [
+       1,
+       2,
+       3,
+       4,
+       5,
+       6,
+       7,
+       8,
+       9,
+       10
+      ]
+     },
+     "harm": {
+      "through": {
+       "adjustedPenalty": {
+        "block": "Dana Street between 63rd Street and North Street",
+        "penaltyVehPerHour": 11.0
+       },
+       "blocksAboveBand": 1,
+       "blocksResolvedIncrease": 6,
+       "largestIncrease": {
+        "baselineVehPerHour": 276.0,
+        "block": "Hillegass Avenue between Alcatraz Avenue and 63rd Street",
+        "effect": {
+         "interval": [
+          47.39,
+          88.81
+         ],
+         "mean": 68.1,
+         "n": 10,
+         "sd": 28.95,
+         "status": "increase"
+        },
+        "increaseVehPerHour": 68.1,
+        "scenarioVehPerHour": 344.1
+       }
+      }
+     },
+     "id": "p1",
+     "interventions": [
+      {
+       "label": "One-way northbound on Colby Street between 63rd Street and North Street (toward North Street)",
+       "type": "one_way"
+      }
+     ],
+     "kind": "search",
+     "link": "#v1;a=rockridge;p=pm_peak;s=ow,9q9p3fr726,355",
+     "origin": {
+      "kind": "search"
+     },
+     "summary": "It makes one change: One-way northbound on Colby Street between 63rd Street and North Street (toward North Street). In the simulation it cuts through traffic on the area's side streets by 6%, from 1248 to 1168 through cars an hour (mean of 10 seeds and of the periods searched; 95% interval -131 to -29 over 10 seeds). The side-street block with the largest increase in through traffic is Hillegass Avenue between Alcatraz Avenue and 63rd Street, about 68 more through cars an hour on average (resolved from seed variation: 95% interval +47 to +89 over 10 seeds). 6 blocks in all have an increase resolved from seed variation.",
+     "title": "One-way conversion on Colby"
+    },
+    {
+     "byPeriod": {
+      "pm_peak": {
+       "allTraffic": {
+        "adjustedPenalty": {
+         "block": "63rd Street between Hillegass Avenue and Colby Street",
+         "penaltyVehPerHour": 58.9
+        },
+        "blocksAboveBand": 4,
+        "largestIncrease": {
+         "baselineVehPerHour": 407.1,
+         "block": "Hillegass Avenue between 63rd Street and 62nd Street",
+         "effect": {
+          "interval": [
+           172.08,
+           230.52
+          ],
+          "mean": 201.3,
+          "n": 10,
+          "sd": 40.85,
+          "status": "increase"
+         },
+         "increaseVehPerHour": 201.3,
+         "scenarioVehPerHour": 608.4,
+         "throughIncreaseVehPerHour": 149.1
+        }
+       },
+       "cutThrough": {
+        "baselineVehPerHour": 1248.3,
+        "changePct": -7.4,
+        "effect": {
+         "interval": [
+          -130.0,
+          -53.6
+         ],
+         "mean": -91.8,
+         "n": 10,
+         "sd": 53.41,
+         "status": "decrease"
+        },
+        "scenarioVehPerHour": 1156.5
+       }
+      }
+     },
+     "context": {
+      "bikeConflictsChangePct": 1.0,
+      "boundingStreets": [
+       {
+        "flowChangePct": 5.9,
+        "name": "Telegraph Avenue",
+        "speedChangeMph": -0.3
+       },
+       {
+        "flowChangePct": 0.2,
+        "name": "Alcatraz Avenue",
+        "speedChangeMph": -0.2
+       },
+       {
+        "flowChangePct": 1.2,
+        "name": "Claremont Avenue",
+        "speedChangeMph": -0.2
+       },
+       {
+        "flowChangePct": 2.8,
+        "name": "College Avenue",
+        "speedChangeMph": 0.0
+       }
+      ],
+      "insideTripTimeChangePct": -0.0,
+      "pedConflictsChangePct": -3.5
+     },
+     "cutThrough": {
+      "baselineVehPerHour": 1248.3,
+      "changePct": -7.4,
+      "changePctEffect": {
+       "interval": [
+        -10.41,
+        -4.29
+       ],
+       "mean": -7.35,
+       "n": 10,
+       "sd": 4.28,
+       "status": "decrease"
+      },
+      "effect": {
+       "interval": [
+        -130.0,
+        -53.6
+       ],
+       "mean": -91.8,
+       "n": 10,
+       "sd": 53.41,
+       "status": "decrease"
+      },
+      "scenarioVehPerHour": 1156.5
+     },
+     "evidence": {
+      "baselineVehPerHour": {
+       "pm_peak": [
+        1146.0,
+        1647.0,
+        1290.0,
+        1161.0,
+        1281.0,
+        1191.0,
+        1392.0,
+        1095.0,
+        1056.0,
+        1224.0
+       ]
+      },
+      "role": "selection",
+      "scenarioVehPerHour": {
+       "pm_peak": [
+        1122.0,
+        1548.0,
+        1188.0,
+        1122.0,
+        1242.0,
+        1155.0,
+        1266.0,
+        960.0,
+        906.0,
+        1056.0
+       ]
+      },
+      "seeds": [
+       1,
+       2,
+       3,
+       4,
+       5,
+       6,
+       7,
+       8,
+       9,
+       10
+      ]
+     },
+     "harm": {
+      "through": {
+       "adjustedPenalty": {
+        "block": "63rd Street between Hillegass Avenue and Colby Street",
+        "penaltyVehPerHour": 59.5
+       },
+       "blocksAboveBand": 6,
+       "blocksResolvedIncrease": 19,
+       "largestIncrease": {
+        "baselineVehPerHour": 284.4,
+        "block": "Hillegass Avenue between 63rd Street and 62nd Street",
+        "effect": {
+         "interval": [
+          128.1,
+          170.1
+         ],
+         "mean": 149.1,
+         "n": 10,
+         "sd": 29.36,
+         "status": "increase"
+        },
+        "increaseVehPerHour": 149.1,
+        "scenarioVehPerHour": 433.5
+       }
+      }
+     },
+     "id": "p2",
+     "interventions": [
+      {
+       "label": "Modal filter at 63rd Street & Colby Street",
+       "type": "modal_filter"
+      }
+     ],
+     "kind": "search",
+     "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p3fprdr",
+     "origin": {
+      "kind": "search"
+     },
+     "summary": "It makes one change: Modal filter at 63rd Street & Colby Street. In the simulation it cuts through traffic on the area's side streets by 7%, from 1248 to 1156 through cars an hour (mean of 10 seeds and of the periods searched; 95% interval -130 to -54 over 10 seeds). The side-street block with the largest increase in through traffic is Hillegass Avenue between 63rd Street and 62nd Street, about 149 more through cars an hour on average (resolved from seed variation: 95% interval +128 to +170 over 10 seeds). 19 blocks in all have an increase resolved from seed variation.",
+     "title": "Filter on 63rd and Colby"
+    },
+    {
+     "byPeriod": {
+      "pm_peak": {
+       "allTraffic": {
+        "adjustedPenalty": {
+         "block": "62nd Street between Colby Street and Canning Street",
+         "penaltyVehPerHour": 57.5
+        },
+        "blocksAboveBand": 13,
+        "largestIncrease": {
+         "baselineVehPerHour": 340.5,
+         "block": "Martin Street between Claremont Avenue and Ayala Avenue",
+         "effect": {
+          "interval": [
+           70.5,
+           153.3
+          ],
+          "mean": 111.9,
+          "n": 10,
+          "sd": 57.88,
+          "status": "increase"
+         },
+         "increaseVehPerHour": 111.9,
+         "scenarioVehPerHour": 452.4,
+         "throughIncreaseVehPerHour": 107.7
+        }
+       },
+       "cutThrough": {
+        "baselineVehPerHour": 1248.3,
+        "changePct": -31.9,
+        "effect": {
+         "interval": [
+          -474.69,
+          -322.71
+         ],
+         "mean": -398.7,
+         "n": 10,
+         "sd": 106.24,
+         "status": "decrease"
+        },
+        "scenarioVehPerHour": 849.6
+       }
+      }
+     },
+     "context": {
+      "bikeConflictsChangePct": -1.5,
+      "boundingStreets": [
+       {
+        "flowChangePct": 10.8,
+        "name": "Telegraph Avenue",
+        "speedChangeMph": -0.4
+       },
+       {
+        "flowChangePct": -10.5,
+        "name": "Alcatraz Avenue",
+        "speedChangeMph": 0.3
+       },
+       {
+        "flowChangePct": -7.1,
+        "name": "Claremont Avenue",
+        "speedChangeMph": -0.0
+       },
+       {
+        "flowChangePct": 25.8,
+        "name": "College Avenue",
+        "speedChangeMph": -0.9
+       }
+      ],
+      "insideTripTimeChangePct": 0.7,
+      "pedConflictsChangePct": 1.2
+     },
+     "cutThrough": {
+      "baselineVehPerHour": 1248.3,
+      "changePct": -31.9,
+      "changePctEffect": {
+       "interval": [
+        -38.03,
+        -25.85
+       ],
+       "mean": -31.94,
+       "n": 10,
+       "sd": 8.51,
+       "status": "decrease"
+      },
+      "effect": {
+       "interval": [
+        -474.69,
+        -322.71
+       ],
+       "mean": -398.7,
+       "n": 10,
+       "sd": 106.24,
+       "status": "decrease"
+      },
+      "scenarioVehPerHour": 849.6
+     },
+     "evidence": {
+      "baselineVehPerHour": {
+       "pm_peak": [
+        1146.0,
+        1647.0,
+        1290.0,
+        1161.0,
+        1281.0,
+        1191.0,
+        1392.0,
+        1095.0,
+        1056.0,
+        1224.0
+       ]
+      },
+      "role": "selection",
+      "scenarioVehPerHour": {
+       "pm_peak": [
+        780.0,
+        1053.0,
+        720.0,
+        747.0,
+        951.0,
+        900.0,
+        1044.0,
+        780.0,
+        732.0,
+        789.0
+       ]
+      },
+      "seeds": [
+       1,
+       2,
+       3,
+       4,
+       5,
+       6,
+       7,
+       8,
+       9,
+       10
+      ]
+     },
+     "harm": {
+      "through": {
+       "adjustedPenalty": {
+        "block": "Martin Street between Claremont Avenue and Ayala Avenue",
+        "penaltyVehPerHour": 61.0
+       },
+       "blocksAboveBand": 14,
+       "blocksResolvedIncrease": 30,
+       "largestIncrease": {
+        "baselineVehPerHour": 191.7,
+        "block": "Martin Street between Claremont Avenue and Ayala Avenue",
+        "effect": {
+         "interval": [
+          67.54,
+          147.86
+         ],
+         "mean": 107.7,
+         "n": 10,
+         "sd": 56.15,
+         "status": "increase"
+        },
+        "increaseVehPerHour": 107.7,
+        "scenarioVehPerHour": 299.4
+       }
+      }
+     },
+     "id": "p3",
+     "interventions": [
+      {
+       "label": "Modal filter at 63rd Street & Hillegass Avenue",
+       "type": "modal_filter"
+      },
+      {
+       "label": "Modal filter at 63rd Street & Colby Street",
+       "type": "modal_filter"
+      }
+     ],
+     "kind": "search",
+     "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2~mn,9q9p3fprdr",
+     "origin": {
+      "kind": "search"
+     },
+     "summary": "It makes two changes: Modal filter at 63rd Street & Hillegass Avenue; modal filter at 63rd Street & Colby Street. In the simulation it cuts through traffic on the area's side streets by 32%, from 1248 to 850 through cars an hour (mean of 10 seeds and of the periods searched; 95% interval -475 to -323 over 10 seeds). The side-street block with the largest increase in through traffic is Martin Street between Claremont Avenue and Ayala Avenue, about 108 more through cars an hour on average (resolved from seed variation: 95% interval +68 to +148 over 10 seeds). 30 blocks in all have an increase resolved from seed variation.",
+     "title": "Two filters on 63rd, Hillegass and Colby"
+    },
+    {
+     "byPeriod": {
+      "pm_peak": {
+       "allTraffic": {
+        "adjustedPenalty": {
+         "block": "62nd Street between Hillegass Avenue and Colby Street",
+         "penaltyVehPerHour": 22.6
+        },
+        "blocksAboveBand": 4,
+        "largestIncrease": {
+         "baselineVehPerHour": 305.1,
+         "block": "62nd Street between Claremont Avenue / College Avenue / +1 and Hillegass Avenue",
+         "effect": {
+          "interval": [
+           41.96,
+           129.04
+          ],
+          "mean": 85.5,
+          "n": 10,
+          "sd": 60.86,
+          "status": "increase"
+         },
+         "increaseVehPerHour": 85.5,
+         "scenarioVehPerHour": 390.6,
+         "throughIncreaseVehPerHour": 91.2
+        }
+       },
+       "cutThrough": {
+        "baselineVehPerHour": 1248.3,
+        "changePct": -10.6,
+        "effect": {
+         "interval": [
+          -182.86,
+          -82.34
+         ],
+         "mean": -132.6,
+         "n": 10,
+         "sd": 70.27,
+         "status": "decrease"
+        },
+        "scenarioVehPerHour": 1115.7
+       }
+      }
+     },
+     "context": {
+      "bikeConflictsChangePct": -0.0,
+      "boundingStreets": [
+       {
+        "flowChangePct": 6.2,
+        "name": "Telegraph Avenue",
+        "speedChangeMph": -0.6
+       },
+       {
+        "flowChangePct": 0.1,
+        "name": "Alcatraz Avenue",
+        "speedChangeMph": 0.0
+       },
+       {
+        "flowChangePct": 4.9,
+        "name": "Claremont Avenue",
+        "speedChangeMph": 0.2
+       },
+       {
+        "flowChangePct": 1.8,
+        "name": "College Avenue",
+        "speedChangeMph": -0.4
+       }
+      ],
+      "insideTripTimeChangePct": 0.5,
+      "pedConflictsChangePct": -0.5
+     },
+     "cutThrough": {
+      "baselineVehPerHour": 1248.3,
+      "changePct": -10.6,
+      "changePctEffect": {
+       "interval": [
+        -14.65,
+        -6.6
+       ],
+       "mean": -10.62,
+       "n": 10,
+       "sd": 5.63,
+       "status": "decrease"
+      },
+      "effect": {
+       "interval": [
+        -182.86,
+        -82.34
+       ],
+       "mean": -132.6,
+       "n": 10,
+       "sd": 70.27,
+       "status": "decrease"
+      },
+      "scenarioVehPerHour": 1115.7
+     },
+     "evidence": {
+      "baselineVehPerHour": {
+       "pm_peak": [
+        1146.0,
+        1647.0,
+        1290.0,
+        1161.0,
+        1281.0,
+        1191.0,
+        1392.0,
+        1095.0,
+        1056.0,
+        1224.0
+       ]
+      },
+      "role": "reference",
+      "scenarioVehPerHour": {
+       "pm_peak": [
+        1116.0,
+        1473.0,
+        1062.0,
+        1035.0,
+        1200.0,
+        1155.0,
+        1212.0,
+        885.0,
+        963.0,
+        1056.0
+       ]
+      },
+      "seeds": [
+       1,
+       2,
+       3,
+       4,
+       5,
+       6,
+       7,
+       8,
+       9,
+       10
+      ]
+     },
+     "harm": {
+      "through": {
+       "adjustedPenalty": {
+        "block": "58th Street between Vicente Street and Telegraph Avenue",
+        "penaltyVehPerHour": 13.8
+       },
+       "blocksAboveBand": 6,
+       "blocksResolvedIncrease": 17,
+       "largestIncrease": {
+        "baselineVehPerHour": 170.4,
+        "block": "62nd Street between Claremont Avenue / College Avenue / +1 and Hillegass Avenue",
+        "effect": {
+         "interval": [
+          53.75,
+          128.65
+         ],
+         "mean": 91.2,
+         "n": 10,
+         "sd": 52.35,
+         "status": "increase"
+        },
+        "increaseVehPerHour": 91.2,
+        "scenarioVehPerHour": 261.6
+       }
+      }
+     },
+     "id": "earlier-62nd-diverters",
+     "interventions": [
+      {
+       "label": "Diagonal diverter at 62nd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 62nd Street (east), and Hillegass Avenue (south) with 62nd Street (west)",
+       "type": "diagonal_diverter"
+      },
+      {
+       "label": "Diagonal diverter at 62nd Street & Colby Street, connecting Colby Street (north) with 62nd Street (east), and Colby Street (south) with 62nd Street (west)",
+       "type": "diagonal_diverter"
+      }
+     ],
+     "kind": "reference",
+     "link": "#v1;a=rockridge;p=pm_peak;s=dd,9q9p641p03,127~dd,9q9p3fpkk7,127",
+     "note": "A package proposed earlier that many residents did not support. Shown for comparison.",
+     "origin": {
+      "kind": "search"
+     },
+     "summary": "It makes two changes: Diagonal diverter at 62nd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 62nd Street (east), and Hillegass Avenue (south) with 62nd Street (west); diagonal diverter at 62nd Street & Colby Street, connecting Colby Street (north) with 62nd Street (east), and Colby Street (south) with 62nd Street (west). In the simulation it cuts through traffic on the area's side streets by 11%, from 1248 to 1116 through cars an hour (mean of 10 seeds and of the periods searched; 95% interval -183 to -82 over 10 seeds). The side-street block with the largest increase in through traffic is 62nd Street between Claremont Avenue / College Avenue / +1 and Hillegass Avenue, about 91 more through cars an hour on average (resolved from seed variation: 95% interval +54 to +129 over 10 seeds). 17 blocks in all have an increase resolved from seed variation.",
+     "title": "Diagonal diverters on 62nd Street at Hillegass and Colby"
+    }
+   ],
+   "title": "Without those limits"
+  }
+ ],
+ "version": 5
+}

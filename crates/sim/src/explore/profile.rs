@@ -81,10 +81,10 @@ fn group_of_v1(old: &Value, fallback: &Profile) -> Value {
 }
 
 /// Put `group` into the proposals file `existing`, replacing the group with the same id and keeping the others.
-/// A file in the earlier single-group format (version 1) counts as the unconstrained group. Version 2 groups report cut-through in vehicle-miles and version 3 groups report one all-traffic worst block; both are kept as they are and readers treat them as out of date.
+/// A file in the earlier single-group format (version 1) counts as the unconstrained group. Version 2 groups report cut-through in vehicle-miles and version 3 groups report one all-traffic worst block; both are kept as they are and readers treat them as out of date. A version 4 group (no provenance, intervals or raw maximum) is kept as it is too: the reader shows it as unverified, and each group carries its own provenance.
 pub fn merge_file(existing: Option<&Value>, area: &str, group: Value, order: &[String], unconstrained: &Profile) -> Value {
     let mut groups: Vec<Value> = match existing {
-        Some(v) if v["version"] == 2 || v["version"] == 3 || v["version"] == 4 => v["groups"].as_array().cloned().unwrap_or_default(),
+        Some(v) if v["version"] == 2 || v["version"] == 3 || v["version"] == 4 || v["version"] == 5 => v["groups"].as_array().cloned().unwrap_or_default(),
         Some(v) if v["version"] == 1 && v["proposals"].is_array() => vec![group_of_v1(v, unconstrained)],
         _ => Vec::new(),
     };
@@ -95,7 +95,7 @@ pub fn merge_file(existing: Option<&Value>, area: &str, group: Value, order: &[S
     }
     let rank = |g: &Value| order.iter().position(|o| g["id"] == o.as_str()).unwrap_or(order.len());
     groups.sort_by_key(rank);
-    json!({"version": 4, "area": area, "groups": groups})
+    json!({"version": 5, "area": area, "groups": groups})
 }
 
 /// Packages published by the other groups of a proposals file that was computed on the study's inputs (same network and demand hashes),

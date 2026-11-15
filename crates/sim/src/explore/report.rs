@@ -617,11 +617,11 @@ fn lower_first(s: &str) -> String {
     }
 }
 
-/// "95% interval -31 to -12 over 10 seeds", "not enough seeds for an interval (3, at least 10 needed)" or "one seed". Cars an hour, signed.
+/// "95% interval -31 to -12 cars an hour over 10 seeds", or why there is none (too few seeds). Cars an hour, signed.
 pub fn interval_phrase(e: &Paired) -> String {
     match e.interval() {
         _ if e.n < MIN_PAIRS => format!("{} seed{} is not enough for an interval; at least {MIN_PAIRS} are needed", e.n, if e.n == 1 { "" } else { "s" }),
-        Some((lo, hi)) => format!("{:.0}% interval {:+.0} to {:+.0} over {} seeds", 100.0 * LEVEL, lo, hi, e.n),
+        Some((lo, hi)) => format!("{:.0}% interval {:+.0} to {:+.0} cars an hour over {} seeds", 100.0 * LEVEL, lo, hi, e.n),
         None => "no interval".to_string(),
     }
 }

@@ -741,7 +741,7 @@ fn profile_results_merge_into_one_file_and_one_report() {
     let old = json!({"version": 1, "area": "t", "computed": {"date": "d"}, "baseline": {}, "proposals": [{"id": "p1"}]});
     let charter = json!({"id": "charter", "title": "c", "note": "", "computed": {}, "baseline": {}, "proposals": [{"id": "p1"}, {"id": "p2"}]});
     let m = merge_file(Some(&old), "t", charter.clone(), &ord, &un);
-    assert_eq!(m["version"], 4);
+    assert_eq!(m["version"], 5);
     let ids: Vec<&str> = m["groups"].as_array().unwrap().iter().map(|g| g["id"].as_str().unwrap()).collect();
     assert_eq!(ids, ["charter", "unconstrained"]);
     assert_eq!(m["groups"][1]["proposals"][0]["id"], "p1");

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { buildFixture } from '../fixtures/area';
 import { buildMockProposals } from '../fixtures/proposals';
 import { decodeScenario } from './hash';
@@ -319,6 +320,39 @@ describe('groups', () => {
     expect(f.groups.map((g) => g.id)).toEqual(['charter', 'unconstrained']);
     expect(f.groups[0].proposals).toHaveLength(0);
     expect(f.groups[1].title).toBe('unconstrained');
+  });
+});
+
+/** A real output of `explore` (one period, small beam, ten seeds, pictures removed): the Rust writer and this reader agree on the version 5 shape. */
+describe('a file the search wrote', () => {
+  const text = readFileSync(new URL('../fixtures/explore-v5-sample.json', import.meta.url), 'utf8');
+  const f = parseProposals(text)!;
+  const g = f.groups[0];
+  it('reads as version 5, with every group and option kept', () => {
+    expect(f.version).toBe(5);
+    expect(g.legacy).toBeUndefined();
+    expect(g.proposals.length).toBeGreaterThan(1);
+    expect(g.optionComparisons?.length).toBe(g.proposals.filter((p) => p.kind !== 'reference').length - 1);
+  });
+  it('is current against its own inputs and stale against another simulator', () => {
+    const c = g.computed;
+    const loaded = { network: c.networkHash, demand: c.demandHash };
+    expect(evidenceStatus(c, { ...loaded, simulator: c.simulator }).state).toBe('current');
+    expect(evidenceStatus(c, { ...loaded, simulator: 'other' }).state).toBe('stale');
+    expect(c.estimation?.selection.estimates).toBe('exploratory');
+  });
+  it('gives the raw maximum and the penalty block separately, with intervals', () => {
+    for (const p of g.proposals) {
+      const t = p.harm.through;
+      expect(t.largestIncrease?.effect?.n).toBe(10);
+      expect(t.largestIncrease?.effect?.interval).toHaveLength(2);
+      expect('penaltyVehPerHour' in t.adjustedPenalty).toBe(true);
+      const h = harmHeadline(p.harm, 'the PM peak');
+      expect(h.label).toMatch(/largest increase|No block gains/);
+      expect(p.cutThrough.effect?.status).toMatch(/decrease|increase|unresolved/);
+      expect(allTrafficRows(p, (id) => id)[0].flagged).toBe(false);
+      expect(p.evidence?.seeds).toHaveLength(10);
+    }
   });
 });
 
