@@ -53,6 +53,26 @@ Demand flows may carry `via`, a movement the trip must make (assumed movement fl
 
 Acceptance criteria as published (sources `[WebTAG-M3.1]`, `[TfL-TMG4]`, `[Aimsun-Manual]` in `docs/references.md`; the table is in `docs/simulator-audit.md`): GEH = sqrt(2 (M - C)^2 / (M + C)); GEH below 5 in more than 85% of cases; within 100 veh/h below 700, within 15% from 700 to 2,700, within 400 above; the guidance says either criterion suffices, so both are reported. The held-out stations are about a quarter of the stations, at least one per corridor, never in the fit that is scored.
 
+## Evidence integrity: split, run manifests, outputs
+
+The held-out stations are a diagnostic holdout: earlier calibration rounds consulted station-level scores, so the figures cannot be called independent validation. Independent validation needs a frozen model and observations no round consulted (new counts or other days), or an outer split that contains the model-selection procedure ([WebTAG-M3.1] appendix C; one counting day does not establish performance on other days, [FHWA-TAT3-2019]). Every assessment says so.
+
+- Split. `npm run data:split` writes `data/demand/<area>.split.json` from station ids, corridors and source observations, never from counts. Stations that share a source observation (both directions and every period of one AADT record or one turning-movement leg, ramps that share a published row) are one group, held or kept whole. Whole-street and turning-movement counts that cover a held block are left out of the cross-validation demand and are not scored. The manifest lists them and the correlated evidence it cannot remove.
+- Two demands. `tools/build-demand.ts` builds the shipped demand (all counts) and, with `--view training`, the cross-validation demand with every count-derived step run without the held groups' observations (`target/validation/<area>.demand.json`). Both carry `build` provenance (view, split hash).
+- Manifests. Every per-seed report and ten-seed summary of the calibrate binary has a `manifest`: simulator fingerprint and revision, SHA-256 of the network, demand, targets, stations, split and configs, period, scale, seed, minutes, warm-up, window, settings. `tools/assess.ts` needs the exact requested seeds with compatible, current manifests and exits with code 3 (nothing written) when it does not get them. Stability is computed from those runs. `--diagnostic` (with `--suffix` or `--no-write`) reports what exists with its real sample size and no verdict.
+- Outputs. Without `--suffix` and with `--minutes 60` the run belongs to the published set (`data/calibration/reports`, `<area>.assessment.md`, `public/data/<area>.noise.json`), which is replaced only with `--publish`. Any other run writes its summaries, seed reports, noise file and assessment to a set of its own under `target/assess-variants/<name>` (the assessment keeps its name `<area>.assessment[-<minutes>min][-<suffix>].md`).
+- Primitives. The validate binary writes `validation.json` next to `validation.md`. The assessment carries its failed cases and the known deviations of `validation.deviations.json`; a deviation is covered only by a reviewed entry (relevance and follow-up written down), and the status cannot be `calibrated` while an unreviewed failure remains.
+
+Regenerating the evidence after a simulator or data change, in this order:
+
+```
+cargo build --release -p traffic-sim --bins
+npm run data:split                                           # only when the station set changed; review and commit data/demand/<area>.split.json
+npm run data                                                 # network, shipped demand, cross-validation demand, assumptions
+cargo run --release -p traffic-sim --bin validate            # validation.md and validation.json
+npm run assess -- --publish --noise                          # 3 periods x 10 seeds x 2 demands, writes the published set
+```
+
 ## Observed arterial travel times
 
 `travelTimes` in the targets file lists arterial segments with observed weekday peak-period speeds from the Alameda CTC level-of-service monitoring ([ACTC-LOS2014] for 2012 and 2014, [ACTC-LOS2018] for 2016 and 2018; floating-car runs or commercial probe speeds): Telegraph Ave between 51st St and Russell St, Shattuck Ave between 51st St and Alcatraz Ave, College Ave between Miles Ave and Ashby Ave, each direction, AM and PM. `tools/assess.ts` finds the links of each segment by street and cross streets, adds the free-flow time and the mean delay per vehicle of every link (seed mean), scales the result to the published segment length and reports it beside the four observed years. The four years differ by up to a factor of 1.7 on one segment (College Ave northbound, 9.4 to 15.9 mph in the PM), so "inside the observed range" is a weak test. The speeds are a target for reading and are not fitted.

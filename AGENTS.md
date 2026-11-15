@@ -25,7 +25,9 @@ areas are data.
 - `npm run dev`: local dev server (Vite + workerd)
 - `npm run build`: WASM build, typecheck, production bundle
 - `npm test`: Rust unit tests + TS tests
-- `npm run data`: regenerate `public/data/*` from `data/*`
+- `npm run data`: regenerate `public/data/*` from `data/*` (the shipped demand and the cross-validation demand, built as the training view of the frozen split)
+- `npm run data:split`: freeze the validation split from the station structure into `data/demand/<area>.split.json` (no count value is read); every demand build needs it, and it is re-frozen only when stations change
+- `npm run data:cv`: build only the cross-validation demand (`target/validation/<area>.demand.json`)
 - `npm run data:fetch`: download source data from its origins
 - `npm run data:assumptions`: write the Assumptions tab table from the demand config and fit report
 - `npm run data:results`: precompute the finished hour of every published proposal for each period (needs `npm run wasm`; see `data/README.md`)
@@ -34,7 +36,8 @@ areas are data.
 - `npm run data:llms`: write `public/data/llms/*` (`llms.txt`, `llms-full.txt`, `<tab>.md`) from the data and `docs/`; run after `data:results` and before `data:push`
 - `npm run data:previews`: write `public/data/og/*` (link-preview cards and `index.json`); run after `data:results` and `data:llms`, before `data:push`
 - `npm run data:pull` / `npm run data:push`: sync `data/*` and `public/data/*` with the R2 bucket
-- `cargo run --release -p traffic-sim --bin validate`: validation suite (writes `data/calibration/validation.md`)
+- `cargo run --release -p traffic-sim --bin validate`: validation suite (writes `data/calibration/validation.md` and `validation.json`; known deviations are in `data/calibration/validation.deviations.json`)
+- `npm run assess -- --publish [--noise]`: ten-seed assessment of the published set; a variant needs `--suffix NAME` (separate output set), a partial or unverifiable run set only `--diagnostic` (no verdict)
 - `cargo run --release -p traffic-sim --bin calibrate -- --area rockridge --period pm_peak`: calibration report against observed data
 - `npm run deploy`: build, then `wrangler deploy`
 

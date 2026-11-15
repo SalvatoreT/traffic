@@ -47,6 +47,14 @@ A variant assessment SHALL resolve a separate output set for seed files, native 
 - **WHEN** a suffixed variant assessment writes its summaries and noise
 - **THEN** their paths belong to the variant output set and all published evidence files remain byte-identical
 
+#### Scenario: Unsuffixed run without an explicit overwrite
+- **WHEN** an assessment of the published set is requested without the overwrite option
+- **THEN** it stops before writing and names the option, and published evidence is unchanged
+
+#### Scenario: Diagnostic output
+- **WHEN** a partial or unverifiable run set is assessed as a diagnostic
+- **THEN** the report is labeled a diagnostic with its actual sample size, issues no calibration or stability verdict, and is never written to the published set
+
 ### Requirement: Primitive deviations remain visible in validity claims
 An assessment SHALL carry the matching primitive-validation results, known deviations, and their documented relevance to its intended comparisons. A known-deviation regression exemption SHALL remain a failed evidence check. Missing or incompatible primitive evidence SHALL prevent an unqualified validity claim. A limited-use exception SHALL name the failed check, supporting rationale, and follow-up rather than report a primitive pass.
 

@@ -79,13 +79,11 @@ describe('frozen split ignores values (D1)', () => {
     expect(checkManifest({ ...m, groups: m.groups.map((g, i) => (i === 0 ? { ...g, held: !g.held } : g)) }, sts).length).toBeGreaterThan(0);
   });
 
-  it('applies the manifest to stations and clears the old cross-validation exclusion', () => {
+  it('applies the manifest to the stations', () => {
     const sts = fixture();
-    sts[0].cvExclude = true;
     const m = freezeSplit('t', sts.map(splitStationOf));
     const held = applySplit(sts, m);
     expect(sts.filter((s) => s.held).map((s) => s.id).sort()).toEqual([...held].sort());
-    expect(sts.some((s) => s.cvExclude)).toBe(false);
   });
 
   it('removes every observation of a held group from training', () => {

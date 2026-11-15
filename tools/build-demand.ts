@@ -49,7 +49,6 @@ if (cfg.countFit?.enabled && cfg.countFit.validation?.enabled && !freezeOnly) {
 if (training && !manifest) { console.error('--view training needs countFit.validation.enabled and a split manifest'); process.exit(1); }
 const withheldObs: Set<string> = training ? withheldObservations(manifest!) : new Set();
 const withheldSt: Set<string> = training ? withheldStationIds(manifest!) : new Set();
-if (training && cfg.adtOverrides) cfg.adtOverrides = cfg.adtOverrides.filter((o: { source: string }) => !withheldObs.has(overrideObservation(o.source)));
 
 interface Node { id: number; x: number; y: number; gate: boolean; canEnter?: boolean; canExit?: boolean; inStudyArea: boolean }
 interface Link { id: number; from: number; to: number; name: string; class: string; length: number; lanes?: number; speedLimit?: number; geometry?: [number, number][]; inStudyArea: boolean; bikeLane?: boolean; bikeRoute?: boolean; humps?: number[]; stopAtEnd?: boolean }
@@ -229,7 +228,9 @@ const gateClass = (n: Node) => (incident.get(n.id) ?? []).reduce((a, l) => (clas
 const nearestOverride = (n: Node, street: string | null) => {
   const cands = (cfg.adtOverrides ?? []).filter((o: { street: string }) => o.street === street);
   const dOf = (o: { lat?: number; lon?: number }) => (o.lat === undefined ? 0 : Math.hypot(...(toXY(o.lat, o.lon!).map((v, i) => v - (i ? n.y : n.x)) as [number, number])));
-  return cands.sort((a: object, b: object) => dOf(a) - dOf(b))[0] as { adt: number; factor?: number; source: string; year?: number } | undefined;
+  const best = cands.sort((a: object, b: object) => dOf(a) - dOf(b))[0] as { adt: number; factor?: number; source: string; year?: number } | undefined;
+  // Training view: a gate whose nearest record is withheld takes the class default (ASSUMPTION) instead of another gate's record, which would use that record twice.
+  return best && withheldObs.has(overrideObservation(best.source)) ? undefined : best;
 };
 // Class-default ADT (step 4 of the fifth-round calibration): the median ADT of the counted streets of that class when at least `minStreets` exist (DATA-derived), else the documented value.
 // A counted street's ADT is its count-based two-way volume: a TMC leg's peak-hour entering + leaving volume divided by K, or the Caltrans station ADT (times its factor).
@@ -770,7 +771,7 @@ if (fc?.enabled) {
     streetKey, gates: gates.map((g) => ({ id: g.id, kind: g.kind, street: g.street, source: g.source, year: g.year, sourceId: g.sourceId, record: g.record, shareIn: g.shareIn, shareOut: g.shareOut, inT: g.inT, outT: g.outT, group: gateGroup(g.id) })),
     tmcs: tmcs.map((c) => ({ id: c.id, year: c.year, x: c.x, y: c.y, legs: c.legs, legStreets: c.legStreets })),
     ramps: ramps.map((r) => { const v = rampVol.get(r)!; return { kind: r.kind, surface: r.surface, streets: r.streets, adt: v.adt, adtKind: v.kind, source: v.source, rows: v.rows, year: v.year }; }),
-    overrides: (cfg.adtOverrides ?? []).map((o: { street: string; adt: number; factor?: number; lat: number; lon: number; source: string; year?: number }) => { const [x, y] = toXY(o.lat, o.lon); return { street: o.street, adt: o.adt, factor: o.factor, x, y, source: o.source, year: o.year ?? null }; }),
+    overrides: (cfg.adtOverrides ?? []).filter((o: { source: string }) => !withheldObs.has(overrideObservation(o.source))).map((o: { street: string; adt: number; factor?: number; lat: number; lon: number; source: string; year?: number }) => { const [x, y] = toXY(o.lat, o.lon); return { street: o.street, adt: o.adt, factor: o.factor, x, y, source: o.source, year: o.year ?? null }; }),
     cfg: { tmcNodeMaxM: fc.tmcNodeMaxM, stationRadiusM: fc.stationRadiusM, weights: fc.weights, tolerancePct: fc.tolerancePct },
   }, stationNotes);
   // Resident volunteer count: measured volumes on the interior streets (blocks, turning movements, whole-street routes) as count stations (data/demand/README.md).
@@ -829,6 +830,7 @@ if (fc?.enabled) {
       stationNotes.push(`training view of split ${manifestHash!.slice(0, 12)}: ${withheldObs.size} observations of held groups and ${manifest!.withheldAggregates.length} aggregate counts overlapping held blocks are removed from the gate totals, ramp volumes, trip ends, assumed movements and the fit`);
     } else {
       const problems = checkManifest(manifest!, splitStations);
+      if (manifest!.rule.fraction !== (fc.validation.fraction ?? DEFAULT_RULE.fraction) || manifest!.rule.minPerCorridor !== (fc.validation.minPerCorridor ?? DEFAULT_RULE.minPerCorridor)) problems.push('countFit.validation fraction or minPerCorridor differ from the rule recorded in the manifest');
       if (problems.length) throw new Error(`the split manifest ${splitFile} does not match this build (re-freeze it with --freeze-split):\n  ${problems.slice(0, 12).join('\n  ')}`);
       const held = applySplit(stations, manifest!);
       stationNotes.push(`validation set (frozen split ${manifestHash!.slice(0, 12)}, rule ${manifest!.rule.name}): ${held.length} of ${stations.length} stations in ${manifest!.groups.filter((g) => g.held).length} dependency groups are held out of the cross-validation demand, which is built from the training view with their observations removed (about ${Math.round(100 * (fc.validation.fraction ?? 0.25))}% of each corridor, at least one per corridor); ${manifest!.withheldAggregates.length} aggregate counts overlapping held blocks are left out of that demand and are not scored; they are reported separately`);
@@ -909,7 +911,7 @@ if (fc?.enabled) {
     const cars = per.flows.filter((q) => !q.mode);
     const types = cars.map((q) => typeOf(q.origin, q.destination));
     // The shipped fit uses every count. The cross-validation demand is the training view (a build of its own), not a first fit on the same preprocessed trips.
-    for (const q of stations) { q.held = !!q.outOfFit; q.cvExclude = false; }
+    for (const q of stations) q.held = !!q.outOfFit;
     const r = fitPeriod(per.id, cars, types, stations, net.nodes as never, net.links as NetLinkIn[], net.turnBans ?? [], fitCfg);
     fitResults.push(r);
     if (process.env.ASSIGN_DUMP && per.id === lastPeriod) {

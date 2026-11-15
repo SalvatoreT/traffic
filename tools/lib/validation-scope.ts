@@ -2,7 +2,7 @@
 // calibration rounds already consulted; it is not independent validation. Sources: [WebTAG-M3.1] appendix C (calibration and validation are distinct; validation data must
 // not have been used to calibrate) and [FHWA-TAT3-2019] (one counting day does not establish performance on other days). No I/O.
 
-export interface ScopeInput { cvDemand: boolean; splitSha: string | null; minHeld: number }
+export interface ScopeInput { cvDemand: boolean; splitSha: string | null; minHeld: number; /** The frozen split manifest, when there is one: counts and the retained overlaps are listed from it. */ split?: { groups: { held: boolean; stations: string[] }[]; withheldAggregates: { station: string; blocks: number[] }[]; retained: string[] } | null }
 
 export function scopeLines(i: ScopeInput): string[] {
   const split = i.splitSha ? `frozen split \`${i.splitSha.slice(0, 12)}\`` : 'no frozen split manifest';
@@ -15,6 +15,7 @@ export function scopeLines(i: ScopeInput): string[] {
     '- Independent validation needs a frozen model and observations that no calibration round consulted (new counts, or other days), or an outer evaluation split that contains the whole model-selection procedure [WebTAG-M3.1] appendix C. A count from one day does not establish performance on other days [FHWA-TAT3-2019]; most recent stations here come from one counting day (see the source line in the verdict).',
     '- Evidence that stays shared and is reported, not removed: the legs and movements of one intersection are not independent rows (flow conservation); whole-street counts that cover a held block are left out of the cross-validation demand and are not scored, but a modeled route can still use detours off its street, which a static rule cannot list.',
     `- Fewer than ${i.minHeld} recent held-out stations are too few to judge; the population is not enlarged or filtered after seeing results.`,
+    ...(i.split?.groups ? [`- The split holds ${i.split.groups.filter((g) => g.held).length} of ${i.split.groups.length} dependency groups (${i.split.groups.filter((g) => g.held).reduce((a, g) => a + g.stations.length, 0)} stations). Aggregate counts left out of the cross-validation demand because they cover a held block: ${i.split.withheldAggregates.length ? i.split.withheldAggregates.map((a) => `${a.station} (blocks ${a.blocks.join(', ')})`).join('; ') : 'none'}. Correlated evidence the split cannot remove: ${i.split.retained.join(' ')}`] : []),
     '',
   ];
 }

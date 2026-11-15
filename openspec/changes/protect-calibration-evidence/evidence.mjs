@@ -6,7 +6,7 @@ import { resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { countStations, touchesHeld } from '../../../tools/lib/volunteer-count.ts';
+import { countStations, overlapsHeld } from '../../../tools/lib/volunteer-count.ts';
 import { readSeeds } from '../../../tools/lib/assess.ts';
 
 const root = resolve(fileURLToPath(new URL('../../..', import.meta.url)));
@@ -35,7 +35,7 @@ for (const s of counted.stations.filter((s) => s.family === 'route')) {
     seen.add(node);
     for (const l of net.links) if (l.name === first.name && l.from === node) queue.push([l.to, [...prefix, l.id]]);
   }
-  console.log(s.id, JSON.stringify({ excludedByTouches: touchesHeld(s, held), heldOnStreetPath: path.filter((l) => held.has(l)) }));
+  console.log(s.id, JSON.stringify({ excludedByEndpoints: (s.touches ?? []).some((l) => held.has(l)), excludedBySupport: overlapsHeld(s, held), heldOnStreetPath: path.filter((l) => held.has(l)) }));
 }
 
 const seeds = Array.from({ length: 10 }, (_, i) => i + 1);
@@ -53,9 +53,13 @@ copyFileSync(join(root, 'data/calibration/rockridge.targets.json'), join(temp, '
 const run = read('data/calibration/reports/rockridge-pm_peak-s1-seed1.json');
 run.health.gridlockRemoved = 9999;
 writeFileSync(join(temp, 'reuse/rockridge-pm_peak-s1-seed1.json'), JSON.stringify(run));
-const result = spawnSync(process.execPath, ['--import', 'tsx', join(temp, 'tools/assess.ts'), '--periods', 'pm_peak', '--reuse', join(temp, 'reuse'), '--suffix', 'audit', '--out', source], { cwd: root, encoding: 'utf8', maxBuffer: 4 * 1024 * 1024 });
-const output = result.status === 0 ? readFileSync(join(temp, 'data/calibration/rockridge.assessment-audit.md'), 'utf8') : result.stdout ?? '';
+// After the fix the reused run set is rejected (exit 3, missing seeds named); a diagnostic reports one sample and no verdict.
+const base = ['--import', 'tsx', join(temp, 'tools/assess.ts'), '--periods', 'pm_peak', '--reuse', join(temp, 'reuse'), '--suffix', 'audit'];
+const result = spawnSync(process.execPath, [...base], { cwd: root, encoding: 'utf8', maxBuffer: 4 * 1024 * 1024 });
+console.log('Synthetic reuse probe exit:', result.status, '(3 = rejected, nothing written)');
+for (const line of (result.stderr ?? '').split('\n')) if (/assess:|pm_peak/.test(line)) console.log(line);
+const diag = spawnSync(process.execPath, [...base, '--diagnostic'], { cwd: root, encoding: 'utf8', maxBuffer: 4 * 1024 * 1024 });
+console.log('Diagnostic probe exit:', diag.status);
+const output = diag.status === 0 ? readFileSync(join(temp, 'data/calibration/rockridge.assessment-audit.md'), 'utf8') : (diag.stdout ?? '') + (diag.stderr ?? '');
 writeFileSync(join(temp, 'output.txt'), output);
-console.log('Synthetic reuse probe exit:', result.status, 'output:', join(temp, 'output.txt'));
-if (result.stderr) console.log(result.stderr);
-for (const line of output.split('\n')) if (/10 seeds|Stability rule \(D16\):|Suggested status/.test(line)) console.log(line);
+for (const line of output.split('\n')) if (/DIAGNOSTIC OUTPUT|Stability rule \(D16\):|Suggested status|No status is suggested/.test(line)) console.log(line.slice(0, 220));

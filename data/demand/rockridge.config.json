@@ -613,7 +613,7 @@
       "enabled": true,
       "fraction": 0.25,
       "minPerCorridor": 1,
-      "_note": "Hold-out of count stations (design D17, [WebTAG-M3.1] C.3.2 and 4.2.1; audit C2). Within each corridor (the street of a gate, the intersection of a turning-movement count, the street of a Caltrans station, all freeway ramps together) the stations are ordered by size and every fourth is validation-only, never fewer than one per corridor; the largest count of a corridor stays in the first fit. Deterministic, no draw. The build fits twice: without the validation stations (out-of-sample figures in the fit report; the demand of that fit goes to demandOutput for a simulator run) and on all counts (the demand that ships).",
+      "_note": "Hold-out of count stations (design D17, [WebTAG-M3.1] C.3.2 and 4.2.1; audit C2; change protect-calibration-evidence). Stations that share a source observation form one dependency group. Within each corridor (the street of a gate, the intersection of a turning-movement count, the street of a Caltrans station, all freeway ramps together) the groups are ordered by a hash of their id and every fourth is held, never fewer than one per corridor; no count value is read. The split is frozen in splitFile (npm run data:split) before any count-derived step. The build runs twice: the shipped view fits all counts, the training view (--view training) removes the held groups' observations from gate totals, ramp volumes, trip ends, assumed movements and the fit, and its demand goes to demandOutput for a simulator run.",
       "demandOutput": "target/validation/rockridge.demand.json"
     },
     "implied": {

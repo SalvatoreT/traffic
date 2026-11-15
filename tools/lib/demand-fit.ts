@@ -28,8 +28,6 @@ export interface Station {
   records: { key: string; share: number }[];
   /** Validation-only: not a fit constraint, reported separately (design D17). */
   held?: boolean;
-  /** Left out of the cross-validation fit without being scored as held out (a movement or route count that touches a held-out block). */
-  cvExclude?: boolean;
   /** Periods whose target is a scaled copy of another period's count, not a count (ASSUMPTION); the station rule leaves them out. */
   derived?: string[];
   /** A turning movement or path count: constrains the share of routes that have the feature, `links` is empty. */
@@ -212,7 +210,7 @@ export function splitStationOf(st: Station): SplitStation {
 /** Mark the validation stations from a frozen split manifest (design D17; protect-calibration-evidence D1). Returns the held ids. */
 export function applySplit(stations: Station[], manifest: SplitManifest): string[] {
   const held = heldStationIds(manifest);
-  for (const s of stations) { s.held = held.has(s.id); s.cvExclude = false; }
+  for (const s of stations) s.held = held.has(s.id);
   return stations.filter((s) => s.held).map((s) => s.id);
 }
 
@@ -336,7 +334,7 @@ export function fitPeriod(
   for (const s of stations) if (s.feature && (s.target[id] ?? 0) > 0) { featOf.set(s.id, features.length); features.push(s.feature); }
   const toCons = (s: Station): Constraint => ({ id: s.id, kind: s.kind, label: s.label, links: s.links, origins: s.origins, destinations: s.destinations, target: s.target[id], weight: s.weightByPeriod?.[id] ?? s.weight, feature: featOf.get(s.id) });
   const heldCons: Constraint[] = stations.filter((s) => s.held && (s.target[id] ?? 0) > 0).map(toCons);
-  const countCons: Constraint[] = stations.filter((s) => !s.held && !s.cvExclude && (s.target[id] ?? 0) > 0).map(toCons);
+  const countCons: Constraint[] = stations.filter((s) => !s.held && (s.target[id] ?? 0) > 0).map(toCons);
   const sumBy = (f: ArrayLike<number>) => { const o: Record<string, number> = { through: 0, local: 0, ramp: 0 }; for (let k = 0; k < f.length; k++) o[types[k]] += f[k]; return o; };
   const exempt = new Set<number>();
   for (const c of countCons) for (const l of c.links) exempt.add(l);
