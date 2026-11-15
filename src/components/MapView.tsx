@@ -24,7 +24,7 @@ import { INTENT_COLORS, INTENT_DASH } from '../lib/intents';
 import { towardLabel, type NetIndex } from '../lib/naming';
 import { hoverLine } from '../lib/hoverline';
 import { describeInterventionFull, interventionPoint } from '../lib/describe';
-import { barAtM, barPx, blockBar, filterLegs, legBars, type Bar } from '../lib/blocked';
+import { barPx, blockBar, filterLegs, legBars, type Bar } from '../lib/blocked';
 import type { SimClient } from '../sim/client';
 import {
   boxOfPoints, centerToShow, correctedCamera, fitCamera, hardBounds, insideRect, isAcceptable, minZoomFor, MIN_ZOOM_FLOOR,
@@ -852,22 +852,14 @@ export function MapView(p: Props) {
       out.push(new maplibregl.Marker({ element: el }).setLngLat(ll).addTo(map));
     }
     markers.current = out;
-    // A leg's bar sits at least 8 m out, and farther when the bars of the junction's other legs would touch it at this zoom; it stays on its street.
-    const place = () => {
-      const z = map.getZoom(), at = barAtM(z, metersPerPixel(z, map.getCenter().lat));
-      const feats: unknown[] = [];
-      for (const { iv, legs } of filters) {
-        const bars: Bar[] = 'link' in iv ? [blockBar(net.links[iv.link])] : legBars(legs!, iv.legs, at);
-        const props = 'link' in iv ? { link: iv.link } : { node: iv.node };
-        for (const b of bars) feats.push({ type: 'Feature', properties: { rot: b.bearing, ...props }, geometry: { type: 'Point', coordinates: proj.toLonLat(b.center[0], b.center[1]) } });
-      }
-      (map.getSource('blocked') as maplibregl.GeoJSONSource | undefined)?.setData({ type: 'FeatureCollection', features: feats } as never);
-    };
-    place();
-    let last = map.getZoom();
-    const onZoom = () => { const z = map.getZoom(); if (Math.abs(z - last) < 0.04) return; last = z; place(); };
-    map.on('zoom', onZoom);
-    return () => { map.off('zoom', onZoom); };
+    // Each bar keeps its fixed place on its street, 8 m from where the leg begins, at every zoom; zoomed out the bars of a junction overlap into one compact mark.
+    const feats: unknown[] = [];
+    for (const { iv, legs } of filters) {
+      const bars: Bar[] = 'link' in iv ? [blockBar(net.links[iv.link])] : legBars(legs!, iv.legs);
+      const props = 'link' in iv ? { link: iv.link } : { node: iv.node };
+      for (const b of bars) feats.push({ type: 'Feature', properties: { rot: b.bearing, ...props }, geometry: { type: 'Point', coordinates: proj.toLonLat(b.center[0], b.center[1]) } });
+    }
+    (map.getSource('blocked') as maplibregl.GeoJSONSource | undefined)?.setData({ type: 'FeatureCollection', features: feats } as never);
   }, [p.interventions, ready, bundle, proj, p.index, region]);
 
   // ---- selection highlight and keeping it in view
@@ -982,7 +974,7 @@ export function MapView(p: Props) {
         const q = map.project(L.proj.toLonLat(x, y));
         if (iv.type === 'modal_filter') {
           const z = map.getZoom(), sz = barPx(z);
-          return ('link' in iv ? [blockBar(net.links[iv.link])] : legBars(filterLegs(net, L.index, iv.node), iv.legs, barAtM(z, metersPerPixel(z, map.getCenter().lat)))).map((b) => {
+          return ('link' in iv ? [blockBar(net.links[iv.link])] : legBars(filterLegs(net, L.index, iv.node), iv.legs)).map((b) => {
             const c = map.project(L.proj.toLonLat(b.center[0], b.center[1]));
             return { x: c.x, y: c.y, len: sz.length, thick: sz.thick, type: 'leg' as const, bearing: b.bearing };
           });

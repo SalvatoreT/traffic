@@ -1,7 +1,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: Modal filters show what they close
-The map SHALL mark every street a modal filter closes to through cars, and only those streets, with a short bar drawn across the road at a right angle to it, by shape and pattern as well as color, and SHALL draw no badge for a modal filter. Bars SHALL be map features centered on their street at a geographic point, sized from the drawn road with a minimum size so they are legible at every zoom. At a junction, a leg's bar SHALL sit at least 8 m out along its street, and farther when the bars of its other legs would touch at the current zoom. Each filter SHALL keep an invisible control of at least 24 by 24 CSS px at its location that is reachable by keyboard, has a visible focus ring and the filter's description as its name, and selects the filter when activated; clicking a bar SHALL select its filter. The Scenario list, selection pop-up and tooltip SHALL say in words which legs are closed.
+The map SHALL mark every street a modal filter closes to through cars, and only those streets, with a short bar drawn across the road at a right angle to it, by shape and pattern as well as color, and SHALL draw no badge for a modal filter. Bars SHALL be map features centered on their street at a geographic point, sized from the drawn road with a minimum size so they are legible at every zoom. A leg's bar SHALL sit 8 m along its street from where the leg begins at every zoom, so zoomed out the bars of a junction overlap into one compact mark no wider than about 22 CSS px at the fitted overview. Each filter SHALL keep an invisible control of at least 24 by 24 CSS px at its location that is reachable by keyboard, has a visible focus ring and the filter's description as its name, and selects the filter when activated; clicking a bar SHALL select its filter. The Scenario list, selection pop-up and tooltip SHALL say in words which legs are closed.
 
 #### Scenario: Text matches the map
 - **WHEN** a filter is placed
@@ -25,7 +25,7 @@ The map SHALL mark every street a modal filter closes to through cars, and only 
 
 #### Scenario: Zooming out
 - **WHEN** the map is at the fitted overview
-- **THEN** every bar is visible at its minimum size, across its own street, with the bars of one junction apart from each other
+- **THEN** every bar is visible at its minimum size, across its own street at its fixed place, and a junction's bars form one compact mark
 
 #### Scenario: Selecting a filter
 - **WHEN** a person clicks a bar, or tabs to the filter's control and presses Enter

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { NetLink, NetNode, Network } from '../types';
 import { buildIndex } from './naming';
-import { closedLegs, filterChoices, filterLegs, filterSentence, filterText, streetFilters, legBars, blockBar, BAR_AT_M, barPx, casingPx, barAtM, BAR_MIN_LEN_PX, BAR_CLEAR_PX } from './blocked';
+import { closedLegs, filterChoices, filterLegs, filterSentence, filterText, streetFilters, legBars, blockBar, BAR_AT_M, barPx, casingPx, BAR_MIN_LEN_PX } from './blocked';
 import { describeInterventionFull } from './describe';
 
 interface LegSpec { street: string; at: [number, number]; mouth?: [number, number] }
@@ -170,23 +170,10 @@ describe('bars at every zoom', () => {
     expect(barPx(12).length).toBe(BAR_MIN_LEN_PX);
   });
 
-  it('keeps the bar 8 m out when neighboring bars are clear of it, and moves it out when they are not', () => {
-    expect(barAtM(18, 0.15)).toBe(BAR_AT_M);
-    const z = 14, mpp = 3.77, b = barPx(z);
-    const at = barAtM(z, mpp);
-    expect(at).toBeGreaterThan(BAR_AT_M);
-    expect(at / mpp).toBeCloseTo(b.length / 2 + b.thick / 2 + BAR_CLEAR_PX);
-  });
-
-  it('puts the bars of a four-leg junction clear of each other on screen at the overview', () => {
-    const net = star(cross());
-    const f = filterLegs(net, buildIndex(net), 0);
-    const z = 14, mpp = 3.77, b = barPx(z);
-    const bars = legBars(f, undefined, barAtM(z, mpp));
-    for (const p of bars) for (const q of bars) {
-      if (p === q) continue;
-      const dx = Math.abs(p.center[0] - q.center[0]) / mpp, dy = Math.abs(p.center[1] - q.center[1]) / mpp;
-      expect(Math.max(dx, dy)).toBeGreaterThanOrEqual(b.thick);
+  it('keeps a junction\'s cluster compact at the fitted overview', () => {
+    for (const [z, mpp] of [[14.2, 3.5], [14.9, 2.2]]) {
+      const b = barPx(z);
+      expect(b.length + (2 * BAR_AT_M) / mpp).toBeLessThanOrEqual(22);
     }
   });
 

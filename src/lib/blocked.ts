@@ -198,20 +198,12 @@ export function casingPx(zoom: number, w = BAR_REF_W): number {
 }
 
 /** Smallest on-screen bar (CSS px): a filter is drawn by its bar alone, so the bar stays legible at the fitted overview. Same 2.2 : 0.6 shape as the drawn bar. */
-export const BAR_MIN_LEN_PX = 15;
-/** Clear space (CSS px) between a bar and the neighboring bars of the same junction. */
-export const BAR_CLEAR_PX = 2;
+export const BAR_MIN_LEN_PX = 14;
 
 /** Bar length and thickness (CSS px) at `zoom`: they follow the drawn road, down to a minimum size. */
 export function barPx(zoom: number): { length: number; thick: number } {
   const length = Math.max(BAR_MIN_LEN_PX, BAR_LEN_X * casingPx(zoom));
   return { length, thick: (length * BAR_THICK_X) / BAR_LEN_X };
-}
-
-/** Distance along a leg (m) to its bar at `zoom`: `BAR_AT_M`, or farther when the bars of neighboring legs would otherwise run into each other. */
-export function barAtM(zoom: number, metersPerPx: number): number {
-  const b = barPx(zoom);
-  return Math.max(BAR_AT_M, (b.length / 2 + b.thick / 2 + BAR_CLEAR_PX) * metersPerPx);
 }
 
 /** One bar per closed leg, `atM` along the street from that leg's own mouth. */
