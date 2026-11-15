@@ -339,6 +339,11 @@ pub struct Config {
     pub interventions: Vec<Intervention>,
     /// Additive: how waiting at a junction is relieved (default `physical`). `historical` and `no_behavioral` exist for sensitivity checks.
     pub junction_recovery: JunctionRecovery,
+    /// Additive: record requests and link exits for the redistribution diagnostic (`Simulation::trace_requests`). Default false; it
+    /// changes nothing a run computes.
+    pub trace: bool,
+    /// Additive: bound on stored trace events (default `sim::trace::TRACE_DETAIL_MAX`).
+    pub trace_detail_max: Option<u64>,
 }
 
 /// Junction recovery policy. Every policy except `historical` keeps physical conflict exclusion regardless of the wait.
@@ -359,7 +364,7 @@ pub enum JunctionRecovery {
 
 impl Default for Config {
     fn default() -> Self {
-        Config { seed: 1, period: String::new(), demand_scale: 1.0, select_links: Vec::new(), local_cost_factor: None, guided_share: None, switch_band: None, record_trips: false, signal_adapt_min: None, motorway_gridlock_removal: false, ped_yield_marked: None, ped_yield_unmarked: None, lane_width_m: None, no_right_turn_on_red: false, initial_load: true, interventions: Vec::new(), junction_recovery: JunctionRecovery::Physical }
+        Config { seed: 1, period: String::new(), demand_scale: 1.0, select_links: Vec::new(), local_cost_factor: None, guided_share: None, switch_band: None, record_trips: false, signal_adapt_min: None, motorway_gridlock_removal: false, ped_yield_marked: None, ped_yield_unmarked: None, lane_width_m: None, no_right_turn_on_red: false, initial_load: true, interventions: Vec::new(), junction_recovery: JunctionRecovery::Physical, trace: false, trace_detail_max: None }
     }
 }
 

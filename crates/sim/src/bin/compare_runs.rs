@@ -22,11 +22,15 @@ fn main() {
     let mut runs = Vec::new();
     for ivs in &a[5..] {
         for &seed in &seeds {
-            let cfg = format!("{{\"seed\":{seed},\"period\":\"{}\",\"interventions\":{ivs}}}", a[2]);
+            let trace = std::env::var("TRACE").is_ok();
+            let scale: f64 = std::env::var("DEMAND_SCALE").ok().and_then(|s| s.parse().ok()).unwrap_or(1.0);
+            let cfg = format!("{{\"seed\":{seed},\"period\":\"{}\",\"interventions\":{ivs},\"trace\":{trace},\"demandScale\":{scale}}}", a[2]);
+            let t0 = std::time::Instant::now();
             let mut sim = Simulation::new(&net, &dem, &cfg).expect("simulation");
             while sim.time() < secs - 1e-9 {
                 sim.step(15.0f64.min(secs - sim.time()));
             }
+            let wall = t0.elapsed().as_secs_f64();
             let m = sim.metrics();
             let st = sim.run_link_stats();
             let n = sim.n_links();
@@ -40,6 +44,12 @@ fn main() {
                 "completed": m.completed_trips,
                 "linkFlow": flows,
                 "linkThrough": ct,
+                "wallS": wall,
+                "trace": trace.then(|| {
+                    let t: serde_json::Value = serde_json::from_str(&sim.trace_summary()).unwrap();
+                    let (r, e) = (sim.trace_requests().len(), sim.trace_events().len());
+                    serde_json::json!({ "requests": t["requests"], "detail": t["detail"], "exportBytes": r * 8 + e * 4 })
+                }),
             }));
         }
     }

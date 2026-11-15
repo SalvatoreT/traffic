@@ -28,6 +28,8 @@ struct Cand {
     vplan: u32,
     noise_seed: u32,
     uid: u32,
+    /// Runtime flow index.
+    flow: usize,
     /// Exit position of a car that starts and ends on one link (NaN otherwise).
     end_pos: f32,
 }
@@ -60,6 +62,7 @@ impl Simulation {
     pub(super) fn adopt_loaded_costs(&mut self) {
         let mut cfg = self.cfg.clone();
         cfg.interventions = Vec::new();
+        cfg.trace = false;
         let Ok(probe) = Simulation::build(self.net.clone(), self.demand.clone(), cfg, false) else { return };
         self.ema = probe.ema;
         self.mv_ema = probe.mv_ema;
@@ -280,7 +283,7 @@ impl Simulation {
                 };
                 let q = self.topo.qidx(l, lane);
                 lane_n[q] += 1;
-                cands.push(Cand { q, lane, link: l as u32, pos, route, at, drv, bike, v0_abs, origin, dest, through, intent, via, vplan, noise_seed, uid, end_pos });
+                cands.push(Cand { q, lane, link: l as u32, pos, route, at, drv, bike, v0_abs, origin, dest, through, intent, via, vplan, noise_seed, uid, flow: k, end_pos });
             }
         }
         // Front of each lane first; ties by uid so the order does not depend on the sort.
@@ -400,9 +403,11 @@ impl Simulation {
             self.vehs[id as usize].off_ramp = off;
         }
         let (q, link, bike) = (c.q, c.link, c.bike);
+        let (flow, uid, origin, dest, drv, noise_seed) = (c.flow, c.uid, c.origin, c.dest, c.drv, c.noise_seed);
         self.lanes[q].push_back(id);
         if !bike {
             self.sl_enter(id, link);
+            self.trace_initial(flow, uid, origin, dest, &drv, noise_seed, link);
         }
     }
 }

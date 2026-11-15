@@ -12,6 +12,7 @@ use std::collections::VecDeque;
 mod initial;
 mod modes;
 mod ped;
+pub mod trace;
 
 use modes::*;
 pub use modes::{injury_risk, injury_risk_bike};
@@ -164,6 +165,8 @@ enum Start {
 }
 
 struct FlowRt {
+    /// Index of the flow in the demand period (runtime flows skip invalid ones).
+    src: u32,
     mode: FlowMode,
     origin: u32,
     dest: u32,
@@ -555,6 +558,8 @@ pub struct Simulation {
     rec_log: Vec<RecoveryEvent>,
     rec_node: Vec<[u32; 4]>,
     timings: Vec<TripTiming>,
+    /// Request and passage records (`Config::trace`); None when off.
+    trace: Option<Box<trace::Trace>>,
 }
 
 /// Improved IDM [Treiber2014]: the IDM with `s1 = 0` and `delta = 4` whose steady-state time gap is exactly `t_hw` (the plain IDM
@@ -731,11 +736,13 @@ impl Simulation {
             rec_log: Vec::new(),
             rec_node: vec![[0; 4]; nn],
             timings: Vec::new(),
+            trace: None,
             topo,
             net,
         };
         s.init_select_links();
         s.init_flows();
+        s.trace_init();
         s.init_intent_rules();
         s.init_modes();
         s.rebuild_effective();
@@ -1045,7 +1052,7 @@ impl Simulation {
                 }
                 let n_int = self.demand.intents.len();
                 let intent = if through && n_int > 0 { f.intent.map_or(n_int, |i| (i as usize).min(n_int)) as u16 } else { NO_INTENT };
-                self.flows.push(FlowRt { mode: f.mode, origin: f.origin, dest: f.destination, rate, rng, next_t, through, intent, via, vplan });
+                self.flows.push(FlowRt { src: k as u32, mode: f.mode, origin: f.origin, dest: f.destination, rate, rng, next_t, through, intent, via, vplan });
             }
         }
     }
@@ -1759,6 +1766,7 @@ impl Simulation {
                     vplan: f.vplan,
                 };
                 self.uid_next += 1;
+                self.trace_request(fi, &trip);
                 self.backlog[trip.origin as usize].push_back(trip);
             }
         }
@@ -1959,6 +1967,7 @@ impl Simulation {
     fn remove_vehicle(&mut self, id: u32) {
         let node;
         let bike;
+        let uid;
         {
             let v = &mut self.vehs[id as usize];
             if !v.alive {
@@ -1966,6 +1975,7 @@ impl Simulation {
             }
             bike = v.kind == KIND_BIKE;
             v.alive = false;
+            uid = v.uid;
             v.route.clear();
             node = self.topo.link_to[v.link as usize] as usize;
         }
@@ -1978,6 +1988,9 @@ impl Simulation {
             self.n_bike -= 1;
         } else {
             self.n_alive -= 1;
+            if self.trace.is_some() {
+                self.trace_removed(uid);
+            }
         }
     }
 
@@ -2155,7 +2168,9 @@ impl Simulation {
                 }
                 if !ok {
                     self.scratch = route;
-                    self.backlog[n].remove(idx);
+                    if let Some(t) = self.backlog[n].remove(idx) {
+                        self.trace_end(t.uid, trace::ST_UNROUTABLE);
+                    }
                     self.st.unroutable += 1;
                     continue;
                 }
@@ -2234,6 +2249,7 @@ impl Simulation {
                 }
                 self.st.spawned += 1;
                 self.sl_enter(id, b);
+                self.trace_enter(self.vehs[id as usize].uid, b);
             }
         }
     }
@@ -2845,6 +2861,9 @@ impl Simulation {
         if self.vehs[vid as usize].kind == KIND_BIKE {
             return;
         }
+        if self.trace.is_some() {
+            self.trace_exit(self.vehs[vid as usize].uid, l);
+        }
         let bi = l * NBINS + self.cur_bin;
         self.bin_flow[bi] += 1.0;
         if self.t >= 0.0 {
@@ -3005,6 +3024,7 @@ impl Simulation {
         if let Some(i) = self.lanes[qi].iter().position(|&x| x == vid) {
             self.lanes[qi].remove(i);
         }
+        self.trace_reason(trace::ST_COMPLETED);
         self.remove_vehicle(vid);
     }
 
@@ -3535,6 +3555,7 @@ impl Simulation {
         if let Some(p) = self.lanes[qi].iter().position(|&x| x == vid) {
             self.lanes[qi].remove(p);
         }
+        self.trace_reason(trace::ST_UNROUTABLE);
         self.remove_vehicle(vid);
         self.st.unroutable += 1;
     }
