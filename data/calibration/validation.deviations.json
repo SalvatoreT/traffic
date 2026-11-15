@@ -23,20 +23,6 @@
    "followUp": "As e2."
   },
   {
-   "id": "f2",
-   "reason": "Circle entry capacity at 600 circulating veh/h is 405 against 496 to 744 [Rodegerdts2007] (1130 exp(-0.001 vc) = 620). It was 482 when vehicles held at a full ring lane were stored in the node (expose-junction-fallback-validity); f1 (200 circulating) passes.",
-   "reviewed": true,
-   "relevance": "All 37 traffic circles of the network lie outside the study area (South and West Berkeley, North Oakland, the hills). In the PM peak all but one carry under 500 veh/h entering on all approaches together, so most circulating flows are in the f1 regime; the exception is Chabot Rd / Roanoke Rd in the hills (about 1,060 veh/h entering). The deviation still matters for stability: in the round 28 assessment the Harmon St circles in South Berkeley (King St, California St, Ellis St) account for 8 of the 36 PM removals and 7 of the 18 AM removals over ten seeds, part of why D16 fails. The through-car figures on Hillegass Ave and Colby St do not depend on these circles.",
-   "followUp": "Repair needed before D16 can pass: entry at a single-node circle waits for in-node occupancy only and ignores gap acceptance against approaching circulating vehicles; it should be checked against the entry-capacity relation of [Rodegerdts2007]. Until then, no figure for a circle with heavy circulating flow."
-  },
-  {
-   "id": "f3",
-   "reason": "Circle entry capacity at 1000 circulating veh/h is 138 against 333 to 499 [Rodegerdts2007] (1130 exp(-0.001 vc) = 416).",
-   "reviewed": true,
-   "relevance": "As f2: no circle near the study area reaches this circulating flow.",
-   "followUp": "As f2."
-  },
-  {
    "id": "j6",
    "reason": "Signal lane with 300 cyclists/h sharing it keeps 0.63 of its capacity against a floor of 0.70; the range has source ASSUMPTION (no verified HCM bicycle factor, the floor is a guess).",
    "reviewed": true,

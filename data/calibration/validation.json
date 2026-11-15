@@ -420,45 +420,33 @@
       "knownDeviation": null,
       "lo": 740.1326007824956,
       "name": "Circle entry capacity, circulating 200 veh/h",
-      "note": "1130 exp(-0.001 vc) = 925",
+      "note": "1130 exp(-0.001 vc) = 925; circulating vehicles pass the entry and the entering vehicles' exit and leave at the next one; when they all leave at the entering vehicles' exit the entry passes 957",
       "pass": true,
-      "sim": 963.0,
+      "sim": 1089.0,
       "source": "Rodegerdts2007",
       "unit": "veh/h"
     },
     {
       "hi": 744.1885785434997,
       "id": "f2",
-      "knownDeviation": {
-        "followUp": "Repair needed before D16 can pass: entry at a single-node circle waits for in-node occupancy only and ignores gap acceptance against approaching circulating vehicles; it should be checked against the entry-capacity relation of [Rodegerdts2007]. Until then, no figure for a circle with heavy circulating flow.",
-        "id": "f2",
-        "reason": "Circle entry capacity at 600 circulating veh/h is 405 against 496 to 744 [Rodegerdts2007] (1130 exp(-0.001 vc) = 620). It was 482 when vehicles held at a full ring lane were stored in the node (expose-junction-fallback-validity); f1 (200 circulating) passes.",
-        "relevance": "All 37 traffic circles of the network lie outside the study area (South and West Berkeley, North Oakland, the hills). In the PM peak all but one carry under 500 veh/h entering on all approaches together, so most circulating flows are in the f1 regime; the exception is Chabot Rd / Roanoke Rd in the hills (about 1,060 veh/h entering). The deviation still matters for stability: in the round 28 assessment the Harmon St circles in South Berkeley (King St, California St, Ellis St) account for 8 of the 36 PM removals and 7 of the 18 AM removals over ten seeds, part of why D16 fails. The through-car figures on Hillegass Ave and Colby St do not depend on these circles.",
-        "reviewed": true
-      },
+      "knownDeviation": null,
       "lo": 496.1257190289998,
       "name": "Circle entry capacity, circulating 600 veh/h",
-      "note": "1130 exp(-0.001 vc) = 620",
-      "pass": false,
-      "sim": 405.0,
+      "note": "1130 exp(-0.001 vc) = 620; circulating vehicles pass the entry and the entering vehicles' exit and leave at the next one; when they all leave at the entering vehicles' exit the entry passes 478",
+      "pass": true,
+      "sim": 687.0,
       "source": "Rodegerdts2007",
       "unit": "veh/h"
     },
     {
       "hi": 498.84452222847574,
       "id": "f3",
-      "knownDeviation": {
-        "followUp": "As f2.",
-        "id": "f3",
-        "reason": "Circle entry capacity at 1000 circulating veh/h is 138 against 333 to 499 [Rodegerdts2007] (1130 exp(-0.001 vc) = 416).",
-        "relevance": "As f2: no circle near the study area reaches this circulating flow.",
-        "reviewed": true
-      },
+      "knownDeviation": null,
       "lo": 332.5630148189839,
       "name": "Circle entry capacity, circulating 1000 veh/h",
-      "note": "1130 exp(-0.001 vc) = 416",
-      "pass": false,
-      "sim": 138.0,
+      "note": "1130 exp(-0.001 vc) = 416; circulating vehicles pass the entry and the entering vehicles' exit and leave at the next one; when they all leave at the entering vehicles' exit the entry passes 158",
+      "pass": true,
+      "sim": 348.0,
       "source": "Rodegerdts2007",
       "unit": "veh/h"
     },
@@ -779,8 +767,6 @@
     "a3",
     "e2",
     "e3",
-    "f2",
-    "f3",
     "j6",
     "j8",
     "j9",
@@ -789,18 +775,18 @@
   "manifest": {
     "deviations": {
       "path": "data/calibration/validation.deviations.json",
-      "sha256": "196a709073dab3e6c6a465aa96bd437caabaa43c484a87836552231d39b5dbc2"
+      "sha256": "fe861200cf34a30014a1fcfc8e99a86c56e2ab95859ca1c091ed8264f71a9481"
     },
     "schema": 1,
     "simulator": {
-      "dirty": true,
-      "fingerprint": "7d07b9a9fd076e6bb601935096958589",
-      "revision": "f17cf6335ae4d17d8965eb217a80f98d5cb598e0",
+      "dirty": false,
+      "fingerprint": "447ddb0b99a951ddb43c7be778800317",
+      "revision": "5f56c0d68705140f17488cfc2bb51a1cccb67195",
       "version": "0.1.0"
     },
     "suite": {
       "cases": 60,
-      "sha256": "ec52ef78c76023389144de8a1be699b446316ec479855cd0bd6b736ff685257e"
+      "sha256": "030f411bc52557868b030333eb2ec1506d9d19a776b4edd930e72c6b9e2f78ba"
     }
   },
   "notDocumented": []

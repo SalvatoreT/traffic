@@ -406,47 +406,6 @@
       "greenSeconds": 13,
       "clearanceSeconds": 4,
       "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing PM', SB SR-24 On-Ramp & MLK Way & NB SR-24 Off-Ramp: cycle 50 s; the southbound stream that turns onto the on-ramp (1547 veh/h) has 29 s of green in a phase of its own and the northbound stream that crosses it (268 veh/h) 13 s; clearance time 4.0 s after each phase, and effective green equal to the actuated green, so 29 + 13 + 2 x 4 = 50 s; applied to midday as an ASSUMPTION (no midday worksheet)"
-    },
-    {
-      "at": ["College Avenue", "Claremont Avenue", "62nd Street"],
-      "approach": "62nd Street",
-      "heading": 81,
-      "periods": ["pm_peak"],
-      "cycleSeconds": 110,
-      "greenSeconds": 15,
-      "clearanceSeconds": 4,
-      "source": "[SafewayCollege-DEIR2011] Appendix B, Synchro 7 worksheet 'Existing PM Peak Hour', intersection 9 (College Avenue/Claremont Avenue/62nd Street), counted 2010-03-16: actuated cycle 110 s in four phases, 62nd Street eastbound 15.0 s of green (clearance 3.0 s), College Avenue both directions 41.0 s (5.0 s), Claremont Avenue northeastbound 19.0 s and southwestbound 19.0 s as split phases (4.0 s each); the clearances are entered as their mean, 4.0 s, which keeps the 16 s of lost time the worksheet sums. The worksheet counts 62 vph on 62nd Street eastbound"
-    },
-    {
-      "at": ["College Avenue", "Claremont Avenue", "62nd Street"],
-      "approach": "College Avenue",
-      "periods": ["pm_peak"],
-      "cycleSeconds": 110,
-      "greenSeconds": 41,
-      "clearanceSeconds": 4,
-      "source": "[SafewayCollege-DEIR2011] Appendix B, Synchro 7 worksheet 'Existing PM Peak Hour', intersection 9 (College Avenue/Claremont Avenue/62nd Street), counted 2010-03-16: actuated cycle 110 s in four phases, 62nd Street eastbound 15.0 s of green (clearance 3.0 s), College Avenue both directions 41.0 s (5.0 s), Claremont Avenue northeastbound 19.0 s and southwestbound 19.0 s as split phases (4.0 s each); the clearances are entered as their mean, 4.0 s, which keeps the 16 s of lost time the worksheet sums. The worksheet counts 62 vph on 62nd Street eastbound"
-    },
-    {
-      "at": ["College Avenue", "Claremont Avenue", "62nd Street"],
-      "approach": "Claremont Avenue",
-      "heading": 32,
-      "ownPhase": true,
-      "periods": ["pm_peak"],
-      "cycleSeconds": 110,
-      "greenSeconds": 19,
-      "clearanceSeconds": 4,
-      "source": "[SafewayCollege-DEIR2011] Appendix B, Synchro 7 worksheet 'Existing PM Peak Hour', intersection 9 (College Avenue/Claremont Avenue/62nd Street), counted 2010-03-16: actuated cycle 110 s in four phases, 62nd Street eastbound 15.0 s of green (clearance 3.0 s), College Avenue both directions 41.0 s (5.0 s), Claremont Avenue northeastbound 19.0 s and southwestbound 19.0 s as split phases (4.0 s each); the clearances are entered as their mean, 4.0 s, which keeps the 16 s of lost time the worksheet sums. The worksheet counts 62 vph on 62nd Street eastbound"
-    },
-    {
-      "at": ["College Avenue", "Claremont Avenue", "62nd Street"],
-      "approach": "Claremont Avenue",
-      "heading": 213,
-      "ownPhase": true,
-      "periods": ["pm_peak"],
-      "cycleSeconds": 110,
-      "greenSeconds": 19,
-      "clearanceSeconds": 4,
-      "source": "[SafewayCollege-DEIR2011] Appendix B, Synchro 7 worksheet 'Existing PM Peak Hour', intersection 9 (College Avenue/Claremont Avenue/62nd Street), counted 2010-03-16: actuated cycle 110 s in four phases, 62nd Street eastbound 15.0 s of green (clearance 3.0 s), College Avenue both directions 41.0 s (5.0 s), Claremont Avenue northeastbound 19.0 s and southwestbound 19.0 s as split phases (4.0 s each); the clearances are entered as their mean, 4.0 s, which keeps the 16 s of lost time the worksheet sums. The worksheet counts 62 vph on 62nd Street eastbound"
     }
   ]
 }
