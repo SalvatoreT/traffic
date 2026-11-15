@@ -32,7 +32,7 @@ const measured = cfg.countFit?.assignment?.measured;
 if (!measured) { console.log('cost-loop: countFit.assignment.measured is not configured; nothing to do'); process.exit(0); }
 const delaysFile = resolve(root, measured.file);
 const minFlow: number = measured.minFlowVehPerHour ?? 60;
-const periods: string[] = Object.keys(cfg.periodFactors);
+const periods: string[] = Object.keys(cfg.periodFactors).filter((p) => !p.startsWith('_'));
 const pm = periods[periods.length - 1];
 const stationsFile = resolve(root, cfg.countFit.stationsOutput ?? `data/demand/${cfg.area}.stations.json`);
 const work = resolve(root, 'target/cost-loop');
