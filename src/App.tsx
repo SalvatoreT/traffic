@@ -1,4 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { ScrollRow } from './components/ScrollRow';
 import type { AreaBundle, Intervention, Metrics, ModeVisibility, Overlay, Theme } from './types';
 import { loadArea, type LoadProgress } from './data';
 import { Loading, LoadError } from './components/Loading';
@@ -440,13 +441,13 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
         <div className="brand">
           <h1>Traffic <span className="area">{bundle.entry.name}</span></h1>
         </div>
-        <nav aria-label="Views">
+        <ScrollRow aria-label="Views">
           {(Object.keys(VIEW_LABEL) as View[]).map((v) => (
             <button key={v} type="button" className="navbtn" aria-current={view === v ? 'page' : undefined} onClick={(e) => { setView(v); e.currentTarget.scrollIntoView({ block: 'nearest', inline: 'nearest' }); }}>
               {VIEW_LABEL[v]}
             </button>
           ))}
-        </nav>
+        </ScrollRow>
         <div className="prefs">
           {showPanel && layout === 'medium' && (
             <button ref={drawerBtn} type="button" className="btn drawer-toggle" aria-expanded={drawerOpen} aria-controls="scenario-panel" onClick={() => setDrawerOpen((o) => !o)}>
