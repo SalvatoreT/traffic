@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { recentRuleMet, ruleSplit, ageOf, applyRecency, bandWeight, groupBySourceYear, growthFactor, recentSplit, sourceYearLines, type Dated, type RecencyConfig } from './lib/recency';
+import { outOfSampleSplit, ruleVerdicts, recentRuleMet, ruleSplit, ageOf, applyRecency, bandWeight, groupBySourceYear, growthFactor, recentSplit, sourceYearLines, type Dated, type RecencyConfig } from './lib/recency';
 
 const cfg: RecencyConfig = { enabled: true, referenceYear: 2026, recentYears: 5, bands: [{ maxAgeYears: 10, weight: 1 }, { weight: 0.5 }] };
 const st = (id: string, source: string, year: number | null, weight = 1): Dated => ({ id, source, year, weight, target: { pm_peak: 100 } });
@@ -55,14 +55,39 @@ describe('recency of count sources', () => {
     const text = sourceYearLines(items, { referenceYear: 2026, recentYears: 5 }).join('\n');
     expect(text).toContain('| eir | 2013 | 13 | 1 of 2 (50%) | - |');
     expect(text).toContain('unknown, treated as old');
-    expect(text).toContain('judged on counts from the last 5 years: fitted 1 of 1 (100%) (met), held out 1 of 1 (0%)'.replace('1 of 1 (0%)', '0 of 1 (0%)'));
+    expect(text).toContain('judged on counts from the last 5 years, scores on the shipped demand (the held-out column here is in the shipped fit): fitted 1 of 1 (100%) (met), held out 0 of 1 (0%)');
     expect(text).toContain('Older counts, reported beside it: fitted 1 of 3 (33%) (not met)');
   });
   it('judges the station rule on recent counts, both sets', () => {
     const mk = (year: number, ok: boolean, held = false) => ({ year, c: { gehOk: ok, held } });
     const good = [mk(2025, true), mk(2025, true, true), mk(2013, false), mk(2013, false, true)];
-    expect(recentRuleMet(ruleSplit(good, { referenceYear: 2026, recentYears: 5 }))).toBe(true);
-    expect(recentRuleMet(ruleSplit([mk(2025, true), mk(2025, false, true)], { referenceYear: 2026, recentYears: 5 }))).toBe(false);
+    expect(recentRuleMet(ruleSplit(good, { referenceYear: 2026, recentYears: 5 }), 0.85, 1)).toBe(true);
+    expect(recentRuleMet(ruleSplit(good, { referenceYear: 2026, recentYears: 5 }))).toBe(false);
+    expect(recentRuleMet(ruleSplit([mk(2025, true), mk(2025, false, true)], { referenceYear: 2026, recentYears: 5 }), 0.85, 1)).toBe(false);
     expect(recentRuleMet(ruleSplit([mk(2013, true)], { referenceYear: 2026, recentYears: 5 }))).toBe(false);
+  });
+  it('leaves derived targets out of the rule and takes the held-out column from the cross-validation run', () => {
+    const cfg = { referenceYear: 2026, recentYears: 5 };
+    const mk = (ok: boolean, held = false, derived = false) => ({ year: 2025, c: { gehOk: ok, held, derived } });
+    const main = ruleSplit([mk(true), mk(true), mk(true, true), mk(true, true), mk(false, false, true)], cfg);
+    expect(main.derived).toEqual({ n: 1, ok: 0 });
+    expect(main.recent.fitted.n).toBe(2);
+    const cv = ruleSplit([mk(true, true), mk(false, true), mk(false, true)], cfg);
+    const split = outOfSampleSplit(main, cv);
+    expect(split.recent.held).toEqual({ n: 3, ok: 1 });
+    expect(split.heldInFit!.recent).toEqual({ n: 2, ok: 2 });
+    expect(ruleVerdicts(split, 0.85, 1)).toMatchObject({ fitted: 'met', held: 'not met', met: false });
+    expect(ruleVerdicts(split).held).toBe('too few');
+    expect(ruleVerdicts(outOfSampleSplit(main, null)).held).toBe('no counts');
+  });
+  it('has no verdict for a period whose targets are all derived', () => {
+    const cfg = { referenceYear: 2026, recentYears: 5 };
+    const m = ruleSplit([{ year: 2025, c: { gehOk: true, held: false, derived: true } }, { year: 2013, c: { gehOk: true, held: true, derived: true } }], cfg);
+    expect(ruleVerdicts(outOfSampleSplit(m, m))).toEqual({ fitted: 'no counts', held: 'no counts', met: null });
+  });
+  it('lists exempt ramp stations apart from the aged rows of the same source and year', () => {
+    const st = (ramp: boolean) => ({ id: 'a', source: 'eir', year: 2013, ramp, weight: 1, target: { pm: 1 } });
+    const sum = applyRecency([st(false), st(false), st(true)], { enabled: true, referenceYear: 2026, bands: [{ maxAgeYears: 10, weight: 1 }, { weight: 0.5 }], recentYears: 5, exemptRamps: true });
+    expect(sum.sources.map((r) => [r.stations, r.weight, r.exempt])).toEqual([[2, 0.5, false], [1, 1, true]]);
   });
 });

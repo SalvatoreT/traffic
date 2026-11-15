@@ -11,7 +11,7 @@ import { hitTest, selectionAnchor, type Selection } from '../lib/selection';
 import { PopoverFrame } from './Popover';
 import { MapMenu } from './MapMenu';
 import { legendModel } from '../lib/legend';
-import { captionOf, composeImage, drawBadges, EXPORT_SCALE, exportFileName, FORMATS, type BadgeMark, type ImageFormat } from '../lib/mapexport';
+import { BADGE_TEXT, captionOf, composeImage, drawBadges, EXPORT_SCALE, exportFileName, FORMATS, type BadgeMark, type ImageFormat } from '../lib/mapexport';
 import { FADE_TIERS, interventionInRegion, REGION_FEATHER_M, type Region } from '../lib/region';
 import { REGION_BUFFER_M } from '../lib/area';
 import { advance, elapsedSim } from '../lib/extrapolate';
@@ -23,6 +23,7 @@ import { CELL_COLORS, CELL_DASHES, ROUTE_COLORS } from '../lib/routestyle';
 import { INTENT_COLORS, INTENT_DASH } from '../lib/intents';
 import { towardLabel, type NetIndex } from '../lib/naming';
 import { hoverLine } from '../lib/hoverline';
+import { EARLY_LABEL } from '../lib/run';
 import { describeInterventionFull, interventionPoint } from '../lib/describe';
 import { barPx, blockBar, filterLegs, legBars, type Bar } from '../lib/blocked';
 import type { SimClient } from '../sim/client';
@@ -45,6 +46,8 @@ interface Props {
   /** Baseline link stats, used by the change view. */
   baseStats: Float32Array | null;
   view: ChangeView;
+  /** Rates on the map are scaled up from the first few simulated minutes. */
+  early: boolean;
   client: SimClient | null;
   /** A stored, finished result is shown: no cars or signals are drawn, only the layers and marks. */
   still?: boolean;
@@ -130,11 +133,6 @@ export const BIKENET = {
 };
 const bikeOpacity = (base: number, from: number, to: number): never =>
   ['interpolate', ['linear'], ['zoom'], from, 0, to, base] as never;
-
-const BADGE: Record<string, string> = {
-  modal_filter: 'MF', speed_hump: 'SH', speed_limit: 'SL', traffic_circle: 'TC', control: 'IC',
-  signal_timing: 'ST', one_way: '1W', turn_ban: 'TB', diagonal_diverter: 'DD',
-};
 
 /** Soft edge: stacked washes of the background color, each a large rectangle with a contour of the region cut out. Their alphas compound to k/N, so the edge goes from clear to opaque over REGION_FEATHER_M. */
 const FEATHER_STEPS = 5;
@@ -846,7 +844,7 @@ export function MapView(p: Props) {
         el.setAttribute('aria-hidden', 'true');
       } else {
         el.className = `iv-badge iv-${iv.type}`;
-        el.textContent = iv.type === 'speed_limit' ? String(Math.round(iv.speed * 2.23694)) : BADGE[iv.type];
+        el.textContent = iv.type === 'speed_limit' ? String(Math.round(iv.speed * 2.23694)) : BADGE_TEXT[iv.type];
         el.setAttribute('aria-hidden', 'true');
       }
       el.title = title;
@@ -1062,7 +1060,7 @@ export function MapView(p: Props) {
           <div>{hoverText}</div>
           {lines.length > 0 && (
             <div className="map-hint-metric">
-              <div className="map-hint-name">{lines[0].name}</div>
+              <div className="map-hint-name">{lines[0].name}{p.early && <span className="early-tag"> {EARLY_LABEL}</span>}</div>
               <div className="map-hint-rows">
                 {lines.map((line, i) => (
                   <div key={i} className="map-hint-row">

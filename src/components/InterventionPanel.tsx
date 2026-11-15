@@ -4,6 +4,7 @@ import type { NetIndex } from '../lib/naming';
 import { interventionInRegion, type Region } from '../lib/region';
 import { describeIntervention } from '../lib/describe';
 import { filterSentence, filterText } from '../lib/blocked';
+import { BADGE_TEXT } from '../lib/mapexport';
 import type { Selection } from '../lib/selection';
 import type { Hover } from '../lib/highlight';
 import { PlaceSearch } from './PlaceSearch';
@@ -29,10 +30,6 @@ interface Props {
   routes: { check: RouteCheck; today: number; show: boolean; onShow(v: boolean): void; onHighlight(id: string | null): void; mode: Mode };
 }
 
-const BADGE: Record<Intervention['type'], string> = {
-  modal_filter: 'MF', speed_hump: 'SH', speed_limit: '', traffic_circle: 'TC', control: 'IC', signal_timing: 'ST', one_way: '1W', turn_ban: 'TB', diagonal_diverter: 'DD',
-};
-
 export function InterventionPanel(p: Props) {
   const { bundle: B, index: X } = p;
   const listId = useId();
@@ -50,7 +47,7 @@ export function InterventionPanel(p: Props) {
               const ft = filterText(iv, B.network, X);
               return (
                 <li key={i}>
-                  <span className={`iv-badge static iv-${iv.type}`} aria-hidden="true">{iv.type === 'speed_limit' ? Math.round(iv.speed * 2.23694) : BADGE[iv.type]}</span>
+                  <span className={`iv-badge static iv-${iv.type}`} aria-hidden="true">{iv.type === 'speed_limit' ? Math.round(iv.speed * 2.23694) : BADGE_TEXT[iv.type]}</span>
                   <span className="desc">
                     <button type="button" className="desc-btn" title="Select this place" onClick={() => p.onSelectIntervention(i)}>{d}</button>
                     {!interventionInRegion(iv, B.network, p.region) && <>{' '}<span className="tag">outside the map</span></>}

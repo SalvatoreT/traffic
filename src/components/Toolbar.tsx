@@ -2,9 +2,10 @@ import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import type { AreaBundle, AreaEntry, ModeKey, ModeVisibility, Overlay } from '../types';
 import { formatClock } from '../lib/format';
 import { divergingGradient, rampStops, TOP_NOTE, type Mode } from '../lib/ramps';
-import { legendModel } from '../lib/legend';
+import { INTENT_COLORS } from '../lib/intents';
+import { badgeKey, legendModel, type MapSymbols } from '../lib/legend';
 import { CHANGE_MAP_NOTE, changeTicks, CHANGE_UNIT, DEAD_BAND, legendClipPath, type MapView } from '../lib/change';
-import { EXPERIMENTAL_NOTE, isExperimentalPeriod, RUN_SECONDS } from '../lib/run';
+import { EARLY_LABEL, EXPERIMENTAL_NOTE, isExperimentalPeriod, RUN_SECONDS } from '../lib/run';
 import { INSTANT, isInstant, speedLabel, speedNoteText } from '../lib/speed';
 import { usePeek } from './usePeek';
 
@@ -151,6 +152,8 @@ interface LegendProps {
   view: MapView; onView(v: MapView): void; canChange: boolean;
   /** First 5 simulated minutes of a comparison: differences are noisy. */
   early: boolean;
+  /** Marks the map draws for the scenario and for a chosen reason, so each one has a key. */
+  symbols: MapSymbols;
 }
 
 const MODE_KEYS: { id: ModeKey; label: string }[] = [
@@ -258,6 +261,10 @@ export function Legend(p: LegendProps) {
             {p.multimodal && <li><svg width="14" height="14" aria-hidden="true"><line x1="7" y1="1" x2="7" y2="13" stroke="var(--text)" strokeWidth="2" /></svg> Crossing (zoomed in)</li>}
             {change && <li><svg width="30" height="14" aria-hidden="true"><line x1="1" y1="10" x2="29" y2="10" stroke="var(--text)" strokeWidth="1.5" /><line x1="1" y1="4" x2="29" y2="4" stroke="var(--text)" strokeWidth="5" /></svg> Thicker line: bigger change, either direction</li>}
             {change && <li><svg width="30" height="14" aria-hidden="true"><path d="M7 2 L12 11 L2 11Z" fill="#fff" stroke="#0b1118" /><path d="M22 12 L27 3 L17 3Z" fill="#fff" stroke="#0b1118" /></svg> Arrow: largest increase (up) or decrease (down)</li>}
+            {p.symbols.bar && <li><svg width="30" height="14" aria-hidden="true"><rect x="1" y="2" width="28" height="10" fill="#fff" /><rect x="1" y="3" width="28" height="8" fill="#111" /><line x1="1" y1="7" x2="29" y2="7" stroke="#ffd43b" strokeWidth="4" strokeDasharray="6 6" /></svg> Yellow and black bar: street closed to through cars (modal filter)</li>}
+            {p.symbols.diverter && <li><svg width="30" height="14" aria-hidden="true"><g transform="translate(15 7) rotate(60)"><line x1="0" y1="-8" x2="0" y2="8" stroke="#fff" strokeWidth="8" /><line x1="0" y1="-8" x2="0" y2="8" stroke="#111" strokeWidth="6" /><line x1="0" y1="-8" x2="0" y2="8" stroke="#ffd43b" strokeWidth="3" strokeDasharray="4 2" /></g></svg> Striped line across a junction: diagonal diverter</li>}
+            {p.symbols.badges.map((t) => <li key={t}><span className={`iv-badge static key-badge iv-${t}`} aria-hidden="true">{badgeKey(t).text}</span> {badgeKey(t).name}</li>)}
+            {p.symbols.reason && <li><svg width="30" height="14" aria-hidden="true"><line x1="1" y1="7" x2="29" y2="7" stroke={INTENT_COLORS[p.mode].line} strokeWidth="3" strokeDasharray="6 3" /></svg> Violet dashed line: typical path of the chosen reason; width shows cars an hour</li>}
             <li><svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="var(--surface)" stroke="#1f9d55" strokeWidth="2" /></svg> Signal green (ring)</li>
             <li><svg width="14" height="14" aria-hidden="true"><path d="M7 1 L13 12 L1 12Z" fill="#f5c400" stroke="var(--text)" /></svg> Yellow (triangle)</li>
             <li><svg width="14" height="14" aria-hidden="true"><rect x="2" y="2" width="10" height="10" fill="#d62728" stroke="var(--text)" /></svg> Red (square)</li>
@@ -270,7 +277,7 @@ export function Legend(p: LegendProps) {
         </button>
         <div className="legend-name">
           <span className="legend-title" id={`${tipId}-n`}>{name}</span>
-          {change && p.early && <span className="legend-early" title="Early results are noisy: wait for 5 simulated minutes.">Early, noisy</span>}
+          {p.early && <span className="legend-early" title="Early results are noisy: wait for 5 simulated minutes.">{EARLY_LABEL}</span>}
           <span className={`legend-tip-wrap ${hush ? 'hush' : ''}`} onMouseLeave={() => { setHush(false); setTipOn(false); }} onBlur={() => { setHush(false); setTipOn(false); }}>
             <button type="button" className="legend-info" aria-label="About this legend" aria-describedby={tipId} aria-expanded={tipShown} onClick={() => { setHush(false); setTipOn((o) => !o); }}>
               <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="7" cy="7" r="6" /><path d="M7 6.2v3.8M7 3.8v.1" strokeLinecap="round" /></svg>

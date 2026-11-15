@@ -3,6 +3,7 @@ import type { AreaBundle, ControlType, Intervention } from '../types';
 import type { NetIndex } from '../lib/naming';
 import { describeIntervention } from '../lib/describe';
 import { filterSentence, filterText } from '../lib/blocked';
+import { EARLY_LABEL } from '../lib/run';
 import { aggregate, CHANGE_NAME, CHANGE_UNIT, diffValue, formatSigned, metricValue, readoutText } from '../lib/change';
 import { linkStatsView, type Overlay } from '../types';
 import {
@@ -19,7 +20,7 @@ interface Props {
   onRemove(i: number): void;
   onClose(): void;
   /** Link stats for the today / with scenario / change line on a selected street; null without a scenario. */
-  readout?: { overlay: Overlay; scen: Float32Array | null; base: Float32Array | null } | null;
+  readout?: { overlay: Overlay; scen: Float32Array | null; base: Float32Array | null; early?: boolean } | null;
 }
 
 interface Choice { key: string; label: string; detail?: string; pick(): void }
@@ -213,7 +214,7 @@ export function SelectionMenu(p: Props) {
             const b = aggregate(linkStatsView(p.readout.base), blk.links), c = aggregate(linkStatsView(p.readout.scen), blk.links);
             const n = (v: number | null) => (v === null ? 'no traffic' : `${v.toFixed(o === 'speed' ? 1 : 0)} ${CHANGE_UNIT[o]}`);
             const spoken = `${CHANGE_NAME[o]}: today ${n(metricValue(o, b))}, with scenario ${n(metricValue(o, c))}, change ${formatSigned(diffValue(o, b, c), o)} ${CHANGE_UNIT[o]}.`;
-            return <p className="sel-readout"><span aria-hidden="true">{readoutText(o, b, c)}<span className="sub"> (today → with scenario)</span></span><span className="sr-only">{spoken}</span></p>;
+            return <p className="sel-readout"><span aria-hidden="true">{readoutText(o, b, c)}<span className="sub"> (today → with scenario)</span>{p.readout.early && <span className="early-tag"> {EARLY_LABEL}</span>}</span><span className="sr-only">{spoken}{p.readout.early ? ` ${EARLY_LABEL}.` : ''}</span></p>;
           })()}
         </div>
         <button type="button" className="btn small-btn" onClick={p.onClose}>Close</button>

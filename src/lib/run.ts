@@ -4,6 +4,9 @@ import type { AreaEntry, DemandPeriod } from '../types';
 export const RUN_SECONDS = 3600;
 /** Runs start with traffic already on the streets, so only the first few minutes are noisy (it was ten while the network filled from empty). */
 export const EARLY_SECONDS = 300;
+/** Short label for figures taken from the first minutes of a run. Text, not color, carries it. */
+export const EARLY_LABEL = 'Early, noisy';
+export const EARLY_NOTE = 'Early figures: rates are scaled up from the first few simulated minutes, so they are noisy. Wait for 5 simulated minutes, or use a faster speed.';
 const EPS = 1e-6;
 
 export interface RunState { running: boolean; finished: boolean; time: number }
@@ -46,3 +49,6 @@ export function isExperimentalPeriod(entry: Pick<AreaEntry, 'experimentalPeriods
 }
 
 export const EXPERIMENTAL_NOTE = 'Peak periods are not calibrated yet and overload the network. Compare with care.';
+
+/** True while a rate shown on the page rests on less than EARLY_SECONDS of a run that has not finished. */
+export const isEarly = (finished: boolean, time: number): boolean => !finished && time < EARLY_SECONDS;

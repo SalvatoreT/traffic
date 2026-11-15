@@ -80,14 +80,14 @@ export function mismatchNote(f: PictureFacts, pictureLabel: string): string {
 
 /** The picture in words: what the drawing shows, for the image's text alternative. */
 export function pictureAlt(p: Proposal, pic: ProposalPicture, f: PictureFacts, pictureLabel: string): string {
-  const r = p.byPeriod[pic.period]?.cutThrough ?? p.cutThrough;
-  const b = Math.round(r.baselineVehPerHour), s = Math.round(r.scenarioVehPerHour);
+  const r = p.byPeriod[pic.period]?.cutThrough;
+  const b = r ? Math.round(r.baselineVehPerHour) : 0, s = r ? Math.round(r.scenarioVehPerHour) : 0;
   const d = s - b;
-  const total = d === 0 ? `no change, ${b} through cars an hour` : `through cars on the side streets go from ${b} to ${s} an hour (${signedNum(d, 'cars an hour', 0)})`;
+  const total = !r ? '' : d === 0 ? `In the area, no change, ${b} through cars an hour. ` : `In the area, through cars on the side streets go from ${b} to ${s} an hour (${signedNum(d, 'cars an hour', 0)}). `;
   const drop = f.drop ? `The biggest drop is on ${f.drop.label}: ${signedNum(f.drop.delta, 'cars an hour', 0)}.` : 'No block drops.';
   const gain = f.gain ? `The biggest gain is on ${f.gain.label}: ${signedNum(f.gain.delta, 'cars an hour', 0)}.` : 'No block gains through cars.';
   const named = f.named && f.named.block !== f.gain?.block ? ` The block the card names, ${f.named.label}, is outlined: ${signedNum(f.named.delta, 'cars an hour', 0)}.` : '';
-  return `Map of the area in the ${pictureLabel}, blue where through cars drop and orange where they rise, with this proposal's changes drawn on the streets. In the area, ${total}. ${drop} ${gain}${named}`;
+  return `Map of the area in the ${pictureLabel}, blue where through cars drop and orange where they rise, with this proposal's changes drawn on the streets. ${total}${drop} ${gain}${named}`;
 }
 
 // ---------------------------------------------------------------- drawing model (screen meters: x east, y down)

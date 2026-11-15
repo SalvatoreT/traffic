@@ -1,15 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Intervention, Network } from '../types';
 import { DEAD_BAND_CUTTHROUGH } from '../lib/change';
-import { BADGE_TEXT, ATTRIBUTION } from '../lib/mapexport';
+import { BADGE_NAME, BADGE_TEXT, ATTRIBUTION } from '../lib/mapexport';
 import type { NetIndex } from '../lib/naming';
 import { buildPicture, mismatchNote, periodNote, pictureAlt, pictureCaption, pictureFacts } from '../lib/picture';
 import type { Proposal } from '../lib/proposals';
+import { controlLabel } from '../lib/selection';
 import { canvasMeasure, buildShareSvg, shareAlt, shareInputFor, svgToPng, SHARE_SCALE } from '../lib/shareimage';
-
-const BADGE_NAME: Partial<Record<Intervention['type'], string>> = {
-  speed_hump: 'speed hump', speed_limit: 'lower speed limit (mph)', traffic_circle: 'traffic circle', control: 'all-way stop', signal_timing: 'signal timing', turn_ban: 'turn ban',
-};
 
 /** Renders once the card nears the screen: a picture is a few hundred kilobytes of canvas work and a file can hold dozens. */
 function useNear(ref: React.RefObject<Element | null>): boolean {
@@ -51,6 +48,7 @@ export function ProposalPicture({ net, index, p, ivs, areaName, areaId, status, 
   const [failed, setFailed] = useState(false);
   useEffect(() => {
     if (!near || !share) return;
+    setPng(null); setFailed(false);
     let dead = false, made: string | null = null;
     svgToPng(share.image).then((b) => {
       if (dead) return;
@@ -66,6 +64,8 @@ export function ProposalPicture({ net, index, p, ivs, areaName, areaId, status, 
   const mismatch = mismatchNote(facts, when);
   const kinds = new Set(model.marks.map((m) => m.kind));
   const badgeTypes = [...new Set(model.marks.flatMap((m) => (m.kind === 'badge' ? [m.type] : [])))];
+  const controls = [...new Set(ivs.flatMap((iv) => (iv.type === 'control' ? [controlLabel(iv.control).toLowerCase()] : [])))];
+  const badgeName = (t: Intervention['type']) => (t === 'control' && controls.length ? `${BADGE_NAME.control} (${controls.join(', ')})` : BADGE_NAME[t]);
   const slug = (t: string) => t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60).replace(/-+$/, '');
   const file = `${slug(areaId)}-${slug(p.title) || slug(p.id)}-${slug(pic.period)}.png`;
   const { width, height } = share.image;
@@ -95,7 +95,7 @@ export function ProposalPicture({ net, index, p, ivs, areaName, areaId, status, 
               {kinds.has('bar') && <li>Yellow and black bar across a street: closed to through cars.</li>}
               {kinds.has('diverter') && <li>Striped line across a junction: diagonal diverter.</li>}
               {kinds.has('arrow') && <li>Arrow: one-way street, in the direction shown.</li>}
-              {badgeTypes.length > 0 && <li>Lettered badges: {badgeTypes.map((t) => `${BADGE_TEXT[t]} ${BADGE_NAME[t] ?? t}`).join(', ')}.</li>}
+              {badgeTypes.length > 0 && <li>Lettered badges: {badgeTypes.map((t) => `${BADGE_TEXT[t]} ${badgeName(t)}`).join(', ')}.</li>}
             </ul>
           )}
         </details>

@@ -10,6 +10,7 @@ import { formatValue } from '../lib/format';
 import { vulnerableSentence } from '../lib/metrics';
 import type { Metrics } from '../types';
 import { aggregate, compareRows, diffValue, formatSigned } from '../lib/change';
+import { EARLY_NOTE } from '../lib/run';
 import { changeUnit, defaultSort, sortChoices, type StreetKey as Key } from '../lib/streetcols';
 interface Row {
   key: number; block: Block; name: string; label: string; cls: string;
@@ -26,12 +27,14 @@ interface Props {
   baseMetrics?: Metrics | null; scenMetrics?: Metrics | null;
   onHover(h: Hover | null): void;
   withheld?: boolean;
+  /** Figures are scaled up from the first few simulated minutes. */
+  early?: boolean;
   /** Phone layout: one card per block, a sort menu in place of header buttons, and a Show on map button per row. */
   phone?: boolean;
   onShowOnMap?(block: number): void;
 }
 
-export function StreetsTable({ index, scen, base, comparing, overlay, showService, onShowService, baseMetrics, scenMetrics, onHover, withheld = false, phone = false, onShowOnMap }: Props) {
+export function StreetsTable({ index, scen, base, comparing, overlay, showService, onShowService, baseMetrics, scenMetrics, onHover, withheld = false, early = false, phone = false, onShowOnMap }: Props) {
   const walkBike = comparing && baseMetrics && scenMetrics ? vulnerableSentence(baseMetrics, scenMetrics) : '';
   const [sort, setSort] = useState<{ key: Key; dir: 1 | -1 } | null>(null);
   // Until a header is chosen: largest absolute change first when a scenario exists, else largest scenario cut-through.
@@ -121,6 +124,7 @@ export function StreetsTable({ index, scen, base, comparing, overlay, showServic
       {phone ? <details className="streets-about"><summary>About these figures</summary>{intro}</details> : intro}
       {!comparing && <p className="small streets-note">Add a change on the Map tab to compare.</p>}
       <div role="status">{withheld && <p className="notice">Street figures appear when the run finishes.</p>}</div>
+      {early && !withheld && <p className="notice" role="note">{EARLY_NOTE}</p>}
       {walkBike && <p className="small">{walkBike}</p>}
       <div className="filters">
         <label>Search streets <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="e.g. Oak" /></label>

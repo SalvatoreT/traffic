@@ -57,9 +57,14 @@ export function wrapText(measure: (s: string) => number, text: string, maxWidth:
   return out;
 }
 
+/** The one set of badge letters: the map, the scenario list, the exported image and the proposal picture all use it. A speed limit shows its number in mph instead where there is room. */
 export const BADGE_TEXT: Record<Intervention['type'], string> = {
   modal_filter: 'MF', speed_hump: 'SH', speed_limit: 'SL', traffic_circle: 'TC', control: 'IC',
   signal_timing: 'ST', one_way: '1W', turn_ban: 'TB', diagonal_diverter: 'DD',
+};
+export const BADGE_NAME: Record<Intervention['type'], string> = {
+  modal_filter: 'modal filter', speed_hump: 'speed hump', speed_limit: 'speed limit (the number is the new limit in mph)', traffic_circle: 'traffic circle', control: 'intersection control',
+  signal_timing: 'signal timing', one_way: 'one-way street', turn_ban: 'turn ban', diagonal_diverter: 'diagonal diverter',
 };
 // Same fills, outlines and corner shapes as the .iv-badge rules in styles.css.
 export const BADGE_STYLE: Record<Intervention['type'], { fill: string; edge: string; ink: string; radius: [number, number, number, number] | 'round' }> = {

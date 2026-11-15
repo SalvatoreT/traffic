@@ -73,3 +73,22 @@ describe('describePaths', () => {
     expect(describePaths(net, idx, { id: 'a', total: 50, maxVph: 50, segments: [{ link: 0, vph: 50 }] })).toMatch(/No typical path/);
   });
 });
+
+describe('describePaths stability', () => {
+  const nodes = [0, 1, 2, 3, 4].map((id) => ({ id, osmId: id, x: 0, y: -id * 100, control: 'uncontrolled', gate: false, inStudyArea: id > 0 && id < 4 })) as unknown as Network['nodes'];
+  const mk = (id: number, from: number, to: number, name: string, cls: string, inStudy: boolean): NetLink => ({
+    id, from, to, name, class: cls, inStudyArea: inStudy, reverse: null, lanes: 1, speedLimit: 11, length: 100, geometry: [[0, -from * 100], [0, -to * 100]],
+    fromBearing: 180, toBearing: 180,
+  }) as unknown as NetLink;
+  const net = { nodes, links: [mk(0, 0, 1, 'Alcatraz Avenue', 'secondary', false), mk(1, 1, 2, 'Hillegass Avenue', 'residential', true), mk(2, 2, 3, 'Ashby Street', 'residential', true), mk(3, 3, 4, 'Claremont Avenue', 'secondary', false)], bbox: [0, 0, 0, 0], studyArea: [] } as unknown as Network;
+  const idx = buildIndex(net);
+  const say = (a: number, b: number) => describePaths(net, idx, { id: 'a', total: 60, maxVph: 60, segments: [{ link: 0, vph: 60 }, { link: 1, vph: a }, { link: 2, vph: b }, { link: 3, vph: 55 }] });
+  it('keeps the same sentence when two streets trade places by a small margin', () => {
+    expect(say(50, 48)).toBe(say(48, 50));
+    expect(say(50, 50)).toBe(say(50, 49));
+  });
+  it('lists the stronger street first once the difference is material', () => {
+    expect(say(60, 20)).toMatch(/uses Hillegass Avenue southbound and Ashby Street southbound/);
+    expect(say(20, 60)).toMatch(/uses Ashby Street southbound and Hillegass Avenue southbound/);
+  });
+});

@@ -94,12 +94,15 @@ const streetName = (net: Network, idx: NetIndex, id: number): string => {
   return net.links[id].class === 'motorway' ? 'the freeway ramp' : 'an unnamed road';
 };
 const join = (xs: string[]): string => (xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
-/** Names with their heaviest flow and the link that carries it, strongest first, up to `n`, dropping the ones under a quarter of the strongest. */
+/** Flows within this ratio of each other count as equal for ordering, so streets with near-equal flow keep a fixed, alphabetical order from one update to the next. ASSUMPTION: display tolerance. */
+export const TIE_RATIO = 1.25;
+const band = (v: number): number => (v > 0 ? Math.floor(Math.log(v) / Math.log(TIE_RATIO)) : -Infinity);
+/** Names with their heaviest flow and the link that carries it, strongest first (alphabetical among near-equal ones), up to `n`, dropping the ones under a quarter of the strongest. */
 function rank(entries: [string, number, number][], n: number): { name: string; link: number }[] {
   const best = new Map<string, [number, number]>();
-  for (const [k, v, link] of entries) { const b = best.get(k); if (!b || v > b[0]) best.set(k, [v, link]); }
-  const sorted = [...best].sort((a, b) => b[1][0] - a[1][0] || a[0].localeCompare(b[0]));
-  const lead = sorted[0]?.[1][0] ?? 0;
+  for (const [k, v, link] of entries) { const b = best.get(k); if (!b || v > b[0] || (v === b[0] && link < b[1])) best.set(k, [v, link]); }
+  const lead = Math.max(0, ...[...best.values()].map((e) => e[0]));
+  const sorted = [...best].sort((a, b) => band(b[1][0]) - band(a[1][0]) || a[0].localeCompare(b[0]));
   return sorted.filter((e) => e[1][0] >= lead * 0.25).slice(0, n).map((e) => ({ name: e[0], link: e[1][1] }));
 }
 

@@ -1,6 +1,7 @@
-import { useId, useMemo } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { DemandIntent, Metrics, Network } from '../types';
 import type { NetIndex } from '../lib/naming';
+import { EARLY_NOTE } from '../lib/run';
 import { BASIS_HELP, BASIS_TEXT, OTHER_ID, describePaths, intentTable, type IntentPaths } from '../lib/intents';
 
 interface Props {
@@ -12,17 +13,33 @@ interface Props {
   paths: IntentPaths | null;
   pathsFrom: 'scenario' | 'baseline';
   phone: boolean;
+  /** The run is playing: the path sentence is held so it does not change under the reader. */
+  running: boolean;
+  /** Figures are scaled up from the first few simulated minutes. */
+  early: boolean;
   onAbout(): void;
 }
 
 const signed = (n: number | null): string => (n === null ? '—' : n === 0 ? '0' : `${n > 0 ? '+' : '−'}${Math.abs(n)}`);
 const num = (n: number | null): string => (n === null ? '—' : String(n));
 
-export function IntentPanel({ defs, base, scen, comparing, net, idx, selected, onSelect, paths, pathsFrom, phone, onAbout }: Props) {
+export function IntentPanel({ defs, base, scen, comparing, net, idx, selected, onSelect, paths, pathsFrom, phone, running, early, onAbout }: Props) {
   const id = useId();
-  const table = useMemo(() => intentTable(defs, base, scen), [defs, base, scen, comparing]);
+  const table = useMemo(() => intentTable(defs, base, scen), [defs, base, scen]);
   const def = selected ? defs.find((d) => d.id === selected) : undefined;
-  const text = useMemo(() => (paths && def ? describePaths(net, idx, paths) : ''), [paths, def, net, idx]);
+  const live = useMemo(() => (paths && def ? describePaths(net, idx, paths) : ''), [paths, def, net, idx]);
+  const held = useRef<{ key: string; text: string } | null>(null);
+  const key = `${selected}|${pathsFrom}`;
+  let text = live;
+  if (running && held.current?.key === key && held.current.text) text = held.current.text;
+  else held.current = { key, text: live };
+  // Said once when a reason is chosen or cleared. The figures and the path sentence change as the run goes on and stay out of the live region.
+  const [said, setSaid] = useState('');
+  const first = useRef(true);
+  useEffect(() => {
+    if (first.current) { first.current = false; return; }
+    setSaid(def ? `${def.label} is shown on the map.` : 'Map highlight turned off.');
+  }, [selected]); // eslint-disable-line
   if (!table) return null;
   const run = comparing ? (pathsFrom === 'scenario' ? 'the scenario' : 'the baseline') : 'today’s traffic';
   return (
@@ -37,6 +54,7 @@ export function IntentPanel({ defs, base, scen, comparing, net, idx, selected, o
       <p className="muted small">
         Cars an hour, averaged over the simulated time so far: the same window as the through cars counted above. Every through car is in one row, so the rows add up to the total.
       </p>
+      {early && <p className="notice" role="note">{EARLY_NOTE}</p>}
       <table className="intent-table" role="table">
         <caption className="sr-only">Through cars on side streets by reason, cars an hour</caption>
         <thead className="sr-only">
@@ -70,7 +88,8 @@ export function IntentPanel({ defs, base, scen, comparing, net, idx, selected, o
         </tfoot>
       </table>
       <p className="muted small">Rows are rounded to whole cars so they add up to the rounded total. Press a reason to draw its typical path on the map.</p>
-      <div role="status" className="intent-show" aria-live="polite">
+      <p className="sr-only" role="status" aria-live="polite">{said}</p>
+      <div className="intent-show">
         {def && (
           <div className="intent-card">
             <p className="intent-title"><strong>On the map:</strong> {def.label}</p>

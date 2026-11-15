@@ -13,7 +13,7 @@ import { addInterventions } from './lib/scenario';
 import { selectionForIntervention, type Selection } from './lib/selection';
 import { interventionPoint } from './lib/describe';
 import { overlayTop, resolveMode } from './lib/ramps';
-import { defaultPeriod, EARLY_SECONDS, initialRun, RUN_SECONDS, runReducer } from './lib/run';
+import { defaultPeriod, initialRun, isEarly, RUN_SECONDS, runReducer } from './lib/run';
 import { SelectionMenu, type Change, type Placement } from './components/SelectionMenu';
 import { Sheet } from './components/Sheet';
 import { Playback, Legend } from './components/Toolbar';
@@ -365,6 +365,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   const base: Metrics | null = withheld ? null : stats?.baseline.metrics ?? null;
   const scen: Metrics | null = withheld ? null : stats?.scenario.metrics ?? null;
   const comparing = !!stats?.comparing;
+  const early = !!stats && !withheld && isEarly(finished, run.time);
   const multimodal = hasModes(stats?.scenario.metrics ?? null);
   const intentDefs = demand.intents;
   const intentRun = comparing && source === 'baseline' ? stats?.baseline : stats?.scenario;
@@ -383,7 +384,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   const menu = selection && placement ? (
     <SelectionMenu bundle={bundle} index={index} selection={selection} interventions={interventions} placement={placement}
       onApply={onApply} onRemove={onRemove} onClose={clearSelection}
-      readout={comparing && !withheld ? { overlay, scen: stats?.scenario.linkStats ?? null, base: baseStats } : null} />
+      readout={comparing && !withheld ? { overlay, scen: stats?.scenario.linkStats ?? null, base: baseStats, early } : null} />
   ) : null;
 
   const shareButton = (
@@ -423,7 +424,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
     <Comparison base={base} scen={scen} comparing={comparing} finished={finished} withheld={withheld} scenarioCount={interventions.length} onRef={(k) => { setSourceRef(k); setView('sources'); }}
       intents={intentDefs?.length ? (
         <IntentPanel defs={intentDefs} base={base} scen={scen} comparing={comparing} net={bundle.network} idx={index} selected={intentSel} onSelect={setIntentSel}
-          paths={intentPathsShown} pathsFrom={comparing ? source : 'scenario'} phone={phone} onAbout={() => { setSourceRef('intents'); setView('assumptions'); }} />
+          paths={intentPathsShown} pathsFrom={comparing ? source : 'scenario'} phone={phone} running={running} early={early} onAbout={() => { setSourceRef('intents'); setView('assumptions'); }} />
       ) : undefined} />
   );
 
@@ -509,12 +510,12 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
               popover={placement === 'popover' ? menu : null}
               visible={mapShown} reducedMotion={reduced}
               modes={multimodal ? modes : { ...modes, bicycle: false, pedestrian: false }} showBikeNet={bikeNet && multimodal}
-              source={source} periodLabel={demand.periods.find((x) => x.id === period)?.label ?? period} exportRef={exportRef} onAnnounce={say}
+              early={early} source={source} periodLabel={demand.periods.find((x) => x.id === period)?.label ?? period} exportRef={exportRef} onAnnounce={say}
             />
             </Suspense>
             <Legend overlay={overlay} onOverlay={setOverlay} mode={mode} 
               source={source} onSource={setSource} canCompare={comparing}
-              view={mapView} onView={(v) => dispatchView({ type: 'choose', view: v })} canChange={interventions.length > 0} early={comparing && !finished && run.time < EARLY_SECONDS}
+              view={mapView} onView={(v) => dispatchView({ type: 'choose', view: v })} canChange={interventions.length > 0} early={early}
               multimodal={multimodal} modes={modes} onModes={setModes} hasBikeNet={hasBikeNet} bikeNet={bikeNet} onBikeNet={setBikeNet} />
             {(!engine || building) && (!stored || simError) && (
               <div className="map-cover">
@@ -526,7 +527,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
           </div>
           {view === 'streets' && (
             <StreetsTable bundle={bundle} index={index} showService={showService} onShowService={setShowService}
-              scen={withheld ? null : stats?.scenario.linkStats ?? null} base={baseStats} comparing={comparing} overlay={overlay} withheld={withheld}
+              scen={withheld ? null : stats?.scenario.linkStats ?? null} base={baseStats} comparing={comparing} overlay={overlay} withheld={withheld} early={early}
               baseMetrics={base} scenMetrics={scen} onHover={setHoverPlace}
               phone={phone} onShowOnMap={(block) => { setHoverPlace(null); select({ kind: 'block', block, point: null, nearLink: null, via: 'list' }); setView('map'); }} />
           )}

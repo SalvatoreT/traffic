@@ -26,8 +26,8 @@ export interface ShareInput {
   changes: string[];
   /** The picture's period with its hours, "PM peak (16:00-18:00 weekday)". */
   period: string;
-  /** The picture's period, like for like with the map. */
-  periodFigure: ShareHeadline;
+  /** The picture's period, like for like with the map. Null when the card has no result for that period. */
+  periodFigure: ShareHeadline | null;
   /** The card's average over the searched periods; null when the picture's period is the only one. */
   averageFigure: ShareHeadline | null;
   caption: string;
@@ -158,8 +158,8 @@ export function buildShareSvg(inp: ShareInput, measure: Measure): ShareImage {
     y += 2;
     y += para(f.figures, MARGIN + pad, INNER - 2 * pad, big ? 34 : 28, 700, INK, 1.2);
   };
-  figure(inp.periodFigure, true);
-  if (inp.averageFigure) { y += 12; figure(inp.averageFigure, false); }
+  if (inp.periodFigure) figure(inp.periodFigure, true);
+  if (inp.averageFigure) { if (inp.periodFigure) y += 12; figure(inp.averageFigure, !inp.periodFigure); }
   y += pad;
   out.splice(boxIdx, 0, `<rect x="${boxX}" y="${boxY}" width="${INNER}" height="${n1(y - boxY)}" rx="10" fill="${BOX}"/>`);
   section('figures', top);
@@ -260,11 +260,11 @@ export function shareInputFor(a: {
 }): ShareInput {
   const { p, pic, facts } = a;
   const when = hoursOnly(a.periodLabel(pic.period));
-  const r = p.byPeriod[pic.period]?.cutThrough ?? p.cutThrough;
-  const periodFigure = { label: `Through cars on all the area's side streets, ${when}, the period this picture shows`, figures: through(r.baselineVehPerHour, r.scenarioVehPerHour, r.changePct) };
+  const r = p.byPeriod[pic.period]?.cutThrough;
+  const periodFigure = r ? { label: `Through cars on all the area's side streets, ${when}, the period this picture shows`, figures: through(r.baselineVehPerHour, r.scenarioVehPerHour, r.changePct) } : null;
   const names = a.searched.map(a.shortLabel);
   const list = names.length <= 1 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
-  const averageFigure = names.length > 1
+  const averageFigure = names.length > 1 || (!periodFigure && names.length === 1)
     ? { label: `Average of ${list}, all side streets`, figures: through(p.cutThrough.baselineVehPerHour, p.cutThrough.scenarioVehPerHour, p.cutThrough.changePct) }
     : null;
   const keys: ShareInput['keys'] = [];
