@@ -380,7 +380,7 @@ Hovering a street on the map SHALL show, under the block's name, the metric the 
 - **THEN** two lines show, one per direction, each with its own swatch and value and naming its direction, for example "toward Elm St"
 
 ### Requirement: Modal filters show what they close
-The map SHALL mark every street a modal filter closes to through cars, and only those streets, with a short bar drawn across the road at a right angle to it, by shape and pattern as well as color. Bars SHALL be map features sized in ground units, so they stay on their street and shrink with the roads as the map zooms out. The Scenario list, selection pop-up and tooltip SHALL say in words which legs are closed.
+The map SHALL mark every street a modal filter closes to through cars, and only those streets, with a short bar drawn across the road at a right angle to it, by shape and pattern as well as color, and SHALL draw no badge for a modal filter. Bars SHALL be map features centered on their street at a geographic point, sized from the drawn road with a minimum size so they are legible at every zoom. A leg's bar SHALL sit 8 m along its street from where the leg begins at every zoom, so zoomed out the bars of a junction overlap into one compact mark no wider than about 22 CSS px at the fitted overview. Each filter SHALL keep an invisible control of at least 24 by 24 CSS px at its location that is reachable by keyboard, has a visible focus ring and the filter's description as its name, and selects the filter when activated; clicking a bar SHALL select its filter. The Scenario list, selection pop-up and tooltip SHALL say in words which legs are closed.
 
 #### Scenario: Text matches the map
 - **WHEN** a filter is placed
@@ -388,7 +388,7 @@ The map SHALL mark every street a modal filter closes to through cars, and only 
 
 #### Scenario: Four-leg intersection
 - **WHEN** a whole-junction filter is placed at a four-leg intersection
-- **THEN** four bars appear, one across each leg a few meters from the junction, and the list names the four legs
+- **THEN** four bars appear, one across each leg, and the list names the four legs
 
 #### Scenario: One street
 - **WHEN** a filter closes the two legs of one street at a four-leg intersection
@@ -396,15 +396,23 @@ The map SHALL mark every street a modal filter closes to through cars, and only 
 
 #### Scenario: Offset junction
 - **WHEN** the filter is at a junction whose legs begin up to 20 m apart
-- **THEN** each bar sits across its own street a few meters from where that street begins, and the text says the junction combines the streets and whether the filter closes all of its legs or only some
+- **THEN** each bar sits across its own street out from where that street begins, and the text says the junction combines the streets and whether the filter closes all of its legs or only some
 
 #### Scenario: Block filter
 - **WHEN** a filter is on a block
-- **THEN** one bar crosses the block at its midpoint, with no tape along the block, and the text names the block
+- **THEN** one bar crosses the block at its midpoint, with no badge and no tape along the block, and the text names the block
 
 #### Scenario: Zooming out
-- **WHEN** the map zooms out
-- **THEN** the bars shrink with the roads and stay on their streets instead of keeping a fixed screen size
+- **WHEN** the map is at the fitted overview
+- **THEN** every bar is visible at its minimum size, across its own street at its fixed place, and a junction's bars form one compact mark
+
+#### Scenario: Selecting a filter
+- **WHEN** a person clicks a bar, or tabs to the filter's control and presses Enter
+- **THEN** the filter's intersection or block is selected, where it can be removed
+
+#### Scenario: Exported image
+- **WHEN** the map is exported at any zoom
+- **THEN** the bars in the image have the sizes and places they have on screen
 
 ### Requirement: Why cars cut through
 The Results panel SHALL show one row per intent plus Other, each with a text basis badge, baseline and scenario cars an hour and the change, rows adding to the through-car total. A short paragraph SHALL say these are hypotheses and link to Sources, which lists each reason with its basis and note.
@@ -451,11 +459,15 @@ Scenario links SHALL write the closed legs of a node filter as bearings after th
 - **THEN** that filter is listed as unplaced and the rest of the scenario loads
 
 ### Requirement: Picture on each proposal card
-Each proposal card whose proposal carries picture data SHALL show, next to its control for opening the package on the map, an inline vector picture of the change in through cars an hour on each block in the picture's period, package minus today. The picture SHALL use the scale of the map's Change in cut-through view and draw the package's changes on the streets. It SHALL follow the light and dark themes, fit the card width and use no animation.
+Each proposal card whose proposal carries picture data SHALL show, directly after the card's title and before its summary, figures and list of changes, the picture of the change in through cars an hour on each block in the picture's period, package minus today, as an image (`img`) of a PNG that can be saved like any image, with a text alternative and a Download image link. The picture SHALL use the scale of the map's Change in cut-through view and draw the package's changes on the streets. It SHALL follow no animation and look the same in light and dark themes. On wide screens it MAY sit beside the text; on narrow screens it stacks above it. The reading order SHALL match the visual order. The control for opening the package on the map SHALL stay with the picture.
 
 #### Scenario: Card with a picture
 - **WHEN** a proposal carries picture data
-- **THEN** its card shows the picture beside the open control, with filters drawn as bars across the closed streets
+- **THEN** its card shows the title, then the picture with its download link and open control, then the summary, figures and changes, with filters drawn as bars across the closed streets
+
+#### Scenario: Phone
+- **WHEN** the card is narrower than 720 px
+- **THEN** the picture follows the title in one column with no horizontal overflow
 
 #### Scenario: Same scale as the map
 - **WHEN** a block's through cars change by the same amount on the picture and in the map's Change in cut-through view
@@ -519,3 +531,25 @@ A scenario link that carries interventions SHALL name its period. A link without
 #### Scenario: Open on the map
 - **WHEN** the user opens a proposal from the Proposals page
 - **THEN** the map shows its stored result for the picture's period
+
+### Requirement: Picture stands on its own when shared
+The picture's PNG SHALL carry the proposal's title, its list of changes, the period it shows with its hours, the legend with numbers and the cues that are not color (the barrier bar, the outlined block), the through cars on all side streets for the picture's period before and after with the percent change, and, when more than one period was searched, the same for the card's average, a note that the figures are a simulation result with the area's calibration status, the area name, the OpenStreetMap attribution, the site address and a QR code, with a short label, that opens the proposal on the map. The title SHALL carry no number. The QR code SHALL encode the absolute link, use error correction M or higher, keep a quiet zone of 4 modules, draw dark modules on white in either theme and take at least 3 px a module in the file, without covering the map, legend or text. No text SHALL overlap or run past the edge, at any number of changes.
+
+#### Scenario: Saved and sent
+- **WHEN** a person saves the picture or follows Download image
+- **THEN** the file is the same PNG, named for the area, the proposal and the period, and shows everything above
+
+#### Scenario: Scanning
+- **WHEN** the QR code in the saved file is decoded
+- **THEN** it gives the address the card's Open on the map control uses
+
+#### Scenario: One period searched
+- **WHEN** only the picture's period was searched
+- **THEN** the image states that period's figure once and has no average line
+
+### Requirement: Why cars cut through highlight is distinct from the traffic scales
+The map highlight for a reason SHALL use a color and line pattern that no overlay scale uses, in both themes, so it cannot be read as a traffic value.
+
+#### Scenario: Highlight on the change view
+- **WHEN** a reason is highlighted while the map shows change in cut-through
+- **THEN** its path is a dashed violet line with a solid casing, apart from the blue and orange of the scale
