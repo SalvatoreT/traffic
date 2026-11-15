@@ -13,6 +13,7 @@ mod initial;
 mod modes;
 mod ped;
 pub mod trace;
+mod via_bypass;
 
 use modes::*;
 pub use modes::{injury_risk, injury_risk_bike};
@@ -3350,7 +3351,7 @@ impl Simulation {
 
     /// Choose the assumed movement a trip makes from `start` (ASSUMPTION). A movement counts only while the route through it costs at most the plan's detour
     /// tolerance times the plain route on free-flow costs in the current network and passes no node that the plain route does not pass twice. The primary movement is taken when it counts, else the cheapest
-    /// alternative that counts, else none (the plain route). On success `route` holds the links after the first one (`Start::Node`: after the returned first link;
+    /// alternative that counts, else, when the primary movement is cut, a local bypass that keeps its intent (`pick_via_bypass`), else none (the plain route). On success `route` holds the links after the first one (`Start::Node`: after the returned first link;
     /// `Start::Link`: after that link).
     fn pick_via(&mut self, start: Start, dest: u32, seed: u32, plan: u32, route: &mut Vec<u32>) -> Option<((u32, u32), Option<u32>)> {
         if plan == NO_PLAN {
@@ -3433,7 +3434,7 @@ impl Simulation {
             route.extend_from_slice(&r);
             return Some(((a, b), first));
         }
-        None
+        self.pick_via_bypass(start, dest, seed, plan, route)
     }
 
     /// Re-plan the remaining route of an on-link vehicle. Returns false (and removes the vehicle) if unroutable and `drop_if_fail`.
