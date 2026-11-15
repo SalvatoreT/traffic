@@ -110,9 +110,9 @@ fn reach(t: &Topo, m: Modal<'_>, from: u32, steps: usize, forward: bool, avoid: 
     out
 }
 
-/// Cheapest legal path from any of `sources` (cost counted after the source link) to any of `targets`, by Dijkstra over links: exhaustive
-/// over the graph. Returns the path (source first) and its cost.
-fn cheapest(t: &Topo, m: Modal<'_>, cost: &[f32], sources: &[u32], targets: &[u32]) -> Option<(Vec<u32>, f32)> {
+/// Dijkstra over links from `sources` (cost counted after the source link) on the legal movements: every reachable link gets its cost
+/// and predecessor, so the search is exhaustive over the graph.
+fn search(t: &Topo, m: Modal<'_>, cost: &[f32], sources: &[u32]) -> (Vec<f32>, Vec<u32>) {
     let n = t.n_links;
     let mut d = vec![INF; n];
     let mut prev = vec![u32::MAX; n];
@@ -123,15 +123,10 @@ fn cheapest(t: &Topo, m: Modal<'_>, cost: &[f32], sources: &[u32], targets: &[u3
             heap.push(Reverse((0f32.to_bits(), s)));
         }
     }
-    let mut hit = None;
     while let Some(Reverse((bits, l))) = heap.pop() {
         let dl = f32::from_bits(bits);
         if dl > d[l as usize] {
             continue;
-        }
-        if targets.contains(&l) && !sources.contains(&l) {
-            hit = Some(l);
-            break;
         }
         for mv in t.lm_start[l as usize]..t.lm_start[l as usize] + t.lm_cnt[l as usize] {
             if !legal(t, m, mv as usize) {
@@ -146,7 +141,10 @@ fn cheapest(t: &Topo, m: Modal<'_>, cost: &[f32], sources: &[u32], targets: &[u3
             }
         }
     }
-    let end = hit?;
+    (d, prev)
+}
+
+fn path_to(prev: &[u32], end: u32) -> Vec<u32> {
     let mut path = vec![end];
     let mut x = end;
     while prev[x as usize] != u32::MAX {
@@ -154,7 +152,7 @@ fn cheapest(t: &Topo, m: Modal<'_>, cost: &[f32], sources: &[u32], targets: &[u3
         path.push(x);
     }
     path.reverse();
-    Some((path, d[end as usize]))
+    path
 }
 
 fn path_cost(t: &Topo, m: Modal<'_>, cost: &[f32], path: &[u32]) -> Option<f32> {
@@ -175,8 +173,10 @@ pub fn path_is_legal(g: &Graphs, mode: &str, path: &[u32]) -> bool {
     path.iter().all(|&l| (l as usize) < g.topo.n_links && !m.closed[l as usize]) && path_cost(&g.topo, m, link_cost(&g.scen, mode), path).is_some()
 }
 
-/// Legal witnesses around closed movement `mv`: for each upstream start, the cheapest legal path in the scenario that rejoins the
-/// movement's onward links within `WITNESS_REACH` junctions, with the cost of the baseline path from the same start to the same link.
+/// Legal witnesses around closed movement `mv`. Starts are links up to `WITNESS_REACH` junctions upstream of its approach, ends links up
+/// to that many junctions downstream of its exit. A (start, end) pair counts when a cheapest baseline path between them makes the movement
+/// (drivers between them had a reason to use it); its witness is the cheapest legal path between them in the scenario. Each start lists
+/// the end with the cheapest witness.
 fn witnesses(g: &Graphs, mode: &str, mv: usize) -> Value {
     let t = &g.topo;
     let (mb, ms) = (modal(&g.base, mode), modal(&g.scen, mode));
@@ -186,32 +186,50 @@ fn witnesses(g: &Graphs, mode: &str, mv: usize) -> Value {
     let mut starts = reach(t, mb, x.a, WITNESS_REACH, false, u32::MAX);
     starts.retain(|&l| !ms.closed[l as usize]);
     let targets = reach(t, mb, x.b, WITNESS_REACH, true, node);
-    let mut found: Vec<(Vec<u32>, f32, Option<f32>)> = Vec::new();
+    let (from_b, _) = search(t, mb, cb, &[x.b]);
+    let through = mb.mv_cost[mv] + cb[x.b as usize] * mb.w[x.b as usize];
+    let mut found: Vec<(Vec<u32>, f32, f32)> = Vec::new();
+    let mut served_pairs = 0usize;
+    let mut connected = false;
     for &s in &starts {
-        let Some((path, c)) = cheapest(t, ms, cs, &[s], &targets) else { continue };
-        if found.iter().any(|f| f.0 == path) {
-            continue;
+        let (db, _) = search(t, mb, cb, &[s]);
+        let (ds, ps) = search(t, ms, cs, &[s]);
+        let mut best: Option<(f32, u32)> = None;
+        for &e in targets.iter().filter(|&&e| e != s) {
+            let via = if s == x.a { 0.0 } else { db[x.a as usize] } + through + if e == x.b { 0.0 } else { from_b[e as usize] };
+            if !via.is_finite() || via > db[e as usize] * 1.0001 + 0.01 {
+                continue;
+            }
+            served_pairs += 1;
+            if ds[e as usize].is_finite() {
+                connected = true;
+                if best.map_or(true, |(c, _)| ds[e as usize] < c) {
+                    best = Some((ds[e as usize], e));
+                }
+            }
         }
-        let end = *path.last().unwrap();
-        let base = cheapest(t, mb, cb, &[s], &[end]).map(|(p, _)| p).and_then(|p| path_cost(t, mb, cb, &p));
-        found.push((path, c, base));
+        if let Some((c, e)) = best {
+            let path = path_to(&ps, e);
+            if !found.iter().any(|f| f.0 == path) {
+                found.push((path, c, db[e as usize]));
+            }
+        }
     }
-    found.sort_by(|a, b| a.1.total_cmp(&b.1).then(a.0.cmp(&b.0)));
-    let any = cheapest(t, ms, cs, &starts, &targets);
+    found.sort_by(|a, b| (a.1 - a.2).total_cmp(&(b.1 - b.2)).then(a.1.total_cmp(&b.1)).then(a.0.cmp(&b.0)));
     let total = found.len();
+    let r1 = |v: f32| (v * 10.0).round() / 10.0;
     json!({
         "movement": [x.a, x.b],
         "node": node,
         "starts": starts,
         "targets": targets,
-        "status": if any.is_some() { "found" } else { "disconnected" },
+        "servedPairs": served_pairs,
+        "status": if connected { "found" } else if served_pairs == 0 { "unused" } else { "disconnected" },
         "exhaustive": true,
         "listed": total.min(WITNESS_LIST_MAX),
         "found": total,
         "cap": WITNESS_LIST_MAX,
-        "paths": found.iter().take(WITNESS_LIST_MAX).map(|(p, c, b)| json!({
-            "links": p, "costS": (c * 10.0).round() / 10.0, "baselineCostS": b.map(|b| (b * 10.0).round() / 10.0),
-        })).collect::<Vec<_>>(),
+        "paths": found.iter().take(WITNESS_LIST_MAX).map(|(p, c, b)| json!({ "links": p, "costS": r1(*c), "baselineCostS": r1(*b) })).collect::<Vec<_>>(),
     })
 }
 

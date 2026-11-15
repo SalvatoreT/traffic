@@ -29,7 +29,7 @@ pub const ST_UNROUTABLE: u8 = 3;
 pub const ST_REMOVED: u8 = 4;
 
 /// Values per request in `Simulation::trace_requests`.
-pub const REQ_STRIDE: usize = 13;
+pub const REQ_STRIDE: usize = 14;
 
 pub(super) struct TraceReq {
     src: u32,
@@ -163,13 +163,20 @@ impl Simulation {
 
     /// Requests in creation order, `REQ_STRIDE` values each: source flow, ordinal, stratum, uid, origin, destination, requested arrival
     /// (s), attribute hash, entry time (NaN before entry), end time (NaN while open), state, detail kept (0/1), entry link (-1 before
-    /// entry). Empty without `Config::trace`.
+    /// entry), and the link an active car is on or crossing onto (-1 otherwise). Empty without `Config::trace`.
     pub fn trace_requests(&self) -> Vec<f64> {
         let Some(tr) = self.trace.as_deref() else { return Vec::new() };
+        let on: HashMap<u32, u32> = self
+            .vehs
+            .iter()
+            .filter(|v| v.alive && v.kind == KIND_CAR)
+            .map(|v| (v.uid, if v.in_transit { v.route.get((v.ridx as usize).wrapping_sub(1)).copied().unwrap_or(v.link) } else { v.link }))
+            .collect();
         let mut out = Vec::with_capacity(tr.reqs.len() * REQ_STRIDE);
         for r in &tr.reqs {
             let entry = if r.entry_link == u32::MAX { -1.0 } else { r.entry_link as f64 };
-            out.extend_from_slice(&[r.src as f64, r.ord as f64, r.stratum as f64, r.uid as f64, r.origin as f64, r.dest as f64, r.t_arr, r.attr as f64, r.t_ins, r.t_end, r.state as f64, r.detail as u8 as f64, entry]);
+            let cur = if r.state == ST_ACTIVE { on.get(&r.uid).map_or(-1.0, |&l| l as f64) } else { -1.0 };
+            out.extend_from_slice(&[r.src as f64, r.ord as f64, r.stratum as f64, r.uid as f64, r.origin as f64, r.dest as f64, r.t_arr, r.attr as f64, r.t_ins, r.t_end, r.state as f64, r.detail as u8 as f64, entry, cur]);
         }
         out
     }

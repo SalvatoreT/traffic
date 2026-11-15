@@ -11,6 +11,7 @@ import { findPlaces, type Place } from './lib/describe-network';
 import { buildReport, parseArgs, parseInterventionsJson, resolvePeriod, scenarioFromLink, type Args, type Scenario } from './lib/simulate-report';
 import { loadEngine, runFor, type Engine, type HourStats } from './lib/run-result';
 import { INTERVENTION_TYPES } from './lib/intervention-types';
+import { defaultJobs, parseSeeds, redistribution } from './lib/redistribution-cli';
 
 const HELP = `Usage: npm run simulate -- <what to do> [options]
 
@@ -28,6 +29,19 @@ Run a scenario (needs the WASM build and the data files):
   --strict                 fail when an item of the link cannot be placed (otherwise it is reported and skipped)
   --json | --pretty        compact or indented JSON (default indented)
   --no-cache               do not reuse a saved baseline
+
+Where traffic goes when a closure is added (needs the WASM build and the data files):
+  --redistribution         baseline, the closure alone and the package, traced, for each seed (see docs/run-locally.md)
+  --closure <item>         the closure to follow: one link item, e.g. mn,9q9p3fr7b5 (optional when --link has one item)
+  --link <url|#v1;...>     the package that contains it (optional: without it the package is the closure alone)
+  --seeds <list>           seeds, e.g. 1-10 or 1,2,3 (default 1; the reporting method needs 10 pairs for a statement)
+  --jobs <n>               runs at a time, in worker threads (default up to 4)
+  --cohort direct|crossings  trips that drove a movement the closure removes (default), or every crossing of its junctions
+  --streets "<a>,<b>"      always list the blocks of these streets, e.g. "63rd Street,Dana Street"
+  --out <file>             also write the JSON there
+  --trace-max <n>          bound on stored route events per run (default 1,500,000; counts stay exact)
+  --graph-only             only the legal paths around the closure, no runs (fast)
+  --from <file>            print a stored diagnostic if it was made on these inputs and this simulator, else exit 3
 
 Look things up (needs only the data files):
   --find "<streets>"       blocks and intersections that match, with the link item for each intervention, e.g. --find "Colby St & 60th St"
@@ -144,6 +158,13 @@ async function main() {
   const files = await loadAreaFiles(a.dataDir ?? DEFAULT_DATA_DIR, a.area);
   if (a.find !== undefined) { out(a, findOutput(files, a)); return; }
   if (a.places) { out(a, studyPlaces(files)); return; }
+  if (a.redistribution) {
+    out(a, await redistribution(files, {
+      link: a.link, closure: a.closure, seeds: parseSeeds(a.seeds ?? String(a.seed)), jobs: a.jobs ?? defaultJobs(), cohort: a.cohort, streets: a.streets,
+      out: a.out, traceMax: a.traceMax, graphOnly: a.graphOnly, from: a.from, period: a.period, minutes: a.minutes, demand: a.demand,
+    }));
+    return;
+  }
   out(a, await simulate(files, a));
 }
 
