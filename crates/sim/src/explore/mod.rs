@@ -45,6 +45,7 @@ pub struct Params {
     pub periods: Vec<String>,
     pub seeds: Vec<u64>,
     pub beam: usize,
+    /// Most interventions in a package: the beam stops growing packages at this size, and a known package with more is dropped.
     pub depth: usize,
     /// Number of ranked locations (blocks and intersections) that get candidate interventions.
     pub candidates: usize,

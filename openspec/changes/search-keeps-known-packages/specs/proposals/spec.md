@@ -32,6 +32,13 @@ Each seed and each package one intervention smaller than it SHALL be screened, a
 - **WHEN** a seed holds three interventions
 - **THEN** the three packages made by removing one of them are screened and extended
 
+### Requirement: Packages are no larger than the search depth
+No package the search builds SHALL have more interventions than `--depth`, and a seed with more SHALL be dropped with that reason.
+
+#### Scenario: Large seed
+- **WHEN** a seed has ten interventions and the depth is 6
+- **THEN** it is not rechecked and the run reports that it has more interventions than the search depth
+
 ### Requirement: Partial packages are ranked with a phased harm weight
 Inside the beam, a package SHALL be ranked by its cut-through reduction minus a harm weight that is zero for one intervention and grows linearly to the full weight at the search depth. A line of descent SHALL stop when no package of the next level beats the previous level's best at the new level's weight. The score published for a package, the finalists' recheck and the choice of options SHALL use the full weight.
 

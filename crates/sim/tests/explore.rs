@@ -1158,10 +1158,11 @@ fn a_known_package_and_its_sub_packages_are_screened_and_start_a_beam() {
     let triple = vec![filter_on(c_d), filter_on(e_f), slow];
     let mut p = params(2);
     p.candidates = 1;
-    p.depth = 2;
+    p.depth = 3;
     with_known(&study, &mut p, vec![seed_entry(&study, &triple, "search", "2026-11-10", 50.0)]);
     assert_eq!(p.known.len(), 1);
     let o = explore(&study, &p);
+    assert!(o.state.evals.iter().all(|e| e.set.len() <= p.depth), "no package is grown past the search depth");
     let cache = &o.state.cache;
     let ids: Vec<u16> = triple.iter().map(|iv| traffic_sim::explore::cands::adopt(&study, &mut o.cands.clone(), iv)).collect();
     let mut all = ids.clone();
@@ -1328,4 +1329,22 @@ fn the_beam_takes_one_variant_per_place() {
     assert!(kept.len() < singles.len());
     assert_eq!(kept[0], singles[0], "the best-ranked variant is the one kept");
     assert_eq!(distinct_places(&ctx, &o.state, &singles, 2).len(), 2, "the width still applies");
+}
+
+/// `--depth` is the most interventions a package may have: a known package with more is dropped with that reason, and the search never builds one.
+#[test]
+fn a_known_package_larger_than_the_search_depth_is_dropped() {
+    let n = ratrun(true, false);
+    let (c_d, e_f) = (n.c_d, n.e_f);
+    let study = study_of(n.study_net);
+    let slow = Intervention { ty: "speed_limit".into(), link: Some(c_d + 2), speed: Some(6.7), ..Default::default() };
+    let triple = vec![filter_on(c_d), filter_on(e_f), slow];
+    let mut p = params(2);
+    p.depth = 2;
+    with_known(&study, &mut p, vec![seed_entry(&study, &triple, "search", "2026-11-10", 50.0), seed_entry(&study, &triple[..2], "search", "2026-11-10", 40.0)]);
+    let o = explore(&study, &p);
+    assert_eq!((o.known.loaded, o.known.rechecked, o.known.dropped.len()), (2, 1, 1));
+    assert!(o.known.dropped[0].reason.contains("more than the search depth of 2"), "{}", o.known.dropped[0].reason);
+    assert!(o.state.evals.iter().all(|e| e.set.len() <= 2));
+    assert!(o.finals.iter().all(|f| f.set.len() <= 2));
 }

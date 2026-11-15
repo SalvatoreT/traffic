@@ -35,7 +35,9 @@ D7. Provenance. Each published option has `origin: { kind: search | seed | hand,
 
 D8. Tools. `explore --check LINK` scores a package with the search's own code (profile, candidate list, access check, full recheck, and with `--check-subsets` or `--check-singles` the screening picture a beam sees). `--add-seed`, `--seed-proposals` and `--seed-labels` fill the seeds file. `--seed-labels` takes the intervention labels an old report lists and matches them against the labels of every intervention the generator offers on the current network; labels in the old wording that no longer exist are skipped with a line.
 
-D9. Candidate cap and termination left as they were. The cap of 40 locations did not lose any intervention of the package, and the line-stop rule never fired. The depth stays an input: a depth below the size of the best package still limits it, and the run says so by ending at the depth with the best rising.
+D9. `--depth` bounds the size of a package. The first full run let the known beam grow the six-filter seeds to seven, eight and up to ten changes, and a ten-change package became the best option. An option with ten changes is not a short ladder and not something a neighborhood can pilot. So no package grows past `--depth` interventions, and a seed with more is dropped with that reason (it stays in the file). With depth 6 the known beam only replaces or adds one intervention to a package of five, which also cuts about 1,500 s from a run.
+
+D10. Candidate cap and termination left as they were. The cap of 40 locations did not lose any intervention of the package, and the line-stop rule never fired. The depth stays an input: a depth below the size of the best package still limits it, and the run says so by ending at the depth with the best rising.
 
 ## Risks
 

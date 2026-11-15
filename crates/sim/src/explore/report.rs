@@ -661,7 +661,7 @@ pub fn explore(study: &Study, p: &Params) -> Outcome {
 }
 
 /// Candidate sets for packages of interventions: each intervention matched to a candidate or added as one. A package the profile does not allow,
-/// that cannot be combined (two interventions on one place), or that fails the access check gets `Err` with the reason (and a line on stderr).
+/// that cannot be combined (two interventions on one place), that has more interventions than the search depth (the largest package an option may be), or that fails the access check gets `Err` with the reason (and a line on stderr).
 pub fn adopt_packages(study: &Study, p: &Params, cands: &mut Vec<Cand>, pkgs: &[Vec<Intervention>], what: &str) -> Vec<Result<Vec<u16>, String>> {
     let mut out: Vec<Result<Vec<u16>, String>> = Vec::new();
     for (k, pkg) in pkgs.iter().enumerate() {
@@ -671,6 +671,10 @@ pub fn adopt_packages(study: &Study, p: &Params, cands: &mut Vec<Cand>, pkgs: &[
         };
         if let Some(iv) = pkg.iter().find(|iv| !profile_allows(study, &p.profile, iv)) {
             fail(format!("{} is not allowed under {}", describe(&study.net, &study.topo, &study.idx, iv), p.profile.id));
+            continue;
+        }
+        if pkg.len() > p.depth {
+            fail(format!("{} interventions, more than the search depth of {}", pkg.len(), p.depth));
             continue;
         }
         let mut local = cands.clone();

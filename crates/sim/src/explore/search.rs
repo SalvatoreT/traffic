@@ -522,6 +522,10 @@ pub fn beam_search(ctx: &Ctx, known: &[Family]) -> SearchState {
             if lin.alive {
                 for &bi in &lin.beam {
                     let member = st.evals[bi].set.clone();
+                    // `depth` is the most interventions a package may have: a known package that is already that large is not grown.
+                    if member.len() >= ctx.p.depth {
+                        continue;
+                    }
                     let mut ext: Vec<u16> = top_singles.clone();
                     // Repair moves: candidates on or next to the blocks this package pushed traffic onto.
                     let mut hot: Vec<usize> = (0..st.evals[bi].inc.len()).filter(|&b| st.evals[bi].inc[b] as f64 > NOISE_FLOOR_VEH_H).collect();
