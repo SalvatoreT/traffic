@@ -80,6 +80,7 @@ impl Simulation {
         self.d_node_space.iter_mut().for_each(|x| *x = 0.0);
         self.gridlock_log.clear();
         self.trips.clear();
+        self.timings.clear();
         if let Some(sl) = self.sl.as_mut() {
             sl.records.clear();
         }

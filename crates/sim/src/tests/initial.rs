@@ -107,7 +107,7 @@ fn the_clock_and_every_result_start_at_zero() {
     let d = s.diagnostics();
     assert!(d.link_exits.iter().all(|&x| x == 0) && d.link_stopped_s.iter().all(|&x| x == 0.0) && d.link_delay_s.iter().all(|&x| x == 0.0));
     assert!(s.link_stats().chunks(4).all(|c| c[0] == 0.0 && c[2] == 0.0));
-    assert!(s.trip_records().is_empty() && s.debug_gridlock().is_empty());
+    assert!(s.trip_records().is_empty() && s.trip_timings().is_empty() && s.debug_gridlock().is_empty());
     assert!(s.select_link_records().iter().all(|r| !r.completed));
     // Switched off: an empty network.
     let (net, c) = corridor(11.2, Control::Signal);

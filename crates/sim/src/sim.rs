@@ -9,6 +9,7 @@ use crate::route::{self, Router, INF, NO_NOISE};
 use crate::topo::*;
 use std::collections::VecDeque;
 
+mod diag;
 mod initial;
 mod modes;
 mod ped;

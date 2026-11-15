@@ -407,5 +407,11 @@
       "clearanceSeconds": 4,
       "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing PM', SB SR-24 On-Ramp & MLK Way & NB SR-24 Off-Ramp: cycle 50 s; the southbound stream that turns onto the on-ramp (1547 veh/h) has 29 s of green in a phase of its own and the northbound stream that crosses it (268 veh/h) 13 s; clearance time 4.0 s after each phase, and effective green equal to the actuated green, so 29 + 13 + 2 x 4 = 50 s; applied to midday as an ASSUMPTION (no midday worksheet)"
     }
-  ]
+  ],
+  "osmTagOverrides": {
+    "way/416105064": {
+      "tags": { "lanes": "4", "lanes:backward": "2" },
+      "source": "ASSUMPTION pending a field check: Telegraph Ave between the 55th St signal and the SR-24 underpass (about 30 m) is tagged 3 lanes, 2 southbound (left|through) and 1 northbound. The northbound approach to 55th St just south of it has two through lanes (way 393902212, turn:lanes:backward left||) and the way just north has 4 lanes (way 86356713), so one northbound lane for 30 m after the signal would be a lane drop with no room to merge; read as a 4-lane cross-section like the way to the north, with the southbound left-turn lane unchanged"
+    }
+  }
 }

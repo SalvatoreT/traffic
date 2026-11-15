@@ -238,7 +238,18 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
   // Ways in bicycle route relations (the extract may have none; attributes then come from way tags only).
   const routeWays = new Set<number>();
   const restrictions: OsmRelation[] = [];
-  for (const e of osm.elements) {
+  const retag = <T extends { type: string; id: number; tags?: Record<string, string> }>(e: T): T => {
+    const o = cfg.osmTagOverrides?.[`${e.type}/${e.id}`];
+    if (!o) return e;
+    const tags = { ...e.tags };
+    for (const [k, v] of Object.entries(o.tags)) {
+      if (v === '') delete tags[k];
+      else tags[k] = v;
+    }
+    return { ...e, tags };
+  };
+  for (const raw of osm.elements) {
+    const e = retag(raw);
     if (e.type === 'node') {
       const prev = nodes.get(e.id);
       nodes.set(e.id, prev ? { ...e, tags: { ...prev.tags, ...e.tags } } : e);
@@ -431,6 +442,15 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
     if (near && near.d <= PARAMS.signalReachM) circle.add(near.node);
   }
 
+  // A one-way chain whose ways carry no lane count but whose last way lists its lanes in `turn:lanes` (one entry per lane, [OSMTurnLanes])
+  // has that many lanes. Applied to the finished links so chain merging, and with it every link id, is unchanged.
+  const wayTags = new Map(ways.map((w) => [w.id, w.tags ?? {}] as const));
+  const turnLaneCount = (l: { ways: number[]; lanes: number }): number | null => {
+    const ts = l.ways.map((w) => wayTags.get(w) ?? {});
+    if (!ts.length || ts.some((t) => !['yes', 'true', '1'].includes(t.oneway ?? '') || t.lanes || t['lanes:forward'] || t['lanes:backward'])) return null;
+    const spec = ts[ts.length - 1]['turn:lanes'];
+    return spec ? Math.max(l.lanes, spec.split('|').length) : null;
+  };
   const segsByRun = new Map<Run, Segment[]>();
   const links: Link[] = [];
   // `turn:lanes` lists the lanes of a way from left to right and applies at the way's end in the direction of travel.
@@ -1106,7 +1126,7 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
       reverse: l.rev && linkIndex.has(l.rev) ? linkIndex.get(l.rev)! : null,
       name: l.name,
       class: l.cls,
-      lanes: l.lanes,
+      lanes: turnLaneCount(l) ?? l.lanes,
       speedLimit: Math.round(l.speed * 100) / 100,
       length,
       geometry,

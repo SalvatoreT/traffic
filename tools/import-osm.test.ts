@@ -177,6 +177,17 @@ describe('rockridge network', () => {
     }
   });
 
+  it('applies the area config tag overrides (Telegraph Ave north of 55th St: two lanes northbound)', () => {
+    const t = net.links.filter((l) => l.osmWayId === 416105064);
+    expect(t.map((l) => l.lanes).sort()).toEqual([2, 2]);
+  });
+  it('reads the lane count of a one-way way tagged only with turn lanes, keeping every link id', () => {
+    const st = net.links.find((l) => l.osmWayId === 24606482)!;
+    expect(st.lanes).toBe(3);
+    const bare = buildNetwork({ ...cfg, osmTagOverrides: {} }, { elements: osm.elements.map((e) => (e.type === 'way' && e.id === 24606482 ? { ...e, tags: { ...e.tags, 'turn:lanes': '' } } : e)) } as Overpass).network;
+    expect(bare.links.length).toBe(net.links.length);
+    expect(bare.links.every((l, i) => l.from === net.links[i].from && l.to === net.links[i].to)).toBe(true);
+  });
   it('flags study-area membership consistently', () => {
     const poly = cfg.studyArea;
     expect(poly[0]).toEqual(poly.at(-1));
