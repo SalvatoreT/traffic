@@ -528,3 +528,4 @@ table.intent-table td { text-align: left; font-variant-numeric: tabular-nums; }
   .streets.cards tbody tr:hover, .streets.cards tbody tr:focus-visible { background: var(--surface); }
 }
 .intent-sec { display: block; font-size: .8rem; font-weight: 400; color: var(--muted); }
+.sources-view, .assume-view, .proposals-view { overflow-wrap: anywhere; } .sources-view :not(pre) > code, .assume-view :not(pre) > code { overflow-wrap: anywhere; word-break: break-all; } .sources-view pre { max-width: 100%; overflow-x: auto; }
