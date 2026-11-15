@@ -793,9 +793,9 @@
     },
     "schema": 1,
     "simulator": {
-      "dirty": true,
+      "dirty": false,
       "fingerprint": "7d07b9a9fd076e6bb601935096958589",
-      "revision": "641c998bcdd79c66ed1a501f6acfb60e82e92abe",
+      "revision": "e998e0426baaeac40cfc05e639a3fd27234720a2",
       "version": "0.1.0"
     },
     "suite": {
