@@ -24,6 +24,8 @@ struct Cand {
     dest: u32,
     through: bool,
     intent: u16,
+    via: Option<(u32, u32)>,
+    vplan: u32,
     noise_seed: u32,
     uid: u32,
 }
@@ -81,6 +83,7 @@ impl Simulation {
         }
         for v in self.vehs.iter_mut().filter(|v| v.alive) {
             v.sl_hits.clear();
+            v.trail_from = if v.in_transit { v.trail.len() } else { v.trail.len().saturating_sub(1) } as u32;
         }
         self.vuln = Vuln::default();
         self.world.reset_stats();
@@ -111,6 +114,18 @@ impl Simulation {
             }
             Some(route)
         }
+    }
+
+    /// Route of a car of a flow with an assumed movement: as a trip of the flow would take it at its origin, the movement included while it counts.
+    /// Returns the route and the movement it makes.
+    fn initial_route_via(&mut self, origin: u32, dest: u32, seed: u32, vplan: u32) -> Option<(Vec<u32>, Option<(u32, u32)>)> {
+        let mut rest = Vec::new();
+        if let Some((mv, Some(first))) = self.pick_via(Start::Node(origin), dest, seed, vplan, &mut rest) {
+            let mut route = vec![first];
+            route.append(&mut rest);
+            return Some((route, Some(mv)));
+        }
+        self.initial_route(false, origin, dest, seed).map(|r| (r, None))
     }
 
     /// Per link of `route`: (free-flow time on the link, delay in front of its stop line), both in s. The delay is the expected control delay at
@@ -150,9 +165,9 @@ impl Simulation {
         let mut order: Vec<usize> = (0..self.flows.len()).collect();
         order.sort_by_key(|&k| (self.flows[k].mode as u8, self.flows[k].dest, k));
         for k in order {
-            let (mode, origin, dest, rate, through, intent) = {
+            let (mode, origin, dest, rate, through, intent, vplan) = {
                 let f = &self.flows[k];
-                (f.mode, f.origin, f.dest, f.rate, f.through, f.intent)
+                (f.mode, f.origin, f.dest, f.rate, f.through, f.intent, if f.via.is_some() { f.vplan } else { NO_PLAN })
             };
             let mut rng = Rng::stream(self.cfg.seed ^ INITIAL_STREAM, k as u64);
             if mode == FlowMode::Pedestrian {
@@ -160,7 +175,12 @@ impl Simulation {
                 continue;
             }
             let bike = mode == FlowMode::Bicycle;
-            let Some(r0) = self.initial_route(bike, origin, dest, NO_NOISE) else { continue };
+            let r0 = if vplan != NO_PLAN {
+                self.initial_route_via(origin, dest, NO_NOISE, vplan).map(|r| r.0)
+            } else {
+                self.initial_route(bike, origin, dest, NO_NOISE)
+            };
+            let Some(r0) = r0 else { continue };
             let v_mean = (BIKE_V_MEAN as f32).min(BIKE_COST_V * 1.2);
             let t0: f32 = self.initial_times(&r0, bike.then_some(v_mean)).iter().map(|t| t.0 + t.1).sum();
             let n = rng.poisson(rate * t0 as f64);
@@ -170,7 +190,8 @@ impl Simulation {
                 } else {
                     (Drv::sample(&mut rng), 0.0, rng.u32() & 0x7FFF_FFFF)
                 };
-                let Some(route) = self.initial_route(bike, origin, dest, noise_seed) else { continue };
+                let routed = if vplan != NO_PLAN { self.initial_route_via(origin, dest, noise_seed, vplan) } else { self.initial_route(bike, origin, dest, noise_seed).map(|r| (r, None)) };
+                let Some((route, mv)) = routed else { continue };
                 let times = self.initial_times(&route, bike.then_some(v0_abs));
                 let total: f32 = times.iter().map(|t| t.0 + t.1).sum();
                 let mut r = rng.f64() as f32 * total;
@@ -182,6 +203,7 @@ impl Simulation {
                     }
                     r -= t.0 + t.1;
                 }
+                let via = mv.filter(|&(a, b)| route.windows(2).enumerate().any(|(i, w)| i >= at && w[0] == a && w[1] == b));
                 let l = route[at] as usize;
                 let (emerge, stop) = (self.topo.emerge_pos[l], self.topo.stop_pos[l]);
                 // Uniform by time over the free-flow part, then the expected control delay in front of the stop line.
@@ -202,7 +224,7 @@ impl Simulation {
                 lane_n[q] += 1;
                 let uid = self.uid_next;
                 self.uid_next += 1;
-                cands.push(Cand { q, lane, link: l as u32, pos, route, at, drv, bike, v0_abs, origin, dest, through, intent, noise_seed, uid });
+                cands.push(Cand { q, lane, link: l as u32, pos, route, at, drv, bike, v0_abs, origin, dest, through, intent, via, vplan, noise_seed, uid });
             }
         }
         // Front of each lane first; ties by uid so the order does not depend on the sort.
@@ -302,6 +324,8 @@ impl Simulation {
             dest: c.dest,
             through: c.through,
             intent: c.intent,
+            via: c.via,
+            vplan: c.vplan,
             noise_seed: c.noise_seed,
             route: rest,
             guided,

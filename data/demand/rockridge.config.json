@@ -46,7 +46,6 @@
   },
   "kFactor": 0.09,
   "kFactorNote": "ASSUMPTION: peak-hour share of ADT for urban arterials (typically 0.08-0.10); not derived from local data.",
-  "directionalSplitDefault": 0.5,
   "classDefaultAdt": {
     "_note": "ASSUMPTION: per-class default two-way ADT when no count exists for the gate street. Documented values; a class with at least classDefaultFromCounts.minStreets counted streets takes their median instead (DATA-derived, see the build log); uncalibrated otherwise.",
     "primary": 14000,
@@ -235,7 +234,6 @@
     ]
   },
   "gravity": {
-    "distanceExponent": 0,
     "sameStreetBonus": 3.0,
     "uTurnPenalty": 0.05,
     "oppositeBonus": 1.0,
@@ -271,7 +269,6 @@
     "sideRuleNote": "ASSUMPTION (round 19): a census block loads only nodes on its own side of the study-area boundary (polygon or boundary street counts as inside; a block is inside when its centroid is in the polygon). Before, blocks across a boundary street loaded the boundary corners, which are study-area nodes, so cars bound for places across Alcatraz Ave and Telegraph Ave ended at the corner and were not through cars.",
     "spreadRadiusM": 150,
     "spreadRadiusNote": "ASSUMPTION: a census block loads every node on a residential street within this distance of its centroid, in equal parts (the nearest node when none is that close). Before the seventeenth round each block loaded only its nearest node, which put the trips of several blocks on one corner.",
-    "internalShare": 0.2,
     "internalDecayM": 1000,
     "maxLocalShareOfGate": 0.5,
     "countCalibration": {
@@ -632,7 +629,7 @@
   },
   "assumedMovementFlows": {
     "enabled": true,
-    "_note": "ASSUMPTION (project lead decisions of 2026-11-14, calibration rounds 20 and 21): a counted turning movement the trip table cannot reach gets flows that must make it, so the modeled movement matches the count. Each movement is read from the volunteer count (`count` names the junction, the approach and the exit as the count file words them; its station targets give the volume per period, so midday takes the PM count times the period ratio as every other count does). The flows carry a `via` movement, which the simulator honors by routing the trip to the movement's approach link, through the movement, and on to its destination (re-routing keeps the movement until it is made), and the fit pins their volume. Round 21: the cars that make a movement are described by `intents`, each a named origin group, destination group and volume (a `share` of the movement's counted volume, or `vehPerHour` in the PM peak, scaled with the count in other periods). The groups are the approach groups of the area config (`approachGroups`; `study-area` is the study area's own nodes). The candidates of an intent are the flows of the seed table between its groups whose route through the movement costs at most `maxDetour` times their best route at free flow (the simulator router's cost) and does not loop; the intent's volume is split over them in proportion to their seed volume. The plain flow of each pair then gives up the trips its assumed flow carries (never more than 80% of it), and the fit rescales it to the counts, so total trips between the groups are not counted twice at the start of the fit. Intents of one movement add up to at most its counted volume. Every volume that is not a count is an ASSUMPTION; the data say which. Nothing here is area specific in code.",
+    "_note": "ASSUMPTION (project lead decisions of 2026-11-14, calibration rounds 20 and 21): a counted turning movement the trip table cannot reach gets flows that must make it, so the modeled movement matches the count. Each movement is read from the volunteer count (`count` names the junction, the approach and the exit as the count file words them; its station targets give the volume per period, so midday takes the PM count times the period ratio as every other count does). The flows carry a `via` movement, which the simulator honors by routing the trip to the movement's approach link, through the movement, and on to its destination (re-routing keeps the movement until it is made), and the fit pins their volume. Round 21: the cars that make a movement are described by `intents`, each a named origin group, destination group and volume (a `share` of the movement's counted volume, or `vehPerHour` in the PM peak, scaled with the count in other periods). The groups are the approach groups of the area config (`approachGroups`; `study-area` is the study area's own nodes). The candidates of an intent are the flows of the seed table between its groups whose route through the movement costs at most `maxDetour` times their best route at free flow (the simulator router's cost) and does not loop; the intent's volume is split over them in proportion to their seed volume. The plain flow of each pair then gives up the trips its assumed flow carries (never more than 80% of it), and the fit rescales it to the counts, so total trips between the groups are not counted twice at the start of the fit. Round 26: plain flows of other pairs whose best route makes the same turn (within `naturalDetour` of their best route) give up volume until the turn carries no more than its count, because the fit cannot take a flow below 0.1 of its seed volume and the turn was overshot. A movement counted below the count fit's minimum (`volunteerCount.minMovementVeh`) has no station and no trips in that period; the Assumptions data shows its count. Intents of one movement add up to at most its counted volume, and their shares apply to the turning cars of the count (a car going straight on has no movement station). Every volume that is not a count is an ASSUMPTION; the data say which. Nothing here is area specific in code.",
     "movements": [
       {
         "id": "colby-nb-left-alcatraz-west",
@@ -647,12 +644,9 @@
         },
         "wholeStreet": "Colby Street NB",
         "wholeStreetNote": "ASSUMPTION (round 25): the through intents (SR-24 off-ramp and south-side traffic) take only seed flows whose route to this movement drives Colby St northbound from its first link. The count has 102 cars driving the whole street and the model had 80: the through flows reached the Alcatraz Ave turn from 63rd St and the other side streets, which the count says the whole-street cars do not (182 entered at the south end).",
-        "throughShare": 0.62,
-        "throughShareNote": "ASSUMPTION from DATA, as in round 20: the volunteer count has 102 cars driving all of Colby St northbound in the PM peak and 164 cars leaving it at Alcatraz Ave (131 left, 32 right, 1 straight); 102 / 164 = 0.62 of the exits are whole-street cars, which have no end in the study area. The intents keep this share (0.47 + 0.15 through since round 25, 0.38 local) and the 131 veh/h.",
         "maxDetour": 1.3,
         "maxDetourNote": "ASSUMPTION: as for the Colby St left turn (round 20): drivers' perceived-cost noise is 8% per link, so a pair within 30% of its best route is one whose drivers could pick either.",
         "minFlowVehPerHour": 0.5,
-        "countShare": 1,
         "intents": [
           {
             "id": "offramp-to-west",
@@ -661,7 +655,7 @@
             "fromGroup": "sr24-off",
             "toGroup": "west-side",
             "share": 0.47,
-            "basis": "ASSUMPTION from DATA: 0.47 of the exits at Alcatraz Ave are freeway-origin whole-street cars (77 of 163 veh/h). The street's freeway share is 0.47 of its trips; this takes every freeway-origin trip of the street to be a whole-street car, the upper end of the round 21 range (low 38 to 62 for the left turn, 0.40 in round 21, 65 veh/h with the mid-street correction 182 / (182 + 47)). It raises the modeled Colby St NB freeway share from 38.7 to 42.7% against 47. The through intents add up to 0.62, the counted whole-street share."
+            "basis": "ASSUMPTION from DATA: 0.47 of the exits at Alcatraz Ave are freeway-origin whole-street cars (77 of the 163 turning cars). The street's freeway share is 0.47 of its trips; this takes every freeway-origin trip of the street to be a whole-street car, the upper end of the round 21 range (low 38 to 62 for the left turn, 0.40 in round 21, 65 veh/h with the mid-street correction 182 / (182 + 47)). It raises the modeled Colby St NB freeway share from 38.7 to 42.7% against 47. The through intents add up to 0.62, the counted whole-street share."
           },
           {
             "id": "south-to-west",
@@ -680,7 +674,8 @@
             "share": 0.38,
             "basis": "DATA-derived share: 1 - 0.62, the share of Colby St northbound exits that are not whole-street cars (102 of 164 are)."
           }
-        ]
+        ],
+        "sharesNote": "ASSUMPTION from DATA, as in round 20: the volunteer count has 102 cars driving all of Colby St northbound in the PM peak and 164 cars leaving it at Alcatraz Ave: 131 left, 32 right and 1 straight on. 102 / 164 = 0.62 of the exits are whole-street cars, which have no end in the study area. The shares of the intents apply to the 163 turning cars (the straight car is taken to have the same mix). They keep this share (0.47 + 0.15 through, 0.38 local) and the 131 veh/h."
       },
       {
         "id": "colby-nb-right-alcatraz-east",
@@ -695,12 +690,9 @@
         },
         "wholeStreet": "Colby Street NB",
         "wholeStreetNote": "ASSUMPTION (round 25): the through intents (SR-24 off-ramp and south-side traffic) take only seed flows whose route to this movement drives Colby St northbound from its first link. The count has 102 cars driving the whole street and the model had 80: the through flows reached the Alcatraz Ave turn from 63rd St and the other side streets, which the count says the whole-street cars do not (182 entered at the south end).",
-        "throughShare": 0.62,
-        "throughShareNote": "ASSUMPTION: the whole-street share of Colby St northbound exits (0.62) applies to the right turn as to the left turn.",
         "maxDetour": 1.3,
         "maxDetourNote": "ASSUMPTION: as for the Colby St left turn (round 20): drivers' perceived-cost noise is 8% per link, so a pair within 30% of its best route is one whose drivers could pick either.",
         "minFlowVehPerHour": 0.5,
-        "countShare": 1,
         "intents": [
           {
             "id": "offramp-to-east",
@@ -728,7 +720,8 @@
             "share": 0.38,
             "basis": "DATA-derived share 0.38, as for the left turn."
           }
-        ]
+        ],
+        "sharesNote": "ASSUMPTION: the whole-street share of Colby St northbound exits (0.62) applies to the right turn as to the left turn."
       },
       {
         "id": "hillegass-nb-left-alcatraz-west",
@@ -741,12 +734,9 @@
           "from": "Hillegass Avenue from south",
           "to": "Alcatraz Avenue toward west"
         },
-        "throughShare": 0.44,
-        "throughShareNote": "ASSUMPTION from DATA: 48 cars drove all of Hillegass Ave northbound and 109 left it at Alcatraz Ave (43 west, 54 east, 12 straight): 48 / 109 = 0.44.",
         "maxDetour": 1.3,
         "maxDetourNote": "ASSUMPTION: as for the Colby St left turn (round 20): drivers' perceived-cost noise is 8% per link, so a pair within 30% of its best route is one whose drivers could pick either.",
         "minFlowVehPerHour": 0.5,
-        "countShare": 1,
         "intents": [
           {
             "id": "offramp-to-west",
@@ -754,7 +744,7 @@
             "fromGroup": "sr24-off",
             "toGroup": "west-side",
             "share": 0.37,
-            "basis": "ASSUMPTION from DATA: 0.37 of the exits at Alcatraz Ave are freeway-origin through cars (40 of 109 veh/h; 47% x 110 = 52 freeway-origin trips times 94 / (94 + 29))."
+            "basis": "ASSUMPTION from DATA: 0.37 of the exits at Alcatraz Ave are freeway-origin through cars: 40 of 109 veh/h (47% x 110 = 52 freeway-origin trips times 94 / (94 + 29)). Applied to the 97 turning cars the share places 36 veh/h on the two turns (16 left, 20 right); the 12 cars that go straight on are taken to have the same mix."
           },
           {
             "id": "south-to-west",
@@ -772,7 +762,8 @@
             "share": 0.56,
             "basis": "DATA-derived share: 1 - 0.44 (48 of the 109 exits are whole-street cars)."
           }
-        ]
+        ],
+        "sharesNote": "ASSUMPTION from DATA: 48 cars drove all of Hillegass Ave northbound and 109 left it at Alcatraz Ave: 43 west, 54 east and 12 straight on. 48 / 109 = 0.44. The shares of the intents apply to the 97 turning cars (43 left, 54 right). The 12 cars that go straight on have no movement station and are taken to have the same mix, so the intents place 0.44 x 97 = 43 veh/h of the 48 whole-street cars on the two turns."
       },
       {
         "id": "hillegass-nb-right-alcatraz-east",
@@ -785,12 +776,9 @@
           "from": "Hillegass Avenue from south",
           "to": "Alcatraz Avenue toward east"
         },
-        "throughShare": 0.44,
-        "throughShareNote": "ASSUMPTION: the whole-street share of Hillegass Ave northbound exits (0.44) applies to this movement as to the left turn.",
         "maxDetour": 1.3,
         "maxDetourNote": "ASSUMPTION: as for the Colby St left turn (round 20): drivers' perceived-cost noise is 8% per link, so a pair within 30% of its best route is one whose drivers could pick either.",
         "minFlowVehPerHour": 0.5,
-        "countShare": 1,
         "intents": [
           {
             "id": "offramp-to-east",
@@ -798,7 +786,7 @@
             "fromGroup": "sr24-off",
             "toGroup": "east-side",
             "share": 0.37,
-            "basis": "ASSUMPTION: the same freeway-origin share of exits as the left turn (0.37)."
+            "basis": "ASSUMPTION: the same freeway-origin share of exits as the left turn (0.37 of the turning cars)."
           },
           {
             "id": "south-to-east",
@@ -816,7 +804,8 @@
             "share": 0.56,
             "basis": "DATA-derived share 0.56, as for the left turn."
           }
-        ]
+        ],
+        "sharesNote": "ASSUMPTION: the whole-street share of Hillegass Ave northbound exits (0.44) applies to this movement as to the left turn; see the left turn for the 97 turning cars."
       },
       {
         "id": "alcatraz-west-hillegass-south",
@@ -829,12 +818,9 @@
           "from": "Alcatraz Avenue from west",
           "to": "Hillegass Avenue toward south"
         },
-        "throughShare": 0.5,
-        "throughShareNote": "ASSUMPTION from DATA: freeway-bound through cars are half of the turn-ins (see the intent). The through share is not set from the whole-street count here because cars that turn off Hillegass Ave onto a side street on the way to the ramp are through cars too (79 cars drove the whole street, a lower bound).",
         "maxDetour": 1.3,
         "maxDetourNote": "ASSUMPTION: as for the Colby St left turn (round 20): drivers' perceived-cost noise is 8% per link, so a pair within 30% of its best route is one whose drivers could pick either.",
         "minFlowVehPerHour": 0.5,
-        "countShare": 1,
         "intents": [
           {
             "id": "west-to-freeway",
@@ -844,7 +830,8 @@
             "share": 0.5,
             "basis": "ASSUMPTION from DATA: freeway-bound cars that did not join mid-street are 87 veh/h (68% x 160 = 109 freeway-bound trips on the block, times 178 / (178 + 44) of its cars that entered at the top), half of the 174 cars that turned in from Alcatraz Ave (76 + 98). The 0.50 is applied to each turn-in."
           }
-        ]
+        ],
+        "sharesNote": "ASSUMPTION from DATA: freeway-bound through cars are half of the turn-ins (see the intent). The through share is not set from the whole-street count here because cars that turn off Hillegass Ave onto a side street on the way to the ramp are through cars too (79 cars drove the whole street, a lower bound)."
       },
       {
         "id": "alcatraz-east-hillegass-south",
@@ -857,12 +844,9 @@
           "from": "Alcatraz Avenue from east",
           "to": "Hillegass Avenue toward south"
         },
-        "throughShare": 0.5,
-        "throughShareNote": "ASSUMPTION from DATA: as for the turn-in from the west.",
         "maxDetour": 1.3,
         "maxDetourNote": "ASSUMPTION: as for the Colby St left turn (round 20): drivers' perceived-cost noise is 8% per link, so a pair within 30% of its best route is one whose drivers could pick either.",
         "minFlowVehPerHour": 0.5,
-        "countShare": 1,
         "intents": [
           {
             "id": "east-to-freeway",
@@ -872,7 +856,8 @@
             "share": 0.5,
             "basis": "ASSUMPTION from DATA: freeway-bound cars that did not join mid-street are 87 veh/h (68% x 160 = 109 freeway-bound trips on the block, times 178 / (178 + 44) of its cars that entered at the top), half of the 174 cars that turned in from Alcatraz Ave (76 + 98). The 0.50 is applied to each turn-in."
           }
-        ]
+        ],
+        "sharesNote": "ASSUMPTION from DATA: as for the turn-in from the west."
       },
       {
         "id": "alcatraz-west-colby-south",
@@ -885,12 +870,9 @@
           "from": "Alcatraz Avenue from west",
           "to": "Colby Street toward south"
         },
-        "throughShare": 0.365,
-        "throughShareNote": "ASSUMPTION from DATA: see the intents.",
         "maxDetour": 1.3,
         "maxDetourNote": "ASSUMPTION: as for the Colby St left turn (round 20): drivers' perceived-cost noise is 8% per link, so a pair within 30% of its best route is one whose drivers could pick either.",
         "minFlowVehPerHour": 0.5,
-        "countShare": 1,
         "intents": [
           {
             "id": "telegraph-to-freeway",
@@ -908,7 +890,8 @@
             "vehPerHour": 15,
             "basis": "ASSUMPTION from DATA: the other 41 turn-ins from the west times 0.365 = 15 veh/h (PM)."
           }
-        ]
+        ],
+        "sharesNote": "ASSUMPTION from DATA: see the intents."
       },
       {
         "id": "alcatraz-east-colby-south",
@@ -921,12 +904,9 @@
           "from": "Alcatraz Avenue from east",
           "to": "Colby Street toward south"
         },
-        "throughShare": 0.365,
-        "throughShareNote": "ASSUMPTION from DATA: see the intent.",
         "maxDetour": 1.3,
         "maxDetourNote": "ASSUMPTION: as for the Colby St left turn (round 20): drivers' perceived-cost noise is 8% per link, so a pair within 30% of its best route is one whose drivers could pick either.",
         "minFlowVehPerHour": 0.5,
-        "countShare": 1,
         "intents": [
           {
             "id": "east-to-freeway",
@@ -936,10 +916,13 @@
             "vehPerHour": 18,
             "basis": "ASSUMPTION from DATA: 50 turn-ins from the east times 0.365 freeway-bound = 18 veh/h (PM)."
           }
-        ]
+        ],
+        "sharesNote": "ASSUMPTION from DATA: see the intent."
       }
     ],
-    "_alternativesNote": "ASSUMPTION (via-detour-fallback): the builder writes `via.maxDetour` (each movement's `maxDetour`) and `via.alternatives` (the other movements that have an intent with the same fromGroup and toGroup as an intent of the flow's movement) on every assumed flow. The simulator makes the movement only while the route through it costs at most `maxDetour` times the plain route in the current network and passes no node twice, else it takes the cheapest alternative that passes, else the plain route. Nothing here is area specific in code."
+    "naturalDetour": 1.05,
+    "naturalDetourNote": "ASSUMPTION (round 26): a plain flow whose best route through a movement costs at most this multiple of its best route makes that turn naturally. The router's perceived-cost noise is 8% per link, so a route within 5% of the best is one drivers take part of the time.",
+    "alternativesNote": "ASSUMPTION (via-detour-fallback, round 26): the builder writes `via.maxDetour` (each movement's `maxDetour`) on every assumed flow and, for a through flow (no end in the study area), `via.alternatives`: the other movements that have an intent whose origin and destination groups contain the flow's groups. The simulator makes the movement only while the route through it costs at most `maxDetour` times the plain route in the current network and passes no node twice, else it takes the cheapest alternative that passes, else the plain route. A flow with an end in the study area (a resident's trip) has no alternatives and falls back to its plain route, so a scenario does not move a Colby St resident's trip to Hillegass Ave. Nothing here is area specific in code."
   },
   "audit": {
     "nearM": 400

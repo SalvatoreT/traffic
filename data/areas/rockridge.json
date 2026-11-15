@@ -154,7 +154,7 @@
         "toGroups": ["telegraph-north", "berkeley-north", "college-north", "shattuck-north", "berkeley-northwest"],
         "avoids": "Telegraph Ave",
         "basis": "observed",
-        "note": "Counted northbound exits at Alcatraz Ave from Colby St (164 an hour) and Hillegass Ave (109 an hour) and the share of those blocks' trips that came from a freeway (47% and 37%) limit the volume. How many of those cars were bound for Berkeley rather than Alcatraz Ave west is an assumption."
+        "note": "Counted northbound exits at Alcatraz Ave from Colby St (164 an hour, 163 of them turning) and Hillegass Ave (109 an hour, 97 of them turning) and the share of those blocks' trips that came from a freeway (47% for each street) limit the volume. How many of those cars were bound for Berkeley rather than Alcatraz Ave west is an assumption."
       },
       {
         "id": "sr24-to-west-hills",

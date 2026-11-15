@@ -416,7 +416,7 @@ Every count station SHALL carry a source id and the count year of its source, de
 
 #### Scenario: Averaged counts
 - **WHEN** a station averages counts of 2018, 2018, 2019 and 2021
-- **THEN** its year is the mean, 2019.5
+- **THEN** its year is the mean, 2019.0
 
 #### Scenario: No known year
 - **WHEN** a source has no date in its provenance

@@ -15,6 +15,9 @@ Text.
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Main St north, left onto Cross St | am_peak | 78 | 853 (777 / 76) | 2347 | 29 | 48 | 30 | 1.20 | 1.29 |
 | Main St north, left onto Cross St | pm_peak | 131 | 1092 (990 / 102) | 3728 | 41 | 81 | 50 | 1.20 | 1.29 |
+| Main St north, right onto Cross St | am_peak | 20 | 0 (0 / 0) | 0 | 0 | 0 | 0 | - | 0.00 |
+
+Main St north, right onto Cross St, am_peak: counted 20 veh/h, below the count fit's minimum of 25 veh/h for a turning movement, so the fit has no station for it and no trips are assigned to it in this period.
 
 ### Intents of the assumed movements (ASSUMPTION)
 
@@ -37,13 +40,26 @@ const cfg: AssumptionsCfg = {
   volunteerCount: { periods: { am: 'am_peak', pm: 'pm_peak', midday: 'midday' }, middayFromPm: true },
 };
 
+describe('a movement counted below the fit minimum', () => {
+  it('keeps the count, drops the assigned cars and says why', () => {
+    const c2: AssumptionsCfg = { ...cfg, assumedMovementFlows: { movements: [{ id: 'r', label: 'Main St north, right onto Cross St', maxDetour: 1.3, intents: [] }] } };
+    const m = buildAssumptions(c2, fit, { area: 'a', demandHash: 'h', countSourceId: '', generated: 'g' }).movements[0];
+    expect(m.counted).toEqual({ am_peak: 20 });
+    expect(m.assigned).toEqual({});
+    expect(m.belowThreshold).toEqual({ am_peak: 20 });
+    expect(m.belowThresholdNote).toMatch(/fewer than the count fit's minimum/);
+  });
+});
+
 describe('the assumptions data', () => {
   it('reads both tables of the fit report', () => {
     const r = parseFitReport(fit);
     expect(r.movements).toEqual([
       { movement: 'Main St north, left onto Cross St', period: 'am_peak', counted: 78, through: 48, local: 30 },
       { movement: 'Main St north, left onto Cross St', period: 'pm_peak', counted: 131, through: 81, local: 50 },
+      { movement: 'Main St north, right onto Cross St', period: 'am_peak', counted: 20, through: 0, local: 0 },
     ]);
+    expect(r.belowMin).toEqual([{ movement: 'Main St north, right onto Cross St', period: 'am_peak', counted: 20 }]);
     expect(r.intents).toHaveLength(4);
     expect(r.intents[2]).toMatchObject({ intent: 'Ramp traffic', period: 'pm_peak', assigned: 61.6 });
   });

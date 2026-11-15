@@ -55,3 +55,29 @@ fn intent_tallies_are_deterministic() {
     assert_eq!(a.intent_links(), b.intent_links());
     assert_eq!(a.metrics().cut_through.by_intent.iter().map(|x| x.vehicles).collect::<Vec<_>>(), b.metrics().cut_through.by_intent.iter().map(|x| x.vehicles).collect::<Vec<_>>());
 }
+
+/// Links a through car left during the settle interval are not credited: on local links the per-intent usage equals the through-car exit counter.
+#[test]
+fn intent_links_agree_with_the_exit_counter_on_local_links() {
+    let (net, c) = corridor(1.0, Control::Uncontrolled);
+    let mut d = demand(&[(c.a[0], c.a[3], 400.0), (c.a[3], c.a[0], 300.0)]);
+    d.periods[0].flows[0].intent = Some(0);
+    d.periods[0].flows[1].intent = Some(1);
+    d.intents = (0..2).map(|i| IntentDef { id: format!("i{i}") }).collect();
+    let mut sim = Simulation::from_parts(net, d, cfg(3, 1.0)).unwrap();
+    assert!(sim.metrics().initial_agents > 10);
+    run(&mut sim, 900.0, |_| {});
+    let mut used = vec![0.0f32; sim.n_links()];
+    for r in sim.intent_links().chunks(3) {
+        used[r[1] as usize] += r[2];
+    }
+    let exits = sim.cut_through_exits();
+    let mut total = 0.0;
+    for &(f, r) in &c.loc {
+        for l in [f, r] {
+            assert_eq!(used[l as usize], exits[l as usize], "link {l}");
+            total += exits[l as usize];
+        }
+    }
+    assert!(total > 20.0, "through cars used the local row: {total}");
+}

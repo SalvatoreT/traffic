@@ -6,11 +6,13 @@
 // --demand and --reuse score something other than the shipped demand, so they need --suffix (or --overwrite-main): they would otherwise overwrite the main assessment and the calibrate summaries.
 // Skips with a message (exit 0) when target/release/calibrate is not built. --reuse DIR scores seed reports already in DIR instead of running them.
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { throughStats, corridorRatios, featureStats, headlineError, meanLinkFlow, noiseFile, rampStats, readSeeds, scoreStations, shareStats, travelTimes, type SeedRun, type StationFile, type TravelNet } from './lib/assess';
 import { seedStat } from './lib/acceptance';
+import { suggestStatus } from './lib/verdict';
 import { MIN_HELD_RECENT, outOfSampleSplit, ruleSplit, ruleVerdicts, sourceYearLines, type RuleSplit, type RuleVerdict } from './lib/recency';
+import { writeFileAtomic } from './lib/atomic';
 
 const root = resolve(import.meta.dirname, '..');
 const arg = (k: string, d: string) => { const i = process.argv.indexOf(k); return i >= 0 ? process.argv[i + 1] : d; };
@@ -174,10 +176,8 @@ for (const p of periods) {
 
 const noCounts = (p: string) => verdicts[p].rule?.fitted === 'no counts' && verdicts[p].rule?.held === 'no counts';
 const allStable = periods.every((p) => verdicts[p].stable);
-const pm = verdicts['pm_peak'];
-const stationOk = periods.every((p) => (noCounts(p) ? true : verdicts[p].flow === true));
-const throughOk = pm ? pm.through === true : false;
-const calibrated = allStable && (pm ? pm.d5 === true && throughOk : false) && stationOk;
+const status = suggestStatus(Object.fromEntries(periods.map((p) => [p, { stable: verdicts[p].stable, d5: verdicts[p].d5, through: p === 'pm_peak' ? verdicts[p].through : null, stations: noCounts(p) ? null : verdicts[p].flow === true }])));
+const calibrated = status.calibrated;
 const yn = (v: boolean | null, na = 'n/a') => (v === null ? na : v ? 'pass' : 'FAIL');
 const tl = (b: { n: number; ok: number }) => (b.n ? `${b.ok} of ${b.n} (${pct(b.ok / b.n, 0)}%)` : 'none');
 const rvText = (v: RuleVerdict) => (v === 'met' ? 'pass' : v === 'not met' ? 'FAIL' : v === 'too few' ? `too few to judge (fewer than ${minHeld}), not a pass` : 'no counts');
@@ -193,11 +193,11 @@ for (const p of periods) for (const q of throughRows[p] ?? []) L.push(`| ${p} | 
 const allCounts = (p: string) => { const sp = splits[p]; return sp ? `${tl(sp.all.fitted)} fitted, ${tl(sp.all.held)} held out (out of sample)` : '-'; };
 const dominant = (p: string) => { const m = new Map<string, number>(); let n = 0; for (const c of scores[p] ?? []) { const age = c.year == null || c.derived ? null : recencyCfg!.referenceYear - c.year; if (age !== null && age <= recencyCfg!.recentYears) { n++; m.set(c.source ?? 'unknown', (m.get(c.source ?? 'unknown') ?? 0) + 1); } } const [src, k] = [...m].sort((a, b) => b[1] - a[1])[0] ?? ['none', 0]; return `${p}: ${k} of ${n} recent stations come from one source (${src})`; };
 const midday = periods.filter(noCounts);
-L.push('', `${midday.length ? `No ${midday.join(', ')} counts exist; ${midday.join(', ')} is checked for stability only, and its station targets (the PM count times a factor, ASSUMPTION) are not judged. ` : ''}Where the recent pass rate comes from: ${recencyCfg ? periods.filter((p) => !noCounts(p)).map(dominant).join('; ') : '-'}. A source counted on a single day carries one hour of that day. The older counts pass less: ${periods.filter((p) => !noCounts(p)).map((p) => `${p} ${splits[p] ? tl(splits[p]!.older.fitted) : '-'} fitted`).join(', ')}. All counts together: ${periods.filter((p) => !noCounts(p)).map((p) => `${p} ${allCounts(p)}`).join('; ')}.`, '', `Suggested status: **${calibrated ? 'calibrated' : 'uncalibrated'}**; experimental periods: ${periods.filter((p) => !verdicts[p].stable).join(', ') || 'none'}.`, '');
+L.push('', `${midday.length ? `No ${midday.join(', ')} counts exist; ${midday.join(', ')} is checked for stability only, and its station targets (the PM count times a factor, ASSUMPTION) are not judged. ` : ''}Where the recent pass rate comes from: ${recencyCfg ? periods.filter((p) => !noCounts(p)).map(dominant).join('; ') : '-'}. A source counted on a single day carries one hour of that day. The older counts pass less: ${periods.filter((p) => !noCounts(p)).map((p) => `${p} ${splits[p] ? tl(splits[p]!.older.fitted) : '-'} fitted`).join(', ')}. All counts together: ${periods.filter((p) => !noCounts(p)).map((p) => `${p} ${allCounts(p)}`).join('; ')}.`, '', `Suggested status: **${calibrated ? 'calibrated' : 'uncalibrated'}**; experimental periods: ${status.experimental.join(', ') || 'none'}.${calibrated ? '' : ` Not calibrated because: ${status.reasons.join('; ')}.`}`, '');
 console.log(L.join('\n'));
-if (write && !reuse || (write && reuse)) writeFileSync(resolve(root, `data/calibration/${area}.assessment${minutes === 60 ? '' : `-${minutes}min`}${suffix ? `-${suffix}` : ''}.md`), L.join('\n') + '\n');
+if (write && !reuse || (write && reuse)) writeFileAtomic(resolve(root, `data/calibration/${area}.assessment${minutes === 60 ? '' : `-${minutes}min`}${suffix ? `-${suffix}` : ''}.md`), L.join('\n') + '\n');
 if (process.argv.includes('--noise') && write) {
   const nf = noiseFile(area, byPeriod);
-  writeFileSync(resolve(root, `public/data/${area}.noise.json`), JSON.stringify(nf));
+  writeFileAtomic(resolve(root, `public/data/${area}.noise.json`), JSON.stringify(nf));
   console.log(`noise file: ${JSON.stringify(nf).length} bytes`);
 }

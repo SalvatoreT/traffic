@@ -3,7 +3,7 @@
 // `--baselines-only` runs just today's traffic per period for baseline-intents.json and leaves the proposals' results and index.json alone.
 // Needs the WASM build (`npm run wasm`): the runs use the same simulator code the app runs. Writes public/data/results/<area>/<key>.json
 // and an index.json beside them, and baseline-intents.json (today's traffic by reason, for the Assumptions tab). A file is reused when its network hash, demand hash and simulator fingerprint match the current ones.
-import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
@@ -15,6 +15,7 @@ import { RESULT_SEED, RESULT_VERSION, canonicalItems, encodeStats, parseResult, 
 import { RUN_SECONDS } from '../src/lib/run';
 import { BASELINE_INTENTS_VERSION, encodeBaselinePeriod, parseBaselineIntents, type BaselineIntents } from '../src/lib/baseline-intents';
 import { loadEngine, runHour, type HourStats } from './lib/run-result';
+import { writeFileAtomic } from './lib/atomic';
 
 const root = resolve(import.meta.dirname, '..');
 const arg = (k: string, d: string) => { const i = process.argv.indexOf(k); return i >= 0 ? process.argv[i + 1] : d; };
@@ -123,7 +124,7 @@ const computed = new Date().toISOString();
   }
   if (basePeriods.length && Object.keys(periodsOut).length) {
     const b: BaselineIntents = { version: BASELINE_INTENTS_VERSION, area, inputs, seed: RESULT_SEED, seconds: RUN_SECONDS, computed, periods: periodsOut };
-    writeFileSync(baselinePath, JSON.stringify(b));
+    writeFileAtomic(baselinePath, JSON.stringify(b));
     console.log(`wrote baseline-intents.json: ${Object.keys(periodsOut).join(', ')}`);
   }
 }
@@ -136,7 +137,7 @@ for (const w of todo) {
     scenario: encodeStats(sc), baseline: encodeStats(base),
   };
   const text = JSON.stringify(r);
-  writeFileSync(pathOf(w.key), text);
+  writeFileAtomic(pathOf(w.key), text);
   sizes.push({ key: w.key, raw: text.length, gz: gzipSync(text).length });
 }
 
@@ -154,7 +155,7 @@ for (const f of readdirSync(outDir).sort()) {
   entries.push({ key: r.key, period: r.period, items: r.items, proposals: w?.proposals ?? [] });
 }
 const index: StoredIndex = { version: RESULT_VERSION, area, inputs, computed, results: entries };
-writeFileSync(join(outDir, 'index.json'), JSON.stringify(index, null, 1) + '\n');
+writeFileAtomic(join(outDir, 'index.json'), JSON.stringify(index, null, 1) + '\n');
 
 const total = readdirSync(outDir).filter((f) => f !== 'index.json' && f !== 'baseline-intents.json').reduce((t, f) => t + statSync(join(outDir, f)).size, 0);
 console.log(`\nwrote ${sizes.length} files in ${((Date.now() - t0) / 1000).toFixed(0)} s; ${entries.length} in the index; directory ${(total / 1024).toFixed(0)} KB`);

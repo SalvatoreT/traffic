@@ -182,3 +182,40 @@ fn detour_loop_and_reversal_metrics_on_a_toy_network() {
     assert!(m[0].reversal, "link followed by its reverse within 200 m");
     assert!(m[0].node_max_visits >= 2, "origin node visited twice");
 }
+
+/// A way out of a blocked link that skips the assumed movement drops it, so later re-plans do not steer the car back to it.
+#[test]
+fn replanning_around_a_blocked_link_drops_a_skipped_via() {
+    let (net, c) = corridor(20.0, Control::Uncontrolled);
+    let (entry, skipped) = (c.art[0].0, c.art[1].0);
+    let mut sim = Simulation::from_parts(net, demand(&[(c.a[0], c.a[3], 10.0)]), cfg_empty(1, 1.0)).unwrap();
+    let car = sim.test_place(entry, 0, 100.0, 5.0, c.a[3], false);
+    assert_eq!(sim.test_route_of(car).first(), Some(&skipped));
+    sim.test_set_via(car, Some((entry, skipped)));
+    sim.test_replan_around_blocked(car);
+    let route = sim.test_route_of(car);
+    assert_ne!(route.first(), Some(&skipped), "the car left the blocked link: {route:?}");
+    assert_eq!(sim.test_via_of(car), None, "the movement it no longer makes is dropped");
+    // A way out that keeps the movement leaves it in place.
+    let car2 = sim.test_place(entry, 0, 60.0, 5.0, c.a[3], false);
+    sim.test_set_via(car2, Some((entry, c.conn[1].0)));
+    sim.test_replan_around_blocked(car2);
+    assert_eq!(sim.test_route_of(car2).first(), Some(&c.conn[1].0));
+    assert_eq!(sim.test_via_of(car2), Some((entry, c.conn[1].0)));
+}
+
+/// A way out that passes a junction the car has already driven through only circles, so the car keeps its route and waits.
+#[test]
+fn replanning_around_a_blocked_link_does_not_revisit_driven_junctions() {
+    let (net, c) = corridor(20.0, Control::Uncontrolled);
+    let mut sim = Simulation::from_parts(net, demand(&[(c.a[0], c.a[3], 10.0)]), cfg_empty(1, 1.0)).unwrap();
+    let car = sim.test_place(c.art[0].0, 0, 100.0, 5.0, c.a[3], false);
+    let before = sim.test_route_of(car);
+    // The local row runs through l2; a car that drove through l2 earlier must not be sent there.
+    sim.test_set_trail(car, &[c.loc[1].0]);
+    sim.test_replan_around_blocked(car);
+    assert_eq!(sim.test_route_of(car), before);
+    sim.test_set_trail(car, &[]);
+    sim.test_replan_around_blocked(car);
+    assert_ne!(sim.test_route_of(car), before);
+}

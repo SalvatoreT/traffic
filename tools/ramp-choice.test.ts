@@ -39,4 +39,18 @@ describe('ramp choice made upstream', () => {
     const links = [{ id: 0, from: 10, to: 1, class: 'motorway' }, { id: 1, from: 1, to: 2, class: 'motorway' }, { id: 2, from: 2, to: 3, class: 'primary' }];
     expect(offRampLinks([2], links, new Set(['motorway']))).toEqual([{ b: 1, from: 1 }]);
   });
+  it('does not take a ramp link that starts at a surface node, and takes the first of two chained ramps on a path', () => {
+    const links = [{ id: 0, from: 10, to: 1, class: 'motorway' }, { id: 1, from: 1, to: 2, class: 'motorway' }, { id: 2, from: 2, to: 3, class: 'motorway' }, { id: 3, from: 2, to: 4, class: 'residential' }, { id: 4, from: 3, to: 5, class: 'residential' }];
+    expect(offRampLinks([2, 3], links, new Set(['motorway']))).toEqual([{ b: 1, from: 1 }]);
+  });
+  it('treats ramp links chained on one path as one physical ramp', () => {
+    // 0 -> 1 -> (ramp link 1 ends at 2) -> (ramp link 2 ends at 3): the second link starts where the first ends
+    const lf = [0, 1, 2], lt = [1, 2, 3];
+    const chained = [{ b: 1, from: 1 }, { b: 2, from: 2 }];
+    const r = splitByRamp<RampFlow>([{ origin: 0, destination: 9, vehPerHour: 10 }], [40], asg([[[0, 1], [1, 1], [2, 1]]]), () => true, chained, lf, lt, cfg);
+    expect(r.flows).toHaveLength(1);
+    expect(r.flows[0].via).toEqual({ a: 0, b: 1, maxDetour: 1.3 });
+    expect(r.divided).toBe(0);
+    expect(r.byRamp.get(2)).toBeUndefined();
+  });
 });

@@ -162,3 +162,26 @@ fn placement_routes_on_loaded_costs() {
     }
     assert!(loaded > free + free / 10, "side-street cars at time zero: {loaded} with loaded costs, {free} with free-flow routes");
 }
+
+/// A flow with an assumed movement is placed with it: a car on the entry link of the movement has it pending and takes it.
+#[test]
+fn placed_agents_of_a_via_flow_make_the_movement() {
+    let (net, c) = corridor(20.0, Control::Uncontrolled);
+    let (entry, exit) = (c.art[0].0, c.conn[1].0);
+    let plain = Simulation::test_build_free_flow(net.clone(), demand(&[(c.a[0], c.a[3], 1500.0)]), cfg(1, 1.0)).test_route_for(c.a[0], c.a[3], NO_NOISE).unwrap();
+    assert!(!plain.contains(&exit), "the plain route stays on the arterial");
+    let mut on_entry = 0;
+    for seed in 1..=6 {
+        let mut s = Simulation::from_parts(net.clone(), via_demand(c.a[0], c.a[3], 1500.0, entry, exit), cfg_empty(seed, 1.0)).unwrap();
+        s.test_prepopulate();
+        for (via, route) in s.test_via_state(entry) {
+            on_entry += 1;
+            assert_eq!(via, Some((entry, exit)));
+            assert_eq!(route.first(), Some(&exit), "the car turns off at the end of its link");
+        }
+        for (via, _) in s.test_via_state(exit) {
+            assert_eq!(via, None, "a car past the movement has made it");
+        }
+    }
+    assert!(on_entry >= 5, "cars placed before the movement: {on_entry}");
+}

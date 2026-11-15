@@ -749,6 +749,23 @@ fn modal_filter_with_legs_closes_only_movements_to_and_from_those_legs() {
     assert!(e.mv_ok[mv(x.w_in, x.e_out)] && !e.node_filter[x.c as usize]);
 }
 
+/// Naming one direction of a leg closes the leg in both directions, as the link filter does.
+#[test]
+fn a_leg_named_by_one_direction_is_closed_in_both() {
+    let (net, x) = cross4(Control::Uncontrolled, RoadClass::Residential, false);
+    let sim = Simulation::from_parts(net.clone(), demand(&[(x.w, x.e, 300.0)]), cfg(1, 1.0)).unwrap();
+    let topo = sim.test_topo();
+    let mv = |a: u32, b: u32| topo.find_mv(a, b).unwrap() as usize;
+    for named in [x.n_in, x.n_out] {
+        let e = crate::eff::Eff::derive(topo, &net, &serde_json::from_str::<Vec<crate::model::Intervention>>(&format!(
+            "[{{\"type\":\"modal_filter\",\"node\":{},\"legs\":[{named}]}}]", x.c)).unwrap());
+        for (a, b) in [(x.w_in, x.n_out), (x.e_in, x.n_out), (x.s_in, x.n_out), (x.n_in, x.e_out), (x.n_in, x.w_out), (x.n_in, x.s_out)] {
+            assert!(!e.mv_ok[mv(a, b)], "naming link {named}: movement {a} -> {b} touches the closed leg");
+        }
+        assert!(e.mv_ok[mv(x.w_in, x.e_out)] && e.mv_ok[mv(x.s_in, x.e_out)], "the other legs stay open");
+    }
+}
+
 #[test]
 fn leg_filter_keeps_the_open_street_flowing_and_cars_stay_off_the_closed_legs() {
     let (net, x) = cross4(Control::Uncontrolled, RoadClass::Residential, false);

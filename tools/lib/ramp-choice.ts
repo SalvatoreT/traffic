@@ -35,7 +35,14 @@ export function splitByRamp<T extends RampFlow>(flows: T[], volume: number[], a:
       if (feeder === null) continue;
       use.set(r.b, { share: (use.get(r.b)?.share ?? 0) + a.share[i], feeder });
     }
-    const kept = [...use].filter(([, u]) => u.share >= cfg.minShare);
+    // A ramp whose feeder chain, upstream on the same path, passes through another ramp's last link is a continuation of that ramp (a freeway-class link that passes a surface node), not a second exit.
+    const feederOf = (l: number): number | null => { for (const m of onPath) if (m !== l && linkTo[m] === linkFrom[l]) return m; return null; };
+    const continuation = (b: number): boolean => {
+      const seen = new Set<number>([b]);
+      for (let l = feederOf(b); l !== null && !seen.has(l); l = feederOf(l)) { if (rampOf.has(l)) return true; seen.add(l); }
+      return false;
+    };
+    const kept = [...use].filter(([b, u]) => u.share >= cfg.minShare && !continuation(b));
     const sum = kept.reduce((s, [, u]) => s + u.share, 0);
     if (!kept.length || sum <= 0) { out.push({ ...f, vehPerHour: v }); return; }
     forced++;
@@ -50,10 +57,15 @@ export function splitByRamp<T extends RampFlow>(flows: T[], volume: number[], a:
   return { flows: out, divided, forced, byRamp };
 }
 
-/** The off-ramps of a network: the freeway-class link that ends at the surface node of each off-ramp, with the node it leaves. */
+/**
+ * The off-ramps of a network: the freeway-class link that ends at the surface node of each off-ramp, with the node it leaves. A freeway-class link that starts at a surface node is
+ * the continuation of another ramp (the ramp passes a surface node and goes on), not an exit from the mainline, so it is not an off-ramp.
+ */
 export function offRampLinks(rampSurfaces: number[], links: { id: number; from: number; to: number; class: string }[], freeway: Set<string>): OffRamp[] {
   const out: OffRamp[] = [];
   const at = new Set(rampSurfaces);
-  for (const l of links) if (freeway.has(l.class) && at.has(l.to)) out.push({ b: l.id, from: l.from });
+  const surface = new Set<number>();
+  for (const l of links) if (!freeway.has(l.class)) { surface.add(l.from); surface.add(l.to); }
+  for (const l of links) if (freeway.has(l.class) && at.has(l.to) && !surface.has(l.from)) out.push({ b: l.id, from: l.from });
   return out;
 }

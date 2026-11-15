@@ -169,6 +169,8 @@ struct Veh {
     replan: bool,
     /// Links entered on this trip, in order (cars): the no-backtracking rule and the wandering metrics read it.
     trail: Vec<u32>,
+    /// Index in `trail` of the first link left at or after t = 0 (links left during the settle interval do not count in the per-intent link usage).
+    trail_from: u32,
     /// En-route route changes so far, and when the last one (or the departure) happened.
     switches: u16,
     last_switch_t: f64,
@@ -231,6 +233,7 @@ impl Veh {
             ttc_leader: NONE_UID,
             replan: false,
             trail: Vec::new(),
+            trail_from: 0,
             switches: 0,
             last_switch_t: 0.0,
             guided: false,
@@ -2357,7 +2360,7 @@ impl Simulation {
         if newly {
             self.st.intent_veh[i as usize] += 1;
             let trail = &self.vehs[vid as usize].trail;
-            for &k in trail {
+            for &k in &trail[(self.vehs[vid as usize].trail_from as usize).min(trail.len())..] {
                 self.st.intent_link[base + k as usize] += 1.0;
             }
             if trail.last() != Some(&(l as u32)) {
@@ -2806,6 +2809,7 @@ impl Simulation {
             let Some(nx) = v.next() else { return };
             (v.link, v.dest, v.noise_seed, nx)
         };
+        let driven: Vec<u32> = self.vehs[vid as usize].trail.iter().map(|&x| self.topo.link_to[x as usize]).collect();
         self.router.ensure(dest, &self.topo, &self.eff, &self.link_cost);
         let table = self.router.table(dest);
         let ms = self.topo.lm_start[l as usize];
@@ -2828,13 +2832,19 @@ impl Simulation {
         let mut route = std::mem::take(&mut self.scratch);
         route.clear();
         route.push(b);
-        // A way out that comes back to the blocked junction only circles; the car keeps waiting.
+        // A way out that comes back to the blocked junction, or to a junction the car has driven through, only circles; the car keeps waiting.
         let here = self.topo.link_to[l as usize];
-        if !route::walk(table, &self.topo, &self.eff, b, dest, seed, &mut route) || route.iter().any(|&x| self.topo.link_to[x as usize] == here) {
+        if !route::walk(table, &self.topo, &self.eff, b, dest, seed, &mut route) || route.iter().any(|&x| self.topo.link_to[x as usize] == here || driven.contains(&self.topo.link_to[x as usize])) {
             self.scratch = route;
             return;
         }
         let veh = &mut self.vehs[vid as usize];
+        if let Some((a, m)) = veh.via {
+            let makes = (l == a && route.first() == Some(&m)) || route.windows(2).any(|w| w[0] == a && w[1] == m);
+            if !makes {
+                veh.via = None;
+            }
+        }
         let mut old = std::mem::replace(&mut veh.route, route);
         veh.ridx = 0;
         veh.switches = veh.switches.saturating_add(1);
@@ -3071,6 +3081,18 @@ impl Simulation {
     /// Place the initial agents without the settle interval (the clock stays where it is).
     pub(crate) fn test_prepopulate(&mut self) {
         self.prepopulate();
+    }
+
+    pub(crate) fn test_set_via(&mut self, id: u32, via: Option<(u32, u32)>) {
+        self.vehs[id as usize].via = via;
+    }
+
+    pub(crate) fn test_via_of(&self, id: u32) -> Option<(u32, u32)> {
+        self.vehs[id as usize].via
+    }
+
+    pub(crate) fn test_replan_around_blocked(&mut self, id: u32) {
+        self.replan_around_blocked(id);
     }
 
     pub(crate) fn test_set_guided(&mut self, id: u32, guided: bool) {

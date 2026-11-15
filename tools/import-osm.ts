@@ -1,8 +1,9 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { round6 } from './lib/geo';
 import { buildNetwork, CLASS_MAP } from './lib/network';
 import type { AreaConfig, Network, Overpass } from './lib/types';
+import { writeFileAtomic } from './lib/atomic';
 
 const root = resolve(import.meta.dirname, '..');
 const outDir = resolve(root, 'public/data');
@@ -69,8 +70,8 @@ function main() {
     const cfg: AreaConfig = JSON.parse(readFileSync(path, 'utf8'));
     const osm: Overpass = JSON.parse(readFileSync(resolve(root, cfg.extract), 'utf8'));
     const { network, stats } = buildNetwork(cfg, osm);
-    writeFileSync(resolve(outDir, `${cfg.id}.network.json`), JSON.stringify(network));
-    writeFileSync(resolve(outDir, `${cfg.id}.basemap.json`), JSON.stringify(buildBasemap(cfg, osm)));
+    writeFileAtomic(resolve(outDir, `${cfg.id}.network.json`), JSON.stringify(network));
+    writeFileAtomic(resolve(outDir, `${cfg.id}.basemap.json`), JSON.stringify(buildBasemap(cfg, osm)));
     console.log(summarize(network));
     const { joinedList, gatesNearSignal, freewayGateMerges, freewayRampViolations, signalObservationsUnmatched, ...rest } = stats;
     for (const m of signalObservationsUnmatched) console.warn(`WARNING: signal observation not applied: ${m}`);
@@ -104,7 +105,7 @@ function main() {
       ...(existsSync(resolve(outDir, `${cfg.id}.noise.json`)) ? { noise: `/data/${cfg.id}.noise.json` } : {}),
     });
   }
-  writeFileSync(resolve(outDir, 'areas.json'), JSON.stringify(manifest, null, 2) + '\n');
+  writeFileAtomic(resolve(outDir, 'areas.json'), JSON.stringify(manifest, null, 2) + '\n');
 }
 
 if (process.argv[1]?.endsWith('import-osm.ts')) main();

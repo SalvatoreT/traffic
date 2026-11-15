@@ -3,10 +3,11 @@
 // Delay of a link = mean time lost against the speed limit per vehicle, including the stop at its end. The router adds a control delay per movement on top of the movement's own
 // traversal time and turn penalty, so the constant is the delay of the links that end at the control minus the delay of links that end at no control (car following, turn slowdown,
 // crossing conflicts), flow-weighted over the seeds and the links with at least 20 veh/h. --write rewrites crates/sim/data/node-delays.json (values rounded to 0.5 s) and the report.
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { readSeeds } from './lib/assess';
 import { buildGraph } from './lib/assign';
+import { writeFileAtomic } from './lib/atomic';
 
 const root = resolve(import.meta.dirname, '..');
 const arg = (k: string, d: string) => { const i = process.argv.indexOf(k); return i >= 0 ? process.argv[i + 1] : d; };
@@ -51,6 +52,6 @@ for (const [k, e] of [...groups].sort((a, b) => b[1].w - a[1].w)) { const s = [.
 console.log(L.join('\n'));
 console.log(JSON.stringify(out));
 if (process.argv.includes('--write')) {
-  writeFileSync(resolve(root, 'crates/sim/data/node-delays.json'), JSON.stringify({ note: cur.note, ...out }, null, 2) + '\n');
-  writeFileSync(resolve(root, `data/calibration/${area}.node-delays.md`), L.join('\n') + '\n');
+  writeFileAtomic(resolve(root, 'crates/sim/data/node-delays.json'), JSON.stringify({ note: cur.note, ...out }, null, 2) + '\n');
+  writeFileAtomic(resolve(root, `data/calibration/${area}.node-delays.md`), L.join('\n') + '\n');
 }

@@ -121,10 +121,16 @@ impl Eff {
                                     let k = &net.links[l as usize];
                                     if k.to == n {
                                         leg_in_closed[l as usize] = true;
+                                        if let Some(r) = k.reverse {
+                                            leg_out_closed[r as usize] = true;
+                                        }
                                         hit = true;
                                     }
                                     if k.from == n {
                                         leg_out_closed[l as usize] = true;
+                                        if let Some(r) = k.reverse {
+                                            leg_in_closed[r as usize] = true;
+                                        }
                                         hit = true;
                                     }
                                 }
