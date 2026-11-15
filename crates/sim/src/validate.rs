@@ -392,9 +392,12 @@ pub fn gap_capacity(vc: f64, tc: f64, tf: f64) -> f64 {
 
 // ---------------------------------------------------------------- (f) circle
 
-pub fn circle_entry(vc: f64, seed: u64) -> f64 {
+/// Entry flow (veh/h) of the south approach (to the east exit) with `vc` veh/h circulating past it. With `shared_exit` the circulating
+/// vehicles leave at the east exit too; otherwise they go on to the north exit, so the entry is measured against the circulating flow
+/// alone, as the entry model has it [Rodegerdts2007], and not against two streams merging into one exit lane.
+pub fn circle_entry(vc: f64, seed: u64, shared_exit: bool) -> f64 {
     let (net, x) = cross(Control::TrafficCircle, RoadClass::Residential, 1, RoadClass::Residential, 1, false);
-    let fl = [(x.w, x.e, vc.max(1.0), FlowMode::Car), (x.s, x.e, 3000.0, FlowMode::Car)];
+    let fl = [(x.w, if shared_exit { x.e } else { x.n }, vc.max(1.0), FlowMode::Car), (x.s, x.e, 3000.0, FlowMode::Car)];
     let mut r = Run::new(net, demand_m(&fl), cfg(seed));
     r.advance(WARM + 2400.0);
     r.rate(&[x.s_in], WARM, WARM + 2400.0)
@@ -593,7 +596,7 @@ pub fn run_all() -> Vec<Case> {
     for (j, vc) in [200.0f64, 600.0, 1000.0].into_iter().enumerate() {
         let exp = 1130.0 * (-1.0e-3 * vc).exp();
         let id: &'static str = ["f1", "f2", "f3"][j];
-        out.push(case(id, format!("Circle entry capacity, circulating {vc:.0} veh/h"), "veh/h", circle_entry(vc, 1), 0.8 * exp, 1.2 * exp, "Rodegerdts2007", format!("1130 exp(-0.001 vc) = {exp:.0}")));
+        out.push(case(id, format!("Circle entry capacity, circulating {vc:.0} veh/h"), "veh/h", circle_entry(vc, 1, false), 0.8 * exp, 1.2 * exp, "Rodegerdts2007", format!("1130 exp(-0.001 vc) = {exp:.0}; circulating vehicles pass the entry and the entering vehicles' exit and leave at the next one; when they all leave at the entering vehicles' exit the entry passes {:.0}", circle_entry(vc, 1, true))));
     }
     for (id, nm, lim) in [("g1", "25 mph", V25), ("g2", "35 mph", 15.65)] {
         let (cap, kq) = crate::sim::equilibrium_capacity(lim, 400, 1);

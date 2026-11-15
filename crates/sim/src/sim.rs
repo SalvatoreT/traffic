@@ -28,7 +28,6 @@ struct Cross {
     t: f32,
     src: u32,
 }
-pub static DBG: [std::sync::atomic::AtomicU64; 4] = [std::sync::atomic::AtomicU64::new(0), std::sync::atomic::AtomicU64::new(0), std::sync::atomic::AtomicU64::new(0), std::sync::atomic::AtomicU64::new(0)];
 const NO_CROSS: Cross = Cross { t: 0.0, src: u32::MAX };
 
 #[derive(Clone, Copy, Debug)]
@@ -2373,11 +2372,8 @@ impl Simulation {
         }
         let x = Cross { t: self.cross_profile(veh, l, mv, ctrl).2, src: self.topo.qidx(l, veh.lane as usize) as u32 };
         if self.pick_lane_for(veh.kind, b, self.lane_hint(b, &veh.route[(veh.ridx as usize + 1).min(veh.route.len())..]), veh.route.get(veh.ridx as usize + 1).copied(), NODE_CROSS_S, x).is_none() {
-            if ctrl == Control::TrafficCircle && l == 4 { DBG[0].fetch_add(1, std::sync::atomic::Ordering::Relaxed); }
             return (false, true, 0);
         }
-        if ctrl == Control::TrafficCircle && l == 4 && DBG[3].fetch_add(1, std::sync::atomic::Ordering::Relaxed) % 400 == 7 { let node = self.topo.mvs[mv as usize].node as usize; for tr in &self.transit[node] { let p = self.topo.conflict_pos(mv, tr.mv, true); eprintln!("t {:.1} tr from link {} to {} conf {} pos {:.2} t_total {:.2} t_left {:.2} blocks {}", self.t, self.topo.mvs[tr.mv as usize].a, tr.to_link, self.topo.conflicts(mv, tr.mv, true), p, tr.t_total, tr.t_left, self.transit_blocks(mv, tr, true, 3.0)); } }
-        if ctrl == Control::TrafficCircle && l == 4 { if self.node_occupied(veh, mv, ctrl) { DBG[1].fetch_add(1, std::sync::atomic::Ordering::Relaxed); } else { DBG[2].fetch_add(1, std::sync::atomic::Ordering::Relaxed); } }
         if self.ped_on && self.ped_block(veh, l as u32, b, ctrl) {
             return (false, false, 0);
         }
@@ -2486,13 +2482,13 @@ impl Simulation {
         }
         let elapsed = if historical { tr.t_total - tr.t_left } else { (tr.t_total - tr.t_left).min(tr.t_total) };
         let clear_in = (pos + tail) * tr.t_total - elapsed;
-        if circle {
-            // Gap acceptance at a circle entry: a circulating vehicle blocks the entry from TC_CIRCLE s before it reaches it until its tail
-            // has passed (critical headway of the single-lane entry model of [Rodegerdts2007] in the Siegloch form, see TC_CIRCLE).
-            let window = TC_CIRCLE - 0.5 * TF_CIRCLE;
-            return clear_in > 0.0 && clear_in < window;
+        if circle && !historical {
+            // Gap acceptance at a circle entry: each circulating vehicle blocks the entry for t_c - t_f / 2 s, ending when its tail has
+            // passed the entry, as in the Siegloch form of the single-lane entry model [Rodegerdts2007] (see `TC_CIRCLE`). One that will
+            // pass later than that leaves room to enter ahead of it.
+            return clear_in > 0.0 && clear_in < TC_CIRCLE - 0.5 * TF_CIRCLE;
         }
-        let arrive = self.topo.conflict_pos(tr.mv, mv, false).max(0.0) * t_mine;
+        let arrive = if circle { 0.0 } else { self.topo.conflict_pos(tr.mv, mv, false).max(0.0) * t_mine };
         clear_in > arrive - NODE_SAFE_S
     }
 
