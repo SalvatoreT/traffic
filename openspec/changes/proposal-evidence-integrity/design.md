@@ -97,3 +97,47 @@ Implement provenance first, then paired result retention and reporting, then raw
 ## Validation and remaining limits
 
 Use the R1 and R2 examples as regressions and add R3 fixtures with identical means but different paired spreads, correlated period outputs, one seed, missing pairs, and unresolved differences. Verify same-run provenance across cards, pictures, and text exports. Run the published Rockridge packages through the updated final comparison and record changed classifications without discarding inconvenient cases. This review establishes software/reporting defects and a missing uncertainty method; it does not establish the size or direction of any real-world intervention effect.
+
+## Implementation record (2026-11-15)
+
+### Verification of the audit's claims
+
+Each claim was checked against the code before any change.
+
+- R1 is confirmed. The writer (`report.rs`, the `computed` block) recorded no simulator fingerprint. `staleInputs` and `proposalNotices` compared only network and demand. `annotate` accepted a file on those two hashes, re-simulated with whatever engine was built, replaced the pictures and kept the old figures and date. The audit's reader probe returns `stale: false` for matching hashes and different engines.
+- R2 is confirmed, with one refinement. `harm_calc` named the block with the largest gain past its band, and `through_harm` reported that block's raw increase. When no block passed its band the fallback was the raw maximum, so the mislabel appeared only when at least one block passed its band and a different block had the larger raw gain. The audit's fixture (gains 100 and 50, bands 80 and 10) now returns raw block A with 100 and penalty block B with 40, and is a regression test.
+- R3 is confirmed. `period_stat` reduced each period to means and baseline-only deviations; the paired arrays did not survive, `goal_noise_pct` and `base_cv_pct` used only baseline spread, and the final recheck shared the search's seed list. The audit's counterexample (baseline spread zero, equal mean effect, scenario spread different) classified both increases the same way under the old band and gets different summaries now.
+
+No claim was rejected.
+
+### The statistical method (task 2.2)
+
+What the cited guidance supports, checked in the source documents on 2026-11-15: [WebTAG-M3.1] C.3.14 asks for the variability across seeds and confidence intervals, and for a demonstration that enough runs were made to tell the interventions apart. C.9.1 gives 10 runs as a starting point, "not intended as an endorsement of a particular number", and forbids picking seeds. C.10.1 asks for the number of runs and the seeds to be documented. [TfL-TMG4] 7.5.1 asks for 20 seeds for validation, a continuous range with a fixed increment, all seeds listed, and the same seeds on the proposed runs, and notes that the number needed can be calculated from a required confidence level. Neither document gives an interval formula, a confidence level, a paired comparison of options or a stopping rule. Those parts are ours.
+
+- Interval: the two-sided 95% Student t interval on the per-seed differences, scenario minus baseline on the same period and seed [NIST-Handbook, 7.2.2.1 for the interval, 1.3.5.3 for forming the pair differences, 1.3.6.7.2 for the critical values; the table is compiled into `paired.rs`]. ASSUMPTION: the 95% level (the guidance names none), and that per-seed differences are close to normal, which was not tested for these outputs. Beyond 60 degrees of freedom the value at 60 is used, which is slightly wide.
+- Periods: equal-weight mean of the periods within each seed, then paired by seed. This is the headline's own aggregation, and the correlation between periods inside a seed is part of each difference.
+- Percent: the interval of the vph difference divided by the baseline mean. ASSUMPTION: the baseline mean is treated as fixed in the denominator; the pairing already puts the baseline's variation into the numerator.
+- Option differences: the two scenarios on the same seeds, scenario against scenario. The baseline cancels.
+- Seeds: a fixed schedule, 1 to 10, with at least 10 pairs needed before a status other than `insufficient` is given. ASSUMPTION: 10 as the minimum [WebTAG-M3.1, C.9.1]. There is no adaptive stopping rule. The published interval width is the evidence of precision, as C.3.14 asks. The audit's ten-seed starting point is kept.
+- The block with the largest raw increase is selected from many blocks, so its interval is not adjusted for that choice (winner's curse); `computed.estimation.maximum` says so. The count of blocks with a resolved increase is not adjusted for multiple comparisons either.
+- Practical floors (the block band and its floor, the 1% reduction floor) stay separate, labeled assumptions, and never appear as intervals.
+
+### Selection and confirmation (task 2.5)
+
+The finalist rechecks both choose the options and estimate them, so their intervals are exploratory and carry `role: selection`. `--confirm-seeds` freezes the chosen options and the references and reruns them, with a baseline, on seeds that must not overlap the discovery seeds. The published figures then come from those runs and carry `role: confirmation`; `computed.seeds` holds the seeds of the published estimates and `computed.estimation.selection` holds the discovery seeds, the confirmation seeds and the shortlist links. If a confirmation run flags a rejection reason it is not used to change the list: that would need a new confirmation range. The search never claims confirmation without the separate seeds.
+
+### Reconciling option retention with `search-keeps-known-packages` (task 2.6)
+
+Its design D6 and its specification used a noise band from the baseline's cut-through spread for three rules: dropping a package that is within noise of a simpler one, keeping a published package over a new one within noise, and dropping a published package for dominance only when the new one wins by more than the band. All three now use one predicate, `beats(a, b)`: the interval of the per-seed difference between the two packages on the same seeds lies on a's side and the mean gap is at least the 1% floor. Without at least 10 paired runs (or with runs that are not the same pairs) only the floor on the means applies, and the output says the evidence is insufficient. A package is also listed as reducing through cars only when its own paired interval is below zero (or the evidence is insufficient and it passes the floor). The stricter group's forced packages, the lightest-option rule, the Pareto-consistent listing and the beam are unchanged. The `proposals` requirement "Stable options" is modified in this change's delta.
+
+### Schema and legacy handling (tasks 3.1, 3.2)
+
+The proposals file is version 5. The reader still accepts versions 2 to 4. A version 4 group keeps its figures and is marked unverified (no simulator, method or settings) and without intervals. Its one worst block is read as the block the search flagged (`adjustedPenalty`, penalty null) and its summary sentence is rewritten to say so; the reader never builds a largest-increase block from it. Groups that lack the through-car measures stay out of date with no options, as before. Text pages, preview cards, exported pictures and the share-path lookup use `evidenceStatus`; a stale group is not drawn as current, an unverified group is drawn with its status in the text. The Rust annotator applies the same rule in `provenance.rs` and refuses a legacy group, so a version 4 file cannot be annotated; it needs a new search.
+
+### Cost
+
+The final comparison needs 10 seeds instead of 3, and the recheck runs every finalist, known package and reference over every period and seed, so a recheck costs about 3.3 times more. Screening and the beam are unchanged. See the task notes for measured times. Run profiles in separate invocations to keep each command under a time limit.
+
+### Remaining limits
+
+The intervals cover seed variability under fixed inputs. They say nothing about calibration error, demand error or real traffic. Task 4.3 (recomputing the published Rockridge packages) is left for after the engine changes land, and the search has not been run in full for this change.

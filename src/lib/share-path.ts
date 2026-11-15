@@ -1,6 +1,6 @@
 import type { Intervention, Network } from '../types';
 import { decodeMeta, decodeScenario } from './hash';
-import { linkHash, staleInputs, type LoadedHashes, type Proposal, type ProposalGroup, type Proposals } from './proposals';
+import { evidenceStatus, linkHash, type LoadedHashes, type Proposal, type ProposalGroup, type Proposals } from './proposals';
 import { canonicalItems } from './stored-results';
 
 /** A published proposal's shareable path. Preview crawlers never see a URL fragment, so the path is what tells a chat which proposal a link is about. */
@@ -84,7 +84,7 @@ export function findPublished(
   let list: Published[];
   try { list = publishedList(file); } catch { return null; }
   for (const x of list) {
-    if (staleInputs(x.group.computed, loaded).length > 0) continue;
+    if (evidenceStatus(x.group.computed, loaded).state === 'stale') continue;
     const meta = decodeMeta(linkHash(x.proposal.link));
     if ((meta.period ?? fallbackPeriod) !== period || (meta.demandScale ?? 1) !== 1) continue;
     try {

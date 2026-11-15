@@ -374,11 +374,13 @@ function Simulator({ bundle, start, onRestart }: { bundle: AreaBundle; start: St
 
   // --- proposals
   // Loaded at start, not only on the Proposals tab, so the map can tell when its scenario is a published proposal.
-  const proposals = useProposals(bundle, true, hashes);
+  // What the proposal figures are checked against: the loaded data and the engine in use. Until the engine reports its version the simulator is unchecked.
+  const evidenceInputs = useMemo<LoadedHashes | null>(() => (hashes ? { ...hashes, simulator: fingerprint } : null), [hashes, fingerprint]);
+  const proposals = useProposals(bundle, true, evidenceInputs);
   useEffect(() => { if (view !== 'proposals') setGoneNotice(false); }, [view]);
   const published = useMemo(
-    () => (proposals.status === 'ready' && hashes ? findPublished(network, proposals.file, hashes, interventions, period, scale, fallbackPeriod) : null),
-    [proposals, hashes, network, interventions, period, scale, fallbackPeriod],
+    () => (proposals.status === 'ready' && evidenceInputs ? findPublished(network, proposals.file, evidenceInputs, interventions, period, scale, fallbackPeriod) : null),
+    [proposals, evidenceInputs, network, interventions, period, scale, fallbackPeriod],
   );
   const copyLink = useCallback((url: string, ok: string) => {
     navigator.clipboard?.writeText(url).then(() => say(ok), () => say('Copy failed. The address bar already holds the link.'));
@@ -636,7 +638,7 @@ function Simulator({ bundle, start, onRestart }: { bundle: AreaBundle; start: St
               baseMetrics={base} scenMetrics={scen} onHover={setHoverPlace}
               phone={phone} onShowOnMap={(block) => { setHoverPlace(null); select({ kind: 'block', block, point: null, nearLink: null, via: 'list' }); go('map'); }} />
           )}
-          {view === 'proposals' && <Proposals bundle={bundle} index={index} today={todayRoutes.total} state={proposals} loaded={hashes ?? NO_HASHES} mode={mode} current={interventions} onOpen={onOpenProposal} notice={goneNotice ? GONE_NOTICE : null} onCopyLink={(p, g) => copyLink(`${location.origin}${pathOfSlug(slugOf(g, p.link))}`, 'Link to this proposal copied.')} />}
+          {view === 'proposals' && <Proposals bundle={bundle} index={index} today={todayRoutes.total} state={proposals} loaded={evidenceInputs ?? NO_HASHES} mode={mode} current={interventions} onOpen={onOpenProposal} notice={goneNotice ? GONE_NOTICE : null} onCopyLink={(p, g) => copyLink(`${location.origin}${pathOfSlug(slugOf(g, p.link))}`, 'Link to this proposal copied.')} />}
           {view === 'assumptions' && <Suspense fallback={<p className="boot" role="status">Loading assumptions…</p>}><Assumptions bundle={bundle} index={index} mode={mode} hashes={hashes} fingerprint={fingerprint} /></Suspense>}
           {view === 'sources' && <Suspense fallback={<p className="boot" role="status">Loading sources…</p>}><Sources demand={demand} synthetic={bundle.synthetic} calibration={bundle.synthetic ? undefined : { status: calStatus, note: bundle.entry.calibration?.note }} /></Suspense>}
         </div>

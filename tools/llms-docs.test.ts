@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildFixture } from '../src/fixtures/area';
 import { buildMockProposals } from '../src/fixtures/proposals';
+import { parseProposals } from '../src/lib/proposals';
 import { pathOfSlug, slugOf } from '../src/lib/share-path';
 import { decodeScenario } from '../src/lib/hash';
 import { buildIndex } from '../src/lib/naming';
@@ -10,11 +11,11 @@ const bundle = buildFixture();
 const entry = { ...bundle.entry, calibration: { status: 'uncalibrated' as const, note: 'Not calibrated: a test note.', defaultPeriod: 'am' } };
 const HASHES = { network: 'a'.repeat(64), demand: 'b'.repeat(64) };
 
-function input(over: Partial<LlmsInput> = {}, mock: 'fresh' | 'stale' = 'fresh'): LlmsInput {
+function input(over: Partial<LlmsInput> = {}, mock: 'fresh' | 'stale' | 'legacy' = 'fresh'): LlmsInput {
   return {
     site: 'https://site.test', repo: 'https://example.test/repo', generated: '2026-01-02T03:04:05Z',
     area: entry, network: bundle.network, demand: bundle.demand, hashes: HASHES, simulator: null, boundary: ['North Edge Ave', { ref: 'CA 1', class: 'motorway' }].map((b) => (typeof b === 'string' ? b : `${b.ref} freeway`)),
-    proposals: buildMockProposals(bundle.network, { networkHash: HASHES.network.slice(0, 16), demandHash: HASHES.demand.slice(0, 16), calibration: 'uncalibrated' }, mock),
+    proposals: parseProposals(JSON.stringify(buildMockProposals(bundle.network, { networkHash: HASHES.network.slice(0, 16), demandHash: HASHES.demand.slice(0, 16), calibration: 'uncalibrated' }, mock))),
     assumptions: null, baselines: {}, baselineIntents: null, resultsIndex: null, dataFiles: [],
     docs: { scenarioLinks: '# Scenario links\n\n## Form\n\ntext\n', dataFiles: '# Data files\n\n## Licenses\n\nODbL text.\n', runLocally: '# Run\n\nrun text\n', references: '# Bibliography\n\n## Part\n\n[Key2000] A paper.\n', readme: '# R\n\n## What is and is not calibrated\n\nStated limits.\n\n## Next\n', proposalsReadme: '# P\n\n## What it measures\n\nMeasures.\n\n## Reading the file\n\nReading.\n', license: 'MIT' },
     ...over,
@@ -91,6 +92,25 @@ describe('generated pages', () => {
     expect(stale).toContain('through cars an hour');
     const changed = buildPages(input({ hashes: { network: 'd'.repeat(64), demand: HASHES.demand } }))['proposals.md'];
     expect(changed).toContain('The street network has changed');
+  });
+  it('says what each figure is: runs, seeds, the interval, and the largest-increase block apart from the penalty block', () => {
+    const p = buildPages(input({ simulator: 'mocksimulator0001' }))['proposals.md'];
+    expect(p).not.toContain('**Not verified.**');
+    expect(p).toContain('mean of 10 runs (seeds 1 to 10)');
+    expect(p).toContain('95% interval');
+    expect(p).toContain('the block with the largest increase');
+    expect(p).toContain("the block behind the search's ranking penalty");
+    expect(p).toContain('Exploratory estimate');
+    expect(p).not.toMatch(/block that gains the most/);
+  });
+  it('is out of date when only the simulator differs, and unverified when the simulator cannot be read or was never recorded', () => {
+    expect(buildPages(input({ simulator: 'another-engine' }))['proposals.md']).toContain('The simulator code has changed');
+    expect(buildPages(input({ simulator: null }))['proposals.md']).toContain('could not be read here');
+    const legacy = buildPages(input({ simulator: 'mocksimulator0001' }, 'legacy'))['proposals.md'];
+    expect(legacy).toContain('**Not verified.**');
+    expect(legacy).toContain('computed before the simulator version, reporting method and run settings were recorded');
+    expect(legacy).toContain('flagged by the search');
+    expect(legacy).toContain('No uncertainty interval was recorded');
   });
   it('says so when there is nothing to show', () => {
     const none = buildPages(input({ proposals: null }));

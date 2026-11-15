@@ -142,6 +142,10 @@ const isCurrent = (p: Proposal) => {
   if (!v5 && !isV4Through(t as V4Harm)) return false;
   return Object.values(p.byPeriod ?? {}).every((v) => hasCount(v?.cutThrough) && (v5 ? isV5All(v?.allTraffic) : isV4All(v?.allTraffic as V4All)));
 };
+/** A version 4 summary calls the search's flagged block "the block that gains the most"; say what it was. */
+export const legacySummary = (t: string): string => t
+  .replace('The side-street block that gains the most through traffic is', "The side-street block the search flagged for through traffic with its noise band, which need not have the largest increase, is")
+  .replace('No side-street block gains through traffic beyond normal run-to-run variation.', "No side-street block passes the search's assumed noise band for through traffic.");
 const fromV4 = (p: Proposal): Proposal => {
   if (isV5Through(p.harm.through)) return p;
   const t = p.harm.through as unknown as V4Harm;
@@ -153,7 +157,7 @@ const fromV4 = (p: Proposal): Proposal => {
       blocksAboveBand: a.blocksAboveNoise as number,
     } };
   }
-  return { ...p, byPeriod, harm: { through: {
+  return { ...p, summary: legacySummary(p.summary), byPeriod, harm: { through: {
     adjustedPenalty: { block: typeof t.worstBlock === 'string' ? t.worstBlock : null, penaltyVehPerHour: null, increaseVehPerHour: t.increaseVehPerHour as number },
     blocksAboveBand: t.blocksAboveNoise as number,
   } } };
@@ -317,7 +321,7 @@ const carsWord = (n: number) => (n === 1 ? 'car' : 'cars');
 /** Fewest seed pairs for which the file makes a statement about an effect. Mirrors `MIN_PAIRS` in `explore/paired.rs`. */
 export const MIN_RUNS = 10;
 const runsWord = (n: number) => `${n} ${n === 1 ? 'run' : 'runs'}`;
-const sg = (x: number, dp = 0, unit = '') => `${x < 0 ? MINUS : '+'}${num(x, dp)}${unit}`;
+const sg = (x: number, dp = 0, unit = '') => (isZero(x, dp) ? `0${unit}` : `${x < 0 ? MINUS : '+'}${num(x, dp)}${unit}`);
 
 /**
  * One sentence on a paired effect: its 95% interval over seeds and what that resolves. `unit` is appended to each end ("%" or " through cars an hour").

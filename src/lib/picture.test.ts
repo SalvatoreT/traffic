@@ -21,7 +21,10 @@ function makePic(): { pic: ProposalPicture; loss: number; gain: number } {
   const scen = [...aLinks.map(() => 10), 29];
   return { pic: { period: 'pm_peak', links, base, scen }, loss: blockOf(a.id), gain: blockOf(b.id) };
 }
-const withPic = (pic: ProposalPicture, worst: string, inc: number, above = 1): Proposal => ({ ...mock, picture: pic, harm: { through: { worstBlock: worst, increaseVehPerHour: inc, blocksAboveNoise: above } } });
+const withPic = (pic: ProposalPicture, worst: string, inc: number, above = 1): Proposal => ({
+  ...mock, picture: pic,
+  harm: { through: { largestIncrease: { block: worst, baselineVehPerHour: 10, scenarioVehPerHour: 10 + inc, increaseVehPerHour: inc }, adjustedPenalty: { block: above > 0 ? worst : null, penaltyVehPerHour: 0 }, blocksAboveBand: above } },
+});
 
 describe('picture numbers', () => {
   it('sums both directions of a block and uses the map\'s scale and dead band', () => {
@@ -46,6 +49,17 @@ describe('picture numbers', () => {
 });
 
 describe('picture words', () => {
+  it('says whether the named block is the largest increase or the one the search flagged', () => {
+    const { pic, gain } = makePic();
+    const big = withPic(pic, index.blocks[gain].label, 20);
+    expect(pictureFacts(big, pic, index)).toMatchObject({ namedKind: 'largest' });
+    const flagged: Proposal = { ...big, harm: { through: { adjustedPenalty: { block: index.blocks[gain].label, penaltyVehPerHour: null, increaseVehPerHour: 20 }, blocksAboveBand: 1 } } };
+    const f = pictureFacts(flagged, pic, index);
+    expect(f.namedKind).toBe('flagged');
+    expect(f.named?.block).toBe(gain);
+    const none: Proposal = { ...big, harm: { through: { adjustedPenalty: { block: null, penaltyVehPerHour: null, increaseVehPerHour: 0 }, blocksAboveBand: 0 } } };
+    expect(pictureFacts(none, pic, index).named).toBeNull();
+  });
   it('says the period once, only when the figures average more than one', () => {
     expect(periodNote(['PM peak'], 'PM peak')).toBe('');
     expect(periodNote(['AM peak', 'PM peak', 'Midday'], 'PM peak')).toBe('The figures on this card average AM peak, PM peak and Midday. This picture shows the PM peak only.');

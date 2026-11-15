@@ -1746,6 +1746,7 @@ mod diverter;
 mod route_choice;
 mod cut_through;
 mod intent;
+mod junction;
 
 /// Removing any intervention restores the baseline effective state and signal output, including after a reset that carried the old list.
 #[test]

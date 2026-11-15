@@ -30,6 +30,12 @@ function build(searched: string[], changes = 2, withPeriod = true) {
 }
 
 describe('shareable picture', () => {
+  it('says whether the figures are a mean and over how many runs, and names the block honestly', () => {
+    const { input } = build(['pm_peak', 'am_peak']);
+    const withRuns = shareInputFor({ ...{ areaName: 'T', status: 's', p: mock, pic: { period: 'pm_peak', links: [], base: [], scen: [] }, facts: { named: null, namedKind: 'largest', drop: null, gain: null }, model: { marks: [], pins: [] } as never, searched: ['pm_peak', 'am_peak'], periodLabel: label, shortLabel: short, caption: '', openUrl: 'x' }, runs: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] });
+    expect(withRuns.averageFigure?.label).toBe('Average of PM peak and AM peak, all side streets, mean of 10 runs (seeds 1 to 10)');
+    expect(input.averageFigure?.label).toBe('Average of PM peak and AM peak, all side streets');
+  });
   it('carries the title, changes, period, legend, both figures, status, attribution and site', () => {
     const { img } = build(['pm_peak', 'am_peak', 'midday']);
     for (const t of ['Filter on Martin and Ayala', 'Modal filter at Street 0 &amp; Avenue 0', 'PM peak (16:00-18:00 weekday)', '610 → 130 an hour (−78.7%)'.replace('−78.7%', '−79%'),

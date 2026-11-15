@@ -78,7 +78,7 @@ export function mismatchNote(f: PictureFacts, pictureLabel: string): string {
     ? `gains ${signedNum(n.delta, 'cars an hour', 0)} in the ${pictureLabel}`
     : `does not gain through cars in the ${pictureLabel}`;
   if (f.gain && f.gain.block !== n.block && f.gain.delta > n.delta + DEAD_BAND_CUTTHROUGH / 2) {
-    return `${n.label}, the block the card names, gains the most when the periods are averaged. In the ${pictureLabel} it ${here}, and the biggest gain is on ${f.gain.label}, ${signedNum(f.gain.delta, 'cars an hour', 0)}.`;
+    return `${n.label}, the block the card names, ${f.namedKind === 'largest' ? 'has the largest increase' : 'is the block the search flagged'} when the periods are averaged. In the ${pictureLabel} it ${here}, and the biggest gain is on ${f.gain.label}, ${signedNum(f.gain.delta, 'cars an hour', 0)}.`;
   }
   return '';
 }

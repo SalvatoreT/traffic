@@ -2,9 +2,18 @@
 //!
 //! cargo run --release -p traffic-sim --bin validate [-- --out PATH] [--before before.json] [--json] [--no-write]
 
+#[path = "support/report_manifest.rs"]
+mod report_manifest;
+#[path = "support/sha256.rs"]
+mod sha256;
+
+use serde_json::{json, Value};
 use std::fmt::Write as _;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use traffic_sim::validate::{run_all, Case};
+
+/// The suite definition compiled into this binary: its hash tells an assessment which cases and ranges the results are for.
+const SUITE_SOURCE: &str = include_str!("../validate.rs");
 
 fn fmt(v: f64) -> String {
     if v.abs() >= 100.0 {
@@ -14,6 +23,29 @@ fn fmt(v: f64) -> String {
     } else {
         format!("{v:.2}")
     }
+}
+
+/// Results with the manifest that identifies the simulator and the suite, and the known deviations with their review state. A known deviation stays a failed check here: the regression test tolerates it, nothing else does.
+fn results_json(cases: &[Case]) -> Value {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let known: Value = std::fs::read_to_string(root.join("data/calibration/validation.deviations.json")).ok().and_then(|t| serde_json::from_str(&t).ok()).unwrap_or(Value::Null);
+    let dev = |id: &str| known["deviations"].as_array().and_then(|a| a.iter().find(|d| d["id"] == id)).cloned();
+    json!({
+        "manifest": {
+            "schema": report_manifest::SCHEMA,
+            "simulator": report_manifest::simulator(&root),
+            "suite": {"sha256": sha256::sha256_hex(SUITE_SOURCE.as_bytes()), "cases": cases.len()},
+            "deviations": report_manifest::input(&root, "data/calibration/validation.deviations.json"),
+        },
+        "cases": cases.iter().map(|c| {
+            let mut v = serde_json::to_value(c).unwrap();
+            v["pass"] = json!(c.pass());
+            v["knownDeviation"] = if c.pass() { Value::Null } else { dev(&c.id).unwrap_or(Value::Null) };
+            v
+        }).collect::<Vec<_>>(),
+        "failing": cases.iter().filter(|c| !c.pass()).map(|c| c.id.clone()).collect::<Vec<_>>(),
+        "notDocumented": cases.iter().filter(|c| !c.pass() && dev(&c.id).is_none()).map(|c| c.id.clone()).collect::<Vec<_>>(),
+    })
 }
 
 fn main() {
@@ -49,5 +81,8 @@ fn main() {
         }
         std::fs::write(&out, md).expect("write validation.md");
         println!("wrote {}", out.display());
+        let json_path = out.with_extension("json");
+        std::fs::write(&json_path, serde_json::to_string_pretty(&results_json(&cases)).unwrap()).expect("write validation.json");
+        println!("wrote {}", json_path.display());
     }
 }

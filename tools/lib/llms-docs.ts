@@ -15,8 +15,8 @@ import { isLocal } from '../../src/lib/intents';
 import { ROUTE_CAVEAT } from '../../src/lib/throughroutes';
 import { SPEED_LIMITS_MPH, SIGNAL_CYCLES_S } from '../../src/lib/selection';
 import {
-  allTrafficNote, allTrafficRows, beforeAfterPct, cutThroughHeadline, formatComputed, harmHeadline, hashMatches, linkHash, periodsPhrase,
-  proposalNotices, signedNum, signedPct, splitProposals, type Proposal, type ProposalGroup, type Proposals,
+  allTrafficNote, allTrafficRows, beforeAfterPct, comparisonText, cutThroughHeadline, evidenceNote, formatComputed, harmHeadline, hashMatches, INTERVAL_SCOPE, intervalText, linkHash, periodsPhrase,
+  provenanceLine, proposalNotices, seedsPhrase, signedNum, signedPct, splitProposals, type Proposal, type ProposalGroup, type Proposals,
 } from '../../src/lib/proposals';
 import {
   ASSUMPTIONS_INTRO, EXPLORATORY_NOTE, FIXED_DEMAND_CAVEAT, LEGACY_GROUP_NOTE, MOVEMENTS_INTRO, PROPOSALS_LEAD, SOURCES_CALIBRATED, SOURCES_UNCALIBRATED, STREETS_INTRO,
@@ -209,15 +209,17 @@ export function proposalsMd(i: LlmsInput): string {
 }
 
 function groupMd(i: LlmsInput, g: ProposalGroup, label: (id: string) => string): string[] {
-  const loaded = { network: i.hashes.network, demand: i.hashes.demand };
+  const loaded = { network: i.hashes.network, demand: i.hashes.demand, simulator: i.simulator };
   const notices = proposalNotices(g.computed, loaded);
   const parts = splitProposals(g);
   const out: string[] = [`## ${g.title}`, ''];
   if (g.note) out.push(g.note, '');
   out.push(formatComputed(g.computed, label), '');
-  out.push(`Run: searched ${plural(g.computed.seeds.length, 'seed')} (${g.computed.seeds.join(', ')}) for ${g.computed.minutes ?? 60} simulated minutes in ${periodsList(g.computed.periods, label)}, on network \`${g.computed.networkHash}\` and demand \`${g.computed.demandHash}\`; the area was \`${g.computed.calibration}\` at the time.`, '');
+  out.push(`Run: ${seedsPhrase(g.computed.seeds)} for ${g.computed.minutes ?? 60} simulated minutes each in ${periodsList(g.computed.periods, label)}, on network \`${g.computed.networkHash}\` and demand \`${g.computed.demandHash}\`; the area was \`${g.computed.calibration}\` at the time. ${provenanceLine(g.computed)}`, '');
+  if (g.computed.simulator) out.push(INTERVAL_SCOPE, '');
   out.push(`Calibration now: ${calibrationLine(i.area)}`, '');
   if (notices.exploratory) out.push(`**Exploratory.** ${EXPLORATORY_NOTE}`, '');
+  if (notices.unverified && !notices.stale) out.push(`**Not verified.** ${notices.unverifiedText}`, '');
   if (notices.stale) out.push(`**Out of date.** ${notices.staleText} These numbers were computed on network \`${g.computed.networkHash}\` and demand \`${g.computed.demandHash}\`; the files served now are network \`${short(i.hashes.network)}\` and demand \`${short(i.hashes.demand)}\`.`, '');
   if (g.legacy) { out.push(`**Out of date.** ${LEGACY_GROUP_NOTE}`, ''); return out; }
   if (parts.search.length === 0 && parts.reference.length === 0) { out.push('No options were found under these limits.', ''); return out; }
@@ -229,7 +231,7 @@ function groupMd(i: LlmsInput, g: ProposalGroup, label: (id: string) => string):
 }
 
 function cardMd(i: LlmsInput, g: ProposalGroup, p: Proposal, n: number | null, when: string, label: (id: string) => string): string[] {
-  const cut = cutThroughHeadline(p.cutThrough, when);
+  const cut = cutThroughHeadline(p.cutThrough, when, g.computed.seeds);
   const harm = harmHeadline(p.harm, when);
   const rows = allTrafficRows(p, label);
   const note = allTrafficNote(rows);
@@ -239,12 +241,15 @@ function cardMd(i: LlmsInput, g: ProposalGroup, p: Proposal, n: number | null, w
   out.push(p.summary, '');
   out.push('Changes:', '', ...p.interventions.map((iv) => `- ${iv.label} (${iv.type})`), '');
   out.push(`Share link: <${abs(i, pathOfSlug(slugOf(g.id, p.link)))}> (opens this proposal on the map; chat apps show a preview card for it)`, `Scenario link: <${abs(i, `/${linkHash(p.link)}`)}>`, '');
-  out.push(`- **${cut.figure}** ${cut.label}: ${cut.detail}. ${cut.definition}`);
+  out.push(`- **${cut.figure}** ${cut.label}: ${cut.detail}. ${cut.interval} ${cut.definition}`);
   out.push(harm.none ? `- ${harm.label}. ${harm.definition}` : `- **${harm.figure}** ${harm.label}. ${harm.definition}`, '');
-  out.push('Through cars an hour on all the side streets, by period (before → after, change):', '', table(['Period', 'Through cars an hour'], Object.entries(p.byPeriod).map(([id, v]) => [label(id), beforeAfterPct(v.cutThrough)])), '');
-  out.push('All cars (through cars and local trips together) on the one block that gains the most all traffic, by period:', '',
-    table(['Period', 'Block', 'All cars an hour, before → after', 'Of the change: through cars', 'Of the change: local trips', 'Blocks gaining beyond run-to-run variation'],
-      rows.map((r) => [r.period, r.block ?? 'None beyond run-to-run variation', r.block === null ? '—' : `${Math.round(r.before)} → ${Math.round(r.after)} (${signedNum(r.change, 'cars an hour', 0)})`, r.block === null ? '—' : signedNum(r.through, 'cars an hour', 0), r.block === null ? '—' : signedNum(r.local, 'cars an hour', 0), r.blocksAbove])), '');
+  out.push(evidenceNote(p, g), '');
+  const comparison = g.optionComparisons?.find((c) => c.option === p.id);
+  if (comparison) out.push(comparisonText(comparison, (id) => g.proposals.find((x) => x.id === id)?.title ?? id), '');
+  out.push('Through cars an hour on all the side streets, by period (before → after, change, and the interval over runs):', '', table(['Period', 'Through cars an hour', 'Interval over runs, cars an hour'], Object.entries(p.byPeriod).map(([id, v]) => [label(id), beforeAfterPct(v.cutThrough), intervalText(v.cutThrough.effect, '')])), '');
+  out.push('All cars (through cars and local trips together) on the one block with the largest increase in all traffic, by period, and beside it the block behind the search\'s ranking penalty (the largest increase past an assumed noise band, a screening rule and not an uncertainty interval; the two can differ):', '',
+    table(['Period', 'Block', 'All cars an hour, before → after', 'Of the change: through cars', 'Of the change: local trips', 'Interval over runs', 'Ranking penalty block and cars an hour past its band', 'Blocks past the noise band'],
+      rows.map((r) => [r.period, r.block === null ? 'None flagged by the noise band' : `${r.block}${r.flagged ? ' (flagged by the search, not necessarily the largest increase)' : ''}`, r.block === null ? '—' : `${Math.round(r.before)} → ${Math.round(r.after)} (${signedNum(r.change, 'cars an hour', 0)})`, r.block === null ? '—' : signedNum(r.through, 'cars an hour', 0), r.block === null ? '—' : signedNum(r.local, 'cars an hour', 0), r.interval, r.penaltyBlock === null || r.penalty === 0 ? 'None past its band' : `${r.penaltyBlock}${r.penalty === null ? '' : `: ${signedNum(r.penalty, 'cars an hour', 0)}`}`, r.blocksAbove])), '');
   if (note) out.push(note, '');
   out.push('For information, not part of the search goal. All cars on each bounding street inside the area, change from today, average of the periods:', '',
     table(['Street', 'All cars, change', 'Mean speed, change'], p.context.boundingStreets.map((b) => [b.name, signedPct(b.flowChangePct), signedNum(b.speedChangeMph, 'mph')])), '');

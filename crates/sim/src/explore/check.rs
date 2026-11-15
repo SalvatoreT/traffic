@@ -72,9 +72,17 @@ pub fn check_links(study: &Study, p: &Params, links: &[String], subsets: bool, s
     for (set, f) in sets.iter().zip(&finals) {
         println!("\nrecheck of {} intervention(s): {}", set.len(), match &f.reject { Some(w) => format!("REJECTED, {w}"), None => "no rejection".into() });
         println!("  through cars an hour, mean of periods: {:.1} -> {:.1} ({:+.1}%); score {:+.1}; ranking penalty {:.0} on {}", f.base_vph, f.scen_vph, -f.reduction_pct, f.score, f.harm, study.idx.blocks[study.harm_blocks[f.worst]].label);
-        println!("  block gaining the most through cars: {} (+{:.0}), {} block(s) past noise", study.idx.blocks[study.harm_blocks[f.through.worst]].label, f.through.increase, f.through.blocks_above);
+        println!(
+            "  block with the largest through-car increase: {} ({:+.0}; {}), {} block(s) with a resolved increase, {} past the noise band",
+            study.idx.blocks[study.harm_blocks[f.through.worst]].label,
+            f.through.increase,
+            super::report::interval_phrase(&f.through.effect),
+            f.through.blocks_resolved,
+            f.through.blocks_above
+        );
+        println!("  through-car change interval: {}", super::report::interval_phrase(&f.effect));
         for (name, r) in p.periods.iter().zip(&f.by_period) {
-            println!("  {name}: through {:.0} -> {:.0} ({:+.1}%); worst all-traffic block {} {:.0} -> {:.0}", r.base_through, r.scen_through, r.cut_pct, study.idx.blocks[study.harm_blocks[r.worst]].label, r.block_base, r.block_scen);
+            println!("  {name}: through {:.0} -> {:.0} ({:+.1}%); all-traffic block with the largest increase {} {:.0} -> {:.0}", r.base_through, r.scen_through, r.cut_pct, study.idx.blocks[study.harm_blocks[r.worst]].label, r.block_base, r.block_scen);
         }
         if subsets && set.len() > 1 {
             let mut all: Vec<Vec<u16>> = Vec::new();

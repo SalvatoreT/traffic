@@ -11,6 +11,7 @@ import { fontMeasure, svgToJpeg } from './raster';
 
 const bundle = buildFixture();
 const hashes = { network: 'a'.repeat(64), demand: 'b'.repeat(64) };
+const SIM = 'mocksimulator0001';
 const measure = fontMeasure();
 
 function withPictures(file: Proposals): Proposals {
@@ -23,7 +24,7 @@ function withPictures(file: Proposals): Proposals {
 }
 const file = withPictures(buildMockProposals(bundle.network, { networkHash: hashes.network, demandHash: hashes.demand, calibration: 'uncalibrated' }));
 const input = (over: Partial<PreviewInput> = {}): PreviewInput => ({
-  siteHost: 'site.example', area: { ...bundle.entry, calibration: { status: 'uncalibrated', note: '' } }, network: bundle.network, demand: bundle.demand, hashes, proposals: file, baseline: null, ...over,
+  siteHost: 'site.example', area: { ...bundle.entry, calibration: { status: 'uncalibrated', note: '' } }, network: bundle.network, demand: bundle.demand, hashes, simulator: SIM, proposals: file, baseline: null, ...over,
 });
 
 describe('words', () => {
@@ -116,6 +117,27 @@ describe('planned previews', () => {
       expect(r.skipped[0]).toMatch(/computed on another (network|demand)/);
       expect(r.plans.find((p) => p.path === '/proposals')!.meta.description).toContain('None are published right now');
     }
+  });
+  it('writes nothing as current when only the simulator or the reporting method changed (the audit\'s R1)', () => {
+    const r = planPreviews(input({ simulator: 'another-engine' }));
+    expect(r.plans.filter((p) => p.path.startsWith('/p/'))).toEqual([]);
+    expect(r.skipped[0]).toMatch(/computed on another simulator/);
+    const old: Proposals = JSON.parse(JSON.stringify(file));
+    for (const g of old.groups) g.computed.reportMethod = 'paired-t-0';
+    expect(planPreviews(input({ proposals: old })).skipped[0]).toMatch(/computed on another method/);
+  });
+  it('still draws a group with no recorded provenance, and says in its description that it is not verified', () => {
+    const legacy = withPictures(buildMockProposals(bundle.network, { networkHash: hashes.network, demandHash: hashes.demand, calibration: 'uncalibrated' }, 'legacy'));
+    const r = planPreviews(input({ proposals: legacy }));
+    const cards = r.plans.filter((p) => p.path.startsWith('/p/'));
+    expect(cards.length).toBe(publishedList(legacy).length);
+    expect(cards[0].meta.description).toContain('not verified');
+    expect(cards[0].meta.description).toContain('mean of 4 runs');
+    expect(cards[0].meta.description.length).toBeLessThanOrEqual(300);
+  });
+  it('names the number of runs in a card\'s figure', () => {
+    const r = planPreviews(input());
+    expect(r.plans.find((p) => p.path.startsWith('/p/'))!.meta.description).toContain('mean of 10 runs');
   });
   it('skips only the stale group, and a proposal with no picture', () => {
     const mixed: Proposals = JSON.parse(JSON.stringify(file));

@@ -10,9 +10,9 @@ import type { NetIndex } from '../lib/naming';
 import { checkThroughRoutes, ROUTE_CAVEAT } from '../lib/throughroutes';
 import { buildMockProposals } from '../fixtures/proposals';
 import {
-  allTrafficNote, allTrafficRows, beforeAfterPct, cutThroughHeadline, fetchProposals, formatComputed, harmHeadline, periodsPhrase, linkHash, needsConfirm, openReducer,
-  proposalNotices, proposalsUrl, signedNum, signedPct, splitProposals,
-  type LoadedHashes, type Proposal, type ProposalGroup, type ProposalsState,
+  allTrafficNote, allTrafficRows, beforeAfterPct, comparisonText, cutThroughHeadline, evidenceNote, fetchProposals, formatComputed, harmHeadline, INTERVAL_SCOPE, intervalText, periodsPhrase,
+  linkHash, needsConfirm, openReducer, parseProposals, provenanceLine, proposalNotices, proposalsUrl, signedNum, signedPct, splitProposals,
+  type EvidenceStatus, type LoadedHashes, type OptionComparison, type Proposal, type ProposalGroup, type ProposalsState,
 } from '../lib/proposals';
 
 const mockParam = new URLSearchParams(location.search).get('mockProposals');
@@ -23,15 +23,18 @@ export function useProposals(bundle: AreaBundle, active: boolean, hashes: Loaded
   const started = useRef(false);
   useEffect(() => {
     if (!active || started.current || !hashes) return;
+    if (mockParam && hashes.simulator === undefined) return;
     started.current = true;
     setState({ status: 'loading' });
     (async () => {
       if (mockParam) {
         const file = buildMockProposals(bundle.network, {
           networkHash: hashes.network ?? 'unknown', demandHash: hashes.demand ?? 'unknown',
-          calibration: bundle.entry.calibration?.status ?? 'uncalibrated',
-        }, mockParam === 'stale' ? 'stale' : 'fresh');
-        setState({ status: 'ready', file });
+          calibration: bundle.entry.calibration?.status ?? 'uncalibrated', simulator: hashes.simulator ?? undefined,
+        }, mockParam === 'stale' ? 'stale' : mockParam === 'legacy' ? 'legacy' : 'fresh');
+        // Through the reader, so a mock in an older shape is read the way a published file of that version is.
+        const read = parseProposals(JSON.stringify(file));
+        setState(read ? { status: 'ready', file: read } : { status: 'none' });
         return;
       }
       const file = bundle.synthetic ? null : await fetchProposals(proposalsUrl(bundle.entry));
@@ -80,8 +83,8 @@ export function Proposals({ bundle, index, today, state, loaded, mode, current, 
     }
     return m;
   }, [decoded, bundle.network, index]);
-  const card = (g: ProposalGroup, p: Proposal, n: number | null) => (
-    <Card key={p.id} p={p} shareUrl={`${location.origin}${pathOfSlug(slugOf(g.id, p.link))}`} onCopyLink={() => onCopyLink(p, g.id)} when={periodsPhrase(g.computed.periods, periodLabel)} hid={gid(g, p)} n={n} routes={routeCounts.get(gid(g, p)) ?? null} ivs={decoded.get(gid(g, p)) ?? null} searched={g.computed.periods} bundle={bundle} index={index} mode={mode} today={today} periodLabel={periodLabel} confirming={open.step === 'confirm' && open.id === gid(g, p)}
+  const card = (g: ProposalGroup, p: Proposal, n: number | null, evidence: EvidenceStatus) => (
+    <Card key={p.id} p={p} group={g} evidence={evidence} comparison={g.optionComparisons?.find((c) => c.option === p.id)} comparisonLabel={(id) => g.proposals.find((x) => x.id === id)?.title ?? id} shareUrl={`${location.origin}${pathOfSlug(slugOf(g.id, p.link))}`} onCopyLink={() => onCopyLink(p, g.id)} when={periodsPhrase(g.computed.periods, periodLabel)} hid={gid(g, p)} n={n} routes={routeCounts.get(gid(g, p)) ?? null} ivs={decoded.get(gid(g, p)) ?? null} searched={g.computed.periods} bundle={bundle} index={index} mode={mode} today={today} periodLabel={periodLabel} confirming={open.step === 'confirm' && open.id === gid(g, p)}
       onRequest={() => request(g, p)} onCancel={() => dispatch({ type: 'cancel' })} onConfirm={() => { dispatch({ type: 'done' }); onOpen(p); }} />
   );
 
@@ -92,10 +95,11 @@ export function Proposals({ bundle, index, today, state, loaded, mode, current, 
       <p className="lead">
         These are packages of changes found by searching the simulation for the most through traffic removed from the area's
         side streets with the least traffic added to any one of them. The cards compare through cars with through cars:
-        the first figure is all the side streets together, the second is the one block that gains the most. The search
-        itself penalizes the largest rise in all traffic (through cars and local trips together) on any one block,
-        because residents experience all the cars on their street. Those all-traffic changes are in More detail on each card,
-        counted only when they exceed normal variation between runs.
+        the first figure is all the side streets together, the second is the one block with the largest increase. Every figure
+        is a mean over the runs named on its card, with a 95% interval over those runs when the file records one. The search itself penalizes the
+        largest rise in all traffic (through cars and local trips together) on any one block past an assumed noise band,
+        because residents experience all the cars on their street. That block can differ from the one with the largest increase;
+        both are in More detail on each card.
       </p>
       {state.status === 'ready' && <p className="muted small">Through routes: {ROUTE_CAVEAT}</p>}
       {state.status === 'idle' || state.status === 'loading' ? <p role="status" className="muted">Loading proposals…</p> : null}
@@ -122,16 +126,18 @@ export function Proposals({ bundle, index, today, state, loaded, mode, current, 
                 </p>
               )}
               {notices.stale && <p className="notice err" role="note"><strong>Out of date.</strong> {notices.staleText}</p>}
+              {!notices.stale && notices.unverified && <p className="notice" role="note"><strong>Not verified.</strong> {notices.unverifiedText}</p>}
+              {g.computed.simulator && <p className="muted small">{provenanceLine(g.computed)} {INTERVAL_SCOPE}</p>}
             </div>
             {parts.search.length > 0 && (
               <ol className="prop-list" aria-label={`${g.title}: options, from fewest changes to greatest reduction`}>
-                {parts.search.map((p, i) => card(g, p, i + 1))}
+                {parts.search.map((p, i) => card(g, p, i + 1, notices.evidence))}
               </ol>
             )}
             {parts.reference.length > 0 && (
               <section aria-labelledby={`${hid}-for-comparison`} className="prop-ref">
                 <AnchorHeading as="h4" id={`${hid}-for-comparison`} label={`${g.title}: for comparison`} className="sec-h">For comparison</AnchorHeading>
-                <ol className="prop-list">{parts.reference.map((p) => card(g, p, null))}</ol>
+                <ol className="prop-list">{parts.reference.map((p) => card(g, p, null, notices.evidence))}</ol>
               </section>
             )}
             {g.legacy && <p className="notice err" role="note"><strong>Out of date.</strong> These options were computed before the figures were made like-for-like (through cars beside through cars), so they are not shown. They need to be computed again.</p>}
@@ -145,11 +151,11 @@ export function Proposals({ bundle, index, today, state, loaded, mode, current, 
   );
 }
 
-function Card({ p, shareUrl, onCopyLink, when, hid, n, routes, ivs, searched, bundle, index, mode, today, periodLabel, confirming, onRequest, onCancel, onConfirm }: {
-  p: Proposal; shareUrl: string; onCopyLink(): void; when: string; hid: string; n: number | null; routes: number | null; ivs: Intervention[] | null; searched: string[]; bundle: AreaBundle; index: NetIndex; mode: Mode; today: number; periodLabel(id: string): string; confirming: boolean;
+function Card({ p, group, evidence, comparison, comparisonLabel, shareUrl, onCopyLink, when, hid, n, routes, ivs, searched, bundle, index, mode, today, periodLabel, confirming, onRequest, onCancel, onConfirm }: {
+  p: Proposal; group: ProposalGroup; evidence: EvidenceStatus; comparison: OptionComparison | undefined; comparisonLabel(id: string): string; shareUrl: string; onCopyLink(): void; when: string; hid: string; n: number | null; routes: number | null; ivs: Intervention[] | null; searched: string[]; bundle: AreaBundle; index: NetIndex; mode: Mode; today: number; periodLabel(id: string): string; confirming: boolean;
   onRequest(): void; onCancel(): void; onConfirm(): void;
 }) {
-  const cut = cutThroughHeadline(p.cutThrough, when);
+  const cut = cutThroughHeadline(p.cutThrough, when, group.computed.seeds);
   const harm = harmHeadline(p.harm, when);
   const allRows = allTrafficRows(p, periodLabel);
   const allNote = allTrafficNote(allRows);
@@ -189,7 +195,7 @@ function Card({ p, shareUrl, onCopyLink, when, hid, n, routes, ivs, searched, bu
       <div className={hasPic ? 'prop-body has-pic' : 'prop-body'}>
         {hasPic && (
           <div className="prop-side">
-            <ProposalPicture net={bundle.network} index={index} p={p} ivs={ivs ?? []} areaName={bundle.entry.name} areaId={bundle.entry.id} status={calStatusText} openUrl={shareUrl} periodLabel={periodLabel} searchedPeriods={searched} />
+            <ProposalPicture net={bundle.network} index={index} p={p} ivs={ivs ?? []} areaName={bundle.entry.name} areaId={bundle.entry.id} status={calStatusText} openUrl={shareUrl} periodLabel={periodLabel} searchedPeriods={searched} runs={group.computed.seeds} evidence={evidence} />
             {action}
           </div>
         )}
@@ -199,6 +205,7 @@ function Card({ p, shareUrl, onCopyLink, when, hid, n, routes, ivs, searched, bu
             <div className="fig">
               <p className="fig-main"><span className="fig-num">{cut.figure}</span> {cut.label}</p>
               <p className="fig-sub">{cut.detail}</p>
+              <p className="fig-sub">{cut.interval}</p>
               <p className="fig-sub">{cut.definition}</p>
             </div>
             <div className="fig">
@@ -213,30 +220,34 @@ function Card({ p, shareUrl, onCopyLink, when, hid, n, routes, ivs, searched, bu
       </div>
       <details className="prop-more">
         <summary>More detail</summary>
+        <h5>Where these figures come from</h5>
+        <p className="small">{evidenceNote(p, group)} {group.computed.simulator ? INTERVAL_SCOPE : ''}</p>
+        {comparison && <p className="small">{comparisonText(comparison, comparisonLabel)}</p>}
         <h5>Through cars an hour, by period</h5>
         <p className="muted small">Through cars on all the area's side streets together: before → after today's streets, with the change in parentheses.</p>
         <div className="table-scroll" role="region" aria-label="Through cars by period, scrollable" tabIndex={0}>
           <table>
             <caption className="sr-only">Through cars an hour on the area's side streets, by period</caption>
-            <thead><tr><th scope="col">Period</th><th scope="col">Through cars an hour, before → after (change)</th></tr></thead>
+            <thead><tr><th scope="col">Period</th><th scope="col">Through cars an hour, before → after (change)</th><th scope="col">Interval over runs, cars an hour</th></tr></thead>
             <tbody>
               {periods.map(([id, v]) => (
-                <tr key={id}><th scope="row">{periodLabel(id)}</th><td>{beforeAfterPct(v.cutThrough)}</td></tr>
+                <tr key={id}><th scope="row">{periodLabel(id)}</th><td>{beforeAfterPct(v.cutThrough)}</td><td>{intervalText(v.cutThrough.effect, '')}</td></tr>
               ))}
             </tbody>
           </table>
         </div>
         <h5>All traffic on side-street blocks (through and local trips together)</h5>
         <p className="muted small">
-          Every car on one block, both directions, including the local trips of people who start or end a trip in the area. For each period, the block that gains the most is named. This is the kind of change the search penalizes.
+          Every car on one block, both directions, including the local trips of people who start or end a trip in the area. For each period, the block with the largest increase in all cars is named, and the block behind the search's ranking penalty is listed beside it because the two can differ: the penalty is the largest increase past an assumed noise band, which is a screening rule, not an uncertainty interval.
         </p>
         <div className="table-scroll" role="region" aria-label="All traffic on side-street blocks by period, scrollable" tabIndex={0}>
           <table className="wide">
-            <caption className="sr-only">All cars an hour on the side-street block that gains the most, by period, split into through cars and local trips</caption>
+            <caption className="sr-only">All cars an hour on the side-street block with the largest increase, by period, split into through cars and local trips, and the block behind the search's ranking penalty</caption>
             <thead>
               <tr>
-                <th scope="col">Period</th><th scope="col">Block that gains the most all traffic</th><th scope="col">All cars an hour, before → after</th>
-                <th scope="col">Of the change: through cars</th><th scope="col">Of the change: local trips</th><th scope="col">Blocks gaining all traffic beyond run-to-run variation</th>
+                <th scope="col">Period</th><th scope="col">Block with the largest increase in all traffic</th><th scope="col">All cars an hour, before → after</th>
+                <th scope="col">Of the change: through cars</th><th scope="col">Of the change: local trips</th><th scope="col">Interval over runs</th>
+                <th scope="col">Search's ranking penalty: block and cars an hour past its noise band</th><th scope="col">Blocks past the noise band</th>
               </tr>
             </thead>
             <tbody>
@@ -244,8 +255,10 @@ function Card({ p, shareUrl, onCopyLink, when, hid, n, routes, ivs, searched, bu
                 <tr key={r.period}>
                   <th scope="row">{r.period}</th>
                   {r.block === null
-                    ? <><td>None beyond run-to-run variation</td><td>—</td><td>—</td><td>—</td></>
-                    : <><td>{r.block}</td><td>{Math.round(r.before)} → {Math.round(r.after)} ({signedNum(r.change, 'cars an hour', 0)})</td><td>{signedNum(r.through, 'cars an hour', 0)}</td><td>{signedNum(r.local, 'cars an hour', 0)}</td></>}
+                    ? <><td>None flagged by the noise band</td><td>—</td><td>—</td><td>—</td></>
+                    : <><td>{r.block}{r.flagged ? ' (flagged by the search; not necessarily the largest increase)' : ''}</td><td>{Math.round(r.before)} → {Math.round(r.after)} ({signedNum(r.change, 'cars an hour', 0)})</td><td>{signedNum(r.through, 'cars an hour', 0)}</td><td>{signedNum(r.local, 'cars an hour', 0)}</td></>}
+                  <td>{r.interval}</td>
+                  <td>{r.penaltyBlock === null || r.penalty === 0 ? 'None past its band' : `${r.penaltyBlock}${r.penalty === null ? '' : `: ${signedNum(r.penalty, 'cars an hour', 0)}`}`}</td>
                   <td>{r.blocksAbove}</td>
                 </tr>
               ))}

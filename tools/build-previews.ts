@@ -16,6 +16,7 @@ import { writeFileAtomic } from './lib/atomic';
 import { buildCard, CARD_H, CARD_W, MIN_TEXT_PX } from './lib/og-card';
 import { planPreviews, type BaselineInput, type Plan } from './lib/previews';
 import { fontMeasure, svgToJpeg } from './lib/raster';
+import { loadEngine } from './lib/run-result';
 
 const arg = (k: string) => { const i = process.argv.indexOf(k); return i >= 0 ? process.argv[i + 1] : undefined; };
 const area = arg('--area') ?? 'rockridge';
@@ -40,8 +41,10 @@ try {
     baseline = { period, linkStats: base64ToF32(result.baseline.linkStats), throughVph: result.baseline.metrics.cutThrough.vehiclesPerHour };
   } else skipped.push(`today's map: no stored ${period} baseline computed on the current network and demand, so the cards show streets without through-car shading`);
 
+  let simulator: string | null = null;
+  try { simulator = (await loadEngine()).fingerprint; } catch { skipped.push('simulator: the WASM build is not present, so proposal groups are not checked against the current simulator (run `npm run wasm` first)'); }
   const { plans, fallback, skipped: planSkipped } = planPreviews({
-    siteHost: new URL(site).host, area: files.entry, network: files.network, demand: files.demand, hashes: files.hashes,
+    siteHost: new URL(site).host, area: files.entry, network: files.network, demand: files.demand, hashes: files.hashes, simulator,
     proposals: proposalsText ? parseProposals(proposalsText) : null, baseline,
   });
   skipped.push(...planSkipped);

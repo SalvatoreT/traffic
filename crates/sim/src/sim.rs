@@ -1473,6 +1473,10 @@ impl Simulation {
                     if !self.topo.conflicts(a.mv, b.mv, circle) && !self.topo.conflicts(b.mv, a.mv, circle) {
                         continue;
                     }
+                    // Merging streams that take different lanes of a multilane exit never meet.
+                    if a.to_link == b.to_link && self.topo.qidx(a.to_link as usize, a.lane as usize) != self.topo.qidx(b.to_link as usize, b.lane as usize) {
+                        continue;
+                    }
                     let (pa, pb) = (self.topo.conflict_pos(b.mv, a.mv, circle), self.topo.conflict_pos(a.mv, b.mv, circle));
                     let (ea, eb) = (self.transit_extent(a), self.transit_extent(b));
                     let covers = |p: f32, e: (f32, f32)| p >= e.0 && p <= e.1;
@@ -2937,12 +2941,38 @@ impl Simulation {
         self.log_recovery(n, from, tr.to_link, -tr.t_left, 3);
     }
 
+    /// Would the vehicle of transit record `i` at node `n`, advanced to `t_left`, reach a conflict point that another vehicle in the node
+    /// still covers (one held at its exit by a full lane after this one started)? Then it stands short of the point.
+    fn stands_in_node(&self, n: usize, i: usize, t_left: f32) -> bool {
+        let trs = &self.transit[n];
+        let me = &trs[i];
+        let circle = self.eff.ctrl[n] == Control::TrafficCircle && !self.eff.ring_node[n];
+        let (p_old, p_new) = (1.0 - me.t_left / me.t_total, 1.0 - t_left / me.t_total);
+        trs.iter().enumerate().any(|(j, o)| {
+            if j == i || !(self.topo.conflicts(me.mv, o.mv, circle) || self.topo.conflicts(o.mv, me.mv, circle)) {
+                return false;
+            }
+            if me.to_link == o.to_link && self.topo.qidx(me.to_link as usize, me.lane as usize) != self.topo.qidx(o.to_link as usize, o.lane as usize) {
+                return false;
+            }
+            let (p_me, p_o) = (self.topo.conflict_pos(o.mv, me.mv, circle), self.topo.conflict_pos(me.mv, o.mv, circle));
+            let e = self.transit_extent(o);
+            p_me >= 0.0 && p_o >= 0.0 && p_old < p_me && p_new >= p_me && p_o >= e.0 && p_o <= e.1
+        })
+    }
+
     fn update_transit(&mut self) {
         let dt = DT as f32;
         for n in 0..self.topo.n_nodes {
             let mut i = 0;
             while i < self.transit[n].len() {
                 let mut tr = self.transit[n][i];
+                if tr.t_left > 0.0 && self.cfg.junction_recovery != JunctionRecovery::Historical && self.stands_in_node(n, i, tr.t_left - dt) {
+                    tr.v_exit = (tr.v_exit - self.vehs[tr.veh as usize].drv.b * dt).max(0.5);
+                    self.transit[n][i] = tr;
+                    i += 1;
+                    continue;
+                }
                 tr.t_left -= dt;
                 let vid = tr.veh;
                 if tr.t_left > 0.0 {
@@ -2963,6 +2993,12 @@ impl Simulation {
                     None => (1e9, 0.0),
                 };
                 if gap < need {
+                    // A vehicle that reaches the end of its path without room brakes at its comfortable deceleration `b` [Treiber2000]
+                    // down to the 0.5 m/s floor of `cross_profile`, so the room it needs shrinks (ASSUMPTION: braking starts at the end of the
+                    // path). Under `Historical` it kept its planned exit speed and the braking room it needs, which a standing queue never frees.
+                    if self.cfg.junction_recovery != JunctionRecovery::Historical {
+                        tr.v_exit = (tr.v_exit - self.vehs[vid as usize].drv.b * dt).max(0.5);
+                    }
                     if self.held_too_long(&tr) {
                         self.transit[n].remove(i);
                         self.remove_held(n, &tr);
@@ -3484,6 +3520,76 @@ impl Simulation {
 
 #[cfg(test)]
 impl Simulation {
+    /// Moves head vehicle `id` from its lane into its node crossing toward its next link (lane 0), with the given crossing time and time left.
+    pub(crate) fn test_force_transit(&mut self, id: u32, t_total: f32, t_left: f32) -> u32 {
+        let (l, lane, b, v) = {
+            let x = &self.vehs[id as usize];
+            (x.link, x.lane, x.next().unwrap(), x.v)
+        };
+        let mv = self.topo.find_mv(l, b).unwrap();
+        let qi = self.topo.qidx(l as usize, lane as usize);
+        self.lanes[qi].retain(|&x| x != id);
+        let x = &mut self.vehs[id as usize];
+        x.ridx += 1;
+        x.in_transit = true;
+        x.tr_mv = mv;
+        self.transit[self.topo.link_to[l as usize] as usize].push(Transit { veh: id, mv, to_link: b, lane: 0, t_left, t_total, v_exit: v.max(0.5) });
+        mv
+    }
+
+    pub(crate) fn test_set_transit_left(&mut self, id: u32, t_left: f32) {
+        for trs in self.transit.iter_mut() {
+            for tr in trs.iter_mut().filter(|t| t.veh == id) {
+                tr.t_left = t_left;
+            }
+        }
+    }
+
+    pub(crate) fn test_in_transit(&self, id: u32) -> bool {
+        self.vehs[id as usize].alive && self.vehs[id as usize].in_transit
+    }
+
+    /// Sets the head's waiting and stopped time.
+    pub(crate) fn test_hold_head(&mut self, id: u32, wait: f32) {
+        let x = &mut self.vehs[id as usize];
+        x.wait_t = wait;
+        x.stop_t = wait;
+    }
+
+    /// `permission` for vehicle `id` where it stands: (may enter, blocked by downstream space, recovery bits).
+    pub(crate) fn test_permission(&self, id: u32) -> (bool, bool, u8) {
+        let x = &self.vehs[id as usize];
+        let l = x.link as usize;
+        self.permission(id, l, self.topo.stop_pos[l] - x.pos, x.v, self.eff.ctrl[self.topo.link_to[l] as usize])
+    }
+
+    /// `begin_crossing` for head vehicle `id`, with its permission evaluated first as `eval_head` would.
+    pub(crate) fn test_begin_crossing(&mut self, id: u32) -> bool {
+        let (go, _, rec) = self.test_permission(id);
+        self.vehs[id as usize].go_rec = if go { rec } else { 0 };
+        let x = &self.vehs[id as usize];
+        let l = x.link as usize;
+        let qi = self.topo.qidx(l, x.lane as usize);
+        self.begin_crossing(id, l, qi)
+    }
+
+    pub(crate) fn test_set_recovery(&mut self, p: JunctionRecovery) {
+        self.cfg.junction_recovery = p;
+    }
+
+    /// Pushes a raw transit record (for invariant tests).
+    pub(crate) fn test_push_transit(&mut self, node: usize, id: u32, mv: u32, to_link: u32) {
+        self.transit[node].push(Transit { veh: id, mv, to_link, lane: 0, t_left: 1.0, t_total: 2.0, v_exit: 1.0 });
+    }
+
+    pub(crate) fn test_set_in_transit_flag(&mut self, id: u32, on: bool) {
+        self.vehs[id as usize].in_transit = on;
+    }
+
+    pub(crate) fn test_lane_room(&self, link: u32, lane: usize) -> f32 {
+        self.lane_room(link, lane)
+    }
+
     pub(crate) fn test_place(&mut self, link: u32, lane: usize, pos: f32, v: f32, dest: u32, frozen: bool) -> u32 {
         let id = self.alloc_veh();
         let uid = self.uid_next;

@@ -3,13 +3,21 @@ import { buildFixture } from '../fixtures/area';
 import { buildMockProposals } from '../fixtures/proposals';
 import { decodeScenario } from './hash';
 import {
-  allProposals, allTrafficNote, allTrafficRows, beforeAfterPct, cutThroughHeadline, hashMatches, hashText, harmHeadline, linkHash, needsConfirm,
-  openReducer, parseProposals, periodsPhrase, proposalNotices, signedPct, splitProposals, staleInputs,
+  allProposals, allTrafficNote, allTrafficRows, beforeAfterPct, comparisonText, cutThroughHeadline, evidenceNote, evidenceStatus, hashMatches, hashText, harmHeadline, intervalText,
+  linkHash, needsConfirm, openReducer, parseProposals, periodsPhrase, proposalNotices, REPORT_METHOD, seedsPhrase, signedPct, splitProposals, staleInputs,
+  type ComparisonStatus, type Effect, type Proposal, type ThroughHarm,
 } from './proposals';
 
 const net = buildFixture().network;
 const file = buildMockProposals(net, { networkHash: 'a'.repeat(64), demandHash: 'b'.repeat(64), calibration: 'uncalibrated' });
 const [charter, unc] = file.groups;
+const legacyRaw = buildMockProposals(net, { networkHash: 'a'.repeat(64), demandHash: 'b'.repeat(64), calibration: 'uncalibrated' }, 'legacy');
+const legacyFile = parseProposals(JSON.stringify(legacyRaw))!;
+const eff = (mean: number, lo: number, hi: number, n = 10): Effect => ({ n, mean, sd: 1, interval: [lo, hi], status: n < 10 ? 'insufficient' : lo > 0 ? 'increase' : hi < 0 ? 'decrease' : 'unresolved' });
+const through = (over: Partial<ThroughHarm> = {}): ThroughHarm => ({
+  largestIncrease: { block: 'Colby Street between 63rd Street and North Street', baselineVehPerHour: 10, scenarioVehPerHour: 22.4, increaseVehPerHour: 12.4, effect: eff(12.4, 7, 18) },
+  adjustedPenalty: { block: 'Hillegass Avenue between 62nd Street and 63rd Street', penaltyVehPerHour: 5 }, blocksAboveBand: 3, blocksResolvedIncrease: 3, ...over,
+});
 
 describe('staleness', () => {
   it('matches full and truncated digests, case-insensitively', async () => {
@@ -35,9 +43,48 @@ describe('notices', () => {
     expect(proposalNotices({ ...unc.computed, calibration: 'calibrated' }, hashes)).toMatchObject({ exploratory: false, stale: false });
   });
   it('stale says which input changed', () => {
-    const n = proposalNotices(unc.computed, { network: 'c'.repeat(64), demand: hashes.demand });
+    const n = proposalNotices(unc.computed, { network: 'c'.repeat(64), demand: hashes.demand, simulator: unc.computed.simulator });
     expect(n.stale).toBe(true);
     expect(n.staleText).toMatch(/street network has changed/);
+  });
+});
+
+/** The audit's R1: network and demand match, but the engine does not. The old reader called this current. */
+describe('evidence status', () => {
+  const same = { network: 'a'.repeat(64), demand: 'b'.repeat(64) };
+  const c = unc.computed;
+  it('is stale when only the simulator differs', () => {
+    const e = evidenceStatus(c, { ...same, simulator: 'new-engine' });
+    expect(e).toMatchObject({ state: 'stale', stale: ['simulator'] });
+    const n = proposalNotices(c, { ...same, simulator: 'new-engine' });
+    expect(n.stale).toBe(true);
+    expect(n.staleText).toBe('The simulator code has changed since these options were computed, so the numbers are out of date.');
+  });
+  it('is stale when only the reporting method differs', () => {
+    expect(evidenceStatus({ ...c, reportMethod: 'paired-t-0' }, { ...same, simulator: c.simulator })).toMatchObject({ state: 'stale', stale: ['method'] });
+  });
+  it('is current only when every input and the method match', () => {
+    expect(evidenceStatus(c, { ...same, simulator: c.simulator })).toMatchObject({ state: 'current', stale: [], missing: [], unchecked: [] });
+    expect(c.reportMethod).toBe(REPORT_METHOD);
+  });
+  it('says which things changed, in words', () => {
+    expect(proposalNotices(c, { network: 'c'.repeat(64), demand: 'd'.repeat(64), simulator: 'x' }).staleText).toMatch(/street network, demand and simulator code have changed/);
+  });
+  it('marks a group with no recorded provenance unverified and never assigns it the current engine', () => {
+    const { simulator: _s, reportMethod: _r, settings: _t, ...old } = c;
+    const e = evidenceStatus(old, { ...same, simulator: 'the-engine-in-use' });
+    expect(e).toMatchObject({ state: 'unverified', stale: [], missing: ['simulator', 'method', 'settings'] });
+    const n = proposalNotices(old, { ...same, simulator: 'the-engine-in-use' });
+    expect(n).toMatchObject({ stale: false, unverified: true });
+    expect(n.unverifiedText).toMatch(/computed before the simulator version, reporting method and run settings were recorded/);
+  });
+  it('a known difference in network wins over missing provenance', () => {
+    const { simulator: _s, ...old } = c;
+    expect(evidenceStatus(old, { network: 'c'.repeat(64), demand: same.demand }).state).toBe('stale');
+  });
+  it('marks recorded provenance unverified when the reader cannot read the simulator in use', () => {
+    expect(evidenceStatus(c, same)).toMatchObject({ state: 'unverified', unchecked: ['simulator'] });
+    expect(evidenceStatus(c, { ...same, simulator: null }).state).toBe('unverified');
   });
 });
 
@@ -50,18 +97,76 @@ describe('headline figures', () => {
     expect(h.definition).toContain(when);
     expect(cutThroughHeadline({ baselineVehPerHour: 70, scenarioVehPerHour: 70, changePct: 0 }).figure).toBe('No change');
   });
-  it('words the no-gain case without a number', () => {
-    const h = harmHeadline({ through: { worstBlock: 'X', increaseVehPerHour: 3, blocksAboveNoise: 0 } }, when);
-    expect(h).toMatchObject({ none: true, figure: '', label: 'No block gains through traffic beyond run-to-run variation' });
-    expect(h.definition).toMatch(/^Through cars only/);
+  it('words a decrease with its interval and the runs behind it', () => {
+    const h = cutThroughHeadline({ baselineVehPerHour: 118.4, scenarioVehPerHour: 73.1, changePct: -38.27, changePctEffect: eff(-38.3, -45.1, -31.4) }, when, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    expect(h.interval).toBe('95% interval −45.1% to −31.4% over 10 runs: the fall is resolved from run-to-run variation.');
+    expect(h.definition).toContain('mean of 10 runs (seeds 1 to 10) per period');
   });
-  it('names the block, counts through cars, and says what is counted', () => {
-    const h = harmHeadline({ through: { worstBlock: 'Colby Street between 63rd Street and North Street', increaseVehPerHour: 12.4, blocksAboveNoise: 3 } }, when);
-    expect(h).toMatchObject({ none: false, figure: '+12 through cars an hour', label: 'on one block: Colby Street between 63rd Street and North Street, the block that gains the most' });
+  it('says so when no interval was recorded or the runs are too few', () => {
+    expect(cutThroughHeadline({ baselineVehPerHour: 100, scenarioVehPerHour: 90, changePct: -10 }, when).interval).toBe('No uncertainty interval was recorded for this figure.');
+    const few = cutThroughHeadline({ baselineVehPerHour: 100, scenarioVehPerHour: 90, changePct: -10, changePctEffect: eff(-10, -14, -6, 3) }, when, [1, 2, 3]);
+    expect(few.interval).toMatch(/^3 runs are too few for an interval \(at least 10 are needed\)/);
+    expect(few.interval).not.toMatch(/95%/);
+  });
+  it('words an unresolved effect without calling it zero or resolved', () => {
+    expect(intervalText(eff(-3, -9, 4), '%', 1)).toBe('95% interval −9% to +4% over 10 runs: the interval includes zero, so the sign of the change is not resolved.');
+  });
+  it('lists seeds as a range when consecutive and one run as one run', () => {
+    expect(seedsPhrase([1, 2, 3])).toBe('mean of 3 runs (seeds 1 to 3)');
+    expect(seedsPhrase([1, 3, 7])).toBe('mean of 3 runs (seeds 1, 3, 7)');
+    expect(seedsPhrase([5])).toBe('one run (seed 5)');
+  });
+  it('names the block with the largest increase, with its interval and the status', () => {
+    const h = harmHeadline({ through: through() }, when);
+    expect(h).toMatchObject({ none: false, status: 'resolved', figure: '+12 through cars an hour', label: 'on one block: Colby Street between 63rd Street and North Street, the block with the largest increase' });
     expect(h.definition).toContain('Through cars only, both directions of that one block');
     expect(h.definition).toContain(when);
-    expect(h.definition).toContain('2 other blocks also gain through cars beyond run-to-run variation');
-    expect(harmHeadline({ through: { worstBlock: 'X', increaseVehPerHour: 11, blocksAboveNoise: 1 } }).definition).toContain('No other block');
+    expect(h.definition).toContain('95% interval +7 through cars an hour to +18 through cars an hour over 10 runs');
+    expect(h.definition).toContain('3 blocks have a rise resolved from run-to-run variation');
+    expect(h.definition).toContain('not adjusted for that choice');
+  });
+  it('shows an unresolved increase with its value and says it is unresolved, never "no gain"', () => {
+    const t = through({ largestIncrease: { block: 'X', baselineVehPerHour: 10, scenarioVehPerHour: 21, increaseVehPerHour: 11, effect: eff(11, -2, 24) }, blocksResolvedIncrease: 0 });
+    const h = harmHeadline({ through: t }, when);
+    expect(h).toMatchObject({ none: false, status: 'unresolved', figure: '+11 through cars an hour' });
+    expect(h.definition).toContain('the interval includes zero, so the sign of the change is not resolved');
+    expect(`${h.label} ${h.definition}`).not.toMatch(/No block/);
+  });
+  it('shows an increase from too few runs with no interval claim', () => {
+    const t = through({ largestIncrease: { block: 'X', baselineVehPerHour: 10, scenarioVehPerHour: 21, increaseVehPerHour: 11, effect: eff(11, 3, 19, 4) } });
+    const h = harmHeadline({ through: t }, when);
+    expect(h.status).toBe('insufficient');
+    expect(h.definition).toMatch(/4 runs are too few for an interval/);
+  });
+  it('says only that averages fall when the largest change is not an increase', () => {
+    const t = through({ largestIncrease: { block: 'X', baselineVehPerHour: 10, scenarioVehPerHour: 7, increaseVehPerHour: -3, effect: eff(-3, -6, 0) }, blocksAboveBand: 0, blocksResolvedIncrease: 0 });
+    const h = harmHeadline({ through: t }, when);
+    expect(h).toMatchObject({ none: true, figure: '', status: 'none' });
+    expect(h.label).toBe('No block gains through cars on average; the largest change is −3 on X');
+    expect(h.definition).toContain('compares averages only');
+  });
+  it('keeps the largest raw increase and the penalty block as different things (the audit\'s R2)', () => {
+    // Block A gains 100 with a band of 80; block B gains 50 with a band of 10. The old file named B and called its 50 the largest.
+    const t = through({
+      largestIncrease: { block: 'A', baselineVehPerHour: 200, scenarioVehPerHour: 300, increaseVehPerHour: 100, effect: eff(100, 60, 140) },
+      adjustedPenalty: { block: 'B', penaltyVehPerHour: 40 },
+    });
+    const h = harmHeadline({ through: t }, when);
+    expect(h.figure).toBe('+100 through cars an hour');
+    expect(h.label).toContain('A, the block with the largest increase');
+    expect(`${h.label} ${h.definition}`).not.toContain('B');
+  });
+  it('words a version 4 figure as the search\'s flagged block, with no interval, and no number when none is flagged', () => {
+    const legacy = legacyFile.groups[1].proposals.find((p) => p.id === 'filters-limit')!;
+    const h = harmHeadline(legacy.harm, when);
+    expect(h).toMatchObject({ none: false, status: 'unrecorded' });
+    expect(h.label).toContain("flagged by the search's noise rule");
+    expect(h.label).not.toContain('the block with the largest increase');
+    expect(h.definition).toContain('another block may have gained more through cars');
+    expect(h.definition).toContain('No interval was recorded');
+    const none = legacyFile.groups[1].proposals.find((p) => p.id === 'one-filter')!;
+    expect(harmHeadline(none.harm, when)).toMatchObject({ none: true, figure: '', status: 'unrecorded' });
+    expect(harmHeadline(none.harm, when).label).toBe("No block passes the search's noise band for through cars");
   });
   it('never shows a figure without naming what it counts', () => {
     for (const p of allProposals(file)) {
@@ -95,17 +200,38 @@ describe('details tables', () => {
     }
   });
   it('says "mostly local trips" only when local trips are most of the gain', () => {
-    const row = (change: number, through: number) => ({ period: 'PM', block: 'B', before: 100, after: 100 + change, change, through, local: change - through, blocksAbove: 1 });
+    const row = (change: number, through: number) => ({ period: 'PM', block: 'B', before: 100, after: 100 + change, change, through, local: change - through, blocksAbove: 1, interval: '', penaltyBlock: null, penalty: null, flagged: false });
     expect(allTrafficNote([row(37, 12)])).toMatch(/^Mostly local trips: about 68% .* about 32% are through cars/);
     expect(allTrafficNote([row(40, 30)])).toMatch(/^About 75% of the extra cars on these blocks are through cars and about 25% are local trips/);
     expect(allTrafficNote([row(40, 30)])).not.toMatch(/Mostly/);
     expect(allTrafficNote([row(37, 12)])).toMatch(/number of trips fixed/);
   });
   it('makes no claim when no block gains beyond noise', () => {
-    expect(allTrafficNote([{ period: 'PM', block: null, before: 1, after: 2, change: 1, through: 0, local: 1, blocksAbove: 0 }])).toBe('');
+    expect(allTrafficNote([{ period: 'PM', block: null, before: 1, after: 2, change: 1, through: 0, local: 1, blocksAbove: 0, interval: '', penaltyBlock: null, penalty: null, flagged: true }])).toBe('');
     expect(allTrafficNote([])).toBe('');
-    const none = { ...p, byPeriod: { pm: { ...p.byPeriod['pm-peak'], allTraffic: { ...p.byPeriod['pm-peak'].allTraffic, blocksAboveNoise: 0 } } } };
-    expect(allTrafficRows(none, label)[0]).toMatchObject({ block: null, blocksAbove: 0 });
+    const legacy = legacyFile.groups[1].proposals.find((x) => x.id === 'one-filter')!;
+    const rows = allTrafficRows({ ...legacy, byPeriod: { pm: { ...legacy.byPeriod['pm-peak'], allTraffic: { ...legacy.byPeriod['pm-peak'].allTraffic, blocksAboveBand: 0 } } } }, label);
+    expect(rows[0]).toMatchObject({ block: null, blocksAbove: 0, flagged: true });
+  });
+  it('shows the largest all-traffic increase and the penalty block as two columns of one row', () => {
+    const q: Proposal = { ...p, byPeriod: { pm: { cutThrough: p.byPeriod['pm-peak'].cutThrough, allTraffic: {
+      largestIncrease: { block: 'A', baselineVehPerHour: 300, scenarioVehPerHour: 400, increaseVehPerHour: 100, throughIncreaseVehPerHour: 40, effect: eff(100, 70, 130) },
+      adjustedPenalty: { block: 'B', penaltyVehPerHour: 40 }, blocksAboveBand: 2,
+    } } } };
+    const [r] = allTrafficRows(q, label);
+    expect(r).toMatchObject({ block: 'A', before: 300, after: 400, change: 100, through: 40, local: 60, penaltyBlock: 'B', penalty: 40, flagged: false });
+    expect(r.interval).toContain('95% interval +70 cars an hour to +130 cars an hour over 10 runs');
+  });
+  it('says what the runs were for, and compares options on the same seeds', () => {
+    expect(evidenceNote(p, unc)).toMatch(/^Exploratory estimate: the same runs that chose this option/);
+    expect(evidenceNote({ ...p, evidence: { ...p.evidence!, role: 'confirmation', seeds: [101, 102, 103] } }, unc)).toMatch(/^Confirmation: a shortlist frozen before these runs, rerun on seeds 101 to 103/);
+    const { evidence: _e, ...bare } = p;
+    expect(evidenceNote(bare, { computed: { ...unc.computed, estimation: undefined } })).toMatch(/not recorded whether/);
+    const label = (id: string) => id;
+    const cmp = (e: { status: ComparisonStatus; mean?: number; interval?: [number, number]; n?: number }) => ({ option: 'b', against: 'a', extraCutVehPerHour: { n: 10, mean: 0, sd: 0, ...e }, extraCutPoints: { n: 10, mean: 0, sd: 0, ...e } });
+    expect(comparisonText(cmp({ status: 'better', mean: 6.2, interval: [3.1, 9.3] }), label)).toBe('b against a: cuts 6.2 more points of through cars (95% interval +3.1 to +9.3 points over 10 runs).');
+    expect(comparisonText(cmp({ status: 'unresolved', mean: 2, interval: [-3, 7] }), label)).toContain('not resolved (+2 points; 95% interval −3 to +7 points over 10 runs)');
+    expect(comparisonText(cmp({ status: 'insufficient', n: 4 }), label)).toBe('b against a: not enough runs to compare (at least 10 paired runs are needed).');
   });
 });
 
@@ -119,6 +245,36 @@ describe('sections', () => {
   it('treats an absent kind as search', () => {
     const f = { proposals: [{ ...unc.proposals[0], kind: undefined }] };
     expect(splitProposals(f).search).toHaveLength(1);
+  });
+  it('reads a version 4 file whole: figures shown, marked as lacking the new evidence, and the worst block relabeled', () => {
+    const f = legacyFile;
+    expect(f.version).toBe(4);
+    expect(f.groups.every((g) => !g.legacy)).toBe(true);
+    const g = f.groups[1];
+    expect(g.computed.simulator).toBeUndefined();
+    expect(evidenceStatus(g.computed, { network: 'a'.repeat(64), demand: 'b'.repeat(64), simulator: 'x' }).state).toBe('unverified');
+    const p = g.proposals.find((x) => x.id === 'filters-limit')!;
+    expect(p.harm.through.largestIncrease).toBeUndefined();
+    expect(p.harm.through.adjustedPenalty.block).toBe('Colby Street between 63rd Street and North Street');
+    const row = allTrafficRows(p, (id) => id)[0];
+    expect(row).toMatchObject({ flagged: true, penaltyBlock: 'Colby Street between 63rd Street and North Street', penalty: null });
+    expect(p.summary).not.toMatch(/gains the most/);
+  });
+  it('rewrites the old summary sentence that called the flagged block the one that gains the most', () => {
+    const old = JSON.parse(JSON.stringify(legacyRaw));
+    old.groups[1].proposals[0].summary = 'It makes one change: X. In the simulation it cuts through traffic. The side-street block that gains the most through traffic is Colby, about 5 more through cars an hour on average.';
+    old.groups[1].proposals[1].summary = 'No side-street block gains through traffic beyond normal run-to-run variation.';
+    const f = parseProposals(JSON.stringify(old))!;
+    expect(f.groups[1].proposals[0].summary).toContain('flagged for through traffic with its noise band, which need not have the largest increase, is Colby');
+    expect(f.groups[1].proposals[1].summary).toBe("No side-street block passes the search's assumed noise band for through traffic.");
+  });
+  it('reads a version 5 file with its intervals and provenance', () => {
+    const f = parseProposals(JSON.stringify(file))!;
+    expect(f.version).toBe(5);
+    const p = f.groups[1].proposals.find((x) => x.id === 'filters-limit')!;
+    expect(p.harm.through.largestIncrease?.effect?.status).toBeDefined();
+    expect(p.cutThrough.effect?.n).toBe(10);
+    expect(f.groups[1].computed.reportMethod).toBe(REPORT_METHOD);
   });
   it('rejects files that are not proposals', () => {
     expect(parseProposals('<html>')).toBeNull();

@@ -1,6 +1,8 @@
 //! Provenance for report files: which simulator source, which revision and which input files a report came from. Used by the `calibrate` and `validate`
 //! binaries (included with `#[path]`, so the library and its WASM build do not carry it). Assessments compare these manifests before they combine runs.
 
+#![allow(dead_code)]
+
 use crate::sha256::sha256_hex;
 use serde_json::{json, Value};
 use std::path::Path;

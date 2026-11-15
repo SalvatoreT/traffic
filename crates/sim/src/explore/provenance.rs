@@ -22,7 +22,7 @@ pub enum Evidence {
 /// Whether a group's figures were made from these inputs and this method. Missing provenance is checked first: without it a mismatch
 /// cannot be told from an old file, and the current engine's fingerprint is never assumed for it.
 pub fn check(computed: &Value, net_hash: &str, demand_hash: &str, simulator: &str) -> Evidence {
-    let missing: Vec<String> = REQUIRED.iter().filter(|k| computed.get(**k).map_or(true, |v| v.is_null())).map(|k| k.to_string()).collect();
+    let missing: Vec<String> = REQUIRED.iter().filter(|k| computed.get(**k).is_none_or(|v| v.is_null())).map(|k| k.to_string()).collect();
     if !missing.is_empty() {
         return Evidence::Unverified(missing);
     }

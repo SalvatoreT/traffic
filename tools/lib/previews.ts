@@ -4,7 +4,7 @@ import { calibrationStatusText } from '../../src/lib/caveat';
 import { decodeScenario } from '../../src/lib/hash';
 import { buildIndex, type NetIndex } from '../../src/lib/naming';
 import { buildBaseMap, buildPicture, pathOf, pictureFacts, type PictureModel } from '../../src/lib/picture';
-import { linkHash, signedPct, staleInputs, type Proposal, type Proposals } from '../../src/lib/proposals';
+import { evidenceStatus, linkHash, signedPct, type EvidenceStatus, type LoadedHashes, type Proposal, type Proposals } from '../../src/lib/proposals';
 import { OVERLAY_TOP, quantizeIntensity } from '../../src/lib/ramps';
 import { VIEWS, titleFor, type View } from '../../src/lib/route';
 import { defaultPeriod } from '../../src/lib/run';
@@ -59,7 +59,7 @@ export interface Plan { path: string; name: string; meta: PageMeta; card: CardIn
 export interface BaselineInput { period: string; linkStats: Float32Array; throughVph: number }
 export interface PreviewInput {
   siteHost: string;
-  area: AreaEntry; network: Network; demand: Demand; hashes: { network: string; demand: string };
+  area: AreaEntry; network: Network; demand: Demand; hashes: { network: string; demand: string }; simulator?: string | null;
   proposals: Proposals | null;
   /** A stored baseline that was computed on the current inputs, or null. */
   baseline: BaselineInput | null;
@@ -110,8 +110,8 @@ export function planPreviews(inp: PreviewInput): PreviewPlans {
   const published = inp.proposals ? (() => { try { return publishedList(inp.proposals!); } catch (e) { skipped.push(`all proposals: ${(e as Error).message}`); return []; } })() : [];
   for (const { slug, group, proposal: p } of published) {
     const where = `${group.id}/${p.id}`;
-    const stale = staleInputs(group.computed, inp.hashes);
-    if (stale.length > 0) { skipped.push(`${where}: computed on another ${stale.join(' and ')}`); continue; }
+    const evidence = evidenceStatus(group.computed, { ...inp.hashes, simulator: inp.simulator ?? null });
+    if (evidence.state === 'stale') { skipped.push(`${where}: computed on another ${evidence.stale.join(' and ')}`); continue; }
     if (!p.picture) { skipped.push(`${where}: no picture, so no map for the card`); continue; }
     let ivs: Intervention[] = [];
     try { ivs = decodeScenario(network, linkHash(p.link)).interventions; } catch { /* drawn without its marks */ }
@@ -122,14 +122,16 @@ export function planPreviews(inp: PreviewInput): PreviewPlans {
     const periodWords = fig.averaged ? 'average of the searched periods' : period;
     const pctText = signedPct(fig.pct);
     const changes = p.interventions.map((iv) => iv.label);
-    const lead = `Simulated ${periodWords}: through cars on side streets ${fig.before} → ${fig.after} an hour (${pctText}).`;
+    const runs = group.computed.seeds.length;
+    const mean = runs > 1 ? `, mean of ${runs} runs` : runs === 1 ? ', one run' : '';
+    const lead = `Simulated ${periodWords}${mean}: through cars on side streets ${fig.before} → ${fig.after} an hour (${pctText}).`;
     const sentence = changesSentence(changes.map(firstClause), Math.max(70, DESCRIPTION_BEFORE_CAVEAT - lead.length));
-    const description = `${lead} ${sentence} ${caveat}`;
+    const description = `${lead} ${sentence} ${caveat}${evidence.state === 'unverified' ? ' Figures not verified against the current simulator.' : ''}`;
     const big = bigPct(fig.pct, fig.before, fig.after);
     const nChanges = `${capital(numberWord(changes.length))} ${plural(changes.length, 'change')}`;
     const alt = [
       `${p.title}.`,
-      fig.before === fig.after ? `Simulated ${periodWords}: no change in through cars on the side streets, ${fig.before} an hour.` : `Simulated ${periodWords}: through cars on the side streets go from ${fig.before} to ${fig.after} an hour (${pctText}).`,
+      fig.before === fig.after ? `Simulated ${periodWords}${mean}: no change in through cars on the side streets, ${fig.before} an hour.` : `Simulated ${periodWords}${mean}: through cars on the side streets go from ${fig.before} to ${fig.after} an hour (${pctText}).`,
       `${nChanges}.`,
       `Map of ${area.name} with this proposal's changes drawn on the streets, blue where through cars drop and orange where they rise.`,
       'Simulation, not a forecast.',
