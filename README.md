@@ -36,6 +36,15 @@ cargo run --release -p traffic-sim --bin validate                # primitive cap
 cargo run --release -p traffic-sim --bin calibrate -- --area rockridge --period pm_peak --minutes 60 --seed 1
 ```
 
+## Using this with an AI agent
+
+The site is a JavaScript app, so a page fetched without scripts is empty. Everything it says is also published as text, and the model can be run headless.
+
+- Start at `/llms.txt` on the site (and `/llms-full.txt` for all of it in one file). It links the text version of each tab (`/index.md`, `/proposals.md`, `/streets.md`, `/assumptions.md`, `/sources.md`) and the guides below. `npm run data:llms` generates these from the data files and the docs; publish them with `npm run data:push`.
+- Run a scenario locally and get JSON: `npm run simulate -- --link "<scenario link>"`. Look up streets and the link item for each intervention with `npm run simulate -- --find "Colby St & 60th St"`. Setup, options and output fields are in [docs/run-locally.md](docs/run-locally.md); the data comes from `npm run data:download`.
+- The scenario link grammar is in [docs/scenario-links.md](docs/scenario-links.md) and the data files are described field by field in [docs/data-files.md](docs/data-files.md). Those files are the one source; the text pages include them verbatim.
+- The site has no endpoint that runs a scenario. Do not put load on the public site beyond plain GETs of pages and `/data/` files, and do not call `/api/*`: it is the maintainers' upload endpoint and needs a secret.
+
 ## How the model works
 
 - Cars follow the Improved Intelligent Driver Model ([Treiber2000], [Treiber2014], [Kesting2010]); the sim steps at 0.25 s.
@@ -108,7 +117,7 @@ The Worker serves the static app and reads generated study-area files from the b
 | `crates/sim` | Rust simulation core (native and WASM), plus the `validate` and `calibrate` binaries |
 | `src/` | React + TypeScript UI, sim worker client |
 | `worker/` | Cloudflare Worker: static assets, `/data/*`, authenticated `/api/data/<key>` |
-| `tools/` | Data pipeline: OSM import, demand fitting, R2 sync |
+| `tools/` | Data pipeline: OSM import, demand fitting, R2 sync; the `simulate` CLI, `data:download` and the text-page generator (`data:llms`) |
 | `data/` | Source extracts, provenance, calibration targets and record |
 | `public/data/` | Generated study-area files |
 | `docs/references.md` | Bibliography and citation keys |

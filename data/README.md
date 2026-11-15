@@ -37,6 +37,10 @@ Each file is about 90 KB gzipped and one simulated hour takes about a minute (tw
 
 The same run writes `public/data/results/<area>/baseline-intents.json`: today's traffic for each period split by the reasons of `throughIntents` (cars an hour and the links each reason's cars used), with the same three validity keys. The Assumptions tab draws a map for each reason from it, and shows no maps when it is missing or stale. After a demand change, regenerate it alone with `npm run data:results -- --baselines-only` (three simulations, about two minutes), and the Assumptions tab's table of assumed movements with `npm run data:assumptions` (reads the config and the fit report; `npm run data` runs it after the demand build).
 
+## Text pages for language models
+
+`npm run data:llms` writes `public/data/llms/` (`llms.txt`, `llms-full.txt`, `index.md`, `proposals.md`, `streets.md`, `assumptions.md`, `sources.md` and copies of the three guides in `docs/`) from the files in `public/data` and the docs. They are published with the rest (`areas/llms/*` in the bucket) and the Worker serves them at `/llms.txt`, `/llms-full.txt` and `/<name>.md`. Order at publish time: the proposal search, `npm run data:results`, then `npm run data:llms`, then `data:push`. Pages built from numbers that no longer match the network, demand or simulator say "Out of date" and still show them. Anyone can fetch the core files without credentials with `npm run data:download`.
+
 ## Publishing without a Cloudflare token
 
 The Worker takes data files at `/api/data/<key>` from requests that carry the upload

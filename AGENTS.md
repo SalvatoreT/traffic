@@ -13,10 +13,11 @@ areas are data.
 | `crates/sim` | Simulation core (Rust). Native lib + WASM build. No I/O, deterministic for a given seed. Binaries: `validate` (primitive capacities vs published ranges), `calibrate` (baseline vs observed data). |
 | `src/` | React + TypeScript UI (Vite). MapLibre GL rendering; sim runs in a Web Worker. |
 | `worker/` | Cloudflare Worker entry (static assets, `/data/*` from R2, authenticated `/api/data/<key>` upload in `worker/upload.ts`). |
-| `tools/` | Node/TS data pipeline: OSM import, demand fitting, R2 sync. |
+| `tools/` | Node/TS data pipeline: OSM import, demand fitting, R2 sync; `simulate.ts` (headless scenario CLI), `download-data.ts`, `build-llms.ts` (text pages for language models). |
 | `data/` | Source extracts (OSM, counts) with provenance; `data/areas` study-area configs, `data/calibration` targets, validation and calibration record. |
 | `public/data/` | Generated study-area files served to the app. |
 | `docs/references.md` | Bibliography. Source of truth for citation keys. |
+| `docs/scenario-links.md`, `docs/data-files.md`, `docs/run-locally.md` | Guides for agents and visitors; the one source the generated text pages include verbatim. |
 | `openspec/` | Specs (current truth) and changes (decision history). |
 
 ## Commands
@@ -28,6 +29,9 @@ areas are data.
 - `npm run data:fetch`: download source data from its origins
 - `npm run data:assumptions`: write the Assumptions tab table from the demand config and fit report
 - `npm run data:results`: precompute the finished hour of every published proposal for each period (needs `npm run wasm`; see `data/README.md`)
+- `npm run simulate -- --link "<url or #v1;...>"`: run one scenario headless and print JSON (`--find "<streets>"` looks up places; needs `npm run wasm` and the data; see `docs/run-locally.md`)
+- `npm run data:download`: fetch the published `/data` files over plain HTTPS (`--all` adds proposals, assumptions, results)
+- `npm run data:llms`: write `public/data/llms/*` (`llms.txt`, `llms-full.txt`, `<tab>.md`) from the data and `docs/`; run after `data:results` and before `data:push`
 - `npm run data:pull` / `npm run data:push`: sync `data/*` and `public/data/*` with the R2 bucket
 - `cargo run --release -p traffic-sim --bin validate`: validation suite (writes `data/calibration/validation.md`)
 - `cargo run --release -p traffic-sim --bin calibrate -- --area rockridge --period pm_peak`: calibration report against observed data
