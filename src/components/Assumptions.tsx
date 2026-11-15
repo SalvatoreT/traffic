@@ -5,6 +5,8 @@ import { assumptionsCurrent, fetchAssumptions, intentShares, type AssumedMovemen
 import { baselineIntent, baselineVerdict, fetchBaselineIntents, type BaselineIntents } from '../lib/baseline-intents';
 import { buildIntentMap } from '../lib/intentmap';
 import { IntentMap } from './IntentMap';
+import { OverviewMap, TurnMap } from './TurnMap';
+import { buildOverview, buildTurnMap } from '../lib/turnmap';
 import { BASIS_HELP, BASIS_TEXT, OTHER_ID, describePaths, isLocal } from '../lib/intents';
 import { ATTRIBUTION } from '../lib/mapexport';
 import type { NetIndex } from '../lib/naming';
@@ -60,14 +62,14 @@ export function Assumptions({ bundle, index, mode, hashes, fingerprint, focusRef
         The measured inputs, the data behind them and the research are on the{' '}
         <button type="button" className="link" onClick={onSources}>Sources</button> page.
       </p>
-      <Movements file={assumed.value} loaded={assumed.done} order={order.map((p) => p.id)} periodName={periodName} demandHash={hashes?.demand ?? null} />
+      <Movements file={assumed.value} loaded={assumed.done} order={order.map((p) => p.id)} periodName={periodName} demandHash={hashes?.demand ?? null} net={bundle.network} mode={mode} />
       {defs?.length ? <Reasons defs={defs} bundle={bundle} index={index} mode={mode} baseline={baseline.value} status={status} order={order.map((p) => p.id)} first={first} periodName={periodName} /> : null}
       <p className="muted small">Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a> (ODbL).</p>
     </div>
   );
 }
 
-function Movements({ file, loaded, order, periodName, demandHash }: { file: AssumptionsFile | null; loaded: boolean; order: string[]; periodName: (id: string) => string; demandHash: string | null }) {
+function Movements({ file, loaded, order, periodName, demandHash, net, mode }: { file: AssumptionsFile | null; loaded: boolean; order: string[]; periodName: (id: string) => string; demandHash: string | null; net: AreaBundle['network']; mode: Mode }) {
   const intro = (
     <>
       <p>
@@ -76,13 +78,15 @@ function Movements({ file, loaded, order, periodName, demandHash }: { file: Assu
       </p>
     </>
   );
-  if (!loaded) return <section id="ref-movements" aria-labelledby="mv-h" tabIndex={-1}><h3 id="mv-h">Assumed movement flows</h3>{intro}<p className="muted" role="status">Loading the table…</p></section>;
-  if (!file) return <section id="ref-movements" aria-labelledby="mv-h" tabIndex={-1}><h3 id="mv-h">Assumed movement flows</h3>{intro}<p className="muted">The table of movements is not available for this area.</p></section>;
+  if (!loaded) return <section id="ref-movements" aria-labelledby="mv-h" tabIndex={-1}><h3 id="mv-h">Assumed movement flows</h3>{intro}<p className="muted" role="status">Loading the turns…</p></section>;
+  if (!file) return <section id="ref-movements" aria-labelledby="mv-h" tabIndex={-1}><h3 id="mv-h">Assumed movement flows</h3>{intro}<p className="muted">The list of movements is not available for this area.</p></section>;
   const counted = order.filter((p) => file.count.measured.includes(p) || file.count.scaled.includes(p));
   const lead = order[0];
   const detours = [...new Set(file.movements.map((m) => m.maxDetour))];
   const extra = detours.length === 1 ? ` A trip joins a turn only if the turn adds no more than ${Math.round((detours[0] - 1) * 100)}% to its best route.` : '';
   const scaled = file.count.scaled.map(periodName).join(' and ');
+  const groups = groupMovements(net, file.movements);
+  const mapped = groups.some((g) => g.title !== null);
   return (
     <section id="ref-movements" aria-labelledby="mv-h" tabIndex={-1}>
       <h3 id="mv-h">Assumed movement flows</h3>
@@ -92,49 +96,100 @@ function Movements({ file, loaded, order, periodName, demandHash }: { file: Assu
         {scaled && ` ${scaled} has no count: its figure is the count scaled by assumed volume factors.`}{' '}
         <strong>Assumed:</strong> how many cars the model assigns to each turn in the {periodName(lead)}, how many of those are through cars (neither trip end in the study area), and who the cars are.{extra}
       </p>
+      {mapped && <p>On each map the two highlighted streets are the one the cars arrive on and the one they leave on. The arrow curves through the junction the way they turn and the numbered circle marks the junction. The street names and the arrow carry the same information, so the highlight color is not needed to read a map.</p>}
       {demandHash !== null && !assumptionsCurrent(file, demandHash) && <p className="caveat">These figures were made for an earlier version of the demand data, so they may not match the model that is loaded.</p>}
-      <table className="move-table" role="table">
-        <caption className="sr-only">Assumed movements: counted and assigned cars an hour, and who the cars are assumed to be</caption>
-        <thead>
-          <tr role="row">
-            <th scope="col" role="columnheader">Turn</th>
-            {counted.map((p) => <th key={p} scope="col" role="columnheader" className="num">Counted, {periodName(p)}{file.count.scaled.includes(p) ? ' (scaled)' : ''}</th>)}
-            <th scope="col" role="columnheader" className="num">Assigned, {periodName(lead)}</th>
-            <th scope="col" role="columnheader" className="num">Through cars, {periodName(lead)}</th>
-            <th scope="col" role="columnheader">Who the cars are assumed to be, {periodName(lead)}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {file.movements.map((m) => <MovementRow key={m.id} m={m} counted={counted} lead={lead} scaled={file.count.scaled} periodName={periodName} />)}
-        </tbody>
-      </table>
-      <p className="move-key">Cars an hour. Percentages are shares of the cars assigned to that turn. An assigned number below the counted one means the model places only part of the count on this turn; the rest is left to the ordinary routing.</p>
+      <MovementCards groups={groups} net={net} mode={mode} counted={counted} lead={lead} scaled={file.count.scaled} periodName={periodName} />
+      <p className="move-key">Cars an hour. Percentages are shares of the cars assigned to that turn. An assigned number below the counted one means the model places only part of the count on this turn; the rest is left to the ordinary routing.{mapped && ` ${ATTRIBUTION}.`}</p>
     </section>
   );
 }
 
-function MovementRow({ m, counted, lead, scaled, periodName }: { m: AssumedMovementView; counted: string[]; lead: string; scaled: string[]; periodName: (id: string) => string }) {
+interface MoveGroup { key: string; title: string | null; items: { m: AssumedMovementView; n: number }[] }
+
+/** The movements under a subheading per pair of streets they connect, numbered in the order shown; movements without map fields share one untitled group. */
+export function groupMovements(net: AreaBundle['network'], ms: AssumedMovementView[]): MoveGroup[] {
+  const groups: MoveGroup[] = [];
+  for (const m of ms) {
+    const names = m.from !== undefined && m.to !== undefined && net.links[m.from] && net.links[m.to]
+      ? [...new Set([net.links[m.from].name.trim(), net.links[m.to].name.trim()])].filter(Boolean).sort() : [];
+    const key = names.join('|');
+    let g = groups.find((x) => x.key === key);
+    if (!g) { g = { key, title: names.length ? names.join(' and ') : null, items: [] }; groups.push(g); }
+    g.items.push({ m, n: 0 });
+  }
+  let n = 0;
+  for (const g of groups) for (const it of g.items) it.n = ++n;
+  return groups;
+}
+
+function MovementCards({ groups, net, mode, counted, lead, scaled, periodName }: { groups: MoveGroup[]; net: AreaBundle['network']; mode: Mode; counted: string[]; lead: string; scaled: string[]; periodName: (id: string) => string }) {
+  const base = useMemo(() => buildBaseMap(net), [net]);
+  const all = groups.flatMap((g) => g.items);
+  const turns = all.flatMap((it) => (it.m.from !== undefined && it.m.to !== undefined && net.links[it.m.from] && net.links[it.m.to] ? [{ n: it.n, from: it.m.from, to: it.m.to }] : []));
+  const overview = useMemo(() => (turns.length ? buildOverview(net, turns, base) : null), [net, base, turns.map((t) => `${t.from}-${t.to}`).join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
+  const alt = overview ? overviewAlt(net, turns, groups) : '';
+  return (
+    <>
+      {overview && (
+        <figure className="move-overview">
+          <OverviewMap model={overview} alt={alt} />
+          <figcaption className="muted small">Where the {turns.length} assumed turns are. The numbers match the cards below.</figcaption>
+        </figure>
+      )}
+      {groups.map((g) => (
+        <div key={g.key} className="move-group">
+          {g.title && <h4>{g.title}</h4>}
+          <ul className="moves">
+            {g.items.map(({ m, n }) => <MovementCard key={m.id} m={m} n={n} net={net} mode={mode} base={base} counted={counted} lead={lead} scaled={scaled} periodName={periodName} />)}
+          </ul>
+        </div>
+      ))}
+    </>
+  );
+}
+
+function overviewAlt(net: AreaBundle['network'], turns: { n: number; from: number; to: number }[], groups: MoveGroup[]): string {
+  const parts = groups.filter((g) => g.title).map((g) => {
+    const ns = g.items.filter((it) => turns.some((t) => t.n === it.n)).map((it) => it.n);
+    return `${ns.length === 1 ? 'turn' : 'turns'} ${ns.join(', ')} at ${g.title}`;
+  });
+  return `Map of the study area with the ${turns.length} assumed turns numbered: ${parts.join('; ')}.`;
+}
+
+function MovementCard({ m, n, net, mode, base, counted, lead, scaled, periodName }: { m: AssumedMovementView; n: number; net: AreaBundle['network']; mode: Mode; base: ReturnType<typeof buildBaseMap>; counted: string[]; lead: string; scaled: string[]; periodName: (id: string) => string }) {
   const a = m.assigned[lead];
   const who = intentShares(m, lead);
+  const ok = m.from !== undefined && m.to !== undefined && !!net.links[m.from] && !!net.links[m.to];
+  const model = useMemo(() => (ok ? buildTurnMap(net, m.from!, m.to!, base) : null), [ok, net, m.from, m.to, base]);
   return (
-    <tr role="row">
-      <th scope="row" role="rowheader">{m.label}</th>
-      {counted.map((p) => <td key={p} role="cell" className="num" data-label={`Counted, ${periodName(p)}${scaled.includes(p) ? ' (scaled)' : ''}`}>{rounded(m.counted[p])}</td>)}
-      <td role="cell" className="num" data-label={`Assigned, ${periodName(lead)}`}>{rounded(a?.total)}</td>
-      <td role="cell" className="num" data-label={`Through cars, ${periodName(lead)}`}>{rounded(a?.through)}</td>
-      <td role="cell" className="who-cell" data-label="Who the cars are assumed to be">
-        {who.length ? (
-          <ul className="who">
-            {who.map((w) => (
-              <li key={w.id}>
-                <span className="pct">{w.pct}%</span> {w.label}
-                <span className={`tag ${w.through ? 'tag-through' : 'tag-local'}`}>{w.through ? 'through cars' : 'start or end here'}</span>
-              </li>
-            ))}
-          </ul>
-        ) : '—'}
-      </td>
-    </tr>
+    <li className="move" id={`move-${m.id}`}>
+      <h5><span className="move-n">{n}</span> {m.label}</h5>
+      {model && <TurnMap model={model} n={n} mode={mode} alt={`Turn ${n}. Map of ${model.words}. A curved arrow runs from the first street through the junction onto the second.`} />}
+      <dl className="move-nums">
+        {counted.map((p) => <div key={p}><dt>Counted, {periodName(p)}{scaled.includes(p) ? ' (scaled)' : ''}</dt><dd>{rounded(m.counted[p])}</dd></div>)}
+        <div className="assigned"><dt>Assigned, {periodName(lead)}</dt><dd>{rounded(a?.total)}</dd></div>
+        <div className="assigned"><dt>Through cars, {periodName(lead)}</dt><dd>{rounded(a?.through)}</dd></div>
+      </dl>
+      {who.length > 0 && <Who who={who} lead={periodName(lead)} />}
+    </li>
+  );
+}
+
+function Who({ who, lead }: { who: ReturnType<typeof intentShares>; lead: string }) {
+  const wide = () => { try { return window.matchMedia('(min-width: 720px)').matches; } catch { return true; } };
+  const [open, setOpen] = useState(wide);
+  return (
+    <details className="who-details" open={open} onToggle={(e) => setOpen(e.currentTarget.open)}>
+      <summary>Who the cars are assumed to be, {lead}</summary>
+      <ul className="who">
+        {who.map((w) => (
+          <li key={w.id}>
+            <span className="pct">{w.pct}%</span> {w.label}
+            <span className={`tag ${w.through ? 'tag-through' : 'tag-local'}`}>{w.through ? 'through cars' : 'start or end here'}</span>
+          </li>
+        ))}
+      </ul>
+    </details>
   );
 }
 

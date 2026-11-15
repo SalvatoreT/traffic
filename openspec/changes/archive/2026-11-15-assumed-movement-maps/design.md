@@ -1,0 +1,19 @@
+## Context
+
+Project lead, 2026-11-15: "Are you remaking the maps for the assumptions table? All the sections could probably use simple maps." The reason cards already have maps; this change gives the assumed movements theirs. Another change regroups the reasons by freeway ramp, so the reasons section and its map code are untouched here.
+
+## Decisions
+
+- **Just the turn, no trip paths.** Each map shows the turn only. Drawing where the assigned trips come from and go to would need per-movement link usage. The stored baseline keeps link usage per reason, not per movement, and the demand file carries no label that ties a flow to its movement. Producing it means changing the demand build or the simulator, which this change does not touch. The cards say who the cars are in words instead.
+- **Map content.** The approach and exit links are highlighted in the reason maps' violet pair, a curved arrow runs from the approach into the exit through the junction, a numbered circle marks the junction, and both streets are named along their links with a direction word ("Colby St northbound"). Names sit on the outside of the corner, away from the arrow. The arrow, the names and the number carry the meaning, so color is never the only signal. Alt text states the turn in words.
+- **Zoomed window.** A card's map is a 340 m wide window around the junction, not the whole study area. At whole-area scale the eight turns cover two junctions and their arrows would be a few pixels long. The window keeps the same muted streets and dashed outline as the reason maps, and shifts so both street names fit. The overview supplies the whole-area context.
+- **Overview.** The overview is cropped to the junctions with the outline and boundary names showing where they fall. Turns at one junction form a two-column block of numbered circles under it on one stem, and the junction is named by the streets of its turns, over two lines.
+- **Turn geometry.** `turnGeometry` takes the approach link, exit link and a reach. The arrow starts on the approach link and ends on the exit link, with the corner between the two link ends as the curve's control point (the importer can leave the ends of a merged junction a few meters apart). Left or right comes from the sign of the change in heading, so it needs no bearings in the data. Under 25 degrees is straight on and over 155 a U-turn.
+- **Data.** `build-assumptions` resolves each movement's count words to link ids with the same `mapMovement` the demand builder uses and writes `from`, `to` and `node` per movement. It reads the network file and never writes it or the demand file. The fields are optional in the parser; a file without them renders cards without maps and without subheadings.
+- **Grouping and numbering.** Subheadings come from the street names of the movement's two links (sorted, so Colby St with Alcatraz Ave groups the turns in both directions). Numbers follow display order. Nothing in code names a street.
+- **Layout.** Cards in two columns on wide screens and one on phones, because the figures must line up across turns: counted in the periods, then assigned and through, in the same positions on every card. The table is gone. The who list is a `details` element, open on wide screens and closed on phones, so a phone card is a heading, a map, five figures and one line.
+- **Attribution.** The tab's closing line credits OpenStreetMap contributors for all maps. The movement section's key line repeats the credit next to the maps.
+
+## Risks
+
+- Link ids are tied to the network file. A network rebuild that renumbers links needs `npm run data:assumptions` again; the file records the demand hash only, so the tab does not detect this. The ids are read from the same mapping the demand builder uses, and a missing mapping is warned about and leaves that card without a map.

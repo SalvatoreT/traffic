@@ -6,6 +6,8 @@ export const ASSUMPTIONS_VERSION = 1;
 export interface AssumedIntentView { id: string; label: string; through: boolean; vph: Record<string, number> }
 export interface AssumedMovementView {
   id: string; label: string;
+  /** The link the cars arrive on, the link they leave on and the junction between them (network ids); absent in a file made before the maps. */
+  from?: number; to?: number; node?: number;
   /** A trip joins the movement only when its route through it costs at most this multiple of its best route. */
   maxDetour: number;
   /** Cars an hour the count shows making the movement; midday is scaled from the others (see `count.scaled`). */
@@ -30,7 +32,7 @@ export function parseAssumptions(text: string): AssumptionsFile | null {
     const r = JSON.parse(text) as AssumptionsFile;
     const ok = r?.version === ASSUMPTIONS_VERSION && typeof r.area === 'string' && typeof r.inputs?.demandHash === 'string'
       && typeof r.count?.label === 'string' && Array.isArray(r.count.measured) && Array.isArray(r.count.scaled)
-      && Array.isArray(r.movements) && r.movements.every((m) => typeof m.id === 'string' && typeof m.label === 'string' && Array.isArray(m.intents) && typeof m.assigned === 'object' && typeof m.counted === 'object');
+      && Array.isArray(r.movements) && r.movements.every((m) => typeof m.id === 'string' && typeof m.label === 'string' && [m.from, m.to, m.node].every((v) => v === undefined || Number.isInteger(v)) && Array.isArray(m.intents) && typeof m.assigned === 'object' && typeof m.counted === 'object');
     return ok ? r : null;
   } catch { return null; }
 }

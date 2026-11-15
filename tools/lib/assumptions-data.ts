@@ -3,6 +3,8 @@ import { ASSUMPTIONS_VERSION, type AssumedMovementView, type AssumptionsFile } f
 
 export interface MovementCfg {
   id: string; label: string; maxDetour: number;
+  /** The count file's words for the movement's junction, approach and exit (as `mapMovement` reads them). */
+  count?: { at: string[]; from: string; to: string };
   intents?: { id: string; label: string; fromGroup: string | string[]; toGroup: string | string[] }[];
 }
 export interface AssumptionsCfg {
@@ -54,7 +56,8 @@ const dayLabel = (id: string): string => {
 };
 
 /** `countSourceId` is the id of the count file's source ("volunteer-count-2025-02-25"); its date names the count. */
-export function buildAssumptions(cfg: AssumptionsCfg, fitText: string, o: { area: string; demandHash: string; countSourceId: string; generated: string }): Omit<AssumptionsFile, 'movements'> & { movements: MovementData[] } {
+/** `links` gives each movement id's approach link, exit link and junction node in the network (see `buildAssumptions`'s caller); a movement it lacks gets no map fields. */
+export function buildAssumptions(cfg: AssumptionsCfg, fitText: string, o: { area: string; demandHash: string; countSourceId: string; generated: string; links?: Record<string, { from: number; to: number; node: number }> }): Omit<AssumptionsFile, 'movements'> & { movements: MovementData[] } {
   const fit = parseFitReport(fitText);
   const vc = cfg.volunteerCount;
   const measured = vc ? [vc.periods.am, vc.periods.pm] : [];
@@ -73,7 +76,8 @@ export function buildAssumptions(cfg: AssumptionsCfg, fitText: string, o: { area
     const below = fit.belowMin.filter((r) => r.movement === m.label);
     for (const r of below) delete assigned[r.period];
     const extra = below.length ? { belowThreshold: Object.fromEntries(below.map((r) => [r.period, r.counted])), belowThresholdNote: `The count shows these cars, but fewer than the count fit's minimum for a turning movement, so the fit has no target for the turn and the model assigns no trips to it in ${below.map((r) => r.period).join(' and ')}.` } : {};
-    return { id: m.id, label: m.label, maxDetour: m.maxDetour, counted, assigned, intents, ...extra };
+    const at = o.links?.[m.id];
+    return { id: m.id, label: m.label, ...(at ? { from: at.from, to: at.to, node: at.node } : {}), maxDetour: m.maxDetour, counted, assigned, intents, ...extra };
   });
   const day = dayLabel(o.countSourceId);
   return {

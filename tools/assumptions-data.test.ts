@@ -51,6 +51,18 @@ describe('a movement counted below the fit minimum', () => {
   });
 });
 
+describe('map fields', () => {
+  it('carries the links and junction of a movement when given, and omits them otherwise', () => {
+    const o = { area: 'a', demandHash: 'h', countSourceId: '', generated: 'g' };
+    const f = buildAssumptions(cfg, fit, { ...o, links: { m1: { from: 4, to: 7, node: 2 } } });
+    expect(f.movements[0]).toMatchObject({ from: 4, to: 7, node: 2 });
+    expect(parseAssumptions(JSON.stringify(f))).not.toBeNull();
+    const bare = buildAssumptions(cfg, fit, o).movements[0];
+    expect('from' in bare).toBe(false);
+    expect(parseAssumptions(JSON.stringify({ ...f, movements: [{ ...f.movements[0], from: 'x' }] }))).toBeNull();
+  });
+});
+
 describe('the assumptions data', () => {
   it('reads both tables of the fit report', () => {
     const r = parseFitReport(fit);
