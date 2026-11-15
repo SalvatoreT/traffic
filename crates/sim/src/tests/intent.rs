@@ -81,3 +81,70 @@ fn intent_links_agree_with_the_exit_counter_on_local_links() {
     }
     assert!(total > 20.0, "through cars used the local row: {total}");
 }
+
+fn ramp(id: &str, kind: &str, links: &[u32]) -> RampDef {
+    RampDef { id: id.into(), kind: kind.into(), links: links.to_vec() }
+}
+
+fn ramp_run(ramps: Vec<RampDef>, intents: Vec<IntentDef>, flow_intents: [Option<u32>; 2]) -> (Simulation, Corr) {
+    let (net, c) = corridor(1.0, Control::Uncontrolled);
+    let mut d = demand(&[(c.a[0], c.a[3], 150.0), (c.a[3], c.a[0], 120.0)]);
+    for (f, i) in d.periods[0].flows.iter_mut().zip(flow_intents) {
+        f.intent = i;
+    }
+    d.intents = intents;
+    d.ramps = ramps;
+    let mut sim = Simulation::from_parts(net, d, cfg(3, 1.0)).unwrap();
+    run(&mut sim, 1500.0, |_| {});
+    (sim, c)
+}
+
+fn intent(id: &str, on: Option<&str>, off: Option<&str>) -> IntentDef {
+    IntentDef { id: id.into(), on_ramp: on.map(String::from), off_ramp: off.map(String::from) }
+}
+
+fn counts(sim: &Simulation) -> Vec<(String, u64)> {
+    sim.metrics().cut_through.by_intent.iter().map(|b| (b.id.clone(), b.vehicles)).collect()
+}
+
+/// A through car is tallied under the on-ramp on its planned route, and any on-ramp no intent lists goes to "other on-ramps".
+#[test]
+fn through_cars_are_grouped_by_the_on_ramp_they_will_use() {
+    let (net, c) = corridor(1.0, Control::Uncontrolled);
+    drop(net);
+    // Eastbound cars leave the local row for the arterial at the far end; westbound ones at the near end.
+    let ramps = vec![ramp("r1", "on", &[c.conn[3].1]), ramp("r2", "on", &[c.conn[2].1, c.conn[1].1, c.conn[0].1])];
+    let intents = vec![intent("to-r1", Some("r1"), None), intent("to-other", Some("other"), None), intent("od", None, None)];
+    let (sim, _) = ramp_run(ramps, intents, [None, Some(2)]);
+    let by = counts(&sim);
+    let total = sim.metrics().cut_through.vehicles;
+    assert_eq!(by.iter().map(|b| b.1).sum::<u64>(), total, "{by:?}");
+    assert!(by[0].1 > 5 && by[1].1 > 5, "both on-ramp reasons carry cars: {by:?}");
+    assert_eq!(by[2].1 + by[3].1, 0, "every through car of these flows uses a listed or unlisted on-ramp: {by:?}");
+    let (checked, changed) = sim.on_ramp_plan_check();
+    assert!(checked > 5 && changed == 0, "static costs: the planned ramp is the one driven ({checked}, {changed})");
+}
+
+/// A through car is tallied under the off-ramp it has driven; the first matching intent wins and the totals still add up.
+#[test]
+fn through_cars_are_grouped_by_the_off_ramp_they_came_from_and_the_first_match_wins() {
+    let (_, c) = corridor(1.0, Control::Uncontrolled);
+    let ramps = vec![ramp("o1", "off", &[c.conn[0].0]), ramp("o2", "off", &[c.conn[3].0])];
+    let intents = vec![intent("from-o1", None, Some("o1")), intent("from-other", None, Some("other")), intent("od", None, None)];
+    let (sim, _) = ramp_run(ramps.clone(), intents, [Some(2), Some(2)]);
+    let by = counts(&sim);
+    assert!(by[0].1 > 5 && by[1].1 > 5, "{by:?}");
+    assert_eq!(by.iter().map(|b| b.1).sum::<u64>(), sim.metrics().cut_through.vehicles);
+    // The same cars with the origin-and-destination intent first: it wins for the flows that carry it.
+    let intents = vec![intent("od", None, None), intent("from-o1", None, Some("o1")), intent("from-other", None, Some("other"))];
+    let (sim, _) = ramp_run(ramps, intents, [Some(0), None]);
+    let by = counts(&sim);
+    assert!(by[0].1 > 5 && by[1].1 == 0 && by[2].1 > 5, "{by:?}");
+}
+
+#[test]
+fn a_demand_without_ramps_tallies_by_flow_as_before() {
+    let (sim, _) = ramp_run(Vec::new(), vec![intent("a", None, None), intent("b", None, None)], [Some(0), Some(1)]);
+    let by = counts(&sim);
+    assert!(by[0].1 > 5 && by[1].1 > 5 && by[2].1 == 0, "{by:?}");
+}
