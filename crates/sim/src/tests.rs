@@ -707,8 +707,10 @@ fn modal_filter_node_bans_all_movements() {
     let d = demand(&[(c.a[0], c.a[3], 500.0), (c.a[3], c.a[0], 400.0)]);
     let mut sim = Simulation::from_parts(net, d, cfg(9, 1.0)).unwrap();
     sim.set_interventions(&iv(&format!("[{{\"type\":\"modal_filter\",\"node\":{}}}]", c.l[1]))).unwrap();
+    // A car already inside the node when the filter appears finishes its crossing (at most 12 s).
+    run(&mut sim, 15.0, |_| {});
     run(&mut sim, 900.0, |s| {
-        assert!(s.test_transit(c.l[1] as usize).is_empty(), "no through movement at a filtered node");
+        assert!(s.test_transit(c.l[1] as usize).is_empty(), "no through movement at a filtered node (t = {})", s.time());
     });
     assert!(sim.metrics().completed_trips > 50);
 }
@@ -1737,10 +1739,12 @@ fn car_only_metrics_match_pre_multimodal_golden() {
 // Updated with route costs by turning movement (ramp-and-colby-calibration): same trips completed, a few routes differ, so distances and means move in the third digit.
 // Updated with no exit-room reservation for vehicles crossing a node (round 18): same trips completed, delay and speed move in the third digit.
 // Updated with mid-block loading of local trips (ramp-and-colby-calibration): trips with a local end start and end along the block, so their distances and times are shorter.
-const GOLDEN_CORRIDOR: &str = r#"{"arterialMeanSpeed":5.761648551766213,"backlog":0,"completedTrips":526,"cutThrough":{"shareOfLocalVehKm":0.8265175350039898,"vehKm":221.5440076608658},"gridlockRemoved":0,"meanTripDelay":1.5208860594030835,"meanTripTime":102.64343672641525,"safety":{"localMeanSpeed":9.558517647891405,"localP85Speed":11.596306758736135,"shareAbove20mph":0.6891513638794794,"shareAbove25mph":0.2201818505972544,"ttcConflicts":0},"spawned":558,"time":1800.0,"unroutableTrips":0,"vehKm":428.1463856430054,"vehiclesInNetwork":32}"#;
+// Updated with local trip accounting (repair-local-trip-measurement-integrity): arrivals enter at the first step at or after them, local ends are drawn per end, the free-flow reference covers the driven part of each link and the last step counts.
+const GOLDEN_CORRIDOR: &str = r#"{"arterialMeanSpeed":5.761736031244265,"backlog":0,"completedTrips":525,"cutThrough":{"shareOfLocalVehKm":0.8257244731051251,"vehKm":222.15067101478576},"gridlockRemoved":0,"meanTripDelay":8.958155887400277,"meanTripTime":102.90836828974405,"safety":{"localMeanSpeed":9.549428974040165,"localP85Speed":11.600536120237706,"shareAbove20mph":0.6897817089201421,"shareAbove25mph":0.22139274252124183,"ttcConflicts":0},"spawned":558,"time":1800.0,"unroutableTrips":0,"vehKm":430.4130046892166,"vehiclesInNetwork":33}"#;
 // Updated when right turn on red was added (ASSUMPTION, validation cases b10 and b11): the w->s flow turns right on red, so mean delay falls from 13.4 to 13.1 s.
 // Updated with physical junction recovery (expose-junction-fallback-validity): vehicles held at a node exit brake and stand, so means move in the fourth digit; `JunctionRecovery::Historical` still gives the previous value.
-const GOLDEN_CROSS: &str = r#"{"arterialMeanSpeed":8.437208849872697,"backlog":0,"completedTrips":551,"cutThrough":{"shareOfLocalVehKm":1.0,"vehKm":64.32630456638336},"gridlockRemoved":0,"meanTripDelay":13.051033011715166,"meanTripTime":50.45545291935601,"safety":{"localMeanSpeed":6.3859110693008585,"localP85Speed":11.395984848484847,"shareAbove20mph":0.46754440442181094,"shareAbove25mph":0.1687492236989194,"ttcConflicts":10},"spawned":572,"time":1800.0,"unroutableTrips":0,"vehKm":216.1536853237152,"vehiclesInNetwork":21}"#;
+// Updated with local trip accounting (repair-local-trip-measurement-integrity): arrivals enter at the first step at or after them, local ends are drawn per end, the free-flow reference covers the driven part of each link and the last step counts.
+const GOLDEN_CROSS: &str = r#"{"arterialMeanSpeed":8.414721174507111,"backlog":0,"completedTrips":551,"cutThrough":{"shareOfLocalVehKm":1.0,"vehKm":64.71006148147583},"gridlockRemoved":0,"meanTripDelay":15.534092318474316,"meanTripTime":50.77940936218723,"safety":{"localMeanSpeed":6.4090566465441725,"localP85Speed":11.420263679816289,"shareAbove20mph":0.46936824454902104,"shareAbove25mph":0.17102636520822093,"ttcConflicts":10},"spawned":571,"time":1800.0,"unroutableTrips":0,"vehKm":217.629896941185,"vehiclesInNetwork":20}"#;
 
 mod modes;
 mod initial;
@@ -1749,6 +1753,7 @@ mod route_choice;
 mod cut_through;
 mod intent;
 mod junction;
+mod local_trips;
 
 /// Removing any intervention restores the baseline effective state and signal output, including after a reset that carried the old list.
 #[test]

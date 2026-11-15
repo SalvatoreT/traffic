@@ -56,3 +56,55 @@ D5. Separate measurement repair from calibration. Run all periods with matching 
 Endpoint repair can change queues, not just reported means. Initial loading must use the same endpoint semantics, or its placed population will represent different trip lengths from newly arriving traffic. Existing free-flow reference and finite-step errors also appear in the gate examples; the small negative gate delays require a numerical explanation during implementation rather than an assertion that E1 accounts for every negative delay.
 
 This proposal makes no claim about the magnitude or direction of a corrected Rockridge intervention effect. The requested scope is proposal-only: tasks stay unchecked and the change stays open until a later implementation passes its tests.
+
+## Implementation, 2026-11-15
+
+### Confirmation
+
+The evidence script reproduced the audit's table exactly on the engine after `expose-junction-fallback-validity` (local one-link: 15 trips, mean time -0.087 s, mean delay -95.0 s, 0 veh-km; local two-link: delay -89.6 s). E1, E2 and E3 hold as described. The terminal-motion part of E3 was confirmed in source: the local-exit, gate-exit and node-entry branches of `update_vehicles` returned before the motion statistics.
+
+### What changed
+
+D1. `mid_block_pos` takes the end's role, so origin and destination draws differ. The origin draw keeps its old key, so origin positions did not move. When a local trip starts and ends on the same link, the two draws are used in driving order: the upstream one is the entry. This ordering is labeled ASSUMPTION; no observed driveway distribution exists. The exit is stored on the vehicle. Initial loading uses the same positions: a car with a local end is placed only on the part of its first or last link it drives, the time weights of those links shrink to that part, and the control delay of a last link that ends before the stop line is dropped. Endpoints repeat after `reset` and in a paired scenario with the same trips (test `endpoints_repeat_after_a_reset_and_in_a_paired_scenario`).
+
+D2. The free-flow reference counts each link only between the trip's entry or the link's emerge point and its exit or stop line, at the driver's desired speed (limit × compliance), with only the humps inside that part (`link_ff_part`). Node movements count at the lower of the turn speed and the driver's desired speed on the lower link limit (`mv_ff_for`), which keeps the compliance semantics through junctions. The old reference counted every link's full length, so the junction areas between the stop line and the next link's emerge point were counted twice, once in the link and once in the movement. Nothing is clamped.
+
+D3. One convention for events within a step: everything that happens in [t, t + DT) is stamped t, and a requested arrival becomes eligible at the first step that starts at or after it. So requested arrival ≤ entry ≤ completion for cars, cyclists and pedestrians, which share `generate_arrivals`. Trip time still counts from the requested arrival, so a wait to enter is included once.
+
+D4. The last step of a vehicle that leaves a link (at a local exit, a gate or into a node) is counted up to the exit point, with the time share of the step it took to get there, before the vehicle is removed or starts crossing (`account_motion`).
+
+`Config::record_trips` now also records `TripTiming` per completed car trip: requested arrival, entry, completion, entry and exit link and position, driven distance and free-flow reference.
+
+A test in `tests::intent` exposed a related classification slip that the new step timing made visible. A through car first counted as it left an on-ramp link was classified as having no on-ramp, because the classification looked only at the links ahead. It now includes the link being left.
+
+### Synthetic fixtures after the change
+
+| Endpoints | Links | Completed trips | Mean trip time, s | Mean delay, s | Vehicle-km |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Local | 1 | 15 | 18.83 | 3.86 | 2.37 |
+| Local | 2 | 15 | 97.56 | 4.07 | 14.87 |
+| Gate | 1 | 15 | 94.15 | 0.36 | 14.82 |
+| Gate | 2 | 15 | 190.56 | 1.85 | 29.82 |
+
+Remaining error (task 3.2): a gate trip enters at its desired speed and keeps it, so a lone gate trip's delay stays within two steps of zero. The test bound is -0.5 s; completion is stamped at the start of its step and a crossing starts up to 0.3 m before the stop line. A local trip pulls out from a standstill, and the IDM free-road term [Treiber2000] approaches the desired speed slowly, so a lone local trip loses up to v0 / a (12.7 s for the fastest, least eager drivers). The means above also include later trips that caught up with a slower car ahead. Driven distance matches the path to within 0.3 m per junction crossed.
+
+### Rockridge, matched seeds
+
+Native runs as in `expose-junction-fallback-validity` (network `5fe8241a6ba1e306`, one hour after the 120 s settle), before = that change's `physical` engine, after = this change. Mean over seeds.
+
+| Period | Scenario | Seeds | Through cars/h | Removed | Mean trip time, s | Mean delay, s | Veh-km | Hillegass N/S, Colby N/S |
+|---|---|---|---|---|---|---|---|---|
+| PM | baseline | 1-3 | 1183 → 1234 | 8.3 → 12.3 | 480.9 → 486.9 | 184.8 → 224.9 | 80,970 → 82,044 | 74/232, 134/171 → 77/227, 140/175 |
+| PM | three filters | 1-3 | 719 → 689 | 7.3 → 14.3 | 489.1 → 494.3 | 192.8 → 232.6 | 80,693 → 81,841 | 22/9, 100/77 → 20/6, 86/78 |
+| AM | baseline | 1-2 | 563 → 567 | 4.0 → 4.0 | 431.0 → 432.3 | 136.1 → 171.5 | 71,598 → 72,699 | |
+| Midday | baseline | 1-2 | 428 → 422 | 0 → 0.5 | 368.3 → 368.5 | 74.7 → 109.4 | 52,754 → 53,582 | |
+
+Trip times move by a few seconds. Mean delay rises by 35 to 40 s in every period, mostly because the reference no longer double-counts junction areas and no longer charges local trips for road they never drove. Vehicle-km rise by 1.3 to 1.6% from the terminal steps now counted. Through cars move within their seed spread (± 114 in PM). The three-filter package now cuts through traffic by 44% against 39% before this change.
+
+The new trip records show the defect's reach. One-link local trips are rare: 1 to 5 per hour in each run, on 1 to 5 flows, consistent with the audit's estimate of 1.2 to 2.0 veh/h of candidate flows. No trip has a negative time. Between 5 and 19 trips per run (of 15,000 to 22,000) have a delay below -0.5 s, the lowest -7.2 s. These are drivers who carry their speed into a link with a lower limit and decelerate gradually, so they drive faster than the reference for a while. They are not clamped.
+
+### Validation suite
+
+g1 (gate-fed single-lane link at 25 mph) moved from 1,608 to 1,590 veh/h against a lower bound of 1,603 when arrivals started entering at the first step at or after them; g2 moved the other way (1,890 to 1,896). It is recorded as an unreviewed deviation in `data/calibration/validation.deviations.json`.
+
+Task 3.5 (regenerating stored results under the new fingerprint) is left to the coordinated regeneration.

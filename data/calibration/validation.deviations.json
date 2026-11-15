@@ -77,6 +77,13 @@
    "reviewed": false,
    "relevance": "unreviewed",
    "followUp": null
+  },
+  {
+   "id": "g1",
+   "reason": "Gate-fed single-lane link at 25 mph carries 1,590 veh/h against 1,603 to 1,980 (0.85 to 1.05 of the drivers' mean equilibrium capacity) [Treiber2014]. It was 1,608 before arrivals were made to enter at the first step that starts at or after them (repair-local-trip-measurement-integrity); the 35 mph case g2 rose from 1,890 to 1,896 with the same change, so the shift is within one seed's variation.",
+   "reviewed": false,
+   "relevance": "unreviewed",
+   "followUp": null
   }
  ]
 }

@@ -28,6 +28,8 @@ struct Cand {
     vplan: u32,
     noise_seed: u32,
     uid: u32,
+    /// Exit position of a car that starts and ends on one link (NaN otherwise).
+    end_pos: f32,
 }
 
 impl Simulation {
@@ -210,7 +212,39 @@ impl Simulation {
                 };
                 let routed = if vplan != NO_PLAN { self.initial_route_via(origin, dest, noise_seed, vplan) } else { self.initial_route(bike, origin, dest, noise_seed) };
                 let Some(route) = routed else { continue };
-                let times = self.initial_times(&route, bike.then_some(v0_abs));
+                let uid = self.uid_next;
+                self.uid_next += 1;
+                let mut times = self.initial_times(&route, bike.then_some(v0_abs));
+                // A car with a local end drives only part of its first or last link, as a newly arriving one does (`try_spawns`).
+                let last = route.len() - 1;
+                let span = |l: usize| (self.topo.emerge_pos[l], self.topo.stop_pos[l]);
+                let (mut lo0, mut hi_last, mut end_pos) = (span(route[0] as usize).0, span(route[last] as usize).1, f32::NAN);
+                if !bike {
+                    let local_o = !self.net.nodes[origin as usize].gate;
+                    let local_d = !self.net.nodes[dest as usize].gate && self.topo.link_to[route[last] as usize] == dest;
+                    if last == 0 && local_o && local_d {
+                        if let Some((a, e)) = self.one_link_ends(uid, route[0] as usize) {
+                            (lo0, hi_last, end_pos) = (a, e, e);
+                        }
+                    } else {
+                        if local_o {
+                            lo0 = self.mid_block_pos(uid, route[0] as usize, END_ORIGIN).unwrap_or(lo0);
+                        }
+                        if local_d {
+                            hi_last = self.mid_block_pos(uid, route[last] as usize, END_DEST).unwrap_or(hi_last);
+                        }
+                    }
+                    for (i, t) in times.iter_mut().enumerate() {
+                        let (e, st) = span(route[i] as usize);
+                        let (lo, hi) = (if i == 0 { lo0 } else { e }, if i == last { hi_last } else { st });
+                        if st - e > 1e-3 {
+                            t.0 *= ((hi - lo) / (st - e)).clamp(0.0, 1.0);
+                        }
+                        if i == last && hi < st {
+                            t.1 = 0.0;
+                        }
+                    }
+                }
                 let total: f32 = times.iter().map(|t| t.0 + t.1).sum();
                 let mut r = rng.f64() as f32 * total;
                 let mut at = route.len() - 1;
@@ -224,8 +258,9 @@ impl Simulation {
                 let (via, vplan) = self.initial_pending(vplan, &route, at);
                 let l = route[at] as usize;
                 let (emerge, stop) = (self.topo.emerge_pos[l], self.topo.stop_pos[l]);
+                let (lo, hi) = (if at == 0 { lo0 } else { emerge }, if at == last { hi_last } else { stop });
                 // Uniform by time over the free-flow part, then the expected control delay in front of the stop line.
-                let pos = if r < times[at].0 { emerge + (stop - emerge) * (r / times[at].0.max(1e-3)) } else { stop };
+                let pos = if r < times[at].0 { lo + (hi - lo) * (r / times[at].0.max(1e-3)) } else { hi };
                 let nm = self.topo.nmain[l];
                 let lane = if bike {
                     self.topo.nlanes(l)
@@ -240,9 +275,7 @@ impl Simulation {
                 };
                 let q = self.topo.qidx(l, lane);
                 lane_n[q] += 1;
-                let uid = self.uid_next;
-                self.uid_next += 1;
-                cands.push(Cand { q, lane, link: l as u32, pos, route, at, drv, bike, v0_abs, origin, dest, through, intent, via, vplan, noise_seed, uid });
+                cands.push(Cand { q, lane, link: l as u32, pos, route, at, drv, bike, v0_abs, origin, dest, through, intent, via, vplan, noise_seed, uid, end_pos });
             }
         }
         // Front of each lane first; ties by uid so the order does not depend on the sort.
@@ -351,6 +384,10 @@ impl Simulation {
             t_depart: self.t,
             t_enter: self.t,
             preplaced: true,
+            ff_from: pos,
+            end_pos: c.end_pos,
+            t_ins: self.t,
+            entry_pos: pos,
             ..Veh::blank()
         };
         if !c.bike {

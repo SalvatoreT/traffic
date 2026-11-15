@@ -103,6 +103,29 @@ pub struct TripRecord {
     pub guided: bool,
 }
 
+/// Timing and extent of one completed car trip (recorded with `Config::record_trips`; trips placed by initial loading are left out).
+#[derive(Clone, Debug, PartialEq)]
+pub struct TripTiming {
+    pub uid: u32,
+    pub origin: u32,
+    pub dest: u32,
+    /// Requested arrival, entry into the network and completion (s).
+    pub t_arr: f64,
+    pub t_ins: f64,
+    pub t_done: f64,
+    pub entry_link: u32,
+    pub entry_pos: f32,
+    pub exit_link: u32,
+    pub exit_pos: f32,
+    /// Distance driven (m) and the free-flow reference time over the same path (s).
+    pub dist_m: f32,
+    pub ff_s: f32,
+}
+
+/// Which end of a trip a local position is for (`Simulation::mid_block_pos`).
+const END_ORIGIN: u32 = 0;
+const END_DEST: u32 = 1;
+
 const NO_PLAN: u32 = u32::MAX;
 /// Intent slot of a vehicle that is not a through car.
 pub(crate) const NO_INTENT: u16 = u16::MAX;
@@ -214,6 +237,14 @@ struct Veh {
     mid_start: bool,
     /// Recovery reasons (`REC_*`) the current permission to enter depends on.
     go_rec: u8,
+    /// Position on the current link where the trip's driven path on it began (free-flow reference of `link_ff_part`).
+    ff_from: f32,
+    /// Exit position of a local trip that starts and ends on one link (NaN: the destination position of `mid_block_pos`).
+    end_pos: f32,
+    /// Time the trip entered the network, its first position, and the distance it has driven (m).
+    t_ins: f64,
+    entry_pos: f32,
+    dist_m: f32,
 }
 
 impl Veh {
@@ -270,6 +301,11 @@ impl Veh {
             preplaced: false,
             mid_start: false,
             go_rec: 0,
+            ff_from: 0.0,
+            end_pos: f32::NAN,
+            t_ins: 0.0,
+            entry_pos: 0.0,
+            dist_m: 0.0,
         }
     }
     #[inline]
@@ -506,6 +542,7 @@ pub struct Simulation {
     /// Junction recovery events (bounded by `RECOVERY_LOG_MAX`) and, per node, measured admissions by reason and held removals.
     rec_log: Vec<RecoveryEvent>,
     rec_node: Vec<[u32; 4]>,
+    timings: Vec<TripTiming>,
 }
 
 /// Improved IDM [Treiber2014]: the IDM with `s1 = 0` and `delta = 4` whose steady-state time gap is exactly `t_hw` (the plain IDM
@@ -680,6 +717,7 @@ impl Simulation {
             off_listed: Vec::new(),
             rec_log: Vec::new(),
             rec_node: vec![[0; 4]; nn],
+            timings: Vec::new(),
             topo,
             net,
         };
@@ -809,6 +847,11 @@ impl Simulation {
         &self.trips
     }
 
+    /// Timing and extent of the completed car trips recorded so far (empty unless `Config::record_trips`).
+    pub fn trip_timings(&self) -> &[TripTiming] {
+        &self.timings
+    }
+
     /// Per-trip wandering metrics of the recorded trips (detour ratio against the shortest network distance, loops, reversals).
     pub fn trip_metrics(&self) -> Vec<crate::wander::TripMetric> {
         crate::wander::analyze(&self.topo, &self.eff, &self.net, &self.trips)
@@ -895,8 +938,9 @@ impl Simulation {
     /// The intent slot of a through car at the moment it is counted: the first intent that matches the on-ramp on its planned route, the off-ramp it has driven, or its flow's intent.
     fn classify_intent(&self, vid: u32) -> (u16, u16) {
         let v = &self.vehs[vid as usize];
+        // The link being left counts too: a car first counted as it leaves an on-ramp link is using that ramp.
         let ahead = v.route.get(v.ridx as usize..).unwrap_or(&[]);
-        let on = ahead.iter().map(|&l| self.link_on[l as usize]).find(|&r| r != 0).unwrap_or(0);
+        let on = std::iter::once(&v.link).chain(ahead).map(|&l| self.link_on[l as usize]).find(|&r| r != 0).unwrap_or(0);
         let off = v.off_ramp;
         for (k, r) in self.intent_rules.iter().enumerate() {
             let hit = match *r {
@@ -1639,10 +1683,11 @@ impl Simulation {
 
     // ------------------------------------------------------------------ demand and spawning
 
+    /// Every event within a step [t, t + DT) is stamped t. A requested arrival becomes eligible to enter at the first step that starts at or
+    /// after it, so arrival <= entry <= completion; the trip time counts from the requested arrival, so waiting to enter is included.
     fn generate_arrivals(&mut self) {
-        let t_end = self.t + DT;
         for fi in 0..self.flows.len() {
-            while self.flows[fi].next_t < t_end {
+            while self.flows[fi].next_t <= self.t {
                 let f = &mut self.flows[fi];
                 let t_arr = f.next_t;
                 f.next_t += f.rng.exp(f.rate);
@@ -1898,15 +1943,89 @@ impl Simulation {
         }
     }
 
-    /// Position along link `l` at which trip `uid` starts or ends when its end there is local (not a gate): between `MID_BLOCK_LO` and
-    /// 1 - `MID_BLOCK_LO` of the room between the junctions, fixed per trip and link. None on a block shorter than `MID_BLOCK_MIN_M`.
-    fn mid_block_pos(&self, uid: u32, l: usize) -> Option<f32> {
+    /// Position along link `l` at which trip `uid` starts (`END_ORIGIN`) or ends (`END_DEST`) when that end is local (not a gate): between
+    /// `MID_BLOCK_LO` and 1 - `MID_BLOCK_LO` of the room between the junctions, fixed per trip, link and end, so a reset or a paired
+    /// scenario puts the trip at the same places. None on a block shorter than `MID_BLOCK_MIN_M`.
+    fn mid_block_pos(&self, uid: u32, l: usize, end: u32) -> Option<f32> {
         let (emerge, stop) = (self.topo.emerge_pos[l], self.topo.stop_pos[l]);
         if stop - emerge < MID_BLOCK_MIN_M {
             return None;
         }
-        let u = hash32(uid, l as u32 ^ 0x4D49_4442) as f32 / u32::MAX as f32;
+        let u = hash32(uid, l as u32 ^ 0x4D49_4442 ^ end.wrapping_mul(0x9E37_79B9)) as f32 / u32::MAX as f32;
         Some(emerge + (stop - emerge) * (MID_BLOCK_LO + (1.0 - 2.0 * MID_BLOCK_LO) * u))
+    }
+
+    /// Entry and exit positions of a local trip that starts and ends on link `l` (ASSUMPTION: the two drawn positions are used in driving
+    /// order, the upstream one as the entry, so the exit is never behind the entry on the one-way direction of the link).
+    fn one_link_ends(&self, uid: u32, l: usize) -> Option<(f32, f32)> {
+        let (o, e) = (self.mid_block_pos(uid, l, END_ORIGIN)?, self.mid_block_pos(uid, l, END_DEST)?);
+        Some((o.min(e), o.max(e)))
+    }
+
+    /// Free-flow reference time of the part of link `l` from `a` to `b` (the part between its junctions that the trip drives), at the
+    /// driver's desired speed, plus the hump allowance of the humps in that part.
+    fn link_ff_part(&self, l: usize, fcomp: f32, a: f32, b: f32) -> f32 {
+        let (a, b) = (a.max(self.topo.emerge_pos[l]), b.min(self.topo.stop_pos[l]));
+        if b <= a {
+            return 0.0;
+        }
+        let humps = self.eff.humps[l].iter().filter(|&&h| h >= a && h < b).count();
+        (b - a) / (self.eff.limit[l] * fcomp) + HUMP_FF_PENALTY * humps as f32
+    }
+
+    /// Free-flow reference time through movement `mv` at the driver's desired speed: the movement's free-flow time `mv_ff` is at the turn
+    /// speed or the lower of the two links' limits; a driver whose desired speed is `fcomp` times the limit crosses no faster than the
+    /// turn speed allows.
+    fn mv_ff_for(&self, mv: u32, fcomp: f32) -> f32 {
+        let m = &self.topo.mvs[mv as usize];
+        let (vt, vlim) = (self.eff.mv_vturn[mv as usize], self.eff.limit[m.a as usize].min(self.eff.limit[m.b as usize]));
+        let len = self.eff.mv_ff[mv as usize] * vt.min(vlim);
+        len / vt.min(vlim * fcomp).max(0.1)
+    }
+
+    /// Motion statistics of motor vehicle `vid` on link `l` for a step part of `w` s in which it drove `dist` m and ended at speed `v`.
+    fn account_motion(&mut self, vid: u32, l: usize, dist: f32, v: f32, w: f64) {
+        self.vehs[vid as usize].dist_m += dist;
+        if self.vehs[vid as usize].kind == KIND_BIKE {
+            return;
+        }
+        let wf = w as f32;
+        let bi = l * NBINS + self.cur_bin;
+        if v < 1.0 {
+            self.d_link_stopped[l] += wf;
+        }
+        self.d_link_delay[l] += wf * (1.0 - v / self.eff.limit[l]).max(0.0);
+        self.bin_vt[bi] += wf;
+        self.bin_vs[bi] += v * wf;
+        if self.t >= 0.0 {
+            self.cum[l][2] += wf;
+            self.cum[l][3] += v * wf;
+        }
+        let st = &mut self.st;
+        st.veh_m += dist as f64;
+        let through = self.vehs[vid as usize].through;
+        if self.topo.is_local[l] {
+            st.local_veh_m += dist as f64;
+            if through {
+                st.ct_veh_m += dist as f64;
+            }
+        }
+        if self.topo.is_res_study[l] {
+            st.safety_t += w;
+            st.safety_vs += v as f64 * w;
+            if v > MPH20 {
+                st.above20 += w;
+            }
+            if v > MPH25 {
+                st.above25 += w;
+            }
+            let hb = ((v / 0.25) as usize).min(HIST_BINS - 1);
+            st.hist[hb] += w;
+        }
+        if self.topo.is_arterial[l] {
+            st.art_t += w;
+            st.art_vs += v as f64 * w;
+        }
     }
 
     /// Can a vehicle with parameters `drv` pull out from the curb into lane `lane` of link `b` at `pos`, from a standstill? The gap rule is
@@ -1980,7 +2099,15 @@ impl Simulation {
                 }
                 let drv = self.backlog[n][idx].drv;
                 // A trip that starts at a gate enters at the start of its first link. A local trip pulls out from the curb along the block.
-                let mid = if self.net.nodes[n].gate { None } else { self.mid_block_pos(self.backlog[n][idx].uid, b as usize) };
+                let uid = self.backlog[n][idx].uid;
+                let one_link = route.is_empty() && self.topo.link_to[b as usize] == dest && !self.net.nodes[dest as usize].gate;
+                let (mid, end_pos) = if self.net.nodes[n].gate {
+                    (None, f32::NAN)
+                } else if one_link {
+                    self.one_link_ends(uid, b as usize).map_or((None, f32::NAN), |(a, e)| (Some(a), e))
+                } else {
+                    (self.mid_block_pos(uid, b as usize, END_ORIGIN), f32::NAN)
+                };
                 let entry = match mid {
                     Some(pos) => {
                         let lane = self.topo.nmain[b as usize] - 1;
@@ -2012,6 +2139,10 @@ impl Simulation {
                     pos: pos_ins,
                     v: v_ins,
                     mid_start: at.is_some(),
+                    ff_from: pos_ins,
+                    end_pos,
+                    t_ins: self.t,
+                    entry_pos: pos_ins,
                     drv: trip.drv,
                     origin: trip.origin,
                     dest: trip.dest,
@@ -2528,7 +2659,6 @@ impl Simulation {
         let nl = self.topo.n_links;
         let rev = self.step_n % 2 == 0;
         let dt = DT as f32;
-        let cb = self.cur_bin;
         for i in 0..nl {
             let l = if rev { nl - 1 - i } else { i };
             let nlanes = self.topo.nlanes(l);
@@ -2564,16 +2694,24 @@ impl Simulation {
                             self.st.clamps += 1;
                         }
                     }
+                    // The part of this step driven before reaching `end` (linear in time over the step), for a vehicle that leaves the link there.
+                    let part = |end: f32| -> (f32, f64) {
+                        let d = (end.min(x) - x0).max(0.0);
+                        (d, if x > x0 { DT * (d / (x - x0)).min(1.0) as f64 } else { 0.0 })
+                    };
                     {
                         // A trip whose destination is local leaves the road along its last block.
                         let veh = &self.vehs[vid as usize];
                         if veh.kind == KIND_CAR && veh.next().is_none() && !self.net.nodes[veh.dest as usize].gate && self.topo.link_to[l] == veh.dest {
-                            if let Some(ex) = self.mid_block_pos(veh.uid, l) {
+                            let exit = if veh.end_pos.is_nan() { self.mid_block_pos(veh.uid, l, END_DEST) } else { Some(veh.end_pos) };
+                            if let Some(ex) = exit {
                                 if x >= ex {
-                                    self.vehs[vid as usize].pos = x;
+                                    let (d, w) = part(ex);
+                                    self.account_motion(vid, l, d, v, w);
+                                    self.vehs[vid as usize].pos = ex;
                                     self.vehs[vid as usize].v = v;
                                     self.vehs[vid as usize].mid_start = true;
-                                    self.finish_trip(vid, qi);
+                                    self.finish_trip(vid, qi, ex);
                                     continue;
                                 }
                             }
@@ -2585,14 +2723,20 @@ impl Simulation {
                             (veh.go, veh.next())
                         };
                         if go && x >= stop_pos - 0.3 {
-                            self.vehs[vid as usize].pos = x;
-                            self.vehs[vid as usize].v = v;
+                            let (d, w) = part(stop_pos);
                             if nxt.is_none() {
-                                self.finish_trip(vid, qi);
+                                self.account_motion(vid, l, d, v, w);
+                                self.vehs[vid as usize].pos = x;
+                                self.vehs[vid as usize].v = v;
+                                self.finish_trip(vid, qi, self.topo.length[l]);
                                 leader = None;
                                 continue;
                             }
+                            self.vehs[vid as usize].pos = x;
+                            self.vehs[vid as usize].v = v;
                             if self.begin_crossing(vid, l, qi) {
+                                // Counted after the crossing starts, at the speed the vehicle reached the line with.
+                                self.account_motion(vid, l, d, v, w);
                                 leader = None;
                                 continue;
                             }
@@ -2614,49 +2758,7 @@ impl Simulation {
                     if self.ped_on && !self.world.mid[l].is_empty() {
                         self.mid_block_passes(vid, l, x0, x, v);
                     }
-                    if self.vehs[vid as usize].kind == KIND_BIKE {
-                        leader = Some((x, self.vehs[vid as usize].drv.len, v));
-                        idx += 1;
-                        continue;
-                    }
-                    // Statistics (motor vehicles).
-                    let bi = l * NBINS + cb;
-                    if v < 1.0 {
-                        self.d_link_stopped[l] += dt;
-                    }
-                    self.d_link_delay[l] += dt * (1.0 - v / self.eff.limit[l]).max(0.0);
-                    self.bin_vt[bi] += dt;
-                    self.bin_vs[bi] += v * dt;
-                    if self.t >= 0.0 {
-                        self.cum[l][2] += dt;
-                        self.cum[l][3] += v * dt;
-                    }
-                    let st = &mut self.st;
-                    st.veh_m += dist as f64;
-                    let through = self.vehs[vid as usize].through;
-                    if self.topo.is_local[l] {
-                        st.local_veh_m += dist as f64;
-                        if through {
-                            st.ct_veh_m += dist as f64;
-                        }
-                    }
-                    if self.topo.is_res_study[l] {
-                        let w = DT;
-                        st.safety_t += w;
-                        st.safety_vs += v as f64 * w;
-                        if v > MPH20 {
-                            st.above20 += w;
-                        }
-                        if v > MPH25 {
-                            st.above25 += w;
-                        }
-                        let hb = ((v / 0.25) as usize).min(HIST_BINS - 1);
-                        st.hist[hb] += w;
-                    }
-                    if self.topo.is_arterial[l] {
-                        st.art_t += DT;
-                        st.art_vs += v as f64 * DT;
-                    }
+                    self.account_motion(vid, l, dist, v, DT);
                     leader = Some((x, self.vehs[vid as usize].drv.len, v));
                     idx += 1;
                 }
@@ -2757,12 +2859,8 @@ impl Simulation {
         out
     }
 
-    fn link_ff_for(&self, l: usize, fcomp: f32) -> f32 {
-        let pen = HUMP_FF_PENALTY * self.eff.humps[l].len() as f32;
-        (self.eff.ff[l] - pen) / fcomp + pen
-    }
-
-    fn finish_trip(&mut self, vid: u32, qi: usize) {
+    /// Trip `vid` ends at position `end` of its current link (the link's length for a trip that ends at a gate or junction).
+    fn finish_trip(&mut self, vid: u32, qi: usize, end: f32) {
         let l = self.vehs[vid as usize].link as usize;
         if self.vehs[vid as usize].kind == KIND_BIKE {
             let tt = self.t - self.vehs[vid as usize].t_depart;
@@ -2776,7 +2874,10 @@ impl Simulation {
             return;
         }
         self.record_link_exit(vid, l);
-        let ff = self.link_ff_for(l, self.vehs[vid as usize].drv.fcomp);
+        let ff = {
+            let v = &self.vehs[vid as usize];
+            self.link_ff_part(l, v.drv.fcomp, v.ff_from, end)
+        };
         let veh = &mut self.vehs[vid as usize];
         if veh.on_ramp != 0 {
             self.st.on_ramp_checked += 1;
@@ -2806,6 +2907,20 @@ impl Simulation {
         if self.cfg.record_trips && !pre {
             let v = &self.vehs[vid as usize];
             self.trips.push(TripRecord { uid: v.uid, origin: v.origin, dest: v.dest, trail: v.trail.clone(), switches: v.switches, guided: v.guided });
+            self.timings.push(TripTiming {
+                uid: v.uid,
+                origin: v.origin,
+                dest: v.dest,
+                t_arr: v.t_depart,
+                t_ins: v.t_ins,
+                t_done: self.t,
+                entry_link: v.trail.first().copied().unwrap_or(v.link),
+                entry_pos: v.entry_pos,
+                exit_link: l as u32,
+                exit_pos: end.min(self.topo.stop_pos[l]),
+                dist_m: v.dist_m,
+                ff_s: v.ff_sum,
+            });
         }
         if self.sl.is_some() {
             if let Some(r) = self.sl_record(&self.vehs[vid as usize], true) {
@@ -2869,7 +2984,7 @@ impl Simulation {
             self.mv_tt_sum[mv as usize] += (self.t - veh_t_enter) as f32;
             self.mv_tt_n[mv as usize] += 1;
         }
-        let ff = self.link_ff_for(l, fcomp) + self.eff.mv_ff[mv as usize];
+        let ff = self.link_ff_part(l, fcomp, self.vehs[vid as usize].ff_from, self.topo.length[l]) + self.mv_ff_for(mv, fcomp);
         self.lanes[qi].pop_front();
         {
             let veh = &mut self.vehs[vid as usize];
@@ -2890,6 +3005,7 @@ impl Simulation {
         if kind != KIND_BIKE {
             self.st.veh_m += m_len as f64;
         }
+        self.vehs[vid as usize].dist_m += m_len;
         self.vehs[vid as usize].go_rec = 0;
         let measured = self.t >= 0.0;
         if measured {
@@ -3020,6 +3136,7 @@ impl Simulation {
                     }
                     veh.lane = tr.lane;
                     veh.pos = self.topo.emerge_pos[tr.to_link as usize];
+                    veh.ff_from = veh.pos;
                     veh.v = tr.v_exit;
                     veh.t_enter = self.t;
                     veh.queued = false;
@@ -3571,6 +3688,14 @@ impl Simulation {
         let l = x.link as usize;
         let qi = self.topo.qidx(l, x.lane as usize);
         self.begin_crossing(id, l, qi)
+    }
+
+    pub(crate) fn test_ff_part(&self, l: usize, fcomp: f32, a: f32, b: f32) -> f32 {
+        self.link_ff_part(l, fcomp, a, b)
+    }
+
+    pub(crate) fn test_ends(&self, uid: u32, l: usize) -> (Option<f32>, Option<f32>, Option<(f32, f32)>) {
+        (self.mid_block_pos(uid, l, END_ORIGIN), self.mid_block_pos(uid, l, END_DEST), self.one_link_ends(uid, l))
     }
 
     pub(crate) fn test_set_recovery(&mut self, p: JunctionRecovery) {
