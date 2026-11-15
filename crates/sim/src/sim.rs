@@ -484,6 +484,8 @@ pub struct Simulation {
     vehs: Vec<Veh>,
     free: Vec<u32>,
     uid_next: u32,
+    /// Next uid of an agent placed by initial loading, from `INITIAL_UID_BASE` on: placements differ by scenario, so they do not shift the uids of requested trips.
+    uid_init: u32,
     n_alive: usize,
     lanes: Vec<VecDeque<u32>>,
     transit: Vec<Vec<Transit>>,
@@ -669,6 +671,7 @@ impl Simulation {
             vehs: Vec::new(),
             free: Vec::new(),
             uid_next: 0,
+            uid_init: initial::INITIAL_UID_BASE,
             n_alive: 0,
             lanes: (0..topo.n_lanes + nl).map(|_| VecDeque::new()).collect(),
             transit: (0..nn).map(|_| Vec::new()).collect(),

@@ -32,6 +32,11 @@ struct Cand {
     end_pos: f32,
 }
 
+/// First uid of the agents placed by initial loading. Requested trips number from 0 in arrival order, the same in every scenario of a
+/// seed, so their uid-keyed draws (local start and end positions, crosswalk yield draws) pair across scenarios (change
+/// explain-traffic-redistribution, decision D2).
+pub(super) const INITIAL_UID_BASE: u32 = 1 << 31;
+
 impl Simulation {
     /// Place the agents of the initial load and settle the network; the clock then reads 0 and all results are zeroed.
     pub(super) fn initial_load(&mut self) {
@@ -212,8 +217,8 @@ impl Simulation {
                 };
                 let routed = if vplan != NO_PLAN { self.initial_route_via(origin, dest, noise_seed, vplan) } else { self.initial_route(bike, origin, dest, noise_seed) };
                 let Some(route) = routed else { continue };
-                let uid = self.uid_next;
-                self.uid_next += 1;
+                let uid = self.uid_init;
+                self.uid_init += 1;
                 let mut times = self.initial_times(&route, bike.then_some(v0_abs));
                 // A car with a local end drives only part of its first or last link, as a newly arriving one does (`try_spawns`).
                 let last = route.len() - 1;
