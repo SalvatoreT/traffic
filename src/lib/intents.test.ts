@@ -1,3 +1,4 @@
+import { endsSentence, rampOfIntent, rampPoint } from './intents';
 import { describe, expect, it } from 'vitest';
 import { apportion, describePaths, intentPaths, intentTable, pathWidth, MAX_PX, MIN_PX } from './intents';
 import { buildIndex } from './naming';
@@ -90,5 +91,37 @@ describe('describePaths stability', () => {
   it('lists the stronger street first once the difference is material', () => {
     expect(say(60, 20)).toMatch(/uses Hillegass Avenue southbound and Ashby Street southbound/);
     expect(say(20, 60)).toMatch(/uses Ashby Street southbound and Hillegass Avenue southbound/);
+  });
+});
+
+describe('freeway ramp reasons', () => {
+  const ramps = [{ id: 'on-1', kind: 'on' as const, node: 1, links: [3], label: 'To SR-9 by the Main St on-ramp' }];
+  const defs = [
+    { id: 'a', label: 'To SR-9 by the Main St on-ramp', section: 'To the freeway, by on-ramp', onRamp: 'on-1', basis: 'observed' as const, note: 'x' },
+    { id: 'b', label: 'Other on-ramps', section: 'To the freeway, by on-ramp', onRamp: 'other', basis: 'assumed' as const, note: 'y' },
+    { id: 'c', label: 'Cross-town', section: 'Not using the freeway', basis: 'assumed' as const, note: 'z' },
+  ];
+  it('rows carry the section heading of their reason', () => {
+    const m = (v: number[]) => ({ cutThrough: { vehiclesPerHour: v.reduce((x, y) => x + y, 0), byIntent: [...v.map((x, i) => ({ id: String(i), vehicles: x, vehiclesPerHour: x })), { id: 'other', vehicles: 0, vehiclesPerHour: 0 }] } }) as never;
+    const t = intentTable(defs, null, m([5, 3, 2]))!;
+    expect(t.rows.map((r) => r.section)).toEqual(['To the freeway, by on-ramp', 'To the freeway, by on-ramp', 'Not using the freeway', undefined]);
+  });
+  it('finds the ramp a reason is keyed by, and none for other', () => {
+    expect(rampOfIntent(defs[0], ramps)?.id).toBe('on-1');
+    expect(rampOfIntent(defs[1], ramps)).toBeNull();
+    expect(rampOfIntent(defs[2], ramps)).toBeNull();
+    expect(rampOfIntent(defs[0], undefined)).toBeNull();
+  });
+  it('places the ramp point at its surface node', () => {
+    const net = { nodes: [{ x: 0, y: 0 }, { x: 12, y: -7 }] } as never;
+    expect(rampPoint(net, ramps[0])).toEqual({ x: 12, y: -7, label: 'To SR-9 by the Main St on-ramp' });
+  });
+  it('says where cars start for an on-ramp reason and where they are bound for an off-ramp reason', () => {
+    const ends = { from: [{ label: 'Berkeley', share: 62 }, { label: 'Telegraph Ave north', share: 30 }], to: [{ label: 'SR-24', share: 100 }] };
+    expect(endsSentence({ onRamp: 'on-1' }, ends)).toBe('In the model these cars mostly start in Berkeley (62%) and Telegraph Ave north (30%).');
+    expect(endsSentence({ offRamp: 'off-1' }, { from: [{ label: 'SR-24', share: 100 }], to: [{ label: 'Berkeley', share: 70 }] })).toBe('In the model these cars mostly are bound for Berkeley (70%).');
+    expect(endsSentence({}, ends)).toContain('start in Berkeley');
+    expect(endsSentence({}, ends)).toContain('are bound for SR-24');
+    expect(endsSentence({ onRamp: 'x' }, null)).toBe('');
   });
 });

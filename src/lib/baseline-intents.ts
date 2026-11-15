@@ -1,5 +1,6 @@
 import type { DemandIntent } from '../types';
 import { intentPaths, type IntentPaths } from './intents';
+import type { IntentEnds } from '../../tools/lib/intent-ends';
 import { hashMatches } from './proposals';
 import { RUN_SECONDS } from './run';
 import { base64ToF32, f32ToBase64, resultsBase, RESULT_SEED, type Loaded, type StoredInputs } from './stored-results';
@@ -15,6 +16,8 @@ export interface BaselineIntentsPeriod {
   byIntent: { id: string; vehiclesPerHour: number }[];
   /** Float32 stride 3 (slot, link, vehicles), as base64 of the little-endian bytes. */
   intentLinks: string;
+  /** Where each reason's cars start and end by approach group, computed from the run (one entry per demand intent in order, then `other`). Absent in older files. */
+  ends?: IntentEnds[];
 }
 export interface BaselineIntents {
   version: typeof BASELINE_INTENTS_VERSION;
@@ -24,10 +27,10 @@ export interface BaselineIntents {
 
 export const baselineIntentsUrl = (area: string) => `${resultsBase(area)}/baseline-intents.json`;
 
-export function encodeBaselinePeriod(metrics: Metrics, intentLinks: Float32Array | null): BaselineIntentsPeriod | null {
+export function encodeBaselinePeriod(metrics: Metrics, intentLinks: Float32Array | null, ends?: IntentEnds[]): BaselineIntentsPeriod | null {
   const by = metrics.cutThrough.byIntent;
   if (!by || !intentLinks) return null;
-  return { totalVph: metrics.cutThrough.vehiclesPerHour, byIntent: by.map((b) => ({ id: b.id, vehiclesPerHour: b.vehiclesPerHour })), intentLinks: f32ToBase64(intentLinks) };
+  return { totalVph: metrics.cutThrough.vehiclesPerHour, byIntent: by.map((b) => ({ id: b.id, vehiclesPerHour: b.vehiclesPerHour })), intentLinks: f32ToBase64(intentLinks), ...(ends ? { ends } : {}) };
 }
 
 export type BaselineVerdict = 'ok' | 'version' | 'area' | 'run' | 'network' | 'demand' | 'simulator';
@@ -61,10 +64,10 @@ export async function fetchBaselineIntents(area: string): Promise<BaselineIntent
 }
 
 /** One reason's typical path in one period's baseline, and its cars an hour; null when the file has no such period or reason. */
-export function baselineIntent(f: BaselineIntents, period: string, defs: DemandIntent[], id: string): { vph: number; paths: IntentPaths } | null {
+export function baselineIntent(f: BaselineIntents, period: string, defs: DemandIntent[], id: string): { vph: number; paths: IntentPaths; ends: IntentEnds | null } | null {
   const p = f.periods[period];
   const slot = defs.findIndex((d) => d.id === id);
   if (!p || slot < 0 || p.byIntent[slot]?.id !== id) return null;
   const vph = p.byIntent[slot].vehiclesPerHour;
-  return { vph, paths: intentPaths(base64ToF32(p.intentLinks), slot, id, f.seconds, vph) };
+  return { vph, paths: intentPaths(base64ToF32(p.intentLinks), slot, id, f.seconds, vph), ends: p.ends?.find((e) => e.id === id) ?? null };
 }

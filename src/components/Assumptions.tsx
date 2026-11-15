@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import './assumptions.css';
 import type { AreaBundle, DemandIntent } from '../types';
 import { assumptionsCurrent, fetchAssumptions, intentShares, type AssumedMovementView, type AssumptionsFile } from '../lib/assumptions';
@@ -7,7 +7,7 @@ import { buildIntentMap } from '../lib/intentmap';
 import { IntentMap } from './IntentMap';
 import { OverviewMap, TurnMap } from './TurnMap';
 import { buildOverview, buildTurnMap } from '../lib/turnmap';
-import { BASIS_HELP, BASIS_TEXT, OTHER_ID, describePaths, isLocal } from '../lib/intents';
+import { BASIS_HELP, BASIS_TEXT, OTHER_ID, describePaths, endsSentence, isLocal, rampOfIntent, rampPoint } from '../lib/intents';
 import { ATTRIBUTION } from '../lib/mapexport';
 import type { NetIndex } from '../lib/naming';
 import { buildBaseMap } from '../lib/picture';
@@ -212,7 +212,7 @@ function Reasons({ defs, bundle, index, mode, baseline, status, order, first, pe
     <section id="ref-intents" aria-labelledby="intents-h" tabIndex={-1}>
       <h3 id="intents-h">Why cars cut through</h3>
       <p>
-        These are hypotheses about why drivers cross the study area without an end in it, not what drivers said. A through trip that uses a residential or service street is filed under the first reason whose origin and destination fit;
+        These are hypotheses about why drivers cross the study area without an end in it, not what drivers said. A through trip that uses a residential or service street is filed under the first reason that fits: the freeway on-ramp it will use, the off-ramp it came by, or, for trips that use no ramp, where it starts and ends;
         any other goes under Other. <strong>{BASIS_TEXT.observed}:</strong> {BASIS_HELP.observed} <strong>{BASIS_TEXT.assumed}:</strong> {BASIS_HELP.assumed}
       </p>
       <p>
@@ -220,23 +220,34 @@ function Reasons({ defs, bundle, index, mode, baseline, status, order, first, pe
         {other && ` Through cars that fit none of the reasons are tallied as Other: ${Math.round(other.vehiclesPerHour)} an hour.`}
       </p>
       {status !== 'ok' && <p className="muted" role="status">{STATUS_NOTE[status]}</p>}
-      <ul className="reasons">
-        {defs.map((d) => <ReasonCard key={d.id} d={d} net={net} index={index} mode={mode} base={base} file={file} order={order} first={first} periodName={periodName} defs={defs} />)}
-      </ul>
+      {defs.reduce<{ title?: string; items: DemandIntent[] }[]>((acc, d) => {
+        if (!acc.length || d.section !== acc[acc.length - 1].title) acc.push({ title: d.section, items: [] });
+        acc[acc.length - 1].items.push(d);
+        return acc;
+      }, []).map((g) => (
+        <Fragment key={g.title ?? 'reasons'}>
+          {g.title && <h4 className="reason-section">{g.title}</h4>}
+          <ul className="reasons">
+            {g.items.map((d) => <ReasonCard key={d.id} d={d} net={net} index={index} mode={mode} base={base} file={file} order={order} first={first} periodName={periodName} defs={defs} ramps={bundle.demand.ramps} />)}
+          </ul>
+        </Fragment>
+      ))}
     </section>
   );
 }
 
-function ReasonCard({ d, net, index, mode, base, file, order, first, periodName, defs }: {
-  d: DemandIntent; net: AreaBundle['network']; index: NetIndex; mode: Mode; base: ReturnType<typeof buildBaseMap>; file: BaselineIntents | null; order: string[]; first: string | undefined; periodName: (id: string) => string; defs: DemandIntent[];
+function ReasonCard({ d, net, index, mode, base, file, order, first, periodName, defs, ramps }: {
+  d: DemandIntent; net: AreaBundle['network']; index: NetIndex; mode: Mode; base: ReturnType<typeof buildBaseMap>; file: BaselineIntents | null; order: string[]; first: string | undefined; periodName: (id: string) => string; defs: DemandIntent[]; ramps: AreaBundle['demand']['ramps'];
 }) {
+  const ramp = rampOfIntent(d, ramps);
+  const rampAt = useMemo(() => (ramp ? rampPoint(net, ramp) : null), [ramp, net]);
   const lead = file && first ? baselineIntent(file, first, defs, d.id) : null;
   const perPeriod = file ? order.map((p) => ({ p, v: baselineIntent(file, p, defs, d.id)?.vph })).filter((x) => x.v !== undefined) : [];
   const drawn = lead && lead.paths.segments.some((s) => isLocal(net.links[s.link]));
   const text = lead ? describePaths(net, index, lead.paths) : '';
-  const model = useMemo(() => (drawn && lead ? buildIntentMap(net, index, lead.paths, base) : null), [drawn, lead, net, index, base]);
+  const model = useMemo(() => (drawn && lead ? buildIntentMap(net, index, lead.paths, base, rampAt) : null), [drawn, lead, net, index, base, rampAt]);
   const widest = lead ? Math.round(lead.paths.maxVph) : 0;
-  const alt = `${d.label}. Map of today’s traffic in the ${first ? periodName(first) : 'baseline'}. ${text} The widest line is about ${widest} ${plural(widest, 'car', 'cars')} an hour.`;
+  const alt = `${d.label}. Map of today’s traffic in the ${first ? periodName(first) : 'baseline'}. ${text} The widest line is about ${widest} ${plural(widest, 'car', 'cars')} an hour.${ramp ? ` The ramp is marked on the map: ${ramp.label}.` : ''}`;
   return (
     <li className="reason" id={`reason-${d.id}`}>
       <div className="reason-head">
@@ -244,6 +255,7 @@ function ReasonCard({ d, net, index, mode, base, file, order, first, periodName,
       </div>
       <p><span className={`badge badge-${d.basis}`} title={BASIS_HELP[d.basis]}>{BASIS_TEXT[d.basis]}</span></p>
       <p className="reason-note">{d.note}</p>
+      {lead?.ends && endsSentence(d, lead.ends) && <p className="reason-ends">{endsSentence(d, lead.ends)}</p>}
       {d.avoids && <p>Would otherwise use {d.avoids}, by the model’s shortest route with the side streets closed.</p>}
       {perPeriod.length > 0 && (
         <dl className="reason-nums" aria-label="Through cars an hour today">

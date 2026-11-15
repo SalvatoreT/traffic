@@ -26,6 +26,12 @@ export function IntentMap({ model, mode, alt }: { model: IntentMapModel; mode: M
         const s = Math.max(6 * unit, 1.3 * a.w);
         return <path key={i} transform={`translate(${n1(a.x)} ${n1(a.y)}) rotate(${n1(a.angle)})`} d={`M${n1(-s)} ${n1(-0.75 * s)}L${n1(s)} 0L${n1(-s)} ${n1(0.75 * s)}Z`} fill={c.line} stroke={c.casing} strokeWidth={n1(1.2 * unit)} strokeLinejoin="round" />;
       })}
+      {model.ramp && (
+        <g>
+          <path transform={`translate(${n1(model.ramp.dot.x)} ${n1(model.ramp.dot.y)}) rotate(45)`} d={`M${n1(-4.6 * unit)} ${n1(-4.6 * unit)}h${n1(9.2 * unit)}v${n1(9.2 * unit)}h${n1(-9.2 * unit)}Z`} fill={c.casing} stroke={c.line} strokeWidth={n1(2 * unit)} />
+          <text className="imap-end" x={n1(model.ramp.x)} y={n1(model.ramp.y)} textAnchor={model.ramp.anchor} fontSize={n1(fontSize)} strokeWidth={n1(3.5 * unit)}>{model.ramp.text}</text>
+        </g>
+      )}
       {model.ends.map((e) => (
         <g key={e.kind}>
           <circle cx={n1(e.dot.x)} cy={n1(e.dot.y)} r={n1(4.6 * unit)} fill={e.kind === 'from' ? c.line : c.casing} stroke={c.line} strokeWidth={n1(1.6 * unit)} />

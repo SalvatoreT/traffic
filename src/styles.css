@@ -476,7 +476,12 @@ table.intent-table, .intent-table thead, .intent-table tbody, .intent-table tfoo
 .intent-table tr { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 .5rem; padding: .4rem .2rem; border-top: 1px solid var(--border); }
 .intent-table th[scope='row'] { grid-column: 1 / -1; text-align: left; font-weight: 400; }
 .intent-table td::before { content: attr(data-label) ' '; display: block; font-size: .72rem; color: var(--muted); }
-table.intent-table tfoot tr { border-top: 2px solid var(--border); } table.intent-table tfoot th, table.intent-table tfoot td { font-weight: 600; }
+table.intent-table tfoot tr { border-top: 2px solid var(--border); }
+.intent-ramp-pin { position: relative; width: 0; height: 0; pointer-events: none; }
+.intent-ramp-dot { position: absolute; left: -7px; top: -7px; width: 14px; height: 14px; box-sizing: border-box; border-radius: 3px; transform: rotate(45deg); background: #e4ccff; border: 3px solid #7a1fc2; }
+.intent-ramp-text { position: absolute; left: 11px; top: -11px; white-space: nowrap; font: 600 .75rem/1.2 system-ui, sans-serif; color: var(--text); background: var(--bg); border: 1px solid #7a1fc2; border-radius: 3px; padding: 1px 5px; }
+.intent-table tr.intent-section { display: block; padding-bottom: 0; border-top: 2px solid var(--border); }
+.intent-table .intent-section th { display: block; text-align: left; font-size: .8rem; font-weight: 600; color: var(--muted); letter-spacing: .02em; } table.intent-table tfoot th, table.intent-table tfoot td { font-weight: 600; }
 table.intent-table td { text-align: left; font-variant-numeric: tabular-nums; }
 .intent-btn { display: block; width: 100%; min-height: 32px; padding: .2rem .35rem; margin: -.2rem -.35rem .15rem; text-align: left; font: inherit; color: var(--text); background: none; border: 1px solid transparent; border-radius: 6px; cursor: pointer; }
 .intent-btn:hover { background: var(--surface-2); }

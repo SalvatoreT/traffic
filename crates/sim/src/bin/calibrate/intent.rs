@@ -362,7 +362,7 @@ pub fn by_intent_section(ct: &traffic_sim::model::CutThrough, defs: &Value) -> S
     let mut md = String::new();
     let total = ct.vehicles_per_hour;
     let _ = writeln!(md, "\n## Through cars by intent (cut-through intent view)\n");
-    let _ = writeln!(md, "A through car is tallied once, under the first intent whose origin and destination groups hold its trip ends, at the moment the through count counts it. Cars an hour over the run, the same window as the through-car figure ({total:.0} an hour).\n");
+    let _ = writeln!(md, "A through car is tallied once, under the first intent that fits it (the on-ramp on its planned route, the off-ramp it has driven, or the origin and destination groups of its trip), at the moment the through count counts it. Cars an hour over the run, the same window as the through-car figure ({total:.0} an hour).\n");
     let _ = writeln!(md, "| Intent | Basis | Cars an hour | Share |\n| --- | --- | --- | --- |");
     let mut listed = 0.0;
     for c in &ct.by_intent {

@@ -15,6 +15,8 @@ import { RESULT_SEED, RESULT_VERSION, canonicalItems, encodeStats, parseResult, 
 import { RUN_SECONDS } from '../src/lib/run';
 import { BASELINE_INTENTS_VERSION, encodeBaselinePeriod, parseBaselineIntents, type BaselineIntents } from '../src/lib/baseline-intents';
 import { loadEngine, runHour, type HourStats } from './lib/run-result';
+import { summarizeEnds } from './lib/intent-ends';
+import { deriveApproachGroups, groupOfNode, type ApproachGroupsCfg } from './lib/approach-groups';
 import { writeFileAtomic } from './lib/atomic';
 
 const root = resolve(import.meta.dirname, '..');
@@ -30,7 +32,7 @@ if (!isMainThread) {
   for (const j of jobs) {
     const t0 = Date.now();
     const s = runHour(e, network, demand, j.period, j.interventions);
-    const stats = { metrics: s.metrics, linkStats: s.linkStats, intentLinks: s.intentLinks };
+    const stats = { metrics: s.metrics, linkStats: s.linkStats, intentLinks: s.intentLinks, intentTrips: s.intentTrips };
     parentPort!.postMessage({ job: j, stats, ms: Date.now() - t0 });
   }
   process.exit(0);
@@ -115,11 +117,22 @@ await new Promise<void>((resolveAll, reject) => {
 });
 
 const computed = new Date().toISOString();
+// Where each reason's cars start and end, in approach groups (area config `approachGroups`), from the run's own per-trip tally.
+const areaCfgPath = join(root, 'data/areas', `${area}.json`);
+const groups = existsSync(areaCfgPath) && JSON.parse(readFileSync(areaCfgPath, 'utf8')).approachGroups
+  ? deriveApproachGroups(network.nodes, network.links, JSON.parse(readFileSync(areaCfgPath, 'utf8')).approachGroups as ApproachGroupsCfg) : null;
+const nodeById = new Map(network.nodes.map((n) => [n.id, n]));
+const endsOf = (s: HourStats) => {
+  const by = s.metrics.cutThrough.byIntent;
+  if (!groups || !by || !s.intentTrips) return undefined;
+  const label = new Map(groups.groups.map((g) => [g.id, g.label]));
+  return summarizeEnds(s.intentTrips, by.map((b) => b.id), (id) => groupOfNode(groups, nodeById as never, id), (g) => label.get(g) ?? g);
+};
 {
   const periodsOut: BaselineIntents['periods'] = sameInputs(oldBaselines) ? { ...oldBaselines!.periods } : {};
   for (const p of basePeriods) {
     const s = done.get(`base:${p}`);
-    const e = s ? encodeBaselinePeriod(s.metrics, s.intentLinks) : null;
+    const e = s ? encodeBaselinePeriod(s.metrics, s.intentLinks, endsOf(s)) : null;
     if (e) periodsOut[p] = e; else console.warn(`baseline ${p} has no intents: the demand carries none, so no baseline-intents entry`);
   }
   if (basePeriods.length && Object.keys(periodsOut).length) {

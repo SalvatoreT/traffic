@@ -1,11 +1,13 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import type { DemandIntent, Metrics, Network } from '../types';
+import { Fragment, useEffect, useId, useMemo, useRef, useState } from 'react';
+import type { DemandIntent, DemandRamp, Metrics, Network } from '../types';
 import type { NetIndex } from '../lib/naming';
 import { EARLY_NOTE } from '../lib/run';
-import { BASIS_HELP, BASIS_TEXT, OTHER_ID, describePaths, intentTable, type IntentPaths } from '../lib/intents';
+import { BASIS_HELP, BASIS_TEXT, OTHER_ID, describePaths, intentTable, rampOfIntent, type IntentPaths } from '../lib/intents';
 
 interface Props {
   defs: DemandIntent[];
+  /** The freeway ramps the reasons are keyed by. */
+  ramps?: DemandRamp[];
   base: Metrics | null; scen: Metrics | null; comparing: boolean;
   net: Network; idx: NetIndex;
   selected: string | null; onSelect(id: string | null): void;
@@ -23,10 +25,11 @@ interface Props {
 const signed = (n: number | null): string => (n === null ? '—' : n === 0 ? '0' : `${n > 0 ? '+' : '−'}${Math.abs(n)}`);
 const num = (n: number | null): string => (n === null ? '—' : String(n));
 
-export function IntentPanel({ defs, base, scen, comparing, net, idx, selected, onSelect, paths, pathsFrom, phone, running, early, onAbout }: Props) {
+export function IntentPanel({ defs, ramps, base, scen, comparing, net, idx, selected, onSelect, paths, pathsFrom, phone, running, early, onAbout }: Props) {
   const id = useId();
   const table = useMemo(() => intentTable(defs, base, scen), [defs, base, scen]);
   const def = selected ? defs.find((d) => d.id === selected) : undefined;
+  const ramp = def ? rampOfIntent(def, ramps) : null;
   const live = useMemo(() => (paths && def ? describePaths(net, idx, paths) : ''), [paths, def, net, idx]);
   const held = useRef<{ key: string; text: string } | null>(null);
   const key = `${selected}|${pathsFrom}`;
@@ -61,11 +64,14 @@ export function IntentPanel({ defs, base, scen, comparing, net, idx, selected, o
           <tr><th scope="col">Reason</th><th scope="col">Baseline</th><th scope="col">Scenario</th><th scope="col">Change</th></tr>
         </thead>
         <tbody>
-          {table.rows.map((r) => {
+          {table.rows.map((r, i) => {
             const d = defs.find((x) => x.id === r.id);
             const on = selected === r.id;
+            const heading = r.section && r.section !== table.rows[i - 1]?.section;
             return (
-              <tr key={r.id} role="row" className={on ? 'intent-on' : undefined}>
+              <Fragment key={r.id}>
+              {heading && <tr role="row" className="intent-section"><th scope="colgroup" colSpan={4}>{r.section}</th></tr>}
+              <tr role="row" className={on ? 'intent-on' : undefined}>
                 <th scope="row">
                   {r.id === OTHER_ID ? <span>{r.label}</span> : (
                     <button type="button" className="intent-btn" aria-pressed={on} onClick={() => onSelect(on ? null : r.id)}>{r.label}</button>
@@ -77,6 +83,7 @@ export function IntentPanel({ defs, base, scen, comparing, net, idx, selected, o
                 <td data-label="Scenario">{num(r.scen)}</td>
                 <td data-label="Change" className="chg neutral">{comparing ? signed(r.change) : '—'}</td>
               </tr>
+              </Fragment>
             );
           })}
         </tbody>
@@ -101,6 +108,7 @@ export function IntentPanel({ defs, base, scen, comparing, net, idx, selected, o
                 {phone ? ' Drag the sheet down to see the map.' : ''}
               </p>
             )}
+            {ramp && <p className="muted small">The ramp is marked on the map: {ramp.label}.</p>}
             <p className="muted small">{def.note}</p>
             <button type="button" className="btn" onClick={() => onSelect(null)}>Turn off the map highlight</button>
           </div>

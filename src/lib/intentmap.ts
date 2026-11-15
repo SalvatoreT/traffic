@@ -1,6 +1,6 @@
 import type { Network } from '../types';
 import { pointAlong } from './geom';
-import { pathEnds, pathWidth, type IntentPaths } from './intents';
+import { pathEnds, pathWidth, type IntentPaths, type RampPoint } from './intents';
 import type { NetIndex } from './naming';
 import { buildBaseMap, type BaseMap } from './picture';
 
@@ -15,7 +15,9 @@ const MARGIN = 5;
 export interface MapLine { link: number; d: string; w: number; vph: number }
 export interface MapArrow { x: number; y: number; angle: number; w: number }
 export interface MapEnd { kind: 'from' | 'to'; street: string; text: string; x: number; y: number; anchor: 'start' | 'end'; dot: { x: number; y: number } }
-export interface IntentMapModel extends BaseMap { lines: MapLine[]; arrows: MapArrow[]; ends: MapEnd[]; maxVph: number; fontSize: number }
+/** The freeway ramp of a ramp reason: a point and its label, placed inside the view. */
+export interface MapRamp { x: number; y: number; text: string; anchor: 'start' | 'end'; dot: { x: number; y: number } }
+export interface IntentMapModel extends BaseMap { lines: MapLine[]; arrows: MapArrow[]; ends: MapEnd[]; ramp: MapRamp | null; maxVph: number; fontSize: number }
 
 const fmt = (v: number) => (Math.round(v * 10) / 10).toString();
 const pathOf = (g: [number, number][]) => g.map(([x, y], i) => `${i ? 'L' : 'M'}${fmt(x)} ${fmt(-y)}`).join('');
@@ -41,7 +43,7 @@ export function keepNames<N extends { text: string; x: number; y: number; angle:
 }
 
 /** The static map of one reason's typical path: the area, quiet streets, boundary names, the path with width by cars an hour, arrows for direction and where it starts and ends. */
-export function buildIntentMap(net: Network, idx: NetIndex, paths: IntentPaths, base: BaseMap = buildBaseMap(net)): IntentMapModel {
+export function buildIntentMap(net: Network, idx: NetIndex, paths: IntentPaths, base: BaseMap = buildBaseMap(net), rampAt: RampPoint | null = null): IntentMapModel {
   const { unit, view } = base;
   // Where both directions of a street are on the path and one is less than half the other, the arrows would face each other: keep the heavier.
   const segs = paths.segments.filter((s) => {
@@ -75,6 +77,15 @@ export function buildIntentMap(net: Network, idx: NetIndex, paths: IntentPaths, 
   };
   e.from.slice(0, 1).forEach((f) => place('from', f.name, f.link));
   e.to.slice(0, 1).forEach((t) => place('to', t.name, t.link));
+  let ramp: MapRamp | null = null;
+  if (rampAt && rampAt.x >= view.x && rampAt.x <= view.x + view.w && -rampAt.y >= view.y && -rampAt.y <= view.y + view.h) {
+    const x = rampAt.x, y = -rampAt.y;
+    const w = rampAt.label.length * CHAR_W * size;
+    const anchor: 'start' | 'end' = x + w + MARGIN * unit > view.x + view.w ? 'end' : 'start';
+    const tx = Math.max(view.x + MARGIN * unit + (anchor === 'end' ? w : 0), Math.min(view.x + view.w - MARGIN * unit - (anchor === 'start' ? w : 0), x + (anchor === 'start' ? 8 : -8) * unit));
+    const ty = Math.max(view.y + size + MARGIN * unit, Math.min(view.y + view.h - MARGIN * unit, y + 14 * unit));
+    ramp = { x: tx, y: ty, text: rampAt.label, anchor, dot: { x, y } };
+  }
   const names = keepNames(base.names, ends, unit, size);
-  return { ...base, names, lines, arrows, ends, maxVph: paths.maxVph, fontSize: size };
+  return { ...base, names, lines, arrows, ends, ramp, maxVph: paths.maxVph, fontSize: size };
 }

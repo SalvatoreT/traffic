@@ -28,7 +28,7 @@ import { Proposals, useProposals } from './components/Proposals';
 import { hashLoaded, linkHash, type LoadedHashes, type Proposal } from './lib/proposals';
 import { fetchResult, resultKey, STORED_NOTE, toStatsMsg, verdict, type StoredResult } from './lib/stored-results';
 import { IntentPanel } from './components/IntentPanel';
-import { intentPaths, segmentWidths } from './lib/intents';
+import { intentPaths, rampOfIntent, rampPoint, segmentWidths } from './lib/intents';
 import { baselineCheck, checkThroughRoutes, routeHeadline } from './lib/throughroutes';
 import { effectiveView, initViewState, viewReducer } from './lib/change';
 import { showCalibrationBanner } from './lib/caveat';
@@ -378,6 +378,11 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
     if (slot < 0 || !m?.cutThrough.byIntent) return null;
     return intentPaths(intentRun?.intentLinks, slot, intentSel!, m.time, m.cutThrough.byIntent[slot]?.vehiclesPerHour ?? 0);
   }, [intentSel, intentDefs, intentRun, withheld]);
+  const intentRamp = useMemo(() => {
+    const d = intentSel ? intentDefs?.find((x) => x.id === intentSel) : undefined;
+    const r = d ? rampOfIntent(d, demand.ramps) : null;
+    return r ? rampPoint(bundle.network, r) : null;
+  }, [intentSel, intentDefs, demand.ramps, bundle.network]);
   const mapVisible = view === 'map';
   const symbols = useMemo(() => mapSymbols(interventions, view === 'map' && !!intentPathsShown), [interventions, view, intentPathsShown]);
   useEffect(() => setHoverPlace(null), [view]);
@@ -427,7 +432,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   const resultsPanel = (
     <Comparison base={base} scen={scen} comparing={comparing} finished={finished} withheld={withheld} scenarioCount={interventions.length} onRef={(k) => { setSourceRef(k); setView('sources'); }}
       intents={intentDefs?.length ? (
-        <IntentPanel defs={intentDefs} base={base} scen={scen} comparing={comparing} net={bundle.network} idx={index} selected={intentSel} onSelect={setIntentSel}
+        <IntentPanel defs={intentDefs} ramps={demand.ramps} base={base} scen={scen} comparing={comparing} net={bundle.network} idx={index} selected={intentSel} onSelect={setIntentSel}
           paths={intentPathsShown} pathsFrom={comparing ? source : 'scenario'} phone={phone} running={running} early={early} onAbout={() => { setSourceRef('intents'); setView('assumptions'); }} />
       ) : undefined} />
   );
@@ -511,6 +516,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
               client={client} still={!!stored} interventions={interventions} selection={mapVisible ? selection : null} onHit={onHit} hover={hoverPlace} interactive={mapVisible}
               routes={{ check: routeCheck, show: showRoutes, highlight: hotRoute }}
               intentPaths={view === 'map' && intentPathsShown ? segmentWidths(intentPathsShown) : null}
+              intentRamp={view === 'map' && intentPathsShown ? intentRamp : null}
               popover={placement === 'popover' ? menu : null}
               visible={mapShown} reducedMotion={reduced}
               modes={multimodal ? modes : { ...modes, bicycle: false, pedestrian: false }} showBikeNet={bikeNet && multimodal}

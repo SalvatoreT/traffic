@@ -57,6 +57,8 @@ interface Props {
   routes?: { check: RouteCheck; show: boolean; highlight: string | null };
   /** Typical path of the chosen cut-through intent: links with cars an hour and the line width in pixels. */
   intentPaths?: { link: number; vph: number; w: number }[] | null;
+  /** The freeway ramp the chosen reason is keyed by: a labeled point at the surface end of the ramp, in network meters. */
+  intentRamp?: { x: number; y: number; label: string } | null;
   /** A place chosen on the map, or null for empty map. */
   onHit(s: Selection | null): void;
   /** Menu shown as a pop-up tied to the selection (wide and mid-width layouts). */
@@ -760,6 +762,20 @@ export function MapView(p: Props) {
       map.setPaintProperty('intent-casing', 'line-color', INTENT_COLORS[mode].casing);
     } catch { /* layers exist once the map has loaded */ }
   }, [ip, mode, ready, bundle, proj]); // eslint-disable-line
+
+  // ---- the freeway ramp of the chosen cut-through intent: a labeled point
+  const ir = p.intentRamp;
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready || !ir) return;
+    const el = document.createElement('div');
+    el.className = 'intent-ramp-pin';
+    el.setAttribute('aria-hidden', 'true');
+    el.innerHTML = '<span class="intent-ramp-dot"></span><span class="intent-ramp-text"></span>';
+    (el.querySelector('.intent-ramp-text') as HTMLElement).textContent = ir.label;
+    const marker = new maplibregl.Marker({ element: el }).setLngLat(proj.toLonLat(ir.x, ir.y)).addTo(map);
+    return () => { marker.remove(); };
+  }, [ir, ready, proj]);
 
   // ---- bike network layer
   useEffect(() => {

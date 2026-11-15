@@ -39,8 +39,16 @@ export interface DemandPeriod {
 }
 export interface Provenance { source: string; url: string; note: string }
 /** A named reason through cars cross the study area (area config `throughIntents`), in the order the simulator tallies them. */
-export interface DemandIntent { id: string; label: string; avoids?: string; basis: 'observed' | 'assumed'; note: string }
-export interface Demand { version: 1; area: string; periods: DemandPeriod[]; provenance: Provenance[]; intents?: DemandIntent[] }
+export interface DemandIntent {
+  id: string; label: string; avoids?: string; basis: 'observed' | 'assumed'; note: string;
+  /** Heading the reason is listed under. */
+  section?: string;
+  /** The freeway ramp (a `ramps` id) or `other` the reason is keyed by: cars that will use this on-ramp, or came by this off-ramp. */
+  onRamp?: string; offRamp?: string;
+}
+/** A freeway ramp derived from the network: the surface node it is entered or left at, and its freeway-class links. */
+export interface DemandRamp { id: string; kind: 'on' | 'off'; node: number; links: number[]; label: string; direction?: string }
+export interface Demand { version: 1; area: string; periods: DemandPeriod[]; provenance: Provenance[]; intents?: DemandIntent[]; ramps?: DemandRamp[] }
 
 export interface Calibration { status: 'uncalibrated' | 'calibrated'; note?: string; defaultPeriod?: string; experimentalPeriods?: string[] }
 export interface AreaEntry {

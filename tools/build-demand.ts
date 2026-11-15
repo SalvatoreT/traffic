@@ -15,7 +15,8 @@ import { applyRecency, yearLabel, type RecencyConfig } from './lib/recency';
 import { offRampLinks, splitByRamp } from './lib/ramp-choice';
 import { intersectionStations, type IxConfig, type IxFile } from './lib/intersection-counts';
 import { assumedMovementFlows, assumedReportLines, belowMinReport, withAlternatives, type AssumedMovementCfg, type AssumedReport, type Carve } from './lib/assumed-movements';
-import { annotateFlows, resolveIntents, type IntentFlow, type ThroughIntentsCfg } from './lib/through-intents';
+import { annotateFlows, rampOut, resolveIntents, type IntentFlow, type ThroughIntentsCfg } from './lib/through-intents';
+import { deriveRamps } from './lib/ramps';
 import { deriveApproachGroups, expandGroups, groupOfNode, groupsFile, type ApproachGroups, type ApproachGroupsCfg } from './lib/approach-groups';
 import { countReportLines, countStations, mapMovement, nodeStreets, rawMovementCounts, touchesHeld, tripEnds, type CountConfig, type CountFile, type CountReport, type TripEnds } from './lib/volunteer-count';
 import { writeFileAtomic } from './lib/atomic';
@@ -1018,7 +1019,9 @@ const provenance = [
 ];
 
 // Cut-through intents (area config `throughIntents`): each car flow gets the index of the intent its origin and destination groups name. Volumes are not touched.
-const intentRes = groups && areaCfg?.throughIntents ? resolveIntents(areaCfg.throughIntents as ThroughIntentsCfg, groups) : [];
+// Freeway ramps are derived from the network (tools/lib/ramps.ts) and written beside the intents: the simulator tallies a through car by the ramp it uses.
+const intentRamps = areaCfg?.throughIntents ? deriveRamps(net.nodes, net.links, new Set<string>(cfg.freewayClasses ?? ['motorway']), (areaCfg.throughIntents as ThroughIntentsCfg).ramps) : [];
+const intentRes = groups && areaCfg?.throughIntents ? resolveIntents(areaCfg.throughIntents as ThroughIntentsCfg, groups, intentRamps) : [];
 if (intentRes.length) {
   for (const per of outPeriods) {
     const vol = annotateFlows(per.flows as IntentFlow[], intentRes, (id) => groupOfNode(groups!, nodeById, id));
@@ -1026,7 +1029,7 @@ if (intentRes.length) {
     console.log(`Intent flows ${per.id}: ${intentRes.map((r, k) => `${r.out.id} ${vol[k].toFixed(0)}`).join(', ')}, none ${vol[intentRes.length].toFixed(0)} veh/h (all flows, through or not)`);
   }
 }
-const out = { version: 1, area: cfg.area, ...(intentRes.length ? { intents: intentRes.map((r) => r.out) } : {}), periods: outPeriods.map((q) => ({ ...q, flows: q.flows.map(viaOut) })), provenance };
+const out = { version: 1, area: cfg.area, ...(intentRes.length ? { intents: intentRes.map((r) => r.out), ramps: intentRamps.map(rampOut) } : {}), periods: outPeriods.map((q) => ({ ...q, flows: q.flows.map(viaOut) })), provenance };
 mkdirSync(dirname(cfg.output), { recursive: true });
 writeFileAtomic(cfg.output, JSON.stringify(out));
 if (cfg.countFit?.validation?.demandOutput && Object.keys(cvFlows).length) {

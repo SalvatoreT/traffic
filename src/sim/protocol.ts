@@ -47,6 +47,8 @@ export interface SimLike {
   signals(): Uint8Array;
   linkStats(): Float32Array;
   intentLinks?(): Float32Array;
+  /** Stride 4: reason slot, origin node, destination node, cars (see the simulator's `intent_trips`). */
+  intentTrips?(): Float32Array;
   metrics(): string;
   reset(): void;
   free?(): void;

@@ -9,7 +9,7 @@ const root = resolve(import.meta.dirname, '../..');
 /** The seconds the worker steps at a time when running to the end at Max. The result does not depend on it. */
 const CHUNK = 15;
 
-export interface HourStats { metrics: Metrics; linkStats: Float32Array; intentLinks: Float32Array | null }
+export interface HourStats { metrics: Metrics; linkStats: Float32Array; intentLinks: Float32Array | null; intentTrips: Float32Array | null }
 export interface Engine { Simulation: SimCtor; fingerprint: string }
 
 /** The same WASM build the app runs, loaded in Node. Needs `npm run wasm`. */
@@ -24,7 +24,8 @@ export async function loadEngine(): Promise<Engine> {
 
 export const statsOf = (s: SimLike): HourStats => {
   const il = s.intentLinks?.() ?? null;
-  return { metrics: JSON.parse(s.metrics()) as Metrics, linkStats: s.linkStats(), intentLinks: il && il.length ? il : null };
+  const it = s.intentTrips?.() ?? null;
+  return { metrics: JSON.parse(s.metrics()) as Metrics, linkStats: s.linkStats(), intentLinks: il && il.length ? il : null, intentTrips: it && it.length ? it : null };
 };
 
 /** Same construction as the worker's `make`: both runs start loaded, the scenario's interventions in the config. */

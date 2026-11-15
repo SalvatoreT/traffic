@@ -35,3 +35,33 @@ describe('through intents', () => {
     expect(() => resolveIntents(mk({ basis: 'guess' as never }), groups)).toThrow(/basis/);
   });
 });
+
+describe('reasons keyed by a freeway ramp', () => {
+  const ramps = [{ id: 'on-1', kind: 'on' as const, label: 'To SR-9 by the Main St on-ramp' }, { id: 'off-2', kind: 'off' as const, label: 'From the SR-9 off-ramp at Oak St' }];
+  const cfg: ThroughIntentsCfg = {
+    sections: [{ id: 'on', title: 'To the freeway, by on-ramp' }, { id: 'none', title: 'Not using the freeway' }],
+    intents: [
+      { id: 'to-1', section: 'on', onRamp: 'on-1', basis: 'observed', note: 'x' },
+      { id: 'to-other', section: 'on', onRamp: 'other', label: 'Other on-ramps', basis: 'assumed', note: 'y' },
+      { id: 'from-2', offRamp: 'off-2', basis: 'assumed', note: 'z' },
+      { id: 'od', section: 'none', label: 'Cross-town', fromGroups: ['s'], toGroups: ['n'], basis: 'assumed', note: 'w' },
+    ],
+  };
+  it('takes the ramp label and the section title, and leaves group matching to the other reasons', () => {
+    const r = resolveIntents(cfg, groups, ramps);
+    expect(r.map((x) => x.out.label)).toEqual(['To SR-9 by the Main St on-ramp', 'Other on-ramps', 'From the SR-9 off-ramp at Oak St', 'Cross-town']);
+    expect(r.map((x) => x.out.section)).toEqual(['To the freeway, by on-ramp', 'To the freeway, by on-ramp', undefined, 'Not using the freeway']);
+    expect(r[0].out.onRamp).toBe('on-1');
+    expect(r[2].out.offRamp).toBe('off-2');
+    expect(intentOf(r, 's', 'n')).toBe(3);
+    const flows = [{ origin: 1, destination: 2, vehPerHour: 4 }] as (IntentFlow & { vehPerHour: number })[];
+    annotateFlows(flows, r, (id) => (id === 1 ? 's' : 'n'));
+    expect(flows[0].intent).toBe(3);
+  });
+  it('stops on a ramp the network does not have, a wrong kind or a missing label', () => {
+    expect(() => resolveIntents({ intents: [{ id: 'a', onRamp: 'off-2', basis: 'assumed', note: 'x' }] }, groups, ramps)).toThrow(/no on-ramp/);
+    expect(() => resolveIntents({ intents: [{ id: 'a', onRamp: 'nope', basis: 'assumed', note: 'x' }] }, groups, ramps)).toThrow(/no on-ramp/);
+    expect(() => resolveIntents({ intents: [{ id: 'a', onRamp: 'other', basis: 'assumed', note: 'x' }] }, groups, ramps)).toThrow(/label/);
+    expect(() => resolveIntents({ intents: [{ id: 'a', section: 'zz', onRamp: 'on-1', basis: 'assumed', note: 'x' }] }, groups, ramps)).toThrow(/section/);
+  });
+});

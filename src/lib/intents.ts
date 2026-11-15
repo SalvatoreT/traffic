@@ -1,4 +1,4 @@
-import type { DemandIntent, Metrics, NetLink, Network } from '../types';
+import type { DemandIntent, DemandRamp, Metrics, NetLink, Network } from '../types';
 import { compassWord, type NetIndex, UNNAMED } from './naming';
 import type { Mode } from './ramps';
 
@@ -26,12 +26,35 @@ export const MAX_PX = 15;
 export const SHOW_SHARE = 0.08;
 export const MIN_VPH = 1;
 
+/** The ramp a reason is keyed by (null for `other`, a reason that names no ramp, or a ramp the file does not list). */
+export const rampOfIntent = (d: DemandIntent, ramps: DemandRamp[] | undefined): DemandRamp | null => {
+  const id = d.onRamp ?? d.offRamp;
+  return (id && id !== 'other' ? ramps?.find((r) => r.id === id) : null) ?? null;
+};
+export interface RampPoint { x: number; y: number; label: string }
+/** Where a ramp meets the surface street, in the network's meters, with its plain label. */
+export const rampPoint = (net: Network, r: DemandRamp): RampPoint | null => {
+  const n = net.nodes[r.node];
+  return n ? { x: n.x, y: n.y, label: r.label } : null;
+};
+
+const endList = (xs: { label: string; share: number }[]): string => join(xs.map((x) => `${x.label} (${x.share}%)`));
+/** Where a reason's cars mostly start and end, from the run: a freeway on-ramp reason says where its cars start, an off-ramp reason where they are bound, the others both. Empty when the run names no group. */
+export function endsSentence(d: Pick<DemandIntent, 'onRamp' | 'offRamp'>, ends: { from: { label: string; share: number }[]; to: { label: string; share: number }[] } | null | undefined): string {
+  if (!ends) return '';
+  const from = d.offRamp ? [] : ends.from, to = d.onRamp ? [] : ends.to;
+  const parts = [from.length ? `start in ${endList(from)}` : '', to.length ? `are bound for ${endList(to)}` : ''].filter(Boolean);
+  return parts.length ? `In the model these cars mostly ${parts.join(' and ')}.` : '';
+}
+
 export const pathWidth = (vph: number): number => Math.min(MAX_PX, Math.max(MIN_PX, MIN_PX + (vph - MIN_VPH) * PX_PER_VPH));
 
 export interface IntentRow {
   id: string;
   label: string;
   basis: DemandIntent['basis'] | null;
+  /** Heading the row is listed under, when its reason has one. */
+  section?: string;
   /** Cars an hour, whole numbers that add up to the total's. */
   base: number | null;
   scen: number | null;
@@ -61,7 +84,7 @@ export function intentTable(defs: DemandIntent[] | undefined, base: Metrics | nu
   if (!defs?.length) return null;
   const b = column(defs, base), s = column(defs, scen);
   if (!s) return null;
-  const rows: IntentRow[] = [...defs.map((d) => ({ id: d.id, label: d.label, basis: d.basis })), { id: OTHER_ID, label: 'Other through cars (no listed reason fits)', basis: null }]
+  const rows: IntentRow[] = [...defs.map((d) => ({ id: d.id, label: d.label, basis: d.basis, section: d.section })), { id: OTHER_ID, label: 'Other through cars (no listed reason fits)', basis: null }]
     .map((d, i) => ({ ...d, base: b ? b[i] : null, scen: s[i], change: b ? s[i] - b[i] : null }));
   const sum = (c: number[] | null) => (c ? c.reduce((x, y) => x + y, 0) : null);
   return { rows, baseTotal: sum(b), scenTotal: sum(s), changeTotal: b ? sum(s)! - sum(b)! : null };

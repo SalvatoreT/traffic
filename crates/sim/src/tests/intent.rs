@@ -148,3 +148,16 @@ fn a_demand_without_ramps_tallies_by_flow_as_before() {
     let by = counts(&sim);
     assert!(by[0].1 > 5 && by[1].1 > 5 && by[2].1 == 0, "{by:?}");
 }
+
+#[test]
+fn intent_trips_add_up_to_each_reasons_count_and_name_its_trip_ends() {
+    let (sim, c) = run_intents(1200.0, &[(0, 3, 90.0, Some(0)), (3, 0, 60.0, Some(1))], 2);
+    let m = sim.metrics();
+    let rows: Vec<(usize, u32, u32, f32)> = sim.intent_trips().chunks(4).map(|r| (r[0] as usize, r[1] as u32, r[2] as u32, r[3])).collect();
+    for k in 0..2 {
+        let n: f32 = rows.iter().filter(|r| r.0 == k).map(|r| r.3).sum();
+        assert_eq!(n as u64, m.cut_through.by_intent[k].vehicles);
+    }
+    assert!(rows.iter().filter(|r| r.0 == 0).all(|r| r.1 == c.a[0] && r.2 == c.a[3]));
+    assert!(rows.iter().filter(|r| r.0 == 1).all(|r| r.1 == c.a[3] && r.2 == c.a[0]));
+}

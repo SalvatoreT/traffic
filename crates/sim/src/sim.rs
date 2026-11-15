@@ -301,8 +301,8 @@ struct Stats {
     /// Through vehicles per intent slot (demand intents, then "other"), and the links they used: slot * links + link. Sized on first use.
     intent_veh: Vec<u64>,
     intent_link: Vec<f32>,
-    /// Through vehicles per (intent slot, origin node): where each reason's cars come from.
-    intent_origin: std::collections::BTreeMap<(u16, u32), f32>,
+    /// Through vehicles per (intent slot, origin node, destination node): where each reason's cars come from and go.
+    intent_trips: std::collections::BTreeMap<(u16, u32, u32), f32>,
     /// Counted through cars whose planned on-ramp was checked at the end of their trip, and how many drove another one (or none).
     on_ramp_checked: u64,
     on_ramp_changed: u64,
@@ -2451,7 +2451,7 @@ impl Simulation {
             let veh = &mut self.vehs[vid as usize];
             veh.intent = slot;
             veh.on_ramp = on;
-            *self.st.intent_origin.entry((slot, veh.origin)).or_insert(0.0) += 1.0;
+            *self.st.intent_trips.entry((slot, veh.origin, veh.dest)).or_insert(0.0) += 1.0;
         }
         let i = self.vehs[vid as usize].intent;
         let (slots, nl) = (self.demand.intents.len() + 1, self.topo.n_links);
@@ -2474,9 +2474,9 @@ impl Simulation {
         }
     }
 
-    /// Stride 3: intent slot, origin node, cumulative through vehicles counted since t = 0. Only nonzero entries.
-    pub fn intent_origins(&self) -> Vec<f32> {
-        self.st.intent_origin.iter().flat_map(|(&(s, o), &n)| [s as f32, o as f32, n]).collect()
+    /// Stride 4: intent slot, origin node, destination node, cumulative through vehicles counted since t = 0. Only nonzero entries.
+    pub fn intent_trips(&self) -> Vec<f32> {
+        self.st.intent_trips.iter().flat_map(|(&(s, o, d), &n)| [s as f32, o as f32, d as f32, n]).collect()
     }
 
     /// (counted through cars whose trip ended and that had planned an on-ramp, how many of them drove another route to the freeway or none).

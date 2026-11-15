@@ -72,3 +72,15 @@ describe('street names on a reason map', () => {
     expect(keepNames([name('College Avenue', 140, 100), name('Telegraph Avenue', 300, 300)], [end], 1, 11).map((n) => n.text)).toEqual(['Telegraph Avenue']);
   });
 });
+
+describe('where the cars of a reason start and end', () => {
+  const ends = [{ id: 'a', from: [{ label: 'Berkeley', share: 80 }], to: [{ label: 'SR-24', share: 100 }] }, { id: 'b', from: [], to: [] }, { id: 'other', from: [], to: [] }];
+  it('is kept with the period and found by reason', () => {
+    const f = file({ periods: { pm_peak: encodeBaselinePeriod(metrics, links, ends)! } });
+    const back = parseBaselineIntents(JSON.stringify(f))!;
+    expect(baselineIntent(back, 'pm_peak', defs, 'a')?.ends?.from[0]).toEqual({ label: 'Berkeley', share: 80 });
+  });
+  it('is absent in a file written without it', () => {
+    expect(baselineIntent(file(), 'pm_peak', defs, 'a')?.ends).toBeNull();
+  });
+});
