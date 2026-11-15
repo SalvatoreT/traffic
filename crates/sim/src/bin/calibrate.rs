@@ -17,7 +17,7 @@ use std::cmp::Ordering;
 use std::collections::{BinaryHeap, HashMap};
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
-use traffic_sim::model::{Config, Control, Demand, FlowMode, Network, RoadClass};
+use traffic_sim::model::{Config, Control, JunctionRecovery, Demand, FlowMode, Network, RoadClass};
 use traffic_sim::sim::{SelectLinkRecord, Simulation, StreetVisit};
 use traffic_sim::wander::{summarize, TripMetric, WanderStats};
 
@@ -55,10 +55,12 @@ struct Args {
     jobs: usize,
     /// `--keep-seeds DIR`: keep every seed's own report (with per-link flows) in DIR.
     keep_seeds: Option<PathBuf>,
+    /// `--junction-recovery physical|no_behavioral|historical`: junction recovery policy (sensitivity checks; default `physical`).
+    junction_recovery: Option<JunctionRecovery>,
 }
 
 fn parse_args() -> Args {
-    let mut a = Args { area: "rockridge".into(), period: "pm_peak".into(), minutes: 60.0, scale: 1.0, seed: 1, warmup_min: 10.0, local_factor: None, guided_share: None, switch_band: None, adapt_min: None, motorway_removal: false, no_rtor: false, out: None, write: true, link_flows: false, select_od: None, cars_only: false, drop: Vec::new(), demand_path: None, network_path: None, no_initial_load: false, seeds: None, jobs: 4, keep_seeds: None };
+    let mut a = Args { area: "rockridge".into(), period: "pm_peak".into(), minutes: 60.0, scale: 1.0, seed: 1, warmup_min: 10.0, local_factor: None, guided_share: None, switch_band: None, adapt_min: None, motorway_removal: false, no_rtor: false, out: None, write: true, link_flows: false, select_od: None, cars_only: false, drop: Vec::new(), demand_path: None, network_path: None, no_initial_load: false, seeds: None, jobs: 4, keep_seeds: None, junction_recovery: None };
     let argv: Vec<String> = std::env::args().skip(1).collect();
     let mut i = 0;
     while i < argv.len() {
@@ -91,6 +93,7 @@ fn parse_args() -> Args {
             "--cars-only" => a.cars_only = true,
             "--demand" => a.demand_path = Some(PathBuf::from(val())),
             "--network" => a.network_path = Some(PathBuf::from(val())),
+            "--junction-recovery" => a.junction_recovery = Some(serde_json::from_value(Value::String(val())).unwrap_or_else(|_| usage("bad --junction-recovery (physical, no_behavioral, historical)"))),
             "--drop" => a.drop = val().split(',').map(String::from).collect(),
             "-h" | "--help" => usage(""),
             _ => usage(&format!("unknown argument {k}")),
@@ -104,7 +107,7 @@ fn usage(msg: &str) -> ! {
     if !msg.is_empty() {
         eprintln!("error: {msg}");
     }
-    eprintln!("usage: calibrate [--area rockridge] [--period pm_peak] [--minutes 60] [--scale 1.0] [--seed 1] [--warmup 10] [--adapt-min 5] [--motorway-removal] [--no-rtor] [--no-initial-load] [--out DIR] [--no-write] [--link-flows] [--cars-only]");
+    eprintln!("usage: calibrate [--area rockridge] [--period pm_peak] [--minutes 60] [--scale 1.0] [--seed 1] [--warmup 10] [--adapt-min 5] [--motorway-removal] [--no-rtor] [--no-initial-load] [--out DIR] [--no-write] [--link-flows] [--cars-only] [--junction-recovery physical]");
     std::process::exit(if msg.is_empty() { 0 } else { 2 });
 }
 
@@ -364,7 +367,7 @@ fn run_manifest(args: &Args, root: &Path, net_path: &Path, dem_path: &Path, dem_
             "initialLoad": !args.no_initial_load,
             "settings": {
                 "localFactor": args.local_factor, "guidedShare": args.guided_share, "switchBand": args.switch_band, "adaptMin": args.adapt_min,
-                "motorwayRemoval": args.motorway_removal, "noRtor": args.no_rtor, "carsOnly": args.cars_only, "drop": args.drop,
+                "motorwayRemoval": args.motorway_removal, "noRtor": args.no_rtor, "junctionRecovery": args.junction_recovery, "carsOnly": args.cars_only, "drop": args.drop,
             },
         },
     })
@@ -508,7 +511,7 @@ fn main() {
     sel.dedup();
 
     // ---- run
-    let cfg = Config { seed: args.seed, period: args.period.clone(), demand_scale: args.scale, select_links: sel, local_cost_factor: args.local_factor, guided_share: args.guided_share, switch_band: args.switch_band, record_trips: true, signal_adapt_min: args.adapt_min, motorway_gridlock_removal: args.motorway_removal, no_right_turn_on_red: args.no_rtor, initial_load: !args.no_initial_load, ..Default::default() };
+    let cfg = Config { seed: args.seed, period: args.period.clone(), demand_scale: args.scale, select_links: sel, local_cost_factor: args.local_factor, guided_share: args.guided_share, switch_band: args.switch_band, record_trips: true, signal_adapt_min: args.adapt_min, motorway_gridlock_removal: args.motorway_removal, no_right_turn_on_red: args.no_rtor, initial_load: !args.no_initial_load, junction_recovery: args.junction_recovery.unwrap_or_default(), ..Default::default() };
     let mut sim = Simulation::from_parts(net.clone(), demand.clone(), cfg).expect("sim");
     let total_s = args.minutes * 60.0;
     let warm_s = if total_s >= 1800.0 { args.warmup_min * 60.0 } else { 0.0 };
@@ -562,7 +565,9 @@ fn main() {
         }
     }
     let wall = t0.elapsed().as_secs_f64();
-    sim.check_invariants().expect("invariants");
+    if args.junction_recovery != Some(JunctionRecovery::Historical) {
+        sim.check_invariants().expect("invariants");
+    }
     let m = sim.metrics();
     let d = sim.diagnostics();
     let recs: Vec<SelectLinkRecord> = sim.select_link_records();
