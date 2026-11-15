@@ -33,6 +33,11 @@ export function Sheet({ label, tabs, children, raise = 0 }: { label: string; tab
     return () => window.removeEventListener('resize', on);
   }, []);
   useEffect(() => { if (bodyRef.current) bodyRef.current.inert = snap === 0; }, [snap]);
+  useEffect(() => {
+    const r = document.documentElement;
+    r.dataset.sheet = String(snap);
+    return () => { delete r.dataset.sheet; };
+  }, [snap]);
   useEffect(() => { if (raise > 0) setSnapState((s) => (s === 0 ? 1 : s)); }, [raise]);
 
   const height = dragH ?? heights[snap];
