@@ -13,9 +13,9 @@
 ## 3. Demand
 
 - [x] 3.1 `npm run data` on the repaired network (frozen split unchanged).
-- [ ] 3.2 Drop the held-out GEH guard from the cost loop's acceptance rule; run the loop to its stop rule.
+- [x] 3.2 Drop the held-out GEH guard from the cost loop's acceptance rule; run the loop to its stop rule.
 
 ## 4. Evaluation and record
 
-- [ ] 4.1 Validation suite, ten-seed `calibrate` summaries of all three periods, Rust and TypeScript tests, WASM parity.
-- [ ] 4.2 Write round 30 into the calibration record (round 17 moved to `rockridge.record-archive-2.md`); update the area's `calibration` note; regenerate `public/data/areas.json`.
+- [x] 4.1 Validation suite, ten-seed `calibrate` summaries of all three periods, Rust and TypeScript tests, WASM parity.
+- [x] 4.2 Write round 30 into the calibration record (round 17 moved to `rockridge.record-archive-2.md`); update the area's `calibration` note; regenerate `public/data/areas.json`.
