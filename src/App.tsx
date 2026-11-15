@@ -31,6 +31,7 @@ import { intentPaths, segmentWidths } from './lib/intents';
 import { baselineCheck, checkThroughRoutes, routeHeadline } from './lib/throughroutes';
 import { effectiveView, initViewState, viewReducer } from './lib/change';
 import { showCalibrationBanner } from './lib/caveat';
+import { mapSymbols } from './lib/legend';
 const MapView = lazy(() => import('./components/MapView').then((m) => ({ default: m.MapView })));
 const Sources = lazy(() => import('./components/Sources').then((m) => ({ default: m.Sources })));
 const Assumptions = lazy(() => import('./components/Assumptions').then((m) => ({ default: m.Assumptions })));
@@ -42,6 +43,7 @@ const store = {
   set(k: string, v: string) { try { localStorage.setItem(k, v); } catch { /* unavailable */ } },
 };
 const query = new URLSearchParams(location.search);
+const NO_HASHES: LoadedHashes = { network: null, demand: null };
 const FORCE_MOCK = query.get('mock') === '1';
 
 function useMedia(q: string): boolean {
@@ -285,7 +287,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   }, [network, demand, fallbackPeriod]);
 
   // --- proposals
-  const proposals = useProposals(bundle, view === 'proposals');
+  const proposals = useProposals(bundle, view === 'proposals', hashes);
   const focusAfterOpen = useRef(false);
   const onOpenProposal = useCallback((p: Proposal) => {
     const d = decodeScenario(network, linkHash(p.link));
@@ -376,6 +378,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
     return intentPaths(intentRun?.intentLinks, slot, intentSel!, m.time, m.cutThrough.byIntent[slot]?.vehiclesPerHour ?? 0);
   }, [intentSel, intentDefs, intentRun, withheld]);
   const mapVisible = view === 'map';
+  const symbols = useMemo(() => mapSymbols(interventions, view === 'map' && !!intentPathsShown), [interventions, view, intentPathsShown]);
   useEffect(() => setHoverPlace(null), [view]);
   // On phones the Streets tab is a full-height table; each row's Show on map button opens the Map tab on that block.
   const mapShown = mapVisible || (view === 'streets' && !phone);
@@ -439,7 +442,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
         </div>
         <nav aria-label="Views">
           {(Object.keys(VIEW_LABEL) as View[]).map((v) => (
-            <button key={v} type="button" className="navbtn" aria-current={view === v ? 'page' : undefined} onClick={() => setView(v)}>
+            <button key={v} type="button" className="navbtn" aria-current={view === v ? 'page' : undefined} onClick={(e) => { setView(v); e.currentTarget.scrollIntoView({ block: 'nearest', inline: 'nearest' }); }}>
               {VIEW_LABEL[v]}
             </button>
           ))}
@@ -516,7 +519,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
             <Legend overlay={overlay} onOverlay={setOverlay} mode={mode} 
               source={source} onSource={setSource} canCompare={comparing}
               view={mapView} onView={(v) => dispatchView({ type: 'choose', view: v })} canChange={interventions.length > 0} early={early}
-              multimodal={multimodal} modes={modes} onModes={setModes} hasBikeNet={hasBikeNet} bikeNet={bikeNet} onBikeNet={setBikeNet} />
+              symbols={symbols} multimodal={multimodal} modes={modes} onModes={setModes} hasBikeNet={hasBikeNet} bikeNet={bikeNet} onBikeNet={setBikeNet} />
             {(!engine || building) && (!stored || simError) && (
               <div className="map-cover">
                 {simError
@@ -531,7 +534,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
               baseMetrics={base} scenMetrics={scen} onHover={setHoverPlace}
               phone={phone} onShowOnMap={(block) => { setHoverPlace(null); select({ kind: 'block', block, point: null, nearLink: null, via: 'list' }); setView('map'); }} />
           )}
-          {view === 'proposals' && <Proposals bundle={bundle} index={index} today={todayRoutes.total} state={proposals.state} loaded={proposals.loaded} mode={mode} current={interventions} onOpen={onOpenProposal} />}
+          {view === 'proposals' && <Proposals bundle={bundle} index={index} today={todayRoutes.total} state={proposals} loaded={hashes ?? NO_HASHES} mode={mode} current={interventions} onOpen={onOpenProposal} />}
           {view === 'assumptions' && <Suspense fallback={<p className="boot" role="status">Loading assumptions…</p>}><Assumptions bundle={bundle} index={index} mode={mode} hashes={hashes} fingerprint={fingerprint} focusRef={sourceRef} onSources={() => { setSourceRef(null); setView('sources'); }} /></Suspense>}
           {view === 'sources' && <Suspense fallback={<p className="boot" role="status">Loading sources…</p>}><Sources demand={demand} synthetic={bundle.synthetic} focusRef={sourceRef} onAssumptions={() => { setSourceRef(null); setView('assumptions'); }} calibration={bundle.synthetic ? undefined : { status: calStatus, note: bundle.entry.calibration?.note }} /></Suspense>}
         </div>
