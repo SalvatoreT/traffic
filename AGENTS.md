@@ -32,6 +32,7 @@ areas are data.
 - `npm run simulate -- --link "<url or #v1;...>"`: run one scenario headless and print JSON (`--find "<streets>"` looks up places; needs `npm run wasm` and the data; see `docs/run-locally.md`)
 - `npm run data:download`: fetch the published `/data` files over plain HTTPS (`--all` adds proposals, assumptions, results)
 - `npm run data:llms`: write `public/data/llms/*` (`llms.txt`, `llms-full.txt`, `<tab>.md`) from the data and `docs/`; run after `data:results` and before `data:push`
+- `npm run data:previews`: write `public/data/og/*` (link-preview cards and `index.json`); run after `data:results` and `data:llms`, before `data:push`
 - `npm run data:pull` / `npm run data:push`: sync `data/*` and `public/data/*` with the R2 bucket
 - `cargo run --release -p traffic-sim --bin validate`: validation suite (writes `data/calibration/validation.md`)
 - `cargo run --release -p traffic-sim --bin calibrate -- --area rockridge --period pm_peak`: calibration report against observed data

@@ -41,6 +41,10 @@ The same run writes `public/data/results/<area>/baseline-intents.json`: today's 
 
 `npm run data:llms` writes `public/data/llms/` (`llms.txt`, `llms-full.txt`, `index.md`, `proposals.md`, `streets.md`, `assumptions.md`, `sources.md` and copies of the three guides in `docs/`) from the files in `public/data` and the docs. They are published with the rest (`areas/llms/*` in the bucket) and the Worker serves them at `/llms.txt`, `/llms-full.txt` and `/<name>.md`. Order at publish time: the proposal search, `npm run data:results`, then `npm run data:llms`, then `data:push`. Pages built from numbers that no longer match the network, demand or simulator say "Out of date" and still show them. Anyone can fetch the core files without credentials with `npm run data:download`.
 
+## Link previews
+
+`npm run data:previews` writes `public/data/og/`: a 1200 x 630 JPEG card for the home page, each tab and each published proposal, and `index.json`, which says what each path's preview shows. They are published with the rest (`areas/og/*` in the bucket). The Worker serves the cards at `/og/<name>-<hash>.jpg` and, for `/`, the tab paths and `/p/<slug>`, puts the matching tags in the page head (title, description, canonical, Open Graph, Twitter card). A card's name carries a hash of its bytes, so a changed card is a new address. Order at publish time: the proposal search, `npm run data:results`, `npm run data:llms`, `npm run data:previews`, then `data:push`. The generator writes a card for a proposals group only when the group was computed on the network and demand now served, and the stored baseline map only when the stored baseline was too; it prints what it skipped. Cards are drawn in Node with `@resvg/resvg-js` and the Inter subset in `tools/fonts/` (SIL Open Font License), with no system fonts.
+
 ## Publishing without a Cloudflare token
 
 The Worker takes data files at `/api/data/<key>` from requests that carry the upload

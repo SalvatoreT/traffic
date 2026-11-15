@@ -28,7 +28,8 @@ import { Comparison } from './components/Comparison';
 import type { Hover } from './lib/highlight';
 import { StreetsTable } from './components/StreetsTable';
 import { Proposals, useProposals } from './components/Proposals';
-import { hashLoaded, linkHash, type LoadedHashes, type Proposal } from './lib/proposals';
+import { fetchProposals, hashLoaded, linkHash, proposalsUrl, type LoadedHashes, type Proposal } from './lib/proposals';
+import { findBySlug, findPublished, pathOfSlug, slugFromPath, slugOf } from './lib/share-path';
 import { fetchResult, resultKey, STORED_NOTE, toStatsMsg, verdict, type StoredResult } from './lib/stored-results';
 import { IntentPanel } from './components/IntentPanel';
 import { intentPaths, rampOfIntent, rampPoint, segmentWidths } from './lib/intents';
@@ -71,19 +72,38 @@ export function App() {
       .then((b) => { if (live) setBundle(b); }, (e) => { if (live) setErr(e instanceof Error ? e.message : String(e)); });
     return () => { live = false; };
   }, [attempt]);
+  // A proposal's share path (`/p/<slug>`) is looked up in the area's proposals file before the map starts, so the page opens as that proposal's own link would.
+  const slug = useMemo(() => slugFromPath(location.pathname), []);
+  const [start, setStart] = useState<Start | null>(null);
+  useEffect(() => {
+    if (!bundle || slug === null) return;
+    let live = true;
+    void fetchProposals(proposalsUrl(bundle.entry)).then((file) => {
+      if (!live) return;
+      const hit = file && !bundle.synthetic ? findBySlug(file, slug) : null;
+      setStart(hit ? { hash: linkHash(hit.proposal.link), gone: false } : { hash: null, gone: true });
+    });
+    return () => { live = false; };
+  }, [bundle, slug]);
   if (err) return <LoadError title="Could not load the study area." message={err} onRetry={() => setAttempt((a) => a + 1)} />;
-  if (!bundle) return <Loading label="Loading study area data…" progress={progress} />;
-  return <Simulator key={attempt} bundle={bundle} onRestart={() => setAttempt((a) => a + 1)} />;
+  if (!bundle || (slug !== null && start === null)) return <Loading label="Loading study area data…" progress={progress} />;
+  return <Simulator key={attempt} bundle={bundle} start={start ?? NO_START} onRestart={() => setAttempt((a) => a + 1)} />;
 }
 
-function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): void }) {
+/** Where a page opened from a share path starts: the proposal's scenario link, or a notice that the proposal is gone. */
+interface Start { hash: string | null; gone: boolean }
+const NO_START: Start = { hash: null, gone: false };
+export const GONE_NOTICE = 'That proposal is no longer published.';
+
+function Simulator({ bundle, start, onRestart }: { bundle: AreaBundle; start: Start; onRestart(): void }) {
   const { network, demand } = bundle;
   const index = useMemo(() => buildIndex(network), [network]);
   const region = useMemo(() => buildRegion(network), [network]);
   const todayRoutes = useMemo(() => baselineCheck(network, index), [network, index]);
   // Read once: the hash is rewritten as soon as the scenario loads, so later renders must not decode it again.
-  const [initial] = useState(() => { const h = scenarioOnly(location.hash); return { ...decodeMeta(h), ...decodeScenario(network, h) }; });
-  const [place] = useState(() => parseLocation(location.pathname, location.hash));
+  const [initial] = useState(() => { const h = start.hash ?? scenarioOnly(location.hash); return { ...decodeMeta(h), ...decodeScenario(network, h) }; });
+  const [place] = useState(() => { const p = parseLocation(location.pathname, location.hash); return start.gone ? { ...p, view: 'proposals' as View } : p; });
+  const [goneNotice, setGoneNotice] = useState(start.gone);
 
   const reduced = useMedia('(prefers-reduced-motion: reduce)');
   const prefersDark = useMedia('(prefers-color-scheme: dark)');
@@ -353,7 +373,16 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   }), [view, scenHash, go, say]);
 
   // --- proposals
-  const proposals = useProposals(bundle, view === 'proposals', hashes);
+  // Loaded at start, not only on the Proposals tab, so the map can tell when its scenario is a published proposal.
+  const proposals = useProposals(bundle, true, hashes);
+  useEffect(() => { if (view !== 'proposals') setGoneNotice(false); }, [view]);
+  const published = useMemo(
+    () => (proposals.status === 'ready' && hashes ? findPublished(network, proposals.file, hashes, interventions, period, scale, fallbackPeriod) : null),
+    [proposals, hashes, network, interventions, period, scale, fallbackPeriod],
+  );
+  const copyLink = useCallback((url: string, ok: string) => {
+    navigator.clipboard?.writeText(url).then(() => say(ok), () => say('Copy failed. The address bar already holds the link.'));
+  }, [say]);
   const focusAfterOpen = useRef(false);
   const onOpenProposal = useCallback((p: Proposal) => {
     const d = decodeScenario(network, linkHash(p.link));
@@ -462,7 +491,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   ) : null;
 
   const shareButton = (
-    <button type="button" className="btn" onClick={() => { navigator.clipboard?.writeText(`${location.origin}${urlFor(view, scenHash, null, location.search)}`).then(() => say('Link to this scenario copied.'), () => say('Copy failed. The address bar already holds the link.')); }}>Copy link to this scenario</button>
+    <button type="button" className="btn" onClick={() => copyLink(`${location.origin}${published ? pathOfSlug(published.slug) : urlFor(view, scenHash, null, location.search)}`, 'Link to this scenario copied.')}>Copy link to this scenario</button>
   );
   const scenarioPanel = (
     <>
@@ -607,7 +636,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
               baseMetrics={base} scenMetrics={scen} onHover={setHoverPlace}
               phone={phone} onShowOnMap={(block) => { setHoverPlace(null); select({ kind: 'block', block, point: null, nearLink: null, via: 'list' }); go('map'); }} />
           )}
-          {view === 'proposals' && <Proposals bundle={bundle} index={index} today={todayRoutes.total} state={proposals} loaded={hashes ?? NO_HASHES} mode={mode} current={interventions} onOpen={onOpenProposal} />}
+          {view === 'proposals' && <Proposals bundle={bundle} index={index} today={todayRoutes.total} state={proposals} loaded={hashes ?? NO_HASHES} mode={mode} current={interventions} onOpen={onOpenProposal} notice={goneNotice ? GONE_NOTICE : null} onCopyLink={(p, g) => copyLink(`${location.origin}${pathOfSlug(slugOf(g, p.link))}`, 'Link to this proposal copied.')} />}
           {view === 'assumptions' && <Suspense fallback={<p className="boot" role="status">Loading assumptions…</p>}><Assumptions bundle={bundle} index={index} mode={mode} hashes={hashes} fingerprint={fingerprint} /></Suspense>}
           {view === 'sources' && <Suspense fallback={<p className="boot" role="status">Loading sources…</p>}><Sources demand={demand} synthetic={bundle.synthetic} calibration={bundle.synthetic ? undefined : { status: calStatus, note: bundle.entry.calibration?.note }} /></Suspense>}
         </div>

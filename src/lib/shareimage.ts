@@ -3,7 +3,7 @@ import { changeTicks, DEAD_BAND_CUTTHROUGH } from './change';
 import { BADGE_STYLE, BADGE_TEXT, ATTRIBUTION } from './mapexport';
 import type { Mark, PictureFacts, PictureModel } from './picture';
 import { signedPct, type Proposal, type ProposalPicture } from './proposals';
-import { changeWidthFor, colorForIntensity, divergingStops, mutedColor } from './ramps';
+import { changeWidthFor, colorForIntensity, divergingStops, mutedColor, widthFor } from './ramps';
 
 /** Layout width of the shared picture in px; it is rasterized at `SHARE_SCALE` times this. Fixed light colors, so it reads the same wherever it is sent. */
 export const SHARE_W = 800;
@@ -90,8 +90,21 @@ function markSvg(m: Mark, unit: number, bar: { len: number; thick: number }): st
 }
 
 /** The map as SVG in its own coordinates (meters, y down), light colors. */
-function mapSvg(model: PictureModel): string {
-  const { unit } = model;
+export interface MapOptions {
+  /** Multiplies every line width, mark and label, for a map that is shown small. */
+  boost?: number;
+  /** Extra multiplier for the barrier bars alone. */
+  barBoost?: number;
+  /** Blocks colored on the sequential today scale (value 0..1) instead of the change scale. */
+  sequential?: boolean;
+  /** Street names and the labeled outlines; off for a map shown small. */
+  labels?: boolean;
+}
+export function mapSvg(model: PictureModel, opts: MapOptions = {}): string {
+  const unit = model.unit * (opts.boost ?? 1);
+  const bb = (opts.boost ?? 1) * (opts.barBoost ?? 1);
+  const bar = { len: model.bar.len * bb, thick: model.bar.thick * bb };
+  const names = opts.labels === false ? [] : model.names, pins = opts.labels === false ? [] : model.pins;
   const muted = mutedColor('light');
   const fontSize = 10.5 * unit;
   const parts: string[] = [];
@@ -99,12 +112,12 @@ function mapSvg(model: PictureModel): string {
   parts.push(`<path d="${model.minor}" fill="none" stroke="${muted}" stroke-width="${n1(unit)}" stroke-linecap="round" stroke-linejoin="round"/>`);
   parts.push(`<path d="${model.major}" fill="none" stroke="${muted}" stroke-width="${n1(2 * unit)}" stroke-linecap="round" stroke-linejoin="round"/>`);
   parts.push(`<path d="${model.outline}" fill="none" stroke="${INK}" stroke-width="${n1(1.4 * unit)}" stroke-dasharray="${n1(6 * unit)} ${n1(4 * unit)}" opacity="0.75"/>`);
-  for (const q of model.pins) parts.push(`<path d="${q.d}" fill="none" stroke="${INK}" stroke-width="${n1(9 * unit)}" stroke-linecap="round" stroke-linejoin="round"${q.dashed ? ` stroke-dasharray="${n1(5 * unit)} ${n1(4 * unit)}"` : ''}/>`);
-  for (const q of model.pins) parts.push(`<path d="${q.d}" fill="none" stroke="${MAP_BG}" stroke-width="${n1(6.5 * unit)}" stroke-linecap="round" stroke-linejoin="round"/>`);
-  for (const b of model.blocks) parts.push(`<path d="${b.d}" fill="none" stroke="${colorForIntensity(b.t, 'light', true)}" stroke-width="${n1(changeWidthFor(b.t) * WIDTH_SCALE * unit)}" stroke-linecap="round" stroke-linejoin="round"/>`);
-  for (const nm of model.names) parts.push(`<text x="0" y="0" transform="translate(${n1(nm.x)} ${n1(nm.y)}) rotate(${n1(nm.angle)})" text-anchor="middle" dy="${n1(-3.5 * unit)}" font-size="${n1(fontSize)}" font-weight="600" fill="${INK}" stroke="${MAP_BG}" stroke-width="${n1(3 * unit)}" paint-order="stroke" stroke-linejoin="round">${esc(nm.text)}</text>`);
-  for (const m of model.marks) parts.push(markSvg(m, unit, model.bar));
-  for (const q of model.pins) parts.push(`<text x="${n1(q.x)}" y="${n1(q.y)}" text-anchor="${q.end ? 'end' : 'start'}" font-size="${n1(fontSize * 1.15)}" font-weight="700" fill="${INK}" stroke="${MAP_BG}" stroke-width="${n1(3.5 * unit)}" paint-order="stroke" stroke-linejoin="round">${esc(q.text)}</text>`);
+  for (const q of pins) parts.push(`<path d="${q.d}" fill="none" stroke="${INK}" stroke-width="${n1(9 * unit)}" stroke-linecap="round" stroke-linejoin="round"${q.dashed ? ` stroke-dasharray="${n1(5 * unit)} ${n1(4 * unit)}"` : ''}/>`);
+  for (const q of pins) parts.push(`<path d="${q.d}" fill="none" stroke="${MAP_BG}" stroke-width="${n1(6.5 * unit)}" stroke-linecap="round" stroke-linejoin="round"/>`);
+  for (const b of model.blocks) parts.push(`<path d="${b.d}" fill="none" stroke="${colorForIntensity(b.t, 'light', !opts.sequential)}" stroke-width="${n1((opts.sequential ? widthFor(b.t) : changeWidthFor(b.t) * WIDTH_SCALE) * unit)}" stroke-linecap="round" stroke-linejoin="round"/>`);
+  for (const nm of names) parts.push(`<text x="0" y="0" transform="translate(${n1(nm.x)} ${n1(nm.y)}) rotate(${n1(nm.angle)})" text-anchor="middle" dy="${n1(-3.5 * unit)}" font-size="${n1(fontSize)}" font-weight="600" fill="${INK}" stroke="${MAP_BG}" stroke-width="${n1(3 * unit)}" paint-order="stroke" stroke-linejoin="round">${esc(nm.text)}</text>`);
+  for (const m of model.marks) parts.push(markSvg(m, unit, bar));
+  for (const q of pins) parts.push(`<text x="${n1(q.x)}" y="${n1(q.y)}" text-anchor="${q.end ? 'end' : 'start'}" font-size="${n1(fontSize * 1.15)}" font-weight="700" fill="${INK}" stroke="${MAP_BG}" stroke-width="${n1(3.5 * unit)}" paint-order="stroke" stroke-linejoin="round">${esc(q.text)}</text>`);
   return parts.join('');
 }
 

@@ -1,6 +1,7 @@
 import { isServableName } from "./paths";
 import { serveText, textRoute } from "./llms";
 import { handleDataApi } from "./upload";
+import { pageKey, serveCard, servePage } from "./og";
 
 interface Env {
   ASSETS: Fetcher;
@@ -53,6 +54,10 @@ export default {
       const name = decoded(url.pathname.slice(6));
       return name === null ? tagged(new Response(null, { status: 400 })) : serveData(req, env, name);
     }
+    if (url.pathname.startsWith("/og/")) return serveCard(req, env, url.pathname.slice(4));
+    if (pageKey(url.pathname) !== null) return servePage(req, env);
+    // A share path with a shape the previews do not cover still opens the app.
+    if (url.pathname.startsWith("/p/")) return env.ASSETS.fetch(req);
     const text = textRoute(url.pathname);
     if (text) return serveText(req, env, text);
     return new Response(null, { status: 404 });

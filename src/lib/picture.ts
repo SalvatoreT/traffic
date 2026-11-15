@@ -117,7 +117,7 @@ export interface PictureModel {
 }
 
 const fmt = (v: number) => (Math.round(v * 10) / 10).toString();
-const pathOf = (g: [number, number][]) => g.map(([x, y], i) => `${i ? 'L' : 'M'}${fmt(x)} ${fmt(-y)}`).join('');
+export const pathOf = (g: [number, number][]) => g.map(([x, y], i) => `${i ? 'L' : 'M'}${fmt(x)} ${fmt(-y)}`).join('');
 const FIT = 1.15;
 const BOUNDING = new Set(['primary', 'secondary', 'tertiary']);
 

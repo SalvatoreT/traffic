@@ -94,3 +94,7 @@ The ids in this example are placeholders. Take the real ones from `--find`.
 ## Tabs and sections
 
 The app's pages have their own paths: `/` (Map), `/proposals`, `/streets`, `/assumptions` and `/sources`. A scenario fragment goes after the path (for example `/proposals#v1;...`), and any other fragment on a tab is the id of a section on that page. Each tab also has a text version at `/<tab>.md` (`/index.md` for the Map), which names its sections.
+
+## Share paths
+
+A published proposal also has a share path, `https://<site>/p/<slug>`, for example `/p/charter-7dvnr3q3`. Chat apps read a link's preview from the page the server returns and never see the part after `#`, so a scenario link always previews as the site's home page, and a share path previews as that proposal: its title, its through-car figures and a map. Opening a share path in a browser opens the Map with the proposal's scenario and period, exactly as its scenario link does, and the address bar then shows the scenario link. A slug that is not published any more opens the Proposals tab with a notice. Slugs are listed in `proposals.md` and `llms.txt` next to each package, and are stable: a slug is the group id and a hash of the package's items, period and group, not its position in the list. Scenario links keep working.

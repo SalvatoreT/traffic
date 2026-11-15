@@ -4,6 +4,8 @@ import { decodeScenario } from '../lib/hash';
 import type { Mode } from '../lib/ramps';
 import { ProposalPicture } from './ProposalPicture';
 import { AnchorHeading } from './Anchor';
+import { calibrationStatusText } from '../lib/caveat';
+import { pathOfSlug, slugOf } from '../lib/share-path';
 import type { NetIndex } from '../lib/naming';
 import { checkThroughRoutes, ROUTE_CAVEAT } from '../lib/throughroutes';
 import { buildMockProposals } from '../fixtures/proposals';
@@ -43,9 +45,12 @@ interface Props {
   bundle: AreaBundle; index: NetIndex; today: number; state: ProposalsState; loaded: LoadedHashes; mode: Mode;
   current: Intervention[];
   onOpen(p: Proposal): void;
+  /** Said above the cards when a share path named a proposal that is no longer published. */
+  notice?: string | null;
+  onCopyLink(p: Proposal, groupId: string): void;
 }
 
-export function Proposals({ bundle, index, today, state, loaded, mode, current, onOpen }: Props) {
+export function Proposals({ bundle, index, today, state, loaded, mode, current, onOpen, notice, onCopyLink }: Props) {
   const periodLabel = useMemo(() => {
     const m = new Map(bundle.demand.periods.map((p) => [p.id, p.label]));
     return (id: string) => m.get(id) ?? id;
@@ -76,13 +81,14 @@ export function Proposals({ bundle, index, today, state, loaded, mode, current, 
     return m;
   }, [decoded, bundle.network, index]);
   const card = (g: ProposalGroup, p: Proposal, n: number | null) => (
-    <Card key={p.id} p={p} when={periodsPhrase(g.computed.periods, periodLabel)} hid={gid(g, p)} n={n} routes={routeCounts.get(gid(g, p)) ?? null} ivs={decoded.get(gid(g, p)) ?? null} searched={g.computed.periods} bundle={bundle} index={index} mode={mode} today={today} periodLabel={periodLabel} confirming={open.step === 'confirm' && open.id === gid(g, p)}
+    <Card key={p.id} p={p} shareUrl={`${location.origin}${pathOfSlug(slugOf(g.id, p.link))}`} onCopyLink={() => onCopyLink(p, g.id)} when={periodsPhrase(g.computed.periods, periodLabel)} hid={gid(g, p)} n={n} routes={routeCounts.get(gid(g, p)) ?? null} ivs={decoded.get(gid(g, p)) ?? null} searched={g.computed.periods} bundle={bundle} index={index} mode={mode} today={today} periodLabel={periodLabel} confirming={open.step === 'confirm' && open.id === gid(g, p)}
       onRequest={() => request(g, p)} onCancel={() => dispatch({ type: 'cancel' })} onConfirm={() => { dispatch({ type: 'done' }); onOpen(p); }} />
   );
 
   return (
     <div className="proposals-view">
       <AnchorHeading as="h2" id="proposals" label="Proposals">Proposals</AnchorHeading>
+      {notice && <p className="notice" role="status">{notice}</p>}
       <p className="lead">
         These are packages of changes found by searching the simulation for the most through traffic removed from the area's
         side streets with the least traffic added to any one of them. The cards compare through cars with through cars:
@@ -139,8 +145,8 @@ export function Proposals({ bundle, index, today, state, loaded, mode, current, 
   );
 }
 
-function Card({ p, when, hid, n, routes, ivs, searched, bundle, index, mode, today, periodLabel, confirming, onRequest, onCancel, onConfirm }: {
-  p: Proposal; when: string; hid: string; n: number | null; routes: number | null; ivs: Intervention[] | null; searched: string[]; bundle: AreaBundle; index: NetIndex; mode: Mode; today: number; periodLabel(id: string): string; confirming: boolean;
+function Card({ p, shareUrl, onCopyLink, when, hid, n, routes, ivs, searched, bundle, index, mode, today, periodLabel, confirming, onRequest, onCancel, onConfirm }: {
+  p: Proposal; shareUrl: string; onCopyLink(): void; when: string; hid: string; n: number | null; routes: number | null; ivs: Intervention[] | null; searched: string[]; bundle: AreaBundle; index: NetIndex; mode: Mode; today: number; periodLabel(id: string): string; confirming: boolean;
   onRequest(): void; onCancel(): void; onConfirm(): void;
 }) {
   const cut = cutThroughHeadline(p.cutThrough, when);
@@ -157,7 +163,7 @@ function Card({ p, when, hid, n, routes, ivs, searched, bundle, index, mode, tod
   }, [confirming]);
   const periods = Object.entries(p.byPeriod);
   const isRef = p.kind === 'reference';
-  const calStatusText = bundle.entry.calibration?.status === 'calibrated' ? 'Calibrated, with limits.' : 'Preview, not yet calibrated.';
+  const calStatusText = calibrationStatusText(bundle.entry.calibration);
   const hasPic = !!p.picture && ivs !== null;
   const action = (
     confirming ? (
@@ -167,7 +173,10 @@ function Card({ p, when, hid, n, routes, ivs, searched, bundle, index, mode, tod
         <button type="button" className="btn" onClick={onCancel}>Cancel</button>
       </div>
     ) : (
-      <button ref={openBtn} type="button" className="btn primary" onClick={onRequest}>Open on the map<span className="sr-only">: {p.title}</span></button>
+      <>
+        <button ref={openBtn} type="button" className="btn primary" onClick={onRequest}>Open on the map<span className="sr-only">: {p.title}</span></button>{' '}
+        <button type="button" className="btn" onClick={onCopyLink}>Copy link<span className="sr-only"> to {p.title}</span></button>
+      </>
     )
   );
   return (
@@ -180,7 +189,7 @@ function Card({ p, when, hid, n, routes, ivs, searched, bundle, index, mode, tod
       <div className={hasPic ? 'prop-body has-pic' : 'prop-body'}>
         {hasPic && (
           <div className="prop-side">
-            <ProposalPicture net={bundle.network} index={index} p={p} ivs={ivs ?? []} areaName={bundle.entry.name} areaId={bundle.entry.id} status={calStatusText} openUrl={`${location.origin}/${linkHash(p.link)}`} periodLabel={periodLabel} searchedPeriods={searched} />
+            <ProposalPicture net={bundle.network} index={index} p={p} ivs={ivs ?? []} areaName={bundle.entry.name} areaId={bundle.entry.id} status={calStatusText} openUrl={shareUrl} periodLabel={periodLabel} searchedPeriods={searched} />
             {action}
           </div>
         )}

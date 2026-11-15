@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildFixture } from '../src/fixtures/area';
 import { buildMockProposals } from '../src/fixtures/proposals';
+import { pathOfSlug, slugOf } from '../src/lib/share-path';
 import { decodeScenario } from '../src/lib/hash';
 import { buildIndex } from '../src/lib/naming';
 import { buildPages, currency, demote, examplesMd, section, streetsMd, table, type LlmsInput } from './lib/llms-docs';
@@ -78,6 +79,7 @@ describe('generated pages', () => {
       for (const pr of g.proposals) {
         expect(p).toContain(pr.title);
         expect(p).toContain(`https://site.test/${pr.link.startsWith('#') ? pr.link : `#${pr.link}`}`);
+        expect(p).toContain(`Share link: <https://site.test${pathOfSlug(slugOf(g.id, pr.link))}>`);
         for (const iv of pr.interventions) expect(p).toContain(iv.label);
       }
     }

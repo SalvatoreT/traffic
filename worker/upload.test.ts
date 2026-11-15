@@ -32,6 +32,8 @@ describe("isAllowedKey", () => {
     expect(isAllowedKey("osm/rockridge.overpass.json")).toBe(true);
     expect(isAllowedKey("demand/raw/oakland/a-b_c.csv")).toBe(true);
     expect(isAllowedKey("areas/results/rockridge/0123456789abcdef.json")).toBe(true);
+    expect(isAllowedKey("areas/og/home-0a1b2c3d.jpg")).toBe(true);
+    expect(isAllowedKey("areas/og/index.json")).toBe(true);
   });
   it("rejects everything else", () => {
     for (const key of ["", "areas/", "other/x.json", "areas/../secret", "areas//x", "/areas/x", "areas/x y", "areas/%2e%2e/x", "a".repeat(300)]) {

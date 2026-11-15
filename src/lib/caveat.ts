@@ -8,3 +8,6 @@ export function calibrationCaveat(cal: Calibration | undefined): string | null {
 
 /** A calibrated area with a caveat still shows its banner, so the limits stay visible. */
 export const showCalibrationBanner = (cal: Calibration | undefined): boolean => (cal?.status ?? 'uncalibrated') !== 'calibrated' || calibrationCaveat(cal) !== null;
+
+/** The short status the app and the pictures it makes show beside the figures. */
+export const calibrationStatusText = (cal: Calibration | undefined): string => ((cal?.status ?? 'uncalibrated') === 'calibrated' ? 'Calibrated, with limits.' : 'Preview, not yet calibrated.');

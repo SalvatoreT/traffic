@@ -21,6 +21,7 @@ import {
 import {
   ASSUMPTIONS_INTRO, EXPLORATORY_NOTE, FIXED_DEMAND_CAVEAT, LEGACY_GROUP_NOTE, MOVEMENTS_INTRO, PROPOSALS_LEAD, SOURCES_CALIBRATED, SOURCES_UNCALIBRATED, STREETS_INTRO,
 } from '../../src/lib/copy';
+import { pathOfSlug, slugOf } from '../../src/lib/share-path';
 import { INTERVENTION_TYPES } from './intervention-types';
 import { blockPlace, nodePlace, linkFor } from './describe-network';
 import { diverterOptions } from '../../src/lib/diverter';
@@ -197,7 +198,7 @@ export function proposalsMd(i: LlmsInput): string {
   const label = periodLabelOf(i.demand);
   const file = i.proposals;
   const out: string[] = [header(i, { title: `Traffic: ${i.area.name}, proposals`, human: '/proposals', json: [`/data/${i.area.id}.proposals.json`] })];
-  out.push('## About these proposals', '', PROPOSALS_LEAD, '', `Each package has a scenario link. Open it in the app, or run it yourself with \`npm run simulate -- --link "<link>"\` (see ${abs(i, '/run-locally.md')}). The numbers below were computed by the proposal search, averaged over several seeds, which is why a single local run at seed 1 can differ.`, '');
+  out.push('## About these proposals', '', PROPOSALS_LEAD, '', `Each package has a share link (\`/p/<slug>\`, the address to give people) and a scenario link. Open either in the app, or run the scenario link yourself with \`npm run simulate -- --link "<link>"\` (see ${abs(i, '/run-locally.md')}). The numbers below were computed by the proposal search, averaged over several seeds, which is why a single local run at seed 1 can differ.`, '');
   if (!file || file.groups.length === 0) {
     out.push('No proposals have been computed for this area yet.', '');
     return out.join('\n');
@@ -237,7 +238,7 @@ function cardMd(i: LlmsInput, g: ProposalGroup, p: Proposal, n: number | null, w
   if (p.kind === 'reference') out.push(`*Earlier proposal.*${p.note ? ` ${p.note}` : ''}`, '');
   out.push(p.summary, '');
   out.push('Changes:', '', ...p.interventions.map((iv) => `- ${iv.label} (${iv.type})`), '');
-  out.push(`Scenario link: <${abs(i, `/${linkHash(p.link)}`)}>`, '');
+  out.push(`Share link: <${abs(i, pathOfSlug(slugOf(g.id, p.link)))}> (opens this proposal on the map; chat apps show a preview card for it)`, `Scenario link: <${abs(i, `/${linkHash(p.link)}`)}>`, '');
   out.push(`- **${cut.figure}** ${cut.label}: ${cut.detail}. ${cut.definition}`);
   out.push(harm.none ? `- ${harm.label}. ${harm.definition}` : `- **${harm.figure}** ${harm.label}. ${harm.definition}`, '');
   out.push('Through cars an hour on all the side streets, by period (before → after, change):', '', table(['Period', 'Through cars an hour'], Object.entries(p.byPeriod).map(([id, v]) => [label(id), beforeAfterPct(v.cutThrough)])), '');
