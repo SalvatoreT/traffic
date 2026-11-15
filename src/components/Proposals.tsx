@@ -9,8 +9,9 @@ import { pathOfSlug, slugOf } from '../lib/share-path';
 import type { NetIndex } from '../lib/naming';
 import { checkThroughRoutes, ROUTE_CAVEAT } from '../lib/throughroutes';
 import { buildMockProposals } from '../fixtures/proposals';
+import { canTrace } from '../lib/redistribution-view';
 import {
-  allTrafficNote, allTrafficRows, beforeAfterPct, comparisonText, cutThroughHeadline, evidenceNote, fetchProposals, formatComputed, harmHeadline, INTERVAL_SCOPE, intervalText, periodsPhrase,
+  allTrafficHeadline, allTrafficNote, allTrafficRows, beforeAfterPct, comparisonText, cutThroughHeadline, evidenceNote, fetchProposals, formatComputed, harmHeadline, INTERVAL_SCOPE, intervalText, periodsPhrase,
   linkHash, needsConfirm, openReducer, parseProposals, provenanceLine, proposalNotices, proposalsUrl, signedNum, signedPct, splitProposals,
   type EvidenceStatus, type LoadedHashes, type OptionComparison, type Proposal, type ProposalGroup, type ProposalsState,
 } from '../lib/proposals';
@@ -51,9 +52,11 @@ interface Props {
   /** Said above the cards when a share path named a proposal that is no longer published. */
   notice?: string | null;
   onCopyLink(p: Proposal, groupId: string): void;
+  /** Open "Where traffic goes" for a package. */
+  onTrace?(p: Proposal, ivs: Intervention[]): void;
 }
 
-export function Proposals({ bundle, index, today, state, loaded, mode, current, onOpen, notice, onCopyLink }: Props) {
+export function Proposals({ bundle, index, today, state, loaded, mode, current, onOpen, notice, onCopyLink, onTrace }: Props) {
   const periodLabel = useMemo(() => {
     const m = new Map(bundle.demand.periods.map((p) => [p.id, p.label]));
     return (id: string) => m.get(id) ?? id;
@@ -85,7 +88,8 @@ export function Proposals({ bundle, index, today, state, loaded, mode, current, 
   }, [decoded, bundle.network, index]);
   const card = (g: ProposalGroup, p: Proposal, n: number | null, evidence: EvidenceStatus) => (
     <Card key={p.id} p={p} group={g} evidence={evidence} comparison={g.optionComparisons?.find((c) => c.option === p.id)} comparisonLabel={(id) => g.proposals.find((x) => x.id === id)?.title ?? id} shareUrl={`${location.origin}${pathOfSlug(slugOf(g.id, p.link))}`} onCopyLink={() => onCopyLink(p, g.id)} when={periodsPhrase(g.computed.periods, periodLabel)} hid={gid(g, p)} n={n} routes={routeCounts.get(gid(g, p)) ?? null} ivs={decoded.get(gid(g, p)) ?? null} searched={g.computed.periods} bundle={bundle} index={index} mode={mode} today={today} periodLabel={periodLabel} confirming={open.step === 'confirm' && open.id === gid(g, p)}
-      onRequest={() => request(g, p)} onCancel={() => dispatch({ type: 'cancel' })} onConfirm={() => { dispatch({ type: 'done' }); onOpen(p); }} />
+      onRequest={() => request(g, p)} onCancel={() => dispatch({ type: 'cancel' })} onConfirm={() => { dispatch({ type: 'done' }); onOpen(p); }}
+      onTrace={onTrace && decoded.get(gid(g, p))?.some(canTrace) ? () => onTrace(p, decoded.get(gid(g, p))!) : undefined} />
   );
 
   return (
@@ -151,14 +155,15 @@ export function Proposals({ bundle, index, today, state, loaded, mode, current, 
   );
 }
 
-function Card({ p, group, evidence, comparison, comparisonLabel, shareUrl, onCopyLink, when, hid, n, routes, ivs, searched, bundle, index, mode, today, periodLabel, confirming, onRequest, onCancel, onConfirm }: {
+function Card({ p, group, evidence, comparison, comparisonLabel, shareUrl, onCopyLink, when, hid, n, routes, ivs, searched, bundle, index, mode, today, periodLabel, confirming, onRequest, onCancel, onConfirm, onTrace }: {
   p: Proposal; group: ProposalGroup; evidence: EvidenceStatus; comparison: OptionComparison | undefined; comparisonLabel(id: string): string; shareUrl: string; onCopyLink(): void; when: string; hid: string; n: number | null; routes: number | null; ivs: Intervention[] | null; searched: string[]; bundle: AreaBundle; index: NetIndex; mode: Mode; today: number; periodLabel(id: string): string; confirming: boolean;
-  onRequest(): void; onCancel(): void; onConfirm(): void;
+  onRequest(): void; onCancel(): void; onConfirm(): void; onTrace?(): void;
 }) {
   const cut = cutThroughHeadline(p.cutThrough, when, group.computed.seeds);
   const harm = harmHeadline(p.harm, when);
   const allRows = allTrafficRows(p, periodLabel);
   const allNote = allTrafficNote(allRows);
+  const all = allTrafficHeadline(allRows);
   const openBtn = useRef<HTMLButtonElement>(null);
   const confirmBtn = useRef<HTMLButtonElement>(null);
   const wasConfirming = useRef(false);
@@ -181,7 +186,8 @@ function Card({ p, group, evidence, comparison, comparisonLabel, shareUrl, onCop
     ) : (
       <>
         <button ref={openBtn} type="button" className="btn primary" onClick={onRequest}>Open on the map<span className="sr-only">: {p.title}</span></button>{' '}
-        <button type="button" className="btn" onClick={onCopyLink}>Copy link<span className="sr-only"> to {p.title}</span></button>
+        <button type="button" className="btn" onClick={onCopyLink}>Copy link<span className="sr-only"> to {p.title}</span></button>{' '}
+        {onTrace && <button type="button" className="btn" onClick={onTrace}>Where traffic goes<span className="sr-only">: {p.title}</span></button>}
       </>
     )
   );
@@ -211,6 +217,11 @@ function Card({ p, group, evidence, comparison, comparisonLabel, shareUrl, onCop
             <div className="fig">
               <p className="fig-main">{harm.none ? harm.label : <><span className="fig-num">{harm.figure}</span> {harm.label}</>}</p>
               <p className="fig-sub">{harm.definition}</p>
+            </div>
+            <div className="fig fig-all">
+              <p className="fig-main">{all.none ? all.label : <><span className="fig-num">{all.figure}</span> {all.label}</>}</p>
+              {!all.none && <p className="fig-sub">{all.split} {all.interval}</p>}
+              <p className="fig-sub">{all.attribution}</p>
             </div>
           </div>
           {routes !== null && <p className="prop-routes">Through routes: <strong>{routes}</strong> ({today} today)</p>}

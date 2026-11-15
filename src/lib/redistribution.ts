@@ -44,7 +44,7 @@ export interface TraceRun { requests: Float64Array; events: Uint32Array; summary
 export interface WitnessPath { links: number[]; costS: number; baselineCostS: number | null }
 export interface Witness {
   movement: [number, number]; node: number; starts: number[]; targets: number[];
-  status: 'found' | 'disconnected'; exhaustive: boolean; listed: number; found: number; cap: number; paths: WitnessPath[];
+  status: 'found' | 'disconnected' | 'unused'; servedPairs: number; exhaustive: boolean; listed: number; found: number; cap: number; paths: WitnessPath[];
 }
 export interface GraphQuery {
   schema: number; mode: string; period: string;
@@ -128,25 +128,30 @@ export function geoOf(net: Network): Geo {
   };
 }
 
-/** Street-by-street description of the part of a path within `LOCAL_RADIUS_M` of the closed junctions (consecutive repeats merged). */
-export function localRoute(geo: Geo, centers: [number, number][], path: ArrayLike<number>): string {
+/** The links of a path within `LOCAL_RADIUS_M` of the closed junctions, and their street-by-street description (consecutive repeats merged). */
+export function localPart(geo: Geo, centers: [number, number][], path: ArrayLike<number>): { key: string; links: number[] } {
   const near = (n: number) => centers.some(([x, y]) => Math.hypot(geo.nodeXY[n][0] - x, geo.nodeXY[n][1] - y) <= LOCAL_RADIUS_M);
   const out: string[] = [];
+  const links: number[] = [];
   for (let k = 0; k < path.length; k++) {
     const l = path[k];
     if (!near(geo.linkFrom[l]) && !near(geo.linkTo[l])) continue;
+    links.push(l);
     const s = geo.linkName[l];
     if (out[out.length - 1] !== s) out.push(s);
   }
-  return out.length ? out.join(' → ') : '';
+  return { key: out.join(' → '), links };
 }
+export const localRoute = (geo: Geo, centers: [number, number][], path: ArrayLike<number>): string => localPart(geo, centers, path).key;
+export const FAR_ROUTE = 'Not within 400 m of the closure';
 
 const zeros = (n: number) => new Float64Array(n);
 export interface LinkCounts { all: Float64Array; through: Float64Array; local: Float64Array; unclassified: Float64Array }
 /** Per-link exits within the window of one comparison side, split by who made them. They add up to `all` exactly. */
 export interface Split { cohort: Float64Array; other: Float64Array; unpaired: Float64Array; initial: Float64Array; noDetail: Float64Array }
 export interface Health { gridlockRemoved: number; unroutableTrips: number; backlog: number; vehiclesInNetwork: number; completedTrips: number; heldRemoved: number | null }
-export interface RouteRow { key: string; counts: Record<Role, number>; complete: Record<Role, number>; partial: Record<Role, number> }
+/** Cohort trips by their route near the closure. `sample`: the local links of the first trip seen on it, for drawing (not a weight). */
+export interface RouteRow { key: string; counts: Record<Role, number>; complete: Record<Role, number>; partial: Record<Role, number>; sample?: number[] }
 
 export interface SeedAnalysis {
   seed: number; seconds: number;
@@ -235,16 +240,20 @@ export function analyzeSeed(o: { seed: number; seconds: number; runs: Record<Rol
   };
 
   const routes = new Map<string, RouteRow>();
+  const local = new Map<string, number[]>();
   const routeRow = (k: string) => {
     let r = routes.get(k);
-    if (!r) { r = { key: k, counts: { baseline: 0, closure: 0, package: 0 }, complete: { baseline: 0, closure: 0, package: 0 }, partial: { baseline: 0, closure: 0, package: 0 } }; routes.set(k, r); }
+    if (!r) { r = { key: k, counts: { baseline: 0, closure: 0, package: 0 }, complete: { baseline: 0, closure: 0, package: 0 }, partial: { baseline: 0, closure: 0, package: 0 }, sample: local.get(k) }; routes.set(k, r); }
     return r;
   };
   const pathOf = (p: Parsed, i: number) => p.links.subarray(p.off[i], p.off[i + 1]);
   const routeKey = (p: Parsed, i: number) => {
     const path = Array.from(pathOf(p, i));
     if (p.reqs[i].state === 'active' && p.reqs[i].cur >= 0) path.push(p.reqs[i].cur);
-    return localRoute(geo, o.centers, path) || 'Not within 400 m of the closure';
+    const part = localPart(geo, o.centers, path);
+    const k = part.key || FAR_ROUTE;
+    if (!local.has(k)) local.set(k, part.links);
+    return k;
   };
   const baselineOutcomes = Object.fromEntries(STATES.map((s) => [s, 0])) as Record<State, number>;
   const baseKeyOf = new Map<number, string>();
@@ -423,7 +432,7 @@ export function summarize(s: SummaryInput): RedistributionResult {
 
   const routes = new Map<string, RouteRow>();
   for (const x of s.seeds) for (const r of x.routes) {
-    const t = routes.get(r.key) ?? { key: r.key, counts: { baseline: 0, closure: 0, package: 0 }, complete: { baseline: 0, closure: 0, package: 0 }, partial: { baseline: 0, closure: 0, package: 0 } };
+    const t = routes.get(r.key) ?? { key: r.key, counts: { baseline: 0, closure: 0, package: 0 }, complete: { baseline: 0, closure: 0, package: 0 }, partial: { baseline: 0, closure: 0, package: 0 }, sample: r.sample };
     for (const role of ['baseline', 'closure', 'package'] as Role[]) { t.counts[role] += r.counts[role]; t.complete[role] += r.complete[role]; t.partial[role] += r.partial[role]; }
     routes.set(r.key, t);
   }
@@ -465,8 +474,11 @@ export type StoredState =
   | { ok: true; result: RedistributionResult }
   | { ok: false; reason: string };
 
+/** Canonical form of a scenario: its interventions in a fixed order, so links that list the same items differently compare equal. */
+export const scenarioKey = (ivs: Intervention[]) => ivs.map((iv) => JSON.stringify(Object.fromEntries(Object.entries(iv).sort(([a], [b]) => a.localeCompare(b))))).sort().join('|');
+
 /** A stored diagnostic is reused only for the inputs it was made on: schema, method, hashes, simulator, period and scenarios. */
-export function checkStored(x: unknown, want: { network: string | null; demand: string | null; simulator: string | null; period: string; closure: string; package: string }): StoredState {
+export function checkStored(x: unknown, want: { network: string | null; demand: string | null; simulator: string | null; period: string; closure: Intervention[]; package: Intervention[] }): StoredState {
   const r = x as RedistributionResult | null;
   if (!r || typeof r !== 'object' || r.kind !== 'redistribution') return { ok: false, reason: 'not a redistribution diagnostic' };
   if (r.schema !== REDISTRIBUTION_SCHEMA) return { ok: false, reason: `schema ${String(r.schema)}; this reader reads ${REDISTRIBUTION_SCHEMA}` };
@@ -477,7 +489,8 @@ export function checkStored(x: unknown, want: { network: string | null; demand: 
   if (!pre(want.demand, h?.demand)) return { ok: false, reason: 'made on another demand file' };
   if (want.simulator !== null && h?.simulator !== want.simulator) return { ok: false, reason: 'made by another simulator version' };
   if (r.identity.period !== want.period) return { ok: false, reason: `made for period ${r.identity.period}` };
-  const link = (role: Role) => r.identity.scenarios.find((x) => x.role === role)?.link;
-  if (link('closure') !== want.closure || link('package') !== want.package) return { ok: false, reason: 'made for other scenarios' };
+  const ivs = (role: Role) => r.identity.scenarios?.find((x) => x.role === role)?.interventions;
+  const c = ivs('closure'), p = ivs('package');
+  if (!c || !p || scenarioKey(c) !== scenarioKey(want.closure) || scenarioKey(p) !== scenarioKey(want.package)) return { ok: false, reason: 'made for other scenarios' };
   return { ok: true, result: r };
 }

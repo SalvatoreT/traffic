@@ -37,9 +37,12 @@ import { baselineCheck, checkThroughRoutes, routeHeadline } from './lib/throughr
 import { effectiveView, initViewState, viewReducer } from './lib/change';
 import { showCalibrationBanner } from './lib/caveat';
 import { mapSymbols } from './lib/legend';
+import type { RedistRequest } from './components/Redistribution';
+import { canTrace } from './lib/redistribution-view';
 const MapView = lazy(() => import('./components/MapView').then((m) => ({ default: m.MapView })));
 const Sources = lazy(() => import('./components/Sources').then((m) => ({ default: m.Sources })));
 const Assumptions = lazy(() => import('./components/Assumptions').then((m) => ({ default: m.Assumptions })));
+const Redistribution = lazy(() => import('./components/Redistribution').then((m) => ({ default: m.Redistribution })));
 
 const store = {
   get(k: string) { try { return localStorage.getItem(k); } catch { return null; } },
@@ -143,6 +146,7 @@ function Simulator({ bundle, start, onRestart }: { bundle: AreaBundle; start: St
   const periodId = demand.periods.some((p) => p.id === initial.period) ? initial.period! : fallbackPeriod;
   const [period, setPeriod] = useState(periodId);
   const [scale, setScale] = useState(initial.demandScale ?? 1);
+  const [redist, setRedist] = useState<RedistRequest | null>(null);
   const [speed, setSpeed] = useState(DEFAULT_SPEED);
   // A link that carries a scenario waits for the stored-result lookup; a miss then starts the run at Max.
   const hasLinkScenario = initial.interventions.length > 0;
@@ -499,6 +503,7 @@ function Simulator({ bundle, start, onRestart }: { bundle: AreaBundle; start: St
     <>
       <InterventionPanel bundle={bundle} index={index} region={region} showService={showService} onShowService={setShowService} interventions={interventions}
         onRemove={onRemove} onClear={onClear} onChoose={select} onHover={setHoverPlace} onSelectIntervention={onSelectIntervention}
+        onTrace={(i) => setRedist({ package: interventions, closure: i, source: 'scenario', title: 'your scenario' })}
         menuTop={placement === 'sheet' ? menu : null} menuInline={placement === 'inline' ? menu : null} shareSlot={shareButton}
         routes={{ check: routeCheck, today: todayRoutes.total, show: showRoutes, onShow: setShowRoutes, onHighlight: setHotRoute, mode }} />
       <div className="scn-notices" role="status" aria-live="polite">
@@ -638,8 +643,15 @@ function Simulator({ bundle, start, onRestart }: { bundle: AreaBundle; start: St
               baseMetrics={base} scenMetrics={scen} onHover={setHoverPlace}
               phone={phone} onShowOnMap={(block) => { setHoverPlace(null); select({ kind: 'block', block, point: null, nearLink: null, via: 'list' }); go('map'); }} />
           )}
-          {view === 'proposals' && <Proposals bundle={bundle} index={index} today={todayRoutes.total} state={proposals} loaded={evidenceInputs ?? NO_HASHES} mode={mode} current={interventions} onOpen={onOpenProposal} notice={goneNotice ? GONE_NOTICE : null} onCopyLink={(p, g) => copyLink(`${location.origin}${pathOfSlug(slugOf(g, p.link))}`, 'Link to this proposal copied.')} />}
+          {view === 'proposals' && <Proposals bundle={bundle} index={index} today={todayRoutes.total} state={proposals} loaded={evidenceInputs ?? NO_HASHES} mode={mode} current={interventions} onOpen={onOpenProposal}
+            onTrace={(p, ivs) => { const i = ivs.findIndex(canTrace); if (i >= 0) setRedist({ package: ivs, closure: i, source: 'proposal', title: p.title }); }} notice={goneNotice ? GONE_NOTICE : null} onCopyLink={(p, g) => copyLink(`${location.origin}${pathOfSlug(slugOf(g, p.link))}`, 'Link to this proposal copied.')} />}
           {view === 'assumptions' && <Suspense fallback={<p className="boot" role="status">Loading assumptions…</p>}><Assumptions bundle={bundle} index={index} mode={mode} hashes={hashes} fingerprint={fingerprint} /></Suspense>}
+          {redist && (
+            <Suspense fallback={null}>
+              <Redistribution bundle={bundle} index={index} period={period} periodLabel={demand.periods.find((x) => x.id === period)?.label ?? period} demandScale={scale}
+                hashes={hashes} fingerprint={fingerprint} request={redist} onClose={() => setRedist(null)} />
+            </Suspense>
+          )}
           {view === 'sources' && <Suspense fallback={<p className="boot" role="status">Loading sources…</p>}><Sources demand={demand} synthetic={bundle.synthetic} calibration={bundle.synthetic ? undefined : { status: calStatus, note: bundle.entry.calibration?.note }} /></Suspense>}
         </div>
 

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { Intervention } from '../types';
 import { analyzeSeed, checkStored, COMPARISONS, localRoute, OUTCOMES, REQ_STRIDE, REDISTRIBUTION_SCHEMA, DIAGNOSTIC_METHOD, type Geo, type Role, type TraceRun } from './redistribution';
 
 // Six links on a small graph: nodes 0, 4 and 5 are gates outside the study area, 1 to 3 inside. Link i runs from linkFrom[i] to linkTo[i].
@@ -116,15 +117,17 @@ describe('redistribution accounting', () => {
 });
 
 describe('stored diagnostics', () => {
-  const want = { network: 'abcdef0123456789', demand: '0123456789abcdef', simulator: 'f1', period: 'pm_peak', closure: '#c', package: '#p' };
-  const ok = { kind: 'redistribution', schema: REDISTRIBUTION_SCHEMA, method: DIAGNOSTIC_METHOD, identity: { period: 'pm_peak', hashes: { network: 'abcdef01', demand: '01234567', simulator: 'f1' }, scenarios: [{ role: 'closure', link: '#c' }, { role: 'package', link: '#p' }] } };
+  const c: Intervention = { type: 'modal_filter', node: 819 };
+  const other: Intervention = { type: 'modal_filter', node: 1090, legs: [2669] };
+  const want = { network: 'abcdef0123456789', demand: '0123456789abcdef', simulator: 'f1', period: 'pm_peak', closure: [c], package: [c, other] };
+  const ok = { kind: 'redistribution', schema: REDISTRIBUTION_SCHEMA, method: DIAGNOSTIC_METHOD, identity: { period: 'pm_peak', hashes: { network: 'abcdef01', demand: '01234567', simulator: 'f1' }, scenarios: [{ role: 'closure', link: '#c', interventions: [c] }, { role: 'package', link: '#p', interventions: [other, c] }] } };
   it('reuses a result only for the inputs, simulator, schema and method it was made with', () => {
     expect(checkStored(ok, want).ok).toBe(true);
     expect(checkStored({ ...ok, schema: 99 }, want)).toMatchObject({ ok: false });
     expect(checkStored({ ...ok, method: 'old' }, want)).toMatchObject({ ok: false });
     expect(checkStored(ok, { ...want, simulator: 'f2' })).toMatchObject({ ok: false, reason: 'made by another simulator version' });
     expect(checkStored(ok, { ...want, network: 'ffff0000ffff' })).toMatchObject({ ok: false });
-    expect(checkStored(ok, { ...want, package: '#other' })).toMatchObject({ ok: false });
+    expect(checkStored(ok, { ...want, package: [c] })).toMatchObject({ ok: false, reason: 'made for other scenarios' });
     expect(checkStored({ aggregate: true }, want)).toMatchObject({ ok: false });
   });
 });

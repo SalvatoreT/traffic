@@ -11,6 +11,7 @@ import { PlaceSearch } from './PlaceSearch';
 import { ThroughRoutes } from './ThroughRoutes';
 import type { RouteCheck } from '../lib/throughroutes';
 import type { Mode } from '../lib/ramps';
+import { canTrace } from '../lib/redistribution-view';
 
 interface Props {
   bundle: AreaBundle; index: NetIndex;
@@ -22,6 +23,8 @@ interface Props {
   onChoose(s: Selection): void;
   onHover(h: Hover | null): void;
   onSelectIntervention(i: number): void;
+  /** Open "Where traffic goes" for intervention `i` inside the current scenario. */
+  onTrace?(i: number): void;
   /** Menu for the selected place when it lives in the panel: above everything on a phone, under the search box otherwise. */
   menuTop?: ReactNode;
   menuInline?: ReactNode;
@@ -52,6 +55,9 @@ export function InterventionPanel(p: Props) {
                     <button type="button" className="desc-btn" title="Select this place" onClick={() => p.onSelectIntervention(i)}>{d}</button>
                     {!interventionInRegion(iv, B.network, p.region) && <>{' '}<span className="tag">outside the map</span></>}
                     {ft && <span className="iv-more">{filterSentence(ft)}</span>}
+                    {p.onTrace && canTrace(iv) && (
+                      <button type="button" className="link-btn small" onClick={() => p.onTrace!(i)}>Where traffic goes<span className="sr-only">: {d}</span></button>
+                    )}
                   </span>
                   <button type="button" className="btn small-btn" onClick={() => p.onRemove(i)} aria-label={`Remove: ${d}`}>Remove</button>
                 </li>

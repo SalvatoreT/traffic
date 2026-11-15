@@ -129,7 +129,7 @@ export async function redistribution(files: AreaFiles, a: RedistArgs): Promise<u
   const e = await engine();
   const g = graphs(e, files, v);
   const h16 = (x: string) => x.slice(0, 16);
-  const want = { network: files.hashes.network, demand: files.hashes.demand, simulator: e.fingerprint, period: v.period, closure: v.links.closure, package: v.links.package };
+  const want = { network: files.hashes.network, demand: files.hashes.demand, simulator: e.fingerprint, period: v.period, closure: v.closure, package: v.package };
   if (a.from !== undefined) {
     if (!existsSync(a.from)) throw new CliError(`No such file: ${a.from}`, EXIT.usage);
     let stored: unknown;
