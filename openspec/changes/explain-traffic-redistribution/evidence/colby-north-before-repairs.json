@@ -1,0 +1,990 @@
+{
+  "sourceRevision": "4820dddd2077090422e5cd492cdcb7603dc3d2e6",
+  "sourceProposalUrl": "https://traffic.transit.directory/data/rockridge.proposals.json",
+  "packageGroups": [
+    "charter",
+    "unconstrained"
+  ],
+  "packageId": "p5",
+  "runSettings": {
+    "period": "pm_peak",
+    "seeds": [
+      1,
+      2,
+      3
+    ],
+    "simulatedSeconds": 3600,
+    "demandScale": 1,
+    "initialLoad": true,
+    "settleSeconds": 120
+  },
+  "hashes": {
+    "network": "5fe8241a6ba1e306",
+    "demand": "8ef2c6578dfbb9fc",
+    "simulator": "96d6b7a11c8815f8a06ba543256eae6e"
+  },
+  "links": {
+    "singleClosure": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p3fr7b5",
+    "currentPackage": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2~dd,9q9p3cz9dy,128~mn,9q9p3cxtt7~mn,9q9p3fr7b5~mn,9q9p3cq6m9,120.300~mn,9q9p3cx02b"
+  },
+  "units": "cars per hour, both directions summed",
+  "rows": [
+    {
+      "block": "63rd Street between Colby Street and Dana Street",
+      "singleClosure": {
+        "allCars": {
+          "baseline": {
+            "mean": 63.333333333333336,
+            "perSeed": [
+              60,
+              60,
+              70
+            ]
+          },
+          "scenario": {
+            "mean": 77.66666666666667,
+            "perSeed": [
+              73,
+              76,
+              84
+            ]
+          },
+          "change": {
+            "mean": 14.333333333333334,
+            "perSeed": [
+              13,
+              16,
+              14
+            ]
+          }
+        },
+        "throughCars": {
+          "baseline": {
+            "mean": 18.333333333333332,
+            "perSeed": [
+              10,
+              24,
+              21
+            ]
+          },
+          "scenario": {
+            "mean": 14.666666666666666,
+            "perSeed": [
+              11,
+              17,
+              16
+            ]
+          },
+          "change": {
+            "mean": -3.6666666666666665,
+            "perSeed": [
+              1,
+              -7,
+              -5
+            ]
+          }
+        }
+      },
+      "currentPackage": {
+        "allCars": {
+          "baseline": {
+            "mean": 63.333333333333336,
+            "perSeed": [
+              60,
+              60,
+              70
+            ]
+          },
+          "scenario": {
+            "mean": 106.33333333333333,
+            "perSeed": [
+              103,
+              95,
+              121
+            ]
+          },
+          "change": {
+            "mean": 43.0,
+            "perSeed": [
+              43,
+              35,
+              51
+            ]
+          }
+        },
+        "throughCars": {
+          "baseline": {
+            "mean": 18.333333333333332,
+            "perSeed": [
+              10,
+              24,
+              21
+            ]
+          },
+          "scenario": {
+            "mean": 11.333333333333334,
+            "perSeed": [
+              6,
+              11,
+              17
+            ]
+          },
+          "change": {
+            "mean": -7.0,
+            "perSeed": [
+              -4,
+              -13,
+              -4
+            ]
+          }
+        }
+      }
+    },
+    {
+      "block": "Dana Street between 63rd Street and North Street",
+      "singleClosure": {
+        "allCars": {
+          "baseline": {
+            "mean": 37.0,
+            "perSeed": [
+              34,
+              32,
+              45
+            ]
+          },
+          "scenario": {
+            "mean": 46.666666666666664,
+            "perSeed": [
+              42,
+              53,
+              45
+            ]
+          },
+          "change": {
+            "mean": 9.666666666666666,
+            "perSeed": [
+              8,
+              21,
+              0
+            ]
+          }
+        },
+        "throughCars": {
+          "baseline": {
+            "mean": 14.0,
+            "perSeed": [
+              10,
+              14,
+              18
+            ]
+          },
+          "scenario": {
+            "mean": 13.333333333333334,
+            "perSeed": [
+              9,
+              19,
+              12
+            ]
+          },
+          "change": {
+            "mean": -0.6666666666666666,
+            "perSeed": [
+              -1,
+              5,
+              -6
+            ]
+          }
+        }
+      },
+      "currentPackage": {
+        "allCars": {
+          "baseline": {
+            "mean": 37.0,
+            "perSeed": [
+              34,
+              32,
+              45
+            ]
+          },
+          "scenario": {
+            "mean": 51.0,
+            "perSeed": [
+              49,
+              51,
+              53
+            ]
+          },
+          "change": {
+            "mean": 14.0,
+            "perSeed": [
+              15,
+              19,
+              8
+            ]
+          }
+        },
+        "throughCars": {
+          "baseline": {
+            "mean": 14.0,
+            "perSeed": [
+              10,
+              14,
+              18
+            ]
+          },
+          "scenario": {
+            "mean": 11.333333333333334,
+            "perSeed": [
+              9,
+              13,
+              12
+            ]
+          },
+          "change": {
+            "mean": -2.6666666666666665,
+            "perSeed": [
+              -1,
+              -1,
+              -6
+            ]
+          }
+        }
+      }
+    },
+    {
+      "block": "Dana Street between North Street and Alcatraz Avenue",
+      "singleClosure": {
+        "allCars": {
+          "baseline": {
+            "mean": 26.666666666666668,
+            "perSeed": [
+              27,
+              20,
+              33
+            ]
+          },
+          "scenario": {
+            "mean": 34.0,
+            "perSeed": [
+              31,
+              38,
+              33
+            ]
+          },
+          "change": {
+            "mean": 7.333333333333333,
+            "perSeed": [
+              4,
+              18,
+              0
+            ]
+          }
+        },
+        "throughCars": {
+          "baseline": {
+            "mean": 14.0,
+            "perSeed": [
+              11,
+              15,
+              16
+            ]
+          },
+          "scenario": {
+            "mean": 13.333333333333334,
+            "perSeed": [
+              9,
+              19,
+              12
+            ]
+          },
+          "change": {
+            "mean": -0.6666666666666666,
+            "perSeed": [
+              -2,
+              4,
+              -4
+            ]
+          }
+        }
+      },
+      "currentPackage": {
+        "allCars": {
+          "baseline": {
+            "mean": 26.666666666666668,
+            "perSeed": [
+              27,
+              20,
+              33
+            ]
+          },
+          "scenario": {
+            "mean": 45.0,
+            "perSeed": [
+              47,
+              41,
+              47
+            ]
+          },
+          "change": {
+            "mean": 18.333333333333332,
+            "perSeed": [
+              20,
+              21,
+              14
+            ]
+          }
+        },
+        "throughCars": {
+          "baseline": {
+            "mean": 14.0,
+            "perSeed": [
+              11,
+              15,
+              16
+            ]
+          },
+          "scenario": {
+            "mean": 11.333333333333334,
+            "perSeed": [
+              9,
+              13,
+              12
+            ]
+          },
+          "change": {
+            "mean": -2.6666666666666665,
+            "perSeed": [
+              -2,
+              -2,
+              -4
+            ]
+          }
+        }
+      }
+    },
+    {
+      "block": "63rd Street between Dana Street and Canning Street",
+      "singleClosure": {
+        "allCars": {
+          "baseline": {
+            "mean": 83.33333333333333,
+            "perSeed": [
+              77,
+              79,
+              94
+            ]
+          },
+          "scenario": {
+            "mean": 75.0,
+            "perSeed": [
+              67,
+              70,
+              88
+            ]
+          },
+          "change": {
+            "mean": -8.333333333333334,
+            "perSeed": [
+              -10,
+              -9,
+              -6
+            ]
+          }
+        },
+        "throughCars": {
+          "baseline": {
+            "mean": 24.333333333333332,
+            "perSeed": [
+              15,
+              29,
+              29
+            ]
+          },
+          "scenario": {
+            "mean": 16.0,
+            "perSeed": [
+              12,
+              18,
+              18
+            ]
+          },
+          "change": {
+            "mean": -8.333333333333334,
+            "perSeed": [
+              -3,
+              -11,
+              -11
+            ]
+          }
+        }
+      },
+      "currentPackage": {
+        "allCars": {
+          "baseline": {
+            "mean": 83.33333333333333,
+            "perSeed": [
+              77,
+              79,
+              94
+            ]
+          },
+          "scenario": {
+            "mean": 107.0,
+            "perSeed": [
+              102,
+              104,
+              115
+            ]
+          },
+          "change": {
+            "mean": 23.666666666666668,
+            "perSeed": [
+              25,
+              25,
+              21
+            ]
+          }
+        },
+        "throughCars": {
+          "baseline": {
+            "mean": 24.333333333333332,
+            "perSeed": [
+              15,
+              29,
+              29
+            ]
+          },
+          "scenario": {
+            "mean": 8.666666666666666,
+            "perSeed": [
+              7,
+              8,
+              11
+            ]
+          },
+          "change": {
+            "mean": -15.666666666666666,
+            "perSeed": [
+              -8,
+              -21,
+              -18
+            ]
+          }
+        }
+      }
+    },
+    {
+      "block": "Hillegass Avenue between Alcatraz Avenue and 63rd Street",
+      "singleClosure": {
+        "allCars": {
+          "baseline": {
+            "mean": 262.6666666666667,
+            "perSeed": [
+              265,
+              262,
+              261
+            ]
+          },
+          "scenario": {
+            "mean": 371.6666666666667,
+            "perSeed": [
+              395,
+              381,
+              339
+            ]
+          },
+          "change": {
+            "mean": 109.0,
+            "perSeed": [
+              130,
+              119,
+              78
+            ]
+          }
+        },
+        "throughCars": {
+          "baseline": {
+            "mean": 174.66666666666666,
+            "perSeed": [
+              168,
+              181,
+              175
+            ]
+          },
+          "scenario": {
+            "mean": 265.6666666666667,
+            "perSeed": [
+              276,
+              281,
+              240
+            ]
+          },
+          "change": {
+            "mean": 91.0,
+            "perSeed": [
+              108,
+              100,
+              65
+            ]
+          }
+        }
+      },
+      "currentPackage": {
+        "allCars": {
+          "baseline": {
+            "mean": 262.6666666666667,
+            "perSeed": [
+              265,
+              262,
+              261
+            ]
+          },
+          "scenario": {
+            "mean": 4.0,
+            "perSeed": [
+              4,
+              4,
+              4
+            ]
+          },
+          "change": {
+            "mean": -258.6666666666667,
+            "perSeed": [
+              -261,
+              -258,
+              -257
+            ]
+          }
+        },
+        "throughCars": {
+          "baseline": {
+            "mean": 174.66666666666666,
+            "perSeed": [
+              168,
+              181,
+              175
+            ]
+          },
+          "scenario": {
+            "mean": 0.0,
+            "perSeed": [
+              0,
+              0,
+              0
+            ]
+          },
+          "change": {
+            "mean": -174.66666666666666,
+            "perSeed": [
+              -168,
+              -181,
+              -175
+            ]
+          }
+        }
+      }
+    },
+    {
+      "block": "Hillegass Avenue between 63rd Street and 62nd Street",
+      "singleClosure": {
+        "allCars": {
+          "baseline": {
+            "mean": 219.66666666666666,
+            "perSeed": [
+              223,
+              222,
+              214
+            ]
+          },
+          "scenario": {
+            "mean": 300.6666666666667,
+            "perSeed": [
+              320,
+              304,
+              278
+            ]
+          },
+          "change": {
+            "mean": 81.0,
+            "perSeed": [
+              97,
+              82,
+              64
+            ]
+          }
+        },
+        "throughCars": {
+          "baseline": {
+            "mean": 152.33333333333334,
+            "perSeed": [
+              151,
+              161,
+              145
+            ]
+          },
+          "scenario": {
+            "mean": 227.33333333333334,
+            "perSeed": [
+              243,
+              237,
+              202
+            ]
+          },
+          "change": {
+            "mean": 75.0,
+            "perSeed": [
+              92,
+              76,
+              57
+            ]
+          }
+        }
+      },
+      "currentPackage": {
+        "allCars": {
+          "baseline": {
+            "mean": 219.66666666666666,
+            "perSeed": [
+              223,
+              222,
+              214
+            ]
+          },
+          "scenario": {
+            "mean": 13.0,
+            "perSeed": [
+              15,
+              12,
+              12
+            ]
+          },
+          "change": {
+            "mean": -206.66666666666666,
+            "perSeed": [
+              -208,
+              -210,
+              -202
+            ]
+          }
+        },
+        "throughCars": {
+          "baseline": {
+            "mean": 152.33333333333334,
+            "perSeed": [
+              151,
+              161,
+              145
+            ]
+          },
+          "scenario": {
+            "mean": 0.0,
+            "perSeed": [
+              0,
+              0,
+              0
+            ]
+          },
+          "change": {
+            "mean": -152.33333333333334,
+            "perSeed": [
+              -151,
+              -161,
+              -145
+            ]
+          }
+        }
+      }
+    },
+    {
+      "block": "Colby Street between North Street and Alcatraz Avenue",
+      "singleClosure": {
+        "allCars": {
+          "baseline": {
+            "mean": 262.3333333333333,
+            "perSeed": [
+              268,
+              290,
+              229
+            ]
+          },
+          "scenario": {
+            "mean": 0.0,
+            "perSeed": [
+              0,
+              0,
+              0
+            ]
+          },
+          "change": {
+            "mean": -262.3333333333333,
+            "perSeed": [
+              -268,
+              -290,
+              -229
+            ]
+          }
+        },
+        "throughCars": {
+          "baseline": {
+            "mean": 174.66666666666666,
+            "perSeed": [
+              178,
+              205,
+              141
+            ]
+          },
+          "scenario": {
+            "mean": 0.0,
+            "perSeed": [
+              0,
+              0,
+              0
+            ]
+          },
+          "change": {
+            "mean": -174.66666666666666,
+            "perSeed": [
+              -178,
+              -205,
+              -141
+            ]
+          }
+        }
+      },
+      "currentPackage": {
+        "allCars": {
+          "baseline": {
+            "mean": 262.3333333333333,
+            "perSeed": [
+              268,
+              290,
+              229
+            ]
+          },
+          "scenario": {
+            "mean": 0.0,
+            "perSeed": [
+              0,
+              0,
+              0
+            ]
+          },
+          "change": {
+            "mean": -262.3333333333333,
+            "perSeed": [
+              -268,
+              -290,
+              -229
+            ]
+          }
+        },
+        "throughCars": {
+          "baseline": {
+            "mean": 174.66666666666666,
+            "perSeed": [
+              178,
+              205,
+              141
+            ]
+          },
+          "scenario": {
+            "mean": 0.0,
+            "perSeed": [
+              0,
+              0,
+              0
+            ]
+          },
+          "change": {
+            "mean": -174.66666666666666,
+            "perSeed": [
+              -178,
+              -205,
+              -141
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "headlines": {
+    "singleClosure": [
+      {
+        "throughCarsPerHour": {
+          "definition": "Through cars (neither trip end in the study area) that use a residential or service street in the study area, each counted once, in cars an hour over the run.",
+          "baseline": 622,
+          "scenario": 570,
+          "change": -52,
+          "changePct": -8.4
+        }
+      },
+      {
+        "throughCarsPerHour": {
+          "definition": "Through cars (neither trip end in the study area) that use a residential or service street in the study area, each counted once, in cars an hour over the run.",
+          "baseline": 678,
+          "scenario": 585,
+          "change": -93,
+          "changePct": -13.7
+        }
+      },
+      {
+        "throughCarsPerHour": {
+          "definition": "Through cars (neither trip end in the study area) that use a residential or service street in the study area, each counted once, in cars an hour over the run.",
+          "baseline": 591,
+          "scenario": 518,
+          "change": -73,
+          "changePct": -12.4
+        }
+      }
+    ],
+    "currentPackage": [
+      {
+        "throughCarsPerHour": {
+          "definition": "Through cars (neither trip end in the study area) that use a residential or service street in the study area, each counted once, in cars an hour over the run.",
+          "baseline": 622,
+          "scenario": 39,
+          "change": -583,
+          "changePct": -93.7
+        }
+      },
+      {
+        "throughCarsPerHour": {
+          "definition": "Through cars (neither trip end in the study area) that use a residential or service street in the study area, each counted once, in cars an hour over the run.",
+          "baseline": 678,
+          "scenario": 62,
+          "change": -616,
+          "changePct": -90.9
+        }
+      },
+      {
+        "throughCarsPerHour": {
+          "definition": "Through cars (neither trip end in the study area) that use a residential or service street in the study area, each counted once, in cars an hour over the run.",
+          "baseline": 591,
+          "scenario": 64,
+          "change": -527,
+          "changePct": -89.2
+        }
+      }
+    ]
+  },
+  "networkHealth": {
+    "singleClosure": [
+      {
+        "baseline": {
+          "vehiclesOnNetwork": 3784,
+          "tripsWaitingToEnter": 9,
+          "removedForGridlock": 0,
+          "unroutableTrips": 0,
+          "oversaturated": false
+        },
+        "scenario": {
+          "vehiclesOnNetwork": 3701,
+          "tripsWaitingToEnter": 13,
+          "removedForGridlock": 0,
+          "unroutableTrips": 0,
+          "oversaturated": false
+        },
+        "invalidInterventionsSkippedBySimulator": 0,
+        "unplacedInterventions": 0
+      },
+      {
+        "baseline": {
+          "vehiclesOnNetwork": 3674,
+          "tripsWaitingToEnter": 4,
+          "removedForGridlock": 0,
+          "unroutableTrips": 0,
+          "oversaturated": false
+        },
+        "scenario": {
+          "vehiclesOnNetwork": 3586,
+          "tripsWaitingToEnter": 7,
+          "removedForGridlock": 0,
+          "unroutableTrips": 0,
+          "oversaturated": false
+        },
+        "invalidInterventionsSkippedBySimulator": 0,
+        "unplacedInterventions": 0
+      },
+      {
+        "baseline": {
+          "vehiclesOnNetwork": 3666,
+          "tripsWaitingToEnter": 5,
+          "removedForGridlock": 0,
+          "unroutableTrips": 0,
+          "oversaturated": false
+        },
+        "scenario": {
+          "vehiclesOnNetwork": 3692,
+          "tripsWaitingToEnter": 7,
+          "removedForGridlock": 0,
+          "unroutableTrips": 0,
+          "oversaturated": false
+        },
+        "invalidInterventionsSkippedBySimulator": 0,
+        "unplacedInterventions": 0
+      }
+    ],
+    "currentPackage": [
+      {
+        "baseline": {
+          "vehiclesOnNetwork": 3784,
+          "tripsWaitingToEnter": 9,
+          "removedForGridlock": 0,
+          "unroutableTrips": 0,
+          "oversaturated": false
+        },
+        "scenario": {
+          "vehiclesOnNetwork": 3832,
+          "tripsWaitingToEnter": 7,
+          "removedForGridlock": 0,
+          "unroutableTrips": 0,
+          "oversaturated": false
+        },
+        "invalidInterventionsSkippedBySimulator": 0,
+        "unplacedInterventions": 0
+      },
+      {
+        "baseline": {
+          "vehiclesOnNetwork": 3674,
+          "tripsWaitingToEnter": 4,
+          "removedForGridlock": 0,
+          "unroutableTrips": 0,
+          "oversaturated": false
+        },
+        "scenario": {
+          "vehiclesOnNetwork": 3657,
+          "tripsWaitingToEnter": 7,
+          "removedForGridlock": 0,
+          "unroutableTrips": 0,
+          "oversaturated": false
+        },
+        "invalidInterventionsSkippedBySimulator": 0,
+        "unplacedInterventions": 0
+      },
+      {
+        "baseline": {
+          "vehiclesOnNetwork": 3666,
+          "tripsWaitingToEnter": 5,
+          "removedForGridlock": 0,
+          "unroutableTrips": 0,
+          "oversaturated": false
+        },
+        "scenario": {
+          "vehiclesOnNetwork": 3660,
+          "tripsWaitingToEnter": 8,
+          "removedForGridlock": 5,
+          "unroutableTrips": 0,
+          "oversaturated": true
+        },
+        "invalidInterventionsSkippedBySimulator": 0,
+        "unplacedInterventions": 0
+      }
+    ]
+  },
+  "limits": [
+    "Model is uncalibrated. These are simulator results, not field forecasts.",
+    "Full package seed3 removed5 vehicles for gridlock and is marked oversaturated by CLI.",
+    "No individual trajectory matching was performed; block deltas do not identify which particular diverted trips use which paths.",
+    "Statistics use three paired seeds, not a confidence interval or proof of robustness."
+  ]
+}

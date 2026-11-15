@@ -1,0 +1,79 @@
+## Context and evidence
+
+The user requested this proposal on 2026-11-15 after questioning the Colby/North closure's effects on 63rd and Dana. The proposal was prepared against `5f56c0d`, after incorporating 36 commits following the original audit. Earlier repairs are already being implemented; this change builds on their new contracts.
+
+The motivating experiment used source `4820dddd2077090422e5cd492cdcb7603dc3d2e6`, simulator fingerprint `96d6b7a11c8815f8a06ba543256eae6e`, network hash `5fe8241a6ba1e306`, and demand hash `8ef2c6578dfbb9fc`. It ran one PM hour after initial loading and settling, at demand scale 1, seeds 1, 2, and 3. Its compact output is [evidence/colby-north-before-repairs.json](evidence/colby-north-before-repairs.json). The field `currentPackage` means the package fetched during that experiment, identified by its full scenario link; it does not mean the latest package when this proposal is read.
+
+| Block | Baseline all cars/h | Colby/North alone | Historical six-change package |
+| --- | ---: | ---: | ---: |
+| 63rd, Colby to Dana | 63.3 | 77.7 | 106.3 |
+| Dana, 63rd to North | 37.0 | 46.7 | 51.0 |
+| Dana, North to Alcatraz | 26.7 | 34.0 | 45.0 |
+
+These are both-direction averages of model outputs, not field measurements or confidence intervals. On 63rd, the package raised total traffic by 43 cars/h while through traffic fell by 7. The existing classification calls a trip through traffic when both trip endpoints lie outside the study area. The residual is traffic with an endpoint inside the area, including visitors. Full-package seed 3 removed five vehicles for gridlock and was flagged oversaturated. No individual trajectories were matched, so these differences do not identify which cars used a detour. Three seeds are descriptive and insufficient under the implemented `paired-t-1` reporting method.
+
+For that network, the legal bypass northbound was Colby, west on 63rd, north on Dana, then Alcatraz: links `[2599,1855,1924,1926]`; the reverse was `[1927,1925,1856,2600]`. Rust `Eff`/`Topo` checks found both directions open under the single closure and the captured packages. Link IDs are fixture-specific. Future tests must identify their geography or use small synthetic networks.
+
+To repeat the block comparison on a matching checkout and matching input files, build its WASM and run the existing CLI for seeds 1, 2, and 3, substituting each of the evidence file's two `links` values:
+
+```sh
+node --import tsx tools/simulate.ts --link '#v1;a=rockridge;p=pm_peak;s=mn,9q9p3fr7b5' --seed 1 --minutes 60 --blocks all --json --no-cache > /tmp/colby-single-1.json
+```
+
+Verify the output hashes before comparing numbers. The original input bytes are not vendored by this proposal; a new download may differ. Repeating on the repaired engine is required during implementation and must produce a new evidence record, not overwrite this historical sample. The example is a regression question, not a target to tune toward.
+
+## Existing implementation and dependencies
+
+`route.rs` already routes through legal link-to-link movements with travel-time costs [Wardrop1952; Peeta2001]. `src/lib/throughroutes.ts` is a separate bounded structural screen: its representative routes, direction merging, and period handling do not establish actual route volumes. `TripRecord` and `TripTiming` currently record completed, non-preplaced car trips; trails hold links entered, while published link flows count link exits in the measurement window. Neither structure alone accounts for all requests or reconciles a finite-hour flow table.
+
+The global `uid_next` counter is consumed by scenario-dependent initial loading before ordinary arrivals. A matching UID across runs is therefore not proof of a matching requested trip. Physical endpoint sampling also uses UID. Runtime flow indices can change after filtering, so those indices are not stable source identities either.
+
+The `proposal-evidence-integrity` implementation provides v5 provenance, reporting-method versions, matched seed differences, and explicit insufficient/exploratory states. Reuse that work instead of defining a second estimator. `repair-local-trip-measurement-integrity`, `protect-calibration-evidence`, and `expose-junction-fallback-validity` provide endpoint, run-manifest, and recovery contracts. `search-keeps-known-packages` is archived; its candidate retention is not changed here. Batch execution may use `docs/sharded-runs.md` when the diagnostic is expensive.
+
+## Decisions
+
+### D1. Keep legal possibilities distinct from simulated choices
+
+Use a shared engine API or an exported effective graph derived from the canonical Rust movement permissions. A bypass witness must respect direction, the selected period's restrictions, mode, and exact intervention scope, including partial-leg filters and diverters. Record the graph/input identity. A UI implementation may cache or search this representation, but it must pass parity fixtures against engine permissions. Maintain the current structural screen's fast response where possible.
+
+Label structural paths as possible, and paths with recorded usage as simulated. Search limits, route merging, truncation, and omitted paths must be visible. Failure of a bounded search to find a path is not a proof of disconnection. An exhaustive reachability result may make that claim for its declared graph and scope. Path counts never supply traffic weights. This preserves the distinction between feasible routes and assignment under the existing routing model [Wardrop1952; Peeta2001]. A new unweighted junction graph was rejected because it would lose turn and period semantics.
+
+### D2. Match requests before attributing routes
+
+Add an opt-in request/event ledger with a stable key based on immutable source demand identity, mode, seed, and within-flow requested-arrival ordinal, or an equivalently verified schedule identity. Record the source-to-runtime-flow mapping and requested arrival. Check matching requested arrival times, origin/destination, driver attributes relevant to routing, and requested physical endpoint attributes across runs. Treat changed attributes as a visible mismatch, not evidence about the same driver's response. A recycled vehicle slot or current global UID is insufficient.
+
+Adding the diagnostic must leave an otherwise identical run unchanged. If existing initialization or UID-keyed endpoint sampling prevents a valid comparison, expose that limitation. A necessary repair that gives persistent attributes scenario-independent keys must be reviewed as a behavior change, fingerprinted, and measured before/after; enabling tracing in the resulting implementation must still have no effect. Do not redesign initial loading merely to force a perfect match. Initial/preplaced and warm-up-only agents have separate strata, with explicit pairing coverage or unmatched status.
+
+### D3. Define the cohort and preserve the finite observation window
+
+The first implementation traces car traffic. The primary cohort is the set of baseline car requests whose vehicles traversed the directed links or movements invalidated or altered by the selected intervention during the stated measurement window. A partial-leg filter must not classify unaffected turns as directly displaced. A broader all-junction-crossings selector may be offered but must be labeled separately. Follow those requests in each comparison, including the paths they take before reaching the selected neighborhood. Preserve requests that remain pending, active, completed, unroutable, removed, or unmatched at the horizon. These outcome bins must be mutually exclusive at the stated time; transition/event counters may be reported separately.
+
+Collect timestamped link-exit and junction-movement events for the window using the existing flow-counting convention. Preserve repeat passages. Count a cohort trip once in a trip-outcome table, but count each qualifying passage in a link-flow table. Distinguish a complete trip path from an observed partial path. Do not extend the scenario horizon silently until trips finish, or infer an empty path from an unrecorded completion.
+
+Derive gross route usage from matched cohort events. Reconcile each block's net change with contributions from the selected cohort, other requests, and explicitly identified initial/unmatched strata under the same window and counting convention. A zero net change can conceal arrivals and departures of equal size. A falling count can reflect delayed completion or failed demand, so show lifecycle and recovery evidence beside the route result [FHWA-TAT3-2019]. Aggregate block subtraction alone was rejected as a way to identify which trips moved.
+
+### D4. Compare named scenarios without additive attribution
+
+Use baseline, the selected closure alone, and the complete package, with identical network, demand, period, requested seed schedule, horizon, initialization policy, and measurement window. A closure-only variant must preserve the chosen intervention's exact semantics. If it cannot be extracted or decoded unambiguously, require a valid explicit selection and show no inferred variant.
+
+Show baseline-to-closure and baseline-to-package changes and, when requested, the paired difference between package and closure-only. Those are conditional model comparisons. They do not assign an additive contribution to each intervention; interacting changes and congestion can make order matter. A package-minus-one experiment would be a different named comparison and is outside the initial scope.
+
+### D5. Make all-car redistribution visible and uncertainty consistent
+
+Show absolute baseline/scenario counts and signed changes for all cars and, where classification is available, external-to-external trips versus trips with an endpoint inside the area. The existing neighborhood through counter applies only to local in-study links. A zero through counter on a boundary or outside link is not evidence that all its cars are local: use consistent origin/destination passage classes for every displayed decomposition, or mark that decomposition unavailable. Keep these classes distinct from the narrower neighborhood cut-through metric. Always show all-car boundary totals. Preserve direction and period in exports, with an explicitly labeled both-direction view for residents. Show boundary-road changes alongside interior roads without treating every outside link as a neighborhood harm score. The map's geographic scope must be declared; a table can retain relevant detours outside the normal map viewport. Display raw gains even when uncertainty is unresolved. Reuse the existing paired estimator, method identity, minimum-pair rule, and selection/confirmation labels [WebTAG-M3.1; TfL-TMG4; NIST-Handbook]. A fixed-input seed interval does not include demand or calibration uncertainty.
+
+Maps and tables distinguish possible bypasses, simulated cohort usage, and net all-car changes by names and non-color cues. Proposal cards expose the all-traffic consequence and a route-diagnostic entry point without requiring readers to interpret a through-only headline as a complete account of displacement. Reuse existing v5 all-traffic fields and provenance; do not rewrite the search penalty or ranking rule.
+
+### D6. Bound instrumentation and identify every result
+
+Keep request/outcome counts exact. Bound detailed route storage with a documented opt-in policy, deterministic grouping, and explicit coverage/truncation metadata; sampling must not be displayed as a complete count or expanded into a full-population claim without a validated estimator. Retain enough exact event aggregates to reconcile flow counts even when individual path details are capped. Measure memory and runtime on the representative area and a synthetic larger case before selecting implementation limits.
+
+The result identity includes network/demand/simulator fingerprints, diagnostic schema and method version, requested cohort selector, scenario links, period, seeds, run settings, and tracing coverage. Extend existing manifests and freshness checks. Old stored results without lifecycle/route evidence may still show their valid aggregate figures but cannot acquire an attributed detour explanation. CLI and browser consume the same result meanings. No server-side simulation or upload endpoint is needed.
+
+## Validation and delivery
+
+Use small deterministic networks for a single bypass, two alternative routes, a period-specific turn ban, a partial-leg filter, repeated passages, and a route that takes longer than the observation window. Include initially placed, failed-entry, unroutable, removed, and unmatched requests. Include a boundary link carrying external-to-external cars to prevent an out-of-scope through counter from turning them into local traffic. Verify conservation and pair-attribute checks before interpreting any route share. Toggle tracing and compare simulator outputs bit-for-bit; compare native and WASM diagnostics under the established parity contract.
+
+Rerun the Colby/North question on repaired inputs with fresh provenance, using the current paired seed policy and reporting any insufficient evidence. Record whether the 63rd/Dana bypass remains legal, all-car changes on those blocks, cohort routes, and every recovery/unfinished outcome. A numerical match to the historical table is not required. Review the map and keyboard-accessible table together, including unresolved, unavailable, and truncated states.
+
+The user authorized a proposal on `main` for later implementation. All implementation tasks remain open. No graph behavior, simulation result, or published proposal is changed by landing this document.
