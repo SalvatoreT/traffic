@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { DemandIntent, DemandRamp, Metrics, Network } from '../types';
 import type { NetIndex } from '../lib/naming';
+import { NavLink } from './Anchor';
 import { EARLY_NOTE } from '../lib/run';
 import { BASIS_HELP, BASIS_TEXT, OTHER_ID, byCars, describePaths, intentTable, rampOfIntent, type IntentPaths } from '../lib/intents';
 
@@ -19,13 +20,12 @@ interface Props {
   running: boolean;
   /** Figures are scaled up from the first few simulated minutes. */
   early: boolean;
-  onAbout(): void;
 }
 
 const signed = (n: number | null): string => (n === null ? '—' : n === 0 ? '0' : `${n > 0 ? '+' : '−'}${Math.abs(n)}`);
 const num = (n: number | null): string => (n === null ? '—' : String(n));
 
-export function IntentPanel({ defs, ramps, base, scen, comparing, net, idx, selected, onSelect, paths, pathsFrom, phone, running, early, onAbout }: Props) {
+export function IntentPanel({ defs, ramps, base, scen, comparing, net, idx, selected, onSelect, paths, pathsFrom, phone, running, early }: Props) {
   const id = useId();
   const table = useMemo(() => intentTable(defs, base, scen), [defs, base, scen]);
   const def = selected ? defs.find((d) => d.id === selected) : undefined;
@@ -58,7 +58,7 @@ export function IntentPanel({ defs, ramps, base, scen, comparing, net, idx, sele
         These are the model's hypotheses about why drivers cut through, not what drivers said. Reasons marked <strong>Observed counts</strong> are limited by a
         turning-movement or freeway-share count; where those cars come from and why they pick side streets is still an assumption. Reasons marked
         <strong> Assumed</strong> come from the trip table with no count behind them.{' '}
-        <button type="button" className="link" onClick={onAbout}>About these reasons</button>
+        <NavLink view="assumptions" anchor="why-cars-cut-through" className="link">About these reasons</NavLink>
       </p>
       <p className="muted small">
         Cars an hour, averaged over the simulated time so far: the same window as the through cars counted above. Every through car is in one row, so the rows add up to the total.

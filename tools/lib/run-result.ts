@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { Intervention, Metrics } from '../../src/types';
 import type { SimCtor, SimLike } from '../../src/sim/protocol';
-import { clampStep, isFinishedAt } from '../../src/lib/run';
+import { RUN_SECONDS, clampStep, isFinishedAt } from '../../src/lib/run';
 import { RESULT_SEED } from '../../src/lib/stored-results';
 
 const root = resolve(import.meta.dirname, '../..');
@@ -29,8 +29,8 @@ export const statsOf = (s: SimLike): HourStats => {
 };
 
 /** Same construction as the worker's `make`: both runs start loaded, the scenario's interventions in the config. */
-export function build(e: Engine, network: string, demand: string, period: string, interventions: Intervention[], demandScale = 1): SimLike {
-  return new e.Simulation(network, demand, JSON.stringify({ seed: RESULT_SEED, period, demandScale, interventions }));
+export function build(e: Engine, network: string, demand: string, period: string, interventions: Intervention[], demandScale = 1, seed = RESULT_SEED): SimLike {
+  return new e.Simulation(network, demand, JSON.stringify({ seed, period, demandScale, interventions }));
 }
 
 export function runToEnd(s: SimLike): HourStats {
@@ -41,4 +41,16 @@ export function runToEnd(s: SimLike): HourStats {
 export function runHour(e: Engine, network: string, demand: string, period: string, interventions: Intervention[]): HourStats {
   const s = build(e, network, demand, period, interventions);
   try { return runToEnd(s); } finally { s.free?.(); }
+}
+
+export interface RunOptions { period: string; interventions: Intervention[]; seed?: number; seconds?: number; demandScale?: number }
+
+/** One run of any length, seed and demand level. At the app's defaults (seed 1, 3600 s, demand 1) it is `runHour`. */
+export function runFor(e: Engine, network: string, demand: string, o: RunOptions): HourStats {
+  const seconds = o.seconds ?? RUN_SECONDS;
+  const s = build(e, network, demand, o.period, o.interventions, o.demandScale ?? 1, o.seed ?? RESULT_SEED);
+  try {
+    while (s.time() < seconds - 1e-6) s.step(Math.min(CHUNK, seconds - s.time()));
+    return statsOf(s);
+  } finally { s.free?.(); }
 }

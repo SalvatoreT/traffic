@@ -1,5 +1,8 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { ScrollRow } from './components/ScrollRow';
+import { NavContext, NavLink, type Nav } from './components/Anchor';
+import { scrollToAnchor } from './lib/anchor-scroll';
+import { canonicalAnchor, parseLocation, scenarioOnly, titleFor, urlFor, VIEWS, type View } from './lib/route';
 import type { AreaBundle, Intervention, Metrics, ModeVisibility, Overlay, Theme } from './types';
 import { loadArea, type LoadProgress } from './data';
 import { Loading, LoadError } from './components/Loading';
@@ -37,8 +40,6 @@ const MapView = lazy(() => import('./components/MapView').then((m) => ({ default
 const Sources = lazy(() => import('./components/Sources').then((m) => ({ default: m.Sources })));
 const Assumptions = lazy(() => import('./components/Assumptions').then((m) => ({ default: m.Assumptions })));
 
-type View = 'map' | 'proposals' | 'streets' | 'assumptions' | 'sources';
-const VIEW_LABEL: Record<View, string> = { map: 'Map', proposals: 'Proposals', streets: 'Streets', assumptions: 'Assumptions', sources: 'Sources' };
 const store = {
   get(k: string) { try { return localStorage.getItem(k); } catch { return null; } },
   set(k: string, v: string) { try { localStorage.setItem(k, v); } catch { /* unavailable */ } },
@@ -66,7 +67,7 @@ export function App() {
   useEffect(() => {
     let live = true;
     setErr(''); setBundle(null); setProgress(null);
-    loadArea(decodeMeta(location.hash).area, query.get('fixture') === '1', (p) => { if (live) setProgress(p); })
+    loadArea(decodeMeta(scenarioOnly(location.hash)).area, query.get('fixture') === '1', (p) => { if (live) setProgress(p); })
       .then((b) => { if (live) setBundle(b); }, (e) => { if (live) setErr(e instanceof Error ? e.message : String(e)); });
     return () => { live = false; };
   }, [attempt]);
@@ -81,7 +82,8 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   const region = useMemo(() => buildRegion(network), [network]);
   const todayRoutes = useMemo(() => baselineCheck(network, index), [network, index]);
   // Read once: the hash is rewritten as soon as the scenario loads, so later renders must not decode it again.
-  const [initial] = useState(() => ({ ...decodeMeta(location.hash), ...decodeScenario(network, location.hash) }));
+  const [initial] = useState(() => { const h = scenarioOnly(location.hash); return { ...decodeMeta(h), ...decodeScenario(network, h) }; });
+  const [place] = useState(() => parseLocation(location.pathname, location.hash));
 
   const reduced = useMedia('(prefers-reduced-motion: reduce)');
   const prefersDark = useMedia('(prefers-color-scheme: dark)');
@@ -96,7 +98,13 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
     store.set('theme', theme);
   }, [theme]);
 
-  const [view, setView] = useState<View>('map');
+  const [view, setView] = useState<View>(place.view);
+  // The section anchor the address bar shows in place of the scenario, if any. The scenario stays in app state meanwhile.
+  const [anchor, setAnchor] = useState<string | null>(place.fragment.kind === 'anchor' ? place.fragment.id : null);
+  const [scrollTo, setScrollTo] = useState<{ id: string; n: number } | null>(place.fragment.kind === 'anchor' ? { id: place.fragment.id, n: 0 } : null);
+  const viewRef = useRef(view); viewRef.current = view;
+  const anchorRef = useRef(anchor); anchorRef.current = anchor;
+  const skipHash = useRef<string | null>(null);
   const [panelTab, setPanelTab] = useState<'scenario' | 'results'>('scenario');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const drawerBtn = useRef<HTMLButtonElement>(null);
@@ -110,7 +118,6 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   const [calClosing, setCalClosing] = useState(false);
   const showCal = showCalibrationBanner(bundle.entry.calibration) && !calDismissed && !bundle.synthetic;
   const dismissCal = () => { setCalClosing(true); store.set(calKey, '1'); window.setTimeout(() => setCalDismissed(true), reduced ? 0 : 200); };
-  const [sourceRef, setSourceRef] = useState<string | null>(null);
 
   const fallbackPeriod = defaultPeriod(bundle.entry, demand.periods);
   const periodId = demand.periods.some((p) => p.id === initial.period) ? initial.period! : fallbackPeriod;
@@ -266,26 +273,84 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
     return () => { live = false; };
   }, [fingerprint, hashes, bundle.synthetic, bundle.entry.id, network, interventions, period, scale, startMax, say]);
 
-  // --- URL hash
+  // --- URL: the path is the tab; the fragment is the scenario, or a section anchor while one is showing
+  const scenHash = useMemo(
+    () => encodeScenario(network, interventions, { area: bundle.synthetic ? null : bundle.entry.id, period: interventions.length === 0 && period === fallbackPeriod ? undefined : period, demandScale: scale }),
+    [bundle, network, period, fallbackPeriod, scale, interventions],
+  );
+  const scenHashRef = useRef(scenHash);
+  scenHashRef.current = scenHash;
+  const lastScen = useRef(scenHash);
   useEffect(() => {
-    const h = encodeScenario(network, interventions, { area: bundle.synthetic ? null : bundle.entry.id, period: interventions.length === 0 && period === fallbackPeriod ? undefined : period, demandScale: scale });
-    history.replaceState(null, '', `${location.pathname}${location.search}${h}`);
-  }, [bundle, network, period, fallbackPeriod, scale, interventions]);
+    if (lastScen.current === scenHash) return;
+    lastScen.current = scenHash;
+    setAnchor(null);
+  }, [scenHash]);
   useEffect(() => {
-    const f = () => {
-      const st = decodeScenario(network, location.hash);
-      const meta = decodeMeta(location.hash);
+    const next = `${urlFor(view, scenHash, anchor, location.search)}`;
+    if (next !== `${location.pathname}${location.search}${location.hash}`) history.replaceState(null, '', next);
+  }, [view, anchor, scenHash]);
+  useEffect(() => { document.title = titleFor(view, bundle.entry.name); }, [view, bundle.entry.name]);
+  const aim = useCallback((id: string) => setScrollTo((s) => ({ id, n: (s?.n ?? 0) + 1 })), []);
+  const go = useCallback((v: View, a: string | null = null, scroll = true) => {
+    const id = a ? canonicalAnchor(v, a) : null;
+    const url = urlFor(v, scenHashRef.current, id, location.search);
+    if (url !== `${location.pathname}${location.search}${location.hash}`) history.pushState(null, '', url);
+    setView(v);
+    setAnchor(id);
+    if (id && scroll) aim(id);
+  }, [aim]);
+  const reducedRef = useRef(reduced);
+  reducedRef.current = reduced;
+  useEffect(() => {
+    if (!scrollTo) return;
+    return scrollToAnchor(scrollTo.id, reducedRef.current);
+  }, [scrollTo]);
+  useEffect(() => {
+    // Back and Forward across tabs, or off an anchor, keep the scenario the app holds; the hashchange that follows must not reload it from the old entry.
+    const onPop = () => {
+      const p = parseLocation(location.pathname, location.hash);
+      if (p.view !== viewRef.current || anchorRef.current !== null) {
+        skipHash.current = location.href;
+        window.setTimeout(() => { skipHash.current = null; }, 200);
+      }
+      setView(p.view);
+      const id = p.fragment.kind === 'anchor' ? p.fragment.id : null;
+      setAnchor(id);
+      if (id) aim(id);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [aim]);
+  useEffect(() => {
+    const f = (e: HashChangeEvent) => {
+      if (skipHash.current !== null && skipHash.current === e.newURL) { skipHash.current = null; return; }
+      const p = parseLocation(location.pathname, location.hash);
+      if (p.fragment.kind === 'anchor') { setAnchor(p.fragment.id); aim(p.fragment.id); return; }
+      setAnchor(null);
+      const h = scenarioOnly(location.hash);
+      const st = decodeScenario(network, h);
+      const meta = decodeMeta(h);
       setNotice({ unplaced: st.unplaced, invalid: st.invalid });
-      const p = meta.period && demand.periods.some((x) => x.id === meta.period) ? meta.period : fallbackPeriod;
+      const pr = meta.period && demand.periods.some((x) => x.id === meta.period) ? meta.period : fallbackPeriod;
       const d = meta.demandScale ?? 1;
       const changed = JSON.stringify(st.interventions) !== JSON.stringify(first.current.interventions);
-      if (p !== first.current.period) setPeriod(p);
+      if (pr !== first.current.period) setPeriod(pr);
       if (d !== first.current.scale) setScale(d);
       if (changed) { openedByLink.current = true; setInterventions(st.interventions); }
     };
     window.addEventListener('hashchange', f);
     return () => window.removeEventListener('hashchange', f);
-  }, [network, demand, fallbackPeriod]);
+  }, [network, demand, fallbackPeriod, aim]);
+  const nav = useMemo<Nav>(() => ({
+    view,
+    hrefFor: (v, a) => urlFor(v, scenHash, a ? canonicalAnchor(v, a) : null, location.search),
+    go: (v, a) => go(v, a),
+    copyAnchor: (id) => {
+      go(view, id, false);
+      navigator.clipboard?.writeText(location.href).then(() => say('Link copied'), () => say('Copy failed. The address bar already holds the link.'));
+    },
+  }), [view, scenHash, go, say]);
 
   // --- proposals
   const proposals = useProposals(bundle, view === 'proposals', hashes);
@@ -298,10 +363,10 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
     openedByLink.current = true;
     setInterventions(d.interventions);
     setNotice({ unplaced: d.unplaced, invalid: d.invalid });
-    setView('map');
+    go('map');
     focusAfterOpen.current = true;
     say(`Opened ${p.title} on the map.`);
-  }, [network, demand, say]);
+  }, [network, demand, say, go]);
   useEffect(() => {
     if (view !== 'map' || !focusAfterOpen.current) return;
     focusAfterOpen.current = false;
@@ -397,7 +462,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   ) : null;
 
   const shareButton = (
-    <button type="button" className="btn" onClick={() => { navigator.clipboard?.writeText(location.href).then(() => say('Link to this scenario copied.'), () => say('Copy failed. The address bar already holds the link.')); }}>Copy link to this scenario</button>
+    <button type="button" className="btn" onClick={() => { navigator.clipboard?.writeText(`${location.origin}${urlFor(view, scenHash, null, location.search)}`).then(() => say('Link to this scenario copied.'), () => say('Copy failed. The address bar already holds the link.')); }}>Copy link to this scenario</button>
   );
   const scenarioPanel = (
     <>
@@ -430,16 +495,17 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
     </>
   );
   const resultsPanel = (
-    <Comparison base={base} scen={scen} comparing={comparing} finished={finished} withheld={withheld} scenarioCount={interventions.length} onRef={(k) => { setSourceRef(k); setView('sources'); }}
+    <Comparison base={base} scen={scen} comparing={comparing} finished={finished} withheld={withheld} scenarioCount={interventions.length}
       intents={intentDefs?.length ? (
         <IntentPanel defs={intentDefs} ramps={demand.ramps} base={base} scen={scen} comparing={comparing} net={bundle.network} idx={index} selected={intentSel} onSelect={setIntentSel}
-          paths={intentPathsShown} pathsFrom={comparing ? source : 'scenario'} phone={phone} running={running} early={early} onAbout={() => { setSourceRef('intents'); setView('assumptions'); }} />
+          paths={intentPathsShown} pathsFrom={comparing ? source : 'scenario'} phone={phone} running={running} early={early} />
       ) : undefined} />
   );
 
   return (
+    <NavContext.Provider value={nav}>
     <div className={`app layout-${layout}`} data-view={view}>
-      <a className="skip" href="#main">Skip to main content</a>
+      <a className="skip" href="#main" onClick={(e) => { e.preventDefault(); document.getElementById('main')?.focus(); }}>Skip to main content</a>
       <p className="sr-only" role="status" aria-live="polite">{toast}</p>
       <p className="sr-only" role="status" aria-live="polite">{routeNote}</p>
       <header className="top">
@@ -447,10 +513,10 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
           <h1>Traffic <span className="area">{bundle.entry.name}</span></h1>
         </div>
         <ScrollRow aria-label="Views">
-          {(Object.keys(VIEW_LABEL) as View[]).map((v) => (
-            <button key={v} type="button" className="navbtn" aria-current={view === v ? 'page' : undefined} onClick={(e) => { setView(v); e.currentTarget.scrollIntoView({ block: 'nearest', inline: 'nearest' }); }}>
-              {VIEW_LABEL[v]}
-            </button>
+          {VIEWS.map((v) => (
+            <NavLink key={v.id} view={v.id} className="navbtn" aria-current={view === v.id ? 'page' : undefined} onClick={(e) => e.currentTarget.scrollIntoView({ block: 'nearest', inline: 'nearest' })}>
+              {v.label}
+            </NavLink>
           ))}
         </ScrollRow>
         <div className="prefs">
@@ -487,7 +553,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
                     <span className="cal-text" title={calNote}>
                       <strong>{calStatus === 'calibrated' ? 'Calibrated, with limits.' : 'Preview, not yet calibrated.'}</strong>{' '}{calNote}
                     </span>
-                    <button type="button" className="link" onClick={() => { setSourceRef('calibration'); setView('sources'); }}>Details</button>
+                    <button type="button" className="link" onClick={() => go('sources', 'calibration')}>Details</button>
                     <button type="button" className="btn small-btn" onClick={dismissCal}>Dismiss</button>
                   </p>
                 </div>
@@ -539,11 +605,11 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
             <StreetsTable bundle={bundle} index={index} showService={showService} onShowService={setShowService}
               scen={withheld ? null : stats?.scenario.linkStats ?? null} base={baseStats} comparing={comparing} overlay={overlay} withheld={withheld} early={early}
               baseMetrics={base} scenMetrics={scen} onHover={setHoverPlace}
-              phone={phone} onShowOnMap={(block) => { setHoverPlace(null); select({ kind: 'block', block, point: null, nearLink: null, via: 'list' }); setView('map'); }} />
+              phone={phone} onShowOnMap={(block) => { setHoverPlace(null); select({ kind: 'block', block, point: null, nearLink: null, via: 'list' }); go('map'); }} />
           )}
           {view === 'proposals' && <Proposals bundle={bundle} index={index} today={todayRoutes.total} state={proposals} loaded={hashes ?? NO_HASHES} mode={mode} current={interventions} onOpen={onOpenProposal} />}
-          {view === 'assumptions' && <Suspense fallback={<p className="boot" role="status">Loading assumptions…</p>}><Assumptions bundle={bundle} index={index} mode={mode} hashes={hashes} fingerprint={fingerprint} focusRef={sourceRef} onSources={() => { setSourceRef(null); setView('sources'); }} /></Suspense>}
-          {view === 'sources' && <Suspense fallback={<p className="boot" role="status">Loading sources…</p>}><Sources demand={demand} synthetic={bundle.synthetic} focusRef={sourceRef} onAssumptions={() => { setSourceRef(null); setView('assumptions'); }} calibration={bundle.synthetic ? undefined : { status: calStatus, note: bundle.entry.calibration?.note }} /></Suspense>}
+          {view === 'assumptions' && <Suspense fallback={<p className="boot" role="status">Loading assumptions…</p>}><Assumptions bundle={bundle} index={index} mode={mode} hashes={hashes} fingerprint={fingerprint} /></Suspense>}
+          {view === 'sources' && <Suspense fallback={<p className="boot" role="status">Loading sources…</p>}><Sources demand={demand} synthetic={bundle.synthetic} calibration={bundle.synthetic ? undefined : { status: calStatus, note: bundle.entry.calibration?.note }} /></Suspense>}
         </div>
 
         {showPanel && !phone && (
@@ -574,10 +640,11 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
       <footer className="foot">
         <span className="foot-left">
           <span>Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>.</span>{' '}
-          <button type="button" className="link" onClick={() => { setSourceRef(null); setView('sources'); }}>Sources &amp; assumptions</button>
+          <button type="button" className="link" onClick={() => go('sources')}>Sources &amp; assumptions</button>
         </span>
         <a className="foot-right" href={SOURCE_REPO_URL} target="_blank" rel="noopener noreferrer">Source on GitHub</a>
       </footer>
     </div>
+    </NavContext.Provider>
   );
 }

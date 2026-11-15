@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { VIEWS } from "../src/lib/route";
 import { describe, expect, it } from "vitest";
 import worker from "./index";
 
@@ -59,5 +61,25 @@ describe("/data", () => {
   });
   it("rejects names it does not serve", async () => {
     expect((await get("/data/..%2fsecret", env())).status).toBe(400);
+  });
+});
+
+describe("tab paths", () => {
+  const tabs = ["/", "/proposals", "/streets", "/assumptions", "/sources"];
+  const wrangler = JSON.parse(readFileSync(new URL("../wrangler.jsonc", import.meta.url), "utf8")) as { assets: { not_found_handling: string; run_worker_first: string[] } };
+
+  it("leaves tab paths to the static assets, whose single-page fallback sends the app shell with status 200", () => {
+    expect(wrangler.assets.not_found_handling).toBe("single-page-application");
+    const claimed = wrangler.assets.run_worker_first.map((p) => new RegExp(`^${p.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*")}$`));
+    for (const t of [...tabs, "/streets/", "/nope"]) expect(claimed.some((re) => re.test(t))).toBe(false);
+    for (const t of ["/api/health", "/api/data/x.json", "/data/rockridge.network.json"]) expect(claimed.some((re) => re.test(t))).toBe(true);
+  });
+  it("keeps answering a missing /data file with 404 JSON beside the tab paths", async () => {
+    const r = await get("/data/proposals", env());
+    expect(r.status).toBe(404);
+    expect(await r.json()).toEqual({ error: "not found" });
+  });
+  it("names the same tabs the app does", () => {
+    expect(VIEWS.map((v) => v.path)).toEqual(tabs);
   });
 });

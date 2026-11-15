@@ -1,4 +1,5 @@
 import { Fragment, type ReactNode } from 'react';
+import { AnchorHeading, AnchorLink } from './Anchor';
 
 /** Minimal, safe markdown renderer (no HTML injection: everything becomes React elements). */
 const SAFE_URL = /^(https?:\/\/|mailto:)/i;
@@ -32,7 +33,10 @@ function inline(text: string, keyBase: string): ReactNode[] {
   return out;
 }
 
-export function Markdown({ source, offset = 1 }: { source: string; offset?: number }) {
+/** With `anchors` (the ids already taken on the page), every heading and every `**[Key]**` entry gets a stable id and a link control. */
+export function Markdown({ source, offset = 1, anchors }: { source: string; offset?: number; anchors?: readonly string[] }) {
+  const taken = new Set(anchors);
+  const unique = (base: string) => { let id = base || 'section', n = 2; while (taken.has(id)) id = `${base}-${n++}`; taken.add(id); return id; };
   const lines = source.replace(/\r/g, '').split('\n');
   const nodes: ReactNode[] = [];
   let i = 0, k = 0;
@@ -50,7 +54,8 @@ export function Markdown({ source, offset = 1 }: { source: string; offset?: numb
     if (h) {
       const lvl = Math.min(h[1].length + offset, 6);
       const Tag = `h${lvl}` as 'h2';
-      nodes.push(<Tag key={k++} id={slug(h[2])}>{inline(h[2], `h${k}`)}</Tag>);
+      if (anchors) nodes.push(<AnchorHeading key={k++} as={Tag} id={unique(slug(h[2]))} label={h[2].replace(/[*`]/g, '')}>{inline(h[2], `h${k}`)}</AnchorHeading>);
+      else nodes.push(<Tag key={k++} id={slug(h[2])}>{inline(h[2], `h${k}`)}</Tag>);
       i++; continue;
     }
     if (/^\s*\|/.test(line) && i + 1 < lines.length && /^\s*\|?\s*:?-{2,}/.test(lines[i + 1])) {
@@ -91,7 +96,9 @@ export function Markdown({ source, offset = 1 }: { source: string; offset?: numb
     if (!buf.length) { buf.push(lines[i++]); }
     const text = buf.join(' ');
     const ref = /^\*\*\[([A-Za-z0-9-]+)\]\*\*/.exec(text);
-    nodes.push(<p key={k++} id={ref ? `ref-${ref[1]}` : undefined}>{inline(text, `p${k}`)}</p>);
+    const key = ref && !taken.has(ref[1]) ? ref[1] : undefined;
+    if (key && anchors) taken.add(key);
+    nodes.push(<p key={k++} id={key} className={key && anchors ? 'anchored' : undefined}>{inline(text, `p${k}`)}{key && anchors && <>{' '}<AnchorLink id={key} label={key} /></>}</p>);
   }
   return <div className="md">{nodes}</div>;
 }

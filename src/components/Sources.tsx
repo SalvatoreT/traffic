@@ -1,36 +1,32 @@
-import { useEffect, useRef } from 'react';
 import refs from '../../docs/references.md?raw';
 import type { Calibration, Demand } from '../types';
 import { Markdown } from './Markdown';
 import { calibrationCaveat } from '../lib/caveat';
+import { AnchorHeading, NavLink } from './Anchor';
+
+const RESERVED = ['sources', 'calibration', 'data-provenance', 'research-references'];
 
 /** Provenance entries the Assumptions tab replaces: the demand file written before that tab carries a long paragraph for them. */
 const onAssumptionsTab = (source: string) => /^Assumed movement flows/.test(source);
 
-export function Sources({ demand, synthetic, focusRef, calibration, onAssumptions }: { demand: Demand; synthetic: boolean; focusRef?: string | null; calibration?: Calibration; onAssumptions?: () => void }) {
-  const root = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (focusRef) root.current?.querySelector<HTMLElement>(`#ref-${CSS.escape(focusRef)}`)?.scrollIntoView({ block: 'start' });
-  }, [focusRef]);
+export function Sources({ demand, synthetic, calibration }: { demand: Demand; synthetic: boolean; calibration?: Calibration }) {
   const caveat = calibrationCaveat(calibration);
   return (
-    <div className="sources-view" ref={root}>
-      <h2>Sources</h2>
-      {onAssumptions && (
-        <p className="assume-pointer">
-          The judgment calls in the model, the assumed movement flows and the reasons cars cut through, are on the <button type="button" className="link" onClick={onAssumptions}>Assumptions</button> tab.
-        </p>
-      )}
+    <div className="sources-view">
+      <AnchorHeading as="h2" id="sources" label="Sources">Sources</AnchorHeading>
+      <p className="assume-pointer">
+        The judgment calls in the model, the assumed movement flows and the reasons cars cut through, are on the <NavLink view="assumptions" className="link">Assumptions</NavLink> tab.
+      </p>
       {calibration && (
-        <section id="ref-calibration" aria-labelledby="cal-h" tabIndex={-1}>
-          <h3 id="cal-h">Calibration</h3>
+        <section aria-labelledby="calibration">
+          <AnchorHeading id="calibration" label="Calibration">Calibration</AnchorHeading>
           <p>{calibration.status === 'calibrated' ? 'The baseline meets the calibration rules against observed traffic, with the limits below.' : 'The baseline is not yet calibrated against observed traffic, so treat results as illustrations and compare scenarios rather than reading absolute numbers.'}</p>
           {calibration.note && <p className="muted">{calibration.note}</p>}
           {caveat && <p>{caveat}</p>}
         </section>
       )}
-      <section aria-labelledby="prov-h">
-        <h3 id="prov-h">Data provenance{synthetic ? ' (synthetic development data)' : ''}</h3>
+      <section aria-labelledby="data-provenance">
+        <AnchorHeading id="data-provenance" label="Data provenance">Data provenance{synthetic ? ' (synthetic development data)' : ''}</AnchorHeading>
         <ul className="prov">
           {demand.provenance.filter((p) => !onAssumptionsTab(p.source)).map((p, i) => (
             <li key={i}>
@@ -42,9 +38,9 @@ export function Sources({ demand, synthetic, focusRef, calibration, onAssumption
         </ul>
         <p className="muted small">Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a> (ODbL).</p>
       </section>
-      <section aria-labelledby="bib-h">
-        <h3 id="bib-h">Research references</h3>
-        <Markdown source={refs} offset={3} />
+      <section aria-labelledby="research-references">
+        <AnchorHeading id="research-references" label="Research references">Research references</AnchorHeading>
+        <Markdown source={refs} offset={3} anchors={RESERVED} />
       </section>
     </div>
   );

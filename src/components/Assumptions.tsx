@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import './assumptions.css';
 import type { AreaBundle, DemandIntent } from '../types';
 import { assumptionsCurrent, fetchAssumptions, intentShares, type AssumedMovementView, type AssumptionsFile } from '../lib/assumptions';
@@ -13,14 +13,13 @@ import type { NetIndex } from '../lib/naming';
 import { buildBaseMap } from '../lib/picture';
 import type { LoadedHashes } from '../lib/proposals';
 import type { Mode } from '../lib/ramps';
+import { AnchorHeading, NavLink } from './Anchor';
 
 interface Props {
   bundle: AreaBundle; index: NetIndex; mode: Mode;
   hashes: LoadedHashes | null;
   /** The simulator's fingerprint: undefined while the engine starts, null when it has none (the mock engine). */
   fingerprint: string | null | undefined;
-  focusRef?: string | null;
-  onSources(): void;
 }
 
 const shortLabel = (label: string) => label.replace(/\s*\(.*\)\s*$/, '');
@@ -39,11 +38,7 @@ function useJson<T>(load: () => Promise<T | null>, key: string, skip: boolean): 
   return s;
 }
 
-export function Assumptions({ bundle, index, mode, hashes, fingerprint, focusRef, onSources }: Props) {
-  const root = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (focusRef) root.current?.querySelector<HTMLElement>(`#ref-${CSS.escape(focusRef)}`)?.scrollIntoView({ block: 'start' });
-  }, [focusRef]);
+export function Assumptions({ bundle, index, mode, hashes, fingerprint }: Props) {
   const area = bundle.entry.id;
   const periods = bundle.demand.periods;
   const first = bundle.entry.calibration?.defaultPeriod ?? periods[0]?.id;
@@ -55,12 +50,12 @@ export function Assumptions({ bundle, index, mode, hashes, fingerprint, focusRef
     : baselineVerdict(baseline.value, { area, networkHash: hashes.network, demandHash: hashes.demand, simulator: fingerprint }) === 'ok' ? 'ok' : 'stale';
   const defs = bundle.demand.intents;
   return (
-    <div className="assume-view" ref={root}>
-      <h2>Assumptions</h2>
+    <div className="assume-view">
+      <AnchorHeading as="h2" id="assumptions" label="Assumptions">Assumptions</AnchorHeading>
       <p>
         These are the judgment calls in the model: the parts that rest on reasoning and not on a count. They are the first things to question, and changing any of them would change the results.
         The measured inputs, the data behind them and the research are on the{' '}
-        <button type="button" className="link" onClick={onSources}>Sources</button> page.
+        <NavLink view="sources" className="link">Sources</NavLink> page.
       </p>
       <Movements file={assumed.value} loaded={assumed.done} order={order.map((p) => p.id)} periodName={periodName} demandHash={hashes?.demand ?? null} net={bundle.network} mode={mode} />
       {defs?.length ? <Reasons defs={defs} bundle={bundle} index={index} mode={mode} baseline={baseline.value} status={status} order={order.map((p) => p.id)} first={first} periodName={periodName} /> : null}
@@ -68,6 +63,9 @@ export function Assumptions({ bundle, index, mode, hashes, fingerprint, focusRef
     </div>
   );
 }
+
+const MOVEMENTS_ID = 'assumed-movement-flows';
+const MovementsHeading = () => <AnchorHeading id={MOVEMENTS_ID} label="Assumed movement flows">Assumed movement flows</AnchorHeading>;
 
 function Movements({ file, loaded, order, periodName, demandHash, net, mode }: { file: AssumptionsFile | null; loaded: boolean; order: string[]; periodName: (id: string) => string; demandHash: string | null; net: AreaBundle['network']; mode: Mode }) {
   const intro = (
@@ -78,8 +76,8 @@ function Movements({ file, loaded, order, periodName, demandHash, net, mode }: {
       </p>
     </>
   );
-  if (!loaded) return <section id="ref-movements" aria-labelledby="mv-h" tabIndex={-1}><h3 id="mv-h">Assumed movement flows</h3>{intro}<p className="muted" role="status">Loading the turns…</p></section>;
-  if (!file) return <section id="ref-movements" aria-labelledby="mv-h" tabIndex={-1}><h3 id="mv-h">Assumed movement flows</h3>{intro}<p className="muted">The list of movements is not available for this area.</p></section>;
+  if (!loaded) return <section aria-labelledby={MOVEMENTS_ID}><MovementsHeading />{intro}<p className="muted" role="status">Loading the turns…</p></section>;
+  if (!file) return <section aria-labelledby={MOVEMENTS_ID}><MovementsHeading />{intro}<p className="muted">The list of movements is not available for this area.</p></section>;
   const counted = order.filter((p) => file.count.measured.includes(p) || file.count.scaled.includes(p));
   const lead = order[0];
   const detours = [...new Set(file.movements.map((m) => m.maxDetour))];
@@ -88,8 +86,8 @@ function Movements({ file, loaded, order, periodName, demandHash, net, mode }: {
   const groups = groupMovements(net, file.movements);
   const mapped = groups.some((g) => g.title !== null);
   return (
-    <section id="ref-movements" aria-labelledby="mv-h" tabIndex={-1}>
-      <h3 id="mv-h">Assumed movement flows</h3>
+    <section aria-labelledby={MOVEMENTS_ID}>
+      <MovementsHeading />
       {intro}
       <p>
         <strong>Counted:</strong> the cars an hour that made each turn, from {file.count.label}, one hour each in {file.count.measured.map(periodName).join(' and ')}.
@@ -104,7 +102,7 @@ function Movements({ file, loaded, order, periodName, demandHash, net, mode }: {
   );
 }
 
-interface MoveGroup { key: string; title: string | null; items: { m: AssumedMovementView; n: number }[] }
+interface MoveGroup { key: string; id: string | null; title: string | null; items: { m: AssumedMovementView; n: number }[] }
 
 /** The movements under a subheading per pair of streets they connect, numbered in the order shown; movements without map fields share one untitled group. */
 export function groupMovements(net: AreaBundle['network'], ms: AssumedMovementView[]): MoveGroup[] {
@@ -114,11 +112,20 @@ export function groupMovements(net: AreaBundle['network'], ms: AssumedMovementVi
       ? [...new Set([net.links[m.from].name.trim(), net.links[m.to].name.trim()])].filter(Boolean).sort() : [];
     const key = names.join('|');
     let g = groups.find((x) => x.key === key);
-    if (!g) { g = { key, title: names.length ? names.join(' and ') : null, items: [] }; groups.push(g); }
+    if (!g) { g = { key, id: null, title: names.length ? names.join(' and ') : null, items: [] }; groups.push(g); }
     g.items.push({ m, n: 0 });
   }
   let n = 0;
-  for (const g of groups) for (const it of g.items) it.n = ++n;
+  const taken = new Set<string>(['assumptions', MOVEMENTS_ID, REASONS_ID]);
+  for (const g of groups) {
+    for (const it of g.items) it.n = ++n;
+    if (!g.title) continue;
+    const base = g.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'streets';
+    let id = base, i = 2;
+    while (taken.has(id)) id = `${base}-${i++}`;
+    taken.add(id);
+    g.id = id;
+  }
   return groups;
 }
 
@@ -138,7 +145,7 @@ function MovementCards({ groups, net, mode, counted, lead, scaled, periodName }:
       )}
       {groups.map((g) => (
         <div key={g.key} className="move-group">
-          {g.title && <h4>{g.title}</h4>}
+          {g.title && g.id && <AnchorHeading as="h4" id={g.id} label={g.title}>{g.title}</AnchorHeading>}
           <ul className="moves">
             {g.items.map(({ m, n }) => <MovementCard key={m.id} m={m} n={n} net={net} mode={mode} base={base} counted={counted} lead={lead} scaled={scaled} periodName={periodName} />)}
           </ul>
@@ -162,8 +169,8 @@ function MovementCard({ m, n, net, mode, base, counted, lead, scaled, periodName
   const ok = m.from !== undefined && m.to !== undefined && !!net.links[m.from] && !!net.links[m.to];
   const model = useMemo(() => (ok ? buildTurnMap(net, m.from!, m.to!, base) : null), [ok, net, m.from, m.to, base]);
   return (
-    <li className="move" id={`move-${m.id}`}>
-      <h5><span className="move-n">{n}</span> {m.label}</h5>
+    <li className="move">
+      <AnchorHeading as="h5" id={`move-${m.id}`} label={m.label}><span className="move-n">{n}</span> {m.label}</AnchorHeading>
       {model && <TurnMap model={model} n={n} mode={mode} alt={`Turn ${n}. Map of ${model.words}. A curved arrow runs from the first street through the junction onto the second.`} />}
       <dl className="move-nums">
         {counted.map((p) => <div key={p}><dt>Counted, {periodName(p)}{scaled.includes(p) ? ' (scaled)' : ''}</dt><dd>{rounded(m.counted[p])}{m.belowThreshold?.[p] !== undefined && <span className="tag tag-local">counted, no trips assigned</span>}</dd></div>)}
@@ -202,6 +209,8 @@ const STATUS_NOTE: Record<Exclude<Status, 'ok'>, string> = {
   stale: 'The stored baseline was computed for a different version of the street network, demand or simulator than the one loaded, so the cards show no maps or car counts.',
 };
 
+const REASONS_ID = 'why-cars-cut-through';
+
 function Reasons({ defs, bundle, index, mode, baseline, status, order, first, periodName }: {
   defs: DemandIntent[]; bundle: AreaBundle; index: NetIndex; mode: Mode; baseline: BaselineIntents | null; status: Status; order: string[]; first: string | undefined; periodName: (id: string) => string;
 }) {
@@ -212,8 +221,8 @@ function Reasons({ defs, bundle, index, mode, baseline, status, order, first, pe
   const sorted = file && first ? byCars(defs, cars).map((i) => defs.find((d) => d.id === i)!) : defs;
   const other = file && first ? file.periods[first]?.byIntent.find((b) => b.id === OTHER_ID) : undefined;
   return (
-    <section id="ref-intents" aria-labelledby="intents-h" tabIndex={-1}>
-      <h3 id="intents-h">Why cars cut through</h3>
+    <section aria-labelledby={REASONS_ID}>
+      <AnchorHeading id={REASONS_ID} label="Why cars cut through">Why cars cut through</AnchorHeading>
       <p>
         These are hypotheses about why drivers cross the study area without an end in it, not what drivers said. A through trip that uses a residential or service street is filed under the first reason that fits: the freeway on-ramp it will use, the off-ramp it came by, or, for trips that use no ramp, where it starts and ends;
         any other goes under Other. <strong>{BASIS_TEXT.observed}:</strong> {BASIS_HELP.observed} <strong>{BASIS_TEXT.assumed}:</strong> {BASIS_HELP.assumed}
@@ -243,9 +252,9 @@ function ReasonCard({ d, net, index, mode, base, file, order, first, periodName,
   const widest = lead ? Math.round(lead.paths.maxVph) : 0;
   const alt = `${d.label}. Map of today’s traffic in the ${first ? periodName(first) : 'baseline'}. ${text} The widest line is about ${widest} ${plural(widest, 'car', 'cars')} an hour.${ramp ? ` The ramp is marked on the map: ${ramp.label}.` : ''}`;
   return (
-    <li className="reason" id={`reason-${d.id}`}>
+    <li className="reason">
       <div className="reason-head">
-        <h4>{d.label}</h4>
+        <AnchorHeading as="h4" id={`reason-${d.id}`} label={d.label}>{d.label}</AnchorHeading>
       </div>
       <p><span className={`badge badge-${d.basis}`} title={BASIS_HELP[d.basis]}>{BASIS_TEXT[d.basis]}</span>{d.section && <span className="intent-sec"> {d.section}</span>}</p>
       <p className="reason-note">{d.note}</p>

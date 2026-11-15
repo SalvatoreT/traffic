@@ -3,6 +3,7 @@ import type { AreaBundle, Intervention } from '../types';
 import { decodeScenario } from '../lib/hash';
 import type { Mode } from '../lib/ramps';
 import { ProposalPicture } from './ProposalPicture';
+import { AnchorHeading } from './Anchor';
 import type { NetIndex } from '../lib/naming';
 import { checkThroughRoutes, ROUTE_CAVEAT } from '../lib/throughroutes';
 import { buildMockProposals } from '../fixtures/proposals';
@@ -75,13 +76,13 @@ export function Proposals({ bundle, index, today, state, loaded, mode, current, 
     return m;
   }, [decoded, bundle.network, index]);
   const card = (g: ProposalGroup, p: Proposal, n: number | null) => (
-    <Card key={p.id} p={p} when={periodsPhrase(g.computed.periods, periodLabel)} hid={`prop-${gid(g, p)}`} n={n} routes={routeCounts.get(gid(g, p)) ?? null} ivs={decoded.get(gid(g, p)) ?? null} searched={g.computed.periods} bundle={bundle} index={index} mode={mode} today={today} periodLabel={periodLabel} confirming={open.step === 'confirm' && open.id === gid(g, p)}
+    <Card key={p.id} p={p} when={periodsPhrase(g.computed.periods, periodLabel)} hid={gid(g, p)} n={n} routes={routeCounts.get(gid(g, p)) ?? null} ivs={decoded.get(gid(g, p)) ?? null} searched={g.computed.periods} bundle={bundle} index={index} mode={mode} today={today} periodLabel={periodLabel} confirming={open.step === 'confirm' && open.id === gid(g, p)}
       onRequest={() => request(g, p)} onCancel={() => dispatch({ type: 'cancel' })} onConfirm={() => { dispatch({ type: 'done' }); onOpen(p); }} />
   );
 
   return (
     <div className="proposals-view">
-      <h2>Proposals</h2>
+      <AnchorHeading as="h2" id="proposals" label="Proposals">Proposals</AnchorHeading>
       <p className="lead">
         These are packages of changes found by searching the simulation for the most through traffic removed from the area's
         side streets with the least traffic added to any one of them. The cards compare through cars with through cars:
@@ -102,10 +103,10 @@ export function Proposals({ bundle, index, today, state, loaded, mode, current, 
       {ready && ready.groups.map((g) => {
         const notices = proposalNotices(g.computed, loaded);
         const parts = splitProposals(g);
-        const hid = `prop-g-${g.id}`;
+        const hid = g.id;
         return (
-          <section key={g.id} aria-labelledby={`${hid}-h`} className="prop-group">
-            <h3 id={`${hid}-h`} className="prop-group-h">{g.title}</h3>
+          <section key={g.id} aria-labelledby={hid} className="prop-group">
+            <AnchorHeading id={hid} label={g.title} className="prop-group-h">{g.title}</AnchorHeading>
             {g.note && <p className="prop-group-note">{g.note}</p>}
             <div className="prop-status">
               <p className="muted">{formatComputed(g.computed, periodLabel)}</p>
@@ -122,8 +123,8 @@ export function Proposals({ bundle, index, today, state, loaded, mode, current, 
               </ol>
             )}
             {parts.reference.length > 0 && (
-              <section aria-labelledby={`${hid}-ref`} className="prop-ref">
-                <h4 id={`${hid}-ref`} className="sec-h">For comparison</h4>
+              <section aria-labelledby={`${hid}-for-comparison`} className="prop-ref">
+                <AnchorHeading as="h4" id={`${hid}-for-comparison`} label={`${g.title}: for comparison`} className="sec-h">For comparison</AnchorHeading>
                 <ol className="prop-list">{parts.reference.map((p) => card(g, p, null))}</ol>
               </section>
             )}
@@ -170,9 +171,9 @@ function Card({ p, when, hid, n, routes, ivs, searched, bundle, index, mode, tod
     )
   );
   return (
-    <li className="prop-card" aria-labelledby={`${hid}-h`}>
+    <li className="prop-card" aria-labelledby={hid}>
       <div className="prop-head">
-        <h4 id={`${hid}-h`}>{n !== null && <span className="prop-n">{n}. </span>}{p.title}</h4>
+        <AnchorHeading as="h4" id={hid} label={p.title}>{n !== null && <span className="prop-n">{n}. </span>}{p.title}</AnchorHeading>
         {isRef && <span className="tag">Earlier proposal</span>}
       </div>
       {isRef && p.note && <p className="muted prop-note">{p.note}</p>}

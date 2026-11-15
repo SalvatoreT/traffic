@@ -1,16 +1,17 @@
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Metrics } from '../types';
+import { NavLink } from './Anchor';
 import { CARDS, MODE_CARDS, emptyMode, hasModes, networkHealth, summarize, type CardDef, type ModeCardId } from '../lib/metrics';
 import { EARLY_NOTE, isEarly, RUN_SECONDS } from '../lib/run';
 import { formatDiff, formatValue } from '../lib/format';
 
 interface Props {
-  base: Metrics | null; scen: Metrics | null; comparing: boolean; finished: boolean; withheld?: boolean; scenarioCount: number; onRef(key: string): void;
+  base: Metrics | null; scen: Metrics | null; comparing: boolean; finished: boolean; withheld?: boolean; scenarioCount: number;
   /** Rendered after the through-traffic card. */
   intents?: ReactNode;
 }
 
-export function Comparison({ base, scen, comparing, finished, withheld = false, scenarioCount, onRef, intents }: Props) {
+export function Comparison({ base, scen, comparing, finished, withheld = false, scenarioCount, intents }: Props) {
   // Throttled polite announcement: at most once per 20 s of wall time, only while a scenario exists.
   const [announce, setAnnounce] = useState('');
   const last = useRef(0);
@@ -58,7 +59,7 @@ export function Comparison({ base, scen, comparing, finished, withheld = false, 
         Trip demand is fixed in this version: the same trips are made before and after
         every change. Real schemes also remove some traffic. A meta-analysis of London low-traffic neighborhoods found traffic
         inside the schemes fell by about 47% on average while boundary roads were on average roughly unchanged (with wide variation
-        between schemes) [<button type="button" className="link" onClick={() => onRef('Thomas2024')}>Thomas2024</button>]. These results show a fixed set of trips redistributed, not a forecast.
+        between schemes) [<NavLink view="sources" anchor="Thomas2024" className="link">Thomas2024</NavLink>]. These results show a fixed set of trips redistributed, not a forecast.
         {scenarioCount === 0 ? '' : ' Model parameters are uncalibrated assumptions unless the Sources page says otherwise.'}
       </aside>
       <div className="sr-only" aria-live="polite" role="status">{announce}</div>

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { AreaBundle, Overlay } from '../types';
+import { AnchorHeading } from './Anchor';
 import { linkStatsView } from '../types';
 import type { Block, NetIndex } from '../lib/naming';
 import { matchesQuery } from '../lib/naming';
@@ -120,7 +121,7 @@ export function StreetsTable({ index, scen, base, comparing, overlay, showServic
   );
   return (
     <div className={`streets-view ${phone ? 'phone' : ''}`}>
-      <h2>Streets</h2>
+      <AnchorHeading as="h2" id="streets" label="Streets">Streets</AnchorHeading>
       {phone ? <details className="streets-about"><summary>About these figures</summary>{intro}</details> : intro}
       {!comparing && <p className="small streets-note">Add a change on the Map tab to compare.</p>}
       <div role="status">{withheld && <p className="notice">Street figures appear when the run finishes.</p>}</div>

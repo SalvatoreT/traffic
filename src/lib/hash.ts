@@ -33,6 +33,9 @@ const TYPE_OF_CODE: Record<string, Intervention['type']> = {
   ct: 'control', st: 'signal_timing', ow: 'one_way', tb: 'turn_ban', dd: 'diagonal_diverter',
 };
 
+/** The item codes a link accepts, in the order the grammar lists them. */
+export const ITEM_CODES = Object.keys(TYPE_OF_CODE);
+
 /** The street approaches of a node, from the network alone. */
 function legsOf(net: Network, node: number) {
   const incomingLinks: number[][] = [], outgoingLinks: number[][] = [];

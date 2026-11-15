@@ -36,7 +36,7 @@ a { color: var(--accent); }
 .brand h1 { margin: 0; }
 .area { font-weight: 400; color: var(--muted); margin-left: .4rem; }
 nav { display: flex; gap: .25rem; }
-.navbtn { min-height: 36px; padding: .3rem .8rem; border: 0; background: none; color: var(--text); border-radius: 8px; font: inherit; cursor: pointer; }
+.navbtn { display: inline-flex; align-items: center; text-decoration: none; min-height: 36px; padding: .3rem .8rem; border: 0; background: none; color: var(--text); border-radius: 8px; font: inherit; cursor: pointer; }
 .navbtn:hover { background: var(--surface-2); }
 .navbtn[aria-current='page'] { background: var(--accent); color: var(--accent-text); font-weight: 600; }
 .prefs { margin-left: auto; display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; }
@@ -49,6 +49,15 @@ nav { display: flex; gap: .25rem; }
 .btn:disabled { opacity: .55; cursor: not-allowed; }
 .small-btn { min-height: 28px; padding: .1rem .55rem; font-size: .85rem; }
 .foot-right { margin-left: auto; }
+.anchored { scroll-margin-top: 3.5rem; }
+.anchored:focus { outline: none; }
+.anchored:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.anchor-wrap { position: relative; display: inline-flex; align-items: center; vertical-align: middle; margin: -5px 0 -5px .1rem; font-size: 1rem; font-weight: 400; }
+.anchor-link { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 6px; color: var(--muted); text-decoration: none; opacity: 0; }
+.anchored:hover .anchor-link, .anchored:focus-within .anchor-link, .anchor-link:focus-visible { opacity: 1; }
+.anchor-link:hover { color: var(--accent); background: var(--surface-2); }
+@media (hover: none) { .anchor-link { opacity: 1; } }
+.anchor-copied { position: absolute; left: 100%; top: 50%; transform: translateY(-50%); margin-left: .35rem; padding: .1rem .5rem; white-space: nowrap; font-size: .8rem; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 6px; z-index: 5; }
 button.link { background: none; border: 0; padding: 0; min-height: 24px; color: var(--accent); text-decoration: underline; font: inherit; cursor: pointer; }
 .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--surface); }
 .seg button { min-height: 34px; min-width: 40px; padding: .2rem .7rem; border: 0; background: none; cursor: pointer; border-right: 1px solid var(--border); }
