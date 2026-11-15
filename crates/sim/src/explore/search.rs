@@ -368,11 +368,30 @@ fn best_valid(st: &SearchState) -> Option<usize> {
     (0..st.evals.len()).filter(|&i| st.evals[i].valid()).max_by(|&a, &b| st.evals[a].score.partial_cmp(&st.evals[b].score).unwrap_or(std::cmp::Ordering::Equal).then_with(|| b.cmp(&a)))
 }
 
-/// One line of descent in the beam search: its current beam and the best score it has reached.
+/// One line of descent in the beam search: its current beam.
 struct Lineage {
     beam: Vec<usize>,
-    best: f64,
     alive: bool,
+}
+
+/// Weight of the harm penalty when a package of `size` interventions is ranked inside the beam: none for a single intervention, the full
+/// `harm_weight` from `depth` interventions on. Interventions added later repair what earlier ones displace, so a partial package's harm
+/// overstates the harm of the package it grows into. In the pilot-limits search on the Rockridge model the six-filter package that cuts
+/// through cars by 92% has a penalty of 56 cars an hour, while 40 of its 62 smaller subsets have one above 80 and none of its single
+/// filters scores above zero, so ranking partial packages by the full penalty drops the way to it. The published score and the choice of
+/// options always use the full weight. ASSUMPTION: linear ramp.
+pub fn rank_weight(p: &Params, size: usize) -> f64 {
+    let steps = p.depth.saturating_sub(1).max(1) as f64;
+    p.harm_weight * (size.saturating_sub(1) as f64 / steps).min(1.0)
+}
+
+/// Ranking value of a screened package inside the beam (`rank_weight` instead of the full harm weight).
+pub fn rank_value(p: &Params, e: &Eval) -> f64 {
+    e.reduction_pct - rank_weight(p, e.set.len()) * e.harm
+}
+
+fn rank_order(p: &Params, st: &SearchState, v: &mut Vec<usize>) {
+    v.sort_by(|&a, &b| rank_value(p, &st.evals[b]).partial_cmp(&rank_value(p, &st.evals[a])).unwrap_or(std::cmp::Ordering::Equal).then(a.cmp(&b)));
 }
 
 /// A package known from earlier (another group's search or the seeds file) and the packages one intervention smaller than it.
@@ -411,26 +430,24 @@ pub fn beam_search(ctx: &Ctx, known: &[Family]) -> SearchState {
     let mut ranked: Vec<u16> = (0..n as u16).filter(|&c| single_eval(&st, c).map_or(false, |e| e.valid())).collect();
     ranked.sort_by(|&a, &b| {
         let (ea, eb) = (single_eval(&st, a).unwrap(), single_eval(&st, b).unwrap());
-        eb.score.partial_cmp(&ea.score).unwrap_or(std::cmp::Ordering::Equal).then(a.cmp(&b))
+        rank_value(ctx.p, eb).partial_cmp(&rank_value(ctx.p, ea)).unwrap_or(std::cmp::Ordering::Equal).then(a.cmp(&b))
     });
     let b = best_valid(&st);
     progress(ctx, &mut st, 1, b);
     let top_singles: Vec<u16> = ranked.iter().copied().filter(|&c| single_eval(&st, c).unwrap().reduction_pct > 0.0).take(ctx.p.expand).collect();
     let usable: Vec<bool> = (0..n as u16).map(|c| single_eval(&st, c).map_or(false, |e| e.valid())).collect();
-    let single_best = ranked.first().map_or(f64::NEG_INFINITY, |&c| single_eval(&st, c).unwrap().score);
-    let mut lineages = vec![Lineage { beam: ranked.iter().take(ctx.p.beam).map(|&c| st.cache[&vec![c]]).collect(), best: single_best, alive: true }];
-    let by_score = |st: &SearchState, v: &mut Vec<usize>| v.sort_by(|&a, &b| st.evals[b].score.partial_cmp(&st.evals[a].score).unwrap_or(std::cmp::Ordering::Equal).then(a.cmp(&b)));
+    let mut lineages = vec![Lineage { beam: ranked.iter().take(ctx.p.beam).map(|&c| st.cache[&vec![c]]).collect(), alive: true }];
     let mut families: Vec<Vec<usize>> = known
         .iter()
         .map(|f| {
             let mut m: Vec<usize> = std::iter::once(&f.set).chain(f.subs.iter()).filter_map(|s| st.cache.get(s).copied()).filter(|&i| st.evals[i].valid()).collect();
             m.dedup();
-            by_score(&st, &mut m);
+            rank_order(ctx.p, &st, &mut m);
             m
         })
         .filter(|m| !m.is_empty())
         .collect();
-    families.sort_by(|a, b| st.evals[b[0]].score.partial_cmp(&st.evals[a[0]].score).unwrap_or(std::cmp::Ordering::Equal).then(a[0].cmp(&b[0])));
+    families.sort_by(|a, b| rank_value(ctx.p, &st.evals[b[0]]).partial_cmp(&rank_value(ctx.p, &st.evals[a[0]])).unwrap_or(std::cmp::Ordering::Equal).then(a[0].cmp(&b[0])));
     let mut start: Vec<usize> = Vec::new();
     let width = ctx.p.beam * 2;
     'fill: for r in 0.. {
@@ -451,10 +468,10 @@ pub fn beam_search(ctx: &Ctx, known: &[Family]) -> SearchState {
         }
     }
     if !start.is_empty() {
-        by_score(&st, &mut start);
+        rank_order(ctx.p, &st, &mut start);
         let best = st.evals[start[0]].score;
         let line = format!("known packages: {} famil(ies) screened, {} starting point(s) for the beam, best {:+.1}", families.len(), start.len(), best);
-        lineages.push(Lineage { beam: start, best, alive: true });
+        lineages.push(Lineage { beam: start, alive: true });
         eprintln!("{line}");
         st.log.push(line);
     }
@@ -505,16 +522,19 @@ pub fn beam_search(ctx: &Ctx, known: &[Family]) -> SearchState {
                 continue;
             }
             let mut level: Vec<usize> = sets.iter().filter_map(|s| st.cache.get(s).copied()).filter(|&i| st.evals[i].valid()).collect();
-            level.sort_by(|&a, &b| st.evals[b].score.partial_cmp(&st.evals[a].score).unwrap_or(std::cmp::Ordering::Equal).then(a.cmp(&b)));
-            let level_best = level.first().map_or(f64::NEG_INFINITY, |&i| st.evals[i].score);
-            if level_best <= lin.best + 1e-9 {
-                let line = format!("depth {depth}: no package beats the best so far in this line; stopping it");
+            rank_order(ctx.p, &st, &mut level);
+            // The line goes on while adding an intervention improves the ranking value at the new size: the previous beam's best is
+            // re-ranked with the new level's harm weight, so levels are compared on the same footing.
+            let w = level.first().map_or(0.0, |&i| rank_weight(ctx.p, st.evals[i].set.len()));
+            let prev_best = lin.beam.iter().map(|&i| st.evals[i].reduction_pct - w * st.evals[i].harm).fold(f64::NEG_INFINITY, f64::max);
+            let level_best = level.first().map_or(f64::NEG_INFINITY, |&i| st.evals[i].reduction_pct - w * st.evals[i].harm);
+            if level_best <= prev_best + 1e-9 {
+                let line = format!("depth {depth}: no package beats the best of the previous level in this line; stopping it");
                 eprintln!("{line}");
                 st.log.push(line);
                 lin.alive = false;
                 continue;
             }
-            lin.best = level_best;
             level.truncate(ctx.p.beam);
             lin.beam = level;
         }

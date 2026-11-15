@@ -453,6 +453,8 @@ fn options_are_spread_and_drop_changes_within_noise() {
         picture: None,
         forced: false,
         access: None,
+        origin: traffic_sim::explore::report::Origin::search(),
+        prior: false,
     };
     let finals = vec![mk(1, 20.0, 0.0), mk(2, 20.5, 0.0), mk(2, 45.0, 20.0), mk(3, 60.0, 30.0), mk(4, 62.0, 90.0), mk(1, 5.0, 60.0), mk(5, 80.0, 40.0), mk(3, 3.0, 0.0)];
     let (picks, notes) = select_options(&finals, 4, 1.5);
@@ -779,6 +781,8 @@ fn listed_options_beat_every_smaller_listed_option_on_through_cars() {
         picture: None,
         forced: false,
         access: None,
+        origin: traffic_sim::explore::report::Origin::search(),
+        prior: false,
     };
     // The three-intervention package has less harm than the single one, so it is not dominated, but it cuts through cars less.
     let finals = vec![mk(1, 49.0, 80.0), mk(3, 40.0, 0.0), mk(5, 90.0, 60.0), mk(4, 70.0, 10.0), mk(6, 80.0, 20.0)];
@@ -1018,4 +1022,271 @@ fn a_reference_that_strands_a_block_is_flagged_not_dropped() {
     let stub = props.iter().find(|x| x["id"] == "stub").expect("the reference is published");
     assert!(stub["accessProblem"].as_str().is_some());
     assert!(props.iter().find(|x| x["id"] == "birch").unwrap().get("accessProblem").is_none());
+}
+
+// ---------------------------------------------------------------- known packages (seeds)
+
+fn filter_on(link: u32) -> Intervention {
+    Intervention { ty: "modal_filter".into(), link: Some(link), ..Default::default() }
+}
+
+fn seed_entry(study: &Study, ivs: &[Intervention], source: &str, last_published: &str, score: f64) -> traffic_sim::explore::seeds::Entry {
+    traffic_sim::explore::seeds::Entry {
+        link: study.encode(ivs, Some("p")),
+        source: source.into(),
+        note: if source == "hand" { "added for the test".into() } else { String::new() },
+        added: "2026-11-01".into(),
+        last_published: last_published.into(),
+        group: "g".into(),
+        size: ivs.len(),
+        change_pct: None,
+        score: Some(score),
+    }
+}
+
+fn with_known(study: &Study, p: &mut Params, entries: Vec<traffic_sim::explore::seeds::Entry>) {
+    let file = traffic_sim::explore::seeds::SeedFile { version: 1, area: "t".into(), cap: 30, seeds: entries };
+    let (known, dropped) = traffic_sim::explore::seeds::prepare(study, &file);
+    p.known = known;
+    p.known_dropped = dropped;
+}
+
+#[test]
+fn seeds_are_keyed_by_their_items_not_their_order_or_period() {
+    use traffic_sim::explore::seeds::key;
+    assert_eq!(key("#v1;a=t;p=p;s=mf,aaaaaaaaaa~mn,bbbbbbbbbb"), key("#v1;a=t;s=mn,bbbbbbbbbb~mf,aaaaaaaaaa"));
+    assert_ne!(key("#v1;a=t;s=mf,aaaaaaaaaa"), key("#v1;a=t;s=mf,aaaaaaaaab"));
+    assert_eq!(key("#v1;a=t"), "");
+}
+
+#[test]
+fn a_seed_that_no_longer_decodes_or_is_forbidden_or_repeated_is_dropped_with_its_reason() {
+    use traffic_sim::explore::cands::generate_with;
+    use traffic_sim::explore::profile::Profile;
+    let study = grid_with_boundary();
+    let hot = hot_everywhere(&study);
+    let open = generate_with(&study, &hot, 200, &Profile::unconstrained());
+    let boundary = open.iter().find(|c| c.kind == "modal_filter" && c.nodes.iter().any(|&n| study.boundary_node[n as usize])).expect("a filter by the boundary");
+    let inside = open.iter().find(|c| c.kind == "node_filter" && c.nodes.iter().all(|&n| !study.boundary_node[n as usize]) && c.iv.legs.is_none()).expect("an inside filter");
+    let other = open.iter().find(|c| c.kind == "node_filter" && c.nodes.iter().all(|&n| !study.boundary_node[n as usize]) && c.iv.legs.is_none() && c.nodes != inside.nodes).expect("a second inside filter");
+    let mut p = params(2);
+    p.profile = Profile { id: "charter".into(), title: "c".into(), note: String::new(), exclude_types: Vec::new(), exclude_boundary: true };
+    let good = vec![inside.iv.clone(), other.iv.clone()];
+    let reversed = vec![other.iv.clone(), inside.iv.clone()];
+    let mut stale = seed_entry(&study, &good, "search", "2026-11-02", 5.0);
+    stale.link = "#v1;a=t;p=p;s=mf,zzzzzzzzzz".into();
+    with_known(
+        &study,
+        &mut p,
+        vec![
+            seed_entry(&study, &good, "search", "2026-11-02", 5.0),
+            seed_entry(&study, &reversed, "search", "2026-11-03", 6.0),
+            seed_entry(&study, &[inside.iv.clone(), boundary.iv.clone()], "search", "2026-11-02", 7.0),
+            stale,
+        ],
+    );
+    assert_eq!(p.known_dropped.len(), 1);
+    assert!(p.known_dropped[0].reason.contains("no longer decodes"), "{}", p.known_dropped[0].reason);
+    let mut cands = generate_with(&study, &hot, 200, &p.profile);
+    let pkgs: Vec<Vec<Intervention>> = p.known.iter().map(|k| k.ivs.clone()).collect();
+    let got = traffic_sim::explore::report::adopt_packages(&study, &p, &mut cands, &pkgs, "known package");
+    assert_eq!(got.len(), 3);
+    assert!(got[0].is_ok() && got[1].is_ok(), "the same package written in either order is accepted by the adopter");
+    assert_eq!(got[0], got[1], "and both give the same candidate set, so the run keeps one");
+    assert!(got[2].as_ref().unwrap_err().contains("not allowed"), "{:?}", got[2]);
+}
+
+#[test]
+fn the_seeds_file_dedupes_and_keeps_to_its_cap_dropping_the_oldest_weakest() {
+    use traffic_sim::explore::seeds::{add, enforce_cap, record, SeedFile};
+    let study = ratrun_study();
+    let mk = |i: u32, source: &str, published: &str, score: f64| {
+        let mut e = seed_entry(&study, &[filter_on(i)], source, published, score);
+        e.link = format!("#v1;a=t;s=mf,9q9p3cx{i:03}");
+        e
+    };
+    let mut f = SeedFile { version: 1, area: "t".into(), cap: 4, seeds: Vec::new() };
+    assert!(add(&mut f, mk(1, "search", "2026-11-01", 30.0)));
+    assert!(!add(&mut f, mk(1, "search", "2026-11-01", 99.0)), "the same package is not added twice");
+    for (i, (src, date, score)) in [("hand", "", 0.0), ("search", "2026-11-01", 10.0), ("search", "2026-11-03", 50.0)].into_iter().enumerate() {
+        add(&mut f, mk(i as u32 + 2, src, date, score));
+    }
+    assert_eq!(f.seeds.len(), 4);
+    // A run today publishes a new package and re-publishes an old one with new figures: the file is over its cap by one.
+    let again = mk(1, "search", "2026-11-15", 77.0);
+    record(&mut f, vec![mk(9, "search", "2026-11-15", 1.0), again], "2026-11-15");
+    assert_eq!(f.seeds.len(), 4, "cut to the cap");
+    let links: Vec<&str> = f.seeds.iter().map(|e| e.link.as_str()).collect();
+    assert!(links.contains(&"#v1;a=t;s=mf,9q9p3cx002"), "a hand-added package is never dropped: {links:?}");
+    assert!(links.contains(&"#v1;a=t;s=mf,9q9p3cx009") && links.contains(&"#v1;a=t;s=mf,9q9p3cx001"), "packages published today stay: {links:?}");
+    assert!(!links.contains(&"#v1;a=t;s=mf,9q9p3cx003"), "of the rest, the oldest and weakest goes: {links:?}");
+    let e = f.seeds.iter().find(|e| e.link.ends_with("001")).unwrap();
+    assert_eq!((e.added.as_str(), e.score), ("2026-11-01", Some(77.0)), "a re-published package keeps its first date and takes the new figures");
+    enforce_cap(&mut f, "2026-11-15");
+    assert_eq!(f.seeds.len(), 4);
+}
+
+fn ratrun_study() -> Study {
+    study_of(ratrun(true, false).study_net)
+}
+
+#[test]
+fn sub_packages_remove_one_intervention_each() {
+    use traffic_sim::explore::search::Family;
+    use traffic_sim::explore::seeds::sub_packages;
+    let subs = sub_packages(&[3, 1, 2]);
+    assert_eq!(subs.len(), 3);
+    for s in &subs {
+        assert_eq!(s.len(), 2);
+        assert!(s.windows(2).all(|w| w[0] < w[1]));
+    }
+    assert!(subs.contains(&vec![1, 2]) && subs.contains(&vec![1, 3]) && subs.contains(&vec![2, 3]));
+    assert!(sub_packages(&[5]).is_empty());
+    let f = Family::new(&[3, 1, 3, 2]);
+    assert_eq!(f.set, vec![1, 2, 3]);
+    assert_eq!(f.subs.len(), 3);
+}
+
+/// A known package of three interventions on a network with two rat runs: it and each package one smaller are screened, whatever the
+/// candidate cap, and the best of them starts a beam of its own.
+#[test]
+fn a_known_package_and_its_sub_packages_are_screened_and_start_a_beam() {
+    let n = ratrun(true, false);
+    let (c_d, e_f) = (n.c_d, n.e_f);
+    let study = study_of(n.study_net);
+    let slow = Intervention { ty: "speed_limit".into(), link: Some(c_d + 2), speed: Some(6.7), ..Default::default() };
+    let triple = vec![filter_on(c_d), filter_on(e_f), slow];
+    let mut p = params(2);
+    p.candidates = 1;
+    p.depth = 2;
+    with_known(&study, &mut p, vec![seed_entry(&study, &triple, "search", "2026-11-10", 50.0)]);
+    assert_eq!(p.known.len(), 1);
+    let o = explore(&study, &p);
+    let cache = &o.state.cache;
+    let ids: Vec<u16> = triple.iter().map(|iv| traffic_sim::explore::cands::adopt(&study, &mut o.cands.clone(), iv)).collect();
+    let mut all = ids.clone();
+    all.sort_unstable();
+    assert!(cache.contains_key(&all), "the known package itself is screened");
+    for k in 0..3 {
+        let mut sub: Vec<u16> = ids.iter().enumerate().filter(|(i, _)| *i != k).map(|(_, &c)| c).collect();
+        sub.sort_unstable();
+        assert!(cache.contains_key(&sub), "sub-package without intervention {k} is screened");
+    }
+    assert!(o.state.log.iter().any(|l| l.starts_with("known packages:") && l.contains("starting point")), "{:?}", o.state.log);
+}
+
+/// Known packages are rechecked in full even when the screening budget is spent, they compete on equal terms (they are not exempt from
+/// being dropped as within noise of a simpler option), and the output says where each option came from and what became of the seeds file.
+#[test]
+fn known_packages_are_rechecked_eligible_and_reported_with_their_origin() {
+    let n = ratrun(true, false);
+    let (c_d, e_f) = (n.c_d, n.e_f);
+    let study = study_of(n.study_net);
+    let pair = vec![filter_on(c_d), filter_on(e_f)];
+    let mut p = params(2);
+    p.candidates = 12;
+    p.budget_evals = Some(1);
+    let mut stale = seed_entry(&study, &pair, "search", "2026-11-10", 50.0);
+    stale.link = "#v1;a=t;p=p;s=mf,zzzzzzzzzz".into();
+    with_known(&study, &mut p, vec![seed_entry(&study, &pair, "hand", "", 0.0), stale]);
+    let o = explore(&study, &p);
+    assert!(o.state.exhausted);
+    let f = o.finals.iter().find(|f| f.set.len() == 2 && f.origin.kind == "hand").expect("the known package is rechecked though the budget is spent");
+    assert!(f.reject.is_none() && f.reduction_pct > 60.0 && !f.forced, "{}", f.reduction_pct);
+    assert_eq!(f.origin.note, "added for the test");
+    assert_eq!((o.known.loaded, o.known.rechecked, o.known.dropped.len()), (2, 1, 1));
+    let props = o.json["proposals"].as_array().unwrap();
+    assert!(props.iter().all(|x| x["origin"]["kind"].is_string()));
+    let kc = &o.json["computed"]["knownPackages"];
+    assert_eq!((kc["loaded"].as_u64(), kc["rechecked"].as_u64(), kc["dropped"].as_u64()), (Some(2), Some(1), Some(1)));
+    assert_eq!(kc["droppedBy"][0]["reason"], "no longer decodes on this network");
+    assert_eq!(kc["droppedPackages"][0]["link"], "#v1;a=t;p=p;s=mf,zzzzzzzzzz");
+    assert!(o.markdown.contains("## Known packages") && o.markdown.contains("Dropped:"));
+    // Published options become seeds for the next run, and the rechecked known package can be among them.
+    assert_eq!(o.published.len(), o.picks.len());
+    assert!(o.published.iter().all(|e| e.source == "search" && e.link.starts_with("#v1;a=t;p=p;s=")));
+    let picked = o.picks.iter().find(|pk| o.finals[pk.idx].origin.kind == "hand");
+    if let Some(pk) = picked {
+        let j = o.json["proposals"].as_array().unwrap().iter().find(|x| x["origin"]["kind"] == "hand").unwrap();
+        assert_eq!(j["origin"]["added"], "2026-11-01");
+        assert!(pk.why.len() > 0);
+    }
+}
+
+#[test]
+fn an_option_published_before_is_kept_over_a_new_one_within_noise() {
+    use traffic_sim::explore::report::{select_options, Final, Origin, ThroughHarm};
+    let mk = |n: usize, red: f64, harm: f64, prior: bool| Final {
+        set: (0..n as u16).collect(),
+        reject: None,
+        base_vph: 100.0,
+        scen_vph: 100.0 - red,
+        reduction_pct: red,
+        harm,
+        worst: 0,
+        blocks_above: 0,
+        through: ThroughHarm { worst: 0, increase: 0.0, blocks_above: 0 },
+        by_period: vec![],
+        bounding: vec![],
+        inside_pct: 0.0,
+        ped_pct: 0.0,
+        bike_pct: 0.0,
+        score: red - 0.1 * harm,
+        picture: None,
+        forced: false,
+        access: None,
+        origin: if prior { Origin { kind: "seed", added: "2026-11-01".into(), note: String::new() } } else { Origin::search() },
+        prior,
+    };
+    // Finalist 1 is a new package that beats the published one (0) by 2 points of through cars, inside a 5-point noise band.
+    let finals = vec![mk(4, 70.0, 10.0, true), mk(4, 72.0, 10.0, false), mk(1, 30.0, 0.0, false), mk(2, 50.0, 5.0, false)];
+    let (picks, notes) = select_options(&finals, 4, 5.0);
+    let chosen: Vec<usize> = picks.iter().map(|p| p.idx).collect();
+    assert!(chosen.contains(&0) && !chosen.contains(&1), "{chosen:?}");
+    assert!(notes[1].contains("an earlier search published"), "{}", notes[1]);
+    // A new package that wins by more than the noise band replaces it.
+    let finals = vec![mk(4, 70.0, 10.0, true), mk(4, 80.0, 10.0, false), mk(1, 30.0, 0.0, false)];
+    let (picks, notes) = select_options(&finals, 4, 5.0);
+    let chosen: Vec<usize> = picks.iter().map(|p| p.idx).collect();
+    assert!(chosen.contains(&1) && !chosen.contains(&0), "{chosen:?}");
+    assert!(notes[0].contains("dominated"), "{}", notes[0]);
+    // A new package with much less harm is not dropped for a published one that has more.
+    let finals = vec![mk(4, 70.0, 90.0, true), mk(4, 72.0, 5.0, false), mk(1, 30.0, 0.0, false)];
+    let (picks, _) = select_options(&finals, 4, 5.0);
+    assert!(picks.iter().any(|p| p.idx == 1));
+    // The lightest option is always listed, even when no single intervention is.
+    let finals = vec![mk(2, 40.0, 0.0, false), mk(5, 90.0, 10.0, false)];
+    let (picks, _) = select_options(&finals, 4, 5.0);
+    assert_eq!(picks[0].idx, 0);
+    assert!(picks[0].why.contains("lightest"), "{}", picks[0].why);
+}
+
+/// Candidates offered without limits include every candidate offered under them, with the seeds on the list too, and the group without
+/// limits never ends up worse than the stricter one.
+#[test]
+fn the_unconstrained_search_offers_everything_charter_does_and_is_never_worse() {
+    use traffic_sim::explore::profile::Profile;
+    let study = grid_with_boundary();
+    let charter = Profile { id: "charter".into(), title: "c".into(), note: String::new(), exclude_types: vec!["speed_hump".into()], exclude_boundary: true };
+    let mut p = params(2);
+    p.candidates = 6;
+    p.depth = 2;
+    p.beam = 2;
+    p.profile = charter;
+    let strict = explore(&study, &p);
+    let sc = strict.finals.iter().filter(|f| f.reject.is_none()).map(|f| f.reduction_pct).fold(f64::NEG_INFINITY, f64::max);
+    // The strict run's published options become the loose run's seeds.
+    let entries: Vec<_> = strict.picks.iter().map(|pk| seed_entry(&study, &strict.finals[pk.idx].set.iter().map(|&c| strict.cands[c as usize].iv.clone()).collect::<Vec<_>>(), "search", "2026-11-15", strict.finals[pk.idx].score)).collect();
+    let mut q = params(2);
+    q.candidates = 6;
+    q.depth = 2;
+    q.beam = 2;
+    with_known(&study, &mut q, entries);
+    let loose = explore(&study, &q);
+    let keys: std::collections::HashSet<&str> = loose.cands.iter().map(|c| c.key.as_str()).collect();
+    for c in strict.cands.iter().filter(|c| !c.key.starts_with("seed:")) {
+        assert!(keys.contains(c.key.as_str()), "{} is offered under the limits but not without them", c.label);
+    }
+    let lc = loose.finals.iter().filter(|f| f.reject.is_none()).map(|f| f.reduction_pct).fold(f64::NEG_INFINITY, f64::max);
+    assert!(lc >= sc - 1e-9, "without limits {lc} is worse than with them {sc}");
 }
