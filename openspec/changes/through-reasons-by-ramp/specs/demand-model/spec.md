@@ -17,3 +17,10 @@ An on-ramp SHALL be a chain of freeway-class links entered from a surface street
 #### Scenario: Connector between surface streets
 - **WHEN** a freeway-class link runs from one surface street to another
 - **THEN** no ramp is derived from it
+
+### Requirement: Flows from a mainline gate that make an assumed movement make the ramp first
+When the ramp choice is enabled, a flow from a freeway mainline gate that already carries an assumed movement SHALL be divided over the ramps its assignment uses like any other off-ramp flow, with the ramp as its first movement and its assumed movement as `via.then`.
+
+#### Scenario: Assumed flow from a mainline gate
+- **WHEN** an assumed flow from a mainline gate uses one off-ramp in its assignment
+- **THEN** its `via` is the ramp movement and its `via.then` is the assumed turn

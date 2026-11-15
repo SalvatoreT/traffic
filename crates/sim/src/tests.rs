@@ -1905,7 +1905,7 @@ fn via_demand(origin: u32, dest: u32, v: f64, from: u32, to: u32) -> Demand {
 
 fn via_demand_with(origin: u32, dest: u32, v: f64, mv: (u32, u32), max_detour: Option<f64>, alts: &[(u32, u32)]) -> Demand {
     let mut d = demand(&[(origin, dest, v)]);
-    d.periods[0].flows[0].via = Some(Via { from: mv.0, to: mv.1, max_detour, alternatives: alts.iter().map(|&(from, to)| ViaMove { from, to }).collect() });
+    d.periods[0].flows[0].via = Some(Via { from: mv.0, to: mv.1, max_detour, alternatives: alts.iter().map(|&(from, to)| ViaMove { from, to }).collect(), then: None });
     d
 }
 
@@ -1999,4 +1999,53 @@ fn flow_with_via_makes_the_movement_and_falls_back_when_it_is_banned() {
     let recs = sim.trip_records();
     assert!(recs.len() > 20, "trips complete: {}", recs.len());
     assert!(made(recs) <= plain_made, "no more trips make the banned movement ({}) than without the flow ({plain_made})", made(recs));
+}
+
+fn two_stage_demand(c: &Corr, rate: f64) -> Demand {
+    let mut d = via_demand_with(c.a[0], c.a[3], rate, (c.art[0].0, c.conn[1].0), Some(5.0), &[]);
+    let second = Via { from: c.loc[1].0, to: c.loc[2].0, max_detour: Some(5.0), alternatives: vec![], then: None };
+    d.periods[0].flows[0].via.as_mut().unwrap().then = Some(Box::new(second));
+    d
+}
+
+#[test]
+fn a_flow_can_make_two_movements_in_order() {
+    let (net, c) = corridor(20.0, Control::Uncontrolled);
+    let (m1, m2) = ((c.art[0].0, c.conn[1].0), (c.loc[1].0, c.loc[2].0));
+    let recs = via_trips(net.clone(), two_stage_demand(&c, 300.0), "[]");
+    assert!(recs.len() > 20, "trips complete");
+    let order = |r: &crate::sim::TripRecord| r.trail.windows(2).position(|w| (w[0], w[1]) == m1).zip(r.trail.windows(2).position(|w| (w[0], w[1]) == m2)).map_or(false, |(a, b)| a < b);
+    assert!(recs.iter().all(order), "every trip makes the ramp-like movement and then the assumed one, in that order");
+    // The first stage alone leaves the rest of the route to the router: it does not always make the second movement.
+    let alone = via_trips(net.clone(), via_demand_with(c.a[0], c.a[3], 300.0, m1, Some(5.0), &[]), "[]");
+    assert!(alone.iter().any(|r| !r.trail.windows(2).any(|w| (w[0], w[1]) == m2)), "the second movement is not what the plain route does");
+    // Each stage falls back on its own: with the second movement banned the trips still make the first and take the plain route on.
+    let ban = format!("[{{\"type\":\"turn_ban\",\"fromLink\":{},\"toLink\":{}}}]", m2.0, m2.1);
+    let banned = via_trips(net.clone(), two_stage_demand(&c, 300.0), &ban);
+    assert!(banned.len() > 20 && banned.iter().all(|r| makes(r, m1) && !makes(r, m2)), "stage one is kept, stage two dropped");
+    // With the first banned the flow takes its plain route; the second movement is not forced either.
+    let ban1 = format!("[{{\"type\":\"turn_ban\",\"fromLink\":{},\"toLink\":{}}}]", m1.0, m1.1);
+    let first_banned = via_trips(net, two_stage_demand(&c, 300.0), &ban1);
+    assert!(first_banned.len() > 20 && first_banned.iter().all(|r| !makes(r, m1)));
+}
+
+#[test]
+fn cars_placed_between_two_movements_carry_the_second() {
+    let (net, c) = corridor(20.0, Control::Uncontrolled);
+    let (m1, m2) = ((c.art[0].0, c.conn[1].0), (c.loc[1].0, c.loc[2].0));
+    let mut found = (0, 0);
+    for seed in 1..=8 {
+        let mut s = Simulation::from_parts(net.clone(), two_stage_demand(&c, 1500.0), cfg_empty(seed, 1.0)).unwrap();
+        s.test_prepopulate();
+        for (via, route) in s.test_via_state(m1.0) {
+            assert_eq!(via, Some(m1));
+            assert_eq!(route.first(), Some(&m1.1));
+            found.0 += 1;
+        }
+        for (via, route) in s.test_via_state(m1.1) {
+            assert_eq!(via, Some(m2), "past the first movement the second is pending: {route:?}");
+            found.1 += 1;
+        }
+    }
+    assert!(found.0 >= 3 && found.1 >= 3, "{found:?}");
 }

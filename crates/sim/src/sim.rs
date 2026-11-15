@@ -122,6 +122,8 @@ enum IntentRule {
 struct ViaPlan {
     moves: Vec<(u32, u32)>,
     max_detour: f32,
+    /// Plan of the movement made after this one (`NO_PLAN` for none).
+    next: u32,
 }
 
 #[derive(Clone, Copy)]
@@ -871,6 +873,50 @@ impl Simulation {
         (self.intent_rules.len() as u16, on)
     }
 
+    /// Plans of a flow's movement and the ones after it, last stage first so each knows its successor; a later stage the topology does not have is dropped.
+    fn add_via_plan(&mut self, v: &Via, nl: u32) -> u32 {
+        let ok = |t: &Topo, m: ViaMove| m.from < nl && m.to < nl && t.find_mv(m.from, m.to).is_some();
+        let next = match v.then.as_deref() {
+            Some(n) if ok(&self.topo, ViaMove { from: n.from, to: n.to }) => self.add_via_plan(n, nl),
+            _ => NO_PLAN,
+        };
+        let moves: Vec<(u32, u32)> = std::iter::once((v.from, v.to)).chain(v.alternatives.iter().filter(|m| ok(&self.topo, **m)).map(|m| (m.from, m.to))).collect();
+        self.via_plans.push(ViaPlan { moves, max_detour: v.max_detour.unwrap_or(VIA_MAX_DETOUR) as f32, next });
+        self.via_plans.len() as u32 - 1
+    }
+
+    /// The first of `moves` the path `from`, `rest` makes (windows of two links), if any.
+    fn first_move_in(moves: &[(u32, u32)], from: u32, rest: &[u32]) -> Option<(u32, u32)> {
+        let mut prev = from;
+        for &l in rest {
+            if let Some(&m) = moves.iter().find(|m| m.0 == prev && m.1 == l) {
+                return Some(m);
+            }
+            prev = l;
+        }
+        None
+    }
+
+    /// A car has just made its stage's movement: the next stage's movement, when the route holds one, becomes the pending one.
+    fn advance_via(&mut self, vid: u32) {
+        let (plan, link) = {
+            let v = &self.vehs[vid as usize];
+            (v.vplan, v.link)
+        };
+        if plan == NO_PLAN {
+            return;
+        }
+        let next = self.via_plans[plan as usize].next;
+        if next == NO_PLAN {
+            return;
+        }
+        let v = &self.vehs[vid as usize];
+        let found = Self::first_move_in(&self.via_plans[next as usize].moves, link, &v.route[(v.ridx as usize).min(v.route.len())..]);
+        let veh = &mut self.vehs[vid as usize];
+        veh.vplan = next;
+        veh.via = found;
+    }
+
     fn init_flows(&mut self) {
         self.flows.clear();
         self.via_plans.clear();
@@ -879,10 +925,11 @@ impl Simulation {
             .periods
             .iter()
             .find(|p| p.id == self.cfg.period)
-            .or_else(|| self.demand.periods.first());
+            .or_else(|| self.demand.periods.first())
+            .cloned();
         let nn = self.net.nodes.len() as u32;
         let t0 = self.t;
-        if let Some(p) = period {
+        if let Some(p) = &period {
             for (k, f) in p.flows.iter().enumerate() {
                 let rate = f.veh_per_hour * self.cfg.demand_scale / 3600.0;
                 if f.origin >= nn || f.destination >= nn || f.origin == f.destination || rate <= 0.0 {
@@ -895,10 +942,8 @@ impl Simulation {
                 let ok = |m: ViaMove| m.from < nl && m.to < nl && self.topo.find_mv(m.from, m.to).is_some();
                 let (mut via, mut vplan) = (None, NO_PLAN);
                 if let Some(v) = f.via.as_ref().filter(|v| ok(ViaMove { from: v.from, to: v.to })) {
-                    let moves: Vec<(u32, u32)> = std::iter::once((v.from, v.to)).chain(v.alternatives.iter().filter(|m| ok(**m)).map(|m| (m.from, m.to))).collect();
                     via = Some((v.from, v.to));
-                    vplan = self.via_plans.len() as u32;
-                    self.via_plans.push(ViaPlan { moves, max_detour: v.max_detour.unwrap_or(VIA_MAX_DETOUR) as f32 });
+                    vplan = self.add_via_plan(v, nl);
                 }
                 let n_int = self.demand.intents.len();
                 let intent = if through && n_int > 0 { f.intent.map_or(n_int, |i| (i as usize).min(n_int)) as u16 } else { NO_INTENT };
@@ -2669,11 +2714,13 @@ impl Simulation {
                     continue;
                 }
                 self.transit[n].remove(i);
+                let made;
                 {
                     let veh = &mut self.vehs[vid as usize];
                     veh.in_transit = false;
                     veh.link = tr.to_link;
-                    if veh.via.map_or(false, |(_, b)| b == tr.to_link) {
+                    made = veh.via.map_or(false, |(_, b)| b == tr.to_link);
+                    if made {
                         veh.via = None;
                     }
                     veh.lane = tr.lane;
@@ -2684,6 +2731,9 @@ impl Simulation {
                     veh.go = true;
                 }
                 self.lanes[qi].push_back(vid);
+                if made {
+                    self.advance_via(vid);
+                }
                 self.sl_enter(vid, tr.to_link);
                 if self.vehs[vid as usize].replan {
                     self.vehs[vid as usize].replan = false;
@@ -2854,6 +2904,18 @@ impl Simulation {
                 let plain_looped = plain_looped.get_or_insert_with(|| self.plain_repeats(start, dest, seed));
                 if looped.iter().any(|n| !plain_looped.contains(n)) {
                     continue;
+                }
+            }
+            // A movement after this one: take the route on from the exit link through it, each stage with its own tolerance and fallback.
+            let next = self.via_plans[plan as usize].next;
+            if next != NO_PLAN {
+                if let Some(k) = seq.windows(2).position(|w| w[0] == a && w[1] == b) {
+                    let mut tail: Vec<u32> = Vec::new();
+                    if self.pick_via(Start::Link(b), dest, seed, next, &mut tail).is_some() {
+                        r.truncate(k);
+                        r.push(b);
+                        r.extend_from_slice(&tail);
+                    }
                 }
             }
             route.extend_from_slice(&r);

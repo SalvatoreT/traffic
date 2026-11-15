@@ -118,14 +118,32 @@ impl Simulation {
 
     /// Route of a car of a flow with an assumed movement: as a trip of the flow would take it at its origin, the movement included while it counts.
     /// Returns the route and the movement it makes.
-    fn initial_route_via(&mut self, origin: u32, dest: u32, seed: u32, vplan: u32) -> Option<(Vec<u32>, Option<(u32, u32)>)> {
+    fn initial_route_via(&mut self, origin: u32, dest: u32, seed: u32, vplan: u32) -> Option<Vec<u32>> {
         let mut rest = Vec::new();
-        if let Some((mv, Some(first))) = self.pick_via(Start::Node(origin), dest, seed, vplan, &mut rest) {
+        if let Some((_, Some(first))) = self.pick_via(Start::Node(origin), dest, seed, vplan, &mut rest) {
             let mut route = vec![first];
             route.append(&mut rest);
-            return Some((route, Some(mv)));
+            return Some(route);
         }
-        self.initial_route(false, origin, dest, seed).map(|r| (r, None))
+        self.initial_route(false, origin, dest, seed)
+    }
+
+    /// The movement a car placed at `route[at]` still has to make, and the plan of its stage: stages whose movement the route made before its position are done.
+    fn initial_pending(&self, plan: u32, route: &[u32], at: usize) -> (Option<(u32, u32)>, u32) {
+        let (mut plan, mut from) = (plan, 0);
+        while plan != NO_PLAN {
+            let p = &self.via_plans[plan as usize];
+            let hit = (from..route.len().saturating_sub(1)).find_map(|i| p.moves.iter().find(|m| m.0 == route[i] && m.1 == route[i + 1]).map(|&m| (i, m)));
+            match hit {
+                Some((i, m)) if i >= at => return (Some(m), plan),
+                Some((i, _)) if p.next != NO_PLAN => {
+                    plan = p.next;
+                    from = i + 1;
+                }
+                _ => return (None, plan),
+            }
+        }
+        (None, plan)
     }
 
     /// Per link of `route`: (free-flow time on the link, delay in front of its stop line), both in s. The delay is the expected control delay at
@@ -176,7 +194,7 @@ impl Simulation {
             }
             let bike = mode == FlowMode::Bicycle;
             let r0 = if vplan != NO_PLAN {
-                self.initial_route_via(origin, dest, NO_NOISE, vplan).map(|r| r.0)
+                self.initial_route_via(origin, dest, NO_NOISE, vplan)
             } else {
                 self.initial_route(bike, origin, dest, NO_NOISE)
             };
@@ -190,8 +208,8 @@ impl Simulation {
                 } else {
                     (Drv::sample(&mut rng), 0.0, rng.u32() & 0x7FFF_FFFF)
                 };
-                let routed = if vplan != NO_PLAN { self.initial_route_via(origin, dest, noise_seed, vplan) } else { self.initial_route(bike, origin, dest, noise_seed).map(|r| (r, None)) };
-                let Some((route, mv)) = routed else { continue };
+                let routed = if vplan != NO_PLAN { self.initial_route_via(origin, dest, noise_seed, vplan) } else { self.initial_route(bike, origin, dest, noise_seed) };
+                let Some(route) = routed else { continue };
                 let times = self.initial_times(&route, bike.then_some(v0_abs));
                 let total: f32 = times.iter().map(|t| t.0 + t.1).sum();
                 let mut r = rng.f64() as f32 * total;
@@ -203,7 +221,7 @@ impl Simulation {
                     }
                     r -= t.0 + t.1;
                 }
-                let via = mv.filter(|&(a, b)| route.windows(2).enumerate().any(|(i, w)| i >= at && w[0] == a && w[1] == b));
+                let (via, vplan) = self.initial_pending(vplan, &route, at);
                 let l = route[at] as usize;
                 let (emerge, stop) = (self.topo.emerge_pos[l], self.topo.stop_pos[l]);
                 // Uniform by time over the free-flow part, then the expected control delay in front of the stop line.

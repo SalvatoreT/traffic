@@ -10,3 +10,8 @@
 ## 3. Config and UI
 - [x] 3.1 Rewrite `throughIntents` in three sections
 - [x] 3.2 Section headings, ramp point on the map, where cars start or end (tests)
+
+## 4. Two-stage via
+- [x] 4.1 `via.then` in the simulator, placement and re-plans (tests)
+- [x] 4.2 The builder writes the ramp, then the assumed turn (test)
+- [x] 4.3 Show counted turns below the fit threshold (test)

@@ -248,6 +248,9 @@ pub struct Via {
     pub max_detour: Option<f64>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub alternatives: Vec<ViaMove>,
+    /// A second movement made after this one (ASSUMPTION: a freeway ramp, then the assumed turn). Each stage keeps its own tolerance and alternatives and falls back on its own.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub then: Option<Box<Via>>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

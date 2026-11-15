@@ -28,8 +28,10 @@ interface Node { id: number; x: number; y: number; gate: boolean; canEnter?: boo
 interface Link { id: number; from: number; to: number; name: string; class: string; length: number; lanes?: number; speedLimit?: number; geometry?: [number, number][]; inStudyArea: boolean; bikeLane?: boolean; bikeRoute?: boolean; humps?: number[]; stopAtEnd?: boolean }
 interface Network { id: string; origin: { lon: number; lat: number }; studyArea: [number, number][]; nodes: (Node & { control: string })[]; links: Link[]; turnBans?: { from: number; to: number; periods?: string[] }[] }
 // `mode` is absent on car flows (default car). Pedestrian and bicycle flows are persons per hour in the same field.
-const viaOut = (f: Flow) => { if (!f.via) return f; const { via, ...r } = f; return { ...r, via: { from: via.a, to: via.b, ...(via.maxDetour !== undefined ? { maxDetour: via.maxDetour } : {}), ...(via.alternatives?.length ? { alternatives: via.alternatives.map((x) => ({ from: x.a, to: x.b })) } : {}) } }; };
-interface Flow { origin: number; destination: number; vehPerHour: number; mode?: 'car' | 'bicycle' | 'pedestrian'; via?: { a: number; b: number; maxDetour?: number; alternatives?: { a: number; b: number }[] } }
+interface FlowVia { a: number; b: number; maxDetour?: number; alternatives?: { a: number; b: number }[]; then?: FlowVia }
+const viaWire = (via: FlowVia): object => ({ from: via.a, to: via.b, ...(via.maxDetour !== undefined ? { maxDetour: via.maxDetour } : {}), ...(via.alternatives?.length ? { alternatives: via.alternatives.map((x) => ({ from: x.a, to: x.b })) } : {}), ...(via.then ? { then: viaWire(via.then) } : {}) });
+const viaOut = (f: Flow) => { if (!f.via) return f; const { via, ...r } = f; return { ...r, via: viaWire(via) }; };
+interface Flow { origin: number; destination: number; vehPerHour: number; mode?: 'car' | 'bicycle' | 'pedestrian'; via?: FlowVia }
 
 const missing = [cfg.network, cfg.raw.lodes, cfg.raw.caltrans, cfg.raw.caltransRamps, cfg.raw.oaklandTmc].filter((f: string) => !existsSync(f));
 if (missing.length) {

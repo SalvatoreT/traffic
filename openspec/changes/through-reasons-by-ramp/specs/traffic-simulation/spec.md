@@ -30,3 +30,18 @@ The simulator SHALL count, for counted through cars that planned an on-ramp and 
 #### Scenario: Static costs
 - **WHEN** route costs do not change a planned ramp
 - **THEN** the count of cars that drove another ramp is zero
+
+### Requirement: A flow can make two movements in order
+A flow's movement MAY carry a second movement (`then`) with its own tolerance and alternatives. A trip SHALL make the first movement, then the second, each chosen and kept by the rules of an assumed movement; a stage that does not count SHALL fall back on its own (the first on its alternatives or the plain route, the second on its alternatives or the plain route from the first's exit). Placement SHALL carry the stage a car has still to make.
+
+#### Scenario: Ramp, then turn
+- **WHEN** a flow's first movement is an off-ramp and its second a turn at the ramp's terminal
+- **THEN** every trip makes the ramp and then the turn, in that order
+
+#### Scenario: Second movement banned
+- **WHEN** the second movement is banned
+- **THEN** the trips still make the first and take their plain route on
+
+#### Scenario: Placed between the stages
+- **WHEN** a car is placed after the first movement and before the second
+- **THEN** it carries the second as its pending movement

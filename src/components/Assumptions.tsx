@@ -166,10 +166,11 @@ function MovementCard({ m, n, net, mode, base, counted, lead, scaled, periodName
       <h5><span className="move-n">{n}</span> {m.label}</h5>
       {model && <TurnMap model={model} n={n} mode={mode} alt={`Turn ${n}. Map of ${model.words}. A curved arrow runs from the first street through the junction onto the second.`} />}
       <dl className="move-nums">
-        {counted.map((p) => <div key={p}><dt>Counted, {periodName(p)}{scaled.includes(p) ? ' (scaled)' : ''}</dt><dd>{rounded(m.counted[p])}</dd></div>)}
+        {counted.map((p) => <div key={p}><dt>Counted, {periodName(p)}{scaled.includes(p) ? ' (scaled)' : ''}</dt><dd>{rounded(m.counted[p])}{m.belowThreshold?.[p] !== undefined && <span className="tag tag-local">counted, no trips assigned</span>}</dd></div>)}
         <div className="assigned"><dt>Assigned, {periodName(lead)}</dt><dd>{rounded(a?.total)}</dd></div>
         <div className="assigned"><dt>Through cars, {periodName(lead)}</dt><dd>{rounded(a?.through)}</dd></div>
       </dl>
+      {m.belowThreshold && Object.keys(m.belowThreshold).length > 0 && m.belowThresholdNote && <p className="muted move-below">{m.belowThresholdNote}</p>}
       {who.length > 0 && <Who who={who} lead={periodName(lead)} />}
     </li>
   );

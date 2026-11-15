@@ -29,11 +29,12 @@ describe('ramp choice made upstream', () => {
     expect(r.flows[0]).toMatchObject({ vehPerHour: 50, via: { a: 0, b: 1 } });
     expect(r.flows[0].via!.alternatives).toBeUndefined();
   });
-  it('leaves other flows, flows with a movement and flows that use no ramp unchanged except for the fitted volume', () => {
+  it('leaves other flows and flows that use no ramp unchanged except for the fitted volume, and puts the ramp before the movement of a flow that has one', () => {
     const flows: RampFlow[] = [{ origin: 5, destination: 9, vehPerHour: 10 }, { origin: 0, destination: 9, vehPerHour: 10, via: { a: 7, b: 8 } }, { origin: 0, destination: 4, vehPerHour: 10 }];
     const r = splitByRamp(flows, [11, 12, 13], asg([[[0, 1], [1, 1]], [[0, 1], [1, 1]], [[0, 1]]]), (k) => k > 0, ramps, linkFrom, linkTo, cfg);
-    expect(r.flows.map((f) => [f.vehPerHour, f.via?.b])).toEqual([[11, undefined], [12, 8], [13, undefined]]);
-    expect(r.forced).toBe(0);
+    expect(r.flows.map((f) => [f.vehPerHour, f.via?.b, f.via?.then?.b])).toEqual([[11, undefined, undefined], [12, 1, 8], [13, undefined, undefined]]);
+    expect(r.flows[1].via).toEqual({ a: 0, b: 1, maxDetour: 1.3, then: { a: 7, b: 8 } });
+    expect(r.forced).toBe(1);
   });
   it('finds the freeway-class link that ends at each ramp surface node', () => {
     const links = [{ id: 0, from: 10, to: 1, class: 'motorway' }, { id: 1, from: 1, to: 2, class: 'motorway' }, { id: 2, from: 2, to: 3, class: 'primary' }];

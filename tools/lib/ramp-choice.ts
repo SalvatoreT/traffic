@@ -2,19 +2,22 @@
 // The simulator picks the off-ramp of a trip from the mainline gate by its own costs, and two ramps whose paths to a destination differ by seconds split such trips on noise and queue
 // length. The count fit already decided how each flow divides over the ramps (its static assignment meets the ramp counts and the counts downstream of each ramp terminal), so the builder
 // splits every off-ramp flow by those shares and writes the ramp movement as the flow's `via`. The simulator keeps the movement while it costs at most `maxDetour` times the plain route
-// and falls back on the flow's other ramps, then on the plain route (see via-detour-fallback).
+// and falls back on the flow's other ramps, then on the plain route (see via-detour-fallback). A flow from a mainline gate that already makes an assumed movement makes the ramp first and the
+// movement second (`via.then`); the simulator honors each in order with its own tolerance and fallback.
 import type { Assignment } from './assign';
 
 /** An off-ramp: `b` is its last freeway-class link (it ends at the surface node), `from` the node it leaves. */
 export interface OffRamp { b: number; from: number }
 export interface RampChoiceCfg { enabled: boolean; /** The simulator keeps the ramp while its route costs at most this multiple of the plain route (ASSUMPTION). */ maxDetour: number; /** A ramp that carries less than this share of a flow's trips is ignored and its trips go to the others (ASSUMPTION). */ minShare: number }
-export interface RampFlow { origin: number; destination: number; vehPerHour: number; mode?: string; via?: { a: number; b: number; maxDetour?: number; alternatives?: { a: number; b: number }[] } }
+/** A movement a flow makes, and the movement it makes after it (two-stage via: the ramp, then the assumed turn). */
+export interface RampVia { a: number; b: number; maxDetour?: number; alternatives?: { a: number; b: number }[]; then?: RampVia }
+export interface RampFlow { origin: number; destination: number; vehPerHour: number; mode?: string; via?: RampVia }
 
 export interface RampSplit<T> { flows: T[]; /** Flows divided over two ramps or more. */ divided: number; /** Flows that got a ramp movement (divided or not). */ forced: number; /** Volume (veh/h) per ramp link. */ byRamp: Map<number, number> }
 
 /**
  * Splits each flow `k` for which `isOffRamp(k)` holds over the off-ramps its final assignment uses. `volume[k]` is the fitted volume; `linkFrom[l]` and `linkTo[l]` the end nodes of link `l`.
- * A flow whose assignment uses no ramp, or that already has a `via`, is returned as it is.
+ * A flow whose assignment uses no ramp is returned as it is. A flow that already has a `via` (an assumed movement) gets the ramp as its first movement and keeps its own as the one after it.
  */
 export function splitByRamp<T extends RampFlow>(flows: T[], volume: number[], a: Assignment, isOffRamp: (k: number) => boolean, ramps: OffRamp[], linkFrom: ArrayLike<number>, linkTo: ArrayLike<number>, cfg: RampChoiceCfg): RampSplit<T> {
   const rampOf = new Map(ramps.map((r) => [r.b, r]));
@@ -23,7 +26,7 @@ export function splitByRamp<T extends RampFlow>(flows: T[], volume: number[], a:
   let divided = 0, forced = 0;
   flows.forEach((f, k) => {
     const v = volume[k];
-    if (!isOffRamp(k) || f.via || !a.routable[k]) { out.push({ ...f, vehPerHour: v }); return; }
+    if (!isOffRamp(k) || !a.routable[k]) { out.push({ ...f, vehPerHour: v }); return; }
     const use = new Map<number, { share: number; feeder: number | null }>();
     const onPath = new Set<number>();
     for (let i = a.start[k]; i < a.start[k + 1]; i++) onPath.add(a.link[i]);
@@ -50,7 +53,7 @@ export function splitByRamp<T extends RampFlow>(flows: T[], volume: number[], a:
     for (const [b, u] of kept) {
       const part = (v * u.share) / sum;
       const alternatives = kept.filter(([b2]) => b2 !== b).map(([b2, u2]) => ({ a: u2.feeder!, b: b2 }));
-      out.push({ ...f, vehPerHour: part, via: { a: u.feeder!, b, maxDetour: cfg.maxDetour, ...(alternatives.length ? { alternatives } : {}) } });
+      out.push({ ...f, vehPerHour: part, via: { a: u.feeder!, b, maxDetour: cfg.maxDetour, ...(alternatives.length ? { alternatives } : {}), ...(f.via ? { then: f.via } : {}) } });
       byRamp.set(b, (byRamp.get(b) ?? 0) + part);
     }
   });

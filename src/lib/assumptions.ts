@@ -15,6 +15,10 @@ export interface AssumedMovementView {
   /** Cars an hour the model assigns to the movement, and how many of those have no end in the study area. */
   assigned: Record<string, { total: number; through: number }>;
   intents: AssumedIntentView[];
+  /** Periods in which the count is below the count fit's minimum for a turn: the number is the count, and the model assigns no trips to it. */
+  belowThreshold?: Record<string, number>;
+  /** Why no trips are assigned in those periods. */
+  belowThresholdNote?: string;
 }
 export interface AssumptionsFile {
   version: typeof ASSUMPTIONS_VERSION;
