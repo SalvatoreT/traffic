@@ -75,7 +75,7 @@
       "note": "published by an earlier search (group unconstrained, option p1, 2026-11-14 through-car change -14.5%)",
       "added": "2026-11-14",
       "lastPublished": "2026-11-15",
-      "group": "charter",
+      "group": "unconstrained",
       "size": 1,
       "changePct": -11.0,
       "score": 5.2
@@ -97,7 +97,7 @@
       "note": "published by an earlier search (group unconstrained, option p3, 2026-11-14 through-car change -62.5%)",
       "added": "2026-11-14",
       "lastPublished": "2026-11-15",
-      "group": "charter",
+      "group": "unconstrained",
       "size": 3,
       "changePct": -62.9,
       "score": 56.4
@@ -174,7 +174,7 @@
       "note": "published by an earlier search (group charter, option p5, 2026-11-15 through-car change -90.3%)",
       "added": "2026-11-15",
       "lastPublished": "2026-11-15",
-      "group": "charter",
+      "group": "unconstrained",
       "size": 6,
       "changePct": -90.6,
       "score": 86.7
@@ -207,7 +207,7 @@
       "note": "",
       "added": "2026-11-15",
       "lastPublished": "2026-11-15",
-      "group": "charter",
+      "group": "unconstrained",
       "size": 2,
       "changePct": -46.0,
       "score": 42.8
@@ -218,7 +218,7 @@
       "note": "",
       "added": "2026-11-15",
       "lastPublished": "2026-11-15",
-      "group": "charter",
+      "group": "unconstrained",
       "size": 4,
       "changePct": -73.1,
       "score": 65.8

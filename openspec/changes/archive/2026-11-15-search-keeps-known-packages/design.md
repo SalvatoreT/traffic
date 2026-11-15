@@ -44,3 +44,13 @@ D10. Candidate cap and termination left as they were. The cap of 40 locations di
 - Run time. Each seed adds a full recheck and the beam has a second lineage. The seeds cap and `--beam`/`--expand` bound it.
 - The ramp is an assumption. If a model change made harm a better guide for partial packages, the seeds file would still hold the good packages.
 - Seeds from an older network that still decode may no longer be good; they are rechecked on the current model, so they publish only if they are.
+
+## Results
+
+A search without the seeds file (beam 5, depth 6, expand 12, pilot limits, 4,537 s) now finds six filters that cut through cars by 91.5% (screening +94.9 at depth 6, against +65.6 before), and its published ladder runs 2, 3, 4, 5 and 6 changes at -46%, -63%, -73%, -88% and -92%. Before the change the same search stopped at -76%.
+
+With the seeds file, on the final model:
+
+- Pilot limits (beam 5, expand 12, 5,578 s): 20 seeds loaded, 16 rechecked, 4 dropped (they hold filters on the Colby or Forest blocks, which the profile forbids). Options of 1, 2, 3, 4 and 6 changes at -11%, -46%, -63%, -73% and -91% of through cars.
+- Without limits (beam 4, expand 10 to stay under two hours, 6,160 s): 20 seeds rechecked, none dropped, and the same five options, because nothing outside the pilot's limits beat them.
+- The six-filter package: 464.3 to 38.3 through cars an hour (-91.7%), penalty 56 cars an hour on 61st Street between Hillegass and Colby, no block gaining through cars beyond noise. It stays in the file as a hand-added seed. It is within noise of the listed best option (-90.6%, penalty 39), which an earlier search had published and which is kept for that reason.
