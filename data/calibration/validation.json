@@ -430,10 +430,10 @@
       "hi": 744.1885785434997,
       "id": "f2",
       "knownDeviation": {
-        "followUp": "Limit on use: no figure for a circle with heavy circulating flow. Repair needs entry gap acceptance at the ring checked against [Rodegerdts2007].",
+        "followUp": "Repair needed before D16 can pass: entry at a single-node circle waits for in-node occupancy only and ignores gap acceptance against approaching circulating vehicles; it should be checked against the entry-capacity relation of [Rodegerdts2007]. Until then, no figure for a circle with heavy circulating flow.",
         "id": "f2",
         "reason": "Circle entry capacity at 600 circulating veh/h is 405 against 496 to 744 [Rodegerdts2007] (1130 exp(-0.001 vc) = 620). It was 482 when vehicles held at a full ring lane were stored in the node (expose-junction-fallback-validity); f1 (200 circulating) passes.",
-        "relevance": "All 37 traffic circles of the network lie outside the study area (South and West Berkeley, North Oakland, the hills). In the PM peak (round 28, seeds 1 to 4) all but one carry under 500 veh/h entering on all approaches together, so their circulating flow is in the f1 regime. The exception is Chabot Rd / Roanoke Rd in the hills (about 1,060 veh/h entering), far from Hillegass Ave and Colby St. A few gridlock removals per hour occur at the Harmon St circles in South Berkeley.",
+        "relevance": "All 37 traffic circles of the network lie outside the study area (South and West Berkeley, North Oakland, the hills). In the PM peak all but one carry under 500 veh/h entering on all approaches together, so most circulating flows are in the f1 regime; the exception is Chabot Rd / Roanoke Rd in the hills (about 1,060 veh/h entering). The deviation still matters for stability: in the round 28 assessment the Harmon St circles in South Berkeley (King St, California St, Ellis St) account for 8 of the 36 PM removals and 7 of the 18 AM removals over ten seeds, part of why D16 fails. The through-car figures on Hillegass Ave and Colby St do not depend on these circles.",
         "reviewed": true
       },
       "lo": 496.1257190289998,
@@ -789,13 +789,13 @@
   "manifest": {
     "deviations": {
       "path": "data/calibration/validation.deviations.json",
-      "sha256": "6b0ca6ecb3382cafa228f76e09bdc915213572b218eac83cc6c248c9819ec241"
+      "sha256": "196a709073dab3e6c6a465aa96bd437caabaa43c484a87836552231d39b5dbc2"
     },
     "schema": 1,
     "simulator": {
-      "dirty": false,
+      "dirty": true,
       "fingerprint": "7d07b9a9fd076e6bb601935096958589",
-      "revision": "e998e0426baaeac40cfc05e639a3fd27234720a2",
+      "revision": "f17cf6335ae4d17d8965eb217a80f98d5cb598e0",
       "version": "0.1.0"
     },
     "suite": {

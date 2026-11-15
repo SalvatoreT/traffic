@@ -15,5 +15,6 @@
 
 - [x] 3.1 Run matched sensitivity cases for current behavior, disabled behavioral fallback and the proposed production policy; report uncertainty across seeds and per-node concentrations.
 - [x] 3.2 Explain effects on backlog, throughput, removals, time and safety surrogates before retuning any demand or capacity parameter.
-- [ ] 3.3 Include recovery policy and validity summaries in calibration reports, exported/stored results and their user-facing interpretation; coordinate schema changes with other review proposals.
+- [x] 3.3 Include recovery policy and validity summaries in calibration reports (seed report, multi-seed summary, assessment; calibration round 28).
+- [ ] 3.3b Carry them into exported/stored results and their user-facing interpretation; coordinate schema changes with other review proposals.
 - [ ] 3.4 Run the Rust suite, native/WASM parity and relevant report tests; validate the OpenSpec and archive only after implementation passes.

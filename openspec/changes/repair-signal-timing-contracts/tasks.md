@@ -15,6 +15,6 @@
 
 - [x] 3.1 Pass tests for initial plans, own/shared phases, adaptation, invalid budgets, and removal of interventions.
 - [x] 3.2 Run native/WASM parity and the relevant TypeScript/import tests.
-- [ ] 3.3 Recheck all observed Rockridge junctions and rerun affected baseline calibration periods; report changed results without compensating demand edits.
+- [x] 3.3 Recheck all observed Rockridge junctions and rerun affected baseline calibration periods; report changed results without compensating demand edits.
 - [ ] 3.4 Regenerate affected stored results and reports with current hashes through the normal data workflow, if those artifacts are published as part of implementation.
 - [ ] 3.5 Validate this OpenSpec change strictly and archive it only after implementation and verification.

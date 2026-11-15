@@ -17,6 +17,6 @@
 ## 3. Evidence and reporting
 
 - [x] 3.1 Label existing repeatedly consulted holdouts as diagnostic and record what independent validation would require under [WebTAG-M3.1] and [FHWA-TAT3-2019].
-- [ ] 3.2 Regenerate the Rockridge split, both demand variants, and the complete assessment on a recorded revision; report missing evidence and changed pass populations without retuning to the test.
-- [ ] 3.3 Run relevant TypeScript/native regression tests, typecheck, and strict OpenSpec validation; update the calibration record and user-facing evidence claims.
+- [x] 3.2 Regenerate the Rockridge split, both demand variants, and the complete assessment on a recorded revision; report missing evidence and changed pass populations without retuning to the test.
+- [x] 3.3 Run relevant TypeScript/native regression tests, typecheck, and strict OpenSpec validation; update the calibration record and user-facing evidence claims.
 - [ ] 3.4 Review the final prose with `.claude/skills/humanizer/SKILL.md`, then archive only after implementation and verification are complete.
