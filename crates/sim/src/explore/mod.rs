@@ -4,6 +4,7 @@
 
 pub mod annotate;
 pub mod cands;
+pub mod check;
 pub mod decode;
 pub mod link;
 pub mod naming;
@@ -11,6 +12,7 @@ pub mod profile;
 pub mod refs;
 pub mod report;
 pub mod search;
+pub mod seeds;
 pub mod util;
 
 use crate::eff::Eff;
@@ -64,6 +66,9 @@ pub struct Params {
     /// Packages found by another search on the same inputs (for example under tighter limits). Those the profile allows are screened first,
     /// extended in a beam of their own and always rechecked, so a looser search cannot end up worse than a stricter one.
     pub warm_start: Vec<Vec<Intervention>>,
+    /// Known packages from the area's seeds file that decoded on this network, and those that did not. Each is rechecked in full and starts part of the beam.
+    pub known: Vec<seeds::Prepared>,
+    pub known_dropped: Vec<seeds::Dropped>,
     pub out: Option<PathBuf>,
     pub report: Option<PathBuf>,
 }
@@ -88,6 +93,8 @@ impl Params {
             references: Vec::new(),
             profile: profile::Profile::unconstrained(),
             warm_start: Vec::new(),
+            known: Vec::new(),
+            known_dropped: Vec::new(),
             out: None,
             report: None,
         }

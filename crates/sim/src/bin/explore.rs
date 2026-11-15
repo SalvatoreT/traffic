@@ -4,7 +4,7 @@
 //! cargo run --release -p traffic-sim --bin explore -- --area rockridge --periods pm_peak,am_peak --seeds 1,2,3 --beam 3 --depth 8 --candidates 40
 
 use std::path::{Path, PathBuf};
-use traffic_sim::explore::{annotate, profile, refs, report::explore, util, Params, Study};
+use traffic_sim::explore::{annotate, profile, refs, report::explore, seeds, util, Params, Study};
 
 fn usage(msg: &str) -> ! {
     if !msg.is_empty() {
@@ -15,6 +15,9 @@ fn usage(msg: &str) -> ! {
          \x20              [--screen-minutes 30] [--minutes 60] [--budget-evals N] [--jobs N] [--harm-weight 0.1] [--expand 16]\n\
          \x20              [--finalists 12] [--options 5] [--out public/data/ID.proposals.json] [--report data/proposals/ID.md]\n\
          \x20              [--references data/proposals/ID.references.json] [--profile ID[,ID...]|all] [--profiles data/proposals/AREA.profiles.json] [--no-warm-start]\n\
+         \x20              [--known data/proposals/ID.seeds.json] [--no-known]   known packages to recheck and start from (each run adds its published options)\n\
+         \x20              [--check LINK ...] [--check-subsets] [--check-singles]   score given scenario links by the search's own code, then exit\n\
+         \x20              [--add-seed LINK [--note TEXT] [--published-on DATE]] [--seed-proposals FILE] [--seed-labels FILE]   add to the seeds file, then exit\n\
          \x20              [--annotate]   add per-link pictures to the existing --out file (re-simulates the published packages; no search)"
     );
     std::process::exit(if msg.is_empty() { 0 } else { 2 });
@@ -26,7 +29,17 @@ fn main() {
     let (mut out, mut report, mut references): (Option<PathBuf>, Option<PathBuf>, Option<PathBuf>) = (None, None, None);
     let (mut profile_id, mut profiles_path): (Option<String>, Option<PathBuf>) = (None, None);
     let mut no_warm = false;
+    let mut no_known = false;
+    let mut add_seed: Vec<String> = Vec::new();
+    let mut seed_note = String::new();
+    let mut seed_published = String::new();
+    let mut seed_labels: Option<PathBuf> = None;
+    let mut seed_files: Vec<PathBuf> = Vec::new();
+    let mut known_path: Option<PathBuf> = None;
     let mut annotate = false;
+    let mut check: Vec<String> = Vec::new();
+    let mut check_subsets = false;
+    let mut check_singles = false;
     let mut i = 0;
     while i < argv.len() {
         let k = argv[i].as_str();
@@ -38,8 +51,23 @@ fn main() {
             i += 1;
             continue;
         }
+        if k == "--no-known" {
+            no_known = true;
+            i += 1;
+            continue;
+        }
         if k == "--annotate" {
             annotate = true;
+            i += 1;
+            continue;
+        }
+        if k == "--check-singles" {
+            check_singles = true;
+            i += 1;
+            continue;
+        }
+        if k == "--check-subsets" {
+            check_subsets = true;
             i += 1;
             continue;
         }
@@ -61,6 +89,13 @@ fn main() {
             "--expand" => p.expand = num("--expand") as usize,
             "--finalists" => p.finalists = num("--finalists") as usize,
             "--options" => p.options = num("--options") as usize,
+            "--add-seed" => add_seed.push(v.clone()),
+            "--note" => seed_note = v.clone(),
+            "--published-on" => seed_published = v.clone(),
+            "--seed-proposals" => seed_files.push(PathBuf::from(v)),
+            "--seed-labels" => seed_labels = Some(PathBuf::from(v)),
+            "--known" => known_path = Some(PathBuf::from(v)),
+            "--check" => check.push(v.clone()),
             "--out" => out = Some(PathBuf::from(v)),
             "--report" => report = Some(PathBuf::from(v)),
             "--references" => references = Some(PathBuf::from(v)),
@@ -81,6 +116,52 @@ fn main() {
         }
     }
     let out = out.unwrap_or_else(|| root.join(format!("public/data/{}.proposals.json", p.area)));
+    if !add_seed.is_empty() || seed_labels.is_some() || !seed_files.is_empty() {
+        let known_file = known_path.clone().unwrap_or_else(|| root.join(format!("data/proposals/{}.seeds.json", p.area)));
+        let mut f = seeds::load(&known_file, &p.area).unwrap_or_else(|e| usage(&e));
+        let today = util::today_utc();
+        let mut entry = |link: String, source: &str, note: String, date: String, group: String| {
+            let ivs = traffic_sim::explore::decode::decode_scenario(&study.net, &study.topo, study.origin, &link).unwrap_or_else(|e| usage(&format!("{link}: {e}")));
+            let e = seeds::Entry { link, source: source.into(), note, added: date.clone(), last_published: if source == seeds::SOURCE_HAND { seed_published.clone() } else { date }, group, size: ivs.len(), change_pct: None, score: None };
+            let added = seeds::add(&mut f, e.clone());
+            eprintln!("{} {}", if added { "added" } else { "already there:" }, e.link);
+        };
+        for l in &add_seed {
+            entry(l.clone(), seeds::SOURCE_HAND, seed_note.clone(), today.clone(), String::new());
+        }
+        for path in &seed_files {
+            let file: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(path).unwrap_or_else(|e| usage(&format!("{}: {e}", path.display())))).unwrap_or_else(|e| usage(&format!("{}: {e}", path.display())));
+            for g in file["groups"].as_array().into_iter().flatten() {
+                for pr in g["proposals"].as_array().into_iter().flatten().filter(|pr| pr["kind"] == "search") {
+                    let Some(link) = pr["link"].as_str() else { continue };
+                    let date = g["computed"]["date"].as_str().unwrap_or(&today).to_string();
+                    let note = format!("published by an earlier search (group {}, option {}, {} through-car change {}%)", g["id"].as_str().unwrap_or(""), pr["id"].as_str().unwrap_or(""), date, pr["cutThrough"]["changePct"]);
+                    entry(link.to_string(), seeds::SOURCE_SEARCH, note, date, g["id"].as_str().unwrap_or("").to_string());
+                }
+            }
+        }
+        if let Some(path) = &seed_labels {
+            let list: Vec<serde_json::Value> = serde_json::from_str(&std::fs::read_to_string(path).unwrap_or_else(|e| usage(&format!("{}: {e}", path.display())))).unwrap_or_else(|e| usage(&format!("{}: {e}", path.display())));
+            let pkgs: Vec<Vec<String>> = list.iter().map(|v| v["labels"].as_array().map(|a| a.iter().filter_map(|x| x.as_str().map(String::from)).collect()).unwrap_or_default()).collect();
+            for (v, r) in list.iter().zip(traffic_sim::explore::check::links_from_labels(&study, &pkgs)) {
+                match r {
+                    Ok(link) => entry(link, seeds::SOURCE_SEARCH, v["note"].as_str().unwrap_or("").into(), v["date"].as_str().unwrap_or(&today).into(), v["group"].as_str().unwrap_or("").into()),
+                    Err(why) => eprintln!("skipped: {why}"),
+                }
+            }
+        }
+        seeds::enforce_cap(&mut f, &today);
+        std::fs::write(&known_file, seeds::to_json(&f)).expect("write seeds");
+        eprintln!("seeds file {}: {} package(s)", known_file.display(), f.seeds.len());
+        return;
+    }
+    if !check.is_empty() {
+        let profiles_file = profiles_path.clone().unwrap_or_else(|| root.join(format!("data/proposals/{}.profiles.json", p.area)));
+        let profiles = if profiles_file.exists() { profile::load(&profiles_file).unwrap_or_else(|e| usage(&e)) } else { Vec::new() };
+        p.profile = profile::choose(&profiles, profile_id.as_deref().filter(|i| *i != profile::UNCONSTRAINED)).unwrap_or_else(|e| usage(&e));
+        traffic_sim::explore::check::check_links(&study, &p, &check, check_subsets, check_singles);
+        return;
+    }
     if annotate {
         let text = std::fs::read_to_string(&out).unwrap_or_else(|e| usage(&format!("cannot read {}: {e}", out.display())));
         let mut file: serde_json::Value = serde_json::from_str(&text).unwrap_or_else(|e| usage(&format!("{}: {e}", out.display())));
@@ -129,7 +210,17 @@ fn main() {
         if !p.warm_start.is_empty() {
             eprintln!("warm start: {} package(s) from the other group(s) of {}", p.warm_start.len(), out.display());
         }
+        let known_file = known_path.clone().unwrap_or_else(|| root.join(format!("data/proposals/{}.seeds.json", p.area)));
+        let mut seed_file = if no_known { seeds::SeedFile::empty(&p.area) } else { seeds::load(&known_file, &p.area).unwrap_or_else(|e| usage(&e)) };
+        let (known, dropped) = seeds::prepare(&study, &seed_file);
+        p.known = known;
+        p.known_dropped = dropped;
         let o = explore(&study, &p);
+        if !no_known {
+            seeds::record(&mut seed_file, o.published.clone(), &util::today_utc());
+            std::fs::write(&known_file, seeds::to_json(&seed_file)).expect("write seeds");
+            eprintln!("seeds file {}: {} package(s)", known_file.display(), seed_file.seeds.len());
+        }
         let merged = profile::merge_file(existing.as_ref(), &p.area, o.json.clone(), &order, &unconstrained);
         std::fs::write(&out, util::pretty_json(&merged)).expect("write proposals");
         let section = profile::report_section(&o.markdown, &p.profile);

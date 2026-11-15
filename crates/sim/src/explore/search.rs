@@ -300,7 +300,7 @@ impl Default for SearchState {
 }
 
 /// Evaluate sets not seen before, within the budget; results go into the state's cache.
-fn eval_batch(ctx: &Ctx, st: &mut SearchState, sets: Vec<Vec<u16>>) {
+pub fn eval_batch(ctx: &Ctx, st: &mut SearchState, sets: Vec<Vec<u16>>) {
     let mut want: Vec<Vec<u16>> = Vec::new();
     for s in sets {
         if !st.cache.contains_key(&s) && !want.contains(&s) {
@@ -375,25 +375,35 @@ struct Lineage {
     alive: bool,
 }
 
+/// A package known from earlier (another group's search or the seeds file) and the packages one intervention smaller than it.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Family {
+    pub set: Vec<u16>,
+    pub subs: Vec<Vec<u16>>,
+}
+
+impl Family {
+    pub fn new(set: &[u16]) -> Family {
+        let mut set = set.to_vec();
+        set.sort_unstable();
+        set.dedup();
+        let subs = super::seeds::sub_packages(&set);
+        Family { set, subs }
+    }
+}
+
 /// Beam search: all single candidates first, then add one candidate at a time to each package in the beam.
-/// `warm` holds packages known from another search (candidate indices): they are screened first and extended in a beam of their own,
-/// beside the one that grows from the best singles, so a strong large package cannot crowd the small ones out of the beam.
-pub fn beam_search(ctx: &Ctx, warm: &[Vec<u16>]) -> SearchState {
+/// `known` holds packages from earlier searches (candidate indices). Each is screened with its sub-packages, and the best of them (taken in
+/// turns from each family, so one package's neighbors cannot fill the beam) are extended in a beam of their own beside the one that grows
+/// from the best singles. A strong large package cannot crowd the small ones out, and a known package is never lost to a weak path to it.
+pub fn beam_search(ctx: &Ctx, known: &[Family]) -> SearchState {
     let mut st = SearchState::new();
     let n = ctx.cands.len();
     let singles: Vec<Vec<u16>> = (0..n as u16).map(|i| vec![i]).collect();
     eval_batch(ctx, &mut st, singles);
-    let warm: Vec<Vec<u16>> = warm
-        .iter()
-        .map(|w| {
-            let mut w = w.clone();
-            w.sort_unstable();
-            w.dedup();
-            w
-        })
-        .filter(|w| w.len() > 1)
-        .collect();
-    eval_batch(ctx, &mut st, warm.clone());
+    let known: Vec<Family> = known.iter().filter(|f| f.set.len() > 1).cloned().collect();
+    eval_batch(ctx, &mut st, known.iter().map(|f| f.set.clone()).collect());
+    eval_batch(ctx, &mut st, known.iter().flat_map(|f| f.subs.iter().cloned()).collect());
     // Single results by candidate index.
     fn single_eval(st: &SearchState, c: u16) -> Option<&Eval> {
         st.cache.get(&vec![c]).map(|&i| &st.evals[i])
@@ -409,13 +419,42 @@ pub fn beam_search(ctx: &Ctx, warm: &[Vec<u16>]) -> SearchState {
     let usable: Vec<bool> = (0..n as u16).map(|c| single_eval(&st, c).map_or(false, |e| e.valid())).collect();
     let single_best = ranked.first().map_or(f64::NEG_INFINITY, |&c| single_eval(&st, c).unwrap().score);
     let mut lineages = vec![Lineage { beam: ranked.iter().take(ctx.p.beam).map(|&c| st.cache[&vec![c]]).collect(), best: single_best, alive: true }];
-    let mut warm_ok: Vec<usize> = warm.iter().filter_map(|w| st.cache.get(w).copied()).filter(|&i| st.evals[i].valid()).collect();
-    warm_ok.sort_by(|&a, &b| st.evals[b].score.partial_cmp(&st.evals[a].score).unwrap_or(std::cmp::Ordering::Equal).then(a.cmp(&b)));
-    if !warm_ok.is_empty() {
-        let best = st.evals[warm_ok[0]].score;
-        warm_ok.truncate(ctx.p.beam.max(warm_ok.len().min(ctx.p.beam * 2)));
-        lineages.push(Lineage { beam: warm_ok, best, alive: true });
-        let line = format!("warm start: {} package(s) from another search, best {:+.1}", lineages[1].beam.len(), best);
+    let by_score = |st: &SearchState, v: &mut Vec<usize>| v.sort_by(|&a, &b| st.evals[b].score.partial_cmp(&st.evals[a].score).unwrap_or(std::cmp::Ordering::Equal).then(a.cmp(&b)));
+    let mut families: Vec<Vec<usize>> = known
+        .iter()
+        .map(|f| {
+            let mut m: Vec<usize> = std::iter::once(&f.set).chain(f.subs.iter()).filter_map(|s| st.cache.get(s).copied()).filter(|&i| st.evals[i].valid()).collect();
+            m.dedup();
+            by_score(&st, &mut m);
+            m
+        })
+        .filter(|m| !m.is_empty())
+        .collect();
+    families.sort_by(|a, b| st.evals[b[0]].score.partial_cmp(&st.evals[a[0]].score).unwrap_or(std::cmp::Ordering::Equal).then(a[0].cmp(&b[0])));
+    let mut start: Vec<usize> = Vec::new();
+    let width = ctx.p.beam * 2;
+    'fill: for r in 0.. {
+        let mut any = false;
+        for m in &families {
+            if let Some(&i) = m.get(r) {
+                any = true;
+                if !start.contains(&i) {
+                    start.push(i);
+                }
+                if start.len() >= width {
+                    break 'fill;
+                }
+            }
+        }
+        if !any {
+            break;
+        }
+    }
+    if !start.is_empty() {
+        by_score(&st, &mut start);
+        let best = st.evals[start[0]].score;
+        let line = format!("known packages: {} famil(ies) screened, {} starting point(s) for the beam, best {:+.1}", families.len(), start.len(), best);
+        lineages.push(Lineage { beam: start, best, alive: true });
         eprintln!("{line}");
         st.log.push(line);
     }

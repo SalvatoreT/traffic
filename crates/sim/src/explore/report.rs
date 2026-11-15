@@ -3,6 +3,7 @@
 use super::cands::{adopt, conflicts, generate_with, profile_allows, Cand};
 use super::naming::describe;
 use super::refs::resolve;
+use super::seeds::{self, Dropped};
 use super::search::*;
 use super::*;
 use serde_json::{json, Value};
@@ -35,6 +36,49 @@ pub struct Final {
     pub forced: bool,
     /// Why the package fails the access check (it strands a block); set for reference packages, which are reported either way.
     pub access: Option<String>,
+    /// Where the package came from: this search, or a known package (a seed from an earlier run, or one added by hand).
+    pub origin: Origin,
+    /// An earlier search published it. When two packages are within noise on through cars, the one published before is kept, so the list does not churn.
+    pub prior: bool,
+}
+
+/// How a package got into the run.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Origin {
+    /// `search` (found by this run), `seed` (published by an earlier run, from the seeds file) or `hand` (added to the seeds file by a person).
+    pub kind: &'static str,
+    /// Date the seeds file first recorded it (empty for `search`).
+    pub added: String,
+    pub note: String,
+}
+
+impl Origin {
+    pub fn search() -> Origin {
+        Origin { kind: "search", added: String::new(), note: String::new() }
+    }
+
+    fn of(e: &seeds::Entry) -> Origin {
+        Origin { kind: if e.source == seeds::SOURCE_HAND { "hand" } else { "seed" }, added: e.added.clone(), note: e.note.clone() }
+    }
+
+    fn json(&self) -> Value {
+        let mut v = json!({"kind": self.kind});
+        if self.kind != "search" {
+            v["added"] = json!(self.added);
+            if !self.note.is_empty() {
+                v["note"] = json!(self.note);
+            }
+        }
+        v
+    }
+
+    fn phrase(&self) -> String {
+        match self.kind {
+            "seed" => format!("seed from an earlier run, first recorded {}", self.added),
+            "hand" => format!("added by hand {}{}", self.added, if self.note.is_empty() { String::new() } else { format!(": {}", self.note) }),
+            _ => "found by this search".to_string(),
+        }
+    }
 }
 
 /// The period the proposal card's picture shows when it was searched.
@@ -224,6 +268,8 @@ fn compare(ctx: &Ctx, set: &[u16], stats: &[PeriodStat], reject: Option<String>)
         },
         forced: false,
         access: None,
+        origin: Origin::search(),
+        prior: false,
     }
 }
 
@@ -258,11 +304,37 @@ pub fn select_options(finals: &[Final], max: usize, noise_pct: f64) -> (Vec<Pick
             }
         })
         .collect();
+    // Stability: a package no earlier search published is dropped when one that was published is within noise of it on through cars and
+    // no worse on harm or size, so two runs on near-identical inputs publish the same list.
+    let published: Vec<usize> = ok.iter().copied().filter(|&i| finals[i].prior).collect();
+    let mut ok = ok;
+    ok.retain(|&i| {
+        let a = &finals[i];
+        if a.prior {
+            return true;
+        }
+        match published.iter().copied().find(|&j| {
+            let b = &finals[j];
+            b.reduction_pct >= a.reduction_pct - noise_pct && b.harm <= a.harm + NOISE_FLOOR_VEH_H && b.set.len() <= a.set.len()
+        }) {
+            Some(j) => {
+                notes[i] = format!("within noise of finalist {}, which an earlier search published: kept that one so the list does not churn", j + 1);
+                false
+            }
+            None => true,
+        }
+    });
+    // A package an earlier search published is dominated by a new one only when the new one beats it on through cars by more than noise.
     let dominated = |i: usize| {
         let a = &finals[i];
         ok.iter().copied().find(|&j| {
             let b = &finals[j];
-            j != i && b.reduction_pct >= a.reduction_pct && b.harm <= a.harm && b.set.len() <= a.set.len() && (b.reduction_pct > a.reduction_pct || b.harm < a.harm || b.set.len() < a.set.len())
+            let margin = if a.prior && !b.prior { noise_pct } else { 0.0 };
+            j != i
+                && b.reduction_pct >= a.reduction_pct + margin
+                && b.harm <= a.harm
+                && b.set.len() <= a.set.len()
+                && (b.reduction_pct > a.reduction_pct + margin || b.harm < a.harm || b.set.len() < a.set.len())
         })
     };
     let mut nd: Vec<usize> = Vec::new();
@@ -299,14 +371,15 @@ pub fn select_options(finals: &[Final], max: usize, noise_pct: f64) -> (Vec<Pick
     let mut picks: Vec<(usize, String)> = Vec::new();
     let mut by_s = keep.clone();
     by_s.sort_by(by_score);
-    if let Some(&b) = by_s.iter().find(|&&i| finals[i].set.len() == 1) {
-        picks.push((b, "best single intervention".into()));
+    let lightest = by_s.iter().map(|&i| finals[i].set.len()).min().unwrap_or(0);
+    if let Some(&b) = by_s.iter().find(|&&i| finals[i].set.len() == lightest) {
+        picks.push((b, if lightest == 1 { "best single intervention" } else { "lightest option" }.into()));
     }
     if let Some(&b) = by_s.first() {
         if !picks.iter().any(|p| p.0 == b) {
             picks.push((b, "best overall".into()));
         } else {
-            picks[0].1 = "best single intervention and best overall".into();
+            picks[0].1 = format!("{} and best overall", picks[0].1);
         }
     }
     let mut rest: Vec<usize> = keep.iter().copied().filter(|i| !picks.iter().any(|p| p.0 == *i)).collect();
@@ -465,6 +538,17 @@ pub struct Outcome {
     pub base: Baseline,
     /// Reference packages (config order) rechecked like the finalists.
     pub ref_finals: Vec<Final>,
+    pub known: KnownSummary,
+    /// The options this run published, as seeds-file entries for the caller to record.
+    pub published: Vec<seeds::Entry>,
+}
+
+/// What the run did with the seeds file.
+#[derive(Clone, Debug, Default)]
+pub struct KnownSummary {
+    pub loaded: usize,
+    pub rechecked: usize,
+    pub dropped: Vec<Dropped>,
 }
 
 pub fn explore(study: &Study, p: &Params) -> Outcome {
@@ -478,28 +562,49 @@ pub fn explore(study: &Study, p: &Params) -> Outcome {
         eprintln!("  {:3} [{}] {}", i + 1, c.kind, c.label);
     }
     let warm = adopt_warm_start(study, p, &mut cands);
+    // Known packages: each is adopted onto the candidate list like a warm-start package and always rechecked in full.
+    let pkgs: Vec<Vec<Intervention>> = p.known.iter().map(|k| k.ivs.clone()).collect();
+    let mut known = KnownSummary { loaded: p.known.len() + p.known_dropped.len(), rechecked: 0, dropped: p.known_dropped.clone() };
+    for d in &known.dropped {
+        eprintln!("known package dropped: {}: {}", d.link, d.reason);
+    }
+    let mut known_sets: Vec<(Vec<u16>, &seeds::Entry)> = Vec::new();
+    for (k, r) in adopt_packages(study, p, &mut cands, &pkgs, "known package").into_iter().enumerate() {
+        let entry = &p.known[k].entry;
+        match r {
+            Ok(set) if known_sets.iter().any(|x| x.0 == set) => known.dropped.push(Dropped { link: entry.link.clone(), reason: "duplicate of another known package".into() }),
+            Ok(set) => known_sets.push((set, entry)),
+            Err(reason) => known.dropped.push(Dropped { link: entry.link.clone(), reason }),
+        }
+    }
+    known.rechecked = known_sets.len();
+    eprintln!("known packages: {} loaded, {} to recheck, {} dropped", known.loaded, known.rechecked, known.dropped.len());
+    let mut all_known: Vec<Vec<u16>> = warm.clone();
+    for (set, _) in &known_sets {
+        if !all_known.contains(set) {
+            all_known.push(set.clone());
+        }
+    }
+    let families: Vec<Family> = all_known.iter().map(|s| Family::new(s)).collect();
     let ctx = Ctx { study, p, cands: &cands, base: &base };
-    let state = beam_search(&ctx, &warm);
-    let fin_idx = pick_finalists(&state.evals, p.finalists, &warm);
+    let state = beam_search(&ctx, &families);
+    let fin_idx = pick_finalists(&state.evals, p.finalists, &all_known);
     eprintln!("rechecking {} finalist(s) over {} period(s) x {} seed(s) at {} min", fin_idx.len(), p.periods.len(), p.seeds.len(), p.minutes);
     let mut sets: Vec<Vec<u16>> = fin_idx.iter().map(|&i| state.evals[i].set.clone()).collect();
-    // Packages from a stricter group are rechecked whatever one-seed screening or the budget said.
-    let forced: Vec<Vec<u16>> = warm
-        .iter()
-        .map(|w| {
-            let mut w = w.clone();
-            w.sort_unstable();
-            w.dedup();
-            w
-        })
-        .collect();
-    for w in &forced {
+    // Packages from a stricter group and known packages are rechecked whatever one-seed screening or the budget said.
+    for w in &all_known {
         if !sets.contains(w) {
             sets.push(w.clone());
         }
     }
     let mut finals = recheck(&ctx, &sets);
-    finals.iter_mut().for_each(|f| f.forced = forced.contains(&f.set));
+    for f in finals.iter_mut() {
+        f.forced = warm.contains(&f.set);
+        if let Some((_, e)) = known_sets.iter().find(|x| x.0 == f.set) {
+            f.origin = Origin::of(e);
+            f.prior = !e.last_published.is_empty();
+        }
+    }
     let noise = goal_noise_pct(base_cv_pct(&base), p.seeds.len());
     let (picks, notes) = select_options(&finals, p.options, noise);
     // Reference packages join the candidate list after the search candidates, so the search's indices stay valid.
@@ -532,34 +637,64 @@ pub fn explore(study: &Study, p: &Params) -> Outcome {
         f.access = check_access(study, &ctx_all.ivs(&f.set)).err();
     }
     eprintln!("chose {} option(s); total {:.0}s", picks.len(), t0.elapsed().as_secs_f64());
-    let json = build_json(study, p, &all, &base, &finals, &picks, &ref_finals);
-    let markdown = build_markdown(study, p, &ctx_all, &state, &finals, &picks, &notes, noise, &t0, &ref_finals);
-    Outcome { json, markdown, cands, state, finals, picks, base, ref_finals }
+    let json = build_json(study, p, &all, &base, &finals, &picks, &ref_finals, &known);
+    let markdown = build_markdown(study, p, &ctx_all, &state, &finals, &picks, &notes, noise, &t0, &ref_finals, &known);
+    let today = util::today_utc();
+    let published: Vec<seeds::Entry> = picks
+        .iter()
+        .map(|pk| {
+            let f = &finals[pk.idx];
+            seeds::Entry {
+                link: study.encode(&ctx.ivs(&f.set), Some(&p.periods[0])),
+                source: seeds::SOURCE_SEARCH.into(),
+                note: String::new(),
+                added: today.clone(),
+                last_published: today.clone(),
+                group: p.profile.id.clone(),
+                size: f.set.len(),
+                change_pct: Some(r1(-f.reduction_pct)),
+                score: Some(r1(f.score)),
+            }
+        })
+        .collect();
+    Outcome { json, markdown, cands, state, finals, picks, base, ref_finals, known, published }
 }
 
-/// The warm-start packages as candidate sets: each intervention matched to a candidate or added as one. A package the profile does not allow,
-/// that cannot be combined (two interventions on one place), or that fails the access check is left out, with a line saying so.
-pub fn adopt_warm_start(study: &Study, p: &Params, cands: &mut Vec<Cand>) -> Vec<Vec<u16>> {
-    let mut out: Vec<Vec<u16>> = Vec::new();
-    for (k, pkg) in p.warm_start.iter().enumerate() {
+/// Candidate sets for packages of interventions: each intervention matched to a candidate or added as one. A package the profile does not allow,
+/// that cannot be combined (two interventions on one place), or that fails the access check gets `Err` with the reason (and a line on stderr).
+pub fn adopt_packages(study: &Study, p: &Params, cands: &mut Vec<Cand>, pkgs: &[Vec<Intervention>], what: &str) -> Vec<Result<Vec<u16>, String>> {
+    let mut out: Vec<Result<Vec<u16>, String>> = Vec::new();
+    for (k, pkg) in pkgs.iter().enumerate() {
+        let mut fail = |why: String| {
+            eprintln!("{what} {}: not used, {why}", k + 1);
+            out.push(Err(why));
+        };
         if let Some(iv) = pkg.iter().find(|iv| !profile_allows(study, &p.profile, iv)) {
-            eprintln!("warm start package {}: not used, {} is not allowed under {}", k + 1, describe(&study.net, &study.topo, &study.idx, iv), p.profile.id);
+            fail(format!("{} is not allowed under {}", describe(&study.net, &study.topo, &study.idx, iv), p.profile.id));
             continue;
         }
         let mut local = cands.clone();
         let mut set: Vec<u16> = pkg.iter().map(|iv| adopt(study, &mut local, iv)).collect();
         set.sort_unstable();
         set.dedup();
-        let clash = set.iter().any(|&a| set.iter().any(|&b| a < b && conflicts(&local[a as usize], &local[b as usize])));
-        if clash {
-            eprintln!("warm start package {}: not used, two of its interventions share a place", k + 1);
+        if set.iter().any(|&a| set.iter().any(|&b| a < b && conflicts(&local[a as usize], &local[b as usize]))) {
+            fail("two of its interventions share a place".into());
             continue;
         }
         if let Err(why) = check_access(study, &pkg.clone()) {
-            eprintln!("warm start package {}: not used, {why}", k + 1);
+            fail(format!("access check: {why}"));
             continue;
         }
         *cands = local;
+        out.push(Ok(set));
+    }
+    out
+}
+
+/// The warm-start packages (those another group published) as candidate sets, without the ones that cannot be used or repeat.
+pub fn adopt_warm_start(study: &Study, p: &Params, cands: &mut Vec<Cand>) -> Vec<Vec<u16>> {
+    let mut out: Vec<Vec<u16>> = Vec::new();
+    for set in adopt_packages(study, p, cands, &p.warm_start, "warm start package").into_iter().flatten() {
         if !out.contains(&set) {
             out.push(set);
         }
@@ -576,7 +711,8 @@ fn r1(x: f64) -> f64 {
     (x * 10.0).round() / 10.0
 }
 
-pub fn build_json(study: &Study, p: &Params, cands: &[Cand], base: &Baseline, finals: &[Final], picks: &[Pick], ref_finals: &[Final]) -> Value {
+#[allow(clippy::too_many_arguments)]
+pub fn build_json(study: &Study, p: &Params, cands: &[Cand], base: &Baseline, finals: &[Final], picks: &[Pick], ref_finals: &[Final], known: &KnownSummary) -> Value {
     let entry = |id: String, title: String, f: &Final, kind: &str, note: Option<&str>| -> Value {
         let ivs: Vec<Intervention> = f.set.iter().map(|&i| cands[i as usize].iv.clone()).collect();
         let block_label = |b: usize| study.idx.blocks[study.harm_blocks[b]].label.clone();
@@ -603,6 +739,7 @@ pub fn build_json(study: &Study, p: &Params, cands: &[Cand], base: &Baseline, fi
         let mut v = json!({
             "id": id,
             "kind": kind,
+            "origin": f.origin.json(),
             "title": title,
             "summary": summary(study, cands, f),
             "link": study.encode(&ivs, Some(&p.periods[0])),
@@ -648,6 +785,13 @@ pub fn build_json(study: &Study, p: &Params, cands: &[Cand], base: &Baseline, fi
             "networkHash": study.net_hash,
             "demandHash": study.demand_hash,
             "calibration": study.calibration,
+            "knownPackages": {
+                "loaded": known.loaded,
+                "rechecked": known.rechecked,
+                "dropped": known.dropped.len(),
+                "droppedBy": seeds::reason_counts(&known.dropped).into_iter().map(|(reason, count)| json!({"reason": reason, "count": count})).collect::<Vec<_>>(),
+                "droppedPackages": known.dropped.iter().map(|d| json!({"link": d.link, "reason": d.reason})).collect::<Vec<_>>(),
+            },
         },
         "baseline": {"cutThroughVehPerHour": p.periods.iter().zip(&base.full).map(|(n, s)| (n.clone(), json!(r1(s.ct_vph)))).collect::<serde_json::Map<String, Value>>()},
         "proposals": proposals,
@@ -655,7 +799,7 @@ pub fn build_json(study: &Study, p: &Params, cands: &[Cand], base: &Baseline, fi
 }
 
 #[allow(clippy::too_many_arguments)]
-fn build_markdown(study: &Study, p: &Params, ctx: &Ctx, state: &SearchState, finals: &[Final], picks: &[Pick], notes: &[String], noise: f64, t0: &std::time::Instant, ref_finals: &[Final]) -> String {
+fn build_markdown(study: &Study, p: &Params, ctx: &Ctx, state: &SearchState, finals: &[Final], picks: &[Pick], notes: &[String], noise: f64, t0: &std::time::Instant, ref_finals: &[Final], known: &KnownSummary) -> String {
     let (cands, base) = (ctx.cands, ctx.base);
     let mut md = String::new();
     let _ = writeln!(md, "# Proposals report: {}\n", study.area);
@@ -707,18 +851,31 @@ fn build_markdown(study: &Study, p: &Params, ctx: &Ctx, state: &SearchState, fin
     for l in &state.log {
         let _ = writeln!(md, "- {l}");
     }
+    let _ = writeln!(md, "\n## Known packages\n");
+    let _ = writeln!(
+        md,
+        "{} package(s) in the seeds file `data/proposals/{}.seeds.json` (published by earlier searches or added by hand): {} rechecked in full beside this search's finalists, {} dropped. Each known package and each package one intervention smaller than it was screened, and the best of them started a beam of their own. Known packages compete for the options on equal terms. When a package that was not published before is within noise of one that was, on through cars and with no more harm or interventions, the earlier one is kept so the list does not churn.\n",
+        known.loaded,
+        study.area,
+        known.rechecked,
+        known.dropped.len()
+    );
+    for d in &known.dropped {
+        let _ = writeln!(md, "- Dropped: `{}`: {}", d.link, d.reason);
+    }
     let _ = writeln!(md, "\n## Finalists, rechecked at full length\n");
     let _ = writeln!(
         md,
         "Through cars are counted on the area's side streets (each car once for the area; on a block, both directions). \"All traffic\" adds the local trips of people who live or drive there. Through figures average the periods searched; the ranking penalty is the largest all-traffic increase on one block in any period, past its noise band.\n"
     );
-    let _ = writeln!(md, "| # | Interventions | Through cars an hour, area change (average of periods) | Block gaining the most through cars (cars an hour, average of periods) | Blocks gaining through cars beyond noise | Ranking penalty: all-traffic increase on one block (cars an hour, worst period) | Outcome |\n| --- | --- | --- | --- | --- | --- | --- |");
+    let _ = writeln!(md, "| # | Interventions | Source | Through cars an hour, area change (average of periods) | Block gaining the most through cars (cars an hour, average of periods) | Blocks gaining through cars beyond noise | Ranking penalty: all-traffic increase on one block (cars an hour, worst period) | Outcome |\n| --- | --- | --- | --- | --- | --- | --- | --- |");
     for (i, f) in finals.iter().enumerate() {
         let _ = writeln!(
             md,
-            "| {} | {} | {:+.1}% | {} (+{:.0}) | {} | {} (+{:.0}) | {} |",
+            "| {} | {} | {} | {:+.1}% | {} (+{:.0}) | {} | {} (+{:.0}) | {} |",
             i + 1,
             f.set.iter().map(|&c| cands[c as usize].label.clone()).collect::<Vec<_>>().join("; "),
+            f.origin.kind,
             -f.reduction_pct,
             study.idx.blocks[study.harm_blocks[f.through.worst]].label,
             f.through.increase,
@@ -731,7 +888,7 @@ fn build_markdown(study: &Study, p: &Params, ctx: &Ctx, state: &SearchState, fin
     let _ = writeln!(md, "\n## Chosen options\n");
     for (n, pick) in picks.iter().enumerate() {
         let f = &finals[pick.idx];
-        let _ = writeln!(md, "{}. {} ({}). {}", n + 1, title(cands, &f.set), pick.why, summary(study, cands, f));
+        let _ = writeln!(md, "{}. {} ({}; source: {}). {}", n + 1, title(cands, &f.set), pick.why, f.origin.phrase(), summary(study, cands, f));
     }
     if !picks.is_empty() {
         let _ = writeln!(md, "\n### All traffic on side-street blocks, by period (through and local trips together)\n");
