@@ -24,14 +24,14 @@
   },
   {
    "id": "f2",
-   "reason": "Circle entry capacity at 600 circulating veh/h is 482 against 496 to 744 [Rodegerdts2007] (1130 exp(-0.001 vc) = 620).",
+   "reason": "Circle entry capacity at 600 circulating veh/h is 425 against 496 to 744 [Rodegerdts2007] (1130 exp(-0.001 vc) = 620). It was 482 before vehicles held at a full ring lane stopped being stored in the node (expose-junction-fallback-validity).",
    "reviewed": false,
    "relevance": "unreviewed",
    "followUp": null
   },
   {
    "id": "f3",
-   "reason": "Circle entry capacity at 1000 circulating veh/h is 164 against 333 to 499 [Rodegerdts2007] (1130 exp(-0.001 vc) = 416).",
+   "reason": "Circle entry capacity at 1000 circulating veh/h is 93 against 333 to 499 [Rodegerdts2007] (1130 exp(-0.001 vc) = 416). It was 164 before vehicles held at a full ring lane stopped being stored in the node (expose-junction-fallback-validity).",
    "reviewed": false,
    "relevance": "unreviewed",
    "followUp": null
@@ -60,6 +60,20 @@
   {
    "id": "j12",
    "reason": "All-way stop with 300 cyclists/h per approach keeps 0.56 of its capacity against a floor of 0.70; the range has source ASSUMPTION.",
+   "reviewed": false,
+   "relevance": "unreviewed",
+   "followUp": null
+  },
+  {
+   "id": "b9",
+   "reason": "Signalized approach, 2 lanes, 10% left with a pocket against 500 opposing veh/h per lane: 777 veh/h per lane against 812 to 1071 [Brilon1999]. It passed at 848 while vehicles that could not enter their exit lane waited inside the node and more could follow them in; with that storage removed (expose-junction-fallback-validity) the approach discharges less.",
+   "reviewed": false,
+   "relevance": "unreviewed",
+   "followUp": null
+  },
+  {
+   "id": "e6",
+   "reason": "Two-way stop minor through at major 1000 per direction: 76.5 veh/h against 45 to 76 [Brilon1999], 0.7 veh/h above the range. It was inside the range (72) before expose-junction-fallback-validity changed how vehicles held at a node exit enter their lane.",
    "reviewed": false,
    "relevance": "unreviewed",
    "followUp": null

@@ -37,3 +37,66 @@ The following tests are implementation tasks, not tests run during this audit:
 Add diagnostics before changing the policy so the current model's dependence can be measured. Coordinate validity summaries with other review proposals; use one event vocabulary across native, WASM, CLI and stored results. Measurement fixes in `repair-local-trip-measurement-integrity` should precede interpretation of travel-time or exposure changes in the sensitivity comparison.
 
 This proposal cannot establish an observed local failure rate from source code. The first implementation report must supply those measurements, including zero counts when the fallback is unused. Tasks remain unchecked and the proposal remains open until a later implementation is tested.
+
+## Implementation, 2026-11-15
+
+### What the diagnostics found
+
+The audit's source trace holds. Under the old engine, `conflict_free` and `begin_crossing` skipped `transit_blocks` once a head had waited `CONFLICT_FALLBACK_S`, and `check_invariants` never read `self.transit`.
+
+The bypass itself is rare. In PM peak seeds 1 to 3 the old engine admitted 13.3 vehicles an hour past an occupied conflict point, out of about 795,000 node entries. Courtesy admitted 149 and the approach-gap/stop-order fallback 80 (table below).
+
+The new invariant checker found a larger defect in the same code path. A vehicle that finished its crossing without room on its exit lane kept its planned exit speed. It entered only when the gap behind the lane's last vehicle covered braking from that speed at 4 m/s², which a standing queue never frees. Its planned crossing time had expired, so `transit_blocks` treated it as gone, and `pick_lane` did not count it on the exit lane. More vehicles crossed toward the same lane and waited in the node with it. At the end of a PM hour the old engine held 677 to 791 vehicles this way (seeds 1 to 3), some for the whole hour. The largest groups were at 60th St/Market St (229 vehicles on one movement), Sacramento St, the Warren Freeway merge (183 on one movement), San Pablo Ave and Shattuck Ave. AM held 222 to 300 and midday 46 to 67. These vehicles never finished their trips, were never removed, and are absent from `gridlockRemoved`, which was 0 in every old-engine baseline run. The low removal count was therefore not evidence of valid junction operation, which is the concern in D5.
+
+### Decisions
+
+D6. Policies. `Config::junction_recovery` selects `physical` (the default), `no_behavioral` or `historical`. `historical` reproduces the old engine bit for bit (checked against the pre-change PM seed 1 run) and exists only for the comparison in D4. `no_behavioral` drops courtesy and the approach-gap/stop-order fallback.
+
+D7. Physical exclusion. Under `physical` and `no_behavioral`, an occupied conflict point blocks permission and admission at any wait. A head that would have used the bypass is counted under `conflictBypass` as invoked and blocked; admissions stay zero. Courtesy (`YIELD_COURTESY_S`) and the yield fallback (`YIELD_FALLBACK_S`) keep their values and change priority only. Their thresholds remain assumptions with no measured basis; [Brilon1999] supplies the gap-acceptance framework, not these waits.
+
+D8. Vehicles held at a node exit. Each of the following is labeled ASSUMPTION in code:
+- A vehicle that reaches the end of its path enters as soon as the gap behind the lane's last vehicle is 0.5 m, at no more than the speed that lets it stop behind that vehicle at 4 m/s², the deceleration the old emergence rule already assumed. It is held only while the lane is physically full.
+- While a vehicle stands at a lane's entry, that lane offers no room to admissions from upstream.
+- A vehicle that would reach a conflict point covered by another vehicle in the node (one held after this vehicle was admitted) stands short of the point.
+- A vehicle held in the node for `GRIDLOCK_REMOVE_S` is removed and counted in `gridlockRemoved` and `heldRemovals`, so conservation accounting includes it. As with `waits_on_motorway`, movements from one motorway link to another wait instead.
+
+Three alternatives were tried on PM seed 1 and rejected. Removing held vehicles without stopping the accumulation turned the 700-odd trapped vehicles into 714 removals. Counting every vehicle in transit, held or not, against the exit lane's room held back normal platoon discharge into short junction links. Letting a held vehicle brake at its comfortable deceleration `b` before entering cut left-turn and roundabout entry capacity in the validation suite more than the rule above does.
+
+D9. Diagnostics. `Metrics::junctionRecovery` reports the policy, node entries (the denominator), and for each reason the head-seconds invoked, the head-seconds blocked, and admissions. Measured totals start at t = 0; settle-interval totals are kept separately. An admission is counted once, when the crossing starts. Repeated evaluation adds head-seconds only (test `repeated_evaluation_of_a_blocked_head_counts_time_not_admissions`). `Simulation::recovery_events` keeps up to `RECOVERY_LOG_MAX` events with time, node, movement, wait and reason, and counts the rest in `eventsDropped`. `recovery_by_node` gives per-node totals.
+
+D10. Invariants. `check_invariants` now checks that every live car and cyclist is in exactly one lane or one transit record, and that the record agrees with the vehicle's link, movement and flags. It also checks that no two vehicles in a node cover a shared conflict point at the same moment, using the occupied part of each path with progress capped at the end of the path for held vehicles. Merges onto different lanes of a multilane exit are legal. Vehicles following each other on one movement are not checked against each other, because the node has no car-following model. Under `physical` the check passed at every 5 s sample of a full PM hour (seed 2) and of an AM hour with the three-filter scenario; under `historical` it failed at 547 of the 720 samples of PM seed 1, mostly where a vehicle held at its exit still covered a conflict point.
+
+### Matched sensitivity comparison (tasks 3.1, 3.2)
+
+Native runs of one simulated hour after the 120 s settle, the published network and demand (network hash `5fe8241a6ba1e306`), seeds as listed, mean ± sample standard deviation across seeds. "iv3" is the published three-filter package `#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2,175.355~mn,9q9p3fr7b5~mn,9q9p3cq6m9`. Street columns give through cars an hour on the busiest study-area block of each street and direction. Admission counts are per hour from t = 0.
+
+| Period | Scenario | Policy | Through cars/h | Removed | Mean delay, s | Backlog | Courtesy | Yield fallback | Bypass | Held removals | Bypass blocked, head-s | TTC | Hillegass N/S, Colby N/S |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| PM | baseline | historical | 630 ± 44 | 0 | 126.5 ± 4.8 | 6 | 149 | 80 | 13.3 | 0 | 0 | 9.7 | 68/107, 119/76 |
+| PM | baseline | no_behavioral | 1168 ± 95 | 79 | 182.7 ± 9.4 | 497 | 0 | 0 | 0 | 7.3 | 3677 | 55.7 | 73/218, 155/156 |
+| PM | baseline | physical | 1183 ± 175 | 8.3 | 184.8 ± 10.7 | 473 | 461 | 193 | 0 | 1.7 | 248 | 33.7 | 74/232, 134/171 |
+| PM | iv3 | historical | 266 ± 7 | 0.3 | 131.6 ± 5.3 | 5 | 173 | 90 | 28.0 | 0 | 0 | 1.7 | 9/0, 45/28 |
+| PM | iv3 | no_behavioral | 617 ± 84 | 101 | 189.0 ± 10.9 | 547 | 0 | 0 | 0 | 7.3 | 4686 | 27.3 | 16/6, 89/59 |
+| PM | iv3 | physical | 719 ± 77 | 7.3 | 192.8 ± 13.0 | 505 | 466 | 207 | 0 | 2.0 | 265 | 41.3 | 22/9, 100/77 |
+| AM | baseline | historical | 425 ± 10 | 0 | 105.1 ± 6.3 | 4.5 | 126 | 51 | 13.5 | 0 | 0 | 6.0 | 69/67, 66/56 |
+| AM | baseline | no_behavioral | 542 ± 0 | 31 | 135.1 ± 14.7 | 203 | 0 | 0 | 0 | 0 | 3058 | 6.5 | 62/84, 72/82 |
+| AM | baseline | physical | 563 ± 27 | 4.0 | 136.1 ± 7.5 | 203 | 259 | 97 | 0 | 1.5 | 90 | 6.0 | 64/82, 71/77 |
+| Midday | baseline | historical | 368 ± 26 | 0 | 71.6 ± 0.6 | 1.0 | 46 | 8.5 | 1.5 | 0 | 0 | 5.0 | 50/74, 68/56 |
+| Midday | baseline | no_behavioral | 427 ± 6 | 2.5 | 75.4 ± 3.1 | 1.0 | 0 | 0 | 0 | 0 | 490 | 3.5 | 47/80, 70/64 |
+| Midday | baseline | physical | 428 ± 1 | 0 | 74.7 ± 1.4 | 2.0 | 61 | 13 | 0 | 0 | 0.2 | 1.0 | 48/77, 70/64 |
+
+PM and iv3 use seeds 1 to 3; AM and midday use seeds 1 and 2. Node entries are about 780,000 an hour in PM and 710,000 in AM, so every recovery admission share is below 0.1%.
+
+Most of the change comes from D8, not from the bypass. The old engine's bypass decided about 13 entries an hour. The vehicles it kept inside nodes acted as a sink of roughly 700 vehicles an hour in PM, mostly on the west side and at the Warren Freeway merge. Once they stay in the network, queues spill back: the SR-24 gate at Grove Shafter Freeway holds most of the backlog (409 to 490 waiting trips at the end of the PM hour, 244 in AM seed 1), PM mean delay rises by 58 s, and through cars on the Trapezoid's side streets nearly double, mostly southbound on Hillegass Ave and Colby St. Midday, with the fewest trapped vehicles, changes least. Removing courtesy and the fallback (`no_behavioral`) adds about 70 gridlock removals an hour in PM and 27 in AM and leaves the other figures close to `physical`, so those behavioral rules mainly break deadlocks that would otherwise end in removal.
+
+The three-filter package still cuts through traffic, but by less: 39% under `physical` against 58% under `historical`. Its stored and published figures came from the old engine.
+
+These results do not mean the new figures are calibrated. The demand was fitted on an engine that hid about 700 vehicles an hour in PM, so the calibration and every stored result need to be redone before the new engine's figures are interpreted [FHWA-TAT3-2019; TfL-TMG4]. No demand or threshold was changed here.
+
+### Primitive validation
+
+The validation suite moves with the new rules. Under `physical`, b9 (two lanes, 10% left with a pocket, 500 opposing veh/h per lane) discharges 777 veh/h per lane against 812 to 1,071, down from 848. e6 (two-way stop minor through at 1,000 per direction) gives 76.5 against 45 to 76, up from 72. Both are recorded in `data/calibration/validation.deviations.json` as unreviewed deviations. The existing deviations f2 and f3 (roundabout entry) fall further, to 425 and 93 veh/h. b4 and b12 stay inside their ranges. The old values relied on vehicles waiting inside the node, where any number could queue unseen. The order in `data/calibration/rockridge.record.md` applies: these primitives need review before demand is tuned to the new engine.
+
+### Not done here
+
+Task 3.3 (calibration reports, stored results and their user-facing interpretation) waits for the recalibration that the user coordinates. `Metrics` carries the new `junctionRecovery` object, so results produced after this change include it. Pedestrian courtesy in `ped.rs` (a driver stops yielding to a pedestrian who has not stepped off after `YIELD_COURTESY_S`) involves no conflict-point occupancy and is unchanged.

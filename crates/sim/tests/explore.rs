@@ -146,6 +146,10 @@ fn ratrun(second: bool, stub: bool) -> Net {
 }
 
 fn study_of(net: Network) -> Study {
+    study_with(net, 650.0)
+}
+
+fn study_with(net: Network, vph: f64) -> Study {
     let (gw, ge) = (0u32, 3u32);
     let demand = Demand {
         version: 1,
@@ -156,8 +160,8 @@ fn study_of(net: Network) -> Study {
             id: "p".into(),
             label: "p".into(),
             flows: vec![
-                Flow { origin: gw, destination: ge, veh_per_hour: 650.0, mode: FlowMode::Car, via: None, intent: None },
-                Flow { origin: ge, destination: gw, veh_per_hour: 650.0, mode: FlowMode::Car, via: None, intent: None },
+                Flow { origin: gw, destination: ge, veh_per_hour: vph, mode: FlowMode::Car, via: None, intent: None },
+                Flow { origin: ge, destination: gw, veh_per_hour: vph, mode: FlowMode::Car, via: None, intent: None },
             ],
         }],
     };
@@ -407,7 +411,9 @@ fn equal_raw_increases_go_to_the_lowest_block() {
 fn a_filter_that_shifts_traffic_next_door_loses_to_a_two_filter_package() {
     let n = ratrun(true, false);
     let (c_d, e_f) = (n.c_d, n.e_f);
-    let study = study_of(n.study_net);
+    // 600 veh/h each way: at 650, once vehicles held at a node exit stopped queuing inside the node (expose-junction-fallback-validity),
+    // closing one route sent its traffic back to Main Street within the 12 minutes instead of onto the other route.
+    let study = study_with(n.study_net, 600.0);
     let mut p = params(4);
     p.candidates = 12;
     let o = explore(&study, &p);

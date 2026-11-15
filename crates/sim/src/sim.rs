@@ -2968,8 +2968,6 @@ impl Simulation {
             while i < self.transit[n].len() {
                 let mut tr = self.transit[n][i];
                 if tr.t_left > 0.0 && self.cfg.junction_recovery != JunctionRecovery::Historical && self.stands_in_node(n, i, tr.t_left - dt) {
-                    tr.v_exit = (tr.v_exit - self.vehs[tr.veh as usize].drv.b * dt).max(0.5);
-                    self.transit[n][i] = tr;
                     i += 1;
                     continue;
                 }
@@ -2983,22 +2981,24 @@ impl Simulation {
                 }
                 // Emerge onto the target lane if there is physical room.
                 let qi = self.topo.qidx(tr.to_link as usize, tr.lane as usize);
-                // Physical room, plus enough distance to brake at 4 m/s^2 if closing on the new leader.
+                // Physical room, plus enough distance to brake at 4 m/s^2 if closing on the new leader. Under `Historical` a vehicle without that
+                // distance waited at its planned exit speed, and a standing queue never freed the braking room that speed needs. Otherwise it
+                // enters as soon as there is physical room, no faster than lets it brake behind the leader at the same 4 m/s^2 (ASSUMPTION:
+                // it adjusted its speed while crossing).
+                let historical = self.cfg.junction_recovery == JunctionRecovery::Historical;
                 let (gap, need) = match self.lanes[qi].back() {
                     Some(&b) => {
                         let bv = &self.vehs[b as usize];
+                        let gap = bv.pos - bv.drv.len - self.topo.emerge_pos[tr.to_link as usize];
                         let closing = (tr.v_exit - bv.v).max(0.0);
-                        (bv.pos - bv.drv.len - self.topo.emerge_pos[tr.to_link as usize], 0.5 + closing * closing / 8.0)
+                        if !historical && gap >= 0.5 {
+                            tr.v_exit = tr.v_exit.min((bv.v + (8.0 * (gap - 0.5)).sqrt()).max(0.5));
+                        }
+                        (gap, if historical { 0.5 + closing * closing / 8.0 } else { 0.5 })
                     }
                     None => (1e9, 0.0),
                 };
                 if gap < need {
-                    // A vehicle that reaches the end of its path without room brakes at its comfortable deceleration `b` [Treiber2000]
-                    // down to the 0.5 m/s floor of `cross_profile`, so the room it needs shrinks (ASSUMPTION: braking starts at the end of the
-                    // path). Under `Historical` it kept its planned exit speed and the braking room it needs, which a standing queue never frees.
-                    if self.cfg.junction_recovery != JunctionRecovery::Historical {
-                        tr.v_exit = (tr.v_exit - self.vehs[vid as usize].drv.b * dt).max(0.5);
-                    }
                     if self.held_too_long(&tr) {
                         self.transit[n].remove(i);
                         self.remove_held(n, &tr);

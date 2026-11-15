@@ -722,7 +722,9 @@ fn a_yield_to_a_pedestrian_who_cannot_step_off_lapses() {
     while sim.test_transit(1).is_empty() {
         sim.step(DT);
     }
-    sim.test_place(2, 0, 11.0, 0.0, 2, true);
+    // Less than the 0.5 m a car held at its exit needs to enter (expose-junction-fallback-validity).
+    let full = sim.test_topo().emerge_pos[2] + 4.5 + 0.2;
+    sim.test_place(2, 0, full, 0.0, 2, true);
     let yielding = sim.test_place(3, 0, 100.0, 8.0, 0, false);
     let (mut in_node, mut stood, mut left_at) = (false, 0.0f64, None);
     for _ in 0..(120.0 / DT) as usize {

@@ -141,3 +141,7 @@ The final comparison needs 10 seeds instead of 3. The recheck runs every finalis
 ### Remaining limits
 
 The intervals cover seed variability under fixed inputs. They say nothing about calibration error, demand error or real traffic. Task 4.3 (recomputing the published Rockridge packages) is left for after the engine changes land, and the search has not been run in full for this change.
+
+## Decision, 2026-11-15: search on three seeds, confirm on ten unused seeds
+
+Ten seeds in every final recheck puts one profile's search at about three hours, past the two-hour limit on a background command. The project lead chose to keep the search and shortlist on seeds 1-3, freeze the shortlist, and rerun it with `--confirm-seeds` on ten seeds the search never used. Published figures come from the confirmation run, so they are not estimates from the runs that selected the options. A staged recheck and a smaller one-stage search were the alternatives; both leave the published estimates exploratory.

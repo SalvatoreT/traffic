@@ -200,10 +200,12 @@ fn held_at_exit(policy: JunctionRecovery, gap: f32) -> (Simulation, u32, u32) {
 }
 
 #[test]
-fn a_held_vehicle_brakes_and_enters_when_it_fits() {
+fn a_held_vehicle_enters_as_soon_as_it_fits() {
     let (mut sim, a, _) = held_at_exit(JunctionRecovery::Physical, 6.0);
-    run(&mut sim, 10.0, |_| {});
+    run(&mut sim, 0.5, |_| {});
     assert!(!sim.test_in_transit(a) && sim.test_veh(a).3);
+    // No faster than lets it stop behind the standing car at 4 m/s^2.
+    assert!(sim.test_veh(a).2 <= (8.0f32 * 5.5).sqrt() + 0.01, "{}", sim.test_veh(a).2);
     // The old engine kept the planned exit speed, needed its braking room, and never entered behind the standing car.
     let (mut sim, a, _) = held_at_exit(JunctionRecovery::Historical, 6.0);
     run(&mut sim, 300.0, |_| {});
