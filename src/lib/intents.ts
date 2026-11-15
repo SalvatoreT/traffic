@@ -94,31 +94,43 @@ const streetName = (net: Network, idx: NetIndex, id: number): string => {
   return net.links[id].class === 'motorway' ? 'the freeway ramp' : 'an unnamed road';
 };
 const join = (xs: string[]): string => (xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
-/** Names in order of first appearance, each with its heaviest flow, strongest first, up to `n`, dropping the ones under a quarter of the strongest. */
-function top(entries: [string, number][], n: number): string[] {
-  const best = new Map<string, number>();
-  for (const [k, v] of entries) best.set(k, Math.max(best.get(k) ?? 0, v));
-  const sorted = [...best].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-  const lead = sorted[0]?.[1] ?? 0;
-  return sorted.filter((e) => e[1] >= lead * 0.25).slice(0, n).map((e) => e[0]);
+/** Names with their heaviest flow and the link that carries it, strongest first, up to `n`, dropping the ones under a quarter of the strongest. */
+function rank(entries: [string, number, number][], n: number): { name: string; link: number }[] {
+  const best = new Map<string, [number, number]>();
+  for (const [k, v, link] of entries) { const b = best.get(k); if (!b || v > b[0]) best.set(k, [v, link]); }
+  const sorted = [...best].sort((a, b) => b[1][0] - a[1][0] || a[0].localeCompare(b[0]));
+  const lead = sorted[0]?.[1][0] ?? 0;
+  return sorted.filter((e) => e[1][0] >= lead * 0.25).slice(0, n).map((e) => ({ name: e[0], link: e[1][1] }));
+}
+
+/** The arterial links the typical path leaves to reach the side streets (`enter`) and the ones it rejoins (`leave`), with each one's flow. */
+function crossings(net: Network, idx: NetIndex, p: IntentPaths): { enter: [string, number, number][]; leave: [string, number, number][] } {
+  const seg = new Map(p.segments.map((s) => [s.link, s.vph]));
+  const enter: [string, number, number][] = [], leave: [string, number, number][] = [];
+  for (const s of p.segments) {
+    const l = net.links[s.link];
+    if (isLocal(l)) {
+      for (const o of idx.outgoingLinks[l.to]) if (seg.has(o) && !isLocal(net.links[o])) leave.push([streetName(net, idx, o), Math.min(s.vph, seg.get(o)!), o]);
+    } else {
+      for (const o of idx.outgoingLinks[l.to]) if (seg.has(o) && isLocal(net.links[o])) enter.push([streetName(net, idx, s.link), Math.min(s.vph, seg.get(o)!), s.link]);
+    }
+  }
+  return { enter, leave };
+}
+
+/** The streets a path starts on and ends on, each with the arterial link to hang a label on. */
+export function pathEnds(net: Network, idx: NetIndex, p: IntentPaths): { from: { name: string; link: number }[]; to: { name: string; link: number }[] } {
+  const { enter, leave } = crossings(net, idx, p);
+  return { from: rank(enter, 2), to: rank(leave, 2) };
 }
 
 /** Where the typical path of an intent runs, from its heaviest links: the arterials its cars leave to reach the side streets, the side streets, and where they rejoin. */
 export function describePaths(net: Network, idx: NetIndex, p: IntentPaths): string {
-  const seg = new Map(p.segments.map((s) => [s.link, s.vph]));
   const local = p.segments.filter((s) => isLocal(net.links[s.link]));
   if (!local.length) return 'No typical path: few or none of these cars have crossed the side streets in this run.';
-  const streets = top(local.map((s) => [`${streetName(net, idx, s.link)} ${compassWord(net, s.link)}`, s.vph]), 3);
-  const enter: [string, number][] = [], leave: [string, number][] = [];
-  for (const s of p.segments) {
-    const l = net.links[s.link];
-    if (isLocal(l)) {
-      for (const o of idx.outgoingLinks[l.to]) if (seg.has(o) && !isLocal(net.links[o])) leave.push([streetName(net, idx, o), Math.min(s.vph, seg.get(o)!)]);
-    } else {
-      for (const o of idx.outgoingLinks[l.to]) if (seg.has(o) && isLocal(net.links[o])) enter.push([streetName(net, idx, s.link), Math.min(s.vph, seg.get(o)!)]);
-    }
-  }
-  const e = top(enter, 2), x = top(leave, 2);
+  const streets = rank(local.map((s) => [`${streetName(net, idx, s.link)} ${compassWord(net, s.link)}`, s.vph, s.link]), 3).map((e) => e.name);
+  const ends = pathEnds(net, idx, p);
+  const e = ends.from.map((x) => x.name), x = ends.to.map((y) => y.name);
   const parts = [e.length ? `Mostly turns off ${join(e)}` : 'Mostly starts on the side streets', `uses ${join(streets)}`, x.length ? `and rejoins ${join(x)}` : 'and does not clearly rejoin one road'];
   return `${parts.join(', ')}.`;
 }

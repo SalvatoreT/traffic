@@ -2,10 +2,12 @@ import { useEffect, useRef } from 'react';
 import refs from '../../docs/references.md?raw';
 import type { Calibration, Demand } from '../types';
 import { Markdown } from './Markdown';
-import { IntentSources } from './IntentSources';
 import { calibrationCaveat } from '../lib/caveat';
 
-export function Sources({ demand, synthetic, focusRef, calibration }: { demand: Demand; synthetic: boolean; focusRef?: string | null; calibration?: Calibration }) {
+/** Provenance entries the Assumptions tab replaces: the demand file written before that tab carries a long paragraph for them. */
+const onAssumptionsTab = (source: string) => /^Assumed movement flows/.test(source);
+
+export function Sources({ demand, synthetic, focusRef, calibration, onAssumptions }: { demand: Demand; synthetic: boolean; focusRef?: string | null; calibration?: Calibration; onAssumptions?: () => void }) {
   const root = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (focusRef) root.current?.querySelector<HTMLElement>(`#ref-${CSS.escape(focusRef)}`)?.scrollIntoView({ block: 'start' });
@@ -14,6 +16,11 @@ export function Sources({ demand, synthetic, focusRef, calibration }: { demand: 
   return (
     <div className="sources-view" ref={root}>
       <h2>Sources</h2>
+      {onAssumptions && (
+        <p className="assume-pointer">
+          The judgment calls in the model, the assumed movement flows and the reasons cars cut through, are on the <button type="button" className="link" onClick={onAssumptions}>Assumptions</button> tab.
+        </p>
+      )}
       {calibration && (
         <section id="ref-calibration" aria-labelledby="cal-h" tabIndex={-1}>
           <h3 id="cal-h">Calibration</h3>
@@ -25,7 +32,7 @@ export function Sources({ demand, synthetic, focusRef, calibration }: { demand: 
       <section aria-labelledby="prov-h">
         <h3 id="prov-h">Data provenance{synthetic ? ' (synthetic development data)' : ''}</h3>
         <ul className="prov">
-          {demand.provenance.map((p, i) => (
+          {demand.provenance.filter((p) => !onAssumptionsTab(p.source)).map((p, i) => (
             <li key={i}>
               <strong>{p.source}</strong>
               {/^https?:\/\//.test(p.url) && <>, <a href={p.url} target="_blank" rel="noopener noreferrer">{p.url}</a></>}
@@ -35,7 +42,6 @@ export function Sources({ demand, synthetic, focusRef, calibration }: { demand: 
         </ul>
         <p className="muted small">Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a> (ODbL).</p>
       </section>
-      <IntentSources demand={demand} />
       <section aria-labelledby="bib-h">
         <h3 id="bib-h">Research references</h3>
         <Markdown source={refs} offset={3} />

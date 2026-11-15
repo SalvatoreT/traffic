@@ -181,7 +181,7 @@ table.cmp thead th { overflow-wrap: normal; white-space: nowrap; }
   .top { padding: .3rem .75rem; display: grid; grid-template-columns: 1fr auto; gap: .3rem .5rem; align-items: center; }
   .prefs { display: contents; }
   .brand { grid-area: 1 / 1; min-width: 0; } .brand h1 { font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  nav { grid-area: 2 / 1 / 3 / 3; } .navbtn { padding: .3rem .65rem; }
+  nav { grid-area: 2 / 1 / 3 / 3; flex-wrap: wrap; gap: 0; } .navbtn { padding: .3rem .45rem; }
   .prefs label { grid-area: 1 / 2; }
   .lbl { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .extras:not(.open) { display: none; }

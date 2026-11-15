@@ -1,7 +1,8 @@
 // Precomputes the finished hour of every published proposal, for each demand period, so a shared link opens already at the end of the run.
-//   npm run data:results [-- --area rockridge] [--periods pm_peak,am_peak,midday] [--only <proposal id or key>] [--force] [--jobs 2]
+//   npm run data:results [-- --area rockridge] [--periods pm_peak,am_peak,midday] [--only <proposal id or key>] [--baselines-only] [--force] [--jobs 2]
+// `--baselines-only` runs just today's traffic per period for baseline-intents.json and leaves the proposals' results and index.json alone.
 // Needs the WASM build (`npm run wasm`): the runs use the same simulator code the app runs. Writes public/data/results/<area>/<key>.json
-// and an index.json beside them. A file is reused when its network hash, demand hash and simulator fingerprint match the current ones.
+// and an index.json beside them, and baseline-intents.json (today's traffic by reason, for the Assumptions tab). A file is reused when its network hash, demand hash and simulator fingerprint match the current ones.
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { gzipSync } from 'node:zlib';
@@ -12,6 +13,7 @@ import { straightenJunctionEnds } from '../src/lib/junctionends';
 import { hashText, linkHash, parseProposals, proposalsUrl } from '../src/lib/proposals';
 import { RESULT_SEED, RESULT_VERSION, canonicalItems, encodeStats, parseResult, resultKey, type StoredIndex, type StoredIndexEntry, type StoredResult } from '../src/lib/stored-results';
 import { RUN_SECONDS } from '../src/lib/run';
+import { BASELINE_INTENTS_VERSION, encodeBaselinePeriod, parseBaselineIntents, type BaselineIntents } from '../src/lib/baseline-intents';
 import { loadEngine, runHour, type HourStats } from './lib/run-result';
 
 const root = resolve(import.meta.dirname, '..');
@@ -37,6 +39,7 @@ const area = arg('--area', 'rockridge');
 const jobsN = Math.max(1, Number(arg('--jobs', '2')));
 const only = process.argv.includes('--only') ? arg('--only', '') : null;
 const force = flag('--force');
+const baselinesOnly = flag('--baselines-only');
 const dataDir = resolve(root, 'public/data');
 const outDir = join(dataDir, 'results', area);
 
@@ -79,11 +82,19 @@ const pathOf = (key: string) => join(outDir, `${key}.json`);
 const readResult = (key: string): StoredResult | null => { const p = pathOf(key); return existsSync(p) ? parseResult(readFileSync(p, 'utf8')) : null; };
 const current = (r: StoredResult | null) => !!r && r.inputs.networkHash === inputs.networkHash && r.inputs.demandHash === inputs.demandHash && r.inputs.simulator === inputs.simulator;
 
+// Today's traffic by reason (baseline-intents.json, for the Assumptions tab): one baseline per period, with the proposals' own.
+const baselinePath = join(outDir, 'baseline-intents.json');
+const readBaselines = (): BaselineIntents | null => (existsSync(baselinePath) ? parseBaselineIntents(readFileSync(baselinePath, 'utf8')) : null);
+const sameInputs = (b: BaselineIntents | null) => !!b && b.inputs.networkHash === inputs.networkHash && b.inputs.demandHash === inputs.demandHash && b.inputs.simulator === inputs.simulator;
+const oldBaselines = readBaselines();
+const haveBaseline = (p: string) => sameInputs(oldBaselines) && !!oldBaselines!.periods[p];
+
 // Baselines are shared: today's traffic does not depend on the scenario.
-const todo = [...wants.values()].filter((w) => force || !current(readResult(w.key)));
-const basePeriods = [...new Set(todo.map((w) => w.period))];
+const todo = baselinesOnly ? [] : [...wants.values()].filter((w) => force || !current(readResult(w.key)));
+const basePeriods = [...new Set([...todo.map((w) => w.period), ...(only ? [] : periods.filter((p) => force || !haveBaseline(p)))])];
 const jobs: Job[] = [...basePeriods.map((period) => ({ key: null, period, interventions: [] as Intervention[] })), ...todo.map((w) => ({ key: w.key, period: w.period, interventions: w.interventions }))];
 console.log(`${wants.size} results wanted, ${wants.size - todo.length} already current, ${todo.length} to run (${jobs.length} simulations, ${jobsN} at a time)`);
+if (jobs.length === 0) console.log('nothing to run');
 
 const done = new Map<string, HourStats>(); // key or `base:<period>`
 const t0 = Date.now();
@@ -103,6 +114,19 @@ await new Promise<void>((resolveAll, reject) => {
 });
 
 const computed = new Date().toISOString();
+{
+  const periodsOut: BaselineIntents['periods'] = sameInputs(oldBaselines) ? { ...oldBaselines!.periods } : {};
+  for (const p of basePeriods) {
+    const s = done.get(`base:${p}`);
+    const e = s ? encodeBaselinePeriod(s.metrics, s.intentLinks) : null;
+    if (e) periodsOut[p] = e; else console.warn(`baseline ${p} has no intents: the demand carries none, so no baseline-intents entry`);
+  }
+  if (basePeriods.length && Object.keys(periodsOut).length) {
+    const b: BaselineIntents = { version: BASELINE_INTENTS_VERSION, area, inputs, seed: RESULT_SEED, seconds: RUN_SECONDS, computed, periods: periodsOut };
+    writeFileSync(baselinePath, JSON.stringify(b));
+    console.log(`wrote baseline-intents.json: ${Object.keys(periodsOut).join(', ')}`);
+  }
+}
 const sizes: { key: string; raw: number; gz: number }[] = [];
 for (const w of todo) {
   const sc = done.get(w.key), base = done.get(`base:${w.period}`);
@@ -116,13 +140,14 @@ for (const w of todo) {
   sizes.push({ key: w.key, raw: text.length, gz: gzipSync(text).length });
 }
 
+if (baselinesOnly) process.exit(0);
 // A full run drops files for scenarios that are no longer published; a partial run leaves them.
 if (!only && periods.length === demand.periods.length) {
-  for (const f of readdirSync(outDir)) if (f.endsWith('.json') && f !== 'index.json' && !wants.has(f.slice(0, -5))) { rmSync(join(outDir, f)); console.log(`removed ${f}`); }
+  for (const f of readdirSync(outDir)) if (f.endsWith('.json') && f !== 'index.json' && f !== 'baseline-intents.json' && !wants.has(f.slice(0, -5))) { rmSync(join(outDir, f)); console.log(`removed ${f}`); }
 }
 const entries: StoredIndexEntry[] = [];
 for (const f of readdirSync(outDir).sort()) {
-  if (!f.endsWith('.json') || f === 'index.json') continue;
+  if (!f.endsWith('.json') || f === 'index.json' || f === 'baseline-intents.json') continue;
   const r = parseResult(readFileSync(join(outDir, f), 'utf8'));
   if (!r || !current(r)) continue;
   const w = wants.get(r.key);
@@ -131,6 +156,6 @@ for (const f of readdirSync(outDir).sort()) {
 const index: StoredIndex = { version: RESULT_VERSION, area, inputs, computed, results: entries };
 writeFileSync(join(outDir, 'index.json'), JSON.stringify(index, null, 1) + '\n');
 
-const total = readdirSync(outDir).filter((f) => f !== 'index.json').reduce((t, f) => t + statSync(join(outDir, f)).size, 0);
+const total = readdirSync(outDir).filter((f) => f !== 'index.json' && f !== 'baseline-intents.json').reduce((t, f) => t + statSync(join(outDir, f)).size, 0);
 console.log(`\nwrote ${sizes.length} files in ${((Date.now() - t0) / 1000).toFixed(0)} s; ${entries.length} in the index; directory ${(total / 1024).toFixed(0)} KB`);
 if (sizes.length) console.log(`size per file: raw ${Math.max(...sizes.map((s) => s.raw)) >> 10} KB max, gzipped ${Math.max(...sizes.map((s) => s.gz)) >> 10} KB max, ${(sizes.reduce((t, s) => t + s.gz, 0) / sizes.length / 1024).toFixed(0)} KB mean`);

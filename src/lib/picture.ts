@@ -120,7 +120,12 @@ const pathOf = (g: [number, number][]) => g.map(([x, y], i) => `${i ? 'L' : 'M'}
 const FIT = 1.15;
 const BOUNDING = new Set(['primary', 'secondary', 'tertiary']);
 
-export function buildPicture(net: Network, index: NetIndex, p: Proposal, pic: ProposalPicture, ivs: Intervention[], f: PictureFacts): PictureModel {
+export interface BaseMap {
+  view: PictureModel['view']; unit: number; outline: string; major: string; minor: string; names: StreetName[];
+}
+
+/** The map's frame and its quiet layers: the study area's outline, the streets and the names of the bounding arterials. */
+export function buildBaseMap(net: Network): BaseMap {
   const proj = makeProjection(net.origin);
   const ring = net.studyArea.map(([lon, lat]) => proj.toLocal(lon, lat));
   const xs = ring.map((q) => q[0]), ys = ring.map((q) => q[1]);
@@ -139,6 +144,30 @@ export function buildPicture(net: Network, index: NetIndex, p: Proposal, pic: Pr
     if (!inView(l.geometry)) continue;
     (l.class === 'residential' || l.class === 'service' ? minor : major).push(pathOf(l.geometry));
   }
+  const at = (x: number, y: number) => ({ x, y: -y });
+  const size = 10.5 * unit;
+  const names: StreetName[] = [];
+  const by = new Map<string, typeof net.links>();
+  for (const l of net.links) {
+    if (!l.inStudyArea || !BOUNDING.has(l.class) || !l.name.trim()) continue;
+    by.set(l.name.trim(), [...(by.get(l.name.trim()) ?? []), l]);
+  }
+  for (const [name, ls] of by) {
+    const best = ls.reduce((m, l) => (l.length > m.length ? l : m));
+    const q = pointAlong(best.geometry, best.length / 2);
+    const ext = Math.max(...ls.flatMap((l) => l.geometry.map((g) => Math.hypot(g[0] - q.x, g[1] - q.y))));
+    const w = name.length * 0.56 * size;
+    if (Math.max(best.length, ext) < w * FIT) continue;
+    let angle = -(q.heading * 180) / Math.PI;
+    if (angle > 90) angle -= 180; else if (angle < -90) angle += 180;
+    names.push({ text: name, ...at(q.x, q.y), angle });
+  }
+
+  return { view, unit, outline: `${ring.map((q, i) => `${i ? 'L' : 'M'}${fmt(q[0])} ${fmt(-q[1])}`).join('')}Z`, major: major.join(''), minor: minor.join(''), names };
+}
+
+export function buildPicture(net: Network, index: NetIndex, p: Proposal, pic: ProposalPicture, ivs: Intervention[], f: PictureFacts): PictureModel {
+  const { view, unit, outline, major, minor, names } = buildBaseMap(net);
   const blocks: PictureBlockLine[] = blockChanges(pic, index).map((c) => ({
     block: c.block, d: pathOf(net.links[index.blocks[c.block].links[0]].geometry), delta: c.delta, t: blockIntensity(c.delta),
   })).sort((a, b) => Math.abs(a.t) - Math.abs(b.t));
@@ -165,24 +194,6 @@ export function buildPicture(net: Network, index: NetIndex, p: Proposal, pic: Pr
     }
   }
 
-  const size = 10.5 * unit;
-  const names: StreetName[] = [];
-  const by = new Map<string, typeof net.links>();
-  for (const l of net.links) {
-    if (!l.inStudyArea || !BOUNDING.has(l.class) || !l.name.trim()) continue;
-    by.set(l.name.trim(), [...(by.get(l.name.trim()) ?? []), l]);
-  }
-  for (const [name, ls] of by) {
-    const best = ls.reduce((m, l) => (l.length > m.length ? l : m));
-    const q = pointAlong(best.geometry, best.length / 2);
-    const ext = Math.max(...ls.flatMap((l) => l.geometry.map((g) => Math.hypot(g[0] - q.x, g[1] - q.y))));
-    const w = name.length * 0.56 * size;
-    if (Math.max(best.length, ext) < w * FIT) continue;
-    let angle = -(q.heading * 180) / Math.PI;
-    if (angle > 90) angle -= 180; else if (angle < -90) angle += 180;
-    names.push({ text: name, ...at(q.x, q.y), angle });
-  }
-
   const pins: Pin[] = [];
   const pin = (c: BlockChange | null, dashed: boolean) => {
     if (!c) return;
@@ -197,8 +208,7 @@ export function buildPicture(net: Network, index: NetIndex, p: Proposal, pic: Pr
 
   const bp = barPx(BAR_ZOOM);
   return {
-    view, unit, outline: `${ring.map((q, i) => `${i ? 'L' : 'M'}${fmt(q[0])} ${fmt(-q[1])}`).join('')}Z`,
-    major: major.join(''), minor: minor.join(''), blocks, marks, names, pins,
+    view, unit, outline, major, minor, blocks, marks, names, pins,
     bar: { len: bp.length * unit, thick: bp.thick * unit },
   };
 }

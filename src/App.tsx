@@ -33,8 +33,10 @@ import { effectiveView, initViewState, viewReducer } from './lib/change';
 import { showCalibrationBanner } from './lib/caveat';
 const MapView = lazy(() => import('./components/MapView').then((m) => ({ default: m.MapView })));
 const Sources = lazy(() => import('./components/Sources').then((m) => ({ default: m.Sources })));
+const Assumptions = lazy(() => import('./components/Assumptions').then((m) => ({ default: m.Assumptions })));
 
-type View = 'map' | 'proposals' | 'streets' | 'sources';
+type View = 'map' | 'proposals' | 'streets' | 'assumptions' | 'sources';
+const VIEW_LABEL: Record<View, string> = { map: 'Map', proposals: 'Proposals', streets: 'Streets', assumptions: 'Assumptions', sources: 'Sources' };
 const store = {
   get(k: string) { try { return localStorage.getItem(k); } catch { return null; } },
   set(k: string, v: string) { try { localStorage.setItem(k, v); } catch { /* unavailable */ } },
@@ -405,7 +407,7 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
     <Comparison base={base} scen={scen} comparing={comparing} finished={finished} withheld={withheld} scenarioCount={interventions.length} onRef={(k) => { setSourceRef(k); setView('sources'); }}
       intents={intentDefs?.length ? (
         <IntentPanel defs={intentDefs} base={base} scen={scen} comparing={comparing} net={bundle.network} idx={index} selected={intentSel} onSelect={setIntentSel}
-          paths={intentPathsShown} pathsFrom={comparing ? source : 'scenario'} phone={phone} onSources={() => { setSourceRef('intents'); setView('sources'); }} />
+          paths={intentPathsShown} pathsFrom={comparing ? source : 'scenario'} phone={phone} onAbout={() => { setSourceRef('intents'); setView('assumptions'); }} />
       ) : undefined} />
   );
 
@@ -419,9 +421,9 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
           <h1>Traffic <span className="area">{bundle.entry.name}</span></h1>
         </div>
         <nav aria-label="Views">
-          {(['map', 'proposals', 'streets', 'sources'] as View[]).map((v) => (
+          {(Object.keys(VIEW_LABEL) as View[]).map((v) => (
             <button key={v} type="button" className="navbtn" aria-current={view === v ? 'page' : undefined} onClick={() => setView(v)}>
-              {v === 'map' ? 'Map' : v === 'proposals' ? 'Proposals' : v === 'streets' ? 'Streets' : 'Sources'}
+              {VIEW_LABEL[v]}
             </button>
           ))}
         </nav>
@@ -513,7 +515,8 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
               phone={phone} onShowOnMap={(block) => { setHoverPlace(null); select({ kind: 'block', block, point: null, nearLink: null, via: 'list' }); setView('map'); }} />
           )}
           {view === 'proposals' && <Proposals bundle={bundle} index={index} today={todayRoutes.total} state={proposals.state} loaded={proposals.loaded} mode={mode} current={interventions} onOpen={onOpenProposal} />}
-          {view === 'sources' && <Suspense fallback={<p className="boot" role="status">Loading sources…</p>}><Sources demand={demand} synthetic={bundle.synthetic} focusRef={sourceRef} calibration={bundle.synthetic ? undefined : { status: calStatus, note: bundle.entry.calibration?.note }} /></Suspense>}
+          {view === 'assumptions' && <Suspense fallback={<p className="boot" role="status">Loading assumptions…</p>}><Assumptions bundle={bundle} index={index} mode={mode} hashes={hashes} fingerprint={fingerprint} focusRef={sourceRef} onSources={() => { setSourceRef(null); setView('sources'); }} /></Suspense>}
+          {view === 'sources' && <Suspense fallback={<p className="boot" role="status">Loading sources…</p>}><Sources demand={demand} synthetic={bundle.synthetic} focusRef={sourceRef} onAssumptions={() => { setSourceRef(null); setView('assumptions'); }} calibration={bundle.synthetic ? undefined : { status: calStatus, note: bundle.entry.calibration?.note }} /></Suspense>}
         </div>
 
         {showPanel && !phone && (

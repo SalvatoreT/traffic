@@ -13,7 +13,7 @@ async function serveData(req: Request, env: Env, name: string): Promise<Response
   if (!object) {
     const res = await env.ASSETS.fetch(req);
     // A result that is not stored is a plain 404, not the app page the single-page fallback would send.
-    return name.startsWith("results/") && !(res.headers.get("content-type") ?? "").includes("json") ? new Response(null, { status: 404 }) : res;
+    return name.startsWith("results/") && res.status !== 304 && !(res.headers.get("content-type") ?? "").includes("json") ? new Response(null, { status: 404 }) : res;
   }
   const headers = new Headers({
     "content-type": "application/json; charset=utf-8",

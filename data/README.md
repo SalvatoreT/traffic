@@ -35,6 +35,8 @@ NODE_USE_ENV_PROXY=1 TRAFFIC_UPLOAD_URL=<site> npm run data:push
 
 Each file is about 90 KB gzipped and one simulated hour takes about a minute (two runs per file, with one baseline per period shared). Each file records the network hash, the demand hash and a fingerprint of the simulator's sources (`crates/sim/build.rs`); the app ignores a file unless all three match what it loaded and runs live instead. A file whose inputs still match is not recomputed. A full run removes files for scenarios that are no longer published. The key is a hash of the order-independent scenario and the period, so proposals with the same scenario share a file. Visitors' own scenarios are not stored: their links run to the end at Max.
 
+The same run writes `public/data/results/<area>/baseline-intents.json`: today's traffic for each period split by the reasons of `throughIntents` (cars an hour and the links each reason's cars used), with the same three validity keys. The Assumptions tab draws a map for each reason from it, and shows no maps when it is missing or stale. After a demand change, regenerate it alone with `npm run data:results -- --baselines-only` (three simulations, about two minutes), and the Assumptions tab's table of assumed movements with `npm run data:assumptions` (reads the config and the fit report; `npm run data` runs it after the demand build).
+
 ## Publishing without a Cloudflare token
 
 The Worker takes data files at `/api/data/<key>` from requests that carry the upload
