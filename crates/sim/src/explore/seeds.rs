@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use std::path::Path;
 
 /// Most entries a seeds file keeps. Each seed costs a full recheck in every search, so the cap bounds the run time.
-pub const DEFAULT_CAP: usize = 30;
+pub const DEFAULT_CAP: usize = 20;
 
 /// Where a package came from: a search that published it, or a person who added it.
 pub const SOURCE_SEARCH: &str = "search";

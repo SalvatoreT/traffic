@@ -150,7 +150,7 @@ fn main() {
                 }
             }
         }
-        seeds::enforce_cap(&mut f, &today);
+        seeds::enforce_cap(&mut f, "");
         std::fs::write(&known_file, seeds::to_json(&f)).expect("write seeds");
         eprintln!("seeds file {}: {} package(s)", known_file.display(), f.seeds.len());
         return;

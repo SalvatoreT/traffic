@@ -19,4 +19,4 @@ The cause is in the beam. All six filters are candidates, the package passes the
 - Specs: proposals (known packages, seed-started beam, phased ranking, stable options, provenance).
 - Code: `crates/sim/src/explore/{seeds,check,search,report,mod}.rs`, `crates/sim/src/bin/explore.rs`, `crates/sim/tests/explore.rs`.
 - Data: `data/proposals/rockridge.seeds.json` (new), `data/proposals/rockridge.md`, `public/data/rockridge.proposals.json` (new fields `origin`, `computed.knownPackages`; readers that ignore unknown fields are unaffected).
-- Run time: each seed adds one full recheck (nine one-hour runs here), so the seeds file is capped at 30.
+- Run time: each seed adds one full recheck (nine one-hour runs here), so the seeds file is capped at 20.

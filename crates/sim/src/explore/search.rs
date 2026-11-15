@@ -447,7 +447,7 @@ impl Family {
 
 /// Beam search: all single candidates first, then add one candidate at a time to each package in the beam.
 /// `known` holds packages from earlier searches (candidate indices). Each is screened with its sub-packages, and the best of them (taken in
-/// turns from each family, so one package's neighbors cannot fill the beam) are extended in a beam of their own beside the one that grows
+/// turns from each family, so one package's neighbors cannot fill the beam, as many as the beam is wide) are extended in a beam of their own beside the one that grows
 /// from the best singles. A strong large package cannot crowd the small ones out, and a known package is never lost to a weak path to it.
 pub fn beam_search(ctx: &Ctx, known: &[Family]) -> SearchState {
     let mut st = SearchState::new();
@@ -485,7 +485,7 @@ pub fn beam_search(ctx: &Ctx, known: &[Family]) -> SearchState {
         .collect();
     families.sort_by(|a, b| rank_value(ctx.p, &st.evals[b[0]]).partial_cmp(&rank_value(ctx.p, &st.evals[a[0]])).unwrap_or(std::cmp::Ordering::Equal).then(a[0].cmp(&b[0])));
     let mut start: Vec<usize> = Vec::new();
-    let width = ctx.p.beam * 2;
+    let width = ctx.p.beam;
     'fill: for r in 0.. {
         let mut any = false;
         for m in &families {
