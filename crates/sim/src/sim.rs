@@ -3154,6 +3154,17 @@ impl Simulation {
         out
     }
 
+    /// For each vehicle on `link`: its pending assumed movement and the rest of its route.
+    pub(crate) fn test_via_state(&self, link: u32) -> Vec<(Option<(u32, u32)>, Vec<u32>)> {
+        let mut out = Vec::new();
+        for k in 0..self.topo.nlanes(link as usize) {
+            for &id in &self.lanes[self.topo.lane_base[link as usize] as usize + k] {
+                out.push((self.vehs[id as usize].via, self.test_route_of(id)));
+            }
+        }
+        out
+    }
+
     pub(crate) fn test_lanes_of(&self, link: u32) -> Vec<(u32, usize)> {
         let mut out = Vec::new();
         for k in 0..self.topo.nlanes(link as usize) {
