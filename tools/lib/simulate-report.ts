@@ -19,10 +19,14 @@ export interface Args {
   link?: string; interventions?: string; area: string; period?: string; seed: number; minutes: number; demand?: number;
   blocks: 'side' | 'all' | 'none'; top: number; pretty: boolean; strict: boolean; dataDir?: string;
   find?: string; listInterventions: boolean; places: boolean; limit: number; help: boolean; noCache: boolean;
+  /** `--redistribution` and its options (tools/lib/redistribution-cli.ts). */
+  redistribution: boolean; graphOnly: boolean; closure?: string; seeds?: string; jobs?: number; cohort: 'direct' | 'crossings';
+  streets: string[]; out?: string; traceMax?: number; from?: string;
 }
 
-const VALUE_FLAGS = ['--link', '--interventions', '--area', '--period', '--seed', '--minutes', '--demand', '--blocks', '--top', '--find', '--limit', '--data-dir'] as const;
-const BOOL_FLAGS = ['--json', '--pretty', '--strict', '--list-interventions', '--places', '--help', '-h', '--no-cache'] as const;
+const VALUE_FLAGS = ['--link', '--interventions', '--area', '--period', '--seed', '--minutes', '--demand', '--blocks', '--top', '--find', '--limit', '--data-dir',
+  '--closure', '--seeds', '--jobs', '--cohort', '--streets', '--out', '--trace-max', '--from'] as const;
+const BOOL_FLAGS = ['--json', '--pretty', '--strict', '--list-interventions', '--places', '--help', '-h', '--no-cache', '--redistribution', '--graph-only'] as const;
 
 const num = (flag: string, v: string, min: number, max: number, int = false): number => {
   const n = Number(v);
@@ -33,7 +37,7 @@ const num = (flag: string, v: string, min: number, max: number, int = false): nu
 };
 
 export function parseArgs(argv: string[]): Args {
-  const a: Args = { area: 'rockridge', seed: 1, minutes: 60, blocks: 'side', top: 15, pretty: true, strict: false, listInterventions: false, places: false, limit: 20, help: false, noCache: false };
+  const a: Args = { area: 'rockridge', seed: 1, minutes: 60, blocks: 'side', top: 15, pretty: true, strict: false, listInterventions: false, places: false, limit: 20, help: false, noCache: false, redistribution: false, graphOnly: false, cohort: 'direct', streets: [] };
   for (let i = 0; i < argv.length; i++) {
     const raw = argv[i];
     const eq = raw.startsWith('--') ? raw.indexOf('=') : -1;
@@ -45,6 +49,8 @@ export function parseArgs(argv: string[]): Args {
       else if (flag === '--list-interventions') a.listInterventions = true;
       else if (flag === '--no-cache') a.noCache = true;
       else if (flag === '--places') a.places = true;
+      else if (flag === '--redistribution') a.redistribution = true;
+      else if (flag === '--graph-only') a.graphOnly = true;
       else a.help = true;
       continue;
     }
@@ -66,9 +72,22 @@ export function parseArgs(argv: string[]): Args {
       case '--limit': a.limit = num(flag, value, 1, 1000, true); break;
       case '--find': a.find = value; break;
       case '--data-dir': a.dataDir = value; break;
+      case '--closure': a.closure = value; break;
+      case '--seeds': a.seeds = value; break;
+      case '--jobs': a.jobs = num(flag, value, 1, 64, true); break;
+      case '--cohort':
+        if (value !== 'direct' && value !== 'crossings') throw new CliError('--cohort is direct or crossings.', EXIT.usage);
+        a.cohort = value; break;
+      case '--streets': a.streets = value.split(',').map((x) => x.trim()).filter(Boolean); break;
+      case '--out': a.out = value; break;
+      case '--trace-max': a.traceMax = num(flag, value, 1000, 100_000_000, true); break;
+      case '--from': a.from = value; break;
     }
   }
   if (a.link !== undefined && a.interventions !== undefined) throw new CliError('Give --link or --interventions, not both.', EXIT.usage);
+  const only = ['closure', 'seeds', 'jobs', 'out', 'traceMax', 'from'] as const;
+  if (!a.redistribution && (a.graphOnly || only.some((k) => a[k] !== undefined) || a.streets.length || a.cohort !== 'direct')) throw new CliError('--closure, --seeds, --jobs, --cohort, --streets, --out, --trace-max, --from and --graph-only go with --redistribution.', EXIT.usage);
+  if (a.redistribution && a.interventions !== undefined) throw new CliError('--redistribution takes the package as --link, not --interventions.', EXIT.usage);
   return a;
 }
 

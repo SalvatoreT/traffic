@@ -5,6 +5,7 @@ pub mod eff;
 pub mod explore;
 pub mod model;
 pub mod params;
+pub mod redistribution;
 pub mod rng;
 pub mod route;
 pub mod sim;

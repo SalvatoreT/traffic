@@ -4,7 +4,7 @@ import { buildFixture } from '../fixtures/area';
 import { buildMockProposals } from '../fixtures/proposals';
 import { decodeScenario } from './hash';
 import {
-  allProposals, allTrafficNote, allTrafficRows, beforeAfterPct, comparisonText, cutThroughHeadline, evidenceNote, evidenceStatus, hashMatches, hashText, harmHeadline, intervalText,
+  allProposals, allTrafficHeadline, allTrafficNote, allTrafficRows, beforeAfterPct, comparisonText, cutThroughHeadline, evidenceNote, evidenceStatus, hashMatches, hashText, harmHeadline, intervalText,
   linkHash, needsConfirm, openReducer, parseProposals, periodsPhrase, proposalNotices, REPORT_METHOD, seedsPhrase, signedPct, splitProposals, staleInputs,
   type ComparisonStatus, type Effect, type Proposal, type ThroughHarm,
 } from './proposals';
@@ -206,6 +206,15 @@ describe('details tables', () => {
     expect(allTrafficNote([row(40, 30)])).toMatch(/^About 75% of the extra cars on these blocks are through cars and about 25% are local trips/);
     expect(allTrafficNote([row(40, 30)])).not.toMatch(/Mostly/);
     expect(allTrafficNote([row(37, 12)])).toMatch(/number of trips fixed/);
+  });
+  it('puts the largest all-car rise on the card with its split and says attribution is missing, not zero', () => {
+    const row = (period: string, change: number, through: number, flagged = false) => ({ period, block: `B ${period}`, before: 100, after: 100 + change, change, through, local: change - through, blocksAbove: 1, interval: 'iv', penaltyBlock: null, penalty: null, flagged });
+    const h = allTrafficHeadline([row('AM', 12, 2), row('PM', 43, -7)]);
+    expect(h).toMatchObject({ none: false, figure: '+43', split: 'Through cars −7, local trips +50.' });
+    expect(h.label).toMatch(/B PM \(PM\), 100 → 143/);
+    expect(h.attribution).toMatch(/no diversion has been ruled out/);
+    expect(allTrafficHeadline([row('PM', 5, 1, true)])).toMatchObject({ none: true });
+    expect(allTrafficHeadline([]).label).toMatch(/not recorded/);
   });
   it('makes no claim when no block gains beyond noise', () => {
     expect(allTrafficNote([{ period: 'PM', block: null, before: 1, after: 2, change: 1, through: 0, local: 1, blocksAbove: 0, interval: '', penaltyBlock: null, penalty: null, flagged: true }])).toBe('');

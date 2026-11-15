@@ -533,8 +533,8 @@ impl Simulation {
                 }
                 r -= t;
             }
-            let uid = self.uid_next;
-            self.uid_next += 1;
+            let uid = self.uid_init;
+            self.uid_init += 1;
             let (state, pos) = match steps[si] {
                 Step::Walk { from, to, .. } => (ST_WALK, from + (to - from) * (r / times[si].max(1e-9)).min(1.0) as f32),
                 Step::Cross { xw, .. } => {

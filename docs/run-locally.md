@@ -61,6 +61,28 @@ JSON with these fields, in the same units and over the same window as the app (a
 
 One seed is one sample. Differences of a few cars an hour on a block are within run-to-run variation; run `--seed 2` and `--seed 3` to see the spread.
 
+## Where traffic goes when you add a closure
+
+A closure's effect on one street is the sum of many trips moving. `--redistribution` follows them. It runs today, the closure alone and the whole package with every car trip recorded, for each seed, and reports three things that are kept apart:
+
+- Possible paths: legal routes around each movement the closure removes, found on the simulator's own turn rules for the period. They carry no traffic. The search covers the whole network; only the listing stops at three paths per movement.
+- Simulated cohort routes: the trips that drove a removed movement today (the cohort), followed into the other two runs by a request key that does not depend on the scenario. For each run they are counted by the route they took near the closure, and by where they stand at the end of the hour: finished, still driving, still waiting to start, found no route, removed to clear gridlock, or not matched.
+- Net change, all cars: every car on a block, today and in each scenario, with the through part (neither trip end in the study area) and the local part, a paired interval over seeds, and a split of the change into the cohort's trips (with the cars it added and took away), other trips, and cars already on the streets when the run started.
+
+```sh
+npm run simulate -- --redistribution --closure mn,9q9p3fr7b5 \
+  --link "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2,175.355~mn,9q9p3fr7b5" \
+  --seeds 1-10 --streets "63rd Street,Dana Street" --out colby.json
+npm run simulate -- --redistribution --closure mn,9q9p3fr7b5 --graph-only   # legal paths only, in a second
+npm run simulate -- --redistribution --closure mn,9q9p3fr7b5 --link "<package>" --from colby.json   # reuse a stored result
+```
+
+`--closure` is one item of the package link (find items with `--find`); it may be left out when the link has one item. Without `--link` the package is the closure alone. `--seeds` takes a list or a range (default 1). Ten seeds are the fewest for which an interval makes a statement; with fewer, every interval reads "insufficient". `--jobs` sets how many runs go at once (default up to 4); each run takes about a minute and a half on one core. `--cohort crossings` follows every trip that crossed the closed junctions instead of only those that drove a removed movement, and says so in the output. `--trace-max` bounds the stored route events per run (default 1,500,000, about twice a Rockridge hour); counts stay exact when it is reached, and the output says how many trips lack route detail. `--from` prints a stored result only if it was made on the same network, demand, simulator, period and scenarios, and otherwise exits with code 3.
+
+The JSON has `kind: "redistribution"`, `schema` and `method` (the accounting version), and `identity`: area, period, seeds, run length, measurement window and counting rule, file hashes, simulator fingerprint, the three scenario links with their interventions, and the cohort selector. `graph` holds the legal paths for the closure alone and for the package; `cohort` the outcome bins, route counts and pairing checks; `blocks` the listed blocks (those on a possible path, those on `--streets`, and the largest changes) with counts by direction; `health` gridlock removals, unroutable trips and waiting trips per run; `coverage` the route detail kept. The app shows the same evidence from a scenario's intervention list or a proposal card, under "Where traffic goes".
+
+Limits: cars only. Trips are fixed, so a closure moves trips and never removes them. The model is not calibrated, the seed interval covers run-to-run variation only, and an unfinished trip at the end of the hour is reported as unfinished, not as a route.
+
 ## What not to do
 
 - Do not run scenarios against the public site. It has no such endpoint; only plain GETs of pages and `/data/` files are expected of visitors.

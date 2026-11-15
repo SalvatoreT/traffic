@@ -494,7 +494,7 @@ export function llmsTxt(i: LlmsInput): string {
     '## Using it',
     '',
     `- [Scenario link format](${abs(i, '/scenario-links.md')}): the complete grammar of a scenario link, how links are placed on the network and how to build one by hand.`,
-    `- [Run the model yourself](${abs(i, '/run-locally.md')}): prerequisites and the commands to look up streets, run a scenario and read the JSON it prints.`,
+    `- [Run the model yourself](${abs(i, '/run-locally.md')}): prerequisites and the commands to look up streets, run a scenario, follow where traffic goes when a closure is added, and read the JSON they print.`,
     `- [Data files](${abs(i, '/data-files.md')}): every JSON file, field by field, with units and what "out of date" means.`,
     '',
     '## Data',

@@ -28,9 +28,16 @@ struct Cand {
     vplan: u32,
     noise_seed: u32,
     uid: u32,
+    /// Runtime flow index.
+    flow: usize,
     /// Exit position of a car that starts and ends on one link (NaN otherwise).
     end_pos: f32,
 }
+
+/// First uid of the agents placed by initial loading. Requested trips number from 0 in arrival order, the same in every scenario of a
+/// seed, so their uid-keyed draws (local start and end positions, crosswalk yield draws) pair across scenarios (change
+/// explain-traffic-redistribution, decision D2).
+pub(super) const INITIAL_UID_BASE: u32 = 1 << 31;
 
 impl Simulation {
     /// Place the agents of the initial load and settle the network; the clock then reads 0 and all results are zeroed.
@@ -55,6 +62,7 @@ impl Simulation {
     pub(super) fn adopt_loaded_costs(&mut self) {
         let mut cfg = self.cfg.clone();
         cfg.interventions = Vec::new();
+        cfg.trace = false;
         let Ok(probe) = Simulation::build(self.net.clone(), self.demand.clone(), cfg, false) else { return };
         self.ema = probe.ema;
         self.mv_ema = probe.mv_ema;
@@ -213,8 +221,8 @@ impl Simulation {
                 };
                 let routed = if vplan != NO_PLAN { self.initial_route_via(origin, dest, noise_seed, vplan) } else { self.initial_route(bike, origin, dest, noise_seed) };
                 let Some(route) = routed else { continue };
-                let uid = self.uid_next;
-                self.uid_next += 1;
+                let uid = self.uid_init;
+                self.uid_init += 1;
                 let mut times = self.initial_times(&route, bike.then_some(v0_abs));
                 // A car with a local end drives only part of its first or last link, as a newly arriving one does (`try_spawns`).
                 let last = route.len() - 1;
@@ -276,7 +284,7 @@ impl Simulation {
                 };
                 let q = self.topo.qidx(l, lane);
                 lane_n[q] += 1;
-                cands.push(Cand { q, lane, link: l as u32, pos, route, at, drv, bike, v0_abs, origin, dest, through, intent, via, vplan, noise_seed, uid, end_pos });
+                cands.push(Cand { q, lane, link: l as u32, pos, route, at, drv, bike, v0_abs, origin, dest, through, intent, via, vplan, noise_seed, uid, flow: k, end_pos });
             }
         }
         // Front of each lane first; ties by uid so the order does not depend on the sort.
@@ -396,9 +404,11 @@ impl Simulation {
             self.vehs[id as usize].off_ramp = off;
         }
         let (q, link, bike) = (c.q, c.link, c.bike);
+        let (flow, uid, origin, dest, drv, noise_seed) = (c.flow, c.uid, c.origin, c.dest, c.drv, c.noise_seed);
         self.lanes[q].push_back(id);
         if !bike {
             self.sl_enter(id, link);
+            self.trace_initial(flow, uid, origin, dest, &drv, noise_seed, link);
         }
     }
 }

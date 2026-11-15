@@ -66,4 +66,46 @@ impl WasmSimulation {
     pub fn reset(&mut self) {
         self.inner.reset();
     }
+
+    /// Request records of a traced run (config `trace`), `REQ_STRIDE` values each (see `Simulation::trace_requests`).
+    #[wasm_bindgen(js_name = traceRequests)]
+    pub fn trace_requests(&self) -> Vec<f64> {
+        self.inner.trace_requests()
+    }
+
+    /// Link exits of a traced run: request index, link, time as f32 bits (see `Simulation::trace_events`).
+    #[wasm_bindgen(js_name = traceEvents)]
+    pub fn trace_events(&self) -> Vec<u32> {
+        self.inner.trace_events()
+    }
+
+    /// Exact counts and coverage of the trace, JSON (see `Simulation::trace_summary`).
+    #[wasm_bindgen(js_name = traceSummary)]
+    pub fn trace_summary(&self) -> String {
+        self.inner.trace_summary()
+    }
+}
+
+/// Closed movements and legal witnesses of a closure on the effective movement graph, JSON (see `redistribution::analyze`).
+#[wasm_bindgen(js_name = redistributionGraph)]
+pub fn redistribution_graph(network_json: &str, period: &str, mode: &str, base_json: &str, scenario_json: &str) -> Result<String, JsError> {
+    let net: crate::model::Network = serde_json::from_str(network_json).map_err(|e| JsError::new(&format!("network: {e}")))?;
+    let parse = |s: &str| -> Result<Vec<crate::model::Intervention>, JsError> {
+        if s.trim().is_empty() {
+            Ok(Vec::new())
+        } else {
+            serde_json::from_str(s).map_err(|e| JsError::new(&format!("interventions: {e}")))
+        }
+    };
+    Ok(crate::redistribution::analyze(&net, period, mode, &parse(base_json)?, &parse(scenario_json)?).to_string())
+}
+
+/// The established paired estimate (`explore::paired`, method `REPORT_METHOD`) of per-seed differences, JSON with `n`, `mean`, `sd`,
+/// `interval` and `status` (`increase`, `decrease`, `unresolved` or `insufficient`).
+#[wasm_bindgen(js_name = pairedEffect)]
+pub fn paired_effect(diffs: Vec<f64>) -> String {
+    let mut v = crate::explore::paired::Paired::of(&diffs).to_json("increase", "decrease");
+    v["method"] = crate::explore::paired::REPORT_METHOD.into();
+    v["minPairs"] = crate::explore::paired::MIN_PAIRS.into();
+    v.to_string()
 }
