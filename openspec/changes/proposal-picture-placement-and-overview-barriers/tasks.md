@@ -9,4 +9,4 @@
 - [x] 3.1 Highlight in a color and dash no scale uses
 ## 4. Tests and verification
 - [x] 4.1 Unit tests (bars, share image)
-- [ ] 4.2 Local and live checks in both themes and viewports
+- [x] 4.2 Local and live checks in both themes and viewports
