@@ -27,7 +27,7 @@ The repository SHALL document, in `AGENTS.md`, the model-delegation policy (Haik
 - **THEN** it loads `AGENTS.md` and follows the delegation and OpenSpec rules without asking the user
 
 ### Requirement: Authenticated data publishing through the Worker
-The Worker SHALL accept reads and writes of data files under the `areas/`, `osm/` and `demand/` prefixes of its bucket only from requests carrying the configured upload secret, and SHALL refuse all such requests when no secret is configured.
+The Worker SHALL accept reads and writes of data files under the `areas/`, `osm/`, `demand/` and `jobs/` prefixes of its bucket only from requests carrying the configured upload secret, and SHALL refuse all such requests when no secret is configured. Objects under `jobs/` SHALL NOT be reachable through the public `/data` route.
 
 #### Scenario: Valid upload
 - **WHEN** a PUT with the correct secret and an allowed key arrives
@@ -44,6 +44,10 @@ The Worker SHALL accept reads and writes of data files under the `areas/`, `osm/
 #### Scenario: No secret configured
 - **WHEN** the Worker has no upload secret
 - **THEN** the endpoint answers 503
+
+#### Scenario: Job objects are private
+- **WHEN** an object is stored under `jobs/` and a client requests the same name under `/data/`
+- **THEN** the request is answered as a missing file and the object is not returned
 
 ### Requirement: Data serving
 The Worker SHALL answer a malformed percent sequence with 400, a missing `/data` file with a 404 JSON body, add `x-content-type-options: nosniff` to every `/data` response, and set `cache-control: no-cache` with an ETag so that unchanged files return 304.
