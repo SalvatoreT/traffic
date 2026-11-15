@@ -132,7 +132,6 @@ struct FlowRt {
     vplan: u32,
 }
 
-#[allow(dead_code)]
 struct Veh {
     alive: bool,
     in_transit: bool,
@@ -380,7 +379,6 @@ pub struct Simulation {
     uid_next: u32,
     n_alive: usize,
     lanes: Vec<VecDeque<u32>>,
-    reserved: Vec<f32>,
     transit: Vec<Vec<Transit>>,
     backlog: Vec<VecDeque<Trip>>,
     awsc: Vec<Vec<u32>>,
@@ -449,7 +447,6 @@ fn idm(v: f32, v0: f32, s: f32, dv: f32, a: f32, b: f32, t_hw: f32, s0: f32) -> 
     let v0 = v0.max(0.5);
     let ratio = v / v0;
     let a_free = a * (1.0 - ratio * ratio * ratio * ratio); // IDM_DELTA = 4
-    let _ = IDM_DELTA;
     let s_star = s0 + (v * t_hw + v * dv / (2.0 * (a * b).sqrt())).max(0.0);
     let s = s.max(0.1);
     let z = s_star / s;
@@ -558,7 +555,6 @@ impl Simulation {
             uid_next: 0,
             n_alive: 0,
             lanes: (0..topo.n_lanes + nl).map(|_| VecDeque::new()).collect(),
-            reserved: vec![0.0; topo.n_lanes + nl],
             transit: (0..nn).map(|_| Vec::new()).collect(),
             backlog: (0..nn).map(|_| VecDeque::new()).collect(),
             awsc: vec![Vec::new(); nn],
@@ -1404,7 +1400,7 @@ impl Simulation {
             }
             None => self.topo.length[l as usize],
         };
-        tail - self.topo.emerge_pos[l as usize] - self.reserved[idx]
+        tail - self.topo.emerge_pos[l as usize]
     }
 
     /// Room needed on a link before another vehicle may be admitted. Very short links (junction fragments) cannot offer
@@ -2487,7 +2483,6 @@ impl Simulation {
         let (v, len, fcomp) = (veh.v, veh.drv.len, veh.drv.fcomp);
         let veh_t_enter = veh.t_enter;
         let mid_started = veh.mid_start;
-        let _ = v;
         self.record_link_exit(vid, l);
         if kind == KIND_CAR && !mid_started {
             self.mv_tt_sum[mv as usize] += (self.t - veh_t_enter) as f32;
@@ -2495,7 +2490,6 @@ impl Simulation {
         }
         let ff = self.link_ff_for(l, fcomp) + self.eff.mv_ff[mv as usize];
         self.lanes[qi].pop_front();
-        let ridx_next;
         {
             let veh = &mut self.vehs[vid as usize];
             veh.ff_sum += ff;
@@ -2507,16 +2501,10 @@ impl Simulation {
             veh.stop_t = 0.0;
             veh.wait_t = 0.0;
             veh.ttc_leader = NONE_UID;
-            ridx_next = veh.ridx;
         }
-        let _ = ridx_next;
         if self.vehs[vid as usize].registered {
             self.awsc[node].retain(|&x| x != vid);
             self.vehs[vid as usize].registered = false;
-        }
-        let tq = self.topo.qidx(b as usize, lane);
-        if RESERVE_EXIT_ROOM {
-            self.reserved[tq] += len + 2.0;
         }
         if kind != KIND_BIKE {
             self.st.veh_m += m_len as f64;
@@ -2560,9 +2548,6 @@ impl Simulation {
                     continue;
                 }
                 self.transit[n].remove(i);
-                if RESERVE_EXIT_ROOM {
-                    self.reserved[qi] = (self.reserved[qi] - (len + 2.0)).max(0.0);
-                }
                 {
                     let veh = &mut self.vehs[vid as usize];
                     veh.in_transit = false;
@@ -2581,7 +2566,7 @@ impl Simulation {
                 self.sl_enter(vid, tr.to_link);
                 if self.vehs[vid as usize].replan {
                     self.vehs[vid as usize].replan = false;
-                    if self.cfg.legacy_reroute || self.vehs[vid as usize].kind == KIND_BIKE || self.route_blocked(vid) {
+                    if self.vehs[vid as usize].kind == KIND_BIKE || self.route_blocked(vid) {
                         self.replan_vehicle(vid, true);
                     }
                 }
@@ -2877,15 +2862,7 @@ impl Simulation {
             if !self.vehs[vid as usize].alive {
                 continue;
             }
-            if self.cfg.legacy_reroute {
-                if self.vehs[vid as usize].in_transit {
-                    self.vehs[vid as usize].replan = true;
-                } else {
-                    self.replan_vehicle(vid, true);
-                }
-            } else {
-                self.reroute_if_blocked(vid);
-            }
+            self.reroute_if_blocked(vid);
         }
     }
 
@@ -2896,12 +2873,7 @@ impl Simulation {
             if !v.alive || v.in_transit || v.kind != KIND_CAR {
                 continue;
             }
-            if self.cfg.legacy_reroute {
-                // ASSUMPTION (old): a deterministic share of en-route vehicles re-plan each epoch.
-                if hash32(v.uid, self.epoch) % 1000 < self.cfg.guided_share.map_or(800, |r| (r.clamp(0.0, 1.0) * 1000.0).round() as u32) {
-                    self.replan_vehicle(vid, true);
-                }
-            } else if v.blocked_space && v.wait_t > BLOCKED_REROUTE_S {
+            if v.blocked_space && v.wait_t > BLOCKED_REROUTE_S {
                 self.replan_around_blocked(vid);
             } else if v.guided {
                 self.consider_reroute(vid);
@@ -2955,9 +2927,6 @@ impl Simulation {
     /// link look slow to drivers going straight on (and a free left look fast behind a through queue). Each movement's cost takes the
     /// difference between the time of the vehicles that made that movement and the time of the link as a whole, where it was measured.
     pub(crate) fn apply_mv_times(&mut self) {
-        if !ROUTE_COST_BY_TURN {
-            return;
-        }
         for m in 0..self.mv_ema.len() {
             let a = self.topo.mvs[m].a as usize;
             let extra = if self.mv_ema[m] > 0.0 { self.mv_ema[m].max(self.eff.ff[a]) - self.link_cost[a] } else { 0.0 };

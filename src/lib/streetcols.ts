@@ -3,9 +3,6 @@ import type { Overlay } from '../types';
 export type StreetKey = 'name' | 'cls' | 'chg' | 'flowB' | 'flowS' | 'speedB' | 'speedS' | 'ctB' | 'ctS';
 export interface SortChoice { key: StreetKey; label: string }
 
-/** Which metric groups the table shows. Scenario and change columns need a scenario to compare with. */
-export function showScenarioColumns(comparing: boolean): boolean { return comparing; }
-
 /** Sort used until a header is chosen: biggest change with a scenario, else most through cars. */
 export function defaultSort(comparing: boolean): { key: StreetKey; dir: 1 | -1 } {
   return comparing ? { key: 'chg', dir: -1 } : { key: 'ctB', dir: -1 };

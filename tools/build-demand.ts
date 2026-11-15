@@ -2,7 +2,7 @@
 // Usage: npx tsx tools/build-demand.ts [data/demand/<area>.config.json]
 // Method and provenance: data/demand/README.md. Steps are tagged DATA or ASSUMPTION.
 // Methods: Furness/IPF balancing of the gate-to-gate matrix; gravity seeding; LODES [LODES]; freeway-ramp demand (DATA ramp ADT, ASSUMPTION destination choice).
-import { readFileSync, readdirSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { readFileSync, readdirSync, writeFileSync, existsSync, mkdirSync, rmSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { buildActiveFlows, parseActiveCounts, type AFlow } from './lib/demand-active';
 import { discoverRamps, matchRampVolumes, type Ramp, type RampRow, type RampVolume } from './lib/demand-ramps';
@@ -720,11 +720,12 @@ const localScaleLines = (): string[] => {
   const f = (x: number) => Math.round(x).toLocaleString('en-US').replace(/,/g, '');
   const L = ['', '## Local trip ends scaled to the volunteer count', '', 'Study-area blocks only. The count implies trip ends as vehicles entering (leaving) less the cars that drive a whole counted street; the offered ends are the external-share trips the assumed rates give. Factor = implied / offered, applied to the block rates (capped; midday takes the mean of the AM and PM factors). Entries and exits are the 18 access points and their reverse links.', '', '| Period | Entering | Leaving | Through (whole streets) | Implied destinations | Implied origins | Offered destinations | Offered origins | Factor destinations | Factor origins |', '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |'];
   for (const [pid, e] of Object.entries(countEnds)) { const q = localScale[pid]; L.push(`| ${pid} | ${f(e.entries)} | ${f(e.exits)} | ${f(e.through)} | ${f(e.destinations)} | ${f(e.origins)} | ${f(q.rawD)} | ${f(q.rawO)} | ${q.d.toFixed(2)} | ${q.o.toFixed(2)} |`); }
+  for (const [pid, e] of Object.entries(countEnds)) if (e.filled.length) L.push('', `ASSUMPTION, ${pid}: ${e.filled.length} entries or exits were not counted in this period and take the other period's count times the AM-to-PM ratio of the entries counted in both (entering ${e.fillRatio.entering?.toFixed(2) ?? '-'}, leaving ${e.fillRatio.leaving?.toFixed(2) ?? '-'}), instead of counting as zero: ${e.filled.join('; ')}.`);
   return L;
 };
 let fitText = '';
 const assumedReports: AssumedReport[] = [];
-const cvFlows: Record<string, { origin: number; destination: number; vehPerHour: number }[]> = {};
+const cvFlows: Record<string, Flow[]> = {};
 const fitResults: PeriodResult[] = [];
 const fc = cfg.countFit;
 const links = net.links;
@@ -844,7 +845,11 @@ if (fc?.enabled) {
     if (process.env.SKIP_CV && fc.validation?.enabled) for (const q of stations) { q.held = !!q.outOfFit; q.cvExclude = false; }
     if (fc.validation?.enabled && stations.some((q) => q.held) && !process.env.SKIP_CV) {
       cv = fitPeriod(per.id, cars, types, stations, net.nodes as never, net.links as NetLinkIn[], net.turnBans ?? [], fitCfg);
-      cvFlows[per.id] = cars.map((q, k) => viaOut({ ...q, vehPerHour: Math.round(cv!.volume[k] * 100) / 100 })).filter((q) => q.vehPerHour >= 0.01) as typeof cvFlows[string];
+      // The same ramp split as the shipped demand (below), so that a run on this file is the same model without the held-out stations.
+      const cvCars = rc.choice?.enabled
+        ? splitByRamp(cars as Flow[], cv.volume, cv.assignment, (k) => !cars[k].mode && fwIdSet.has(cars[k].origin) && !fwIdSet.has(cars[k].destination), offRamps, net.links.map((l: { from: number }) => l.from), net.links.map((l: { to: number }) => l.to), rc.choice).flows
+        : (cars as Flow[]).map((q, k) => ({ ...q, vehPerHour: cv!.volume[k] }));
+      cvFlows[per.id] = cvCars.map((q) => ({ ...q, vehPerHour: Math.round(q.vehPerHour * 100) / 100 })).filter((q) => q.vehPerHour >= 0.01);
       for (const q of stations) { q.held = !!q.outOfFit; q.cvExclude = false; }
     }
     const r = fitPeriod(per.id, cars, types, stations, net.nodes as never, net.links as NetLinkIn[], net.turnBans ?? [], fitCfg);
@@ -1005,6 +1010,7 @@ const intentRes = groups && areaCfg?.throughIntents ? resolveIntents(areaCfg.thr
 if (intentRes.length) {
   for (const per of outPeriods) {
     const vol = annotateFlows(per.flows as IntentFlow[], intentRes, (id) => groupOfNode(groups!, nodeById, id));
+    if (cvFlows[per.id]) annotateFlows(cvFlows[per.id] as IntentFlow[], intentRes, (id) => groupOfNode(groups!, nodeById, id));
     console.log(`Intent flows ${per.id}: ${intentRes.map((r, k) => `${r.out.id} ${vol[k].toFixed(0)}`).join(', ')}, none ${vol[intentRes.length].toFixed(0)} veh/h (all flows, through or not)`);
   }
 }
@@ -1012,9 +1018,12 @@ const out = { version: 1, area: cfg.area, ...(intentRes.length ? { intents: inte
 mkdirSync(dirname(cfg.output), { recursive: true });
 writeFileSync(cfg.output, JSON.stringify(out));
 if (cfg.countFit?.validation?.demandOutput && Object.keys(cvFlows).length) {
-  const vOut = { ...out, periods: out.periods.map((q: { id: string; flows: { mode?: string }[] }) => ({ ...q, flows: [...(cvFlows[q.id] ?? q.flows.filter((f) => !f.mode)), ...q.flows.filter((f) => f.mode)] })) };
+  const vOut = { ...out, periods: out.periods.map((q: { id: string; flows: { mode?: string }[] }) => ({ ...q, flows: [...(cvFlows[q.id]?.map(viaOut) ?? q.flows.filter((f) => !f.mode)), ...q.flows.filter((f) => f.mode)] })) };
   mkdirSync(dirname(cfg.countFit.validation.demandOutput), { recursive: true });
   writeFileSync(cfg.countFit.validation.demandOutput, JSON.stringify(vOut));
+} else if (cfg.countFit?.validation?.demandOutput && existsSync(cfg.countFit.validation.demandOutput)) {
+  // A cross-validation demand from an earlier build no longer matches the shipped one.
+  rmSync(cfg.countFit.validation.demandOutput);
 }
 
 // ---------- summary ----------

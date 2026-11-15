@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildFixture } from '../fixtures/area';
 import type { DemandIntent, Metrics } from '../types';
 import { BASELINE_INTENTS_VERSION, baselineIntent, baselineVerdict, encodeBaselinePeriod, parseBaselineIntents, type BaselineIntents } from './baseline-intents';
-import { buildIntentMap } from './intentmap';
+import { buildIntentMap, keepNames } from './intentmap';
 import { pathEnds, type IntentPaths } from './intents';
 import { buildIndex } from './naming';
 import { RUN_SECONDS } from './run';
@@ -59,5 +59,16 @@ describe('the static map of a reason', () => {
   it('names where a path starts and ends from its arterial crossings', () => {
     const e = pathEnds(net, idx, paths);
     expect(Array.isArray(e.from) && Array.isArray(e.to)).toBe(true);
+  });
+});
+
+describe('street names on a reason map', () => {
+  const end = { kind: 'to' as const, street: 'Alcatraz Avenue', text: 'To Alcatraz Avenue', x: 100, y: 100, anchor: 'start' as const, dot: { x: 90, y: 107 } };
+  const name = (text: string, x: number, y: number) => ({ text, x, y, angle: 0 });
+  it('drops the name of the street a From or To label already names, wherever it sits', () => {
+    expect(keepNames([name('Alcatraz Avenue', 400, 400)], [end], 1, 11)).toEqual([]);
+  });
+  it('drops a name whose text would run under the label, keeps one clear of it', () => {
+    expect(keepNames([name('College Avenue', 140, 100), name('Telegraph Avenue', 300, 300)], [end], 1, 11).map((n) => n.text)).toEqual(['Telegraph Avenue']);
   });
 });

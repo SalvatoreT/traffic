@@ -10,7 +10,7 @@ import { hoverTargets, type Hover } from '../lib/highlight';
 import { hitTest, selectionAnchor, type Selection } from '../lib/selection';
 import { PopoverFrame } from './Popover';
 import { MapMenu } from './MapMenu';
-import { legendModel } from '../lib/legend';
+import { legendModel, mapSymbols } from '../lib/legend';
 import { BADGE_TEXT, captionOf, composeImage, drawBadges, EXPORT_SCALE, exportFileName, FORMATS, type BadgeMark, type ImageFormat } from '../lib/mapexport';
 import { FADE_TIERS, interventionInRegion, REGION_FEATHER_M, type Region } from '../lib/region';
 import { REGION_BUFFER_M } from '../lib/area';
@@ -185,6 +185,14 @@ function barImage(): ImageData {
   const dash = h * 0.5 * 1.5;
   for (let x = (w - (2 * 3 - 1) * dash) / 2; x < w - 1; x += 2 * dash) g.fillRect(x, h * 0.25, dash, h * 0.5);
   return g.getImageData(0, 0, w, h);
+}
+function setHitsInteractive(markers: maplibregl.Marker[], on: boolean) {
+  for (const m of markers) {
+    const el = m.getElement();
+    if (!el.classList.contains('iv-hit')) continue;
+    (el as HTMLButtonElement).disabled = !on;
+    if (on) el.removeAttribute('aria-hidden'); else el.setAttribute('aria-hidden', 'true');
+  }
 }
 const lineFeature = (region: Region, pr: ReturnType<typeof makeProjection>, g: [number, number][]) => {
   const parts = region.clipLine(g).map((pt) => pt.map(([x, y]) => pr.toLonLat(x, y)));
@@ -833,6 +841,7 @@ export function MapView(p: Props) {
         el.setAttribute('aria-label', title);
         el.onclick = () => {
           const L = live.current;
+          if (!L.interactive) return;
           if ('link' in iv) L.onHit({ kind: 'block', block: L.index.blockOfLink[iv.link], point: [x, y], nearLink: iv.link, via: 'map' });
           else L.onHit({ kind: 'node', node: iv.node, via: 'map' });
         };
@@ -851,6 +860,7 @@ export function MapView(p: Props) {
       out.push(new maplibregl.Marker({ element: el }).setLngLat(ll).addTo(map));
     }
     markers.current = out;
+    setHitsInteractive(out, live.current.interactive);
     // Each bar keeps its fixed place on its street, 8 m from where the leg begins, at every zoom; zoomed out the bars of a junction overlap into one compact mark.
     const feats: unknown[] = [];
     for (const { iv, legs } of filters) {
@@ -860,6 +870,9 @@ export function MapView(p: Props) {
     }
     (map.getSource('blocked') as maplibregl.GeoJSONSource | undefined)?.setData({ type: 'FeatureCollection', features: feats } as never);
   }, [p.interventions, ready, bundle, proj, p.index, region]);
+
+  // The Streets tab shows the map as context only: its filter controls neither select nor take focus there.
+  useEffect(() => { setHitsInteractive(markers.current, p.interactive); }, [p.interactive]);
 
   // ---- selection highlight and keeping it in view
   const selKey = p.selection ? `${p.selection.kind}-${p.selection.kind === 'block' ? p.selection.block : p.selection.node}-${p.selection.via}` : '';
@@ -993,7 +1006,7 @@ export function MapView(p: Props) {
           interventions: L.interventions.map((iv) => describeInterventionFull(iv, net, L.index)),
         }),
         legend,
-        keys: { car: L.modes.car, bicycle: L.modes.bicycle, pedestrian: L.modes.pedestrian, agents: { car: AGENT_COLORS[L.mode].car, bike: AGENT_COLORS[L.mode].bike, ped: AGENT_COLORS[L.mode].ped, ring: AGENT_COLORS[L.mode].ring } },
+        keys: { car: L.modes.car && !L.still, bicycle: L.modes.bicycle && !L.still, pedestrian: L.modes.pedestrian && !L.still, symbols: mapSymbols(L.interventions.filter((iv) => interventionInRegion(iv, net, L.region)), !!L.intentPaths?.length), reasonColor: INTENT_COLORS[L.mode].line, agents: { car: AGENT_COLORS[L.mode].car, bike: AGENT_COLORS[L.mode].bike, ped: AGENT_COLORS[L.mode].ped, ring: AGENT_COLORS[L.mode].ring } },
         theme: { surface: v('--surface', '#ffffff'), text: v('--text', '#1b2430'), muted: v('--muted', '#4a5565'), border: v('--border', '#c9c6bc') },
       });
       const blob = await new Promise<Blob | null>((res) => cv.toBlob(res, FORMATS[fmt].mime, 0.92));

@@ -7,25 +7,22 @@ import type { NetIndex } from '../lib/naming';
 import { checkThroughRoutes, ROUTE_CAVEAT } from '../lib/throughroutes';
 import { buildMockProposals } from '../fixtures/proposals';
 import {
-  allTrafficNote, allTrafficRows, beforeAfterPct, cutThroughHeadline, fetchProposals, formatComputed, harmHeadline, periodsPhrase, hashLoaded, linkHash, needsConfirm, openReducer,
+  allTrafficNote, allTrafficRows, beforeAfterPct, cutThroughHeadline, fetchProposals, formatComputed, harmHeadline, periodsPhrase, linkHash, needsConfirm, openReducer,
   proposalNotices, proposalsUrl, signedNum, signedPct, splitProposals,
   type LoadedHashes, type Proposal, type ProposalGroup, type ProposalsState,
 } from '../lib/proposals';
 
 const mockParam = new URLSearchParams(location.search).get('mockProposals');
 
-/** Fetched once, the first time the tab is open. A missing file is the normal "none yet" state. */
-export function useProposals(bundle: AreaBundle, active: boolean): { state: ProposalsState; loaded: LoadedHashes } {
+/** Fetched once, the first time the tab is open and the app's input hashes are known. A missing file is the normal "none yet" state. */
+export function useProposals(bundle: AreaBundle, active: boolean, hashes: LoadedHashes | null): ProposalsState {
   const [state, setState] = useState<ProposalsState>({ status: 'idle' });
-  const [loaded, setLoaded] = useState<LoadedHashes>({ network: null, demand: null });
   const started = useRef(false);
   useEffect(() => {
-    if (!active || started.current) return;
+    if (!active || started.current || !hashes) return;
     started.current = true;
     setState({ status: 'loading' });
     (async () => {
-      const hashes = await hashLoaded(bundle.raw);
-      setLoaded(hashes);
       if (mockParam) {
         const file = buildMockProposals(bundle.network, {
           networkHash: hashes.network ?? 'unknown', demandHash: hashes.demand ?? 'unknown',
@@ -37,8 +34,8 @@ export function useProposals(bundle: AreaBundle, active: boolean): { state: Prop
       const file = bundle.synthetic ? null : await fetchProposals(proposalsUrl(bundle.entry));
       setState(file ? { status: 'ready', file } : { status: 'none' });
     })();
-  }, [active, bundle]);
-  return { state, loaded };
+  }, [active, bundle, hashes]);
+  return state;
 }
 
 interface Props {

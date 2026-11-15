@@ -1,7 +1,7 @@
 import type { Intervention } from '../types';
 import { changeMagnitude } from './change';
 import { formatClock } from './format';
-import type { LegendModel } from './legend';
+import { badgeKey, type LegendModel, type MapSymbols } from './legend';
 import { RUN_SECONDS } from './run';
 
 export const ATTRIBUTION = '© OpenStreetMap contributors';
@@ -126,7 +126,11 @@ export function drawBadges(g: CanvasRenderingContext2D, marks: BadgeMark[]) {
 }
 
 export interface Theme { surface: string; text: string; muted: string; border: string }
-export interface Keys { car: boolean; bicycle: boolean; pedestrian: boolean; agents: { car: string; bike: string; ped: string; ring: string } }
+export interface Keys {
+  car: boolean; bicycle: boolean; pedestrian: boolean; agents: { car: string; bike: string; ped: string; ring: string };
+  /** Marks drawn on this image besides the colored streets, and the color of the reason line. */
+  symbols: MapSymbols; reasonColor: string;
+}
 
 export interface ComposeInput {
   /** The map as pixels, already `EXPORT_SCALE` times its CSS size. */
@@ -155,7 +159,8 @@ export function composeImage(c: ComposeInput): HTMLCanvasElement {
   const note = c.legend.change ? CHANGE_NOTE : FLAT_NOTE;
   probe.font = `11px ${FONT}`;
   const noteLines = wrapText((t) => probe.measureText(t).width, note, W - pad * 2);
-  const footH = 78 + noteLines.length * 14 + 22;
+  const keyRows = layoutKeys(probe, c, W - pad * 2);
+  const footH = 78 + (keyRows.length - 1) * 18 + noteLines.length * 14 + 22;
   const cv = document.createElement('canvas');
   cv.width = Math.round(W * s); cv.height = Math.round((headH + H + footH) * s);
   const g = cv.getContext('2d')!;
@@ -176,13 +181,41 @@ export function composeImage(c: ComposeInput): HTMLCanvasElement {
   g.strokeStyle = c.theme.border; g.lineWidth = 1;
   g.beginPath(); g.moveTo(0, headH + H + 0.5); g.lineTo(W, headH + H + 0.5); g.stroke();
 
-  drawLegend(g, c, pad, headH + H, noteLines);
+  drawLegend(g, c, pad, headH + H, noteLines, keyRows);
   g.fillStyle = c.theme.muted; g.font = `12px ${FONT}`; g.textAlign = 'right';
   g.fillText(ATTRIBUTION, W - pad, headH + H + footH - 8);
   return cv;
 }
 
-function drawLegend(g: CanvasRenderingContext2D, c: ComposeInput, x0: number, y0: number, noteLines: string[]) {
+interface KeyItem { label: string; width: number; extra?: number; shape(g: CanvasRenderingContext2D, x: number, y: number): void }
+
+/** The symbols the image needs a key for, in rows that fit `maxW`. Agents only appear while cars are drawn; a stored result draws none. */
+function layoutKeys(g: CanvasRenderingContext2D, c: ComposeInput, maxW: number): KeyItem[][] {
+  const A = c.keys.agents, S = c.keys.symbols;
+  const items: Omit<KeyItem, 'width'>[] = [];
+  if (c.keys.car) items.push({ label: 'Cars', shape: (g2, x, y) => { g2.lineWidth = 1; g2.strokeStyle = A.ring; g2.fillStyle = A.car; g2.beginPath(); g2.arc(x, y, 4.5, 0, 7); g2.fill(); g2.stroke(); } });
+  if (c.keys.bicycle) items.push({ label: 'Bikes', shape: (g2, x, y) => { g2.lineWidth = 1; g2.strokeStyle = A.ring; g2.fillStyle = A.bike; g2.beginPath(); g2.moveTo(x, y - 5); g2.lineTo(x + 5.5, y + 4); g2.lineTo(x - 5.5, y + 4); g2.closePath(); g2.fill(); g2.stroke(); } });
+  if (c.keys.pedestrian) items.push({ label: 'People walking', shape: (g2, x, y) => { g2.lineWidth = 1; g2.strokeStyle = A.ring; g2.fillStyle = A.ped; g2.fillRect(x - 4, y - 4, 8, 8); g2.strokeRect(x - 4, y - 4, 8, 8); } });
+  if (S.bar) items.push({ label: 'Bar: closed to through cars (modal filter)', extra: 10, shape: (g2, x, y) => { g2.fillStyle = '#fff'; g2.fillRect(x - 6, y - 4, 22, 8); g2.fillStyle = '#111'; g2.fillRect(x - 6, y - 3, 22, 6); g2.fillStyle = '#ffd43b'; for (let i = 0; i < 2; i++) g2.fillRect(x - 5 + i * 11, y - 1.5, 5.5, 3); } });
+  if (S.diverter) items.push({ label: 'Striped line: diagonal diverter', extra: 10, shape: (g2, x, y) => { g2.save(); g2.translate(x + 5, y); g2.rotate(1); g2.lineCap = 'butt'; for (const [w, col, dash] of [[8, '#fff', []], [6, '#111', []], [3, '#ffd43b', [4, 2]]] as [number, string, number[]][]) { g2.setLineDash(dash); g2.lineWidth = w; g2.strokeStyle = col; g2.beginPath(); g2.moveTo(0, -7); g2.lineTo(0, 7); g2.stroke(); } g2.restore(); } });
+  for (const t of S.badges) {
+    const k = badgeKey(t), st = BADGE_STYLE[t];
+    items.push({ label: `${k.text} ${k.name}`, shape: (g2, x, y) => { g2.fillStyle = st.fill; g2.strokeStyle = st.edge; g2.lineWidth = 1.5; g2.beginPath(); g2.arc(x, y, 4.5, 0, 7); g2.fill(); g2.stroke(); } });
+  }
+  if (S.reason) items.push({ label: 'Violet dashed line: typical path of the chosen reason', extra: 10, shape: (g2, x, y) => { g2.save(); g2.setLineDash([6, 3]); g2.lineWidth = 3; g2.strokeStyle = c.keys.reasonColor; g2.beginPath(); g2.moveTo(x - 6, y); g2.lineTo(x + 16, y); g2.stroke(); g2.restore(); } });
+  g.font = `11px ${FONT}`;
+  const rows: KeyItem[][] = [[]];
+  let used = 0;
+  for (const it of items) {
+    const width = 16 + (it.extra ?? 0) + g.measureText(it.label).width + 14;
+    if (used > 0 && used + width > maxW) { rows.push([]); used = 0; }
+    rows[rows.length - 1].push({ ...it, width });
+    used += width;
+  }
+  return rows;
+}
+
+function drawLegend(g: CanvasRenderingContext2D, c: ComposeInput, x0: number, y0: number, noteLines: string[], keyRows: KeyItem[][]) {
   const L = c.legend, th = c.theme;
   g.textAlign = 'left'; g.fillStyle = th.text; g.font = `700 12px ${FONT}`;
   g.fillText(L.name, x0, y0 + 20);
@@ -203,18 +236,13 @@ function drawLegend(g: CanvasRenderingContext2D, c: ComposeInput, x0: number, y0
   g.textAlign = 'left'; g.fillText(L.ticks[4], barX + barW + 4, barY + 10);
   g.textAlign = 'center';
   for (const i of [1, 2, 3]) g.fillText(L.ticks[i], barX + (barW * i) / 4, barY + barH + 13);
-  // Symbols for the modes drawn on the map, then a note for the change view.
-  let kx = x0, ky = y0 + 72;
+  // Keys for what is drawn on the map, then a note for the change view.
+  const ky = y0 + 72;
   g.textAlign = 'left'; g.font = `11px ${FONT}`;
-  const A = c.keys.agents;
-  const key = (label: string, shape: (x: number, y: number) => void) => {
-    shape(kx + 6, ky - 4); g.fillStyle = th.text; g.fillText(label, kx + 16, ky);
-    kx += 16 + g.measureText(label).width + 14;
-  };
-  g.lineWidth = 1; g.strokeStyle = A.ring;
-  if (c.keys.car) key('Cars', (x, y) => { g.fillStyle = A.car; g.beginPath(); g.arc(x, y, 4.5, 0, 7); g.fill(); g.stroke(); });
-  if (c.keys.bicycle) key('Bikes', (x, y) => { g.fillStyle = A.bike; g.beginPath(); g.moveTo(x, y - 5); g.lineTo(x + 5.5, y + 4); g.lineTo(x - 5.5, y + 4); g.closePath(); g.fill(); g.stroke(); });
-  if (c.keys.pedestrian) key('People walking', (x, y) => { g.fillStyle = A.ped; g.fillRect(x - 4, y - 4, 8, 8); g.strokeRect(x - 4, y - 4, 8, 8); });
+  keyRows.forEach((row, r) => {
+    let kx = x0;
+    for (const k of row) { k.shape(g, kx + 6, ky + r * 18 - 4); g.fillStyle = th.text; g.textAlign = 'left'; g.fillText(k.label, kx + 16 + (k.extra ?? 0), ky + r * 18); kx += k.width; }
+  });
   g.fillStyle = th.muted;
-  noteLines.forEach((l, i) => g.fillText(l, x0, ky + 18 + i * 14));
+  noteLines.forEach((l, i) => g.fillText(l, x0, ky + (keyRows.length - 1) * 18 + 18 + i * 14));
 }

@@ -344,21 +344,47 @@ export function countReportLines(r: CountReport): string[] {
   return L;
 }
 
-export interface TripEnds { entries: number; exits: number; through: number; destinations: number; origins: number }
+export interface TripEnds { entries: number; exits: number; through: number; destinations: number; origins: number; /** Entries and exits with no count in this period whose volume was estimated from the other period (ASSUMPTION). */ filled: string[]; /** AM count over PM count of the entries counted in both periods, the ratio the fill used. */ fillRatio: { entering: number | null; leaving: number | null } }
+
+/**
+ * Values per period for a list of counted things where some are missing in a period: a missing value is the other period's value times the ratio of the totals over the items
+ * counted in both periods (ASSUMPTION: an uncounted entry follows the same AM-to-PM ratio as the counted ones). Nothing is filled when no item is counted in both.
+ */
+export function fillMissing(rows: Record<'am' | 'pm', number | null>[]): { values: Record<'am' | 'pm', number>[]; filled: { index: number; period: 'am' | 'pm' }[]; ratio: { amOverPm: number } | null } {
+  let a = 0, b = 0;
+  for (const r of rows) if (r.am != null && r.pm != null) { a += r.am; b += r.pm; }
+  const ratio = a > 0 && b > 0 ? a / b : null;
+  const filled: { index: number; period: 'am' | 'pm' }[] = [];
+  const values = rows.map((r, index) => {
+    const v = { am: r.am ?? 0, pm: r.pm ?? 0 };
+    if (ratio !== null) {
+      if (r.am == null && r.pm != null) { v.am = r.pm * ratio; filled.push({ index, period: 'am' }); }
+      else if (r.pm == null && r.am != null) { v.pm = r.am / ratio; filled.push({ index, period: 'pm' }); }
+    }
+    return v;
+  });
+  return { values, filled, ratio: ratio === null ? null : { amOverPm: ratio } };
+}
 
 /**
  * Trip ends inside the neighborhood implied by the count, per period id: vehicles entering minus the cars that drive a whole counted street (they enter and leave
  * without stopping, so they are no trip end), and the same for vehicles leaving (volume of the reverse link of every entry link). A lower bound on `through` (only the
- * counted streets), so an upper bound on the ends. Midday has no count: the mean of the two counted periods' ratios to the offered ends is the caller's choice.
+ * counted streets), so an upper bound on the ends. An entry or exit that was not counted in a period takes the other period's count times the ratio over the entries counted
+ * in both (`fillMissing`), instead of counting as zero. Midday has no count: the mean of the two counted periods' ratios to the offered ends is the caller's choice.
  */
 export function tripEnds(file: CountFile, res: { stations: CountStation[]; report: CountReport }, net: CNet, periods: PeriodMap, cfg?: Pick<CountConfig, 'otherThrough'>): Record<string, TripEnds> {
   const rev = new Map(net.links.map((l) => [l.id, (l as CLink & { reverse?: number | null }).reverse ?? null]));
   const blk = new Map(res.stations.filter((s) => s.family === 'block').map((s) => [s.links[0], s]));
   const out: Record<string, TripEnds> = {};
+  const ents = res.report.entries;
+  const get = (e: (typeof ents)[number], p: 'am' | 'pm') => e.counted[periods[p]] ?? null;
+  const exitOf = (e: (typeof ents)[number], p: 'am' | 'pm') => { const r = rev.get(e.link); return r !== null && r !== undefined ? blk.get(r)?.target[periods[p]] ?? null : null; };
+  const inF = fillMissing(ents.map((e) => ({ am: get(e, 'am'), pm: get(e, 'pm') })));
+  const outF = fillMissing(ents.map((e) => ({ am: exitOf(e, 'am'), pm: exitOf(e, 'pm') })));
   for (const p of ['am', 'pm'] as const) {
     const id = periods[p];
-    let entries = 0, exits = 0;
-    for (const e of res.report.entries) { entries += e.counted[id] ?? 0; const r = rev.get(e.link); exits += (r !== null && r !== undefined ? blk.get(r)?.target[id] : 0) ?? 0; }
+    const entries = inF.values.reduce((a, v) => a + v[p], 0), exits = outF.values.reduce((a, v) => a + v[p], 0);
+    const filled = [...inF.filled.filter((q) => q.period === p).map((q) => `${ents[q.index].label} entering`), ...outF.filled.filter((q) => q.period === p).map((q) => `${ents[q.index].label} leaving`)];
     const counted = res.stations.filter((s) => s.family === 'route').reduce((a, s) => a + (s.target[id] ?? 0), 0);
     let extra = 0;
     const ot = cfg?.otherThrough;
@@ -367,11 +393,11 @@ export function tripEnds(file: CountFile, res: { stations: CountStation[]; repor
       const enter = rows.reduce((a, r) => a + r.tableTotals.enteringAtStart, 0);
       const share = enter > 0 ? rows.reduce((a, r) => a + r.tableTotals.drivingEntireRoute, 0) / enter : 0;
       let base = 0;
-      for (const e of res.report.entries) if (ot.entries.some((k) => e.label.includes(k))) base += e.counted[id] ?? 0;
+      ents.forEach((e, i) => { if (ot.entries.some((k) => e.label.includes(k))) base += inF.values[i][p]; });
       extra = share * ot.scale * base;
     }
-    const through = counted + extra;
-    out[id] = { entries, exits, through, destinations: Math.max(0, entries - through), origins: Math.max(0, exits - through) };
+  const through = counted + extra;
+    out[id] = { entries, exits, through, destinations: Math.max(0, entries - through), origins: Math.max(0, exits - through), filled, fillRatio: { entering: inF.ratio?.amOverPm ?? null, leaving: outF.ratio?.amOverPm ?? null } };
   }
   return out;
 }

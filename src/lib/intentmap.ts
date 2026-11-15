@@ -14,11 +14,31 @@ const MARGIN = 5;
 
 export interface MapLine { link: number; d: string; w: number; vph: number }
 export interface MapArrow { x: number; y: number; angle: number; w: number }
-export interface MapEnd { kind: 'from' | 'to'; text: string; x: number; y: number; anchor: 'start' | 'end'; dot: { x: number; y: number } }
+export interface MapEnd { kind: 'from' | 'to'; street: string; text: string; x: number; y: number; anchor: 'start' | 'end'; dot: { x: number; y: number } }
 export interface IntentMapModel extends BaseMap { lines: MapLine[]; arrows: MapArrow[]; ends: MapEnd[]; maxVph: number; fontSize: number }
 
 const fmt = (v: number) => (Math.round(v * 10) / 10).toString();
 const pathOf = (g: [number, number][]) => g.map(([x, y], i) => `${i ? 'L' : 'M'}${fmt(x)} ${fmt(-y)}`).join('');
+
+interface Box { x0: number; x1: number; y0: number; y1: number }
+const endBox = (e: MapEnd, size: number): Box => {
+  const w = e.text.length * CHAR_W * size;
+  return { x0: e.anchor === 'start' ? e.x : e.x - w, x1: e.anchor === 'start' ? e.x + w : e.x, y0: e.y - size, y1: e.y + 0.25 * size };
+};
+/** Bounding box of a street name drawn along its street: its text box turned by the street's angle, padded a little. */
+const nameBox = (n: { text: string; x: number; y: number; angle: number }, size: number, pad: number): Box => {
+  const w = n.text.length * CHAR_W * size * 0.95, h = size * 1.2, a = (n.angle * Math.PI) / 180;
+  const hw = (Math.abs(Math.cos(a)) * w + Math.abs(Math.sin(a)) * h) / 2, hh = (Math.abs(Math.sin(a)) * w + Math.abs(Math.cos(a)) * h) / 2;
+  return { x0: n.x - hw - pad, x1: n.x + hw + pad, y0: n.y - hh - h * 0.3 - pad, y1: n.y + hh + pad };
+};
+const overlap = (a: Box, b: Box) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
+
+/** Boundary street names that would sit under a From or To label are dropped: the label already names its street, and nothing is drawn over anything else. */
+export function keepNames<N extends { text: string; x: number; y: number; angle: number }>(names: N[], ends: MapEnd[], unit: number, size: number): N[] {
+  const boxes = ends.map((e) => endBox(e, size));
+  return names.filter((n) => !ends.some((e) => e.street === n.text || Math.hypot(n.x - e.dot.x, n.y - e.dot.y) <= 45 * unit)
+    && !boxes.some((b) => overlap(nameBox(n, size, 2 * unit), b)));
+}
 
 /** The static map of one reason's typical path: the area, quiet streets, boundary names, the path with width by cars an hour, arrows for direction and where it starts and ends. */
 export function buildIntentMap(net: Network, idx: NetIndex, paths: IntentPaths, base: BaseMap = buildBaseMap(net)): IntentMapModel {
@@ -51,10 +71,10 @@ export function buildIntentMap(net: Network, idx: NetIndex, paths: IntentPaths, 
     const anchor: 'start' | 'end' = x + w + MARGIN * unit > view.x + view.w ? 'end' : 'start';
     const tx = Math.max(view.x + MARGIN * unit + (anchor === 'end' ? w : 0), Math.min(view.x + view.w - MARGIN * unit - (anchor === 'start' ? w : 0), x + (anchor === 'start' ? 7 : -7) * unit));
     const ty = Math.max(view.y + size + MARGIN * unit, Math.min(view.y + view.h - MARGIN * unit, y - 7 * unit));
-    ends.push({ kind, text, x: tx, y: ty, anchor, dot: { x, y } });
+    ends.push({ kind, street: name, text, x: tx, y: ty, anchor, dot: { x, y } });
   };
   e.from.slice(0, 1).forEach((f) => place('from', f.name, f.link));
   e.to.slice(0, 1).forEach((t) => place('to', t.name, t.link));
-  const names = base.names.filter((n) => ends.every((e) => Math.hypot(n.x - e.dot.x, n.y - e.dot.y) > 45 * unit));
+  const names = keepNames(base.names, ends, unit, size);
   return { ...base, names, lines, arrows, ends, maxVph: paths.maxVph, fontSize: size };
 }

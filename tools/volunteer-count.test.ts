@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { assign, buildGraph, type ALink, type ANode } from './lib/assign';
 import { assigned, fitToCounts, DEFAULT_FIT } from './lib/fit-counts';
-import { countStations, mapBlock, mapMovement, nodeStreets, tripEnds, type CNet, type CountConfig, type CountFile } from './lib/volunteer-count';
+import { countStations, mapBlock, mapMovement, nodeStreets, fillMissing, tripEnds, type CNet, type CountConfig, type CountFile } from './lib/volunteer-count';
 
 // A small grid with invented names: Pine Street runs north-south, crossed by Alder, Birch, Cedar and Dune Streets; Ridge Road is the arterial at its south end, Summit Road at its north end.
 // Node ids: 0 = Pine/Ridge, 1 = Pine/Alder, 2 = Pine/Birch, 3 = Pine/Cedar, 4 = Pine/Summit; side nodes 5.. are the other ends of the cross streets.
@@ -69,6 +69,9 @@ describe('count stations', () => {
     expect(first.target).toMatchObject({ pm: 100, am: 40 });
     expect(first.target.mid).toBeCloseTo(62, 6);
     expect(first.weightByPeriod!.mid).toBe(0.5);
+    expect(first.derived).toEqual(['mid']);
+    expect(stations.filter((s) => s.family === 'movement').every((s) => s.derived?.[0] === 'mid')).toBe(true);
+    expect(blk.find((s) => !s.target.mid)?.derived).toBeUndefined();
   });
   it('down-weights uncertain values and never holds them out', () => {
     const { stations } = run();
@@ -103,6 +106,30 @@ describe('count stations', () => {
     expect(e.pm).toMatchObject({ entries: 100, exits: 80, through: 60 });
     expect(e.pm.destinations).toBe(40);
     expect(e.pm.origins).toBe(20);
+  });
+});
+
+describe('entries not counted in a period', () => {
+  it('fills a missing value from the other period with the ratio over the items counted in both', () => {
+    const r = fillMissing([{ am: 50, pm: 100 }, { am: 30, pm: 60 }, { am: null, pm: 80 }, { am: 10, pm: null }]);
+    expect(r.ratio!.amOverPm).toBeCloseTo(0.5, 9);
+    expect(r.values[2].am).toBeCloseTo(40, 9);
+    expect(r.values[3].pm).toBeCloseTo(20, 9);
+    expect(r.filled).toEqual([{ index: 2, period: 'am' }, { index: 3, period: 'pm' }]);
+  });
+  it('leaves values at zero when no item is counted in both periods', () => {
+    const r = fillMissing([{ am: 5, pm: null }, { am: null, pm: 9 }]);
+    expect(r.ratio).toBeNull();
+    expect(r.values).toEqual([{ am: 5, pm: 0 }, { am: 0, pm: 9 }]);
+  });
+  it('counts an entry that was counted only in the PM as an AM entry in the trip ends', () => {
+    const net = grid(), f = file();
+    f.accessPoints = [{ at: ['Ridge Road', 'Pine Street'], side: 's', period: 'pm', in: 100 }, { at: ['Ridge Road', 'Pine Street'], side: 's', period: 'am', in: 50 }, { at: ['Summit Road', 'Pine Street'], side: 'n', period: 'pm', in: 60 }];
+    const r = countStations(f, net, cfg, { am: 'am', pm: 'pm', midday: 'mid' }, { am: 0.85, pm: 1, mid: 0.62 });
+    const e = tripEnds(f, r, net, { am: 'am', pm: 'pm' });
+    expect(e.am.entries).toBeCloseTo(80, 6);
+    expect(e.am.filled.some((x) => x.includes('entering'))).toBe(true);
+    expect(e.pm.entries).toBe(160);
   });
 });
 

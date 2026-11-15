@@ -2,7 +2,7 @@
 //! pairs at a node), movement paths and the movement conflict matrices.
 
 use crate::model::{Control, Network, RoadClass};
-use crate::params::{FORK_LANES, POCKET_MIN_LINK_M, SHARP_TURN_MAX};
+use crate::params::{POCKET_MIN_LINK_M, SHARP_TURN_MAX};
 use std::f64::consts::PI;
 
 /// Half-extent of the node area along each link (m): stop line is this far before the node center
@@ -243,9 +243,6 @@ impl Topo {
     /// blocks the other branch's vehicles behind it.
     fn build_forks(&mut self) {
         self.fork_band = vec![(0, 255); self.mvs.len()];
-        if !FORK_LANES {
-            return;
-        }
         for l in 0..self.n_links {
             let lanes = self.nmain[l];
             if lanes < 2 {
@@ -323,8 +320,6 @@ impl Topo {
                         let rx = pb[0] - pa[0];
                         let ry = pb[1] - pa[1];
                         let s = (rx * (-dy) - ry * (-dx)) / det;
-                        let t = (cx * ry - cy * rx) / det; // pa + s*c = pb - t*d  (t>0 means before pb)
-                        let _ = t;
                         if s.abs() < 3.0 * chord.max(1.0) {
                             x = [pa[0] + s * cx, pa[1] + s * cy];
                         }
@@ -339,7 +334,6 @@ impl Topo {
             }
             self.mcount[n] = self.mvs.len() as u32 - self.mbase[n];
         }
-        let _ = net;
         // Conflict matrices.
         for n in 0..self.n_nodes {
             let base = self.mbase[n] as usize;

@@ -21,20 +21,16 @@ pub const YELLOW_DECEL: f32 = 4.0; // ASSUMPTION: go on yellow if v^2/(2*4) > di
 
 // --- capacity realism (all ASSUMPTION: not sourced in docs/references.md) ---
 pub const NODE_CROSS_S: f32 = 2.0; // ASSUMPTION: s of leader motion credited when checking downstream room before a node crossing (crossing takes ~2-3 s)
-pub const RESERVE_EXIT_ROOM: bool = false; // ASSUMPTION: a vehicle crossing a node holds its length and a 2 m gap on the exit lane until it emerges, and the next vehicle checks the room left after that. Off: the next vehicle checks the room in front of the lane tail only, and `update_transit` still holds a vehicle in the node when the lane has no physical room. On, a 12 m left turn into a 32 m single-lane link discharged one car per 3 to 4 s
 pub const NODE_SAFE_S: f32 = 0.5; // ASSUMPTION: s to spare when an entering vehicle will reach a conflict point just after a crossing one has cleared it
 pub const POCKET_VEH: usize = 3; // ASSUMPTION: left-turn pocket storage, vehicles (~20 m); more lefts queue in the through lane
 pub const POCKET_LEN: f32 = 20.0; // ASSUMPTION: pocket storage length (m); a through-lane queue longer than this blocks pocket entry
 pub const POCKET_MIN_LINK_M: f32 = 40.0; // ASSUMPTION: shortest approach link that can hold a pocket
-pub const MARKED_LEFT_LANE: bool = true; // a left-turn lane marked on the link (OSM `turn:lanes`, [OSMTurnLanes]) holds left-turners along the whole link and they use no other lane; false restores the 3-car pocket rule for marked lanes
 pub const LANE_LOOKAHEAD_M: f32 = 150.0; // ASSUMPTION: a driver picks the lane for the next left or right turn this far ahead of it, across link ends that offer no choice; 0 looks only at the end of the link entered
-pub const TURN_LANE_HALF: bool = true; // ASSUMPTION: a driver sorting for a left (right) turn uses only the left (right) half of the lanes, the middle lane of an odd number included, and waits when they are full; false lets the driver take any lane with room
 pub const SNEAKERS: u8 = 2; // ASSUMPTION: permissive left-turners that may clear per signal cycle on yellow/all-red (HCM practice; [HCM7] value not verified in references.md)
 pub const SHARP_TURN_MAX: f64 = 2.88; // ASSUMPTION: rad (165 degrees); a turn between 149 and 165 degrees onto a street of another name is a sharp turn at an acute junction, not a U-turn
 pub const MID_BLOCK_MIN_M: f32 = 20.0; // ASSUMPTION: a trip with a local end starts and ends along the block when the block offers at least this much room between its two junctions; shorter blocks keep the junction end
 pub const MID_BLOCK_LO: f32 = 0.25; // ASSUMPTION: local trips start and end between this share and 1 - this share of the block, at a position fixed per trip (driveways and parking are spread along the middle of a block; no source for the spread)
 pub const SPAWN_SCAN: usize = 512; // ASSUMPTION: a gate stands for a multilane road whose vehicles arrive side by side, so a waiting trip whose first link has no room does not hold back the trips behind it that use another first link; at most this many waiting trips are scanned per step, in order, and a trip never passes another on the same first link
-pub const FORK_LANES: bool = true; // ASSUMPTION: lanes of a link that forks into several straight-ahead branches are shared out by branch, left branch in the left lanes (OSM `turn:lanes` is not read for this)
 pub const LOCAL_COST_FACTOR: f32 = 1.25; // ASSUMPTION: perceived-cost multiplier for residential/service links in route choice (street hierarchy preference)
 
 pub const VIA_MAX_DETOUR: f64 = 1.3; // ASSUMPTION: default tolerance of an assumed movement (`via`): it is made while the route through it costs at most this multiple of the plain route in the current network; the demand file carries the value that built the flows
@@ -85,7 +81,6 @@ pub const MIN_SWITCH_GAP_S: f64 = 120.0;
 /// ASSUMPTION: a driver whose next link has had no room for this long (s) re-routes whatever its class, backtracking allowed.
 pub const BLOCKED_REROUTE_S: f32 = 60.0;
 pub const EMA_ALPHA: f32 = 0.3; // ASSUMPTION
-pub const ROUTE_COST_BY_TURN: bool = true; // route costs use the measured link time of the vehicles that made the same movement at the link end, not the mean over all movements; false restores one time per link
 pub const ROUTE_NOISE: f32 = 0.08; // ASSUMPTION: per-driver perceived-cost noise (+-8%)
 pub const TURN_RIGHT_S: f32 = 1.0; // ASSUMPTION: turn penalties for routing (s)
 pub const TURN_LEFT_S: f32 = 4.0; // ASSUMPTION
