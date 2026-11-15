@@ -258,7 +258,7 @@ pub fn check_access(study: &Study, ivs: &[Intervention]) -> Result<(), String> {
 
 /// Results of one headless run.
 pub struct RunOut {
-    /// Through vehicles per hour that use a local link (each counted once), over the whole run.
+    /// Through vehicles per hour that use a local link (each counted once), over the run from t = 0.
     pub ct_vph: f64,
     pub veh_km: f64,
     pub inside_n: u64,
@@ -271,11 +271,11 @@ pub struct RunOut {
     pub invalid: u64,
     pub ped_conflicts: u64,
     pub bike_conflicts: u64,
-    /// Veh/h per link over the window after warm-up (cars and trucks; every link).
+    /// Veh/h per link over the run from t = 0 (cars and trucks; every link).
     pub flow: Vec<f32>,
     /// Veh/h per link of through vehicles (the per-link cut-through counters, same window as `flow`).
     pub through: Vec<f32>,
-    /// Mean of the sim's rolling 5-minute mean speed per link (m/s), sampled every 5 minutes after warm-up.
+    /// Mean of the sim's rolling 5-minute mean speed per link (m/s), sampled every 5 minutes from minute 5.
     pub speed: Vec<f32>,
     pub records: Vec<SelectLinkRecord>,
 }
@@ -290,20 +290,17 @@ impl RunOut {
     }
 }
 
-/// Run the simulation headless from an empty network (no initial loading: the search measures its own warm-up). The first `min(600 s, 25%)` of the run is warm-up for the flow and speed figures; cut-through
-/// vehicles per hour cover the whole run, as `metrics().cutThrough` does.
+/// Run the simulation headless the way the app and the stored results do: construction places the agents already en route and settles the
+/// network (`INITIAL_SETTLE_S`), the clock reads 0, and every figure (cut-through, per-link flow and through cars, speeds) covers the
+/// `minutes` from t = 0. A screening run is the same run, only shorter, so its rates are over the same kind of window.
 pub fn run(study: &Study, ivs: &[Intervention], period: &str, seed: u64, minutes: f64, select_links: &[u32]) -> RunOut {
-    let cfg = Config { seed, period: period.into(), select_links: select_links.to_vec(), interventions: ivs.to_vec(), initial_load: false, ..Default::default() };
+    let cfg = Config { seed, period: period.into(), select_links: select_links.to_vec(), interventions: ivs.to_vec(), initial_load: true, ..Default::default() };
     let mut sim = Simulation::from_parts(study.net.clone(), study.demand.clone(), cfg).expect("simulation");
     let nl = study.net.links.len();
     let total = minutes * 60.0;
-    let warm = (0.25 * total).min(600.0);
-    let mut exits0: Vec<u32> = vec![0; nl];
-    let mut ct0: Vec<f32> = vec![0.0; nl];
-    let mut warmed = warm == 0.0;
     let mut speed_sum = vec![0.0f32; nl];
     let mut n_samples = 0u32;
-    let mut next_sample = warm + 300.0;
+    let mut next_sample = 300.0;
     let mut t = 0.0;
     let sample = |sim: &Simulation, sum: &mut Vec<f32>| {
         let st = sim.link_stats();
@@ -315,12 +312,7 @@ pub fn run(study: &Study, ivs: &[Intervention], period: &str, seed: u64, minutes
         let dt = 5.0f64.min(total - t);
         sim.step(dt);
         t += dt;
-        if !warmed && t >= warm - 1e-9 {
-            exits0 = sim.diagnostics().link_exits.to_vec();
-            ct0 = sim.cut_through_exits();
-            warmed = true;
-        }
-        if warmed && t >= next_sample - 1e-9 {
+        if t >= next_sample - 1e-9 {
             sample(&sim, &mut speed_sum);
             n_samples += 1;
             next_sample += 300.0;
@@ -330,7 +322,7 @@ pub fn run(study: &Study, ivs: &[Intervention], period: &str, seed: u64, minutes
         sample(&sim, &mut speed_sum);
         n_samples = 1;
     }
-    let hours = ((total - warm).max(1.0)) / 3600.0;
+    let hours = total.max(1.0) / 3600.0;
     let exits = sim.diagnostics().link_exits.to_vec();
     let ct1 = sim.cut_through_exits();
     let m = sim.metrics();
@@ -348,8 +340,8 @@ pub fn run(study: &Study, ivs: &[Intervention], period: &str, seed: u64, minutes
         invalid: m.invalid_interventions,
         ped_conflicts: m.vulnerable.ped_conflicts,
         bike_conflicts: m.vulnerable.bike_conflicts,
-        flow: (0..nl).map(|l| ((exits[l] - exits0[l]) as f64 / hours) as f32).collect(),
-        through: (0..nl).map(|l| ((ct1[l] - ct0[l]) as f64 / hours) as f32).collect(),
+        flow: (0..nl).map(|l| (exits[l] as f64 / hours) as f32).collect(),
+        through: (0..nl).map(|l| (ct1[l] as f64 / hours) as f32).collect(),
         speed: speed_sum.iter().map(|s| s / n_samples as f32).collect(),
         records: if select_links.is_empty() { Vec::new() } else { sim.select_link_records() },
     }

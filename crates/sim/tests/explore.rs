@@ -901,3 +901,39 @@ fn warm_packages_come_from_matching_groups_only() {
     assert_eq!(got[0][0].ty, "traffic_circle");
     assert!(traffic_sim::explore::profile::warm_packages(None, &study, "x").is_empty());
 }
+
+/// Every candidate, written as a link and read back, gives the same effective network (humps included, whichever way the block's first link runs).
+#[test]
+fn every_candidate_round_trips_to_the_same_effective_network() {
+    use traffic_sim::eff::Eff;
+    use traffic_sim::explore::decode::decode_scenario;
+    for west_first in [false, true] {
+        let mut b = B::default();
+        let gw = b.node(-500.0, 0.0, Control::Uncontrolled, true);
+        let a = b.node(-250.0, 0.0, Control::Uncontrolled, false);
+        let bb = b.node(250.0, 0.0, Control::Uncontrolled, false);
+        let ge = b.node(500.0, 0.0, Control::Uncontrolled, true);
+        let c = b.node(-120.0, -100.0, Control::TwoWayStop, false);
+        let d = b.node(120.0, -100.0, Control::TwoWayStop, false);
+        b.two_way(gw, a, "Main Street", RoadClass::Secondary, 6.0, false);
+        b.two_way(a, bb, "Main Street", RoadClass::Secondary, 6.0, true);
+        b.two_way(bb, ge, "Main Street", RoadClass::Secondary, 6.0, false);
+        b.two_way(a, c, "Cedar Street", RoadClass::Residential, 11.2, true);
+        if west_first {
+            b.two_way(d, c, "Birch Street", RoadClass::Residential, 11.2, true);
+        } else {
+            b.two_way(c, d, "Birch Street", RoadClass::Residential, 11.2, true);
+        }
+        b.two_way(d, bb, "Fir Street", RoadClass::Residential, 11.2, true);
+        let study = study_of(Network { version: 1, id: "t".into(), name: "t".into(), nodes: b.nodes, links: b.links, turn_bans: Vec::new() });
+        let cands = generate(&study, &hot_everywhere(&study), 1000);
+        assert!(cands.iter().any(|c| c.kind == "speed_hump"), "a hump is offered");
+        for c in &cands {
+            let link = study.encode(std::slice::from_ref(&c.iv), Some("p"));
+            let back = decode_scenario(&study.net, &study.topo, study.origin, &link).unwrap();
+            let (x, y) = (Eff::derive(&study.topo, &study.net, std::slice::from_ref(&c.iv)), Eff::derive(&study.topo, &study.net, &back));
+            let same = x.closed == y.closed && x.mv_ok == y.mv_ok && x.limit == y.limit && x.humps == y.humps && x.ctrl == y.ctrl && x.cycle_override == y.cycle_override && x.invalid_ivs == y.invalid_ivs;
+            assert!(same, "{} ({}) changes after the link round trip (west_first {west_first})", c.label, c.kind);
+        }
+    }
+}

@@ -85,6 +85,21 @@ pub fn mph_to_mps(mph: f64) -> f64 {
     (mph / MPS_TO_MPH * 100.0).round() / 100.0
 }
 
+/// A hump written as a link point comes back from the decoder on the link and at the position the decoder finds (it may pick the opposite
+/// direction of the block). Start from the decoder's answer until it maps to itself, so the candidate searched is the scenario a person who opens the link gets.
+fn round_trip_fixed(study: &Study, mut iv: Intervention) -> Option<Intervention> {
+    for _ in 0..4 {
+        let link = study.encode(std::slice::from_ref(&iv), None);
+        let back = super::decode::decode_scenario(&study.net, &study.topo, study.origin, &link).ok()?;
+        let [b] = <[Intervention; 1]>::try_from(back).ok()?;
+        if b.link == iv.link && b.position == iv.position {
+            return Some(iv);
+        }
+        iv = b;
+    }
+    None
+}
+
 pub fn generate(study: &Study, hot: &Hotspots, n_loc: usize) -> Vec<Cand> {
     generate_with(study, hot, n_loc, &Profile::unconstrained())
 }
@@ -161,7 +176,9 @@ pub fn generate_with(study: &Study, hot: &Hotspots, n_loc: usize, profile: &Prof
                 let hump_free = blk.links.iter().all(|&l| net.links[l as usize].humps.is_empty());
                 if hump_free && link.length >= 30.0 {
                     let v = Intervention { ty: "speed_hump".into(), link: Some(a), position: Some((link.length / 2.0 * 10.0).round() / 10.0), ..Default::default() };
-                    add(&mut out, v, "speed_hump", format!("sh:b{b}"), Some(b), nodes.clone(), places.clone(), *score);
+                    if let Some(v) = round_trip_fixed(study, v) {
+                        add(&mut out, v, "speed_hump", format!("sh:b{b}"), Some(b), nodes.clone(), places.clone(), *score);
+                    }
                 }
                 for mph in SPEED_LIMITS_MPH {
                     let mps = mph_to_mps(mph);

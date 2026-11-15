@@ -43,6 +43,8 @@ const cvPath = process.argv.includes('--cv-demand') ? resolve(root, arg('--cv-de
 const keepCv = `${keep}-cv`;
 if (!reuse) { rmSync(keep, { recursive: true, force: true }); mkdirSync(keep, { recursive: true }); }
 if (!reuse && cvPath) { rmSync(keepCv, { recursive: true, force: true }); mkdirSync(keepCv, { recursive: true }); }
+/** A period has counts of its own when some station target in it is not derived (midday has none: its targets are the PM counts times a factor). */
+const hasCounts = (p: string): boolean => !stations || stations.stations.some((q) => (q.target[p] ?? 0) > 0 && !q.derived?.includes(p));
 const minHeld: number = targets.acceptance?.minHeldStations ?? MIN_HELD_RECENT;
 
 const areaCfg = JSON.parse(readFileSync(resolve(root, `data/areas/${area}.json`), 'utf8')) as { signalObservations?: { at: string[]; periods: string[]; observedCarsPerCycle?: { mean?: number; median?: number } }[] };
@@ -69,7 +71,7 @@ for (const p of periods) {
   if (!reuse) {
     const r = spawnSync(bin, ['--area', area, '--period', p, '--minutes', String(minutes), '--scale', '1', '--seeds', seedSpec, '--jobs', jobs, '--keep-seeds', keep, '--out', write ? outDir : join(keep, 'summary'), ...(demandPath ? ['--demand', demandPath] : [])], { cwd: root, stdio: ['ignore', 'ignore', 'inherit'] });
     if (r.status !== 0) { console.error(`assess: calibrate failed for ${p}`); process.exit(1); }
-    if (cvPath) {
+    if (cvPath && hasCounts(p)) {
       const rc = spawnSync(bin, ['--area', area, '--period', p, '--minutes', String(minutes), '--scale', '1', '--seeds', seedSpec, '--jobs', jobs, '--keep-seeds', keepCv, '--out', join(keepCv, 'summary'), '--demand', cvPath], { cwd: root, stdio: ['ignore', 'ignore', 'inherit'] });
       if (rc.status !== 0) { console.error(`assess: calibrate failed for ${p} on the cross-validation demand`); process.exit(1); }
     }
@@ -89,7 +91,7 @@ for (const p of periods) {
   const head = ss.filter((q) => q.headline);
   const d5 = p === 'pm_peak' ? head.length > 0 && head.every((q) => q.within10) : null;
   const sc = stations ? scoreStations(runs, stations, p) : null;
-  const cvR = cvPath || (reuse && existsSync(keepCv)) ? readSeeds(keepCv, area, p, seeds) : [];
+  const cvR = hasCounts(p) && (cvPath || (reuse && existsSync(keepCv))) ? readSeeds(keepCv, area, p, seeds) : [];
   cvRuns[p] = cvR;
   const scCv = stations && cvR.length ? scoreStations(cvR, stations, p) : null;
   const mainSplit = sc && recencyCfg ? ruleSplit(sc.cases.map((c) => ({ year: c.year, c })), recencyCfg) : null;
