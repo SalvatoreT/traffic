@@ -1,0 +1,68 @@
+{
+ "note": "Validation cases that do not meet their expected range. The regression test (crates/sim/tests/validate.rs) tolerates exactly these so that a new failure is caught; they stay failed evidence checks in every assessment. A case is reviewed only when `relevance` states what the deviation means for the intended comparisons, `followUp` names the repair or the limit on use, and `reviewed` is true. Reasons restate the notes of data/calibration/validation.md; none has been reviewed for the intended comparisons yet.",
+ "deviations": [
+  {
+   "id": "a3",
+   "reason": "Start-up lost time is 0.20 s against 1 to 3 s [FHWA-STM2008]: the simulator has no response delay at the onset of green (about 2 s short).",
+   "reviewed": false,
+   "relevance": "unreviewed",
+   "followUp": null
+  },
+  {
+   "id": "e2",
+   "reason": "Two-way stop minor-right capacity at major 600 per direction is 364 veh/h against 378 to 631 [Brilon1999] (gap formula 505, critical gap 6.2 s, follow-up 3.3 s).",
+   "reviewed": false,
+   "relevance": "unreviewed",
+   "followUp": null
+  },
+  {
+   "id": "e3",
+   "reason": "Two-way stop minor-right capacity at major 1000 per direction is 172 veh/h against 223 to 372 [Brilon1999] (gap formula 298).",
+   "reviewed": false,
+   "relevance": "unreviewed",
+   "followUp": null
+  },
+  {
+   "id": "f2",
+   "reason": "Circle entry capacity at 600 circulating veh/h is 482 against 496 to 744 [Rodegerdts2007] (1130 exp(-0.001 vc) = 620).",
+   "reviewed": false,
+   "relevance": "unreviewed",
+   "followUp": null
+  },
+  {
+   "id": "f3",
+   "reason": "Circle entry capacity at 1000 circulating veh/h is 164 against 333 to 499 [Rodegerdts2007] (1130 exp(-0.001 vc) = 416).",
+   "reviewed": false,
+   "relevance": "unreviewed",
+   "followUp": null
+  },
+  {
+   "id": "j6",
+   "reason": "Signal lane with 300 cyclists/h sharing it keeps 0.64 of its capacity against a floor of 0.70; the range has source ASSUMPTION (no verified HCM bicycle factor, the floor is a guess).",
+   "reviewed": false,
+   "relevance": "unreviewed",
+   "followUp": null
+  },
+  {
+   "id": "j8",
+   "reason": "All-way stop with 300 pedestrians/h on each crosswalk keeps 0.49 of its capacity against a floor of 0.60; the range has source ASSUMPTION.",
+   "reviewed": false,
+   "relevance": "unreviewed",
+   "followUp": null
+  },
+  {
+   "id": "j9",
+   "reason": "All-way stop with 600 pedestrians/h on each crosswalk keeps 0.24 of its capacity against a floor of 0.60; the range has source ASSUMPTION.",
+   "reviewed": false,
+   "relevance": "unreviewed",
+   "followUp": null
+  },
+  {
+   "id": "j12",
+   "reason": "All-way stop with 300 cyclists/h per approach keeps 0.56 of its capacity against a floor of 0.70; the range has source ASSUMPTION.",
+   "reviewed": false,
+   "relevance": "unreviewed",
+   "followUp": null
+  }
+ ]
+}

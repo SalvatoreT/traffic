@@ -1,32 +1,49 @@
 // Ten-seed assessment of the baseline (baseline-calibration decision D16 to D18): runs the calibrate binary over a fixed seed list for each period, applies the
 // stability rule, scores the route shares and the count stations (GEH and size bands on the simulator's flows, fitted and held-out), and writes the assessment
 // report and, with --noise, the per-link seed spread file the app can use for a noise band.
-//   npx tsx tools/assess.ts [--area rockridge] [--periods am_peak,midday,pm_peak] [--seeds 1-10] [--jobs 4] [--minutes 60] [--noise] [--no-write] [--reuse DIR] [--suffix NAME] [--demand FILE] [--cv-demand FILE] [--overwrite-main]
-// The held-out stations are scored on the cross-validation demand (the fit without them, `countFit.validation.demandOutput`), run with the same seeds, so their pass rate is out of sample.
-// --demand and --reuse score something other than the shipped demand, so they need --suffix (or --overwrite-main): they would otherwise overwrite the main assessment and the calibrate summaries.
-// Skips with a message (exit 0) when target/release/calibrate is not built. --reuse DIR scores seed reports already in DIR instead of running them.
+//   npx tsx tools/assess.ts [--area rockridge] [--periods am_peak,midday,pm_peak] [--seeds 1-10] [--jobs 4] [--minutes 60] [--noise] [--no-write] [--reuse DIR] [--suffix NAME] [--demand FILE] [--cv-demand FILE] [--publish] [--diagnostic] [--root DIR]
+// Integrity (change protect-calibration-evidence): the verdict needs the exact requested seeds, a manifest on every run, one compatible run set whose inputs still match the files on
+// disk, and a cross-validation demand built as the training view of the frozen split. Stability is computed from those runs. Anything missing or incompatible stops the assessment
+// with the list of problems (exit 3) and writes nothing; --diagnostic instead reports what exists, labeled as a diagnostic with no verdict, and needs --suffix or --no-write.
+// Outputs: the published set (60-minute runs, no suffix: data/calibration/reports, <area>.assessment.md, public/data/<area>.noise.json) is written only with --publish. Everything else, the
+// summaries and the noise file included, goes to a set of its own named by --minutes and --suffix (tools/lib/assess-outputs.ts).
+// The held-out stations are scored on the cross-validation demand (`countFit.validation.demandOutput`, built by `build-demand.ts --view training` from the split without them), run with the same seeds.
+// Skips with a message (exit 0) when target/release/calibrate is not built. --reuse DIR scores seed reports already in DIR instead of running them (they must still match the files on disk).
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
-import { resolve, join } from 'node:path';
-import { throughStats, corridorRatios, featureStats, headlineError, meanLinkFlow, noiseFile, rampStats, readSeeds, scoreStations, shareStats, travelTimes, type SeedRun, type StationFile, type TravelNet } from './lib/assess';
+import { resolve, join, dirname } from 'node:path';
+import { throughStats, corridorRatios, featureStats, headlineError, meanLinkFlow, noiseFile, rampStats, readRuns, scoreStations, shareStats, travelTimes, type SeedRun, type StationFile, type TravelNet } from './lib/assess';
 import { seedStat } from './lib/acceptance';
-import { suggestStatus } from './lib/verdict';
+import { computeStability, stabilityRule, suggestStatus, type Stability } from './lib/verdict';
 import { MIN_HELD_RECENT, outOfSampleSplit, ruleSplit, ruleVerdicts, sourceYearLines, type RuleSplit, type RuleVerdict } from './lib/recency';
 import { writeFileAtomic } from './lib/atomic';
+import { checkPair, checkRunSet, expectedInputs, type RunManifest } from './lib/run-manifest';
+import { isolationProblems, resolveOutputs } from './lib/assess-outputs';
+import { primitiveEvidence, primitiveLines, toVerdict, type ValidationFile } from './lib/primitive-evidence';
+import { scopeLines } from './lib/validation-scope';
 
-const root = resolve(import.meta.dirname, '..');
+const has = (k: string) => process.argv.includes(k);
 const arg = (k: string, d: string) => { const i = process.argv.indexOf(k); return i >= 0 ? process.argv[i + 1] : d; };
+const root = has('--root') ? resolve(arg('--root', '')) : resolve(import.meta.dirname, '..');
 const area = arg('--area', 'rockridge');
 const periods = arg('--periods', 'am_peak,midday,pm_peak').split(',');
 const seedSpec = arg('--seeds', '1-10');
 const jobs = arg('--jobs', '4');
 const minutes = Number(arg('--minutes', '60'));
-const write = !process.argv.includes('--no-write');
-const demandPath = process.argv.includes('--demand') ? resolve(root, arg('--demand', '')) : null;
+const write = !has('--no-write');
+const diagnostic = has('--diagnostic');
+const publish = has('--publish') || has('--overwrite-main');
+const demandPath = has('--demand') ? resolve(root, arg('--demand', '')) : null;
 const suffix = arg('--suffix', '');
-const reuse = process.argv.includes('--reuse') ? resolve(root, arg('--reuse', '')) : null;
-const outDir = resolve(root, arg('--out', 'data/calibration/reports'));
-if ((demandPath || reuse) && !suffix && !process.argv.includes('--overwrite-main') && write) { console.error('assess: --demand and --reuse need --suffix NAME (or --no-write, or --overwrite-main): without one they overwrite the main assessment and the calibrate summaries'); process.exit(2); }
+const reuse = has('--reuse') ? resolve(root, arg('--reuse', '')) : null;
+const outputs = resolveOutputs({ root, area, minutes, suffix, out: has('--out') ? arg('--out', '') : undefined });
+if (write && outputs.published && !publish) { console.error('assess: this run would replace the published evidence (data/calibration/reports, the assessment and the noise file). Give --publish to replace it, or --suffix NAME (or --minutes N) for a separate output set, or --no-write.'); process.exit(2); }
+if (write && !outputs.published && publish) { console.error('assess: --publish is for the published set (60-minute runs, no --suffix)'); process.exit(2); }
+const isolation = isolationProblems(outputs, root, area);
+if (write && isolation.length) { console.error(`assess: a variant would write into published evidence:\n  ${isolation.join('\n  ')}`); process.exit(2); }
+if (diagnostic && write && outputs.published) { console.error('assess: --diagnostic output never goes to the published set; give --suffix NAME or --no-write'); process.exit(2); }
+if (diagnostic && publish) { console.error('assess: --diagnostic and --publish exclude each other'); process.exit(2); }
+if (demandPath && publish) { console.error('assess: --demand scores something other than the shipped demand; it cannot be published (use --suffix)'); process.exit(2); }
 const bin = process.env.CALIBRATE_BIN ? resolve(process.env.CALIBRATE_BIN) : resolve(root, 'target/release/calibrate');
 if (!reuse && !existsSync(bin)) { console.log('assess: target/release/calibrate is not built (cargo build --release -p traffic-sim --bin calibrate); skipping'); process.exit(0); }
 
@@ -38,9 +55,10 @@ const demandCfg = JSON.parse(readFileSync(resolve(root, `data/demand/${area}.con
 const recencyCfg: { referenceYear: number; recentYears: number } | null = demandCfg.countFit?.recency?.enabled ? demandCfg.countFit.recency : null;
 const netPath = resolve(root, `public/data/${area}.network.json`);
 const travelNet: TravelNet | null = targets.travelTimes?.segments?.length && existsSync(netPath) ? JSON.parse(readFileSync(netPath, 'utf8')) : null;
-const keep = reuse ?? resolve(root, 'target/assess-seeds', `${minutes}${suffix}`);
-const cvPath = process.argv.includes('--cv-demand') ? resolve(root, arg('--cv-demand', '')) : demandPath ? null : demandCfg.countFit?.validation?.demandOutput ? resolve(root, demandCfg.countFit.validation.demandOutput) : null;
-const keepCv = `${keep}-cv`;
+const keep = reuse ?? outputs.seeds;
+const cvPath = has('--cv-demand') ? resolve(root, arg('--cv-demand', '')) : demandPath ? null : demandCfg.countFit?.validation?.demandOutput ? resolve(root, demandCfg.countFit.validation.demandOutput) : null;
+const keepCv = reuse ? `${reuse}-cv` : outputs.seedsCv;
+const summaryDir = write ? outputs.reports : join(keep, 'summary');
 if (!reuse) { rmSync(keep, { recursive: true, force: true }); mkdirSync(keep, { recursive: true }); }
 if (!reuse && cvPath) { rmSync(keepCv, { recursive: true, force: true }); mkdirSync(keepCv, { recursive: true }); }
 /** A period has counts of its own when some station target in it is not derived (midday has none: its targets are the PM counts times a factor). */
@@ -66,33 +84,79 @@ const cvRuns: Record<string, SeedRun[]> = {};
 const heldFails: Record<string, { label: string; source?: string; year: number | null; counted: number; cv: number; cvGeh: number; shipped: number; shippedGeh: number }[]> = {};
 const rule = targets.acceptance?.stability ?? {};
 
-L.push(`# Baseline assessment: ${area}`, '', `Generated by \`tools/assess.ts\` (do not edit).${demandPath ? ` Demand: ${arg('--demand', '')}.` : ''}${cvPath ? ` The held-out stations are scored on the cross-validation demand (${cvPath.replace(`${root}/`, '')}), a fit that left them out, with the same seeds; the other stations on the shipped demand.` : ' No cross-validation demand: the held-out stations cannot be scored out of sample.'} ${seeds.length} seeds (${seedSpec}, none chosen), ${minutes}-minute runs at scale 1, the current simulator and demand files. Intervals are 95% intervals of the mean over seeds (Student t). Rules: \`openspec/changes/archive/2026-11-13-baseline-calibration/design.md\` D16 to D18.`, '');
+/** What the assessment is made from, so a reader can tell which runs, simulator and inputs it describes. */
+function provenanceLines(): string[] {
+  const out = ['### Evidence this assessment is made from', ''];
+  const ms = periods.map((p) => acquired[p]).filter((a) => a.mainManifest);
+  const first = ms[0]?.mainManifest, cvFirst = periods.map((p) => acquired[p].cvManifest).find((m) => m) ?? null;
+  if (!first) return [...out, 'No run has a manifest (reports from before manifests): the provenance of these figures is unknown.', ''];
+  const short = (x: string | null | undefined) => (x ? x.slice(0, 12) : 'none');
+  out.push(`- Simulator: fingerprint \`${short(first.simulator.fingerprint)}\`, revision ${[...new Set(ms.flatMap((a) => a.revisions))].map((r) => short(r)).join(', ')}${ms.some((a) => a.dirty) ? ' (working tree had uncommitted changes under crates/)' : ''}.`);
+  out.push(`- Run setup: ${first.run.minutes} minutes, scale ${first.run.scale}, warm-up ${first.run.warmupMin} min (flow tables count minutes ${first.run.measurementWindow.fromMin} to ${first.run.measurementWindow.toMin}), initial load ${first.run.initialLoad ? 'on' : 'off'}; seeds ${seeds.join(', ')}.`);
+  out.push(`- Inputs (SHA-256, first 12): network ${short(first.inputs.network.sha256)}, shipped demand ${short(first.inputs.demand.sha256)}${first.inputs.demandBuild ? ` (built as ${first.inputs.demandBuild.view})` : ''}, ${cvFirst ? `cross-validation demand ${short(cvFirst.inputs.demand.sha256)} (built as ${cvFirst.inputs.demandBuild?.view ?? 'unknown'}), ` : ''}targets ${short(first.inputs.targets.sha256)}, stations ${short(first.inputs.stations.sha256)}, validation split ${short(first.inputs.split.sha256)}.`);
+  return [...out, ''];
+}
 
+// ---------- 1. acquire the runs and check them before anything is judged ----------
+const problems: string[] = [];
+const acquired: Record<string, { main: SeedRun[]; cv: SeedRun[]; mainManifest: RunManifest | null; cvManifest: RunManifest | null; revisions: string[]; dirty: boolean; fingerprint: string | null; wantCv: boolean }> = {};
+const splitSha = expectedInputs(root, area, null).split;
+const mainDemandFile = demandPath ?? resolve(root, `public/data/${area}.demand.json`);
+const cvDemandFile = cvPath ?? (demandCfg.countFit?.validation?.demandOutput ? resolve(root, demandCfg.countFit.validation.demandOutput) : null);
 for (const p of periods) {
   if (!reuse) {
-    const r = spawnSync(bin, ['--area', area, '--period', p, '--minutes', String(minutes), '--scale', '1', '--seeds', seedSpec, '--jobs', jobs, '--keep-seeds', keep, '--out', write ? outDir : join(keep, 'summary'), ...(demandPath ? ['--demand', demandPath] : [])], { cwd: root, stdio: ['ignore', 'ignore', 'inherit'] });
+    const r = spawnSync(bin, ['--area', area, '--period', p, '--minutes', String(minutes), '--scale', '1', '--seeds', seedSpec, '--jobs', jobs, '--keep-seeds', keep, '--out', summaryDir, ...(demandPath ? ['--demand', demandPath] : [])], { cwd: root, stdio: ['ignore', 'ignore', 'inherit'] });
     if (r.status !== 0) { console.error(`assess: calibrate failed for ${p}`); process.exit(1); }
     if (cvPath && hasCounts(p)) {
       const rc = spawnSync(bin, ['--area', area, '--period', p, '--minutes', String(minutes), '--scale', '1', '--seeds', seedSpec, '--jobs', jobs, '--keep-seeds', keepCv, '--out', join(keepCv, 'summary'), '--demand', cvPath], { cwd: root, stdio: ['ignore', 'ignore', 'inherit'] });
       if (rc.status !== 0) { console.error(`assess: calibrate failed for ${p} on the cross-validation demand`); process.exit(1); }
     }
   }
-  const runs = readSeeds(keep, area, p, seeds);
+  const wantCv = hasCounts(p) && !!(cvPath || (reuse && existsSync(keepCv)));
+  const mainFound = readRuns(keep, area, p, seeds);
+  const mainCheck = checkRunSet(`${p}, shipped demand`, seeds, mainFound, expectedInputs(root, area, mainDemandFile));
+  const cvFound = wantCv ? readRuns(keepCv, area, p, seeds) : [];
+  const cvCheck = wantCv ? checkRunSet(`${p}, cross-validation demand`, seeds, cvFound, expectedInputs(root, area, cvDemandFile)) : null;
+  const mainManifest = mainFound.find((q) => q.manifest)?.manifest ?? null, cvManifest = cvFound.find((q) => q.manifest)?.manifest ?? null;
+  problems.push(...mainCheck.problems, ...(cvCheck?.problems ?? []), ...(wantCv ? checkPair(mainManifest, cvManifest, splitSha, !demandPath) : []));
+  acquired[p] = { main: mainFound.flatMap((q) => (q.run ? [q.run] : [])), cv: cvFound.flatMap((q) => (q.run ? [q.run] : [])), mainManifest, cvManifest, revisions: mainCheck.revisions, dirty: mainCheck.dirty, fingerprint: mainCheck.fingerprint, wantCv };
+}
+const fingerprints = [...new Set(periods.map((p) => acquired[p].fingerprint).filter((x): x is string => !!x))];
+if (fingerprints.length > 1) problems.push(`the periods were run on different simulators (${fingerprints.map((x) => x.slice(0, 12)).join(', ')})`);
+if (problems.length && !diagnostic) {
+  console.error(`assess: the runs cannot support a verdict. ${problems.length} problem(s):\n${problems.map((x) => `  - ${x}`).join('\n')}\nNothing was written. Fix the runs (rerun without --reuse), or give --diagnostic with --suffix or --no-write to report what exists without a verdict.`);
+  process.exit(3);
+}
+const validationPath = join(root, 'data/calibration/validation.json');
+const validationFile: ValidationFile | null = existsSync(validationPath) ? JSON.parse(readFileSync(validationPath, 'utf8')) : null;
+const primitives = primitiveEvidence(validationFile, fingerprints[0] ?? null);
+const nameOf = (p: string) => (p.startsWith(`${root}/`) ? p.slice(root.length + 1) : p);
+
+L.push(`# Baseline assessment: ${area}`, '');
+if (diagnostic) L.push(`**DIAGNOSTIC OUTPUT: no calibration or stability verdict is issued.** The runs do not satisfy the rules for an assessment (${problems.length} problem(s) below); the figures describe only the runs that exist.`, '', ...problems.map((x) => `- ${x}`), '');
+const nRuns = (p: string) => `${acquired[p].main.length} of ${seeds.length}`;
+L.push(`Generated by \`tools/assess.ts\` (do not edit).${demandPath ? ` Variant demand: ${nameOf(demandPath)} (not the shipped demand).` : ''}${cvPath ? ` The held-out stations are scored on the cross-validation demand (${nameOf(cvPath)}), built as the training view of the frozen split (their observations are removed from every count-derived step), with the same seeds; the other stations on the shipped demand.` : ' No cross-validation demand: the held-out stations cannot be scored out of sample.'} ${diagnostic ? `Seeds found per period: ${periods.map((p) => `${p} ${nRuns(p)}`).join(', ')} of the requested ${seedSpec}` : `${seeds.length} seeds (${seedSpec}, none chosen)`}, ${minutes}-minute runs at scale 1. Intervals are 95% intervals of the mean over seeds (Student t). Rules: \`openspec/changes/archive/2026-11-13-baseline-calibration/design.md\` D16 to D18.`, '');
+L.push(...provenanceLines());
+L.push(...scopeLines({ cvDemand: !!cvPath, splitSha, minHeld }));
+
+for (const p of periods) {
+  const acq = acquired[p];
+  const runs = acq.main;
   byPeriod[p] = runs;
+  if (!runs.length) { L.push(`## ${p}`, '', `No run report exists for ${p}; nothing to report.`, ''); verdicts[p] = { stable: false, d5: null, flow: null, through: null, rule: null }; splits[p] = null; continue; }
   const n = runs.length;
   const per = 60 / minutes;
   const rem = seedStat(runs.map((r) => r.health.gridlockRemoved * per));
   const bl = runs.map((r) => r.health.backlogPct);
-  const blOk = bl.filter((b) => b < (rule.backlogPct ?? 2)).length;
   const speed = seedStat(runs.map((r) => r.health.arterialMeanSpeed));
   const done = seedStat(runs.map((r) => r.health.completed));
-  const stableFromRust = (() => { try { return JSON.parse(readFileSync(join(write ? outDir : join(keep, 'summary'), `${area}-${p}-s1-seeds${seeds[0]}-${seeds[seeds.length - 1]}.json`), 'utf8')).stability; } catch { return null; } })();
-  const stable: boolean = stableFromRust ? stableFromRust.holds : false;
+  const stab: Stability = computeStability(runs, stabilityRule(targets));
+  const stable: boolean = stab.holds;
   const ss = shareStats(runs, p === 'pm_peak');
   const head = ss.filter((q) => q.headline);
   const d5 = p === 'pm_peak' ? head.length > 0 && head.every((q) => q.within10) : null;
   const sc = stations ? scoreStations(runs, stations, p) : null;
-  const cvR = hasCounts(p) && (cvPath || (reuse && existsSync(keepCv))) ? readSeeds(keepCv, area, p, seeds) : [];
+  const cvR = acq.cv;
   cvRuns[p] = cvR;
   const scCv = stations && cvR.length ? scoreStations(cvR, stations, p) : null;
   const mainSplit = sc && recencyCfg ? ruleSplit(sc.cases.map((c) => ({ year: c.year, c })), recencyCfg) : null;
@@ -112,7 +176,7 @@ for (const p of periods) {
   verdicts[p] = { stable, d5, flow, through: th.length ? th.every((q) => q.inside) : null, rule: rv };
 
   L.push(`## ${p}`, '');
-  L.push(`**Stability rule (D16): ${stable ? 'holds' : 'fails'}.** Mean removals ${f(rem.mean)} per hour (min ${f(rem.min)}, max ${f(rem.max)}; rule below ${rule.maxMeanRemovalsPerHour ?? 1}); backlog under ${rule.backlogPct ?? 2}% in ${blOk} of ${n} seeds (mean ${f(seedStat(bl).mean)}%, max ${f(Math.max(...bl))}%); backlog growth in the second half: ${stableFromRust ? (stableFromRust.growthSeeds.length ? `seeds ${stableFromRust.growthSeeds.join(', ')} exceed ${rule.maxSecondHalfBacklogGrowthPct ?? 2} points` : 'no seed above the limit') : '-'}; arterial speed ${f(speed.mean)} m/s (${f(speed.lo)} to ${f(speed.hi)}); completed trips ${Math.round(done.mean)} (${Math.round(done.lo)} to ${Math.round(done.hi)}). The old rule (zero removals in every seed) passes in ${stableFromRust ? stableFromRust.oldRuleSeedsPassing.length : '-'} of ${n} seeds.`, '');
+  L.push(`**Stability rule (D16): ${diagnostic ? `not judged (diagnostic, ${n} of ${seeds.length} seeds)` : stable ? 'holds' : 'fails'}.** Mean removals ${f(rem.mean)} per hour (min ${f(rem.min)}, max ${f(rem.max)}; rule below ${rule.maxMeanRemovalsPerHour ?? 1}); backlog under ${rule.backlogPct ?? 2}% in ${stab.backlogSeedsOk} of ${n} seeds (mean ${f(seedStat(bl).mean)}%, max ${f(Math.max(...bl))}%); backlog growth in the second half: ${stab.growthSeeds.length ? `seeds ${stab.growthSeeds.join(', ')} exceed ${rule.maxSecondHalfBacklogGrowthPct ?? 2} points` : 'no seed above the limit'}; arterial speed ${f(speed.mean)} m/s (${f(speed.lo)} to ${f(speed.hi)}); completed trips ${Math.round(done.mean)} (${Math.round(done.lo)} to ${Math.round(done.hi)}). The old rule (zero removals in every seed) passes in ${stab.oldRuleSeedsPassing.length} of ${n} seeds. Computed from these ${n} runs.`, '');
   L.push(`Route shares (modeled seed mean, 95% interval, observed${p === 'pm_peak' ? ', PM values' : '; the observed values are the PM ones, shown for comparison only'}):`, '', '| Share | Observed | Modeled | 95% interval | Error (points) | Within 10 |', '| --- | --- | --- | --- | --- | --- |');
   for (const q of ss) L.push(`| ${q.headline ? '**' : ''}${q.block} ${q.side} ${q.via}${q.headline ? '**' : ''} | ${pct(q.observed, 0)} | ${pct(q.mean)} | ${pct(q.lo)} to ${pct(q.hi)} | ${f(q.errPoints, 1)} | ${q.within10 ? 'yes' : 'NO'} |`);
   L.push('', `Headline shares: mean absolute error ${f(headlineError(ss), 1)} points; ${head.filter((q) => q.within10).length} of ${head.length} within 10 points${d5 === null ? ' (not gated outside the PM peak)' : d5 ? ' (D5 holds)' : ' (D5 fails)'}.`, '');
@@ -184,11 +248,11 @@ for (const p of periods) {
 
 const noCounts = (p: string) => verdicts[p].rule?.fitted === 'no counts' && verdicts[p].rule?.held === 'no counts';
 const allStable = periods.every((p) => verdicts[p].stable);
-const status = suggestStatus(Object.fromEntries(periods.map((p) => [p, { stable: verdicts[p].stable, d5: verdicts[p].d5, through: p === 'pm_peak' ? verdicts[p].through : null, stations: noCounts(p) ? null : verdicts[p].flow === true }])));
+const status = suggestStatus(Object.fromEntries(periods.map((p) => [p, { stable: verdicts[p].stable, d5: verdicts[p].d5, through: p === 'pm_peak' ? verdicts[p].through : null, stations: noCounts(p) ? null : verdicts[p].flow === true }])), 'pm_peak', toVerdict(primitives));
 const calibrated = status.calibrated;
-const yn = (v: boolean | null, na = 'n/a') => (v === null ? na : v ? 'pass' : 'FAIL');
+const yn = (v: boolean | null, na = 'n/a') => (diagnostic ? 'not judged' : v === null ? na : v ? 'pass' : 'FAIL');
 const tl = (b: { n: number; ok: number }) => (b.n ? `${b.ok} of ${b.n} (${pct(b.ok / b.n, 0)}%)` : 'none');
-const rvText = (v: RuleVerdict) => (v === 'met' ? 'pass' : v === 'not met' ? 'FAIL' : v === 'too few' ? `too few to judge (fewer than ${minHeld}), not a pass` : 'no counts');
+const rvText = (v: RuleVerdict) => (diagnostic ? 'not judged' : v === 'met' ? 'pass' : v === 'not met' ? 'FAIL' : v === 'too few' ? `too few to judge (fewer than ${minHeld}), not a pass` : 'no counts');
 L.push('## Verdict', '', `Status rules, per period. D16 stability; D5 headline shares (PM peak only, the other periods have no observed shares); the station rule (GEH below 5 at more than 85% of stations) judged on counts from the last ${recencyCfg?.recentYears ?? 5} years: the fitted stations on the shipped demand, the held-out stations on the cross-validation demand (a fit that left them out, same seeds), so the held-out figure is out of sample; at least ${minHeld} recent held-out stations are needed to judge it. A target that is a scaled copy of another period's count (midday = PM x factor, ASSUMPTION) is not a count and is not judged. The through-car check (modeled through cars inside the observed range on each counted block, PM peak only: the other periods have no whole-street counts; no rows is a failure, not a pass).`, '', '| Period | D16 | D5 | Station rule, recent counts, fitted (shipped fit) | Station rule, recent counts, held out (out of sample) | Through cars | Validation stations, in the shipped fit (in sample, not judged) | Older counts, fitted / held out (out of sample) |', '| --- | --- | --- | --- | --- | --- | --- | --- |');
 for (const p of periods) {
   const sp = splits[p], v = verdicts[p];
@@ -206,11 +270,15 @@ if (failing.length) {
 const allCounts = (p: string) => { const sp = splits[p]; return sp ? `${tl(sp.all.fitted)} fitted, ${tl(sp.all.held)} held out (out of sample)` : '-'; };
 const dominant = (p: string) => { const m = new Map<string, number>(); let n = 0; for (const c of scores[p] ?? []) { const age = c.year == null || c.derived ? null : recencyCfg!.referenceYear - c.year; if (age !== null && age <= recencyCfg!.recentYears) { n++; m.set(c.source ?? 'unknown', (m.get(c.source ?? 'unknown') ?? 0) + 1); } } const [src, k] = [...m].sort((a, b) => b[1] - a[1])[0] ?? ['none', 0]; return `${p}: ${k} of ${n} recent stations come from one source (${src})`; };
 const midday = periods.filter(noCounts);
-L.push('', `${midday.length ? `No ${midday.join(', ')} counts exist; ${midday.join(', ')} is checked for stability only, and its station targets (the PM count times a factor, ASSUMPTION) are not judged. ` : ''}Where the recent pass rate comes from: ${recencyCfg ? periods.filter((p) => !noCounts(p)).map(dominant).join('; ') : '-'}. A source counted on a single day carries one hour of that day. The older counts pass less: ${periods.filter((p) => !noCounts(p)).map((p) => `${p} ${splits[p] ? tl(splits[p]!.older.fitted) : '-'} fitted`).join(', ')}. All counts together: ${periods.filter((p) => !noCounts(p)).map((p) => `${p} ${allCounts(p)}`).join('; ')}.`, '', `Suggested status: **${calibrated ? 'calibrated' : 'uncalibrated'}**; experimental periods: ${status.experimental.join(', ') || 'none'}.${calibrated ? '' : ` Not calibrated because: ${status.reasons.join('; ')}.`}`, '');
+L.push('', `${midday.length ? `No ${midday.join(', ')} counts exist; ${midday.join(', ')} is checked for stability only, and its station targets (the PM count times a factor, ASSUMPTION) are not judged. ` : ''}Where the recent pass rate comes from: ${recencyCfg ? periods.filter((p) => !noCounts(p)).map(dominant).join('; ') : '-'}. A source counted on a single day carries one hour of that day. The older counts pass less: ${periods.filter((p) => !noCounts(p)).map((p) => `${p} ${splits[p] ? tl(splits[p]!.older.fitted) : '-'} fitted`).join(', ')}. All counts together: ${periods.filter((p) => !noCounts(p)).map((p) => `${p} ${allCounts(p)}`).join('; ')}.`, '', '', ...primitiveLines(primitives), `${diagnostic ? '**No status is suggested: diagnostic output.**' : `Suggested status: **${calibrated ? 'calibrated' : 'uncalibrated'}**; experimental periods: ${status.experimental.join(', ') || 'none'}.${calibrated ? '' : ` Not calibrated because: ${status.reasons.join('; ')}.`}${status.qualifications.length ? ` Qualifications: ${status.qualifications.join('; ')}.` : ''}`}`, '');
 console.log(L.join('\n'));
-if (write && !reuse || (write && reuse)) writeFileAtomic(resolve(root, `data/calibration/${area}.assessment${minutes === 60 ? '' : `-${minutes}min`}${suffix ? `-${suffix}` : ''}.md`), L.join('\n') + '\n');
-if (process.argv.includes('--noise') && write) {
+if (write) {
+  mkdirSync(dirname(outputs.assessment), { recursive: true });
+  writeFileAtomic(outputs.assessment, L.join('\n') + '\n');
+}
+if (has('--noise') && write) {
   const nf = noiseFile(area, byPeriod);
-  writeFileAtomic(resolve(root, `public/data/${area}.noise.json`), JSON.stringify(nf));
-  console.log(`noise file: ${JSON.stringify(nf).length} bytes`);
+  mkdirSync(dirname(outputs.noise), { recursive: true });
+  writeFileAtomic(outputs.noise, JSON.stringify(nf));
+  console.log(`noise file ${nameOf(outputs.noise)}: ${JSON.stringify(nf).length} bytes`);
 }

@@ -3,9 +3,12 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { evaluateCases, seedStat, summarizeCases, linkSpread, encodeUint16, type AcceptanceSummary, type CaseResult } from './acceptance';
+import { seedFileName, type RunManifest } from './run-manifest';
 
 export interface SeedRun {
   seed: number; minutes: number; period: string;
+  manifest?: RunManifest | null;
+  series?: { tMin: number; backlog: number }[];
   health: { gridlockRemoved: number; backlogPct: number; completed: number; arterialMeanSpeed: number; spawned: number };
   shares: { block: string; side: string; via: string; observed: number; observedPm: number | null; modelled: number | null; headline: boolean }[];
   rampShares: { direction: string; via: string; observed: number; modelledSide: number | null }[];
@@ -26,11 +29,29 @@ export interface StationFile {
 
 export const seedFile = (dir: string, area: string, period: string, scale: number, seed: number) => join(dir, `${area}-${period}-s${scale}-seed${seed}.json`);
 
+/** Reads the reports that exist, relabeling each with the seed of its file name and skipping missing ones. For the cost loop's own scratch iterations only: an assessment uses `readRuns`, which checks what it reads. */
 export function readSeeds(dir: string, area: string, period: string, seeds: number[], scale = 1): SeedRun[] {
   const out: SeedRun[] = [];
   for (const s of seeds) {
     const p = seedFile(dir, area, period, scale, s);
     if (existsSync(p)) out.push({ ...JSON.parse(readFileSync(p, 'utf8')), seed: s });
+  }
+  return out;
+}
+
+export interface FoundRun { seed: number; file: string; reportSeed?: number; manifest?: RunManifest | null; error?: string; run?: SeedRun }
+
+/** Every requested seed's report as it is on disk: nothing is skipped or relabeled, so that missing, unreadable and mislabeled reports can be named. */
+export function readRuns(dir: string, area: string, period: string, seeds: number[], scale = 1): FoundRun[] {
+  const out: FoundRun[] = [];
+  for (const s of [...new Set(seeds)]) {
+    const file = seedFileName(area, period, scale, s);
+    const p = join(dir, file);
+    if (!existsSync(p)) continue;
+    try {
+      const run = JSON.parse(readFileSync(p, 'utf8')) as SeedRun;
+      out.push({ seed: s, file, reportSeed: run.seed, manifest: run.manifest ?? null, run });
+    } catch (e) { out.push({ seed: s, file, error: `cannot read ${file}: ${(e as Error).message}` }); }
   }
   return out;
 }
