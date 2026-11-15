@@ -1,6 +1,6 @@
 # Calibration report: rockridge am_peak scale 1 seed 1 (60 min)
 
-Offered demand 21981 veh/h x scale 1 = 21981 veh/h. Run took 24.5 s wall clock. Flow tables use the window after a 10 min warm-up; select-link and health figures cover the whole run from an empty network.
+Offered demand 21981 veh/h x scale 1 = 21981 veh/h. Run took 22.7 s wall clock. Flow tables use the window after a 10 min warm-up; select-link and health figures cover the whole run from an empty network.
 
 ## Stability (design D4)
 
@@ -237,21 +237,20 @@ By destination group: SR-24 westbound on-ramps (toward Oakland and I-980) 109; T
 
 ## Through cars by intent (cut-through intent view)
 
-A through car is tallied once, under the first intent whose origin and destination groups hold its trip ends, at the moment the through count counts it. Cars an hour over the run, the same window as the through-car figure (432 an hour).
+A through car is tallied once, under the first intent that fits it (the on-ramp on its planned route, the off-ramp it has driven, or the origin and destination groups of its trip), at the moment the through count counts it. Cars an hour over the run, the same window as the through-car figure (432 an hour).
 
 | Intent | Basis | Cars an hour | Share |
 | --- | --- | --- | --- |
-| Berkeley and College Ave traffic using Hillegass Ave, Colby St and nearby side streets to reach the SR-24 on-ramps | observed | 56 | 13% |
-| Southbound Telegraph Ave and west-side traffic turning off Alcatraz Ave onto Colby St or Hillegass Ave to reach the SR-24 on-ramps | observed | 34 | 8% |
-| SR-24 off-ramp traffic using Colby St, Hillegass Ave and nearby side streets to reach Berkeley and Telegraph Ave north | observed | 92 | 21% |
-| SR-24 off-ramp traffic using side streets to reach Alcatraz Ave west, Ashby Ave and Claremont Ave toward the hills | assumed | 24 | 6% |
+| on-2853241697 | observed | 110 | 25% |
+| Other on-ramps | assumed | 13 | 3% |
+| off-52990846 | observed | 102 | 24% |
+| Other off-ramps | assumed | 21 | 5% |
 | Downtown, south and west Oakland traffic using side streets to reach Berkeley and Telegraph Ave north | assumed | 76 | 18% |
 | Berkeley and Telegraph Ave north traffic using side streets to reach downtown, south and west Oakland | assumed | 57 | 13% |
 | Oakland cross-town traffic (West Oakland, Broadway, Piedmont, Emeryville) using side streets near Claremont Ave and Telegraph Ave | assumed | 35 | 8% |
-| Claremont Ave, hills and south Oakland traffic using side streets to reach the SR-24 on-ramps | assumed | 30 | 7% |
-| Other (no intent listed) |  | 28 | 6% |
+| Other (no intent listed) |  | 18 | 4% |
 
-Intents listed cover 94% of through cars.
+Intents listed cover 96% of through cars.
 
 
 ## Select-link shares: modeled vs observed (design D5: headline = freeway shares, tolerance +/-10 pp)
