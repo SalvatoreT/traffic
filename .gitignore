@@ -8,3 +8,4 @@ public/data/
 data/osm/*.json
 data/**/raw/
 .claude/skills/humanizer/
+.claude/worktrees/
