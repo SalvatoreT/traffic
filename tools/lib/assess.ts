@@ -19,6 +19,17 @@ export interface SeedRun {
   throughCheck?: { block: string; expectedThroughLow: number | null; expectedThroughHigh: number | null; modeledThrough: number }[];
   patternBypass?: { bypass: string; arterial: string; dir: string; corridorTrips: number; viaBypass: number }[];
   patternFreewayThrough?: { trips: string; localMiles: number; shareOfLocalMiles: number }[];
+  junctionRecovery?: { policy: string; crossings: number; courtesy: { admissions: number }; yieldFallback: { admissions: number }; conflictBypass: { admissions: number }; heldRemovals: number };
+}
+
+/** One sentence on the junction recovery rules of the runs (change expose-junction-fallback-validity): policy, admissions per hour by reason and held-vehicle removals. */
+export function recoverySentence(runs: SeedRun[]): string {
+  const jr = runs.map((r) => ({ r: r.junctionRecovery, h: 60 / (r.minutes || 60) })).filter((x) => x.r);
+  if (!jr.length) return 'The runs carry no junction recovery figures.';
+  const mean = (g: (x: NonNullable<SeedRun['junctionRecovery']>) => number) => jr.reduce((a, x) => a + g(x.r!) * x.h, 0) / jr.length;
+  const policies = [...new Set(jr.map((x) => x.r!.policy))].join(', ');
+  const entries = mean((x) => x.crossings);
+  return `Junction recovery policy ${policies}: admissions the ordinary rule would have refused, per hour, courtesy ${mean((x) => x.courtesy.admissions).toFixed(1)}, yield fallback ${mean((x) => x.yieldFallback.admissions).toFixed(1)}, conflict bypass ${mean((x) => x.conflictBypass.admissions).toFixed(1)}, out of ${Math.round(entries)} node entries; vehicles removed while held in a node ${mean((x) => x.heldRemovals).toFixed(2)} per hour (part of the removals).`;
 }
 
 export interface StationFile {

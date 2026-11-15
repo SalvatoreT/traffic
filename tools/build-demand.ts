@@ -807,8 +807,8 @@ if (fc?.enabled) {
     }
     stationNotes.push(`intersection counts: ${res.report.intersections} intersections give ${res.report.legs} leg volumes (${res.report.ramps} on ramps) and ${res.report.movements} turning movements`, ...res.report.notes);
   }
-  // Targets of the other periods of an ADT-based or gate station are the PM value times the period factors (ASSUMPTION), not counts: the station rule leaves them out.
-  for (const q of stations) if (q.kind === 'caltrans' || q.kind === 'ramp' || q.kind === 'gate') q.derived = [...new Set([...(q.derived ?? []), ...periodIds.filter((p) => p !== lastPeriod && (q.target[p] ?? 0) > 0)])];
+  // Targets of the other periods of an ADT-based or gate station, or of an Oakland turning-count leg (a PM count), are the PM value times the period factors (ASSUMPTION), not counts: the station rule leaves them out.
+  for (const q of stations) if (q.kind === 'caltrans' || q.kind === 'ramp' || q.kind === 'gate' || q.source === 'oakland-tmc') q.derived = [...new Set([...(q.derived ?? []), ...periodIds.filter((p) => p !== lastPeriod && (q.target[p] ?? 0) > 0)])];
   if (fc.validation?.enabled) {
     const countById = new Map((countFull?.stations ?? []).map((q) => [q.id, q]));
     const splitStations: SplitStation[] = stations.map((q) => {

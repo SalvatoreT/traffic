@@ -210,6 +210,12 @@ pub fn run(m: Multi) {
     push("health", "completed trips".into(), "trips", col(&|r| num(&r["health"]["completed"])));
     push("health", "arterial mean speed".into(), "m/s", col(&|r| num(&r["health"]["arterialMeanSpeed"])));
     push("health", "arterial mean speed, last 15 min".into(), "m/s", col(&|r| num(&r["health"]["arterialMeanSpeedLast15min"])));
+    if first["junctionRecovery"].is_object() {
+        for (key, name) in [("courtesy", "courtesy"), ("yieldFallback", "yield fallback"), ("conflictBypass", "conflict bypass")] {
+            push("junction recovery", format!("{name} admissions per hour"), "veh/h", col(&|r| num(&r["junctionRecovery"][key]["admissions"]) * per_hour));
+        }
+        push("junction recovery", "vehicles removed while held in a node, per hour".into(), "veh/h", col(&|r| num(&r["junctionRecovery"]["heldRemovals"]) * per_hour));
+    }
     // Cut-through: local-street vehicle-miles of surface-gate to freeway-gate trips (reported pattern a), and the study-area miles in detours.
     if let Some(rows) = first["patternFreewayThrough"].as_array() {
         for (i, row) in rows.iter().enumerate() {

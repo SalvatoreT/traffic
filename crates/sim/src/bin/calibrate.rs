@@ -1057,6 +1057,23 @@ fn main() {
             let _ = writeln!(md, "| {} | {} | {} | {} | {} | {:.1} |", l, if lk.name.is_empty() { "(unnamed)" } else { &lk.name }, street_label(&net, lk.to as usize, &inc), ctrl_str(net.nodes[lk.to as usize].control), n, t / 60.0);
         }
     }
+    let jr = &m.junction_recovery;
+    let per_h = 60.0 / args.minutes.max(1.0);
+    let _ = writeln!(md, "\n## Junction recovery\n");
+    let _ = writeln!(md, "Policy `{}`. Node entries by cars and cyclists in the run: {} (settle interval {}). An admission is an entry the ordinary rule would have refused; head-seconds count the time a waiting head vehicle had the reason invoked, and the part of it in which it still could not enter. Courtesy and the yield fallback change priority only; under `physical` the conflict bypass never admits.\n", jr.policy, jr.crossings, jr.init_crossings);
+    let _ = writeln!(md, "| Reason | Admissions per hour | Per 1,000 entries | Head-s invoked | Head-s blocked |\n| --- | --- | --- | --- | --- |");
+    for (name, r) in [("courtesy", &jr.courtesy), ("yield fallback", &jr.yield_fallback), ("conflict bypass", &jr.conflict_bypass)] {
+        let _ = writeln!(md, "| {name} | {:.1} | {:.3} | {:.0} | {:.0} |", r.admissions as f64 * per_h, 1000.0 * r.admissions as f64 / (jr.crossings.max(1) as f64), r.invoked_s, r.blocked_s);
+    }
+    let _ = writeln!(md, "\nVehicles removed while held in a node by a full exit: {} ({:.1} per hour, included in the gridlock removals).", jr.held_removals, jr.held_removals as f64 * per_h);
+    let mut by_node: Vec<(usize, [u32; 4])> = sim.recovery_by_node().iter().enumerate().filter(|(_, r)| r.iter().any(|&x| x > 0)).map(|(n, r)| (n, *r)).collect();
+    by_node.sort_by(|a, b| b.1.iter().sum::<u32>().cmp(&a.1.iter().sum::<u32>()).then(a.0.cmp(&b.0)));
+    if !by_node.is_empty() {
+        let _ = writeln!(md, "\n| Node | Streets | Control | Courtesy | Yield fallback | Conflict bypass | Held removals |\n| --- | --- | --- | --- | --- | --- | --- |");
+        for (n, r) in by_node.iter().take(10) {
+            let _ = writeln!(md, "| {} | {} | {} | {} | {} | {} | {} |", n, street_label(&net, *n, &inc), ctrl_str(net.nodes[*n].control), r[0], r[1], r[2], r[3]);
+        }
+    }
     let mut bl: Vec<(usize, u32)> = d.node_backlog.iter().enumerate().filter(|x| *x.1 > 0).map(|(n, &b)| (n, b)).collect();
     bl.sort_by(|a, b| b.1.cmp(&a.1));
     if !bl.is_empty() {
@@ -1097,6 +1114,7 @@ fn main() {
             "wander": wander_rows.iter().map(|(lab, w)| json!({"set": lab, "trips": w.trips, "meanSwitches": w.mean_switches, "shareSwitched": w.share_switched, "meanDetour": w.mean_detour, "medianDetour": w.median_detour, "meanDetourFreeFlow": w.mean_detour_ff, "shareDetourFreeFlowOver1.3": w.share_detour_ff_high, "shareDetourOver1.3": w.share_detour_high, "shareDetourOver2": w.share_detour_very_high, "shareLoops": w.share_loops, "shareReversals": w.share_reversal, "studyMiles": w.study_miles, "studyMilesShareDetourOver1.3": w.study_share_detour_high})).collect::<Vec<_>>(),
             "patternFreewayThrough": pat_a_rows.iter().map(|(l, n, mi, sh)| json!({"trips": l, "n": n, "localMiles": mi, "shareOfLocalMiles": sh})).collect::<Vec<_>>(),
             "patternBypass": bypass_rows.iter().map(|b| json!({"bypass": b.bypass, "arterial": b.arterial, "minBlocks": b.min_blocks, "dir": b.dir.to_string(), "corridorTrips": b.trips, "viaBypass": b.by_bypass, "arterialOnly": b.by_arterial, "other": b.by_other, "meanBypassBlocks": b.mean_bypass_blocks})).collect::<Vec<_>>(),
+            "junctionRecovery": serde_json::to_value(&m.junction_recovery).unwrap_or(Value::Null),
             "modes": serde_json::to_value(&m.modes).unwrap_or(Value::Null),
             "vulnerable": serde_json::to_value(&m.vulnerable).unwrap_or(Value::Null),
             "series": series.iter().map(|s| json!({"tMin": s.t / 60.0, "vehicles": s.veh, "backlog": s.backlog, "completed": s.completed, "removed": s.removed, "arterialSpeed": s.art_speed})).collect::<Vec<_>>(),
