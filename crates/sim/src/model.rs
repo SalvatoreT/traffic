@@ -460,13 +460,57 @@ pub struct Modes {
     pub pedestrian: PedMode,
 }
 
+/// Version of the safety output's meaning. 2: pedestrian and cyclist severity reported apart with encounter counts; cyclist severity from
+/// closing speed in supported geometry only. Stored results without it carry the old car-speed score and are legacy.
+pub const SAFETY_VERSION: u32 = 2;
+
+/// Conditional severity of one mode's encounters: the mean over supported encounters of the source's injury probability, not a crash probability.
+#[derive(Clone, Debug, Default, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Severity {
+    pub endpoint: &'static str,
+    pub source: &'static str,
+    pub encounters: u64,
+    pub supported: u64,
+    pub unsupported: u64,
+    /// None when no supported encounter occurred (not a measured zero); `unavailable` says why.
+    pub mean_severity: Option<f64>,
+    pub unavailable: Option<&'static str>,
+}
+
+impl Severity {
+    /// "mean 0.047 (AIS4+, 120 supported of 120)" or "unavailable: no encounters (AIS4+)".
+    pub fn describe(&self) -> String {
+        match self.mean_severity {
+            Some(m) => format!("mean {:.3} ({}, {} supported of {} encounters)", m, self.endpoint, self.supported, self.encounters),
+            None => format!("unavailable: {} ({}, {} encounters)", self.unavailable.unwrap_or("no supported encounters"), self.endpoint, self.encounters),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Default, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Passes {
+    pub count: u64,
+    pub mean_vehicle_speed: Option<f64>,
+}
+
+#[derive(Clone, Debug, Default, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CyclistSeverity {
+    #[serde(flatten)]
+    pub severity: Severity,
+    pub passes: Passes,
+}
+
 #[derive(Clone, Debug, Default, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Vulnerable {
+    pub safety_version: u32,
     pub ped_conflicts: u64,
     pub bike_conflicts: u64,
     pub close_passes: u64,
-    pub ped_injury_risk_index: f64,
-    pub bike_injury_risk_index: f64,
-    pub mean_vehicle_speed_at_ped_encounter: f64,
+    pub pedestrian: Severity,
+    pub cyclist: CyclistSeverity,
+    pub mean_vehicle_speed_at_ped_encounter: Option<f64>,
 }

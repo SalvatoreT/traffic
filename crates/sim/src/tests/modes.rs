@@ -67,9 +67,17 @@ fn metrics_carry_the_per_mode_and_vulnerable_sections() {
     assert!(v["modes"]["car"]["completedTrips"].is_number() && v["modes"]["car"]["meanTripTime"].is_number());
     assert!(v["modes"].get("bus").is_none() && v.get("busRunsBlocked").is_none(), "buses are not simulated");
     assert!(v["modes"]["bicycle"]["completedTrips"].is_number() && v["modes"]["pedestrian"]["meanCrossingDelay"].is_number());
-    for k in ["pedConflicts", "bikeConflicts", "closePasses", "pedInjuryRiskIndex", "bikeInjuryRiskIndex", "meanVehicleSpeedAtPedEncounter"] {
+    for k in ["safetyVersion", "pedConflicts", "bikeConflicts", "closePasses"] {
         assert!(v["vulnerable"][k].is_number(), "vulnerable.{k}");
     }
+    assert!(v["vulnerable"].get("pedInjuryRiskIndex").is_none() && v["vulnerable"].get("bikeInjuryRiskIndex").is_none(), "the old scalar scores are gone");
+    for (k, endpoint) in [("pedestrian", "AIS4+"), ("cyclist", "MAIS3+F")] {
+        let s = &v["vulnerable"][k];
+        assert_eq!(s["endpoint"], endpoint);
+        assert!(s["encounters"].is_number() && s["supported"].is_number() && s["unsupported"].is_number(), "{k} counts");
+        assert!(s["meanSeverity"].is_null() && s["unavailable"].is_string(), "{k}: an empty sample is unavailable, not zero");
+    }
+    assert!(v["vulnerable"]["cyclist"]["passes"]["count"].is_number());
     assert_eq!(v["modes"]["car"]["inNetwork"], 1);
     assert_eq!(sim.vehicles()[4], 0.0, "kind 0 for a car");
 }
@@ -185,7 +193,9 @@ fn car_follows_a_cyclist_until_oncoming_traffic_allows_a_pass() {
         }
     });
     assert!(passed, "car overtakes when the opposing lane is clear");
-    assert!(sim.metrics().vulnerable.bike_injury_risk_index > 0.0, "the pass is an encounter");
+    let cy = sim.metrics().vulnerable.cyclist;
+    assert!(cy.passes.count > 0 && cy.severity.encounters > 0, "the pass is an encounter");
+    assert_eq!((cy.severity.supported, cy.severity.mean_severity), (0, None), "a passing encounter is unsupported geometry: counted, not scored");
 }
 
 #[test]
@@ -215,7 +225,8 @@ fn bike_lane_links_keep_cyclists_and_cars_apart() {
     run(&mut sim, 12.0, |s| max_v = max_v.max(s.test_veh(car).2));
     assert!(max_v > 9.0, "the car is not slowed by a cyclist in the bike lane: {max_v}");
     assert_eq!(sim.metrics().vulnerable.close_passes, 0);
-    assert_eq!(sim.metrics().vulnerable.bike_injury_risk_index, 0.0, "no pass encounters on a separated lane");
+    let cy = sim.metrics().vulnerable.cyclist;
+    assert_eq!((cy.severity.encounters, cy.severity.mean_severity), (0, None), "no pass encounters on a separated lane");
 }
 
 #[test]
@@ -233,7 +244,7 @@ fn fast_passes_are_close_passes_and_slower_streets_have_fewer() {
     let fast = run_with(17.0);
     let slow = run_with(6.0);
     assert!(fast.close_passes >= 1, "{}", fast.close_passes);
-    assert!(fast.bike_injury_risk_index > slow.bike_injury_risk_index);
+    assert!(fast.cyclist.passes.mean_vehicle_speed.unwrap() > slow.cyclist.passes.mean_vehicle_speed.unwrap_or(0.0));
     assert!(fast.close_passes >= slow.close_passes);
     assert_eq!(slow.close_passes, 0);
 }
@@ -379,8 +390,10 @@ fn cyclists_and_cars_conflict_at_nodes_and_encounters_are_scored() {
     run(&mut sim, 1800.0, |_| {});
     let m = sim.metrics();
     assert!(m.modes.bicycle.completed_trips > 20);
-    assert!(m.vulnerable.bike_injury_risk_index > 0.0, "encounters at the node are scored");
-    assert!(m.vulnerable.bike_injury_risk_index < 1.0);
+    let cy = &m.vulnerable.cyclist.severity;
+    assert!(cy.supported > 0, "crossing encounters at the node are scored");
+    let mean = cy.mean_severity.unwrap();
+    assert!(mean > 0.0 && mean < 1.0, "{mean}");
 }
 
 #[test]
@@ -643,11 +656,13 @@ fn yielding_lowers_pedestrian_waits_and_vehicle_speeds_at_encounters() {
     let always = run_with(1.0, None);
     assert!(never.modes.pedestrian.completed_trips > 20 && always.modes.pedestrian.completed_trips > 20);
     assert!(always.modes.pedestrian.mean_crossing_delay < never.modes.pedestrian.mean_crossing_delay, "{} vs {}", always.modes.pedestrian.mean_crossing_delay, never.modes.pedestrian.mean_crossing_delay);
-    assert!(always.vulnerable.mean_vehicle_speed_at_ped_encounter <= never.vulnerable.mean_vehicle_speed_at_ped_encounter + 0.5);
+    let enc_speed = |m: &Metrics| m.vulnerable.mean_vehicle_speed_at_ped_encounter.unwrap();
+    assert!(enc_speed(&always) <= enc_speed(&never) + 0.5);
     // Slower traffic past the crossing lowers the injury-risk index.
     let slow = run_with(0.0, Some(5.0));
-    assert!(never.vulnerable.mean_vehicle_speed_at_ped_encounter > 0.0);
-    assert!(slow.vulnerable.ped_injury_risk_index < never.vulnerable.ped_injury_risk_index, "{} vs {}", slow.vulnerable.ped_injury_risk_index, never.vulnerable.ped_injury_risk_index);
+    assert!(enc_speed(&never) > 0.0);
+    let sev = |m: &Metrics| m.vulnerable.pedestrian.mean_severity.unwrap();
+    assert!(sev(&slow) < sev(&never), "{} vs {}", sev(&slow), sev(&never));
 }
 
 #[test]

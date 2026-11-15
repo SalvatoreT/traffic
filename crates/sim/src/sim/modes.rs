@@ -22,11 +22,86 @@ pub(super) struct Vuln {
     pub ped_enc: u64,
     pub ped_risk_sum: f64,
     pub ped_speed_sum: f64,
-    pub bike_enc: u64,
+    /// Cyclist encounters at conflict points that fall inside the supported crash geometry, with their closing-speed severity.
+    pub bike_sup: u64,
     pub bike_risk_sum: f64,
+    /// Cyclist encounters whose geometry the injury source does not cover: node conflicts with near-parallel paths.
+    pub bike_unsup_node: u64,
+    /// Passes of a cyclist on a shared link: unsupported geometry, so observed speeds only.
+    pub pass_n: u64,
+    pub pass_speed_sum: f64,
+}
+
+/// Closing speed (m/s) of two road users with speeds `v1`, `v2` along math headings `h1`, `h2`: the magnitude of the difference of their
+/// velocity vectors. [Lubbe2022] defines closing speed as the relative speed between the two crash partners; reading that as the
+/// vector difference is an ASSUMPTION (full text not accessible when written).
+pub fn closing_speed(v1: f32, h1: f64, v2: f32, h2: f64) -> f32 {
+    let dx = v1 as f64 * h1.cos() - v2 as f64 * h2.cos();
+    let dy = v1 as f64 * h1.sin() - v2 as f64 * h2.sin();
+    dx.hypot(dy) as f32
+}
+
+/// Smallest angle (rad) between the two paths for a node encounter to count as inside the supported geometry. ASSUMPTION: [Lubbe2022] covers
+/// cyclists impacting the front of a car; near-parallel paths (merges, same-direction turns) are not established as that geometry.
+/// Same value as the turn-class cutoff in `topo` (30 degrees).
+pub const SUPPORTED_MIN_ANGLE_RAD: f64 = 0.52;
+
+/// Direction of travel through a node on movement `mv`: the circular mean of its entry and exit headings (ASSUMPTION; a U-turn uses the entry heading).
+pub fn mv_heading(topo: &Topo, mv: u32) -> f64 {
+    let m = &topo.mvs[mv as usize];
+    let (x, y) = (m.h_in.cos() + m.h_out.cos(), m.h_in.sin() + m.h_out.sin());
+    if x.hypot(y) < 1e-6 { m.h_in } else { y.atan2(x) }
+}
+
+/// Smallest absolute angle between two math headings.
+pub fn heading_angle(h1: f64, h2: f64) -> f64 {
+    let d = (h1 - h2).rem_euclid(std::f64::consts::TAU);
+    d.min(std::f64::consts::TAU - d)
 }
 
 impl Vuln {
+    /// The reported safety output: each mode's conditional severity over supported encounters, with the counts behind it.
+    pub fn summary(&self) -> Vulnerable {
+        let v = self;
+        let mean = |sum: f64, n: u64| if n > 0 { Some(sum / n as f64) } else { None };
+        let ped_n = v.ped_enc;
+        let bike_unsup = v.bike_unsup_node + v.pass_n;
+        Vulnerable {
+            safety_version: SAFETY_VERSION,
+            ped_conflicts: v.ped_conf,
+            bike_conflicts: v.bike_conf,
+            close_passes: v.close_passes,
+            pedestrian: Severity {
+                endpoint: "AIS4+",
+                source: "Tefft2013",
+                encounters: ped_n,
+                supported: ped_n,
+                unsupported: 0,
+                mean_severity: mean(v.ped_risk_sum, ped_n),
+                unavailable: if ped_n == 0 { Some("no encounters") } else { None },
+            },
+            cyclist: CyclistSeverity {
+                severity: Severity {
+                    endpoint: "MAIS3+F",
+                    source: "Lubbe2022",
+                    encounters: v.bike_sup + bike_unsup,
+                    supported: v.bike_sup,
+                    unsupported: bike_unsup,
+                    mean_severity: mean(v.bike_risk_sum, v.bike_sup),
+                    unavailable: if v.bike_sup > 0 {
+                        None
+                    } else if bike_unsup > 0 {
+                        Some("no encounters in the supported crash geometry")
+                    } else {
+                        Some("no encounters")
+                    },
+                },
+                passes: Passes { count: v.pass_n, mean_vehicle_speed: mean(v.pass_speed_sum, v.pass_n) },
+            },
+            mean_vehicle_speed_at_ped_encounter: mean(v.ped_speed_sum, ped_n),
+        }
+    }
+
     /// A vehicle passed a crosswalk conflict point with post-encroachment time `pet` (s) while at speed `speed` (m/s).
     /// A vehicle that stopped for the pedestrian passes the crosswalk afterwards: exposure at its (low) speed, never a conflict.
     pub fn ped_exposure(&mut self, speed: f32) {
@@ -46,19 +121,26 @@ impl Vuln {
         }
     }
 
-    pub fn bike_encounter(&mut self, pet: f32, speed: f32, moving: bool) {
+    /// A node conflict between a car and a cyclist. `closing` is the source-compatible closing speed, or None when the paths' geometry is unsupported.
+    pub fn bike_encounter(&mut self, pet: f32, closing: Option<f32>, moving: bool) {
         if pet < PET_ENCOUNTER_S {
-            self.bike_enc += 1;
-            self.bike_risk_sum += injury_risk_bike(speed) as f64;
+            match closing {
+                Some(c) => {
+                    self.bike_sup += 1;
+                    self.bike_risk_sum += injury_risk_bike(c) as f64;
+                }
+                None => self.bike_unsup_node += 1,
+            }
             if pet < PET_THRESHOLD && moving {
                 self.bike_conf += 1;
             }
         }
     }
 
+    /// A car passed a cyclist on a shared link at car speed `speed` (m/s). Not a frontal-crash geometry: counted, never scored.
     pub fn bike_pass(&mut self, speed: f32, close: bool) {
-        self.bike_enc += 1;
-        self.bike_risk_sum += injury_risk_bike(speed) as f64;
+        self.pass_n += 1;
+        self.pass_speed_sum += speed as f64;
         if close {
             self.close_passes += 1;
         }
@@ -369,12 +451,14 @@ impl Simulation {
             {
                 let log = &mut self.node_log[node];
                 log.retain(|e| now - e.t_out < PET_ENCOUNTER_S as f64);
+                let h_me = mv_heading(&self.topo, mv);
                 for e in log.iter() {
                     if e.bike != is_bike && self.topo.conflicts(mv, e.mv, circle) {
-                        // PET: time between the first user leaving the conflict area and the second arriving [Mahmud2017];
-                        // the speed that matters is the motor vehicle's, whichever crossed second.
+                        // PET: time between the first user leaving the conflict area and the second arriving [Mahmud2017].
                         let pet = (now - e.t_out).max(0.0) as f32;
-                        self.vuln.bike_encounter(pet, if is_bike { e.speed } else { speed }, speed >= PET_MOVING_V);
+                        let h_e = mv_heading(&self.topo, e.mv);
+                        let closing = (heading_angle(h_me, h_e) >= SUPPORTED_MIN_ANGLE_RAD).then(|| closing_speed(speed, h_me, e.speed, h_e));
+                        self.vuln.bike_encounter(pet, closing, (if is_bike { e.speed } else { speed }) >= PET_MOVING_V);
                     }
                 }
                 log.push(LogEnt { t_out: now + t_total as f64, mv, bike: is_bike, speed });
@@ -398,14 +482,84 @@ impl Simulation {
             mean_trip_time: if st.bike_timed > 0 { st.bike_tt_sum / st.bike_timed as f64 } else { 0.0 },
         };
         m.modes.pedestrian = self.world.mode_metrics();
-        let v = &self.vuln;
-        m.vulnerable = Vulnerable {
-            ped_conflicts: v.ped_conf,
-            bike_conflicts: v.bike_conf,
-            close_passes: v.close_passes,
-            ped_injury_risk_index: if v.ped_enc > 0 { v.ped_risk_sum / v.ped_enc as f64 } else { 0.0 },
-            bike_injury_risk_index: if v.bike_enc > 0 { v.bike_risk_sum / v.bike_enc as f64 } else { 0.0 },
-            mean_vehicle_speed_at_ped_encounter: if v.ped_enc > 0 { v.ped_speed_sum / v.ped_enc as f64 } else { 0.0 },
-        };
+        m.vulnerable = self.vuln.summary();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::f64::consts::{FRAC_PI_2, PI};
+
+    #[test]
+    fn closing_speed_depends_on_both_velocities() {
+        let car = 10.0;
+        // Same car speed, cyclist riding the same way at different speeds: relative speed changes.
+        let slow = closing_speed(car, 0.0, 2.0, 0.0);
+        let fast = closing_speed(car, 0.0, 6.0, 0.0);
+        assert!((slow - 8.0).abs() < 1e-5 && (fast - 4.0).abs() < 1e-5);
+        // Head-on: speeds add. Perpendicular: root of the sum of squares.
+        assert!((closing_speed(car, 0.0, 5.0, PI) - 15.0).abs() < 1e-4);
+        assert!((closing_speed(car, 0.0, 5.0, FRAC_PI_2) - 125f32.sqrt()).abs() < 1e-4);
+        assert!(injury_risk_bike(closing_speed(car, 0.0, 5.0, PI)) > injury_risk_bike(closing_speed(car, 0.0, 5.0, FRAC_PI_2)));
+    }
+
+    #[test]
+    fn heading_angle_wraps() {
+        assert!((heading_angle(0.1, -0.1) - 0.2).abs() < 1e-12);
+        assert!((heading_angle(3.0, -3.0) - (2.0 * PI - 6.0)).abs() < 1e-12);
+    }
+
+    #[test]
+    fn unsupported_encounters_are_counted_never_scored() {
+        let mut v = Vuln::default();
+        v.bike_encounter(1.0, None, true);
+        v.bike_pass(10.0, true);
+        let s = v.summary().cyclist;
+        assert_eq!((s.severity.encounters, s.severity.supported, s.severity.unsupported), (2, 0, 2));
+        assert_eq!(s.severity.mean_severity, None);
+        assert_eq!(s.severity.unavailable, Some("no encounters in the supported crash geometry"));
+        assert_eq!(s.passes.count, 1);
+        assert_eq!(v.summary().close_passes, 1);
+    }
+
+    #[test]
+    fn empty_samples_are_unavailable_not_zero() {
+        let s = Vuln::default().summary();
+        assert_eq!(s.pedestrian.mean_severity, None);
+        assert_eq!(s.pedestrian.unavailable, Some("no encounters"));
+        assert_eq!(s.cyclist.severity.mean_severity, None);
+        assert_eq!(s.cyclist.severity.unavailable, Some("no encounters"));
+        assert_eq!(s.mean_vehicle_speed_at_ped_encounter, None);
+        assert_eq!(s.safety_version, SAFETY_VERSION);
+    }
+
+    #[test]
+    fn duplicating_a_sample_doubles_counts_and_keeps_means() {
+        let mut once = Vuln::default();
+        let mut twice = Vuln::default();
+        for (c, p) in [(8.0f32, 3.0f32), (14.0, 9.0), (20.0, 12.0)] {
+            once.bike_encounter(1.0, Some(c), true);
+            once.ped_encounter(1.0, p);
+            for _ in 0..2 {
+                twice.bike_encounter(1.0, Some(c), true);
+                twice.ped_encounter(1.0, p);
+            }
+        }
+        let (a, b) = (once.summary(), twice.summary());
+        assert_eq!(b.cyclist.severity.encounters, 2 * a.cyclist.severity.encounters);
+        assert_eq!(b.pedestrian.encounters, 2 * a.pedestrian.encounters);
+        assert!((b.cyclist.severity.mean_severity.unwrap() - a.cyclist.severity.mean_severity.unwrap()).abs() < 1e-12);
+        assert!((b.pedestrian.mean_severity.unwrap() - a.pedestrian.mean_severity.unwrap()).abs() < 1e-12);
+    }
+
+    #[test]
+    fn endpoints_stay_separate() {
+        let mut v = Vuln::default();
+        v.ped_encounter(1.0, 15.0);
+        v.bike_encounter(1.0, Some(15.0), true);
+        let s = v.summary();
+        assert_eq!((s.pedestrian.endpoint, s.cyclist.severity.endpoint), ("AIS4+", "MAIS3+F"));
+        assert!(s.pedestrian.mean_severity.unwrap() > s.cyclist.severity.mean_severity.unwrap());
     }
 }
