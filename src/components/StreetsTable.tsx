@@ -105,8 +105,8 @@ export function StreetsTable({ index, scen, base, comparing, overlay, showServic
   const group = (label: string) => <th colSpan={comparing ? 2 : 1} scope="colgroup">{label}</th>;
   const val = (kind: 'flow' | 'speed', b: number, s: number, label: string) => (
     <>
-      <td data-label={comparing ? `${label}, base` : label}>{formatValue(kind, b, false)}</td>
-      {comparing && <td data-label={`${label}, scenario`}>{formatValue(kind, s, false)}</td>}
+      <td data-label={comparing ? `${label}, base` : label}>{withheld ? '—' : formatValue(kind, b, false)}</td>
+      {comparing && <td data-label={`${label}, scenario`}>{withheld ? '—' : formatValue(kind, s, false)}</td>}
     </>
   );
   const choices = sortChoices(comparing, overlay);
@@ -171,7 +171,7 @@ export function StreetsTable({ index, scen, base, comparing, overlay, showServic
                 {val('flow', r.flowB, r.flowS, 'All cars an hour')}
                 {val('speed', r.speedB, r.speedS, 'Mean speed, mph')}
                 {val('flow', r.ctB, r.ctS, 'Through cars an hour')}
-                {comparing && <td className="chg" data-label={`Change, ${changeUnit(overlay)}`}>{formatSigned(r.chg, overlay)}</td>}
+                {comparing && <td className="chg" data-label={`Change, ${changeUnit(overlay)}`}>{withheld ? '—' : formatSigned(r.chg, overlay)}</td>}
                 {phone && (
                   <td className="act">
                     <button type="button" className="btn small-btn" tabIndex={r.key === rowStop ? 0 : -1} aria-label={`Show ${r.label} on the map`} onClick={() => onShowOnMap?.(index.blockOfLink[r.key])}>Show on map</button>
