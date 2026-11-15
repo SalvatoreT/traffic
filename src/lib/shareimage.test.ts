@@ -85,3 +85,19 @@ describe('shareable picture', () => {
     expect(shareAlt('1. A', ['x', 'y'], 'Map.')).toBe('1. A. Changes: x; y. Map.');
   });
 });
+
+describe('smallestFit', () => {
+  const blob = (n: number) => ({ size: n }) as Blob;
+  it('takes the first encoding that fits and stops there', async () => {
+    const { smallestFit } = await import('./shareimage');
+    const sizes = [900, 400, 100]; let calls = 0;
+    const b = await smallestFit(async () => blob(sizes[calls++]), 450, [{ scale: 2, quality: 0.8 }, { scale: 2, quality: 0.6 }, { scale: 1, quality: 0.6 }]);
+    expect(b!.size).toBe(400); expect(calls).toBe(2);
+  });
+  it('falls back to the smallest when none fits and skips failed encodings', async () => {
+    const { smallestFit } = await import('./shareimage');
+    const out = [blob(900), null, blob(700)]; let i = 0;
+    const b = await smallestFit(async () => out[i++], 450, [{ scale: 2, quality: 0.8 }, { scale: 2, quality: 0.6 }, { scale: 1, quality: 0.6 }]);
+    expect(b!.size).toBe(700);
+  });
+});

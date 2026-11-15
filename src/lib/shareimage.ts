@@ -232,22 +232,40 @@ export function canvasMeasure(): Measure {
   return (t, size, weight) => { g.font = `${weight} ${size}px ${FONT}`; return g.measureText(t).width; };
 }
 
-/** High enough that small text and the QR code stay sharp. */
-export const SHARE_QUALITY = 0.86;
+/** The picture is kept under this size so it sends easily. */
+export const SHARE_MAX_BYTES = 450_000;
+/** Tried in order until the file fits: full size first, then lower quality, then fewer pixels. */
+export const SHARE_STEPS: { scale: number; quality: number }[] = [
+  { scale: SHARE_SCALE, quality: 0.8 }, { scale: SHARE_SCALE, quality: 0.62 }, { scale: 1.5, quality: 0.7 }, { scale: 1.5, quality: 0.5 }, { scale: 1, quality: 0.6 },
+];
 
-/** Rasterizes the SVG to a JPEG at `SHARE_SCALE` times its size, on the paper color since JPEG has no transparency. */
+/** The first encoding that fits `max`, else the smallest one made. */
+export async function smallestFit(encode: (step: { scale: number; quality: number }) => Promise<Blob | null>, max = SHARE_MAX_BYTES, steps = SHARE_STEPS): Promise<Blob | null> {
+  let best: Blob | null = null;
+  for (const step of steps) {
+    const b = await encode(step);
+    if (!b) continue;
+    if (!best || b.size < best.size) best = b;
+    if (b.size <= max) return b;
+  }
+  return best;
+}
+
+/** Rasterizes the SVG to a JPEG on the paper color (JPEG has no transparency), stepping quality and size down until it is small enough to send. */
 export async function svgToPng(img: ShareImage): Promise<Blob> {
   const url = URL.createObjectURL(new Blob([img.svg], { type: 'image/svg+xml;charset=utf-8' }));
   try {
     const el = new Image();
     el.decoding = 'async';
     await new Promise<void>((res, rej) => { el.onload = () => res(); el.onerror = () => rej(new Error('The picture could not be drawn.')); el.src = url; });
-    const c = document.createElement('canvas');
-    c.width = img.width * SHARE_SCALE; c.height = img.height * SHARE_SCALE;
-    const g = c.getContext('2d')!;
-    g.fillStyle = PAPER; g.fillRect(0, 0, c.width, c.height);
-    g.drawImage(el, 0, 0, c.width, c.height);
-    const blob = await new Promise<Blob | null>((res) => c.toBlob(res, 'image/jpeg', SHARE_QUALITY));
+    const blob = await smallestFit(({ scale, quality }) => {
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
+      const g = c.getContext('2d')!;
+      g.fillStyle = PAPER; g.fillRect(0, 0, c.width, c.height);
+      g.drawImage(el, 0, 0, c.width, c.height);
+      return new Promise<Blob | null>((res) => c.toBlob(res, 'image/jpeg', quality));
+    });
     if (!blob) throw new Error('The browser could not encode the picture.');
     return blob;
   } finally { URL.revokeObjectURL(url); }

@@ -44,7 +44,7 @@ export function ProposalPicture({ net, index, p, ivs, areaName, areaId, status, 
   }, [pic, facts, model, areaName, status, p, searchedPeriods, openUrl]);
   const box = useRef<HTMLDivElement>(null);
   const near = useNear(box);
-  const [png, setPng] = useState<{ url: string } | null>(null);
+  const [png, setPng] = useState<{ url: string; ext: string } | null>(null);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
     if (!near || !share) return;
@@ -53,7 +53,7 @@ export function ProposalPicture({ net, index, p, ivs, areaName, areaId, status, 
     svgToPng(share.image).then((b) => {
       if (dead) return;
       made = URL.createObjectURL(b);
-      setPng({ url: made });
+      setPng({ url: made, ext: b.type === 'image/jpeg' ? 'jpg' : 'png' });
     }, () => { if (!dead) setFailed(true); });
     return () => { dead = true; if (made) URL.revokeObjectURL(made); };
   }, [near, share]);
@@ -67,7 +67,7 @@ export function ProposalPicture({ net, index, p, ivs, areaName, areaId, status, 
   const controls = [...new Set(ivs.flatMap((iv) => (iv.type === 'control' ? [controlLabel(iv.control).toLowerCase()] : [])))];
   const badgeName = (t: Intervention['type']) => (t === 'control' && controls.length ? `${BADGE_NAME.control} (${controls.join(', ')})` : BADGE_NAME[t]);
   const slug = (t: string) => t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60).replace(/-+$/, '');
-  const file = `${slug(areaId)}-${slug(p.title) || slug(p.id)}-${slug(pic.period)}.jpg`;
+  const file = `${slug(areaId)}-${slug(p.title) || slug(p.id)}-${slug(pic.period)}.${png?.ext ?? 'jpg'}`;
   const { width, height } = share.image;
   return (
     <figure className="prop-pic">
