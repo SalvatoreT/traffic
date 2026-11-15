@@ -142,3 +142,64 @@ The map is an SVG of a 900 m square around the closure, north up. The three evid
 Proposal cards now carry the all-traffic figure from the version 5 fields beside the two through-car figures: the largest rise in all cars on one side-street block over the searched periods, its through and local parts, and its interval statement. A version 4 file says that it records only the flagged block. Every card states that its figures do not say which trips moved and that no diversion has been ruled out until the route diagnostic is run. The search's penalty and ranking are unchanged.
 
 Not done in this change: a stored diagnostic is not published (publishing data is outside this task), so the app runs the diagnostic itself until one is.
+
+### 2026-11-15: claims of this design checked against the code
+
+Confirmed: `uid_next` was consumed by initial loading before ordinary arrivals, and the scenario changed the count (fixture above; on Rockridge PM seed 1 the closure placed 3,343 agents against 3,352 in the baseline, before the repair). Physical endpoints were keyed on the uid (`mid_block_pos`), and so was a second draw the design does not mention, the driver's yield to a waiting pedestrian (`PedWorld::yields`). `TripRecord` and `TripTiming` hold only completed trips not placed at the start, trails hold links entered, and published link flows count exits from time zero. The neighborhood through counter (`cum[l][1]`) counts only `is_local` links. On the current network the northbound bypass is still links 2599, 1855, 1924 and 1926 (Colby, 63rd, Dana), and the witness query finds it.
+
+Qualified: runtime flow indices do not change between scenarios of the same inputs, because `init_flows` skips flows for reasons of the demand and network only; they can change when the inputs change. The key uses the source index anyway, so it survives a change of filtering.
+
+Done differently, with reasons:
+
+- D3 asks for link-exit and junction-movement events. Only link exits are recorded. A movement is two consecutive exits of the same request, and the last one is the exit followed by the link the car is on at the end of the run, so separate movement events would add memory without adding information.
+- D6 asks for a synthetic larger case. The larger case measured is the Rockridge network at twice the demand (58,140 requests, 1,094,342 events), which loads the trace harder than a bigger empty network would; a larger network was not built.
+- D4's optional package-against-closure comparison is always computed, because it costs nothing once both runs exist; it stays labeled as a conditional comparison.
+
+### 2026-11-15: the Colby/North question on the repaired engine (task 4.3)
+
+New record: [evidence/colby-north-repaired-2026-11-15.json](evidence/colby-north-repaired-2026-11-15.json), beside the historical one, which it does not replace. It comes from an uncalibrated model and is not a forecast or a field measurement. Engine at `d1742a8` (fingerprint `3fcec99de9fa148496fade8098e0d8e2`), network `69f62ad981d0b8fa` and demand `34d7f297345aef06` (the files in the main checkout on 2026-11-15 at 23:02 UTC; they changed during the day, so these are not the inputs of the earlier three-seed measurements in this design). PM peak, seeds 1 to 10, one hour after loading, demand 1, method `redistribution-1` with `paired-t-1` intervals. Cars an hour, mean of the ten seeds, both directions; the change is paired by seed with its 95% interval.
+
+| Block | Measure | Baseline | Closure alone | Change | Package | Change |
+| --- | --- | ---: | ---: | --- | ---: | --- |
+| 63rd St, Colby to Dana | all cars | 55.8 | 99.9 | +44.1 (+35.6 to +52.6) | 216.5 | +160.7 (+144.3 to +177.1) |
+| | through cars | 38.0 | 38.3 | +0.3 (unresolved) | 151.5 | +113.5 (+98.5 to +128.5) |
+| | local-end cars | 17.8 | 61.6 | +43.8 (+39.7 to +47.9) | 65.0 | +47.2 (+42.4 to +52.0) |
+| Dana St, 63rd to North | all cars | 49.5 | 74.8 | +25.3 (+14.8 to +35.8) | 187.0 | +137.5 (+119.2 to +155.8) |
+| | through cars | 36.4 | 37.2 | +0.8 (unresolved) | 152.3 | +115.9 (+100.2 to +131.6) |
+| | local-end cars | 13.1 | 37.6 | +24.5 (+20.7 to +28.3) | 34.7 | +21.6 (+17.2 to +26.0) |
+| Dana St, North to Alcatraz | all cars | 46.0 | 69.8 | +23.8 (+14.2 to +33.5) | 183.1 | +137.1 (+118.8 to +155.4) |
+| | through cars | 37.1 | 37.7 | +0.6 (unresolved) | 153.2 | +116.1 (+100.2 to +132.0) |
+| | local-end cars | 8.9 | 32.1 | +23.2 (+19.9 to +26.5) | 29.9 | +21.0 (+16.3 to +25.7) |
+
+The 63rd/Dana bypass is legal under the closure alone and under the package (Colby, 63rd, Dana, then Alcatraz; about 22 s more at free flow than Colby). The cohort is 2,621 baseline trips over the ten seeds (227 to 303 a seed) that drove a movement the closure removes; all 268,598 requested trips of each baseline were matched in both comparisons with identical attributes. With the closure alone, 81 of them drove Colby, 63rd, Dana and Alcatraz; most went by Hillegass Avenue (194 and 191 on two Claremont-Hillegass-Alcatraz routes) or Telegraph Avenue (118). With the package, whose Hillegass leg filter shuts that alternative, 599 took the 63rd/Dana route. With the closure alone the rise on these blocks is trips with an end in the study area, and through cars do not change; with the package it is mainly through trips. At the end of the hour 294 (closure) and 301 (package) cohort trips were still driving, none were waiting to start, one was removed in the package runs, none were unroutable. Gridlock removals per run: baseline 1 to 16, closure 1 to 18, package 1 to 23. Each block's net change reconciles exactly with the cohort, other trips and initially placed cars; on 63rd St the cohort added 59.2 and removed 18.8 cars an hour with the closure alone.
+
+### 2026-11-15: does closing one cut-through raise its neighbors? (user expectation, general coverage)
+
+The user's expectation is general: blocking a cut-through in one place should raise traffic on the nearby alternative cut-throughs, everywhere in the model, and Colby/North is one case of it.
+
+Fixtures (`crates/sim/src/tests/cut_through_shift.rs`): two parallel one-block cut-throughs, A and B, between the same two arterials, beside a slow arterial route. With A closed, at least 80% of A's through cars must appear on B and at most 20% on the arterial; measured 97% on B for plain flows and 99% for assumed-movement flows (their counted turn into A is cut and leaves no way back onto A, so they fall back to the plain route, which is B). The expected share follows from the cost model: B costs about 30% less than the arterial even with its stop delays, far beyond the 8% route noise. With a less slow arterial (6.3 m/s) the stop delays on the side streets already made the arterial competitive, A carried only a fifth of the trips, and 78% of the displaced assumed-movement trips went to the arterial; the expectation holds only where the cost model says the alternative is clearly cheaper. A second fixture has only a one-block dogleg around a whole-junction filter besides a slow arterial: at least 75% of the plain trips must take the dogleg (it is 14 s cheaper at free flow), and they do; the assumed-movement case of the dogleg is `tests/via_bypass.rs`.
+
+Sweep (`npm run simulate:sweep`, `tools/redistribution-sweep.ts`): the 12 Trapezoid residential or service blocks with the most through cars in the PM baseline, each closed alone with a modal filter, seeds 1 to 3, same engine and inputs as the Colby/North record. It follows the baseline through trips (neither end in the Trapezoid) that drove the closed block. A trip counts on "new Trapezoid side streets" when it now drives a Trapezoid residential or service block it did not drive before; otherwise it counts under arterials or outside (bounding arterials, roads outside the Trapezoid, or only Trapezoid blocks it already drove). Uncalibrated model; cars an hour, mean of three seeds; the record holds the receiving blocks, routes near each closure and the legal bypasses.
+
+| Closure (Trapezoid block) | Through today | Displaced | New Trapezoid side streets | Arterials or outside | Waiting, removed | Largest receivers |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| Martin St, Claremont to Ayala | 272 | 272.3 | 127.7 (47%) | 144.0 | 0.7 | Forest St 90.3; Ayala Ave 69.3 |
+| Colby St, McAuley to 60th | 222 | 221.7 | 148.0 (67%) | 73.7 | 0 | Hillegass Ave 76.3; 61st St 43.0 |
+| Forest St, Claremont to Ayala | 216 | 216.3 | 116.3 (54%) | 100.0 | 0 | Martin St 62.7; Colby St 41.3 |
+| Colby St, Claremont to McAuley | 216 | 216.0 | 144.3 (67%) | 71.7 | 0 | Hillegass Ave 53.7; Forest St 49.7 |
+| Colby St, 60th to 61st | 210 | 211.0 | 143.7 (68%) | 67.3 | 0 | Hillegass Ave 97.7; 61st St 62.0 |
+| Colby St, 62nd to 63rd | 197 | 198.7 | 136.0 (68%) | 62.3 | 0.3 | Hillegass Ave 93.3 and 89.7 |
+| Colby St at 63rd | 194 | 194.7 | 128.7 (66%) | 65.7 | 0.3 | Hillegass Ave 69.3 and 67.3 |
+| Colby St, 63rd to North | 190 | 189.7 | 128.0 (67%) | 61.3 | 0.3 | Dana St 76.3; North St 74.7; 63rd St 69.0 |
+| Colby St, 61st to 62nd | 186 | 186.7 | 133.0 (71%) | 53.7 | 0 | Hillegass Ave 89.0 and 83.7 |
+| Colby St, North to Alcatraz | 185 | 186.0 | 135.7 (73%) | 50.3 | 0 | Hillegass Ave 91.0 and 85.7 |
+| 57th St, Ayala to Vicente | 182 | 181.7 | 96.0 (53%) | 85.7 | 0 | 58th St 81.3 and 80.3 |
+| 57th St, Vicente to Telegraph | 182 | 183.3 | 94.0 (51%) | 89.3 | 0 | 58th St 74.0 and 71.7 |
+
+Every closure has a legal Trapezoid bypass within the 1.3 tolerance, and in every case 47% to 73% of the displaced through cars newly drive Trapezoid side streets, so no closure is flagged (rule: bypass within tolerance and under 25% taking it). No general routing defect showed up, so no engine change was made for it.
+
+Judgment calls for the project lead, not changed:
+
+1. Configured alternatives come before the local bypass. The Colby/North whole-junction filter cuts the counted Colby turns; their configured alternative is Hillegass Avenue, so most of those trips go to Hillegass, and through cars on 63rd and Dana do not change (record above, +0.3 to +0.8, unresolved). The sweep's block filter on Colby between 63rd and North leaves the counted turn reachable through 63rd, Dana and North, and Dana then gains 76 through cars an hour. Whether the bypass should rank before or with the configured alternatives is a modeling choice.
+2. When a straight parallel street and a dogleg back onto the counted street are both legal, the bypass fallback prefers the dogleg if it is within the tolerance, because it keeps the counted street's intent. Not tested on Rockridge beyond the cases above.
+3. The sweep's thresholds (tolerance 1.3, "gains little" under 25%) are assumptions chosen for this check.
