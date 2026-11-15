@@ -55,10 +55,12 @@ The site is a JavaScript app, so a page fetched without scripts is empty. Everyt
 - Demand is fitted to link counts and to observed route shares by assignment, using multiplicative updates
   ([VanZuylen1980], [Willumsen1981]) and successive averages ([PowellSheffi1982]). Details are in
   [data/demand/README.md](data/demand/README.md).
-- Demand is fixed: the same trips are made before and after each change. Real schemes also remove traffic
-  ([Thomas2024]), which this version does not model.
+- Demand is fixed: the same trips are made before and after each change, so results are conditional simulations of those
+  trips. London monitoring found some traffic removed by real schemes ([Thomas2024]); this version does not model demand
+  response, and that average is context, not a target or a bound for any local result.
 - Safety is reported as surrogate indicators (speeds, time-to-collision conflicts; [Hayward1972], [Mahmud2017]), not
-  crash predictions.
+  crash predictions. Pedestrian (AIS 4+, [Tefft2013]) and cyclist (MAIS 3+, [Lubbe2022]) severity are separate means over
+  scored encounters, shown with their counts and never added together.
 - Parameters and demand that are not sourced are labeled as assumptions in code, specs and the UI.
 
 Keys resolve in [docs/references.md](docs/references.md), which records how each entry was verified.

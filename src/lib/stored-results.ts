@@ -1,4 +1,4 @@
-import type { Intervention, Metrics, Network } from '../types';
+import { SAFETY_VERSION, type Intervention, type Metrics, type Network } from '../types';
 import type { StatsMsg } from '../sim/client';
 import { encodeScenario } from './hash';
 import { RUN_SECONDS } from './run';
@@ -91,7 +91,12 @@ export function verdict(r: StoredResult, want: { key: string; period: string; de
 const isNum = (v: unknown): boolean => typeof v === 'number' && Number.isFinite(v);
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 const METRIC_NUMBERS = ['time', 'vehiclesInNetwork', 'spawned', 'completedTrips', 'backlog', 'meanTripTime', 'meanTripDelay', 'vehKm', 'arterialMeanSpeed'];
-const isMetrics = (m: unknown): boolean => isObj(m) && METRIC_NUMBERS.every((k) => isNum(m[k])) && isObj(m.cutThrough) && isNum(m.cutThrough.vehiclesPerHour) && isObj(m.safety);
+/**
+ * A result from a build with walking and biking agents carries the safety block of the version this app reads. One with the old
+ * scalar scores (cyclist severity from car speed, no endpoint or encounter counts) is a legacy meaning and is not read as the new one.
+ */
+const hasCurrentSafety = (m: Record<string, unknown>): boolean => m.vulnerable === undefined || (isObj(m.vulnerable) && m.vulnerable.safetyVersion === SAFETY_VERSION);
+const isMetrics = (m: unknown): boolean => isObj(m) && METRIC_NUMBERS.every((k) => isNum(m[k])) && isObj(m.cutThrough) && isNum(m.cutThrough.vehiclesPerHour) && isObj(m.safety) && hasCurrentSafety(m);
 
 /** Byte length of a base64 string, or -1 when it does not decode. */
 function decodedBytes(b64: string): number {
@@ -111,7 +116,7 @@ function isStats(s: unknown, net?: { links: readonly unknown[] }): s is StoredSt
   }
   return true;
 }
-/** Anything that is not a well-formed result of this version (a missing file served as the app page, an older format, a damaged file) reads as none. */
+/** Anything that is not a well-formed result of this version (a missing file served as the app page, an older format or safety meaning, a damaged file) reads as none. */
 export function parseResult(text: string, net?: { links: readonly unknown[] }): StoredResult | null {
   try {
     const r = JSON.parse(text) as StoredResult;

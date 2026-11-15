@@ -108,10 +108,21 @@ export interface ModeMetrics {
   bicycle: { inNetwork: number; completedTrips: number; meanTripTime: number };
   pedestrian: { inNetwork: number; completedTrips: number; meanTripTime: number; meanCrossingDelay: number };
 }
+/** Version of the safety output's meaning that this app reads. Results without it carry the old car-speed score (legacy). */
+export const SAFETY_VERSION = 2;
+/** Conditional injury severity of one mode's encounters: the mean source probability over supported encounters, not a crash probability. */
+export interface SeveritySummary {
+  endpoint: 'AIS4+' | 'MAIS3+F'; source: string;
+  encounters: number; supported: number; unsupported: number;
+  /** null when no supported encounter occurred; `unavailable` says why. */
+  meanSeverity: number | null; unavailable: string | null;
+}
 export interface VulnerableMetrics {
+  safetyVersion: number;
   pedConflicts: number; bikeConflicts: number; closePasses: number;
-  pedInjuryRiskIndex: number; bikeInjuryRiskIndex: number;
-  meanVehicleSpeedAtPedEncounter: number;
+  pedestrian: SeveritySummary;
+  cyclist: SeveritySummary & { passes: { count: number; meanVehicleSpeed: number | null } };
+  meanVehicleSpeedAtPedEncounter: number | null;
 }
 
 /** Agent kind codes in the vehicle buffer (slot 4). Code 1 is retired and unused. */

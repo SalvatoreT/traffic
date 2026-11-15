@@ -1,10 +1,12 @@
-import type { Metrics } from '../types';
+import { SAFETY_VERSION, type Metrics, type SeveritySummary } from '../types';
 import { formatDiff, formatValue, type Diff, type Kind } from './format';
 
 export interface MetricDef {
   id: string; label: string; kind: Kind; lowerIsBetter: boolean | null;
   get(m: Metrics): number;
   hint?: string;
+  /** Why the value is unavailable, when it is. */
+  why?(m: Metrics): string | null;
 }
 export interface CardDef { id: string; title: string; note?: string; metrics: MetricDef[] }
 
@@ -46,17 +48,35 @@ const mv = (f: (m: Metrics) => number | undefined) => (m: Metrics): number => {
   return v === undefined ? NaN : v;
 };
 
+/** The safety block in the current meaning; legacy results (no version, or an older one) read as unavailable. */
+export const currentSafety = (m: Metrics | null | undefined) => (m?.vulnerable?.safetyVersion === SAFETY_VERSION ? m.vulnerable : null);
+export const isLegacySafety = (m: Metrics | null | undefined): boolean => !!m?.vulnerable && m.vulnerable.safetyVersion !== SAFETY_VERSION;
+
+const sev = (pick: (v: NonNullable<ReturnType<typeof currentSafety>>) => SeveritySummary) => ({
+  mean: mv((m) => { const v = currentSafety(m); return v ? pick(v).meanSeverity ?? NaN : undefined; }),
+  count: (f: (s: SeveritySummary) => number) => mv((m) => { const v = currentSafety(m); return v ? f(pick(v)) : undefined; }),
+  why: (m: Metrics): string | null => {
+    if (isLegacySafety(m)) return 'computed with an older safety definition';
+    const v = currentSafety(m);
+    return v ? pick(v).unavailable : null;
+  },
+});
+const pedSev = sev((v) => v.pedestrian), bikeSev = sev((v) => v.cyclist);
+
 export const MODE_CARDS: CardDef[] = [
   {
     id: 'vulnerable', title: 'People walking and biking',
-    note: 'Surrogate indicators, not crash predictions. Walking and biking volumes are assumed, not counted. Injury-risk index is exposure-weighted from vehicle speed at encounters (unitless, for comparing baseline and scenario).',
+    note: 'Surrogate indicators, not crash predictions. Walking and biking volumes are assumed, not counted. Severity is the average injury probability the cited study gives for an encounter, over the encounters its crash geometry covers. Walking (serious injury, AIS 4+; Tefft 2013) and biking (at least serious injury, MAIS 3+; Lubbe 2022) are different injury levels, so they are never added together. A mean does not show how many encounters there were: read it with the counts. Biking passes on shared streets are not a crash geometry the study covers, so they are counted but not scored.',
     metrics: [
       { id: 'pedConf', label: 'Conflicts with vehicles, walking', kind: 'count', lowerIsBetter: true, get: mv((m) => m.vulnerable?.pedConflicts) },
       { id: 'bikeConf', label: 'Conflicts with vehicles, biking', kind: 'count', lowerIsBetter: true, get: mv((m) => m.vulnerable?.bikeConflicts) },
       { id: 'close', label: 'Close passes of cyclists', kind: 'count', lowerIsBetter: true, get: mv((m) => m.vulnerable?.closePasses) },
-      { id: 'pedRisk', label: 'Injury-risk index, walking', kind: 'index', lowerIsBetter: true, get: mv((m) => m.vulnerable?.pedInjuryRiskIndex) },
-      { id: 'bikeRisk', label: 'Injury-risk index, biking', kind: 'index', lowerIsBetter: true, get: mv((m) => m.vulnerable?.bikeInjuryRiskIndex) },
-      { id: 'encSpeed', label: 'Vehicle speed at pedestrian encounters', kind: 'speed', lowerIsBetter: true, get: mv((m) => m.vulnerable?.meanVehicleSpeedAtPedEncounter) },
+      { id: 'pedEnc', label: 'Encounters scored, walking', kind: 'count', lowerIsBetter: null, get: pedSev.count((s) => s.supported) },
+      { id: 'pedSev', label: 'Injury severity per encounter, walking (AIS 4+)', kind: 'index', lowerIsBetter: null, get: pedSev.mean, why: pedSev.why },
+      { id: 'bikeEnc', label: 'Encounters scored, biking (crossing paths)', kind: 'count', lowerIsBetter: null, get: bikeSev.count((s) => s.supported) },
+      { id: 'bikeUnsup', label: 'Encounters not scored, biking (passes and near-parallel paths)', kind: 'count', lowerIsBetter: null, get: bikeSev.count((s) => s.unsupported) },
+      { id: 'bikeSev', label: 'Injury severity per scored encounter, biking (MAIS 3+)', kind: 'index', lowerIsBetter: null, get: bikeSev.mean, why: bikeSev.why },
+      { id: 'encSpeed', label: 'Vehicle speed at pedestrian encounters', kind: 'speed', lowerIsBetter: true, get: mv((m) => m.vulnerable?.meanVehicleSpeedAtPedEncounter ?? (m.vulnerable ? NaN : undefined)) },
       { id: 'xdelay', label: 'Pedestrian crossing delay', kind: 'seconds', lowerIsBetter: true, get: mv((m) => m.modes?.pedestrian.meanCrossingDelay) },
     ],
   },
@@ -95,14 +115,23 @@ function phrase(label: string, d: Diff): string {
   return `${label} ${d.direction === 'up' ? 'up' : 'down'}${d.pct === null ? '' : ` ${Math.abs(d.pct).toFixed(0)}%`}, ${d.verdict}`;
 }
 
-/** One sentence on walking and biking safety, or '' when the sim build or run lacks the numbers. */
+const sevText = (label: string, endpoint: string, b: SeveritySummary, s: SeveritySummary): string => {
+  const n = (x: SeveritySummary) => `${x.supported} scored`;
+  if (b.meanSeverity === null || s.meanSeverity === null) {
+    return `${label} severity (${endpoint}) unavailable where no encounter was scored (baseline ${n(b)}, scenario ${n(s)})`;
+  }
+  const d = formatDiff(b.meanSeverity, s.meanSeverity, 'index', null);
+  const change = d.direction === 'same' ? 'about the same' : `${d.direction === 'up' ? 'up' : 'down'}${d.pct === null ? '' : ` ${Math.abs(d.pct).toFixed(0)}%`}`;
+  return `${label} severity per scored encounter (${endpoint}) ${change} (baseline ${n(b)}, scenario ${n(s)} encounters)`;
+};
+
+/** One sentence on walking and biking safety, or '' when the sim build or run lacks the numbers or has the older safety meaning. */
 export function vulnerableSentence(base: Metrics, scen: Metrics): string {
-  const b = base.vulnerable, s = scen.vulnerable;
+  const b = currentSafety(base), s = currentSafety(scen);
   if (!b || !s) return '';
   const ped = formatDiff(b.pedConflicts, s.pedConflicts, 'count', true);
   const bike = formatDiff(b.bikeConflicts, s.bikeConflicts, 'count', true);
-  const risk = formatDiff(b.pedInjuryRiskIndex + b.bikeInjuryRiskIndex, s.pedInjuryRiskIndex + s.bikeInjuryRiskIndex, 'index', true);
-  return `For people walking and biking: ${phrase('pedestrian conflicts', ped)}; ${phrase('cyclist conflicts', bike)}; ${phrase('combined injury-risk index', risk)} (surrogate indicators, assumed volumes).`;
+  return `For people walking and biking: ${phrase('pedestrian conflicts', ped)}; ${phrase('cyclist conflicts', bike)}; ${sevText('walking', 'AIS 4+', b.pedestrian, s.pedestrian)}; ${sevText('biking', 'MAIS 3+', b.cyclist, s.cyclist)}; the two injury levels are not combined (surrogate indicators, assumed volumes).`;
 }
 
 export function summarize(base: Metrics, scen: Metrics): string {

@@ -74,3 +74,31 @@ The user asked on 2026-11-15 for observations and fix proposals on `main`, so an
 Add deterministic unit cases for cyclist velocity and encounter geometry, separated endpoint summaries, repeated identical encounters, and empty supported samples. Verify serialization, browser reports, headless JSON, proposal text, and stored-result compatibility. Bump the relevant metric/result schema when fields change and prevent old scalar scores from silently acquiring new meanings. Check corrected documentation for remaining active claims that a London average validates a local result or that fixed demand guarantees a worst case.
 
 The proposed implementation can improve the interpretation of safety measures without demonstrating local safety validity. Validation against observed conflicts or crashes remains separate work.
+
+## Implementation record (2026-11-15)
+
+Each finding was rechecked against the code before any change. SAF-1, SAF-2 and EVD-1 all reproduced as described, and none was narrowed or rejected. The old `bike_encounter` and `bike_pass` took only the car's speed, the UI summed `pedInjuryRiskIndex` and `bikeInjuryRiskIndex`, and `docs/references.md` and `docs/simulator-audit.md` carried the target and upper-bound wording.
+
+### Source access and what stays an assumption
+
+The tsr.international host did not resolve from this session, so the full text of [Lubbe2022] was not read. The Crossref abstract was re-read: closing speed is "the relative speed between two crash partners", and the sample is frontal impacts from the car's perspective. Three points could not be confirmed and are labeled ASSUMPTION in code and in the bibliography entry:
+
+- Closing speed is computed as the magnitude of the difference of the two velocity vectors at the conflict point, with each velocity taken along the movement's mean direction (circular mean of entry and exit headings).
+- A node conflict is inside the supported geometry when the two paths differ in direction by at least 30 degrees (`SUPPORTED_MIN_ANGLE_RAD`, the same cutoff as the turn classes). Near-parallel paths are reported as unsupported. The cutoff is ours.
+- A pass on a shared link is outside the supported geometry. It is counted, with its mean car speed, and its close-pass flag is unchanged, but no severity is attached. The abstract does not say whether rear-end or lateral-pass configurations are in the sample, so scoring them would repeat the unverified transfer.
+
+The earlier bibliography note that the open full text was read now carries a verification block saying the coefficients come from the earlier pass and were not rechecked here. [Thomas2024] had no abstract in Crossref; the entry's wording change rests on the audit's reading of the publisher-indexed abstract and introduction and removes the target claim without adding a new one.
+
+### Output contract (safety version 2)
+
+`vulnerable` keeps `pedConflicts`, `bikeConflicts` and `closePasses`, and gains `safetyVersion: 2`, `pedestrian` and `cyclist`. Each of those has `endpoint`, `source`, `encounters`, `supported`, `unsupported`, `meanSeverity` (null when no supported encounter) and `unavailable` (the reason). `cyclist.passes` holds the count and mean car speed of passes. `pedInjuryRiskIndex` and `bikeInjuryRiskIndex` are removed rather than redefined, so no client can read an old number as a new measure. `meanVehicleSpeedAtPedEncounter` is null when there were no pedestrian encounters.
+
+Every pedestrian encounter counts as supported: the crosswalk case is a car-front-to-pedestrian geometry and the input remains the car's speed as an impact-speed proxy, as before. Only the cyclist side needed a geometry rule.
+
+Mean relative longitudinal speed for passes is not reported. It is computed in the engine's per-step code in `sim.rs`, which another change owns, and the call that records a pass there passes only the car speed. Adding it is a one-argument change once that file is free.
+
+### Stored results
+
+A stored result is read only when `vulnerable` is absent (a build without walking and biking agents) or carries `safetyVersion` 2; otherwise `parseResult` returns null and the app simulates live. The simulator fingerprint in a result's inputs already differs after this change, so legacy files were already refused by the verdict check. The version test makes that refusal independent of the fingerprint. The cached headless baselines are keyed by the fingerprint and are recomputed. Stored results under `public/data/results` stay in their old form until task 4.4's regeneration; until then the app does not show them and runs the hour itself.
+
+Neutral direction: severity means and encounter counts have no better/worse verdict, because a lower mean with more encounters does not mean less harm. Conflict counts and close passes keep theirs.

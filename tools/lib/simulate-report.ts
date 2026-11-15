@@ -167,7 +167,12 @@ const pct = (b: number, s: number) => (b !== 0 ? r1(((s - b) / Math.abs(b)) * 10
 
 const KIND_UNIT: Record<Kind, string> = { speed: 'mph', share: 'percent', minutes: 'minutes', seconds: 'seconds', count: 'count', flow: 'cars an hour', index: 'index (unitless)' };
 
-export interface MetricRow { id: string; label: string; unit: string; baseline: number | null; scenario: number | null; change: number | null; changePct: number | null; lowerIsBetter: boolean | null }
+const r3 = (x: number) => Math.round(x * 1000) / 1000;
+export interface MetricRow {
+  id: string; label: string; unit: string; baseline: number | null; scenario: number | null; change: number | null; changePct: number | null; lowerIsBetter: boolean | null;
+  /** Why a value is null, for figures that can be unavailable (a severity mean with no scored encounter is not a measured zero). */
+  unavailable?: { baseline?: string; scenario?: string };
+}
 
 /** Every figure of the app's Results cards in display units (cars an hour, mph, minutes, percent). */
 export function metricRows(base: Metrics, scen: Metrics): MetricRow[] {
@@ -176,10 +181,13 @@ export function metricRows(base: Metrics, scen: Metrics): MetricRow[] {
     const b = d.get(base), s = d.get(scen);
     const ok = Number.isFinite(b) && Number.isFinite(s);
     const bd = ok ? displayValue(d.kind as Kind, b) : null, sd = ok ? displayValue(d.kind as Kind, s) : null;
+    const rd = d.kind === 'index' ? r3 : r1;
+    const why = { baseline: Number.isFinite(b) ? null : d.why?.(base) ?? null, scenario: Number.isFinite(s) ? null : d.why?.(scen) ?? null };
     return {
       id: d.id, label: d.label, unit: KIND_UNIT[d.kind as Kind],
-      baseline: bd === null ? null : r1(bd), scenario: sd === null ? null : r1(sd), change: bd === null || sd === null ? null : r1(sd - bd), changePct: bd === null || sd === null ? null : pct(bd, sd),
+      baseline: bd === null ? null : rd(bd), scenario: sd === null ? null : rd(sd), change: bd === null || sd === null ? null : rd(sd - bd), changePct: bd === null || sd === null ? null : pct(bd, sd),
       lowerIsBetter: d.lowerIsBetter,
+      ...(why.baseline || why.scenario ? { unavailable: { ...(why.baseline ? { baseline: why.baseline } : {}), ...(why.scenario ? { scenario: why.scenario } : {}) } } : {}),
     };
   }));
 }

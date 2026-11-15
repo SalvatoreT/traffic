@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Metrics } from '../types';
 import { NavLink } from './Anchor';
-import { CARDS, MODE_CARDS, emptyMode, hasModes, networkHealth, summarize, type CardDef, type ModeCardId } from '../lib/metrics';
+import { CARDS, MODE_CARDS, emptyMode, hasModes, networkHealth, summarize, type CardDef, type MetricDef, type ModeCardId } from '../lib/metrics';
 import { EARLY_NOTE, isEarly, RUN_SECONDS } from '../lib/run';
 import { formatDiff, formatValue } from '../lib/format';
 
@@ -56,10 +56,13 @@ export function Comparison({ base, scen, comparing, finished, withheld = false, 
       ))}
       </>}
       <aside className="caveat" aria-label="Caveat about fixed demand">
-        Trip demand is fixed in this version: the same trips are made before and after
-        every change. Real schemes also remove some traffic. A meta-analysis of London low-traffic neighborhoods found traffic
-        inside the schemes fell by about 47% on average while boundary roads were on average roughly unchanged (with wide variation
-        between schemes) [<NavLink view="sources" anchor="Thomas2024" className="link">Thomas2024</NavLink>]. These results show a fixed set of trips redistributed, not a forecast.
+        Trip demand is fixed in this version: the same trips are made before and after every change, so these results are conditional
+        simulations of those trips, not forecasts. Real schemes can also remove some traffic, and this calculation has no behavioral demand
+        response. For context only, a meta-analysis of monitoring counts at London low-traffic neighborhoods found traffic inside the
+        schemes fell by about 47% on average while boundary roads were on average roughly unchanged, with wide variation between schemes
+        [<NavLink view="sources" anchor="Thomas2024" className="link">Thomas2024</NavLink>]. Those are counts of all traffic at monitoring
+        locations in London; this app counts distinct through cars on study-area side streets, so the figures are not comparable, and a
+        result here that differs from that average does not show the model is right or wrong.
         {scenarioCount === 0 ? '' : ' Model parameters are uncalibrated assumptions unless the Sources page says otherwise.'}
       </aside>
       <div className="sr-only" aria-live="polite" role="status">{announce}</div>
@@ -71,6 +74,13 @@ export function Comparison({ base, scen, comparing, finished, withheld = false, 
 function formatShort(seconds: number): string {
   const m = Math.floor(Math.max(0, seconds) / 60);
   return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`;
+}
+
+/** A value, or a dash with the reason when it is unavailable, so a missing sample never reads as a measured zero. */
+function cell(d: MetricDef, m: Metrics | null, v: number | undefined) {
+  const text = formatValue(d.kind, v);
+  const why = m && text === '—' ? d.why?.(m) : null;
+  return why ? <>{text} <span className="muted small">({why})</span></> : text;
 }
 
 function CardTable({ c, base, scen, comparing, empty }: { c: CardDef; base: Metrics | null; scen: Metrics | null; comparing: boolean; empty?: string | null }) {
@@ -90,8 +100,8 @@ function CardTable({ c, base, scen, comparing, empty }: { c: CardDef; base: Metr
               return (
                 <tr key={d.id}>
                   <th scope="row">{d.label}</th>
-                  <td>{formatValue(d.kind, b)}</td>
-                  <td>{formatValue(d.kind, s)}</td>
+                  <td>{cell(d, base, b)}</td>
+                  <td>{cell(d, scen, s)}</td>
                   <td className={`chg ${comparing ? df.verdict.replace(/ /g, '-') : 'neutral'}`}>{comparing ? df.text : '—'}</td>
                 </tr>
               );

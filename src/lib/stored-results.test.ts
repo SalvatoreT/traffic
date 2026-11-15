@@ -85,6 +85,12 @@ describe('parseResult', () => {
     expect(parseResult('{}')).toBeNull();
     expect(parseResult(JSON.stringify({ ...result(), scenario: { metrics: null, linkStats: 1 } }))).toBeNull();
   });
+  it('rejects a result that carries the old safety scores and reads one with the current block', () => {
+    const withVuln = (vulnerable: unknown) => { const m = { ...metrics, vulnerable } as unknown as StoredResult['scenario']['metrics']; return result({ scenario: { ...stats([1, 2, 3, 4]), metrics: m }, baseline: { ...stats([4, 3, 2, 1]), metrics: m } }); };
+    const legacy = withVuln({ pedConflicts: 1, bikeConflicts: 2, closePasses: 3, pedInjuryRiskIndex: 0.05, bikeInjuryRiskIndex: 0.07, meanVehicleSpeedAtPedEncounter: 2 });
+    expect(parseResult(JSON.stringify(legacy))).toBeNull();
+    expect(parseResult(JSON.stringify(withVuln({ safetyVersion: 2 })))?.key).toBe('k1');
+  });
   it('rejects a damaged file instead of throwing later: bad base64, wrong lengths, a partial metrics object', () => {
     const net4 = { links: [{}, {}] };
     const ok = result({ scenario: stats([1, 2, 3, 4, 5, 6, 7, 8]), baseline: stats([1, 2, 3, 4, 5, 6, 7, 8]) });

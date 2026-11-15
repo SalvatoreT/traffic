@@ -2,8 +2,8 @@
  * MockSimulation: a tiny stand-in with the same interface as the WASM `Simulation`, used with `?mock=1` or
  * when WASM fails to initialize. Vehicles drift along links; it is NOT a traffic model.
  */
-import type { Demand, Intervention, Metrics, Network } from '../types';
-import { KIND_BIKE, KIND_PED } from '../types';
+import type { Demand, Intervention, Metrics, Network, SeveritySummary } from '../types';
+import { KIND_BIKE, KIND_PED, SAFETY_VERSION } from '../types';
 import { pointAlong } from '../lib/geom';
 import { bannedMoves } from '../lib/diverter';
 import type { SimLike } from './protocol';
@@ -15,6 +15,12 @@ interface A { kind: number; link: number; s: number; v: number; born: number }
 // Mock-only numbers: plausible magnitudes so the UI can be built, not a model.
 const MOCK_AGENTS = { bike: 140, ped: 1200 };
 const MOCK_END_P = { bike: 0.04, ped: 0.05 };
+
+/** Stand-in severity summary: `n` exposure-weighted encounters with summed severity `sum`. */
+function mockSeverity(endpoint: SeveritySummary['endpoint'], source: string, n: number, sum: number): SeveritySummary {
+  const k = Math.round(n);
+  return { endpoint, source, encounters: k, supported: k, unsupported: 0, meanSeverity: n > 0 ? sum / n : null, unavailable: n > 0 ? null : 'no encounters' };
+}
 
 export class MockSimulation implements SimLike {
   private net: Network;
@@ -277,8 +283,10 @@ export class MockSimulation implements SimLike {
       initialAgents: this.initialAgents, initialSkipped: 0,
       vulnerable: {
         pedConflicts: Math.round(mm.pedConf), bikeConflicts: Math.round(mm.bikeConf), closePasses: Math.round(mm.close),
-        pedInjuryRiskIndex: mm.pedRisk, bikeInjuryRiskIndex: mm.bikeRisk,
-        meanVehicleSpeedAtPedEncounter: mm.pedEnc > 0 ? mm.pedEncSpeed / mm.pedEnc : 0,
+        safetyVersion: SAFETY_VERSION,
+        pedestrian: mockSeverity('AIS4+', 'Tefft2013', mm.pedEnc, mm.pedRisk),
+        cyclist: { ...mockSeverity('MAIS3+F', 'Lubbe2022', mm.bikeConf, mm.bikeRisk), passes: { count: Math.round(mm.close), meanVehicleSpeed: null } },
+        meanVehicleSpeedAtPedEncounter: mm.pedEnc > 0 ? mm.pedEncSpeed / mm.pedEnc : null,
       },
     };
     return JSON.stringify(m);
