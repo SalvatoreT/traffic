@@ -56,3 +56,17 @@ export function intentShares(m: AssumedMovementView, period: string): { id: stri
   const total = m.intents.reduce((s, i) => s + (i.vph[period] ?? 0), 0);
   return m.intents.filter((i) => (i.vph[period] ?? 0) > 0).map((i) => ({ id: i.id, label: i.label, through: i.through, vph: i.vph[period], pct: total > 0 ? Math.round((100 * i.vph[period]) / total) : 0 }));
 }
+
+/** The below-threshold note with period ids replaced by the names people see, and a typographic apostrophe. */
+export function belowThresholdText(note: string, periodIds: string[], name: (id: string) => string): string {
+  let out = note.replace(/'/g, '’');
+  for (const id of periodIds) out = out.split(id).join(name(id));
+  return out;
+}
+
+export const MAP_UNAVAILABLE: Record<'loading' | 'pending' | 'missing' | 'stale', string> = {
+  loading: 'Map loading.',
+  pending: 'Map loading: it appears once the simulation engine has started.',
+  missing: 'Map not available yet: the stored traffic for this model is being updated.',
+  stale: 'Map not available yet: the stored traffic for this version of the model is being updated.',
+};

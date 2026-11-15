@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import './assumptions.css';
 import type { AreaBundle, DemandIntent } from '../types';
-import { assumptionsCurrent, fetchAssumptions, intentShares, type AssumedMovementView, type AssumptionsFile } from '../lib/assumptions';
+import { assumptionsCurrent, belowThresholdText, fetchAssumptions, intentShares, MAP_UNAVAILABLE, type AssumedMovementView, type AssumptionsFile } from '../lib/assumptions';
 import { baselineIntent, baselineVerdict, fetchBaselineIntents, type BaselineIntents } from '../lib/baseline-intents';
 import { buildIntentMap } from '../lib/intentmap';
 import { IntentMap } from './IntentMap';
@@ -57,15 +57,15 @@ export function Assumptions({ bundle, index, mode, hashes, fingerprint }: Props)
         The measured inputs, the data behind them and the research are on the{' '}
         <NavLink view="sources" className="link">Sources</NavLink> page.
       </p>
-      <Movements file={assumed.value} loaded={assumed.done} order={order.map((p) => p.id)} periodName={periodName} demandHash={hashes?.demand ?? null} net={bundle.network} mode={mode} />
       {defs?.length ? <Reasons defs={defs} bundle={bundle} index={index} mode={mode} baseline={baseline.value} status={status} order={order.map((p) => p.id)} first={first} periodName={periodName} /> : null}
+      <Movements file={assumed.value} loaded={assumed.done} order={order.map((p) => p.id)} periodName={periodName} demandHash={hashes?.demand ?? null} net={bundle.network} mode={mode} />
       <p className="muted small">Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a> (ODbL).</p>
     </div>
   );
 }
 
 const MOVEMENTS_ID = 'assumed-movement-flows';
-const MovementsHeading = () => <AnchorHeading id={MOVEMENTS_ID} label="Assumed movement flows">Assumed movement flows</AnchorHeading>;
+const MovementsHeading = () => <AnchorHeading id={MOVEMENTS_ID} className="sticky-h" label="Assumed movement flows">Assumed movement flows</AnchorHeading>;
 
 function Movements({ file, loaded, order, periodName, demandHash, net, mode }: { file: AssumptionsFile | null; loaded: boolean; order: string[]; periodName: (id: string) => string; demandHash: string | null; net: AreaBundle['network']; mode: Mode }) {
   const intro = (
@@ -173,11 +173,11 @@ function MovementCard({ m, n, net, mode, base, counted, lead, scaled, periodName
       <AnchorHeading as="h5" id={`move-${m.id}`} label={m.label}><span className="move-n">{n}</span> {m.label}</AnchorHeading>
       {model && <TurnMap model={model} n={n} mode={mode} alt={`Turn ${n}. Map of ${model.words}. A curved arrow runs from the first street through the junction onto the second.`} />}
       <dl className="move-nums">
-        {counted.map((p) => <div key={p}><dt>Counted, {periodName(p)}{scaled.includes(p) ? ' (scaled)' : ''}</dt><dd>{rounded(m.counted[p])}{m.belowThreshold?.[p] !== undefined && <span className="tag tag-local">counted, no trips assigned</span>}</dd></div>)}
+        {counted.map((p) => <div key={p}><dt>Counted, {periodName(p)}{scaled.includes(p) ? ' (scaled)' : ''}</dt><dd>{rounded(m.counted[p])}{m.belowThreshold?.[p] !== undefined && <span className="tag tag-local">no trips assigned</span>}</dd></div>)}
         <div className="assigned"><dt>Assigned, {periodName(lead)}</dt><dd>{rounded(a?.total)}</dd></div>
         <div className="assigned"><dt>Through cars, {periodName(lead)}</dt><dd>{rounded(a?.through)}</dd></div>
       </dl>
-      {m.belowThreshold && Object.keys(m.belowThreshold).length > 0 && m.belowThresholdNote && <p className="muted move-below">{m.belowThresholdNote}</p>}
+      {m.belowThreshold && Object.keys(m.belowThreshold).length > 0 && m.belowThresholdNote && <p className="muted move-below">{belowThresholdText(m.belowThresholdNote, Object.keys(m.belowThreshold), periodName)}</p>}
       {who.length > 0 && <Who who={who} lead={periodName(lead)} />}
     </li>
   );
@@ -205,8 +205,8 @@ type Status = 'loading' | 'missing' | 'pending' | 'stale' | 'ok';
 const STATUS_NOTE: Record<Exclude<Status, 'ok'>, string> = {
   loading: 'Loading today’s cars an hour for each reason…',
   pending: 'Today’s cars an hour and the maps appear once the simulation engine has started.',
-  missing: 'The stored baseline for these maps is not available, so the cards show no maps or car counts.',
-  stale: 'The stored baseline was computed for a different version of the street network, demand or simulator than the one loaded, so the cards show no maps or car counts.',
+  missing: 'The stored traffic for the maps is not available, so the cards show no maps or car counts.',
+  stale: 'The stored traffic was computed for a different version of the model than the one loaded, so the cards show no maps or car counts.',
 };
 
 const REASONS_ID = 'why-cars-cut-through';
@@ -222,7 +222,7 @@ function Reasons({ defs, bundle, index, mode, baseline, status, order, first, pe
   const other = file && first ? file.periods[first]?.byIntent.find((b) => b.id === OTHER_ID) : undefined;
   return (
     <section aria-labelledby={REASONS_ID}>
-      <AnchorHeading id={REASONS_ID} label="Why cars cut through">Why cars cut through</AnchorHeading>
+      <AnchorHeading id={REASONS_ID} className="sticky-h" label="Why cars cut through">Why cars cut through</AnchorHeading>
       <p>
         These are hypotheses about why drivers cross the study area without an end in it, not what drivers said. A through trip that uses a residential or service street is filed under the first reason that fits: the freeway on-ramp it will use, the off-ramp it came by, or, for trips that use no ramp, where it starts and ends;
         any other goes under Other. <strong>{BASIS_TEXT.observed}:</strong> {BASIS_HELP.observed} <strong>{BASIS_TEXT.assumed}:</strong> {BASIS_HELP.assumed}
@@ -233,14 +233,14 @@ function Reasons({ defs, bundle, index, mode, baseline, status, order, first, pe
       </p>
       {status !== 'ok' && <p className="muted" role="status">{STATUS_NOTE[status]}</p>}
       <ul className="reasons">
-        {sorted.map((d) => <ReasonCard key={d.id} d={d} net={net} index={index} mode={mode} base={base} file={file} order={order} first={first} periodName={periodName} defs={defs} ramps={bundle.demand.ramps} />)}
+        {sorted.map((d) => <ReasonCard key={d.id} d={d} net={net} index={index} mode={mode} base={base} file={file} status={status} order={order} first={first} periodName={periodName} defs={defs} ramps={bundle.demand.ramps} />)}
       </ul>
     </section>
   );
 }
 
-function ReasonCard({ d, net, index, mode, base, file, order, first, periodName, defs, ramps }: {
-  d: DemandIntent; net: AreaBundle['network']; index: NetIndex; mode: Mode; base: ReturnType<typeof buildBaseMap>; file: BaselineIntents | null; order: string[]; first: string | undefined; periodName: (id: string) => string; defs: DemandIntent[]; ramps: AreaBundle['demand']['ramps'];
+function ReasonCard({ d, net, index, mode, base, file, status, order, first, periodName, defs, ramps }: {
+  d: DemandIntent; net: AreaBundle['network']; index: NetIndex; mode: Mode; base: ReturnType<typeof buildBaseMap>; file: BaselineIntents | null; status: Status; order: string[]; first: string | undefined; periodName: (id: string) => string; defs: DemandIntent[]; ramps: AreaBundle['demand']['ramps'];
 }) {
   const ramp = rampOfIntent(d, ramps);
   const rampAt = useMemo(() => (ramp ? rampPoint(net, ramp) : null), [ramp, net]);
@@ -275,6 +275,7 @@ function ReasonCard({ d, net, index, mode, base, file, order, first, periodName,
         </figure>
       )}
       {lead && !model && <p className="muted">{text}</p>}
+      {!lead && <p className="muted reason-nomap">{status === 'ok' ? 'No map: the stored traffic has no path for this reason.' : MAP_UNAVAILABLE[status]}</p>}
     </li>
   );
 }

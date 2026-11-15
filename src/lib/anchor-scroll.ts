@@ -11,7 +11,7 @@ export function scrollToAnchor(id: string, reduced: boolean, opts: { waitMs?: nu
   const wanted = (e: HTMLElement) => {
     let p = e.parentElement;
     while (p && !(p.scrollHeight > p.clientHeight + 1 && getComputedStyle(p).overflowY !== 'visible')) p = p.parentElement;
-    return (p ? p.getBoundingClientRect().top : 0) + (parseFloat(getComputedStyle(e).scrollMarginTop) || 0);
+    return (p ? p.getBoundingClientRect().top + (parseFloat(getComputedStyle(p).scrollPaddingTop) || 0) : 0) + (parseFloat(getComputedStyle(e).scrollMarginTop) || 0);
   };
   const place = (b: ScrollBehavior) => {
     const e = el();
