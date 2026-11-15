@@ -749,7 +749,7 @@ if (fc?.enabled) {
     for (const q of res.stations) {
       stations.push({
         id: q.id, kind: 'count', label: q.label, basis: q.basis, links: q.links, target: Object.fromEntries(periodIds.map((p) => [p, q.target[p] ?? 0])), weight: q.weight, tolPct: q.tolPct,
-        records: [{ key: q.id, share: 1 }], source: 'volunteer-count', year: countYear, held: q.held, cvExclude: q.family !== 'block' && touchesHeld(q, heldLinks), feature: q.feature, weightByPeriod: q.weightByPeriod, corridor: q.corridor,
+        records: [{ key: q.id, share: 1 }], source: 'volunteer-count', year: countYear, held: q.held, derived: q.derived, cvExclude: q.family !== 'block' && touchesHeld(q, heldLinks), feature: q.feature, weightByPeriod: q.weightByPeriod, corridor: q.corridor,
       });
     }
     stationNotes.push(`volunteer count: ${res.report.blocks.mapped} of ${res.report.blocks.total} counted block values mapped to ${res.stations.filter((q) => q.family === 'block').length} directed links (${res.report.blocks.held} held out), ${res.report.movements.used} turning movements and ${res.report.routes.used} whole-street routes as constraints`);
@@ -768,7 +768,7 @@ if (fc?.enabled) {
           if (sib.length) { for (const p of periodIds) { const rest = Math.max(0, old.target[p] * (sib.length + 1) - (q.target[p] ?? 0)) / sib.length; for (const st of sib) st.target[p] = rest; } stationNotes.push(`${sib.map((st) => st.label).join(', ')}: shares the ADT row of the counted ramp above and takes the rest of it (${periodIds.map((p) => Math.round(sib[0].target[p])).join(' / ')} veh/h)`); }
         }
       }
-      stations.push({ id: q.id, kind: 'tmc', label: q.label, basis: q.basis, links: q.links, target: Object.fromEntries(periodIds.map((p) => [p, q.target[p] ?? 0])), weight: q.weight, tolPct: q.tolPct, records: [{ key: q.id, share: 1 }], feature: q.feature, weightByPeriod: q.weightByPeriod, corridor: q.corridor, source: q.source, year: q.year, ramp: !!q.rampLinks });
+      stations.push({ id: q.id, kind: 'tmc', label: q.label, basis: q.basis, links: q.links, target: Object.fromEntries(periodIds.map((p) => [p, q.target[p] ?? 0])), weight: q.weight, tolPct: q.tolPct, records: [{ key: q.id, share: 1 }], feature: q.feature, weightByPeriod: q.weightByPeriod, corridor: q.corridor, source: q.source, year: q.year, ramp: !!q.rampLinks, derived: q.derived });
     }
     stationNotes.push(`intersection counts: ${res.report.intersections} intersections give ${res.report.legs} leg volumes (${res.report.ramps} on ramps) and ${res.report.movements} turning movements`, ...res.report.notes);
   }
@@ -781,7 +781,7 @@ if (fc?.enabled) {
     const sum = applyRecency(stations, rcy);
     stationNotes.push(`recency weights (ASSUMPTION, reference year ${rcy.referenceYear}): ${sum.sources.map((r) => `${r.source} ${yearLabel(r.year)}: ${r.stations} stations, weight x${r.weight}${r.weight === 0 ? ' (held out of the fit)' : ''}${r.growth !== 1 ? `, counts x${r.growth.toFixed(3)} for growth` : ''}`).join('; ')}`);
   }
-  if (fc.stationsOutput) writeFileSync(fc.stationsOutput, JSON.stringify({ area: cfg.area, note: 'Count stations for the calibration report: links are indices into the network link list, targets are veh/h per period, held = validation only (excluded from the fit). Gate stations have no links. Count stations of the volunteer count with a feature (turning movement or whole-street path) have no links either; entries lists the interior links that start at a surface arterial.', entries: countRep?.entries.map((e) => ({ side: e.side, label: e.label, link: e.link, counted: e.counted })), stations: stations.map((q) => ({ id: q.id, kind: q.kind, label: q.label, corridor: corridorOf(q), held: !!q.held, source: q.source ?? null, year: q.year ?? null, links: q.links, feature: q.feature, target: Object.fromEntries(Object.entries(q.target).map(([k, v]) => [k, Math.round(v as number)])) })) }));
+  if (fc.stationsOutput) writeFileSync(fc.stationsOutput, JSON.stringify({ area: cfg.area, note: 'Count stations for the calibration report: links are indices into the network link list, targets are veh/h per period, held = validation only (excluded from the fit). Gate stations have no links. Count stations of the volunteer count with a feature (turning movement or whole-street path) have no links either; entries lists the interior links that start at a surface arterial.', entries: countRep?.entries.map((e) => ({ side: e.side, label: e.label, link: e.link, counted: e.counted })), stations: stations.map((q) => ({ id: q.id, kind: q.kind, label: q.label, corridor: corridorOf(q), held: !!q.held, source: q.source ?? null, year: q.year ?? null, derived: q.derived, links: q.links, feature: q.feature, target: Object.fromEntries(Object.entries(q.target).map(([k, v]) => [k, Math.round(v as number)])) })) }));
   const heldIds = new Set(stations.filter((q) => q.held).map((q) => q.id));
   const cvEx = new Set(stations.filter((q) => q.cvExclude).map((q) => q.id));
   const overused = overusedRecords(stations);

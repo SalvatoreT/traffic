@@ -88,25 +88,44 @@ export function verdict(r: StoredResult, want: { key: string; period: string; de
   return 'ok';
 }
 
-const isStats = (s: unknown): s is StoredStats => {
-  const x = s as StoredStats | undefined;
-  return !!x && typeof x.metrics === 'object' && x.metrics !== null && typeof x.linkStats === 'string' && (x.intentLinks === undefined || typeof x.intentLinks === 'string');
-};
-/** Anything that is not a well-formed result of this version (a missing file served as the app page, an older format) reads as none. */
-export function parseResult(text: string): StoredResult | null {
+const isNum = (v: unknown): boolean => typeof v === 'number' && Number.isFinite(v);
+const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
+const METRIC_NUMBERS = ['time', 'vehiclesInNetwork', 'spawned', 'completedTrips', 'backlog', 'meanTripTime', 'meanTripDelay', 'vehKm', 'arterialMeanSpeed'];
+const isMetrics = (m: unknown): boolean => isObj(m) && METRIC_NUMBERS.every((k) => isNum(m[k])) && isObj(m.cutThrough) && isNum(m.cutThrough.vehiclesPerHour) && isObj(m.safety);
+
+/** Byte length of a base64 string, or -1 when it does not decode. */
+function decodedBytes(b64: string): number {
+  try { return atob(b64).length; } catch { return -1; }
+}
+const LINK_STRIDE = 4, INTENT_STRIDE = 3;
+/** Link stats cover every link of the network; intent links are whole rows. With no network given only the encoding is checked. */
+function isStats(s: unknown, net?: Pick<Network, 'links'>): s is StoredStats {
+  if (!isObj(s) || !isMetrics(s.metrics) || typeof s.linkStats !== 'string') return false;
+  if (s.intentLinks !== undefined && typeof s.intentLinks !== 'string') return false;
+  const link = decodedBytes(s.linkStats);
+  if (link < 0 || link % 4 !== 0) return false;
+  if (net && link / 4 !== net.links.length * LINK_STRIDE) return false;
+  if (typeof s.intentLinks === 'string') {
+    const n = decodedBytes(s.intentLinks);
+    if (n < 0 || (n / 4) % INTENT_STRIDE !== 0) return false;
+  }
+  return true;
+}
+/** Anything that is not a well-formed result of this version (a missing file served as the app page, an older format, a damaged file) reads as none. */
+export function parseResult(text: string, net?: Pick<Network, 'links'>): StoredResult | null {
   try {
     const r = JSON.parse(text) as StoredResult;
     const ok = r?.version === RESULT_VERSION && typeof r.key === 'string' && typeof r.period === 'string' && typeof r.area === 'string'
-      && typeof r.inputs?.networkHash === 'string' && typeof r.inputs?.demandHash === 'string' && typeof r.inputs?.simulator === 'string'
-      && typeof r.seconds === 'number' && isStats(r.scenario) && isStats(r.baseline);
+      && isObj(r.inputs) && typeof r.inputs.networkHash === 'string' && typeof r.inputs.demandHash === 'string' && typeof r.inputs.simulator === 'string'
+      && isNum(r.seconds) && isStats(r.scenario, net) && isStats(r.baseline, net);
     return ok ? r : null;
   } catch { return null; }
 }
 
-export async function fetchResult(area: string, key: string): Promise<StoredResult | null> {
+export async function fetchResult(area: string, key: string, net?: Pick<Network, 'links'>): Promise<StoredResult | null> {
   try {
     const r = await fetch(resultUrl(area, key));
     if (!r.ok) return null;
-    return parseResult(await r.text());
+    return parseResult(await r.text(), net);
   } catch { return null; }
 }

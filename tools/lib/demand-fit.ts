@@ -29,6 +29,8 @@ export interface Station {
   held?: boolean;
   /** Left out of the cross-validation fit without being scored as held out (a movement or route count that touches a held-out block). */
   cvExclude?: boolean;
+  /** Periods whose target is a scaled copy of another period's count, not a count (ASSUMPTION); the station rule leaves them out. */
+  derived?: string[];
   /** A turning movement or path count: constrains the share of routes that have the feature, `links` is empty. */
   feature?: Feature;
   /** Weight in a period where it differs from `weight`. */

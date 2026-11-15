@@ -161,6 +161,8 @@ export interface CountStation {
   /** Weight in a period where it differs (midday is the PM count scaled, not measured). */
   weightByPeriod?: Record<string, number>;
   held: boolean;
+  /** Periods whose target is not a count but a scaled copy of another period's count (midday = PM x factor, ASSUMPTION): left out of the station rule. */
+  derived?: string[];
   /** Source rows (block directions / movement ids) for the report. */
   note?: string;
   corridor: string;
@@ -217,7 +219,7 @@ export function countStations(file: CountFile, net: CNet, cfg: CountConfig, peri
     blockStations.push({
       id: `count block ${li}`, family: 'block', label: `${lab}`, corridor: `${l.name} (volunteer count)`,
       basis: `DATA (volunteer count of ${file.source.id}${e.am ? ` AM ${e.am.vehicles}` : ''}${e.pm ? ` PM ${e.pm.vehicles}` : ''}${mid ? `; ${mid} = PM x ${midFromPm!.toFixed(2)} ASSUMPTION` : ''}${uncertain ? '; reading flagged uncertain' : ''})`,
-      links: [li], target, weight: cfg.weight * (uncertain ? cfg.uncertainFactor : 1), tolPct: cfg.tolerancePct, held: false, uncertain,
+      links: [li], target, weight: cfg.weight * (uncertain ? cfg.uncertainFactor : 1), tolPct: cfg.tolerancePct, held: false, uncertain, ...(target[mid ?? ''] ? { derived: [mid!] } : {}),
     });
   }
   if (mid) for (const s of blockStations) s.weightByPeriod = { [mid]: s.weight * cfg.middayWeightFactor };
@@ -268,7 +270,7 @@ export function countStations(file: CountFile, net: CNet, cfg: CountConfig, peri
     stations.push({
       id: `count move ${k}`, family: 'movement', label: `${e.from} to ${e.to} at ${e.at.join(' / ')}`, corridor: 'turning movements (volunteer count)',
       basis: `DATA (volunteer count of ${file.source.id}, turning movement${e.am ? ` AM ${e.am}` : ''}${e.pm ? ` PM ${e.pm}` : ''})`,
-      links: [], feature: { kind: 'move', a: e.a, b: e.b }, target, weight: cfg.movementWeight * (e.low ? cfg.uncertainFactor : 1), tolPct: cfg.tolerancePct, held: false, touches: [e.a, e.b],
+      links: [], feature: { kind: 'move', a: e.a, b: e.b }, target, weight: cfg.movementWeight * (e.low ? cfg.uncertainFactor : 1), tolPct: cfg.tolerancePct, held: false, touches: [e.a, e.b], ...(mid && target[mid] ? { derived: [mid] } : {}),
     });
   }
 
@@ -300,7 +302,7 @@ export function countStations(file: CountFile, net: CNet, cfg: CountConfig, peri
     stations.push({
       id: `count route ${f.id}>${l.id}`, family: 'route', label: `${e.street} ${e.direction}, whole street between ${endA} and ${endB} (links ${f.id} to ${l.id})`, corridor: 'full routes (volunteer count)',
       basis: `DATA (volunteer count of ${file.source.id}, full-route count${e.am ? ` AM ${e.am}` : ''}${e.pm ? ` PM ${e.pm}` : ''})`,
-      links: [], feature: { kind: 'path', first: f.id, last: l.id }, target, weight: cfg.routeWeight, tolPct: cfg.tolerancePct * 1.5, held: false, touches: [f.id, l.id],
+      links: [], feature: { kind: 'path', first: f.id, last: l.id }, target, weight: cfg.routeWeight, tolPct: cfg.tolerancePct * 1.5, held: false, touches: [f.id, l.id], ...(mid && target[mid] ? { derived: [mid] } : {}),
     });
   }
 

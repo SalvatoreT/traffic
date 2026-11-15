@@ -23,6 +23,8 @@ export interface IxStation {
   id: string; label: string; basis: string; corridor: string; links: number[]; feature?: Feature; target: Record<string, number>; weight: number; weightByPeriod?: Record<string, number>; tolPct: number;
   /** Set on a leg that is a ramp: the links whose ADT-based station this count replaces. */
   rampLinks?: number[];
+  /** Periods whose target is the PM count times a factor, not a count (midday, ASSUMPTION): left out of the station rule. */
+  derived?: string[];
   /** Source id and the year of the count date. */
   source: string; year: number | null;
 }
@@ -108,7 +110,7 @@ export function intersectionStations(file: IxFile, net: IxNet, cfg: IxConfig, to
         if (!ls.length) { rep.notes.push(`intersection count ${c.id}: no ${dir} link for the ${k} leg (${leg!.ramp ? 'ramp' : leg!.street}) within ${cfg.nodeMaxM} m; its ${dir} volume is not used`); continue; }
         const ramp = !!leg!.ramp;
         stations.push({
-          id: `ix ${c.id} ${k} ${dir}`, label: `${c.label}, ${ramp ? 'ramp' : leg!.street} (${k} leg) ${dir}`, basis, corridor, links: ls, target: withMid(vol),
+          id: `ix ${c.id} ${k} ${dir}`, label: `${c.label}, ${ramp ? 'ramp' : leg!.street} (${k} leg) ${dir}`, basis, corridor, links: ls, target: withMid(vol), derived: mid && vol[cfg.periods.pm] ? [mid] : undefined,
           weight: ramp ? cfg.rampWeight : cfg.weight, weightByPeriod: wMid(ramp ? cfg.rampWeight : cfg.weight), tolPct: cfg.tolerancePct, rampLinks: ramp ? ls : undefined, source: c.source, year,
         });
         rep.legs++; if (ramp) rep.ramps++;
@@ -119,7 +121,7 @@ export function intersectionStations(file: IxFile, net: IxNet, cfg: IxConfig, to
       const adjacent = linkOf.get(e.a)!.to === linkOf.get(e.b)!.from;
       stations.push({
         id: `ix ${c.id} move ${key}`, label: `${c.label}, ${e.from} approach to the ${e.to} leg`, basis, corridor, links: [],
-        feature: adjacent ? { kind: 'move', a: e.a, b: e.b } : { kind: 'path', first: e.a, last: e.b }, target: withMid(e.t), weight: cfg.movementWeight, weightByPeriod: wMid(cfg.movementWeight), tolPct: cfg.tolerancePct * 1.5, source: c.source, year,
+        feature: adjacent ? { kind: 'move', a: e.a, b: e.b } : { kind: 'path', first: e.a, last: e.b }, target: withMid(e.t), derived: mid && e.t[cfg.periods.pm] ? [mid] : undefined, weight: cfg.movementWeight, weightByPeriod: wMid(cfg.movementWeight), tolPct: cfg.tolerancePct * 1.5, source: c.source, year,
       });
       rep.movements++;
     }

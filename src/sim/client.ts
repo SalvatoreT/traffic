@@ -11,6 +11,7 @@ export class SimClient {
   private worker: Worker;
   frame: Frame | null = null;
   private epoch = 0;
+  private held = false;
   onFrame: (() => void) | null = null;
   onStats: ((s: StatsMsg) => void) | null = null;
   onProgress: ((time: number) => void) | null = null;
@@ -24,8 +25,8 @@ export class SimClient {
     this.worker.onmessage = (ev: MessageEvent<FromWorker>) => {
       const m = ev.data;
       if (m.t === 'frame') { this.frame = { time: m.time, vehicles: m.vehicles, signals: m.signals, wall: m.wall, rate: m.rate }; this.onFrame?.(); }
-      else if (m.t === 'stats') { if (m.epoch === this.epoch) this.onStats?.(m); }
-      else if (m.t === 'progress') { if (m.epoch === this.epoch) this.onProgress?.(m.time); }
+      else if (m.t === 'stats') { if (m.epoch === this.epoch && !this.held) this.onStats?.(m); }
+      else if (m.t === 'progress') { if (m.epoch === this.epoch && !this.held) this.onProgress?.(m.time); }
       else if (m.t === 'version') this.onVersion?.(m.fingerprint);
       else if (m.t === 'ready') this.onReady?.(m.engine, m.reason);
       else if (m.t === 'busy') this.onBusy?.(m.busy);
@@ -33,7 +34,9 @@ export class SimClient {
     };
     this.worker.onerror = (e) => this.onError?.(`Worker failed: ${e.message}`);
   }
-  send(m: ToWorker) { if (RESTARTS.includes(m.t)) this.epoch++; this.worker.postMessage(m); }
+  /** A restart is coming but not sent yet: drop reports of the old configuration until it is. */
+  hold() { this.held = true; }
+  send(m: ToWorker) { if (RESTARTS.includes(m.t)) { this.epoch++; this.held = false; } this.worker.postMessage(m); }
   setInterventions(list: Intervention[]) { this.send({ t: 'interventions', list }); }
   terminate() { this.worker.terminate(); }
 }

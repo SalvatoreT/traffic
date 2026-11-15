@@ -15,8 +15,8 @@ import { captionOf, composeImage, drawBadges, EXPORT_SCALE, exportFileName, FORM
 import { FADE_TIERS, interventionInRegion, REGION_FEATHER_M, type Region } from '../lib/region';
 import { REGION_BUFFER_M } from '../lib/area';
 import { advance, elapsedSim } from '../lib/extrapolate';
-import { divergingStops, intensity, mutedColor, quantizeIntensity, rampStops, WIDTH_MAX, WIDTH_MIN, type Mode } from '../lib/ramps';
-import { changeMark, linkChangeIntensity, NO_DATA, type MapView as ChangeView } from '../lib/change';
+import { divergingStops, mutedColor, quantizeIntensity, rampStops, WIDTH_MAX, WIDTH_MIN, type Mode } from '../lib/ramps';
+import { changeMark, linkChangeIntensity, linkIntensity, NO_DATA, type MapView as ChangeView } from '../lib/change';
 import { linkStatsView } from '../types';
 import type { RouteCheck } from '../lib/throughroutes';
 import { CELL_COLORS, CELL_DASHES, ROUTE_COLORS } from '../lib/routestyle';
@@ -777,8 +777,9 @@ export function MapView(p: Props) {
     for (let i = 0; i < links.length; i++) {
       if (!vis[i]) continue;
       const l = links[i];
-      const t = quantizeIntensity(change ? (ls && p.baseStats ? linkChangeIntensity(p.overlay, B, S, i) : NO_DATA)
-        : ls ? intensity(p.overlay, ls[i * 4] ?? 0, ls[i * 4 + 1] ?? 0, ls[i * 4 + 2] ?? 0, l.speedLimit, p.overlayMax) : -1);
+      const blk = p.index.blocks[p.index.blockOfLink[i]].links;
+      const t = quantizeIntensity(change ? (ls && p.baseStats ? linkChangeIntensity(p.overlay, B, S, i, blk) : NO_DATA)
+        : ls ? linkIntensity(p.overlay, S, i, l.speedLimit, p.overlayMax, blk) : -1);
       if (prevT.current[i] !== t) {
         prevT.current[i] = t;
         map.setFeatureState({ source: 'links', id: i }, { t });
@@ -790,7 +791,7 @@ export function MapView(p: Props) {
     }
     marks.current = mk;
     schedule();
-  }, [p.linkStats, p.baseStats, p.view, p.overlay, p.overlayMax, ready, bundle, clipped]);
+  }, [p.linkStats, p.baseStats, p.view, p.overlay, p.overlayMax, ready, bundle, clipped, p.index]);
 
   // ---- view switch: swap paint expressions once, not per update
   useEffect(() => {
@@ -1039,11 +1040,17 @@ export function MapView(p: Props) {
     if (hoverLink === null) return [];
     const net = bundle.network, blk = p.index.blocks[p.index.blockOfLink[hoverLink]];
     const stats = p.linkStats ? linkStatsView(p.linkStats) : null, base = p.baseStats ? linkStatsView(p.baseStats) : null;
-    return blk.links.map((id) => {
-      const line = hoverLine({ overlay: p.overlay, change: p.view === 'change', mode, max: p.overlayMax, link: net.links[id], stats, base });
-      const cut = line.text.indexOf(': ');
-      return { color: line.color, name: line.text.slice(0, cut).replace(' on this block', ''), value: line.text.slice(cut + 2), direction: blk.links.length > 1 ? towardLabel(net, p.index, id) : null };
+    const two = blk.links.length > 1;
+    const input = { overlay: p.overlay, change: p.view === 'change', mode, max: p.overlayMax, stats, base, block: blk.links };
+    const rows = blk.links.map((id) => {
+      const line = hoverLine({ ...input, link: net.links[id] });
+      return { color: line.color, name: line.name.replace(' on this block', ''), value: line.value, direction: two ? `this direction, ${towardLabel(net, p.index, id)}` : null };
     });
+    if (two && p.overlay === 'cutthrough') {
+      const line = hoverLine({ ...input, link: net.links[blk.links[0]], total: true });
+      rows.push({ color: line.color, name: rows[0].name, value: line.value.replace(/, both directions$/, ''), direction: 'both directions' });
+    }
+    return rows;
   }, [hoverLink, p.linkStats, p.baseStats, p.view, p.overlay, p.overlayMax, mode, bundle, p.index]);
 
   return (

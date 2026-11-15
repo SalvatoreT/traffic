@@ -1,6 +1,7 @@
 import type { Overlay } from '../types';
 import type { LinkStatsView } from '../types';
 import { MPS_TO_MPH } from './format';
+import { intensity } from './ramps';
 
 /** Marks a link with no traffic in the baseline or the scenario. */
 export const NO_DATA = -2;
@@ -78,9 +79,20 @@ export function changeIntensity(o: Overlay, base: Agg, scen: Agg): number {
   return softChange(d, o);
 }
 
-/** Per-link difference for one link id. */
-export function linkChangeIntensity(o: Overlay, base: LinkStatsView, scen: LinkStatsView, id: number): number {
-  return changeIntensity(o, aggregate(base, [id]), aggregate(scen, [id]));
+/** Cut-through is colored per block from both directions together, as the Streets table, the picture and the cards count it. Flow and speed are colored per direction. */
+export const BLOCK_LAYER: Record<Overlay, boolean> = { cutthrough: true, flow: false, speed: false };
+/** The links one drawn link takes its color from: its whole block for a block layer, else itself. */
+export const colorGroup = (o: Overlay, id: number, block?: readonly number[]): readonly number[] => (BLOCK_LAYER[o] && block && block.length > 0 ? block : [id]);
+
+/** Change intensity of one drawn link; `block` lists every link of its block (both directions). */
+export function linkChangeIntensity(o: Overlay, base: LinkStatsView, scen: LinkStatsView, id: number, block?: readonly number[]): number {
+  const g = colorGroup(o, id, block);
+  return changeIntensity(o, aggregate(base, g), aggregate(scen, g));
+}
+
+/** Sequential intensity of one drawn link in the scenario view, with the same grouping. `limit` in m/s. */
+export function linkIntensity(o: Overlay, v: LinkStatsView, id: number, limit: number, max: number, block?: readonly number[]): number {
+  return intensity(o, v.flow(id), v.speed(id), aggregate(v, colorGroup(o, id, block)).cut, limit, max);
 }
 
 const MINUS = '−';
@@ -107,9 +119,8 @@ export function readoutText(o: Overlay, base: Agg, scen: Agg): string {
 }
 
 /** Street-level link statistics count motor vehicles only: bicycles are not counted per link and pedestrians are not on the street network, so the map change view is cars only. */
-export const CHANGE_MAP_MODES = 'cars';
 export const CHANGE_MAP_NOTE = 'The map shows cars only. The simulator reports walking and biking for the whole area, not street by street: see People walking and biking and Trips by mode in Results.';
-export const changeLabel = (o: Overlay): string => o === 'cutthrough' ? 'Change in cut-through: through cars on a block, cars an hour' : o === 'flow' ? 'Change in flow: all cars on a block, cars an hour' : `Change in car speed, ${CHANGE_UNIT[o]}`;
+export const changeLabel = (o: Overlay): string => o === 'cutthrough' ? 'Change in cut-through: through cars on a block, both directions, cars an hour' : o === 'flow' ? 'Change in flow: all cars in each direction, cars an hour' : `Change in car speed in each direction, ${CHANGE_UNIT[o]}`;
 
 /** Sort key helper: 'chg' orders by absolute change, other numeric keys by value. */
 export function compareRows<T extends { label: string; chg: number | null }>(key: keyof T | 'chg', dir: 1 | -1) {

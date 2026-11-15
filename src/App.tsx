@@ -207,11 +207,18 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
     if (finished && !wasFinished.current) say('Run finished.');
     wasFinished.current = finished;
   }, [finished, say]);
-  const runAgain = useCallback(() => { setStoredFor(null); client?.send({ t: 'reset' }); dispatchRun({ type: 'restart' }); }, [client]);
+  // Counts the user's own run controls, so a stored result that arrives late does not replace a run they started.
+  const userRuns = useRef(0);
+  const runAgain = useCallback(() => { userRuns.current++; setStoredFor(null); client?.send({ t: 'reset' }); dispatchRun({ type: 'restart' }); }, [client]);
   useEffect(() => { client?.send({ t: 'speed', speed }); setSlowSpeed(null); }, [speed, client]);
+  const sentPeriod = useRef(period);
   useEffect(() => {
     if (firstRun.current) { firstRun.current = false; return; }
     dispatchRun({ type: 'restart' });
+    setStats(null);
+    // A period change goes out at once. Only the demand slider is debounced, and until its config is sent the client drops the old run's reports.
+    if (period !== sentPeriod.current) { sentPeriod.current = period; client?.send({ t: 'config', period, demandScale: scale }); return; }
+    client?.hold();
     const id = window.setTimeout(() => client?.send({ t: 'config', period, demandScale: scale }), 250);
     return () => window.clearTimeout(id);
   }, [period, scale]); // eslint-disable-line
@@ -233,14 +240,17 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
     if (!runRef.current.running && !runRef.current.finished) dispatchRun({ type: 'toggle' });
   }, []);
   useEffect(() => {
-    if (fingerprint === undefined || !hashes || bundle.synthetic) return;
     const opened = openedByLink.current;
+    if (bundle.synthetic) { if (opened && interventions.length > 0) { openedByLink.current = false; startMax(); } return; }
+    if (fingerprint === undefined || !hashes) return;
     if (interventions.length === 0 || scale !== 1) { if (opened && interventions.length > 0) { openedByLink.current = false; startMax(); } return; }
     let live = true;
+    const started = userRuns.current;
     void (async () => {
       const key = await resultKey(network, interventions, period);
-      const r = await fetchResult(bundle.entry.id, key);
+      const r = await fetchResult(bundle.entry.id, key, network);
       if (!live) return;
+      if (userRuns.current !== started) { openedByLink.current = false; return; }
       const loaded = { area: bundle.entry.id, networkHash: hashes.network, demandHash: hashes.demand, simulator: fingerprint };
       if (r && verdict(r, { key, period, demandScale: scale }, loaded) === 'ok') {
         openedByLink.current = false;
@@ -261,12 +271,18 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
   useEffect(() => {
     const f = () => {
       const st = decodeScenario(network, location.hash);
+      const meta = decodeMeta(location.hash);
       setNotice({ unplaced: st.unplaced, invalid: st.invalid });
-      if (JSON.stringify(st.interventions) !== JSON.stringify(first.current.interventions)) { openedByLink.current = true; setInterventions(st.interventions); }
+      const p = meta.period && demand.periods.some((x) => x.id === meta.period) ? meta.period : fallbackPeriod;
+      const d = meta.demandScale ?? 1;
+      const changed = JSON.stringify(st.interventions) !== JSON.stringify(first.current.interventions);
+      if (p !== first.current.period) setPeriod(p);
+      if (d !== first.current.scale) setScale(d);
+      if (changed) { openedByLink.current = true; setInterventions(st.interventions); }
     };
     window.addEventListener('hashchange', f);
     return () => window.removeEventListener('hashchange', f);
-  }, [network]);
+  }, [network, demand, fallbackPeriod]);
 
   // --- proposals
   const proposals = useProposals(bundle, view === 'proposals');
@@ -474,8 +490,8 @@ function Simulator({ bundle, onRestart }: { bundle: AreaBundle; onRestart(): voi
           )}
           {showPanel && (
             <Playback
-              running={running} finished={finished} onToggle={() => (finished ? runAgain() : dispatchRun({ type: 'toggle' }))}
-              onReset={() => { setStoredFor(null); client?.send({ t: 'reset' }); dispatchRun({ type: 'restart' }); say('Simulation reset.'); }}
+              running={running} finished={finished} onToggle={() => { userRuns.current++; if (finished) runAgain(); else dispatchRun({ type: 'toggle' }); }}
+              onReset={() => { userRuns.current++; setStoredFor(null); client?.send({ t: 'reset' }); dispatchRun({ type: 'restart' }); say('Simulation reset.'); }}
               entry={bundle.entry}
               onExport={() => { void exportRef.current?.('png'); }}
               speed={speed} onSpeed={setSpeed} periods={demand.periods} period={period} onPeriod={setPeriod}
