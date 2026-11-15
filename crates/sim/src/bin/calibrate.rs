@@ -7,6 +7,8 @@
 mod intent;
 #[path = "calibrate/multi.rs"]
 mod multi;
+#[path = "calibrate/odcost.rs"]
+mod odcost;
 #[path = "support/report_manifest.rs"]
 mod report_manifest;
 #[path = "support/sha256.rs"]
@@ -57,10 +59,13 @@ struct Args {
     keep_seeds: Option<PathBuf>,
     /// `--junction-recovery physical|no_behavioral|historical`: junction recovery policy (sensitivity checks; default `physical`).
     junction_recovery: Option<JunctionRecovery>,
+    /// `--od-costs PATH`: write the router's costs of the driven and the arterial route of every through trip on the counted blocks (and on `--od-links`) to this JSON file.
+    od_costs: Option<PathBuf>,
+    od_links: Vec<u32>,
 }
 
 fn parse_args() -> Args {
-    let mut a = Args { area: "rockridge".into(), period: "pm_peak".into(), minutes: 60.0, scale: 1.0, seed: 1, warmup_min: 10.0, local_factor: None, guided_share: None, switch_band: None, adapt_min: None, motorway_removal: false, no_rtor: false, out: None, write: true, link_flows: false, select_od: None, cars_only: false, drop: Vec::new(), demand_path: None, network_path: None, no_initial_load: false, seeds: None, jobs: 4, keep_seeds: None, junction_recovery: None };
+    let mut a = Args { area: "rockridge".into(), period: "pm_peak".into(), minutes: 60.0, scale: 1.0, seed: 1, warmup_min: 10.0, local_factor: None, guided_share: None, switch_band: None, adapt_min: None, motorway_removal: false, no_rtor: false, out: None, write: true, link_flows: false, select_od: None, cars_only: false, drop: Vec::new(), demand_path: None, network_path: None, no_initial_load: false, seeds: None, jobs: 4, keep_seeds: None, junction_recovery: None, od_costs: None, od_links: Vec::new() };
     let argv: Vec<String> = std::env::args().skip(1).collect();
     let mut i = 0;
     while i < argv.len() {
@@ -94,6 +99,8 @@ fn parse_args() -> Args {
             "--demand" => a.demand_path = Some(PathBuf::from(val())),
             "--network" => a.network_path = Some(PathBuf::from(val())),
             "--junction-recovery" => a.junction_recovery = Some(serde_json::from_value(Value::String(val())).unwrap_or_else(|_| usage("bad --junction-recovery (physical, no_behavioral, historical)"))),
+            "--od-costs" => a.od_costs = Some(PathBuf::from(val())),
+            "--od-links" => a.od_links = val().split(',').filter_map(|x| x.parse().ok()).collect(),
             "--drop" => a.drop = val().split(',').map(String::from).collect(),
             "-h" | "--help" => usage(""),
             _ => usage(&format!("unknown argument {k}")),
@@ -531,6 +538,10 @@ fn main() {
     let mut delay0: Vec<f32> = vec![0.0; net.links.len()];
     let mut t = 0.0;
     let mut warmed = warm_s == 0.0;
+    let mut snaps = odcost::Snaps::new();
+    if args.od_costs.is_some() {
+        snaps.take(0.0, &sim);
+    }
     // CAL_TRACE="<every s>:<from min>:<to min>:<link,link,...>" prints the lanes of the listed links to stderr.
     let trace: Option<(f64, f64, f64, Vec<u32>)> = std::env::var("CAL_TRACE").ok().and_then(|v| {
         let p: Vec<&str> = v.split(':').collect();
@@ -547,6 +558,9 @@ fn main() {
                     eprintln!("  {line}");
                 }
             }
+        }
+        if args.od_costs.is_some() && (t % 60.0).abs() < 1e-6 {
+            snaps.take(t, &sim);
         }
         if !warmed && t >= warm_s - 1e-9 {
             exits0 = sim.diagnostics().link_exits.to_vec();
@@ -587,6 +601,14 @@ fn main() {
             })
             .collect();
         std::fs::write(path, serde_json::to_string(&json!({"period": args.period, "seed": args.seed, "minutes": args.minutes, "blocks": blocks})).unwrap()).expect("write select-od");
+    }
+
+    if let Some(path) = &args.od_costs {
+        let mut sets: Vec<(String, Vec<u32>)> = tgts.iter().map(|t| (t.label.clone(), t.links.clone())).collect();
+        sets.extend(args.od_links.iter().map(|&l| (format!("link {l}"), vec![l])));
+        let gv: Option<Value> = std::fs::read_to_string(root.join(format!("data/demand/{}.groups.json", args.area))).ok().and_then(|t| serde_json::from_str(&t).ok());
+        let groups = gv.as_ref().map(|v| intent::Groups::from_json(v, Some(&net)));
+        odcost::write(path, &sim, &net, &snaps, &sets, groups.as_ref(), sim.trip_records(), sim.trip_timings());
     }
 
     // ---- select-link shares

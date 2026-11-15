@@ -780,8 +780,8 @@
     "schema": 1,
     "simulator": {
       "dirty": false,
-      "fingerprint": "447ddb0b99a951ddb43c7be778800317",
-      "revision": "5f56c0d68705140f17488cfc2bb51a1cccb67195",
+      "fingerprint": "169f9cf71eef871df933f54aeb0beee7",
+      "revision": "eb73eba5c5a38cc836748b50355f38c0cc964cfb",
       "version": "0.1.0"
     },
     "suite": {
