@@ -2489,7 +2489,7 @@ impl Simulation {
         if circle {
             // Gap acceptance at a circle entry: a circulating vehicle blocks the entry from TC_CIRCLE s before it reaches it until its tail
             // has passed (critical headway of the single-lane entry model of [Rodegerdts2007] in the Siegloch form, see TC_CIRCLE).
-            let window = (TC_CIRCLE - 0.5 * TF_CIRCLE) * self.vehs[tr.veh as usize].drv.gap_f;
+            let window = TC_CIRCLE - 0.5 * TF_CIRCLE;
             return clear_in > 0.0 && clear_in < window;
         }
         let arrive = self.topo.conflict_pos(tr.mv, mv, false).max(0.0) * t_mine;

@@ -10,7 +10,6 @@ fn run(vc: f64, to_n: bool, seed: u64) -> f64 {
 }
 fn main() {
     for vc in [1000.0] { let v = run(vc, true, 1); let d: Vec<u64> = traffic_sim::sim::DBG.iter().map(|x| x.load(std::sync::atomic::Ordering::Relaxed)).collect(); println!("vc {vc} -> {v:.0}; steps lane-none {} node-occ {} free {}", d[0], d[1], d[2]); }
-    return;
     for vc in [200.0, 600.0, 1000.0] {
         let exp = 1130.0 * (-1.0e-3f64 * vc).exp();
         let a: f64 = (1..=3).map(|s| run(vc, false, s)).sum::<f64>() / 3.0;
