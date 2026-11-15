@@ -100,3 +100,30 @@ The validation suite moves with the new rules. Under `physical`, b9 (two lanes, 
 ### Not done here
 
 Task 3.3 (calibration reports, stored results and their user-facing interpretation) waits for the recalibration that the user coordinates. `Metrics` carries the new `junctionRecovery` object, so results produced after this change include it. Pedestrian courtesy in `ped.rs` (a driver stops yielding to a pedestrian who has not stepped off after `YIELD_COURTESY_S`) involves no conflict-point occupancy and is unchanged.
+
+## Primitive review of calibration round 28, 2026-11-15
+
+The validation suite was rerun before any demand tuning, as `data/calibration/rockridge.record.md` requires. To find which rule moved which case, the suite was run with each part of D8 switched back to its `historical` form, one at a time, and over seeds 1 to 5. Two rules caused the new failures; neither is a fault of physical exclusion itself.
+
+D11. Side-by-side starts. Lane choice and the room check looked only at the vehicles already on the exit lane, not at those still crossing toward it. Two vehicles leaving two approach lanes in the same step both picked the lane with most room (lane 0 on a tie) and arrived on top of each other. Under `historical` the second one waited in the node unseen; under `physical` it entered 0.5 m behind the first and braked hard. Now lane choice ranks lanes by their room less the vehicles crossing toward them (length plus s0 = 2 m [Treiber2014]), and a vehicle does not start toward a lane while a vehicle from another approach lane would still be within the needed room when it emerges (its position projected at its exit speed). Followers from the same approach lane are spaced by their queue and are not checked against each other: checking them too cut single-lane discharge from 1,896 to 1,686 veh/h. ASSUMPTION.
+
+D12. Emergence behind a moving leader. A vehicle that reached its exit close behind a moving leader entered at once at the reduced speed of D8 and then braked toward the IIDM gap, which cost discharge on every straight crossing of a saturated link (g1). It now waits until it could brake behind the leader from its exit speed at 4 m/s², the safe deceleration b_safe of MOBIL [Kesting2007], and enters at that speed; the gap opens within seconds because the leader moves. Behind a leader below `QUEUE_V` (standing or crawling) D8 stands, so a standing queue never traps a vehicle in the node, which was the defect of the old engine. An IIDM-consistent entry speed [Treiber2014] was tried instead and rejected: it held followers until the full desired gap opened and cut saturation flow (a2) from 1,677 to 1,423 veh/h.
+
+D13. New case i5 (lane drop). The SR-24 eastbound off-ramp toward Martin Luther King Jr Way drops from two lanes to one at a node, and with D8 that drop passed about 1,212 veh/h against 1,896 for the same road with one lane throughout. In the PM peak it backed up across the 3-lane off-ramp to the Grove Shafter Freeway gate, which held 347 to 490 waiting trips at the end of the hour. i5 measures the flow past a drop against the single-lane flow, range 0.75 to 1.0 (ASSUMPTION, the merge bound of i4). With D11 and D12 it is 0.81.
+
+Validation suite, seed 1 (veh/h per lane unless a ratio), before round 28 (the head of this change) and after:
+
+| Case | Range | Historical | Physical before | Physical after |
+| --- | --- | --- | --- | --- |
+| b2 two lanes through | 752 to 1,003 | 837 | 753 | 837 |
+| b9 two lanes, 10% left | 812 to 1,072 | 814 | 772 (fail) | 814 |
+| b12 protected left | 647 to 1,015 | 717 | 654 | 789 |
+| c1 / c2 signals 100 m apart (ratio) | 0.75 to 1.15 | 0.97 / 0.94 | 0.87 / 0.82 | 0.79 / 0.75 |
+| e6 two-way stop, minor through at 1,000 | 45.5 to 75.8 | 72.0 | 76.5 (fail) | 72.0 |
+| g1 gate-fed link, 25 mph | 1,603 to 1,980 | 1,644 | 1,590 (fail) | 1,668 |
+| i5 lane drop (ratio) | 0.75 to 1.0 | not run | 0.64 | 0.81 |
+| f2 / f3 circle entry | 496 to 744 / 333 to 499 | 489 / 172 | 432 / 110 | 405 / 138 |
+
+c1 and c2 fell because their reference, the same signals 1,000 m apart, recovered with b2 (2,040 to 2,355 veh/h), not because the 100 m case lost flow (1,428 to 1,452 veh/h on the adaptive plan). The `historical` value of c2 relied on vehicles stored in the node between the two signals. b9 and c2 sit at their lower bounds on seed 1 and fall below them on some other seeds; e6 lies above its range on some seeds under every policy, so it is seed noise around a 76 veh/h flow. f2 and f3 failed before this change and remain reviewed deviations: every traffic circle of the network is outside the study area and, but one in the hills, carries circulating flows in the range of f1, which passes. The reviewed relevance of every remaining failure is in `data/calibration/validation.deviations.json`.
+
+Effect on the Rockridge PM peak, seeds 1 to 4, same demand (hash 83bdd362657a), head of this change against round 28: removals 10.5 to 4.0 an hour, entry backlog 1.73% to 0.18% of spawned trips (under 2% in 2 of 4 seeds before, 4 of 4 after), the Grove Shafter Freeway gate from 403 waiting trips (seed 1) to none in the top list, completed trips 24,157 to 24,652, through cars on the study area's local streets 1,182 to 1,055 an hour. The counted blocks moved less: Hillegass Ave SB 245 to 206, Colby St SB 234 to 210, Colby St NB 161 to 154, Hillegass Ave NB 91 to 84. The southbound blocks stay far above their ranges, so that excess is not mainly a junction-capacity effect.

@@ -22,6 +22,14 @@ use ped::PedWorld;
 const ROOM_MIN: f32 = 4.0;
 const NONE_UID: u32 = u32::MAX;
 
+/// A vehicle about to cross a node: its crossing time (s) and the queue index of the lane it leaves. `NO_CROSS` for entries that cross no node.
+#[derive(Clone, Copy)]
+struct Cross {
+    t: f32,
+    src: u32,
+}
+const NO_CROSS: Cross = Cross { t: 0.0, src: u32::MAX };
+
 #[derive(Clone, Copy, Debug)]
 struct Drv {
     len: f32,
@@ -318,6 +326,8 @@ impl Veh {
 struct Transit {
     veh: u32,
     mv: u32,
+    /// Queue index of the lane the vehicle left (`u32::MAX` when placed directly in the node).
+    from_q: u32,
     to_link: u32,
     lane: u8,
     t_left: f32,
@@ -1751,6 +1761,38 @@ impl Simulation {
         }
     }
 
+    /// Room at the start of a lane less the vehicles already crossing the upstream node toward it, each taking its length plus 2 m
+    /// (s0 of [Treiber2014]): what a driver choosing among lanes sees. Used to rank lanes only; admission still needs `lane_room_ahead`.
+    fn lane_rank_room(&self, l: u32, lane: usize, horizon: f32, x: Cross) -> f32 {
+        let r = self.lane_room_cross(l, lane, horizon, x);
+        if self.cfg.junction_recovery == JunctionRecovery::Historical {
+            return r;
+        }
+        let idx = self.topo.qidx(l as usize, lane);
+        r - self.transit[self.topo.link_from[l as usize] as usize]
+            .iter()
+            .filter(|tr| tr.to_link == l && self.topo.qidx(l as usize, tr.lane as usize) == idx)
+            .map(|tr| self.vehs[tr.veh as usize].drv.len + 2.0)
+            .sum::<f32>()
+    }
+
+    /// `lane_room_ahead` for a vehicle about to cross the upstream node (`x`): a vehicle already crossing toward the lane from another
+    /// approach lane counts as the lane's tail at the point it will have reached when this one emerges (its exit speed held from its own
+    /// emergence), so two vehicles do not start toward one lane side by side; a lane drop passes them in turn, as a zipper merge (ASSUMPTION).
+    /// Vehicles from the same approach lane are already spaced by their queue.
+    fn lane_room_cross(&self, l: u32, lane: usize, horizon: f32, x: Cross) -> f32 {
+        let r = self.lane_room_ahead(l, lane, horizon);
+        if x.t <= 0.0 || self.cfg.junction_recovery == JunctionRecovery::Historical {
+            return r;
+        }
+        let idx = self.topo.qidx(l as usize, lane);
+        self.transit[self.topo.link_from[l as usize] as usize]
+            .iter()
+            .filter(|tr| tr.to_link == l && tr.t_left > 0.0 && tr.from_q != x.src && self.topo.qidx(l as usize, tr.lane as usize) == idx)
+            .map(|tr| (x.t - tr.t_left) * tr.v_exit - self.vehs[tr.veh as usize].drv.len)
+            .fold(r, f32::min)
+    }
+
     fn lane_room(&self, l: u32, lane: usize) -> f32 {
         self.lane_room_ahead(l, lane, 0.0)
     }
@@ -1800,16 +1842,16 @@ impl Simulation {
 
     /// Can a left-turner enter the pocket of link `l` now? Storage is limited to POCKET_VEH vehicles, and a standing
     /// queue in the inner through lane longer than the pocket blocks its entrance (ASSUMPTION).
-    fn pocket_open(&self, l: usize, need: f32, horizon: f32) -> bool {
+    fn pocket_open(&self, l: usize, need: f32, horizon: f32, x: Cross) -> bool {
         if !self.topo.pocket[l] || self.eff.ctrl[self.topo.link_to[l] as usize] != Control::Signal {
             return false;
         }
         let main = self.topo.nmain[l];
         if self.topo.left_marked[l] {
-            return self.lane_room_ahead(l as u32, main, horizon) >= need;
+            return self.lane_room_cross(l as u32, main, horizon, x) >= need;
         }
         self.lanes[self.topo.lane_base[l] as usize + main].len() < POCKET_VEH
-            && self.lane_room_ahead(l as u32, main, horizon) >= need
+            && self.lane_room_cross(l as u32, main, horizon, x) >= need
             && self.queue_extent(l, 0) <= POCKET_LEN
     }
 
@@ -1838,7 +1880,7 @@ impl Simulation {
     /// Lane choice on entering link `l` for a vehicle whose next movement at its far end has kind `kind` [None = unknown/through].
     /// Left-turners use the left lane (or the pocket), right-turners the right lane, through traffic the lane with most room.
     /// Falls back to any lane with room. None only if no lane has room.
-    fn pick_lane(&self, l: u32, kind: Option<u8>, after: Option<u32>, horizon: f32) -> Option<usize> {
+    fn pick_lane(&self, l: u32, kind: Option<u8>, after: Option<u32>, horizon: f32, x: Cross) -> Option<usize> {
         let lu = l as usize;
         let main = self.topo.nmain[lu];
         let need = self.room_need(lu);
@@ -1847,15 +1889,15 @@ impl Simulation {
             if hi != 255 {
                 let mut best: Option<(f32, usize)> = None;
                 for k in lo as usize..(hi as usize).min(main) {
-                    let r = self.lane_room_ahead(l, k, horizon);
-                    if r >= need && best.map_or(true, |(br, _)| r > br + 1e-4) {
+                    let r = self.lane_rank_room(l, k, horizon, x);
+                    if self.lane_room_cross(l, k, horizon, x) >= need && best.map_or(true, |(br, _)| r > br + 1e-4) {
                         best = Some((r, k));
                     }
                 }
                 return best.map(|b| b.1);
             }
         }
-        if kind == Some(K_LEFT) && self.pocket_open(lu, need, horizon) {
+        if kind == Some(K_LEFT) && self.pocket_open(lu, need, horizon, x) {
             return Some(main);
         }
         if kind == Some(K_LEFT) && self.topo.left_marked[lu] && self.mv_kind(l, after) == Some(K_LEFT) {
@@ -1868,7 +1910,7 @@ impl Simulation {
                 _ => None,
             };
             if let Some(k) = pref {
-                if self.lane_room_ahead(l, k, horizon) >= need {
+                if self.lane_room_cross(l, k, horizon, x) >= need {
                     return Some(k);
                 }
                 // A driver sorting for a turn keeps to that side of the road: the left (right) half of the lanes, the middle lane of an odd
@@ -1877,8 +1919,8 @@ impl Simulation {
                 let (lo, hi) = if kind == Some(K_LEFT) { (0, half) } else { (main - half, main) };
                 let mut best: Option<(f32, usize)> = None;
                 for j in lo..hi {
-                    let r = self.lane_room_ahead(l, j, horizon);
-                    if r >= need && best.map_or(true, |(br, _)| r > br + 1e-4) {
+                    let r = self.lane_rank_room(l, j, horizon, x);
+                    if self.lane_room_cross(l, j, horizon, x) >= need && best.map_or(true, |(br, _)| r > br + 1e-4) {
                         best = Some((r, j));
                     }
                 }
@@ -1887,8 +1929,8 @@ impl Simulation {
         }
         let mut best: Option<(f32, usize)> = None;
         for k in 0..main {
-            let r = self.lane_room_ahead(l, k, horizon);
-            if r >= need && best.map_or(true, |(br, _)| r > br + 1e-4) {
+            let r = self.lane_rank_room(l, k, horizon, x);
+            if self.lane_room_cross(l, k, horizon, x) >= need && best.map_or(true, |(br, _)| r > br + 1e-4) {
                 best = Some((r, k));
             }
         }
@@ -2136,7 +2178,7 @@ impl Simulation {
                         let lane = self.topo.nmain[b as usize] - 1;
                         self.curb_gap(b, lane, pos, &drv).map(|at| (lane, 0.0, pos, Some(at)))
                     }
-                    None => self.pick_lane(b, self.lane_hint(b, &route), route.first().copied(), 0.0).and_then(|lane| self.entry_speed(b, lane, &drv).map(|v| (lane, v, self.topo.emerge_pos[b as usize], None))),
+                    None => self.pick_lane(b, self.lane_hint(b, &route), route.first().copied(), 0.0, NO_CROSS).and_then(|lane| self.entry_speed(b, lane, &drv).map(|v| (lane, v, self.topo.emerge_pos[b as usize], None))),
                 };
                 let Some((lane, v_ins, pos_ins, at)) = entry else {
                     self.scratch = route;
@@ -2328,7 +2370,8 @@ impl Simulation {
             // Banned/closed after the plan was made; will be re-planned. Hold.
             return (false, false, 0);
         }
-        if self.pick_lane_for(veh.kind, b, self.lane_hint(b, &veh.route[(veh.ridx as usize + 1).min(veh.route.len())..]), veh.route.get(veh.ridx as usize + 1).copied(), NODE_CROSS_S).is_none() {
+        let x = Cross { t: self.cross_profile(veh, l, mv, ctrl).2, src: self.topo.qidx(l, veh.lane as usize) as u32 };
+        if self.pick_lane_for(veh.kind, b, self.lane_hint(b, &veh.route[(veh.ridx as usize + 1).min(veh.route.len())..]), veh.route.get(veh.ridx as usize + 1).copied(), NODE_CROSS_S, x).is_none() {
             return (false, true, 0);
         }
         if self.ped_on && self.ped_block(veh, l as u32, b, ctrl) {
@@ -2991,7 +3034,8 @@ impl Simulation {
         let wait = veh.wait_t;
         let after = veh.route.get(veh.ridx as usize + 1).copied();
         let hint = self.lane_hint(b, &veh.route[(veh.ridx as usize + 1).min(veh.route.len())..]);
-        let Some(lane) = self.pick_lane_for(kind, b, hint, after, NODE_CROSS_S) else { return false };
+        let x = Cross { t: self.cross_profile(veh, l, mv, ctrl).2, src: qi as u32 };
+        let Some(lane) = self.pick_lane_for(kind, b, hint, after, NODE_CROSS_S, x) else { return false };
         if ctrl == Control::Signal && self.sig_state[l] >= 2 && self.topo.mvs[mv as usize].kind == K_LEFT {
             self.sneak[l] = self.sneak[l].saturating_add(1);
         }
@@ -3049,7 +3093,7 @@ impl Simulation {
         if self.ped_on || self.bike_on {
             self.on_node_cross(vid, node, mv, t_total, ctrl == Control::TrafficCircle && !self.eff.ring_node[node], v);
         }
-        self.transit[node].push(Transit { veh: vid, mv, to_link: b, lane: lane as u8, t_left: t_total, t_total, v_exit });
+        self.transit[node].push(Transit { veh: vid, mv, from_q: qi as u32, to_link: b, lane: lane as u8, t_left: t_total, t_total, v_exit });
         true
     }
 
@@ -3120,20 +3164,24 @@ impl Simulation {
                 }
                 // Emerge onto the target lane if there is physical room.
                 let qi = self.topo.qidx(tr.to_link as usize, tr.lane as usize);
-                // Physical room, plus enough distance to brake at 4 m/s^2 if closing on the new leader. Under `Historical` a vehicle without that
-                // distance waited at its planned exit speed, and a standing queue never freed the braking room that speed needs. Otherwise it
-                // enters as soon as there is physical room, no faster than lets it brake behind the leader at the same 4 m/s^2 (ASSUMPTION:
-                // it adjusted its speed while crossing).
+                // Physical room, plus enough distance to brake at 4 m/s^2 (the safe deceleration b_safe of [Kesting2007]) if closing on the new
+                // leader. Under `Historical` a vehicle without that distance waited at its planned exit speed, and a standing queue never freed the
+                // braking room that speed needs. Otherwise, behind a leader that is moving (at least `QUEUE_V`) it waits for that room and enters at
+                // its exit speed, since the gap opens within seconds; behind a standing or crawling leader it enters as soon as there is physical
+                // room, no faster than lets it brake behind the leader at the same 4 m/s^2 (ASSUMPTION: it adjusted its speed while crossing).
                 let historical = self.cfg.junction_recovery == JunctionRecovery::Historical;
                 let (gap, need) = match self.lanes[qi].back() {
                     Some(&b) => {
                         let bv = &self.vehs[b as usize];
                         let gap = bv.pos - bv.drv.len - self.topo.emerge_pos[tr.to_link as usize];
                         let closing = (tr.v_exit - bv.v).max(0.0);
-                        if !historical && gap >= 0.5 {
-                            tr.v_exit = tr.v_exit.min((bv.v + (8.0 * (gap - 0.5)).sqrt()).max(0.5));
+                        let moving = !historical && bv.v >= QUEUE_V && gap < 0.5 + closing * closing / 8.0;
+                        if !historical && gap >= 0.5 && !moving {
+                            let cap = (bv.v + (8.0 * (gap - 0.5)).sqrt()).max(0.5);
+                            tr.v_exit = tr.v_exit.min(cap);
                         }
-                        (gap, if historical { 0.5 + closing * closing / 8.0 } else { 0.5 })
+                        let need = if historical || moving { 0.5 + closing * closing / 8.0 } else { 0.5 };
+                        (gap, need)
                     }
                     None => (1e9, 0.0),
                 };
@@ -3673,7 +3721,7 @@ impl Simulation {
         x.ridx += 1;
         x.in_transit = true;
         x.tr_mv = mv;
-        self.transit[self.topo.link_to[l as usize] as usize].push(Transit { veh: id, mv, to_link: b, lane: 0, t_left, t_total, v_exit: v.max(0.5) });
+        self.transit[self.topo.link_to[l as usize] as usize].push(Transit { veh: id, mv, from_q: u32::MAX, to_link: b, lane: 0, t_left, t_total, v_exit: v.max(0.5) });
         mv
     }
 
@@ -3727,7 +3775,7 @@ impl Simulation {
 
     /// Pushes a raw transit record (for invariant tests).
     pub(crate) fn test_push_transit(&mut self, node: usize, id: u32, mv: u32, to_link: u32) {
-        self.transit[node].push(Transit { veh: id, mv, to_link, lane: 0, t_left: 1.0, t_total: 2.0, v_exit: 1.0 });
+        self.transit[node].push(Transit { veh: id, mv, from_q: u32::MAX, to_link, lane: 0, t_left: 1.0, t_total: 2.0, v_exit: 1.0 });
     }
 
     pub(crate) fn test_set_in_transit_flag(&mut self, id: u32, on: bool) {

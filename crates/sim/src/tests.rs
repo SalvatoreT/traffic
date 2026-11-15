@@ -1746,7 +1746,8 @@ const GOLDEN_CORRIDOR: &str = r#"{"arterialMeanSpeed":5.761736031244265,"backlog
 // Updated when right turn on red was added (ASSUMPTION, validation cases b10 and b11): the w->s flow turns right on red, so mean delay falls from 13.4 to 13.1 s.
 // Updated with physical junction recovery (expose-junction-fallback-validity): vehicles held at a node exit brake and stand, so means move in the fourth digit; `JunctionRecovery::Historical` still gives the previous value.
 // Updated with local trip accounting (repair-local-trip-measurement-integrity): arrivals enter at the first step at or after them, local ends are drawn per end, the free-flow reference covers the driven part of each link and the last step counts.
-const GOLDEN_CROSS: &str = r#"{"arterialMeanSpeed":8.414721174507111,"backlog":0,"completedTrips":551,"cutThrough":{"shareOfLocalVehKm":1.0,"vehKm":64.71006148147583},"gridlockRemoved":0,"meanTripDelay":15.534092318474316,"meanTripTime":50.77940936218723,"safety":{"localMeanSpeed":6.4090566465441725,"localP85Speed":11.420263679816289,"shareAbove20mph":0.46936824454902104,"shareAbove25mph":0.17102636520822093,"ttcConflicts":10},"spawned":571,"time":1800.0,"unroutableTrips":0,"vehKm":217.629896941185,"vehiclesInNetwork":20}"#;
+// Updated with emergence behind a moving leader and side-by-side exit checks (calibration round 28): same trips, speeds move in the fourth digit.
+const GOLDEN_CROSS: &str = r#"{"arterialMeanSpeed":8.414946184372877,"backlog":0,"completedTrips":551,"cutThrough":{"shareOfLocalVehKm":1.0,"vehKm":64.71006148147583},"gridlockRemoved":0,"meanTripDelay":15.534092318474316,"meanTripTime":50.77940936218723,"safety":{"localMeanSpeed":6.409204986099149,"localP85Speed":11.420308066740937,"shareAbove20mph":0.4694045861729056,"shareAbove25mph":0.17103062764293528,"ttcConflicts":10},"spawned":571,"time":1800.0,"unroutableTrips":0,"vehKm":217.629896941185,"vehiclesInNetwork":20}"#;
 
 mod modes;
 mod initial;

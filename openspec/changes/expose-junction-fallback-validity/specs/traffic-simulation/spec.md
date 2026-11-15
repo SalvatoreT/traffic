@@ -34,11 +34,29 @@ The simulator's invariant checker SHALL validate lane/transit membership, moveme
 - **THEN** the checker and admission policy use its actual remaining occupancy and do not assume it has disappeared
 
 ### Requirement: Vehicles held at a node exit stay physical
-A vehicle that reaches the end of its node crossing SHALL enter its exit lane as soon as there is physical room, at no more than the speed that lets it stop behind the lane's last vehicle. Without room it SHALL be treated as standing at the end of its path. While it stands there, its exit lane SHALL offer no room to further admissions, and no other vehicle in the node SHALL advance onto a conflict point it still covers. The room margin and deceleration are assumptions.
+A vehicle that reaches the end of its node crossing behind a standing or crawling vehicle SHALL enter its exit lane as soon as there is physical room, at no more than the speed that lets it stop behind the lane's last vehicle. Without room it SHALL stand at the end of its path; its exit lane SHALL then offer no room to further admissions, and no other vehicle in the node SHALL advance onto a conflict point it still covers. The room margin and deceleration are assumptions.
 
 #### Scenario: Standing queue on the exit
 - **WHEN** a crossing vehicle finds a standing vehicle a few meters into its exit lane
 - **THEN** it enters behind it at a speed from which it can stop, or stands at the end of its path while the lane is full, and no other vehicle crosses toward that lane while it stands
+
+### Requirement: A vehicle behind a moving leader enters at its exit speed
+A vehicle that reaches the end of its node crossing close behind a vehicle that is still moving SHALL wait until it could brake behind that vehicle from its exit speed and then enter at that speed. The speed that separates a moving from a crawling leader is an assumption.
+
+#### Scenario: Moving leader just ahead
+- **WHEN** a crossing vehicle reaches its exit lane close behind a vehicle that is still moving
+- **THEN** it waits at the end of its path until it could brake behind that vehicle from its exit speed and then enters at that speed
+
+### Requirement: Vehicles do not start toward one exit lane side by side
+A vehicle SHALL NOT start crossing a node toward an exit lane while a vehicle from another approach lane that is crossing toward the same exit lane would still be within the room a new vehicle needs when this one emerges. Lane choice among several exit lanes SHALL count the vehicles already crossing toward each lane.
+
+#### Scenario: Lane drop
+- **WHEN** two lanes of one road continue as one lane at a node and both lanes are queued
+- **THEN** their vehicles enter the single lane in turn, and the flow past the drop stays within the range of validation case i5
+
+#### Scenario: Two exit lanes
+- **WHEN** two vehicles leave two approach lanes at the same moment for a two-lane exit with equal room
+- **THEN** they take different exit lanes
 
 ### Requirement: A vehicle held too long in a node is removed and reported
 A vehicle held at the end of its node crossing for the gridlock removal time SHALL be removed, counted among gridlock removals and recovery removals, and logged with its node and movement. Movements between motorway links MAY wait instead, as motorway queues do on links. The removal time is an assumption.

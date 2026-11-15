@@ -437,6 +437,20 @@ pub fn merge_flow(exit_lanes: u32, seed: u64) -> f64 {
     r.rate(&[out], 120.0, 720.0)
 }
 
+/// Flow (veh/h) past a lane drop: a saturated link of `lanes_in` lanes continues as a single-lane link of the same road (one movement at the node).
+pub fn lane_drop_flow(lanes_in: u32, seed: u64) -> f64 {
+    let mut b = B::default();
+    let g0 = b.node(-600.0, 0.0, Control::Uncontrolled, true);
+    let c = b.node(0.0, 0.0, Control::Uncontrolled, false);
+    let e = b.node(600.0, 0.0, Control::Uncontrolled, true);
+    b.link(g0, c, RoadClass::Secondary, lanes_in, 15.65, false);
+    let out = b.link(c, e, RoadClass::Secondary, 1, 15.65, false);
+    let net = b.net();
+    let mut r = Run::new(net, demand(&[(g0, e, 4000.0)]), cfg(seed));
+    r.advance(720.0);
+    r.rate(&[out], 120.0, 720.0)
+}
+
 // ---------------------------------------------------------------- (i) off-ramp
 
 /// Discharge (veh/h per lane) of a one-lane exit ramp that flares to two lanes at a signalized terminal, and G/C of the ramp phase.
@@ -595,6 +609,8 @@ pub fn run_all() -> Vec<Case> {
     let (lane_cap, _) = crate::sim::equilibrium_capacity(15.65, 400, 1);
     let mf = merge_flow(2, 1);
     out.push(case("i4", "Two single-lane approaches merging onto a 2-lane exit at an uncontrolled node, saturated: exit flow", "veh/h", mf, 0.75 * lane_cap, 2.1 * lane_cap, "ASSUMPTION", format!("the two streams take different exit lanes, so the exit should pass about one free lane's flow (case g2, {lane_cap:.0} veh/h/lane; lower bound 0.75 of it for the merge) and cannot pass more than two; the one-vehicle-at-a-time merge gave 0.60 of it, the same as a single-lane exit ({:.0} veh/h here)", merge_flow(1, 1))));
+    let (one, two) = (lane_drop_flow(1, 1), lane_drop_flow(2, 1));
+    out.push(case("i5", "Lane drop: a saturated 2-lane link continues as 1 lane at an uncontrolled node: flow over the same link with 1 lane throughout", "ratio", two / one, 0.75, 1.0, "ASSUMPTION", format!("{two:.0} against {one:.0} veh/h; vehicles from the two lanes take turns (zipper merge), so the drop should pass close to one lane's flow; lower bound 0.75 as for the merge in i4; the off-ramps from SR-24 to Martin Luther King Jr Way and 52nd St drop from 2 lanes to 1")));
     let (rq, gc) = off_ramp(1);
     out.push(case("i2", format!("Off-ramp, 1 lane flaring to 2 at a signal (green share {gc:.2}): per lane"), "veh/h/lane", rq, 1500.0 * gc, 2000.0 * gc, "FHWA-SIG2004", "s x green share, s observed 1,500 to 2,000"));
     for (j, (nm, kind, lo, hi)) in [("through", 0u8, -0.5, 1.0), ("left", 1, 2.5, 6.0), ("right", 2, 3.0, 7.0)].into_iter().enumerate() {

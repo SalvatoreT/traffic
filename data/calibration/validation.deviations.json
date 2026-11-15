@@ -1,89 +1,68 @@
 {
- "note": "Validation cases that do not meet their expected range. The regression test (crates/sim/tests/validate.rs) tolerates exactly these so that a new failure is caught; they stay failed evidence checks in every assessment. A case is reviewed only when `relevance` states what the deviation means for the intended comparisons, `followUp` names the repair or the limit on use, and `reviewed` is true. Reasons restate the notes of data/calibration/validation.md; none has been reviewed for the intended comparisons yet.",
+ "note": "Validation cases that do not meet their expected range. The regression test (crates/sim/tests/validate.rs) tolerates exactly these so that a new failure is caught; they stay failed evidence checks in every assessment. A case is reviewed only when `relevance` states what the deviation means for the intended comparisons, `followUp` names the repair or the limit on use, and `reviewed` is true. Reviewed in calibration round 28 (2026-11-15) on the simulator with physical junction recovery; reasons restate the notes of data/calibration/validation.md.",
  "deviations": [
   {
    "id": "a3",
-   "reason": "Start-up lost time is 0.20 s against 1 to 3 s [FHWA-STM2008]: the simulator has no response delay at the onset of green (about 2 s short).",
-   "reviewed": false,
-   "relevance": "unreviewed",
-   "followUp": null
+   "reason": "Start-up lost time is 0.28 s against 1 to 3 s [FHWA-STM2008]: the simulator has no response delay at the onset of green (about 2 s short).",
+   "reviewed": true,
+   "relevance": "Saturation flow (a1, a2, a4) and signal capacity (b1 to b12) pass, so the missing delay costs about 1.5 s of green per phase that the simulator does not lose: signal capacity is a few percent high at the arterial signals. That favors the arterials slightly against the side streets, so it cannot explain side-street through cars above the counted ranges.",
+   "followUp": "Limit on use: signal capacities can be a few percent high. Repair would be a reaction delay at the onset of green in the car-following start, with a cited value."
   },
   {
    "id": "e2",
    "reason": "Two-way stop minor-right capacity at major 600 per direction is 364 veh/h against 378 to 631 [Brilon1999] (gap formula 505, critical gap 6.2 s, follow-up 3.3 s).",
-   "reviewed": false,
-   "relevance": "unreviewed",
-   "followUp": null
+   "reviewed": true,
+   "relevance": "Side streets of the study area leave by a right turn onto Alcatraz Ave and Claremont Ave, whose modeled PM flows are about 400 to 500 veh/h per direction. The deviation (4% below the range at 600) makes those exits slightly slower than the gap-acceptance range, which works against side-street routes, so it does not inflate the through-car figures.",
+   "followUp": "Limit on use: minor-street right turns onto busy streets are slightly underserved. Repair needs a review of the right-turn gap rule against [Brilon1999]."
   },
   {
    "id": "e3",
    "reason": "Two-way stop minor-right capacity at major 1000 per direction is 172 veh/h against 223 to 372 [Brilon1999] (gap formula 298).",
-   "reviewed": false,
-   "relevance": "unreviewed",
-   "followUp": null
+   "reviewed": true,
+   "relevance": "Only Telegraph Ave carries about 1,000 veh/h per direction near the study area, and side-street right turns onto it are few. Same direction of bias as e2.",
+   "followUp": "As e2."
   },
   {
    "id": "f2",
-   "reason": "Circle entry capacity at 600 circulating veh/h is 425 against 496 to 744 [Rodegerdts2007] (1130 exp(-0.001 vc) = 620). It was 482 before vehicles held at a full ring lane stopped being stored in the node (expose-junction-fallback-validity).",
-   "reviewed": false,
-   "relevance": "unreviewed",
-   "followUp": null
+   "reason": "Circle entry capacity at 600 circulating veh/h is 405 against 496 to 744 [Rodegerdts2007] (1130 exp(-0.001 vc) = 620). It was 482 when vehicles held at a full ring lane were stored in the node (expose-junction-fallback-validity); f1 (200 circulating) passes.",
+   "reviewed": true,
+   "relevance": "All 37 traffic circles of the network lie outside the study area (South and West Berkeley, North Oakland, the hills). In the PM peak (round 28, seeds 1 to 4) all but one carry under 500 veh/h entering on all approaches together, so their circulating flow is in the f1 regime. The exception is Chabot Rd / Roanoke Rd in the hills (about 1,060 veh/h entering), far from Hillegass Ave and Colby St. A few gridlock removals per hour occur at the Harmon St circles in South Berkeley.",
+   "followUp": "Limit on use: no figure for a circle with heavy circulating flow. Repair needs entry gap acceptance at the ring checked against [Rodegerdts2007]."
   },
   {
    "id": "f3",
-   "reason": "Circle entry capacity at 1000 circulating veh/h is 93 against 333 to 499 [Rodegerdts2007] (1130 exp(-0.001 vc) = 416). It was 164 before vehicles held at a full ring lane stopped being stored in the node (expose-junction-fallback-validity).",
-   "reviewed": false,
-   "relevance": "unreviewed",
-   "followUp": null
+   "reason": "Circle entry capacity at 1000 circulating veh/h is 138 against 333 to 499 [Rodegerdts2007] (1130 exp(-0.001 vc) = 416).",
+   "reviewed": true,
+   "relevance": "As f2: no circle near the study area reaches this circulating flow.",
+   "followUp": "As f2."
   },
   {
    "id": "j6",
-   "reason": "Signal lane with 300 cyclists/h sharing it keeps 0.64 of its capacity against a floor of 0.70; the range has source ASSUMPTION (no verified HCM bicycle factor, the floor is a guess).",
-   "reviewed": false,
-   "relevance": "unreviewed",
-   "followUp": null
+   "reason": "Signal lane with 300 cyclists/h sharing it keeps 0.63 of its capacity against a floor of 0.70; the range has source ASSUMPTION (no verified HCM bicycle factor, the floor is a guess).",
+   "reviewed": true,
+   "relevance": "The floor is not a published value, and 300 cyclists an hour sharing one lane is far above the cyclist flows of the study area's signalized approaches. It does not bear on the through-car figures.",
+   "followUp": "Limit on use: no claim about signal capacity under heavy shared-lane cycling. Needs a verified bicycle adjustment before the range can judge it."
   },
   {
    "id": "j8",
    "reason": "All-way stop with 300 pedestrians/h on each crosswalk keeps 0.49 of its capacity against a floor of 0.60; the range has source ASSUMPTION.",
-   "reviewed": false,
-   "relevance": "unreviewed",
-   "followUp": null
+   "reviewed": true,
+   "relevance": "The floor is not a published value. The study area's all-way stops (on Hillegass Ave, Colby St and the cross streets) are residential; crosswalk volumes near 300 an hour there are not expected, though the modeled crosswalk volumes were not checked in this round. If they were that high, the stops would slow side-street traffic, which works against cut-through routes.",
+   "followUp": "Limit on use: no claim about all-way stops with heavy pedestrian volumes. Needs a verified pedestrian adjustment."
   },
   {
    "id": "j9",
-   "reason": "All-way stop with 600 pedestrians/h on each crosswalk keeps 0.24 of its capacity against a floor of 0.60; the range has source ASSUMPTION.",
-   "reviewed": false,
-   "relevance": "unreviewed",
-   "followUp": null
+   "reason": "All-way stop with 600 pedestrians/h on each crosswalk keeps 0.23 of its capacity against a floor of 0.60; the range has source ASSUMPTION.",
+   "reviewed": true,
+   "relevance": "As j8.",
+   "followUp": "As j8."
   },
   {
    "id": "j12",
-   "reason": "All-way stop with 300 cyclists/h per approach keeps 0.56 of its capacity against a floor of 0.70; the range has source ASSUMPTION.",
-   "reviewed": false,
-   "relevance": "unreviewed",
-   "followUp": null
-  },
-  {
-   "id": "b9",
-   "reason": "Signalized approach, 2 lanes, 10% left with a pocket against 500 opposing veh/h per lane: 777 veh/h per lane against 812 to 1071 [Brilon1999]. It passed at 848 while vehicles that could not enter their exit lane waited inside the node and more could follow them in; with that storage removed (expose-junction-fallback-validity) the approach discharges less.",
-   "reviewed": false,
-   "relevance": "unreviewed",
-   "followUp": null
-  },
-  {
-   "id": "e6",
-   "reason": "Two-way stop minor through at major 1000 per direction: 76.5 veh/h against 45 to 76 [Brilon1999], 0.7 veh/h above the range. It was inside the range (72) before expose-junction-fallback-validity changed how vehicles held at a node exit enter their lane.",
-   "reviewed": false,
-   "relevance": "unreviewed",
-   "followUp": null
-  },
-  {
-   "id": "g1",
-   "reason": "Gate-fed single-lane link at 25 mph carries 1,590 veh/h against 1,603 to 1,980 (0.85 to 1.05 of the drivers' mean equilibrium capacity) [Treiber2014]. It was 1,608 before arrivals were made to enter at the first step that starts at or after them (repair-local-trip-measurement-integrity); the 35 mph case g2 rose from 1,890 to 1,896 with the same change, so the shift is within one seed's variation.",
-   "reviewed": false,
-   "relevance": "unreviewed",
-   "followUp": null
+   "reason": "All-way stop with 300 cyclists/h per approach keeps 0.60 of its capacity against a floor of 0.70; the range has source ASSUMPTION.",
+   "reviewed": true,
+   "relevance": "As j6: the floor is a guess and the cyclist flow is far above the study area's.",
+   "followUp": "As j6."
   }
  ]
 }
