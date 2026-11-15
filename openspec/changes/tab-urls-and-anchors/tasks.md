@@ -12,6 +12,6 @@
 - [x] 3.1 Worker tests pin the asset configuration and the data 404
 
 ## 4. Verification
-- [ ] 4.1 `tsc`, `vitest run src worker`
-- [ ] 4.2 Playwright at 1280 px and Pixel 7: direct loads, tab clicks with Back and Forward, scenario links, cold anchors, anchor button, old links, QR target
+- [x] 4.1 `tsc`, `vitest run src worker`
+- [x] 4.2 Playwright at 1280 px and Pixel 7: direct loads, tab clicks with Back and Forward, scenario links, cold anchors, anchor button, old links, QR target
 - [ ] 4.3 Live check after deploy

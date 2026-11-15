@@ -6,16 +6,20 @@
 export function scrollToAnchor(id: string, reduced: boolean, opts: { waitMs?: number; settleMs?: number } = {}): () => void {
   const waitMs = opts.waitMs ?? 20000, settleMs = opts.settleMs ?? 6000;
   let stopped = false, found = false;
-  let settle = 0;
   const behavior: ScrollBehavior = reduced ? 'auto' : 'smooth';
   const el = () => { const e = document.getElementById(id); return e?.isConnected ? e : null; };
+  const wanted = (e: HTMLElement) => {
+    let p = e.parentElement;
+    while (p && !(p.scrollHeight > p.clientHeight + 1 && getComputedStyle(p).overflowY !== 'visible')) p = p.parentElement;
+    return (p ? p.getBoundingClientRect().top : 0) + (parseFloat(getComputedStyle(e).scrollMarginTop) || 0);
+  };
   const place = (b: ScrollBehavior) => {
     const e = el();
     if (!e) return false;
     e.scrollIntoView({ block: 'start', behavior: b });
     return true;
   };
-  const stop = () => { stopped = true; mo.disconnect(); window.clearTimeout(giveUp); window.clearTimeout(settle); for (const t of INPUTS) window.removeEventListener(t, stop, true); };
+  const stop = () => { stopped = true; mo.disconnect(); window.clearTimeout(giveUp); window.clearInterval(settleTick); for (const t of INPUTS) window.removeEventListener(t, stop, true); };
   const INPUTS = ['wheel', 'touchstart', 'keydown', 'pointerdown'];
   const mo = new MutationObserver(() => {
     if (stopped) return;
@@ -28,9 +32,16 @@ export function scrollToAnchor(id: string, reduced: boolean, opts: { waitMs?: nu
       window.setTimeout(stop, settleMs);
       return;
     }
-    window.clearTimeout(settle);
-    settle = window.setTimeout(() => { if (!stopped) place('auto'); }, 200);
   });
+  let last = NaN;
+  const settleTick = window.setInterval(() => {
+    const e = el();
+    if (stopped || !e) return;
+    const top = e.getBoundingClientRect().top;
+    // Idle (not mid-scroll) and off its place: layout above it changed since, so put it back.
+    if (top === last && Math.abs(top - wanted(e)) > 2) place('auto');
+    last = top;
+  }, 250);
   const giveUp = window.setTimeout(stop, waitMs);
   for (const t of INPUTS) window.addEventListener(t, stop, { capture: true, passive: true });
   mo.observe(document.body, { childList: true, subtree: true });
