@@ -302,6 +302,18 @@ pub fn approach_cap(a: Appr, seed: u64, extra: &[(u32, u32, f64, FlowMode)], nod
     (r.rate(&[x.w_in], WARM, WARM + MEAS) / a.lanes as f64, gc)
 }
 
+/// `approach_cap` with lane changes along a link switched on or off.
+pub fn approach_cap_lc(a: Appr, lane_changes: bool) -> (f64, f64) {
+    let class = if a.pocket { RoadClass::Secondary } else { RoadClass::Residential };
+    let (net, x) = cross(Control::Signal, class, a.lanes, RoadClass::Secondary, a.lanes, false);
+    let q = 4000.0 * a.lanes as f64;
+    let fl = vec![(x.w, x.e, q * (1.0 - a.p_left), FlowMode::Car), (x.s, x.n, q, FlowMode::Car), (x.n, x.s, q, FlowMode::Car), (x.w, x.n, q * a.p_left, FlowMode::Car), (x.e, x.w, a.opp * a.lanes as f64, FlowMode::Car)];
+    let mut r = Run::new(net, demand_m(&fl), Config { lane_changes: Some(lane_changes), ..cfg(1) }).with_ivs(&pin(x.c, 100.0)).watching(&[x.w_in]);
+    r.advance(WARM + MEAS);
+    let gc = r.green_frac(x.w_in, WARM, WARM + MEAS);
+    (r.rate(&[x.w_in], WARM, WARM + MEAS) / a.lanes as f64, gc)
+}
+
 /// Right turns on red: (discharge of a one-lane approach whose cars all turn right, veh/h; G/C of its phase) with `cross_q` veh/h per lane of
 /// cross-street traffic that the turn merges with, from the left. Cycle 100 s, saturated demand.
 pub fn rtor_cap(cross_q: f64, no_rtor: bool, seed: u64) -> (f64, f64) {
@@ -319,8 +331,17 @@ pub fn two_signals(d: f64, adaptive: bool, seed: u64) -> f64 {
     two_signals_served(d, adaptive, seed).0
 }
 
+/// `two_signals` with the coordination of closely spaced signals switched off (round 32 comparison).
+pub fn two_signals_uncoordinated(d: f64, adaptive: bool, seed: u64) -> f64 {
+    two_signals_with(d, adaptive, seed, Some(0.0)).0
+}
+
 /// (through flow past the second signal, all four approaches of the first signal, the two cross-street approaches of the first signal), veh/h.
 pub fn two_signals_served(d: f64, adaptive: bool, seed: u64) -> (f64, f64, f64) {
+    two_signals_with(d, adaptive, seed, None)
+}
+
+fn two_signals_with(d: f64, adaptive: bool, seed: u64, coord_max_m: Option<f64>) -> (f64, f64, f64) {
     let mut b = B::default();
     let w = b.node(-300.0, 0.0, Control::Uncontrolled, true);
     let s1 = b.node(0.0, 0.0, Control::Signal, false);
@@ -342,7 +363,7 @@ pub fn two_signals_served(d: f64, adaptive: bool, seed: u64) -> (f64, f64, f64) 
     }
     let net = b.net();
     let fl = [(w, e, 4000.0), (e, w, 4000.0), (n1, sg1, 500.0), (sg1, n1, 500.0), (n2, sg2, 500.0), (sg2, n2, 500.0)];
-    let c = Config { signal_adapt_min: if adaptive { None } else { Some(0.0) }, ..cfg(seed) };
+    let c = Config { signal_adapt_min: if adaptive { None } else { Some(0.0) }, coord_max_m, ..cfg(seed) };
     let mut r = Run::new(net, demand(&fl), c).with_ivs(&format!(r#"[{{"type":"signal_timing","node":{s1},"cycle":90}},{{"type":"signal_timing","node":{s2},"cycle":90}}]"#));
     r.advance(WARM + MEAS);
     let cross_rate = r.rate(&cross, WARM, WARM + MEAS);
@@ -452,6 +473,26 @@ pub fn lane_drop_flow(lanes_in: u32, seed: u64) -> f64 {
     let mut r = Run::new(net, demand(&[(g0, e, 4000.0)]), cfg(seed));
     r.advance(720.0);
     r.rate(&[out], 120.0, 720.0)
+}
+
+// ---------------------------------------------------------------- (l) lane changes along a link
+
+/// A two-lane link 600 m long whose left lane is blocked 400 m in by a standing vehicle, with `q` veh/h offered: (veh/h past the
+/// obstruction from 600 to 3,600 s, vehicles standing behind it at the end).
+pub fn blocked_lane(q: f64, lane_changes: bool, seed: u64) -> (f64, usize) {
+    let mut b = B::default();
+    let g0 = b.node(-600.0, 0.0, Control::Uncontrolled, true);
+    let c = b.node(0.0, 0.0, Control::Uncontrolled, false);
+    let e = b.node(600.0, 0.0, Control::Uncontrolled, true);
+    let l = b.link(g0, c, RoadClass::Secondary, 2, 15.65, false);
+    let out = b.link(c, e, RoadClass::Secondary, 2, 15.65, false);
+    let net = b.net();
+    let mut r = Run::new(net, demand(&[(g0, e, q)]), Config { lane_changes: Some(lane_changes), ..cfg(seed) });
+    let bpos = 400.0f32;
+    let buid = r.sim.place_obstacle(l, 0, bpos, out);
+    r.advance(3600.0);
+    let stuck = r.sim.link_occupants(l).iter().filter(|&&(u, p, v)| u != buid && p < bpos && v < 0.5).count();
+    (r.rate(&[out], 600.0, 3600.0), stuck)
 }
 
 // ---------------------------------------------------------------- (i) off-ramp
@@ -679,7 +720,13 @@ pub fn run_all() -> Vec<Case> {
         for (k, ad) in [false, true].into_iter().enumerate() {
             let t = two_signals(d, ad, 1);
             let id: &'static str = match (d as u32, ad) { (100, false) => "c1", (100, true) => "c2", (200, false) => "c3", _ => "c4" };
-            out.push(case(id, format!("Two signals {d:.0} m apart, {} plan: through flow over the same plan 1000 m apart", if ad { "adaptive" } else { "fixed" }), "ratio", t / iso[k], 0.75, 1.15, "ASSUMPTION", format!("{t:.0} against {:.0} veh/h; uncoordinated offsets, storage {:.0} veh per lane", iso[k], d / 7.0)));
+            let coord = d <= crate::params::COORD_MAX_M as f64;
+            let note = if coord {
+                format!("{t:.0} against {:.0} veh/h; closely spaced, so one cycle and the second green offset by the travel time [FHWA-STM2008] 6.6.4 ({:.2} with the offsets of uncoordinated signals); storage {:.0} veh per lane", iso[k], two_signals_uncoordinated(d, ad, 1) / iso[k], d / 7.0)
+            } else {
+                format!("{t:.0} against {:.0} veh/h; uncoordinated offsets, storage {:.0} veh per lane", iso[k], d / 7.0)
+            };
+            out.push(case(id, format!("Two signals {d:.0} m apart, {} plan: through flow over the same plan 1000 m apart", if ad { "adaptive" } else { "fixed" }), "ratio", t / iso[k], 0.75, 1.15, "ASSUMPTION", note));
         }
     }
     let (q4, h4) = awsc(1, &[], false);
@@ -715,6 +762,16 @@ pub fn run_all() -> Vec<Case> {
     out.push(case("i4", "Two single-lane approaches merging onto a 2-lane exit at an uncontrolled node, saturated: exit flow", "veh/h", mf, 0.75 * lane_cap, 2.1 * lane_cap, "ASSUMPTION", format!("the two streams take different exit lanes, so the exit should pass about one free lane's flow (case g2, {lane_cap:.0} veh/h/lane; lower bound 0.75 of it for the merge) and cannot pass more than two; the one-vehicle-at-a-time merge gave 0.60 of it, the same as a single-lane exit ({:.0} veh/h here)", merge_flow(1, 1))));
     let (one, two) = (lane_drop_flow(1, 1), lane_drop_flow(2, 1));
     out.push(case("i5", "Lane drop: a saturated 2-lane link continues as 1 lane at an uncontrolled node: flow over the same link with 1 lane throughout", "ratio", two / one, 0.75, 1.0, "ASSUMPTION", format!("{two:.0} against {one:.0} veh/h; vehicles from the two lanes take turns (zipper merge), so the drop should pass close to one lane's flow; lower bound 0.75 as for the merge in i4; the off-ramps from SR-24 to Martin Luther King Jr Way and 52nd St drop from 2 lanes to 1")));
+    // Lane changes along a link [Kesting2007]: a through driver behind a stopped left-turner or an obstruction moves to the free adjacent lane.
+    let lb = Appr { lanes: 2, p_left: 0.2, opp: 500.0, ..base };
+    let (lcap, lgc) = approach_cap(lb, 1, &[], |_, _| {});
+    let (lcap0, _) = approach_cap_lc(lb, false);
+    let (llo, lhi) = left_limited(2, 0.2, 500.0, lgc);
+    out.push(case("l1", format!("2 lanes, 20% left, pocket overflowing, opposing 500/lane (green share {lgc:.2}): approach capacity"), "veh/h/lane", lcap, 0.8 * llo, lhi, "Brilon1999", format!("per lane, cycle 100 s, saturated; the left-turn queue overflows the 3-vehicle pocket every cycle and through drivers behind it move to the free lane; min(permissive-left limit, through limit) as in b9, s 1,800 to 1,900, lower bound 0.8 of it; without lane changes along the link {lcap0:.0}")));
+    let bq = 1200.0;
+    let (bf, bs) = blocked_lane(bq, true, 1);
+    let (bf0, bs0) = blocked_lane(bq, false, 1);
+    out.push(case("l2", format!("Two-lane link with its left lane blocked by a standing vehicle, {bq:.0} veh/h offered: flow past the obstruction over the offered flow"), "ratio", bf / bq, 0.9, 1.1, "Kesting2007", format!("{bf:.0} veh/h; one free lane carries about 1,900 veh/h at 35 mph (case g2), above the demand, so drivers behind the obstruction change lanes when the gap is safe (MOBIL) and all pass (band for arrival noise ASSUMPTION); {bs} vehicles left standing behind it at the end; without lane changes along the link {:.2} and {bs0} standing", bf0 / bq)));
     let (rq, gc) = off_ramp(1);
     out.push(case("i2", format!("Off-ramp, 1 lane flaring to 2 at a signal (green share {gc:.2}): per lane"), "veh/h/lane", rq, 1500.0 * gc, 2000.0 * gc, "FHWA-SIG2004", "s x green share, s observed 1,500 to 2,000"));
     for (j, (nm, kind, lo, hi)) in [("through", 0u8, -0.5, 1.0), ("left", 1, 2.5, 6.0), ("right", 2, 3.0, 7.0)].into_iter().enumerate() {

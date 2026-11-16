@@ -11,6 +11,7 @@ use std::collections::VecDeque;
 
 mod diag;
 mod initial;
+mod lanechange;
 mod modes;
 mod ped;
 pub mod trace;
@@ -258,6 +259,8 @@ struct Veh {
     t_ins: f64,
     entry_pos: f32,
     dist_m: f32,
+    /// Time of the last lane change along a link.
+    lc_t: f64,
 }
 
 impl Veh {
@@ -319,6 +322,7 @@ impl Veh {
             t_ins: 0.0,
             entry_pos: 0.0,
             dist_m: 0.0,
+            lc_t: f64::NEG_INFINITY,
         }
     }
     #[inline]
@@ -1144,6 +1148,7 @@ impl Simulation {
     fn rebuild_effective(&mut self) {
         let mut eff = Eff::derive(&self.topo, &self.net, &self.ivs);
         eff.period = self.cfg.period.clone();
+        eff.coord_max_m = self.cfg.coord_max_m.map_or(COORD_MAX_M, |x| x as f32);
         if let Some(f) = self.cfg.local_cost_factor {
             eff.set_local_factor(&self.net, f.max(0.1) as f32);
         }
@@ -1638,6 +1643,7 @@ impl Simulation {
         self.try_spawns();
         self.try_spawn_bikes();
         self.update_peds();
+        self.change_lanes();
         self.eval_heads();
         self.compute_accels();
         self.update_vehicles();
@@ -1733,7 +1739,7 @@ impl Simulation {
             self.win_exit[l] = 0;
         }
         let flow = std::mem::take(&mut self.adapt_flow);
-        self.eff.adapt_signals(&self.net, &flow, self.t);
+        self.eff.adapt_signals(&self.topo, &self.net, &flow, self.t);
         self.adapt_flow = flow;
     }
 
@@ -3979,7 +3985,7 @@ impl Simulation {
 
     /// Feed measured approach flows (veh/h per link) to the signal adaptation at the current time.
     pub(crate) fn test_adapt_with(&mut self, flow: &[f32]) {
-        self.eff.adapt_signals(&self.net, flow, self.t);
+        self.eff.adapt_signals(&self.topo, &self.net, flow, self.t);
     }
 
     pub(crate) fn test_veh_uid(&self, id: u32) -> u32 {

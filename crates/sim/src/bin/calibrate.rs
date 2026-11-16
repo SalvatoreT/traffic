@@ -64,10 +64,17 @@ struct Args {
     /// `--od-costs PATH`: write the router's costs of the driven and the arterial route of every through trip on the counted blocks (and on `--od-links`) to this JSON file.
     od_costs: Option<PathBuf>,
     od_links: Vec<u32>,
+    /// `--node-report PATH` (round 32): per link after the warm-up, exits, standing vehicles, the share of 5 s samples with the link near jam density,
+    /// gridlock removals, and the mean signal plan of every signal (sampled every 5 min), as JSON for locating capacity deficits.
+    node_report: Option<PathBuf>,
+    /// `--no-lane-changes`: keep every vehicle in the lane it entered by (A/B check of lane changes along a link).
+    no_lane_changes: bool,
+    /// `--coord-max-m M`: longest link joining coordinated signals (0 turns coordination off).
+    coord_max_m: Option<f64>,
 }
 
 fn parse_args() -> Args {
-    let mut a = Args { area: "rockridge".into(), period: "pm_peak".into(), minutes: 60.0, scale: 1.0, seed: 1, warmup_min: 10.0, local_factor: None, guided_share: None, switch_band: None, route_dispersion: None, adapt_min: None, motorway_removal: false, no_rtor: false, out: None, write: true, link_flows: false, select_od: None, cars_only: false, drop: Vec::new(), demand_path: None, network_path: None, no_initial_load: false, seeds: None, jobs: 4, keep_seeds: None, junction_recovery: None, od_costs: None, od_links: Vec::new() };
+    let mut a = Args { area: "rockridge".into(), period: "pm_peak".into(), minutes: 60.0, scale: 1.0, seed: 1, warmup_min: 10.0, local_factor: None, guided_share: None, switch_band: None, route_dispersion: None, adapt_min: None, motorway_removal: false, no_rtor: false, out: None, write: true, link_flows: false, select_od: None, cars_only: false, drop: Vec::new(), demand_path: None, network_path: None, no_initial_load: false, seeds: None, jobs: 4, keep_seeds: None, junction_recovery: None, od_costs: None, od_links: Vec::new(), node_report: None, no_lane_changes: false, coord_max_m: None };
     let argv: Vec<String> = std::env::args().skip(1).collect();
     let mut i = 0;
     while i < argv.len() {
@@ -103,6 +110,9 @@ fn parse_args() -> Args {
             "--network" => a.network_path = Some(PathBuf::from(val())),
             "--junction-recovery" => a.junction_recovery = Some(serde_json::from_value(Value::String(val())).unwrap_or_else(|_| usage("bad --junction-recovery (physical, no_behavioral, historical)"))),
             "--od-costs" => a.od_costs = Some(PathBuf::from(val())),
+            "--no-lane-changes" => a.no_lane_changes = true,
+            "--coord-max-m" => a.coord_max_m = Some(val().parse().unwrap_or_else(|_| usage("bad --coord-max-m"))),
+            "--node-report" => a.node_report = Some(PathBuf::from(val())),
             "--od-links" => a.od_links = val().split(',').filter_map(|x| x.parse().ok()).collect(),
             "--drop" => a.drop = val().split(',').map(String::from).collect(),
             "-h" | "--help" => usage(""),
@@ -377,7 +387,7 @@ fn run_manifest(args: &Args, root: &Path, net_path: &Path, dem_path: &Path, dem_
             "initialLoad": !args.no_initial_load,
             "settings": {
                 "localFactor": args.local_factor, "guidedShare": args.guided_share, "switchBand": args.switch_band, "routeDispersion": args.route_dispersion, "adaptMin": args.adapt_min,
-                "motorwayRemoval": args.motorway_removal, "noRtor": args.no_rtor, "junctionRecovery": args.junction_recovery, "carsOnly": args.cars_only, "drop": args.drop,
+                "motorwayRemoval": args.motorway_removal, "noRtor": args.no_rtor, "junctionRecovery": args.junction_recovery, "carsOnly": args.cars_only, "drop": args.drop, "noLaneChanges": args.no_lane_changes, "coordMaxM": args.coord_max_m,
             },
         },
     })
@@ -521,7 +531,7 @@ fn main() {
     sel.dedup();
 
     // ---- run
-    let cfg = Config { seed: args.seed, period: args.period.clone(), demand_scale: args.scale, select_links: sel, local_cost_factor: args.local_factor, guided_share: args.guided_share, switch_band: args.switch_band, route_dispersion: args.route_dispersion, record_trips: true, signal_adapt_min: args.adapt_min, motorway_gridlock_removal: args.motorway_removal, no_right_turn_on_red: args.no_rtor, initial_load: !args.no_initial_load, junction_recovery: args.junction_recovery.unwrap_or_default(), ..Default::default() };
+    let cfg = Config { seed: args.seed, period: args.period.clone(), demand_scale: args.scale, select_links: sel, local_cost_factor: args.local_factor, guided_share: args.guided_share, switch_band: args.switch_band, route_dispersion: args.route_dispersion, record_trips: true, signal_adapt_min: args.adapt_min, motorway_gridlock_removal: args.motorway_removal, no_right_turn_on_red: args.no_rtor, initial_load: !args.no_initial_load, junction_recovery: args.junction_recovery.unwrap_or_default(), lane_changes: if args.no_lane_changes { Some(false) } else { None }, coord_max_m: args.coord_max_m, ..Default::default() };
     let mut sim = Simulation::from_parts(net.clone(), demand.clone(), cfg).expect("sim");
     let total_s = args.minutes * 60.0;
     let warm_s = if total_s >= 1800.0 { args.warmup_min * 60.0 } else { 0.0 };
@@ -542,6 +552,10 @@ fn main() {
     let mut t = 0.0;
     let mut warmed = warm_s == 0.0;
     let mut snaps = odcost::Snaps::new();
+    let mut nr_full: Vec<u32> = vec![0; net.links.len()];
+    let mut nr_samples = 0u32;
+    let mut nr_stop0: Vec<f32> = vec![0.0; net.links.len()];
+    let mut nr_plans: std::collections::BTreeMap<u32, (f64, Vec<f64>, u32)> = std::collections::BTreeMap::new();
     if args.od_costs.is_some() {
         snaps.take(0.0, &sim);
     }
@@ -565,9 +579,32 @@ fn main() {
         if args.od_costs.is_some() && (t % 60.0).abs() < 1e-6 {
             snaps.take(t, &sim);
         }
+        if args.node_report.is_some() && warmed {
+            let ls = sim.link_stats();
+            for (l, k) in net.links.iter().enumerate() {
+                let count = ls[l * 4 + 3] as f64 * k.length / 1000.0;
+                if count >= 0.8 * k.lanes.max(1) as f64 * k.length / 6.5 {
+                    nr_full[l] += 1;
+                }
+            }
+            nr_samples += 1;
+            if (t % 300.0).abs() < 1e-6 {
+                for (n, cyc, _, greens) in sim.signal_plans() {
+                    let e = nr_plans.entry(n).or_insert((0.0, vec![0.0; greens.len()], 0));
+                    if e.1.len() == greens.len() {
+                        e.0 += cyc as f64;
+                        for (a, g) in e.1.iter_mut().zip(&greens) {
+                            *a += *g as f64;
+                        }
+                        e.2 += 1;
+                    }
+                }
+            }
+        }
         if !warmed && t >= warm_s - 1e-9 {
             exits0 = sim.diagnostics().link_exits.to_vec();
             delay0 = sim.diagnostics().link_delay_s.to_vec();
+            nr_stop0 = sim.diagnostics().link_stopped_s.to_vec();
             warmed = true;
         }
         if (t % 300.0).abs() < 1e-6 || (t - total_s).abs() < 1e-9 {
@@ -612,6 +649,20 @@ fn main() {
         let gv: Option<Value> = std::fs::read_to_string(root.join(format!("data/demand/{}.groups.json", args.area))).ok().and_then(|t| serde_json::from_str(&t).ok());
         let groups = gv.as_ref().map(|v| intent::Groups::from_json(v, Some(&net)));
         odcost::write(path, &sim, &net, &snaps, &sets, groups.as_ref(), sim.trip_records(), sim.trip_timings());
+    }
+
+    if let Some(path) = &args.node_report {
+        let d = sim.diagnostics();
+        let span = (total_s - warm_s).max(1.0);
+        let links: Vec<Value> = (0..net.links.len())
+            .map(|l| json!([d.link_exits[l] - exits0[l], ((d.link_stopped_s[l] - nr_stop0[l]) as f64).round(), nr_full[l]]))
+            .collect();
+        let plans: Vec<Value> = nr_plans
+            .iter()
+            .map(|(&n, (c, g, k))| json!({"node": n, "cycle": c / *k as f64, "greens": g.iter().map(|x| x / *k as f64).collect::<Vec<_>>(), "phases": sim.signal_phase_links(n)}))
+            .collect();
+        let rem: Vec<Value> = sim.debug_gridlock().iter().map(|&(l, tt)| json!([l, tt])).collect();
+        std::fs::write(path, serde_json::to_string(&json!({"seed": args.seed, "spanS": span, "samples": nr_samples, "links": links, "plans": plans, "removals": rem})).unwrap()).expect("write node report");
     }
 
     // ---- select-link shares

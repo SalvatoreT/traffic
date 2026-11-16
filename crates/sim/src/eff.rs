@@ -108,6 +108,8 @@ pub struct Eff {
     pub issues: Vec<SignalIssue>,
     /// Demand period of the run: selects the observed signal timing of a node (`Node::signal_timing`).
     pub period: String,
+    /// Longest link joining two coordinated signals (`COORD_MAX_M`, `Config::coord_max_m`); 0 turns coordination off.
+    pub coord_max_m: f32,
 }
 
 impl Eff {
@@ -436,6 +438,7 @@ impl Eff {
             invalid_ivs,
             issues: Vec::new(),
             period: String::new(),
+            coord_max_m: COORD_MAX_M,
         }
     }
 
@@ -475,11 +478,12 @@ impl Eff {
             let offset = ((n as f32 * 37.0) % 100.0) / 100.0 * cycle;
             self.sig[n] = Some(SigPlan { cycle, t0: -(offset as f64), phases, links: groups, always_green: false, ysum, next: None });
         }
+        self.coordinate(topo, net, est_flow, None);
     }
 
     /// Recompute the splits (and the cycle unless pinned by an intervention) of every signal from measured approach flows
     /// (veh/h). The new plan starts when the current cycle ends, so no phase is cut short.
-    pub fn adapt_signals(&mut self, net: &Network, flow: &[f32], t: f64) {
+    pub fn adapt_signals(&mut self, topo: &Topo, net: &Network, flow: &[f32], t: f64) {
         for n in 0..self.sig.len() {
             let pin = self.cycle_override[n];
             let Some(p) = self.sig[n].as_mut() else { continue };
@@ -492,6 +496,169 @@ impl Eff {
             let k = ((t - p.t0) / p.cycle as f64).ceil().max(1.0);
             let start = p.t0 + k * p.cycle as f64;
             p.next = Some(Box::new(SigNext { t0: start, cycle, phases, ysum }));
+        }
+        self.coordinate(topo, net, flow, Some(t));
+    }
+
+    /// Closely spaced signals (round 32): two signals joined by a link of at most `COORD_MAX_M` (or by links that go straight on through
+    /// uncontrolled nodes, `COORD_MAX_M` in all) run one cycle, the longest of their
+    /// own (critical-intersection method, [FHWA-STM2008] 6.6.2, 6.7.7; one cycle for all members of a coordination plan, 6.3.1), and the
+    /// downstream signal's green for that link starts when a platoon released at the start of the upstream green arrives (offset by the
+    /// link's free-flow time, 6.6.4), in the direction of the larger approach flow. Groups chain along such links from the signal no
+    /// coordinated link enters. `t` is None for the start-up plans (offsets set on them) and the adaptation time otherwise (offsets set on
+    /// the pending plans, which start no earlier than the end of each signal's running cycle).
+    fn coordinate(&mut self, topo: &Topo, net: &Network, flow: &[f32], t: Option<f64>) {
+        if self.coord_max_m <= 0.0 {
+            return;
+        }
+        let active = |e: &Eff, n: usize| e.ctrl[n] == Control::Signal && e.sig[n].as_ref().map_or(false, |p| !p.always_green);
+        // Paths between two signals: a link, or links joined straight on through uncontrolled nodes, of at most `coord_max_m` in all.
+        // The busier direction of each closely spaced pair is kept.
+        let mut paths: Vec<(u32, u32, f64)> = Vec::new();
+        let mut best: std::collections::BTreeMap<(u32, u32), (f32, usize)> = std::collections::BTreeMap::new();
+        for l in 0..topo.n_links {
+            let u = topo.link_from[l] as usize;
+            if self.closed[l] || !active(self, u) {
+                continue;
+            }
+            let (mut cur, mut len, mut tt) = (l, topo.length[l], self.ff[l] as f64);
+            let d = loop {
+                if len > self.coord_max_m {
+                    break None;
+                }
+                let v = topo.link_to[cur] as usize;
+                if active(self, v) {
+                    break Some(v);
+                }
+                if self.ctrl[v] != Control::Uncontrolled {
+                    break None;
+                }
+                let st = topo.lm_start[cur] as usize;
+                let mut thr = (st..st + topo.lm_cnt[cur] as usize).filter(|&m| topo.mvs[m].kind == K_THROUGH && !self.closed[topo.mvs[m].b as usize]);
+                let (Some(m), None) = (thr.next(), thr.next()) else { break None };
+                cur = topo.mvs[m].b as usize;
+                len += topo.length[cur];
+                tt += self.ff[cur] as f64;
+            };
+            let Some(d) = d else { continue };
+            if d == u {
+                continue;
+            }
+            let key = (u.min(d) as u32, u.max(d) as u32);
+            let f = flow.get(cur).copied().unwrap_or(0.0);
+            if best.get(&key).map_or(true, |&(bf, _)| f > bf) {
+                best.insert(key, (f, paths.len()));
+            }
+            paths.push((l as u32, cur as u32, tt));
+        }
+        if best.is_empty() {
+            return;
+        }
+        // Union-find over the nodes of the pairs.
+        let mut parent: std::collections::BTreeMap<u32, u32> = std::collections::BTreeMap::new();
+        fn find(p: &mut std::collections::BTreeMap<u32, u32>, x: u32) -> u32 {
+            let mut r = x;
+            while let Some(&q) = p.get(&r) {
+                if q == r {
+                    break;
+                }
+                r = q;
+            }
+            p.insert(x, r);
+            r
+        }
+        for &(a, b) in best.keys() {
+            parent.entry(a).or_insert(a);
+            parent.entry(b).or_insert(b);
+            let (ra, rb) = (find(&mut parent, a), find(&mut parent, b));
+            if ra != rb {
+                parent.insert(ra.max(rb), ra.min(rb));
+            }
+        }
+        let nodes: Vec<u32> = parent.keys().copied().collect();
+        let mut groups: std::collections::BTreeMap<u32, Vec<u32>> = std::collections::BTreeMap::new();
+        for n in nodes {
+            let r = find(&mut parent, n);
+            groups.entry(r).or_default().push(n);
+        }
+        let edges: Vec<(u32, u32, f64)> = best.values().map(|&(_, i)| paths[i]).collect();
+        for members in groups.values() {
+            // Common cycle: the longest member cycle (a pinned cycle of an intervention counts as the member's cycle).
+            let cyc = |p: &SigPlan| p.next.as_ref().map_or(p.cycle, |n| n.cycle);
+            let c = members.iter().map(|&n| cyc(self.sig[n as usize].as_ref().unwrap())).fold(0.0f32, f32::max);
+            let mut ok = true;
+            for &n in members {
+                let n = n as usize;
+                let p = self.sig[n].as_ref().unwrap();
+                if (cyc(p) - c).abs() < 1e-3 {
+                    continue;
+                }
+                let ys = group_flow_ratios(net, &p.links, flow);
+                match plan_with_observation(net, &self.period, n, &p.links, &ys, Some(c)) {
+                    Ok((cycle, phases, ysum)) => {
+                        let p = self.sig[n].as_mut().unwrap();
+                        match (t, p.next.as_mut()) {
+                            (Some(_), Some(nx)) => {
+                                nx.cycle = cycle;
+                                nx.phases = phases;
+                                nx.ysum = ysum;
+                            }
+                            (Some(_), None) => ok = false,
+                            (None, _) => {
+                                p.cycle = cycle;
+                                p.phases = phases;
+                                p.ysum = ysum;
+                            }
+                        }
+                    }
+                    Err(_) => ok = false,
+                }
+            }
+            if !ok {
+                continue;
+            }
+            let mem: std::collections::BTreeSet<u32> = members.iter().copied().collect();
+            let ge: Vec<(u32, u32, f64)> = edges.iter().copied().filter(|&(f, _, _)| mem.contains(&(topo.link_from[f as usize] as u32))).collect();
+            let has_in: std::collections::BTreeSet<u32> = ge.iter().map(|&(_, la, _)| topo.link_to[la as usize] as u32).collect();
+            let mut done: std::collections::BTreeSet<u32> = members.iter().copied().filter(|n| !has_in.contains(n)).collect();
+            let mut progress = true;
+            while progress {
+                progress = false;
+                for &(s, last, tt) in &ge {
+                    let (u, d) = (topo.link_from[s as usize] as usize, topo.link_to[last as usize] as usize);
+                    if !done.contains(&(u as u32)) || done.contains(&(d as u32)) {
+                        continue;
+                    }
+                    done.insert(d as u32);
+                    progress = true;
+                    // Upstream phase: the one holding the busiest approach that goes straight on into `s`.
+                    let feed = topo.ins[u].iter().copied().filter(|&a| {
+                        let st = topo.lm_start[a as usize];
+                        (st..st + topo.lm_cnt[a as usize]).any(|m| topo.mvs[m as usize].b == s && topo.mvs[m as usize].kind == K_THROUGH)
+                    });
+                    let Some(a) = feed.max_by(|&x, &y| flow.get(x as usize).copied().unwrap_or(0.0).total_cmp(&flow.get(y as usize).copied().unwrap_or(0.0)).then(y.cmp(&x))) else { continue };
+                    let (pu, pd) = (self.sig[u].as_ref().unwrap(), self.sig[d].as_ref().unwrap());
+                    let (Some(iu), Some(id)) = (pu.links.iter().position(|g| g.contains(&a)), pd.links.iter().position(|g| g.contains(&last))) else { continue };
+                    let (u_t0, u_start) = match (t, pu.next.as_ref()) {
+                        (Some(_), Some(nx)) => (nx.t0, nx.phases[iu].0 as f64),
+                        (Some(_), None) => continue,
+                        (None, _) => (pu.t0, pu.phases[iu].0 as f64),
+                    };
+                    let c = c as f64;
+                    let p = self.sig[d].as_mut().unwrap();
+                    match (t, p.next.as_mut()) {
+                        (Some(_), Some(nx)) => {
+                            let base = u_t0 + u_start + tt - nx.phases[id].0 as f64;
+                            let k = ((nx.t0 - base) / c).ceil();
+                            nx.t0 = base + k * c;
+                        }
+                        (Some(_), None) => {}
+                        (None, _) => {
+                            p.t0 = u_t0 + u_start + tt - p.phases[id].0 as f64;
+                        }
+                    }
+                }
+            }
         }
     }
 }

@@ -346,6 +346,10 @@ pub struct Config {
     pub trace: bool,
     /// Additive: bound on stored trace events (default `sim::trace::TRACE_DETAIL_MAX`).
     pub trace_detail_max: Option<u64>,
+    /// Additive: lane changes along a link (MOBIL, `Simulation::change_lanes`). Default on; false keeps each vehicle in the lane it entered by (diagnostic).
+    pub lane_changes: Option<bool>,
+    /// Additive: longest link (m) joining two signals that run one cycle with offsets by travel time (default `params::COORD_MAX_M`; 0 turns it off).
+    pub coord_max_m: Option<f64>,
 }
 
 /// Junction recovery policy. Every policy except `historical` keeps physical conflict exclusion regardless of the wait.
@@ -366,7 +370,7 @@ pub enum JunctionRecovery {
 
 impl Default for Config {
     fn default() -> Self {
-        Config { seed: 1, period: String::new(), demand_scale: 1.0, select_links: Vec::new(), local_cost_factor: None, guided_share: None, switch_band: None, route_dispersion: None, record_trips: false, signal_adapt_min: None, motorway_gridlock_removal: false, ped_yield_marked: None, ped_yield_unmarked: None, lane_width_m: None, no_right_turn_on_red: false, initial_load: true, interventions: Vec::new(), junction_recovery: JunctionRecovery::Physical, trace: false, trace_detail_max: None }
+        Config { seed: 1, period: String::new(), demand_scale: 1.0, select_links: Vec::new(), local_cost_factor: None, guided_share: None, switch_band: None, route_dispersion: None, record_trips: false, signal_adapt_min: None, motorway_gridlock_removal: false, ped_yield_marked: None, ped_yield_unmarked: None, lane_width_m: None, no_right_turn_on_red: false, initial_load: true, interventions: Vec::new(), junction_recovery: JunctionRecovery::Physical, trace: false, trace_detail_max: None, lane_changes: None, coord_max_m: None }
     }
 }
 

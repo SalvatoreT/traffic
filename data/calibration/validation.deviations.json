@@ -49,6 +49,13 @@
    "reviewed": true,
    "relevance": "As j6: the floor is a guess and the cyclist flow is far above the study area's.",
    "followUp": "As j6."
+  },
+  {
+   "id": "l1",
+   "reason": "New in round 32. Two-lane signal approach with 20% left turns, a 3-vehicle pocket that overflows every cycle and 500 veh/h per opposing lane: 792 veh/h per lane against 851 to 1,064 [Brilon1999] (the b9 bound at 20% left). It was 699 without lane changes along a link: through drivers now move around a waiting left-turner, but a left-turner that does not fit in the pocket still holds the inner lane at the stop line until it can turn.",
+   "reviewed": false,
+   "relevance": "Not reviewed: left to the project lead. Possible meaning: two-lane approaches with heavy permissive left turns (Ashby Ave at Claremont Ave, Claremont Ave northbound) are somewhat slow in the model, which would favor side streets near them.",
+   "followUp": "Pending review. Candidate repairs: pocket length from map or field data instead of the 3-vehicle ASSUMPTION, or a protected-permissive phase where a timing sheet shows one."
   }
  ]
 }

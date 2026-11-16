@@ -67,14 +67,14 @@
       "unit": "veh/h/lane"
     },
     {
-      "hi": 1002.9166666666666,
+      "hi": 1006.6666666666666,
       "id": "b2",
       "knownDeviation": null,
-      "lo": 752.1875,
+      "lo": 755.0,
       "name": "Signal capacity, 2 lanes through (green share 0.50)",
       "note": "per lane, cycle 100 s, saturated; s x green share, s observed 1,500 to 2,000 (ideal 1,900)",
       "pass": true,
-      "sim": 837.0,
+      "sim": 844.5,
       "source": "FHWA-SIG2004",
       "unit": "veh/h/lane"
     },
@@ -91,26 +91,26 @@
       "unit": "veh/h/lane"
     },
     {
-      "hi": 1217.1874999999998,
+      "hi": 1211.7447916666667,
       "id": "b4",
       "knownDeviation": null,
-      "lo": 922.4999999999999,
+      "lo": 918.375,
       "name": "1 lane, 20% left, pocket, opposing 500/lane (green share 0.51)",
       "note": "per lane, cycle 100 s, saturated; min(permissive-left limit, through limit), s 1,800 to 1,900, lower bound 0.8 of it",
       "pass": true,
-      "sim": 933.0,
+      "sim": 924.0,
       "source": "Brilon1999",
       "unit": "veh/h/lane"
     },
     {
-      "hi": 1071.8287037037037,
+      "hi": 1075.3472222222222,
       "id": "b9",
       "knownDeviation": null,
-      "lo": 812.3333333333334,
+      "lo": 815.0,
       "name": "2 lanes, 10% left, pocket, opposing 500/lane (green share 0.51)",
       "note": "per lane, cycle 100 s, saturated; min(permissive-left limit, through limit), s 1,800 to 1,900, lower bound 0.8 of it",
       "pass": true,
-      "sim": 814.5,
+      "sim": 870.0,
       "source": "Brilon1999",
       "unit": "veh/h/lane"
     },
@@ -139,14 +139,14 @@
       "unit": "veh/h/lane"
     },
     {
-      "hi": 1014.9999999999999,
+      "hi": 1006.6666666666666,
       "id": "b12",
       "knownDeviation": null,
-      "lo": 647.0624999999999,
-      "name": "1 lane, all left turns, no opposing traffic (a protected left) (green share 0.51)",
+      "lo": 641.75,
+      "name": "1 lane, all left turns, no opposing traffic (a protected left) (green share 0.50)",
       "note": "per lane, cycle 100 s, saturated; no verified adjustment factor: lower bound 0.85 (right), 0.40 to 0.5 (left, shared lane) of s x green share",
       "pass": true,
-      "sim": 789.0,
+      "sim": 837.0,
       "source": "ASSUMPTION",
       "unit": "veh/h/lane"
     },
@@ -204,9 +204,9 @@
       "knownDeviation": null,
       "lo": 0.9,
       "name": "Adaptive plan over fixed plan, saturated arterial (4,000 veh/h per direction) with a 500 veh/h cross street: vehicles served at the first signal",
-      "note": "4815 against 5298 veh/h on all four approaches; the start-up plan sizes the arterial phase for the uncapped 4,000 veh/h (flow ratio 1.11) and gives the cross street 16 s of a 90 s cycle, so it serves 588 of the 1000 veh/h the cross street offers; the adaptive plan gives it 30 s and serves 1041, and the arterial through flow past the second signal falls from 2355 to 1974 veh/h as a consequence (not a defect of the adaptive plan)",
+      "note": "4836 against 5301 veh/h on all four approaches; the start-up plan sizes the arterial phase for the uncapped 4,000 veh/h (flow ratio 1.11) and gives the cross street 16 s of a 90 s cycle, so it serves 588 of the 1000 veh/h the cross street offers; the adaptive plan gives it 30 s and serves 1038, and the arterial through flow past the second signal falls from 2370 to 1962 veh/h as a consequence (not a defect of the adaptive plan)",
       "pass": true,
-      "sim": 0.9088335220838052,
+      "sim": 0.9122807017543859,
       "source": "ASSUMPTION",
       "unit": "ratio"
     },
@@ -216,9 +216,9 @@
       "knownDeviation": null,
       "lo": 0.9,
       "name": "Adaptive plan: share of the cross-street demand (2 x 500 veh/h) served at the first signal",
-      "note": "1041 against 588 veh/h with the fixed start-up plan",
+      "note": "1038 against 588 veh/h with the fixed start-up plan",
       "pass": true,
-      "sim": 1.041,
+      "sim": 1.038,
       "source": "ASSUMPTION",
       "unit": "share"
     },
@@ -228,9 +228,9 @@
       "knownDeviation": null,
       "lo": 0.75,
       "name": "Two signals 100 m apart, fixed plan: through flow over the same plan 1000 m apart",
-      "note": "1863 against 2355 veh/h; uncoordinated offsets, storage 14 veh per lane",
+      "note": "2430 against 2370 veh/h; closely spaced, so one cycle and the second green offset by the travel time [FHWA-STM2008] 6.6.4 (0.78 with the offsets of uncoordinated signals); storage 14 veh per lane",
       "pass": true,
-      "sim": 0.7910828025477706,
+      "sim": 1.0253164556962024,
       "source": "ASSUMPTION",
       "unit": "ratio"
     },
@@ -240,9 +240,9 @@
       "knownDeviation": null,
       "lo": 0.75,
       "name": "Two signals 100 m apart, adaptive plan: through flow over the same plan 1000 m apart",
-      "note": "1488 against 1974 veh/h; uncoordinated offsets, storage 14 veh per lane",
+      "note": "2025 against 1962 veh/h; closely spaced, so one cycle and the second green offset by the travel time [FHWA-STM2008] 6.6.4 (0.76 with the offsets of uncoordinated signals); storage 14 veh per lane",
       "pass": true,
-      "sim": 0.7537993920972644,
+      "sim": 1.0321100917431192,
       "source": "ASSUMPTION",
       "unit": "ratio"
     },
@@ -252,9 +252,9 @@
       "knownDeviation": null,
       "lo": 0.75,
       "name": "Two signals 200 m apart, fixed plan: through flow over the same plan 1000 m apart",
-      "note": "2358 against 2355 veh/h; uncoordinated offsets, storage 29 veh per lane",
+      "note": "2349 against 2370 veh/h; uncoordinated offsets, storage 29 veh per lane",
       "pass": true,
-      "sim": 1.0012738853503185,
+      "sim": 0.9911392405063291,
       "source": "ASSUMPTION",
       "unit": "ratio"
     },
@@ -264,9 +264,9 @@
       "knownDeviation": null,
       "lo": 0.75,
       "name": "Two signals 200 m apart, adaptive plan: through flow over the same plan 1000 m apart",
-      "note": "1905 against 1974 veh/h; uncoordinated offsets, storage 29 veh per lane",
+      "note": "1902 against 1962 veh/h; uncoordinated offsets, storage 29 veh per lane",
       "pass": true,
-      "sim": 0.9650455927051672,
+      "sim": 0.9694189602446482,
       "source": "ASSUMPTION",
       "unit": "ratio"
     },
@@ -506,7 +506,7 @@
       "name": "Motorway mainline, 2 lanes, 65 mph: flow per lane",
       "note": "HCM 7 basic freeway segment capacity at 65 mph free-flow speed: 2,350 pc/h/ln; range is -10% / +5%",
       "pass": true,
-      "sim": 2184.0,
+      "sim": 2187.0,
       "source": "TxDOT-TSAP",
       "unit": "veh/h/lane"
     },
@@ -547,14 +547,44 @@
       "unit": "ratio"
     },
     {
-      "hi": 560.0,
+      "hi": 1064.0200605630496,
+      "id": "l1",
+      "knownDeviation": {
+        "followUp": "Pending review. Candidate repairs: pocket length from map or field data instead of the 3-vehicle ASSUMPTION, or a protected-permissive phase where a timing sheet shows one.",
+        "id": "l1",
+        "reason": "New in round 32. Two-lane signal approach with 20% left turns, a 3-vehicle pocket that overflows every cycle and 500 veh/h per opposing lane: 792 veh/h per lane against 851 to 1,064 [Brilon1999] (the b9 bound at 20% left). It was 699 without lane changes along a link: through drivers now move around a waiting left-turner, but a left-turner that does not fit in the pocket still holds the inner lane at the stop line until it can turn.",
+        "relevance": "Not reviewed: left to the project lead. Possible meaning: two-lane approaches with heavy permissive left turns (Ashby Ave at Claremont Ave, Claremont Ave northbound) are somewhat slow in the model, which would favor side streets near them.",
+        "reviewed": false
+      },
+      "lo": 851.2160484504398,
+      "name": "2 lanes, 20% left, pocket overflowing, opposing 500/lane (green share 0.51): approach capacity",
+      "note": "per lane, cycle 100 s, saturated; the left-turn queue overflows the 3-vehicle pocket every cycle and through drivers behind it move to the free lane; min(permissive-left limit, through limit) as in b9, s 1,800 to 1,900, lower bound 0.8 of it; without lane changes along the link 699",
+      "pass": false,
+      "sim": 792.0,
+      "source": "Brilon1999",
+      "unit": "veh/h/lane"
+    },
+    {
+      "hi": 1.1,
+      "id": "l2",
+      "knownDeviation": null,
+      "lo": 0.9,
+      "name": "Two-lane link with its left lane blocked by a standing vehicle, 1200 veh/h offered: flow past the obstruction over the offered flow",
+      "note": "1247 veh/h; one free lane carries about 1,900 veh/h at 35 mph (case g2), above the demand, so drivers behind the obstruction change lanes when the gap is safe (MOBIL) and all pass (band for arrival noise ASSUMPTION); 4 vehicles left standing behind it at the end; without lane changes along the link 1.04 and 59 standing",
+      "pass": true,
+      "sim": 1.039,
+      "source": "Kesting2007",
+      "unit": "ratio"
+    },
+    {
+      "hi": 556.25,
       "id": "i2",
       "knownDeviation": null,
-      "lo": 420.00000000000006,
+      "lo": 417.1875,
       "name": "Off-ramp, 1 lane flaring to 2 at a signal (green share 0.28): per lane",
       "note": "s x green share, s observed 1,500 to 2,000",
       "pass": true,
-      "sim": 447.0,
+      "sim": 445.5,
       "source": "FHWA-SIG2004",
       "unit": "veh/h/lane"
     },
@@ -648,9 +678,9 @@
       "knownDeviation": null,
       "lo": 0.7,
       "name": "Signal, 1 lane, 10% left 15% right: capacity with 150 cyclists/h sharing the lane",
-      "note": "729 against 909 veh/h/lane; no verified HCM bicycle factor, floor 0.7 is a guess",
+      "note": "741 against 909 veh/h/lane; no verified HCM bicycle factor, floor 0.7 is a guess",
       "pass": true,
-      "sim": 0.801980198019802,
+      "sim": 0.8151815181518152,
       "source": "ASSUMPTION",
       "unit": "capacity share"
     },
@@ -839,6 +869,7 @@
     "a3",
     "e2",
     "e3",
+    "l1",
     "j6",
     "j8",
     "j9",
@@ -847,18 +878,18 @@
   "manifest": {
     "deviations": {
       "path": "data/calibration/validation.deviations.json",
-      "sha256": "fe861200cf34a30014a1fcfc8e99a86c56e2ab95859ca1c091ed8264f71a9481"
+      "sha256": "e995e5f03e38d1804f9d2044bcddf3d491a0a075ba1d4f416324559949df568c"
     },
     "schema": 1,
     "simulator": {
-      "dirty": false,
-      "fingerprint": "60df28cd94a0e4c6929ccf903bd84718",
-      "revision": "57dd294dea93f790c872f5b6e3e0e6fba3a39c08",
+      "dirty": true,
+      "fingerprint": "6741b48b6d1743c763b018a288bb6215",
+      "revision": "cb17bad697684b2066c4d3f11f54aac9c8732cce",
       "version": "0.1.0"
     },
     "suite": {
-      "cases": 66,
-      "sha256": "34919da1939ab30e0d4a43c21ce1308fe4ad54f6632c9d3672a777044bde7176"
+      "cases": 68,
+      "sha256": "5d906f7130a25e349859e896b292e5e66b6a1e02703b92878abc9f7d492a096a"
     }
   },
   "notDocumented": []
