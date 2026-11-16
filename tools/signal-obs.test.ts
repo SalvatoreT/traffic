@@ -64,6 +64,15 @@ describe('signal observations', () => {
     const ns2 = [node(0, 'signal'), node(1, 'uncontrolled'), node(2, 'uncontrolled')];
     expect(applySignalObservations(ns2, ls, [o, { ...o, ownPhase: true, cycleSeconds: 90 }])).toHaveLength(2);
   });
+  it('takes the lane coding alone without attaching a timing', () => {
+    const ns = [node(0, 'signal'), node(1, 'uncontrolled'), node(2, 'uncontrolled')];
+    const ls = [{ ...link(0, 1, 0, 'Main Street'), toBearing: 90 }, { ...link(1, 2, 0, 'Main Street'), toBearing: 270 }] as NetLink[];
+    const o = { at: ['Main Street'], approach: 'Main Street', periods: ['pm'], heading: 90, source: 'sheet' };
+    expect(applySignalObservations(ns, ls, [{ ...o, noLeftTurnLane: true }])).toEqual([]);
+    expect(ns[0].signalTiming).toBeUndefined();
+    expect(ls.map((l) => l.noPocket)).toEqual([true, undefined]);
+    expect(applySignalObservations(ns, ls, [{ ...o, noLeftTurnLane: true, clearanceSeconds: 4 }])).toHaveLength(1);
+  });
   it('reports an observation that matches no signal', () => {
     expect(applySignalObservations(nodes, links, [{ ...obs, at: ['Pine Street', 'Elm Street'] }])).toHaveLength(1);
   });

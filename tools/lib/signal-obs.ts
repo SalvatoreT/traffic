@@ -21,7 +21,7 @@ export interface SignalObservation {
   runsWithHeading?: number;
   /** Clearance interval (yellow and all-red) after the approach's phase, when the source gives one. When observations of one timing differ, each approach's phase keeps its own. */
   clearanceSeconds?: number;
-  /** Observed lane coding: the approach has no left-turn lane (its left turns share a through lane), so the simulator adds no class-rule pocket. */
+  /** Observed lane coding: the approach has no left-turn lane (its left turns share a through lane), so the simulator adds no class-rule pocket. An observation may give only this (no timing, no `ownPhase`). */
   noLeftTurnLane?: boolean;
   source: string;
 }
@@ -43,9 +43,11 @@ export function applySignalObservations(nodes: NetNode[], links: NetLink[], obs:
       const by = hit.map((n) => ({ n, d: Math.hypot(n.x - x, n.y - y) })).sort((p, q) => p.d - q.d)[0];
       node = by && by.d <= NEAR_M ? by.n : null;
     }
-    if ((o.cycleSeconds === undefined) !== (o.greenSeconds === undefined) || (o.greenSeconds === undefined && !o.ownPhase)) { misses.push(`${o.at.join(' / ')} (${o.approach}): an observation without timing must leave out both cycle and green and mark ownPhase`); continue; }
+    const laneOnly = o.cycleSeconds === undefined && o.greenSeconds === undefined && !o.ownPhase && o.noLeftTurnLane === true && o.runsWithHeading === undefined && o.clearanceSeconds === undefined;
+    if (!laneOnly && ((o.cycleSeconds === undefined) !== (o.greenSeconds === undefined) || (o.greenSeconds === undefined && !o.ownPhase))) { misses.push(`${o.at.join(' / ')} (${o.approach}): an observation without timing must leave out both cycle and green and mark ownPhase, or give only the lane coding`); continue; }
     const ins = node ? links.filter((l) => l.to === node.id && l.name === o.approach && (o.heading === undefined || angDiff(l.toBearing ?? 0, o.heading) <= HEADING_TOL)).map((l) => l.id) : [];
     if (!node || !ins.length) { misses.push(`${o.at.join(' / ')} (${o.approach}): ${hit.length > 1 ? 'several signals match' : !node ? 'no signal matches' : 'no approach link'}`); continue; }
+    if (laneOnly) { for (const l of links) if (ins.includes(l.id)) l.noPocket = true; continue; }
     const runsWith = node && o.runsWithHeading !== undefined ? links.filter((l) => l.to === node.id && l.name === o.approach && angDiff(l.toBearing ?? 0, o.runsWithHeading!) <= HEADING_TOL).map((l) => l.id) : [];
     if (o.runsWithHeading !== undefined && !runsWith.length) { misses.push(`${o.at.join(' / ')} (${o.approach}): no approach link to run with`); continue; }
     const green: { links: number[]; greenS: number; ownPhase?: boolean; runsWith?: number[]; clearanceS?: number } = { links: ins, greenS: o.greenSeconds ?? 0, ...(o.ownPhase ? { ownPhase: true } : {}), ...(runsWith.length ? { runsWith } : {}) };
