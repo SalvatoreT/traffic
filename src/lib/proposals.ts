@@ -104,7 +104,10 @@ export interface ProposalGroup {
   legacy?: boolean;
 }
 /** Version 5 records provenance and paired intervals. Version 4 is still read: its figures are shown and marked as lacking that evidence. */
-export interface Proposals { version: 4 | 5; area: string; groups: ProposalGroup[] }
+export interface Proposals { version: 4 | 5; area: string; groups: ProposalGroup[]
+  /** Set when the published options were taken down: the reason, shown in place of the list. */
+  withdrawn?: string;
+}
 
 export const UNCONSTRAINED_GROUP = {
   id: 'unconstrained', title: 'Without limits',
@@ -180,14 +183,14 @@ function normalizeGroup(g: ProposalGroup): ProposalGroup {
 
 export function parseProposals(text: string): Proposals | null {
   try {
-    const f = JSON.parse(text) as { version?: number; area?: string; groups?: ProposalGroup[]; computed?: ProposalGroup['computed']; baseline?: ProposalGroup['baseline']; proposals?: Proposal[] };
+    const f = JSON.parse(text) as { version?: number; area?: string; withdrawn?: string; groups?: ProposalGroup[]; computed?: ProposalGroup['computed']; baseline?: ProposalGroup['baseline']; proposals?: Proposal[] };
     if (f?.version === 1 && Array.isArray(f.proposals) && f.computed) {
       return { version: 4, area: f.area ?? '', groups: [normalizeGroup({ ...UNCONSTRAINED_GROUP, computed: f.computed, baseline: f.baseline ?? { cutThroughVehPerHour: {} }, proposals: f.proposals })] };
     }
     if (!(f?.version === 2 || f?.version === 3 || f?.version === 4 || f?.version === 5) || !Array.isArray(f.groups)) return null;
     const groups = f.groups.filter((g) => g && typeof g.id === 'string' && Array.isArray(g.proposals) && g.computed)
       .map((g) => normalizeGroup({ ...g, title: g.title || g.id, note: g.note ?? '' }));
-    return { version: f.version === 5 ? 5 : 4, area: f.area ?? '', groups };
+    return { version: f.version === 5 ? 5 : 4, area: f.area ?? '', groups, ...(typeof f.withdrawn === 'string' && f.withdrawn ? { withdrawn: f.withdrawn } : {}) };
   } catch { return null; }
 }
 
