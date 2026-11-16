@@ -8,8 +8,9 @@ export interface SignalObservation {
   approach: string;
   /** Demand periods the observation holds for. */
   periods: string[];
-  cycleSeconds: number;
-  greenSeconds: number;
+  /** Omitted with `greenSeconds` when only the phasing was observed (`ownPhase`, no timing sheet): the cycle and greens then follow the flows. */
+  cycleSeconds?: number;
+  greenSeconds?: number;
   /** [lat, lon] of the signal, when the street names alone match several signals; the nearest matching signal within 80 m is taken. */
   near?: [number, number];
   /** Compass direction of travel of the approach, degrees, when the street arrives from two sides and the observation is about one of them. */
@@ -40,15 +41,16 @@ export function applySignalObservations(nodes: NetNode[], links: NetLink[], obs:
       const by = hit.map((n) => ({ n, d: Math.hypot(n.x - x, n.y - y) })).sort((p, q) => p.d - q.d)[0];
       node = by && by.d <= NEAR_M ? by.n : null;
     }
+    if ((o.cycleSeconds === undefined) !== (o.greenSeconds === undefined) || (o.greenSeconds === undefined && !o.ownPhase)) { misses.push(`${o.at.join(' / ')} (${o.approach}): an observation without timing must leave out both cycle and green and mark ownPhase`); continue; }
     const ins = node ? links.filter((l) => l.to === node.id && l.name === o.approach && (o.heading === undefined || angDiff(l.toBearing ?? 0, o.heading) <= HEADING_TOL)).map((l) => l.id) : [];
     if (!node || !ins.length) { misses.push(`${o.at.join(' / ')} (${o.approach}): ${hit.length > 1 ? 'several signals match' : !node ? 'no signal matches' : 'no approach link'}`); continue; }
     const runsWith = node && o.runsWithHeading !== undefined ? links.filter((l) => l.to === node.id && l.name === o.approach && angDiff(l.toBearing ?? 0, o.runsWithHeading!) <= HEADING_TOL).map((l) => l.id) : [];
     if (o.runsWithHeading !== undefined && !runsWith.length) { misses.push(`${o.at.join(' / ')} (${o.approach}): no approach link to run with`); continue; }
-    const green = { links: ins, greenS: o.greenSeconds, ...(o.ownPhase ? { ownPhase: true } : {}), ...(runsWith.length ? { runsWith } : {}) };
+    const green = { links: ins, greenS: o.greenSeconds ?? 0, ...(o.ownPhase ? { ownPhase: true } : {}), ...(runsWith.length ? { runsWith } : {}) };
     // Observations of one signal in the same periods and cycle are one timing with several approaches.
-    const same = (node.signalTiming ??= []).find((t) => t.cycleS === o.cycleSeconds && t.periods.join() === o.periods.join());
+    const same = (node.signalTiming ??= []).find((t) => t.cycleS === (o.cycleSeconds ?? 0) && t.periods.join() === o.periods.join());
     if (same && same.clearanceS !== o.clearanceSeconds) { misses.push(`${o.at.join(' / ')} (${o.approach}): clearance ${o.clearanceSeconds ?? 'default'} s differs from ${same.clearanceS ?? 'default'} s of the same timing`); continue; }
-    if (same) { same.greens.push(green); if (!same.source.includes(o.source)) same.source += `; ${o.source}`; } else node.signalTiming.push({ periods: o.periods, cycleS: o.cycleSeconds, greens: [green], source: o.source, ...(o.clearanceSeconds !== undefined ? { clearanceS: o.clearanceSeconds } : {}) });
+    if (same) { same.greens.push(green); if (!same.source.includes(o.source)) same.source += `; ${o.source}`; } else node.signalTiming.push({ periods: o.periods, cycleS: o.cycleSeconds ?? 0, greens: [green], source: o.source, ...(o.clearanceSeconds !== undefined ? { clearanceS: o.clearanceSeconds } : {}) });
   }
   return misses;
 }

@@ -59,10 +59,13 @@ pub struct Node {
 }
 
 /// An observed signal timing: in the listed periods the cycle is `cycle_s` and each listed approach group gets `green_s` (the other phases share the rest of the cycle by flow).
+/// An observation of the phasing alone (a protected left seen in the field, no timing sheet) leaves `cycle_s` and every `green_s` at 0: the phase structure applies
+/// and the cycle and greens follow the flows as at any other signal.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SignalTiming {
     pub periods: Vec<String>,
+    #[serde(default)]
     pub cycle_s: f32,
     pub greens: Vec<ApproachGreen>,
     #[serde(default)]
@@ -77,6 +80,8 @@ pub struct SignalTiming {
 pub struct ApproachGreen {
     /// Incoming links of the approach.
     pub links: Vec<u32>,
+    /// Observed green (s); 0 when only the phasing was observed.
+    #[serde(default)]
     pub green_s: f32,
     /// The approach runs in a phase of its own (observed split phasing or protected left turn), so nothing opposes its left turns.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
@@ -350,6 +355,10 @@ pub struct Config {
     pub lane_changes: Option<bool>,
     /// Additive: longest link (m) joining two signals that run one cycle with offsets by travel time (default `params::COORD_MAX_M`; 0 turns it off).
     pub coord_max_m: Option<f64>,
+    /// Additive (round 33): permissive left turns at a signal by the queue-first gap model [Fambro1991]: a conflicting car starting from the
+    /// line counts as arriving by its acceleration, the critical gap is `TC_PERMITTED_LEFT`, and the left-turner gets no courtesy or yield
+    /// fallback. Default off (round 33 kept the step out: the network got less stable); validation cases p1 to p3 measure it.
+    pub queue_first_left: Option<bool>,
 }
 
 /// Junction recovery policy. Every policy except `historical` keeps physical conflict exclusion regardless of the wait.
@@ -370,7 +379,7 @@ pub enum JunctionRecovery {
 
 impl Default for Config {
     fn default() -> Self {
-        Config { seed: 1, period: String::new(), demand_scale: 1.0, select_links: Vec::new(), local_cost_factor: None, guided_share: None, switch_band: None, route_dispersion: None, record_trips: false, signal_adapt_min: None, motorway_gridlock_removal: false, ped_yield_marked: None, ped_yield_unmarked: None, lane_width_m: None, no_right_turn_on_red: false, initial_load: true, interventions: Vec::new(), junction_recovery: JunctionRecovery::Physical, trace: false, trace_detail_max: None, lane_changes: None, coord_max_m: None }
+        Config { seed: 1, period: String::new(), demand_scale: 1.0, select_links: Vec::new(), local_cost_factor: None, guided_share: None, switch_band: None, route_dispersion: None, record_trips: false, signal_adapt_min: None, motorway_gridlock_removal: false, ped_yield_marked: None, ped_yield_unmarked: None, lane_width_m: None, no_right_turn_on_red: false, initial_load: true, interventions: Vec::new(), junction_recovery: JunctionRecovery::Physical, trace: false, trace_detail_max: None, lane_changes: None, coord_max_m: None, queue_first_left: None }
     }
 }
 

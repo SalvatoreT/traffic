@@ -117,3 +117,16 @@ fn generic_plans_always_fit_their_cycle() {
         assert!((end - cycle).abs() < 1e-2 && phases.iter().all(|p| p.1 >= 4.0), "{ys:?}: {phases:?} in {cycle}");
     }
 }
+
+#[test]
+fn an_observed_phase_without_timing_keeps_the_structure_and_a_flow_based_plan() {
+    let (mut net, x) = cross4(Control::Signal, RoadClass::Residential, false);
+    net.nodes[x.c as usize].signal_timing = vec![timing(0.0, vec![green(vec![x.w_in], 0.0, true)], None)];
+    let sim = Simulation::from_parts(net, flows(&x), cfg(2, 1.0)).unwrap();
+    let p = sim.test_eff().sig[x.c as usize].as_ref().expect("signal plan");
+    assert_eq!(p.phases.len(), 3, "the observed approach has a phase of its own: {:?}", p.links);
+    assert!(p.links.iter().any(|g| g == &vec![x.w_in]));
+    assert!(p.cycle >= CYCLE_MIN && p.cycle <= CYCLE_MAX + 1e-3, "Webster cycle, not the 0 s of the observation: {}", p.cycle);
+    assert_budget(&sim, x.c, YELLOW + ALL_RED);
+    assert!(sim.test_eff().issues.is_empty());
+}

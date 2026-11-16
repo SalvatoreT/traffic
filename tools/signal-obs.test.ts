@@ -47,6 +47,15 @@ describe('signal observations', () => {
     const ns2 = [node(0, 'signal'), node(1, 'uncontrolled'), node(2, 'uncontrolled')];
     expect(applySignalObservations(ns2, ls, [{ ...o, heading: 90, greenSeconds: 29 }, { ...o, heading: 270, greenSeconds: 13, clearanceSeconds: undefined }])).toHaveLength(1);
   });
+  it('takes an observed protected phase without timing, and rejects half a timing', () => {
+    const ns = [node(0, 'signal'), node(1, 'uncontrolled'), node(2, 'uncontrolled')];
+    const ls = [{ ...link(0, 1, 0, 'Main Street'), toBearing: 90 }, { ...link(1, 2, 0, 'Main Street'), toBearing: 270 }] as NetLink[];
+    const o = { at: ['Main Street'], approach: 'Main Street', periods: ['am', 'pm'], heading: 90, source: 'field' };
+    expect(applySignalObservations(ns, ls, [{ ...o, ownPhase: true }])).toEqual([]);
+    expect(ns[0].signalTiming).toEqual([{ periods: ['am', 'pm'], cycleS: 0, greens: [{ links: [0], greenS: 0, ownPhase: true }], source: 'field' }]);
+    const ns2 = [node(0, 'signal'), node(1, 'uncontrolled'), node(2, 'uncontrolled')];
+    expect(applySignalObservations(ns2, ls, [o, { ...o, ownPhase: true, cycleSeconds: 90 }])).toHaveLength(2);
+  });
   it('reports an observation that matches no signal', () => {
     expect(applySignalObservations(nodes, links, [{ ...obs, at: ['Pine Street', 'Elm Street'] }])).toHaveLength(1);
   });
