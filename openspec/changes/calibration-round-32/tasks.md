@@ -21,7 +21,7 @@
 
 ## 5. Demand, evaluation and record
 
-- [ ] 5.1 Tests, WASM parity, trace on/off identity; commit.
-- [ ] 5.2 `npm run data` (network, demand and split unchanged); delay-feedback fit to its stop rule.
-- [ ] 5.3 Validation suite, ten seeds PM, AM and midday, assessment, `--od-costs`.
-- [ ] 5.4 Round 32 in the calibration record (older rounds archived), the area's `calibration` note, `tsx tools/import-osm.ts`.
+- [x] 5.1 Tests, WASM parity, trace on/off identity; commit.
+- [x] 5.2 `npm run data` (network, demand and split unchanged); delay-feedback fit to its stop rule.
+- [x] 5.3 Validation suite, ten seeds PM, AM and midday, assessment, `--od-costs`.
+- [x] 5.4 Round 32 in the calibration record (older rounds archived), the area's `calibration` note, `tsx tools/import-osm.ts`.
