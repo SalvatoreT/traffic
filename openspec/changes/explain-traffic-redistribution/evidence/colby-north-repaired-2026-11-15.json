@@ -2068,5 +2068,910 @@
     "flagged": false
    }
   ]
+ },
+ "sweepTrapezoidRerun": {
+  "status": "Model output of an uncalibrated simulation of the Trapezoid, not a forecast.",
+  "question": "Does closing one Trapezoid side-street block push its through cars onto nearby Trapezoid side streets?",
+  "period": "pm_peak",
+  "seeds": [
+   1,
+   2,
+   3
+  ],
+  "simulatedSeconds": 3600,
+  "hashes": {
+   "network": "69f62ad981d0b8fa",
+   "demand": "756d1470a053ab85",
+   "simulator": "09963f72308385712bdffc35c4f129c3"
+  },
+  "sourceRevision": "7836d4c",
+  "note": "Rerun after the lead decision to rank cut counted turns by cost, on the demand file of 23:48 UTC",
+  "rule": {
+   "candidates": "the 12 Trapezoid residential or service blocks (inStudyArea) with the most through cars in the baseline, summed over the seeds",
+   "closure": "one modal filter on the block, both directions, nothing else changed",
+   "displaced": "baseline through trips (neither end in the Trapezoid) that drove the closed block in the hour",
+   "newTrapezoidSideStreets": "drives, with the closure, a Trapezoid residential or service block it did not drive in the baseline",
+   "arterialsOrOutside": "does not: bounding arterials, roads outside the Trapezoid, or only Trapezoid blocks it already drove",
+   "bypassWithinTolerance": "a legal witness path using another Trapezoid side street costs at most 1.3 times the baseline path between the same links at free flow",
+   "flagged": "bypass within tolerance but fewer than 25% of the displaced cars on new Trapezoid side streets"
+  },
+  "rows": [
+   {
+    "closure": "Martin Street between Claremont Avenue and Ayala Avenue",
+    "intervention": {
+     "type": "modal_filter",
+     "link": 1827
+    },
+    "throughCarsTodayPerHour": 271,
+    "displacedThroughCarsPerHour": 274,
+    "perHour": {
+     "newTrapezoidSideStreets": 112,
+     "arterialsOrOutside": 162,
+     "pending": 0,
+     "removed": 0,
+     "unroutable": 0,
+     "unmatched": 0
+    },
+    "shareOnNewTrapezoidSideStreets": 0.41,
+    "receivingTrapezoidBlocks": [
+     {
+      "block": "Forest Street between Claremont Avenue / Colby Street and Ayala Avenue",
+      "perHour": 81.7
+     },
+     {
+      "block": "Ayala Avenue between Howell Street and Forest Street",
+      "perHour": 56
+     },
+     {
+      "block": "Ayala Avenue between Martin Street and Howell Street",
+      "perHour": 34.3
+     },
+     {
+      "block": "Colby Street between Claremont Avenue / Forest Street and McAuley Street",
+      "perHour": 26.3
+     }
+    ],
+    "topRoutesNearClosure": [
+     {
+      "nearClosure": "Not within 400 m of the closure",
+      "perHour": 85
+     },
+     {
+      "nearClosure": "Telegraph Avenue",
+      "perHour": 47
+     },
+     {
+      "nearClosure": "57th Street \u2192 Ayala Avenue \u2192 Forest Street \u2192 Claremont Avenue \u2192 Unnamed road",
+      "perHour": 13.7
+     },
+     {
+      "nearClosure": "Telegraph Avenue \u2192 57th Street \u2192 Ayala Avenue \u2192 Forest Street \u2192 Claremont Avenue \u2192 Unnamed road",
+      "perHour": 7
+     }
+    ],
+    "legalTrapezoidBypasses": [
+     {
+      "streets": "Ayala Avenue \u2192 Martin Street \u2192 58th Street \u2192 Canning Street \u2192 McAuley Street",
+      "ratio": 1.03,
+      "extraS": 3
+     },
+     {
+      "streets": "Ayala Avenue \u2192 Forest Street \u2192 Colby Street \u2192 McAuley Street \u2192 Howell Street",
+      "ratio": 1.03,
+      "extraS": 3
+     },
+     {
+      "streets": "Forest Street \u2192 Colby Street \u2192 McAuley Street \u2192 Ayala Avenue \u2192 Howell Street",
+      "ratio": 1.04,
+      "extraS": 3
+     }
+    ],
+    "bypassWithinTolerance": true,
+    "flagged": false
+   },
+   {
+    "closure": "Colby Street between McAuley Street and 60th Street",
+    "intervention": {
+     "type": "modal_filter",
+     "link": 2593
+    },
+    "throughCarsTodayPerHour": 258,
+    "displacedThroughCarsPerHour": 258,
+    "perHour": {
+     "newTrapezoidSideStreets": 198.3,
+     "arterialsOrOutside": 59.7,
+     "pending": 0,
+     "removed": 0,
+     "unroutable": 0,
+     "unmatched": 0
+    },
+    "shareOnNewTrapezoidSideStreets": 0.77,
+    "receivingTrapezoidBlocks": [
+     {
+      "block": "Hillegass Avenue between 61st Street and 60th Street / Claremont Avenue",
+      "perHour": 87.7
+     },
+     {
+      "block": "61st Street between Hillegass Avenue and Colby Street",
+      "perHour": 55.3
+     },
+     {
+      "block": "Howell Street between Ayala Avenue and 59th Street",
+      "perHour": 32.7
+     },
+     {
+      "block": "McAuley Street between Ayala Avenue and Howell Street",
+      "perHour": 30.7
+     }
+    ],
+    "topRoutesNearClosure": [
+     {
+      "nearClosure": "Claremont Avenue \u2192 Hillegass Avenue \u2192 61st Street \u2192 Colby Street",
+      "perHour": 51
+     },
+     {
+      "nearClosure": "Not within 400 m of the closure",
+      "perHour": 24
+     },
+     {
+      "nearClosure": "Telegraph Avenue",
+      "perHour": 18.7
+     },
+     {
+      "nearClosure": "Claremont Avenue \u2192 60th Street \u2192 Colby Street",
+      "perHour": 14.7
+     }
+    ],
+    "legalTrapezoidBypasses": [
+     {
+      "streets": "Forest Street \u2192 Ayala Avenue \u2192 McAuley Street \u2192 Howell Street \u2192 60th Street",
+      "ratio": 1,
+      "extraS": 0
+     },
+     {
+      "streets": "Oak Grove Avenue \u2192 Forest Street \u2192 Ayala Avenue \u2192 McAuley Street \u2192 Howell Street \u2192 60th Street",
+      "ratio": 1,
+      "extraS": 0
+     },
+     {
+      "streets": "Claremont Avenue \u2192 60th Street \u2192 Howell Street \u2192 Ayala Avenue",
+      "ratio": 1.02,
+      "extraS": 3
+     }
+    ],
+    "bypassWithinTolerance": true,
+    "flagged": false
+   },
+   {
+    "closure": "Colby Street between Claremont Avenue / Forest Street and McAuley Street",
+    "intervention": {
+     "type": "modal_filter",
+     "link": 2591
+    },
+    "throughCarsTodayPerHour": 243,
+    "displacedThroughCarsPerHour": 245.3,
+    "perHour": {
+     "newTrapezoidSideStreets": 179.3,
+     "arterialsOrOutside": 65.7,
+     "pending": 0,
+     "removed": 0.3,
+     "unroutable": 0,
+     "unmatched": 0
+    },
+    "shareOnNewTrapezoidSideStreets": 0.73,
+    "receivingTrapezoidBlocks": [
+     {
+      "block": "Hillegass Avenue between 61st Street and 60th Street / Claremont Avenue",
+      "perHour": 66
+     },
+     {
+      "block": "Forest Street between Claremont Avenue / Colby Street and Ayala Avenue",
+      "perHour": 61.7
+     },
+     {
+      "block": "Ayala Avenue between Forest Street and McAuley Street",
+      "perHour": 52.7
+     },
+     {
+      "block": "61st Street between Hillegass Avenue and Colby Street",
+      "perHour": 43
+     }
+    ],
+    "topRoutesNearClosure": [
+     {
+      "nearClosure": "Not within 400 m of the closure",
+      "perHour": 51
+     },
+     {
+      "nearClosure": "Claremont Avenue \u2192 Hillegass Avenue \u2192 61st Street \u2192 Colby Street",
+      "perHour": 40.3
+     },
+     {
+      "nearClosure": "Claremont Avenue \u2192 Forest Street \u2192 Ayala Avenue \u2192 McAuley Street \u2192 Colby Street",
+      "perHour": 12
+     },
+     {
+      "nearClosure": "Claremont Avenue \u2192 60th Street \u2192 Colby Street",
+      "perHour": 11
+     }
+    ],
+    "legalTrapezoidBypasses": [
+     {
+      "streets": "Claremont Avenue \u2192 60th Street \u2192 Howell Street \u2192 Ayala Avenue",
+      "ratio": 1.02,
+      "extraS": 3
+     },
+     {
+      "streets": "60th Street \u2192 Howell Street \u2192 Ayala Avenue",
+      "ratio": 1.03,
+      "extraS": 3
+     },
+     {
+      "streets": "Howell Street \u2192 Ayala Avenue \u2192 Martin Street \u2192 58th Street \u2192 Canning Street \u2192 McAuley Street",
+      "ratio": 1.05,
+      "extraS": 5
+     }
+    ],
+    "bypassWithinTolerance": true,
+    "flagged": false
+   },
+   {
+    "closure": "Colby Street between 60th Street and 61st Street",
+    "intervention": {
+     "type": "modal_filter",
+     "link": 2595
+    },
+    "throughCarsTodayPerHour": 236,
+    "displacedThroughCarsPerHour": 236,
+    "perHour": {
+     "newTrapezoidSideStreets": 186,
+     "arterialsOrOutside": 50,
+     "pending": 0,
+     "removed": 0,
+     "unroutable": 0,
+     "unmatched": 0
+    },
+    "shareOnNewTrapezoidSideStreets": 0.79,
+    "receivingTrapezoidBlocks": [
+     {
+      "block": "Hillegass Avenue between 61st Street and 60th Street / Claremont Avenue",
+      "perHour": 113.3
+     },
+     {
+      "block": "61st Street between Hillegass Avenue and Colby Street",
+      "perHour": 72
+     },
+     {
+      "block": "Hillegass Avenue between 62nd Street and 61st Street",
+      "perHour": 37.3
+     },
+     {
+      "block": "Hillegass Avenue between 63rd Street and 62nd Street",
+      "perHour": 33.7
+     }
+    ],
+    "topRoutesNearClosure": [
+     {
+      "nearClosure": "Claremont Avenue \u2192 Hillegass Avenue \u2192 61st Street \u2192 Colby Street \u2192 Alcatraz Avenue",
+      "perHour": 64.3
+     },
+     {
+      "nearClosure": "Not within 400 m of the closure",
+      "perHour": 17.3
+     },
+     {
+      "nearClosure": "Telegraph Avenue",
+      "perHour": 17.3
+     },
+     {
+      "nearClosure": "Alcatraz Avenue \u2192 Hillegass Avenue \u2192 Claremont Avenue",
+      "perHour": 13.3
+     }
+    ],
+    "legalTrapezoidBypasses": [
+     {
+      "streets": "60th Street \u2192 Howell Street \u2192 McAuley Street \u2192 Canning Street \u2192 61st Street",
+      "ratio": 1,
+      "extraS": 0
+     },
+     {
+      "streets": "61st Street \u2192 Canning Street \u2192 60th Street",
+      "ratio": 1.01,
+      "extraS": 1
+     },
+     {
+      "streets": "Hillegass Avenue \u2192 61st Street \u2192 Canning Street \u2192 60th Street",
+      "ratio": 1.01,
+      "extraS": 1
+     }
+    ],
+    "bypassWithinTolerance": true,
+    "flagged": false
+   },
+   {
+    "closure": "Colby Street between 62nd Street and 63rd Street",
+    "intervention": {
+     "type": "modal_filter",
+     "link": 2599
+    },
+    "throughCarsTodayPerHour": 236,
+    "displacedThroughCarsPerHour": 236.7,
+    "perHour": {
+     "newTrapezoidSideStreets": 174,
+     "arterialsOrOutside": 62.3,
+     "pending": 0,
+     "removed": 0.3,
+     "unroutable": 0,
+     "unmatched": 0
+    },
+    "shareOnNewTrapezoidSideStreets": 0.74,
+    "receivingTrapezoidBlocks": [
+     {
+      "block": "Hillegass Avenue between 63rd Street and 62nd Street",
+      "perHour": 110
+     },
+     {
+      "block": "Hillegass Avenue between 62nd Street and 61st Street",
+      "perHour": 100.3
+     },
+     {
+      "block": "Hillegass Avenue between 61st Street and 60th Street / Claremont Avenue",
+      "perHour": 95.3
+     },
+     {
+      "block": "63rd Street between Hillegass Avenue and Colby Street",
+      "perHour": 88
+     }
+    ],
+    "topRoutesNearClosure": [
+     {
+      "nearClosure": "Claremont Avenue \u2192 Hillegass Avenue \u2192 63rd Street \u2192 Colby Street \u2192 Alcatraz Avenue \u2192 Telegraph Avenue",
+      "perHour": 60.7
+     },
+     {
+      "nearClosure": "Not within 400 m of the closure",
+      "perHour": 24.3
+     },
+     {
+      "nearClosure": "Telegraph Avenue",
+      "perHour": 16.7
+     },
+     {
+      "nearClosure": "Telegraph Avenue \u2192 Alcatraz Avenue \u2192 Colby Street \u2192 63rd Street \u2192 Hillegass Avenue \u2192 Claremont Avenue",
+      "perHour": 10
+     }
+    ],
+    "legalTrapezoidBypasses": [
+     {
+      "streets": "College Avenue \u2192 62nd Street \u2192 Hillegass Avenue \u2192 63rd Street \u2192 Colby Street",
+      "ratio": 1.01,
+      "extraS": 1
+     },
+     {
+      "streets": "62nd Street \u2192 Hillegass Avenue \u2192 63rd Street \u2192 Colby Street",
+      "ratio": 1.01,
+      "extraS": 1
+     },
+     {
+      "streets": "Colby Street \u2192 63rd Street \u2192 Hillegass Avenue \u2192 62nd Street",
+      "ratio": 1.03,
+      "extraS": 3
+     }
+    ],
+    "bypassWithinTolerance": true,
+    "flagged": false
+   },
+   {
+    "closure": "Colby Street between 63rd Street and North Street",
+    "intervention": {
+     "type": "modal_filter",
+     "link": 2603
+    },
+    "throughCarsTodayPerHour": 229,
+    "displacedThroughCarsPerHour": 228.7,
+    "perHour": {
+     "newTrapezoidSideStreets": 161.3,
+     "arterialsOrOutside": 67.3,
+     "pending": 0,
+     "removed": 0,
+     "unroutable": 0,
+     "unmatched": 0
+    },
+    "shareOnNewTrapezoidSideStreets": 0.71,
+    "receivingTrapezoidBlocks": [
+     {
+      "block": "Dana Street between 63rd Street and North Street",
+      "perHour": 94.7
+     },
+     {
+      "block": "63rd Street between Colby Street and Dana Street",
+      "perHour": 88.3
+     },
+     {
+      "block": "North Street between Colby Street and Dana Street",
+      "perHour": 87.7
+     },
+     {
+      "block": "Hillegass Avenue between Alcatraz Avenue and 63rd Street",
+      "perHour": 31.3
+     }
+    ],
+    "topRoutesNearClosure": [
+     {
+      "nearClosure": "Colby Street \u2192 63rd Street \u2192 Dana Street \u2192 North Street \u2192 Colby Street \u2192 Alcatraz Avenue \u2192 Telegraph Avenue",
+      "perHour": 60
+     },
+     {
+      "nearClosure": "Telegraph Avenue",
+      "perHour": 26
+     },
+     {
+      "nearClosure": "Not within 400 m of the closure",
+      "perHour": 24
+     },
+     {
+      "nearClosure": "Telegraph Avenue \u2192 Alcatraz Avenue \u2192 Colby Street \u2192 North Street \u2192 Dana Street \u2192 63rd Street \u2192 Colby Street",
+      "perHour": 10
+     }
+    ],
+    "legalTrapezoidBypasses": [
+     {
+      "streets": "Alcatraz Avenue \u2192 Dana Street \u2192 63rd Street",
+      "ratio": 1.02,
+      "extraS": 2
+     },
+     {
+      "streets": "Hillegass Avenue \u2192 63rd Street \u2192 Colby Street \u2192 Dana Street",
+      "ratio": 1.04,
+      "extraS": 4
+     },
+     {
+      "streets": "63rd Street \u2192 Dana Street \u2192 North Street \u2192 Colby Street",
+      "ratio": 1.04,
+      "extraS": 3
+     }
+    ],
+    "bypassWithinTolerance": true,
+    "flagged": false
+   },
+   {
+    "closure": "Colby Street at 63rd Street",
+    "intervention": {
+     "type": "modal_filter",
+     "link": 2601
+    },
+    "throughCarsTodayPerHour": 226,
+    "displacedThroughCarsPerHour": 226,
+    "perHour": {
+     "newTrapezoidSideStreets": 162.7,
+     "arterialsOrOutside": 63.3,
+     "pending": 0,
+     "removed": 0,
+     "unroutable": 0,
+     "unmatched": 0
+    },
+    "shareOnNewTrapezoidSideStreets": 0.72,
+    "receivingTrapezoidBlocks": [
+     {
+      "block": "Hillegass Avenue between 63rd Street and 62nd Street",
+      "perHour": 81
+     },
+     {
+      "block": "Hillegass Avenue between 62nd Street and 61st Street",
+      "perHour": 71.7
+     },
+     {
+      "block": "Hillegass Avenue between 61st Street and 60th Street / Claremont Avenue",
+      "perHour": 67.3
+     },
+     {
+      "block": "63rd Street between Hillegass Avenue and Colby Street",
+      "perHour": 60.7
+     }
+    ],
+    "topRoutesNearClosure": [
+     {
+      "nearClosure": "Claremont Avenue \u2192 Hillegass Avenue \u2192 63rd Street \u2192 Colby Street \u2192 Alcatraz Avenue \u2192 Telegraph Avenue",
+      "perHour": 38
+     },
+     {
+      "nearClosure": "Colby Street \u2192 63rd Street \u2192 Dana Street \u2192 North Street \u2192 Colby Street \u2192 Alcatraz Avenue \u2192 Telegraph Avenue",
+      "perHour": 25
+     },
+     {
+      "nearClosure": "Telegraph Avenue",
+      "perHour": 22.3
+     },
+     {
+      "nearClosure": "Not within 400 m of the closure",
+      "perHour": 21.3
+     }
+    ],
+    "legalTrapezoidBypasses": [
+     {
+      "streets": "62nd Street \u2192 Hillegass Avenue \u2192 63rd Street \u2192 Colby Street",
+      "ratio": 1.01,
+      "extraS": 1
+     },
+     {
+      "streets": "Alcatraz Avenue \u2192 Dana Street \u2192 63rd Street",
+      "ratio": 1.02,
+      "extraS": 2
+     },
+     {
+      "streets": "63rd Street \u2192 Dana Street \u2192 North Street \u2192 Colby Street",
+      "ratio": 1.03,
+      "extraS": 3
+     }
+    ],
+    "bypassWithinTolerance": true,
+    "flagged": false
+   },
+   {
+    "closure": "Colby Street between North Street and Alcatraz Avenue",
+    "intervention": {
+     "type": "modal_filter",
+     "link": 2605
+    },
+    "throughCarsTodayPerHour": 222,
+    "displacedThroughCarsPerHour": 223.7,
+    "perHour": {
+     "newTrapezoidSideStreets": 166.3,
+     "arterialsOrOutside": 57,
+     "pending": 0,
+     "removed": 0.3,
+     "unroutable": 0,
+     "unmatched": 0
+    },
+    "shareOnNewTrapezoidSideStreets": 0.74,
+    "receivingTrapezoidBlocks": [
+     {
+      "block": "Dana Street between North Street and Alcatraz Avenue",
+      "perHour": 85
+     },
+     {
+      "block": "63rd Street between Colby Street and Dana Street",
+      "perHour": 65.7
+     },
+     {
+      "block": "Dana Street between 63rd Street and North Street",
+      "perHour": 62.7
+     },
+     {
+      "block": "Hillegass Avenue between Alcatraz Avenue and 63rd Street",
+      "perHour": 50.7
+     }
+    ],
+    "topRoutesNearClosure": [
+     {
+      "nearClosure": "Colby Street \u2192 63rd Street \u2192 Dana Street \u2192 Alcatraz Avenue \u2192 Telegraph Avenue",
+      "perHour": 52
+     },
+     {
+      "nearClosure": "Not within 400 m of the closure",
+      "perHour": 19
+     },
+     {
+      "nearClosure": "Telegraph Avenue",
+      "perHour": 16.3
+     },
+     {
+      "nearClosure": "Telegraph Avenue \u2192 Alcatraz Avenue \u2192 Dana Street \u2192 North Street \u2192 Colby Street",
+      "perHour": 10.7
+     }
+    ],
+    "legalTrapezoidBypasses": [
+     {
+      "streets": "North Street \u2192 Dana Street \u2192 63rd Street \u2192 Colby Street",
+      "ratio": 1.14,
+      "extraS": 15
+     },
+     {
+      "streets": "Hillegass Avenue \u2192 63rd Street \u2192 Colby Street \u2192 North Street \u2192 Dana Street \u2192 Alcatraz Avenue",
+      "ratio": 1.16,
+      "extraS": 19
+     },
+     {
+      "streets": "Dana Street \u2192 North Street \u2192 Colby Street \u2192 63rd Street \u2192 Hillegass Avenue \u2192 Alcatraz Avenue",
+      "ratio": 1.19,
+      "extraS": 19
+     }
+    ],
+    "bypassWithinTolerance": true,
+    "flagged": false
+   },
+   {
+    "closure": "Colby Street between 61st Street and 62nd Street",
+    "intervention": {
+     "type": "modal_filter",
+     "link": 2597
+    },
+    "throughCarsTodayPerHour": 222,
+    "displacedThroughCarsPerHour": 223.3,
+    "perHour": {
+     "newTrapezoidSideStreets": 173.7,
+     "arterialsOrOutside": 49.7,
+     "pending": 0,
+     "removed": 0,
+     "unroutable": 0,
+     "unmatched": 0
+    },
+    "shareOnNewTrapezoidSideStreets": 0.78,
+    "receivingTrapezoidBlocks": [
+     {
+      "block": "Hillegass Avenue between 62nd Street and 61st Street",
+      "perHour": 103
+     },
+     {
+      "block": "Hillegass Avenue between 61st Street and 60th Street / Claremont Avenue",
+      "perHour": 96.7
+     },
+     {
+      "block": "Hillegass Avenue between 63rd Street and 62nd Street",
+      "perHour": 58
+     },
+     {
+      "block": "62nd Street between Hillegass Avenue and Colby Street",
+      "perHour": 50.3
+     }
+    ],
+    "topRoutesNearClosure": [
+     {
+      "nearClosure": "Claremont Avenue \u2192 Hillegass Avenue \u2192 62nd Street \u2192 Colby Street \u2192 Alcatraz Avenue \u2192 Telegraph Avenue",
+      "perHour": 36
+     },
+     {
+      "nearClosure": "Claremont Avenue \u2192 Hillegass Avenue \u2192 63rd Street \u2192 Colby Street \u2192 Alcatraz Avenue \u2192 Telegraph Avenue",
+      "perHour": 26.3
+     },
+     {
+      "nearClosure": "Not within 400 m of the closure",
+      "perHour": 20.7
+     },
+     {
+      "nearClosure": "Telegraph Avenue",
+      "perHour": 11
+     }
+    ],
+    "legalTrapezoidBypasses": [
+     {
+      "streets": "60th Street \u2192 Colby Street \u2192 61st Street \u2192 Hillegass Avenue",
+      "ratio": 1,
+      "extraS": 0
+     },
+     {
+      "streets": "Colby Street \u2192 61st Street \u2192 Hillegass Avenue",
+      "ratio": 1,
+      "extraS": 0
+     },
+     {
+      "streets": "61st Street \u2192 Hillegass Avenue \u2192 62nd Street",
+      "ratio": 1,
+      "extraS": 0
+     }
+    ],
+    "bypassWithinTolerance": true,
+    "flagged": false
+   },
+   {
+    "closure": "Hillegass Avenue between Alcatraz Avenue and 63rd Street",
+    "intervention": {
+     "type": "modal_filter",
+     "link": 2669
+    },
+    "throughCarsTodayPerHour": 198,
+    "displacedThroughCarsPerHour": 199,
+    "perHour": {
+     "newTrapezoidSideStreets": 138.3,
+     "arterialsOrOutside": 60.7,
+     "pending": 0,
+     "removed": 0,
+     "unroutable": 0,
+     "unmatched": 0
+    },
+    "shareOnNewTrapezoidSideStreets": 0.7,
+    "receivingTrapezoidBlocks": [
+     {
+      "block": "Colby Street between North Street and Alcatraz Avenue",
+      "perHour": 103
+     },
+     {
+      "block": "Colby Street between 63rd Street and North Street",
+      "perHour": 102.7
+     },
+     {
+      "block": "Colby Street between 62nd Street and 63rd Street",
+      "perHour": 100.7
+     },
+     {
+      "block": "Colby Street at 63rd Street",
+      "perHour": 98.3
+     }
+    ],
+    "topRoutesNearClosure": [
+     {
+      "nearClosure": "Alcatraz Avenue \u2192 Colby Street",
+      "perHour": 29.3
+     },
+     {
+      "nearClosure": "College Avenue \u2192 Alcatraz Avenue \u2192 Colby Street",
+      "perHour": 14
+     },
+     {
+      "nearClosure": "Not within 400 m of the closure",
+      "perHour": 12.3
+     },
+     {
+      "nearClosure": "Claremont Avenue",
+      "perHour": 10
+     }
+    ],
+    "legalTrapezoidBypasses": [
+     {
+      "streets": "Regent Street \u2192 Alcatraz Avenue \u2192 Dana Street \u2192 North Street \u2192 Colby Street",
+      "ratio": 1.01,
+      "extraS": 1
+     },
+     {
+      "streets": "63rd Street \u2192 College Avenue \u2192 Alcatraz Avenue",
+      "ratio": 1.01,
+      "extraS": 1
+     },
+     {
+      "streets": "College Avenue \u2192 63rd Street \u2192 Hillegass Avenue",
+      "ratio": 1.02,
+      "extraS": 2
+     }
+    ],
+    "bypassWithinTolerance": true,
+    "flagged": false
+   },
+   {
+    "closure": "Hillegass Avenue between 63rd Street and 62nd Street",
+    "intervention": {
+     "type": "modal_filter",
+     "link": 2671
+    },
+    "throughCarsTodayPerHour": 188,
+    "displacedThroughCarsPerHour": 189.3,
+    "perHour": {
+     "newTrapezoidSideStreets": 132.7,
+     "arterialsOrOutside": 56.7,
+     "pending": 0,
+     "removed": 0,
+     "unroutable": 0,
+     "unmatched": 0
+    },
+    "shareOnNewTrapezoidSideStreets": 0.7,
+    "receivingTrapezoidBlocks": [
+     {
+      "block": "Colby Street between 62nd Street and 63rd Street",
+      "perHour": 82.3
+     },
+     {
+      "block": "Colby Street at 63rd Street",
+      "perHour": 81.7
+     },
+     {
+      "block": "Colby Street between 61st Street and 62nd Street",
+      "perHour": 74.3
+     },
+     {
+      "block": "Colby Street between 60th Street and 61st Street",
+      "perHour": 70.7
+     }
+    ],
+    "topRoutesNearClosure": [
+     {
+      "nearClosure": "Alcatraz Avenue \u2192 Hillegass Avenue \u2192 63rd Street \u2192 Colby Street",
+      "perHour": 22.3
+     },
+     {
+      "nearClosure": "Claremont Avenue",
+      "perHour": 14.7
+     },
+     {
+      "nearClosure": "Alcatraz Avenue \u2192 Hillegass Avenue \u2192 63rd Street \u2192 College Avenue \u2192 Claremont Avenue",
+      "perHour": 13.3
+     },
+     {
+      "nearClosure": "Not within 400 m of the closure",
+      "perHour": 13
+     }
+    ],
+    "legalTrapezoidBypasses": [
+     {
+      "streets": "College Avenue \u2192 62nd Street \u2192 Hillegass Avenue",
+      "ratio": 1,
+      "extraS": 0
+     },
+     {
+      "streets": "Alcatraz Avenue \u2192 College Avenue \u2192 62nd Street \u2192 Hillegass Avenue",
+      "ratio": 1,
+      "extraS": 0
+     },
+     {
+      "streets": "Hillegass Avenue \u2192 Alcatraz Avenue \u2192 Colby Street \u2192 61st Street",
+      "ratio": 1.01,
+      "extraS": 2
+     }
+    ],
+    "bypassWithinTolerance": true,
+    "flagged": false
+   },
+   {
+    "closure": "Forest Street between Claremont Avenue / Colby Street and Ayala Avenue",
+    "intervention": {
+     "type": "modal_filter",
+     "link": 2696
+    },
+    "throughCarsTodayPerHour": 176,
+    "displacedThroughCarsPerHour": 178.7,
+    "perHour": {
+     "newTrapezoidSideStreets": 109,
+     "arterialsOrOutside": 69.7,
+     "pending": 0,
+     "removed": 0,
+     "unroutable": 0,
+     "unmatched": 0
+    },
+    "shareOnNewTrapezoidSideStreets": 0.61,
+    "receivingTrapezoidBlocks": [
+     {
+      "block": "Colby Street between Claremont Avenue / Forest Street and McAuley Street",
+      "perHour": 45.7
+     },
+     {
+      "block": "Martin Street between Claremont Avenue and Ayala Avenue",
+      "perHour": 45
+     },
+     {
+      "block": "Colby Street between McAuley Street and 60th Street",
+      "perHour": 29.7
+     },
+     {
+      "block": "Ayala Avenue between Martin Street and Howell Street",
+      "perHour": 23.3
+     }
+    ],
+    "topRoutesNearClosure": [
+     {
+      "nearClosure": "Not within 400 m of the closure",
+      "perHour": 29.7
+     },
+     {
+      "nearClosure": "Telegraph Avenue",
+      "perHour": 14.7
+     },
+     {
+      "nearClosure": "Colby Street \u2192 Claremont Avenue",
+      "perHour": 10
+     },
+     {
+      "nearClosure": "57th Street \u2192 Ayala Avenue \u2192 Martin Street \u2192 Claremont Avenue \u2192 Unnamed road",
+      "perHour": 8.3
+     }
+    ],
+    "legalTrapezoidBypasses": [
+     {
+      "streets": "Chabot Road \u2192 Claremont Avenue \u2192 Martin Street",
+      "ratio": 1.02,
+      "extraS": 2
+     },
+     {
+      "streets": "Claremont Avenue \u2192 Martin Street",
+      "ratio": 1.03,
+      "extraS": 2
+     },
+     {
+      "streets": "60th Street \u2192 Howell Street \u2192 Ayala Avenue",
+      "ratio": 1.03,
+      "extraS": 3
+     }
+    ],
+    "bypassWithinTolerance": true,
+    "flagged": false
+   }
+  ]
  }
 }
