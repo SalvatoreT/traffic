@@ -727,7 +727,7 @@
     "arterialMeanSpeed": 8.04946149844562,
     "arterialMeanSpeedLast15min": 7.608437524619842,
     "backlog": 245,
-    "backlogPct": 0.9312402599870768,
+    "backlogPct": 0.9312402599870767,
     "completed": 25943,
     "gridlockRemoved": 1,
     "meanTripDelay": 178.11072615938684,
@@ -1791,7 +1791,7 @@
     "inputs": {
       "areaConfig": {
         "path": "data/areas/rockridge.json",
-        "sha256": "cc5aebc126c44207490e352005ba03324fb6b97e1b1704c55403c43dc9e373a5"
+        "sha256": "496b36ff7439ce481998de6619024847146088ccfa1d8f2bfb5210adb20832ec"
       },
       "demand": {
         "path": "public/data/rockridge.demand.json",
@@ -1860,8 +1860,8 @@
     "schema": 1,
     "simulator": {
       "dirty": false,
-      "fingerprint": "cef9506de5200ff7cfcf8805b36ecba1",
-      "revision": "038be5b2a87839b1cdbe0d99f98ac3f3e7b7ffa5",
+      "fingerprint": "f0df1aabc323bca5893215e1df1afbff",
+      "revision": "5ac5c50e6118a082bd8b120bf66def504e7b871b",
       "version": "0.1.0"
     }
   },
@@ -1919,7 +1919,7 @@
       "applies": true,
       "approaches": [
         {
-          "exitsPerHour": 1184.4,
+          "exitsPerHour": 1184.3999999999999,
           "links": [
             1662
           ],
@@ -1950,7 +1950,7 @@
       "applies": true,
       "approaches": [
         {
-          "exitsPerHour": 121.2,
+          "exitsPerHour": 121.19999999999999,
           "links": [
             2592
           ],
@@ -1973,7 +1973,7 @@
       "applies": true,
       "approaches": [
         {
-          "exitsPerHour": 411.6,
+          "exitsPerHour": 411.59999999999997,
           "links": [
             4329
           ],
@@ -2055,7 +2055,7 @@
     {
       "direction": "onto freeway",
       "modelled": 0.10352941176470588,
-      "modelledSide": 0.11666666666666668,
+      "modelledSide": 0.11666666666666667,
       "n": 850,
       "nSide": 720,
       "observed": 0.1,
@@ -2178,7 +2178,7 @@
       "vehicles": 3189
     },
     {
-      "arterialSpeed": 7.699447536500768,
+      "arterialSpeed": 7.6994475365007675,
       "backlog": 35,
       "completed": 12990,
       "removed": 0,
@@ -2358,7 +2358,7 @@
     {
       "block": "Colby Street SB",
       "headline": false,
-      "modelled": 0.24050632911392408,
+      "modelled": 0.24050632911392406,
       "n": 316,
       "observed": 0.43,
       "observedPm": null,
@@ -2447,7 +2447,7 @@
       "dir": "S",
       "links": 7,
       "maxVehPerHour": 859.1999999999999,
-      "medianVehPerHour": 381.6,
+      "medianVehPerHour": 381.59999999999997,
       "street": "Claremont"
     },
     {
@@ -2488,7 +2488,7 @@
     {
       "dir": "S",
       "links": 7,
-      "maxVehPerHour": 202.8,
+      "maxVehPerHour": 202.79999999999998,
       "medianVehPerHour": 158.4,
       "street": "Colby"
     },
@@ -2502,8 +2502,8 @@
     {
       "dir": "W",
       "links": 2,
-      "maxVehPerHour": 127.2,
-      "medianVehPerHour": 127.2,
+      "maxVehPerHour": 127.19999999999999,
+      "medianVehPerHour": 127.19999999999999,
       "street": "Martin"
     }
   ],
@@ -2515,7 +2515,7 @@
       "freewayShare": 0.47,
       "modeledFreewayTrips": 119.0,
       "modeledThrough": 83.0,
-      "observedFreewayEnd": 51.7,
+      "observedFreewayEnd": 51.699999999999996,
       "observedVehPerHour": 110.0
     },
     {
@@ -2535,7 +2535,7 @@
       "freewayShare": 0.68,
       "modeledFreewayTrips": 119.0,
       "modeledThrough": 171.0,
-      "observedFreewayEnd": 108.8,
+      "observedFreewayEnd": 108.80000000000001,
       "observedVehPerHour": 160.0
     },
     {
@@ -2557,7 +2557,7 @@
       "street": ""
     },
     {
-      "delayVehH": 13.662741661071776,
+      "delayVehH": 13.662741661071777,
       "link": 2921,
       "stoppedVehH": 11.414005279541016,
       "street": "Russell Street"
@@ -2581,15 +2581,15 @@
       "street": "Ashby Avenue"
     },
     {
-      "delayVehH": 9.885632514953612,
+      "delayVehH": 9.885632514953613,
       "link": 4329,
       "stoppedVehH": 8.39983081817627,
       "street": "Claremont Avenue"
     },
     {
-      "delayVehH": 9.87790870666504,
+      "delayVehH": 9.877908706665039,
       "link": 1126,
-      "stoppedVehH": 7.239794254302979,
+      "stoppedVehH": 7.2397942543029785,
       "street": "Market Street"
     },
     {
@@ -2666,7 +2666,7 @@
     {
       "blockedLaneH": 4.247777938842773,
       "control": "signal",
-      "noSpaceLaneH": 0.02756944485008717,
+      "noSpaceLaneH": 0.027569444850087166,
       "node": 331,
       "streets": "52nd Street / Martin Luther King Junior Way"
     },
@@ -2743,7 +2743,7 @@
     {
       "blockedLaneH": 2.944791555404663,
       "control": "signal",
-      "noSpaceLaneH": 0.02701388858258724,
+      "noSpaceLaneH": 0.027013888582587242,
       "node": 17,
       "streets": "45th Street / San Pablo Avenue"
     }
@@ -2796,7 +2796,7 @@
     },
     {
       "meanDetour": 1.1015075760804036,
-      "meanDetourFreeFlow": 1.041396261576656,
+      "meanDetourFreeFlow": 1.0413962615766559,
       "meanSwitches": 0.07200474495848161,
       "medianDetour": 1.0734312534332275,
       "set": "gate to gate",
@@ -2807,7 +2807,7 @@
       "shareReversals": 0.003202846975088968,
       "shareSwitched": 0.06263345195729537,
       "studyMiles": 591.3889722513866,
-      "studyMilesShareDetourOver1.3": 0.1449270789882117,
+      "studyMilesShareDetourOver1.3": 0.14492707898821167,
       "trips": 8430
     },
     {
@@ -2818,11 +2818,11 @@
       "set": "with a local end",
       "shareDetourFreeFlowOver1.3": 0.03287885706830191,
       "shareDetourOver1.3": 0.05864700893730837,
-      "shareDetourOver2": 0.0009133015852306088,
+      "shareDetourOver2": 0.0009133015852306087,
       "shareLoops": 0.0,
       "shareReversals": 0.0032617913758236023,
       "shareSwitched": 0.024724378628742907,
-      "studyMiles": 1966.6038905674463,
+      "studyMiles": 1966.6038905674466,
       "studyMilesShareDetourOver1.3": 0.06874100455946713,
       "trips": 15329
     },
@@ -2833,7 +2833,7 @@
       "medianDetour": 1.060349941253662,
       "set": "guided drivers",
       "shareDetourFreeFlowOver1.3": 0.0357207615593835,
-      "shareDetourOver1.3": 0.06219401631912965,
+      "shareDetourOver1.3": 0.062194016319129644,
       "shareDetourOver2": 0.0008159564823209429,
       "shareLoops": 0.0,
       "shareReversals": 0.003173164097914778,

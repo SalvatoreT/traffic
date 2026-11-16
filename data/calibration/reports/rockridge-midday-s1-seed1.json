@@ -1588,7 +1588,7 @@
     "inputs": {
       "areaConfig": {
         "path": "data/areas/rockridge.json",
-        "sha256": "cc5aebc126c44207490e352005ba03324fb6b97e1b1704c55403c43dc9e373a5"
+        "sha256": "496b36ff7439ce481998de6619024847146088ccfa1d8f2bfb5210adb20832ec"
       },
       "demand": {
         "path": "public/data/rockridge.demand.json",
@@ -1657,8 +1657,8 @@
     "schema": 1,
     "simulator": {
       "dirty": false,
-      "fingerprint": "cef9506de5200ff7cfcf8805b36ecba1",
-      "revision": "96620f79af24d66eda7bc4aa463c3fb346e3fc3c",
+      "fingerprint": "f0df1aabc323bca5893215e1df1afbff",
+      "revision": "5ac5c50e6118a082bd8b120bf66def504e7b871b",
       "version": "0.1.0"
     }
   },
@@ -1747,7 +1747,7 @@
       "applies": true,
       "approaches": [
         {
-          "exitsPerHour": 55.2,
+          "exitsPerHour": 55.199999999999996,
           "links": [
             2592
           ],
@@ -1887,7 +1887,7 @@
     },
     {
       "direction": "from freeway",
-      "modelled": 0.09227871939736348,
+      "modelled": 0.09227871939736347,
       "modelledSide": 0.09496124031007752,
       "n": 531,
       "nSide": 516,
@@ -1897,7 +1897,7 @@
     {
       "direction": "from freeway",
       "modelled": 0.1167608286252354,
-      "modelledSide": 0.12015503875968991,
+      "modelledSide": 0.12015503875968993,
       "n": 531,
       "nSide": 516,
       "observed": 0.1,
@@ -1905,7 +1905,7 @@
     },
     {
       "direction": "from freeway",
-      "modelled": 0.10922787193973636,
+      "modelled": 0.10922787193973635,
       "modelledSide": 0.1124031007751938,
       "n": 531,
       "nSide": 516,
@@ -1943,7 +1943,7 @@
       "vehicles": 1735
     },
     {
-      "arterialSpeed": 9.924697177761916,
+      "arterialSpeed": 9.924697177761917,
       "backlog": 0,
       "completed": 3044,
       "removed": 0,
@@ -1975,7 +1975,7 @@
       "vehicles": 1525
     },
     {
-      "arterialSpeed": 10.023354075117233,
+      "arterialSpeed": 10.023354075117231,
       "backlog": 0,
       "completed": 8585,
       "removed": 0,
@@ -1991,7 +1991,7 @@
       "vehicles": 1604
     },
     {
-      "arterialSpeed": 10.01124765295944,
+      "arterialSpeed": 10.011247652959439,
       "backlog": 4,
       "completed": 11328,
       "removed": 0,
@@ -2045,7 +2045,7 @@
     {
       "block": "Hillegass Avenue NB",
       "headline": false,
-      "modelled": 0.02205882352941177,
+      "modelled": 0.022058823529411766,
       "n": 136,
       "observed": 0.21,
       "observedPm": 0.33,
@@ -2075,7 +2075,7 @@
     {
       "block": "Colby Street NB",
       "headline": true,
-      "modelled": 0.3775510204081632,
+      "modelled": 0.37755102040816324,
       "n": 196,
       "observed": 0.47,
       "observedPm": null,
@@ -2135,7 +2135,7 @@
     {
       "block": "Hillegass Avenue SB",
       "headline": false,
-      "modelled": 0.18181818181818185,
+      "modelled": 0.18181818181818182,
       "n": 110,
       "observed": 0.16,
       "observedPm": null,
@@ -2165,7 +2165,7 @@
     {
       "block": "Colby Street SB",
       "headline": false,
-      "modelled": 0.2066666666666667,
+      "modelled": 0.20666666666666667,
       "n": 150,
       "observed": 0.46,
       "observedPm": null,
@@ -2236,14 +2236,14 @@
     {
       "dir": "N",
       "links": 6,
-      "maxVehPerHour": 406.7999999999999,
+      "maxVehPerHour": 406.79999999999995,
       "medianVehPerHour": 262.8,
       "street": "Claremont"
     },
     {
       "dir": "S",
       "links": 7,
-      "maxVehPerHour": 448.7999999999999,
+      "maxVehPerHour": 448.79999999999995,
       "medianVehPerHour": 169.2,
       "street": "Claremont"
     },
@@ -2258,7 +2258,7 @@
       "dir": "W",
       "links": 6,
       "maxVehPerHour": 291.59999999999997,
-      "medianVehPerHour": 248.4,
+      "medianVehPerHour": 248.39999999999998,
       "street": "Alcatraz"
     },
     {
@@ -2278,8 +2278,8 @@
     {
       "dir": "N",
       "links": 7,
-      "maxVehPerHour": 122.4,
-      "medianVehPerHour": 103.2,
+      "maxVehPerHour": 122.39999999999999,
+      "medianVehPerHour": 103.19999999999999,
       "street": "Colby"
     },
     {
@@ -2413,7 +2413,7 @@
       "streets": "52nd Street / Shattuck Avenue"
     },
     {
-      "blockedLaneH": 3.837013959884643,
+      "blockedLaneH": 3.8370139598846436,
       "control": "signal",
       "noSpaceLaneH": 0.1123611107468605,
       "node": 446,
@@ -2429,7 +2429,7 @@
     {
       "blockedLaneH": 2.77673602104187,
       "control": "signal",
-      "noSpaceLaneH": 0.03097222186625004,
+      "noSpaceLaneH": 0.030972221866250038,
       "node": 30,
       "streets": "57th Street / Adeline Street / Market Street"
     },
@@ -2443,7 +2443,7 @@
     {
       "blockedLaneH": 2.692291736602783,
       "control": "signal",
-      "noSpaceLaneH": 0.014791666530072687,
+      "noSpaceLaneH": 0.014791666530072689,
       "node": 331,
       "streets": "52nd Street / Martin Luther King Junior Way"
     },
@@ -2497,7 +2497,7 @@
       "streets": "Ashby Avenue / Telegraph Avenue"
     },
     {
-      "blockedLaneH": 1.919583320617676,
+      "blockedLaneH": 1.9195833206176758,
       "control": "signal",
       "noSpaceLaneH": 0.011250000447034836,
       "node": 713,
@@ -2547,7 +2547,7 @@
       "shareReversals": 0.0012733176290825746,
       "shareSwitched": 0.001909976443623862,
       "studyMiles": 1462.1325690649787,
-      "studyMilesShareDetourOver1.3": 0.05650845950562699,
+      "studyMilesShareDetourOver1.3": 0.056508459505626996,
       "trips": 15707
     },
     {
@@ -2568,7 +2568,7 @@
     },
     {
       "meanDetour": 1.077476319328105,
-      "meanDetourFreeFlow": 1.021359714199653,
+      "meanDetourFreeFlow": 1.0213597141996533,
       "meanSwitches": 0.000986679822397632,
       "medianDetour": 1.044317603111267,
       "set": "with a local end",
@@ -2578,7 +2578,7 @@
       "shareLoops": 0.0,
       "shareReversals": 0.0011840157868771583,
       "shareSwitched": 0.000986679822397632,
-      "studyMiles": 1114.0808784420317,
+      "studyMiles": 1114.0808784420315,
       "studyMilesShareDetourOver1.3": 0.05689952687637357,
       "trips": 10135
     },
@@ -2588,7 +2588,7 @@
       "meanSwitches": 0.00415570023548968,
       "medianDetour": 1.0450835227966309,
       "set": "guided drivers",
-      "shareDetourFreeFlowOver1.3": 0.01011220390635822,
+      "shareDetourFreeFlowOver1.3": 0.010112203906358221,
       "shareDetourOver1.3": 0.027843191577780858,
       "shareDetourOver2": 0.0002770466823659787,
       "shareLoops": 0.0,
@@ -2602,7 +2602,7 @@
       "meanDetour": 1.0786652750529622,
       "meanDetourFreeFlow": 1.01922465641048,
       "meanSwitches": 0.0,
-      "medianDetour": 1.0445127487182615,
+      "medianDetour": 1.0445127487182617,
       "set": "other drivers",
       "shareDetourFreeFlowOver1.3": 0.00942507068803016,
       "shareDetourOver1.3": 0.030867106503298776,

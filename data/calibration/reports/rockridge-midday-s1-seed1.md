@@ -1,6 +1,6 @@
 # Calibration report: rockridge midday scale 1 seed 1 (60 min)
 
-Offered demand 16569 veh/h x scale 1 = 16569 veh/h. Run took 20.8 s wall clock. Flow tables use the window after a 10 min warm-up; select-link and health figures cover the whole run from an empty network.
+Offered demand 16569 veh/h x scale 1 = 16569 veh/h. Run took 21.6 s wall clock. Flow tables use the window after a 10 min warm-up; select-link and health figures cover the whole run from an empty network.
 
 ## Stability (design D4)
 

@@ -730,7 +730,7 @@
     "backlogPct": 0.01776356692423839,
     "completed": 22688,
     "gridlockRemoved": 1,
-    "meanTripDelay": 125.18468306625952,
+    "meanTripDelay": 125.18468306625951,
     "meanTripTime": 372.36710137647674,
     "spawned": 22518,
     "unroutable": 0
@@ -1714,7 +1714,7 @@
     "inputs": {
       "areaConfig": {
         "path": "data/areas/rockridge.json",
-        "sha256": "cc5aebc126c44207490e352005ba03324fb6b97e1b1704c55403c43dc9e373a5"
+        "sha256": "496b36ff7439ce481998de6619024847146088ccfa1d8f2bfb5210adb20832ec"
       },
       "demand": {
         "path": "public/data/rockridge.demand.json",
@@ -1783,8 +1783,8 @@
     "schema": 1,
     "simulator": {
       "dirty": false,
-      "fingerprint": "cef9506de5200ff7cfcf8805b36ecba1",
-      "revision": "96620f79af24d66eda7bc4aa463c3fb346e3fc3c",
+      "fingerprint": "f0df1aabc323bca5893215e1df1afbff",
+      "revision": "41da10f973e828867f60e2191abcc76b9b19588d",
       "version": "0.1.0"
     }
   },
@@ -1793,7 +1793,7 @@
     "bicycle": {
       "completedTrips": 720,
       "inNetwork": 50,
-      "meanTripTime": 245.00247558160825
+      "meanTripTime": 245.00247558160822
     },
     "car": {
       "completedTrips": 22688,
@@ -1935,7 +1935,7 @@
       "bypass": "Hillegass Avenue",
       "corridorTrips": 1293,
       "dir": "S",
-      "meanBypassBlocks": 0.1546790409899459,
+      "meanBypassBlocks": 0.15467904098994587,
       "minBlocks": 3,
       "other": 964,
       "viaBypass": 37
@@ -2014,7 +2014,7 @@
     {
       "direction": "from freeway",
       "modelled": 0.09662576687116564,
-      "modelledSide": 0.09902597402597405,
+      "modelledSide": 0.09902597402597403,
       "n": 652,
       "nSide": 616,
       "observed": 0.1,
@@ -2022,8 +2022,8 @@
     },
     {
       "direction": "from freeway",
-      "modelled": 0.11503067484662576,
-      "modelledSide": 0.12175324675324677,
+      "modelled": 0.11503067484662577,
+      "modelledSide": 0.12175324675324675,
       "n": 652,
       "nSide": 616,
       "observed": 0.1,
@@ -2061,7 +2061,7 @@
   "seed": 1,
   "series": [
     {
-      "arterialSpeed": 9.043338813243595,
+      "arterialSpeed": 9.043338813243597,
       "backlog": 4,
       "completed": 1969,
       "removed": 1,
@@ -2093,7 +2093,7 @@
       "vehicles": 2426
     },
     {
-      "arterialSpeed": 9.150159251994388,
+      "arterialSpeed": 9.150159251994387,
       "backlog": 2,
       "completed": 9570,
       "removed": 1,
@@ -2133,7 +2133,7 @@
       "vehicles": 2383
     },
     {
-      "arterialSpeed": 9.087628441690663,
+      "arterialSpeed": 9.087628441690665,
       "backlog": 3,
       "completed": 18952,
       "removed": 1,
@@ -2181,7 +2181,7 @@
     {
       "block": "Hillegass Avenue NB",
       "headline": false,
-      "modelled": 0.11805555555555557,
+      "modelled": 0.11805555555555555,
       "n": 144,
       "observed": 0.06,
       "observedPm": null,
@@ -2251,7 +2251,7 @@
     {
       "block": "Hillegass Avenue SB",
       "headline": false,
-      "modelled": 0.022900763358778622,
+      "modelled": 0.022900763358778626,
       "n": 131,
       "observed": 0.26,
       "observedPm": null,
@@ -2342,7 +2342,7 @@
       "dir": "S",
       "links": 10,
       "maxVehPerHour": 956.4,
-      "medianVehPerHour": 915.6,
+      "medianVehPerHour": 915.5999999999999,
       "street": "Telegraph"
     },
     {
@@ -2370,7 +2370,7 @@
       "dir": "S",
       "links": 7,
       "maxVehPerHour": 818.4,
-      "medianVehPerHour": 411.6,
+      "medianVehPerHour": 411.59999999999997,
       "street": "Claremont"
     },
     {
@@ -2404,7 +2404,7 @@
     {
       "dir": "N",
       "links": 7,
-      "maxVehPerHour": 115.2,
+      "maxVehPerHour": 115.19999999999999,
       "medianVehPerHour": 105.6,
       "street": "Colby"
     },
@@ -2425,8 +2425,8 @@
     {
       "dir": "W",
       "links": 2,
-      "maxVehPerHour": 103.2,
-      "medianVehPerHour": 103.2,
+      "maxVehPerHour": 103.19999999999999,
+      "medianVehPerHour": 103.19999999999999,
       "street": "Martin"
     }
   ],
@@ -2519,7 +2519,7 @@
     {
       "delayVehH": 4.720848083496094,
       "link": 755,
-      "stoppedVehH": 3.909948110580444,
+      "stoppedVehH": 3.9099481105804443,
       "street": "Market Street"
     }
   ],
@@ -2569,7 +2569,7 @@
     {
       "blockedLaneH": 3.051041603088379,
       "control": "signal",
-      "noSpaceLaneH": 0.02423611097037792,
+      "noSpaceLaneH": 0.024236110970377922,
       "node": 479,
       "streets": "Adeline Street / Martin Luther King Junior Way / Stanford Avenue"
     },
@@ -2597,7 +2597,7 @@
     {
       "blockedLaneH": 2.6348609924316406,
       "control": "signal",
-      "noSpaceLaneH": 0.04395833238959312,
+      "noSpaceLaneH": 0.043958332389593124,
       "node": 851,
       "streets": "Alcatraz Avenue / Telegraph Avenue"
     },
@@ -2625,7 +2625,7 @@
     {
       "blockedLaneH": 2.340902805328369,
       "control": "signal",
-      "noSpaceLaneH": 0.014999999664723871,
+      "noSpaceLaneH": 0.014999999664723873,
       "node": 944,
       "streets": "Ashby Avenue / Shattuck Avenue"
     }
@@ -2678,7 +2678,7 @@
     },
     {
       "meanDetour": 1.0918935991183267,
-      "meanDetourFreeFlow": 1.0219496585954575,
+      "meanDetourFreeFlow": 1.0219496585954577,
       "meanSwitches": 0.02613556953179595,
       "medianDetour": 1.066813588142395,
       "set": "gate to gate",
@@ -2688,7 +2688,7 @@
       "shareLoops": 0.0,
       "shareReversals": 0.0011180992313067784,
       "shareSwitched": 0.02585604472396925,
-      "studyMiles": 456.0911714210531,
+      "studyMiles": 456.09117142105316,
       "studyMilesShareDetourOver1.3": 0.09255435653990922,
       "trips": 7155
     },
@@ -2725,7 +2725,7 @@
       "trips": 9643
     },
     {
-      "meanDetour": 1.087045120143039,
+      "meanDetour": 1.0870451201430387,
       "meanDetourFreeFlow": 1.020826237325443,
       "meanSwitches": 0.00017685029622424618,
       "medianDetour": 1.0512865781784058,
@@ -2736,7 +2736,7 @@
       "shareLoops": 0.0,
       "shareReversals": 0.0024759041471394466,
       "shareSwitched": 0.00017685029622424618,
-      "studyMiles": 1151.5842399164435,
+      "studyMiles": 1151.5842399164437,
       "studyMilesShareDetourOver1.3": 0.07499820056343615,
       "trips": 11309
     }
