@@ -5,6 +5,7 @@ use super::naming::describe;
 use super::paired::{option_gain, CtPairs, Paired, Status, LEVEL, MIN_PAIRS, REPORT_METHOD};
 use super::refs::resolve;
 use super::seeds::{self, Dropped};
+use super::similar;
 use super::search::*;
 use super::*;
 use serde_json::{json, Value};
@@ -50,6 +51,10 @@ pub struct Final {
     pub origin: Origin,
     /// An earlier search published it. When two packages are within noise on through cars, the one published before is kept, so the list does not churn.
     pub prior: bool,
+    /// The places the package acts at, sorted (see `places_of`): equal places mean the packages differ only in the variant at a place.
+    pub places: Vec<String>,
+    /// Through-car change on each side-street block (harm-block order), mean over the periods and seeds: the package's per-block picture.
+    pub block_change: Vec<f64>,
 }
 
 /// How a package got into the run.
@@ -337,6 +342,8 @@ fn compare(ctx: &Ctx, set: &[u16], stats: &[PeriodStat], reject: Option<String>)
         access: None,
         origin: Origin::search(),
         prior: false,
+        places: places_of(ctx, set),
+        block_change: through_inc,
     }
 }
 
@@ -367,6 +374,8 @@ impl Default for Final {
             access: None,
             origin: Origin::search(),
             prior: false,
+            places: Vec::new(),
+            block_change: Vec::new(),
         }
     }
 }
@@ -405,6 +414,12 @@ pub fn beats(a: &Final, b: &Final) -> bool {
 /// stay; the rest are spread from fewest interventions to greatest reduction. Returns the picks (ordered by size, then reduction) and a
 /// note per finalist.
 pub fn select_options(finals: &[Final], max: usize) -> (Vec<Pick>, Vec<String>) {
+    let (picks, notes, _) = select_with_folds(finals, max);
+    (picks, notes)
+}
+
+/// `select_options` and the near-duplicates it folded into the options it kept (see `similar`).
+pub fn select_with_folds(finals: &[Final], max: usize) -> (Vec<Pick>, Vec<String>, Vec<similar::Fold>) {
     let mut notes: Vec<String> = vec![String::new(); finals.len()];
     let ok: Vec<usize> = (0..finals.len())
         .filter(|&i| {
@@ -484,6 +499,10 @@ pub fn select_options(finals: &[Final], max: usize) -> (Vec<Pick>, Vec<String>) 
         }
     }
     let keep: Vec<usize> = keep.into_iter().filter(|i| consistent.contains(i)).collect();
+    let (keep, folds) = similar::dedupe(finals, &keep);
+    for f in &folds {
+        notes[f.from] = format!("folded into finalist {}: {}", f.into + 1, f.why.phrase());
+    }
     let by_score = |a: &usize, b: &usize| finals[*b].score.partial_cmp(&finals[*a].score).unwrap_or(std::cmp::Ordering::Equal).then(a.cmp(b));
     let mut picks: Vec<(usize, String)> = Vec::new();
     let mut by_s = keep.clone();
@@ -510,11 +529,11 @@ pub fn select_options(finals: &[Final], max: usize) -> (Vec<Pick>, Vec<String>) 
     for &i in &rest {
         notes[i] = "not chosen: similar to a chosen option".into();
     }
-    picks.sort_by(|a, b| finals[a.0].set.len().cmp(&finals[b.0].set.len()).then(finals[a.0].reduction_pct.partial_cmp(&finals[b.0].reduction_pct).unwrap_or(std::cmp::Ordering::Equal)));
+    picks.sort_by(|a, b| similar::order_options(&finals[a.0], &finals[b.0]).then(a.0.cmp(&b.0)));
     for (n, (i, why)) in picks.iter().enumerate() {
         notes[*i] = format!("chosen as option {}: {why}", n + 1);
     }
-    (picks.into_iter().map(|(idx, why)| Pick { idx, why }).collect(), notes)
+    (picks.into_iter().map(|(idx, why)| Pick { idx, why }).collect(), notes, folds)
 }
 
 // ---------------------------------------------------------------- titles and summaries
@@ -682,6 +701,41 @@ pub struct Outcome {
     pub published: Vec<seeds::Entry>,
 }
 
+/// A package folded into a published option: shown on that option's card as a tweak, with its own figures from the runs that chose it.
+#[derive(Clone)]
+pub struct Variant {
+    pub f: Final,
+    pub link: String,
+    pub differs: Vec<String>,
+    pub why: similar::Why,
+}
+
+/// What the choice of options folded away: the variants of each published option (in `shown` order) and a machine-readable record of every fold.
+#[derive(Clone, Default)]
+pub struct SimilarOut {
+    pub variants: Vec<Vec<Variant>>,
+    pub folded: Vec<Value>,
+}
+
+pub fn similar_out(ctx: &Ctx, finals: &[Final], picks: &[Pick], folds: &[similar::Fold]) -> SimilarOut {
+    let link = |f: &Final| ctx.study.encode(&ctx.ivs(&f.set), Some(&ctx.p.periods[0]));
+    let variants = picks
+        .iter()
+        .map(|pk| {
+            folds
+                .iter()
+                .filter(|f| f.into == pk.idx)
+                .map(|f| Variant { f: finals[f.from].clone(), link: link(&finals[f.from]), differs: similar::differences(ctx, &finals[pk.idx].set, &finals[f.from].set), why: f.why.clone() })
+                .collect()
+        })
+        .collect();
+    let folded = folds
+        .iter()
+        .map(|f| json!({"from": link(&finals[f.from]), "into": link(&finals[f.into]), "why": f.why.key(), "reason": f.why.phrase(), "intoPublished": picks.iter().any(|pk| pk.idx == f.into)}))
+        .collect();
+    SimilarOut { variants, folded }
+}
+
 /// What the run did with the seeds file.
 #[derive(Clone, Debug, Default)]
 pub struct KnownSummary {
@@ -744,7 +798,7 @@ pub fn explore(study: &Study, p: &Params) -> Outcome {
             f.prior = !e.last_published.is_empty();
         }
     }
-    let (picks, notes) = select_options(&finals, p.options);
+    let (picks, mut notes, folds) = select_with_folds(&finals, p.options);
     // Reference packages join the candidate list after the search candidates, so the search's indices stay valid.
     let mut all = cands.clone();
     let mut ref_sets: Vec<Vec<u16>> = Vec::new();
@@ -795,14 +849,28 @@ pub fn explore(study: &Study, p: &Params) -> Outcome {
         }
         cf
     };
+    // The published order is by the figures that are published: with confirmation seeds, those are the confirmation runs.
+    let (picks, shown) = {
+        let mut perm: Vec<usize> = (0..picks.len()).collect();
+        perm.sort_by(|&a, &b| similar::order_options(&shown[a], &shown[b]).then(a.cmp(&b)));
+        let mut pk: Vec<Option<Pick>> = picks.into_iter().map(Some).collect();
+        let mut sh: Vec<Option<Final>> = shown.into_iter().map(Some).collect();
+        let picks: Vec<Pick> = perm.iter().map(|&i| pk[i].take().expect("pick")).collect();
+        let shown: Vec<Final> = perm.iter().map(|&i| sh[i].take().expect("shown")).collect();
+        (picks, shown)
+    };
+    for (n, pk) in picks.iter().enumerate() {
+        notes[pk.idx] = format!("chosen as option {}: {}", n + 1, pk.why);
+    }
+    let sim = similar_out(&ctx_all, &finals, &picks, &folds);
     let mut ref_finals = if ref_sets.is_empty() { Vec::new() } else { eprintln!("rechecking {} reference package(s)", ref_sets.len()); recheck(&ctx_all, &ref_sets) };
     for f in ref_finals.iter_mut() {
         f.access = check_access(study, &ctx_all.ivs(&f.set)).err();
         f.role = "reference";
     }
     eprintln!("chose {} option(s); total {:.0}s", picks.len(), t0.elapsed().as_secs_f64());
-    let json = build_json(study, p, &all, est_base, &shown, &ref_finals, &known, &Estimation { seeds: est_p.seeds.clone(), confirmed: !p.confirm_seeds.is_empty() });
-    let markdown = build_markdown(study, p, &ctx_all, &state, &finals, &picks, &notes, &t0, &ref_finals, &known, &shown);
+    let json = build_json(study, p, &all, est_base, &shown, &ref_finals, &known, &Estimation { seeds: est_p.seeds.clone(), confirmed: !p.confirm_seeds.is_empty() }, &sim);
+    let markdown = build_markdown(study, p, &ctx_all, &state, &finals, &picks, &notes, &t0, &ref_finals, &known, &shown, &sim);
     let today = util::today_utc();
     let published: Vec<seeds::Entry> = picks
         .iter()
@@ -878,6 +946,20 @@ pub struct Estimation {
     pub confirmed: bool,
 }
 
+fn variant_json(v: &Variant) -> Value {
+    let f = &v.f;
+    json!({
+        "link": v.link,
+        "differs": v.differs,
+        "why": v.why.key(),
+        "origin": f.origin.json(),
+        "cutThrough": {
+            "baselineVehPerHour": r1(f.base_vph), "scenarioVehPerHour": r1(f.scen_vph), "changePct": r1(-f.reduction_pct),
+            "role": f.role, "seeds": f.pairs.seeds,
+        },
+    })
+}
+
 fn effect_json(e: &Paired) -> Value {
     e.to_json("increase", "decrease")
 }
@@ -912,7 +994,7 @@ fn provenance_json(p: &Params, est: &Estimation, shortlist: &[String]) -> Value 
 }
 
 #[allow(clippy::too_many_arguments)]
-pub fn build_json(study: &Study, p: &Params, cands: &[Cand], base: &Baseline, shown: &[Final], ref_finals: &[Final], known: &KnownSummary, est: &Estimation) -> Value {
+pub fn build_json(study: &Study, p: &Params, cands: &[Cand], base: &Baseline, shown: &[Final], ref_finals: &[Final], known: &KnownSummary, est: &Estimation, sim: &SimilarOut) -> Value {
     let block_label = |b: usize| study.idx.blocks[study.harm_blocks[b]].label.clone();
     let opt_label = |b: Option<usize>| b.map(block_label).map(Value::from).unwrap_or(Value::Null);
     let entry = |id: String, title: String, f: &Final, kind: &str, note: Option<&str>| -> Value {
@@ -993,6 +1075,11 @@ pub fn build_json(study: &Study, p: &Params, cands: &[Cand], base: &Baseline, sh
         v
     };
     let mut proposals: Vec<Value> = shown.iter().enumerate().map(|(n, f)| entry(format!("p{}", n + 1), title(cands, &f.set), f, "search", None)).collect();
+    for (v, vs) in proposals.iter_mut().zip(&sim.variants) {
+        if !vs.is_empty() {
+            v["variants"] = json!(vs.iter().map(variant_json).collect::<Vec<_>>());
+        }
+    }
     for (r, f) in p.references.iter().zip(ref_finals) {
         proposals.push(entry(r.id.clone(), r.title.clone(), f, "reference", Some(&r.note)));
     }
@@ -1001,15 +1088,15 @@ pub fn build_json(study: &Study, p: &Params, cands: &[Cand], base: &Baseline, sh
         .windows(2)
         .enumerate()
         .map(|(k, w)| {
-            let (lo, hi) = (&w[0], &w[1]);
+            let (hi, lo) = (&w[0], &w[1]);
             let base_mean = hi.pairs.base_mean();
             match option_gain(&hi.pairs, &lo.pairs) {
                 Some(g) if base_mean > 0.0 => json!({
-                    "option": format!("p{}", k + 2), "against": format!("p{}", k + 1),
+                    "option": format!("p{}", k + 1), "against": format!("p{}", k + 2),
                     "extraCutVehPerHour": g.to_json("better", "worse"),
                     "extraCutPoints": g.scaled(100.0 / base_mean).to_json("better", "worse"),
                 }),
-                _ => json!({"option": format!("p{}", k + 2), "against": format!("p{}", k + 1), "extraCutVehPerHour": {"n": 0, "status": "insufficient"}}),
+                _ => json!({"option": format!("p{}", k + 1), "against": format!("p{}", k + 2), "extraCutVehPerHour": {"n": 0, "status": "insufficient"}}),
             }
         })
         .collect();
@@ -1034,6 +1121,11 @@ pub fn build_json(study: &Study, p: &Params, cands: &[Cand], base: &Baseline, sh
             "droppedPackages": known.dropped.iter().map(|d| json!({"link": d.link, "reason": d.reason})).collect::<Vec<_>>(),
         },
     });
+    computed["similarity"] = json!({
+        "rule": "Two rechecked packages are similar when they act at the same places, or differ by at most one change and cut through cars alike on the paired comparison, or change through cars on the side-street blocks almost identically. One of each similar group is published; the others are listed on it as variants. ASSUMPTION: the thresholds.",
+        "pictureDistanceMax": similar::PICTURE_DISTANCE_MAX,
+        "folded": sim.folded,
+    });
     for (k, v) in provenance_json(p, est, &shortlist).as_object().expect("object") {
         computed[k] = v.clone();
     }
@@ -1049,7 +1141,7 @@ pub fn build_json(study: &Study, p: &Params, cands: &[Cand], base: &Baseline, sh
 }
 
 #[allow(clippy::too_many_arguments)]
-fn build_markdown(study: &Study, p: &Params, ctx: &Ctx, state: &SearchState, finals: &[Final], picks: &[Pick], notes: &[String], t0: &std::time::Instant, ref_finals: &[Final], known: &KnownSummary, shown: &[Final]) -> String {
+fn build_markdown(study: &Study, p: &Params, ctx: &Ctx, state: &SearchState, finals: &[Final], picks: &[Pick], notes: &[String], t0: &std::time::Instant, ref_finals: &[Final], known: &KnownSummary, shown: &[Final], sim: &SimilarOut) -> String {
     let (cands, base) = (ctx.cands, ctx.base);
     let mut md = String::new();
     let confirmed = !p.confirm_seeds.is_empty();
@@ -1159,19 +1251,19 @@ fn build_markdown(study: &Study, p: &Params, ctx: &Ctx, state: &SearchState, fin
         let _ = writeln!(md, "{}. {} ({}; source: {}; estimates: {}). {}", n + 1, title(cands, &f.set), pick.why, f.origin.phrase(), f.role, summary(study, cands, f));
     }
     for (k, w) in shown.windows(2).enumerate() {
-        let c = match option_gain(&w[1].pairs, &w[0].pairs) {
-            Some(g) if w[1].pairs.base_mean() > 0.0 => {
-                let pts = g.scaled(100.0 / w[1].pairs.base_mean());
+        let c = match option_gain(&w[0].pairs, &w[1].pairs) {
+            Some(g) if w[0].pairs.base_mean() > 0.0 => {
+                let pts = g.scaled(100.0 / w[0].pairs.base_mean());
                 match (g.status(), pts.interval()) {
                     (Status::Positive, Some((lo, hi))) => format!("cuts through cars by {:.1} more points (interval {:.1} to {:.1} over {} seeds)", pts.mean, lo, hi, pts.n),
                     (Status::Negative, Some((lo, hi))) => format!("cuts through cars by {:.1} fewer points (interval {:.1} to {:.1} over {} seeds)", -pts.mean, -hi, -lo, pts.n),
-                    (Status::Unresolved, Some((lo, hi))) => format!("is not resolved from option {}: {:+.1} points (interval {:.1} to {:.1} over {} seeds)", k + 1, pts.mean, lo, hi, pts.n),
-                    _ => format!("has insufficient evidence against option {}: {} seed pair(s), at least {MIN_PAIRS} needed", k + 1, g.n),
+                    (Status::Unresolved, Some((lo, hi))) => format!("is not resolved from option {}: {:+.1} points (interval {:.1} to {:.1} over {} seeds)", k + 2, pts.mean, lo, hi, pts.n),
+                    _ => format!("has insufficient evidence against option {}: {} seed pair(s), at least {MIN_PAIRS} needed", k + 2, g.n),
                 }
             }
-            _ => format!("cannot be compared with option {}: the runs are not the same seed pairs", k + 1),
+            _ => format!("cannot be compared with option {}: the runs are not the same seed pairs", k + 2),
         };
-        let _ = writeln!(md, "- Option {} {c} than option {}, paired on the same seeds.", k + 2, k + 1);
+        let _ = writeln!(md, "- Option {} {c} than option {}, paired on the same seeds.", k + 1, k + 2);
     }
     if !picks.is_empty() {
         let _ = writeln!(md, "\n### All traffic on side-street blocks, by period (through and local trips together)\n");
@@ -1205,6 +1297,13 @@ fn build_markdown(study: &Study, p: &Params, ctx: &Ctx, state: &SearchState, fin
             if let Some(w) = &f.access {
                 let _ = writeln!(md, "  Fails the access check: {w}.");
             }
+        }
+    }
+    if !sim.folded.is_empty() {
+        let _ = writeln!(md, "\n## Similar packages\n");
+        let _ = writeln!(md, "Near-duplicates are published once; the others are listed on the kept option as variants. Picture distance limit (assumption): {:.2}.\n", similar::PICTURE_DISTANCE_MAX);
+        for f in &sim.folded {
+            let _ = writeln!(md, "- `{}` folded into `{}`: {}{}.", f["from"].as_str().unwrap_or(""), f["into"].as_str().unwrap_or(""), f["reason"].as_str().unwrap_or(""), if f["intoPublished"] == true { "" } else { " (the package it folded into was not published either)" });
         }
     }
     if picks.is_empty() {

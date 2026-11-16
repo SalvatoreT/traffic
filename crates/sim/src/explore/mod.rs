@@ -15,6 +15,7 @@ pub mod refs;
 pub mod report;
 pub mod search;
 pub mod seeds;
+pub mod similar;
 pub mod util;
 
 use crate::eff::Eff;

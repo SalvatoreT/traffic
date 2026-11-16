@@ -12,10 +12,10 @@ fn usage(msg: &str) -> ! {
     }
     eprintln!(
         "usage: explore --area ID [--periods pm_peak,am_peak] [--seeds 1-10] [--beam 3] [--depth 8] [--candidates 40]\n\
-         \x20              [--confirm-seeds 101-110]   (seeds accept lists or ranges: 1-10)\n\
+         \x20              [--confirm-seeds 101-110] [--no-confirm]   (defaults: --seeds 1-3 --confirm-seeds 101-110; seeds accept lists or ranges: 1-10)\n\
          \x20              [--screen-minutes 30] [--minutes 60] [--budget-evals N] [--jobs N] [--harm-weight 0.1] [--expand 16]\n\
          \x20              [--finalists 12] [--options 5] [--out public/data/ID.proposals.json] [--report data/proposals/ID.md]\n\
-         \x20              [--references data/proposals/ID.references.json] [--profile ID[,ID...]|all] [--profiles data/proposals/AREA.profiles.json] [--no-warm-start]\n\
+         \x20              [--references data/proposals/ID.references.json] [--profile ID[,ID...]|all] [--profiles FILE]   (optional limits; none are published) [--no-warm-start]\n\
          \x20              [--known data/proposals/ID.seeds.json] [--no-known]   known packages to recheck and start from (each run adds its published options)\n\
          \x20              [--check LINK ...] [--check-subsets] [--check-singles]   score given scenario links by the search's own code, then exit\n\
          \x20              [--add-seed LINK [--note TEXT] [--published-on DATE]] [--seed-proposals FILE] [--seed-labels FILE]   add to the seeds file, then exit\n\
@@ -42,6 +42,9 @@ fn seed_list(v: &str, what: &str) -> Vec<u64> {
 fn main() {
     let argv: Vec<String> = std::env::args().skip(1).collect();
     let mut p = Params::new("rockridge");
+    // The default run is the whole job: search on seeds 1-3, then confirm the shortlist on ten seeds that took no part in the search.
+    p.seeds = vec![1, 2, 3];
+    p.confirm_seeds = (101..=110).collect();
     let (mut out, mut report, mut references): (Option<PathBuf>, Option<PathBuf>, Option<PathBuf>) = (None, None, None);
     let (mut profile_id, mut profiles_path): (Option<String>, Option<PathBuf>) = (None, None);
     let mut no_warm = false;
@@ -64,6 +67,11 @@ fn main() {
         }
         if k == "--no-warm-start" {
             no_warm = true;
+            i += 1;
+            continue;
+        }
+        if k == "--no-confirm" {
+            p.confirm_seeds = Vec::new();
             i += 1;
             continue;
         }
@@ -242,10 +250,11 @@ fn main() {
             std::fs::write(&known_file, seeds::to_json(&seed_file)).expect("write seeds");
             eprintln!("seeds file {}: {} package(s)", known_file.display(), seed_file.seeds.len());
         }
-        let merged = profile::merge_file(existing.as_ref(), &p.area, o.json.clone(), &order, &unconstrained);
+        // Without --profile the run is the whole proposals list: it replaces the file instead of joining other groups.
+        let merged = profile::merge_file(if profile_id.is_some() { existing.as_ref() } else { None }, &p.area, o.json.clone(), &order, &unconstrained);
         std::fs::write(&out, util::pretty_json(&merged)).expect("write proposals");
         let section = profile::report_section(&o.markdown, &p.profile);
-        let old_report = std::fs::read_to_string(&report).ok();
+        let old_report = if profile_id.is_some() { std::fs::read_to_string(&report).ok() } else { None };
         std::fs::write(&report, profile::merge_report(old_report.as_deref(), &p.area, &section, &p.profile.id, &order, &unconstrained)).expect("write report");
         eprintln!("wrote group {} to {} and {}", p.profile.id, out.display(), report.display());
     }

@@ -556,8 +556,8 @@ fn options_are_spread_and_drop_changes_within_noise() {
     assert!(notes[1].contains("does not beat simpler"), "{}", notes[1]);
     assert!(notes[5].contains("dominated"), "{}", notes[5]);
     assert_eq!(chosen.len(), 4);
-    let sizes: Vec<usize> = picks.iter().map(|p| finals[p.idx].set.len()).collect();
-    assert!(sizes.windows(2).all(|w| w[0] <= w[1]));
+    let cuts: Vec<f64> = picks.iter().map(|p| finals[p.idx].reduction_pct).collect();
+    assert!(cuts.windows(2).all(|w| w[0] >= w[1]), "listed by through cars removed, largest first: {cuts:?}");
 }
 
 // ---------------------------------------------------------------- reference resolver
@@ -1307,8 +1307,8 @@ fn an_option_published_before_is_kept_over_a_new_one_it_is_not_beaten_by() {
     // The lightest option is always listed, even when no single intervention is.
     let finals = vec![mk(2, 40.0, 0.0, false), mk(5, 90.0, 10.0, false)];
     let (picks, _) = select_options(&finals, 4);
-    assert_eq!(picks[0].idx, 0);
-    assert!(picks[0].why.contains("lightest"), "{}", picks[0].why);
+    let light = picks.iter().find(|p| p.idx == 0).expect("the lightest option is listed");
+    assert!(light.why.contains("lightest"), "{}", light.why);
 }
 
 /// Task 2.6: stability is decided by the paired comparison on the same seeds, not by a band from the baseline's spread.
@@ -1542,4 +1542,133 @@ fn a_frozen_shortlist_on_unused_seeds_is_a_confirmation() {
     assert_eq!(pr["evidence"]["role"], "confirmation");
     assert_eq!(pr["cutThrough"]["effect"]["n"], 10);
     assert!(o.shown.iter().all(|f| f.pairs.seeds.iter().all(|s| *s > 100)));
+}
+
+
+// ---------------------------------------------------------------- similar options, variants and the order of the list
+
+mod similar_options {
+    use super::*;
+    use traffic_sim::explore::similar::{dedupe, differences, order_options, similar, Why};
+
+    fn with(set: &[u16], places: &[&str], red: f64, change: &[f64]) -> Final {
+        let mut f = fixture_final(set.len(), red, 0.0, false);
+        f.set = set.to_vec();
+        f.places = places.iter().map(|s| s.to_string()).collect();
+        f.block_change = change.to_vec();
+        f
+    }
+
+    #[test]
+    fn packages_at_the_same_places_are_similar_and_the_one_that_wins_the_paired_comparison_is_kept() {
+        let a = with(&[0, 1], &["b1", "n2"], 40.0, &[-10.0, 0.0, 5.0]);
+        let b = with(&[0, 2], &["b1", "n2"], 52.0, &[-30.0, 4.0, 0.0]);
+        assert_eq!(similar(&a, &b), Some(Why::Places));
+        let (kept, folds) = dedupe(&[a, b], &[0, 1]);
+        assert_eq!(kept, vec![1]);
+        assert_eq!((folds[0].from, folds[0].into), (0, 1));
+    }
+
+    #[test]
+    fn one_change_apart_and_not_different_on_through_cars_is_similar_and_fewer_changes_win() {
+        let small = with(&[0, 1], &["b1", "b2"], 40.0, &[-10.0, 0.0]);
+        let big = with(&[0, 1, 2], &["b1", "b2", "b3"], 40.4, &[0.0, -40.0]);
+        assert_eq!(similar(&small, &big), Some(Why::OneChange));
+        let (kept, folds) = dedupe(&[small.clone(), big.clone()], &[1, 0]);
+        assert_eq!(kept, vec![0]);
+        assert_eq!(folds[0].why, Why::OneChange);
+        // A package that cuts clearly more is a different option, not a variant.
+        let better = with(&[0, 1, 2], &["b1", "b2", "b3"], 60.0, &[0.0, -40.0]);
+        assert_eq!(similar(&small, &better), None);
+        // Two changes apart is not one change.
+        let far = with(&[0, 3, 4], &["b1", "b4", "b5"], 40.2, &[0.0, -40.0]);
+        assert_eq!(similar(&small, &far), None);
+    }
+
+    #[test]
+    fn nearly_identical_pictures_are_similar_and_different_ones_are_not() {
+        let a = with(&[0, 1], &["b1", "b2"], 40.0, &[-20.0, -10.0, 4.0, 0.0]);
+        let b = with(&[2, 3], &["b3", "b4"], 40.2, &[-20.0, -10.5, 4.0, 0.0]);
+        match similar(&a, &b) {
+            Some(Why::Picture(d)) => assert!(d < 0.1, "{d}"),
+            other => panic!("{other:?}"),
+        }
+        let c = with(&[2, 3], &["b3", "b4"], 40.2, &[0.0, -10.0, -20.0, 4.0]);
+        assert_eq!(similar(&a, &c), None);
+        let (none, other) = (with(&[5, 6], &["b5", "b6"], 40.0, &[]), with(&[7, 8], &["b7", "b8"], 40.0, &[]));
+        assert_eq!(similar(&none, &other), None);
+    }
+
+    #[test]
+    fn ties_keep_fewer_changes_then_the_smaller_rise_then_the_published_one_then_the_earlier() {
+        let mut a = with(&[0, 1], &["b1", "b2"], 40.0, &[-10.0, 0.0]);
+        let mut b = with(&[2, 3], &["b1", "b2"], 40.0, &[-10.0, 0.0]);
+        let (kept, _) = dedupe(&[a.clone(), b.clone()], &[0, 1]);
+        assert_eq!(kept, vec![0], "the earlier finalist");
+        b.prior = true;
+        let (kept, _) = dedupe(&[a.clone(), b.clone()], &[0, 1]);
+        assert_eq!(kept, vec![1], "the one an earlier search published");
+        let mut pr = traffic_sim::explore::report::PeriodRes {
+            base_through: 0.0, scen_through: 0.0, cut_pct: 0.0, effect: Paired::none(), worst: 0, block_base: 100.0, block_scen: 130.0, block_through_inc: 0.0,
+            block_effect: Paired::none(), penalty_block: None, penalty: 0.0, blocks_above: 0,
+        };
+        a.by_period = vec![pr.clone()];
+        pr.block_scen = 110.0;
+        b.by_period = vec![pr];
+        let (kept, _) = dedupe(&[a.clone(), b.clone()], &[0, 1]);
+        assert_eq!(kept, vec![1], "the smaller largest all-car rise comes before publication history");
+        let single = with(&[7], &["b1", "b2"], 40.0, &[-10.0, 0.0]);
+        let (kept, _) = dedupe(&[a, single], &[0, 1]);
+        assert_eq!(kept, vec![1], "fewer changes come first");
+    }
+
+    #[test]
+    fn the_list_is_ordered_by_through_cars_removed_then_fewer_changes_then_the_smaller_rise() {
+        let mut v = vec![with(&[0, 1, 2], &[], 30.0, &[]), with(&[0], &[], 20.0, &[]), with(&[0, 1], &[], 30.0, &[]), with(&[0, 1], &[], 50.0, &[])];
+        v.sort_by(order_options);
+        let got: Vec<(usize, f64)> = v.iter().map(|f| (f.set.len(), f.reduction_pct)).collect();
+        assert_eq!(got, vec![(2, 50.0), (2, 30.0), (3, 30.0), (1, 20.0)]);
+        use traffic_sim::explore::report::select_options;
+        let finals = vec![fixture_final(1, 20.0, 0.0, false), fixture_final(4, 70.0, 30.0, false), fixture_final(2, 45.0, 10.0, false)];
+        let (picks, notes) = select_options(&finals, 5);
+        assert_eq!(picks.iter().map(|p| p.idx).collect::<Vec<_>>(), vec![1, 2, 0]);
+        assert!(notes[1].starts_with("chosen as option 1"), "{}", notes[1]);
+    }
+
+    #[test]
+    fn folded_packages_become_variant_lines_on_the_kept_option() {
+        use traffic_sim::explore::report::{select_with_folds, similar_out};
+        let n = ratrun(false, false);
+        let study = study_of(n.study_net);
+        let p = params(1);
+        let base = traffic_sim::explore::search::run_baseline(&study, &p);
+        let cands = traffic_sim::explore::search::make_cands(&study, &base, &p);
+        let ctx = traffic_sim::explore::search::Ctx { study: &study, p: &p, cands: &cands, base: &base };
+        assert!(cands.len() >= 3);
+        // Two packages with the same candidate set minus one: a dropped change, and an added one.
+        let (a, b) = (vec![0u16, 1], vec![0u16]);
+        assert_eq!(differences(&ctx, &a, &b), vec![format!("Drop: {}", cands[1].label)]);
+        assert_eq!(differences(&ctx, &b, &a), vec![format!("Add: {}", cands[1].label)]);
+        // A candidate at the same place as another is a swap.
+        let twin = (0..cands.len() as u16).find(|&c| c != 0 && traffic_sim::explore::search::places_of(&ctx, &[c]) == traffic_sim::explore::search::places_of(&ctx, &[0]));
+        if let Some(t) = twin {
+            assert_eq!(differences(&ctx, &[0], &[t]), vec![format!("Use {} instead of {}", cands[t as usize].label, cands[0].label)]);
+        }
+        // Through the selection: the folded package comes out as a variant of the kept one with its link and figures.
+        let mut kept = fixture_final(1, 40.5, 10.0, false);
+        kept.set = vec![0, 1];
+        kept.places = vec!["x".into()];
+        let mut dup = fixture_final(1, 40.0, 0.0, false);
+        dup.set = vec![0, 2];
+        dup.places = vec!["x".into()];
+        let finals = vec![kept, dup];
+        let (picks, _, folds) = select_with_folds(&finals, 4);
+        assert_eq!(picks.len(), 1);
+        let out = similar_out(&ctx, &finals, &picks, &folds);
+        assert_eq!(out.variants[0].len(), 1);
+        let v = &out.variants[0][0];
+        assert_eq!(v.differs, vec![format!("Use {} instead of {}", cands[2].label, cands[1].label)]);
+        assert!(v.link.starts_with("#v1;"), "{}", v.link);
+        assert_eq!(out.folded[0]["intoPublished"], true);
+    }
 }

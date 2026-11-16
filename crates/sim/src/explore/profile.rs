@@ -29,8 +29,8 @@ impl Profile {
     pub fn unconstrained() -> Profile {
         Profile {
             id: UNCONSTRAINED.into(),
-            title: "Without limits".into(),
-            note: "Every tool except new traffic lights, anywhere in the area. Shown for comparison.".into(),
+            title: "Proposals".into(),
+            note: String::new(),
             exclude_types: Vec::new(),
             exclude_boundary: false,
         }
