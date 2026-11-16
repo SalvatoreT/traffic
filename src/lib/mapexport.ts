@@ -59,11 +59,11 @@ export function wrapText(measure: (s: string) => number, text: string, maxWidth:
 
 /** The one set of badge letters: the map, the scenario list, the exported image and the proposal picture all use it. A speed limit shows its number in mph instead where there is room. */
 export const BADGE_TEXT: Record<Intervention['type'], string> = {
-  modal_filter: 'MF', speed_hump: 'SH', speed_limit: 'SL', traffic_circle: 'TC', control: 'IC',
+  modal_filter: 'MF', speed_hump: 'SH', speed_limit: 'SL', slow_street: 'SS', traffic_circle: 'TC', control: 'IC',
   signal_timing: 'ST', one_way: '1W', turn_ban: 'TB', diagonal_diverter: 'DD',
 };
 export const BADGE_NAME: Record<Intervention['type'], string> = {
-  modal_filter: 'modal filter', speed_hump: 'speed hump', speed_limit: 'speed limit (the number is the new limit in mph)', traffic_circle: 'traffic circle', control: 'intersection control',
+  modal_filter: 'modal filter', speed_hump: 'speed hump', speed_limit: 'speed limit (the number is the new limit in mph)', slow_street: 'Slow Street (15 mph on the whole street)', traffic_circle: 'traffic circle', control: 'intersection control',
   signal_timing: 'signal timing', one_way: 'one-way street', turn_ban: 'turn ban', diagonal_diverter: 'diagonal diverter',
 };
 // Same fills, outlines and corner shapes as the .iv-badge rules in styles.css.
@@ -72,6 +72,7 @@ export type BadgedType = Exclude<Intervention['type'], 'modal_filter' | 'diagona
 export const BADGE_STYLE: Record<BadgedType, { fill: string; edge: string; ink: string; radius: [number, number, number, number] | 'round' }> = {
   speed_hump: { fill: '#fff', edge: '#c92a2a', ink: '#c92a2a', radius: 'round' },
   speed_limit: { fill: '#fff', edge: '#c92a2a', ink: '#c92a2a', radius: 'round' },
+  slow_street: { fill: '#fff', edge: '#c92a2a', ink: '#c92a2a', radius: 'round' },
   traffic_circle: { fill: '#d0ebff', edge: '#111', ink: '#111', radius: 'round' },
   control: { fill: '#d3f9d8', edge: '#111', ink: '#111', radius: [3, 12, 3, 12] },
   signal_timing: { fill: '#d3f9d8', edge: '#111', ink: '#111', radius: [3, 12, 3, 12] },
@@ -114,7 +115,7 @@ export function drawBadges(g: CanvasRenderingContext2D, marks: BadgeMark[]) {
       continue;
     }
     const st = BADGE_STYLE[m.type];
-    const label = m.type === 'speed_limit' && m.mph !== undefined ? String(m.mph) : BADGE_TEXT[m.type];
+    const label = (m.type === 'speed_limit' || m.type === 'slow_street') && m.mph !== undefined ? String(m.mph) : BADGE_TEXT[m.type];
     g.font = '700 11px system-ui, sans-serif';
     const w = Math.max(26, g.measureText(label).width + 12), h = 26;
     g.save(); g.shadowColor = 'rgba(0,0,0,.35)'; g.shadowBlur = 4; g.shadowOffsetY = 1;

@@ -68,6 +68,7 @@ export function blockPlace(net: Network, idx: NetIndex, block: number): BlockPla
   const options = compact([
     a.modalFilter ? option(net, idx, { type: 'modal_filter', link: first }) : null,
     a.hump ? option(net, idx, { type: 'speed_hump', link: first, position: Math.round(l.length / 2 * 10) / 10 }) : null,
+    a.slowStreet ? option(net, idx, { type: 'slow_street', link: a.slowStreet.link }) : null,
     ...a.speedLimit.choices.map((mph) => option(net, idx, { type: 'speed_limit', link: first, speed: mphToMps(mph) })),
     ...a.oneWay.map((o) => option(net, idx, { type: 'one_way', link: o.link })),
   ]);

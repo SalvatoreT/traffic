@@ -36,6 +36,8 @@ const ivSets: { name: string; ivs: Intervention[]; period?: string; demandScale?
     ivs: [{ type: 'modal_filter', node: nodeAt(3, 3).id, legs: net.links.filter((l) => (l.from === nodeAt(3, 3).id || l.to === nodeAt(3, 3).id) && Math.abs(net.nodes[l.from === nodeAt(3, 3).id ? l.to : l.from].y - nodeAt(3, 3).y) < 1e-6).map((l) => l.id).sort((a, b) => a - b) }],
   },
   { name: 'speed limits', ivs: [{ type: 'speed_limit', link: L([1, 3], [1, 4]).id, speed: 6.71 }, { type: 'speed_limit', link: L([2, 4], [3, 4]).id, speed: 8.94 }] },
+  { name: 'slow street', ivs: [{ type: 'slow_street', link: L([2, 2], [3, 2]).id }] },
+  { name: 'slow street with a filter on its street and an unnamed block', ivs: [{ type: 'slow_street', link: L([3, 1], [4, 1]).id }, { type: 'modal_filter', link: L([2, 1], [3, 1]).id }, { type: 'slow_street', link: L([2, 3], [3, 3]).id }] },
   { name: 'speed hump', ivs: [{ type: 'speed_hump', link: L([2, 2], [3, 2]).id, position: 61.3 }] },
   { name: 'traffic circle and controls', ivs: [{ type: 'traffic_circle', node: nodeAt(2, 2).id }, { type: 'control', node: nodeAt(3, 2).id, control: 'all_way_stop' }, { type: 'control', node: nodeAt(2, 3).id, control: 'uncontrolled' }] },
   { name: 'signal timing', ivs: [{ type: 'signal_timing', node: nodeAt(1, 1).id, cycle: 60 }, { type: 'signal_timing', node: nodeAt(4, 4).id, cycle: 120 }] },

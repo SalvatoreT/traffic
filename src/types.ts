@@ -69,6 +69,8 @@ export type Intervention =
   /** `legs`: ids of the links on each closed leg (both directions). Absent: the whole junction. */
   | { type: 'modal_filter'; node: number; legs?: number[] }
   | { type: 'speed_limit'; link: number; speed: number }
+  /** Every block of one named street inside the study area at 15 mph; `link` is any block of it (canonically its lowest-id block). */
+  | { type: 'slow_street'; link: number }
   | { type: 'speed_hump'; link: number; position: number }
   | { type: 'traffic_circle'; node: number }
   | { type: 'control'; node: number; control: ControlType }

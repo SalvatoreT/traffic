@@ -16,6 +16,7 @@ pub mod report;
 pub mod search;
 pub mod seeds;
 pub mod similar;
+pub mod street;
 pub mod util;
 
 use crate::eff::Eff;
@@ -265,7 +266,7 @@ pub fn stranded_nodes(study: &Study, eff: &Eff) -> Vec<u32> {
 /// Check a package before simulating it: every intervention must be valid and no in-study node may be stranded that the baseline
 /// did not already strand (design D2). `Err` holds the reason.
 pub fn check_access(study: &Study, ivs: &[Intervention]) -> Result<(), String> {
-    let eff = Eff::derive(&study.topo, &study.net, ivs);
+    let eff = Eff::derive(&study.topo, &study.net, &street::expand(&study.net, ivs));
     if eff.invalid_ivs > 0 {
         return Err("invalid intervention".into());
     }
@@ -314,7 +315,7 @@ impl RunOut {
 /// network (`INITIAL_SETTLE_S`), the clock reads 0, and every figure (cut-through, per-link flow and through cars, speeds) covers the
 /// `minutes` from t = 0. A screening run is the same run, only shorter, so its rates are over the same kind of window.
 pub fn run(study: &Study, ivs: &[Intervention], period: &str, seed: u64, minutes: f64, select_links: &[u32]) -> RunOut {
-    let cfg = Config { seed, period: period.into(), select_links: select_links.to_vec(), interventions: ivs.to_vec(), initial_load: true, ..Default::default() };
+    let cfg = Config { seed, period: period.into(), select_links: select_links.to_vec(), interventions: street::expand(&study.net, ivs), initial_load: true, ..Default::default() };
     let mut sim = Simulation::from_parts(study.net.clone(), study.demand.clone(), cfg).expect("simulation");
     let nl = study.net.links.len();
     let total = minutes * 60.0;

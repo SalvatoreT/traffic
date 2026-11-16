@@ -182,6 +182,7 @@ pub fn encode_scenario(net: &Network, origin: (f64, f64), ivs: &[Intervention], 
                 }
             }
             "speed_limit" => iv.link.and_then(|l| pt(block_point(net, l))).map(|p| format!("sl,{p},{}", num(iv.speed.unwrap_or(0.0), 2))),
+            "slow_street" => iv.link.and_then(|l| super::street::street_run(net, l)).and_then(|r| pt(block_point(net, r.canonical))).map(|p| format!("ss,{p}")),
             "speed_hump" => iv.link.and_then(|l| net.links.get(l as usize)).and_then(|l| {
                 let q = point_along(&l.geometry, iv.position.unwrap_or(0.0));
                 pt(Some((q.0, q.1))).map(|p| format!("sh,{p}"))

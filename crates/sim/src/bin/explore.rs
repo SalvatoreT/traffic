@@ -17,7 +17,7 @@ fn usage(msg: &str) -> ! {
          \x20              [--finalists 12] [--options 5] [--out public/data/ID.proposals.json] [--report data/proposals/ID.md]\n\
          \x20              [--references data/proposals/ID.references.json] [--profile ID[,ID...]|all] [--profiles FILE]   (optional limits; none are published) [--no-warm-start]\n\
          \x20              [--known data/proposals/ID.seeds.json] [--no-known]   known packages to recheck and start from (each run adds its published options)\n\
-         \x20              [--check LINK ...] [--check-subsets] [--check-singles]   score given scenario links by the search's own code, then exit\n\
+         \x20              [--check LINK ...] [--check-subsets] [--check-singles]   score given scenario links, or with --check-singles every candidate alone, by the search's own code, then print and exit (nothing is written)\n\
          \x20              [--add-seed LINK [--note TEXT] [--published-on DATE]] [--seed-proposals FILE] [--seed-labels FILE]   add to the seeds file, then exit\n\
          \x20              [--annotate]   add per-link pictures to the existing --out file (re-simulates the published packages; no search)"
     );
@@ -59,6 +59,7 @@ fn main() {
     let mut check: Vec<String> = Vec::new();
     let mut check_subsets = false;
     let mut check_singles = false;
+    let mut out_given = false;
     let mut i = 0;
     while i < argv.len() {
         let k = argv[i].as_str();
@@ -121,7 +122,10 @@ fn main() {
             "--seed-labels" => seed_labels = Some(PathBuf::from(v)),
             "--known" => known_path = Some(PathBuf::from(v)),
             "--check" => check.push(v.clone()),
-            "--out" => out = Some(PathBuf::from(v)),
+            "--out" => {
+                out = Some(PathBuf::from(v));
+                out_given = true;
+            }
             "--report" => report = Some(PathBuf::from(v)),
             "--references" => references = Some(PathBuf::from(v)),
             "--profile" => profile_id = Some(v.clone()),
@@ -184,7 +188,10 @@ fn main() {
         eprintln!("seeds file {}: {} package(s)", known_file.display(), f.seeds.len());
         return;
     }
-    if !check.is_empty() {
+    if !check.is_empty() || check_singles || check_subsets {
+        if out_given || report.is_some() {
+            usage("--check, --check-subsets and --check-singles only print; they write no proposals or report file, so --out and --report do not apply");
+        }
         let profiles_file = profiles_path.clone().unwrap_or_else(|| root.join(format!("data/proposals/{}.profiles.json", p.area)));
         let profiles = if profiles_file.exists() { profile::load(&profiles_file).unwrap_or_else(|e| usage(&e)) } else { Vec::new() };
         p.profile = profile::choose(&profiles, profile_id.as_deref().filter(|i| *i != profile::UNCONSTRAINED)).unwrap_or_else(|e| usage(&e));

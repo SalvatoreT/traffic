@@ -421,6 +421,9 @@ fn rank_order(p: &Params, st: &SearchState, v: &mut Vec<usize>) {
 /// Where a candidate acts: its block, else its intersection(s). Candidates that act at one place are variants of one another (a filter on the
 /// whole junction, one on a single street, a diverter, an all-way stop).
 fn place_key(c: &Cand) -> String {
+    if matches!(c.kind, "slow_street" | "speed_limit") {
+        return format!("s:{}", c.places.first().cloned().unwrap_or_default());
+    }
     match c.block {
         Some(b) => format!("b{b}"),
         None => format!("n{}", c.nodes.iter().map(|n| n.to_string()).collect::<Vec<_>>().join(".")),

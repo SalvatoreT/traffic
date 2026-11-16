@@ -158,6 +158,7 @@ pub fn resolve_one(study: &Study, v: &Value) -> Result<Intervention, String> {
             iv.link = Some(study.idx.blocks[block()?].links[0]);
             iv.speed = Some(mph_to_mps(v["mph"].as_f64().ok_or("speed_limit needs \"mph\"")?));
         }
+        "slow_street" => iv.link = Some(study.idx.blocks[block()?].links[0]),
         "speed_hump" => {
             let l = study.idx.blocks[block()?].links[0];
             iv.link = Some(l);

@@ -436,7 +436,7 @@ export function examplesMd(i: LlmsInput): string {
   };
   if (studyBlockIdx >= 0) {
     const b = blockPlace(net, idx, studyBlockIdx);
-    for (const t of ['modal_filter', 'speed_hump', 'speed_limit', 'one_way']) add(t, t, b.options);
+    for (const t of ['modal_filter', 'speed_hump', 'slow_street', 'speed_limit', 'one_way']) add(t, t, b.options);
   }
   if (studyNode !== undefined) {
     const n = nodePlace(net, idx, studyNode);

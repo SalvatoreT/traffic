@@ -136,9 +136,12 @@ export function SelectionMenu(p: Props) {
           <li><button type="button" className="sel-act" onClick={() => apply({ add: [{ type: 'speed_hump', link: first, position: humpPosition(net, X, s.block, s.point) }] })}>
             {a.hump === 'move' ? 'Move speed hump here' : 'Add speed hump'}</button></li>
         )}
-        {a.speedLimit.choices.length > 0 && (
-          <li><ChoiceGroup label="Set speed limit" hint={`now ${a.speedLimit.currentMph} mph`}
-            choices={a.speedLimit.choices.map((mph) => ({ key: String(mph), label: `${mph} mph`, pick: () => apply({ add: [{ type: 'speed_limit', link: first, speed: mphToMps(mph) }] }) }))} /></li>
+        {(a.slowStreet || a.speedLimit.choices.length > 0) && (
+          <li><ChoiceGroup label="Set speed limit" hint={`now ${a.speedLimit.currentMph} mph`} defaultOpen={!!a.slowStreet}
+            choices={[
+              ...(a.slowStreet ? [{ key: 'slow-street', label: 'Apply to the whole street (Slow Street, 15 mph)', detail: a.slowStreet.label, pick: () => apply({ add: [{ type: 'slow_street' as const, link: a.slowStreet!.link }] }) }] : []),
+              ...a.speedLimit.choices.map((mph) => ({ key: String(mph), label: `This block only: ${mph} mph`, pick: () => apply({ add: [{ type: 'speed_limit' as const, link: first, speed: mphToMps(mph) }] }) })),
+            ]} /></li>
         )}
         {a.oneWay.length > 0 && (
           <li><ChoiceGroup label="Make one-way"

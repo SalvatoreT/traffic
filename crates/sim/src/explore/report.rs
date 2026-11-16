@@ -582,6 +582,7 @@ fn noun(kind: &str) -> (&'static str, &'static str) {
         "speed_hump" => ("speed hump", "speed humps"),
         "traffic_circle" => ("traffic circle", "traffic circles"),
         "speed_limit" => ("lower speed limit", "lower speed limits"),
+        "slow_street" => ("Slow Street", "Slow Streets"),
         "control" => ("all-way stop", "all-way stops"),
         _ => ("signal timing change", "signal timing changes"),
     }
@@ -815,6 +816,7 @@ pub fn explore(study: &Study, p: &Params) -> Outcome {
                 "speed_hump" => "speed_hump",
                 "traffic_circle" => "traffic_circle",
                 "speed_limit" => "speed_limit",
+                "slow_street" => "slow_street",
                 "control" => "control",
                 _ => "signal_timing",
             };

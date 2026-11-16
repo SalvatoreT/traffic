@@ -120,6 +120,12 @@ pub fn decode_scenario(net: &Network, topo: &Topo, origin: (f64, f64), link: &st
                 iv.link = Some(match_link(net, x, y, None).ok_or_else(miss)?.0);
                 iv.speed = Some(num(2).ok_or_else(miss)?);
             }
+            "ss" => {
+                let l = match_link(net, x, y, None).ok_or_else(miss)?.0;
+                let run = super::street::street_run(net, l).ok_or_else(miss)?;
+                iv.ty = super::street::TYPE.into();
+                iv.link = Some(run.canonical);
+            }
             "sh" => {
                 iv.ty = "speed_hump".into();
                 let (l, along) = match_link(net, x, y, None).ok_or_else(miss)?;

@@ -132,7 +132,7 @@ main { flex: 1; min-height: 0; display: flex; }
 
 .iv-badge { min-width: 26px; height: 26px; padding: 0 4px; display: inline-flex; align-items: center; justify-content: center; font: 700 11px/1 system-ui, sans-serif; background: #fff; color: #111; border: 2px solid #111; border-radius: 6px; box-shadow: 0 1px 4px rgba(0, 0, 0, .35); }
 .iv-badge.iv-modal_filter { background: #ffd43b; border-radius: 4px; }
-.iv-badge.iv-speed_hump, .iv-badge.iv-speed_limit { background: #fff; border-radius: 50%; border-color: #c92a2a; color: #c92a2a; }
+.iv-badge.iv-speed_hump, .iv-badge.iv-speed_limit, .iv-badge.iv-slow_street { background: #fff; border-radius: 50%; border-color: #c92a2a; color: #c92a2a; }
 .iv-badge.iv-traffic_circle { border-radius: 50%; background: #d0ebff; }
 .iv-badge.iv-control, .iv-badge.iv-signal_timing { background: #d3f9d8; border-radius: 3px 12px 3px 12px; }
 .iv-badge.iv-one_way { background: #e5dbff; clip-path: none; border-radius: 12px 4px 4px 12px; }

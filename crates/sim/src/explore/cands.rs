@@ -56,7 +56,7 @@ pub fn hotspots(study: &Study, records: &[SelectLinkRecord], hours: f64) -> Hots
 #[derive(Clone)]
 pub struct Cand {
     pub iv: Intervention,
-    /// Short code: modal_filter, node_filter, diagonal_diverter, one_way, turn_ban, speed_hump, traffic_circle, speed_limit, control, signal_timing.
+    /// Short code: modal_filter, node_filter, diagonal_diverter, one_way, turn_ban, speed_hump, traffic_circle, speed_limit, slow_street, control, signal_timing.
     pub kind: &'static str,
     pub label: String,
     /// Canonical key: two candidates with the same key are the same intervention.
@@ -76,9 +76,9 @@ enum Loc {
     Node(u32),
 }
 
-/// Speed limits offered, in mph (as in the app).
-pub const SPEED_LIMITS_MPH: [f64; 2] = [15.0, 20.0];
 pub const CYCLES_S: [f64; 2] = [60.0, 120.0];
+/// ASSUMPTION: a street carries meaningful through traffic when its busiest block carries at least this share of the busiest block's.
+pub const SLOW_STREET_MIN_SHARE: f64 = 0.25;
 
 /// The app's mph to m/s at two decimals, the precision a scenario link carries.
 pub fn mph_to_mps(mph: f64) -> f64 {
@@ -180,13 +180,6 @@ pub fn generate_with(study: &Study, hot: &Hotspots, n_loc: usize, profile: &Prof
                         add(&mut out, v, "speed_hump", format!("sh:b{b}"), Some(b), nodes.clone(), places.clone(), *score);
                     }
                 }
-                for mph in SPEED_LIMITS_MPH {
-                    let mps = mph_to_mps(mph);
-                    if blk.links.iter().all(|&l| net.links[l as usize].speed_limit > mps + 0.1) {
-                        let v = Intervention { ty: "speed_limit".into(), link: Some(a), speed: Some(mps), ..Default::default() };
-                        add(&mut out, v, "speed_limit", format!("sl{mph}:b{b}"), Some(b), nodes.clone(), places.clone(), *score);
-                    }
-                }
             }
             Loc::Node(n) => {
                 let nu = n as usize;
@@ -252,6 +245,18 @@ pub fn generate_with(study: &Study, hot: &Hotspots, n_loc: usize, profile: &Prof
             }
         }
     }
+    // Slow Streets: one per street whose busiest block carries meaningful through traffic in the baseline, ranked by that block. A speed
+    // limit does not need a location among the few that get filters and diverters, so every street is looked at, not only the retained ones.
+    let busiest = study.harm_blocks.iter().map(|&b| hot.block_ct[b]).fold(0.0, f64::max);
+    let mut by_ct: Vec<(usize, f64)> = study.harm_blocks.iter().map(|&b| (b, hot.block_ct[b])).filter(|&(_, ct)| ct > 0.0 && ct >= SLOW_STREET_MIN_SHARE * busiest).collect();
+    by_ct.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal).then(a.0.cmp(&b.0)));
+    for (b, ct) in by_ct {
+        let a = idx.blocks[b].links[0];
+        if let Some(run) = super::street::street_run(net, a).filter(|r| slow_street_ok(study, r)) {
+            let v = Intervention { ty: super::street::TYPE.into(), link: Some(run.canonical), ..Default::default() };
+            add(&mut out, v, "slow_street", format!("ss:l{}", run.canonical), None, Vec::new(), vec![run.name.clone()], ct);
+        }
+    }
     // Turn bans: the heaviest cut-through movements from an arterial onto a local street.
     let osm: HashSet<(u32, u32)> = net.turn_bans.iter().map(|b| (b.from, b.to)).collect();
     let mut mvs: Vec<((u32, u32), f64)> = hot
@@ -275,6 +280,14 @@ pub fn generate_with(study: &Study, hot: &Hotspots, n_loc: usize, profile: &Prof
     }
     out.retain(|c| !profile.exclude_types.iter().any(|t| *t == c.iv.ty));
     out
+}
+
+/// A street the search may make a Slow Street: every block of its run is a residential or service street inside the study area, and at least
+/// one block is faster than the Slow Street limit (otherwise the item changes nothing).
+fn slow_street_ok(study: &Study, run: &super::street::Run) -> bool {
+    let mps = super::street::slow_street_mps();
+    run.blocks.iter().all(|b| b.iter().all(|&l| study.is_local[l as usize]))
+        && run.blocks.iter().any(|b| b.iter().all(|&l| study.net.links[l as usize].speed_limit > mps + 0.1))
 }
 
 /// The per-street filters a node offers: for each street, the links of all its legs, when closing them leaves at least two other legs connected
@@ -312,8 +325,12 @@ pub fn conflicts(a: &Cand, b: &Cand) -> bool {
             return true;
         }
     }
+    let slow = |c: &Cand| matches!(c.kind, "slow_street" | "speed_limit");
+    if slow(a) && slow(b) && (a.kind == "slow_street" || b.kind == "slow_street") && a.places.first() == b.places.first() {
+        return true;
+    }
     let node_kind = |c: &Cand| matches!(c.kind, "node_filter" | "diagonal_diverter" | "traffic_circle" | "control" | "signal_timing");
-    let on_node = |c: &Cand| c.block.is_none() && c.kind != "turn_ban";
+    let on_node = |c: &Cand| c.block.is_none() && c.kind != "turn_ban" && c.kind != "slow_street";
     if on_node(a) && on_node(b) && a.nodes == b.nodes {
         return true;
     }
@@ -334,6 +351,9 @@ pub fn profile_allows(study: &Study, profile: &Profile, iv: &Intervention) -> bo
     }
     let (net, idx) = (&study.net, &study.idx);
     let link_ok = |l: u32| (l as usize) < net.links.len() && !study.is_boundary[l as usize] && !study.boundary_node[net.links[l as usize].from as usize] && !study.boundary_node[net.links[l as usize].to as usize];
+    if iv.ty == super::street::TYPE {
+        return iv.link.and_then(|l| super::street::street_run(net, l)).map_or(false, |r| r.blocks.iter().flatten().all(|&l| !study.is_boundary[l as usize]));
+    }
     match (iv.link, iv.node, iv.from_link) {
         (Some(l), _, _) => idx.blocks.get(idx.block_of_link.get(l as usize).copied().unwrap_or(usize::MAX)).map_or(false, |b| b.links.iter().all(|&k| link_ok(k))),
         (_, Some(n), _) => (n as usize) < net.nodes.len() && !study.boundary_node[n as usize],
@@ -361,6 +381,10 @@ pub fn same_intervention(study: &Study, a: &Intervention, b: &Intervention) -> b
         "modal_filter" if a.link.is_some() || b.link.is_some() => block(a.link).is_some() && block(a.link) == block(b.link),
         "modal_filter" => a.node == b.node && legs(a) == legs(b),
         "speed_hump" => block(a.link).is_some() && block(a.link) == block(b.link),
+        "slow_street" => match (a.link, b.link) {
+            (Some(x), Some(y)) => x == y || super::street::street_run(&study.net, x).map_or(false, |r| r.blocks.iter().flatten().any(|&l| l == y)),
+            _ => false,
+        },
         "speed_limit" => block(a.link).is_some() && block(a.link) == block(b.link) && (a.speed.unwrap_or(0.0) - b.speed.unwrap_or(0.0)).abs() < 0.02,
         "one_way" => a.link == b.link,
         "turn_ban" => a.from_link == b.from_link && a.to_link == b.to_link,
@@ -389,6 +413,7 @@ pub fn adopt(study: &Study, cands: &mut Vec<Cand>, iv: &Intervention) -> u16 {
         "modal_filter" => ("modal_filter", blk, blk.map(|b| vec![idx.blocks[b].a, idx.blocks[b].b]).unwrap_or_default(), blk.map(|b| vec![idx.blocks[b].name.clone()]).unwrap_or_default()),
         "one_way" => ("one_way", blk, blk.map(|b| vec![idx.blocks[b].a, idx.blocks[b].b]).unwrap_or_default(), blk.map(|b| vec![idx.blocks[b].name.clone()]).unwrap_or_default()),
         "speed_hump" => ("speed_hump", blk, blk.map(|b| vec![idx.blocks[b].a, idx.blocks[b].b]).unwrap_or_default(), blk.map(|b| vec![idx.blocks[b].name.clone()]).unwrap_or_default()),
+        "slow_street" => ("slow_street", None, Vec::new(), iv.link.and_then(|l| super::street::street_run(net, l)).map(|r| vec![r.name]).unwrap_or_default()),
         "speed_limit" => ("speed_limit", blk, blk.map(|b| vec![idx.blocks[b].a, idx.blocks[b].b]).unwrap_or_default(), blk.map(|b| vec![idx.blocks[b].name.clone()]).unwrap_or_default()),
         "turn_ban" => ("turn_ban", None, iv.from_link.map(|a| vec![net.links[a as usize].to]).unwrap_or_default(), iv.to_link.map(|b| vec![idx.link_name[b as usize].clone()]).unwrap_or_default()),
         "diagonal_diverter" => ("diagonal_diverter", None, vec![iv.node.unwrap_or(0)], idx.node_streets.get(iv.node.unwrap_or(0) as usize).cloned().unwrap_or_default()),

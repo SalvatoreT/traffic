@@ -2,6 +2,7 @@
  * MockSimulation: a tiny stand-in with the same interface as the WASM `Simulation`, used with `?mock=1` or
  * when WASM fails to initialize. Vehicles drift along links; it is NOT a traffic model.
  */
+import { expandSlowStreets } from '../lib/slowstreet';
 import type { Demand, Intervention, Metrics, Network, SeveritySummary } from '../types';
 import { KIND_BIKE, KIND_PED, SAFETY_VERSION } from '../types';
 import { pointAlong } from '../lib/geom';
@@ -111,7 +112,7 @@ export class MockSimulation implements SimLike {
   }
 
   setInterventions(json: string) {
-    const list = JSON.parse(json) as Intervention[];
+    const list = expandSlowStreets(this.net, JSON.parse(json) as Intervention[]);
     this.closed.clear(); this.limitScale.clear(); this.slow.clear(); this.banned.clear();
     for (const iv of list) {
       const rev = (id: number) => this.net.links[id].reverse;

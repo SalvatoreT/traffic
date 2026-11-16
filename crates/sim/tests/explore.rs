@@ -494,9 +494,10 @@ fn candidates_never_add_a_signal() {
     let hot = Hotspots { block_ct: vec![10.0; study.idx.blocks.len()], node_ct: vec![10.0; study.net.nodes.len()], mv_ct: Default::default() };
     let cands = generate(&study, &hot, 200);
     let kinds: std::collections::BTreeSet<&str> = cands.iter().map(|c| c.kind).collect();
-    for k in ["modal_filter", "node_filter", "diagonal_diverter", "one_way", "speed_hump", "traffic_circle", "speed_limit", "control", "signal_timing"] {
+    for k in ["modal_filter", "node_filter", "diagonal_diverter", "one_way", "speed_hump", "traffic_circle", "slow_street", "control", "signal_timing"] {
         assert!(kinds.contains(k), "missing {k}: {kinds:?}");
     }
+    assert!(!kinds.contains("speed_limit"), "per-block speed limits are not generated");
     for c in &cands {
         assert!(!(c.iv.ty == "control" && c.iv.control == Some(Control::Signal)), "{}", c.label);
         assert!(c.iv.ty != "traffic_circle" || c.iv.node.is_some());
