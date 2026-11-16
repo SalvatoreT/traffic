@@ -165,7 +165,7 @@ describe('streets', () => {
     const metrics = { time: 3600, cutThrough: { vehiclesPerHour: 5 } } as never;
     const set = (inputs: { networkHash: string; demandHash: string; simulator: string }) => ({ am: { period: 'am', metrics, linkStats: stats, key: 'k', computed: '2026-01-01T00:00:00Z', inputs, seed: 1, seconds: 3600 } });
     const fresh = streetsMd(input({ baselines: set({ networkHash: HASHES.network, demandHash: HASHES.demand, simulator: 's' }) }));
-    expect(fresh).toContain('| 120 | 30 | 17.9 |');
+    expect(fresh).toContain('| 120 | 30 |');
     expect(fresh).not.toContain('**Out of date.**');
     const old = streetsMd(input({ baselines: set({ networkHash: HASHES.network, demandHash: 'e'.repeat(64), simulator: 's' }) }));
     expect(old).toContain('**Out of date.**');

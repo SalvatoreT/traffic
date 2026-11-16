@@ -5,12 +5,13 @@ import type { BaselineIntents } from '../../src/lib/baseline-intents';
 import type { AssumptionsFile } from '../../src/lib/assumptions';
 import { intentShares } from '../../src/lib/assumptions';
 import { aggregate, CHANGE_TOP, DEAD_BAND } from '../../src/lib/change';
-import { CARDS, MODE_CARDS } from '../../src/lib/metrics';
+import { CARDS } from '../../src/lib/metrics';
 import { EARLY_NOTE, EARLY_SECONDS, RUN_SECONDS } from '../../src/lib/run';
-import { formatValue, MPS_TO_MPH, type Kind } from '../../src/lib/format';
+import { formatValue, type Kind } from '../../src/lib/format';
 import { BASIS_HELP, BASIS_TEXT } from '../../src/lib/intents';
 import { calibrationCaveat } from '../../src/lib/caveat';
 import { buildIndex, type NetIndex } from '../../src/lib/naming';
+import { blockMeasured } from '../../src/lib/scope';
 import { isLocal } from '../../src/lib/intents';
 import { ROUTE_CAVEAT } from '../../src/lib/throughroutes';
 import { SPEED_LIMITS_MPH, SIGNAL_CYCLES_S } from '../../src/lib/selection';
@@ -132,7 +133,7 @@ function header(i: LlmsInput, o: { title: string; human?: string; json: string[]
 const mapTab = (periods: string[]) => [
   `The Map tab shows the study area and a 250 m buffer around it, with the simulated traffic drawn live. Pick a period (${periods.map((p) => `\`${p}\``).join(', ')}), a demand scale and a playback speed, then press play. A run covers one simulated hour; at the top speed ("Max") it goes straight to the end.`,
   'Select a street block or an intersection on the map, or search for one by name, and choose from the interventions that apply there (the types are listed in /llms-full.txt). Each change restarts both runs. Today\'s traffic (the baseline) and the scenario run side by side from the same seed, period and demand, so the Results panel compares like with like.',
-  'The map colors streets by all-car flow, mean speed or through cars (cut-through), and, once a scenario has an intervention, shows the change from the baseline. The Results panel lists the figures by card: through traffic on side streets, safety indicators, delay and throughput, people walking and biking, trips by mode, and network health. A link to the scenario can be copied and shared; a link to a published proposal opens already at the end of the hour from a stored result when one is valid for the data served.',
+  'The map colors the side streets inside the study area (residential and service streets) by through cars (cut-through) or by all-car flow, and, once a scenario has an intervention, shows the change from the baseline. Bounding streets and everything outside the study area are drawn as plain context and carry no figures. The Results panel lists the figures by card: through traffic on side streets and close-following conflicts. A link to the scenario can be copied and shared; a link to a published proposal opens already at the end of the hour from a stored result when one is valid for the data served.',
 ].join('\n\n');
 
 export function baselineTable(i: LlmsInput): string {
@@ -140,11 +141,11 @@ export function baselineTable(i: LlmsInput): string {
   const have = order(i).filter((p) => i.baselines[p]);
   if (have.length === 0) return 'No stored baseline results are available to this generator, so no headline figures are shown. Run `npm run simulate` for the baseline.';
   const all = CARDS.flatMap((c) => c.metrics);
-  const cols = ['ctVeh', 'ctShare', 'meanSpeed', 'trip', 'art'].map((id) => all.find((m) => m.id === id)!);
-  const unit: Record<string, string> = { flow: 'cars an hour', share: '%', speed: 'mph', minutes: 'min' };
+  const cols = ['ctVeh', 'ctShare'].map((id) => all.find((m) => m.id === id)!);
+  const unit: Record<string, string> = { flow: 'cars an hour', share: '%' };
   return table(
-    ['Period', ...cols.map((c) => `${c.label} (${unit[c.kind]})`), 'Trips waiting to enter', 'Vehicles removed for gridlock'],
-    have.map((p) => { const m = i.baselines[p].metrics; return [label(p), ...cols.map((c) => formatValue(c.kind as Kind, c.get(m), false)), Math.round(m.backlog), Math.round(m.gridlockRemoved ?? 0)]; }),
+    ['Period', ...cols.map((c) => `${c.label} (${unit[c.kind]})`)],
+    have.map((p) => { const m = i.baselines[p].metrics; return [label(p), ...cols.map((c) => formatValue(c.kind as Kind, c.get(m), false))]; }),
   );
 }
 
@@ -268,9 +269,6 @@ function cardMd(i: LlmsInput, g: ProposalGroup, p: Proposal, n: number | null, w
     table(['Period', 'Block', 'All cars an hour, before → after', 'Of the change: through cars', 'Of the change: local trips', 'Interval over runs', 'Ranking penalty block and cars an hour past its band', 'Blocks past the noise band'],
       rows.map((r) => [r.period, r.block === null ? 'None flagged by the noise band' : `${r.block}${r.flagged ? ' (flagged by the search, not necessarily the largest increase)' : ''}`, r.block === null ? '—' : `${Math.round(r.before)} → ${Math.round(r.after)} (${signedNum(r.change, 'cars an hour', 0)})`, r.block === null ? '—' : signedNum(r.through, 'cars an hour', 0), r.block === null ? '—' : signedNum(r.local, 'cars an hour', 0), r.interval, r.penaltyBlock === null || r.penalty === 0 ? 'None past its band' : `${r.penaltyBlock}${r.penalty === null ? '' : `: ${signedNum(r.penalty, 'cars an hour', 0)}`}`, r.blocksAbove])), '');
   if (note) out.push(note, '');
-  out.push('For information, not part of the search goal. All cars on each bounding street inside the area, change from today, average of the periods:', '',
-    table(['Street', 'All cars, change', 'Mean speed, change'], p.context.boundingStreets.map((b) => [b.name, signedPct(b.flowChangePct), signedNum(b.speedChangeMph, 'mph')])), '');
-  out.push(`Inside the area, change from today: trip time for trips starting or ending inside ${signedPct(p.context.insideTripTimeChangePct)}; walking conflicts ${signedPct(p.context.pedConflictsChangePct)}; biking conflicts ${signedPct(p.context.bikeConflictsChangePct)}. Safety figures are surrogate indicators, not crash predictions.`, '');
   if (stored.length && i.resultsIndex) {
     const c = currency(i.resultsIndex.inputs, i);
     out.push(`Stored full-hour results (seed 1, demand 1)${c.current ? '' : `, out of date because ${list(c.reasons)}`}: ${stored.map((r) => `${label(r.period)} <${abs(i, `/data/results/${i.area.id}/${r.key}.json`)}>`).join('; ')}.`, '');
@@ -362,17 +360,17 @@ export function sourcesMd(i: LlmsInput, withBibliography = true): string {
 
 // --- streets
 
-export interface StreetRow { label: string; cls: string; periods: { flow: number; cut: number; speed: number | null }[] }
+export interface StreetRow { label: string; cls: string; periods: { flow: number; cut: number }[] }
 
 export function streetRows(net: Network, idx: NetIndex, periods: string[], baselines: Record<string, BaselineSet>): StreetRow[] {
   const views = periods.map((p) => (baselines[p] ? linkStatsView(baselines[p].linkStats) : null));
   const rows: StreetRow[] = [];
   for (const b of idx.blocks) {
-    if (!b.inFocus) continue;
+    if (!blockMeasured(b)) continue;
     const per = views.map((v) => {
-      if (!v) return { flow: 0, cut: 0, speed: null };
+      if (!v) return { flow: 0, cut: 0 };
       const a = aggregate(v, b.links);
-      return { flow: Math.round(a.flow), cut: Math.round(a.cut), speed: a.flow > 0 ? Math.round(a.speed * MPS_TO_MPH * 10) / 10 : null };
+      return { flow: Math.round(a.flow), cut: Math.round(a.cut) };
     });
     if (per.every((p) => p.flow === 0 && p.cut === 0)) continue;
     rows.push({ label: b.label, cls: b.cls, periods: per });
@@ -391,10 +389,10 @@ export function streetsMd(i: LlmsInput): string {
   const c = currency(first.inputs, i);
   out.push(`Source: the stored baseline (today's traffic, no interventions) of one simulated hour at seed ${first.seed}, demand 1, one run per period (stored result \`${first.key}\`, computed ${first.computed.slice(0, 10)}, network \`${short(first.inputs.networkHash)}\`, demand \`${short(first.inputs.demandHash)}\`, simulator \`${first.inputs.simulator.slice(0, 8)}\`).${c.current ? simUnchecked(i) : ''}`, '');
   if (!c.current) out.push(outOfDate(c), '');
-  out.push('Includes service roads. Blocks with no cars in any period are left out. Speeds are blank where no car used the block. One seed is one sample: differences of a few cars an hour between runs are within run-to-run variation. These are today\'s figures; to see how a change moves them, run `npm run simulate -- --blocks all`.', '');
-  const head = ['Street block', 'Class', ...periods.flatMap((p) => [`${label(p)}: all cars`, `${label(p)}: through cars`, `${label(p)}: speed mph`])];
+  out.push('Side streets inside the study area only, service roads included; bounding streets and streets outside the study area are not listed. Blocks with no cars in any period are left out. One seed is one sample: differences of a few cars an hour between runs are within run-to-run variation. These are today\'s figures; to see how a change moves them, run `npm run simulate -- --blocks all`.', '');
+  const head = ['Street block', 'Class', ...periods.flatMap((p) => [`${label(p)}: all cars`, `${label(p)}: through cars`])];
   const rows = streetRows(i.network, idx, periods, i.baselines);
-  out.push(table(head, rows.map((r) => [r.label, r.cls, ...r.periods.flatMap((p) => [p.flow, p.cut, p.speed ?? '—'])])), '');
+  out.push(table(head, rows.map((r) => [r.label, r.cls, ...r.periods.flatMap((p) => [p.flow, p.cut])])), '');
   out.push(`${rows.length} blocks. All cars and through cars are cars an hour on the block, both directions summed; through cars are part of all cars.`, '');
   return out.join('\n');
 }
@@ -447,8 +445,8 @@ export function examplesMd(i: LlmsInput): string {
 }
 
 export function figuresMd(i: LlmsInput): string {
-  const cards = [...CARDS, ...MODE_CARDS];
-  const rows = cards.flatMap((c) => c.metrics.map((m) => [m.label, c.title, ({ flow: 'cars an hour', share: 'percent', speed: 'mph', minutes: 'minutes', seconds: 'seconds', count: 'count', index: 'index (unitless)' } as Record<string, string>)[m.kind], m.lowerIsBetter === null ? 'neutral' : m.lowerIsBetter ? 'lower is better' : 'higher is better']));
+  const cards = CARDS;
+  const rows = cards.flatMap((c) => c.metrics.map((m) => [m.label, c.title, ({ flow: 'cars an hour', share: 'percent', count: 'count' } as Record<string, string>)[m.kind], m.lowerIsBetter === null ? 'neutral' : m.lowerIsBetter ? 'lower is better' : 'higher is better']));
   const maxLimit = SPEED_LIMITS_MPH.join(', ');
   return [
     '### Vocabulary', '',
@@ -456,11 +454,11 @@ export function figuresMd(i: LlmsInput): string {
     '- **Through car**: a car with neither trip end in the study area that uses at least one side street, counted once across all the side streets together. **All cars**: every car on a block, through cars and the local trips of people who start or end a trip in the area. Through cars are part of all cars, never added to them; a through number is never compared with an all-cars number.',
     '- **Baseline**: today\'s traffic with no interventions. **Scenario**: the same trips with the interventions placed. Demand is fixed: the same trips are made in both.',
     `- **Window**: a run is ${RUN_SECONDS / 3600} simulated hour of one demand period, started with traffic already on the streets. Rates are cars an hour over the run; per-block flows are averages over the run so far. ${EARLY_NOTE} Stored results and the app use seed 1.`,
-    '- **Run-to-run variation**: the simulation is random but repeatable for a seed. Differences smaller than the seed-to-seed spread are noise; the map treats a change of less than ' + `${DEAD_BAND.cutthrough} through cars an hour, ${DEAD_BAND.flow} all cars an hour or ${DEAD_BAND.speed} mph as no change (its colors saturate at ${CHANGE_TOP.cutthrough}, ${CHANGE_TOP.flow} and ${CHANGE_TOP.speed}), and proposals count a block as gaining only past max(2 standard deviations of its baseline across seeds, 10 cars an hour).`,
+    '- **Run-to-run variation**: the simulation is random but repeatable for a seed. Differences smaller than the seed-to-seed spread are noise; the map treats a change of less than ' + `${DEAD_BAND.cutthrough} through cars an hour or ${DEAD_BAND.flow} all cars an hour as no change (its colors saturate at ${CHANGE_TOP.cutthrough} and ${CHANGE_TOP.flow}), and proposals count a block as gaining only past max(2 standard deviations of its baseline across seeds, 10 cars an hour).`,
     '', '### The figures on the Results cards', '',
     ...cards.filter((c) => c.note).map((c) => `**${c.title}.** ${c.note}`),
     '', table(['Figure', 'Card', 'Unit', 'Direction'], rows), '',
-    'Network health lists vehicles on the network, trips waiting to enter, vehicles removed to clear gridlock and unroutable trips. A run with removed vehicles or a large backlog is oversaturated and understates real congestion.', '',
+    'A run in which the simulator had to remove vehicles to clear gridlock, or in which many trips wait to enter, is oversaturated and understates real congestion; Results then carries a caution.', '',
     `Through routes: ${ROUTE_CAVEAT} It is a quick check of the street layout and does not use traffic volumes.`, '',
     `Interventions offered in the app: speed limits ${maxLimit} mph; signal cycles ${SIGNAL_CYCLES_S.join(', ')} s. These are UI choices, not published recommendations.`, '',
     '### How the proposal figures are measured', '',
@@ -519,7 +517,7 @@ export function llmsTxt(i: LlmsInput): string {
     '## Pages as text',
     '',
     `- [Proposals](${abs(i, '/proposals.md')}): every published package of interventions with its figures, scenario link and the run that produced the numbers (human page: ${abs(i, '/proposals')}).`,
-    `- [Streets](${abs(i, '/streets.md')}): today's all cars, through cars and mean speed on every block, by period (human page: ${abs(i, '/streets')}).`,
+    `- [Streets](${abs(i, '/streets.md')}): today's all cars and through cars on every side-street block, by period (human page: ${abs(i, '/streets')}).`,
     `- [Methodology](${abs(i, '/methodology.md')}): how the model and the proposals are made, a short plain-language guide (human page: ${abs(i, '/methodology')}).`,
     `- [Assumptions](${abs(i, '/assumptions.md')}): the judgment calls: assumed movement flows and the reasons cars cut through (human page: ${abs(i, '/assumptions')}).`,
     `- [Sources](${abs(i, '/sources.md')}): input provenance, the calibration statement and the research bibliography (human page: ${abs(i, '/sources')}).`,

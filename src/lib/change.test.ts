@@ -6,26 +6,22 @@ import {
 import { linkStatsView } from '../types';
 import { legendModel } from './legend';
 
-const A = (flow: number, cut: number, speed = 8) => ({ flow, cut, speed });
+const A = (flow: number, cut: number) => ({ flow, cut });
 const stats = (...rows: number[][]) => linkStatsView(new Float32Array(rows.flat()));
 
 describe('difference', () => {
   it('is scenario minus baseline per metric', () => {
     expect(diffValue('cutthrough', A(100, 62), A(80, 18))).toBe(-44);
     expect(diffValue('flow', A(100, 62), A(180, 18))).toBe(80);
-    expect(diffValue('speed', A(100, 0, 10), A(100, 0, 10 + 4.4704))).toBeCloseTo(10, 5);
-  });
-  it('has no speed difference when either run is empty', () => {
-    expect(diffValue('speed', A(0, 0, 0), A(50, 0, 8))).toBeNull();
   });
   it('reads link stats the same way as the overlay (4 floats per link)', () => {
     const b = stats([100, 8, 60, 0]), s = stats([40, 8, 10, 0]);
     expect(linkChangeIntensity('cutthrough', b, s, 0)).toBeCloseTo(-(50 - DEAD_BAND.cutthrough) / (100 - DEAD_BAND.cutthrough), 6);
     expect(aggregate(b, [0]).cut).toBe(60);
   });
-  it('flow-weights speed over both directions of a block', () => {
-    const v = stats([100, 10, 0, 0], [300, 6, 0, 0]);
-    expect(aggregate(v, [0, 1]).speed).toBeCloseTo(7, 6);
+  it('sums flow and cut-through over both directions of a block', () => {
+    const v = stats([100, 10, 5, 0], [300, 6, 7, 0]);
+    expect(aggregate(v, [0, 1])).toEqual({ flow: 400, cut: 12 });
   });
 });
 
@@ -37,7 +33,7 @@ describe('dead band and clamping', () => {
     expect(changeIntensity('cutthrough', A(50, 50), A(50, 50 + 8))).toBeCloseTo(0.5 / (100 - DEAD_BAND.cutthrough), 6);
   });
   it('has no jump at the edge of the band: the value rises from zero', () => {
-    for (const o of ['cutthrough', 'flow', 'speed'] as const) {
+    for (const o of ['cutthrough', 'flow'] as const) {
       const b = DEAD_BAND[o];
       expect(softChange(b, o)).toBe(0);
       expect(softChange(b + 0.01 * CHANGE_TOP[o], o)).toBeLessThan(0.02);
@@ -51,7 +47,6 @@ describe('dead band and clamping', () => {
   });
   it('marks streets with no traffic in either run', () => {
     expect(changeIntensity('flow', A(0, 0), A(0, 0))).toBe(NO_DATA);
-    expect(changeIntensity('speed', A(0, 0), A(0, 0))).toBe(NO_DATA);
     expect(changeIntensity('flow', A(0, 0), A(300, 0))).toBeGreaterThan(0);
   });
   it('is symmetric about zero', () => {
@@ -61,17 +56,16 @@ describe('dead band and clamping', () => {
 
 describe('signed labels', () => {
   it('uses a true minus and an explicit plus', () => {
-    expect(formatSigned(-44.2, 'cutthrough')).toBe('−44');
-    expect(formatSigned(18.6, 'flow')).toBe('+19');
-    expect(formatSigned(-3.14, 'speed')).toBe('−3.1');
-    expect(formatSigned(0.2, 'flow')).toBe('0');
-    expect(formatSigned(-0.4, 'cutthrough')).toBe('0');
-    expect(formatSigned(null, 'speed')).toBe('—');
-    expect(formatSigned(1234, 'flow')).toBe('+1,234');
+    expect(formatSigned(-44.2)).toBe('−44');
+    expect(formatSigned(18.6)).toBe('+19');
+    expect(formatSigned(0.2)).toBe('0');
+    expect(formatSigned(-0.4)).toBe('0');
+    expect(formatSigned(null)).toBe('—');
+    expect(formatSigned(1234)).toBe('+1,234');
   });
   it('builds legend ticks and the readout', () => {
     expect(changeTicks('cutthrough')).toEqual(['−100+', '−50', '0', '+50', '+100+']);
-    expect(changeTicks('speed')[4]).toBe('+10+');
+    expect(changeTicks('flow')[4]).toBe('+800+');
     expect(readoutText('cutthrough', A(80, 62), A(40, 18))).toBe('Through cars on this block: 62 → 18 cars an hour (−44)');
   });
 });
@@ -159,21 +153,21 @@ describe('cut-through colors a block from both directions', () => {
   });
   it('colors the scenario view from the block total too', () => {
     const s = v(30, 30);
-    expect(linkIntensity('cutthrough', s, 0, 11, 100, [0, 1])).toBeCloseTo(0.6, 6);
-    expect(linkIntensity('cutthrough', s, 1, 11, 100, [0, 1])).toBeCloseTo(0.6, 6);
-    expect(linkIntensity('cutthrough', s, 0, 11, 100)).toBeCloseTo(0.3, 6);
+    expect(linkIntensity('cutthrough', s, 0, 100, [0, 1])).toBeCloseTo(0.6, 6);
+    expect(linkIntensity('cutthrough', s, 1, 100, [0, 1])).toBeCloseTo(0.6, 6);
+    expect(linkIntensity('cutthrough', s, 0, 100)).toBeCloseTo(0.3, 6);
   });
-  it('keeps flow and speed per direction', () => {
+  it('keeps flow per direction', () => {
     const base = f(100, 700), scen = f(100, 100);
     expect(linkChangeIntensity('flow', base, scen, 0, [0, 1])).toBe(0);
     expect(linkChangeIntensity('flow', base, scen, 1, [0, 1])).toBeLessThan(-0.5);
-    expect(linkIntensity('flow', f(400, 0), 0, 11, 800, [0, 1])).toBeCloseTo(0.5, 6);
+    expect(linkIntensity('flow', f(400, 0), 0, 800, [0, 1])).toBeCloseTo(0.5, 6);
   });
   it('says in the legend what is colored', () => {
     expect(changeLabel('cutthrough')).toContain('both directions');
     expect(changeLabel('flow')).toContain('each direction');
     expect(legendModel('cutthrough', 'light', false).name).toContain('both directions');
     expect(legendModel('flow', 'light', false).name).toContain('each direction');
-    expect(legendModel('speed', 'light', false).name).toContain('each direction');
+    expect(legendModel('flow', 'light', false).name).toContain('study-area side streets');
   });
 });

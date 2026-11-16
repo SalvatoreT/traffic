@@ -169,7 +169,7 @@ function ModeSymbol({ id }: { id: ModeKey }) {
 }
 
 const OVERLAYS: { id: Overlay; label: string }[] = [
-  { id: 'cutthrough', label: 'Cut-through' }, { id: 'speed', label: 'Speed' }, { id: 'flow', label: 'Flow' },
+  { id: 'cutthrough', label: 'Cut-through' }, { id: 'flow', label: 'Flow' },
 ];
 
 /** Docked legend row along the bottom of the map. Collapsed it names the metric and shows the ramp ends; expanded it adds layers and symbols. */
@@ -184,12 +184,11 @@ export function Legend(p: LegendProps) {
   const grad = change ? divergingGradient(p.mode) : `linear-gradient(to right, ${rampStops(p.mode).join(', ')})`;
   const { ticks, name } = legendModel(p.overlay, p.mode, change);
   const band = DEAD_BAND[p.overlay];
-  const counts = p.overlay === 'speed' ? 'Speed is the average speed of the cars in one direction of a block; the two directions of a street are colored on their own.'
-    : p.overlay === 'flow' ? 'Flow counts every car in one direction of a block, local trips included; the two directions of a street are colored on their own.'
+  const counts = p.overlay === 'flow' ? 'Flow counts every car in one direction of a block, local trips included; the two directions of a street are colored on their own.'
       : 'Cut-through counts only through cars on a block, both directions added together, and both directions are drawn in the same color: cars crossing the area without a trip that starts or ends in it. It is not all the cars on that block, and it is not the area-wide through count in Results.';
   const help = change
-    ? `${counts} Blue lines carry less than today; orange lines carry more. The thicker the line, the bigger the change, in either direction; arrows mark the largest ones, up for more and down for less. Street values are averages over the simulated time so far, so colors settle as the run goes on. Differences under ${band} ${CHANGE_UNIT[p.overlay]} count as noise and are shown as no change, in thin gray, and larger ones fade in from there; streets with no traffic in either run are thin gray too. Colors show less and more, not better and worse. ${CHANGE_MAP_NOTE} The scale tops out at ${changeTicks(p.overlay)[4].slice(1)} ${CHANGE_UNIT[p.overlay]}.`
-    : `${counts} ${p.overlay === 'speed' ? 'Slower is darker and wider (more congested).' : `Higher is a wider line. ${TOP_NOTE[p.overlay]}`} Thin gray lines carry no vehicles. Values are averages over the simulated time so far.`;
+    ? `Only the residential and service streets inside the study area are measured and colored; bounding streets and everything outside are plain gray context. ${counts} Blue lines carry less than today; orange lines carry more. The thicker the line, the bigger the change, in either direction; arrows mark the largest ones, up for more and down for less. Street values are averages over the simulated time so far, so colors settle as the run goes on. Differences under ${band} ${CHANGE_UNIT[p.overlay]} count as noise and are shown as no change, in thin gray, and larger ones fade in from there; streets with no traffic in either run are thin gray too. Colors show less and more, not better and worse. ${CHANGE_MAP_NOTE} The scale tops out at ${changeTicks(p.overlay)[4].slice(1)} ${CHANGE_UNIT[p.overlay]}.`
+    : `Only the residential and service streets inside the study area are measured and colored; bounding streets and everything outside are plain gray context. ${counts} Higher is a wider line. ${TOP_NOTE[p.overlay]} Thin lines in the lowest ramp color carry no vehicles. Values are averages over the simulated time so far.`;
 
   // Keep the map's attribution just above the row, whatever its height.
   useEffect(() => {

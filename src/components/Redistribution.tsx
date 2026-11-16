@@ -7,6 +7,7 @@ import type { LoadedHashes } from '../lib/proposals';
 import { checkStored, COMPARISONS, OUTCOMES, type Comparison, type GraphQuery, type RedistributionResult } from '../lib/redistribution';
 import { canTrace, cohortRoutes, effectStatus, isFar, LAYER_LABEL, linksD, mapFrame, MAP_MAX, midpoint, netBlocks, possiblePaths, ROLE_LABEL, round, signed, type Layer } from '../lib/redistribution-view';
 import type { RedistFromWorker, RedistToWorker } from '../sim/redistribution.worker';
+import { blockMeasured } from '../lib/scope';
 
 /** What the view is asked to explain: one closure inside a package (the package may be the closure alone). */
 export interface RedistRequest { package: Intervention[]; closure: number; source: 'scenario' | 'proposal'; title: string }
@@ -350,11 +351,11 @@ function BlockTable({ r, cmp, nSeeds }: { r: RedistributionResult; cmp: Comparis
   return (
     <>
       <p className="small muted">
-        Every car on the block in the hour, both directions, mean of {nSeeds} run{nSeeds === 1 ? '' : 's'}. Through trips have neither end in the study area; local trips start or end in it. The last column splits the net change: followed trips, other trips, and cars already on the streets at the start. A small net change can hide trips moving onto a block while others leave it.
+        Blocks inside the study area only. Every car on the block in the hour, both directions, mean of {nSeeds} run{nSeeds === 1 ? '' : 's'}. Through trips have neither end in the study area; local trips start or end in it. The last column splits the net change: followed trips, other trips, and cars already on the streets at the start. A small net change can hide trips moving onto a block while others leave it.
       </p>
       <div className="table-scroll" role="region" aria-label="Net change by block, scrollable" tabIndex={0}>
         <table className="wide">
-          <caption className="sr-only">Net change in all cars an hour by block: today, with the closure alone and with the whole package, the through and local parts, and where the change comes from</caption>
+          <caption className="sr-only">Net change in all cars an hour by block inside the study area, with one line for everything else: today, with the closure alone and with the whole package, the through and local parts, and where the change comes from</caption>
           <thead>
             <tr>
               <th scope="col">Block</th><th scope="col">{ROLE_LABEL.baseline}</th><th scope="col">{ROLE_LABEL.closure}</th><th scope="col">{ROLE_LABEL.package}</th>
@@ -362,7 +363,7 @@ function BlockTable({ r, cmp, nSeeds }: { r: RedistributionResult; cmp: Comparis
             </tr>
           </thead>
           <tbody>
-            {r.blocks.map((b) => {
+            {r.blocks.filter((b) => blockMeasured(b)).map((b) => {
               const c = b.change[cmp];
               const rc = b.reconcile[cmp];
               return (
@@ -375,6 +376,15 @@ function BlockTable({ r, cmp, nSeeds }: { r: RedistributionResult; cmp: Comparis
                 </tr>
               );
             })}
+            {r.outside && (
+              <tr>
+                <th scope="row">Bounding streets and outside <span className="muted small">(net change on all other streets together; not listed)</span></th>
+                <td>—</td><td>—</td><td>—</td>
+                <td>{r.outside.change[cmp].mean > 0 ? '▲ ' : r.outside.change[cmp].mean < 0 ? '▼ ' : ''}{signed(r.outside.change[cmp].mean)}; n/a; n/a</td>
+                <td>{effectStatus(r.outside.change[cmp])}</td>
+                <td>n/a</td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

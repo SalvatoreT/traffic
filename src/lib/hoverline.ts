@@ -1,7 +1,6 @@
 import type { LinkStatsView, Overlay } from '../types';
 import { aggregate, CHANGE_NAME, CHANGE_UNIT, linkChangeIntensity, linkIntensity, readoutText } from './change';
 import { colorForIntensity, quantizeIntensity, type Mode } from './ramps';
-import { MPS_TO_MPH } from './format';
 
 export interface HoverLine {
   /** Swatch color, or null when there is nothing to color. */
@@ -18,7 +17,7 @@ export interface HoverLineInput {
   mode: Mode;
   /** Top of the one-sided scale, as drawn on the map. */
   max: number;
-  link: { id: number; speedLimit: number };
+  link: { id: number };
   stats: LinkStatsView | null;
   base: LinkStatsView | null;
   /** "toward Elm St" for a street drawn as two directions, so the number belongs to the direction the swatch shows. */
@@ -47,12 +46,7 @@ export function hoverLine(i: HoverLineInput): HoverLine {
     const cut = text.indexOf(': ');
     return done(colorForIntensity(t, i.mode, true), text.slice(0, cut), text.slice(cut + 2));
   }
-  const t = quantizeIntensity(linkIntensity(o, S, id, link.speedLimit, i.max, i.block));
+  const t = quantizeIntensity(linkIntensity(o, S, id, i.max, i.block));
   const color = colorForIntensity(t, i.mode, false);
-  if (o === 'speed') {
-    const body = s.flow <= 0 && S.speed(id) <= 0 ? 'no traffic'
-      : `${num(link.speedLimit > 0 ? (S.speed(id) / link.speedLimit) * 100 : 100)}% of limit (${num(S.speed(id) * MPS_TO_MPH)} ${CHANGE_UNIT.speed})`;
-    return done(color, 'Speed', body);
-  }
   return done(color, CHANGE_NAME[o], `${num(o === 'flow' ? s.flow : s.cut)} ${CHANGE_UNIT[o]}`);
 }

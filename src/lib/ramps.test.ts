@@ -41,7 +41,7 @@ describe('drawn intensity', () => {
     const drawn = (flows: number[]) => {
       let prev = -3;
       for (const f of flows) {
-        const t = quantizeIntensity(intensity('flow', f, 8, 0, 11, 350));
+        const t = quantizeIntensity(intensity('flow', f, 0, 350));
         if (prev !== t) prev = t;
       }
       return prev;

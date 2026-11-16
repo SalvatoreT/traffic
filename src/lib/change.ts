@@ -1,22 +1,20 @@
 import type { Overlay } from '../types';
 import type { LinkStatsView } from '../types';
-import { MPS_TO_MPH } from './format';
 import { intensity } from './ramps';
 
 /** Marks a link with no traffic in the baseline or the scenario. */
 export const NO_DATA = -2;
 
-/** Fixed top of the two-sided scale, in display units (veh/h; mph for speed). Cut-through and flow match the one-sided tops in ramps.ts [see OVERLAY_TOP]. Speed: ASSUMPTION, 10 mph. */
-export const CHANGE_TOP: Record<Overlay, number> = { cutthrough: 100, flow: 800, speed: 10 };
+/** Fixed top of the two-sided scale, in display units (veh/h). Cut-through and flow match the one-sided tops in ramps.ts [see OVERLAY_TOP]. */
+export const CHANGE_TOP: Record<Overlay, number> = { cutthrough: 100, flow: 800 };
 
 /** Dead band half-width, display units. ASSUMPTION: 5% of the top, since seeded runs reshuffle arrivals and small differences are noise (design D4). */
 export const DEAD_BAND_CUTTHROUGH = 7.5;
 export const DEAD_BAND_FLOW = 40;
-export const DEAD_BAND_SPEED = 0.5;
-export const DEAD_BAND: Record<Overlay, number> = { cutthrough: DEAD_BAND_CUTTHROUGH, flow: DEAD_BAND_FLOW, speed: DEAD_BAND_SPEED };
+export const DEAD_BAND: Record<Overlay, number> = { cutthrough: DEAD_BAND_CUTTHROUGH, flow: DEAD_BAND_FLOW };
 
-export const CHANGE_UNIT: Record<Overlay, string> = { cutthrough: 'cars an hour', flow: 'cars an hour', speed: 'mph' };
-export const CHANGE_NAME: Record<Overlay, string> = { cutthrough: 'Through cars on this block', flow: 'All cars on this block', speed: 'Mean speed' };
+export const CHANGE_UNIT: Record<Overlay, string> = { cutthrough: 'cars an hour', flow: 'cars an hour' };
+export const CHANGE_NAME: Record<Overlay, string> = { cutthrough: 'Through cars on this block', flow: 'All cars on this block' };
 
 /** Perceptual size of a change intensity (0..1): square root, so mid-size changes are told apart from small ones. */
 export const changeMagnitude = (t: number): number => Math.sqrt(Math.min(1, Math.abs(t)));
@@ -40,28 +38,22 @@ export function legendClipPath(min = 0.3, steps = 10): string {
   return `polygon(${[...up, ...down].join(', ')})`;
 }
 
-export interface Agg { flow: number; cut: number; speed: number }
+export interface Agg { flow: number; cut: number }
 
-/** Flow and cut-through summed, speed flow-weighted, over a set of directed links. */
+/** Flow and cut-through summed over a set of directed links. */
 export function aggregate(v: LinkStatsView, links: readonly number[]): Agg {
-  let flow = 0, cut = 0, sp = 0, w = 0;
-  for (const id of links) { const f = v.flow(id); flow += f; cut += v.cut(id); sp += v.speed(id) * Math.max(f, 0.001); w += Math.max(f, 0.001); }
-  return { flow, cut, speed: w > 0 && flow > 0 ? sp / w : 0 };
+  let flow = 0, cut = 0;
+  for (const id of links) { flow += v.flow(id); cut += v.cut(id); }
+  return { flow, cut };
 }
 
-/** The selected metric in display units, or null when it is undefined (speed with no traffic). */
+/** The selected metric in display units. */
 export function metricValue(o: Overlay, a: Agg): number | null {
-  if (o === 'flow') return a.flow;
-  if (o === 'cutthrough') return a.cut;
-  return a.flow > 0 ? a.speed * MPS_TO_MPH : null;
+  return o === 'flow' ? a.flow : a.cut;
 }
 
-/** Scenario minus baseline in display units, or null when either side has no value to compare. */
+/** Scenario minus baseline in display units. */
 export function diffValue(o: Overlay, base: Agg, scen: Agg): number | null {
-  if (o === 'speed') {
-    const b = metricValue(o, base), s = metricValue(o, scen);
-    return b === null || s === null ? null : s - b;
-  }
   return (metricValue(o, scen) as number) - (metricValue(o, base) as number);
 }
 
@@ -79,8 +71,8 @@ export function changeIntensity(o: Overlay, base: Agg, scen: Agg): number {
   return softChange(d, o);
 }
 
-/** Cut-through is colored per block from both directions together, as the Streets table, the picture and the cards count it. Flow and speed are colored per direction. */
-export const BLOCK_LAYER: Record<Overlay, boolean> = { cutthrough: true, flow: false, speed: false };
+/** Cut-through is colored per block from both directions together, as the Streets table, the picture and the cards count it. Flow is colored per direction. */
+export const BLOCK_LAYER: Record<Overlay, boolean> = { cutthrough: true, flow: false };
 /** The links one drawn link takes its color from: its whole block for a block layer, else itself. */
 export const colorGroup = (o: Overlay, id: number, block?: readonly number[]): readonly number[] => (BLOCK_LAYER[o] && block && block.length > 0 ? block : [id]);
 
@@ -90,21 +82,21 @@ export function linkChangeIntensity(o: Overlay, base: LinkStatsView, scen: LinkS
   return changeIntensity(o, aggregate(base, g), aggregate(scen, g));
 }
 
-/** Sequential intensity of one drawn link in the scenario view, with the same grouping. `limit` in m/s. */
-export function linkIntensity(o: Overlay, v: LinkStatsView, id: number, limit: number, max: number, block?: readonly number[]): number {
-  return intensity(o, v.flow(id), v.speed(id), aggregate(v, colorGroup(o, id, block)).cut, limit, max);
+/** Sequential intensity of one drawn link in the scenario view, with the same grouping. */
+export function linkIntensity(o: Overlay, v: LinkStatsView, id: number, max: number, block?: readonly number[]): number {
+  return intensity(o, v.flow(id), aggregate(v, colorGroup(o, id, block)).cut, max);
 }
 
 const MINUS = '−';
 /** "+44", "−44", "0". Rounds first, so a change that rounds to zero carries no sign. */
-export function formatSigned(v: number | null | undefined, o: Overlay): string {
+export function formatSigned(v: number | null | undefined): string {
   if (v === null || v === undefined || !Number.isFinite(v)) return '—';
-  const r = o === 'speed' ? Math.round(v * 10) / 10 : Math.round(v);
+  const r = Math.round(v);
   if (r === 0) return '0';
-  const s = Math.abs(r).toLocaleString('en-US', { maximumFractionDigits: o === 'speed' ? 1 : 0 });
+  const s = Math.abs(r).toLocaleString('en-US', { maximumFractionDigits: 0 });
   return `${r < 0 ? MINUS : '+'}${s}`;
 }
-const plain = (v: number | null, o: Overlay): string => (v === null ? '—' : v.toLocaleString('en-US', { maximumFractionDigits: o === 'speed' ? 1 : 0 }));
+const plain = (v: number | null): string => (v === null ? '—' : v.toLocaleString('en-US', { maximumFractionDigits: 0 }));
 
 /** Five legend labels, low to high; the ends carry a plus because larger changes clamp. */
 export function changeTicks(o: Overlay): string[] {
@@ -115,12 +107,12 @@ export function changeTicks(o: Overlay): string[] {
 /** "Through cars on this block: 62 → 18 cars an hour (−44)". */
 export function readoutText(o: Overlay, base: Agg, scen: Agg): string {
   const b = metricValue(o, base), s = metricValue(o, scen);
-  return `${CHANGE_NAME[o]}: ${plain(b, o)} → ${plain(s, o)} ${CHANGE_UNIT[o]} (${formatSigned(diffValue(o, base, scen), o)})`;
+  return `${CHANGE_NAME[o]}: ${plain(b)} → ${plain(s)} ${CHANGE_UNIT[o]} (${formatSigned(diffValue(o, base, scen))})`;
 }
 
 /** Street-level link statistics count motor vehicles only: bicycles are not counted per link and pedestrians are not on the street network, so the map change view is cars only. */
-export const CHANGE_MAP_NOTE = 'The map shows cars only. The simulator reports walking and biking for the whole area, not street by street: see People walking and biking and Trips by mode in Results.';
-export const changeLabel = (o: Overlay): string => o === 'cutthrough' ? 'Change in cut-through: through cars on a block, both directions, cars an hour' : o === 'flow' ? 'Change in flow: all cars in each direction, cars an hour' : `Change in car speed in each direction, ${CHANGE_UNIT[o]}`;
+export const CHANGE_MAP_NOTE = 'The map shows cars only. Walking and biking are not counted street by street.';
+export const changeLabel = (o: Overlay): string => o === 'cutthrough' ? 'Change in cut-through: through cars on a block, both directions, cars an hour' : 'Change in flow: all cars in each direction, cars an hour';
 
 /** Sort key helper: 'chg' orders by absolute change, other numeric keys by value. */
 export function compareRows<T extends { label: string; chg: number | null }>(key: keyof T | 'chg', dir: 1 | -1) {

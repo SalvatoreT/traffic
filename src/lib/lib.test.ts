@@ -59,9 +59,7 @@ describe('diff formatting', () => {
     expect(formatDiff(undefined, 1, 'count', true).verdict).toBe('n/a');
   });
   it('converts units', () => {
-    expect(formatValue('speed', 11.176)).toBe('25 mph');
     expect(formatValue('share', 0.123)).toBe('12.3%');
-    expect(formatValue('minutes', 150)).toBe('2.5 min');
     expect(formatDiff(0.2, 0.1, 'share', true).text).toContain('pp');
     expect(formatClock(3725)).toBe('1:02:05');
   });

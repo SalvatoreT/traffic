@@ -9,9 +9,9 @@ describe('street columns', () => {
     expect(defaultSort(false)).toEqual({ key: 'ctB', dir: -1 });
   });
   it('shows them with a scenario and sorts by change first', () => {
-    const c = sortChoices(true, 'speed');
-    expect(c[0]).toEqual({ key: 'chg', label: 'Change, mph' });
-    expect(c.map((x) => x.key)).toEqual(expect.arrayContaining(['flowS', 'speedS', 'ctS']));
+    const c = sortChoices(true, 'flow');
+    expect(c[0]).toEqual({ key: 'chg', label: 'Change, all cars an hour' });
+    expect(c.map((x) => x.key)).toEqual(expect.arrayContaining(['flowS', 'ctS']));
     expect(defaultSort(true).key).toBe('chg');
   });
 });

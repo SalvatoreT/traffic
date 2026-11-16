@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Metrics } from '../types';
 import { NavLink } from './Anchor';
-import { CARDS, MODE_CARDS, emptyMode, hasModes, networkHealth, summarize, type CardDef, type MetricDef, type ModeCardId } from '../lib/metrics';
+import { CARDS, networkHealth, summarize, type CardDef } from '../lib/metrics';
 import { EARLY_NOTE, isEarly, RUN_SECONDS } from '../lib/run';
 import { formatDiff, formatValue } from '../lib/format';
 
@@ -45,15 +45,9 @@ export function Comparison({ base, scen, comparing, finished, withheld = false, 
       {scen && isEarly(finished, elapsed) && <p className="notice" role="note">{EARLY_NOTE}</p>}
       {scen && <HealthLine scen={scen} base={comparing ? base : null} />}
       {CARDS.map((c) => <Fragment key={c.id}><CardTable c={c} base={base} scen={scen} comparing={comparing} />{c.id === 'cut' && intents}</Fragment>)}
-      {scen && !hasModes(scen) && (
-        <section className="card" aria-labelledby="card-modes-na">
-          <h3 id="card-modes-na">Walking and biking</h3>
-          <p className="muted small">Not available: this simulation build has no walking or biking agents.</p>
-        </section>
-      )}
-      {hasModes(scen) && MODE_CARDS.map((c) => (
-        <CardTable key={c.id} c={c} base={base} scen={scen} comparing={comparing} empty={emptyMode(c.id as ModeCardId, [base, scen])} />
-      ))}
+      <p className="muted small" role="note">
+        Figures are for the side streets inside the study area. Bounding streets and everything outside it are not measured.
+      </p>
       </>}
       <aside className="caveat" aria-label="Caveat about fixed demand">
         Trip demand is fixed in this version: the same trips are made before and after every change, so these results are conditional
@@ -76,64 +70,42 @@ function formatShort(seconds: number): string {
   return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`;
 }
 
-/** A value, or a dash with the reason when it is unavailable, so a missing sample never reads as a measured zero. */
-function cell(d: MetricDef, m: Metrics | null, v: number | undefined) {
-  const text = formatValue(d.kind, v);
-  const why = m && text === '—' ? d.why?.(m) : null;
-  return why ? <>{text} <span className="muted small">({why})</span></> : text;
-}
-
-function CardTable({ c, base, scen, comparing, empty }: { c: CardDef; base: Metrics | null; scen: Metrics | null; comparing: boolean; empty?: string | null }) {
+function CardTable({ c, base, scen, comparing }: { c: CardDef; base: Metrics | null; scen: Metrics | null; comparing: boolean }) {
   return (
     <section className="card" aria-labelledby={`card-${c.id}`}>
       <h3 id={`card-${c.id}`}>{c.title}</h3>
       {c.note && <p className="muted small">{c.note}</p>}
-      {empty ? <p className="notice" role="note">{empty}</p> : (
-        <table className="cmp">
-          <thead>
-            <tr><th scope="col">Metric</th><th scope="col">Baseline</th><th scope="col">Scenario</th><th scope="col">Change</th></tr>
-          </thead>
-          <tbody>
-            {c.metrics.map((d) => {
-              const b = base ? d.get(base) : undefined, s = scen ? d.get(scen) : undefined;
-              const df = formatDiff(b, s, d.kind, d.lowerIsBetter);
-              return (
-                <tr key={d.id}>
-                  <th scope="row">{d.label}</th>
-                  <td>{cell(d, base, b)}</td>
-                  <td>{cell(d, scen, s)}</td>
-                  <td className={`chg ${comparing ? df.verdict.replace(/ /g, '-') : 'neutral'}`}>{comparing ? df.text : '—'}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      )}
+      <table className="cmp">
+        <thead>
+          <tr><th scope="col">Metric</th><th scope="col">Baseline</th><th scope="col">Scenario</th><th scope="col">Change</th></tr>
+        </thead>
+        <tbody>
+          {c.metrics.map((d) => {
+            const b = base ? d.get(base) : undefined, s = scen ? d.get(scen) : undefined;
+            const df = formatDiff(b, s, d.kind, d.lowerIsBetter);
+            return (
+              <tr key={d.id}>
+                <th scope="row">{d.label}</th>
+                <td>{formatValue(d.kind, b)}</td>
+                <td>{formatValue(d.kind, s)}</td>
+                <td className={`chg ${comparing ? df.verdict.replace(/ /g, '-') : 'neutral'}`}>{comparing ? df.text : '—'}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </section>
   );
 }
 
+/** Only the caveat shows: the counts of vehicles, backlog and gridlock cover the whole network. */
 function HealthLine({ scen, base }: { scen: Metrics; base: Metrics | null }) {
-  const h = networkHealth(scen);
-  const hb = base ? networkHealth(base) : null;
-  const n = (v: number) => Math.round(v).toLocaleString('en-US');
-  const bad = h.oversaturated || !!hb?.oversaturated;
+  const bad = networkHealth(scen).oversaturated || (!!base && networkHealth(base).oversaturated);
+  if (!bad) return null;
   return (
-    <section className="health" aria-labelledby="health-h">
-      <h3 id="health-h">Network health</h3>
-      <p className="small" aria-label="Network health summary">
-        {n(h.inNetwork)} vehicles on the network · {n(h.backlog)} trips waiting to enter · {n(h.gridlockRemoved)} cleared from gridlock · {n(h.unroutable)} unroutable
-        {hb ? <span className="muted"> (baseline: {n(hb.backlog)} waiting, {n(hb.gridlockRemoved)} cleared)</span> : null}
-      </p>
-      {bad && (
-        <p className="notice" role="note">
-          <strong>The network is oversaturated at this demand level.</strong>{' '}
-          {h.oversaturated ? 'In the scenario' : 'In the baseline'}, {(h.oversaturated ? h : hb!).gridlockRemoved > 0
-            ? `${n((h.oversaturated ? h : hb!).gridlockRemoved)} vehicles had to be removed to clear gridlock`
-            : `${n((h.oversaturated ? h : hb!).backlog)} trips are queued outside waiting to enter`}.
-          Delay and speed figures understate real congestion, so treat comparisons with care. Try a lower demand setting or another period.
-        </p>
-      )}
-    </section>
+    <p className="notice" role="note">
+      <strong>The simulated network is oversaturated at this demand level.</strong>{' '}
+      Real congestion is worse than the model shows, so treat comparisons with care. Try a lower demand setting or another period.
+    </p>
   );
 }

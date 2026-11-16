@@ -1,6 +1,7 @@
 import type { Intervention, Overlay } from '../types';
 import { BADGE_NAME, BADGE_TEXT, type BadgedType } from './mapexport';
 import { changeLabel, changeTicks } from './change';
+import { STUDY_ONLY } from './scope';
 import { divergingStops, rampStops, rampTicks, type Mode } from './ramps';
 
 export interface LegendModel {
@@ -16,11 +17,11 @@ export interface LegendModel {
 /** What the legend row says for the current overlay and view, shared by the on-screen legend and the exported image. */
 export function legendModel(overlay: Overlay, mode: Mode, change: boolean): LegendModel {
   if (change) {
-    return { name: changeLabel(overlay), ticks: changeTicks(overlay), change: true, stops: divergingStops(mode).map((s) => ({ at: (s.t + 1) / 2, color: s.color })) };
+    return { name: `${changeLabel(overlay)} (${STUDY_ONLY})`, ticks: changeTicks(overlay), change: true, stops: divergingStops(mode).map((s) => ({ at: (s.t + 1) / 2, color: s.color })) };
   }
   const colors = rampStops(mode);
-  const name = overlay === 'speed' ? 'Speed in each direction, % of limit' : overlay === 'flow' ? 'Flow: all cars in each direction, cars an hour' : 'Cut-through: through cars on a block, both directions, cars an hour';
-  return { name, ticks: rampTicks(overlay), change: false, stops: colors.map((color, i) => ({ at: i / Math.max(1, colors.length - 1), color })) };
+  const name = overlay === 'flow' ? 'Flow: all cars in each direction, cars an hour' : 'Cut-through: through cars on a block, both directions, cars an hour';
+  return { name: `${name} (${STUDY_ONLY})`, ticks: rampTicks(overlay), change: false, stops: colors.map((color, i) => ({ at: i / Math.max(1, colors.length - 1), color })) };
 }
 
 /** What the map draws besides the colored streets, so the legend can say what each mark means. */

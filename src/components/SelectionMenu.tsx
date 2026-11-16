@@ -5,6 +5,7 @@ import { describeIntervention } from '../lib/describe';
 import { filterSentence, filterText } from '../lib/blocked';
 import { EARLY_LABEL } from '../lib/run';
 import { aggregate, CHANGE_NAME, CHANGE_UNIT, diffValue, formatSigned, metricValue, readoutText } from '../lib/change';
+import { blockMeasured } from '../lib/scope';
 import { linkStatsView, type Overlay } from '../types';
 import {
   blockActions, humpPosition, interventionsAt, mphToMps, nodeActions, controlLabel, type Selection,
@@ -209,11 +210,12 @@ export function SelectionMenu(p: Props) {
         <div>
           <h3 id={`${id}-t`} ref={title} tabIndex={-1} className="sel-title">{heading}</h3>
           <p id={`${id}-s`} className="sel-sub">{sub}</p>
-          {s.kind === 'block' && p.readout && (() => {
+          {s.kind === 'block' && p.readout && !blockMeasured(X.blocks[s.block]) && <p className="sel-readout">Outside the study area: not measured.</p>}
+          {s.kind === 'block' && p.readout && blockMeasured(X.blocks[s.block]) && (() => {
             const blk = X.blocks[s.block], o = p.readout.overlay;
             const b = aggregate(linkStatsView(p.readout.base), blk.links), c = aggregate(linkStatsView(p.readout.scen), blk.links);
-            const n = (v: number | null) => (v === null ? 'no traffic' : `${v.toFixed(o === 'speed' ? 1 : 0)} ${CHANGE_UNIT[o]}`);
-            const spoken = `${CHANGE_NAME[o]}: today ${n(metricValue(o, b))}, with scenario ${n(metricValue(o, c))}, change ${formatSigned(diffValue(o, b, c), o)} ${CHANGE_UNIT[o]}.`;
+            const n = (v: number | null) => (v === null ? 'no traffic' : `${v.toFixed(0)} ${CHANGE_UNIT[o]}`);
+            const spoken = `${CHANGE_NAME[o]}: today ${n(metricValue(o, b))}, with scenario ${n(metricValue(o, c))}, change ${formatSigned(diffValue(o, b, c))} ${CHANGE_UNIT[o]}.`;
             return <p className="sel-readout"><span aria-hidden="true">{readoutText(o, b, c)}<span className="sub"> (today → with scenario)</span>{p.readout.early && <span className="early-tag"> {EARLY_LABEL}</span>}</span><span className="sr-only">{spoken}{p.readout.early ? ` ${EARLY_LABEL}.` : ''}</span></p>;
           })()}
         </div>
