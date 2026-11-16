@@ -9,6 +9,7 @@
 import type { Intervention, Network } from '../types';
 import type { NetIndex } from './naming';
 import { directedLabel } from './naming';
+import { blockMeasured, linkMeasured } from './scope';
 
 /** Version of the stored result. A reader refuses any other. */
 export const REDISTRIBUTION_SCHEMA = 1;
@@ -357,6 +358,8 @@ export interface RedistributionResult {
     matching: Record<Comparison, { baselineRequested: number; matched: number; unmatched: number; mismatched: number }>;
   };
   blocks: BlockRow[];
+  /** One summary of every street outside the measured set (bounding streets beyond the study area and the wider network), in place of block rows. */
+  outside?: { baseline: number; closure: number; package: number; change: Record<Comparison, Effect> };
   health: Record<Role, Health[]>;
   coverage: Record<Role, TraceSummary['detail'][]>;
   notes: string[];
@@ -383,12 +386,12 @@ function chooseBlocks(s: SummaryInput, perHour: number): Map<number, BlockRow['w
     if (!cur.includes(w)) cur.push(w);
     why.set(b, cur);
   };
-  for (const g of [s.graph.closure, s.graph.package]) for (const w of g.witnesses) for (const p of w.paths) for (const l of p.links) add(byLink.get(l), 'witness');
+  for (const g of [s.graph.closure, s.graph.package]) for (const w of g.witnesses) for (const p of w.paths) for (const l of p.links) { const bi = byLink.get(l); if (bi !== undefined && blockMeasured(s.index.blocks[bi])) add(bi, 'witness'); }
   const wanted = (s.requestedStreets ?? []).map((x) => x.toLowerCase());
-  if (wanted.length) s.index.blocks.forEach((b, i) => { if (wanted.some((w) => b.name.toLowerCase().includes(w) && b.inStudyArea)) add(i, 'requested'); });
+  if (wanted.length) s.index.blocks.forEach((b, i) => { if (wanted.some((w) => b.name.toLowerCase().includes(w)) && blockMeasured(b)) add(i, 'requested'); });
   const scored = s.index.blocks.map((b, i) => {
     const d = COMPARISONS.map((c) => Math.abs(mean(s.seeds.map((x) => sumLinks(x.counts[c].all, b.links) - sumLinks(x.counts.baseline.all, b.links))) * perHour));
-    return { i, d: Math.max(...d), focus: b.inFocus };
+    return { i, d: Math.max(...d), focus: blockMeasured(b) };
   }).filter((x) => x.focus && x.d > 0);
   scored.sort((a, b) => b.d - a.d || a.i - b.i);
   for (const x of scored.slice(0, TOP_BLOCKS)) add(x.i, 'largest change');
@@ -441,6 +444,12 @@ export function summarize(s: SummaryInput): RedistributionResult {
     for (const x of s.seeds) for (const [k, v] of Object.entries(get(x)) as [K, number][]) out[k] = (out[k] ?? 0) + v;
     return out;
   };
+  const out = s.net.links.filter((l) => !linkMeasured(l)).map((l) => l.id);
+  const outAll = (role: Role) => mean(per((x) => sumLinks(x.counts[role].all, out)));
+  const outside = {
+    baseline: outAll('baseline'), closure: outAll('closure'), package: outAll('package'),
+    change: Object.fromEntries(COMPARISONS.map((c) => [c, s.paired(per((x) => sumLinks(x.counts[c].all, out) - sumLinks(x.counts.baseline.all, out)))])) as Record<Comparison, Effect>,
+  };
   const notes: string[] = [];
   if (nSeeds < 10) notes.push(`${nSeeds} seed${nSeeds === 1 ? '' : 's'}: fewer than the 10 pairs the reporting method needs, so every interval status reads insufficient.`);
   const skipped = (['baseline', 'closure', 'package'] as Role[]).some((r) => s.seeds.some((x) => x.coverage[r].skippedEvents > 0));
@@ -461,7 +470,7 @@ export function summarize(s: SummaryInput): RedistributionResult {
       routes: [...routes.values()].sort((a, b) => b.counts.baseline + b.counts.closure + b.counts.package - (a.counts.baseline + a.counts.closure + a.counts.package) || a.key.localeCompare(b.key)),
       matching: { closure: addRec((x) => x.matching.closure), package: addRec((x) => x.matching.package) },
     },
-    blocks,
+    blocks, outside,
     health: { baseline: s.seeds.map((x) => x.health.baseline), closure: s.seeds.map((x) => x.health.closure), package: s.seeds.map((x) => x.health.package) },
     coverage: { baseline: s.seeds.map((x) => x.coverage.baseline), closure: s.seeds.map((x) => x.coverage.closure), package: s.seeds.map((x) => x.coverage.package) },
     notes,

@@ -1,17 +1,20 @@
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Metrics } from '../types';
 import { NavLink } from './Anchor';
-import { CARDS, MODE_CARDS, emptyMode, hasModes, networkHealth, summarize, type CardDef, type MetricDef, type ModeCardId } from '../lib/metrics';
+import { CARDS, networkHealth, summarize, type CardDef, type MetricDef } from '../lib/metrics';
+import { SCOPE } from '../lib/scope';
 import { EARLY_NOTE, isEarly, RUN_SECONDS } from '../lib/run';
 import { formatDiff, formatValue } from '../lib/format';
 
 interface Props {
   base: Metrics | null; scen: Metrics | null; comparing: boolean; finished: boolean; withheld?: boolean; scenarioCount: number;
+  /** Mean speed on the bounding streets inside the study area, m/s, from link stats. */
+  bounding?: { base: number; scen: number } | null;
   /** Rendered after the through-traffic card. */
   intents?: ReactNode;
 }
 
-export function Comparison({ base, scen, comparing, finished, withheld = false, scenarioCount, intents }: Props) {
+export function Comparison({ base, scen, comparing, finished, withheld = false, scenarioCount, bounding = null, intents }: Props) {
   // Throttled polite announcement: at most once per 20 s of wall time, only while a scenario exists.
   const [announce, setAnnounce] = useState('');
   const last = useRef(0);
@@ -45,15 +48,10 @@ export function Comparison({ base, scen, comparing, finished, withheld = false, 
       {scen && isEarly(finished, elapsed) && <p className="notice" role="note">{EARLY_NOTE}</p>}
       {scen && <HealthLine scen={scen} base={comparing ? base : null} />}
       {CARDS.map((c) => <Fragment key={c.id}><CardTable c={c} base={base} scen={scen} comparing={comparing} />{c.id === 'cut' && intents}</Fragment>)}
-      {scen && !hasModes(scen) && (
-        <section className="card" aria-labelledby="card-modes-na">
-          <h3 id="card-modes-na">Walking and biking</h3>
-          <p className="muted small">Not available: this simulation build has no walking or biking agents.</p>
-        </section>
-      )}
-      {hasModes(scen) && MODE_CARDS.map((c) => (
-        <CardTable key={c.id} c={c} base={base} scen={scen} comparing={comparing} empty={emptyMode(c.id as ModeCardId, [base, scen])} />
-      ))}
+      {scen && SCOPE === 'study' && <BoundingCard bounding={bounding} comparing={comparing} />}
+      <p className="muted small" role="note">
+        Figures are for streets inside the study area only. Trip times, delay, completed and unroutable trips, walking and biking indicators and network totals cover the whole simulated network, so they are not shown here.
+      </p>
       </>}
       <aside className="caveat" aria-label="Caveat about fixed demand">
         Trip demand is fixed in this version: the same trips are made before and after every change, so these results are conditional
@@ -113,27 +111,35 @@ function CardTable({ c, base, scen, comparing, empty }: { c: CardDef; base: Metr
   );
 }
 
-function HealthLine({ scen, base }: { scen: Metrics; base: Metrics | null }) {
-  const h = networkHealth(scen);
-  const hb = base ? networkHealth(base) : null;
-  const n = (v: number) => Math.round(v).toLocaleString('en-US');
-  const bad = h.oversaturated || !!hb?.oversaturated;
+function BoundingCard({ bounding, comparing }: { bounding: { base: number; scen: number } | null; comparing: boolean }) {
+  const b = bounding?.base, s = bounding?.scen;
+  const df = formatDiff(b, s, 'speed', false);
   return (
-    <section className="health" aria-labelledby="health-h">
-      <h3 id="health-h">Network health</h3>
-      <p className="small" aria-label="Network health summary">
-        {n(h.inNetwork)} vehicles on the network · {n(h.backlog)} trips waiting to enter · {n(h.gridlockRemoved)} cleared from gridlock · {n(h.unroutable)} unroutable
-        {hb ? <span className="muted"> (baseline: {n(hb.backlog)} waiting, {n(hb.gridlockRemoved)} cleared)</span> : null}
-      </p>
-      {bad && (
-        <p className="notice" role="note">
-          <strong>The network is oversaturated at this demand level.</strong>{' '}
-          {h.oversaturated ? 'In the scenario' : 'In the baseline'}, {(h.oversaturated ? h : hb!).gridlockRemoved > 0
-            ? `${n((h.oversaturated ? h : hb!).gridlockRemoved)} vehicles had to be removed to clear gridlock`
-            : `${n((h.oversaturated ? h : hb!).backlog)} trips are queued outside waiting to enter`}.
-          Delay and speed figures understate real congestion, so treat comparisons with care. Try a lower demand setting or another period.
-        </p>
-      )}
+    <section className="card" aria-labelledby="card-bounding">
+      <h3 id="card-bounding">Bounding streets</h3>
+      <p className="muted small">Mean car speed on the arterials inside the study area only, weighted by time on the street. Arterial stretches outside the study area are not counted.</p>
+      <table className="cmp">
+        <thead><tr><th scope="col">Metric</th><th scope="col">Baseline</th><th scope="col">Scenario</th><th scope="col">Change</th></tr></thead>
+        <tbody>
+          <tr>
+            <th scope="row">Bounding-street mean speed, inside the study area</th>
+            <td>{formatValue('speed', b)}</td><td>{formatValue('speed', s)}</td>
+            <td className={`chg ${comparing ? df.verdict.replace(/ /g, '-') : 'neutral'}`}>{comparing ? df.text : '—'}</td>
+          </tr>
+        </tbody>
+      </table>
     </section>
+  );
+}
+
+/** Counts of vehicles, backlog and gridlock cover the whole network, so only the caveat shows, without figures. */
+function HealthLine({ scen, base }: { scen: Metrics; base: Metrics | null }) {
+  const bad = networkHealth(scen).oversaturated || (!!base && networkHealth(base).oversaturated);
+  if (!bad) return null;
+  return (
+    <p className="notice" role="note">
+      <strong>The simulated network is oversaturated at this demand level.</strong>{' '}
+      Speed figures understate real congestion, so treat comparisons with care. Try a lower demand setting or another period.
+    </p>
   );
 }

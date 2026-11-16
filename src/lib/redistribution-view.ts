@@ -2,6 +2,7 @@
 import type { Intervention, Network } from '../types';
 import type { BlockRow, Comparison, Effect, GraphQuery, RedistributionResult, RouteRow } from './redistribution';
 import { FAR_ROUTE } from './redistribution';
+import { blockMeasured } from './scope';
 
 /** Intervention types that can remove car movements, so a cohort of displaced trips exists. */
 export const TRACEABLE: Intervention['type'][] = ['modal_filter', 'turn_ban', 'diagonal_diverter', 'one_way'];
@@ -74,7 +75,7 @@ export const isFar = (row: RouteRow) => row.key === FAR_ROUTE;
 
 /** Blocks to draw for the net layer: a resolved or raw change of at least one car an hour in the comparison. */
 export function netBlocks(r: RedistributionResult, c: Comparison): BlockRow[] {
-  return r.blocks.filter((b) => Math.abs(b.change[c].all.mean) >= 1);
+  return r.blocks.filter((b) => blockMeasured(b) && Math.abs(b.change[c].all.mean) >= 1);
 }
 
 export interface Frame { minX: number; maxY: number; w: number; h: number; links: { id: number; d: string; major: boolean }[] }

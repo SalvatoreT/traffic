@@ -1,4 +1,5 @@
-import { SAFETY_VERSION, type Metrics, type SeveritySummary } from '../types';
+import { SAFETY_VERSION, type Metrics, type Network, type SeveritySummary } from '../types';
+import { linkMeasured } from './scope';
 import { formatDiff, formatValue, type Diff, type Kind } from './format';
 
 export interface MetricDef {
@@ -21,23 +22,13 @@ export const CARDS: CardDef[] = [
   },
   {
     id: 'safety', title: 'Safety indicators',
-    note: 'Surrogate indicators, not crash predictions. Local = residential streets in the study area.',
+    note: 'Surrogate indicators, not crash predictions. Local = residential streets inside the study area; streets outside it are not counted.',
     metrics: [
       { id: 'meanSpeed', label: 'Local mean speed', kind: 'speed', lowerIsBetter: true, get: (m) => m.safety.localMeanSpeed },
       { id: 'p85', label: 'Local 85th-percentile speed', kind: 'speed', lowerIsBetter: true, get: (m) => m.safety.localP85Speed },
       { id: 'a20', label: 'Share above 20 mph', kind: 'share', lowerIsBetter: true, get: (m) => m.safety.shareAbove20mph },
       { id: 'a25', label: 'Share above 25 mph', kind: 'share', lowerIsBetter: true, get: (m) => m.safety.shareAbove25mph },
       { id: 'ttc', label: 'Close-following conflicts (TTC < 1.5 s)', kind: 'count', lowerIsBetter: true, get: (m) => m.safety.ttcConflicts },
-    ],
-  },
-  {
-    id: 'delay', title: 'Delay and throughput',
-    metrics: [
-      { id: 'trip', label: 'Mean trip time', kind: 'minutes', lowerIsBetter: true, get: (m) => m.meanTripTime },
-      { id: 'delay', label: 'Mean trip delay', kind: 'minutes', lowerIsBetter: true, get: (m) => m.meanTripDelay },
-      { id: 'done', label: 'Completed trips', kind: 'count', lowerIsBetter: false, get: (m) => m.completedTrips },
-      { id: 'art', label: 'Arterial mean speed', kind: 'speed', lowerIsBetter: false, get: (m) => m.arterialMeanSpeed },
-      { id: 'unr', label: 'Unroutable trips', kind: 'count', lowerIsBetter: true, get: (m) => m.unroutableTrips },
     ],
   },
 ];
@@ -135,15 +126,14 @@ export function vulnerableSentence(base: Metrics, scen: Metrics): string {
 }
 
 export function summarize(base: Metrics, scen: Metrics): string {
-  const pick = ['ctVeh', 'meanSpeed', 'ttc', 'trip', 'art'];
+  const pick = ['ctVeh', 'meanSpeed', 'ttc'];
   const parts: string[] = [];
   for (const c of CARDS) for (const d of c.metrics) {
     if (!pick.includes(d.id)) continue;
     const df: Diff = formatDiff(d.get(base), d.get(scen), d.kind, d.lowerIsBetter);
     parts.push(`${d.label} ${df.direction === 'same' ? 'about the same' : `${df.direction === 'up' ? 'up' : 'down'} ${df.pct === null ? '' : Math.abs(df.pct).toFixed(0) + '%'}, ${df.verdict}`} at ${formatValue(d.kind, d.get(scen))}`);
   }
-  const vul = vulnerableSentence(base, scen);
-  return `Scenario versus baseline after ${Math.round(scen.time / 60)} simulated minutes. ${parts.join('. ')}.${vul ? ` ${vul}` : ''}`;
+  return `Scenario versus baseline after ${Math.round(scen.time / 60)} simulated minutes, inside the study area only. ${parts.join('. ')}.`;
 }
 
 export interface NetworkHealth {
@@ -159,4 +149,18 @@ export function networkHealth(m: Metrics): NetworkHealth {
     gridlockRemoved, backlog, unroutable: m.unroutableTrips ?? 0, inNetwork: m.vehiclesInNetwork ?? 0,
     oversaturated: gridlockRemoved > 0 || bigBacklog,
   };
+}
+
+/** Vehicle-time-weighted mean speed (m/s) over the study-area streets that are not side streets, from link stats (stride 4: flow veh/h, speed m/s, cut, density); NaN when none carries traffic. */
+export function boundingMeanSpeed(net: Network, stats: Float32Array | null): number {
+  if (!stats) return NaN;
+  let w = 0, ws = 0;
+  for (const l of net.links) {
+    if (!linkMeasured(l) || l.class === 'residential' || l.class === 'service') continue;
+    const flow = stats[l.id * 4], v = stats[l.id * 4 + 1];
+    if (!(flow > 0) || !(v > 0)) continue;
+    const t = (flow * l.length) / v;
+    w += t; ws += t * v;
+  }
+  return w > 0 ? ws / w : NaN;
 }

@@ -493,7 +493,7 @@ export function allTrafficHeadline(rows: AllTrafficRow[]): { none: boolean; figu
   return {
     none: false,
     figure: n > 0 ? `+${n}` : n < 0 ? `${MINUS}${-n}` : '0',
-    label: `all cars an hour on ${r.block} (${r.period}), ${Math.round(r.before)} → ${Math.round(r.after)}: the largest rise on any side-street block`,
+    label: `all cars an hour on ${r.block} (${r.period}), ${Math.round(r.before)} → ${Math.round(r.after)}: the largest rise on any side-street block inside the study area`,
     split: `Through cars ${signedNum(r.through, '', 0).trim()}, local trips ${signedNum(r.local, '', 0).trim()}.`,
     interval: r.interval, attribution,
   };

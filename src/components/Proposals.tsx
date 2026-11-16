@@ -10,6 +10,7 @@ import type { NetIndex } from '../lib/naming';
 import { checkThroughRoutes, ROUTE_CAVEAT } from '../lib/throughroutes';
 import { buildMockProposals } from '../fixtures/proposals';
 import { canTrace } from '../lib/redistribution-view';
+import { SCOPE } from '../lib/scope';
 import {
   allTrafficHeadline, allTrafficNote, allTrafficRows, beforeAfterPct, comparisonText, cutThroughHeadline, evidenceNote, fetchProposals, formatComputed, harmHeadline, INTERVAL_SCOPE, intervalText, periodsPhrase,
   linkHash, listOptions, needsConfirm, openReducer, parseProposals, provenanceLine, proposalNotices, proposalsUrl, seedsPhrase, signedNum, signedPct,
@@ -289,7 +290,7 @@ function Card({ p, group, evidence, comparison, comparisonLabel, shareUrl, onCop
             </tbody>
           </table>
         </div>
-        <h5>All traffic on side-street blocks (through and local trips together)</h5>
+        <h5>All traffic on side-street blocks inside the study area (through and local trips together)</h5>
         <p className="muted small">
           Every car on one block, both directions, including the local trips of people who start or end a trip in the area. For each period, the block with the largest increase in all cars is named. The search itself penalizes the largest rise in all cars on any one block past an assumed noise band, because residents experience all the cars on their street. That block can differ from the one with the largest increase, so it is listed beside it. The penalty is a screening rule, not an uncertainty interval.
         </p>
@@ -321,6 +322,7 @@ function Card({ p, group, evidence, comparison, comparisonLabel, shareUrl, onCop
         {allNote && <p className="small">{allNote}</p>}
         <p className="muted small">{all.attribution}</p>
         <p className="muted small">The figures below are reported for information. They were not part of the search goal.</p>
+        {SCOPE === 'study' && <>
         <h5>Bounding streets</h5>
         <p className="muted small">All cars on each street inside the area, change from today, average of the periods.</p>
         <table>
@@ -332,13 +334,7 @@ function Card({ p, group, evidence, comparison, comparisonLabel, shareUrl, onCop
             ))}
           </tbody>
         </table>
-        <h5>Inside the area</h5>
-        <p className="muted small">Change from today, average of the periods.</p>
-        <dl className="ctx">
-          <div><dt>Trip time for trips starting or ending inside</dt><dd>{signedPct(p.context.insideTripTimeChangePct)}</dd></div>
-          <div><dt>Walking conflicts</dt><dd>{signedPct(p.context.pedConflictsChangePct)}</dd></div>
-          <div><dt>Biking conflicts</dt><dd>{signedPct(p.context.bikeConflictsChangePct)}</dd></div>
-        </dl>
+        </>}
       </details>
       {!hasPic && action}
     </li>

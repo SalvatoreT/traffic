@@ -296,8 +296,8 @@ input[type='checkbox'] { width: 18px; height: 18px; accent-color: var(--accent);
 /* Legend: a docked row along the bottom of the map */
 .legend { position: absolute; left: 0; right: 0; bottom: 0; z-index: 5; background: color-mix(in srgb, var(--surface) 96%, transparent); border-top: 1px solid var(--border); box-shadow: 0 -2px 10px rgba(20, 30, 45, .08); font-size: .85rem; }
 .legend-row { display: flex; align-items: center; gap: .6rem; min-height: 40px; padding: 2px .4rem 2px .75rem; }
-.legend-name { display: flex; align-items: center; gap: .2rem; flex: none; font-weight: 600; position: relative; }
-.legend-title { white-space: nowrap; }
+.legend-name { display: flex; align-items: center; gap: .2rem; flex: 1 1 auto; min-width: 0; font-weight: 600; position: relative; }
+.legend-title { white-space: normal; }
 .ramp-bar { height: 10px; border-radius: 3px; border: 1px solid var(--border); }
 .is-change .ramp-bar { height: 16px; border: 0; border-radius: 0; }
 .ramp-mid { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .18s ease-out; }

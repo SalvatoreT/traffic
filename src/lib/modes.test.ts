@@ -64,7 +64,8 @@ describe('walking and biking summary', () => {
     expect(t).toContain('pedestrian conflicts down 50%, better');
     expect(t).toContain('cyclist conflicts about the same');
     expect(t).not.toMatch(/combined (injury|risk)/);
-    expect(summarize(b, s)).toContain('people walking and biking');
+    expect(summarize(b, s)).toContain('inside the study area only');
+    expect(summarize(b, s)).not.toContain('walking and biking');
   });
   it('reports each endpoint with its own change and support, and no sum', () => {
     const s = withModes(b, { pedestrian: sevOf('AIS4+', 100, 0.4), cyclist: { ...b.vulnerable!.cyclist, ...sevOf('MAIS3+F', 50, 0.05, 5) } });

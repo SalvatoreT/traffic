@@ -5,7 +5,7 @@
 
 export const PROPOSALS_LEAD = "Each proposal is a package of changes found by searching the simulation for the most through traffic removed from the area's side streets with the least traffic added to any one of them. They are listed by through cars removed, largest first. A card shows through cars an hour before and after, then the largest rise in all cars on any one block, then the changes. Everything else is under More detail. Every figure is a mean over the runs named on its card, with a 95% interval over those runs when the file records one.";
 
-export const STREETS_INTRO = "A text alternative to the map: one row per street block (both directions combined), limited to the study area and the streets around it that the map shows. Each count is cars an hour on that one block, both directions: all cars (local trips included) and, separately, only the through cars among them, which cross the area without a trip that starts or ends in it. Through cars are always part of all cars, never added to them. Speed in mph, flow-weighted.";
+export const STREETS_INTRO = "A text alternative to the map: one row per street block (both directions combined), inside the study area only. Streets outside it are not measured and are not listed. Each count is cars an hour on that one block, both directions: all cars (local trips included) and, separately, only the through cars among them, which cross the area without a trip that starts or ends in it. Through cars are always part of all cars, never added to them. Speed in mph, flow-weighted.";
 
 export const ASSUMPTIONS_INTRO = "These are the judgment calls in the model: the parts that rest on reasoning and not on a count. They are the first things to question, and changing any of them would change the results.";
 

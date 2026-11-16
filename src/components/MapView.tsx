@@ -25,6 +25,7 @@ import { INTENT_COLORS, INTENT_DASH } from '../lib/intents';
 import { towardLabel, type NetIndex } from '../lib/naming';
 import { hoverLine } from '../lib/hoverline';
 import { EARLY_LABEL } from '../lib/run';
+import { linkMeasured } from '../lib/scope';
 import { describeInterventionFull, interventionPoint } from '../lib/describe';
 import { barPx, blockBar, filterLegs, legBars, type Bar } from '../lib/blocked';
 import type { SimClient } from '../sim/client';
@@ -92,6 +93,8 @@ const KIND_STYLE = {
 const HOVER_FILL = { light: '#f5a300', dark: '#ffc94d' };
 const HOVER_EDGE = { light: '#1a1a1a', dark: '#ffffff' };
 const mutedFor = mutedColor;
+/** Streets outside the study area: the basemap's major-street gray, no ramp. */
+const contextColor = (mode: Mode): string => KIND_STYLE[mode].major;
 function ramp(mode: Mode, view: ChangeView = 'scenario'): unknown[] {
   const muted = mutedFor(mode);
   if (view === 'change') {
@@ -166,7 +169,7 @@ function clipData(b: AreaBundle, region: Region) {
     if (!parts.length) continue;
     linkVisible[l.id] = 1;
     links.push({
-      type: 'Feature', id: l.id, properties: { id: l.id, bikeLane: !!l.bikeLane, bikeRoute: !!l.bikeRoute && !l.bikeLane },
+      type: 'Feature', id: l.id, properties: { id: l.id, shade: linkMeasured(l), bikeLane: !!l.bikeLane, bikeRoute: !!l.bikeRoute && !l.bikeLane },
       geometry: parts.length === 1 ? { type: 'LineString', coordinates: toLL(parts[0]) } : { type: 'MultiLineString', coordinates: parts.map(toLL) },
     });
   }
@@ -616,7 +619,9 @@ export function MapView(p: Props) {
       CELL_DASHES.forEach((dash, k) => map.addLayer({ id: `cells-${k}`, type: 'line', source: 'cells', filter: ['==', ['get', 'pat'], k],
         layout: { 'line-cap': 'butt', 'line-join': 'round' },
         paint: { 'line-color': ['get', 'color'], 'line-opacity': 0.55, 'line-dasharray': dash as never, 'line-width': ['interpolate', ['linear'], ['zoom'], 14, 9, 18, 22] as never } }));
-      map.addLayer({ id: 'links-casing', type: 'line', source: 'links', layout: { 'line-cap': 'butt', 'line-join': 'round' },
+      map.addLayer({ id: 'links-context', type: 'line', source: 'links', filter: ['!', ['get', 'shade']] as never, layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: { 'line-color': contextColor(live.current.mode), 'line-width': ['interpolate', ['linear'], ['zoom'], 14, 0.8, 18, 2.2] as never, 'line-offset': OFFSET as never } });
+      map.addLayer({ id: 'links-casing', type: 'line', source: 'links', filter: ['get', 'shade'] as never, layout: { 'line-cap': 'butt', 'line-join': 'round' },
         paint: { 'line-color': mode === 'dark' ? '#0b1118' : '#ffffff', 'line-opacity': 0.85, 'line-width': casingWidth(live.current.view) as never, 'line-offset': OFFSET as never } });
       const bikeVis = live.current.showBikeNet ? 'visible' : 'none';
       const BN = BIKENET[live.current.mode];
@@ -626,7 +631,7 @@ export function MapView(p: Props) {
       map.addLayer({ id: 'bike-lane', type: 'line', source: 'links', filter: ['get', 'bikeLane'] as never,
         layout: { 'line-cap': 'butt', 'line-join': 'round', visibility: bikeVis },
         paint: { 'line-color': BN.color, 'line-opacity': bikeOpacity(BN.lane, 11.5, 14), 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 0.6, 14, 1.5, 18, 3] as never, 'line-offset': OFFSET as never } });
-      map.addLayer({ id: 'links', type: 'line', source: 'links', layout: { 'line-cap': 'butt', 'line-join': 'round' },
+      map.addLayer({ id: 'links', type: 'line', source: 'links', filter: ['get', 'shade'] as never, layout: { 'line-cap': 'butt', 'line-join': 'round' },
         paint: { 'line-color': ramp(mode, live.current.view) as never, 'line-width': widthExpr(live.current.view) as never, 'line-offset': OFFSET as never } });
       // Barrier bars sit at a map point and turn with the street. Their size follows the road casing's own zoom stops, so they shrink with the roads.
       map.addImage('barrier-bar', barImage(), { pixelRatio: BAR_PR });
@@ -714,6 +719,7 @@ export function MapView(p: Props) {
     map.setPaintProperty('sel-node-edge', 'circle-stroke-color', SEL_EDGE[mode]);
     map.setPaintProperty('links-casing', 'line-color', mode === 'dark' ? '#0b1118' : '#ffffff');
     map.setPaintProperty('links', 'line-color', ramp(mode, live.current.view) as never);
+    map.setPaintProperty('links-context', 'line-color', contextColor(mode));
     map.setPaintProperty('bike-lane', 'line-color', BIKENET[mode].color);
     map.setPaintProperty('bike-route', 'line-color', BIKENET[mode].color);
     map.setPaintProperty('bike-lane', 'line-opacity', bikeOpacity(BIKENET[mode].lane, 11.5, 14));
@@ -796,7 +802,7 @@ export function MapView(p: Props) {
     if (prevT.current.length !== links.length) prevT.current = new Float32Array(links.length).fill(-3);
     const mk: number[] = [];
     for (let i = 0; i < links.length; i++) {
-      if (!vis[i]) continue;
+      if (!vis[i] || !linkMeasured(links[i])) continue;
       const l = links[i];
       const blk = p.index.blocks[p.index.blockOfLink[i]].links;
       const t = quantizeIntensity(change ? (ls && p.baseStats ? linkChangeIntensity(p.overlay, B, S, i, blk) : NO_DATA)
@@ -1063,7 +1069,7 @@ export function MapView(p: Props) {
   }, [selKey, p.selection && p.selection.kind === 'block' ? p.selection.point : null, bundle, proj, p.index]); // eslint-disable-line
 
   const lines = useMemo(() => {
-    if (hoverLink === null) return [];
+    if (hoverLink === null || !linkMeasured(bundle.network.links[hoverLink])) return [];
     const net = bundle.network, blk = p.index.blocks[p.index.blockOfLink[hoverLink]];
     const stats = p.linkStats ? linkStatsView(p.linkStats) : null, base = p.baseStats ? linkStatsView(p.baseStats) : null;
     const two = blk.links.length > 1;
@@ -1086,6 +1092,9 @@ export function MapView(p: Props) {
       {hoverText && !p.popover && (
         <div className="map-hint" aria-hidden="true">
           <div>{hoverText}</div>
+          {lines.length === 0 && hoverLink !== null && (
+            <div className="map-hint-metric"><div className="map-hint-name">Outside the study area: not measured</div></div>
+          )}
           {lines.length > 0 && (
             <div className="map-hint-metric">
               <div className="map-hint-name">{lines[0].name}{p.early && <span className="early-tag"> {EARLY_LABEL}</span>}</div>
