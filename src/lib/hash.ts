@@ -3,6 +3,7 @@ import { makeProjection } from './projection';
 import { decodeGeohash, encodeGeohash } from './geohash';
 import { nearestOnPolyline, pointAlong, polylineLength } from './geom';
 import { nodeLegs } from './diverter';
+import { streetRun } from './slowstreet';
 
 /**
  * Scenario links: `#v1;a=<area>;p=<period>;d=<scale>;s=<item>~<item>`
@@ -10,6 +11,7 @@ import { nodeLegs } from './diverter';
  *   mf  modal filter on a block        mn  modal filter at an intersection; optional third field: bearings (whole degrees, joined by `.`)
  *                                          of the legs it closes, as `90.270`; absent: every leg
  *   sl  speed limit (m/s)              sh  speed hump (the hump's own point)
+ *   ss  Slow Street: 15 mph on every block of the street of that block, inside the study area (any block of it; no parameter)
  *   tc  traffic circle                 ct  control (s a t u c)
  *   st  signal cycle (s)               ow  one-way (kept direction, bearing in degrees)
  *   tb  turn ban (intersection, inbound bearing, outbound bearing)
@@ -29,7 +31,7 @@ export interface EncodeOptions { area?: string | null; period?: string; demandSc
 const CONTROL_CODE: Record<ControlType, string> = { signal: 's', all_way_stop: 'a', two_way_stop: 't', uncontrolled: 'u', traffic_circle: 'c' };
 const CODE_CONTROL = Object.fromEntries(Object.entries(CONTROL_CODE).map(([k, v]) => [v, k])) as Record<string, ControlType>;
 const TYPE_OF_CODE: Record<string, Intervention['type']> = {
-  mf: 'modal_filter', mn: 'modal_filter', sl: 'speed_limit', sh: 'speed_hump', tc: 'traffic_circle',
+  mf: 'modal_filter', mn: 'modal_filter', sl: 'speed_limit', ss: 'slow_street', sh: 'speed_hump', tc: 'traffic_circle',
   ct: 'control', st: 'signal_timing', ow: 'one_way', tb: 'turn_ban', dd: 'diagonal_diverter',
 };
 
@@ -101,6 +103,7 @@ export function encodeScenario(net: Network, interventions: Intervention[], opts
         break;
       }
       case 'speed_limit': { const p = pt(blockPoint(net, iv.link)); if (p) s = `sl,${p},${num(iv.speed, 2)}`; break; }
+      case 'slow_street': { const run = streetRun(net, iv.link); const p = run ? pt(blockPoint(net, run.canonical)) : null; if (p) s = `ss,${p}`; break; }
       case 'speed_hump': {
         const l = net.links[iv.link];
         if (l) { const q = pointAlong(l.geometry, iv.position); s = `sh,${pt([q.x, q.y])}`; }
@@ -194,6 +197,7 @@ const PARAMS_OK: Record<string, (f: string[]) => boolean> = {
   mn: (f) => f[2] === undefined || (/^\d{1,3}(\.\d{1,3})*$/.test(f[2]) && f[2].split('.').length <= 12 && f[2].split('.').every((b) => isNum(Number(b), 0, 359))),
   sh: () => true, tc: () => true,
   sl: (f) => isNum(Number(f[2]), 1, 40),
+  ss: (f) => f[2] === undefined,
   ow: (f) => isNum(Number(f[2]), 0, 360),
   tb: (f) => isNum(Number(f[2]), 0, 360) && isNum(Number(f[3]), 0, 360),
   ct: (f) => Object.hasOwn(CODE_CONTROL, f[2]),
@@ -238,6 +242,12 @@ export function decodeScenario(net: Network, hash: string): DecodedScenario {
       case 'sl': {
         const m = matchLink(net, x, y);
         if (m) out.interventions.push({ type: 'speed_limit', link: m.id, speed: p3 }); else miss(noStreet);
+        break;
+      }
+      case 'ss': {
+        const m = matchLink(net, x, y);
+        const run = m ? streetRun(net, m.id) : null;
+        if (run) out.interventions.push({ type: 'slow_street', link: run.canonical }); else miss(noStreet);
         break;
       }
       case 'sh': {

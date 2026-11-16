@@ -3,6 +3,7 @@ import { compassWord, headingTo, type NetIndex } from './naming';
 import { pointAlong } from './geom';
 import { controlLabel } from './selection';
 import { connectedLabel } from './diverter';
+import { slowStreetLabel, streetRun } from './slowstreet';
 import { closedLegs, closedLegsLabel, filterLegs, filterSentence, filterText } from './blocked';
 
 const atOthers = (streets: string[], shut: { street: string }[], fallback: string) => {
@@ -21,6 +22,7 @@ export function describeIntervention(iv: Intervention, net: AreaBundle['network'
       return shut.length === 0 || shut.length === f.legs.length ? `Modal filter at ${nn(iv.node)}` : `Modal filter on ${closedLegsLabel(f, shut)} at ${atOthers(f.streets, shut, nn(iv.node))}`;
     }
     case 'speed_limit': return `Speed limit ${Math.round(iv.speed * 2.23694)} mph on ${ln(iv.link)}`;
+    case 'slow_street': { const run = streetRun(net, iv.link); return run ? slowStreetLabel(run) : 'Slow Street'; }
     case 'speed_hump': return `Speed hump on ${ln(iv.link)}`;
     case 'traffic_circle': return `Traffic circle at ${nn(iv.node)}`;
     case 'control': return `${controlLabel(iv.control)} at ${nn(iv.node)}`;
@@ -55,14 +57,14 @@ export function interventionPoint(iv: Intervention, net: AreaBundle['network']):
   switch (iv.type) {
     case 'modal_filter': return 'link' in iv ? mid(iv.link) : node(iv.node);
     case 'speed_hump': return mid(iv.link, iv.position);
-    case 'speed_limit': case 'one_way': return mid(iv.link);
+    case 'speed_limit': case 'slow_street': case 'one_way': return mid(iv.link);
     case 'turn_ban': return node(net.links[iv.fromLink]?.to ?? 0);
     default: return node(iv.node);
   }
 }
 
 const TYPE_LABEL: Record<Intervention['type'], string> = {
-  modal_filter: 'Modal filter', speed_limit: 'Speed limit', speed_hump: 'Speed hump', traffic_circle: 'Traffic circle',
+  modal_filter: 'Modal filter', speed_limit: 'Speed limit', slow_street: 'Slow Street', speed_hump: 'Speed hump', traffic_circle: 'Traffic circle',
   control: 'Intersection control', signal_timing: 'Signal timing', one_way: 'One-way street', turn_ban: 'Turn ban',
   diagonal_diverter: 'Diagonal diverter',
 };

@@ -11,19 +11,41 @@ pub fn simulator_fingerprint() -> String {
 #[wasm_bindgen(js_name = Simulation)]
 pub struct WasmSimulation {
     inner: crate::sim::Simulation,
+    network_json: String,
+}
+
+/// The engine's form of an intervention list (`explore::street::expand`): Slow Streets become per-block speed limits. A list with none is passed on untouched.
+fn expand_list(network_json: &str, list: &serde_json::Value) -> Result<Option<String>, String> {
+    let has = list.as_array().map_or(false, |a| a.iter().any(|v| v["type"] == crate::explore::street::TYPE));
+    if !has {
+        return Ok(None);
+    }
+    let net: crate::model::Network = serde_json::from_str(network_json).map_err(|e| format!("network: {e}"))?;
+    let ivs: Vec<crate::model::Intervention> = serde_json::from_value(list.clone()).map_err(|e| format!("interventions: {e}"))?;
+    serde_json::to_string(&crate::explore::street::expand(&net, &ivs)).map(Some).map_err(|e| e.to_string())
 }
 
 #[wasm_bindgen(js_class = Simulation)]
 impl WasmSimulation {
     #[wasm_bindgen(constructor)]
     pub fn new(network_json: &str, demand_json: &str, config_json: &str) -> Result<WasmSimulation, JsError> {
-        let inner = crate::sim::Simulation::new(network_json, demand_json, config_json).map_err(|e| JsError::new(&e))?;
-        Ok(WasmSimulation { inner })
+        let mut cfg: serde_json::Value = serde_json::from_str(config_json).map_err(|e| JsError::new(&format!("config: {e}")))?;
+        let config_json = match expand_list(network_json, &cfg["interventions"]).map_err(|e| JsError::new(&e))? {
+            Some(list) => {
+                cfg["interventions"] = serde_json::from_str(&list).map_err(|e| JsError::new(&e.to_string()))?;
+                cfg.to_string()
+            }
+            None => config_json.to_string(),
+        };
+        let inner = crate::sim::Simulation::new(network_json, demand_json, &config_json).map_err(|e| JsError::new(&e))?;
+        Ok(WasmSimulation { inner, network_json: network_json.to_string() })
     }
 
     #[wasm_bindgen(js_name = setInterventions)]
     pub fn set_interventions(&mut self, json: &str) -> Result<(), JsError> {
-        self.inner.set_interventions(json).map_err(|e| JsError::new(&e))
+        let list: serde_json::Value = serde_json::from_str(json).map_err(|e| JsError::new(&format!("interventions: {e}")))?;
+        let json = expand_list(&self.network_json, &list).map_err(|e| JsError::new(&e))?.unwrap_or_else(|| json.to_string());
+        self.inner.set_interventions(&json).map_err(|e| JsError::new(&e))
     }
 
     pub fn step(&mut self, seconds: f64) {
@@ -97,7 +119,9 @@ pub fn redistribution_graph(network_json: &str, period: &str, mode: &str, base_j
             serde_json::from_str(s).map_err(|e| JsError::new(&format!("interventions: {e}")))
         }
     };
-    Ok(crate::redistribution::analyze(&net, period, mode, &parse(base_json)?, &parse(scenario_json)?).to_string())
+    let (base, scenario) = (parse(base_json)?, parse(scenario_json)?);
+    let (base, scenario) = (crate::explore::street::expand(&net, &base), crate::explore::street::expand(&net, &scenario));
+    Ok(crate::redistribution::analyze(&net, period, mode, &base, &scenario).to_string())
 }
 
 /// The established paired estimate (`explore::paired`, method `REPORT_METHOD`) of per-seed differences, JSON with `n`, `mean`, `sd`,

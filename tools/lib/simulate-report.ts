@@ -148,7 +148,7 @@ export function parseInterventionsJson(net: Network, text: string): Intervention
   if (!list) throw new CliError('The interventions file must be a JSON list, or an object with an "interventions" list.', EXIT.usage);
   const nl = net.links.length, nn = net.nodes.length;
   return list.map((v, i) => {
-    const bad = (why: string) => new CliError(`Intervention ${i + 1}: ${why} Types: modal_filter, speed_limit, speed_hump, traffic_circle, control, signal_timing, one_way, turn_ban, diagonal_diverter.`, EXIT.usage);
+    const bad = (why: string) => new CliError(`Intervention ${i + 1}: ${why} Types: modal_filter, speed_limit, slow_street, speed_hump, traffic_circle, control, signal_timing, one_way, turn_ban, diagonal_diverter.`, EXIT.usage);
     if (!isObj(v) || typeof v.type !== 'string') throw bad('it needs a "type".');
     const t = v.type;
     const link = (k: string) => { if (!isInt(v[k], nl)) throw bad(`"${k}" must be a link id from 0 to ${nl - 1}.`); return v[k] as number; };
@@ -162,6 +162,7 @@ export function parseInterventionsJson(net: Network, text: string): Intervention
         }
         return { type: t, node: node() };
       case 'speed_limit': if (!isNum(v.speed) || v.speed < 1 || v.speed > 40) throw bad('"speed" is meters per second, 1 to 40.'); return { type: t, link: link('link'), speed: v.speed };
+      case 'slow_street': return { type: t, link: link('link') };
       case 'speed_hump': if (!isNum(v.position) || v.position < 0) throw bad('"position" is meters from the start of the link.'); return { type: t, link: link('link'), position: v.position };
       case 'traffic_circle': return { type: t, node: node() };
       case 'control': if (typeof v.control !== 'string' || !CONTROLS.includes(v.control)) throw bad(`"control" is one of ${CONTROLS.join(', ')}.`); return { type: t, node: node(), control: v.control as Intervention & never };

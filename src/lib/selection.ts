@@ -1,3 +1,4 @@
+import { slowStreetLabel, slowedBlocks, streetRun } from './slowstreet';
 import type { ControlType, Intervention, Network, NetLink } from '../types';
 import { MPS_TO_MPH } from './format';
 import { legBearing, nearestOnPolyline, pickLink, pointAlong } from './geom';
@@ -107,7 +108,7 @@ export function selectionForIntervention(net: Network, idx: NetIndex, iv: Interv
       if ('node' in iv) return { kind: 'node', node: iv.node, via };
       const b = block(iv.link); return b === null ? null : { kind: 'block', block: b, point, nearLink: iv.link, via };
     }
-    case 'speed_limit': case 'speed_hump': case 'one_way': {
+    case 'speed_limit': case 'slow_street': case 'speed_hump': case 'one_way': {
       const b = block(iv.link); return b === null ? null : { kind: 'block', block: b, point, nearLink: iv.link, via };
     }
     case 'turn_ban': { const l = net.links[iv.fromLink]; return l ? { kind: 'node', node: l.to, via } : null; }
@@ -121,7 +122,9 @@ export function interventionsAt(net: Network, idx: NetIndex, s: Selection, ivs: 
   ivs.forEach((iv, i) => {
     if (s.kind === 'block') {
       const links = idx.blocks[s.block].links;
-      if (('link' in iv) && links.includes(iv.link)) out.push(i);
+      if (iv.type === 'slow_street') {
+        if (streetRun(net, iv.link)?.blocks.some((b) => b.some((l) => links.includes(l)))) out.push(i);
+      } else if (('link' in iv) && links.includes(iv.link)) out.push(i);
     } else if (iv.type === 'turn_ban') {
       if (net.links[iv.fromLink]?.to === s.node) out.push(i);
     } else if ('node' in iv && iv.node === s.node) out.push(i);
@@ -145,8 +148,17 @@ export interface BlockActions {
   /** 'move' when the block already has a hump somewhere else. */
   hump: 'add' | 'move' | null;
   speedLimit: { currentMph: number; choices: number[] };
+  /** The whole street at 15 mph, offered first when someone picks a speed limit; null when the street is unnamed, already a Slow Street, or has nothing faster than 15 mph. */
+  slowStreet: { link: number; label: string } | null;
   /** Direction choices, the one nearer the click first. */
   oneWay: { link: number; label: string; switching: boolean }[];
+}
+
+function slowStreetOffer(net: Network, link: number, ivs: Intervention[]): BlockActions['slowStreet'] {
+  const run = streetRun(net, link);
+  if (!run || slowedBlocks(net, run).length === 0) return null;
+  const taken = ivs.some((iv) => iv.type === 'slow_street' && streetRun(net, iv.link)?.canonical === run.canonical);
+  return taken ? null : { link: run.canonical, label: slowStreetLabel(run) };
 }
 
 export function blockActions(net: Network, idx: NetIndex, s: Extract<Selection, { kind: 'block' }>, ivs: Intervention[]): BlockActions {
@@ -167,6 +179,7 @@ export function blockActions(net: Network, idx: NetIndex, s: Extract<Selection, 
     modalFilter: !hasFilter,
     hump: hump ? (Math.abs(hump.position - pos) < 1 ? null : 'move') : 'add',
     speedLimit: { currentMph, choices: SPEED_LIMITS_MPH.filter((v) => v !== currentMph) },
+    slowStreet: slowStreetOffer(net, blk.links[0], ivs),
     oneWay,
   };
 }

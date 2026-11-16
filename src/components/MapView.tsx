@@ -875,7 +875,7 @@ export function MapView(p: Props) {
         el.setAttribute('aria-hidden', 'true');
       } else {
         el.className = `iv-badge iv-${iv.type}`;
-        el.textContent = iv.type === 'speed_limit' ? String(Math.round(iv.speed * 2.23694)) : BADGE_TEXT[iv.type];
+        el.textContent = iv.type === 'speed_limit' ? String(Math.round(iv.speed * 2.23694)) : iv.type === 'slow_street' ? '15' : BADGE_TEXT[iv.type];
         el.setAttribute('aria-hidden', 'true');
       }
       el.title = title;
@@ -1013,7 +1013,7 @@ export function MapView(p: Props) {
             return { x: c.x, y: c.y, len: sz.length, thick: sz.thick, type: 'leg' as const, bearing: b.bearing };
           });
         }
-        return [{ x: q.x, y: q.y, type: iv.type, bearing: iv.type === 'diagonal_diverter' ? iv.bearing : undefined, mph: iv.type === 'speed_limit' ? Math.round(iv.speed * 2.23694) : undefined }];
+        return [{ x: q.x, y: q.y, type: iv.type, bearing: iv.type === 'diagonal_diverter' ? iv.bearing : undefined, mph: iv.type === 'speed_limit' ? Math.round(iv.speed * 2.23694) : iv.type === 'slow_street' ? 15 : undefined }];
       });
       const change = L.view === 'change';
       const legend = legendModel(L.overlay, L.mode, change);

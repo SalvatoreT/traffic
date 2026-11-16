@@ -12,8 +12,8 @@ import { checkThroughRoutes, ROUTE_CAVEAT } from '../lib/throughroutes';
 import { buildMockProposals } from '../fixtures/proposals';
 import { canTrace } from '../lib/redistribution-view';
 import {
-  allTrafficHeadline, allTrafficNote, allTrafficRows, beforeAfterPct, comparisonText, cutThroughHeadline, evidenceNote, fetchProposals, formatComputed, harmHeadline, INTERVAL_SCOPE, intervalText, periodsPhrase,
-  linkHash, listOptions, needsConfirm, openReducer, parseProposals, provenanceLine, proposalNotices, proposalsUrl, seedsPhrase, signedNum, signedPct,
+  allTrafficHeadline, allTrafficNote, allTrafficRows, beforeAfterPct, comparisonText, cutThroughHeadline, detourText, evidenceNote, fetchProposals, formatComputed, harmHeadline, INTERVAL_SCOPE, intervalText, periodsPhrase,
+  linkHash, listOptions, needsConfirm, objectiveTags, openReducer, parseProposals, provenanceLine, proposalNotices, proposalsUrl, seedsPhrase, signedNum, signedPct,
   type EvidenceStatus, type Listed, type LoadedHashes, type OptionComparison, type Proposal, type ProposalGroup, type ProposalsState, type Variant,
 } from '../lib/proposals';
 
@@ -194,6 +194,8 @@ function Card({ p, group, evidence, comparison, comparisonLabel, shareUrl, onCop
   }, [confirming]);
   const periods = Object.entries(p.byPeriod);
   const isRef = p.kind === 'reference';
+  const tags = objectiveTags(p);
+  const detour = detourText(p.residentsDetour);
   const calStatusText = calibrationStatusText(bundle.entry.calibration);
   const hasPic = !!p.picture && ivs !== null;
   const variants = p.variants ?? [];
@@ -229,6 +231,7 @@ function Card({ p, group, evidence, comparison, comparisonLabel, shareUrl, onCop
         <AnchorHeading as="h4" id={hid} label={p.title}>{n !== null && <span className="prop-n">{n}. </span>}{p.title}</AnchorHeading>
         {isRef && <span className="tag">Earlier proposal</span>}
       </div>
+      {tags.length > 0 && <p className="prop-best small"><span className="prop-best-lead">Best for:</span> {tags.join(', ')}</p>}
       {isRef && p.note && <p className="muted prop-note">{p.note}</p>}
       <div className="prop-body">
         <div className="prop-figs">
@@ -239,6 +242,12 @@ function Card({ p, group, evidence, comparison, comparisonLabel, shareUrl, onCop
           </div>
         </div>
         {hasPic && <ProposalMap net={bundle.network} index={index} p={p} group={group} ivs={ivs ?? []} areaId={bundle.entry.id} mode={mode} periodLabel={periodLabel} searchedPeriods={searched} loaded={loaded} onTrace={onTrace} />}
+        {detour && (
+          <div className="fig fig-detour">
+            <p className="fig-main"><span className="fig-num">{detour.figure}</span> {detour.label}</p>
+            <p className="fig-sub">{detour.detail}</p>
+          </div>
+        )}
         <div className="fig fig-all">
           <p className="fig-main">{all.none ? all.label : <><span className="fig-num">{all.figure}</span> {all.label}</>}</p>
           {!all.none && <p className="fig-sub">{all.split} {all.interval}</p>}

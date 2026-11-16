@@ -41,6 +41,12 @@ export const INTERVENTION_TYPES: InterventionType[] = [
     offered: `${mph} mph (UI choices, not published recommendations).`,
   },
   {
+    type: 'slow_street', codes: ['ss'], name: 'Slow Street', appliesTo: 'street block', at: 'the middle of any block of the street (the whole street is limited)', params: 'none',
+    json: '{"type":"slow_street","link":<link id of any block of the street>}',
+    effect: 'Limits every block of that street inside the study area to 15 mph, as one change. The street is its name; a gap or a rename ends it, so only the connected run that holds the chosen block counts. A block already at or below 15 mph keeps its limit. ASSUMPTION: full compliance on average. Each car\'s desired speed scales to the limit with the model\'s usual spread, with no enforcement and no physical measure, and the street\'s free-flow time rises, so some trips take other routes.',
+    offered: 'One per street that carries meaningful through traffic in the baseline.',
+  },
+  {
     type: 'speed_hump', codes: ['sh'], name: 'Speed hump', appliesTo: 'street block', at: 'the hump itself', params: 'none',
     json: '{"type":"speed_hump","link":<link id>,"position":<meters from the start of the link>}',
     effect: 'Cars slow to the hump crossing speed near the hump, which raises the block\'s travel time. One hump per block; adding another moves it.',

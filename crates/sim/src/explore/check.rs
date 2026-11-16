@@ -1,7 +1,7 @@
 //! Score given packages by the search's own code paths: the access check, the profile's limits, the candidate list, the screening run
 //! and the full recheck. Used to find out why a package the search published before is not found now (`explore --check`).
 
-use super::cands::{adopt, generate_with, profile_allows};
+use super::cands::{adopt, generate_with, profile_allows, Cand};
 use super::decode::decode_scenario;
 use super::report::{recheck, Final};
 use super::search::*;
@@ -15,6 +15,9 @@ pub fn check_links(study: &Study, p: &Params, links: &[String], subsets: bool, s
     let mut cands = generate_with(study, &base.hot, p.candidates, &p.profile);
     let n_gen = cands.len();
     println!("candidate list: {n_gen} candidates under profile {}", p.profile.id);
+    for (i, c) in cands.iter().enumerate() {
+        println!("  candidate {} [{}] {}", i + 1, c.kind, c.label);
+    }
     let mut sets: Vec<Vec<u16>> = Vec::new();
     for link in links {
         let ivs = match decode_scenario(&study.net, &study.topo, study.origin, link) {
@@ -44,26 +47,13 @@ pub fn check_links(study: &Study, p: &Params, links: &[String], subsets: bool, s
     }
     let ctx = Ctx { study, p, cands: &cands, base: &base };
     if singles {
-        let mut st = SearchState::new();
-        eval_batch(&ctx, &mut st, (0..cands.len() as u16).map(|i| vec![i]).collect());
-        let ok: Vec<u16> = (0..cands.len() as u16).filter(|&i| st.evals[st.cache[&vec![i]]].valid()).collect();
-        let ev = |i: u16| &st.evals[st.cache[&vec![i]]];
-        let mut by_score = ok.clone();
-        by_score.sort_by(|&a, &b| ev(b).score.partial_cmp(&ev(a).score).unwrap().then(a.cmp(&b)));
-        let mut by_red = ok.clone();
-        by_red.sort_by(|&a, &b| ev(b).reduction_pct.partial_cmp(&ev(a).reduction_pct).unwrap().then(a.cmp(&b)));
-        println!("\nsingles: {} valid of {} candidates (expand takes the best {} by score with a reduction)", ok.len(), cands.len(), p.expand);
-        for (name, order) in [("score", &by_score), ("reduction", &by_red)] {
-            println!("  top 15 by {name}:");
-            for (r, &i) in order.iter().take(15).enumerate() {
-                println!("    {:3}. score {:+.1}, cut-through -{:.1}%, harm {:.0}: {}", r + 1, ev(i).score, ev(i).reduction_pct, ev(i).harm, cands[i as usize].label);
-            }
-        }
+        let rows = score_singles(&ctx);
+        println!("\n{}", singles_header(p));
+        print_singles(study, p, &cands, &rows, n_gen);
         for set in &sets {
             for &i in set {
-                if (i as usize) < n_gen && ok.contains(&i) {
-                    let (rs, rr) = (by_score.iter().position(|&x| x == i).unwrap() + 1, by_red.iter().position(|&x| x == i).unwrap() + 1);
-                    println!("  {}: rank {rs} by score, {rr} by reduction (score {:+.1}, -{:.1}%, harm {:.0})", cands[i as usize].label, ev(i).score, ev(i).reduction_pct, ev(i).harm);
+                if let Some(r) = rows.iter().find(|r| r.cand == i) {
+                    println!("  {}: score {:+.1}, through {:.1} -> {:.1}, largest all-car rise {:+.0}", cands[i as usize].label, r.score, r.base_ct, r.scen_ct, r.rise);
                 }
             }
         }
@@ -103,6 +93,110 @@ pub fn check_links(study: &Study, p: &Params, links: &[String], subsets: bool, s
                     None => println!("    [{}] score {:+.1}, cut-through -{:.1}%, harm {:.0} on {}", names.join(","), e.score, e.reduction_pct, e.harm, worst),
                 }
             }
+        }
+    }
+}
+
+/// One candidate scored alone.
+pub struct SingleRow {
+    pub cand: u16,
+    pub reject: Option<String>,
+    /// Through cars an hour, mean over the periods and seeds run.
+    pub base_ct: f64,
+    pub scen_ct: f64,
+    pub reduction_pct: f64,
+    /// Largest all-car rise on one block in any period (cars an hour, both directions), and the harm-block position of that block.
+    pub rise: f64,
+    pub rise_block: usize,
+    pub score: f64,
+}
+
+/// What `score_singles` runs, in words: the periods, seeds and run length actually used.
+pub fn singles_header(p: &Params) -> String {
+    format!(
+        "singles scored on period(s) {}, seed(s) {}, {} min runs (the screening length; --periods, --seeds and --screen-minutes set them), harm weight {}",
+        p.periods.join(","),
+        p.seeds.iter().map(|s| s.to_string()).collect::<Vec<_>>().join(","),
+        p.screen_minutes,
+        p.harm_weight
+    )
+}
+
+/// Score every candidate alone over all of `p.periods` and `p.seeds` at the screening length, paired with baseline runs of the same
+/// period, seed and length. Through cars is the mean over periods and seeds; the rise is the largest in any period (seed means).
+pub fn score_singles(ctx: &Ctx) -> Vec<SingleRow> {
+    let (study, p) = (ctx.study, ctx.p);
+    let ns = p.seeds.len();
+    let cells: Vec<(usize, usize)> = (0..p.periods.len()).flat_map(|pi| (0..ns).map(move |si| (pi, si))).collect();
+    let base_runs = parallel_map(p.jobs, &cells, |&(pi, si)| run(study, &[], &p.periods[pi], p.seeds[si], p.screen_minutes, &[]));
+    let base_stats: Vec<PeriodStat> = (0..p.periods.len()).map(|pi| period_stat(study, &base_runs[pi * ns..(pi + 1) * ns].iter().collect::<Vec<_>>())).collect();
+    let ids: Vec<u16> = (0..ctx.cands.len() as u16).collect();
+    let checks: Vec<Result<(), String>> = parallel_map(p.jobs, &ids, |&i| check_access(study, &ctx.ivs(&[i])));
+    let todo: Vec<u16> = ids.iter().copied().filter(|&i| checks[i as usize].is_ok()).collect();
+    let jobs: Vec<(u16, usize, usize)> = todo.iter().flat_map(|&c| cells.iter().map(move |&(pi, si)| (c, pi, si))).collect();
+    let outs = parallel_map(p.jobs, &jobs, |&(c, pi, si)| run(study, &ctx.ivs(&[c]), &p.periods[pi], p.seeds[si], p.screen_minutes, &[]));
+    let mut rows: Vec<SingleRow> = Vec::new();
+    for &i in &ids {
+        if let Err(why) = &checks[i as usize] {
+            rows.push(SingleRow { cand: i, reject: Some(why.clone()), base_ct: 0.0, scen_ct: 0.0, reduction_pct: 0.0, rise: 0.0, rise_block: 0, score: f64::NEG_INFINITY });
+            continue;
+        }
+        let k = todo.iter().position(|&c| c == i).unwrap();
+        let mine = &outs[k * cells.len()..(k + 1) * cells.len()];
+        let (mut reject, mut rise, mut rise_block) = (None, f64::NEG_INFINITY, 0usize);
+        let (mut worst_adj, mut worst_adj_block) = (0.0f64, 0usize);
+        let (mut b_sum, mut s_sum) = (0.0, 0.0);
+        for pi in 0..p.periods.len() {
+            let runs: Vec<&RunOut> = mine[pi * ns..(pi + 1) * ns].iter().collect();
+            if runs.iter().any(|r| r.invalid > 0) {
+                reject = Some("invalid intervention".to_string());
+            }
+            let st = period_stat(study, &runs);
+            reject = reject.or_else(|| run_reject(st.unroutable, st.gridlock, st.backlog, &base_stats[pi].lite()));
+            let inc: Vec<f64> = st.block_flow.iter().zip(&base_stats[pi].block_flow).map(|(a, b)| a - b).collect();
+            let h = harm_calc(&inc, &base_stats[pi].block_sigma);
+            if h.raw_increase > rise {
+                rise = h.raw_increase;
+                rise_block = h.raw_worst;
+            }
+            if h.worst_adj > worst_adj {
+                worst_adj = h.worst_adj;
+                worst_adj_block = h.worst;
+            }
+            b_sum += base_stats[pi].ct_vph;
+            s_sum += st.ct_vph;
+        }
+        let _ = worst_adj_block;
+        let np = p.periods.len() as f64;
+        let (base_ct, scen_ct) = (b_sum / np, s_sum / np);
+        let red = reduction_pct(base_ct, scen_ct);
+        rows.push(SingleRow { cand: i, reject, base_ct, scen_ct, reduction_pct: red, rise: rise.max(0.0), rise_block, score: score(p, red, worst_adj) });
+    }
+    rows
+}
+
+/// One row per candidate, best score first: type, label, link, through cars before -> after, largest all-car rise and its block, score.
+pub fn print_singles(study: &Study, p: &Params, cands: &[Cand], rows: &[SingleRow], n_gen: usize) {
+    let mut order: Vec<&SingleRow> = rows.iter().collect();
+    order.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal).then(a.cand.cmp(&b.cand)));
+    for r in order {
+        let c = &cands[r.cand as usize];
+        let link = study.encode(std::slice::from_ref(&c.iv), Some(&p.periods[0]));
+        let origin = if (r.cand as usize) < n_gen { "" } else { " [not in the candidate list]" };
+        match &r.reject {
+            Some(why) => println!("  #{} {} | {} | {link} | REJECTED: {why}{origin}", r.cand + 1, c.kind, c.label),
+            None => println!(
+                "  #{} {} | {} | {link} | through {:.1} -> {:.1} ({:+.1}%) | largest all-car rise {:+.0} on {} | score {:+.1}{origin}",
+                r.cand + 1,
+                c.kind,
+                c.label,
+                r.base_ct,
+                r.scen_ct,
+                -r.reduction_pct,
+                r.rise,
+                study.idx.blocks[study.harm_blocks[r.rise_block]].label,
+                r.score
+            ),
         }
     }
 }

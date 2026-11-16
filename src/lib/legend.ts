@@ -34,7 +34,7 @@ export interface MapSymbols {
   /** The violet dashed line of a chosen reason cars cut through. */
   reason: boolean;
 }
-const BADGED: BadgedType[] = ['speed_hump', 'speed_limit', 'traffic_circle', 'control', 'signal_timing', 'one_way', 'turn_ban'];
+const BADGED: BadgedType[] = ['speed_hump', 'speed_limit', 'slow_street', 'traffic_circle', 'control', 'signal_timing', 'one_way', 'turn_ban'];
 
 export function mapSymbols(ivs: readonly Pick<Intervention, 'type'>[], reason: boolean): MapSymbols {
   const types = new Set(ivs.map((iv) => iv.type));

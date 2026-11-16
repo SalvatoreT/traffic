@@ -295,6 +295,7 @@ pub fn describe(net: &Network, topo: &Topo, idx: &NameIndex, iv: &Intervention) 
             _ => "Modal filter".into(),
         },
         "speed_limit" => format!("Speed limit {} mph on {}", js_round(iv.speed.unwrap_or(0.0) * 2.23694), ln(iv.link.unwrap_or(0))),
+        "slow_street" => iv.link.and_then(|l| super::street::street_run(net, l)).map(|r| super::street::label(&r)).unwrap_or_else(|| "Slow Street".into()),
         "speed_hump" => format!("Speed hump on {}", ln(iv.link.unwrap_or(0))),
         "traffic_circle" => format!("Traffic circle at {}", nn(iv.node.unwrap_or(0))),
         "control" => format!("{} at {}", control_label(iv.control.unwrap_or(Control::Uncontrolled)), nn(iv.node.unwrap_or(0))),

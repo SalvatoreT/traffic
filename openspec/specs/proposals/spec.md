@@ -315,6 +315,59 @@ Without arguments for seeds, `explore` SHALL search and recheck on seeds 1 to 3 
 - **WHEN** `--seeds` includes a confirmation seed
 - **THEN** the command stops and says the ranges must not overlap
 
+### Requirement: Speed reductions are Slow Streets in the search
+The proposal search SHALL offer speed reductions only as Slow Streets, one per street whose busiest block carries at least a quarter of the busiest block's through traffic in the baseline, ranked like other candidates. It SHALL NOT generate per-block speed limits. Packages in the seeds file that hold per-block limits SHALL stay loadable.
+
+#### Scenario: Candidates
+- **WHEN** the candidate list is generated
+- **THEN** it holds Slow Streets and no per-block speed limit
+
+#### Scenario: Filter on a Slow Street
+- **WHEN** a package holds a Slow Street and a modal filter on a block of that street
+- **THEN** the two do not conflict
+
+### Requirement: Places of a Slow Street
+A Slow Street SHALL occupy one place per street name, so it combines with a filter or a one-way on the same street. A Slow Street and per-block limits on the same street SHALL count as the same change in conflict and similarity rules.
+
+#### Scenario: Same street, two forms
+- **WHEN** a package holds a Slow Street and another holds per-block limits on the same street
+- **THEN** the search treats them as the same place
+
+### Requirement: Options are chosen for named objectives
+The search SHALL choose the published options for four objectives, each a documented rule with its weights labeled assumptions: most cut-through removed, no street closures, least detour for residents and fewest changes. Each objective SHALL grow its own beam over the shared screening cache, finalists SHALL be pooled and rechecked together, and each option SHALL name the objectives it is the best for. The list SHALL stay one list, largest through-car removal first.
+
+#### Scenario: One package, two objectives
+- **WHEN** the same package is the best for most cut-through removed and for fewest changes
+- **THEN** it appears once, with both tags
+
+#### Scenario: Remaining places
+- **WHEN** fewer options than the list size are objective winners
+- **THEN** the rest are the best remaining by through cars removed that are not similar to an option already chosen
+
+### Requirement: Rules of the objectives
+No street closures SHALL use the search score among packages made only of Slow Streets, one-ways, all-way stops, traffic circles, speed humps and turn bans. Least detour for residents SHALL subtract a light weight times the added trip time of trips that start or end inside the study area and SHALL NOT lift a package that removes less than half of the most removed. Fewest changes SHALL use the search score among packages of at most two changes.
+
+#### Scenario: A closing package cannot hide the best package without closures
+- **WHEN** a package with a filter removes more through cars than every package without closures
+- **THEN** the best package without closures is still an option, tagged "no street closures"
+
+#### Scenario: The detour weight is light
+- **WHEN** the least-detour objective chooses between packages
+- **THEN** it may reorder packages with similar reductions and it never lifts a package that removes less than half of the most removed
+
+### Requirement: Residents' detour
+Each published option SHALL report residents' detour: the added mean trip time, in seconds per trip, of completed car trips that start or end inside the study area, scenario minus baseline on the same seed, averaged over the searched periods, with its interval over runs, and the same trips' added time in vehicle-minutes an hour. Trips that do not complete in the run SHALL NOT be timed, and the documentation SHALL say so.
+
+#### Scenario: Reading the detour
+- **WHEN** a reader opens an option
+- **THEN** it shows seconds per resident trip with its interval beside through cars before and after and the largest all-car rise
+
+### Requirement: Older files are still read
+A proposals file written before objectives SHALL be read as options with no tags and no residents' detour, and shown without them.
+
+#### Scenario: Older file
+- **WHEN** the app loads a version 5 file with no `objectives` fields
+- **THEN** the cards show no "Best for" row and no detour line
 ### Requirement: Stored redirect data for published proposals
 `npm run data:redistribution` SHALL write `public/data/redistribution/<area>/<group>.<proposal>.json`, under 200 KB, for each published proposal with a picture, from traced runs of today's traffic and the package on the proposal's confirmation seeds. For each intervention that closes a car movement it SHALL record how many through cars an hour drove it, where they went, the top routes with their links, and the receiving blocks.
 

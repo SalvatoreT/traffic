@@ -494,9 +494,10 @@ fn candidates_never_add_a_signal() {
     let hot = Hotspots { block_ct: vec![10.0; study.idx.blocks.len()], node_ct: vec![10.0; study.net.nodes.len()], mv_ct: Default::default() };
     let cands = generate(&study, &hot, 200);
     let kinds: std::collections::BTreeSet<&str> = cands.iter().map(|c| c.kind).collect();
-    for k in ["modal_filter", "node_filter", "diagonal_diverter", "one_way", "speed_hump", "traffic_circle", "speed_limit", "control", "signal_timing"] {
+    for k in ["modal_filter", "node_filter", "diagonal_diverter", "one_way", "speed_hump", "traffic_circle", "slow_street", "control", "signal_timing"] {
         assert!(kinds.contains(k), "missing {k}: {kinds:?}");
     }
+    assert!(!kinds.contains("speed_limit"), "per-block speed limits are not generated");
     for c in &cands {
         assert!(!(c.iv.ty == "control" && c.iv.control == Some(Control::Signal)), "{}", c.label);
         assert!(c.iv.ty != "traffic_circle" || c.iv.node.is_some());
@@ -1373,7 +1374,7 @@ fn partial_packages_are_ranked_with_the_harm_weight_phased_in() {
     assert_eq!(rank_weight(&p, 1), 0.0);
     assert!((rank_weight(&p, 6) - 0.1).abs() < 1e-12 && (rank_weight(&p, 9) - 0.1).abs() < 1e-12);
     assert!(rank_weight(&p, 2) > 0.0 && rank_weight(&p, 3) > rank_weight(&p, 2) && rank_weight(&p, 5) < 0.1);
-    let mk = |n: usize, red: f64, harm: f64| Eval { set: (0..n as u16).collect(), reject: None, reduction_pct: red, harm, worst: 0, inc: Vec::new(), score: red - 0.1 * harm };
+    let mk = |n: usize, red: f64, harm: f64| Eval { set: (0..n as u16).collect(), reject: None, reduction_pct: red, harm, worst: 0, inc: Vec::new(), score: red - 0.1 * harm, detour_s: 0.0 };
     // A filter that cuts through cars the most but displaces them ranks above a mild measure while it stands alone, and below it once the package is whole.
     let (bold, mild) = (|n| mk(n, 14.0, 94.0), |n| mk(n, 9.5, 2.0));
     assert!(rank_value(&p, &bold(1)) > rank_value(&p, &mild(1)));

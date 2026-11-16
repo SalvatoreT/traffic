@@ -33,6 +33,7 @@ Each item is `<code>,<geohash>[,<parameter>...]`.
 | `mf` | Modal filter on a street block | middle of the block | none |
 | `mn` | Modal filter at an intersection | the intersection | optional: bearings of the legs it closes, in whole degrees joined by `.`, such as `175.355`. Absent: every leg. |
 | `sl` | Speed limit on a block | middle of the block | the limit in meters per second, 1 to 40 (20 mph is 8.94) |
+| `ss` | Slow Street: 15 mph on every block of one street | middle of any block of the street | none |
 | `sh` | Speed hump | the hump | none |
 | `tc` | Traffic circle | the intersection | none |
 | `ct` | Intersection control | the intersection | one letter: `s` signal, `a` all-way stop, `t` two-way stop, `u` uncontrolled, `c` traffic circle |
@@ -49,10 +50,12 @@ Bearings are compass degrees, clockwise from north: 0 north, 90 east, 180 south,
 
 The app and the CLI place each item on the street network by position:
 
-- Block items (`mf`, `sl`, `sh`, `ow`) match the nearest street link within 25 m of the point. For `ow` the link must also run within 45 degrees of the bearing, which picks the direction. For `sh` the hump goes where the point projects onto the link.
+- Block items (`mf`, `sl`, `ss`, `sh`, `ow`) match the nearest street link within 25 m of the point. For `ow` the link must also run within 45 degrees of the bearing, which picks the direction. For `sh` the hump goes where the point projects onto the link.
 - Intersection items (`mn`, `tc`, `ct`, `st`, `dd`) match the nearest intersection within 30 m.
 - A turn ban (`tb`) looks at the intersections within 30 m for an arriving link whose end bearing is within 45 degrees of the first bearing and a leaving link whose start bearing is within 45 degrees of the second.
 - An item that matches nothing is not an error. It is left out and reported as unplaced, with its type, its position, the nearest street name and the reason. The app shows a message; the CLI lists it under `inputs.unplacedInterventions` and, with `--strict`, fails.
+
+A Slow Street (`ss`) is one change that limits a whole street to 15 mph (6.71 m/s). The point only names the street: the item matches the block as above, then takes every block of that street inside the study area that connects to it through shared intersections. A street is its name. Where the street has a gap, or changes name, only the connected run that holds the chosen block counts, and its label says so. A block that is already at 15 mph or slower keeps its limit. The app and the search write the item at the middle of the run's lowest-numbered block, so every link for one Slow Street is the same string. Links written before this item existed, with an `sl` item on each block, still open and run as they did.
 
 Items are order-independent: `a~b` and `b~a` are the same scenario.
 
@@ -79,6 +82,7 @@ Without the CLI, compute the geohash of the latitude and longitude of the place 
   {"type": "modal_filter", "link": 2593},
   {"type": "modal_filter", "node": 799, "legs": [2593, 2594, 2595, 2596]},
   {"type": "speed_limit", "link": 2619, "speed": 8.94},
+  {"type": "slow_street", "link": 2619},
   {"type": "speed_hump", "link": 2619, "position": 40},
   {"type": "traffic_circle", "node": 799},
   {"type": "control", "node": 799, "control": "all_way_stop"},

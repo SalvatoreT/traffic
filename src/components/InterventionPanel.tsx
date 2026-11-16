@@ -50,7 +50,7 @@ export function InterventionPanel(p: Props) {
               const ft = filterText(iv, B.network, X);
               return (
                 <li key={i}>
-                  <span className={`iv-badge static iv-${iv.type}`} aria-hidden="true">{iv.type === 'speed_limit' ? Math.round(iv.speed * 2.23694) : BADGE_TEXT[iv.type]}</span>
+                  <span className={`iv-badge static iv-${iv.type}`} aria-hidden="true">{iv.type === 'speed_limit' ? Math.round(iv.speed * 2.23694) : iv.type === 'slow_street' ? 15 : BADGE_TEXT[iv.type]}</span>
                   <span className="desc">
                     <button type="button" className="desc-btn" title="Select this place" onClick={() => p.onSelectIntervention(i)}>{d}</button>
                     {!interventionInRegion(iv, B.network, p.region) && <>{' '}<span className="tag">outside the map</span></>}

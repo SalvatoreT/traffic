@@ -190,6 +190,7 @@ export function buildPicture(net: Network, index: NetIndex, p: Proposal, pic: Pr
         break;
       case 'diagonal_diverter': { const n = net.nodes[iv.node]; if (n) marks.push({ kind: 'diverter', ...at(n.x, n.y), bearing: iv.bearing, iv: ivi }); break; }
       case 'one_way': { const l = net.links[iv.link]; if (l) { const q = pointAtLinkMeters(l, l.length / 2); marks.push({ kind: 'arrow', ...at(q.x, q.y), bearing: bearingOf(q.heading), iv: ivi }); } break; }
+      case 'slow_street': { const l = net.links[iv.link]; if (!l) break; const q = pointAtLinkMeters(l, l.length / 2); marks.push({ kind: 'badge', type: 'slow_street', ...at(q.x, q.y), text: '', iv: ivi }); break; }
       case 'speed_limit': case 'speed_hump': {
         const l = net.links[iv.link]; if (!l) break;
         const q = pointAtLinkMeters(l, iv.type === 'speed_hump' ? iv.position : l.length / 2);

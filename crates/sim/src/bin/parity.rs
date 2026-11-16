@@ -32,7 +32,7 @@ fn main() {
     let req: String = traced.trace_requests().iter().map(|x| format!("{:016x}", x.to_bits())).collect();
     let ev: String = traced.trace_events().iter().map(|x| format!("{x:08x}")).collect();
     let net_v: traffic_sim::Network = serde_json::from_str(&net).expect("network");
-    let graph = traffic_sim::redistribution::analyze(&net_v, &a[2], "car", &[], &serde_json::from_str::<Vec<traffic_sim::model::Intervention>>(&ivs).expect("PARITY_IVS"));
+    let graph = traffic_sim::redistribution::analyze(&net_v, &a[2], "car", &[], &traffic_sim::explore::street::expand(&net_v, &serde_json::from_str::<Vec<traffic_sim::model::Intervention>>(&ivs).expect("PARITY_IVS")));
     let out = serde_json::json!({
         "metrics": sim.metrics_json(),
         "vehicles": bits(sim.vehicles()),

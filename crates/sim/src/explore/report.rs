@@ -7,6 +7,7 @@ use super::refs::resolve;
 use super::seeds::{self, Dropped};
 use super::similar;
 use super::search::*;
+use super::objectives::{eligible, final_score, Objective, DETOUR_REDUCTION_FLOOR};
 use super::*;
 use serde_json::{json, Value};
 use std::fmt::Write as _;
@@ -55,6 +56,17 @@ pub struct Final {
     pub places: Vec<String>,
     /// Through-car change on each side-street block (harm-block order), mean over the periods and seeds: the package's per-block picture.
     pub block_change: Vec<f64>,
+    /// Added trip time (s per trip) of completed car trips that start or end inside the study area, scenario minus baseline, paired by seed
+    /// and averaged over the periods. Positive is a longer trip. Trips that complete are the only ones timed, so a package that strands or
+    /// delays trips beyond the run's end is understated.
+    pub detour: Paired,
+    pub detour_s: f64,
+    /// The same trips' summed added time, vehicle-minutes an hour.
+    pub detour_vmin_h: f64,
+    /// Some intervention in the package closes a street or an intersection to cars (a modal filter or a diverter).
+    pub closes: bool,
+    /// The objectives this package is the best for in the published list (set when it is chosen).
+    pub objectives: Vec<super::objectives::Objective>,
 }
 
 /// How a package got into the run.
@@ -314,6 +326,14 @@ fn compare(ctx: &Ctx, set: &[u16], stats: &[PeriodStat], reject: Option<String>)
         bounding.push((s.name.clone(), pct_change(fb, fs), dv * MPS_TO_MPH));
     }
     let m = |f: &dyn Fn(&PeriodStat) -> f64, s: &[PeriodStat]| mean(&s.iter().map(f).collect::<Vec<_>>());
+    let mut detour_seed = vec![0.0f64; ns];
+    let mut detour_vmin_h = 0.0;
+    for pi in 0..np {
+        for sd in 0..ns {
+            detour_seed[sd] += (stats[pi].runs[sd].inside_s - base.full[pi].runs[sd].inside_s) / np as f64;
+        }
+        detour_vmin_h += (stats[pi].inside_tt_s - base.full[pi].inside_tt_s) / p.minutes.max(1e-9) / np as f64;
+    }
     let red = reduction_pct(base_vph, scen_vph);
     Final {
         set: set.to_vec(),
@@ -344,6 +364,11 @@ fn compare(ctx: &Ctx, set: &[u16], stats: &[PeriodStat], reject: Option<String>)
         prior: false,
         places: places_of(ctx, set),
         block_change: through_inc,
+        detour: Paired::of(&detour_seed),
+        detour_s: mean(&detour_seed),
+        detour_vmin_h,
+        closes: set.iter().any(|&i| !super::objectives::closes_nothing(&ctx.cands[i as usize])),
+        objectives: Vec::new(),
     }
 }
 
@@ -376,6 +401,11 @@ impl Default for Final {
             prior: false,
             places: Vec::new(),
             block_change: Vec::new(),
+            detour: Paired::none(),
+            detour_s: 0.0,
+            detour_vmin_h: 0.0,
+            closes: false,
+            objectives: Vec::new(),
         }
     }
 }
@@ -385,6 +415,8 @@ impl Default for Final {
 pub struct Pick {
     pub idx: usize,
     pub why: String,
+    /// The objectives this option is the best for.
+    pub objectives: Vec<super::objectives::Objective>,
 }
 
 /// Whether a package's through-car reduction is established. With at least `MIN_PAIRS` seed pairs the interval of the paired
@@ -419,9 +451,12 @@ pub fn select_options(finals: &[Final], max: usize) -> (Vec<Pick>, Vec<String>) 
 }
 
 /// `select_options` and the near-duplicates it folded into the options it kept (see `similar`).
-pub fn select_with_folds(finals: &[Final], max: usize) -> (Vec<Pick>, Vec<String>, Vec<similar::Fold>) {
-    let mut notes: Vec<String> = vec![String::new(); finals.len()];
-    let ok: Vec<usize> = (0..finals.len())
+/// The packages of `pool` (finalist indices) that stay after the filters of the choice: established reductions, the stability rule, domination,
+/// simpler packages, the Pareto-consistent listing and near-duplicates. The notes of the packages that drop out are written to `notes`.
+fn keep_pool(finals: &[Final], pool: &[usize], notes: &mut Vec<String>, detour: bool) -> (Vec<usize>, Vec<similar::Fold>) {
+    let ok: Vec<usize> = pool
+        .iter()
+        .copied()
         .filter(|&i| {
             if let Some(w) = &finals[i].reject {
                 notes[i] = format!("rejected: {w}");
@@ -466,7 +501,7 @@ pub fn select_with_folds(finals: &[Final], max: usize) -> (Vec<Pick>, Vec<String
             let b = &finals[j];
             let at_least = if a.prior && !b.prior { beats(b, a) } else { b.reduction_pct >= a.reduction_pct };
             let ahead = if a.prior && !b.prior { beats(b, a) } else { b.reduction_pct > a.reduction_pct };
-            j != i && at_least && b.harm <= a.harm && b.set.len() <= a.set.len() && (ahead || b.harm < a.harm || b.set.len() < a.set.len())
+            j != i && at_least && b.harm <= a.harm && b.set.len() <= a.set.len() && (!detour || b.detour_s <= a.detour_s) && (ahead || b.harm < a.harm || b.set.len() < a.set.len())
         })
     };
     let mut nd: Vec<usize> = Vec::new();
@@ -481,7 +516,7 @@ pub fn select_with_folds(finals: &[Final], max: usize) -> (Vec<Pick>, Vec<String
         let a = &finals[i];
         let simpler = nd.iter().copied().filter(|_| !a.forced).find(|&j| {
             let b = &finals[j];
-            b.set.len() < a.set.len() && !beats(a, b) && a.harm >= b.harm - NOISE_FLOOR_VEH_H
+            b.set.len() < a.set.len() && !beats(a, b) && a.harm >= b.harm - NOISE_FLOOR_VEH_H && (!detour || a.detour_s >= b.detour_s)
         });
         match simpler {
             Some(j) => notes[i] = format!("does not beat simpler finalist {} on through cars", j + 1),
@@ -493,7 +528,7 @@ pub fn select_with_folds(finals: &[Final], max: usize) -> (Vec<Pick>, Vec<String
     by_size.sort_by(|&a, &b| finals[a].set.len().cmp(&finals[b].set.len()).then(finals[b].reduction_pct.partial_cmp(&finals[a].reduction_pct).unwrap_or(std::cmp::Ordering::Equal)).then(a.cmp(&b)));
     let mut consistent: Vec<usize> = Vec::new();
     for &i in &by_size {
-        match consistent.iter().copied().find(|&j| finals[j].set.len() < finals[i].set.len() && finals[j].reduction_pct >= finals[i].reduction_pct) {
+        match consistent.iter().copied().find(|&j| finals[j].set.len() < finals[i].set.len() && finals[j].reduction_pct >= finals[i].reduction_pct && (!detour || finals[j].detour_s <= finals[i].detour_s)) {
             Some(j) => notes[i] = format!("not listed: smaller finalist {} cuts through cars at least as much", j + 1),
             None => consistent.push(i),
         }
@@ -503,6 +538,13 @@ pub fn select_with_folds(finals: &[Final], max: usize) -> (Vec<Pick>, Vec<String
     for f in &folds {
         notes[f.from] = format!("folded into finalist {}: {}", f.into + 1, f.why.phrase());
     }
+    (keep, folds)
+}
+
+pub fn select_with_folds(finals: &[Final], max: usize) -> (Vec<Pick>, Vec<String>, Vec<similar::Fold>) {
+    let mut notes: Vec<String> = vec![String::new(); finals.len()];
+    let all: Vec<usize> = (0..finals.len()).collect();
+    let (keep, folds) = keep_pool(finals, &all, &mut notes, false);
     let by_score = |a: &usize, b: &usize| finals[*b].score.partial_cmp(&finals[*a].score).unwrap_or(std::cmp::Ordering::Equal).then(a.cmp(b));
     let mut picks: Vec<(usize, String)> = Vec::new();
     let mut by_s = keep.clone();
@@ -533,7 +575,83 @@ pub fn select_with_folds(finals: &[Final], max: usize) -> (Vec<Pick>, Vec<String
     for (n, (i, why)) in picks.iter().enumerate() {
         notes[*i] = format!("chosen as option {}: {why}", n + 1);
     }
-    (picks.into_iter().map(|(idx, why)| Pick { idx, why }).collect(), notes, folds)
+    (picks.into_iter().map(|(idx, why)| Pick { idx, why, objectives: Vec::new() }).collect(), notes, folds)
+}
+
+/// The winner of `obj` among the packages of `keep` it can win: highest objective score, then fewer changes, then the earlier finalist.
+/// The least-detour objective never lifts a package that removes less than `DETOUR_REDUCTION_FLOOR` of the most removed in its pool.
+pub fn objective_winner(finals: &[Final], p: &Params, obj: Objective, keep: &[usize]) -> Option<usize> {
+    let best = keep.iter().map(|&i| finals[i].reduction_pct).fold(0.0, f64::max);
+    keep.iter()
+        .copied()
+        .filter(|&i| obj != Objective::LeastDetour || finals[i].reduction_pct >= DETOUR_REDUCTION_FLOOR * best)
+        .max_by(|&a, &b| {
+            let (sa, sb) = (final_score(obj, p, &finals[a]), final_score(obj, p, &finals[b]));
+            sa.partial_cmp(&sb).unwrap_or(std::cmp::Ordering::Equal).then(finals[b].set.len().cmp(&finals[a].set.len())).then(b.cmp(&a))
+        })
+}
+
+/// Choose the published options for several objectives. Each objective picks its winner from the packages it may win, after the same filters
+/// and near-duplicate folding as the main choice, applied inside that objective's pool, so a package that is better on the main score but
+/// closes a street cannot hide the best package without closures. A package that wins several objectives is one option with all its tags.
+/// The rest of the list, up to `max`, is the best remaining by through cars removed that is not similar to an option already chosen.
+pub fn select_by_objectives(finals: &[Final], p: &Params, max: usize) -> (Vec<Pick>, Vec<String>, Vec<similar::Fold>) {
+    let all: Vec<usize> = (0..finals.len()).collect();
+    let mut notes: Vec<String> = vec![String::new(); finals.len()];
+    let (keep_all, folds_all) = keep_pool(finals, &all, &mut notes, false);
+    let mut folds: Vec<similar::Fold> = folds_all;
+    let mut chosen: Vec<(usize, Vec<Objective>)> = Vec::new();
+    let mut order: Vec<Objective> = p.objectives.clone();
+    if !order.contains(&Objective::MostRemoved) {
+        order.insert(0, Objective::MostRemoved);
+    }
+    for obj in order {
+        let (keep, fo) = if obj == Objective::MostRemoved {
+            (keep_all.clone(), Vec::new())
+        } else {
+            let pool: Vec<usize> = all.iter().copied().filter(|&i| eligible(obj, &finals[i])).collect();
+            keep_pool(finals, &pool, &mut vec![String::new(); finals.len()], obj == Objective::LeastDetour)
+        };
+        let Some(w) = objective_winner(finals, p, obj, &keep) else { continue };
+        folds.extend(fo);
+        match chosen.iter_mut().find(|c| c.0 == w) {
+            Some(c) => c.1.push(obj),
+            None => chosen.push((w, vec![obj])),
+        }
+    }
+    chosen.truncate(max.max(1));
+    let by_score = |a: &usize, b: &usize| finals[*b].score.partial_cmp(&finals[*a].score).unwrap_or(std::cmp::Ordering::Equal).then(a.cmp(b));
+    let mut rest: Vec<usize> = keep_all.iter().copied().filter(|i| !chosen.iter().any(|c| c.0 == *i)).collect();
+    rest.sort_by(by_score);
+    let mut extra: Vec<usize> = Vec::new();
+    for i in rest {
+        if chosen.len() + extra.len() >= max {
+            break;
+        }
+        if chosen.iter().map(|c| c.0).chain(extra.iter().copied()).any(|k| similar::similar(&finals[i], &finals[k]).is_some()) {
+            continue;
+        }
+        extra.push(i);
+    }
+    let mut picks: Vec<Pick> = chosen
+        .into_iter()
+        .map(|(idx, objs)| Pick { idx, why: format!("best for {}", objs.iter().map(|o| o.label()).collect::<Vec<_>>().join(" and ")), objectives: objs })
+        .chain(extra.into_iter().map(|idx| Pick { idx, why: "next best by through cars removed".into(), objectives: Vec::new() }))
+        .collect();
+    picks.sort_by(|a, b| similar::order_options(&finals[a.idx], &finals[b.idx]).then(a.idx.cmp(&b.idx)));
+    let mut seen_from: Vec<usize> = Vec::new();
+    folds.retain(|f| picks.iter().any(|pk| pk.idx == f.into) && !picks.iter().any(|pk| pk.idx == f.from) && {
+        let fresh = !seen_from.contains(&f.from);
+        seen_from.push(f.from);
+        fresh
+    });
+    for f in &folds {
+        notes[f.from] = format!("folded into finalist {}: {}", f.into + 1, f.why.phrase());
+    }
+    for (n, pk) in picks.iter().enumerate() {
+        notes[pk.idx] = format!("chosen as option {}: {}", n + 1, pk.why);
+    }
+    (picks, notes, folds)
 }
 
 // ---------------------------------------------------------------- titles and summaries
@@ -582,6 +700,7 @@ fn noun(kind: &str) -> (&'static str, &'static str) {
         "speed_hump" => ("speed hump", "speed humps"),
         "traffic_circle" => ("traffic circle", "traffic circles"),
         "speed_limit" => ("lower speed limit", "lower speed limits"),
+        "slow_street" => ("Slow Street", "Slow Streets"),
         "control" => ("all-way stop", "all-way stops"),
         _ => ("signal timing change", "signal timing changes"),
     }
@@ -637,6 +756,15 @@ fn lower_first(s: &str) -> String {
 }
 
 /// "95% interval -31 to -12 cars an hour over 10 seeds", or why there is none (too few seeds). Cars an hour, signed.
+/// The interval of the residents' detour, in seconds per trip.
+pub fn detour_phrase(e: &Paired) -> String {
+    match e.interval() {
+        _ if e.n < MIN_PAIRS => format!("{} seed{} is not enough for an interval", e.n, if e.n == 1 { "" } else { "s" }),
+        Some((lo, hi)) => format!("{:.0}% interval {:+.1} to {:+.1} s over {} seeds", 100.0 * LEVEL, lo, hi, e.n),
+        None => "no interval".to_string(),
+    }
+}
+
 pub fn interval_phrase(e: &Paired) -> String {
     match e.interval() {
         _ if e.n < MIN_PAIRS => format!("{} seed{} is not enough for an interval; at least {MIN_PAIRS} are needed", e.n, if e.n == 1 { "" } else { "s" }),
@@ -780,8 +908,26 @@ pub fn explore(study: &Study, p: &Params) -> Outcome {
     }
     let families: Vec<Family> = all_known.iter().map(|s| Family::new(s)).collect();
     let ctx = Ctx { study, p, cands: &cands, base: &base };
-    let state = beam_search(&ctx, &families);
+    let mut state = beam_search(&ctx, &families);
+    // Each other objective grows its own beam over the shared screening cache: singles and packages already screened are reused.
+    let others: Vec<Objective> = p.objectives.iter().copied().filter(|o| *o != Objective::MostRemoved).collect();
+    for &obj in &others {
+        let lim = BeamLimit::for_objective(obj, p, &cands);
+        let before = state.used;
+        eprintln!("beam for {}", obj.label());
+        beam_search_in(&ctx, &families, &lim, &mut state);
+        eprintln!("beam for {}: {} new screening run(s)", obj.label(), state.used - before);
+    }
     let fin_idx = pick_finalists(&state.evals, p.finalists, &all_known);
+    let mut fin_idx = fin_idx;
+    for &obj in &others {
+        let lim = BeamLimit::for_objective(obj, p, &cands);
+        for i in pick_finalists_for(&ctx, &state.evals, (p.finalists / 3).max(3), &lim) {
+            if !fin_idx.iter().any(|&j| state.evals[j].set == state.evals[i].set) {
+                fin_idx.push(i);
+            }
+        }
+    }
     eprintln!("rechecking {} finalist(s) over {} period(s) x {} seed(s) at {} min", fin_idx.len(), p.periods.len(), p.seeds.len(), p.minutes);
     let mut sets: Vec<Vec<u16>> = fin_idx.iter().map(|&i| state.evals[i].set.clone()).collect();
     // Packages from a stricter group and known packages are rechecked whatever one-seed screening or the budget said.
@@ -798,7 +944,7 @@ pub fn explore(study: &Study, p: &Params) -> Outcome {
             f.prior = !e.last_published.is_empty();
         }
     }
-    let (picks, mut notes, folds) = select_with_folds(&finals, p.options);
+    let (picks, mut notes, folds) = select_by_objectives(&finals, p, p.options);
     // Reference packages join the candidate list after the search candidates, so the search's indices stay valid.
     let mut all = cands.clone();
     let mut ref_sets: Vec<Vec<u16>> = Vec::new();
@@ -815,6 +961,7 @@ pub fn explore(study: &Study, p: &Params) -> Outcome {
                 "speed_hump" => "speed_hump",
                 "traffic_circle" => "traffic_circle",
                 "speed_limit" => "speed_limit",
+                "slow_street" => "slow_street",
                 "control" => "control",
                 _ => "signal_timing",
             };
@@ -849,6 +996,10 @@ pub fn explore(study: &Study, p: &Params) -> Outcome {
         }
         cf
     };
+    let mut shown = shown;
+    for (f, pk) in shown.iter_mut().zip(&picks) {
+        f.objectives = pk.objectives.clone();
+    }
     // The published order is by the figures that are published: with confirmation seeds, those are the confirmation runs.
     let (picks, shown) = {
         let mut perm: Vec<usize> = (0..picks.len()).collect();
@@ -1063,6 +1214,14 @@ pub fn build_json(study: &Study, p: &Params, cands: &[Cand], base: &Baseline, sh
                 "scenarioVehPerHour": per(&|c| &c.scen),
             },
         });
+        v["residentsDetour"] = json!({
+            "secondsPerTrip": r1(f.detour_s),
+            "effect": effect_json(&f.detour),
+            "vehicleMinutesPerHour": r1(f.detour_vmin_h),
+        });
+        if !f.objectives.is_empty() {
+            v["objectives"] = json!(f.objectives.iter().map(|o| o.id()).collect::<Vec<_>>());
+        }
         if let Some(n) = note {
             v["note"] = json!(n);
         }
@@ -1120,6 +1279,12 @@ pub fn build_json(study: &Study, p: &Params, cands: &[Cand], base: &Baseline, sh
             "droppedBy": seeds::reason_counts(&known.dropped).into_iter().map(|(reason, count)| json!({"reason": reason, "count": count})).collect::<Vec<_>>(),
             "droppedPackages": known.dropped.iter().map(|d| json!({"link": d.link, "reason": d.reason})).collect::<Vec<_>>(),
         },
+    });
+    computed["objectives"] = json!({
+        "list": p.objectives.iter().map(|o| json!({"id": o.id(), "label": o.label(), "rule": o.rule()})).collect::<Vec<_>>(),
+        "detourWeightPointsPerSecond": p.detour_weight,
+        "detourReductionFloor": DETOUR_REDUCTION_FLOOR,
+        "note": "Each option lists the objectives it is the best for. Detour is the added trip time of completed car trips that start or end inside the study area, scenario minus baseline on the same seed. ASSUMPTION: the weight and the floor.",
     });
     computed["similarity"] = json!({
         "rule": "Two rechecked packages are similar when they act at the same places, or differ by at most one change and cut through cars alike on the paired comparison, or change through cars on the side-street blocks almost identically. One of each similar group is published; the others are listed on it as variants. ASSUMPTION: the thresholds.",
@@ -1227,11 +1392,11 @@ fn build_markdown(study: &Study, p: &Params, ctx: &Ctx, state: &SearchState, fin
         "Through cars are counted on the area's side streets (each car once for the area; on a block, both directions). \"All traffic\" adds the local trips of people who live or drive there. Through figures are means over the {} discovery seeds and the periods searched. The block with the largest raw increase and the block behind the ranking penalty are different quantities and may differ: the penalty is the largest all-traffic increase on one block in any period after subtracting its assumed noise band.\n",
         p.seeds.len()
     );
-    let _ = writeln!(md, "| # | Interventions | Source | Through cars an hour, area change (mean of periods and seeds) | Seed interval of that change | Block with the largest through-car increase (cars an hour) | Its interval | Blocks with a resolved through-car increase | Ranking penalty: block and all-traffic increase past its band (cars an hour, worst period) | Outcome |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |");
+    let _ = writeln!(md, "| # | Interventions | Source | Through cars an hour, area change (mean of periods and seeds) | Seed interval of that change | Block with the largest through-car increase (cars an hour) | Its interval | Blocks with a resolved through-car increase | Ranking penalty: block and all-traffic increase past its band (cars an hour, worst period) | Residents' detour (s per trip) | Outcome |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |");
     for (i, f) in finals.iter().enumerate() {
         let _ = writeln!(
             md,
-            "| {} | {} | {} | {:+.1}% | {} | {} ({:+.0}) | {} | {} | {} ({:+.0}) | {} |",
+            "| {} | {} | {} | {:+.1}% | {} | {} ({:+.0}) | {} | {} | {} ({:+.0}) | {:+.1} | {} |",
             i + 1,
             f.set.iter().map(|&c| cands[c as usize].label.clone()).collect::<Vec<_>>().join("; "),
             f.origin.kind,
@@ -1243,12 +1408,32 @@ fn build_markdown(study: &Study, p: &Params, ctx: &Ctx, state: &SearchState, fin
             f.through.blocks_resolved,
             f.through.penalty_block.map(blk).unwrap_or_else(|| "none past its band".into()),
             f.harm,
+            f.detour_s,
             notes[i]
         );
     }
+    let _ = writeln!(md, "\n## Residents' detour weight\n");
+    let _ = writeln!(
+        md,
+        "The least-detour objective subtracts {} points of through-car reduction per second of added resident trip time (ASSUMPTION), among packages that remove at least {:.0}% of the most removed. Winner among the rechecked finalists at half and double the weight (a rechecked package that passes the filters of the main choice):\n\n| Weight | Winner | Through cars removed (%) | Detour (s per trip) |\n| --- | --- | --- | --- |",
+        p.detour_weight,
+        DETOUR_REDUCTION_FLOOR * 100.0
+    );
+    let pool: Vec<usize> = (0..finals.len()).filter(|&i| finals[i].reject.is_none() && reduces(&finals[i])).collect();
+    for w in [p.detour_weight / 2.0, p.detour_weight, p.detour_weight * 2.0] {
+        let q = Params { detour_weight: w, ..p.clone() };
+        match objective_winner(finals, &q, Objective::LeastDetour, &pool) {
+            Some(i) => {
+                let _ = writeln!(md, "| {w} | {} | {:.1} | {:+.1} |", title(cands, &finals[i].set), finals[i].reduction_pct, finals[i].detour_s);
+            }
+            None => {
+                let _ = writeln!(md, "| {w} | none | | |");
+            }
+        }
+    }
     let _ = writeln!(md, "\n## Chosen options\n");
     for (n, (pick, f)) in picks.iter().zip(shown).enumerate() {
-        let _ = writeln!(md, "{}. {} ({}; source: {}; estimates: {}). {}", n + 1, title(cands, &f.set), pick.why, f.origin.phrase(), f.role, summary(study, cands, f));
+        let _ = writeln!(md, "{}. {} ({}; source: {}; estimates: {}). {} Residents' detour: {:+.1} s per trip, {:+.0} vehicle-minutes an hour ({}).", n + 1, title(cands, &f.set), pick.why, f.origin.phrase(), f.role, summary(study, cands, f), f.detour_s, f.detour_vmin_h, detour_phrase(&f.detour));
     }
     for (k, w) in shown.windows(2).enumerate() {
         let c = match option_gain(&w[0].pairs, &w[1].pairs) {

@@ -947,6 +947,23 @@ The app SHALL have a top-level Methodology tab at `/methodology`, between Street
 - **WHEN** the text pages are generated
 - **THEN** `/methodology.md` carries the same copy and the diagrams' descriptions, and `llms.txt` links it
 
+### Requirement: Objective tags on proposal cards
+A proposal card SHALL show a tag row under the title, "Best for: " followed by the objectives the option is best for, in the order most cut-through removed, no street closures, least detour for residents, fewest changes. An option with no tags SHALL show no row. The text pages and the link-preview text SHALL carry the same words.
+
+#### Scenario: Tags
+- **WHEN** an option is the best for two objectives
+- **THEN** its card shows both after "Best for:"
+
+#### Scenario: Older file
+- **WHEN** a file has no objectives
+- **THEN** the card shows no tag row
+
+### Requirement: Residents' detour on proposal cards
+A proposal card SHALL show residents' detour as seconds per resident trip with its interval. The Methodology page SHALL say in one plain sentence that options are chosen for different goals and tagged.
+
+#### Scenario: Detour line
+- **WHEN** an option has a recorded detour
+- **THEN** its card shows seconds per resident trip and the interval over runs
 ### Requirement: Street facts on the card's map
 Moving the pointer over, focusing, or tapping a measured street on a card's map SHALL show its name and block, its through cars an hour today and with the proposal in the picture's period, the change, that the figure counts through cars only, and the runs it is a mean over. It SHALL say when the change is within run-to-run variation. It SHALL give all cars on the block only for a block whose all-car figures the file records, and otherwise say they are not in the file.
 

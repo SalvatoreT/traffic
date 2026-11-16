@@ -18,7 +18,7 @@ import { ROUTE_CAVEAT } from '../../src/lib/throughroutes';
 import { SPEED_LIMITS_MPH, SIGNAL_CYCLES_S } from '../../src/lib/selection';
 import {
   allTrafficHeadline, allTrafficNote, allTrafficRows, beforeAfterPct, comparisonText, cutThroughHeadline, evidenceNote, formatComputed, harmHeadline, hashMatches, INTERVAL_SCOPE, intervalText, linkHash, periodsPhrase,
-  provenanceLine, proposalNotices, seedsPhrase, signedNum, signedPct, listOptions, type Proposal, type ProposalGroup, type Proposals,
+  provenanceLine, proposalNotices, bestForText, detourText, seedsPhrase, signedNum, signedPct, listOptions, type Proposal, type ProposalGroup, type Proposals,
 } from '../../src/lib/proposals';
 import {
   ASSUMPTIONS_INTRO, EXPLORATORY_NOTE, FIXED_DEMAND_CAVEAT, LEGACY_GROUP_NOTE, MOVEMENTS_INTRO, PROPOSALS_LEAD, SOURCES_CALIBRATED, SOURCES_UNCALIBRATED, STREETS_INTRO,
@@ -259,9 +259,13 @@ function cardMd(i: LlmsInput, g: ProposalGroup, p: Proposal, n: number | null, w
   const stored = (i.resultsIndex?.results ?? []).filter((r) => r.proposals.some((x) => x.group === g.id && x.id === p.id));
   const out: string[] = [`### ${n === null ? '' : `${n}. `}${p.title}`, ''];
   if (p.kind === 'reference') out.push(`*Earlier proposal.*${p.note ? ` ${p.note}` : ''}`, '');
+  const best = bestForText(p);
+  if (best) out.push(`${best}.`, '');
   out.push(`- **${cut.figure}** ${cut.label} (${cut.change}). ${cut.scope} ${cut.interval}`);
   const big = allTrafficHeadline(rows);
-  out.push(big.none ? `- ${big.label}` : `- **${big.figure}** ${big.label}. ${big.split} ${big.interval}`, '');
+  out.push(big.none ? `- ${big.label}` : `- **${big.figure}** ${big.label}. ${big.split} ${big.interval}`);
+  const dt = detourText(p.residentsDetour);
+  out.push(dt ? `- **${dt.figure}** ${dt.label}. ${dt.detail}` : '', '');
   out.push('Changes:', '', ...p.interventions.map((iv) => `- ${iv.label} (${iv.type})`), '');
   if (p.variants?.length) {
     out.push('Variants (tweaks of this proposal that do about the same; each opens on the map and runs live; no share path or stored result):', '',
@@ -436,7 +440,7 @@ export function examplesMd(i: LlmsInput): string {
   };
   if (studyBlockIdx >= 0) {
     const b = blockPlace(net, idx, studyBlockIdx);
-    for (const t of ['modal_filter', 'speed_hump', 'speed_limit', 'one_way']) add(t, t, b.options);
+    for (const t of ['modal_filter', 'speed_hump', 'slow_street', 'speed_limit', 'one_way']) add(t, t, b.options);
   }
   if (studyNode !== undefined) {
     const n = nodePlace(net, idx, studyNode);

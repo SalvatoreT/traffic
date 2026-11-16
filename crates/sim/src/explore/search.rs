@@ -6,6 +6,7 @@
 //! period, one seed and a shortened run; the finalists are rechecked elsewhere (`report`).
 
 use super::cands::{conflicts, hotspots, generate_with, Cand, Hotspots};
+use super::objectives::Objective;
 use super::*;
 use std::collections::HashMap;
 use std::time::Instant;
@@ -18,6 +19,8 @@ pub struct PeriodStat {
     pub ped_conflicts: f64,
     pub bike_conflicts: f64,
     pub inside_s: f64,
+    /// Summed trip time (s) of those trips, mean over seeds.
+    pub inside_tt_s: f64,
     pub unroutable: f64,
     pub gridlock: f64,
     pub backlog: f64,
@@ -43,6 +46,9 @@ pub struct PeriodStat {
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct RunRec {
     pub ct_vph: f64,
+    /// Mean trip time (s) and summed trip time (s) of completed car trips with an end inside the study area.
+    pub inside_s: f64,
+    pub inside_tt_s: f64,
     pub block_flow: Vec<f64>,
     pub block_through: Vec<f64>,
 }
@@ -89,6 +95,7 @@ pub fn period_stat(study: &Study, runs: &[&RunOut]) -> PeriodStat {
         ped_conflicts: m(&|r| r.ped_conflicts as f64),
         bike_conflicts: m(&|r| r.bike_conflicts as f64),
         inside_s: m(&|r| r.inside_mean_s()),
+        inside_tt_s: m(&|r| r.inside_tt_s),
         unroutable: m(&|r| r.unroutable as f64),
         gridlock: m(&|r| r.gridlock_removed as f64),
         backlog: m(&|r| r.backlog as f64),
@@ -100,7 +107,7 @@ pub fn period_stat(study: &Study, runs: &[&RunOut]) -> PeriodStat {
         link_through,
         street_flow,
         street_speed,
-        runs: runs.iter().zip(per_run).zip(per_run_through).map(|((r, bf), bt)| RunRec { ct_vph: r.ct_vph, block_flow: bf, block_through: bt }).collect(),
+        runs: runs.iter().zip(per_run).zip(per_run_through).map(|((r, bf), bt)| RunRec { ct_vph: r.ct_vph, inside_s: r.inside_mean_s(), inside_tt_s: r.inside_tt_s, block_flow: bf, block_through: bt }).collect(),
     }
 }
 
@@ -253,6 +260,8 @@ pub struct Eval {
     /// Raw increase per harm block (veh/h).
     pub inc: Vec<f32>,
     pub score: f64,
+    /// Added mean trip time (s) of trips that start or end inside the study area, scenario minus baseline on the same seed.
+    pub detour_s: f64,
 }
 
 impl Eval {
@@ -260,7 +269,7 @@ impl Eval {
         self.reject.is_none()
     }
     fn rejected(set: &[u16], why: String) -> Eval {
-        Eval { set: set.to_vec(), reject: Some(why), reduction_pct: 0.0, harm: 0.0, worst: 0, inc: Vec::new(), score: f64::NEG_INFINITY }
+        Eval { set: set.to_vec(), reject: Some(why), reduction_pct: 0.0, harm: 0.0, worst: 0, inc: Vec::new(), score: f64::NEG_INFINITY, detour_s: 0.0 }
     }
 }
 
@@ -298,7 +307,7 @@ fn eval_screen(ctx: &Ctx, set: &[u16]) -> Eval {
     let inc: Vec<f64> = scen_flow.iter().zip(&base_flow).map(|(s, b)| s - b).collect();
     let h = harm_calc(&inc, &ctx.base.screen.block_sigma);
     let red = reduction_pct(base_run.ct_vph, out.ct_vph);
-    Eval { set: set.to_vec(), reject: None, reduction_pct: red, harm: h.worst_adj, worst: h.worst, inc: inc.iter().map(|&x| x as f32).collect(), score: score(p, red, h.worst_adj) }
+    Eval { set: set.to_vec(), reject: None, reduction_pct: red, harm: h.worst_adj, worst: h.worst, inc: inc.iter().map(|&x| x as f32).collect(), score: score(p, red, h.worst_adj), detour_s: out.inside_mean_s() - base_run.inside_mean_s() }
 }
 
 pub struct SearchState {
@@ -414,13 +423,21 @@ pub fn rank_value(p: &Params, e: &Eval) -> f64 {
     e.reduction_pct - rank_weight(p, e.set.len()) * e.harm
 }
 
-fn rank_order(p: &Params, st: &SearchState, v: &mut Vec<usize>) {
-    v.sort_by(|&a, &b| rank_value(p, &st.evals[b]).partial_cmp(&rank_value(p, &st.evals[a])).unwrap_or(std::cmp::Ordering::Equal).then(a.cmp(&b)));
+/// Ranking value of a screened package inside the beam of objective `obj`.
+fn rank_for(p: &Params, obj: Objective, e: &Eval) -> f64 {
+    super::objectives::screen_value(obj, p, rank_value(p, e), e)
+}
+
+fn rank_order(p: &Params, obj: Objective, st: &SearchState, v: &mut Vec<usize>) {
+    v.sort_by(|&a, &b| rank_for(p, obj, &st.evals[b]).partial_cmp(&rank_for(p, obj, &st.evals[a])).unwrap_or(std::cmp::Ordering::Equal).then(a.cmp(&b)));
 }
 
 /// Where a candidate acts: its block, else its intersection(s). Candidates that act at one place are variants of one another (a filter on the
 /// whole junction, one on a single street, a diverter, an all-way stop).
 fn place_key(c: &Cand) -> String {
+    if matches!(c.kind, "slow_street" | "speed_limit") {
+        return format!("s:{}", c.places.first().cloned().unwrap_or_default());
+    }
     match c.block {
         Some(b) => format!("b{b}"),
         None => format!("n{}", c.nodes.iter().map(|n| n.to_string()).collect::<Vec<_>>().join(".")),
@@ -475,26 +492,55 @@ impl Family {
 /// from the best singles. A strong large package cannot crowd the small ones out, and a known package is never lost to a weak path to it.
 pub fn beam_search(ctx: &Ctx, known: &[Family]) -> SearchState {
     let mut st = SearchState::new();
+    beam_search_in(ctx, known, &BeamLimit::main(ctx.p), &mut st);
+    st
+}
+
+/// What one objective's beam may use: its objective, the candidates it may combine (None: all) and the deepest package it grows.
+pub struct BeamLimit {
+    pub objective: Objective,
+    pub allowed: Option<Vec<bool>>,
+    pub depth: usize,
+}
+
+impl BeamLimit {
+    pub fn main(p: &Params) -> BeamLimit {
+        BeamLimit { objective: Objective::MostRemoved, allowed: None, depth: p.depth }
+    }
+
+    pub fn for_objective(obj: Objective, p: &Params, cands: &[Cand]) -> BeamLimit {
+        let allowed = if obj == Objective::NoClosures { Some(super::objectives::allowed(obj, cands)) } else { None };
+        BeamLimit { objective: obj, allowed, depth: super::objectives::depth(obj, p) }
+    }
+
+    pub fn ok(&self, c: u16) -> bool {
+        self.allowed.as_ref().map_or(true, |a| a[c as usize])
+    }
+}
+
+/// One beam over a shared state: screened packages already in the cache are reused, and the evaluations the beam adds stay in it for the others.
+pub fn beam_search_in(ctx: &Ctx, known: &[Family], lim: &BeamLimit, st_ref: &mut SearchState) {
+    let mut st = std::mem::take(st_ref);
     let n = ctx.cands.len();
-    let singles: Vec<Vec<u16>> = (0..n as u16).map(|i| vec![i]).collect();
+    let singles: Vec<Vec<u16>> = (0..n as u16).filter(|&i| lim.ok(i)).map(|i| vec![i]).collect();
     eval_batch(ctx, &mut st, singles);
-    let known: Vec<Family> = known.iter().filter(|f| f.set.len() > 1).cloned().collect();
+    let known: Vec<Family> = known.iter().filter(|f| f.set.len() > 1 && f.set.len() <= lim.depth && f.set.iter().all(|&c| lim.ok(c))).cloned().collect();
     eval_batch(ctx, &mut st, known.iter().map(|f| f.set.clone()).collect());
     eval_batch(ctx, &mut st, known.iter().flat_map(|f| f.subs.iter().cloned()).collect());
     // Single results by candidate index.
     fn single_eval(st: &SearchState, c: u16) -> Option<&Eval> {
         st.cache.get(&vec![c]).map(|&i| &st.evals[i])
     }
-    let mut ranked: Vec<u16> = (0..n as u16).filter(|&c| single_eval(&st, c).map_or(false, |e| e.valid())).collect();
+    let mut ranked: Vec<u16> = (0..n as u16).filter(|&c| lim.ok(c) && single_eval(&st, c).map_or(false, |e| e.valid())).collect();
     ranked.sort_by(|&a, &b| {
         let (ea, eb) = (single_eval(&st, a).unwrap(), single_eval(&st, b).unwrap());
-        rank_value(ctx.p, eb).partial_cmp(&rank_value(ctx.p, ea)).unwrap_or(std::cmp::Ordering::Equal).then(a.cmp(&b))
+        rank_for(ctx.p, lim.objective, eb).partial_cmp(&rank_for(ctx.p, lim.objective, ea)).unwrap_or(std::cmp::Ordering::Equal).then(a.cmp(&b))
     });
     let b = best_valid(&st);
     progress(ctx, &mut st, 1, b);
     let positive: Vec<usize> = ranked.iter().filter(|&&c| single_eval(&st, c).unwrap().reduction_pct > 0.0).map(|&c| st.cache[&vec![c]]).collect();
     let top_singles: Vec<u16> = distinct_places(ctx, &st, &positive, ctx.p.expand).into_iter().map(|i| st.evals[i].set[0]).collect();
-    let usable: Vec<bool> = (0..n as u16).map(|c| single_eval(&st, c).map_or(false, |e| e.valid())).collect();
+    let usable: Vec<bool> = (0..n as u16).map(|c| lim.ok(c) && single_eval(&st, c).map_or(false, |e| e.valid())).collect();
     let all_ranked: Vec<usize> = ranked.iter().map(|&c| st.cache[&vec![c]]).collect();
     let mut lineages = vec![Lineage { beam: distinct_places(ctx, &st, &all_ranked, ctx.p.beam), alive: true }];
     let mut families: Vec<Vec<usize>> = known
@@ -502,12 +548,12 @@ pub fn beam_search(ctx: &Ctx, known: &[Family]) -> SearchState {
         .map(|f| {
             let mut m: Vec<usize> = std::iter::once(&f.set).chain(f.subs.iter()).filter_map(|s| st.cache.get(s).copied()).filter(|&i| st.evals[i].valid()).collect();
             m.dedup();
-            rank_order(ctx.p, &st, &mut m);
+            rank_order(ctx.p, lim.objective, &st, &mut m);
             m
         })
         .filter(|m| !m.is_empty())
         .collect();
-    families.sort_by(|a, b| rank_value(ctx.p, &st.evals[b[0]]).partial_cmp(&rank_value(ctx.p, &st.evals[a[0]])).unwrap_or(std::cmp::Ordering::Equal).then(a[0].cmp(&b[0])));
+    families.sort_by(|a, b| rank_for(ctx.p, lim.objective, &st.evals[b[0]]).partial_cmp(&rank_for(ctx.p, lim.objective, &st.evals[a[0]])).unwrap_or(std::cmp::Ordering::Equal).then(a[0].cmp(&b[0])));
     let mut start: Vec<usize> = Vec::new();
     let width = ctx.p.beam;
     'fill: for r in 0.. {
@@ -528,7 +574,7 @@ pub fn beam_search(ctx: &Ctx, known: &[Family]) -> SearchState {
         }
     }
     if !start.is_empty() {
-        rank_order(ctx.p, &st, &mut start);
+        rank_order(ctx.p, lim.objective, &st, &mut start);
         let start = distinct_places(ctx, &st, &start, usize::MAX);
         let best = st.evals[start[0]].score;
         let line = format!("known packages: {} famil(ies) screened, {} starting point(s) for the beam, best {:+.1}", families.len(), start.len(), best);
@@ -536,7 +582,7 @@ pub fn beam_search(ctx: &Ctx, known: &[Family]) -> SearchState {
         eprintln!("{line}");
         st.log.push(line);
     }
-    for depth in 2..=ctx.p.depth {
+    for depth in 2..=lim.depth {
         if st.exhausted || lineages.iter().all(|l| !l.alive || l.beam.is_empty()) {
             break;
         }
@@ -547,7 +593,7 @@ pub fn beam_search(ctx: &Ctx, known: &[Family]) -> SearchState {
                 for &bi in &lin.beam {
                     let member = st.evals[bi].set.clone();
                     // `depth` is the most interventions a package may have: a known package that is already that large is not grown.
-                    if member.len() >= ctx.p.depth {
+                    if member.len() >= lim.depth {
                         continue;
                     }
                     let mut ext: Vec<u16> = top_singles.clone();
@@ -587,12 +633,13 @@ pub fn beam_search(ctx: &Ctx, known: &[Family]) -> SearchState {
                 continue;
             }
             let mut level: Vec<usize> = sets.iter().filter_map(|s| st.cache.get(s).copied()).filter(|&i| st.evals[i].valid()).collect();
-            rank_order(ctx.p, &st, &mut level);
+            rank_order(ctx.p, lim.objective, &st, &mut level);
             // The line goes on while adding an intervention improves the ranking value at the new size: the previous beam's best is
             // re-ranked with the new level's harm weight, so levels are compared on the same footing.
             let w = level.first().map_or(0.0, |&i| rank_weight(ctx.p, st.evals[i].set.len()));
-            let prev_best = lin.beam.iter().map(|&i| st.evals[i].reduction_pct - w * st.evals[i].harm).fold(f64::NEG_INFINITY, f64::max);
-            let level_best = level.first().map_or(f64::NEG_INFINITY, |&i| st.evals[i].reduction_pct - w * st.evals[i].harm);
+            let rw = |i: usize| super::objectives::screen_value(lim.objective, ctx.p, st.evals[i].reduction_pct - w * st.evals[i].harm, &st.evals[i]);
+            let prev_best = lin.beam.iter().map(|&i| rw(i)).fold(f64::NEG_INFINITY, f64::max);
+            let level_best = level.first().map_or(f64::NEG_INFINITY, |&i| rw(i));
             if level_best <= prev_best + 1e-9 {
                 let line = format!("depth {depth}: no package beats the best of the previous level in this line; stopping it");
                 eprintln!("{line}");
@@ -603,7 +650,7 @@ pub fn beam_search(ctx: &Ctx, known: &[Family]) -> SearchState {
             lin.beam = distinct_places(ctx, &st, &level, ctx.p.beam);
         }
     }
-    st
+    *st_ref = st;
 }
 
 /// Packages no other evaluated package beats on cut-through reduction, harm and number of interventions (maximize, minimize, minimize).
@@ -637,6 +684,27 @@ pub fn pick_finalists(evals: &[Eval], cap: usize, warm: &[Vec<u16>]) -> Vec<usiz
             if !out.contains(&i) {
                 out.push(i);
             }
+        }
+    }
+    out
+}
+
+/// Up to `cap` finalists of one objective's beam: valid packages that reduce through cars, within the beam's limits, best screening value
+/// first, one per set of places.
+pub fn pick_finalists_for(ctx: &Ctx, evals: &[Eval], cap: usize, lim: &BeamLimit) -> Vec<usize> {
+    let value = |i: usize| super::objectives::screen_value(lim.objective, ctx.p, evals[i].score, &evals[i]);
+    let mut idx: Vec<usize> = (0..evals.len()).filter(|&i| evals[i].valid() && evals[i].reduction_pct > 0.0 && evals[i].set.len() <= lim.depth && evals[i].set.iter().all(|&c| lim.ok(c))).collect();
+    idx.sort_by(|&a, &b| value(b).partial_cmp(&value(a)).unwrap_or(std::cmp::Ordering::Equal).then(a.cmp(&b)));
+    let mut seen: Vec<Vec<String>> = Vec::new();
+    let mut out = Vec::new();
+    for i in idx {
+        if out.len() >= cap {
+            break;
+        }
+        let k = places_of(ctx, &evals[i].set);
+        if !seen.contains(&k) {
+            seen.push(k);
+            out.push(i);
         }
     }
     out

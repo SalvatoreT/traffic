@@ -40,6 +40,7 @@ export interface Variant {
   link: string; differs: string[]; why?: string; origin?: { kind: string };
   cutThrough?: { baselineVehPerHour: number; scenarioVehPerHour: number; changePct: number; role?: string; seeds?: number[] };
 }
+export interface ResidentsDetour { secondsPerTrip: number; effect: Effect; vehicleMinutesPerHour: number }
 export interface Proposal {
   id: string; title: string; summary: string;
   /** Tweaks of this option, opened by their scenario link and run live. Not stored results, not share paths. */
@@ -60,6 +61,10 @@ export interface Proposal {
   byPeriod: Record<string, PeriodResult>;
   /** The runs behind the figures. Absent in files written before it was recorded. */
   evidence?: ProposalEvidence;
+  /** Objectives this option is the best for (ids, see `OBJECTIVE_LABELS`). Absent in files written before options were chosen by objective. */
+  objectives?: string[];
+  /** Added trip time of trips that start or end inside the study area, scenario minus baseline. Absent in files written before it was recorded. */
+  residentsDetour?: ResidentsDetour;
   /** Per-link through cars for the card's picture. Absent in files written before pictures; the card then shows none. */
   picture?: ProposalPicture;
 }
@@ -98,6 +103,8 @@ export interface Computed {
   date: string; periods: string[]; seeds: number[]; minutes?: number; networkHash: string; demandHash: string; calibration: string;
   simulator?: string; reportMethod?: string; sourceRevision?: string;
   settings?: Record<string, unknown>;
+  /** The goals the options were chosen for, with the weights behind them. Absent in files written before. */
+  objectives?: { list: { id: string; label: string; rule: string }[]; detourWeightPointsPerSecond?: number; detourReductionFloor?: number; note?: string };
   estimation?: {
     method: string; level: number; minPairs: number; aggregation: string; scope: string; maximum: string; practicalFloors: string;
     selection: { estimates: 'exploratory' | 'confirmation'; discoverySeeds: number[]; confirmationSeeds: number[]; shortlist: string[] };
@@ -627,3 +634,32 @@ export function listOptions(file: Pick<Proposals, 'groups'>): { search: Listed[]
 
 export const allProposals = (file: Proposals): Proposal[] => file.groups.flatMap((g) => g.proposals);
 
+
+/** The goals an option can be the best for, in the order a card lists them. */
+export const OBJECTIVE_LABELS: Record<string, string> = {
+  'most-removed': 'most cut-through removed',
+  'no-closures': 'no street closures',
+  'least-detour': 'least detour for residents',
+  'fewest-changes': 'fewest changes',
+};
+
+/** The tag labels of an option, in the fixed order. An id this reader does not know is left out; a file with none gives no tags. */
+export function objectiveTags(p: Pick<Proposal, 'objectives'>): string[] {
+  const ids = p.objectives ?? [];
+  return Object.keys(OBJECTIVE_LABELS).filter((id) => ids.includes(id)).map((id) => OBJECTIVE_LABELS[id]);
+}
+
+/** "Best for: no street closures, fewest changes", or an empty string when the option carries no tag. */
+export const bestForText = (p: Pick<Proposal, 'objectives'>): string => {
+  const t = objectiveTags(p);
+  return t.length ? `Best for: ${t.join(', ')}` : '';
+};
+
+/** Seconds added per trip for trips that start or end inside the study area, with the interval over runs; null when the file recorded none. */
+export function detourText(d: ResidentsDetour | undefined): { figure: string; label: string; detail: string } | null {
+  if (!d || !Number.isFinite(d.secondsPerTrip)) return null;
+  const s = d.secondsPerTrip;
+  const figure = `${s < 0 ? MINUS : s > 0 ? '+' : ''}${num(Math.abs(s), 1)} s`;
+  const total = `${d.vehicleMinutesPerHour < 0 ? MINUS : '+'}${num(Math.abs(d.vehicleMinutesPerHour), 0)} vehicle-minutes an hour`;
+  return { figure, label: 'per resident trip', detail: `${total} across trips that start or end inside the study area. ${intervalText(d.effect, ' s', 1)}` };
+}
