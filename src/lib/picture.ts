@@ -6,6 +6,7 @@ import { pointAlong } from './geom';
 import { pointAtLinkMeters } from './junctionends';
 import type { NetIndex } from './naming';
 import { makeProjection } from './projection';
+import { blockMeasured } from './scope';
 import { signedNum, type Proposal, type ProposalPicture } from './proposals';
 
 /** Width of the picture in nominal CSS pixels: line widths, bars and type are sized for this and scale with the drawing. */
@@ -98,11 +99,12 @@ export function pictureAlt(p: Proposal, pic: ProposalPicture, f: PictureFacts, p
 // ---------------------------------------------------------------- drawing model (screen meters: x east, y down)
 
 export interface PictureBlockLine { block: number; d: string; delta: number; t: number }
+/** `iv` is the index of the intervention (in the decoded scenario) that the mark draws. */
 export type Mark =
-  | { kind: 'bar'; x: number; y: number; bearing: number }
-  | { kind: 'diverter'; x: number; y: number; bearing: number }
-  | { kind: 'arrow'; x: number; y: number; bearing: number }
-  | { kind: 'badge'; type: BadgedType; x: number; y: number; text: string };
+  | { kind: 'bar'; x: number; y: number; bearing: number; iv: number }
+  | { kind: 'diverter'; x: number; y: number; bearing: number; iv: number }
+  | { kind: 'arrow'; x: number; y: number; bearing: number; iv: number }
+  | { kind: 'badge'; type: BadgedType; x: number; y: number; text: string; iv: number };
 export interface StreetName { text: string; x: number; y: number; angle: number }
 export interface Pin { x: number; y: number; text: string; end: boolean; d: string; dashed: boolean }
 
@@ -173,31 +175,31 @@ export function buildBaseMap(net: Network): BaseMap {
 
 export function buildPicture(net: Network, index: NetIndex, p: Proposal, pic: ProposalPicture, ivs: Intervention[], f: PictureFacts): PictureModel {
   const { view, unit, outline, major, minor, names } = buildBaseMap(net);
-  const blocks: PictureBlockLine[] = blockChanges(pic, index).map((c) => ({
+  const blocks: PictureBlockLine[] = blockChanges(pic, index).filter((c) => blockMeasured(index.blocks[c.block])).map((c) => ({
     block: c.block, d: pathOf(net.links[index.blocks[c.block].links[0]].geometry), delta: c.delta, t: blockIntensity(c.delta),
   })).sort((a, b) => Math.abs(a.t) - Math.abs(b.t));
 
   const marks: Mark[] = [];
   const at = (x: number, y: number) => ({ x, y: -y });
   const bearingOf = (heading: number) => ((90 - (heading * 180) / Math.PI) % 360 + 360) % 360;
-  for (const iv of ivs) {
+  ivs.forEach((iv, ivi) => {
     switch (iv.type) {
       case 'modal_filter':
-        if ('node' in iv) for (const b of legBars(filterLegs(net, index, iv.node), iv.legs)) marks.push({ kind: 'bar', ...at(b.center[0], b.center[1]), bearing: b.bearing });
-        else { const l = net.links[iv.link]; if (l) { const b = blockBar(l); marks.push({ kind: 'bar', ...at(b.center[0], b.center[1]), bearing: b.bearing }); } }
+        if ('node' in iv) for (const b of legBars(filterLegs(net, index, iv.node), iv.legs)) marks.push({ kind: 'bar', ...at(b.center[0], b.center[1]), bearing: b.bearing, iv: ivi });
+        else { const l = net.links[iv.link]; if (l) { const b = blockBar(l); marks.push({ kind: 'bar', ...at(b.center[0], b.center[1]), bearing: b.bearing, iv: ivi }); } }
         break;
-      case 'diagonal_diverter': { const n = net.nodes[iv.node]; if (n) marks.push({ kind: 'diverter', ...at(n.x, n.y), bearing: iv.bearing }); break; }
-      case 'one_way': { const l = net.links[iv.link]; if (l) { const q = pointAtLinkMeters(l, l.length / 2); marks.push({ kind: 'arrow', ...at(q.x, q.y), bearing: bearingOf(q.heading) }); } break; }
+      case 'diagonal_diverter': { const n = net.nodes[iv.node]; if (n) marks.push({ kind: 'diverter', ...at(n.x, n.y), bearing: iv.bearing, iv: ivi }); break; }
+      case 'one_way': { const l = net.links[iv.link]; if (l) { const q = pointAtLinkMeters(l, l.length / 2); marks.push({ kind: 'arrow', ...at(q.x, q.y), bearing: bearingOf(q.heading), iv: ivi }); } break; }
       case 'speed_limit': case 'speed_hump': {
         const l = net.links[iv.link]; if (!l) break;
         const q = pointAtLinkMeters(l, iv.type === 'speed_hump' ? iv.position : l.length / 2);
-        marks.push({ kind: 'badge', type: iv.type, ...at(q.x, q.y), text: iv.type === 'speed_limit' ? String(Math.round(iv.speed * 2.23694)) : '' });
+        marks.push({ kind: 'badge', type: iv.type, ...at(q.x, q.y), text: iv.type === 'speed_limit' ? String(Math.round(iv.speed * 2.23694)) : '', iv: ivi });
         break;
       }
-      case 'traffic_circle': case 'control': case 'signal_timing': { const n = net.nodes[iv.node]; if (n) marks.push({ kind: 'badge', type: iv.type, ...at(n.x, n.y), text: '' }); break; }
-      case 'turn_ban': { const a = net.links[iv.fromLink]; const n = a ? net.nodes[a.to] : undefined; if (n) marks.push({ kind: 'badge', type: 'turn_ban', ...at(n.x, n.y), text: '' }); break; }
+      case 'traffic_circle': case 'control': case 'signal_timing': { const n = net.nodes[iv.node]; if (n) marks.push({ kind: 'badge', type: iv.type, ...at(n.x, n.y), text: '', iv: ivi }); break; }
+      case 'turn_ban': { const a = net.links[iv.fromLink]; const n = a ? net.nodes[a.to] : undefined; if (n) marks.push({ kind: 'badge', type: 'turn_ban', ...at(n.x, n.y), text: '', iv: ivi }); break; }
     }
-  }
+  });
 
   const pins: Pin[] = [];
   const pin = (c: BlockChange | null, dashed: boolean) => {

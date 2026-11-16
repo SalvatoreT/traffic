@@ -6,13 +6,12 @@ import { seedsPhrase, signedPct, type Proposal, type ProposalPicture } from './p
 import { changeWidthFor, colorForIntensity, divergingStops, mutedColor, widthFor } from './ramps';
 
 /** Layout width of the shared picture in px; it is rasterized at `SHARE_SCALE` times this. Fixed light colors, so it reads the same wherever it is sent. */
-export const SHARE_W = 800;
-export const SHARE_SCALE = 2;
+export const SHARE_W = 1200;
+export const SHARE_SCALE = 1.5;
 export const SITE_URL = 'traffic.transit.directory';
 export const FONT = "system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
 
-const MARGIN = 32;
-const INNER = SHARE_W - 2 * MARGIN;
+const MARGIN = 36;
 const INK = '#1b2430', MUTED = '#4a5565', PAPER = '#ffffff', MAP_BG = '#f1efe8', RULE = '#c9c6bc', BOX = '#eef1f5';
 const WIDTH_SCALE = 0.62;
 
@@ -40,10 +39,10 @@ export interface ShareInput {
 }
 
 export interface LaidLine { text: string; x: number; y: number; size: number; width: number }
-export interface Section { name: string; top: number; bottom: number }
+export interface Section { name: string; left: number; top: number; right: number; bottom: number }
 export interface ShareImage { svg: string; width: number; height: number; lines: LaidLine[]; sections: Section[]; qr: { x: number; y: number; size: number; modules: number } }
 
-/** Layout px per QR module: 6 px in the PNG at `SHARE_SCALE` 2, enough for a phone to read. Error correction M, quiet zone of 4 modules. */
+/** Layout px per QR module: 4.5 px in the JPEG at `SHARE_SCALE` 1.5, enough for a phone camera to read from a screen. Error correction M, quiet zone of 4 modules. */
 export const QR_MODULE = 3;
 const QR_QUIET = 4;
 export function qrMatrix(url: string): boolean[][] {
@@ -69,7 +68,7 @@ export function wrapText(text: string, size: number, weight: number, maxW: numbe
   return out;
 }
 
-function markSvg(m: Mark, unit: number, bar: { len: number; thick: number }): string {
+export function markSvg(m: Mark, unit: number, bar: { len: number; thick: number }): string {
   if (m.kind === 'bar') {
     const L = bar.len, T = bar.thick, dash = T * 0.5 * 1.5;
     return `<g transform="translate(${n1(m.x)} ${n1(m.y)}) rotate(${n1(m.bearing)})"><rect x="${n1(-L / 2)}" y="${n1(-T / 2)}" width="${n1(L)}" height="${n1(T)}" fill="#fff"/><rect x="${n1(-L / 2)}" y="${n1(-T * 0.375)}" width="${n1(L)}" height="${n1(T * 0.75)}" fill="#111"/><line x1="${n1(-L / 2)}" y1="0" x2="${n1(L / 2)}" y2="0" stroke="#ffd43b" stroke-width="${n1(T * 0.5)}" stroke-dasharray="${n1(dash)} ${n1(dash)}"/></g>`;
@@ -121,122 +120,220 @@ export function mapSvg(model: PictureModel, opts: MapOptions = {}): string {
   return parts.join('');
 }
 
-/**
- * The picture as one self-contained SVG: title, changes, the through-car figures for the picture's period and for the card's average, the map,
- * legend with its non-color cues, status, attribution and site. Text is laid out here with `measure`, so every line fits and no block overlaps.
- */
-export function buildShareSvg(inp: ShareInput, measure: Measure): ShareImage {
-  const out: string[] = [];
-  const lines: LaidLine[] = [];
-  const sections: Section[] = [];
-  let y = MARGIN;
+/** Longest the picture may grow before the changes list is shortened, in layout px (the width is `SHARE_W`). */
+export const SHARE_MAX_H = 960;
+/** A change label up to its first comma: the long ones go on to say which legs a diverter joins. */
+export const firstClause = (label: string): string => label.replace(/,.*$/, '');
 
+const LEAD = 1.3;
+const COL_GAP = 32;
+const BAND_LEFT = 400;
+const MIN_ZONE = 560;
+const QR_EDGE = 10;
+const QR_NOTE = 'Scan to open';
+
+interface Sink { out: string[]; lines: LaidLine[] }
+const makeText = (sink: Sink, measure: Measure) => {
   const text = (t: string, x: number, baseline: number, size: number, weight: number, fill: string, anchor = 'start') => {
     const w = measure(t, size, weight);
-    lines.push({ text: t, x: anchor === 'end' ? x - w : anchor === 'middle' ? x - w / 2 : x, y: baseline, size, width: w });
-    out.push(`<text x="${n1(x)}" y="${n1(baseline)}" font-size="${size}" font-weight="${weight}" fill="${fill}" text-anchor="${anchor}">${esc(t)}</text>`);
+    sink.lines.push({ text: t, x: anchor === 'end' ? x - w : anchor === 'middle' ? x - w / 2 : x, y: baseline, size, width: w });
+    sink.out.push(`<text x="${n1(x)}" y="${n1(baseline)}" font-size="${size}" font-weight="${weight}" fill="${fill}" text-anchor="${anchor}">${esc(t)}</text>`);
   };
-  /** Wrapped paragraph; returns the height used. */
-  const para = (t: string, x: number, maxW: number, size: number, weight: number, fill: string, lead = 1.32): number => {
+  /** Wrapped paragraph from `y`; returns the height used. */
+  const para = (t: string, x: number, y: number, maxW: number, size: number, weight: number, fill: string, lead = LEAD): number => {
     const ls = wrapText(t, size, weight, maxW, measure);
     ls.forEach((l, i) => text(l, x, y + size * 0.95 + i * size * lead, size, weight, fill));
     return ls.length * size * lead;
   };
-  const section = (name: string, from: number) => sections.push({ name, top: from, bottom: y });
+  return { text, para };
+};
 
-  let top = y;
-  y += para(inp.areaName, MARGIN, INNER, 22, 600, MUTED);
-  y += 6;
-  y += para(inp.title, MARGIN, INNER, 36, 700, INK, 1.2);
-  section('title', top);
+interface Box { x: number; y: number; w: number; h: number }
 
-  if (inp.changes.length) {
-    y += 14; top = y;
-    y += para('Changes in this proposal', MARGIN, INNER, 22, 700, MUTED) + 4;
-    for (const c of inp.changes) {
-      const ls = wrapText(c, 24, 400, INNER - 26, measure);
-      text('•', MARGIN + 4, y + 23, 24, 400, INK);
-      ls.forEach((l, i) => text(l, MARGIN + 26, y + 23 + i * 31, 24, 400, INK));
-      y += ls.length * 31 + 3;
+/** Points of the map that a corner stamp must not cover: colored blocks, marks, labels and pin text, in map meters. */
+function inkPoints(model: PictureModel): { x: number; y: number; r: number }[] {
+  const pts: { x: number; y: number; r: number }[] = [];
+  const num = /(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)/g;
+  const walk = (d: string, r: number) => {
+    let prev: [number, number] | null = null;
+    for (const m of d.matchAll(num)) {
+      const q: [number, number] = [Number(m[1]), Number(m[2])];
+      if (prev) { const n = Math.max(1, Math.ceil(Math.hypot(q[0] - prev[0], q[1] - prev[1]) / (4 * model.unit))); for (let i = 1; i < n; i++) pts.push({ x: prev[0] + ((q[0] - prev[0]) * i) / n, y: prev[1] + ((q[1] - prev[1]) * i) / n, r }); }
+      pts.push({ x: q[0], y: q[1], r });
+      prev = q;
     }
-    section('changes', top);
-  }
-
-  y += 16; top = y;
-  const boxX = MARGIN, boxY = y, pad = 20;
-  const boxIdx = out.length;
-  y += pad;
-  const figure = (f: ShareHeadline, big: boolean) => {
-    y += para(f.label, MARGIN + pad, INNER - 2 * pad, 22, 400, MUTED);
-    y += 2;
-    y += para(f.figures, MARGIN + pad, INNER - 2 * pad, big ? 34 : 28, 700, INK, 1.2);
   };
-  if (inp.periodFigure) figure(inp.periodFigure, true);
-  if (inp.averageFigure) { if (inp.periodFigure) y += 12; figure(inp.averageFigure, !inp.periodFigure); }
-  y += pad;
-  out.splice(boxIdx, 0, `<rect x="${boxX}" y="${boxY}" width="${INNER}" height="${n1(y - boxY)}" rx="10" fill="${BOX}"/>`);
-  section('figures', top);
+  for (const b of model.blocks) walk(b.d, 4 * model.unit);
+  for (const p of model.pins) { walk(p.d, 5 * model.unit); for (let i = 0; i <= 6; i++) pts.push({ x: p.x + (p.end ? -i : i) * 7 * model.unit, y: p.y, r: 8 * model.unit }); }
+  for (const m of model.marks) pts.push({ x: m.x, y: m.y, r: 14 * model.unit });
+  for (const nm of model.names) { const half = nm.text.length * 0.3 * 10.5 * model.unit; for (let i = -4; i <= 4; i++) pts.push({ x: nm.x + (i / 4) * half, y: nm.y, r: 8 * model.unit }); }
+  return pts;
+}
 
-  y += 18; top = y;
-  const mh = (INNER * inp.model.view.h) / inp.model.view.w;
-  const v = inp.model.view;
-  out.push(`<clipPath id="mapclip"><rect x="${MARGIN}" y="${n1(y)}" width="${INNER}" height="${n1(mh)}" rx="10"/></clipPath>`);
-  out.push(`<g clip-path="url(#mapclip)"><svg x="${MARGIN}" y="${n1(y)}" width="${INNER}" height="${n1(mh)}" viewBox="${n1(v.x)} ${n1(v.y)} ${n1(v.w)} ${n1(v.h)}" preserveAspectRatio="xMidYMid meet">${mapSvg(inp.model)}</svg></g>`);
-  out.push(`<rect x="${MARGIN + 0.5}" y="${n1(y + 0.5)}" width="${INNER - 1}" height="${n1(mh - 1)}" rx="10" fill="none" stroke="${RULE}"/>`);
-  y += mh;
-  section('map', top);
-
-  y += 14; top = y;
-  y += para(inp.caption, MARGIN, INNER, 24, 700, INK) + 10;
-  // ramp
-  const ticks = changeTicks('cutthrough');
-  out.push(`<defs><linearGradient id="ramp" x1="0" x2="1" y1="0" y2="0">${divergingStops('light').map((s) => `<stop offset="${((s.t + 1) * 50).toFixed(1)}%" stop-color="${s.color}"/>`).join('')}</linearGradient></defs>`);
-  out.push(`<rect x="${MARGIN}" y="${n1(y)}" width="${INNER}" height="18" rx="3" fill="url(#ramp)" stroke="${RULE}"/>`);
-  y += 18 + 22;
-  ticks.forEach((t, i) => {
-    const x = MARGIN + (INNER * i) / (ticks.length - 1);
-    text(t, x, y, 22, 400, INK, i === 0 ? 'start' : i === ticks.length - 1 ? 'end' : 'middle');
-  });
-  y += 12;
-  y += para(`Cars an hour. Blue: fewer through cars. Orange: more. Thin gray: within normal run-to-run variation (about ${Math.round(DEAD_BAND_CUTTHROUGH)} cars an hour).`, MARGIN, INNER, 22, 400, MUTED) + 6;
-  for (const k of inp.keys) {
-    const sw = k.kind === 'text' ? 0 : 52;
-    const ls = wrapText(k.text, 22, 400, INNER - (sw ? sw + 12 : 0), measure);
-    const h = ls.length * 29;
-    if (k.kind === 'bar') out.push(`<g transform="translate(${MARGIN + 22} ${n1(y + 14)})"><rect x="-22" y="-6" width="44" height="12" fill="#fff"/><rect x="-22" y="-4.5" width="44" height="9" fill="#111"/><line x1="-22" y1="0" x2="22" y2="0" stroke="#ffd43b" stroke-width="6" stroke-dasharray="9 9"/></g>`);
-    if (k.kind === 'pin' || k.kind === 'pin-dashed') {
-      const d = k.kind === 'pin-dashed' ? ' stroke-dasharray="7 6"' : '';
-      out.push(`<line x1="${MARGIN}" y1="${n1(y + 14)}" x2="${MARGIN + 44}" y2="${n1(y + 14)}" stroke="${INK}" stroke-width="12" stroke-linecap="round"${d}/><line x1="${MARGIN}" y1="${n1(y + 14)}" x2="${MARGIN + 44}" y2="${n1(y + 14)}" stroke="${colorForIntensity(0.7, 'light', true)}" stroke-width="7" stroke-linecap="round"/>`);
-    }
-    ls.forEach((l, i) => text(l, MARGIN + (sw ? sw + 12 : 0), y + 21 + i * 29, 22, 400, MUTED));
-    y += Math.max(h, 28) + 6;
+/** The corner of the map, in preference order, whose stamp-sized square holds none of the drawn ink; null when none is clear. */
+export function freeCorner(model: PictureModel, mapW: number, mapH: number, stampW: number, stampH: number): 'br' | 'tr' | 'bl' | 'tl' | null {
+  const v = model.view;
+  const sx = v.w / mapW, sy = v.h / mapH;
+  const e = QR_EDGE;
+  const pts = inkPoints(model);
+  const rects: Record<string, Box> = {
+    br: { x: v.x + v.w - (e + stampW) * sx, y: v.y + v.h - (e + stampH) * sy, w: stampW * sx, h: stampH * sy },
+    tr: { x: v.x + v.w - (e + stampW) * sx, y: v.y + e * sy, w: stampW * sx, h: stampH * sy },
+    bl: { x: v.x + e * sx, y: v.y + v.h - (e + stampH) * sy, w: stampW * sx, h: stampH * sy },
+    tl: { x: v.x + e * sx, y: v.y + e * sy, w: stampW * sx, h: stampH * sy },
+  };
+  for (const c of ['br', 'tr', 'bl', 'tl'] as const) {
+    const r = rects[c];
+    if (!pts.some((p) => p.x + p.r > r.x && p.x - p.r < r.x + r.w && p.y + p.r > r.y && p.y - p.r < r.y + r.h)) return c;
   }
-  section('legend', top);
+  return null;
+}
 
-  y += 12; top = y;
-  out.push(`<line x1="${MARGIN}" y1="${n1(y)}" x2="${SHARE_W - MARGIN}" y2="${n1(y)}" stroke="${RULE}"/>`);
-  y += 14;
+/**
+ * The picture as one self-contained SVG, landscape: the name, changes and through-car figures on the left, the map on the right with the QR code in
+ * a clear corner of it, and a band under both with the legend, its non-color cues, status, attribution and site. Text is laid out here with
+ * `measure`, so every line fits and no box overlaps. When the changes would make the picture taller than `SHARE_MAX_H`, their lines are shortened
+ * to the first clause, then cut to "and N more"; the card keeps the full list.
+ */
+export function buildShareSvg(inp: ShareInput, measure: Measure): ShareImage {
+  const full = layoutShare(inp, inp.changes, measure);
+  if (full.height <= SHARE_MAX_H) return full;
+  const short = inp.changes.map(firstClause);
+  const brief = layoutShare(inp, short, measure);
+  if (brief.height <= SHARE_MAX_H) return brief;
+  for (let keep = short.length - 1; keep >= 1; keep--) {
+    const cut = layoutShare(inp, [...short.slice(0, keep), `and ${short.length - keep} more`], measure);
+    if (cut.height <= SHARE_MAX_H || keep === 1) return cut;
+  }
+  return brief;
+}
+
+function layoutShare(inp: ShareInput, changes: string[], measure: Measure, qrBelow = false): ShareImage {
+  const v = inp.model.view;
+  const asp = v.w / v.h;
   const qrm = qrMatrix(inp.openUrl);
   const qrSize = (qrm.length + 2 * QR_QUIET) * QR_MODULE;
-  const qrX = SHARE_W - MARGIN - qrSize, qrY = y;
-  const leftW = qrX - MARGIN - 24;
-  y += para(`Simulation result, not a forecast. ${inp.status}`, MARGIN, leftW, 22, 400, MUTED) + 4;
-  y += para(`${inp.areaName}. ${ATTRIBUTION}.`, MARGIN, leftW, 22, 400, MUTED) + 4;
-  y += para(SITE_URL, MARGIN, leftW, 24, 700, INK);
-  const left = y;
-  y = qrY + qrSize + 6;
-  const qrPath = qrm.flatMap((row, r) => row.map((d, c) => (d ? `M${qrX + (c + QR_QUIET) * QR_MODULE} ${qrY + (r + QR_QUIET) * QR_MODULE}h${QR_MODULE}v${QR_MODULE}h-${QR_MODULE}z` : ''))).join('');
-  out.push(`<rect x="${qrX}" y="${qrY}" width="${qrSize}" height="${qrSize}" fill="#fff" stroke="${RULE}"/><path d="${qrPath}" fill="#000" shape-rendering="crispEdges"/>`);
-  const labelLines = wrapText('Open this proposal in the simulator', 20, 700, qrSize, measure);
-  labelLines.forEach((l, i) => text(l, qrX + qrSize / 2, y + 18 + i * 25, 20, 700, INK, 'middle'));
-  y += labelLines.length * 25 + 4;
-  y = Math.max(y, left);
-  section('footer', top);
-  y += MARGIN - 6;
+  const stampH = qrSize + 22;
 
-  const height = Math.ceil(y);
+  /** The left column at width `w` from `y0`: returns its height and the boxes it drew. */
+  const leftColumn = (sink: Sink, x: number, y0: number, w: number) => {
+    const { text, para } = makeText(sink, measure);
+    const boxes: Section[] = [];
+    let y = y0;
+    y += para(inp.areaName, x, y, w, 20, 600, MUTED) + 6;
+    y += para(inp.title, x, y, w, 36, 700, INK, 1.18);
+    boxes.push({ name: 'title', left: x, top: y0, right: x + w, bottom: y });
+    if (changes.length) {
+      y += 14; const top = y;
+      y += para('Changes in this proposal', x, y, w, 18, 700, MUTED) + 4;
+      for (const c of changes) {
+        const ls = wrapText(c, 21, 400, w - 24, measure);
+        text('•', x + 3, y + 20, 21, 400, INK);
+        ls.forEach((l, i) => text(l, x + 24, y + 20 + i * 27, 21, 400, INK));
+        y += ls.length * 27 + 3;
+      }
+      boxes.push({ name: 'changes', left: x, top, right: x + w, bottom: y });
+    }
+    y += 14; const top = y, pad = 16, boxIdx = sink.out.length;
+    y += pad;
+    const figure = (f: ShareHeadline, big: boolean) => {
+      y += para(f.label, x + pad, y, w - 2 * pad, 17, 400, MUTED) + 2;
+      y += para(f.figures, x + pad, y, w - 2 * pad, big ? 30 : 26, 700, INK, 1.2);
+    };
+    if (inp.periodFigure) figure(inp.periodFigure, true);
+    if (inp.averageFigure) { if (inp.periodFigure) y += 10; figure(inp.averageFigure, !inp.periodFigure); }
+    y += pad;
+    sink.out.splice(boxIdx, 0, `<rect x="${x}" y="${n1(top)}" width="${w}" height="${n1(y - top)}" rx="10" fill="${BOX}"/>`);
+    boxes.push({ name: 'figures', left: x, top, right: x + w, bottom: y });
+    return { height: y - y0, boxes };
+  };
+
+  const avail = (lw: number) => SHARE_W - 2 * MARGIN - COL_GAP - lw;
+  let best: { lw: number; zone: number; mapW: number; mapH: number } | null = null;
+  for (let lw = Math.round(SHARE_W * 0.38); lw <= Math.round(SHARE_W * 0.44); lw += 8) {
+    const h = leftColumn({ out: [], lines: [] }, MARGIN, 0, lw).height + (qrBelow ? stampH + 14 : 0);
+    const zone = Math.max(h, MIN_ZONE);
+    const mapW = Math.min(zone * asp, avail(lw));
+    const mapH = mapW / asp;
+    if (!best || mapH > best.mapH + 0.5 || (Math.abs(mapH - best.mapH) <= 0.5 && zone < best.zone)) best = { lw, zone, mapW, mapH };
+  }
+  const { zone, mapW, mapH } = best!;
+  const lw = Math.min(Math.max(SHARE_W - 2 * MARGIN - COL_GAP - mapW, Math.round(SHARE_W * 0.38)), Math.round(SHARE_W * 0.46));
+  const corner = qrBelow ? null : freeCorner(inp.model, mapW, mapH, qrSize, stampH);
+  if (!qrBelow && corner === null) return layoutShare(inp, changes, measure, true);
+
+  const out: string[] = [];
+  const lines: LaidLine[] = [];
+  const sink = { out, lines };
+  const sections: Section[] = [];
+  const { text, para } = makeText(sink, measure);
+  const left = leftColumn(sink, MARGIN, MARGIN, lw);
+  sections.push(...left.boxes);
+  let qr: ShareImage['qr'];
+  const drawQr = (qx: number, qy: number) => {
+    const qrPath = qrm.flatMap((row, r) => row.map((d, c) => (d ? `M${n1(qx + (c + QR_QUIET) * QR_MODULE)} ${n1(qy + (r + QR_QUIET) * QR_MODULE)}h${QR_MODULE}v${QR_MODULE}h-${QR_MODULE}z` : ''))).join('');
+    out.push(`<rect x="${n1(qx)}" y="${n1(qy)}" width="${qrSize}" height="${qrSize}" fill="#fff" stroke="${RULE}"/><path d="${qrPath}" fill="#000" shape-rendering="crispEdges"/>`);
+    text(QR_NOTE, qx + qrSize / 2, qy + qrSize + 17, 16, 700, INK, 'middle');
+    return { x: qx, y: qy, size: qrSize, modules: qrm.length };
+  };
+  if (qrBelow) {
+    const bottom = left.boxes[left.boxes.length - 1].bottom;
+    qr = drawQr(MARGIN, bottom + 14);
+    sections.push({ name: 'qr', left: MARGIN, top: bottom + 14, right: MARGIN + qrSize, bottom: bottom + 14 + stampH });
+  }
+
+  const mx = SHARE_W - MARGIN - mapW, my = MARGIN;
+  out.push(`<clipPath id="mapclip"><rect x="${n1(mx)}" y="${my}" width="${n1(mapW)}" height="${n1(mapH)}" rx="10"/></clipPath>`);
+  out.push(`<g clip-path="url(#mapclip)"><svg x="${n1(mx)}" y="${my}" width="${n1(mapW)}" height="${n1(mapH)}" viewBox="${n1(v.x)} ${n1(v.y)} ${n1(v.w)} ${n1(v.h)}" preserveAspectRatio="xMidYMid meet">${mapSvg(inp.model)}</svg></g>`);
+  out.push(`<rect x="${n1(mx + 0.5)}" y="${my + 0.5}" width="${n1(mapW - 1)}" height="${n1(mapH - 1)}" rx="10" fill="none" stroke="${RULE}"/>`);
+  sections.push({ name: 'map', left: mx, top: my, right: mx + mapW, bottom: my + mapH });
+  if (corner) {
+    const qx = corner.endsWith('r') ? mx + mapW - QR_EDGE - qrSize : mx + QR_EDGE;
+    const qy = corner.startsWith('b') ? my + mapH - QR_EDGE - stampH : my + QR_EDGE;
+    qr = drawQr(qx, qy);
+  }
+
+  let y = MARGIN + Math.max(zone, left.height) + 14;
+  out.push(`<line x1="${MARGIN}" y1="${n1(y)}" x2="${SHARE_W - MARGIN}" y2="${n1(y)}" stroke="${RULE}"/>`);
+  y += 14;
+  const legendTop = y;
+  let ly = y;
+  ly += para(inp.caption, MARGIN, ly, BAND_LEFT, 20, 700, INK) + 8;
+  const ticks = changeTicks('cutthrough');
+  out.push(`<defs><linearGradient id="ramp" x1="0" x2="1" y1="0" y2="0">${divergingStops('light').map((s) => `<stop offset="${((s.t + 1) * 50).toFixed(1)}%" stop-color="${s.color}"/>`).join('')}</linearGradient></defs>`);
+  out.push(`<rect x="${MARGIN}" y="${n1(ly)}" width="${BAND_LEFT}" height="16" rx="3" fill="url(#ramp)" stroke="${RULE}"/>`);
+  ly += 16 + 19;
+  ticks.forEach((t, i) => {
+    const x = MARGIN + (BAND_LEFT * i) / (ticks.length - 1);
+    text(t, x, ly, 17, 400, INK, i === 0 ? 'start' : i === ticks.length - 1 ? 'end' : 'middle');
+  });
+  ly += 8;
+  ly += para(`Cars an hour. Blue: fewer through cars. Orange: more. Thin gray: within normal run-to-run variation (about ${Math.round(DEAD_BAND_CUTTHROUGH)} cars an hour).`, MARGIN, ly, BAND_LEFT, 17, 400, MUTED);
+  sections.push({ name: 'legend', left: MARGIN, top: legendTop, right: MARGIN + BAND_LEFT, bottom: ly });
+
+  const kx = MARGIN + BAND_LEFT + COL_GAP, kw = SHARE_W - MARGIN - kx;
+  let ky = legendTop;
+  for (const k of inp.keys) {
+    const sw = k.kind === 'text' ? 0 : 52;
+    const ls = wrapText(k.text, 17, 400, kw - (sw ? sw + 12 : 0), measure);
+    const h = ls.length * 22;
+    if (k.kind === 'bar') out.push(`<g transform="translate(${kx + 22} ${n1(ky + 11)})"><rect x="-22" y="-6" width="44" height="12" fill="#fff"/><rect x="-22" y="-4.5" width="44" height="9" fill="#111"/><line x1="-22" y1="0" x2="22" y2="0" stroke="#ffd43b" stroke-width="6" stroke-dasharray="9 9"/></g>`);
+    if (k.kind === 'pin' || k.kind === 'pin-dashed') {
+      const d = k.kind === 'pin-dashed' ? ' stroke-dasharray="7 6"' : '';
+      out.push(`<line x1="${kx}" y1="${n1(ky + 11)}" x2="${kx + 44}" y2="${n1(ky + 11)}" stroke="${INK}" stroke-width="12" stroke-linecap="round"${d}/><line x1="${kx}" y1="${n1(ky + 11)}" x2="${kx + 44}" y2="${n1(ky + 11)}" stroke="${colorForIntensity(0.7, 'light', true)}" stroke-width="7" stroke-linecap="round"${d}/>`);
+    }
+    ls.forEach((l, i) => text(l, kx + (sw ? sw + 12 : 0), ky + 16 + i * 22, 17, 400, MUTED));
+    ky += Math.max(h, 24) + 4;
+  }
+  ky += 4;
+  ky += para(`Simulation result, not a forecast. ${inp.status} ${inp.areaName}. ${ATTRIBUTION}.`, kx, ky, kw, 17, 400, MUTED) + 2;
+  ky += para(SITE_URL, kx, ky, kw, 20, 700, INK);
+  sections.push({ name: 'keys', left: kx, top: legendTop, right: kx + kw, bottom: ky });
+  y = Math.max(ly, ky);
+
+  const height = Math.ceil(y + MARGIN - 8);
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${SHARE_W}" height="${height}" viewBox="0 0 ${SHARE_W} ${height}" font-family="${esc(FONT)}"><rect width="${SHARE_W}" height="${height}" fill="${PAPER}"/>${out.join('')}</svg>`;
-  return { svg, width: SHARE_W, height, lines, sections, qr: { x: qrX, y: qrY, size: qrSize, modules: qrm.length } };
+  return { svg, width: SHARE_W, height, lines, sections, qr: qr! };
 }
 
 /** Text width in px for a canvas-capable browser, with the same font stack the SVG uses. */

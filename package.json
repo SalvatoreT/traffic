@@ -19,6 +19,7 @@
     "prepare": "git config core.hooksPath .githooks && sh scripts/install-skills.sh",
     "data:pull": "tsx tools/r2-sync.ts pull",
     "data:push": "tsx tools/r2-sync.ts push",
+    "data:redistribution": "tsx tools/precompute-redistribution.ts",
     "data:results": "tsx tools/precompute-results.ts",
     "data:download": "tsx tools/download-data.ts",
     "data:llms": "tsx tools/build-llms.ts",
