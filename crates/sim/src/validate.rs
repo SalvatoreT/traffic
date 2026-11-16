@@ -566,6 +566,17 @@ fn left_limited(lanes: u32, p_left: f64, opp_per_lane: f64, gc: f64) -> (f64, f6
     (q(1800.0), q(1900.0))
 }
 
+/// Permitted left-turn capacity (veh/h) of a lane with opposing flow `vo` veh/h at a signal of cycle `c` s whose phase shows green for `g` s
+/// [Fambro1991]: left-turners use gaps only once the opposing queue (arrivals over the red, discharged at `s` veh/h) has cleared, then
+/// turn at the gap-acceptance rate of Drew's model with critical gap `tc` and turning headway `h` (the HCM/Harders form of `gap_capacity`),
+/// and `ns` sneakers clear in the change interval each cycle. The opposing flow is spread evenly over `lanes` lanes.
+pub fn permitted_left_cap(vo: f64, lanes: f64, g: f64, c: f64, tc: f64, h: f64, ns: f64, s: f64) -> f64 {
+    let (q, sv) = (vo / lanes / 3600.0, s / 3600.0);
+    let gq = q * (c - g) / (sv - q).max(1e-6);
+    let gu = (g - gq).max(0.0);
+    3600.0 / c * (gu * gap_capacity(vo.max(1.0), tc, h) / 3600.0 + ns)
+}
+
 // ---------------------------------------------------------------- route choice
 
 /// Perception seed of the `i`-th driver of a route-choice case.
@@ -703,6 +714,14 @@ pub fn run_all() -> Vec<Case> {
         };
         out.push(case(id, format!("{nm} (green share {gc:.2})"), "veh/h/lane", cap, lo, hi, src, format!("per lane, cycle 100 s, saturated; {note}")));
     }
+    // Permissive left at a signal, one left-only lane against one opposing lane [Fambro1991]: the band runs from the measured critical gap
+    // (5.1 s), turning headway (2.57 s) and sneakers (0.88 a cycle) with s 1,500 to the recommended critical gap (4.5 s), the shortest measured
+    // turning headway (2.24 s) and the HCM 1985 two sneakers a cycle with s 2,000 [FHWA-SIG2004].
+    for (id, vo) in [("p1", 200.0), ("p2", 400.0), ("p3", 600.0)] {
+        let (cap, gc) = approach_cap(Appr { p_left: 1.0, pocket: false, opp: vo, ..base }, 1, &[], |_, _| {});
+        let (lo, hi) = (permitted_left_cap(vo, 1.0, 100.0 * gc, 100.0, 5.1, 2.57, 0.88, 1500.0), permitted_left_cap(vo, 1.0, 100.0 * gc, 100.0, 4.5, 2.24, 2.0, 2000.0));
+        out.push(case(id, format!("Permissive left, left-only lane, opposing {vo:.0} veh/h (green share {gc:.2}): left turns"), "veh/h", cap, lo, hi, "Fambro1991", format!("cycle 100 s, saturated; left turns only after the opposing queue clears, Drew's gap model, then sneakers in the change interval: critical gap 5.1 to 4.5 s, turning headway 2.57 to 2.24 s, 0.88 to 2 sneakers a cycle, opposing discharge 1,500 to 2,000 veh/h")));
+    }
     // Right turn on red (ASSUMPTION: permitted at every signal after a stop; the legal basis is California Vehicle Code 21453 [CVC21453], 2010 text only; gap-acceptance treatment of RTOR: [Virkler1998], [Stewart1995], abstracts only). Gap acceptance for the turn is the two-way-stop minor right (tc 6.2 s, tf 3.3 s [Brilon1999]); the stop costs the rest of the
     // follow-up headway, so the red-time discharge is at most 3600 / tf = 1,090 veh/h.
     let (off, _gc0) = rtor_cap(100.0, true, 1);
@@ -767,7 +786,8 @@ pub fn run_all() -> Vec<Case> {
     let (lcap, lgc) = approach_cap(lb, 1, &[], |_, _| {});
     let (lcap0, _) = approach_cap_lc(lb, false);
     let (llo, lhi) = left_limited(2, 0.2, 500.0, lgc);
-    out.push(case("l1", format!("2 lanes, 20% left, pocket overflowing, opposing 500/lane (green share {lgc:.2}): approach capacity"), "veh/h/lane", lcap, 0.8 * llo, lhi, "Brilon1999", format!("per lane, cycle 100 s, saturated; the left-turn queue overflows the 3-vehicle pocket every cycle and through drivers behind it move to the free lane; min(permissive-left limit, through limit) as in b9, s 1,800 to 1,900, lower bound 0.8 of it; without lane changes along the link {lcap0:.0}")));
+    let flim = |tc: f64, h: f64, ns: f64, sat: f64| (permitted_left_cap(1000.0, 2.0, 100.0 * lgc, 100.0, tc, h, ns, sat) / 0.2).min(1800.0 * lgc * 2.0 / 0.8) / 2.0;
+    out.push(case("l1", format!("2 lanes, 20% left, pocket overflowing, opposing 500/lane (green share {lgc:.2}): approach capacity"), "veh/h/lane", lcap, 0.8 * llo, lhi, "Brilon1999", format!("per lane, cycle 100 s, saturated; the left-turn queue overflows the 3-vehicle pocket every cycle and through drivers behind it move to the free lane; min(permissive-left limit, through limit) as in b9, s 1,800 to 1,900, lower bound 0.8 of it; without lane changes along the link {lcap0:.0}; the permitted-left method of p1 to p3 [Fambro1991] (left turns only after the opposing queue clears) puts the left-limited approach at {:.0} to {:.0} per lane", flim(5.1, 2.57, 0.88, 1500.0), flim(4.5, 2.24, 2.0, 2000.0))));
     let bq = 1200.0;
     let (bf, bs) = blocked_lane(bq, true, 1);
     let (bf0, bs0) = blocked_lane(bq, false, 1);

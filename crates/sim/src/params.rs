@@ -34,7 +34,7 @@ pub const LC_POLITENESS: f32 = 0.2; // ASSUMPTION within the realistic range ]0,
 pub const LC_MIN_INTERVAL_S: f64 = 3.0; // ASSUMPTION: Treiber's implementation bars a new change for a while after one (no value given); stops lane hopping
 pub const LC_EVERY_STEPS: u64 = 4; // ASSUMPTION: drivers reconsider their lane once a second
 pub const LC_MIN_GAP_M: f32 = 1.0; // ASSUMPTION: the changer needs this much bumper-to-bumper room to its new leader and follower
-pub const SNEAKERS: u8 = 2; // ASSUMPTION: permissive left-turners that may clear per signal cycle on yellow/all-red (HCM practice; [HCM7] value not verified in references.md)
+pub const SNEAKERS: u8 = 2; // permissive left-turners that may clear per signal cycle on yellow/all-red: the 1985 HCM's two a cycle [Fambro1991] p. 9, "one or two" [FHWA-STM2008] 4.8.4; 0.88 measured at protected-permitted sites [Fambro1991]
 pub const SHARP_TURN_MAX: f64 = 2.88; // ASSUMPTION: rad (165 degrees); a turn between 149 and 165 degrees onto a street of another name is a sharp turn at an acute junction, not a U-turn
 pub const MID_BLOCK_MIN_M: f32 = 20.0; // ASSUMPTION: a trip with a local end starts and ends along the block when the block offers at least this much room between its two junctions; shorter blocks keep the junction end
 pub const MID_BLOCK_LO: f32 = 0.25; // ASSUMPTION: local trips start and end between this share and 1 - this share of the block, at a position fixed per trip (driveways and parking are spread along the middle of a block; no source for the spread)
@@ -48,6 +48,7 @@ pub const TC_MINOR_RIGHT: f32 = 6.2;
 pub const TC_MINOR_THROUGH: f32 = 6.5;
 pub const TC_MINOR_LEFT: f32 = 7.1;
 pub const TC_MAJOR_LEFT: f32 = 4.1;
+pub const TC_PERMITTED_LEFT: f32 = 4.5; // permissive left at a signal: critical gap of the Fambro et al. field studies; measured 5.0 to 5.3 at three Dallas sites [Fambro1991]
 /// Critical headway at a circle entry (s): the single-lane entry model 1130 exp(-0.001 v_c) of [Rodegerdts2007] read in the Siegloch
 /// form c = (3600 / t_f) exp(-v_c (t_c - t_f / 2) / 3600) gives t_f = 3600 / 1130 = 3.19 s and t_c = 3.6 + t_f / 2 = 5.19 s.
 pub const TC_CIRCLE: f32 = 5.19;
