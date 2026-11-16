@@ -412,64 +412,8 @@
       "approach": "Claremont Avenue",
       "heading": 33,
       "ownPhase": true,
-      "periods": ["pm_peak"],
-      "cycleSeconds": 100,
-      "greenSeconds": 17,
-      "clearanceSeconds": 4.5,
-      "noLeftTurnLane": true,
-      "source": "[SafewayCollege-DEIR2011] 'Existing PM Peak Hour' Synchro 7 worksheet of intersection 2, Ashby Avenue & Claremont Avenue (PDF page 482), DATA from 2010: actuated cycle 100 s; Claremont Ave northbound and southbound run as split phases (turn type Split, protected phases 8 and 7) with actuated greens of 17.0 s and 17.5 s and 4.5 s of clearance each; Ashby Ave eastbound and westbound share one phase (phases 2 and 6, permitted lefts) with 50.5 s and 6.0 s of clearance, so 17.0 + 17.5 + 50.5 + 2 x 4.5 + 6.0 = 100 s. Under split phasing every northbound movement, the left included, runs on a green arrow with no opposing traffic, which agrees with the resident field observation relayed by the project lead (2026-11-15) of a left-turn arrow on the northbound approach. The worksheet codes northbound as one shared lane group of two lanes with no left-turn lane, and southbound as a left-turn lane beside a shared group, as in the OSM turn lanes (left | left;through | through;right). ASSUMPTION: the 2010 plan still runs, with its actuated greens as fixed greens"
-    },
-    {
-      "at": ["Ashby Avenue", "Claremont Avenue"],
-      "approach": "Claremont Avenue",
-      "heading": 210,
-      "ownPhase": true,
-      "periods": ["pm_peak"],
-      "cycleSeconds": 100,
-      "greenSeconds": 17.5,
-      "clearanceSeconds": 4.5,
-      "source": "[SafewayCollege-DEIR2011] 'Existing PM Peak Hour' Synchro 7 worksheet of intersection 2, Ashby Avenue & Claremont Avenue (PDF page 482), DATA from 2010: actuated cycle 100 s; Claremont Ave northbound and southbound run as split phases (turn type Split, protected phases 8 and 7) with actuated greens of 17.0 s and 17.5 s and 4.5 s of clearance each; Ashby Ave eastbound and westbound share one phase (phases 2 and 6, permitted lefts) with 50.5 s and 6.0 s of clearance, so 17.0 + 17.5 + 50.5 + 2 x 4.5 + 6.0 = 100 s. Under split phasing every northbound movement, the left included, runs on a green arrow with no opposing traffic, which agrees with the resident field observation relayed by the project lead (2026-11-15) of a left-turn arrow on the northbound approach. The worksheet codes northbound as one shared lane group of two lanes with no left-turn lane, and southbound as a left-turn lane beside a shared group, as in the OSM turn lanes (left | left;through | through;right). ASSUMPTION: the 2010 plan still runs, with its actuated greens as fixed greens"
-    },
-    {
-      "at": ["Ashby Avenue", "Claremont Avenue"],
-      "approach": "Ashby Avenue",
-      "periods": ["pm_peak"],
-      "cycleSeconds": 100,
-      "greenSeconds": 50.5,
-      "clearanceSeconds": 6,
-      "source": "[SafewayCollege-DEIR2011] 'Existing PM Peak Hour' Synchro 7 worksheet of intersection 2, Ashby Avenue & Claremont Avenue (PDF page 482), DATA from 2010: actuated cycle 100 s; Claremont Ave northbound and southbound run as split phases (turn type Split, protected phases 8 and 7) with actuated greens of 17.0 s and 17.5 s and 4.5 s of clearance each; Ashby Ave eastbound and westbound share one phase (phases 2 and 6, permitted lefts) with 50.5 s and 6.0 s of clearance, so 17.0 + 17.5 + 50.5 + 2 x 4.5 + 6.0 = 100 s. Under split phasing every northbound movement, the left included, runs on a green arrow with no opposing traffic, which agrees with the resident field observation relayed by the project lead (2026-11-15) of a left-turn arrow on the northbound approach. The worksheet codes northbound as one shared lane group of two lanes with no left-turn lane, and southbound as a left-turn lane beside a shared group, as in the OSM turn lanes (left | left;through | through;right). ASSUMPTION: the 2010 plan still runs, with its actuated greens as fixed greens"
-    },
-    {
-      "at": ["Ashby Avenue", "Claremont Avenue"],
-      "approach": "Claremont Avenue",
-      "heading": 33,
-      "ownPhase": true,
-      "periods": ["am_peak", "midday"],
-      "cycleSeconds": 100,
-      "greenSeconds": 17,
-      "clearanceSeconds": 4.5,
-      "noLeftTurnLane": true,
-      "source": "[SafewayCollege-DEIR2011] 'Existing PM Peak Hour' Synchro 7 worksheet of intersection 2, Ashby Avenue & Claremont Avenue (PDF page 482), DATA from 2010: actuated cycle 100 s; Claremont Ave northbound and southbound run as split phases (turn type Split, protected phases 8 and 7) with actuated greens of 17.0 s and 17.5 s and 4.5 s of clearance each; Ashby Ave eastbound and westbound share one phase (phases 2 and 6, permitted lefts) with 50.5 s and 6.0 s of clearance, so 17.0 + 17.5 + 50.5 + 2 x 4.5 + 6.0 = 100 s. Under split phasing every northbound movement, the left included, runs on a green arrow with no opposing traffic, which agrees with the resident field observation relayed by the project lead (2026-11-15) of a left-turn arrow on the northbound approach. The worksheet codes northbound as one shared lane group of two lanes with no left-turn lane, and southbound as a left-turn lane beside a shared group, as in the OSM turn lanes (left | left;through | through;right). ASSUMPTION: the 2010 plan still runs, with its actuated greens as fixed greens; applied to the AM peak and midday as an ASSUMPTION (no AM or midday worksheet; the PM plan reused, as for the other observed plans that have no worksheet for the period)"
-    },
-    {
-      "at": ["Ashby Avenue", "Claremont Avenue"],
-      "approach": "Claremont Avenue",
-      "heading": 210,
-      "ownPhase": true,
-      "periods": ["am_peak", "midday"],
-      "cycleSeconds": 100,
-      "greenSeconds": 17.5,
-      "clearanceSeconds": 4.5,
-      "source": "[SafewayCollege-DEIR2011] 'Existing PM Peak Hour' Synchro 7 worksheet of intersection 2, Ashby Avenue & Claremont Avenue (PDF page 482), DATA from 2010: actuated cycle 100 s; Claremont Ave northbound and southbound run as split phases (turn type Split, protected phases 8 and 7) with actuated greens of 17.0 s and 17.5 s and 4.5 s of clearance each; Ashby Ave eastbound and westbound share one phase (phases 2 and 6, permitted lefts) with 50.5 s and 6.0 s of clearance, so 17.0 + 17.5 + 50.5 + 2 x 4.5 + 6.0 = 100 s. Under split phasing every northbound movement, the left included, runs on a green arrow with no opposing traffic, which agrees with the resident field observation relayed by the project lead (2026-11-15) of a left-turn arrow on the northbound approach. The worksheet codes northbound as one shared lane group of two lanes with no left-turn lane, and southbound as a left-turn lane beside a shared group, as in the OSM turn lanes (left | left;through | through;right). ASSUMPTION: the 2010 plan still runs, with its actuated greens as fixed greens; applied to the AM peak and midday as an ASSUMPTION (no AM or midday worksheet; the PM plan reused, as for the other observed plans that have no worksheet for the period)"
-    },
-    {
-      "at": ["Ashby Avenue", "Claremont Avenue"],
-      "approach": "Ashby Avenue",
-      "periods": ["am_peak", "midday"],
-      "cycleSeconds": 100,
-      "greenSeconds": 50.5,
-      "clearanceSeconds": 6,
-      "source": "[SafewayCollege-DEIR2011] 'Existing PM Peak Hour' Synchro 7 worksheet of intersection 2, Ashby Avenue & Claremont Avenue (PDF page 482), DATA from 2010: actuated cycle 100 s; Claremont Ave northbound and southbound run as split phases (turn type Split, protected phases 8 and 7) with actuated greens of 17.0 s and 17.5 s and 4.5 s of clearance each; Ashby Ave eastbound and westbound share one phase (phases 2 and 6, permitted lefts) with 50.5 s and 6.0 s of clearance, so 17.0 + 17.5 + 50.5 + 2 x 4.5 + 6.0 = 100 s. Under split phasing every northbound movement, the left included, runs on a green arrow with no opposing traffic, which agrees with the resident field observation relayed by the project lead (2026-11-15) of a left-turn arrow on the northbound approach. The worksheet codes northbound as one shared lane group of two lanes with no left-turn lane, and southbound as a left-turn lane beside a shared group, as in the OSM turn lanes (left | left;through | through;right). ASSUMPTION: the 2010 plan still runs, with its actuated greens as fixed greens; applied to the AM peak and midday as an ASSUMPTION (no AM or midday worksheet; the PM plan reused, as for the other observed plans that have no worksheet for the period)"
+      "periods": ["am_peak", "midday", "pm_peak"],
+      "source": "Field observation by a resident, relayed by the project lead (2026-11-15): the northbound Claremont Ave approach at Ashby Ave has a left-turn arrow, so its left turn onto Ashby Ave is protected (DATA for the phasing). The 2010 PM Synchro worksheet of [SafewayCollege-DEIR2011] runs the two Claremont Ave approaches as split phases (northbound 17.0 s, southbound 17.5 s of a 100 s cycle) and codes the northbound approach as two lanes with no left-turn lane, which fits. ASSUMPTION pending a timing sheet: the approach runs in a phase of its own in every period (protected-only, not protected-permissive), and the cycle and greens follow the flows like any other modeled signal; the other approaches' phasing, the pocket length and the timing are not observed"
     }
   ],
   "osmTagOverrides": {
