@@ -41,7 +41,7 @@ export const PROPOSAL_STEPS: Step[] = [
   { label: ['Score', 'each'], text: 'Each package scores by the cut-through cars it removes. It loses points when it pushes more cars onto any one block.' },
   { label: ['Keep', 'the best'], text: 'It keeps the best few. Near-duplicates fold into one option and become its variants.' },
   { label: ['Retest on', 'new seeds'], text: 'It reruns the shortlist on fresh random seeds it has not seen. A seed is one random draw of driver variation. This keeps luck from flattering the published numbers.' },
-  { label: ['Sort', 'the list'], text: 'The list is sorted by cut-through cars removed, most first.' },
+  { label: ['Sort', 'the list'], text: 'The proposal that takes the most cut-through cars off the side streets is listed first, then the next most, and so on.' },
 ];
 export const PROPOSAL_ALT = { title: 'Five steps that make a proposal list', desc: 'Try changes, score each, keep the best, retest on new seeds, then sort the list, each leading to the next.' };
 
