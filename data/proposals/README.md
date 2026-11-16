@@ -4,11 +4,12 @@
 
 ```
 cargo run --release -p traffic-sim --bin explore -- --area rockridge \
-  --periods pm_peak,am_peak --seeds 1-10 --beam 3 --depth 8 --candidates 40 \
-  [--confirm-seeds 101-110] [--screen-minutes 30] [--minutes 60] [--budget-evals N] [--jobs N] [--harm-weight 0.1] \
-  [--expand 16] [--finalists 12] [--options 5] [--out FILE] [--report FILE] \
-  [--profile ID] [--profiles FILE]
+  --periods pm_peak,am_peak --beam 3 --depth 8 --candidates 40 \
+  [--seeds 1-3] [--confirm-seeds 101-110 | --no-confirm] [--screen-minutes 30] [--minutes 60] [--budget-evals N] [--jobs N] \
+  [--harm-weight 0.1] [--expand 16] [--finalists 12] [--options 5] [--out FILE] [--report FILE]
 ```
+
+The default run is the whole job. It searches and rechecks on seeds 1 to 3, then reruns the chosen shortlist on ten seeds that took no part in the search (`--confirm-seeds 101-110`), and those ten paired runs are what the file publishes. It replaces `public/data/<area>.proposals.json` and the report: the file holds one list.
 
 To add the pictures the cards draw to a file that was written without them, without searching again:
 
@@ -20,17 +21,9 @@ It reads `public/data/<area>.proposals.json` (or `--out FILE`) and checks every 
 
 The simulator results change whenever the network, the demand or the model changes, so rerun the search after any of them. The output is not meant to be edited by hand.
 
-## Profiles
+## Limits on the candidates (optional)
 
-`data/proposals/<area>.profiles.json` lists constraint profiles: `{ id, title, note, excludeTypes, excludeBoundary }`. `--profile ID` removes the excluded intervention types from the candidates, and with `excludeBoundary` also every candidate on a bounding street or at an intersection with one (the non-residential, non-service links inside the study area, and the nodes they touch). A block that ends at a bounding street counts as at its intersection. Reference packages are skipped for a constrained profile. Without `--profile` the run is the unconstrained group, titled and described by the file's `unconstrained` entry if it has one.
-
-Each run writes only its own group in `public/data/<area>.proposals.json` (version 5, `groups` in the profiles file's order) and its own section in the report, and keeps the other groups. A file in the earlier single-list format counts as the unconstrained group. Run each profile separately:
-
-```
-cargo run --release -p traffic-sim --bin explore -- --area rockridge --periods pm_peak,am_peak --seeds 1-10 --profile charter
-```
-
-Do not start an unconstrained run from an older build while another run is writing: whichever finishes last rewrites the file in its own format.
+The proposals are one list, searched without limits: every tool except new traffic lights, anywhere in the area. The 2025 neighborhood pilot's limits are not a criterion, and no file in the repository defines a limit profile. The code still accepts one for experiments: `--profile ID` with `--profiles FILE`, a list of `{ id, title, note, excludeTypes, excludeBoundary }`. It removes the excluded intervention types from the candidates and, with `excludeBoundary`, every candidate on a bounding street or at an intersection with one. A run with `--profile` writes its own group next to the others in the file; nothing published depends on it. Files written before 2026-11-15 hold two groups, one of them under those limits. The app shows their options as one list and every package once.
 
 ## What it measures
 
@@ -61,14 +54,24 @@ A package is rejected before simulation if an intervention is invalid or any in-
 explore --area rockridge --add-seed '#v1;a=rockridge;p=pm_peak;s=...' --note "why it matters" [--published-on 2026-11-14]
 explore --area rockridge --seed-proposals public/data/rockridge.proposals.json   # every search option in a proposals file
 explore --area rockridge --seed-labels labels.json                               # [{ "labels": [...], "note", "date", "group" }] from an old report
-explore --area rockridge --profile charter --check '#v1;...' [--check-subsets] [--check-singles]
+explore --area rockridge --check '#v1;...' [--check-subsets] [--check-singles]
 ```
 
 `--check` scores a package with the search's own code: whether the profile allows each intervention, whether the candidate list holds it, the access check, the full recheck over every period and seed, and with `--check-subsets` the screening score of every subset (which shows whether a beam could reach the package), with `--check-singles` the rank of each of its interventions among all the single interventions. `--known FILE` reads and writes another seeds file (use it for experiments), `--no-known` ignores the file.
 
 ## Choosing the options
 
-From the rechecked finalists the tool keeps those that no other finalist beats on reduction, harm and size, drops any whose reduction is within noise of a simpler one, always keeps the lightest option (the best single intervention when one is listed) and the best overall, and spreads the rest by reduction up to `--options`. When a package that no earlier search published is within noise on through cars of one that was (a known package with a `lastPublished` date), with no more harm and no more interventions, the earlier package is kept and the new one dropped, so the list does not churn between runs. A published package falls to dominance only when a new one beats it by more than the noise. Two options differ when the interval of their per-seed difference in through cars (see below) lies on one side of zero and the mean gap is at least the 1% floor of `GOAL_NOISE_FLOOR_PCT` (an assumed practical floor); with fewer paired runs than the method needs, only that floor applies and the file says the evidence is insufficient.
+From the rechecked finalists the tool keeps those that no other finalist beats on reduction, harm and size, and drops any whose reduction is within noise of a simpler one. When a package that no earlier search published is within noise on through cars of one that was (a known package with a `lastPublished` date), with no more harm and no more interventions, the earlier package is kept and the new one dropped, so the list does not churn between runs. A published package falls to dominance only when a new one beats it by more than the noise. Two options differ when the interval of their per-seed difference in through cars (see below) lies on one side of zero and the mean gap is at least the 1% floor of `GOAL_NOISE_FLOOR_PCT` (an assumed practical floor); with fewer paired runs than the method needs, only that floor applies and the file says the evidence is insufficient.
+
+Near-duplicates are then folded into one (`explore/similar.rs`). Two packages are similar when any of these holds:
+
+1. They act at the same places and differ only in the variant at a place (which leg a filter sits on, a filter or a diverter at the same junction).
+2. One differs from the other by at most one change (one added, dropped or swapped) and neither beats the other on through cars under the paired comparison (`beats`: the paired interval lies above zero and the gap is at least the 1% floor; with too few pairs, the 1% floor alone).
+3. Their through-car changes on the side-street blocks are nearly the same: `sum |a - b| / (sum |a| + sum |b|)` over the blocks, mean over periods and seeds, is at most 0.10 (`PICTURE_DISTANCE_MAX`, an assumption; it is 0 for equal changes, 1 for opposite ones, and about 0.1 when one is the other scaled by 1.22).
+
+Of a similar group one package is kept: the one with the larger reduction if it wins the paired comparison, otherwise the one with fewer changes, then the smaller largest all-car rise, then the one an earlier search published, then the earlier finalist. The rest become **variants** of the kept option: tweaks the card lists in plain lines (`Use X instead of Y`, `Add: X`, `Drop: X`), with their through-car figures from the runs that chose them and a scenario link. Variants are not drawn in the picture, have no share path and no stored result. `computed.similarity` records every fold and its reason, and the report has a "Similar packages" section.
+
+The best overall option and up to `--options` others, spread by reduction, are published, and the lightest option is listed only if it survived the fold. They are ordered by through cars removed an hour, largest first. Ties go to fewer changes, then the smaller largest all-car rise. With confirmation seeds the order follows the confirmed figures. The app sorts older files the same way when it reads them.
 
 ## Reading the file
 
@@ -80,6 +83,9 @@ From the rechecked finalists the tool keeps those that no other finalist beats o
 - `context.boundingStreets` lists the named primary, secondary and tertiary streets with in-study links, summed over their in-study links. `flowChangePct` compares summed flow, `speedChangeMph` the flow-weighted mean speed.
 - `picture` holds, for one period, the through cars an hour on each link that has any, today (`base`) and with the package (`scen`), parallel to `links` (link ids), integers, averaged over the group's seeds with the same counters and window as the block figures. The period is the PM peak when it was searched, else the first period. The card draws the change on each block (both directions summed) with the interventions on top. It is absent from files written before pictures; the card then shows none. `computed.minutes` is the run length the group used.
 - `link` opens the package on the first searched period.
+- `variants` (optional, on a search option) lists the packages folded into it: `link`, `differs` (plain lines), `why` (`same-places`, `one-change` or `same-picture`), `origin` and `cutThrough` (before, after and change in through cars an hour, with the `seeds` and `role` of the runs that chose it, which are not the option's confirmation runs).
+- `computed.similarity` holds the rule, the picture-distance limit and every fold: the package's link, the link it folded into, the reason, and whether the option it folded into was published.
+- `optionComparisons` compares each option with the next one in the list: `option` against `against`, the extra points of through cars the first cuts.
 - `computed.networkHash` and `demandHash` are the first 16 hex characters of the SHA-256 of the file bytes of `public/data/<area>.network.json` and `<area>.demand.json`. `calibration` is the status in `public/data/areas.json`.
 
 Scenario links come from a Rust port of `src/lib/hash.ts`; `crates/sim/tests/fixtures/links.json` holds strings made by the TypeScript encoder (`npx tsx tools/gen-proposal-link-fixtures.ts`) that the Rust tests must match.
@@ -96,5 +102,5 @@ Every final comparison pairs each scenario run with the baseline run of the same
 - **Status.** An effect's `status` is `increase` or `decrease` when the interval is on one side of zero, `unresolved` when it includes zero and `insufficient` with too few runs. An option comparison uses `better`, `worse`, `unresolved` and `insufficient`.
 - **Practical floors are separate.** The block noise band (above), its 10 cars an hour floor and the 1% reduction floor are assumptions for screening. They never appear as intervals.
 - **Exploratory or confirmed.** The finalist rechecks choose the options, so their intervals are exploratory (`computed.estimation.selection.estimates` and each proposal's `evidence.role` say `selection`). `--confirm-seeds 101-110` freezes the chosen shortlist and reruns it, and the references, on seeds that took no part in screening, rechecking or choosing (the ranges must not overlap); the file then records the shortlist, both seed lists and role `confirmation`. A package changed after seeing confirmation results needs a new confirmation range.
-- **Provenance.** Each group's `computed` records the network and demand hashes, `simulator` (the fingerprint of the simulator build), `reportMethod` (`paired-t-1`, bumped when the pairing, interval or selection rules change, because the fingerprint does not cover this module), `settings`, `sourceRevision` (the git revision, `-dirty` when the tree had changes), the periods, the seeds of the published estimates and the run length. The app, the annotator, the text pages, the preview cards and the pictures treat a mismatch as stale and a missing field as unverified.
-- **Cost.** The final recheck runs every finalist and known package on every period and seed, so ten seeds cost about 3.3 times what three did. Screening and the beam are unchanged. Run each profile in its own command, and lower `--finalists` or the seeds file cap to stay inside a time limit.
+- **Provenance.** Each group's `computed` records the network and demand hashes, `simulator` (the fingerprint of the simulator build), `reportMethod` (`paired-t-2`, bumped when the pairing, interval or selection rules change, because the fingerprint does not cover this module), `settings`, `sourceRevision` (the git revision, `-dirty` when the tree had changes), the periods, the seeds of the published estimates and the run length. The app, the annotator, the text pages, the preview cards and the pictures treat a mismatch as stale and a missing field as unverified.
+- **Cost.** The final recheck runs every finalist and known package on every period and seed, so ten seeds cost about 3.3 times what three did. Screening and the beam are unchanged. Lower `--finalists` or the seeds file cap to stay inside a time limit.
