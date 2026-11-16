@@ -37,11 +37,11 @@ export const CHECK_MORE_TAIL = 'tab.';
 
 export const PROPOSAL_INTRO = 'A computer search builds proposals in five steps.';
 export const PROPOSAL_STEPS: Step[] = [
-  { label: ['Try changes'], text: 'It tries packages of changes: filters, diverters, one-way streets, stop signs and more. It starts at the places with the most cut-through traffic and adds one change at a time.' },
-  { label: ['Score each'], text: 'Each package scores by the cut-through cars it removes. It loses points when it pushes more cars onto any one block.' },
-  { label: ['Keep the best'], text: 'It keeps the best few. Near-duplicates fold into one option and become its variants.' },
-  { label: ['Retest on new seeds'], text: 'It reruns the shortlist on fresh random seeds it has not seen. A seed is one random draw of driver variation. This keeps luck from flattering the published numbers.' },
-  { label: ['Sort the list'], text: 'The list is sorted by cut-through cars removed, most first.' },
+  { label: ['Try', 'changes'], text: 'It tries packages of changes: filters, diverters, one-way streets, stop signs and more. It starts at the places with the most cut-through traffic and adds one change at a time.' },
+  { label: ['Score', 'each'], text: 'Each package scores by the cut-through cars it removes. It loses points when it pushes more cars onto any one block.' },
+  { label: ['Keep', 'the best'], text: 'It keeps the best few. Near-duplicates fold into one option and become its variants.' },
+  { label: ['Retest on', 'new seeds'], text: 'It reruns the shortlist on fresh random seeds it has not seen. A seed is one random draw of driver variation. This keeps luck from flattering the published numbers.' },
+  { label: ['Sort', 'the list'], text: 'The list is sorted by cut-through cars removed, most first.' },
 ];
 export const PROPOSAL_ALT = { title: 'Five steps that make a proposal list', desc: 'Try changes, score each, keep the best, retest on new seeds, then sort the list, each leading to the next.' };
 

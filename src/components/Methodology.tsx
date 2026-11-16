@@ -49,7 +49,7 @@ function Flow({ steps, icons, alt }: { steps: Step[]; icons: Icon[]; alt: { titl
               <rect x={x} y="0" width={bw} height={H} rx="12" className="mg-box" />
               {num(x + 22, 22, k)}
               <Glyph icon={icons[k]} x={x + bw / 2 - 20} y={20} />
-              {s.label.map((l, j) => <text key={j} x={x + bw / 2} y={84 + j * 20} textAnchor="middle" className="mg-label">{l}</text>)}
+              {s.label.map((l, j) => <text key={j} x={x + bw / 2} y={80 + j * 20} textAnchor="middle" className="mg-label">{l}</text>)}
               {k < n - 1 && <path d={`M${x + bw + 8} ${H / 2}h${gap - 22}m-8 -7l9 7l-9 7`} className="mg-arrow" />}
             </g>
           );
