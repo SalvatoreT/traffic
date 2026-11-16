@@ -5,7 +5,7 @@ import { parseProposals } from '../src/lib/proposals';
 import { pathOfSlug, slugOf } from '../src/lib/share-path';
 import { decodeScenario } from '../src/lib/hash';
 import { buildIndex } from '../src/lib/naming';
-import { buildPages, currency, demote, examplesMd, section, streetsMd, table, type LlmsInput } from './lib/llms-docs';
+import { buildPages, currency, demote, examplesMd, linkRefs, section, streetsMd, table, type LlmsInput } from './lib/llms-docs';
 
 const bundle = buildFixture();
 const entry = { ...bundle.entry, calibration: { status: 'uncalibrated' as const, note: 'Not calibrated: a test note.', defaultPeriod: 'am' } };
@@ -29,6 +29,10 @@ describe('markdown helpers', () => {
     expect(section(md, 'Missing')).toBe('');
     expect(demote('# H\n```\n# not a heading\n```\n## K', 2)).toBe('### H\n```\n# not a heading\n```\n#### K');
     expect(demote('###### deep', 3)).toBe('###### deep');
+  });
+  it('writes bibliography Links lines as markdown links and leaves other lines alone', () => {
+    const md = '**[K]** A (2000). Title.\nLinks: Title → https://e.org/a#page=2 · DOI → https://doi.org/10.1/x · checked 2026-11-16\nText.';
+    expect(linkRefs(md)).toBe('**[K]** A (2000). Title.\nLinks: [Title](https://e.org/a#page=2) · [DOI](https://doi.org/10.1/x)\nText.');
   });
   it('escapes pipes in table cells', () => {
     expect(table(['a'], [['x|y']])).toContain('x\\|y');

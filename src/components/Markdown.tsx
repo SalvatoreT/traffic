@@ -1,12 +1,13 @@
 import { Fragment, type ReactNode } from 'react';
 import { AnchorHeading, AnchorLink } from './Anchor';
+import { splitRefEntry } from '../lib/ref-links';
 
 /** Minimal, safe markdown renderer (no HTML injection: everything becomes React elements). */
 const SAFE_URL = /^(https?:\/\/|mailto:)/i;
 
 function slug(s: string) { return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
 
-function inline(text: string, keyBase: string): ReactNode[] {
+function inline(text: string, keyBase: string, sameTab?: ReadonlySet<string>): ReactNode[] {
   const out: ReactNode[] = [];
   const re = /(`[^`]+`)|(\*\*[^*]+\*\*)|(\*[^*\s][^*]*\*)|(\[[^\]]+\]\([^)\s]+\))|(https?:\/\/[^\s)<>\]]+)/g;
   let last = 0, m: RegExpExecArray | null, i = 0;
@@ -15,12 +16,12 @@ function inline(text: string, keyBase: string): ReactNode[] {
     const k = `${keyBase}-${i++}`;
     const tok = m[0];
     if (m[1]) out.push(<code key={k}>{tok.slice(1, -1)}</code>);
-    else if (m[2]) out.push(<strong key={k}>{inline(tok.slice(2, -2), k)}</strong>);
-    else if (m[3]) out.push(<em key={k}>{inline(tok.slice(1, -1), k)}</em>);
+    else if (m[2]) out.push(<strong key={k}>{inline(tok.slice(2, -2), k, sameTab)}</strong>);
+    else if (m[3]) out.push(<em key={k}>{inline(tok.slice(1, -1), k, sameTab)}</em>);
     else if (m[4]) {
       const mm = /^\[([^\]]+)\]\(([^)\s]+)\)$/.exec(tok)!;
       out.push(SAFE_URL.test(mm[2])
-        ? <a key={k} href={mm[2]} target="_blank" rel="noopener noreferrer">{mm[1]}</a>
+        ? sameTab?.has(mm[2]) ? <a key={k} href={mm[2]}>{mm[1]}</a> : <a key={k} href={mm[2]} target="_blank" rel="noopener noreferrer">{mm[1]}</a>
         : <Fragment key={k}>{mm[1]}</Fragment>);
     } else {
       const url = tok.replace(/[.,;:]+$/, '');
@@ -94,11 +95,29 @@ export function Markdown({ source, offset = 1, anchors }: { source: string; offs
     const buf: string[] = [];
     while (i < lines.length && !/^\s*$/.test(lines[i]) && !/^(#{1,6}\s|```|\s*\||\s*([-*]|\d+\.)\s+|>)/.test(lines[i])) buf.push(lines[i++]);
     if (!buf.length) { buf.push(lines[i++]); }
-    const text = buf.join(' ');
+    const entry = splitRefEntry(buf);
+    const same = new Set<string>();
+    let text = entry.head;
+    if (entry.title) {
+      const t = entry.title;
+      same.add(t.url);
+      text = text.replace(t.label, `[${t.label}](${t.url})`);
+    }
     const ref = /^\*\*\[([A-Za-z0-9-]+)\]\*\*/.exec(text);
     const key = ref && !taken.has(ref[1]) ? ref[1] : undefined;
     if (key && anchors) taken.add(key);
-    nodes.push(<p key={k++} id={key} className={key && anchors ? 'anchored' : undefined}>{inline(text, `p${k}`)}{key && anchors && <>{' '}<AnchorLink id={key} label={key} /></>}</p>);
+    nodes.push(
+      <p key={k++} id={key} className={key && anchors ? 'anchored' : undefined}>
+        {inline(text, `p${k}`, same)}
+        {entry.more.length > 0 && (
+          <span className="ref-links"> (
+            {entry.more.map((l, n) => <Fragment key={n}>{n > 0 && '; '}<a href={l.url}>{l.label}</a></Fragment>)}
+          )</span>
+        )}
+        {entry.tail && <> {inline(entry.tail, `t${k}`)}</>}
+        {key && anchors && <>{' '}<AnchorLink id={key} label={key} /></>}
+      </p>,
+    );
   }
   return <div className="md">{nodes}</div>;
 }

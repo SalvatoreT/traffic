@@ -30,8 +30,7 @@ export function Sources({ demand, synthetic, calibration }: { demand: Demand; sy
         <ul className="prov">
           {demand.provenance.filter((p) => !onAssumptionsTab(p.source)).map((p, i) => (
             <li key={i}>
-              <strong>{p.source}</strong>
-              {/^https?:\/\//.test(p.url) && <>, <a href={p.url} target="_blank" rel="noopener noreferrer">{p.url}</a></>}
+              <strong>{/^https?:\/\//.test(p.url) ? <a href={p.url}>{p.source}</a> : p.source}</strong>
               <br /><span className="muted">{p.note}</span>
             </li>
           ))}
