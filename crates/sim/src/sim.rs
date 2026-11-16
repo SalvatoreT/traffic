@@ -2503,7 +2503,7 @@ impl Simulation {
         let base = match ctrl {
             Control::Signal => {
                 if m.kind == K_LEFT {
-                    TC_PERMITTED_LEFT
+                    if self.cfg.queue_first_left == Some(true) { TC_PERMITTED_LEFT } else { TC_MAJOR_LEFT }
                 } else {
                     TC_UNCONTROLLED
                 }
@@ -2619,10 +2619,10 @@ impl Simulation {
         if ctrl == Control::TrafficCircle && !self.eff.ring_node[node] {
             return (true, rec);
         }
-        // A permissive left at a signal gets no courtesy or yield fallback: its wait spans the red, and the opposing queue it would cut in
+        // `queue_first_left`: a permissive left at a signal gets no courtesy or yield fallback: its wait spans the red, and the opposing queue it would cut in
         // front of stands only because of it. Its way out is a gap after the opposing queue or the change interval, one or two vehicles
         // a cycle [FHWA-STM2008] 4.8.4, [Fambro1991].
-        let permissive = ctrl == Control::Signal && !rtor && self.topo.mvs[mv as usize].kind == K_LEFT;
+        let permissive = self.cfg.queue_first_left == Some(true) && ctrl == Control::Signal && !rtor && self.topo.mvs[mv as usize].kind == K_LEFT;
         let behavioral = policy != JunctionRecovery::NoBehavioral && !permissive;
         let courtesy = behavioral && veh.wait_t >= YIELD_COURTESY_S;
         if behavioral && veh.wait_t >= YIELD_FALLBACK_S {
@@ -2679,7 +2679,7 @@ impl Simulation {
                 for &x in q.iter().take(4) {
                     let xv = &self.vehs[x as usize];
                     let dx = (self.topo.stop_pos[e as usize] - xv.pos).max(0.0) + self.topo.length[e as usize].min(R_NODE as f32 * 4.0).min(R_NODE as f32);
-                    let tx = if ctrl == Control::Signal { approach_time(dx, xv.v, xv.drv.a, self.eff.limit[e as usize] * xv.drv.fcomp) } else { dx / xv.v.max(MIN_APPROACH_SPEED) };
+                    let tx = if ctrl == Control::Signal && self.cfg.queue_first_left == Some(true) { approach_time(dx, xv.v, xv.drv.a, self.eff.limit[e as usize] * xv.drv.fcomp) } else { dx / xv.v.max(MIN_APPROACH_SPEED) };
                     if tx > tc {
                         break;
                     }

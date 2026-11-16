@@ -406,6 +406,14 @@
       "greenSeconds": 13,
       "clearanceSeconds": 4,
       "source": "[CHRCO-EIR2014] Appendix C, Synchro worksheet 'Existing PM', SB SR-24 On-Ramp & MLK Way & NB SR-24 Off-Ramp: cycle 50 s; the southbound stream that turns onto the on-ramp (1547 veh/h) has 29 s of green in a phase of its own and the northbound stream that crosses it (268 veh/h) 13 s; clearance time 4.0 s after each phase, and effective green equal to the actuated green, so 29 + 13 + 2 x 4 = 50 s; applied to midday as an ASSUMPTION (no midday worksheet)"
+    },
+    {
+      "at": ["Ashby Avenue", "Claremont Avenue"],
+      "approach": "Claremont Avenue",
+      "heading": 33,
+      "ownPhase": true,
+      "periods": ["am_peak", "midday", "pm_peak"],
+      "source": "Field observation by a resident, relayed by the project lead (2026-11-15): the northbound Claremont Ave approach at Ashby Ave has a left-turn arrow, so its left turn onto Ashby Ave is protected (DATA for the phasing). The 2010 PM Synchro worksheet of [SafewayCollege-DEIR2011] runs the two Claremont Ave approaches as split phases (northbound 17.0 s, southbound 17.5 s of a 100 s cycle) and codes the northbound approach as two lanes with no left-turn lane, which fits. ASSUMPTION pending a timing sheet: the approach runs in a phase of its own in every period (protected-only, not protected-permissive), and the cycle and greens follow the flows like any other modeled signal; the other approaches' phasing, the pocket length and the timing are not observed"
     }
   ],
   "osmTagOverrides": {

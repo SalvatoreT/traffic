@@ -52,10 +52,31 @@
   },
   {
    "id": "l1",
-   "reason": "New in round 32. Two-lane signal approach with 20% left turns, a 3-vehicle pocket that overflows every cycle and 500 veh/h per opposing lane: 792 veh/h per lane against 851 to 1,064 [Brilon1999] (the b9 bound at 20% left). It was 699 without lane changes along a link: through drivers now move around a waiting left-turner, but a left-turner that does not fit in the pocket still holds the inner lane at the stop line until it can turn.",
+   "reason": "New in round 32. Two-lane signal approach with 20% left turns, a 3-vehicle pocket that overflows every cycle and 500 veh/h per opposing lane: 792 veh/h per lane against 851 to 1,064, the b9 bound at 20% left, which applies the gap formula of [Brilon1999] with tc 4.1 s and tf 2.2 s to the hourly opposing flow. Round 33: the permitted-left method of [Fambro1991] (left turns only once the opposing queue has cleared, then gaps, then sneakers) puts the left-limited approach at 385 to 706 per lane, so the simulator's 792 is above that method, not below it; with the queue-first left-turn model (`Config::queue_first_left`, off by default) it is 658. Through drivers move around a waiting left-turner (lane changes along a link), and a left-turner that does not fit in the pocket waits at the stop line of the inner lane and turns from there.",
    "reviewed": false,
-   "relevance": "Not reviewed: left to the project lead. Possible meaning: two-lane approaches with heavy permissive left turns (Ashby Ave at Claremont Ave, Claremont Ave northbound) are somewhat slow in the model, which would favor side streets near them.",
-   "followUp": "Pending review. Candidate repairs: pocket length from map or field data instead of the 3-vehicle ASSUMPTION, or a protected-permissive phase where a timing sheet shows one."
+   "relevance": "Not reviewed: left to the project lead. The range and the cited permitted-left method disagree; the expected range needs the lead's review before this case can say whether two-lane approaches with heavy permissive left turns are too slow or too fast.",
+   "followUp": "Pending review. Candidate repairs: an expected range from the [Fambro1991] method for this geometry, pocket length from map or field data instead of the 3-vehicle ASSUMPTION, and a left-turner that waits at the pocket entrance instead of turning from the through lane beside a full pocket."
+  },
+  {
+   "id": "p2",
+   "reason": "New in round 33. Permissive left from a left-only lane against 400 veh/h of opposing flow: 402 left turns an hour against 157 to 303 by the permitted-left method of [Fambro1991] (left turns only after the opposing queue clears, Drew's gap model with critical gap 4.5 to 5.1 s and turning headway 2.24 to 2.57 s, 0.88 to 2 sneakers a cycle). A left-turner counts a car starting from the green line as about 4 to 6 s away and takes that gap, and after the 45 s courtesy wait (which runs through the red) it goes ahead of the standing opposing queue; the opposing approach then carries less than it is offered. The queue-first model (`Config::queue_first_left`) gives 246, inside the range, but made the Rockridge PM peak less stable and was not switched on.",
+   "reviewed": false,
+   "relevance": "Not reviewed: left to the project lead. Permissive left turns against moderate and heavy opposing flow are served up to twice as fast as the method allows, and the opposing through traffic correspondingly slower.",
+   "followUp": "Pending review. Repair: switch on the queue-first model once protected phases where the field has them (left-turn arrows) are in the network, so that the arterials do not lose capacity they have in reality."
+  },
+  {
+   "id": "p3",
+   "reason": "New in round 33. As p2 with 600 veh/h opposing: 369 left turns an hour against 32 to 167 [Fambro1991]; the queue-first model gives 120.",
+   "reviewed": false,
+   "relevance": "As p2.",
+   "followUp": "As p2."
+  },
+  {
+   "id": "b13",
+   "reason": "New in round 33. A one-lane, all-left approach in a phase of its own (protected, phasing observed without timing) discharges 450 veh/h at a green share of 0.30, about 1,500 an hour of green, against s x green share with s 1,500 to 2,000 [FHWA-SIG2004]: 2 veh/h below the lower bound. Single-lane left turns slow to the 5 m/s turn speed (ASSUMPTION); seeds 2 to 5 give 456 to 486.",
+   "reviewed": false,
+   "relevance": "Not reviewed: left to the project lead. Protected left turns discharge at the low end of the observed saturation flows.",
+   "followUp": "Pending review. Repair: a cited turn speed or left-turn saturation adjustment."
   }
  ]
 }

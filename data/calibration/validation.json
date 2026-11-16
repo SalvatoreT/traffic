@@ -175,6 +175,54 @@
       "unit": "veh/h/lane"
     },
     {
+      "hi": 483.3589480065337,
+      "id": "p1",
+      "knownDeviation": null,
+      "lo": 351.4949678497243,
+      "name": "Permissive left, left-only lane, opposing 200 veh/h (green share 0.38): left turns",
+      "note": "cycle 100 s, saturated; left turns only after the opposing queue clears, Drew's gap model, then sneakers in the change interval: critical gap 5.1 to 4.5 s, turning headway 2.57 to 2.24 s, 0.88 to 2 sneakers a cycle, opposing discharge 1,500 to 2,000 veh/h",
+      "pass": true,
+      "sim": 444.0,
+      "source": "Fambro1991",
+      "unit": "veh/h"
+    },
+    {
+      "hi": 302.5458107331906,
+      "id": "p2",
+      "knownDeviation": null,
+      "lo": 157.3133442122538,
+      "name": "Permissive left, left-only lane, opposing 400 veh/h (green share 0.37): left turns",
+      "note": "cycle 100 s, saturated; left turns only after the opposing queue clears, Drew's gap model, then sneakers in the change interval: critical gap 5.1 to 4.5 s, turning headway 2.57 to 2.24 s, 0.88 to 2 sneakers a cycle, opposing discharge 1,500 to 2,000 veh/h",
+      "pass": false,
+      "sim": 402.0,
+      "source": "Fambro1991",
+      "unit": "veh/h"
+    },
+    {
+      "hi": 167.0277751299215,
+      "id": "p3",
+      "knownDeviation": null,
+      "lo": 31.68,
+      "name": "Permissive left, left-only lane, opposing 600 veh/h (green share 0.37): left turns",
+      "note": "cycle 100 s, saturated; left turns only after the opposing queue clears, Drew's gap model, then sneakers in the change interval: critical gap 5.1 to 4.5 s, turning headway 2.57 to 2.24 s, 0.88 to 2 sneakers a cycle, opposing discharge 1,500 to 2,000 veh/h",
+      "pass": false,
+      "sim": 369.0,
+      "source": "Fambro1991",
+      "unit": "veh/h"
+    },
+    {
+      "hi": 602.5,
+      "id": "b13",
+      "knownDeviation": null,
+      "lo": 451.875,
+      "name": "1 lane, all left turns, protected (a phase of its own, phasing observed without timing), opposing 500/lane (green share 0.30)",
+      "note": "per lane, cycle 100 s, saturated; s x green share, s observed 1,500 to 2,000; the same approach with a permissive left carries 348",
+      "pass": false,
+      "sim": 450.0,
+      "source": "FHWA-SIG2004",
+      "unit": "veh/h/lane"
+    },
+    {
       "hi": 1.2422222222222223,
       "id": "b10",
       "knownDeviation": null,
@@ -558,7 +606,7 @@
       },
       "lo": 851.2160484504398,
       "name": "2 lanes, 20% left, pocket overflowing, opposing 500/lane (green share 0.51): approach capacity",
-      "note": "per lane, cycle 100 s, saturated; the left-turn queue overflows the 3-vehicle pocket every cycle and through drivers behind it move to the free lane; min(permissive-left limit, through limit) as in b9, s 1,800 to 1,900, lower bound 0.8 of it; without lane changes along the link 699",
+      "note": "per lane, cycle 100 s, saturated; the left-turn queue overflows the 3-vehicle pocket every cycle and through drivers behind it move to the free lane; min(permissive-left limit, through limit) as in b9, s 1,800 to 1,900, lower bound 0.8 of it; without lane changes along the link 699; the permitted-left method of p1 to p3 [Fambro1991] (left turns only after the opposing queue clears) puts the left-limited approach at 385 to 706 per lane",
       "pass": false,
       "sim": 792.0,
       "source": "Brilon1999",
@@ -867,6 +915,9 @@
   ],
   "failing": [
     "a3",
+    "p2",
+    "p3",
+    "b13",
     "e2",
     "e3",
     "l1",
@@ -883,14 +934,18 @@
     "schema": 1,
     "simulator": {
       "dirty": true,
-      "fingerprint": "6741b48b6d1743c763b018a288bb6215",
-      "revision": "cb17bad697684b2066c4d3f11f54aac9c8732cce",
+      "fingerprint": "cef9506de5200ff7cfcf8805b36ecba1",
+      "revision": "8e27168999494fbd6b6d7aef1aaf8ae2c30d34e4",
       "version": "0.1.0"
     },
     "suite": {
-      "cases": 68,
-      "sha256": "5d906f7130a25e349859e896b292e5e66b6a1e02703b92878abc9f7d492a096a"
+      "cases": 72,
+      "sha256": "f4dc277045948af2fec225cecf5e24e3181e83564d12eec6afdae0dd75278745"
     }
   },
-  "notDocumented": []
+  "notDocumented": [
+    "p2",
+    "p3",
+    "b13"
+  ]
 }

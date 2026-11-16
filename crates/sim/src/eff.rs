@@ -820,7 +820,7 @@ fn webster_with(ys: &[f32], pinned: Option<f32>, clearance: f32) -> (f32, Vec<(f
 /// ratio [Webster1958]. Otherwise, when the node has an observed timing for the run's period, the observed cycle holds with the
 /// observed approaches' greens fixed (the phase that holds their links) and the other phases sharing the rest of the cycle by flow
 /// ratio, with the usual minimum green. Clearance after each phase is the observation's `clearance_s` when given, else
-/// `YELLOW + ALL_RED`. A plan whose greens and clearance intervals do not add up to its cycle is returned as an issue, never
+/// `YELLOW + ALL_RED`. An observation of the phasing alone (no green above 0) keeps the Webster cycle and splits. A plan whose greens and clearance intervals do not add up to its cycle is returned as an issue, never
 /// stretched or shortened.
 fn plan_with_observation(net: &Network, period: &str, n: usize, groups: &[Vec<u32>], ys: &[f32], pin: Option<f32>) -> Result<(f32, Vec<(f32, f32)>, f32), SignalIssue> {
     let obs = net.nodes[n].signal_timing.iter().find(|o| o.periods.iter().any(|p| p == period));
@@ -861,7 +861,7 @@ fn plan_with_observation(net: &Network, period: &str, n: usize, groups: &[Vec<u3
     }
     let Some(obs) = obs else { return Ok(webster_with(ys, None, clearance)) };
     let mut fixed: Vec<Option<f32>> = vec![None; groups.len()];
-    for a in &obs.greens {
+    for a in obs.greens.iter().filter(|a| a.green_s > 0.0) {
         let alone = !a.runs_with.is_empty();
         let gi = groups.iter().position(|g| g.iter().any(|l| a.links.contains(l)) && !(alone && g.iter().any(|l| a.runs_with.contains(l))));
         if let Some(gi) = gi {
