@@ -581,3 +581,4 @@ table.intent-table td { text-align: left; font-variant-numeric: tabular-nums; }
   .redist-head { top: -.75rem; }
 }
 .fig-all { grid-column: 1 / -1; border-left: 4px solid var(--bad); padding-left: .6rem; }
+.md .ref-links { overflow-wrap: anywhere; }

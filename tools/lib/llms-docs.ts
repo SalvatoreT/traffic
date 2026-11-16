@@ -1,5 +1,6 @@
 import type { AreaEntry, Demand, Metrics, Network } from '../../src/types';
 import { linkStatsView } from '../../src/types';
+import { parseRefLinks } from '../../src/lib/ref-links';
 import type { StoredIndex, StoredInputs } from '../../src/lib/stored-results';
 import type { BaselineIntents } from '../../src/lib/baseline-intents';
 import type { AssumptionsFile } from '../../src/lib/assumptions';
@@ -82,6 +83,14 @@ export function section(md: string, heading: string): string {
   let end = lines.length;
   for (let i = at + 1; i < lines.length; i++) if (level(lines[i]) > 0 && level(lines[i]) <= depth) { end = i; break; }
   return lines.slice(at + 1, end).join('\n').trim();
+}
+
+/** Writes each `Links:` line of the bibliography as markdown links, so the text pages show labels instead of bare URLs. */
+export function linkRefs(md: string): string {
+  return md.split('\n').map((l) => {
+    const p = parseRefLinks(l);
+    return p ? `Links: ${p.map((x) => `[${x.label}](${x.url})`).join(' · ')}` : l;
+  }).join('\n');
 }
 
 /** Headings shifted down by `by` levels (capped at 6), skipping fenced code. */
@@ -351,10 +360,10 @@ export function sourcesMd(i: LlmsInput, withBibliography = true): string {
   const cav = calibrationCaveat(cal);
   if (cav) out.push(cav, '');
   out.push('## Data provenance', '', 'Where each input comes from. A note that starts with DATA rests on a count or a published table; one that says ASSUMPTION is a judgment call, listed in the Assumptions page.', '');
-  for (const p of i.demand.provenance.filter((x) => !/^Assumed movement flows/.test(x.source))) out.push(`- **${p.source}**${/^https?:\/\//.test(p.url) ? `, <${p.url}>` : ''}. ${p.note}`);
+  for (const p of i.demand.provenance.filter((x) => !/^Assumed movement flows/.test(x.source))) out.push(`- **${/^https?:\/\//.test(p.url) ? `[${p.source}](${p.url.replace(/[()]/g, encodeURIComponent)})` : p.source}**. ${p.note}`);
   out.push('', 'Map data © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright) (ODbL).', '');
   out.push('## Research references', '');
-  out.push(withBibliography ? demote(i.docs.references, 2) : `The bibliography, with a verification status for each entry, is at ${abs(i, '/sources.md')}.`);
+  out.push(withBibliography ? demote(linkRefs(i.docs.references), 2) : `The bibliography, with a verification status for each entry, is at ${abs(i, '/sources.md')}.`);
   return `${out.join('\n')}\n`;
 }
 

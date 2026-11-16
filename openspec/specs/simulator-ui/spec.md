@@ -85,11 +85,19 @@ The UI SHALL meet WCAG 2.2 AA: full keyboard operation with visible focus, label
 - **THEN** a table lists the side streets inside the study area with their flow and cut-through values and metric updates are announced politely
 
 ### Requirement: Sources visible
-The UI SHALL provide a page listing the research references and data sources behind the model, and a pointer to the Assumptions tab for the judgment calls.
+The UI SHALL provide a page listing the research references and data sources behind the model, and a pointer to the Assumptions tab for the judgment calls. Each source SHALL link as specifically as a verified link allows to the passage, page, file or record the project uses, and a source with several uses SHALL give each its own labeled link. Links SHALL open normally, SHALL be named by their labels and not by their URLs, and SHALL NOT make the page scroll sideways on a phone. A source with no verifiable deeper link SHALL keep its general link or none.
 
 #### Scenario: Viewing sources
 - **WHEN** a user opens "Sources"
 - **THEN** they see the bibliography and data provenance with links, and a line pointing to the Assumptions tab
+
+#### Scenario: Following a cited table
+- **WHEN** a user follows the link of an entry whose use is a table in a PDF or a passage on an HTML page
+- **THEN** the link opens that PDF page or highlights that passage, and further uses of the same source appear as labeled links in parentheses after the citation line
+
+#### Scenario: Entry with no deeper link
+- **WHEN** no link to the cited content could be verified
+- **THEN** the entry shows no new link and the bibliography's notes say why
 
 ### Requirement: Location-based scenario links
 Shareable scenario links SHALL encode each intervention by geographic location (a 10-character geohash, about 1 m), with a bearing where direction matters, together with the area id and a format version, and SHALL NOT depend on network link or node indices.
