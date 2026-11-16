@@ -1,22 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { blockMeasured, linkMeasured, scopeFromSearch } from './scope';
-import { boundingMeanSpeed } from './metrics';
-import { buildFixture } from '../fixtures/area';
+import { blockMeasured, linkMeasured } from './scope';
 
-describe('measured scope', () => {
-  it('reads the preview switch', () => {
-    expect(scopeFromSearch('')).toBe('study');
-    expect(scopeFromSearch('?shade=interior')).toBe('interior');
-  });
-  it('shades study-area streets only, or only their side streets in interior scope', () => {
-    expect(linkMeasured({ inStudyArea: false, class: 'residential' }, 'study')).toBe(false);
-    expect(linkMeasured({ inStudyArea: true, class: 'secondary' }, 'study')).toBe(true);
-    expect(linkMeasured({ inStudyArea: true, class: 'secondary' }, 'interior')).toBe(false);
-    expect(linkMeasured({ inStudyArea: true, class: 'service' }, 'interior')).toBe(true);
-    expect(blockMeasured({ inStudyArea: true, cls: 'tertiary' }, 'interior')).toBe(false);
-    expect(blockMeasured({ inStudyArea: false, cls: 'residential' }, 'study')).toBe(false);
-  });
-  it('has no bounding speed without stats', () => {
-    expect(boundingMeanSpeed(buildFixture().network, null)).toBeNaN();
+describe('measured streets', () => {
+  it('are the residential and service streets inside the study area', () => {
+    expect(linkMeasured({ inStudyArea: true, class: 'residential' })).toBe(true);
+    expect(linkMeasured({ inStudyArea: true, class: 'service' })).toBe(true);
+    expect(linkMeasured({ inStudyArea: true, class: 'secondary' })).toBe(false);
+    expect(linkMeasured({ inStudyArea: false, class: 'residential' })).toBe(false);
+    expect(blockMeasured({ inStudyArea: true, cls: 'tertiary' })).toBe(false);
+    expect(blockMeasured({ inStudyArea: true, cls: 'residential' })).toBe(true);
   });
 });

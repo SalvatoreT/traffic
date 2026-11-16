@@ -10,7 +10,6 @@ import type { NetIndex } from '../lib/naming';
 import { checkThroughRoutes, ROUTE_CAVEAT } from '../lib/throughroutes';
 import { buildMockProposals } from '../fixtures/proposals';
 import { canTrace } from '../lib/redistribution-view';
-import { SCOPE } from '../lib/scope';
 import {
   allTrafficHeadline, allTrafficNote, allTrafficRows, beforeAfterPct, comparisonText, cutThroughHeadline, evidenceNote, fetchProposals, formatComputed, harmHeadline, INTERVAL_SCOPE, intervalText, periodsPhrase,
   linkHash, listOptions, needsConfirm, openReducer, parseProposals, provenanceLine, proposalNotices, proposalsUrl, seedsPhrase, signedNum, signedPct,
@@ -321,20 +320,6 @@ function Card({ p, group, evidence, comparison, comparisonLabel, shareUrl, onCop
         </div>
         {allNote && <p className="small">{allNote}</p>}
         <p className="muted small">{all.attribution}</p>
-        <p className="muted small">The figures below are reported for information. They were not part of the search goal.</p>
-        {SCOPE === 'study' && <>
-        <h5>Bounding streets</h5>
-        <p className="muted small">All cars on each street inside the area, change from today, average of the periods.</p>
-        <table>
-          <caption className="sr-only">Change in all cars and in mean speed on the bounding streets, for information</caption>
-          <thead><tr><th scope="col">Street</th><th scope="col">All cars, change</th><th scope="col">Mean speed, change</th></tr></thead>
-          <tbody>
-            {p.context.boundingStreets.map((b) => (
-              <tr key={b.name}><th scope="row">{b.name}</th><td>{signedPct(b.flowChangePct)}</td><td>{signedNum(b.speedChangeMph, 'mph')}</td></tr>
-            ))}
-          </tbody>
-        </table>
-        </>}
       </details>
       {!hasPic && action}
     </li>

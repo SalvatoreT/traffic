@@ -6,7 +6,7 @@ What the web interface shows and lets people do: watch traffic, edit a scenario,
 ## Requirements
 
 ### Requirement: Live traffic map
-The UI SHALL show the study area's streets with moving vehicles, signal states and a per-street overlay selectable between flow, speed and cut-through volume, with OpenStreetMap attribution.
+The UI SHALL show the study area's streets with moving vehicles, signal states and a per-street overlay selectable between flow (all cars) and cut-through volume on the side streets inside the study area, with OpenStreetMap attribution.
 
 #### Scenario: Opening the app
 - **WHEN** a user opens the app
@@ -75,14 +75,14 @@ The UI SHALL show the scenario's metrics beside the baseline's for the same peri
 
 #### Scenario: After adding a modal filter
 - **WHEN** a scenario has run for the comparison window
-- **THEN** cut-through, safety and delay metrics show baseline, scenario and difference
+- **THEN** cut-through and close-following conflict metrics show baseline, scenario and difference
 
 ### Requirement: Accessibility
 The UI SHALL meet WCAG 2.2 AA: full keyboard operation with visible focus, labeled controls, 4.5:1 text contrast in light and dark themes, color never the sole carrier of meaning, and a text/table alternative for information shown only on the map.
 
 #### Scenario: Screen reader user
 - **WHEN** a screen reader user explores results
-- **THEN** a table lists streets with their flow, speed and cut-through values and metric updates are announced politely
+- **THEN** a table lists the side streets inside the study area with their flow and cut-through values and metric updates are announced politely
 
 ### Requirement: Sources visible
 The UI SHALL provide a page listing the research references and data sources behind the model, and a pointer to the Assumptions tab for the judgment calls.
@@ -128,20 +128,6 @@ The map SHALL draw cars, bicycles and pedestrians with distinct shapes as well a
 - **WHEN** a user turns off cars
 - **THEN** only bicycles and pedestrians are drawn and the legend reflects the choice
 
-### Requirement: Results by mode
-Results SHALL show, for baseline and scenario, safety indicators for people walking and biking, pedestrian crossing delay and per-mode trip times, with the change stated in words and the surrogate-indicator caveat visible.
-
-#### Scenario: After adding a modal filter
-- **WHEN** a scenario with a modal filter has run for the comparison window
-- **THEN** the results show how conflicts with pedestrians and cyclists changed
-
-### Requirement: Assumed volumes are stated
-The UI SHALL state that walking and biking volumes are assumptions wherever their metrics appear.
-
-#### Scenario: Viewing walking results
-- **WHEN** a user views pedestrian metrics
-- **THEN** a note says the walking volumes are assumed, not counted
-
 ### Requirement: Map limited to the study area
 The map SHALL draw streets, traffic, agents, signals and markers only within the study area and a fixed buffer around it, SHALL keep the camera within that region, and SHALL leave the simulation and its results covering the whole network.
 
@@ -168,7 +154,7 @@ On first load the app SHALL select a period that is not marked experimental when
 - **THEN** the selected period is not marked experimental
 
 ### Requirement: Change from baseline on the map
-When a scenario has interventions, the map SHALL be able to color each street by the difference between the scenario and the baseline for the selected metric, on a fixed two-sided scale centered on no change. Size of change SHALL show as line thickness, thin near zero and thick at both ends, and as color intensity on a blue-orange diverging ramp whose non-zero steps keep 3:1 contrast against the basemap in both themes. Direction SHALL be conveyed by more than color: signed values in text and arrows on the largest changes. The view covers cars only and SHALL say so. Street values SHALL be averages over the simulated time so far, taken for the baseline and the scenario at the same simulated time, so colors change gradually as evidence accumulates and do not blink; the legend SHALL say so.
+When a scenario has interventions, the map SHALL be able to color each street by the difference between the scenario and the baseline for the selected metric, on a fixed two-sided scale centered on no change. Size of change SHALL show as line thickness, thin near zero and thick at both ends, and as color intensity on a blue-orange diverging ramp whose non-zero steps keep 3:1 contrast against the basemap in both themes. Direction SHALL be conveyed by more than color: signed values in text and arrows on the largest changes. The view covers cars only and SHALL say so, and colors only the side streets inside the study area. Street values SHALL be averages over the simulated time so far, taken for the baseline and the scenario at the same simulated time, so colors change gradually as evidence accumulates and do not blink; the legend SHALL say so.
 
 #### Scenario: Adding the first intervention
 - **WHEN** a user adds an intervention to an empty scenario
@@ -192,7 +178,7 @@ When a scenario has interventions, the map SHALL be able to color each street by
 
 #### Scenario: Walking and biking
 - **WHEN** the change view is on
-- **THEN** the legend states that the map shows cars and points to the area-wide walking and biking results, because the simulator reports those only for the whole area
+- **THEN** the legend states that the map shows cars and the side streets inside the study area only
 
 #### Scenario: Steady colors
 - **WHEN** the run is past its first five minutes and a street carries a few vehicles an hour
@@ -329,7 +315,7 @@ Choosing "Show more" in a list SHALL reveal the new rows with a short height and
 - **THEN** the new rows fade in, focus is on the first of them and a polite message gives the count
 
 ### Requirement: Steady street values without interventions
-The plain overlays (flow, speed, cut-through) SHALL show each street's average over the simulated time so far, and a street that has carried traffic SHALL NOT return to "no traffic" gray during the run. The legend SHALL say the values are averages over the simulated time so far.
+The plain overlays (flow and cut-through) SHALL show each street's average over the simulated time so far, and a street that has carried traffic SHALL NOT return to the "no traffic" color during the run. The legend SHALL say the values are averages over the simulated time so far.
 
 #### Scenario: Quiet street
 - **WHEN** a street carries one vehicle every few minutes
@@ -385,7 +371,11 @@ Hovering a street on the map SHALL show, under the block's name, the metric the 
 
 #### Scenario: Swatch matches the map
 - **WHEN** a user hovers a street with no traffic, or a change inside the noise band
-- **THEN** the swatch is the neutral gray the map draws, in the current theme
+- **THEN** the swatch is the color the map draws, in the current theme: the ramp's lowest color for no traffic, neutral gray for a change inside the band
+
+#### Scenario: Street outside the measured set
+- **WHEN** a user hovers or selects a bounding street or a street outside the study area
+- **THEN** the label reads "Outside the study area: not measured" and no value is shown
 
 #### Scenario: Two-way block
 - **WHEN** a user hovers a two-way block
@@ -582,7 +572,7 @@ On phones (viewport under 720 px) the Streets tab SHALL be a full-height list wi
 - **THEN** the Map tab opens with that block selected
 
 ### Requirement: Streets table columns
-Headers in the Streets table SHALL carry units ("All cars, cars an hour", "Mean speed, mph", "Through cars, cars an hour"), SHALL NOT wrap, and SHALL NOT overlap or clip the rows beneath them. The Scenario and Change columns SHALL appear only when a scenario can be compared with the baseline; without one the table SHALL say "Add a change on the Map tab to compare." Figures SHALL show a dash, not zero, while a run's results are withheld.
+Headers in the Streets table SHALL carry units ("All cars, cars an hour", "Through cars, cars an hour"), SHALL NOT wrap, and SHALL NOT overlap or clip the rows beneath them. The Scenario and Change columns SHALL appear only when a scenario can be compared with the baseline; without one the table SHALL say "Add a change on the Map tab to compare." Figures SHALL show a dash, not zero, while a run's results are withheld.
 
 #### Scenario: No scenario
 - **WHEN** no intervention has been added
@@ -884,3 +874,36 @@ A card whose option has variants SHALL list them under its changes in plain text
 #### Scenario: Unreadable variant
 - **WHEN** a variant in the file has no link or no description
 - **THEN** it is left out and the option's other variants stay
+
+### Requirement: Measured streets only
+Metrics SHALL apply only to the residential and service streets inside the study area. The map shading, hover and tap values, legend, Streets table, Results cards, text pages and headless report SHALL list and color those streets only and SHALL say so in text. The code SHALL decide this from the link's `inStudyArea` flag and class, not from street names.
+
+#### Scenario: Reading the map
+- **WHEN** a user views any map mode
+- **THEN** only side streets inside the study area are colored by the ramp, and the legend names them
+
+#### Scenario: Bounding streets
+- **WHEN** a user views the map
+- **THEN** bounding streets and everything outside the study area are drawn as plain context, with intervention markers still shown, and carry no figure
+
+#### Scenario: Streets table
+- **WHEN** a user opens the Streets tab
+- **THEN** every row is a side-street block inside the study area, and the intro says streets outside it are not measured
+
+### Requirement: Context streets differ from streets with no traffic
+Streets that are not measured SHALL be drawn as a thin dashed line lighter than the basemap street, with no casing and no ramp color. A measured street with no traffic SHALL take the ramp's lowest color, thin, with a casing. The difference SHALL not rest on color alone, and SHALL hold in light and dark themes.
+
+#### Scenario: Quiet side street beside a bounding street
+- **WHEN** a side street with no traffic meets a bounding street
+- **THEN** the side street shows a casing in the ramp's lowest color and the bounding street shows a dashed context line
+
+### Requirement: Whole-network figures are not shown
+The app, the text pages and the docs SHALL NOT show figures that cover the whole simulated network, such as trip times, delay, trip counts, walking and biking indicators and network counts. An oversaturated run SHALL get one sentence of caution without counts.
+
+#### Scenario: Results after adding a modal filter
+- **WHEN** a scenario with a modal filter has run for the comparison window
+- **THEN** Results show the through-traffic and close-following conflict cards and a note that bounding streets and outside are not measured
+
+#### Scenario: Net change away from the side streets
+- **WHEN** Where traffic goes lists net all-car change by block
+- **THEN** it lists side-street blocks inside the study area and one row, "Bounding streets and outside", with the net change on every other street

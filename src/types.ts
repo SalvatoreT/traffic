@@ -136,7 +136,7 @@ export const KIND_CAR = 0, KIND_BIKE = 2, KIND_PED = 3;
 export type ModeKey = 'car' | 'bicycle' | 'pedestrian';
 export type ModeVisibility = Record<ModeKey, boolean>;
 
-export type Overlay = 'flow' | 'speed' | 'cutthrough';
+export type Overlay = 'flow' | 'cutthrough';
 export type Theme = 'auto' | 'light' | 'dark';
 
 export interface AreaBundle {

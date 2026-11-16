@@ -7,7 +7,8 @@ nothing in the code is specific to Rockridge.
 
 The simulated network is much wider than the study area: it runs from Ashby Ave south to about 52nd St and from
 Sacramento St east to Tunnel Road, so that routes and edge traffic are realistic. The map shows the study area plus a
-250 m buffer. Results come from the whole network.
+250 m buffer, but only the side streets inside the study area carry figures: bounding streets and everything outside are
+drawn as plain context, and the app shows no whole-network totals. The simulation still runs on the whole network.
 
 Agents are cars, cyclists and pedestrians. Buses were removed on purpose. Interventions are modal filters, speed humps,
 traffic circles, one-way streets, turn bans, signal changes and the diagonal diverter. You select a street block or an
@@ -58,9 +59,9 @@ The site is a JavaScript app, so a page fetched without scripts is empty. Everyt
 - Demand is fixed: the same trips are made before and after each change, so results are conditional simulations of those
   trips. London monitoring found some traffic removed by real schemes ([Thomas2024]); this version does not model demand
   response, and that average is context, not a target or a bound for any local result.
-- Safety is reported as surrogate indicators (speeds, time-to-collision conflicts; [Hayward1972], [Mahmud2017]), not
-  crash predictions. Pedestrian (AIS 4+, [Tefft2013]) and cyclist (MAIS 3+, [Lubbe2022]) severity are separate means over
-  scored encounters, shown with their counts and never added together.
+- Safety is reported as a surrogate indicator, close-following (time-to-collision) conflicts on the residential streets
+  inside the study area ([Hayward1972], [Mahmud2017]), not a crash prediction. The simulator still scores walking and
+  biking encounters ([Tefft2013], [Lubbe2022]); the app does not show them.
 - Parameters and demand that are not sourced are labeled as assumptions in code, specs and the UI.
 
 Keys resolve in [docs/references.md](docs/references.md), which records how each entry was verified.

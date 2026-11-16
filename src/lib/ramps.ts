@@ -9,13 +9,8 @@ export function rampStops(mode: Mode): string[] {
 }
 export const resolveMode = (t: Theme, prefersDark: boolean): Mode => (t === 'auto' ? (prefersDark ? 'dark' : 'light') : t);
 
-/** Normalized intensity 0..1 for a link given overlay. `limit` in m/s. Returns -1 for "no data". */
-export function intensity(overlay: Overlay, flow: number, speed: number, cut: number, limit: number, max: number): number {
-  if (overlay === 'speed') {
-    if (flow <= 0 && speed <= 0) return -1;
-    const ratio = limit > 0 ? speed / limit : 1;
-    return Math.max(0, Math.min(1, 1 - ratio));
-  }
+/** Normalized intensity 0..1 for a link given overlay. Returns -1 for "no data". */
+export function intensity(overlay: Overlay, flow: number, cut: number, max: number): number {
   const v = overlay === 'flow' ? flow : cut;
   return v <= 0 ? -1 : Math.min(1, v / max);
 }
@@ -36,12 +31,11 @@ export const widthFor = (t: number) => (t < 0 ? WIDTH_MIN * 0.8 : WIDTH_MIN + t 
  */
 export const OVERLAY_TOP = { flow: 800, cutthrough: 100 } as const;
 
-/** Top-of-scale value for the overlay; speed is a fixed 0 to 100% of the limit. */
-export const overlayTop = (o: Overlay): number => (o === 'speed' ? 1 : OVERLAY_TOP[o]);
+/** Top-of-scale value for the overlay. */
+export const overlayTop = (o: Overlay): number => OVERLAY_TOP[o];
 
 /** Five legend labels from the low to the high end. The last carries a plus sign for flow and cut-through because larger values clamp to it. */
 export function rampTicks(overlay: Overlay): string[] {
-  if (overlay === 'speed') return ['100%', '75%', '50%', '25%', '0%'];
   const top = OVERLAY_TOP[overlay];
   const ticks = [0, 0.25, 0.5, 0.75, 1].map((f) => String(Math.round(top * f)));
   ticks[4] = `${ticks[4]}+`;
@@ -92,9 +86,9 @@ const lerpStops = (stops: { t: number; color: string }[], t: number): string => 
   return stops[stops.length - 1].color;
 };
 
-/** The color the map draws for a quantized intensity: the same stops the paint expressions use, linear in RGB. Negative sequential values and NO_DATA (-2) in the change view are the muted gray. */
+/** The color the map draws for a quantized intensity: the same stops the paint expressions use, linear in RGB. Negative sequential values (no traffic) take the ramp's lowest color; NO_DATA (-2) in the change view is the muted gray. */
 export function colorForIntensity(t: number, mode: Mode, change: boolean): string {
   if (change) return t <= -1.5 ? mutedColor(mode) : lerpStops(divergingStops(mode), t);
-  if (t < 0) return mutedColor(mode);
+  if (t < 0) return rampStops(mode)[0];
   return lerpStops(rampStops(mode).map((color, i) => ({ t: i / 4, color })), t);
 }

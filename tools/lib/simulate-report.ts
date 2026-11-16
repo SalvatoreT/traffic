@@ -2,14 +2,15 @@ import type { AreaEntry, Demand, Intervention, Metrics, Network } from '../../sr
 import { linkStatsView } from '../../src/types';
 import { ITEM_CODES, decodeMeta, decodeScenario, encodeScenario, HASH_VERSION, type Unplaced } from '../../src/lib/hash';
 import { aggregate, DEAD_BAND_CUTTHROUGH } from '../../src/lib/change';
-import { displayValue, MPS_TO_MPH, type Kind } from '../../src/lib/format';
-import { CARDS, MODE_CARDS, hasModes, networkHealth } from '../../src/lib/metrics';
+import { displayValue, type Kind } from '../../src/lib/format';
+import { CARDS, networkHealth } from '../../src/lib/metrics';
 import { intentTable } from '../../src/lib/intents';
 import { isLocal } from '../../src/lib/intents';
 import { describeIntervention } from '../../src/lib/describe';
 import { nearestStreetName } from '../../src/lib/hash';
 import { defaultPeriod } from '../../src/lib/run';
 import type { Block, NetIndex } from '../../src/lib/naming';
+import { blockMeasured } from '../../src/lib/scope';
 import { CliError, EXIT } from './agent-area';
 
 export const REPORT_VERSION = 1;
@@ -184,29 +185,23 @@ export function resolvePeriod(entry: AreaEntry, demand: Demand, ...wanted: (stri
 const r1 = (x: number) => Math.round(x * 10) / 10;
 const pct = (b: number, s: number) => (b !== 0 ? r1(((s - b) / Math.abs(b)) * 100) : null);
 
-const KIND_UNIT: Record<Kind, string> = { speed: 'mph', share: 'percent', minutes: 'minutes', seconds: 'seconds', count: 'count', flow: 'cars an hour', index: 'index (unitless)' };
+const KIND_UNIT: Record<Kind, string> = { share: 'percent', count: 'count', flow: 'cars an hour' };
 
-const r3 = (x: number) => Math.round(x * 1000) / 1000;
 export interface MetricRow {
   id: string; label: string; unit: string; baseline: number | null; scenario: number | null; change: number | null; changePct: number | null; lowerIsBetter: boolean | null;
-  /** Why a value is null, for figures that can be unavailable (a severity mean with no scored encounter is not a measured zero). */
-  unavailable?: { baseline?: string; scenario?: string };
 }
 
-/** Every figure of the app's Results cards in display units (cars an hour, mph, minutes, percent). */
+/** Every figure of the app's Results cards in display units (cars an hour, count, percent). */
 export function metricRows(base: Metrics, scen: Metrics): MetricRow[] {
-  const cards = [...CARDS, ...(hasModes(scen) && hasModes(base) ? MODE_CARDS : [])];
-  return cards.flatMap((c) => c.metrics.map((d) => {
+  return CARDS.flatMap((c) => c.metrics.map((d) => {
     const b = d.get(base), s = d.get(scen);
     const ok = Number.isFinite(b) && Number.isFinite(s);
     const bd = ok ? displayValue(d.kind as Kind, b) : null, sd = ok ? displayValue(d.kind as Kind, s) : null;
-    const rd = d.kind === 'index' ? r3 : r1;
-    const why = { baseline: Number.isFinite(b) ? null : d.why?.(base) ?? null, scenario: Number.isFinite(s) ? null : d.why?.(scen) ?? null };
+    const rd = r1;
     return {
       id: d.id, label: d.label, unit: KIND_UNIT[d.kind as Kind],
       baseline: bd === null ? null : rd(bd), scenario: sd === null ? null : rd(sd), change: bd === null || sd === null ? null : rd(sd - bd), changePct: bd === null || sd === null ? null : pct(bd, sd),
       lowerIsBetter: d.lowerIsBetter,
-      ...(why.baseline || why.scenario ? { unavailable: { ...(why.baseline ? { baseline: why.baseline } : {}), ...(why.scenario ? { scenario: why.scenario } : {}) } } : {}),
     };
   }));
 }
@@ -215,30 +210,26 @@ export interface BlockRow {
   block: number; label: string; street: string; class: string; links: number[];
   allCars: { baseline: number; scenario: number; change: number };
   throughCars: { baseline: number; scenario: number; change: number; beyondNoise: boolean };
-  meanSpeedMph: { baseline: number | null; scenario: number | null; change: number | null };
 }
 
 const isSide = (net: Network, b: Block) => b.links.some((id) => isLocal(net.links[id]));
 
 /**
  * One row per block with its cars an hour (both directions summed), as the Streets tab shows them. `side` keeps the study area's residential
- * and service blocks, the streets the through-car count covers; `all` keeps every block the Streets tab lists. A block with no cars in either run is left out.
+ * and service blocks, the streets the through-car count covers; `all` keeps every block the Streets tab lists, which is the same set. A block with no cars in either run is left out.
  */
 export function blockRows(net: Network, idx: NetIndex, base: Float32Array, scen: Float32Array, scope: 'side' | 'all'): BlockRow[] {
   const B = linkStatsView(base), S = linkStatsView(scen);
   const rows: BlockRow[] = [];
   for (const b of idx.blocks) {
-    if (scope === 'side' ? !isSide(net, b) : !(b.inFocus)) continue;
+    if (scope === 'side' ? !isSide(net, b) : !blockMeasured(b)) continue;
     const bs = aggregate(B, b.links), ss = aggregate(S, b.links);
     if (bs.flow <= 0 && ss.flow <= 0 && bs.cut <= 0 && ss.cut <= 0) continue;
-    const spd = (a: { flow: number; speed: number }) => (a.flow > 0 ? r1(a.speed * MPS_TO_MPH) : null);
-    const sb = spd(bs), sc = spd(ss);
     const ct = ss.cut - bs.cut;
     rows.push({
       block: b.key, label: b.label, street: b.name, class: b.cls, links: b.links,
       allCars: { baseline: Math.round(bs.flow), scenario: Math.round(ss.flow), change: Math.round(ss.flow - bs.flow) },
       throughCars: { baseline: Math.round(bs.cut), scenario: Math.round(ss.cut), change: Math.round(ct), beyondNoise: Math.abs(ct) > DEAD_BAND_CUTTHROUGH },
-      meanSpeedMph: { baseline: sb, scenario: sc, change: sb === null || sc === null ? null : r1(sc - sb) },
     });
   }
   return rows;
@@ -255,7 +246,7 @@ export interface ReportInput {
   blocks: 'side' | 'all' | 'none'; top: number; notes: string[];
 }
 
-const health = (m: Metrics) => { const h = networkHealth(m); return { vehiclesOnNetwork: h.inNetwork, tripsWaitingToEnter: h.backlog, removedForGridlock: h.gridlockRemoved, unroutableTrips: h.unroutable, oversaturated: h.oversaturated }; };
+const health = (m: Metrics) => ({ oversaturated: networkHealth(m).oversaturated });
 
 export function buildReport(i: ReportInput) {
   const { network: net, index: idx, base, scen } = i;
@@ -293,8 +284,8 @@ export function buildReport(i: ReportInput) {
     } : null,
     networkHealth: { baseline: health(base.metrics), scenario: health(scen.metrics), invalidInterventionsSkippedBySimulator: scen.metrics.invalidInterventions ?? 0, unplacedInterventions: unplaced.length },
     blocks: i.blocks === 'none' ? null : {
-      scope: i.blocks === 'side' ? 'study-area residential and service blocks' : 'every block the Streets tab lists',
-      units: { allCars: 'cars an hour, both directions', throughCars: 'cars an hour, both directions', meanSpeed: 'mph, flow-weighted' },
+      scope: i.blocks === 'side' ? 'study-area residential and service blocks' : 'every block the Streets tab lists (side streets inside the study area)',
+      units: { allCars: 'cars an hour, both directions', throughCars: 'cars an hour, both directions' },
       noiseBandThroughCarsPerHour: DEAD_BAND_CUTTHROUGH,
       count: rows.length,
       ...(i.blocks === 'side' ? { topGains: gains, topDrops: drops } : { all: sorted }),

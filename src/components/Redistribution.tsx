@@ -378,8 +378,8 @@ function BlockTable({ r, cmp, nSeeds }: { r: RedistributionResult; cmp: Comparis
             })}
             {r.outside && (
               <tr>
-                <th scope="row">Bounding streets and outside <span className="muted small">(all other blocks together, not listed)</span></th>
-                <td>{round(r.outside.baseline)}</td><td>{round(r.outside.closure)}</td><td>{round(r.outside.package)}</td>
+                <th scope="row">Bounding streets and outside <span className="muted small">(net change on all other streets together; not listed)</span></th>
+                <td>—</td><td>—</td><td>—</td>
                 <td>{r.outside.change[cmp].mean > 0 ? '▲ ' : r.outside.change[cmp].mean < 0 ? '▼ ' : ''}{signed(r.outside.change[cmp].mean)}; n/a; n/a</td>
                 <td>{effectStatus(r.outside.change[cmp])}</td>
                 <td>n/a</td>

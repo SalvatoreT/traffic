@@ -20,7 +20,7 @@ export function legendModel(overlay: Overlay, mode: Mode, change: boolean): Lege
     return { name: `${changeLabel(overlay)} (${STUDY_ONLY})`, ticks: changeTicks(overlay), change: true, stops: divergingStops(mode).map((s) => ({ at: (s.t + 1) / 2, color: s.color })) };
   }
   const colors = rampStops(mode);
-  const name = overlay === 'speed' ? 'Speed in each direction, % of limit' : overlay === 'flow' ? 'Flow: all cars in each direction, cars an hour' : 'Cut-through: through cars on a block, both directions, cars an hour';
+  const name = overlay === 'flow' ? 'Flow: all cars in each direction, cars an hour' : 'Cut-through: through cars on a block, both directions, cars an hour';
   return { name: `${name} (${STUDY_ONLY})`, ticks: rampTicks(overlay), change: false, stops: colors.map((color, i) => ({ at: i / Math.max(1, colors.length - 1), color })) };
 }
 

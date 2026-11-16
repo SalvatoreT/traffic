@@ -58,15 +58,14 @@ describe('periods', () => {
 
 describe('fixed overlay scale', () => {
   it('clamps values above the top to the top color and below zero to no data', () => {
-    expect(intensity('cutthrough', 0, 0, OVERLAY_TOP.cutthrough * 5, 11, overlayTop('cutthrough'))).toBe(1);
-    expect(intensity('flow', OVERLAY_TOP.flow / 2, 0, 0, 11, overlayTop('flow'))).toBe(0.5);
-    expect(intensity('flow', OVERLAY_TOP.flow * 3, 0, 0, 11, overlayTop('flow'))).toBe(1);
-    expect(intensity('flow', 0, 0, 0, 11, overlayTop('flow'))).toBe(-1);
+    expect(intensity('cutthrough', 0, OVERLAY_TOP.cutthrough * 5, overlayTop('cutthrough'))).toBe(1);
+    expect(intensity('flow', OVERLAY_TOP.flow / 2, 0, overlayTop('flow'))).toBe(0.5);
+    expect(intensity('flow', OVERLAY_TOP.flow * 3, 0, overlayTop('flow'))).toBe(1);
+    expect(intensity('flow', 0, 0, overlayTop('flow'))).toBe(-1);
   });
   it('labels the top of the flow and cut-through scales with a plus sign', () => {
     expect(rampTicks('cutthrough')).toEqual(['0', '25', '50', '75', '100+']);
     expect(rampTicks('flow')).toEqual(['0', '200', '400', '600', '800+']);
-    expect(rampTicks('speed')).toEqual(['100%', '75%', '50%', '25%', '0%']);
   });
 });
 

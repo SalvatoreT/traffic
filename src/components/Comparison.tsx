@@ -1,20 +1,17 @@
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Metrics } from '../types';
 import { NavLink } from './Anchor';
-import { CARDS, networkHealth, summarize, type CardDef, type MetricDef } from '../lib/metrics';
-import { SCOPE } from '../lib/scope';
+import { CARDS, networkHealth, summarize, type CardDef } from '../lib/metrics';
 import { EARLY_NOTE, isEarly, RUN_SECONDS } from '../lib/run';
 import { formatDiff, formatValue } from '../lib/format';
 
 interface Props {
   base: Metrics | null; scen: Metrics | null; comparing: boolean; finished: boolean; withheld?: boolean; scenarioCount: number;
-  /** Mean speed on the bounding streets inside the study area, m/s, from link stats. */
-  bounding?: { base: number; scen: number } | null;
   /** Rendered after the through-traffic card. */
   intents?: ReactNode;
 }
 
-export function Comparison({ base, scen, comparing, finished, withheld = false, scenarioCount, bounding = null, intents }: Props) {
+export function Comparison({ base, scen, comparing, finished, withheld = false, scenarioCount, intents }: Props) {
   // Throttled polite announcement: at most once per 20 s of wall time, only while a scenario exists.
   const [announce, setAnnounce] = useState('');
   const last = useRef(0);
@@ -48,9 +45,8 @@ export function Comparison({ base, scen, comparing, finished, withheld = false, 
       {scen && isEarly(finished, elapsed) && <p className="notice" role="note">{EARLY_NOTE}</p>}
       {scen && <HealthLine scen={scen} base={comparing ? base : null} />}
       {CARDS.map((c) => <Fragment key={c.id}><CardTable c={c} base={base} scen={scen} comparing={comparing} />{c.id === 'cut' && intents}</Fragment>)}
-      {scen && SCOPE === 'study' && <BoundingCard bounding={bounding} comparing={comparing} />}
       <p className="muted small" role="note">
-        Figures are for streets inside the study area only. Trip times, delay, completed and unroutable trips, walking and biking indicators and network totals cover the whole simulated network, so they are not shown here.
+        Figures are for the side streets inside the study area. Bounding streets and everything outside it are not measured.
       </p>
       </>}
       <aside className="caveat" aria-label="Caveat about fixed demand">
@@ -74,72 +70,42 @@ function formatShort(seconds: number): string {
   return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`;
 }
 
-/** A value, or a dash with the reason when it is unavailable, so a missing sample never reads as a measured zero. */
-function cell(d: MetricDef, m: Metrics | null, v: number | undefined) {
-  const text = formatValue(d.kind, v);
-  const why = m && text === '—' ? d.why?.(m) : null;
-  return why ? <>{text} <span className="muted small">({why})</span></> : text;
-}
-
-function CardTable({ c, base, scen, comparing, empty }: { c: CardDef; base: Metrics | null; scen: Metrics | null; comparing: boolean; empty?: string | null }) {
+function CardTable({ c, base, scen, comparing }: { c: CardDef; base: Metrics | null; scen: Metrics | null; comparing: boolean }) {
   return (
     <section className="card" aria-labelledby={`card-${c.id}`}>
       <h3 id={`card-${c.id}`}>{c.title}</h3>
       {c.note && <p className="muted small">{c.note}</p>}
-      {empty ? <p className="notice" role="note">{empty}</p> : (
-        <table className="cmp">
-          <thead>
-            <tr><th scope="col">Metric</th><th scope="col">Baseline</th><th scope="col">Scenario</th><th scope="col">Change</th></tr>
-          </thead>
-          <tbody>
-            {c.metrics.map((d) => {
-              const b = base ? d.get(base) : undefined, s = scen ? d.get(scen) : undefined;
-              const df = formatDiff(b, s, d.kind, d.lowerIsBetter);
-              return (
-                <tr key={d.id}>
-                  <th scope="row">{d.label}</th>
-                  <td>{cell(d, base, b)}</td>
-                  <td>{cell(d, scen, s)}</td>
-                  <td className={`chg ${comparing ? df.verdict.replace(/ /g, '-') : 'neutral'}`}>{comparing ? df.text : '—'}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      )}
-    </section>
-  );
-}
-
-function BoundingCard({ bounding, comparing }: { bounding: { base: number; scen: number } | null; comparing: boolean }) {
-  const b = bounding?.base, s = bounding?.scen;
-  const df = formatDiff(b, s, 'speed', false);
-  return (
-    <section className="card" aria-labelledby="card-bounding">
-      <h3 id="card-bounding">Bounding streets</h3>
-      <p className="muted small">Mean car speed on the arterials inside the study area only, weighted by time on the street. Arterial stretches outside the study area are not counted.</p>
       <table className="cmp">
-        <thead><tr><th scope="col">Metric</th><th scope="col">Baseline</th><th scope="col">Scenario</th><th scope="col">Change</th></tr></thead>
+        <thead>
+          <tr><th scope="col">Metric</th><th scope="col">Baseline</th><th scope="col">Scenario</th><th scope="col">Change</th></tr>
+        </thead>
         <tbody>
-          <tr>
-            <th scope="row">Bounding-street mean speed, inside the study area</th>
-            <td>{formatValue('speed', b)}</td><td>{formatValue('speed', s)}</td>
-            <td className={`chg ${comparing ? df.verdict.replace(/ /g, '-') : 'neutral'}`}>{comparing ? df.text : '—'}</td>
-          </tr>
+          {c.metrics.map((d) => {
+            const b = base ? d.get(base) : undefined, s = scen ? d.get(scen) : undefined;
+            const df = formatDiff(b, s, d.kind, d.lowerIsBetter);
+            return (
+              <tr key={d.id}>
+                <th scope="row">{d.label}</th>
+                <td>{formatValue(d.kind, b)}</td>
+                <td>{formatValue(d.kind, s)}</td>
+                <td className={`chg ${comparing ? df.verdict.replace(/ /g, '-') : 'neutral'}`}>{comparing ? df.text : '—'}</td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </section>
   );
 }
 
-/** Counts of vehicles, backlog and gridlock cover the whole network, so only the caveat shows, without figures. */
+/** Only the caveat shows: the counts of vehicles, backlog and gridlock cover the whole network. */
 function HealthLine({ scen, base }: { scen: Metrics; base: Metrics | null }) {
   const bad = networkHealth(scen).oversaturated || (!!base && networkHealth(base).oversaturated);
   if (!bad) return null;
   return (
     <p className="notice" role="note">
       <strong>The simulated network is oversaturated at this demand level.</strong>{' '}
-      Speed figures understate real congestion, so treat comparisons with care. Try a lower demand setting or another period.
+      Real congestion is worse than the model shows, so treat comparisons with care. Try a lower demand setting or another period.
     </p>
   );
 }

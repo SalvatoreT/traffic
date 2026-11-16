@@ -214,8 +214,8 @@ export function SelectionMenu(p: Props) {
           {s.kind === 'block' && p.readout && blockMeasured(X.blocks[s.block]) && (() => {
             const blk = X.blocks[s.block], o = p.readout.overlay;
             const b = aggregate(linkStatsView(p.readout.base), blk.links), c = aggregate(linkStatsView(p.readout.scen), blk.links);
-            const n = (v: number | null) => (v === null ? 'no traffic' : `${v.toFixed(o === 'speed' ? 1 : 0)} ${CHANGE_UNIT[o]}`);
-            const spoken = `${CHANGE_NAME[o]}: today ${n(metricValue(o, b))}, with scenario ${n(metricValue(o, c))}, change ${formatSigned(diffValue(o, b, c), o)} ${CHANGE_UNIT[o]}.`;
+            const n = (v: number | null) => (v === null ? 'no traffic' : `${v.toFixed(0)} ${CHANGE_UNIT[o]}`);
+            const spoken = `${CHANGE_NAME[o]}: today ${n(metricValue(o, b))}, with scenario ${n(metricValue(o, c))}, change ${formatSigned(diffValue(o, b, c))} ${CHANGE_UNIT[o]}.`;
             return <p className="sel-readout"><span aria-hidden="true">{readoutText(o, b, c)}<span className="sub"> (today → with scenario)</span>{p.readout.early && <span className="early-tag"> {EARLY_LABEL}</span>}</span><span className="sr-only">{spoken}{p.readout.early ? ` ${EARLY_LABEL}.` : ''}</span></p>;
           })()}
         </div>

@@ -1,30 +1,22 @@
 export const MPS_TO_MPH = 2.2369362920544;
 
-export type Kind = 'speed' | 'share' | 'minutes' | 'seconds' | 'count' | 'flow' | 'index';
+export type Kind = 'share' | 'count' | 'flow';
 
-export const speedValue = (mps: number): number => mps * MPS_TO_MPH;
-
-/** Convert an SI-ish metric (speed m/s, share 0..1, time s) to a display number (mph, percent, minutes). */
+/** Convert a metric (share 0..1) to a display number (percent). */
 export function displayValue(kind: Kind, v: number): number {
   switch (kind) {
-    case 'speed': return speedValue(v);
     case 'share': return v * 100;
-    case 'minutes': return v / 60;
     default: return v;
   }
 }
 export function unitLabel(kind: Kind): string {
   switch (kind) {
-    case 'speed': return 'mph';
     case 'share': return '%';
-    case 'minutes': return 'min';
-    case 'seconds': return 's';
     case 'flow': return 'cars an hour';
     default: return '';
   }
 }
 function digits(kind: Kind, x: number): number {
-  if (kind === 'index') return Math.abs(x) >= 100 ? 0 : Math.abs(x) >= 10 ? 1 : 2;
   if (kind === 'count' || kind === 'flow') return Math.abs(x) >= 100 || Number.isInteger(x) ? 0 : 1;
   return Math.abs(x) >= 100 ? 0 : 1;
 }

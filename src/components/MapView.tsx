@@ -93,8 +93,9 @@ const KIND_STYLE = {
 const HOVER_FILL = { light: '#f5a300', dark: '#ffc94d' };
 const HOVER_EDGE = { light: '#1a1a1a', dark: '#ffffff' };
 const mutedFor = mutedColor;
-/** Streets outside the study area: the basemap's major-street gray, no ramp. */
-const contextColor = (mode: Mode): string => KIND_STYLE[mode].major;
+/** Streets that are not measured: a thin dashed centerline lighter than the basemap street, no casing and no ramp, so they never read as a measured street with no traffic. */
+const CONTEXT = { light: '#faf8f2', dark: '#5f6b7d' };
+const contextColor = (mode: Mode): string => CONTEXT[mode];
 function ramp(mode: Mode, view: ChangeView = 'scenario'): unknown[] {
   const muted = mutedFor(mode);
   if (view === 'change') {
@@ -106,7 +107,7 @@ function ramp(mode: Mode, view: ChangeView = 'scenario'): unknown[] {
   }
   const s = rampStops(mode);
   return ['interpolate', ['linear'], ['coalesce', ['feature-state', 't'], -1],
-    -1, muted, -0.01, muted, 0, s[0], 0.25, s[1], 0.5, s[2], 0.75, s[3], 1, s[4]];
+    -1, s[0], -0.01, s[0], 0, s[0], 0.25, s[1], 0.5, s[2], 0.75, s[3], 1, s[4]];
 }
 function lineWidth(view: ChangeView): unknown[] {
   if (view === 'change') {
@@ -619,8 +620,8 @@ export function MapView(p: Props) {
       CELL_DASHES.forEach((dash, k) => map.addLayer({ id: `cells-${k}`, type: 'line', source: 'cells', filter: ['==', ['get', 'pat'], k],
         layout: { 'line-cap': 'butt', 'line-join': 'round' },
         paint: { 'line-color': ['get', 'color'], 'line-opacity': 0.55, 'line-dasharray': dash as never, 'line-width': ['interpolate', ['linear'], ['zoom'], 14, 9, 18, 22] as never } }));
-      map.addLayer({ id: 'links-context', type: 'line', source: 'links', filter: ['!', ['get', 'shade']] as never, layout: { 'line-cap': 'round', 'line-join': 'round' },
-        paint: { 'line-color': contextColor(live.current.mode), 'line-width': ['interpolate', ['linear'], ['zoom'], 14, 0.8, 18, 2.2] as never, 'line-offset': OFFSET as never } });
+      map.addLayer({ id: 'links-context', type: 'line', source: 'links', filter: ['!', ['get', 'shade']] as never, layout: { 'line-cap': 'butt', 'line-join': 'round' },
+        paint: { 'line-color': contextColor(live.current.mode), 'line-dasharray': [2, 2.5] as never, 'line-width': ['interpolate', ['linear'], ['zoom'], 14, 0.7, 18, 1.6] as never, 'line-offset': OFFSET as never } });
       map.addLayer({ id: 'links-casing', type: 'line', source: 'links', filter: ['get', 'shade'] as never, layout: { 'line-cap': 'butt', 'line-join': 'round' },
         paint: { 'line-color': mode === 'dark' ? '#0b1118' : '#ffffff', 'line-opacity': 0.85, 'line-width': casingWidth(live.current.view) as never, 'line-offset': OFFSET as never } });
       const bikeVis = live.current.showBikeNet ? 'visible' : 'none';
@@ -806,7 +807,7 @@ export function MapView(p: Props) {
       const l = links[i];
       const blk = p.index.blocks[p.index.blockOfLink[i]].links;
       const t = quantizeIntensity(change ? (ls && p.baseStats ? linkChangeIntensity(p.overlay, B, S, i, blk) : NO_DATA)
-        : ls ? linkIntensity(p.overlay, S, i, l.speedLimit, p.overlayMax, blk) : -1);
+        : ls ? linkIntensity(p.overlay, S, i, p.overlayMax, blk) : -1);
       if (prevT.current[i] !== t) {
         prevT.current[i] = t;
         map.setFeatureState({ source: 'links', id: i }, { t });

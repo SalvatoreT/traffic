@@ -25,7 +25,6 @@ import type { ImageFormat } from './lib/mapexport';
 import { InterventionPanel } from './components/InterventionPanel';
 import { hasModes } from './lib/metrics';
 import { Comparison } from './components/Comparison';
-import { boundingMeanSpeed } from './lib/metrics';
 import type { Hover } from './lib/highlight';
 import { StreetsTable } from './components/StreetsTable';
 import { Proposals, useProposals } from './components/Proposals';
@@ -469,10 +468,6 @@ function Simulator({ bundle, start, onRestart }: { bundle: AreaBundle; start: St
   const base: Metrics | null = withheld ? null : stats?.baseline.metrics ?? null;
   const scen: Metrics | null = withheld ? null : stats?.scenario.metrics ?? null;
   const comparing = !!stats?.comparing;
-  const bounding = useMemo(() => {
-    const b = boundingMeanSpeed(bundle.network, stats?.baseline.linkStats ?? null), c = boundingMeanSpeed(bundle.network, stats?.scenario.linkStats ?? null);
-    return withheld || (Number.isNaN(b) && Number.isNaN(c)) ? null : { base: b, scen: c };
-  }, [bundle, stats, withheld]);
   const early = !!stats && !withheld && isEarly(finished, run.time);
   const multimodal = hasModes(stats?.scenario.metrics ?? null);
   const intentDefs = demand.intents;
@@ -537,7 +532,6 @@ function Simulator({ bundle, start, onRestart }: { bundle: AreaBundle; start: St
   );
   const resultsPanel = (
     <Comparison base={base} scen={scen} comparing={comparing} finished={finished} withheld={withheld} scenarioCount={interventions.length}
-      bounding={bounding}
       intents={intentDefs?.length ? (
         <IntentPanel defs={intentDefs} ramps={demand.ramps} base={base} scen={scen} comparing={comparing} net={bundle.network} idx={index} selected={intentSel} onSelect={setIntentSel}
           paths={intentPathsShown} pathsFrom={comparing ? source : 'scenario'} phone={phone} running={running} early={early} />

@@ -12,22 +12,11 @@ function run(): Metrics {
   return JSON.parse(sim.metrics()) as Metrics;
 }
 
-describe('headless metric rows for safety', () => {
+describe('headless metric rows', () => {
   const m = run();
-  const ids = (rows: ReturnType<typeof metricRows>) => rows.map((r) => r.id);
-  it('lists each mode separately with its counts and no combined row', () => {
+  it('list only the figures on the side streets inside the study area', () => {
     const rows = metricRows(m, m);
-    expect(ids(rows)).toEqual(expect.arrayContaining(['pedSev', 'bikeSev', 'pedEnc', 'bikeEnc', 'bikeUnsup']));
-    expect(rows.some((r) => /combined/i.test(r.label))).toBe(false);
-  });
-  it('reports an unscored severity mean as null with its reason, not zero', () => {
-    const empty = { ...m, vulnerable: { ...m.vulnerable!, cyclist: { ...m.vulnerable!.cyclist, supported: 0, unsupported: 3, encounters: 3, meanSeverity: null, unavailable: 'no encounters in the supported crash geometry' } } };
-    const row = metricRows(empty, empty).find((r) => r.id === 'bikeSev')!;
-    expect(row.baseline).toBeNull();
-    expect(row.unavailable?.baseline).toMatch(/supported crash geometry/);
-  });
-  it('keeps three decimals for a 0..1 severity', () => {
-    const a = { ...m, vulnerable: { ...m.vulnerable!, pedestrian: { ...m.vulnerable!.pedestrian, supported: 9, meanSeverity: 0.0476 } } };
-    expect(metricRows(a, a).find((r) => r.id === 'pedSev')!.baseline).toBe(0.048);
+    expect(rows.map((r) => r.id)).toEqual(['ctVeh', 'ctShare', 'ttc']);
+    expect(rows.every((r) => !/speed|trip|walking|biking/i.test(r.label))).toBe(true);
   });
 });

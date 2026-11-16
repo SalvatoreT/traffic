@@ -359,7 +359,7 @@ export interface RedistributionResult {
   };
   blocks: BlockRow[];
   /** One summary of every street outside the measured set (bounding streets beyond the study area and the wider network), in place of block rows. */
-  outside?: { baseline: number; closure: number; package: number; change: Record<Comparison, Effect> };
+  outside?: { change: Record<Comparison, Effect> };
   health: Record<Role, Health[]>;
   coverage: Record<Role, TraceSummary['detail'][]>;
   notes: string[];
@@ -445,9 +445,7 @@ export function summarize(s: SummaryInput): RedistributionResult {
     return out;
   };
   const out = s.net.links.filter((l) => !linkMeasured(l)).map((l) => l.id);
-  const outAll = (role: Role) => mean(per((x) => sumLinks(x.counts[role].all, out)));
   const outside = {
-    baseline: outAll('baseline'), closure: outAll('closure'), package: outAll('package'),
     change: Object.fromEntries(COMPARISONS.map((c) => [c, s.paired(per((x) => sumLinks(x.counts[c].all, out) - sumLinks(x.counts.baseline.all, out)))])) as Record<Comparison, Effect>,
   };
   const notes: string[] = [];
