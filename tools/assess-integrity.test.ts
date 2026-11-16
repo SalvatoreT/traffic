@@ -74,7 +74,7 @@ describe('assessment of reused runs (C4)', () => {
     expect(r.status).toBe(0);
     const text = readFileSync(join(root, 'data/calibration/rockridge.assessment-x.md'), 'utf8');
     expect(text).toMatch(/Stability rule \(D16\): fails/);
-    expect(text).toMatch(/Mean removals 9999\.00 per hour/);
+    expect(text).toMatch(/Cars cleared from gridlock \(all of them: no near\/far split\) 9999\.00 per hour/);
     expect(text).toMatch(/Suggested status: \*\*uncalibrated\*\*/);
   }, 60000);
 

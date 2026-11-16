@@ -182,6 +182,18 @@ fn num(v: &Value) -> f64 {
     v.as_f64().unwrap_or(f64::NAN)
 }
 
+/// Cars cleared from gridlock that count against the stability rule (round 37): near the study area plus far ones whose blocking chain reaches it.
+/// A run without a near/far split that adds up to its total counts every clearing.
+pub fn judged_clearings(r: &Value) -> f64 {
+    let (z, total) = (&r["gridlockZone"], num(&r["health"]["gridlockRemoved"]));
+    let ok = z.is_object() && num(&z["total"]) == total && num(&z["near"]) + num(&z["far"]) == total && num(&z["judged"]) == num(&z["near"]) + num(&z["farLinked"]);
+    if ok {
+        num(&z["judged"])
+    } else {
+        total
+    }
+}
+
 struct Metric {
     group: &'static str,
     name: String,
@@ -216,6 +228,15 @@ pub fn run(m: Multi) {
         }
         push("junction recovery", "vehicles removed while held in a node, per hour".into(), "veh/h", col(&|r| num(&r["junctionRecovery"]["heldRemovals"]) * per_hour));
     }
+    let zoned = runs.iter().all(|r| judged_clearings(&r.1) == num(&r.1["gridlockZone"]["judged"]));
+    let judged = col(&|r| judged_clearings(r) * per_hour);
+    if zoned {
+        push("gridlock by place", "cars cleared from gridlock per hour, judged (near the study area, and far ones whose chain reaches it)".into(), "veh/h", judged.clone());
+        push("gridlock by place", "cars cleared from gridlock per hour, near the study area".into(), "veh/h", col(&|r| num(&r["gridlockZone"]["near"]) * per_hour));
+        push("gridlock by place", "cars cleared from gridlock per hour, farther out".into(), "veh/h", col(&|r| num(&r["gridlockZone"]["far"]) * per_hour));
+        push("gridlock by place", "cars cleared from gridlock per hour, farther out with a chain into the judged zone".into(), "veh/h", col(&|r| num(&r["gridlockZone"]["farLinked"]) * per_hour));
+        push("gridlock by place", "trips waiting at origins in the judged zone at the end".into(), "trips", col(&|r| num(&r["gridlockZone"]["backlog"]["zoneTrips"])));
+    }
     // Cut-through: local-street vehicle-miles of surface-gate to freeway-gate trips (reported pattern a), and the study-area miles in detours.
     if let Some(rows) = first["patternFreewayThrough"].as_array() {
         for (i, row) in rows.iter().enumerate() {
@@ -249,7 +270,7 @@ pub fn run(m: Multi) {
     }
 
     // Stability verdict over the seeds.
-    let removals = stat(&metrics[1].vals);
+    let removals = stat(&judged);
     let backlog_ok = metrics[2].vals.iter().filter(|&&b| b < stab.backlog_pct).count();
     let n = runs.len();
     let growth_bad: Vec<u64> = seeds.iter().zip(&metrics[3].vals).filter(|(_, &g)| g > stab.max_second_half_growth_pct).map(|(s, _)| *s).collect();
@@ -274,7 +295,7 @@ pub fn run(m: Multi) {
     let _ = writeln!(md, "Seeds are the fixed list above, none chosen; each run is {minutes:.0} minutes from the same start. Interval = 95% interval of the mean (Student t, n - 1 degrees of freedom). Run-to-run noise only: demand is fixed, so day-to-day variation is not in these intervals.\n");
     let _ = writeln!(md, "## Stability rule (design decision D16)\n");
     let _ = writeln!(md, "| Check | Rule | Result | Pass |\n| --- | --- | --- | --- |");
-    let _ = writeln!(md, "| Removals | mean per hour below {:.2} | {:.2} (min {:.2}, max {:.2}) | {} |", stab.max_mean_removals_per_hour, removals.mean, removals.min, removals.max, yn(c1));
+    let _ = writeln!(md, "| Cars cleared from gridlock{} | mean per hour below {:.2} | {:.2} (min {:.2}, max {:.2}) | {} |", if zoned { " near the study area (judged zone)" } else { " (all: no near/far split)" }, stab.max_mean_removals_per_hour, removals.mean, removals.min, removals.max, yn(c1));
     let _ = writeln!(md, "| Entry backlog | below {:.1}% in at least {:.0}% of seeds | {} of {} seeds | {} |", stab.backlog_pct, stab.min_seeds_share * 100.0, backlog_ok, n, yn(c2));
     let _ = writeln!(md, "| Runaway growth | no seed adds more than {:.1} points of backlog in the second half | {} | {} |", stab.max_second_half_growth_pct, if growth_bad.is_empty() { "none".to_string() } else { format!("seeds {}", growth_bad.iter().map(|s| s.to_string()).collect::<Vec<_>>().join(", ")) }, yn(c3));
     let _ = writeln!(md, "| Arterial speed | mean above {:.1} m/s | {:.2} m/s | {} |", stab.min_arterial_speed, speed.mean, yn(c4));
@@ -309,7 +330,7 @@ pub fn run(m: Multi) {
         "seeds": seeds, "minutes": minutes,
         "stability": {
             "rule": {"maxMeanRemovalsPerHour": stab.max_mean_removals_per_hour, "backlogPct": stab.backlog_pct, "minSeedsShare": stab.min_seeds_share, "maxSecondHalfBacklogGrowthPct": stab.max_second_half_growth_pct, "minArterialSpeed": stab.min_arterial_speed},
-            "meanRemovalsPerHourOk": c1, "backlogSeedsOk": backlog_ok, "backlogOk": c2, "growthOk": c3, "growthSeeds": growth_bad, "speedOk": c4, "holds": holds, "oldRuleSeedsPassing": old_pass,
+            "meanRemovalsPerHourOk": c1, "zoneScoped": zoned, "judgedRemovalsPerHourMean": removals.mean, "backlogSeedsOk": backlog_ok, "backlogOk": c2, "growthOk": c3, "growthSeeds": growth_bad, "speedOk": c4, "holds": holds, "oldRuleSeedsPassing": old_pass,
         },
         "metrics": metrics.iter().map(|mt| json!({"group": mt.group, "name": mt.name, "unit": mt.unit, "values": mt.vals.iter().map(|x| if x.is_finite() { json!((x * 1000.0).round() / 1000.0) } else { Value::Null }).collect::<Vec<_>>(), "stat": st_json(&stat(&mt.vals))})).collect::<Vec<_>>(),
     });
@@ -382,5 +403,13 @@ mod tests {
         let run = json!({"minutes": 60.0, "health": {"spawned": 1000.0}, "series": [
             {"tMin": 5.0, "backlog": 0.0}, {"tMin": 30.0, "backlog": 10.0}, {"tMin": 55.0, "backlog": 40.0}]});
         assert!((series_growth(&run) - 3.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn judged_clearings_use_the_zone_split_only_when_it_adds_up() {
+        let z = |near: u64, far: u64, linked: u64| json!({"health": {"gridlockRemoved": 5.0}, "gridlockZone": {"total": near + far, "near": near, "far": far, "farLinked": linked, "judged": near + linked}});
+        assert_eq!(judged_clearings(&z(1, 4, 1)), 2.0);
+        assert_eq!(judged_clearings(&z(1, 3, 0)), 5.0);
+        assert_eq!(judged_clearings(&json!({"health": {"gridlockRemoved": 5.0}})), 5.0);
     }
 }

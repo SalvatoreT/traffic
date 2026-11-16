@@ -4,6 +4,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { evaluateCases, seedStat, summarizeCases, linkSpread, encodeUint16, type AcceptanceSummary, type CaseResult } from './acceptance';
 import { seedFileName, type RunManifest } from './run-manifest';
+import type { Stability, ZoneSplit } from './verdict';
 
 export interface SeedRun {
   seed: number; minutes: number; period: string;
@@ -20,6 +21,7 @@ export interface SeedRun {
   patternBypass?: { bypass: string; arterial: string; dir: string; corridorTrips: number; viaBypass: number }[];
   patternFreewayThrough?: { trips: string; localMiles: number; shareOfLocalMiles: number }[];
   junctionRecovery?: { policy: string; crossings: number; courtesy: { admissions: number }; yieldFallback: { admissions: number }; conflictBypass: { admissions: number }; heldRemovals: number };
+  gridlockZone?: GridlockZone | null;
 }
 
 /** One sentence on the junction recovery rules of the runs (change expose-junction-fallback-validity): policy, admissions per hour by reason and held-vehicle removals. */
@@ -204,4 +206,49 @@ export function throughStats(runs: SeedRun[]): { block: string; low: number; hig
     const mean = vals.reduce((a, b) => a + b, 0) / (vals.length || 1);
     return [{ block: t.block, low: t.expectedThroughLow, high: t.expectedThroughHigh, mean, inside: mean >= t.expectedThroughLow && mean <= t.expectedThroughHigh }];
   });
+}
+
+/** calibrate's per-seed `gridlockZone` (change calibration-round-37). */
+export interface GridlockZone extends ZoneSplit {
+  farSites: { node: number; streets: string; distM: number; cleared: number; linked: number }[];
+  backlog: { zoneTrips: number; allTrips: number };
+  boundingStreets: { street: string; links: number; maxQueueM: number; link: number | null; linkLengthM: number | null; tMin: number; fullShare: number }[];
+}
+
+/** Far clearings summed over the runs by node, most first. */
+export function farSites(runs: SeedRun[]): { node: number; streets: string; distM: number; cleared: number; linked: number }[] {
+  const by = new Map<number, { node: number; streets: string; distM: number; cleared: number; linked: number }>();
+  for (const r of runs) for (const q of r.gridlockZone?.farSites ?? []) {
+    const e = by.get(q.node) ?? by.set(q.node, { ...q, cleared: 0, linked: 0 }).get(q.node)!;
+    e.cleared += q.cleared; e.linked += q.linked;
+  }
+  return [...by.values()].sort((a, b) => b.cleared - a.cleared || a.node - b.node);
+}
+
+/** Markdown on where the cars cleared from gridlock were held, the judged zone's backlog and the queues on its bounding streets. */
+export function zoneLines(runs: SeedRun[], stab: Stability, limit: number): string[] {
+  const f = (x: number, d = 2) => (Number.isFinite(x) ? x.toFixed(d) : '-');
+  if (!stab.zoneScoped) return [`Cars cleared from gridlock are not split by place for these runs (no judged zone in the area config, or reports from before round 37), so every one counts: ${f(stab.allPerHourMean)} per hour.`, ''];
+  const n = runs.length;
+  const out = [`Cars cleared from gridlock per hour, seed means: ${f(stab.allPerHourMean)} in all; ${f(stab.nearPerHourMean)} near the study area (the judged zone: the study area, its bounding streets and the junctions on them, and ${stab.bufferM} m beyond along the network); ${f(stab.farPerHourMean)} farther out, of which ${f(stab.farLinkedPerHourMean)} were held in a chain of blocked vehicles that reached the zone and count against the rule. The rule judges ${f(stab.removalsPerHourMean)} per hour (limit ${limit}). With half and double the buffer: ${stab.sensitivity.filter((q) => q.factor !== 1).map((q) => `${q.bufferM} m ${f(q.perHourMean)} (${q.ok ? 'holds' : 'fails'})`).join(', ')}.`, ''];
+  const sites = farSites(runs);
+  if (sites.length) {
+    out.push(`Far clearings by place, total over the ${n} seeds (a known weakness at the model's edges, where it has few counts):`, '', '| Node | Streets | Distance from the study area (m) | Cleared | Chain reached the zone |', '| --- | --- | --- | --- | --- |');
+    for (const q of sites.slice(0, 10)) out.push(`| ${q.node} | ${q.streets} | ${q.distM} | ${q.cleared} | ${q.linked} |`);
+    if (sites.length > 10) out.push(`| other ${sites.length - 10} places | | | ${sites.slice(10).reduce((a, q) => a + q.cleared, 0)} | ${sites.slice(10).reduce((a, q) => a + q.linked, 0)} |`);
+    out.push('');
+  }
+  const zb = runs.map((r) => r.gridlockZone!.backlog);
+  out.push(`Entry backlog at the end of the run at origins in the judged zone: ${f(zb.reduce((a, b) => a + b.zoneTrips, 0) / n, 1)} trips on average, of ${f(zb.reduce((a, b) => a + b.allTrips, 0) / n, 1)} waiting in all.`, '');
+  const bs = runs[0].gridlockZone!.boundingStreets;
+  if (bs.length) {
+    out.push('Longest standing queue on one link of each bounding street (cars standing per lane times 6.5 m), seed mean and largest, and the share of 5 s samples with one of its links full:', '', '| Bounding street | Links | Mean of the longest queue (m) | Largest (m) | On link (length m) | Samples with a full link |', '| --- | --- | --- | --- | --- | --- |');
+    bs.forEach((b, i) => {
+      const rows = runs.map((r) => r.gridlockZone!.boundingStreets[i]);
+      const top = rows.reduce((a, q) => (q.maxQueueM > a.maxQueueM ? q : a), rows[0]);
+      out.push(`| ${b.street} | ${b.links} | ${f(rows.reduce((a, q) => a + q.maxQueueM, 0) / n, 0)} | ${top.maxQueueM} | ${top.link ?? '-'} (${top.linkLengthM ?? '-'}) | ${f((100 * rows.reduce((a, q) => a + q.fullShare, 0)) / n, 1)}% |`);
+    });
+    out.push('');
+  }
+  return out;
 }

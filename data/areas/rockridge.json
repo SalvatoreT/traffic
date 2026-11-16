@@ -238,6 +238,10 @@
       }
     ]
   },
+  "judgedZone": {
+    "bufferM": 200,
+    "source": "ASSUMPTION (calibration round 37): cars cleared from gridlock count against the stability rule when held in the study area, on its bounding streets, at the junctions on them, or at a node within this distance of them along the network. A bounding street's queue holds a car beyond it by filling the cross-street link into its junction, so the zone must reach the first junction beyond each bounding street: 113 m away at the median, 200 m at the 75th percentile, 301 m at most. A queue that spills farther is a chain of held vehicles, which the rule follows to any distance"
+  },
   "calibration": {
     "status": "uncalibrated",
     "note": "Not calibrated: PM through cars on Hillegass Ave and Colby St are above the counted ranges, and the PM peak clears 1.1 cars an hour from gridlock (limit 1).",
@@ -428,6 +432,10 @@
     "way/416105064": {
       "tags": { "lanes": "4", "lanes:backward": "2" },
       "source": "ASSUMPTION pending a field check: Telegraph Ave between the 55th St signal and the SR-24 underpass (about 30 m) is tagged 3 lanes, 2 southbound (left|through) and 1 northbound. The northbound approach to 55th St just south of it has two through lanes (way 393902212, turn:lanes:backward left||) and the way just north has 4 lanes (way 86356713), so one northbound lane for 30 m after the signal would be a lane drop with no room to merge; read as a 4-lane cross-section like the way to the north, with the southbound left-turn lane unchanged"
+    },
+    "node/53082604": {
+      "tags": { "stop": "all" },
+      "source": "Field observation by a resident, relayed by the project lead (2026-11-16): Claremont Ave at Russell St is an all-way stop; every approach stops (DATA). The map tags highway=stop on the junction node with no stop value, which the importer already read as an all-way stop, so the network is unchanged"
     }
   }
 }

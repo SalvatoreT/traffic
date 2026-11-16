@@ -9,6 +9,8 @@ mod intent;
 mod multi;
 #[path = "calibrate/odcost.rs"]
 mod odcost;
+#[path = "calibrate/zone.rs"]
+mod zone;
 #[path = "support/report_manifest.rs"]
 mod report_manifest;
 #[path = "support/sha256.rs"]
@@ -567,10 +569,29 @@ fn main() {
         let p: Vec<&str> = v.split(':').collect();
         Some((p.first()?.parse().ok()?, p.get(1)?.parse::<f64>().ok()? * 60.0, p.get(2)?.parse::<f64>().ok()? * 60.0, p.get(3)?.split(',').filter_map(|x| x.parse().ok()).collect()))
     });
+    // Judged zone of the stability rule (round 37): observed between steps only, so the run is unchanged.
+    let zone_cfg: Value = std::fs::read_to_string(root.join(format!("data/areas/{}.json", args.area))).ok().and_then(|t| serde_json::from_str(&t).ok()).unwrap_or(Value::Null);
+    let judged_zone = zone::buffer_from_area(&zone_cfg).map(|b| zone::Zone::new(&net, b));
+    let bounding = zone::bounding_streets(&net, &zone_cfg, judged_zone.as_ref());
+    let mut queues = vec![zone::QueueTrack::default(); bounding.len()];
+    let mut snap = zone::Snapshot::default();
+    let mut clearings: Vec<zone::Clearing> = Vec::new();
+    let mut glog_n = 0usize;
     while t < total_s - 1e-9 {
         let dt = if trace.as_ref().map_or(false, |x| x.0 < 5.0 && t + 5.0 >= x.1 && t <= x.2) { 1.0f64 } else { 5.0f64 }.min(total_s - t);
         sim.step(dt);
         t += dt;
+        if judged_zone.is_some() {
+            let glog = sim.debug_gridlock();
+            for &(l, tt) in &glog[glog_n..] {
+                clearings.push(zone::Clearing { link: l, t: tt, chain: snap.component(l) });
+            }
+            glog_n = glog.len();
+            snap = zone::Snapshot::from_parts(&sim.debug_stuck(zone::CHAIN_MIN_WAIT_S), &sim.debug_held(zone::CHAIN_MIN_WAIT_S));
+            if warmed {
+                zone::track_queues(&net, &bounding, &sim.debug_link_load(), t, &mut queues);
+            }
+        }
         if let Some((every, from, to, links)) = &trace {
             if t >= *from && t <= *to && (t % every).abs() < 1e-6 {
                 eprintln!("t {:.0} ({:.1} min)", t, t / 60.0);
@@ -1141,6 +1162,27 @@ fn main() {
             let _ = writeln!(md, "| {} | {} | {} | {} | {} | {:.1} |", l, if lk.name.is_empty() { "(unnamed)" } else { &lk.name }, street_label(&net, lk.to as usize, &inc), ctrl_str(net.nodes[lk.to as usize].control), n, t / 60.0);
         }
     }
+    let zone_json = judged_zone.as_ref().map(|z| zone::report_json(&net, z, &clearings, &|n| street_label(&net, n, &inc), &d.node_backlog, &bounding, &queues)).unwrap_or(Value::Null);
+    if let Some(z) = &judged_zone {
+        let zj = &zone_json;
+        let _ = writeln!(md, "\n## Cars cleared from gridlock near and far (judged zone)\n");
+        let _ = writeln!(md, "Judged zone: the study area, its bounding streets and the junctions on them, plus nodes within {:.0} m of it along the network ({} nodes, {} links). A far clearing counts against the stability rule when its blocking chain (vehicles held at least {:.0} s by a full exit, at the 5 s snapshot before it) reaches a link in the zone.\n", z.buffer_m, zj["zoneNodes"], zj["zoneLinks"], zone::CHAIN_MIN_WAIT_S);
+        let _ = writeln!(md, "| Buffer (m) | Near | Far | Far, chain reaches the zone | Judged |\n| --- | --- | --- | --- | --- |");
+        for r in zj["sensitivity"].as_array().unwrap() {
+            let _ = writeln!(md, "| {} | {} | {} | {} | {} |", r["bufferM"], r["near"], r["far"], r["farLinked"], r["judged"]);
+        }
+        if let Some(fs) = zj["farSites"].as_array().filter(|a| !a.is_empty()) {
+            let _ = writeln!(md, "\n| Far node | Streets | Distance from the study area (m) | Cleared | Chain reaches the zone |\n| --- | --- | --- | --- | --- |");
+            for r in fs.iter().take(10) {
+                let _ = writeln!(md, "| {} | {} | {} | {} | {} |", r["node"], r["streets"].as_str().unwrap_or(""), r["distM"], r["cleared"], r["linked"]);
+            }
+        }
+        let _ = writeln!(md, "\nEntry backlog at the end of the run: {} trips waiting at origins in the zone, of {} in all.\n", zj["backlog"]["zoneTrips"], zj["backlog"]["allTrips"]);
+        let _ = writeln!(md, "| Bounding street | Links | Longest standing queue on one link (m) | Link (length m) | At (min) | Share of samples with a link full |\n| --- | --- | --- | --- | --- | --- |");
+        for r in zj["boundingStreets"].as_array().unwrap() {
+            let _ = writeln!(md, "| {} | {} | {} | {} ({}) | {} | {} |", r["street"].as_str().unwrap_or(""), r["links"], r["maxQueueM"], r["link"], r["linkLengthM"], r["tMin"], r["fullShare"]);
+        }
+    }
     let jr = &m.junction_recovery;
     let per_h = 60.0 / args.minutes.max(1.0);
     let _ = writeln!(md, "\n## Junction recovery\n");
@@ -1199,6 +1241,7 @@ fn main() {
             "patternFreewayThrough": pat_a_rows.iter().map(|(l, n, mi, sh)| json!({"trips": l, "n": n, "localMiles": mi, "shareOfLocalMiles": sh})).collect::<Vec<_>>(),
             "patternBypass": bypass_rows.iter().map(|b| json!({"bypass": b.bypass, "arterial": b.arterial, "minBlocks": b.min_blocks, "dir": b.dir.to_string(), "corridorTrips": b.trips, "viaBypass": b.by_bypass, "arterialOnly": b.by_arterial, "other": b.by_other, "meanBypassBlocks": b.mean_bypass_blocks})).collect::<Vec<_>>(),
             "junctionRecovery": serde_json::to_value(&m.junction_recovery).unwrap_or(Value::Null),
+            "gridlockZone": zone_json,
             "modes": serde_json::to_value(&m.modes).unwrap_or(Value::Null),
             "vulnerable": serde_json::to_value(&m.vulnerable).unwrap_or(Value::Null),
             "series": series.iter().map(|s| json!({"tMin": s.t / 60.0, "vehicles": s.veh, "backlog": s.backlog, "completed": s.completed, "removed": s.removed, "arterialSpeed": s.art_speed})).collect::<Vec<_>>(),

@@ -12,9 +12,9 @@
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
 import { resolve, join, dirname } from 'node:path';
-import { throughStats, corridorRatios, recoverySentence, featureStats, headlineError, meanLinkFlow, noiseFile, rampStats, readRuns, scoreStations, shareStats, travelTimes, type SeedRun, type StationFile, type TravelNet } from './lib/assess';
+import { throughStats, corridorRatios, recoverySentence, zoneLines, featureStats, headlineError, meanLinkFlow, noiseFile, rampStats, readRuns, scoreStations, shareStats, travelTimes, type SeedRun, type StationFile, type TravelNet } from './lib/assess';
 import { seedStat } from './lib/acceptance';
-import { computeStability, stabilityRule, suggestStatus, type Stability } from './lib/verdict';
+import { computeStability, judgedClearings, stabilityRule, suggestStatus, type Stability } from './lib/verdict';
 import { MIN_HELD_RECENT, outOfSampleSplit, ruleSplit, ruleVerdicts, sourceYearLines, type RuleSplit, type RuleVerdict } from './lib/recency';
 import { writeFileAtomic } from './lib/atomic';
 import { checkPair, checkRunSet, expectedInputs, type RunManifest } from './lib/run-manifest';
@@ -147,11 +147,11 @@ for (const p of periods) {
   if (!runs.length) { L.push(`## ${p}`, '', `No run report exists for ${p}; nothing to report.`, ''); verdicts[p] = { stable: false, d5: null, flow: null, through: null, rule: null }; splits[p] = null; continue; }
   const n = runs.length;
   const per = 60 / minutes;
-  const rem = seedStat(runs.map((r) => r.health.gridlockRemoved * per));
   const bl = runs.map((r) => r.health.backlogPct);
   const speed = seedStat(runs.map((r) => r.health.arterialMeanSpeed));
   const done = seedStat(runs.map((r) => r.health.completed));
   const stab: Stability = computeStability(runs, stabilityRule(targets));
+  const rem = seedStat(runs.map((r) => judgedClearings(r) * per));
   const stable: boolean = stab.holds;
   const ss = shareStats(runs, p === 'pm_peak');
   const head = ss.filter((q) => q.headline);
@@ -177,7 +177,8 @@ for (const p of periods) {
   verdicts[p] = { stable, d5, flow, through: th.length ? th.every((q) => q.inside) : null, rule: rv };
 
   L.push(`## ${p}`, '');
-  L.push(`**Stability rule (D16): ${diagnostic ? `not judged (diagnostic, ${n} of ${seeds.length} seeds)` : stable ? 'holds' : 'fails'}.** Mean removals ${f(rem.mean)} per hour (min ${f(rem.min)}, max ${f(rem.max)}; rule below ${rule.maxMeanRemovalsPerHour ?? 1}); backlog under ${rule.backlogPct ?? 2}% in ${stab.backlogSeedsOk} of ${n} seeds (mean ${f(seedStat(bl).mean)}%, max ${f(Math.max(...bl))}%); backlog growth in the second half: ${stab.growthSeeds.length ? `seeds ${stab.growthSeeds.join(', ')} exceed ${rule.maxSecondHalfBacklogGrowthPct ?? 2} points` : 'no seed above the limit'}; arterial speed ${f(speed.mean)} m/s (${f(speed.lo)} to ${f(speed.hi)}); completed trips ${Math.round(done.mean)} (${Math.round(done.lo)} to ${Math.round(done.hi)}). The old rule (zero removals in every seed) passes in ${stab.oldRuleSeedsPassing.length} of ${n} seeds. Computed from these ${n} runs. ${recoverySentence(runs)}`, '');
+  L.push(`**Stability rule (D16): ${diagnostic ? `not judged (diagnostic, ${n} of ${seeds.length} seeds)` : stable ? 'holds' : 'fails'}.** Cars cleared from gridlock ${stab.zoneScoped ? 'near the study area (judged zone, far ones linked to it included)' : '(all of them: no near/far split)'} ${f(rem.mean)} per hour (min ${f(rem.min)}, max ${f(rem.max)}; rule below ${rule.maxMeanRemovalsPerHour ?? 1}${stab.zoneScoped ? `; ${f(stab.allPerHourMean)} in all, ${f(stab.farPerHourMean)} far` : ''}); backlog under ${rule.backlogPct ?? 2}% in ${stab.backlogSeedsOk} of ${n} seeds (mean ${f(seedStat(bl).mean)}%, max ${f(Math.max(...bl))}%); backlog growth in the second half: ${stab.growthSeeds.length ? `seeds ${stab.growthSeeds.join(', ')} exceed ${rule.maxSecondHalfBacklogGrowthPct ?? 2} points` : 'no seed above the limit'}; arterial speed ${f(speed.mean)} m/s (${f(speed.lo)} to ${f(speed.hi)}); completed trips ${Math.round(done.mean)} (${Math.round(done.lo)} to ${Math.round(done.hi)}). The old rule (zero cars cleared from gridlock anywhere in every seed) passes in ${stab.oldRuleSeedsPassing.length} of ${n} seeds. Computed from these ${n} runs. ${recoverySentence(runs)}`, '');
+  L.push(...zoneLines(runs, stab, rule.maxMeanRemovalsPerHour ?? 1));
   L.push(`Route shares (modeled seed mean, 95% interval, observed${p === 'pm_peak' ? ', PM values' : '; the observed values are the PM ones, shown for comparison only'}):`, '', '| Share | Observed | Modeled | 95% interval | Error (points) | Within 10 |', '| --- | --- | --- | --- | --- | --- |');
   for (const q of ss) L.push(`| ${q.headline ? '**' : ''}${q.block} ${q.side} ${q.via}${q.headline ? '**' : ''} | ${pct(q.observed, 0)} | ${pct(q.mean)} | ${pct(q.lo)} to ${pct(q.hi)} | ${f(q.errPoints, 1)} | ${q.within10 ? 'yes' : 'NO'} |`);
   L.push('', `Headline shares: mean absolute error ${f(headlineError(ss), 1)} points; ${head.filter((q) => q.within10).length} of ${head.length} within 10 points${d5 === null ? ' (not gated outside the PM peak)' : d5 ? ' (D5 holds)' : ' (D5 fails)'}.`, '');

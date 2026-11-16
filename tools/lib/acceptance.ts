@@ -113,3 +113,24 @@ export function shareUnchanged(oldCost: ArrayLike<number>, newCost: ArrayLike<nu
   for (let i = 0; i < n; i++) if (Math.abs(newCost[i] - oldCost[i]) <= Math.max(threshold * Math.abs(oldCost[i]), floorS)) ok++;
   return n ? ok / n : 1;
 }
+
+/** What the cost loop's acceptance rule reads of one scored iteration. `meanRemovals` is the judged figure of D16 (round 37: near the study area, far ones linked to it included). */
+export interface LoopScore { k: number; stable: boolean; meanRemovals: number; backlogMean: number; headErr: number; fittedGeh: number; intFitGeh: number; rampCountErr: number }
+
+/**
+ * The cost loop's choice: iteration 0 (free-flow and BPR costs) unless a later one passes. Twelfth round: the PM baseline is not stable, so "stable" cannot be
+ * the test; an iteration passes when it is stable or the baseline is not, its removals and backlog are not worse than the baseline's, its headline-share error is
+ * within 0.5 points, and no fitted GEH share (interior blocks included) falls by more than 5 points; the best has the least removals plus backlog. Round 30: the
+ * held-out GEH shares are not read. Round 20 (`ramp`): the counted off-ramps move toward their counts by at least 25 veh/h with removals below 1.0 per hour.
+ */
+export function keptIteration(rows: LoopScore[], objective: 'share' | 'ramp' = 'share'): number {
+  const base = rows[0];
+  let best = 0;
+  for (const r of rows.slice(1)) {
+    const rampOk = objective === 'ramp' && r.meanRemovals < 1.0 && r.backlogMean <= Math.max(base.backlogMean, 0.5) && r.rampCountErr < base.rampCountErr - 25 && r.headErr <= base.headErr + 0.5;
+    const ok = (objective === 'ramp' ? rampOk : (r.stable || !base.stable) && r.meanRemovals <= base.meanRemovals && r.backlogMean <= base.backlogMean && r.headErr <= base.headErr + 0.5) && r.fittedGeh >= base.fittedGeh - 0.05 && r.intFitGeh >= base.intFitGeh - 0.05;
+    const prev = rows.find((q) => q.k === best)!;
+    if (ok && (objective === 'ramp' ? r.rampCountErr < prev.rampCountErr : r.meanRemovals + r.backlogMean < prev.meanRemovals + prev.backlogMean)) best = r.k;
+  }
+  return best;
+}

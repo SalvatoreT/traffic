@@ -109,6 +109,8 @@ export interface AreaConfig {
    * empty string, removes) tags and states its source; one that is not observed is labeled ASSUMPTION in `source`.
    */
   osmTagOverrides?: Record<string, { tags: Record<string, string>; source: string }>;
+  /** Where cars cleared from gridlock count against the stability rule: the study area plus nodes within `bufferM` of it along the network (read by `calibrate`). */
+  judgedZone?: { bufferM: number; source: string };
   calibration?: { status: 'uncalibrated' | 'calibrated'; note?: string; /** Limits of the calibration, in full sentences, shown on the Sources page and beside the banner. */ caveat?: string; defaultPeriod?: string; experimentalPeriods?: string[] };
 }
 
