@@ -215,14 +215,14 @@ impl Topo {
     }
 
     /// Left-turn pockets (ASSUMPTION, class rule): approaches of primary/secondary/tertiary links to a signalized node that
-    /// offer a left movement and at least one other movement, and are long enough to hold the pocket.
+    /// offer a left movement and at least one other movement, and are long enough to hold the pocket, unless an observed lane coding says the approach has none (`no_pocket`).
     fn build_pockets(&mut self, net: &Network) {
         for l in 0..self.n_links {
             let link = &net.links[l];
             if !matches!(link.class, RoadClass::Primary | RoadClass::Secondary | RoadClass::Tertiary) {
                 continue;
             }
-            if net.nodes[link.to as usize].control != Control::Signal || self.length[l] < POCKET_MIN_LINK_M {
+            if net.nodes[link.to as usize].control != Control::Signal || self.length[l] < POCKET_MIN_LINK_M || link.no_pocket {
                 continue;
             }
             let ms = self.lm_start[l] as usize;

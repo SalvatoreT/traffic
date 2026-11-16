@@ -3,7 +3,7 @@
 use super::*;
 
 fn green(links: Vec<u32>, g: f32, own: bool) -> ApproachGreen {
-    ApproachGreen { links, green_s: g, own_phase: own, runs_with: Vec::new() }
+    ApproachGreen { links, green_s: g, own_phase: own, runs_with: Vec::new(), clearance_s: None }
 }
 
 fn timing(cycle: f32, greens: Vec<ApproachGreen>, clearance: Option<f32>) -> SignalTiming {
