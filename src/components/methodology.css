@@ -1,0 +1,39 @@
+.method-view section { margin-top: 1.8rem; }
+.method-view p, .method-view ul, .method-view ol { max-width: 68ch; }
+.method-view figure { margin: 1rem 0; }
+.method-view li { margin: 0 0 .4rem; }
+.mg-steps { padding-left: 1.4rem; }
+
+.mg-row, .mg-col, .mg-cut { display: block; width: 100%; height: auto; font-family: inherit; }
+.mg-row { display: none; max-width: 900px; }
+.mg-col { max-width: 340px; }
+.mg-cut { max-width: 400px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+@media (min-width: 720px) {
+  .mg-row { display: block; }
+  .mg-col { display: none; }
+}
+
+.mg-box { fill: var(--surface); stroke: var(--border); stroke-width: 1.5; }
+.mg-glyph { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.mg-glyph .mg-thick { stroke-width: 5; }
+.mg-glyph .mg-fill { fill: var(--accent); }
+.mg-label { fill: var(--text); font-size: 17px; font-weight: 600; }
+.mg-badge { fill: var(--text); }
+.mg-badge-text { fill: var(--surface); font-size: 14px; font-weight: 700; }
+.mg-arrow { fill: none; stroke: var(--muted); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+
+.mg-area { fill: var(--surface-2); }
+.mg-side { fill: none; stroke: var(--border); stroke-width: 3; }
+.mg-bound { fill: none; stroke: var(--muted); stroke-width: 7; stroke-linejoin: round; }
+.mg-note { fill: var(--text); font-size: 14px; font-weight: 600; paint-order: stroke; stroke: var(--surface-2); stroke-width: 4px; }
+.mg-trip { fill: none; stroke-width: 5; stroke-linejoin: round; }
+.mg-t1 { stroke: var(--accent); }
+.mg-t2 { stroke: var(--bike); stroke-dasharray: 11 8; }
+.mg-t3 { stroke: var(--ped); stroke-dasharray: 2 9; stroke-linecap: round; stroke-width: 6; }
+.mg-head.mg-t1 { fill: var(--accent); stroke: none; }
+.mg-head.mg-t3 { fill: var(--ped); stroke: none; }
+.mg-end { fill: var(--bike); stroke: var(--surface); stroke-width: 2; }
+
+.mg-status { padding: .7rem .9rem; border: 1px solid var(--note-border); border-left-width: 5px; border-radius: 8px; background: var(--note-bg); }
+.mg-trips { list-style: none; padding-left: 0; }
+.mg-trips li { padding-left: 0; }

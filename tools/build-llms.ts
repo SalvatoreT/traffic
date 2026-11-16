@@ -1,5 +1,5 @@
 // Writes the text pages that let a language model read the site without running JavaScript: llms.txt, llms-full.txt, index.md, proposals.md, streets.md,
-// assumptions.md, sources.md and copies of the three guide documents, into public/data/llms/ (published like the other data files, with `npm run data:push`).
+// methodology.md, assumptions.md, sources.md and copies of the three guide documents, into public/data/llms/ (published like the other data files, with `npm run data:push`).
 //   npm run data:llms [-- --area rockridge] [--data-dir public/data] [--out public/data/llms] [--site https://...] [--date 2026-11-15T00:00:00Z]
 // Everything comes from files already in public/data and docs/: run it after `npm run data`, `npm run data:results` and the proposal search, and before data:push.
 // With the WASM build present it also checks whether stored results came from the current simulator; without it, that check is skipped and the pages say so.

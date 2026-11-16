@@ -83,6 +83,7 @@ export function todayModel(net: Network, index: NetIndex, linkStats: Float32Arra
 const tabSummary = (view: View, area: string, status: string): string => {
   switch (view) {
     case 'streets': return `One row per street block in ${area}: simulated cars an hour, through cars and speed, as a text alternative to the map.`;
+    case 'methodology': return `How the simulation of ${area} and its proposals are made, in plain language, and what it cannot tell you. ${status}`;
     case 'assumptions': return `The judgment calls behind the model: why cars cut through ${area}, and which turn movements are assumed. ${status}`;
     case 'sources': return `The data behind the simulation of ${area} and how its baseline compares with observed traffic. ${status}`;
     default: return '';

@@ -47,7 +47,7 @@ describe('currency of stored numbers', () => {
 describe('generated pages', () => {
   const pages = buildPages(input());
   it('writes every page', () => {
-    expect(Object.keys(pages).sort()).toEqual(['assumptions.md', 'data-files.md', 'index.md', 'llms-full.txt', 'llms.txt', 'proposals.md', 'run-locally.md', 'scenario-links.md', 'sources.md', 'streets.md']);
+    expect(Object.keys(pages).sort()).toEqual(['assumptions.md', 'data-files.md', 'index.md', 'llms-full.txt', 'llms.txt', 'methodology.md', 'proposals.md', 'run-locally.md', 'scenario-links.md', 'sources.md', 'streets.md']);
   });
   it('follows the llms.txt layout: H1, blockquote summary, sections of links with descriptions', () => {
     const t = pages['llms.txt'];

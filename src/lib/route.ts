@@ -1,8 +1,8 @@
-export type View = 'map' | 'proposals' | 'streets' | 'assumptions' | 'sources';
+export type View = 'map' | 'proposals' | 'streets' | 'methodology' | 'assumptions' | 'sources';
 
 /** One row per tab: the path is derived from the id, and the same table answers both directions. */
 export const VIEWS: readonly { id: View; label: string; path: string }[] = (
-  [['map', 'Map'], ['proposals', 'Proposals'], ['streets', 'Streets'], ['assumptions', 'Assumptions'], ['sources', 'Sources']] as const
+  [['map', 'Map'], ['proposals', 'Proposals'], ['streets', 'Streets'], ['methodology', 'Methodology'], ['assumptions', 'Assumptions'], ['sources', 'Sources']] as const
 ).map(([id, label]) => ({ id, label, path: id === 'map' ? '/' : `/${id}` }));
 
 export const viewLabel = (v: View): string => VIEWS.find((x) => x.id === v)!.label;

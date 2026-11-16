@@ -12,7 +12,7 @@ export const TEXT_ROUTES: Record<string, { file: string; type: string }> = {
   "/llms.txt": { file: "llms.txt", type: PLAIN },
   "/llms-full.txt": { file: "llms-full.txt", type: PLAIN },
   ...Object.fromEntries(
-    ["index", "proposals", "streets", "assumptions", "sources", "scenario-links", "data-files", "run-locally"].map((n) => [`/${n}.md`, { file: `${n}.md`, type: MARKDOWN }]),
+    ["index", "proposals", "streets", "methodology", "assumptions", "sources", "scenario-links", "data-files", "run-locally"].map((n) => [`/${n}.md`, { file: `${n}.md`, type: MARKDOWN }]),
   ),
 };
 

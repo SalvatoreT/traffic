@@ -73,7 +73,7 @@ describe("/data", () => {
 });
 
 describe("tab paths", () => {
-  const tabs = ["/", "/proposals", "/streets", "/assumptions", "/sources"];
+  const tabs = ["/", "/proposals", "/streets", "/methodology", "/assumptions", "/sources"];
   const wrangler = JSON.parse(readFileSync(new URL("../wrangler.jsonc", import.meta.url), "utf8")) as { assets: { not_found_handling: string; run_worker_first: string[] } };
 
   it("sends tab paths and share paths to the Worker, which serves the app shell for them, and leaves every other path to the static fallback", () => {

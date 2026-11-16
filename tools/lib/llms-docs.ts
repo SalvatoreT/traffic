@@ -21,6 +21,9 @@ import {
 import {
   ASSUMPTIONS_INTRO, EXPLORATORY_NOTE, FIXED_DEMAND_CAVEAT, LEGACY_GROUP_NOTE, MOVEMENTS_INTRO, PROPOSALS_LEAD, SOURCES_CALIBRATED, SOURCES_UNCALIBRATED, STREETS_INTRO,
 } from '../../src/lib/copy';
+import {
+  BUILD_ALT, BUILD_INTRO, BUILD_STEPS, CHECK_INTRO, CUT_ALT, CUT_INTRO, CUT_TRIPS, CUT_TRIP_STYLES, LIMITS, LIMITS_INTRO, PROPOSAL_ALT, PROPOSAL_INTRO, PROPOSAL_STEPS, checkStatus, whatThisIs,
+} from '../../src/lib/methodology';
 import { pathOfSlug, slugOf } from '../../src/lib/share-path';
 import { INTERVENTION_TYPES } from './intervention-types';
 import { blockPlace, nodePlace, linkFor } from './describe-network';
@@ -183,6 +186,7 @@ export function indexMd(i: LlmsInput): string {
     '',
     `- [Proposals](${abs(i, '/proposals.md')}): published packages of interventions, with their figures and scenario links.`,
     `- [Streets](${abs(i, '/streets.md')}): today's cars an hour on every block.`,
+    `- [Methodology](${abs(i, '/methodology.md')}): how the model and the proposals are made, in plain language.`,
     `- [Assumptions](${abs(i, '/assumptions.md')}): the judgment calls in the model.`,
     `- [Sources](${abs(i, '/sources.md')}): inputs, provenance and the bibliography.`,
     `- [Scenario link format](${abs(i, '/scenario-links.md')}), [data files](${abs(i, '/data-files.md')}) and [how to run the model yourself](${abs(i, '/run-locally.md')}).`,
@@ -272,6 +276,21 @@ function cardMd(i: LlmsInput, g: ProposalGroup, p: Proposal, n: number | null, w
     out.push(`Stored full-hour results (seed 1, demand 1)${c.current ? '' : `, out of date because ${list(c.reasons)}`}: ${stored.map((r) => `${label(r.period)} <${abs(i, `/data/results/${i.area.id}/${r.key}.json`)}>`).join('; ')}.`, '');
   }
   return out;
+}
+
+// --- methodology
+
+export function methodologyMd(i: LlmsInput): string {
+  const c = checkStatus(i.area.calibration);
+  const steps = (xs: { label: string[]; text: string }[]) => xs.map((s, k) => `${k + 1}. **${s.label.join(' ')}.** ${s.text}`);
+  const out: string[] = [header(i, { title: `Traffic: ${i.area.name}, methodology`, human: '/methodology', json: [] })];
+  out.push('## What this is', '', ...whatThisIs(i.area.name).flatMap((t) => [t, '']));
+  out.push('## Building today\'s traffic', '', BUILD_INTRO, '', ...steps(BUILD_STEPS), '', `Diagram: ${BUILD_ALT.desc}`, '');
+  out.push('## What counts as cut-through', '', CUT_INTRO, '', ...CUT_TRIPS.map((t, k) => `${t.n}. **Trip ${t.n}, ${CUT_TRIP_STYLES[k]}.** ${t.text}`), '', `Diagram: ${CUT_ALT.desc}`, '');
+  out.push('## Checking the model', '', CHECK_INTRO, '', `Status today: ${c.status}${c.note ? ` ${c.note}` : ''}`, '', `The judgment calls are in ${abs(i, '/assumptions.md')} and the data and results of the checks are in ${abs(i, '/sources.md')}.`, '');
+  out.push('## How proposals are made', '', PROPOSAL_INTRO, '', ...steps(PROPOSAL_STEPS), '', `Diagram: ${PROPOSAL_ALT.desc}`, '');
+  out.push('## What it can\'t tell you', '', LIMITS_INTRO, '', ...LIMITS.map((l) => `- ${l}`), '');
+  return `${out.join('\n')}\n`;
 }
 
 // --- assumptions
@@ -501,6 +520,7 @@ export function llmsTxt(i: LlmsInput): string {
     '',
     `- [Proposals](${abs(i, '/proposals.md')}): every published package of interventions with its figures, scenario link and the run that produced the numbers (human page: ${abs(i, '/proposals')}).`,
     `- [Streets](${abs(i, '/streets.md')}): today's all cars, through cars and mean speed on every block, by period (human page: ${abs(i, '/streets')}).`,
+    `- [Methodology](${abs(i, '/methodology.md')}): how the model and the proposals are made, a short plain-language guide (human page: ${abs(i, '/methodology')}).`,
     `- [Assumptions](${abs(i, '/assumptions.md')}): the judgment calls: assumed movement flows and the reasons cars cut through (human page: ${abs(i, '/assumptions')}).`,
     `- [Sources](${abs(i, '/sources.md')}): input provenance, the calibration statement and the research bibliography (human page: ${abs(i, '/sources')}).`,
     '',
@@ -545,7 +565,7 @@ export function llmsFull(i: LlmsInput, pages: Record<string, string>): string {
   out.push('## Data files', '', dataListMd(i), '', demote(strip(i.docs.dataFiles), 1), '');
   out.push('## Licensing and attribution', '', section(i.docs.dataFiles, 'Licenses'), '', `The source repository is ${i.repo} (public). Its license file: ${i.repo}/blob/main/LICENSE. Map data © OpenStreetMap contributors (ODbL): keep that attribution visible when you show maps or numbers derived from it.`, '');
   out.push('## Run it yourself', '', demote(strip(i.docs.runLocally), 1), '');
-  for (const [name, title] of [['index.md', 'Overview page'], ['proposals.md', 'Proposals'], ['assumptions.md', 'Assumptions']] as const) {
+  for (const [name, title] of [['index.md', 'Overview page'], ['proposals.md', 'Proposals'], ['methodology.md', 'Methodology'], ['assumptions.md', 'Assumptions']] as const) {
     out.push(`## ${title}`, '', demote(strip(pages[name]), 2), '');
   }
   out.push('## Sources', '', demote(strip(sourcesMd(i, false)), 2), '');
@@ -559,7 +579,7 @@ export function docPage(i: LlmsInput, title: string, body: string, source: strin
 /** Every generated file by name. */
 export function buildPages(i: LlmsInput): Record<string, string> {
   const pages: Record<string, string> = {
-    'index.md': indexMd(i), 'proposals.md': proposalsMd(i), 'assumptions.md': assumptionsMd(i), 'sources.md': sourcesMd(i), 'streets.md': streetsMd(i),
+    'index.md': indexMd(i), 'proposals.md': proposalsMd(i), 'methodology.md': methodologyMd(i), 'assumptions.md': assumptionsMd(i), 'sources.md': sourcesMd(i), 'streets.md': streetsMd(i),
     'scenario-links.md': docPage(i, 'Scenario links', i.docs.scenarioLinks, 'docs/scenario-links.md'),
     'data-files.md': docPage(i, 'Data files', i.docs.dataFiles, 'docs/data-files.md'),
     'run-locally.md': docPage(i, 'Run the model yourself', i.docs.runLocally, 'docs/run-locally.md'),

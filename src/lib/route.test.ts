@@ -5,7 +5,7 @@ const SCENARIO = '#v1;a=rockridge;s=mn,9q9p642ut2~mn,9q9p3fr7b5;p=pm_peak';
 
 describe('path and tab', () => {
   it('maps every tab to one path and back', () => {
-    expect(VIEWS.map((v) => v.path)).toEqual(['/', '/proposals', '/streets', '/assumptions', '/sources']);
+    expect(VIEWS.map((v) => v.path)).toEqual(['/', '/proposals', '/streets', '/methodology', '/assumptions', '/sources']);
     for (const v of VIEWS) { expect(pathOfView(v.id)).toBe(v.path); expect(viewOfPath(v.path)).toBe(v.id); }
   });
   it('derives each slug from the tab id', () => {
