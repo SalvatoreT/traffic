@@ -406,9 +406,14 @@ input[type='checkbox'] { width: 18px; height: 18px; accent-color: var(--accent);
 .proposals-view .lead { max-width: 70ch; }
 .prop-status .notice { max-width: 70ch; }
 .empty { border: 1px dashed var(--border); border-radius: var(--radius); padding: .5rem 1rem; max-width: 60ch; background: var(--surface); }
-.prop-group { margin-top: 2rem; }
-.prop-group-h { margin: 0 0 .25rem; font-size: 1.3rem; }
-.prop-group-note { margin: 0 0 .75rem; max-width: 70ch; }
+.prop-status { margin-top: 1rem; }
+.prop-variants { margin: 0 0 .8rem; }
+.prop-variants h5 { margin: .2rem 0; font-size: .95rem; }
+.prop-variants ul { margin: .35rem 0; padding-left: 1.2rem; }
+.prop-variants li { margin: .35rem 0; }
+.prop-variants details summary { cursor: pointer; min-height: 24px; }
+.prop-variants .btn { margin-top: .2rem; }
+.fig-pct { color: var(--muted); font-variant-numeric: tabular-nums; }
 .prop-ref .sec-h { font-size: 1rem; }
 .prop-list { list-style: none; margin: 1rem 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; }
 .prop-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: .9rem 1.1rem 1rem; box-shadow: var(--shadow); }

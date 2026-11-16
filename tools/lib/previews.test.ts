@@ -141,6 +141,7 @@ describe('planned previews', () => {
   });
   it('skips only the stale group, and a proposal with no picture', () => {
     const mixed: Proposals = JSON.parse(JSON.stringify(file));
+    mixed.groups.push({ ...JSON.parse(JSON.stringify(mixed.groups[0])), id: 'other' });
     mixed.groups[1].computed.networkHash = 'deadbeefdeadbeef';
     delete mixed.groups[0].proposals[0].picture;
     const r = planPreviews(input({ proposals: mixed }));

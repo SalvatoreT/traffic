@@ -1,7 +1,8 @@
 import type { Intervention, Network } from '../types';
 import { decodeMeta, decodeScenario } from './hash';
-import { evidenceStatus, linkHash, type LoadedHashes, type Proposal, type ProposalGroup, type Proposals } from './proposals';
+import { evidenceStatus, linkHash, linkKey, type LoadedHashes, type Proposal, type ProposalGroup, type Proposals } from './proposals';
 import { canonicalItems } from './stored-results';
+export { linkKey };
 
 /** A published proposal's shareable path. Preview crawlers never see a URL fragment, so the path is what tells a chat which proposal a link is about. */
 export const SHARE_PREFIX = '/p/';
@@ -12,13 +13,6 @@ export function slugFromPath(pathname: string): string | null {
   return m ? m[1].toLowerCase() : null;
 }
 export const pathOfSlug = (slug: string): string => `${SHARE_PREFIX}${slug}`;
-
-/** The link as one comparable string: period, demand scale and the items in sorted order, so item order and token order do not matter. */
-export function linkKey(link: string): string {
-  const tokens = linkHash(link).slice(1).split(';');
-  const get = (k: string) => tokens.find((t) => t.startsWith(`${k}=`))?.slice(k.length + 1) ?? '';
-  return `${get('p')}|${get('d')}|${get('s').split('~').filter(Boolean).sort().join('~')}`;
-}
 
 /** cyrb53: a 53-bit string hash that needs no crypto API, so the page and the Node tools compute the same value. */
 function hash53(str: string): number {

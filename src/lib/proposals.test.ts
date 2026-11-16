@@ -5,13 +5,15 @@ import { buildMockProposals } from '../fixtures/proposals';
 import { decodeScenario } from './hash';
 import {
   allProposals, allTrafficHeadline, allTrafficNote, allTrafficRows, beforeAfterPct, comparisonText, cutThroughHeadline, evidenceNote, evidenceStatus, hashMatches, hashText, harmHeadline, intervalText,
-  linkHash, needsConfirm, openReducer, parseProposals, periodsPhrase, proposalNotices, REPORT_METHOD, seedsPhrase, signedPct, splitProposals, staleInputs,
+  linkHash, listOptions, largestAllCarRise, needsConfirm, openReducer, parseProposals, periodsPhrase, proposalNotices, REPORT_METHOD, seedsPhrase, signedPct, staleInputs, throughRemoved,
   type ComparisonStatus, type Effect, type Proposal, type ThroughHarm,
 } from './proposals';
 
 const net = buildFixture().network;
 const file = buildMockProposals(net, { networkHash: 'a'.repeat(64), demandHash: 'b'.repeat(64), calibration: 'uncalibrated' });
-const [charter, unc] = file.groups;
+const [unc] = file.groups;
+/** An older file's second list, which shares two packages with the first. */
+const charter = { ...unc, id: 'charter', title: "Within the 2025 neighborhood pilot's limits", note: 'Nothing on the bounding streets.', proposals: unc.proposals.filter((p) => ['one-filter', 'filters-limit'].includes(p.id)).map((p) => ({ ...p, variants: undefined })) };
 const legacyRaw = buildMockProposals(net, { networkHash: 'a'.repeat(64), demandHash: 'b'.repeat(64), calibration: 'uncalibrated' }, 'legacy');
 const legacyFile = parseProposals(JSON.stringify(legacyRaw))!;
 const eff = (mean: number, lo: number, hi: number, n = 10): Effect => ({ n, mean, sd: 1, interval: [lo, hi], status: n < 10 ? 'insufficient' : lo > 0 ? 'increase' : hi < 0 ? 'decrease' : 'unresolved' });
@@ -93,15 +95,16 @@ describe('headline figures', () => {
   const when = 'the average of the AM peak, PM peak and Midday';
   it('formats the cut-through change and defines it', () => {
     const h = cutThroughHeadline({ baselineVehPerHour: 118.4, scenarioVehPerHour: 73.1, changePct: -38.27 }, when);
-    expect(h).toMatchObject({ figure: '−45 cars an hour', label: 'cutting through, all side streets together', detail: '118 → 73 through cars an hour (−38%)' });
-    expect(h.definition).toMatch(/Through cars on all of the area's side streets/);
-    expect(h.definition).toContain(when);
-    expect(cutThroughHeadline({ baselineVehPerHour: 70, scenarioVehPerHour: 70, changePct: 0 }).figure).toBe('No change');
+    expect(h).toMatchObject({ figure: '118 → 73', label: 'through cars an hour', change: '−45 cars an hour (−38%)' });
+    expect(h.scope).toMatch(/^Cars crossing the area's side streets without a trip that starts or ends there/);
+    expect(h.scope).toContain(when[0].toUpperCase() + when.slice(1));
+    expect(cutThroughHeadline({ baselineVehPerHour: 70, scenarioVehPerHour: 70, changePct: 0 }, when, [1], 'Rockridge Trapezoid')).toMatchObject({ figure: '70 → 70', change: 'No change (0%)' });
+    expect(cutThroughHeadline({ baselineVehPerHour: 70, scenarioVehPerHour: 60, changePct: -14 }, when, [1], 'Rockridge Trapezoid').scope).toContain("Rockridge Trapezoid's side streets");
   });
   it('words a decrease with its interval and the runs behind it', () => {
     const h = cutThroughHeadline({ baselineVehPerHour: 118.4, scenarioVehPerHour: 73.1, changePct: -38.27, changePctEffect: eff(-38.3, -45.1, -31.4) }, when, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
     expect(h.interval).toBe('95% interval −45.1% to −31.4% over 10 runs: the fall is resolved from run-to-run variation.');
-    expect(h.definition).toContain('mean of 10 runs (seeds 1 to 10) per period');
+    expect(h.scope).toContain('mean of 10 runs (seeds 1 to 10) per period');
   });
   it('says so when no interval was recorded or the runs are too few', () => {
     expect(cutThroughHeadline({ baselineVehPerHour: 100, scenarioVehPerHour: 90, changePct: -10 }, when).interval).toBe('No uncertainty interval was recorded for this figure.');
@@ -158,21 +161,21 @@ describe('headline figures', () => {
     expect(`${h.label} ${h.definition}`).not.toContain('B');
   });
   it('words a version 4 figure as the search\'s flagged block, with no interval, and no number when none is flagged', () => {
-    const legacy = legacyFile.groups[1].proposals.find((p) => p.id === 'filters-limit')!;
+    const legacy = legacyFile.groups[0].proposals.find((p) => p.id === 'filters-limit')!;
     const h = harmHeadline(legacy.harm, when);
     expect(h).toMatchObject({ none: false, status: 'unrecorded' });
     expect(h.label).toContain("flagged by the search's noise rule");
     expect(h.label).not.toContain('the block with the largest increase');
     expect(h.definition).toContain('another block may have gained more through cars');
     expect(h.definition).toContain('No interval was recorded');
-    const none = legacyFile.groups[1].proposals.find((p) => p.id === 'one-filter')!;
+    const none = legacyFile.groups[0].proposals.find((p) => p.id === 'one-filter')!;
     expect(harmHeadline(none.harm, when)).toMatchObject({ none: true, figure: '', status: 'unrecorded' });
     expect(harmHeadline(none.harm, when).label).toBe("No block passes the search's noise band for through cars");
   });
   it('never shows a figure without naming what it counts', () => {
     for (const p of allProposals(file)) {
       const c = cutThroughHeadline(p.cutThrough, when), h = harmHeadline(p.harm, when);
-      expect(c.detail).toContain('through cars an hour');
+      expect(c.label).toContain('through cars an hour'); expect(c.figure).toMatch(/^\d+ → \d+$/);
       if (!h.none) { expect(h.figure).toContain('through cars'); expect(`${h.figure} ${h.label}`).not.toMatch(/veh\/h/); }
     }
   });
@@ -219,7 +222,7 @@ describe('details tables', () => {
   it('makes no claim when no block gains beyond noise', () => {
     expect(allTrafficNote([{ period: 'PM', block: null, before: 1, after: 2, change: 1, through: 0, local: 1, blocksAbove: 0, interval: '', penaltyBlock: null, penalty: null, flagged: true }])).toBe('');
     expect(allTrafficNote([])).toBe('');
-    const legacy = legacyFile.groups[1].proposals.find((x) => x.id === 'one-filter')!;
+    const legacy = legacyFile.groups[0].proposals.find((x) => x.id === 'one-filter')!;
     const rows = allTrafficRows({ ...legacy, byPeriod: { pm: { ...legacy.byPeriod['pm-peak'], allTraffic: { ...legacy.byPeriod['pm-peak'].allTraffic, blocksAboveBand: 0 } } } }, label);
     expect(rows[0]).toMatchObject({ block: null, blocksAbove: 0, flagged: true });
   });
@@ -246,21 +249,48 @@ describe('details tables', () => {
 });
 
 describe('sections', () => {
-  it('lists search options in file order, reference entries apart', () => {
-    const { search, reference } = splitProposals(unc);
-    expect(search.map((p) => p.id)).toEqual(['one-filter', 'two-filters-hump', 'filters-limit', 'filters-diverter', 'widest']);
-    expect(reference.map((p) => p.id)).toEqual(['earlier-62nd-diverters']);
-    expect(reference[0].interventions).toHaveLength(2);
+  it('lists search options by through cars removed, largest first, reference entries apart', () => {
+    const { search, reference } = listOptions(file);
+    expect(search.map((x) => x.proposal.id)).toEqual(['widest', 'filters-diverter', 'filters-limit', 'two-filters-hump', 'one-filter']);
+    expect(reference.map((x) => x.proposal.id)).toEqual(['earlier-62nd-diverters']);
+    expect(reference[0].proposal.interventions).toHaveLength(2);
   });
-  it('treats an absent kind as search', () => {
-    const f = { proposals: [{ ...unc.proposals[0], kind: undefined }] };
-    expect(splitProposals(f).search).toHaveLength(1);
+  it('orders a file written in any order the same way: ties go to fewer changes, then the smaller largest all-car rise', () => {
+    const base = unc.proposals.find((p) => p.id === 'filters-limit')!;
+    const mk = (id: string, removed: number, changes: number, rise: number): Proposal => ({
+      ...base, id, link: `#v1;a=x;s=${id}`, interventions: base.interventions.slice(0, 1).concat(Array(changes - 1).fill(base.interventions[0])),
+      cutThrough: { ...base.cutThrough, baselineVehPerHour: 100, scenarioVehPerHour: 100 - removed },
+      byPeriod: { pm: { ...base.byPeriod['pm-peak'], allTraffic: { ...base.byPeriod['pm-peak'].allTraffic, largestIncrease: { block: 'B', baselineVehPerHour: 100, scenarioVehPerHour: 100 + rise, increaseVehPerHour: rise } } } },
+    });
+    const list = [mk('a', 20, 3, 5), mk('b', 30, 4, 9), mk('c', 20, 2, 9), mk('d', 20, 2, 4), mk('e', 20.04, 3, 5)];
+    const order = (l: Proposal[]) => listOptions({ groups: [{ ...unc, proposals: l }] }).search.map((x) => x.proposal.id);
+    expect(order(list)).toEqual(['b', 'd', 'c', 'a', 'e']);
+    expect(order([...list].reverse())).toEqual(['b', 'd', 'c', 'e', 'a']);
+    expect(throughRemoved(list[4])).toBe(20);
+    expect(largestAllCarRise(list[0])).toBe(5);
+  });
+  it('shows an older file\'s several lists as one, each package once, sorted', () => {
+    const old = { ...file, groups: [charter, unc] };
+    const { search } = listOptions(old);
+    expect(search.map((x) => x.proposal.id)).toEqual(['widest', 'filters-diverter', 'filters-limit', 'two-filters-hump', 'one-filter']);
+    expect(search.find((x) => x.proposal.id === 'one-filter')!.group.id).toBe('charter');
+    expect(search).toHaveLength(5);
+  });
+  it('reads variants and drops the ones it cannot read', () => {
+    const raw = JSON.parse(JSON.stringify(file));
+    const p = raw.groups[0].proposals.find((x: Proposal) => x.id === 'one-filter');
+    expect(p.variants).toHaveLength(2);
+    p.variants.push({ link: 5, differs: ['x'] }, { link: '#v1', differs: [] });
+    const got = parseProposals(JSON.stringify(raw))!.groups[0].proposals.find((x) => x.id === 'one-filter')!;
+    expect(got.variants).toHaveLength(2);
+    expect(got.variants![0]).toMatchObject({ differs: ['Use the filter on the next block instead'], cutThrough: { changePct: -11 } });
+    for (const x of listOptions(file).search) expect(x.proposal.variants === undefined || x.proposal.variants.length > 0).toBe(true);
   });
   it('reads a version 4 file whole: figures shown, marked as lacking the new evidence, and the worst block relabeled', () => {
     const f = legacyFile;
     expect(f.version).toBe(4);
     expect(f.groups.every((g) => !g.legacy)).toBe(true);
-    const g = f.groups[1];
+    const g = f.groups[0];
     expect(g.computed.simulator).toBeUndefined();
     expect(evidenceStatus(g.computed, { network: 'a'.repeat(64), demand: 'b'.repeat(64), simulator: 'x' }).state).toBe('unverified');
     const p = g.proposals.find((x) => x.id === 'filters-limit')!;
@@ -272,19 +302,19 @@ describe('sections', () => {
   });
   it('rewrites the old summary sentence that called the flagged block the one that gains the most', () => {
     const old = JSON.parse(JSON.stringify(legacyRaw));
-    old.groups[1].proposals[0].summary = 'It makes one change: X. In the simulation it cuts through traffic. The side-street block that gains the most through traffic is Colby, about 5 more through cars an hour on average.';
-    old.groups[1].proposals[1].summary = 'No side-street block gains through traffic beyond normal run-to-run variation.';
+    old.groups[0].proposals[0].summary = 'It makes one change: X. In the simulation it cuts through traffic. The side-street block that gains the most through traffic is Colby, about 5 more through cars an hour on average.';
+    old.groups[0].proposals[1].summary = 'No side-street block gains through traffic beyond normal run-to-run variation.';
     const f = parseProposals(JSON.stringify(old))!;
-    expect(f.groups[1].proposals[0].summary).toContain('flagged for through traffic with its noise band, which need not have the largest increase, is Colby');
-    expect(f.groups[1].proposals[1].summary).toBe("No side-street block passes the search's assumed noise band for through traffic.");
+    expect(f.groups[0].proposals[0].summary).toContain('flagged for through traffic with its noise band, which need not have the largest increase, is Colby');
+    expect(f.groups[0].proposals[1].summary).toBe("No side-street block passes the search's assumed noise band for through traffic.");
   });
   it('reads a version 5 file with its intervals and provenance', () => {
     const f = parseProposals(JSON.stringify(file))!;
     expect(f.version).toBe(5);
-    const p = f.groups[1].proposals.find((x) => x.id === 'filters-limit')!;
+    const p = f.groups[0].proposals.find((x) => x.id === 'filters-limit')!;
     expect(p.harm.through.largestIncrease?.effect?.status).toBeDefined();
     expect(p.cutThrough.effect?.n).toBe(10);
-    expect(f.groups[1].computed.reportMethod).toBe(REPORT_METHOD);
+    expect(f.groups[0].computed.reportMethod).toBe(REPORT_METHOD);
   });
   it('rejects files that are not proposals', () => {
     expect(parseProposals('<html>')).toBeNull();
@@ -293,14 +323,15 @@ describe('sections', () => {
 });
 
 describe('groups', () => {
-  it('keeps the file order, charter first', () => {
+  it('a current file holds one list', () => {
     const f = parseProposals(JSON.stringify(file))!;
-    expect(f.groups.map((g) => g.id)).toEqual(['charter', 'unconstrained']);
-    expect(f.groups.map((g) => g.proposals.length)).toEqual([2, 6]);
-    expect(allProposals(f)).toHaveLength(8);
+    expect(f.groups.map((g) => g.id)).toEqual(['unconstrained']);
+    expect(allProposals(f)).toHaveLength(6);
   });
-  it('charter holds no hump or circle', () => {
-    for (const p of charter.proposals) for (const iv of p.interventions) expect(['speed_hump', 'traffic_circle']).not.toContain(iv.type);
+  it('keeps the groups of an older file in file order', () => {
+    const f = parseProposals(JSON.stringify({ ...file, groups: [charter, unc] }))!;
+    expect(f.groups.map((g) => g.id)).toEqual(['charter', 'unconstrained']);
+    expect(allProposals(f)).toHaveLength(8);
   });
   it('reads a version 1 file as the unconstrained group', () => {
     const v1 = { version: 1, area: 'x', computed: unc.computed, baseline: unc.baseline, proposals: unc.proposals };
@@ -315,6 +346,7 @@ describe('groups', () => {
     const f = parseProposals(JSON.stringify({ version: 3, area: 'x', groups: [v3, charter] }))!;
     expect(f.groups[0]).toMatchObject({ id: 'unconstrained', legacy: true, proposals: [] });
     expect(f.groups[1].legacy).toBeUndefined();
+    expect(listOptions(f).search.map((x) => x.group.id)).toEqual(['charter', 'charter']);
   });
   it('keeps a group computed in vehicle-miles but marks it out of date', () => {
     const old = { ...unc, proposals: unc.proposals.map((p) => ({ ...p, cutThrough: { baselineVehMi: 70, scenarioVehMi: 40, changePct: -43 } })) };

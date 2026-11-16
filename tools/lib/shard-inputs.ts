@@ -19,7 +19,7 @@ export interface InputsManifest {
 export const GIT_INPUTS = (area: string): Record<string, string> => ({
   targets: `data/calibration/${area}.targets.json`, stations: `data/demand/${area}.stations.json`, split: `data/demand/${area}.split.json`,
   demandConfig: `data/demand/${area}.config.json`, areaConfig: `data/areas/${area}.json`, groups: `data/demand/${area}.groups.json`,
-  profiles: `data/proposals/${area}.profiles.json`, references: `data/proposals/${area}.references.json`, seeds: `data/proposals/${area}.seeds.json`,
+  references: `data/proposals/${area}.references.json`, seeds: `data/proposals/${area}.seeds.json`,
 });
 
 const hashOf = (path: string): string | null => (existsSync(path) ? sha256(readFileSync(path)) : null);

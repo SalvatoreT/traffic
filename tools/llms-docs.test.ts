@@ -76,7 +76,6 @@ describe('generated pages', () => {
     const p = pages['proposals.md'];
     const file = input().proposals!;
     for (const g of file.groups) {
-      expect(p).toContain(`## ${g.title}`);
       for (const pr of g.proposals) {
         expect(p).toContain(pr.title);
         expect(p).toContain(`https://site.test/${pr.link.startsWith('#') ? pr.link : `#${pr.link}`}`);
@@ -85,6 +84,16 @@ describe('generated pages', () => {
       }
     }
     expect(p).not.toContain('**Out of date.**');
+    expect(p).not.toMatch(/pilot|limits\)/);
+  });
+  it('numbers the options by through cars removed, largest first, and lists variants under their option', () => {
+    const p = pages['proposals.md'];
+    const heads = [...p.matchAll(/^### (\d+)\. (.+)$/gm)].map((m) => [Number(m[1]), m[2]]);
+    expect(heads.map((h) => h[0])).toEqual([1, 2, 3, 4, 5]);
+    expect(heads.map((h) => h[1])).toEqual(['Six changes across the interior', 'Four filters and one diverter', 'Three filters and a lower speed limit', 'Two filters and a speed hump', 'One filter on the busiest cut-through block']);
+    const one = p.slice(p.indexOf('### 5. '));
+    expect(one).toContain('Variants (tweaks of this proposal');
+    expect(one).toContain('- Use the filter on the next block instead — through cars an hour 118 → 105 (−11%; mean of 10 runs');
   });
   it('says "Out of date" for a proposals file computed on other inputs, and still shows the numbers', () => {
     const stale = buildPages(input({}, 'stale'))['proposals.md'];

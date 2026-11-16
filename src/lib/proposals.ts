@@ -32,8 +32,18 @@ export interface ThroughHarm {
   /** Blocks whose seed interval is above zero. Absent in version 4 files. */
   blocksResolvedIncrease?: number;
 }
+/**
+ * A near-duplicate of a published option that the search folded into it: a tweak the card offers. `differs` says in plain lines what changes
+ * against the option. `cutThrough` comes from the runs that chose it, which are not the option's own runs when the option was confirmed.
+ */
+export interface Variant {
+  link: string; differs: string[]; why?: string; origin?: { kind: string };
+  cutThrough?: { baselineVehPerHour: number; scenarioVehPerHour: number; changePct: number; role?: string; seeds?: number[] };
+}
 export interface Proposal {
   id: string; title: string; summary: string;
+  /** Tweaks of this option, opened by their scenario link and run live. Not stored results, not share paths. */
+  variants?: Variant[];
   /** Absent means "search". Reference entries are hand-defined packages evaluated with the same metrics. */
   kind?: 'search' | 'reference'; note?: string;
   link: string;
@@ -93,7 +103,7 @@ export interface Computed {
     selection: { estimates: 'exploratory' | 'confirmation'; discoverySeeds: number[]; confirmationSeeds: number[]; shortlist: string[] };
   };
 }
-/** One ranked list: the packages found under one set of limits. */
+/** One search's list of packages. Files written before 2026-11-15 hold several (one per set of limits); the reader shows their options as one list. */
 export interface ProposalGroup {
   id: string; title: string; note: string;
   computed: Computed;
@@ -109,10 +119,7 @@ export interface Proposals { version: 4 | 5; area: string; groups: ProposalGroup
   withdrawn?: string;
 }
 
-export const UNCONSTRAINED_GROUP = {
-  id: 'unconstrained', title: 'Without limits',
-  note: 'Every tool except new traffic lights, anywhere in the area. Shown for comparison.',
-};
+export const UNCONSTRAINED_GROUP = { id: 'unconstrained', title: 'Proposals', note: '' };
 
 export type ProposalsState =
   | { status: 'idle' | 'loading' }
@@ -170,6 +177,19 @@ const isPicture = (x: unknown): x is ProposalPicture => {
   const nums = (a: unknown) => Array.isArray(a) && a.every(finite);
   return typeof q?.period === 'string' && nums(q.links) && nums(q.base) && nums(q.scen) && q.links.length === q.base.length && q.links.length === q.scen.length;
 };
+const isVariant = (v: unknown): v is Variant => {
+  const q = v as Variant | undefined;
+  const c = q?.cutThrough;
+  return typeof q?.link === 'string' && Array.isArray(q.differs) && q.differs.length > 0 && q.differs.every((d) => typeof d === 'string')
+    && (c === undefined || (finite(c.baselineVehPerHour) && finite(c.scenarioVehPerHour) && finite(c.changePct)));
+};
+/** Variants that cannot be read are dropped one by one; the option keeps the rest. */
+const withValidVariants = (p: Proposal): Proposal => {
+  if (p.variants === undefined) return p;
+  const { variants, ...rest } = p;
+  const ok = Array.isArray(variants) ? variants.filter(isVariant) : [];
+  return ok.length > 0 ? { ...rest, variants: ok } : rest;
+};
 /** A malformed picture is dropped, so the card shows none instead of a broken one. */
 const withValidPicture = (p: Proposal): Proposal => {
   if (p.picture === undefined || isPicture(p.picture)) return p;
@@ -177,7 +197,7 @@ const withValidPicture = (p: Proposal): Proposal => {
   return rest;
 };
 function normalizeGroup(g: ProposalGroup): ProposalGroup {
-  if (g.proposals.every(isCurrent)) return { ...g, proposals: g.proposals.map((p) => withValidPicture(fromV4(p))) };
+  if (g.proposals.every(isCurrent)) return { ...g, proposals: g.proposals.map((p) => withValidVariants(withValidPicture(fromV4(p)))) };
   return { ...g, legacy: true, proposals: [], baseline: { cutThroughVehPerHour: {} } };
 }
 
@@ -234,7 +254,7 @@ export function staleInputs(computed: Pick<ProposalGroup['computed'], 'networkHa
 }
 
 /** The version of the reporting method this reader understands: the pairing, the interval and the selection rules. Written by the search as `computed.reportMethod`. */
-export const REPORT_METHOD = 'paired-t-1';
+export const REPORT_METHOD = 'paired-t-2';
 
 export type EvidenceState = 'current' | 'stale' | 'unverified';
 export interface EvidenceStatus {
@@ -350,18 +370,20 @@ export function seedsPhrase(seeds: number[]): string {
   return `mean of ${n} runs (${consecutive ? `seeds ${seeds[0]} to ${seeds[n - 1]}` : `seeds ${seeds.join(', ')}`})`;
 }
 
-/** Figure 1: through cars an hour across all the area's side streets. `when` is a `periodsPhrase`; `runs` the seeds behind the mean. */
-export function cutThroughHeadline(c: CutThrough, when = 'the searched periods', runs?: number[]): { figure: string; label: string; detail: string; definition: string; interval: string } {
+/**
+ * Figure 1: through cars an hour across the area's side streets, before and after. `when` is a `periodsPhrase`, `runs` the seeds behind the
+ * mean and `area` the study area's name; `scope` says what the figure counts, for which periods and from how many runs.
+ */
+export function cutThroughHeadline(c: CutThrough, when = 'the searched periods', runs?: number[], area?: string): { figure: string; label: string; change: string; scope: string; interval: string } {
   const b = Math.round(c.baselineVehPerHour), s = Math.round(c.scenarioVehPerHour);
   const d = s - b;
-  const dp = pctDigits(c.changePct);
-  const pct = isZero(c.changePct, dp) ? '0%' : `${c.changePct < 0 ? MINUS : '+'}${num(c.changePct, dp)}%`;
+  const pct = signedPct(c.changePct);
   const basis = runs && runs.length > 0 ? `${seedsPhrase(runs)} per period` : 'averaged over the runs';
   return {
-    figure: d === 0 ? 'No change' : `${d < 0 ? MINUS : '+'}${Math.abs(d)} cars an hour`,
-    label: 'cutting through, all side streets together',
-    detail: `${b} → ${s} through cars an hour (${pct})`,
-    definition: `Through cars on all of the area's side streets together: cars that cross the area without a trip that starts or ends in it. Each car is counted once. Shown for ${when}; ${basis}.`,
+    figure: `${b} → ${s}`,
+    label: 'through cars an hour',
+    change: d === 0 ? `No change (${pct})` : `${d < 0 ? MINUS : '+'}${Math.abs(d)} cars an hour (${pct})`,
+    scope: `Cars crossing ${area ? `${area}'s` : "the area's"} side streets without a trip that starts or ends there, each counted once. ${when[0].toUpperCase()}${when.slice(1)}; ${basis}.`,
     interval: c.changePctEffect !== undefined || c.effect !== undefined ? intervalText(c.changePctEffect ?? undefined, '%', 1) : intervalText(undefined),
   };
 }
@@ -558,10 +580,50 @@ export function openReducer(s: OpenState, a: OpenAction): OpenState {
 /** Links are stored as scenario-link fragments; accept them with or without the leading `#`. */
 export const linkHash = (link: string) => (link.startsWith('#') ? link : `#${link}`);
 
-/** Search options keep file order (fewest interventions to greatest reduction); reference entries are listed apart. */
-export function splitProposals(file: Pick<ProposalGroup, 'proposals'>): { search: Proposal[]; reference: Proposal[] } {
-  const reference = file.proposals.filter((p) => p.kind === 'reference');
-  return { search: file.proposals.filter((p) => p.kind !== 'reference'), reference };
+/** The link as one comparable string: period, demand scale and the items in sorted order, so item order and token order do not matter. */
+export function linkKey(link: string): string {
+  const tokens = linkHash(link).slice(1).split(';');
+  const get = (k: string) => tokens.find((t) => t.startsWith(`${k}=`))?.slice(k.length + 1) ?? '';
+  return `${get('p')}|${get('d')}|${get('s').split('~').filter(Boolean).sort().join('~')}`;
+}
+
+const tenths = (x: number) => Math.round(x * 10);
+/** Through cars an hour a package removes, as published to one decimal. */
+export const throughRemoved = (p: Pick<Proposal, 'cutThrough'>): number => tenths(p.cutThrough.baselineVehPerHour - p.cutThrough.scenarioVehPerHour) / 10;
+/** The largest rise in all cars on one side-street block in any period (0 when none rises; a version 4 file's flagged block counts as recorded). */
+export function largestAllCarRise(p: Pick<Proposal, 'byPeriod'>): number {
+  let m = 0;
+  for (const v of Object.values(p.byPeriod)) {
+    const a = v.allTraffic;
+    const d = a.largestIncrease ? a.largestIncrease.increaseVehPerHour : (a.adjustedPenalty.scenarioVehPerHour ?? 0) - (a.adjustedPenalty.baselineVehPerHour ?? 0);
+    if (d > m) m = d;
+  }
+  return m;
+}
+/** The published order: most through cars removed first; ties go to fewer changes, then the smaller largest all-car rise. Mirrors `order_options` in `explore/similar.rs`. */
+export function compareOptions(a: Proposal, b: Proposal): number {
+  return tenths(throughRemoved(b)) - tenths(throughRemoved(a))
+    || a.interventions.length - b.interventions.length
+    || tenths(largestAllCarRise(a)) - tenths(largestAllCarRise(b));
+}
+
+export interface Listed { group: ProposalGroup; proposal: Proposal }
+/**
+ * The file's options as one list in the published order, whatever order and however many groups the file has. A package that two groups
+ * both list (the same scenario link) is shown once. Reference entries are listed apart, in file order.
+ */
+export function listOptions(file: Pick<Proposals, 'groups'>): { search: Listed[]; reference: Listed[] } {
+  const all: Listed[] = file.groups.filter((g) => !g.legacy).flatMap((group) => group.proposals.map((proposal) => ({ group, proposal })));
+  const once = (list: Listed[]) => {
+    const seen = new Set<string>();
+    return list.filter((x) => { const k = linkKey(x.proposal.link); if (seen.has(k)) return false; seen.add(k); return true; });
+  };
+  const search = all.filter((x) => x.proposal.kind !== 'reference');
+  return {
+    search: once(search.map((x, i) => ({ x, i })).sort((a, b) => compareOptions(a.x.proposal, b.x.proposal) || a.i - b.i).map((e) => e.x)),
+    reference: once(all.filter((x) => x.proposal.kind === 'reference')),
+  };
 }
 
 export const allProposals = (file: Proposals): Proposal[] => file.groups.flatMap((g) => g.proposals);
+

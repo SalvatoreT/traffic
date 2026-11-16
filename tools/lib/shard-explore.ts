@@ -27,6 +27,7 @@ export function profileOrder(root: string, area: string): string[] {
   return ids.includes(UNCONSTRAINED) ? ids : [...ids, UNCONSTRAINED];
 }
 
+const wholeList0 = (got: { index: { args: string[] } }[]) => got.every((s) => argValue(s.index.args, '--profile') === undefined);
 export const argValue = (args: string[], k: string): string | undefined => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : undefined; };
 
 /** The group ids one `explore` invocation writes: `--profile all`, a comma list, one id, or the unconstrained group. */
@@ -215,19 +216,21 @@ export async function exploreFetch(ctx: Ctx, o: ExploreFetchOptions): Promise<{ 
     if (![2, 3, 4, 5].includes(existing.version) || existing.area !== area || !Array.isArray(existing.groups)) throw new Error(`${o.out} is version ${existing.version} for ${existing.area}; the merge needs a version 2 to 5 file of ${area}. Move it aside to start a new file.`);
   }
   const produced = got.flatMap((s) => s.file.groups);
+  const wholeList = wholeList0(got);
   const first = produced[0].computed ?? {};
-  for (const g of existing?.groups ?? []) if (!owner.has(g.id)) {
+  for (const g of wholeList ? [] : existing?.groups ?? []) if (!owner.has(g.id)) {
     const diff = SHARED.filter((k) => g.computed?.[k] !== first[k]);
     if (diff.length) log(`warning: kept group ${g.id} of ${o.out} differs from the new groups in ${diff.join(', ')}; it is stale until it is computed again`);
   }
-  const merged: ProposalsFile = { version: 5, area, groups: mergeGroups(existing?.groups ?? [], produced, order) };
+  // Without --profile a search is the whole list, so it replaces the file; searches under named profiles are merged by group.
+  const merged: ProposalsFile = { version: 5, area, groups: wholeList ? produced : mergeGroups(existing?.groups ?? [], produced, order) };
   writeFileAtomic(outPath, prettyJson(merged));
   log(`${o.out}: groups ${merged.groups.map((g) => g.id).join(', ')} (new or replaced: ${[...owner.keys()].join(', ')})`);
 
   if (o.report) {
     const rp = join(root, `data/proposals/${area}.md`);
     mkdirSync(join(root, 'data/proposals'), { recursive: true });
-    writeFileAtomic(rp, mergeReports(existsSync(rp) ? readFileSync(rp, 'utf8') : null, got.map((s) => ({ text: s.report, ids: s.file.groups.map((g) => g.id) })), area, order));
+    writeFileAtomic(rp, mergeReports(existsSync(rp) && !wholeList ? readFileSync(rp, 'utf8') : null, got.map((s) => ({ text: s.report, ids: s.file.groups.map((g) => g.id) })), area, order));
     log(`data/proposals/${area}.md: sections for ${[...owner.keys()].join(', ')} replaced`);
   }
   let seedsMerged = false;

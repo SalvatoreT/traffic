@@ -2,7 +2,7 @@ import type { Intervention, Network } from '../types';
 import { buildIndex } from '../lib/naming';
 import { describeIntervention } from '../lib/describe';
 import { encodeScenario } from '../lib/hash';
-import { REPORT_METHOD, type Effect, type Proposal, type Proposals } from '../lib/proposals';
+import { REPORT_METHOD, type Effect, type Proposal, type Proposals, type Variant as Tweak } from '../lib/proposals';
 
 /** `legacy` is the version 4 shape: figures only, with no provenance, intervals or largest-increase block. */
 type Variant = 'fresh' | 'stale' | 'legacy';
@@ -72,6 +72,10 @@ export function buildMockProposals(network: Network, computed: { networkHash: st
       ...extra,
     };
   };
+  const tweak = (ivs: Intervention[], differs: string[], cut: number): Tweak => ({
+    link: encodeScenario(network, ivs, { area: network.id }), differs, why: 'same-places', origin: { kind: 'search' },
+    ...(variant === 'legacy' ? {} : { cutThrough: { baselineVehPerHour: 118, scenarioVehPerHour: +(118 * (1 + cut / 100)).toFixed(1), changePct: cut, role: 'selection', seeds: SEEDS } }),
+  });
   const stale = variant === 'stale', legacy = variant === 'legacy';
   const { simulator, ...inputs } = computed;
   const meta = {
@@ -88,19 +92,12 @@ export function buildMockProposals(network: Network, computed: { networkHash: st
     version: legacy ? 4 : 5, area: network.id,
     groups: [
       {
-        id: 'charter', title: "Within the 2025 neighborhood pilot's limits", note: 'Nothing on the bounding streets or at their intersections, and only temporary measures.', ...meta,
+        id: 'unconstrained', title: 'Proposals', note: '', ...meta,
         proposals: [
-          mk('one-filter', 'One filter on the busiest cut-through block', 'Closes one block to through cars. It is the lightest change that removes a clear share of cut-through.', [mf(1)], -12, 0, 0),
-          mk('filters-limit', 'Three filters and a lower speed limit', 'Closes three blocks to through cars and lowers the limit on the nearest alternate route.', [mf(1), mf(3), mf(4), sl(6)], -38, 22, 3),
-        ],
-      },
-      {
-        id: 'unconstrained', title: 'Without those limits', note: 'Every tool except new traffic lights, anywhere in the area. Shown for comparison.', ...meta,
-        proposals: [
-          mk('one-filter', 'One filter on the busiest cut-through block', 'Closes one block to through cars. It is the lightest change that removes a clear share of cut-through.', [mf(1)], -12, 0, 0),
+          mk('one-filter', 'One filter on the busiest cut-through block', 'Closes one block to through cars. It is the lightest change that removes a clear share of cut-through.', [mf(1)], -12, 0, 0, { variants: [tweak([mf(2)], ['Use the filter on the next block instead'], -11), tweak([mf(1), mf(2)], ['Add: a second filter on the next block'], -13)] }),
           mk('two-filters-hump', 'Two filters and a speed hump', 'Closes two blocks to through cars and slows the street that picks up the diverted trips.', [mf(1), mf(3), { type: 'speed_hump', link: L(5), position: 20 }], -24, 8, 1),
           mk('filters-limit', 'Three filters and a lower speed limit', 'Closes three blocks to through cars and lowers the limit on the nearest alternate route.', [mf(1), mf(3), mf(4), sl(6)], -38, 22, 3),
-          mk('filters-diverter', 'Four filters and one diverter', 'Breaks up the main routes through the neighborhood with four closures and one diagonal diverter.', [mf(1), mf(3), mf(4), mf(7), dd(2, 45)], -51, 31, 5),
+          mk('filters-diverter', 'Four filters and one diverter', 'Breaks up the main routes through the neighborhood with four closures and one diagonal diverter.', [mf(1), mf(3), mf(4), mf(7), dd(2, 45)], -51, 31, 5, { variants: [tweak([mf(1), mf(3), mf(4), mf(7), dd(5, 45)], ['Use a diagonal diverter at the next junction instead of the first'], -50), tweak([mf(1), mf(3), mf(4), dd(2, 45)], ['Drop: the fourth filter'], -49), tweak([mf(1), mf(3), mf(5), mf(7), dd(2, 45)], ['Use the filter on the next block instead of the third'], -50), tweak([mf(1), mf(3), mf(4), mf(7)], ['Drop: the diverter'], -48)] }),
           mk('widest', 'Six changes across the interior', 'The strongest package found. It removes most cut-through and moves some of it to a few streets.', [mf(1), mf(3), mf(4), mf(7), dd(2, 45), dd(5, 135)], -63, 47, 7),
           mk('earlier-62nd-diverters', 'Diagonal diverters on 62nd Street at Hillegass and Colby', 'Two diagonal diverters on 62nd Street.', [dd(3, 45), dd(6, 135)], -29, 58, 6, {
             kind: 'reference', note: 'A package proposed earlier that many residents did not support. Shown for comparison.',

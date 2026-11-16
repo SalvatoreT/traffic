@@ -54,7 +54,7 @@
     "periods": [
      "pm_peak"
     ],
-    "reportMethod": "paired-t-1",
+    "reportMethod": "paired-t-2",
     "screenMinutes": 10.0,
     "seeds": [
      1,

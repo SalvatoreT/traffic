@@ -21,7 +21,7 @@ const SHELL = `<!doctype html>
 
 const page = (over: Partial<PreviewPage> = {}): PreviewPage => ({
   title: "Filter on Martin and Ayala", description: "Simulated PM peak: through cars 598 → 512 an hour (−14%). Simulation, not a forecast.",
-  image: "/og/p-charter-aaaa1111-0a1b2c3d.jpg", imageAlt: "A map.", imageWidth: 1200, imageHeight: 630, ...over,
+  image: "/og/p-unconstrained-aaaa1111-0a1b2c3d.jpg", imageAlt: "A map.", imageWidth: 1200, imageHeight: 630, ...over,
 });
 const fallback = page({ title: "Traffic: Area", description: "Generic.", image: "/og/home-0a1b2c3d.jpg" });
 const index = (pages: Record<string, PreviewPage> = {}): PreviewIndex => ({ version: 1, site: "https://site.example", siteName: "Traffic", fallback, pages });
@@ -51,28 +51,28 @@ describe("pageKey", () => {
     for (const v of VIEWS) expect(pageKey(v.path)).toBe(v.path);
     expect(pageKey("/Proposals/")).toBe("/proposals");
     expect(pageKey("/index.html")).toBe("/");
-    expect(pageKey("/p/Charter-0abc1234/")).toBe("/p/charter-0abc1234");
+    expect(pageKey("/p/Unconstrained-0abc1234/")).toBe("/p/unconstrained-0abc1234");
     for (const p of ["/p", "/p/", "/p/a/b", "/p/a_b", "/data/x", "/proposals/extra", "/p/" + "a".repeat(81)]) expect(pageKey(p)).toBeNull();
   });
 });
 
 describe("head tags", () => {
   it("writes the title, description, canonical, Open Graph and Twitter card tags", () => {
-    const html = injectHead(SHELL, headTags(page(), "Traffic", "https://site.example", "/p/charter-aaaa1111"));
+    const html = injectHead(SHELL, headTags(page(), "Traffic", "https://site.example", "/p/unconstrained-aaaa1111"));
     expect(html).toContain("<title>Filter on Martin and Ayala</title>");
     expect(tag(html, "description")).toBe(page().description);
-    expect(html).toContain('<link rel="canonical" href="https://site.example/p/charter-aaaa1111" />');
-    expect(tag(html, "og:url")).toBe("https://site.example/p/charter-aaaa1111");
+    expect(html).toContain('<link rel="canonical" href="https://site.example/p/unconstrained-aaaa1111" />');
+    expect(tag(html, "og:url")).toBe("https://site.example/p/unconstrained-aaaa1111");
     expect(tag(html, "og:type")).toBe("website");
     expect(tag(html, "og:site_name")).toBe("Traffic");
     expect(tag(html, "og:title")).toBe("Filter on Martin and Ayala");
-    expect(tag(html, "og:image")).toBe("https://site.example/og/p-charter-aaaa1111-0a1b2c3d.jpg");
+    expect(tag(html, "og:image")).toBe("https://site.example/og/p-unconstrained-aaaa1111-0a1b2c3d.jpg");
     expect(tag(html, "og:image:width")).toBe("1200");
     expect(tag(html, "og:image:height")).toBe("630");
     expect(tag(html, "og:image:alt")).toBe("A map.");
     expect(tag(html, "twitter:card")).toBe("summary_large_image");
     expect(tag(html, "twitter:title")).toBe("Filter on Martin and Ayala");
-    expect(tag(html, "twitter:image")).toBe("https://site.example/og/p-charter-aaaa1111-0a1b2c3d.jpg");
+    expect(tag(html, "twitter:image")).toBe("https://site.example/og/p-unconstrained-aaaa1111-0a1b2c3d.jpg");
   });
   it("replaces the shell's own tags instead of adding a second set, and keeps the rest of the head", () => {
     const html = injectHead(SHELL, headTags(page(), "Traffic", "https://site.example", "/"));
@@ -103,7 +103,7 @@ describe("head tags", () => {
 });
 
 describe("pages through the Worker", () => {
-  const idx = index({ "/": page({ title: "Traffic: Area", image: "/og/home-0a1b2c3d.jpg" }), "/proposals": page({ title: "Proposals" }), "/p/charter-aaaa1111": page() });
+  const idx = index({ "/": page({ title: "Traffic: Area", image: "/og/home-0a1b2c3d.jpg" }), "/proposals": page({ title: "Proposals" }), "/p/unconstrained-aaaa1111": page() });
 
   it("serves the shell with the home tags for /", async () => {
     const r = await get("/", env(stored(idx)));
@@ -122,10 +122,10 @@ describe("pages through the Worker", () => {
     expect(tag(html, "og:url")).toBe("https://site.example/proposals");
   });
   it("serves a published proposal's tags for /p/<slug>, with or without a trailing slash or capitals", async () => {
-    for (const path of ["/p/charter-aaaa1111", "/p/charter-aaaa1111/", "/p/Charter-AAAA1111"]) {
+    for (const path of ["/p/unconstrained-aaaa1111", "/p/unconstrained-aaaa1111/", "/p/Unconstrained-AAAA1111"]) {
       const html = await (await get(path, env(stored(idx)))).text();
       expect(html).toContain("<title>Filter on Martin and Ayala</title>");
-      expect(tag(html, "og:url")).toBe("https://site.example/p/charter-aaaa1111");
+      expect(tag(html, "og:url")).toBe("https://site.example/p/unconstrained-aaaa1111");
       expect(tag(html, "og:description")).toContain("598 → 512");
     }
   });
@@ -139,7 +139,7 @@ describe("pages through the Worker", () => {
   });
   it("answers HEAD with the same headers and no body", async () => {
     const e = env(stored(idx));
-    const r = await get("/p/charter-aaaa1111", e, { method: "HEAD" });
+    const r = await get("/p/unconstrained-aaaa1111", e, { method: "HEAD" });
     expect(r.status).toBe(200);
     expect(r.headers.get("content-type")).toBe("text/html; charset=utf-8");
     expect(await r.text()).toBe("");

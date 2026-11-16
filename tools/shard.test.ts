@@ -16,7 +16,7 @@ let site: StubSite;
 beforeAll(async () => { site = await startStubSite(); });
 afterAll(async () => { await site.close(); for (const t of temps) rmSync(t, { recursive: true, force: true }); });
 
-const GIT_FILES = ['data/calibration/rockridge.targets.json', 'data/demand/rockridge.stations.json', 'data/demand/rockridge.config.json', 'data/areas/rockridge.json', 'data/proposals/rockridge.profiles.json', 'data/proposals/rockridge.references.json', 'data/proposals/rockridge.seeds.json'];
+const GIT_FILES = ['data/calibration/rockridge.targets.json', 'data/demand/rockridge.stations.json', 'data/demand/rockridge.config.json', 'data/areas/rockridge.json', 'data/proposals/rockridge.references.json', 'data/proposals/rockridge.seeds.json'];
 const put = (root: string, rel: string, text: string) => { mkdirSync(dirname(join(root, rel)), { recursive: true }); writeFileSync(join(root, rel), text); };
 const NET = '{"links":[],"nodes":[]}';
 const FP = 'a'.repeat(32);
@@ -256,6 +256,7 @@ describe('proposal shards', () => {
 
   it('merges two profiles into the proposals file, report and seeds, keeping other groups', async () => {
     const { lead, child } = await setup('ex1');
+    put(lead, 'data/proposals/rockridge.profiles.json', JSON.stringify([{ id: 'charter', title: 'c' }, { id: 'unconstrained', title: 'u' }]));
     const c = ctx(child);
     const a = await exploreRun(c, { job: 'ex1', shard: 'charter', args: eargs('charter') });
     expect(a.groups).toEqual(['charter']);
@@ -277,6 +278,16 @@ describe('proposal shards', () => {
     const again = await merge(lead, 'ex1', ['charter', 'free']);
     expect(again.groups).toHaveLength(2);
     expect(JSON.parse(readFileSync(join(lead, 'public/data/rockridge.proposals.json'), 'utf8')).groups).toHaveLength(3);
+  });
+
+  it('a search without --profile is the whole list: it replaces the groups of an older file and its report', async () => {
+    const { lead, child } = await setup('ex5');
+    await exploreRun(ctx(child), { job: 'ex5', shard: 'one', args: eargs() });
+    const r = await merge(lead, 'ex5', ['one']);
+    expect(r.groups).toEqual(['unconstrained']);
+    const file = JSON.parse(readFileSync(join(lead, 'public/data/rockridge.proposals.json'), 'utf8'));
+    expect(file.groups.map((g: Group) => g.id)).toEqual(['unconstrained']);
+    expect(readFileSync(join(lead, 'data/proposals/rockridge.md'), 'utf8')).not.toContain('profile:old');
   });
 
   it('refuses the same group from two shards before writing anything', async () => {

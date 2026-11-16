@@ -15,8 +15,8 @@ import { isLocal } from '../../src/lib/intents';
 import { ROUTE_CAVEAT } from '../../src/lib/throughroutes';
 import { SPEED_LIMITS_MPH, SIGNAL_CYCLES_S } from '../../src/lib/selection';
 import {
-  allTrafficNote, allTrafficRows, beforeAfterPct, comparisonText, cutThroughHeadline, evidenceNote, formatComputed, harmHeadline, hashMatches, INTERVAL_SCOPE, intervalText, linkHash, periodsPhrase,
-  provenanceLine, proposalNotices, seedsPhrase, signedNum, signedPct, splitProposals, type Proposal, type ProposalGroup, type Proposals,
+  allTrafficHeadline, allTrafficNote, allTrafficRows, beforeAfterPct, comparisonText, cutThroughHeadline, evidenceNote, formatComputed, harmHeadline, hashMatches, INTERVAL_SCOPE, intervalText, linkHash, periodsPhrase,
+  provenanceLine, proposalNotices, seedsPhrase, signedNum, signedPct, listOptions, type Proposal, type ProposalGroup, type Proposals,
 } from '../../src/lib/proposals';
 import {
   ASSUMPTIONS_INTRO, EXPLORATORY_NOTE, FIXED_DEMAND_CAVEAT, LEGACY_GROUP_NOTE, MOVEMENTS_INTRO, PROPOSALS_LEAD, SOURCES_CALIBRATED, SOURCES_UNCALIBRATED, STREETS_INTRO,
@@ -208,16 +208,24 @@ export function proposalsMd(i: LlmsInput): string {
     return out.join('\n');
   }
   out.push(`Figures: **through cars an hour** are cars that cross the area without a trip that starts or ends in it, counted across all the side streets together; **all cars** are every car on a block, through cars and local trips together. A through number is never compared with an all-cars number. "Before → after" is today's streets to the streets with the package; negative is a reduction.`, '');
-  for (const g of file.groups) out.push(...groupMd(i, g, label));
+  out.push('Options are listed by through cars removed, largest first.', '');
+  const loaded = { network: i.hashes.network, demand: i.hashes.demand, simulator: i.simulator };
+  for (const g of file.groups) out.push(...statusMd(i, g, loaded, label));
+  const listed = listOptions(file);
+  if (listed.search.length === 0 && listed.reference.length === 0) {
+    if (!file.groups.some((g) => g.legacy)) out.push('No options were found.', '');
+    return out.join('\n');
+  }
+  const card = (x: { group: ProposalGroup; proposal: Proposal }, n: number | null) => cardMd(i, x.group, x.proposal, n, periodsPhrase(x.group.computed.periods, label), label);
+  listed.search.forEach((x, k) => out.push(...card(x, k + 1)));
+  if (listed.reference.length) { out.push('## For comparison', ''); listed.reference.forEach((x) => out.push(...card(x, null))); }
   return out.join('\n');
 }
 
-function groupMd(i: LlmsInput, g: ProposalGroup, label: (id: string) => string): string[] {
-  const loaded = { network: i.hashes.network, demand: i.hashes.demand, simulator: i.simulator };
+/** How one search's figures were made and whether they may be shown as current. A file from before 2026-11-15 can hold several. */
+function statusMd(i: LlmsInput, g: ProposalGroup, loaded: { network: string | null; demand: string | null; simulator: string | null }, label: (id: string) => string): string[] {
   const notices = proposalNotices(g.computed, loaded);
-  const parts = splitProposals(g);
-  const out: string[] = [`## ${g.title}`, ''];
-  if (g.note) out.push(g.note, '');
+  const out: string[] = [];
   out.push(formatComputed(g.computed, label), '');
   out.push(`Run: ${seedsPhrase(g.computed.seeds)} for ${g.computed.minutes ?? 60} simulated minutes each in ${periodsList(g.computed.periods, label)}, on network \`${g.computed.networkHash}\` and demand \`${g.computed.demandHash}\`; the area was \`${g.computed.calibration}\` at the time. ${provenanceLine(g.computed)}`, '');
   if (g.computed.simulator) out.push(INTERVAL_SCOPE, '');
@@ -225,27 +233,28 @@ function groupMd(i: LlmsInput, g: ProposalGroup, label: (id: string) => string):
   if (notices.exploratory) out.push(`**Exploratory.** ${EXPLORATORY_NOTE}`, '');
   if (notices.unverified && !notices.stale) out.push(`**Not verified.** ${notices.unverifiedText}`, '');
   if (notices.stale) out.push(`**Out of date.** ${notices.staleText} These numbers were computed on network \`${g.computed.networkHash}\` and demand \`${g.computed.demandHash}\`; the files served now are network \`${short(i.hashes.network)}\` and demand \`${short(i.hashes.demand)}\`.`, '');
-  if (g.legacy) { out.push(`**Out of date.** ${LEGACY_GROUP_NOTE}`, ''); return out; }
-  if (parts.search.length === 0 && parts.reference.length === 0) { out.push('No options were found under these limits.', ''); return out; }
-  const when = periodsPhrase(g.computed.periods, label);
-  const card = (p: Proposal, n: number | null) => cardMd(i, g, p, n, when, label);
-  parts.search.forEach((p, k) => out.push(...card(p, k + 1)));
-  if (parts.reference.length) { out.push('### For comparison', ''); parts.reference.forEach((p) => out.push(...card(p, null))); }
+  if (g.legacy) out.push(`**Out of date.** ${LEGACY_GROUP_NOTE}`, '');
   return out;
 }
 
 function cardMd(i: LlmsInput, g: ProposalGroup, p: Proposal, n: number | null, when: string, label: (id: string) => string): string[] {
-  const cut = cutThroughHeadline(p.cutThrough, when, g.computed.seeds);
+  const cut = cutThroughHeadline(p.cutThrough, when, g.computed.seeds, i.area.name);
   const harm = harmHeadline(p.harm, when);
   const rows = allTrafficRows(p, label);
   const note = allTrafficNote(rows);
   const stored = (i.resultsIndex?.results ?? []).filter((r) => r.proposals.some((x) => x.group === g.id && x.id === p.id));
-  const out: string[] = [`${n === null ? '####' : '###'} ${n === null ? '' : `${n}. `}${p.title}`, ''];
+  const out: string[] = [`### ${n === null ? '' : `${n}. `}${p.title}`, ''];
   if (p.kind === 'reference') out.push(`*Earlier proposal.*${p.note ? ` ${p.note}` : ''}`, '');
-  out.push(p.summary, '');
+  out.push(`- **${cut.figure}** ${cut.label} (${cut.change}). ${cut.scope} ${cut.interval}`);
+  const big = allTrafficHeadline(rows);
+  out.push(big.none ? `- ${big.label}` : `- **${big.figure}** ${big.label}. ${big.split} ${big.interval}`, '');
   out.push('Changes:', '', ...p.interventions.map((iv) => `- ${iv.label} (${iv.type})`), '');
+  if (p.variants?.length) {
+    out.push('Variants (tweaks of this proposal that do about the same; each opens on the map and runs live; no share path or stored result):', '',
+      ...p.variants.map((v) => `- ${v.differs.join('; ')}${v.cutThrough ? ` — through cars an hour ${Math.round(v.cutThrough.baselineVehPerHour)} → ${Math.round(v.cutThrough.scenarioVehPerHour)} (${signedPct(v.cutThrough.changePct)}${v.cutThrough.seeds?.length ? `; ${seedsPhrase(v.cutThrough.seeds)}` : ''})` : ''}: <${abs(i, `/${linkHash(v.link)}`)}>`), '');
+  }
+  out.push(p.summary, '');
   out.push(`Share link: <${abs(i, pathOfSlug(slugOf(g.id, p.link)))}> (opens this proposal on the map; chat apps show a preview card for it)`, `Scenario link: <${abs(i, `/${linkHash(p.link)}`)}>`, '');
-  out.push(`- **${cut.figure}** ${cut.label}: ${cut.detail}. ${cut.interval} ${cut.definition}`);
   out.push(harm.none ? `- ${harm.label}. ${harm.definition}` : `- **${harm.figure}** ${harm.label}. ${harm.definition}`, '');
   out.push(evidenceNote(p, g), '');
   const comparison = g.optionComparisons?.find((c) => c.option === p.id);

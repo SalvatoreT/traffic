@@ -70,7 +70,7 @@ async function main(argv: string[]): Promise<void> {
     const rel = dest.startsWith(`${root}/`) ? dest.slice(root.length + 1) : dest;
     log(`${r.runs} runs are complete and consistent. Next:\n  npm run assess -- --area ${area} --periods ${periods.join(',')} --seeds ${seedSpec}${opt.has('--minutes') ? ` --minutes ${opt.get('--minutes')}` : ''} --reuse ${rel} --publish --noise`);
   } else if (group === 'explore' && action === 'run') {
-    if (!rest.length) throw new Error('give the explore arguments after --, for example: explore run --job ID --shard charter -- --area rockridge --profile charter --confirm-seeds 101-110');
+    if (!rest.length) throw new Error('give the explore arguments after --, for example: explore run --job ID --shard search -- --area rockridge --periods pm_peak,am_peak --seeds 1-3 --confirm-seeds 101-110');
     await exploreRun(make(), { job: job(), shard: need('--shard'), args: rest });
   } else if (group === 'explore' && action === 'fetch') {
     const r = await exploreFetch(make(), { job: job(), shards: list(need('--shards')), out: opt.get('--out') ?? `public/data/${area}.proposals.json`, seeds: !flag.has('--no-seeds'), report: !flag.has('--no-report') });
