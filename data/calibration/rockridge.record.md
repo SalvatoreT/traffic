@@ -149,14 +149,14 @@ After both repairs and `npm run data` (network 69f62ad981d0b8fa, demand c4420aa7
 
 The network changed, so `npm run data` rebuilt the shipped and the cross-validation demand from the unchanged frozen split. Then the delay-feedback loop (`tools/cost-loop.ts` [PowellSheffi1982]) ran to its own stop rule. Its acceptance rule used to read the held-out GEH shares as a guard; it now decides on removals, backlog, the headline-share error and the fitted GEH shares only, and reports the held-out shares. The through-car ranges are not targets in `rockridge.targets.json` (the calibrate report checks through cars against them beside the headline shares) and played no part.
 
-| Iteration (engine 7b94e620c9d8, PM seeds 1 to 10) | Removals/h | Headline shares (47 / 47 / 68 / 45), error | Through cars HSB / CSB / HNB / CNB | 62nd St / Forest St EB | Telegraph Ave SB, s (link times summed, not scaled) | GEH<5 fitted / held out, all stations | Cost gap |
+| Iteration (merged engine 169f9cf71eef, PM seeds 1 to 10) | Removals/h | Headline shares (47 / 47 / 68 / 45), error | Through cars HSB / CSB / HNB / CNB | 62nd St / Forest St EB | Telegraph Ave SB, s (link times summed, not scaled) | GEH<5 fitted / held out, all stations | Cost gap |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 0 (free-flow and BPR costs) | 1.0 | 53 / 38 / 46 / 31, 12.9 | 197 / 209 / 86 / 157 | 224 / 237 | 371 | 61% / 67% | - |
-| 1 | 8.2 | 53 / 37 / 64 / 42, 5.9 | 144 / 198 / 85 / 160 | 109 / 191 | 430 | 67% / 64% | 0.266 |
-| 2 | 11.3 | 56 / 41 / 64 / 40, 6.1 | 151 / 199 / 81 / 133 | 85 / 231 | 458 | 68% / 60% | 0.135 |
-| 3 | 8.1 | 51 / 42 / 74 / 48, 4.3 | 126 / 164 / 79 / 138 | 58 / 199 | 407 | 69% / 57% | 0.076 |
+| 0 (free-flow and BPR costs) | 1.6 | 52 / 38 / 46 / 30, 12.7 | 193 / 213 / 87 / 154 | 206 / 241 | 381 | 60% / 60% | - |
+| 1 | 7.0 | 49 / 36 / 61 / 41, 6.1 | 155 / 186 / 85 / 165 | 119 / 167 | 406 | 67% / 60% | 0.233 |
+| 2 | 14.4 | 57 / 41 / 67 / 37, 6.1 | 151 / 200 / 74 / 143 | 80 / 322 | 477 | 65% / 62% | 0.134 |
+| 3 | 5.2 | 55 / 41 / 68 / 45, 3.6 | 134 / 174 / 77 / 131 | 71 / 150 | 394 | 72% / 57% | 0.068 |
 
-The cost gap fell below 0.10 at iteration 3, so the loop stopped converged. Every iteration had eight to eleven times the removals of the free-flow and BPR costs, so the rule rejected all of them and restored the demand (c4420aa7aeecc473, `rockridge.cost-loop.md`). As in round 28, feeding the simulated delays back moves the through traffic toward the observed shares (all four within 10 points at iterations 2 and 3, 62nd St eastbound 58 against 59 counted) by loading Telegraph Ave and the streets west of it until they jam. The loop ran on the round's engine before the trip-tracing change merged (design D9).
+The cost gap fell below 0.10 at iteration 3, so the loop stopped converged. Every iteration had three to nine times the removals of the free-flow and BPR costs, so the rule rejected all of them and restored the demand (c4420aa7aeecc473, `rockridge.cost-loop.md`). At iteration 3 all four headline shares are within 10 points, Hillegass Ave and Colby St northbound through cars are inside their ranges and 62nd St eastbound is 71 against 59 counted, but the southbound blocks stay above their ranges (134 and 174) and Telegraph Ave slows. As in round 28, feeding the simulated delays back moves through traffic toward the observed shares by loading Telegraph Ave and the streets west of it until they jam. The same loop run on the round's engine before the trip-tracing change merged (7b94e620c9d8) gave the same verdict: removals 1.0, 8.2, 11.3 and 8.1 an hour, converged at iteration 3 (gap 0.076) with through cars 126 / 164 / 79 / 138.
 
 ### Result: ten seeds
 
