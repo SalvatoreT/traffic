@@ -13,10 +13,10 @@
 ## 3. Delay-feedback fit
 
 - [x] 3.1 `npm run data`: network changes at one signal, demand flows and frozen split unchanged, no link renumbered.
-- [ ] 3.2 `tools/cost-loop.ts --no-stop` to convergence under the unchanged acceptance rule.
+- [x] 3.2 `tools/cost-loop.ts --no-stop` to convergence under the unchanged acceptance rule.
 
 ## 4. Evaluation and record
 
-- [ ] 4.1 Tests, WASM parity, trace on/off identity, `tests/cut_through_shift.rs`.
-- [ ] 4.2 Validation suite; PM, AM and midday seeds 1 to 10 and PM seeds 11 to 20; `npm run assess -- --publish --noise`; `--od-costs`.
-- [ ] 4.3 Round 33 in the calibration record (older rounds archived, every file under 200 KB); the area's `calibration` note; `tsx tools/import-osm.ts`.
+- [x] 4.1 Tests, WASM parity, trace on/off identity, `tests/cut_through_shift.rs`.
+- [x] 4.2 Validation suite; PM, AM and midday seeds 1 to 10 and PM seeds 11 to 20; `npm run assess -- --publish --noise`; `--od-costs`.
+- [x] 4.3 Round 33 in the calibration record (older rounds archived, every file under 200 KB); the area's `calibration` note; `tsx tools/import-osm.ts`.
