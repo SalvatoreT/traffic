@@ -3352,7 +3352,7 @@ impl Simulation {
 
     /// Choose the assumed movement a trip makes from `start` (ASSUMPTION). A movement counts only while the route through it costs at most the plan's detour
     /// tolerance times the plain route on free-flow costs in the current network and passes no node that the plain route does not pass twice. The primary movement is taken when it counts, else the cheapest
-    /// alternative that counts, else, when the primary movement is cut, a local bypass that keeps its intent (`pick_via_bypass`), else none (the plain route). On success `route` holds the links after the first one (`Start::Node`: after the returned first link;
+    /// alternative that counts, else none (the plain route). When the primary movement is cut, its alternatives and a local bypass that keeps its intent compete on cost instead (`pick_cut_via`). On success `route` holds the links after the first one (`Start::Node`: after the returned first link;
     /// `Start::Link`: after that link).
     fn pick_via(&mut self, start: Start, dest: u32, seed: u32, plan: u32, route: &mut Vec<u32>) -> Option<((u32, u32), Option<u32>)> {
         if plan == NO_PLAN {
@@ -3380,62 +3380,74 @@ impl Simulation {
         }
         ranked.sort_by(|x, y| x.0.total_cmp(&y.0));
         let mut plain_looped: Option<Vec<u32>> = None;
-        for (_, (a, b)) in ranked {
-            let mut r: Vec<u32> = Vec::new();
-            self.router.ensure(dest, &self.topo, &self.eff, &self.link_cost);
-            self.router.ensure_link(a, &self.topo, &self.eff, &self.link_cost);
-            let first = match start {
-                Start::Node(n) => {
-                    let Some(f) = route::first_link(&self.router.link_tables[&a], &self.topo, &self.eff, n, seed) else { continue };
-                    Some(f)
-                }
-                Start::Link(_) => None,
-            };
-            let from = match (start, first) {
-                (_, Some(f)) => f,
-                (Start::Link(l), None) => l,
-                _ => continue,
-            };
-            if !self.walk_via(from, dest, seed, Some((a, b)), &mut r) {
-                continue;
-            }
-            let mut seq = vec![from];
-            seq.extend_from_slice(&r);
-            if !seq.windows(2).any(|w| w[0] == a && w[1] == b) {
-                continue;
-            }
-            let mut nodes: Vec<u32> = Vec::with_capacity(seq.len() + 1);
-            nodes.push(match start {
-                Start::Node(n) => n,
-                Start::Link(l) => self.topo.link_to[l as usize],
-            });
-            if first.is_some() {
-                nodes.push(self.topo.link_to[from as usize]);
-            }
-            nodes.extend(r.iter().map(|&l| self.topo.link_to[l as usize]));
-            let looped = Self::repeated(nodes);
-            if !looped.is_empty() {
-                let plain_looped = plain_looped.get_or_insert_with(|| self.plain_repeats(start, dest, seed));
-                if looped.iter().any(|n| !plain_looped.contains(n)) {
-                    continue;
-                }
-            }
-            // A movement after this one: take the route on from the exit link through it, each stage with its own tolerance and fallback.
-            let next = self.via_plans[plan as usize].next;
-            if next != NO_PLAN {
-                if let Some(k) = seq.windows(2).position(|w| w[0] == a && w[1] == b) {
-                    let mut tail: Vec<u32> = Vec::new();
-                    if self.pick_via(Start::Link(b), dest, seed, next, &mut tail).is_some() {
-                        r.truncate(k);
-                        r.push(b);
-                        r.extend_from_slice(&tail);
-                    }
-                }
-            }
-            route.extend_from_slice(&r);
-            return Some(((a, b), first));
+        // A cut primary movement: its alternatives and the local bypass compete on cost (`pick_cut_via`).
+        if self.via_cut(start, dest, plan) {
+            return self.pick_cut_via(start, dest, seed, plan, &ranked, route);
         }
-        self.pick_via_bypass(start, dest, seed, plan, route)
+        for (_, (a, b)) in ranked {
+            if let Some(x) = self.try_via_move(start, dest, seed, plan, (a, b), route, &mut plain_looped) {
+                return Some(x);
+            }
+        }
+        None
+    }
+
+    /// Build the route of `pick_via` through movement (a, b), or None when it cannot be walked, does not make the movement or loops
+    /// where the plain route does not.
+    fn try_via_move(&mut self, start: Start, dest: u32, seed: u32, plan: u32, (a, b): (u32, u32), route: &mut Vec<u32>, plain_looped: &mut Option<Vec<u32>>) -> Option<((u32, u32), Option<u32>)> {
+        let mut r: Vec<u32> = Vec::new();
+        self.router.ensure(dest, &self.topo, &self.eff, &self.link_cost);
+        self.router.ensure_link(a, &self.topo, &self.eff, &self.link_cost);
+        let first = match start {
+            Start::Node(n) => {
+                let Some(f) = route::first_link(&self.router.link_tables[&a], &self.topo, &self.eff, n, seed) else { return None };
+                Some(f)
+            }
+            Start::Link(_) => None,
+        };
+        let from = match (start, first) {
+            (_, Some(f)) => f,
+            (Start::Link(l), None) => l,
+            _ => return None,
+        };
+        if !self.walk_via(from, dest, seed, Some((a, b)), &mut r) {
+            return None;
+        }
+        let mut seq = vec![from];
+        seq.extend_from_slice(&r);
+        if !seq.windows(2).any(|w| w[0] == a && w[1] == b) {
+            return None;
+        }
+        let mut nodes: Vec<u32> = Vec::with_capacity(seq.len() + 1);
+        nodes.push(match start {
+            Start::Node(n) => n,
+            Start::Link(l) => self.topo.link_to[l as usize],
+        });
+        if first.is_some() {
+            nodes.push(self.topo.link_to[from as usize]);
+        }
+        nodes.extend(r.iter().map(|&l| self.topo.link_to[l as usize]));
+        let looped = Self::repeated(nodes);
+        if !looped.is_empty() {
+            let plain_looped = plain_looped.get_or_insert_with(|| self.plain_repeats(start, dest, seed));
+            if looped.iter().any(|n| !plain_looped.contains(n)) {
+                return None;
+            }
+        }
+        // A movement after this one: take the route on from the exit link through it, each stage with its own tolerance and fallback.
+        let next = self.via_plans[plan as usize].next;
+        if next != NO_PLAN {
+            if let Some(k) = seq.windows(2).position(|w| w[0] == a && w[1] == b) {
+                let mut tail: Vec<u32> = Vec::new();
+                if self.pick_via(Start::Link(b), dest, seed, next, &mut tail).is_some() {
+                    r.truncate(k);
+                    r.push(b);
+                    r.extend_from_slice(&tail);
+                }
+            }
+        }
+        route.extend_from_slice(&r);
+        return Some(((a, b), first));
     }
 
     /// Re-plan the remaining route of an on-link vehicle. Returns false (and removes the vehicle) if unroutable and `drop_if_fail`.
