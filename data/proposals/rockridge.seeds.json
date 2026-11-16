@@ -81,17 +81,6 @@
       "score": 5.2
     },
     {
-      "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p3cq6m9~mn,9q9p3cx02b,125",
-      "source": "search",
-      "note": "published by an earlier search (group unconstrained, option p2, 2026-11-14 through-car change -23.0%)",
-      "added": "2026-11-14",
-      "lastPublished": "2026-11-14",
-      "group": "unconstrained",
-      "size": 2,
-      "changePct": -23.0,
-      "score": null
-    },
-    {
       "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2,175.355~mn,9q9p3fr7b5~mn,9q9p3cq6m9",
       "source": "search",
       "note": "published by an earlier search (group unconstrained, option p3, 2026-11-14 through-car change -62.5%)",
@@ -101,17 +90,6 @@
       "size": 3,
       "changePct": -62.9,
       "score": 56.4
-    },
-    {
-      "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2~mn,9q9p3fr7b5~mn,9q9p3cz9dy,175.355~mn,9q9p3cq6m9~mn,9q9p3cx02b",
-      "source": "search",
-      "note": "published by an earlier search (group unconstrained, option p4, 2026-11-14 through-car change -79.0%)",
-      "added": "2026-11-14",
-      "lastPublished": "2026-11-14",
-      "group": "unconstrained",
-      "size": 5,
-      "changePct": -79.0,
-      "score": null
     },
     {
       "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2~mn,9q9p3fr7b5~mn,9q9p3cz9dy~mn,9q9p3cq6m9~mn,9q9p3cx02b~mn,9q9p3cwkcz",
@@ -180,28 +158,6 @@
       "score": 86.7
     },
     {
-      "link": "#v1;a=rockridge;s=mn,9q9p3cq6m9~mf,9q9p3cx9rf~mn,9q9p3cx02b",
-      "source": "search",
-      "note": "published by an earlier search (unconstrained group, report of commit b46c22d); recovered from the report history",
-      "added": "2026-11-14",
-      "lastPublished": "2026-11-14",
-      "group": "unconstrained",
-      "size": 3,
-      "changePct": null,
-      "score": null
-    },
-    {
-      "link": "#v1;a=rockridge;s=mn,9q9p3cq6m9~mf,9q9p3crqtn",
-      "source": "search",
-      "note": "published by an earlier search (unconstrained group, report of commit b46c22d); recovered from the report history",
-      "added": "2026-11-14",
-      "lastPublished": "2026-11-14",
-      "group": "unconstrained",
-      "size": 2,
-      "changePct": null,
-      "score": null
-    },
-    {
       "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2,175.355~mn,9q9p3fr7b5",
       "source": "search",
       "note": "",
@@ -222,6 +178,50 @@
       "size": 4,
       "changePct": -73.1,
       "score": 65.8
+    },
+    {
+      "link": "#v1;a=rockridge;p=pm_peak;s=dd,9q9p642ut2,41~mf,9q9p3fr338~mn,9q9p3czrpw,175.355~mn,9q9p3cxtt7~mn,9q9p3cq6m9~mn,9q9p3cx02b",
+      "source": "search",
+      "note": "published by an earlier search (group unconstrained, option p1, 2026-11-16 through-car change -71.5%)",
+      "added": "2026-11-16",
+      "lastPublished": "2026-11-16",
+      "group": "unconstrained",
+      "size": 6,
+      "changePct": -71.5,
+      "score": null
+    },
+    {
+      "link": "#v1;a=rockridge;p=pm_peak;s=dd,9q9p642ut2,41~mf,9q9p3fr338~mn,9q9p3czrpw,175.355~sl,9q9p3cxxsh,8.94~mn,9q9p3cx02b~mf,9q9p3cqb23",
+      "source": "search",
+      "note": "published by an earlier search (group unconstrained, option p2, 2026-11-16 through-car change -59.3%)",
+      "added": "2026-11-16",
+      "lastPublished": "2026-11-16",
+      "group": "unconstrained",
+      "size": 6,
+      "changePct": -59.3,
+      "score": null
+    },
+    {
+      "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p3fprdr~mn,9q9p642ut2,80.260~mn,9q9p641p03~mn,9q9p3cxtt7",
+      "source": "search",
+      "note": "published by an earlier search (group unconstrained, option p3, 2026-11-16 through-car change -42.1%)",
+      "added": "2026-11-16",
+      "lastPublished": "2026-11-16",
+      "group": "unconstrained",
+      "size": 4,
+      "changePct": -42.1,
+      "score": null
+    },
+    {
+      "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p641p03",
+      "source": "search",
+      "note": "published by an earlier search (group unconstrained, option p5, 2026-11-16 through-car change -14.1%)",
+      "added": "2026-11-16",
+      "lastPublished": "2026-11-16",
+      "group": "unconstrained",
+      "size": 1,
+      "changePct": -14.1,
+      "score": null
     }
   ]
 }
