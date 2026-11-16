@@ -6,6 +6,10 @@ use super::*;
 /// The origin gate is east of Low Rd and East Blvd; the destination gate is west of Top Ave. Returns the network, the node grid, the
 /// origin and destination, and links by name.
 fn dogleg_net() -> (Network, [[u32; 4]; 3], u32, u32, HashMap<&'static str, u32>) {
+    dogleg_net_v(15.0)
+}
+
+fn dogleg_net_v(east_v: f64) -> (Network, [[u32; 4]; 3], u32, u32, HashMap<&'static str, u32>) {
     let mut b = B::default();
     let mut g = [[0u32; 4]; 3];
     for i in 0..3 {
@@ -21,7 +25,7 @@ fn dogleg_net() -> (Network, [[u32; 4]; 3], u32, u32, HashMap<&'static str, u32>
     for i in 0..3 {
         let class = if i == 2 { RoadClass::Secondary } else { RoadClass::Residential };
         for j in 0..3 {
-            let (f, r) = b.two_way(g[i][j], g[i][j + 1], class, 1, if i == 2 { 15.0 } else { 11.2 });
+            let (f, r) = b.two_way(g[i][j], g[i][j + 1], class, 1, if i == 2 { east_v } else { 11.2 });
             b.links[f as usize].name = cols[i].into();
             b.links[r as usize].name = cols[i].into();
             if i == 1 {
@@ -29,6 +33,9 @@ fn dogleg_net() -> (Network, [[u32; 4]; 3], u32, u32, HashMap<&'static str, u32>
             }
             if i == 0 {
                 l.insert(["west0n", "west1n", "west2n"][j], f);
+            }
+            if i == 2 && j == 2 {
+                l.insert("east2n", f);
             }
         }
     }
@@ -42,6 +49,9 @@ fn dogleg_net() -> (Network, [[u32; 4]; 3], u32, u32, HashMap<&'static str, u32>
             }
             if j == 3 && i == 0 {
                 l.insert("top0w", r);
+            }
+            if j == 3 && i == 1 {
+                l.insert("top1w", r);
             }
         }
     }
@@ -89,4 +99,31 @@ fn a_cut_counted_turn_takes_the_one_block_dogleg() {
         assert!(t.contains(&l["west1n"]) && t.contains(&l["west2n"]) && t.contains(&l["top_out"]), "{t:?}");
         assert!(!t.contains(&l["mid1n"]) && !t.contains(&l["mid2n"]));
     }
+}
+
+/// Trails of the O-W trips whose counted turn (north on Mid St, left onto Top Ave) has a configured alternative (north on East Blvd,
+/// left onto Top Ave), with Mid St filtered at Second St so the counted turn is cut.
+fn cut_trails(east_v: f64) -> (Vec<Vec<u32>>, HashMap<&'static str, u32>) {
+    let (net, g, o, w, l) = dogleg_net_v(east_v);
+    let mut dem = demand(&[(o, w, 240.0)]);
+    dem.periods[0].flows[0].via = Some(Via { from: l["mid2n"], to: l["top0w"], max_detour: Some(1.3), alternatives: vec![ViaMove { from: l["east2n"], to: l["top1w"] }], then: None });
+    let ivs = format!(r#"[{{"type":"modal_filter","node":{}}}]"#, g[1][2]);
+    let cfg = Config { record_trips: true, interventions: serde_json::from_str(&ivs).unwrap(), ..cfg_empty(1, 1.0) };
+    let mut s = Simulation::from_parts(net, dem, cfg).unwrap();
+    step_n(&mut s, 1200.0);
+    (s.trip_records().iter().filter(|t| t.origin == o && t.dest == w).map(|t| t.trail.clone()).collect(), l)
+}
+
+/// Lead decision of 2026-11-15: a cut counted turn's alternatives and its local bypass compete on cost; neither kind comes first.
+#[test]
+fn a_cut_turn_takes_the_cheaper_of_its_alternative_and_the_bypass() {
+    // East Blvd fast (15 m/s): the alternative is the cheaper way onto Top Ave and the trips take it.
+    let (t, l) = cut_trails(15.0);
+    let alt = t.iter().filter(|t| has(t, l["east2n"], l["top1w"])).count();
+    assert!(t.len() > 20 && alt * 10 >= t.len() * 9, "{alt} of {} took the alternative", t.len());
+    // East Blvd at 6 m/s: the alternative costs about 1.23 times the dogleg at free flow, inside the 1.3 tolerance, so before this
+    // decision every trip took it (checked with the alternatives ranked first); now the cheaper bypass by First St and West St wins.
+    let (t, l) = cut_trails(6.0);
+    let bypass = t.iter().filter(|t| has(t, l["mid0n"], l["first_w"]) && t.contains(&l["top_out"])).count();
+    assert!(t.len() > 20 && bypass * 10 >= t.len() * 9, "{bypass} of {} took the bypass", t.len());
 }
