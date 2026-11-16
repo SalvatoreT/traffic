@@ -90,6 +90,9 @@ pub struct ApproachGreen {
     /// `green_s` is then the approach's whole through green and the phase it has alone lasts `green_s` less the partner's green.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub runs_with: Vec<u32>,
+    /// Clearance interval (yellow and all-red) after the phase that holds this approach, when the source gives one per phase; else the timing's `clearance_s`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub clearance_s: Option<f32>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -131,6 +134,9 @@ pub struct Link {
     /// left-turn pocket uses one of them instead of adding a lane.
     #[serde(default)]
     pub left_lanes: u32,
+    /// Additive: the approach has no left-turn lane (an observed lane coding, `signalObservations` `noLeftTurnLane`), so the class-rule pocket is not added.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub no_pocket: bool,
     /// Additive: direction (degrees clockwise from north) in which the link leaves its start node, and in which it arrives at its end
     /// node, as a driver experiences the street. The importer measures them on the way geometry before a junction join moved the link end to the
     /// cluster centroid, so a side street of a merged staggered junction does not read as running along the through street. Missing: the

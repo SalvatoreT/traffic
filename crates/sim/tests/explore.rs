@@ -96,6 +96,7 @@ impl B {
                 sidewalk: None,
                 crossings: vec![],
                 left_lanes: 0,
+                no_pocket: false,
                 from_bearing: None,
                 to_bearing: None,
             });

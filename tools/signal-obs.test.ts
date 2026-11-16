@@ -38,7 +38,7 @@ describe('signal observations', () => {
     expect(ns[1].signalTiming?.[0].greens[0].links).toEqual([1]);
     expect(ns[0].signalTiming).toBeUndefined();
   });
-  it('carries an observed clearance interval and reports approaches of one timing that disagree on it', () => {
+  it('carries an observed clearance interval and reports an approach that leaves it out while the timing has one', () => {
     const ns = [node(0, 'signal'), node(1, 'uncontrolled'), node(2, 'uncontrolled')];
     const ls = [{ ...link(0, 1, 0, 'Main Street'), toBearing: 90 }, { ...link(1, 2, 0, 'Main Street'), toBearing: 270 }] as NetLink[];
     const o = { at: ['Main Street'], approach: 'Main Street', periods: ['pm'], cycleSeconds: 50, ownPhase: true, clearanceSeconds: 4, source: 'doc' };
@@ -46,6 +46,14 @@ describe('signal observations', () => {
     expect(ns[0].signalTiming).toEqual([{ periods: ['pm'], cycleS: 50, greens: [{ links: [0], greenS: 29, ownPhase: true }, { links: [1], greenS: 13, ownPhase: true }], source: 'doc', clearanceS: 4 }]);
     const ns2 = [node(0, 'signal'), node(1, 'uncontrolled'), node(2, 'uncontrolled')];
     expect(applySignalObservations(ns2, ls, [{ ...o, heading: 90, greenSeconds: 29 }, { ...o, heading: 270, greenSeconds: 13, clearanceSeconds: undefined }])).toHaveLength(1);
+  });
+  it('keeps a per-phase clearance when the approaches of one timing have different ones, and marks an approach coded with no left-turn lane', () => {
+    const ns = [node(0, 'signal'), node(1, 'uncontrolled'), node(2, 'uncontrolled'), node(3, 'uncontrolled')];
+    const ls = [{ ...link(0, 1, 0, 'Main Street'), toBearing: 90 }, { ...link(1, 2, 0, 'Main Street'), toBearing: 270 }, { ...link(2, 3, 0, 'Pine Street'), toBearing: 0 }] as NetLink[];
+    const o = { at: ['Main Street', 'Pine Street'], periods: ['pm'], cycleSeconds: 100, source: 'doc' };
+    expect(applySignalObservations(ns, ls, [{ ...o, approach: 'Main Street', heading: 90, greenSeconds: 17, ownPhase: true, clearanceSeconds: 4.5, noLeftTurnLane: true }, { ...o, approach: 'Main Street', heading: 270, greenSeconds: 17.5, ownPhase: true, clearanceSeconds: 4.5 }, { ...o, approach: 'Pine Street', greenSeconds: 50.5, clearanceSeconds: 6 }])).toEqual([]);
+    expect(ns[0].signalTiming).toEqual([{ periods: ['pm'], cycleS: 100, greens: [{ links: [0], greenS: 17, ownPhase: true }, { links: [1], greenS: 17.5, ownPhase: true }, { links: [2], greenS: 50.5, clearanceS: 6 }], source: 'doc', clearanceS: 4.5 }]);
+    expect(ls.map((l) => l.noPocket)).toEqual([true, undefined, undefined]);
   });
   it('takes an observed protected phase without timing, and rejects half a timing', () => {
     const ns = [node(0, 'signal'), node(1, 'uncontrolled'), node(2, 'uncontrolled')];

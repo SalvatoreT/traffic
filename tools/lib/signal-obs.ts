@@ -19,8 +19,10 @@ export interface SignalObservation {
   ownPhase?: boolean;
   /** Compass direction of travel of another approach at the same signal that this one also has green with: a protected left that leads the opposing through. `greenSeconds` is then this approach's whole through green. */
   runsWithHeading?: number;
-  /** Clearance interval (yellow and all-red) after each phase, when the source gives one. Observations of one timing must agree on it. */
+  /** Clearance interval (yellow and all-red) after the approach's phase, when the source gives one. When observations of one timing differ, each approach's phase keeps its own. */
   clearanceSeconds?: number;
+  /** Observed lane coding: the approach has no left-turn lane (its left turns share a through lane), so the simulator adds no class-rule pocket. */
+  noLeftTurnLane?: boolean;
   source: string;
 }
 
@@ -46,10 +48,14 @@ export function applySignalObservations(nodes: NetNode[], links: NetLink[], obs:
     if (!node || !ins.length) { misses.push(`${o.at.join(' / ')} (${o.approach}): ${hit.length > 1 ? 'several signals match' : !node ? 'no signal matches' : 'no approach link'}`); continue; }
     const runsWith = node && o.runsWithHeading !== undefined ? links.filter((l) => l.to === node.id && l.name === o.approach && angDiff(l.toBearing ?? 0, o.runsWithHeading!) <= HEADING_TOL).map((l) => l.id) : [];
     if (o.runsWithHeading !== undefined && !runsWith.length) { misses.push(`${o.at.join(' / ')} (${o.approach}): no approach link to run with`); continue; }
-    const green = { links: ins, greenS: o.greenSeconds ?? 0, ...(o.ownPhase ? { ownPhase: true } : {}), ...(runsWith.length ? { runsWith } : {}) };
+    const green: { links: number[]; greenS: number; ownPhase?: boolean; runsWith?: number[]; clearanceS?: number } = { links: ins, greenS: o.greenSeconds ?? 0, ...(o.ownPhase ? { ownPhase: true } : {}), ...(runsWith.length ? { runsWith } : {}) };
     // Observations of one signal in the same periods and cycle are one timing with several approaches.
     const same = (node.signalTiming ??= []).find((t) => t.cycleS === (o.cycleSeconds ?? 0) && t.periods.join() === o.periods.join());
-    if (same && same.clearanceS !== o.clearanceSeconds) { misses.push(`${o.at.join(' / ')} (${o.approach}): clearance ${o.clearanceSeconds ?? 'default'} s differs from ${same.clearanceS ?? 'default'} s of the same timing`); continue; }
+    if (same && same.clearanceS !== o.clearanceSeconds) {
+      if (o.clearanceSeconds === undefined) { misses.push(`${o.at.join(' / ')} (${o.approach}): no clearance given, but the same timing has ${same.clearanceS} s`); continue; }
+      green.clearanceS = o.clearanceSeconds;
+    }
+    if (o.noLeftTurnLane) for (const l of links) if (ins.includes(l.id)) l.noPocket = true;
     if (same) { same.greens.push(green); if (!same.source.includes(o.source)) same.source += `; ${o.source}`; } else node.signalTiming.push({ periods: o.periods, cycleS: o.cycleSeconds ?? 0, greens: [green], source: o.source, ...(o.clearanceSeconds !== undefined ? { clearanceS: o.clearanceSeconds } : {}) });
   }
   return misses;

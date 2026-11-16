@@ -45,6 +45,7 @@ impl B {
             sidewalk: None,
             crossings: vec![],
             left_lanes: 0,
+            no_pocket: false,
             from_bearing: None,
             to_bearing: None,
         });
@@ -955,7 +956,7 @@ fn traffic_circle_replaces_control_and_caps_speed() {
 #[test]
 fn observed_signal_timing_sets_cycle_and_green_of_the_approach() {
     let (mut net, x) = cross4(Control::Signal, RoadClass::Residential, false);
-    net.nodes[x.c as usize].signal_timing = vec![SignalTiming { periods: vec!["p".into()], cycle_s: 79.0, greens: vec![ApproachGreen { links: vec![x.s_in], green_s: 4.0, own_phase: false, runs_with: Vec::new() }], source: "test".into(), clearance_s: None }];
+    net.nodes[x.c as usize].signal_timing = vec![SignalTiming { periods: vec!["p".into()], cycle_s: 79.0, greens: vec![ApproachGreen { links: vec![x.s_in], green_s: 4.0, own_phase: false, runs_with: Vec::new(), clearance_s: None }], source: "test".into(), clearance_s: None }];
     let d = demand(&[(x.w, x.e, 700.0), (x.e, x.w, 700.0), (x.s, x.n, 150.0), (x.n, x.s, 150.0)]);
     let mut sim = Simulation::from_parts(net.clone(), d, cfg(2, 1.0)).unwrap();
     {
@@ -985,7 +986,7 @@ fn observed_own_phase_separates_the_approach_from_the_opposing_one() {
     net.nodes[x.c as usize].signal_timing = vec![SignalTiming {
         periods: vec!["p".into()],
         cycle_s: 110.0,
-        greens: vec![ApproachGreen { links: vec![x.w_in], green_s: 33.5, own_phase: true, runs_with: Vec::new() }, ApproachGreen { links: vec![x.e_in], green_s: 27.5, own_phase: true, runs_with: Vec::new() }],
+        greens: vec![ApproachGreen { links: vec![x.w_in], green_s: 33.5, own_phase: true, runs_with: Vec::new(), clearance_s: None }, ApproachGreen { links: vec![x.e_in], green_s: 27.5, own_phase: true, runs_with: Vec::new(), clearance_s: None }],
         source: "test".into(),
         clearance_s: None,
     }];
@@ -1011,12 +1012,36 @@ fn observed_own_phase_separates_the_approach_from_the_opposing_one() {
 }
 
 #[test]
+fn observed_split_phases_keep_the_clearance_of_each_phase() {
+    let (mut net, x) = cross4(Control::Signal, RoadClass::Residential, false);
+    let g = |l: u32, green: f32, own: bool, c: Option<f32>| ApproachGreen { links: vec![l], green_s: green, own_phase: own, runs_with: Vec::new(), clearance_s: c };
+    let mut ns = g(x.n_in, 50.5, false, Some(6.0));
+    ns.links.push(x.s_in);
+    net.nodes[x.c as usize].signal_timing = vec![SignalTiming { periods: vec!["p".into()], cycle_s: 100.0, greens: vec![g(x.w_in, 17.0, true, None), g(x.e_in, 17.5, true, None), ns], source: "test".into(), clearance_s: Some(4.5) }];
+    let d = demand(&[(x.w, x.e, 300.0), (x.e, x.w, 300.0), (x.w, x.n, 200.0), (x.s, x.n, 500.0), (x.n, x.s, 500.0)]);
+    let sim = Simulation::from_parts(net.clone(), d.clone(), cfg(2, 1.0)).unwrap();
+    let p = sim.test_eff().sig[x.c as usize].as_ref().expect("signal plan");
+    assert_eq!(p.links.len(), 3, "{:?}", p.links);
+    let at = |l: u32| p.links.iter().position(|q| q.contains(&l)).unwrap();
+    let (w, e, n) = (at(x.w_in), at(x.e_in), at(x.n_in));
+    assert!(w != e && at(x.s_in) == n);
+    assert!((p.phases[w].1 - 17.0).abs() < 0.01 && (p.phases[e].1 - 17.5).abs() < 0.01 && (p.phases[n].1 - 50.5).abs() < 0.01, "{:?}", p.phases);
+    assert!((p.cycle - 100.0).abs() < 0.01);
+    let next = |i: usize| if i + 1 < p.phases.len() { p.phases[i + 1].0 } else { p.cycle };
+    assert!((next(n) - p.phases[n].0 - 56.5).abs() < 0.01 && (next(w) - p.phases[w].0 - 21.5).abs() < 0.01, "{:?}", p.phases);
+    // A clearance that does not fit the cycle is an issue, not a stretched plan.
+    net.nodes[x.c as usize].signal_timing[0].greens[2].clearance_s = Some(7.0);
+    let err = Simulation::from_parts(net, d, cfg(2, 1.0)).err().expect("rejected");
+    assert!(err.contains("16.0 s of clearance in all") && err.contains("101.0 s"), "{err}");
+}
+
+#[test]
 fn observed_lead_lag_gives_the_leading_approach_both_phases() {
     let (mut net, x) = cross4(Control::Signal, RoadClass::Residential, false);
     net.nodes[x.c as usize].signal_timing = vec![SignalTiming {
         periods: vec!["p".into()],
         cycle_s: 110.0,
-        greens: vec![ApproachGreen { links: vec![x.w_in], green_s: 57.2, own_phase: true, runs_with: vec![x.e_in] }, ApproachGreen { links: vec![x.e_in], green_s: 27.6, own_phase: true, runs_with: Vec::new() }],
+        greens: vec![ApproachGreen { links: vec![x.w_in], green_s: 57.2, own_phase: true, runs_with: vec![x.e_in], clearance_s: None }, ApproachGreen { links: vec![x.e_in], green_s: 27.6, own_phase: true, runs_with: Vec::new(), clearance_s: None }],
         source: "test".into(),
         clearance_s: None,
     }];
@@ -1397,6 +1422,12 @@ fn left_pocket_exists_on_signalized_arterial_approaches_only() {
     assert!(t.pocket[x.w_in as usize] && t.pocket[x.e_in as usize], "secondary approach to a signal has a pocket");
     assert!(!t.pocket[x.s_in as usize], "residential approach has none");
     assert_eq!(t.nlanes(x.w_in as usize), 2);
+    let (mut net, x) = sig_cross(1);
+    net.links[x.w_in as usize].no_pocket = true;
+    let sim = empty_sim(net);
+    let t = sim.test_topo();
+    assert!(!t.pocket[x.w_in as usize] && t.pocket[x.e_in as usize], "an approach coded with no left-turn lane has no pocket");
+    assert_eq!(t.nlanes(x.w_in as usize), 1);
 }
 
 #[test]

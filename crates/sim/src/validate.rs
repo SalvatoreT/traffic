@@ -73,6 +73,7 @@ impl B {
             sidewalk: None,
             crossings: vec![],
             left_lanes: 0,
+            no_pocket: false,
             from_bearing: None,
             to_bearing: None,
         });
@@ -733,7 +734,7 @@ pub fn run_all() -> Vec<Case> {
     {
         let a = Appr { p_left: 1.0, pocket: false, opp: 500.0, ..base };
         let protect = |net: &mut Network, x: &Cross| {
-            net.nodes[x.c as usize].signal_timing = vec![SignalTiming { periods: vec!["p".into()], cycle_s: 0.0, greens: vec![ApproachGreen { links: vec![x.w_in], green_s: 0.0, own_phase: true, runs_with: Vec::new() }], source: "phasing only".into(), clearance_s: None }];
+            net.nodes[x.c as usize].signal_timing = vec![SignalTiming { periods: vec!["p".into()], cycle_s: 0.0, greens: vec![ApproachGreen { links: vec![x.w_in], green_s: 0.0, own_phase: true, runs_with: Vec::new(), clearance_s: None }], source: "phasing only".into(), clearance_s: None }];
         };
         let (cap, gc) = approach_cap(a, 1, &[], protect);
         let (perm, _) = approach_cap(a, 1, &[], |_, _| {});
