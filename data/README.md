@@ -31,7 +31,7 @@ Each Proposals card hovers its changes: where the through cars that used a close
 npm run data:redistribution            # --jobs 4 by default; --only <proposal id>, --force
 ```
 
-Runs are traced and slow: ten seeds of today's traffic plus ten of each package, about a minute and a half to three minutes each on one core. Raw files are a few kilobytes each.
+Runs are traced and slow: ten seeds of today's traffic plus ten of each package. The six published packages took about 41 minutes on four cores (`--jobs 4`, while another job shared the machine; a package alone takes four to nine minutes). Raw files are 2 to 8 KB each.
 
 A shared link to a published proposal opens already at the end of the hour. `npm run data:results` runs every proposal in `public/data/<area>.proposals.json` (all groups, search and reference) for every demand period with the same WASM build the app runs (build it first with `npm run wasm`), at the app's seed and 100% demand, and writes `public/data/results/<area>/<key>.json` plus `index.json`. Run it after `npm run data` or any change to the simulator or the proposals file:
 

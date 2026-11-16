@@ -16,9 +16,9 @@
 - [x] 3.2 `npm run data:redistribution` generator
 - [x] 3.3 Worker serves `redistribution/<area>/<file>.json`
 - [x] 3.4 Docs: AGENTS.md command list, data/README.md
-- [ ] 3.5 Run the generator for the six published packages, report time and sizes
+- [x] 3.5 Run the generator for the six published packages, report time and sizes
 
 ## 4. Verify
 
-- [ ] 4.1 Screenshots, desktop and phones, light and dark, hover states and the downloaded JPEG
-- [ ] 4.2 Tests, typecheck, validate, archive, merge, push
+- [x] 4.1 Screenshots, desktop and phones, light and dark, hover states and the downloaded JPEG
+- [x] 4.2 Tests, typecheck, validate, archive, merge, push

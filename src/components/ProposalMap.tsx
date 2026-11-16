@@ -151,10 +151,13 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
           <>
             <p>{redistributionLine(selItem, when)}</p>
             {routes.length > 0 && (
-              <ol className="pm-routes">{selItem.routes.slice(0, 3).map((r, k) => <li key={r.streets}><strong>{k + 1}.</strong> {r.streets}: {Math.round(r.perHour)} cars an hour</li>)}</ol>
+              <ul className="pm-routes">{selItem.routes.slice(0, 3).map((r, k) => <li key={r.streets}><strong>{k + 1}.</strong> {r.streets}: {Math.round(r.perHour)} cars an hour</li>)}</ul>
             )}
-            <dl className="pm-rows">{redistributionRows(selItem).map((r) => <div key={r.label}><dt>{r.label}</dt><dd>{r.value}</dd></div>)}</dl>
-            {selItem.receiving.length > 0 && <p className="small">Side streets that gain these cars: {selItem.receiving.map((x) => `${x.block} (${Math.round(x.perHour)} an hour)`).join('; ')}.</p>}
+            <details className="pm-detail">
+              <summary>Where they went, in detail</summary>
+              <dl className="pm-rows">{redistributionRows(selItem).map((r) => <div key={r.label}><dt>{r.label}</dt><dd>{r.value}</dd></div>)}</dl>
+              {selItem.receiving.length > 0 && <p className="small">Side streets that gain these cars: {selItem.receiving.map((x) => `${x.block} (${Math.round(x.perHour)} an hour)`).join('; ')}.</p>}
+            </details>
             {stored && <p className="muted small">{redistributionBasis(stored)}</p>}
           </>
         ) : (
