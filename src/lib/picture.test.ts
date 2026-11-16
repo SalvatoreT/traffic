@@ -62,7 +62,7 @@ describe('picture words', () => {
   });
   it('says the period once, only when the figures average more than one', () => {
     expect(periodNote(['PM peak'], 'PM peak')).toBe('');
-    expect(periodNote(['AM peak', 'PM peak', 'Midday'], 'PM peak')).toBe('The figures on this card average AM peak, PM peak and Midday. This picture shows the PM peak only.');
+    expect(periodNote(['AM peak', 'PM peak', 'Midday'], 'PM peak')).toBe('The figures on this card average AM peak, PM peak and Midday. This map shows the PM peak only.');
     expect(pictureCaption('PM peak')).toBe('PM peak, change in through cars an hour on each block, proposal vs. today');
   });
   it('names the biggest drop and gain in the alt text, with the card\'s total for that period', () => {

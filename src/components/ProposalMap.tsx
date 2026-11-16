@@ -134,7 +134,7 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
           <p>{t.line}</p>
           {t.noise && <p className="muted small">{t.noise}</p>}
           <p className="small">{t.all ?? ALL_CARS_MISSING}</p>
-          <p className="muted small">Through cars only: cars with no trip that starts or ends in the area. {seedsPhrase(runs)}.</p>
+          <p className="muted small">Through cars only: cars with no trip that starts or ends in the area; {seedsPhrase(runs)}.</p>
         </div>
       );
     }
@@ -259,6 +259,7 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
         </div>
         <div className="pm-side">
           <div className="pm-read" aria-live="polite">{readout}</div>
+          <div className="pm-lists">
           <h5>Streets that change</h5>
           {ranked.length === 0 ? <p className="muted small">No side-street block changes by a whole car an hour in the {when}.</p> : (
             <>
@@ -277,14 +278,15 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
                   return (
                     <li key={i} className={rowCls(s)}>
                       <button type="button" className="pm-link" {...rowProps(s)}>{ivLabel(i)}</button>
-                      <span className="muted small"> {it ? redistributionLine(it, when) : redist.status === 'loading' || redist.status === 'idle' ? 'Loading…' : redist.status === 'stale' ? `Redirect data out of date: ${redist.reason}.` : redist.status === 'ok' ? 'No redirect data for this change.' : 'Redirect data not published for this proposal.'}</span>
+                      {it ? <span className="muted small"> {redistributionLine(it, when)}</span> : redist.status === 'loading' || redist.status === 'idle' ? <span className="muted small"> Loading…</span> : redist.status === 'ok' ? <span className="muted small"> No redirect data for this change.</span> : null}
                     </li>
                   );
                 })}
               </ul>
-              {redist.status !== 'ok' && redist.status !== 'loading' && redist.status !== 'idle' && onTrace && <p className="small">Run it live with <button type="button" className="btn small-btn" onClick={onTrace}>Where traffic goes</button>.</p>}
+              {(redist.status === 'missing' || redist.status === 'stale') && <p className="small muted">{redist.status === 'stale' ? `The stored redirect data is out of date (${redist.reason}).` : 'No stored redirect data has been published for this proposal.'} {onTrace && <>Run it live with <button type="button" className="btn small-btn" onClick={onTrace}>Where traffic goes</button>.</>}</p>}
             </>
           )}
+          </div>
         </div>
       </div>
     </section>

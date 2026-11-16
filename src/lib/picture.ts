@@ -68,7 +68,7 @@ export function pictureCaption(periodLabel: string): string {
 export function periodNote(periodLabels: string[], pictureLabel: string): string {
   if (periodLabels.length <= 1) return '';
   const list = `${periodLabels.slice(0, -1).join(', ')} and ${periodLabels[periodLabels.length - 1]}`;
-  return `The figures on this card average ${list}. This picture shows the ${pictureLabel} only.`;
+  return `The figures on this card average ${list}. This map shows the ${pictureLabel} only.`;
 }
 
 /** Where the picture and the card's named block disagree, said plainly instead of hidden. Empty when they agree or the card names no block. */

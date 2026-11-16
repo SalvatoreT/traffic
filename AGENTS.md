@@ -31,6 +31,7 @@ areas are data.
 - `npm run data:cv`: build only the cross-validation demand (`target/validation/<area>.demand.json`)
 - `npm run data:fetch`: download source data from its origins
 - `npm run data:assumptions`: write the Assumptions tab table from the demand config and fit report
+- `npm run data:redistribution`: for each published proposal, trace today and the package on the proposal's seeds and store where the through cars that used each closure go (`public/data/redistribution/<area>/`; needs `npm run wasm`; run after the search, before `data:results`; `--jobs N`, `--only <id>`, `--force`; see `data/README.md`)
 - `npm run data:results`: precompute the finished hour of every published proposal for each period (needs `npm run wasm`; see `data/README.md`)
 - `npm run simulate -- --link "<url or #v1;...>"`: run one scenario headless and print JSON (`--find "<streets>"` looks up places; needs `npm run wasm` and the data; see `docs/run-locally.md`)
 - `npm run shard -- <inputs|assess|explore> ...`: split a heavy batch across child sessions and merge the results (`docs/sharded-runs.md`)

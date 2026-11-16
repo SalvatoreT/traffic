@@ -25,6 +25,14 @@ The OSM fetch tries the Overpass mirrors first. When none answers (the case on 2
 
 ## Precomputed scenario results
 
+Each Proposals card hovers its changes: where the through cars that used a closed movement go with the package. `npm run data:redistribution` makes that from traced runs (build the WASM first with `npm run wasm`). For every proposal in `public/data/<area>.proposals.json` it runs today's traffic once per seed and the proposal's package once per seed, on the proposal's own confirmation seeds and the period of its picture, and follows the baseline through trips (neither end in the study area) that drove each closed movement of each of its filters, diverters, turn bans and one-ways (the accounting of `npm run simulate -- --redistribution`). It writes `public/data/redistribution/<area>/<group>.<proposal>.json`: per intervention, cars an hour that used it, where they were in the package's run (other side streets, bounding streets or streets already used, removed, found no route, still waiting, not followed), the top routes with their links, and the side-street blocks that gain. Each file carries the proposal's link, period, seeds and the network hash, demand hash and simulator fingerprint it was made on; the card shows it only when all of them match the card's own figures and what is loaded, and otherwise says the redirect data is not available. A file that is current is skipped unless `--force`. Run it after the proposal search and before `npm run data:results`:
+
+```sh
+npm run data:redistribution            # --jobs 4 by default; --only <proposal id>, --force
+```
+
+Runs are traced and slow: ten seeds of today's traffic plus ten of each package, about a minute and a half to three minutes each on one core. Raw files are a few kilobytes each.
+
 A shared link to a published proposal opens already at the end of the hour. `npm run data:results` runs every proposal in `public/data/<area>.proposals.json` (all groups, search and reference) for every demand period with the same WASM build the app runs (build it first with `npm run wasm`), at the app's seed and 100% demand, and writes `public/data/results/<area>/<key>.json` plus `index.json`. Run it after `npm run data` or any change to the simulator or the proposals file:
 
 ```

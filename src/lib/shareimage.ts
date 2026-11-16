@@ -121,7 +121,7 @@ export function mapSvg(model: PictureModel, opts: MapOptions = {}): string {
 }
 
 /** Longest the picture may grow before the changes list is shortened, in layout px (the width is `SHARE_W`). */
-export const SHARE_MAX_H = 960;
+export const SHARE_MAX_H = 1080;
 /** A change label up to its first comma: the long ones go on to say which legs a diverter joins. */
 export const firstClause = (label: string): string => label.replace(/,.*$/, '');
 
