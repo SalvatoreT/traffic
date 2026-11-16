@@ -4,16 +4,16 @@
       "inputs": {
         "areaConfig": {
           "path": "data/areas/rockridge.json",
-          "sha256": "496b36ff7439ce481998de6619024847146088ccfa1d8f2bfb5210adb20832ec"
+          "sha256": "2635dbe670726c6a59bb9740e88e185342e7e642af076c3fed1565c16ee73d8d"
         },
         "demand": {
           "path": "public/data/rockridge.demand.json",
-          "sha256": "bef51b684a8c079ce5e133e089df0659b422ca2ec77bd6b8f5784e38bf1bd93c"
+          "sha256": "1c798217e72fb1babf4c6099b006aaf142efaba80201f7c21d3bfec9002b41bd"
         },
         "demandBuild": {
           "config": "9b16716a3690c6065ae2e8adf352751227d0bf19655a506fe7670bb84028f9e6",
           "countFile": "0ac7a3b72c8a9b3a243019b9e54ecbbc3d410f4d1cefb5b8f37b1d97de7080ea",
-          "network": "6a8285d5076f9ddc9042b3a4554998e61b5427fdb8fbbbbaaa8572cd7b18f4b0",
+          "network": "f9fa09a5726644d77f5535bc402357b37f7201e53df9eaebb8bb455912da1576",
           "split": "be72380b485ec5fcd5e3c59d4c5601060f3736cfb8238d6aad912293ced0928a",
           "view": "shipped"
         },
@@ -27,7 +27,7 @@
         },
         "network": {
           "path": "public/data/rockridge.network.json",
-          "sha256": "6a8285d5076f9ddc9042b3a4554998e61b5427fdb8fbbbbaaa8572cd7b18f4b0"
+          "sha256": "f9fa09a5726644d77f5535bc402357b37f7201e53df9eaebb8bb455912da1576"
         },
         "split": {
           "path": "data/demand/rockridge.split.json",
@@ -74,7 +74,7 @@
       "simulator": {
         "dirty": false,
         "fingerprint": "f0df1aabc323bca5893215e1df1afbff",
-        "revision": "41da10f973e828867f60e2191abcc76b9b19588d",
+        "revision": "c2a52557fc988a563d971e408c5a16898074e996",
         "version": "0.1.0"
       }
     },
@@ -82,43 +82,43 @@
     "summaryOf": [
       {
         "seed": 1,
-        "sha256": "797134d4370b762c64c3a91c09d2a84f58b1ce7547698f7b5fd29e350ad9465e"
+        "sha256": "70a2f513b0a9186324677805f8564ecec9f82bdd3fc459ca2e95eec888f3ce1b"
       },
       {
         "seed": 2,
-        "sha256": "8fdaa761c3c8d83bd4a63ad0ca9657add330f3a90c4ba37e14bde7ad923d1613"
+        "sha256": "2b135f91e575ccbda6fe42dc87d00328377c879768fb22699b11cf079e3a76b4"
       },
       {
         "seed": 3,
-        "sha256": "1bc5e1df1f7dc6c7a4db621d538db1c76321d54753b42b46452ca6cf9a25c0d6"
+        "sha256": "ce0c964df1d36c8f30075a37113c88d7a646fd7754eb09599dbdd6970270b0de"
       },
       {
         "seed": 4,
-        "sha256": "de5c9e79e28fd4f318898f0ae4d73255dd49d71b4ed3c3307080359bb6a40548"
+        "sha256": "3420de49fa0ac01ed227a7b9b6abc42f5f1c6510ff45d9c1acbe2ecd03bcbc1a"
       },
       {
         "seed": 5,
-        "sha256": "9916868791b2461d44b4a4ff2c1e3dbb537d0f4e4310c8277d351c42fd38aacb"
+        "sha256": "5bc560e6b82c3a2772f9d1f5d8df13d127ef805168f85e0cb111f74e19395196"
       },
       {
         "seed": 6,
-        "sha256": "6aaea86ff0854631d289eb1a9f2affcde525e95445e0cb030a6f50bc0b9fedb4"
+        "sha256": "1576c63a26b2087213bb24a00a25bc57d43afc9c8f3dcf63bf21d50acd09bdba"
       },
       {
         "seed": 7,
-        "sha256": "df9763d0aef786bd664e130b40fb0ca0deb6964b4ec5d89696b98ea2c79d8fed"
+        "sha256": "e94f5254a5565160b216b2824c8bb4421fde3a760d02099c230b9304d7849765"
       },
       {
         "seed": 8,
-        "sha256": "954755299a4b913c6e25348bd4de2aa5b29824d1ee5ec37352fcbdf2c9f005eb"
+        "sha256": "6044a7b233a6af2adeceb990adb4148d5999abefe9a0b20db0f07bb9055bfe3f"
       },
       {
         "seed": 9,
-        "sha256": "b538a6d46dd8b8db73c40225c74ca8f03d22df2050099200120ab8819f1519b0"
+        "sha256": "e7d9d794ade39abb96d3ae23d29d37b8678bc6b0ef73cde66f068194745d0aef"
       },
       {
         "seed": 10,
-        "sha256": "8b215e9b015560998040b0ea573f6ca8225dd2c93a4a3650da9589294071b141"
+        "sha256": "1bb8887ec94d9f07152c6e70a5fcdd069ce8b0641b23382da235144c46383f27"
       }
     ]
   },

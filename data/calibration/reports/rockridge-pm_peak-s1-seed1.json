@@ -1791,16 +1791,16 @@
     "inputs": {
       "areaConfig": {
         "path": "data/areas/rockridge.json",
-        "sha256": "496b36ff7439ce481998de6619024847146088ccfa1d8f2bfb5210adb20832ec"
+        "sha256": "2635dbe670726c6a59bb9740e88e185342e7e642af076c3fed1565c16ee73d8d"
       },
       "demand": {
         "path": "public/data/rockridge.demand.json",
-        "sha256": "bef51b684a8c079ce5e133e089df0659b422ca2ec77bd6b8f5784e38bf1bd93c"
+        "sha256": "1c798217e72fb1babf4c6099b006aaf142efaba80201f7c21d3bfec9002b41bd"
       },
       "demandBuild": {
         "config": "9b16716a3690c6065ae2e8adf352751227d0bf19655a506fe7670bb84028f9e6",
         "countFile": "0ac7a3b72c8a9b3a243019b9e54ecbbc3d410f4d1cefb5b8f37b1d97de7080ea",
-        "network": "6a8285d5076f9ddc9042b3a4554998e61b5427fdb8fbbbbaaa8572cd7b18f4b0",
+        "network": "f9fa09a5726644d77f5535bc402357b37f7201e53df9eaebb8bb455912da1576",
         "split": "be72380b485ec5fcd5e3c59d4c5601060f3736cfb8238d6aad912293ced0928a",
         "view": "shipped"
       },
@@ -1814,7 +1814,7 @@
       },
       "network": {
         "path": "public/data/rockridge.network.json",
-        "sha256": "6a8285d5076f9ddc9042b3a4554998e61b5427fdb8fbbbbaaa8572cd7b18f4b0"
+        "sha256": "f9fa09a5726644d77f5535bc402357b37f7201e53df9eaebb8bb455912da1576"
       },
       "split": {
         "path": "data/demand/rockridge.split.json",
@@ -1861,7 +1861,7 @@
     "simulator": {
       "dirty": false,
       "fingerprint": "f0df1aabc323bca5893215e1df1afbff",
-      "revision": "5ac5c50e6118a082bd8b120bf66def504e7b871b",
+      "revision": "c2a52557fc988a563d971e408c5a16898074e996",
       "version": "0.1.0"
     }
   },
@@ -1976,6 +1976,14 @@
           "exitsPerHour": 411.59999999999997,
           "links": [
             4329
+          ],
+          "modeledGreenS": 15.0,
+          "observedGreenS": 0.0
+        },
+        {
+          "exitsPerHour": 442.79999999999995,
+          "links": [
+            3447
           ],
           "modeledGreenS": 15.0,
           "observedGreenS": 0.0

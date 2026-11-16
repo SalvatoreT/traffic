@@ -18,4 +18,4 @@ D6. Queue-first left turns stay off. On the kept network, `--queue-first-left` g
 
 D7. Fit. With step 1 reverted and queue-first off, every run equals round 34's, so `tools/cost-loop.ts --no-stop --resume 3` replayed round 33's stored iterations under the unchanged acceptance rule: converged at iteration 3 (gap 0.090), every iteration rejected, and the final build gave the same flows. The shipped demand keeps its free-flow and BPR costs; its file differs from round 34's only in the provenance URL (D1) and the network hash it records.
 
-D8. Verdict. Status stays `uncalibrated`. Every simulated figure equals round 34's.
+D8. Verdict. Status stays `uncalibrated`. Every simulated figure equals round 34's (the assessment's seeds 1 to 10 of each period, and PM seeds 11 to 20 seed for seed); validation 61 of 72 as before. The area note is unchanged (still true at 156 characters); the caveat names both arrows and says, in visitor wording, that two eastbound lanes on Ashby Ave were tested and cleared more cars from gridlock, so the model keeps the map's one lane.

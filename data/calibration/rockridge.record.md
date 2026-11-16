@@ -89,6 +89,74 @@ Claremont Ave: checked end to end. OSM lanes (3 with one forward and one backwar
 
 Ramp junctions: after joining all four SR-24 terminals are single signalized nodes (Aileen/Telegraph and Clifton/Claremont off-ramps, Hudson/Claremont and 56th/Telegraph on-ramps) with 2-lane ramp approaches at 35 mph. Mean discharge in the PM peak (seeds 1 to 3, measured before the third round): Aileen off-ramp 584 veh/h (offered 656), Clifton off-ramp 914 veh/h (offered about 1,025), on-ramps 783 and 555 veh/h. That is 290 to 460 veh/h per lane averaged over the hour; the signal gives the ramp 30 to 45% of the cycle and the shortfall is downstream spill-back on Claremont and Telegraph, not the ramp signal itself. Before the third round the remaining gridlock removals were mostly vehicles queued on the 4-lane freeway stub behind the single-lane Clifton off-ramp (26 of about 45 removals over six seeds at scale 0.3). The third round checked the ramp lanes against OSM: the off-ramps are tagged one lane for most of their length and two lanes (turn lanes left | left;through;right at Clifton, left | right at Aileen) on the final way before the signal, and the importer keeps that per segment (a test covers it), so no lane count is lost. After step M the stub accounts for about one removal per run.
 
+## Thirty-fifth round: field observations at Ashby Ave / Claremont Ave (change calibration-round-35)
+
+On 2026-11-16 the project lead relayed two resident-provided field observations at Ashby Ave / Claremont Ave: (a) Ashby Ave eastbound has two travel lanes in the PM peak; (b) Claremont Ave southbound has a green left arrow, as northbound does (observed 2026-11-15). With the 2010 worksheet in [SafewayCollege-DEIR2011], (b) means both Claremont Ave approaches run as split phases. This round models the junction from them, retests the queue-first left-turn model and redoes the fit, keeping each step only if the validation suite and the network both improve or stay equal. Decisions are in `openspec/changes/calibration-round-35/design.md`. Simulator fingerprint f0df1aabc323 throughout (no simulator change). Network 6a8285d5076f9ddc to f9fa09a5726644d7 (one observed approach added to one signal; no link renumbered, no link changed); demand bef51b684a8c079c to 1c798217e72fb1ba with the same flows (D1 of the design: a provenance URL and the network hash it records). Frozen split unchanged. Times Pacific; the round ran on 2026-11-16.
+
+### Reproduction
+
+`npm run data` in a fresh worktree reproduced the network. The demand differed from bef51b684a8c079c in one field: the provenance URL of the Oakland multimodal counts, which commit debeb6c (bibliography deep links) changed in `build-demand.ts` after round 34 built its data; flows and every other field are identical. PM seed 1 on the published files matches round 34's stored report in every field except the manifest.
+
+### Step 1: the junction from the observations (lanes reverted, phasing kept)
+
+Phasing. Southbound Claremont Ave enters `signalObservations` as an own phase (all periods; DATA for the phasing). The engine already ran it alone: with northbound marked `ownPhase`, the southbound approach was the only one left in the Claremont Ave phase. PM seed 1 is identical apart from the list of observed approaches in the report. Cycle and greens follow the flows (Webster) on the three phases, ASSUMPTION pending a timing sheet; Ashby Ave keeps one phase with permitted lefts, as in the worksheet.
+
+Lanes. The worksheet (PDF page 482) codes Ashby Ave eastbound as one lane group of two lanes (lane utilization 0.95, saturated flow 3,490 veh/h) with its 99 left turns inside it, so no left-turn lane. OSM way 34361024 (checked 2024-03-15) is `lanes=2`, one each way; the network had one eastbound lane on link 3395 (129 m from Claremont Crescent to the signal) plus the class-rule pocket. An `osmTagOverrides` entry (`lanes=3`, `lanes:forward=2`, `lanes:backward=1`) gave the link two eastbound lanes over its whole length, the shortest extent the network holds without splitting a link, in all periods (the network has no lanes by period); both are ASSUMPTIONS. A lane-coding observation removed the pocket; the importer now accepts `noLeftTurnLane` without a timing. The importer's network matched the measured scratch network link for link (4,411 links, only link 3395 changed). Ashby Ave westbound: the worksheet codes two lanes in one shared group (lane utilization 0.95, saturated flow 3,357 veh/h); OSM way 165864174 is `lanes=4` with no direction split and no `turn:lanes`, and the network has two westbound lanes (link 3426, 37 m, too short for a pocket). They agree, so nothing changed.
+
+PM, seeds 1 to 10 / 11 to 20 (round 34, then two eastbound lanes with the worksheet lane coding; the iteration demands are round 33's, as rebuilt in round 34):
+
+| | Shipped demand | Iteration-2 demand | Iteration-3 demand |
+| --- | --- | --- | --- |
+| Cars cleared from gridlock per hour, round 34 | 1.1 / 1.3 | 13.9 / 13.6 | 10.6 / 16.0 |
+| Two eastbound lanes, no pocket | 2.4 / 1.7 | 12.6 / 13.6 | 14.5 / 11.2 |
+| Two eastbound lanes with the pocket (diagnostic) | 3.6 / 3.1 | 11.8 / 14.9 | 13.1 / 15.8 |
+| Cleared at the junction, total over ten seeds (Ashby Ave eastbound, Claremont Ave northbound), round 34 / two lanes | 0 (0, 0) / 4 (4, 0) | 22 (5, 15) / 26 (18, 7) | 21 (4, 17) / 29 (23, 5) |
+| Cleared on the hillside streets (Avalon Ave, Oak Knoll Ter, Claremont Crescent, Ashby Ave west of the junction), round 34 / two lanes | 1 / 2 | 43 / 33 | 48 / 46 |
+| Claremont Ave northbound, veh/h (577 counted in 2010) | 373 / 369 | 307 / 321 | 257 / 291 |
+| Claremont Ave southbound, veh/h (549 in 2010, 272 of them left) | 437 / 561 | 487 / 556 | 513 / 506 |
+| Ashby Ave eastbound, veh/h (1,163 Caltrans 2024) | 474 / 480 | 303 / 325 | 314 / 329 |
+| Ashby Ave westbound, veh/h | 608 / 435 | 395 / 318 | 367 / 296 |
+| Through cars HSB / CSB / HNB / CNB | 142 / 132 / 98 / 150 to 141 / 135 / 95 / 153 | 129 / 107 / 86 / 124 to 133 / 110 / 83 / 123 | 105 / 93 / 92 / 140 to 103 / 93 / 95 / 141 |
+| Headline shares within 10 points, error | 3 of 4, 7.5 to 3 of 4, 7.3 | 4 of 4, 3.7 to 4 of 4, 4.3 | 4 of 4, 5.5 to 4 of 4, 5.4 |
+
+Rows below the first three are seeds 1 to 10; the gridlock counts come from each seed's top-ten table. With two lanes the eastbound flow ratio per lane halves, so Webster gives the Ashby Ave phase less green (29.6 s of a 76.5 s cycle before, 23.7 s of 75 s after; shipped demand, means of the reported plans). Westbound then carries less, southbound more, eastbound about the same, and the gridlock at the junction moves onto the eastbound approach. On the shipped demand the other cars cleared are single events spread over the network (Russell St, 55th St, Pine Ave). The network got worse on the shipped demand on both seed sets, so the lane override and the lane coding were taken out of the area config; validation is unchanged (no case uses the junction). The southbound phase stays (no run changes); so does the importer's lane-coding-only observation, which changes nothing without the field.
+
+### Step 2: queue-first left turns
+
+`--queue-first-left` on the kept network, PM, cars cleared from gridlock per hour, seeds 1 to 10 / 11 to 20: shipped 1.6 / 2.6 against 1.1 / 1.3; iteration 2 16.1 / 17.1 against 13.9 / 13.6; iteration 3 13.8 / 20.2 against 10.6 / 16.0. Worse on every demand and seed set, so it stays off. On the two-lane network (diagnostic): 2.2 / 2.2, 13.3 / 20.4, 14.5 / 14.9.
+
+### Step 3: delay-feedback fit
+
+With step 1's lanes reverted and queue-first off, every run equals round 34's, so `tools/cost-loop.ts --no-stop --resume 3` replayed the stored iterations under the unchanged acceptance rule: removals 1.1, 24.7, 13.9 and 10.6 an hour at iterations 0 to 3, converged at iteration 3 (gap 0.090), every iteration rejected. The final build gave the shipped flows again. The demand keeps its free-flow and BPR costs.
+
+### Result: ten seeds
+
+Seeds 1 to 10 (PM also 11 to 20), scale 1.0, 60 minutes, fingerprint f0df1aabc323, `npm run assess -- --publish --noise`; PM seeds 11 to 20 run separately and identical to round 34's seed for seed. Round 34 in brackets; every figure is unchanged.
+
+| | Target | PM 1-10 | PM 11-20 | AM 1-10 | Midday 1-10 |
+| --- | --- | --- | --- | --- | --- |
+| Through cars, all study-area local streets | | 822 (822) | | 466 (466) | 358 (358) |
+| Through cars HSB / CSB / HNB / CNB | 79-120 / 39-117 / 48-95 / 102-145 | 142 / 132 / 98 / 150 (same) | 146 / 140 / 96 / 152 (same) | no counts | no counts |
+| Headline shares HNB / CNB / HSB / CSB | 47 / 47 / 68 / 45 | 52.9 / 50.5 / 55.1 / 37.4, 3 of 4, error 7.5 (same) | 52.8 / 47.9 / 56.6 / 38.9, 3 of 4, error 6.0 (same) | 50.8 / 43.9 / 59.6 / 47.3 (same) | 52.6 / 37.2 / 62.8 / 45.5 (same) |
+| Cars cleared from gridlock per hour (D16) | below 1 | 1.10 (1.10) | 1.30 (1.30) | 0.30 (0.30) | 0.00 (0.00) |
+| Entry backlog, mean % | below 2% | 0.71 (0.71) | 0.57 (0.57) | 0.03 (0.03) | 0.01 (0.01) |
+| Completed trips | | 25,857 (25,857) | 25,965 (25,965) | 22,628 (22,628) | 16,705 (16,705) |
+| Recent stations GEH<5, fitted / held out | above 85% | 75 of 92 (82%) / 13 of 24 (54%) (same) | | 67 of 77 (87%) / 14 of 19 (74%) (same) | no counts |
+| Claremont Ave northbound / southbound at Ashby Ave, veh/h | 577 / 549 (2010) | 373 / 437 (same) | 411 / 432 (same) | | |
+| Ashby Ave eastbound / westbound at Claremont Ave, veh/h | 1,163 eastbound (Caltrans 2024) | 474 / 608 (same) | 428 / 598 (same) | | |
+
+Validation: 61 of 72 cases pass, as in round 34. Failing: a3, e2, e3, j6, j8, j9, j12 (reviewed), l1, p2, p3, b13 (not reviewed).
+
+### Verdict
+
+Status `uncalibrated`. PM peak: D16 fails (1.10 and 1.30 cars cleared from gridlock an hour); D5 fails (3 of 4); the through-car check fails on all four blocks; the station rule fails fitted (82%) and held out (54%). AM peak: D16 passes (0.30); stations pass fitted (87%) and fail held out (74%). Midday: D16 passes; no counts. Primitive validation: p2, p3, b13 and l1 fail with no reviewed exception.
+
+### What remains off
+
+- Ashby Ave / Claremont Ave: the observed second eastbound lane is not in the model, because with flow-based greens it takes green from Ashby Ave and the network got worse. The worksheet gives Ashby Ave 50.5 s of 100 s; the model's Webster plan gives it 24 to 30 s of 75 s. A current timing sheet (cycle, greens, minimum greens, whether the arrows are protected-only) would settle whether the two lanes and the plan belong together. Neither plan brings Claremont Ave northbound near the 577 counted in 2010 or Ashby Ave eastbound near the 1,163 Caltrans counted in 2024.
+- The queue-first left-turn model fixes p2 and p3 and still makes the network worse.
+- As in round 34: l1's range disagrees with the cited method; b13 sits 2 veh/h under its band; field checks of rounds 30 to 32 are open; stored proposal results, text pages and previews are stale.
+
 ## Thirty-fourth round: the 2010 worksheet plan at Ashby Ave / Claremont Ave (change calibration-round-34)
 
 The lead's reading after round 33: the resident field observation (a left-turn arrow for northbound Claremont Ave) and the 2010 PM worksheet in [SafewayCollege-DEIR2011] describe the same plan. The worksheet runs the two Claremont Ave approaches as split phases, and under split phasing every movement of an approach, the left included, runs on a green arrow with no opposing traffic. Round 33 had tried that timing only together with the queue-first left-turn model. This round enters it on the default engine, checks the queue-first model again and redoes the fit, keeping each step only if the validation suite and the network both improve or stay equal. Decisions are in `openspec/changes/calibration-round-34/design.md`. Simulator fingerprint cef9506de520 at the start, f0df1aabc323 at the end; on the round 33 network and demand every run is identical to round 33 (seed 1 of each period and PM seeds 11 to 20 checked bit for bit). Network 6a8285d5076f9ddc and demand bef51b684a8c079c unchanged; frozen split unchanged; no link renumbered. Times Pacific; the round ran on 2026-11-16.
