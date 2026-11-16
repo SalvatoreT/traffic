@@ -571,6 +571,24 @@ pub struct Simulation {
     trace: Option<Box<trace::Trace>>,
 }
 
+/// Time (s) for a conflicting vehicle `dx` m from the conflict area of a signal at speed `v` to arrive when it speeds up at `a` to `vmax`
+/// (no reaction delay, ASSUMPTION). A car starting from a green line is about to come: the old estimate dx / max(v, 2 m/s) counted it as 4 to 6 s away,
+/// so permissive left-turners went ahead of the opposing queue all through the green, while left turns use gaps only once the opposing
+/// queue has cleared [Fambro1991].
+fn approach_time(dx: f32, v: f32, a: f32, vmax: f32) -> f32 {
+    let (a, vmax) = (a.max(0.1), vmax.max(MIN_APPROACH_SPEED));
+    if v >= vmax {
+        return dx / v;
+    }
+    let t1 = (vmax - v) / a;
+    let d1 = v * t1 + 0.5 * a * t1 * t1;
+    if dx <= d1 {
+        (-v + (v * v + 2.0 * a * dx).sqrt()) / a
+    } else {
+        t1 + (dx - d1) / vmax
+    }
+}
+
 /// Improved IDM [Treiber2014]: the IDM with `s1 = 0` and `delta = 4` whose steady-state time gap is exactly `t_hw` (the plain IDM
 /// follows at a larger gap, which cut the queue discharge flow below the observed 1,800-1,900 veh/h/lane). For v <= v0 the
 /// acceleration is a (1 - z^2) when z = s*/s >= 1 and a_free (1 - z^(2a/a_free)) otherwise ([Treiber2014] eq. 1-3). Above v0 the
@@ -2471,7 +2489,8 @@ impl Simulation {
     }
 
     /// Permissive-left "sneaker": a left-turner waiting at the stop line may clear on the yellow or all-red, up to SNEAKERS per
-    /// cycle and approach (ASSUMPTION). The in-node and opposing-flow conflict checks still apply.
+    /// cycle and approach [Fambro1991]. It waits at the line rather than inside the junction (ASSUMPTION; the count per cycle is what
+    /// the capacity method uses). The in-node and opposing-flow conflict checks still apply.
     fn sneaker(&self, veh: &Veh, l: usize, d: f32, v: f32) -> bool {
         if self.sneak[l] >= SNEAKERS || self.sig_since[l] >= YELLOW + ALL_RED || d > 10.0 || v > 3.0 {
             return false;
@@ -2484,7 +2503,7 @@ impl Simulation {
         let base = match ctrl {
             Control::Signal => {
                 if m.kind == K_LEFT {
-                    TC_MAJOR_LEFT
+                    TC_PERMITTED_LEFT
                 } else {
                     TC_UNCONTROLLED
                 }
@@ -2600,7 +2619,11 @@ impl Simulation {
         if ctrl == Control::TrafficCircle && !self.eff.ring_node[node] {
             return (true, rec);
         }
-        let behavioral = policy != JunctionRecovery::NoBehavioral;
+        // A permissive left at a signal gets no courtesy or yield fallback: its wait spans the red, and the opposing queue it would cut in
+        // front of stands only because of it. Its way out is a gap after the opposing queue or the change interval, one or two vehicles
+        // a cycle [FHWA-STM2008] 4.8.4, [Fambro1991].
+        let permissive = ctrl == Control::Signal && !rtor && self.topo.mvs[mv as usize].kind == K_LEFT;
+        let behavioral = policy != JunctionRecovery::NoBehavioral && !permissive;
         let courtesy = behavioral && veh.wait_t >= YIELD_COURTESY_S;
         if behavioral && veh.wait_t >= YIELD_FALLBACK_S {
             if !self.priority_free(vid, mv, ctrl, rtor, false).0 {
@@ -2656,7 +2679,7 @@ impl Simulation {
                 for &x in q.iter().take(4) {
                     let xv = &self.vehs[x as usize];
                     let dx = (self.topo.stop_pos[e as usize] - xv.pos).max(0.0) + self.topo.length[e as usize].min(R_NODE as f32 * 4.0).min(R_NODE as f32);
-                    let tx = dx / xv.v.max(MIN_APPROACH_SPEED);
+                    let tx = if ctrl == Control::Signal { approach_time(dx, xv.v, xv.drv.a, self.eff.limit[e as usize] * xv.drv.fcomp) } else { dx / xv.v.max(MIN_APPROACH_SPEED) };
                     if tx > tc {
                         break;
                     }
