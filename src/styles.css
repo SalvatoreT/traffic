@@ -582,3 +582,6 @@ table.intent-table td { text-align: left; font-variant-numeric: tabular-nums; }
 }
 .fig-all { grid-column: 1 / -1; border-left: 4px solid var(--bad); padding-left: .6rem; }
 .md .ref-links { overflow-wrap: anywhere; }
+.prop-best { margin: .15rem 0 .5rem; }
+.prop-best-lead { font-weight: 600; }
+.fig-detour { grid-column: 1 / -1; border-left: 4px solid var(--border, currentColor); padding-left: .6rem; }

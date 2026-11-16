@@ -6,7 +6,7 @@
 cargo run --release -p traffic-sim --bin explore -- --area rockridge \
   --periods pm_peak,am_peak --beam 3 --depth 8 --candidates 40 \
   [--seeds 1-3] [--confirm-seeds 101-110 | --no-confirm] [--screen-minutes 30] [--minutes 60] [--budget-evals N] [--jobs N] \
-  [--harm-weight 0.1] [--expand 16] [--finalists 12] [--options 5] [--out FILE] [--report FILE]
+  [--harm-weight 0.1] [--expand 16] [--finalists 12] [--options 6] [--objectives all|LIST] [--detour-weight 0.5] [--out FILE] [--report FILE]
 ```
 
 The default run is the whole job. It searches and rechecks on seeds 1 to 3, then reruns the chosen shortlist on ten seeds that took no part in the search (`--confirm-seeds 101-110`), and those ten paired runs are what the file publishes. It replaces `public/data/<area>.proposals.json` and the report: the file holds one list.
@@ -71,7 +71,14 @@ Near-duplicates are then folded into one (`explore/similar.rs`). Two packages ar
 
 Of a similar group one package is kept: the one with the larger reduction if it wins the paired comparison, otherwise the one with fewer changes, then the smaller largest all-car rise, then the one an earlier search published, then the earlier finalist. The rest become **variants** of the kept option: tweaks the card lists in plain lines (`Use X instead of Y`, `Add: X`, `Drop: X`), with their through-car figures from the runs that chose them and a scenario link. Variants are not drawn in the picture, have no share path and no stored result. `computed.similarity` records every fold and its reason, and the report has a "Similar packages" section.
 
-The best overall option and up to `--options` others, spread by reduction, are published, and the lightest option is listed only if it survived the fold. They are ordered by through cars removed an hour, largest first. Ties go to fewer changes, then the smaller largest all-car rise. With confirmation seeds the order follows the confirmed figures. The app sorts older files the same way when it reads them.
+Options are chosen for named objectives (`explore/objectives.rs`), and each published option lists the objectives it is the best for in `objectives` (ids `most-removed`, `no-closures`, `least-detour`, `fewest-changes`). Each objective has a rule, and every weight and threshold in them is an assumption:
+
+1. Most cut-through removed: the search score, through cars removed less the light penalty for the largest all-car rise on one block.
+2. No street closures: the same score among packages made only of measures that close nothing to cars (Slow Streets, one-ways, all-way stops, traffic circles, speed humps, turn bans). Its beam may combine only those candidates.
+3. Least detour for residents: the same score less `--detour-weight` points (default 0.5) per second of added trip time for trips that start or end inside the study area, among packages that remove at least half (`DETOUR_REDUCTION_FLOOR`) of the most removed in its pool. The detour is the mean trip time of completed car trips with an end inside the study area, scenario minus baseline on the same seed, averaged over the periods (`residentsDetour.secondsPerTrip`, with `effect` and `vehicleMinutesPerHour`). Only trips that complete in the run are timed.
+4. Fewest changes: the same score among packages of at most two changes.
+
+Each objective grows its own beam over the shared screening cache, and its finalists join the pool that is rechecked. Each objective then picks its winner from the packages it may win, after the filters above are applied inside that pool, so a better package that closes a street cannot hide the best one that does not. A package that wins several objectives is listed once with all its tags. The rest of the list, up to `--options` (default 6), is the best remaining by through cars removed that is not similar to an option already chosen. Options are ordered by through cars removed an hour, largest first. Ties go to fewer changes, then the smaller largest all-car rise. With confirmation seeds the order follows the confirmed figures. The app sorts older files the same way when it reads them. A file written before objectives has no `objectives` or `residentsDetour`; the app then shows no tags and no detour line.
 
 ## Reading the file
 

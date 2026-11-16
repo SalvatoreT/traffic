@@ -1374,7 +1374,7 @@ fn partial_packages_are_ranked_with_the_harm_weight_phased_in() {
     assert_eq!(rank_weight(&p, 1), 0.0);
     assert!((rank_weight(&p, 6) - 0.1).abs() < 1e-12 && (rank_weight(&p, 9) - 0.1).abs() < 1e-12);
     assert!(rank_weight(&p, 2) > 0.0 && rank_weight(&p, 3) > rank_weight(&p, 2) && rank_weight(&p, 5) < 0.1);
-    let mk = |n: usize, red: f64, harm: f64| Eval { set: (0..n as u16).collect(), reject: None, reduction_pct: red, harm, worst: 0, inc: Vec::new(), score: red - 0.1 * harm };
+    let mk = |n: usize, red: f64, harm: f64| Eval { set: (0..n as u16).collect(), reject: None, reduction_pct: red, harm, worst: 0, inc: Vec::new(), score: red - 0.1 * harm, detour_s: 0.0 };
     // A filter that cuts through cars the most but displaces them ranks above a mild measure while it stands alone, and below it once the package is whole.
     let (bold, mild) = (|n| mk(n, 14.0, 94.0), |n| mk(n, 9.5, 2.0));
     assert!(rank_value(&p, &bold(1)) > rank_value(&p, &mild(1)));

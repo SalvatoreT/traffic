@@ -8,6 +8,7 @@ pub mod check;
 pub mod decode;
 pub mod link;
 pub mod naming;
+pub mod objectives;
 pub mod paired;
 pub mod profile;
 pub mod provenance;
@@ -71,6 +72,10 @@ pub struct Params {
     pub expand: usize,
     pub finalists: usize,
     pub options: usize,
+    /// Goals the options are chosen for (`objectives`); each runs its own beam over the shared screening cache.
+    pub objectives: Vec<objectives::Objective>,
+    /// Points of through-car reduction one second of added resident trip time costs, for the least-detour objective. ASSUMPTION.
+    pub detour_weight: f64,
     /// Hand-written packages to evaluate and publish alongside the search results.
     pub references: Vec<refs::RefCfg>,
     /// Limits on which interventions the search may use; the default has none.
@@ -103,7 +108,9 @@ impl Params {
             harm_weight: 0.1,
             expand: 16,
             finalists: 12,
-            options: 5,
+            options: 6,
+            objectives: objectives::ALL.to_vec(),
+            detour_weight: objectives::DETOUR_WEIGHT_PTS_PER_S,
             references: Vec::new(),
             profile: profile::Profile::unconstrained(),
             warm_start: Vec::new(),

@@ -4,7 +4,7 @@ import { calibrationStatusText } from '../../src/lib/caveat';
 import { decodeScenario } from '../../src/lib/hash';
 import { buildIndex, type NetIndex } from '../../src/lib/naming';
 import { buildBaseMap, buildPicture, pathOf, pictureFacts, type PictureModel } from '../../src/lib/picture';
-import { evidenceStatus, linkHash, signedPct, type EvidenceStatus, type LoadedHashes, type Proposal, type Proposals } from '../../src/lib/proposals';
+import { bestForText, evidenceStatus, linkHash, signedPct, type EvidenceStatus, type LoadedHashes, type Proposal, type Proposals } from '../../src/lib/proposals';
 import { OVERLAY_TOP, quantizeIntensity } from '../../src/lib/ramps';
 import { VIEWS, titleFor, type View } from '../../src/lib/route';
 import { defaultPeriod } from '../../src/lib/run';
@@ -134,6 +134,7 @@ export function planPreviews(inp: PreviewInput): PreviewPlans {
       `${p.title}.`,
       fig.before === fig.after ? `Simulated ${periodWords}${mean}: no change in through cars on the side streets, ${fig.before} an hour.` : `Simulated ${periodWords}${mean}: through cars on the side streets go from ${fig.before} to ${fig.after} an hour (${pctText}).`,
       `${nChanges}.`,
+      ...(bestForText(p) ? [`${bestForText(p)}.`] : []),
       `Map of ${area.name} with this proposal's changes drawn on the streets, blue where through cars drop and orange where they rise.`,
       'Simulation, not a forecast.',
     ].join(' ');

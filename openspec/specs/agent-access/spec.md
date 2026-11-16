@@ -61,3 +61,10 @@ The generated proposals page SHALL give each package's share link beside its sce
 #### Scenario: Output paths refused
 - **WHEN** a check flag is given with `--out`
 - **THEN** it exits with a usage error and writes nothing
+
+### Requirement: Search options for objectives
+`explore` SHALL accept `--objectives` (`all` or a list of `most-removed`, `no-closures`, `least-detour`, `fewest-changes`) and `--detour-weight`, and SHALL write each option's objectives and residents' detour into the proposals file and the report.
+
+#### Scenario: One objective
+- **WHEN** `explore` runs with `--objectives most-removed`
+- **THEN** only the main beam runs and options carry only that tag when they win it

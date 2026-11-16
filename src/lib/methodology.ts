@@ -39,7 +39,7 @@ export const PROPOSAL_INTRO = 'A computer search builds proposals in five steps.
 export const PROPOSAL_STEPS: Step[] = [
   { label: ['Try', 'changes'], text: 'It tries packages of changes: filters, diverters, one-way streets, stop signs and more. It starts at the places with the most cut-through traffic and adds one change at a time.' },
   { label: ['Score', 'each'], text: 'Each package scores by the cut-through cars it removes. It loses points when it pushes more cars onto any one block.' },
-  { label: ['Keep', 'the best'], text: 'It keeps the best few. Near-duplicates fold into one option and become its variants.' },
+  { label: ['Keep', 'the best'], text: 'It keeps the best few, chosen for different goals such as no street closures or fewest changes, and tags each option with the goals it is best for. Near-duplicates fold into one option and become its variants.' },
   { label: ['Retest on', 'new seeds'], text: 'It reruns the shortlist on fresh random seeds it has not seen. A seed is one random draw of driver variation. This keeps luck from flattering the published numbers.' },
   { label: ['Sort', 'the list'], text: 'The proposal that takes the most cut-through cars off the side streets is listed first, then the next most, and so on.' },
 ];
