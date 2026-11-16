@@ -265,7 +265,7 @@ export function Redistribution({ bundle, index, period, periodLabel, demandScale
           <ul>
             {result.notes.map((n) => <li key={n}>{n}</li>)}
             <li>Seeds {result.identity.seeds.join(', ')}; simulator {result.identity.hashes.simulator || 'unknown'}; network {result.identity.hashes.network || 'unknown'}, demand {result.identity.hashes.demand || 'unknown'}.</li>
-            <li>Gridlock removals per run: today {result.health.baseline.map((h) => h.gridlockRemoved).join(', ')}; closure {result.health.closure.map((h) => h.gridlockRemoved).join(', ')}; package {result.health.package.map((h) => h.gridlockRemoved).join(', ')}.</li>
+            <li>Cars cleared from gridlock per run: today {result.health.baseline.map((h) => h.gridlockRemoved).join(', ')}; closure {result.health.closure.map((h) => h.gridlockRemoved).join(', ')}; package {result.health.package.map((h) => h.gridlockRemoved).join(', ')}.</li>
             <li>Route detail kept for {result.coverage.baseline.map((c) => `${c.requestsWithDetail} of ${c.requests}`).join(', ')} trips today.</li>
           </ul>
         </section>
