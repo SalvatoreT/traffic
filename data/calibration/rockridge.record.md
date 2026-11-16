@@ -89,6 +89,67 @@ Claremont Ave: checked end to end. OSM lanes (3 with one forward and one backwar
 
 Ramp junctions: after joining all four SR-24 terminals are single signalized nodes (Aileen/Telegraph and Clifton/Claremont off-ramps, Hudson/Claremont and 56th/Telegraph on-ramps) with 2-lane ramp approaches at 35 mph. Mean discharge in the PM peak (seeds 1 to 3, measured before the third round): Aileen off-ramp 584 veh/h (offered 656), Clifton off-ramp 914 veh/h (offered about 1,025), on-ramps 783 and 555 veh/h. That is 290 to 460 veh/h per lane averaged over the hour; the signal gives the ramp 30 to 45% of the cycle and the shortfall is downstream spill-back on Claremont and Telegraph, not the ramp signal itself. Before the third round the remaining gridlock removals were mostly vehicles queued on the 4-lane freeway stub behind the single-lane Clifton off-ramp (26 of about 45 removals over six seeds at scale 0.3). The third round checked the ramp lanes against OSM: the off-ramps are tagged one lane for most of their length and two lanes (turn lanes left | left;through;right at Clifton, left | right at Aileen) on the final way before the signal, and the importer keeps that per segment (a test covers it), so no lane count is lost. After step M the stub accounts for about one removal per run.
 
+## Thirty-sixth round: what limits Ashby Ave / Claremont Ave (change calibration-round-36)
+
+Rounds 33 to 35 changed the phasing, the timing and the eastbound lanes at Ashby Ave / Claremont Ave and none of them reduced the cars cleared from gridlock there. The lead's reading: two northbound lanes with even 17 s of green in 100 s discharge about 600 an hour, yet the model passes 260 to 370, so something else limits the junction. This round looks for that constraint before touching the signal again, checks the data along it, and tries fixes at the source under the step rule. Decisions are in `openspec/changes/calibration-round-36/design.md`. Simulator fingerprint f0df1aabc323, network f9fa09a5726644d7 and demand 1c798217e72fb1ba, all unchanged; frozen split unchanged. Times Pacific; the round ran on 2026-11-16.
+
+### Reproduction
+
+`npm run data` in a fresh worktree reproduced round 35's network and demand byte for byte. PM seed 1 on them matches round 35's stored run in every simulated field.
+
+### Step 1: diagnosis
+
+A read-only probe in `calibrate` wrote, every 0.25 s after the warm-up, the state of each lane on 26 links around the junction: signal state, queue, and the head vehicle's next link, turn, distance to the line, speed, permission and what held it (a full downstream link, a vehicle crossing the junction, a pedestrian, or a priority rule). A probed run equals an unprobed one. The probe was not committed: it sits in the simulator's module tree, and landing it would change the fingerprint on which the published proposals were searched and confirmed. Round 33's iteration-2 demand, PM seeds 1 to 4 (12.3 cars cleared from gridlock an hour); the shipped demand in brackets (1.0). Saturation flow 1,500 to 2,000 vehicles an hour per lane is 0.42 to 0.56 a second [FHWA-SIG2004].
+
+| Link (role) | Green, s/h | Queued at the line on green, s/h per lane | Discharge on queued green, veh/s per lane | Head held by a full downstream link, % of that time | Flow, veh/h |
+| --- | --- | --- | --- | --- | --- |
+| 4329 Claremont Ave northbound approach (through lane, right lane) | 814 (720) | 445, 656 (239, 393) | 0.17, 0.14 (0.42, 0.28) | 70 by 3446, 75 by 3425 (32, 52) | 317 (363) |
+| 3395 Ashby Ave eastbound approach | 1,393 (1,582) | 1,154 (850) | 0.16 (0.47) | 63, by 3425 and 3446 (21) | 301 (506) |
+| 3446 Claremont Ave north of the signal (43 m, two lanes) | uncontrolled | 2,728, 2,478 (1,717, 1,530) | 0.06, 0.03 (0.10, 0.07) | 50, 61 by 3431 (51, 61) | 241 (264) |
+| 3425 Ashby Ave east of the signal, inner lane (37 m) | uncontrolled | 2,949 (2,141) | 0.09 (0.15) | 63 by the slip lane 3449 (42, half of it by 4397) | 277, 253 of them turning left into the slip lane (317, 176) |
+| 3449 westbound right-turn slip lane (45 m) | uncontrolled | 2,305 (1,005) | 0.24 (0.23) | 52, mostly by 3431 (55) | 548 (232) |
+| 3431 Claremont Ave north of Claremont Blvd (one lane, 82 m) into the all-way stop at Russell St | all-way stop | 3,387 (3,084) | 0.10 (0.11) | 21; a vehicle in the junction 51 (14; 55) | 338 (345) |
+| 4397 Ashby Ave eastbound into Domingo Ave / Tunnel Rd (two lanes into one) | 1,352 (1,410) | 492, 500 (995, 999) | 0.22, 0.16 (0.23, 0.19) | 23, 24; a vehicle in the junction 51, 49 (32, 33; 34, 32) | 203 (449) |
+| 3344 Domingo Ave southbound into the same signal | 1,769 (1,714) | 1,096 (930) | 0.40 (0.54) | 14 (4) | 497, 411 of them left onto Tunnel Rd (563, 497) |
+
+The other approaches of the Russell St stop are queued 3,556 (Claremont Ave southbound), 3,369 (Russell St eastbound) and 3,136 s an hour (westbound) (3,523, 3,382, 1,808); the stop passes about 1,370 cars an hour over its four approaches. Claremont Ave southbound into Ashby Ave discharges near saturation flow while green and queued (0.54, 0.50, 0.39 a second) and is short of traffic, not of green.
+
+Routes through the probed links (iteration 2, an hour): of the 411 left turns from Domingo Ave onto Tunnel Rd, about 220 come down Claremont Ave from the north edge and turn left at the Russell St stop and about 90 come along Russell St from Claremont Blvd. The slip lane's eastbound entries are Claremont Ave northbound through traffic that turns right on red onto Ashby Ave and then left across the westbound lanes (a 134 degree turn), and Ashby Ave eastbound left-turners; together about 250.
+
+The chain: Claremont Ave northbound does not reach saturation flow because its head waits for room on Claremont Ave beyond the junction most of the green. That stretch is one lane for 82 m and ends at an all-way stop at Russell St that runs at capacity. Part of that stop's load is a route from the north hills to Tunnel Rd through Russell St and Domingo Ave, which also takes more green at Ashby Ave / Domingo Ave / Tunnel Rd than Ashby Ave gets; the Ashby Ave eastbound queue there reaches back to the slip-lane junction, where cars waiting to turn left into the slip lane hold the inner lane. Ashby Ave eastbound into Claremont Ave then waits for room, and its queue reaches back over Claremont Crescent, where the hillside gridlock starts. On the shipped demand the same chain is present with shorter queues. Signal timing at Ashby Ave / Claremont Ave was not the constraint on the northbound or eastbound approach.
+
+### Step 2: the data along the chain
+
+- Claremont Ave north of Claremont Blvd: OSM ways 201989355 and 201989356 are `lanes=2`, one lane each way, as in the network.
+- Claremont Ave / Russell St: OSM node 53082604 is `highway=stop` on the junction node with no `stop` value and no direction. [OSMStop] maps minor-road stops on the approaches and all-way stops on the node with `stop=all`, so the tag does not say which approaches stop; the importer reads it as an all-way stop. The extract has 172 junction-node stops tagged the same way, so the general reading stays. The City of Berkeley's 2026 quick-build slides [BerkeleyClaremontQB2026] list, at Claremont Ave and Russell St, advance yield markings and "Yield to Ped" signs, which are used where approaching traffic is not stopped; they do not state the control. The City's 2025 slides [BerkeleyClaremontQB2025] give Claremont Ave peak-hour volumes of about 600 northbound (15:30 to 16:30) and 400 southbound (17:15 to 18:15), counted on 2025-09-23 along the corridor from Russell St to the southern city limit. The model's all-way stop passes about 340 northbound.
+- [SafewayCollege-DEIR2011] does not study Russell St or Ashby Ave / Domingo Ave / Tunnel Rd. At Ashby Ave / Claremont Ave it records eastbound queues that did not clear in the 2010 PM peak and 697 vehicles an hour leaving northward (359 northbound through, 99 eastbound left, 239 westbound right).
+- Ashby Ave / Domingo Ave / Tunnel Rd: Tunnel Rd eastbound is one lane (OSM way 517583960, `lanes:forward=1`); Caltrans counts 1,337 an hour there (2024, held out) against about 690 modeled on the iteration-2 demand. Ashby Ave eastbound into the signal is tagged `turn:lanes:forward=none|right`; the importer reads only left-turn lanes, so the model lets through traffic use the right lane. OSM restriction 14485297 (no left from Tunnel Rd westbound onto Domingo Ave, weekdays 16:00 to 18:00) does not reach the network: its `to` way is absorbed by junction joining. Both are importer gaps; neither is on the binding part of the chain.
+- The slip lane: [CaltransD4BikeNeeds2025] (item Ala-13-NX04) names a slip lane at Claremont Ave. No source says whether eastbound traffic can enter it.
+- Ashby Ave between College Ave and Tunnel Rd: no Caltrans or City of Berkeley source found in this round gives peak-hour tow-away lanes or lane counts.
+
+### Step 3: fixes at the source (scratch networks, not kept)
+
+PM, cars cleared from gridlock per hour, seeds 1 to 4:
+
+| Network | Iteration-2 demand | Shipped demand | Claremont Ave north of the junction, veh/h (iteration 2 / shipped) | Where the gridlock is |
+| --- | --- | --- | --- | --- |
+| Round 35 | 12.3 | 1.0 | 338 / 345 | hillside streets, the junction |
+| A: Claremont Ave / Russell St as a minor-road stop (Russell St stops) | 39.8 | 9.3 | 786 / 834 | Avalon Ave at Claremont Blvd, Russell St, Oak Knoll Ter |
+| B: no eastbound left into the slip lane, no U-turn from it onto Claremont Ave southbound | 13.0 | 1.5 | 361 / 369 | as round 35 |
+| A and B | 16.0 | 16.3 | 871 / 856 | hillside streets |
+
+Without the all-way stop, Claremont Ave north of the junction carries more than twice as much and the gridlock moves onto the stop-controlled hillside streets that have to enter the heavier Claremont Ave and Claremont Blvd streams. Both changes fail the step rule on seeds 1 to 4, so neither was run on the other seed sets or demands.
+
+### Result
+
+The constraint is the all-way stop at Claremont Ave / Russell St and the traffic that reaches it, and whether the real junction is that limited cannot be settled from the sources: the map data shows an all-way stop, the City's documents point to uncontrolled Claremont Ave approaches without saying so, and nothing counts the route through Russell St and Domingo Ave. Following the lead's instruction, the round stops here. The network, the demand and every published file are round 35's; round 35's fit replay (every iteration rejected) and its assessment stand, as does the verdict: status `uncalibrated`, PM D16 fails (1.10 and 1.30 cars cleared from gridlock an hour), D5 fails (3 of 4), the through-car check fails on all four blocks, the station rule fails fitted (82%) and held out (54%); AM D16 passes, stations pass fitted (87%) and fail held out (74%); midday D16 passes; p2, p3, b13 and l1 fail with no reviewed exception.
+
+### What would settle it
+
+- A weekday PM peak-hour turning-movement count at Claremont Ave / Russell St, noting which approaches have stop signs. It gives the control, the northbound volume the junction must pass, and the southbound left turns onto Russell St that feed the route to Tunnel Rd.
+- Second: a PM count of Domingo Ave southbound left turns onto Tunnel Rd at Ashby Ave.
+- Then, as before, a current timing sheet for Ashby Ave / Claremont Ave and Ashby Ave / Domingo Ave / Tunnel Rd.
+
 ## Thirty-fifth round: field observations at Ashby Ave / Claremont Ave (change calibration-round-35)
 
 On 2026-11-16 the project lead relayed two resident-provided field observations at Ashby Ave / Claremont Ave: (a) Ashby Ave eastbound has two travel lanes in the PM peak; (b) Claremont Ave southbound has a green left arrow, as northbound does (observed 2026-11-15). With the 2010 worksheet in [SafewayCollege-DEIR2011], (b) means both Claremont Ave approaches run as split phases. This round models the junction from them, retests the queue-first left-turn model and redoes the fit, keeping each step only if the validation suite and the network both improve or stay equal. Decisions are in `openspec/changes/calibration-round-35/design.md`. Simulator fingerprint f0df1aabc323 throughout (no simulator change). Network 6a8285d5076f9ddc to f9fa09a5726644d7 (one observed approach added to one signal; no link renumbered, no link changed); demand bef51b684a8c079c to 1c798217e72fb1ba with the same flows (D1 of the design: a provenance URL and the network hash it records). Frozen split unchanged. Times Pacific; the round ran on 2026-11-16.
