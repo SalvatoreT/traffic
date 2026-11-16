@@ -13,9 +13,9 @@
 
 ## 3. Demand
 
-- [ ] 3.1 `npm run data` (frozen split unchanged); delay-feedback loop to its stop rule.
+- [x] 3.1 `npm run data` (frozen split unchanged); delay-feedback loop to its stop rule.
 
 ## 4. Evaluation and record
 
-- [ ] 4.1 Validation suite, ten-seed PM, AM and midday, `--od-costs` breakdown, Rust and TypeScript tests, WASM parity.
-- [ ] 4.2 Round 31 in the calibration record (older rounds archived), the area's `calibration` note, `public/data/areas.json`.
+- [x] 4.1 Validation suite, ten-seed PM, AM and midday, `--od-costs` breakdown, Rust and TypeScript tests, WASM parity.
+- [x] 4.2 Round 31 in the calibration record (older rounds archived), the area's `calibration` note, `public/data/areas.json`.

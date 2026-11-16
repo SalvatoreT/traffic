@@ -761,6 +761,78 @@
       "sim": 0.6028938906752411,
       "source": "ASSUMPTION",
       "unit": "capacity share"
+    },
+    {
+      "hi": 0.55,
+      "id": "r1",
+      "knownDeviation": null,
+      "lo": 0.45,
+      "name": "Route choice: two routes of equal cost, one with 1 junction(s) offering a side link onto the other (+314 s): share that stays on it",
+      "note": "perceived arc costs N(t, beta t) drawn once per driver, beta 2 s [DaganzoSheffi1977]; route variance beta x cost whatever the number of junctions (eq. 11.14b), so the share is about 0.5 less the drivers on a mixed route (Phi(-2.5) each, the band +/-0.05 is an ASSUMPTION); route cost 8027 s; the per-node rule used before round 31 (+/-8% on the remaining cost at every node) keeps 0.418, 4000 drivers",
+      "pass": true,
+      "sim": 0.49625,
+      "source": "Sheffi1985",
+      "unit": "share"
+    },
+    {
+      "hi": 0.55,
+      "id": "r2",
+      "knownDeviation": null,
+      "lo": 0.45,
+      "name": "Route choice: two routes of equal cost, one with 20 junction(s) offering a side link onto the other (+314 s): share that stays on it",
+      "note": "perceived arc costs N(t, beta t) drawn once per driver, beta 2 s [DaganzoSheffi1977]; route variance beta x cost whatever the number of junctions (eq. 11.14b), so the share is about 0.5 less the drivers on a mixed route (Phi(-2.5) each, the band +/-0.05 is an ASSUMPTION); route cost 8217 s; the per-node rule used before round 31 (+/-8% on the remaining cost at every node) keeps 0.020, 4000 drivers",
+      "pass": true,
+      "sim": 0.49875,
+      "source": "Sheffi1985",
+      "unit": "share"
+    },
+    {
+      "hi": 0.4108901384414363,
+      "id": "r3",
+      "knownDeviation": null,
+      "lo": 0.35089013844143635,
+      "name": "Route choice: share on a route 15 s (2%) costlier than the other, no link in common",
+      "note": "probit prediction Phi(-(cB - cA) / sqrt(beta (cA + cB))) = 0.381 (eq. 11.20, beta 2 s, cA 604 s); band +/-0.03 for 4000 drivers (ASSUMPTION); the per-node rule used before round 31 gives 0.369",
+      "pass": true,
+      "sim": 0.3815,
+      "source": "Sheffi1985",
+      "unit": "share"
+    },
+    {
+      "hi": 0.30296240419978415,
+      "id": "r4",
+      "knownDeviation": null,
+      "lo": 0.24296240419978413,
+      "name": "Route choice: share on a route 30 s (5%) costlier than the other, no link in common",
+      "note": "probit prediction Phi(-(cB - cA) / sqrt(beta (cA + cB))) = 0.273 (eq. 11.20, beta 2 s, cA 604 s); band +/-0.03 for 4000 drivers (ASSUMPTION); the per-node rule used before round 31 gives 0.244",
+      "pass": true,
+      "sim": 0.27,
+      "source": "Sheffi1985",
+      "unit": "share"
+    },
+    {
+      "hi": 0.1461222147958629,
+      "id": "r5",
+      "knownDeviation": null,
+      "lo": 0.0861222147958629,
+      "name": "Route choice: share on a route 60 s (10%) costlier than the other, no link in common",
+      "note": "probit prediction Phi(-(cB - cA) / sqrt(beta (cA + cB))) = 0.116 (eq. 11.20, beta 2 s, cA 604 s); band +/-0.03 for 4000 drivers (ASSUMPTION); the per-node rule used before round 31 gives 0.081",
+      "pass": true,
+      "sim": 0.10825,
+      "source": "Sheffi1985",
+      "unit": "share"
+    },
+    {
+      "hi": 0.03975518674047057,
+      "id": "r6",
+      "knownDeviation": null,
+      "lo": 0.0,
+      "name": "Route choice: share on a route 120 s (20%) costlier than the other, no link in common",
+      "note": "probit prediction Phi(-(cB - cA) / sqrt(beta (cA + cB))) = 0.010 (eq. 11.20, beta 2 s, cA 604 s); band +/-0.03 for 4000 drivers (ASSUMPTION); the per-node rule used before round 31 gives 0.000",
+      "pass": true,
+      "sim": 0.01175,
+      "source": "Sheffi1985",
+      "unit": "share"
     }
   ],
   "failing": [
@@ -780,13 +852,13 @@
     "schema": 1,
     "simulator": {
       "dirty": false,
-      "fingerprint": "169f9cf71eef871df933f54aeb0beee7",
-      "revision": "eb73eba5c5a38cc836748b50355f38c0cc964cfb",
+      "fingerprint": "60df28cd94a0e4c6929ccf903bd84718",
+      "revision": "57dd294dea93f790c872f5b6e3e0e6fba3a39c08",
       "version": "0.1.0"
     },
     "suite": {
-      "cases": 60,
-      "sha256": "030f411bc52557868b030333eb2ec1506d9d19a776b4edd930e72c6b9e2f78ba"
+      "cases": 66,
+      "sha256": "34919da1939ab30e0d4a43c21ce1308fe4ad54f6632c9d3672a777044bde7176"
     }
   },
   "notDocumented": []
