@@ -1,0 +1,32 @@
+// What the card's map says when a street or a change is hovered, focused or tapped. Kept out of the component so it can be tested.
+import { DEAD_BAND_CUTTHROUGH } from './change';
+import type { BlockChange } from './picture';
+import { signedNum, type Proposal, type ProposalPicture } from './proposals';
+
+const round = Math.round;
+
+/** The blocks whose through cars change by at least one car an hour, biggest change first. */
+export function streetsThatChange(changes: BlockChange[]): BlockChange[] {
+  return changes.filter((c) => round(c.delta) !== 0).sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta) || a.label.localeCompare(b.label));
+}
+
+/** "5 → 34 through cars an hour in the PM peak (+29 cars an hour)". */
+export function throughLine(c: { base: number; scen: number; delta: number }, when: string): string {
+  return `${round(c.base)} → ${round(c.scen)} through cars an hour in the ${when} (${signedNum(round(c.scen) - round(c.base), 'cars an hour', 0)})`;
+}
+
+/** Said when the change is inside the dead band the map draws as thin gray. */
+export function noiseNote(delta: number): string | null {
+  return Math.abs(delta) < DEAD_BAND_CUTTHROUGH ? `Within normal run-to-run variation (about ${round(DEAD_BAND_CUTTHROUGH)} cars an hour), so the map draws it thin and gray.` : null;
+}
+
+/** All cars on the block, for the one block per period the file records them for; null for every other block. */
+export function allCarsLine(p: Proposal, pic: ProposalPicture, blockLabel: string, when: string): string | null {
+  const b = p.byPeriod[pic.period]?.allTraffic.largestIncrease;
+  if (!b || b.block !== blockLabel) return null;
+  const through = b.throughIncreaseVehPerHour;
+  const split = through === undefined ? '' : `: through cars ${signedNum(through, '', 0).trim()}, local trips ${signedNum(b.increaseVehPerHour - through, '', 0).trim()}`;
+  return `All cars on this block, ${when}: ${round(b.baselineVehPerHour)} → ${round(b.scenarioVehPerHour)} an hour (${signedNum(b.increaseVehPerHour, 'cars an hour', 0)}${split}). The file records all cars for this block only.`;
+}
+
+export const ALL_CARS_MISSING = 'All cars on this block (through cars and local trips) are not in the published file; it records them only for the block with the largest rise.';

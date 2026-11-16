@@ -2,7 +2,8 @@ import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import type { AreaBundle, Intervention } from '../types';
 import { decodeScenario } from '../lib/hash';
 import type { Mode } from '../lib/ramps';
-import { ProposalPicture } from './ProposalPicture';
+import { DownloadImage } from './DownloadImage';
+import { ProposalMap } from './ProposalMap';
 import { AnchorHeading } from './Anchor';
 import { calibrationStatusText } from '../lib/caveat';
 import { pathOfSlug, slugOf } from '../lib/share-path';
@@ -88,7 +89,7 @@ export function Proposals({ bundle, index, today, state, loaded, mode, current, 
     return m;
   }, [decoded, bundle.network, index]);
   const card = ({ group: g, proposal: p }: Listed, n: number | null) => (
-    <Card key={gid(g, p)} p={p} group={g} evidence={proposalNotices(g.computed, loaded).evidence} comparison={g.optionComparisons?.find((c) => c.option === p.id)} comparisonLabel={(id) => g.proposals.find((x) => x.id === id)?.title ?? id} shareUrl={`${location.origin}${pathOfSlug(slugOf(g.id, p.link))}`} onCopyLink={() => onCopyLink(p, g.id)} when={periodsPhrase(g.computed.periods, periodLabel)} hid={gid(g, p)} n={n} routes={routeCounts.get(gid(g, p)) ?? null} ivs={decoded.get(gid(g, p)) ?? null} searched={g.computed.periods} bundle={bundle} index={index} mode={mode} today={today} periodLabel={periodLabel} confirmId={open.step === 'confirm' && (open.id === gid(g, p) || open.id.startsWith(`${gid(g, p)}-v`)) ? open.id : null}
+    <Card key={gid(g, p)} p={p} group={g} evidence={proposalNotices(g.computed, loaded).evidence} comparison={g.optionComparisons?.find((c) => c.option === p.id)} comparisonLabel={(id) => g.proposals.find((x) => x.id === id)?.title ?? id} shareUrl={`${location.origin}${pathOfSlug(slugOf(g.id, p.link))}`} onCopyLink={() => onCopyLink(p, g.id)} when={periodsPhrase(g.computed.periods, periodLabel)} hid={gid(g, p)} n={n} routes={routeCounts.get(gid(g, p)) ?? null} ivs={decoded.get(gid(g, p)) ?? null} searched={g.computed.periods} bundle={bundle} index={index} mode={mode} loaded={loaded} today={today} periodLabel={periodLabel} confirmId={open.step === 'confirm' && (open.id === gid(g, p) || open.id.startsWith(`${gid(g, p)}-v`)) ? open.id : null}
       onRequest={(v) => request(g, p, v)} onCancel={() => dispatch({ type: 'cancel' })} onConfirm={(v) => { dispatch({ type: 'done' }); onOpen(v === null ? p : variantProposal(p, p.variants![v])); }}
       onTrace={onTrace && decoded.get(gid(g, p))?.some(canTrace) ? () => onTrace(p, decoded.get(gid(g, p))!) : undefined} />
   );
@@ -110,7 +111,7 @@ export function Proposals({ bundle, index, today, state, loaded, mode, current, 
       <AnchorHeading as="h2" id="proposals" label="Proposals">Proposals</AnchorHeading>
       {notice && <p className="notice" role="status">{notice}</p>}
       <p className="lead">
-        Each proposal is a package of changes found by searching the simulation for the most through traffic removed from the area's side streets with the least traffic added to any one of them. They are listed by through cars removed, largest first. A card shows through cars an hour before and after, then the largest rise in all cars on any one block, then the changes. Everything else is under More detail. Every figure is a mean over the runs named on its card, with a 95% interval over those runs when the file records one.
+        Each proposal is a package of changes found by searching the simulation for the most through traffic removed from the area's side streets with the least traffic added to any one of them. They are listed by through cars removed, largest first. A card shows through cars an hour before and after, then a map of the change on each street (hover, focus or tap a street or a change for its numbers), the largest rise in all cars on any one block, and the changes. Everything else is under More detail, and Download image makes a picture to send. Every figure is a mean over the runs named on its card, with a 95% interval over those runs when the file records one.
       </p>
       {state.status === 'ready' && <p className="muted small">Through routes: {ROUTE_CAVEAT}</p>}
       {state.status === 'idle' || state.status === 'loading' ? <p role="status" className="muted">Loading proposals…</p> : null}
@@ -171,8 +172,8 @@ function variantProposal(p: Proposal, v: Variant): Proposal {
 
 const VISIBLE_VARIANTS = 3;
 
-function Card({ p, group, evidence, comparison, comparisonLabel, shareUrl, onCopyLink, when, hid, n, routes, ivs, searched, bundle, index, mode, today, periodLabel, confirmId, onRequest, onCancel, onConfirm, onTrace }: {
-  p: Proposal; group: ProposalGroup; evidence: EvidenceStatus; comparison: OptionComparison | undefined; comparisonLabel(id: string): string; shareUrl: string; onCopyLink(): void; when: string; hid: string; n: number | null; routes: number | null; ivs: Intervention[] | null; searched: string[]; bundle: AreaBundle; index: NetIndex; mode: Mode; today: number; periodLabel(id: string): string;
+function Card({ p, group, evidence, comparison, comparisonLabel, shareUrl, onCopyLink, when, hid, n, routes, ivs, searched, bundle, index, mode, loaded, today, periodLabel, confirmId, onRequest, onCancel, onConfirm, onTrace }: {
+  p: Proposal; group: ProposalGroup; evidence: EvidenceStatus; comparison: OptionComparison | undefined; comparisonLabel(id: string): string; shareUrl: string; onCopyLink(): void; when: string; hid: string; n: number | null; routes: number | null; ivs: Intervention[] | null; searched: string[]; bundle: AreaBundle; index: NetIndex; mode: Mode; loaded: LoadedHashes; today: number; periodLabel(id: string): string;
   /** The id of what is asking before it replaces the map's scenario: the option (`hid`) or one of its variants (`hid-v<k>`). */
   confirmId: string | null;
   onRequest(variant: number | null): void; onCancel(): void; onConfirm(variant: number | null): void; onTrace?(): void;
@@ -232,46 +233,43 @@ function Card({ p, group, evidence, comparison, comparisonLabel, shareUrl, onCop
       </div>
       {tags.length > 0 && <p className="prop-best small"><span className="prop-best-lead">Best for:</span> {tags.join(', ')}</p>}
       {isRef && p.note && <p className="muted prop-note">{p.note}</p>}
-      <div className={hasPic ? 'prop-body has-pic' : 'prop-body'}>
-        {hasPic && (
-          <div className="prop-side">
-            <ProposalPicture net={bundle.network} index={index} p={p} ivs={ivs ?? []} areaName={bundle.entry.name} areaId={bundle.entry.id} status={calStatusText} openUrl={shareUrl} periodLabel={periodLabel} searchedPeriods={searched} runs={group.computed.seeds} evidence={evidence} />
-            {action}
+      <div className="prop-body">
+        <div className="prop-figs">
+          <div className="fig">
+            <p className="fig-main"><span className="fig-num">{cut.figure}</span> {cut.label} <span className="fig-pct">{cut.change}</span></p>
+            <p className="fig-sub">{cut.scope}</p>
+            <p className="fig-sub">{cut.interval}</p>
+          </div>
+        </div>
+        {hasPic && <ProposalMap net={bundle.network} index={index} p={p} group={group} ivs={ivs ?? []} areaId={bundle.entry.id} mode={mode} periodLabel={periodLabel} searchedPeriods={searched} loaded={loaded} onTrace={onTrace} />}
+        {detour && (
+          <div className="fig fig-detour">
+            <p className="fig-main"><span className="fig-num">{detour.figure}</span> {detour.label}</p>
+            <p className="fig-sub">{detour.detail}</p>
           </div>
         )}
-        <div className="prop-main">
-          <div className="prop-figs">
-            <div className="fig">
-              <p className="fig-main"><span className="fig-num">{cut.figure}</span> {cut.label} <span className="fig-pct">{cut.change}</span></p>
-              <p className="fig-sub">{cut.scope}</p>
-              <p className="fig-sub">{cut.interval}</p>
-            </div>
-            {detour && (
-              <div className="fig fig-detour">
-                <p className="fig-main"><span className="fig-num">{detour.figure}</span> {detour.label}</p>
-                <p className="fig-sub">{detour.detail}</p>
-              </div>
+        <div className="fig fig-all">
+          <p className="fig-main">{all.none ? all.label : <><span className="fig-num">{all.figure}</span> {all.label}</>}</p>
+          {!all.none && <p className="fig-sub">{all.split} {all.interval}</p>}
+        </div>
+        <h5 className="prop-h">Changes</h5>
+        <ul className="prop-ivs">{p.interventions.map((iv, i) => <li key={i}>{iv.label}</li>)}</ul>
+        {variants.length > 0 && (
+          <div className="prop-variants">
+            <h5>Variants</h5>
+            <p className="muted small">Tweaks of this proposal that the search found to do about the same. Each opens on the map and runs live.</p>
+            <ul>{variants.slice(0, VISIBLE_VARIANTS).map((v, k) => variantItem(v, k))}</ul>
+            {variants.length > VISIBLE_VARIANTS && (
+              <details>
+                <summary>{variants.length - VISIBLE_VARIANTS} more {variants.length - VISIBLE_VARIANTS === 1 ? 'variant' : 'variants'}</summary>
+                <ul>{variants.slice(VISIBLE_VARIANTS).map((v, k) => variantItem(v, k + VISIBLE_VARIANTS))}</ul>
+              </details>
             )}
-            <div className="fig fig-all">
-              <p className="fig-main">{all.none ? all.label : <><span className="fig-num">{all.figure}</span> {all.label}</>}</p>
-              {!all.none && <p className="fig-sub">{all.split} {all.interval}</p>}
-            </div>
           </div>
-          <h5 className="sr-only">Changes</h5>
-          <ul className="prop-ivs">{p.interventions.map((iv, i) => <li key={i}>{iv.label}</li>)}</ul>
-          {variants.length > 0 && (
-            <div className="prop-variants">
-              <h5>Variants</h5>
-              <p className="muted small">Tweaks of this proposal that the search found to do about the same. Each opens on the map and runs live.</p>
-              <ul>{variants.slice(0, VISIBLE_VARIANTS).map((v, k) => variantItem(v, k))}</ul>
-              {variants.length > VISIBLE_VARIANTS && (
-                <details>
-                  <summary>{variants.length - VISIBLE_VARIANTS} more {variants.length - VISIBLE_VARIANTS === 1 ? 'variant' : 'variants'}</summary>
-                  <ul>{variants.slice(VISIBLE_VARIANTS).map((v, k) => variantItem(v, k + VISIBLE_VARIANTS))}</ul>
-                </details>
-              )}
-            </div>
-          )}
+        )}
+        <div className="prop-actions">
+          {action}
+          {hasPic && confirmId !== hid && <DownloadImage net={bundle.network} index={index} p={p} ivs={ivs ?? []} areaName={bundle.entry.name} areaId={bundle.entry.id} status={calStatusText} openUrl={shareUrl} periodLabel={periodLabel} searchedPeriods={searched} runs={group.computed.seeds} evidence={evidence} />}
         </div>
       </div>
       <details className="prop-more">
@@ -330,7 +328,6 @@ function Card({ p, group, evidence, comparison, comparisonLabel, shareUrl, onCop
         {allNote && <p className="small">{allNote}</p>}
         <p className="muted small">{all.attribution}</p>
       </details>
-      {!hasPic && action}
     </li>
   );
 }

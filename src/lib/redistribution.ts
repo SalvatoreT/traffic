@@ -514,6 +514,8 @@ export interface Displacement {
   byBlock: Map<number, number>;
   /** Followed trips per route near the closure in the scenario. */
   routes: Map<string, number>;
+  /** The local links of the first trip seen on each route, for drawing it (not a weight). */
+  samples: Map<string, number[]>;
 }
 
 export function displacement(o: {
@@ -524,7 +526,7 @@ export function displacement(o: {
   const sel = new Set(o.selector.movements.map(([a, b]) => `${a}>${b}`));
   const selLinks = new Set(o.selector.links);
   const closedBlocks = new Set(o.selector.links.map((l) => o.blockOf[l]));
-  const d: Displacement = { displaced: 0, local: 0, arterialOnly: 0, pending: 0, removed: 0, unroutable: 0, unmatched: 0, byBlock: new Map(), routes: new Map() };
+  const d: Displacement = { displaced: 0, local: 0, arterialOnly: 0, pending: 0, removed: 0, unroutable: 0, unmatched: 0, byBlock: new Map(), routes: new Map(), samples: new Map() };
   for (let i = 0; i < B.reqs.length; i++) {
     const r = B.reqs[i];
     if (r.stratum !== 0 || !r.detail || o.geo.inStudy[r.origin] || o.geo.inStudy[r.dest]) continue;
@@ -537,8 +539,10 @@ export function displacement(o: {
     if (s.state === 'unroutable') { d.unroutable++; continue; }
     const path = Array.from(S.links.subarray(S.off[j], S.off[j + 1]));
     if (s.state === 'active' && s.cur >= 0) path.push(s.cur);
-    const k = localPart(o.geo, o.centers, path).key || FAR_ROUTE;
+    const part = localPart(o.geo, o.centers, path);
+    const k = part.key || FAR_ROUTE;
     d.routes.set(k, (d.routes.get(k) ?? 0) + 1);
+    if (!d.samples.has(k)) d.samples.set(k, part.links);
     // Local blocks the trip drives now and did not drive in the baseline: where it reappears.
     const before = new Set(Array.from(B.links.subarray(B.off[i], B.off[i + 1])).map((l) => o.blockOf[l]));
     const blocks = new Set(path.filter((l) => o.isLocal[l]).map((l) => o.blockOf[l]).filter((b) => b >= 0 && !closedBlocks.has(b) && !before.has(b)));

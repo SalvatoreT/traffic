@@ -3,7 +3,7 @@ import { buildFixture } from '../fixtures/area';
 import { buildMockProposals } from '../fixtures/proposals';
 import { buildIndex } from './naming';
 import { buildPicture, pictureFacts } from './picture';
-import { buildShareSvg, qrMatrix, QR_MODULE, shareAlt, shareInputFor, SHARE_SCALE, SHARE_W, wrapText, type Measure } from './shareimage';
+import { buildShareSvg, firstClause, freeCorner, qrMatrix, QR_MODULE, shareAlt, shareInputFor, SHARE_MAX_H, SHARE_SCALE, SHARE_W, wrapText, type Measure } from './shareimage';
 import type { Proposal, ProposalPicture } from './proposals';
 
 const net = buildFixture().network;
@@ -38,8 +38,8 @@ describe('shareable picture', () => {
   });
   it('carries the title, changes, period, legend, both figures, status, attribution and site', () => {
     const { img } = build(['pm_peak', 'am_peak', 'midday']);
-    for (const t of ['Filter on Martin and Ayala', 'Modal filter at Street 0 &amp; Avenue 0', 'PM peak (16:00-18:00 weekday)', '610 → 130 an hour (−78.7%)'.replace('−78.7%', '−79%'),
-      '445 → 94 an hour (−79%)', 'Average of PM peak, AM peak and Midday', 'Calibrated,', 'limits.', '© OpenStreetMap contributors', 'traffic.transit.directory', 'Cars an hour. Blue: fewer through cars', 'simulator']) {
+    for (const t of ['Filter on Martin and', 'Modal filter at Street 0 &amp; Avenue 0', 'PM peak (16:00-18:00 weekday)', '610 → 130 an hour (−78.7%)'.replace('−78.7%', '−79%'),
+      '445 → 94 an hour (−79%)', 'Average of PM peak, AM peak and Midday', 'Calibrated,', 'limits.', 'OpenStreetMap contributors', 'traffic.transit.directory', 'Cars an hour. Blue: fewer through cars', 'Scan to open']) {
       expect(img.svg, t).toContain(t);
     }
     expect(img.svg).toMatch(/^<svg xmlns="http:\/\/www.w3.org\/2000\/svg"/);
@@ -55,32 +55,77 @@ describe('shareable picture', () => {
     const { img } = build(['pm_peak']);
     expect(img.svg).not.toContain('Average of');
   });
-  it('fits every text line in the width and stacks its sections without overlap', () => {
+  it('fits every text line in the width and keeps its boxes apart', () => {
     for (const searched of [['pm_peak'], ['pm_peak', 'am_peak', 'midday']]) for (const changes of [1, 8]) {
       const { img } = build(searched, changes);
       for (const l of img.lines) { expect(l.x).toBeGreaterThanOrEqual(0); expect(l.x + l.width, l.text).toBeLessThanOrEqual(SHARE_W); }
-      for (let i = 1; i < img.sections.length; i++) expect(img.sections[i].top).toBeGreaterThanOrEqual(img.sections[i - 1].bottom);
-      expect(img.sections[img.sections.length - 1].bottom).toBeLessThanOrEqual(img.height);
+      const bs = img.sections;
+      for (let i = 0; i < bs.length; i++) {
+        expect(bs[i].bottom).toBeLessThanOrEqual(img.height);
+        expect(bs[i].right).toBeLessThanOrEqual(SHARE_W);
+        for (let j = i + 1; j < bs.length; j++) {
+          const a = bs[i], c = bs[j];
+          const apart = a.right <= c.left || c.right <= a.left || a.bottom <= c.top || c.bottom <= a.top;
+          expect(apart, `${a.name} and ${c.name}`).toBe(true);
+        }
+      }
     }
+  });
+  it('is landscape: the text column is 38 to 46 percent of the width and the map sits to its right', () => {
+    const { img } = build(['pm_peak'], 2);
+    const map = img.sections.find((s) => s.name === 'map')!, title = img.sections.find((s) => s.name === 'title')!;
+    const w = (title.right - title.left) / SHARE_W;
+    expect(w).toBeGreaterThanOrEqual(0.38); expect(w).toBeLessThanOrEqual(0.46);
+    expect(map.left).toBeGreaterThan(title.right);
+    expect(img.width / img.height).toBeGreaterThan(1.2);
+  });
+  it('keeps no text under 16 layout px', () => {
+    const { img } = build(['pm_peak', 'am_peak'], 3);
+    for (const l of img.lines) expect(l.size, l.text).toBeGreaterThanOrEqual(16);
+  });
+  it('shortens a long list to first clauses, then to "and N more", under the height cap', () => {
+    const { input } = build(['pm_peak'], 2);
+    const long = { ...input, changes: Array.from({ length: 24 }, (_, i) => `Diagonal diverter at Street ${i} & Avenue ${i}, connecting Avenue (north) with Street (west), and Avenue (south) with Street (east)`) };
+    const img = buildShareSvg(long, measure);
+    expect(img.height).toBeLessThanOrEqual(SHARE_MAX_H);
+    expect(img.svg).toContain('more');
+    expect(img.svg).not.toContain('connecting Avenue');
+    const mid = { ...input, changes: Array.from({ length: 6 }, (_, i) => `Diagonal diverter at Street ${i} & Avenue ${i}, connecting Avenue (north) with Street (west)`) };
+    const m = buildShareSvg(mid, measure);
+    expect(m.height).toBeLessThanOrEqual(SHARE_MAX_H);
+    expect(firstClause('A at B, connecting C')).toBe('A at B');
   });
   it('has no number in the title', () => {
     expect(build(['pm_peak']).input.title).toBe('Filter on Martin and Ayala');
   });
-  it('draws a QR code of the open link in clear space at the bottom right', () => {
+  it('draws a QR code of the open link in clear space, away from the text and the drawn streets', () => {
     const { img, input } = build(['pm_peak', 'am_peak']);
     const m = qrMatrix(input.openUrl);
     expect(m.length).toBeGreaterThanOrEqual(21);
-    expect(QR_MODULE * SHARE_SCALE).toBeGreaterThanOrEqual(5);
-    const q = img.qr, footer = img.sections.find((s) => s.name === 'footer')!;
+    expect(QR_MODULE * SHARE_SCALE).toBeGreaterThanOrEqual(4.5);
+    const q = img.qr;
     expect(q.size).toBe((q.modules + 8) * QR_MODULE);
-    expect(q.x + q.size).toBe(SHARE_W - 32);
-    expect(q.y).toBeGreaterThanOrEqual(footer.top);
-    expect(q.y + q.size).toBeLessThanOrEqual(footer.bottom);
-    for (const l of img.lines) if (l.y >= q.y && l.y <= q.y + q.size && l.x < q.x) expect(l.x + l.width, l.text).toBeLessThanOrEqual(q.x - 8);
-    for (const s of img.sections) if (s.name !== 'footer') expect(s.bottom).toBeLessThanOrEqual(q.y);
+    expect(q.x + q.size).toBeLessThanOrEqual(SHARE_W - 36);
+    expect(q.y + q.size).toBeLessThanOrEqual(img.height);
+    const inMap = img.sections.find((s) => s.name === 'map')!;
+    const inside = q.x >= inMap.left && q.x + q.size <= inMap.right && q.y >= inMap.top && q.y + q.size <= inMap.bottom;
+    const note = img.lines.find((l) => l.text === 'Scan to open')!;
+    for (const l of img.lines) if (l !== note && l.y >= q.y && l.y <= q.y + q.size + 20 && l.x + l.width > q.x && l.x < q.x + q.size) throw new Error(`${l.text} runs under the QR code`);
+    if (!inside) for (const s of img.sections) if (s.name !== 'qr') expect(s.right <= q.x || s.left >= q.x + q.size || s.bottom <= q.y || s.top >= q.y + q.size, s.name).toBe(true);
   });
-  it('grows with the number of changes', () => {
-    expect(build(['pm_peak'], 8).img.height).toBeGreaterThan(build(['pm_peak'], 1).img.height);
+  it('finds a clear corner for the QR code, or none when streets fill them', () => {
+    const { input } = build(['pm_peak']);
+    const empty = { ...input.model, blocks: [], marks: [], names: [], pins: [], major: '', minor: '' };
+    expect(freeCorner(empty, 400, 500, 150, 170)).toBe('br');
+    const v = input.model.view;
+    const full = { ...empty, blocks: [{ block: 0, d: `M${v.x} ${v.y}L${v.x + v.w} ${v.y + v.h}M${v.x} ${v.y + v.h}L${v.x + v.w} ${v.y}M${v.x} ${v.y}L${v.x + v.w} ${v.y}M${v.x} ${v.y + v.h}L${v.x + v.w} ${v.y + v.h}M${v.x} ${v.y}L${v.x} ${v.y + v.h}M${v.x + v.w} ${v.y}L${v.x + v.w} ${v.y + v.h}`, delta: 50, t: 0.5 }] };
+    expect(freeCorner(full, 400, 500, 150, 170)).toBeNull();
+  });
+  it('grows only as far as the list needs, and never past the cap', () => {
+    let prev = 0;
+    for (let n = 1; n <= 6; n++) { const h = build(['pm_peak'], n).img.height; expect(h).toBeGreaterThanOrEqual(prev); prev = h; }
+    for (const n of [10, 16, 30]) expect(build(['pm_peak'], n).img.height).toBeLessThanOrEqual(SHARE_MAX_H);
+    expect(build(['pm_peak'], 14).img.height).toBeGreaterThan(build(['pm_peak'], 1).img.height);
   });
   it('wraps on word boundaries', () => {
     const ls = wrapText('one two three four five six seven', 10, 400, 100, measure);
