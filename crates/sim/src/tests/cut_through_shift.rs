@@ -1,6 +1,7 @@
 //! Closing one cut-through moves its through cars to the nearby alternative (user expectation of 2026-11-15, change
 //! explain-traffic-redistribution). Expected shares come from the free-flow cost model: perceived cost = time x class weight
-//! (`LOCAL_COST_FACTOR` 1.25 on residential links) plus turn costs, with a per-driver noise of +-8% (`ROUTE_NOISE`) per link.
+//! (`LOCAL_COST_FACTOR` 1.25 on residential links) plus turn costs, perceived by each driver with a probit error of variance
+//! `ROUTE_DISPERSION_S` x cost [Sheffi1985] eq. 11.12.
 
 use super::*;
 
@@ -75,23 +76,26 @@ fn shift(via: bool) -> (f32, f32, f32, f32) {
 
 #[test]
 fn closing_one_of_two_parallel_cut_throughs_moves_its_cars_to_the_other() {
-    // B is about 30% cheaper than the arterial even with its stop delays, far beyond the +-8% noise, so nearly all of A's cars should
-    // take B (measured 97% over seeds 1 to 3). ASSUMPTION of the test band: at least 80%, at most 20% to the arterial.
+    // B is about 30% cheaper than the arterial at free flow (Phi gives 96% on B at a dispersion of 2 s), but with A closed its stop-controlled
+    // junctions load up: on measured costs B is about 18 s cheaper on a 135 s trip, and the probit share of the arterial is then
+    // Phi(-18 / sqrt(2 x 287)) = 0.23 [Sheffi1985] eq. 11.20 (0.30 at a dispersion of 4 s). Measured 75% on B over seeds 1 to 3 (97% under
+    // the +-8% per-node rule before round 31). ASSUMPTION of the test band: at least 60% on B, at most 40% to the arterial.
     let (to_b, to_east, a_before, a_after) = shift(false);
     assert!(a_before > 100.0, "A carries {a_before} cars an hour today");
     assert_eq!(a_after, 0.0);
-    assert!((0.8..=1.2).contains(&to_b), "share of A's cars on B: {to_b:.2} (to the arterial {to_east:.2})");
-    assert!(to_east < 0.2, "{to_east:.2}");
+    assert!((0.6..=1.2).contains(&to_b), "share of A's cars on B: {to_b:.2} (to the arterial {to_east:.2})");
+    assert!(to_east < 0.4, "{to_east:.2}");
 }
 
 #[test]
 fn assumed_movement_trips_on_the_closed_cut_through_also_take_the_other() {
     // Every trip must make the counted turn into A today. A's link closure cuts it and leaves no way back onto A St, so the trips fall
-    // back to their plain route, which is B (measured 99%).
+    // back to their plain route, which is mostly B (measured 79%; 99% under the per-node rule before round 31): the band is the one of the
+    // test above, for the same cost gap.
     let (to_b, to_east, a_before, a_after) = shift(true);
     assert!(a_before > 250.0, "all 300 cars an hour turn into A today: {a_before}");
     assert_eq!(a_after, 0.0);
-    assert!((0.8..=1.2).contains(&to_b), "share on B: {to_b:.2} (arterial {to_east:.2})");
+    assert!((0.6..=1.2).contains(&to_b), "share on B: {to_b:.2} (arterial {to_east:.2})");
 }
 
 /// Mid St runs north from a south gate through four junctions to a north gate; West St is parallel 150 m west, joined by First St and
@@ -139,3 +143,4 @@ fn a_one_block_dogleg_takes_the_closed_street_s_cars() {
     let share = (after - before) / 3.0 / 200.0;
     assert!(share >= 0.75, "dogleg share {share:.2}");
 }
+

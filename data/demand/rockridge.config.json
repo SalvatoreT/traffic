@@ -516,8 +516,8 @@
     "tol": 0.01,
     "damping": 1,
     "draws": 5,
-    "noise": 0.08,
-    "drawsNote": "ASSUMPTION: each flow is split equally over this many free-flow shortest paths found with link costs perturbed by +/- noise (the simulator's perceived-cost noise is also 8%); 1 draw and 0 noise gives all-or-nothing assignment.",
+    "dispersion": 2,
+    "drawsNote": "ASSUMPTION: each flow is split equally over this many draws of perceived free-flow costs (probit loading [Sheffi1985] ch. 11.2: each link and movement cost normal with variance `dispersion` x the cost, the simulator's `ROUTE_DISPERSION_S`); 1 draw and dispersion 0 gives all-or-nothing assignment.",
     "uncounted": {
       "rule": "medianOfType",
       "volumeWeighted": true,
@@ -592,7 +592,7 @@
       "drawsPerPass": 2,
       "alpha": 0.15,
       "beta": 4,
-      "noise": 0.08,
+      "dispersion": 2,
       "rounds": 2,
       "measured": {
         "file": "data/demand/rockridge.linkdelays.json",
@@ -600,7 +600,7 @@
         "minFlowVehPerHour": 60,
         "_note": "Outer loop (tools/cost-loop.ts): mean delay per vehicle on each link from a simulator run (seed 1) is added to the free-flow cost of the static assignment; the BPR factor is switched off (alpha 0) because the measured delay already contains the congestion. ASSUMPTION: the control delay the router adds at the link end is subtracted so queues at signals count once. The file is optional: without it, or for another network, the assignment uses free-flow and BPR costs."
       },
-      "_note": "method 'free': the free-flow assignment over `draws` perturbed shortest paths (draws and noise above). Method 'msa': stochastic capacity-restrained assignment: each pass loads every flow with `drawsPerPass` driver walks (the simulator's rule: cost-to-go with a +/-noise factor per candidate link) over link costs x BPR(volume / capacity), volumes averaged over passes (method of successive averages [PowellSheffi1982]); BPR form [Spiess1990] with alpha 0.15 and beta 4 (ASSUMPTION: the usual values); capacities from capacityGuard.capacity; `rounds` > 1 refits the table and reassigns at its own volumes."
+      "_note": "method 'free': the free-flow assignment over `draws` draws of perceived costs (draws and dispersion above). Method 'msa': stochastic capacity-restrained assignment: each pass loads every flow on `drawsPerPass` draws of perceived costs (probit loading [DaganzoSheffi1977] [Sheffi1985] ch. 11.2, the simulator's route choice: each link and movement cost normal with variance `dispersion` x the cost, shortest path on the draw) over link costs x BPR(volume / capacity), volumes averaged over passes (method of successive averages [PowellSheffi1982]); BPR form [Spiess1990] with alpha 0.15 and beta 4 (ASSUMPTION: the usual values); capacities from capacityGuard.capacity; `rounds` > 1 refits the table and reassigns at its own volumes."
     },
     "shares": {
       "enabled": true,
@@ -645,7 +645,7 @@
         "wholeStreet": "Colby Street NB",
         "wholeStreetNote": "ASSUMPTION (round 25): the through intents (SR-24 off-ramp and south-side traffic) take only seed flows whose route to this movement drives Colby St northbound from its first link. The count has 102 cars driving the whole street and the model had 80: the through flows reached the Alcatraz Ave turn from 63rd St and the other side streets, which the count says the whole-street cars do not (182 entered at the south end).",
         "maxDetour": 1.3,
-        "maxDetourNote": "ASSUMPTION: as for the Colby St left turn (round 20): drivers' perceived-cost noise is 8% per link, so a pair within 30% of its best route is one whose drivers could pick either.",
+        "maxDetourNote": "ASSUMPTION: as for the Colby St left turn (round 20): drivers perceive route costs with an error (8% per link until round 31, probit dispersion since), so a pair within 30% of its best route is one whose drivers could pick either.",
         "minFlowVehPerHour": 0.5,
         "intents": [
           {
@@ -691,7 +691,7 @@
         "wholeStreet": "Colby Street NB",
         "wholeStreetNote": "ASSUMPTION (round 25): the through intents (SR-24 off-ramp and south-side traffic) take only seed flows whose route to this movement drives Colby St northbound from its first link. The count has 102 cars driving the whole street and the model had 80: the through flows reached the Alcatraz Ave turn from 63rd St and the other side streets, which the count says the whole-street cars do not (182 entered at the south end).",
         "maxDetour": 1.3,
-        "maxDetourNote": "ASSUMPTION: as for the Colby St left turn (round 20): drivers' perceived-cost noise is 8% per link, so a pair within 30% of its best route is one whose drivers could pick either.",
+        "maxDetourNote": "ASSUMPTION: as for the Colby St left turn (round 20): drivers perceive route costs with an error (8% per link until round 31, probit dispersion since), so a pair within 30% of its best route is one whose drivers could pick either.",
         "minFlowVehPerHour": 0.5,
         "intents": [
           {
@@ -735,7 +735,7 @@
           "to": "Alcatraz Avenue toward west"
         },
         "maxDetour": 1.3,
-        "maxDetourNote": "ASSUMPTION: as for the Colby St left turn (round 20): drivers' perceived-cost noise is 8% per link, so a pair within 30% of its best route is one whose drivers could pick either.",
+        "maxDetourNote": "ASSUMPTION: as for the Colby St left turn (round 20): drivers perceive route costs with an error (8% per link until round 31, probit dispersion since), so a pair within 30% of its best route is one whose drivers could pick either.",
         "minFlowVehPerHour": 0.5,
         "intents": [
           {
@@ -777,7 +777,7 @@
           "to": "Alcatraz Avenue toward east"
         },
         "maxDetour": 1.3,
-        "maxDetourNote": "ASSUMPTION: as for the Colby St left turn (round 20): drivers' perceived-cost noise is 8% per link, so a pair within 30% of its best route is one whose drivers could pick either.",
+        "maxDetourNote": "ASSUMPTION: as for the Colby St left turn (round 20): drivers perceive route costs with an error (8% per link until round 31, probit dispersion since), so a pair within 30% of its best route is one whose drivers could pick either.",
         "minFlowVehPerHour": 0.5,
         "intents": [
           {
@@ -819,7 +819,7 @@
           "to": "Hillegass Avenue toward south"
         },
         "maxDetour": 1.3,
-        "maxDetourNote": "ASSUMPTION: as for the Colby St left turn (round 20): drivers' perceived-cost noise is 8% per link, so a pair within 30% of its best route is one whose drivers could pick either.",
+        "maxDetourNote": "ASSUMPTION: as for the Colby St left turn (round 20): drivers perceive route costs with an error (8% per link until round 31, probit dispersion since), so a pair within 30% of its best route is one whose drivers could pick either.",
         "minFlowVehPerHour": 0.5,
         "intents": [
           {
@@ -845,7 +845,7 @@
           "to": "Hillegass Avenue toward south"
         },
         "maxDetour": 1.3,
-        "maxDetourNote": "ASSUMPTION: as for the Colby St left turn (round 20): drivers' perceived-cost noise is 8% per link, so a pair within 30% of its best route is one whose drivers could pick either.",
+        "maxDetourNote": "ASSUMPTION: as for the Colby St left turn (round 20): drivers perceive route costs with an error (8% per link until round 31, probit dispersion since), so a pair within 30% of its best route is one whose drivers could pick either.",
         "minFlowVehPerHour": 0.5,
         "intents": [
           {
@@ -871,7 +871,7 @@
           "to": "Colby Street toward south"
         },
         "maxDetour": 1.3,
-        "maxDetourNote": "ASSUMPTION: as for the Colby St left turn (round 20): drivers' perceived-cost noise is 8% per link, so a pair within 30% of its best route is one whose drivers could pick either.",
+        "maxDetourNote": "ASSUMPTION: as for the Colby St left turn (round 20): drivers perceive route costs with an error (8% per link until round 31, probit dispersion since), so a pair within 30% of its best route is one whose drivers could pick either.",
         "minFlowVehPerHour": 0.5,
         "intents": [
           {
@@ -905,7 +905,7 @@
           "to": "Colby Street toward south"
         },
         "maxDetour": 1.3,
-        "maxDetourNote": "ASSUMPTION: as for the Colby St left turn (round 20): drivers' perceived-cost noise is 8% per link, so a pair within 30% of its best route is one whose drivers could pick either.",
+        "maxDetourNote": "ASSUMPTION: as for the Colby St left turn (round 20): drivers perceive route costs with an error (8% per link until round 31, probit dispersion since), so a pair within 30% of its best route is one whose drivers could pick either.",
         "minFlowVehPerHour": 0.5,
         "intents": [
           {
@@ -921,7 +921,7 @@
       }
     ],
     "naturalDetour": 1.05,
-    "naturalDetourNote": "ASSUMPTION (round 26): a plain flow whose best route through a movement costs at most this multiple of its best route makes that turn naturally. The router's perceived-cost noise is 8% per link, so a route within 5% of the best is one drivers take part of the time.",
+    "naturalDetourNote": "ASSUMPTION (round 26): a plain flow whose best route through a movement costs at most this multiple of its best route makes that turn naturally. Drivers perceive route costs with an error (8% per link until round 31, probit dispersion since), so a route within 5% of the best is one drivers take part of the time.",
     "alternativesNote": "ASSUMPTION (via-detour-fallback, round 26): the builder writes `via.maxDetour` (each movement's `maxDetour`) on every assumed flow and, for a through flow (no end in the study area), `via.alternatives`: the other movements that have an intent whose origin and destination groups contain the flow's groups. The simulator makes the movement only while the route through it costs at most `maxDetour` times the plain route in the current network and passes no node twice, else it takes the cheapest alternative that passes, else the plain route. A flow with an end in the study area (a resident's trip) has no alternatives and falls back to its plain route, so a scenario does not move a Colby St resident's trip to Hillegass Ave. Nothing here is area specific in code."
   },
   "audit": {

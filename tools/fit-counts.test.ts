@@ -273,13 +273,13 @@ describe('assignment by successive averages', () => {
     expect(isFinite(h[1]) && isFinite(h[3])).toBe(true);
   });
   it('without restraint every walk takes the shorter route', () => {
-    const r = assignMsa(g, flows, [1000], { iterations: 5, drawsPerPass: 2, alpha: 0, beta: 4, noise: 0, capacity: cap });
+    const r = assignMsa(g, flows, [1000], { iterations: 5, drawsPerPass: 2, alpha: 0, beta: 4, dispersion: 0, capacity: cap });
     const v = linkVolumes(r, [1000], 4);
     expect(v[0]).toBeCloseTo(1000, 6);
     expect(v[2]).toBeCloseTo(0, 6);
   });
   it('with restraint a loaded short route sheds flow to the longer one and volume is conserved', () => {
-    const r = assignMsa(g, flows, [1000], { iterations: 40, drawsPerPass: 1, alpha: 0.15, beta: 4, noise: 0, capacity: cap });
+    const r = assignMsa(g, flows, [1000], { iterations: 40, drawsPerPass: 1, alpha: 0.15, beta: 4, dispersion: 0, capacity: cap });
     const v = linkVolumes(r, [1000], 4);
     expect(v[0] + v[2]).toBeCloseTo(1000, 3);
     expect(v[1] + v[3]).toBeCloseTo(1000, 3);
@@ -290,7 +290,7 @@ describe('assignment by successive averages', () => {
     expect(r.relChange).toBeLessThan(0.05);
   });
   it('a light load stays on the short route', () => {
-    const r = assignMsa(g, flows, [100], { iterations: 20, drawsPerPass: 1, alpha: 0.15, beta: 4, noise: 0, capacity: cap });
+    const r = assignMsa(g, flows, [100], { iterations: 20, drawsPerPass: 1, alpha: 0.15, beta: 4, dispersion: 0, capacity: cap });
     expect(linkVolumes(r, [100], 4)[0]).toBeCloseTo(100, 6);
   });
 });

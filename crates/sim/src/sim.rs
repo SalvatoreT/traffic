@@ -5,7 +5,7 @@ use crate::eff::{phase_since_green, phase_state, Eff};
 use crate::model::*;
 use crate::params::*;
 use crate::rng::{hash32, Rng};
-use crate::route::{self, Router, INF, NO_NOISE};
+use crate::route::{self, Goal, Router, INF, NO_NOISE};
 use crate::topo::*;
 use std::collections::VecDeque;
 
@@ -543,6 +543,9 @@ pub struct Simulation {
     bike_router: Router,
     /// Free-flow tables for the detour check of assumed movements (ASSUMPTION: the tolerance is judged on free-flow costs, as the builder chose the flows, so congestion alone does not drop a counted movement).
     via_router: Router,
+    perceived: route::Perceived,
+    /// Route of each waiting trip (assumed movement, first link, links after it) on the costs in force; cleared when they change.
+    spawn_cache: std::collections::HashMap<u32, (Option<(u32, u32)>, u32, Vec<u32>)>,
     bike_backlog: Vec<VecDeque<Trip>>,
     node_log: Vec<Vec<LogEnt>>,
     vuln: Vuln,
@@ -723,6 +726,8 @@ impl Simulation {
             bike_on: false,
             bike_router: Router::new(nn),
             via_router: Router::new(nn),
+            perceived: route::Perceived::default(),
+            spawn_cache: std::collections::HashMap::new(),
             bike_backlog: (0..nn).map(|_| VecDeque::new()).collect(),
             node_log: (0..nn).map(|_| Vec::new()).collect(),
             vuln: Vuln::default(),
@@ -903,6 +908,41 @@ impl Simulation {
         } else {
             self.topo.link_point(l, self.topo.length[l] as f64, 0.0).1
         }
+    }
+
+    /// Departure route (first link included) of a car with perception seed `seed` from node `origin` to node `dest` on the costs in force.
+    pub fn departure_route(&mut self, origin: u32, dest: u32, seed: u32) -> Option<Vec<u32>> {
+        let mut r = Vec::new();
+        self.plan(Start::Node(origin), Goal::Dest(dest), seed, None, &mut r).then_some(r)
+    }
+
+    /// The route choice used until calibration round 31, kept only for the validation suite: walk the cost-to-go table and at every node
+    /// scale each candidate's movement cost plus cost-to-go by a factor 1 +/- `noise` fixed per (driver, link) (uniform, ASSUMPTION).
+    pub fn departure_route_per_node(&mut self, origin: u32, dest: u32, seed: u32, noise: f32) -> Option<Vec<u32>> {
+        self.router.ensure(dest, &self.topo, &self.eff, &self.link_cost);
+        let table = self.router.table(dest);
+        let f = |b: u32| 1.0 + (2.0 * (hash32(seed, b) as f32 / u32::MAX as f32) - 1.0) * noise;
+        let pick = |it: &mut dyn Iterator<Item = (f32, u32)>| it.filter(|x| x.0.is_finite()).fold(None, |best: Option<(f32, u32)>, x| if best.map_or(true, |b| x.0 < b.0) { Some(x) } else { best }).map(|x| x.1);
+        let mut l = pick(&mut self.topo.outs[origin as usize].iter().filter(|&&b| !self.eff.closed[b as usize]).map(|&b| (table[b as usize] * f(b), b)))?;
+        let mut r = vec![l];
+        while self.topo.link_to[l as usize] != dest {
+            let ms = self.topo.lm_start[l as usize];
+            l = pick(&mut (ms..ms + self.topo.lm_cnt[l as usize]).filter(|&m| self.eff.mv_ok[m as usize]).map(|m| {
+                let b = self.topo.mvs[m as usize].b;
+                ((table[b as usize] + self.eff.mv_cost[m as usize]) * f(b), b)
+            }))?;
+            r.push(l);
+            if r.len() > 4000 {
+                return None;
+            }
+        }
+        Some(r)
+    }
+
+    /// Router cost of a route from its origin node (first link included), without perception error.
+    pub fn route_cost(&self, route: &[u32]) -> f32 {
+        let Some((&first, rest)) = route.split_first() else { return INF };
+        self.link_cost[first as usize] * self.eff.route_w[first as usize] + self.path_cost(first, rest, NO_NOISE)
     }
 
     /// Per-link / per-node diagnostics for calibration reports.
@@ -1121,6 +1161,7 @@ impl Simulation {
         }
         self.apply_mv_times();
         self.router.invalidate();
+        self.spawn_cache.clear();
         self.bike_router.invalidate();
         self.via_router.invalidate();
         for a in self.awsc.iter_mut() {
@@ -1156,9 +1197,9 @@ impl Simulation {
                 last_dest = f.dest;
             }
             let table = r.table(f.dest);
-            if let Some(b) = route::first_link(table, &self.topo, eff, f.origin, NO_NOISE) {
+            if let Some(b) = route::first_link(table, &self.topo, eff, f.origin) {
                 route.clear();
-                if route::walk(table, &self.topo, eff, b, f.dest, NO_NOISE, &mut route) {
+                if route::walk(table, &self.topo, eff, b, f.dest, &mut route) {
                     let q = (f.rate * 3600.0) as f32;
                     est[b as usize] += q;
                     for &l in &route {
@@ -2140,31 +2181,41 @@ impl Simulation {
             // ASSUMPTION: at most 4 trips enter the network per node per step (a gate stands for a multilane road with side-by-side arrivals); no source.
             while spawned < 4 && idx < SPAWN_SCAN && blocked.len() < self.topo.outs[n].len() {
                 let Some(trip) = self.backlog[n].get(idx) else { break };
-                let (dest, seed) = (trip.dest, trip.noise_seed);
+                let (dest, seed, tuid) = (trip.dest, trip.noise_seed, trip.uid);
                 let (vplan, trip_via) = (trip.vplan, trip.via);
-                self.router.ensure(dest, &self.topo, &self.eff, &self.link_cost);
-                let table = self.router.table(dest);
                 let mut route = std::mem::take(&mut self.scratch);
                 route.clear();
-                let mut first = route::first_link(table, &self.topo, &self.eff, n as u32, seed);
+                let mut first = None;
                 let mut ok = false;
                 let mut via = None;
-                if trip_via.is_some() {
-                    if let Some((v, b)) = self.pick_via(Start::Node(n as u32), dest, seed, vplan, &mut route) {
-                        (via, first, ok) = (Some(v), b, true);
-                    }
-                }
-                let table = self.router.table(dest);
-                if !ok {
-                    if let Some(b) = first {
-                        ok = route::walk(table, &self.topo, &self.eff, b, dest, seed, &mut route);
-                        if !ok {
+                // A waiting trip's route depends only on the costs in force, so it is kept until they change.
+                if let Some((v, f, r)) = self.spawn_cache.get(&tuid) {
+                    (via, first, ok) = (*v, Some(*f), true);
+                    route.extend_from_slice(r);
+                } else {
+                    if trip_via.is_some() {
+                        // A route through the movement that loops on the driver's perceived costs is tried on mean costs, as en route.
+                        for sd in [seed, NO_NOISE] {
                             route.clear();
-                            first = route::first_link(table, &self.topo, &self.eff, n as u32, NO_NOISE);
-                            if let Some(b2) = first {
-                                ok = route::walk(table, &self.topo, &self.eff, b2, dest, NO_NOISE, &mut route);
-                                first = Some(b2);
+                            if let Some((v, b)) = self.pick_via(Start::Node(n as u32), dest, sd, vplan, &mut route) {
+                                (via, first, ok) = (Some(v), b, true);
+                                break;
                             }
+                        }
+                    }
+                    if !ok {
+                        for sd in [seed, NO_NOISE] {
+                            route.clear();
+                            if self.plan(Start::Node(n as u32), Goal::Dest(dest), sd, None, &mut route) {
+                                first = Some(route.remove(0));
+                                ok = true;
+                                break;
+                            }
+                        }
+                    }
+                    if ok {
+                        if let Some(f) = first {
+                            self.spawn_cache.insert(tuid, (via, f, route.clone()));
                         }
                     }
                 }
@@ -2208,6 +2259,7 @@ impl Simulation {
                 };
                 spawned += 1;
                 let trip = self.backlog[n].remove(idx).unwrap();
+                self.spawn_cache.remove(&trip.uid);
                 let id = self.alloc_veh();
                 let guided = self.is_guided(trip.noise_seed);
                 let veh = &mut self.vehs[id as usize];
@@ -3271,23 +3323,58 @@ impl Simulation {
     /// Route from link `l` (not included) to `dest`. With an assumed movement (a, b) pending the route first runs to link `a`, takes the movement to `b`, then runs on to `dest`
     /// (ASSUMPTION: the trips that make a counted movement the router never picks, calibration round 20). Falls back to the plain route when `a` cannot be reached.
     fn walk_via(&mut self, l: u32, dest: u32, seed: u32, via: Option<(u32, u32)>, route: &mut Vec<u32>) -> bool {
-        self.router.ensure(dest, &self.topo, &self.eff, &self.link_cost);
         if let Some((a, b)) = via {
             let mark = route.len();
-            let mut ok = true;
-            if l != a {
-                self.router.ensure_link(a, &self.topo, &self.eff, &self.link_cost);
-                ok = route::walk_to_link(&self.router.link_tables[&a], &self.topo, &self.eff, l, a, seed, route);
-            }
-            if ok {
+            if self.plan(Start::Link(l), Goal::Link(a), seed, None, route) {
                 route.push(b);
-                if route::walk(self.router.table(dest), &self.topo, &self.eff, b, dest, seed, route) {
+                if self.plan(Start::Link(b), Goal::Dest(dest), seed, None, route) {
                     return true;
                 }
             }
             route.truncate(mark);
         }
-        route::walk(self.router.table(dest), &self.topo, &self.eff, l, dest, seed, route)
+        self.plan(Start::Link(l), Goal::Dest(dest), seed, None, route)
+    }
+
+    fn dispersion(&self) -> f32 {
+        self.cfg.route_dispersion.map_or(ROUTE_DISPERSION_S, |b| b.max(0.0) as f32)
+    }
+
+    /// Route of driver `seed` from `start` to `goal`, appended to `out` (`Start::Node`: the first link included; `Start::Link(l)`: the links
+    /// after `l`). A driver routes on its own perceived costs, drawn once for the trip (`route::Perceived`, [DaganzoSheffi1977], [Sheffi1985]);
+    /// without perception error (`NO_NOISE`, or dispersion 0) it walks the router's cost-to-go table. `first_ok` filters the first link.
+    fn plan(&mut self, start: Start, goal: Goal, seed: u32, first_ok: Option<&dyn Fn(u32) -> bool>, out: &mut Vec<u32>) -> bool {
+        let beta = self.dispersion();
+        if (seed == NO_NOISE || beta <= 0.0) && first_ok.is_none() {
+            let table: &[f32] = match goal {
+                Goal::Dest(d) => {
+                    self.router.ensure(d, &self.topo, &self.eff, &self.link_cost);
+                    self.router.table(d)
+                }
+                Goal::Link(t) => {
+                    self.router.ensure_link(t, &self.topo, &self.eff, &self.link_cost);
+                    &self.router.link_tables[&t]
+                }
+            };
+            let from = match start {
+                Start::Node(n) => {
+                    let Some(f) = route::first_link(table, &self.topo, &self.eff, n) else { return false };
+                    out.push(f);
+                    f
+                }
+                Start::Link(l) => l,
+            };
+            return match goal {
+                Goal::Dest(d) => route::walk(table, &self.topo, &self.eff, from, d, out),
+                Goal::Link(t) => from == t || route::walk_to_link(table, &self.topo, &self.eff, from, t, out),
+            };
+        }
+        let from = match start {
+            Start::Node(n) => route::From::Node(n),
+            Start::Link(l) => route::From::Link(l),
+        };
+        let any = |_: u32| true;
+        self.perceived.search(&self.topo, self.eff.car_modal(), &self.link_cost, beta, seed, from, goal, first_ok.unwrap_or(&any), out).is_some()
     }
 
     /// Cheapest cost-to-go over the first steps from `start` (the first link out of a node, or the movements out of a link) in cost table `tab`.
@@ -3327,23 +3414,12 @@ impl Simulation {
 
     /// Nodes the plain route from `start` passes twice: a loop of the plain route is not blamed on an assumed movement.
     fn plain_repeats(&mut self, start: Start, dest: u32, seed: u32) -> Vec<u32> {
-        self.router.ensure(dest, &self.topo, &self.eff, &self.link_cost);
-        let table = self.router.table(dest);
         let mut r: Vec<u32> = Vec::new();
-        let mut nodes: Vec<u32> = Vec::new();
-        let from = match start {
-            Start::Node(n) => {
-                nodes.push(n);
-                let Some(f) = route::first_link(table, &self.topo, &self.eff, n, seed) else { return Vec::new() };
-                nodes.push(self.topo.link_to[f as usize]);
-                f
-            }
-            Start::Link(l) => {
-                nodes.push(self.topo.link_to[l as usize]);
-                l
-            }
-        };
-        if !route::walk(table, &self.topo, &self.eff, from, dest, seed, &mut r) {
+        let mut nodes: Vec<u32> = vec![match start {
+            Start::Node(n) => n,
+            Start::Link(l) => self.topo.link_to[l as usize],
+        }];
+        if !self.plan(start, Goal::Dest(dest), seed, None, &mut r) {
             return Vec::new();
         }
         nodes.extend(r.iter().map(|&l| self.topo.link_to[l as usize]));
@@ -3396,11 +3472,13 @@ impl Simulation {
     /// where the plain route does not.
     fn try_via_move(&mut self, start: Start, dest: u32, seed: u32, plan: u32, (a, b): (u32, u32), route: &mut Vec<u32>, plain_looped: &mut Option<Vec<u32>>) -> Option<((u32, u32), Option<u32>)> {
         let mut r: Vec<u32> = Vec::new();
-        self.router.ensure(dest, &self.topo, &self.eff, &self.link_cost);
-        self.router.ensure_link(a, &self.topo, &self.eff, &self.link_cost);
         let first = match start {
             Start::Node(n) => {
-                let Some(f) = route::first_link(&self.router.link_tables[&a], &self.topo, &self.eff, n, seed) else { return None };
+                if !self.plan(Start::Node(n), Goal::Link(a), seed, None, &mut r) {
+                    return None;
+                }
+                let f = r[0];
+                r.clear();
                 Some(f)
             }
             Start::Link(_) => None,
@@ -3517,31 +3595,15 @@ impl Simulation {
             (v.link, v.dest, v.noise_seed, nx)
         };
         let driven: Vec<u32> = self.vehs[vid as usize].trail.iter().map(|&x| self.topo.link_to[x as usize]).collect();
-        self.router.ensure(dest, &self.topo, &self.eff, &self.link_cost);
-        let table = self.router.table(dest);
+        let back = self.topo.link_from[l as usize];
         let ms = self.topo.lm_start[l as usize];
-        let mut best: Option<(f32, u32)> = None;
-        for m in ms..ms + self.topo.lm_cnt[l as usize] {
-            let b = self.topo.mvs[m as usize].b;
-            if b == blocked || !self.eff.mv_ok[m as usize] || self.eff.closed[b as usize] || self.topo.link_to[b as usize] == self.topo.link_from[l as usize] {
-                continue;
-            }
-            let h = table[b as usize];
-            if !h.is_finite() {
-                continue;
-            }
-            let c = (h + self.eff.mv_cost[m as usize]) * route::noise(seed, b);
-            if best.map_or(true, |(bc, _)| c < bc) {
-                best = Some((c, b));
-            }
-        }
-        let Some((_, b)) = best else { return };
+        let banned: Vec<u32> = (ms..ms + self.topo.lm_cnt[l as usize]).map(|m| self.topo.mvs[m as usize].b).filter(|&b| b == blocked || self.topo.link_to[b as usize] == back).collect();
+        let first_ok = |b: u32| !banned.contains(&b);
         let mut route = std::mem::take(&mut self.scratch);
         route.clear();
-        route.push(b);
         // A way out that comes back to the blocked junction, or to a junction the car has driven through, only circles; the car keeps waiting.
         let here = self.topo.link_to[l as usize];
-        if !route::walk(table, &self.topo, &self.eff, b, dest, seed, &mut route) || route.iter().any(|&x| self.topo.link_to[x as usize] == here || driven.contains(&self.topo.link_to[x as usize])) {
+        if !self.plan(Start::Link(l), Goal::Dest(dest), seed, Some(&first_ok), &mut route) || route.iter().any(|&x| self.topo.link_to[x as usize] == here || driven.contains(&self.topo.link_to[x as usize])) {
             self.scratch = route;
             return;
         }
@@ -3637,6 +3699,7 @@ impl Simulation {
         }
         self.apply_mv_times();
         self.router.invalidate();
+        self.spawn_cache.clear();
         self.epoch += 1;
     }
 
@@ -3651,16 +3714,17 @@ impl Simulation {
         }
     }
 
-    /// Cost of `route` (the links after `from`) as the driver perceives it: link and movement costs on current times, each link scaled by the
-    /// driver's fixed per-link noise. INF when a link or movement is closed.
+    /// Cost of `route` (the links after `from`) as the driver perceives it: each movement and its exit link on current times, with the
+    /// driver's perception drawn once for the trip (`route::perceive_mv`). INF when a link or movement is closed.
     fn path_cost(&self, from: u32, route: &[u32], seed: u32) -> f32 {
+        let beta = self.dispersion();
         let (mut prev, mut c) = (from, 0.0f32);
         for &b in route {
             let Some(mv) = self.topo.find_mv(prev, b) else { return INF };
             if !self.eff.mv_ok[mv as usize] || self.eff.closed[b as usize] {
                 return INF;
             }
-            c += (self.link_cost[b as usize] * self.eff.route_w[b as usize] + self.eff.mv_cost[mv as usize]) * route::noise(seed, b);
+            c += route::perceive_mv(self.eff.mv_cost[mv as usize] + self.link_cost[b as usize] * self.eff.route_w[b as usize], beta, seed, mv);
             prev = b;
         }
         c
@@ -3698,11 +3762,9 @@ impl Simulation {
         if switches >= MAX_SWITCHES || self.t - last < MIN_SWITCH_GAP_S || (self.vehs[vid as usize].ridx as usize) >= route_len || self.vehs[vid as usize].via.is_some() {
             return;
         }
-        self.router.ensure(dest, &self.topo, &self.eff, &self.link_cost);
-        let table = self.router.table(dest);
         let mut alt = std::mem::take(&mut self.scratch);
         alt.clear();
-        let ok = route::walk(table, &self.topo, &self.eff, l, dest, seed, &mut alt);
+        let ok = self.plan(Start::Link(l), Goal::Dest(dest), seed, None, &mut alt);
         let switch = ok && self.accept_switch(vid, &alt);
         if switch {
             let veh = &mut self.vehs[vid as usize];
@@ -3837,7 +3899,7 @@ impl Simulation {
         let mut route = Vec::new();
         self.router.ensure(dest, &self.topo, &self.eff, &self.link_cost);
         let table = self.router.table(dest);
-        route::walk(table, &self.topo, &self.eff, link, dest, NO_NOISE, &mut route);
+        route::walk(table, &self.topo, &self.eff, link, dest, &mut route);
         self.vehs[id as usize] = Veh {
             alive: true,
             uid,
@@ -3995,18 +4057,12 @@ impl Simulation {
         self.ema[link] = v;
         self.link_cost[link] = self.eff.ff[link].max(v);
         self.router.invalidate();
+        self.spawn_cache.clear();
     }
 
     pub(crate) fn test_route_for(&mut self, origin: u32, dest: u32, seed: u32) -> Option<Vec<u32>> {
-        self.router.ensure(dest, &self.topo, &self.eff, &self.link_cost);
-        let table = self.router.table(dest);
-        let b = route::first_link(table, &self.topo, &self.eff, origin, seed)?;
-        let mut r = vec![b];
-        if route::walk(table, &self.topo, &self.eff, b, dest, seed, &mut r) {
-            Some(r)
-        } else {
-            None
-        }
+        let mut r = Vec::new();
+        self.plan(Start::Node(origin), Goal::Dest(dest), seed, None, &mut r).then_some(r)
     }
 
     pub(crate) fn test_topo_stop(&self, l: u32) -> f32 {
@@ -4036,7 +4092,7 @@ impl Simulation {
         let mut route = Vec::new();
         self.bike_router.ensure_m(dest, &self.topo, self.eff.bike_modal(), &self.eff.bike_link_cost);
         let table = self.bike_router.table(dest);
-        route::walk_m(table, &self.topo, self.eff.bike_modal(), link, dest, NO_NOISE, &mut route);
+        route::walk_m(table, &self.topo, self.eff.bike_modal(), link, dest, &mut route);
         let drv = Drv::bike(&mut Rng::stream(1, uid as u64));
         self.vehs[id as usize] = Veh {
             alive: true,

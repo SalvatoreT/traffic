@@ -225,7 +225,7 @@ pub fn write(path: &std::path::Path, sim: &Simulation, net: &Network, snaps: &Sn
             let mut rt = traffic_sim::route::Router::new(topo.n_nodes);
             rt.ensure_m(r.dest, topo, m, &snaps.link[k_ins]);
             let mut w = Vec::new();
-            let ok = traffic_sim::route::walk_m(rt.table(r.dest), topo, m, r.trail[0], r.dest, traffic_sim::route::NO_NOISE, &mut w);
+            let ok = traffic_sim::route::walk_m(rt.table(r.dest), topo, m, r.trail[0], r.dest, &mut w);
             json!({"ok": ok, "same": ok && w.as_slice() == &r.trail[1..], "streets": streets(net, &w), "h0": rt.table(r.dest)[r.trail[0] as usize]})
         };
         let alt_v = alt.as_ref().map(|p| {

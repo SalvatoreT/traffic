@@ -1,8 +1,10 @@
 // Static free-flow assignment for the demand builder. No I/O.
 // Mirrors the simulator's router (crates/sim/src/route.rs, eff.rs, topo.rs, params.rs): a link-based shortest path whose cost is
 //   link time (length / speed limit + hump penalty) x class weight  +  per movement: turn penalty + control delay + traversal time.
-// Approximations: the simulator's per-driver noise multiplies the cost-to-go of a candidate link; here each of `draws` assignments perturbs
-// every link cost by a seeded factor in 1 +/- noise and the flow is split equally over the draws (draws = 1, noise = 0 gives all-or-nothing).
+// Route choice is probit stochastic loading [DaganzoSheffi1977], [Sheffi1985] ch. 11.2: each draw samples a perceived cost for every link and
+// movement, normal with mean the cost and variance `dispersion` x the cost (truncated at zero), and loads every flow on its shortest path on
+// those costs; flows are split equally over the draws (dispersion 0 gives all-or-nothing). The simulator draws the same distribution once per
+// driver (crates/sim/src/route.rs, `Perceived`); here the drivers of one draw share it.
 // Movement length uses the same corner/Bezier estimate as the simulator; the signal and stop delays are the fixed free-flow constants.
 import { readFileSync } from 'node:fs';
 export type Pt = [number, number];
@@ -175,11 +177,35 @@ class MinHeap {
   }
 }
 
-/** Seeded per-(draw, link) perceived-cost factor in 1 +/- noise. */
-export function linkNoise(draw: number, link: number, noise: number): number {
-  let z = (Math.imul(draw + 1, 0x9e3779b1) ^ Math.imul(link + 1, 0x85ebca6b)) | 0;
+/** Standard normal quantile (P. J. Acklam's rational approximation, relative error below 1.2e-9). */
+export function invNorm(p: number): number {
+  const a = [-3.969683028665376e1, 2.209460984245205e2, -2.759285104469687e2, 1.38357751867269e2, -3.066479806614716e1, 2.506628277459239];
+  const b = [-5.447609879822406e1, 1.615858368580409e2, -1.556989798598866e2, 6.680131188771972e1, -1.328068155288572e1];
+  const c = [-7.784894002430293e-3, -3.223964580411365e-1, -2.400758277161838, -2.549732539343734, 4.374664141464968, 2.938163982698783];
+  const d = [7.784695709041462e-3, 3.224671290700398e-1, 2.445134137142996, 3.754408661907416];
+  const tail = (q: number) => (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) / ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
+  if (p < 0.02425) return tail(Math.sqrt(-2 * Math.log(p)));
+  if (p > 1 - 0.02425) return -tail(Math.sqrt(-2 * Math.log(1 - p)));
+  const q = p - 0.5, r = q * q;
+  return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q / (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1);
+}
+
+/** Seeded standard normal deviate per (draw, key). */
+export function drawZ(draw: number, key: number): number {
+  let z = (Math.imul(draw + 1, 0x9e3779b1) ^ Math.imul(key + 1, 0x85ebca6b)) | 0;
   z = Math.imul(z ^ (z >>> 15), 0x2c1b3c6d); z = Math.imul(z ^ (z >>> 12), 0x297a2d39); z ^= z >>> 15;
-  return 1 + (2 * ((z >>> 0) / 4294967296) - 1) * noise;
+  return invNorm(((z >>> 0) + 0.5) / 4294967296);
+}
+
+/** Perceived cost of an element of cost `c` (s): normal with mean c and variance dispersion x c, truncated at zero [Sheffi1985] eq. 11.12. */
+export const perceive = (c: number, dispersion: number, draw: number, key: number): number => (dispersion > 0 && isFinite(c) ? Math.max(0, c + Math.sqrt(dispersion * Math.max(c, 0)) * drawZ(draw, key)) : c);
+
+/** One draw of perceived costs for the whole network (step 1 of the probit loading algorithm [Sheffi1985] ch. 11.2): a view of `g` with perceived movement costs, and perceived link costs. */
+export function perceivedGraph(g: Graph, cost: ArrayLike<number>, dispersion: number, draw: number): { g: Graph; cost: Float64Array } {
+  if (!(dispersion > 0)) return { g, cost: Float64Array.from(cost) };
+  const pc = Float64Array.from(cost, (c, l) => perceive(c, dispersion, draw, 2 * l));
+  const mv = Float64Array.from(g.mvCost, (c, m) => perceive(c, dispersion, draw, 2 * m + 1));
+  return { g: { ...g, mvCost: mv }, cost: pc };
 }
 
 /** Shortest-path tree from `origin` over link states. Returns per-link arrival cost and predecessor link (-1 for first links). */
@@ -224,11 +250,10 @@ export function routeFeatures(route: ArrayLike<number>, feats: Feature[], idx: M
 }
 
 /** One all-or-nothing pass: the shortest path of every flow (links in reverse path order), or null when the destination cannot be reached. */
-function aonPaths(g: Graph, flows: OdFlow[], byOrigin: Map<number, number[]>, draw: number, noise: number, cost: ArrayLike<number>): (number[] | null)[] {
+function aonPaths(g: Graph, flows: OdFlow[], byOrigin: Map<number, number[]>, cost: ArrayLike<number>): (number[] | null)[] {
   const out = new Array<number[] | null>(flows.length).fill(null);
-  const nz = noise > 0 ? (l: number) => linkNoise(draw, l, noise) : null;
   for (const [o, ks] of byOrigin) {
-    const { dist, pred } = treeFrom(g, o, nz, cost);
+    const { dist, pred } = treeFrom(g, o, null, cost);
     for (const k of ks) {
       let best = -1, bd = Infinity;
       for (const l of g.inLinks.get(flows[k].destination) ?? []) if (dist[l] < bd) { bd = dist[l]; best = l; }
@@ -268,7 +293,7 @@ function toAssignment(flows: OdFlow[], accum: Map<number, number>[], ok: number[
  * Assign every flow to its free-flow generalized-cost shortest path(s). Node ids in flows and link `from`/`to` are node ids; link
  * indices in the result are positions in `links` (what `buildGraph` was given).
  */
-export function assign(g: Graph, flows: OdFlow[], draws = 1, noise = 0, feats: Feature[] = []): Assignment {
+export function assign(g: Graph, flows: OdFlow[], draws = 1, dispersion = 0, feats: Feature[] = []): Assignment {
   if (flows.some((f) => f.via)) throw new Error('assign: flows with a via movement need the msa assignment');
   const byOrigin = groupByOrigin(flows);
   const accum: Map<number, number>[] = flows.map(() => new Map());
@@ -276,7 +301,8 @@ export function assign(g: Graph, flows: OdFlow[], draws = 1, noise = 0, feats: F
   const fIdx = featureIndex(feats);
   const ok = new Array<number>(flows.length).fill(0);
   for (let dr = 0; dr < draws; dr++) {
-    const paths = aonPaths(g, flows, byOrigin, dr, noise, g.cost);
+    const pg = perceivedGraph(g, g.cost, dispersion, dr);
+    const paths = aonPaths(pg.g, flows, byOrigin, pg.cost);
     paths.forEach((p, k) => {
       if (!p) return;
       ok[k]++;
@@ -293,11 +319,11 @@ export const bprFactor = (x: number, c: number, alpha: number, beta: number) => 
 export interface MsaOptions {
   /** Passes averaged (the step of pass n is 1 / n [PowellSheffi1982]); 1 gives a single loading at the starting costs. */
   iterations: number;
-  /** Noisy route walks per flow in each pass; the shares of a flow are the fractions of its walks that use a link. */
+  /** Draws of perceived costs in each pass; the shares of a flow are the fractions of its routes that use a link. */
   drawsPerPass: number;
   alpha: number; beta: number;
-  /** Perceived-cost noise of a driver's walk, as in the simulator (a factor 1 +/- noise on each candidate link's cost-to-go). */
-  noise: number;
+  /** Route-choice dispersion (s): variance of a perceived cost per second of cost, as in the simulator (`ROUTE_DISPERSION_S`). */
+  dispersion: number;
   /** Capacity per link in veh/h (Infinity: no delay on the link). */
   capacity: ArrayLike<number>;
   /** Extra perceived cost per link in seconds added to the free-flow cost before the volume-delay factor (measured delay from a simulator run, already weighted by class). */
@@ -365,7 +391,7 @@ export function costToLink(g: Graph, target: number, cost: ArrayLike<number>): F
 }
 
 /** Walk from the end of link `from` until link `target` is entered (links after `from`, `target` included), by the same rule as `walkRoute`. */
-function walkToLink(g: Graph, h: Float64Array, from: number, target: number, seed: number, noise: number, route: number[], seen: Set<number>): boolean {
+function walkToLink(g: Graph, h: Float64Array, from: number, target: number, route: number[], seen: Set<number>): boolean {
   let best = from;
   for (let steps = 0; best !== target; steps++) {
     if (steps > 4000) return false;
@@ -373,7 +399,7 @@ function walkToLink(g: Graph, h: Float64Array, from: number, target: number, see
     for (let m = g.mvStart[best]; m < g.mvStart[best + 1]; m++) {
       const b = g.mvTo[m];
       if (!isFinite(h[b])) continue;
-      const c = (h[b] + g.mvCost[m]) * linkNoise(seed, b, noise);
+      const c = h[b] + g.mvCost[m];
       if (c < bc) { bc = c; nb = b; }
     }
     if (nb < 0 || seen.has(nb)) return false;
@@ -383,15 +409,15 @@ function walkToLink(g: Graph, h: Float64Array, from: number, target: number, see
 }
 
 /**
- * One driver's route (the simulator's rule, route.rs): at the origin and at every node take the candidate link with the least
- * (movement cost + cost-to-go) x noise, the noise being a fixed factor 1 +/- `noise` per (driver, link). Returns the links in order, or null.
+ * Shortest route on the costs of `g` and its cost-to-go table `h`: at the origin and at every node take the candidate link with the least
+ * movement cost + cost-to-go. Returns the links in order, or null.
  */
-function walkRoute(g: Graph, h: Float64Array, origin: number, dest: number, seed: number, noise: number, via?: { a: number; b: number; h1: Float64Array }): number[] | null {
+function walkRoute(g: Graph, h: Float64Array, origin: number, dest: number, via?: { a: number; b: number; h1: Float64Array }): number[] | null {
   let best = -1, bc = Infinity;
   const h0 = via ? via.h1 : h;
   for (const b of g.outLinks.get(origin) ?? []) {
     if (!isFinite(h0[b])) continue;
-    const c = h0[b] * linkNoise(seed, b, noise);
+    const c = h0[b];
     if (c < bc) { bc = c; best = b; }
   }
   if (best < 0) return null;
@@ -399,7 +425,7 @@ function walkRoute(g: Graph, h: Float64Array, origin: number, dest: number, seed
   const seen = new Set<number>(route);
   if (via) {
     // Assumed movement: run to link a, take the movement to b, then on to the destination.
-    if (!walkToLink(g, via.h1, best, via.a, seed, noise, route, seen)) return null;
+    if (!walkToLink(g, via.h1, best, via.a, route, seen)) return null;
     if (seen.has(via.b)) return null;
     route.push(via.b); seen.add(via.b); best = via.b;
   }
@@ -410,10 +436,9 @@ function walkRoute(g: Graph, h: Float64Array, origin: number, dest: number, seed
     for (let m = g.mvStart[best]; m < g.mvStart[best + 1]; m++) {
       const b = g.mvTo[m];
       if (!isFinite(h[b])) continue;
-      const c = (h[b] + g.mvCost[m]) * linkNoise(seed, b, noise);
+      const c = h[b] + g.mvCost[m];
       if (c < bc) { bc = c; nb = b; }
     }
-    // A noisy driver can turn back into a link already used (a loop); that walk is abandoned.
     if (nb < 0 || seen.has(nb)) return null;
     route.push(nb); best = nb; seen.add(nb);
   }
@@ -421,10 +446,10 @@ function walkRoute(g: Graph, h: Float64Array, origin: number, dest: number, seed
 }
 
 /**
- * Stochastic capacity-restrained assignment: pass n loads every flow with `drawsPerPass` driver walks over the link costs
- * g.cost x BPR(x / capacity), where x is the running average of the pass volumes (method of successive averages [PowellSheffi1982]); a flow's link shares are
- * the fractions of all its walks that use each link. `volume` is the flow table that loads the links (veh/h per flow). With
- * iterations 1 and alpha 0 this is the free-flow assignment of drivers that choose like the simulator's.
+ * Stochastic capacity-restrained assignment: pass n loads every flow on `drawsPerPass` draws of perceived costs around the link costs
+ * g.cost x BPR(x / capacity), where x is the running average of the pass volumes (method of successive averages [PowellSheffi1982], probit
+ * loading [Sheffi1985] ch. 11.2); a flow's link shares are the fractions of all its routes that use each link. `volume` is the flow table that
+ * loads the links (veh/h per flow). With iterations 1 and alpha 0 this is the free-flow assignment of drivers that choose like the simulator's.
  */
 export function assignMsa(g: Graph, flows: OdFlow[], volume: ArrayLike<number>, opt: MsaOptions): MsaResult {
   const accum: Map<number, number>[] = flows.map(() => new Map());
@@ -440,16 +465,18 @@ export function assignMsa(g: Graph, flows: OdFlow[], volume: ArrayLike<number>, 
   let rel = 1;
   for (let n = 1; n <= opt.iterations; n++) {
     const y = new Float64Array(g.nLinks);
-    const toLink = new Map<number, Float64Array>(viaLinks.map((a) => [a, costToLink(g, a, cost)]));
-    for (const [d, ks] of byDest) {
-      const h = costToGo(g, d, cost);
-      for (const k of ks) {
-        const fv = flows[k].via;
-        const via = fv ? { a: fv.a, b: fv.b, h1: toLink.get(fv.a)! } : undefined;
-        for (let r = 0; r < opt.drawsPerPass; r++) {
-          // A driver whose noisy walk loops takes the plain shortest path instead (the noise-free walk cannot loop).
-          const route = walkRoute(g, h, flows[k].origin, d, (k * 7919 + (n - 1) * opt.drawsPerPass + r + 1) | 0, opt.noise, via) ?? walkRoute(g, h, flows[k].origin, d, 0, 0, via) ?? (via ? walkRoute(g, h, flows[k].origin, d, 0, 0) : null);
-          if (!route) break;
+    for (let r = 0; r < opt.drawsPerPass; r++) {
+      const pg = perceivedGraph(g, cost, opt.dispersion, (n - 1) * opt.drawsPerPass + r + 1);
+      const toLink = new Map<number, Float64Array>(viaLinks.map((a) => [a, costToLink(pg.g, a, pg.cost)]));
+      for (const [d, ks] of byDest) {
+        const h = costToGo(pg.g, d, pg.cost);
+        let plain: Float64Array | null = null;
+        for (const k of ks) {
+          const fv = flows[k].via;
+          const via = fv ? { a: fv.a, b: fv.b, h1: toLink.get(fv.a)! } : undefined;
+          // A route that cannot make its movement without a loop takes the plain shortest path instead.
+          const route = walkRoute(pg.g, h, flows[k].origin, d, via) ?? (via ? walkRoute(pg.g, h, flows[k].origin, d) : null) ?? walkRoute(g, (plain ??= costToGo(g, d, cost)), flows[k].origin, d);
+          if (!route) continue;
           ok[k]++;
           for (const l of route) { accum[k].set(l, (accum[k].get(l) ?? 0) + 1); y[l] += volume[k] / opt.drawsPerPass; }
           if (feats.length) for (const f of routeFeatures(route, feats, fIdx)) fAccum[k].set(f, (fAccum[k].get(f) ?? 0) + 1);

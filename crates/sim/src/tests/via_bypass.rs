@@ -91,12 +91,16 @@ fn a_cut_counted_turn_takes_the_one_block_dogleg() {
     assert!(open.len() > 20, "{}", open.len());
     assert!(open.iter().all(|t| has(t, l["mid2n"], l["top0w"])), "{open:?}");
     // With Mid St filtered at Second St they still drive Mid St north, turn onto First St, take West St north and rejoin Top Ave
-    // westbound beyond the closure.
+    // westbound beyond the closure. From the end of Mid St's first block to Top Ave westbound the drivers route on their own perceived
+    // costs: the dogleg takes about 50 s and the way round by First St east and East Blvd about 70 s, so the probit share of the longer way
+    // is Phi(-20 / sqrt(2 x 120)) = 0.10 at a dispersion of 2 s [Sheffi1985] eq. 11.20 (measured 12 of 85). ASSUMPTION of the band: at least
+    // 75% take the dogleg; every trip stays on Mid St to First St, avoids Mid St beyond it and leaves by Top Ave westbound.
     let cut = trails(&format!(r#"[{{"type":"modal_filter","node":{}}}]"#, g[1][2]));
     assert!(cut.len() > 20, "{}", cut.len());
+    let dogleg = cut.iter().filter(|t| has(t, l["mid0n"], l["first_w"]) && t.contains(&l["west1n"]) && t.contains(&l["west2n"])).count();
+    assert!(dogleg as f64 >= 0.75 * cut.len() as f64, "{dogleg} of {}", cut.len());
     for t in &cut {
-        assert!(has(t, l["mid0n"], l["first_w"]), "{t:?}");
-        assert!(t.contains(&l["west1n"]) && t.contains(&l["west2n"]) && t.contains(&l["top_out"]), "{t:?}");
+        assert!(t.contains(&l["mid0n"]) && t.contains(&l["top_out"]), "{t:?}");
         assert!(!t.contains(&l["mid1n"]) && !t.contains(&l["mid2n"]));
     }
 }
@@ -127,3 +131,4 @@ fn a_cut_turn_takes_the_cheaper_of_its_alternative_and_the_bypass() {
     let bypass = t.iter().filter(|t| has(t, l["mid0n"], l["first_w"]) && t.contains(&l["top_out"])).count();
     assert!(t.len() > 20 && bypass * 10 >= t.len() * 9, "{bypass} of {} took the bypass", t.len());
 }
+

@@ -87,7 +87,7 @@ impl Simulation {
         cands
     }
 
-    /// Cost by the router's current link costs (the ones a departing car routes on, without its perceived-cost noise) of reaching `via`
+    /// Cost by the router's current link costs (the mean of what a departing car perceives, without its own perception error) of reaching `via`
     /// from `start`, then going on to `then` (when given) and to `dest`.
     fn live_cost(&mut self, start: Start, via: u32, then: Option<u32>, dest: u32) -> f32 {
         self.router.ensure(dest, &self.topo, &self.eff, &self.link_cost);
@@ -141,11 +141,14 @@ impl Simulation {
     /// Build the bypass route through approach link `p` and onward link `q`; the returned movement is the one onto the onward street
     /// (made like a counted movement, so the car keeps the bypass until it is back on that street).
     fn try_bypass(&mut self, start: Start, dest: u32, seed: u32, p: u32, q: u32, route: &mut Vec<u32>, plain_looped: &mut Option<Vec<u32>>) -> Option<((u32, u32), Option<u32>)> {
-        self.router.ensure(dest, &self.topo, &self.eff, &self.link_cost);
-        self.router.ensure_link(p, &self.topo, &self.eff, &self.link_cost);
-        self.router.ensure_link(q, &self.topo, &self.eff, &self.link_cost);
         let first = match start {
-            Start::Node(n) => Some(route::first_link(&self.router.link_tables[&p], &self.topo, &self.eff, n, seed)?),
+            Start::Node(n) => {
+                let mut r0: Vec<u32> = Vec::new();
+                if !self.plan(Start::Node(n), Goal::Link(p), seed, None, &mut r0) {
+                    return None;
+                }
+                Some(r0[0])
+            }
             Start::Link(_) => None,
         };
         let from = match (start, first) {
@@ -154,13 +157,13 @@ impl Simulation {
             _ => return None,
         };
         let mut r: Vec<u32> = Vec::new();
-        if from != p && !route::walk_to_link(&self.router.link_tables[&p], &self.topo, &self.eff, from, p, seed, &mut r) {
+        if from != p && !self.plan(Start::Link(from), Goal::Link(p), seed, None, &mut r) {
             return None;
         }
-        if !route::walk_to_link(&self.router.link_tables[&q], &self.topo, &self.eff, p, q, seed, &mut r) {
+        if !self.plan(Start::Link(p), Goal::Link(q), seed, None, &mut r) {
             return None;
         }
-        if self.topo.link_to[q as usize] != dest && !route::walk(self.router.table(dest), &self.topo, &self.eff, q, dest, seed, &mut r) {
+        if self.topo.link_to[q as usize] != dest && !self.plan(Start::Link(q), Goal::Dest(dest), seed, None, &mut r) {
             return None;
         }
         let mut nodes: Vec<u32> = Vec::with_capacity(r.len() + 2);

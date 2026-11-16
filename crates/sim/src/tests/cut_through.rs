@@ -41,9 +41,11 @@ fn a_non_through_vehicle_counts_zero() {
 
 #[test]
 fn a_through_vehicle_on_arterials_counts_zero() {
-    let (n, done) = count_after(11.2, &[(0, 3, 300.0)], 600.0);
-    assert!(done > 5);
-    assert_eq!(n, 0);
+    // The local row costs about 45 s more than the 70 s arterial, so the probit share of drivers who perceive it as cheaper is
+    // Phi(-45 / sqrt(2 x 177)) = 0.008 at a dispersion of 2 s [Sheffi1985] eq. 11.20. ASSUMPTION of the band: at most 2% of the trips.
+    let (n, done) = count_after(11.2, &[(0, 3, 300.0)], 3600.0);
+    assert!(done > 200);
+    assert!(n as f64 <= 0.02 * done as f64, "{n} of {done}");
 }
 
 #[test]

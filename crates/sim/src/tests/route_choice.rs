@@ -219,3 +219,23 @@ fn replanning_around_a_blocked_link_does_not_revisit_driven_junctions() {
     sim.test_replan_around_blocked(car);
     assert_ne!(sim.test_route_of(car), before);
 }
+
+#[test]
+fn perceived_cost_route_choice_has_no_junction_count_bias() {
+    let mut cases = Vec::new();
+    crate::validate::route_choice_cases(&mut cases);
+    for c in &cases {
+        eprintln!("{} {:.3} [{:.3}, {:.3}] {}", c.id, c.sim, c.lo, c.hi, c.note);
+    }
+    for c in &cases {
+        assert!(c.pass(), "{} {} = {:.3} outside {:.3} to {:.3}: {}", c.id, c.name, c.sim, c.lo, c.hi, c.note);
+    }
+}
+
+#[test]
+fn a_driver_keeps_its_perception_for_the_trip() {
+    let (mut sim, dm) = setup();
+    for seed in [7u32, 11, 4242] {
+        assert_eq!(sim.departure_route(dm.o, dm.d, seed), sim.departure_route(dm.o, dm.d, seed));
+    }
+}

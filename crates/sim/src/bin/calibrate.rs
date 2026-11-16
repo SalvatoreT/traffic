@@ -35,6 +35,8 @@ struct Args {
     guided_share: Option<f64>,
     /// `--switch-band <x>`: relative indifference band of route switching (default `params::SWITCH_BAND`).
     switch_band: Option<f64>,
+    /// `--route-dispersion <s>`: variance of perceived arc cost per second of arc cost (default `params::ROUTE_DISPERSION_S`).
+    route_dispersion: Option<f64>,
     adapt_min: Option<f64>,
     motorway_removal: bool,
     no_rtor: bool,
@@ -65,7 +67,7 @@ struct Args {
 }
 
 fn parse_args() -> Args {
-    let mut a = Args { area: "rockridge".into(), period: "pm_peak".into(), minutes: 60.0, scale: 1.0, seed: 1, warmup_min: 10.0, local_factor: None, guided_share: None, switch_band: None, adapt_min: None, motorway_removal: false, no_rtor: false, out: None, write: true, link_flows: false, select_od: None, cars_only: false, drop: Vec::new(), demand_path: None, network_path: None, no_initial_load: false, seeds: None, jobs: 4, keep_seeds: None, junction_recovery: None, od_costs: None, od_links: Vec::new() };
+    let mut a = Args { area: "rockridge".into(), period: "pm_peak".into(), minutes: 60.0, scale: 1.0, seed: 1, warmup_min: 10.0, local_factor: None, guided_share: None, switch_band: None, route_dispersion: None, adapt_min: None, motorway_removal: false, no_rtor: false, out: None, write: true, link_flows: false, select_od: None, cars_only: false, drop: Vec::new(), demand_path: None, network_path: None, no_initial_load: false, seeds: None, jobs: 4, keep_seeds: None, junction_recovery: None, od_costs: None, od_links: Vec::new() };
     let argv: Vec<String> = std::env::args().skip(1).collect();
     let mut i = 0;
     while i < argv.len() {
@@ -83,6 +85,7 @@ fn parse_args() -> Args {
             "--warmup" => a.warmup_min = val().parse().unwrap_or_else(|_| usage("bad --warmup")),
             "--guided-share" | "--reroute-share" => a.guided_share = Some(val().parse().unwrap_or_else(|_| usage("bad --guided-share"))),
             "--switch-band" => a.switch_band = Some(val().parse().unwrap_or_else(|_| usage("bad --switch-band"))),
+            "--route-dispersion" => a.route_dispersion = Some(val().parse().unwrap_or_else(|_| usage("bad --route-dispersion"))),
             "--local-factor" => a.local_factor = Some(val().parse().unwrap_or_else(|_| usage("bad --local-factor"))),
             "--adapt-min" => a.adapt_min = Some(val().parse().unwrap_or_else(|_| usage("bad --adapt-min"))),
             "--motorway-removal" => a.motorway_removal = true,
@@ -373,7 +376,7 @@ fn run_manifest(args: &Args, root: &Path, net_path: &Path, dem_path: &Path, dem_
             "measurementWindow": {"fromMin": if args.minutes >= 30.0 { args.warmup_min } else { 0.0 }, "toMin": args.minutes},
             "initialLoad": !args.no_initial_load,
             "settings": {
-                "localFactor": args.local_factor, "guidedShare": args.guided_share, "switchBand": args.switch_band, "adaptMin": args.adapt_min,
+                "localFactor": args.local_factor, "guidedShare": args.guided_share, "switchBand": args.switch_band, "routeDispersion": args.route_dispersion, "adaptMin": args.adapt_min,
                 "motorwayRemoval": args.motorway_removal, "noRtor": args.no_rtor, "junctionRecovery": args.junction_recovery, "carsOnly": args.cars_only, "drop": args.drop,
             },
         },
@@ -518,7 +521,7 @@ fn main() {
     sel.dedup();
 
     // ---- run
-    let cfg = Config { seed: args.seed, period: args.period.clone(), demand_scale: args.scale, select_links: sel, local_cost_factor: args.local_factor, guided_share: args.guided_share, switch_band: args.switch_band, record_trips: true, signal_adapt_min: args.adapt_min, motorway_gridlock_removal: args.motorway_removal, no_right_turn_on_red: args.no_rtor, initial_load: !args.no_initial_load, junction_recovery: args.junction_recovery.unwrap_or_default(), ..Default::default() };
+    let cfg = Config { seed: args.seed, period: args.period.clone(), demand_scale: args.scale, select_links: sel, local_cost_factor: args.local_factor, guided_share: args.guided_share, switch_band: args.switch_band, route_dispersion: args.route_dispersion, record_trips: true, signal_adapt_min: args.adapt_min, motorway_gridlock_removal: args.motorway_removal, no_right_turn_on_red: args.no_rtor, initial_load: !args.no_initial_load, junction_recovery: args.junction_recovery.unwrap_or_default(), ..Default::default() };
     let mut sim = Simulation::from_parts(net.clone(), demand.clone(), cfg).expect("sim");
     let total_s = args.minutes * 60.0;
     let warm_s = if total_s >= 1800.0 { args.warmup_min * 60.0 } else { 0.0 };

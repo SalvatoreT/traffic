@@ -359,8 +359,8 @@ impl Simulation {
                 self.bike_router.ensure_m(dest, &self.topo, self.eff.bike_modal(), &self.eff.bike_link_cost);
                 let table = self.bike_router.table(dest);
                 let mut route = Vec::new();
-                let first = route::first_link_m(table, &self.topo, self.eff.bike_modal(), n as u32, NO_NOISE);
-                let ok = first.map_or(false, |b| route::walk_m(table, &self.topo, self.eff.bike_modal(), b, dest, NO_NOISE, &mut route));
+                let first = route::first_link_m(table, &self.topo, self.eff.bike_modal(), n as u32);
+                let ok = first.map_or(false, |b| route::walk_m(table, &self.topo, self.eff.bike_modal(), b, dest, &mut route));
                 if !ok {
                     self.bike_backlog[n].pop_front();
                     continue;
@@ -404,7 +404,7 @@ impl Simulation {
         self.bike_router.ensure_m(dest, &self.topo, self.eff.bike_modal(), &self.eff.bike_link_cost);
         let table = self.bike_router.table(dest);
         let mut route = Vec::new();
-        if route::walk_m(table, &self.topo, self.eff.bike_modal(), l, dest, NO_NOISE, &mut route) {
+        if route::walk_m(table, &self.topo, self.eff.bike_modal(), l, dest, &mut route) {
             let v = &mut self.vehs[vid as usize];
             v.route = route;
             v.ridx = 0;

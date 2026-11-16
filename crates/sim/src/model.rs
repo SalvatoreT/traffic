@@ -315,6 +315,8 @@ pub struct Config {
     pub guided_share: Option<f64>,
     /// Additive: relative indifference band of route switching, e.g. 0.2 = the new remaining route must be 20% cheaper (default `params::SWITCH_BAND`).
     pub switch_band: Option<f64>,
+    /// Route-choice dispersion (s) in place of `ROUTE_DISPERSION_S`.
+    pub route_dispersion: Option<f64>,
     /// Additive: record every completed car trip (`Simulation::trip_records`) for the wandering metrics. Default false.
     pub record_trips: bool,
     /// Additive: minutes between signal split adaptations (default `params::ADAPT_INTERVAL_S`; 0 keeps the start-up splits).
@@ -364,7 +366,7 @@ pub enum JunctionRecovery {
 
 impl Default for Config {
     fn default() -> Self {
-        Config { seed: 1, period: String::new(), demand_scale: 1.0, select_links: Vec::new(), local_cost_factor: None, guided_share: None, switch_band: None, record_trips: false, signal_adapt_min: None, motorway_gridlock_removal: false, ped_yield_marked: None, ped_yield_unmarked: None, lane_width_m: None, no_right_turn_on_red: false, initial_load: true, interventions: Vec::new(), junction_recovery: JunctionRecovery::Physical, trace: false, trace_detail_max: None }
+        Config { seed: 1, period: String::new(), demand_scale: 1.0, select_links: Vec::new(), local_cost_factor: None, guided_share: None, switch_band: None, route_dispersion: None, record_trips: false, signal_adapt_min: None, motorway_gridlock_removal: false, ped_yield_marked: None, ped_yield_unmarked: None, lane_width_m: None, no_right_turn_on_red: false, initial_load: true, interventions: Vec::new(), junction_recovery: JunctionRecovery::Physical, trace: false, trace_detail_max: None }
     }
 }
 

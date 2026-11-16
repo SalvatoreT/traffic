@@ -59,7 +59,7 @@ export interface AssumedReport {
 /** Volume to take off each seed flow (index into the seed list) because an assumed flow of the same pair now carries those trips. */
 export type Carve = Map<number, number>;
 
-/** Default `naturalDetour` (ASSUMPTION): the router's perceived-cost noise is 8% per link, so a route within 5% of the best is one that drivers take part of the time. */
+/** Default `naturalDetour` (ASSUMPTION): drivers perceive route costs with an error (probit dispersion, `ROUTE_DISPERSION_S`; 8% per link before round 31), so a route within 5% of the best is one that drivers take part of the time. */
 export const NATURAL_DETOUR = 1.05;
 
 /** True when the shortest way on from link `b` to node `dest` (descending the cost-to-go `h`) enters a node of `seen` (the first leg), that is, the route through the movement loops. */

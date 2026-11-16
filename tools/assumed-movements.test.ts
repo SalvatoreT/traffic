@@ -61,7 +61,7 @@ describe('assumed movement flows', () => {
   it('routes a via flow through the movement in the assignment and holds its volume in the fit', () => {
     const flows = [{ origin: 0, destination: 1, via: { a: 2, b: 3 } }, { origin: 0, destination: 1 }];
     const v = [50, 50];
-    const a = assignMsa(g, flows, v, { iterations: 2, drawsPerPass: 1, alpha: 0, beta: 4, noise: 0, capacity: new Float64Array(4).fill(Infinity) });
+    const a = assignMsa(g, flows, v, { iterations: 2, drawsPerPass: 1, alpha: 0, beta: 4, dispersion: 0, capacity: new Float64Array(4).fill(Infinity) });
     const used = (k: number) => [...a.link.slice(a.start[k], a.start[k + 1])].sort();
     expect(used(0)).toEqual([2, 3]);
     expect(used(1)).toEqual([0, 1]);

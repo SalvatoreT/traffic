@@ -267,8 +267,8 @@ export function linkCapacity(l: NetLinkIn, node: ANode, minor: boolean, cap: Cap
 export interface AssignConfig {
   /** 'free': free-flow all-or-nothing paths over perturbed link costs; 'msa': stochastic capacity-restrained assignment by successive averages. */
   method: 'free' | 'msa';
-  /** msa: passes, driver walks per flow and pass, BPR alpha and beta, walk noise, and how often the table is refitted and reassigned at its own volumes. */
-  iterations: number; drawsPerPass: number; alpha: number; beta: number; noise: number; rounds: number;
+  /** msa: passes, draws of perceived costs per pass, BPR alpha and beta, route-choice dispersion (s), and how often the table is refitted and reassigned at its own volumes. */
+  iterations: number; drawsPerPass: number; alpha: number; beta: number; dispersion: number; rounds: number;
 }
 
 export interface FitConfig {
@@ -280,7 +280,7 @@ export interface FitConfig {
   implied?: { weight: number };
   /** Measured mean delay per vehicle (s) on every link, per period, from a simulator run (`tools/cost-loop.ts`); omitted: free-flow and BPR costs only. */
   measured?: { delayS: Record<string, number[]>; alpha: number; source: string };
-  draws: number; noise: number;
+  draws: number; dispersion: number;
   guard: { enabled: boolean; excessShare: number; weight: number; capacity: CapTable };
 }
 
@@ -320,7 +320,7 @@ export function fitPeriod(
   const fitOpt: FitOptions = flows.some((f) => f.via) ? { ...cfg.fit, pinned: flows.map((f) => (f.via ? 1 : 0)) } : cfg.fit;
   const nL = links.length;
   const ruleOf: { cap: number; rule: string }[] = links.map((l, i) => linkCapacity(l, nodeBy.get(l.to)!, g.minor[i], cfg.guard.capacity));
-  const as = cfg.assignment ?? { method: 'free' as const, iterations: 1, drawsPerPass: cfg.draws, alpha: 0, beta: 4, noise: cfg.noise, rounds: 1 };
+  const as = cfg.assignment ?? { method: 'free' as const, iterations: 1, drawsPerPass: cfg.draws, alpha: 0, beta: 4, dispersion: cfg.dispersion, rounds: 1 };
   // Measured delay: the simulator's mean time lost per vehicle on a link. The control delay the router already adds at the end of the link
   // (signal 10 s, all-way stop 6 s, minor stop approach 5 s, circle 3 s) is taken out so a queue at a signal is not counted twice (ASSUMPTION).
   const dl = cfg.measured?.delayS[id];
@@ -328,8 +328,8 @@ export function fitPeriod(
   const extra = dl && dl.length === nL ? links.map((l, i) => Math.max(0, dl[i] - ctrlS(i)) * (l.class === 'residential' || l.class === 'service' ? SIM_ROUTE_PARAMS.localCostFactor : 1)) : undefined;
   const alphaUse = extra && cfg.measured ? cfg.measured.alpha : as.alpha;
   const assignAt = (vol: ArrayLike<number>): Assignment => (as.method === 'msa'
-    ? assignMsa(g, flows, vol, { iterations: as.iterations, drawsPerPass: as.drawsPerPass, alpha: alphaUse, beta: as.beta, noise: as.noise, capacity: ruleOf.map((r) => r.cap), extraCost: extra, features })
-    : assign(g, flows, cfg.draws, cfg.noise, features));
+    ? assignMsa(g, flows, vol, { iterations: as.iterations, drawsPerPass: as.drawsPerPass, alpha: alphaUse, beta: as.beta, dispersion: as.dispersion, capacity: ruleOf.map((r) => r.cap), extraCost: extra, features })
+    : assign(g, flows, cfg.draws, cfg.dispersion, features));
   const features: Feature[] = [], featOf = new Map<string, number>();
   for (const s of stations) if (s.feature && (s.target[id] ?? 0) > 0) { featOf.set(s.id, features.length); features.push(s.feature); }
   const toCons = (s: Station): Constraint => ({ id: s.id, kind: s.kind, label: s.label, links: s.links, origins: s.origins, destinations: s.destinations, target: s.target[id], weight: s.weightByPeriod?.[id] ?? s.weight, feature: featOf.get(s.id) });
@@ -369,7 +369,7 @@ export function fitPeriod(
   const notes: string[] = [];
   let residualOver: PeriodResult['residualOver'] = [];
   if (extra && cfg.measured) notes.push(`link costs include the simulator's measured delay per vehicle (${cfg.measured.source}; mean ${(extra.reduce((x, y) => x + y, 0) / nL).toFixed(1)} s per link after the control delay is removed, BPR alpha ${cfg.measured.alpha})`);
-  if (as.method === 'msa') notes.push(`assignment by successive averages (${as.iterations} passes x ${as.drawsPerPass} driver walks, BPR alpha ${as.alpha} beta ${as.beta}, noise ${(as.noise * 100).toFixed(0)}%), ${rounds} round(s) with the table refitted and reassigned at its own volumes; relative link-volume change at the last pass ${(a as ReturnType<typeof assignMsa>).relChange?.toFixed(3)}`);
+  if (as.method === 'msa') notes.push(`assignment by successive averages (${as.iterations} passes x ${as.drawsPerPass} draws of perceived costs, BPR alpha ${as.alpha} beta ${as.beta}, route-choice dispersion ${as.dispersion} s), ${rounds} round(s) with the table refitted and reassigned at its own volumes; relative link-volume change at the last pass ${(a as ReturnType<typeof assignMsa>).relChange?.toFixed(3)}`);
   if (cfg.guard.enabled) {
     const V2 = linkVolumes(a, fFinal, nL);
     for (let l = 0; l < nL; l++) if (V1[l] > limit[l]) guardBound.push({ link: l, name: links[l].name || '(unnamed)', rule: ruleOf[l].rule, cap: ruleOf[l].cap, before: V1[l], after: V2[l] });
@@ -408,10 +408,10 @@ export function percentiles(vals: number[], w: number[], ps: number[]): number[]
   });
 }
 
-export function fitReport(area: string, results: PeriodResult[], flowsBy: Record<string, FlowIn[]>, opt: { fit: FitOptions; draws: number; noise: number; guardExcess: number; guardWeight: number; guardOn: boolean; tolOk: number; shareWeight?: number; assignment?: AssignConfig; links?: { name: string; fromBearing?: number; inStudyArea?: boolean }[]; composition?: string[]; recency?: Pick<RecencyConfig, 'referenceYear' | 'recentYears'> }, stationNotes: string[], extra: string[]): string {
+export function fitReport(area: string, results: PeriodResult[], flowsBy: Record<string, FlowIn[]>, opt: { fit: FitOptions; draws: number; dispersion: number; guardExcess: number; guardWeight: number; guardOn: boolean; tolOk: number; shareWeight?: number; assignment?: AssignConfig; links?: { name: string; fromBearing?: number; inStudyArea?: boolean }[]; composition?: string[]; recency?: Pick<RecencyConfig, 'referenceYear' | 'recentYears'> }, stationNotes: string[], extra: string[]): string {
   const L: string[] = [];
   L.push(`# Count-constrained demand fit: ${area}`, '', 'Generated by `tools/build-demand.ts` (do not edit). Car trips only, veh/h. Method and assumptions: `data/demand/README.md`, section "Count-constrained demand".', '');
-  const asg = opt.assignment?.method === 'msa' ? `capacity-restrained assignment by successive averages (${opt.assignment.iterations} passes x ${opt.assignment.drawsPerPass} driver walks, BPR alpha ${opt.assignment.alpha} beta ${opt.assignment.beta}, walk noise +/-${(opt.assignment.noise * 100).toFixed(0)}%, ${opt.assignment.rounds} round(s))` : `static assignment over ${opt.draws} perturbed free-flow shortest paths (cost noise +/-${(opt.noise * 100).toFixed(0)}%)`;
+  const asg = opt.assignment?.method === 'msa' ? `capacity-restrained assignment by successive averages (${opt.assignment.iterations} passes x ${opt.assignment.drawsPerPass} draws of perceived costs, BPR alpha ${opt.assignment.alpha} beta ${opt.assignment.beta}, route-choice dispersion ${opt.assignment.dispersion} s, ${opt.assignment.rounds} round(s))` : `static assignment over ${opt.draws} draws of perceived free-flow costs (route-choice dispersion ${opt.dispersion} s)`;
   L.push(`Settings: factor bounds ${opt.fit.lo} to ${opt.fit.hi}, damping ${opt.fit.damping}, tolerance ${(100 * (Math.exp(opt.fit.tol) - 1)).toFixed(1)}% on the unblocked count stations, at most ${opt.fit.maxIter} iterations; flows that touch no count take the ${opt.fit.uncounted} factor${opt.fit.volumeWeightedMedian ? ' (volume-weighted median)' : ''}; ${asg}; route-share constraints ${opt.shareWeight ? `on, weight ${opt.shareWeight} (counts 1 to 2)` : 'off'}; capacity guard ${opt.guardOn ? `on (limit = capacity x ${(1 + opt.guardExcess).toFixed(2)}, uncounted links only; an ASSUMPTION-labeled sanity rule, not data)` : 'off'}.`, '');
   L.push('## Offered car trips, before and after', '', '| Period | Type | Offered (build) | After count fit | After guard (final) | Removed by the count-only fit | Removed by the share and guard terms (final minus count-only) | Final / offered |', '| --- | --- | --- | --- | --- | --- | --- | --- |');
   for (const r of results) {

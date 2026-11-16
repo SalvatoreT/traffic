@@ -525,6 +525,107 @@ fn left_limited(lanes: u32, p_left: f64, opp_per_lane: f64, gc: f64) -> (f64, f6
     (q(1800.0), q(1900.0))
 }
 
+// ---------------------------------------------------------------- route choice
+
+/// Perception seed of the `i`-th driver of a route-choice case.
+fn driver_seed(i: u32) -> u32 {
+    crate::rng::hash32(i, 0x00A1_1CE5) & 0x7FFF_FFFF
+}
+
+fn route_sim(b: B) -> Simulation {
+    Simulation::from_parts(b.net(), demand(&[]), cfg(1)).expect("valid network")
+}
+
+/// Route-choice case (a): two routes of equal cost from O to D. Route A has `k` junctions, each with a one-way side link onto route B that
+/// costs about `rung_s` more than staying; route B has none. Returns (share of drivers that drive A throughout under the perceived-cost model,
+/// the same under the per-node rule used before round 31, cost of A, extra cost of leaving A at its first junction).
+pub fn ladder(k: usize, len_m: f64, rung_s: f64, drivers: u32) -> (f64, f64, f64, f64) {
+    let v = V25;
+    let mut b = B::default();
+    let (block, h) = (100.0, 0.5 * (rung_s - 10.0).max(1.0) * v);
+    let span = block * (k as f64 + 1.0);
+    let o = b.node(0.0, 0.0, Control::Uncontrolled, true);
+    let d = b.node(2.0 * len_m + span, 0.0, Control::Uncontrolled, true);
+    let side = |b: &mut B, y: f64| (0..=k + 1).map(|i| b.node(len_m + i as f64 * block, y, Control::Uncontrolled, false)).collect::<Vec<u32>>();
+    let (an, sn) = (side(&mut b, -h), side(&mut b, h));
+    let mut a_links = vec![b.link(o, an[0], RoadClass::Secondary, 1, v, false)];
+    let s0 = b.link(o, sn[0], RoadClass::Secondary, 1, v, false);
+    for i in 0..=k {
+        a_links.push(b.link(an[i], an[i + 1], RoadClass::Secondary, 1, v, false));
+        b.link(sn[i], sn[i + 1], RoadClass::Secondary, 1, v, false);
+    }
+    let a_end = b.link(an[k + 1], d, RoadClass::Secondary, 1, v, false);
+    let s_end = b.link(sn[k + 1], d, RoadClass::Secondary, 1, v, false);
+    let rungs: Vec<u32> = (1..=k).map(|i| b.link(an[i], sn[i], RoadClass::Secondary, 1, v, false)).collect();
+    let mut sim = route_sim(b);
+    let mut a_route = a_links.clone();
+    a_route.push(a_end);
+    let mut via1 = a_links[..2].to_vec();
+    via1.push(rungs[0]);
+    let s_rest: Vec<u32> = sim.departure_route(sn[1], d, crate::route::NO_NOISE).unwrap_or_default();
+    via1.extend(s_rest);
+    let (ca, c1) = (sim.route_cost(&a_route) as f64, sim.route_cost(&via1) as f64);
+    let _ = (s0, s_end);
+    let pure_a = |r: &[u32]| r == a_route.as_slice();
+    let (mut new_a, mut old_a) = (0u32, 0u32);
+    for i in 0..drivers {
+        let sd = driver_seed(i);
+        new_a += sim.departure_route(o, d, sd).is_some_and(|r| pure_a(&r)) as u32;
+        old_a += sim.departure_route_per_node(o, d, sd, 0.08).is_some_and(|r| pure_a(&r)) as u32;
+    }
+    (new_a as f64 / drivers as f64, old_a as f64 / drivers as f64, ca, c1 - ca)
+}
+
+/// Route-choice case (b): two routes with no link in common, B slower than A by `extra_s` on its second link. Returns (share of drivers on B
+/// under the perceived-cost model, under the per-node rule used before round 31, cost of A, cost of B).
+pub fn two_routes(len_m: f64, extra_s: f64, drivers: u32) -> (f64, f64, f64, f64) {
+    let v = V25;
+    let mut b = B::default();
+    let o = b.node(0.0, 0.0, Control::Uncontrolled, true);
+    let d = b.node(len_m, 0.0, Control::Uncontrolled, true);
+    let ma = b.node(0.5 * len_m, -0.05 * len_m, Control::Uncontrolled, false);
+    let mb = b.node(0.5 * len_m, 0.05 * len_m, Control::Uncontrolled, false);
+    let a1 = b.link(o, ma, RoadClass::Secondary, 1, v, false);
+    let a2 = b.link(ma, d, RoadClass::Secondary, 1, v, false);
+    let b1 = b.link(o, mb, RoadClass::Secondary, 1, v, false);
+    let half = b.links[b1 as usize].length;
+    let b2 = b.link(mb, d, RoadClass::Secondary, 1, half / (half / v + extra_s), false);
+    let mut sim = route_sim(b);
+    let (ca, cb) = (sim.route_cost(&[a1, a2]) as f64, sim.route_cost(&[b1, b2]) as f64);
+    let (mut new_b, mut old_b) = (0u32, 0u32);
+    for i in 0..drivers {
+        let sd = driver_seed(i);
+        new_b += sim.departure_route(o, d, sd).is_some_and(|r| r.first() == Some(&b1)) as u32;
+        old_b += sim.departure_route_per_node(o, d, sd, 0.08).is_some_and(|r| r.first() == Some(&b1)) as u32;
+    }
+    (new_b as f64 / drivers as f64, old_b as f64 / drivers as f64, ca, cb)
+}
+
+/// Standard normal distribution function.
+fn phi(x: f64) -> f64 {
+    0.5 * libm::erfc(-x / std::f64::consts::SQRT_2)
+}
+
+pub fn route_choice_cases(out: &mut Vec<Case>) {
+    let beta = crate::params::ROUTE_DISPERSION_S as f64;
+    let n = 4000;
+    // (a) The trip is long enough (about 2,000 x beta s before the side links) that leaving A costs 2.5 standard deviations of the probit
+    // difference, so the perceived-cost model should keep about half the drivers on A however many side links A has, while a +/-8% factor on
+    // the remaining cost still reaches past the extra cost at each junction.
+    let len = 2000.0 * beta.max(0.5) * V25;
+    let rung = 2.5 * (beta * 2.0 * 2000.0 * beta.max(0.5)).sqrt();
+    for (id, k) in [("r1", 1usize), ("r2", 20)] {
+        let (new_a, old_a, ca, extra) = ladder(k, len, rung, n);
+        out.push(case(id, format!("Route choice: two routes of equal cost, one with {k} junction(s) offering a side link onto the other (+{extra:.0} s): share that stays on it"), "share", new_a, 0.45, 0.55, "Sheffi1985", format!("perceived arc costs N(t, beta t) drawn once per driver, beta {beta} s [DaganzoSheffi1977]; route variance beta x cost whatever the number of junctions (eq. 11.14b), so the share is about 0.5 less the drivers on a mixed route (Phi(-2.5) each, the band +/-0.05 is an ASSUMPTION); route cost {ca:.0} s; the per-node rule used before round 31 (+/-8% on the remaining cost at every node) keeps {old_a:.3}, {n} drivers")));
+    }
+    // (b) Two routes with no link in common: the probit share of the costlier route is Phi(-(cB - cA) / sqrt(beta (cA + cB))) [Sheffi1985] eq. 11.20.
+    for (id, extra) in [("r3", 15.0), ("r4", 30.0), ("r5", 60.0), ("r6", 120.0)] {
+        let (new_b, old_b, ca, cb) = two_routes(6700.0, extra, n);
+        let p = phi(-(cb - ca) / (beta * (ca + cb)).sqrt());
+        out.push(case(id, format!("Route choice: share on a route {:.0} s ({:.0}%) costlier than the other, no link in common", cb - ca, 100.0 * (cb - ca) / ca), "share", new_b, (p - 0.03).max(0.0), p + 0.03, "Sheffi1985", format!("probit prediction Phi(-(cB - cA) / sqrt(beta (cA + cB))) = {p:.3} (eq. 11.20, beta {beta} s, cA {ca:.0} s); band +/-0.03 for {n} drivers (ASSUMPTION); the per-node rule used before round 31 gives {old_b:.3}")));
+    }
+}
+
 pub fn run_all() -> Vec<Case> {
     let mut out = Vec::new();
     let (h, l1, s, nb) = sat_flow(1, V25);
@@ -644,6 +745,7 @@ pub fn run_all() -> Vec<Case> {
         let (cr, _) = awsc_modes(0.0, bike);
         out.push(case(ids[i], format!("All-way stop: capacity with {bike:.0} cyclists/h per approach"), "capacity share", cr / a0, 0.7, 1.0, "ASSUMPTION", format!("{cr:.0} against {a0:.0} veh/h/approach")));
     }
+    route_choice_cases(&mut out);
     out
 }
 

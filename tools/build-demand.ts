@@ -846,8 +846,8 @@ if (fc?.enabled) {
   if (overused.length) throw new Error(`a count is used by more than one station: ${overused.join('; ')}`);
   const fitCfg: FitConfig = {
     fit: { lo: fc.bounds.lo, hi: fc.bounds.hi, byType: fc.bounds.byType, maxIter: fc.maxIter, tol: fc.tol, damping: fc.damping, uncounted: fc.uncounted.rule, volumeWeightedMedian: fc.uncounted.volumeWeighted, stationary: fc.stationary ?? 1e-4, softStep: fc.softStep ?? 1e-3, stallWindow: fc.stallWindow ?? 25, stallGain: fc.stallGain ?? 0.002, blockedShare: fc.blockedShare ?? 0.8, band: 0, shareTol: fc.shareTol ?? 0.02 },
-    draws: fc.draws, noise: fc.noise,
-    assignment: fc.assignment ? { method: fc.assignment.method, iterations: fc.assignment.iterations, drawsPerPass: fc.assignment.drawsPerPass, alpha: fc.assignment.alpha, beta: fc.assignment.beta, noise: fc.assignment.noise, rounds: fc.assignment.rounds } : undefined,
+    draws: fc.draws, dispersion: fc.dispersion,
+    assignment: fc.assignment ? { method: fc.assignment.method, iterations: fc.assignment.iterations, drawsPerPass: fc.assignment.drawsPerPass, alpha: fc.assignment.alpha, beta: fc.assignment.beta, dispersion: fc.assignment.dispersion, rounds: fc.assignment.rounds } : undefined,
     measured: loadMeasured(fc),
     implied: fc.implied?.enabled && fc.shares?.enabled ? { weight: fc.implied.weight } : undefined,
     shares: fc.shares?.enabled ? { targets: JSON.parse(readFileSync(fc.shares.targets, 'utf8')), weight: fc.shares.weight, pmPeriod: lastPeriod } : undefined,
@@ -936,7 +936,7 @@ if (fc?.enabled) {
     per.flows = [...carOut.map((q) => ({ ...q, vehPerHour: Math.round(q.vehPerHour * 100) / 100 })).filter((q) => q.vehPerHour >= 0.01), ...per.flows.filter((q) => q.mode)];
   }
   for (const s of summary) { const per = outPeriods.find((q) => q.id === s.id)!; Object.assign(s, summarizeFlows(per.flows)); }
-  fitText = fitReport(cfg.area, fitResults, flowsBy, { fit: fitCfg.fit, draws: fc.draws, noise: fc.noise, guardExcess: fc.capacityGuard.excessShare, guardWeight: fc.capacityGuard.weight, guardOn: fc.capacityGuard.enabled, tolOk: fc.tolerancePct.report, shareWeight: fc.shares?.enabled ? fc.shares.weight : undefined, assignment: fitCfg.assignment, links: net.links, composition: fc.composition, recency: fc.recency?.enabled ? { referenceYear: fc.recency.referenceYear, recentYears: fc.recency.recentYears } : undefined }, stationNotes, [...(countRep ? countReportLines(countRep) : []), ...localScaleLines(), ...(assumedReports.length ? assumedReportLines(assumedReports, (id) => `${gateName(id)} (${id})`) : [])]);
+  fitText = fitReport(cfg.area, fitResults, flowsBy, { fit: fitCfg.fit, draws: fc.draws, dispersion: fc.dispersion, guardExcess: fc.capacityGuard.excessShare, guardWeight: fc.capacityGuard.weight, guardOn: fc.capacityGuard.enabled, tolOk: fc.tolerancePct.report, shareWeight: fc.shares?.enabled ? fc.shares.weight : undefined, assignment: fitCfg.assignment, links: net.links, composition: fc.composition, recency: fc.recency?.enabled ? { referenceYear: fc.recency.referenceYear, recentYears: fc.recency.recentYears } : undefined }, stationNotes, [...(countRep ? countReportLines(countRep) : []), ...localScaleLines(), ...(assumedReports.length ? assumedReportLines(assumedReports, (id) => `${gateName(id)} (${id})`) : [])]);
   if (fc.output) {
     // The station tables of each period go to a file of their own, so that no report outgrows the repository's file size limit. The training view writes beside it with `.cv` in the name.
     const reportFile: string = training ? fc.output.replace(/\.md$/, '.cv.md') : fc.output;

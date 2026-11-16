@@ -86,7 +86,11 @@ pub const MIN_SWITCH_GAP_S: f64 = 120.0;
 /// ASSUMPTION: a driver whose next link has had no room for this long (s) re-routes whatever its class, backtracking allowed.
 pub const BLOCKED_REROUTE_S: f32 = 60.0;
 pub const EMA_ALPHA: f32 = 0.3; // ASSUMPTION
-pub const ROUTE_NOISE: f32 = 0.08; // ASSUMPTION: per-driver perceived-cost noise (+-8%)
+/// Route-choice dispersion: a driver perceives each movement-and-link arc with a normal error of variance `ROUTE_DISPERSION_S` x the arc's
+/// measured cost, drawn once for the trip, and takes the shortest path on its perceived costs (probit route choice [DaganzoSheffi1977],
+/// [Sheffi1985] eq. 11.12; the book's examples use 1 time unit for illustration). No value for urban street networks was found, so the value
+/// (s) is an ASSUMPTION chosen by a sweep on fitted evidence (calibration round 31).
+pub const ROUTE_DISPERSION_S: f32 = 2.0;
 pub const TURN_RIGHT_S: f32 = 1.0; // ASSUMPTION: turn penalties for routing (s)
 pub const TURN_LEFT_S: f32 = 4.0; // ASSUMPTION
 pub const TURN_U_S: f32 = 25.0; // ASSUMPTION

@@ -71,6 +71,7 @@ impl Simulation {
         }
         self.apply_mv_times();
         self.router.invalidate();
+        self.spawn_cache.clear();
     }
 
     /// Zero every result so that the run counts from time zero. State that drives the dynamics (queues, signal plans, route costs,
@@ -100,41 +101,35 @@ impl Simulation {
         self.world.reset_stats();
     }
 
-    /// Route of an agent from `origin` to `dest`: the first link and the links after it. Cars use the free-flow cost tables with the
-    /// driver's perception noise (as at departure), cyclists theirs without noise.
+    /// Route of an agent from `origin` to `dest`: the first link and the links after it. Cars route on their own perceived costs
+    /// (as at departure), cyclists theirs without noise.
     fn initial_route(&mut self, bike: bool, origin: u32, dest: u32, seed: u32) -> Option<Vec<u32>> {
         let mut route = Vec::new();
         if bike {
             self.bike_router.ensure_m(dest, &self.topo, self.eff.bike_modal(), &self.eff.bike_link_cost);
             let table = self.bike_router.table(dest);
-            let b = route::first_link_m(table, &self.topo, self.eff.bike_modal(), origin, NO_NOISE)?;
+            let b = route::first_link_m(table, &self.topo, self.eff.bike_modal(), origin)?;
             route.push(b);
-            route::walk_m(table, &self.topo, self.eff.bike_modal(), b, dest, NO_NOISE, &mut route).then_some(route)
+            route::walk_m(table, &self.topo, self.eff.bike_modal(), b, dest, &mut route).then_some(route)
         } else {
-            self.router.ensure(dest, &self.topo, &self.eff, &self.link_cost);
-            let table = self.router.table(dest);
-            let mut b = route::first_link(table, &self.topo, &self.eff, origin, seed)?;
-            route.push(b);
-            if !route::walk(table, &self.topo, &self.eff, b, dest, seed, &mut route) {
-                route.clear();
-                b = route::first_link(table, &self.topo, &self.eff, origin, NO_NOISE)?;
-                route.push(b);
-                if !route::walk(table, &self.topo, &self.eff, b, dest, NO_NOISE, &mut route) {
-                    return None;
-                }
+            if self.plan(Start::Node(origin), Goal::Dest(dest), seed, None, &mut route) {
+                return Some(route);
             }
-            Some(route)
+            route.clear();
+            self.plan(Start::Node(origin), Goal::Dest(dest), NO_NOISE, None, &mut route).then_some(route)
         }
     }
 
     /// Route of a car of a flow with an assumed movement: as a trip of the flow would take it at its origin, the movement included while it counts.
     /// Returns the route and the movement it makes.
     fn initial_route_via(&mut self, origin: u32, dest: u32, seed: u32, vplan: u32) -> Option<Vec<u32>> {
-        let mut rest = Vec::new();
-        if let Some((_, Some(first))) = self.pick_via(Start::Node(origin), dest, seed, vplan, &mut rest) {
-            let mut route = vec![first];
-            route.append(&mut rest);
-            return Some(route);
+        for sd in [seed, NO_NOISE] {
+            let mut rest = Vec::new();
+            if let Some((_, Some(first))) = self.pick_via(Start::Node(origin), dest, sd, vplan, &mut rest) {
+                let mut route = vec![first];
+                route.append(&mut rest);
+                return Some(route);
+            }
         }
         self.initial_route(false, origin, dest, seed)
     }
