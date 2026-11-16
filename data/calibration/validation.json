@@ -952,13 +952,13 @@
     "schema": 1,
     "simulator": {
       "dirty": false,
-      "fingerprint": "cef9506de5200ff7cfcf8805b36ecba1",
-      "revision": "dc9b244e587083ddd0258f4b3a97fba351988260",
+      "fingerprint": "f0df1aabc323bca5893215e1df1afbff",
+      "revision": "41da10f973e828867f60e2191abcc76b9b19588d",
       "version": "0.1.0"
     },
     "suite": {
       "cases": 72,
-      "sha256": "406994b286ab25f1ed1b67b4c818be1e2dca6d1def90ccac14adf6de24c2b269"
+      "sha256": "94eb79e1af3419285f106d8a6b6e9da2db1249e0409c87163a8563a19a3a1523"
     }
   },
   "notDocumented": []
