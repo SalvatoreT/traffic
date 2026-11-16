@@ -180,7 +180,7 @@
       "knownDeviation": null,
       "lo": 351.4949678497243,
       "name": "Permissive left, left-only lane, opposing 200 veh/h (green share 0.38): left turns",
-      "note": "cycle 100 s, saturated; left turns only after the opposing queue clears, Drew's gap model, then sneakers in the change interval: critical gap 5.1 to 4.5 s, turning headway 2.57 to 2.24 s, 0.88 to 2 sneakers a cycle, opposing discharge 1,500 to 2,000 veh/h",
+      "note": "cycle 100 s, saturated; left turns only after the opposing queue clears, Drew's gap model, then sneakers in the change interval: critical gap 5.1 to 4.5 s, turning headway 2.57 to 2.24 s, 0.88 to 2 sneakers a cycle, opposing discharge 1,500 to 2,000 veh/h; with the queue-first left-turn model (`Config::queue_first_left`, off by default) 411",
       "pass": true,
       "sim": 444.0,
       "source": "Fambro1991",
@@ -189,10 +189,16 @@
     {
       "hi": 302.5458107331906,
       "id": "p2",
-      "knownDeviation": null,
+      "knownDeviation": {
+        "followUp": "Pending review. Repair: switch on the queue-first model once protected phases where the field has them (left-turn arrows) are in the network, so that the arterials do not lose capacity they have in reality.",
+        "id": "p2",
+        "reason": "New in round 33. Permissive left from a left-only lane against 400 veh/h of opposing flow: 402 left turns an hour against 157 to 303 by the permitted-left method of [Fambro1991] (left turns only after the opposing queue clears, Drew's gap model with critical gap 4.5 to 5.1 s and turning headway 2.24 to 2.57 s, 0.88 to 2 sneakers a cycle). A left-turner counts a car starting from the green line as about 4 to 6 s away and takes that gap, and after the 45 s courtesy wait (which runs through the red) it goes ahead of the standing opposing queue; the opposing approach then carries less than it is offered. The queue-first model (`Config::queue_first_left`) gives 246, inside the range, but made the Rockridge PM peak less stable and was not switched on.",
+        "relevance": "Not reviewed: left to the project lead. Permissive left turns against moderate and heavy opposing flow are served up to twice as fast as the method allows, and the opposing through traffic correspondingly slower.",
+        "reviewed": false
+      },
       "lo": 157.3133442122538,
       "name": "Permissive left, left-only lane, opposing 400 veh/h (green share 0.37): left turns",
-      "note": "cycle 100 s, saturated; left turns only after the opposing queue clears, Drew's gap model, then sneakers in the change interval: critical gap 5.1 to 4.5 s, turning headway 2.57 to 2.24 s, 0.88 to 2 sneakers a cycle, opposing discharge 1,500 to 2,000 veh/h",
+      "note": "cycle 100 s, saturated; left turns only after the opposing queue clears, Drew's gap model, then sneakers in the change interval: critical gap 5.1 to 4.5 s, turning headway 2.57 to 2.24 s, 0.88 to 2 sneakers a cycle, opposing discharge 1,500 to 2,000 veh/h; with the queue-first left-turn model (`Config::queue_first_left`, off by default) 246",
       "pass": false,
       "sim": 402.0,
       "source": "Fambro1991",
@@ -201,10 +207,16 @@
     {
       "hi": 167.0277751299215,
       "id": "p3",
-      "knownDeviation": null,
+      "knownDeviation": {
+        "followUp": "As p2.",
+        "id": "p3",
+        "reason": "New in round 33. As p2 with 600 veh/h opposing: 369 left turns an hour against 32 to 167 [Fambro1991]; the queue-first model gives 120.",
+        "relevance": "As p2.",
+        "reviewed": false
+      },
       "lo": 31.68,
       "name": "Permissive left, left-only lane, opposing 600 veh/h (green share 0.37): left turns",
-      "note": "cycle 100 s, saturated; left turns only after the opposing queue clears, Drew's gap model, then sneakers in the change interval: critical gap 5.1 to 4.5 s, turning headway 2.57 to 2.24 s, 0.88 to 2 sneakers a cycle, opposing discharge 1,500 to 2,000 veh/h",
+      "note": "cycle 100 s, saturated; left turns only after the opposing queue clears, Drew's gap model, then sneakers in the change interval: critical gap 5.1 to 4.5 s, turning headway 2.57 to 2.24 s, 0.88 to 2 sneakers a cycle, opposing discharge 1,500 to 2,000 veh/h; with the queue-first left-turn model (`Config::queue_first_left`, off by default) 120",
       "pass": false,
       "sim": 369.0,
       "source": "Fambro1991",
@@ -213,7 +225,13 @@
     {
       "hi": 602.5,
       "id": "b13",
-      "knownDeviation": null,
+      "knownDeviation": {
+        "followUp": "Pending review. Repair: a cited turn speed or left-turn saturation adjustment.",
+        "id": "b13",
+        "reason": "New in round 33. A one-lane, all-left approach in a phase of its own (protected, phasing observed without timing) discharges 450 veh/h at a green share of 0.30, about 1,500 an hour of green, against s x green share with s 1,500 to 2,000 [FHWA-SIG2004]: 2 veh/h below the lower bound. Single-lane left turns slow to the 5 m/s turn speed (ASSUMPTION); seeds 2 to 5 give 456 to 486.",
+        "relevance": "Not reviewed: left to the project lead. Protected left turns discharge at the low end of the observed saturation flows.",
+        "reviewed": false
+      },
       "lo": 451.875,
       "name": "1 lane, all left turns, protected (a phase of its own, phasing observed without timing), opposing 500/lane (green share 0.30)",
       "note": "per lane, cycle 100 s, saturated; s x green share, s observed 1,500 to 2,000; the same approach with a permissive left carries 348",
@@ -598,15 +616,15 @@
       "hi": 1064.0200605630496,
       "id": "l1",
       "knownDeviation": {
-        "followUp": "Pending review. Candidate repairs: pocket length from map or field data instead of the 3-vehicle ASSUMPTION, or a protected-permissive phase where a timing sheet shows one.",
+        "followUp": "Pending review. Candidate repairs: an expected range from the [Fambro1991] method for this geometry, pocket length from map or field data instead of the 3-vehicle ASSUMPTION, and a left-turner that waits at the pocket entrance instead of turning from the through lane beside a full pocket.",
         "id": "l1",
-        "reason": "New in round 32. Two-lane signal approach with 20% left turns, a 3-vehicle pocket that overflows every cycle and 500 veh/h per opposing lane: 792 veh/h per lane against 851 to 1,064 [Brilon1999] (the b9 bound at 20% left). It was 699 without lane changes along a link: through drivers now move around a waiting left-turner, but a left-turner that does not fit in the pocket still holds the inner lane at the stop line until it can turn.",
-        "relevance": "Not reviewed: left to the project lead. Possible meaning: two-lane approaches with heavy permissive left turns (Ashby Ave at Claremont Ave, Claremont Ave northbound) are somewhat slow in the model, which would favor side streets near them.",
+        "reason": "New in round 32. Two-lane signal approach with 20% left turns, a 3-vehicle pocket that overflows every cycle and 500 veh/h per opposing lane: 792 veh/h per lane against 851 to 1,064, the b9 bound at 20% left, which applies the gap formula of [Brilon1999] with tc 4.1 s and tf 2.2 s to the hourly opposing flow. Round 33: the permitted-left method of [Fambro1991] (left turns only once the opposing queue has cleared, then gaps, then sneakers) puts the left-limited approach at 385 to 706 per lane, so the simulator's 792 is above that method, not below it; with the queue-first left-turn model (`Config::queue_first_left`, off by default) it is 658. Through drivers move around a waiting left-turner (lane changes along a link), and a left-turner that does not fit in the pocket waits at the stop line of the inner lane and turns from there.",
+        "relevance": "Not reviewed: left to the project lead. The range and the cited permitted-left method disagree; the expected range needs the lead's review before this case can say whether two-lane approaches with heavy permissive left turns are too slow or too fast.",
         "reviewed": false
       },
       "lo": 851.2160484504398,
       "name": "2 lanes, 20% left, pocket overflowing, opposing 500/lane (green share 0.51): approach capacity",
-      "note": "per lane, cycle 100 s, saturated; the left-turn queue overflows the 3-vehicle pocket every cycle and through drivers behind it move to the free lane; min(permissive-left limit, through limit) as in b9, s 1,800 to 1,900, lower bound 0.8 of it; without lane changes along the link 699; the permitted-left method of p1 to p3 [Fambro1991] (left turns only after the opposing queue clears) puts the left-limited approach at 385 to 706 per lane",
+      "note": "per lane, cycle 100 s, saturated; the left-turn queue overflows the 3-vehicle pocket every cycle and through drivers behind it move to the free lane; min(permissive-left limit, through limit) as in b9, s 1,800 to 1,900, lower bound 0.8 of it; without lane changes along the link 699; the permitted-left method of p1 to p3 [Fambro1991] (left turns only after the opposing queue clears) puts the left-limited approach at 385 to 706 per lane; with the queue-first left-turn model (off by default) 658",
       "pass": false,
       "sim": 792.0,
       "source": "Brilon1999",
@@ -929,23 +947,19 @@
   "manifest": {
     "deviations": {
       "path": "data/calibration/validation.deviations.json",
-      "sha256": "e995e5f03e38d1804f9d2044bcddf3d491a0a075ba1d4f416324559949df568c"
+      "sha256": "200be1f8f9731970501699984fd77e2488c3091973f2f3ea6de2ab317c06271b"
     },
     "schema": 1,
     "simulator": {
-      "dirty": true,
+      "dirty": false,
       "fingerprint": "cef9506de5200ff7cfcf8805b36ecba1",
-      "revision": "8e27168999494fbd6b6d7aef1aaf8ae2c30d34e4",
+      "revision": "dc9b244e587083ddd0258f4b3a97fba351988260",
       "version": "0.1.0"
     },
     "suite": {
       "cases": 72,
-      "sha256": "f4dc277045948af2fec225cecf5e24e3181e83564d12eec6afdae0dd75278745"
+      "sha256": "406994b286ab25f1ed1b67b4c818be1e2dca6d1def90ccac14adf6de24c2b269"
     }
   },
-  "notDocumented": [
-    "p2",
-    "p3",
-    "b13"
-  ]
+  "notDocumented": []
 }
