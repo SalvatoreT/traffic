@@ -37,3 +37,10 @@
 .mg-status { padding: .7rem .9rem; border: 1px solid var(--note-border); border-left-width: 5px; border-radius: 8px; background: var(--note-bg); }
 .mg-trips { list-style: none; padding-left: 0; }
 .mg-trips li { padding-left: 0; }
+
+@container (min-width: 70rem) {
+  .method-cols { column-count: 2; column-gap: clamp(2rem, 4cqw, 4rem); }
+  .method-cols > section { break-inside: avoid; }
+  .method-cols > section:first-child { margin-top: 0; }
+  .method-view .method-cols p, .method-view .method-cols ul, .method-view .method-cols ol { max-width: 72ch; }
+}

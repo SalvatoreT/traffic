@@ -39,7 +39,7 @@ export function Sources({ demand, synthetic, calibration }: { demand: Demand; sy
       </section>
       <section aria-labelledby="research-references">
         <AnchorHeading id="research-references" label="Research references">Research references</AnchorHeading>
-        <Markdown source={refs} offset={3} anchors={RESERVED} />
+        <div className="refs-cols"><Markdown source={refs} offset={3} anchors={RESERVED} /></div>
       </section>
     </div>
   );

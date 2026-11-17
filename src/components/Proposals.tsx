@@ -240,20 +240,23 @@ function Card({ p, group, evidence, comparison, comparisonLabel, shareUrl, onCop
             <p className="fig-sub">{cut.scope}</p>
             <p className="fig-sub">{cut.interval}</p>
           </div>
+          {detour && (
+            <div className="fig fig-detour">
+              <p className="fig-main"><span className="fig-num">{detour.figure}</span> {detour.label}</p>
+              <p className="fig-sub">{detour.detail}</p>
+            </div>
+          )}
+          <div className="fig fig-all">
+            <p className="fig-main">{all.none ? all.label : <><span className="fig-num">{all.figure}</span> {all.label}</>}</p>
+            {!all.none && <p className="fig-sub">{all.split} {all.interval}</p>}
+          </div>
         </div>
         {hasPic && <ProposalMap net={bundle.network} index={index} p={p} group={group} ivs={ivs ?? []} areaId={bundle.entry.id} mode={mode} periodLabel={periodLabel} searchedPeriods={searched} loaded={loaded} onTrace={onTrace} />}
-        {detour && (
-          <div className="fig fig-detour">
-            <p className="fig-main"><span className="fig-num">{detour.figure}</span> {detour.label}</p>
-            <p className="fig-sub">{detour.detail}</p>
-          </div>
-        )}
-        <div className="fig fig-all">
-          <p className="fig-main">{all.none ? all.label : <><span className="fig-num">{all.figure}</span> {all.label}</>}</p>
-          {!all.none && <p className="fig-sub">{all.split} {all.interval}</p>}
-        </div>
+        <div className="prop-extra">
+        <div className="prop-changes">
         <h5 className="prop-h">Changes</h5>
         <ul className="prop-ivs">{p.interventions.map((iv, i) => <li key={i}>{iv.label}</li>)}</ul>
+        </div>
         {variants.length > 0 && (
           <div className="prop-variants">
             <h5>Variants</h5>
@@ -267,6 +270,7 @@ function Card({ p, group, evidence, comparison, comparisonLabel, shareUrl, onCop
             )}
           </div>
         )}
+        </div>
         <div className="prop-actions">
           {action}
           {hasPic && confirmId !== hid && <DownloadImage net={bundle.network} index={index} p={p} ivs={ivs ?? []} areaName={bundle.entry.name} areaId={bundle.entry.id} status={calStatusText} openUrl={shareUrl} periodLabel={periodLabel} searchedPeriods={searched} runs={group.computed.seeds} evidence={evidence} />}
