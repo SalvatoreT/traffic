@@ -2,7 +2,7 @@
 // more sets of seed runs, keeps the trips with neither end in the study area (the calibrate report's through figure), and writes, per period, the trips of
 // each pair counted on each street run and the trips the pair offered in those runs. `tools/build-demand.ts` reads the file as the measured membership of the
 // through-car targets (`countFit.throughTargets.measured`).
-//   npx tsx tools/through-membership.ts --area rockridge --period pm_peak --run DIR=DEMAND [--run DIR=DEMAND ...] [--out FILE] [--stations]
+//   npx tsx tools/through-membership.ts --area rockridge --period pm_peak --run DIR=DEMAND [--run DIR=DEMAND ...] [--out FILE] [--stations [--ids ID,ID]]
 // --stations adds, for that period, the pairs of the movement and route stations (all trips) and keeps the through membership.
 // DIR holds `sod-<period>-<seed>.json` from `calibrate --select-od`; DEMAND is the demand file those runs used. Other periods in FILE are kept.
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
@@ -32,6 +32,13 @@ const file = existsSync(out) ? JSON.parse(readFileSync(out, 'utf8')) : { area, n
 if (argv.includes('--stations')) {
   // Only the movement and route stations' pairs (round 41); the through targets' membership of the period is kept.
   const st = pooledStations(sets);
+  // --ids keeps only the named stations (the file stays small enough for the repository).
+  const ids = arg('--ids')?.split(',');
+  if (ids) {
+    st.hits = Object.fromEntries(Object.entries(st.hits).filter(([id]) => ids.includes(id)));
+    const keep = new Set(Object.values(st.hits).flatMap((h) => Object.keys(h)));
+    st.trips = Object.fromEntries(Object.entries(st.trips).filter(([q]) => keep.has(q)));
+  }
   if (!file.periods?.[period]) throw new Error(`${out}: no ${period} entry to add station pairs to`);
   file.periods[period].stations = st;
   writeFileAtomic(out, JSON.stringify(file));
