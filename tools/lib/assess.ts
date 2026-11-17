@@ -5,11 +5,13 @@ import { join } from 'node:path';
 import { geh, GEH_GOOD, evaluateCases, seedStat, summarizeCases, linkSpread, encodeUint16, type AcceptanceSummary, type CaseResult } from './acceptance';
 import { seedFileName, type RunManifest } from './run-manifest';
 import type { DetectorEnd } from './demand-fit';
+import type { PedestrianSeedCount } from './pedestrian-count';
 import { backlogGrowth, type Stability, type ZoneSplit } from './verdict';
 
 export interface SeedRun {
   seed: number; minutes: number; period: string; area?: string; scale?: number;
   manifest?: RunManifest | null;
+  pedestrianCount?: PedestrianSeedCount | null;
   series?: { tMin: number; backlog: number }[];
   health: { gridlockRemoved: number; backlogPct: number; completed: number; arterialMeanSpeed: number; spawned: number };
   shares: { block: string; side: string; via: string; observed: number; observedPm: number | null; modelled: number | null; headline: boolean }[];

@@ -21,6 +21,7 @@ import { assessmentSplitPath, buildEvidence, hashFile, checkPair, checkRunSet, e
 import { isolationProblems, resolveOutputs } from './lib/assess-outputs';
 import { primitiveEvidence, primitiveLines, toVerdict, type ValidationFile } from './lib/primitive-evidence';
 import { scopeLines } from './lib/validation-scope';
+import { pedestrianCountLines, readPedestrianStation } from './lib/pedestrian-count';
 
 const has = (k: string) => process.argv.includes(k);
 const arg = (k: string, d: string) => { const i = process.argv.indexOf(k); return i >= 0 ? process.argv[i + 1] : d; };
@@ -108,6 +109,8 @@ const mainInputs = expectedInputs(root, area, mainDemandFile);
 const cvBuild = buildEvidence(root, area, cvDemandFile, 'training');
 const cvInputs = expectedInputs(root, area, cvDemandFile);
 const splitSha = mainInputs.split;
+const mainPedestrianStation = readPedestrianStation(mainDemandFile), cvPedestrianStation = readPedestrianStation(cvDemandFile);
+const pedestrianByPeriod: Record<string, string[]> = {};
 for (const p of periods) {
   if (!reuse) {
     const r = spawnSync(bin, ['--area', area, '--period', p, '--minutes', String(minutes), '--scale', '1', '--seeds', seedSpec, '--jobs', jobs, '--keep-seeds', keep, '--out', summaryDir, ...(demandPath ? ['--demand', demandPath] : [])], { cwd: root, stdio: ['ignore', 'ignore', 'inherit'] });
@@ -121,6 +124,10 @@ for (const p of periods) {
   const mainFound = readRuns(keep, area, p, seeds, 1, minutes);
   const mainCheck = checkRunSet(`${p}, ${mainView} demand`, seeds, mainFound, mainInputs, mainBuild);
   const cvFound = wantCv ? readRuns(keepCv, area, p, seeds, 1, minutes) : [];
+  pedestrianByPeriod[p] = [
+    ...pedestrianCountLines(mainView, p, mainPedestrianStation, mainFound, seeds),
+    ...(wantCv ? pedestrianCountLines('cross-validation', p, cvPedestrianStation, cvFound, seeds) : []),
+  ];
   const cvCheck = wantCv ? checkRunSet(`${p}, cross-validation demand`, seeds, cvFound, cvInputs, cvBuild) : null;
   if (stations) for (const [view, reports] of [[mainView, mainFound], ['training', cvFound]] as const) {
     for (const { run, seed } of reports) if (run) {
@@ -163,7 +170,8 @@ for (const p of periods) {
   const acq = acquired[p];
   const runs = acq.main;
   byPeriod[p] = runs;
-  if (!runs.length) { L.push(`## ${p}`, '', `No run report exists for ${p}; nothing to report.`, ''); verdicts[p] = { stable: false, d5: null, flow: null, through: null, rule: null }; splits[p] = null; continue; }
+  L.push(`## ${p}`, '', ...pedestrianByPeriod[p]);
+  if (!runs.length) { L.push(`No run report exists for ${p}.`, ''); verdicts[p] = { stable: false, d5: null, flow: null, through: null, rule: null }; splits[p] = null; continue; }
   const n = runs.length;
   const per = 60 / minutes;
   const bl = runs.map((r) => r.health.backlogPct);
@@ -195,7 +203,6 @@ for (const p of periods) {
   throughRows[p] = th;
   verdicts[p] = { stable, d5, flow, through: th.length ? th.every((q) => q.inside) : null, rule: rv };
 
-  L.push(`## ${p}`, '');
   L.push(`**Stability rule (D16): ${diagnostic ? `not judged (diagnostic, ${n} of ${seeds.length} seeds)` : stable ? 'holds' : 'fails'}.** Cars cleared from gridlock ${stab.zoneScoped ? 'near the study area (judged zone, far ones linked to it included)' : '(all of them: no near/far split)'} ${f(rem.mean)} per hour (min ${f(rem.min)}, max ${f(rem.max)}; rule below ${rule.maxMeanRemovalsPerHour ?? 1}${stab.zoneScoped ? `; ${f(stab.allPerHourMean)} in all, ${f(stab.farPerHourMean)} far` : ''}); backlog under ${rule.backlogPct ?? 2}% in ${stab.backlogSeedsOk} of ${n} seeds (mean ${f(seedStat(bl).mean)}%, max ${f(Math.max(...bl))}%); backlog growth in the second half: ${stab.growthSeeds.length ? `seeds ${stab.growthSeeds.join(', ')} exceed ${rule.maxSecondHalfBacklogGrowthPct ?? 2} points or lack complete growth readings` : 'no seed above the limit'}; arterial speed ${f(speed.mean)} m/s (${f(speed.lo)} to ${f(speed.hi)}); completed trips ${Math.round(done.mean)} (${Math.round(done.lo)} to ${Math.round(done.hi)}). The old rule (zero cars cleared from gridlock anywhere in every seed) passes in ${stab.oldRuleSeedsPassing.length} of ${n} seeds. Computed from these ${n} runs. ${recoverySentence(runs)}`, '');
   L.push(...zoneLines(runs, stab, rule.maxMeanRemovalsPerHour ?? 1));
   L.push(`Route shares (modeled seed mean, 95% interval, observed${p === 'pm_peak' ? ', PM values' : '; the observed values are the PM ones, shown for comparison only'}):`, '', '| Share | Observed | Modeled | 95% interval | Error (points) | Within 10 |', '| --- | --- | --- | --- | --- | --- |');
