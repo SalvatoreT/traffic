@@ -2,7 +2,7 @@
 import type { ThroughMeasured } from './demand-fit';
 
 /** `calibrate --select-od` output: per counted street run, the trips (origin, destination, count) that used any of its links in one seed run. */
-export interface SelectOd { period: string; seed: number; minutes: number; blocks: { label: string; links: number[]; trips: [number, number, number][] }[] }
+export interface SelectOd { period: string; seed: number; minutes: number; blocks: { label: string; links: number[]; trips: [number, number, number][] }[]; features?: { id: string; trips: [number, number, number][] }[] }
 
 export const throughTargetId = (label: string) => `through ${label}`;
 
@@ -37,4 +37,30 @@ export function pooledMembership(sets: { label: string; flows: { origin: number;
   for (const q of [...pairs].sort()) trips[q] = Math.round(perSet.reduce((a, p) => a + p.n * (p.vph.get(q) ?? 0), 0) * 100) / 100;
   for (const h of Object.values(hits)) for (const q of Object.keys(h)) h[q] = Math.round(h[q] * 100) / 100;
   return { runs, source: sets.map((s) => s.label).join('; '), hits, trips };
+}
+
+/** Movement and route stations (round 41): every trip that made the movement counts, through or not. Same pooling as `pooledMembership`; sets without station pairs are skipped. */
+export function pooledStations(sets: { label: string; flows: { origin: number; destination: number; vehPerHour: number }[]; sod: SelectOd[] }[]): ThroughMeasured {
+  const hits: Record<string, Record<string, number>> = {};
+  const pairs = new Set<string>();
+  let runs = 0;
+  const perSet: { vph: Map<string, number>; n: number }[] = [];
+  const used: string[] = [];
+  for (const s of sets) {
+    const sod = s.sod.filter((r) => r.features);
+    if (!sod.length) continue;
+    used.push(s.label);
+    const vph = new Map<string, number>();
+    for (const f of s.flows) { const q = `${f.origin}>${f.destination}`; vph.set(q, (vph.get(q) ?? 0) + f.vehPerHour); }
+    for (const r of sod) for (const ft of r.features!) {
+      const h = (hits[ft.id] ??= {});
+      for (const [o, d, n] of ft.trips) { const q = `${o}>${d}`; h[q] = (h[q] ?? 0) + (n * 60) / r.minutes; pairs.add(q); }
+    }
+    runs += sod.length;
+    perSet.push({ vph, n: sod.length });
+  }
+  const trips: Record<string, number> = {};
+  for (const q of [...pairs].sort()) trips[q] = Math.round(perSet.reduce((a, p) => a + p.n * (p.vph.get(q) ?? 0), 0) * 100) / 100;
+  for (const h of Object.values(hits)) for (const q of Object.keys(h)) h[q] = Math.round(h[q] * 100) / 100;
+  return { runs, source: used.join('; '), hits, trips };
 }

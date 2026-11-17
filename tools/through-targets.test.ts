@@ -3,7 +3,7 @@ import { featureIndex, routeFeatures, type Assignment, type Feature } from './li
 import { assigned, DEFAULT_FIT, fitToCounts, type Constraint, type FlowType } from './lib/fit-counts';
 import { throughMembership, type ThroughMeasured } from './lib/demand-fit';
 import { throughStats } from './lib/assess';
-import { pooledMembership, throughTargetId, type SelectOd } from './lib/through-membership';
+import { pooledStations, pooledMembership, throughTargetId, type SelectOd } from './lib/through-membership';
 
 // Three flows on a two-link network: flow 0 uses link 0, flow 1 uses links 0 and 1, flow 2 uses link 1. One assignment, every route share 1.
 const asg = (feat?: Assignment['feat']): Assignment => ({
@@ -89,5 +89,16 @@ describe('pooled select-od files', () => {
     expect(m.runs).toBe(2);
     expect(m.hits[throughTargetId('A St SB')]).toEqual({ '1>2': 6 });
     expect(m.trips).toEqual({ '1>2': 14 });
+  });
+});
+
+describe('pooled station pairs', () => {
+  it('counts every trip of a movement and skips runs without station pairs', () => {
+    const flows = [{ origin: 1, destination: 2, vehPerHour: 7 }, { origin: 1, destination: 9, vehPerHour: 4 }];
+    const run = (seed: number, f?: boolean): SelectOd => ({ period: 'pm_peak', seed, minutes: 60, blocks: [], ...(f ? { features: [{ id: 'count move 5>6', trips: [[1, 2, 2], [1, 9, 1]] as [number, number, number][] }] } : {}) });
+    const m = pooledStations([{ label: 'old', flows, sod: [run(1)] }, { label: 'new', flows, sod: [run(1, true), run(2, true)] }]);
+    expect(m.runs).toBe(2);
+    expect(m.hits['count move 5>6']).toEqual({ '1>2': 4, '1>9': 2 });
+    expect(m.trips).toEqual({ '1>2': 14, '1>9': 8 });
   });
 });

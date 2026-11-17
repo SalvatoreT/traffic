@@ -664,7 +664,24 @@ fn main() {
                 json!({"label": t.label, "links": t.links, "trips": v})
             })
             .collect();
-        std::fs::write(path, serde_json::to_string(&json!({"period": args.period, "seed": args.seed, "minutes": args.minutes, "blocks": blocks})).unwrap()).expect("write select-od");
+        // Movement and route stations of the station file: the pairs of the trips that made them (round 41).
+        let features: Vec<Value> = feats
+            .iter()
+            .map(|f| {
+                let mut od: HashMap<(u32, u32), u32> = HashMap::new();
+                for r in &recs {
+                    let h: Vec<u32> = r.hits.iter().map(|x| x.0).collect();
+                    let ok = if f.mv { h.windows(2).any(|w| w[0] == f.first && w[1] == f.last) } else { h.iter().position(|&l| l == f.first).map_or(false, |i| h[i + 1..].contains(&f.last)) };
+                    if ok {
+                        *od.entry((r.origin, r.dest)).or_insert(0) += 1;
+                    }
+                }
+                let mut v: Vec<(u32, u32, u32)> = od.into_iter().map(|((o, d), n)| (o, d, n)).collect();
+                v.sort_unstable();
+                json!({"id": f.id, "trips": v})
+            })
+            .collect();
+        std::fs::write(path, serde_json::to_string(&json!({"period": args.period, "seed": args.seed, "minutes": args.minutes, "blocks": blocks, "features": features})).unwrap()).expect("write select-od");
     }
 
     if let Some(path) = &args.od_costs {

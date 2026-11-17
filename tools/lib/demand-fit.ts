@@ -293,9 +293,9 @@ export interface FitConfig {
  */
 export interface ThroughTarget { id: string; label: string; links: number[]; target: Record<string, number>; lo: Record<string, number>; hi: Record<string, number>; ceiling: string[]; derived: string[]; weight: number; basis: string }
 /** Simulated through trips per origin-destination pair (`tools/through-membership.ts`): over `runs` seed runs, `hits[id]["o>d"]` trips of the pair counted on target `id`, `trips["o>d"]` trips of the pair offered (veh/h summed over the runs; only pairs with a counted trip). */
-export interface ThroughMeasured { runs: number; source: string; hits: Record<string, Record<string, number>>; trips: Record<string, number> }
+export interface ThroughMeasured { runs: number; source: string; hits: Record<string, Record<string, number>>; trips: Record<string, number>; /** Movement and route stations' pairs, all trips (round 41). */ stations?: ThroughMeasured }
 /** `reportOnly`: the figures are reported, no constraint enters the fit (the table is the one built without targets). */
-export interface ThroughFit { targets: ThroughTarget[]; inStudy: Set<number>; measured?: Record<string, ThroughMeasured>; priorTrips: number; reportOnly?: boolean }
+export interface ThroughFit { targets: ThroughTarget[]; inStudy: Set<number>; measured?: Record<string, ThroughMeasured>; priorTrips: number; reportOnly?: boolean; /** Station ids whose membership comes from the simulated pairs of `measured[period].stations`. */ measuredStations?: string[] }
 
 /**
  * Per-flow proportions of a through target. Static: the share of the flow's assigned routes that use the run (through flows only). Measured: per pair, the
@@ -390,7 +390,20 @@ export function fitPeriod(
   };
   const toCons = (s: Station): Constraint => ({ id: s.id, kind: s.kind, label: s.label, links: s.links, origins: s.origins, destinations: s.destinations, target: s.target[id], weight: s.weightByPeriod?.[id] ?? s.weight, feature: featOf.get(s.id) });
   const heldCons: Constraint[] = stations.filter((s) => s.held && (s.target[id] ?? 0) > 0).map(toCons);
-  const countCons: Constraint[] = stations.filter((s) => !s.held && (s.target[id] ?? 0) > 0).map(toCons);
+  const countCons0: Constraint[] = stations.filter((s) => !s.held && (s.target[id] ?? 0) > 0).map(toCons);
+  let countCons = countCons0;
+  // Named movement and route stations with simulated pairs for this period take a simulated membership (round 41); the others keep their route feature.
+  const stMeas = cfg.through?.measured?.[id]?.stations;
+  const measSt = new Set((cfg.through?.measuredStations ?? []).filter((sid) => stMeas?.hits[sid] && featOf.has(sid)));
+  const stationCons = (aa: Assignment): Constraint[] => {
+    if (!measSt.size) return countCons0;
+    return countCons0.map((c) => {
+      if (!measSt.has(c.id)) return c;
+      const r = throughMembership(aa, flows, featOf.get(c.id)!, new Set(), stMeas, c.id, cfg.through!.priorTrips, (k) => !!flows[k].via);
+      return { ...c, feature: undefined, member: r.use };
+    });
+  };
+
   const sumBy = (f: ArrayLike<number>) => { const o: Record<string, number> = { through: 0, local: 0, ramp: 0 }; for (let k = 0; k < f.length; k++) o[types[k]] += f[k]; return o; };
   const exempt = new Set<number>();
   for (const c of countCons) for (const l of c.links) exempt.add(l);
@@ -410,6 +423,7 @@ export function fitPeriod(
     implied = cfg.shares && cfg.implied && cfg.implied.weight > 0 ? impliedVolumes(nodes, links as ShareLink[], cfg.shares.targets, a, v0, id, cfg.shares.pmPeriod, rampTargets) : [];
     const impliedCons: Constraint[] = implied.map((q) => ({ id: q.id, kind: 'derived', label: q.label, links: [q.link], target: q.target, weight: cfg.implied!.weight }));
     const tc = thrCons(a).filter(() => !cfg.through?.reportOnly);
+    countCons = stationCons(a);
     cons = [...countCons, ...tc, ...impliedCons, ...shareCons];
     before = assigned(a, v0, cons, nL);
     // Counts only (no guard, no shares): the "after count fit" column. Through-car targets are counts.
@@ -426,6 +440,7 @@ export function fitPeriod(
   const notes: string[] = [];
   let residualOver: PeriodResult['residualOver'] = [];
   if (extra && cfg.measured) notes.push(`link costs include the simulator's measured delay per vehicle (${cfg.measured.source}; mean ${(extra.reduce((x, y) => x + y, 0) / nL).toFixed(1)} s per link after the control delay is removed, weight ${mw}, BPR alpha ${cfg.measured.alpha})`);
+  if (measSt.size) notes.push(`stations whose membership comes from simulated trips (${stMeas!.runs} runs; their assigned volumes in the station tables use it): ${[...measSt].join(', ')}`);
   if (as.method === 'msa') notes.push(`assignment by successive averages (${as.iterations} passes x ${as.drawsPerPass} draws of perceived costs, BPR alpha ${as.alpha} beta ${as.beta}, route-choice dispersion ${as.dispersion} s), ${rounds} round(s) with the table refitted and reassigned at its own volumes; relative link-volume change at the last pass ${(a as ReturnType<typeof assignMsa>).relChange?.toFixed(3)}`);
   if (cfg.guard.enabled) {
     const V2 = linkVolumes(a, fFinal, nL);

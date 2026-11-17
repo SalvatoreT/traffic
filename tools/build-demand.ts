@@ -829,7 +829,7 @@ function loadMeasured(fc: { assignment?: { measured?: { file: string; alpha: num
 // that drove the whole street to the block volume less the cars whose trip ended along it; the central value is the target. Other periods: that range times the
 // period's volume factor (ASSUMPTION), acting only above its upper end. In the training view a target whose street run holds a held-out block is left out,
 // as are the whole-street route counts.
-function loadThrough(fc: { throughTargets?: { enabled: boolean | 'report'; targets: string; weight: number; otherPeriods?: 'ceiling' | 'none'; measured?: { file: string; priorTrips: number } } }, notes: string[]): ThroughFit | undefined {
+function loadThrough(fc: { throughTargets?: { enabled: boolean | 'report'; targets: string; weight: number; otherPeriods?: 'ceiling' | 'none'; measured?: { file: string; priorTrips: number }; measuredStations?: string[] } }, notes: string[]): ThroughFit | undefined {
   const tt = fc.throughTargets;
   if (!tt?.enabled) return undefined;
   const tf = JSON.parse(readFileSync(tt.targets, 'utf8'));
@@ -863,7 +863,7 @@ function loadThrough(fc: { throughTargets?: { enabled: boolean | 'report'; targe
     if (j.network !== net.id) notes.push(`${mf.file}: written for network ${j.network}, this network is ${net.id}; through targets use static route shares`);
     else { measured = j.periods; notes.push(`through targets: simulated membership from ${mf.file} (${Object.entries(j.periods as Record<string, { runs: number }>).map(([p, q]) => `${p} ${q.runs} runs`).join(', ')}), prior ${mf.priorTrips} trips at the static route share (ASSUMPTION)`); }
   }
-  return { targets, inStudy: new Set(net.nodes.filter((n: { inStudyArea?: boolean }) => n.inStudyArea).map((n: { id: number }) => n.id)), measured, priorTrips: mf?.priorTrips ?? 5, reportOnly: tt.enabled === 'report' };
+  return { targets, inStudy: new Set(net.nodes.filter((n: { inStudyArea?: boolean }) => n.inStudyArea).map((n: { id: number }) => n.id)), measured, priorTrips: mf?.priorTrips ?? 5, reportOnly: tt.enabled === 'report', measuredStations: tt.measuredStations };
 }
 const localScaleLines = (): string[] => {
   if (!countEnds || !Object.keys(localScale).length) return [];
