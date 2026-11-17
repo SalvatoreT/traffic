@@ -176,10 +176,13 @@ table.cmp thead th { overflow-wrap: normal; white-space: nowrap; }
 .streets thead th { position: sticky; top: 0; z-index: 1; white-space: nowrap; height: 34px; }
 .streets.two-row thead tr:nth-child(2) th { top: 34px; }
 /* With the map strip pinned above, the stage is the scroller: the header sticks just under the strip instead of sliding beneath it. */
+/* Only while the table fits the stage; narrower, it scrolls inside its own labeled region instead of the stage sideways. */
 @media (min-width: 720px) {
-  .app[data-view='streets'] .table-scroll { max-height: none; overflow: visible; }
-  .app[data-view='streets'] .streets thead th { top: var(--strip-h); }
-  .app[data-view='streets'] .streets.two-row thead tr:nth-child(2) th { top: calc(var(--strip-h) + 34px); }
+  @container (min-width: 40rem) {
+    .app[data-view='streets'] .table-scroll { max-height: none; overflow: visible; }
+    .app[data-view='streets'] .streets thead th { top: var(--strip-h); }
+    .app[data-view='streets'] .streets.two-row thead tr:nth-child(2) th { top: calc(var(--strip-h) + 34px); }
+  }
 }
 .streets .sort { white-space: nowrap; }
 .streets-note { margin: .25rem 0 0; }
@@ -309,7 +312,7 @@ input[type='checkbox'] { width: 18px; height: 18px; accent-color: var(--accent);
 /* Legend: a docked row along the bottom of the map */
 .legend { position: absolute; left: 0; right: 0; bottom: 0; z-index: 5; background: color-mix(in srgb, var(--surface) 96%, transparent); border-top: 1px solid var(--border); box-shadow: 0 -2px 10px rgba(20, 30, 45, .08); font-size: .85rem; }
 .legend-row { display: flex; align-items: center; gap: .6rem; min-height: 40px; padding: 2px .4rem 2px .75rem; }
-.legend-name { display: flex; align-items: center; gap: .2rem; flex: 1 1 auto; min-width: 0; font-weight: 600; position: relative; }
+.legend-name { display: flex; align-items: center; gap: .2rem; flex: 1 1 auto; min-width: 0; font-weight: 600; }
 .legend-title { white-space: normal; }
 .ramp-bar { height: 10px; border-radius: 3px; border: 1px solid var(--border); }
 .is-change .ramp-bar { height: 16px; border: 0; border-radius: 0; }
@@ -321,8 +324,8 @@ input[type='checkbox'] { width: 18px; height: 18px; accent-color: var(--accent);
 .icon-btn { display: inline-flex; align-items: center; justify-content: center; min-width: 36px; padding: .3rem .5rem; }
 .legend-info { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border: 0; border-radius: 999px; background: none; color: var(--muted); cursor: pointer; padding: 0; }
 .legend-info:hover { color: var(--text); background: var(--surface-2); }
-.legend-tip-wrap { position: relative; display: inline-flex; }
-.legend-tip { position: absolute; left: -8px; bottom: calc(100% + 4px); width: max-content; max-width: min(260px, 80vw); background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: .35rem .55rem; font-weight: 400; font-size: .82rem; box-shadow: var(--shadow); opacity: 0; visibility: hidden; transition: opacity .15s ease-out, visibility 0s .15s; z-index: 3; pointer-events: none; }
+.legend-tip-wrap { position: static; display: inline-flex; }
+.legend-tip { position: absolute; left: .5rem; bottom: calc(100% + 4px); width: max-content; max-width: min(260px, calc(100% - 1rem)); background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: .35rem .55rem; font-weight: 400; font-size: .82rem; box-shadow: var(--shadow); opacity: 0; visibility: hidden; transition: opacity .15s ease-out, visibility 0s .15s; z-index: 3; pointer-events: none; }
 .legend-tip-wrap:not(.hush):hover .legend-tip, .legend-tip-wrap:not(.hush):focus-within .legend-tip, .legend-tip.on { opacity: 1; visibility: visible; transition-delay: 0s; }
 .legend-extras { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .2s ease-out; }
 .legend-extras.open { grid-template-rows: 1fr; }
@@ -605,7 +608,8 @@ table.intent-table td { text-align: left; font-variant-numeric: tabular-nums; }
   .streets-view .filters { gap: .4rem .75rem; }
   .streets-view .filters > label:not(.check), .streets-view .sort-pick label { flex-direction: row; align-items: center; gap: .6rem; flex: 1 1 100%; }
   .streets-view .filters > label:not(.check) > :is(select, input), .streets-view .sort-pick select { flex: 1; min-width: 0; }
-  .streets-view .sort-pick { flex: 1 1 100%; align-items: center; }
+  .streets-view .sort-pick { flex: 1 1 100%; align-items: center; min-width: 0; }
+  .streets-view .sort-pick label { min-width: 0; }
   .streets-view .table-scroll { max-height: none; overflow: visible; border: 0; background: none; }
   table.streets.cards, .streets.cards tbody { display: block; width: 100%; }
   .streets.cards thead { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
