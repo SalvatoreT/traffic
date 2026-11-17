@@ -49,7 +49,7 @@ impl Simulation {
         let main = self.topo.nmain[l];
         let next = veh.next();
         let here = self.mv_kind(l as u32, next);
-        let pocket = self.topo.pocket[l] && self.eff.ctrl[self.topo.link_to[l] as usize] == Control::Signal;
+        let pocket = self.pocket_active(l);
         let mut out: Vec<usize> = Vec::new();
         if let Some(m) = next.and_then(|b| self.topo.find_mv(l as u32, b)) {
             let (lo, hi) = self.topo.fork_band[m as usize];

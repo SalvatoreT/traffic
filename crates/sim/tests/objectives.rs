@@ -15,7 +15,7 @@ fn fin(set: &[u16], red: f64, closes: bool, detour: f64) -> Final {
         harm: 0.0,
         score: red,
         closes,
-        detour_s: detour,
+        detour_s: Some(detour),
         places: set.iter().map(|c| format!("p{c}")).collect(),
         ..Final::default()
     }
@@ -57,7 +57,7 @@ fn with_rise(f: Final, rise: f64, half: Option<f64>) -> Final {
 }
 
 fn seeds_detour(f: Final, d: [f64; 10]) -> Final {
-    Final { detour_s: d.iter().sum::<f64>() / 10.0, detour_seeds: d.to_vec(), pairs: traffic_sim::explore::paired::CtPairs { seeds: (1..=10).collect(), base: vec![], scen: vec![] }, ..f }
+    Final { detour_s: Some(d.iter().sum::<f64>() / 10.0), detour_seeds: d.to_vec(), pairs: traffic_sim::explore::paired::CtPairs { seeds: (1..=10).collect(), base: vec![], scen: vec![] }, ..f }
 }
 
 #[test]
@@ -171,7 +171,7 @@ fn ties_in_detour_and_reduction_go_to_fewer_changes() {
 
 #[test]
 fn the_beam_ranks_packages_above_the_floor_by_detour_and_the_rest_by_reduction() {
-    let ev = |red: f64, detour: f64| Eval { set: vec![0], reject: None, reduction_pct: red, harm: 0.0, worst: 0, inc: Vec::new(), score: red, detour_s: detour };
+    let ev = |red: f64, detour: f64| Eval { set: vec![0], reject: None, reduction_pct: red, harm: 0.0, worst: 0, inc: Vec::new(), score: red, detour_s: Some(detour) };
     let evals = vec![ev(40.0, 9.0), ev(22.0, 0.0), ev(25.0, 3.0), ev(10.0, -30.0), ev(5.0, 1.0)];
     let floor = detour_floor_pct(&evals);
     assert!((floor - 20.0).abs() < 1e-9, "half of the best valid reduction: {floor}");

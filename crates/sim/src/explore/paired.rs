@@ -9,7 +9,7 @@ use serde_json::{json, Value};
 
 /// Version of the reporting method: the pairing, the aggregation, the interval and the selection rules. Bump it when any of them
 /// changes so a reader can tell figures made under another method (the simulator fingerprint does not cover this module).
-pub const REPORT_METHOD: &str = "paired-t-2";
+pub const REPORT_METHOD: &str = "paired-t-3";
 
 /// Confidence level of every interval. ASSUMPTION: 95%, the level used for the intervals in [WebTAG-M3.1, C.3.14].
 pub const LEVEL: f64 = 0.95;

@@ -239,3 +239,38 @@ fn a_driver_keeps_its_perception_for_the_trip() {
         assert_eq!(sim.departure_route(dm.o, dm.d, seed), sim.departure_route(dm.o, dm.d, seed));
     }
 }
+
+#[test]
+fn perceived_and_mean_routes_agree_on_a_fast_turn_off_a_congested_approach() {
+    use crate::eff::Eff;
+    use crate::route::{first_link, From, Goal, Perceived, Router};
+    use crate::topo::Topo;
+    let mut b = B::default();
+    let s = b.node(0., 0., Control::Uncontrolled, true);
+    let a = b.node(100., 0., Control::Uncontrolled, false);
+    let d = b.node(150., 0., Control::Uncontrolled, true);
+    b.link(s, a, RoadClass::Secondary, 1, 10., false);
+    b.link(a, d, RoadClass::Secondary, 1, 10., false);
+    b.link(s, d, RoadClass::Secondary, 1, 10., false);
+    let net = b.net();
+    let topo = Topo::new(&net);
+    let mut eff = Eff::derive(&topo, &net, &[]);
+    let mv = topo.find_mv(0, 1).unwrap() as usize;
+    let cost = [100., 10., 60.];
+    // Cost constructed by sim::apply_mv_times: weighted turn-specific approach time minus mean, plus movement cost.
+    eff.route_w = vec![1.; 3];
+    eff.mv_cost[mv] = 5. + 20. - 100.;
+    let mut router = Router::new(3);
+    router.ensure(d, &topo, &eff, &cost);
+    let deterministic = first_link(router.table(d), &topo, &eff, s).unwrap();
+    let mut out = Vec::new();
+    let mut forward = Perceived::default();
+    let t = forward.search(&topo, eff.car_modal(), &cost, 1e-9, 42, From::Node(s), Goal::Dest(d), &|_| true, &mut out).unwrap();
+    assert!((t - 35.0).abs() < 0.001);
+    assert_eq!(deterministic, 0);
+    assert_eq!(out, [0, 1]);
+    out.clear();
+    let en_route = forward.search(&topo, eff.car_modal(), &cost, 1e-9, 42, From::Link(0), Goal::Dest(d), &|_| true, &mut out).unwrap();
+    assert_eq!(out, [1]);
+    assert!((en_route - t).abs() < 0.001);
+}

@@ -18,7 +18,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 pub const CASE_SCHEMA: &str = "search-benchmark-case-1";
-pub const RESULTS_SCHEMA: &str = "search-benchmark-results-1";
+pub const RESULTS_SCHEMA: &str = "search-benchmark-results-2";
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -211,8 +211,7 @@ pub struct RunSum {
     pub backlog: u64,
     pub spawned: u64,
     pub invalid: u64,
-    pub inside_n: u64,
-    pub inside_tt_s: f64,
+    pub resident: crate::sim::ResidentTime,
     /// All cars and through cars per harm block (both directions), veh/h.
     pub block_flow: Vec<f64>,
     pub block_through: Vec<f64>,
@@ -227,17 +226,9 @@ impl RunSum {
             backlog: r.backlog,
             spawned: r.spawned,
             invalid: r.invalid,
-            inside_n: r.inside_n,
-            inside_tt_s: r.inside_tt_s,
+            resident: r.resident,
             block_flow: block_flows(study, &r.flow),
             block_through: block_flows(study, &r.through),
-        }
-    }
-    pub fn inside_mean_s(&self) -> f64 {
-        if self.inside_n > 0 {
-            self.inside_tt_s / self.inside_n as f64
-        } else {
-            0.0
         }
     }
 }
@@ -273,7 +264,7 @@ pub fn eval_runs(harm_weight: f64, set: &[u16], base: &[&RunSum], scen: &[&RunSu
         worst: h.worst,
         inc: inc.iter().map(|&x| x as f32).collect(),
         score: red - harm_weight * h.worst_adj,
-        detour_s: m(scen, &|r| r.inside_mean_s()) - m(base, &|r| r.inside_mean_s()),
+        detour_s: base.iter().zip(scen).map(|(b, s)| b.resident.paired_delta(&s.resident)).sum::<Option<f64>>().filter(|_| !base.is_empty()).map(|sum| sum / n),
     }
 }
 
@@ -382,7 +373,7 @@ pub fn build_table(study: &Study, root: &Path, case: &Case, case_sha: &str, out:
     let unchecked: Vec<Vec<u16>> = legal.iter().filter(|s| !access.contains_key(*s)).cloned().collect();
     if !unchecked.is_empty() {
         let ivs = |s: &Vec<u16>| s.iter().map(|&i| cands[i as usize].iv.clone()).collect::<Vec<_>>();
-        let checks = parallel_map(jobs, &unchecked, |s| check_access(study, &ivs(s)).err());
+        let checks = parallel_map(jobs, &unchecked, |s| check_access_for(study, &ivs(s), [case.period.as_str()]).err());
         for (s, c) in unchecked.iter().zip(checks) {
             writeln!(f, "{}", json!({ "set": s, "access": c })).map_err(|e| e.to_string())?;
             access.insert(s.clone(), c);
@@ -561,11 +552,11 @@ pub fn objective_best<'a>(cands: &[Cand], pool: &[&'a Eval], obj: Objective, flo
                 Objective::MostRemoved => true,
                 Objective::NoClosures => e.set.iter().all(|&c| objectives::closes_nothing(&cands[c as usize])),
                 Objective::FewestChanges => e.set.len() <= objectives::FEWEST_MAX_CHANGES,
-                Objective::LeastDetour => e.reduction_pct >= floor,
+                Objective::LeastDetour => e.detour_s.is_some() && e.reduction_pct >= floor,
             }
     };
     let tie = |a: &Eval, b: &Eval| b.set.len().cmp(&a.set.len()).then(b.set.cmp(&a.set));
-    let key = |e: &Eval| if obj == Objective::LeastDetour { -e.detour_s } else { e.score };
+    let key = |e: &Eval| if obj == Objective::LeastDetour { -e.detour_s.unwrap_or(f64::INFINITY) } else { e.score };
     pool.iter().filter(ok).max_by(|a, b| key(a).total_cmp(&key(b)).then_with(|| tie(a, b))).copied()
 }
 
@@ -592,7 +583,7 @@ pub fn assess(ctx: &Ctx, st: &SearchState, known: &[Vec<u16>], table: &ScreenTab
             let best = objective_best(ctx.cands, &all_full, obj, floor);
             let got = objective_best(ctx.cands, &fin_full, obj, floor);
             let gap = match (best, got) {
-                (Some(b), Some(g)) if obj == Objective::LeastDetour => Some(g.detour_s - b.detour_s),
+                (Some(b), Some(g)) if obj == Objective::LeastDetour => g.detour_s.zip(b.detour_s).map(|(g, b)| g - b),
                 (Some(b), Some(g)) => Some(b.score - g.score),
                 _ => None,
             };
@@ -695,7 +686,7 @@ pub fn table_from_projection(proj: &Value) -> Result<ScreenTable, String> {
             worst: r["worst"].as_u64().unwrap_or(0) as usize,
             inc: serde_json::from_value(r["blockIncreases"].clone()).unwrap_or_default(),
             score: if reject.is_some() { f64::NEG_INFINITY } else { r["score"].as_f64().unwrap_or(0.0) },
-            detour_s: r["detourS"].as_f64().unwrap_or(0.0),
+            detour_s: r["detourS"].as_f64(),
         };
         rows.insert(set, (e, charged));
     }
@@ -1093,7 +1084,9 @@ pub fn confirm(study: &Study, case: &Case, res: &Results, out: &Path, jobs: usiz
             let scen: Vec<&RunSum> = spec.seeds.iter().map(|&k| &done[&(s.clone(), k)]).collect();
             let e = eval_runs(case.search.harm_weight, s, &base, &scen, &sigma);
             let through = pd(series(&Vec::new(), &|r| r.ct_vph), series(s, &|r| r.ct_vph));
-            let detour = pd(series(&Vec::new(), &|r| r.inside_mean_s()), series(s, &|r| r.inside_mean_s()));
+            let mut coverage = super::report::DetourCoverage::default();
+            let changes: Vec<_> = base.iter().zip(&scen).filter_map(|(b, s)| coverage.record(&b.resident, &s.resident)).collect();
+            let detour = coverage.complete().then(|| super::paired::Paired::of(&changes));
             let vs_ref = ref_set.as_ref().filter(|r| *r != s && !s.is_empty()).map(|r| pd(series(r, &|x| x.ct_vph), series(s, &|x| x.ct_vph)).to_json("more through cars", "fewer through cars"));
             let raw = e.inc.iter().enumerate().max_by(|a, b| a.1.total_cmp(b.1).then(b.0.cmp(&a.0)));
             json!({
@@ -1101,15 +1094,16 @@ pub fn confirm(study: &Study, case: &Case, res: &Results, out: &Path, jobs: usiz
                 "selectedBy": list.iter().find(|x| &x.0 == s).map(|x| &x.1),
                 "reject": e.reject, "score": if e.valid() { Some(e.score) } else { None }, "reductionPct": e.reduction_pct, "adjustedHarm": e.harm,
                 "rawMaxIncrease": raw.map(|x| *x.1), "rawMaxBlock": raw.map(|(b, _)| study.idx.blocks[study.harm_blocks[b]].label.clone()),
-                "throughChange": through.to_json("increase", "decrease"), "insideTripTimeChangeS": detour.to_json("increase", "decrease"),
+                "throughChange": through.to_json("increase", "decrease"), "insideTripTimeChangeS": detour.map(|p| p.to_json("increase", "decrease")),
+                "residentCoverage": coverage,
                 "throughVsFirstShortlisted": vs_ref,
             })
         })
         .collect();
     let v = json!({
-        "schema": "search-benchmark-confirmation-1", "case": case.id, "identity": res.identity, "seeds": spec.seeds, "minutes": spec.minutes,
+        "schema": "search-benchmark-confirmation-2", "residentTimeMethod": "requested-elapsed-to-cutoff", "case": case.id, "identity": res.identity, "seeds": spec.seeds, "minutes": spec.minutes,
         "method": super::paired::REPORT_METHOD,
-        "scope": "Frozen shortlist only, on seeds no search or selection used. Paired Student t intervals over the seeds of one fixed model; pointwise; no interval for the nonlinear score or the largest block increase; trip times cover completed trips only.",
+        "scope": "Frozen shortlist only, on seeds no search or selection used. Paired Student t intervals over the seeds of one fixed model; pointwise; no interval for the nonlinear score or the largest block increase; resident elapsed times include all eligible requests until completion or the common cutoff.",
         "packages": pkgs,
     });
     let tmp = out.with_extension("tmp");
@@ -1158,10 +1152,25 @@ pub fn table_from_partial(study: &Study, case: &Case, partial: &Path, spec: &Run
     Ok(screen_table(&res, case, spec))
 }
 
+/// Absolute differences in the stored scores. A missing required value or a change in detour support makes the row incomparable.
+pub fn projection_differences(e: &Eval, recorded: &Value) -> Option<[f64; 4]> {
+    let detour = match (e.detour_s, recorded.get("detourS")?) {
+        (None, Value::Null) => 0.0,
+        (Some(current), previous) => (current - previous.as_f64()?).abs(),
+        _ => return None,
+    };
+    Some([
+        (e.reduction_pct - recorded["reductionPct"].as_f64()?).abs(),
+        (e.harm - recorded["harm"].as_f64()?).abs(),
+        (e.score - recorded["score"].as_f64()?).abs(),
+        detour,
+    ])
+}
+
 /// Compare a screening table with the audit's frozen evaluations, and replay the beam on it against the recorded visited sequences.
 pub fn compare_with_evidence(study: &Study, case: &Case, table: ScreenTable, proj: &Value) -> Result<Value, String> {
     let mut worst = [0.0f64; 4];
-    let (mut rejects_differ, mut missing) = (Vec::new(), 0usize);
+    let (mut rejects_differ, mut incomparable, mut missing) = (Vec::new(), Vec::new(), 0usize);
     for r in proj["evaluations"].as_array().ok_or("no evaluations")? {
         let set: Vec<u16> = serde_json::from_value(r["set"].clone()).map_err(|e| e.to_string())?;
         let Some((e, _)) = table.rows.get(&set) else {
@@ -1173,12 +1182,17 @@ pub fn compare_with_evidence(study: &Study, case: &Case, table: ScreenTable, pro
             continue;
         }
         if e.valid() {
-            for (k, (a, b)) in [(e.reduction_pct, "reductionPct"), (e.harm, "harm"), (e.score, "score"), (e.detour_s, "detourS")].iter().enumerate() {
-                worst[k] = worst[k].max((a - r[*b].as_f64().unwrap_or(f64::NAN)).abs());
+            match projection_differences(e, r) {
+                Some(differences) => {
+                    for (max, difference) in worst.iter_mut().zip(differences) {
+                        *max = max.max(difference);
+                    }
+                }
+                None => incomparable.push(set),
             }
         }
     }
-    let mut v = json!({"evaluations": proj["evaluations"].as_array().map_or(0, |a| a.len()), "missing": missing, "rejectionsDiffer": rejects_differ, "maxAbsDiff": {"reductionPct": worst[0], "harm": worst[1], "score": worst[2], "detourS": worst[3]}});
+    let mut v = json!({"evaluations": proj["evaluations"].as_array().map_or(0, |a| a.len()), "missing": missing, "rejectionsDiffer": rejects_differ, "incomparable": incomparable, "maxAbsDiff": {"reductionPct": worst[0], "harm": worst[1], "score": worst[2], "detourS": worst[3]}});
     let rows: Vec<Value> = table
         .rows
         .values()
@@ -1187,7 +1201,7 @@ pub fn compare_with_evidence(study: &Study, case: &Case, table: ScreenTable, pro
     let mine = json!({"evaluations": rows, "beamStages": proj["beamStages"], "beam": proj["beam"]});
     let rep = replay_evidence(study, case, &mine)?;
     v["replay"] = json!({"matches": rep["matches"], "stages": rep["stages"], "finalistsMatch": rep["finalistsMatch"], "charged": rep["charged"], "missedNondominated": rep["missedNondominated"], "oracleNondominated": rep["oracleNondominated"]});
-    v["identical"] = json!(missing == 0 && v["rejectionsDiffer"].as_array().map_or(false, |a| a.is_empty()) && worst.iter().all(|&w| w == 0.0) && rep["matches"] == json!(true));
+    v["identical"] = json!(missing == 0 && rejects_differ.is_empty() && incomparable.is_empty() && worst.iter().all(|&w| w == 0.0) && rep["matches"] == json!(true));
     Ok(v)
 }
 

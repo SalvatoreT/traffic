@@ -14,6 +14,27 @@ fn known_deviations() -> Vec<String> {
 #[test]
 fn validation_suite_has_no_new_failures() {
     let cases = run_all();
+    // Separate from the emitted results. Assessments read these reviewed ranges and ids when checking a report.
+    let expected: Vec<serde_json::Value> =
+        serde_json::from_str(include_str!("../data/validation/cases.json")).unwrap();
+    assert_eq!(cases.len(), expected.len());
+    let actual: std::collections::BTreeMap<_, _> =
+        cases.iter().map(|case| (case.id.as_str(), case)).collect();
+    let mut ids = std::collections::BTreeSet::new();
+    for row in expected {
+        let id = row["id"].as_str().expect("case id");
+        assert!(ids.insert(id.to_string()), "duplicate validation case {id}");
+        let case = actual[id];
+        assert_eq!(row["source"], case.source, "{id} reference");
+        assert_eq!(row["unit"], case.unit, "{id} unit");
+        for (name, bound) in [("lo", case.lo), ("hi", case.hi)] {
+            let reference = row[name].as_f64().expect("finite bound");
+            assert!(
+                (reference - bound).abs() <= 1e-12 * bound.abs().max(1.0),
+                "{id} {name}: review validation/cases.json against the native suite"
+            );
+        }
+    }
     let known = known_deviations();
     let bad: Vec<String> = cases
         .iter()

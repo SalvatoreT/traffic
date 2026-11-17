@@ -46,7 +46,7 @@ pub struct Router {
 }
 
 const SALT_MV: u32 = 0x5EED_0D15;
-const SALT_FIRST: u32 = 0x0F1E_57D1;
+const SALT_LAST: u32 = 0x0F1E_57D1;
 const Z_BITS: u32 = 12;
 
 /// Standard normal quantile by P. J. Acklam's rational approximation (relative error below 1.2e-9); libm only, so native and WASM agree.
@@ -86,16 +86,16 @@ pub fn perceive(e: f32, beta: f32, seed: u32, salt: u32, key: u32) -> f32 {
     (e + (beta * e.max(0.0)).sqrt() * z(seed ^ salt, key)).max(0.0)
 }
 
-/// Perceived cost of movement `mv` into its exit link: the movement's cost plus the exit link's weighted cost, one draw per (driver, movement).
+/// Perceived traversal of the approach and its outgoing movement, drawn once per (driver, movement).
 #[inline]
 pub fn perceive_mv(e: f32, beta: f32, seed: u32, mv: u32) -> f32 {
     perceive(e, beta, seed, SALT_MV, mv)
 }
 
-/// Perceived cost of the first link of a trip from its origin node, one draw per (driver, link).
+/// Perceived cost of the final link, where no outgoing movement is taken, one draw per (driver, link).
 #[inline]
-pub fn perceive_first(e: f32, beta: f32, seed: u32, link: u32) -> f32 {
-    perceive(e, beta, seed, SALT_FIRST, link)
+pub fn perceive_last(e: f32, beta: f32, seed: u32, link: u32) -> f32 {
+    perceive(e, beta, seed, SALT_LAST, link)
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -113,7 +113,7 @@ pub enum Goal {
 /// Shortest path on one driver's perceived costs: the probit route choice of stochastic network loading, where each driver is one draw of
 /// the perceived link times and takes the shortest path on them [DaganzoSheffi1977], [Sheffi1985] (ch. 11.2). The draw is fixed for the trip
 /// (deterministic from the driver's seed), so re-planning en route uses the same perception on current measured times. Forward Dijkstra
-/// over links, stopping at the first goal link settled; ties break on link id.
+/// over link starts; a goal link also pays its terminal traversal. Ties break on link id.
 #[derive(Clone, Default)]
 pub struct Perceived {
     dist: Vec<f32>,
@@ -127,10 +127,7 @@ impl Perceived {
     #[allow(clippy::too_many_arguments)]
     pub fn search(&mut self, topo: &Topo, m: Modal<'_>, cost: &[f32], beta: f32, seed: u32, from: From, goal: Goal, first_ok: &dyn Fn(u32) -> bool, out: &mut Vec<u32>) -> Option<f32> {
         let n = topo.n_links;
-        let done = |l: u32| match goal {
-            Goal::Dest(d) => topo.link_to[l as usize] == d,
-            Goal::Link(t) => l == t,
-        };
+        let done = |l| goal.reached(topo, l);
         if let From::Link(l) = from {
             if done(l) {
                 return Some(0.0);
@@ -148,24 +145,27 @@ impl Perceived {
                     if m.closed[b as usize] || !first_ok(b) {
                         continue;
                     }
-                    let c = perceive_first(arc(b), beta, seed, b);
-                    if c < self.dist[b as usize] {
-                        self.dist[b as usize] = c;
-                        self.heap.push(Reverse((c.to_bits(), b)));
-                    }
+                    self.dist[b as usize] = 0.0;
+                    self.heap.push(Reverse((0, b)));
                 }
             }
             From::Link(l) => self.relax(topo, m, cost, beta, seed, l, 0.0, Some(first_ok)),
         }
-        let mut hit = None;
+        let mut hit: Option<(u32, f32)> = None;
         while let Some(Reverse((bits, a))) = self.heap.pop() {
             let d = f32::from_bits(bits);
+            if hit.is_some_and(|(_, best)| d > best) {
+                break;
+            }
             if d > self.dist[a as usize] {
                 continue;
             }
             if done(a) {
-                hit = Some((a, d));
-                break;
+                let total = d + perceive_last(arc(a), beta, seed, a);
+                if hit.is_none_or(|(link, best)| total < best || (total == best && a < link)) {
+                    hit = Some((a, total));
+                }
+                continue;
             }
             self.relax(topo, m, cost, beta, seed, a, d, None);
         }
@@ -196,7 +196,7 @@ impl Perceived {
             if m.closed[b as usize] || first_ok.is_some_and(|f| !f(b)) {
                 continue;
             }
-            let c = d + perceive_mv(m.mv_cost[mv as usize] + cost[b as usize] * m.w[b as usize], beta, seed, mv);
+            let c = d + perceive_mv(m.mv_cost[mv as usize] + cost[a as usize] * m.w[a as usize], beta, seed, mv);
             if c < self.dist[b as usize] {
                 self.dist[b as usize] = c;
                 self.pred[b as usize] = if first_ok.is_some() { u32::MAX } else { a };
@@ -206,7 +206,24 @@ impl Perceived {
     }
 }
 
+impl Goal {
+    pub fn reached(self, topo: &Topo, link: u32) -> bool {
+        match self { Goal::Dest(d) => topo.link_to[link as usize] == d, Goal::Link(l) => link == l }
+    }
+}
+
 impl Router {
+    pub fn ensure_goal(&mut self, goal: Goal, topo: &Topo, modal: Modal<'_>, cost: &[f32]) {
+        match goal {
+            Goal::Dest(d) => self.ensure_m(d, topo, modal, cost),
+            Goal::Link(l) => self.ensure_link_m(l, topo, modal, cost),
+        }
+    }
+
+    pub fn goal_table(&self, goal: Goal) -> &[f32] {
+        match goal { Goal::Dest(d) => self.table(d), Goal::Link(l) => &self.link_tables[&l] }
+    }
+
     pub fn new(n_nodes: usize) -> Router {
         Router { tables: (0..n_nodes).map(|_| None).collect(), link_tables: HashMap::new(), heap: BinaryHeap::new() }
     }
@@ -243,7 +260,7 @@ impl Router {
                     continue;
                 }
                 let a = topo.mvs[mv as usize].a as usize;
-                if m.closed[a] {
+                if m.closed[a] || a == target as usize {
                     continue;
                 }
                 let cand = cost[a] * m.w[a] + m.mv_cost[mv as usize] + hl;
@@ -282,7 +299,7 @@ impl Router {
                     continue;
                 }
                 let a = topo.mvs[mv as usize].a as usize;
-                if eff.closed[a] {
+                if eff.closed[a] || topo.link_to[a] == dest {
                     continue;
                 }
                 let cand = cost[a] * eff.w[a] + eff.mv_cost[mv as usize] + hl;

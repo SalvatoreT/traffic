@@ -185,7 +185,7 @@ fn table_evaluation_is_the_screening_evaluation_and_replay_is_the_live_search() 
         assert_eq!(live.reduction_pct.to_bits(), e.reduction_pct.to_bits(), "{set:?}");
         assert_eq!(live.harm.to_bits(), e.harm.to_bits(), "{set:?}");
         assert_eq!(live.score.to_bits(), e.score.to_bits(), "{set:?}");
-        assert_eq!(live.detour_s.to_bits(), e.detour_s.to_bits(), "{set:?}");
+        assert_eq!(live.detour_s.map(f64::to_bits), e.detour_s.map(f64::to_bits), "{set:?}");
         assert_eq!(live.inc, e.inc, "{set:?}");
         assert_eq!(live.worst, e.worst, "{set:?}");
     }
@@ -247,7 +247,7 @@ fn a_replay_never_sees_rows_it_did_not_ask_for() {
     let case = small_case(c_d, e_f, a_c);
     let cs = bench::case_cands(&s, &case).unwrap();
     let nb = s.harm_blocks.len();
-    let ev = |set: Vec<u16>, red: f64| Eval { set, reject: None, reduction_pct: red, harm: 0.0, worst: 0, inc: vec![0.0; nb], score: red, detour_s: 0.0 };
+    let ev = |set: Vec<u16>, red: f64| Eval { set, reject: None, reduction_pct: red, harm: 0.0, worst: 0, inc: vec![0.0; nb], score: red, detour_s: Some(0.0) };
     let mut rows = HashMap::new();
     for (set, _) in bench::enumerate(&cs, 3).0.iter().map(|s| (s.clone(), ())) {
         let red = if set == vec![1, 3] { 99.0 } else { set.len() as f64 };
@@ -273,7 +273,7 @@ fn a_replay_never_sees_rows_it_did_not_ask_for() {
 fn ties_go_to_fewer_changes_then_the_smaller_set() {
     let (s, c_d, e_f, a_c) = ratruns();
     let cs = bench::case_cands(&s, &small_case(c_d, e_f, a_c)).unwrap();
-    let ev = |set: Vec<u16>, score: f64| Eval { set, reject: None, reduction_pct: score, harm: 0.0, worst: 0, inc: vec![], score, detour_s: 0.0 };
+    let ev = |set: Vec<u16>, score: f64| Eval { set, reject: None, reduction_pct: score, harm: 0.0, worst: 0, inc: vec![], score, detour_s: Some(0.0) };
     let pool = [ev(vec![0, 1], 10.0), ev(vec![1], 10.0), ev(vec![0], 10.0)];
     let refs: Vec<&Eval> = pool.iter().collect();
     let b = bench::objective_best(&cs, &refs, traffic_sim::explore::objectives::Objective::MostRemoved, 0.0).unwrap();
@@ -331,7 +331,7 @@ fn table_of(f: &Fixture, depth: usize, red: impl Fn(&[u16]) -> f64) -> Arc<Scree
     let mut rows = HashMap::new();
     for set in bench::enumerate(&f.cands, depth).0 {
         let r = red(&set);
-        rows.insert(set.clone(), (Eval { set, reject: None, reduction_pct: r, harm: 0.0, worst: 0, inc: vec![0.0; nb], score: r, detour_s: 0.0 }, true));
+        rows.insert(set.clone(), (Eval { set, reject: None, reduction_pct: r, harm: 0.0, worst: 0, inc: vec![0.0; nb], score: r, detour_s: Some(0.0) }, true));
     }
     Arc::new(ScreenTable { rows })
 }
@@ -428,7 +428,7 @@ fn deleting_a_change_from_a_finalist() {
         if set == vec![0, 2] {
             inc[hb] = 50.0;
         }
-        rows.insert(set.clone(), (Eval { set, reject: None, reduction_pct: r, harm: 0.0, worst: 0, inc, score: r, detour_s: 0.0 }, true));
+        rows.insert(set.clone(), (Eval { set, reject: None, reduction_pct: r, harm: 0.0, worst: 0, inc, score: r, detour_s: Some(0.0) }, true));
     }
     let table = Arc::new(ScreenTable { rows });
     let p = params(3, 1, 2);

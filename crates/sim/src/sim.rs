@@ -8,7 +8,12 @@ use crate::rng::{hash32, Rng};
 use crate::route::{self, Goal, Router, INF, NO_NOISE};
 use crate::topo::*;
 use std::collections::VecDeque;
+use std::sync::OnceLock;
 
+mod curb;
+use curb::Curbs;
+mod corridor;
+pub use corridor::{LinkDetector, PathObservation};
 mod diag;
 mod initial;
 mod lanechange;
@@ -20,6 +25,7 @@ mod via_bypass;
 use modes::*;
 pub use modes::{injury_risk, injury_risk_bike};
 use ped::PedWorld;
+pub use ped::planned_pedestrian_crossings;
 
 /// Minimum free room (m) between a link's entry point and the tail of its last vehicle before another
 /// vehicle may be admitted. ASSUMPTION.
@@ -89,6 +95,7 @@ fn bike_speed(rng: &mut Rng) -> f32 {
 }
 
 struct Trip {
+    curbs: Curbs,
     v0_abs: f32,
     uid: u32,
     origin: u32,
@@ -98,8 +105,6 @@ struct Trip {
     intent: u16,
     noise_seed: u32,
     drv: Drv,
-    /// Assumed movement (link a, link b) this trip must make (ASSUMPTION, demand flow `via`).
-    via: Option<(u32, u32)>,
     /// Index into `Simulation::via_plans` (`NO_PLAN` when the trip has no assumed movement).
     vplan: u32,
 }
@@ -168,6 +173,7 @@ enum Start {
 }
 
 struct FlowRt {
+    curbs: Curbs,
     /// Index of the flow in the demand period (runtime flows skip invalid ones).
     src: u32,
     mode: FlowMode,
@@ -253,8 +259,9 @@ struct Veh {
     go_rec: u8,
     /// Position on the current link where the trip's driven path on it began (free-flow reference of `link_ff_part`).
     ff_from: f32,
-    /// Exit position of a local trip that starts and ends on one link (NaN: the destination position of `mid_block_pos`).
+    /// Fixed destination curb position in the direction of end_link (NaN for a junction destination).
     end_pos: f32,
+    end_link: Option<u32>,
     /// Time the trip entered the network, its first position, and the distance it has driven (m).
     t_ins: f64,
     entry_pos: f32,
@@ -319,6 +326,7 @@ impl Veh {
             go_rec: 0,
             ff_from: 0.0,
             end_pos: f32::NAN,
+            end_link: None,
             t_ins: 0.0,
             entry_pos: 0.0,
             dist_m: 0.0,
@@ -369,8 +377,39 @@ pub struct RecoveryEvent {
     pub reason: &'static str,
 }
 
+/// Elapsed seconds for local-end car requests from the measurement window. A request
+/// counts through completion or the common cutoff, including a request never served.
+#[derive(Clone, Copy, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct ResidentTime {
+    pub requested: u64,
+    pub completed: u64,
+    pub seconds: f64,
+    /// Signature of the ordered request IDs, OD endpoints and departure times.
+    pub signature: u64,
+}
+
+impl ResidentTime {
+    fn request(&mut self, trip: &Trip) {
+        self.requested += 1;
+        self.seconds -= trip.t_arr;
+        for word in [trip.uid as u64, ((trip.origin as u64) << 32) | trip.dest as u64, trip.t_arr.to_bits()] {
+            self.signature = (self.signature ^ word).wrapping_mul(0x100000001b3);
+        }
+    }
+
+    pub fn mean(&self) -> Option<f64> {
+        (self.requested > 0).then(|| self.seconds / self.requested as f64)
+    }
+
+    pub fn paired_delta(&self, scenario: &Self) -> Option<f64> {
+        (self.requested > 0 && self.requested == scenario.requested && self.signature == scenario.signature)
+            .then(|| (scenario.seconds - self.seconds) / self.requested as f64)
+    }
+}
+
 #[derive(Default)]
 struct Stats {
+    resident: ResidentTime,
     spawned: u64,
     completed: u64,
     unroutable: u64,
@@ -465,8 +504,11 @@ pub struct Diagnostics<'a> {
     pub link_stopped_s: &'a [f32],
     /// Excess travel time (s) versus traveling at the effective limit, summed over vehicles.
     pub link_delay_s: &'a [f32],
-    /// Vehicles that left each link (cumulative).
+    /// Cars that left each link, including trips that parked along the block.
     pub link_exits: &'a [u32],
+    /// Cars that passed the downstream stop line or entered at the upstream end.
+    pub stop_line_passages: &'a [u32],
+    pub link_start_passages: &'a [u32],
     /// Seconds the head vehicle of some lane waited at the node stop line without permission.
     pub node_wait_s: &'a [f32],
     /// Subset of `node_wait_s` where the only obstacle was no space on the downstream link.
@@ -477,6 +519,10 @@ pub struct Diagnostics<'a> {
     /// Trips waiting to enter the network at each node (entry link full).
     pub node_backlog: Vec<u32>,
 }
+
+/// Measured baseline link and movement times. A study shares this cell only for matching inputs and run settings.
+#[derive(Default)]
+pub(crate) struct LoadedCosts(OnceLock<Option<(Vec<f32>, Vec<f32>)>>);
 
 pub struct Simulation {
     net: Network,
@@ -533,6 +579,9 @@ pub struct Simulation {
     d_link_stopped: Vec<f32>,
     d_link_delay: Vec<f32>,
     d_link_exits: Vec<u32>,
+    corridors: corridor::Corridors,
+    d_stop_line: Vec<u32>,
+    d_link_start: Vec<u32>,
     d_node_wait: Vec<f32>,
     d_node_space: Vec<f32>,
     /// Smoothed measured approach flow (veh/h) per link, used for the adaptive signal splits.
@@ -667,11 +716,11 @@ impl Simulation {
     }
 
     pub fn from_parts(net: Network, demand: Demand, cfg: Config) -> Result<Simulation, String> {
-        Self::build(net, demand, cfg, true)
+        Self::build(net, demand, cfg, Some(&LoadedCosts::default()))
     }
 
-    /// `loaded_routes`: when initial loading is on, route the placed agents on link costs measured by a pass on the unmodified network.
-    fn build(mut net: Network, demand: Demand, cfg: Config, loaded_routes: bool) -> Result<Simulation, String> {
+    /// When supplied, the cell holds the baseline costs for placing initial traffic. The baseline probe itself uses free flow.
+    pub(crate) fn build(mut net: Network, demand: Demand, cfg: Config, loaded_costs: Option<&LoadedCosts>) -> Result<Simulation, String> {
         net.turn_bans.retain(|b| b.periods.is_empty() || b.periods.iter().any(|p| *p == cfg.period));
         net.turn_bans.retain(|b| (b.from as usize) < net.links.len() && (b.to as usize) < net.links.len());
         for (i, l) in net.links.iter().enumerate() {
@@ -685,7 +734,8 @@ impl Simulation {
             }
         }
         let topo = Topo::new(&net);
-        let eff = Eff::derive(&topo, &net, &[]);
+        let mut eff = Eff::derive(&topo, &net, &[]);
+        if let Some(f) = cfg.local_cost_factor { eff.set_local_factor(&net, f.max(0.1) as f32); }
         let t0 = if cfg.initial_load { -INITIAL_SETTLE_S } else { 0.0 };
         let ivs = cfg.interventions.clone();
         let nl = topo.n_links;
@@ -738,6 +788,9 @@ impl Simulation {
             d_link_stopped: vec![0.0; nl],
             d_link_delay: vec![0.0; nl],
             d_link_exits: vec![0; nl],
+            corridors: corridor::Corridors::default(),
+            d_stop_line: vec![0; nl],
+            d_link_start: vec![0; nl],
             d_node_wait: vec![0.0; nn],
             d_node_space: vec![0.0; nn],
             adapt_flow: vec![0.0; nl],
@@ -771,14 +824,15 @@ impl Simulation {
         };
         s.init_select_links();
         s.init_flows();
+        s.assign_curbs();
         s.trace_init();
         s.init_intent_rules();
         s.init_modes();
         s.rebuild_effective();
         s.signal_check()?;
         if s.cfg.initial_load {
-            if loaded_routes {
-                s.adopt_loaded_costs();
+            if let Some(costs) = loaded_costs {
+                s.adopt_loaded_costs(costs);
             }
             s.initial_load();
         }
@@ -830,6 +884,7 @@ impl Simulation {
             return;
         }
         self.vehs[vid as usize].trail.push(l);
+        self.count_paths(vid, l, LinkDetector::Start);
         if let Some(&r) = self.link_off.get(l as usize).filter(|&&r| r != 0) {
             self.vehs[vid as usize].off_ramp = r;
         }
@@ -964,7 +1019,7 @@ impl Simulation {
     /// Router cost of a route from its origin node (first link included), without perception error.
     pub fn route_cost(&self, route: &[u32]) -> f32 {
         let Some((&first, rest)) = route.split_first() else { return INF };
-        self.link_cost[first as usize] * self.eff.route_w[first as usize] + self.path_cost(first, rest, NO_NOISE)
+        self.path_cost(first, rest, NO_NOISE)
     }
 
     /// Per-link / per-node diagnostics for calibration reports.
@@ -973,6 +1028,8 @@ impl Simulation {
             link_stopped_s: &self.d_link_stopped,
             link_delay_s: &self.d_link_delay,
             link_exits: &self.d_link_exits,
+            stop_line_passages: &self.d_stop_line,
+            link_start_passages: &self.d_link_start,
             node_wait_s: &self.d_node_wait,
             node_space_s: &self.d_node_space,
             art_t: self.st.art_t,
@@ -1116,7 +1173,7 @@ impl Simulation {
                 }
                 let n_int = self.demand.intents.len();
                 let intent = if through && n_int > 0 { f.intent.map_or(n_int, |i| (i as usize).min(n_int)) as u16 } else { NO_INTENT };
-                self.flows.push(FlowRt { src: k as u32, mode: f.mode, origin: f.origin, dest: f.destination, rate, rng, next_t, through, intent, via, vplan });
+                self.flows.push(FlowRt { curbs: Curbs::default(), src: k as u32, mode: f.mode, origin: f.origin, dest: f.destination, rate, rng, next_t, through, intent, via, vplan });
             }
         }
     }
@@ -1127,7 +1184,9 @@ impl Simulation {
         let demand = self.demand.clone();
         let mut cfg = self.cfg.clone();
         cfg.interventions = self.ivs.clone();
-        if let Ok(s) = Simulation::from_parts(net, demand, cfg) {
+        if let Ok(mut s) = Simulation::from_parts(net, demand, cfg) {
+            self.corridors.reset();
+            s.corridors = std::mem::take(&mut self.corridors);
             *self = s;
         }
     }
@@ -1170,15 +1229,17 @@ impl Simulation {
         if let Some(f) = self.cfg.local_cost_factor {
             eff.set_local_factor(&self.net, f.max(0.1) as f32);
         }
-        let has_signal = eff.ctrl.iter().any(|&c| c == Control::Signal);
-        if has_signal {
-            let est = self.estimate_flows(&eff);
-            eff.plan_signals(&self.topo, &self.net, &est);
+        self.eff = eff;
+        if self.eff.ctrl.contains(&Control::Signal) {
+            self.link_cost.copy_from_slice(&self.eff.ff);
+            self.router.invalidate();
+            self.via_router.invalidate();
+            let est = self.estimate_flows();
+            self.eff.plan_signals(&self.topo, &self.net, &est);
             self.adapt_flow = est;
         }
         self.win_exit.iter_mut().for_each(|x| *x = 0);
         self.next_adapt_t = self.t + self.adapt_interval();
-        self.eff = eff;
         for l in 0..self.topo.n_links {
             self.link_cost[l] = self.eff.ff[l].max(self.ema[l]);
         }
@@ -1202,33 +1263,30 @@ impl Simulation {
     }
 
     /// All-or-nothing assignment of the demand on free-flow costs, used only for Webster plans.
-    fn estimate_flows(&self, eff: &Eff) -> Vec<f32> {
+    fn estimate_flows(&mut self) -> Vec<f32> {
         let mut est = vec![0.0f32; self.topo.n_links];
-        let mut r = Router::new(self.topo.n_nodes);
-        let mut order: Vec<usize> = (0..self.flows.len()).filter(|&i| self.flows[i].mode == FlowMode::Car).collect();
-        order.sort_by_key(|&i| (self.flows[i].dest, i));
+        let mut order: Vec<_> = (0..self.flows.len()).filter(|&i| self.flows[i].mode == FlowMode::Car).collect();
+        order.sort_by_key(|&i| self.flows[i].dest);
         let mut route = Vec::new();
-        let mut last_dest = u32::MAX;
+        let mut prev = None;
         for i in order {
             let f = &self.flows[i];
-            if f.dest != last_dest {
-                // Free dest tables from the previous destination to bound memory.
-                if last_dest != u32::MAX {
-                    r.tables[last_dest as usize] = None;
-                }
-                r.ensure(f.dest, &self.topo, eff, &eff.ff);
-                last_dest = f.dest;
+            let (origin, dest, curbs, vplan, rate) = (f.origin, f.dest, f.curbs, f.vplan, f.rate);
+            if prev != Some(dest) {
+                // Keep the goal tables for only one destination and its address blocks.
+                self.router.invalidate();
+                self.via_router.invalidate();
+                prev = Some(dest);
             }
-            let table = r.table(f.dest);
-            if let Some(b) = route::first_link(table, &self.topo, eff, f.origin) {
-                route.clear();
-                if route::walk(table, &self.topo, eff, b, f.dest, &mut route) {
-                    let q = (f.rate * 3600.0) as f32;
-                    est[b as usize] += q;
-                    for &l in &route {
-                        est[l as usize] += q;
-                    }
-                }
+            route.clear();
+            if self.car_path(origin, dest, curbs, NO_NOISE, vplan, &mut route).is_none() {
+                continue;
+            }
+            if curbs.has_destination() {
+                route.pop();
+            }
+            for &l in &route {
+                est[l as usize] += (rate * 3600.0) as f32;
             }
         }
         est
@@ -1442,6 +1500,13 @@ impl Simulation {
     /// (completed car trips, summed trip time in s) for trips with an origin or destination inside the study area (search tool).
     pub fn inside_trip_stats(&self) -> (u64, f64) {
         (self.st.inside_n, self.st.inside_tt_sum)
+    }
+
+    /// Right-censored time to service for car requests made from t=0 with at least one local endpoint.
+    pub fn resident_time(&self) -> ResidentTime {
+        let mut cohort = self.st.resident;
+        cohort.seconds += (cohort.requested - cohort.completed) as f64 * self.t;
+        cohort
     }
 
     pub fn metrics_json(&self) -> String {
@@ -1700,7 +1765,10 @@ impl Simulation {
     fn standing_on(&self, l: usize) -> u32 {
         let base = self.topo.lane_base[l] as usize;
         (base..base + self.topo.nlanes(l))
-            .map(|i| self.lanes[i].iter().filter(|&&v| self.vehs[v as usize].v < 2.0).count() as u32)
+            .map(|i| self.lanes[i].iter().filter(|&&id| {
+                let veh = &self.vehs[id as usize];
+                veh.v < 2.0 && (veh.next().is_some() || veh.end_link != Some(l as u32))
+            }).count() as u32)
             .sum()
     }
 
@@ -1812,7 +1880,7 @@ impl Simulation {
                 if f.mode == FlowMode::Bicycle {
                     let drv = Drv::bike(&mut f.rng);
                     let v0_abs = bike_speed(&mut f.rng);
-                    let trip = Trip { v0_abs, uid: self.uid_next, origin: f.origin, dest: f.dest, t_arr, through: false, intent: NO_INTENT, noise_seed: NO_NOISE, drv, via: None, vplan: NO_PLAN };
+                    let trip = Trip { curbs: Curbs::default(), v0_abs, uid: self.uid_next, origin: f.origin, dest: f.dest, t_arr, through: false, intent: NO_INTENT, noise_seed: NO_NOISE, drv, vplan: NO_PLAN };
                     self.uid_next += 1;
                     self.bike_backlog[trip.origin as usize].push_back(trip);
                     continue;
@@ -1820,6 +1888,7 @@ impl Simulation {
                 let drv = Drv::sample(&mut f.rng);
                 let noise_seed = f.rng.u32() & 0x7FFF_FFFF;
                 let trip = Trip {
+                    curbs: f.curbs,
                     v0_abs: 0.0,
                     uid: self.uid_next,
                     origin: f.origin,
@@ -1829,10 +1898,12 @@ impl Simulation {
                     intent: f.intent,
                     noise_seed,
                     drv,
-                    via: f.via,
                     vplan: f.vplan,
                 };
                 self.uid_next += 1;
+                if !trip.through && trip.t_arr >= 0.0 {
+                    self.st.resident.request(&trip);
+                }
                 self.trace_request(fi, &trip);
                 self.backlog[trip.origin as usize].push_back(trip);
             }
@@ -1918,10 +1989,15 @@ impl Simulation {
         }
     }
 
+    /// A marked turn lane is part of the street. An assumed short pocket serves only a signal.
+    fn pocket_active(&self, l: usize) -> bool {
+        self.topo.left_marked[l] || (self.topo.pocket[l] && self.eff.ctrl[self.topo.link_to[l] as usize] == Control::Signal)
+    }
+
     /// Can a left-turner enter the pocket of link `l` now? Storage is limited to POCKET_VEH vehicles, and a standing
     /// queue in the inner through lane longer than the pocket blocks its entrance (ASSUMPTION).
     fn pocket_open(&self, l: usize, need: f32, horizon: f32, x: Cross) -> bool {
-        if !self.topo.pocket[l] || self.eff.ctrl[self.topo.link_to[l] as usize] != Control::Signal {
+        if !self.pocket_active(l) {
             return false;
         }
         let main = self.topo.nmain[l];
@@ -1975,11 +2051,13 @@ impl Simulation {
                 return best.map(|b| b.1);
             }
         }
-        if kind == Some(K_LEFT) && self.pocket_open(lu, need, horizon, x) {
-            return Some(main);
-        }
-        if kind == Some(K_LEFT) && self.topo.left_marked[lu] && self.mv_kind(l, after) == Some(K_LEFT) {
-            return None;
+        if self.mv_kind(l, after) == Some(K_LEFT) {
+            if self.pocket_open(lu, need, horizon, x) {
+                return Some(main);
+            }
+            if self.topo.left_marked[lu] {
+                return None;
+            }
         }
         if main >= 2 {
             let pref = match kind {
@@ -2206,52 +2284,27 @@ impl Simulation {
             while spawned < 4 && idx < SPAWN_SCAN && blocked.len() < self.topo.outs[n].len() {
                 let Some(trip) = self.backlog[n].get(idx) else { break };
                 let (dest, seed, tuid) = (trip.dest, trip.noise_seed, trip.uid);
-                let (vplan, trip_via) = (trip.vplan, trip.via);
+                let (vplan, curbs) = (trip.vplan, trip.curbs);
                 let mut route = std::mem::take(&mut self.scratch);
                 route.clear();
-                let mut first = None;
-                let mut ok = false;
-                let mut via = None;
-                // A waiting trip's route depends only on the costs in force, so it is kept until they change.
-                if let Some((v, f, r)) = self.spawn_cache.get(&tuid) {
-                    (via, first, ok) = (*v, Some(*f), true);
+                let planned = if let Some((via, first, r)) = self.spawn_cache.get(&tuid) {
                     route.extend_from_slice(r);
+                    Some((*via, *first))
                 } else {
-                    if trip_via.is_some() {
-                        // A route through the movement that loops on the driver's perceived costs is tried on mean costs, as en route.
-                        for sd in [seed, NO_NOISE] {
-                            route.clear();
-                            if let Some((v, b)) = self.pick_via(Start::Node(n as u32), dest, sd, vplan, &mut route) {
-                                (via, first, ok) = (Some(v), b, true);
-                                break;
-                            }
-                        }
-                    }
-                    if !ok {
-                        for sd in [seed, NO_NOISE] {
-                            route.clear();
-                            if self.plan(Start::Node(n as u32), Goal::Dest(dest), sd, None, &mut route) {
-                                first = Some(route.remove(0));
-                                ok = true;
-                                break;
-                            }
-                        }
-                    }
-                    if ok {
-                        if let Some(f) = first {
-                            self.spawn_cache.insert(tuid, (via, f, route.clone()));
-                        }
-                    }
-                }
-                if !ok {
+                    self.car_path(n as u32, dest, curbs, seed, vplan, &mut route).map(|via| {
+                        let first = route.remove(0);
+                        self.spawn_cache.insert(tuid, (via, first, route.clone()));
+                        (via, first)
+                    })
+                };
+                let Some((via, b)) = planned else {
                     self.scratch = route;
                     if let Some(t) = self.backlog[n].remove(idx) {
                         self.trace_end(t.uid, trace::ST_UNROUTABLE);
                     }
                     self.st.unroutable += 1;
                     continue;
-                }
-                let b = first.unwrap();
+                };
                 if blocked.contains(&b) {
                     self.scratch = route;
                     idx += 1;
@@ -2260,14 +2313,8 @@ impl Simulation {
                 let drv = self.backlog[n][idx].drv;
                 // A trip that starts at a gate enters at the start of its first link. A local trip pulls out from the curb along the block.
                 let uid = self.backlog[n][idx].uid;
-                let one_link = route.is_empty() && self.topo.link_to[b as usize] == dest && !self.net.nodes[dest as usize].gate;
-                let (mid, end_pos) = if self.net.nodes[n].gate {
-                    (None, f32::NAN)
-                } else if one_link {
-                    self.one_link_ends(uid, b as usize).map_or((None, f32::NAN), |(a, e)| (Some(a), e))
-                } else {
-                    (self.mid_block_pos(uid, b as usize, END_ORIGIN), f32::NAN)
-                };
+                let last = route.last().copied().unwrap_or(b);
+                let (mid, end) = self.curb_positions(uid, curbs, b, last);
                 let entry = match mid {
                     Some(pos) => {
                         let lane = self.topo.nmain[b as usize] - 1;
@@ -2301,7 +2348,8 @@ impl Simulation {
                     v: v_ins,
                     mid_start: at.is_some(),
                     ff_from: pos_ins,
-                    end_pos,
+                    end_pos: end.unwrap_or(f32::NAN),
+                    end_link: end.map(|_| last),
                     t_ins: self.t,
                     entry_pos: pos_ins,
                     drv: trip.drv,
@@ -2326,6 +2374,9 @@ impl Simulation {
                     None => self.lanes[idx].push_back(id),
                 }
                 self.st.spawned += 1;
+                if at.is_none() {
+                    self.record_link_start(id, b);
+                }
                 self.sl_enter(id, b);
                 self.trace_enter(self.vehs[id as usize].uid, b);
             }
@@ -2876,19 +2927,15 @@ impl Simulation {
                     {
                         // A trip whose destination is local leaves the road along its last block.
                         let veh = &self.vehs[vid as usize];
-                        if veh.kind == KIND_CAR && veh.next().is_none() && !self.net.nodes[veh.dest as usize].gate && self.topo.link_to[l] == veh.dest {
-                            let exit = if veh.end_pos.is_nan() { self.mid_block_pos(veh.uid, l, END_DEST) } else { Some(veh.end_pos) };
-                            if let Some(ex) = exit {
-                                if x >= ex {
-                                    let (d, w) = part(ex);
-                                    self.account_motion(vid, l, d, v, w);
-                                    self.vehs[vid as usize].pos = ex;
-                                    self.vehs[vid as usize].v = v;
-                                    self.vehs[vid as usize].mid_start = true;
-                                    self.finish_trip(vid, qi, ex);
-                                    continue;
-                                }
-                            }
+                        if veh.kind == KIND_CAR && veh.next().is_none() && veh.end_link == Some(l as u32) && x >= veh.end_pos {
+                            let ex = veh.end_pos;
+                            let (d, w) = part(ex);
+                            self.account_motion(vid, l, d, v, w);
+                            self.vehs[vid as usize].pos = ex;
+                            self.vehs[vid as usize].v = v;
+                            self.vehs[vid as usize].mid_start = true;
+                            self.finish_trip(vid, qi, ex);
+                            continue;
                         }
                     }
                     if idx == 0 {
@@ -2902,6 +2949,9 @@ impl Simulation {
                                 self.account_motion(vid, l, d, v, w);
                                 self.vehs[vid as usize].pos = x;
                                 self.vehs[vid as usize].v = v;
+                                if self.vehs[vid as usize].kind == KIND_CAR {
+                                    self.record_stop_line(vid, l);
+                                }
                                 self.finish_trip(vid, qi, self.topo.length[l]);
                                 leader = None;
                                 continue;
@@ -2940,6 +2990,18 @@ impl Simulation {
         }
     }
 
+    fn record_link_start(&mut self, vid: u32, l: u32) {
+        self.d_link_start[l as usize] += 1;
+        self.count_link_detector(vid, l, LinkDetector::Start);
+    }
+
+    fn record_stop_line(&mut self, vid: u32, l: usize) {
+        self.count_link_detector(vid, l as u32, LinkDetector::Stop);
+        self.count_paths(vid, l as u32, LinkDetector::Stop);
+        self.d_stop_line[l] += 1;
+        self.win_exit[l] += 1;
+    }
+
     fn record_link_exit(&mut self, vid: u32, l: usize) {
         if self.vehs[vid as usize].kind == KIND_BIKE {
             return;
@@ -2953,7 +3015,7 @@ impl Simulation {
             self.cum[l][0] += 1.0;
         }
         self.d_link_exits[l] += 1;
-        self.win_exit[l] += 1;
+        self.count_link_detector(vid, l as u32, LinkDetector::BlockUse);
 
         let veh = &mut self.vehs[vid as usize];
         let mut newly = false;
@@ -3079,6 +3141,10 @@ impl Simulation {
             if self.net.nodes[origin].in_study_area || self.net.nodes[dest].in_study_area {
                 self.st.inside_n += 1;
                 self.st.inside_tt_sum += tt;
+                if veh.t_depart >= 0.0 {
+                    self.st.resident.completed += 1;
+                    self.st.resident.seconds += self.t;
+                }
             }
         }
         if self.cfg.record_trips && !pre {
@@ -3158,6 +3224,9 @@ impl Simulation {
         let (v, fcomp) = (veh.v, veh.drv.fcomp);
         let veh_t_enter = veh.t_enter;
         let mid_started = veh.mid_start;
+        if kind == KIND_CAR {
+            self.record_stop_line(vid, l);
+        }
         self.record_link_exit(vid, l);
         if kind == KIND_CAR && !mid_started {
             self.mv_tt_sum[mv as usize] += (self.t - veh_t_enter) as f32;
@@ -3326,6 +3395,9 @@ impl Simulation {
                     veh.go = true;
                 }
                 self.lanes[qi].push_back(vid);
+                if self.vehs[vid as usize].kind == KIND_CAR {
+                    self.record_link_start(vid, tr.to_link);
+                }
                 if made {
                     self.advance_via(vid);
                 }
@@ -3351,18 +3423,18 @@ impl Simulation {
 
     /// Route from link `l` (not included) to `dest`. With an assumed movement (a, b) pending the route first runs to link `a`, takes the movement to `b`, then runs on to `dest`
     /// (ASSUMPTION: the trips that make a counted movement the router never picks, calibration round 20). Falls back to the plain route when `a` cannot be reached.
-    fn walk_via(&mut self, l: u32, dest: u32, seed: u32, via: Option<(u32, u32)>, route: &mut Vec<u32>) -> bool {
+    fn walk_via(&mut self, l: u32, dest: Goal, seed: u32, via: Option<(u32, u32)>, route: &mut Vec<u32>) -> bool {
         if let Some((a, b)) = via {
             let mark = route.len();
             if self.plan(Start::Link(l), Goal::Link(a), seed, None, route) {
                 route.push(b);
-                if self.plan(Start::Link(b), Goal::Dest(dest), seed, None, route) {
+                if self.plan(Start::Link(b), dest, seed, None, route) {
                     return true;
                 }
             }
             route.truncate(mark);
         }
-        self.plan(Start::Link(l), Goal::Dest(dest), seed, None, route)
+        self.plan(Start::Link(l), dest, seed, None, route)
     }
 
     fn dispersion(&self) -> f32 {
@@ -3442,13 +3514,13 @@ impl Simulation {
     }
 
     /// Nodes the plain route from `start` passes twice: a loop of the plain route is not blamed on an assumed movement.
-    fn plain_repeats(&mut self, start: Start, dest: u32, seed: u32) -> Vec<u32> {
+    fn plain_repeats(&mut self, start: Start, dest: Goal, seed: u32) -> Vec<u32> {
         let mut r: Vec<u32> = Vec::new();
         let mut nodes: Vec<u32> = vec![match start {
             Start::Node(n) => n,
             Start::Link(l) => self.topo.link_to[l as usize],
         }];
-        if !self.plan(start, Goal::Dest(dest), seed, None, &mut r) {
+        if !self.plan(start, dest, seed, None, &mut r) {
             return Vec::new();
         }
         nodes.extend(r.iter().map(|&l| self.topo.link_to[l as usize]));
@@ -3459,7 +3531,7 @@ impl Simulation {
     /// tolerance times the plain route on free-flow costs in the current network and passes no node that the plain route does not pass twice. The primary movement is taken when it counts, else the cheapest
     /// alternative that counts, else none (the plain route). When the primary movement is cut, its alternatives and a local bypass that keeps its intent compete on cost instead (`pick_cut_via`). On success `route` holds the links after the first one (`Start::Node`: after the returned first link;
     /// `Start::Link`: after that link).
-    fn pick_via(&mut self, start: Start, dest: u32, seed: u32, plan: u32, route: &mut Vec<u32>) -> Option<((u32, u32), Option<u32>)> {
+    fn pick_via(&mut self, start: Start, dest: Goal, seed: u32, plan: u32, route: &mut Vec<u32>) -> Option<((u32, u32), Option<u32>)> {
         if plan == NO_PLAN {
             return None;
         }
@@ -3467,8 +3539,8 @@ impl Simulation {
             let p = &self.via_plans[plan as usize];
             (p.moves.clone(), p.max_detour)
         };
-        self.via_router.ensure_m(dest, &self.topo, self.eff.static_modal(), &self.eff.ff);
-        let plain = self.start_cost(start, self.via_router.table(dest), &self.eff.mv_static);
+        self.via_router.ensure_goal(dest, &self.topo, self.eff.static_modal(), &self.eff.ff);
+        let plain = self.start_cost(start, self.via_router.goal_table(dest), &self.eff.mv_static);
         let mut ranked: Vec<(f32, (u32, u32))> = Vec::new();
         for (k, &mv) in moves.iter().enumerate() {
             let Some((a, b)) = self.usable_via(Some(mv)) else { continue };
@@ -3478,7 +3550,7 @@ impl Simulation {
                 _ => self.start_cost(start, &self.via_router.link_tables[&a], &self.eff.mv_static),
             };
             let mvc = self.eff.mv_static[self.topo.find_mv(a, b).unwrap() as usize];
-            let cost = to_a + mvc + self.via_router.table(dest)[b as usize];
+            let cost = to_a + mvc + self.via_router.goal_table(dest)[b as usize];
             if cost.is_finite() && (!plain.is_finite() || cost <= max * plain) {
                 ranked.push((if k == 0 { f32::NEG_INFINITY } else { cost }, (a, b)));
             }
@@ -3493,13 +3565,20 @@ impl Simulation {
             if let Some(x) = self.try_via_move(start, dest, seed, plan, (a, b), route, &mut plain_looped) {
                 return Some(x);
             }
+            // Perception may make this particular route loop. Try the same observed
+            // movement on mean costs before dropping it in favor of an alternative.
+            if seed != NO_NOISE {
+                if let Some(x) = self.try_via_move(start, dest, NO_NOISE, plan, (a, b), route, &mut None) {
+                    return Some(x);
+                }
+            }
         }
         None
     }
 
     /// Build the route of `pick_via` through movement (a, b), or None when it cannot be walked, does not make the movement or loops
     /// where the plain route does not.
-    fn try_via_move(&mut self, start: Start, dest: u32, seed: u32, plan: u32, (a, b): (u32, u32), route: &mut Vec<u32>, plain_looped: &mut Option<Vec<u32>>) -> Option<((u32, u32), Option<u32>)> {
+    fn try_via_move(&mut self, start: Start, dest: Goal, seed: u32, plan: u32, (a, b): (u32, u32), route: &mut Vec<u32>, plain_looped: &mut Option<Vec<u32>>) -> Option<((u32, u32), Option<u32>)> {
         let mut r: Vec<u32> = Vec::new();
         let first = match start {
             Start::Node(n) => {
@@ -3565,7 +3644,7 @@ impl Simulation {
         }
         let (l, dest, seed, via, vplan) = {
             let v = &self.vehs[vid as usize];
-            (v.link, v.dest, v.noise_seed, v.via, v.vplan)
+            (v.link, v.end_link.map_or(Goal::Dest(v.dest), Goal::Link), v.noise_seed, v.via, v.vplan)
         };
         let mut route = std::mem::take(&mut self.scratch);
         route.clear();
@@ -3580,11 +3659,25 @@ impl Simulation {
             }
         }
         if !ok {
-            ok = self.walk_via(l, dest, seed, None, &mut route);
+            ok = self.remaining_path(vid, dest, self.vehs[vid as usize].end_pos, seed, None, &mut route);
         }
         if !ok {
             route.clear();
-            ok = self.walk_via(l, dest, NO_NOISE, None, &mut route);
+            ok = self.remaining_path(vid, dest, self.vehs[vid as usize].end_pos, NO_NOISE, None, &mut route);
+        }
+        if !ok {
+            if let Goal::Link(old) = dest {
+                if let Some(rev) = self.net.links[old as usize].reverse.filter(|&r| !self.eff.closed[r as usize]) {
+                    route.clear();
+                    let end = (1.0 - self.vehs[vid as usize].end_pos / self.topo.length[old as usize]) * self.topo.length[rev as usize];
+                    ok = self.remaining_path(vid, Goal::Link(rev), end, seed, None, &mut route);
+                    if ok {
+                        let veh = &mut self.vehs[vid as usize];
+                        veh.end_pos = end;
+                        veh.end_link = Some(rev);
+                    }
+                }
+            }
         }
         if ok {
             let veh = &mut self.vehs[vid as usize];
@@ -3621,7 +3714,7 @@ impl Simulation {
         let (l, dest, seed, blocked) = {
             let v = &self.vehs[vid as usize];
             let Some(nx) = v.next() else { return };
-            (v.link, v.dest, v.noise_seed, nx)
+            (v.link, v.end_link.map_or(Goal::Dest(v.dest), Goal::Link), v.noise_seed, nx)
         };
         let driven: Vec<u32> = self.vehs[vid as usize].trail.iter().map(|&x| self.topo.link_to[x as usize]).collect();
         let back = self.topo.link_from[l as usize];
@@ -3632,7 +3725,7 @@ impl Simulation {
         route.clear();
         // A way out that comes back to the blocked junction, or to a junction the car has driven through, only circles; the car keeps waiting.
         let here = self.topo.link_to[l as usize];
-        if !self.plan(Start::Link(l), Goal::Dest(dest), seed, Some(&first_ok), &mut route) || route.iter().any(|&x| self.topo.link_to[x as usize] == here || driven.contains(&self.topo.link_to[x as usize])) {
+        if !self.remaining_path(vid, dest, self.vehs[vid as usize].end_pos, seed, Some(&first_ok), &mut route) || route.iter().any(|&x| self.topo.link_to[x as usize] == here || driven.contains(&self.topo.link_to[x as usize])) {
             self.scratch = route;
             return;
         }
@@ -3743,7 +3836,7 @@ impl Simulation {
         }
     }
 
-    /// Cost of `route` (the links after `from`) as the driver perceives it: each movement and its exit link on current times, with the
+    /// Cost from the start of `from`: each approach and its outgoing turn, then the final link, with the
     /// driver's perception drawn once for the trip (`route::perceive_mv`). INF when a link or movement is closed.
     fn path_cost(&self, from: u32, route: &[u32], seed: u32) -> f32 {
         let beta = self.dispersion();
@@ -3753,10 +3846,10 @@ impl Simulation {
             if !self.eff.mv_ok[mv as usize] || self.eff.closed[b as usize] {
                 return INF;
             }
-            c += route::perceive_mv(self.eff.mv_cost[mv as usize] + self.link_cost[b as usize] * self.eff.route_w[b as usize], beta, seed, mv);
+            c += route::perceive_mv(self.eff.mv_cost[mv as usize] + self.link_cost[prev as usize] * self.eff.route_w[prev as usize], beta, seed, mv);
             prev = b;
         }
-        c
+        c + route::perceive_last(self.link_cost[prev as usize] * self.eff.route_w[prev as usize], beta, seed, prev)
     }
 
     /// True when the remaining route of `vid` uses a closed link or a banned movement.
@@ -3784,16 +3877,16 @@ impl Simulation {
     /// just left, or return to a node already visited on this trip); and the driver is limited to `MAX_SWITCHES` changes, `MIN_SWITCH_GAP_S`
     /// apart. A blocked route is handled by `replan_vehicle` instead.
     fn consider_reroute(&mut self, vid: u32) {
-        let (l, dest, seed, switches, last, route_len) = {
+        let (dest, seed, switches, last, route_len) = {
             let v = &self.vehs[vid as usize];
-            (v.link, v.dest, v.noise_seed, v.switches, v.last_switch_t, v.route.len())
+            (v.end_link.map_or(Goal::Dest(v.dest), Goal::Link), v.noise_seed, v.switches, v.last_switch_t, v.route.len())
         };
         if switches >= MAX_SWITCHES || self.t - last < MIN_SWITCH_GAP_S || (self.vehs[vid as usize].ridx as usize) >= route_len || self.vehs[vid as usize].via.is_some() {
             return;
         }
         let mut alt = std::mem::take(&mut self.scratch);
         alt.clear();
-        let ok = self.plan(Start::Link(l), Goal::Dest(dest), seed, None, &mut alt);
+        let ok = self.remaining_path(vid, dest, self.vehs[vid as usize].end_pos, seed, None, &mut alt);
         let switch = ok && self.accept_switch(vid, &alt);
         if switch {
             let veh = &mut self.vehs[vid as usize];
@@ -3817,7 +3910,8 @@ impl Simulation {
         let cur_cost = self.path_cost(v.link, cur, v.noise_seed);
         let alt_cost = self.path_cost(v.link, alt, v.noise_seed);
         let band = self.cfg.switch_band.map_or(SWITCH_BAND, |b| b.max(0.0) as f32);
-        if !alt_cost.is_finite() || (cur_cost.is_finite() && cur_cost - alt_cost <= (band * cur_cost).max(SWITCH_MIN_GAIN_S)) {
+        let remaining_cost = (cur_cost - (self.t - v.t_enter) as f32).max(0.0);
+        if !alt_cost.is_finite() || (cur_cost.is_finite() && cur_cost - alt_cost <= (band * remaining_cost).max(SWITCH_MIN_GAIN_S)) {
             return false;
         }
         // No backtracking: no node of the alternative may already be on this trip.
@@ -3952,7 +4046,7 @@ impl Simulation {
 
     /// Build with initial loading routed on free-flow costs (the placement before `adopt_loaded_costs`), for comparison in tests.
     pub(crate) fn test_build_free_flow(net: Network, demand: Demand, cfg: Config) -> Simulation {
-        Self::build(net, demand, cfg, false).unwrap()
+        Self::build(net, demand, cfg, None).unwrap()
     }
 
     /// Place the initial agents without the settle interval (the clock stays where it is).

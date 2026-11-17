@@ -5,7 +5,7 @@
 //! over the periods. The published report also gives the like-for-like measure, through cars only (`report::through_harm`). Screening runs use one
 //! period, one seed and a shortened run; the finalists are rechecked elsewhere (`report`).
 
-use super::cands::{conflicts, hotspots, generate_with, Cand, Hotspots};
+use super::cands::{conflicts, hotspots, Cand, Hotspots};
 use super::objectives::Objective;
 use super::*;
 use serde_json::{json, Value};
@@ -20,9 +20,7 @@ pub struct PeriodStat {
     pub ct_cv_pct: f64,
     pub ped_conflicts: f64,
     pub bike_conflicts: f64,
-    pub inside_s: f64,
-    /// Summed trip time (s) of those trips, mean over seeds.
-    pub inside_tt_s: f64,
+    pub inside_s: Option<f64>,
     pub unroutable: f64,
     pub gridlock: f64,
     pub backlog: f64,
@@ -50,9 +48,7 @@ pub struct PeriodStat {
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct RunRec {
     pub ct_vph: f64,
-    /// Mean trip time (s) and summed trip time (s) of completed car trips with an end inside the study area.
-    pub inside_s: f64,
-    pub inside_tt_s: f64,
+    pub resident: crate::sim::ResidentTime,
     pub block_flow: Vec<f64>,
     pub block_through: Vec<f64>,
 }
@@ -99,8 +95,7 @@ pub fn period_stat(study: &Study, runs: &[&RunOut]) -> PeriodStat {
         },
         ped_conflicts: m(&|r| r.ped_conflicts as f64),
         bike_conflicts: m(&|r| r.bike_conflicts as f64),
-        inside_s: m(&|r| r.inside_mean_s()),
-        inside_tt_s: m(&|r| r.inside_tt_s),
+        inside_s: runs.iter().map(|r| r.resident.mean()).sum::<Option<f64>>().filter(|_| !runs.is_empty()).map(|sum| sum / n),
         unroutable: m(&|r| r.unroutable as f64),
         gridlock: m(&|r| r.gridlock_removed as f64),
         backlog: m(&|r| r.backlog as f64),
@@ -113,7 +108,7 @@ pub fn period_stat(study: &Study, runs: &[&RunOut]) -> PeriodStat {
         link_flow,
         street_flow,
         street_speed,
-        runs: runs.iter().zip(per_run).zip(per_run_through).map(|((r, bf), bt)| RunRec { ct_vph: r.ct_vph, inside_s: r.inside_mean_s(), inside_tt_s: r.inside_tt_s, block_flow: bf, block_through: bt }).collect(),
+        runs: runs.iter().zip(per_run).zip(per_run_through).map(|((r, bf), bt)| RunRec { ct_vph: r.ct_vph, resident: r.resident, block_flow: bf, block_through: bt }).collect(),
     }
 }
 
@@ -268,7 +263,7 @@ pub struct Eval {
     pub inc: Vec<f32>,
     pub score: f64,
     /// Added mean trip time (s) of trips that start or end inside the study area, scenario minus baseline on the same seed.
-    pub detour_s: f64,
+    pub detour_s: Option<f64>,
 }
 
 impl Eval {
@@ -276,7 +271,7 @@ impl Eval {
         self.reject.is_none()
     }
     pub fn rejected(set: &[u16], why: String) -> Eval {
-        Eval { set: set.to_vec(), reject: Some(why), reduction_pct: 0.0, harm: 0.0, worst: 0, inc: Vec::new(), score: f64::NEG_INFINITY, detour_s: 0.0 }
+        Eval { set: set.to_vec(), reject: Some(why), reduction_pct: 0.0, harm: 0.0, worst: 0, inc: Vec::new(), score: f64::NEG_INFINITY, detour_s: None }
     }
 }
 
@@ -314,7 +309,7 @@ pub fn eval_screen(ctx: &Ctx, set: &[u16]) -> Eval {
     let inc: Vec<f64> = scen_flow.iter().zip(&base_flow).map(|(s, b)| s - b).collect();
     let h = harm_calc(&inc, &ctx.base.screen.block_sigma);
     let red = reduction_pct(base_run.ct_vph, out.ct_vph);
-    Eval { set: set.to_vec(), reject: None, reduction_pct: red, harm: h.worst_adj, worst: h.worst, inc: inc.iter().map(|&x| x as f32).collect(), score: score(p, red, h.worst_adj), detour_s: out.inside_mean_s() - base_run.inside_mean_s() }
+    Eval { set: set.to_vec(), reject: None, reduction_pct: red, harm: h.worst_adj, worst: h.worst, inc: inc.iter().map(|&x| x as f32).collect(), score: score(p, red, h.worst_adj), detour_s: base_run.resident.paired_delta(&out.resident) }
 }
 
 /// Screening results computed beforehand (the finite-space benchmark): a search that reads one gets for each package it asks for the
@@ -376,7 +371,7 @@ pub fn eval_batch(ctx: &Ctx, st: &mut SearchState, sets: Vec<Vec<u16>>) {
             Some((_, true)) => Ok(()),
             None => panic!("the screening table has no row for package {s:?}"),
         }).collect(),
-        None => parallel_map(ctx.p.jobs, &want, |s| check_access(ctx.study, &ctx.ivs(s))),
+        None => parallel_map(ctx.p.jobs, &want, |s| check_access_for(ctx.study, &ctx.ivs(s), ctx.p.periods.iter().map(String::as_str))),
     };
     let mut to_run: Vec<Vec<u16>> = Vec::new();
     let mut results: HashMap<Vec<u16>, Eval> = HashMap::new();
@@ -588,6 +583,10 @@ impl BeamLimit {
         BeamLimit { objective: obj, allowed, depth: super::objectives::depth(obj, p) }
     }
 
+    fn accepts(&self, evaluation: &Eval) -> bool {
+        evaluation.valid() && (self.objective != Objective::LeastDetour || evaluation.detour_s.is_some())
+    }
+
     pub fn ok(&self, c: u16) -> bool {
         self.allowed.as_ref().map_or(true, |a| a[c as usize])
     }
@@ -606,7 +605,7 @@ pub fn beam_search_in(ctx: &Ctx, known: &[Family], lim: &BeamLimit, st_ref: &mut
     fn single_eval(st: &SearchState, c: u16) -> Option<&Eval> {
         st.cache.get(&vec![c]).map(|&i| &st.evals[i])
     }
-    let mut ranked: Vec<u16> = (0..n as u16).filter(|&c| lim.ok(c) && single_eval(&st, c).map_or(false, |e| e.valid())).collect();
+    let mut ranked: Vec<u16> = (0..n as u16).filter(|&c| lim.ok(c) && single_eval(&st, c).is_some_and(|e| lim.accepts(e))).collect();
     let floor = detour_floor_pct(&st.evals);
     ranked.sort_by(|&a, &b| {
         let (ea, eb) = (single_eval(&st, a).unwrap(), single_eval(&st, b).unwrap());
@@ -618,14 +617,14 @@ pub fn beam_search_in(ctx: &Ctx, known: &[Family], lim: &BeamLimit, st_ref: &mut
     let why = distinct_places_why(ctx, &st, &positive, ctx.p.expand);
     if st.trace.is_some() {
         let nonpositive: Vec<u16> = ranked.iter().copied().filter(|&c| single_eval(&st, c).unwrap().reduction_pct <= 0.0).collect();
-        let invalid: Vec<u16> = (0..n as u16).filter(|&c| lim.ok(c) && single_eval(&st, c).map_or(true, |e| !e.valid())).collect();
+        let invalid: Vec<u16> = (0..n as u16).filter(|&c| lim.ok(c) && !single_eval(&st, c).is_some_and(|e| lim.accepts(e))).collect();
         let disallowed: Vec<u16> = (0..n as u16).filter(|&c| !lim.ok(c)).collect();
         let v = json!({"event": "singles", "objective": lim.objective.id(), "nonPositive": nonpositive, "invalid": invalid, "notAllowed": disallowed});
         st.note(|| v);
         note_selection(&mut st, lim.objective, "extension-singles", 1, 0, &why);
     }
     let top_singles: Vec<u16> = why.0.into_iter().map(|i| st.evals[i].set[0]).collect();
-    let usable: Vec<bool> = (0..n as u16).map(|c| lim.ok(c) && single_eval(&st, c).map_or(false, |e| e.valid())).collect();
+    let usable: Vec<bool> = (0..n as u16).map(|c| lim.ok(c) && single_eval(&st, c).is_some_and(|e| lim.accepts(e))).collect();
     let all_ranked: Vec<usize> = ranked.iter().map(|&c| st.cache[&vec![c]]).collect();
     let why = distinct_places_why(ctx, &st, &all_ranked, ctx.p.beam);
     note_selection(&mut st, lim.objective, "beam", 1, 0, &why);
@@ -633,7 +632,7 @@ pub fn beam_search_in(ctx: &Ctx, known: &[Family], lim: &BeamLimit, st_ref: &mut
     let mut families: Vec<Vec<usize>> = known
         .iter()
         .map(|f| {
-            let mut m: Vec<usize> = std::iter::once(&f.set).chain(f.subs.iter()).filter_map(|s| st.cache.get(s).copied()).filter(|&i| st.evals[i].valid()).collect();
+            let mut m: Vec<usize> = std::iter::once(&f.set).chain(f.subs.iter()).filter_map(|s| st.cache.get(s).copied()).filter(|&i| lim.accepts(&st.evals[i])).collect();
             m.dedup();
             rank_order(ctx.p, lim.objective, &st, &mut m);
             m
@@ -729,7 +728,7 @@ pub fn beam_search_in(ctx: &Ctx, known: &[Family], lim: &BeamLimit, st_ref: &mut
             if !lin.alive {
                 continue;
             }
-            let mut level: Vec<usize> = sets.iter().filter_map(|s| st.cache.get(s).copied()).filter(|&i| st.evals[i].valid()).collect();
+            let mut level: Vec<usize> = sets.iter().filter_map(|s| st.cache.get(s).copied()).filter(|&i| lim.accepts(&st.evals[i])).collect();
             rank_order(ctx.p, lim.objective, &st, &mut level);
             // The line goes on while adding an intervention improves the ranking value at the new size: the previous beam's best is
             // re-ranked with the new level's harm weight, so levels are compared on the same footing.
@@ -798,7 +797,7 @@ pub fn pick_finalists(evals: &[Eval], cap: usize, warm: &[Vec<u16>]) -> Vec<usiz
 pub fn pick_finalists_for(ctx: &Ctx, evals: &[Eval], cap: usize, lim: &BeamLimit) -> Vec<usize> {
     let floor = detour_floor_pct(evals);
     let value = |i: usize| super::objectives::screen_value(lim.objective, evals[i].score, &evals[i], floor);
-    let mut idx: Vec<usize> = (0..evals.len()).filter(|&i| evals[i].valid() && evals[i].reduction_pct > 0.0 && evals[i].set.len() <= lim.depth && evals[i].set.iter().all(|&c| lim.ok(c))).collect();
+    let mut idx: Vec<usize> = (0..evals.len()).filter(|&i| lim.accepts(&evals[i]) && evals[i].reduction_pct > 0.0 && evals[i].set.len() <= lim.depth && evals[i].set.iter().all(|&c| lim.ok(c))).collect();
     idx.sort_by(|&a, &b| value(b).partial_cmp(&value(a)).unwrap_or(std::cmp::Ordering::Equal).then(a.cmp(&b)));
     let mut seen: Vec<Vec<String>> = Vec::new();
     let mut out = Vec::new();
@@ -841,5 +840,5 @@ fn pick_finalists_capped(evals: &[Eval], cap: usize) -> Vec<usize> {
 }
 
 pub fn make_cands(study: &Study, base: &Baseline, p: &Params) -> Vec<Cand> {
-    generate_with(study, &base.hot, p.candidates, &p.profile)
+    super::cands::generate_for(study, &base.hot, p.candidates, &p.profile, p.periods.iter().map(String::as_str))
 }

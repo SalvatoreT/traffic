@@ -157,6 +157,10 @@ pub fn kept_locations(ranked: &[(Loc, f64, bool)], n_loc: usize, profile: &Profi
 
 /// Candidates under a profile. Boundary locations are dropped before the top `n_loc` are taken, so a constrained search still gets `n_loc` locations.
 pub fn generate_with(study: &Study, hot: &Hotspots, n_loc: usize, profile: &Profile) -> Vec<Cand> {
+    generate_for(study, hot, n_loc, profile, study.period_access.keys().map(String::as_str))
+}
+
+pub fn generate_for<'a>(study: &Study, hot: &Hotspots, n_loc: usize, profile: &Profile, periods: impl IntoIterator<Item = &'a str>) -> Vec<Cand> {
     let (net, idx, topo) = (&study.net, &study.idx, &study.topo);
     let locs = kept_locations(&ranked_locations(study, hot), n_loc, profile);
 
@@ -271,7 +275,13 @@ pub fn generate_with(study: &Study, hot: &Hotspots, n_loc: usize, profile: &Prof
         }
     }
     // Turn bans: the heaviest cut-through movements from an arterial onto a local street.
-    let osm: HashSet<(u32, u32)> = net.turn_bans.iter().map(|b| (b.from, b.to)).collect();
+    let mut period_bans = periods.into_iter().map(|period| {
+        study.period_access[period].0.turn_bans.iter().map(|b| (b.from, b.to)).collect::<HashSet<_>>()
+    });
+    let mut osm = period_bans.next().unwrap_or_default();
+    for banned in period_bans {
+        osm.retain(|movement| banned.contains(movement));
+    }
     let mut mvs: Vec<((u32, u32), f64)> = hot
         .mv_ct
         .iter()

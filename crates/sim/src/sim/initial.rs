@@ -59,13 +59,17 @@ impl Simulation {
     /// run with the same seed route their placed agents alike), settled for `INITIAL_SETTLE_S`; its measured link times become the
     /// costs the placement routes on. Free-flow routes put too few cars on the side streets, because drivers move onto them as the
     /// arterials fill.
-    pub(super) fn adopt_loaded_costs(&mut self) {
-        let mut cfg = self.cfg.clone();
-        cfg.interventions = Vec::new();
-        cfg.trace = false;
-        let Ok(probe) = Simulation::build(self.net.clone(), self.demand.clone(), cfg, false) else { return };
-        self.ema = probe.ema;
-        self.mv_ema = probe.mv_ema;
+    pub(super) fn adopt_loaded_costs(&mut self, costs: &LoadedCosts) {
+        let Some((links, movements)) = costs.0.get_or_init(|| {
+            let mut cfg = self.cfg.clone();
+            cfg.interventions.clear();
+            cfg.select_links.clear();
+            cfg.trace = false;
+            let probe = Simulation::build(self.net.clone(), self.demand.clone(), cfg, None).ok()?;
+            Some((probe.ema, probe.mv_ema))
+        }) else { return };
+        self.ema.copy_from_slice(links);
+        self.mv_ema.copy_from_slice(movements);
         for l in 0..self.topo.n_links {
             self.link_cost[l] = self.eff.ff[l].max(self.ema[l]);
         }
@@ -84,7 +88,9 @@ impl Simulation {
         self.cur_bin = 0;
         self.d_link_stopped.iter_mut().for_each(|x| *x = 0.0);
         self.d_link_delay.iter_mut().for_each(|x| *x = 0.0);
-        self.d_link_exits.iter_mut().for_each(|x| *x = 0);
+        self.d_link_exits.fill(0);
+        self.d_stop_line.fill(0);
+        self.d_link_start.fill(0);
         self.d_node_wait.iter_mut().for_each(|x| *x = 0.0);
         self.d_node_space.iter_mut().for_each(|x| *x = 0.0);
         self.gridlock_log.clear();
@@ -103,7 +109,7 @@ impl Simulation {
 
     /// Route of an agent from `origin` to `dest`: the first link and the links after it. Cars route on their own perceived costs
     /// (as at departure), cyclists theirs without noise.
-    fn initial_route(&mut self, bike: bool, origin: u32, dest: u32, seed: u32) -> Option<Vec<u32>> {
+    fn initial_route(&mut self, bike: bool, origin: u32, dest: u32, seed: u32, vplan: u32, curbs: Curbs) -> Option<Vec<u32>> {
         let mut route = Vec::new();
         if bike {
             self.bike_router.ensure_m(dest, &self.topo, self.eff.bike_modal(), &self.eff.bike_link_cost);
@@ -112,26 +118,9 @@ impl Simulation {
             route.push(b);
             route::walk_m(table, &self.topo, self.eff.bike_modal(), b, dest, &mut route).then_some(route)
         } else {
-            if self.plan(Start::Node(origin), Goal::Dest(dest), seed, None, &mut route) {
-                return Some(route);
-            }
-            route.clear();
-            self.plan(Start::Node(origin), Goal::Dest(dest), NO_NOISE, None, &mut route).then_some(route)
+            self.car_path(origin, dest, curbs, seed, vplan, &mut route)?;
+            Some(route)
         }
-    }
-
-    /// Route of a car of a flow with an assumed movement: as a trip of the flow would take it at its origin, the movement included while it counts.
-    /// Returns the route and the movement it makes.
-    fn initial_route_via(&mut self, origin: u32, dest: u32, seed: u32, vplan: u32) -> Option<Vec<u32>> {
-        for sd in [seed, NO_NOISE] {
-            let mut rest = Vec::new();
-            if let Some((_, Some(first))) = self.pick_via(Start::Node(origin), dest, sd, vplan, &mut rest) {
-                let mut route = vec![first];
-                route.append(&mut rest);
-                return Some(route);
-            }
-        }
-        self.initial_route(false, origin, dest, seed)
     }
 
     /// The movement a car placed at `route[at]` still has to make, and the plan of its stage: stages whose movement the route made before its position are done.
@@ -199,22 +188,19 @@ impl Simulation {
                 continue;
             }
             let bike = mode == FlowMode::Bicycle;
-            let r0 = if vplan != NO_PLAN {
-                self.initial_route_via(origin, dest, NO_NOISE, vplan)
-            } else {
-                self.initial_route(bike, origin, dest, NO_NOISE)
-            };
+            let curbs = self.flows[k].curbs;
+            let r0 = self.initial_route(bike, origin, dest, NO_NOISE, vplan, curbs);
             let Some(r0) = r0 else { continue };
             let v_mean = (BIKE_V_MEAN as f32).min(BIKE_COST_V * 1.2);
             let t0: f32 = self.initial_times(&r0, bike.then_some(v_mean)).iter().map(|t| t.0 + t.1).sum();
             let n = rng.poisson(rate * t0 as f64);
-            for _ in 0..n {
+            for ordinal in 0..n {
                 let (drv, v0_abs, noise_seed) = if bike {
                     (Drv::bike(&mut rng), bike_speed(&mut rng), NO_NOISE)
                 } else {
                     (Drv::sample(&mut rng), 0.0, rng.u32() & 0x7FFF_FFFF)
                 };
-                let routed = if vplan != NO_PLAN { self.initial_route_via(origin, dest, noise_seed, vplan) } else { self.initial_route(bike, origin, dest, noise_seed) };
+                let routed = self.initial_route(bike, origin, dest, noise_seed, vplan, curbs);
                 let Some(route) = routed else { continue };
                 let uid = self.uid_init;
                 self.uid_init += 1;
@@ -222,22 +208,13 @@ impl Simulation {
                 // A car with a local end drives only part of its first or last link, as a newly arriving one does (`try_spawns`).
                 let last = route.len() - 1;
                 let span = |l: usize| (self.topo.emerge_pos[l], self.topo.stop_pos[l]);
-                let (mut lo0, mut hi_last, mut end_pos) = (span(route[0] as usize).0, span(route[last] as usize).1, f32::NAN);
+                // The number placed on earlier flows varies with the scenario. Pair address
+                // draws by flow and ordinal, independently of allocation-order vehicle IDs.
+                let address_key = hash32(k as u32, ordinal as u32 ^ INITIAL_UID_BASE);
+                let (start, end) = self.curb_positions(address_key, curbs, route[0], route[last]);
+                let (lo0, hi_last) = (start.unwrap_or(span(route[0] as usize).0), end.unwrap_or(span(route[last] as usize).1));
+                let end_pos = end.unwrap_or(f32::NAN);
                 if !bike {
-                    let local_o = !self.net.nodes[origin as usize].gate;
-                    let local_d = !self.net.nodes[dest as usize].gate && self.topo.link_to[route[last] as usize] == dest;
-                    if last == 0 && local_o && local_d {
-                        if let Some((a, e)) = self.one_link_ends(uid, route[0] as usize) {
-                            (lo0, hi_last, end_pos) = (a, e, e);
-                        }
-                    } else {
-                        if local_o {
-                            lo0 = self.mid_block_pos(uid, route[0] as usize, END_ORIGIN).unwrap_or(lo0);
-                        }
-                        if local_d {
-                            hi_last = self.mid_block_pos(uid, route[last] as usize, END_DEST).unwrap_or(hi_last);
-                        }
-                    }
                     for (i, t) in times.iter_mut().enumerate() {
                         let (e, st) = span(route[i] as usize);
                         let (lo, hi) = (if i == 0 { lo0 } else { e }, if i == last { hi_last } else { st });
@@ -268,6 +245,8 @@ impl Simulation {
                 let nm = self.topo.nmain[l];
                 let lane = if bike {
                     self.topo.nlanes(l)
+                } else if self.topo.left_marked[l] && self.mv_kind(l as u32, route.get(at + 1).copied()) == Some(K_LEFT) {
+                    nm
                 } else if nm >= 2 {
                     match self.mv_kind(route[at] as u32, route.get(at + 1).copied()) {
                         Some(K_LEFT) => 0,
@@ -390,6 +369,7 @@ impl Simulation {
             preplaced: true,
             ff_from: pos,
             end_pos: c.end_pos,
+            end_link: c.end_pos.is_finite().then(|| *c.route.last().unwrap()),
             t_ins: self.t,
             entry_pos: pos,
             ..Veh::blank()

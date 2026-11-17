@@ -6,7 +6,7 @@
 //! costs) name the blocks and junctions of its bypasses. Those locations get the closure interventions the generator would offer there.
 //! Connectivity says drivers could go that way, not how many would; every supplementary candidate is still screened by simulation.
 
-use super::cands::{generate_with, same_intervention, Cand, Hotspots, Loc};
+use super::cands::{generate_for, same_intervention, Cand, Hotspots, Loc};
 use super::profile::Profile;
 use super::Study;
 use crate::model::Intervention;
@@ -164,7 +164,7 @@ pub fn supplement(study: &Study, period: &str, base: &[Cand], profile: &Profile,
             Loc::Node(n) => hot.node_ct[n as usize] = w,
         }
     }
-    let gen = generate_with(study, &hot, chosen.len(), profile);
+    let gen = generate_for(study, &hot, chosen.len(), profile, [period]);
     let (mut added, mut already) = (Vec::new(), Vec::new());
     for c in gen.into_iter().filter(|c| CLOSURE_KINDS.contains(&c.kind)) {
         let at = chosen.iter().find(|(l, _, _)| match *l {

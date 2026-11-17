@@ -34,6 +34,7 @@ pub(super) struct Xw {
     pub in_links: Vec<u32>,
     pub out_links: Vec<u32>,
     pub crossing: u32,
+    completed_crossings: u64,
     pub waiting: u32,
     pub last_clear_t: f64,
     pub last_pass_t: f64,
@@ -135,6 +136,34 @@ pub(super) struct PedWorld {
     pub unroutable: u64,
 }
 
+/// Number of planned crosswalk traversals at a station per OD pair, or None when the sidewalk route is unavailable.
+pub fn planned_pedestrian_crossings(net: &Network, station: Option<u32>, pairs: &[[u32; 2]]) -> Result<Vec<Option<u32>>, String> {
+    let valid_node = |id: u32| (id as usize) < net.nodes.len();
+    if station.is_some_and(|n| !valid_node(n)) || pairs.iter().flatten().any(|&n| !valid_node(n)) {
+        return Err("pedestrian route query has an unknown node".into());
+    }
+    let mut world = PedWorld::build(net, &Topo::new(net));
+    let mut results = vec![None; pairs.len()];
+    // Reuse the production router's destination table for every origin bound for it.
+    let mut order: Vec<usize> = (0..pairs.len()).collect();
+    order.sort_unstable_by_key(|&i| pairs[i][1]);
+    for i in order {
+        let [origin, dest] = pairs[i];
+        if let Some(steps) = world.route(origin, dest) {
+            let count = steps.iter().filter(|s| matches!(s, Step::Cross { xw, .. } if Some(world.xws[*xw as usize].node) == station)).count();
+            results[i] = Some(count as u32);
+        }
+    }
+    Ok(results)
+}
+
+impl Simulation {
+    /// Crosswalk traversals completed at this intersection since the simulation's measurement clock started.
+    pub fn pedestrian_crossings_at(&self, node: u32) -> u64 {
+        self.world.xws.iter().filter(|x| x.node == node).map(|x| x.completed_crossings).sum()
+    }
+}
+
 impl PedWorld {
     pub fn n_alive(&self) -> usize {
         self.alive
@@ -148,6 +177,9 @@ impl PedWorld {
         self.cross_delay_sum = 0.0;
         self.crossings_done = 0;
         self.unroutable = 0;
+        for xw in &mut self.xws {
+            xw.completed_crossings = 0;
+        }
     }
 
     pub fn mode_metrics(&self) -> PedMode {
@@ -224,6 +256,7 @@ impl PedWorld {
                     in_links: ins,
                     out_links: outs,
                     crossing: 0,
+                    completed_crossings: 0,
                     waiting: 0,
                     last_clear_t: f64::NEG_INFINITY,
                     last_pass_t: f64::NEG_INFINITY,
@@ -272,6 +305,7 @@ impl PedWorld {
                 in_links: vec![l, r],
                 out_links: Vec::new(),
                 crossing: 0,
+                completed_crossings: 0,
                 waiting: 0,
                 last_clear_t: f64::NEG_INFINITY,
                 last_pass_t: f64::NEG_INFINITY,
@@ -621,6 +655,7 @@ impl Simulation {
                         let uid = p.uid;
                         let x = &mut self.world.xws[xw as usize];
                         x.crossing -= 1;
+                        x.completed_crossings += 1;
                         if x.crossing == 0 {
                             x.last_clear_t = t;
                             x.last_ped = uid;

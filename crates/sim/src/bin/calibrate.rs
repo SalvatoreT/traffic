@@ -22,7 +22,7 @@ use std::collections::{BinaryHeap, HashMap};
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
 use traffic_sim::model::{Config, Control, JunctionRecovery, Demand, FlowMode, Network, RoadClass};
-use traffic_sim::sim::{SelectLinkRecord, Simulation, StreetVisit};
+use traffic_sim::sim::{LinkDetector, PathObservation, SelectLinkRecord, Simulation, StreetVisit};
 use traffic_sim::wander::{summarize, TripMetric, WanderStats};
 
 struct Args {
@@ -124,6 +124,9 @@ fn parse_args() -> Args {
             _ => usage(&format!("unknown argument {k}")),
         }
         i += 1;
+    }
+    if !a.minutes.is_finite() || a.minutes <= 0.0 || !a.warmup_min.is_finite() || a.warmup_min < 0.0 || (a.minutes >= 30.0 && a.warmup_min >= a.minutes) {
+        usage("minutes must be positive and the warmup must leave a measurement window");
     }
     a
 }
@@ -237,8 +240,8 @@ fn visit_matches(v: &StreetVisit, name: &str, dir: Option<char>) -> bool {
 }
 
 /// Links of the named street between two cross streets, in the stated direction of travel.
-/// Returns the link ids and a note describing how they were found.
-fn resolve_block(net: &Network, street: &str, dir: &str, between: &[String]) -> (Vec<u32>, String) {
+/// Returns the link ids, whether they cover the full observed path, and a note describing how they were found.
+fn resolve_block(net: &Network, street: &str, dir: &str, between: &[String]) -> (Vec<u32>, bool, String) {
     let want = match dir {
         "NB" => 0.0,
         "EB" => 90.0,
@@ -259,9 +262,9 @@ fn resolve_block(net: &Network, street: &str, dir: &str, between: &[String]) -> 
             .filter(|&n| inc[n].iter().any(|&l| same(&net.links[l].name, x)) && inc[n].iter().any(|&l| same(&net.links[l].name, street)))
             .collect()
     };
-    let fallback = |why: &str| -> (Vec<u32>, String) {
+    let fallback = |why: &str| -> (Vec<u32>, bool, String) {
         let v: Vec<u32> = street_links.iter().filter(|&&l| net.links[l].in_study_area).map(|&l| l as u32).collect();
-        (v, format!("FALLBACK ({why}): all study-area {street} {dir} links"))
+        (v, false, format!("FALLBACK ({why}): all study-area {street} {dir} links"))
     };
     if between.len() != 2 {
         return fallback("no between pair");
@@ -311,7 +314,7 @@ fn resolve_block(net: &Network, street: &str, dir: &str, between: &[String]) -> 
                 }
             }
             path.reverse();
-            return (path, format!("path {} -> {} ({:.0} m)", between[order[0]], between[order[1]], dist[&end]));
+            return (path, true, format!("path {} -> {} ({:.0} m)", between[order[0]], between[order[1]], dist[&end]));
         }
     }
     fallback("no path between the cross streets")
@@ -425,9 +428,31 @@ fn main() {
     let dem_path = args.demand_path.clone().unwrap_or_else(|| root.join(format!("public/data/{}.demand.json", args.area)));
     let net_json = read(net_path.clone());
     let dem_json = read(dem_path.clone());
+    let manifest = run_manifest(&args, &root, &net_path, &dem_path, &dem_json);
+    // The stations file describes both fit views. A training build withholds the frozen
+    // groups and overlapping aggregate stations; the shipped fit uses them.
+    let inputs = &manifest["inputs"];
+    let build = &inputs["demandBuild"];
+    let fitted_view = build["view"].as_str().filter(|_| build["split"].is_string() && build["split"] == inputs["split"]["sha256"] && build["network"] == inputs["network"]["sha256"] && build["config"] == inputs["demandConfig"]["sha256"]);
+    let mut withheld = std::collections::HashSet::new();
+    if fitted_view == Some("training") {
+        let split: Value = serde_json::from_str(&read(root.join(format!("data/demand/{}.split.json", args.area)))).expect("split json");
+        for group in split["groups"].as_array().into_iter().flatten().filter(|g| g["held"] == true) {
+            withheld.extend(group["stations"].as_array().into_iter().flatten().filter_map(Value::as_str).map(str::to_owned));
+        }
+        withheld.extend(split["withheldAggregates"].as_array().into_iter().flatten().filter_map(|r| r["station"].as_str().map(str::to_owned)));
+    }
     let targets: Value = serde_json::from_str(&read(root.join(format!("data/calibration/{}.targets.json", args.area)))).expect("targets json");
     let net: Network = serde_json::from_str(&net_json).expect("network");
     let mut demand: Demand = serde_json::from_str(&dem_json).expect("demand");
+    #[derive(serde::Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    struct PedestrianCount { node: u32, period: String, observed_per_hour: f64, planned_per_hour: Option<f64> }
+    #[derive(serde::Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    struct CountMetadata { pedestrian_count: Option<PedestrianCount> }
+    let count_metadata: CountMetadata = serde_json::from_str(&dem_json).expect("pedestrian count metadata");
+    let ped_count = count_metadata.pedestrian_count.filter(|c| c.period == args.period && (c.node as usize) < net.nodes.len());
     if args.cars_only {
         for p in demand.periods.iter_mut() {
             p.flows.retain(|f| f.mode == FlowMode::Car);
@@ -447,13 +472,13 @@ fn main() {
     struct Target {
         label: String,
         links: Vec<u32>,
+        full_path: bool,
         note: String,
         from: Vec<(String, f64, Option<f64>)>,
         to: Vec<(String, f64, Option<f64>)>,
         observed_vph: Option<f64>,
-        /// Observed cars that drove the whole street, and cars whose trip ends along it (volunteer count), per hour in the period.
         whole_street: Option<f64>,
-        end_along: Option<f64>,
+        counter: Option<usize>,
     }
     let shares = |v: &Value| -> Vec<(String, f64, Option<f64>)> {
         v.as_array()
@@ -465,8 +490,8 @@ fn main() {
         let street = t["street"].as_str().unwrap_or("");
         let dir = t["direction"].as_str().unwrap_or("NB");
         let between: Vec<String> = t["between"].as_array().map(|a| a.iter().filter_map(|x| x.as_str().map(String::from)).collect()).unwrap_or_default();
-        let (links, note) = resolve_block(&net, street, dir, &between);
-        tgts.push(Target { label: format!("{street} {dir}"), links, note, from: shares(&t["from"]), to: shares(&t["to"]), observed_vph: t["observedVehPerHour"][if args.period == "pm_peak" { "pm_peak" } else { "am_peak" }].as_f64(), whole_street: t["wholeStreetVehPerHour"][if args.period == "pm_peak" { "pm_peak" } else { "am_peak" }].as_f64(), end_along: t["endAlongVehPerHour"][if args.period == "pm_peak" { "pm_peak" } else { "am_peak" }].as_f64() });
+        let (links, full_path, note) = resolve_block(&net, street, dir, &between);
+        tgts.push(Target { label: format!("{street} {dir}"), links, full_path, note, from: shares(&t["from"]), to: shares(&t["to"]), observed_vph: t["observedVehPerHour"][&args.period].as_f64(), whole_street: t["wholeStreetVehPerHour"][&args.period].as_f64(), counter: None });
     }
 
     // ---- freeway ramps: surface nodes touched by motorway-class and surface links
@@ -508,34 +533,65 @@ fn main() {
             }
         }
     }
-    // Route features of the volunteer count (turning movements and whole-street paths; `data/demand/<area>.stations.json`, written by the demand build): their links are select links too.
+    // Route features and physical screenlines come from the stations file produced by the demand build.
     struct Feat {
         id: String,
         label: String,
-        first: u32,
-        last: u32,
-        mv: bool,
+        path: PathObservation,
+        od_counter: Option<usize>,
+        counter: Option<usize>,
+        fitted_target: Option<f64>,
     }
     let mut feats: Vec<Feat> = Vec::new();
     // Link stations (round 42): with --select-od their pairs are written too, each trip counted once per station link it used.
-    let mut link_st: Vec<(String, Vec<u32>)> = Vec::new();
+    let mut link_st: Vec<(String, Vec<(u32, LinkDetector)>)> = Vec::new();
     if let Ok(txt) = std::fs::read_to_string(root.join(format!("data/demand/{}.stations.json", args.area))) {
         if let Ok(v) = serde_json::from_str::<Value>(&txt) {
             for st in v["stations"].as_array().map(|a| a.as_slice()).unwrap_or(&[]) {
                 let ls: Vec<u32> = st["links"].as_array().map(|a| a.iter().filter_map(|x| x.as_u64().map(|x| x as u32)).collect()).unwrap_or_default();
                 if args.select_od.is_some() && !ls.is_empty() {
-                    link_st.push((st["id"].as_str().unwrap_or("").to_string(), ls));
+                    let detectors = if let Some(ends) = st["detectors"].as_array() {
+                        assert_eq!(ends.len(), ls.len(), "one detector per link for station {}", st["id"]);
+                        ls.iter().zip(ends).map(|(&l, d)| (l, match d.as_str() {
+                            Some("start") => LinkDetector::Start,
+                            Some("stop") => LinkDetector::Stop,
+                            _ => panic!("unknown detector {d} for station {}", st["id"]),
+                        })).collect()
+                    } else if st["kind"] == "ramp" || st["kind"] == "tmc" {
+                        Vec::new()
+                    } else {
+                        ls.iter().map(|&l| (l, LinkDetector::BlockUse)).collect()
+                    };
+                    if !detectors.is_empty() {
+                        link_st.push((st["id"].as_str().unwrap_or("").to_string(), detectors));
+                    }
                 }
                 let f = &st["feature"];
                 let (kind, a, b) = (f["kind"].as_str().unwrap_or(""), f["a"].as_u64().or(f["first"].as_u64()), f["b"].as_u64().or(f["last"].as_u64()));
                 if let (true, Some(a), Some(b)) = (kind == "move" || kind == "path", a, b) {
-                    feats.push(Feat { id: st["id"].as_str().unwrap_or("").to_string(), label: st["label"].as_str().unwrap_or("").to_string(), first: a as u32, last: b as u32, mv: kind == "move" });
+                    let (first, last) = (a as u32, b as u32);
+                    let path = if let Some(links) = f["links"].as_array() {
+                        let path: Vec<u32> = links.iter().map(|v| v.as_u64().and_then(|n| u32::try_from(n).ok()).expect("invalid corridor link id")).collect();
+                        assert!(path.first() == Some(&first) && path.last() == Some(&last), "corridor endpoints disagree with station {}", st["id"]);
+                        if f["junction"] == true { PathObservation::SplitJunction(path) } else { PathObservation::WholeStreet(path) }
+                    } else if kind == "path" && st["source"] == "volunteer-count" {
+                        // Older station files contain only the endpoints of a whole-street observation.
+                        let Some(t) = tgts.iter().find(|t| t.full_path && t.links.first() == Some(&first) && t.links.last() == Some(&last)) else {
+                            eprintln!("skipping whole-street station {}: cannot resolve its complete corridor", st["id"]);
+                            continue;
+                        };
+                        PathObservation::WholeStreet(t.links.clone())
+                    } else if kind == "move" {
+                        PathObservation::Movement(first, last)
+                    } else {
+                        eprintln!("skipping split-junction station {}: no interior path supplied", st["id"]);
+                        continue;
+                    };
+                    feats.push(Feat { id: st["id"].as_str().unwrap_or("").to_string(), label: st["label"].as_str().unwrap_or("").to_string(), path, counter: None, od_counter: None, fitted_target: st["target"][&args.period].as_f64().filter(|v| *v > 0. && !withheld.contains(st["id"].as_str().unwrap_or(""))) });
                 }
             }
         }
     }
-    sel.extend(feats.iter().flat_map(|f| [f.first, f.last]));
-    sel.extend(link_st.iter().flat_map(|(_, ls)| ls.iter().copied()));
     // Residential and service links inside the study area: a through trip that uses one is cut-through (intent map, round 21).
     let study_local: Vec<u32> = (0..net.links.len()).filter(|&l| net.links[l].in_study_area && matches!(net.links[l].class, RoadClass::Residential | RoadClass::Service)).map(|l| l as u32).collect();
     sel.extend(study_local.iter().copied());
@@ -547,6 +603,23 @@ fn main() {
     let mut sim = Simulation::from_parts(net.clone(), demand.clone(), cfg).expect("sim");
     let total_s = args.minutes * 60.0;
     let warm_s = if total_s >= 1800.0 { args.warmup_min * 60.0 } else { 0.0 };
+    let elapsed_h = (total_s - warm_s) / 3600.0;
+    for t in &mut tgts {
+        if t.full_path {
+            t.counter = Some(sim.observe_corridor(&t.links, warm_s).expect("resolved directed corridor"));
+        }
+    }
+    for f in &mut feats {
+        f.counter = Some(sim.observe_path(f.path.clone(), warm_s).expect("station observation path"));
+        if args.select_od.is_some() {
+            f.od_counter = Some(sim.observe_path(f.path.clone(), 0.0).expect("station observation path"));
+        }
+    }
+    for (_, detectors) in &link_st {
+        for &(l, end) in detectors {
+            sim.observe_link_detector(l, end);
+        }
+    }
     let t0 = std::time::Instant::now();
     #[derive(Clone)]
     struct Sample {
@@ -560,9 +633,16 @@ fn main() {
     let mut series: Vec<Sample> = Vec::new();
     let (mut last_t, mut last_vs) = (0.0, 0.0);
     let mut exits0: Vec<u32> = vec![0; net.links.len()];
+    let mut stop0 = vec![0; net.links.len()];
+    let mut start0 = vec![0; net.links.len()];
     let mut delay0: Vec<f32> = vec![0.0; net.links.len()];
     let mut t = 0.0;
+    // Events carry the start time of their fixed simulation step. Snapshot just before
+    // the first step whose events fall in the measurement window.
+    let warm_boundary = (warm_s / traffic_sim::params::DT).ceil() * traffic_sim::params::DT;
     let mut warmed = warm_s == 0.0;
+    let mut ped_crossings_start = 0;
+    let mut ped_window_start = 0.0;
     let mut snaps = odcost::Snaps::new();
     let mut nr_full: Vec<u32> = vec![0; net.links.len()];
     let mut nr_samples = 0u32;
@@ -586,6 +666,7 @@ fn main() {
     let mut glog_n = 0usize;
     while t < total_s - 1e-9 {
         let dt = if trace.as_ref().map_or(false, |x| x.0 < 5.0 && t + 5.0 >= x.1 && t <= x.2) { 1.0f64 } else { 5.0f64 }.min(total_s - t);
+        let dt = if warmed { dt } else { dt.min(warm_boundary - t) };
         sim.step(dt);
         t += dt;
         if judged_zone.is_some() {
@@ -632,8 +713,15 @@ fn main() {
                 }
             }
         }
-        if !warmed && t >= warm_s - 1e-9 {
-            exits0 = sim.diagnostics().link_exits.to_vec();
+        if !warmed && t >= warm_boundary - 1e-9 {
+            if let Some(c) = &ped_count {
+                ped_crossings_start = sim.pedestrian_crossings_at(c.node);
+                ped_window_start = t;
+            }
+            let d = sim.diagnostics();
+            exits0.copy_from_slice(d.link_exits);
+            stop0.copy_from_slice(d.stop_line_passages);
+            start0.copy_from_slice(d.link_start_passages);
             delay0 = sim.diagnostics().link_delay_s.to_vec();
             nr_stop0 = sim.diagnostics().link_stopped_s.to_vec();
             warmed = true;
@@ -675,27 +763,17 @@ fn main() {
         let features: Vec<Value> = feats
             .iter()
             .map(|f| {
-                let mut od: HashMap<(u32, u32), u32> = HashMap::new();
-                for r in &recs {
-                    let h: Vec<u32> = r.hits.iter().map(|x| x.0).collect();
-                    let ok = if f.mv { h.windows(2).any(|w| w[0] == f.first && w[1] == f.last) } else { h.iter().position(|&l| l == f.first).map_or(false, |i| h[i + 1..].contains(&f.last)) };
-                    if ok {
-                        *od.entry((r.origin, r.dest)).or_insert(0) += 1;
-                    }
-                }
-                let mut v: Vec<(u32, u32, u32)> = od.into_iter().map(|((o, d), n)| (o, d, n)).collect();
-                v.sort_unstable();
-                json!({"id": f.id, "trips": v})
+                let trips: Vec<_> = sim.corridor_trips(f.od_counter.unwrap()).iter().map(|(&(o, d), &n)| (o, d, n)).collect();
+                json!({"id": f.id, "trips": trips})
             })
             .collect();
         let links: Vec<Value> = link_st
             .iter()
             .map(|(id, ls)| {
                 let mut od: HashMap<(u32, u32), u32> = HashMap::new();
-                for r in &recs {
-                    let n = r.hits.iter().filter(|h| ls.contains(&h.0)).count() as u32;
-                    if n > 0 {
-                        *od.entry((r.origin, r.dest)).or_insert(0) += n;
+                for &(l, end) in ls {
+                    for (&pair, &n) in sim.link_detector_trips(l, end) {
+                        *od.entry(pair).or_default() += n;
                     }
                 }
                 let mut v: Vec<(u32, u32, u32)> = od.into_iter().map(|((o, d), n)| (o, d, n)).collect();
@@ -703,7 +781,7 @@ fn main() {
                 json!({"id": id, "trips": v})
             })
             .collect();
-        std::fs::write(path, serde_json::to_string(&json!({"period": args.period, "seed": args.seed, "minutes": args.minutes, "blocks": blocks, "features": features, "links": links})).unwrap()).expect("write select-od");
+        std::fs::write(path, serde_json::to_string(&json!({"stationCountVersion": 2, "manifest": manifest, "period": args.period, "seed": args.seed, "minutes": args.minutes, "blocks": blocks, "features": features, "links": links})).unwrap()).expect("write select-od");
     }
 
     if let Some(path) = &args.od_costs {
@@ -777,26 +855,40 @@ fn main() {
         }
     }
 
-    // ---- through cars on the counted blocks: modeled against observed volume times the observed freeway share
-    // Rows: block, observed volume (veh/h), freeway share, expected through (volume x share), modeled through cars per hour, modeled trips to or from a freeway per hour.
-    let mut through_rows: Vec<(String, f64, f64, f64, f64, f64, Option<(f64, f64)>)> = Vec::new();
+    #[derive(serde::Serialize)]
+    #[serde(rename_all = "camelCase")]
+    struct CorridorRow {
+        block: String,
+        observed_whole_street: Option<f64>,
+        modeled_whole_street: Option<f64>,
+        observed_veh_per_hour: Option<f64>,
+        freeway_share: Option<f64>,
+        observed_freeway_end: Option<f64>,
+        modeled_through: f64,
+        modeled_freeway_trips: f64,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        fitted: Option<bool>,
+    }
+    let mut through_rows = Vec::new();
     for t in &tgts {
-        let Some(vol) = t.observed_vph else { continue };
-        let Some((_, share, pm)) = t.from.iter().chain(t.to.iter()).find(|(via, _, _)| matches!(parse_via(via), Via::Freeway)) else { continue };
-        let share = if pm_period { pm.unwrap_or(*share) } else { *share };
+        let share = t.from.iter().chain(t.to.iter()).find(|(via, _, _)| matches!(parse_via(via), Via::Freeway))
+            .map(|(_, share, pm)| if pm_period { pm.unwrap_or(*share) } else { *share });
         let set: std::collections::HashSet<u32> = t.links.iter().copied().collect();
         let on: Vec<&SelectLinkRecord> = recs.iter().filter(|r| r.hits.iter().any(|h| set.contains(&h.0))).collect();
         let per_h = 60.0 / args.minutes;
-        let thr = on.iter().filter(|r| r.through).count() as f64 * per_h;
-        let fw = on.iter().filter(|r| r.origin_freeway || r.dest_freeway).count() as f64 * per_h;
-        // Range a through count can take: at least the cars that drove the whole street, at most the block volume less the cars that end along the street.
-        let range = t.whole_street.map(|lo| (lo, (vol - t.end_along.unwrap_or(0.0)).max(lo)));
-        through_rows.push((t.label.clone(), vol, share, vol * share, thr, fw, range));
+        through_rows.push(CorridorRow {
+            block: t.label.clone(), observed_whole_street: t.whole_street,
+            modeled_whole_street: t.counter.map(|i| sim.corridor_trips(i).values().sum::<u32>() as f64 / elapsed_h),
+            observed_veh_per_hour: t.observed_vph, freeway_share: share,
+            observed_freeway_end: t.observed_vph.zip(share).map(|(v, s)| v * s),
+            modeled_through: on.iter().filter(|r| r.through).count() as f64 * per_h,
+            modeled_freeway_trips: on.iter().filter(|r| r.origin_freeway || r.dest_freeway).count() as f64 * per_h,
+            fitted: match (fitted_view, t.counter, t.whole_street) {
+                (Some("training" | "shipped"), Some(i), Some(observed)) => Some(feats.iter().any(|f| f.fitted_target == Some(observed) && f.counter == Some(i))),
+                _ => None,
+            },
+        });
     }
-
-    // Blocks whose through figure the demand fit targets (round 39): marked `fitThrough` in the targets file, with the demand config's through targets on.
-    let fit_on = std::fs::read_to_string(root.join(format!("data/demand/{}.config.json", args.area))).ok().and_then(|t| serde_json::from_str::<Value>(&t).ok()).map_or(false, |c| c["countFit"]["throughTargets"]["enabled"] == Value::Bool(true));
-    let fitted_through: std::collections::BTreeSet<String> = if fit_on { targets["selectLink"].as_array().map(|a| a.iter().filter(|t| t["fitThrough"] == Value::Bool(true)).map(|t| format!("{} {}", t["street"].as_str().unwrap_or(""), t["direction"].as_str().unwrap_or(""))).collect()).unwrap_or_default() } else { Default::default() };
     // ---- intent map (round 21): through cars by origin group and destination group
     let groups_v: Option<Value> = std::fs::read_to_string(root.join(format!("data/demand/{}.groups.json", args.area))).ok().and_then(|t| serde_json::from_str(&t).ok());
     let mut intent_rows: Vec<intent::Row> = Vec::new();
@@ -1019,7 +1111,7 @@ fn main() {
     let tail: Vec<&Sample> = series.iter().filter(|s| s.t > total_s - 900.0).collect();
     let art_tail = if tail.is_empty() { 0.0 } else { tail.iter().map(|s| s.art_speed).sum::<f64>() / tail.len() as f64 };
     let stable = m.gridlock_removed == 0 && backlog_pct < 2.0 && m.arterial_mean_speed > 4.0;
-    let elapsed_h = (total_s - warm_s).max(1.0) / 3600.0;
+
 
     // ---- top links / nodes
     let mut link_idx: Vec<usize> = (0..net.links.len()).collect();
@@ -1055,6 +1147,12 @@ fn main() {
     };
     let (bike_flows, bike_vph) = mode_demand(FlowMode::Bicycle);
     let (ped_flows, ped_vph) = mode_demand(FlowMode::Pedestrian);
+    let pedestrian_comparison = ped_count.as_ref().filter(|_| warmed && t > ped_window_start).map(|c| {
+        let completed = sim.pedestrian_crossings_at(c.node) - ped_crossings_start;
+        let rate = completed as f64 * 3600.0 / (t - ped_window_start);
+        json!({"node": c.node, "fromMin": ped_window_start / 60.0, "toMin": t / 60.0, "completedCrossings": completed,
+            "simulatedPerHour": rate, "observedPerHour": c.observed_per_hour, "plannedPerHourAtScale1": c.planned_per_hour})
+    });
     let mut by_origin: HashMap<u32, f64> = HashMap::new();
     if let Some(p) = period {
         for f in &p.flows {
@@ -1110,17 +1208,18 @@ fn main() {
     let _ = writeln!(md, "| Car | {} | {} | {:.0} | |", m.modes.car.in_network, m.modes.car.completed_trips, m.modes.car.mean_trip_time);
     let _ = writeln!(md, "| Bicycle | {} | {} | {:.0} | |", m.modes.bicycle.in_network, m.modes.bicycle.completed_trips, m.modes.bicycle.mean_trip_time);
     let _ = writeln!(md, "| Pedestrian | {} | {} | {:.0} | mean crossing delay {:.1} s |", m.modes.pedestrian.in_network, m.modes.pedestrian.completed_trips, m.modes.pedestrian.mean_trip_time, m.modes.pedestrian.mean_crossing_delay);
+    if let Some(q) = &pedestrian_comparison {
+        let _ = writeln!(md, "\nPedestrian crosswalks at node {}: {} completed in minutes {:.1} to {:.1}, {:.1} per hour against {:.1} observed.",
+            q["node"], q["completedCrossings"], q["fromMin"].as_f64().unwrap(), q["toMin"].as_f64().unwrap(), q["simulatedPerHour"].as_f64().unwrap(), q["observedPerHour"].as_f64().unwrap());
+    }
     let v = &m.vulnerable;
     let _ = writeln!(md, "\nVulnerable road users (surrogate indicators): pedestrian conflicts {}, bicycle conflicts {}, close passes {}, pedestrian injury severity {}, cyclist injury severity {} (separate endpoints, never summed), mean vehicle speed at pedestrian encounters {}.\n", v.ped_conflicts, v.bike_conflicts, v.close_passes, v.pedestrian.describe(), v.cyclist.severity.describe(), v.mean_vehicle_speed_at_ped_encounter.map_or("unavailable".to_string(), |x| format!("{x:.2} m/s")));
-    let _ = writeln!(md, "\n## Through cars on the counted blocks (a car is through when neither trip end is in the study area)\n");
-    let _ = writeln!(md, "Observed through range = from the cars that drove the whole street (volunteer count, a lower bound) to the block volume less the cars whose trip ends along the street (an upper bound). Observed freeway-end trips = observed block volume times the observed freeway share of the street (the headline share of the targets file); these include freeway trips that end inside the study area, so they are not an expected through count. Modeled through = select-link trips with no end in the study area, per hour. Modeled freeway = select-link trips from or to a freeway node, per hour.\n");
-    let _ = writeln!(md, "| Block | Observed volume (veh/h) | Observed freeway share | Observed freeway-end trips (veh/h) | Observed through range (veh/h) | Modeled through (veh/h) | In range | Modeled freeway trips (veh/h) |\n| --- | --- | --- | --- | --- | --- | --- | --- |");
-    for (l, vol, sh, ex, thr, fw, range) in &through_rows {
-        let (rs, ok) = match range { Some((lo, hi)) => (format!("{lo:.0} to {hi:.0}"), if *thr >= *lo && *thr <= *hi { "yes" } else if *thr < *lo { "below" } else { "above" }), None => ("n/a".to_string(), "n/a") };
-        let _ = writeln!(md, "| {l} | {vol:.0} | {} | {ex:.0} | {rs} | {thr:.0} | {ok} | {fw:.0} |", pct1(*sh));
-    }
-    if !fitted_through.is_empty() {
-        let _ = writeln!(md, "\nFitted: {} are targets of the demand fit (`countFit.throughTargets`, calibration round 39), so these rows are no longer an independent check. The checks that stay independent are the held-out count stations, the headline freeway shares, stability and the arterial travel times.", fitted_through.iter().cloned().collect::<Vec<_>>().join(", "));
+    let _ = writeln!(md, "\n## Volunteer whole-street counts\n");
+    let _ = writeln!(md, "Each car counts once when it passes the last stop line after driving the full directed corridor in order. The measurement window is {:.1} minutes. The last two columns describe trips that visited any corridor link during the full run.\n", elapsed_h * 60.0);
+    let _ = writeln!(md, "| Corridor | Counted whole street (veh/h) | Modeled whole street (veh/h) | Used in fit | Through trips on any link (veh/h) | Freeway trips on any link (veh/h) |\n| --- | --- | --- | --- | --- | --- |");
+    for r in &through_rows {
+        let fmt = |v: Option<f64>| v.map_or_else(|| "n/a".into(), |v| format!("{v:.0}"));
+        let _ = writeln!(md, "| {} | {} | {} | {} | {:.0} | {:.0} |", r.block, fmt(r.observed_whole_street), fmt(r.modeled_whole_street), match r.fitted { Some(true) => "yes", Some(false) => "no", None => "n/a" }, r.modeled_through, r.modeled_freeway_trips);
     }
     if let Some(g) = &intent_groups {
         md.push_str(&intent::report(&intent_rows, g, &targets, 1, pm));
@@ -1274,7 +1373,7 @@ fn main() {
         std::fs::write(dir.join(format!("{stem}.md")), &md).expect("write md");
         let js = json!({
             "area": args.area, "period": args.period, "scale": args.scale, "seed": args.seed, "minutes": args.minutes,
-            "manifest": run_manifest(&args, &root, &net_path, &dem_path, &dem_json),
+            "manifest": manifest,
             "offeredVehPerHour": total_demand * args.scale,
             "stable": stable,
             "health": {
@@ -1287,11 +1386,12 @@ fn main() {
             "patternBypass": bypass_rows.iter().map(|b| json!({"bypass": b.bypass, "arterial": b.arterial, "minBlocks": b.min_blocks, "dir": b.dir.to_string(), "corridorTrips": b.trips, "viaBypass": b.by_bypass, "arterialOnly": b.by_arterial, "other": b.by_other, "meanBypassBlocks": b.mean_bypass_blocks})).collect::<Vec<_>>(),
             "junctionRecovery": serde_json::to_value(&m.junction_recovery).unwrap_or(Value::Null),
             "gridlockZone": zone_json,
+            "pedestrianCount": pedestrian_comparison,
             "modes": serde_json::to_value(&m.modes).unwrap_or(Value::Null),
             "vulnerable": serde_json::to_value(&m.vulnerable).unwrap_or(Value::Null),
             "series": series.iter().map(|s| json!({"tMin": s.t / 60.0, "vehicles": s.veh, "backlog": s.backlog, "completed": s.completed, "removed": s.removed, "arterialSpeed": s.art_speed})).collect::<Vec<_>>(),
             "intentRows": intent::rows_json(&intent_rows),
-            "throughCheck": through_rows.iter().map(|(l, vol, sh, ex, thr, fw, range)| json!({"block": l, "observedVehPerHour": vol, "freewayShare": sh, "observedFreewayEnd": ex, "expectedThroughLow": range.map(|r| r.0), "expectedThroughHigh": range.map(|r| r.1), "modeledThrough": thr, "modeledFreewayTrips": fw, "fitted": fitted_through.contains(l)})).collect::<Vec<_>>(),
+            "throughCheck": through_rows,
             "shares": rows.iter().map(|r| json!({
                 "block": r.target, "side": r.side, "via": r.via, "observed": r.observed, "observedPm": r.observed_pm,
                 "modelled": if r.modeled.is_nan() { Value::Null } else { json!(r.modeled) }, "n": r.n, "headline": r.headline,
@@ -1300,11 +1400,9 @@ fn main() {
             "topLinks": link_idx.iter().take(15).map(|&l| json!({"link": l, "street": net.links[l].name, "delayVehH": d.link_delay_s[l] / 3600.0, "stoppedVehH": d.link_stopped_s[l] / 3600.0})).collect::<Vec<_>>(),
             "topNodes": node_idx.iter().take(15).map(|&n| json!({"node": n, "streets": street_label(&net, n, &inc), "control": ctrl_str(net.nodes[n].control), "blockedLaneH": d.node_wait_s[n] / 3600.0, "noSpaceLaneH": d.node_space_s[n] / 3600.0})).collect::<Vec<_>>(),
             "features": feats.iter().map(|f| {
-                let n = recs.iter().filter(|r| {
-                    let h: Vec<u32> = r.hits.iter().map(|x| x.0).collect();
-                    if f.mv { h.windows(2).any(|w| w[0] == f.first && w[1] == f.last) } else { h.iter().position(|&l| l == f.first).map_or(false, |i| h[i + 1..].contains(&f.last)) }
-                }).count();
-                json!({"id": f.id, "label": f.label, "kind": if f.mv { "move" } else { "path" }, "trips": n, "vehPerHour": n as f64 / (args.minutes / 60.0)})
+                let n: u32 = sim.corridor_trips(f.counter.unwrap()).values().sum();
+                let kind = if matches!(f.path, PathObservation::Movement(_, _)) { "move" } else { "path" };
+                json!({"id": f.id, "label": f.label, "kind": kind, "trips": n, "vehPerHour": n as f64 / elapsed_h})
             }).collect::<Vec<_>>(),
             "observedSignals": sim.signal_plans().into_iter().filter(|p| !net.nodes[p.0 as usize].signal_timing.is_empty()).map(|(n, cycle, ysum, greens)| {
                 let applies = net.nodes[n as usize].signal_timing.iter().any(|o| o.periods.iter().any(|q| *q == args.period));
@@ -1313,10 +1411,12 @@ fn main() {
                 json!({"node": n, "streets": street_label(&net, n as usize, &inc), "applies": applies, "cycleS": cycle, "greenS": greens, "observedCycleS": obs.cycle_s, "approaches": obs.greens.iter().map(|g| json!({
                     "links": g.links, "observedGreenS": g.green_s,
                     "modeledGreenS": groups.iter().position(|gr| gr.iter().any(|l| g.links.contains(l))).map(|i| greens[i]),
-                    "exitsPerHour": g.links.iter().map(|&l| (d.link_exits[l as usize] - exits0[l as usize]) as f64 / elapsed_h).sum::<f64>(),
+                    "exitsPerHour": g.links.iter().map(|&l| (d.stop_line_passages[l as usize] - stop0[l as usize]) as f64 / elapsed_h).sum::<f64>(),
                 })).collect::<Vec<_>>(), "ysum": ysum})
             }).collect::<Vec<_>>(),
             "linkMeanDelayS": if args.link_flows { json!((0..net.links.len()).map(|l| { let n = d.link_exits[l] - exits0[l]; if n == 0 { 0.0 } else { (((d.link_delay_s[l] - delay0[l]) as f64 / n as f64) * 10.0).round() / 10.0 } }).collect::<Vec<_>>()) } else { Value::Null },
+            "linkStopLineVehPerHour": if args.link_flows { json!((0..net.links.len()).map(|l| ((d.stop_line_passages[l] - stop0[l]) as f64 / elapsed_h).round()).collect::<Vec<_>>()) } else { Value::Null },
+            "linkStartVehPerHour": if args.link_flows { json!((0..net.links.len()).map(|l| ((d.link_start_passages[l] - start0[l]) as f64 / elapsed_h).round()).collect::<Vec<_>>()) } else { Value::Null },
             "linkFlowVehPerHour": if args.link_flows { json!((0..net.links.len()).map(|l| ((d.link_exits[l] - exits0[l]) as f64 / elapsed_h).round()).collect::<Vec<_>>()) } else { Value::Null },
             "streetFlows": flow_rows.iter().map(|(k, dch, n, med, max)| json!({"street": k, "dir": dch.to_string(), "links": n, "medianVehPerHour": med, "maxVehPerHour": max})).collect::<Vec<_>>(),
         });

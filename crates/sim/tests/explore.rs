@@ -1396,7 +1396,7 @@ fn partial_packages_are_ranked_with_the_harm_weight_phased_in() {
     assert_eq!(rank_weight(&p, 1), 0.0);
     assert!((rank_weight(&p, 6) - 0.1).abs() < 1e-12 && (rank_weight(&p, 9) - 0.1).abs() < 1e-12);
     assert!(rank_weight(&p, 2) > 0.0 && rank_weight(&p, 3) > rank_weight(&p, 2) && rank_weight(&p, 5) < 0.1);
-    let mk = |n: usize, red: f64, harm: f64| Eval { set: (0..n as u16).collect(), reject: None, reduction_pct: red, harm, worst: 0, inc: Vec::new(), score: red - 0.1 * harm, detour_s: 0.0 };
+    let mk = |n: usize, red: f64, harm: f64| Eval { set: (0..n as u16).collect(), reject: None, reduction_pct: red, harm, worst: 0, inc: Vec::new(), score: red - 0.1 * harm, detour_s: Some(0.0) };
     // A filter that cuts through cars the most but displaces them ranks above a mild measure while it stands alone, and below it once the package is whole.
     let (bold, mild) = (|n| mk(n, 14.0, 94.0), |n| mk(n, 9.5, 2.0));
     assert!(rank_value(&p, &bold(1)) > rank_value(&p, &mild(1)));
@@ -1566,6 +1566,12 @@ fn a_frozen_shortlist_on_unused_seeds_is_a_confirmation() {
     assert_eq!(pr["evidence"]["role"], "confirmation");
     assert_eq!(pr["cutThrough"]["effect"]["n"], 10);
     assert!(o.shown.iter().all(|f| f.pairs.seeds.iter().all(|s| *s > 100)));
+    let detour = &pr["residentsDetour"];
+    assert_eq!(detour["coverage"]["baselineRequests"], 0);
+    assert_eq!(detour["coverage"]["supportedPairs"], 0);
+    assert_eq!(detour["cutoffMinutes"], 6.0);
+    assert!(detour["secondsPerTrip"].is_null() && detour["effect"].is_null());
+    assert!(!pr["objectives"].as_array().unwrap().iter().any(|obj| obj == "least-detour"));
 }
 
 
@@ -1695,4 +1701,33 @@ mod similar_options {
         assert!(v.link.starts_with("#v1;"), "{}", v.link);
         assert_eq!(out.folded[0]["intoPublished"], true);
     }
+}
+
+#[test]
+fn access_and_turn_candidates_follow_the_searched_periods() {
+    let mut b = B::default();
+    for (x, y, gate) in [(0., 0., true), (100., 0., false), (300., 0., false), (150., 150., false)] {
+        b.node(x, y, Control::Uncontrolled, gate);
+    }
+    // A gate feeds a direct block and a bypass; the bypass is banned only at peak.
+    for (n, (a, z)) in [(0, 1), (1, 2), (1, 3), (3, 2), (2, 0)].into_iter().enumerate() {
+        let cls = if n == 0 { RoadClass::Secondary } else { RoadClass::Residential };
+        b.two_way(a, z, &format!("Street {n}"), cls, 10., true);
+        b.links.pop();
+        b.links.last_mut().unwrap().reverse = None;
+    }
+    let net = Network { version: 1, id: "p".into(), name: "p".into(), nodes: b.nodes, links: b.links, turn_bans: vec![TurnBan { from: 0, to: 2, periods: vec!["pm".into()] }] };
+    let periods = ["midday", "pm"].into_iter().map(|id| Period { id: id.into(), label: id.into(), flows: vec![] }).collect();
+    let d = Demand { version: 1, area: "p".into(), intents: vec![], ramps: vec![], periods };
+    let study = Study::from_parts("p", net, d, (0., 0.), String::new(), String::new(), String::new());
+    let iv = vec![Intervention { ty: "modal_filter".into(), link: Some(1), ..Default::default() }];
+    use traffic_sim::explore::{check_access_for, cands::generate_for, profile::Profile};
+    assert!(check_access_for(&study, &iv, ["midday"]).is_ok());
+    assert!(check_access_for(&study, &iv, ["midday", "pm"]).unwrap_err().contains("pm: strands"));
+    let mut h = hot_everywhere(&study);
+    h.mv_ct.insert((0, 2), 100.0);
+    let has_turn = |periods: &[&str]| generate_for(&study, &h, 10, &Profile::unconstrained(), periods.iter().copied()).iter().any(|c| c.iv.ty == "turn_ban" && c.iv.from_link == Some(0) && c.iv.to_link == Some(2));
+    assert!(!has_turn(&["pm"]));
+    assert!(has_turn(&["midday"]));
+    assert!(has_turn(&["pm", "midday"]));
 }

@@ -437,11 +437,26 @@ fn pedestrians_walk_sidewalks_at_a_sampled_speed() {
 }
 
 #[test]
+fn pedestrian_station_counts_completed_crosswalk_traversals() {
+    let (net, c) = ped_cross(Control::Uncontrolled, true);
+    let pairs = [[c.w, c.e], [c.w, c.c], [c.c, c.e]];
+    assert_eq!(crate::sim::planned_pedestrian_crossings(&net, Some(c.c), &pairs).unwrap(), [Some(1), Some(0), Some(0)]);
+    let mut sim = empty_sim(net);
+    sim.test_enable_peds();
+    for [o, d] in pairs {
+        sim.test_spawn_ped(o, d, 1.3);
+    }
+    step_n(&mut sim, 600.0);
+    assert_eq!(sim.pedestrian_crossings_at(c.c), 1);
+}
+
+#[test]
 fn links_without_sidewalks_cannot_be_walked() {
     let mut net = street(300.0, 1, 11.2);
     for l in net.links.iter_mut() {
         l.sidewalk = Some(false);
     }
+    assert_eq!(crate::sim::planned_pedestrian_crossings(&net, Some(1), &[[0, 2]]).unwrap(), [None]);
     let mut sim = sim_with(net, &[(0, 2, 150.0, FlowMode::Pedestrian)], cfg(1, 1.0));
     step_n(&mut sim, 600.0);
     let m = sim.metrics();
@@ -693,6 +708,7 @@ fn a_two_leg_node_has_a_crosswalk_only_when_marked() {
         net.links[1].sidewalk = Some(false);
         net.links[2].sidewalk = Some(false);
         net.nodes[1].marked_crossing = marked;
+        assert_eq!(crate::sim::planned_pedestrian_crossings(&net, Some(1), &[[0, 2]]).unwrap(), [marked.then_some(1)]);
         let mut sim = sim_with(net, &[(0, 2, 150.0, FlowMode::Pedestrian)], cfg(1, 1.0));
         step_n(&mut sim, 900.0);
         sim.metrics().modes.pedestrian

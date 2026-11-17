@@ -43,9 +43,18 @@ fn a_non_through_vehicle_counts_zero() {
 fn a_through_vehicle_on_arterials_counts_zero() {
     // The local row costs about 45 s more than the 70 s arterial, so the probit share of drivers who perceive it as cheaper is
     // Phi(-45 / sqrt(2 x 177)) = 0.008 at a dispersion of 2 s [Sheffi1985] eq. 11.20. ASSUMPTION of the band: at most 2% of the trips.
-    let (n, done) = count_after(11.2, &[(0, 3, 300.0)], 3600.0);
-    assert!(done > 200);
-    assert!(n as f64 <= 0.02 * done as f64, "{n} of {done}");
+    let (mut n, mut entered) = (0, 0);
+    // Sampling error from one 300-trip hour is comparable with this rare route's share.
+    for seed in 1..=10 {
+        let (net, c) = corridor(11.2, Control::Uncontrolled);
+        let mut s = Simulation::from_parts(net, demand(&[(c.a[0], c.a[3], 300.0)]), cfg_empty(seed, 1.0)).unwrap();
+        run(&mut s, 3600.0, |_| {});
+        n += s.metrics().cut_through.vehicles;
+        // The headline includes cars still driving at the end of the hour.
+        entered += s.metrics().spawned;
+    }
+    assert!(entered > 2000);
+    assert!(n as f64 <= 0.02 * entered as f64, "{n} of {entered}");
 }
 
 #[test]

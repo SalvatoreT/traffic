@@ -1,6 +1,6 @@
 //! Recheck of the finalists, choice of the options to publish (design D4, D5), their titles and summaries, and the output files.
 
-use super::cands::{adopt, conflicts, generate_with, profile_allows, Cand};
+use super::cands::{adopt, conflicts, profile_allows, Cand};
 use super::naming::describe;
 use super::paired::{diffs, option_gain, CtPairs, Paired, Status, LEVEL, MIN_PAIRS, REPORT_METHOD};
 use super::refs::resolve;
@@ -38,7 +38,7 @@ pub struct Final {
     pub role: &'static str,
     pub by_period: Vec<PeriodRes>,
     pub bounding: Vec<(String, f64, f64)>,
-    pub inside_pct: f64,
+    pub inside_pct: Option<f64>,
     pub ped_pct: f64,
     pub bike_pct: f64,
     pub score: f64,
@@ -58,19 +58,44 @@ pub struct Final {
     pub places: Vec<String>,
     /// Through-car change on each side-street block (harm-block order), mean over the periods and seeds: the package's per-block picture.
     pub block_change: Vec<f64>,
-    /// Added trip time (s per trip) of completed car trips that start or end inside the study area, scenario minus baseline, paired by seed
-    /// and averaged over the periods. Positive is a longer trip. Trips that complete are the only ones timed, so a package that strands or
-    /// delays trips beyond the run's end is understated.
+    /// Paired change in elapsed time until completion or the common run cutoff.
     pub detour: Paired,
-    pub detour_s: f64,
-    /// The per-seed values behind `detour` (periods averaged), in seed order, so two packages' detours can be compared pair by pair.
+    pub detour_s: Option<f64>,
     pub detour_seeds: Vec<f64>,
-    /// The same trips' summed added time, vehicle-minutes an hour.
-    pub detour_vmin_h: f64,
+    pub detour_vmin_h: Option<f64>,
+    pub detour_coverage: DetourCoverage,
     /// Some intervention in the package closes a street or an intersection to cars (a modal filter or a diverter).
     pub closes: bool,
     /// The objectives this package is the best for in the published list (set when it is chosen).
     pub objectives: Vec<super::objectives::Objective>,
+}
+
+#[derive(Clone, Default, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DetourCoverage {
+    pub baseline_requests: u64,
+    pub scenario_requests: u64,
+    pub baseline_unfinished: u64,
+    pub scenario_unfinished: u64,
+    pub supported_pairs: usize,
+    pub total_pairs: usize,
+}
+
+impl DetourCoverage {
+    pub fn record(&mut self, base: &crate::sim::ResidentTime, scenario: &crate::sim::ResidentTime) -> Option<f64> {
+        self.total_pairs += 1;
+        self.baseline_requests += base.requested;
+        self.scenario_requests += scenario.requested;
+        self.baseline_unfinished += base.requested - base.completed;
+        self.scenario_unfinished += scenario.requested - scenario.completed;
+        let change = base.paired_delta(scenario)?;
+        self.supported_pairs += 1;
+        Some(change)
+    }
+
+    pub fn complete(&self) -> bool {
+        self.total_pairs > 0 && self.supported_pairs == self.total_pairs
+    }
 }
 
 /// How a package got into the run.
@@ -350,13 +375,25 @@ fn compare(ctx: &Ctx, set: &[u16], stats: &[PeriodStat], reject: Option<String>)
     }
     let m = |f: &dyn Fn(&PeriodStat) -> f64, s: &[PeriodStat]| mean(&s.iter().map(f).collect::<Vec<_>>());
     let mut detour_seed = vec![0.0f64; ns];
-    let mut detour_vmin_h = 0.0;
+    let mut coverage = DetourCoverage::default();
+    let (mut added_s, mut baseline_mean) = (0.0, 0.0);
     for pi in 0..np {
-        for sd in 0..ns {
-            detour_seed[sd] += (stats[pi].runs[sd].inside_s - base.full[pi].runs[sd].inside_s) / np as f64;
+        for (sd, delta) in detour_seed.iter_mut().enumerate() {
+            let b = &base.full[pi].runs[sd].resident;
+            let s = &stats[pi].runs[sd].resident;
+            if let Some(d) = coverage.record(b, s) {
+                *delta += d / np as f64;
+                added_s += s.seconds - b.seconds;
+                baseline_mean += b.seconds / b.requested as f64;
+            }
         }
-        detour_vmin_h += (stats[pi].inside_tt_s - base.full[pi].inside_tt_s) / p.minutes.max(1e-9) / np as f64;
     }
+    let supported = coverage.complete();
+    if !supported {
+        detour_seed.clear();
+    }
+    let detour_s = supported.then(|| mean(&detour_seed));
+    let detour_vmin_h = supported.then(|| added_s / (p.minutes * coverage.total_pairs as f64));
     let red = reduction_pct(base_vph, scen_vph);
     Final {
         set: set.to_vec(),
@@ -373,7 +410,7 @@ fn compare(ctx: &Ctx, set: &[u16], stats: &[PeriodStat], reject: Option<String>)
         role: "selection",
         by_period,
         bounding,
-        inside_pct: pct_change(m(&|s| s.inside_s, &base.full), m(&|s| s.inside_s, stats)),
+        inside_pct: detour_s.filter(|_| baseline_mean > 0.0).map(|d| 100.0 * d * coverage.total_pairs as f64 / baseline_mean),
         ped_pct: pct_change(m(&|s| s.ped_conflicts, &base.full), m(&|s| s.ped_conflicts, stats)),
         bike_pct: pct_change(m(&|s| s.bike_conflicts, &base.full), m(&|s| s.bike_conflicts, stats)),
         score: score(p, red, harm),
@@ -392,9 +429,10 @@ fn compare(ctx: &Ctx, set: &[u16], stats: &[PeriodStat], reject: Option<String>)
         places: places_of(ctx, set),
         block_change: through_inc,
         detour: Paired::of(&detour_seed),
-        detour_s: mean(&detour_seed),
+        detour_s,
         detour_seeds: detour_seed,
         detour_vmin_h,
+        detour_coverage: coverage,
         closes: set.iter().any(|&i| !super::objectives::closes_nothing(&ctx.cands[i as usize])),
         objectives: Vec::new(),
     }
@@ -418,7 +456,7 @@ impl Default for Final {
             role: "selection",
             by_period: Vec::new(),
             bounding: Vec::new(),
-            inside_pct: 0.0,
+            inside_pct: None,
             ped_pct: 0.0,
             bike_pct: 0.0,
             score: 0.0,
@@ -431,9 +469,10 @@ impl Default for Final {
             places: Vec::new(),
             block_change: Vec::new(),
             detour: Paired::none(),
-            detour_s: 0.0,
+            detour_s: None,
             detour_seeds: Vec::new(),
-            detour_vmin_h: 0.0,
+            detour_vmin_h: None,
+            detour_coverage: Default::default(),
             closes: false,
             objectives: Vec::new(),
         }
@@ -448,6 +487,49 @@ pub struct Pick {
     pub why: String,
     /// The objectives this option is the best for.
     pub objectives: Vec<super::objectives::Objective>,
+}
+
+/// Check the frozen shortlist before displacement, without refilling a failed place.
+fn checked_options(ordered: Vec<(Pick, Final)>, mut failed: impl FnMut(&Pick, &Final, &str)) -> (Vec<Pick>, Vec<Final>) {
+    let mut picks = Vec::new();
+    let mut shown = Vec::new();
+    for (mut pk, mut f) in ordered {
+        if let Some(reason) = &f.reject {
+            failed(&pk, &f, reason);
+            continue;
+        }
+        f.objectives = pk.objectives.iter().copied().filter(|&obj| eligible(obj, &f)).collect();
+        if pk.objectives != f.objectives {
+            pk.objectives = f.objectives.clone();
+            pk.why = if pk.objectives.is_empty() {
+                "shortlisted on the discovery seeds".into()
+            } else {
+                format!("best for {}", pk.objectives.iter().map(|o| o.label()).collect::<Vec<_>>().join(" and "))
+            };
+        }
+        picks.push(pk);
+        shown.push(f);
+    }
+    (picks, shown)
+}
+
+#[cfg(test)]
+mod confirmation_tests {
+    use super::*;
+
+    #[test]
+    fn failed_goal_winners_cannot_displace_or_be_published() {
+        let pick = |idx| Pick { idx, why: "best for least detour".into(), objectives: vec![Objective::LeastDetour] };
+        let bad = Final { reject: Some("midday: excess backlog".into()), ..Default::default() };
+        let missing_support = Final::default();
+        let mut failures = Vec::new();
+        let (picks, shown) = checked_options(vec![(pick(0), bad), (pick(1), missing_support)], |pk, _, reason| failures.push((pk.idx, reason.to_string())));
+        assert_eq!(failures, vec![(0, "midday: excess backlog".into())]);
+        assert_eq!(picks.len(), 1);
+        assert_eq!(picks[0].idx, 1);
+        assert!(shown[0].objectives.is_empty() && picks[0].objectives.is_empty());
+        assert!(!picks[0].why.contains("best"));
+    }
 }
 
 /// Whether a package's through-car reduction is established. With at least `MIN_PAIRS` seed pairs the interval of the paired
@@ -621,7 +703,7 @@ pub fn detour_lower(a: &Final, b: &Final) -> bool {
     if n >= MIN_PAIRS && n == b.detour_seeds.len() && a.pairs.seeds == b.pairs.seeds {
         return diffs(&a.detour_seeds, &b.detour_seeds).map_or(false, |d| Paired::of(&d).status() == Status::Positive);
     }
-    b.detour_s - a.detour_s > DETOUR_TIE_S
+    a.detour_s.zip(b.detour_s).is_some_and(|(a, b)| b - a > DETOUR_TIE_S)
 }
 
 /// The winner of `obj` among the packages of `keep` it can win. Most removed, no closures and fewest changes: highest score, then fewer
@@ -632,7 +714,7 @@ pub fn objective_winner(finals: &[Final], obj: Objective, keep: &[usize]) -> Opt
     let by_removed = |a: usize, b: usize| finals[a].reduction_pct.partial_cmp(&finals[b].reduction_pct).unwrap_or(std::cmp::Ordering::Equal).then(finals[b].set.len().cmp(&finals[a].set.len())).then(b.cmp(&a));
     if obj == Objective::LeastDetour {
         let best = keep.iter().map(|&i| finals[i].reduction_pct).fold(0.0, f64::max);
-        let above: Vec<usize> = keep.iter().copied().filter(|&i| finals[i].reduction_pct >= DETOUR_REDUCTION_FLOOR * best).collect();
+        let above: Vec<usize> = keep.iter().copied().filter(|&i| finals[i].detour_s.is_some() && finals[i].reduction_pct >= DETOUR_REDUCTION_FLOOR * best).collect();
         let lowest = above.iter().copied().min_by(|&a, &b| finals[a].detour_s.partial_cmp(&finals[b].detour_s).unwrap_or(std::cmp::Ordering::Equal).then(by_removed(b, a)))?;
         return above.iter().copied().filter(|&c| c == lowest || !detour_lower(&finals[lowest], &finals[c])).max_by(|&a, &b| by_removed(a, b));
     }
@@ -1100,7 +1182,7 @@ pub fn explore(study: &Study, p: &Params) -> Outcome {
     eprintln!("baseline: {} period(s) x {} seed(s) at {} min, plus {} screening run(s) at {} min", p.periods.len(), p.seeds.len(), p.minutes, p.seeds.len(), p.screen_minutes);
     let base = run_baseline(study, p);
     eprintln!("baseline done in {:.0}s; cut-through {}", t0.elapsed().as_secs_f64(), p.periods.iter().zip(&base.full).map(|(n, s)| format!("{n} {:.0} veh/h", s.ct_vph)).collect::<Vec<_>>().join(", "));
-    let mut cands = generate_with(study, &base.hot, p.candidates, &p.profile);
+    let mut cands = super::cands::generate_for(study, &base.hot, p.candidates, &p.profile, p.periods.iter().map(String::as_str));
     if p.bypass_locations > 0 {
         let sup = super::bypass::supplement(study, &p.periods[0], &cands, &p.profile, p.bypass_locations);
         eprintln!("bypass supplement (experimental): {} candidate(s) at up to {} location(s)", sup.added.len(), p.bypass_locations);
@@ -1207,6 +1289,7 @@ pub fn explore(study: &Study, p: &Params) -> Outcome {
     // The shortlist is frozen here. With confirmation seeds, the chosen options and the references are rerun on seeds that took no part
     // in screening, rechecking or choosing, and those runs are what is published; otherwise the published estimates come from the runs that
     // chose them and are labeled exploratory.
+    let shortlist = picks.iter().map(|pk| study.encode(&ctx.ivs(&finals[pk.idx].set), Some(&p.periods[0]))).collect();
     let (pc, base_c);
     let (est_p, est_base): (&Params, &Baseline) = if p.confirm_seeds.is_empty() {
         (p, &base)
@@ -1230,20 +1313,13 @@ pub fn explore(study: &Study, p: &Params) -> Outcome {
         }
         cf
     };
-    let mut shown = shown;
-    for (f, pk) in shown.iter_mut().zip(&picks) {
-        f.objectives = pk.objectives.clone();
-    }
-    // The published order is by the figures that are published: with confirmation seeds, those are the confirmation runs.
-    let (picks, shown) = {
-        let mut perm: Vec<usize> = (0..picks.len()).collect();
-        perm.sort_by(|&a, &b| similar::order_options(&shown[a], &shown[b]).then(a.cmp(&b)));
-        let mut pk: Vec<Option<Pick>> = picks.into_iter().map(Some).collect();
-        let mut sh: Vec<Option<Final>> = shown.into_iter().map(Some).collect();
-        let picks: Vec<Pick> = perm.iter().map(|&i| pk[i].take().expect("pick")).collect();
-        let shown: Vec<Final> = perm.iter().map(|&i| sh[i].take().expect("shown")).collect();
-        (picks, shown)
-    };
+    let mut ordered: Vec<_> = picks.into_iter().zip(shown).collect();
+    ordered.sort_by(|a, b| similar::order_options(&a.1, &b.1));
+    let mut failed = Vec::new();
+    let (picks, shown) = checked_options(ordered, |pk, f, reason| {
+        notes[pk.idx] = format!("failed confirmation: {reason}");
+        failed.push(json!({"link": study.encode(&ctx.ivs(&f.set), Some(&p.periods[0])), "title": title(&all, &f.set), "reason": reason}));
+    });
     // The rule runs again on the figures that are published. An option it drops is removed, and the list is not refilled.
     let (shown_all, picks_all) = (shown.clone(), picks.clone());
     let after = if p.confirm_seeds.is_empty() {
@@ -1267,11 +1343,11 @@ pub fn explore(study: &Study, p: &Params) -> Outcome {
     sim.dropped.extend(displaced_out(&ctx_all, &shown_all, &after));
     let mut ref_finals = if ref_sets.is_empty() { Vec::new() } else { eprintln!("rechecking {} reference package(s)", ref_sets.len()); recheck(&ctx_all, &ref_sets) };
     for f in ref_finals.iter_mut() {
-        f.access = check_access(study, &ctx_all.ivs(&f.set)).err();
+        f.access = check_access_for(study, &ctx_all.ivs(&f.set), p.periods.iter().map(String::as_str)).err();
         f.role = "reference";
     }
     eprintln!("chose {} option(s); total {:.0}s", picks.len(), t0.elapsed().as_secs_f64());
-    let json = build_json(study, p, &all, est_base, &shown, &ref_finals, &known, &Estimation { seeds: est_p.seeds.clone(), confirmed: !p.confirm_seeds.is_empty(), shortlist: shown_all.iter().map(|f| study.encode(&ctx.ivs(&f.set), Some(&p.periods[0]))).collect() }, &sim);
+    let json = build_json(study, p, &all, est_base, &shown, &ref_finals, &known, &Estimation { seeds: est_p.seeds.clone(), confirmed: !p.confirm_seeds.is_empty(), shortlist, failed }, &sim);
     let markdown = build_markdown(study, p, &ctx_all, &state, &finals, &picks, &notes, &t0, &ref_finals, &known, &shown, &sim);
     let today = util::today_utc();
     let published: Vec<seeds::Entry> = picks
@@ -1317,7 +1393,7 @@ pub fn adopt_packages(study: &Study, p: &Params, cands: &mut Vec<Cand>, pkgs: &[
             fail("two of its interventions share a place".into());
             continue;
         }
-        if let Err(why) = check_access(study, &pkg.clone()) {
+        if let Err(why) = check_access_for(study, pkg, p.periods.iter().map(String::as_str)) {
             fail(format!("access check: {why}"));
             continue;
         }
@@ -1348,6 +1424,7 @@ pub struct Estimation {
     pub confirmed: bool,
     /// The packages that were confirmed or estimated, in published order, before the displacement rule ran on the confirmed figures.
     pub shortlist: Vec<String>,
+    pub failed: Vec<Value>,
 }
 
 fn variant_json(v: &Variant) -> Value {
@@ -1400,6 +1477,7 @@ fn provenance_core(p: &Params, est: &Estimation, shortlist: &[String]) -> Value 
                 "discoverySeeds": p.seeds,
                 "confirmationSeeds": if est.confirmed { json!(est.seeds) } else { json!([]) },
                 "shortlist": shortlist,
+                "failed": est.failed,
             },
         },
     })
@@ -1502,7 +1580,7 @@ pub fn build_json(study: &Study, p: &Params, cands: &[Cand], base: &Baseline, sh
             }},
             "context": {
                 "boundingStreets": f.bounding.iter().map(|(name, flow, speed)| json!({"name": name, "flowChangePct": r1(*flow), "speedChangeMph": r1(*speed)})).collect::<Vec<_>>(),
-                "insideTripTimeChangePct": r1(f.inside_pct),
+                "insideTripTimeChangePct": f.inside_pct.map(r1),
                 "pedConflictsChangePct": r1(f.ped_pct),
                 "bikeConflictsChangePct": r1(f.bike_pct),
             },
@@ -1515,11 +1593,17 @@ pub fn build_json(study: &Study, p: &Params, cands: &[Cand], base: &Baseline, sh
             },
         });
         v["residentsDetour"] = json!({
-            "secondsPerTrip": r1(f.detour_s),
-            "effect": effect_json(&f.detour),
-            "vehicleMinutesPerHour": r1(f.detour_vmin_h),
+            "method": "requested-elapsed-to-cutoff",
+            "cutoffMinutes": p.minutes,
+            "coverage": f.detour_coverage,
+            "secondsPerTrip": f.detour_s.map(r1),
+            "effect": f.detour_s.map(|_| effect_json(&f.detour)),
+            "vehicleMinutesPerHour": f.detour_vmin_h.map(r1),
         });
-        if !f.objectives.is_empty() {
+        if let Some(reason) = &f.reject {
+            v["simulationProblem"] = json!(reason);
+        }
+        if f.reject.is_none() && !f.objectives.is_empty() {
             v["objectives"] = json!(f.objectives.iter().map(|o| o.id()).collect::<Vec<_>>());
         }
         if let Some(n) = note {
@@ -1571,7 +1655,7 @@ pub fn build_json(study: &Study, p: &Params, cands: &[Cand], base: &Baseline, sh
         "list": p.objectives.iter().map(|o| json!({"id": o.id(), "label": o.label(), "rule": o.rule()})).collect::<Vec<_>>(),
         "detourReductionFloor": DETOUR_REDUCTION_FLOOR,
         "detourTieSeconds": DETOUR_TIE_S,
-        "note": "Each option lists the objectives it is the best for. Detour is the added trip time of completed car trips that start or end inside the study area, scenario minus baseline on the same seed. ASSUMPTION: the reduction floor, and the detour tie threshold used only when fewer than the minimum seed pairs are available.",
+        "note": "Each option lists the objectives it is the best for. Detour compares the same requested car trips with at least one end in the study area. Each accrues time from its request until arrival at the destination or the run cutoff, including unserved requests. Warm-up trips are excluded. ASSUMPTION: the reduction floor, and the detour tie threshold used only when fewer than the minimum seed pairs are available.",
     });
     computed["displacement"] = json!({
         "rule": "An option that is not the winner of a goal is not published when another published option removes at least as many through cars, or is not distinguishable from it on the paired comparison, and its largest all-car rise on one block is smaller by more than the noise of the two rises: the paired intervals' half widths combined, or a floor when either has none. The rule runs on the search seeds when the options are chosen and again on the confirmation seeds, whose figures are the published ones; each dropped record says which (`basis`, `seeds`). The list is not refilled. ASSUMPTION: the floor.",
@@ -1634,9 +1718,9 @@ fn build_markdown(study: &Study, p: &Params, ctx: &Ctx, state: &SearchState, fin
         MIN_PAIRS
     );
     let _ = writeln!(md, "## Baseline\n");
-    let _ = writeln!(md, "| Period | Through cars an hour, all side streets | Seed-to-seed spread (SD as % of mean) | Inside trip time (s) | Ped conflicts | Bike conflicts |\n| --- | --- | --- | --- | --- | --- |");
+    let _ = writeln!(md, "| Period | Through cars an hour, all side streets | Seed-to-seed spread (SD as % of mean) | Resident elapsed time to cutoff (s/request) | Ped conflicts | Bike conflicts |\n| --- | --- | --- | --- | --- | --- |");
     for (n, s) in p.periods.iter().zip(&base.full) {
-        let _ = writeln!(md, "| {n} | {:.1} | {:.1}% | {:.0} | {:.0} | {:.0} |", s.ct_vph, s.ct_cv_pct, s.inside_s, s.ped_conflicts, s.bike_conflicts);
+        let _ = writeln!(md, "| {n} | {:.1} | {:.1}% | {} | {:.0} | {:.0} |", s.ct_vph, s.ct_cv_pct, s.inside_s.map_or_else(|| "unavailable".into(), |v| format!("{v:.0}")), s.ped_conflicts, s.bike_conflicts);
     }
     let _ = writeln!(
         md,
@@ -1684,11 +1768,11 @@ fn build_markdown(study: &Study, p: &Params, ctx: &Ctx, state: &SearchState, fin
         "Through cars are counted on the area's side streets (each car once for the area; on a block, both directions). \"All traffic\" adds the local trips of people who live or drive there. Through figures are means over the {} discovery seeds and the periods searched. The block with the largest raw increase and the block behind the ranking penalty are different quantities and may differ: the penalty is the largest all-traffic increase on one block in any period after subtracting its assumed noise band.\n",
         p.seeds.len()
     );
-    let _ = writeln!(md, "| # | Interventions | Source | Through cars an hour, area change (mean of periods and seeds) | Seed interval of that change | Block with the largest through-car increase (cars an hour) | Its interval | Blocks with a resolved through-car increase | Ranking penalty: block and all-traffic increase past its band (cars an hour, worst period) | Residents' detour (s per trip) | Outcome |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |");
+    let _ = writeln!(md, "| # | Interventions | Source | Through cars an hour, area change (mean of periods and seeds) | Seed interval of that change | Block with the largest through-car increase (cars an hour) | Its interval | Blocks with a resolved through-car increase | Ranking penalty: block and all-traffic increase past its band (cars an hour, worst period) | Resident elapsed time to cutoff (s per requested trip) | Outcome |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |");
     for (i, f) in finals.iter().enumerate() {
         let _ = writeln!(
             md,
-            "| {} | {} | {} | {:+.1}% | {} | {} ({:+.0}) | {} | {} | {} ({:+.0}) | {:+.1} | {} |",
+            "| {} | {} | {} | {:+.1}% | {} | {} ({:+.0}) | {} | {} | {} ({:+.0}) | {} | {} |",
             i + 1,
             f.set.iter().map(|&c| cands[c as usize].label.clone()).collect::<Vec<_>>().join("; "),
             f.origin.kind,
@@ -1700,19 +1784,21 @@ fn build_markdown(study: &Study, p: &Params, ctx: &Ctx, state: &SearchState, fin
             f.through.blocks_resolved,
             f.through.penalty_block.map(blk).unwrap_or_else(|| "none past its band".into()),
             f.harm,
-            f.detour_s,
+            f.detour_s.map_or_else(|| "unavailable".into(), |v| format!("{v:+.1}")),
             notes[i]
         );
     }
     let _ = writeln!(md, "\n## Residents' detour\n");
     let _ = writeln!(
         md,
-        "The least-detour objective takes, among the packages that remove at least {:.0}% of the most removed (ASSUMPTION: the share), the one with the smallest added resident trip time per trip. A difference in detour the paired comparison cannot resolve goes to the package that removes more through cars, then to the one with fewer changes.\n",
+        "The least-detour objective takes, among the packages that remove at least {:.0}% of the most removed (ASSUMPTION: the share), the one with the smallest added elapsed time per requested trip through the run cutoff. All eligible requests count from departure until completion or the cutoff, including any still waiting, removed or unroutable. The cohort excludes trips requested or placed before time zero. A difference in detour the paired comparison cannot resolve goes to the package that removes more through cars, then to the one with fewer changes.\n",
         DETOUR_REDUCTION_FLOOR * 100.0
     );
     let _ = writeln!(md, "\n## Chosen options\n");
     for (n, (pick, f)) in picks.iter().zip(shown).enumerate() {
-        let _ = writeln!(md, "{}. {} ({}; source: {}; estimates: {}). {} Residents' detour: {:+.1} s per trip, {:+.0} vehicle-minutes an hour ({}).", n + 1, title(cands, &f.set), pick.why, f.origin.phrase(), f.role, summary(study, cands, f), f.detour_s, f.detour_vmin_h, detour_phrase(&f.detour));
+        let value = f.detour_s.zip(f.detour_vmin_h).map_or_else(|| "unavailable for these requests".into(), |(s, total)| format!("{s:+.1} s per request, {total:+.0} vehicle-minutes an hour ({})", detour_phrase(&f.detour)));
+        let c = &f.detour_coverage;
+        let _ = writeln!(md, "{}. {} ({}; source: {}; estimates: {}). {} Resident elapsed time through the {}-minute cutoff was {value}. Across runs, {} of {} requests were unfinished at baseline and {} of {} with the package.", n + 1, title(cands, &f.set), pick.why, f.origin.phrase(), f.role, summary(study, cands, f), p.minutes, c.baseline_unfinished, c.baseline_requests, c.scenario_unfinished, c.scenario_requests);
     }
     for (k, w) in shown.windows(2).enumerate() {
         let _ = writeln!(md, "{}", comparison_line(k, option_gain(&w[0].pairs, &w[1].pairs), w[0].pairs.base_mean()));

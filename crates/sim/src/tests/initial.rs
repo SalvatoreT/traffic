@@ -185,3 +185,25 @@ fn placed_agents_of_a_via_flow_make_the_movement() {
     }
     assert!(on_entry >= 5, "cars placed before the movement: {on_entry}");
 }
+
+#[test]
+fn shared_loaded_costs_reproduce_independent_scenario_runs() {
+    let (net, c) = corridor(11.2, Control::Signal);
+    let d = demand(&[(c.a[0], c.a[3], 900.0), (c.a[3], c.a[0], 800.0), (c.l[1], c.a[3], 300.0)]);
+    let costs = crate::sim::LoadedCosts::default();
+    let ivs: Vec<Intervention> = serde_json::from_value(serde_json::json!([{"type":"modal_filter", "link": c.loc[1].0}])).unwrap();
+    // The first observer and package to initialize the cell must have no influence on later runs.
+    for changes in [ivs, Vec::new()] {
+        let config = Config { interventions: changes, select_links: vec![c.art[1].0], ..cfg(3, 1.0) };
+        let mut shared = Simulation::build(net.clone(), d.clone(), config.clone(), Some(&costs)).unwrap();
+        let mut fresh = Simulation::from_parts(net.clone(), d.clone(), config).unwrap();
+        for dt in [0.0, 180.0] {
+            shared.step(dt);
+            fresh.step(dt);
+            assert_eq!(shared.vehicles(), fresh.vehicles());
+            assert_eq!(shared.link_stats(), fresh.link_stats());
+            assert_eq!(shared.metrics_json(), fresh.metrics_json());
+            assert_eq!(shared.diagnostics().link_exits, fresh.diagnostics().link_exits);
+        }
+    }
+}

@@ -12,7 +12,7 @@ use super::*;
 /// every non-empty subset (one period, one seed, shortened run), which shows whether a beam could reach the package.
 pub fn check_links(study: &Study, p: &Params, links: &[String], subsets: bool, singles: bool) {
     let base = run_baseline(study, p);
-    let mut cands = generate_with(study, &base.hot, p.candidates, &p.profile);
+    let mut cands = super::cands::generate_for(study, &base.hot, p.candidates, &p.profile, p.periods.iter().map(String::as_str));
     let n_gen = cands.len();
     println!("candidate list: {n_gen} candidates under profile {}", p.profile.id);
     for (i, c) in cands.iter().enumerate() {
@@ -39,7 +39,7 @@ pub fn check_links(study: &Study, p: &Params, links: &[String], subsets: bool, s
                 if (i as usize) < n_gen { format!("candidate {}", i + 1) } else { "NOT in the candidate list".to_string() }
             );
         }
-        match check_access(study, &ivs) {
+        match check_access_for(study, &ivs, p.periods.iter().map(String::as_str)) {
             Ok(()) => println!("  access check: passes"),
             Err(e) => println!("  access check: fails, {e}"),
         }
@@ -71,6 +71,9 @@ pub fn check_links(study: &Study, p: &Params, links: &[String], subsets: bool, s
             f.through.blocks_above
         );
         println!("  through-car change interval: {}", super::report::interval_phrase(&f.effect));
+        let elapsed = f.detour_s.map_or_else(|| "unavailable".into(), |s| format!("{s:+.1} s per request"));
+        let c = &f.detour_coverage;
+        println!("  Resident elapsed time through the {}-minute cutoff was {elapsed}. Unfinished requests numbered {} of {} at baseline and {} of {} with the package.", p.minutes, c.baseline_unfinished, c.baseline_requests, c.scenario_unfinished, c.scenario_requests);
         for (name, r) in p.periods.iter().zip(&f.by_period) {
             println!("  {name}: through {:.0} -> {:.0} ({:+.1}%); all-traffic block with the largest increase {} {:.0} -> {:.0}", r.base_through, r.scen_through, r.cut_pct, study.idx.blocks[study.harm_blocks[r.worst]].label, r.block_base, r.block_scen);
         }
@@ -131,7 +134,7 @@ pub fn score_singles(ctx: &Ctx) -> Vec<SingleRow> {
     let base_runs = parallel_map(p.jobs, &cells, |&(pi, si)| run(study, &[], &p.periods[pi], p.seeds[si], p.screen_minutes, &[]));
     let base_stats: Vec<PeriodStat> = (0..p.periods.len()).map(|pi| period_stat(study, &base_runs[pi * ns..(pi + 1) * ns].iter().collect::<Vec<_>>())).collect();
     let ids: Vec<u16> = (0..ctx.cands.len() as u16).collect();
-    let checks: Vec<Result<(), String>> = parallel_map(p.jobs, &ids, |&i| check_access(study, &ctx.ivs(&[i])));
+    let checks: Vec<Result<(), String>> = parallel_map(p.jobs, &ids, |&i| check_access_for(study, &ctx.ivs(&[i]), p.periods.iter().map(String::as_str)));
     let todo: Vec<u16> = ids.iter().copied().filter(|&i| checks[i as usize].is_ok()).collect();
     let jobs: Vec<(u16, usize, usize)> = todo.iter().flat_map(|&c| cells.iter().map(move |&(pi, si)| (c, pi, si))).collect();
     let outs = parallel_map(p.jobs, &jobs, |&(c, pi, si)| run(study, &ctx.ivs(&[c]), &p.periods[pi], p.seeds[si], p.screen_minutes, &[]));

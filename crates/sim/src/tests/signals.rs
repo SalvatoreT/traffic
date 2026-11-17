@@ -130,3 +130,68 @@ fn an_observed_phase_without_timing_keeps_the_structure_and_a_flow_based_plan() 
     assert_budget(&sim, x.c, YELLOW + ALL_RED);
     assert!(sim.test_eff().issues.is_empty());
 }
+
+#[test]
+fn allocating_a_minimum_green_preserves_every_previously_fixed_phase() {
+    for (cycle, expected) in [(30.0, 5.0), (60.0, 15.0)] {
+        let (actual, phases, _) = crate::eff::webster(&[0.01, 0.38, 0.61], Some(cycle));
+        assert_eq!(actual, cycle);
+        assert!(phases.iter().all(|&(_, green)| (green - expected).abs() < 0.001), "{phases:?}");
+    }
+    let (mut net, x) = cross4(Control::Signal, RoadClass::Residential, false);
+    net.nodes[x.c as usize].signal_timing = vec![timing(69.0, vec![
+        green(vec![x.w_in], 4.0, true), green(vec![x.n_in], 0.0, true),
+    ], None)];
+    let sim = Simulation::from_parts(net, demand(&[(x.e, x.w, 10.0), (x.s, x.n, 380.0), (x.n, x.s, 610.0)]), cfg_empty(1, 1.0)).unwrap();
+    assert_eq!(green_of(&sim, x.c, x.w_in), 4.0);
+    for l in [x.e_in, x.s_in, x.n_in] {
+        assert!((green_of(&sim, x.c, l) - 15.0).abs() < 0.001);
+    }
+}
+
+#[test]
+fn curb_destinations_use_the_street_without_passing_the_signal() {
+    let (net, x) = cross4(Control::Signal, RoadClass::Residential, false);
+    for (origin, dest, parks) in [(x.w, x.c, true), (x.w, x.e, false), (x.c, x.e, false)] {
+        let mut sim = Simulation::from_parts(net.clone(), demand(&[(origin, dest, 500.0)]), cfg_empty(1, 1.0)).unwrap();
+        let crosses = origin != x.c && dest != x.c;
+        let start_y = sim.signal_plans()[0].2;
+        assert_eq!(start_y > 0.0, crosses);
+        sim.step(1800.0);
+        let d = sim.diagnostics();
+        assert!(sim.metrics().completed_trips > 100);
+        assert_eq!(sim.signal_plans()[0].2 > 0.0, crosses);
+        assert_eq!(d.stop_line_passages[x.w_in as usize] > 100, crosses);
+        if parks {
+            assert!(d.link_exits[x.w_in as usize] > 100);
+            assert_eq!(d.stop_line_passages[x.w_in as usize], 0);
+        }
+        assert_eq!(d.link_start_passages[x.e_out as usize] > 100, crosses);
+        assert_eq!(d.stop_line_passages[x.e_out as usize] > 100, !parks);
+        if origin == x.c {
+            assert_eq!(d.link_start_passages[x.e_out as usize], 0);
+        }
+    }
+}
+
+#[test]
+fn marked_left_lane_serves_its_turn_after_signal_removal() {
+    let (mut net, x) = sig_cross(2);
+    net.links[x.w_in as usize].left_lanes = 1;
+    let d = demand(&[(x.w, x.n, 120.0)]);
+    for control in ["all_way_stop", "traffic_circle", "uncontrolled"] {
+        let ivs = format!(r#"[{{"type":"control","node":{},"control":"{control}"}}]"#, x.c);
+        let cfg = Config { interventions: serde_json::from_str(&ivs).unwrap(), ..cfg_empty(1, 1.0) };
+        let mut sim = Simulation::from_parts(net.clone(), d.clone(), cfg).unwrap();
+        let marked = sim.test_topo().nmain[x.w_in as usize];
+        let mut seen = false;
+        run(&mut sim, 600.0, |s| {
+            for (_, lane) in s.test_lanes_of(x.w_in) {
+                seen = true;
+                assert_eq!(lane, marked);
+            }
+        });
+        assert!(seen && sim.metrics().completed_trips > 0);
+        assert_eq!(sim.metrics().backlog, 0);
+    }
+}

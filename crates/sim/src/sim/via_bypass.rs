@@ -42,31 +42,31 @@ impl Simulation {
     }
 
     /// Can the plan's primary movement still be made from `start` at all (not only within the tolerance)?
-    pub(super) fn via_cut(&mut self, start: Start, dest: u32, plan: u32) -> bool {
+    pub(super) fn via_cut(&mut self, start: Start, dest: Goal, plan: u32) -> bool {
         let (a, b) = self.via_plans[plan as usize].moves[0];
         if self.usable_via(Some((a, b))).is_none() {
             return true;
         }
-        self.via_router.ensure_m(dest, &self.topo, self.eff.static_modal(), &self.eff.ff);
+        self.via_router.ensure_goal(dest, &self.topo, self.eff.static_modal(), &self.eff.ff);
         self.via_router.ensure_link_m(a, &self.topo, self.eff.static_modal(), &self.eff.ff);
         let to_a = match start {
             Start::Link(l) if l == a => 0.0,
             _ => self.start_cost(start, &self.via_router.link_tables[&a], &self.eff.mv_static),
         };
-        let from_b = if self.topo.link_to[b as usize] == dest { 0.0 } else { self.start_cost(Start::Link(b), self.via_router.table(dest), &self.eff.mv_static) };
+        let from_b = if dest.reached(&self.topo, b) { 0.0 } else { self.start_cost(Start::Link(b), self.via_router.goal_table(dest), &self.eff.mv_static) };
         !(to_a + from_b).is_finite()
     }
 
     /// Bypass candidates (free-flow cost, approach link, onward link) of a plan whose primary movement is cut, within its tolerance.
-    fn bypass_candidates(&mut self, start: Start, dest: u32, plan: u32) -> Vec<(f32, u32, u32)> {
+    fn bypass_candidates(&mut self, start: Start, dest: Goal, plan: u32) -> Vec<(f32, u32, u32)> {
         let (a, b) = self.via_plans[plan as usize].moves[0];
         let max = self.via_plans[plan as usize].max_detour;
         let (approach, onward) = (self.street_chain(a, false), self.street_chain(b, true));
-        self.via_router.ensure_m(dest, &self.topo, self.eff.static_modal(), &self.eff.ff);
-        let plain = self.start_cost(start, self.via_router.table(dest), &self.eff.mv_static);
+        self.via_router.ensure_goal(dest, &self.topo, self.eff.static_modal(), &self.eff.ff);
+        let plain = self.start_cost(start, self.via_router.goal_table(dest), &self.eff.mv_static);
         let mut cands: Vec<(f32, u32, u32)> = Vec::new();
         for &q in onward.iter().filter(|&&q| !self.eff.closed[q as usize]) {
-            let to_dest = if self.topo.link_to[q as usize] == dest { 0.0 } else { self.start_cost(Start::Link(q), self.via_router.table(dest), &self.eff.mv_static) };
+            let to_dest = if dest.reached(&self.topo, q) { 0.0 } else { self.start_cost(Start::Link(q), self.via_router.goal_table(dest), &self.eff.mv_static) };
             if !to_dest.is_finite() {
                 continue;
             }
@@ -89,8 +89,8 @@ impl Simulation {
 
     /// Cost by the router's current link costs (the mean of what a departing car perceives, without its own perception error) of reaching `via`
     /// from `start`, then going on to `then` (when given) and to `dest`.
-    fn live_cost(&mut self, start: Start, via: u32, then: Option<u32>, dest: u32) -> f32 {
-        self.router.ensure(dest, &self.topo, &self.eff, &self.link_cost);
+    fn live_cost(&mut self, start: Start, via: u32, then: Option<u32>, dest: Goal) -> f32 {
+        self.router.ensure_goal(dest, &self.topo, self.eff.car_modal(), &self.link_cost);
         self.router.ensure_link(via, &self.topo, &self.eff, &self.link_cost);
         let to_via = match start {
             Start::Link(l) if l == via => 0.0,
@@ -103,24 +103,24 @@ impl Simulation {
             }
             None => (via, 0.0),
         };
-        let on = if self.topo.link_to[last as usize] == dest { 0.0 } else { self.start_cost(Start::Link(last), self.router.table(dest), &self.eff.mv_cost) };
+        let on = if dest.reached(&self.topo, last) { 0.0 } else { self.start_cost(Start::Link(last), self.router.goal_table(dest), &self.eff.mv_cost) };
         to_via + mid + on
     }
 
     /// Project lead decision of 2026-11-15 (ASSUMPTION): when a plan's primary movement is cut, its configured alternatives within the
     /// tolerance (`alts`, free-flow cost and movement) and the local bypasses within it compete on the router's cost at departure; the
     /// cheapest that can be built wins, ties going to the smaller detour (free-flow cost), then to the bypass. No kind has priority.
-    pub(super) fn pick_cut_via(&mut self, start: Start, dest: u32, seed: u32, plan: u32, alts: &[(f32, (u32, u32))], route: &mut Vec<u32>) -> Option<((u32, u32), Option<u32>)> {
+    pub(super) fn pick_cut_via(&mut self, start: Start, dest: Goal, seed: u32, plan: u32, alts: &[(f32, (u32, u32))], route: &mut Vec<u32>) -> Option<((u32, u32), Option<u32>)> {
         // (live cost, free-flow cost, kind: 0 bypass, 1 alternative, first link, second link)
         let mut all: Vec<(f32, f32, u8, u32, u32)> = Vec::new();
         for &(ff, (a, b)) in alts {
-            self.router.ensure(dest, &self.topo, &self.eff, &self.link_cost);
+            self.router.ensure_goal(dest, &self.topo, self.eff.car_modal(), &self.link_cost);
             self.router.ensure_link(a, &self.topo, &self.eff, &self.link_cost);
             let to_a = match start {
                 Start::Link(l) if l == a => 0.0,
                 _ => self.start_cost(start, &self.router.link_tables[&a], &self.eff.mv_cost),
             };
-            let cost = to_a + self.eff.mv_cost[self.topo.find_mv(a, b).unwrap() as usize] + self.router.table(dest)[b as usize];
+            let cost = to_a + self.eff.mv_cost[self.topo.find_mv(a, b).unwrap() as usize] + self.router.goal_table(dest)[b as usize];
             all.push((cost, ff, 1, a, b));
         }
         for (ff, p, q) in self.bypass_candidates(start, dest, plan) {
@@ -140,7 +140,7 @@ impl Simulation {
 
     /// Build the bypass route through approach link `p` and onward link `q`; the returned movement is the one onto the onward street
     /// (made like a counted movement, so the car keeps the bypass until it is back on that street).
-    fn try_bypass(&mut self, start: Start, dest: u32, seed: u32, p: u32, q: u32, route: &mut Vec<u32>, plain_looped: &mut Option<Vec<u32>>) -> Option<((u32, u32), Option<u32>)> {
+    fn try_bypass(&mut self, start: Start, dest: Goal, seed: u32, p: u32, q: u32, route: &mut Vec<u32>, plain_looped: &mut Option<Vec<u32>>) -> Option<((u32, u32), Option<u32>)> {
         let first = match start {
             Start::Node(n) => {
                 let mut r0: Vec<u32> = Vec::new();
@@ -163,7 +163,7 @@ impl Simulation {
         if !self.plan(Start::Link(p), Goal::Link(q), seed, None, &mut r) {
             return None;
         }
-        if self.topo.link_to[q as usize] != dest && !self.plan(Start::Link(q), Goal::Dest(dest), seed, None, &mut r) {
+        if !dest.reached(&self.topo, q) && !self.plan(Start::Link(q), dest, seed, None, &mut r) {
             return None;
         }
         let mut nodes: Vec<u32> = Vec::with_capacity(r.len() + 2);

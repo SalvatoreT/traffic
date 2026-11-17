@@ -17,7 +17,7 @@ use serde_json::{json, Value};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use traffic_sim::explore::bench::{self, Case, Results};
-use traffic_sim::explore::{bypass, cands, check_access, profile::Profile, run, Study};
+use traffic_sim::explore::{bypass, cands, check_access_for, profile::Profile, run, Study};
 
 fn die(msg: &str) -> ! {
     eprintln!("search-bench: {msg}");
@@ -143,8 +143,7 @@ fn main() {
                 .map(|(s, o)| {
                     let e = bench::eval_runs(case.search.harm_weight, s, &first, &o.iter().collect::<Vec<_>>(), &sigma);
                     let rec = proj["evaluations"].as_array().and_then(|v| v.iter().find(|r| r["set"] == json!(s))).cloned().unwrap_or(Value::Null);
-                    let d = |a: f64, k: &str| (a - rec[k].as_f64().unwrap_or(f64::NAN)).abs();
-                    let worst = [d(e.reduction_pct, "reductionPct"), d(e.harm, "harm"), d(e.score, "score"), d(e.detour_s, "detourS")].iter().fold(0.0f64, |m, x| m.max(*x));
+                    let worst = bench::projection_differences(&e, &rec).map(|d| d.into_iter().fold(0.0, f64::max));
                     json!({"set": s, "now": {"reductionPct": e.reduction_pct, "harm": e.harm, "score": e.score, "detourS": e.detour_s}, "audit": {"reductionPct": rec["reductionPct"], "harm": rec["harm"], "score": rec["score"], "detourS": rec["detourS"]}, "maxAbsDiff": worst})
                 })
                 .collect();
@@ -191,7 +190,7 @@ fn coverage(study: &Study, case: &Case, n_loc: usize, ident: &Value) -> Value {
     let profile = Profile::unconstrained();
     let ranked = cands::ranked_locations(study, &hot);
     let kept = cands::kept_locations(&ranked, n_loc, &profile);
-    let generated = cands::generate_with(study, &hot, n_loc, &profile);
+    let generated = cands::generate_for(study, &hot, n_loc, &profile, [case.period.as_str()]);
     let cs = bench::case_cands(study, case).unwrap_or_else(|e| die(&e));
     let busiest = study.harm_blocks.iter().map(|&b| hot.block_ct[b]).fold(0.0, f64::max);
     let loc_rank = |l: cands::Loc| ranked.iter().position(|x| x.0 == l);
@@ -247,7 +246,7 @@ fn coverage(study: &Study, case: &Case, n_loc: usize, ident: &Value) -> Value {
     let added: Vec<Value> = sup
         .added
         .iter()
-        .map(|s| json!({"label": s.cand.label, "kind": s.cand.kind, "link": study.encode(std::slice::from_ref(&s.cand.iv), None), "fromCandidate": generated[s.from].label, "bypass": s.bypass.to_json(), "access": check_access(study, std::slice::from_ref(&s.cand.iv)).err()}))
+        .map(|s| json!({"label": s.cand.label, "kind": s.cand.kind, "link": study.encode(std::slice::from_ref(&s.cand.iv), None), "fromCandidate": generated[s.from].label, "bypass": s.bypass.to_json(), "access": check_access_for(study, std::slice::from_ref(&s.cand.iv), [case.period.as_str()]).err()}))
         .collect();
     let pairs = bypass::coordinated_pairs(study, &case.period, &cs);
     json!({

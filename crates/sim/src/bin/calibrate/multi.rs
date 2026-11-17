@@ -22,7 +22,7 @@ pub fn parse_seeds(s: &str) -> Option<Vec<u64>> {
             out.push(part.trim().parse().ok()?);
         }
     }
-    if out.is_empty() { None } else { Some(out) }
+    if out.is_empty() || out.iter().collect::<std::collections::HashSet<_>>().len() != out.len() { None } else { Some(out) }
 }
 
 /// Two-sided 97.5% quantile of Student's t for `df` degrees of freedom (table values; 1.96 beyond 120).
@@ -99,15 +99,40 @@ impl Stability {
 
 fn series_growth(run: &Value) -> f64 {
     // Backlog added between the sample nearest the half of the run and the last sample, in points of spawned trips.
-    let minutes = run["minutes"].as_f64().unwrap_or(60.0);
-    let spawned = run["health"]["spawned"].as_f64().unwrap_or(1.0).max(1.0);
-    let s = run["series"].as_array().cloned().unwrap_or_default();
-    if s.len() < 2 {
-        return 0.0;
+    let minutes = num(&run["minutes"]);
+    let spawned = num(&run["health"]["spawned"]);
+    let Some(series) = run["series"].as_array() else {
+        return f64::NAN;
+    };
+    let half = minutes / 2.0;
+    let mut previous = -1.0;
+    let mut midpoint = (f64::INFINITY, 0.0);
+    let mut last = (0.0, 0.0);
+    for row in series {
+        let t = num(&row["tMin"]);
+        let backlog = num(&row["backlog"]);
+        if !t.is_finite() || t <= previous || !backlog.is_finite() || backlog < 0.0 {
+            return f64::NAN;
+        }
+        last = (t, backlog);
+        if (t - half).abs() < (midpoint.0 - half).abs() {
+            midpoint = last;
+        }
+        previous = t;
     }
-    let at = |t: f64| s.iter().min_by(|a, b| (a["tMin"].as_f64().unwrap_or(0.0) - t).abs().partial_cmp(&(b["tMin"].as_f64().unwrap_or(0.0) - t).abs()).unwrap()).unwrap()["backlog"].as_f64().unwrap_or(0.0);
-    let last = s.last().unwrap()["backlog"].as_f64().unwrap_or(0.0);
-    100.0 * (last - at(minutes / 2.0)) / spawned
+    // The native run samples every five minutes and at its actual end.
+    if series.len() < 2
+        || !minutes.is_finite()
+        || minutes <= 0.0
+        || !spawned.is_finite()
+        || spawned < 0.0
+        || (last.0 - minutes).abs() > 1e-6
+        || midpoint.0 >= last.0
+        || (midpoint.0 - half).abs() > 2.5 + 1e-6
+    {
+        return f64::NAN;
+    }
+    100.0 * (last.1 - midpoint.1) / spawned.max(1.0)
 }
 
 pub struct Multi<'a> {
@@ -152,7 +177,8 @@ fn run_seeds(m: &Multi) -> Vec<(u64, Value)> {
             }
             let p = dir.join(format!("{prefix}-seed{seed}.json"));
             match std::fs::read_to_string(&p).ok().and_then(|t| serde_json::from_str::<Value>(&t).ok()) {
-                Some(v) => r.lock().unwrap().push((seed, v)),
+                Some(v) if v["seed"].as_u64() == Some(seed) && v["manifest"]["run"]["seed"].as_u64() == Some(seed) => r.lock().unwrap().push((seed, v)),
+                Some(_) => eprintln!("seed {seed}: mismatched report identity"),
                 None => eprintln!("seed {seed}: cannot read {}", p.display()),
             }
         }));
@@ -203,8 +229,9 @@ struct Metric {
 
 pub fn run(m: Multi) {
     let runs = run_seeds(&m);
-    if runs.is_empty() {
-        eprintln!("no seed finished");
+    if runs.len() != m.seeds.len() || runs.is_empty() {
+        let missing: Vec<_> = m.seeds.iter().filter(|s| !runs.iter().any(|(seed, _)| seed == *s)).collect();
+        eprintln!("missing or invalid requested seeds: {missing:?}");
         std::process::exit(1);
     }
     let stab = Stability::from_targets(m.targets);
@@ -273,12 +300,12 @@ pub fn run(m: Multi) {
     let removals = stat(&judged);
     let backlog_ok = metrics[2].vals.iter().filter(|&&b| b < stab.backlog_pct).count();
     let n = runs.len();
-    let growth_bad: Vec<u64> = seeds.iter().zip(&metrics[3].vals).filter(|(_, &g)| g > stab.max_second_half_growth_pct).map(|(s, _)| *s).collect();
+    let growth_bad: Vec<u64> = seeds.iter().zip(&metrics[3].vals).filter(|(_, &g)| !g.is_finite() || g > stab.max_second_half_growth_pct).map(|(s, _)| *s).collect();
     let speed = stat(&metrics[5].vals);
-    let c1 = removals.mean < stab.max_mean_removals_per_hour;
-    let c2 = (backlog_ok as f64) >= (stab.min_seeds_share * n as f64).ceil() - 1e-9;
+    let c1 = removals.n == n && removals.min >= 0.0 && removals.mean < stab.max_mean_removals_per_hour;
+    let c2 = metrics[2].vals.iter().all(|&b| b.is_finite() && b >= 0.0) && (backlog_ok as f64) >= (stab.min_seeds_share * n as f64).ceil() - 1e-9;
     let c3 = growth_bad.is_empty();
-    let c4 = speed.mean > stab.min_arterial_speed;
+    let c4 = speed.n == n && speed.min >= 0.0 && speed.mean > stab.min_arterial_speed;
     let holds = c1 && c2 && c3 && c4;
     // Old rule (D4 as first written), per seed, for comparison.
     let old_pass: Vec<u64> = seeds
@@ -357,6 +384,8 @@ fn copy_detail(m: &Multi, src: &Path, prefix: &str, seed: u64, run: &Value) -> s
     if let Some(o) = v.as_object_mut() {
         o.insert("linkFlowVehPerHour".into(), Value::Null);
         o.insert("linkMeanDelayS".into(), Value::Null);
+        o.insert("linkStopLineVehPerHour".into(), Value::Null);
+        o.insert("linkStartVehPerHour".into(), Value::Null);
     }
     std::fs::write(m.out.join(format!("{prefix}-seed{seed}.json")), serde_json::to_string_pretty(&v).unwrap())?;
     let p = src.join(format!("{prefix}-seed{seed}.md"));
@@ -383,6 +412,7 @@ mod tests {
         assert_eq!(parse_seeds("1,2,5").unwrap(), vec![1, 2, 5]);
         assert_eq!(parse_seeds("1-3,9").unwrap(), vec![1, 2, 3, 9]);
         assert!(parse_seeds("5-1").is_none());
+        assert!(parse_seeds("1-3,3").is_none());
         assert!(parse_seeds("x").is_none());
     }
 
@@ -401,8 +431,13 @@ mod tests {
     #[test]
     fn growth_of_backlog_in_the_second_half() {
         let run = json!({"minutes": 60.0, "health": {"spawned": 1000.0}, "series": [
-            {"tMin": 5.0, "backlog": 0.0}, {"tMin": 30.0, "backlog": 10.0}, {"tMin": 55.0, "backlog": 40.0}]});
+            {"tMin": 5.0, "backlog": 0.0}, {"tMin": 30.0, "backlog": 10.0}, {"tMin": 60.0, "backlog": 40.0}]});
         assert!((series_growth(&run) - 3.0).abs() < 1e-9);
+        let mut incomplete = run;
+        incomplete["series"][2]["tMin"] = json!(45.0);
+        assert!(series_growth(&incomplete).is_nan());
+        incomplete["series"] = json!([]);
+        assert!(series_growth(&incomplete).is_nan());
     }
 
     #[test]

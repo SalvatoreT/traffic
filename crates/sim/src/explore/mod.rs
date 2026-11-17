@@ -26,13 +26,13 @@ pub mod util;
 
 use crate::eff::Eff;
 use crate::model::{Config, Demand, Intervention, Network, RoadClass};
-use crate::sim::{SelectLinkRecord, Simulation};
+use crate::sim::{LoadedCosts, SelectLinkRecord, Simulation};
 use crate::topo::Topo;
 use naming::NameIndex;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 pub const MPS_TO_MPH: f64 = 2.2369362920544;
 /// Dead band for "traffic increased on a block": `max(NOISE_SIGMAS x per-block standard deviation of flow across seeds, NOISE_FLOOR_VEH_H)`.
@@ -135,10 +135,16 @@ pub struct Bounding {
     pub links: Vec<u32>,
 }
 
-pub struct Study {
-    pub area: String,
+/// Inputs shared by every scenario of a study. Derived topology and baseline travel times depend on both.
+pub struct StudyInputs {
     pub net: Network,
     pub demand: Demand,
+}
+
+pub struct Study {
+    pub area: String,
+    inputs: StudyInputs,
+    loaded_costs: Mutex<HashMap<(String, u64), Arc<LoadedCosts>>>,
     pub origin: (f64, f64),
     pub net_hash: String,
     pub demand_hash: String,
@@ -156,7 +162,14 @@ pub struct Study {
     /// Per node: an intersection with a bounding street.
     pub boundary_node: Vec<bool>,
     /// In-study nodes that already lack a way in or out by car in the baseline network.
-    pub base_fail: HashSet<u32>,
+    period_access: std::collections::BTreeMap<String, (Network, HashSet<u32>)>,
+}
+
+impl std::ops::Deref for Study {
+    type Target = StudyInputs;
+    fn deref(&self) -> &StudyInputs {
+        &self.inputs
+    }
 }
 
 impl Study {
@@ -199,9 +212,15 @@ impl Study {
             boundary_node[l.from as usize] = true;
             boundary_node[l.to as usize] = true;
         }
-        let mut s = Study { area: area.into(), net, demand, origin, net_hash, demand_hash, calibration, topo, idx, is_local, harm_blocks, bounding, is_boundary, boundary_node, base_fail: HashSet::new() };
-        let eff = Eff::derive(&s.topo, &s.net, &[]);
-        s.base_fail = stranded_nodes(&s, &eff).into_iter().collect();
+        let mut s = Study { area: area.into(), inputs: StudyInputs { net, demand }, loaded_costs: Mutex::default(), origin, net_hash, demand_hash, calibration, topo, idx, is_local, harm_blocks, bounding, is_boundary, boundary_node, period_access: Default::default() };
+        // Study inputs without demand periods are also used for network inspection.
+        let periods = if s.demand.periods.is_empty() { vec![String::new()] } else { s.demand.periods.iter().map(|p| p.id.clone()).collect() };
+        for period in periods {
+            let network = crate::redistribution::period_network(&s.net, &period);
+            let eff = Eff::derive(&s.topo, &network, &[]);
+            let stranded = stranded_nodes(&s, &eff).into_iter().collect();
+            s.period_access.insert(period, (network, stranded));
+        }
         s
     }
 
@@ -281,15 +300,23 @@ pub fn stranded_nodes(study: &Study, eff: &Eff) -> Vec<u32> {
 /// Check a package before simulating it: every intervention must be valid and no in-study node may be stranded that the baseline
 /// did not already strand (design D2). `Err` holds the reason.
 pub fn check_access(study: &Study, ivs: &[Intervention]) -> Result<(), String> {
-    let eff = Eff::derive(&study.topo, &study.net, &street::expand(&study.net, ivs));
-    if eff.invalid_ivs > 0 {
-        return Err("invalid intervention".into());
+    check_access_for(study, ivs, study.period_access.keys().map(String::as_str))
+}
+
+pub fn check_access_for<'a>(study: &Study, ivs: &[Intervention], periods: impl IntoIterator<Item = &'a str>) -> Result<(), String> {
+    let expanded = street::expand(&study.net, ivs);
+    for period in periods {
+        let (net, baseline) = study.period_access.get(period).ok_or_else(|| format!("no access graph for period {period}"))?;
+        let eff = Eff::derive(&study.topo, net, &expanded);
+        if eff.invalid_ivs > 0 {
+            return Err(format!("{period}: invalid intervention"));
+        }
+        let bad: Vec<u32> = stranded_nodes(study, &eff).into_iter().filter(|n| !baseline.contains(n)).collect();
+        if let Some(&n) = bad.first() {
+            return Err(format!("{period}: strands {} node(s), first at {}", bad.len(), study.idx.node_label(n)));
+        }
     }
-    let bad: Vec<u32> = stranded_nodes(study, &eff).into_iter().filter(|n| !study.base_fail.contains(n)).collect();
-    match bad.first() {
-        Some(&n) => Err(format!("strands {} node(s), first at {}", bad.len(), study.idx.node_label(n))),
-        None => Ok(()),
-    }
+    Ok(())
 }
 
 /// Results of one headless run.
@@ -297,8 +324,7 @@ pub struct RunOut {
     /// Through vehicles per hour that use a local link (each counted once), over the run from t = 0.
     pub ct_vph: f64,
     pub veh_km: f64,
-    pub inside_n: u64,
-    pub inside_tt_s: f64,
+    pub resident: crate::sim::ResidentTime,
     pub unroutable: u64,
     pub gridlock_removed: u64,
     pub backlog: u64,
@@ -316,22 +342,15 @@ pub struct RunOut {
     pub records: Vec<SelectLinkRecord>,
 }
 
-impl RunOut {
-    pub fn inside_mean_s(&self) -> f64 {
-        if self.inside_n > 0 {
-            self.inside_tt_s / self.inside_n as f64
-        } else {
-            0.0
-        }
-    }
-}
-
 /// Run the simulation headless the way the app and the stored results do: construction places the agents already en route and settles the
 /// network (`INITIAL_SETTLE_S`), the clock reads 0, and every figure (cut-through, per-link flow and through cars, speeds) covers the
 /// `minutes` from t = 0. A screening run is the same run, only shorter, so its rates are over the same kind of window.
 pub fn run(study: &Study, ivs: &[Intervention], period: &str, seed: u64, minutes: f64, select_links: &[u32]) -> RunOut {
     let cfg = Config { seed, period: period.into(), select_links: select_links.to_vec(), interventions: street::expand(&study.net, ivs), initial_load: true, ..Default::default() };
-    let mut sim = Simulation::from_parts(study.net.clone(), study.demand.clone(), cfg).expect("simulation");
+    // All dynamics settings for this runner are fixed apart from the period, seed and scenario.
+    // The probe drops interventions and observers. Each scenario still places and settles its own traffic.
+    let costs = study.loaded_costs.lock().unwrap().entry((period.into(), seed)).or_default().clone();
+    let mut sim = Simulation::build(study.net.clone(), study.demand.clone(), cfg, Some(&costs)).expect("simulation");
     let nl = study.net.links.len();
     let total = minutes * 60.0;
     let mut speed_sum = vec![0.0f32; nl];
@@ -362,12 +381,10 @@ pub fn run(study: &Study, ivs: &[Intervention], period: &str, seed: u64, minutes
     let exits = sim.diagnostics().link_exits.to_vec();
     let ct1 = sim.cut_through_exits();
     let m = sim.metrics();
-    let (inside_n, inside_tt_s) = sim.inside_trip_stats();
     RunOut {
         ct_vph: m.cut_through.vehicles_per_hour,
         veh_km: m.veh_km,
-        inside_n,
-        inside_tt_s,
+        resident: sim.resident_time(),
         unroutable: m.unroutable_trips,
         gridlock_removed: m.gridlock_removed,
         backlog: m.backlog,

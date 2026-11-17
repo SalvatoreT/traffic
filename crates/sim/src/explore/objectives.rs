@@ -58,7 +58,7 @@ impl Objective {
             Objective::MostRemoved => "Through cars removed, minus the light penalty for the largest all-car rise on one block.".into(),
             Objective::NoClosures => "The same score, among packages made only of measures that close nothing to cars: Slow Streets, one-ways, all-way stops, traffic circles, speed humps and turn bans. No modal filters or diverters.".into(),
             Objective::LeastDetour => format!(
-                "The smallest added trip time per trip for trips that start or end inside the study area, among packages that remove at least {:.0}% of the most removed (ASSUMPTION: the share). Ties and differences the paired comparison cannot resolve go to the larger reduction, then fewer changes.",
+                "The smallest increase in elapsed time per requested car trip with an end inside the study area, measured until completion or the run cutoff, among packages that remove at least {:.0}% of the most removed (ASSUMPTION: the share). Ties and differences the paired comparison cannot resolve go to the larger reduction, then fewer changes.",
                 DETOUR_REDUCTION_FLOOR * 100.0
             ),
             Objective::FewestChanges => format!("The same score, among packages of at most {FEWEST_MAX_CHANGES} changes."),
@@ -93,17 +93,20 @@ pub fn depth(obj: Objective, p: &Params) -> usize {
 /// objective, `floor_pct` is the reduction a package needs to count (`DETOUR_REDUCTION_FLOOR` of the best seen): above it a package ranks
 /// by its detour, lowest first, ahead of every package below it, which rank by `core`.
 pub fn screen_value(obj: Objective, core: f64, e: &Eval, floor_pct: f64) -> f64 {
-    if obj == Objective::LeastDetour && e.reduction_pct >= floor_pct {
-        ABOVE_FLOOR - e.detour_s.clamp(-ABOVE_FLOOR / 2.0, ABOVE_FLOOR / 2.0)
-    } else {
-        core
+    if obj == Objective::LeastDetour {
+        let Some(seconds) = e.detour_s else { return f64::NEG_INFINITY };
+        if e.reduction_pct >= floor_pct {
+            return ABOVE_FLOOR - seconds.clamp(-ABOVE_FLOOR / 2.0, ABOVE_FLOOR / 2.0);
+        }
     }
+    core
 }
 
 /// Whether a rechecked package can win `obj`.
 pub fn eligible(obj: Objective, f: &Final) -> bool {
     match obj {
-        Objective::MostRemoved | Objective::LeastDetour => true,
+        Objective::MostRemoved => true,
+        Objective::LeastDetour => f.detour_s.is_some(),
         Objective::NoClosures => !f.closes,
         Objective::FewestChanges => f.set.len() <= FEWEST_MAX_CHANGES,
     }

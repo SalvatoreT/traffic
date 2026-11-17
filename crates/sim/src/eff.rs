@@ -781,6 +781,39 @@ pub fn webster(ys: &[f32], pinned: Option<f32>) -> (f32, Vec<(f32, f32)>, f32) {
 /// allocators always used.
 pub const GREEN_FLOOR_S: f32 = 5.0;
 
+/// Distribute the available green among unobserved phases by flow ratio [Webster1958].
+/// Fix the smallest ratio at the minimum whenever its share is too short. Its green
+/// stays fixed as the remaining phases divide the remaining seconds.
+fn allocate_greens(ys: &[f32], fixed: Vec<Option<f32>>, available: f32) -> Vec<f32> {
+    let mut free: Vec<usize> = (0..fixed.len()).filter(|&i| fixed[i].is_none()).collect();
+    let mut green: Vec<f32> = fixed.into_iter().map(Option::unwrap_or_default).collect();
+    if free.is_empty() {
+        return green;
+    }
+    let minimum = MIN_GREEN.min(available / free.len() as f32);
+    free.sort_by(|&a, &b| ys[a].total_cmp(&ys[b]));
+    let mut remaining = available;
+    for (j, &i) in free.iter().enumerate() {
+        let pending = &free[j..];
+        let sum: f32 = pending.iter().map(|&k| ys[k]).sum();
+        if sum <= 1e-6 {
+            for &k in pending {
+                green[k] = remaining / pending.len() as f32;
+            }
+            break;
+        }
+        if remaining * ys[i] / sum >= minimum {
+            for &k in pending {
+                green[k] = remaining * ys[k] / sum;
+            }
+            break;
+        }
+        green[i] = minimum;
+        remaining -= minimum;
+    }
+    green
+}
+
 fn webster_with(ys: &[f32], pinned: Option<f32>, clearance: &[f32]) -> (f32, Vec<(f32, f32)>, f32) {
     let np = ys.len() as f32;
     let lost: f32 = clearance.iter().sum(); // L = sum of intergreens
@@ -793,19 +826,7 @@ fn webster_with(ys: &[f32], pinned: Option<f32>, clearance: &[f32]) -> (f32, Vec
         ((c.clamp(CYCLE_MIN, CYCLE_MAX).max(lost + np * GREEN_FLOOR_S)) / 5.0).ceil() * 5.0
     };
     let avail = (cycle - lost).max(np * GREEN_FLOOR_S);
-    let mut green: Vec<f32> = if ysum > 1e-6 { ys.iter().map(|&y| avail * y / ysum).collect() } else { vec![avail / np; ys.len()] };
-    let minimum = MIN_GREEN.min(avail / np);
-    for _ in 0..2 {
-        let low = green.iter().filter(|&&g| g < minimum).count() as f32;
-        if low == 0.0 {
-            break;
-        }
-        let fixed = low * minimum;
-        let rest: f32 = green.iter().filter(|&&g| g >= minimum).sum();
-        for g in green.iter_mut() {
-            *g = if *g < minimum { minimum } else if rest > 0.0 { *g * (avail - fixed) / rest } else { *g };
-        }
-    }
+    let green = allocate_greens(ys, vec![None; ys.len()], avail);
     let mut phases = Vec::new();
     let mut t = 0.0;
     for (g, c) in green.iter().zip(clearance) {
@@ -885,21 +906,7 @@ fn plan_with_observation(net: &Network, period: &str, n: usize, groups: &[Vec<u3
         return Err(issue(false, cycle, required, format!("cannot hold its {} phases: the observed greens ({spent:.1} s), {clr} and {GREEN_FLOOR_S} s for each other phase need {required:.1} s", ys.len())));
     }
     let avail = cycle - lost - spent;
-    let ysum_free: f32 = ys.iter().zip(&fixed).filter(|(_, f)| f.is_none()).map(|(y, _)| *y).sum();
-    let minimum = MIN_GREEN.min(avail / nfree.max(1.0));
-    let mut green: Vec<f32> = ys.iter().zip(&fixed).map(|(y, f)| f.unwrap_or(if ysum_free > 1e-6 { avail * y / ysum_free } else { avail / nfree.max(1.0) })).collect();
-    for _ in 0..2 {
-        let low = green.iter().zip(&fixed).filter(|(g, f)| f.is_none() && **g < minimum).count() as f32;
-        if low == 0.0 {
-            break;
-        }
-        let rest: f32 = green.iter().zip(&fixed).filter(|(g, f)| f.is_none() && **g >= minimum).map(|(g, _)| *g).sum();
-        for (g, f) in green.iter_mut().zip(&fixed) {
-            if f.is_none() {
-                *g = if *g < minimum { minimum } else if rest > 0.0 { *g * (avail - low * minimum) / rest } else { *g };
-            }
-        }
-    }
+    let green = allocate_greens(ys, fixed, avail);
     let mut phases = Vec::new();
     let mut t = 0.0;
     for (g, c) in green.iter().zip(&clearance) {
