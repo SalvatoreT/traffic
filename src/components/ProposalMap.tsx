@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Intervention, Network } from '../types';
 import { changeTicks, DEAD_BAND_CUTTHROUGH } from '../lib/change';
+import { badgeKey } from '../lib/legend';
 import { ATTRIBUTION, BADGE_NAME, BADGE_TEXT } from '../lib/mapexport';
 import type { NetIndex } from '../lib/naming';
 import { blockChanges, buildPicture, mismatchNote, periodNote, pathOf, pictureAlt, pictureFacts, type BlockChange } from '../lib/picture';
@@ -11,7 +12,7 @@ import { canTrace } from '../lib/redistribution-view';
 import { blockMeasured } from '../lib/scope';
 import { controlLabel } from '../lib/selection';
 import { itemFor, parseRedistribution, redistributionBasis, redistributionLine, redistributionRows, redistributionUrl, redistributionVerdict, type StoredItem, type StoredRedistribution } from '../lib/stored-redistribution';
-import { markSvg } from '../lib/shareimage';
+import { markCenter, markSvg } from '../lib/shareimage';
 import { useNear } from '../lib/useNear';
 
 const ROUTE_COLOR = { light: '#5b2a86', dark: '#d9b8ff' } as const;
@@ -106,6 +107,7 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
   const mismatch = mismatchNote(facts, when);
   const kinds = new Set(model.marks.map((m) => m.kind));
   const badgeTypes = [...new Set(model.marks.flatMap((m) => (m.kind === 'badge' ? [m.type] : [])))];
+  const signTypes = [...new Set(model.marks.flatMap((m) => (m.kind === 'sign' ? [m.type] : [])))];
   const controls = [...new Set(ivs.flatMap((iv) => (iv.type === 'control' ? [controlLabel(iv.control).toLowerCase()] : [])))];
   const badgeName = (t: Intervention['type']) => (t === 'control' && controls.length ? `${BADGE_NAME.control} (${controls.join(', ')})` : BADGE_NAME[t]);
   const traceable = ivs.map((iv, i) => ({ iv, i })).filter(({ iv }) => canTrace(iv));
@@ -226,13 +228,16 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
                   const s: Sel = { kind: 'iv', iv: i };
                   return (
                     <g key={i} style={{ cursor: 'pointer' }} onPointerEnter={mouseEnter(s)} onClick={() => toggle(s)}>
-                      {ms.map((m, k) => (
-                        <g key={k}>
-                          {same(sel, s) && <circle cx={m.x} cy={m.y} r={17 * unit} fill="none" stroke={ink} strokeWidth={2.2 * unit} strokeDasharray={`${4 * unit} ${3 * unit}`} />}
-                          <g dangerouslySetInnerHTML={{ __html: markSvg(m, unit, model.bar) }} />
-                          <circle cx={m.x} cy={m.y} r={15 * unit} fill="transparent" />
-                        </g>
-                      ))}
+                      {ms.map((m, k) => {
+                        const c = markCenter(m, unit);
+                        return (
+                          <g key={k}>
+                            {same(sel, s) && <circle cx={c.x} cy={c.y} r={(m.kind === 'sign' ? 19 : 17) * unit} fill="none" stroke={ink} strokeWidth={2.2 * unit} strokeDasharray={`${4 * unit} ${3 * unit}`} />}
+                            <g dangerouslySetInnerHTML={{ __html: markSvg(m, unit, model.bar) }} />
+                            <circle cx={c.x} cy={c.y} r={15 * unit} fill="transparent" />
+                          </g>
+                        );
+                      })}
                     </g>
                   );
                 })}
@@ -254,6 +259,7 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
                 {kinds.has('bar') && <li>Yellow and black bar across a street: closed to through cars.</li>}
                 {kinds.has('diverter') && <li>Striped line across a junction: diagonal diverter.</li>}
                 {kinds.has('arrow') && <li>Arrow: one-way street, in the direction shown.</li>}
+                {signTypes.map((t) => <li key={t}>{badgeKey(t).label}.</li>)}
                 {badgeTypes.length > 0 && <li>Lettered badges: {badgeTypes.map((t) => `${BADGE_TEXT[t]} ${badgeName(t)}`).join(', ')}.</li>}
                 {model.pins.length > 0 && facts.named && <li>Bold number: change on {facts.named.label}, {facts.namedKind === 'largest' ? 'the block with the largest through-car increase' : 'the block the search flagged'}{model.pins.length > 1 && facts.gain ? `, and on ${facts.gain.label}, the biggest gain in the ${when}` : ''}.</li>}
                 {routeGeom.length > 0 && <li>Purple dashed line with a number and an arrow: a route the redirected cars take.</li>}

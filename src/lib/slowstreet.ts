@@ -1,4 +1,6 @@
 import type { Intervention, Network, NetLink } from '../types';
+import { pointAtLinkMeters } from './junctionends';
+import { limitMph } from './speedsign';
 
 /**
  * Slow Street: one intervention that limits every block of one named street, inside the study area, to 15 mph. The street comes from the
@@ -89,4 +91,28 @@ export function expandSlowStreets(net: Network, ivs: Intervention[]): Interventi
     const run = streetRun(net, iv.link);
     return run ? slowedBlocks(net, run).map((link) => ({ type: 'speed_limit' as const, link, speed: SLOW_STREET_MPS })) : [];
   });
+}
+
+/** The middle of a Slow Street's run: the midpoint of the block nearest the average of the run's block midpoints, with that block's heading. */
+export function slowStreetAnchor(net: Network, link: number): { x: number; y: number; heading: number } | null {
+  const run = streetRun(net, link);
+  if (!run) return null;
+  const pts = run.blocks.map((b) => pointAtLinkMeters(net.links[b[0]], net.links[b[0]].length / 2));
+  const cx = pts.reduce((s, q) => s + q.x, 0) / pts.length, cy = pts.reduce((s, q) => s + q.y, 0) / pts.length;
+  return pts.reduce((m, q) => (Math.hypot(q.x - cx, q.y - cy) < Math.hypot(m.x - cx, m.y - cy) ? q : m));
+}
+
+/** The one sign a speed-limit item draws: its limit in mph, where it sits (a Slow Street at the middle of its run, a block limit at the block's middle), the street's heading, and the accessible name. Null for any other item. */
+export function speedSign(net: Network, iv: Intervention): { mph: number; x: number; y: number; heading: number; name: string } | null {
+  if (iv.type === 'slow_street') {
+    const q = slowStreetAnchor(net, iv.link) ?? (net.links[iv.link] ? pointAtLinkMeters(net.links[iv.link], net.links[iv.link].length / 2) : null);
+    return q ? { mph: SLOW_STREET_MPH, ...q, name: `Slow Street, ${SLOW_STREET_MPH} mph speed limit, on ${net.links[iv.link].name.trim() || 'this street'}` } : null;
+  }
+  if (iv.type === 'speed_limit') {
+    const l = net.links[iv.link];
+    if (!l) return null;
+    const mph = limitMph(iv.speed);
+    return { mph, ...pointAtLinkMeters(l, l.length / 2), name: `Speed limit, ${mph} mph, on ${l.name.trim() || 'this street'}` };
+  }
+  return null;
 }

@@ -4,7 +4,9 @@ import type { NetIndex } from '../lib/naming';
 import { interventionInRegion, type Region } from '../lib/region';
 import { describeIntervention } from '../lib/describe';
 import { filterSentence, filterText } from '../lib/blocked';
-import { BADGE_TEXT } from '../lib/mapexport';
+import { BADGE_TEXT, isSignType, type LetteredType } from '../lib/mapexport';
+import { speedSign } from '../lib/slowstreet';
+import { speedSignElement } from '../lib/speedsign';
 import type { Selection } from '../lib/selection';
 import type { Hover } from '../lib/highlight';
 import { PlaceSearch } from './PlaceSearch';
@@ -48,9 +50,10 @@ export function InterventionPanel(p: Props) {
             {p.interventions.map((iv, i) => {
               const d = describeIntervention(iv, B.network, X);
               const ft = filterText(iv, B.network, X);
+              const sign = speedSign(B.network, iv);
               return (
                 <li key={i}>
-                  <span className={`iv-badge static iv-${iv.type}`} aria-hidden="true">{iv.type === 'speed_limit' ? Math.round(iv.speed * 2.23694) : iv.type === 'slow_street' ? 15 : BADGE_TEXT[iv.type]}</span>
+                  {sign ? <span className="iv-sign static" aria-hidden="true" dangerouslySetInnerHTML={{ __html: speedSignElement(sign.mph, 24) }} /> : <span className={`iv-badge static iv-${iv.type}`} aria-hidden="true">{isSignType(iv.type) ? '' : BADGE_TEXT[iv.type as LetteredType]}</span>}
                   <span className="desc">
                     <button type="button" className="desc-btn" title="Select this place" onClick={() => p.onSelectIntervention(i)}>{d}</button>
                     {!interventionInRegion(iv, B.network, p.region) && <>{' '}<span className="tag">outside the map</span></>}
