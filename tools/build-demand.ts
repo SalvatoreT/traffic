@@ -351,7 +351,16 @@ if (lodes) {
     const m = e.dir === 'out' ? r.out : r.in;
     m[e.sector] = (m[e.sector] ?? 0) + e.n;
   }
-  const inBbox = (b: { lat: number; lon: number }) => b.lon >= cfg.bbox[0] && b.lon <= cfg.bbox[2] && b.lat >= cfg.bbox[1] && b.lat <= cfg.bbox[3];
+  // A model extent (area config `extent`) also cuts the blocks: one outside the polygon lies beyond the gates, so its trips arrive through them.
+  const extPoly: [number, number][] | null = areaCfg?.extent?.polygon?.length ? areaCfg.extent.polygon.map(([lon, lat]: [number, number]) => toXY(lat, lon)) : null;
+  const extR: number = lo.spreadRadiusM || 150;
+  const inExtent = (b: { lat: number; lon: number }) => {
+    if (!areaCfg?.extent) return true;
+    const [x, y] = toXY(b.lat, b.lon);
+    if (extPoly) return pointInPolygon([x, y], extPoly);
+    return candNodes.some((n) => Math.hypot(n.x - x, n.y - y) <= extR);
+  };
+  const inBbox = (b: { lat: number; lon: number }) => b.lon >= cfg.bbox[0] && b.lon <= cfg.bbox[2] && b.lat >= cfg.bbox[1] && b.lat <= cfg.bbox[3] && inExtent(b);
   for (const b of lodes.blocks) {
     if ((!b.resWorkers && !b.jobs) || !inBbox(b)) continue; // blocks outside the model area (the raw file was cut for a larger one) would map to the nearest edge node
     const [x, y] = toXY(b.lat, b.lon);
