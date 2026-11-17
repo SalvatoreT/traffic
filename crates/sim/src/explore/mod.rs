@@ -7,6 +7,7 @@ pub mod bench;
 pub mod bypass;
 pub mod cands;
 pub mod check;
+pub mod confirmed;
 pub mod decode;
 pub mod link;
 pub mod naming;

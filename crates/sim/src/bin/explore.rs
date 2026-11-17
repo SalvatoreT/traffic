@@ -20,6 +20,7 @@ fn usage(msg: &str) -> ! {
          \x20              [--known data/proposals/ID.seeds.json] [--no-known]   known packages to recheck and start from (each run adds its published options)\n\
          \x20              [--check LINK ...] [--check-subsets] [--check-singles]   score given scenario links, or with --check-singles every candidate alone, by the search's own code, then print and exit (nothing is written)\n\
          \x20              [--add-seed LINK [--note TEXT] [--published-on DATE]] [--seed-proposals FILE] [--seed-labels FILE]   add to the seeds file, then exit\n\
+         \x20              [--reapply-displacement FILE [--report FILE]]   apply the displacement rule to the confirmed figures of an existing proposals file and its report (no search)\n\
          \x20              [--annotate]   add per-link pictures to the existing --out file (re-simulates the published packages; no search)"
     );
     std::process::exit(if msg.is_empty() { 0 } else { 2 });
@@ -40,6 +41,29 @@ fn seed_list(v: &str, what: &str) -> Vec<u64> {
     }
 }
 
+/// `--reapply-displacement`: the displacement rule on the confirmed figures of a finished proposals file, then the matching edits to its report.
+fn reapply_displacement(path: &Path, report: &Path) {
+    let text = std::fs::read_to_string(path).unwrap_or_else(|e| usage(&format!("cannot read {}: {e}", path.display())));
+    let mut file: serde_json::Value = serde_json::from_str(&text).unwrap_or_else(|e| usage(&format!("{}: {e}", path.display())));
+    let changes = traffic_sim::explore::confirmed::reapply(&mut file).unwrap_or_else(|e| usage(&e));
+    for c in &changes {
+        eprintln!("group {}: dropped {}; renumbered {}; labeled {} earlier record(s) as search-seed figures", c.id, if c.dropped.is_empty() { "none".into() } else { c.dropped.join(", ") }, if c.renamed.is_empty() { "none".into() } else { c.renamed.iter().map(|r| format!("{} to {}", r.0, r.1)).collect::<Vec<_>>().join(", ") }, c.labeled);
+    }
+    if !changes.iter().any(|c| c.changed()) {
+        eprintln!("nothing to change; {} left as it is", path.display());
+        return;
+    }
+    std::fs::write(path, util::pretty_json(&file)).expect("write proposals");
+    eprintln!("wrote {}", path.display());
+    match std::fs::read_to_string(report) {
+        Ok(md) => {
+            std::fs::write(report, traffic_sim::explore::confirmed::patch_report(&md, &changes)).expect("write report");
+            eprintln!("wrote {}", report.display());
+        }
+        Err(_) => eprintln!("no report at {}: pass --report FILE to edit one", report.display()),
+    }
+}
+
 fn main() {
     let argv: Vec<String> = std::env::args().skip(1).collect();
     let mut p = Params::new("rockridge");
@@ -57,6 +81,7 @@ fn main() {
     let mut seed_files: Vec<PathBuf> = Vec::new();
     let mut known_path: Option<PathBuf> = None;
     let mut annotate = false;
+    let mut reapply: Option<PathBuf> = None;
     let mut check: Vec<String> = Vec::new();
     let mut check_subsets = false;
     let mut check_singles = false;
@@ -130,6 +155,7 @@ fn main() {
             "--published-on" => seed_published = v.clone(),
             "--seed-proposals" => seed_files.push(PathBuf::from(v)),
             "--seed-labels" => seed_labels = Some(PathBuf::from(v)),
+            "--reapply-displacement" => reapply = Some(PathBuf::from(v)),
             "--known" => known_path = Some(PathBuf::from(v)),
             "--check" => check.push(v.clone()),
             "--out" => {
@@ -143,6 +169,12 @@ fn main() {
             _ => usage(&format!("unknown argument {k}")),
         }
         i += 1;
+    }
+    if let Some(path) = &reapply {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let report = report.clone().unwrap_or_else(|| root.join(format!("data/proposals/{}.md", p.area)));
+        reapply_displacement(path, &report);
+        return;
     }
     if p.periods.is_empty() || p.seeds.is_empty() || p.beam == 0 || p.depth == 0 {
         usage("periods, seeds, beam and depth must be non-empty / positive");

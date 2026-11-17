@@ -84,8 +84,12 @@ export interface ProposalEvidence {
  * parallel to `links` (link ids). Links with no through cars in either column are left out.
  */
 export interface ProposalPicture { period: string; links: number[]; base: number[]; scen: number[] }
-/** One option dropped for displacement: the other option that made it unnecessary and the figures behind that. */
-export interface DroppedOption { from: string; by: string; reason: string }
+/**
+ * One option dropped for displacement: the other option that made it unnecessary and the figures behind that. `basis` says which runs the
+ * figures come from: the `search` seeds that chose the options or the `confirmation` seeds that the published figures come from. Absent in files
+ * written before the label existed, whose figures are the search seeds'.
+ */
+export interface DroppedOption { from: string; by: string; reason: string; basis?: 'search' | 'confirmation'; seeds?: number[] }
 export interface CutThrough {
   baselineVehPerHour: number; scenarioVehPerHour: number; changePct: number;
   /** Scenario minus baseline in through cars an hour, paired by seed. */
@@ -109,7 +113,7 @@ export interface Computed {
   settings?: Record<string, unknown>;
   /** The goals the options were chosen for, with the weights behind them. Absent in files written before. */
   objectives?: { list: { id: string; label: string; rule: string }[]; detourReductionFloor?: number; note?: string };
-  /** Options that win no goal and were left out because another option removes as many through cars with a clearly smaller rise on one block. */
+  /** Options that win no goal and were left out because another option removes as many through cars with a clearly smaller rise on one block, judged on the search seeds and again on the confirmation seeds. */
   displacement?: { rule: string; floorVehPerHour: number; dropped: DroppedOption[] };
   estimation?: {
     method: string; level: number; minPairs: number; aggregation: string; scope: string; maximum: string; practicalFloors: string;
