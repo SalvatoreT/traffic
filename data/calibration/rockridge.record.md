@@ -89,6 +89,65 @@ Claremont Ave: checked end to end. OSM lanes (3 with one forward and one backwar
 
 Ramp junctions: after joining all four SR-24 terminals are single signalized nodes (Aileen/Telegraph and Clifton/Claremont off-ramps, Hudson/Claremont and 56th/Telegraph on-ramps) with 2-lane ramp approaches at 35 mph. Mean discharge in the PM peak (seeds 1 to 3, measured before the third round): Aileen off-ramp 584 veh/h (offered 656), Clifton off-ramp 914 veh/h (offered about 1,025), on-ramps 783 and 555 veh/h. That is 290 to 460 veh/h per lane averaged over the hour; the signal gives the ramp 30 to 45% of the cycle and the shortfall is downstream spill-back on Claremont and Telegraph, not the ramp signal itself. Before the third round the remaining gridlock removals were mostly vehicles queued on the 4-lane freeway stub behind the single-lane Clifton off-ramp (26 of about 45 removals over six seeds at scale 0.3). The third round checked the ramp lanes against OSM: the off-ramps are tagged one lane for most of their length and two lanes (turn lanes left | left;through;right at Clifton, left | right at Aileen) on the final way before the signal, and the importer keeps that per segment (a test covers it), so no lane count is lost. After step M the stub accounts for about one removal per run.
 
+## Thirty-seventh round: gridlock judged near the Trapezoid (change calibration-round-37)
+
+Round 36 traced the gridlock that keeps the delay-feedback fit rejected to the all-way stop at Claremont Ave / Russell St and the Berkeley hills streets north of Ashby Ave, a kilometer or more from the study area. On 2026-11-16 the project lead relayed a resident's field observation that Claremont Ave / Russell St is an all-way stop (every approach stops), so the network there is right, and chose "Judge gridlock near the Trapezoid": D16's limit of 1 car an hour cleared from gridlock, and the cost loop's acceptance rule, apply to the study area, its bounding streets and the junctions on them. Gridlock farther out is reported apart as a known weakness at the model's edges. Decisions are in `openspec/changes/calibration-round-37/design.md`. Simulator fingerprint f0df1aabc323, network f9fa09a5726644d7, demand 1c798217e72fb1ba and cross-validation demand a367850a13850985, all unchanged; frozen split unchanged; no link renumbered. Times Pacific; the round ran on 2026-11-16.
+
+### Reproduction
+
+`npm run data` in a fresh worktree reproduced round 36's network, demand and cross-validation demand byte for byte (the assumptions table differs only in its generation time). PM seed 1 on them, with this round's reporting, equals round 35's stored assessment run in every field but the manifest.
+
+### Step 1: the field observation
+
+`osmTagOverrides` adds `stop=all` to OSM node 53082604 with the observation as its source (DATA). The importer already read the junction-node stop as all-way, so the network file is unchanged. Round 36's open question, whether the junction is a minor-road stop, is closed.
+
+### Step 2: the judged zone
+
+The zone comes from data: the links and nodes the importer marks as in the study area (bounding streets included), both ends of those links, and every node within `judgedZone.bufferM` of them along the network in either direction (area config; 200 m, ASSUMPTION). A car counts as near when the node where it was held (the end of the link it waited on, or the node it was held in) is in the zone. The first non-freeway link beyond a bounding-street junction is 113 m long at the median, 200 m at the 75th percentile and 301 m at most, so 200 m reaches the next junction on three cross streets in four. A far car counts against the rule too when its blocking chain reaches the zone: at the 5 s snapshot before it was cleared, the links joined by vehicles held at least 60 s by a full exit (ASSUMPTION) include one in the zone. Bounding-street travel times were not used as the guard: only Telegraph Ave has observed segments and they stay in the assessment. The zone has 111 nodes and 329 links.
+
+`calibrate` reads the split from the simulation's existing read-only diagnostics between its 5 s steps and writes `gridlockZone` into each seed's report: near, far, far with a chain into the zone, the judged count at 100, 200 and 400 m, far places, trips waiting at origins in the zone, and the longest standing queue on each bounding street. Nothing in the simulator's module tree changed, so the fingerprint and every run are unchanged (every re-run PM seed below matches its stored run). The ten-seed summary, `tools/assess.ts` and `tools/cost-loop.ts` judge D16 on near plus linked far clearings; everything else in both rules is unchanged.
+
+### Step 3: delay-feedback fit
+
+`tools/cost-loop.ts --no-stop` from the shipped demand, resumed from iteration 2 after two container restarts (`--resume 1 --jobs 3`). The runs carry no near/far split in storage, so the PM seeds were simulated again with the new reporting; every PM run of iterations 0 to 3 equals round 33's stored run (round 35's for iteration 0) in every simulated field, apart from the list of observed approaches that round 35 added to one signal. PM seeds 1 to 10, cars cleared from gridlock per hour:
+
+| Iteration | All | Near (judged) | Far | Far, chain into the zone | Where far (seeds total) | PM stable (D16) | Backlog mean %, seeds under 2% | Headline error | Cost gap |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 0 (free-flow and BPR costs) | 1.10 | 0.60 | 0.50 | 0 | single events | yes | 0.71, 10 | 7.5 | - |
+| 1 | 24.70 | 0.10 | 24.60 | 0 | Ashby Ave / Claremont Crescent 34, Avalon Ave / Claremont Blvd 26, Ashby Ave / Claremont Ave 22 | yes | 1.07, 10 | 5.4 | 0.378 |
+| 2 | 13.90 | 0.00 | 13.90 | 0 | Ashby Ave / Claremont Ave 23, Avalon Ave / Claremont Blvd 21, Ashby Ave / Claremont Crescent 10 | no | 1.75, 6 | 3.7 | 0.122 |
+| 3 | 10.60 | 0.00 | 10.60 | 0 | Ashby Ave / Claremont Ave 21, Avalon Ave / Claremont Blvd 16, Ashby Ave / Claremont Crescent 16 | no | 1.86, 5 | 5.5 | 0.090 |
+
+Converged at iteration 3. The far gridlock sits 1.0 to 1.4 km from the study area and no chain of it reached the zone. With gridlock judged near the Trapezoid the baseline is stable, so the rule needs a stable iteration with no more backlog than the baseline: iteration 1 is stable but leaves 1.07% of trips waiting against 0.71%, and iterations 2 and 3 fail D16 on backlog (6 and 5 seeds under 2%). Every iteration was rejected and the final build reproduced the shipped demand byte for byte.
+
+### Result: ten seeds
+
+Seeds 1 to 10 (PM also 11 to 20), scale 1.0, 60 minutes, `npm run assess -- --publish --noise`; PM seeds 11 to 20 run separately and identical to round 35's stored runs. Round 36 in brackets; only the gridlock rows changed in meaning.
+
+| | Target | PM 1-10 | PM 11-20 | AM 1-10 | Midday 1-10 |
+| --- | --- | --- | --- | --- | --- |
+| Through cars HSB / CSB / HNB / CNB | 79-120 / 39-117 / 48-95 / 102-145 | 143 / 132 / 98 / 150 (same) | 146 / 140 / 96 / 152 (same) | no counts | no counts |
+| Headline shares HNB / CNB / HSB / CSB | 47 / 47 / 68 / 45 | 52.9 / 50.5 / 55.1 / 37.4, 3 of 4, error 7.5 (same) | 52.8 / 47.9 / 56.6 / 38.9, 3 of 4 (same) | 50.8 / 43.9 / 59.6 / 47.3 (same) | 52.6 / 37.2 / 62.8 / 45.5 (same) |
+| Cars cleared from gridlock per hour near the study area, judged (D16) | below 1 | 0.60 (1.10, every one counted) | 0.00 (1.30) | 0.00 (0.30) | 0.00 (0.00) |
+| Far, with a chain into the zone | | 0.50, 0 | 1.30, 0 | 0.30, 0 | 0, 0 |
+| Judged at 100 m / 400 m buffer | | 0.60 / 0.60 | 0.00 / 0.00 | 0.00 / 0.00 | 0.00 / 0.00 |
+| Entry backlog, mean %; trips waiting at zone origins / all at the end | below 2% | 0.71; 0.9 / 185 (0.71) | 0.57; 1.5 / 150 (0.57) | 0.03; 0.4 / 5.6 (0.03) | 0.01; 0.1 / 0.8 (0.01) |
+| Longest queue, seed mean m (share of samples with a full link): Telegraph / Alcatraz / College / Claremont / CA 24 | | 74 (2.9%) / 82 (1.6%) / 87 (3.3%) / 56 (0) / 43 (0) | 70 (1.4%) / 77 (1.2%) / 86 (5.4%) / 59 (0) / 42 (0) | see the assessment | see the assessment |
+| Telegraph Ave NB / SB, s | PM 302-420 / 300-376; AM 280-315 / 245-285 | 345 / 317 (same) | | 294 / 299 (same) | |
+| Recent stations GEH<5, fitted / held out | above 85% | 75 of 92 (82%) / 13 of 24 (54%) (same) | | 67 of 77 (87%) / 14 of 19 (74%) (same) | no counts |
+
+PM near clearings: 6 over ten seeds, all on 55th St approaching its signal at Telegraph Ave by the SR-24 ramps (links 1576 and 1578; 4 of them in seed 6). Far: single events at 61st St / MLK Jr Way, 59th St / Idaho St, Russell St and Pine Ave, and Ashby Ave / Claremont Crescent; on seeds 11 to 20, 7 of 13 on Russell St. `calibrate --od-costs` on PM seeds 1 to 4 gives the same through cars as round 33 (Hillegass Ave SB 128, Colby St SB 118 an hour). Validation: 61 of 72 cases pass, as in round 36; failing a3, e2, e3, j6, j8, j9, j12 (reviewed), l1, p2, p3, b13 (not reviewed). WASM parity and trace identity hold (`npm run check:wasm`).
+
+### Verdict
+
+Status `uncalibrated`. D16 now holds in every period: PM 0.60 and 0.00 judged cars cleared from gridlock an hour on the two seed sets, AM and midday 0.00, at every buffer from 100 to 400 m. The PM peak still fails D5 (3 of 4), the through-car check on all four blocks and the station rule fitted (82%) and held out (54%); the AM peak fails the station rule held out (74%). Primitive validation: p2, p3, b13 and l1 fail with no reviewed exception. Whether to change the status is the project lead's decision.
+
+### What remains off
+
+- Far from the study area the model still clears cars from gridlock: about 1 an hour on the shipped demand and 10 to 25 on the feedback iterations, on Russell St and the hillside streets around Ashby Ave / Claremont Ave. The model has few counts there; the count at Claremont Ave / Russell St named in round 36 would still show what that all-way stop must pass.
+- The feedback fit stays rejected, now on entry backlog rather than gridlock near the study area.
+- As before: the queue-first left-turn model, the second eastbound lane on Ashby Ave, l1 and b13, the field checks of rounds 30 to 32, and stale stored proposal results, text pages and previews.
+
 ## Thirty-sixth round: what limits Ashby Ave / Claremont Ave (change calibration-round-36)
 
 Rounds 33 to 35 changed the phasing, the timing and the eastbound lanes at Ashby Ave / Claremont Ave and none of them reduced the cars cleared from gridlock there. The lead's reading: two northbound lanes with even 17 s of green in 100 s discharge about 600 an hour, yet the model passes 260 to 370, so something else limits the junction. This round looks for that constraint before touching the signal again, checks the data along it, and tries fixes at the source under the step rule. Decisions are in `openspec/changes/calibration-round-36/design.md`. Simulator fingerprint f0df1aabc323, network f9fa09a5726644d7 and demand 1c798217e72fb1ba, all unchanged; frozen split unchanged. Times Pacific; the round ran on 2026-11-16.

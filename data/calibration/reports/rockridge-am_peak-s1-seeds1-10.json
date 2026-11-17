@@ -4,7 +4,7 @@
       "inputs": {
         "areaConfig": {
           "path": "data/areas/rockridge.json",
-          "sha256": "2635dbe670726c6a59bb9740e88e185342e7e642af076c3fed1565c16ee73d8d"
+          "sha256": "2a3cdc8c3e3129857749af17614fa1f0aba101be663f9de8f8a0f5347243fe60"
         },
         "demand": {
           "path": "public/data/rockridge.demand.json",
@@ -74,7 +74,7 @@
       "simulator": {
         "dirty": false,
         "fingerprint": "f0df1aabc323bca5893215e1df1afbff",
-        "revision": "c2a52557fc988a563d971e408c5a16898074e996",
+        "revision": "017273f7ef4b9806532bc35339985a0d847e9509",
         "version": "0.1.0"
       }
     },
@@ -82,43 +82,43 @@
     "summaryOf": [
       {
         "seed": 1,
-        "sha256": "70a2f513b0a9186324677805f8564ecec9f82bdd3fc459ca2e95eec888f3ce1b"
+        "sha256": "ee78b5f203cbe78c61424c997510cc3794274effda104edf559868faa837fc9c"
       },
       {
         "seed": 2,
-        "sha256": "2b135f91e575ccbda6fe42dc87d00328377c879768fb22699b11cf079e3a76b4"
+        "sha256": "72b62b308e5d0c081a0023cf272bb7bb2fde87d49131b3aee1d506839d7fbfdc"
       },
       {
         "seed": 3,
-        "sha256": "ce0c964df1d36c8f30075a37113c88d7a646fd7754eb09599dbdd6970270b0de"
+        "sha256": "9562ae18052bbf5289b0f9ecd82191714af383613f2c49f2ecfade2604d523ed"
       },
       {
         "seed": 4,
-        "sha256": "3420de49fa0ac01ed227a7b9b6abc42f5f1c6510ff45d9c1acbe2ecd03bcbc1a"
+        "sha256": "90192ed87da4ef364c306c2ae62eca17180dc8510bf2793d1b44b7afe03a7e93"
       },
       {
         "seed": 5,
-        "sha256": "5bc560e6b82c3a2772f9d1f5d8df13d127ef805168f85e0cb111f74e19395196"
+        "sha256": "9d83a2ce53d045e815a57ea7ad775703f47a8c59632dde702578e35921f5b370"
       },
       {
         "seed": 6,
-        "sha256": "1576c63a26b2087213bb24a00a25bc57d43afc9c8f3dcf63bf21d50acd09bdba"
+        "sha256": "365107238fd59075a6777ddbc067e27ffba97c7552c1f4675114075a43e08df1"
       },
       {
         "seed": 7,
-        "sha256": "e94f5254a5565160b216b2824c8bb4421fde3a760d02099c230b9304d7849765"
+        "sha256": "76c2e2d280953de401b49ad340894db34cb025af596374f86f70e82329fc026f"
       },
       {
         "seed": 8,
-        "sha256": "6044a7b233a6af2adeceb990adb4148d5999abefe9a0b20db0f07bb9055bfe3f"
+        "sha256": "5e75e54d47ebc57a05f88582c8e0333a7bc5aa010b54618945d8cebe5f1805ba"
       },
       {
         "seed": 9,
-        "sha256": "e7d9d794ade39abb96d3ae23d29d37b8678bc6b0ef73cde66f068194745d0aef"
+        "sha256": "da4c4db57a63e739d5c417579d8c45e6e2ff1a6edbb395ce208b6c208e204da8"
       },
       {
         "seed": 10,
-        "sha256": "1bb8887ec94d9f07152c6e70a5fcdd069ce8b0641b23382da235144c46383f27"
+        "sha256": "810c35f1bbd78c4b227180fcb263d2a04d3d89beeecd8f3d8d86edc1597be1cf"
       }
     ]
   },
@@ -407,6 +407,136 @@
         0.0,
         0.0,
         0.0
+      ]
+    },
+    {
+      "group": "gridlock by place",
+      "name": "cars cleared from gridlock per hour, judged (near the study area, and far ones whose chain reaches it)",
+      "stat": {
+        "ci95Hi": 0.0,
+        "ci95Lo": 0.0,
+        "max": 0.0,
+        "mean": 0.0,
+        "min": 0.0,
+        "n": 10,
+        "sd": 0.0
+      },
+      "unit": "veh/h",
+      "values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "group": "gridlock by place",
+      "name": "cars cleared from gridlock per hour, near the study area",
+      "stat": {
+        "ci95Hi": 0.0,
+        "ci95Lo": 0.0,
+        "max": 0.0,
+        "mean": 0.0,
+        "min": 0.0,
+        "n": 10,
+        "sd": 0.0
+      },
+      "unit": "veh/h",
+      "values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "group": "gridlock by place",
+      "name": "cars cleared from gridlock per hour, farther out",
+      "stat": {
+        "ci95Hi": 0.783,
+        "ci95Lo": -0.183,
+        "max": 2.0,
+        "mean": 0.3,
+        "min": 0.0,
+        "n": 10,
+        "sd": 0.675
+      },
+      "unit": "veh/h",
+      "values": [
+        1.0,
+        0.0,
+        2.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "group": "gridlock by place",
+      "name": "cars cleared from gridlock per hour, farther out with a chain into the judged zone",
+      "stat": {
+        "ci95Hi": 0.0,
+        "ci95Lo": 0.0,
+        "max": 0.0,
+        "mean": 0.0,
+        "min": 0.0,
+        "n": 10,
+        "sd": 0.0
+      },
+      "unit": "veh/h",
+      "values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "group": "gridlock by place",
+      "name": "trips waiting at origins in the judged zone at the end",
+      "stat": {
+        "ci95Hi": 0.769,
+        "ci95Lo": 0.031,
+        "max": 1.0,
+        "mean": 0.4,
+        "min": 0.0,
+        "n": 10,
+        "sd": 0.516
+      },
+      "unit": "trips",
+      "values": [
+        0.0,
+        1.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        1.0
       ]
     },
     {
@@ -1729,6 +1859,7 @@
     "growthOk": true,
     "growthSeeds": [],
     "holds": true,
+    "judgedRemovalsPerHourMean": 0.0,
     "meanRemovalsPerHourOk": true,
     "oldRuleSeedsPassing": [
       2,
@@ -1747,6 +1878,7 @@
       "minArterialSpeed": 4.0,
       "minSeedsShare": 0.9
     },
-    "speedOk": true
+    "speedOk": true,
+    "zoneScoped": true
   }
 }

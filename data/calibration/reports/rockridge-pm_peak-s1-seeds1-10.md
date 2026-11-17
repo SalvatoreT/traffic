@@ -6,12 +6,12 @@ Seeds are the fixed list above, none chosen; each run is 60 minutes from the sam
 
 | Check | Rule | Result | Pass |
 | --- | --- | --- | --- |
-| Removals | mean per hour below 1.00 | 1.10 (min 0.00, max 5.00) | NO |
+| Cars cleared from gridlock near the study area (judged zone) | mean per hour below 1.00 | 0.60 (min 0.00, max 4.00) | yes |
 | Entry backlog | below 2.0% in at least 90% of seeds | 10 of 10 seeds | yes |
 | Runaway growth | no seed adds more than 2.0 points of backlog in the second half | none | yes |
 | Arterial speed | mean above 4.0 m/s | 8.26 m/s | yes |
 
-**Verdict: not stable.** Old rule (zero removals, backlog under 2%, speed above 4 m/s, every seed): 4 of 10 seeds pass.
+**Verdict: stable.** Old rule (zero removals, backlog under 2%, speed above 4 m/s, every seed): 4 of 10 seeds pass.
 
 ## Metrics over seeds
 
@@ -28,6 +28,11 @@ Seeds are the fixed list above, none chosen; each run is 60 minutes from the sam
 | junction recovery | yield fallback admissions per hour | veh/h | 124.80 | 21.67 | 85.00 | 153.00 | 109.30 to 140.30 |
 | junction recovery | conflict bypass admissions per hour | veh/h | 0.00 | 0.00 | 0.00 | 0.00 | 0.00 to 0.00 |
 | junction recovery | vehicles removed while held in a node, per hour | veh/h | 0.10 | 0.32 | 0.00 | 1.00 | -0.13 to 0.33 |
+| gridlock by place | cars cleared from gridlock per hour, judged (near the study area, and far ones whose chain reaches it) | veh/h | 0.60 | 1.35 | 0.00 | 4.00 | -0.37 to 1.57 |
+| gridlock by place | cars cleared from gridlock per hour, near the study area | veh/h | 0.60 | 1.35 | 0.00 | 4.00 | -0.37 to 1.57 |
+| gridlock by place | cars cleared from gridlock per hour, farther out | veh/h | 0.50 | 0.53 | 0.00 | 1.00 | 0.12 to 0.88 |
+| gridlock by place | cars cleared from gridlock per hour, farther out with a chain into the judged zone | veh/h | 0.00 | 0.00 | 0.00 | 0.00 | 0.00 to 0.00 |
+| gridlock by place | trips waiting at origins in the judged zone at the end | trips | 0.90 | 0.88 | 0.00 | 3.00 | 0.27 to 1.53 |
 | cut-through | local vehicle-miles, surface gates to the freeway | veh-miles | 40.82 | 3.76 | 33.47 | 46.47 | 38.13 to 43.50 |
 | cut-through | share of local vehicle-miles, surface gates to the freeway | % | 8.2 | 0.7 | 7.1 | 9.4 | 7.7 to 8.7 |
 | cut-through | local vehicle-miles, freeway to the surface gates | veh-miles | 34.37 | 3.40 | 29.18 | 38.93 | 31.94 to 36.80 |

@@ -6,7 +6,7 @@ Seeds are the fixed list above, none chosen; each run is 60 minutes from the sam
 
 | Check | Rule | Result | Pass |
 | --- | --- | --- | --- |
-| Removals | mean per hour below 1.00 | 0.30 (min 0.00, max 2.00) | yes |
+| Cars cleared from gridlock near the study area (judged zone) | mean per hour below 1.00 | 0.00 (min 0.00, max 0.00) | yes |
 | Entry backlog | below 2.0% in at least 90% of seeds | 10 of 10 seeds | yes |
 | Runaway growth | no seed adds more than 2.0 points of backlog in the second half | none | yes |
 | Arterial speed | mean above 4.0 m/s | 9.36 m/s | yes |
@@ -28,6 +28,11 @@ Seeds are the fixed list above, none chosen; each run is 60 minutes from the sam
 | junction recovery | yield fallback admissions per hour | veh/h | 34.50 | 10.96 | 18.00 | 49.00 | 26.66 to 42.34 |
 | junction recovery | conflict bypass admissions per hour | veh/h | 0.00 | 0.00 | 0.00 | 0.00 | 0.00 to 0.00 |
 | junction recovery | vehicles removed while held in a node, per hour | veh/h | 0.00 | 0.00 | 0.00 | 0.00 | 0.00 to 0.00 |
+| gridlock by place | cars cleared from gridlock per hour, judged (near the study area, and far ones whose chain reaches it) | veh/h | 0.00 | 0.00 | 0.00 | 0.00 | 0.00 to 0.00 |
+| gridlock by place | cars cleared from gridlock per hour, near the study area | veh/h | 0.00 | 0.00 | 0.00 | 0.00 | 0.00 to 0.00 |
+| gridlock by place | cars cleared from gridlock per hour, farther out | veh/h | 0.30 | 0.67 | 0.00 | 2.00 | -0.18 to 0.78 |
+| gridlock by place | cars cleared from gridlock per hour, farther out with a chain into the judged zone | veh/h | 0.00 | 0.00 | 0.00 | 0.00 | 0.00 to 0.00 |
+| gridlock by place | trips waiting at origins in the judged zone at the end | trips | 0.40 | 0.52 | 0.00 | 1.00 | 0.03 to 0.77 |
 | cut-through | local vehicle-miles, surface gates to the freeway | veh-miles | 20.44 | 3.31 | 16.10 | 26.54 | 18.07 to 22.81 |
 | cut-through | share of local vehicle-miles, surface gates to the freeway | % | 5.8 | 0.8 | 4.8 | 7.3 | 5.3 to 6.4 |
 | cut-through | local vehicle-miles, freeway to the surface gates | veh-miles | 21.67 | 3.02 | 17.99 | 27.35 | 19.51 to 23.83 |

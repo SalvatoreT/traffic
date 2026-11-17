@@ -1,6 +1,6 @@
 # Calibration report: rockridge pm_peak scale 1 seed 1 (60 min)
 
-Offered demand 26352 veh/h x scale 1 = 26352 veh/h. Run took 39.0 s wall clock. Flow tables use the window after a 10 min warm-up; select-link and health figures cover the whole run from an empty network.
+Offered demand 26352 veh/h x scale 1 = 26352 veh/h. Run took 39.8 s wall clock. Flow tables use the window after a 10 min warm-up; select-link and health figures cover the whole run from an empty network.
 
 ## Stability (design D4)
 
@@ -370,6 +370,30 @@ Phases of the five most blocked signals (green s: approach links with their lane
 | Link | Street | End node | Control | Removals | First at (min) |
 | --- | --- | --- | --- | --- | --- |
 | 882 | 61st Street | 61st Street / Martin Luther King Junior Way | uncontrolled | 1 | 41.1 |
+
+## Cars cleared from gridlock near and far (judged zone)
+
+Judged zone: the study area, its bounding streets and the junctions on them, plus nodes within 200 m of it along the network (111 nodes, 329 links). A far clearing counts against the stability rule when its blocking chain (vehicles held at least 60 s by a full exit, at the 5 s snapshot before it) reaches a link in the zone.
+
+| Buffer (m) | Near | Far | Far, chain reaches the zone | Judged |
+| --- | --- | --- | --- | --- |
+| 100.0 | 0 | 1 | 0 | 0 |
+| 200.0 | 0 | 1 | 0 | 0 |
+| 400.0 | 0 | 1 | 0 | 0 |
+
+| Far node | Streets | Distance from the study area (m) | Cleared | Chain reaches the zone |
+| --- | --- | --- | --- | --- |
+| 403 | 61st Street / Martin Luther King Junior Way | 989.0 | 1 | 0 |
+
+Entry backlog at the end of the run: 1 trips waiting at origins in the zone, of 245 in all.
+
+| Bounding street | Links | Longest standing queue on one link (m) | Link (length m) | At (min) | Share of samples with a link full |
+| --- | --- | --- | --- | --- | --- |
+| Telegraph Avenue | 28 | 88.0 | 2030 (101.0) | 36.3 | 0.055 |
+| Alcatraz Avenue | 14 | 65.0 | 4238 (84.0) | 29.8 | 0.002 |
+| College Avenue | 6 | 85.0 | 2805 (102.0) | 15.4 | 0.022 |
+| Claremont Avenue | 13 | 55.0 | 2776 (161.0) | 57.2 | 0.0 |
+| CA 24 | 3 | 42.0 | 1945 (188.0) | 46.5 | 0.0 |
 
 ## Junction recovery
 
