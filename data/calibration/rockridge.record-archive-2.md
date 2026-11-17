@@ -1,6 +1,6 @@
 # Rockridge baseline calibration record: archive, part 2
 
-Rounds from the seventeenth on, moved unchanged from `rockridge.record.md` (round seventeen on 2026-11-15, rounds eighteen to twenty-one on 2026-11-16, rounds twenty-two to twenty-four in round 33, rounds twenty-five and twenty-six in round 38, round twenty-seven in round 40) to keep that file under the 200 KB limit of the pre-commit hook. `rockridge.record-archive.md` holds rounds one to sixteen and is full. Newer rounds and the main step table are in `rockridge.record.md`.
+Rounds from the seventeenth on, moved unchanged from `rockridge.record.md` (round seventeen on 2026-11-15, rounds eighteen to twenty-one on 2026-11-16, rounds twenty-two to twenty-four in round 33, rounds twenty-five and twenty-six in round 38, round twenty-seven in round 40, rounds twenty-eight and twenty-nine in round 42) to keep that file under the 200 KB limit of the pre-commit hook. `rockridge.record-archive.md` holds rounds one to sixteen and is full. Newer rounds and the main step table are in `rockridge.record.md`.
 
 ## Seventeenth round: published counts, the 52nd Street ramp, Colby St, where local trips load (change ramp-and-colby-calibration)
 
@@ -989,3 +989,143 @@ Four of the five are Caltrans counts at the edge of the model (three AADT link s
 ### Scenario regression
 
 63rd St scenario and six-filter scenario (proposal p5), PM, seeds 1 to 3: no unroutable trips, no invalid interventions, gridlock removals 0 except 2 in one 63rd St seed. Of the assumed-flow trips that make their movement, 0.8% revisit a node in the baseline, 1.0% (63rd St) and 0.0% (six filters, 10 trips) in the scenario. Trips that do not make it revisit a node at 10.3% in the baseline and 10.3% and 10.5% in the scenarios, so the revisits are not made by `via` trips. Trips with the movement fall from 726 to 300 (63rd St) and 10 (six filters). Two-stage `via` flows in the final demand (mainline-gate assumed flows): PM 16 flows, 110.0 veh/h; AM 11, 69.2; midday 14, 67.7.
+
+## Twenty-eighth round: primitives and demand on the repaired engine (change calibration-round-28)
+
+The first round on the engine of expose-junction-fallback-validity, repair-local-trip-measurement-integrity and repair-signal-timing-contracts. Under that engine vehicles waiting at a junction exit stay on the road; the old one held 677 to 791 of them inside junction nodes at the end of a PM hour, uncounted. Simulator fingerprint fcf19cdc05eb (start of the round) to 7d07b9a9fd07. Network a64c2a63399e5423 and demand 83bdd362657a2305 (built by the user from the frozen split; unchanged in this round). Cross-validation demand 1e0b2175a1b8079c. Decisions are in `openspec/changes/calibration-round-28/design.md`; the engine repairs are D11 to D13 of `openspec/changes/expose-junction-fallback-validity/design.md`.
+
+### Primitives first
+
+The validation suite was rerun before any demand change. Each failing case was traced by switching the parts of the new junction policy back to their old form one at a time, and over seeds 1 to 5.
+
+| Case | Range | Old engine | Start of round | End of round | Outcome |
+| --- | --- | --- | --- | --- | --- |
+| b2 two lanes through | 752 to 1,003 | 837 | 753 | 837 | fixed (side-by-side starts, D11) |
+| b9 two lanes, 10% left | 812 to 1,072 | 814 | 772 | 814 | fixed (D11); at its lower bound on seed 1 |
+| e6 two-way stop, minor through at 1,000 | 45.5 to 75.8 | 72.0 | 76.5 | 72.0 | passes; 64 to 83 over seeds under every policy (noise) |
+| g1 gate-fed link, 25 mph | 1,603 to 1,980 | 1,644 | 1,590 | 1,668 | fixed (moving-leader entry, D12) |
+| i5 lane drop, new (ratio) | 0.75 to 1.0 | not run | 0.64 | 0.81 | fixed (D11, D12); new case D13 |
+| c2 signals 100 m apart, adaptive (ratio) | 0.75 to 1.15 | 0.94 | 0.82 | 0.75 | passes at its bound; the 1,000 m reference recovered, the 100 m flow did not change |
+| f2 / f3 circle entry | 496 to 744 / 333 to 499 | 489 / 172 | 432 / 110 | 405 / 138 | reviewed deviation |
+| a3, e2, e3, j6, j8, j9, j12 | | fail | fail | fail | reviewed deviations, unchanged |
+
+51 of 60 cases pass. Every remaining failure has a reviewed relevance and follow-up in `validation.deviations.json`. The circle entry deviation matters for stability: the Harmon St circles in South Berkeley account for 8 of the 36 PM removals and 7 of the 18 AM removals in the ten-seed runs.
+
+The lane drop was the cause of the large backlog at the Grove Shafter Freeway gate. The SR-24 eastbound off-ramp toward Martin Luther King Jr Way drops from two lanes to one at a node, which passed about 1,212 veh/h; the queue filled the three-lane off-ramp and held the gate. PM seeds 1 to 4 on the same demand, start of round against end: removals 10.5 to 4.0 an hour, backlog 1.73% to 0.18% of spawned trips, 403 waiting trips at the gate (seed 1) to none, through cars on all study-area local streets 1,182 to 1,055 an hour. The counted blocks moved less: Hillegass Ave SB 245 to 206, Colby St SB 234 to 210, Colby St NB 161 to 154, Hillegass Ave NB 91 to 84. The southbound excess is not mainly a junction-capacity effect.
+
+Calibration reports and the assessment now give the junction recovery policy and its admissions per hour (expose-junction-fallback-validity task 3.3).
+
+Observed signal timings (repair-signal-timing-contracts task 3.3), seed-1 reports of all three periods: the signals at Martin Luther King Jr Way (45 s AM, 50 s midday and PM), 52nd St / Shattuck Ave (90 s AM, 110 s midday and PM) and Claremont Ave / Colby St / Forest St (79 s AM and PM, 147 s midday) run their observed cycles, and the observed greens are met except as follows. The 52nd St eastbound approach shows 18.3 s (AM) and 29.6 s (PM) of green of its own against 37.7 s and 57.2 s observed because the rest of its observed green runs in the shared phase, as the lead-lag ASSUMPTION of the area config describes. No demand was changed to compensate.
+
+### Demand: what was tried
+
+Judged on PM seeds 1 to 4 on fitted stations, headline shares, through cars and removals; the held-out stations were not consulted. Recent fitted stations are the PM count stations of the last five years in the fit.
+
+| Variant | Removals/h | Headline shares (47 / 47 / 68 / 45) | Through cars HSB / CSB / HNB / CNB | Recent fitted GEH < 5 |
+| --- | --- | --- | --- | --- |
+| Shipped demand (free-flow and BPR costs) | 4.0 | 52 / 38 / 46 / 30 | 206 / 210 / 84 / 154 | 65 of 92 |
+| Measured simulator delays fed back into the fit, iteration 1 (`tools/cost-loop.ts`) | 10.3 | 55 / 41 / 69 / 50 | 150 / 168 / 77 / 139 | 67% of all fitted |
+| Same, iteration 2 | 7.3 | 54 / 36 / 63 / 52 | 135 / 138 / 76 / 140 | 71% of all fitted |
+| Neighbor blocks across Alcatraz Ave at 0.5 of the study area's trip-rate factor (`neighborScale` 1 to 0.5) | 7.8 (3 to 19) | 53 / 46 / 56 / 50 | 178 / 204 / 72 / 126 | 71 of 92 |
+| Same at 0 | 15.0 | 53 / 42 / 62 / 52 | 177 / 204 / 71 / 120 | 74 of 92 |
+
+The cost loop rejected both iterations under its own rule (more removals than the free-flow costs) and restored the demand; `rockridge.cost-loop.md` has its table. Only the delay feedback moves the southbound through cars much, and after two iterations they stay above their ranges (135 and 138 against 120 and 117) while removals rise and the Colby St northbound share drops out of the 10-point band. The neighbor-block factor fixes Colby St northbound and the headline shares but leaves the southbound blocks at about 177 and 204. Most southbound through cars come from the Berkeley blocks north of Alcatraz Ave and from Telegraph Ave north, bound for south-east Oakland and the SR-24 westbound on-ramps; in the simulator they leave Telegraph Ave and College Ave for Hillegass Ave, Colby St, 62nd St and Forest St, which the static assignment of the fit does not foresee (in the ten-seed PM runs, 62nd St eastbound between Hillegass Ave and College Ave carries 198 veh/h against 59 counted, Forest St eastbound 257 against 66). That is the trade-off: the side-street through cars respond to the simulator's congestion, not to the trip table, so no demand lever tested meets the ranges without breaking stability. The demand was left as built.
+
+### Result: ten seeds on the shipped demand
+
+PM, AM and midday, seeds 1 to 10, scale 1.0, 60 minutes, `npm run assess -- --publish --noise`.
+
+| Seeds 1 to 10 | Target | PM peak | AM peak | Midday |
+| --- | --- | --- | --- | --- |
+| Through cars, all study-area local streets | | 1,070 | 527 | 392 |
+| Through cars Hillegass Ave SB / Colby St SB / Hillegass Ave NB / Colby St NB | 79-120 / 39-117 / 48-95 / 102-145 (PM) | 193 / 218 / 84 / 159 | no whole-street counts | no whole-street counts |
+| Headline shares Hillegass Ave NB from / Colby St NB from / Hillegass Ave SB to / Colby St SB to | 47 / 47 / 68 / 45 (PM) | 52.8 / 37.8 / 47.1 / 31.1 (2 of 4) | 52.8 / 45.4 / 58.4 / 49.4 | 52.2 / 36.0 / 54.3 / 43.4 |
+| Removals per hour (D16: below 1.0) | below 1 | 3.60 (1 to 6) | 1.80 (0 to 5) | 0.00 |
+| Entry backlog, mean % of spawned | below 2% | 0.18 | 0.01 | 0.00 |
+| Completed trips | | 24,570 | 21,920 | 16,121 |
+| Courtesy / yield-fallback admissions per hour, conflict bypass | | 416 / 192, 0 | 246 / 118, 0 | 51 / 13, 0 |
+| Recent stations below GEH 5, fitted / held out (out of sample) | above 85% | 62 of 92 (67%) / 10 of 24 (42%) | 70 of 77 (91%) / 13 of 19 (68%) | no counts |
+| Older stations below GEH 5, fitted / held out | reported | 46 of 95 (48%) / 8 of 34 (24%) | 18 of 48 (38%) / 9 of 16 (56%) | no counts |
+
+The AM and midday headline shares are reported against the PM observations and are not gated. The held-out population is 24 PM and 19 AM stations under the frozen split (round 27 had 22 and 19). The Oakland turning-count legs (16 stations, 2013 to 2019, PM only) are now `derived` for the AM and midday, as the other scaled kinds are; none of them is recent, so the recent pass rates do not change.
+
+### Verdict
+
+| Period | D16 | D5 | Station rule, recent, fitted | Station rule, recent, held out | Through cars |
+| --- | --- | --- | --- | --- | --- |
+| AM peak | fails (1.80) | not gated | 91%, pass | 68%, fail | no target |
+| Midday | holds | not gated | no counts | no counts | no target |
+| PM peak | fails (3.60) | fails (2 of 4) | 67%, fail | 42%, fail | fails (3 of 4 outside) |
+
+Status `uncalibrated`, no experimental period. The primitive deviations are reviewed. The area's `calibration` note and caveat carry these numbers.
+
+### What remains off
+
+- Southbound through cars on Hillegass Ave and Colby St, about 1.6 and 1.9 times the top of their ranges, and Colby St northbound slightly above. The cause is diversion off Telegraph Ave and the College Ave / Claremont Ave / 62nd St signal in the simulator. The adaptive signal there sizes the 62nd St phase (one lane, 59 veh/h counted) from the diverted traffic it carries: 18 to 25 s of green in the seed-1 reports against 17 to 21 s for College Ave and Claremont Ave, which keeps the detour attractive. Not changed in this round.
+- Removals: 60th St / Market St, 62nd St / Martin Luther King Jr Way, the Harmon St circles and Adeline St / Alcatraz Ave, all west of Telegraph Ave. The circle entry rule ignores approaching circulating vehicles (deviation f2, f3).
+- Held-out PM stations fail out of sample at the model edge (San Pablo Ave, Tunnel Rd, Ashby Ave Caltrans stations) and on the local streets south of the study area (McAuley St, 60th St, Ayala Ave, Canning St), which carry diverted through traffic.
+- Stored proposal results, text pages and previews were made on the old engine and are stale.
+
+## Twenty-ninth round: are the arterials too slow? (change calibration-round-29)
+
+The question of this round: does the repaired engine make the arterials around the Trapezoid slower than they are, so that the model diverts too many through cars onto Hillegass Ave and Colby St? Measured first, then primitives, signals and route choice, in the record's order. Network a64c2a63399e5423 and demand 83bdd362657a2305, both unchanged (`npm run data` reproduces them). Simulator fingerprint 7d07b9a9fd07 at the start, 447ddb0b99a9 at the end. Decisions are in `openspec/changes/calibration-round-29/design.md`.
+
+### Measurement: the repaired engine against the historical one
+
+`calibrate` now takes `--junction-recovery`. PM peak, seeds 1 to 4, same demand. Times are free-flow time plus the mean link delay along the street, scaled to the published segment length; observed are the four Alameda CTC years [ACTC-LOS2014] [ACTC-LOS2018].
+
+| PM, seeds 1 to 4 | Physical (production) | Historical | Observed |
+| --- | --- | --- | --- |
+| Through cars HSB / CSB / HNB / CNB | 206 / 210 / 84 / 154 | 112 / 98 / 81 / 138 | 79-120 / 39-117 / 48-95 / 102-145 |
+| Through cars, all study-area local streets | 1,060 | 633 | |
+| 62nd St / Forest St eastbound, veh/h | 213 / 258 | 82 / 110 | 59 / 66 |
+| Telegraph Ave NB / SB, 51st St to Russell St, s | 371 / 399 | 299 / 303 | 302-420 / 300-376 |
+| College Ave NB / SB, Miles Ave to Ashby Ave, s | 223 / 247 | 211 / 203 | 188-318 / 202-293 |
+| Arterial mean speed, m/s; removals per hour | 7.93; 4.0 | 9.35; 0 | |
+
+Telegraph Ave between Alcatraz Ave and 51st St takes 281 s southbound on the repaired engine against 193 s on the historical one, and 254 s against 191 s northbound. College Ave southbound from Alcatraz Ave to Claremont Ave takes 86 s against 44 s. Where the time goes, southbound on Telegraph Ave (mean delay per vehicle, physical against historical, s): Aileen St signal 22 against 9, 56th St signal 24 against 11, 52nd St signal 22 against 7, and 8 to 12 s at each of the unsignalized nodes between 57th St and 55th St against 0 to 1. The unsignalized nodes add delay only because queues from the interchange signals reach back over them: in a test chain (two lanes, signal at a 100 s cycle) three or six unsignalized nodes upstream or downstream of the signal did not lower its discharge (820 to 872 veh/h per lane against 838 without). The signals at Aileen St, 56th St and 55th St are 88 to 94 m apart, and 52nd St and 51st St 81 m; the historical engine stored the overflow inside its nodes. On College Ave southbound the signal at Claremont Ave and 62nd St has 40 s of delay against 18 s, and its queue reaches back over the two-way stop at 63rd St.
+
+What the evidence says, plainly. Observed: peak-period speeds on Telegraph Ave (51st St to Russell St) and College Ave (Miles Ave to Ashby Ave), both directions. Computed, not measured: the 2010 Synchro delays at College Ave / Claremont Ave / 62nd St (61.5 s, LOS E) and nearby signals [SafewayCollege-DEIR2011] and the 2013 HCM delays on Telegraph Ave [TelegraphCS2013]. Not available: travel times on Claremont Ave and Alcatraz Ave, measured approach delays, and saturation headways or start-up lost times at any Rockridge signal. The hypothesis holds in part. Telegraph Ave southbound sits at or above the slowest observed year (375 to 399 s over the seed sets of this round and round 28, against 300 to 376 s); Telegraph Ave northbound and College Ave in both directions are inside their observed ranges. The capacity primitives are not at a floor through an engine artifact: saturation flow is 1,681 veh/h per lane (a2, observed 1,500 to 2,000), b2 is 0.95 of its range midpoint, and the start-up lost time is too short (a3), which makes signals faster. b9 (two lanes, permissive left with a pocket) sits at its floor because left-turners that overflow the pocket block the inner lane and the simulator has no lane changes along a link. c2 at its floor is the closely spaced signal case above.
+
+### Changes
+
+| Change | Source | Kept | PM effect (seeds 1 to 10 unless stated) |
+| --- | --- | --- | --- |
+| Circle entry: each circulating vehicle blocks the entry for t_c - t_f / 2 = 3.6 s, ending when its tail has passed it (t_f 3.19 s, t_c 5.19 s); before, every circulating vehicle in the node blocked it until it had passed | [Rodegerdts2007] single-lane model in the Siegloch form | yes | f1 / f2 / f3 1,089 / 687 / 348 veh/h against 740-1,110 / 496-744 / 333-499 (were 963 / 405 / 138); removals 4.5 against 3.6 (seeds 11 to 20: 4.9 against 4.8); through cars 192 / 210 / 91 / 159 against 193 / 218 / 84 / 159 |
+| Signals along one street within 800 m (then 150 m) coordinated: longest member cycle, simultaneous offsets | [FHWA-STM2008] ch. 6 (MUTCD 800 m guidance, one cycle per coordinated group) | no | Seeds 1 to 4: c1 / c2 0.79 / 0.75 to 1.03 / 1.00, but Telegraph Ave SB 445 s (800 m) and 422 s (150 m) against 399 s, removals 7.25 against 4.0, Hillegass Ave SB 171 and 234 against 206 |
+| College Ave / Claremont Ave / 62nd St on its observed 2010 PM plan: 110 s, 62nd St 15 s, College Ave 41 s, Claremont Ave 19 s and 19 s split | [SafewayCollege-DEIR2011] Synchro worksheet | no | 62nd St EB 198 to 150 veh/h, Hillegass Ave SB 193 to 186, Forest St EB 257 to 277; removals 3.6 to 5.7 (seeds 1 to 10) without the circle repair, and over seeds 1 to 20 4.7 to 6.5 with it |
+
+The validation suite passes 53 of 60 cases (51 before); f2 and f3 leave `validation.deviations.json`. The f cases now send the circulating vehicles on to a later exit; when both streams leave by the entering vehicles' exit lane the entry passes 957 / 478 / 158 veh/h, which the case note reports.
+
+### Route choice
+
+Drivers pick a route at departure on the current costs; 46% re-plan en route [Guin2021] inside an indifference band [Srinivasan2000]. Sensitivity on the round's engine, PM seeds 1 to 4 (HSB / CSB / HNB / CNB, removals per hour): as shipped 204 / 193 / 90 / 157, 4.3; guided share 0: 196 / 213 / 87 / 161, 20.5; guided share 1: 206 / 236 / 88 / 159, 2.5; switch band 0.4: 204 / 216 / 90 / 160, 11.5; local cost factor 1.0: 264 / 318 / 120 / 222, 2.5; 1.5: 202 / 217 / 81 / 110, 10.3. En-route re-planning does not set the southbound excess: the trips choose the side streets at departure because the simulated Telegraph Ave and College Ave costs make them cheaper. Only the local cost factor (an ASSUMPTION) moves the through cars much, and at 1.5 the southbound blocks stay near 200 while removals and Telegraph Ave times rise. No route-choice parameter was changed.
+
+### Result: ten seeds
+
+PM, AM and midday, seeds 1 to 10, scale 1.0, 60 minutes (`calibrate --seeds 1-10`, reports in `reports/`). Station figures from `npm run assess -- --periods pm_peak,am_peak --suffix round29` (not published: the state is not materially better than round 28).
+
+| Seeds 1 to 10 | Target | PM peak | AM peak | Midday |
+| --- | --- | --- | --- | --- |
+| Through cars, all study-area local streets | | 1,081 (1,070) | 537 (527) | 396 (392) |
+| Through cars HSB / CSB / HNB / CNB | 79-120 / 39-117 / 48-95 / 102-145 (PM) | 192 / 210 / 91 / 159 (193 / 218 / 84 / 159) | no whole-street counts | no whole-street counts |
+| Headline shares HNB from / CNB from / HSB to / CSB to | 47 / 47 / 68 / 45 (PM) | 52.9 / 37.6 / 46.1 / 31.6 (2 of 4) | 52.7 / 45.4 / 58.2 / 48.5 | 52.0 / 35.9 / 53.7 / 44.3 |
+| Removals per hour (D16) | below 1 | 4.50 (3.60) | 2.00 (1.80) | 0.00 |
+| Entry backlog, mean % of spawned | below 2% | 0.17 | 0.01 | 0.01 |
+| Recent stations below GEH 5, fitted / held out | above 85% | 65 of 92 (71%) / 11 of 24 (46%) | 70 of 77 (91%) / 14 of 19 (74%) | no counts |
+| 62nd St / Forest St eastbound, veh/h | 59 / 66 counted | 196 / 264 (198 / 257) | | |
+| Telegraph Ave NB / SB, s | 302-420 / 300-376 | 372 / 375 | | |
+
+Round 28 values in brackets. The differences in through cars, removals and stations are inside the spread of ten-seed sets: the same state gave 3.6 removals an hour on seeds 1 to 10 and 4.8 on seeds 11 to 20.
+
+### Verdict
+
+Status `uncalibrated`. D16 fails in the AM and PM peaks, D5 and the through-car check fail in the PM peak, and the station rule fails in the PM peak and, out of sample, in the AM peak. Hillegass Ave southbound and Colby St southbound through cars stay at about 1.6 and 1.8 times the top of their ranges.
+
+### What remains off
+
+- Telegraph Ave southbound through the SR-24 interchange: queues at the Aileen St, 56th St and 55th St signals and at 52nd St and 51st St reach back over links of 81 to 94 m. The model's times sit at the slow end of the observed range on this round's seeds and above it on others; the historical engine, which hid these queues, gave 303 s and through cars inside every range. Coordination on a common cycle did not help. Candidates for a later change, each needing a source: offsets set by direction and spacing at the interchange, and lane changes along a link so through drivers pass a left-turn queue that overflows its pocket (b9).
+- College Ave / Claremont Ave / 62nd St: the observed plan cuts the 62nd St detour but costs stability; the adaptive plan stays.
+- OSM tags Telegraph Ave northbound as one lane for 30 m between 55th St and the SR-24 underpass (way 416105064, 3 lanes north of it are 2 + 1 turn lane); not checked against the street.
+- Removals west of Telegraph Ave (60th St / Market St, 62nd St / Martin Luther King Jr Way, Adeline St / Alcatraz Ave, the Harmon St circles).
+- Stored proposal results, text pages and previews were made on an older engine and are stale.

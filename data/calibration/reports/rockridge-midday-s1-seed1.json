@@ -1626,14 +1626,14 @@
     "inputs": {
       "areaConfig": {
         "path": "data/areas/rockridge.json",
-        "sha256": "2f8a53861b4f9895afe1f485a65e2148c00faa1dd6e33393355d11a9aea40932"
+        "sha256": "4413e3cbd61ef307ee247408e8a5f57010f83a768da9bd386a6a6d4e35c68f52"
       },
       "demand": {
         "path": "public/data/rockridge.demand.json",
-        "sha256": "930a1d90b2d1af05f8441cd3a9745e809641935c8e9c5dc9c7e514b7730f3a24"
+        "sha256": "36cb33c11df6840ffe55af6345bfac1ff98f2b5e795455d5982aba037554dbe9"
       },
       "demandBuild": {
-        "config": "7aef2b4f0313d5b6a89364e1b9f18c16b8b9d83a5a0c69e5a46935a31302df60",
+        "config": "4396c8df1eb66a2e58aa012fc3967409dd8982fb2643e9d48d72879cb7f295d6",
         "countFile": "0ac7a3b72c8a9b3a243019b9e54ecbbc3d410f4d1cefb5b8f37b1d97de7080ea",
         "network": "f9fa09a5726644d77f5535bc402357b37f7201e53df9eaebb8bb455912da1576",
         "split": "be72380b485ec5fcd5e3c59d4c5601060f3736cfb8238d6aad912293ced0928a",
@@ -1641,7 +1641,7 @@
       },
       "demandConfig": {
         "path": "data/demand/rockridge.config.json",
-        "sha256": "7aef2b4f0313d5b6a89364e1b9f18c16b8b9d83a5a0c69e5a46935a31302df60"
+        "sha256": "4396c8df1eb66a2e58aa012fc3967409dd8982fb2643e9d48d72879cb7f295d6"
       },
       "groups": {
         "path": "data/demand/rockridge.groups.json",
@@ -1696,7 +1696,7 @@
     "simulator": {
       "dirty": false,
       "fingerprint": "f0df1aabc323bca5893215e1df1afbff",
-      "revision": "5cb0c8e311e88259ff4f8913c7ec6a225bad2d6d",
+      "revision": "17ed5629c5f377144d61aae9035b1f33a2369dbc",
       "version": "0.1.0"
     }
   },
