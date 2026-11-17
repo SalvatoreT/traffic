@@ -1,6 +1,7 @@
 // Reader for a manual turning-movement count file (data/calibration/<area>.volunteer-count-*.json): maps counted blocks, turning movements, entry points and
 // full-route counts onto directed network links by street name, cross-street names and bearing. No street names live here; the file and the area config carry them.
 // No I/O.
+import { resolveBlock } from './share-targets';
 import type { Feature } from './assign';
 import { blockObservation, routeSupportLinks } from './lineage';
 
@@ -12,7 +13,7 @@ export interface CountFile {
   source: { id: string; description?: string };
   entering?: { pm?: { total: number; bySide: { side: string; vehicles: number }[]; fromClaremontOnto?: { street: string; vehicles: number }[] }; am?: { totalCounted: number } };
   fullRoute?: { definition?: string; rows: CountFullRoute[] };
-  routeDiagrams?: { street: string; direction: string; period: string; tableTotals: { enteringAtStart: number; drivingEntireRoute: number } }[];
+  routeDiagrams?: { street?: string; direction?: string; period: string; tableTotals: { enteringAtStart: number; drivingEntireRoute: number } }[];
   alcatrazExits?: { towardTelegraph: number; towardCollege: number; straightAcross: number };
   signal?: { at: string[]; approach: string; period: string; cycleSeconds: number; greenSeconds: number; medianCarsPerCycle?: Record<string, number>; maxQueue?: number };
   blocks: CountBlock[];
@@ -195,8 +196,14 @@ export interface CountReport {
 /** Period ids the count covers and the period the count hour belongs to. */
 export interface PeriodMap { am: string; pm: string; midday?: string }
 
+interface CountView {
+  stations: CountStation[];
+  report: CountReport;
+  routeDiagrams: NonNullable<CountFile['routeDiagrams']>;
+}
+
 /** `withheld`: station ids the training view leaves out (held blocks and the aggregates that overlap them). Structure, mapping and the held flags are computed on the whole file first, so the same blocks are held in both views. */
-export function countStations(file: CountFile, net: CNet, cfg: CountConfig, periods: PeriodMap, volume: Record<string, number>, withheld?: Set<string>): { stations: CountStation[]; report: CountReport } {
+export function countStations(file: CountFile, net: CNet, cfg: CountConfig, periods: PeriodMap, volume: Record<string, number>, withheld?: Set<string>): CountView {
   const nodes = new Map(net.nodes.map((n) => [n.id, n]));
   const ns = nodeStreets(net);
   const notes: string[] = [];
@@ -300,23 +307,26 @@ export function countStations(file: CountFile, net: CNet, cfg: CountConfig, peri
     e[r.period] = r.vehicles;
   }
   for (const o of ov) { const e = routeRows.get(`${o.street}|${o.direction}`); if (e) { if (o.am !== undefined) e.am = o.am; if (o.pm !== undefined) e.pm = o.pm; notes.push(`full route ${o.street} ${o.direction}: ${o.reason}`); } }
-  for (const e of routeRows.values()) {
-    const want = COMPASS[e.direction];
-    const cand = net.links.filter((l) => l.name === e.street && angDiff(linkBearing(l, nodes), want) <= BEARING_TOL);
-    const first = cand.filter((l) => ns.get(l.from)?.has(endA) || ns.get(l.from)?.has(endB));
-    const last = cand.filter((l) => ns.get(l.to)?.has(endA) || ns.get(l.to)?.has(endB));
-    const pair = first.flatMap((f) => last.filter((l) => l.id !== f.id && ((ns.get(f.from)?.has(endA) && ns.get(l.to)?.has(endB)) || (ns.get(f.from)?.has(endB) && ns.get(l.to)?.has(endA)))).map((l) => [f, l] as const));
-    if (!pair.length) { rep.routes.skipped.push(`${e.street} ${e.direction}: no link of the street starts at ${endA} or ${endB} and a later one ends at the other`); continue; }
-    const [f, l] = pair[0];
+  const trainingRoutes = new Set<string>();
+  for (const [key, e] of routeRows) {
+    const route = resolveBlock(net.links, nodes, e.street, e.direction, [endA, endB]);
+    if (!route.links.length || route.note.startsWith('FALLBACK')) {
+      rep.routes.skipped.push(`${e.street} ${e.direction}: no directed street path between ${endA} and ${endB}`);
+      continue;
+    }
+    const links = route.links.map((i) => net.links[i].id);
+    const first = links[0], last = links[links.length - 1];
+    const id = `count route ${first}>${last}`;
+    if (!withheld?.has(id)) trainingRoutes.add(key);
     const target: Record<string, number> = {};
     if (e.am) target[per('am')] = e.am;
     if (e.pm) target[per('pm')] = e.pm;
     if (mid && e.pm) target[mid] = e.pm * midFromPm!;
     rep.routes.used++;
     stations.push({
-      id: `count route ${f.id}>${l.id}`, family: 'route', label: `${e.street} ${e.direction}, whole street between ${endA} and ${endB} (links ${f.id} to ${l.id})`, corridor: 'full routes (volunteer count)',
+      id, family: 'route', label: `${e.street} ${e.direction}, whole street between ${endA} and ${endB} (links ${first} to ${last})`, corridor: 'full routes (volunteer count)',
       basis: `DATA (volunteer count of ${file.source.id}, full-route count${e.am ? ` AM ${e.am}` : ''}${e.pm ? ` PM ${e.pm}` : ''})`,
-      links: [], feature: { kind: 'path', first: f.id, last: l.id }, target, weight: cfg.routeWeight, tolPct: cfg.tolerancePct * 1.5, held: false, touches: [f.id, l.id], support: routeSupportLinks(net, f.id, l.id), ...(mid && target[mid] ? { derived: [mid] } : {}),
+      links: [], feature: { kind: 'path', first, last, links }, target, weight: cfg.routeWeight, tolPct: cfg.tolerancePct * 1.5, held: false, touches: [first, last], support: routeSupportLinks(net, first, last), ...(mid && target[mid] ? { derived: [mid] } : {}),
     });
   }
 
@@ -335,7 +345,11 @@ export function countStations(file: CountFile, net: CNet, cfg: CountConfig, peri
     rep.entries.push({ side: a.side, label: `${a.at.join(' / ')}`, link, counted, source: a.inSource ?? (a.in == null && blk ? 'block count of the entry block' : '') });
   }
   rep.notes.push(`${blockLinks.size} block stations (${heldLinks.size} held out); movement and route stations whose support (the links they cover, a whole street included) lies on a held-out block are left out of the training view`);
-  return { stations: withheld ? stations.filter((s) => !withheld.has(s.id)) : stations, report: rep };
+  const diagrams = file.routeDiagrams ?? [];
+  // For training, use only diagrams whose route has verified support in the split.
+  const routeDiagrams = withheld ? diagrams.filter((d) => trainingRoutes.has(`${d.street}|${d.direction}`)) : diagrams;
+  if (withheld) notes.push(`Trip-end estimates use ${routeDiagrams.length} of ${diagrams.length} route diagrams with eligible route observations in the training view.`);
+  return { stations: withheld ? stations.filter((s) => !withheld.has(s.id)) : stations, report: rep, routeDiagrams };
 }
 
 /** Whether a movement or route station covers a held-out block. */
@@ -386,7 +400,7 @@ export function fillMissing(rows: Record<'am' | 'pm', number | null>[]): { value
  * counted streets), so an upper bound on the ends. An entry or exit that was not counted in a period takes the other period's count times the ratio over the entries counted
  * in both (`fillMissing`), instead of counting as zero. Midday has no count: the mean of the two counted periods' ratios to the offered ends is the caller's choice.
  */
-export function tripEnds(file: CountFile, res: { stations: CountStation[]; report: CountReport }, net: CNet, periods: PeriodMap, cfg?: Pick<CountConfig, 'otherThrough'>): Record<string, TripEnds> {
+export function tripEnds(res: CountView, net: CNet, periods: PeriodMap, cfg?: Pick<CountConfig, 'otherThrough'>): Record<string, TripEnds> {
   const rev = new Map(net.links.map((l) => [l.id, (l as CLink & { reverse?: number | null }).reverse ?? null]));
   const blk = new Map(res.stations.filter((s) => s.family === 'block').map((s) => [s.links[0], s]));
   const out: Record<string, TripEnds> = {};
@@ -402,15 +416,15 @@ export function tripEnds(file: CountFile, res: { stations: CountStation[]; repor
     const counted = res.stations.filter((s) => s.family === 'route').reduce((a, s) => a + (s.target[id] ?? 0), 0);
     let extra = 0;
     const ot = cfg?.otherThrough;
-    if (ot && ot.scale > 0 && file.routeDiagrams) {
-      const rows = file.routeDiagrams.filter((r) => r.period === p && r.tableTotals.drivingEntireRoute > 0);
+    if (ot && ot.scale > 0) {
+      const rows = res.routeDiagrams.filter((r) => r.period === p && r.tableTotals.drivingEntireRoute > 0);
       const enter = rows.reduce((a, r) => a + r.tableTotals.enteringAtStart, 0);
       const share = enter > 0 ? rows.reduce((a, r) => a + r.tableTotals.drivingEntireRoute, 0) / enter : 0;
       let base = 0;
       ents.forEach((e, i) => { if (ot.entries.some((k) => e.label.includes(k))) base += inF.values[i][p]; });
       extra = share * ot.scale * base;
     }
-  const through = counted + extra;
+    const through = counted + extra;
     out[id] = { entries, exits, through, destinations: Math.max(0, entries - through), origins: Math.max(0, exits - through), filled, fillRatio: { entering: inF.ratio?.amOverPm ?? null, leaving: outF.ratio?.amOverPm ?? null } };
   }
   return out;

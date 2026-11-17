@@ -1,5 +1,6 @@
 // Published intersection turning-movement counts (environmental review documents, agency studies) as count stations of the demand fit:
 // the volume entering and leaving on each leg, the turning movements, and a counted ramp leg in place of the ramp's ADT x K. No I/O, no street names.
+import type { DetectorEnd } from './demand-fit';
 import type { Feature } from './assign';
 
 export interface IxLeg { /** Exact name of the leg's links; omitted for a ramp. */ street?: string; /** Freeway ramp: the leg's links are of the freeway class. */ ramp?: boolean; /** Compass bearing from the intersection toward the leg, degrees. */ bearing: number }
@@ -16,13 +17,14 @@ export interface IxConfig {
   file: string; periods: Record<string, string>; weight: number; rampWeight: number; movementWeight: number; minMovementVeh: number; tolerancePct: number;
   nodeMaxM: number; bearingTolDeg: number; middayFromPm?: boolean; middayWeightFactor?: number; freewayClass: string;
 }
-export interface IxNet { nodes: { id: number; x: number; y: number }[]; links: { id: number; from: number; to: number; name: string; class: string; fromBearing?: number; toBearing?: number }[] }
+export interface IxNet { nodes: { id: number; x: number; y: number }[]; links: { id: number; from: number; to: number; name: string; class: string; length?: number; geometry?: [number, number][]; fromBearing?: number; toBearing?: number }[]; turnBans?: { from: number; to: number; periods?: string[] }[] }
 /** `in` and `out` hold the leg's links including slip links; `inBase` and `outBase` the links of the leg's own street, and `inSlip` and `outSlip` the slip links added. */
 export interface IxLegLinks { in: number[]; out: number[]; inBase: number[]; outBase: number[]; inSlip: number[]; outSlip: number[] }
 export interface IxStation {
   id: string; label: string; basis: string; corridor: string; links: number[]; feature?: Feature; target: Record<string, number>; weight: number; weightByPeriod?: Record<string, number>; tolPct: number;
   /** Set on a leg that is a ramp: the links whose ADT-based station this count replaces. */
   rampLinks?: number[];
+  detectors?: DetectorEnd[];
   /** Periods whose target is the PM count times a factor, not a count (midday, ASSUMPTION): left out of the station rule. */
   derived?: string[];
   /** Source id and the year of the count date. */
@@ -62,6 +64,46 @@ export function mapLeg(leg: IxLeg, p: [number, number], net: IxNet, nodes: Map<n
   };
   const inSlip = slip(inBase, 'from'), outSlip = slip(outBase, 'to');
   return { in: [...inBase, ...inSlip], out: [...outBase, ...outSlip], inBase, outBase, inSlip, outSlip };
+}
+
+/** A split-junction count requires one directed path between the two observed legs, wholly within the mapped intersection. */
+function junctionMovement(net: IxNet, nodes: Map<number, { x: number; y: number }>, first: IxNet['links'][number], last: IxNet['links'][number], legs: Set<number>, point: [number, number], radius: number, period: string): Feature | null {
+  // Adjacent stop and start lines identify the observed turn directly. If the model bans it, its zero flow is a meaningful residual.
+  if (first.to === last.from) return { kind: 'move', a: first.id, b: last.id };
+  const bans = (net.turnBans ?? []).filter((b) => !b.periods?.length || b.periods.includes(period));
+  const legal = (from: number, to: number) => !bans.some((b) => b.from === from && b.to === to);
+
+  const outgoing = new Map<number, IxNet['links']>();
+  const inside = (x: number, y: number) => Math.hypot(x - point[0], y - point[1]) <= radius;
+  for (const link of net.links) {
+    if (legs.has(link.id)) continue;
+    const a = nodes.get(link.from)!, b = nodes.get(link.to)!;
+    if (!inside(a.x, a.y) || !inside(b.x, b.y) || link.geometry?.some(([x, y]) => !inside(x, y))) continue;
+    if (!outgoing.has(link.from)) outgoing.set(link.from, []);
+    outgoing.get(link.from)!.push(link);
+  }
+  const paths: number[][] = [];
+  const visited = new Set([first.to]);
+  function visit(node: number, path: number[], length: number) {
+    if (paths.length > 1) return;
+    const previous = path[path.length - 1];
+    if (node === last.from) {
+      if (legal(previous, last.id)) paths.push([...path, last.id]);
+      return;
+    }
+    for (const link of outgoing.get(node) ?? []) {
+      if (visited.has(link.to) || !legal(previous, link.id)) continue;
+      const a = nodes.get(node)!, b = nodes.get(link.to)!;
+      const distance = length + (link.length ?? Math.hypot(a.x - b.x, a.y - b.y));
+      // ASSUMPTION: at most one footprint diameter of interior travel can confidently be attributed to this counted turn.
+      if (distance > 2 * radius) continue;
+      visited.add(link.to);
+      visit(link.to, [...path, link.id], distance);
+      visited.delete(link.to);
+    }
+  }
+  visit(first.to, [first.id], 0);
+  return paths.length === 1 ? { kind: 'path', first: first.id, last: last.id, links: paths[0], junction: true } : null;
 }
 
 /** Count stations of every counted intersection. Periods without a count get no target; midday may take the PM count times `middayFactor` at reduced weight (ASSUMPTION). */
@@ -109,19 +151,37 @@ export function intersectionStations(file: IxFile, net: IxNet, cfg: IxConfig, to
         if (!vol) continue;
         if (!ls.length) { rep.notes.push(`intersection count ${c.id}: no ${dir} link for the ${k} leg (${leg!.ramp ? 'ramp' : leg!.street}) within ${cfg.nodeMaxM} m; its ${dir} volume is not used`); continue; }
         const ramp = !!leg!.ramp;
+        // Slip lanes cross the counted leg at the opposite end from its main links.
+        const detectors: DetectorEnd[] = dir === 'entering' ? ls.map((l) => m.inSlip.includes(l) ? 'start' : 'stop') : ls.map((l) => m.outSlip.includes(l) ? 'stop' : 'start');
         stations.push({
-          id: `ix ${c.id} ${k} ${dir}`, label: `${c.label}, ${ramp ? 'ramp' : leg!.street} (${k} leg) ${dir}`, basis, corridor, links: ls, target: withMid(vol), derived: mid && vol[cfg.periods.pm] ? [mid] : undefined,
+          id: `ix ${c.id} ${k} ${dir}`, label: `${c.label}, ${ramp ? 'ramp' : leg!.street} (${k} leg) ${dir}`, basis, corridor, links: ls, detectors, target: withMid(vol), derived: mid && vol[cfg.periods.pm] ? [mid] : undefined,
           weight: ramp ? cfg.rampWeight : cfg.weight, weightByPeriod: wMid(ramp ? cfg.rampWeight : cfg.weight), tolPct: cfg.tolerancePct, rampLinks: ramp ? ls : undefined, source: c.source, year,
         });
         rep.legs++; if (ramp) rep.ramps++;
         used = true;
       }
     }
+    const boundaryLinks = new Set(Object.values(legs).flatMap((leg) => [...leg.in, ...leg.out]));
     for (const [key, e] of moves) {
-      const adjacent = linkOf.get(e.a)!.to === linkOf.get(e.b)!.from;
+      const target: Record<string, number> = {};
+      const routes = new Map<string, Feature>();
+      for (const [period, count] of Object.entries(withMid(e.t))) {
+        const path = junctionMovement(net, nodes, linkOf.get(e.a)!, linkOf.get(e.b)!, boundaryLinks, p, cfg.nodeMaxM, period);
+        if (!path) {
+          rep.notes.push(`intersection count ${c.id}: no unique legal movement ${key} within the intersection footprint in ${period}. The leg stations retain its volume.`);
+          continue;
+        }
+        routes.set(JSON.stringify(path), path);
+        target[period] = count;
+      }
+      if (routes.size !== 1) {
+        if (routes.size > 1) rep.notes.push(`intersection count ${c.id}: the interior path of movement ${key} differs by period. Only the leg stations are used.`);
+        continue;
+      }
+      const [feature] = routes.values();
       stations.push({
         id: `ix ${c.id} move ${key}`, label: `${c.label}, ${e.from} approach to the ${e.to} leg`, basis, corridor, links: [],
-        feature: adjacent ? { kind: 'move', a: e.a, b: e.b } : { kind: 'path', first: e.a, last: e.b }, target: withMid(e.t), derived: mid && e.t[cfg.periods.pm] ? [mid] : undefined, weight: cfg.movementWeight, weightByPeriod: wMid(cfg.movementWeight), tolPct: cfg.tolerancePct * 1.5, source: c.source, year,
+        feature, target, derived: mid && target[mid] ? [mid] : undefined, weight: cfg.movementWeight, weightByPeriod: wMid(cfg.movementWeight), tolPct: cfg.tolerancePct * 1.5, source: c.source, year,
       });
       rep.movements++;
     }

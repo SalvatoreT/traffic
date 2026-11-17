@@ -7,8 +7,9 @@
 // DIR holds `sod-<period>-<seed>.json` from `calibrate --select-od`; DEMAND is the demand file those runs used. Other periods in FILE are kept.
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { hashFile } from './lib/run-manifest';
 import { writeFileAtomic } from './lib/atomic';
-import { pooledMembership, pooledStations, type SelectOd } from './lib/through-membership';
+import { checkSelectOdSeed, membershipEvidence, sameMembershipEvidence, pooledMembership, pooledStations, type MembershipEvidence, type SelectOd } from './lib/through-membership';
 
 const argv = process.argv.slice(2);
 const arg = (k: string, d?: string) => { const i = argv.indexOf(k); return i >= 0 ? argv[i + 1] : d; };
@@ -20,17 +21,37 @@ const runs = argv.flatMap((a, i) => (a === '--run' ? [argv[i + 1]] : []));
 if (!runs.length) { console.error('give at least one --run DIR=DEMAND'); process.exit(2); }
 const net = JSON.parse(readFileSync(resolve(root, `public/data/${area}.network.json`), 'utf8'));
 const inStudy = new Set<number>(net.nodes.filter((n: { inStudyArea?: boolean }) => n.inStudyArea).map((n: { id: number }) => n.id));
+let evidence: MembershipEvidence | undefined;
+let setup: string | undefined;
+const seen = new Set<string>();
 const sets = runs.map((r) => {
   const [dir, dem] = r.split('=');
   const files = readdirSync(resolve(root, dir)).filter((f) => f.startsWith(`sod-${period}-`) && f.endsWith('.json'));
   if (!files.length) throw new Error(`${dir}: no sod-${period}-*.json`);
   const demand = JSON.parse(readFileSync(resolve(root, dem), 'utf8'));
   const flows = demand.periods.find((p: { id: string }) => p.id === period).flows.filter((f: { mode?: string }) => !f.mode);
-  return { label: `${dir} (${files.length} seeds)`, flows, sod: files.map((f) => JSON.parse(readFileSync(join(resolve(root, dir), f), 'utf8')) as SelectOd) };
+  const hash = hashFile(resolve(root, dem))!;
+  const sod = files.map((f) => JSON.parse(readFileSync(join(resolve(root, dir), f), 'utf8')) as SelectOd);
+  for (const [i, run] of sod.entries()) {
+    checkSelectOdSeed(run, hash, period, files[i], seen);
+    const current = membershipEvidence(run, hash);
+    if (run.period !== period || run.manifest!.run.area !== area || (evidence && !sameMembershipEvidence(evidence, current))) throw new Error('cannot pool runs from different simulators, areas, periods, sources, splits or demand views');
+    const runSetup = JSON.stringify({ ...run.manifest!.run, seed: undefined });
+    if (setup !== undefined && setup !== runSetup) throw new Error('cannot pool different run settings or measurement windows');
+    setup = runSetup;
+    evidence = current;
+  }
+  return { label: `${dir} (${files.length} seeds)`, flows, sod };
 });
 const file = existsSync(out) ? JSON.parse(readFileSync(out, 'utf8')) : { area, note: '' };
+if (!evidence || evidence.network !== hashFile(resolve(root, `public/data/${area}.network.json`))) throw new Error('pooled run network differs from the selected network');
+if (file.periods && !sameMembershipEvidence(file.evidence, evidence)) throw new Error('existing membership file has different or missing source evidence; use a new output file');
+if (file.setups?.[period] && file.setups[period] !== setup) throw new Error('existing membership for this period used different run settings');
+file.setups = { ...file.setups, [period]: setup };
+file.evidence = evidence;
 if (argv.includes('--stations')) {
   // Only the movement and route stations' pairs (round 41); the through targets' membership of the period is kept.
+  // Version 2 records each station at its specified detector or route feature.
   const st = pooledStations(sets);
   // --ids keeps only the named stations (the file stays small enough for the repository).
   const ids = arg('--ids')?.split(',');

@@ -14,7 +14,7 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { keptIteration, msaAverage, relativeGap, shareUnchanged } from './lib/acceptance';
-import { farSites, headlineError, rampStats, readSeeds, scoreStations, shareStats, type SeedRun, type StationFile } from './lib/assess';
+import { farSites, fittedRampCountError, headlineError, rampStats, readSeeds, scoreStations, shareStats, type SeedRun, type StationFile } from './lib/assess';
 import { computeStability, stabilityRule } from './lib/verdict';
 
 const root = resolve(import.meta.dirname, '..');
@@ -62,15 +62,6 @@ let observedHead = "";
 const rows: Row[] = [];
 const history: (Record<string, number[]> | null)[] = [];
 
-/** Counted ramps: stations of a turning-movement count whose leg is a ramp entering the junction (the off-ramps). Mean absolute error of the simulator's ramp flow in veh/h against the count. */
-function rampCountError(runs: SeedRun[]): number {
-  const st: StationFile = JSON.parse(readFileSync(stationsFile, 'utf8'));
-  const ramps = st.stations.filter((q) => q.kind === 'tmc' && q.links.length === 1 && /ramp \(.\ leg\) entering/.test(q.label) && (q.target[pm] ?? 0) > 0);
-  const w = runs.filter((r) => r.linkFlowVehPerHour);
-  if (!ramps.length || !w.length) return NaN;
-  return ramps.reduce((a, q) => a + Math.abs(w.reduce((b, r) => b + r.linkFlowVehPerHour![q.links[0]], 0) / w.length - q.target[pm]), 0) / ramps.length;
-}
-
 function score(k: number, gap: number | null, unchanged: number | null, pmRuns: SeedRun[]): Row {
   const stab = computeStability(pmRuns, stabilityRule(targets));
   const ss = shareStats(pmRuns, true);
@@ -80,7 +71,7 @@ function score(k: number, gap: number | null, unchanged: number | null, pmRuns: 
   const bl = pmRuns.map((r) => r.health.backlogPct);
   const where = farSites(pmRuns).slice(0, 3).map((q) => `${q.streets} ${q.cleared}`).join('; ');
   return {
-    rampCountErr: rampCountError(pmRuns), k, stable: stab.holds, meanRemovals: stab.removalsPerHourMean, allRemovals: stab.allPerHourMean, nearRemovals: stab.nearPerHourMean, farRemovals: stab.farPerHourMean, farLinked: stab.farLinkedPerHourMean, zoneScoped: stab.zoneScoped, farWhere: where,
+    rampCountErr: fittedRampCountError(sc.cases), k, stable: stab.holds, meanRemovals: stab.removalsPerHourMean, allRemovals: stab.allPerHourMean, nearRemovals: stab.nearPerHourMean, farRemovals: stab.farPerHourMean, farLinked: stab.farLinkedPerHourMean, zoneScoped: stab.zoneScoped, farWhere: where,
     backlogMean: bl.reduce((a, b) => a + b, 0) / bl.length, backlogSeedsOk: stab.backlogSeedsOk,
     completed: pmRuns.reduce((a, r) => a + r.health.completed, 0) / pmRuns.length, headErr: headlineError(ss), rampErr: rs.reduce((a, q) => a + Math.abs(q.errPoints), 0) / Math.max(1, rs.length),
     heads: ss.filter((q) => q.headline).map((q) => (q.mean * 100).toFixed(0)).join(' / '), fittedGeh: sc.fitted.gehShare, heldGeh: sc.held.gehShare, intFitGeh: sc.interior.fitted.gehShare, intHeldGeh: sc.interior.held.gehShare, fittedBand: sc.fitted.bandShare, heldBand: sc.held.bandShare, gap, unchanged,

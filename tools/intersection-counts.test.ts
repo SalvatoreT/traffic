@@ -65,6 +65,31 @@ describe('published intersection counts', () => {
     expect(report.notes.some((n) => /no entering link for the N leg \(Elm Way\)/.test(n))).toBe(true);
     expect(stations.some((s) => s.id === 'ix oak-fig N entering')).toBe(false);
   });
+  it('keeps a unique contiguous path inside a split junction and declines ambiguous or banned movements', () => {
+    const split: IxNet = {
+      nodes: [{ id: 0, x: 0, y: -6 }, { id: 1, x: 10, y: 0 }, { id: 2, x: 0, y: 150 }, { id: 3, x: 160, y: 0 }, { id: 4, x: 90, y: 90 }],
+      links: [
+        { id: 0, from: 2, to: 0, name: 'Oak Road', class: 'tertiary', toBearing: 180 },
+        { id: 1, from: 1, to: 3, name: 'Fig Lane', class: 'tertiary', fromBearing: 90 },
+        { id: 2, from: 0, to: 1, name: 'Interior', class: 'tertiary' },
+        { id: 3, from: 0, to: 4, name: 'Outside', class: 'tertiary' },
+        { id: 4, from: 4, to: 1, name: 'Outside', class: 'tertiary' },
+      ],
+    };
+    const f: IxFile = { sources: file().sources, intersections: [{ ...file().intersections[0], legs: { N: { street: 'Oak Road', bearing: 0 }, E: { street: 'Fig Lane', bearing: 90 } }, volumes: { pm: { SB: { L: 40 } } } }] };
+    const build = () => intersectionStations(f, split, cfg, toXY, null);
+    expect(build().stations.find((s) => s.feature)?.feature).toEqual({ kind: 'path', first: 0, last: 1, links: [0, 2, 1], junction: true });
+    split.turnBans = [{ from: 2, to: 1, periods: ['pm_peak'] }];
+    expect(build().stations.some((s) => s.feature)).toBe(false);
+    f.intersections[0].volumes.am = { SB: { L: 32 } };
+    expect(build().stations.find((s) => s.feature)?.target).toEqual({ am_peak: 32 });
+    split.turnBans = [];
+    split.nodes[4].x = 12; split.nodes[4].y = 5;
+    expect(build().stations.some((s) => s.feature)).toBe(false);
+    expect(build().report.notes.join(' ')).toMatch(/no unique legal movement/);
+    expect(build().report.legs).toBe(2);
+  });
+
   it('counts a slip link on both legs it joins and drops the movement that can bypass the signal', () => {
     const ns = [{ id: 0, x: 0, y: 0 }, { id: 1, x: 0, y: 100 }, { id: 2, x: 100, y: 0 }, { id: 7, x: 40, y: 0 }, { id: 8, x: 0, y: 40 }];
     const links: IxNet['links'] = [];
@@ -78,8 +103,8 @@ describe('published intersection counts', () => {
     const f: IxFile = { sources: file().sources, intersections: [{ id: 'slip', label: 'Slip', source: 'doc', date: '2020-01-01', lat: 0, lon: 0, legs: { N: { street: 'Oak Road', bearing: 0 }, E: { street: 'Fig Lane', bearing: 90 } }, volumes: { pm: { WB: { T: 500, R: 240 }, SB: { L: 60 } } } }] };
     const { stations, report } = intersectionStations(f, sn, cfg, toXY, null);
     const by = new Map(stations.map((s) => [s.id, s]));
-    expect(by.get('ix slip E entering')).toMatchObject({ links: [4, 8], target: { pm_peak: 740 } });
-    expect(by.get('ix slip N leaving')).toMatchObject({ links: [1, 8], target: { pm_peak: 240 } });
+    expect(by.get('ix slip E entering')).toMatchObject({ links: [4, 8], detectors: ['stop', 'start'], target: { pm_peak: 740 } });
+    expect(by.get('ix slip N leaving')).toMatchObject({ links: [1, 8], detectors: ['start', 'stop'], target: { pm_peak: 240 } });
     expect([...by.keys()].some((k) => k.startsWith('ix slip move 4>'))).toBe(false);
     expect(report.notes.some((n) => /slip link/.test(n))).toBe(true);
     expect(by.get('ix slip move 0>5')).toBeDefined();

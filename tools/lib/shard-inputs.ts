@@ -1,8 +1,9 @@
 // The inputs of a sharded job: the files that are not in git and travel through the bucket, the hashes of the git-tracked inputs the runs read, and the check that
 // a machine has exactly those and a build with the lead's simulator fingerprint (change sharded-batch-runs, D3).
+import { assessmentSplitPath } from './run-manifest';
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
-import { dirname, join, normalize, isAbsolute } from 'node:path';
+import { dirname, join, normalize, isAbsolute, resolve } from 'node:path';
 import { writeFileAtomic } from './atomic';
 import { checkName, getJson, jobKey, putJson, sha256, type Store } from './shard-store';
 
@@ -16,14 +17,14 @@ export interface InputsManifest {
   git: Record<string, string | null>;
 }
 
-export const GIT_INPUTS = (area: string): Record<string, string> => ({
-  targets: `data/calibration/${area}.targets.json`, stations: `data/demand/${area}.stations.json`, split: `data/demand/${area}.split.json`,
+export const GIT_INPUTS = (area: string, split = `data/demand/${area}.split.json`): Record<string, string> => ({
+  targets: `data/calibration/${area}.targets.json`, stations: `data/demand/${area}.stations.json`, split,
   demandConfig: `data/demand/${area}.config.json`, areaConfig: `data/areas/${area}.json`, groups: `data/demand/${area}.groups.json`,
   references: `data/proposals/${area}.references.json`, seeds: `data/proposals/${area}.seeds.json`,
 });
 
 const hashOf = (path: string): string | null => (existsSync(path) ? sha256(readFileSync(path)) : null);
-export const gitHashes = (root: string, area: string): Record<string, string | null> => Object.fromEntries(Object.entries(GIT_INPUTS(area)).map(([k, p]) => [k, hashOf(join(root, p))]));
+export const gitHashes = (root: string, area: string): Record<string, string | null> => Object.fromEntries(Object.entries(GIT_INPUTS(area, assessmentSplitPath(root, area))).map(([k, p]) => [k, hashOf(resolve(root, p))]));
 
 /** The relative path the demand config names for the cross-validation demand, if any. */
 export function cvDemandPath(root: string, area: string): string | null {
@@ -107,7 +108,7 @@ export function verifyLocal(ctx: Pick<Ctx, 'root' | 'env'>, m: InputsManifest, o
   let fp: string | null = null;
   try { fp = localFingerprint(ctx.root, ctx.env); } catch (e) { problems.push((e as Error).message); }
   if (fp && fp !== m.simulator.fingerprint) problems.push(`this build's simulator fingerprint is ${fp.slice(0, 12)}, the job expects ${m.simulator.fingerprint.slice(0, 12)} (pushed from revision ${m.simulator.revision?.slice(0, 12) ?? 'unknown'}): update the clone to that revision and rebuild with \`cargo build --release -p traffic-sim --bins\``);
-  const paths = GIT_INPUTS(m.area);
+  const paths = GIT_INPUTS(m.area, assessmentSplitPath(ctx.root, m.area));
   const now = gitHashes(ctx.root, m.area);
   for (const k of Object.keys(m.git)) if (now[k] !== m.git[k]) problems.push(`${paths[k] ?? k} differs from the lead's (${now[k]?.slice(0, 12) ?? 'absent'}, the job has ${m.git[k]?.slice(0, 12) ?? 'absent'}): the clone is not at the lead's commit`);
   if (opts.files !== false) for (const f of m.files) {

@@ -51,7 +51,8 @@ describe('static assignment', () => {
     const ls = [e(0, 0, 1), e(1, 1, 3), e(2, 0, 2), e(3, 2, 3)];
     const a = assign(buildGraph(ns, ls, [], null), [{ origin: 0, destination: 3 }], 40, 0.08);
     const v = linkVolumes(a, [100], 4);
-    expect(v[0] + v[2]).toBeCloseTo(100, 6);
+    // Shares are stored in Float32Array.
+    expect(v[0] + v[2]).toBeCloseTo(100, 5);
     expect(v[0]).toBeGreaterThan(20);
     expect(v[2]).toBeGreaterThan(20);
   });

@@ -308,15 +308,19 @@ A driver entering a link SHALL sort for the first left or right turn at a link e
 - **THEN** those drivers take the left lane of the ramp and the others may use both lanes
 
 ### Requirement: Local trips start and end along the block
-A car trip whose origin is not a gate SHALL enter the curb lane of its first link from a standstill at a position along the block, when the gap rule of gate insertion [Treiber2000] holds toward the vehicles ahead and behind. A trip whose destination is not a gate SHALL leave the road at such a position on its last link. Blocks shorter than 20 m and gates SHALL keep the junction end. The first link SHALL be legal under the current interventions.
+A locally starting or ending car SHALL use the same physical curb location for the same request across scenarios. A legal baseline route SHALL identify its curb blocks when the demand provides only nodes. A gate or a block shorter than 20 m SHALL retain its junction endpoint. Drivers SHALL obey the scenario's movement and access restrictions and the existing insertion gaps [Treiber2000].
 
 #### Scenario: Filter at the origin junction
-- **WHEN** a modal filter stands on a junction that is the origin of local trips
-- **THEN** those trips start along the adjoining blocks, complete, and no car crosses the junction
+- **WHEN** an origin junction is filtered and a legal route still serves the requested curb
+- **THEN** a local driver can enter from the curb without crossing the filtered junction
 
 #### Scenario: Gate trips
 - **WHEN** a trip starts at a gate
-- **THEN** it enters at the start of its first link as before, and only gate-to-gate trips count as through vehicles
+- **THEN** it enters at the start of its first link and its gate endpoint stays fixed across scenarios
+
+#### Scenario: A filter changes the route
+- **WHEN** the ordinary approach to a local address is closed
+- **THEN** the car may reach that address on another legal approach and an inaccessible address yields an unserved request
 
 ### Requirement: Route costs by turning movement
 The simulator SHALL measure the time on a link separately for each movement at its end and SHALL add to a movement's cost the difference between the time of the vehicles that made that movement and the time of the link as a whole, so that the cost of a link and movement together is the larger of the free-flow time and the movement's measured time. Free-flow routing for metrics SHALL not use the measured times.
@@ -451,3 +455,14 @@ A flow's movement MAY carry a second movement (`then`) with its own tolerance an
 #### Scenario: Placed between the stages
 - **WHEN** a car is placed after the first movement and before the second
 - **THEN** it carries the second as its pending movement
+
+### Requirement: Physical movements and routing costs
+A stop-line detector SHALL count a vehicle passing that line. A marked left-turn lane SHALL retain its permitted movement under a change of control. Signal splits SHALL honor observed phase minima and the feasible generic minimum during adaptation. Every router SHALL charge the approach and its outgoing turn together and the final link once.
+
+#### Scenario: Parking before the signal
+- **WHEN** a trip finishes before the end of the approach link
+- **THEN** it records link use without a stop-line passage
+
+#### Scenario: No perceived cost dispersion
+- **WHEN** forward and reverse routing minimize the same costs with no noise
+- **THEN** they agree on the minimum cost even when movement adjustments are negative

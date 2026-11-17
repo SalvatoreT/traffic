@@ -73,6 +73,8 @@ export interface ActiveInput {
   tripsPerResident: number;
   tripsPerJob: number;
   cfg: ActiveCfg;
+  /** Number of crosswalk traversals at the station on each production sidewalk route; null if unroutable. */
+  pedestrianRoutes: (pairs: [number, number][], station: number | null) => (number | null)[];
   /** Node nearest the counted intersection and observed PM peak-hour totals there. */
   count: { node: number; pedestrian: number | null; bicycle: number | null } | null;
 }
@@ -84,7 +86,7 @@ export interface ModeReport {
   observed: number | null;
   after: number | null;
   factor: number;
-  perPeriod: Record<string, { total: number; flows: number; candidates: number; toGates: number; toCommercial: number; through: number }>;
+  perPeriod: Record<string, { total: number; flows: number; candidates: number; unroutable: number; toGates: number; toCommercial: number; through: number }>;
 }
 
 interface Tree {
@@ -251,29 +253,49 @@ export function buildActiveFlows(inp: ActiveInput): { flows: Record<string, AFlo
     return { flows, ...stats };
   };
 
-  // Persons passing the counted intersection (ends included) on shortest paths.
-  const passing = (mode: Mode, flows: Map<string, number>, at: number) => {
-    const R = mode === 'pedestrian' ? walk : bike;
-    let tot = 0;
-    for (const [k, v] of flows) {
-      const [o, d] = k.split('>').map(Number);
-      if (o === at || d === at || R.path(o, d)?.includes(at)) tot += v;
-    }
-    return tot;
-  };
-
   const flows: Record<string, AFlow[]> = Object.fromEntries(inp.periodIds.map((p) => [p, []]));
   const reports: ModeReport[] = [];
   for (const mode of ['pedestrian', 'bicycle'] as Mode[]) {
     const mc = cfg[mode];
     const raw = new Map(inp.periodIds.map((p) => [p, rawFor(mode, p)] as const));
+    const unroutable: Record<string, number> = {};
+    const crossingByPair = new Map<string, number | null>();
+    if (mode === 'pedestrian') {
+      const keys = [...new Set([...raw.values()].flatMap((r) => [...r.flows.keys()]))];
+      const pairs = keys.map((k): [number, number] => {
+        const [o, d] = k.split('>').map(Number);
+        return [o, d];
+      });
+      const crossings = inp.pedestrianRoutes(pairs, inp.count?.node ?? null);
+      if (crossings.length !== keys.length) throw new Error('incomplete pedestrian routing response');
+      keys.forEach((k, i) => crossingByPair.set(k, crossings[i]));
+      for (const [p, r] of raw) {
+        unroutable[p] = 0;
+        for (const [k, v] of r.flows) {
+          if (crossingByPair.get(k) !== null) continue;
+          unroutable[p] += v;
+          r.flows.delete(k);
+        }
+      }
+    }
+    const passing = (flows: Map<string, number>, at: number) => {
+      let total = 0;
+      for (const [key, v] of flows) {
+        if (mode === 'pedestrian') total += v * crossingByPair.get(key)!;
+        else {
+          const [o, d] = key.split('>').map(Number);
+          if (bike.path(o, d)?.includes(at)) total += v;
+        }
+      }
+      return total;
+    };
     const observed = inp.count?.[mode] ?? null;
     let factor = 1;
     let prior: number | null = null;
     let after: number | null = null;
     const scaling = cfg.countScaling.enabled && inp.count && observed !== null;
     if (scaling) {
-      prior = passing(mode, raw.get(inp.scalePeriod)!.flows, inp.count!.node);
+      prior = passing(raw.get(inp.scalePeriod)!.flows, inp.count!.node);
       if (prior > 0) factor = observed! / prior;
     }
     const rep: ModeReport = { mode, prior, observed, after, factor, perPeriod: {} };
@@ -291,7 +313,7 @@ export function buildActiveFlows(inp: ActiveInput): { flows: Record<string, AFlo
     if (scaling && prior! > 0) {
       for (let it = 0; it < 6; it++) {
         const b = build(inp.scalePeriod, factor);
-        after = passing(mode, new Map(b.list.map((x) => [x.key, x.v * b.f] as const)), inp.count!.node);
+        after = passing(new Map(b.list.map((x) => [x.key, x.v * b.f] as const)), inp.count!.node);
         if (after <= 0 || Math.abs(after / observed! - 1) < 0.01) break;
         factor *= observed! / after;
       }
@@ -301,11 +323,16 @@ export function buildActiveFlows(inp: ActiveInput): { flows: Record<string, AFlo
     for (const p of inp.periodIds) {
       const { r, k, all, list, f } = build(p, factor);
       const total = sum(all.map((x) => x.v));
+      const serialized = new Map<string, number>();
       for (const x of list) {
         const [o, d] = x.key.split('>').map(Number);
-        flows[p].push({ origin: o, destination: d, vehPerHour: Math.round(x.v * f * 100) / 100, mode });
+        const v = Math.round(x.v * f * 100) / 100;
+        if (v <= 0) continue;
+        serialized.set(x.key, v);
+        flows[p].push({ origin: o, destination: d, vehPerHour: v, mode });
       }
-      rep.perPeriod[p] = { total, flows: list.length, candidates: all.filter((x) => x.v >= cfg.minFlowPerHour).length, toGates: r.toGates * k, toCommercial: r.toCommercial * k, through: r.through * k };
+      if (scaling && p === inp.scalePeriod) rep.after = passing(serialized, inp.count!.node);
+      rep.perPeriod[p] = { total, flows: serialized.size, unroutable: (unroutable[p] ?? 0) * k, candidates: all.filter((x) => x.v >= cfg.minFlowPerHour).length, toGates: r.toGates * k, toCommercial: r.toCommercial * k, through: r.through * k };
     }
     reports.push(rep);
   }

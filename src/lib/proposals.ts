@@ -40,9 +40,15 @@ export interface Variant {
   link: string; differs: string[]; why?: string; origin?: { kind: string };
   cutThrough?: { baselineVehPerHour: number; scenarioVehPerHour: number; changePct: number; role?: string; seeds?: number[] };
 }
-export interface ResidentsDetour { secondsPerTrip: number; effect: Effect; vehicleMinutesPerHour: number }
+export interface ResidentsDetour {
+  method?: 'requested-elapsed-to-cutoff';
+  cutoffMinutes?: number;
+  coverage?: { baselineRequests: number; scenarioRequests: number; baselineUnfinished: number; scenarioUnfinished: number; supportedPairs: number; totalPairs: number };
+  secondsPerTrip: number | null; effect: Effect | null; vehicleMinutesPerHour: number | null;
+}
 export interface Proposal {
   id: string; title: string; summary: string;
+  simulationProblem?: string; accessProblem?: string;
   /** Tweaks of this option, opened by their scenario link and run live. Not stored results, not share paths. */
   variants?: Variant[];
   /** Absent means "search". Reference entries are hand-defined packages evaluated with the same metrics. */
@@ -55,7 +61,7 @@ export interface Proposal {
   harm: { through: ThroughHarm };
   context: {
     boundingStreets: { name: string; flowChangePct: number; speedChangeMph: number }[];
-    insideTripTimeChangePct: number;
+    insideTripTimeChangePct: number | null;
     pedConflictsChangePct: number; bikeConflictsChangePct: number;
   };
   byPeriod: Record<string, PeriodResult>;
@@ -117,7 +123,7 @@ export interface Computed {
   displacement?: { rule: string; floorVehPerHour: number; dropped: DroppedOption[] };
   estimation?: {
     method: string; level: number; minPairs: number; aggregation: string; scope: string; maximum: string; practicalFloors: string;
-    selection: { estimates: 'exploratory' | 'confirmation'; discoverySeeds: number[]; confirmationSeeds: number[]; shortlist: string[] };
+    selection: { estimates: 'exploratory' | 'confirmation'; discoverySeeds: number[]; confirmationSeeds: number[]; shortlist: string[]; failed?: { link: string; title: string; reason: string }[] };
   };
 }
 /** One search's list of packages. Files written before 2026-11-15 hold several (one per set of limits); the reader shows their options as one list. */
@@ -278,7 +284,7 @@ export function staleInputs(computed: Pick<ProposalGroup['computed'], 'networkHa
 }
 
 /** The version of the reporting method this reader understands: the pairing, the interval and the selection rules. Written by the search as `computed.reportMethod`. */
-export const REPORT_METHOD = 'paired-t-2';
+export const REPORT_METHOD = 'paired-t-3';
 
 export type EvidenceState = 'current' | 'stale' | 'unverified';
 export interface EvidenceStatus {
@@ -660,23 +666,35 @@ export const OBJECTIVE_LABELS: Record<string, string> = {
   'fewest-changes': 'fewest changes',
 };
 
-/** The tag labels of an option, in the fixed order. An id this reader does not know is left out; a file with none gives no tags. */
-export function objectiveTags(p: Pick<Proposal, 'objectives'>): string[] {
+type ObjectiveEvidence = Pick<Proposal, 'objectives' | 'simulationProblem' | 'accessProblem' | 'residentsDetour'>;
+
+/** The supported objectives in the order used on proposal cards. */
+export function objectiveTags(p: ObjectiveEvidence): string[] {
+  if (p.simulationProblem || p.accessProblem) return [];
   const ids = p.objectives ?? [];
-  return Object.keys(OBJECTIVE_LABELS).filter((id) => ids.includes(id)).map((id) => OBJECTIVE_LABELS[id]);
+  const missingDetour = p.residentsDetour?.method === 'requested-elapsed-to-cutoff' && p.residentsDetour.secondsPerTrip == null;
+  return Object.keys(OBJECTIVE_LABELS).filter((id) => ids.includes(id) && !(id === 'least-detour' && missingDetour)).map((id) => OBJECTIVE_LABELS[id]);
 }
 
 /** "Best for: no street closures, fewest changes", or an empty string when the option carries no tag. */
-export const bestForText = (p: Pick<Proposal, 'objectives'>): string => {
+export const bestForText = (p: ObjectiveEvidence): string => {
   const t = objectiveTags(p);
   return t.length ? `Best for: ${t.join(', ')}` : '';
 };
 
 /** Seconds added per trip for trips that start or end inside the study area, with the interval over runs; null when the file recorded none. */
 export function detourText(d: ResidentsDetour | undefined): { figure: string; label: string; detail: string } | null {
-  if (!d || !Number.isFinite(d.secondsPerTrip)) return null;
+  if (!d) return null;
+  const coverage = d.coverage;
+  const window = d.method === 'requested-elapsed-to-cutoff';
+  const scope = window && coverage
+    ? `Elapsed time to completion or the ${d.cutoffMinutes}-minute cutoff. Across runs, ${coverage.baselineUnfinished} of ${coverage.baselineRequests} requests were unfinished at baseline and ${coverage.scenarioUnfinished} of ${coverage.scenarioRequests} with the proposal.`
+    : 'Legacy estimate across completed trips with at least one end in the study area.';
+  if (d.secondsPerTrip == null || d.vehicleMinutesPerHour == null || !d.effect || !Number.isFinite(d.secondsPerTrip)) {
+    return { figure: 'Unavailable', label: 'for resident detour', detail: `${scope} A paired comparison needs matching requests in every period and seed.` };
+  }
   const s = d.secondsPerTrip;
   const figure = `${s < 0 ? MINUS : s > 0 ? '+' : ''}${num(Math.abs(s), 1)} s`;
   const total = `${d.vehicleMinutesPerHour < 0 ? MINUS : '+'}${num(Math.abs(d.vehicleMinutesPerHour), 0)} vehicle-minutes an hour`;
-  return { figure, label: 'per resident trip', detail: `${total} across trips that start or end inside the study area. ${intervalText(d.effect, ' s', 1)}` };
+  return { figure, label: window ? 'per requested resident trip' : 'per resident trip', detail: `${total}. ${scope} ${intervalText(d.effect, ' s', 1)}` };
 }

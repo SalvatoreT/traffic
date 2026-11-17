@@ -2,22 +2,25 @@
 // Used by tools/assess.ts (final assessment) and tools/cost-loop.ts (feedback loop). No simulator code here.
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { evaluateCases, seedStat, summarizeCases, linkSpread, encodeUint16, type AcceptanceSummary, type CaseResult } from './acceptance';
+import { geh, GEH_GOOD, evaluateCases, seedStat, summarizeCases, linkSpread, encodeUint16, type AcceptanceSummary, type CaseResult } from './acceptance';
 import { seedFileName, type RunManifest } from './run-manifest';
-import type { Stability, ZoneSplit } from './verdict';
+import type { DetectorEnd } from './demand-fit';
+import { backlogGrowth, type Stability, type ZoneSplit } from './verdict';
 
 export interface SeedRun {
-  seed: number; minutes: number; period: string;
+  seed: number; minutes: number; period: string; area?: string; scale?: number;
   manifest?: RunManifest | null;
   series?: { tMin: number; backlog: number }[];
   health: { gridlockRemoved: number; backlogPct: number; completed: number; arterialMeanSpeed: number; spawned: number };
   shares: { block: string; side: string; via: string; observed: number; observedPm: number | null; modelled: number | null; headline: boolean }[];
   rampShares: { direction: string; via: string; observed: number; modelledSide: number | null }[];
   linkFlowVehPerHour: number[] | null;
+  linkStartVehPerHour?: number[] | null;
+  linkStopLineVehPerHour?: number[] | null;
   linkMeanDelayS: number[] | null;
   features?: { id: string; label: string; kind: string; trips: number; vehPerHour: number }[];
   observedSignals?: { node: number; applies?: boolean; streets: string; cycleS: number; greenS: number[]; observedCycleS: number; approaches: { links: number[]; observedGreenS: number; modeledGreenS: number | null; exitsPerHour: number }[] }[];
-  throughCheck?: { block: string; expectedThroughLow: number | null; expectedThroughHigh: number | null; modeledThrough: number; fitted?: boolean }[];
+  throughCheck?: { block: string; observedWholeStreet?: number | null; modeledWholeStreet?: number; modeledThrough: number; fitted?: boolean }[];
   patternBypass?: { bypass: string; arterial: string; dir: string; corridorTrips: number; viaBypass: number }[];
   patternFreewayThrough?: { trips: string; localMiles: number; shareOfLocalMiles: number }[];
   junctionRecovery?: { policy: string; crossings: number; courtesy: { admissions: number }; yieldFallback: { admissions: number }; conflictBypass: { admissions: number }; heldRemovals: number };
@@ -35,7 +38,7 @@ export function recoverySentence(runs: SeedRun[]): string {
 }
 
 export interface StationFile {
-  stations: { id: string; kind: string; label: string; corridor: string; held: boolean; derived?: string[]; source?: string | null; year?: number | null; links: number[]; target: Record<string, number>; feature?: { kind: string } }[];
+  stations: { id: string; kind: string; label: string; corridor: string; held: boolean; derived?: string[]; source?: string | null; year?: number | null; links: number[]; detectors?: DetectorEnd[]; target: Record<string, number>; feature?: { kind: string } }[];
   /** Interior links that start at a surface arterial, with the vehicles the volunteer count recorded entering there (per period id). */
   entries?: { side: string; label: string; link: number; counted: Record<string, number | null> }[];
 }
@@ -55,7 +58,7 @@ export function readSeeds(dir: string, area: string, period: string, seeds: numb
 export interface FoundRun { seed: number; file: string; reportSeed?: number; manifest?: RunManifest | null; error?: string; run?: SeedRun }
 
 /** Every requested seed's report as it is on disk: nothing is skipped or relabeled, so that missing, unreadable and mislabeled reports can be named. */
-export function readRuns(dir: string, area: string, period: string, seeds: number[], scale = 1): FoundRun[] {
+export function readRuns(dir: string, area: string, period: string, seeds: number[], scale = 1, minutes?: number): FoundRun[] {
   const out: FoundRun[] = [];
   for (const s of [...new Set(seeds)]) {
     const file = seedFileName(area, period, scale, s);
@@ -63,7 +66,19 @@ export function readRuns(dir: string, area: string, period: string, seeds: numbe
     if (!existsSync(p)) continue;
     try {
       const run = JSON.parse(readFileSync(p, 'utf8')) as SeedRun;
-      out.push({ seed: s, file, reportSeed: run.seed, manifest: run.manifest ?? null, run });
+      const setup = run?.manifest?.run;
+      if (run?.manifest && (run.manifest.schema !== 1 || !setup || !run.manifest.inputs || !run.manifest.simulator?.fingerprint)) {
+        out.push({ seed: s, file, error: 'incomplete or unsupported run manifest' });
+      } else if (setup && (run.area !== area || setup.area !== area || run.period !== period || setup.period !== period || run.scale !== scale || setup.scale !== scale ||
+          run.minutes !== setup.minutes || (minutes !== undefined && run.minutes !== minutes) || setup.measurementWindow?.toMin !== run.minutes ||
+          setup.measurementWindow.fromMin !== (run.minutes >= 30 ? setup.warmupMin : 0) || !(setup.measurementWindow.fromMin >= 0 && setup.measurementWindow.fromMin < run.minutes))) {
+        out.push({ seed: s, file, error: `run settings do not match requested area, period, scale, duration or measurement window` });
+      } else if (!run?.health || ![run.health.gridlockRemoved, run.health.backlogPct, run.health.completed, run.health.arterialMeanSpeed, run.health.spawned].every((value) => Number.isFinite(value) && value >= 0) ||
+          !Array.isArray(run.shares) || !Array.isArray(run.rampShares) || !Number.isFinite(backlogGrowth(run))) {
+        out.push({ seed: s, file, error: `seed ${s} has incomplete health, backlog series or route-share evidence` });
+      } else {
+        out.push({ seed: s, file, reportSeed: run.seed, manifest: run.manifest ?? null, run });
+      }
     } catch (e) { out.push({ seed: s, file, error: `cannot read ${file}: ${(e as Error).message}` }); }
   }
   return out;
@@ -74,19 +89,43 @@ export interface ShareStat { block: string; side: string; via: string; observed:
 /** Seed mean and 95% interval of every route share; observed is the PM value where the file has one and the period is the PM peak. */
 export function shareStats(runs: SeedRun[], usePm: boolean): ShareStat[] {
   if (!runs.length) return [];
-  return runs[0].shares.map((q, i) => {
-    const vals = runs.map((r) => r.shares[i].modelled ?? NaN);
-    const st = seedStat(vals);
+  return runs[0].shares.map((q) => {
+    const vals = runs.map((r) => {
+      const rows = r.shares.filter((s) => s.block === q.block && s.side === q.side && s.via === q.via);
+      return rows.length === 1 ? rows[0].modelled ?? NaN : NaN;
+    });
+    const st = seedStat(vals.every(Number.isFinite) ? vals : []);
     const obs = usePm && q.observedPm != null ? q.observedPm : q.observed;
     const err = (st.mean - obs) * 100;
     return { block: q.block, side: q.side, via: q.via, observed: obs, mean: st.mean, lo: st.lo, hi: st.hi, sd: st.sd, errPoints: err, within10: Math.abs(err) <= 10, headline: q.headline };
   });
 }
 
+/** The PM gate requires every observed freeway share in the target inventory in every seed. */
+export function headlineSharesPass(runs: SeedRun[], targets: { street: string; direction: string; from?: { via: string; share: number; pmPeakShare?: number }[]; to?: { via: string; share: number; pmPeakShare?: number }[] }[], tolerancePoints: number): boolean {
+  const comparisons = targets.flatMap((t) => (['from', 'to'] as const).flatMap((side) => (t[side] ?? []).filter((q) => q.via.toLowerCase() === 'freeway').map((q) => {
+    const observed = q.pmPeakShare ?? q.share;
+    const values = runs.map((run) => {
+      const rows = run.shares.filter((s) => s.block === `${t.street} ${t.direction}` && s.side === side && s.via === q.via && s.headline);
+      const value = rows[0]?.modelled;
+      return rows.length === 1 && (rows[0].observedPm ?? rows[0].observed) === observed && typeof value === 'number' && value >= 0 && value <= 1 ? value : NaN;
+    });
+    return Math.abs(completeMean(values) - observed) * 100 <= tolerancePoints;
+  })));
+  return comparisons.length > 0 && comparisons.every(Boolean);
+}
+
 export interface RampStat { direction: string; via: string; observed: number; mean: number; lo: number; hi: number; errPoints: number }
 export function rampStats(runs: SeedRun[]): RampStat[] {
   if (!runs.length) return [];
-  return runs[0].rampShares.map((q, i) => { const st = seedStat(runs.map((r) => r.rampShares[i].modelledSide ?? NaN)); return { direction: q.direction, via: q.via, observed: q.observed, mean: st.mean, lo: st.lo, hi: st.hi, errPoints: (st.mean - q.observed) * 100 }; });
+  return runs[0].rampShares.map((q) => {
+    const values = runs.map((r) => {
+      const rows = r.rampShares.filter((s) => s.direction === q.direction && s.via === q.via);
+      return rows.length === 1 ? rows[0].modelledSide ?? NaN : NaN;
+    });
+    const st = seedStat(values.every(Number.isFinite) ? values : []);
+    return { direction: q.direction, via: q.via, observed: q.observed, mean: st.mean, lo: st.lo, hi: st.hi, errPoints: (st.mean - q.observed) * 100 };
+  });
 }
 
 /** Mean absolute error of the headline shares, in points, on the seed means. */
@@ -94,21 +133,59 @@ export const headlineError = (ss: ShareStat[]): number => { const h = ss.filter(
 
 export interface StationScore { period: string; fitted: AcceptanceSummary; held: AcceptanceSummary; interior: { fitted: AcceptanceSummary; held: AcceptanceSummary }; other: { fitted: AcceptanceSummary; held: AcceptanceSummary }; cases: (CaseResult & { corridor: string; label: string; kind: string; stationId: string; source?: string; year: number | null; derived: boolean })[]; skippedWithoutLinks: number; /** Of those, gate stations and movement or route stations (select-link counts). */ skippedGates: number; skippedFeatures: number }
 
+type Screenline = Pick<StationFile['stations'][number], 'links' | 'detectors' | 'kind'>;
+
+function stationFlow(run: SeedRun, station: Screenline): number {
+  const { links, detectors } = station;
+  if ((detectors && detectors.length !== links.length) || (!detectors && ['ramp', 'tmc'].includes(station.kind))) return NaN;
+  return links.reduce((sum, link, i) => {
+    const end = detectors?.[i];
+    const counts = end === 'start' ? run.linkStartVehPerHour : end === 'stop' ? run.linkStopLineVehPerHour : end === undefined ? run.linkFlowVehPerHour : null;
+    const count = counts?.[link];
+    return sum + (typeof count === 'number' && Number.isFinite(count) && count >= 0 ? count : NaN);
+  }, 0);
+}
+
+function completeMean(values: number[]): number {
+  return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : NaN;
+}
+
+export function stationEvidenceProblems(run: SeedRun, file: StationFile, period: string): string[] {
+  const missing: string[] = [];
+  const features = new Map<string, number>();
+  const repeated = new Set<string>();
+  for (const f of run.features ?? []) {
+    if (features.has(f.id)) repeated.add(f.id);
+    features.set(f.id, f.vehPerHour);
+  }
+  for (const st of file.stations) {
+    if (!(st.target[period] > 0)) continue;
+    if (st.links.length && !Number.isFinite(stationFlow(run, st))) missing.push(st.id);
+    if (st.feature && (repeated.has(st.id) || !Number.isFinite(features.get(st.id)) || features.get(st.id)! < 0)) missing.push(st.id);
+  }
+  return missing;
+}
+
 /** GEH and size bands of the simulator's link flows (mean over the seeds) against the count targets of link-based stations; gate stations have no link and are skipped. */
 export function scoreStations(runs: SeedRun[], file: StationFile, period: string): StationScore {
-  const withFlows = runs.filter((r) => r.linkFlowVehPerHour);
   const cases: StationScore['cases'] = [];
   let skipped = 0, gates = 0, features = 0;
   for (const st of file.stations) {
     const target = st.target[period];
     if (!(target > 0)) continue;
     if (!st.links.length) { skipped++; if (st.feature) features++; else gates++; continue; }
-    const modeled = withFlows.length ? withFlows.reduce((a, r) => a + st.links.reduce((b, l) => b + (r.linkFlowVehPerHour![l] ?? 0), 0), 0) / withFlows.length : NaN;
+    const modeled = completeMean(runs.map((r) => stationFlow(r, st)));
     const [c] = evaluateCases([{ id: st.id, modeled, counted: target, held: st.held }]);
     cases.push({ ...c, corridor: st.corridor, label: st.label, kind: st.kind, stationId: st.id, source: st.source ?? undefined, year: st.year ?? null, derived: !!st.derived?.includes(period) });
   }
   const part = (sel: (c: (typeof cases)[number]) => boolean) => ({ fitted: summarizeCases(cases.filter((c) => sel(c) && !c.held)), held: summarizeCases(cases.filter((c) => sel(c) && c.held)) });
   return { period, fitted: summarizeCases(cases.filter((c) => !c.held)), held: summarizeCases(cases.filter((c) => c.held)), interior: part((c) => c.kind === 'count'), other: part((c) => c.kind !== 'count'), cases, skippedWithoutLinks: skipped, skippedGates: gates, skippedFeatures: features };
+}
+
+/** Fitted off-ramp screenlines used to choose a cost-loop iteration. All legs, including slip lanes, use their station detectors. */
+export function fittedRampCountError(cases: StationScore['cases']): number {
+  const fitted = cases.filter((q) => !q.held && q.kind === 'tmc' && /ramp \([NSEW] leg\) entering/.test(q.label));
+  return completeMean(fitted.map((q) => Math.abs(q.modeled - q.counted)));
 }
 
 /** Corridor ratio: simulated flow over counted flow, summed over the link-based stations of a corridor, mean over seeds with its 95% interval across seeds. */
@@ -117,8 +194,8 @@ export function corridorRatios(runs: SeedRun[], file: StationFile, period: strin
   for (const st of file.stations) if (st.links.length && st.target[period] > 0) (by.get(st.corridor) ?? by.set(st.corridor, []).get(st.corridor)!).push(st);
   return [...by].map(([corridor, sts]) => {
     const tgt = sts.reduce((a, s) => a + s.target[period], 0);
-    const per = runs.filter((r) => r.linkFlowVehPerHour).map((r) => sts.reduce((a, s) => a + s.links.reduce((b, l) => b + (r.linkFlowVehPerHour![l] ?? 0), 0), 0) / tgt);
-    const st = seedStat(per);
+    const per = runs.map((r) => sts.reduce((sum, s) => sum + stationFlow(r, s), 0) / tgt);
+    const st = seedStat(per.every(Number.isFinite) ? per : []);
     return { corridor, stations: sts.length, ratio: st.mean, lo: st.lo, hi: st.hi };
   }).sort((a, b) => a.corridor.localeCompare(b.corridor));
 }
@@ -139,13 +216,13 @@ export function noiseFile(area: string, byPeriod: Record<string, SeedRun[]>, uni
 }
 
 /** Simulated link flow of every station link (sum over its links), mean over the seeds, and the modeled value of every route feature (turning movements, whole-street paths). */
-export function meanLinkFlow(runs: SeedRun[], links: number[]): number {
-  const w = runs.filter((r) => r.linkFlowVehPerHour);
-  return w.length ? w.reduce((a, r) => a + links.reduce((b, l) => b + (r.linkFlowVehPerHour![l] ?? 0), 0), 0) / w.length : NaN;
+export function meanLinkFlow(runs: SeedRun[], links: number[], end?: DetectorEnd): number {
+  const station = { links, detectors: end ? links.map(() => end) : undefined, kind: 'count' };
+  return completeMean(runs.map((r) => stationFlow(r, station)));
 }
 export function featureStats(runs: SeedRun[], id: string) {
   const v = runs.map((r) => r.features?.find((x) => x.id === id)?.vehPerHour ?? NaN);
-  return seedStat(v);
+  return seedStat(v.every(Number.isFinite) ? v : []);
 }
 
 export interface TravelTimeSpec { id: string; street: string; from: string; to: string; lengthMi: number; observedMph: Record<string, Record<string, number>> }
@@ -196,16 +273,24 @@ export function travelTimes(runs: SeedRun[], net: TravelNet, specs: TravelTimeSp
   return rows;
 }
 
-/** Through cars per block, seed mean, against the observed range (whole-street cars to block volume less the freeway end); only blocks with a range. */
-export function throughStats(runs: SeedRun[]): { block: string; low: number; high: number; mean: number; se: number; inside: boolean; fitted: boolean }[] {
-  const first = runs.find((r) => r.throughCheck?.length);
-  if (!first) return [];
-  return first.throughCheck!.flatMap((t, i) => {
-    if (t.expectedThroughLow == null || t.expectedThroughHigh == null) return [];
-    const vals = runs.map((r) => r.throughCheck?.[i]?.modeledThrough ?? NaN).filter(Number.isFinite);
-    const mean = vals.reduce((a, b) => a + b, 0) / (vals.length || 1);
-    const se = vals.length > 1 ? Math.sqrt(vals.reduce((a, v) => a + (v - mean) ** 2, 0) / (vals.length - 1) / vals.length) : NaN;
-    return [{ block: t.block, low: t.expectedThroughLow, high: t.expectedThroughHigh, mean, se, inside: mean >= t.expectedThroughLow && mean <= t.expectedThroughHigh, fitted: !!t.fitted }];
+export interface WholeStreetTarget { street: string; direction: string; wholeStreetVehPerHour?: Record<string, number> }
+
+/** Compare each directional count to complete traversals of its ordered links, one reading from every seed. */
+export function throughStats(runs: SeedRun[], targets: WholeStreetTarget[], period: string) {
+  return targets.flatMap((target) => {
+    const observed = target.wholeStreetVehPerHour?.[period];
+    if (observed == null) return [];
+    const block = `${target.street} ${target.direction}`;
+    const matched = runs.map((run) => (run.throughCheck ?? []).filter((row) => row.block === block));
+    const fittedValues = matched.map((rows) => rows.length === 1 ? rows[0].fitted : undefined);
+    const fitted = fittedValues.length && fittedValues.every((x) => x === fittedValues[0]) ? fittedValues[0] : undefined;
+    const values = matched.map((rows) => {
+      const value = rows[0]?.modeledWholeStreet;
+      return rows.length === 1 && rows[0].observedWholeStreet === observed && typeof value === 'number' && value >= 0 && Number.isFinite(value) ? value : NaN;
+    });
+    const stats = seedStat(values.every(Number.isFinite) ? values : []);
+    const error = geh(stats.mean, observed);
+    return [{ block, observed, fitted, mean: stats.mean, se: stats.n > 1 ? stats.sd / Math.sqrt(stats.n) : NaN, geh: error, inside: error < GEH_GOOD }];
   });
 }
 

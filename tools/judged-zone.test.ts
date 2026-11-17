@@ -8,7 +8,7 @@ const zone = (near: number, far: number, farLinked: number, sens?: [number, numb
   bufferM: 200, total: near + far, near, far, farLinked, judged: near + farLinked,
   sensitivity: [[100, ...(sens?.[0] ?? [near, farLinked])], [200, near, farLinked], [400, ...(sens?.[1] ?? [near, farLinked])]].map(([b, n, l]) => ({ bufferM: b, near: n, far: near + far - n, farLinked: l, judged: n + l })),
 });
-const run = (seed: number, removed: number, z?: ZoneSplit | null): StabilityRun => ({ seed, minutes: 60, health: { gridlockRemoved: removed, backlogPct: 0.5, arterialMeanSpeed: 6, spawned: 20000 }, series: [], gridlockZone: z });
+const run = (seed: number, removed: number, z?: ZoneSplit | null): StabilityRun => ({ seed, minutes: 60, health: { gridlockRemoved: removed, backlogPct: 0.5, arterialMeanSpeed: 6, spawned: 20000 }, series: [{ tMin: 30, backlog: 0 }, { tMin: 60, backlog: 0 }], gridlockZone: z });
 
 describe('near and far cars cleared from gridlock (D16, round 37)', () => {
   it('judges the near ones and the far ones linked to the zone', () => {

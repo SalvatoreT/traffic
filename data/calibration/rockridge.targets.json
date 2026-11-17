@@ -3,12 +3,12 @@
   "source": {
     "id": "streetlight-2025",
     "description": "StreetLight Data select-link analysis of Hillegass Ave and Colby St between Alcatraz Ave and Claremont Ave, January–July 2025, provided by residents.",
-    "throughNote": "wholeStreetVehPerHour and endAlongVehPerHour are DATA from the resident volunteer count of 2025-02-25 (data/calibration/rockridge.volunteer-count-2025-02-25.json, routeDiagrams tableTotals: cars that drove the whole street, cars whose trip ended along it). The calibrate report turns them into an observed through range: whole-street cars up to block volume less end-along cars.",
+    "throughNote": "The volunteer count of February 25, 2025 records cars that drove the whole street (wholeStreetVehPerHour) and cars that ended a trip along it (endAlongVehPerHour). Compare wholeStreetVehPerHour with simulated end-to-end traversals of the same street and direction. The count does not measure all through trips that used any block. Source: data/calibration/rockridge.volunteer-count-2025-02-25.json, routeDiagrams.tableTotals.",
     "caveat": "Sample does not represent all travelers. Shares are of trips traversing the analyzed segment, each direction analyzed separately."
   },
   "selectLink": [
     {
-      "street": "Hillegass Avenue", "direction": "NB", "fitThrough": true, "between": ["Claremont Avenue", "Alcatraz Avenue"],
+      "street": "Hillegass Avenue", "direction": "NB", "between": ["Claremont Avenue", "Alcatraz Avenue"],
       "observedVehPerHour": { "pm_peak": 110 },
       "wholeStreetVehPerHour": { "pm_peak": 48, "am_peak": 34 },
       "endAlongVehPerHour": { "pm_peak": 15, "am_peak": 9 },
@@ -20,7 +20,7 @@
       ]
     },
     {
-      "street": "Colby Street", "direction": "NB", "fitThrough": true, "between": ["Claremont Avenue", "Alcatraz Avenue"],
+      "street": "Colby Street", "direction": "NB", "between": ["Claremont Avenue", "Alcatraz Avenue"],
       "observedVehPerHour": { "pm_peak": 174 },
       "wholeStreetVehPerHour": { "pm_peak": 102, "am_peak": 33 },
       "endAlongVehPerHour": { "pm_peak": 29, "am_peak": 14 },
@@ -32,7 +32,7 @@
       ]
     },
     {
-      "street": "Hillegass Avenue", "direction": "SB", "fitThrough": true, "between": ["Alcatraz Avenue", "Claremont Avenue"],
+      "street": "Hillegass Avenue", "direction": "SB", "between": ["Alcatraz Avenue", "Claremont Avenue"],
       "observedVehPerHour": { "pm_peak": 160 },
       "wholeStreetVehPerHour": { "pm_peak": 79, "am_peak": 36 },
       "endAlongVehPerHour": { "pm_peak": 40, "am_peak": 9 },
@@ -44,7 +44,7 @@
       "to": [{ "via": "freeway", "share": 0.57, "pmPeakShare": 0.68 }]
     },
     {
-      "street": "Colby Street", "direction": "SB", "fitThrough": true, "between": ["Alcatraz Avenue", "Claremont Avenue"],
+      "street": "Colby Street", "direction": "SB", "between": ["Alcatraz Avenue", "Claremont Avenue"],
       "observedVehPerHour": { "pm_peak": 160 },
       "wholeStreetVehPerHour": { "pm_peak": 39, "am_peak": 46 },
       "endAlongVehPerHour": { "pm_peak": 43, "am_peak": 15 },

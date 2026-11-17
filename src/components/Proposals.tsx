@@ -99,8 +99,9 @@ export function Proposals({ bundle, index, today, state, loaded, mode, current, 
   const statusGroups = (() => {
     const seen = new Set<string>();
     return ready && !ready.withdrawn ? ready.groups.filter((g) => {
-      if (g.legacy || g.proposals.length === 0) return false;
-      const key = JSON.stringify([formatComputed(g.computed, periodLabel), proposalNotices(g.computed, loaded), provenanceLine(g.computed)]);
+      const failed = g.computed.estimation?.selection.failed ?? [];
+      if (g.legacy || (g.proposals.length === 0 && !failed.length)) return false;
+      const key = JSON.stringify([formatComputed(g.computed, periodLabel), proposalNotices(g.computed, loaded), provenanceLine(g.computed), failed]);
       return seen.has(key) ? false : (seen.add(key), true);
     }) : [];
   })();
@@ -134,6 +135,9 @@ export function Proposals({ bundle, index, today, state, loaded, mode, current, 
         return (
           <div key={g.id} className="prop-status">
             <p className="muted">{formatComputed(g.computed, periodLabel)}</p>
+            {g.computed.estimation?.selection.failed?.map((f) => (
+              <p className="notice err" key={f.link}><strong>Failed confirmation.</strong> {f.title}. {f.reason}.</p>
+            ))}
             {notices.exploratory && (
               <p className="notice" role="note">
                 <strong>Exploratory.</strong> The baseline these were computed on is not calibrated against observed traffic yet, so read the figures as relative comparisons, not forecasts.
@@ -240,6 +244,8 @@ function Card({ p, group, evidence, comparison, comparisonLabel, shareUrl, onCop
             <p className="fig-sub">{cut.scope}</p>
             <p className="fig-sub">{cut.interval}</p>
           </div>
+          {p.accessProblem && <p className="notice err"><strong>Street access check failed.</strong> {p.accessProblem}.</p>}
+          {p.simulationProblem && <p className="notice err"><strong>Simulation validity check failed.</strong> {p.simulationProblem}.</p>}
           {detour && (
             <div className="fig fig-detour">
               <p className="fig-main"><span className="fig-num">{detour.figure}</span> {detour.label}</p>

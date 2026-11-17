@@ -3,7 +3,7 @@ export interface PeriodVerdict {
   stable: boolean;
   /** Headline shares within tolerance (PM peak only; null elsewhere). */
   d5: boolean | null;
-  /** Through-car check: true inside every observed range, false outside, null with no rows (no data). */
+  /** Complete whole-street traversal counts meet the GEH criterion on every observed corridor; null if there are no measurements. */
   through: boolean | null;
   /** Station rule on recent counts: true met, false not met or too few to judge, null when the period has no counts of its own (midday). */
   stations: boolean | null;
@@ -23,8 +23,8 @@ export function suggestStatus(periods: Record<string, PeriodVerdict>, pmPeriod =
   if (!pm) reasons.push('no PM peak run');
   else {
     if (pm.d5 !== true) reasons.push('headline shares (D5) not met');
-    if (pm.through === null) reasons.push('no through-car rows: the check has no data');
-    else if (!pm.through) reasons.push('through cars outside the observed range');
+    if (pm.through === null) reasons.push('no through-car rows: the whole-street traversal check has no data');
+    else if (!pm.through) reasons.push('whole-street traversal counts outside the GEH criterion');
   }
   for (const p of ids) if (periods[p].stations === false) reasons.push(`station rule not met or not judgeable in ${p}`);
   if (primitives) {
@@ -76,10 +76,14 @@ export const zoneConsistent = (r: StabilityRun): boolean => {
 /** Backlog added between the sample nearest the middle of the run and the last sample, in points of spawned trips (the native summary's definition). */
 export function backlogGrowth(run: StabilityRun): number {
   const s = run.series ?? [];
-  if (s.length < 2) return 0;
+  if (!Number.isFinite(run.minutes) || run.minutes <= 0 || !Number.isFinite(run.health.spawned) || run.health.spawned < 0 ||
+      s.length < 2 || s.some((x, i) => !Number.isFinite(x.tMin) || !Number.isFinite(x.backlog) || x.backlog < 0 || (i > 0 && x.tMin <= s[i - 1].tMin))) return NaN;
   const half = run.minutes / 2;
   const at = s.reduce((best, x) => (Math.abs(x.tMin - half) < Math.abs(best.tMin - half) ? x : best), s[0]);
-  return (100 * (s[s.length - 1].backlog - at.backlog)) / Math.max(1, run.health.spawned);
+  const last = s[s.length - 1];
+  // Calibrate samples every five minutes and at the end of the run.
+  if (Math.abs(last.tMin - run.minutes) > 1e-6 || at.tMin >= last.tMin || Math.abs(at.tMin - half) > 2.5 + 1e-6) return NaN;
+  return (100 * (last.backlog - at.backlog)) / Math.max(1, run.health.spawned);
 }
 
 export interface Stability {
@@ -109,11 +113,11 @@ export function computeStability(runs: StabilityRun[], rule: StabilityRule): Sta
     return { factor, bufferM: zoneScoped ? runs[0].gridlockZone!.bufferM * factor : null, perHourMean: m, ok: n > 0 && m < rule.maxMeanRemovalsPerHour };
   });
   const backlogSeedsOk = runs.filter((r) => r.health.backlogPct < rule.backlogPct).length;
-  const growthSeeds = runs.filter((r) => backlogGrowth(r) > rule.maxSecondHalfBacklogGrowthPct).map((r) => r.seed);
+  const growthSeeds = runs.filter((r) => !(backlogGrowth(r) <= rule.maxSecondHalfBacklogGrowthPct)).map((r) => r.seed);
   const arterialSpeedMean = mean(runs.map((r) => r.health.arterialMeanSpeed));
   const checks = {
     removals: n > 0 && removalsPerHourMean < rule.maxMeanRemovalsPerHour,
-    backlog: n > 0 && backlogSeedsOk >= Math.ceil(rule.minSeedsShare * n) - 1e-9,
+    backlog: n > 0 && runs.every((r) => Number.isFinite(r.health.backlogPct) && r.health.backlogPct >= 0) && backlogSeedsOk >= Math.ceil(rule.minSeedsShare * n) - 1e-9,
     growth: n > 0 && growthSeeds.length === 0,
     speed: n > 0 && arterialSpeedMean > rule.minArterialSpeed,
   };

@@ -3,6 +3,7 @@
 // Method and provenance: data/demand/README.md. Steps are tagged DATA or ASSUMPTION.
 // Methods: Furness/IPF balancing of the gate-to-gate matrix; gravity seeding; LODES [LODES]; freeway-ramp demand (DATA ramp ADT, ASSUMPTION destination choice).
 import { readFileSync, readdirSync, existsSync, mkdirSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { buildActiveFlows, parseActiveCounts, type AFlow } from './lib/demand-active';
 import { discoverRamps, matchRampVolumes, type Ramp, type RampRow, type RampVolume } from './lib/demand-ramps';
@@ -11,7 +12,7 @@ import { makeProjection, pointInPolygon } from './lib/geo';
 import { buildGraph, costToGo, treeFrom, type Graph } from './lib/assign';
 import { applySplit, buildStations, corridorOf, overusedRecords, fitPeriod, fitReport, splitStationOf, stationObservations, type FitConfig, type NetLinkIn, type PeriodResult, type ThroughFit, type ThroughTarget } from './lib/demand-fit';
 import { resolveBlock } from './lib/share-targets';
-import { throughTargetId } from './lib/through-membership';
+import { corridorThroughCounts, sameMembershipEvidence, throughTargetId } from './lib/through-membership';
 import { checkManifest, freezeSplit, manifestSha256, manifestText, overrideObservation, tmcObservation, withheldObservations, withheldStationIds, DEFAULT_RULE, type SplitManifest, type SplitStation } from './lib/lineage';
 import { createHash } from 'node:crypto';
 import type { FlowType } from './lib/fit-counts';
@@ -22,13 +23,15 @@ import { assumedMovementFlows, assumedReportLines, belowMinReport, withAlternati
 import { annotateFlows, rampOut, resolveIntents, type IntentFlow, type ThroughIntentsCfg } from './lib/through-intents';
 import { deriveRamps } from './lib/ramps';
 import { deriveApproachGroups, expandGroups, groupOfNode, groupsFile, type ApproachGroups, type ApproachGroupsCfg } from './lib/approach-groups';
-import { countReportLines, countStations, mapMovement, nodeStreets, rawMovementCounts, tripEnds, type CountConfig, type CountFile, type CountReport, type TripEnds } from './lib/volunteer-count';
+import { countReportLines, countStations, linkBearing, mapMovement, nodeStreets, rawMovementCounts, tripEnds, type CountConfig, type CountFile, type CountReport, type TripEnds } from './lib/volunteer-count';
 import { writeFileAtomic } from './lib/atomic';
+import { countDirectionForInflow, reverseCountDirection, type CountDirection } from './lib/gate-count';
 
 // Views (protect-calibration-evidence): `shipped` is the demand that ships, fitted on every count. `training` is the cross-validation demand: the observations of the
 // frozen split's held groups (and the aggregate counts that overlap held blocks) are removed from every count-derived step, preprocessing included, and the result goes to
 // `countFit.validation.demandOutput`. `--freeze-split` writes the split manifest from structure and stops. `--out-root DIR` redirects every output file under DIR.
 const cliArgs = process.argv.slice(2);
+const sha = (path: string): string | null => (existsSync(path) ? createHash('sha256').update(readFileSync(path)).digest('hex') : null);
 const cliOpt = (k: string) => { const i = cliArgs.indexOf(k); return i >= 0 ? cliArgs[i + 1] : undefined; };
 const cfgPath = cliArgs.find((a, i) => !a.startsWith('--') && !['--view', '--split', '--out-root'].includes(cliArgs[i - 1] ?? '')) ?? 'data/demand/rockridge.config.json';
 const cfg = JSON.parse(readFileSync(cfgPath, 'utf8'));
@@ -53,7 +56,7 @@ const withheldObs: Set<string> = training ? withheldObservations(manifest!) : ne
 const withheldSt: Set<string> = training ? withheldStationIds(manifest!) : new Set();
 
 interface Node { id: number; x: number; y: number; gate: boolean; canEnter?: boolean; canExit?: boolean; inStudyArea: boolean }
-interface Link { id: number; from: number; to: number; name: string; class: string; length: number; lanes?: number; speedLimit?: number; geometry?: [number, number][]; inStudyArea: boolean; bikeLane?: boolean; bikeRoute?: boolean; humps?: number[]; stopAtEnd?: boolean }
+interface Link { id: number; from: number; to: number; name: string; class: string; length: number; lanes?: number; speedLimit?: number; geometry?: [number, number][]; fromBearing?: number; toBearing?: number; inStudyArea: boolean; bikeLane?: boolean; bikeRoute?: boolean; humps?: number[]; stopAtEnd?: boolean }
 interface Network { id: string; origin: { lon: number; lat: number }; studyArea: [number, number][]; nodes: (Node & { control: string })[]; links: Link[]; turnBans?: { from: number; to: number; periods?: string[] }[] }
 // `mode` is absent on car flows (default car). Pedestrian and bicycle flows are persons per hour in the same field.
 interface FlowVia { a: number; b: number; maxDetour?: number; alternatives?: { a: number; b: number }[]; then?: FlowVia }
@@ -133,7 +136,7 @@ const tmc = tmcs[0] ?? null;
 const [tx, ty] = tmc ? [tmc.x, tmc.y] : [0, 0];
 
 // ---------- gates: peak targets per period ----------
-interface Gate { id: number; /** Straight-line distance (m) from the gate to where its count was taken; null for a class default. */ countDistM?: number | null; /** Source record of the count and this gate's share of it per direction (see demand-fit.ts, dedupeStations). */ record?: string; shareIn?: number; shareOut?: number; street: string | null; cls: string; deg: number; source: string; /** Count year of the source (mean of the count years), null when unknown. */ year: number | null; sourceId: string; kind: 'DATA' | 'DATA(adt)' | 'ASSUMPTION'; adt: number | null; pmIn: number; pmOut: number; inT: Record<string, number>; outT: Record<string, number>; locIn: Record<string, number>; locOut: Record<string, number> }
+interface Gate { id: number; /** Straight-line distance (m) from the gate to where its count was taken; null for a class default. */ countDistM?: number | null; /** Source record of the count and this gate's share of it per direction (see demand-fit.ts, dedupeStations). */ record?: string; inflowDirection?: CountDirection; shareIn?: number; shareOut?: number; street: string | null; cls: string; deg: number; source: string; /** Count year of the source (mean of the count years), null when unknown. */ year: number | null; sourceId: string; kind: 'DATA' | 'DATA(adt)' | 'ASSUMPTION'; adt: number | null; pmIn: number; pmOut: number; inT: Record<string, number>; outT: Record<string, number>; locIn: Record<string, number>; locOut: Record<string, number> }
 const gates: Gate[] = [];
 const pf = cfg.periodFactors;
 const pct = (a: number, b: number) => `${((100 * a) / (b || 1)).toFixed(0)}%`;
@@ -146,7 +149,7 @@ const nodeById = new Map(net.nodes.map((n) => [n.id, n]));
 const areaCfg = existsSync(`data/areas/${cfg.area}.json`) ? JSON.parse(readFileSync(`data/areas/${cfg.area}.json`, 'utf8')) : null;
 const groups: ApproachGroups | null = areaCfg?.approachGroups ? deriveApproachGroups(net.nodes, net.links, areaCfg.approachGroups as ApproachGroupsCfg) : null;
 if (groups && cfg.groupsOutput && !training) writeOut(cfg.groupsOutput, JSON.stringify(groupsFile(cfg.area, groups)));
-const legGroups = new Map<string, { orig: number; dest: number }>();
+const legGroups = new Map<string, Record<CountDirection, number>>();
 // Origins must be enterable gates (canEnter), destinations exitable (canExit); falls back to link topology.
 const caps = (id: number) => {
   const ls = incident.get(id) ?? [];
@@ -195,13 +198,22 @@ function streetGroupSize(n: Node): number {
   return Math.max(1, both + Math.max(ins, outs));
 }
 // DATA assignment: a gate takes the leg volume of the nearest counted intersection whose leg street and compass direction match the gate's street and bearing.
-function countFor(n: Node, street: string | null): { c: Count; leg: string } | null {
+function countFor(n: Node, street: string | null): { c: Count; leg: string; inflow: CountDirection } | null {
   if (!street) return null;
-  let best: { c: Count; leg: string; d: number } | null = null;
+  const { canIn, canOut } = caps(n.id);
+  const inboundBearings: number[] = [];
+  for (const l of incident.get(n.id) ?? []) {
+    if (streetKey(l.name) !== street) continue;
+    if (l.from === n.id && canIn) inboundBearings.push(l.fromBearing ?? linkBearing(l, nodeById));
+    if (l.to === n.id && canOut) inboundBearings.push((l.toBearing ?? linkBearing(l, nodeById)) + 180);
+  }
+  let best: { c: Count; leg: string; inflow: CountDirection; d: number } | null = null;
   for (const c of tmcs) {
     const leg = legOf(bearing(n.x, n.y, c.x, c.y));
     const d = Math.hypot(n.x - c.x, n.y - c.y);
-    if (c.legStreets[leg] === street && c.legs[leg] && d <= c.maxLegDistM && (!best || d < best.d)) best = { c, leg, d };
+    if (c.legStreets[leg] !== street || !c.legs[leg] || d > c.maxLegDistM || (best && d >= best.d)) continue;
+    const inflow = countDirectionForInflow(leg, inboundBearings);
+    if (inflow) best = { c, leg, d, inflow };
   }
   return best;
 }
@@ -263,8 +275,10 @@ if (cfg.classDefaultFromCounts) {
 for (const n of surfaceGates) {
   const hit = countFor(n, gateStreet(n));
   if (hit) {
-    const k = `${hit.c.id}|${hit.leg}`, c = caps(n.id), r = legGroups.get(k) ?? { orig: 0, dest: 0 };
-    r.orig += c.canIn ? 1 : 0; r.dest += c.canOut ? 1 : 0; legGroups.set(k, r);
+    const k = `${hit.c.id}|${hit.leg}`, c = caps(n.id), r = legGroups.get(k) ?? { entering: 0, leaving: 0 };
+    if (c.canIn) r[hit.inflow]++;
+    if (c.canOut) r[reverseCountDirection(hit.inflow)]++;
+    legGroups.set(k, r);
   }
 }
 for (const n of surfaceGates) {
@@ -273,17 +287,20 @@ for (const n of surfaceGates) {
   const cls = gateClass(n);
   const { canIn, canOut } = caps(n.id);
   let pmIn: number, pmOut: number, kind: Gate['kind'], source: string, adt: number | null = null, year: number | null = null, sourceId = 'assumption';
-  let record: string | undefined, shareIn = 1, shareOut = 1, countDistM: number | null = null;
+  let record: string | undefined, inflowDirection: CountDirection | undefined, shareIn = 1, shareOut = 1, countDistM: number | null = null;
   const hit = countFor(n, street);
   if (hit) {
     const grp = legGroups.get(`${hit.c.id}|${hit.leg}`)!;
-    pmIn = canIn ? hit.c.legs[hit.leg].entering / Math.max(1, grp.orig) : 0;
-    pmOut = canOut ? hit.c.legs[hit.leg].leaving / Math.max(1, grp.dest) : 0;
+    inflowDirection = hit.inflow;
+    const outflow = reverseCountDirection(hit.inflow);
+    shareIn = canIn ? 1 / grp[hit.inflow] : 0;
+    shareOut = canOut ? 1 / grp[outflow] : 0;
+    pmIn = hit.c.legs[hit.leg][hit.inflow] * shareIn;
+    pmOut = hit.c.legs[hit.leg][outflow] * shareOut;
     kind = 'DATA'; year = hit.c.year; sourceId = 'oakland-tmc';
     record = `tmc ${hit.c.id}|${hit.leg}`;
     countDistM = Math.hypot(n.x - hit.c.x, n.y - hit.c.y);
-    shareIn = 1 / Math.max(1, grp.orig); shareOut = 1 / Math.max(1, grp.dest);
-    source = `Oakland TMC ${hit.c.id} ${hit.leg}-leg avg of ${hit.c.legs[hit.leg].files} counts, ${Math.round(Math.hypot(n.x - hit.c.x, n.y - hit.c.y))} m away, shared by ${Math.max(grp.orig, grp.dest)} gate node(s)`;
+    source = `Oakland TMC ${hit.c.id} ${hit.leg}-leg avg of ${hit.c.legs[hit.leg].files} counts, ${Math.round(Math.hypot(n.x - hit.c.x, n.y - hit.c.y))} m away, shared by ${Math.max(grp.entering, grp.leaving)} gate node(s)`;
   } else {
     const ov = nearestOverride(n, street);
     if (ov) { const o = ov as { lat?: number; lon?: number }; countDistM = o.lat === undefined ? null : Math.hypot(toXY(o.lat, o.lon!)[0] - n.x, toXY(o.lat, o.lon!)[1] - n.y); adt = ov.adt * (ov.factor ?? 1); kind = 'DATA(adt)'; year = ov.year ?? null; sourceId = 'caltrans-aadt'; source = `Caltrans AADT: ${ov.source}`; record = `ov ${ov.source}`; shareIn = shareOut = 1 / streetGroupSize(n); }
@@ -299,11 +316,11 @@ for (const n of surfaceGates) {
     pmIn = canIn ? (canOut ? pkn * share : paired ? pkn * share : pkn) : 0;
     pmOut = canOut ? (canIn ? pkn - pmIn : paired ? pkn * (1 - share) : pkn) : 0;
   }
-  const g: Gate = { id: n.id, countDistM, record, shareIn, shareOut, street, cls, deg: bearing(n.x, n.y), source, year, sourceId, kind, adt, pmIn, pmOut, inT: {}, outT: {}, locIn: {}, locOut: {} };
+  const g: Gate = { id: n.id, countDistM, record, inflowDirection, shareIn, shareOut, street, cls, deg: bearing(n.x, n.y), source, year, sourceId, kind, adt, pmIn, pmOut, inT: {}, outT: {}, locIn: {}, locOut: {} };
   const sPm = pmIn / (pmIn + pmOut || 1);
   for (const p of periodIds) {
     const tot = (pmIn + pmOut) * pf[p].volume;
-    const s = canIn && canOut ? clamp(sPm + (pf[p].inboundShare - pf[lastPeriod].inboundShare), 0.2, 0.8) : canIn ? 1 : 0;
+    const s = p === lastPeriod ? sPm : canIn && canOut ? clamp(sPm + (pf[p].inboundShare - pf[lastPeriod].inboundShare), 0.2, 0.8) : canIn ? 1 : 0;
     g.inT[p] = tot * s; g.outT[p] = tot * (1 - s);
   }
   gates.push(g);
@@ -344,7 +361,7 @@ const vc = cfg.volunteerCount as (CountConfig & { enabled: boolean; periods: { a
 const countFile: CountFile | null = vc?.enabled ? JSON.parse(readFileSync(vc.file, 'utf8')) : null;
 const countRes = countFile ? countStations(countFile, net as never, vc!, vc!.periods, Object.fromEntries(periodIds.map((p) => [p, cfg.periodFactors[p].volume])), training ? withheldSt : undefined) : null;
 const countFull = training ? null : countRes;
-const countEnds: Record<string, TripEnds> | null = countFile && countRes ? tripEnds(countFile, countRes, net as never, vc!.periods, vc) : null;
+const countEnds: Record<string, TripEnds> | null = countRes ? tripEnds(countRes, net as never, vc!.periods, vc) : null;
 /** Multiplier on the trip rates of blocks inside the study area, per period and side (origins / destinations); filled in the period loop from the count-implied trip ends. */
 const localScale: Record<string, { o: number; d: number; rawO: number; rawD: number; targetO: number; targetD: number }> = {};
 if (lodes) {
@@ -825,11 +842,8 @@ function loadMeasured(fc: { assignment?: { measured?: { file: string; alpha: num
   if (j.links !== net.links.length) { console.warn(`${m.file}: written for ${j.links} links, the network has ${net.links.length}; measured delays skipped`); return undefined; }
   return { delayS: j.delayS as Record<string, number[]>, alpha: m.alpha, weight: m.weight, source: `${m.file}, ${j.note}` };
 }
-// Through-car targets (calibration round 39): every select-link block of the targets file marked `fitThrough`. PM: the volunteer count's range, from the cars
-// that drove the whole street to the block volume less the cars whose trip ended along it; the central value is the target. Other periods: that range times the
-// period's volume factor (ASSUMPTION), acting only above its upper end. In the training view a target whose street run holds a held-out block is left out,
-// as are the whole-street route counts.
-function loadThrough(fc: { throughTargets?: { enabled: boolean | 'report'; targets: string; weight: number; otherPeriods?: 'ceiling' | 'none'; measured?: { file: string; priorTrips: number }; measuredStations?: string[]; measuredStationsTraining?: string } }, notes: string[]): ThroughFit | undefined {
+// A through-car target counts distinct trips with both ends outside the study area that visit any link of the corridor.
+function loadThrough(fc: { stationsOutput?: string; throughTargets?: { enabled: boolean | 'report'; targets: string; weight: number; otherPeriods?: 'ceiling' | 'none'; measured?: { file: string; priorTrips: number }; measuredStations?: string[]; measuredStationsTraining?: string } }, notes: string[]): ThroughFit | undefined {
   const tt = fc.throughTargets;
   if (!tt?.enabled) return undefined;
   const tf = JSON.parse(readFileSync(tt.targets, 'utf8'));
@@ -838,39 +852,32 @@ function loadThrough(fc: { throughTargets?: { enabled: boolean | 'report'; targe
   const targets: ThroughTarget[] = [];
   for (const t of tf.selectLink ?? []) {
     if (!t.fitThrough) continue;
-    const label = `${t.street} ${t.direction}`, pm = lastPeriod;
-    const vol = t.observedVehPerHour?.[pm], whole = t.wholeStreetVehPerHour?.[pm];
-    if (!(vol > 0) || !(whole > 0)) throw new Error(`through target ${label}: needs observedVehPerHour and wholeStreetVehPerHour for ${pm}`);
+    const label = `${t.street} ${t.direction}`;
+    const target = corridorThroughCounts(t, periodIds);
+    if (!Object.keys(target).length) { notes.push(`through target ${label}: no positive measured unique-corridor through count for these periods`); continue; }
     const blk = resolveBlock(net.links as never, nodeBy as never, t.street, t.direction, t.between ?? []);
     if (!blk.links.length || blk.note.startsWith('FALLBACK')) throw new Error(`through target ${label}: street run not found (${blk.note})`);
     if (training && blk.links.some((l) => heldBlocks.has(l))) { notes.push(`through target ${label}: its street run holds a held-out block; left out of the training view`); continue; }
-    const lo0 = whole, hi0 = Math.max(whole, vol - (t.endAlongVehPerHour?.[pm] ?? 0));
-    const other = tt.otherPeriods ?? 'ceiling';
-    const target: Record<string, number> = {}, lo: Record<string, number> = {}, hi: Record<string, number> = {};
-    const derived: string[] = [], ceiling: string[] = [];
-    for (const p of periodIds) {
-      if (p !== pm && other === 'none') continue;
-      const f = cfg.periodFactors[p].volume / cfg.periodFactors[pm].volume;
-      lo[p] = lo0 * f; hi[p] = hi0 * f; target[p] = ((lo0 + hi0) / 2) * f;
-      if (p !== pm) { derived.push(p); ceiling.push(p); }
-    }
-    targets.push({ id: throughTargetId(label), label: `${label}, through cars (${t.between?.join(' to ') ?? ''})`, links: blk.links, target, lo, hi, ceiling, derived, weight: tt.weight, basis: `DATA (resident volunteer count of 2025-02-25): whole-street cars ${whole}, block volume ${vol}, cars ending along ${t.endAlongVehPerHour?.[pm] ?? 0}; central value ASSUMPTION` });
+    targets.push({
+      id: throughTargetId(label), label: `${label}, through cars (${t.between?.join(' to ') ?? ''})`, links: blk.links,
+      target, lo: target, hi: target, ceiling: [], derived: [], weight: tt.weight, basis: 'Observed unique trips with both ends outside the study area on the corridor',
+    });
   }
+  if (!targets.length) notes.push('No comparable unique-corridor through counts enter this fit. Whole-street traversal counts are scored on the end-to-end path.');
   let measured: ThroughFit['measured'];
   const mf = tt.measured;
-  if (mf && existsSync(mf.file)) {
-    const j = JSON.parse(readFileSync(mf.file, 'utf8'));
-    if (j.network !== net.id) notes.push(`${mf.file}: written for network ${j.network}, this network is ${net.id}; through targets use static route shares`);
-    else { measured = j.periods; notes.push(`through targets: simulated membership from ${mf.file} (${Object.entries(j.periods as Record<string, { runs: number }>).map(([p, q]) => `${p} ${q.runs} runs`).join(', ')}), prior ${mf.priorTrips} trips at the static route share (ASSUMPTION)`); }
-  }
-  // Training view (round 42): the stations' pairs come from runs of the cross-validation demand, never from shipped runs whose demand saw the held-out counts.
-  if (training && tt.measuredStations?.length && measured) {
-    const tf2 = tt.measuredStationsTraining;
-    const j2 = tf2 && existsSync(tf2) ? JSON.parse(readFileSync(tf2, 'utf8')) : null;
-    const ok = j2 && j2.network === net.id;
-    measured = Object.fromEntries(Object.entries(measured).map(([p, q]) => [p, { ...q, stations: ok ? j2.periods?.[p]?.stations : undefined }]));
-    notes.push(ok ? `stations with simulated membership: pairs from ${tf2} (runs of the cross-validation demand)` : `stations with simulated membership: no training pairs (${tf2 ?? 'measuredStationsTraining not set'}${j2 && !ok ? ', other network' : ''}); static membership in this view`);
-  }
+  const membershipFile = training ? tt.measuredStationsTraining : mf?.file;
+  if (membershipFile && existsSync(membershipFile)) {
+    const j = JSON.parse(readFileSync(membershipFile, 'utf8'));
+    const stationPath = fc.stationsOutput && (existsSync(outPath(fc.stationsOutput)) ? outPath(fc.stationsOutput) : fc.stationsOutput);
+    const evidence = {
+      view, network: sha(cfg.network) ?? '', split: manifestHash ?? '', config: sha(cfgPath) ?? '', stations: stationPath ? sha(stationPath) ?? '' : '',
+      targets: sha(tt.targets) ?? '', countFile: vc?.enabled ? sha(vc.file) ?? '' : '', stationCountVersion: 2,
+      simulator: j.evidence?.stationCountVersion === 2 ? execFileSync('cargo', ['run', '--quiet', '--release', '--bin', 'fingerprint'], { encoding: 'utf8' }).trim() : '',
+    };
+    if (j.network === net.id && sameMembershipEvidence(j.evidence, evidence)) { measured = j.periods; notes.push(`Simulated membership from ${membershipFile} (${view} view)`); }
+    else notes.push(`${membershipFile} lacks matching source, detector, split or demand-view evidence. Using static membership.`);
+  } else if (mf) notes.push(`No simulated membership file for the ${view} view. Using static route shares.`);
   return { targets, inStudy: new Set(net.nodes.filter((n: { inStudyArea?: boolean }) => n.inStudyArea).map((n: { id: number }) => n.id)), measured, priorTrips: mf?.priorTrips ?? 5, reportOnly: tt.enabled === 'report', measuredStations: tt.measuredStations };
 }
 const localScaleLines = (): string[] => {
@@ -891,7 +898,7 @@ if (fc?.enabled) {
   const stations = buildStations({
     nodes: net.nodes as never, links: net.links as NetLinkIn[], periodIds, lastPeriod, periodFactors: pf, kFactor: cfg.kFactor, rampKFactor: rc.kFactor, center,
     inBbox: (x, y) => x >= rect.minX && x <= rect.maxX && y >= rect.minY && y <= rect.maxY,
-    streetKey, gates: gates.map((g) => ({ id: g.id, kind: g.kind, street: g.street, source: g.source, year: g.year, sourceId: g.sourceId, record: g.record, shareIn: g.shareIn, shareOut: g.shareOut, inT: g.inT, outT: g.outT, group: gateGroup(g.id) })),
+    streetKey, gates: gates.map((g) => ({ id: g.id, kind: g.kind, street: g.street, source: g.source, year: g.year, sourceId: g.sourceId, record: g.record, inflowDirection: g.inflowDirection, shareIn: g.shareIn, shareOut: g.shareOut, inT: g.inT, outT: g.outT, group: gateGroup(g.id) })),
     tmcs: tmcs.map((c) => ({ id: c.id, year: c.year, x: c.x, y: c.y, legs: c.legs, legStreets: c.legStreets })),
     ramps: ramps.map((r) => { const v = rampVol.get(r)!; return { kind: r.kind, surface: r.surface, streets: r.streets, adt: v.adt, adtKind: v.kind, source: v.source, rows: v.rows, year: v.year }; }),
     overrides: (cfg.adtOverrides ?? []).filter((o: { source: string }) => !withheldObs.has(overrideObservation(o.source))).map((o: { street: string; adt: number; factor?: number; lat: number; lon: number; source: string; year?: number }) => { const [x, y] = toXY(o.lat, o.lon); return { street: o.street, adt: o.adt, factor: o.factor, x, y, source: o.source, year: o.year ?? null }; }),
@@ -926,7 +933,7 @@ if (fc?.enabled) {
           if (sib.length) { for (const p of periodIds) { const rest = Math.max(0, old.target[p] * (sib.length + 1) - (q.target[p] ?? 0)) / sib.length; for (const st of sib) st.target[p] = rest; } stationNotes.push(`${sib.map((st) => st.label).join(', ')}: shares the ADT row of the counted ramp above and takes the rest of it (${periodIds.map((p) => Math.round(sib[0].target[p])).join(' / ')} veh/h)`); }
         }
       }
-      stations.push({ id: q.id, kind: 'tmc', label: q.label, basis: q.basis, links: q.links, target: Object.fromEntries(periodIds.map((p) => [p, q.target[p] ?? 0])), weight: q.weight, tolPct: q.tolPct, records: [{ key: q.id, share: 1 }], feature: q.feature, weightByPeriod: q.weightByPeriod, corridor: q.corridor, source: q.source, year: q.year, ramp: !!q.rampLinks, derived: q.derived });
+      stations.push({ id: q.id, kind: 'tmc', label: q.label, basis: q.basis, links: q.links, detectors: q.detectors, target: Object.fromEntries(periodIds.map((p) => [p, q.target[p] ?? 0])), weight: q.weight, tolPct: q.tolPct, records: [{ key: q.id, share: 1 }], feature: q.feature, weightByPeriod: q.weightByPeriod, corridor: q.corridor, source: q.source, year: q.year, ramp: !!q.rampLinks, derived: q.derived });
     }
     stationNotes.push(`intersection counts: ${res.report.intersections} intersections give ${res.report.legs} leg volumes (${res.report.ramps} on ramps) and ${res.report.movements} turning movements`, ...res.report.notes);
   }
@@ -964,7 +971,7 @@ if (fc?.enabled) {
     const sum = applyRecency(stations, rcy);
     stationNotes.push(`recency weights (ASSUMPTION, reference year ${rcy.referenceYear}): ${sum.sources.map((r) => `${r.source} ${yearLabel(r.year)}: ${r.stations} stations, weight x${r.weight}${r.exempt ? ' (ramp stations, exempt from the age bands)' : ''}${r.weight === 0 ? ' (held out of the fit)' : ''}${r.growth !== 1 ? `, counts x${r.growth.toFixed(3)} for growth` : ''}`).join('; ')}`);
   }
-  if (fc.stationsOutput && !training) writeOut(fc.stationsOutput, JSON.stringify({ area: cfg.area, note: 'Count stations for the calibration report: links are indices into the network link list, targets are veh/h per period, held = validation only (excluded from the fit). Gate stations have no links. Count stations of the volunteer count with a feature (turning movement or whole-street path) have no links either; entries lists the interior links that start at a surface arterial.', entries: countRep?.entries.map((e) => ({ side: e.side, label: e.label, link: e.link, counted: e.counted })), stations: stations.map((q) => ({ id: q.id, kind: q.kind, label: q.label, corridor: corridorOf(q), held: !!q.held, source: q.source ?? null, year: q.year ?? null, derived: q.derived, links: q.links, feature: q.feature, target: Object.fromEntries(Object.entries(q.target).map(([k, v]) => [k, Math.round(v as number)])) })) }));
+  if (fc.stationsOutput && !training) writeOut(fc.stationsOutput, JSON.stringify({ area: cfg.area, note: 'Count stations for the calibration report: links are indices into the network link list, detectors give the measured start or stop line per link where known, targets are veh/h per period, held = validation only (excluded from the fit). Gate stations have no links. Count stations of the volunteer count with a feature (turning movement or whole-street path) have no links either; entries lists the interior links that start at a surface arterial.', entries: countRep?.entries.map((e) => ({ side: e.side, label: e.label, link: e.link, counted: e.counted })), stations: stations.map((q) => ({ id: q.id, kind: q.kind, label: q.label, corridor: corridorOf(q), held: !!q.held, source: q.source ?? null, year: q.year ?? null, derived: q.derived, links: q.links, detectors: q.detectors, feature: q.feature, target: Object.fromEntries(Object.entries(q.target).map(([k, v]) => [k, Math.round(v as number)])) })) }));
   const overused = overusedRecords(stations);
   if (overused.length) throw new Error(`a count is used by more than one station: ${overused.join('; ')}`);
   const fitCfg: FitConfig = {
@@ -1080,6 +1087,7 @@ if (fc?.enabled) {
 // ---------- walking and biking (design D6): ASSUMPTION shares and trip lengths; DATA only in the count scaling ----------
 interface ActiveSummary { lines: string[] }
 const activeSummary: ActiveSummary = { lines: [] };
+let pedestrianCount: { node: number; period: string; observedPerHour: number; plannedPerHour: number | null } | undefined;
 if (cfg.active) {
   const dir = cfg.raw[cfg.streetCounts?.[0]?.source];
   const counts = dir && existsSync(dir) ? readdirSync(dir).filter((f) => f.includes(cfg.streetCounts[0].filePattern) && f.endsWith('.csv')).map((f) => parseActiveCounts(readFileSync(join(dir, f), 'utf8'))).filter((c) => c !== null) : [];
@@ -1089,15 +1097,25 @@ if (cfg.active) {
     nodes: net.nodes, links: net.links, locals: [...localNodes.values()].map((b) => ({ node: b.node, res: b.res, jobs: b.jobs })),
     freewayGates: freewayIds, periodIds, scalePeriod: lastPeriod,
     originShare: lo.originShareResidents, destShare: lo.destShareJobs, tripsPerResident: lo.dailyTripsPerResidentWorker * lo.residentsPerWorker, tripsPerJob: lo.dailyTripsPerJob,
+    pedestrianRoutes: (pairs, station) => {
+      if (!pairs.length) return [];
+      const input = JSON.stringify({ pairs, station });
+      const result = execFileSync('cargo', ['run', '--quiet', '--release', '--bin', 'pedestrian_routes', '--', cfg.network], {
+        input, encoding: 'utf8', maxBuffer: 1024 * 1024 + pairs.length * 12,
+      });
+      return JSON.parse(result);
+    },
     cfg: cfg.active, count: countNode && counts.length ? { node: countNode.id, pedestrian: mean('pedestrian'), bicycle: mean('bicycle') } : null,
   });
   for (const per of outPeriods) per.flows.push(...(res.flows[per.id] as AFlow[]));
   activeSummary.lines.push(`Pedestrian and bicycle flows (persons/h; ${counts.length} Oakland counts)`);
   for (const r of res.reports) {
-    activeSummary.lines.push(`  ${r.mode}: PM peak persons through the counted intersection ${r.prior === null ? 'n/a' : r.prior.toFixed(0)} before scaling, observed ${r.observed === null ? 'n/a' : r.observed.toFixed(0)}, factor ${r.factor.toFixed(3)}, in the final flow list ${r.after === null ? 'n/a' : r.after.toFixed(0)}`);
+    const unit = r.mode === 'pedestrian' ? 'crosswalk traversals' : 'bicycle movements';
+    if (r.mode === 'pedestrian' && countNode && r.observed !== null) pedestrianCount = { node: countNode.id, period: lastPeriod, observedPerHour: r.observed, plannedPerHour: r.after };
+    activeSummary.lines.push(`  ${r.mode}: PM peak ${unit} at the counted intersection ${r.prior === null ? 'n/a' : r.prior.toFixed(0)} before scaling, observed ${r.observed === null ? 'n/a' : r.observed.toFixed(0)}, factor ${r.factor.toFixed(3)}, in the final flow list ${r.after === null ? 'n/a' : r.after.toFixed(0)}`);
     for (const per of outPeriods) {
       const q = r.perPeriod[per.id];
-      activeSummary.lines.push(`    ${per.id.padEnd(9)} ${q.total.toFixed(0).padStart(5)}/h in ${String(q.flows).padStart(4)} flows of ${q.candidates} (to gates ${q.toGates.toFixed(0)}, to commercial streets ${q.toCommercial.toFixed(0)}, gate-to-gate ${q.through.toFixed(0)})`);
+      activeSummary.lines.push(`    ${per.id.padEnd(9)} ${q.total.toFixed(0).padStart(5)}/h in ${String(q.flows).padStart(4)} flows of ${q.candidates} (unroutable demand ${q.unroutable.toFixed(1)} persons/h, to gates ${q.toGates.toFixed(0)}, to commercial streets ${q.toCommercial.toFixed(0)}, gate-to-gate ${q.through.toFixed(0)})`);
     }
   }
   const tot = outPeriods.map((per) => `${per.id} ${per.flows.length}`).join(', ');
@@ -1184,7 +1202,7 @@ const provenance = [
   { source: 'US Census LEHD LODES8 CA OD main JT00 2024 and ca_xwalk', url: 'https://lehd.ces.census.gov/data/lodes/LODES8/ca/', note: 'DATA. Resident workers and jobs per block in the bbox and home/work direction mix by compass sector. ASSUMPTION: each block loads the residential-street junctions within 150 m of its centroid in equal parts; in the simulation these trips pull out from the curb along an adjoining block and leave the road along one, not at the junction. Trip rates, mode share, peak-hour shares are ASSUMPTIONS.' },
   { source: "Children's Hospital and Research Center Oakland Campus Master Plan Project, Draft EIR (City of Oakland, 2014), Appendix C", url: 'https://www.oaklandca.gov/files/assets/city/v/1/planning-amp-building/documents/dp/ceqa/2011-present/childrens-hospital-draft-environmental-impact-report-appendix-c.pdf#page=11', note: 'DATA. AM and PM peak-hour turning-movement counts of 2013-09-19 at nine intersections (legs, turns, SR-24 ramps at 52nd St and Martin Luther King Jr Way) as targets of the count fit; observed signal timing at two signals. ASSUMPTION: no growth since the count.' },
   { source: 'Safeway Shopping Center, College and Claremont Avenues, Draft EIR (City of Oakland, 2011)', url: 'https://www.oaklandca.gov/files/assets/city/v/1/planning-amp-building/documents/dp/ceqa/2011-present/college-avenue-safeway-deir_2024-05-10-203917_bvqg.pdf#page=481', note: 'DATA. PM peak-hour demand volumes of 2010-03-16 at five intersections (legs, turns, SR-24 ramps at Clifton St and Hudson St) as targets of the count fit. ASSUMPTION: no growth since the count.' },
-  ...(cfg.active ? [{ source: 'Walking and biking demand (pedestrian and bicycle flows, persons per hour)', url: 'data/demand/README.md', note: 'ASSUMPTION, not counts: synthesized from LODES resident workers and jobs per block with assumed mode shares, trip lengths, gate and commercial-street shares (config `active`). DATA: the volumes are scaled by one factor per mode so that PM peak-hour people passing Telegraph Ave & Alcatraz Ave match the mean of the Oakland pedestrian and bicycle counts there; the spatial pattern elsewhere is uncounted. Calibration against walking and biking counts has not been done.' }] : []),
+  ...(cfg.active ? [{ source: 'Walking and biking demand (pedestrian and bicycle flows, persons per hour)', url: 'data/demand/README.md', note: 'ASSUMPTION: LODES resident workers and jobs supply the trips. Mode shares, trip lengths and destination weights come from the active config. Where an observation is configured, the pedestrian factor uses planned sidewalk crosswalk traversals and the bicycle factor uses routes passing the counted intersection. Each factor applies across the area and periods.' }] : []),
   ...(assumedReports.length ? [{ source: 'Assumed movement flows (trips that make a counted turning movement)', url: 'data/demand/README.md', note: 'ASSUMPTION, not observed trips (project decisions of 2026-11-14). Each turning count is real; the trips that make the movement are not. The Assumptions tab lists each movement with its counted and assigned cars an hour and who the cars are assumed to be.' }] : []),
   { source: 'Assumptions', url: 'data/demand/README.md', note: 'ASSUMPTION: K-factor, period volume factors, per-class default ADT, directional split, trip rates, gravity turning factors, sector-to-gate weights, local trip share capped per gate. Uncalibrated.' }
 ];
@@ -1199,10 +1217,9 @@ if (intentRes.length) {
     console.log(`Intent flows ${per.id}: ${intentRes.map((r, k) => `${r.out.id} ${vol[k].toFixed(0)}`).join(', ')}, none ${vol[intentRes.length].toFixed(0)} veh/h (all flows, through or not)`);
   }
 }
-const sha = (path: string): string | null => (existsSync(path) ? createHash('sha256').update(readFileSync(path)).digest('hex') : null);
 // Provenance of this build for the assessment: which view, and the hashes of the inputs that decide what the demand is (run manifests compare them).
 const build = { view, split: manifestHash, config: sha(cfgPath), network: sha(cfg.network), countFile: vc?.enabled ? sha(vc.file) : null };
-const out = { version: 1, area: cfg.area, ...(intentRes.length ? { intents: intentRes.map((r) => r.out), ramps: intentRamps.map(rampOut) } : {}), periods: outPeriods.map((q) => ({ ...q, flows: q.flows.map(viaOut) })), provenance, build };
+const out = { version: 1, area: cfg.area, pedestrianCount, ...(intentRes.length ? { intents: intentRes.map((r) => r.out), ramps: intentRamps.map(rampOut) } : {}), periods: outPeriods.map((q) => ({ ...q, flows: q.flows.map(viaOut) })), provenance, build };
 const demandOut = training ? cfg.countFit.validation.demandOutput : cfg.output;
 if (!demandOut) { console.error('countFit.validation.demandOutput is not set; the training view has nowhere to write'); process.exit(1); }
 mkdirSync(dirname(outPath(demandOut)), { recursive: true });

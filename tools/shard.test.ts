@@ -17,7 +17,7 @@ let site: StubSite;
 beforeAll(async () => { site = await startStubSite(); });
 afterAll(async () => { await site.close(); for (const t of temps) rmSync(t, { recursive: true, force: true }); });
 
-const GIT_FILES = ['data/calibration/rockridge.targets.json', 'data/demand/rockridge.stations.json', 'data/demand/rockridge.config.json', 'data/areas/rockridge.json', 'data/proposals/rockridge.references.json', 'data/proposals/rockridge.seeds.json'];
+const GIT_FILES = ['data/calibration/rockridge.targets.json', 'data/demand/rockridge.stations.json', 'data/demand/rockridge.config.json', 'data/areas/rockridge.json', 'data/proposals/rockridge.references.json', 'data/proposals/rockridge.seeds.json', 'data/calibration/rockridge.volunteer-count-2025-02-25.json'];
 const put = (root: string, rel: string, text: string) => { mkdirSync(dirname(join(root, rel)), { recursive: true }); writeFileSync(join(root, rel), text); };
 const NET = '{"links":[],"nodes":[]}';
 const FP = 'a'.repeat(32);
@@ -33,8 +33,9 @@ function makeRoot(lead: boolean): string {
   if (lead) {
     const split = sha256(readFileSync(join(root, 'data/demand/rockridge.split.json')));
     put(root, 'public/data/rockridge.network.json', NET);
-    put(root, 'public/data/rockridge.demand.json', JSON.stringify({ periods: [], build: { view: 'shipped', split, config: 'c', network: 'n', countFile: 'f' } }));
-    put(root, 'target/validation/rockridge.demand.json', JSON.stringify({ periods: [], build: { view: 'training', split, config: 'c', network: 'n', countFile: 'f' } }));
+    const sources = { split, network: sha256(Buffer.from(NET)), config: sha256(readFileSync(join(root, 'data/demand/rockridge.config.json'))), countFile: sha256(readFileSync(join(root, 'data/calibration/rockridge.volunteer-count-2025-02-25.json'))) };
+    put(root, 'public/data/rockridge.demand.json', JSON.stringify({ periods: [], build: { view: 'shipped', ...sources } }));
+    put(root, 'target/validation/rockridge.demand.json', JSON.stringify({ periods: [], build: { view: 'training', ...sources } }));
     put(root, 'public/data/areas.json', '[]');
   }
   return root;
@@ -165,6 +166,9 @@ describe('assessment shards', () => {
     expect(cvIndex.complete).toBe(true);
     const r = await fetchAll(ctx(lead), 'as1', ['s1', 's2', 's3']);
     expect(r.runs).toBe(30);
+    const collector = makeRoot(false);
+    await expect(fetchAll(ctx(collector), 'as1', ['s1', 's2', 's3'])).resolves.toMatchObject({ runs: 30 });
+    expect(existsSync(join(collector, 'public/data/rockridge.demand.json'))).toBe(false);
     const dir = join(lead, 'target/assess-seeds/merged');
     expect(readdirSync(dir).sort()).toHaveLength(20);
     expect(readdirSync(`${dir}-cv`)).toHaveLength(10);

@@ -375,10 +375,10 @@ describe('a file the search wrote', () => {
     expect(g.proposals.length).toBeGreaterThan(1);
     expect(g.optionComparisons?.length).toBe(g.proposals.filter((p) => p.kind !== 'reference').length - 1);
   });
-  it('is current against its own inputs and stale against another simulator', () => {
+  it('recognizes the legacy reporting method even on the original inputs', () => {
     const c = g.computed;
     const loaded = { network: c.networkHash, demand: c.demandHash };
-    expect(evidenceStatus(c, { ...loaded, simulator: c.simulator }).state).toBe('current');
+    expect(evidenceStatus(c, { ...loaded, simulator: c.simulator })).toMatchObject({ state: 'stale', stale: ['method'] });
     expect(evidenceStatus(c, { ...loaded, simulator: 'other' }).state).toBe('stale');
     expect(c.estimation?.selection.estimates).toBe('exploratory');
   });

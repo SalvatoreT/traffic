@@ -386,7 +386,7 @@
       "name": "Two-way stop, minor right, major 600/direction (vc 600)",
       "note": "gap formula 505; tc 6.2, tf 3.3",
       "pass": false,
-      "sim": 364.5,
+      "sim": 319.5,
       "source": "Brilon1999",
       "unit": "veh/h"
     },
@@ -416,7 +416,7 @@
       "name": "Two-way stop, minor through, major 200/direction (vc 400)",
       "note": "gap formula 541; tc 6.5, tf 4",
       "pass": true,
-      "sim": 574.5,
+      "sim": 565.5,
       "source": "Brilon1999",
       "unit": "veh/h"
     },
@@ -428,7 +428,7 @@
       "name": "Two-way stop, minor through, major 600/direction (vc 1200)",
       "note": "gap formula 187; tc 6.5, tf 4",
       "pass": true,
-      "sim": 208.5,
+      "sim": 189.0,
       "source": "Brilon1999",
       "unit": "veh/h"
     },
@@ -452,7 +452,7 @@
       "name": "Two-way stop, minor left, major 200/direction (vc 400)",
       "note": "gap formula 564; tc 7.1, tf 3.5",
       "pass": true,
-      "sim": 516.0,
+      "sim": 502.5,
       "source": "Brilon1999",
       "unit": "veh/h"
     },
@@ -464,7 +464,7 @@
       "name": "Two-way stop, minor left, major 600/direction (vc 1200)",
       "note": "gap formula 163; tc 7.1, tf 3.5",
       "pass": true,
-      "sim": 148.5,
+      "sim": 151.5,
       "source": "Brilon1999",
       "unit": "veh/h"
     },
@@ -498,7 +498,7 @@
       "knownDeviation": null,
       "lo": 496.1257190289998,
       "name": "Circle entry capacity, circulating 600 veh/h",
-      "note": "1130 exp(-0.001 vc) = 620; circulating vehicles pass the entry and the entering vehicles' exit and leave at the next one; when they all leave at the entering vehicles' exit the entry passes 478",
+      "note": "1130 exp(-0.001 vc) = 620; circulating vehicles pass the entry and the entering vehicles' exit and leave at the next one; when they all leave at the entering vehicles' exit the entry passes 486",
       "pass": true,
       "sim": 687.0,
       "source": "Rodegerdts2007",
@@ -510,9 +510,9 @@
       "knownDeviation": null,
       "lo": 332.5630148189839,
       "name": "Circle entry capacity, circulating 1000 veh/h",
-      "note": "1130 exp(-0.001 vc) = 416; circulating vehicles pass the entry and the entering vehicles' exit and leave at the next one; when they all leave at the entering vehicles' exit the entry passes 158",
+      "note": "1130 exp(-0.001 vc) = 416; circulating vehicles pass the entry and the entering vehicles' exit and leave at the next one; when they all leave at the entering vehicles' exit the entry passes 160",
       "pass": true,
-      "sim": 348.0,
+      "sim": 346.5,
       "source": "Rodegerdts2007",
       "unit": "veh/h"
     },
@@ -654,7 +654,7 @@
       },
       "lo": 851.2160484504398,
       "name": "2 lanes, 20% left, pocket overflowing, opposing 500/lane (green share 0.51): approach capacity",
-      "note": "per lane, cycle 100 s, saturated; the left-turn queue overflows the 3-vehicle pocket every cycle and through drivers behind it move to the free lane; min(permissive-left limit, through limit) as in b9, s 1,800 to 1,900, lower bound 0.8 of it; without lane changes along the link 699; the permitted-left method of p1 to p3 [Fambro1991] (left turns only after the opposing queue clears) puts the left-limited approach at 385 to 706 per lane; with the queue-first left-turn model (off by default) 658",
+      "note": "per lane, cycle 100 s, saturated; the left-turn queue overflows the 3-vehicle pocket every cycle and through drivers behind it move to the free lane; min(permissive-left limit, through limit) as in b9, s 1,800 to 1,900, lower bound 0.8 of it; without lane changes along the link 699; the permitted-left method of p1 to p3 [Fambro1991] (left turns only after the opposing queue clears) puts the left-limited approach at 385 to 706 per lane; with the queue-first left-turn model (off by default) 646",
       "pass": false,
       "sim": 792.0,
       "source": "Brilon1999",
@@ -896,7 +896,7 @@
       "name": "Route choice: two routes of equal cost, one with 1 junction(s) offering a side link onto the other (+314 s): share that stays on it",
       "note": "perceived arc costs N(t, beta t) drawn once per driver, beta 2 s [DaganzoSheffi1977]; route variance beta x cost whatever the number of junctions (eq. 11.14b), so the share is about 0.5 less the drivers on a mixed route (Phi(-2.5) each, the band +/-0.05 is an ASSUMPTION); route cost 8027 s; the per-node rule used before round 31 (+/-8% on the remaining cost at every node) keeps 0.418, 4000 drivers",
       "pass": true,
-      "sim": 0.49625,
+      "sim": 0.4945,
       "source": "Sheffi1985",
       "unit": "share"
     },
@@ -908,7 +908,7 @@
       "name": "Route choice: two routes of equal cost, one with 20 junction(s) offering a side link onto the other (+314 s): share that stays on it",
       "note": "perceived arc costs N(t, beta t) drawn once per driver, beta 2 s [DaganzoSheffi1977]; route variance beta x cost whatever the number of junctions (eq. 11.14b), so the share is about 0.5 less the drivers on a mixed route (Phi(-2.5) each, the band +/-0.05 is an ASSUMPTION); route cost 8217 s; the per-node rule used before round 31 (+/-8% on the remaining cost at every node) keeps 0.020, 4000 drivers",
       "pass": true,
-      "sim": 0.49875,
+      "sim": 0.50375,
       "source": "Sheffi1985",
       "unit": "share"
     },
@@ -920,7 +920,7 @@
       "name": "Route choice: share on a route 15 s (2%) costlier than the other, no link in common",
       "note": "probit prediction Phi(-(cB - cA) / sqrt(beta (cA + cB))) = 0.381 (eq. 11.20, beta 2 s, cA 604 s); band +/-0.03 for 4000 drivers (ASSUMPTION); the per-node rule used before round 31 gives 0.369",
       "pass": true,
-      "sim": 0.3815,
+      "sim": 0.37,
       "source": "Sheffi1985",
       "unit": "share"
     },
@@ -932,7 +932,7 @@
       "name": "Route choice: share on a route 30 s (5%) costlier than the other, no link in common",
       "note": "probit prediction Phi(-(cB - cA) / sqrt(beta (cA + cB))) = 0.273 (eq. 11.20, beta 2 s, cA 604 s); band +/-0.03 for 4000 drivers (ASSUMPTION); the per-node rule used before round 31 gives 0.244",
       "pass": true,
-      "sim": 0.27,
+      "sim": 0.265,
       "source": "Sheffi1985",
       "unit": "share"
     },
@@ -944,7 +944,7 @@
       "name": "Route choice: share on a route 60 s (10%) costlier than the other, no link in common",
       "note": "probit prediction Phi(-(cB - cA) / sqrt(beta (cA + cB))) = 0.116 (eq. 11.20, beta 2 s, cA 604 s); band +/-0.03 for 4000 drivers (ASSUMPTION); the per-node rule used before round 31 gives 0.081",
       "pass": true,
-      "sim": 0.10825,
+      "sim": 0.11675,
       "source": "Sheffi1985",
       "unit": "share"
     },
@@ -956,7 +956,7 @@
       "name": "Route choice: share on a route 120 s (20%) costlier than the other, no link in common",
       "note": "probit prediction Phi(-(cB - cA) / sqrt(beta (cA + cB))) = 0.010 (eq. 11.20, beta 2 s, cA 604 s); band +/-0.03 for 4000 drivers (ASSUMPTION); the per-node rule used before round 31 gives 0.000",
       "pass": true,
-      "sim": 0.01175,
+      "sim": 0.007,
       "source": "Sheffi1985",
       "unit": "share"
     }
@@ -983,8 +983,8 @@
     "schema": 1,
     "simulator": {
       "dirty": false,
-      "fingerprint": "f0df1aabc323bca5893215e1df1afbff",
-      "revision": "17ed5629c5f377144d61aae9035b1f33a2369dbc",
+      "fingerprint": "4fba23cc4474ee85c5e37d26b57fa4af",
+      "revision": "0834e6a99c87b70f5bd14d750973d29dc92eab4f",
       "version": "0.1.0"
     },
     "suite": {

@@ -73,12 +73,10 @@ The Rockridge area is marked `uncalibrated` in `data/areas/rockridge.json`.
 - Validated: a suite of small synthetic networks checks the simulator's own capacities (signal saturation flow, stop and
   circle entry, link and motorway lane capacity, pedestrian and cyclist effects) against published ranges. Not every
   case passes. Results are in [data/calibration/validation.md](data/calibration/validation.md).
-- Midday is the default period. All three periods pass the stability rule over ten seeds (PM peak: 0.7 vehicles
-  removed per hour against a limit of 1.0), so none is labeled experimental in the app. One off-ramp at the SR-24 west
-  end still carries less than half its count in the PM peak.
-- Route shares: the fit meets the observed shares in the static assignment, but in the simulator none of the four
-  freeway shares for Hillegass Ave and Colby St is within 10 points of the observed value (PM peak; the closest
-  misses by 10.1).
+- Rockridge opens in the PM peak. The current station detectors and demand fit need a new multi-seed assessment.
+  Earlier stability figures and freeway-share results belong to the model version recorded with each run.
+- At Hillegass Avenue and Colby Street, the volunteer route diagrams count drivers who traveled the full length in
+  each direction. The simulator reports those traversals separately from drivers who used only part of the street.
 - Counts and assumptions: counts cover few intersections, ramp counts are from 2012 to 2021 and have no peak-hour
   direction, and local trip generation, walking and biking volumes and many parameters are assumptions.
 - Observed route shares are percentages from resident-provided select-link data and are indicative only.

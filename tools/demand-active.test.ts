@@ -38,6 +38,7 @@ const input = (over: Partial<ActiveInput> = {}): ActiveInput => ({
   periodIds: ['am', 'pm'], scalePeriod: 'pm',
   originShare: { am: 0.7, pm: 0.3 }, destShare: { am: 0.7, pm: 0.3 },
   tripsPerResident: 3.2, tripsPerJob: 3.5, cfg,
+  pedestrianRoutes: (pairs) => pairs.map(([o, d]) => o === 6 && d === 13 ? 2 : 0),
   count: { node: 7, pedestrian: 40, bicycle: 12 },
   ...over,
 });
@@ -76,6 +77,16 @@ describe('walking and biking flows', () => {
       expect(r.flows[p].filter((f) => f.mode === 'bicycle').length).toBeLessThanOrEqual(50);
     }
   });
+  it('uses traversal multiplicity and excludes and reports unreachable walking demand', () => {
+    const q = buildActiveFlows(input({ pedestrianRoutes: (pairs) => pairs.map(([o, d]) => o === 6 ? null : d === 13 ? 2 : 0) }));
+    const ped = q.flows.pm.filter((f) => f.mode === 'pedestrian');
+    expect(ped.some((f) => f.origin === 6)).toBe(false);
+    expect(q.reports[0].perPeriod.pm.unroutable).toBeGreaterThan(0);
+    const crossings = ped.filter((f) => f.destination === 13).reduce((a, f) => a + 2 * f.vehPerHour, 0);
+    expect(crossings).toBeCloseTo(q.reports[0].after!, 6);
+    expect(Math.abs(crossings - 40)).toBeLessThan(0.4);
+  });
+
   it('leaves volumes unscaled without counts', () => {
     const q = buildActiveFlows(input({ count: null }));
     expect(q.reports.every((x) => x.factor === 1)).toBe(true);

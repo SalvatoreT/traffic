@@ -3,7 +3,7 @@ import { featureIndex, routeFeatures, type Assignment, type Feature } from './li
 import { assigned, DEFAULT_FIT, fitToCounts, type Constraint, type FlowType } from './lib/fit-counts';
 import { linkShare, measuredShare, throughMembership, type ThroughMeasured } from './lib/demand-fit';
 import { throughStats } from './lib/assess';
-import { pooledStations, pooledMembership, throughTargetId, type SelectOd } from './lib/through-membership';
+import { checkSelectOdSeed, corridorThroughCounts, membershipEvidence, sameMembershipEvidence, pooledStations, pooledMembership, throughTargetId, type SelectOd } from './lib/through-membership';
 
 // Three flows on a two-link network: flow 0 uses link 0, flow 1 uses links 0 and 1, flow 2 uses link 1. One assignment, every route share 1.
 const asg = (feat?: Assignment['feat']): Assignment => ({
@@ -73,11 +73,14 @@ describe('through membership', () => {
 
 describe('through figures over seeds', () => {
   it('gives the standard error of the seed mean', () => {
-    const run = (v: number) => ({ throughCheck: [{ block: 'A St SB', expectedThroughLow: 10, expectedThroughHigh: 20, modeledThrough: v }] }) as never;
-    const [q] = throughStats([run(18), run(22), run(20), run(24)]);
+    const targets = [{ street: 'A St', direction: 'SB', wholeStreetVehPerHour: { pm: 1 } }];
+    const run = (v: number) => ({ throughCheck: [{ block: 'A St SB', observedWholeStreet: 1, modeledWholeStreet: v, modeledThrough: 300 }] }) as never;
+    const [q] = throughStats([run(18), run(22), run(20), run(24)], targets, 'pm');
     expect(q.mean).toBe(21);
     expect(q.se).toBeCloseTo(Math.sqrt(20 / 3 / 4));
     expect(q.inside).toBe(false);
+    expect(throughStats([run(1), { throughCheck: [] } as never], targets, 'pm')[0].inside).toBe(false);
+    expect(throughStats([run(1)], targets, 'pm')[0].inside).toBe(true);
   });
 });
 
@@ -123,5 +126,44 @@ describe('link stations with simulated membership (round 42)', () => {
     const m = pooledStations([{ label: 'a', flows: fl, sod: [run(1), run(2)] }]);
     expect(m.hits['count block 7']).toEqual({ '1>2': 6 });
     expect(m.trips).toEqual({ '1>2': 14 });
+  });
+});
+
+
+it('fits corridor through trips only for periods with a directly comparable observation', () => {
+  const corridor = { wholeStreetVehPerHour: { pm: 20 }, observedVehPerHour: { pm: 100 }, endAlongVehPerHour: { pm: 30 }, observedCorridorThroughVehPerHour: undefined };
+  expect(corridorThroughCounts(corridor, ['am', 'pm'])).toEqual({});
+  expect(corridorThroughCounts({ ...corridor, observedCorridorThroughVehPerHour: { am: 24 } }, ['am', 'pm'])).toEqual({ am: 24 });
+});
+
+
+describe('measured station provenance', () => {
+  const ref = (sha256: string) => ({ path: sha256, sha256 });
+  const run: SelectOd = {
+    period: 'pm', minutes: 60, seed: 1, stationCountVersion: 2, blocks: [],
+    manifest: {
+      schema: 1, simulator: { fingerprint: 'sim' },
+      run: { area: 'a', period: 'pm', seed: 1, minutes: 60, scale: 1, warmupMin: 10, measurementWindow: { fromMin: 10, toMin: 60 }, initialLoad: true, settings: {} },
+      inputs: { demandBuild: { view: 'training', network: 'net', split: 'split', config: 'cfg', countFile: 'count' }, network: ref('net'), demand: ref('demand'), stations: ref('stations'), targets: ref('targets'), split: ref('split'), demandConfig: ref('cfg'), areaConfig: ref('area'), groups: ref('groups') },
+    },
+  };
+  it('accepts matching detector events, and rejects historical or cross-view evidence', () => {
+    const source = { view: 'training', network: 'net', split: 'split', config: 'cfg', countFile: 'count', stations: 'stations', targets: 'targets', simulator: 'sim', stationCountVersion: 2 };
+    expect(membershipEvidence(run, 'demand')).toEqual(source);
+    for (const input of [{ ...run, stationCountVersion: 1 }, { ...run, manifest: undefined }, { ...run, seed: 2 }])
+      expect(() => membershipEvidence(input, 'demand')).toThrow(/source, split and network/);
+    expect(() => membershipEvidence(run, 'another demand')).toThrow();
+    expect(sameMembershipEvidence(undefined, source)).toBe(false);
+    expect(sameMembershipEvidence(source, source)).toBe(true);
+    for (const field of Object.keys(source)) expect(sameMembershipEvidence({ ...source, [field]: 'other' }, source)).toBe(false);
+  });
+  it('counts each seed once per demand and rejects mislabeled and backup files', () => {
+    const seen = new Set<string>();
+    const check = (file: string, demand = 'demand', sample = run) => checkSelectOdSeed(sample, demand, 'pm', file, seen);
+    for (const file of ['sod-pm-2.json', 'sod-pm-01.json', 'sod-pm-1-backup.json']) expect(() => check(file)).toThrow(/mismatched/);
+    expect(() => check('sod-pm-2.json', 'demand', { ...run, seed: 2 })).toThrow(/mismatched/);
+    check('sod-pm-1.json');
+    expect(() => check('sod-pm-1.json')).toThrow(/duplicate/);
+    expect(() => check('sod-pm-1.json', 'new demand')).not.toThrow();
   });
 });

@@ -17,20 +17,26 @@ const build = existsSync(demand) ? JSON.parse(readFileSync(demand, 'utf8')).buil
 const skip = new Set((process.env.STUB_SKIP_SEEDS ?? '').split(',').filter(Boolean).map(Number));
 mkdirSync(keep, { recursive: true });
 mkdirSync(out, { recursive: true });
+const stations = JSON.parse(readFileSync(`data/demand/${area}.stations.json`, 'utf8')).stations ?? [];
+const targets = JSON.parse(readFileSync(`data/calibration/${area}.targets.json`, 'utf8')).selectLink ?? [];
+const linkRates = Array(1 + Math.max(0, ...stations.flatMap((s) => s.links))).fill(0);
+const features = stations.filter((s) => s.feature).map((s) => ({ id: s.id, label: s.label, kind: s.feature.kind, trips: 0, vehPerHour: 0 }));
+const shares = targets.flatMap((t) => ['from', 'to'].flatMap((side) => (t[side] ?? []).map((q) => ({ block: `${t.street} ${t.direction}`, side, via: q.via, observed: q.share, observedPm: q.pmPeakShare ?? null, modelled: q.pmPeakShare ?? q.share, headline: q.via === 'freeway' }))));
+const throughCheck = targets.map((t) => ({ block: `${t.street} ${t.direction}`, observedWholeStreet: t.wholeStreetVehPerHour?.[period] ?? null, modeledWholeStreet: 0, modeledThrough: 0, fitted: true }));
 for (const seed of seeds) {
   if (skip.has(seed)) continue;
   const manifest = {
     schema: 1,
     simulator: { fingerprint: process.env.STUB_FINGERPRINT ?? 'f'.repeat(32), revision: 'abc', dirty: false, version: '0.1.0' },
     inputs: { network: input(`public/data/${area}.network.json`), demand: input(demand), demandBuild: build, targets: input(`data/calibration/${area}.targets.json`), stations: input(`data/demand/${area}.stations.json`), split: input(`data/demand/${area}.split.json`), demandConfig: input(`data/demand/${area}.config.json`), areaConfig: input(`data/areas/${area}.json`), groups: input(`data/demand/${area}.groups.json`) },
-    run: { area, period, scale: 1, seed, minutes, warmupMin: 10, measurementWindow: { fromMin: 10, toMin: minutes }, initialLoad: true, settings: {} },
+    run: { area, period, scale: 1, seed, minutes, warmupMin: 10, measurementWindow: { fromMin: minutes >= 30 ? 10 : 0, toMin: minutes }, initialLoad: true, settings: {} },
   };
   const report = {
     area, period, scale: 1, seed, minutes,
     ...(process.env.STUB_NO_MANIFEST ? {} : { manifest }),
     health: { gridlockRemoved: Number(process.env.STUB_REMOVALS ?? 0), backlog: 10, spawned: 1000, backlogPct: 0.5, arterialMeanSpeed: 6, completed: 900, meanTripDelay: 1, meanTripTime: 2, unroutable: 0 },
-    series: [{ tMin: 5, backlog: 5 }, { tMin: 30, backlog: 6 }, { tMin: 55, backlog: 7 }],
-    shares: [], rampShares: [], linkFlowVehPerHour: null, linkMeanDelayS: null,
+    series: [{ tMin: minutes / 2, backlog: 6 }, { tMin: minutes, backlog: 7 }],
+    shares, throughCheck, features, rampShares: [], linkFlowVehPerHour: linkRates, linkStartVehPerHour: linkRates, linkStopLineVehPerHour: linkRates, linkMeanDelayS: null,
   };
   writeFileSync(join(keep, `${area}-${period}-s1-seed${seed}.json`), JSON.stringify(report));
 }

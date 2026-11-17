@@ -63,15 +63,23 @@ The assessment SHALL compute GEH, GEH below 5 in more than 85% of cases, and the
 - **THEN** every station row has its GEH, GEH pass and size-band pass, and each period states the share of fitted and of held-out stations passing
 
 ### Requirement: Fit rule on seed means
-The headline select-link shares SHALL be judged on the seed means (within 10 points of observed) with their 95% intervals shown. The area status SHALL be `calibrated` only when, in every period, the stability rule holds and the station rule holds on counts from the last `recentYears` years, fitted and held out, and, in the PM peak, the headline shares are within the tolerance and the modeled through cars are inside the observed range on every counted block. `experimentalPeriods` SHALL list the periods that fail the stability rule.
+Calibrated status SHALL require stability in every period, the recent fitted and held-out station rules, PM whole-street counts, current primitive validation and PM headline shares within ten percentage points of the observed values on seed means. Show their 95% intervals. Missing, mismatched or nonfinite evidence for a required seed, detector or primitive SHALL block a pass. List periods failing stability in `experimentalPeriods`.
 
 #### Scenario: One failing period
-- **WHEN** the stability rule fails in the PM peak and holds in the others
-- **THEN** the status is `uncalibrated` and `experimentalPeriods` is the PM peak
+- **WHEN** stability fails only in the PM peak
+- **THEN** the area stays uncalibrated and the manifest lists that period
 
 #### Scenario: Every rule holds
-- **WHEN** every period is stable, the recent-count station rule holds fitted and held out in every period, and the PM shares and through cars are within their tolerances
-- **THEN** the assessment prescribes `calibrated` and `experimentalPeriods` is empty
+- **WHEN** complete current evidence passes each applicable rule
+- **THEN** the assessment recommends calibrated status and lists no experimental periods
+
+#### Scenario: Missing measurement
+- **WHEN** a required detector has no finite measurement on one expected seed
+- **THEN** the station and run set cannot supply passing evidence, and the assessment identifies the missing measurement
+
+#### Scenario: Incomplete primitive report
+- **WHEN** the primitive report omits a required case or belongs to a different simulator
+- **THEN** it cannot support a calibrated verdict
 
 ### Requirement: Link-flow noise file
 The assessment SHALL write the per-link sample standard deviation of flow over the seeds, per period, to `public/data/<area>.noise.json` as integers in a stated unit, under 200 KB, and the importer SHALL list the file as `noise` in `areas.json` when it exists.
@@ -157,22 +165,26 @@ The targets file MAY list arterial segments by street and the two cross streets,
 - **THEN** the PM section of the assessment has a row with the simulated seconds and speed, the four observed speeds and yes or no for the range
 
 ### Requirement: Through cars on the counted blocks
-For each select-link target that lists `observedVehPerHour` for the period and a freeway share, the calibration report SHALL list the observed volume, the observed freeway share, the observed freeway-end trips (their product), the modeled through cars per hour (neither trip end in the study area) and the modeled trips per hour with a freeway end, and write the same in the JSON as `throughCheck`. When the target also lists `wholeStreetVehPerHour` the report SHALL give an observed through range from that value up to the block volume less `endAlongVehPerHour`, and say whether the modeled through cars are inside it. When the target is marked `fitThrough`, the figure is a target of the demand fit: the report SHALL say so, mark the row as fitted in the JSON (`fitted: true`), and name the checks that stay independent of it (held-out count stations, headline freeway shares, stability, arterial travel times).
+The calibration report SHALL keep observed block volumes and freeway shares separate from simulated unique vehicles using any part of the corridor. When an observation counts vehicles traveling a whole street in one direction, the model SHALL count continuous traversals in that direction between the recorded endpoints. Counts of vehicles ending along a street and summaries across blocks SHALL NOT supply an upper bound on unique users of a corridor.
 
 #### Scenario: Colby Street northbound
-- **WHEN** the targets file gives Colby Street northbound 174 veh/h, a freeway share of 0.47, 102 whole-street cars and 29 end-along cars
-- **THEN** the report row shows 82 observed freeway-end trips, an observed through range of 102 to 145 and the modeled figures
+- **WHEN** the observation counts 102 drivers traveling the full street northbound
+- **THEN** the report compares it with simulated continuous northbound traversals
 
 #### Scenario: Fitted through figure
-- **WHEN** the Colby Street northbound target is marked `fitThrough`
-- **THEN** the row is marked fitted, and the report says the figure is fitted and is no longer an independent check
+- **WHEN** a legacy fit inferred corridor-wide traffic from block volumes and cars ending along the street
+- **THEN** those figures remain historical evidence and cannot serve as a measured corridor-wide target
+
+#### Scenario: Vehicle leaves after one block
+- **WHEN** a driver uses the first counted block and turns off before the last one
+- **THEN** it counts toward its block and any-use metrics and contributes zero whole-street traversals
 
 ### Requirement: Through figures carry their standard error
-The assessment's through-car table SHALL give, per counted block, the seed mean and its standard error (standard deviation over the seeds divided by the square root of their number), so a figure within one standard error of its range can be told apart from one clearly outside.
+The assessment SHALL report the modeled mean and its standard error across seeds beside each observed whole-street count. It SHALL identify the detector or corridor and compare like quantities in vehicles per hour.
 
 #### Scenario: Twenty seeds
-- **WHEN** the assessment runs twenty seeds and a block's figures have a standard deviation of 16 cars an hour
-- **THEN** the table shows a standard error of about 3.6 beside the mean
+- **WHEN** the standard deviation for a direction is 16 cars an hour over twenty seeds
+- **THEN** the table shows a standard error of about 3.6 beside its mean
 
 ### Requirement: Intent map of through cars
 The calibrate report SHALL list, for each counted block and for the study area's residential and service streets, the through cars per hour (neither trip end in the study area) by origin group and destination group, with the arterial each trip would otherwise use on the shortest free-flow path that avoids the study area's local streets, where that path runs on a boundary street near the study area. The ten-seed summary SHALL give the mean over the seeds.

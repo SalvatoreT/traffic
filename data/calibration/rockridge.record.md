@@ -1175,6 +1175,14 @@ Status `uncalibrated` (no experimental period, as in rounds 28 and 29). D16 hold
 - Station ids are link ids, so an import repair that renumbers links would break the frozen split; the lane repair of this round avoids that by acting on finished links.
 - Stored proposal results, text pages and previews were made on an older engine and are stale.
 
+## Measurement corrections after round 42
+
+The rebuilt Rockridge demand uses 731 vehicles per hour entering at the southern Telegraph Avenue gate and 549 leaving it in the PM peak. The volunteer route diagrams now compare with cars that drove the full length of the counted street. The earlier corridor range, derived from a representative block volume, has been retired. The training build keeps the same 86 held-out stations.
+
+In one 60-minute PM run on seed 1, 75 of 92 recent fitted stations and 13 of 24 recent held-out stations passed GEH < 5. The shipped and training runs passed the assessment's input checks. Over minutes 10–60, the shipped run recorded 124 completed pedestrian crossings at Telegraph and Alcatraz, or 148.8 per hour. The training run recorded 141, or 169.2 per hour. Both demand files assign 150.49 crossings per hour there against 150.5 observed. Rockridge remains uncalibrated pending a multi-seed assessment. The previous round's results belong to its recorded inputs.
+
+The decisions and verification are in [the measurement and assignment change](../../openspec/changes/archive/2026-11-17-repair-traffic-measurement-and-assignment/design.md).
+
 ## Older rounds
 
 The seventeenth to twenty-ninth rounds are in `rockridge.record-archive-2.md`. The eleventh to sixteenth rounds, the initial-loading note, the tenth round and everything before it (ninth to fourth, sixth, fifth, and the third-round history) are in `rockridge.record-archive.md`, moved unchanged.

@@ -243,6 +243,7 @@ function statusMd(i: LlmsInput, g: ProposalGroup, loaded: { network: string | nu
   out.push(formatComputed(g.computed, label), '');
   out.push(`Run: ${seedsPhrase(g.computed.seeds)} for ${g.computed.minutes ?? 60} simulated minutes each in ${periodsList(g.computed.periods, label)}, on network \`${g.computed.networkHash}\` and demand \`${g.computed.demandHash}\`; the area was \`${g.computed.calibration}\` at the time. ${provenanceLine(g.computed)}`, '');
   if (g.computed.simulator) out.push(INTERVAL_SCOPE, '');
+  for (const f of g.computed.estimation?.selection.failed ?? []) out.push(`**Failed confirmation.** ${f.title}. ${f.reason}.`, '');
   out.push(`Calibration now: ${calibrationLine(i.area)}`, '');
   if (notices.exploratory) out.push(`**Exploratory.** ${EXPLORATORY_NOTE}`, '');
   if (notices.unverified && !notices.stale) out.push(`**Not verified.** ${notices.unverifiedText}`, '');
@@ -258,6 +259,8 @@ function cardMd(i: LlmsInput, g: ProposalGroup, p: Proposal, n: number | null, w
   const note = allTrafficNote(rows);
   const stored = (i.resultsIndex?.results ?? []).filter((r) => r.proposals.some((x) => x.group === g.id && x.id === p.id));
   const out: string[] = [`### ${n === null ? '' : `${n}. `}${p.title}`, ''];
+  if (p.accessProblem) out.push(`**Street access check failed.** ${p.accessProblem}.`, '');
+  if (p.simulationProblem) out.push(`**Simulation validity check failed.** ${p.simulationProblem}.`, '');
   if (p.kind === 'reference') out.push(`*Earlier proposal.*${p.note ? ` ${p.note}` : ''}`, '');
   const best = bestForText(p);
   if (best) out.push(`${best}.`, '');

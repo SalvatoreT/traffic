@@ -3,7 +3,8 @@
 // the exact requested seed set, each run's manifest, one compatible set of runs, and inputs that still match the files on disk. No I/O except `hashFile`.
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
+import { isDeepStrictEqual } from 'node:util';
 
 export interface InputRef { path: string; sha256: string | null }
 export interface DemandBuild { view?: string; split?: string | null; config?: string | null; network?: string | null; countFile?: string | null }
@@ -29,11 +30,43 @@ export interface ExpectedInputs {
   demand: string | null;
 }
 
+export function assessmentSplitPath(root: string, area: string): string {
+  const path = join(root, `data/demand/${area}.config.json`);
+  const cfg = existsSync(path) ? JSON.parse(readFileSync(path, 'utf8')) : {};
+  return cfg.countFit?.validation?.splitFile ?? `data/demand/${area}.split.json`;
+}
+
 export const expectedInputs = (root: string, area: string, demandFile: string | null): ExpectedInputs => ({
   network: hashFile(join(root, `public/data/${area}.network.json`)), targets: hashFile(join(root, `data/calibration/${area}.targets.json`)), stations: hashFile(join(root, `data/demand/${area}.stations.json`)),
-  split: hashFile(join(root, `data/demand/${area}.split.json`)), demandConfig: hashFile(join(root, `data/demand/${area}.config.json`)), areaConfig: hashFile(join(root, `data/areas/${area}.json`)), groups: hashFile(join(root, `data/demand/${area}.groups.json`)),
+  split: hashFile(resolve(root, assessmentSplitPath(root, area))), demandConfig: hashFile(join(root, `data/demand/${area}.config.json`)), areaConfig: hashFile(join(root, `data/areas/${area}.json`)), groups: hashFile(join(root, `data/demand/${area}.groups.json`)),
   demand: demandFile ? hashFile(demandFile) : null,
 });
+
+export type BuildView = 'shipped' | 'training' | 'variant';
+export interface BuildEvidence {
+  view: BuildView;
+  /** Metadata embedded in the demand file whose bytes the simulator read. */
+  recorded: DemandBuild | null;
+  /** Null means the input was disabled. Undefined means an enabled source is missing. */
+  sources: Partial<Record<'config' | 'network' | 'countFile' | 'split', string | null | undefined>>;
+}
+
+/** Read once per demand view. A variant can come from another fitting config or from an external generator. */
+export function buildEvidence(root: string, area: string, demandPath: string | null, view: BuildView): BuildEvidence {
+  const recorded: DemandBuild | null = demandPath && existsSync(demandPath) ? JSON.parse(readFileSync(demandPath, 'utf8')).build ?? null : null;
+  const network = hashFile(join(root, `public/data/${area}.network.json`)) ?? undefined;
+  if (view === 'variant') return { view, recorded, sources: recorded?.network != null ? { network } : {} };
+  const configPath = join(root, `data/demand/${area}.config.json`);
+  const cfg = existsSync(configPath) ? JSON.parse(readFileSync(configPath, 'utf8')) : {};
+  const count = cfg.volunteerCount, validation = cfg.countFit?.validation;
+  const needsSplit = view === 'training' || (cfg.countFit?.enabled && validation?.enabled);
+  const splitPath = validation?.splitFile ?? `data/demand/${area}.split.json`;
+  const countFile = count?.enabled ? (typeof count.file === 'string' ? hashFile(resolve(root, count.file)) ?? undefined : undefined) : null;
+  return { view, recorded, sources: {
+    config: hashFile(configPath) ?? undefined, network, countFile,
+    split: needsSplit ? hashFile(resolve(root, splitPath)) ?? undefined : null,
+  } };
+}
 
 const INPUT_KEYS = ['network', 'targets', 'stations', 'split', 'demandConfig', 'areaConfig', 'groups', 'demand'] as const;
 
@@ -51,7 +84,7 @@ export interface SetCheck { problems: string[]; revisions: string[]; dirty: bool
  * Problems of one run set (one period, one role): exactly the requested seeds, each with a manifest that names its own seed and agrees with the others, and
  * inputs that equal the files now on disk. Runs are as read by `readRuns`: `seed` is the file's seed, `reportSeed` the seed the report itself says.
  */
-export function checkRunSet(label: string, requested: number[], found: { seed: number; file: string; reportSeed?: number; manifest?: RunManifest | null; error?: string }[], expected: ExpectedInputs): SetCheck {
+export function checkRunSet(label: string, requested: number[], found: { seed: number; file: string; reportSeed?: number; manifest?: RunManifest | null; error?: string }[], expected: ExpectedInputs, evidence: BuildEvidence): SetCheck {
   const problems: string[] = [];
   const dup = requested.filter((s, i) => requested.indexOf(s) !== i);
   if (dup.length) problems.push(`${label}: seed list repeats ${[...new Set(dup)].join(', ')}`);
@@ -79,9 +112,20 @@ export function checkRunSet(label: string, requested: number[], found: { seed: n
       for (const k of Object.keys(ref.run) as (keyof typeof ref.run)[]) if (k !== 'seed' && JSON.stringify(c.run[k]) !== JSON.stringify(ref.run[k])) problems.push(`${label}: seed ${f.seed} differs from seed ${withManifest[0].seed} in run setting ${k}`);
     }
     const m = withManifest[0].manifest;
+    if (!expected.demand || !expected.network) problems.push(`${label}: the requested demand or network file is missing`);
     for (const k of INPUT_KEYS) {
       const now = expected[k];
       if ((m.inputs[k]?.sha256 ?? null) !== now) problems.push(`${label}: the ${k} file is not the one the runs used (runs ${(m.inputs[k]?.sha256 ?? 'none').slice(0, 12)}, now ${(now ?? 'none').slice(0, 12)}): the runs are stale`);
+    }
+    const build = m.inputs.demandBuild ?? null;
+    if (!isDeepStrictEqual(build, evidence.recorded)) problems.push(`${label}: the report's demand build does not match the metadata in its demand file`);
+    if (evidence.view !== 'variant' && build?.view !== evidence.view) {
+      problems.push(`${label}: expected a ${evidence.view} demand build, found ${build?.view ?? 'no build provenance'}`);
+    }
+    for (const [key, hash] of Object.entries(evidence.sources)) {
+      if (hash === undefined || build?.[key as keyof DemandBuild] !== hash) {
+        problems.push(`${label}: the recorded demand build ${key} does not match its current source. Rebuild the demand before assessing these runs.`);
+      }
     }
     revisions = [...new Set(withManifest.map((f) => f.manifest.simulator.revision ?? 'unknown'))];
     dirty = withManifest.some((f) => f.manifest.simulator.dirty === true);

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { countDirectionForInflow } from './lib/gate-count';
 import { buildStations, dedupeStations, overusedRecords, type StationInputs } from './lib/demand-fit';
 
 // A Caltrans station on a link of Tunnel Road, 100 m from the gate that takes the same AADT: one count, one station.
@@ -46,5 +47,29 @@ describe('a count is used once', () => {
   it('lets a record split into shares that add to one', () => {
     const mk = (id: string) => ({ id, kind: 'gate' as const, label: id, basis: '', links: [], target: {}, weight: 1, tolPct: 10, records: [{ key: 'r|entering', share: 0.5 }] });
     expect(overusedRecords([mk('a'), mk('b')])).toEqual([]);
+  });
+});
+
+describe('turning counts at a model boundary', () => {
+  it('maps gate inflow by its travel direction on the counted leg', () => {
+    // The north leg carries southbound traffic entering the intersection and northbound traffic leaving it.
+    expect(countDirectionForInflow('N', [190, 192])).toBe('entering');
+    expect(countDirectionForInflow('N', [12, 10])).toBe('leaving');
+    expect(countDirectionForInflow('N', [90])).toBeNull();
+    expect(countDirectionForInflow('N', [10, 190])).toBeNull();
+  });
+
+  it('keeps physical count directions on separate entry and exit gates', () => {
+    const s = inputs(false);
+    s.overrides = [];
+    s.nodes = nodes.map((n) => ({ ...n, gate: n.id !== 1 }));
+    s.links = [links[0], links[2]];
+    const entry = { ...s.gates[0], record: 'tmc Outside|N', inflowDirection: countDirectionForInflow('N', [12])!, inT: { pm: 731 }, outT: { pm: 0 } };
+    s.gates = [entry, { ...entry, id: 2, inT: { pm: 0 }, outT: { pm: 549 } }];
+    const stations = buildStations(s, []);
+    expect(stations.map(({ records, target }) => [records, target.pm])).toEqual([
+      [[{ key: 'tmc Outside|N|leaving', share: 1 }], 731],
+      [[{ key: 'tmc Outside|N|entering', share: 1 }], 549],
+    ]);
   });
 });

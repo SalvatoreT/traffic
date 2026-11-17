@@ -373,7 +373,15 @@ fn run_manifest(args: &Args, root: &Path, net_path: &Path, dem_path: &Path, dem_
     }
     let build = serde_json::from_str::<Built>(dem_json).ok().and_then(|b| b.build);
     let a = &args.area;
-    let split_rel = format!("data/demand/{a}.split.json");
+    let config_rel = format!("data/demand/{a}.config.json");
+    let config: Value = std::fs::read(root.join(&config_rel)).ok().and_then(|b| serde_json::from_slice(&b).ok()).unwrap_or(Value::Null);
+    let default_split = format!("data/demand/{a}.split.json");
+    let split_rel = config["countFit"]["validation"]["splitFile"].as_str().unwrap_or(&default_split);
+    let count_ref = if config["volunteerCount"]["enabled"] == true {
+        config["volunteerCount"]["file"].as_str().map(|f| report_manifest::input(root, f))
+    } else {
+        None
+    };
     json!({
         "schema": report_manifest::SCHEMA,
         "simulator": report_manifest::simulator(root),
@@ -383,8 +391,9 @@ fn run_manifest(args: &Args, root: &Path, net_path: &Path, dem_path: &Path, dem_
             "demandBuild": build,
             "targets": report_manifest::input(root, &format!("data/calibration/{a}.targets.json")),
             "stations": report_manifest::input(root, &format!("data/demand/{a}.stations.json")),
-            "split": report_manifest::input(root, &split_rel),
-            "demandConfig": report_manifest::input(root, &format!("data/demand/{a}.config.json")),
+            "split": report_manifest::input(root, split_rel),
+            "countFile": count_ref,
+            "demandConfig": report_manifest::input(root, &config_rel),
             "areaConfig": report_manifest::input(root, &format!("data/areas/{a}.json")),
             "groups": report_manifest::input(root, &format!("data/demand/{a}.groups.json")),
         },
@@ -433,10 +442,14 @@ fn main() {
     // groups and overlapping aggregate stations; the shipped fit uses them.
     let inputs = &manifest["inputs"];
     let build = &inputs["demandBuild"];
-    let fitted_view = build["view"].as_str().filter(|_| build["split"].is_string() && build["split"] == inputs["split"]["sha256"] && build["network"] == inputs["network"]["sha256"] && build["config"] == inputs["demandConfig"]["sha256"]);
+    let fitted_view = build["view"].as_str().filter(|_| build["split"].is_string() && build["split"] == inputs["split"]["sha256"]
+        && build["network"].is_string() && build["network"] == inputs["network"]["sha256"]
+        && build["config"].is_string() && build["config"] == inputs["demandConfig"]["sha256"]
+        && build.get("countFile").is_some() && (inputs["countFile"].is_null() || inputs["countFile"]["sha256"].is_string())
+        && build["countFile"] == inputs["countFile"]["sha256"]);
     let mut withheld = std::collections::HashSet::new();
     if fitted_view == Some("training") {
-        let split: Value = serde_json::from_str(&read(root.join(format!("data/demand/{}.split.json", args.area)))).expect("split json");
+        let split: Value = serde_json::from_str(&read(root.join(inputs["split"]["path"].as_str().expect("split file")))).expect("split json");
         for group in split["groups"].as_array().into_iter().flatten().filter(|g| g["held"] == true) {
             withheld.extend(group["stations"].as_array().into_iter().flatten().filter_map(Value::as_str).map(str::to_owned));
         }

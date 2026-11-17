@@ -3,7 +3,7 @@
 //  - select link: (volume on the block from trips with a freeway origin or destination) / (volume on the block);
 //  - ramp via-street: (volume that uses the ramp and the named street) / (volume that uses the ramp).
 // A node is a freeway end when a motorway-class link touches it. Street names and blocks come from the targets file; nothing here names a street.
-import type { Assignment } from './assign';
+import type { OdFlow } from './assign';
 import type { Constraint } from './fit-counts';
 
 export interface ShareLink { id: number; from: number; to: number; name: string; class: string; length: number; geometry?: [number, number][]; inStudyArea?: boolean }
@@ -118,80 +118,100 @@ export function findRamps(links: ShareLink[], location: string): RampNode[] {
 
 export interface ShareSpec { id: string; label: string; target: number; weight: number; kind: 'select' | 'ramp'; note: string; ratio: NonNullable<Constraint['ratio']> }
 
-/**
- * Ratio constraints for one period. `weight` applies to every share (they come from a device sample, so it is set below the counts).
- * `period` selects `pmPeakShare` when the target has one and the period is `pmPeriod`.
- */
-export function buildShareConstraints(
-  nodes: ShareNode[], links: ShareLink[], targets: Targets, a: Assignment, period: string, pmPeriod: string, weight: number,
-): ShareSpec[] {
+/** Tally route events before sampled paths are reduced to per-link marginal shares. */
+export function routeShareTally(
+  nodes: ShareNode[], links: ShareLink[], targets: Targets, flows: OdFlow[], period: string, pmPeriod: string, weight: number,
+) {
   const nodeBy = new Map(nodes.map((n) => [n.id, n]));
-  const nFlows = a.routable.length;
-  const fwNode = new Set<number>();
-  for (const l of links) if (l.class === 'motorway') { fwNode.add(l.from); fwNode.add(l.to); }
-  const sumOver = (set: Set<number>): Float64Array => {
-    const d = new Float64Array(nFlows);
-    for (let k = 0; k < nFlows; k++) for (let i = a.start[k]; i < a.start[k + 1]; i++) if (set.has(a.link[i])) d[k] += a.share[i];
-    for (let k = 0; k < nFlows; k++) d[k] = Math.min(d[k], 1);
-    return d;
+  const freeway = new Set<number>();
+  for (const l of links) if (l.class === 'motorway') { freeway.add(l.from); freeway.add(l.to); }
+  const samples = new Uint32Array(flows.length);
+  const groupsByLink = links.map((): number[] => []);
+  let groupCount = 0;
+  const group = (members: Iterable<number>) => {
+    const id = groupCount++;
+    for (const l of members) groupsByLink[l].push(id);
+    return id;
   };
-  const out: ShareSpec[] = [];
-  const pack = (den: Float64Array, num: Float64Array) => {
-    const flows: number[] = [], dd: number[] = [], nn: number[] = [];
-    for (let k = 0; k < nFlows; k++) if (den[k] > 0) { flows.push(k); dd.push(den[k]); nn.push(Math.min(num[k], den[k])); }
-    return { flows: Int32Array.from(flows), den: Float64Array.from(dd), num: Float64Array.from(nn) };
+  type Hit = (k: number, visited: Set<number>) => boolean;
+  const totals: { matches: Hit; counts: Uint32Array }[] = [];
+  const total = (matches: Hit) => {
+    const counts = new Uint32Array(flows.length);
+    totals.push({ matches, counts });
+    return counts;
   };
+  const rules: { spec: Omit<ShareSpec, 'ratio'>; denominator: Uint32Array; numerator: Uint32Array }[] = [];
   for (const t of targets.selectLink ?? []) {
-    const blk = resolveBlock(links, nodeBy, t.street, t.direction, t.between ?? []);
-    if (!blk.links.length) continue;
-    const den = sumOver(new Set(blk.links));
+    const block = resolveBlock(links, nodeBy, t.street, t.direction, t.between ?? []);
+    if (!block.links.length) continue;
+    const blockId = group(block.links);
+    const den = total((_, visited) => visited.has(blockId));
     for (const side of ['from', 'to'] as const) for (const e of t[side] ?? []) {
       if (!parseVia(e.via).freeway) continue;
-      const num = new Float64Array(nFlows);
-      for (let k = 0; k < nFlows; k++) if (den[k] > 0 && fwNode.has(side === 'from' ? a.origin[k] : a.destination[k])) num[k] = den[k];
-      const target = period === pmPeriod && e.pmPeakShare !== undefined ? e.pmPeakShare : e.share;
-      out.push({ id: `share ${t.street} ${t.direction} ${side} freeway`, label: `${t.street} ${t.direction}, trips ${side === 'from' ? 'from' : 'to'} the freeway`, target, weight, kind: 'select', note: `block: ${blk.note}`, ratio: pack(den, num) });
+      const num = total((k, visited) => visited.has(blockId) && freeway.has(side === 'from' ? flows[k].origin : flows[k].destination));
+      rules.push({ denominator: den, numerator: num, spec: {
+        id: `share ${t.street} ${t.direction} ${side} freeway`, label: `${t.street} ${t.direction}, trips ${side} the freeway`,
+        target: period === pmPeriod && e.pmPeakShare !== undefined ? e.pmPeakShare : e.share, weight, kind: 'select', note: `block: ${block.note}`,
+      } });
     }
   }
   const fr = targets.freewayRamp;
+  const rampTotals = new Map<boolean, { all: Uint32Array; eligible: Uint32Array }>();
   if (fr) {
     const ramps = findRamps(links, fr.location ?? '');
-    const sideKey = fr.side ? fr.side[0].toUpperCase() : null;
-    // Per flow, the share of its paths on a ramp of this direction, kept only when the flow's surface end (origin for the on-ramp, destination for the off-ramp)
-    // lies on the stated side of that ramp's node.
-    const rampDen = (onRamp: boolean): Float64Array => {
-      const d = new Float64Array(nFlows);
-      for (const r of ramps.filter((q) => q.on === onRamp)) {
-        const set = new Set(r.links), dr = sumOver(set), rn = nodeBy.get(r.node)!;
-        for (let k = 0; k < nFlows; k++) {
-          if (!(dr[k] > 0)) continue;
-          if (sideKey) {
-            const e = nodeBy.get(onRamp ? a.origin[k] : a.destination[k]);
-            if (!e || !(sideKey === 'N' ? e.y > rn.y : sideKey === 'S' ? e.y < rn.y : sideKey === 'E' ? e.x > rn.x : e.x < rn.x)) continue;
-          }
-          d[k] = Math.min(1, d[k] + dr[k]);
-        }
-      }
-      return d;
-    };
-    for (const [key, onRamp] of [['ontoFreewayFromNorth', true], ['fromFreewayGoingNorth', false]] as const) {
-      if (!ramps.some((r) => r.on === onRamp)) continue;
-      const den = rampDen(onRamp);
+    const side = fr.side?.[0]?.toUpperCase();
+    for (const [key, on] of [['ontoFreewayFromNorth', true], ['fromFreewayGoingNorth', false]] as const) {
+      const directed = ramps.filter((r) => r.on === on).map((r) => ({ id: group(r.links), node: nodeBy.get(r.node)! }));
+      if (!directed.length) continue;
+      const eligible = flows.map((f) => {
+        const end = nodeBy.get(on ? f.origin : f.destination);
+        return directed.filter(({ node }) => !side || (end && (side === 'N' ? end.y > node.y : side === 'S' ? end.y < node.y : side === 'E' ? end.x > node.x : end.x < node.x))).map((r) => r.id);
+      });
+      const onRamp: Hit = (k, visited) => eligible[k].some((id) => visited.has(id));
+      const den = total(onRamp);
+      rampTotals.set(on, { all: total((_, visited) => directed.some((r) => visited.has(r.id))), eligible: den });
       for (const e of fr[key] ?? []) {
-        const v = parseVia(e.via);
-        if (v.freeway) continue;
+        const via = parseVia(e.via);
+        if (via.freeway) continue;
         const q = viaQualifier(e.via);
-        const street = new Set<number>();
-        if (q) for (const i of qualifiedLinks(links, nodeBy, v.name, q.side, q.cross)) street.add(i);
-        else links.forEach((l, i) => { if (l.class !== 'motorway' && same(l.name, v.name) && (!v.dir || compassOf(bearingOf(l, nodeBy)) === v.dir)) street.add(i); });
-        const ds = sumOver(street);
-        const num = new Float64Array(nFlows);
-        for (let k = 0; k < nFlows; k++) num[k] = Math.min(den[k], ds[k]);
-        out.push({ id: `share ramp ${onRamp ? 'onto' : 'from'} via ${e.via}`, label: `${onRamp ? 'Onto' : 'From'} the freeway at the ramps, via ${e.via}`, target: e.share, weight, kind: 'ramp', note: `${ramps.filter((r) => r.on === onRamp).length} ramp node(s) at "${fr.location}"${sideKey ? `, trips ${onRamp ? 'from' : 'to'} the ${fr.side}` : ''}; street used anywhere on the path (joint use taken as the smaller of the two path shares)`, ratio: pack(den, num) });
+        const street = q ? qualifiedLinks(links, nodeBy, via.name, q.side, q.cross)
+          : links.flatMap((l, i) => l.class !== 'motorway' && same(l.name, via.name) && (!via.dir || compassOf(bearingOf(l, nodeBy)) === via.dir) ? [i] : []);
+        const streetId = group(street);
+        const num = total((k, visited) => visited.has(streetId) && onRamp(k, visited));
+        rules.push({ denominator: den, numerator: num, spec: {
+          id: `share ramp ${on ? 'onto' : 'from'} via ${e.via}`, label: `${on ? 'Onto' : 'From'} the freeway at the ramps, via ${e.via}`,
+          target: e.share, weight, kind: 'ramp', note: `${directed.length} ramp node(s) at "${fr.location}"${side ? `, trips ${on ? 'from' : 'to'} the ${fr.side}` : ''}; street and ramp visited on the same sampled path`,
+        } });
       }
     }
   }
-  return out;
+  const visited = new Set<number>();
+  return {
+    onRoute(k: number, route: number[]) {
+      samples[k]++;
+      visited.clear();
+      for (const link of route) for (const id of groupsByLink[link]) visited.add(id);
+      if (visited.size) for (const { matches, counts } of totals) if (matches(k, visited)) counts[k]++;
+    },
+    constraints(): ShareSpec[] {
+      return rules.map(({ spec, denominator, numerator }) => {
+        const members: number[] = [], den: number[] = [], num: number[] = [];
+        for (let k = 0; k < flows.length; k++) if (denominator[k]) {
+          members.push(k); den.push(denominator[k] / samples[k]); num.push(numerator[k] / samples[k]);
+        }
+        return { ...spec, ratio: { flows: Int32Array.from(members), den: Float64Array.from(den), num: Float64Array.from(num) } };
+      });
+    },
+    sideFraction(on: boolean, volume: ArrayLike<number>) {
+      const ramp = rampTotals.get(on);
+      let all = 0, side = 0;
+      if (ramp) for (let k = 0; k < flows.length; k++) if (samples[k]) {
+        all += volume[k] * ramp.all[k] / samples[k];
+        side += volume[k] * ramp.eligible[k] / samples[k];
+      }
+      return all > 0 ? side / all : 1;
+    },
+  };
 }
 
 // ---------- volumes implied by the shares and the ramp counts (DERIVED) ----------
@@ -214,20 +234,13 @@ export interface ImpliedVolume {
  * `rampTargets` lists the counted ramps (links of the ramp station and its target in this period). DERIVED, not DATA: its weight is set below the counts.
  */
 export function impliedVolumes(
-  nodes: ShareNode[], links: ShareLink[], targets: Targets, a: Assignment, volume: ArrayLike<number>, period: string, pmPeriod: string,
+  nodes: ShareNode[], links: ShareLink[], targets: Targets, sideFraction: (on: boolean) => number, period: string, pmPeriod: string,
   rampTargets: { links: number[]; target: number }[],
 ): ImpliedVolume[] {
   const fr = targets.freewayRamp;
   if (!fr) return [];
   const nodeBy = new Map(nodes.map((n) => [n.id, n]));
-  const nFlows = a.routable.length;
   const ramps = findRamps(links, fr.location ?? '');
-  const sumOver = (set: Set<number>): Float64Array => {
-    const d = new Float64Array(nFlows);
-    for (let k = 0; k < nFlows; k++) { for (let i = a.start[k]; i < a.start[k + 1]; i++) if (set.has(a.link[i])) d[k] += a.share[i]; d[k] = Math.min(d[k], 1); }
-    return d;
-  };
-  const sideKey = fr.side ? fr.side[0].toUpperCase() : null;
   const out: ImpliedVolume[] = [];
   for (const [key, onRamp] of [['ontoFreewayFromNorth', true], ['fromFreewayGoingNorth', false]] as const) {
     const rs = ramps.filter((r) => r.on === onRamp);
@@ -235,19 +248,7 @@ export function impliedVolumes(
     const rampLinks = new Set(rs.flatMap((r) => r.links));
     const rv = rampTargets.filter((q) => q.links.some((l) => rampLinks.has(l))).reduce((x, q) => x + q.target, 0);
     if (!(rv > 0)) continue;
-    // Trips on the ramps, all and from the stated side (volume-weighted over the offered table).
-    let all = 0, side = 0;
-    for (const r of rs) {
-      const dr = sumOver(new Set(r.links)), rn = nodeBy.get(r.node)!;
-      for (let k = 0; k < nFlows; k++) {
-        if (!(dr[k] > 0)) continue;
-        const w = volume[k] * dr[k];
-        all += w;
-        const e = nodeBy.get(onRamp ? a.origin[k] : a.destination[k]);
-        if (!sideKey || (e && (sideKey === 'N' ? e.y > rn.y : sideKey === 'S' ? e.y < rn.y : sideKey === 'E' ? e.x > rn.x : e.x < rn.x))) side += w;
-      }
-    }
-    const f = all > 0 ? side / all : 1;
+    const f = sideFraction(onRamp);
     for (const e of fr[key] ?? []) {
       const v = parseVia(e.via);
       if (v.freeway || viaQualifier(e.via)) continue;

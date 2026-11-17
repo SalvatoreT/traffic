@@ -4,8 +4,9 @@ import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
-import { checkPair, checkRunSet, type RunManifest } from './lib/run-manifest';
+import { buildEvidence, checkPair, checkRunSet, type RunManifest } from './lib/run-manifest';
 import { isolationProblems, resolveOutputs } from './lib/assess-outputs';
+import { fittedRampCountError, headlineSharesPass, scoreStations, stationEvidenceProblems, type SeedRun, type StationFile } from './lib/assess';
 import { backlogGrowth, computeStability, stabilityRule, suggestStatus } from './lib/verdict';
 import { isReviewed, primitiveEvidence, primitiveLines, type ValidationFile } from './lib/primitive-evidence';
 
@@ -21,10 +22,15 @@ const put = (root: string, rel: string, text: string) => { mkdirSync(dirname(joi
 function makeRoot(): string {
   const root = mkdtempSync(join(tmpdir(), 'assess-integrity-'));
   temps.push(root);
-  for (const f of ['data/calibration/rockridge.targets.json', 'data/demand/rockridge.stations.json', 'data/demand/rockridge.config.json', 'data/areas/rockridge.json']) { mkdirSync(dirname(join(root, f)), { recursive: true }); cpSync(join(repo, f), join(root, f)); }
+  for (const f of ['data/calibration/rockridge.targets.json', 'data/demand/rockridge.stations.json', 'data/demand/rockridge.config.json', 'data/areas/rockridge.json', 'data/calibration/rockridge.volunteer-count-2025-02-25.json']) { mkdirSync(dirname(join(root, f)), { recursive: true }); cpSync(join(repo, f), join(root, f)); }
   put(root, 'data/demand/rockridge.split.json', '{"version":1}\n');
-  put(root, 'public/data/rockridge.demand.json', JSON.stringify({ periods: [], build: { view: 'shipped', split: sha(join(root, 'data/demand/rockridge.split.json')), config: 'c', network: 'n', countFile: 'f' } }));
-  put(root, 'target/validation/rockridge.demand.json', JSON.stringify({ periods: [], build: { view: 'training', split: sha(join(root, 'data/demand/rockridge.split.json')), config: 'c', network: 'n', countFile: 'f' } }));
+  put(root, 'public/data/rockridge.network.json', '{"links":[],"nodes":[]}');
+  const sources = {
+    split: sha(join(root, 'data/demand/rockridge.split.json')), config: sha(join(root, 'data/demand/rockridge.config.json')),
+    network: sha(join(root, 'public/data/rockridge.network.json')), countFile: sha(join(root, 'data/calibration/rockridge.volunteer-count-2025-02-25.json')),
+  };
+  put(root, 'public/data/rockridge.demand.json', JSON.stringify({ periods: [], build: { view: 'shipped', ...sources } }));
+  put(root, 'target/validation/rockridge.demand.json', JSON.stringify({ periods: [], build: { view: 'training', ...sources } }));
   put(root, 'data/calibration/rockridge.assessment.md', 'PUBLISHED ASSESSMENT\n');
   put(root, 'data/calibration/reports/rockridge-pm_peak-s1-seeds1-10.json', '{"published":true}\n');
   put(root, 'public/data/rockridge.noise.json', '{"published":true}\n');
@@ -42,6 +48,37 @@ function stubRuns(root: string, dir: string, env: Record<string, string> = {}, s
     spawnSync(stub, ['--area', 'rockridge', '--period', 'pm_peak', '--minutes', '60', '--seeds', seeds, '--keep-seeds', d, '--out', join(d, 'summary'), '--demand', demand], { cwd: root, env: { ...process.env, ...env } });
   }
 }
+
+describe('complete station and headline evidence', () => {
+  it('uses the observed end of each link and requires every seed at that screenline', () => {
+    const file: StationFile = { stations: [{ id: 'junction', label: 'Main and slip', kind: 'tmc', corridor: 'Main', links: [0, 1], detectors: ['stop', 'start'], target: { pm: 75 }, held: false }] };
+    const run = { linkFlowVehPerHour: [999, 999], linkStartVehPerHour: [40, 5], linkStopLineVehPerHour: [70, 2] } as SeedRun;
+    expect(scoreStations([run], file, 'pm').cases[0].modeled).toBe(75);
+    for (const start of [[], [40, NaN], [40, -1]]) {
+      const bad = { ...run, linkStartVehPerHour: start };
+      expect(stationEvidenceProblems(bad, file, 'pm')).toEqual(['junction']);
+      expect(scoreStations([run, bad], file, 'pm').fitted.meets).toBe(false);
+    }
+  });
+
+  it('uses stop-line errors on fitted off-ramps when selecting an iteration', () => {
+    const station = { id: 'ramp', kind: 'tmc', label: 'North interchange, ramp (S leg) entering', corridor: 'North', held: false, links: [0], detectors: ['stop' as const], target: { pm: 70 } };
+    const run = { linkFlowVehPerHour: [200, 900], linkStopLineVehPerHour: [50, 75] } as SeedRun;
+    const score = scoreStations([run], { stations: [station, { ...station, id: 'other', links: [1], held: true, target: { pm: 900 } }] }, 'pm');
+    expect(fittedRampCountError(score.cases)).toBe(20);
+  });
+
+  it('checks all observed headline keys in each seed, independent of row order', () => {
+    const observation = { via: 'Freeway', share: 0.3 };
+    const targets = [{ street: 'Main', direction: 'SB', from: [observation], to: [observation] }];
+    const shares = ['from', 'to'].map((side) => ({ block: 'Main SB', side, via: 'Freeway', observed: 0.3, observedPm: null, modelled: 0.25, headline: true }));
+    const run = { shares } as SeedRun;
+    expect(headlineSharesPass([run, { shares: [...shares].reverse() } as SeedRun], targets, 10)).toBe(true);
+    for (const rows of [[shares[0]], [shares[0], shares[0], shares[1]], [shares[0], { ...shares[1], modelled: NaN }]]) {
+      expect(headlineSharesPass([run, { shares: rows } as SeedRun], targets, 10)).toBe(false);
+    }
+  });
+});
 
 describe('assessment of reused runs (C4)', () => {
   it('rejects a single seed of ten, listing the missing ones, and writes nothing', () => {
@@ -76,6 +113,27 @@ describe('assessment of reused runs (C4)', () => {
     expect(text).toMatch(/Stability rule \(D16\): fails/);
     expect(text).toMatch(/Cars cleared from gridlock \(all of them: no near\/far split\) 9999\.00 per hour/);
     expect(text).toMatch(/Suggested status: \*\*uncalibrated\*\*/);
+  }, 60000);
+
+  it('rejects incomplete detectors in one seed even when its manifest and other seeds match', () => {
+    const root = makeRoot(), dir = join(root, 'reuse');
+    stubRuns(root, dir);
+    const f = join(dir, 'rockridge-pm_peak-s1-seed3.json');
+    const report = JSON.parse(readFileSync(f, 'utf8'));
+    report.linkStopLineVehPerHour = [];
+    writeFileSync(f, JSON.stringify(report));
+    const r = assess(root, ['--reuse', dir, '--suffix', 'x']);
+    expect(r.status).toBe(3);
+    expect(r.err).toMatch(/seed 3: missing or invalid measurements/);
+    expect(existsSync(join(root, 'data/calibration/rockridge.assessment-x.md'))).toBe(false);
+  }, 60000);
+
+  it('rejects a complete reused seed set from a different requested measurement duration', () => {
+    const root = makeRoot(), dir = join(root, 'reuse');
+    stubRuns(root, dir);
+    const r = assess(root, ['--reuse', dir, '--minutes', '120', '--suffix', 'x']);
+    expect(r.status).toBe(3);
+    expect(r.err).toMatch(/run settings do not match requested/);
   }, 60000);
 
   it('rejects a report that carries another seed than its file name', () => {
@@ -167,15 +225,35 @@ describe('run sets and manifests (D3)', () => {
     schema: 1, simulator: { fingerprint: fp }, run: { area: 'a', period: 'p', scale: 1, seed, minutes: 60, warmupMin: 10, measurementWindow: { fromMin: 10, toMin: 60 }, initialLoad: true, settings: {}, ...over },
     inputs: { network: { path: 'n', sha256: 'n' }, demand: { path: 'd', sha256: 'd' }, demandBuild: build, targets: { path: 't', sha256: 't' }, stations: { path: 's', sha256: 's' }, split: { path: 'p', sha256: 's' }, demandConfig: { path: 'c', sha256: 'c' }, areaConfig: { path: 'a', sha256: 'a' }, groups: { path: 'g', sha256: 'g' } },
   });
+  const receipt = { view: 'shipped' as const, recorded: { view: 'shipped', split: 's' }, sources: { split: 's' } };
   const expected = { network: 'n', targets: 't', stations: 's', split: 's', demandConfig: 'c', areaConfig: 'a', groups: 'g', demand: 'd' };
   const found = (seeds: number[], f: (s: number) => RunManifest = (s) => man(s)) => seeds.map((s) => ({ seed: s, file: `f${s}.json`, reportSeed: s, manifest: f(s) }));
 
   it('accepts the exact seed set and rejects duplicates in the request', () => {
-    expect(checkRunSet('x', [1, 2, 3], found([1, 2, 3]), expected).problems).toEqual([]);
-    expect(checkRunSet('x', [1, 1, 2], found([1, 2]), expected).problems.join(' ')).toMatch(/repeats 1/);
+    expect(checkRunSet('x', [1, 2, 3], found([1, 2, 3]), expected, receipt).problems).toEqual([]);
+    expect(checkRunSet('x', [1, 1, 2], found([1, 2]), expected, receipt).problems.join(' ')).toMatch(/repeats 1/);
   });
+  it('binds each build source and view to the demand file independently within a single run set', () => {
+    const root = makeRoot(), demand = join(root, 'public/data/rockridge.demand.json');
+    const ev = buildEvidence(root, 'rockridge', demand, 'shipped');
+    for (const field of ['config', 'network', 'countFile', 'split'] as const) {
+      const stale = { ...ev.recorded, [field]: 'previous' };
+      const mismatched = checkRunSet('shipped', [1], found([1], (s) => man(s, {}, 'fp', stale)), expected, { ...ev, recorded: stale });
+      expect(mismatched.problems.join(' ')).toContain(`build ${field} does not match`);
+    }
+    const only = (build: object | null, e = ev) => checkRunSet('shipped', [1], found([1], (s) => man(s, {}, 'fp', build)), expected, e).problems;
+    expect(only(ev.recorded)).toEqual([]);
+    expect(only({ ...ev.recorded, view: 'training' }).join(' ')).toContain('metadata in its demand file');
+    expect(only(ev.recorded, { ...ev, view: 'training' }).join(' ')).toContain('expected a training demand');
+    rmSync(join(root, 'data/calibration/rockridge.volunteer-count-2025-02-25.json'));
+    expect(only(ev.recorded, buildEvidence(root, 'rockridge', demand, 'shipped')).join(' ')).toContain('build countFile');
+    const custom = join(root, 'variant.json');
+    put(root, 'variant.json', '{"periods":[]}');
+    expect(only(null, buildEvidence(root, 'rockridge', custom, 'variant'))).toEqual([]);
+  });
+
   it('rejects a different run setting inside one set', () => {
-    expect(checkRunSet('x', [1, 2], found([1, 2], (s) => man(s, s === 2 ? { minutes: 120 } : {})), expected).problems.join(' ')).toMatch(/seed 2 differs from seed 1 in run setting minutes/);
+    expect(checkRunSet('x', [1, 2], found([1, 2], (s) => man(s, s === 2 ? { minutes: 120 } : {})), expected, receipt).problems.join(' ')).toMatch(/seed 2 differs from seed 1 in run setting minutes/);
   });
   it('requires the roles of main and cross-validation demands to match their view and split', () => {
     const main = man(1), cv = man(1, {}, 'fp', { view: 'training', split: 's' });
@@ -187,14 +265,14 @@ describe('run sets and manifests (D3)', () => {
   });
   it('two reports with the same area but different demand hashes are different run sets', () => {
     const a = man(1), b = { ...man(1), inputs: { ...man(1).inputs, demand: { path: 'd', sha256: 'zzz' } } };
-    expect(checkRunSet('x', [1, 2], [...found([1]), { seed: 2, file: 'f2', reportSeed: 2, manifest: { ...b, run: { ...b.run, seed: 2 } } }], expected).problems.join(' ')).toMatch(/different demand file/);
+    expect(checkRunSet('x', [1, 2], [...found([1]), { seed: 2, file: 'f2', reportSeed: 2, manifest: { ...b, run: { ...b.run, seed: 2 } } }], expected, receipt).problems.join(' ')).toMatch(/different demand file/);
     expect(a).toBeTruthy();
   });
 });
 
 describe('stability from the selected runs (2.3)', () => {
   const rule = stabilityRule({});
-  const run = (seed: number, over: Partial<{ gridlockRemoved: number; backlogPct: number; arterialMeanSpeed: number }> = {}) => ({ seed, minutes: 60, health: { gridlockRemoved: 0, backlogPct: 0.5, arterialMeanSpeed: 6, spawned: 1000, ...over }, series: [{ tMin: 5, backlog: 5 }, { tMin: 30, backlog: 10 }, { tMin: 55, backlog: 40 }] });
+  const run = (seed: number, over: Partial<{ gridlockRemoved: number; backlogPct: number; arterialMeanSpeed: number }> = {}) => ({ seed, minutes: 60, health: { gridlockRemoved: 0, backlogPct: 0.5, arterialMeanSpeed: 6, spawned: 1000, ...over }, series: [{ tMin: 5, backlog: 5 }, { tMin: 30, backlog: 10 }, { tMin: 60, backlog: 40 }] });
   it('matches the native growth definition', () => {
     expect(backlogGrowth(run(1))).toBeCloseTo(3.0);
   });
@@ -208,12 +286,18 @@ describe('stability from the selected runs (2.3)', () => {
     const s = computeStability([run(1), run(2)], rule);
     expect(s.growthSeeds).toEqual([1, 2]);
     expect(s.holds).toBe(false);
-    const ok = computeStability([{ ...run(1), series: [] }, { ...run(2), series: [] }], rule);
+    const stableSamples = [{ tMin: 30, backlog: 10 }, { tMin: 60, backlog: 10 }];
+    const ok = computeStability([{ ...run(1), series: stableSamples }, { ...run(2), series: stableSamples }], rule);
     expect(ok.holds).toBe(true);
     expect(ok.oldRuleSeedsPassing).toEqual([1, 2]);
   });
+  it('requires measured growth in each seed, including the last half of the run', () => {
+    for (const series of [[], [{ tMin: 30, backlog: 0 }], [{ tMin: 30, backlog: 0 }, { tMin: 40, backlog: 0 }], [{ tMin: 30, backlog: NaN }, { tMin: 60, backlog: 0 }]]) {
+      expect(computeStability([{ ...run(1), series }], rule).checks.growth).toBe(false);
+    }
+  });
   it('needs 90% of seeds under the backlog limit', () => {
-    const runs = Array.from({ length: 10 }, (_, i) => ({ ...run(i + 1, { backlogPct: i === 0 ? 5 : 0.5 }), series: [] }));
+    const runs = Array.from({ length: 10 }, (_, i) => ({ ...run(i + 1, { backlogPct: i === 0 ? 5 : 0.5 }), series: [{ tMin: 30, backlog: 0 }, { tMin: 60, backlog: 0 }] }));
     expect(computeStability(runs, rule).holds).toBe(true);
     runs[1].health.backlogPct = 5;
     expect(computeStability(runs, rule).holds).toBe(false);
@@ -222,16 +306,19 @@ describe('stability from the selected runs (2.3)', () => {
 
 describe('primitive validation in the verdict (C6)', () => {
   const file = (over: Partial<ValidationFile> = {}, dev: object | null = null): ValidationFile => ({
-    manifest: { schema: 1, simulator: { fingerprint: 'fp' }, suite: { sha256: 's', cases: 2 } },
+    manifest: { schema: 1, simulator: { fingerprint: 'fp' }, suite: { sha256: 's', cases: 2 }, deviations: { path: 'data/calibration/validation.deviations.json', sha256: 'd' } },
     cases: [{ id: 'a1', name: 'ok', unit: 's', sim: 2, lo: 1, hi: 3, source: 'X', note: '', pass: true, knownDeviation: null }, { id: 'a3', name: 'Signal: start-up lost time', unit: 's', sim: 0.2, lo: 1, hi: 3, source: 'FHWA-STM2008', note: 'n', pass: false, knownDeviation: dev as never }],
     failing: ['a3'], notDocumented: dev ? [] : ['a3'], ...over,
   });
   const good = { id: 'a3', reason: 'no response delay', reviewed: false, relevance: 'unreviewed', followUp: null };
   const verdictOf = (e: ReturnType<typeof primitiveEvidence>) => ({ state: e.state, unreviewed: e.unreviewed.map((c) => c.id), reviewed: e.reviewed.map((c) => c.id) });
+  const sources = (deviations: typeof good[] = []) => ({ suiteHash: 's', cases: file().cases.map(({ id, lo, hi, unit, source }) => ({ id, lo, hi, unit, source })), deviationsHash: 'd', deviations });
+  const evidence = (report: ValidationFile | null, fingerprint: string) => primitiveEvidence(report, fingerprint,
+    { ...sources(), deviations: report?.cases.flatMap((c) => c.knownDeviation ? [c.knownDeviation] : []) ?? [] });
   const allGood = { pm_peak: { stable: true, d5: true, through: true, stations: true } };
 
   it('a known deviation stays a failed check and blocks an unqualified calibrated status', () => {
-    const e = primitiveEvidence(file({}, good), 'fp');
+    const e = evidence(file({}, good), 'fp');
     expect(e.failed.map((c) => c.id)).toEqual(['a3']);
     expect(e.unreviewed.map((c) => c.id)).toEqual(['a3']);
     const s = suggestStatus(allGood, 'pm_peak', verdictOf(e));
@@ -240,12 +327,31 @@ describe('primitive validation in the verdict (C6)', () => {
     expect(primitiveLines(e).join('\n')).toMatch(/\| a3 \| Signal: start-up lost time \| 0\.200 s \| 1 to 3 \| FHWA-STM2008 \| documented, not reviewed/);
   });
   it('missing or incompatible evidence prevents an unqualified claim', () => {
-    expect(suggestStatus(allGood, 'pm_peak', verdictOf(primitiveEvidence(null, 'fp'))).calibrated).toBe(false);
-    expect(primitiveEvidence(file({}, good), 'other').state).toBe('incompatible');
-    expect(suggestStatus(allGood, 'pm_peak', verdictOf(primitiveEvidence(file({}, good), 'other'))).reasons.join(' ')).toMatch(/does not match these runs/);
+    expect(suggestStatus(allGood, 'pm_peak', verdictOf(evidence(null, 'fp'))).calibrated).toBe(false);
+    expect(evidence(file({}, good), 'other').state).toBe('incompatible');
+    expect(suggestStatus(allGood, 'pm_peak', verdictOf(evidence(file({}, good), 'other'))).reasons.join(' ')).toMatch(/does not match these runs/);
+  });
+  it('rejects a truncated suite, duplicate ids, nonfinite readings, stale source identities and forged reviews', () => {
+    for (const modify of [
+      (f: ValidationFile) => { f.cases = []; f.manifest.suite.cases = 0; },
+      (f: ValidationFile) => { f.cases[0].id = 'a3'; },
+      (f: ValidationFile) => { f.cases[0].sim = NaN; },
+      (f: ValidationFile) => { f.cases[0].hi = 300; },
+      (f: ValidationFile) => { f.cases[0].source = 'other'; },
+      (f: ValidationFile) => { Object.assign(f.cases[1], { sim: 2, pass: true, knownDeviation: null }); f.failing = []; },
+      (f: ValidationFile) => { f.cases[1].pass = true; },
+      (f: ValidationFile) => { f.manifest.suite.sha256 = 'other'; },
+      (f: ValidationFile) => { f.manifest.deviations.sha256 = 'other'; },
+      (f: ValidationFile) => { f.cases[1].knownDeviation!.reviewed = true; },
+      (f: ValidationFile) => { f.failing = []; },
+    ]) {
+      const f = file({}, { ...good });
+      modify(f);
+      expect(primitiveEvidence(f, 'fp', sources([good])).state).toBe('incompatible');
+    }
   });
   it('an undocumented failure is named as such', () => {
-    const e = primitiveEvidence(file(), 'fp');
+    const e = evidence(file(), 'fp');
     expect(e.undocumented.map((c) => c.id)).toEqual(['a3']);
     expect(primitiveLines(e).join('\n')).toContain('NOT DOCUMENTED');
   });
@@ -254,7 +360,7 @@ describe('primitive validation in the verdict (C6)', () => {
     expect(isReviewed(reviewed)).toBe(true);
     expect(isReviewed({ ...reviewed, followUp: '' })).toBe(false);
     expect(isReviewed({ ...reviewed, reviewed: false })).toBe(false);
-    const e = primitiveEvidence(file({}, reviewed), 'fp');
+    const e = evidence(file({}, reviewed), 'fp');
     expect(e.failed).toHaveLength(1);
     const s = suggestStatus(allGood, 'pm_peak', { state: e.state, unreviewed: [], reviewed: [`a3: ${reviewed.relevance}`] });
     expect(s.calibrated).toBe(true);

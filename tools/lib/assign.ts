@@ -1,8 +1,8 @@
 // Static free-flow assignment for the demand builder. No I/O.
 // Mirrors the simulator's router (crates/sim/src/route.rs, eff.rs, topo.rs, params.rs): a link-based shortest path whose cost is
 //   link time (length / speed limit + hump penalty) x class weight  +  per movement: turn penalty + control delay + traversal time.
-// Route choice is probit stochastic loading [DaganzoSheffi1977], [Sheffi1985] ch. 11.2: each draw samples a perceived cost for every link and
-// movement, normal with mean the cost and variance `dispersion` x the cost (truncated at zero), and loads every flow on its shortest path on
+// Route choice is probit stochastic loading [DaganzoSheffi1977], [Sheffi1985] ch. 11.2: each draw samples the cost of each approach plus its
+// outgoing movement, and of a terminal link. Its normal error has variance `dispersion` x cost, truncated at zero. Load each flow on its shortest path on
 // those costs; flows are split equally over the draws (dispersion 0 gives all-or-nothing). The simulator draws the same distribution once per
 // driver (crates/sim/src/route.rs, `Perceived`); here the drivers of one draw share it.
 // Movement length uses the same corner/Bezier estimate as the simulator; the signal and stop delays are the fixed free-flow constants.
@@ -204,7 +204,12 @@ export const perceive = (c: number, dispersion: number, draw: number, key: numbe
 export function perceivedGraph(g: Graph, cost: ArrayLike<number>, dispersion: number, draw: number): { g: Graph; cost: Float64Array } {
   if (!(dispersion > 0)) return { g, cost: Float64Array.from(cost) };
   const pc = Float64Array.from(cost, (c, l) => perceive(c, dispersion, draw, 2 * l));
-  const mv = Float64Array.from(g.mvCost, (c, m) => perceive(c, dispersion, draw, 2 * m + 1));
+  // Store the difference so the existing additive graph charges one perceived approach + turn
+  // for each movement and one perceived terminal link, just like the simulation.
+  const mv = Float64Array.from(g.mvCost, (turn, m) => {
+    const approach = g.mvFrom[m];
+    return perceive(cost[approach] + turn, dispersion, draw, 2 * m + 1) - pc[approach];
+  });
   return { g: { ...g, mvCost: mv }, cost: pc };
 }
 
@@ -231,7 +236,7 @@ export interface OdFlow { origin: number; destination: number; via?: { a: number
  * A route property a count can constrain: a turning movement (link `a` followed at once by link `b`) or a path (the route uses link `first` and later link `last`),
  * with link indices as positions in the link list given to `buildGraph`.
  */
-export type Feature = { kind: 'move'; a: number; b: number } | { kind: 'path'; first: number; last: number } | { kind: 'any'; links: number[] };
+export type Feature = { kind: 'move'; a: number; b: number } | { kind: 'path'; first: number; last: number; links?: number[]; junction?: boolean } | { kind: 'any'; links: number[] };
 /** Sparse link shares per flow, CSR: flow k uses links[start[k] .. start[k+1]] with share (0..1] each; unroutable flows have none. `feat` (when features were given) holds per flow the share of its routes that have each feature. */
 export interface Assignment { start: Int32Array; link: Int32Array; share: Float32Array; routable: Uint8Array; origin: Int32Array; destination: Int32Array; feat?: { start: Int32Array; id: Int32Array; share: Float32Array } }
 
@@ -246,7 +251,13 @@ export function routeFeatures(route: ArrayLike<number>, feats: Feature[], idx: M
   const start = out.length;
   for (let i = 0; i < route.length; i++) for (const f of idx.get(route[i]) ?? []) {
     const ft = feats[f];
-    if (ft.kind === 'move') { if (route[i + 1] === ft.b) out.push(f); } else if (ft.kind === 'any') { if (out.indexOf(f, start) < 0) out.push(f); } else for (let j = i + 1; j < route.length; j++) if (route[j] === ft.last) { out.push(f); break; }
+    if (ft.kind === 'move') {
+      if (route[i + 1] === ft.b) out.push(f);
+    } else if (ft.kind === 'any') {
+      if (out.indexOf(f, start) < 0) out.push(f);
+    } else if (ft.links) {
+      if (ft.links.length && ft.links.every((link, j) => route[i + j] === link) && out.indexOf(f, start) < 0) out.push(f);
+    }
   }
   return out;
 }
@@ -295,7 +306,7 @@ function toAssignment(flows: OdFlow[], accum: Map<number, number>[], ok: number[
  * Assign every flow to its free-flow generalized-cost shortest path(s). Node ids in flows and link `from`/`to` are node ids; link
  * indices in the result are positions in `links` (what `buildGraph` was given).
  */
-export function assign(g: Graph, flows: OdFlow[], draws = 1, dispersion = 0, feats: Feature[] = []): Assignment {
+export function assign(g: Graph, flows: OdFlow[], draws = 1, dispersion = 0, feats: Feature[] = [], onRoute?: MsaOptions['onRoute']): Assignment {
   if (flows.some((f) => f.via)) throw new Error('assign: flows with a via movement need the msa assignment');
   const byOrigin = groupByOrigin(flows);
   const accum: Map<number, number>[] = flows.map(() => new Map());
@@ -309,7 +320,11 @@ export function assign(g: Graph, flows: OdFlow[], draws = 1, dispersion = 0, fea
       if (!p) return;
       ok[k]++;
       for (const l of p) accum[k].set(l, (accum[k].get(l) ?? 0) + 1);
-      if (feats.length) for (const f of routeFeatures(p.slice().reverse(), feats, fIdx)) fAccum[k].set(f, (fAccum[k].get(f) ?? 0) + 1);
+      if (feats.length || onRoute) {
+        const route = p.slice().reverse();
+        onRoute?.(k, route);
+        for (const f of routeFeatures(route, feats, fIdx)) fAccum[k].set(f, (fAccum[k].get(f) ?? 0) + 1);
+      }
     });
   }
   return toAssignment(flows, accum, ok, feats.length ? fAccum : undefined);
@@ -369,6 +384,7 @@ export function costToGo(g: Graph, dest: number, cost: ArrayLike<number>): Float
     if (hl > h[l]) continue;
     for (let i = predStart[l]; i < predStart[l + 1]; i++) {
       const m = predMv[i], a = g.mvFrom[m];
+      if (g.to[a] === dest) continue;
       const cand = cost[a] + g.mvCost[m] + hl;
       if (cand < h[a]) { h[a] = cand; heap.push(cand, a); }
     }
@@ -387,6 +403,7 @@ export function costToLink(g: Graph, target: number, cost: ArrayLike<number>): F
     if (hl > h[l]) continue;
     for (let i = predStart[l]; i < predStart[l + 1]; i++) {
       const m = predMv[i], a = g.mvFrom[m];
+      if (a === target) continue;
       const cand = cost[a] + g.mvCost[m] + hl;
       if (cand < h[a]) { h[a] = cand; heap.push(cand, a); }
     }

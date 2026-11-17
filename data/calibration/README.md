@@ -24,7 +24,7 @@ No npm needed (Rust only; reads `public/data/<area>.{network,demand}.json` and `
 cargo run --release -p traffic-sim --bin calibrate -- --area rockridge --period pm_peak --minutes 60 --scale 1.0 --seed 1
 ```
 
-Options: `--local-factor <x>` (override the residential/service perceived-cost multiplier), `--guided-share <x>` (share of drivers that follow live guidance and re-evaluate their route every 60 s epoch, 0 to 1, default 0.46; `--reroute-share` is the old name), `--switch-band <x>` (relative indifference band, default 0.2), `--no-rtor` (forbid right turns on red; they are allowed after a stop by default, an ASSUMPTION), `--select-od <path>` (write the origin-destination pairs and trip counts of each headline select-link block), `--demand <path>` and `--network <path>` (read other files than `public/data/<area>.{demand,network}.json`, for A/B runs of variant demand), `--cars-only` and `--drop bicycle,pedestrian` (leave modes out), `--adapt-min <m>` (minutes between signal adaptations, default 5, 0 keeps the start-up plans), `--motorway-removal` (apply the gridlock breaker on ramps and the freeway stub too), `--warmup <min>` (flow tables ignore the first N minutes of runs of 30+ min, default 10), `--out <dir>`, `--no-write` (print only; with `--seeds` no report file is written either, and seed files go to the system temp directory unless `--keep-seeds` names one), `--link-flows` (adds per-link flow and the mean delay per exiting vehicle, `linkMeanDelayS`, to the JSON; `tools/cost-loop.ts` reads both).
+Options: `--local-factor <x>` (override the residential/service perceived-cost multiplier), `--guided-share <x>` (share of drivers that follow live guidance and re-evaluate their route every 60 s epoch, 0 to 1, default 0.46; `--reroute-share` is the old name), `--switch-band <x>` (relative indifference band, default 0.2), `--no-rtor` (forbid right turns on red; they are allowed after a stop by default, an ASSUMPTION), `--select-od <path>` (write the origin-destination pairs and trip counts of each headline select-link block), `--demand <path>` and `--network <path>` (read other files than `public/data/<area>.{demand,network}.json`, for A/B runs of variant demand), `--cars-only` and `--drop bicycle,pedestrian` (leave modes out), `--adapt-min <m>` (minutes between signal adaptations, default 5, 0 keeps the start-up plans), `--motorway-removal` (apply the gridlock breaker on ramps and the freeway stub too), `--warmup <min>` (flow tables ignore the first N minutes of runs of 30+ min, default 10), `--out <dir>`, `--no-write` (print only; with `--seeds` no report file is written either, and seed files go to the system temp directory unless `--keep-seeds` names one), `--link-flows` (adds per-link use, physical passages at the start and stop line (`linkStartVehPerHour` and `linkStopLineVehPerHour`), and mean delay per exiting vehicle (`linkMeanDelayS`) to the JSON).
 The ramp table of the report has two modeled columns: all trips on the ramps with any visit to the street (the first definition, kept for comparison with earlier rounds) and the trips from (to) the side named in the targets file with qualified streets resolved to their links (`modelled` and `modelledSide` in the JSON; `nSide` is the trip count of the second).
 It prints a markdown report and writes `reports/<area>-<period>-s<scale>-seed<seed>.{md,json}`: stability criteria, vehicles in
 network every 5 min, modeled vs observed select-link shares (target blocks resolved from street name, direction and the
@@ -114,22 +114,20 @@ period rate is the hourly rate of the whole window, so the busiest hour of the w
 somewhat above it. The Oakland and Caltrans counts are peak hours too, so all counts are used as
 the hourly rate of their period in the same way. Midday has no interior count.
 
-Through cars on the four counted blocks (Hillegass Avenue and Colby Street, each direction, PM)
-are fit targets from round 39 on (project lead decision of 2026-11-16). Before that they were only
-a check. The range runs from the cars that drove the whole street to the block volume less the
-cars whose trip ended along it; the demand fit aims at the middle of that range
-(`countFit.throughTargets` in the demand config, blocks marked `fitThrough` in the targets file).
-It takes each trip pair's share of trips on a street from simulator runs
-(`data/demand/rockridge.through-membership.json`, written by `tools/through-membership.ts` from
-`calibrate --select-od` files), because the fit's own routes put fewer through cars on these streets
-than the simulator does. To refresh it, run ten seeds on the shipped demand with `--select-od`, then
-`npx tsx tools/through-membership.ts --period pm_peak --run DIR=public/data/rockridge.demand.json`
-(and the same for `am_peak` and `midday`), then `npm run data`. Because the four figures are fitted, they no
-longer check the model. The checks that stay independent are the held-out count stations, the
-headline freeway shares, stability and the arterial travel times. The calibrate report and the
-assessment mark the fitted rows.
-Movement and route stations listed in `countFit.throughTargets.measuredStations` can take the
-same simulated membership (round 41: `calibrate --select-od` writes their pairs, `tools/through-membership.ts
---stations --ids ...` pools them). The shipped build lists none; the round-41 test did not help.
+The route diagrams give separate northbound and southbound counts of vehicles that traveled
+the length of Hillegass Avenue and Colby Street. Compare them with simulated trips that
+traverse the full ordered route in that direction. A count on one block measures traffic
+there. A unique driver who uses any portion of a corridor is a third quantity.
 
-The router's control delays (signal, all-way stop, minor stop approach, circle) are in `crates/sim/data/node-delays.json`, read by the simulator and by the demand fit. `npx tsx tools/node-delays.ts --dir DIR --seeds 1-3 --write` rewrites them from kept seed reports (`--keep-seeds DIR`) and writes `rockridge.node-delays.md`. `calibrate` reports, in the seed JSON, the simulator's count of the volunteer count's turning movements and whole-street routes (`features`, select-link trips per hour, read from the station file the demand build writes) and the plan of every signal with an observed timing (`observedSignals`); `tools/assess.ts` prints them with the interior blocks, the entries by side and Colby Street and Hillegass Avenue block by block.
+Rounds 39–42 used the whole-street count and a representative block volume to infer a
+range for unique through drivers on each corridor. The records for those rounds preserve
+their results. The current demand build disables that inferred target. A future fit of
+unique through drivers would require an observation of distinct corridor users with both
+trip ends outside the study area.
+
+Simulated membership can inform count fitting when its input and detector provenance
+matches the build. Legacy membership files lack that evidence. The build reports when it
+uses static assignment for those stations. Run `calibrate --select-od` on matching inputs
+to collect fresh evidence.
+
+The router's control delays (signal, all-way stop, minor stop approach, circle) are in `crates/sim/data/node-delays.json`, read by the simulator and by the demand fit. `npx tsx tools/node-delays.ts --dir DIR --seeds 1-3 --write` rewrites them from kept seed reports (`--keep-seeds DIR`) and writes `rockridge.node-delays.md`. `calibrate` reports, in the seed JSON, simulated turning movements and continuous whole-street traversals (`features`, counted at the final detector of each station defined in the demand build) and the plan of every signal with an observed timing (`observedSignals`); `tools/assess.ts` prints them with the interior blocks, the entries by side and Colby Street and Hillegass Avenue block by block.

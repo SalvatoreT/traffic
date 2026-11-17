@@ -4,7 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { readRuns, type StationFile } from './assess';
-import { checkPair, checkRunSet, seedFileName, type ExpectedInputs, type RunManifest } from './run-manifest';
+import { buildEvidence, checkPair, checkRunSet, seedFileName, type BuildEvidence, type ExpectedInputs, type RunManifest } from './run-manifest';
 import { loadManifest, verifyLocal, type Ctx, type InputsManifest } from './shard-inputs';
 import { checkName, getJson, jobKey, putJson, sha256 } from './shard-store';
 import { writeFileAtomic } from './atomic';
@@ -37,6 +37,11 @@ export function calibrateArgs(o: { area: string; period: string; minutes: number
 export function expectedFromManifest(m: InputsManifest, view: View): ExpectedInputs {
   const file = (role: string) => m.files.find((f) => f.role === role)?.sha256 ?? null;
   return { network: file('network'), demand: view === 'cv' ? file('cv-demand') : file('demand'), targets: m.git.targets, stations: m.git.stations, split: m.git.split, demandConfig: m.git.demandConfig, areaConfig: m.git.areaConfig, groups: m.git.groups };
+}
+
+function shardBuildEvidence(root: string, m: InputsManifest, view: View) {
+  const demand = m.files.find((f) => f.role === (view === 'cv' ? 'cv-demand' : 'demand'));
+  return buildEvidence(root, m.area, demand ? join(root, demand.path) : null, view === 'cv' ? 'training' : 'shipped');
 }
 
 export interface ShardEntry { view: View; period: string; seed: number; name: string; key: string; sha256: string; size: number }
@@ -83,11 +88,12 @@ export async function assessRun(ctx: Ctx, o: AssessRunOptions): Promise<AssessIn
   if (o.fresh) rmSync(work, { recursive: true, force: true });
   mkdirSync(work, { recursive: true });
   const expected = expectedFromManifest(m, o.view);
+  const build = shardBuildEvidence(root, m, o.view);
   const entries: ShardEntry[] = [];
   const index = (complete: boolean): AssessIndex => ({ schema: 1, kind: 'assess', job: o.job, shard: o.shard, area, view: o.view, periods, seeds, minutes: o.minutes, complete, fingerprint: m.simulator.fingerprint, updatedAt: new Date().toISOString(), files: entries });
   const check = (p: string) => {
     const found = readRuns(work, area, p, seeds);
-    const set = checkRunSet(`${p}, ${o.view} demand`, seeds, found, expected);
+    const set = checkRunSet(`${p}, ${o.view} demand`, seeds, found, expected, build);
     const per = found.flatMap((f) => (f.manifest ? reportProblems(`${p} seed ${f.seed}`, f, m, o.view, { area, period: p, seed: f.seed, minutes: o.minutes }) : []));
     return { found, problems: [...set.problems, ...per] };
   };
@@ -150,6 +156,20 @@ export async function assessFetch(ctx: Ctx, o: FetchOptions): Promise<{ dest: st
   if (missing.length) problems.push(`${missing.length} of ${want.length} runs missing: ${groupMissing(missing)}`);
   if (problems.length) throw new Error(`cannot merge job ${o.job}:\n  - ${problems.join('\n  - ')}`);
 
+  // A checkout can collect a job before pulling its generated network and demands.
+  const builds = new Map<View, BuildEvidence>();
+  for (const view of o.views) {
+    const f = m.files.find((f) => f.role === (view === 'cv' ? 'cv-demand' : 'demand'));
+    if (!f) throw new Error(`job ${o.job} has no ${view} demand file`);
+    const local = join(root, f.path);
+    const bytes = existsSync(local) ? readFileSync(local) : null;
+    const demand = bytes && sha256(bytes) === f.sha256 ? bytes : await store.get(f.key);
+    if (!demand || sha256(demand) !== f.sha256) throw new Error(`cannot verify the ${view} demand file of job ${o.job}`);
+    const evidence = buildEvidence(root, area, null, view === 'cv' ? 'training' : 'shipped');
+    evidence.recorded = JSON.parse(demand.toString('utf8')).build ?? null;
+    evidence.sources.network = expectedFromManifest(m, view).network ?? undefined;
+    builds.set(view, evidence);
+  }
   const staging = { shipped: `${dests.shipped}.partial`, cv: `${dests.cv}.partial` };
   for (const v of o.views) { rmSync(staging[v], { recursive: true, force: true }); mkdirSync(staging[v], { recursive: true }); }
   const manifests = new Map<string, RunManifest>();
@@ -169,7 +189,7 @@ export async function assessFetch(ctx: Ctx, o: FetchOptions): Promise<{ dest: st
   if (!problems.length) {
     for (const view of o.views) for (const period of o.periods) {
       if (view === 'cv' && !periodHasCounts(stations, period)) continue;
-      const set = checkRunSet(`${period}, ${view} demand`, seeds, readRuns(staging[view], area, period, seeds), expectedFromManifest(m, view));
+      const set = checkRunSet(`${period}, ${view} demand`, seeds, readRuns(staging[view], area, period, seeds), expectedFromManifest(m, view), builds.get(view)!);
       problems.push(...set.problems);
     }
     for (const period of o.periods) if (o.views.length === 2 && periodHasCounts(stations, period)) problems.push(...checkPair(manifests.get(`shipped ${period} seed ${seeds[0]}`) ?? null, manifests.get(`cv ${period} seed ${seeds[0]}`) ?? null, m.git.split));

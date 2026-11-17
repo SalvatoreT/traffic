@@ -12,12 +12,12 @@
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
 import { resolve, join, dirname } from 'node:path';
-import { throughStats, corridorRatios, recoverySentence, zoneLines, featureStats, headlineError, meanLinkFlow, noiseFile, rampStats, readRuns, scoreStations, shareStats, travelTimes, type SeedRun, type StationFile, type TravelNet } from './lib/assess';
+import { throughStats, stationEvidenceProblems, corridorRatios, recoverySentence, zoneLines, featureStats, headlineError, headlineSharesPass, meanLinkFlow, noiseFile, rampStats, readRuns, scoreStations, shareStats, travelTimes, type SeedRun, type StationFile, type TravelNet } from './lib/assess';
 import { seedStat } from './lib/acceptance';
 import { computeStability, judgedClearings, stabilityRule, suggestStatus, type Stability } from './lib/verdict';
 import { MIN_HELD_RECENT, outOfSampleSplit, ruleSplit, ruleVerdicts, sourceYearLines, type RuleSplit, type RuleVerdict } from './lib/recency';
 import { writeFileAtomic } from './lib/atomic';
-import { checkPair, checkRunSet, expectedInputs, type RunManifest } from './lib/run-manifest';
+import { assessmentSplitPath, buildEvidence, hashFile, checkPair, checkRunSet, expectedInputs, type RunManifest } from './lib/run-manifest';
 import { isolationProblems, resolveOutputs } from './lib/assess-outputs';
 import { primitiveEvidence, primitiveLines, toVerdict, type ValidationFile } from './lib/primitive-evidence';
 import { scopeLines } from './lib/validation-scope';
@@ -93,16 +93,21 @@ function provenanceLines(): string[] {
   const short = (x: string | null | undefined) => (x ? x.slice(0, 12) : 'none');
   out.push(`- Simulator: fingerprint \`${short(first.simulator.fingerprint)}\`, revision ${[...new Set(ms.flatMap((a) => a.revisions))].map((r) => short(r)).join(', ')}${ms.some((a) => a.dirty) ? ' (working tree had uncommitted changes under crates/)' : ''}.`);
   out.push(`- Run setup: ${first.run.minutes} minutes, scale ${first.run.scale}, warm-up ${first.run.warmupMin} min (flow tables count minutes ${first.run.measurementWindow.fromMin} to ${first.run.measurementWindow.toMin}), initial load ${first.run.initialLoad ? 'on' : 'off'}; seeds ${seeds.join(', ')}.`);
-  out.push(`- Inputs (SHA-256, first 12): network ${short(first.inputs.network.sha256)}, shipped demand ${short(first.inputs.demand.sha256)}${first.inputs.demandBuild ? ` (built as ${first.inputs.demandBuild.view})` : ''}, ${cvFirst ? `cross-validation demand ${short(cvFirst.inputs.demand.sha256)} (built as ${cvFirst.inputs.demandBuild?.view ?? 'unknown'}), ` : ''}targets ${short(first.inputs.targets.sha256)}, stations ${short(first.inputs.stations.sha256)}, validation split ${short(first.inputs.split.sha256)}.`);
+  out.push(`- Inputs (SHA-256, first 12): network ${short(first.inputs.network.sha256)}, ${mainView} demand ${short(first.inputs.demand.sha256)}${first.inputs.demandBuild ? ` (built as ${first.inputs.demandBuild.view})` : ''}, ${cvFirst ? `cross-validation demand ${short(cvFirst.inputs.demand.sha256)} (built as ${cvFirst.inputs.demandBuild?.view ?? 'unknown'}), ` : ''}targets ${short(first.inputs.targets.sha256)}, stations ${short(first.inputs.stations.sha256)}, validation split ${short(first.inputs.split.sha256)}.`);
   return [...out, ''];
 }
 
 // ---------- 1. acquire the runs and check them before anything is judged ----------
 const problems: string[] = [];
 const acquired: Record<string, { main: SeedRun[]; cv: SeedRun[]; mainManifest: RunManifest | null; cvManifest: RunManifest | null; revisions: string[]; dirty: boolean; fingerprint: string | null; wantCv: boolean }> = {};
-const splitSha = expectedInputs(root, area, null).split;
 const mainDemandFile = demandPath ?? resolve(root, `public/data/${area}.demand.json`);
 const cvDemandFile = cvPath ?? (demandCfg.countFit?.validation?.demandOutput ? resolve(root, demandCfg.countFit.validation.demandOutput) : null);
+const mainView = mainDemandFile === resolve(root, `public/data/${area}.demand.json`) ? 'shipped' : 'variant';
+const mainBuild = buildEvidence(root, area, mainDemandFile, mainView);
+const mainInputs = expectedInputs(root, area, mainDemandFile);
+const cvBuild = buildEvidence(root, area, cvDemandFile, 'training');
+const cvInputs = expectedInputs(root, area, cvDemandFile);
+const splitSha = mainInputs.split;
 for (const p of periods) {
   if (!reuse) {
     const r = spawnSync(bin, ['--area', area, '--period', p, '--minutes', String(minutes), '--scale', '1', '--seeds', seedSpec, '--jobs', jobs, '--keep-seeds', keep, '--out', summaryDir, ...(demandPath ? ['--demand', demandPath] : [])], { cwd: root, stdio: ['ignore', 'ignore', 'inherit'] });
@@ -113,12 +118,18 @@ for (const p of periods) {
     }
   }
   const wantCv = hasCounts(p) && !!(cvPath || (reuse && existsSync(keepCv)));
-  const mainFound = readRuns(keep, area, p, seeds);
-  const mainCheck = checkRunSet(`${p}, shipped demand`, seeds, mainFound, expectedInputs(root, area, mainDemandFile));
-  const cvFound = wantCv ? readRuns(keepCv, area, p, seeds) : [];
-  const cvCheck = wantCv ? checkRunSet(`${p}, cross-validation demand`, seeds, cvFound, expectedInputs(root, area, cvDemandFile)) : null;
+  const mainFound = readRuns(keep, area, p, seeds, 1, minutes);
+  const mainCheck = checkRunSet(`${p}, ${mainView} demand`, seeds, mainFound, mainInputs, mainBuild);
+  const cvFound = wantCv ? readRuns(keepCv, area, p, seeds, 1, minutes) : [];
+  const cvCheck = wantCv ? checkRunSet(`${p}, cross-validation demand`, seeds, cvFound, cvInputs, cvBuild) : null;
+  if (stations) for (const [view, reports] of [[mainView, mainFound], ['training', cvFound]] as const) {
+    for (const { run, seed } of reports) if (run) {
+      const missing = stationEvidenceProblems(run, stations, p);
+      if (missing.length) problems.push(`${p}, ${view} demand, seed ${seed}: missing or invalid measurements at ${missing.length} stations (${missing.slice(0, 5).join(', ')}). Rebuild station detector metadata and rerun calibrate.`);
+    }
+  }
   const mainManifest = mainFound.find((q) => q.manifest)?.manifest ?? null, cvManifest = cvFound.find((q) => q.manifest)?.manifest ?? null;
-  problems.push(...mainCheck.problems, ...(cvCheck?.problems ?? []), ...(wantCv ? checkPair(mainManifest, cvManifest, splitSha, !demandPath) : []));
+  problems.push(...mainCheck.problems, ...(cvCheck?.problems ?? []), ...(wantCv ? checkPair(mainManifest, cvManifest, splitSha, mainView === 'shipped') : []));
   acquired[p] = { main: mainFound.flatMap((q) => (q.run ? [q.run] : [])), cv: cvFound.flatMap((q) => (q.run ? [q.run] : [])), mainManifest, cvManifest, revisions: mainCheck.revisions, dirty: mainCheck.dirty, fingerprint: mainCheck.fingerprint, wantCv };
 }
 const fingerprints = [...new Set(periods.map((p) => acquired[p].fingerprint).filter((x): x is string => !!x))];
@@ -129,15 +140,23 @@ if (problems.length && !diagnostic) {
 }
 const validationPath = join(root, 'data/calibration/validation.json');
 const validationFile: ValidationFile | null = existsSync(validationPath) ? JSON.parse(readFileSync(validationPath, 'utf8')) : null;
-const primitives = primitiveEvidence(validationFile, fingerprints[0] ?? null);
+const casesPath = join(root, 'crates/sim/data/validation/cases.json');
+const deviationsPath = join(root, 'data/calibration/validation.deviations.json');
+const primitiveSources = existsSync(casesPath) && existsSync(deviationsPath) ? {
+  cases: JSON.parse(readFileSync(casesPath, 'utf8')),
+  suiteHash: hashFile(join(root, 'crates/sim/src/validate.rs')),
+  deviationsHash: hashFile(deviationsPath),
+  deviations: JSON.parse(readFileSync(deviationsPath, 'utf8')).deviations,
+} : null;
+const primitives = primitiveEvidence(validationFile, fingerprints[0] ?? null, primitiveSources);
 const nameOf = (p: string) => (p.startsWith(`${root}/`) ? p.slice(root.length + 1) : p);
 
 L.push(`# Baseline assessment: ${area}`, '');
-if (diagnostic) L.push(`**DIAGNOSTIC OUTPUT: no calibration or stability verdict is issued.** The runs do not satisfy the rules for an assessment (${problems.length} problem(s) below); the figures describe only the runs that exist.`, '', ...problems.map((x) => `- ${x}`), '');
+if (diagnostic) L.push(`**DIAGNOSTIC OUTPUT: no calibration or stability verdict is issued.** ${problems.length ? `The run checks found ${problems.length} problem(s), listed below. The figures describe the available runs.` : 'The run inputs passed the integrity checks. The requested diagnostic reports measurements only.'}`, '', ...problems.map((x) => `- ${x}`), '');
 const nRuns = (p: string) => `${acquired[p].main.length} of ${seeds.length}`;
 L.push(`Generated by \`tools/assess.ts\` (do not edit).${demandPath ? ` Variant demand: ${nameOf(demandPath)} (not the shipped demand).` : ''}${cvPath ? ` The held-out stations are scored on the cross-validation demand (${nameOf(cvPath)}), built as the training view of the frozen split (their observations are removed from every count-derived step), with the same seeds; the other stations on the shipped demand.` : ' No cross-validation demand: the held-out stations cannot be scored out of sample.'} ${diagnostic ? `Seeds found per period: ${periods.map((p) => `${p} ${nRuns(p)}`).join(', ')} of the requested ${seedSpec}` : `${seeds.length} seeds (${seedSpec}, none chosen)`}, ${minutes}-minute runs at scale 1. Intervals are 95% intervals of the mean over seeds (Student t). Rules: \`openspec/changes/archive/2026-11-13-baseline-calibration/design.md\` D16 to D18.`, '');
 L.push(...provenanceLines());
-const splitFile = join(root, `data/demand/${area}.split.json`);
+const splitFile = resolve(root, assessmentSplitPath(root, area));
 L.push(...scopeLines({ cvDemand: !!cvPath, splitSha, minHeld, split: existsSync(splitFile) ? JSON.parse(readFileSync(splitFile, 'utf8')) : null }));
 
 for (const p of periods) {
@@ -155,7 +174,7 @@ for (const p of periods) {
   const stable: boolean = stab.holds;
   const ss = shareStats(runs, p === 'pm_peak');
   const head = ss.filter((q) => q.headline);
-  const d5 = p === 'pm_peak' ? head.length > 0 && head.every((q) => q.within10) : null;
+  const d5 = p === 'pm_peak' ? headlineSharesPass(runs, targets.selectLink ?? [], targets.acceptance?.headlineShareTolerancePoints ?? 10) : null;
   const sc = stations ? scoreStations(runs, stations, p) : null;
   const cvR = acq.cv;
   cvRuns[p] = cvR;
@@ -172,12 +191,12 @@ for (const p of periods) {
   scores[p] = sc ? sc.cases : [];
   const rv = split ? ruleVerdicts(split, 0.85, minHeld) : null;
   const flow = rv ? rv.met : sc ? sc.fitted.meets : null;
-  const th = throughStats(runs);
+  const th = throughStats(runs, targets.selectLink ?? [], p);
   throughRows[p] = th;
   verdicts[p] = { stable, d5, flow, through: th.length ? th.every((q) => q.inside) : null, rule: rv };
 
   L.push(`## ${p}`, '');
-  L.push(`**Stability rule (D16): ${diagnostic ? `not judged (diagnostic, ${n} of ${seeds.length} seeds)` : stable ? 'holds' : 'fails'}.** Cars cleared from gridlock ${stab.zoneScoped ? 'near the study area (judged zone, far ones linked to it included)' : '(all of them: no near/far split)'} ${f(rem.mean)} per hour (min ${f(rem.min)}, max ${f(rem.max)}; rule below ${rule.maxMeanRemovalsPerHour ?? 1}${stab.zoneScoped ? `; ${f(stab.allPerHourMean)} in all, ${f(stab.farPerHourMean)} far` : ''}); backlog under ${rule.backlogPct ?? 2}% in ${stab.backlogSeedsOk} of ${n} seeds (mean ${f(seedStat(bl).mean)}%, max ${f(Math.max(...bl))}%); backlog growth in the second half: ${stab.growthSeeds.length ? `seeds ${stab.growthSeeds.join(', ')} exceed ${rule.maxSecondHalfBacklogGrowthPct ?? 2} points` : 'no seed above the limit'}; arterial speed ${f(speed.mean)} m/s (${f(speed.lo)} to ${f(speed.hi)}); completed trips ${Math.round(done.mean)} (${Math.round(done.lo)} to ${Math.round(done.hi)}). The old rule (zero cars cleared from gridlock anywhere in every seed) passes in ${stab.oldRuleSeedsPassing.length} of ${n} seeds. Computed from these ${n} runs. ${recoverySentence(runs)}`, '');
+  L.push(`**Stability rule (D16): ${diagnostic ? `not judged (diagnostic, ${n} of ${seeds.length} seeds)` : stable ? 'holds' : 'fails'}.** Cars cleared from gridlock ${stab.zoneScoped ? 'near the study area (judged zone, far ones linked to it included)' : '(all of them: no near/far split)'} ${f(rem.mean)} per hour (min ${f(rem.min)}, max ${f(rem.max)}; rule below ${rule.maxMeanRemovalsPerHour ?? 1}${stab.zoneScoped ? `; ${f(stab.allPerHourMean)} in all, ${f(stab.farPerHourMean)} far` : ''}); backlog under ${rule.backlogPct ?? 2}% in ${stab.backlogSeedsOk} of ${n} seeds (mean ${f(seedStat(bl).mean)}%, max ${f(Math.max(...bl))}%); backlog growth in the second half: ${stab.growthSeeds.length ? `seeds ${stab.growthSeeds.join(', ')} exceed ${rule.maxSecondHalfBacklogGrowthPct ?? 2} points or lack complete growth readings` : 'no seed above the limit'}; arterial speed ${f(speed.mean)} m/s (${f(speed.lo)} to ${f(speed.hi)}); completed trips ${Math.round(done.mean)} (${Math.round(done.lo)} to ${Math.round(done.hi)}). The old rule (zero cars cleared from gridlock anywhere in every seed) passes in ${stab.oldRuleSeedsPassing.length} of ${n} seeds. Computed from these ${n} runs. ${recoverySentence(runs)}`, '');
   L.push(...zoneLines(runs, stab, rule.maxMeanRemovalsPerHour ?? 1));
   L.push(`Route shares (modeled seed mean, 95% interval, observed${p === 'pm_peak' ? ', PM values' : '; the observed values are the PM ones, shown for comparison only'}):`, '', '| Share | Observed | Modeled | 95% interval | Error (points) | Within 10 |', '| --- | --- | --- | --- | --- | --- |');
   for (const q of ss) L.push(`| ${q.headline ? '**' : ''}${q.block} ${q.side} ${q.via}${q.headline ? '**' : ''} | ${pct(q.observed, 0)} | ${pct(q.mean)} | ${pct(q.lo)} to ${pct(q.hi)} | ${f(q.errPoints, 1)} | ${q.within10 ? 'yes' : 'NO'} |`);
@@ -205,7 +224,7 @@ for (const p of periods) {
       const bySide = new Map<string, { counted: number; modeled: number; rows: string[] }>();
       for (const e of stations!.entries) {
         const c = e.counted[p]; if (c == null) continue;
-        const m = meanLinkFlow(runs, [e.link]);
+        const m = meanLinkFlow(runs, [e.link], 'start');
         const g = bySide.get(e.side) ?? bySide.set(e.side, { counted: 0, modeled: 0, rows: [] }).get(e.side)!;
         g.counted += c; g.modeled += m; g.rows.push(`| ${e.label} | ${c} | ${Math.round(m)} |`);
       }
@@ -219,9 +238,11 @@ for (const p of periods) {
       for (const q of fs) { const st = featureStats(runs, q.id); L.push(`| ${q.label} | ${Math.round(q.target[p])} | ${f(st.mean, 0)} | ${f(st.lo, 0)} to ${f(st.hi, 0)} | ${f(st.mean / q.target[p])} |`); }
     }
     const sg = runs[0].observedSignals ?? [];
-    for (const [i, o] of sg.entries()) {
-      for (const [j, a] of o.approaches.entries()) {
-        const ex = seedStat(runs.map((r) => r.observedSignals![i].approaches[j].exitsPerHour));
+    for (const o of sg) {
+      for (const a of o.approaches) {
+        const key = [...a.links].sort((x, y) => x - y).join(',');
+        const values = runs.map((r) => r.observedSignals?.find((s) => s.node === o.node)?.approaches.find((g) => [...g.links].sort((x, y) => x - y).join(',') === key)?.exitsPerHour ?? NaN);
+        const ex = seedStat(values.every((value) => Number.isFinite(value) && value >= 0) ? values : []);
         L.push('', `Signal with observed timing, ${o.streets}${o.applies === false ? ' (the observation does not apply to this period; the plan is the Webster plan)' : ''}: modeled cycle ${f(o.cycleS, 0)} s (observed ${f(o.observedCycleS, 0)}), green of the observed approach ${a.modeledGreenS == null ? '-' : f(a.modeledGreenS, 0)} s (observed ${f(a.observedGreenS, 0)}); the approach discharges ${f(ex.mean, 0)} veh/h, ${f((ex.mean * o.cycleS) / 3600, 1)} cars per cycle ${observedCars(o.streets, p)}.`);
       }
     }
@@ -255,16 +276,15 @@ const calibrated = status.calibrated;
 const yn = (v: boolean | null, na = 'n/a') => (diagnostic ? 'not judged' : v === null ? na : v ? 'pass' : 'FAIL');
 const tl = (b: { n: number; ok: number }) => (b.n ? `${b.ok} of ${b.n} (${pct(b.ok / b.n, 0)}%)` : 'none');
 const rvText = (v: RuleVerdict) => (diagnostic ? 'not judged' : v === 'met' ? 'pass' : v === 'not met' ? 'FAIL' : v === 'too few' ? `too few to judge (fewer than ${minHeld}), not a pass` : 'no counts');
-L.push('## Verdict', '', `Status rules, per period. D16 stability; D5 headline shares (PM peak only, the other periods have no observed shares); the station rule (GEH below 5 at more than 85% of stations) judged on counts from the last ${recencyCfg?.recentYears ?? 5} years: the fitted stations on the shipped demand, the held-out stations on the cross-validation demand (a fit that left them out, same seeds), so the held-out figure is out of sample; at least ${minHeld} recent held-out stations are needed to judge it. A target that is a scaled copy of another period's count (midday = PM x factor, ASSUMPTION) is not a count and is not judged. The through-car check (modeled through cars inside the observed range on each counted block, PM peak only: the other periods have no whole-street counts; no rows is a failure, not a pass).`, '', '| Period | D16 | D5 | Station rule, recent counts, fitted (shipped fit) | Station rule, recent counts, held out (out of sample) | Through cars | Validation stations, in the shipped fit (in sample, not judged) | Older counts, fitted / held out (out of sample) |', '| --- | --- | --- | --- | --- | --- | --- | --- |');
+L.push('## Verdict', '', `Status rules, per period. D16 stability; D5 headline shares (PM peak only, the other periods have no observed shares); the station rule (GEH below 5 at more than 85% of stations) judged on counts from the last ${recencyCfg?.recentYears ?? 5} years: the fitted stations on the shipped demand, the held-out stations on the cross-validation demand (a fit that left them out, same seeds), so the held-out figure is out of sample; at least ${minHeld} recent held-out stations are needed to judge it. A target that is a scaled copy of another period's count (midday = PM x factor, ASSUMPTION) is not a count and is not judged. The PM whole-street check compares complete modeled traversals with every observed directional whole-street count and requires GEH below 5 for each. Each counted block is assessed against its own volume.`, '', '| Period | D16 | D5 | Station rule, recent counts, fitted (shipped fit) | Station rule, recent counts, held out (out of sample) | Whole-street traversals | Validation stations, in the shipped fit (in sample, not judged) | Older counts, fitted / held out (out of sample) |', '| --- | --- | --- | --- | --- | --- | --- | --- |');
 for (const p of periods) {
   const sp = splits[p], v = verdicts[p];
-  const thr = p === 'pm_peak' && v.through === null ? 'FAIL: no through-car rows in the reports' : yn(v.through, 'no target');
+  const thr = p === 'pm_peak' && v.through === null ? 'FAIL: no matched whole-street counts' : yn(v.through, 'no target');
   if (!sp || !v.rule || noCounts(p)) { L.push(`| ${p} | ${yn(v.stable)} | ${yn(v.d5, 'not gated')} | no ${p === 'midday' ? 'midday ' : ''}counts: stability only | no counts | ${thr} | - | - |`); continue; }
   L.push(`| ${p} | ${yn(v.stable)} | ${yn(v.d5, 'not gated')} | ${tl(sp.recent.fitted)}, ${rvText(v.rule.fitted)} | ${tl(sp.recent.held)}, ${rvText(v.rule.held)} | ${thr} | ${sp.heldInFit ? tl(sp.heldInFit.recent) : '-'} | ${tl(sp.older.fitted)} / ${tl(sp.older.held)} |`);
 }
-L.push('', 'Through cars per hour, seed mean (standard error of the mean: standard deviation over the seeds / square root of their number) against the observed range:', '', '| Period | Block | Modeled | Standard error | Observed range | Inside | Fitted |', '| --- | --- | --- | --- | --- | --- | --- |');
-for (const p of periods) for (const q of throughRows[p] ?? []) L.push(`| ${p} | ${q.block} | ${f(q.mean, 0)} | ${f(q.se, 1)} | ${q.low} to ${q.high} | ${q.inside ? 'yes' : 'NO'}${!q.inside && Math.min(Math.abs(q.mean - q.low), Math.abs(q.mean - q.high)) <= q.se ? ' (within one standard error)' : ''} | ${q.fitted ? 'yes' : 'no'} |`);
-if (periods.some((p) => (throughRows[p] ?? []).some((q) => q.fitted))) L.push('', 'Fitted blocks are targets of the demand fit (calibration round 39), so they are no longer an independent check. The independent checks are the held-out stations, the headline freeway shares, stability and the arterial travel times.');
+L.push('', 'Complete traversals of each street in the counted direction, vehicles per hour. Each matching trip covers the full ordered street. The standard error is across seeds. A fitted whole-street count is an in-sample comparison. Intersection and ramp counts use crossings at the observed end of each link. Block counts with no surveyed detector location use total link exits as a proxy.', '', '| Period | Street and direction | Modeled | Standard error | Observed | GEH | GEH < 5 | Count fitted |', '| --- | --- | --- | --- | --- | --- | --- | --- |');
+for (const p of periods) for (const q of throughRows[p] ?? []) L.push(`| ${p} | ${q.block} | ${f(q.mean, 0)} | ${f(q.se, 1)} | ${q.observed} | ${f(q.geh, 1)} | ${q.inside ? 'yes' : 'NO'} | ${q.fitted === undefined ? 'unknown' : q.fitted ? 'yes' : 'no'} |`);
 const failing = periods.filter((p) => heldFails[p]?.length);
 if (failing.length) {
   L.push('', 'Recent held-out stations at GEH 5 or more on the cross-validation demand (out of sample), with the same station on the shipped demand:', '', '| Period | Station | Source | Counted | Cross-validation | GEH | Shipped demand | GEH |', '| --- | --- | --- | --- | --- | --- | --- | --- |');

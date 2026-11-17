@@ -1,8 +1,50 @@
 // Pooling of simulated select-link trips into per-pair through counts (calibration round 39). No I/O.
 import type { ThroughMeasured } from './demand-fit';
+import type { RunManifest } from './run-manifest';
 
 /** `calibrate --select-od` output: per counted street run, the trips (origin, destination, count) that used any of its links in one seed run. */
-export interface SelectOd { period: string; seed: number; minutes: number; blocks: { label: string; links: number[]; trips: [number, number, number][] }[]; features?: { id: string; trips: [number, number, number][] }[]; /** Link stations (round 42): a trip counted once per station link it used. */ links?: { id: string; trips: [number, number, number][] }[] }
+export interface SelectOd { stationCountVersion?: number; manifest?: RunManifest; period: string; seed: number; minutes: number; blocks: { label: string; links: number[]; trips: [number, number, number][] }[]; features?: { id: string; trips: [number, number, number][] }[]; /** Version 2 link stations count crossings at their configured detector. */ links?: { id: string; trips: [number, number, number][] }[] }
+
+export interface MembershipEvidence {
+  view: string; network: string; split: string; config: string; countFile: string; stations: string; targets: string; simulator: string; stationCountVersion: number;
+}
+
+/** One pool is for one network, source observation set, split and demand view. */
+export function sameMembershipEvidence(a: MembershipEvidence | undefined, b: MembershipEvidence): boolean {
+  const fields: (keyof MembershipEvidence)[] = ['view', 'network', 'split', 'config', 'countFile', 'stations', 'targets', 'simulator', 'stationCountVersion'];
+  return !!a && fields.every((field) => !!b[field] && a[field] === b[field]);
+}
+
+export function membershipEvidence(run: SelectOd, demandHash: string): MembershipEvidence {
+  const m = run.manifest, b = m?.inputs.demandBuild;
+  if (run.stationCountVersion !== 2 || !m?.simulator?.fingerprint || !b || !b.countFile || (b.view !== 'training' && b.view !== 'shipped') || !b.network || !b.split || !b.config ||
+      !m.inputs.targets.sha256 || !m.inputs.stations.sha256 || m.inputs.network.sha256 !== b.network || m.inputs.demand.sha256 !== demandHash ||
+      m.inputs.split.sha256 !== b.split || m.inputs.demandConfig.sha256 !== b.config ||
+      m.run.period !== run.period || m.run.seed !== run.seed || m.run.minutes !== run.minutes || m.run.scale !== 1) {
+    throw new Error('select-OD run does not match the supplied demand and its source, split and network evidence');
+  }
+  return { view: b.view, network: b.network, split: b.split, config: b.config, countFile: b.countFile, stations: m.inputs.stations.sha256, targets: m.inputs.targets.sha256, simulator: m.simulator.fingerprint, stationCountVersion: run.stationCountVersion };
+}
+
+/** Each demand may contribute a given seed once, under its canonical filename. */
+export function checkSelectOdSeed(run: SelectOd, demandHash: string, requestedPeriod: string, file: string, seen: Set<string>): void {
+  const key = `${demandHash}:${run.seed}`;
+  if (!Number.isSafeInteger(run.seed) || run.seed < 0 || run.seed !== run.manifest?.run.seed || run.period !== requestedPeriod ||
+      file !== `sod-${requestedPeriod}-${run.seed}.json` || seen.has(key)) throw new Error(`duplicate or mismatched select-OD seed in ${file}`);
+  seen.add(key);
+}
+
+/** Counted unique through trips using any corridor block, with neither trip end inside the study area. */
+export function corridorThroughCounts(t: { observedCorridorThroughVehPerHour?: Record<string, number> }, periods: string[]): Record<string, number> {
+  const target: Record<string, number> = {};
+  for (const period of periods) {
+    const value = t.observedCorridorThroughVehPerHour?.[period];
+    if (value !== undefined && (!Number.isFinite(value) || value < 0)) throw new Error(`invalid observed corridor through volume for ${period}`);
+    // Multiplicative OD fitting can use positive count targets only.
+    if (value !== undefined && value > 0) target[period] = value;
+  }
+  return target;
+}
 
 export const throughTargetId = (label: string) => `through ${label}`;
 

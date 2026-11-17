@@ -13,6 +13,7 @@ export const SHARE_REQUIRED = 0.85;
 
 /** GEH of hourly flows. Zero when both are zero. */
 export function geh(modeled: number, counted: number): number {
+  if (!Number.isFinite(modeled) || !Number.isFinite(counted) || modeled < 0 || counted < 0) return NaN;
   const s = modeled + counted;
   return s > 0 ? Math.sqrt((2 * (modeled - counted) ** 2) / s) : 0;
 }
@@ -37,7 +38,7 @@ export interface FlowCase { id: string; modeled: number; counted: number; held?:
 export interface CaseResult extends FlowCase { geh: number; gehOk: boolean; bandOk: boolean; gehClass: GehClass; band: Band }
 
 export function evaluateCases(cases: FlowCase[]): CaseResult[] {
-  return cases.map((c) => { const g = geh(c.modeled, c.counted); return { ...c, geh: g, gehOk: g < GEH_GOOD, bandOk: withinBand(c.modeled, c.counted), gehClass: gehClass(g), band: bandOf(c.counted) }; });
+  return cases.map((c) => { const g = geh(c.modeled, c.counted); return { ...c, geh: g, gehOk: g < GEH_GOOD, bandOk: Number.isFinite(g) && withinBand(c.modeled, c.counted), gehClass: gehClass(g), band: bandOf(c.counted) }; });
 }
 
 export interface AcceptanceSummary { n: number; gehOk: number; bandOk: number; either: number; both: number; gehShare: number; bandShare: number; meets: boolean; meanGeh: number }
@@ -47,7 +48,7 @@ export function summarizeCases(rs: CaseResult[]): AcceptanceSummary {
   const n = rs.length;
   const c = (f: (r: CaseResult) => boolean) => rs.filter(f).length;
   const gehOk = c((r) => r.gehOk), bandOk = c((r) => r.bandOk);
-  return { n, gehOk, bandOk, either: c((r) => r.gehOk || r.bandOk), both: c((r) => r.gehOk && r.bandOk), gehShare: n ? gehOk / n : 0, bandShare: n ? bandOk / n : 0, meets: n > 0 && (gehOk / n > SHARE_REQUIRED || bandOk / n > SHARE_REQUIRED), meanGeh: n ? rs.reduce((a, r) => a + r.geh, 0) / n : 0 };
+  return { n, gehOk, bandOk, either: c((r) => r.gehOk || r.bandOk), both: c((r) => r.gehOk && r.bandOk), gehShare: n ? gehOk / n : 0, bandShare: n ? bandOk / n : 0, meets: n > 0 && rs.every((r) => Number.isFinite(r.geh)) && (gehOk / n > SHARE_REQUIRED || bandOk / n > SHARE_REQUIRED), meanGeh: n ? rs.reduce((a, r) => a + r.geh, 0) / n : 0 };
 }
 
 // Hold-out selection moved to lineage.ts (group-level, chosen from ids and corridors only).

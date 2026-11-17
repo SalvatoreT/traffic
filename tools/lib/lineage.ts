@@ -92,7 +92,7 @@ export function selectGroupHoldout(groups: { id: string; corridor: string }[], r
 }
 
 export const RETAINED_NOTES = [
-  'Legs and movements of one intersection obey flow conservation (their published volumes are not independent rows), and a whole-street route can follow detours off its street; neither is a shared source row, so the split does not group them.',
+  'Legs and movements of one intersection obey flow conservation. They remain correlated when their source rows belong to different groups.',
   'Several observations were taken on one day or in one environmental study; evidence from one counting day does not establish performance on other days [FHWA-TAT3-2019].',
 ];
 
@@ -152,8 +152,8 @@ export interface RouteNet { links: { id: number; from: number; to: number; name:
 
 /**
  * Directed links of the street that lie on some path from the end of `first` to the start of `last` along links of the same name: reachable forward from `first`
- * and able to reach `last`. This is the support of the observation "vehicles that drove the whole street" (the count covers every block on its way). The model's
- * path feature matches any route that uses `first` and later `last`, so detours off the street also match; those cannot be listed statically and are a retained overlap.
+ * and able to reach `last`. This is the support of the observation "vehicles that drove the whole street" (the count covers every block on its way). The split conservatively includes every possible same-street branch between those ends.
+ * The scored whole-street feature uses one ordered, contiguous link sequence.
  */
 export function routeSupportLinks(net: RouteNet, first: number, last: number): number[] {
   const byId = new Map(net.links.map((l) => [l.id, l]));

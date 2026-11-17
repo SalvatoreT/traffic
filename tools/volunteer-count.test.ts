@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { assign, buildGraph, type ALink, type ANode } from './lib/assign';
+import { assign, buildGraph, featureIndex, routeFeatures, type ALink, type ANode } from './lib/assign';
 import { assigned, fitToCounts, DEFAULT_FIT } from './lib/fit-counts';
 import { countStations, mapBlock, mapMovement, nodeStreets, fillMissing, tripEnds, type CNet, type CountConfig, type CountFile } from './lib/volunteer-count';
 
@@ -95,18 +95,44 @@ describe('count stations', () => {
     const rt = run().stations.filter((s) => s.family === 'route');
     expect(rt).toHaveLength(2);
     const nbRoute = rt.find((s) => s.target.pm === 40)!;
-    expect(nbRoute.feature).toMatchObject({ kind: 'path' });
-    if (nbRoute.feature?.kind === 'path') { expect(net.links[nbRoute.feature.first].from).toBe(0); expect(net.links[nbRoute.feature.last].to).toBe(4); }
+    expect(nbRoute.feature).toEqual({ kind: 'path', first: 0, last: 6, links: [0, 2, 4, 6] });
+    const features = [nbRoute.feature!], index = featureIndex(features);
+    expect(routeFeatures([10, 0, 2, 4, 6, 16], features, index)).toEqual([0]);
+    expect(routeFeatures([0, 2, 12, 13, 4, 6], features, index)).toEqual([]);
+    expect(routeFeatures([2, 4, 6], features, index)).toEqual([]);
   });
   it('implies trip ends from entries, exits and through cars', () => {
     const f = file();
     f.accessPoints = [{ at: ['Ridge Road', 'Pine Street'], side: 's', period: 'pm', in: 100 }];
     const r = countStations(f, net, cfg, { am: 'am', pm: 'pm', midday: 'mid' }, { am: 0.85, pm: 1, mid: 0.62 });
-    const e = tripEnds(f, r, net, { am: 'am', pm: 'pm' });
+    const e = tripEnds(r, net, { am: 'am', pm: 'pm' });
     expect(e.pm).toMatchObject({ entries: 100, exits: 80, through: 60 });
     expect(e.pm.destinations).toBe(40);
     expect(e.pm.origins).toBe(20);
   });
+  it('keeps held route observations out of the indirect through share used to estimate trip ends', () => {
+    const f = file();
+    const periods = { am: 'am', pm: 'pm' };
+    const volumes = { am: 0.85, pm: 1 };
+    const options = { ...cfg, otherThrough: { entries: ['Ridge Road'], scale: 1 } };
+    f.accessPoints = [{ at: ['Ridge Road', 'Pine Street'], side: 'south', period: 'pm', in: 100 }];
+    f.routeDiagrams = [
+      { street: 'Pine Street', direction: 'NB', period: 'pm', tableTotals: { enteringAtStart: 100, drivingEntireRoute: 40 } },
+      { street: 'Pine Street', direction: 'SB', period: 'pm', tableTotals: { enteringAtStart: 50, drivingEntireRoute: 20 } },
+      { period: 'pm', tableTotals: { enteringAtStart: 10, drivingEntireRoute: 10 } },
+    ];
+    const held = new Set(['count route 0>6']);
+    const run = (withheld?: Set<string>) => tripEnds(countStations(f, net, options, periods, volumes, withheld), net, periods, options).pm;
+    const training = run(held);
+    expect(training.through).toBe(20 + 100 * 20 / 50);
+    const shipped = run();
+    expect(shipped.through).toBe(60 + 100 * 70 / 160);
+    f.fullRoute!.rows[0].vehicles = 90;
+    f.routeDiagrams[0].tableTotals = { enteringAtStart: 120, drivingEntireRoute: 90 };
+    expect(run(held)).toEqual(training);
+    expect(run()).not.toEqual(shipped);
+  });
+
 });
 
 describe('entries not counted in a period', () => {
@@ -126,7 +152,7 @@ describe('entries not counted in a period', () => {
     const net = grid(), f = file();
     f.accessPoints = [{ at: ['Ridge Road', 'Pine Street'], side: 's', period: 'pm', in: 100 }, { at: ['Ridge Road', 'Pine Street'], side: 's', period: 'am', in: 50 }, { at: ['Summit Road', 'Pine Street'], side: 'n', period: 'pm', in: 60 }];
     const r = countStations(f, net, cfg, { am: 'am', pm: 'pm', midday: 'mid' }, { am: 0.85, pm: 1, mid: 0.62 });
-    const e = tripEnds(f, r, net, { am: 'am', pm: 'pm' });
+    const e = tripEnds(r, net, { am: 'am', pm: 'pm' });
     expect(e.am.entries).toBeCloseTo(80, 6);
     expect(e.am.filled.some((x) => x.includes('entering'))).toBe(true);
     expect(e.pm.entries).toBe(160);
@@ -141,7 +167,7 @@ describe('route features in the assignment', () => {
   const flows = [{ origin: 5, destination: 9 }, { origin: 0, destination: 4 }];
   const link = (a: number, b: number) => links.findIndex((l) => l.from === a && l.to === b);
   it('records the share of routes with a movement or a path', () => {
-    const feats = [{ kind: 'move' as const, a: link(5, 0), b: link(0, 1) }, { kind: 'path' as const, first: link(0, 1), last: link(3, 4) }];
+    const feats = [{ kind: 'move' as const, a: link(5, 0), b: link(0, 1) }, { kind: 'path' as const, first: link(0, 1), last: link(3, 4), links: [0, 2, 4, 6] }];
     const a = assign(g, flows, 1, 0, feats);
     const sh = (k: number, f: number) => { for (let i = a.feat!.start[k]; i < a.feat!.start[k + 1]; i++) if (a.feat!.id[i] === f) return a.feat!.share[i]; return 0; };
     expect(sh(0, 0)).toBe(1);
