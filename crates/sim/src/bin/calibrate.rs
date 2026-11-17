@@ -517,9 +517,15 @@ fn main() {
         mv: bool,
     }
     let mut feats: Vec<Feat> = Vec::new();
+    // Link stations (round 42): with --select-od their pairs are written too, each trip counted once per station link it used.
+    let mut link_st: Vec<(String, Vec<u32>)> = Vec::new();
     if let Ok(txt) = std::fs::read_to_string(root.join(format!("data/demand/{}.stations.json", args.area))) {
         if let Ok(v) = serde_json::from_str::<Value>(&txt) {
             for st in v["stations"].as_array().map(|a| a.as_slice()).unwrap_or(&[]) {
+                let ls: Vec<u32> = st["links"].as_array().map(|a| a.iter().filter_map(|x| x.as_u64().map(|x| x as u32)).collect()).unwrap_or_default();
+                if args.select_od.is_some() && !ls.is_empty() {
+                    link_st.push((st["id"].as_str().unwrap_or("").to_string(), ls));
+                }
                 let f = &st["feature"];
                 let (kind, a, b) = (f["kind"].as_str().unwrap_or(""), f["a"].as_u64().or(f["first"].as_u64()), f["b"].as_u64().or(f["last"].as_u64()));
                 if let (true, Some(a), Some(b)) = (kind == "move" || kind == "path", a, b) {
@@ -529,6 +535,7 @@ fn main() {
         }
     }
     sel.extend(feats.iter().flat_map(|f| [f.first, f.last]));
+    sel.extend(link_st.iter().flat_map(|(_, ls)| ls.iter().copied()));
     // Residential and service links inside the study area: a through trip that uses one is cut-through (intent map, round 21).
     let study_local: Vec<u32> = (0..net.links.len()).filter(|&l| net.links[l].in_study_area && matches!(net.links[l].class, RoadClass::Residential | RoadClass::Service)).map(|l| l as u32).collect();
     sel.extend(study_local.iter().copied());
@@ -681,7 +688,22 @@ fn main() {
                 json!({"id": f.id, "trips": v})
             })
             .collect();
-        std::fs::write(path, serde_json::to_string(&json!({"period": args.period, "seed": args.seed, "minutes": args.minutes, "blocks": blocks, "features": features})).unwrap()).expect("write select-od");
+        let links: Vec<Value> = link_st
+            .iter()
+            .map(|(id, ls)| {
+                let mut od: HashMap<(u32, u32), u32> = HashMap::new();
+                for r in &recs {
+                    let n = r.hits.iter().filter(|h| ls.contains(&h.0)).count() as u32;
+                    if n > 0 {
+                        *od.entry((r.origin, r.dest)).or_insert(0) += n;
+                    }
+                }
+                let mut v: Vec<(u32, u32, u32)> = od.into_iter().map(|((o, d), n)| (o, d, n)).collect();
+                v.sort_unstable();
+                json!({"id": id, "trips": v})
+            })
+            .collect();
+        std::fs::write(path, serde_json::to_string(&json!({"period": args.period, "seed": args.seed, "minutes": args.minutes, "blocks": blocks, "features": features, "links": links})).unwrap()).expect("write select-od");
     }
 
     if let Some(path) = &args.od_costs {

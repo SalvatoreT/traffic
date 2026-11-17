@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { featureIndex, routeFeatures, type Assignment, type Feature } from './lib/assign';
 import { assigned, DEFAULT_FIT, fitToCounts, type Constraint, type FlowType } from './lib/fit-counts';
-import { throughMembership, type ThroughMeasured } from './lib/demand-fit';
+import { linkShare, measuredShare, throughMembership, type ThroughMeasured } from './lib/demand-fit';
 import { throughStats } from './lib/assess';
 import { pooledStations, pooledMembership, throughTargetId, type SelectOd } from './lib/through-membership';
 
@@ -100,5 +100,28 @@ describe('pooled station pairs', () => {
     expect(m.runs).toBe(2);
     expect(m.hits['count move 5>6']).toEqual({ '1>2': 4, '1>9': 2 });
     expect(m.trips).toEqual({ '1>2': 14, '1>9': 8 });
+  });
+});
+
+describe('link stations with simulated membership (round 42)', () => {
+  const flows = [{ origin: 10, destination: 20, vehPerHour: 10 }, { origin: 11, destination: 21, vehPerHour: 20 }, { origin: 12, destination: 22, vehPerHour: 5 }];
+  it('gives the static share on the station links, once per link used', () => {
+    expect([...linkShare(asg(), 3, [0])]).toEqual([1, 1, 0]);
+    expect([...linkShare(asg(), 3, [0, 1])]).toEqual([1, 2, 1]);
+  });
+  it('takes the simulated pairs of every flow, local or through', () => {
+    const m: ThroughMeasured = { runs: 10, source: 't', hits: { s: { '11>21': 40 } }, trips: { '11>21': 200 } };
+    const use = measuredShare(linkShare(asg(), 3, [1]), flows, m, 's', 5, () => false, () => false);
+    expect(use[1]).toBeCloseTo((40 + 5) / 205);
+    // pair 12>22 never counted: the prior against its plain volume over the runs
+    expect(use[2]).toBeCloseTo(5 / 55);
+    expect(use[0]).toBe(0);
+  });
+  it('pools link-station pairs with the movement pairs', () => {
+    const fl = [{ origin: 1, destination: 2, vehPerHour: 7 }];
+    const run = (seed: number): SelectOd => ({ period: 'pm_peak', seed, minutes: 60, blocks: [], features: [], links: [{ id: 'count block 7', trips: [[1, 2, 3]] }] });
+    const m = pooledStations([{ label: 'a', flows: fl, sod: [run(1), run(2)] }]);
+    expect(m.hits['count block 7']).toEqual({ '1>2': 6 });
+    expect(m.trips).toEqual({ '1>2': 14 });
   });
 });

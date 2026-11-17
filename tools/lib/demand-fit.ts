@@ -308,7 +308,19 @@ export function throughMembership(a: Assignment, flows: FlowIn[], feat: number, 
     if (inStudy.has(flows[k].origin) || inStudy.has(flows[k].destination)) continue;
     for (let i = a.feat.start[k]; i < a.feat.start[k + 1]; i++) if (a.feat.id[i] === feat) stat[k] = Math.min(1, a.feat.share[i]);
   }
-  if (!m) return { stat, use: stat };
+  return { stat, use: m ? measuredShare(stat, flows, m, id, priorTrips, pinned, (k) => inStudy.has(flows[k].origin) || inStudy.has(flows[k].destination)) : stat };
+}
+
+/** Static share of each flow's assigned routes on a link station's links (a route using two of them counts twice, as the link flow does). */
+export function linkShare(a: Assignment, n: number, links: number[]): Float64Array {
+  const set = new Set(links), stat = new Float64Array(n);
+  for (let k = 0; k < n; k++) for (let i = a.start[k]; i < a.start[k + 1]; i++) if (set.has(a.link[i])) stat[k] += a.share[i];
+  return stat;
+}
+
+/** Measured proportions from simulated pairs, with the static share `stat` as a prior worth `priorTrips` trips; flows for which `skip` holds keep `stat`. */
+export function measuredShare(stat: Float64Array, flows: FlowIn[], m: ThroughMeasured, id: string, priorTrips: number, pinned: (k: number) => boolean, skip: (k: number) => boolean): Float64Array {
+  const n = flows.length;
   const key = (k: number) => `${flows[k].origin}>${flows[k].destination}`;
   const pinVol = new Map<string, number>(), pinThr = new Map<string, number>(), plainVol = new Map<string, number>(), plainThr = new Map<string, number>();
   const add = (mp: Map<string, number>, q: string, v: number) => mp.set(q, (mp.get(q) ?? 0) + v);
@@ -318,7 +330,7 @@ export function throughMembership(a: Assignment, flows: FlowIn[], feat: number, 
   }
   const use = Float64Array.from(stat);
   for (let k = 0; k < n; k++) {
-    if (pinned(k) || inStudy.has(flows[k].origin) || inStudy.has(flows[k].destination)) continue;
+    if (pinned(k) || skip(k)) continue;
     const q = key(k), pv = plainVol.get(q) ?? 0;
     const p0 = pv > 0 ? (plainThr.get(q) ?? 0) / pv : 0;
     // A pair with no simulated trip on any run is not in the file: its offered trips are taken as this table's plain volume over the runs.
@@ -326,7 +338,7 @@ export function throughMembership(a: Assignment, flows: FlowIn[], feat: number, 
     const hits = Math.max(0, (m.hits[id]?.[q] ?? 0) - m.runs * (pinThr.get(q) ?? 0));
     use[k] = Math.min(1, (hits + priorTrips * p0) / (offered + priorTrips));
   }
-  return { stat, use };
+  return use;
 }
 
 export interface PeriodResult {
@@ -394,13 +406,17 @@ export function fitPeriod(
   let countCons = countCons0;
   // Named movement and route stations with simulated pairs for this period take a simulated membership (round 41); the others keep their route feature.
   const stMeas = cfg.through?.measured?.[id]?.stations;
-  const measSt = new Set((cfg.through?.measuredStations ?? []).filter((sid) => stMeas?.hits[sid] && featOf.has(sid)));
+  // Link stations (round 42) take it from the pairs of the trips that used their links.
+  const measSt = new Set((cfg.through?.measuredStations ?? []).filter((sid) => stMeas?.hits[sid] && (featOf.has(sid) || countCons0.some((c) => c.id === sid && c.links.length))));
   const stationCons = (aa: Assignment): Constraint[] => {
     if (!measSt.size) return countCons0;
     return countCons0.map((c) => {
       if (!measSt.has(c.id)) return c;
-      const r = throughMembership(aa, flows, featOf.get(c.id)!, new Set(), stMeas, c.id, cfg.through!.priorTrips, (k) => !!flows[k].via);
-      return { ...c, feature: undefined, member: r.use };
+      if (featOf.has(c.id)) {
+        const r = throughMembership(aa, flows, featOf.get(c.id)!, new Set(), stMeas, c.id, cfg.through!.priorTrips, (k) => !!flows[k].via);
+        return { ...c, feature: undefined, member: r.use };
+      }
+      return { ...c, links: [], member: measuredShare(linkShare(aa, flows.length, c.links), flows, stMeas!, c.id, cfg.through!.priorTrips, (k) => !!flows[k].via, () => false) };
     });
   };
 

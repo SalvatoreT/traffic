@@ -3,7 +3,7 @@
 // each pair counted on each street run and the trips the pair offered in those runs. `tools/build-demand.ts` reads the file as the measured membership of the
 // through-car targets (`countFit.throughTargets.measured`).
 //   npx tsx tools/through-membership.ts --area rockridge --period pm_peak --run DIR=DEMAND [--run DIR=DEMAND ...] [--out FILE] [--stations [--ids ID,ID]]
-// --stations adds, for that period, the pairs of the movement and route stations (all trips) and keeps the through membership.
+// --stations adds, for that period, the pairs of the movement, route and link stations (all trips) and keeps the through membership; a new FILE holds the station pairs only.
 // DIR holds `sod-<period>-<seed>.json` from `calibrate --select-od`; DEMAND is the demand file those runs used. Other periods in FILE are kept.
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
@@ -39,7 +39,8 @@ if (argv.includes('--stations')) {
     const keep = new Set(Object.values(st.hits).flatMap((h) => Object.keys(h)));
     st.trips = Object.fromEntries(Object.entries(st.trips).filter(([q]) => keep.has(q)));
   }
-  if (!file.periods?.[period]) throw new Error(`${out}: no ${period} entry to add station pairs to`);
+  // A file of station pairs only (the training view's, round 42) starts with an empty through membership.
+  if (!file.periods?.[period]) { file.area = area; file.network = net.id; file.note ||= 'Simulated station pairs only (no through membership), pooled over seed runs. Model output, not data. Written by tools/through-membership.ts --stations.'; file.periods = { ...(file.periods ?? {}), [period]: { runs: 0, source: '', hits: {}, trips: {} } }; }
   file.periods[period].stations = st;
   writeFileAtomic(out, JSON.stringify(file));
   console.log(`${out}: ${period} stations, ${st.runs} runs; ${Object.entries(st.hits).map(([id, h]) => `${id} ${(Object.values(h).reduce((a, b) => a + b, 0) / st.runs).toFixed(1)}/h`).join(', ')}`);
