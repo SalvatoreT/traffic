@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { featureIndex, routeFeatures, type Assignment, type Feature } from './lib/assign';
 import { assigned, DEFAULT_FIT, fitToCounts, type Constraint, type FlowType } from './lib/fit-counts';
 import { throughMembership, type ThroughMeasured } from './lib/demand-fit';
+import { throughStats } from './lib/assess';
 import { pooledMembership, throughTargetId, type SelectOd } from './lib/through-membership';
 
 // Three flows on a two-link network: flow 0 uses link 0, flow 1 uses links 0 and 1, flow 2 uses link 1. One assignment, every route share 1.
@@ -67,6 +68,16 @@ describe('through membership', () => {
     expect(use[1]).toBe(1);
     // 60 counted less 40 pinned = 20 over 100 plain trips
     expect(use[0]).toBeCloseTo(0.2);
+  });
+});
+
+describe('through figures over seeds', () => {
+  it('gives the standard error of the seed mean', () => {
+    const run = (v: number) => ({ throughCheck: [{ block: 'A St SB', expectedThroughLow: 10, expectedThroughHigh: 20, modeledThrough: v }] }) as never;
+    const [q] = throughStats([run(18), run(22), run(20), run(24)]);
+    expect(q.mean).toBe(21);
+    expect(q.se).toBeCloseTo(Math.sqrt(20 / 3 / 4));
+    expect(q.inside).toBe(false);
   });
 });
 

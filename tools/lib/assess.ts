@@ -197,14 +197,15 @@ export function travelTimes(runs: SeedRun[], net: TravelNet, specs: TravelTimeSp
 }
 
 /** Through cars per block, seed mean, against the observed range (whole-street cars to block volume less the freeway end); only blocks with a range. */
-export function throughStats(runs: SeedRun[]): { block: string; low: number; high: number; mean: number; inside: boolean; fitted: boolean }[] {
+export function throughStats(runs: SeedRun[]): { block: string; low: number; high: number; mean: number; se: number; inside: boolean; fitted: boolean }[] {
   const first = runs.find((r) => r.throughCheck?.length);
   if (!first) return [];
   return first.throughCheck!.flatMap((t, i) => {
     if (t.expectedThroughLow == null || t.expectedThroughHigh == null) return [];
     const vals = runs.map((r) => r.throughCheck?.[i]?.modeledThrough ?? NaN).filter(Number.isFinite);
     const mean = vals.reduce((a, b) => a + b, 0) / (vals.length || 1);
-    return [{ block: t.block, low: t.expectedThroughLow, high: t.expectedThroughHigh, mean, inside: mean >= t.expectedThroughLow && mean <= t.expectedThroughHigh, fitted: !!t.fitted }];
+    const se = vals.length > 1 ? Math.sqrt(vals.reduce((a, v) => a + (v - mean) ** 2, 0) / (vals.length - 1) / vals.length) : NaN;
+    return [{ block: t.block, low: t.expectedThroughLow, high: t.expectedThroughHigh, mean, se, inside: mean >= t.expectedThroughLow && mean <= t.expectedThroughHigh, fitted: !!t.fitted }];
   });
 }
 
