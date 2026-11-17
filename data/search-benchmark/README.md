@@ -66,5 +66,6 @@ target/release/search_bench decide --development colby-north-pm \
 
 - `search_bench coverage --case FILE` runs one baseline with select-link records and reports, for each case candidate, whether the production generator offers it and why not, plus what the bypass supplement adds (`--locations`, default 40).
 - `search_bench evidence --case colby-north-pm.json --projection <change>/evidence/screen-results.projection.json` replays the production beam on the audit's frozen screening table and checks its visited sequences and finalists.
+- `search_bench evidence-methods --case colby-north-pm.json --projection ...` replays every method on the audit's screening table (screening measures only).
 - `search_bench spot --case colby-north-pm.json --projection ... --sets 1.7.9,2.4.5` reruns a few of the audit's packages and compares the numbers.
 - `search_bench reproduce --case colby-north-pm.json --partial target/benchmark/colby-north-pm.results.partial.jsonl --projection ...` compares the whole first screening setting with the audit once the table has run it.

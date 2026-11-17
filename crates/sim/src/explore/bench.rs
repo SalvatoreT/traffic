@@ -676,6 +676,12 @@ pub fn empty_baseline(study: &Study) -> Baseline {
 /// in order, and its finalists with the recorded ones. No simulation.
 pub fn replay_evidence(study: &Study, case: &Case, proj: &Value) -> Result<Value, String> {
     let cands = case_cands(study, case)?;
+    let table = Arc::new(table_from_projection(proj)?);
+    replay_on(study, case, &cands, table, proj)
+}
+
+/// The audit's frozen screening evaluations as a table (access rejections, which start with "strands", cost nothing).
+pub fn table_from_projection(proj: &Value) -> Result<ScreenTable, String> {
     let mut rows = HashMap::new();
     for r in proj["evaluations"].as_array().ok_or("no evaluations")? {
         let set: Vec<u16> = serde_json::from_value(r["set"].clone()).map_err(|e| e.to_string())?;
@@ -693,7 +699,11 @@ pub fn replay_evidence(study: &Study, case: &Case, proj: &Value) -> Result<Value
         };
         rows.insert(set, (e, charged));
     }
-    let table = Arc::new(ScreenTable { rows });
+    Ok(ScreenTable { rows })
+}
+
+fn replay_on(study: &Study, case: &Case, cands: &[Cand], table: Arc<ScreenTable>, proj: &Value) -> Result<Value, String> {
+    let cands = cands.to_vec();
     let p = case.params(1);
     let base = empty_baseline(study);
     let ctx = Ctx { study, p: &p, cands: &cands, base: &base };
@@ -1179,4 +1189,39 @@ pub fn compare_with_evidence(study: &Study, case: &Case, table: ScreenTable, pro
     v["replay"] = json!({"matches": rep["matches"], "stages": rep["stages"], "finalistsMatch": rep["finalistsMatch"], "charged": rep["charged"], "missedNondominated": rep["missedNondominated"], "oracleNondominated": rep["oracleNondominated"]});
     v["identical"] = json!(missing == 0 && v["rejectionsDiffer"].as_array().map_or(false, |a| a.is_empty()) && worst.iter().all(|&w| w == 0.0) && rep["matches"] == json!(true));
     Ok(v)
+}
+
+/// Screening-only replay of every method on a screening table (no full-hour runs): charged runs, best-score gap and nondominated coverage.
+pub fn methods_on_table(study: &Study, case: &Case, table: Arc<ScreenTable>) -> Value {
+    let cands = case_cands(study, case).expect("case candidates");
+    let pairs = super::bypass::coordinated_pairs(study, &case.period, &cands);
+    let known = case.known_sets().expect("known packages");
+    let nd = oracle_nd(&table);
+    let oracle_best = table.rows.values().filter(|r| r.0.valid()).map(|r| r.0.score).fold(f64::NEG_INFINITY, f64::max);
+    let mut out = Vec::new();
+    for (mode, kn) in [("cold", Vec::new()), ("known", known)] {
+        if mode == "known" && kn.is_empty() {
+            continue;
+        }
+        let (mut beam_cost, mut all_cost) = (0, 0);
+        for (id, moves, budget) in methods() {
+            let (st, rec) = run_method(study, case, &cands, table.clone(), &kn, &pairs, &moves, budget, beam_cost, all_cost);
+            if budget == Budget::Natural {
+                beam_cost = st.used;
+            }
+            if id == "beam+all@extra" {
+                all_cost = st.used;
+            }
+            let base = empty_baseline(study);
+            let p = case.params(1);
+            let ctx = Ctx { study, p: &p, cands: &cands, base: &base };
+            let fin: Vec<Vec<u16>> = finalists(&ctx, &st, &kn).into_iter().map(|i| st.evals[i].set.clone()).collect();
+            let visited: Vec<&Vec<u16>> = st.evals.iter().map(|e| &e.set).collect();
+            let best = st.evals.iter().filter(|e| e.valid()).map(|e| e.score).fold(f64::NEG_INFINITY, f64::max);
+            out.push(json!({"mode": mode, "method": id, "charged": st.used, "screenGap": oracle_best - best,
+                "ndVisited": nd.iter().filter(|s| visited.contains(s)).count(), "ndForwarded": nd.iter().filter(|s| fin.contains(s)).count(), "nd": nd.len(),
+                "missed": nd.iter().filter(|s| !visited.contains(s)).collect::<Vec<_>>(), "knownCharged": rec["knownCharged"]}));
+        }
+    }
+    json!({"case": case.id, "scope": "screening table only; no full-hour runs", "runs": out})
 }

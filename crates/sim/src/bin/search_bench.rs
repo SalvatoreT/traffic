@@ -9,6 +9,7 @@
 //!   search_bench analyze  --case FILE --results FILE --out FILE   replay every search method and screening setting against the table
 //!   search_bench confirm  --case FILE --results FILE --out FILE [--jobs N]   freeze the shortlist, then run it on the case's confirmation seeds
 //!   search_bench decide   --analyses A,B,C --development CASE [--confirm X,Y,Z] [--out FILE]   apply the frozen adoption rules (design D9)
+//!   search_bench evidence-methods --case FILE --projection FILE   every method on the audit's table (screening measures only)
 //!   search_bench spot     --case FILE --projection FILE --sets 1.7.9,2.4.5   rerun some of the audit's packages and compare
 //! Every mode takes --root DIR (default: the current directory).
 
@@ -117,6 +118,11 @@ fn main() {
             if v["matches"] != json!(true) {
                 std::process::exit(1);
             }
+        }
+        "evidence-methods" => {
+            let proj: Value = serde_json::from_slice(&std::fs::read(opt.get("projection").unwrap_or_else(|| die("--projection is required"))).unwrap_or_else(|e| die(&e.to_string()))).unwrap_or_else(|e| die(&e.to_string()));
+            let table = std::sync::Arc::new(bench::table_from_projection(&proj).unwrap_or_else(|e| die(&e)));
+            println!("{}", serde_json::to_string_pretty(&bench::methods_on_table(&study, &case, table)).unwrap());
         }
         "spot" => {
             let proj: Value = serde_json::from_slice(&std::fs::read(opt.get("projection").unwrap_or_else(|| die("--projection is required"))).unwrap_or_else(|e| die(&e.to_string()))).unwrap_or_else(|e| die(&e.to_string()));
