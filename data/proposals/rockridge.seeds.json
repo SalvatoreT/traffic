@@ -15,17 +15,6 @@
       "score": null
     },
     {
-      "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p3cxtt7~mn,9q9p3cq6m9,120.300~mn,9q9p3cx02b,125",
-      "source": "search",
-      "note": "published by an earlier search (group charter, option p2, 2026-11-15 through-car change -35.3%)",
-      "added": "2026-11-15",
-      "lastPublished": "2026-11-15",
-      "group": "charter",
-      "size": 3,
-      "changePct": -35.3,
-      "score": null
-    },
-    {
       "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2,175.355~mn,9q9p3fr7b5~mn,9q9p641p03,80.260~ow,9q9p3fp3vc,355",
       "source": "search",
       "note": "published by an earlier search (group charter, option p3, 2026-11-15 through-car change -49.6%)",
@@ -221,6 +210,17 @@
       "group": "unconstrained",
       "size": 2,
       "changePct": -27.9,
+      "score": null
+    },
+    {
+      "link": "#v1;a=rockridge;p=pm_peak;s=dd,9q9p3fpkk7,41~mn,9q9p642ut2,175.355~mn,9q9p3cq6m9,120.300~mn,9q9p3cx02b",
+      "source": "search",
+      "note": "published by an earlier search (group unconstrained, option p3, 2026-11-17 through-car change -46.2%)",
+      "added": "2026-11-17",
+      "lastPublished": "2026-11-17",
+      "group": "unconstrained",
+      "size": 4,
+      "changePct": -46.2,
       "score": null
     }
   ]
