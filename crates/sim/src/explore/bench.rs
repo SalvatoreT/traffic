@@ -70,6 +70,9 @@ pub struct Case {
     /// Known packages (candidate ids) given to every competitor in the known-package runs.
     #[serde(default)]
     pub known: Vec<Vec<String>>,
+    /// Named candidate subsets (ids), such as those the production generator offers: the analysis reports the best package inside each.
+    #[serde(default)]
+    pub coverage: BTreeMap<String, Vec<String>>,
 }
 
 impl Case {
@@ -852,8 +855,27 @@ pub fn analyze(study: &Study, case: &Case, res: &Results) -> Value {
             }
         }
     }
+    let primary = screen_table(res, case, &case.screen[0]);
+    let groups: Vec<Value> = case
+        .coverage
+        .iter()
+        .map(|(name, ids)| {
+            let ok: Vec<u16> = ids.iter().filter_map(|id| case.candidates.iter().position(|c| &c.id == id).map(|i| i as u16)).collect();
+            let inside = |s: &Vec<u16>| s.iter().all(|c| ok.contains(c));
+            let best = |rows: Vec<&Eval>| rows.into_iter().filter(|e| e.valid() && inside(&e.set)).max_by(|a, b| a.score.total_cmp(&b.score).then(b.set.cmp(&a.set))).map(|e| json!({"set": e.set, "score": e.score}));
+            let fl: Vec<&Eval> = full.values().filter(|e| inside(&e.set)).collect();
+            let floor = detour_floor(&full.values().collect::<Vec<_>>());
+            json!({
+                "group": name, "candidates": ok,
+                "screenBest": best(primary.rows.values().map(|r| &r.0).collect()),
+                "fullHourBest": best(full.values().collect()),
+                "objectives": objectives::ALL.iter().map(|&o| json!({"objective": o.id(), "best": objective_best(&cands, &fl, o, floor).map(|e| json!({"set": e.set, "score": e.score, "detourS": e.detour_s}))})).collect::<Vec<_>>(),
+            })
+        })
+        .collect();
     json!({
         "schema": "search-benchmark-analysis-1",
+        "coverageGroups": groups,
         "identity": res.identity,
         "case": case.id,
         "period": case.period,

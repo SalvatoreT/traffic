@@ -87,6 +87,11 @@ pub struct Params {
     /// Known packages from the area's seeds file that decoded on this network, and those that did not. Each is rechecked in full and starts part of the beam.
     pub known: Vec<seeds::Prepared>,
     pub known_dropped: Vec<seeds::Dropped>,
+    /// EXPERIMENTAL (change improve-proposal-search-coverage): supplementary closure locations on the legal bypasses of the generated
+    /// candidates (`bypass::supplement`); 0 is off, the default.
+    pub bypass_locations: usize,
+    /// EXPERIMENTAL: supplementary search moves after the beams (`supplement::run`); empty is off, the default.
+    pub supplement: Vec<supplement::Move>,
     pub out: Option<PathBuf>,
     pub report: Option<PathBuf>,
 }
@@ -116,6 +121,8 @@ impl Params {
             warm_start: Vec::new(),
             known: Vec::new(),
             known_dropped: Vec::new(),
+            bypass_locations: 0,
+            supplement: Vec::new(),
             out: None,
             report: None,
         }

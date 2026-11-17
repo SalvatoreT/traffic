@@ -102,16 +102,17 @@ pub struct SupplementReport {
     pub log: Vec<Value>,
 }
 
-/// Supplementary closure candidates on the legal bypasses of `base`'s candidates. A candidate's bypass locations are ranked by how many of
-/// the movements it closes have a bypass through them, then by the smallest extra cost, then by location; locations where a base candidate
-/// already acts are left out. At most `PER_CANDIDATE` per candidate and `max_locations` in all, taken in turn from the candidates in list
-/// order. Deterministic for the same inputs.
+/// Supplementary closure candidates on the legal bypasses of `base`'s candidates. Each candidate's bypass locations are ranked by how many
+/// of the movements it closes have a bypass through them, then by the smallest extra cost; locations where a base candidate already acts
+/// are left out, and each candidate keeps `PER_CANDIDATE`. The `max_locations` kept in all are those on the bypasses of the most candidates
+/// (ASSUMPTION: unweighted legal connectivity, no traffic volume), then of the most closed movements, then with the cheapest bypass.
+/// Deterministic for the same inputs.
 pub fn supplement(study: &Study, period: &str, base: &[Cand], profile: &Profile, max_locations: usize) -> SupplementReport {
     let covered = |l: &Loc| match *l {
         Loc::Block(b) => base.iter().any(|c| c.block == Some(b)),
         Loc::Node(n) => base.iter().any(|c| c.block.is_none() && c.kind != "turn_ban" && c.kind != "slow_street" && c.nodes == vec![n]),
     };
-    let mut per: Vec<(usize, Vec<(Loc, Bypass)>)> = Vec::new();
+    let mut per: Vec<(usize, Vec<(Loc, usize, Bypass)>)> = Vec::new();
     let mut log = Vec::new();
     for (i, c) in base.iter().enumerate() {
         if !CLOSURE_KINDS.contains(&c.kind) && c.kind != "one_way" && c.kind != "turn_ban" {
@@ -136,24 +137,25 @@ pub fn supplement(study: &Study, period: &str, base: &[Cand], profile: &Profile,
         locs.truncate(PER_CANDIDATE);
         log.push(json!({"candidate": i, "label": c.label, "bypasses": bs.len(), "locations": locs.iter().map(|(l, m, _)| json!({"location": format!("{l:?}"), "closedMovements": m})).collect::<Vec<_>>()}));
         if !locs.is_empty() {
-            per.push((i, locs.into_iter().map(|(l, _, b)| (l, b)).collect()));
+            per.push((i, locs));
         }
     }
-    let mut chosen: Vec<(Loc, usize, Bypass)> = Vec::new();
-    let mut round = 0;
-    while chosen.len() < max_locations && per.iter().any(|(_, l)| l.len() > round) {
-        for (i, locs) in &per {
-            if chosen.len() >= max_locations {
-                break;
-            }
-            if let Some((l, b)) = locs.get(round) {
-                if !chosen.iter().any(|x| x.0 == *l) {
-                    chosen.push((*l, *i, b.clone()));
-                }
+    // Across candidates: a location on the bypasses of more closures first, then the more closed movements, then the cheaper bypass.
+    let mut score: BTreeMap<Loc, (usize, usize, f64, usize, Bypass)> = BTreeMap::new();
+    for (i, locs) in &per {
+        for (l, m, b) in locs {
+            let extra = b.cost_s - b.base_cost_s;
+            let e = score.entry(*l).or_insert((0, 0, f64::INFINITY, *i, b.clone()));
+            e.0 += 1;
+            e.1 += m;
+            if extra < e.2 {
+                e.2 = extra;
             }
         }
-        round += 1;
     }
+    let mut ranked: Vec<(Loc, (usize, usize, f64, usize, Bypass))> = score.into_iter().collect();
+    ranked.sort_by(|x, y| y.1 .0.cmp(&x.1 .0).then(y.1 .1.cmp(&x.1 .1)).then(x.1 .2.total_cmp(&y.1 .2)).then(x.0.cmp(&y.0)));
+    let chosen: Vec<(Loc, usize, Bypass)> = ranked.into_iter().take(max_locations).map(|(l, (_, _, _, i, b))| (l, i, b)).collect();
     let mut hot = Hotspots { block_ct: vec![0.0; study.idx.blocks.len()], node_ct: vec![0.0; study.net.nodes.len()], mv_ct: BTreeMap::new() };
     for (k, (l, _, _)) in chosen.iter().enumerate() {
         let w = (chosen.len() - k) as f64;

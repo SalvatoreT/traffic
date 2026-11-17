@@ -119,7 +119,8 @@ fn small_case(c_d: u32, e_f: u32, a_c: u32) -> Case {
             spec("ow", Intervention { link: Some(c_d), ..iv("one_way") }),
             spec("slow", Intervention { link: Some(a_c), ..iv("slow_street") }),
         ],
-        known: vec![],
+        known: vec![vec!["f1".into(), "slow".into()]],
+        coverage: BTreeMap::from([("filters".to_string(), vec!["f1".to_string(), "f2".to_string()])]),
     }
 }
 
@@ -202,6 +203,41 @@ fn table_evaluation_is_the_screening_evaluation_and_replay_is_the_live_search() 
     bench::production_beam(&ctx, &mut again, &[]);
     assert_eq!(again.used, replay.used);
     assert!(again.evals.len() < shared.rows.len() || shared.rows.len() == again.evals.len(), "a replay sees only what it asks for");
+
+    // Analysis, decision and confirmation run end to end and are deterministic.
+    let a1 = bench::analyze(&s, &case, &res);
+    let a2 = bench::analyze(&s, &case, &res);
+    assert_eq!(a1, a2);
+    let runs = a1["runs"].as_array().unwrap();
+    assert_eq!(runs.iter().filter(|r| r["setting"] == "8m-x1").count(), 2 * bench::methods().len(), "every method, cold and known");
+    assert_eq!(runs.iter().filter(|r| r["setting"] == "8m-x3").count(), 2, "the unchanged beam on the other setting");
+    let beam = runs.iter().find(|r| r["method"] == "beam" && r["mode"] == "cold" && r["setting"] == "8m-x1").unwrap();
+    for r in runs.iter().filter(|r| r["setting"] == "8m-x1" && r["mode"] == "cold") {
+        let m = r["method"].as_str().unwrap();
+        let (c, b) = (r["charged"].as_u64().unwrap(), beam["charged"].as_u64().unwrap());
+        if m.ends_with("@equal") && m != "wide@equal" {
+            assert!(c <= b, "{m}: an equal-budget run costs no more than the beam ({c} > {b})");
+        }
+        if m.ends_with("@extra") {
+            assert!(c <= b + bench::allowance(b as usize) as u64, "{m}");
+        }
+    }
+    assert_eq!(a1["coverageGroups"][0]["group"], "filters");
+    let mut other = a1.clone();
+    other["case"] = serde_json::json!("held-out");
+    let d = bench::decide(&[a1.clone(), other], "synthetic", &HashMap::new());
+    assert_eq!(d["heldOut"], serde_json::json!(["held-out"]));
+    assert!(d["search"]["challengers"].as_array().unwrap().len() == 4);
+    let conf = dir.join("c.json");
+    bench::confirm(&s, &case, &res, &conf, 3).unwrap();
+    let shortlist = std::fs::read(dir.join("c.shortlist.json")).unwrap();
+    bench::confirm(&s, &case, &res, &conf, 3).unwrap();
+    assert_eq!(std::fs::read(dir.join("c.shortlist.json")).unwrap(), shortlist, "the frozen shortlist is not rewritten");
+    let c: serde_json::Value = serde_json::from_slice(&std::fs::read(&conf).unwrap()).unwrap();
+    assert!(c["packages"].as_array().unwrap().len() >= 2, "baseline and at least one package");
+    let mut bad = case.clone();
+    bad.confirm = Some(RunSpec { minutes: 12.0, seeds: vec![2, 11] });
+    assert!(bench::confirm(&s, &bad, &res, &dir.join("x.json"), 1).is_err(), "confirmation seeds may not overlap the search's");
     let _ = std::fs::remove_dir_all(&dir);
 }
 
