@@ -62,6 +62,8 @@ export interface AreaEntry {
   experimentalPeriods?: string[];
   /** Proposals file; defaults to `/data/<id>.proposals.json`. */
   proposals?: string;
+  /** Left out of the public list and never the default; opened only by a link that names it. */
+  preview?: boolean;
 }
 
 export type Intervention =

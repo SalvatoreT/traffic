@@ -205,6 +205,114 @@ export function classify(tags: Record<string, string>): LinkClass | null {
   return cls;
 }
 
+/** Synthetic node ids for extent cuts start here (negative, below the roundabout centers, which are minus an OSM way id). */
+const CUT_ID0 = -2e12;
+/** A crossing closer than this to the inside node (m) is not split: that node is the gate. */
+const CUT_MIN_M = 1;
+
+/**
+ * Model extent (area config `extent`). `has` says whether an OSM node is in it (polygon, network buffer around the study area, or listed);
+ * `split` inserts a node where a way segment leaves the polygon, so the gate sits on the extent edge and not at the last junction inside.
+ */
+export function modelExtent(cfg: AreaConfig, nodes: Map<number, OsmNode>, ways: OsmWay[], proj: ReturnType<typeof makeProjection>, studyPoly: Pt[]) {
+  const ext = cfg.extent;
+  if (!ext) return null;
+  const poly: Pt[] | null = ext.polygon?.length ? ext.polygon.map(([lon, lat]) => proj.fwd(lon, lat)) : null;
+  const keep = new Set<number>(ext.include?.nodes ?? []);
+  const incWays = new Set(ext.include?.ways ?? []);
+  for (const w of ways) if (incWays.has(w.id)) for (const id of w.nodes) keep.add(id);
+  const xy = (id: number) => { const n = nodes.get(id)!; return proj.fwd(n.lon, n.lat); };
+  if (ext.bufferM && ext.bufferM > 0) {
+    const adj = new Map<number, [number, number][]>();
+    for (const w of ways) {
+      if (!classify(w.tags)) continue;
+      for (let i = 1; i < w.nodes.length; i++) {
+        const [a, b] = [w.nodes[i - 1], w.nodes[i]];
+        if (!nodes.has(a) || !nodes.has(b)) continue;
+        const pa = xy(a), pb = xy(b);
+        const d = Math.hypot(pa[0] - pb[0], pa[1] - pb[1]);
+        (adj.get(a) ?? adj.set(a, []).get(a)!).push([b, d]);
+        (adj.get(b) ?? adj.set(b, []).get(b)!).push([a, d]);
+      }
+    }
+    const dist = new Map<number, number>();
+    const heap: [number, number][] = [];
+    const push = (id: number, d: number) => {
+      heap.push([d, id]);
+      for (let i = heap.length - 1; i > 0; ) { const p = (i - 1) >> 1; if (heap[p][0] <= heap[i][0]) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; }
+    };
+    const pop = () => {
+      const top = heap[0], last = heap.pop()!;
+      if (heap.length) {
+        heap[0] = last;
+        for (let i = 0; ; ) { const l = 2 * i + 1, r = l + 1; let m = i; if (l < heap.length && heap[l][0] < heap[m][0]) m = l; if (r < heap.length && heap[r][0] < heap[m][0]) m = r; if (m === i) break; [heap[m], heap[i]] = [heap[i], heap[m]]; i = m; }
+      }
+      return top;
+    };
+    for (const id of adj.keys()) {
+      const p = xy(id);
+      if (pointInPolygon(p, studyPoly) || distToRing(p, studyPoly) <= PARAMS.boundaryReachM) (dist.set(id, 0), push(id, 0));
+    }
+    while (heap.length) {
+      const [d, id] = pop();
+      if (d > (dist.get(id) ?? Infinity) || d > ext.bufferM) continue;
+      keep.add(id);
+      for (const [v, w] of adj.get(id) ?? []) if (d + w < (dist.get(v) ?? Infinity)) (dist.set(v, d + w), push(v, d + w));
+    }
+  }
+  const inPoly = (id: number) => !!poly && pointInPolygon(xy(id), poly);
+  const has = (n: OsmNode) => keep.has(n.id) || inPoly(n.id);
+  const cuts = new Map<string, number>();
+  const split = (ids: number[], inside: (n: OsmNode) => boolean): number[] => {
+    if (!poly) return ids;
+    let out: number[] | null = null;
+    for (let i = 1; i < ids.length; i++) {
+      const a = nodes.get(ids[i - 1]), b = nodes.get(ids[i]);
+      let add: number | null = null;
+      if (a && b && inside(a) !== inside(b)) {
+        const [pin, pout, kin, kout] = inside(a) ? [a, b, ids[i - 1], ids[i]] : [b, a, ids[i], ids[i - 1]];
+        if (inPoly(kin) && !keep.has(kin) && !keep.has(kout)) {
+          const key = `${kin}>${kout}`;
+          add = cuts.get(key) ?? null;
+          if (add === null) {
+            const P = proj.fwd(pin.lon, pin.lat), Q = proj.fwd(pout.lon, pout.lat);
+            const t = firstCrossing(P, Q, poly);
+            const len = Math.hypot(Q[0] - P[0], Q[1] - P[1]);
+            if (t !== null && t * len >= CUT_MIN_M) {
+              const id = CUT_ID0 - cuts.size;
+              const [lon, lat] = proj.inv(P[0] + t * (Q[0] - P[0]), P[1] + t * (Q[1] - P[1]));
+              nodes.set(id, { type: 'node', id, lon, lat });
+              keep.add(id);
+              cuts.set(key, id);
+              add = id;
+            }
+          }
+        }
+      }
+      if (add !== null) (out ??= ids.slice(0, i)).push(add, ids[i]);
+      else if (out) out.push(ids[i]);
+    }
+    return out ?? ids;
+  };
+  return { has, split };
+}
+
+/** Smallest t in (0, 1] at which the segment P→Q crosses an edge of `poly`, or null. */
+function firstCrossing(P: Pt, Q: Pt, poly: Pt[]): number | null {
+  let best: number | null = null;
+  const r = [Q[0] - P[0], Q[1] - P[1]];
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const A = poly[j], B = poly[i];
+    const s = [B[0] - A[0], B[1] - A[1]];
+    const den = r[0] * s[1] - r[1] * s[0];
+    if (Math.abs(den) < 1e-12) continue;
+    const t = ((A[0] - P[0]) * s[1] - (A[1] - P[1]) * s[0]) / den;
+    const u = ((A[0] - P[0]) * r[1] - (A[1] - P[1]) * r[0]) / den;
+    if (t > 0 && t <= 1 && u >= 0 && u <= 1 && (best === null || t < best)) best = t;
+  }
+  return best;
+}
+
 export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network; stats: BuildStats } {
   const stats: BuildStats = {
     promotedSignals: 0,
@@ -258,7 +366,10 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
       for (const m of e.members ?? []) if (m.type === 'way') routeWays.add(m.ref);
     } else if (e.type === 'relation' && e.tags?.type === 'restriction') restrictions.push(e);
   }
-  const inside = (n: OsmNode) => n.lat >= minLat && n.lat <= maxLat && n.lon >= minLon && n.lon <= maxLon;
+  const inBox = (n: OsmNode) => n.lat >= minLat && n.lat <= maxLat && n.lon >= minLon && n.lon <= maxLon;
+  const studyPoly0: Pt[] = cfg.studyArea.map(([lon, lat]) => proj.fwd(lon, lat));
+  const ext = modelExtent(cfg, nodes, ways, proj, studyPoly0);
+  const inside = (n: OsmNode) => inBox(n) && (!ext || ext.has(n));
   const nodeXY = new Map<number, Pt>();
   const xyOf = (id: number): Pt => {
     let p = nodeXY.get(id);
@@ -300,6 +411,10 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
       if (isRing(way) && way.nodes.some((id) => alias.has(id))) continue;
       const mapped = way.nodes.map((id) => alias.get(id) ?? id).filter((id, i, a) => i === 0 || id !== a[i - 1]);
       if (mapped.length !== way.nodes.length || mapped.some((id, i) => id !== way.nodes[i])) way = { ...way, nodes: mapped };
+    }
+    if (ext) {
+      const cut = ext.split(way.nodes, inside);
+      if (cut !== way.nodes) way = { ...way, nodes: cut };
     }
     const ins = way.nodes.map((id) => {
       const n = nodes.get(id);

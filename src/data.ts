@@ -59,7 +59,7 @@ export async function loadArea(preferred?: string, forceFixture = false, onProgr
     if (!(err.kind === 'parse' || (err.kind === 'http' && err.status === 404))) throw err;
     console.info('Using synthetic fixture area:', err.message);
   }
-  const entry = areas?.find((a) => a.id === preferred) ?? areas?.[0];
+  const entry = areas?.find((a) => a.id === preferred) ?? areas?.find((a) => !a.preview) ?? areas?.[0];
   if (!entry) return buildFixture();
 
   const base = (f: string) => (f.startsWith('/') || f.startsWith('http') ? f : `/data/${f}`);

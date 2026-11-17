@@ -111,6 +111,14 @@ export interface AreaConfig {
   osmTagOverrides?: Record<string, { tags: Record<string, string>; source: string }>;
   /** Where cars cleared from gridlock count against the stability rule: the study area plus nodes within `bufferM` of it along the network (read by `calibrate`). */
   judgedZone?: { bufferM: number; source: string };
+  /**
+   * How far the simulated network extends beyond the study area. Absent: everything in `bbox`. A node is in the model when it lies in `bbox` and
+   * in `polygon` (lon, lat ring), or within `bufferM` of the study area along the network, or on a way or node listed in `include`. A way that
+   * leaves the polygon is cut where it crosses the polygon edge and a gate is placed there.
+   */
+  extent?: { polygon?: [number, number][]; bufferM?: number; include?: { ways?: number[]; nodes?: number[] }; source?: string };
+  /** A preview area is left out of the public area list and the app's default; it is reached by a link that names it. */
+  preview?: boolean;
   calibration?: { status: 'uncalibrated' | 'calibrated'; note?: string; /** Limits of the calibration, in full sentences, shown on the Sources page and beside the banner. */ caveat?: string; defaultPeriod?: string; experimentalPeriods?: string[] };
 }
 

@@ -102,10 +102,13 @@ function main() {
       center,
       zoom: cfg.zoom ?? 15,
       ...(cfg.calibration ? { calibration: cfg.calibration } : {}),
+      ...(cfg.preview ? { preview: true } : {}),
       ...(existsSync(resolve(outDir, `${cfg.id}.noise.json`)) ? { noise: `/data/${cfg.id}.noise.json` } : {}),
     });
   }
-  writeFileAtomic(resolve(outDir, 'areas.json'), JSON.stringify(manifest, null, 2) + '\n');
+  // Preview areas go last so that the first entry, the app's default, stays a public one.
+  const ordered = [...manifest.filter((m) => !(m as { preview?: boolean }).preview), ...manifest.filter((m) => (m as { preview?: boolean }).preview)];
+  writeFileAtomic(resolve(outDir, 'areas.json'), JSON.stringify(ordered, null, 2) + '\n');
 }
 
 if (process.argv[1]?.endsWith('import-osm.ts')) main();
