@@ -1,0 +1,164 @@
+{
+  "schema": "proposal-search-evidence-manifest-1",
+  "sourceRevision": "f8197de0d6fc9d5bf02098c260cb73f4456d38fa",
+  "experimentDate": "2026-11-17",
+  "artifacts": [
+    {
+      "file": "candidates.json",
+      "sourceFile": "candidates.json",
+      "sourceSha256": "5d80919fa160c06e89cdb813b7961df3a7496938adf15f1d471ede0321edb133",
+      "storedSha256": "5d80919fa160c06e89cdb813b7961df3a7496938adf15f1d471ede0321edb133",
+      "transform": "byte-identical"
+    },
+    {
+      "file": "frozen-inputs.json",
+      "sourceFile": "frozen-inputs.json",
+      "sourceSha256": "2284ba62f9f79019b11c47fea983937e58491def204313d1a7fd093f920a1397",
+      "storedSha256": "2284ba62f9f79019b11c47fea983937e58491def204313d1a7fd093f920a1397",
+      "transform": "byte-identical"
+    },
+    {
+      "file": "description.json",
+      "sourceFile": "description.json",
+      "sourceSha256": "1680cba33373bfa353da09bca09a0a1d18ade3f611f5a48e0f757753ee03b47c",
+      "storedSha256": "1680cba33373bfa353da09bca09a0a1d18ade3f611f5a48e0f757753ee03b47c",
+      "transform": "byte-identical"
+    },
+    {
+      "file": "analysis-summary.json",
+      "sourceFile": "analysis-summary.json",
+      "sourceSha256": "8954102778a8105a0b493e4e8dd120d810af7dea9a3bdcfcbe6d943025c99e22",
+      "storedSha256": "8954102778a8105a0b493e4e8dd120d810af7dea9a3bdcfcbe6d943025c99e22",
+      "transform": "byte-identical"
+    },
+    {
+      "file": "confirmation-selection.json",
+      "sourceFile": "confirmation-selection.json",
+      "sourceSha256": "05d8947f65b1a6b7c2924e512018f07e349dd3c59e9346b01466d3bf145ef420",
+      "storedSha256": "05d8947f65b1a6b7c2924e512018f07e349dd3c59e9346b01466d3bf145ef420",
+      "transform": "byte-identical"
+    },
+    {
+      "file": "confirmation-results.protocol.json",
+      "sourceFile": "confirmation-results.protocol.json",
+      "sourceSha256": "c2eee432299f676e3f6b7ef092a0420f87f01546bc168d6efae867ca78f660e0",
+      "storedSha256": "c2eee432299f676e3f6b7ef092a0420f87f01546bc168d6efae867ca78f660e0",
+      "transform": "byte-identical"
+    },
+    {
+      "file": "search-path-analysis.json",
+      "sourceFile": "search-path-analysis.json",
+      "sourceSha256": "13289d80b10a74975332987346b831dbe9eae8c24ca2ec7becdd6e57b636829f",
+      "storedSha256": "13289d80b10a74975332987346b831dbe9eae8c24ca2ec7becdd6e57b636829f",
+      "transform": "byte-identical"
+    },
+    {
+      "file": "confirmation-results.json",
+      "sourceFile": "confirmation-results.json",
+      "sourceSha256": "ac6a2d81530d99dd9ea7e4aa51f493991ae5e77c782ea25d9905de7d7c1fa51b",
+      "storedSha256": "1dd9d6fa87fe6a7391c6e4b5c47c10b056bc2f79f2c112be67b8251c3337c369",
+      "transform": "JSON whitespace compacted; parsed content unchanged"
+    },
+    {
+      "file": "screen-results.projection.json",
+      "sourceFile": "screen-results.json",
+      "sourceSha256": "5a140a2a9644f7d91db3bec059dc5c9b12394866f68ba7ce9018d09b2ca5b455",
+      "storedSha256": "765c4ceca54c4989d4972a1dd06beb501aa956fea4e6ecccfd793afd078aba47",
+      "transform": {
+        "schema": "screen-results-evidence-projection-1",
+        "sourceSha256": "5a140a2a9644f7d91db3bec059dc5c9b12394866f68ba7ce9018d09b2ca5b455",
+        "omittedPaths": [
+          "baseline.full",
+          "baseline.screen.link_flow",
+          "baseline.screen.link_through",
+          "evaluations[*].labels",
+          "evaluations[*].link",
+          "evaluations[*].rawWorstLabel",
+          "evaluations[*].worstLabel"
+        ],
+        "addedPaths": [
+          "projection",
+          "repairBlockEndpoints"
+        ],
+        "repairBlockEndpointsSource": "First link endpoints for each harm block, extracted from frozen rockridge.network.json; network SHA256 in frozen-inputs.json. This is not a routable network."
+      }
+    },
+    {
+      "file": "reproduction/harness/src/main.rs",
+      "sourceFile": "harness/src/main.rs",
+      "sourceSha256": "790e2463f9571173f2dd805e8a60faf000cee27397b758a407e76de97a4ddc4a",
+      "storedSha256": "790e2463f9571173f2dd805e8a60faf000cee27397b758a407e76de97a4ddc4a",
+      "transform": "byte-identical"
+    },
+    {
+      "file": "reproduction/harness/Cargo.toml",
+      "sourceFile": "harness/Cargo.toml",
+      "sourceSha256": "fa70a595552a5e283ee2f746257fc27996828fd73bb5540a829c84471c60f8d1",
+      "storedSha256": "fa70a595552a5e283ee2f746257fc27996828fd73bb5540a829c84471c60f8d1",
+      "transform": "byte-identical"
+    },
+    {
+      "file": "reproduction/harness/Cargo.lock",
+      "sourceFile": "harness/Cargo.lock",
+      "sourceSha256": "951be3317cdeb6124d1e06511005ad3d03f99e14dcc3e13218a53a339fa08c82",
+      "storedSha256": "951be3317cdeb6124d1e06511005ad3d03f99e14dcc3e13218a53a339fa08c82",
+      "transform": "byte-identical"
+    },
+    {
+      "file": "reproduction/confirmation/src/main.rs",
+      "sourceFile": "confirmation/src/main.rs",
+      "sourceSha256": "ad72d9354a746ca79b484590e588986e8d2af9ad1dc5612fe228f9583ce009a3",
+      "storedSha256": "ad72d9354a746ca79b484590e588986e8d2af9ad1dc5612fe228f9583ce009a3",
+      "transform": "byte-identical"
+    },
+    {
+      "file": "reproduction/confirmation/Cargo.toml",
+      "sourceFile": "confirmation/Cargo.toml",
+      "sourceSha256": "2870ae39bd1446a14c68aba59ddef1c7e311ab922a09e4a3ac8064ca367174a4",
+      "storedSha256": "2870ae39bd1446a14c68aba59ddef1c7e311ab922a09e4a3ac8064ca367174a4",
+      "transform": "byte-identical"
+    },
+    {
+      "file": "reproduction/confirmation/Cargo.lock",
+      "sourceFile": "confirmation/Cargo.lock",
+      "sourceSha256": "5f2eae0d4e24808bcf40dda0b115f17811a64cc91ebc6f0b022e346c77be9dd7",
+      "storedSha256": "5f2eae0d4e24808bcf40dda0b115f17811a64cc91ebc6f0b022e346c77be9dd7",
+      "transform": "byte-identical"
+    },
+    {
+      "file": "reproduction/analyze.py",
+      "sourceFile": "analyze.py",
+      "sourceSha256": "349dc5edbcc4f7e9a4a101ff573a6d3ee3dbe48bfb309ac378c54204fd1093e9",
+      "storedSha256": "349dc5edbcc4f7e9a4a101ff573a6d3ee3dbe48bfb309ac378c54204fd1093e9",
+      "transform": "byte-identical"
+    },
+    {
+      "file": "reproduction/path-analysis.py",
+      "sourceFile": "path-analysis.py",
+      "sourceSha256": "b15c44b332dab50593f6251a9429d56b095595321114e90b0b8abe2926a714a9",
+      "storedSha256": "b15c44b332dab50593f6251a9429d56b095595321114e90b0b8abe2926a714a9",
+      "transform": "byte-identical"
+    }
+  ],
+  "verificationRecord": {
+    "completedConfirmationRuns": 30,
+    "independentNumericalChecks": 5906,
+    "allPassed": true,
+    "scope": "Independent session recomputation from the original per-run checkpoints; this record is not a substitute for those uncommitted raw checkpoints."
+  },
+  "omittedOriginalArtifacts": [
+    "public/data/rockridge.network.json",
+    "public/data/rockridge.demand.json",
+    "public/data/areas.json",
+    "screen-results.baseline.json",
+    "screen-results.json",
+    "confirmation-results.runs/*",
+    "beam-score-snapshot.json",
+    "target/*",
+    "confirmation/target/*",
+    "report.html",
+    "make-report.py",
+    "screen.log",
+    "confirmation.log"
+  ]
+}

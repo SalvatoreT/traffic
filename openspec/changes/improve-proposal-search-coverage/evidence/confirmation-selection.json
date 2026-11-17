@@ -1,0 +1,104 @@
+{
+  "analysisScriptSha256": "349dc5edbcc4f7e9a4a101ff573a6d3ee3dbe48bfb309ac378c54204fd1093e9",
+  "baselineIncludedByRunner": true,
+  "candidateManifestSha256": "5d80919fa160c06e89cdb813b7961df3a7496938adf15f1d471ede0321edb133",
+  "demandHash": "bef51b684a8c079c",
+  "networkHash": "6a8285d5076f9ddc",
+  "schema": "search-benchmark-confirmation-selection-1",
+  "screeningResultsSha256": "5a140a2a9644f7d91db3bec059dc5c9b12394866f68ba7ce9018d09b2ca5b455",
+  "selectionProtocol": {
+    "claims": "Confirmation tests the primary core-score winners and strongest missed package only. Other objectives, non-dominated-set coverage, and full finite-space optimality remain screening-only findings.",
+    "minutes": 60,
+    "periods": [
+      "pm_peak"
+    ],
+    "seeds": [
+      201,
+      202,
+      203,
+      204,
+      205,
+      206,
+      207,
+      208,
+      209,
+      210
+    ],
+    "selection": "Before reading confirmation results, freeze the union of: (1) the valid package with highest final core score among beam-visited packages; (2) the valid package with highest final core score in the exhaustive set; (3) the valid nonempty package with highest final core score that the beam missed, if any. Break score ties lexicographically by frozen manifest-index vectors; deduplicate. The empty baseline, score zero, is eligible for (1) and (2) and is always run as the comparator. At most three nonempty packages plus baseline. No reselection on confirmation seeds."
+  },
+  "sets": [
+    {
+      "id": "beam-best",
+      "roles": [
+        "beam-best",
+        "exhaustive-best"
+      ],
+      "screening": {
+        "adjustedHarm": 22.143593539448982,
+        "candidateIds": [
+          "filter-colby-63rd-west",
+          "diverter-hillegass-63rd-1",
+          "slow-colby"
+        ],
+        "labels": [
+          "Modal filter at Colby Street and the western 63rd Street branch toward Dana",
+          "Diagonal diverter at Hillegass Avenue and 63rd Street, orientation 1 (41 degrees)",
+          "Slow Street on Colby Street (15 mph)"
+        ],
+        "largestRawAllCarIncrease": 48.0,
+        "largestRawIncreaseBlock": "Martin Street between Claremont Avenue and Ayala Avenue",
+        "reductionPct": 40.37735849056604,
+        "residentDetourSeconds": 2.8950893063872627,
+        "scenarioLink": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p3fprdr~dd,9q9p642ut2,41~ss,9q9p3cx9rf",
+        "score": 38.16299913662114,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "set": [
+        1,
+        7,
+        9
+      ]
+    },
+    {
+      "id": "strongest-missed",
+      "roles": [
+        "strongest-missed"
+      ],
+      "screening": {
+        "adjustedHarm": 42.0,
+        "candidateIds": [
+          "filter-colby-63rd-east",
+          "filter-dana-63rd",
+          "filter-hillegass-63rd"
+        ],
+        "labels": [
+          "Modal filter at Colby Street and the eastern 63rd Street branch toward Hillegass",
+          "Modal filter at Dana Street and 63rd Street",
+          "Modal filter at Hillegass Avenue and 63rd Street"
+        ],
+        "largestRawAllCarIncrease": 54.0,
+        "largestRawIncreaseBlock": "62nd Street between Colby Street and Canning Street",
+        "reductionPct": 38.490566037735846,
+        "residentDetourSeconds": 3.1674761449186235,
+        "scenarioLink": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p3fr6b9~mn,9q9p3fnqdk~mn,9q9p642ut2",
+        "score": 34.29056603773584,
+        "set": [
+          2,
+          4,
+          5
+        ]
+      },
+      "set": [
+        2,
+        4,
+        5
+      ]
+    }
+  ],
+  "simulatorFingerprint": "f0df1aabc323bca5893215e1df1afbff",
+  "sourceRevision": "f8197de0d6fc9d5bf02098c260cb73f4456d38fa"
+}

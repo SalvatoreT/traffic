@@ -1,0 +1,18 @@
+{
+  "frozenAt": "2026-11-17T04:56:20.162077+00:00",
+  "sourceRevision": "f8197de0d6fc9d5bf02098c260cb73f4456d38fa",
+  "files": {
+    "candidates.json": "5d80919fa160c06e89cdb813b7961df3a7496938adf15f1d471ede0321edb133",
+    "harness/src/main.rs": "790e2463f9571173f2dd805e8a60faf000cee27397b758a407e76de97a4ddc4a",
+    "harness/Cargo.toml": "fa70a595552a5e283ee2f746257fc27996828fd73bb5540a829c84471c60f8d1",
+    "harness/Cargo.lock": "951be3317cdeb6124d1e06511005ad3d03f99e14dcc3e13218a53a339fa08c82",
+    "target/release/search-benchmark": "1bec392fb47d6ad3c56cce3572750deac0eb4bf353ebde398733044f8357bd9b",
+    "confirmation/src/main.rs": "ad72d9354a746ca79b484590e588986e8d2af9ad1dc5612fe228f9583ce009a3",
+    "confirmation/Cargo.toml": "2870ae39bd1446a14c68aba59ddef1c7e311ab922a09e4a3ac8064ca367174a4",
+    "confirmation/Cargo.lock": "5f2eae0d4e24808bcf40dda0b115f17811a64cc91ebc6f0b022e346c77be9dd7",
+    "confirmation/target/release/search-confirmation": "f86b21e5db64318d5c6798b8a2205eedeaacf4c230a8b40179e30f68a5a9f0c5",
+    "public/data/rockridge.network.json": "6a8285d5076f9ddc9042b3a4554998e61b5427fdb8fbbbbaaa8572cd7b18f4b0",
+    "public/data/rockridge.demand.json": "bef51b684a8c079ce5e133e089df0659b422ca2ec77bd6b8f5784e38bf1bd93c",
+    "public/data/areas.json": "386731eb104a1ac7a35475d2e5952bcd2b98f6a29991a87b3f68334308477abd"
+  }
+}
