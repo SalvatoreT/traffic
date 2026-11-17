@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { allCarsByBlock, allCarsLine, allCarsPictureLine, allCarsShort, ALL_CARS_MISSING, noiseNote, streetsThatChange, throughLine } from './proposal-map';
+import { allCarsByBlock, allCarsLine, allCarsPictureLine, allCarsShort, ALL_CARS_MISSING, blockTip, changeTip, mostlyVisible, noiseNote, placeTip, streetsThatChange, throughLine } from './proposal-map';
 import type { NetIndex } from './naming';
 import type { Proposal, ProposalPicture } from './proposals';
 
@@ -40,5 +40,28 @@ describe('proposal map readouts', () => {
   });
   it('keeps the old wording when the file has no all-car picture', () => {
     expect(ALL_CARS_MISSING).toMatch(/not in the published file/);
+  });
+});
+
+describe('map tooltip', () => {
+  it('puts all cars on a second line only when the file has them', () => {
+    expect(blockTip('A St', '5 → 9 through cars', null).lines).toEqual(['5 → 9 through cars']);
+    expect(blockTip('A St', '5 → 9 through cars', '10 → 20 all cars an hour').lines).toHaveLength(2);
+  });
+  it('has no line for a change whose redirect data has not loaded', () => {
+    expect(changeTip('One-way', null)).toEqual({ title: 'One-way', lines: [] });
+    expect(changeTip('One-way', 'About 9 used this.').lines).toEqual(['About 9 used this.']);
+  });
+  it('places the tip below and right of the anchor, flips near the edges and stays inside', () => {
+    const b = { left: 0, top: 0, right: 300, bottom: 200 };
+    expect(placeTip({ x: 20, y: 20 }, { w: 100, h: 50 }, b)).toEqual({ x: 32, y: 32 });
+    expect(placeTip({ x: 280, y: 190 }, { w: 100, h: 50 }, b)).toEqual({ x: 168, y: 128 });
+    expect(placeTip({ x: 10, y: 10 }, { w: 400, h: 300 }, b)).toEqual({ x: 0, y: 0 });
+  });
+  it('knows when the map is already in view', () => {
+    const view = { left: 0, top: 0, right: 400, bottom: 800 };
+    expect(mostlyVisible({ left: 8, top: 100, right: 392, bottom: 500 }, view)).toBe(true);
+    expect(mostlyVisible({ left: 8, top: 600, right: 392, bottom: 1000 }, view)).toBe(false);
+    expect(mostlyVisible({ left: 8, top: -300, right: 392, bottom: 50 }, view)).toBe(false);
   });
 });

@@ -1,17 +1,17 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { Intervention, Network } from '../types';
 import { changeTicks, DEAD_BAND_CUTTHROUGH } from '../lib/change';
 import { badgeKey } from '../lib/legend';
 import { ATTRIBUTION, BADGE_NAME, BADGE_TEXT } from '../lib/mapexport';
 import type { NetIndex } from '../lib/naming';
 import { blockChanges, buildPicture, mismatchNote, periodNote, pathOf, pictureAlt, pictureFacts, type BlockChange } from '../lib/picture';
-import { allCarsByBlock, allCarsLine, allCarsPictureLine, allCarsShort, ALL_CARS_MISSING, noiseNote, streetsThatChange, throughLine } from '../lib/proposal-map';
+import { allCarsByBlock, allCarsLine, allCarsPictureLine, allCarsShort, ALL_CARS_MISSING, blockTip, changeTip, mostlyVisible, noiseNote, placeTip, streetsThatChange, throughLine, type Box, type TipText } from '../lib/proposal-map';
 import { seedsPhrase, signedNum, type LoadedHashes, type Proposal, type ProposalGroup } from '../lib/proposals';
 import { changeWidthFor, colorForIntensity, divergingGradient, mutedColor, type Mode } from '../lib/ramps';
 import { canTrace } from '../lib/redistribution-view';
 import { blockMeasured } from '../lib/scope';
 import { controlLabel } from '../lib/selection';
-import { itemFor, parseRedistribution, redistributionBasis, redistributionLine, redistributionRows, redistributionUrl, redistributionVerdict, type StoredItem, type StoredRedistribution } from '../lib/stored-redistribution';
+import { itemFor, parseRedistribution, redistributionBasis, redistributionLine, redistributionRows, redistributionTip, redistributionUrl, redistributionVerdict, type StoredItem, type StoredRedistribution } from '../lib/stored-redistribution';
 import { markCenter, markSvg } from '../lib/shareimage';
 import { useNear } from '../lib/useNear';
 
@@ -88,20 +88,82 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
 
   const [hover, setHover] = useState<Sel>(null);
   const [pin, setPin] = useState<Sel>(null);
-  const [tip, setTip] = useState<{ x: number; y: number } | null>(null);
+  const [back, setBack] = useState<HTMLElement | null>(null);
+  const [mapSeen, setMapSeen] = useState(true);
+  const [anchor, setAnchor] = useState<{ x: number; y: number } | null>(null);
+  const [tipAt, setTipAt] = useState<{ x: number; y: number } | null>(null);
+  const grid = useRef<HTMLDivElement>(null);
+  const tipBox = useRef<HTMLDivElement>(null);
+  const pinBy = useRef<'focus' | 'click' | null>(null);
+  const pointer = useRef<{ key: string; x: number; y: number } | null>(null);
   const sel = hover ?? pin;
-  const selectionKey = sel ? `${sel.kind}:${sel.kind === 'block' ? sel.block : sel.iv}` : null;
+  const keyOf = (s: Sel) => (s ? `${s.kind}:${s.kind === 'block' ? s.block : s.iv}` : null);
+  const selectionKey = keyOf(sel);
   useEffect(() => {
     if (readoutBox.current) readoutBox.current.scrollTop = 0;
   }, [selectionKey]);
-  const toggle = (s: Sel) => setPin((cur) => (same(cur, s) ? null : s));
-  const mouseEnter = (s: Sel) => (e: React.PointerEvent) => { if (e.pointerType === 'mouse') setHover(s); };
-  const track = (e: React.PointerEvent) => {
-    if (e.pointerType !== 'mouse' || !box.current) return;
-    const r = box.current.getBoundingClientRect();
-    setTip({ x: e.clientX - r.left, y: e.clientY - r.top });
+  const dismiss = () => { setPin(null); setHover(null); setBack(null); pinBy.current = null; };
+  useEffect(() => {
+    if (!sel) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') dismiss(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [!sel]);
+  const stuck = () => !!grid.current && getComputedStyle(grid.current).getPropertyValue('--pm-pin').trim() === '1';
+  const reduced = () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const viewBox = (): Box => {
+    const root = box.current?.closest('.stage');
+    const r = root?.getBoundingClientRect();
+    return r ? { left: r.left, top: r.top, right: r.right, bottom: r.bottom } : { left: 0, top: 0, right: innerWidth, bottom: innerHeight };
   };
-  const leave = (e: React.PointerEvent) => { if (e.pointerType === 'mouse') { setHover(null); setTip(null); } };
+  const toggle = (s: Sel, e?: React.MouseEvent) => {
+    if (e) pointer.current = { key: keyOf(s)!, x: e.clientX, y: e.clientY };
+    if (same(pin, s) && pinBy.current === 'click') { dismiss(); return; }
+    setPin(s); pinBy.current = 'click';
+  };
+  const showOnMap = (from: HTMLElement | null) => {
+    const el = box.current;
+    if (!el) return;
+    if (from) setBack(from);
+    el.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: 'start' });
+  };
+  const rowClick = (s: Sel) => (e: React.MouseEvent<HTMLElement>) => {
+    const row = e.currentTarget;
+    const turnOn = !same(pin, s) || pinBy.current !== 'click';
+    toggle(s);
+    if (turnOn && !stuck() && box.current && !mostlyVisible(box.current.getBoundingClientRect(), viewBox())) showOnMap(row);
+  };
+  const backToList = () => { const el = back; setBack(null); el?.focus(); };
+  useEffect(() => {
+    const el = box.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const io = new IntersectionObserver((es) => { const e = es[es.length - 1]; if (e) setMapSeen(e.intersectionRatio >= 0.5); }, { root: el.closest('.stage'), threshold: [0, 0.25, 0.5, 0.75, 1] });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  const mouseEnter = (s: Sel) => (e: React.PointerEvent) => {
+    if (e.pointerType !== 'mouse') return;
+    pointer.current = { key: keyOf(s)!, x: e.clientX, y: e.clientY };
+    setHover(s);
+  };
+  const leave = (e: React.PointerEvent) => { if (e.pointerType === 'mouse') setHover(null); };
+
+  useLayoutEffect(() => {
+    const fr = box.current;
+    if (!fr || !sel || !selectionKey) { setAnchor(null); setTipAt(null); return; }
+    const r = fr.getBoundingClientRect();
+    setTipAt(null);
+    const q = pointer.current && pointer.current.key === selectionKey ? pointer.current : null;
+    if (q) { setAnchor({ x: q.x - r.left, y: q.y - r.top }); return; }
+    const el = fr.querySelector<SVGGraphicsElement>(sel.kind === 'block' ? `[data-street="${sel.block}"]` : `[data-iv="${sel.iv}"]`);
+    if (!el) { setAnchor(null); return; }
+    if (sel.kind === 'block' && el instanceof SVGPathElement) {
+      const m = el.getPointAtLength(el.getTotalLength() / 2), ctm = el.getScreenCTM();
+      if (ctm) { setAnchor({ x: ctm.a * m.x + ctm.c * m.y + ctm.e - r.left, y: ctm.b * m.x + ctm.d * m.y + ctm.f - r.top }); return; }
+    }
+    const b = el.getBoundingClientRect();
+    setAnchor({ x: b.left + b.width / 2 - r.left, y: b.top + b.height / 2 - r.top });
+  }, [selectionKey, near]);
 
   const v = model.view;
   const unit = model.unit;
@@ -176,10 +238,28 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
     );
   })();
 
+  const tipText = ((): TipText | null => {
+    if (!sel) return null;
+    if (sel.kind === 'block') { const t = blockText(sel.block); return blockTip(t.c.label, t.line, t.allShort); }
+    const iv = ivs[sel.iv];
+    if (!iv || !canTrace(iv)) return changeTip(ivLabel(sel.iv), 'Closes no car movement, so no traffic is redirected.');
+    return changeTip(ivLabel(sel.iv), selItem ? redistributionTip(selItem) : redist.status === 'loading' || redist.status === 'idle' ? 'Loading the redirect data…' : 'No redirect data for this change.');
+  })();
+  const tipSig = tipText ? `${tipText.title}|${tipText.lines.join('|')}` : '';
+  useLayoutEffect(() => {
+    const fr = box.current, t = tipBox.current;
+    if (!fr || !t || !anchor) return;
+    const r = fr.getBoundingClientRect(), v = viewBox();
+    const bounds: Box = { left: 4, top: Math.max(4, v.top - r.top + 4), right: r.width - 4, bottom: Math.min(r.height - 4, v.bottom - r.top - 4) };
+    if (bounds.bottom - bounds.top < t.offsetHeight) { bounds.top = 4; bounds.bottom = r.height - 4; }
+    setTipAt(placeTip(anchor, { w: t.offsetWidth, h: t.offsetHeight }, bounds));
+  }, [anchor, tipSig]);
   const rowProps = (s: Sel) => ({
     onMouseEnter: () => setHover(s), onMouseLeave: () => setHover(null),
-    onFocus: () => setPin(s), onClick: () => toggle(s),
+    onFocus: (e: React.FocusEvent<HTMLElement>) => { if (e.currentTarget.matches(':focus-visible')) { setPin(s); pinBy.current = 'focus'; } },
+    onClick: rowClick(s),
     'aria-pressed': same(pin, s),
+    'data-pm': keyOf(s)!,
   });
   const rowCls = (s: Sel) => (same(sel, s) ? 'pm-on' : undefined);
   const top = ranked.slice(0, 8), rest = ranked.slice(8);
@@ -202,10 +282,10 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
   );
 
   return (
-    <section className="pm" aria-label={`Map of ${p.title}`} onKeyDown={(e) => { if (e.key === 'Escape') { setPin(null); setHover(null); } }}>
-      <div className="pm-grid">
+    <section className="pm" aria-label={`Map of ${p.title}`}>
+      <div ref={grid} className="pm-grid">
         <div className="pm-mapcol">
-          <div ref={box} className="pm-frame" style={{ aspectRatio: `${v.w} / ${v.h}` }} onPointerMove={track} onPointerLeave={leave}>
+          <div ref={box} className="pm-frame" style={{ aspectRatio: `${v.w} / ${v.h}`, '--ar': v.w / v.h } as React.CSSProperties} onPointerLeave={leave}>
             {near ? (
               <svg className="pm-svg" viewBox={`${v.x} ${v.y} ${v.w} ${v.h}`} role="img" aria-label={alt}>
                 <rect x={v.x} y={v.y} width={v.w} height={v.h} fill={bg} />
@@ -218,8 +298,8 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
                 {model.names.map((nm) => <text key={nm.text} x={0} y={0} transform={`translate(${nm.x} ${nm.y}) rotate(${nm.angle})`} textAnchor="middle" dy={-3.5 * unit} fontSize={10.5 * unit} fontWeight={600} fill={ink} stroke={bg} strokeWidth={3 * unit} paintOrder="stroke" strokeLinejoin="round">{nm.text}</text>)}
                 {model.pins.map((q) => <text key={q.text + q.x} x={q.x} y={q.y} textAnchor={q.end ? 'end' : 'start'} fontSize={10.5 * unit * 1.15} fontWeight={700} fill={ink} stroke={bg} strokeWidth={3.5 * unit} paintOrder="stroke" strokeLinejoin="round">{q.text}</text>)}
                 {streets.map((s) => (
-                  <path key={s.i} d={s.d} fill="none" stroke="transparent" strokeWidth={22 * unit} strokeLinecap="round" style={{ pointerEvents: 'stroke', cursor: 'pointer' }}
-                    onPointerEnter={mouseEnter({ kind: 'block', block: s.i })} onClick={() => toggle({ kind: 'block', block: s.i })} />
+                  <path key={s.i} data-street={s.i} d={s.d} fill="none" stroke="transparent" strokeWidth={22 * unit} strokeLinecap="round" style={{ pointerEvents: 'stroke', cursor: 'pointer' }}
+                    onPointerEnter={mouseEnter({ kind: 'block', block: s.i })} onClick={(e) => toggle({ kind: 'block', block: s.i }, e)} />
                 ))}
                 {routeGeom.map((r, k) => (
                   <g key={k} stroke={ROUTE_COLOR[mode]} fill={ROUTE_COLOR[mode]} pointerEvents="none">
@@ -232,7 +312,7 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
                 {[...marksBy.entries()].map(([i, ms]) => {
                   const s: Sel = { kind: 'iv', iv: i };
                   return (
-                    <g key={i} style={{ cursor: 'pointer' }} onPointerEnter={mouseEnter(s)} onClick={() => toggle(s)}>
+                    <g key={i} data-iv={i} style={{ cursor: 'pointer' }} onPointerEnter={mouseEnter(s)} onClick={(e) => toggle(s, e)}>
                       {ms.map((m, k) => {
                         const c = markCenter(m, unit);
                         return (
@@ -248,17 +328,56 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
                 })}
               </svg>
             ) : <p className="pm-wait muted small">Map loads as you scroll.</p>}
-            {tip && sel && (
-              <div className="pm-tip" aria-hidden="true" style={{ left: tip.x, top: tip.y }}>
-                {sel.kind === 'block' ? <><strong>{blockText(sel.block).c.label}</strong><br />{blockText(sel.block).line}{blockText(sel.block).allShort && <><br />{blockText(sel.block).allShort}</>}</> : <strong>{ivLabel(sel.iv)}</strong>}
+            {tipText && anchor && (
+              <div ref={tipBox} className="pm-tip" aria-hidden="true" style={tipAt ? { left: tipAt.x, top: tipAt.y } : { left: anchor.x, top: anchor.y, visibility: 'hidden' }}>
+                <strong>{tipText.title}</strong>{tipText.lines.map((l) => <span key={l}><br />{l}</span>)}
               </div>
             )}
             <p className="pm-attr">{ATTRIBUTION}</p>
           </div>
-          <div className="pm-legend">
+          <div className="pm-ramp-block">
             <div className="pm-ramp" style={{ background: divergingGradient(mode) }} role="presentation" />
             <div className="pm-ticks" aria-hidden="true">{ticks.map((t) => <span key={t}>{t}</span>)}</div>
             <p className="small muted">{when}, change in through cars an hour on each block, proposal vs. today. Blue: fewer. Orange: more. Thicker line: bigger change. Thin gray: within normal run-to-run variation (about {Math.round(DEAD_BAND_CUTTHROUGH)} cars an hour). Only side streets inside the study area are measured.</p>
+          </div>
+        </div>
+        <div className="pm-side">
+          <div className="pm-mid">
+            <div ref={readoutBox} className="pm-read" role="region" aria-label={`${p.title}: street and intervention details`} tabIndex={0} aria-live="polite">
+              {back && sel && <button type="button" className="btn small-btn pm-back" onClick={backToList}>Back to list</button>}
+              {readout}
+            </div>
+            <div className="pm-streets">
+              <h5>Streets that change</h5>
+              {ranked.length === 0 ? <p className="muted small">No side-street block changes by a whole car an hour in the {when}.</p> : (
+                <>
+                  <p className="muted small">Through cars an hour in the {when}, largest change first{allCars ? ', with all cars (through cars and local trips) beside them' : ''}; {seedsPhrase(runs)}. Select a street to see it on the map.</p>
+                  {table(top)}
+                  {rest.length > 0 && <details className="pm-more"><summary>{rest.length} more {rest.length === 1 ? 'block' : 'blocks'}</summary>{table(rest)}</details>}
+                </>
+              )}
+            </div>
+          </div>
+          <div className="pm-aside">
+            {traceable.length > 0 && (
+              <div className="pm-filters">
+                <h5>Where filtered traffic goes</h5>
+                <ul className="pm-goes">
+                  {traceable.map(({ i }) => {
+                    const s: Sel = { kind: 'iv', iv: i };
+                    const it = itemOf(i);
+                    return (
+                      <li key={i} className={rowCls(s)}>
+                        <button type="button" className="pm-link" {...rowProps(s)}>{ivLabel(i)}</button>
+                        {it ? <span className="muted small"> {redistributionLine(it, when)}</span> : redist.status === 'loading' || redist.status === 'idle' ? <span className="muted small"> Loading…</span> : redist.status === 'ok' ? <span className="muted small"> No redirect data for this change.</span> : null}
+                      </li>
+                    );
+                  })}
+                </ul>
+                {(redist.status === 'missing' || redist.status === 'stale') && <p className="small muted">{redist.status === 'stale' ? `The stored redirect data is out of date (${redist.reason}).` : 'No stored redirect data has been published for this proposal.'} {onTrace && <>Run it live with <button type="button" className="btn small-btn" onClick={onTrace}>Where traffic goes</button>.</>}</p>}
+              </div>
+            )}
+            <div className="pm-key">
             {(kinds.size > 0 || model.pins.length > 0) && (
               <ul className="pm-keys small muted">
                 {kinds.has('bar') && <li>Yellow and black bar across a street: closed to through cars.</li>}
@@ -272,41 +391,16 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
             )}
             {note && <p className="small muted">{note}</p>}
             {mismatch && <p className="small muted">{mismatch}</p>}
+            </div>
           </div>
         </div>
-        <div className="pm-side">
-          <div ref={readoutBox} className="pm-read" role="region" aria-label={`${p.title}: street and intervention details`} tabIndex={0} aria-live="polite">{readout}</div>
-          <div className="pm-lists">
-          <h5>Streets that change</h5>
-          {ranked.length === 0 ? <p className="muted small">No side-street block changes by a whole car an hour in the {when}.</p> : (
-            <>
-              <p className="muted small">Through cars an hour in the {when}, largest change first{allCars ? ', with all cars (through cars and local trips) beside them' : ''}; {seedsPhrase(runs)}. Select a street to see it on the map.</p>
-              {table(top)}
-              {rest.length > 0 && <details className="pm-more"><summary>{rest.length} more {rest.length === 1 ? 'block' : 'blocks'}</summary>{table(rest)}</details>}
-            </>
-          )}
-          {traceable.length > 0 && (
-            <>
-              <h5>Where filtered traffic goes</h5>
-              <ul className="pm-goes">
-                {traceable.map(({ i }) => {
-                  const s: Sel = { kind: 'iv', iv: i };
-                  const it = itemOf(i);
-                  return (
-                    <li key={i} className={rowCls(s)}>
-                      <button type="button" className="pm-link" {...rowProps(s)}>{ivLabel(i)}</button>
-                      {it ? <span className="muted small"> {redistributionLine(it, when)}</span> : redist.status === 'loading' || redist.status === 'idle' ? <span className="muted small"> Loading…</span> : redist.status === 'ok' ? <span className="muted small"> No redirect data for this change.</span> : null}
-                    </li>
-                  );
-                })}
-              </ul>
-              {(redist.status === 'missing' || redist.status === 'stale') && <p className="small muted">{redist.status === 'stale' ? `The stored redirect data is out of date (${redist.reason}).` : 'No stored redirect data has been published for this proposal.'} {onTrace && <>Run it live with <button type="button" className="btn small-btn" onClick={onTrace}>Where traffic goes</button>.</>}</p>}
-            </>
-          )}
+        {sel && !mapSeen && tipText && (
+          <div className="pm-peek">
+            <span aria-hidden="true"><strong>{tipText.title}</strong>{tipText.lines[0] ? `: ${tipText.lines[0]}` : ''}</span>
+            <button type="button" className="btn small-btn" onClick={() => showOnMap(grid.current?.querySelector<HTMLElement>(`[data-pm="${selectionKey}"]`) ?? null)}>Show on map<span className="sr-only">: {tipText.title}</span></button>
           </div>
-        </div>
+        )}
       </div>
     </section>
   );
 }
-

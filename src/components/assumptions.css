@@ -1,9 +1,6 @@
-.assume-view { padding: 1rem 1.25rem 2rem; }
-:where(.assume-view > *, .assume-view section > :not(.sticky-h)) { max-width: 1060px; }
-.assume-view > section { max-width: none; }
 .assume-view h3 { margin-top: 1.8rem; }
 .assume-view section { margin-top: 1.8rem; }
-.assume-view h3.sticky-h { position: sticky; top: var(--sticky-top); z-index: 3; display: flex; align-items: center; min-height: var(--sticky-h); margin: 0 -1.25rem .6rem; padding: 0 1.25rem; background: var(--bg); border-bottom: 1px solid var(--border); box-shadow: 0 2px 4px rgba(20, 30, 45, .08); scroll-margin-top: 0; }
+.assume-view h3.sticky-h { position: sticky; top: var(--sticky-top); z-index: 3; display: flex; align-items: center; min-height: var(--sticky-h); margin: 0 calc(-1 * var(--pad)) .6rem; padding: 0 var(--pad); background: var(--bg); border-bottom: 1px solid var(--border); box-shadow: 0 2px 4px rgba(20, 30, 45, .08); scroll-margin-top: 0; }
 .assume-view .anchored { scroll-margin-top: .25rem; }
 .assume-view h3.sticky-h.anchored { scroll-margin-top: calc(-1 * (var(--sticky-h) + .5rem)); }
 .app[data-view='assumptions'] .stage { scroll-padding-top: calc(var(--sticky-top) + var(--sticky-h) + .5rem); }
@@ -14,7 +11,7 @@
 .move-overview figcaption { margin-top: .3rem; }
 .imap { display: block; width: 100%; height: auto; border: 1px solid var(--border); border-radius: 8px; }
 .move-group h4 { margin: 1.4rem 0 .2rem; font-size: 1rem; }
-.moves { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin: .6rem 0 0; padding: 0; list-style: none; }
+.moves { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 24rem), 1fr)); gap: 1rem; margin: .6rem 0 0; padding: 0; list-style: none; }
 .move { display: flex; flex-direction: column; gap: .5rem; min-width: 0; padding: .8rem .9rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
 .move h5 { display: flex; gap: .5rem; align-items: baseline; margin: 0; font-size: .95rem; line-height: 1.3; }
 .move-n { flex: none; display: inline-grid; place-items: center; min-width: 1.45rem; height: 1.45rem; border-radius: 999px; background: var(--text); color: var(--surface); font-size: .8rem; font-weight: 700; font-variant-numeric: tabular-nums; }

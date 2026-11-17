@@ -112,6 +112,13 @@ export function redistributionLine(item: StoredItem, when: string): string {
   return `${head}${goes}${leave}`;
 }
 
+/** The short form for the map tooltip: how many used the closed movement and the one route most take. */
+export function redistributionTip(item: StoredItem): string {
+  if (item.usedPerHour < 0.5) return 'Almost no through cars used this.';
+  const top = item.routes.find((r) => r.streets && r.perHour >= 0.5);
+  return `About ${round(item.usedPerHour)} through cars an hour used this${top ? `; most go via ${top.streets} (${round(top.perHour)} an hour)` : ''}.`;
+}
+
 /** The full breakdown, for the list under the map and the text alternative. */
 export function redistributionRows(item: StoredItem): { label: string; value: string }[] {
   const p = item.perHour;

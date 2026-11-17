@@ -48,3 +48,35 @@ export function allCarsShort(all: { base: number; scen: number }): string {
 }
 
 export const ALL_CARS_MISSING = 'All cars on this block (through cars and local trips) are not in the published file; it records them only for the block with the largest rise.';
+
+export interface TipText { title: string; lines: string[] }
+
+/** The essential line for a street: its name, through cars today and with the proposal, and all cars when the file has them. */
+export function blockTip(label: string, through: string, allShort: string | null): TipText {
+  return { title: label, lines: allShort ? [through, allShort] : [through] };
+}
+
+/** The essential line for a drawn change; null for `summary` while the redirect data has not loaded. */
+export function changeTip(label: string, summary: string | null): TipText {
+  return { title: label, lines: summary ? [summary] : [] };
+}
+
+export interface Box { left: number; top: number; right: number; bottom: number }
+
+/** Where a tooltip of `size` goes beside `anchor`: below and right by `gap`, flipped to the other side when it would cross `bounds`, then clamped inside them. Everything is in the same coordinate space. */
+export function placeTip(anchor: { x: number; y: number }, size: { w: number; h: number }, bounds: Box, gap = 12): { x: number; y: number } {
+  const room = (lo: number, hi: number, a: number, len: number) => {
+    let v = a + gap;
+    if (v + len > hi) v = a - gap - len;
+    return Math.max(lo, Math.min(v, hi - len));
+  };
+  return { x: room(bounds.left, bounds.right, anchor.x, size.w), y: room(bounds.top, bounds.bottom, anchor.y, size.h) };
+}
+
+/** True when at least `min` of the box's height and all of its width lies inside the viewport, so selecting a row needs no scroll. */
+export function mostlyVisible(box: Box, view: Box, min = 0.9): boolean {
+  const h = box.bottom - box.top;
+  if (h <= 0) return false;
+  const seen = Math.min(box.bottom, view.bottom) - Math.max(box.top, view.top);
+  return seen / h >= min && box.left >= view.left - 1 && box.right <= view.right + 1;
+}

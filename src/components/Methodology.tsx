@@ -116,6 +116,7 @@ export function Methodology({ area }: { area: AreaEntry }) {
   return (
     <div className="sources-view method-view">
       <AnchorHeading as="h2" id="methodology" label={METHOD_TITLE}>{METHOD_TITLE}</AnchorHeading>
+      <div className="method-cols">
       {section('what-this-is', 'What this is', <><p>{lead}</p><p>{simulation}</p></>)}
       {section('building-todays-traffic', 'Building today\'s traffic', <>
         <p>{BUILD_INTRO}</p>
@@ -141,6 +142,7 @@ export function Methodology({ area }: { area: AreaEntry }) {
         <p>{LIMITS_INTRO}</p>
         <ul>{LIMITS.map((l) => <li key={l}>{l}</li>)}</ul>
       </>)}
+      </div>
     </div>
   );
 }
