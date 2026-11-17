@@ -261,6 +261,11 @@ fn one_filter_removes_a_rat_run_without_harm() {
     assert!(all["largestIncrease"]["block"].is_string() && all["blocksAboveBand"].is_u64() && all["adjustedPenalty"]["penaltyVehPerHour"].is_number());
     assert!(f.by_period[0].block_through_inc <= f.by_period[0].block_scen - f.by_period[0].block_base + 1.0);
     assert!(p0["summary"].as_str().unwrap().contains("through cars an hour"));
+    // The detour goal has no weight, and the displacement rule records what it dropped.
+    let obj = &o.json["computed"]["objectives"];
+    assert!(obj.get("detourWeightPointsPerSecond").is_none() && obj["detourReductionFloor"] == 0.5);
+    assert!(o.json["computed"]["displacement"]["dropped"].is_array() && o.json["computed"]["displacement"]["floorVehPerHour"].is_number());
+    assert!(!o.markdown.contains("detour weight") && o.markdown.contains("## Residents' detour"));
 }
 
 fn picture_arrays(pr: &Value) -> (Vec<i64>, Vec<i64>, Vec<i64>) {
@@ -288,10 +293,27 @@ fn proposals_carry_a_picture_and_annotate_reproduces_it() {
     }
     let (_, base, scen) = picture_arrays(&proposals[0]);
     assert!(base.iter().sum::<i64>() > scen.iter().sum::<i64>(), "the rat run's filter takes through cars off its links");
+    // All cars come beside through cars: same period, ascending links on the measured blocks only, and no link carries fewer cars than through cars.
+    let measured = traffic_sim::explore::report::measured_links(&study);
+    for pr in proposals {
+        let all = &pr["pictureAll"];
+        assert_eq!(all["period"], pr["picture"]["period"]);
+        let get = |v: &Value, k: &str| v[k].as_array().unwrap().iter().map(|x| x.as_i64().unwrap()).collect::<Vec<_>>();
+        let (links, base, scen) = (get(all, "links"), get(all, "base"), get(all, "scen"));
+        assert!(!links.is_empty() && links.len() == base.len() && links.len() == scen.len());
+        assert!(links.windows(2).all(|w| w[0] < w[1]) && links.iter().all(|&l| measured[l as usize]), "ascending, measured blocks only");
+        assert!(base.iter().zip(&scen).all(|(b, s)| *b != 0 || *s != 0), "zeros are omitted");
+        let (tl, tb, ts) = picture_arrays(pr);
+        for (k, &l) in tl.iter().enumerate().filter(|(_, l)| measured[**l as usize]) {
+            let at = links.iter().position(|&x| x == l).expect("a link with through cars carries cars");
+            assert!(base[at] >= tb[k] - 1 && scen[at] >= ts[k] - 1, "link {l}: all cars {} {} against through {} {}", base[at], scen[at], tb[k], ts[k]);
+        }
+    }
     // The file is annotated by a second path with no search: same numbers, whatever `--jobs`.
     let mut file = serde_json::json!({"version": 5, "area": "t", "groups": [o.json.clone()]});
     for pr in file["groups"][0]["proposals"].as_array_mut().unwrap() {
         pr.as_object_mut().unwrap().remove("picture");
+        pr.as_object_mut().unwrap().remove("pictureAll");
     }
     let s = annotate(&study, &mut file, 1).unwrap();
     assert_eq!((s.groups, s.packages), (1, proposals.len()));

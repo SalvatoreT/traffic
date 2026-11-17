@@ -4,7 +4,7 @@ import { changeTicks, DEAD_BAND_CUTTHROUGH } from '../lib/change';
 import { ATTRIBUTION, BADGE_NAME, BADGE_TEXT } from '../lib/mapexport';
 import type { NetIndex } from '../lib/naming';
 import { blockChanges, buildPicture, mismatchNote, periodNote, pathOf, pictureAlt, pictureFacts, type BlockChange } from '../lib/picture';
-import { allCarsLine, ALL_CARS_MISSING, noiseNote, streetsThatChange, throughLine } from '../lib/proposal-map';
+import { allCarsByBlock, allCarsLine, allCarsPictureLine, allCarsShort, ALL_CARS_MISSING, noiseNote, streetsThatChange, throughLine } from '../lib/proposal-map';
 import { seedsPhrase, signedNum, type LoadedHashes, type Proposal, type ProposalGroup } from '../lib/proposals';
 import { changeWidthFor, colorForIntensity, divergingGradient, mutedColor, type Mode } from '../lib/ramps';
 import { canTrace } from '../lib/redistribution-view';
@@ -72,6 +72,7 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
   const facts = useMemo(() => pictureFacts(p, pic, index), [p, pic, index]);
   const model = useMemo(() => buildPicture(net, index, p, pic, ivs, facts), [net, index, p, pic, ivs, facts]);
   const changes = useMemo(() => new Map(blockChanges(pic, index).map((c) => [c.block, c])), [pic, index]);
+  const allCars = useMemo(() => allCarsByBlock(p, index), [p, index]);
   const ranked = useMemo(() => streetsThatChange([...changes.values()].filter((c) => blockMeasured(index.blocks[c.block]))), [changes, index]);
   const streets = useMemo(() => (near ? index.blocks.flatMap((b, i) => (blockMeasured(b) ? [{ i, d: pathOf(net.links[b.links[0]].geometry), label: b.label }] : [])) : []), [near, index, net]);
   const marksBy = useMemo(() => {
@@ -122,7 +123,8 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
 
   const blockText = (b: number) => {
     const c: BlockChange = changes.get(b) ?? { block: b, label: index.blocks[b].label, base: 0, scen: 0, delta: 0 };
-    return { c, line: throughLine(c, when), noise: noiseNote(c.delta), all: allCarsLine(p, pic, c.label, when) };
+    const a = allCars ? (allCars.get(b) ?? { block: b, label: c.label, base: 0, scen: 0, delta: 0 }) : null;
+    return { c, line: throughLine(c, when), noise: noiseNote(c.delta), all: a ? allCarsPictureLine(a, c, when) : allCarsLine(p, pic, c.label, when), allShort: a ? allCarsShort(a) : null };
   };
   const readout = (() => {
     if (!sel) return <p className="muted pm-hint">Hover or tap a street or a change on the map, or pick one from the lists. Only side streets inside the study area are measured; the rest is faint context.</p>;
@@ -181,12 +183,13 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
         <th scope="row"><button type="button" className="pm-link" {...rowProps(s)}>{c.label}</button></th>
         <td>{Math.round(c.base)} → {Math.round(c.scen)}</td>
         <td>{signedNum(Math.round(c.scen) - Math.round(c.base), '', 0).trim()}</td>
+        {allCars && (() => { const a = allCars.get(c.block); return <td>{a ? `${Math.round(a.base)} → ${Math.round(a.scen)}` : 'none'}</td>; })()}
       </tr>
     );
   };
   const table = (rows: BlockChange[]) => (
     <table className="pm-table">
-      <thead><tr><th scope="col">Street block</th><th scope="col">Through cars an hour, today → proposal</th><th scope="col">Change</th></tr></thead>
+      <thead><tr><th scope="col">Street block</th><th scope="col">Through cars an hour, today → proposal</th><th scope="col">Change</th>{allCars && <th scope="col">All cars an hour, today → proposal</th>}</tr></thead>
       <tbody>{rows.map(row)}</tbody>
     </table>
   );
@@ -237,7 +240,7 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
             ) : <p className="pm-wait muted small">Map loads as you scroll.</p>}
             {tip && sel && (
               <div className="pm-tip" aria-hidden="true" style={{ left: tip.x, top: tip.y }}>
-                {sel.kind === 'block' ? <><strong>{blockText(sel.block).c.label}</strong><br />{blockText(sel.block).line}</> : <strong>{ivLabel(sel.iv)}</strong>}
+                {sel.kind === 'block' ? <><strong>{blockText(sel.block).c.label}</strong><br />{blockText(sel.block).line}{blockText(sel.block).allShort && <><br />{blockText(sel.block).allShort}</>}</> : <strong>{ivLabel(sel.iv)}</strong>}
               </div>
             )}
             <p className="pm-attr">{ATTRIBUTION}</p>
@@ -266,7 +269,7 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
           <h5>Streets that change</h5>
           {ranked.length === 0 ? <p className="muted small">No side-street block changes by a whole car an hour in the {when}.</p> : (
             <>
-              <p className="muted small">Through cars an hour in the {when}, largest change first; {seedsPhrase(runs)}. Select a street to see it on the map.</p>
+              <p className="muted small">Through cars an hour in the {when}, largest change first{allCars ? ', with all cars (through cars and local trips) beside them' : ''}; {seedsPhrase(runs)}. Select a street to see it on the map.</p>
               {table(top)}
               {rest.length > 0 && <details className="pm-more"><summary>{rest.length} more {rest.length === 1 ? 'block' : 'blocks'}</summary>{table(rest)}</details>}
             </>

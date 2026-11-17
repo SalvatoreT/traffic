@@ -1,9 +1,9 @@
-//! `explore --annotate`: add the per-link through-car arrays the proposal card draws to an existing proposals file, by re-simulating only
+//! `explore --annotate`: add the per-link through-car and all-car arrays the proposal card draws to an existing proposals file, by re-simulating only
 //! the published packages for one period with the search's seeds and run length. No search is repeated.
 
 use super::decode::decode_scenario;
 use super::provenance::{check, Evidence};
-use super::report::{picture_period, Picture};
+use super::report::{measured_links, picture_period, Picture};
 use super::*;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -23,7 +23,7 @@ struct Task {
     minutes: f64,
 }
 
-/// Rewrite `file` so each package of each group carries a `picture`. Every group must have been computed on the study's network and
+/// Rewrite `file` so each package of each group carries a `picture` and a `pictureAll`. Every group must have been computed on the study's network and
 /// demand, by this simulator and under this reporting method, and must record its run settings; otherwise nothing is changed and the
 /// error names the group. A group without that provenance needs a full recomputation: its figures are never given pictures from
 /// another engine. The numeric figures and their provenance are left as they are.
@@ -74,12 +74,15 @@ pub fn annotate(study: &Study, file: &mut Value, jobs: usize) -> Result<Summary,
     let outs = parallel_map(jobs, &tasks, |t| run(study, &t.ivs, &t.period, t.seed, t.minutes, &[]));
     let nl = study.net.links.len();
     let mean_through = |ids: &[usize]| -> Vec<f64> { (0..nl).map(|l| ids.iter().map(|&i| outs[i].through[l] as f64).sum::<f64>() / ids.len().max(1) as f64).collect() };
+    let mean_flow = |ids: &[usize]| -> Vec<f64> { (0..nl).map(|l| ids.iter().map(|&i| outs[i].flow[l] as f64).sum::<f64>() / ids.len().max(1) as f64).collect() };
+    let measured = measured_links(study);
     let mut packages = 0;
     for (gi, (period, base_ids, per_pkg)) in plan.iter().enumerate() {
-        let base = mean_through(base_ids);
+        let (base, base_all) = (mean_through(base_ids), mean_flow(base_ids));
         let props = file["groups"][gi]["proposals"].as_array_mut().expect("proposals");
         for (pr, ids) in props.iter_mut().zip(per_pkg) {
             pr["picture"] = Picture::new(period, &base, &mean_through(ids)).to_json();
+            pr["pictureAll"] = Picture::scoped(period, &base_all, &mean_flow(ids), &measured).to_json();
             packages += 1;
         }
     }

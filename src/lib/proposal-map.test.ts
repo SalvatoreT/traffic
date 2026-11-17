@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { allCarsLine, noiseNote, streetsThatChange, throughLine } from './proposal-map';
+import { allCarsByBlock, allCarsLine, allCarsPictureLine, allCarsShort, ALL_CARS_MISSING, noiseNote, streetsThatChange, throughLine } from './proposal-map';
+import type { NetIndex } from './naming';
 import type { Proposal, ProposalPicture } from './proposals';
 
 const c = (block: number, label: string, base: number, scen: number) => ({ block, label, base, scen, delta: scen - base });
@@ -22,5 +23,22 @@ describe('proposal map readouts', () => {
     expect(allCarsLine(p, pic, 'North St', 'PM peak')).toContain('36 → 151');
     expect(allCarsLine(p, pic, 'North St', 'PM peak')).toContain('local trips +63');
     expect(allCarsLine(p, pic, 'Other St', 'PM peak')).toBeNull();
+  });
+  it('reads all cars per block from pictureAll, both directions together, and says nothing when the file has none', () => {
+    const index = { blockOfLink: [0, 0, 1, -1], blocks: [{ label: 'North St' }, { label: 'Dana St' }] } as unknown as NetIndex;
+    const pictureAll: ProposalPicture = { period: 'pm', links: [0, 1, 2, 3], base: [40, 30, 10, 99], scen: [150, 128, 12, 99] };
+    const by = allCarsByBlock({ pictureAll }, index)!;
+    expect([...by.keys()]).toEqual([0, 1]);
+    expect(by.get(0)).toMatchObject({ label: 'North St', base: 70, scen: 278, delta: 208 });
+    expect(allCarsByBlock({}, index)).toBeNull();
+  });
+  it('splits the all-car change into through cars and local trips', () => {
+    const line = allCarsPictureLine({ base: 70, scen: 278 }, { base: 5, scen: 99 }, 'PM peak');
+    expect(line).toBe('All cars on this block, PM peak: 70 → 278 an hour (+208 cars an hour): through cars +94, local trips +114.');
+    expect(allCarsPictureLine({ base: 70, scen: 60 }, { base: 5, scen: 0 }, 'PM peak')).toContain('local trips −5');
+    expect(allCarsShort({ base: 70.4, scen: 277.6 })).toBe('70 → 278 all cars an hour');
+  });
+  it('keeps the old wording when the file has no all-car picture', () => {
+    expect(ALL_CARS_MISSING).toMatch(/not in the published file/);
   });
 });

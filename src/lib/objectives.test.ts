@@ -6,7 +6,7 @@ import { methodologyText } from './methodology';
 describe('objective tags', () => {
   it('lists the goals in a fixed order, whatever order the file wrote', () => {
     expect(objectiveTags({ objectives: ['fewest-changes', 'most-removed'] })).toEqual(['most cut-through removed', 'fewest changes']);
-    expect(bestForText({ objectives: ['no-closures', 'least-detour'] })).toBe('Best for: no street closures, most removed after counting residents\' detour');
+    expect(bestForText({ objectives: ['no-closures', 'least-detour'] })).toBe('Best for: no street closures, least detour for residents');
   });
   it('shows nothing for an option with no tag, and ignores an id it does not know', () => {
     expect(objectiveTags({})).toEqual([]);

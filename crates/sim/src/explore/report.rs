@@ -2,12 +2,12 @@
 
 use super::cands::{adopt, conflicts, generate_with, profile_allows, Cand};
 use super::naming::describe;
-use super::paired::{option_gain, CtPairs, Paired, Status, LEVEL, MIN_PAIRS, REPORT_METHOD};
+use super::paired::{diffs, option_gain, CtPairs, Paired, Status, LEVEL, MIN_PAIRS, REPORT_METHOD};
 use super::refs::resolve;
 use super::seeds::{self, Dropped};
 use super::similar;
 use super::search::*;
-use super::objectives::{eligible, final_score, Objective, DETOUR_REDUCTION_FLOOR};
+use super::objectives::{eligible, Objective, DETOUR_REDUCTION_FLOOR, DETOUR_TIE_S};
 use super::*;
 use serde_json::{json, Value};
 use std::fmt::Write as _;
@@ -44,6 +44,8 @@ pub struct Final {
     pub score: f64,
     /// Through cars per link in the picture's period, today and with the package.
     pub picture: Option<Picture>,
+    /// All cars per link on the side-street blocks the card measures, same period, links and seeds as `picture`.
+    pub picture_all: Option<Picture>,
     /// A package carried over from a stricter group: always rechecked, and never dropped as within noise of a simpler one, so a looser profile's best is never worse than the stricter group's.
     pub forced: bool,
     /// Why the package fails the access check (it strands a block); set for reference packages, which are reported either way.
@@ -61,6 +63,8 @@ pub struct Final {
     /// delays trips beyond the run's end is understated.
     pub detour: Paired,
     pub detour_s: f64,
+    /// The per-seed values behind `detour` (periods averaged), in seed order, so two packages' detours can be compared pair by pair.
+    pub detour_seeds: Vec<f64>,
     /// The same trips' summed added time, vehicle-minutes an hour.
     pub detour_vmin_h: f64,
     /// Some intervention in the package closes a street or an intersection to cars (a modal filter or a diverter).
@@ -123,8 +127,16 @@ pub struct Picture {
 
 impl Picture {
     pub fn new(period: &str, base: &[f64], scen: &[f64]) -> Picture {
+        Picture::scoped(period, base, scen, &[])
+    }
+
+    /// Like `new`, but with a non-empty `in_scope` only the links marked there are kept.
+    pub fn scoped(period: &str, base: &[f64], scen: &[f64], in_scope: &[bool]) -> Picture {
         let mut p = Picture { period: period.into(), links: Vec::new(), base: Vec::new(), scen: Vec::new() };
         for l in 0..base.len().min(scen.len()) {
+            if !in_scope.is_empty() && !in_scope.get(l).copied().unwrap_or(false) {
+                continue;
+            }
             let (b, s) = (base[l].round() as i32, scen[l].round() as i32);
             if b != 0 || s != 0 {
                 p.links.push(l as u32);
@@ -138,6 +150,17 @@ impl Picture {
     pub fn to_json(&self) -> Value {
         json!({"period": self.period, "links": self.links, "base": self.base, "scen": self.scen})
     }
+}
+
+/// The links of the side-street blocks the search measures: the only links whose all-car counts the card needs.
+pub fn measured_links(study: &Study) -> Vec<bool> {
+    let mut m = vec![false; study.net.links.len()];
+    for &b in &study.harm_blocks {
+        for &l in &study.idx.blocks[b].links {
+            m[l as usize] = true;
+        }
+    }
+    m
 }
 
 /// Index of the period the picture shows: the PM peak if it was searched, else the first period.
@@ -358,6 +381,10 @@ fn compare(ctx: &Ctx, set: &[u16], stats: &[PeriodStat], reject: Option<String>)
             let pi = picture_period(&p.periods);
             Some(Picture::new(&p.periods[pi], &base.full[pi].link_through, &stats[pi].link_through))
         },
+        picture_all: {
+            let pi = picture_period(&p.periods);
+            Some(Picture::scoped(&p.periods[pi], &base.full[pi].link_flow, &stats[pi].link_flow, &measured_links(study)))
+        },
         forced: false,
         access: None,
         origin: Origin::search(),
@@ -366,6 +393,7 @@ fn compare(ctx: &Ctx, set: &[u16], stats: &[PeriodStat], reject: Option<String>)
         block_change: through_inc,
         detour: Paired::of(&detour_seed),
         detour_s: mean(&detour_seed),
+        detour_seeds: detour_seed,
         detour_vmin_h,
         closes: set.iter().any(|&i| !super::objectives::closes_nothing(&ctx.cands[i as usize])),
         objectives: Vec::new(),
@@ -395,6 +423,7 @@ impl Default for Final {
             bike_pct: 0.0,
             score: 0.0,
             picture: None,
+            picture_all: None,
             forced: false,
             access: None,
             origin: Origin::search(),
@@ -403,6 +432,7 @@ impl Default for Final {
             block_change: Vec::new(),
             detour: Paired::none(),
             detour_s: 0.0,
+            detour_seeds: Vec::new(),
             detour_vmin_h: 0.0,
             closes: false,
             objectives: Vec::new(),
@@ -578,24 +608,92 @@ pub fn select_with_folds(finals: &[Final], max: usize) -> (Vec<Pick>, Vec<String
     (picks.into_iter().map(|(idx, why)| Pick { idx, why, objectives: Vec::new() }).collect(), notes, folds)
 }
 
-/// The winner of `obj` among the packages of `keep` it can win: highest objective score, then fewer changes, then the earlier finalist.
-/// The least-detour objective never lifts a package that removes less than `DETOUR_REDUCTION_FLOOR` of the most removed in its pool.
-pub fn objective_winner(finals: &[Final], p: &Params, obj: Objective, keep: &[usize]) -> Option<usize> {
-    let best = keep.iter().map(|&i| finals[i].reduction_pct).fold(0.0, f64::max);
-    keep.iter()
-        .copied()
-        .filter(|&i| obj != Objective::LeastDetour || finals[i].reduction_pct >= DETOUR_REDUCTION_FLOOR * best)
-        .max_by(|&a, &b| {
-            let (sa, sb) = (final_score(obj, p, &finals[a]), final_score(obj, p, &finals[b]));
-            sa.partial_cmp(&sb).unwrap_or(std::cmp::Ordering::Equal).then(finals[b].set.len().cmp(&finals[a].set.len())).then(b.cmp(&a))
-        })
+/// Whether `a` has a resolvably lower residents' detour than `b`: with at least `MIN_PAIRS` shared seeds, the interval of the per-seed
+/// difference lies above zero; otherwise the mean detours differ by more than `DETOUR_TIE_S` seconds per trip (ASSUMPTION).
+pub fn detour_lower(a: &Final, b: &Final) -> bool {
+    let n = a.detour_seeds.len();
+    if n >= MIN_PAIRS && n == b.detour_seeds.len() && a.pairs.seeds == b.pairs.seeds {
+        return diffs(&a.detour_seeds, &b.detour_seeds).map_or(false, |d| Paired::of(&d).status() == Status::Positive);
+    }
+    b.detour_s - a.detour_s > DETOUR_TIE_S
+}
+
+/// The winner of `obj` among the packages of `keep` it can win. Most removed, no closures and fewest changes: highest score, then fewer
+/// changes, then the earlier finalist. Least detour: among the packages that remove at least `DETOUR_REDUCTION_FLOOR` of the most removed
+/// in `keep`, the smallest residents' detour; a package whose detour the paired comparison cannot tell from that one's competes on
+/// through cars removed, then fewer changes, then the earlier finalist.
+pub fn objective_winner(finals: &[Final], obj: Objective, keep: &[usize]) -> Option<usize> {
+    let by_removed = |a: usize, b: usize| finals[a].reduction_pct.partial_cmp(&finals[b].reduction_pct).unwrap_or(std::cmp::Ordering::Equal).then(finals[b].set.len().cmp(&finals[a].set.len())).then(b.cmp(&a));
+    if obj == Objective::LeastDetour {
+        let best = keep.iter().map(|&i| finals[i].reduction_pct).fold(0.0, f64::max);
+        let above: Vec<usize> = keep.iter().copied().filter(|&i| finals[i].reduction_pct >= DETOUR_REDUCTION_FLOOR * best).collect();
+        let lowest = above.iter().copied().min_by(|&a, &b| finals[a].detour_s.partial_cmp(&finals[b].detour_s).unwrap_or(std::cmp::Ordering::Equal).then(by_removed(b, a)))?;
+        return above.iter().copied().filter(|&c| c == lowest || !detour_lower(&finals[lowest], &finals[c])).max_by(|&a, &b| by_removed(a, b));
+    }
+    keep.iter().copied().max_by(|&a, &b| finals[a].score.partial_cmp(&finals[b].score).unwrap_or(std::cmp::Ordering::Equal).then(finals[b].set.len().cmp(&finals[a].set.len())).then(b.cmp(&a)))
+}
+
+/// The largest rise in all cars on one block over the periods (cars an hour) and the half width of that block's paired interval, when it has one.
+pub fn largest_rise(f: &Final) -> (f64, Option<f64>) {
+    f.by_period
+        .iter()
+        .map(|r| (r.block_scen - r.block_base, r.block_effect.half))
+        .max_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal))
+        .unwrap_or((f.harm, None))
+}
+
+/// An option that was not published because another one removes as many through cars and piles fewer cars onto one block.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Displaced {
+    pub from: usize,
+    pub by: usize,
+    pub removed: f64,
+    pub by_removed: f64,
+    pub rise: f64,
+    pub by_rise: f64,
+    /// How much smaller the other's rise must be to count, and where that came from: `paired intervals` (both rises have one) or `floor`.
+    pub noise: f64,
+    pub noise_basis: &'static str,
+    /// `at least as many` through cars removed, or `not distinguishable` on the paired comparison.
+    pub removal: &'static str,
+}
+
+impl Displaced {
+    pub fn phrase(&self) -> String {
+        format!(
+            "removes {:.1}% of through cars against {:.1}% ({}), and its largest all-car rise on one block is {:.0} cars an hour against {:.0}, a difference of more than {:.0} ({})",
+            self.by_removed, self.removed, self.removal, self.by_rise, self.rise, self.noise, self.noise_basis
+        )
+    }
+}
+
+/// Whether finalist `by` makes finalist `from` unnecessary as an untagged option: `by` removes at least as many through cars or is not
+/// distinguishable from `from` on the paired comparison (`beats`), and its largest all-car rise on one block is smaller by more than the
+/// noise of the two rises (the paired intervals' half widths combined; `NOISE_FLOOR_VEH_H` when either has none, an ASSUMPTION).
+pub fn displaces(finals: &[Final], from: usize, by: usize) -> Option<Displaced> {
+    let (a, b) = (&finals[from], &finals[by]);
+    let removal = if b.reduction_pct >= a.reduction_pct {
+        "at least as many"
+    } else if !beats(a, b) {
+        "not distinguishable"
+    } else {
+        return None;
+    };
+    let ((ra, ha), (rb, hb)) = (largest_rise(a), largest_rise(b));
+    let (noise, noise_basis) = match (ha, hb) {
+        (Some(x), Some(y)) => ((x * x + y * y).sqrt(), "paired intervals"),
+        _ => (NOISE_FLOOR_VEH_H, "floor"),
+    };
+    (ra - rb > noise).then_some(Displaced { from, by, removed: a.reduction_pct, by_removed: b.reduction_pct, rise: ra, by_rise: rb, noise, noise_basis, removal })
 }
 
 /// Choose the published options for several objectives. Each objective picks its winner from the packages it may win, after the same filters
 /// and near-duplicate folding as the main choice, applied inside that objective's pool, so a package that is better on the main score but
 /// closes a street cannot hide the best package without closures. A package that wins several objectives is one option with all its tags.
-/// The rest of the list, up to `max`, is the best remaining by through cars removed that is not similar to an option already chosen.
-pub fn select_by_objectives(finals: &[Final], p: &Params, max: usize) -> (Vec<Pick>, Vec<String>, Vec<similar::Fold>) {
+/// The rest of the list, up to `max`, is the best remaining by through cars removed that is not similar to an option already chosen and that
+/// no other published option displaces (`displaces`); goal winners are never dropped. Returns the picks, a note per finalist, the folds and
+/// the options dropped for displacement.
+pub fn select_by_objectives(finals: &[Final], p: &Params, max: usize) -> (Vec<Pick>, Vec<String>, Vec<similar::Fold>, Vec<Displaced>) {
     let all: Vec<usize> = (0..finals.len()).collect();
     let mut notes: Vec<String> = vec![String::new(); finals.len()];
     let (keep_all, folds_all) = keep_pool(finals, &all, &mut notes, false);
@@ -612,7 +710,7 @@ pub fn select_by_objectives(finals: &[Final], p: &Params, max: usize) -> (Vec<Pi
             let pool: Vec<usize> = all.iter().copied().filter(|&i| eligible(obj, &finals[i])).collect();
             keep_pool(finals, &pool, &mut vec![String::new(); finals.len()], obj == Objective::LeastDetour)
         };
-        let Some(w) = objective_winner(finals, p, obj, &keep) else { continue };
+        let Some(w) = objective_winner(finals, obj, &keep) else { continue };
         folds.extend(fo);
         match chosen.iter_mut().find(|c| c.0 == w) {
             Some(c) => c.1.push(obj),
@@ -623,16 +721,28 @@ pub fn select_by_objectives(finals: &[Final], p: &Params, max: usize) -> (Vec<Pi
     let by_score = |a: &usize, b: &usize| finals[*b].score.partial_cmp(&finals[*a].score).unwrap_or(std::cmp::Ordering::Equal).then(a.cmp(b));
     let mut rest: Vec<usize> = keep_all.iter().copied().filter(|i| !chosen.iter().any(|c| c.0 == *i)).collect();
     rest.sort_by(by_score);
-    let mut extra: Vec<usize> = Vec::new();
-    for i in rest {
-        if chosen.len() + extra.len() >= max {
-            break;
+    let mut dropped: Vec<Displaced> = Vec::new();
+    let extra: Vec<usize> = loop {
+        let mut extra: Vec<usize> = Vec::new();
+        for &i in rest.iter().filter(|i| !dropped.iter().any(|d| d.from == **i)) {
+            if chosen.len() + extra.len() >= max {
+                break;
+            }
+            if chosen.iter().map(|c| c.0).chain(extra.iter().copied()).any(|k| similar::similar(&finals[i], &finals[k]).is_some()) {
+                continue;
+            }
+            extra.push(i);
         }
-        if chosen.iter().map(|c| c.0).chain(extra.iter().copied()).any(|k| similar::similar(&finals[i], &finals[k]).is_some()) {
-            continue;
+        let listed: Vec<usize> = chosen.iter().map(|c| c.0).chain(extra.iter().copied()).collect();
+        let worst = extra
+            .iter()
+            .filter_map(|&i| listed.iter().filter(|&&k| k != i).filter_map(|&k| displaces(finals, i, k)).min_by(|a, b| a.by_rise.partial_cmp(&b.by_rise).unwrap_or(std::cmp::Ordering::Equal)))
+            .max_by(|a, b| a.rise.partial_cmp(&b.rise).unwrap_or(std::cmp::Ordering::Equal));
+        match worst {
+            Some(d) => dropped.push(d),
+            None => break extra,
         }
-        extra.push(i);
-    }
+    };
     let mut picks: Vec<Pick> = chosen
         .into_iter()
         .map(|(idx, objs)| Pick { idx, why: format!("best for {}", objs.iter().map(|o| o.label()).collect::<Vec<_>>().join(" and ")), objectives: objs })
@@ -648,10 +758,13 @@ pub fn select_by_objectives(finals: &[Final], p: &Params, max: usize) -> (Vec<Pi
     for f in &folds {
         notes[f.from] = format!("folded into finalist {}: {}", f.into + 1, f.why.phrase());
     }
+    for d in &dropped {
+        notes[d.from] = format!("not published: finalist {} {}", d.by + 1, d.phrase());
+    }
     for (n, pk) in picks.iter().enumerate() {
         notes[pk.idx] = format!("chosen as option {}: {}", n + 1, pk.why);
     }
-    (picks, notes, folds)
+    (picks, notes, folds, dropped)
 }
 
 // ---------------------------------------------------------------- titles and summaries
@@ -838,11 +951,29 @@ pub struct Variant {
     pub why: similar::Why,
 }
 
-/// What the choice of options folded away: the variants of each published option (in `shown` order) and a machine-readable record of every fold.
+/// What the choice of options folded away: the variants of each published option (in `shown` order) and a machine-readable record of every
+/// fold, and the options dropped for displacement.
 #[derive(Clone, Default)]
 pub struct SimilarOut {
     pub variants: Vec<Vec<Variant>>,
     pub folded: Vec<Value>,
+    pub dropped: Vec<Value>,
+}
+
+/// A machine-readable record of every option dropped for displacement.
+pub fn displaced_out(ctx: &Ctx, finals: &[Final], dropped: &[Displaced]) -> Vec<Value> {
+    let link = |f: &Final| ctx.study.encode(&ctx.ivs(&f.set), Some(&ctx.p.periods[0]));
+    dropped
+        .iter()
+        .map(|d| {
+            json!({
+                "from": link(&finals[d.from]), "by": link(&finals[d.by]), "reason": d.phrase(), "removal": d.removal,
+                "throughCarsRemovedPct": r1(d.removed), "byThroughCarsRemovedPct": r1(d.by_removed),
+                "largestRiseVehPerHour": r1(d.rise), "byLargestRiseVehPerHour": r1(d.by_rise),
+                "noiseVehPerHour": r1(d.noise), "noiseBasis": d.noise_basis,
+            })
+        })
+        .collect()
 }
 
 pub fn similar_out(ctx: &Ctx, finals: &[Final], picks: &[Pick], folds: &[similar::Fold]) -> SimilarOut {
@@ -861,7 +992,7 @@ pub fn similar_out(ctx: &Ctx, finals: &[Final], picks: &[Pick], folds: &[similar
         .iter()
         .map(|f| json!({"from": link(&finals[f.from]), "into": link(&finals[f.into]), "why": f.why.key(), "reason": f.why.phrase(), "intoPublished": picks.iter().any(|pk| pk.idx == f.into)}))
         .collect();
-    SimilarOut { variants, folded }
+    SimilarOut { variants, folded, dropped: Vec::new() }
 }
 
 /// What the run did with the seeds file.
@@ -944,7 +1075,7 @@ pub fn explore(study: &Study, p: &Params) -> Outcome {
             f.prior = !e.last_published.is_empty();
         }
     }
-    let (picks, mut notes, folds) = select_by_objectives(&finals, p, p.options);
+    let (picks, mut notes, folds, dropped) = select_by_objectives(&finals, p, p.options);
     // Reference packages join the candidate list after the search candidates, so the search's indices stay valid.
     let mut all = cands.clone();
     let mut ref_sets: Vec<Vec<u16>> = Vec::new();
@@ -1013,7 +1144,8 @@ pub fn explore(study: &Study, p: &Params) -> Outcome {
     for (n, pk) in picks.iter().enumerate() {
         notes[pk.idx] = format!("chosen as option {}: {}", n + 1, pk.why);
     }
-    let sim = similar_out(&ctx_all, &finals, &picks, &folds);
+    let mut sim = similar_out(&ctx_all, &finals, &picks, &folds);
+    sim.dropped = displaced_out(&ctx_all, &finals, &dropped);
     let mut ref_finals = if ref_sets.is_empty() { Vec::new() } else { eprintln!("rechecking {} reference package(s)", ref_sets.len()); recheck(&ctx_all, &ref_sets) };
     for f in ref_finals.iter_mut() {
         f.access = check_access(study, &ctx_all.ivs(&f.set)).err();
@@ -1231,6 +1363,9 @@ pub fn build_json(study: &Study, p: &Params, cands: &[Cand], base: &Baseline, sh
         if let Some(pic) = &f.picture {
             v["picture"] = pic.to_json();
         }
+        if let Some(pic) = &f.picture_all {
+            v["pictureAll"] = pic.to_json();
+        }
         v
     };
     let mut proposals: Vec<Value> = shown.iter().enumerate().map(|(n, f)| entry(format!("p{}", n + 1), title(cands, &f.set), f, "search", None)).collect();
@@ -1282,9 +1417,14 @@ pub fn build_json(study: &Study, p: &Params, cands: &[Cand], base: &Baseline, sh
     });
     computed["objectives"] = json!({
         "list": p.objectives.iter().map(|o| json!({"id": o.id(), "label": o.label(), "rule": o.rule()})).collect::<Vec<_>>(),
-        "detourWeightPointsPerSecond": p.detour_weight,
         "detourReductionFloor": DETOUR_REDUCTION_FLOOR,
-        "note": "Each option lists the objectives it is the best for. Detour is the added trip time of completed car trips that start or end inside the study area, scenario minus baseline on the same seed. ASSUMPTION: the weight and the floor.",
+        "detourTieSeconds": DETOUR_TIE_S,
+        "note": "Each option lists the objectives it is the best for. Detour is the added trip time of completed car trips that start or end inside the study area, scenario minus baseline on the same seed. ASSUMPTION: the reduction floor, and the detour tie threshold used only when fewer than the minimum seed pairs are available.",
+    });
+    computed["displacement"] = json!({
+        "rule": "An option that is not the winner of a goal is not published when another published option removes at least as many through cars, or is not distinguishable from it on the paired comparison, and its largest all-car rise on one block is smaller by more than the noise of the two rises: the paired intervals' half widths combined, or a floor when either has none. ASSUMPTION: the floor.",
+        "floorVehPerHour": NOISE_FLOOR_VEH_H,
+        "dropped": sim.dropped,
     });
     computed["similarity"] = json!({
         "rule": "Two rechecked packages are similar when they act at the same places, or differ by at most one change and cut through cars alike on the paired comparison, or change through cars on the side-street blocks almost identically. One of each similar group is published; the others are listed on it as variants. ASSUMPTION: the thresholds.",
@@ -1412,25 +1552,12 @@ fn build_markdown(study: &Study, p: &Params, ctx: &Ctx, state: &SearchState, fin
             notes[i]
         );
     }
-    let _ = writeln!(md, "\n## Residents' detour weight\n");
+    let _ = writeln!(md, "\n## Residents' detour\n");
     let _ = writeln!(
         md,
-        "The least-detour objective subtracts {} points of through-car reduction per second of added resident trip time (ASSUMPTION), among packages that remove at least {:.0}% of the most removed. Winner among the rechecked finalists at half and double the weight (a rechecked package that passes the filters of the main choice):\n\n| Weight | Winner | Through cars removed (%) | Detour (s per trip) |\n| --- | --- | --- | --- |",
-        p.detour_weight,
+        "The least-detour objective takes, among the packages that remove at least {:.0}% of the most removed (ASSUMPTION: the share), the one with the smallest added resident trip time per trip. A difference in detour the paired comparison cannot resolve goes to the package that removes more through cars, then to the one with fewer changes.\n",
         DETOUR_REDUCTION_FLOOR * 100.0
     );
-    let pool: Vec<usize> = (0..finals.len()).filter(|&i| finals[i].reject.is_none() && reduces(&finals[i])).collect();
-    for w in [p.detour_weight / 2.0, p.detour_weight, p.detour_weight * 2.0] {
-        let q = Params { detour_weight: w, ..p.clone() };
-        match objective_winner(finals, &q, Objective::LeastDetour, &pool) {
-            Some(i) => {
-                let _ = writeln!(md, "| {w} | {} | {:.1} | {:+.1} |", title(cands, &finals[i].set), finals[i].reduction_pct, finals[i].detour_s);
-            }
-            None => {
-                let _ = writeln!(md, "| {w} | none | | |");
-            }
-        }
-    }
     let _ = writeln!(md, "\n## Chosen options\n");
     for (n, (pick, f)) in picks.iter().zip(shown).enumerate() {
         let _ = writeln!(md, "{}. {} ({}; source: {}; estimates: {}). {} Residents' detour: {:+.1} s per trip, {:+.0} vehicle-minutes an hour ({}).", n + 1, title(cands, &f.set), pick.why, f.origin.phrase(), f.role, summary(study, cands, f), f.detour_s, f.detour_vmin_h, detour_phrase(&f.detour));
@@ -1489,6 +1616,13 @@ fn build_markdown(study: &Study, p: &Params, ctx: &Ctx, state: &SearchState, fin
         let _ = writeln!(md, "Near-duplicates are published once; the others are listed on the kept option as variants. Picture distance limit (assumption): {:.2}.\n", similar::PICTURE_DISTANCE_MAX);
         for f in &sim.folded {
             let _ = writeln!(md, "- `{}` folded into `{}`: {}{}.", f["from"].as_str().unwrap_or(""), f["into"].as_str().unwrap_or(""), f["reason"].as_str().unwrap_or(""), if f["intoPublished"] == true { "" } else { " (the package it folded into was not published either)" });
+        }
+    }
+    if !sim.dropped.is_empty() {
+        let _ = writeln!(md, "\n## Dropped for displacement\n");
+        let _ = writeln!(md, "An option that wins no goal is not published when another published option removes at least as many through cars, or cannot be told from it on the paired comparison, and piles clearly fewer cars onto its worst block (floor when a rise has no interval: {} cars an hour, an assumption).\n", NOISE_FLOOR_VEH_H);
+        for d in &sim.dropped {
+            let _ = writeln!(md, "- `{}` dropped for `{}`: {}.", d["from"].as_str().unwrap_or(""), d["by"].as_str().unwrap_or(""), d["reason"].as_str().unwrap_or(""));
         }
     }
     if picks.is_empty() {

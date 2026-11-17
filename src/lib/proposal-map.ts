@@ -1,6 +1,7 @@
 // What the card's map says when a street or a change is hovered, focused or tapped. Kept out of the component so it can be tested.
 import { DEAD_BAND_CUTTHROUGH } from './change';
-import type { BlockChange } from './picture';
+import { blockChanges, type BlockChange } from './picture';
+import type { NetIndex } from './naming';
 import { signedNum, type Proposal, type ProposalPicture } from './proposals';
 
 const round = Math.round;
@@ -27,6 +28,23 @@ export function allCarsLine(p: Proposal, pic: ProposalPicture, blockLabel: strin
   const through = b.throughIncreaseVehPerHour;
   const split = through === undefined ? '' : `: through cars ${signedNum(through, '', 0).trim()}, local trips ${signedNum(b.increaseVehPerHour - through, '', 0).trim()}`;
   return `All cars on this block, ${when}: ${round(b.baselineVehPerHour)} → ${round(b.scenarioVehPerHour)} an hour (${signedNum(b.increaseVehPerHour, 'cars an hour', 0)}${split}). The file records all cars for this block only.`;
+}
+
+/** All cars per block (both directions together) from the file's `pictureAll`, keyed by block; null when the file has none. */
+export function allCarsByBlock(p: Pick<Proposal, 'pictureAll'>, index: NetIndex): Map<number, BlockChange> | null {
+  return p.pictureAll ? new Map(blockChanges(p.pictureAll, index).map((c) => [c.block, c])) : null;
+}
+
+/** "All cars on this block, PM peak: 120 → 328 an hour (+208 cars an hour): through cars +94, local trips +114." `all` is the block's all-car change, `through` its through-car change. */
+export function allCarsPictureLine(all: { base: number; scen: number }, through: { base: number; scen: number }, when: string): string {
+  const total = round(all.scen) - round(all.base);
+  const t = round(through.scen) - round(through.base);
+  return `All cars on this block, ${when}: ${round(all.base)} → ${round(all.scen)} an hour (${signedNum(total, 'cars an hour', 0)}): through cars ${signedNum(t, '', 0).trim()}, local trips ${signedNum(total - t, '', 0).trim()}.`;
+}
+
+/** The short form for the hover tip: "120 → 328 all cars an hour". */
+export function allCarsShort(all: { base: number; scen: number }): string {
+  return `${round(all.base)} → ${round(all.scen)} all cars an hour`;
 }
 
 export const ALL_CARS_MISSING = 'All cars on this block (through cars and local trips) are not in the published file; it records them only for the block with the largest rise.';

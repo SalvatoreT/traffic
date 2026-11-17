@@ -166,7 +166,7 @@ export function Proposals({ bundle, index, today, state, loaded, mode, current, 
 
 /** A variant opens as a scenario of its own: its link, with the option's name for the notice. */
 function variantProposal(p: Proposal, v: Variant): Proposal {
-  const { picture: _p, variants: _v, ...rest } = p;
+  const { picture: _p, pictureAll: _a, variants: _v, ...rest } = p;
   return { ...rest, title: `${p.title} (variant)`, link: v.link };
 }
 

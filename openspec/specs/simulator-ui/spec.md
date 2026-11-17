@@ -964,12 +964,21 @@ A proposal card SHALL show residents' detour as seconds per resident trip with i
 #### Scenario: Detour line
 - **WHEN** an option has a recorded detour
 - **THEN** its card shows seconds per resident trip and the interval over runs
+
 ### Requirement: Street facts on the card's map
-Moving the pointer over, focusing, or tapping a measured street on a card's map SHALL show its name and block, its through cars an hour today and with the proposal in the picture's period, the change, that the figure counts through cars only, and the runs it is a mean over. It SHALL say when the change is within run-to-run variation. It SHALL give all cars on the block only for a block whose all-car figures the file records, and otherwise say they are not in the file.
+Moving the pointer over, focusing, or tapping a measured street on a card's map SHALL show its name and block, its through cars an hour today and with the proposal in the picture's period, the change, and the runs it is a mean over. It SHALL say when the change is within run-to-run variation. When the file has all-car figures for the proposal (`pictureAll`), it SHALL show all cars on the block today and with the proposal beside the through cars, split into through cars and local trips, in the street panel and the hover tip, and the "Streets that change" table SHALL carry an all-cars column. When the file has none, it SHALL give all cars only for a block whose all-car figures the file records, and otherwise say they are not in the file.
 
 #### Scenario: Street hover
 - **WHEN** the pointer is over a side street whose through cars go from 5 to 34
 - **THEN** the card names the block and says 5 to 34 through cars an hour in the period, up 29, through cars only, with the runs
+
+#### Scenario: Street hover with all cars
+- **WHEN** the pointer is over a side street whose through cars go from 5 to 99 and whose all cars go from 70 to 278, and the file has `pictureAll`
+- **THEN** the card names the block, says 5 to 99 through cars an hour, and says 70 to 278 all cars an hour, up 208, with the through and local split
+
+#### Scenario: Street hover without all cars
+- **WHEN** the file has no `pictureAll` and the street is not the block with the largest rise
+- **THEN** the card says all cars on the block are not in the file
 
 ### Requirement: Where a change sends traffic, and keyboard access
 Moving over, focusing, or tapping a drawn change SHALL show, from stored redirect data, how many cars used it, the routes most take with cars an hour, and how many do not newly drive a side street; the routes are drawn as numbered arrows. Every fact on the map SHALL also be reachable by keyboard through a table "Streets that change" and a list "Where filtered traffic goes", and the map SHALL highlight the focused row. Escape SHALL clear a pinned selection.

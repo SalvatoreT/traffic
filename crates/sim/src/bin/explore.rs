@@ -14,7 +14,7 @@ fn usage(msg: &str) -> ! {
         "usage: explore --area ID [--periods pm_peak,am_peak] [--seeds 1-10] [--beam 3] [--depth 8] [--candidates 40]\n\
          \x20              [--confirm-seeds 101-110] [--no-confirm]   (defaults: --seeds 1-3 --confirm-seeds 101-110; seeds accept lists or ranges: 1-10)\n\
          \x20              [--screen-minutes 30] [--minutes 60] [--budget-evals N] [--jobs N] [--harm-weight 0.1] [--expand 16]\n\
-         \x20              [--finalists 12] [--options 6] [--objectives all|most-removed,no-closures,least-detour,fewest-changes] [--detour-weight 0.5] [--out public/data/ID.proposals.json] [--report data/proposals/ID.md]\n\
+         \x20              [--finalists 12] [--options 6] [--objectives all|most-removed,no-closures,least-detour,fewest-changes] [--out public/data/ID.proposals.json] [--report data/proposals/ID.md]\n\
          \x20              [--references data/proposals/ID.references.json] [--profile ID[,ID...]|all] [--profiles FILE]   (optional limits; none are published) [--no-warm-start]\n\
          \x20              [--known data/proposals/ID.seeds.json] [--no-known]   known packages to recheck and start from (each run adds its published options)\n\
          \x20              [--check LINK ...] [--check-subsets] [--check-singles]   score given scenario links, or with --check-singles every candidate alone, by the search's own code, then print and exit (nothing is written)\n\
@@ -122,7 +122,6 @@ fn main() {
                     v.split(',').map(|i| objectives::Objective::from_id(i.trim()).unwrap_or_else(|| usage(&format!("unknown objective {i}; one of most-removed, no-closures, least-detour, fewest-changes, or all")))).collect()
                 }
             }
-            "--detour-weight" => p.detour_weight = num("--detour-weight"),
             "--add-seed" => add_seed.push(v.clone()),
             "--note" => seed_note = v.clone(),
             "--published-on" => seed_published = v.clone(),

@@ -67,6 +67,8 @@ export interface Proposal {
   residentsDetour?: ResidentsDetour;
   /** Per-link through cars for the card's picture. Absent in files written before pictures; the card then shows none. */
   picture?: ProposalPicture;
+  /** All cars per link (through cars and local trips) on the side-street blocks the card measures, same period, links and seeds as `picture`. Absent in files written before it was added; the street panel then says all cars are not in the file. */
+  pictureAll?: ProposalPicture;
 }
 /**
  * `selection`: the runs that chose this option also estimate it, so the intervals are exploratory. `confirmation`: a frozen shortlist rerun on seeds
@@ -82,6 +84,8 @@ export interface ProposalEvidence {
  * parallel to `links` (link ids). Links with no through cars in either column are left out.
  */
 export interface ProposalPicture { period: string; links: number[]; base: number[]; scen: number[] }
+/** One option dropped for displacement: the other option that made it unnecessary and the figures behind that. */
+export interface DroppedOption { from: string; by: string; reason: string }
 export interface CutThrough {
   baselineVehPerHour: number; scenarioVehPerHour: number; changePct: number;
   /** Scenario minus baseline in through cars an hour, paired by seed. */
@@ -104,7 +108,9 @@ export interface Computed {
   simulator?: string; reportMethod?: string; sourceRevision?: string;
   settings?: Record<string, unknown>;
   /** The goals the options were chosen for, with the weights behind them. Absent in files written before. */
-  objectives?: { list: { id: string; label: string; rule: string }[]; detourWeightPointsPerSecond?: number; detourReductionFloor?: number; note?: string };
+  objectives?: { list: { id: string; label: string; rule: string }[]; detourReductionFloor?: number; note?: string };
+  /** Options that win no goal and were left out because another option removes as many through cars with a clearly smaller rise on one block. */
+  displacement?: { rule: string; floorVehPerHour: number; dropped: DroppedOption[] };
   estimation?: {
     method: string; level: number; minPairs: number; aggregation: string; scope: string; maximum: string; practicalFloors: string;
     selection: { estimates: 'exploratory' | 'confirmation'; discoverySeeds: number[]; confirmationSeeds: number[]; shortlist: string[] };
@@ -197,11 +203,18 @@ const withValidVariants = (p: Proposal): Proposal => {
   const ok = Array.isArray(variants) ? variants.filter(isVariant) : [];
   return ok.length > 0 ? { ...rest, variants: ok } : rest;
 };
-/** A malformed picture is dropped, so the card shows none instead of a broken one. */
+/** A malformed picture is dropped, so the card shows none instead of a broken one. A malformed all-cars picture is dropped alone: the card keeps its through-car map and says all cars are not in the file. */
 const withValidPicture = (p: Proposal): Proposal => {
-  if (p.picture === undefined || isPicture(p.picture)) return p;
-  const { picture: _dropped, ...rest } = p;
-  return rest;
+  let out = p;
+  if (out.picture !== undefined && !isPicture(out.picture)) {
+    const { picture: _dropped, ...rest } = out;
+    out = rest;
+  }
+  if (out.pictureAll !== undefined && !isPicture(out.pictureAll)) {
+    const { pictureAll: _dropped, ...rest } = out;
+    out = rest;
+  }
+  return out;
 };
 function normalizeGroup(g: ProposalGroup): ProposalGroup {
   if (g.proposals.every(isCurrent)) return { ...g, proposals: g.proposals.map((p) => withValidVariants(withValidPicture(fromV4(p)))) };
@@ -639,7 +652,7 @@ export const allProposals = (file: Proposals): Proposal[] => file.groups.flatMap
 export const OBJECTIVE_LABELS: Record<string, string> = {
   'most-removed': 'most cut-through removed',
   'no-closures': 'no street closures',
-  'least-detour': "most removed after counting residents' detour",
+  'least-detour': 'least detour for residents',
   'fewest-changes': 'fewest changes',
 };
 
