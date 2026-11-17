@@ -19,6 +19,6 @@
 
 ## 4. Evaluation and record
 
-- [ ] 4.1 Tests, WASM parity and trace identity, validation suite.
-- [ ] 4.2 `npm run assess -- --publish --noise`; PM seeds 11 to 20.
-- [ ] 4.3 Round 38 in the calibration record; area note and caveat; `tools/import-osm.ts` rerun.
+- [x] 4.1 Tests, WASM parity and trace identity, validation suite.
+- [x] 4.2 `npm run assess -- --publish --noise`; PM seeds 11 to 20.
+- [x] 4.3 Round 38 in the calibration record; area note and caveat; `tools/import-osm.ts` rerun.
