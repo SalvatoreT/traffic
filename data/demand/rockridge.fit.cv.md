@@ -333,6 +333,11 @@ After the final count refit 1 uncounted link(s) remain above their limit (worst:
 - intersection count ashby-claremont: the WB approach to the N leg (239 veh/h) can use a slip link, so no movement constraint is made for it; the leg stations carry it
 - training view of split be72380b485e: 77 observations of held groups and 5 aggregate counts overlapping held blocks are removed from the gate totals, ramp volumes, trip ends, assumed movements and the fit
 - recency weights (ASSUMPTION, reference year 2026): caltrans-ramp 2012: 12 stations, weight x1 (ramp stations, exempt from the age bands); caltrans-ramp 2024: 3 stations, weight x1; CHRCO-EIR2014 2013: 84 stations, weight x0.5; CHRCO-EIR2014 2013: 2 stations, weight x1 (ramp stations, exempt from the age bands); oakland-tmc 2019: 12 stations, weight x1; SafewayCollege-DEIR2011 2010: 45 stations, weight x0.5; volunteer-count 2025: 112 stations, weight x1
+- through target Hillegass Avenue NB: its street run holds a held-out block; left out of the training view
+- through target Colby Street NB: its street run holds a held-out block; left out of the training view
+- through target Hillegass Avenue SB: its street run holds a held-out block; left out of the training view
+- through target Colby Street SB: its street run holds a held-out block; left out of the training view
+- through targets: simulated membership from data/demand/rockridge.through-membership.json (pm_peak 10 runs, am_peak 10 runs, midday 10 runs), prior 5 trips at the static route share (ASSUMPTION)
 - assumed movement colby-nb-left-alcatraz-west: its whole-street count overlaps a held block and is withheld; not assumed in the training view
 - assumed movement colby-nb-right-alcatraz-east: its whole-street count overlaps a held block and is withheld; not assumed in the training view
 - assumed movement intents, am_peak: 149.6 veh/h taken from plain flows between the same pairs

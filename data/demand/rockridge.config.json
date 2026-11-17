@@ -621,6 +621,14 @@
       "weight": 0.5,
       "_note": "DERIVED volumes on the select-link blocks: ramp count x via-street share / freeway share of the street's traffic (tools/lib/share-targets.ts impliedVolumes). Soft constraint with the share weight, below the counts."
     },
+    "throughTargets": {
+      "enabled": true,
+      "targets": "data/calibration/rockridge.targets.json",
+      "weight": 1,
+      "otherPeriods": "ceiling",
+      "measured": { "file": "data/demand/rockridge.through-membership.json", "priorTrips": 5 },
+      "_note": "Calibration round 39 (decision of the project lead, 2026-11-16): the through-car figures of the select-link blocks marked fitThrough in the targets file are fit targets. PM target = middle of the resident volunteer count's range (DATA bounds, central value ASSUMPTION), weight 1 like the whole-street route counts (ASSUMPTION). AM and midday: the PM range times the period volume factor, acting only above its upper end (ASSUMPTION). Membership: each pair's share of simulated trips on the run (tools/through-membership.ts), with the static route share as a prior worth priorTrips trips (ASSUMPTION). enabled 'report' prints the figures without fitting them."
+    },
     "stationsOutput": "data/demand/rockridge.stations.json",
     "composition": [
       "Colby Street",
