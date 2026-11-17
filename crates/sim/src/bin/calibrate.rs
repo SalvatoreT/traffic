@@ -755,6 +755,9 @@ fn main() {
         through_rows.push((t.label.clone(), vol, share, vol * share, thr, fw, range));
     }
 
+    // Blocks whose through figure the demand fit targets (round 39): marked `fitThrough` in the targets file, with the demand config's through targets on.
+    let fit_on = std::fs::read_to_string(root.join(format!("data/demand/{}.config.json", args.area))).ok().and_then(|t| serde_json::from_str::<Value>(&t).ok()).map_or(false, |c| c["countFit"]["throughTargets"]["enabled"] == Value::Bool(true));
+    let fitted_through: std::collections::BTreeSet<String> = if fit_on { targets["selectLink"].as_array().map(|a| a.iter().filter(|t| t["fitThrough"] == Value::Bool(true)).map(|t| format!("{} {}", t["street"].as_str().unwrap_or(""), t["direction"].as_str().unwrap_or(""))).collect()).unwrap_or_default() } else { Default::default() };
     // ---- intent map (round 21): through cars by origin group and destination group
     let groups_v: Option<Value> = std::fs::read_to_string(root.join(format!("data/demand/{}.groups.json", args.area))).ok().and_then(|t| serde_json::from_str(&t).ok());
     let mut intent_rows: Vec<intent::Row> = Vec::new();
@@ -1077,6 +1080,9 @@ fn main() {
         let (rs, ok) = match range { Some((lo, hi)) => (format!("{lo:.0} to {hi:.0}"), if *thr >= *lo && *thr <= *hi { "yes" } else if *thr < *lo { "below" } else { "above" }), None => ("n/a".to_string(), "n/a") };
         let _ = writeln!(md, "| {l} | {vol:.0} | {} | {ex:.0} | {rs} | {thr:.0} | {ok} | {fw:.0} |", pct1(*sh));
     }
+    if !fitted_through.is_empty() {
+        let _ = writeln!(md, "\nFitted: {} are targets of the demand fit (`countFit.throughTargets`, calibration round 39), so these rows are no longer an independent check. The checks that stay independent are the held-out count stations, the headline freeway shares, stability and the arterial travel times.", fitted_through.iter().cloned().collect::<Vec<_>>().join(", "));
+    }
     if let Some(g) = &intent_groups {
         md.push_str(&intent::report(&intent_rows, g, &targets, 1, pm));
     }
@@ -1246,7 +1252,7 @@ fn main() {
             "vulnerable": serde_json::to_value(&m.vulnerable).unwrap_or(Value::Null),
             "series": series.iter().map(|s| json!({"tMin": s.t / 60.0, "vehicles": s.veh, "backlog": s.backlog, "completed": s.completed, "removed": s.removed, "arterialSpeed": s.art_speed})).collect::<Vec<_>>(),
             "intentRows": intent::rows_json(&intent_rows),
-            "throughCheck": through_rows.iter().map(|(l, vol, sh, ex, thr, fw, range)| json!({"block": l, "observedVehPerHour": vol, "freewayShare": sh, "observedFreewayEnd": ex, "expectedThroughLow": range.map(|r| r.0), "expectedThroughHigh": range.map(|r| r.1), "modeledThrough": thr, "modeledFreewayTrips": fw})).collect::<Vec<_>>(),
+            "throughCheck": through_rows.iter().map(|(l, vol, sh, ex, thr, fw, range)| json!({"block": l, "observedVehPerHour": vol, "freewayShare": sh, "observedFreewayEnd": ex, "expectedThroughLow": range.map(|r| r.0), "expectedThroughHigh": range.map(|r| r.1), "modeledThrough": thr, "modeledFreewayTrips": fw, "fitted": fitted_through.contains(l)})).collect::<Vec<_>>(),
             "shares": rows.iter().map(|r| json!({
                 "block": r.target, "side": r.side, "via": r.via, "observed": r.observed, "observedPm": r.observed_pm,
                 "modelled": if r.modeled.is_nan() { Value::Null } else { json!(r.modeled) }, "n": r.n, "headline": r.headline,

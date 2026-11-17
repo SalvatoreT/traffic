@@ -9,7 +9,9 @@ import { discoverRamps, matchRampVolumes, type Ramp, type RampRow, type RampVolu
 import { linkMetrics, perimeterGap, perimeterLength, perimeterPos, relevanceOf, Router, routeStat, sideOf, type Rect, type Relevance, type RouteStat } from './lib/demand-audit';
 import { makeProjection, pointInPolygon } from './lib/geo';
 import { buildGraph, costToGo, treeFrom, type Graph } from './lib/assign';
-import { applySplit, buildStations, corridorOf, overusedRecords, fitPeriod, fitReport, splitStationOf, stationObservations, type FitConfig, type NetLinkIn, type PeriodResult } from './lib/demand-fit';
+import { applySplit, buildStations, corridorOf, overusedRecords, fitPeriod, fitReport, splitStationOf, stationObservations, type FitConfig, type NetLinkIn, type PeriodResult, type ThroughFit, type ThroughTarget } from './lib/demand-fit';
+import { resolveBlock } from './lib/share-targets';
+import { throughTargetId } from './lib/through-membership';
 import { checkManifest, freezeSplit, manifestSha256, manifestText, overrideObservation, tmcObservation, withheldObservations, withheldStationIds, DEFAULT_RULE, type SplitManifest, type SplitStation } from './lib/lineage';
 import { createHash } from 'node:crypto';
 import type { FlowType } from './lib/fit-counts';
@@ -823,6 +825,46 @@ function loadMeasured(fc: { assignment?: { measured?: { file: string; alpha: num
   if (j.links !== net.links.length) { console.warn(`${m.file}: written for ${j.links} links, the network has ${net.links.length}; measured delays skipped`); return undefined; }
   return { delayS: j.delayS as Record<string, number[]>, alpha: m.alpha, weight: m.weight, source: `${m.file}, ${j.note}` };
 }
+// Through-car targets (calibration round 39): every select-link block of the targets file marked `fitThrough`. PM: the volunteer count's range, from the cars
+// that drove the whole street to the block volume less the cars whose trip ended along it; the central value is the target. Other periods: that range times the
+// period's volume factor (ASSUMPTION), acting only above its upper end. In the training view a target whose street run holds a held-out block is left out,
+// as are the whole-street route counts.
+function loadThrough(fc: { throughTargets?: { enabled: boolean | 'report'; targets: string; weight: number; otherPeriods?: 'ceiling' | 'none'; measured?: { file: string; priorTrips: number } } }, notes: string[]): ThroughFit | undefined {
+  const tt = fc.throughTargets;
+  if (!tt?.enabled) return undefined;
+  const tf = JSON.parse(readFileSync(tt.targets, 'utf8'));
+  const nodeBy = new Map(net.nodes.map((n: { id: number; x: number; y: number }) => [n.id, n]));
+  const heldBlocks = new Set([...withheldSt].flatMap((id) => { const m = id.match(/^count block (\d+)$/); return m ? [Number(m[1])] : []; }));
+  const targets: ThroughTarget[] = [];
+  for (const t of tf.selectLink ?? []) {
+    if (!t.fitThrough) continue;
+    const label = `${t.street} ${t.direction}`, pm = lastPeriod;
+    const vol = t.observedVehPerHour?.[pm], whole = t.wholeStreetVehPerHour?.[pm];
+    if (!(vol > 0) || !(whole > 0)) throw new Error(`through target ${label}: needs observedVehPerHour and wholeStreetVehPerHour for ${pm}`);
+    const blk = resolveBlock(net.links as never, nodeBy as never, t.street, t.direction, t.between ?? []);
+    if (!blk.links.length || blk.note.startsWith('FALLBACK')) throw new Error(`through target ${label}: street run not found (${blk.note})`);
+    if (training && blk.links.some((l) => heldBlocks.has(l))) { notes.push(`through target ${label}: its street run holds a held-out block; left out of the training view`); continue; }
+    const lo0 = whole, hi0 = Math.max(whole, vol - (t.endAlongVehPerHour?.[pm] ?? 0));
+    const other = tt.otherPeriods ?? 'ceiling';
+    const target: Record<string, number> = {}, lo: Record<string, number> = {}, hi: Record<string, number> = {};
+    const derived: string[] = [], ceiling: string[] = [];
+    for (const p of periodIds) {
+      if (p !== pm && other === 'none') continue;
+      const f = cfg.periodFactors[p].volume / cfg.periodFactors[pm].volume;
+      lo[p] = lo0 * f; hi[p] = hi0 * f; target[p] = ((lo0 + hi0) / 2) * f;
+      if (p !== pm) { derived.push(p); ceiling.push(p); }
+    }
+    targets.push({ id: throughTargetId(label), label: `${label}, through cars (${t.between?.join(' to ') ?? ''})`, links: blk.links, target, lo, hi, ceiling, derived, weight: tt.weight, basis: `DATA (resident volunteer count of 2025-02-25): whole-street cars ${whole}, block volume ${vol}, cars ending along ${t.endAlongVehPerHour?.[pm] ?? 0}; central value ASSUMPTION` });
+  }
+  let measured: ThroughFit['measured'];
+  const mf = tt.measured;
+  if (mf && existsSync(mf.file)) {
+    const j = JSON.parse(readFileSync(mf.file, 'utf8'));
+    if (j.network !== net.id) notes.push(`${mf.file}: written for network ${j.network}, this network is ${net.id}; through targets use static route shares`);
+    else { measured = j.periods; notes.push(`through targets: simulated membership from ${mf.file} (${Object.entries(j.periods as Record<string, { runs: number }>).map(([p, q]) => `${p} ${q.runs} runs`).join(', ')}), prior ${mf.priorTrips} trips at the static route share (ASSUMPTION)`); }
+  }
+  return { targets, inStudy: new Set(net.nodes.filter((n: { inStudyArea?: boolean }) => n.inStudyArea).map((n: { id: number }) => n.id)), measured, priorTrips: mf?.priorTrips ?? 5, reportOnly: tt.enabled === 'report' };
+}
 const localScaleLines = (): string[] => {
   if (!countEnds || !Object.keys(localScale).length) return [];
   const f = (x: number) => Math.round(x).toLocaleString('en-US').replace(/,/g, '');
@@ -922,6 +964,7 @@ if (fc?.enabled) {
     draws: fc.draws, dispersion: fc.dispersion,
     assignment: fc.assignment ? { method: fc.assignment.method, iterations: fc.assignment.iterations, drawsPerPass: fc.assignment.drawsPerPass, alpha: fc.assignment.alpha, beta: fc.assignment.beta, dispersion: fc.assignment.dispersion, rounds: fc.assignment.rounds } : undefined,
     measured: loadMeasured(fc),
+    through: loadThrough(fc, stationNotes),
     implied: fc.implied?.enabled && fc.shares?.enabled ? { weight: fc.implied.weight } : undefined,
     shares: fc.shares?.enabled ? { targets: JSON.parse(readFileSync(fc.shares.targets, 'utf8')), weight: fc.shares.weight, pmPeriod: lastPeriod } : undefined,
     guard: { enabled: fc.capacityGuard.enabled, excessShare: fc.capacityGuard.excessShare, weight: fc.capacityGuard.weight, capacity: fc.capacityGuard.capacity },

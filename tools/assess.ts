@@ -262,8 +262,9 @@ for (const p of periods) {
   if (!sp || !v.rule || noCounts(p)) { L.push(`| ${p} | ${yn(v.stable)} | ${yn(v.d5, 'not gated')} | no ${p === 'midday' ? 'midday ' : ''}counts: stability only | no counts | ${thr} | - | - |`); continue; }
   L.push(`| ${p} | ${yn(v.stable)} | ${yn(v.d5, 'not gated')} | ${tl(sp.recent.fitted)}, ${rvText(v.rule.fitted)} | ${tl(sp.recent.held)}, ${rvText(v.rule.held)} | ${thr} | ${sp.heldInFit ? tl(sp.heldInFit.recent) : '-'} | ${tl(sp.older.fitted)} / ${tl(sp.older.held)} |`);
 }
-L.push('', 'Through cars per hour, seed mean against the observed range:', '', '| Period | Block | Modeled | Observed range | Inside |', '| --- | --- | --- | --- | --- |');
-for (const p of periods) for (const q of throughRows[p] ?? []) L.push(`| ${p} | ${q.block} | ${f(q.mean, 0)} | ${q.low} to ${q.high} | ${q.inside ? 'yes' : 'NO'} |`);
+L.push('', 'Through cars per hour, seed mean against the observed range:', '', '| Period | Block | Modeled | Observed range | Inside | Fitted |', '| --- | --- | --- | --- | --- | --- |');
+for (const p of periods) for (const q of throughRows[p] ?? []) L.push(`| ${p} | ${q.block} | ${f(q.mean, 0)} | ${q.low} to ${q.high} | ${q.inside ? 'yes' : 'NO'} | ${q.fitted ? 'yes' : 'no'} |`);
+if (periods.some((p) => (throughRows[p] ?? []).some((q) => q.fitted))) L.push('', 'Fitted blocks are targets of the demand fit (calibration round 39), so they are no longer an independent check. The independent checks are the held-out stations, the headline freeway shares, stability and the arterial travel times.');
 const failing = periods.filter((p) => heldFails[p]?.length);
 if (failing.length) {
   L.push('', 'Recent held-out stations at GEH 5 or more on the cross-validation demand (out of sample), with the same station on the shipped demand:', '', '| Period | Station | Source | Counted | Cross-validation | GEH | Shipped demand | GEH |', '| --- | --- | --- | --- | --- | --- | --- | --- |');

@@ -283,6 +283,50 @@ export interface FitConfig {
   measured?: { delayS: Record<string, number[]>; alpha: number; source: string; weight?: number };
   draws: number; dispersion: number;
   guard: { enabled: boolean; excessShare: number; weight: number; capacity: CapTable };
+  /** Through-car targets on named street runs (calibration round 39); see `throughConstraints`. */
+  through?: ThroughFit;
+}
+
+/**
+ * A through-car target: cars per hour with neither trip end in the study area that use any link of a street run, each car counted once (the calibrate
+ * report's through figure). `target` is the central value; `lo` and `hi` bound the tolerance. A period listed in `ceiling` acts only above `hi`.
+ */
+export interface ThroughTarget { id: string; label: string; links: number[]; target: Record<string, number>; lo: Record<string, number>; hi: Record<string, number>; ceiling: string[]; derived: string[]; weight: number; basis: string }
+/** Simulated through trips per origin-destination pair (`tools/through-membership.ts`): over `runs` seed runs, `hits[id]["o>d"]` trips of the pair counted on target `id`, `trips["o>d"]` trips of the pair offered (veh/h summed over the runs; only pairs with a counted trip). */
+export interface ThroughMeasured { runs: number; source: string; hits: Record<string, Record<string, number>>; trips: Record<string, number> }
+/** `reportOnly`: the figures are reported, no constraint enters the fit (the table is the one built without targets). */
+export interface ThroughFit { targets: ThroughTarget[]; inStudy: Set<number>; measured?: Record<string, ThroughMeasured>; priorTrips: number; reportOnly?: boolean }
+
+/**
+ * Per-flow proportions of a through target. Static: the share of the flow's assigned routes that use the run (through flows only). Measured: per pair, the
+ * simulated through trips on the run over the trips offered, after the pinned flows' static share is taken out; the static share enters as a prior worth
+ * `priorTrips` trips (ASSUMPTION), so a pair with few simulated trips stays near its static share.
+ */
+export function throughMembership(a: Assignment, flows: FlowIn[], feat: number, inStudy: Set<number>, m: ThroughMeasured | undefined, id: string, priorTrips: number, pinned: (k: number) => boolean): { stat: Float64Array; use: Float64Array } {
+  const n = flows.length, stat = new Float64Array(n);
+  if (a.feat) for (let k = 0; k < n; k++) {
+    if (inStudy.has(flows[k].origin) || inStudy.has(flows[k].destination)) continue;
+    for (let i = a.feat.start[k]; i < a.feat.start[k + 1]; i++) if (a.feat.id[i] === feat) stat[k] = Math.min(1, a.feat.share[i]);
+  }
+  if (!m) return { stat, use: stat };
+  const key = (k: number) => `${flows[k].origin}>${flows[k].destination}`;
+  const pinVol = new Map<string, number>(), pinThr = new Map<string, number>(), plainVol = new Map<string, number>(), plainThr = new Map<string, number>();
+  const add = (mp: Map<string, number>, q: string, v: number) => mp.set(q, (mp.get(q) ?? 0) + v);
+  for (let k = 0; k < n; k++) {
+    const q = key(k), v = flows[k].vehPerHour;
+    if (pinned(k)) { add(pinVol, q, v); add(pinThr, q, v * stat[k]); } else { add(plainVol, q, v); add(plainThr, q, v * stat[k]); }
+  }
+  const use = Float64Array.from(stat);
+  for (let k = 0; k < n; k++) {
+    if (pinned(k) || inStudy.has(flows[k].origin) || inStudy.has(flows[k].destination)) continue;
+    const q = key(k), pv = plainVol.get(q) ?? 0;
+    const p0 = pv > 0 ? (plainThr.get(q) ?? 0) / pv : 0;
+    // A pair with no simulated trip on any run is not in the file: its offered trips are taken as this table's plain volume over the runs.
+    const offered = q in m.trips ? Math.max(0, m.trips[q] - m.runs * (pinVol.get(q) ?? 0)) : m.runs * pv;
+    const hits = Math.max(0, (m.hits[id]?.[q] ?? 0) - m.runs * (pinThr.get(q) ?? 0));
+    use[k] = Math.min(1, (hits + priorTrips * p0) / (offered + priorTrips));
+  }
+  return { stat, use };
 }
 
 export interface PeriodResult {
@@ -304,6 +348,8 @@ export interface PeriodResult {
   heldRows: { st: Station; target: number; before: number; afterFit: number; final: number }[];
   impliedRows: { iv: ImpliedVolume; before: number; afterFit: number; final: number }[];
   shareRows: { spec: ShareSpec; offered: number; afterFit: number; final: number; n: number }[];
+  /** Through-car targets: the figure under the proportions the fit used (measured or static) and under the static route shares, offered and final. */
+  throughRows: { t: ThroughTarget; target: number; lo: number; hi: number; oneSided: boolean; measured: boolean; offered: number; final: number; staticOffered: number; staticFinal: number }[];
   unroutable: number;
   graphBans: number;
   cons: number;
@@ -334,6 +380,14 @@ export function fitPeriod(
     : assign(g, flows, cfg.draws, cfg.dispersion, features));
   const features: Feature[] = [], featOf = new Map<string, number>();
   for (const s of stations) if (s.feature && (s.target[id] ?? 0) > 0) { featOf.set(s.id, features.length); features.push(s.feature); }
+  const thr = (cfg.through?.targets ?? []).filter((t) => (t.target[id] ?? 0) > 0 && t.links.length);
+  for (const t of thr) { featOf.set(t.id, features.length); features.push({ kind: 'any', links: t.links }); }
+  const pinnedK = (k: number) => !!flows[k].via;
+  let thrMem: { stat: Float64Array; use: Float64Array }[] = [];
+  const thrCons = (aa: Assignment): Constraint[] => {
+    thrMem = thr.map((t) => throughMembership(aa, flows, featOf.get(t.id)!, cfg.through!.inStudy, cfg.through!.measured?.[id], t.id, cfg.through!.priorTrips, pinnedK));
+    return thr.map((t, i) => ({ id: t.id, kind: 'through', label: t.label, links: [], target: t.target[id], weight: t.weight, member: thrMem[i].use, ...(t.ceiling.includes(id) ? { ceiling: t.hi[id] } : {}) }));
+  };
   const toCons = (s: Station): Constraint => ({ id: s.id, kind: s.kind, label: s.label, links: s.links, origins: s.origins, destinations: s.destinations, target: s.target[id], weight: s.weightByPeriod?.[id] ?? s.weight, feature: featOf.get(s.id) });
   const heldCons: Constraint[] = stations.filter((s) => s.held && (s.target[id] ?? 0) > 0).map(toCons);
   const countCons: Constraint[] = stations.filter((s) => !s.held && (s.target[id] ?? 0) > 0).map(toCons);
@@ -355,10 +409,11 @@ export function fitPeriod(
     const rampTargets = stations.filter((q) => q.kind === 'ramp' && (q.target[id] ?? 0) > 0).map((q) => ({ links: q.links, target: q.target[id] }));
     implied = cfg.shares && cfg.implied && cfg.implied.weight > 0 ? impliedVolumes(nodes, links as ShareLink[], cfg.shares.targets, a, v0, id, cfg.shares.pmPeriod, rampTargets) : [];
     const impliedCons: Constraint[] = implied.map((q) => ({ id: q.id, kind: 'derived', label: q.label, links: [q.link], target: q.target, weight: cfg.implied!.weight }));
-    cons = [...countCons, ...impliedCons, ...shareCons];
+    const tc = thrCons(a).filter(() => !cfg.through?.reportOnly);
+    cons = [...countCons, ...tc, ...impliedCons, ...shareCons];
     before = assigned(a, v0, cons, nL);
-    // Counts only (no guard, no shares): the "after count fit" column.
-    r1 = fitToCounts(a, v0, types, countCons, nL, fitOpt);
+    // Counts only (no guard, no shares): the "after count fit" column. Through-car targets are counts.
+    r1 = fitToCounts(a, v0, types, [...countCons, ...tc], nL, fitOpt);
     f1 = v0.map((v, k) => v * r1.g[k]);
     afterFit = assigned(a, f1, cons, nL);
     V1 = linkVolumes(a, f1, nL);
@@ -389,11 +444,13 @@ export function fitPeriod(
   const byId = new Map(cons.map((c, i) => [c.id, i]));
   const shareRows = specs.map((q) => { const i = byId.get(q.id)!; return { spec: q, offered: before[i], afterFit: afterFit[i], final: final[i], n: q.ratio.flows.length }; });
   const impliedRows = implied.map((iv) => { const i = byId.get(iv.id)!; return { iv, before: before[i], afterFit: afterFit[i], final: final[i] }; });
+  const dot = (m: ArrayLike<number>, f: ArrayLike<number>) => { let x = 0; for (let k = 0; k < f.length; k++) x += m[k] * f[k]; return x; };
+  const throughRows = thr.map((t, i) => ({ t, target: t.target[id], lo: t.lo[id], hi: t.hi[id], oneSided: t.ceiling.includes(id), measured: !!cfg.through?.measured?.[id], offered: dot(thrMem[i].use, v0), final: dot(thrMem[i].use, volume), staticOffered: dot(thrMem[i].stat, v0), staticFinal: dot(thrMem[i].stat, volume) }));
   const heldIdx = heldCons.length ? { b: assigned(a, v0, heldCons, nL), f1: assigned(a, f1, heldCons, nL), f: assigned(a, fFinal, heldCons, nL) } : null;
   const heldRows = heldCons.map((c, i) => ({ st: stations.find((q) => q.id === c.id)!, target: c.target, before: heldIdx!.b[i], afterFit: heldIdx!.f1[i], final: heldIdx!.f[i] }));
   const stationRows = stations.filter((s) => byId.has(s.id)).map((s) => { const i = byId.get(s.id)!; return { st: s, target: cons[i].target, before: before[i], afterFit: afterFit[i], final: final[i] }; });
   const guardRemoved = Object.values(totals).reduce((x, q) => x + q.afterFit - q.final, 0);
-  return { id, volume, totals, stationRows, fit: rFinal, gFinal: [...rFinal.g], counted: rFinal.counted, types, guardBound, guardRemoved, guardFlows, residualOver, shareRows, heldRows, impliedRows, unroutable: [...a.routable].filter((x) => !x).length, graphBans: g.banned, cons: countCons.length, notes, assignment: a };
+  return { id, volume, totals, stationRows, fit: rFinal, gFinal: [...rFinal.g], counted: rFinal.counted, types, guardBound, guardRemoved, guardFlows, residualOver, shareRows, heldRows, impliedRows, throughRows, unroutable: [...a.routable].filter((x) => !x).length, graphBans: g.banned, cons: countCons.length, notes, assignment: a };
 }
 
 // ---------- report ----------
@@ -494,6 +551,11 @@ export function fitReport(area: string, results: PeriodResult[], flowsBy: Record
       for (const x of r.impliedRows) L.push(`| ${x.iv.label} | ${x.iv.arithmetic} | ${f0(x.iv.volumeB)} to ${f0(x.iv.volumeA)} | ${f0(x.iv.target)} | ${f0(x.before)} | ${f0(x.afterFit)} | ${f0(x.final)} |`);
       L.push('');
     }
+  }
+  if (results.some((r) => r.throughRows.length)) {
+    L.push('', '## Through-car targets on street runs', '', 'Cars an hour with neither trip end in the study area that use any link of the street run, each counted once (the calibrate report\'s through figure). PM: the target is the middle of the resident volunteer count\'s range (whole-street cars to the block volume less the cars ending along the street); the range is the tolerance. Other periods: the PM range times the period\'s volume factor (ASSUMPTION), acting only above its upper end, not scored. "Simulated membership": each pair\'s share of trips on the run comes from seed runs of the simulator (`countFit.throughTargets.measured`); "static": from the fit\'s own route shares.', '', '| Period | Street run | Range | Target | Membership | Offered | Final | Static route shares, offered | Static, final |', '| --- | --- | --- | --- | --- | --- | --- | --- | --- |');
+    for (const r of results) for (const x of r.throughRows) L.push(`| ${r.id} | ${x.t.label} | ${f0(x.lo)} to ${f0(x.hi)}${x.oneSided ? ' (upper limit only)' : ''} | ${f0(x.target)} | ${x.measured ? 'simulated' : 'static'} | ${f0(x.offered)} | ${f0(x.final)} | ${f0(x.staticOffered)} | ${f0(x.staticFinal)} |`);
+    L.push('');
   }
   if (opt.composition?.length && opt.links) {
     L.push('', '## Who uses the interior streets: composition of the assigned traffic', '', 'Mean assigned volume per block (veh/h) on the links of a street inside the study area, by the kind of trip that loads it: local-end (one end at a block of the area or the model, the other at a gate), through (gate to gate, no local end) and freeway-related (one end on the freeway). Offered = the table before the fit, final = the table that ships. Directions by link bearing (north half or south half).', '', '| Period | Street | Direction | Links | Offered local-end | Offered through | Offered freeway | Offered total | Final local-end | Final through | Final freeway | Final total |', '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |');

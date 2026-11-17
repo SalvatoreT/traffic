@@ -231,20 +231,22 @@ export interface OdFlow { origin: number; destination: number; via?: { a: number
  * A route property a count can constrain: a turning movement (link `a` followed at once by link `b`) or a path (the route uses link `first` and later link `last`),
  * with link indices as positions in the link list given to `buildGraph`.
  */
-export type Feature = { kind: 'move'; a: number; b: number } | { kind: 'path'; first: number; last: number };
+export type Feature = { kind: 'move'; a: number; b: number } | { kind: 'path'; first: number; last: number } | { kind: 'any'; links: number[] };
 /** Sparse link shares per flow, CSR: flow k uses links[start[k] .. start[k+1]] with share (0..1] each; unroutable flows have none. `feat` (when features were given) holds per flow the share of its routes that have each feature. */
 export interface Assignment { start: Int32Array; link: Int32Array; share: Float32Array; routable: Uint8Array; origin: Int32Array; destination: Int32Array; feat?: { start: Int32Array; id: Int32Array; share: Float32Array } }
 
 /** Features of one route (links in travel order): indices into `feats` that the route has. `byLink` maps a link to the features that start or end on it. */
 export function featureIndex(feats: Feature[]): Map<number, number[]> {
   const m = new Map<number, number[]>();
-  feats.forEach((f, i) => { const k = f.kind === 'move' ? f.a : f.first; (m.get(k) ?? m.set(k, []).get(k)!).push(i); });
+  feats.forEach((f, i) => { for (const k of f.kind === 'move' ? [f.a] : f.kind === 'path' ? [f.first] : f.links) (m.get(k) ?? m.set(k, []).get(k)!).push(i); });
   return m;
 }
+/** A route has an `any` feature once, however many of its links it uses (one vehicle counted once per street run, as the simulator's select-link records). */
 export function routeFeatures(route: ArrayLike<number>, feats: Feature[], idx: Map<number, number[]>, out: number[] = []): number[] {
+  const start = out.length;
   for (let i = 0; i < route.length; i++) for (const f of idx.get(route[i]) ?? []) {
     const ft = feats[f];
-    if (ft.kind === 'move') { if (route[i + 1] === ft.b) out.push(f); } else for (let j = i + 1; j < route.length; j++) if (route[j] === ft.last) { out.push(f); break; }
+    if (ft.kind === 'move') { if (route[i + 1] === ft.b) out.push(f); } else if (ft.kind === 'any') { if (out.indexOf(f, start) < 0) out.push(f); } else for (let j = i + 1; j < route.length; j++) if (route[j] === ft.last) { out.push(f); break; }
   }
   return out;
 }

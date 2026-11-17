@@ -22,6 +22,10 @@ export interface Constraint {
    * the rest of the denominator by ((1 - target) / (1 - modeled))^w, w being the constraint weight times the proportion in the denominator.
    */
   ratio?: { flows: ArrayLike<number>; den: ArrayLike<number>; num: ArrayLike<number> };
+  /** Explicit membership: per flow, the proportion of its volume the constraint counts (a select-link figure whose proportions come from routes or from simulated trips). Used instead of links and features. */
+  member?: ArrayLike<number>;
+  /** One-sided target: the constraint acts only while the assigned volume is above this value (then it pulls toward `target`). */
+  ceiling?: number;
 }
 
 export interface FitOptions {
@@ -115,6 +119,7 @@ function membership(a: Assignment, cons: Constraint[], nLinks: number) {
     for (const o of c.origins ?? []) (byOrigin.get(o) ?? byOrigin.set(o, []).get(o)!).push(i);
     for (const d of c.destinations ?? []) (byDest.get(d) ?? byDest.set(d, []).get(d)!).push(i);
   });
+  const memberCons = cons.map((c, i) => i).filter((i) => cons[i].member && cons[i].target > 0 && !cons[i].ratio);
   const byFeature = new Map<number, number[]>();
   cons.forEach((c, i) => { if (c.feature !== undefined && c.target > 0 && !c.ratio) (byFeature.get(c.feature) ?? byFeature.set(c.feature, []).get(c.feature)!).push(i); });
   const kk: number[] = [], cc: number[] = [], pp: number[] = [], nf: number[] = [];
@@ -125,6 +130,7 @@ function membership(a: Assignment, cons: Constraint[], nLinks: number) {
     for (let i = a.start[k]; i < a.start[k + 1]; i++) for (const c of inCons[a.link[i]]) acc.set(c, (acc.get(c) ?? 0) + a.share[i]);
     for (const c of byOrigin.get(a.origin[k]) ?? []) acc.set(c, (acc.get(c) ?? 0) + 1);
     for (const c of byDest.get(a.destination[k]) ?? []) acc.set(c, (acc.get(c) ?? 0) + 1);
+    for (const c of memberCons) { const p = cons[c].member![k]; if (p > 0) acc.set(c, (acc.get(c) ?? 0) + p); }
     for (const [c, p] of acc) { kk.push(k); cc.push(c); pp.push(Math.min(p, 1)); nf.push(0); }
     for (const c of ratioCons[k]) { const r = ratioOf[c].get(k)!; kk.push(k); cc.push(c); pp.push(r.den); nf.push(r.nf); }
   }
@@ -199,7 +205,8 @@ export function fitToCounts(a: Assignment, v0: ArrayLike<number>, types: FlowTyp
       if (f[k] <= lo(k) * (1 + 1e-9)) pinLo[c] += x;
     }
   };
-  const logErr = (c: number) => (!isRatio[c] && cons[c].target > 0 && A[c] > 1e-9 ? Math.log(cons[c].target / A[c]) : 0);
+  const idle = (c: number) => cons[c].ceiling !== undefined && A[c] <= cons[c].ceiling!;
+  const logErr = (c: number) => (!isRatio[c] && cons[c].target > 0 && A[c] > 1e-9 && !idle(c) ? Math.log(cons[c].target / A[c]) : 0);
   // Stations in tension: outside tolerance, with other stations outside tolerance the other way (or the capacity guard) on their flows, in volume at least half
   // of their shortfall. Found every 10 iterations from iteration 20 and kept out of the stopping test (they stay in the update and in `conflicts`).
   const tension = new Uint8Array(nC);
@@ -251,13 +258,13 @@ export function fitToCounts(a: Assignment, v0: ArrayLike<number>, types: FlowTyp
     if (it % 10 === 0) trace.push(maxErrFree);
     const lrNum = new Float64Array(nC), lrCom = new Float64Array(nC);
     for (let c = 0; c < nC; c++) {
-      if (!(cons[c].target > 0) || A[c] <= 1e-9) continue;
+      if (!(cons[c].target > 0) || A[c] <= 1e-9 || idle(c)) continue;
       if (isRatio[c]) { const r = clampS(Nn[c] / A[c]), s = clampS(cons[c].target); lrNum[c] = Math.log(s / r); lrCom[c] = Math.log((1 - s) / (1 - r)); } else lrNum[c] = lrCom[c] = Math.log(cons[c].target / A[c]);
     }
     const num = new Float64Array(n), den = new Float64Array(n);
     for (let i = 0; i < kk.length; i++) {
       const c = cc[i];
-      if (A[c] <= 1e-9) continue;
+      if (A[c] <= 1e-9 || idle(c)) continue;
       if (opt.band > 0 && !isRatio[c] && Math.abs(lrNum[c]) < opt.band) continue;
       const wt = w[c] * pp[i];
       num[kk[i]] += wt * (nf[i] * lrNum[c] + (1 - nf[i]) * lrCom[c]); den[kk[i]] += wt;
