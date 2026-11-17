@@ -6,18 +6,18 @@
 
 ## 2. Mechanism
 
-- [ ] 2.1 Route feature `any`; explicit membership and one-sided targets in the fit.
-- [ ] 2.2 Through targets in the demand fit (`countFit.throughTargets`), report section, training-view rule.
-- [ ] 2.3 `tools/through-membership.ts`; tests.
+- [x] 2.1 Route feature `any`; explicit membership and one-sided targets in the fit.
+- [x] 2.2 Through targets in the demand fit (`countFit.throughTargets`), report section, training-view rule.
+- [x] 2.3 `tools/through-membership.ts`; tests.
 
 ## 3. Iterations
 
-- [ ] 3.1 Baseline AM and midday select-od runs; report-only build reproduces the shipped demand.
-- [ ] 3.2 Iterate build, PM seeds 1 to 10, pool, until the stopping rule; PM seeds 11 to 20.
-- [ ] 3.3 `npm run data`; frozen split unchanged; no link renumbered.
+- [x] 3.1 Baseline AM and midday select-od runs; report-only build reproduces the shipped demand.
+- [x] 3.2 Iterate build, PM seeds 1 to 10, pool, until the stopping rule; PM seeds 11 to 20.
+- [x] 3.3 `npm run data`; frozen split unchanged; no link renumbered.
 
 ## 4. Evaluation and record
 
-- [ ] 4.1 Tests, WASM parity and trace identity, validation suite.
-- [ ] 4.2 `npm run assess -- --publish --noise`; PM seeds 11 to 20; `--od-costs` before and after.
-- [ ] 4.3 Round 39 in the record; README, spec, area note and caveat, site copy; `tools/import-osm.ts` rerun.
+- [x] 4.1 Tests, WASM parity and trace identity, validation suite.
+- [x] 4.2 `npm run assess -- --publish --noise`; PM seeds 11 to 20; `--od-costs` before and after.
+- [x] 4.3 Round 39 in the record; README, spec, area note and caveat, site copy; `tools/import-osm.ts` rerun.

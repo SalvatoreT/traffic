@@ -29,7 +29,7 @@ export const CUT_TRIPS = [
 ];
 export const CUT_ALT = { title: 'Three trips and the study area', desc: 'An outline marks the study area, with a bounding street along each edge. Trip 1, drawn as a solid line, enters from the left, crosses on side streets and leaves on the right. Trip 2, a dashed line, enters from the top and ends at a point inside. Trip 3, a dotted line, runs along the bounding street at the bottom without entering.' };
 
-export const CHECK_INTRO = 'We compare the simulation with traffic counts and with basic engineering checks, such as how many cars one signal can pass in an hour. We hold back about a quarter of the count locations when fitting trips and test against them. Earlier tuning rounds saw those scores, so this is a check, not a fully independent test.';
+export const CHECK_INTRO = 'We compare the simulation with traffic counts and with basic engineering checks, such as how many cars one signal can pass in an hour. We hold back about a quarter of the count locations when fitting trips and test against them. Earlier tuning rounds saw those scores, so this is a check, not a fully independent test. Where volunteers counted the cars driving through on side streets, we fit the trips to those counts too, so those streets no longer test the model.';
 export const checkStatus = (cal: Calibration | undefined): { status: string; note: string | null } => ({ status: calibrationStatusText(cal), note: cal?.note?.trim() || null });
 export const CHECK_MORE_LEAD = 'The judgment calls are on the';
 export const CHECK_MORE_MID = 'tab and the data and results of the checks are on the';

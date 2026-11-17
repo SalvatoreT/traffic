@@ -114,4 +114,19 @@ period rate is the hourly rate of the whole window, so the busiest hour of the w
 somewhat above it. The Oakland and Caltrans counts are peak hours too, so all counts are used as
 the hourly rate of their period in the same way. Midday has no interior count.
 
+Through cars on the four counted blocks (Hillegass Avenue and Colby Street, each direction, PM)
+are fit targets from round 39 on (project lead decision of 2026-11-16). Before that they were only
+a check. The range runs from the cars that drove the whole street to the block volume less the
+cars whose trip ended along it; the demand fit aims at the middle of that range
+(`countFit.throughTargets` in the demand config, blocks marked `fitThrough` in the targets file).
+It takes each trip pair's share of trips on a street from simulator runs
+(`data/demand/rockridge.through-membership.json`, written by `tools/through-membership.ts` from
+`calibrate --select-od` files), because the fit's own routes put fewer through cars on these streets
+than the simulator does. To refresh it, run ten seeds on the shipped demand with `--select-od`, then
+`npx tsx tools/through-membership.ts --period pm_peak --run DIR=public/data/rockridge.demand.json`
+(and the same for `am_peak` and `midday`), then `npm run data`. Because the four figures are fitted, they no
+longer check the model. The checks that stay independent are the held-out count stations, the
+headline freeway shares, stability and the arterial travel times. The calibrate report and the
+assessment mark the fitted rows.
+
 The router's control delays (signal, all-way stop, minor stop approach, circle) are in `crates/sim/data/node-delays.json`, read by the simulator and by the demand fit. `npx tsx tools/node-delays.ts --dir DIR --seeds 1-3 --write` rewrites them from kept seed reports (`--keep-seeds DIR`) and writes `rockridge.node-delays.md`. `calibrate` reports, in the seed JSON, the simulator's count of the volunteer count's turning movements and whole-street routes (`features`, select-link trips per hour, read from the station file the demand build writes) and the plan of every signal with an observed timing (`observedSignals`); `tools/assess.ts` prints them with the interior blocks, the entries by side and Colby Street and Hillegass Avenue block by block.

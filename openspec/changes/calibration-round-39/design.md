@@ -1,6 +1,6 @@
 ## Context
 
-Rounds 36 to 38 and the compact-extent model did not bring the through cars on the four counted blocks into their ranges. PM seeds 1 to 10 (11 to 20), shipped demand 1c798217e72fb1ba: Hillegass Ave SB 143 (146), Colby St SB 132 (140), Hillegass Ave NB 98 (96), Colby St NB 150 (152), against 79 to 120, 39 to 117, 48 to 95 and 102 to 145. Times are Pacific; the round ran on 2026-11-17.
+Rounds 36 to 38 and the compact-extent model did not bring the through cars on the four counted blocks into their ranges. PM seeds 1 to 10 (11 to 20), shipped demand 1c798217e72fb1ba: Hillegass Ave SB 143 (146), Colby St SB 132 (140), Hillegass Ave NB 98 (96), Colby St NB 150 (152), against 79 to 120, 39 to 117, 48 to 95 and 102 to 145. Times are Pacific; the round ran on 2026-11-16 from 22:00.
 
 ## Decisions
 
@@ -50,3 +50,5 @@ D8. Guard rails, frozen before any result of the new demand was seen. Baseline =
 - Reported, not rails: held-out stations (D7), AM and midday through figures and everything else in the assessment, the far gridlock, entry backlog by gate.
 
 D9. Stopping rule, frozen with D8. Iterate (build, PM seeds 1 to 10, pool, rebuild) until all four simulated figures are inside their ranges on seeds 1 to 10; then run seeds 11 to 20. Stop when all four are inside on both sets, or when an iteration does not cut the summed distance outside the ranges (seeds 1 to 10) by at least 10%, or after four iterations. Take the iteration that is inside on both sets (or, failing that, the one with the smallest summed distance) and stop; the central values are not chased past the ranges. If that iteration breaks a guard rail, try weight 0.5 on the targets once; if that also breaks one, the shipped demand stays and the record says so.
+
+D10. Outcome (recorded after the runs). Iteration 1 is the result: iteration 2 did not cut the distance outside the ranges (13.9 against 8.5 cars an hour on seeds 1 to 10), so the loop stopped. PM seeds 1 to 10 (11 to 20): Hillegass Ave NB 94 (96), Colby St NB 148 (161), Hillegass Ave SB 125 (129), Colby St SB 116 (120); two blocks inside on seeds 1 to 10, none on 11 to 20. Every guard rail held on both seed sets. The fit stops about 25% above the middle on Colby St NB and Hillegass Ave SB because the flows on those runs also carry ramp counts, freeway shares and block counts; no weight change or route constraint was tried, per D9. The status stays `uncalibrated`; details are in round 39 of the calibration record.

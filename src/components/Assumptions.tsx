@@ -225,7 +225,7 @@ function Reasons({ defs, bundle, index, mode, baseline, status, order, first, pe
       <AnchorHeading id={REASONS_ID} className="sticky-h" label="Why cars cut through">Why cars cut through</AnchorHeading>
       <p>
         These are hypotheses about why drivers cross the study area without an end in it, not what drivers said. A through trip that uses a residential or service street is filed under the first reason that fits: the freeway on-ramp it will use, the off-ramp it came by, or, for trips that use no ramp, where it starts and ends;
-        any other goes under Other. <strong>{BASIS_TEXT.observed}:</strong> {BASIS_HELP.observed} <strong>{BASIS_TEXT.assumed}:</strong> {BASIS_HELP.assumed}
+        any other goes under Other. On side streets where volunteers counted the cars driving through, the PM peak trips are fitted to that count; the split between reasons is still assumed. <strong>{BASIS_TEXT.observed}:</strong> {BASIS_HELP.observed} <strong>{BASIS_TEXT.assumed}:</strong> {BASIS_HELP.assumed}
       </p>
       <p>
         Each map shows today’s traffic in the {first ? periodName(first) : 'baseline'}: the dashed violet line is the typical path of that reason’s cars, drawn wider where more cars an hour use the street, with arrowheads for the direction.

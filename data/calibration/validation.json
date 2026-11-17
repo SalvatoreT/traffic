@@ -982,9 +982,9 @@
     },
     "schema": 1,
     "simulator": {
-      "dirty": true,
+      "dirty": false,
       "fingerprint": "f0df1aabc323bca5893215e1df1afbff",
-      "revision": "293a448ad92e63389a040a6acd3417b798d5b3a3",
+      "revision": "27cff0097f4f477524fbe582309d0e886fd42253",
       "version": "0.1.0"
     },
     "suite": {
