@@ -25,5 +25,5 @@
 ## 4. Report
 
 - [x] 4.1 `data/calibration/rockridge.extent-comparison.md`
-- [ ] 4.2 Tests pass (`cargo test -p traffic-sim`, `npm test`), native and WASM parity, merge, push
+- [x] 4.2 Tests pass (`cargo test -p traffic-sim`, `npm test`), native and WASM parity, merge, push
 - [ ] 4.3 Archive once the project lead decides (not before)
