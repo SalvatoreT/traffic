@@ -1,6 +1,7 @@
 import type { Intervention, Network } from '../types';
 import { DEAD_BAND_CUTTHROUGH, softChange } from './change';
-import type { BadgedType } from './mapexport';
+import type { BadgedType, SignType } from './mapexport';
+import { speedSign } from './slowstreet';
 import { barPx, blockBar, filterLegs, legBars } from './blocked';
 import { pointAlong } from './geom';
 import { pointAtLinkMeters } from './junctionends';
@@ -104,7 +105,9 @@ export type Mark =
   | { kind: 'bar'; x: number; y: number; bearing: number; iv: number }
   | { kind: 'diverter'; x: number; y: number; bearing: number; iv: number }
   | { kind: 'arrow'; x: number; y: number; bearing: number; iv: number }
-  | { kind: 'badge'; type: BadgedType; x: number; y: number; text: string; iv: number };
+  | { kind: 'badge'; type: Exclude<BadgedType, SignType>; x: number; y: number; text: string; iv: number }
+  /** A speed-limit sign beside its street: (x, y) is on the street, `heading` the street's own. */
+  | { kind: 'sign'; type: SignType; mph: number; x: number; y: number; heading: number; name: string; iv: number };
 export interface StreetName { text: string; x: number; y: number; angle: number }
 export interface Pin { x: number; y: number; text: string; end: boolean; d: string; dashed: boolean }
 
@@ -190,11 +193,15 @@ export function buildPicture(net: Network, index: NetIndex, p: Proposal, pic: Pr
         break;
       case 'diagonal_diverter': { const n = net.nodes[iv.node]; if (n) marks.push({ kind: 'diverter', ...at(n.x, n.y), bearing: iv.bearing, iv: ivi }); break; }
       case 'one_way': { const l = net.links[iv.link]; if (l) { const q = pointAtLinkMeters(l, l.length / 2); marks.push({ kind: 'arrow', ...at(q.x, q.y), bearing: bearingOf(q.heading), iv: ivi }); } break; }
-      case 'slow_street': { const l = net.links[iv.link]; if (!l) break; const q = pointAtLinkMeters(l, l.length / 2); marks.push({ kind: 'badge', type: 'slow_street', ...at(q.x, q.y), text: '', iv: ivi }); break; }
-      case 'speed_limit': case 'speed_hump': {
+      case 'slow_street': case 'speed_limit': {
+        const g = speedSign(net, iv); if (!g) break;
+        marks.push({ kind: 'sign', type: iv.type, mph: g.mph, ...at(g.x, g.y), heading: g.heading, name: g.name, iv: ivi });
+        break;
+      }
+      case 'speed_hump': {
         const l = net.links[iv.link]; if (!l) break;
-        const q = pointAtLinkMeters(l, iv.type === 'speed_hump' ? iv.position : l.length / 2);
-        marks.push({ kind: 'badge', type: iv.type, ...at(q.x, q.y), text: iv.type === 'speed_limit' ? String(Math.round(iv.speed * 2.23694)) : '', iv: ivi });
+        const q = pointAtLinkMeters(l, iv.position);
+        marks.push({ kind: 'badge', type: iv.type, ...at(q.x, q.y), text: '', iv: ivi });
         break;
       }
       case 'traffic_circle': case 'control': case 'signal_timing': { const n = net.nodes[iv.node]; if (n) marks.push({ kind: 'badge', type: iv.type, ...at(n.x, n.y), text: '', iv: ivi }); break; }

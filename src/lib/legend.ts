@@ -1,5 +1,6 @@
 import type { Intervention, Overlay } from '../types';
 import { BADGE_NAME, BADGE_TEXT, type BadgedType } from './mapexport';
+import { SLOW_STREET_MPH } from './slowstreet';
 import { changeLabel, changeTicks } from './change';
 import { STUDY_ONLY } from './scope';
 import { divergingStops, rampStops, rampTicks, type Mode } from './ramps';
@@ -40,4 +41,9 @@ export function mapSymbols(ivs: readonly Pick<Intervention, 'type'>[], reason: b
   const types = new Set(ivs.map((iv) => iv.type));
   return { bar: types.has('modal_filter'), diverter: types.has('diagonal_diverter'), badges: BADGED.filter((t) => types.has(t)), reason };
 }
-export const badgeKey = (t: BadgedType): { text: string; name: string } => ({ text: BADGE_TEXT[t], name: BADGE_NAME[t] });
+/** `label` is the key's words; `sign` is the mph of a speed-limit sign drawn as the key's symbol, where the type is one. */
+export function badgeKey(t: BadgedType): { text: string; name: string; label: string; sign?: number | string } {
+  if (t === 'slow_street') return { text: `${SLOW_STREET_MPH} mph sign`, name: BADGE_NAME[t], label: `${SLOW_STREET_MPH} mph sign: ${BADGE_NAME[t]}`, sign: SLOW_STREET_MPH };
+  if (t === 'speed_limit') return { text: 'Speed-limit sign', name: BADGE_NAME[t], label: `Speed-limit sign: ${BADGE_NAME[t]}`, sign: 'NN' };
+  return { text: BADGE_TEXT[t], name: BADGE_NAME[t], label: `${BADGE_TEXT[t]} ${BADGE_NAME[t]}` };
+}

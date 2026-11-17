@@ -1,6 +1,8 @@
 import qrcode from 'qrcode-generator';
 import { changeTicks, DEAD_BAND_CUTTHROUGH } from './change';
+import { badgeKey } from './legend';
 import { BADGE_STYLE, BADGE_TEXT, ATTRIBUTION } from './mapexport';
+import { speedSignSvg, signOffset } from './speedsign';
 import type { Mark, PictureFacts, PictureModel } from './picture';
 import { seedsPhrase, signedPct, type Proposal, type ProposalPicture } from './proposals';
 import { changeWidthFor, colorForIntensity, divergingStops, mutedColor, widthFor } from './ramps';
@@ -31,7 +33,7 @@ export interface ShareInput {
   averageFigure: ShareHeadline | null;
   caption: string;
   /** Sentences under the legend ramp, in order, each drawn with the swatch of its kind. */
-  keys: { kind: 'bar' | 'pin' | 'pin-dashed' | 'text'; text: string }[];
+  keys: { kind: 'bar' | 'pin' | 'pin-dashed' | 'text' | 'sign'; text: string; mph?: number | string }[];
   status: string;
   model: PictureModel;
   /** Absolute address of the proposal on the map; drawn as a QR code. */
@@ -68,7 +70,20 @@ export function wrapText(text: string, size: number, weight: number, maxW: numbe
   return out;
 }
 
+/** Height of the speed-limit sign in a picture, in nominal CSS px (scaled by `unit`). */
+const PIC_SIGN_H = 22;
+/** Where a mark's hit area and selection ring belong: on the street, or at its sign. */
+export function markCenter(m: Mark, unit: number): { x: number; y: number } {
+  if (m.kind !== 'sign') return { x: m.x, y: m.y };
+  const o = signOffset(m.heading, PIC_SIGN_H);
+  return { x: m.x + o.dx * unit, y: m.y + o.dy * unit };
+}
+
 export function markSvg(m: Mark, unit: number, bar: { len: number; thick: number }): string {
+  if (m.kind === 'sign') {
+    const c = markCenter(m, unit);
+    return `<g transform="translate(${n1(c.x)} ${n1(c.y)}) scale(${n1(unit)})">${speedSignSvg(m.mph, PIC_SIGN_H, { title: m.name })}</g>`;
+  }
   if (m.kind === 'bar') {
     const L = bar.len, T = bar.thick, dash = T * 0.5 * 1.5;
     return `<g transform="translate(${n1(m.x)} ${n1(m.y)}) rotate(${n1(m.bearing)})"><rect x="${n1(-L / 2)}" y="${n1(-T / 2)}" width="${n1(L)}" height="${n1(T)}" fill="#fff"/><rect x="${n1(-L / 2)}" y="${n1(-T * 0.375)}" width="${n1(L)}" height="${n1(T * 0.75)}" fill="#111"/><line x1="${n1(-L / 2)}" y1="0" x2="${n1(L / 2)}" y2="0" stroke="#ffd43b" stroke-width="${n1(T * 0.5)}" stroke-dasharray="${n1(dash)} ${n1(dash)}"/></g>`;
@@ -82,7 +97,7 @@ export function markSvg(m: Mark, unit: number, bar: { len: number; thick: number
     return `<g transform="translate(${n1(m.x)} ${n1(m.y)}) rotate(${n1(m.bearing)}) scale(${n1(unit)})"><path d="M0 -8 L5.5 4.5 L0 2 L-5.5 4.5 Z" fill="#111" stroke="#fff" stroke-width="1.6" stroke-linejoin="round" paint-order="stroke"/></g>`;
   }
   const st = BADGE_STYLE[m.type];
-  const label = m.text || BADGE_TEXT[m.type];
+  const label = BADGE_TEXT[m.type];
   const w = Math.max(17, label.length * 6.4 + 7), h = 15;
   const r = st.radius === 'round' ? h / 2 : Math.min(...st.radius, h / 2);
   return `<g transform="translate(${n1(m.x)} ${n1(m.y)}) scale(${n1(unit)})"><rect x="${n1(-w / 2)}" y="${n1(-h / 2)}" width="${n1(w)}" height="${n1(h)}" rx="${n1(r)}" fill="${st.fill}" stroke="${st.edge}" stroke-width="1.4"/><text x="0" y="0.5" text-anchor="middle" dominant-baseline="central" font-size="8.5" font-weight="700" fill="${st.ink}">${esc(label)}</text></g>`;
@@ -317,6 +332,7 @@ function layoutShare(inp: ShareInput, changes: string[], measure: Measure, qrBel
     const sw = k.kind === 'text' ? 0 : 52;
     const ls = wrapText(k.text, 17, 400, kw - (sw ? sw + 12 : 0), measure);
     const h = ls.length * 22;
+    if (k.kind === 'sign' && k.mph !== undefined) out.push(`<g transform="translate(${kx + 22} ${n1(ky + 11)})">${speedSignSvg(k.mph, 24)}</g>`);
     if (k.kind === 'bar') out.push(`<g transform="translate(${kx + 22} ${n1(ky + 11)})"><rect x="-22" y="-6" width="44" height="12" fill="#fff"/><rect x="-22" y="-4.5" width="44" height="9" fill="#111"/><line x1="-22" y1="0" x2="22" y2="0" stroke="#ffd43b" stroke-width="6" stroke-dasharray="9 9"/></g>`);
     if (k.kind === 'pin' || k.kind === 'pin-dashed') {
       const d = k.kind === 'pin-dashed' ? ' stroke-dasharray="7 6"' : '';
@@ -407,6 +423,7 @@ export function shareInputFor(a: {
   const pins = a.model.pins;
   if (pins.length > 0 && facts.named) keys.push({ kind: 'pin', text: `Outlined, labeled ${pins[0].text}: ${facts.named.label}, ${facts.namedKind === 'largest' ? 'the block with the largest through-car increase' : "the block the search flagged with an assumed noise band, which need not have the largest increase"}, averaged over the periods searched.` });
   if (pins.length > 1 && facts.gain) keys.push({ kind: 'pin-dashed', text: `Dashed outline, labeled ${pins[1].text}: ${facts.gain.label}, the biggest gain in the ${a.shortLabel(pic.period)}.` });
+  for (const t of new Set(a.model.marks.flatMap((m) => (m.kind === 'sign' ? [m.type] : [])))) { const k = badgeKey(t); keys.push({ kind: 'sign', text: `${k.label}.`, mph: k.sign }); }
   if (kinds.has('diverter')) keys.push({ kind: 'text', text: 'Striped line across a junction: diagonal diverter.' });
   if (kinds.has('arrow')) keys.push({ kind: 'text', text: 'Arrow: one-way street, in the direction shown.' });
   return {

@@ -685,7 +685,7 @@ The reasons card SHALL announce only when a reason is chosen or cleared. Changin
 - **THEN** one short status is announced, and the figures do not re-announce each second
 
 ### Requirement: Legend keys
-The on-screen legend and the exported map image SHALL include keys for filter bars, diverters, lettered badges and the reason line when they are drawn, and SHALL list no cars when none are drawn.
+The on-screen legend and the exported map image SHALL include keys for filter bars, diverters, lettered badges, speed-limit signs and the reason line when they are drawn, and SHALL list no cars when none are drawn.
 
 #### Scenario: Stored result export
 - **WHEN** a stored result is exported

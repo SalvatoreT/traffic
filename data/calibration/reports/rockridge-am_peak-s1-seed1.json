@@ -1818,7 +1818,7 @@
     "inputs": {
       "areaConfig": {
         "path": "data/areas/rockridge.json",
-        "sha256": "2a3cdc8c3e3129857749af17614fa1f0aba101be663f9de8f8a0f5347243fe60"
+        "sha256": "22813d0eb56847e6d162f7d858a6c8a756dd3c14bf90002aef4091ed369d14bc"
       },
       "demand": {
         "path": "public/data/rockridge.demand.json",
@@ -1888,7 +1888,7 @@
     "simulator": {
       "dirty": false,
       "fingerprint": "f0df1aabc323bca5893215e1df1afbff",
-      "revision": "017273f7ef4b9806532bc35339985a0d847e9509",
+      "revision": "c651bad8aa1e536e87a384ea6a2c35372bf41925",
       "version": "0.1.0"
     }
   },

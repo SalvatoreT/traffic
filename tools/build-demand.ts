@@ -752,12 +752,12 @@ const gateGroup = (id: number): string => {
   return String(Math.min(...seen));
 };
 // Measured link delays (tools/cost-loop.ts writes them from a simulator run; absent or a different network: free-flow and BPR costs only).
-function loadMeasured(fc: { assignment?: { measured?: { file: string; alpha: number } } }) {
+function loadMeasured(fc: { assignment?: { measured?: { file: string; alpha: number; weight?: number } } }) {
   const m = fc.assignment?.measured;
   if (!m || !existsSync(m.file)) return undefined;
   const j = JSON.parse(readFileSync(m.file, 'utf8'));
   if (j.links !== net.links.length) { console.warn(`${m.file}: written for ${j.links} links, the network has ${net.links.length}; measured delays skipped`); return undefined; }
-  return { delayS: j.delayS as Record<string, number[]>, alpha: m.alpha, source: `${m.file}, ${j.note}` };
+  return { delayS: j.delayS as Record<string, number[]>, alpha: m.alpha, weight: m.weight, source: `${m.file}, ${j.note}` };
 }
 const localScaleLines = (): string[] => {
   if (!countEnds || !Object.keys(localScale).length) return [];

@@ -12,7 +12,9 @@ import { PopoverFrame } from './Popover';
 import { MapMenu } from './MapMenu';
 import { legendModel, mapSymbols } from '../lib/legend';
 import { fitSheetRect } from '../lib/sheet';
-import { BADGE_TEXT, captionOf, composeImage, drawBadges, EXPORT_SCALE, exportFileName, FORMATS, type BadgeMark, type ImageFormat } from '../lib/mapexport';
+import { BADGE_TEXT, captionOf, composeImage, drawBadges, EXPORT_SCALE, exportFileName, FORMATS, SIGN_PX, type BadgeMark, type ImageFormat, type LetteredType, type SignType } from '../lib/mapexport';
+import { speedSign } from '../lib/slowstreet';
+import { signOffset, speedSignElement } from '../lib/speedsign';
 import { FADE_TIERS, interventionInRegion, REGION_FEATHER_M, type Region } from '../lib/region';
 import { REGION_BUFFER_M } from '../lib/area';
 import { advance, elapsedSim } from '../lib/extrapolate';
@@ -853,9 +855,9 @@ export function MapView(p: Props) {
     const filters: { iv: Extract<Intervention, { type: 'modal_filter' }>; legs: ReturnType<typeof filterLegs> | null }[] = [];
     for (const iv of p.interventions.filter((v) => interventionInRegion(v, net, region))) {
       const [x, y] = interventionPoint(iv, net);
-      const ll = proj.toLonLat(x, y);
+      let at = proj.toLonLat(x, y), offset: [number, number] = [0, 0];
       const el = document.createElement(iv.type === 'modal_filter' ? 'button' : 'div');
-      const title = describeInterventionFull(iv, net, p.index);
+      let title = describeInterventionFull(iv, net, p.index);
       if (iv.type === 'modal_filter') {
         // The bars are the drawing; this invisible control keeps the filter reachable by keyboard, pointer and touch (24 CSS px, WCAG 2.2 SC 2.5.8).
         el.className = 'iv-hit';
@@ -874,12 +876,22 @@ export function MapView(p: Props) {
         el.innerHTML = `<svg width="44" height="44" viewBox="-22 -22 44 44" focusable="false"><g transform="rotate(${iv.bearing})"><line x1="0" y1="-17" x2="0" y2="17" class="iv-dd-halo"/><line x1="0" y1="-17" x2="0" y2="17" class="iv-dd-out"/><line x1="0" y1="-17" x2="0" y2="17" class="iv-dd-in"/></g></svg>`;
         el.setAttribute('aria-hidden', 'true');
       } else {
-        el.className = `iv-badge iv-${iv.type}`;
-        el.textContent = iv.type === 'speed_limit' ? String(Math.round(iv.speed * 2.23694)) : iv.type === 'slow_street' ? '15' : BADGE_TEXT[iv.type];
+        const sign = speedSign(net, iv);
+        if (sign) {
+          el.className = 'iv-sign';
+          el.innerHTML = speedSignElement(sign.mph, SIGN_PX);
+          title = sign.name;
+          const o = signOffset(sign.heading, SIGN_PX);
+          offset = [o.dx, o.dy];
+          at = proj.toLonLat(sign.x, sign.y);
+        } else {
+          el.className = `iv-badge iv-${iv.type}`;
+          el.textContent = BADGE_TEXT[iv.type as LetteredType];
+        }
         el.setAttribute('aria-hidden', 'true');
       }
       el.title = title;
-      out.push(new maplibregl.Marker({ element: el }).setLngLat(ll).addTo(map));
+      out.push(new maplibregl.Marker({ element: el, offset }).setLngLat(at).addTo(map));
     }
     markers.current = out;
     setHitsInteractive(out, live.current.interactive);
@@ -1013,7 +1025,12 @@ export function MapView(p: Props) {
             return { x: c.x, y: c.y, len: sz.length, thick: sz.thick, type: 'leg' as const, bearing: b.bearing };
           });
         }
-        return [{ x: q.x, y: q.y, type: iv.type, bearing: iv.type === 'diagonal_diverter' ? iv.bearing : undefined, mph: iv.type === 'speed_limit' ? Math.round(iv.speed * 2.23694) : iv.type === 'slow_street' ? 15 : undefined }];
+        const sign = speedSign(net, iv);
+        if (sign) {
+          const s = map.project(L.proj.toLonLat(sign.x, sign.y)), o = signOffset(sign.heading, SIGN_PX);
+          return [{ x: s.x + o.dx, y: s.y + o.dy, type: iv.type as SignType, mph: sign.mph }];
+        }
+        return [{ x: q.x, y: q.y, type: iv.type, bearing: iv.type === 'diagonal_diverter' ? iv.bearing : undefined }];
       });
       const change = L.view === 'change';
       const legend = legendModel(L.overlay, L.mode, change);
