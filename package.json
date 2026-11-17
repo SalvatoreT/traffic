@@ -15,6 +15,7 @@
     "data:split": "tsx tools/build-demand.ts --freeze-split",
     "data:cv": "tsx tools/build-demand.ts --view training",
     "data:assumptions": "tsx tools/build-assumptions.ts",
+    "data:cordon": "tsx tools/cordon-prior.ts",
     "test": "cargo test --workspace && vitest run",
     "prepare": "git config core.hooksPath .githooks && sh scripts/install-skills.sh",
     "data:pull": "tsx tools/r2-sync.ts pull",

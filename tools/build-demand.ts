@@ -131,7 +131,7 @@ const tmc = tmcs[0] ?? null;
 const [tx, ty] = tmc ? [tmc.x, tmc.y] : [0, 0];
 
 // ---------- gates: peak targets per period ----------
-interface Gate { id: number; /** Source record of the count and this gate's share of it per direction (see demand-fit.ts, dedupeStations). */ record?: string; shareIn?: number; shareOut?: number; street: string | null; cls: string; deg: number; source: string; /** Count year of the source (mean of the count years), null when unknown. */ year: number | null; sourceId: string; kind: 'DATA' | 'DATA(adt)' | 'ASSUMPTION'; adt: number | null; pmIn: number; pmOut: number; inT: Record<string, number>; outT: Record<string, number>; locIn: Record<string, number>; locOut: Record<string, number> }
+interface Gate { id: number; /** Straight-line distance (m) from the gate to where its count was taken; null for a class default. */ countDistM?: number | null; /** Source record of the count and this gate's share of it per direction (see demand-fit.ts, dedupeStations). */ record?: string; shareIn?: number; shareOut?: number; street: string | null; cls: string; deg: number; source: string; /** Count year of the source (mean of the count years), null when unknown. */ year: number | null; sourceId: string; kind: 'DATA' | 'DATA(adt)' | 'ASSUMPTION'; adt: number | null; pmIn: number; pmOut: number; inT: Record<string, number>; outT: Record<string, number>; locIn: Record<string, number>; locOut: Record<string, number> }
 const gates: Gate[] = [];
 const pf = cfg.periodFactors;
 const pct = (a: number, b: number) => `${((100 * a) / (b || 1)).toFixed(0)}%`;
@@ -271,7 +271,7 @@ for (const n of surfaceGates) {
   const cls = gateClass(n);
   const { canIn, canOut } = caps(n.id);
   let pmIn: number, pmOut: number, kind: Gate['kind'], source: string, adt: number | null = null, year: number | null = null, sourceId = 'assumption';
-  let record: string | undefined, shareIn = 1, shareOut = 1;
+  let record: string | undefined, shareIn = 1, shareOut = 1, countDistM: number | null = null;
   const hit = countFor(n, street);
   if (hit) {
     const grp = legGroups.get(`${hit.c.id}|${hit.leg}`)!;
@@ -279,11 +279,12 @@ for (const n of surfaceGates) {
     pmOut = canOut ? hit.c.legs[hit.leg].leaving / Math.max(1, grp.dest) : 0;
     kind = 'DATA'; year = hit.c.year; sourceId = 'oakland-tmc';
     record = `tmc ${hit.c.id}|${hit.leg}`;
+    countDistM = Math.hypot(n.x - hit.c.x, n.y - hit.c.y);
     shareIn = 1 / Math.max(1, grp.orig); shareOut = 1 / Math.max(1, grp.dest);
     source = `Oakland TMC ${hit.c.id} ${hit.leg}-leg avg of ${hit.c.legs[hit.leg].files} counts, ${Math.round(Math.hypot(n.x - hit.c.x, n.y - hit.c.y))} m away, shared by ${Math.max(grp.orig, grp.dest)} gate node(s)`;
   } else {
     const ov = nearestOverride(n, street);
-    if (ov) { adt = ov.adt * (ov.factor ?? 1); kind = 'DATA(adt)'; year = ov.year ?? null; sourceId = 'caltrans-aadt'; source = `Caltrans AADT: ${ov.source}`; record = `ov ${ov.source}`; shareIn = shareOut = 1 / streetGroupSize(n); }
+    if (ov) { const o = ov as { lat?: number; lon?: number }; countDistM = o.lat === undefined ? null : Math.hypot(toXY(o.lat, o.lon!)[0] - n.x, toXY(o.lat, o.lon!)[1] - n.y); adt = ov.adt * (ov.factor ?? 1); kind = 'DATA(adt)'; year = ov.year ?? null; sourceId = 'caltrans-aadt'; source = `Caltrans AADT: ${ov.source}`; record = `ov ${ov.source}`; shareIn = shareOut = 1 / streetGroupSize(n); }
     else { adt = classAdt[cls] ?? classAdt.residential; kind = 'ASSUMPTION'; source = `class default (${cls})`; }
     const pk = adt! * cfg.kFactor;
     // A two-way street can appear as a pair of one-way gate nodes (one enter-only, one exit-only, same street,
@@ -296,7 +297,7 @@ for (const n of surfaceGates) {
     pmIn = canIn ? (canOut ? pkn * share : paired ? pkn * share : pkn) : 0;
     pmOut = canOut ? (canIn ? pkn - pmIn : paired ? pkn * (1 - share) : pkn) : 0;
   }
-  const g: Gate = { id: n.id, record, shareIn, shareOut, street, cls, deg: bearing(n.x, n.y), source, year, sourceId, kind, adt, pmIn, pmOut, inT: {}, outT: {}, locIn: {}, locOut: {} };
+  const g: Gate = { id: n.id, countDistM, record, shareIn, shareOut, street, cls, deg: bearing(n.x, n.y), source, year, sourceId, kind, adt, pmIn, pmOut, inT: {}, outT: {}, locIn: {}, locOut: {} };
   const sPm = pmIn / (pmIn + pmOut || 1);
   for (const p of periodIds) {
     const tot = (pmIn + pmOut) * pf[p].volume;
@@ -448,6 +449,53 @@ if (countEnds && lo.countCalibration?.enabled) {
 let throughDebug: string[] = [];
 const periLog: string[] = [];
 let unroutableDropped = 0;
+
+// Cordon prior (change compact-model-extent, design D8): an area whose extent names a parent takes as its trip table the parent's trips cut at the
+// extent (tools/cordon-prior.ts), in place of the gravity and class-default table. Gates no parent route crosses keep their class-default trips; counted
+// gates are scaled to their counts. The count fit then runs on top as usual.
+interface Prior { inputs: { childNetwork: string }; parent: string; periods: Record<string, { flows: [number, number, number][]; stats: Record<string, number> }> }
+const priorPath: string | null = areaCfg?.extent?.parent ? `target/cordon/${cfg.area}.${training ? 'training' : 'shipped'}.prior.json` : null;
+const prior: Prior | null = (() => {
+  if (!priorPath) return null;
+  if (!existsSync(priorPath)) { console.error(`No cordon prior at ${priorPath}: the area's extent names parent "${areaCfg.extent.parent}"; run \`npx tsx tools/cordon-prior.ts ${cfg.area}\` after the parent's demand.`); process.exit(1); }
+  const pr = JSON.parse(readFileSync(priorPath, 'utf8')) as Prior;
+  const netSha = createHash('sha256').update(readFileSync(cfg.network)).digest('hex');
+  if (pr.inputs.childNetwork !== netSha) { console.error(`${priorPath} was cut for another network than ${cfg.network}; rerun tools/cordon-prior.ts`); process.exit(1); }
+  return pr;
+})();
+const priorLog: { period: string; fromParent: number; fallback: number; counted: { id: number; dir: string; before: number; target: number }[] }[] = [];
+const gateProv = new Map<number, 'counted' | 'parent' | 'class default'>();
+function applyPrior(pid: string, flowsMap: Map<string, number>) {
+  const next = new Map<string, number>();
+  const touched = new Set<number>();
+  let fromParent = 0;
+  for (const [o, d, v] of prior!.periods[pid].flows) {
+    if (!nodeById.has(o) || !nodeById.has(d)) continue;
+    next.set(`${o}>${d}`, v); touched.add(o); touched.add(d); fromParent += v;
+  }
+  const surface = new Set(gates.map((g) => g.id));
+  let fallback = 0;
+  for (const [k, v] of flowsMap) {
+    const [o, d] = k.split('>').map(Number);
+    if ((surface.has(o) && !touched.has(o)) || (surface.has(d) && !touched.has(d))) { next.set(k, (next.get(k) ?? 0) + v); fallback += v; }
+  }
+  // A count sets a gate's total only when it was taken near the gate (`cordonPrior.ownCountM`, ASSUMPTION); a count taken farther in acts where it was
+  // taken, as a station of the fit, and the gate keeps the parent's trips.
+  const ownM: number = cfg.cordonPrior?.ownCountM ?? 400;
+  const counted = gates.filter((g) => g.kind !== 'ASSUMPTION' && g.countDistM !== null && g.countDistM !== undefined && g.countDistM <= ownM);
+  const sumAt = (id: number, dir: 'in' | 'out') => { let s = 0; for (const [k, v] of next) { const [o, d] = k.split('>').map(Number); if ((dir === 'in' ? o : d) === id) s += v; } return s; };
+  const firstSums = counted.flatMap((g) => (['in', 'out'] as const).map((dir) => ({ id: g.id, dir, before: sumAt(g.id, dir), target: dir === 'in' ? g.inT[pid] : g.outT[pid] })));
+  for (let it = 0; it < 30; it++) for (const g of counted) for (const dir of ['in', 'out'] as const) {
+    const tgt = dir === 'in' ? g.inT[pid] : g.outT[pid], s = sumAt(g.id, dir);
+    if (!(s > 0 && tgt > 0)) continue;
+    for (const [k, v] of next) { const [o, d] = k.split('>').map(Number); if ((dir === 'in' ? o : d) === g.id) next.set(k, (v * tgt) / s); }
+  }
+  for (const g of gates) gateProv.set(g.id, counted.includes(g) ? 'counted' : touched.has(g.id) ? 'parent' : 'class default');
+  for (const g of fwGates) gateProv.set(g.id, touched.has(g.id) ? 'parent' : 'class default');
+  priorLog.push({ period: pid, fromParent, fallback, counted: firstSums });
+  flowsMap.clear();
+  for (const [k, v] of next) if (v > 0) flowsMap.set(k, v);
+}
 
 for (const p of cfg.periods as { id: string; label: string }[]) {
   const local = new Map<string, number>();
@@ -688,6 +736,7 @@ for (const p of cfg.periods as { id: string; label: string }[]) {
   if (p.id === lastPeriod) throughDebug = [`through supply ${rs.toFixed(0)} vs demand ${cs.toFixed(0)} veh/h (demand scaled to supply)`];
   for (const [k, v] of thr) flowsMap.set(k, (flowsMap.get(k) ?? 0) + v);
   for (const [k, v] of rampFlows) flowsMap.set(k, (flowsMap.get(k) ?? 0) + v);
+  if (prior) applyPrior(p.id, flowsMap);
 
   // Prune: drop < min, cap count, renormalize to preserve total.
   for (const k of [...flowsMap.keys()]) { const [o, d] = k.split('>').map(Number); const ok = (nodeById.get(o)!.gate ? caps(o).canIn : true) && (nodeById.get(d)!.gate ? caps(d).canOut : true) && routable(o, d); if (!ok) { unroutableDropped += flowsMap.get(k)!; flowsMap.delete(k); } }
@@ -730,6 +779,21 @@ for (const p of cfg.periods as { id: string; label: string }[]) {
   outPeriods.push({ id: p.id, label: p.label, flows });
 }
 
+if (prior && !training) {
+  const f0 = (x: number) => Math.round(x).toLocaleString('en-US').replace(/,/g, '');
+  const pm = outPeriods.find((q) => q.id === lastPeriod)!;
+  const at = (id: number, dir: 'in' | 'out') => pm.flows.filter((q) => !q.mode && (dir === 'in' ? q.origin : q.destination) === id).reduce((a, q) => a + q.vehPerHour, 0);
+  const L = [`# Cordon prior: ${cfg.area}`, '', `Generated by \`tools/build-demand.ts\` (do not edit). The trip table is the ${prior.parent} demand cut at this area's extent (\`tools/cordon-prior.ts\`, ${priorPath}), before the count fit. Change compact-model-extent, design D8.`, '', '| Period | Parent car trips | Assumed movement flows left out | Prior (trips cut at the extent) | Freeway to freeway left out | Lost at an unmatched gate / node | Taken into the table | Class-default trips kept at gates no parent route crosses |', '| --- | --- | --- | --- | --- | --- | --- | --- |'];
+  for (const q of priorLog) { const s = prior.periods[q.period].stats; L.push(`| ${q.period} | ${f0(s.parentCars)} | ${f0(s.assumedLeftOut)} | ${f0(s.crossing)} | ${f0(s.freewayToFreeway)} | ${s.lostGate.toFixed(1)} / ${s.lostNode.toFixed(1)} | ${f0(q.fromParent)} | ${f0(q.fallback)} |`); }
+  L.push('', 'Counted gates: the prior\'s trips at the gate before and after scaling to the count (veh/h):', '', '| Period | Gate | Street | Direction | Prior | Count |', '| --- | --- | --- | --- | --- | --- |');
+  for (const q of priorLog) for (const c of q.counted) L.push(`| ${q.period} | ${c.id} | ${gateName(c.id)} | ${c.dir} | ${f0(c.before)} | ${f0(c.target)} |`);
+  const all = [...gates.map((g) => ({ id: g.id, cls: g.cls, def: `${f0(g.inT[lastPeriod])} / ${f0(g.outT[lastPeriod])}${g.kind !== 'ASSUMPTION' ? ` (${g.kind}, taken ${g.countDistM === null || g.countDistM === undefined ? '?' : Math.round(g.countDistM)} m from the gate)` : ' (class default)'}` })), ...fwGates.map((g) => ({ id: g.id, cls: 'motorway', def: 'ramp ADT' }))];
+  const tally = new Map<string, number>();
+  for (const g of all) tally.set(gateProv.get(g.id) ?? 'class default', (tally.get(gateProv.get(g.id) ?? 'class default') ?? 0) + 1);
+  L.push('', `Gates by what sets their trips: ${[...tally].map(([k, v]) => `${k} ${v}`).join(', ')}.`, '', `| Gate | Street | Class | Set by | PM in / out offered (before the count fit) | PM class default or count, in / out (as built) |`, '| --- | --- | --- | --- | --- | --- |');
+  for (const g of all) L.push(`| ${g.id} | ${gateName(g.id)} | ${g.cls} | ${gateProv.get(g.id) ?? 'class default'} | ${f0(at(g.id, 'in'))} / ${f0(at(g.id, 'out'))} | ${g.def} |`);
+  writeOut(`data/demand/${cfg.area}.cordon.md`, L.join('\n') + '\n');
+}
 const gateById = new Map(gates.map((g) => [g.id, g]));
 const fwIdSet = new Set(fwGates.map((g) => g.id));
 const typeOf = (o: number, d: number): FlowType => (fwIdSet.has(o) || fwIdSet.has(d) ? 'ramp' : gateById.has(o) && gateById.has(d) ? 'through' : 'local');

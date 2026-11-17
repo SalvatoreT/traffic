@@ -183,9 +183,9 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
     return (
       <tr key={c.block} className={rowCls(s)}>
         <th scope="row"><button type="button" className="pm-link" {...rowProps(s)}>{c.label}</button></th>
-        <td>{Math.round(c.base)} → {Math.round(c.scen)}</td>
-        <td>{signedNum(Math.round(c.scen) - Math.round(c.base), '', 0).trim()}</td>
-        {allCars && (() => { const a = allCars.get(c.block); return <td>{a ? `${Math.round(a.base)} → ${Math.round(a.scen)}` : 'none'}</td>; })()}
+        <td data-label="Through cars">{Math.round(c.base)} → {Math.round(c.scen)}</td>
+        <td data-label="Change">{signedNum(Math.round(c.scen) - Math.round(c.base), '', 0).trim()}</td>
+        {allCars && (() => { const a = allCars.get(c.block); return <td data-label="All cars">{a ? `${Math.round(a.base)} → ${Math.round(a.scen)}` : 'none'}</td>; })()}
       </tr>
     );
   };

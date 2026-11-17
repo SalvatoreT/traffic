@@ -116,7 +116,7 @@ export interface AreaConfig {
    * in `polygon` (lon, lat ring), or within `bufferM` of the study area along the network, or on a way or node listed in `include`. A way that
    * leaves the polygon is cut where it crosses the polygon edge and a gate is placed there.
    */
-  extent?: { polygon?: [number, number][]; bufferM?: number; include?: { ways?: number[]; nodes?: number[] }; source?: string };
+  extent?: { polygon?: [number, number][]; bufferM?: number; include?: { ways?: number[]; nodes?: number[] }; /** Area whose demand, cut at this extent, is this area's demand prior (tools/cordon-prior.ts). */ parent?: string; source?: string };
   /** A preview area is left out of the public area list and the app's default; it is reached by a link that names it. */
   preview?: boolean;
   calibration?: { status: 'uncalibrated' | 'calibrated'; note?: string; /** Limits of the calibration, in full sentences, shown on the Sources page and beside the banner. */ caveat?: string; defaultPeriod?: string; experimentalPeriods?: string[] };
