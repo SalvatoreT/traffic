@@ -481,6 +481,26 @@ pub fn lane_drop_flow(lanes_in: u32, seed: u64) -> f64 {
     r.rate(&[out], 120.0, 720.0)
 }
 
+/// A gate feeds a 3-lane link that forks at an uncontrolled node into two 2-lane exits. Exit A drops to one lane further on and, offered `qa`
+/// veh/h above what that lane passes, queues back to the gate; exit B is offered `qb` veh/h and is free. Returns the flow
+/// (veh/h) on exit B from 720 to 3,120 s: the gate stands for a multilane road, so trips bound for B must not wait behind trips bound for A.
+pub fn gate_fork_flow(qa: f64, qb: f64, seed: u64) -> f64 {
+    let mut b = B::default();
+    let g0 = b.node(-300.0, 0.0, Control::Uncontrolled, true);
+    let c = b.node(0.0, 0.0, Control::Uncontrolled, false);
+    let a1 = b.node(300.0, 120.0, Control::Uncontrolled, false);
+    let ga = b.node(600.0, 120.0, Control::Uncontrolled, true);
+    let gb = b.node(600.0, -120.0, Control::Uncontrolled, true);
+    b.link(g0, c, RoadClass::Secondary, 3, 15.65, false);
+    b.link(c, a1, RoadClass::Secondary, 2, 15.65, false);
+    b.link(a1, ga, RoadClass::Secondary, 1, 15.65, false);
+    let lb = b.link(c, gb, RoadClass::Secondary, 2, 15.65, false);
+    let net = b.net();
+    let mut r = Run::new(net, demand(&[(g0, ga, qa), (g0, gb, qb)]), cfg(seed));
+    r.advance(3120.0);
+    r.rate(&[lb], 720.0, 3120.0)
+}
+
 // ---------------------------------------------------------------- (l) lane changes along a link
 
 /// A two-lane link 600 m long whose left lane is blocked 400 m in by a standing vehicle, with `q` veh/h offered: (veh/h past the
@@ -799,6 +819,11 @@ pub fn run_all() -> Vec<Case> {
     out.push(case("i4", "Two single-lane approaches merging onto a 2-lane exit at an uncontrolled node, saturated: exit flow", "veh/h", mf, 0.75 * lane_cap, 2.1 * lane_cap, "ASSUMPTION", format!("the two streams take different exit lanes, so the exit should pass about one free lane's flow (case g2, {lane_cap:.0} veh/h/lane; lower bound 0.75 of it for the merge) and cannot pass more than two; the one-vehicle-at-a-time merge gave 0.60 of it, the same as a single-lane exit ({:.0} veh/h here)", merge_flow(1, 1))));
     let (one, two) = (lane_drop_flow(1, 1), lane_drop_flow(2, 1));
     out.push(case("i5", "Lane drop: a saturated 2-lane link continues as 1 lane at an uncontrolled node: flow over the same link with 1 lane throughout", "ratio", two / one, 0.75, 1.0, "ASSUMPTION", format!("{two:.0} against {one:.0} veh/h; vehicles from the two lanes take turns (zipper merge), so the drop should pass close to one lane's flow; lower bound 0.75 as for the merge in i4; the off-ramps from SR-24 to Martin Luther King Jr Way and 52nd St drop from 2 lanes to 1")));
+    let (q3, ins3) = link_flow(15.65, 3, RoadClass::Secondary, 1);
+    out.push(case("h3", "Gate insertion rate onto a free 3-lane 35 mph link", "veh/h/lane", ins3, 0.85 * lane_cap, 3.0 * lane_cap, "Treiber2014", format!("must not fall below the lane capacity of case g2 ({lane_cap:.0} veh/h/lane); flow through the middle link {q3:.0} veh/h/lane")));
+    let qb = 900.0;
+    let (fb, f0) = (gate_fork_flow(3000.0, qb, 1), gate_fork_flow(300.0, qb, 1));
+    out.push(case("h4", "Gate onto a 3-lane link forking into two exits, one queued back to the gate: flow to the free exit", "ratio", fb / f0, 0.9, 1.1, "ASSUMPTION", format!("{fb:.0} veh/h against {f0:.0} with the other exit offered 300 veh/h (not queued), {qb:.0} offered; the other exit drops to one lane and is offered 3,000 veh/h, so its queue reaches the gate; a gate stands for a multilane road, so trips toward the free exit are not held behind it (round 38: the SR-24 mainline gate feeds the Martin Luther King Jr Way and 52nd St off-ramps this way)")));
     // Lane changes along a link [Kesting2007]: a through driver behind a stopped left-turner or an obstruction moves to the free adjacent lane.
     let lb = Appr { lanes: 2, p_left: 0.2, opp: 500.0, ..base };
     let (lcap, lgc) = approach_cap(lb, 1, &[], |_, _| {});

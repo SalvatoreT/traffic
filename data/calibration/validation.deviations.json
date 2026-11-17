@@ -77,6 +77,13 @@
    "reviewed": false,
    "relevance": "Not reviewed: left to the project lead. Protected left turns discharge at the low end of the observed saturation flows.",
    "followUp": "Pending review. Repair: a cited turn speed or left-turn saturation adjustment."
+  },
+  {
+   "id": "h4",
+   "reason": "New in round 38. A gate feeding a 3-lane link that forks into two branches with lanes of their own passes 0.43 of the free branch's flow while the other branch is queued back to the gate (offered 3,000 veh/h into a lane drop), measured against the same network with the other branch unqueued. Waiting trips leave a gate in order per first link, so trips for the free branch wait behind trips for the queued one. On the network this holds trips for the 52nd St off-ramp behind those for the Martin Luther King Jr Way off-ramp at the SR-24 mainline gate.",
+   "reviewed": false,
+   "relevance": "Not reviewed: left to the project lead. A tested fix (a waiting trip waits only behind trips for the same fork branch) gives 0.64 and leaves every other case unchanged. On PM seeds 1 to 20 it cuts the trips waiting at the SR-24 gate from 143 to 84 and 68 per seed, but the fitted stations do not improve, and it changes the simulator fingerprint. So it was not landed.",
+   "followUp": "Pending review. Repair: per-branch waiting at gates (the round-38 patch), together with the lane drop on the Martin Luther King Jr Way off-ramp (case i5)."
   }
  ]
 }
