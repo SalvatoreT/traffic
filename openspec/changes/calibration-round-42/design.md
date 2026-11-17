@@ -1,0 +1,25 @@
+## Context
+
+Round 40 shipped through targets at weight 2 (demand 930a1d90b2d1). Round 41 tried simulated membership for four movement stations at Claremont Ave / Colby St / Forest St and reverted it. The status rules that still fail are the count-station rule (PM fitted 82%, PM held out 54%, AM held out 74%), the through-car check on Colby St NB, AM Telegraph Ave southbound and five primitive cases. Times are Pacific; the round ran on 2026-11-17.
+
+## Decisions
+
+D1. Project-lead decisions of 2026-11-17, recorded here as well as in round 40's design: the published model is the round-40 demand (through-target weight 2); the site keeps "not yet calibrated" until every rule passes, including the count-station rule. Direction for this round: work on the count-station rule by finding and fixing causes, without loosening the rule or any range. Held-out stations are judged out of sample on the cross-validation demand and their values are never used. No simulator engine change unless the diagnosis finds an engine defect (class c).
+
+D2. Diagnosis method (step 1, no change to the model). Every recent PM station (count year 2021 or later, as the rule counts them) that fails GEH 5 is listed with its count, the twenty-seed simulated mean and standard error, the fit's own final assigned flow, source and year, and a location: inside the study area, on a bounding street, within the judged zone (200 m along the network) or far. Held-out stations are scored on the cross-validation demand with the same seeds. Each miss gets a class: (a) the fit's static flow is itself 5 or more GEH from the count; (b) the fit is within GEH 5 and the simulator is not, so the two route differently; (c) a queue, signal or stop in the simulator holds flow below a count the fit meets; (d) the count is doubtful (old, derived, or out of balance with its counted neighbors). Counted junctions where every leg is a station are checked for conservation.
+
+D3. Guard rails, frozen before any result of a changed demand. The baseline is the round-40 demand on the same seeds (PM seeds 1 to 20, SE = standard deviation over the seeds divided by the square root of 20):
+- R1 through cars: the twenty-seed summed distance outside the four ranges may not exceed 8.0 + 4.3 = 12.3 (4.3 is the standard error of the sum of the two figures outside in round 40, Colby St NB SE 3.3 and Hillegass Ave SB SE 2.8), and no figure's own distance may grow by more than its standard error (Hillegass Ave NB at most 97.0, Colby St NB at most 153.9, Hillegass Ave SB at most 122.8, Colby St SB at most 120.3).
+- R2 D5: 4 of 4 headline shares within 10 points on seeds 1 to 10 and on 11 to 20; mean error no more than 1.5 points above 5.9 and 5.3.
+- R3 D16: holds on both ten-seed sets (judged cars cleared from gridlock below 1 an hour, backlog under 2% in every seed, no runaway growth); mean backlog no more than 0.15 points above 0.68% and 0.67%.
+- R4 Telegraph Ave, PM: inside 302 to 420 s northbound and 300 to 376 s southbound on both sets. For an AM change: AM northbound inside 280 to 315 s, AM southbound no more than 10 s above 300 s, and AM recent fitted stations no fewer than 65 of 77.
+
+D4. Keep rule, frozen with D3. A step is kept only if the recent PM fitted stations within GEH 5 on the twenty-seed means rise above round 40's 76 of 92, neither ten-seed set falls below round 40's 75, and R1 to R4 hold. Held-out stations are reported out of sample and never used to keep, reject or tune a step. One build per step, no iteration on held-out results. Otherwise the step is reverted (config off, demand 930a1d90b2d1 stays).
+
+D5. Mechanism. Link stations get simulated membership the way round 41 gave it to movement stations: `calibrate --select-od` writes, per link station, the pairs of the trips that used its links (a trip counts once per station link it used); a named station's proportion for a pair is its simulated trips over the trips the pair offered, with the static route share as a prior worth 5 trips (ASSUMPTION, as for the through targets). Weights and targets are unchanged. Pairs come from twenty seeds of the round-40 demand. In the training view the stations' membership comes from twenty seeds of the cross-validation demand (`measuredStationsTraining`), so no shipped run, whose demand saw the held-out counts, informs the out-of-sample score. Simulated trips are counted over the whole hour from an empty network while station flows use minutes 10 to 60, so the proportions run a little low for pairs that start late; the same holds for the through targets.
+
+D6. Steps, in order, each on PM seeds 1 to 20:
+- S1 (the lead's first choice): the fitted PM stations on the bounding streets within the judged zone and the fitted legs of the Telegraph Ave / Alcatraz Ave count (24 stations, all from 2010 to 2019 counts, so none counts toward the recent rule).
+- S2: the fitted recent stations inside the study area of class (b) by D2.
+- S3: S1 and S2 together if both are kept; AM only if a PM step is kept.
+Class (c) is fixed only at the source (OSM tags or a published worksheet) with provenance. A class (d) count is listed for the project lead, not dropped.
