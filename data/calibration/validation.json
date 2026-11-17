@@ -613,6 +613,36 @@
       "unit": "ratio"
     },
     {
+      "hi": 6300.989143066405,
+      "id": "h3",
+      "knownDeviation": null,
+      "lo": 1785.280257202148,
+      "name": "Gate insertion rate onto a free 3-lane 35 mph link",
+      "note": "must not fall below the lane capacity of case g2 (2100 veh/h/lane); flow through the middle link 1918 veh/h/lane",
+      "pass": true,
+      "sim": 1922.0,
+      "source": "Treiber2014",
+      "unit": "veh/h/lane"
+    },
+    {
+      "hi": 1.1,
+      "id": "h4",
+      "knownDeviation": {
+        "followUp": "Pending review. Repair: per-branch waiting at gates (the round-38 patch), together with the lane drop on the Martin Luther King Jr Way off-ramp (case i5).",
+        "id": "h4",
+        "reason": "New in round 38. A gate feeding a 3-lane link that forks into two branches with lanes of their own passes 0.43 of the free branch's flow while the other branch is queued back to the gate (offered 3,000 veh/h into a lane drop), measured against the same network with the other branch unqueued. Waiting trips leave a gate in order per first link, so trips for the free branch wait behind trips for the queued one. On the network this holds trips for the 52nd St off-ramp behind those for the Martin Luther King Jr Way off-ramp at the SR-24 mainline gate.",
+        "relevance": "Not reviewed: left to the project lead. A tested fix (a waiting trip waits only behind trips for the same fork branch) gives 0.64 and leaves every other case unchanged. On PM seeds 1 to 20 it cuts the trips waiting at the SR-24 gate from 143 to 84 and 68 per seed, but the fitted stations do not improve, and it changes the simulator fingerprint. So it was not landed.",
+        "reviewed": false
+      },
+      "lo": 0.9,
+      "name": "Gate onto a 3-lane link forking into two exits, one queued back to the gate: flow to the free exit",
+      "note": "388 veh/h against 897 with the other exit offered 300 veh/h (not queued), 900 offered; the other exit drops to one lane and is offered 3,000 veh/h, so its queue reaches the gate; a gate stands for a multilane road, so trips toward the free exit are not held behind it (round 38: the SR-24 mainline gate feeds the Martin Luther King Jr Way and 52nd St off-ramps this way)",
+      "pass": false,
+      "sim": 0.4331103678929766,
+      "source": "ASSUMPTION",
+      "unit": "ratio"
+    },
+    {
       "hi": 1064.0200605630496,
       "id": "l1",
       "knownDeviation": {
@@ -938,6 +968,7 @@
     "b13",
     "e2",
     "e3",
+    "h4",
     "l1",
     "j6",
     "j8",
@@ -947,18 +978,18 @@
   "manifest": {
     "deviations": {
       "path": "data/calibration/validation.deviations.json",
-      "sha256": "200be1f8f9731970501699984fd77e2488c3091973f2f3ea6de2ab317c06271b"
+      "sha256": "eab15aa555cf4589f9d19613c0ee0ea608652dda921db6d9cef4ebd05cce5f51"
     },
     "schema": 1,
     "simulator": {
-      "dirty": false,
+      "dirty": true,
       "fingerprint": "f0df1aabc323bca5893215e1df1afbff",
-      "revision": "e234ca55d61acdaa8f1356cb72fa9a2e7a2863ed",
+      "revision": "293a448ad92e63389a040a6acd3417b798d5b3a3",
       "version": "0.1.0"
     },
     "suite": {
-      "cases": 72,
-      "sha256": "94eb79e1af3419285f106d8a6b6e9da2db1249e0409c87163a8563a19a3a1523"
+      "cases": 74,
+      "sha256": "2c9bbffd45cdd88814dc06b293b950b452263edce64016148f4c5c78fcd17d3d"
     }
   },
   "notDocumented": []

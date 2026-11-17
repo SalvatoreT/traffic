@@ -279,7 +279,8 @@ export interface FitConfig {
   /** Peak-hour volumes on the select-link blocks implied by the ramp counts and the observed shares (DERIVED), as soft volume constraints; weight below the counts. */
   implied?: { weight: number };
   /** Measured mean delay per vehicle (s) on every link, per period, from a simulator run (`tools/cost-loop.ts`); omitted: free-flow and BPR costs only. */
-  measured?: { delayS: Record<string, number[]>; alpha: number; source: string };
+  /** `weight` scales the measured delay (1 when omitted): a damped step toward the simulator's costs, see `countFit.assignment.measured` in the demand config. */
+  measured?: { delayS: Record<string, number[]>; alpha: number; source: string; weight?: number };
   draws: number; dispersion: number;
   guard: { enabled: boolean; excessShare: number; weight: number; capacity: CapTable };
 }
@@ -325,7 +326,8 @@ export function fitPeriod(
   // (signal 10 s, all-way stop 6 s, minor stop approach 5 s, circle 3 s) is taken out so a queue at a signal is not counted twice (ASSUMPTION).
   const dl = cfg.measured?.delayS[id];
   const ctrlS = (l: number) => { const c = nodeBy.get(links[l].to)!.control; return c === 'signal' ? SIM_ROUTE_PARAMS.delaySignalS : c === 'all_way_stop' ? SIM_ROUTE_PARAMS.delayAllwayS : c === 'two_way_stop' ? (g.minor[l] ? SIM_ROUTE_PARAMS.delayMinorS : 0) : c === 'traffic_circle' ? SIM_ROUTE_PARAMS.delayCircleS : 0; };
-  const extra = dl && dl.length === nL ? links.map((l, i) => Math.max(0, dl[i] - ctrlS(i)) * (l.class === 'residential' || l.class === 'service' ? SIM_ROUTE_PARAMS.localCostFactor : 1)) : undefined;
+  const mw = cfg.measured?.weight ?? 1;
+  const extra = dl && dl.length === nL ? links.map((l, i) => mw * Math.max(0, dl[i] - ctrlS(i)) * (l.class === 'residential' || l.class === 'service' ? SIM_ROUTE_PARAMS.localCostFactor : 1)) : undefined;
   const alphaUse = extra && cfg.measured ? cfg.measured.alpha : as.alpha;
   const assignAt = (vol: ArrayLike<number>): Assignment => (as.method === 'msa'
     ? assignMsa(g, flows, vol, { iterations: as.iterations, drawsPerPass: as.drawsPerPass, alpha: alphaUse, beta: as.beta, dispersion: as.dispersion, capacity: ruleOf.map((r) => r.cap), extraCost: extra, features })
@@ -368,7 +370,7 @@ export function fitPeriod(
   const guardBound: PeriodResult['guardBound'] = [];
   const notes: string[] = [];
   let residualOver: PeriodResult['residualOver'] = [];
-  if (extra && cfg.measured) notes.push(`link costs include the simulator's measured delay per vehicle (${cfg.measured.source}; mean ${(extra.reduce((x, y) => x + y, 0) / nL).toFixed(1)} s per link after the control delay is removed, BPR alpha ${cfg.measured.alpha})`);
+  if (extra && cfg.measured) notes.push(`link costs include the simulator's measured delay per vehicle (${cfg.measured.source}; mean ${(extra.reduce((x, y) => x + y, 0) / nL).toFixed(1)} s per link after the control delay is removed, weight ${mw}, BPR alpha ${cfg.measured.alpha})`);
   if (as.method === 'msa') notes.push(`assignment by successive averages (${as.iterations} passes x ${as.drawsPerPass} draws of perceived costs, BPR alpha ${as.alpha} beta ${as.beta}, route-choice dispersion ${as.dispersion} s), ${rounds} round(s) with the table refitted and reassigned at its own volumes; relative link-volume change at the last pass ${(a as ReturnType<typeof assignMsa>).relChange?.toFixed(3)}`);
   if (cfg.guard.enabled) {
     const V2 = linkVolumes(a, fFinal, nL);
