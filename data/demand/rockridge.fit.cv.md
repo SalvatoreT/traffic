@@ -337,7 +337,7 @@ After the final count refit 1 uncounted link(s) remain above their limit (worst:
 - through target Colby Street NB: its street run holds a held-out block; left out of the training view
 - through target Hillegass Avenue SB: its street run holds a held-out block; left out of the training view
 - through target Colby Street SB: its street run holds a held-out block; left out of the training view
-- through targets: simulated membership from data/demand/rockridge.through-membership.json (pm_peak 10 runs, am_peak 10 runs, midday 10 runs), prior 5 trips at the static route share (ASSUMPTION)
+- through targets: simulated membership from data/demand/rockridge.through-membership.json (pm_peak 40 runs, am_peak 10 runs, midday 10 runs), prior 5 trips at the static route share (ASSUMPTION)
 - assumed movement colby-nb-left-alcatraz-west: its whole-street count overlaps a held block and is withheld; not assumed in the training view
 - assumed movement colby-nb-right-alcatraz-east: its whole-street count overlaps a held block and is withheld; not assumed in the training view
 - assumed movement intents, am_peak: 149.6 veh/h taken from plain flows between the same pairs
