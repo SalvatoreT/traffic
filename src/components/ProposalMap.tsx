@@ -348,7 +348,7 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
               {readout}
             </div>
             <div className="pm-streets">
-              <h5>Streets that change</h5>
+              <h4>Streets that change</h4>
               {ranked.length === 0 ? <p className="muted small">No side-street block changes by a whole car an hour in the {when}.</p> : (
                 <>
                   <p className="muted small">Through cars an hour in the {when}, largest change first{allCars ? ', with all cars (through cars and local trips) beside them' : ''}; {seedsPhrase(runs)}. Select a street to see it on the map.</p>
@@ -361,7 +361,7 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
           <div className="pm-aside">
             {traceable.length > 0 && (
               <div className="pm-filters">
-                <h5>Where filtered traffic goes</h5>
+                <h4>Where filtered traffic goes</h4>
                 <ul className="pm-goes">
                   {traceable.map(({ i }) => {
                     const s: Sel = { kind: 'iv', iv: i };

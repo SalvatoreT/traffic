@@ -228,7 +228,7 @@ function Card({ p, group, evidence, comparison, comparisonLabel, shareUrl, onCop
   return (
     <li className="prop-card" aria-labelledby={hid}>
       <div className="prop-head">
-        <AnchorHeading as="h4" id={hid} label={p.title}>{n !== null && <span className="prop-n">{n}. </span>}{p.title}</AnchorHeading>
+        <AnchorHeading as="h3" id={hid} label={p.title}>{n !== null && <span className="prop-n">{n}. </span>}{p.title}</AnchorHeading>
         {isRef && <span className="tag">Earlier proposal</span>}
       </div>
       {tags.length > 0 && <p className="prop-best small"><span className="prop-best-lead">Best for:</span> {tags.join(', ')}</p>}
@@ -254,12 +254,12 @@ function Card({ p, group, evidence, comparison, comparisonLabel, shareUrl, onCop
         {hasPic && <ProposalMap net={bundle.network} index={index} p={p} group={group} ivs={ivs ?? []} areaId={bundle.entry.id} mode={mode} periodLabel={periodLabel} searchedPeriods={searched} loaded={loaded} onTrace={onTrace} />}
         <div className="prop-extra">
         <div className="prop-changes">
-        <h5 className="prop-h">Changes</h5>
+        <h4 className="prop-h">Changes</h4>
         <ul className="prop-ivs">{p.interventions.map((iv, i) => <li key={i}>{iv.label}</li>)}</ul>
         </div>
         {variants.length > 0 && (
           <div className="prop-variants">
-            <h5>Variants</h5>
+            <h4>Variants</h4>
             <p className="muted small">Tweaks of this proposal that the search found to do about the same. Each opens on the map and runs live.</p>
             <ul>{variants.slice(0, VISIBLE_VARIANTS).map((v, k) => variantItem(v, k))}</ul>
             {variants.length > VISIBLE_VARIANTS && (
@@ -278,16 +278,16 @@ function Card({ p, group, evidence, comparison, comparisonLabel, shareUrl, onCop
       </div>
       <details className="prop-more">
         <summary>More detail</summary>
-        <h5>In words</h5>
+        <h4>In words</h4>
         <p className="small">{p.summary}</p>
-        <h5>Where these figures come from</h5>
+        <h4>Where these figures come from</h4>
         <p className="small">{evidenceNote(p, group)} {group.computed.simulator ? INTERVAL_SCOPE : ''}</p>
         {comparison && <p className="small">{comparisonText(comparison, comparisonLabel)}</p>}
         {routes !== null && <p className="small">Through routes: <strong>{routes}</strong> ({today} today)</p>}
-        <h5>Through cars on one block</h5>
+        <h4>Through cars on one block</h4>
         <p className="small">{harm.none ? harm.label : <><strong>{harm.figure}</strong> {harm.label}</>}</p>
         <p className="muted small">{harm.definition}</p>
-        <h5>Through cars an hour, by period</h5>
+        <h4>Through cars an hour, by period</h4>
         <p className="muted small">Through cars on all the area's side streets together: before → after today's streets, with the change in parentheses.</p>
         <div className="table-scroll" role="region" aria-label="Through cars by period, scrollable" tabIndex={0}>
           <table>
@@ -300,7 +300,7 @@ function Card({ p, group, evidence, comparison, comparisonLabel, shareUrl, onCop
             </tbody>
           </table>
         </div>
-        <h5>All traffic on side-street blocks inside the study area (through and local trips together)</h5>
+        <h4>All traffic on side-street blocks inside the study area (through and local trips together)</h4>
         <p className="muted small">
           Every car on one block, both directions, including the local trips of people who start or end a trip in the area. For each period, the block with the largest increase in all cars is named. The search itself penalizes the largest rise in all cars on any one block past an assumed noise band, because residents experience all the cars on their street. That block can differ from the one with the largest increase, so it is listed beside it. The penalty is a screening rule, not an uncertainty interval.
         </p>
