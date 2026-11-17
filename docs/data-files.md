@@ -12,13 +12,14 @@ A list of study areas. Each entry:
 - `network`, `demand`, `basemap`, `noise`, optional `proposals`: paths of the area's files.
 - `center` (`[lon, lat]`), `zoom`: where the map opens.
 - `calibration`: `status` (`calibrated` or `uncalibrated`), `note` (the one-line status shown on the Map tab), `caveat` (the full statement of what the calibration does and does not show), `defaultPeriod`, `experimentalPeriods`.
+- `preview`: present and true for an area that is not public yet; the app never opens it by default, only from a link that names it. Preview areas come after the others.
 
 ## `/data/<area>.network.json`
 
 The street network the simulator runs on, much wider than the study area, from OpenStreetMap (ODbL).
 
 - `version` (1), `id`, `name`, `origin` (`lon`, `lat` of local coordinates `0, 0`), `bbox` (`[west, south, east, north]`), `studyArea` (the study-area outline as `[lon, lat]` points).
-- `nodes[]`: `id` (the array index), `osmId`, `x`, `y`, `control` (`signal`, `all_way_stop`, `two_way_stop`, `uncontrolled`, `traffic_circle`), `gate` (true at the network edge, where trips enter and leave), `inStudyArea`, optional `canEnter`, `canExit`, `markedCrossing`.
+- `nodes[]`: `id` (the array index), `osmId` (negative for a node the importer added: a roundabout center, or a gate where the model's extent cuts a street), `x`, `y`, `control` (`signal`, `all_way_stop`, `two_way_stop`, `uncontrolled`, `traffic_circle`), `gate` (true at the network edge, where trips enter and leave), `inStudyArea`, optional `canEnter`, `canExit`, `markedCrossing`.
 - `links[]`: one per direction of a street, `id` (the array index), `osmWayId`, `from`, `to` (node ids), `reverse` (the opposite direction's link id, or null for a one-way street), `name`, `class` (`motorway`, `primary`, `secondary`, `tertiary`, `residential`, `service`), `lanes`, `speedLimit` (m/s), `length` (m), `geometry` (`[x, y]` points in local meters), `fromBearing`, `toBearing` (compass degrees the street leaves and reaches its ends), `stopAtEnd`, `humps` (positions in m of speed humps already there), `inStudyArea`, optional `bikeLane`, `bikeRoute`, `sidewalk`, `crossings`.
 - `turnBans[]`: `from`, `to` (link ids) and optional `periods`: turns banned by OpenStreetMap, in the listed periods or always.
 
