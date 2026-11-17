@@ -25,3 +25,8 @@ D5. Steps and stopping rule, frozen with D4.
 - The membership prior stays 5 trips (ASSUMPTION). Item 4's question, noise or prior, is answered by step A: with forty runs pooled the prior weighs half as much per pair as with twenty.
 
 D6. Outcome (recorded after the runs). Step A (forty-run membership, weight 1) changed the distance by under 1 car an hour on each set and raised it on twenty seeds: no change beyond noise, so round 39's worse second iteration was noise in the ten-seed shares. Weight 2 cut the distance on both sets (8.5 to 4.9, 29.2 to 12.0; twenty seeds 17.6 to 8.0) with every rail held and is kept. Weight 4 (E leg +1.54) and weight 8 (E leg +1.67, all four figures inside on both sets) break G5 on seeds 11 to 20 at the held-out east leg of Telegraph Ave / Alcatraz Ave. A second iteration at weight 2 (sixty runs) raised the distance on seeds 11 to 20 (12.0 to 17.3) and is not kept. Shipped: weight 2, forty-run membership, demand 930a1d90b2d1. On twenty seeds Hillegass Ave SB (122.4, SE 2.8) is inside within noise and Colby St NB (150.6, SE 3.3) is 5.6 above. The trade at weight 8 is the lead's decision.
+
+## Decisions by the project lead, 2026-11-17
+
+- The published model uses through-target weight 2, the setting that broke no guard rail. Weight 8, which put all four through figures inside their ranges but exceeded G5 on one seed set, is not adopted.
+- The site keeps the "not yet calibrated" status until every rule passes, including the count-station rule.
