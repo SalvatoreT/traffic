@@ -213,6 +213,8 @@ fn an_untagged_option_is_dropped_when_another_removes_as_many_with_a_clearly_sma
     let d = &dropped[0];
     assert_eq!((d.from, d.by), (1, 2));
     assert_eq!(d.removal, "not distinguishable");
+    assert_eq!((d.basis, d.seeds.clone()), ("search", params().seeds));
+    assert!(d.phrase().contains("figures from the search seeds"), "{}", d.phrase());
     assert_eq!(d.noise_basis, "paired intervals");
     assert!(d.rise - d.by_rise > d.noise, "{d:?}");
     assert!(notes[1].starts_with("not published: finalist 3") && notes[1].contains("208") && notes[1].contains("56"), "{}", notes[1]);

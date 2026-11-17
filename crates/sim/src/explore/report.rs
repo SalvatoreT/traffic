@@ -442,6 +442,7 @@ impl Default for Final {
 
 // ---------------------------------------------------------------- choosing the options
 
+#[derive(Clone)]
 pub struct Pick {
     pub idx: usize,
     pub why: String,
@@ -460,8 +461,13 @@ pub fn reduces(f: &Final) -> bool {
 /// the interval of the per-seed gain is above zero and the gain is at least `GOAL_NOISE_FLOOR_PCT` points of the baseline. With fewer than
 /// `MIN_PAIRS` pairs, or runs that are not the same pairs, there is no interval and only the practical floor on the means applies.
 pub fn beats(a: &Final, b: &Final) -> bool {
+    beats_figures(&Figures::of(a), &Figures::of(b))
+}
+
+/// `beats` on the figures it reads, so a published file can be judged the same way as a finalist.
+pub fn beats_figures(a: &Figures, b: &Figures) -> bool {
     let floor_only = a.reduction_pct - b.reduction_pct > GOAL_NOISE_FLOOR_PCT;
-    match option_gain(&a.pairs, &b.pairs) {
+    match option_gain(a.pairs, b.pairs) {
         Some(g) if g.n >= MIN_PAIRS => {
             let base = a.pairs.base_mean();
             let pts = if base > 0.0 { 100.0 * g.mean / base } else { 0.0 };
@@ -642,6 +648,40 @@ pub fn largest_rise(f: &Final) -> (f64, Option<f64>) {
         .unwrap_or((f.harm, None))
 }
 
+/// What the displacement rule reads from one option: through cars removed (percent), the largest all-car rise on one block (cars an hour)
+/// with the half width of its paired interval when it has one, and the per-seed through-car runs behind the paired comparison.
+#[derive(Clone, Copy, Debug)]
+pub struct Figures<'a> {
+    pub reduction_pct: f64,
+    pub rise: f64,
+    pub rise_half: Option<f64>,
+    pub pairs: &'a CtPairs,
+}
+
+impl<'a> Figures<'a> {
+    pub fn of(f: &'a Final) -> Figures<'a> {
+        let (rise, rise_half) = largest_rise(f);
+        Figures { reduction_pct: f.reduction_pct, rise, rise_half, pairs: &f.pairs }
+    }
+}
+
+/// Basis of a displacement record: the seeds that chose the option (`search`) or the fresh seeds that confirmed it (`confirmation`).
+pub const BASIS_SEARCH: &str = "search";
+pub const BASIS_CONFIRMATION: &str = "confirmation";
+
+/// `1-3` for consecutive seeds, otherwise the list.
+pub fn seed_span(seeds: &[u64]) -> String {
+    match (seeds.first(), seeds.last()) {
+        (Some(a), Some(b)) if seeds.len() > 2 && seeds.windows(2).all(|w| w[1] == w[0] + 1) => format!("{a}-{b}"),
+        _ => seeds.iter().map(|s| s.to_string()).collect::<Vec<_>>().join(", "),
+    }
+}
+
+/// `search seeds 1-3` or `confirmation seeds 101-110`.
+pub fn basis_label(basis: &str, seeds: &[u64]) -> String {
+    format!("{} seeds {}", if basis == BASIS_CONFIRMATION { "confirmation" } else { "search" }, seed_span(seeds))
+}
+
 /// An option that was not published because another one removes as many through cars and piles fewer cars onto one block.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Displaced {
@@ -656,14 +696,28 @@ pub struct Displaced {
     pub noise_basis: &'static str,
     /// `at least as many` through cars removed, or `not distinguishable` on the paired comparison.
     pub removal: &'static str,
+    /// Which runs the figures come from: `BASIS_SEARCH` or `BASIS_CONFIRMATION`, and their seeds (empty when not stated).
+    pub basis: &'static str,
+    pub seeds: Vec<u64>,
 }
 
 impl Displaced {
+    pub fn on(mut self, basis: &'static str, seeds: &[u64]) -> Displaced {
+        self.basis = basis;
+        self.seeds = seeds.to_vec();
+        self
+    }
+
     pub fn phrase(&self) -> String {
-        format!(
+        let core = format!(
             "removes {:.1}% of through cars against {:.1}% ({}), and its largest all-car rise on one block is {:.0} cars an hour against {:.0}, a difference of more than {:.0} ({})",
             self.by_removed, self.removed, self.removal, self.by_rise, self.rise, self.noise, self.noise_basis
-        )
+        );
+        if self.seeds.is_empty() {
+            core
+        } else {
+            format!("{core}, figures from the {}", basis_label(self.basis, &self.seeds))
+        }
     }
 }
 
@@ -671,20 +725,58 @@ impl Displaced {
 /// distinguishable from `from` on the paired comparison (`beats`), and its largest all-car rise on one block is smaller by more than the
 /// noise of the two rises (the paired intervals' half widths combined; `NOISE_FLOOR_VEH_H` when either has none, an ASSUMPTION).
 pub fn displaces(finals: &[Final], from: usize, by: usize) -> Option<Displaced> {
-    let (a, b) = (&finals[from], &finals[by]);
+    displaces_figures(&Figures::of(&finals[from]), &Figures::of(&finals[by]), from, by)
+}
+
+/// `displaces` on the figures it reads; `from` and `by` are the positions the record carries.
+pub fn displaces_figures(a: &Figures, b: &Figures, from: usize, by: usize) -> Option<Displaced> {
     let removal = if b.reduction_pct >= a.reduction_pct {
         "at least as many"
-    } else if !beats(a, b) {
+    } else if !beats_figures(a, b) {
         "not distinguishable"
     } else {
         return None;
     };
-    let ((ra, ha), (rb, hb)) = (largest_rise(a), largest_rise(b));
-    let (noise, noise_basis) = match (ha, hb) {
+    let (noise, noise_basis) = match (a.rise_half, b.rise_half) {
         (Some(x), Some(y)) => ((x * x + y * y).sqrt(), "paired intervals"),
         _ => (NOISE_FLOOR_VEH_H, "floor"),
     };
-    (ra - rb > noise).then_some(Displaced { from, by, removed: a.reduction_pct, by_removed: b.reduction_pct, rise: ra, by_rise: rb, noise, noise_basis, removal })
+    (a.rise - b.rise > noise).then_some(Displaced {
+        from,
+        by,
+        removed: a.reduction_pct,
+        by_removed: b.reduction_pct,
+        rise: a.rise,
+        by_rise: b.rise,
+        noise,
+        noise_basis,
+        removal,
+        basis: BASIS_SEARCH,
+        seeds: Vec::new(),
+    })
+}
+
+/// The options the displacement rule drops from a list of published options, one at a time: the worst displaced option (the largest rise
+/// among those a listed option displaces, taken against the displacing option with the smallest rise) goes, and the rest are judged again.
+/// `protected` marks goal winners, which are never dropped. `from` and `by` index `figs`. The list is not refilled.
+pub fn displace_listed(figs: &[Figures], protected: &[bool], basis: &'static str, seeds: &[u64]) -> Vec<Displaced> {
+    let mut gone = vec![false; figs.len()];
+    let mut out: Vec<Displaced> = Vec::new();
+    loop {
+        let listed: Vec<usize> = (0..figs.len()).filter(|&i| !gone[i]).collect();
+        let worst = listed
+            .iter()
+            .filter(|&&i| !protected.get(i).copied().unwrap_or(false))
+            .filter_map(|&i| listed.iter().filter(|&&k| k != i).filter_map(|&k| displaces_figures(&figs[i], &figs[k], i, k)).min_by(|a, b| a.by_rise.partial_cmp(&b.by_rise).unwrap_or(std::cmp::Ordering::Equal)))
+            .max_by(|a, b| a.rise.partial_cmp(&b.rise).unwrap_or(std::cmp::Ordering::Equal));
+        match worst {
+            Some(d) => {
+                gone[d.from] = true;
+                out.push(d.on(basis, seeds));
+            }
+            None => break out,
+        }
+    }
 }
 
 /// Choose the published options for several objectives. Each objective picks its winner from the packages it may win, after the same filters
@@ -739,7 +831,7 @@ pub fn select_by_objectives(finals: &[Final], p: &Params, max: usize) -> (Vec<Pi
             .filter_map(|&i| listed.iter().filter(|&&k| k != i).filter_map(|&k| displaces(finals, i, k)).min_by(|a, b| a.by_rise.partial_cmp(&b.by_rise).unwrap_or(std::cmp::Ordering::Equal)))
             .max_by(|a, b| a.rise.partial_cmp(&b.rise).unwrap_or(std::cmp::Ordering::Equal));
         match worst {
-            Some(d) => dropped.push(d),
+            Some(d) => dropped.push(d.on(BASIS_SEARCH, &p.seeds)),
             None => break extra,
         }
     };
@@ -960,20 +1052,20 @@ pub struct SimilarOut {
     pub dropped: Vec<Value>,
 }
 
-/// A machine-readable record of every option dropped for displacement.
+/// A machine-readable record of every option dropped for displacement; `from` and `by` index `finals`.
 pub fn displaced_out(ctx: &Ctx, finals: &[Final], dropped: &[Displaced]) -> Vec<Value> {
     let link = |f: &Final| ctx.study.encode(&ctx.ivs(&f.set), Some(&ctx.p.periods[0]));
-    dropped
-        .iter()
-        .map(|d| {
-            json!({
-                "from": link(&finals[d.from]), "by": link(&finals[d.by]), "reason": d.phrase(), "removal": d.removal,
-                "throughCarsRemovedPct": r1(d.removed), "byThroughCarsRemovedPct": r1(d.by_removed),
-                "largestRiseVehPerHour": r1(d.rise), "byLargestRiseVehPerHour": r1(d.by_rise),
-                "noiseVehPerHour": r1(d.noise), "noiseBasis": d.noise_basis,
-            })
-        })
-        .collect()
+    dropped.iter().map(|d| dropped_json(d, &link(&finals[d.from]), &link(&finals[d.by]))).collect()
+}
+
+pub fn dropped_json(d: &Displaced, from: &str, by: &str) -> Value {
+    json!({
+        "from": from, "by": by, "reason": d.phrase(), "removal": d.removal,
+        "basis": d.basis, "seeds": d.seeds,
+        "throughCarsRemovedPct": r1(d.removed), "byThroughCarsRemovedPct": r1(d.by_removed),
+        "largestRiseVehPerHour": r1(d.rise), "byLargestRiseVehPerHour": r1(d.by_rise),
+        "noiseVehPerHour": r1(d.noise), "noiseBasis": d.noise_basis,
+    })
 }
 
 pub fn similar_out(ctx: &Ctx, finals: &[Final], picks: &[Pick], folds: &[similar::Fold]) -> SimilarOut {
@@ -1152,18 +1244,34 @@ pub fn explore(study: &Study, p: &Params) -> Outcome {
         let shown: Vec<Final> = perm.iter().map(|&i| sh[i].take().expect("shown")).collect();
         (picks, shown)
     };
+    // The rule runs again on the figures that are published. An option it drops is removed, and the list is not refilled.
+    let (shown_all, picks_all) = (shown.clone(), picks.clone());
+    let after = if p.confirm_seeds.is_empty() {
+        Vec::new()
+    } else {
+        let figs: Vec<Figures> = shown.iter().map(Figures::of).collect();
+        let protected: Vec<bool> = shown.iter().map(|f| !f.objectives.is_empty()).collect();
+        displace_listed(&figs, &protected, BASIS_CONFIRMATION, &p.confirm_seeds)
+    };
+    let kept = |i: usize| !after.iter().any(|d| d.from == i);
+    let picks: Vec<Pick> = picks.into_iter().enumerate().filter(|(i, _)| kept(*i)).map(|(_, pk)| pk).collect();
+    let shown: Vec<Final> = shown.into_iter().enumerate().filter(|(i, _)| kept(*i)).map(|(_, f)| f).collect();
     for (n, pk) in picks.iter().enumerate() {
         notes[pk.idx] = format!("chosen as option {}: {}", n + 1, pk.why);
     }
+    for d in &after {
+        notes[picks_all[d.from].idx] = format!("not published after confirmation, displaced by \"{}\": {}", title(&cands, &shown_all[d.by].set), d.phrase());
+    }
     let mut sim = similar_out(&ctx_all, &finals, &picks, &folds);
     sim.dropped = displaced_out(&ctx_all, &finals, &dropped);
+    sim.dropped.extend(displaced_out(&ctx_all, &shown_all, &after));
     let mut ref_finals = if ref_sets.is_empty() { Vec::new() } else { eprintln!("rechecking {} reference package(s)", ref_sets.len()); recheck(&ctx_all, &ref_sets) };
     for f in ref_finals.iter_mut() {
         f.access = check_access(study, &ctx_all.ivs(&f.set)).err();
         f.role = "reference";
     }
     eprintln!("chose {} option(s); total {:.0}s", picks.len(), t0.elapsed().as_secs_f64());
-    let json = build_json(study, p, &all, est_base, &shown, &ref_finals, &known, &Estimation { seeds: est_p.seeds.clone(), confirmed: !p.confirm_seeds.is_empty() }, &sim);
+    let json = build_json(study, p, &all, est_base, &shown, &ref_finals, &known, &Estimation { seeds: est_p.seeds.clone(), confirmed: !p.confirm_seeds.is_empty(), shortlist: shown_all.iter().map(|f| study.encode(&ctx.ivs(&f.set), Some(&p.periods[0]))).collect() }, &sim);
     let markdown = build_markdown(study, p, &ctx_all, &state, &finals, &picks, &notes, &t0, &ref_finals, &known, &shown, &sim);
     let today = util::today_utc();
     let published: Vec<seeds::Entry> = picks
@@ -1238,6 +1346,8 @@ fn r1(x: f64) -> f64 {
 pub struct Estimation {
     pub seeds: Vec<u64>,
     pub confirmed: bool,
+    /// The packages that were confirmed or estimated, in published order, before the displacement rule ran on the confirmed figures.
+    pub shortlist: Vec<String>,
 }
 
 fn variant_json(v: &Variant) -> Value {
@@ -1293,6 +1403,45 @@ fn provenance_core(p: &Params, est: &Estimation, shortlist: &[String]) -> Value 
             },
         },
     })
+}
+
+/// Option `k + 1` against option `k + 2` on the same seeds: how many more points of through cars it cuts.
+pub fn comparison_json(k: usize, gain: Option<Paired>, base_mean: f64) -> Value {
+    match gain {
+        Some(g) if base_mean > 0.0 => json!({
+            "option": format!("p{}", k + 1), "against": format!("p{}", k + 2),
+            "extraCutVehPerHour": g.to_json("better", "worse"),
+            "extraCutPoints": g.scaled(100.0 / base_mean).to_json("better", "worse"),
+        }),
+        _ => json!({"option": format!("p{}", k + 1), "against": format!("p{}", k + 2), "extraCutVehPerHour": {"n": 0, "status": "insufficient"}}),
+    }
+}
+
+/// The report line for `comparison_json`.
+pub fn comparison_line(k: usize, gain: Option<Paired>, base_mean: f64) -> String {
+    let c = match gain {
+        Some(g) if base_mean > 0.0 => {
+            let pts = g.scaled(100.0 / base_mean);
+            match (g.status(), pts.interval()) {
+                (Status::Positive, Some((lo, hi))) => format!("cuts through cars by {:.1} more points (interval {:.1} to {:.1} over {} seeds)", pts.mean, lo, hi, pts.n),
+                (Status::Negative, Some((lo, hi))) => format!("cuts through cars by {:.1} fewer points (interval {:.1} to {:.1} over {} seeds)", -pts.mean, -hi, -lo, pts.n),
+                (Status::Unresolved, Some((lo, hi))) => format!("is not resolved from option {}: {:+.1} points (interval {:.1} to {:.1} over {} seeds)", k + 2, pts.mean, lo, hi, pts.n),
+                _ => format!("has insufficient evidence against option {}: {} seed pair(s), at least {MIN_PAIRS} needed", k + 2, g.n),
+            }
+        }
+        _ => format!("cannot be compared with option {}: the runs are not the same seed pairs", k + 2),
+    };
+    format!("- Option {} {c} than option {}, paired on the same seeds.", k + 1, k + 2)
+}
+
+/// The report's explanation of the displacement rule.
+pub fn displacement_intro() -> String {
+    format!("An option that wins no goal is not published when another published option removes at least as many through cars, or cannot be told from it on the paired comparison, and piles clearly fewer cars onto its worst block (floor when a rise has no interval: {} cars an hour, an assumption). The rule runs twice: on the search seeds when the options are chosen, and again on the confirmation seeds, whose figures are the published ones. Each line says which seeds its figures come from.", NOISE_FLOOR_VEH_H)
+}
+
+/// The report line for one dropped record.
+pub fn dropped_line(d: &Value) -> String {
+    format!("- `{}` dropped for `{}`: {}.", d["from"].as_str().unwrap_or(""), d["by"].as_str().unwrap_or(""), d["reason"].as_str().unwrap_or(""))
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -1397,23 +1546,7 @@ pub fn build_json(study: &Study, p: &Params, cands: &[Cand], base: &Baseline, sh
         proposals.push(entry(r.id.clone(), r.title.clone(), f, "reference", Some(&r.note)));
     }
     // Each option against the next simpler one on the same seeds: how many more points of through cars it cuts.
-    let comparisons: Vec<Value> = shown
-        .windows(2)
-        .enumerate()
-        .map(|(k, w)| {
-            let (hi, lo) = (&w[0], &w[1]);
-            let base_mean = hi.pairs.base_mean();
-            match option_gain(&hi.pairs, &lo.pairs) {
-                Some(g) if base_mean > 0.0 => json!({
-                    "option": format!("p{}", k + 1), "against": format!("p{}", k + 2),
-                    "extraCutVehPerHour": g.to_json("better", "worse"),
-                    "extraCutPoints": g.scaled(100.0 / base_mean).to_json("better", "worse"),
-                }),
-                _ => json!({"option": format!("p{}", k + 1), "against": format!("p{}", k + 2), "extraCutVehPerHour": {"n": 0, "status": "insufficient"}}),
-            }
-        })
-        .collect();
-    let shortlist: Vec<String> = shown.iter().map(|f| study.encode(&f.set.iter().map(|&i| cands[i as usize].iv.clone()).collect::<Vec<_>>(), Some(&p.periods[0]))).collect();
+    let comparisons: Vec<Value> = shown.windows(2).enumerate().map(|(k, w)| comparison_json(k, option_gain(&w[0].pairs, &w[1].pairs), w[0].pairs.base_mean())).collect();
     let mut computed = json!({
         "date": util::today_utc(),
         "periods": p.periods,
@@ -1441,7 +1574,7 @@ pub fn build_json(study: &Study, p: &Params, cands: &[Cand], base: &Baseline, sh
         "note": "Each option lists the objectives it is the best for. Detour is the added trip time of completed car trips that start or end inside the study area, scenario minus baseline on the same seed. ASSUMPTION: the reduction floor, and the detour tie threshold used only when fewer than the minimum seed pairs are available.",
     });
     computed["displacement"] = json!({
-        "rule": "An option that is not the winner of a goal is not published when another published option removes at least as many through cars, or is not distinguishable from it on the paired comparison, and its largest all-car rise on one block is smaller by more than the noise of the two rises: the paired intervals' half widths combined, or a floor when either has none. ASSUMPTION: the floor.",
+        "rule": "An option that is not the winner of a goal is not published when another published option removes at least as many through cars, or is not distinguishable from it on the paired comparison, and its largest all-car rise on one block is smaller by more than the noise of the two rises: the paired intervals' half widths combined, or a floor when either has none. The rule runs on the search seeds when the options are chosen and again on the confirmation seeds, whose figures are the published ones; each dropped record says which (`basis`, `seeds`). The list is not refilled. ASSUMPTION: the floor.",
         "floorVehPerHour": NOISE_FLOOR_VEH_H,
         "dropped": sim.dropped,
     });
@@ -1450,7 +1583,7 @@ pub fn build_json(study: &Study, p: &Params, cands: &[Cand], base: &Baseline, sh
         "pictureDistanceMax": similar::PICTURE_DISTANCE_MAX,
         "folded": sim.folded,
     });
-    for (k, v) in provenance_json(p, est, &shortlist).as_object().expect("object") {
+    for (k, v) in provenance_json(p, est, &est.shortlist).as_object().expect("object") {
         computed[k] = v.clone();
     }
     json!({
@@ -1582,19 +1715,7 @@ fn build_markdown(study: &Study, p: &Params, ctx: &Ctx, state: &SearchState, fin
         let _ = writeln!(md, "{}. {} ({}; source: {}; estimates: {}). {} Residents' detour: {:+.1} s per trip, {:+.0} vehicle-minutes an hour ({}).", n + 1, title(cands, &f.set), pick.why, f.origin.phrase(), f.role, summary(study, cands, f), f.detour_s, f.detour_vmin_h, detour_phrase(&f.detour));
     }
     for (k, w) in shown.windows(2).enumerate() {
-        let c = match option_gain(&w[0].pairs, &w[1].pairs) {
-            Some(g) if w[0].pairs.base_mean() > 0.0 => {
-                let pts = g.scaled(100.0 / w[0].pairs.base_mean());
-                match (g.status(), pts.interval()) {
-                    (Status::Positive, Some((lo, hi))) => format!("cuts through cars by {:.1} more points (interval {:.1} to {:.1} over {} seeds)", pts.mean, lo, hi, pts.n),
-                    (Status::Negative, Some((lo, hi))) => format!("cuts through cars by {:.1} fewer points (interval {:.1} to {:.1} over {} seeds)", -pts.mean, -hi, -lo, pts.n),
-                    (Status::Unresolved, Some((lo, hi))) => format!("is not resolved from option {}: {:+.1} points (interval {:.1} to {:.1} over {} seeds)", k + 2, pts.mean, lo, hi, pts.n),
-                    _ => format!("has insufficient evidence against option {}: {} seed pair(s), at least {MIN_PAIRS} needed", k + 2, g.n),
-                }
-            }
-            _ => format!("cannot be compared with option {}: the runs are not the same seed pairs", k + 2),
-        };
-        let _ = writeln!(md, "- Option {} {c} than option {}, paired on the same seeds.", k + 1, k + 2);
+        let _ = writeln!(md, "{}", comparison_line(k, option_gain(&w[0].pairs, &w[1].pairs), w[0].pairs.base_mean()));
     }
     if !picks.is_empty() {
         let _ = writeln!(md, "\n### All traffic on side-street blocks, by period (through and local trips together)\n");
@@ -1639,9 +1760,9 @@ fn build_markdown(study: &Study, p: &Params, ctx: &Ctx, state: &SearchState, fin
     }
     if !sim.dropped.is_empty() {
         let _ = writeln!(md, "\n## Dropped for displacement\n");
-        let _ = writeln!(md, "An option that wins no goal is not published when another published option removes at least as many through cars, or cannot be told from it on the paired comparison, and piles clearly fewer cars onto its worst block (floor when a rise has no interval: {} cars an hour, an assumption).\n", NOISE_FLOOR_VEH_H);
+        let _ = writeln!(md, "{}\n", displacement_intro());
         for d in &sim.dropped {
-            let _ = writeln!(md, "- `{}` dropped for `{}`: {}.", d["from"].as_str().unwrap_or(""), d["by"].as_str().unwrap_or(""), d["reason"].as_str().unwrap_or(""));
+            let _ = writeln!(md, "{}", dropped_line(d));
         }
     }
     if picks.is_empty() {
