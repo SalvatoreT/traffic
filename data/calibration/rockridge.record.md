@@ -89,6 +89,52 @@ Claremont Ave: checked end to end. OSM lanes (3 with one forward and one backwar
 
 Ramp junctions: after joining all four SR-24 terminals are single signalized nodes (Aileen/Telegraph and Clifton/Claremont off-ramps, Hudson/Claremont and 56th/Telegraph on-ramps) with 2-lane ramp approaches at 35 mph. Mean discharge in the PM peak (seeds 1 to 3, measured before the third round): Aileen off-ramp 584 veh/h (offered 656), Clifton off-ramp 914 veh/h (offered about 1,025), on-ramps 783 and 555 veh/h. That is 290 to 460 veh/h per lane averaged over the hour; the signal gives the ramp 30 to 45% of the cycle and the shortfall is downstream spill-back on Claremont and Telegraph, not the ramp signal itself. Before the third round the remaining gridlock removals were mostly vehicles queued on the 4-lane freeway stub behind the single-lane Clifton off-ramp (26 of about 45 removals over six seeds at scale 0.3). The third round checked the ramp lanes against OSM: the off-ramps are tagged one lane for most of their length and two lanes (turn lanes left | left;through;right at Clifton, left | right at Aileen) on the final way before the signal, and the importer keeps that per segment (a test covers it), so no lane count is lost. After step M the stub accounts for about one removal per run.
 
+## Forty-first round: Colby St NB and the Forest St turn (change calibration-round-41)
+
+Round 40 traced the remaining Colby St NB excess (150.6 on twenty seeds, SE 3.3, against 102 to 145) to cars that join Colby St partway, mostly from Forest St. This round checked the volunteer count at Claremont Ave / Colby St / Forest St and tried one change. Guard rails G1 to G5 were carried over against the round-40 demand and frozen with the keep rule in `openspec/changes/calibration-round-41/design.md` before any result. Nothing shipped: demand 930a1d90b2d1af05, network f9fa09a5726644d7, split, cross-validation demand and fingerprint f0df1aabc323 are all unchanged. Times Pacific; the round ran on 2026-11-17, 00:45 to 01:45.
+
+### What the count gives at the junction
+
+PM, route diagrams of Colby St NB and SB:
+- Claremont Ave from the southwest onto Colby St NB, 121, and Forest St from the southeast onto Colby St NB, 57: fit stations (weight 0.5), not held out.
+- Claremont Ave from the northeast onto Colby St NB, 4: below the 25-vehicle minimum for a constraint; unused.
+- Colby St SB onto Claremont Ave toward the southwest, 84: fit station, not held out.
+- Colby St SB onto Claremont Ave toward the northeast, 75: fit station with a quarter weight for a doubtful reading (the exits read 218 against 162 on the feeding block); not held out.
+- Colby St SB straight onto Forest St, 59: not a movement station; the Forest St eastbound block from the junction (66) covers it. It is southbound traffic and not part of the Colby St NB excess, and a new station would change the station list the frozen split was checked against, so it was not added.
+
+No movement there is both counted and unused, so there was nothing new to add. All four movement stations were already in the fit. Their membership came from the fit's static routes, which send fewer cars from Forest St onto Colby St NB than the simulator does.
+
+### Change tried: simulated membership for the four movement stations
+
+`calibrate --select-od` now also writes the pairs of the trips that made each movement or route station, and `countFit.throughTargets.measuredStations` lets named stations take their membership from those simulated trips (all trips, not only through trips; prior 5 trips at the static share, ASSUMPTION; station weights unchanged; PM only). The pairs came from twenty seeds of the round-40 demand; the through targets kept round 40's membership. PM, round 40 in brackets:
+
+| | 1-10 | 11-20 | 1-20 (SE) |
+| --- | --- | --- | --- |
+| Through HNB / CNB / HSB / CSB | 96 / 152 / 121 / 120 (92 / 150 / 119 / 111) | 96 / 150 / 123 / 116 (93 / 151 / 126 / 113) | 96.0 (2.7) / 151.3 (3.0) / 122.2 (2.5) / 118.0 (2.4) (92.6 / 150.6 / 122.4 / 111.8) |
+| Distance outside the ranges | 12.5 (4.9) | 9.2 (12.0) | 10.5 (8.0) |
+| Forest St onto Colby St NB (57) | | | 75.9 (2.7) (81.0) |
+| Claremont Ave onto Colby St NB (121) | | | 103.1 (2.7) (106.2) |
+| Colby St NB whole street (102) | | | 93.7 (2.1) (93.2) |
+| Recent fitted stations | 75 of 92 (75) | 77 of 92 (75) | |
+| Headline error, within 10 | 5.6, 4 of 4 (5.9) | 5.6, 4 of 4 (5.3) | |
+| Mean backlog | 0.63% (0.68%) | 0.58% (0.67%) | |
+| Largest leg GEH rise (limit 1.5) | none | W +0.94 | |
+
+The fit itself could bring the Forest St turn only to 77 under simulated membership (its target is 57), because the same pairs carry the block and gate counts. In the simulation the turn fell from 81 to 76 and Colby St NB did not move. The rails held, but the twenty-seed distance rose from 8.0 to 10.5, so by the frozen rule the change was reverted. The option stays in the code, unused by the shipped build.
+
+### 62nd St and Forest St eastbound today
+
+Twenty seeds on the shipped (round-40) demand, nothing changed: 62nd St eastbound from Florio St / Claremont Ave to Hillegass Ave carries 96.9 (SE 3.0) against 59 counted. Forest St eastbound from Colby St / Claremont Ave to Ayala Ave carries 189.5 (SE 6.3) against 66, 2.9 times its count, while Forest St westbound matches (63.6 against 66). Colby St SB onto Claremont Ave toward the northeast carries 0.5 against 75 counted (the doubtful reading). Where the model sends those cars instead, and how much of the Forest St eastbound excess they explain, was not traced in this round.
+
+### Verdict
+
+Unchanged from round 40: status `uncalibrated`; D16 and D5 pass; the through-car check fails on Colby St NB (150.6, SE 3.3, against 145); the station rule fails in the PM peak fitted (82%) and held out (54%) and in the AM held out (74%); AM Telegraph Ave southbound is 300 s against 245 to 285; p2, p3, b13, l1 and h4 fail with no reviewed exception.
+
+### What remains off
+
+- Colby St NB, the Forest St turn onto it, and Forest St eastbound. A count of the Colby St / Claremont Ave / Forest St junction that settles the doubtful 75 (Colby St SB onto Claremont Ave toward College Ave) would show whether the model's straight-through traffic onto Forest St is wrong.
+- Weight 8 of round 40 (all four through figures inside, G5 broken on one seed set) awaits the project lead.
+
 ## Fortieth round: twenty seeds, target weight, Colby St NB against the count (change calibration-round-40)
 
 Round 39 left Colby St NB and Hillegass Ave SB above their ranges, and its two ten-seed sets disagreed by up to 13 cars an hour. The project lead asked for four steps in order: judge on twenty seeds, raise the through targets' weight, check Colby St NB against data before constraining any route, and test a second membership iteration. A step is kept only if the summed distance outside the ranges falls on seeds 1 to 10 and on 11 to 20 and the guard rails G1 to G5 of round 39 hold, now measured against the round-39 demand. Rails and rules were frozen in `openspec/changes/calibration-round-40/design.md` before any new result. Simulator fingerprint f0df1aabc323, network f9fa09a5726644d7, split and cross-validation flows unchanged; demand 86ec26e0a271a7e3 became 930a1d90b2d1af05. Times Pacific; the round ran on 2026-11-16 and 17, 23:45 to 03:00.

@@ -128,5 +128,8 @@ than the simulator does. To refresh it, run ten seeds on the shipped demand with
 longer check the model. The checks that stay independent are the held-out count stations, the
 headline freeway shares, stability and the arterial travel times. The calibrate report and the
 assessment mark the fitted rows.
+Movement and route stations listed in `countFit.throughTargets.measuredStations` can take the
+same simulated membership (round 41: `calibrate --select-od` writes their pairs, `tools/through-membership.ts
+--stations --ids ...` pools them). The shipped build lists none; the round-41 test did not help.
 
 The router's control delays (signal, all-way stop, minor stop approach, circle) are in `crates/sim/data/node-delays.json`, read by the simulator and by the demand fit. `npx tsx tools/node-delays.ts --dir DIR --seeds 1-3 --write` rewrites them from kept seed reports (`--keep-seeds DIR`) and writes `rockridge.node-delays.md`. `calibrate` reports, in the seed JSON, the simulator's count of the volunteer count's turning movements and whole-street routes (`features`, select-link trips per hour, read from the station file the demand build writes) and the plan of every signal with an observed timing (`observedSignals`); `tools/assess.ts` prints them with the interior blocks, the entries by side and Colby Street and Hillegass Avenue block by block.

@@ -26,3 +26,5 @@ D4. Guard rails, carried over from round 40 and frozen before results; baseline 
 - G5: per Telegraph Ave / Alcatraz Ave leg the GEH rises by no more than 1.5 over round 40 on the same set (1 to 10: N 6.70, W 12.50, S 6.72, E 6.31; 11 to 20: 7.93, 12.98, 8.44, 6.59).
 
 D5. Keep rule, frozen with D4: the summed distance outside the four ranges on seeds 1 to 20 must fall and every rail must hold on both sets. One build, no iteration. Otherwise the change is reverted (config off, demand 930a1d90b2d1 stays) and reported.
+
+D6. Outcome (after the runs). Twenty seeds: through figures 96.0 / 151.3 / 122.2 / 118.0 (round 40: 92.6 / 150.6 / 122.4 / 111.8), distance 10.5 against 8.0; Forest St onto Colby St NB 75.9 against 81.0 (counted 57). Rails held (largest leg rise +0.94, W leg, seeds 11 to 20). The distance rose, so by D5 the change is reverted: the shipped config does not list `measuredStations` and demand 930a1d90b2d1 stays. Reported without change: 62nd St EB 96.9 against 59, Forest St EB 189.5 against 66, Colby St SB onto Claremont Ave toward College Ave 0.5 against 75 (doubtful reading).
