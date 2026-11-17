@@ -1009,6 +1009,11 @@ pub fn explore(study: &Study, p: &Params) -> Outcome {
     let base = run_baseline(study, p);
     eprintln!("baseline done in {:.0}s; cut-through {}", t0.elapsed().as_secs_f64(), p.periods.iter().zip(&base.full).map(|(n, s)| format!("{n} {:.0} veh/h", s.ct_vph)).collect::<Vec<_>>().join(", "));
     let mut cands = generate_with(study, &base.hot, p.candidates, &p.profile);
+    if p.bypass_locations > 0 {
+        let sup = super::bypass::supplement(study, &p.periods[0], &cands, &p.profile, p.bypass_locations);
+        eprintln!("bypass supplement (experimental): {} candidate(s) at up to {} location(s)", sup.added.len(), p.bypass_locations);
+        cands.extend(sup.added.into_iter().map(|s| s.cand));
+    }
     eprintln!("{} candidate interventions:", cands.len());
     for (i, c) in cands.iter().enumerate() {
         eprintln!("  {:3} [{}] {}", i + 1, c.kind, c.label);
@@ -1048,6 +1053,12 @@ pub fn explore(study: &Study, p: &Params) -> Outcome {
         eprintln!("beam for {}", obj.label());
         beam_search_in(&ctx, &families, &lim, &mut state);
         eprintln!("beam for {}: {} new screening run(s)", obj.label(), state.used - before);
+    }
+    if !p.supplement.is_empty() {
+        let pairs = if p.supplement.contains(&super::supplement::Move::Coordinated) { super::bypass::coordinated_pairs(study, &p.periods[0], &cands) } else { Vec::new() };
+        let allowance = super::bench::allowance(state.used);
+        let rec = super::supplement::run(&ctx, &mut state, &p.supplement, allowance, &pairs, &all_known);
+        eprintln!("supplementary moves (experimental): {} screening run(s), stopped on {}", rec["charged"], rec["stop"]);
     }
     let fin_idx = pick_finalists(&state.evals, p.finalists, &all_known);
     let mut fin_idx = fin_idx;
@@ -1249,6 +1260,14 @@ fn effect_json(e: &Paired) -> Value {
 
 /// The shared `computed` block fields that say what made the figures (design D1 and D2 of `proposal-evidence-integrity`).
 fn provenance_json(p: &Params, est: &Estimation, shortlist: &[String]) -> Value {
+    let mut v = provenance_core(p, est, shortlist);
+    if p.bypass_locations > 0 || !p.supplement.is_empty() {
+        v["settings"]["searchExtensions"] = json!({"experimental": true, "bypassLocations": p.bypass_locations, "supplement": p.supplement.iter().map(|m| m.id()).collect::<Vec<_>>(), "allowanceShare": super::bench::ALLOWANCE_SHARE});
+    }
+    v
+}
+
+fn provenance_core(p: &Params, est: &Estimation, shortlist: &[String]) -> Value {
     json!({
         "simulator": crate::FINGERPRINT,
         "reportMethod": REPORT_METHOD,

@@ -1,0 +1,182 @@
+{
+ "schema": "search-benchmark-case-1",
+ "area": "rockridge",
+ "inputs": {
+  "network": "6a8285d5076f9ddc9042b3a4554998e61b5427fdb8fbbbbaaa8572cd7b18f4b0",
+  "demand": "bef51b684a8c079ce5e133e089df0659b422ca2ec77bd6b8f5784e38bf1bd93c",
+  "areas": "386731eb104a1ac7a35475d2e5952bcd2b98f6a29991a87b3f68334308477abd"
+ },
+ "depth": 3,
+ "baselineSeeds": [
+  1,
+  2,
+  3
+ ],
+ "screen": [
+  {
+   "minutes": 20,
+   "seeds": [
+    1
+   ]
+  },
+  {
+   "minutes": 20,
+   "seeds": [
+    1,
+    2,
+    3
+   ]
+  },
+  {
+   "minutes": 30,
+   "seeds": [
+    1
+   ]
+  },
+  {
+   "minutes": 60,
+   "seeds": [
+    1
+   ]
+  }
+ ],
+ "full": {
+  "minutes": 60,
+  "seeds": [
+   1,
+   2,
+   3
+  ]
+ },
+ "confirm": {
+  "minutes": 60,
+  "seeds": [
+   301,
+   302,
+   303,
+   304,
+   305,
+   306,
+   307,
+   308,
+   309,
+   310
+  ]
+ },
+ "search": {
+  "beam": 5,
+  "expand": 12,
+  "finalists": 12,
+  "harmWeight": 0.1
+ },
+ "candidates": [
+  {
+   "id": "c00",
+   "iv": {
+    "node": 862,
+    "type": "modal_filter"
+   }
+  },
+  {
+   "id": "c01",
+   "iv": {
+    "legs": [
+     2696,
+     2697
+    ],
+    "node": 862,
+    "type": "modal_filter"
+   }
+  },
+  {
+   "id": "c02",
+   "iv": {
+    "node": 799,
+    "type": "modal_filter"
+   }
+  },
+  {
+   "id": "c03",
+   "iv": {
+    "legs": [
+     1863,
+     1864,
+     1865,
+     1866
+    ],
+    "node": 799,
+    "type": "modal_filter"
+   }
+  },
+  {
+   "id": "c04",
+   "iv": {
+    "link": 2696,
+    "type": "modal_filter"
+   }
+  },
+  {
+   "id": "c05",
+   "iv": {
+    "link": 2593,
+    "type": "modal_filter"
+   }
+  },
+  {
+   "id": "c06",
+   "iv": {
+    "node": 828,
+    "type": "modal_filter"
+   }
+  },
+  {
+   "id": "c07",
+   "iv": {
+    "legs": [
+     1928,
+     1929
+    ],
+    "node": 828,
+    "type": "modal_filter"
+   }
+  },
+  {
+   "id": "c08",
+   "iv": {
+    "node": 1070,
+    "type": "modal_filter"
+   }
+  },
+  {
+   "id": "c09",
+   "iv": {
+    "legs": [
+     2619,
+     2620,
+     2694,
+     2695
+    ],
+    "node": 1070,
+    "type": "modal_filter"
+   }
+  },
+  {
+   "id": "c10",
+   "iv": {
+    "link": 2595,
+    "type": "modal_filter"
+   }
+  },
+  {
+   "id": "c11",
+   "iv": {
+    "node": 775,
+    "type": "modal_filter"
+   }
+  }
+ ],
+ "known": [],
+ "id": "second-cluster-pm",
+ "period": "pm_peak",
+ "selection": "Structural cluster rule of data/search-benchmark/select-cluster.py on the pm_peak baseline coverage report (seed 1, 40 locations, bypass supplement on): anchor Node(862) (kept rank 6), the first location more than 400 m from every junction of case colby-north-pm; closure candidates and Slow Streets within 300 m, at most 2 designs per place, first 12 in generator then supplement order. Held-out candidate set: frozen before any of its packages was simulated."
+}

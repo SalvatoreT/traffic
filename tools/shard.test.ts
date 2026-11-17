@@ -5,6 +5,7 @@ import { dirname, join, resolve } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { startStubSite, type StubSite } from './fixtures/stub-site';
 import { assessFetch, assessRun, calibrateArgs, parseSeeds, periodHasCounts, readStations } from './lib/shard-assess';
+import { benchmarkFetch, benchmarkRun } from './lib/shard-benchmark';
 import { argValue, checkExploreArgs, exploreFetch, exploreRun, mergeGroups, mergeReports, prettyJson, producedIds, type Group } from './lib/shard-explore';
 import { GIT_INPUTS, loadManifest, pullInputs, pushInputs, verifyLocal, type Ctx } from './lib/shard-inputs';
 import { checkName, httpStore, jobKey, sha256 } from './lib/shard-store';
@@ -20,7 +21,7 @@ const GIT_FILES = ['data/calibration/rockridge.targets.json', 'data/demand/rockr
 const put = (root: string, rel: string, text: string) => { mkdirSync(dirname(join(root, rel)), { recursive: true }); writeFileSync(join(root, rel), text); };
 const NET = '{"links":[],"nodes":[]}';
 const FP = 'a'.repeat(32);
-const env = (over: Record<string, string> = {}): NodeJS.ProcessEnv => ({ ...process.env, SHARD_FINGERPRINT_BIN: fx('stub-fingerprint.mjs'), CALIBRATE_BIN: fx('stub-calibrate.mjs'), EXPLORE_BIN: fx('stub-explore.mjs'), STUB_FINGERPRINT: FP, ...over });
+const env = (over: Record<string, string> = {}): NodeJS.ProcessEnv => ({ ...process.env, SHARD_FINGERPRINT_BIN: fx('stub-fingerprint.mjs'), CALIBRATE_BIN: fx('stub-calibrate.mjs'), EXPLORE_BIN: fx('stub-explore.mjs'), BENCH_BIN: fx('stub-search-bench.mjs'), STUB_FINGERPRINT: FP, ...over });
 const ctx = (root: string, e = env()): Ctx => ({ root, area: 'rockridge', store: httpStore(site.url, 'dummy-token', { retries: 1, delayMs: 1 }), log: () => {}, env: e });
 
 /** A repository root with the git-tracked inputs; the lead's also has the files that are not in git. */
@@ -378,4 +379,38 @@ describe('command line', () => {
     expect(bad.status).toBe(1);
     expect(bad.stderr).toMatch(/cv pm_peak seeds 1,2,3,4,5,6,7,8,9,10/);
   }, 60000);
+});
+
+describe('benchmark shards', () => {
+  const CASE = 'data/search-benchmark/x.json';
+  async function setup(job: string) {
+    const lead = makeRoot(true), child = makeRoot(false);
+    copyGit(lead, child);
+    for (const r of [lead, child]) put(r, CASE, JSON.stringify({ id: 'x', area: 'rockridge' }));
+    await pushInputs(ctx(lead), { job, only: 'explore', allowDirty: false, replace: false });
+    await pullInputs(ctx(child), { job, force: false });
+    return { lead, child };
+  }
+
+  it('runs a case, uploads its results and confirmation, and fetches them after checking', async () => {
+    const { lead, child } = await setup('bm1');
+    const idx = await benchmarkRun(ctx(child), { job: 'bm1', shard: 'c1', casePath: CASE, jobs: '2', confirm: true });
+    expect(idx.files.map((f) => f.name)).toEqual(['x.results.json', 'x.confirm.json', 'x.confirm.shortlist.json']);
+    const files = await benchmarkFetch(ctx(lead), { job: 'bm1', shards: ['c1'], dest: 'target/benchmark/bm1' });
+    expect(files).toHaveLength(3);
+    expect(existsSync(join(lead, 'target/benchmark/bm1/x.results.json'))).toBe(true);
+  });
+
+  it('refuses results from another simulator or a changed file, and writes nothing', async () => {
+    const { lead, child } = await setup('bm2');
+    const wrapper = mkdtempSync(join(tmpdir(), 'bench-'));
+    temps.push(wrapper);
+    writeFileSync(join(wrapper, 'b.sh'), `#!/bin/sh\nSTUB_FINGERPRINT=${'c'.repeat(32)} exec ${fx('stub-search-bench.mjs')} "$@"\n`, { mode: 0o755 });
+    await expect(benchmarkRun(ctx(child, env({ BENCH_BIN: join(wrapper, 'b.sh') })), { job: 'bm2', shard: 'c1', casePath: CASE, jobs: '2', confirm: false })).rejects.toThrow(/simulator cccccccccccc, the job has aaaaaaaaaaaa/);
+    expect([...site.store.keys()].some((k) => k.startsWith('jobs/bm2/benchmark/'))).toBe(false);
+    await benchmarkRun(ctx(child), { job: 'bm2', shard: 'c1', casePath: CASE, jobs: '2', confirm: false });
+    site.store.set('jobs/bm2/benchmark/c1/x.results.json', { body: Buffer.from('{}'), type: 'application/json' });
+    await expect(benchmarkFetch(ctx(lead), { job: 'bm2', shards: ['c1'], dest: 'target/benchmark/bm2' })).rejects.toThrow(/does not match the hash in its index/);
+    expect(existsSync(join(lead, 'target/benchmark/bm2'))).toBe(false);
+  });
 });

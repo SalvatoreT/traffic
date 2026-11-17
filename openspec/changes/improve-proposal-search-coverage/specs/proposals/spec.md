@@ -14,6 +14,11 @@ The project SHALL provide a benchmark that evaluates every conflict-compatible p
 - **WHEN** a heuristic is compared with exhaustive evaluation
 - **THEN** its decisions use only its own charged evaluations and declared prior inputs, and the exhaustive results are used afterward to assess coverage
 
+#### Scenario: Replay equals the live search
+
+- **WHEN** a search is replayed against a finished table of the same inputs and run settings
+- **THEN** it asks for the same packages in the same order and is charged the same simulations as the live search, and it receives only the rows it asks for
+
 #### Scenario: Rejected combination
 
 - **WHEN** an enumerated package fails conflict, access, or simulation checks
@@ -56,6 +61,11 @@ The search SHALL support a bounded experimental supplement for deletions, replac
 
 - **WHEN** the supplement proposes replacing an intervention with another permitted design at that junction
 - **THEN** the candidate package can be evaluated even if the replacement lost the initial same-place ranking, and the package never contains both conflicting designs
+
+#### Scenario: Off by default
+
+- **WHEN** a search runs without the experimental supplement settings
+- **THEN** its candidates, screening runs and options are those of the search without them, and a search that uses them records the settings with its results
 
 #### Scenario: Deleting a change
 

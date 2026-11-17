@@ -7,14 +7,17 @@
 //   npx tsx tools/shard.ts assess fetch  --job ID --shards a,b,c [--periods ...] [--seeds 1-10] [--views shipped,cv] [--minutes 60] [--dest DIR] [--force]
 //   npx tsx tools/shard.ts explore run   --job ID --shard NAME -- <explore arguments>
 //   npx tsx tools/shard.ts explore fetch --job ID --shards a,b [--out FILE] [--no-seeds] [--no-report]
+//   npx tsx tools/shard.ts benchmark run   --job ID --shard NAME --case FILE [--jobs 4] [--confirm]
+//   npx tsx tools/shard.ts benchmark fetch --job ID --shards a,b [--dest DIR]
 // Every command takes --area (default rockridge) and --root DIR (a repository root other than this one, for tests).
 import { resolve } from 'node:path';
 import { assessFetch, assessRun, DEFAULT_PERIODS, type View } from './lib/shard-assess';
+import { benchmarkFetch, benchmarkRun } from './lib/shard-benchmark';
 import { exploreFetch, exploreRun } from './lib/shard-explore';
 import { loadManifest, pullInputs, pushInputs, verifyLocal, type Ctx, type Only } from './lib/shard-inputs';
 import { checkName, httpStore } from './lib/shard-store';
 
-const FLAGS = new Set(['--allow-dirty', '--replace', '--force', '--fresh', '--no-seeds', '--no-report']);
+const FLAGS = new Set(['--allow-dirty', '--replace', '--force', '--fresh', '--no-seeds', '--no-report', '--confirm']);
 
 function parse(argv: string[]) {
   const dd = argv.indexOf('--');
@@ -37,13 +40,13 @@ async function main(argv: string[]): Promise<void> {
   const need = (k: string): string => { const v = opt.get(k); if (!v) throw new Error(`${k} is required`); return v; };
   const root = opt.has('--root') ? resolve(opt.get('--root')!) : resolve(import.meta.dirname, '..');
   const area = opt.get('--area') ?? 'rockridge';
-  const known = ['--root', '--area', '--job', '--for', '--shard', '--shards', '--view', '--views', '--periods', '--seeds', '--minutes', '--jobs', '--dest', '--out'];
+  const known = ['--root', '--area', '--job', '--for', '--shard', '--shards', '--view', '--views', '--periods', '--seeds', '--minutes', '--jobs', '--dest', '--out', '--case'];
   for (const k of opt.keys()) if (!known.includes(k)) throw new Error(`unknown option ${k}`);
   const [group, action] = pos;
   const log = (m: string) => console.log(m);
   const make = (): Ctx => ({ root, area, log, env: process.env, store: httpStore(process.env.TRAFFIC_UPLOAD_URL, process.env.TRAFFIC_UPLOAD_TOKEN) });
   const job = () => checkName('job id', need('--job'));
-  if (['inputs', 'assess', 'explore'].includes(group ?? '')) job();
+  if (['inputs', 'assess', 'explore', 'benchmark'].includes(group ?? '')) job();
 
   if (group === 'inputs' && action === 'push') {
     const only = (opt.get('--for') ?? 'all') as Only;
@@ -75,8 +78,13 @@ async function main(argv: string[]): Promise<void> {
   } else if (group === 'explore' && action === 'fetch') {
     const r = await exploreFetch(make(), { job: job(), shards: list(need('--shards')), out: opt.get('--out') ?? `public/data/${area}.proposals.json`, seeds: !flag.has('--no-seeds'), report: !flag.has('--no-report') });
     log(`merged groups ${r.groups.join(', ')}. Review data/proposals/${area}.md and ${r.seedsMerged ? `data/proposals/${area}.seeds.json` : 'the seeds file (not merged)'}, then commit them; publish the proposals file with the usual data steps.`);
+  } else if (group === 'benchmark' && action === 'run') {
+    await benchmarkRun(make(), { job: job(), shard: need('--shard'), casePath: need('--case'), jobs: opt.get('--jobs') ?? '4', confirm: flag.has('--confirm') });
+  } else if (group === 'benchmark' && action === 'fetch') {
+    const files = await benchmarkFetch(make(), { job: job(), shards: list(need('--shards')), dest: opt.get('--dest') ?? `target/benchmark/${job()}` });
+    log(`${files.length} file(s) are complete and consistent. Next, for each case: target/release/search_bench analyze --case data/search-benchmark/<case>.json --results <dest>/<case>.results.json --out <dest>/<case>.analysis.json`);
   } else {
-    throw new Error('usage: shard <inputs push|pull|verify | assess run|fetch | explore run|fetch> --job ID ... (see the header of tools/shard.ts and docs/sharded-runs.md)');
+    throw new Error('usage: shard <inputs push|pull|verify | assess run|fetch | explore run|fetch | benchmark run|fetch> --job ID ... (see the header of tools/shard.ts and docs/sharded-runs.md)');
   }
 }
 

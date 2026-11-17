@@ -8,7 +8,9 @@
 use super::cands::{conflicts, hotspots, generate_with, Cand, Hotspots};
 use super::objectives::Objective;
 use super::*;
+use serde_json::{json, Value};
 use std::collections::HashMap;
+use std::sync::Arc;
 use std::time::Instant;
 
 /// One period's runs over the seeds, reduced to means.
@@ -254,6 +256,7 @@ pub fn reduction_pct(base: f64, scen: f64) -> f64 {
 }
 
 /// A screened package.
+#[derive(Clone, Debug)]
 pub struct Eval {
     pub set: Vec<u16>,
     pub reject: Option<String>,
@@ -272,7 +275,7 @@ impl Eval {
     pub fn valid(&self) -> bool {
         self.reject.is_none()
     }
-    fn rejected(set: &[u16], why: String) -> Eval {
+    pub fn rejected(set: &[u16], why: String) -> Eval {
         Eval { set: set.to_vec(), reject: Some(why), reduction_pct: 0.0, harm: 0.0, worst: 0, inc: Vec::new(), score: f64::NEG_INFINITY, detour_s: 0.0 }
     }
 }
@@ -295,7 +298,7 @@ impl Ctx<'_> {
 }
 
 /// Screening run for a package that already passed the access check.
-fn eval_screen(ctx: &Ctx, set: &[u16]) -> Eval {
+pub fn eval_screen(ctx: &Ctx, set: &[u16]) -> Eval {
     let p = ctx.p;
     let out = run(ctx.study, &ctx.ivs(set), &p.periods[0], p.seeds[0], p.screen_minutes, &[]);
     let base_run = &ctx.base.screen_runs[0];
@@ -314,6 +317,13 @@ fn eval_screen(ctx: &Ctx, set: &[u16]) -> Eval {
     Eval { set: set.to_vec(), reject: None, reduction_pct: red, harm: h.worst_adj, worst: h.worst, inc: inc.iter().map(|&x| x as f32).collect(), score: score(p, red, h.worst_adj), detour_s: out.inside_mean_s() - base_run.inside_mean_s() }
 }
 
+/// Screening results computed beforehand (the finite-space benchmark): a search that reads one gets for each package it asks for the
+/// evaluation a live run would give (runs are deterministic for a seed) and is charged the same, and sees nothing it did not ask for.
+pub struct ScreenTable {
+    /// Per package: its evaluation, and whether it took a simulation (false: rejected by the access check, which is free).
+    pub rows: HashMap<Vec<u16>, (Eval, bool)>,
+}
+
 pub struct SearchState {
     pub evals: Vec<Eval>,
     pub cache: HashMap<Vec<u16>, usize>,
@@ -321,12 +331,27 @@ pub struct SearchState {
     pub used: usize,
     pub exhausted: bool,
     pub log: Vec<String>,
+    /// When set, evaluations come from this table instead of simulation (benchmark replays only).
+    pub table: Option<Arc<ScreenTable>>,
+    /// When set, the beam records why packages and singles were dropped (benchmark diagnostics; production leaves it off).
+    pub trace: Option<Vec<Value>>,
     started: Instant,
 }
 
 impl SearchState {
     pub fn new() -> SearchState {
-        SearchState { evals: Vec::new(), cache: HashMap::new(), used: 0, exhausted: false, log: Vec::new(), started: Instant::now() }
+        SearchState { evals: Vec::new(), cache: HashMap::new(), used: 0, exhausted: false, log: Vec::new(), table: None, trace: None, started: Instant::now() }
+    }
+
+    /// A state that replays `table` and records pruning decisions.
+    pub fn replay(table: Arc<ScreenTable>) -> SearchState {
+        SearchState { table: Some(table), trace: Some(Vec::new()), ..SearchState::new() }
+    }
+
+    fn note(&mut self, v: impl FnOnce() -> Value) {
+        if let Some(t) = self.trace.as_mut() {
+            t.push(v());
+        }
     }
 }
 
@@ -344,7 +369,15 @@ pub fn eval_batch(ctx: &Ctx, st: &mut SearchState, sets: Vec<Vec<u16>>) {
             want.push(s);
         }
     }
-    let checks: Vec<Result<(), String>> = parallel_map(ctx.p.jobs, &want, |s| check_access(ctx.study, &ctx.ivs(s)));
+    let table = st.table.clone();
+    let checks: Vec<Result<(), String>> = match &table {
+        Some(t) => want.iter().map(|s| match t.rows.get(s) {
+            Some((e, false)) => Err(e.reject.clone().unwrap_or_default()),
+            Some((_, true)) => Ok(()),
+            None => panic!("the screening table has no row for package {s:?}"),
+        }).collect(),
+        None => parallel_map(ctx.p.jobs, &want, |s| check_access(ctx.study, &ctx.ivs(s))),
+    };
     let mut to_run: Vec<Vec<u16>> = Vec::new();
     let mut results: HashMap<Vec<u16>, Eval> = HashMap::new();
     for (s, c) in want.iter().zip(checks) {
@@ -362,7 +395,10 @@ pub fn eval_batch(ctx: &Ctx, st: &mut SearchState, sets: Vec<Vec<u16>>) {
             st.exhausted = true;
         }
     }
-    let evals = parallel_map(ctx.p.jobs, &to_run, |s| eval_screen(ctx, s));
+    let evals = match &table {
+        Some(t) => to_run.iter().map(|s| t.rows[s].0.clone()).collect(),
+        None => parallel_map(ctx.p.jobs, &to_run, |s| eval_screen(ctx, s)),
+    };
     st.used += to_run.len();
     for e in evals {
         results.insert(e.set.clone(), e);
@@ -464,19 +500,48 @@ pub fn places_of(ctx: &Ctx, set: &[u16]) -> Vec<String> {
 /// The first `width` of `ranked` (evaluation indices, best first) with at most one package per set of places, so variants of one
 /// intervention at one place do not fill the beam or the list of singles an extension tries.
 pub fn distinct_places(ctx: &Ctx, st: &SearchState, ranked: &[usize], width: usize) -> Vec<usize> {
-    let mut seen: Vec<Vec<String>> = Vec::new();
-    let mut out = Vec::new();
+    distinct_places_why(ctx, st, ranked, width).0
+}
+
+/// `distinct_places`, with what it left out: packages that lost to a better one at the same places (with that one), and packages beyond
+/// the width (each distinct set of places, in rank order).
+pub fn distinct_places_why(ctx: &Ctx, st: &SearchState, ranked: &[usize], width: usize) -> (Vec<usize>, Vec<(usize, usize)>, Vec<usize>) {
+    let mut seen: Vec<(Vec<String>, usize)> = Vec::new();
+    let (mut out, mut same, mut beyond) = (Vec::new(), Vec::new(), Vec::new());
     for &i in ranked {
-        if out.len() >= width {
+        let k = places_of(ctx, &st.evals[i].set);
+        if let Some(&(_, w)) = seen.iter().find(|x| x.0 == k) {
+            if out.len() < width || st.trace.is_some() {
+                same.push((i, w));
+            }
+        } else if out.len() < width {
+            seen.push((k, i));
+            out.push(i);
+        } else if st.trace.is_some() {
+            seen.push((k, i));
+            beyond.push(i);
+        } else {
             break;
         }
-        let k = places_of(ctx, &st.evals[i].set);
-        if !seen.contains(&k) {
-            seen.push(k);
-            out.push(i);
-        }
     }
-    out
+    (out, same, beyond)
+}
+
+fn sets_of(st: &SearchState, v: &[usize]) -> Value {
+    json!(v.iter().map(|&i| &st.evals[i].set).collect::<Vec<_>>())
+}
+
+fn note_selection(st: &mut SearchState, obj: Objective, stage: &str, depth: usize, lineage: usize, why: &(Vec<usize>, Vec<(usize, usize)>, Vec<usize>)) {
+    if st.trace.is_none() {
+        return;
+    }
+    let v = json!({
+        "event": "select", "objective": obj.id(), "stage": stage, "depth": depth, "lineage": lineage,
+        "kept": sets_of(st, &why.0),
+        "samePlace": why.1.iter().map(|&(i, w)| json!({"set": st.evals[i].set, "lostTo": st.evals[w].set})).collect::<Vec<_>>(),
+        "beyondWidth": sets_of(st, &why.2),
+    });
+    st.note(|| v);
 }
 
 /// A package known from earlier (another group's search or the seeds file) and the packages one intervention smaller than it.
@@ -550,10 +615,21 @@ pub fn beam_search_in(ctx: &Ctx, known: &[Family], lim: &BeamLimit, st_ref: &mut
     let b = best_valid(&st);
     progress(ctx, &mut st, 1, b);
     let positive: Vec<usize> = ranked.iter().filter(|&&c| single_eval(&st, c).unwrap().reduction_pct > 0.0).map(|&c| st.cache[&vec![c]]).collect();
-    let top_singles: Vec<u16> = distinct_places(ctx, &st, &positive, ctx.p.expand).into_iter().map(|i| st.evals[i].set[0]).collect();
+    let why = distinct_places_why(ctx, &st, &positive, ctx.p.expand);
+    if st.trace.is_some() {
+        let nonpositive: Vec<u16> = ranked.iter().copied().filter(|&c| single_eval(&st, c).unwrap().reduction_pct <= 0.0).collect();
+        let invalid: Vec<u16> = (0..n as u16).filter(|&c| lim.ok(c) && single_eval(&st, c).map_or(true, |e| !e.valid())).collect();
+        let disallowed: Vec<u16> = (0..n as u16).filter(|&c| !lim.ok(c)).collect();
+        let v = json!({"event": "singles", "objective": lim.objective.id(), "nonPositive": nonpositive, "invalid": invalid, "notAllowed": disallowed});
+        st.note(|| v);
+        note_selection(&mut st, lim.objective, "extension-singles", 1, 0, &why);
+    }
+    let top_singles: Vec<u16> = why.0.into_iter().map(|i| st.evals[i].set[0]).collect();
     let usable: Vec<bool> = (0..n as u16).map(|c| lim.ok(c) && single_eval(&st, c).map_or(false, |e| e.valid())).collect();
     let all_ranked: Vec<usize> = ranked.iter().map(|&c| st.cache[&vec![c]]).collect();
-    let mut lineages = vec![Lineage { beam: distinct_places(ctx, &st, &all_ranked, ctx.p.beam), alive: true }];
+    let why = distinct_places_why(ctx, &st, &all_ranked, ctx.p.beam);
+    note_selection(&mut st, lim.objective, "beam", 1, 0, &why);
+    let mut lineages = vec![Lineage { beam: why.0, alive: true }];
     let mut families: Vec<Vec<usize>> = known
         .iter()
         .map(|f| {
@@ -611,6 +687,7 @@ pub fn beam_search_in(ctx: &Ctx, known: &[Family], lim: &BeamLimit, st_ref: &mut
                     // Repair moves: candidates on or next to the blocks this package pushed traffic onto.
                     let mut hot: Vec<usize> = (0..st.evals[bi].inc.len()).filter(|&b| st.evals[bi].inc[b] as f64 > NOISE_FLOOR_VEH_H).collect();
                     hot.sort_by(|&a, &b| st.evals[bi].inc[b].partial_cmp(&st.evals[bi].inc[a]).unwrap_or(std::cmp::Ordering::Equal).then(a.cmp(&b)));
+                    let n_top = ext.len();
                     for &hb in hot.iter().take(3) {
                         let blk = &ctx.study.idx.blocks[ctx.study.harm_blocks[hb]];
                         for c in 0..n as u16 {
@@ -620,6 +697,10 @@ pub fn beam_search_in(ctx: &Ctx, known: &[Family], lim: &BeamLimit, st_ref: &mut
                                 ext.push(c);
                             }
                         }
+                    }
+                    if st.trace.is_some() && ext.len() > n_top {
+                        let v = json!({"event": "repair", "objective": lim.objective.id(), "depth": depth, "parent": member, "hotBlocks": hot.iter().take(3).collect::<Vec<_>>(), "added": ext[n_top..]});
+                        st.note(|| v);
                     }
                     for c in ext {
                         if member.contains(&c) || member.iter().any(|&m| conflicts(&ctx.cands[m as usize], &ctx.cands[c as usize])) {
@@ -636,10 +717,15 @@ pub fn beam_search_in(ctx: &Ctx, known: &[Family], lim: &BeamLimit, st_ref: &mut
             }
             per_lineage.push(new_sets);
         }
+        let before = st.used;
         eval_batch(ctx, &mut st, per_lineage.iter().flatten().cloned().collect());
+        if st.exhausted && st.trace.is_some() {
+            let v = json!({"event": "budget", "objective": lim.objective.id(), "depth": depth, "charged": st.used - before});
+            st.note(|| v);
+        }
         let b = best_valid(&st);
         progress(ctx, &mut st, depth, b);
-        for (lin, sets) in lineages.iter_mut().zip(per_lineage) {
+        for (li, (lin, sets)) in lineages.iter_mut().zip(per_lineage).enumerate() {
             if !lin.alive {
                 continue;
             }
@@ -657,9 +743,15 @@ pub fn beam_search_in(ctx: &Ctx, known: &[Family], lim: &BeamLimit, st_ref: &mut
                 eprintln!("{line}");
                 st.log.push(line);
                 lin.alive = false;
+                if st.trace.is_some() {
+                    let v = json!({"event": "stop", "objective": lim.objective.id(), "depth": depth, "lineage": li, "previousBest": prev_best, "levelBest": level_best, "level": sets_of(&st, &level)});
+                    st.note(|| v);
+                }
                 continue;
             }
-            lin.beam = distinct_places(ctx, &st, &level, ctx.p.beam);
+            let why = distinct_places_why(ctx, &st, &level, ctx.p.beam);
+            note_selection(&mut st, lim.objective, "beam", depth, li, &why);
+            lin.beam = why.0;
         }
     }
     *st_ref = st;

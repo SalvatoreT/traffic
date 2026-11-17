@@ -14,6 +14,7 @@ fn usage(msg: &str) -> ! {
         "usage: explore --area ID [--periods pm_peak,am_peak] [--seeds 1-10] [--beam 3] [--depth 8] [--candidates 40]\n\
          \x20              [--confirm-seeds 101-110] [--no-confirm]   (defaults: --seeds 1-3 --confirm-seeds 101-110; seeds accept lists or ranges: 1-10)\n\
          \x20              [--screen-minutes 30] [--minutes 60] [--budget-evals N] [--jobs N] [--harm-weight 0.1] [--expand 16]\n\
+         \x20              [--bypass-locations N] [--supplement delete|swap|coordinated|all]   (experimental, off by default)\n\
          \x20              [--finalists 12] [--options 6] [--objectives all|most-removed,no-closures,least-detour,fewest-changes] [--out public/data/ID.proposals.json] [--report data/proposals/ID.md]\n\
          \x20              [--references data/proposals/ID.references.json] [--profile ID[,ID...]|all] [--profiles FILE]   (optional limits; none are published) [--no-warm-start]\n\
          \x20              [--known data/proposals/ID.seeds.json] [--no-known]   known packages to recheck and start from (each run adds its published options)\n\
@@ -110,6 +111,8 @@ fn main() {
             "--screen-minutes" => p.screen_minutes = num("--screen-minutes"),
             "--minutes" => p.minutes = num("--minutes"),
             "--budget-evals" => p.budget_evals = Some(num("--budget-evals") as usize),
+            "--bypass-locations" => p.bypass_locations = num("--bypass-locations") as usize,
+            "--supplement" => p.supplement = traffic_sim::explore::supplement::Move::parse(&v).unwrap_or_else(|| usage("--supplement is delete, swap, coordinated or all")),
             "--jobs" => p.jobs = (num("--jobs") as usize).max(1),
             "--harm-weight" => p.harm_weight = num("--harm-weight"),
             "--expand" => p.expand = num("--expand") as usize,
