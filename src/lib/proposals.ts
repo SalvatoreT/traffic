@@ -639,7 +639,7 @@ export const allProposals = (file: Proposals): Proposal[] => file.groups.flatMap
 export const OBJECTIVE_LABELS: Record<string, string> = {
   'most-removed': 'most cut-through removed',
   'no-closures': 'no street closures',
-  'least-detour': 'least detour for residents',
+  'least-detour': "most removed after counting residents' detour",
   'fewest-changes': 'fewest changes',
 };
 
