@@ -73,8 +73,8 @@ const compactPath = resolve(root, 'data/areas/rockridge-compact.json');
 describe.runIf(existsSync(compactPath))('rockridge-compact', () => {
   const cfg: AreaConfig = JSON.parse(readFileSync(compactPath, 'utf8'));
   const full: AreaConfig = JSON.parse(readFileSync(resolve(root, 'data/areas/rockridge.json'), 'utf8'));
-  it('shares the study area and settings of rockridge and differs only in id, name, extent and preview', () => {
-    const strip = (c: AreaConfig) => { const { id, name, extent, preview, ...rest } = c; void id; void name; void extent; void preview; return rest; };
+  it('shares the study area and settings of rockridge and differs only in id, name, extent, preview and calibration note', () => {
+    const strip = (c: AreaConfig) => { const { id, name, extent, preview, calibration, ...rest } = c; void id; void name; void extent; void preview; void calibration; return rest; };
     expect(strip(cfg)).toEqual(strip(full));
     expect(cfg.preview).toBe(true);
     expect(cfg.extent?.polygon?.length).toBeGreaterThan(3);
