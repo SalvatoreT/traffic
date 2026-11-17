@@ -265,6 +265,42 @@ The current model's loop (round 37, `data/calibration/rockridge.record.md`), for
 
 The order of the three options is the same on both models (p1 cuts most, then p3, then p5), and both pass the access check with no rejection. The compact model gives p1 and p3 smaller cuts in percent (−55% and −34% against −73% and −48%) and roughly the same cut to p5. Its PM baseline carries more through cars (978 against 837 on seeds 1 to 3), mostly the southbound excess above, and p1 and p3 remove less of it. The largest all-car rises land on the same blocks in most rows (60th St, McAuley St, Martin St), larger in the compact model.
 
+## Second round: a cordon prior from the current model
+
+Decision by the project lead, 2026-11-16 ("One more round on its edges"): keep the current model published, set the compact model's edge trips from data instead of class assumptions, compare again, and switch only if southbound cut-through comes into line; otherwise drop the compact model. Method in design D8: the current model's shipped car flows, assigned on its own fit settings, cut where their routes cross the compact extent (`tools/cordon-prior.ts`), became the compact trip table, with the unchanged count fit on top and the frozen compact split. The prior was built without tuning: 155 s and 0.38 GB, 4 to 21 trips an hour lost at crossings no compact gate matched. The current model's assumed movement flows (393 an hour in the PM) were left out, because the compact build makes its own from the same counts. 292 an hour of freeway-to-freeway trips were also left out.
+
+What sets each of the 78 compact gates' trips: the parent model's assignment 69 (63 surface and all 6 freeway gates), a count 2 (Tunnel Rd and Alcatraz Ave west, counts taken 230 and 307 m away), class default 7 (gates no parent route crosses: four service roads, Margarido Dr, Rockridge Pl, Oak Ridge Rd). The other four counted gates take counts 700 m to 1.5 km inside the extent; they keep the parent's trips and their counts act where they were taken, as fit stations (design D8). A run with no count scaling at all gave the same southbound result (Hillegass Ave SB 213, Colby St SB 232).
+
+PM peak, three models (seeds 1 to 10 unless marked; the AM, midday, assessment, loop and proposal runs were not repeated for the prior, see below):
+
+| | Current | Compact as built | Compact with cordon prior |
+| --- | --- | --- | --- |
+| Car trips an hour (PM, fitted table) | 26,352 | 14,308 | 19,194 |
+| Through cars HSB / CSB / HNB / CNB (79-120 / 39-117 / 48-95 / 102-145) | 143 / 132 / 98 / 150 | 221 / 235 / 75 / 138 | 200 / 231 / 85 / 145 |
+| Same, seeds 11-20 | 146 / 140 / 96 / 152 | 195 / 205 / 84 / 142 | 225 / 225 / 87 / 150 |
+| Blocks inside their range, seeds 1-10 / 11-20 | 0 / 0 | 2 / 2 | 2 / 1 |
+| Headline shares HNB / CNB / HSB / CSB (47 / 47 / 68 / 45), error, within 10 | 52.9 / 50.5 / 55.1 / 37.4; 7.5; 3 of 4 | 47.0 / 38.6 / 51.8 / 36.3; 8.4; 3 of 4 | 50.3 / 43.0 / 41.0 / 31.0; 12.1; 2 of 4 |
+| Same, seeds 11-20 | 52.8 / 47.9 / 56.6 / 38.9; 3 of 4 | 46.9 / 39.9 / 53.1 / 37.6; 7.4; 3 of 4 | 52.6 / 44.3 / 38.4 / 32.1; 12.7; 2 of 4 |
+| Cars cleared from gridlock an hour, judged / far | 0.60 / 0.50 | 0.20 / 4.20 | 0.30 / 7.20 |
+| Same, seeds 11-20 | 0.00 / 1.30 | 0.20 / 5.70 | 0.30 / 5.50 |
+| Entry backlog, seeds under 2% (1-10; 11-20) | 0.71%, 10; 0.57%, 10 | 0.32%, 10; 0.37%, 10 | 1.42%, 10; 1.48%, 9 |
+| Stability rule (D16) | holds | holds | holds |
+| Arterial mean speed (m/s) | 8.26 | 6.27 | 6.55 |
+| Telegraph Ave approaching Alcatraz Ave from the north (1,064) | 1,307 | 1,120 | 1,262 |
+| Telegraph Ave leaving to the south (910) | 1,128 | 917 | 1,009 |
+| Alcatraz Ave approaching from the west (547) | 285 | 355 | 343 |
+| Turns from Alcatraz Ave into Colby St and Hillegass Ave (360) | 259 | 440 | 381 |
+| Entries from Telegraph Ave into the study area (264) | 465 | 460 | 535 |
+| Recent stations GEH < 5, fitted | 75 of 92 (82%) | 69 of 89 (78%) | 67 of 89 (75%) |
+| Validation stations, scored in the shipped fit | 18 of 24 (75%) | 16 of 22 (73%) | 13 of 22 (59%) |
+| Older counts GEH < 5, fitted | 48 of 95 (51%) | 47 of 67 (70%) | 53 of 67 (79%) |
+
+The fitted evidence got worse on every rule but the older counts: two headline shares outside 10 points instead of one, fewer recent stations within GEH 5, twice the backlog, and the Telegraph Ave north leg farther from its count. Southbound through cars stayed far above the current model's on both seed sets. By the round's rule the prior is not kept, and `rockridge-compact` is back on its as-built demand (byte for byte, `cdc967c2df88`). The round stopped there. The AM and midday runs, the assessment, the delay-feedback loop and the proposal checks were not repeated for the prior; the commands to run them are in the session report if wanted.
+
+The west side. The prior brought the turns from Alcatraz Ave into Colby St and Hillegass Ave close to the count (381 against 360). It also cut the gates halfway to Shattuck Ave to 5 to 13 trips an hour on 61st, 62nd and 63rd St. But the entries from Telegraph Ave into the study area rose to 535 against 264 counted. The southbound excess therefore now comes from traffic that reaches Telegraph Ave and turns east into the grid, more than from the west-side gates. At the cordon the prior and the current model's own simulation agree in total (12,606 against 12,950 trips an hour entering). They differ at single gates: Alcatraz Ave west 563 against 345 (the count there is 547), Shattuck Ave 672 against 550, Claremont Ave north 237 against 105. The same trips still choose Hillegass Ave and Colby St southbound more often in the compact network than in the current one: College Ave northbound carries 343 against 436 and Hillegass Ave southbound 185 against 145 (median link flows). So the excess comes from how the compact network loads and routes the same trips, not from the gate volumes.
+
+Assumed movements and double counting. The four assumed movement flows that turn from Alcatraz Ave into Hillegass Ave and Colby St pin 133 through trips an hour (PM) in every build. The build takes the trips they replace out of plain flows only where the static best route makes the same turn: 375 an hour in the current model, 129 in the compact as built and 0.2 with the prior. Turns the simulator's drivers make on routes the static assignment did not predict are not taken out, so on those turns pinned and plain trips can add up. The share of this in the excess was not measured separately.
+
 ## What the compact model cannot show
 
 - Rerouting beyond the edge. Gate volumes are fixed, so traffic that a change in the Trapezoid pushes off its route cannot move to Shattuck Ave, Martin Luther King Jr Way, Broadway Terrace, SR-13 or the Berkeley streets north of Ashby Ave. It lands on Telegraph Ave, Alcatraz Ave, College Ave, Claremont Ave, Ashby Ave, Broadway and 51st St, so a proposal's effect on those streets is an upper bound. The current model has the same limit at its own, farther, edge.
@@ -276,4 +312,4 @@ The order of the three options is the same on both models (p1 cuts most, then p3
 
 ## Reading
 
-The compact model runs four to five times faster, comes closer to the Telegraph Ave and Alcatraz Ave counts at their junction, and passes more of its held-out stations, though on a different held-out set. Its new edge sends more through trips from the west across the study area toward the north-east, so southbound through cars on Hillegass Ave and Colby St rise from about 140 to 200 or more an hour, farther from the counts than today, and the top two proposals cut about a quarter less in relative terms. The gridlock that keeps the delay-feedback fit rejected moved with the edge to Ashby Ave between Claremont Ave and Domingo Ave instead of going away. My reading: the extent mechanism works and is cheap to run, but switching now would swap one bias for a larger one; the volumes and pairing of the edge gates would need work first, and that is demand tuning this change was told not to do.
+First round: the compact model runs four to five times faster and comes closer to the Telegraph Ave and Alcatraz Ave counts at their junction, but its edge sent more through trips across the study area, and southbound through cars on Hillegass Ave and Colby St rose from about 140 to 200 or more an hour. Second round: taking the edge trips from the current model's own trip table removed the guessed gate volumes and brought the Alcatraz Ave turn-ins near their count, yet southbound through cars stayed at 200 to 231 an hour and the fitted evidence got worse. So the excess comes from how the smaller network loads and routes the same trips, not from the edge assumptions. By the rule the project lead set, the compact model is not a candidate to switch to; I would drop it and keep only the generic extent and cordon tooling, which no shipped area uses.

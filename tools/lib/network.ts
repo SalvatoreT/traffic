@@ -298,7 +298,7 @@ export function modelExtent(cfg: AreaConfig, nodes: Map<number, OsmNode>, ways: 
 }
 
 /** Smallest t in (0, 1] at which the segment P→Q crosses an edge of `poly`, or null. */
-function firstCrossing(P: Pt, Q: Pt, poly: Pt[]): number | null {
+export function firstCrossing(P: Pt, Q: Pt, poly: Pt[]): number | null {
   let best: number | null = null;
   const r = [Q[0] - P[0], Q[1] - P[1]];
   for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {

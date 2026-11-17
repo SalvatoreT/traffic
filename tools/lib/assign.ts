@@ -330,6 +330,8 @@ export interface MsaOptions {
   extraCost?: ArrayLike<number>;
   /** Route features whose share per flow is recorded (turning movements, paths). */
   features?: Feature[];
+  /** Called with every route loaded (flow index, links in order), each pass and draw; for tools that need the routes themselves (tools/cordon-prior.ts). */
+  onRoute?: (k: number, route: number[]) => void;
 }
 export interface MsaResult extends Assignment {
   /** Link volumes (veh/h) of the averaged assignment at the given flow volumes. */
@@ -478,6 +480,7 @@ export function assignMsa(g: Graph, flows: OdFlow[], volume: ArrayLike<number>, 
           const route = walkRoute(pg.g, h, flows[k].origin, d, via) ?? (via ? walkRoute(pg.g, h, flows[k].origin, d) : null) ?? walkRoute(g, (plain ??= costToGo(g, d, cost)), flows[k].origin, d);
           if (!route) continue;
           ok[k]++;
+          opt.onRoute?.(k, route);
           for (const l of route) { accum[k].set(l, (accum[k].get(l) ?? 0) + 1); y[l] += volume[k] / opt.drawsPerPass; }
           if (feats.length) for (const f of routeFeatures(route, feats, fIdx)) fAccum[k].set(f, (fAccum[k].get(f) ?? 0) + 1);
         }

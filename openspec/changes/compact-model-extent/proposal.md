@@ -9,6 +9,7 @@ The app is about cut-through traffic on the side streets of the Rockridge Trapez
 - `tools/build-demand.ts` drops census blocks outside the extent, so their trips arrive through the gates. Everything else in the demand build is unchanged and reads its settings from the area's demand config.
 - A second area, `rockridge-compact`, with the same study area, counts and targets as `rockridge`, its own demand config, its own frozen validation split and its own outputs. It is a preview.
 - An evaluation of the compact model by the same rules as the current one, and a comparison document, `data/calibration/rockridge.extent-comparison.md`.
+- Second round (project lead, 2026-11-16, "One more round on its edges"): an extent can name a parent area; `tools/cordon-prior.ts` cuts the parent's assigned trips at the extent and the demand build can use them as its trip table (design D8). Tried on `rockridge-compact`; not kept, because the fitted evidence got worse and southbound cut-through stayed far above the current model's.
 
 ## Capabilities
 
