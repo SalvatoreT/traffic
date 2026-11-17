@@ -64,6 +64,7 @@ interface Props {
 export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLabel, searchedPeriods, loaded, onTrace }: Props) {
   const pic = p.picture!;
   const box = useRef<HTMLDivElement>(null);
+  const readoutBox = useRef<HTMLDivElement>(null);
   const near = useNear(box);
   const short = (id: string) => periodLabel(id).replace(/\s*\(.*\)\s*$/, '');
   const when = short(pic.period);
@@ -89,6 +90,10 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
   const [pin, setPin] = useState<Sel>(null);
   const [tip, setTip] = useState<{ x: number; y: number } | null>(null);
   const sel = hover ?? pin;
+  const selectionKey = sel ? `${sel.kind}:${sel.kind === 'block' ? sel.block : sel.iv}` : null;
+  useEffect(() => {
+    if (readoutBox.current) readoutBox.current.scrollTop = 0;
+  }, [selectionKey]);
   const toggle = (s: Sel) => setPin((cur) => (same(cur, s) ? null : s));
   const mouseEnter = (s: Sel) => (e: React.PointerEvent) => { if (e.pointerType === 'mouse') setHover(s); };
   const track = (e: React.PointerEvent) => {
@@ -270,7 +275,7 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
           </div>
         </div>
         <div className="pm-side">
-          <div className="pm-read" aria-live="polite">{readout}</div>
+          <div ref={readoutBox} className="pm-read" role="region" aria-label={`${p.title}: street and intervention details`} tabIndex={0} aria-live="polite">{readout}</div>
           <div className="pm-lists">
           <h5>Streets that change</h5>
           {ranked.length === 0 ? <p className="muted small">No side-street block changes by a whole car an hour in the {when}.</p> : (
