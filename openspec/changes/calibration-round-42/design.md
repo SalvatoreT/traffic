@@ -42,3 +42,11 @@ D12. S5 outcome (AM seeds 1 to 10, round 40 in brackets): recent fitted stations
 D13. Project lead decisions, 2026-11-17, taken after the round-42 report. (1) The round-42 demand is adopted as the model, knowing that S4 was written into this design after S2's result, that the PM held-out stations fall from 13 to 11 of 24 and that the held-out Alcatraz Ave east leg falls from 530 to 487 against a count of 689. The proposals are searched again on this demand, and the site keeps the round-40 model until they are ready. (2) The frozen validation split stays as it is. The six PM held-out failures at edge-gate Caltrans stations (San Pablo Ave, Ashby Ave, Tunnel Rd) are recorded as structural and are not moved into the fit. The status stays `uncalibrated`.
 
 D14. Project lead decisions, 2026-11-17. (1) The Colby St southbound to Claremont Ave northeast-bound reading of 75 cars an hour stays in the data at full weight; the record notes that the block's counted exits (218) exceed its counted entries (162). (2) The Forest St green at Claremont Ave / Colby St / Forest St stays an assumption until a field timing arrives. The project lead will provide a PM-peak timing of the Forest St green and the cycle length, and a later round uses it as a resident-provided field observation.
+
+## D15: Round 42 is superseded before publication (project lead decision, 2026-11-17)
+
+The measurement and assignment repair (`openspec/changes/archive/2026-11-17-repair-traffic-measurement-and-assignment/design.md`) landed after D13. It changes the simulator fingerprint and the reporting method and rebuilds the demand, so proposals searched on the round-42 inputs would be shown as out of date. The project lead decided:
+
+- The round-42 proposal search is stopped and its demand is not published. The round's record stays as written.
+- The through-car ranges that rounds 39 to 42 fitted to are retired as an acceptance rule. The volunteer count's whole-street cars are compared with simulated end-to-end traversals of the same street and direction; through cars on any block are model output with no counted range.
+- The next published model is the corrected one, after a ten-seed assessment and a proposal search on it.
