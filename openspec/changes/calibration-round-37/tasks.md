@@ -18,10 +18,10 @@
 
 ## 4. Fit and evaluation
 
-- [ ] 4.1 Delay-feedback loop to convergence under the re-scoped rule; every PM run checked against the stored runs of round 33/35.
-- [ ] 4.2 Tests, WASM parity and trace identity, validation suite.
-- [ ] 4.3 PM seeds 1 to 10 and 11 to 20, AM and midday seeds 1 to 10 (`npm run assess -- --publish --noise`), `--od-costs`.
+- [x] 4.1 Delay-feedback loop to convergence under the re-scoped rule; every PM run checked against the stored runs of round 33/35.
+- [x] 4.2 Tests, WASM parity and trace identity, validation suite.
+- [x] 4.3 PM seeds 1 to 10 and 11 to 20, AM and midday seeds 1 to 10 (`npm run assess -- --publish --noise`), `--od-costs`.
 
 ## 5. Record
 
-- [ ] 5.1 Round 37 in the calibration record; area `calibration` note and caveat; `tools/import-osm.ts` rerun.
+- [x] 5.1 Round 37 in the calibration record; area `calibration` note and caveat; `tools/import-osm.ts` rerun.

@@ -723,6 +723,110 @@
       "vehPerHour": 50.0
     }
   ],
+  "gridlockZone": {
+    "backlog": {
+      "allTrips": 4,
+      "zoneTrips": 0
+    },
+    "boundingStreets": [
+      {
+        "fullShare": 0.0,
+        "link": 1979,
+        "linkLengthM": 81.0,
+        "links": 28,
+        "maxQueueM": 62.0,
+        "street": "Telegraph Avenue",
+        "tMin": 30.2
+      },
+      {
+        "fullShare": 0.017,
+        "link": 4188,
+        "linkLengthM": 143.0,
+        "links": 14,
+        "maxQueueM": 59.0,
+        "street": "Alcatraz Avenue",
+        "tMin": 13.6
+      },
+      {
+        "fullShare": 0.0,
+        "link": 2805,
+        "linkLengthM": 102.0,
+        "links": 6,
+        "maxQueueM": 59.0,
+        "street": "College Avenue",
+        "tMin": 36.6
+      },
+      {
+        "fullShare": 0.0,
+        "link": 2776,
+        "linkLengthM": 161.0,
+        "links": 13,
+        "maxQueueM": 49.0,
+        "street": "Claremont Avenue",
+        "tMin": 54.6
+      },
+      {
+        "fullShare": 0.0,
+        "link": 1945,
+        "linkLengthM": 188.0,
+        "links": 3,
+        "maxQueueM": 36.0,
+        "street": "CA 24",
+        "tMin": 13.9
+      }
+    ],
+    "bufferM": 200.0,
+    "chainMinWaitS": 60.0,
+    "clearings": [
+      {
+        "chainLinks": 1,
+        "link": 4329,
+        "linked": false,
+        "near": false,
+        "node": 1406,
+        "tMin": 2.2
+      }
+    ],
+    "far": 1,
+    "farLinked": 0,
+    "farSites": [
+      {
+        "cleared": 1,
+        "distM": 1020.0,
+        "linked": 0,
+        "node": 1406,
+        "streets": "Ashby Avenue / Claremont Avenue"
+      }
+    ],
+    "judged": 0,
+    "near": 0,
+    "sensitivity": [
+      {
+        "bufferM": 100.0,
+        "far": 1,
+        "farLinked": 0,
+        "judged": 0,
+        "near": 0
+      },
+      {
+        "bufferM": 200.0,
+        "far": 1,
+        "farLinked": 0,
+        "judged": 0,
+        "near": 0
+      },
+      {
+        "bufferM": 400.0,
+        "far": 1,
+        "farLinked": 0,
+        "judged": 0,
+        "near": 0
+      }
+    ],
+    "total": 1,
+    "zoneLinks": 329,
+    "zoneNodes": 111
+  },
   "health": {
     "arterialMeanSpeed": 9.120689727792833,
     "arterialMeanSpeedLast15min": 9.180614990589458,
@@ -1714,7 +1818,7 @@
     "inputs": {
       "areaConfig": {
         "path": "data/areas/rockridge.json",
-        "sha256": "2635dbe670726c6a59bb9740e88e185342e7e642af076c3fed1565c16ee73d8d"
+        "sha256": "2a3cdc8c3e3129857749af17614fa1f0aba101be663f9de8f8a0f5347243fe60"
       },
       "demand": {
         "path": "public/data/rockridge.demand.json",
@@ -1784,7 +1888,7 @@
     "simulator": {
       "dirty": false,
       "fingerprint": "f0df1aabc323bca5893215e1df1afbff",
-      "revision": "c2a52557fc988a563d971e408c5a16898074e996",
+      "revision": "017273f7ef4b9806532bc35339985a0d847e9509",
       "version": "0.1.0"
     }
   },

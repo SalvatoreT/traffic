@@ -723,6 +723,93 @@
       "vehPerHour": 19.0
     }
   ],
+  "gridlockZone": {
+    "backlog": {
+      "allTrips": 3,
+      "zoneTrips": 1
+    },
+    "boundingStreets": [
+      {
+        "fullShare": 0.0,
+        "link": 1979,
+        "linkLengthM": 81.0,
+        "links": 28,
+        "maxQueueM": 39.0,
+        "street": "Telegraph Avenue",
+        "tMin": 28.9
+      },
+      {
+        "fullShare": 0.0,
+        "link": 4238,
+        "linkLengthM": 84.0,
+        "links": 14,
+        "maxQueueM": 39.0,
+        "street": "Alcatraz Avenue",
+        "tMin": 43.5
+      },
+      {
+        "fullShare": 0.0,
+        "link": 2805,
+        "linkLengthM": 102.0,
+        "links": 6,
+        "maxQueueM": 78.0,
+        "street": "College Avenue",
+        "tMin": 27.9
+      },
+      {
+        "fullShare": 0.0,
+        "link": 2776,
+        "linkLengthM": 161.0,
+        "links": 13,
+        "maxQueueM": 46.0,
+        "street": "Claremont Avenue",
+        "tMin": 35.4
+      },
+      {
+        "fullShare": 0.0,
+        "link": 1945,
+        "linkLengthM": 188.0,
+        "links": 3,
+        "maxQueueM": 39.0,
+        "street": "CA 24",
+        "tMin": 50.3
+      }
+    ],
+    "bufferM": 200.0,
+    "chainMinWaitS": 60.0,
+    "clearings": [],
+    "far": 0,
+    "farLinked": 0,
+    "farSites": [],
+    "judged": 0,
+    "near": 0,
+    "sensitivity": [
+      {
+        "bufferM": 100.0,
+        "far": 0,
+        "farLinked": 0,
+        "judged": 0,
+        "near": 0
+      },
+      {
+        "bufferM": 200.0,
+        "far": 0,
+        "farLinked": 0,
+        "judged": 0,
+        "near": 0
+      },
+      {
+        "bufferM": 400.0,
+        "far": 0,
+        "farLinked": 0,
+        "judged": 0,
+        "near": 0
+      }
+    ],
+    "total": 0,
+    "zoneLinks": 329,
+    "zoneNodes": 111
+  },
   "health": {
     "arterialMeanSpeed": 10.065431836384253,
     "arterialMeanSpeedLast15min": 9.958948695907408,
@@ -1588,7 +1675,7 @@
     "inputs": {
       "areaConfig": {
         "path": "data/areas/rockridge.json",
-        "sha256": "2635dbe670726c6a59bb9740e88e185342e7e642af076c3fed1565c16ee73d8d"
+        "sha256": "2a3cdc8c3e3129857749af17614fa1f0aba101be663f9de8f8a0f5347243fe60"
       },
       "demand": {
         "path": "public/data/rockridge.demand.json",
@@ -1658,7 +1745,7 @@
     "simulator": {
       "dirty": false,
       "fingerprint": "f0df1aabc323bca5893215e1df1afbff",
-      "revision": "c2a52557fc988a563d971e408c5a16898074e996",
+      "revision": "017273f7ef4b9806532bc35339985a0d847e9509",
       "version": "0.1.0"
     }
   },
