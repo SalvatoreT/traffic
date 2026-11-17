@@ -1,0 +1,170 @@
+{
+ "schema": "search-benchmark-case-1",
+ "area": "rockridge",
+ "inputs": {
+  "network": "6a8285d5076f9ddc9042b3a4554998e61b5427fdb8fbbbbaaa8572cd7b18f4b0",
+  "demand": "bef51b684a8c079ce5e133e089df0659b422ca2ec77bd6b8f5784e38bf1bd93c",
+  "areas": "386731eb104a1ac7a35475d2e5952bcd2b98f6a29991a87b3f68334308477abd"
+ },
+ "depth": 3,
+ "baselineSeeds": [
+  1,
+  2,
+  3
+ ],
+ "screen": [
+  {
+   "minutes": 20,
+   "seeds": [
+    1
+   ]
+  },
+  {
+   "minutes": 20,
+   "seeds": [
+    1,
+    2,
+    3
+   ]
+  },
+  {
+   "minutes": 30,
+   "seeds": [
+    1
+   ]
+  },
+  {
+   "minutes": 60,
+   "seeds": [
+    1
+   ]
+  }
+ ],
+ "full": {
+  "minutes": 60,
+  "seeds": [
+   1,
+   2,
+   3
+  ]
+ },
+ "confirm": {
+  "minutes": 60,
+  "seeds": [
+   301,
+   302,
+   303,
+   304,
+   305,
+   306,
+   307,
+   308,
+   309,
+   310
+  ]
+ },
+ "search": {
+  "beam": 5,
+  "expand": 12,
+  "finalists": 12,
+  "harmWeight": 0.1
+ },
+ "candidates": [
+  {
+   "id": "filter-colby-north",
+   "iv": {
+    "type": "modal_filter",
+    "node": 819
+   }
+  },
+  {
+   "id": "filter-colby-63rd-west",
+   "iv": {
+    "type": "modal_filter",
+    "node": 793
+   }
+  },
+  {
+   "id": "filter-colby-63rd-east",
+   "iv": {
+    "type": "modal_filter",
+    "node": 1071
+   }
+  },
+  {
+   "id": "filter-dana-north",
+   "iv": {
+    "type": "modal_filter",
+    "node": 820
+   }
+  },
+  {
+   "id": "filter-dana-63rd",
+   "iv": {
+    "type": "modal_filter",
+    "node": 794
+   }
+  },
+  {
+   "id": "filter-hillegass-63rd",
+   "iv": {
+    "type": "modal_filter",
+    "node": 1090
+   }
+  },
+  {
+   "id": "filter-hillegass-only-63rd",
+   "iv": {
+    "type": "modal_filter",
+    "node": 1090,
+    "legs": [
+     2669,
+     2670,
+     2671,
+     2672
+    ]
+   }
+  },
+  {
+   "id": "diverter-hillegass-63rd-1",
+   "iv": {
+    "type": "diagonal_diverter",
+    "node": 1090,
+    "bearing": 41
+   }
+  },
+  {
+   "id": "diverter-hillegass-63rd-2",
+   "iv": {
+    "type": "diagonal_diverter",
+    "node": 1090,
+    "bearing": 127
+   }
+  },
+  {
+   "id": "slow-colby",
+   "iv": {
+    "type": "slow_street",
+    "link": 2591
+   }
+  },
+  {
+   "id": "slow-dana",
+   "iv": {
+    "type": "slow_street",
+    "link": 1924
+   }
+  },
+  {
+   "id": "slow-hillegass",
+   "iv": {
+    "type": "slow_street",
+    "link": 2669
+   }
+  }
+ ],
+ "known": [],
+ "id": "colby-north-am",
+ "period": "am_peak",
+ "selection": "Six named local junctions around Colby/North and its Dana and Hillegass bypasses; whole-node filters at all six, all four restriction variants at Hillegass/63rd, and Slow Streets on Colby, Dana and Hillegass. The two Colby/63rd T-junctions are separate sites. Selection used geometry and legal intervention types, not scenario scores. Frozen by the 2026-11-17 audit (evidence/candidates.json of change improve-proposal-search-coverage), indices unchanged. Held-out period: the audit's candidate set in the AM peak, never scored before this change."
+}

@@ -3,6 +3,8 @@
 //! The `explore` binary is a thin wrapper; the logic lives here so tests can run it on small synthetic networks.
 
 pub mod annotate;
+pub mod bench;
+pub mod bypass;
 pub mod cands;
 pub mod check;
 pub mod decode;
@@ -18,6 +20,7 @@ pub mod search;
 pub mod seeds;
 pub mod similar;
 pub mod street;
+pub mod supplement;
 pub mod util;
 
 use crate::eff::Eff;

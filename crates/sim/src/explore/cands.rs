@@ -70,8 +70,8 @@ pub struct Cand {
     pub loc_score: f64,
 }
 
-#[derive(Clone, Copy, PartialEq)]
-enum Loc {
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Loc {
     Block(usize),
     Node(u32),
 }
@@ -104,9 +104,10 @@ pub fn generate(study: &Study, hot: &Hotspots, n_loc: usize) -> Vec<Cand> {
     generate_with(study, hot, n_loc, &Profile::unconstrained())
 }
 
-/// Candidates under a profile. Boundary locations are dropped before the top `n_loc` are taken, so a constrained search still gets `n_loc` locations.
-pub fn generate_with(study: &Study, hot: &Hotspots, n_loc: usize, profile: &Profile) -> Vec<Cand> {
-    let (net, idx, topo) = (&study.net, &study.idx, &study.topo);
+/// Every location with cut-through in `hot`, busiest first (ties: blocks before nodes, then by index), and whether it is not on a bounding
+/// street.
+pub fn ranked_locations(study: &Study, hot: &Hotspots) -> Vec<(Loc, f64, bool)> {
+    let (net, idx) = (&study.net, &study.idx);
     let mut locs: Vec<(Loc, f64)> = Vec::new();
     for &b in &study.harm_blocks {
         if hot.block_ct[b] > 0.0 {
@@ -128,24 +129,36 @@ pub fn generate_with(study: &Study, hot: &Hotspots, n_loc: usize, profile: &Prof
         Loc::Node(n) => !study.boundary_node[n as usize],
     };
     locs.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal).then_with(|| rank(&a.0).cmp(&rank(&b.0))));
+    locs.into_iter().map(|(l, v)| (l, v, interior(&l))).collect()
+}
+
+/// The locations the generator keeps (`ranked_locations` order): with `exclude_boundary` the top `n_loc` interior ones, otherwise the top
+/// `n_loc` overall plus the top `n_loc` interior ones.
+pub fn kept_locations(ranked: &[(Loc, f64, bool)], n_loc: usize, profile: &Profile) -> Vec<(Loc, f64)> {
     if profile.exclude_boundary {
-        locs.retain(|(l, _)| interior(l));
-        locs.truncate(n_loc);
-    } else {
-        // A looser profile keeps every location a stricter one gets: the top `n_loc` overall plus the top `n_loc` that are not on the boundary,
-        // so busy boundary locations cannot crowd out the interior ones a constrained search finds.
-        let mut interior_seen = 0;
-        let mut keep: Vec<bool> = vec![false; locs.len()];
-        for (i, (l, _)) in locs.iter().enumerate() {
-            if interior(l) {
-                interior_seen += 1;
-                keep[i] = interior_seen <= n_loc;
-            }
-            keep[i] |= i < n_loc;
-        }
-        let mut k = keep.into_iter();
-        locs.retain(|_| k.next().unwrap_or(false));
+        return ranked.iter().filter(|x| x.2).take(n_loc).map(|&(l, v, _)| (l, v)).collect();
     }
+    // A looser profile keeps every location a stricter one gets: the top `n_loc` overall plus the top `n_loc` that are not on the boundary,
+    // so busy boundary locations cannot crowd out the interior ones a constrained search finds.
+    let mut interior_seen = 0;
+    let mut out = Vec::new();
+    for (i, &(l, v, interior)) in ranked.iter().enumerate() {
+        let mut keep = i < n_loc;
+        if interior {
+            interior_seen += 1;
+            keep |= interior_seen <= n_loc;
+        }
+        if keep {
+            out.push((l, v));
+        }
+    }
+    out
+}
+
+/// Candidates under a profile. Boundary locations are dropped before the top `n_loc` are taken, so a constrained search still gets `n_loc` locations.
+pub fn generate_with(study: &Study, hot: &Hotspots, n_loc: usize, profile: &Profile) -> Vec<Cand> {
+    let (net, idx, topo) = (&study.net, &study.idx, &study.topo);
+    let locs = kept_locations(&ranked_locations(study, hot), n_loc, profile);
 
     let mut out: Vec<Cand> = Vec::new();
     let mut keys: HashSet<String> = HashSet::new();
