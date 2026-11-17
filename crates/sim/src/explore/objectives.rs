@@ -1,6 +1,6 @@
 //! Objectives: the goals the published options are chosen for. One list, sorted by through cars removed, but each option says which
-//! objective or objectives it is the best for. Every weight and threshold here is an ASSUMPTION (no published value); the project lead
-//! asked for different proposals that optimize for different things, and for closures and resident detours to count only lightly.
+//! objective or objectives it is the best for. Every threshold here is an ASSUMPTION (no published value); the project lead asked for
+//! different proposals that optimize for different things.
 
 use super::cands::Cand;
 use super::report::Final;
@@ -13,7 +13,8 @@ pub enum Objective {
     MostRemoved,
     /// The best package made only of measures that close nothing to cars.
     NoClosures,
-    /// Through cars removed, less a light weight times the added trip time of trips that start or end inside the study area.
+    /// The smallest added trip time for trips that start or end inside the study area, among packages that still remove at least half of
+    /// the most removed.
     LeastDetour,
     /// The best package of at most `FEWEST_MAX_CHANGES` changes.
     FewestChanges,
@@ -23,11 +24,14 @@ pub const ALL: [Objective; 4] = [Objective::MostRemoved, Objective::NoClosures, 
 
 /// ASSUMPTION: "a simple first step" is at most two changes.
 pub const FEWEST_MAX_CHANGES: usize = 2;
-/// ASSUMPTION: points of through-car reduction (percent of the baseline) given up per second of added trip time for a resident trip. Light:
-/// through-car removal still dominates; see `design.md` of `proposal-objectives` for how it was set.
-pub const DETOUR_WEIGHT_PTS_PER_S: f64 = 0.5;
-/// ASSUMPTION: the detour objective never lifts a package that removes less than this share of the best reduction in its pool.
+/// ASSUMPTION: the detour objective considers only packages that remove at least this share of the best reduction in its pool ("lowest
+/// detour that still removes half", project lead, 2026-11-16).
 pub const DETOUR_REDUCTION_FLOOR: f64 = 0.5;
+/// ASSUMPTION: seconds per trip by which one package's mean detour must be lower than another's before the difference counts when the two
+/// have no paired per-seed comparison (fewer than `MIN_PAIRS` seeds). With enough seeds the paired interval decides instead.
+pub const DETOUR_TIE_S: f64 = 1.0;
+/// Ranking offset that puts a package above the detour floor ahead of every package below it in a beam (reductions are percentages).
+const ABOVE_FLOOR: f64 = 1000.0;
 
 impl Objective {
     pub fn id(self) -> &'static str {
@@ -54,7 +58,7 @@ impl Objective {
             Objective::MostRemoved => "Through cars removed, minus the light penalty for the largest all-car rise on one block.".into(),
             Objective::NoClosures => "The same score, among packages made only of measures that close nothing to cars: Slow Streets, one-ways, all-way stops, traffic circles, speed humps and turn bans. No modal filters or diverters.".into(),
             Objective::LeastDetour => format!(
-                "The same score minus {DETOUR_WEIGHT_PTS_PER_S} points per second of added trip time for trips that start or end inside the study area (ASSUMPTION: the weight), among packages that remove at least {:.0}% of the most removed.",
+                "The smallest added trip time per trip for trips that start or end inside the study area, among packages that remove at least {:.0}% of the most removed (ASSUMPTION: the share). Ties and differences the paired comparison cannot resolve go to the larger reduction, then fewer changes.",
                 DETOUR_REDUCTION_FLOOR * 100.0
             ),
             Objective::FewestChanges => format!("The same score, among packages of at most {FEWEST_MAX_CHANGES} changes."),
@@ -85,10 +89,12 @@ pub fn depth(obj: Objective, p: &Params) -> usize {
     }
 }
 
-/// Screening value of a package for `obj` (`core` is the beam's ranking value: reduction minus the ranking-weighted harm).
-pub fn screen_value(obj: Objective, p: &Params, core: f64, e: &Eval) -> f64 {
-    if obj == Objective::LeastDetour {
-        core - p.detour_weight * e.detour_s.max(0.0)
+/// Screening value of a package for `obj` (`core` is the beam's ranking value: reduction minus the ranking-weighted harm). For the detour
+/// objective, `floor_pct` is the reduction a package needs to count (`DETOUR_REDUCTION_FLOOR` of the best seen): above it a package ranks
+/// by its detour, lowest first, ahead of every package below it, which rank by `core`.
+pub fn screen_value(obj: Objective, core: f64, e: &Eval, floor_pct: f64) -> f64 {
+    if obj == Objective::LeastDetour && e.reduction_pct >= floor_pct {
+        ABOVE_FLOOR - e.detour_s.clamp(-ABOVE_FLOOR / 2.0, ABOVE_FLOOR / 2.0)
     } else {
         core
     }
@@ -100,14 +106,5 @@ pub fn eligible(obj: Objective, f: &Final) -> bool {
         Objective::MostRemoved | Objective::LeastDetour => true,
         Objective::NoClosures => !f.closes,
         Objective::FewestChanges => f.set.len() <= FEWEST_MAX_CHANGES,
-    }
-}
-
-/// Published score of a rechecked package for `obj`.
-pub fn final_score(obj: Objective, p: &Params, f: &Final) -> f64 {
-    if obj == Objective::LeastDetour {
-        f.score - p.detour_weight * f.detour_s.max(0.0)
-    } else {
-        f.score
     }
 }

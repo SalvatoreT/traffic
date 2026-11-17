@@ -35,6 +35,8 @@ pub struct PeriodStat {
     pub block_through_sigma: Vec<f64>,
     /// Through cars per link (directed), mean over seeds: what the map's cut-through layer draws.
     pub link_through: Vec<f64>,
+    /// All cars per link (directed), mean over seeds: through cars and local trips together.
+    pub link_flow: Vec<f64>,
     /// Per bounding street: summed flow of its in-study links (veh/h) and flow-weighted mean speed (m/s).
     pub street_flow: Vec<f64>,
     pub street_speed: Vec<f64>,
@@ -67,6 +69,7 @@ pub fn period_stat(study: &Study, runs: &[&RunOut]) -> PeriodStat {
     let block_through: Vec<f64> = (0..nb).map(|b| per_run_through.iter().map(|v| v[b]).sum::<f64>() / n).collect();
     let block_through_sigma: Vec<f64> = (0..nb).map(|b| std_dev(&per_run_through.iter().map(|v| v[b]).collect::<Vec<_>>())).collect();
     let link_through: Vec<f64> = (0..study.net.links.len()).map(|l| runs.iter().map(|r| r.through[l] as f64).sum::<f64>() / n).collect();
+    let link_flow: Vec<f64> = (0..study.net.links.len()).map(|l| runs.iter().map(|r| r.flow[l] as f64).sum::<f64>() / n).collect();
     let mut street_flow = Vec::new();
     let mut street_speed = Vec::new();
     for s in &study.bounding {
@@ -105,6 +108,7 @@ pub fn period_stat(study: &Study, runs: &[&RunOut]) -> PeriodStat {
         block_through,
         block_through_sigma,
         link_through,
+        link_flow,
         street_flow,
         street_speed,
         runs: runs.iter().zip(per_run).zip(per_run_through).map(|((r, bf), bt)| RunRec { ct_vph: r.ct_vph, inside_s: r.inside_mean_s(), inside_tt_s: r.inside_tt_s, block_flow: bf, block_through: bt }).collect(),
@@ -424,12 +428,18 @@ pub fn rank_value(p: &Params, e: &Eval) -> f64 {
 }
 
 /// Ranking value of a screened package inside the beam of objective `obj`.
-fn rank_for(p: &Params, obj: Objective, e: &Eval) -> f64 {
-    super::objectives::screen_value(obj, p, rank_value(p, e), e)
+fn rank_for(p: &Params, obj: Objective, e: &Eval, floor_pct: f64) -> f64 {
+    super::objectives::screen_value(obj, rank_value(p, e), e, floor_pct)
+}
+
+/// The reduction a package needs to count for the detour objective: `DETOUR_REDUCTION_FLOOR` of the best valid package screened so far.
+pub fn detour_floor_pct(evals: &[Eval]) -> f64 {
+    super::objectives::DETOUR_REDUCTION_FLOOR * evals.iter().filter(|e| e.valid()).map(|e| e.reduction_pct).fold(0.0, f64::max)
 }
 
 fn rank_order(p: &Params, obj: Objective, st: &SearchState, v: &mut Vec<usize>) {
-    v.sort_by(|&a, &b| rank_for(p, obj, &st.evals[b]).partial_cmp(&rank_for(p, obj, &st.evals[a])).unwrap_or(std::cmp::Ordering::Equal).then(a.cmp(&b)));
+    let floor = detour_floor_pct(&st.evals);
+    v.sort_by(|&a, &b| rank_for(p, obj, &st.evals[b], floor).partial_cmp(&rank_for(p, obj, &st.evals[a], floor)).unwrap_or(std::cmp::Ordering::Equal).then(a.cmp(&b)));
 }
 
 /// Where a candidate acts: its block, else its intersection(s). Candidates that act at one place are variants of one another (a filter on the
@@ -532,9 +542,10 @@ pub fn beam_search_in(ctx: &Ctx, known: &[Family], lim: &BeamLimit, st_ref: &mut
         st.cache.get(&vec![c]).map(|&i| &st.evals[i])
     }
     let mut ranked: Vec<u16> = (0..n as u16).filter(|&c| lim.ok(c) && single_eval(&st, c).map_or(false, |e| e.valid())).collect();
+    let floor = detour_floor_pct(&st.evals);
     ranked.sort_by(|&a, &b| {
         let (ea, eb) = (single_eval(&st, a).unwrap(), single_eval(&st, b).unwrap());
-        rank_for(ctx.p, lim.objective, eb).partial_cmp(&rank_for(ctx.p, lim.objective, ea)).unwrap_or(std::cmp::Ordering::Equal).then(a.cmp(&b))
+        rank_for(ctx.p, lim.objective, eb, floor).partial_cmp(&rank_for(ctx.p, lim.objective, ea, floor)).unwrap_or(std::cmp::Ordering::Equal).then(a.cmp(&b))
     });
     let b = best_valid(&st);
     progress(ctx, &mut st, 1, b);
@@ -553,7 +564,7 @@ pub fn beam_search_in(ctx: &Ctx, known: &[Family], lim: &BeamLimit, st_ref: &mut
         })
         .filter(|m| !m.is_empty())
         .collect();
-    families.sort_by(|a, b| rank_for(ctx.p, lim.objective, &st.evals[b[0]]).partial_cmp(&rank_for(ctx.p, lim.objective, &st.evals[a[0]])).unwrap_or(std::cmp::Ordering::Equal).then(a[0].cmp(&b[0])));
+    families.sort_by(|a, b| rank_for(ctx.p, lim.objective, &st.evals[b[0]], floor).partial_cmp(&rank_for(ctx.p, lim.objective, &st.evals[a[0]], floor)).unwrap_or(std::cmp::Ordering::Equal).then(a[0].cmp(&b[0])));
     let mut start: Vec<usize> = Vec::new();
     let width = ctx.p.beam;
     'fill: for r in 0.. {
@@ -637,7 +648,8 @@ pub fn beam_search_in(ctx: &Ctx, known: &[Family], lim: &BeamLimit, st_ref: &mut
             // The line goes on while adding an intervention improves the ranking value at the new size: the previous beam's best is
             // re-ranked with the new level's harm weight, so levels are compared on the same footing.
             let w = level.first().map_or(0.0, |&i| rank_weight(ctx.p, st.evals[i].set.len()));
-            let rw = |i: usize| super::objectives::screen_value(lim.objective, ctx.p, st.evals[i].reduction_pct - w * st.evals[i].harm, &st.evals[i]);
+            let floor = detour_floor_pct(&st.evals);
+            let rw = |i: usize| super::objectives::screen_value(lim.objective, st.evals[i].reduction_pct - w * st.evals[i].harm, &st.evals[i], floor);
             let prev_best = lin.beam.iter().map(|&i| rw(i)).fold(f64::NEG_INFINITY, f64::max);
             let level_best = level.first().map_or(f64::NEG_INFINITY, |&i| rw(i));
             if level_best <= prev_best + 1e-9 {
@@ -692,7 +704,8 @@ pub fn pick_finalists(evals: &[Eval], cap: usize, warm: &[Vec<u16>]) -> Vec<usiz
 /// Up to `cap` finalists of one objective's beam: valid packages that reduce through cars, within the beam's limits, best screening value
 /// first, one per set of places.
 pub fn pick_finalists_for(ctx: &Ctx, evals: &[Eval], cap: usize, lim: &BeamLimit) -> Vec<usize> {
-    let value = |i: usize| super::objectives::screen_value(lim.objective, ctx.p, evals[i].score, &evals[i]);
+    let floor = detour_floor_pct(evals);
+    let value = |i: usize| super::objectives::screen_value(lim.objective, evals[i].score, &evals[i], floor);
     let mut idx: Vec<usize> = (0..evals.len()).filter(|&i| evals[i].valid() && evals[i].reduction_pct > 0.0 && evals[i].set.len() <= lim.depth && evals[i].set.iter().all(|&c| lim.ok(c))).collect();
     idx.sort_by(|&a, &b| value(b).partial_cmp(&value(a)).unwrap_or(std::cmp::Ordering::Equal).then(a.cmp(&b)));
     let mut seen: Vec<Vec<String>> = Vec::new();

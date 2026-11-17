@@ -119,4 +119,14 @@ describe('older files', () => {
     expect(file(mk('nope')).picture).toBeUndefined();
     expect(file(mk(undefined)).picture).toBeUndefined();
   });
+  it('keeps a valid all-cars picture, drops a malformed one without touching the through-car picture, and tolerates none', () => {
+    const { pic } = makePic();
+    const mk = (pictureAll: unknown) => ({ ...mock, picture: pic, ...(pictureAll === undefined ? {} : { pictureAll }) });
+    const file = (p: unknown) => parseProposals(JSON.stringify({ version: 4, area: 'x', groups: [{ id: 'g', title: 'g', note: '', computed: { date: '2026-01-01', periods: Object.keys(mock.byPeriod), seeds: [1], networkHash: 'a', demandHash: 'b', calibration: 'uncalibrated' }, baseline: { cutThroughVehPerHour: {} }, proposals: [p] }] }))!.groups[0].proposals[0];
+    expect(file(mk(pic)).pictureAll).toEqual(pic);
+    const bad = file(mk({ ...pic, scen: [1] }));
+    expect(bad.pictureAll).toBeUndefined();
+    expect(bad.picture).toEqual(pic);
+    expect(file(mk(undefined)).pictureAll).toBeUndefined();
+  });
 });
