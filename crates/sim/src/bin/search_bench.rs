@@ -8,6 +8,8 @@
 //!   search_bench reproduce --case FILE --partial FILE --projection FILE   compare the first screening setting of a table run with the audit
 //!   search_bench analyze  --case FILE --results FILE --out FILE   replay every search method and screening setting against the table
 //!   search_bench confirm  --case FILE --results FILE --out FILE [--jobs N]   freeze the shortlist, then run it on the case's confirmation seeds
+//!   search_bench decide   --analyses A,B,C --development CASE [--confirm X,Y,Z] [--out FILE]   apply the frozen adoption rules (design D9)
+//!   search_bench spot     --case FILE --projection FILE --sets 1.7.9,2.4.5   rerun some of the audit's packages and compare
 //! Every mode takes --root DIR (default: the current directory).
 
 use serde_json::{json, Value};
@@ -46,6 +48,17 @@ fn main() {
         i += 2;
     }
     let root = PathBuf::from(opt.get("root").cloned().unwrap_or_else(|| ".".into()));
+    if mode == "decide" {
+        let read = |p: &str| -> Value { serde_json::from_slice(&std::fs::read(p).unwrap_or_else(|e| die(&format!("{p}: {e}")))).unwrap_or_else(|e| die(&format!("{p}: {e}"))) };
+        let analyses: Vec<Value> = opt.get("analyses").unwrap_or_else(|| die("--analyses a.json,b.json is required")).split(',').map(read).collect();
+        let confirm: std::collections::HashMap<String, Value> = opt.get("confirm").map(|c| c.split(',').map(read).map(|v| (v["case"].as_str().unwrap_or("").to_string(), v)).collect()).unwrap_or_default();
+        let v = bench::decide(&analyses, opt.get("development").map(String::as_str).unwrap_or(""), &confirm);
+        match opt.get("out") {
+            Some(o) => write_json(Path::new(o), &v),
+            None => println!("{}", serde_json::to_string_pretty(&v).unwrap()),
+        }
+        return;
+    }
     let case_path = PathBuf::from(opt.get("case").unwrap_or_else(|| die("--case is required")));
     let (case, case_sha) = Case::load(&case_path).unwrap_or_else(|e| die(&e));
     let study = Study::load(&root, &case.area).unwrap_or_else(|e| die(&e));

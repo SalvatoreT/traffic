@@ -77,6 +77,19 @@ npm run shard -- explore fetch --job r2 --shards search
 
 The merge writes the produced list to `public/data/<area>.proposals.json` (version 5) in place of what was there, replaces `data/proposals/<area>.md`, and adds the shards' search options to `data/proposals/<area>.seeds.json` by running `explore --seed-proposals`, which applies the seeds file's own dedupe and cap. An option already in the seeds file keeps its earlier figures and dates; a search run on one machine would refresh them. It refuses a list produced by two shards and any difference in network hash, demand hash, simulator fingerprint or reporting-method version, and writes nothing in that case. Commit the report and the seeds file, then continue with the usual data steps (`data:results`, `data:llms`, `data:previews`, `data:push`).
 
+## Benchmark cases
+
+The proposal-search benchmark (`data/search-benchmark/README.md`) runs one case per shard. The inputs are the search's, so push them with `--for explore`:
+
+```sh
+npm run shard -- inputs push --job sb1 --for explore                    # lead
+nohup npm run shard -- benchmark run --job sb1 --shard pm \
+  --case data/search-benchmark/colby-north-pm.json --jobs 4 --confirm > shard-pm.log 2>&1 &   # child
+npm run shard -- benchmark fetch --job sb1 --shards pm,am,second         # lead
+```
+
+`benchmark run` calls `target/release/search_bench table` (and `confirm` with `--confirm`) on shard-local files under `target/shard/<job>/<shard>/benchmark/`, which keep their checkpoints: run the same command again after a restart and it continues. It uploads the results only after checking that they carry the job's simulator fingerprint, network and demand hashes and the case file's hash. `benchmark fetch` downloads every shard's files, checks them against their index and the job again, refuses a case run by two shards, and writes nothing when a check fails; the default destination is `target/benchmark/<job>/`. A case table is about 65,000 simulated minutes, so on a four-core child it takes several hours.
+
 ## Suggested shards
 
 At 60 minutes one `calibrate` seed run takes about 30 seconds on one core, so the whole assessment fits one four-core machine in a few minutes; sharding pays off for longer runs. With six children:

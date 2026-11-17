@@ -305,6 +305,9 @@ pub struct Results {
     pub timing: Value,
 }
 
+/// The identity fields a results or checkpoint file must share with this checkout (the source revision is recorded, not compared).
+pub const IDENTITY_KEYS: [&str; 6] = ["case", "caseSha256", "simulator", "inputs", "harmBlocks", "method"];
+
 /// What a results file must match: the case, the inputs and the simulator.
 pub fn identity(study: &Study, root: &Path, case: &Case, case_sha: &str) -> Value {
     let file = |name: &str| std::fs::read(root.join("public/data").join(name)).map(|b| util::sha256_hex(&b)).unwrap_or_default();
@@ -318,6 +321,8 @@ pub fn identity(study: &Study, root: &Path, case: &Case, case_sha: &str) -> Valu
         "inputsLabel": if frozen { "frozen inputs of the case" } else { "CURRENT inputs, which differ from the case's frozen inputs: a separate result" },
         "inputsMatchCase": frozen,
         "calibration": study.calibration,
+        "sourceRevision": super::provenance::source_revision(root),
+        "method": RESULTS_SCHEMA,
         "harmBlocks": study.harm_blocks.len(),
         "nodes": study.net.nodes.len(),
         "links": study.net.links.len(),
@@ -339,7 +344,7 @@ pub fn build_table(study: &Study, root: &Path, case: &Case, case_sha: &str, out:
     let lines = read_partial(&partial);
     let mut f = std::fs::OpenOptions::new().create(true).append(true).open(&partial).map_err(|e| format!("{}: {e}", partial.display()))?;
     match lines.first() {
-        Some(v) if v.get("identity") == Some(&ident) => {}
+        Some(v) if IDENTITY_KEYS.iter().all(|k| v["identity"][*k] == ident[*k]) => {}
         Some(_) => return Err(format!("{} belongs to another case, input or simulator; move it aside", partial.display())),
         None => writeln!(f, "{}", json!({ "identity": ident })).map_err(|e| e.to_string())?,
     }
@@ -458,7 +463,7 @@ pub fn verify(res: &Results, study: &Study, root: &Path, case: &Case, case_sha: 
         out.push(format!("schema {} is not {RESULTS_SCHEMA}", res.schema));
     }
     let want = identity(study, root, case, case_sha);
-    for k in ["case", "caseSha256", "simulator", "inputs", "harmBlocks"] {
+    for k in IDENTITY_KEYS {
         if res.identity[k] != want[k] {
             out.push(format!("{k}: file has {}, this checkout has {}", res.identity[k], want[k]));
         }
