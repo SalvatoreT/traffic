@@ -1,0 +1,548 @@
+{
+  "beam": {
+    "best": {
+      "adjustedHarm": 22.143593539448982,
+      "candidateIds": [
+        "filter-colby-63rd-west",
+        "diverter-hillegass-63rd-1",
+        "slow-colby"
+      ],
+      "labels": [
+        "Modal filter at Colby Street and the western 63rd Street branch toward Dana",
+        "Diagonal diverter at Hillegass Avenue and 63rd Street, orientation 1 (41 degrees)",
+        "Slow Street on Colby Street (15 mph)"
+      ],
+      "largestRawAllCarIncrease": 48.0,
+      "largestRawIncreaseBlock": "Martin Street between Claremont Avenue and Ayala Avenue",
+      "reductionPct": 40.37735849056604,
+      "residentDetourSeconds": 2.8950893063872627,
+      "scenarioLink": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p3fprdr~dd,9q9p642ut2,41~ss,9q9p3cx9rf",
+      "score": 38.16299913662114,
+      "set": [
+        1,
+        7,
+        9
+      ]
+    },
+    "forwardedPackages": 13,
+    "simulations": 75,
+    "stages": [
+      {
+        "bestCoreScore": 38.16299913662114,
+        "bestCoreScoreSet": [
+          1,
+          7,
+          9
+        ],
+        "cumulativeEvaluations": 71,
+        "cumulativeSimulations": 71,
+        "newEvaluations": 71,
+        "newSearchLog": [
+          "depth 1: best so far +13.0 (cut-through -15.1%, harm 21 veh/h, 1 intervention(s)): Slow Street on Colby Street (15 mph, Alcatraz Avenue to Claremont Avenue / Forest Street) | evals 12 | 44s",
+          "depth 2: best so far +31.2 (cut-through -33.2%, harm 21 veh/h, 2 intervention(s)): Diagonal diverter at 63rd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 63rd Street (west), and Hillegass Avenue (south) with 63rd Street (east); Slow Street on Colby Street (15 mph, Alcatraz Avenue to Claremont Avenue / Forest Street) | evals 44 | 161s",
+          "depth 3: best so far +38.2 (cut-through -40.4%, harm 22 veh/h, 3 intervention(s)): Modal filter at 63rd Street & Colby Street; Diagonal diverter at 63rd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 63rd Street (west), and Hillegass Avenue (south) with 63rd Street (east); Slow Street on Colby Street (15 mph, Alcatraz Avenue to Claremont Avenue / Forest Street) | evals 71 | 260s"
+        ],
+        "newSimulations": 71,
+        "objective": "most-removed",
+        "objectiveFinalistSets": [
+          [
+            1,
+            7,
+            9
+          ],
+          [
+            1,
+            4,
+            7
+          ],
+          [
+            1,
+            3,
+            7
+          ],
+          [
+            4,
+            7,
+            9
+          ]
+        ]
+      },
+      {
+        "bestCoreScore": 38.16299913662114,
+        "bestCoreScoreSet": [
+          1,
+          7,
+          9
+        ],
+        "cumulativeEvaluations": 71,
+        "cumulativeSimulations": 71,
+        "newEvaluations": 0,
+        "newSearchLog": [
+          "depth 1: best so far +38.2 (cut-through -40.4%, harm 22 veh/h, 3 intervention(s)): Modal filter at 63rd Street & Colby Street; Diagonal diverter at 63rd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 63rd Street (west), and Hillegass Avenue (south) with 63rd Street (east); Slow Street on Colby Street (15 mph, Alcatraz Avenue to Claremont Avenue / Forest Street) | evals 71 | 260s",
+          "depth 2: best so far +38.2 (cut-through -40.4%, harm 22 veh/h, 3 intervention(s)): Modal filter at 63rd Street & Colby Street; Diagonal diverter at 63rd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 63rd Street (west), and Hillegass Avenue (south) with 63rd Street (east); Slow Street on Colby Street (15 mph, Alcatraz Avenue to Claremont Avenue / Forest Street) | evals 71 | 260s",
+          "depth 3: best so far +38.2 (cut-through -40.4%, harm 22 veh/h, 3 intervention(s)): Modal filter at 63rd Street & Colby Street; Diagonal diverter at 63rd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 63rd Street (west), and Hillegass Avenue (south) with 63rd Street (east); Slow Street on Colby Street (15 mph, Alcatraz Avenue to Claremont Avenue / Forest Street) | evals 71 | 260s",
+          "depth 3: no package beats the best of the previous level in this line; stopping it"
+        ],
+        "newSimulations": 0,
+        "objective": "no-closures",
+        "objectiveFinalistSets": [
+          [
+            9,
+            11
+          ],
+          [
+            9,
+            10,
+            11
+          ],
+          [
+            9
+          ],
+          [
+            11
+          ]
+        ]
+      },
+      {
+        "bestCoreScore": 38.16299913662114,
+        "bestCoreScoreSet": [
+          1,
+          7,
+          9
+        ],
+        "cumulativeEvaluations": 75,
+        "cumulativeSimulations": 75,
+        "newEvaluations": 4,
+        "newSearchLog": [
+          "depth 1: best so far +38.2 (cut-through -40.4%, harm 22 veh/h, 3 intervention(s)): Modal filter at 63rd Street & Colby Street; Diagonal diverter at 63rd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 63rd Street (west), and Hillegass Avenue (south) with 63rd Street (east); Slow Street on Colby Street (15 mph, Alcatraz Avenue to Claremont Avenue / Forest Street) | evals 71 | 260s",
+          "depth 2: best so far +38.2 (cut-through -40.4%, harm 22 veh/h, 3 intervention(s)): Modal filter at 63rd Street & Colby Street; Diagonal diverter at 63rd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 63rd Street (west), and Hillegass Avenue (south) with 63rd Street (east); Slow Street on Colby Street (15 mph, Alcatraz Avenue to Claremont Avenue / Forest Street) | evals 71 | 260s",
+          "depth 3: best so far +38.2 (cut-through -40.4%, harm 22 veh/h, 3 intervention(s)): Modal filter at 63rd Street & Colby Street; Diagonal diverter at 63rd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 63rd Street (west), and Hillegass Avenue (south) with 63rd Street (east); Slow Street on Colby Street (15 mph, Alcatraz Avenue to Claremont Avenue / Forest Street) | evals 75 | 275s"
+        ],
+        "newSimulations": 4,
+        "objective": "least-detour",
+        "objectiveFinalistSets": [
+          [
+            0,
+            3,
+            7
+          ],
+          [
+            0,
+            7,
+            10
+          ],
+          [
+            7,
+            9
+          ],
+          [
+            0,
+            4,
+            7
+          ]
+        ]
+      },
+      {
+        "bestCoreScore": 38.16299913662114,
+        "bestCoreScoreSet": [
+          1,
+          7,
+          9
+        ],
+        "cumulativeEvaluations": 75,
+        "cumulativeSimulations": 75,
+        "newEvaluations": 0,
+        "newSearchLog": [
+          "depth 1: best so far +38.2 (cut-through -40.4%, harm 22 veh/h, 3 intervention(s)): Modal filter at 63rd Street & Colby Street; Diagonal diverter at 63rd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 63rd Street (west), and Hillegass Avenue (south) with 63rd Street (east); Slow Street on Colby Street (15 mph, Alcatraz Avenue to Claremont Avenue / Forest Street) | evals 75 | 275s",
+          "depth 2: best so far +38.2 (cut-through -40.4%, harm 22 veh/h, 3 intervention(s)): Modal filter at 63rd Street & Colby Street; Diagonal diverter at 63rd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 63rd Street (west), and Hillegass Avenue (south) with 63rd Street (east); Slow Street on Colby Street (15 mph, Alcatraz Avenue to Claremont Avenue / Forest Street) | evals 75 | 275s"
+        ],
+        "newSimulations": 0,
+        "objective": "fewest-changes",
+        "objectiveFinalistSets": [
+          [
+            7,
+            9
+          ],
+          [
+            1,
+            5
+          ],
+          [
+            9,
+            11
+          ],
+          [
+            0,
+            7
+          ]
+        ]
+      }
+    ],
+    "validPackages": 75,
+    "visitedPackages": 75
+  },
+  "candidateGeneration": {
+    "absent": [
+      "filter-dana-north",
+      "filter-dana-63rd",
+      "slow-dana"
+    ],
+    "frozenCandidatesPresent": 9,
+    "productionCandidateCount": 219
+  },
+  "checks": {
+    "conflictingPackages": 58,
+    "coveredNonconflictingPackages": 240,
+    "enumeratedNonempty": 298,
+    "immutableBeamScores": {
+      "available": true,
+      "capturedBeforeExhaustiveCompletion": true,
+      "checkedRows": 75,
+      "sha256": "826b2288f7c3ef9f018f6bfd41434c6e73395404114cbe8c8c3c4fb735d0f8ae"
+    },
+    "passed": true
+  },
+  "comparison": {
+    "exhaustiveAdditionalSimulations": 164,
+    "missedFrontier": [
+      {
+        "adjustedHarm": 19.284366616798906,
+        "candidateIds": [
+          "filter-hillegass-only-63rd",
+          "slow-colby",
+          "slow-hillegass"
+        ],
+        "labels": [
+          "Filter Hillegass Avenue at 63rd Street, keeping 63rd Street connected",
+          "Slow Street on Colby Street (15 mph)",
+          "Slow Street on Hillegass Avenue (15 mph)"
+        ],
+        "largestRawAllCarIncrease": 42.0,
+        "largestRawIncreaseBlock": "61st Street between Hillegass Avenue and Colby Street",
+        "reductionPct": 29.056603773584907,
+        "residentDetourSeconds": 1.6614212485350208,
+        "scenarioLink": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2,175.355~ss,9q9p3cx9rf~ss,9q9p642z5y",
+        "score": 27.128167111905018,
+        "set": [
+          6,
+          9,
+          11
+        ]
+      },
+      {
+        "adjustedHarm": 1.1435935394489825,
+        "candidateIds": [
+          "filter-dana-north",
+          "slow-hillegass"
+        ],
+        "labels": [
+          "Modal filter at Dana Street and North Street",
+          "Slow Street on Hillegass Avenue (15 mph)"
+        ],
+        "largestRawAllCarIncrease": 39.0,
+        "largestRawIncreaseBlock": "Colby Street between 60th Street and 61st Street",
+        "reductionPct": 8.679245283018869,
+        "residentDetourSeconds": 0.01505486873531936,
+        "scenarioLink": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p3fq4xp~ss,9q9p642z5y",
+        "score": 8.56488592907397,
+        "set": [
+          3,
+          11
+        ]
+      }
+    ],
+    "oracleFrontierCount": 9,
+    "oracleFrontierForwardedCount": 7,
+    "oracleFrontierRecall": 0.7777777777777778,
+    "oracleFrontierVisitedCount": 7,
+    "sameBestSet": true,
+    "screeningScoreGap": 0.0,
+    "strongestMissed": {
+      "adjustedHarm": 42.0,
+      "candidateIds": [
+        "filter-colby-63rd-east",
+        "filter-dana-63rd",
+        "filter-hillegass-63rd"
+      ],
+      "labels": [
+        "Modal filter at Colby Street and the eastern 63rd Street branch toward Hillegass",
+        "Modal filter at Dana Street and 63rd Street",
+        "Modal filter at Hillegass Avenue and 63rd Street"
+      ],
+      "largestRawAllCarIncrease": 54.0,
+      "largestRawIncreaseBlock": "62nd Street between Colby Street and Canning Street",
+      "reductionPct": 38.490566037735846,
+      "residentDetourSeconds": 3.1674761449186235,
+      "scenarioLink": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p3fr6b9~mn,9q9p3fnqdk~mn,9q9p642ut2",
+      "score": 34.29056603773584,
+      "set": [
+        2,
+        4,
+        5
+      ]
+    },
+    "unvisitedPackages": 165,
+    "unvisitedValidPackages": 164,
+    "visitedFrontierNotForwarded": []
+  },
+  "confirmation": {
+    "file": "/workspace/traffic-search-benchmark/confirmation-selection.json",
+    "packageCount": 2,
+    "selections": [
+      {
+        "id": "beam-best",
+        "roles": [
+          "beam-best",
+          "exhaustive-best"
+        ],
+        "screening": {
+          "adjustedHarm": 22.143593539448982,
+          "candidateIds": [
+            "filter-colby-63rd-west",
+            "diverter-hillegass-63rd-1",
+            "slow-colby"
+          ],
+          "labels": [
+            "Modal filter at Colby Street and the western 63rd Street branch toward Dana",
+            "Diagonal diverter at Hillegass Avenue and 63rd Street, orientation 1 (41 degrees)",
+            "Slow Street on Colby Street (15 mph)"
+          ],
+          "largestRawAllCarIncrease": 48.0,
+          "largestRawIncreaseBlock": "Martin Street between Claremont Avenue and Ayala Avenue",
+          "reductionPct": 40.37735849056604,
+          "residentDetourSeconds": 2.8950893063872627,
+          "scenarioLink": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p3fprdr~dd,9q9p642ut2,41~ss,9q9p3cx9rf",
+          "score": 38.16299913662114,
+          "set": [
+            1,
+            7,
+            9
+          ]
+        },
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      {
+        "id": "strongest-missed",
+        "roles": [
+          "strongest-missed"
+        ],
+        "screening": {
+          "adjustedHarm": 42.0,
+          "candidateIds": [
+            "filter-colby-63rd-east",
+            "filter-dana-63rd",
+            "filter-hillegass-63rd"
+          ],
+          "labels": [
+            "Modal filter at Colby Street and the eastern 63rd Street branch toward Hillegass",
+            "Modal filter at Dana Street and 63rd Street",
+            "Modal filter at Hillegass Avenue and 63rd Street"
+          ],
+          "largestRawAllCarIncrease": 54.0,
+          "largestRawIncreaseBlock": "62nd Street between Colby Street and Canning Street",
+          "reductionPct": 38.490566037735846,
+          "residentDetourSeconds": 3.1674761449186235,
+          "scenarioLink": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p3fr6b9~mn,9q9p3fnqdk~mn,9q9p642ut2",
+          "score": 34.29056603773584,
+          "set": [
+            2,
+            4,
+            5
+          ]
+        },
+        "set": [
+          2,
+          4,
+          5
+        ]
+      }
+    ],
+    "totalRunsIncludingBaseline": 30
+  },
+  "exhaustive": {
+    "best": {
+      "adjustedHarm": 22.143593539448982,
+      "candidateIds": [
+        "filter-colby-63rd-west",
+        "diverter-hillegass-63rd-1",
+        "slow-colby"
+      ],
+      "labels": [
+        "Modal filter at Colby Street and the western 63rd Street branch toward Dana",
+        "Diagonal diverter at Hillegass Avenue and 63rd Street, orientation 1 (41 degrees)",
+        "Slow Street on Colby Street (15 mph)"
+      ],
+      "largestRawAllCarIncrease": 48.0,
+      "largestRawIncreaseBlock": "Martin Street between Claremont Avenue and Ayala Avenue",
+      "reductionPct": 40.37735849056604,
+      "residentDetourSeconds": 2.8950893063872627,
+      "scenarioLink": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p3fprdr~dd,9q9p642ut2,41~ss,9q9p3cx9rf",
+      "score": 38.16299913662114,
+      "set": [
+        1,
+        7,
+        9
+      ]
+    },
+    "rejectedPackages": 1,
+    "simulations": 239,
+    "validPackages": 239,
+    "visitedPackages": 240
+  },
+  "limits": [
+    "Exact within the frozen candidate universe and screening conditions only.",
+    "Cold search without prior packages; not a replay of the published full search.",
+    "The exhaustive oracle uses more evaluations; it is a quality reference, not an equal-budget competitor.",
+    "Confirmation covers the frozen primary-score representatives, not all objectives or every package.",
+    "No claim of field validation or model-form uncertainty coverage."
+  ],
+  "provenance": {
+    "analysisScriptSha256": "349dc5edbcc4f7e9a4a101ff573a6d3ee3dbe48bfb309ac378c54204fd1093e9",
+    "candidateManifestSha256": "5d80919fa160c06e89cdb813b7961df3a7496938adf15f1d471ede0321edb133",
+    "confirmationSelectionSha256": "05d8947f65b1a6b7c2924e512018f07e349dd3c59e9346b01466d3bf145ef420",
+    "demandHash": "bef51b684a8c079c",
+    "networkHash": "6a8285d5076f9ddc",
+    "screeningResultsSha256": "5a140a2a9644f7d91db3bec059dc5c9b12394866f68ba7ce9018d09b2ca5b455",
+    "simulatorFingerprint": "f0df1aabc323bca5893215e1df1afbff",
+    "sourceRevision": "f8197de0d6fc9d5bf02098c260cb73f4456d38fa"
+  },
+  "schema": "search-benchmark-analysis-1",
+  "singletonDiagnostics": [
+    {
+      "harm": 72.42539695602818,
+      "id": "filter-colby-north",
+      "index": 0,
+      "productionCandidatePresent": true,
+      "rawIncrease": 111.0,
+      "rawIncreaseBlock": "63rd Street between Colby Street and Dana Street",
+      "reductionPct": 14.716981132075471,
+      "reject": null,
+      "score": 7.474441436472652
+    },
+    {
+      "harm": 82.60769515458674,
+      "id": "filter-colby-63rd-west",
+      "index": 1,
+      "productionCandidatePresent": true,
+      "rawIncrease": 108.0,
+      "rawIncreaseBlock": "Hillegass Avenue between 63rd Street and 62nd Street",
+      "reductionPct": 12.075471698113208,
+      "reject": null,
+      "score": 3.8147021826545338
+    },
+    {
+      "harm": 66.8432083375061,
+      "id": "filter-colby-63rd-east",
+      "index": 2,
+      "productionCandidatePresent": true,
+      "rawIncrease": 102.0,
+      "rawIncreaseBlock": "Dana Street between 63rd Street and North Street",
+      "reductionPct": 6.7924528301886795,
+      "reject": null,
+      "score": 0.10813199643806914
+    },
+    {
+      "harm": 14.9003311294585,
+      "id": "filter-dana-north",
+      "index": 3,
+      "productionCandidatePresent": false,
+      "rawIncrease": 54.0,
+      "rawIncreaseBlock": "Colby Street between Claremont Avenue / Forest Street and McAuley Street",
+      "reductionPct": -2.641509433962264,
+      "reject": null,
+      "score": -4.131542546908114
+    },
+    {
+      "harm": 15.0,
+      "id": "filter-dana-63rd",
+      "index": 4,
+      "productionCandidatePresent": false,
+      "rawIncrease": 27.0,
+      "rawIncreaseBlock": "62nd Street between Colby Street and Canning Street",
+      "reductionPct": 5.660377358490566,
+      "reject": null,
+      "score": 4.160377358490566
+    },
+    {
+      "harm": 63.61783151138759,
+      "id": "filter-hillegass-63rd",
+      "index": 5,
+      "productionCandidatePresent": true,
+      "rawIncrease": 141.0,
+      "rawIncreaseBlock": "Colby Street between 62nd Street and 63rd Street",
+      "reductionPct": 11.320754716981131,
+      "reject": null,
+      "score": 4.958971565842372
+    },
+    {
+      "harm": 63.61783151138759,
+      "id": "filter-hillegass-only-63rd",
+      "index": 6,
+      "productionCandidatePresent": true,
+      "rawIncrease": 141.0,
+      "rawIncreaseBlock": "Colby Street between 62nd Street and 63rd Street",
+      "reductionPct": 6.037735849056604,
+      "reject": null,
+      "score": -0.32404730208215504
+    },
+    {
+      "harm": 90.61783151138759,
+      "id": "diverter-hillegass-63rd-1",
+      "index": 7,
+      "productionCandidatePresent": true,
+      "rawIncrease": 168.0,
+      "rawIncreaseBlock": "Colby Street between 62nd Street and 63rd Street",
+      "reductionPct": 12.452830188679245,
+      "reject": null,
+      "score": 3.391047037540485
+    },
+    {
+      "harm": 71.9003311294585,
+      "id": "diverter-hillegass-63rd-2",
+      "index": 8,
+      "productionCandidatePresent": true,
+      "rawIncrease": 87.0,
+      "rawIncreaseBlock": "63rd Street between College Avenue and Hillegass Avenue",
+      "reductionPct": 3.7735849056603774,
+      "reject": null,
+      "score": -3.4164482072854723
+    },
+    {
+      "harm": 20.75128869403572,
+      "id": "slow-colby",
+      "index": 9,
+      "productionCandidatePresent": true,
+      "rawIncrease": 45.0,
+      "rawIncreaseBlock": "Hillegass Avenue between 61st Street and 60th Street / Claremont Avenue",
+      "reductionPct": 15.09433962264151,
+      "reject": null,
+      "score": 13.019210753237937
+    },
+    {
+      "harm": 5.9003311294585,
+      "id": "slow-dana",
+      "index": 10,
+      "productionCandidatePresent": false,
+      "rawIncrease": 30.0,
+      "rawIncreaseBlock": "62nd Street between Claremont Avenue / College Avenue / +1 and Hillegass Avenue",
+      "reductionPct": 2.2641509433962264,
+      "reject": null,
+      "score": 1.6741178304503763
+    },
+    {
+      "harm": 1.607695154586736,
+      "id": "slow-hillegass",
+      "index": 11,
+      "productionCandidatePresent": true,
+      "rawIncrease": 30.0,
+      "rawIncreaseBlock": "Colby Street between McAuley Street and 60th Street",
+      "reductionPct": 9.433962264150944,
+      "reject": null,
+      "score": 9.27319274869227
+    }
+  ]
+}

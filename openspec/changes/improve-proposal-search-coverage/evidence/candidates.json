@@ -1,0 +1,348 @@
+{
+  "version": 1,
+  "experiment": "colby-north-local-search-benchmark",
+  "sourceRevision": "f8197de0d6fc9d5bf02098c260cb73f4456d38fa",
+  "networkSha256": "6a8285d5076f9ddc9042b3a4554998e61b5427fdb8fbbbbaaa8572cd7b18f4b0",
+  "selectionRule": "Six named local junctions around Colby/North and its Dana and Hillegass bypasses; whole-node filters at all six, all four restriction variants at Hillegass/63rd, and Slow Streets on Colby, Dana and Hillegass. The two Colby/63rd T-junctions are separate sites. Selection used geometry and legal intervention types, not scenario scores.",
+  "candidateIndexing": "Zero-based array order. Stable IDs and exact interventions are frozen before scenario scoring.",
+  "protocol": {
+    "screening": {
+      "periods": [
+        "pm_peak"
+      ],
+      "scenarioSeed": 1,
+      "minutes": 20,
+      "baselineSpreadSeeds": [
+        1,
+        2,
+        3
+      ],
+      "baselineFullMinutes": 60
+    },
+    "beam": {
+      "width": 5,
+      "expand": 12,
+      "depth": 3,
+      "objectives": [
+        "most-removed",
+        "no-closures",
+        "least-detour",
+        "fewest-changes"
+      ],
+      "knownPackages": [],
+      "warmStarts": [],
+      "finalistCap": 12,
+      "harmWeight": 0.1
+    },
+    "enumeration": {
+      "maxInterventions": 3,
+      "countBeforeConflictFilteringIncludingBaseline": 299,
+      "excludeOnlyProductionPairwiseConflictsBeforeWholePackageAccessCheck": true,
+      "doNotPruneUsingSingletonRejections": true
+    },
+    "order": "Run production beam on a fresh state; freeze its visited sets and finalists; then fill missing exhaustive combinations. Never give the beam unseen exhaustive scores.",
+    "confirmation": {
+      "periods": [
+        "pm_peak"
+      ],
+      "minutes": 60,
+      "seeds": [
+        201,
+        202,
+        203,
+        204,
+        205,
+        206,
+        207,
+        208,
+        209,
+        210
+      ],
+      "selection": "Before reading confirmation results, freeze the union of: (1) the valid package with highest final core score among beam-visited packages; (2) the valid package with highest final core score in the exhaustive set; (3) the valid nonempty package with highest final core score that the beam missed, if any. Break score ties lexicographically by frozen manifest-index vectors; deduplicate. The empty baseline, score zero, is eligible for (1) and (2) and is always run as the comparator. At most three nonempty packages plus baseline. No reselection on confirmation seeds.",
+      "claims": "Confirmation tests the primary core-score winners and strongest missed package only. Other objectives, non-dominated-set coverage, and full finite-space optimality remain screening-only findings."
+    },
+    "comparisons": [
+      "Best final score, with full harm weight",
+      "Exact production non-dominated set over cut-through reduction, adjusted harm, and intervention count",
+      "Evaluated versus forwarded packages",
+      "Largest raw all-car block increase and its location",
+      "Mean added time for trips with an endpoint inside the study area",
+      "Screening simulation count and elapsed time"
+    ],
+    "scope": "Exact only within these twelve candidates, packages of at most three interventions, and the fixed screening objective and inputs. Confirmation estimates concern the frozen representatives, not an exhaustive full-hour optimum.",
+    "uncertainty": "Seed intervals describe within-model randomness; comparisons across algorithm choice or model assumptions are separate. No claim of calibrated real-world effects.",
+    "candidateGenerationAudit": "Record which of the frozen twelve are produced by the production candidate generator under these parameters and baseline. Inclusion is descriptive and does not establish the causal effect of candidate generation."
+  },
+  "candidates": [
+    {
+      "id": "filter-colby-north",
+      "label": "Modal filter at Colby Street and North Street",
+      "rationale": "The closure that motivated the redistribution question.",
+      "iv": {
+        "type": "modal_filter",
+        "node": 819
+      }
+    },
+    {
+      "id": "filter-colby-63rd-west",
+      "label": "Modal filter at Colby Street and the western 63rd Street branch toward Dana",
+      "rationale": "Tests the entrance to the 63rd/Dana bypass.",
+      "iv": {
+        "type": "modal_filter",
+        "node": 793
+      }
+    },
+    {
+      "id": "filter-colby-63rd-east",
+      "label": "Modal filter at Colby Street and the eastern 63rd Street branch toward Hillegass",
+      "rationale": "Tests the distinct nearby T-junction toward the parallel corridor.",
+      "iv": {
+        "type": "modal_filter",
+        "node": 1071
+      }
+    },
+    {
+      "id": "filter-dana-north",
+      "label": "Modal filter at Dana Street and North Street",
+      "rationale": "Tests the connection from North Street into the Dana bypass.",
+      "iv": {
+        "type": "modal_filter",
+        "node": 820
+      }
+    },
+    {
+      "id": "filter-dana-63rd",
+      "label": "Modal filter at Dana Street and 63rd Street",
+      "rationale": "Tests the turn between the two bypass streets.",
+      "iv": {
+        "type": "modal_filter",
+        "node": 794
+      }
+    },
+    {
+      "id": "filter-hillegass-63rd",
+      "label": "Modal filter at Hillegass Avenue and 63rd Street",
+      "rationale": "Tests a nearby parallel north-south corridor.",
+      "iv": {
+        "type": "modal_filter",
+        "node": 1090
+      }
+    },
+    {
+      "id": "filter-hillegass-only-63rd",
+      "label": "Filter Hillegass Avenue at 63rd Street, keeping 63rd Street connected",
+      "rationale": "Compares a partial intersection filter with the whole-intersection filter.",
+      "iv": {
+        "type": "modal_filter",
+        "node": 1090,
+        "legs": [
+          2669,
+          2670,
+          2671,
+          2672
+        ]
+      }
+    },
+    {
+      "id": "diverter-hillegass-63rd-1",
+      "label": "Diagonal diverter at Hillegass Avenue and 63rd Street, orientation 1 (41 degrees)",
+      "rationale": "Both legal diagonal orientations are included without using traffic scores.",
+      "iv": {
+        "type": "diagonal_diverter",
+        "node": 1090,
+        "bearing": 41
+      },
+      "expectedPermittedMovements": [
+        [
+          2625,
+          2671
+        ],
+        [
+          2628,
+          2670
+        ],
+        [
+          2669,
+          2627
+        ],
+        [
+          2672,
+          2626
+        ]
+      ],
+      "expectedBannedMovements": [
+        [
+          2625,
+          2626
+        ],
+        [
+          2625,
+          2627
+        ],
+        [
+          2625,
+          2670
+        ],
+        [
+          2628,
+          2626
+        ],
+        [
+          2628,
+          2627
+        ],
+        [
+          2628,
+          2671
+        ],
+        [
+          2669,
+          2626
+        ],
+        [
+          2669,
+          2670
+        ],
+        [
+          2669,
+          2671
+        ],
+        [
+          2672,
+          2627
+        ],
+        [
+          2672,
+          2670
+        ],
+        [
+          2672,
+          2671
+        ]
+      ]
+    },
+    {
+      "id": "diverter-hillegass-63rd-2",
+      "label": "Diagonal diverter at Hillegass Avenue and 63rd Street, orientation 2 (127 degrees)",
+      "rationale": "Both legal diagonal orientations are included without using traffic scores.",
+      "iv": {
+        "type": "diagonal_diverter",
+        "node": 1090,
+        "bearing": 127
+      },
+      "expectedPermittedMovements": [
+        [
+          2625,
+          2670
+        ],
+        [
+          2628,
+          2671
+        ],
+        [
+          2669,
+          2626
+        ],
+        [
+          2672,
+          2627
+        ]
+      ],
+      "expectedBannedMovements": [
+        [
+          2625,
+          2626
+        ],
+        [
+          2625,
+          2627
+        ],
+        [
+          2625,
+          2671
+        ],
+        [
+          2628,
+          2626
+        ],
+        [
+          2628,
+          2627
+        ],
+        [
+          2628,
+          2670
+        ],
+        [
+          2669,
+          2627
+        ],
+        [
+          2669,
+          2670
+        ],
+        [
+          2669,
+          2671
+        ],
+        [
+          2672,
+          2626
+        ],
+        [
+          2672,
+          2670
+        ],
+        [
+          2672,
+          2671
+        ]
+      ]
+    },
+    {
+      "id": "slow-colby",
+      "label": "Slow Street on Colby Street (15 mph)",
+      "rationale": "Provides a no-closure alternative on one of the three north-south corridors.",
+      "iv": {
+        "type": "slow_street",
+        "link": 2591
+      }
+    },
+    {
+      "id": "slow-dana",
+      "label": "Slow Street on Dana Street (15 mph)",
+      "rationale": "Provides a no-closure alternative on one of the three north-south corridors.",
+      "iv": {
+        "type": "slow_street",
+        "link": 1924
+      }
+    },
+    {
+      "id": "slow-hillegass",
+      "label": "Slow Street on Hillegass Avenue (15 mph)",
+      "rationale": "Provides a no-closure alternative on one of the three north-south corridors.",
+      "iv": {
+        "type": "slow_street",
+        "link": 2669
+      }
+    }
+  ],
+  "params": {
+    "periods": [
+      "pm_peak"
+    ],
+    "seeds": [
+      1,
+      2,
+      3
+    ],
+    "beam": 5,
+    "expand": 12,
+    "depth": 3,
+    "screenMinutes": 20,
+    "minutes": 60,
+    "candidateLocations": 40,
+    "finalists": 12,
+    "harmWeight": 0.1
+  }
+}

@@ -1,0 +1,5892 @@
+{
+  "schema": "search-benchmark-path-analysis-1",
+  "replayedVisitedSequenceExactly": true,
+  "sourceRevision": "f8197de0d6fc9d5bf02098c260cb73f4456d38fa",
+  "screeningResultsSha256": "5a140a2a9644f7d91db3bec059dc5c9b12394866f68ba7ce9018d09b2ca5b455",
+  "scriptSha256": "b15c44b332dab50593f6251a9429d56b095595321114e90b0b8abe2926a714a9",
+  "note": "Control-flow replay over completed screening values. No new simulations; no confirmation results read. No alternative algorithm has been tested.",
+  "trace": [
+    {
+      "objective": "most-removed",
+      "initialRankedSingles": [
+        [
+          9
+        ],
+        [
+          0
+        ],
+        [
+          7
+        ],
+        [
+          1
+        ],
+        [
+          5
+        ],
+        [
+          11
+        ],
+        [
+          2
+        ],
+        [
+          6
+        ],
+        [
+          4
+        ],
+        [
+          8
+        ],
+        [
+          10
+        ],
+        [
+          3
+        ]
+      ],
+      "positiveSingleExtensionCandidates": [
+        9,
+        0,
+        7,
+        1,
+        11,
+        2,
+        4,
+        10
+      ],
+      "initialBeam": [
+        [
+          9
+        ],
+        [
+          0
+        ],
+        [
+          7
+        ],
+        [
+          1
+        ],
+        [
+          11
+        ]
+      ],
+      "levels": [
+        {
+          "depth": 2,
+          "parents": [
+            [
+              9
+            ],
+            [
+              0
+            ],
+            [
+              7
+            ],
+            [
+              1
+            ],
+            [
+              11
+            ]
+          ],
+          "expansions": [
+            {
+              "parent": [
+                9
+              ],
+              "extensionCandidates": [
+                9,
+                0,
+                7,
+                1,
+                11,
+                2,
+                4,
+                10,
+                5,
+                6,
+                8
+              ],
+              "repairCandidates": [
+                5,
+                6,
+                8
+              ],
+              "hotBlocks": [
+                "Hillegass Avenue between 61st Street and 60th Street / Claremont Avenue",
+                "Hillegass Avenue between 63rd Street and 62nd Street",
+                "Hillegass Avenue between Alcatraz Avenue and 63rd Street"
+              ],
+              "children": [
+                [
+                  0,
+                  9
+                ],
+                [
+                  7,
+                  9
+                ],
+                [
+                  1,
+                  9
+                ],
+                [
+                  9,
+                  11
+                ],
+                [
+                  2,
+                  9
+                ],
+                [
+                  4,
+                  9
+                ],
+                [
+                  9,
+                  10
+                ],
+                [
+                  5,
+                  9
+                ],
+                [
+                  6,
+                  9
+                ],
+                [
+                  8,
+                  9
+                ]
+              ]
+            },
+            {
+              "parent": [
+                0
+              ],
+              "extensionCandidates": [
+                9,
+                0,
+                7,
+                1,
+                11,
+                2,
+                4,
+                10,
+                3
+              ],
+              "repairCandidates": [
+                3
+              ],
+              "hotBlocks": [
+                "63rd Street between Colby Street and Dana Street",
+                "Dana Street between 63rd Street and North Street",
+                "Dana Street between North Street and Alcatraz Avenue"
+              ],
+              "children": [
+                [
+                  0,
+                  9
+                ],
+                [
+                  0,
+                  7
+                ],
+                [
+                  0,
+                  1
+                ],
+                [
+                  0,
+                  11
+                ],
+                [
+                  0,
+                  2
+                ],
+                [
+                  0,
+                  4
+                ],
+                [
+                  0,
+                  10
+                ],
+                [
+                  0,
+                  3
+                ]
+              ]
+            },
+            {
+              "parent": [
+                7
+              ],
+              "extensionCandidates": [
+                9,
+                0,
+                7,
+                1,
+                11,
+                2,
+                4,
+                10
+              ],
+              "repairCandidates": [],
+              "hotBlocks": [
+                "Colby Street between 62nd Street and 63rd Street",
+                "Colby Street at 63rd Street",
+                "Colby Street between 61st Street and 62nd Street"
+              ],
+              "children": [
+                [
+                  7,
+                  9
+                ],
+                [
+                  0,
+                  7
+                ],
+                [
+                  1,
+                  7
+                ],
+                [
+                  7,
+                  11
+                ],
+                [
+                  2,
+                  7
+                ],
+                [
+                  4,
+                  7
+                ],
+                [
+                  7,
+                  10
+                ]
+              ]
+            },
+            {
+              "parent": [
+                1
+              ],
+              "extensionCandidates": [
+                9,
+                0,
+                7,
+                1,
+                11,
+                2,
+                4,
+                10,
+                5,
+                6,
+                8
+              ],
+              "repairCandidates": [
+                5,
+                6,
+                8
+              ],
+              "hotBlocks": [
+                "Hillegass Avenue between 63rd Street and 62nd Street",
+                "63rd Street between Hillegass Avenue and Colby Street",
+                "Hillegass Avenue between 62nd Street and 61st Street"
+              ],
+              "children": [
+                [
+                  1,
+                  9
+                ],
+                [
+                  0,
+                  1
+                ],
+                [
+                  1,
+                  7
+                ],
+                [
+                  1,
+                  11
+                ],
+                [
+                  1,
+                  2
+                ],
+                [
+                  1,
+                  4
+                ],
+                [
+                  1,
+                  10
+                ],
+                [
+                  1,
+                  5
+                ],
+                [
+                  1,
+                  6
+                ],
+                [
+                  1,
+                  8
+                ]
+              ]
+            },
+            {
+              "parent": [
+                11
+              ],
+              "extensionCandidates": [
+                9,
+                0,
+                7,
+                1,
+                11,
+                2,
+                4,
+                10
+              ],
+              "repairCandidates": [],
+              "hotBlocks": [
+                "Colby Street between McAuley Street and 60th Street",
+                "Colby Street between 60th Street and 61st Street",
+                "Colby Street between 62nd Street and 63rd Street"
+              ],
+              "children": [
+                [
+                  9,
+                  11
+                ],
+                [
+                  0,
+                  11
+                ],
+                [
+                  7,
+                  11
+                ],
+                [
+                  1,
+                  11
+                ],
+                [
+                  2,
+                  11
+                ],
+                [
+                  4,
+                  11
+                ],
+                [
+                  10,
+                  11
+                ]
+              ]
+            }
+          ],
+          "rankedChildren": [
+            {
+              "set": [
+                7,
+                9
+              ],
+              "rank": 32.182319878298074,
+              "coreScore": 31.157092586784824,
+              "places": [
+                "n1090",
+                "s:Colby Street"
+              ]
+            },
+            {
+              "set": [
+                1,
+                7
+              ],
+              "rank": 25.92638659229267,
+              "coreScore": 23.550886392132508,
+              "places": [
+                "n1090",
+                "n793"
+              ]
+            },
+            {
+              "set": [
+                1,
+                5
+              ],
+              "rank": 25.747169811320752,
+              "coreScore": 23.94716981132075,
+              "places": [
+                "n1090",
+                "n793"
+              ]
+            },
+            {
+              "set": [
+                6,
+                9
+              ],
+              "rank": 24.250876008782697,
+              "coreScore": 22.08665767794275,
+              "places": [
+                "n1090",
+                "s:Colby Street"
+              ]
+            },
+            {
+              "set": [
+                5,
+                9
+              ],
+              "rank": 23.34615902765062,
+              "coreScore": 21.031940696810675,
+              "places": [
+                "n1090",
+                "s:Colby Street"
+              ]
+            },
+            {
+              "set": [
+                0,
+                7
+              ],
+              "rank": 22.28942656302538,
+              "coreScore": 17.40904180529604,
+              "places": [
+                "n1090",
+                "n819"
+              ]
+            },
+            {
+              "set": [
+                9,
+                11
+              ],
+              "rank": 20.464417405791224,
+              "coreScore": 19.4194008493183,
+              "places": [
+                "s:Colby Street",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                0,
+                11
+              ],
+              "rank": 17.43816411446274,
+              "coreScore": 13.366894266661332,
+              "places": [
+                "n819",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                2,
+                7
+              ],
+              "rank": 16.320239586160852,
+              "coreScore": 9.998969738359444,
+              "places": [
+                "n1071",
+                "n1090"
+              ]
+            },
+            {
+              "set": [
+                8,
+                9
+              ],
+              "rank": 15.882341934093112,
+              "coreScore": 11.387325377620188,
+              "places": [
+                "n1090",
+                "s:Colby Street"
+              ]
+            },
+            {
+              "set": [
+                0,
+                10
+              ],
+              "rank": 15.474013171066513,
+              "coreScore": 11.702743323265103,
+              "places": [
+                "n819",
+                "s:Dana Street"
+              ]
+            },
+            {
+              "set": [
+                1,
+                6
+              ],
+              "rank": 13.455464298874436,
+              "coreScore": 9.175079541145099,
+              "places": [
+                "n1090",
+                "n793"
+              ]
+            },
+            {
+              "set": [
+                0,
+                4
+              ],
+              "rank": 13.351849796258977,
+              "coreScore": 10.099926007612293,
+              "places": [
+                "n794",
+                "n819"
+              ]
+            },
+            {
+              "set": [
+                1,
+                11
+              ],
+              "rank": 13.000747317742363,
+              "coreScore": 9.020362560013025,
+              "places": [
+                "n793",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                1,
+                8
+              ],
+              "rank": 12.855464298874434,
+              "coreScore": 7.975079541145098,
+              "places": [
+                "n1090",
+                "n793"
+              ]
+            },
+            {
+              "set": [
+                2,
+                11
+              ],
+              "rank": 12.279537696332241,
+              "coreScore": 9.087377279456936,
+              "places": [
+                "n1071",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                7,
+                10
+              ],
+              "rank": 12.173388827176323,
+              "coreScore": 7.743004069446986,
+              "places": [
+                "n1090",
+                "s:Dana Street"
+              ]
+            },
+            {
+              "set": [
+                0,
+                9
+              ],
+              "rank": 12.03413367850576,
+              "coreScore": 8.596569243803973,
+              "places": [
+                "n819",
+                "s:Colby Street"
+              ]
+            },
+            {
+              "set": [
+                0,
+                1
+              ],
+              "rank": 11.754312492099348,
+              "coreScore": 7.659568380425114,
+              "places": [
+                "n793",
+                "n819"
+              ]
+            },
+            {
+              "set": [
+                4,
+                9
+              ],
+              "rank": 11.652058206807649,
+              "coreScore": 8.964493772105861,
+              "places": [
+                "n794",
+                "s:Colby Street"
+              ]
+            },
+            {
+              "set": [
+                0,
+                3
+              ],
+              "rank": 11.347341225675573,
+              "coreScore": 9.109776790973786,
+              "places": [
+                "n819",
+                "n820"
+              ]
+            },
+            {
+              "set": [
+                2,
+                9
+              ],
+              "rank": 9.010548772845384,
+              "coreScore": 6.3229843381435975,
+              "places": [
+                "n1071",
+                "s:Colby Street"
+              ]
+            },
+            {
+              "set": [
+                1,
+                10
+              ],
+              "rank": 8.740161548703124,
+              "coreScore": 3.895417437028888,
+              "places": [
+                "n793",
+                "s:Dana Street"
+              ]
+            },
+            {
+              "set": [
+                4,
+                11
+              ],
+              "rank": 8.611320754716981,
+              "coreScore": 7.41132075471698,
+              "places": [
+                "n794",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                10,
+                11
+              ],
+              "rank": 8.221502034723493,
+              "coreScore": 8.141117276994157,
+              "places": [
+                "s:Dana Street",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                1,
+                9
+              ],
+              "rank": 7.417728449817833,
+              "coreScore": 3.1373436920884963,
+              "places": [
+                "n793",
+                "s:Colby Street"
+              ]
+            },
+            {
+              "set": [
+                4,
+                7
+              ],
+              "rank": 7.244580122543828,
+              "coreScore": 2.4136885469744485,
+              "places": [
+                "n1090",
+                "n794"
+              ]
+            },
+            {
+              "set": [
+                1,
+                2
+              ],
+              "rank": 6.926010605306896,
+              "coreScore": 2.5312664936326605,
+              "places": [
+                "n1071",
+                "n793"
+              ]
+            },
+            {
+              "set": [
+                0,
+                2
+              ],
+              "rank": 6.794767888047646,
+              "coreScore": 3.0234980402462375,
+              "places": [
+                "n1071",
+                "n819"
+              ]
+            },
+            {
+              "set": [
+                1,
+                4
+              ],
+              "rank": 5.348652114740859,
+              "coreScore": -0.24609199693337658,
+              "places": [
+                "n793",
+                "n794"
+              ]
+            },
+            {
+              "set": [
+                9,
+                10
+              ],
+              "rank": 5.004888395486893,
+              "coreScore": 3.217323960785107,
+              "places": [
+                "s:Colby Street",
+                "s:Dana Street"
+              ]
+            },
+            {
+              "set": [
+                7,
+                11
+              ],
+              "rank": 4.453070688581564,
+              "coreScore": -0.5278208869878167,
+              "places": [
+                "n1090",
+                "s:Hillegass Avenue"
+              ]
+            }
+          ],
+          "stopped": false,
+          "nextBeam": [
+            [
+              7,
+              9
+            ],
+            [
+              1,
+              7
+            ],
+            [
+              0,
+              7
+            ],
+            [
+              9,
+              11
+            ],
+            [
+              0,
+              11
+            ]
+          ]
+        },
+        {
+          "depth": 3,
+          "parents": [
+            [
+              7,
+              9
+            ],
+            [
+              1,
+              7
+            ],
+            [
+              0,
+              7
+            ],
+            [
+              9,
+              11
+            ],
+            [
+              0,
+              11
+            ]
+          ],
+          "expansions": [
+            {
+              "parent": [
+                7,
+                9
+              ],
+              "extensionCandidates": [
+                9,
+                0,
+                7,
+                1,
+                11,
+                2,
+                4,
+                10
+              ],
+              "repairCandidates": [],
+              "hotBlocks": [
+                "62nd Street between Hillegass Avenue and Colby Street",
+                "63rd Street between Canning Street and Telegraph Avenue",
+                "61st Street between Hillegass Avenue and Colby Street"
+              ],
+              "children": [
+                [
+                  0,
+                  7,
+                  9
+                ],
+                [
+                  1,
+                  7,
+                  9
+                ],
+                [
+                  7,
+                  9,
+                  11
+                ],
+                [
+                  2,
+                  7,
+                  9
+                ],
+                [
+                  4,
+                  7,
+                  9
+                ],
+                [
+                  7,
+                  9,
+                  10
+                ]
+              ]
+            },
+            {
+              "parent": [
+                1,
+                7
+              ],
+              "extensionCandidates": [
+                9,
+                0,
+                7,
+                1,
+                11,
+                2,
+                4,
+                10,
+                3
+              ],
+              "repairCandidates": [
+                3
+              ],
+              "hotBlocks": [
+                "Martin Street between Claremont Avenue and Ayala Avenue",
+                "59th Street between Canning Street and Telegraph Avenue",
+                "Dana Street between 63rd Street and North Street"
+              ],
+              "children": [
+                [
+                  1,
+                  7,
+                  9
+                ],
+                [
+                  0,
+                  1,
+                  7
+                ],
+                [
+                  1,
+                  7,
+                  11
+                ],
+                [
+                  1,
+                  2,
+                  7
+                ],
+                [
+                  1,
+                  4,
+                  7
+                ],
+                [
+                  1,
+                  7,
+                  10
+                ],
+                [
+                  1,
+                  3,
+                  7
+                ]
+              ]
+            },
+            {
+              "parent": [
+                0,
+                7
+              ],
+              "extensionCandidates": [
+                9,
+                0,
+                7,
+                1,
+                11,
+                2,
+                4,
+                10,
+                5,
+                6,
+                8,
+                3
+              ],
+              "repairCandidates": [
+                5,
+                6,
+                8,
+                3
+              ],
+              "hotBlocks": [
+                "63rd Street between Colby Street and Dana Street",
+                "63rd Street between Hillegass Avenue and Colby Street",
+                "Dana Street between 63rd Street and North Street"
+              ],
+              "children": [
+                [
+                  0,
+                  7,
+                  9
+                ],
+                [
+                  0,
+                  1,
+                  7
+                ],
+                [
+                  0,
+                  7,
+                  11
+                ],
+                [
+                  0,
+                  2,
+                  7
+                ],
+                [
+                  0,
+                  4,
+                  7
+                ],
+                [
+                  0,
+                  7,
+                  10
+                ],
+                [
+                  0,
+                  3,
+                  7
+                ]
+              ]
+            },
+            {
+              "parent": [
+                9,
+                11
+              ],
+              "extensionCandidates": [
+                9,
+                0,
+                7,
+                1,
+                11,
+                2,
+                4,
+                10
+              ],
+              "repairCandidates": [],
+              "hotBlocks": [
+                "Martin Street between Ayala Avenue and 58th Street / Hermann Street",
+                "58th Street between Hermann Street / Martin Street and Canning Street",
+                "58th Street between Vicente Street and Telegraph Avenue"
+              ],
+              "children": [
+                [
+                  0,
+                  9,
+                  11
+                ],
+                [
+                  7,
+                  9,
+                  11
+                ],
+                [
+                  1,
+                  9,
+                  11
+                ],
+                [
+                  2,
+                  9,
+                  11
+                ],
+                [
+                  4,
+                  9,
+                  11
+                ],
+                [
+                  9,
+                  10,
+                  11
+                ]
+              ]
+            },
+            {
+              "parent": [
+                0,
+                11
+              ],
+              "extensionCandidates": [
+                9,
+                0,
+                7,
+                1,
+                11,
+                2,
+                4,
+                10,
+                3
+              ],
+              "repairCandidates": [
+                3
+              ],
+              "hotBlocks": [
+                "63rd Street between Colby Street and Dana Street",
+                "Dana Street between 63rd Street and North Street",
+                "Dana Street between North Street and Alcatraz Avenue"
+              ],
+              "children": [
+                [
+                  0,
+                  9,
+                  11
+                ],
+                [
+                  0,
+                  7,
+                  11
+                ],
+                [
+                  0,
+                  1,
+                  11
+                ],
+                [
+                  0,
+                  2,
+                  11
+                ],
+                [
+                  0,
+                  4,
+                  11
+                ],
+                [
+                  0,
+                  10,
+                  11
+                ],
+                [
+                  0,
+                  3,
+                  11
+                ]
+              ]
+            }
+          ],
+          "rankedChildren": [
+            {
+              "set": [
+                1,
+                7,
+                9
+              ],
+              "rank": 38.16299913662114,
+              "coreScore": 38.16299913662114,
+              "places": [
+                "n1090",
+                "n793",
+                "s:Colby Street"
+              ]
+            },
+            {
+              "set": [
+                1,
+                4,
+                7
+              ],
+              "rank": 35.490566037735846,
+              "coreScore": 35.490566037735846,
+              "places": [
+                "n1090",
+                "n793",
+                "n794"
+              ]
+            },
+            {
+              "set": [
+                1,
+                3,
+                7
+              ],
+              "rank": 34.58451350340925,
+              "coreScore": 34.58451350340925,
+              "places": [
+                "n1090",
+                "n793",
+                "n820"
+              ]
+            },
+            {
+              "set": [
+                4,
+                7,
+                9
+              ],
+              "rank": 33.90377358490566,
+              "coreScore": 33.90377358490566,
+              "places": [
+                "n1090",
+                "n794",
+                "s:Colby Street"
+              ]
+            },
+            {
+              "set": [
+                1,
+                7,
+                11
+              ],
+              "rank": 33.60377358490566,
+              "coreScore": 33.60377358490566,
+              "places": [
+                "n1090",
+                "n793",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                1,
+                7,
+                10
+              ],
+              "rank": 29.511263750623076,
+              "coreScore": 29.511263750623076,
+              "places": [
+                "n1090",
+                "n793",
+                "s:Dana Street"
+              ]
+            },
+            {
+              "set": [
+                2,
+                7,
+                9
+              ],
+              "rank": 29.419724455340578,
+              "coreScore": 29.419724455340578,
+              "places": [
+                "n1071",
+                "n1090",
+                "s:Colby Street"
+              ]
+            },
+            {
+              "set": [
+                7,
+                9,
+                11
+              ],
+              "rank": 28.63072160403528,
+              "coreScore": 28.63072160403528,
+              "places": [
+                "n1090",
+                "s:Colby Street",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                0,
+                7,
+                9
+              ],
+              "rank": 24.900856530812273,
+              "coreScore": 24.900856530812273,
+              "places": [
+                "n1090",
+                "n819",
+                "s:Colby Street"
+              ]
+            },
+            {
+              "set": [
+                7,
+                9,
+                10
+              ],
+              "rank": 23.87977820780887,
+              "coreScore": 23.87977820780887,
+              "places": [
+                "n1090",
+                "s:Colby Street",
+                "s:Dana Street"
+              ]
+            },
+            {
+              "set": [
+                2,
+                9,
+                11
+              ],
+              "rank": 23.71562726441264,
+              "coreScore": 23.71562726441264,
+              "places": [
+                "n1071",
+                "s:Colby Street",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                1,
+                2,
+                7
+              ],
+              "rank": 22.89245283018868,
+              "coreScore": 22.89245283018868,
+              "places": [
+                "n1071",
+                "n1090",
+                "n793"
+              ]
+            },
+            {
+              "set": [
+                0,
+                3,
+                11
+              ],
+              "rank": 22.051476321016413,
+              "coreScore": 22.051476321016413,
+              "places": [
+                "n819",
+                "n820",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                0,
+                7,
+                11
+              ],
+              "rank": 20.691422568548123,
+              "coreScore": 20.691422568548123,
+              "places": [
+                "n1090",
+                "n819",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                1,
+                9,
+                11
+              ],
+              "rank": 18.822249352465853,
+              "coreScore": 18.822249352465853,
+              "places": [
+                "n793",
+                "s:Colby Street",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                9,
+                10,
+                11
+              ],
+              "rank": 18.11320754716981,
+              "coreScore": 18.11320754716981,
+              "places": [
+                "s:Colby Street",
+                "s:Dana Street",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                0,
+                1,
+                11
+              ],
+              "rank": 16.922641509433962,
+              "coreScore": 16.922641509433962,
+              "places": [
+                "n793",
+                "n819",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                0,
+                1,
+                7
+              ],
+              "rank": 16.641509433962263,
+              "coreScore": 16.641509433962263,
+              "places": [
+                "n1090",
+                "n793",
+                "n819"
+              ]
+            },
+            {
+              "set": [
+                0,
+                9,
+                11
+              ],
+              "rank": 16.608613784146318,
+              "coreScore": 16.608613784146318,
+              "places": [
+                "n819",
+                "s:Colby Street",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                4,
+                9,
+                11
+              ],
+              "rank": 16.31320754716981,
+              "coreScore": 16.31320754716981,
+              "places": [
+                "n794",
+                "s:Colby Street",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                0,
+                10,
+                11
+              ],
+              "rank": 13.589535776095293,
+              "coreScore": 13.589535776095293,
+              "places": [
+                "n819",
+                "s:Dana Street",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                0,
+                7,
+                10
+              ],
+              "rank": 12.880739918503588,
+              "coreScore": 12.880739918503588,
+              "places": [
+                "n1090",
+                "n819",
+                "s:Dana Street"
+              ]
+            },
+            {
+              "set": [
+                0,
+                2,
+                11
+              ],
+              "rank": 9.74802634213303,
+              "coreScore": 9.74802634213303,
+              "places": [
+                "n1071",
+                "n819",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                0,
+                2,
+                7
+              ],
+              "rank": 9.485762191189632,
+              "coreScore": 9.485762191189632,
+              "places": [
+                "n1071",
+                "n1090",
+                "n819"
+              ]
+            },
+            {
+              "set": [
+                0,
+                4,
+                11
+              ],
+              "rank": 8.630188679245283,
+              "coreScore": 8.630188679245283,
+              "places": [
+                "n794",
+                "n819",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                0,
+                3,
+                7
+              ],
+              "rank": 8.312815390201704,
+              "coreScore": 8.312815390201704,
+              "places": [
+                "n1090",
+                "n819",
+                "n820"
+              ]
+            },
+            {
+              "set": [
+                0,
+                4,
+                7
+              ],
+              "rank": 5.526022937371515,
+              "coreScore": 5.526022937371515,
+              "places": [
+                "n1090",
+                "n794",
+                "n819"
+              ]
+            }
+          ],
+          "stopped": false,
+          "nextBeam": [
+            [
+              1,
+              7,
+              9
+            ],
+            [
+              1,
+              4,
+              7
+            ],
+            [
+              1,
+              3,
+              7
+            ],
+            [
+              4,
+              7,
+              9
+            ],
+            [
+              1,
+              7,
+              11
+            ]
+          ]
+        }
+      ],
+      "visitedCount": 71
+    },
+    {
+      "objective": "no-closures",
+      "initialRankedSingles": [
+        [
+          9
+        ],
+        [
+          11
+        ],
+        [
+          10
+        ]
+      ],
+      "positiveSingleExtensionCandidates": [
+        9,
+        11,
+        10
+      ],
+      "initialBeam": [
+        [
+          9
+        ],
+        [
+          11
+        ],
+        [
+          10
+        ]
+      ],
+      "levels": [
+        {
+          "depth": 2,
+          "parents": [
+            [
+              9
+            ],
+            [
+              11
+            ],
+            [
+              10
+            ]
+          ],
+          "expansions": [
+            {
+              "parent": [
+                9
+              ],
+              "extensionCandidates": [
+                9,
+                11,
+                10
+              ],
+              "repairCandidates": [],
+              "hotBlocks": [
+                "Hillegass Avenue between 61st Street and 60th Street / Claremont Avenue",
+                "Hillegass Avenue between 63rd Street and 62nd Street",
+                "Hillegass Avenue between Alcatraz Avenue and 63rd Street"
+              ],
+              "children": [
+                [
+                  9,
+                  11
+                ],
+                [
+                  9,
+                  10
+                ]
+              ]
+            },
+            {
+              "parent": [
+                11
+              ],
+              "extensionCandidates": [
+                9,
+                11,
+                10
+              ],
+              "repairCandidates": [],
+              "hotBlocks": [
+                "Colby Street between McAuley Street and 60th Street",
+                "Colby Street between 60th Street and 61st Street",
+                "Colby Street between 62nd Street and 63rd Street"
+              ],
+              "children": [
+                [
+                  9,
+                  11
+                ],
+                [
+                  10,
+                  11
+                ]
+              ]
+            },
+            {
+              "parent": [
+                10
+              ],
+              "extensionCandidates": [
+                9,
+                11,
+                10
+              ],
+              "repairCandidates": [],
+              "hotBlocks": [
+                "62nd Street between Claremont Avenue / College Avenue / +1 and Hillegass Avenue",
+                "58th Street between Vicente Street and Telegraph Avenue",
+                "Ayala Avenue between Howell Street and Forest Street"
+              ],
+              "children": [
+                [
+                  9,
+                  10
+                ],
+                [
+                  10,
+                  11
+                ]
+              ]
+            }
+          ],
+          "rankedChildren": [
+            {
+              "set": [
+                9,
+                11
+              ],
+              "rank": 20.464417405791224,
+              "coreScore": 19.4194008493183,
+              "places": [
+                "s:Colby Street",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                10,
+                11
+              ],
+              "rank": 8.221502034723493,
+              "coreScore": 8.141117276994157,
+              "places": [
+                "s:Dana Street",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                9,
+                10
+              ],
+              "rank": 5.004888395486893,
+              "coreScore": 3.217323960785107,
+              "places": [
+                "s:Colby Street",
+                "s:Dana Street"
+              ]
+            }
+          ],
+          "stopped": false,
+          "nextBeam": [
+            [
+              9,
+              11
+            ],
+            [
+              10,
+              11
+            ],
+            [
+              9,
+              10
+            ]
+          ]
+        },
+        {
+          "depth": 3,
+          "parents": [
+            [
+              9,
+              11
+            ],
+            [
+              10,
+              11
+            ],
+            [
+              9,
+              10
+            ]
+          ],
+          "expansions": [
+            {
+              "parent": [
+                9,
+                11
+              ],
+              "extensionCandidates": [
+                9,
+                11,
+                10
+              ],
+              "repairCandidates": [],
+              "hotBlocks": [
+                "Martin Street between Ayala Avenue and 58th Street / Hermann Street",
+                "58th Street between Hermann Street / Martin Street and Canning Street",
+                "58th Street between Vicente Street and Telegraph Avenue"
+              ],
+              "children": [
+                [
+                  9,
+                  10,
+                  11
+                ]
+              ]
+            },
+            {
+              "parent": [
+                10,
+                11
+              ],
+              "extensionCandidates": [
+                9,
+                11,
+                10
+              ],
+              "repairCandidates": [],
+              "hotBlocks": [
+                "Colby Street between Claremont Avenue / Forest Street and McAuley Street",
+                "Colby Street between McAuley Street and 60th Street",
+                "Colby Street between 60th Street and 61st Street"
+              ],
+              "children": [
+                [
+                  9,
+                  10,
+                  11
+                ]
+              ]
+            },
+            {
+              "parent": [
+                9,
+                10
+              ],
+              "extensionCandidates": [
+                9,
+                11,
+                10
+              ],
+              "repairCandidates": [],
+              "hotBlocks": [
+                "Hillegass Avenue between 61st Street and 60th Street / Claremont Avenue",
+                "Martin Street between Ayala Avenue and 58th Street / Hermann Street",
+                "58th Street between Hermann Street / Martin Street and Canning Street"
+              ],
+              "children": [
+                [
+                  9,
+                  10,
+                  11
+                ]
+              ]
+            }
+          ],
+          "rankedChildren": [
+            {
+              "set": [
+                9,
+                10,
+                11
+              ],
+              "rank": 18.11320754716981,
+              "coreScore": 18.11320754716981,
+              "places": [
+                "s:Colby Street",
+                "s:Dana Street",
+                "s:Hillegass Avenue"
+              ]
+            }
+          ],
+          "stopped": true,
+          "nextBeam": []
+        }
+      ],
+      "visitedCount": 71
+    },
+    {
+      "objective": "least-detour",
+      "initialRankedSingles": [
+        [
+          9
+        ],
+        [
+          0
+        ],
+        [
+          7
+        ],
+        [
+          1
+        ],
+        [
+          5
+        ],
+        [
+          11
+        ],
+        [
+          2
+        ],
+        [
+          6
+        ],
+        [
+          4
+        ],
+        [
+          8
+        ],
+        [
+          10
+        ],
+        [
+          3
+        ]
+      ],
+      "positiveSingleExtensionCandidates": [
+        9,
+        0,
+        7,
+        1,
+        11,
+        2,
+        4,
+        10
+      ],
+      "initialBeam": [
+        [
+          9
+        ],
+        [
+          0
+        ],
+        [
+          7
+        ],
+        [
+          1
+        ],
+        [
+          11
+        ]
+      ],
+      "levels": [
+        {
+          "depth": 2,
+          "parents": [
+            [
+              9
+            ],
+            [
+              0
+            ],
+            [
+              7
+            ],
+            [
+              1
+            ],
+            [
+              11
+            ]
+          ],
+          "expansions": [
+            {
+              "parent": [
+                9
+              ],
+              "extensionCandidates": [
+                9,
+                0,
+                7,
+                1,
+                11,
+                2,
+                4,
+                10,
+                5,
+                6,
+                8
+              ],
+              "repairCandidates": [
+                5,
+                6,
+                8
+              ],
+              "hotBlocks": [
+                "Hillegass Avenue between 61st Street and 60th Street / Claremont Avenue",
+                "Hillegass Avenue between 63rd Street and 62nd Street",
+                "Hillegass Avenue between Alcatraz Avenue and 63rd Street"
+              ],
+              "children": [
+                [
+                  0,
+                  9
+                ],
+                [
+                  7,
+                  9
+                ],
+                [
+                  1,
+                  9
+                ],
+                [
+                  9,
+                  11
+                ],
+                [
+                  2,
+                  9
+                ],
+                [
+                  4,
+                  9
+                ],
+                [
+                  9,
+                  10
+                ],
+                [
+                  5,
+                  9
+                ],
+                [
+                  6,
+                  9
+                ],
+                [
+                  8,
+                  9
+                ]
+              ]
+            },
+            {
+              "parent": [
+                0
+              ],
+              "extensionCandidates": [
+                9,
+                0,
+                7,
+                1,
+                11,
+                2,
+                4,
+                10,
+                3
+              ],
+              "repairCandidates": [
+                3
+              ],
+              "hotBlocks": [
+                "63rd Street between Colby Street and Dana Street",
+                "Dana Street between 63rd Street and North Street",
+                "Dana Street between North Street and Alcatraz Avenue"
+              ],
+              "children": [
+                [
+                  0,
+                  9
+                ],
+                [
+                  0,
+                  7
+                ],
+                [
+                  0,
+                  1
+                ],
+                [
+                  0,
+                  11
+                ],
+                [
+                  0,
+                  2
+                ],
+                [
+                  0,
+                  4
+                ],
+                [
+                  0,
+                  10
+                ],
+                [
+                  0,
+                  3
+                ]
+              ]
+            },
+            {
+              "parent": [
+                7
+              ],
+              "extensionCandidates": [
+                9,
+                0,
+                7,
+                1,
+                11,
+                2,
+                4,
+                10
+              ],
+              "repairCandidates": [],
+              "hotBlocks": [
+                "Colby Street between 62nd Street and 63rd Street",
+                "Colby Street at 63rd Street",
+                "Colby Street between 61st Street and 62nd Street"
+              ],
+              "children": [
+                [
+                  7,
+                  9
+                ],
+                [
+                  0,
+                  7
+                ],
+                [
+                  1,
+                  7
+                ],
+                [
+                  7,
+                  11
+                ],
+                [
+                  2,
+                  7
+                ],
+                [
+                  4,
+                  7
+                ],
+                [
+                  7,
+                  10
+                ]
+              ]
+            },
+            {
+              "parent": [
+                1
+              ],
+              "extensionCandidates": [
+                9,
+                0,
+                7,
+                1,
+                11,
+                2,
+                4,
+                10,
+                5,
+                6,
+                8
+              ],
+              "repairCandidates": [
+                5,
+                6,
+                8
+              ],
+              "hotBlocks": [
+                "Hillegass Avenue between 63rd Street and 62nd Street",
+                "63rd Street between Hillegass Avenue and Colby Street",
+                "Hillegass Avenue between 62nd Street and 61st Street"
+              ],
+              "children": [
+                [
+                  1,
+                  9
+                ],
+                [
+                  0,
+                  1
+                ],
+                [
+                  1,
+                  7
+                ],
+                [
+                  1,
+                  11
+                ],
+                [
+                  1,
+                  2
+                ],
+                [
+                  1,
+                  4
+                ],
+                [
+                  1,
+                  10
+                ],
+                [
+                  1,
+                  5
+                ],
+                [
+                  1,
+                  6
+                ],
+                [
+                  1,
+                  8
+                ]
+              ]
+            },
+            {
+              "parent": [
+                11
+              ],
+              "extensionCandidates": [
+                9,
+                0,
+                7,
+                1,
+                11,
+                2,
+                4,
+                10
+              ],
+              "repairCandidates": [],
+              "hotBlocks": [
+                "Colby Street between McAuley Street and 60th Street",
+                "Colby Street between 60th Street and 61st Street",
+                "Colby Street between 62nd Street and 63rd Street"
+              ],
+              "children": [
+                [
+                  9,
+                  11
+                ],
+                [
+                  0,
+                  11
+                ],
+                [
+                  7,
+                  11
+                ],
+                [
+                  1,
+                  11
+                ],
+                [
+                  2,
+                  11
+                ],
+                [
+                  4,
+                  11
+                ],
+                [
+                  10,
+                  11
+                ]
+              ]
+            }
+          ],
+          "rankedChildren": [
+            {
+              "set": [
+                7,
+                9
+              ],
+              "rank": 999.6959685084519,
+              "coreScore": 31.157092586784824,
+              "places": [
+                "n1090",
+                "s:Colby Street"
+              ]
+            },
+            {
+              "set": [
+                9,
+                11
+              ],
+              "rank": 998.8962790942135,
+              "coreScore": 19.4194008493183,
+              "places": [
+                "s:Colby Street",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                5,
+                9
+              ],
+              "rank": 998.2185129321388,
+              "coreScore": 21.031940696810675,
+              "places": [
+                "n1090",
+                "s:Colby Street"
+              ]
+            },
+            {
+              "set": [
+                0,
+                7
+              ],
+              "rank": 997.8812940123792,
+              "coreScore": 17.40904180529604,
+              "places": [
+                "n1090",
+                "n819"
+              ]
+            },
+            {
+              "set": [
+                8,
+                9
+              ],
+              "rank": 997.8136443779568,
+              "coreScore": 11.387325377620188,
+              "places": [
+                "n1090",
+                "s:Colby Street"
+              ]
+            },
+            {
+              "set": [
+                0,
+                11
+              ],
+              "rank": 997.4666698591052,
+              "coreScore": 13.366894266661332,
+              "places": [
+                "n819",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                2,
+                7
+              ],
+              "rank": 996.2304045342264,
+              "coreScore": 9.998969738359444,
+              "places": [
+                "n1071",
+                "n1090"
+              ]
+            },
+            {
+              "set": [
+                1,
+                7
+              ],
+              "rank": 996.1760996531389,
+              "coreScore": 23.550886392132508,
+              "places": [
+                "n1090",
+                "n793"
+              ]
+            },
+            {
+              "set": [
+                6,
+                9
+              ],
+              "rank": 995.9120929455778,
+              "coreScore": 22.08665767794275,
+              "places": [
+                "n1090",
+                "s:Colby Street"
+              ]
+            },
+            {
+              "set": [
+                1,
+                5
+              ],
+              "rank": 993.7096149899041,
+              "coreScore": 23.94716981132075,
+              "places": [
+                "n1090",
+                "n793"
+              ]
+            },
+            {
+              "set": [
+                0,
+                10
+              ],
+              "rank": 15.474013171066513,
+              "coreScore": 11.702743323265103,
+              "places": [
+                "n819",
+                "s:Dana Street"
+              ]
+            },
+            {
+              "set": [
+                1,
+                6
+              ],
+              "rank": 13.455464298874436,
+              "coreScore": 9.175079541145099,
+              "places": [
+                "n1090",
+                "n793"
+              ]
+            },
+            {
+              "set": [
+                0,
+                4
+              ],
+              "rank": 13.351849796258977,
+              "coreScore": 10.099926007612293,
+              "places": [
+                "n794",
+                "n819"
+              ]
+            },
+            {
+              "set": [
+                1,
+                11
+              ],
+              "rank": 13.000747317742363,
+              "coreScore": 9.020362560013025,
+              "places": [
+                "n793",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                1,
+                8
+              ],
+              "rank": 12.855464298874434,
+              "coreScore": 7.975079541145098,
+              "places": [
+                "n1090",
+                "n793"
+              ]
+            },
+            {
+              "set": [
+                2,
+                11
+              ],
+              "rank": 12.279537696332241,
+              "coreScore": 9.087377279456936,
+              "places": [
+                "n1071",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                7,
+                10
+              ],
+              "rank": 12.173388827176323,
+              "coreScore": 7.743004069446986,
+              "places": [
+                "n1090",
+                "s:Dana Street"
+              ]
+            },
+            {
+              "set": [
+                0,
+                9
+              ],
+              "rank": 12.03413367850576,
+              "coreScore": 8.596569243803973,
+              "places": [
+                "n819",
+                "s:Colby Street"
+              ]
+            },
+            {
+              "set": [
+                0,
+                1
+              ],
+              "rank": 11.754312492099348,
+              "coreScore": 7.659568380425114,
+              "places": [
+                "n793",
+                "n819"
+              ]
+            },
+            {
+              "set": [
+                4,
+                9
+              ],
+              "rank": 11.652058206807649,
+              "coreScore": 8.964493772105861,
+              "places": [
+                "n794",
+                "s:Colby Street"
+              ]
+            },
+            {
+              "set": [
+                0,
+                3
+              ],
+              "rank": 11.347341225675573,
+              "coreScore": 9.109776790973786,
+              "places": [
+                "n819",
+                "n820"
+              ]
+            },
+            {
+              "set": [
+                2,
+                9
+              ],
+              "rank": 9.010548772845384,
+              "coreScore": 6.3229843381435975,
+              "places": [
+                "n1071",
+                "s:Colby Street"
+              ]
+            },
+            {
+              "set": [
+                1,
+                10
+              ],
+              "rank": 8.740161548703124,
+              "coreScore": 3.895417437028888,
+              "places": [
+                "n793",
+                "s:Dana Street"
+              ]
+            },
+            {
+              "set": [
+                4,
+                11
+              ],
+              "rank": 8.611320754716981,
+              "coreScore": 7.41132075471698,
+              "places": [
+                "n794",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                10,
+                11
+              ],
+              "rank": 8.221502034723493,
+              "coreScore": 8.141117276994157,
+              "places": [
+                "s:Dana Street",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                1,
+                9
+              ],
+              "rank": 7.417728449817833,
+              "coreScore": 3.1373436920884963,
+              "places": [
+                "n793",
+                "s:Colby Street"
+              ]
+            },
+            {
+              "set": [
+                4,
+                7
+              ],
+              "rank": 7.244580122543828,
+              "coreScore": 2.4136885469744485,
+              "places": [
+                "n1090",
+                "n794"
+              ]
+            },
+            {
+              "set": [
+                1,
+                2
+              ],
+              "rank": 6.926010605306896,
+              "coreScore": 2.5312664936326605,
+              "places": [
+                "n1071",
+                "n793"
+              ]
+            },
+            {
+              "set": [
+                0,
+                2
+              ],
+              "rank": 6.794767888047646,
+              "coreScore": 3.0234980402462375,
+              "places": [
+                "n1071",
+                "n819"
+              ]
+            },
+            {
+              "set": [
+                1,
+                4
+              ],
+              "rank": 5.348652114740859,
+              "coreScore": -0.24609199693337658,
+              "places": [
+                "n793",
+                "n794"
+              ]
+            },
+            {
+              "set": [
+                9,
+                10
+              ],
+              "rank": 5.004888395486893,
+              "coreScore": 3.217323960785107,
+              "places": [
+                "s:Colby Street",
+                "s:Dana Street"
+              ]
+            },
+            {
+              "set": [
+                7,
+                11
+              ],
+              "rank": 4.453070688581564,
+              "coreScore": -0.5278208869878167,
+              "places": [
+                "n1090",
+                "s:Hillegass Avenue"
+              ]
+            }
+          ],
+          "stopped": false,
+          "nextBeam": [
+            [
+              7,
+              9
+            ],
+            [
+              9,
+              11
+            ],
+            [
+              0,
+              7
+            ],
+            [
+              0,
+              11
+            ],
+            [
+              2,
+              7
+            ]
+          ]
+        },
+        {
+          "depth": 3,
+          "parents": [
+            [
+              7,
+              9
+            ],
+            [
+              9,
+              11
+            ],
+            [
+              0,
+              7
+            ],
+            [
+              0,
+              11
+            ],
+            [
+              2,
+              7
+            ]
+          ],
+          "expansions": [
+            {
+              "parent": [
+                7,
+                9
+              ],
+              "extensionCandidates": [
+                9,
+                0,
+                7,
+                1,
+                11,
+                2,
+                4,
+                10
+              ],
+              "repairCandidates": [],
+              "hotBlocks": [
+                "62nd Street between Hillegass Avenue and Colby Street",
+                "63rd Street between Canning Street and Telegraph Avenue",
+                "61st Street between Hillegass Avenue and Colby Street"
+              ],
+              "children": [
+                [
+                  0,
+                  7,
+                  9
+                ],
+                [
+                  1,
+                  7,
+                  9
+                ],
+                [
+                  7,
+                  9,
+                  11
+                ],
+                [
+                  2,
+                  7,
+                  9
+                ],
+                [
+                  4,
+                  7,
+                  9
+                ],
+                [
+                  7,
+                  9,
+                  10
+                ]
+              ]
+            },
+            {
+              "parent": [
+                9,
+                11
+              ],
+              "extensionCandidates": [
+                9,
+                0,
+                7,
+                1,
+                11,
+                2,
+                4,
+                10
+              ],
+              "repairCandidates": [],
+              "hotBlocks": [
+                "Martin Street between Ayala Avenue and 58th Street / Hermann Street",
+                "58th Street between Hermann Street / Martin Street and Canning Street",
+                "58th Street between Vicente Street and Telegraph Avenue"
+              ],
+              "children": [
+                [
+                  0,
+                  9,
+                  11
+                ],
+                [
+                  7,
+                  9,
+                  11
+                ],
+                [
+                  1,
+                  9,
+                  11
+                ],
+                [
+                  2,
+                  9,
+                  11
+                ],
+                [
+                  4,
+                  9,
+                  11
+                ],
+                [
+                  9,
+                  10,
+                  11
+                ]
+              ]
+            },
+            {
+              "parent": [
+                0,
+                7
+              ],
+              "extensionCandidates": [
+                9,
+                0,
+                7,
+                1,
+                11,
+                2,
+                4,
+                10,
+                5,
+                6,
+                8,
+                3
+              ],
+              "repairCandidates": [
+                5,
+                6,
+                8,
+                3
+              ],
+              "hotBlocks": [
+                "63rd Street between Colby Street and Dana Street",
+                "63rd Street between Hillegass Avenue and Colby Street",
+                "Dana Street between 63rd Street and North Street"
+              ],
+              "children": [
+                [
+                  0,
+                  7,
+                  9
+                ],
+                [
+                  0,
+                  1,
+                  7
+                ],
+                [
+                  0,
+                  7,
+                  11
+                ],
+                [
+                  0,
+                  2,
+                  7
+                ],
+                [
+                  0,
+                  4,
+                  7
+                ],
+                [
+                  0,
+                  7,
+                  10
+                ],
+                [
+                  0,
+                  3,
+                  7
+                ]
+              ]
+            },
+            {
+              "parent": [
+                0,
+                11
+              ],
+              "extensionCandidates": [
+                9,
+                0,
+                7,
+                1,
+                11,
+                2,
+                4,
+                10,
+                3
+              ],
+              "repairCandidates": [
+                3
+              ],
+              "hotBlocks": [
+                "63rd Street between Colby Street and Dana Street",
+                "Dana Street between 63rd Street and North Street",
+                "Dana Street between North Street and Alcatraz Avenue"
+              ],
+              "children": [
+                [
+                  0,
+                  9,
+                  11
+                ],
+                [
+                  0,
+                  7,
+                  11
+                ],
+                [
+                  0,
+                  1,
+                  11
+                ],
+                [
+                  0,
+                  2,
+                  11
+                ],
+                [
+                  0,
+                  4,
+                  11
+                ],
+                [
+                  0,
+                  10,
+                  11
+                ],
+                [
+                  0,
+                  3,
+                  11
+                ]
+              ]
+            },
+            {
+              "parent": [
+                2,
+                7
+              ],
+              "extensionCandidates": [
+                9,
+                0,
+                7,
+                1,
+                11,
+                2,
+                4,
+                10,
+                3
+              ],
+              "repairCandidates": [
+                3
+              ],
+              "hotBlocks": [
+                "63rd Street between Colby Street and Dana Street",
+                "Dana Street between 63rd Street and North Street",
+                "North Street between Colby Street and Dana Street"
+              ],
+              "children": [
+                [
+                  2,
+                  7,
+                  9
+                ],
+                [
+                  0,
+                  2,
+                  7
+                ],
+                [
+                  1,
+                  2,
+                  7
+                ],
+                [
+                  2,
+                  7,
+                  11
+                ],
+                [
+                  2,
+                  4,
+                  7
+                ],
+                [
+                  2,
+                  7,
+                  10
+                ],
+                [
+                  2,
+                  3,
+                  7
+                ]
+              ]
+            }
+          ],
+          "rankedChildren": [
+            {
+              "set": [
+                0,
+                3,
+                7
+              ],
+              "rank": 1001.2528311473936,
+              "coreScore": 8.312815390201704,
+              "places": [
+                "n1090",
+                "n819",
+                "n820"
+              ]
+            },
+            {
+              "set": [
+                0,
+                7,
+                10
+              ],
+              "rank": 1000.7920985528734,
+              "coreScore": 12.880739918503588,
+              "places": [
+                "n1090",
+                "n819",
+                "s:Dana Street"
+              ]
+            },
+            {
+              "set": [
+                0,
+                4,
+                7
+              ],
+              "rank": 999.6592765901755,
+              "coreScore": 5.526022937371515,
+              "places": [
+                "n1090",
+                "n794",
+                "n819"
+              ]
+            },
+            {
+              "set": [
+                0,
+                7,
+                9
+              ],
+              "rank": 999.0225778942952,
+              "coreScore": 24.900856530812273,
+              "places": [
+                "n1090",
+                "n819",
+                "s:Colby Street"
+              ]
+            },
+            {
+              "set": [
+                7,
+                9,
+                11
+              ],
+              "rank": 998.7020010003271,
+              "coreScore": 28.63072160403528,
+              "places": [
+                "n1090",
+                "s:Colby Street",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                2,
+                4,
+                7
+              ],
+              "rank": 998.2801604290848,
+              "coreScore": 26.82075471698113,
+              "places": [
+                "n1071",
+                "n1090",
+                "n794"
+              ]
+            },
+            {
+              "set": [
+                2,
+                7,
+                10
+              ],
+              "rank": 998.2150032486234,
+              "coreScore": 17.691422568548123,
+              "places": [
+                "n1071",
+                "n1090",
+                "s:Dana Street"
+              ]
+            },
+            {
+              "set": [
+                0,
+                3,
+                11
+              ],
+              "rank": 997.9174353247012,
+              "coreScore": 22.051476321016413,
+              "places": [
+                "n819",
+                "n820",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                2,
+                3,
+                7
+              ],
+              "rank": 997.837359374336,
+              "coreScore": 27.51132075471698,
+              "places": [
+                "n1071",
+                "n1090",
+                "n820"
+              ]
+            },
+            {
+              "set": [
+                7,
+                9,
+                10
+              ],
+              "rank": 997.5639221877633,
+              "coreScore": 23.87977820780887,
+              "places": [
+                "n1090",
+                "s:Colby Street",
+                "s:Dana Street"
+              ]
+            },
+            {
+              "set": [
+                1,
+                9,
+                11
+              ],
+              "rank": 997.5566505511784,
+              "coreScore": 18.822249352465853,
+              "places": [
+                "n793",
+                "s:Colby Street",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                0,
+                1,
+                7
+              ],
+              "rank": 997.5009214858906,
+              "coreScore": 16.641509433962263,
+              "places": [
+                "n1090",
+                "n793",
+                "n819"
+              ]
+            },
+            {
+              "set": [
+                2,
+                7,
+                9
+              ],
+              "rank": 997.3444100376089,
+              "coreScore": 29.419724455340578,
+              "places": [
+                "n1071",
+                "n1090",
+                "s:Colby Street"
+              ]
+            },
+            {
+              "set": [
+                4,
+                7,
+                9
+              ],
+              "rank": 997.2762657262685,
+              "coreScore": 33.90377358490566,
+              "places": [
+                "n1090",
+                "n794",
+                "s:Colby Street"
+              ]
+            },
+            {
+              "set": [
+                0,
+                10,
+                11
+              ],
+              "rank": 997.1847207887804,
+              "coreScore": 13.589535776095293,
+              "places": [
+                "n819",
+                "s:Dana Street",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                1,
+                7,
+                9
+              ],
+              "rank": 997.1049106936127,
+              "coreScore": 38.16299913662114,
+              "places": [
+                "n1090",
+                "n793",
+                "s:Colby Street"
+              ]
+            },
+            {
+              "set": [
+                0,
+                2,
+                7
+              ],
+              "rank": 996.4326985475969,
+              "coreScore": 9.485762191189632,
+              "places": [
+                "n1071",
+                "n1090",
+                "n819"
+              ]
+            },
+            {
+              "set": [
+                2,
+                7,
+                11
+              ],
+              "rank": 995.9845274897925,
+              "coreScore": 14.527271625151899,
+              "places": [
+                "n1071",
+                "n1090",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                1,
+                2,
+                7
+              ],
+              "rank": 995.6579927672465,
+              "coreScore": 22.89245283018868,
+              "places": [
+                "n1071",
+                "n1090",
+                "n793"
+              ]
+            },
+            {
+              "set": [
+                0,
+                7,
+                11
+              ],
+              "rank": 994.4583843874316,
+              "coreScore": 20.691422568548123,
+              "places": [
+                "n1090",
+                "n819",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                2,
+                9,
+                11
+              ],
+              "rank": 994.0534289651375,
+              "coreScore": 23.71562726441264,
+              "places": [
+                "n1071",
+                "s:Colby Street",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                9,
+                10,
+                11
+              ],
+              "rank": 18.11320754716981,
+              "coreScore": 18.11320754716981,
+              "places": [
+                "s:Colby Street",
+                "s:Dana Street",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                0,
+                1,
+                11
+              ],
+              "rank": 16.922641509433962,
+              "coreScore": 16.922641509433962,
+              "places": [
+                "n793",
+                "n819",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                0,
+                9,
+                11
+              ],
+              "rank": 16.608613784146318,
+              "coreScore": 16.608613784146318,
+              "places": [
+                "n819",
+                "s:Colby Street",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                4,
+                9,
+                11
+              ],
+              "rank": 16.31320754716981,
+              "coreScore": 16.31320754716981,
+              "places": [
+                "n794",
+                "s:Colby Street",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                0,
+                2,
+                11
+              ],
+              "rank": 9.74802634213303,
+              "coreScore": 9.74802634213303,
+              "places": [
+                "n1071",
+                "n819",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                0,
+                4,
+                11
+              ],
+              "rank": 8.630188679245283,
+              "coreScore": 8.630188679245283,
+              "places": [
+                "n794",
+                "n819",
+                "s:Hillegass Avenue"
+              ]
+            }
+          ],
+          "stopped": false,
+          "nextBeam": [
+            [
+              0,
+              3,
+              7
+            ],
+            [
+              0,
+              7,
+              10
+            ],
+            [
+              0,
+              4,
+              7
+            ],
+            [
+              0,
+              7,
+              9
+            ],
+            [
+              7,
+              9,
+              11
+            ]
+          ]
+        }
+      ],
+      "visitedCount": 75
+    },
+    {
+      "objective": "fewest-changes",
+      "initialRankedSingles": [
+        [
+          9
+        ],
+        [
+          0
+        ],
+        [
+          7
+        ],
+        [
+          1
+        ],
+        [
+          5
+        ],
+        [
+          11
+        ],
+        [
+          2
+        ],
+        [
+          6
+        ],
+        [
+          4
+        ],
+        [
+          8
+        ],
+        [
+          10
+        ],
+        [
+          3
+        ]
+      ],
+      "positiveSingleExtensionCandidates": [
+        9,
+        0,
+        7,
+        1,
+        11,
+        2,
+        4,
+        10
+      ],
+      "initialBeam": [
+        [
+          9
+        ],
+        [
+          0
+        ],
+        [
+          7
+        ],
+        [
+          1
+        ],
+        [
+          11
+        ]
+      ],
+      "levels": [
+        {
+          "depth": 2,
+          "parents": [
+            [
+              9
+            ],
+            [
+              0
+            ],
+            [
+              7
+            ],
+            [
+              1
+            ],
+            [
+              11
+            ]
+          ],
+          "expansions": [
+            {
+              "parent": [
+                9
+              ],
+              "extensionCandidates": [
+                9,
+                0,
+                7,
+                1,
+                11,
+                2,
+                4,
+                10,
+                5,
+                6,
+                8
+              ],
+              "repairCandidates": [
+                5,
+                6,
+                8
+              ],
+              "hotBlocks": [
+                "Hillegass Avenue between 61st Street and 60th Street / Claremont Avenue",
+                "Hillegass Avenue between 63rd Street and 62nd Street",
+                "Hillegass Avenue between Alcatraz Avenue and 63rd Street"
+              ],
+              "children": [
+                [
+                  0,
+                  9
+                ],
+                [
+                  7,
+                  9
+                ],
+                [
+                  1,
+                  9
+                ],
+                [
+                  9,
+                  11
+                ],
+                [
+                  2,
+                  9
+                ],
+                [
+                  4,
+                  9
+                ],
+                [
+                  9,
+                  10
+                ],
+                [
+                  5,
+                  9
+                ],
+                [
+                  6,
+                  9
+                ],
+                [
+                  8,
+                  9
+                ]
+              ]
+            },
+            {
+              "parent": [
+                0
+              ],
+              "extensionCandidates": [
+                9,
+                0,
+                7,
+                1,
+                11,
+                2,
+                4,
+                10,
+                3
+              ],
+              "repairCandidates": [
+                3
+              ],
+              "hotBlocks": [
+                "63rd Street between Colby Street and Dana Street",
+                "Dana Street between 63rd Street and North Street",
+                "Dana Street between North Street and Alcatraz Avenue"
+              ],
+              "children": [
+                [
+                  0,
+                  9
+                ],
+                [
+                  0,
+                  7
+                ],
+                [
+                  0,
+                  1
+                ],
+                [
+                  0,
+                  11
+                ],
+                [
+                  0,
+                  2
+                ],
+                [
+                  0,
+                  4
+                ],
+                [
+                  0,
+                  10
+                ],
+                [
+                  0,
+                  3
+                ]
+              ]
+            },
+            {
+              "parent": [
+                7
+              ],
+              "extensionCandidates": [
+                9,
+                0,
+                7,
+                1,
+                11,
+                2,
+                4,
+                10
+              ],
+              "repairCandidates": [],
+              "hotBlocks": [
+                "Colby Street between 62nd Street and 63rd Street",
+                "Colby Street at 63rd Street",
+                "Colby Street between 61st Street and 62nd Street"
+              ],
+              "children": [
+                [
+                  7,
+                  9
+                ],
+                [
+                  0,
+                  7
+                ],
+                [
+                  1,
+                  7
+                ],
+                [
+                  7,
+                  11
+                ],
+                [
+                  2,
+                  7
+                ],
+                [
+                  4,
+                  7
+                ],
+                [
+                  7,
+                  10
+                ]
+              ]
+            },
+            {
+              "parent": [
+                1
+              ],
+              "extensionCandidates": [
+                9,
+                0,
+                7,
+                1,
+                11,
+                2,
+                4,
+                10,
+                5,
+                6,
+                8
+              ],
+              "repairCandidates": [
+                5,
+                6,
+                8
+              ],
+              "hotBlocks": [
+                "Hillegass Avenue between 63rd Street and 62nd Street",
+                "63rd Street between Hillegass Avenue and Colby Street",
+                "Hillegass Avenue between 62nd Street and 61st Street"
+              ],
+              "children": [
+                [
+                  1,
+                  9
+                ],
+                [
+                  0,
+                  1
+                ],
+                [
+                  1,
+                  7
+                ],
+                [
+                  1,
+                  11
+                ],
+                [
+                  1,
+                  2
+                ],
+                [
+                  1,
+                  4
+                ],
+                [
+                  1,
+                  10
+                ],
+                [
+                  1,
+                  5
+                ],
+                [
+                  1,
+                  6
+                ],
+                [
+                  1,
+                  8
+                ]
+              ]
+            },
+            {
+              "parent": [
+                11
+              ],
+              "extensionCandidates": [
+                9,
+                0,
+                7,
+                1,
+                11,
+                2,
+                4,
+                10
+              ],
+              "repairCandidates": [],
+              "hotBlocks": [
+                "Colby Street between McAuley Street and 60th Street",
+                "Colby Street between 60th Street and 61st Street",
+                "Colby Street between 62nd Street and 63rd Street"
+              ],
+              "children": [
+                [
+                  9,
+                  11
+                ],
+                [
+                  0,
+                  11
+                ],
+                [
+                  7,
+                  11
+                ],
+                [
+                  1,
+                  11
+                ],
+                [
+                  2,
+                  11
+                ],
+                [
+                  4,
+                  11
+                ],
+                [
+                  10,
+                  11
+                ]
+              ]
+            }
+          ],
+          "rankedChildren": [
+            {
+              "set": [
+                7,
+                9
+              ],
+              "rank": 32.182319878298074,
+              "coreScore": 31.157092586784824,
+              "places": [
+                "n1090",
+                "s:Colby Street"
+              ]
+            },
+            {
+              "set": [
+                1,
+                7
+              ],
+              "rank": 25.92638659229267,
+              "coreScore": 23.550886392132508,
+              "places": [
+                "n1090",
+                "n793"
+              ]
+            },
+            {
+              "set": [
+                1,
+                5
+              ],
+              "rank": 25.747169811320752,
+              "coreScore": 23.94716981132075,
+              "places": [
+                "n1090",
+                "n793"
+              ]
+            },
+            {
+              "set": [
+                6,
+                9
+              ],
+              "rank": 24.250876008782697,
+              "coreScore": 22.08665767794275,
+              "places": [
+                "n1090",
+                "s:Colby Street"
+              ]
+            },
+            {
+              "set": [
+                5,
+                9
+              ],
+              "rank": 23.34615902765062,
+              "coreScore": 21.031940696810675,
+              "places": [
+                "n1090",
+                "s:Colby Street"
+              ]
+            },
+            {
+              "set": [
+                0,
+                7
+              ],
+              "rank": 22.28942656302538,
+              "coreScore": 17.40904180529604,
+              "places": [
+                "n1090",
+                "n819"
+              ]
+            },
+            {
+              "set": [
+                9,
+                11
+              ],
+              "rank": 20.464417405791224,
+              "coreScore": 19.4194008493183,
+              "places": [
+                "s:Colby Street",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                0,
+                11
+              ],
+              "rank": 17.43816411446274,
+              "coreScore": 13.366894266661332,
+              "places": [
+                "n819",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                2,
+                7
+              ],
+              "rank": 16.320239586160852,
+              "coreScore": 9.998969738359444,
+              "places": [
+                "n1071",
+                "n1090"
+              ]
+            },
+            {
+              "set": [
+                8,
+                9
+              ],
+              "rank": 15.882341934093112,
+              "coreScore": 11.387325377620188,
+              "places": [
+                "n1090",
+                "s:Colby Street"
+              ]
+            },
+            {
+              "set": [
+                0,
+                10
+              ],
+              "rank": 15.474013171066513,
+              "coreScore": 11.702743323265103,
+              "places": [
+                "n819",
+                "s:Dana Street"
+              ]
+            },
+            {
+              "set": [
+                1,
+                6
+              ],
+              "rank": 13.455464298874436,
+              "coreScore": 9.175079541145099,
+              "places": [
+                "n1090",
+                "n793"
+              ]
+            },
+            {
+              "set": [
+                0,
+                4
+              ],
+              "rank": 13.351849796258977,
+              "coreScore": 10.099926007612293,
+              "places": [
+                "n794",
+                "n819"
+              ]
+            },
+            {
+              "set": [
+                1,
+                11
+              ],
+              "rank": 13.000747317742363,
+              "coreScore": 9.020362560013025,
+              "places": [
+                "n793",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                1,
+                8
+              ],
+              "rank": 12.855464298874434,
+              "coreScore": 7.975079541145098,
+              "places": [
+                "n1090",
+                "n793"
+              ]
+            },
+            {
+              "set": [
+                2,
+                11
+              ],
+              "rank": 12.279537696332241,
+              "coreScore": 9.087377279456936,
+              "places": [
+                "n1071",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                7,
+                10
+              ],
+              "rank": 12.173388827176323,
+              "coreScore": 7.743004069446986,
+              "places": [
+                "n1090",
+                "s:Dana Street"
+              ]
+            },
+            {
+              "set": [
+                0,
+                9
+              ],
+              "rank": 12.03413367850576,
+              "coreScore": 8.596569243803973,
+              "places": [
+                "n819",
+                "s:Colby Street"
+              ]
+            },
+            {
+              "set": [
+                0,
+                1
+              ],
+              "rank": 11.754312492099348,
+              "coreScore": 7.659568380425114,
+              "places": [
+                "n793",
+                "n819"
+              ]
+            },
+            {
+              "set": [
+                4,
+                9
+              ],
+              "rank": 11.652058206807649,
+              "coreScore": 8.964493772105861,
+              "places": [
+                "n794",
+                "s:Colby Street"
+              ]
+            },
+            {
+              "set": [
+                0,
+                3
+              ],
+              "rank": 11.347341225675573,
+              "coreScore": 9.109776790973786,
+              "places": [
+                "n819",
+                "n820"
+              ]
+            },
+            {
+              "set": [
+                2,
+                9
+              ],
+              "rank": 9.010548772845384,
+              "coreScore": 6.3229843381435975,
+              "places": [
+                "n1071",
+                "s:Colby Street"
+              ]
+            },
+            {
+              "set": [
+                1,
+                10
+              ],
+              "rank": 8.740161548703124,
+              "coreScore": 3.895417437028888,
+              "places": [
+                "n793",
+                "s:Dana Street"
+              ]
+            },
+            {
+              "set": [
+                4,
+                11
+              ],
+              "rank": 8.611320754716981,
+              "coreScore": 7.41132075471698,
+              "places": [
+                "n794",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                10,
+                11
+              ],
+              "rank": 8.221502034723493,
+              "coreScore": 8.141117276994157,
+              "places": [
+                "s:Dana Street",
+                "s:Hillegass Avenue"
+              ]
+            },
+            {
+              "set": [
+                1,
+                9
+              ],
+              "rank": 7.417728449817833,
+              "coreScore": 3.1373436920884963,
+              "places": [
+                "n793",
+                "s:Colby Street"
+              ]
+            },
+            {
+              "set": [
+                4,
+                7
+              ],
+              "rank": 7.244580122543828,
+              "coreScore": 2.4136885469744485,
+              "places": [
+                "n1090",
+                "n794"
+              ]
+            },
+            {
+              "set": [
+                1,
+                2
+              ],
+              "rank": 6.926010605306896,
+              "coreScore": 2.5312664936326605,
+              "places": [
+                "n1071",
+                "n793"
+              ]
+            },
+            {
+              "set": [
+                0,
+                2
+              ],
+              "rank": 6.794767888047646,
+              "coreScore": 3.0234980402462375,
+              "places": [
+                "n1071",
+                "n819"
+              ]
+            },
+            {
+              "set": [
+                1,
+                4
+              ],
+              "rank": 5.348652114740859,
+              "coreScore": -0.24609199693337658,
+              "places": [
+                "n793",
+                "n794"
+              ]
+            },
+            {
+              "set": [
+                9,
+                10
+              ],
+              "rank": 5.004888395486893,
+              "coreScore": 3.217323960785107,
+              "places": [
+                "s:Colby Street",
+                "s:Dana Street"
+              ]
+            },
+            {
+              "set": [
+                7,
+                11
+              ],
+              "rank": 4.453070688581564,
+              "coreScore": -0.5278208869878167,
+              "places": [
+                "n1090",
+                "s:Hillegass Avenue"
+              ]
+            }
+          ],
+          "stopped": false,
+          "nextBeam": [
+            [
+              7,
+              9
+            ],
+            [
+              1,
+              7
+            ],
+            [
+              0,
+              7
+            ],
+            [
+              9,
+              11
+            ],
+            [
+              0,
+              11
+            ]
+          ]
+        }
+      ],
+      "visitedCount": 75
+    }
+  ],
+  "targets": [
+    {
+      "target": [
+        6,
+        9,
+        11
+      ],
+      "score": 27.128167111905018,
+      "attemptedPaths": [
+        {
+          "objective": "most-removed",
+          "parent": [
+            9,
+            11
+          ],
+          "add": 6,
+          "parentWasExpanded": true,
+          "additionWasOffered": false,
+          "parentVisited": true,
+          "parentCoreScore": 19.4194008493183,
+          "extensionCandidates": [
+            9,
+            0,
+            7,
+            1,
+            11,
+            2,
+            4,
+            10
+          ],
+          "hotBlocks": [
+            "Martin Street between Ayala Avenue and 58th Street / Hermann Street",
+            "58th Street between Hermann Street / Martin Street and Canning Street",
+            "58th Street between Vicente Street and Telegraph Avenue"
+          ]
+        },
+        {
+          "objective": "most-removed",
+          "parent": [
+            6,
+            11
+          ],
+          "add": 9,
+          "parentWasExpanded": false,
+          "additionWasOffered": false,
+          "parentVisited": false,
+          "parentCoreScore": -3.024047302082156,
+          "extensionCandidates": null,
+          "hotBlocks": null
+        },
+        {
+          "objective": "most-removed",
+          "parent": [
+            6,
+            9
+          ],
+          "add": 11,
+          "parentWasExpanded": false,
+          "additionWasOffered": false,
+          "parentVisited": true,
+          "parentCoreScore": 22.08665767794275,
+          "extensionCandidates": null,
+          "hotBlocks": null
+        },
+        {
+          "objective": "no-closures",
+          "parent": [
+            9,
+            11
+          ],
+          "add": 6,
+          "parentWasExpanded": true,
+          "additionWasOffered": false,
+          "parentVisited": true,
+          "parentCoreScore": 19.4194008493183,
+          "extensionCandidates": [
+            9,
+            11,
+            10
+          ],
+          "hotBlocks": [
+            "Martin Street between Ayala Avenue and 58th Street / Hermann Street",
+            "58th Street between Hermann Street / Martin Street and Canning Street",
+            "58th Street between Vicente Street and Telegraph Avenue"
+          ]
+        },
+        {
+          "objective": "no-closures",
+          "parent": [
+            6,
+            11
+          ],
+          "add": 9,
+          "parentWasExpanded": false,
+          "additionWasOffered": false,
+          "parentVisited": false,
+          "parentCoreScore": -3.024047302082156,
+          "extensionCandidates": null,
+          "hotBlocks": null
+        },
+        {
+          "objective": "no-closures",
+          "parent": [
+            6,
+            9
+          ],
+          "add": 11,
+          "parentWasExpanded": false,
+          "additionWasOffered": false,
+          "parentVisited": true,
+          "parentCoreScore": 22.08665767794275,
+          "extensionCandidates": null,
+          "hotBlocks": null
+        },
+        {
+          "objective": "least-detour",
+          "parent": [
+            9,
+            11
+          ],
+          "add": 6,
+          "parentWasExpanded": true,
+          "additionWasOffered": false,
+          "parentVisited": true,
+          "parentCoreScore": 19.4194008493183,
+          "extensionCandidates": [
+            9,
+            0,
+            7,
+            1,
+            11,
+            2,
+            4,
+            10
+          ],
+          "hotBlocks": [
+            "Martin Street between Ayala Avenue and 58th Street / Hermann Street",
+            "58th Street between Hermann Street / Martin Street and Canning Street",
+            "58th Street between Vicente Street and Telegraph Avenue"
+          ]
+        },
+        {
+          "objective": "least-detour",
+          "parent": [
+            6,
+            11
+          ],
+          "add": 9,
+          "parentWasExpanded": false,
+          "additionWasOffered": false,
+          "parentVisited": false,
+          "parentCoreScore": -3.024047302082156,
+          "extensionCandidates": null,
+          "hotBlocks": null
+        },
+        {
+          "objective": "least-detour",
+          "parent": [
+            6,
+            9
+          ],
+          "add": 11,
+          "parentWasExpanded": false,
+          "additionWasOffered": false,
+          "parentVisited": true,
+          "parentCoreScore": 22.08665767794275,
+          "extensionCandidates": null,
+          "hotBlocks": null
+        }
+      ],
+      "oneEditNeighbors": [
+        {
+          "from": [
+            7,
+            9,
+            11
+          ],
+          "fromCoreScore": 28.63072160403528,
+          "remove": [
+            7
+          ],
+          "add": [
+            6
+          ],
+          "forwarded": false
+        },
+        {
+          "from": [
+            2,
+            9,
+            11
+          ],
+          "fromCoreScore": 23.71562726441264,
+          "remove": [
+            2
+          ],
+          "add": [
+            6
+          ],
+          "forwarded": true
+        },
+        {
+          "from": [
+            6,
+            9
+          ],
+          "fromCoreScore": 22.08665767794275,
+          "remove": [],
+          "add": [
+            11
+          ],
+          "forwarded": false
+        },
+        {
+          "from": [
+            9,
+            11
+          ],
+          "fromCoreScore": 19.4194008493183,
+          "remove": [],
+          "add": [
+            6
+          ],
+          "forwarded": true
+        },
+        {
+          "from": [
+            1,
+            9,
+            11
+          ],
+          "fromCoreScore": 18.822249352465853,
+          "remove": [
+            1
+          ],
+          "add": [
+            6
+          ],
+          "forwarded": false
+        },
+        {
+          "from": [
+            9,
+            10,
+            11
+          ],
+          "fromCoreScore": 18.11320754716981,
+          "remove": [
+            10
+          ],
+          "add": [
+            6
+          ],
+          "forwarded": true
+        },
+        {
+          "from": [
+            0,
+            9,
+            11
+          ],
+          "fromCoreScore": 16.608613784146318,
+          "remove": [
+            0
+          ],
+          "add": [
+            6
+          ],
+          "forwarded": false
+        },
+        {
+          "from": [
+            4,
+            9,
+            11
+          ],
+          "fromCoreScore": 16.31320754716981,
+          "remove": [
+            4
+          ],
+          "add": [
+            6
+          ],
+          "forwarded": false
+        }
+      ]
+    },
+    {
+      "target": [
+        3,
+        11
+      ],
+      "score": 8.56488592907397,
+      "attemptedPaths": [
+        {
+          "objective": "most-removed",
+          "parent": [
+            11
+          ],
+          "add": 3,
+          "parentWasExpanded": true,
+          "additionWasOffered": false,
+          "parentVisited": true,
+          "parentCoreScore": 9.27319274869227,
+          "extensionCandidates": [
+            9,
+            0,
+            7,
+            1,
+            11,
+            2,
+            4,
+            10
+          ],
+          "hotBlocks": [
+            "Colby Street between McAuley Street and 60th Street",
+            "Colby Street between 60th Street and 61st Street",
+            "Colby Street between 62nd Street and 63rd Street"
+          ]
+        },
+        {
+          "objective": "most-removed",
+          "parent": [
+            3
+          ],
+          "add": 11,
+          "parentWasExpanded": false,
+          "additionWasOffered": false,
+          "parentVisited": true,
+          "parentCoreScore": -4.131542546908114,
+          "extensionCandidates": null,
+          "hotBlocks": null
+        },
+        {
+          "objective": "no-closures",
+          "parent": [
+            11
+          ],
+          "add": 3,
+          "parentWasExpanded": true,
+          "additionWasOffered": false,
+          "parentVisited": true,
+          "parentCoreScore": 9.27319274869227,
+          "extensionCandidates": [
+            9,
+            11,
+            10
+          ],
+          "hotBlocks": [
+            "Colby Street between McAuley Street and 60th Street",
+            "Colby Street between 60th Street and 61st Street",
+            "Colby Street between 62nd Street and 63rd Street"
+          ]
+        },
+        {
+          "objective": "no-closures",
+          "parent": [
+            3
+          ],
+          "add": 11,
+          "parentWasExpanded": false,
+          "additionWasOffered": false,
+          "parentVisited": true,
+          "parentCoreScore": -4.131542546908114,
+          "extensionCandidates": null,
+          "hotBlocks": null
+        },
+        {
+          "objective": "least-detour",
+          "parent": [
+            11
+          ],
+          "add": 3,
+          "parentWasExpanded": true,
+          "additionWasOffered": false,
+          "parentVisited": true,
+          "parentCoreScore": 9.27319274869227,
+          "extensionCandidates": [
+            9,
+            0,
+            7,
+            1,
+            11,
+            2,
+            4,
+            10
+          ],
+          "hotBlocks": [
+            "Colby Street between McAuley Street and 60th Street",
+            "Colby Street between 60th Street and 61st Street",
+            "Colby Street between 62nd Street and 63rd Street"
+          ]
+        },
+        {
+          "objective": "least-detour",
+          "parent": [
+            3
+          ],
+          "add": 11,
+          "parentWasExpanded": false,
+          "additionWasOffered": false,
+          "parentVisited": true,
+          "parentCoreScore": -4.131542546908114,
+          "extensionCandidates": null,
+          "hotBlocks": null
+        },
+        {
+          "objective": "fewest-changes",
+          "parent": [
+            11
+          ],
+          "add": 3,
+          "parentWasExpanded": true,
+          "additionWasOffered": false,
+          "parentVisited": true,
+          "parentCoreScore": 9.27319274869227,
+          "extensionCandidates": [
+            9,
+            0,
+            7,
+            1,
+            11,
+            2,
+            4,
+            10
+          ],
+          "hotBlocks": [
+            "Colby Street between McAuley Street and 60th Street",
+            "Colby Street between 60th Street and 61st Street",
+            "Colby Street between 62nd Street and 63rd Street"
+          ]
+        },
+        {
+          "objective": "fewest-changes",
+          "parent": [
+            3
+          ],
+          "add": 11,
+          "parentWasExpanded": false,
+          "additionWasOffered": false,
+          "parentVisited": true,
+          "parentCoreScore": -4.131542546908114,
+          "extensionCandidates": null,
+          "hotBlocks": null
+        }
+      ],
+      "oneEditNeighbors": [
+        {
+          "from": [
+            0,
+            3,
+            11
+          ],
+          "fromCoreScore": 22.051476321016413,
+          "remove": [
+            0
+          ],
+          "add": [],
+          "forwarded": true
+        },
+        {
+          "from": [
+            9,
+            11
+          ],
+          "fromCoreScore": 19.4194008493183,
+          "remove": [
+            9
+          ],
+          "add": [
+            3
+          ],
+          "forwarded": true
+        },
+        {
+          "from": [
+            0,
+            11
+          ],
+          "fromCoreScore": 13.366894266661332,
+          "remove": [
+            0
+          ],
+          "add": [
+            3
+          ],
+          "forwarded": false
+        },
+        {
+          "from": [
+            11
+          ],
+          "fromCoreScore": 9.27319274869227,
+          "remove": [],
+          "add": [
+            3
+          ],
+          "forwarded": true
+        },
+        {
+          "from": [
+            0,
+            3
+          ],
+          "fromCoreScore": 9.109776790973786,
+          "remove": [
+            0
+          ],
+          "add": [
+            11
+          ],
+          "forwarded": false
+        },
+        {
+          "from": [
+            2,
+            11
+          ],
+          "fromCoreScore": 9.087377279456936,
+          "remove": [
+            2
+          ],
+          "add": [
+            3
+          ],
+          "forwarded": false
+        },
+        {
+          "from": [
+            1,
+            11
+          ],
+          "fromCoreScore": 9.020362560013025,
+          "remove": [
+            1
+          ],
+          "add": [
+            3
+          ],
+          "forwarded": false
+        },
+        {
+          "from": [
+            10,
+            11
+          ],
+          "fromCoreScore": 8.141117276994157,
+          "remove": [
+            10
+          ],
+          "add": [
+            3
+          ],
+          "forwarded": false
+        },
+        {
+          "from": [
+            4,
+            11
+          ],
+          "fromCoreScore": 7.41132075471698,
+          "remove": [
+            4
+          ],
+          "add": [
+            3
+          ],
+          "forwarded": false
+        },
+        {
+          "from": [
+            7,
+            11
+          ],
+          "fromCoreScore": -0.5278208869878167,
+          "remove": [
+            7
+          ],
+          "add": [
+            3
+          ],
+          "forwarded": false
+        },
+        {
+          "from": [
+            3
+          ],
+          "fromCoreScore": -4.131542546908114,
+          "remove": [],
+          "add": [
+            11
+          ],
+          "forwarded": false
+        }
+      ]
+    },
+    {
+      "target": [
+        2,
+        4,
+        5
+      ],
+      "score": 34.29056603773584,
+      "attemptedPaths": [
+        {
+          "objective": "most-removed",
+          "parent": [
+            4,
+            5
+          ],
+          "add": 2,
+          "parentWasExpanded": false,
+          "additionWasOffered": false,
+          "parentVisited": false,
+          "parentCoreScore": -0.31461333981800443,
+          "extensionCandidates": null,
+          "hotBlocks": null
+        },
+        {
+          "objective": "most-removed",
+          "parent": [
+            2,
+            5
+          ],
+          "add": 4,
+          "parentWasExpanded": false,
+          "additionWasOffered": false,
+          "parentVisited": false,
+          "parentCoreScore": 10.231045210057559,
+          "extensionCandidates": null,
+          "hotBlocks": null
+        },
+        {
+          "objective": "most-removed",
+          "parent": [
+            2,
+            4
+          ],
+          "add": 5,
+          "parentWasExpanded": false,
+          "additionWasOffered": false,
+          "parentVisited": false,
+          "parentCoreScore": 4.67162412081984,
+          "extensionCandidates": null,
+          "hotBlocks": null
+        },
+        {
+          "objective": "no-closures",
+          "parent": [
+            4,
+            5
+          ],
+          "add": 2,
+          "parentWasExpanded": false,
+          "additionWasOffered": false,
+          "parentVisited": false,
+          "parentCoreScore": -0.31461333981800443,
+          "extensionCandidates": null,
+          "hotBlocks": null
+        },
+        {
+          "objective": "no-closures",
+          "parent": [
+            2,
+            5
+          ],
+          "add": 4,
+          "parentWasExpanded": false,
+          "additionWasOffered": false,
+          "parentVisited": false,
+          "parentCoreScore": 10.231045210057559,
+          "extensionCandidates": null,
+          "hotBlocks": null
+        },
+        {
+          "objective": "no-closures",
+          "parent": [
+            2,
+            4
+          ],
+          "add": 5,
+          "parentWasExpanded": false,
+          "additionWasOffered": false,
+          "parentVisited": false,
+          "parentCoreScore": 4.67162412081984,
+          "extensionCandidates": null,
+          "hotBlocks": null
+        },
+        {
+          "objective": "least-detour",
+          "parent": [
+            4,
+            5
+          ],
+          "add": 2,
+          "parentWasExpanded": false,
+          "additionWasOffered": false,
+          "parentVisited": false,
+          "parentCoreScore": -0.31461333981800443,
+          "extensionCandidates": null,
+          "hotBlocks": null
+        },
+        {
+          "objective": "least-detour",
+          "parent": [
+            2,
+            5
+          ],
+          "add": 4,
+          "parentWasExpanded": false,
+          "additionWasOffered": false,
+          "parentVisited": false,
+          "parentCoreScore": 10.231045210057559,
+          "extensionCandidates": null,
+          "hotBlocks": null
+        },
+        {
+          "objective": "least-detour",
+          "parent": [
+            2,
+            4
+          ],
+          "add": 5,
+          "parentWasExpanded": false,
+          "additionWasOffered": false,
+          "parentVisited": false,
+          "parentCoreScore": 4.67162412081984,
+          "extensionCandidates": null,
+          "hotBlocks": null
+        }
+      ],
+      "oneEditNeighbors": [
+        {
+          "from": [
+            2,
+            4,
+            7
+          ],
+          "fromCoreScore": 26.82075471698113,
+          "remove": [
+            7
+          ],
+          "add": [
+            5
+          ],
+          "forwarded": false
+        }
+      ]
+    }
+  ],
+  "posthocNeighborhoodCounts": [
+    {
+      "rule": "one-edit-from-forwarded",
+      "additionalCombinations": 93,
+      "validAdditionalCombinations": 92,
+      "targetsReached": [
+        [
+          3,
+          11
+        ],
+        [
+          6,
+          9,
+          11
+        ]
+      ],
+      "additionalSets": [
+        [
+          0,
+          1,
+          3
+        ],
+        [
+          0,
+          1,
+          4
+        ],
+        [
+          0,
+          1,
+          5
+        ],
+        [
+          0,
+          1,
+          9
+        ],
+        [
+          0,
+          1,
+          10
+        ],
+        [
+          0,
+          2,
+          3
+        ],
+        [
+          0,
+          2,
+          4
+        ],
+        [
+          0,
+          2,
+          9
+        ],
+        [
+          0,
+          2,
+          10
+        ],
+        [
+          0,
+          3,
+          4
+        ],
+        [
+          0,
+          3,
+          5
+        ],
+        [
+          0,
+          3,
+          6
+        ],
+        [
+          0,
+          3,
+          8
+        ],
+        [
+          0,
+          3,
+          9
+        ],
+        [
+          0,
+          3,
+          10
+        ],
+        [
+          0,
+          4,
+          5
+        ],
+        [
+          0,
+          4,
+          6
+        ],
+        [
+          0,
+          4,
+          8
+        ],
+        [
+          0,
+          4,
+          9
+        ],
+        [
+          0,
+          4,
+          10
+        ],
+        [
+          0,
+          5
+        ],
+        [
+          0,
+          5,
+          10
+        ],
+        [
+          0,
+          5,
+          11
+        ],
+        [
+          0,
+          6
+        ],
+        [
+          0,
+          6,
+          10
+        ],
+        [
+          0,
+          6,
+          11
+        ],
+        [
+          0,
+          8
+        ],
+        [
+          0,
+          8,
+          10
+        ],
+        [
+          0,
+          8,
+          11
+        ],
+        [
+          0,
+          9,
+          10
+        ],
+        [
+          1,
+          2,
+          5
+        ],
+        [
+          1,
+          2,
+          9
+        ],
+        [
+          1,
+          2,
+          11
+        ],
+        [
+          1,
+          3
+        ],
+        [
+          1,
+          3,
+          5
+        ],
+        [
+          1,
+          3,
+          9
+        ],
+        [
+          1,
+          3,
+          11
+        ],
+        [
+          1,
+          4,
+          5
+        ],
+        [
+          1,
+          4,
+          9
+        ],
+        [
+          1,
+          5,
+          9
+        ],
+        [
+          1,
+          5,
+          10
+        ],
+        [
+          1,
+          5,
+          11
+        ],
+        [
+          1,
+          6,
+          9
+        ],
+        [
+          1,
+          8,
+          9
+        ],
+        [
+          1,
+          9,
+          10
+        ],
+        [
+          1,
+          10,
+          11
+        ],
+        [
+          2,
+          3,
+          9
+        ],
+        [
+          2,
+          3,
+          11
+        ],
+        [
+          2,
+          4,
+          9
+        ],
+        [
+          2,
+          4,
+          11
+        ],
+        [
+          2,
+          5
+        ],
+        [
+          2,
+          5,
+          9
+        ],
+        [
+          2,
+          5,
+          11
+        ],
+        [
+          2,
+          6,
+          9
+        ],
+        [
+          2,
+          6,
+          11
+        ],
+        [
+          2,
+          8,
+          9
+        ],
+        [
+          2,
+          8,
+          11
+        ],
+        [
+          2,
+          9,
+          10
+        ],
+        [
+          2,
+          10,
+          11
+        ],
+        [
+          3,
+          4,
+          7
+        ],
+        [
+          3,
+          4,
+          11
+        ],
+        [
+          3,
+          5
+        ],
+        [
+          3,
+          5,
+          11
+        ],
+        [
+          3,
+          6,
+          11
+        ],
+        [
+          3,
+          7
+        ],
+        [
+          3,
+          7,
+          9
+        ],
+        [
+          3,
+          7,
+          10
+        ],
+        [
+          3,
+          7,
+          11
+        ],
+        [
+          3,
+          8,
+          11
+        ],
+        [
+          3,
+          9
+        ],
+        [
+          3,
+          9,
+          10
+        ],
+        [
+          3,
+          9,
+          11
+        ],
+        [
+          3,
+          10,
+          11
+        ],
+        [
+          3,
+          11
+        ],
+        [
+          4,
+          5
+        ],
+        [
+          4,
+          7,
+          10
+        ],
+        [
+          4,
+          7,
+          11
+        ],
+        [
+          4,
+          9,
+          10
+        ],
+        [
+          4,
+          10,
+          11
+        ],
+        [
+          5,
+          9,
+          10
+        ],
+        [
+          5,
+          9,
+          11
+        ],
+        [
+          5,
+          10
+        ],
+        [
+          5,
+          10,
+          11
+        ],
+        [
+          5,
+          11
+        ],
+        [
+          6,
+          9,
+          10
+        ],
+        [
+          6,
+          9,
+          11
+        ],
+        [
+          6,
+          10,
+          11
+        ],
+        [
+          6,
+          11
+        ],
+        [
+          7,
+          10,
+          11
+        ],
+        [
+          8,
+          9,
+          10
+        ],
+        [
+          8,
+          9,
+          11
+        ],
+        [
+          8,
+          10,
+          11
+        ],
+        [
+          8,
+          11
+        ]
+      ]
+    },
+    {
+      "rule": "same-site-variant-from-all-visited",
+      "additionalCombinations": 78,
+      "validAdditionalCombinations": 77,
+      "targetsReached": [
+        [
+          2,
+          4,
+          5
+        ],
+        [
+          6,
+          9,
+          11
+        ]
+      ],
+      "additionalSets": [
+        [
+          0,
+          1,
+          5
+        ],
+        [
+          0,
+          1,
+          6
+        ],
+        [
+          0,
+          1,
+          8
+        ],
+        [
+          0,
+          2,
+          5
+        ],
+        [
+          0,
+          2,
+          6
+        ],
+        [
+          0,
+          2,
+          8
+        ],
+        [
+          0,
+          3,
+          5
+        ],
+        [
+          0,
+          3,
+          6
+        ],
+        [
+          0,
+          3,
+          8
+        ],
+        [
+          0,
+          4,
+          5
+        ],
+        [
+          0,
+          4,
+          6
+        ],
+        [
+          0,
+          4,
+          8
+        ],
+        [
+          0,
+          5
+        ],
+        [
+          0,
+          5,
+          9
+        ],
+        [
+          0,
+          5,
+          10
+        ],
+        [
+          0,
+          5,
+          11
+        ],
+        [
+          0,
+          6
+        ],
+        [
+          0,
+          6,
+          9
+        ],
+        [
+          0,
+          6,
+          10
+        ],
+        [
+          0,
+          6,
+          11
+        ],
+        [
+          0,
+          8
+        ],
+        [
+          0,
+          8,
+          9
+        ],
+        [
+          0,
+          8,
+          10
+        ],
+        [
+          0,
+          8,
+          11
+        ],
+        [
+          1,
+          2,
+          5
+        ],
+        [
+          1,
+          2,
+          6
+        ],
+        [
+          1,
+          2,
+          8
+        ],
+        [
+          1,
+          3,
+          5
+        ],
+        [
+          1,
+          3,
+          6
+        ],
+        [
+          1,
+          3,
+          8
+        ],
+        [
+          1,
+          4,
+          5
+        ],
+        [
+          1,
+          4,
+          6
+        ],
+        [
+          1,
+          4,
+          8
+        ],
+        [
+          1,
+          5,
+          9
+        ],
+        [
+          1,
+          5,
+          10
+        ],
+        [
+          1,
+          5,
+          11
+        ],
+        [
+          1,
+          6,
+          9
+        ],
+        [
+          1,
+          6,
+          10
+        ],
+        [
+          1,
+          6,
+          11
+        ],
+        [
+          1,
+          8,
+          9
+        ],
+        [
+          1,
+          8,
+          10
+        ],
+        [
+          1,
+          8,
+          11
+        ],
+        [
+          2,
+          3,
+          5
+        ],
+        [
+          2,
+          3,
+          6
+        ],
+        [
+          2,
+          3,
+          8
+        ],
+        [
+          2,
+          4,
+          5
+        ],
+        [
+          2,
+          4,
+          6
+        ],
+        [
+          2,
+          4,
+          8
+        ],
+        [
+          2,
+          5
+        ],
+        [
+          2,
+          5,
+          9
+        ],
+        [
+          2,
+          5,
+          10
+        ],
+        [
+          2,
+          5,
+          11
+        ],
+        [
+          2,
+          6
+        ],
+        [
+          2,
+          6,
+          9
+        ],
+        [
+          2,
+          6,
+          10
+        ],
+        [
+          2,
+          6,
+          11
+        ],
+        [
+          2,
+          8
+        ],
+        [
+          2,
+          8,
+          9
+        ],
+        [
+          2,
+          8,
+          10
+        ],
+        [
+          2,
+          8,
+          11
+        ],
+        [
+          4,
+          5
+        ],
+        [
+          4,
+          5,
+          9
+        ],
+        [
+          4,
+          6
+        ],
+        [
+          4,
+          6,
+          9
+        ],
+        [
+          4,
+          8
+        ],
+        [
+          4,
+          8,
+          9
+        ],
+        [
+          5,
+          9,
+          10
+        ],
+        [
+          5,
+          9,
+          11
+        ],
+        [
+          5,
+          10
+        ],
+        [
+          5,
+          11
+        ],
+        [
+          6,
+          9,
+          10
+        ],
+        [
+          6,
+          9,
+          11
+        ],
+        [
+          6,
+          10
+        ],
+        [
+          6,
+          11
+        ],
+        [
+          8,
+          9,
+          10
+        ],
+        [
+          8,
+          9,
+          11
+        ],
+        [
+          8,
+          10
+        ],
+        [
+          8,
+          11
+        ]
+      ]
+    },
+    {
+      "rule": "same-site-variant-from-forwarded",
+      "additionalCombinations": 15,
+      "validAdditionalCombinations": 15,
+      "targetsReached": [],
+      "additionalSets": [
+        [
+          0,
+          3,
+          5
+        ],
+        [
+          0,
+          3,
+          6
+        ],
+        [
+          0,
+          3,
+          8
+        ],
+        [
+          0,
+          4,
+          5
+        ],
+        [
+          0,
+          4,
+          6
+        ],
+        [
+          0,
+          4,
+          8
+        ],
+        [
+          0,
+          5
+        ],
+        [
+          0,
+          5,
+          10
+        ],
+        [
+          0,
+          6
+        ],
+        [
+          0,
+          6,
+          10
+        ],
+        [
+          0,
+          8
+        ],
+        [
+          0,
+          8,
+          10
+        ],
+        [
+          1,
+          5,
+          9
+        ],
+        [
+          1,
+          6,
+          9
+        ],
+        [
+          1,
+          8,
+          9
+        ]
+      ]
+    },
+    {
+      "rule": "deletion-from-forwarded",
+      "additionalCombinations": 2,
+      "validAdditionalCombinations": 2,
+      "targetsReached": [
+        [
+          3,
+          11
+        ]
+      ],
+      "additionalSets": [
+        [
+          3,
+          7
+        ],
+        [
+          3,
+          11
+        ]
+      ]
+    }
+  ],
+  "neighborhoodLimit": "Finite-oracle neighborhood enumeration only; no alternative search was run, and these posthoc choices have not been independently tested."
+}
