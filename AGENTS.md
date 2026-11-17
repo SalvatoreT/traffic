@@ -42,6 +42,8 @@ areas are data.
 - `cargo run --release -p traffic-sim --bin validate`: validation suite (writes `data/calibration/validation.md` and `validation.json`; known deviations are in `data/calibration/validation.deviations.json`)
 - `npm run assess -- --publish [--noise]`: ten-seed assessment of the published set; a variant needs `--suffix NAME` (separate output set), a partial or unverifiable run set only `--diagnostic` (no verdict)
 - `cargo run --release -p traffic-sim --bin calibrate -- --area rockridge --period pm_peak`: calibration report against observed data
+- `cargo run --release -p traffic-sim --bin explore -- --area rockridge --reapply-displacement <proposals.json> [--report FILE]`: apply the displacement pass to a finished proposals file without a search (drops options, renumbers `p1`..`pN`; `data/proposals/README.md`)
+- `cargo run --release -p traffic-sim --bin search_bench -- <describe|table|verify|coverage|evidence|reproduce|analyze|confirm> --case FILE`: finite-space proposal-search benchmark; `table` and `confirm` take hours, so run them sharded (`npm run shard -- benchmark`, `docs/sharded-runs.md`, `data/search-benchmark/README.md`)
 - `npm run deploy`: build, then `wrangler deploy`
 
 ## Publishing data
