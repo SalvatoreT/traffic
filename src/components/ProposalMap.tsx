@@ -11,7 +11,7 @@ import { changeWidthFor, colorForIntensity, divergingGradient, mutedColor, type 
 import { canTrace } from '../lib/redistribution-view';
 import { blockMeasured } from '../lib/scope';
 import { controlLabel } from '../lib/selection';
-import { cellCars, itemFor, parseRedistribution, redistributionBasis, redistributionFigures, redistributionLine, redistributionTip, redistributionUrl, redistributionVerdict, type StoredItem, type StoredRedistribution } from '../lib/stored-redistribution';
+import { cellCars, connectedRuns, itemFor, parseRedistribution, redistributionBasis, redistributionFigures, redistributionLine, redistributionTip, redistributionUrl, redistributionVerdict, type StoredItem, type StoredRedistribution } from '../lib/stored-redistribution';
 import { markCenter, markSvg } from '../lib/shareimage';
 import { useNear } from '../lib/useNear';
 
@@ -160,12 +160,17 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
 
   const selItem = sel?.kind === 'iv' ? itemOf(sel.iv) : undefined;
   const routes = selItem ? selItem.routes.filter((r) => r.links.length > 1 && r.perHour >= 0.5).slice(0, 3) : [];
+  const linkEnds = routes.length ? { from: net.links.map((l) => l.from), to: net.links.map((l) => l.to) } : null;
   const routeGeom = routes.map((r) => {
-    const pts: [number, number][] = [];
-    for (const l of r.links) for (const q of net.links[l]?.geometry ?? []) { const last = pts[pts.length - 1]; if (!last || last[0] !== q[0] || last[1] !== q[1]) pts.push(q); }
+    const runs = connectedRuns(r.links, linkEnds!.from, linkEnds!.to).map((run) => {
+      const pts: [number, number][] = [];
+      for (const l of run) for (const q of net.links[l]?.geometry ?? []) { const last = pts[pts.length - 1]; if (!last || last[0] !== q[0] || last[1] !== q[1]) pts.push(q); }
+      return pts;
+    });
+    const pts = runs.flat();
     const mid = pts[Math.floor(pts.length / 2)] ?? [0, 0];
     const a = pts[pts.length - 2] ?? pts[0], b = pts[pts.length - 1] ?? pts[0];
-    return { d: pathOf(pts), mid: { x: mid[0], y: -mid[1] }, tip: { x: b[0], y: -b[1], deg: (Math.atan2(-(b[1] - a[1]), b[0] - a[0]) * 180) / Math.PI } };
+    return { d: runs.map((p) => pathOf(p)).join(' '), mid: { x: mid[0], y: -mid[1] }, tip: { x: b[0], y: -b[1], deg: (Math.atan2(-(b[1] - a[1]), b[0] - a[0]) * 180) / Math.PI } };
   });
 
   const blockText = (b: number) => {

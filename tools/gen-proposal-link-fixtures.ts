@@ -25,6 +25,25 @@ for (const [a, b, dx, dy] of [[nodeAt(2, 2).id, nodeAt(3, 2).id, 12, 31], [nodeA
 // An unnamed service road and a one-way pair for the naming checks.
 net.links.find((l) => l.from === nodeAt(2, 3).id && l.to === nodeAt(3, 3).id)!.name = '';
 
+// A street that runs through a small loop: no other street meets the loop's two junctions, so its blocks are named by the cross streets
+// beyond them, never "a dead end" (`loopStreet` in src/lib/naming.test.ts, the Rust twin in crates/sim/tests/explore.rs).
+{
+  const c = nodeAt(0, 0), d = nodeAt(0, 1);
+  const addNode = (x: number, y: number) => { const id = net.nodes.length; net.nodes.push({ id, osmId: 9000 + id, x, y, control: 'uncontrolled', gate: false, inStudyArea: true }); return id; };
+  const p = addNode(c.x - 60, c.y + 30), q = addNode(c.x - 60, c.y + 80);
+  const pair = (a: number, b: number, via: [number, number] | null, way: number) => {
+    const geo: [number, number][] = [[net.nodes[a].x, net.nodes[a].y], ...(via ? [via] : []), [net.nodes[b].x, net.nodes[b].y]];
+    const len = geomLen(geo);
+    const f = net.links.length;
+    const mk = (id: number, from: number, to: number, g: [number, number][], rev: number) => ({ id, osmWayId: way, from, to, reverse: rev, name: 'Loop Road', class: 'residential' as const, lanes: 1, speedLimit: 11.2, length: len, geometry: g, stopAtEnd: false, humps: [], inStudyArea: true });
+    net.links.push(mk(f, a, b, geo, f + 1) as never, mk(f + 1, b, a, [...geo].reverse() as [number, number][], f) as never);
+  };
+  pair(c.id, p, null, 9001);
+  pair(p, q, [net.nodes[p].x - 25, (net.nodes[p].y + net.nodes[q].y) / 2], 9002);
+  pair(p, q, [net.nodes[p].x + 25, (net.nodes[p].y + net.nodes[q].y) / 2], 9003);
+  pair(q, d.id, null, 9004);
+}
+
 const idx = buildIndex(net);
 const L = (a: [number, number], b: [number, number]) => between(nodeAt(...a).id, nodeAt(...b).id);
 const ivSets: { name: string; ivs: Intervention[]; period?: string; demandScale?: number }[] = [

@@ -127,7 +127,59 @@ impl NameIndex {
             let name = link_name[first.id as usize].clone();
             let others = |nid: u32| -> Vec<String> { node_streets[nid as usize].iter().filter(|s| **s != name && s.as_str() != UNNAMED).cloned().collect() };
             let is_dead_end = |nid: u32| !net.nodes[nid as usize].gate && incoming[nid as usize].len() + outgoing[nid as usize].len() <= if rev.is_some() { 2 } else { 1 };
-            let end_text = |nid: u32| join_names(&others(nid), if net.nodes[nid as usize].gate { "the study-area edge" } else { "a dead end" });
+            let ends = [first.from, first.to];
+            let end_text = |nid: u32| -> String {
+                let o = others(nid);
+                if !o.is_empty() {
+                    return join_names(&o, "");
+                }
+                if net.nodes[nid as usize].gate {
+                    return "the study-area edge".into();
+                }
+                // No other street meets this end: follow the same street on, past the block's own ends, to the next cross streets.
+                let mut seen = vec![nid];
+                let mut queue = std::collections::VecDeque::from([nid]);
+                let mut found: Vec<String> = Vec::new();
+                let (mut edge, mut closed) = (false, false);
+                while let Some(cur) = queue.pop_front() {
+                    for &id in outgoing[cur as usize].iter().chain(incoming[cur as usize].iter()) {
+                        let l = &net.links[id as usize];
+                        if ids.contains(&id) || link_street(&l.name) != name {
+                            continue;
+                        }
+                        let m = if l.from == cur { l.to } else { l.from };
+                        if m == if nid == first.from { first.to } else { first.from } {
+                            closed = true;
+                        }
+                        if ends.contains(&m) || seen.contains(&m) {
+                            continue;
+                        }
+                        seen.push(m);
+                        let om = others(m);
+                        if !om.is_empty() {
+                            for s in om {
+                                if !found.contains(&s) {
+                                    found.push(s);
+                                }
+                            }
+                        } else if net.nodes[m as usize].gate {
+                            edge = true;
+                        } else {
+                            queue.push_back(m);
+                        }
+                    }
+                }
+                if !found.is_empty() {
+                    found.sort_by(|p, q| locale_cmp(p, q));
+                    join_names(&found, "")
+                } else if edge {
+                    "the study-area edge".into()
+                } else if closed {
+                    "a loop".into()
+                } else {
+                    "a dead end".into()
+                }
+            };
             let label = if unnamed {
                 let dead = if is_dead_end(first.from) {
                     Some(first.from)

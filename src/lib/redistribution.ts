@@ -129,14 +129,22 @@ export function geoOf(net: Network): Geo {
   };
 }
 
-/** The links of a path within `LOCAL_RADIUS_M` of the closed junctions, and their street-by-street description (consecutive repeats merged). */
+/** The stretch of a path from its first to its last link within `LOCAL_RADIUS_M` of the closed junctions, and its street-by-street description
+ *  (consecutive repeats merged). A path that leaves the radius and comes back keeps the links in between, so the list stays a connected path. */
 export function localPart(geo: Geo, centers: [number, number][], path: ArrayLike<number>): { key: string; links: number[] } {
   const near = (n: number) => centers.some(([x, y]) => Math.hypot(geo.nodeXY[n][0] - x, geo.nodeXY[n][1] - y) <= LOCAL_RADIUS_M);
-  const out: string[] = [];
-  const links: number[] = [];
+  let first = -1, last = -1;
   for (let k = 0; k < path.length; k++) {
     const l = path[k];
     if (!near(geo.linkFrom[l]) && !near(geo.linkTo[l])) continue;
+    if (first < 0) first = k;
+    last = k;
+  }
+  const out: string[] = [];
+  const links: number[] = [];
+  if (first < 0) return { key: '', links };
+  for (let k = first; k <= last; k++) {
+    const l = path[k];
     links.push(l);
     const s = geo.linkName[l];
     if (out[out.length - 1] !== s) out.push(s);
