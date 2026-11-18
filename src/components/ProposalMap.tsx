@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Intervention, Network } from '../types';
 import { changeTicks, DEAD_BAND_CUTTHROUGH, DEAD_BAND_FLOW } from '../lib/change';
-import { badgeKey } from '../lib/legend';
-import { ATTRIBUTION, BADGE_NAME, BADGE_TEXT } from '../lib/mapexport';
+import { badgeKey, orderSymbols, type LegendSymbol } from '../lib/legend';
+import { ATTRIBUTION, BADGE_NAME } from '../lib/mapexport';
+import { pictoElement } from '../lib/signs';
+import { speedSignElement } from '../lib/speedsign';
 import type { NetIndex } from '../lib/naming';
 import { blockChanges, buildPicture, cardPicture, mismatchNote, periodNote, pathOf, pictureAlt, wholeChange, type BlockChange } from '../lib/picture';
 import { allCarsByBlock, allCarsFromFile, allCarsShort, ALL_CARS_MISSING, blockFigures, blockTip, changeTip, mostlyVisible, noiseNote, signedCars, streetsThatChange, throughLine, type Box, type TipText } from '../lib/proposal-map';
@@ -10,7 +12,6 @@ import { seedsPhrase, signedNum, type LoadedHashes, type Proposal, type Proposal
 import { changeWidthFor, colorForIntensity, divergingGradient, mutedColor, type Mode } from '../lib/ramps';
 import { canTrace } from '../lib/redistribution-view';
 import { blockMeasured } from '../lib/scope';
-import { controlLabel } from '../lib/selection';
 import { cellCars, connectedRuns, itemFor, parseRedistribution, redistributionBasis, redistributionFigures, redistributionLine, redistributionTip, redistributionUrl, redistributionVerdict, type StoredItem, type StoredRedistribution } from '../lib/stored-redistribution';
 import { markCenter, markSvg } from '../lib/shareimage';
 import { useNear } from '../lib/useNear';
@@ -149,10 +150,7 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
   const note = periodNote(searchedPeriods.map(short), when);
   const mismatch = kind === 'through' ? mismatchNote(facts, when) : '';
   const kinds = new Set(model.marks.map((m) => m.kind));
-  const badgeTypes = [...new Set(model.marks.flatMap((m) => (m.kind === 'badge' ? [m.type] : [])))];
-  const signTypes = [...new Set(model.marks.flatMap((m) => (m.kind === 'sign' ? [m.type] : [])))];
-  const controls = [...new Set(ivs.flatMap((iv) => (iv.type === 'control' ? [controlLabel(iv.control).toLowerCase()] : [])))];
-  const badgeName = (t: Intervention['type']) => (t === 'control' && controls.length ? `${BADGE_NAME.control} (${controls.join(', ')})` : BADGE_NAME[t]);
+  const symbols = orderSymbols(model.marks.flatMap((m): LegendSymbol[] => (m.kind === 'sign' ? [m.type] : m.kind === 'picto' ? [m.picto] : [])));
   const traceable = ivs.map((iv, i) => ({ iv, i })).filter(({ iv }) => canTrace(iv));
   const ticks = changeTicks(kind === 'all' ? 'flow' : 'cutthrough');
 
@@ -371,9 +369,7 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
               <ul className="pm-keys small muted">
                 {kinds.has('bar') && <li>Yellow and black bar across a street: closed to through cars.</li>}
                 {kinds.has('diverter') && <li>Striped line across a junction: diagonal diverter.</li>}
-                {kinds.has('arrow') && <li>Arrow: one-way street, in the direction shown.</li>}
-                {signTypes.map((t) => <li key={t}>{badgeKey(t).label}.</li>)}
-                {badgeTypes.length > 0 && <li>Lettered badges: {badgeTypes.map((t) => `${BADGE_TEXT[t]} ${badgeName(t)}`).join(', ')}.</li>}
+                {symbols.map((t) => { const k = badgeKey(t); return <li key={t}><span className="key-sign" aria-hidden="true" dangerouslySetInnerHTML={{ __html: k.sign !== undefined ? speedSignElement(k.sign, 18) : pictoElement(k.picto!, 20) }} /> {k.label}.</li>; })}
                 {model.pins.length > 0 && kind === 'all' && <li>Bold number: change in all cars an hour on that block, for the biggest gain{facts.drop ? ' and the biggest drop' : ''} in the {when}.</li>}
                 {model.pins.length > 0 && kind === 'through' && facts.named && <li>Bold number: change on {facts.named.label}, {facts.namedKind === 'largest' ? 'the block with the largest through-car increase' : 'the block the search flagged'}{model.pins.length > 1 && facts.gain ? `, and on ${facts.gain.label}, the biggest gain in the ${when}` : ''}.</li>}
                 {routeGeom.length > 0 && <li>Purple dashed line with a number and an arrow: a route the redirected cars take.</li>}

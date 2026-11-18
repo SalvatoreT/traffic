@@ -130,21 +130,12 @@ main { flex: 1; min-height: 0; display: flex; }
 .share { margin-top: .75rem; }
 .toast { min-height: 1.4em; color: var(--muted); font-size: .9rem; }
 
-.iv-badge { min-width: 26px; height: 26px; padding: 0 4px; display: inline-flex; align-items: center; justify-content: center; font: 700 11px/1 system-ui, sans-serif; background: #fff; color: #111; border: 2px solid #111; border-radius: 6px; box-shadow: 0 1px 4px rgba(0, 0, 0, .35); }
-.iv-badge.iv-modal_filter { background: #ffd43b; border-radius: 4px; }
-.iv-badge.iv-speed_hump { background: #fff; border-radius: 50%; border-color: #c92a2a; color: #c92a2a; }
-.iv-badge.iv-traffic_circle { border-radius: 50%; background: #d0ebff; }
-.iv-badge.iv-control, .iv-badge.iv-signal_timing { background: #d3f9d8; border-radius: 3px 12px 3px 12px; }
-.iv-badge.iv-one_way { background: #e5dbff; clip-path: none; border-radius: 12px 4px 4px 12px; }
-.iv-badge.iv-turn_ban { background: #ffe3e3; border-radius: 4px 12px 4px 4px; }
 .iv-diverter { width: 44px; height: 44px; pointer-events: none; }
 .iv-diverter svg { display: block; overflow: visible; filter: drop-shadow(0 1px 3px rgba(0, 0, 0, .4)); }
 .iv-more { display: block; margin-top: .2rem; font-size: .82rem; color: var(--muted); }
 .iv-dd-halo { stroke: #fff; stroke-width: 14px; stroke-linecap: butt; }
 .iv-dd-out { stroke: #111; stroke-width: 10px; stroke-linecap: butt; }
 .iv-dd-in { stroke: #ffd43b; stroke-width: 6px; stroke-linecap: butt; stroke-dasharray: 7 3; }
-.iv-badge.iv-diagonal_diverter { background: #ffd43b; border-radius: 4px; }
-.iv-badge.static { box-shadow: none; flex: none; }
 .iv-sign { display: block; line-height: 0; pointer-events: auto; }
 .iv-sign svg { display: block; overflow: visible; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .35)); }
 .iv-sign.static { display: inline-flex; flex: none; }
@@ -152,7 +143,6 @@ main { flex: 1; min-height: 0; display: flex; }
 .key-sign { display: inline-flex; vertical-align: middle; line-height: 0; }
 :root[data-theme="dark"] .iv-sign svg { filter: drop-shadow(0 0 1.5px rgba(255, 255, 255, .55)); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .iv-sign svg { filter: drop-shadow(0 0 1.5px rgba(255, 255, 255, .55)); } }
-.keys .key-badge { min-width: 20px; height: 20px; font-size: 10px; vertical-align: middle; }
 .iv-hit { width: 24px; height: 24px; padding: 0; border: 0; border-radius: 6px; background: transparent; cursor: pointer; }
 .iv-hit:disabled { pointer-events: none; cursor: default; }
 .iv-hit:focus-visible { outline: 3px solid var(--focus); outline-offset: 1px; background: rgba(255, 255, 255, .35); }

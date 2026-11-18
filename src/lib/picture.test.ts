@@ -134,7 +134,7 @@ describe('picture drawing model', () => {
     const f = pictureFacts(p, pic, index);
     const m = buildPicture(net, index, p, pic, [{ type: 'modal_filter', node: node.id }, { type: 'one_way', link: inside[0].id }], f);
     expect(m.marks.filter((k) => k.kind === 'bar').length).toBeGreaterThanOrEqual(2);
-    expect(m.marks.some((k) => k.kind === 'arrow')).toBe(true);
+    expect(m.marks.some((k) => k.kind === 'picto' && k.picto === 'one_way' && Number.isFinite(k.rotate))).toBe(true);
     expect(m.blocks.length).toBe(2);
     expect(Math.abs(m.blocks[0].t)).toBeLessThanOrEqual(Math.abs(m.blocks[1].t));
     expect(m.pins.length).toBe(1);

@@ -12,7 +12,8 @@ import { PopoverFrame } from './Popover';
 import { MapMenu } from './MapMenu';
 import { legendModel, mapSymbols } from '../lib/legend';
 import { fitSheetRect } from '../lib/sheet';
-import { BADGE_TEXT, captionOf, composeImage, drawBadges, EXPORT_SCALE, exportFileName, FORMATS, SIGN_PX, type BadgeMark, type ImageFormat, type LetteredType, type SignType } from '../lib/mapexport';
+import { captionOf, composeImage, drawBadges, EXPORT_SCALE, exportFileName, FORMATS, SIGN_PX, type BadgeMark, type ImageFormat } from '../lib/mapexport';
+import { PICTO_PX, pictoElement, pictoOf, rotationOfHeading } from '../lib/signs';
 import { speedSign } from '../lib/slowstreet';
 import { signOffset, speedSignElement } from '../lib/speedsign';
 import { FADE_TIERS, interventionInRegion, REGION_FEATHER_M, type Region } from '../lib/region';
@@ -195,6 +196,13 @@ function barImage(): ImageData {
   for (let x = (w - (2 * 3 - 1) * dash) / 2; x < w - 1; x += 2 * dash) g.fillRect(x, h * 0.25, dash, h * 0.5);
   return g.getImageData(0, 0, w, h);
 }
+/** A one-way sign turns to point along its street; every other picture stands upright. */
+function pictoRotation(iv: Intervention, net: AreaBundle['network']): number | undefined {
+  if (iv.type !== 'one_way') return undefined;
+  const l = net.links[iv.link];
+  return l ? rotationOfHeading(pointAtLinkMeters(l, l.length / 2).heading) : undefined;
+}
+
 function setHitsInteractive(markers: maplibregl.Marker[], on: boolean) {
   for (const m of markers) {
     const el = m.getElement();
@@ -885,8 +893,11 @@ export function MapView(p: Props) {
           offset = [o.dx, o.dy];
           at = proj.toLonLat(sign.x, sign.y);
         } else {
-          el.className = `iv-badge iv-${iv.type}`;
-          el.textContent = BADGE_TEXT[iv.type as LetteredType];
+          const picto = pictoOf(iv);
+          if (picto) {
+            el.className = 'iv-sign';
+            el.innerHTML = pictoElement(picto, PICTO_PX, { rotate: pictoRotation(iv, net) });
+          }
         }
         el.setAttribute('aria-hidden', 'true');
       }
@@ -1028,9 +1039,11 @@ export function MapView(p: Props) {
         const sign = speedSign(net, iv);
         if (sign) {
           const s = map.project(L.proj.toLonLat(sign.x, sign.y)), o = signOffset(sign.heading, SIGN_PX);
-          return [{ x: s.x + o.dx, y: s.y + o.dy, type: iv.type as SignType, mph: sign.mph }];
+          return [{ x: s.x + o.dx, y: s.y + o.dy, type: 'speed_sign' as const, mph: sign.mph }];
         }
-        return [{ x: q.x, y: q.y, type: iv.type, bearing: iv.type === 'diagonal_diverter' ? iv.bearing : undefined }];
+        if (iv.type === 'diagonal_diverter') return [{ x: q.x, y: q.y, type: 'diagonal_diverter' as const, bearing: iv.bearing }];
+        const picto = pictoOf(iv);
+        return picto ? [{ x: q.x, y: q.y, type: 'picto' as const, picto, rotate: pictoRotation(iv, net) }] : [];
       });
       const change = L.view === 'change';
       const legend = legendModel(L.overlay, L.mode, change);

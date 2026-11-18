@@ -3,6 +3,7 @@ import type { AreaBundle, AreaEntry, ModeKey, ModeVisibility, Overlay } from '..
 import { formatClock } from '../lib/format';
 import { divergingGradient, rampStops, TOP_NOTE, type Mode } from '../lib/ramps';
 import { INTENT_COLORS } from '../lib/intents';
+import { pictoElement } from '../lib/signs';
 import { speedSignElement } from '../lib/speedsign';
 import { badgeKey, legendModel, type MapSymbols } from '../lib/legend';
 import { CHANGE_MAP_NOTE, changeTicks, CHANGE_UNIT, DEAD_BAND, legendClipPath, type MapView } from '../lib/change';
@@ -265,9 +266,7 @@ export function Legend(p: LegendProps) {
             {p.symbols.diverter && <li><svg width="30" height="14" aria-hidden="true"><g transform="translate(15 7) rotate(60)"><line x1="0" y1="-8" x2="0" y2="8" stroke="#fff" strokeWidth="8" /><line x1="0" y1="-8" x2="0" y2="8" stroke="#111" strokeWidth="6" /><line x1="0" y1="-8" x2="0" y2="8" stroke="#ffd43b" strokeWidth="3" strokeDasharray="4 2" /></g></svg> Striped line across a junction: diagonal diverter</li>}
             {p.symbols.badges.map((t) => {
               const k = badgeKey(t);
-              return k.sign !== undefined
-                ? <li key={t}><span className="key-sign" aria-hidden="true" dangerouslySetInnerHTML={{ __html: speedSignElement(k.sign, 18) }} /> {k.label}</li>
-                : <li key={t}><span className={`iv-badge static key-badge iv-${t}`} aria-hidden="true">{k.text}</span> {k.name}</li>;
+              return <li key={t}><span className="key-sign" aria-hidden="true" dangerouslySetInnerHTML={{ __html: k.sign !== undefined ? speedSignElement(k.sign, 18) : pictoElement(k.picto!, 20) }} /> {k.label}</li>;
             })}
             {p.symbols.reason && <li><svg width="30" height="14" aria-hidden="true"><line x1="1" y1="7" x2="29" y2="7" stroke={INTENT_COLORS[p.mode].line} strokeWidth="3" strokeDasharray="6 3" /></svg> Violet dashed line: typical path of the chosen reason; width shows cars an hour</li>}
             <li><svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="var(--surface)" stroke="#1f9d55" strokeWidth="2" /></svg> Signal green (ring)</li>

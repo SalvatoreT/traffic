@@ -4,6 +4,7 @@ import { formatClock } from './format';
 import { badgeKey, type LegendModel, type MapSymbols } from './legend';
 import { RUN_SECONDS } from './run';
 import { SLOW_STREET_MPH } from './slowstreet';
+import { drawPicto, PICTO_PX, type PictoId } from './signs';
 import { drawSpeedSign } from './speedsign';
 
 export const ATTRIBUTION = '© OpenStreetMap contributors';
@@ -59,48 +60,25 @@ export function wrapText(measure: (s: string) => number, text: string, maxWidth:
   return out;
 }
 
-/** A speed limit and a Slow Street are drawn as the speed-limit sign (`speedsign.ts`) with their number in mph, not as letters. */
+/** A speed limit and a Slow Street are drawn as the speed-limit sign (`speedsign.ts`) with their number in mph; every other kind is a picture from `signs.ts`. */
 export type SignType = 'speed_limit' | 'slow_street';
-export const isSignType = (t: Intervention['type']): t is SignType => t === 'speed_limit' || t === 'slow_street';
-export type LetteredType = Exclude<Intervention['type'], SignType>;
-/** The one set of badge letters: the map, the scenario list, the exported image and the proposal picture all use it. */
-export const BADGE_TEXT: Record<LetteredType, string> = {
-  modal_filter: 'MF', speed_hump: 'SH', traffic_circle: 'TC', control: 'IC',
-  signal_timing: 'ST', one_way: '1W', turn_ban: 'TB', diagonal_diverter: 'DD',
-};
 export const BADGE_NAME: Record<Intervention['type'], string> = {
   modal_filter: 'modal filter', speed_hump: 'speed hump', speed_limit: 'a block with its own speed limit (the number is the new limit in mph)', slow_street: `Slow Street (speed limit ${SLOW_STREET_MPH} mph on the whole street)`, traffic_circle: 'traffic circle', control: 'intersection control',
   signal_timing: 'signal timing', one_way: 'one-way street', turn_ban: 'turn ban', diagonal_diverter: 'diagonal diverter',
 };
-// Same fills, outlines and corner shapes as the .iv-badge rules in styles.css.
-/** Types drawn as a lettered badge: a modal filter is a bar and a diverter a striped line, neither a badge. */
-export type BadgedType = Exclude<Intervention['type'], 'modal_filter' | 'diagonal_diverter'>;
-export type LetterBadge = Exclude<BadgedType, SignType>;
-export const BADGE_STYLE: Record<LetterBadge, { fill: string; edge: string; ink: string; radius: [number, number, number, number] | 'round' }> = {
-  speed_hump: { fill: '#fff', edge: '#c92a2a', ink: '#c92a2a', radius: 'round' },
-  traffic_circle: { fill: '#d0ebff', edge: '#111', ink: '#111', radius: 'round' },
-  control: { fill: '#d3f9d8', edge: '#111', ink: '#111', radius: [3, 12, 3, 12] },
-  signal_timing: { fill: '#d3f9d8', edge: '#111', ink: '#111', radius: [3, 12, 3, 12] },
-  one_way: { fill: '#e5dbff', edge: '#111', ink: '#111', radius: [12, 4, 4, 12] },
-  turn_ban: { fill: '#ffe3e3', edge: '#111', ink: '#111', radius: [4, 12, 4, 4] },
-};
 
-/** `leg` is a closed-to-cars bar across a street, centered on (x, y), `len` by `thick` CSS px, turned so it crosses the street whose bearing is `bearing`. */
-export interface BadgeMark { x: number; y: number; len?: number; thick?: number; type: BadgedType | 'diagonal_diverter' | 'leg'; bearing?: number; mph?: number }
-
-function roundedRect(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: [number, number, number, number]) {
-  const [tl, tr, br, bl] = r;
-  g.beginPath();
-  g.moveTo(x + tl, y); g.lineTo(x + w - tr, y); g.arcTo(x + w, y, x + w, y + tr, tr);
-  g.lineTo(x + w, y + h - br); g.arcTo(x + w, y + h, x + w - br, y + h, br);
-  g.lineTo(x + bl, y + h); g.arcTo(x, y + h, x, y + h - bl, bl);
-  g.lineTo(x, y + tl); g.arcTo(x, y, x + tl, y, tl); g.closePath();
-}
+/** `leg` is a closed-to-cars bar across a street, centered on (x, y), `len` by `thick` CSS px, turned so it crosses the street whose bearing is `bearing`. A `picto` is drawn from `signs.ts`, turned `rotate` degrees clockwise; a `speed_sign` shows `mph`. */
+export type BadgeMark = { x: number; y: number } & (
+  | { type: 'leg'; len?: number; thick?: number; bearing?: number }
+  | { type: 'diagonal_diverter'; bearing?: number }
+  | { type: 'speed_sign'; mph: number }
+  | { type: 'picto'; picto: PictoId; rotate?: number }
+);
 
 /** Height of the speed-limit sign on the map, in CSS px. */
 export const SIGN_PX = 30;
 
-/** Intervention badges and diverter barriers as the page shows them, in CSS pixels. */
+/** Intervention pictures and diverter barriers as the page shows them, in CSS pixels. */
 export function drawBadges(g: CanvasRenderingContext2D, marks: BadgeMark[]) {
   for (const m of marks) {
     if (m.type === 'diagonal_diverter') {
@@ -108,9 +86,7 @@ export function drawBadges(g: CanvasRenderingContext2D, marks: BadgeMark[]) {
       const line = (w: number, c: string, dash: number[] = []) => { g.setLineDash(dash); g.lineWidth = w; g.strokeStyle = c; g.beginPath(); g.moveTo(0, -17); g.lineTo(0, 17); g.stroke(); };
       line(14, '#fff'); line(10, '#111'); line(6, '#ffd43b', [7, 3]);
       g.restore();
-      continue;
-    }
-    if (m.type === 'leg') {
+    } else if (m.type === 'leg') {
       if (m.len === undefined || m.thick === undefined) continue;
       const L = m.len, T = m.thick;
       g.save(); g.translate(m.x, m.y); g.rotate(((m.bearing ?? 0) * Math.PI) / 180);
@@ -120,18 +96,12 @@ export function drawBadges(g: CanvasRenderingContext2D, marks: BadgeMark[]) {
       const dash = T * 0.5 * 1.5;
       for (let x = -dash * 2.5; x < L / 2 - 1; x += 2 * dash) g.fillRect(x, -T * 0.25, Math.min(dash, L / 2 - x), T * 0.5);
       g.restore();
-      continue;
+    } else if (m.type === 'speed_sign') drawSpeedSign(g, m.x, m.y, m.mph, SIGN_PX);
+    else {
+      g.save(); g.shadowColor = 'rgba(0,0,0,.3)'; g.shadowBlur = 3; g.shadowOffsetY = 1;
+      drawPicto(g, m.x, m.y, m.picto, PICTO_PX, m.rotate);
+      g.restore();
     }
-    if (isSignType(m.type)) { if (m.mph !== undefined) drawSpeedSign(g, m.x, m.y, m.mph, SIGN_PX); continue; }
-    const st = BADGE_STYLE[m.type];
-    const label = BADGE_TEXT[m.type];
-    g.font = '700 11px system-ui, sans-serif';
-    const w = Math.max(26, g.measureText(label).width + 12), h = 26;
-    g.save(); g.shadowColor = 'rgba(0,0,0,.35)'; g.shadowBlur = 4; g.shadowOffsetY = 1;
-    roundedRect(g, m.x - w / 2 + 1, m.y - h / 2 + 1, w - 2, h - 2, st.radius === 'round' ? [12, 12, 12, 12] : st.radius);
-    g.fillStyle = st.fill; g.fill(); g.restore();
-    g.lineWidth = 2; g.strokeStyle = st.edge; g.stroke();
-    g.fillStyle = st.ink; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(label, m.x, m.y + 0.5);
   }
 }
 
@@ -211,8 +181,8 @@ function layoutKeys(g: CanvasRenderingContext2D, c: ComposeInput, maxW: number):
   for (const t of S.badges) {
     const k = badgeKey(t);
     if (k.sign !== undefined) { const mph = k.sign; items.push({ label: k.label, extra: 4, shape: (g2, x, y) => drawSpeedSign(g2, x + 2, y, mph, 15) }); continue; }
-    const st = BADGE_STYLE[t as LetterBadge];
-    items.push({ label: k.label, shape: (g2, x, y) => { g2.fillStyle = st.fill; g2.strokeStyle = st.edge; g2.lineWidth = 1.5; g2.beginPath(); g2.arc(x, y, 4.5, 0, 7); g2.fill(); g2.stroke(); } });
+    const id = k.picto;
+    if (id) items.push({ label: k.label, extra: 4, shape: (g2, x, y) => drawPicto(g2, x + 2, y, id, 16) });
   }
   if (S.reason) items.push({ label: 'Violet dashed line: typical path of the chosen reason', extra: 10, shape: (g2, x, y) => { g2.save(); g2.setLineDash([6, 3]); g2.lineWidth = 3; g2.strokeStyle = c.keys.reasonColor; g2.beginPath(); g2.moveTo(x - 6, y); g2.lineTo(x + 16, y); g2.stroke(); g2.restore(); } });
   g.font = `11px ${FONT}`;

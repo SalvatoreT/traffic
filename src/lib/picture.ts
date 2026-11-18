@@ -1,6 +1,7 @@
 import type { Intervention, Network, Overlay } from '../types';
 import { DEAD_BAND_CUTTHROUGH, DEAD_BAND_FLOW, softChange } from './change';
-import type { BadgedType, SignType } from './mapexport';
+import type { SignType } from './mapexport';
+import { pictoOf, rotationOfHeading, type MapPicto } from './signs';
 import { speedSign } from './slowstreet';
 import { barPx, blockBar, filterLegs, legBars } from './blocked';
 import { pointAlong } from './geom';
@@ -140,8 +141,8 @@ export interface PictureBlockLine { block: number; d: string; delta: number; t: 
 export type Mark =
   | { kind: 'bar'; x: number; y: number; bearing: number; iv: number }
   | { kind: 'diverter'; x: number; y: number; bearing: number; iv: number }
-  | { kind: 'arrow'; x: number; y: number; bearing: number; iv: number }
-  | { kind: 'badge'; type: Exclude<BadgedType, SignType>; x: number; y: number; text: string; iv: number }
+  /** A picture from `signs.ts` at (x, y), turned `rotate` degrees clockwise (a one-way sign points along its street). */
+  | { kind: 'picto'; picto: MapPicto; x: number; y: number; rotate: number; iv: number }
   /** A speed-limit sign beside its street: (x, y) is on the street, `heading` the street's own. */
   | { kind: 'sign'; type: SignType; mph: number; x: number; y: number; heading: number; name: string; iv: number };
 export interface StreetName { text: string; x: number; y: number; angle: number }
@@ -220,7 +221,6 @@ export function buildPicture(net: Network, index: NetIndex, p: Proposal, pic: Pr
 
   const marks: Mark[] = [];
   const at = (x: number, y: number) => ({ x, y: -y });
-  const bearingOf = (heading: number) => ((90 - (heading * 180) / Math.PI) % 360 + 360) % 360;
   ivs.forEach((iv, ivi) => {
     switch (iv.type) {
       case 'modal_filter':
@@ -228,7 +228,7 @@ export function buildPicture(net: Network, index: NetIndex, p: Proposal, pic: Pr
         else { const l = net.links[iv.link]; if (l) { const b = blockBar(l); marks.push({ kind: 'bar', ...at(b.center[0], b.center[1]), bearing: b.bearing, iv: ivi }); } }
         break;
       case 'diagonal_diverter': { const n = net.nodes[iv.node]; if (n) marks.push({ kind: 'diverter', ...at(n.x, n.y), bearing: iv.bearing, iv: ivi }); break; }
-      case 'one_way': { const l = net.links[iv.link]; if (l) { const q = pointAtLinkMeters(l, l.length / 2); marks.push({ kind: 'arrow', ...at(q.x, q.y), bearing: bearingOf(q.heading), iv: ivi }); } break; }
+      case 'one_way': { const l = net.links[iv.link]; if (l) { const q = pointAtLinkMeters(l, l.length / 2); marks.push({ kind: 'picto', picto: 'one_way', ...at(q.x, q.y), rotate: rotationOfHeading(q.heading), iv: ivi }); } break; }
       case 'slow_street': case 'speed_limit': {
         const g = speedSign(net, iv); if (!g) break;
         marks.push({ kind: 'sign', type: iv.type, mph: g.mph, ...at(g.x, g.y), heading: g.heading, name: g.name, iv: ivi });
@@ -237,11 +237,11 @@ export function buildPicture(net: Network, index: NetIndex, p: Proposal, pic: Pr
       case 'speed_hump': {
         const l = net.links[iv.link]; if (!l) break;
         const q = pointAtLinkMeters(l, iv.position);
-        marks.push({ kind: 'badge', type: iv.type, ...at(q.x, q.y), text: '', iv: ivi });
+        marks.push({ kind: 'picto', picto: 'speed_hump', ...at(q.x, q.y), rotate: 0, iv: ivi });
         break;
       }
-      case 'traffic_circle': case 'control': case 'signal_timing': { const n = net.nodes[iv.node]; if (n) marks.push({ kind: 'badge', type: iv.type, ...at(n.x, n.y), text: '', iv: ivi }); break; }
-      case 'turn_ban': { const a = net.links[iv.fromLink]; const n = a ? net.nodes[a.to] : undefined; if (n) marks.push({ kind: 'badge', type: 'turn_ban', ...at(n.x, n.y), text: '', iv: ivi }); break; }
+      case 'traffic_circle': case 'control': case 'signal_timing': { const n = net.nodes[iv.node]; const id = pictoOf(iv) as MapPicto | null; if (n && id) marks.push({ kind: 'picto', picto: id, ...at(n.x, n.y), rotate: 0, iv: ivi }); break; }
+      case 'turn_ban': { const a = net.links[iv.fromLink]; const n = a ? net.nodes[a.to] : undefined; if (n) marks.push({ kind: 'picto', picto: 'turn_ban', ...at(n.x, n.y), rotate: 0, iv: ivi }); break; }
     }
   });
 

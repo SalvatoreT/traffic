@@ -1,7 +1,8 @@
 import qrcode from 'qrcode-generator';
 import { changeTicks } from './change';
-import { badgeKey } from './legend';
-import { BADGE_STYLE, BADGE_TEXT, ATTRIBUTION } from './mapexport';
+import { badgeKey, orderSymbols, type LegendSymbol } from './legend';
+import { ATTRIBUTION } from './mapexport';
+import { pictoSvg, type MapPicto } from './signs';
 import { speedSignSvg, signOffset } from './speedsign';
 import { legendSentence, pictureCaption, type Mark, type PictureFacts, type PictureKind, type PictureModel } from './picture';
 import { seedsPhrase, signedPct, type Proposal, type ProposalPicture } from './proposals';
@@ -35,7 +36,7 @@ export interface ShareInput {
   /** Which cars the map's colors and numbers count. */
   kind: PictureKind;
   /** Sentences under the legend ramp, in order, each drawn with the swatch of its kind. */
-  keys: { kind: 'bar' | 'pin' | 'pin-dashed' | 'text' | 'sign'; text: string; mph?: number | string }[];
+  keys: { kind: 'bar' | 'pin' | 'pin-dashed' | 'text' | 'sign' | 'picto'; text: string; mph?: number | string; picto?: MapPicto }[];
   status: string;
   model: PictureModel;
   /** Absolute address of the proposal on the map; drawn as a QR code. */
@@ -74,6 +75,8 @@ export function wrapText(text: string, size: number, weight: number, maxW: numbe
 
 /** Height of the speed-limit sign in a picture, in nominal CSS px (scaled by `unit`). */
 const PIC_SIGN_H = 22;
+/** Height of an intervention picture (stop sign, traffic light and the rest) in a picture, in nominal CSS px. */
+const PIC_PICTO_H = 24;
 /** Where a mark's hit area and selection ring belong: on the street, or at its sign. */
 export function markCenter(m: Mark, unit: number): { x: number; y: number } {
   if (m.kind !== 'sign') return { x: m.x, y: m.y };
@@ -95,14 +98,7 @@ export function markSvg(m: Mark, unit: number, bar: { len: number; thick: number
     const ln = (w: number, c: string, d = '') => `<line x1="0" y1="${n1(-h)}" x2="0" y2="${n1(h)}" stroke="${c}" stroke-width="${n1(w * k)}"${d}/>`;
     return `<g transform="translate(${n1(m.x)} ${n1(m.y)}) rotate(${n1(m.bearing)})">${ln(14, '#fff')}${ln(10, '#111')}${ln(6, '#ffd43b', ` stroke-dasharray="${n1(7 * k)} ${n1(3 * k)}"`)}</g>`;
   }
-  if (m.kind === 'arrow') {
-    return `<g transform="translate(${n1(m.x)} ${n1(m.y)}) rotate(${n1(m.bearing)}) scale(${n1(unit)})"><path d="M0 -8 L5.5 4.5 L0 2 L-5.5 4.5 Z" fill="#111" stroke="#fff" stroke-width="1.6" stroke-linejoin="round" paint-order="stroke"/></g>`;
-  }
-  const st = BADGE_STYLE[m.type];
-  const label = BADGE_TEXT[m.type];
-  const w = Math.max(17, label.length * 6.4 + 7), h = 15;
-  const r = st.radius === 'round' ? h / 2 : Math.min(...st.radius, h / 2);
-  return `<g transform="translate(${n1(m.x)} ${n1(m.y)}) scale(${n1(unit)})"><rect x="${n1(-w / 2)}" y="${n1(-h / 2)}" width="${n1(w)}" height="${n1(h)}" rx="${n1(r)}" fill="${st.fill}" stroke="${st.edge}" stroke-width="1.4"/><text x="0" y="0.5" text-anchor="middle" dominant-baseline="central" font-size="8.5" font-weight="700" fill="${st.ink}">${esc(label)}</text></g>`;
+  return `<g transform="translate(${n1(m.x)} ${n1(m.y)}) scale(${n1(unit)})">${pictoSvg(m.picto, PIC_PICTO_H, { rotate: m.rotate })}</g>`;
 }
 
 /** The map as SVG in its own coordinates (meters, y down), light colors. */
@@ -335,6 +331,7 @@ function layoutShare(inp: ShareInput, changes: string[], measure: Measure, qrBel
     const ls = wrapText(k.text, 17, 400, kw - (sw ? sw + 12 : 0), measure);
     const h = ls.length * 22;
     if (k.kind === 'sign' && k.mph !== undefined) out.push(`<g transform="translate(${kx + 22} ${n1(ky + 11)})">${speedSignSvg(k.mph, 24)}</g>`);
+    if (k.kind === 'picto' && k.picto) out.push(`<g transform="translate(${kx + 22} ${n1(ky + 11)})">${pictoSvg(k.picto, 24)}</g>`);
     if (k.kind === 'bar') out.push(`<g transform="translate(${kx + 22} ${n1(ky + 11)})"><rect x="-22" y="-6" width="44" height="12" fill="#fff"/><rect x="-22" y="-4.5" width="44" height="9" fill="#111"/><line x1="-22" y1="0" x2="22" y2="0" stroke="#ffd43b" stroke-width="6" stroke-dasharray="9 9"/></g>`);
     if (k.kind === 'pin' || k.kind === 'pin-dashed') {
       const d = k.kind === 'pin-dashed' ? ' stroke-dasharray="7 6"' : '';
@@ -434,9 +431,9 @@ export function shareInputFor(a: {
     if (pins.length > 0 && facts.named) keys.push({ kind: 'pin', text: `Outlined, labeled ${pins[0].text}: ${facts.named.label}, ${facts.namedKind === 'largest' ? 'the block with the largest through-car increase' : "the block the search flagged with an assumed noise band, which need not have the largest increase"}, averaged over the periods searched.` });
     if (pins.length > 1 && facts.gain) keys.push({ kind: 'pin-dashed', text: `Dashed outline, labeled ${pins[1].text}: ${facts.gain.label}, the biggest gain in the ${a.shortLabel(pic.period)}.` });
   }
-  for (const t of new Set(a.model.marks.flatMap((m) => (m.kind === 'sign' ? [m.type] : [])))) { const k = badgeKey(t); keys.push({ kind: 'sign', text: `${k.label}.`, mph: k.sign }); }
+  const drawn = a.model.marks.flatMap((m): LegendSymbol[] => (m.kind === 'sign' ? [m.type] : m.kind === 'picto' ? [m.picto] : []));
+  for (const t of orderSymbols(drawn)) { const k = badgeKey(t); keys.push({ kind: k.picto ? 'picto' : 'sign', text: `${k.label}.`, mph: k.sign, picto: k.picto as MapPicto | undefined }); }
   if (kinds.has('diverter')) keys.push({ kind: 'text', text: 'Striped line across a junction: diagonal diverter.' });
-  if (kinds.has('arrow')) keys.push({ kind: 'text', text: 'Arrow: one-way street, in the direction shown.' });
   return {
     areaName: a.areaName, title: p.title, changes: p.interventions.map((iv) => iv.label),
     period: when, periodFigure, averageFigure, caption: pictureCaption(when, kind), kind, keys, status: a.status, model: a.model, openUrl: a.openUrl,
