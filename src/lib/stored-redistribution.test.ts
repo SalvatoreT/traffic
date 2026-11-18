@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Intervention } from '../types';
 import { scenarioKey } from './redistribution';
-import { itemFor, parseRedistribution, redistributionLine, redistributionRows, redistributionTip, redistributionVerdict, STORED_REDIST_METHOD, STORED_REDIST_VERSION, type StoredItem, type StoredRedistribution } from './stored-redistribution';
+import { cellCars, itemFor, redistributionFigures, parseRedistribution, redistributionLine, redistributionRows, redistributionTip, redistributionVerdict, STORED_REDIST_METHOD, STORED_REDIST_VERSION, type StoredItem, type StoredRedistribution } from './stored-redistribution';
 
 const iv = { type: 'modal_filter', link: 7 } as unknown as Intervention;
 const item: StoredItem = {
@@ -40,6 +40,10 @@ describe('stored redistribution', () => {
     expect(line).toContain('18 do not newly drive any side street');
     expect(redistributionLine({ ...item, usedPerHour: 0.2 }, 'PM peak')).toMatch(/Almost no through cars/);
     expect(redistributionRows(item).map((r) => r.label)).toContain('Still waiting to start at the end of the hour');
+    expect(redistributionFigures(item).every((r) => typeof r.value === 'number')).toBe(true);
+    expect(cellCars(0.3)).toBe('<1');
+    expect(cellCars(12.4)).toBe('12');
+    expect(cellCars(0)).toBe('0');
   });
   it('gives a short tip with the one route most take', () => {
     expect(redistributionTip(item)).toBe('About 42 through cars an hour used this; most go via Colby Street → 63rd Street (25 an hour).');

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildFixture } from '../fixtures/area';
 import { buildIndex } from './naming';
-import { blockChanges, blockIntensity, buildPicture, mismatchNote, periodNote, pictureAlt, pictureCaption, pictureFacts } from './picture';
+import { allCarFacts, blockChanges, blockIntensity, buildPicture, mismatchNote, periodNote, pictureAlt, pictureCaption, pictureFacts, wholeChange } from './picture';
 import { parseProposals, type Proposal, type ProposalPicture } from './proposals';
 import { buildMockProposals } from '../fixtures/proposals';
 import { colorForIntensity } from './ramps';
@@ -89,6 +89,36 @@ describe('picture words', () => {
     expect(note).toContain('does not gain through cars in the PM peak');
     expect(note).toContain(`biggest gain is on ${index.blocks[gain].label}, +24 cars an hour`);
     expect(mismatchNote(pictureFacts(withPic(pic, '', 0, 0), pic, index), 'PM peak')).toBe('');
+  });
+});
+
+describe('all-car picture', () => {
+  it('colors a block by all cars, on the flow scale, so a through-car fall can still be a rise', () => {
+    expect(blockIntensity(30, 'through')).toBeGreaterThan(0);
+    expect(blockIntensity(30, 'all')).toBe(0);
+    expect(blockIntensity(246, 'all')).toBeGreaterThan(0);
+    expect(blockIntensity(-246, 'all')).toBeLessThan(0);
+  });
+  it('writes the change from rounded figures, the way the detail box does', () => {
+    expect(wholeChange({ base: 37.6, scen: 283.5 })).toBe(246);
+    expect(wholeChange({ base: 0.4, scen: 0.6 })).toBe(1);
+  });
+  it('ranks the largest gain and drop in all cars and names no card block', () => {
+    const { pic, loss, gain } = makePic();
+    const f = allCarFacts(pic, index);
+    expect(f.named).toBeNull();
+    expect(f.gain?.block).toBe(gain);
+    expect(f.drop?.block).toBe(loss);
+  });
+  it('pins the gain and the drop with the rounded all-car change, and says what the colors mean', () => {
+    const { pic, gain } = makePic();
+    const p = withPic(pic, index.blocks[gain].label, 20);
+    const f = allCarFacts(pic, index);
+    const m = buildPicture(net, index, p, pic, [], f, 'all');
+    expect(m.pins.map((x) => x.text)).toEqual(['+24', `−${30 * index.blocks[blockChanges(pic, index).find((c) => c.delta < 0)!.block].links.length}`]);
+    const alt = pictureAlt(p, pic, f, 'PM peak', 'all');
+    expect(alt).toMatch(/change in all cars an hour on each block/);
+    expect(alt).toMatch(/mean of the runs/);
   });
 });
 

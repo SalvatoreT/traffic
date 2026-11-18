@@ -75,6 +75,16 @@ describe('old ids', () => {
     expect(canonicalAnchor('sources', 'ref-calibration')).toBe('calibration');
     expect(canonicalAnchor('sources', 'ref-Treiber2000')).toBe('Treiber2000');
   });
+  it('maps the proposal card ids made before cards were named proposal-N, with or without a variant suffix', () => {
+    expect(canonicalAnchor('proposals', 'unconstrained-p1')).toBe('proposal-1');
+    expect(canonicalAnchor('proposals', 'unconstrained-p12-v2')).toBe('proposal-12');
+    expect(canonicalAnchor('proposals', 'unconstrained-earlier-62nd-diverters')).toBe('proposal-earlier-62nd-diverters');
+    expect(canonicalAnchor('proposals', 'charter-p2')).toBe('proposal-charter-2');
+    expect(canonicalAnchor('proposals', 'proposal-1')).toBe('proposal-1');
+    expect(canonicalAnchor('proposals', 'proposals-for-comparison')).toBe('proposals-for-comparison');
+    expect(canonicalAnchor('map', 'unconstrained-p1')).toBe('unconstrained-p1');
+    expect(parseLocation('/proposals', '#unconstrained-p1').fragment).toEqual({ kind: 'anchor', id: 'proposal-1' });
+  });
   it('leaves current ids and other tabs alone', () => {
     expect(canonicalAnchor('assumptions', 'why-cars-cut-through')).toBe('why-cars-cut-through');
     expect(canonicalAnchor('sources', 'Treiber2000')).toBe('Treiber2000');
