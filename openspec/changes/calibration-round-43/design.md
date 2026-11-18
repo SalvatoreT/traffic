@@ -22,11 +22,14 @@ D8. Check on the network (step 1.3). Against the network of 2026-11-17, the rebu
 
 D9. The compact preview area (`data/areas/rockridge-compact.json`) shares every setting of the Rockridge config apart from its extent, and a test holds that, so it takes the same override and exemption. Its network changes in the same two nodes and three links (faa35da1aa7da17a becomes 3f46e2e23f5df218). Its demand is not built by `npm run data` and was not rebuilt, and the extent comparison (`data/calibration/rockridge.extent-comparison.md`) stays as written on the earlier networks.
 
+D10. Outcome (seeds 1 to 10, the assessment of 2026-11-17 in brackets). Demand 77ef92449de50092, cross-validation demand 09d3f3d769ead5ec, fingerprint unchanged, validation 67 of 74. D16 holds in every period with no judged clearing (holds). Recent stations within GEH 5: PM fitted 72 of 92 (78), PM held out 12 of 24 (13), AM fitted 69 of 77 (67), AM held out 15 of 19 (14). All eight whole-street counts stay within GEH 5; the Hillegass Ave traversals fall to 56 southbound and 40 northbound in the PM peak (81, 65). D5 fails in the PM peak: the share of Hillegass Ave southbound cars bound for the freeway is 51.3% against 68% observed (66.0%). By D6 the result is worse, so the area note and caveat are not updated and nothing is tuned. The corrections, the rebuilt demand and the new assessment files are committed on the branch for the project lead to decide on; the record has the full table.
+
 ## What is not known
 
 - Whether the barricades of D4 are still in place. If they are, Howell St, Forest St and Colby St carry less through traffic than the baseline allows, which bears on the held-out misses near Howell St. Open question for the project lead; a field check or dated imagery would settle it.
 - The date of the imagery behind D1 and D2. D2 rests on not seeing a sign, which is weaker evidence than seeing one.
 - The three open items of D3.
+- Whether the two corrections should stay in the baseline as they are, given D10, and whether a membership iteration on the new network (the procedure of rounds 39 to 42) should follow. Both are the project lead's to decide.
 
 ## Risks
 

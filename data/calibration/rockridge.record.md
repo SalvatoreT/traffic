@@ -89,6 +89,69 @@ Claremont Ave: checked end to end. OSM lanes (3 with one forward and one backwar
 
 Ramp junctions: after joining all four SR-24 terminals are single signalized nodes (Aileen/Telegraph and Clifton/Claremont off-ramps, Hudson/Claremont and 56th/Telegraph on-ramps) with 2-lane ramp approaches at 35 mph. Mean discharge in the PM peak (seeds 1 to 3, measured before the third round): Aileen off-ramp 584 veh/h (offered 656), Clifton off-ramp 914 veh/h (offered about 1,025), on-ramps 783 and 555 veh/h. That is 290 to 460 veh/h per lane averaged over the hour; the signal gives the ramp 30 to 45% of the cycle and the shortfall is downstream spill-back on Claremont and Telegraph, not the ramp signal itself. Before the third round the remaining gridlock removals were mostly vehicles queued on the 4-lane freeway stub behind the single-lane Clifton off-ramp (26 of about 45 removals over six seeds at scale 0.3). The third round checked the ramp lanes against OSM: the off-ramps are tagged one lane for most of their length and two lanes (turn lanes left | left;through;right at Clifton, left | right at Aileen) on the final way before the signal, and the importer keeps that per segment (a test covers it), so no lane count is lost. After step M the stub accounts for about one removal per run.
 
+## Forty-third round: stop control at Hillegass Ave / 61st St and Canning St / 62nd St (change calibration-round-43)
+
+On 2026-11-18 the project lead compared the stop control of all 36 side-street junctions in the study area with street-level imagery and decided two corrections by card (`openspec/changes/calibration-round-43/design.md`, D1 to D4). Hillegass Ave at 61st St is an all-way stop (high confidence, DATA); the model stopped 61st St only. At Canning St and 62nd St the eastbound 62nd St approach has no stop (medium confidence, ASSUMPTION pending a field check); the model stopped all four approaches. No other junction differed at medium confidence or better. Nothing was tuned in this round: the network was corrected, the demand rebuilt with `npm run data` on the frozen split, and the result assessed.
+
+### What changed
+
+- Network f9fa09a5726644d7 became 093cbd5469aad29c. Two nodes and three links differ and nothing else: node 53085953 `two_way_stop` to `all_way_stop` with `stopAtEnd` on both Hillegass Ave approaches (links 2673, 2676); node 53088342 `all_way_stop` to `two_way_stop` with `stopAtEnd` cleared on the eastbound 62nd St approach (link 1848). No link id moved, so the frozen split (be72380b485e) and the stations stand.
+- The second correction needed a way to free one approach of a junction the map tags on its node: `stopExemptions` in the area config (design D5).
+- Demand e4f1993916827e82 became 77ef92449de50092 and cross-validation demand e480933c18b970f6 became 09d3f3d769ead5ec. The membership files are those of the earlier network.
+- Simulator fingerprint d45a275dd7be0713cec6a64394b7d8a9, unchanged. Validation 67 of 74, unchanged.
+
+### Result: ten seeds
+
+`npm run assess -- --publish --noise`, seeds 1 to 10, 60 minutes. The assessment of 2026-11-17 is in brackets.
+
+| | Target | PM | AM | Midday |
+| --- | --- | --- | --- | --- |
+| D16: cars cleared from gridlock per hour, judged / far | below 1 | 0.00 / 1.10 (0.00 / 5.20), holds | 0.00 / 0.40 (0.00 / 1.80), holds | 0.00 / 0.00 (0.00 / 0.00), holds |
+| Entry backlog, mean %, seeds under 2% | below 2% | 0.20, 10 (0.24, 10) | 0.13, 10 (0.26, 10) | 0.01, 10 (0.01, 10) |
+| Headline shares HNB from / CNB from / HSB to / CSB to freeway | PM 47 / 47 / 68 / 45 | 51.2 / 45.0 / 51.3 / 42.9, 3 of 4, error 6.3, D5 fails (51.4 / 48.8 / 66.0 / 38.4, 4 of 4, error 3.7) | 3 of 4, error 7.2, not a rule (4 of 4, error 3.1) | 4 of 4, error 5.8 (4 of 4, error 1.8) |
+| Recent stations GEH<5, fitted | above 85% | 72 of 92, 78% (78 of 92, 85%) | 69 of 77, 90% (67 of 77, 87%) | no counts |
+| Recent stations GEH<5, held out (out of sample) | above 85% | 12 of 24, 50% (13 of 24, 54%) | 15 of 19, 79% (14 of 19, 74%) | no counts |
+
+Whole-street traversals, cars an hour, simulated against counted (all fitted, so in sample):
+
+| | Counted | PM modeled | Counted | AM modeled |
+| --- | --- | --- | --- | --- |
+| Hillegass Ave SB | 79 | 56 (81) | 36 | 19 (38) |
+| Colby St SB | 39 | 58 (56) | 46 | 27 (24) |
+| Hillegass Ave NB | 48 | 40 (65) | 34 | 43 (51) |
+| Colby St NB | 102 | 84 (85) | 33 | 59 (54) |
+
+All eight stay within GEH 5 (largest 3.9, Colby St NB in the AM).
+
+The PM held-out misses near Howell St and Canning St, cross-validation demand against counted:
+
+| Station | Counted | Modeled |
+| --- | --- | --- |
+| McAuley St, Howell St to Canning St, EB | 12 | 163 (161) |
+| 60th St, Howell St to Canning St, EB | 23 | 136 (130) |
+| Ayala Ave, Martin St to Howell St, NB | 60 | 172 (155) |
+| 62nd St, Colby St to Canning St, EB | 11 | 22 (41), now within GEH 5 |
+
+Two PM held-out stations are new misses: 62nd St Colby St to Canning St westbound, 1 against 19 counted, and Ayala Ave Martin St to Howell St southbound, 89 against 44.
+
+### What moved
+
+The two extra stops on Hillegass Ave take through cars off it. Whole-street traversals of Hillegass Ave fall by about a third in the PM peak, the fitted block from 63rd St to 62nd St southbound carries 95 against 168 counted (128 before), and the share of Hillegass Ave southbound cars bound for the freeway falls from 66.0% to 51.3% against 68% observed, which is what fails D5. The freed 62nd St approach draws more cars than the count: 62nd St from Canning St to Telegraph Ave eastbound carries 33 against 9 counted (22 in earlier runs on the previous network, made with an older simulator build). The other PM fitted stations that left GEH 5 are small counts on Dana St, 63rd St and Howell St. The AM peak moves the other way on Colby St southbound, where the blocks from 61st St to 63rd St now carry 141 and 150 against 167 and 171 counted (103 and 91 before).
+
+The large held-out misses on McAuley St, 60th St and Ayala Ave did not move, so stop control at these two junctions does not explain them.
+
+### Verdict
+
+Status `uncalibrated`. By the keep rule written before the assessment (design D6) the result is worse than the assessment of 2026-11-17: recent PM fitted stations fall from 78 to 72 of 92, PM held-out stations from 13 to 12 of 24, and D5 fails in the PM peak, where it passed. Stability holds in every period, the eight whole-street counts stay within GEH 5, and the AM station counts rise. Following the project lead's instruction, the area note and caveat in `data/areas/rockridge.json` were not updated and nothing was tuned. They still describe the assessment of 2026-11-17, which was made on the earlier network. The assessment files in `data/calibration` are the new ones.
+
+### Open for the project lead
+
+- Whether to keep the two corrections in the baseline. They follow the street as the imagery shows it, and the fitted counts on Hillegass Ave got worse with them. The membership files and the fit settings were made for the earlier network; a membership iteration on the new one (the procedure of rounds 39 to 42) was not run, because the instruction was not to tune.
+- The imagery shows "Road closed to thru traffic" barricades on Howell St at Ayala Ave, on Forest St at Ayala Ave and on Colby St at 61st St. It is undated and nobody has confirmed they are still there, so the baseline leaves them out (design D4). If they stand, they bear directly on the held-out misses near Howell St.
+- Lower-confidence items from the survey, unchanged: Dana St at North St (the model stops North St; none seen), Canning St at 63rd St (a possible stop on 63rd St), 63rd St at Dana St.
+- The compact preview area took the same two corrections in its network; its demand and the extent comparison were not rebuilt.
+- Stored proposals, results, text pages and previews were made on the earlier network and are out of date.
+
 ## Forty-second round: the failing count stations (change calibration-round-42)
 
 On 2026-11-17 the project lead decided that the published model is the round-40 demand (through-target weight 2) and that the site keeps "not yet calibrated" until every rule passes, the count-station rule included. This round looked for the causes of the failing count stations and fixed what the diagnosis supported, with the rule and its ranges unchanged. Guard rails R1 to R4 and the keep rule were frozen in `openspec/changes/calibration-round-42/design.md` (D3, D4) before any changed demand was run; steps S4 and S5 were added there after earlier results and before their own (D9, D11). Simulator fingerprint f0df1aabc323, network f9fa09a5726644d7 and the frozen split are unchanged; `npm run data` reproduced round 40's demand 930a1d90b2d1 and cross-validation demand 738c179defd7 before anything changed. Times Pacific; the round ran on 2026-11-17, 07:59 to 11:19.

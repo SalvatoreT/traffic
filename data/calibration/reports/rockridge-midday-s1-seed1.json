@@ -5,400 +5,400 @@
       "id": "count move 2776>2591",
       "kind": "move",
       "label": "Claremont Avenue from southwest to Colby Street toward north at Colby Street / Claremont Avenue",
-      "trips": 21,
-      "vehPerHour": 25.2
+      "trips": 36,
+      "vehPerHour": 43.199999999999996
     },
     {
       "id": "count move 2730>2591",
       "kind": "move",
       "label": "Forest Street from southeast to Colby Street toward north at Colby Street / Claremont Avenue",
-      "trips": 35,
-      "vehPerHour": 42.0
+      "trips": 28,
+      "vehPerHour": 33.6
     },
     {
       "id": "count move 2605>2035",
       "kind": "move",
       "label": "Colby Street from south to Alcatraz Avenue toward west at Colby Street / Alcatraz Avenue",
-      "trips": 62,
-      "vehPerHour": 74.39999999999999
+      "trips": 66,
+      "vehPerHour": 79.2
     },
     {
       "id": "count move 2605>2762",
       "kind": "move",
       "label": "Colby Street from south to Alcatraz Avenue toward east at Colby Street / Alcatraz Avenue",
-      "trips": 7,
-      "vehPerHour": 8.4
+      "trips": 9,
+      "vehPerHour": 10.799999999999999
     },
     {
       "id": "count move 2034>2606",
       "kind": "move",
       "label": "Alcatraz Avenue from west to Colby Street toward south at Colby Street / Alcatraz Avenue",
-      "trips": 16,
-      "vehPerHour": 19.2
+      "trips": 27,
+      "vehPerHour": 32.4
     },
     {
       "id": "count move 2763>2606",
       "kind": "move",
       "label": "Alcatraz Avenue from east to Colby Street toward south at Colby Street / Alcatraz Avenue",
-      "trips": 20,
-      "vehPerHour": 24.0
+      "trips": 27,
+      "vehPerHour": 32.4
     },
     {
       "id": "count move 1856>2600",
       "kind": "move",
       "label": "63rd Street from west to Colby Street toward south at Colby Street / 63rd Street",
-      "trips": 9,
-      "vehPerHour": 10.799999999999999
+      "trips": 7,
+      "vehPerHour": 8.4
     },
     {
       "id": "count move 2592>2777",
       "kind": "move",
       "label": "Colby Street from north to Claremont Avenue toward southwest (Telegraph side) at Colby Street / Claremont Avenue",
-      "trips": 45,
-      "vehPerHour": 54.0
+      "trips": 70,
+      "vehPerHour": 84.0
     },
     {
       "id": "count move 2592>2750",
       "kind": "move",
       "label": "Colby Street from north to Claremont Avenue toward northeast (College side) at Colby Street / Claremont Avenue",
-      "trips": 1,
-      "vehPerHour": 1.2
+      "trips": 0,
+      "vehPerHour": 0.0
     },
     {
       "id": "count move 2752>2676",
       "kind": "move",
       "label": "Claremont Avenue from southwest to Hillegass Avenue toward north at Hillegass Avenue / Claremont Avenue",
-      "trips": 75,
-      "vehPerHour": 90.0
+      "trips": 52,
+      "vehPerHour": 62.4
     },
     {
       "id": "count move 2670>2765",
       "kind": "move",
       "label": "Hillegass Avenue from south to Alcatraz Avenue toward west at Hillegass Avenue / Alcatraz Avenue",
-      "trips": 27,
-      "vehPerHour": 32.4
+      "trips": 23,
+      "vehPerHour": 27.599999999999998
     },
     {
       "id": "count move 2670>2766",
       "kind": "move",
       "label": "Hillegass Avenue from south to Alcatraz Avenue toward east at Hillegass Avenue / Alcatraz Avenue",
-      "trips": 25,
-      "vehPerHour": 30.0
+      "trips": 22,
+      "vehPerHour": 26.4
     },
     {
       "id": "count move 2764>2669",
       "kind": "move",
       "label": "Alcatraz Avenue from west to Hillegass Avenue toward south at Hillegass Avenue / Alcatraz Avenue",
-      "trips": 38,
-      "vehPerHour": 45.6
+      "trips": 32,
+      "vehPerHour": 38.4
     },
     {
       "id": "count move 2767>2669",
       "kind": "move",
       "label": "Alcatraz Avenue from east to Hillegass Avenue toward south at Hillegass Avenue / Alcatraz Avenue",
-      "trips": 41,
-      "vehPerHour": 49.199999999999996
+      "trips": 32,
+      "vehPerHour": 38.4
     },
     {
       "id": "count move 2671>2622",
       "kind": "move",
       "label": "Hillegass Avenue from north to 62nd Street toward east at Hillegass Avenue / 62nd Street",
-      "trips": 22,
-      "vehPerHour": 26.4
+      "trips": 12,
+      "vehPerHour": 14.399999999999999
     },
     {
       "id": "count move 2675>2753",
       "kind": "move",
       "label": "Hillegass Avenue from north to Claremont Avenue toward southwest (Telegraph side) at Hillegass Avenue / Claremont Avenue",
-      "trips": 39,
-      "vehPerHour": 46.8
+      "trips": 37,
+      "vehPerHour": 44.4
     },
     {
       "id": "count move 2812>1827",
       "kind": "move",
       "label": "Claremont Avenue from southwest (Telegraph side) to Martin Street toward northwest at Martin Street / Claremont Avenue",
-      "trips": 58,
-      "vehPerHour": 69.6
+      "trips": 72,
+      "vehPerHour": 86.39999999999999
     },
     {
       "id": "count move 1825>1987",
       "kind": "move",
       "label": "Martin Street from southeast to 58th Street toward west at Martin Street / Hermann Street / 58th Street",
-      "trips": 43,
-      "vehPerHour": 51.599999999999994
+      "trips": 53,
+      "vehPerHour": 63.599999999999994
     },
     {
       "id": "count move 1828>2758",
       "kind": "move",
       "label": "Martin Street from northwest (Ayala side) to Claremont Avenue toward southwest (Telegraph side) at Claremont Avenue / Martin Street",
-      "trips": 69,
-      "vehPerHour": 82.8
+      "trips": 64,
+      "vehPerHour": 76.8
     },
     {
       "id": "count move 4189>1927",
       "kind": "move",
       "label": "Alcatraz Avenue from west (Telegraph side) to Dana Street toward south at Alcatraz Avenue / Dana Street",
-      "trips": 5,
-      "vehPerHour": 6.0
+      "trips": 1,
+      "vehPerHour": 1.2
     },
     {
       "id": "count move 1925>1857",
       "kind": "move",
       "label": "Dana Street from north to 63rd Street toward west (Telegraph side) at Dana Street / 63rd Street",
-      "trips": 15,
-      "vehPerHour": 18.0
+      "trips": 12,
+      "vehPerHour": 14.399999999999999
     },
     {
       "id": "count move 1925>1856",
       "kind": "move",
       "label": "Dana Street from north to 63rd Street toward east (Colby side) at Dana Street / 63rd Street",
-      "trips": 0,
-      "vehPerHour": 0.0
+      "trips": 2,
+      "vehPerHour": 2.4
     },
     {
       "id": "count route 2591>2605",
       "kind": "path",
       "label": "Colby Street NB, whole street between Claremont Avenue and Alcatraz Avenue (links 2591 to 2605)",
-      "trips": 20,
-      "vehPerHour": 24.0
+      "trips": 28,
+      "vehPerHour": 33.6
     },
     {
       "id": "count route 2606>2592",
       "kind": "path",
       "label": "Colby Street SB, whole street between Claremont Avenue and Alcatraz Avenue (links 2606 to 2592)",
-      "trips": 21,
-      "vehPerHour": 25.2
+      "trips": 29,
+      "vehPerHour": 34.8
     },
     {
       "id": "count route 2676>2670",
       "kind": "path",
       "label": "Hillegass Avenue NB, whole street between Claremont Avenue and Alcatraz Avenue (links 2676 to 2670)",
-      "trips": 24,
-      "vehPerHour": 28.799999999999997
+      "trips": 15,
+      "vehPerHour": 18.0
     },
     {
       "id": "count route 2669>2675",
       "kind": "path",
       "label": "Hillegass Avenue SB, whole street between Claremont Avenue and Alcatraz Avenue (links 2669 to 2675)",
-      "trips": 34,
-      "vehPerHour": 40.8
+      "trips": 17,
+      "vehPerHour": 20.4
     },
     {
       "id": "ix mlk-55th move 834>713",
       "kind": "move",
       "label": "Martin Luther King Jr Way and 55th St, SB approach to the E leg",
-      "trips": 70,
-      "vehPerHour": 84.0
+      "trips": 55,
+      "vehPerHour": 66.0
     },
     {
       "id": "ix mlk-55th move 834>714",
       "kind": "move",
       "label": "Martin Luther King Jr Way and 55th St, SB approach to the W leg",
-      "trips": 33,
-      "vehPerHour": 39.6
+      "trips": 45,
+      "vehPerHour": 54.0
     },
     {
       "id": "ix mlk-55th move 712>765",
       "kind": "move",
       "label": "Martin Luther King Jr Way and 55th St, WB approach to the S leg",
-      "trips": 9,
-      "vehPerHour": 10.799999999999999
+      "trips": 10,
+      "vehPerHour": 12.0
     },
     {
       "id": "ix mlk-55th move 712>705",
       "kind": "move",
       "label": "Martin Luther King Jr Way and 55th St, WB approach to the N leg",
-      "trips": 25,
-      "vehPerHour": 30.0
+      "trips": 22,
+      "vehPerHour": 26.4
     },
     {
       "id": "ix mlk-55th move 764>714",
       "kind": "move",
       "label": "Martin Luther King Jr Way and 55th St, NB approach to the W leg",
-      "trips": 43,
-      "vehPerHour": 51.599999999999994
+      "trips": 48,
+      "vehPerHour": 57.599999999999994
     },
     {
       "id": "ix mlk-55th move 764>713",
       "kind": "move",
       "label": "Martin Luther King Jr Way and 55th St, NB approach to the E leg",
-      "trips": 12,
-      "vehPerHour": 14.399999999999999
+      "trips": 16,
+      "vehPerHour": 19.2
     },
     {
       "id": "ix mlk-55th move 715>765",
       "kind": "move",
       "label": "Martin Luther King Jr Way and 55th St, EB approach to the S leg",
-      "trips": 3,
-      "vehPerHour": 3.5999999999999996
+      "trips": 2,
+      "vehPerHour": 2.4
     },
     {
       "id": "ix shattuck-55th move 1751>1578",
       "kind": "move",
       "label": "Shattuck Ave and 55th St, SB approach to the E leg",
-      "trips": 26,
-      "vehPerHour": 31.2
+      "trips": 35,
+      "vehPerHour": 42.0
     },
     {
       "id": "ix shattuck-55th move 1751>710",
       "kind": "move",
       "label": "Shattuck Ave and 55th St, SB approach to the W leg",
-      "trips": 27,
-      "vehPerHour": 32.4
+      "trips": 34,
+      "vehPerHour": 40.8
     },
     {
       "id": "ix shattuck-55th move 1577>1661",
       "kind": "move",
       "label": "Shattuck Ave and 55th St, WB approach to the S leg",
-      "trips": 29,
-      "vehPerHour": 34.8
+      "trips": 22,
+      "vehPerHour": 26.4
     },
     {
       "id": "ix shattuck-55th move 1577>1750",
       "kind": "move",
       "label": "Shattuck Ave and 55th St, WB approach to the N leg",
-      "trips": 40,
-      "vehPerHour": 48.0
+      "trips": 44,
+      "vehPerHour": 52.8
     },
     {
       "id": "ix shattuck-55th move 1660>710",
       "kind": "move",
       "label": "Shattuck Ave and 55th St, NB approach to the W leg",
-      "trips": 11,
-      "vehPerHour": 13.2
+      "trips": 16,
+      "vehPerHour": 19.2
     },
     {
       "id": "ix shattuck-55th move 711>1750",
       "kind": "move",
       "label": "Shattuck Ave and 55th St, EB approach to the N leg",
-      "trips": 70,
-      "vehPerHour": 84.0
+      "trips": 45,
+      "vehPerHour": 54.0
     },
     {
       "id": "ix shattuck-55th move 711>1661",
       "kind": "move",
       "label": "Shattuck Ave and 55th St, EB approach to the S leg",
-      "trips": 30,
-      "vehPerHour": 36.0
+      "trips": 13,
+      "vehPerHour": 15.6
     },
     {
       "id": "ix shattuck-55th move 1660>1578",
       "kind": "move",
       "label": "Shattuck Ave and 55th St, NB approach to the E leg",
-      "trips": 21,
-      "vehPerHour": 25.2
+      "trips": 32,
+      "vehPerHour": 38.4
     },
     {
       "id": "ix telegraph-55th move 1678>1565",
       "kind": "move",
       "label": "Telegraph Ave and 55th St, SB approach to the E leg",
-      "trips": 22,
-      "vehPerHour": 26.4
+      "trips": 10,
+      "vehPerHour": 12.0
     },
     {
       "id": "ix telegraph-55th move 1678>1575",
       "kind": "move",
       "label": "Telegraph Ave and 55th St, SB approach to the W leg",
-      "trips": 41,
-      "vehPerHour": 49.199999999999996
+      "trips": 34,
+      "vehPerHour": 40.8
     },
     {
       "id": "ix telegraph-55th move 1564>1676",
       "kind": "move",
       "label": "Telegraph Ave and 55th St, WB approach to the S leg",
-      "trips": 18,
-      "vehPerHour": 21.599999999999998
+      "trips": 12,
+      "vehPerHour": 14.399999999999999
     },
     {
       "id": "ix telegraph-55th move 1677>1575",
       "kind": "move",
       "label": "Telegraph Ave and 55th St, NB approach to the W leg",
-      "trips": 68,
-      "vehPerHour": 81.6
+      "trips": 55,
+      "vehPerHour": 66.0
     },
     {
       "id": "ix telegraph-55th move 1677>1565",
       "kind": "move",
       "label": "Telegraph Ave and 55th St, NB approach to the E leg",
-      "trips": 20,
-      "vehPerHour": 24.0
+      "trips": 19,
+      "vehPerHour": 22.8
     },
     {
       "id": "ix telegraph-55th move 1576>1679",
       "kind": "move",
       "label": "Telegraph Ave and 55th St, EB approach to the N leg",
-      "trips": 77,
-      "vehPerHour": 92.39999999999999
+      "trips": 96,
+      "vehPerHour": 115.19999999999999
     },
     {
       "id": "ix telegraph-55th move 1576>1676",
       "kind": "move",
       "label": "Telegraph Ave and 55th St, EB approach to the S leg",
-      "trips": 68,
-      "vehPerHour": 81.6
+      "trips": 74,
+      "vehPerHour": 88.8
     },
     {
       "id": "ix mlk-52nd move 704>4131",
       "kind": "move",
       "label": "Martin Luther King Jr Way and 52nd St, SB approach to the E leg",
-      "trips": 54,
-      "vehPerHour": 64.8
+      "trips": 18,
+      "vehPerHour": 21.599999999999998
     },
     {
       "id": "ix mlk-52nd move 758>831",
       "kind": "move",
       "label": "Martin Luther King Jr Way and 52nd St, WB approach to the S leg",
-      "trips": 45,
-      "vehPerHour": 54.0
+      "trips": 49,
+      "vehPerHour": 58.8
     },
     {
       "id": "ix mlk-52nd move 758>811",
       "kind": "move",
       "label": "Martin Luther King Jr Way and 52nd St, WB approach to the N leg",
-      "trips": 11,
-      "vehPerHour": 13.2
+      "trips": 30,
+      "vehPerHour": 36.0
     },
     {
       "id": "ix mlk-52nd move 761>759",
       "kind": "move",
       "label": "Martin Luther King Jr Way and 52nd St, NB approach to the W leg",
-      "trips": 19,
-      "vehPerHour": 22.8
+      "trips": 17,
+      "vehPerHour": 20.4
     },
     {
       "id": "ix mlk-52nd move 761>4131",
       "kind": "move",
       "label": "Martin Luther King Jr Way and 52nd St, NB approach to the E leg",
-      "trips": 37,
-      "vehPerHour": 44.4
+      "trips": 25,
+      "vehPerHour": 30.0
     },
     {
       "id": "ix mlk-52nd move 760>811",
       "kind": "move",
       "label": "Martin Luther King Jr Way and 52nd St, EB approach to the N leg",
-      "trips": 42,
-      "vehPerHour": 50.4
+      "trips": 40,
+      "vehPerHour": 48.0
     },
     {
       "id": "ix mlk-52nd move 760>831",
       "kind": "move",
       "label": "Martin Luther King Jr Way and 52nd St, EB approach to the S leg",
-      "trips": 21,
-      "vehPerHour": 25.2
+      "trips": 13,
+      "vehPerHour": 15.6
     },
     {
       "id": "ix sr24-52nd move 1665>4165",
       "kind": "move",
       "label": "SR-24 ramps and 52nd St, WB approach to the N leg",
-      "trips": 595,
-      "vehPerHour": 714.0
+      "trips": 537,
+      "vehPerHour": 644.4
     },
     {
       "id": "ix sr24-52nd move 4160>1749",
       "kind": "move",
       "label": "SR-24 ramps and 52nd St, NB approach to the E leg",
-      "trips": 508,
-      "vehPerHour": 609.6
+      "trips": 544,
+      "vehPerHour": 652.8
     },
     {
       "id": "ix shattuck-52nd move 1653>1571",
@@ -411,113 +411,113 @@
       "id": "ix shattuck-52nd move 1653>1663",
       "kind": "move",
       "label": "Shattuck Ave and 52nd St, SB approach to the W leg",
-      "trips": 366,
-      "vehPerHour": 439.2
+      "trips": 328,
+      "vehPerHour": 393.59999999999997
     },
     {
       "id": "ix shattuck-52nd move 1666>1652",
       "kind": "move",
       "label": "Shattuck Ave and 52nd St, WB approach to the N leg",
-      "trips": 60,
-      "vehPerHour": 72.0
+      "trips": 39,
+      "vehPerHour": 46.8
     },
     {
       "id": "ix shattuck-52nd move 1705>1663",
       "kind": "move",
       "label": "Shattuck Ave and 52nd St, NB approach to the W leg",
-      "trips": 72,
-      "vehPerHour": 86.39999999999999
+      "trips": 69,
+      "vehPerHour": 82.8
     },
     {
       "id": "ix shattuck-52nd move 1705>1571",
       "kind": "move",
       "label": "Shattuck Ave and 52nd St, NB approach to the E leg",
-      "trips": 10,
-      "vehPerHour": 12.0
+      "trips": 2,
+      "vehPerHour": 2.4
     },
     {
       "id": "ix shattuck-52nd move 1662>1652",
       "kind": "move",
       "label": "Shattuck Ave and 52nd St, EB approach to the N leg",
-      "trips": 148,
-      "vehPerHour": 177.6
+      "trips": 149,
+      "vehPerHour": 178.79999999999998
     },
     {
       "id": "ix shattuck-52nd move 1662>1706",
       "kind": "move",
       "label": "Shattuck Ave and 52nd St, EB approach to the S leg",
-      "trips": 89,
-      "vehPerHour": 106.8
+      "trips": 104,
+      "vehPerHour": 124.8
     },
     {
       "id": "ix shattuck-52nd move 1666>1706",
       "kind": "move",
       "label": "Shattuck Ave and 52nd St, WB approach to the S leg",
-      "trips": 8,
-      "vehPerHour": 9.6
+      "trips": 6,
+      "vehPerHour": 7.199999999999999
     },
     {
       "id": "ix telegraph-52nd-claremont move 1630>1647",
       "kind": "move",
       "label": "Telegraph Ave, 52nd St and Claremont Ave, SB approach to the E leg",
-      "trips": 114,
-      "vehPerHour": 136.79999999999998
+      "trips": 135,
+      "vehPerHour": 162.0
     },
     {
       "id": "ix telegraph-52nd-claremont move 1630>1462",
       "kind": "move",
       "label": "Telegraph Ave, 52nd St and Claremont Ave, SB approach to the W leg",
-      "trips": 88,
-      "vehPerHour": 105.6
+      "trips": 76,
+      "vehPerHour": 91.2
     },
     {
       "id": "ix telegraph-52nd-claremont move 1646>4170",
       "kind": "move",
       "label": "Telegraph Ave, 52nd St and Claremont Ave, WB approach to the S leg",
-      "trips": 3,
-      "vehPerHour": 3.5999999999999996
+      "trips": 4,
+      "vehPerHour": 4.8
     },
     {
       "id": "ix telegraph-52nd-claremont move 1646>1631",
       "kind": "move",
       "label": "Telegraph Ave, 52nd St and Claremont Ave, WB approach to the N leg",
-      "trips": 103,
-      "vehPerHour": 123.6
+      "trips": 100,
+      "vehPerHour": 120.0
     },
     {
       "id": "ix telegraph-52nd-claremont move 4171>1647",
       "kind": "move",
       "label": "Telegraph Ave, 52nd St and Claremont Ave, NB approach to the E leg",
-      "trips": 43,
-      "vehPerHour": 51.599999999999994
+      "trips": 20,
+      "vehPerHour": 24.0
     },
     {
       "id": "ix telegraph-51st move 4170>1704",
       "kind": "move",
       "label": "Telegraph Ave and 51st St, SB approach to the E leg",
-      "trips": 223,
-      "vehPerHour": 267.59999999999997
+      "trips": 255,
+      "vehPerHour": 306.0
     },
     {
       "id": "ix telegraph-51st move 4170>1764",
       "kind": "move",
       "label": "Telegraph Ave and 51st St, SB approach to the W leg",
-      "trips": 1,
-      "vehPerHour": 1.2
+      "trips": 2,
+      "vehPerHour": 2.4
     },
     {
       "id": "ix telegraph-51st move 1700>1628",
       "kind": "move",
       "label": "Telegraph Ave and 51st St, WB approach to the S leg",
-      "trips": 24,
-      "vehPerHour": 28.799999999999997
+      "trips": 19,
+      "vehPerHour": 22.8
     },
     {
       "id": "ix telegraph-51st move 1700>4171",
       "kind": "move",
       "label": "Telegraph Ave and 51st St, WB approach to the N leg",
-      "trips": 59,
-      "vehPerHour": 70.8
+      "trips": 85,
+      "vehPerHour": 102.0
     },
     {
       "id": "ix telegraph-51st move 1629>1764",
@@ -530,71 +530,71 @@
       "id": "ix telegraph-51st move 1629>1704",
       "kind": "move",
       "label": "Telegraph Ave and 51st St, NB approach to the E leg",
-      "trips": 16,
-      "vehPerHour": 19.2
+      "trips": 10,
+      "vehPerHour": 12.0
     },
     {
       "id": "ix telegraph-51st move 1763>4171",
       "kind": "move",
       "label": "Telegraph Ave and 51st St, EB approach to the N leg",
-      "trips": 5,
-      "vehPerHour": 6.0
+      "trips": 7,
+      "vehPerHour": 8.4
     },
     {
       "id": "ix telegraph-51st move 1763>1628",
       "kind": "move",
       "label": "Telegraph Ave and 51st St, EB approach to the S leg",
-      "trips": 24,
-      "vehPerHour": 28.799999999999997
+      "trips": 23,
+      "vehPerHour": 27.599999999999998
     },
     {
       "id": "ix ashby-claremont move 3447>3425",
       "kind": "move",
       "label": "Ashby Ave and Claremont Ave, SB approach to the E leg",
-      "trips": 62,
-      "vehPerHour": 74.39999999999999
+      "trips": 49,
+      "vehPerHour": 58.8
     },
     {
       "id": "ix ashby-claremont move 3447>3396",
       "kind": "move",
       "label": "Ashby Ave and Claremont Ave, SB approach to the W leg",
-      "trips": 278,
-      "vehPerHour": 333.59999999999997
+      "trips": 237,
+      "vehPerHour": 284.4
     },
     {
       "id": "ix ashby-claremont move 3426>4328",
       "kind": "move",
       "label": "Ashby Ave and Claremont Ave, WB approach to the S leg",
-      "trips": 15,
-      "vehPerHour": 18.0
+      "trips": 10,
+      "vehPerHour": 12.0
     },
     {
       "id": "ix ashby-claremont move 4329>3396",
       "kind": "move",
       "label": "Ashby Ave and Claremont Ave, NB approach to the W leg",
-      "trips": 10,
-      "vehPerHour": 12.0
+      "trips": 0,
+      "vehPerHour": 0.0
     },
     {
       "id": "ix ashby-claremont move 4329>3425",
       "kind": "move",
       "label": "Ashby Ave and Claremont Ave, NB approach to the E leg",
-      "trips": 157,
-      "vehPerHour": 188.4
+      "trips": 158,
+      "vehPerHour": 189.6
     },
     {
       "id": "ix ashby-claremont move 3395>3446",
       "kind": "move",
       "label": "Ashby Ave and Claremont Ave, EB approach to the N leg",
-      "trips": 47,
-      "vehPerHour": 56.4
+      "trips": 22,
+      "vehPerHour": 26.4
     },
     {
       "id": "ix ashby-claremont move 3395>4328",
       "kind": "move",
       "label": "Ashby Ave and Claremont Ave, EB approach to the S leg",
-      "trips": 10,
-      "vehPerHour": 12.0
+      "trips": 8,
+      "vehPerHour": 9.6
     },
     {
       "id": "ix alcatraz-college move 3008>2955",
@@ -607,85 +607,85 @@
       "id": "ix alcatraz-college move 3008>4239",
       "kind": "move",
       "label": "Alcatraz Ave and College Ave, SB approach to the W leg",
-      "trips": 67,
-      "vehPerHour": 80.39999999999999
+      "trips": 38,
+      "vehPerHour": 45.6
     },
     {
       "id": "ix alcatraz-college move 2805>4239",
       "kind": "move",
       "label": "Alcatraz Ave and College Ave, NB approach to the W leg",
-      "trips": 48,
-      "vehPerHour": 57.599999999999994
+      "trips": 44,
+      "vehPerHour": 52.8
     },
     {
       "id": "ix alcatraz-college move 4238>3009",
       "kind": "move",
       "label": "Alcatraz Ave and College Ave, EB approach to the N leg",
-      "trips": 80,
-      "vehPerHour": 96.0
+      "trips": 78,
+      "vehPerHour": 93.6
     },
     {
       "id": "ix alcatraz-college move 4238>2804",
       "kind": "move",
       "label": "Alcatraz Ave and College Ave, EB approach to the S leg",
-      "trips": 75,
-      "vehPerHour": 90.0
+      "trips": 48,
+      "vehPerHour": 57.599999999999994
     },
     {
       "id": "ix alcatraz-claremont move 2794>2956",
       "kind": "move",
       "label": "Alcatraz Ave and Claremont Ave, SB approach to the W leg",
-      "trips": 65,
-      "vehPerHour": 78.0
+      "trips": 78,
+      "vehPerHour": 93.6
     },
     {
       "id": "ix alcatraz-claremont move 2797>2956",
       "kind": "move",
       "label": "Alcatraz Ave and Claremont Ave, NB approach to the W leg",
-      "trips": 26,
-      "vehPerHour": 31.2
+      "trips": 25,
+      "vehPerHour": 30.0
     },
     {
       "id": "ix alcatraz-claremont move 2955>2795",
       "kind": "move",
       "label": "Alcatraz Ave and Claremont Ave, EB approach to the N leg",
-      "trips": 87,
-      "vehPerHour": 104.39999999999999
+      "trips": 122,
+      "vehPerHour": 146.4
     },
     {
       "id": "ix alcatraz-claremont move 2955>2796",
       "kind": "move",
       "label": "Alcatraz Ave and Claremont Ave, EB approach to the S leg",
-      "trips": 14,
-      "vehPerHour": 16.8
+      "trips": 11,
+      "vehPerHour": 13.2
     },
     {
       "id": "ix sr24-hudson-claremont move 4187>2818",
       "kind": "move",
       "label": "SR-24 westbound on-ramp, Hudson St and Claremont Ave, SB approach to the E leg",
-      "trips": 6,
-      "vehPerHour": 7.199999999999999
+      "trips": 13,
+      "vehPerHour": 15.6
     },
     {
       "id": "ix sr24-hudson-claremont move 4187>1938",
       "kind": "move",
       "label": "SR-24 westbound on-ramp, Hudson St and Claremont Ave, SB approach to the W leg",
-      "trips": 311,
-      "vehPerHour": 373.2
+      "trips": 319,
+      "vehPerHour": 382.8
     },
     {
       "id": "ix sr24-hudson-claremont move 2817>2812",
       "kind": "move",
       "label": "SR-24 westbound on-ramp, Hudson St and Claremont Ave, WB approach to the N leg",
-      "trips": 22,
-      "vehPerHour": 26.4
+      "trips": 20,
+      "vehPerHour": 24.0
     },
     {
       "id": "ix sr24-hudson-claremont move 2021>1938",
       "kind": "move",
       "label": "SR-24 westbound on-ramp, Hudson St and Claremont Ave, NB approach to the W leg",
-      "trips": 48,
-      "vehPerHour": 57.599999999999994
+      "trips": 47,
+      "vehPerHour": 56.4
     },
     {
       "id": "ix sr24-hudson-claremont move 2021>2818",
@@ -705,27 +705,27 @@
       "id": "ix sr24-clifton-claremont move 1600>1771",
       "kind": "move",
       "label": "SR-24 eastbound off-ramp, Clifton St and Claremont Ave, NB approach to the E leg",
-      "trips": 8,
-      "vehPerHour": 9.6
+      "trips": 0,
+      "vehPerHour": 0.0
     },
     {
       "id": "ix sr24-clifton-claremont move 1573>1632",
       "kind": "move",
       "label": "SR-24 eastbound off-ramp, Clifton St and Claremont Ave, EB approach to the N leg",
-      "trips": 277,
-      "vehPerHour": 332.4
+      "trips": 295,
+      "vehPerHour": 354.0
     },
     {
       "id": "ix sr24-clifton-claremont move 1573>1599",
       "kind": "move",
       "label": "SR-24 eastbound off-ramp, Clifton St and Claremont Ave, EB approach to the S leg",
-      "trips": 26,
-      "vehPerHour": 31.2
+      "trips": 35,
+      "vehPerHour": 42.0
     }
   ],
   "gridlockZone": {
     "backlog": {
-      "allTrips": 1,
+      "allTrips": 0,
       "zoneTrips": 0
     },
     "boundingStreets": [
@@ -734,45 +734,45 @@
         "link": 1604,
         "linkLengthM": 94.0,
         "links": 28,
-        "maxQueueM": 42.0,
+        "maxQueueM": 59.0,
         "street": "Telegraph Avenue",
-        "tMin": 10.8
+        "tMin": 45.8
       },
       {
         "fullShare": 0.0,
         "link": 4238,
         "linkLengthM": 84.0,
         "links": 14,
-        "maxQueueM": 46.0,
+        "maxQueueM": 52.0,
         "street": "Alcatraz Avenue",
-        "tMin": 43.5
+        "tMin": 22.3
       },
       {
         "fullShare": 0.0,
         "link": 2805,
         "linkLengthM": 102.0,
         "links": 6,
-        "maxQueueM": 46.0,
+        "maxQueueM": 59.0,
         "street": "College Avenue",
-        "tMin": 17.8
+        "tMin": 44.1
       },
       {
         "fullShare": 0.0,
         "link": 2776,
         "linkLengthM": 161.0,
         "links": 13,
-        "maxQueueM": 42.0,
+        "maxQueueM": 46.0,
         "street": "Claremont Avenue",
-        "tMin": 20.8
+        "tMin": 40.3
       },
       {
         "fullShare": 0.0,
         "link": 1945,
         "linkLengthM": 188.0,
         "links": 3,
-        "maxQueueM": 26.0,
+        "maxQueueM": 29.0,
         "street": "CA 24",
-        "tMin": 25.2
+        "tMin": 46.3
       }
     ],
     "bufferM": 200.0,
@@ -811,15 +811,15 @@
     "zoneNodes": 111
   },
   "health": {
-    "arterialMeanSpeed": 10.103938854946255,
-    "arterialMeanSpeedLast15min": 10.088688507517569,
-    "backlog": 1,
-    "backlogPct": 0.006125199068969742,
-    "completed": 16530,
+    "arterialMeanSpeed": 10.07499210359651,
+    "arterialMeanSpeedLast15min": 10.078238584023396,
+    "backlog": 0,
+    "backlogPct": 0.0,
+    "completed": 16650,
     "gridlockRemoved": 0,
-    "meanTripDelay": 93.71453789336842,
-    "meanTripTime": 345.8787945839903,
-    "spawned": 16326,
+    "meanTripDelay": 93.85964518493624,
+    "meanTripTime": 346.0334075134186,
+    "spawned": 16474,
     "unroutable": 0
   },
   "intentRows": [
@@ -828,108 +828,73 @@
       "block": "Hillegass Avenue NB",
       "from": "sr24-off-west",
       "to": "telegraph-north",
-      "vph": 13.0
+      "vph": 15.0
     },
     {
       "arterial": "SR-24",
       "block": "Hillegass Avenue NB",
       "from": "sr24-off-west",
       "to": "claremont-hills",
-      "vph": 11.0
+      "vph": 8.0
+    },
+    {
+      "arterial": "College Avenue then Alcatraz Avenue",
+      "block": "Hillegass Avenue NB",
+      "from": "college-north",
+      "to": "west-streets",
+      "vph": 4.0
     },
     {
       "arterial": "Telegraph Avenue",
       "block": "Hillegass Avenue NB",
-      "from": "telegraph-south",
-      "to": "berkeley-north",
-      "vph": 5.0
+      "from": "south-oakland",
+      "to": "telegraph-north",
+      "vph": 3.0
     },
     {
-      "arterial": "Claremont Avenue then Alcatraz Avenue",
-      "block": "Hillegass Avenue NB",
-      "from": "sr13",
-      "to": "berkeley-north",
-      "vph": 4.0
-    },
-    {
-      "arterial": "Claremont Avenue then Alcatraz Avenue",
-      "block": "Hillegass Avenue NB",
-      "from": "sr24-off-east",
-      "to": "berkeley-north",
-      "vph": 4.0
-    },
-    {
-      "arterial": "SR-24 then Claremont Avenue then College Avenue",
-      "block": "Hillegass Avenue NB",
-      "from": "sr24-off-west",
-      "to": "college-north",
-      "vph": 4.0
-    },
-    {
-      "arterial": "SR-24 then Claremont Avenue then College Avenue",
+      "arterial": "SR-24 then Claremont Avenue",
       "block": "Hillegass Avenue NB",
       "from": "sr24-off-west",
       "to": "berkeley-north",
       "vph": 3.0
     },
     {
-      "arterial": "College Avenue then Alcatraz Avenue",
+      "arterial": "SR-24 then Claremont Avenue then College Avenue",
       "block": "Hillegass Avenue NB",
-      "from": "college-north",
-      "to": "alcatraz-west",
-      "vph": 2.0
+      "from": "sr24-off-west",
+      "to": "college-north",
+      "vph": 3.0
     },
     {
-      "arterial": "Claremont Avenue",
+      "arterial": "College Avenue",
       "block": "Hillegass Avenue NB",
-      "from": "southwest-oakland",
+      "from": "south-oakland",
       "to": "berkeley-north",
       "vph": 2.0
     },
     {
-      "arterial": "SR-24 then Telegraph Avenue",
+      "arterial": "Claremont Avenue then Alcatraz Avenue",
+      "block": "Hillegass Avenue NB",
+      "from": "sr13",
+      "to": "berkeley-north",
+      "vph": 2.0
+    },
+    {
+      "arterial": "Claremont Avenue then Alcatraz Avenue",
       "block": "Hillegass Avenue NB",
       "from": "sr24-off-east",
-      "to": "ashby-west",
-      "vph": 2.0
-    },
-    {
-      "arterial": "none near the study area",
-      "block": "Hillegass Avenue NB",
-      "from": "sr24-off-east",
-      "to": "telegraph-north",
-      "vph": 2.0
-    },
-    {
-      "arterial": "College Avenue then Alcatraz Avenue",
-      "block": "Hillegass Avenue NB",
-      "from": "college-north",
       "to": "berkeley-north",
-      "vph": 1.0
-    },
-    {
-      "arterial": "Claremont Avenue then College Avenue",
-      "block": "Hillegass Avenue NB",
-      "from": "san-pablo",
-      "to": "berkeley-north",
-      "vph": 1.0
+      "vph": 2.0
     },
     {
       "arterial": "Alcatraz Avenue then College Avenue",
       "block": "Hillegass Avenue NB",
-      "from": "san-pablo",
-      "to": "college-north",
-      "vph": 1.0
-    },
-    {
-      "arterial": "Telegraph Avenue",
-      "block": "Hillegass Avenue NB",
-      "from": "south-oakland",
+      "from": "berkeley-north",
       "to": "berkeley-north",
       "vph": 1.0
     },
     {
-      "arterial": "none near the study area",
+      "arterial": "Claremont Avenue",
       "block": "Hillegass Avenue NB",
       "from": "south-oakland",
       "to": "berkeley-northwest",
@@ -939,14 +904,7 @@
       "arterial": "none near the study area",
       "block": "Hillegass Avenue NB",
       "from": "south-oakland",
-      "to": "shattuck-north",
-      "vph": 1.0
-    },
-    {
-      "arterial": "Telegraph Avenue",
-      "block": "Hillegass Avenue NB",
-      "from": "south-oakland",
-      "to": "telegraph-north",
+      "to": "claremont-hills",
       "vph": 1.0
     },
     {
@@ -958,66 +916,80 @@
     },
     {
       "arterial": "Telegraph Avenue",
-      "block": "Hillegass Avenue NB",
-      "from": "southwest-oakland",
-      "to": "college-north",
-      "vph": 1.0
-    },
-    {
-      "arterial": "Telegraph Avenue",
-      "block": "Hillegass Avenue NB",
-      "from": "southwest-oakland",
-      "to": "telegraph-north",
-      "vph": 1.0
-    },
-    {
-      "arterial": "SR-24",
-      "block": "Hillegass Avenue NB",
-      "from": "sr24-off-east",
-      "to": "san-pablo",
-      "vph": 1.0
-    },
-    {
-      "arterial": "Telegraph Avenue",
       "block": "Colby Street NB",
       "from": "sr24-off-west",
       "to": "telegraph-north",
-      "vph": 29.0
-    },
-    {
-      "arterial": "Claremont Avenue then College Avenue",
-      "block": "Colby Street NB",
-      "from": "south-oakland",
-      "to": "telegraph-north",
-      "vph": 9.0
-    },
-    {
-      "arterial": "none near the study area",
-      "block": "Colby Street NB",
-      "from": "south-oakland",
-      "to": "ashby-west",
-      "vph": 6.0
-    },
-    {
-      "arterial": "Telegraph Avenue",
-      "block": "Colby Street NB",
-      "from": "southwest-oakland",
-      "to": "telegraph-north",
-      "vph": 6.0
+      "vph": 45.0
     },
     {
       "arterial": "Telegraph Avenue",
       "block": "Colby Street NB",
       "from": "telegraph-south",
       "to": "telegraph-north",
-      "vph": 6.0
+      "vph": 7.0
     },
     {
-      "arterial": "Claremont Avenue then College Avenue then Alcatraz Avenue",
+      "arterial": "Telegraph Avenue",
+      "block": "Colby Street NB",
+      "from": "southwest-oakland",
+      "to": "telegraph-north",
+      "vph": 5.0
+    },
+    {
+      "arterial": "Telegraph Avenue",
       "block": "Colby Street NB",
       "from": "south-oakland",
       "to": "berkeley-north",
+      "vph": 4.0
+    },
+    {
+      "arterial": "none near the study area",
+      "block": "Colby Street NB",
+      "from": "south-oakland",
+      "to": "berkeley-northwest",
       "vph": 3.0
+    },
+    {
+      "arterial": "Telegraph Avenue",
+      "block": "Colby Street NB",
+      "from": "south-oakland",
+      "to": "telegraph-north",
+      "vph": 3.0
+    },
+    {
+      "arterial": "College Avenue then Alcatraz Avenue",
+      "block": "Colby Street NB",
+      "from": "college-north",
+      "to": "west-streets",
+      "vph": 2.0
+    },
+    {
+      "arterial": "none near the study area",
+      "block": "Colby Street NB",
+      "from": "south-oakland",
+      "to": "ashby-west",
+      "vph": 2.0
+    },
+    {
+      "arterial": "Claremont Avenue then Telegraph Avenue",
+      "block": "Colby Street NB",
+      "from": "south-oakland",
+      "to": "telegraph-south",
+      "vph": 2.0
+    },
+    {
+      "arterial": "College Avenue then Alcatraz Avenue",
+      "block": "Colby Street NB",
+      "from": "south-oakland",
+      "to": "west-streets",
+      "vph": 2.0
+    },
+    {
+      "arterial": "Claremont Avenue",
+      "block": "Colby Street NB",
+      "from": "southwest-oakland",
+      "to": "claremont-hills",
+      "vph": 2.0
     },
     {
       "arterial": "SR-24 then Claremont Avenue",
@@ -1027,17 +999,24 @@
       "vph": 2.0
     },
     {
-      "arterial": "College Avenue",
+      "arterial": "SR-24",
+      "block": "Colby Street NB",
+      "from": "sr24-off-west",
+      "to": "claremont-hills",
+      "vph": 2.0
+    },
+    {
+      "arterial": "SR-24 then Telegraph Avenue then Alcatraz Avenue",
       "block": "Colby Street NB",
       "from": "south-oakland",
-      "to": "college-north",
+      "to": "shattuck-north",
       "vph": 1.0
     },
     {
-      "arterial": "Claremont Avenue then Telegraph Avenue",
+      "arterial": "Claremont Avenue",
       "block": "Colby Street NB",
       "from": "south-oakland",
-      "to": "telegraph-south",
+      "to": "southwest-oakland",
       "vph": 1.0
     },
     {
@@ -1048,10 +1027,10 @@
       "vph": 1.0
     },
     {
-      "arterial": "Telegraph Avenue",
+      "arterial": "Claremont Avenue",
       "block": "Colby Street NB",
       "from": "telegraph-south",
-      "to": "college-north",
+      "to": "claremont-hills",
       "vph": 1.0
     },
     {
@@ -1059,7 +1038,7 @@
       "block": "Hillegass Avenue SB",
       "from": "telegraph-north",
       "to": "sr24-west-on",
-      "vph": 28.0
+      "vph": 21.0
     },
     {
       "arterial": "Claremont Avenue then SR-24",
@@ -1069,100 +1048,65 @@
       "vph": 14.0
     },
     {
-      "arterial": "Claremont Avenue then SR-24",
-      "block": "Hillegass Avenue SB",
-      "from": "berkeley-north",
-      "to": "sr24-west-on",
-      "vph": 12.0
-    },
-    {
       "arterial": "College Avenue then Claremont Avenue then SR-24",
       "block": "Hillegass Avenue SB",
       "from": "college-north",
       "to": "sr24-west-on",
-      "vph": 11.0
+      "vph": 8.0
     },
     {
-      "arterial": "Telegraph Avenue",
+      "arterial": "Claremont Avenue then SR-24",
       "block": "Hillegass Avenue SB",
       "from": "berkeley-north",
-      "to": "south-oakland",
+      "to": "sr24-west-on",
       "vph": 7.0
     },
     {
-      "arterial": "College Avenue",
+      "arterial": "Alcatraz Avenue then College Avenue",
       "block": "Hillegass Avenue SB",
-      "from": "shattuck-north",
-      "to": "berkeley-north",
+      "from": "alcatraz-west",
+      "to": "college-north",
       "vph": 4.0
     },
     {
       "arterial": "College Avenue",
       "block": "Hillegass Avenue SB",
-      "from": "berkeley-northwest",
+      "from": "berkeley-north",
       "to": "berkeley-north",
       "vph": 3.0
-    },
-    {
-      "arterial": "College Avenue",
-      "block": "Hillegass Avenue SB",
-      "from": "telegraph-north",
-      "to": "berkeley-north",
-      "vph": 3.0
-    },
-    {
-      "arterial": "SR-24",
-      "block": "Hillegass Avenue SB",
-      "from": "alcatraz-west",
-      "to": "sr13",
-      "vph": 1.0
     },
     {
       "arterial": "Alcatraz Avenue then College Avenue",
       "block": "Hillegass Avenue SB",
       "from": "ashby-west",
-      "to": "south-oakland",
-      "vph": 1.0
-    },
-    {
-      "arterial": "Claremont Avenue",
-      "block": "Hillegass Avenue SB",
-      "from": "berkeley-northwest",
-      "to": "hills-northeast",
-      "vph": 1.0
-    },
-    {
-      "arterial": "College Avenue then Alcatraz Avenue",
-      "block": "Hillegass Avenue SB",
-      "from": "college-north",
-      "to": "alcatraz-west",
-      "vph": 1.0
-    },
-    {
-      "arterial": "Claremont Avenue then College Avenue",
-      "block": "Hillegass Avenue SB",
-      "from": "san-pablo",
-      "to": "berkeley-north",
-      "vph": 1.0
+      "to": "college-north",
+      "vph": 2.0
     },
     {
       "arterial": "Alcatraz Avenue then College Avenue",
       "block": "Hillegass Avenue SB",
-      "from": "san-pablo",
+      "from": "berkeley-north",
       "to": "college-north",
       "vph": 1.0
     },
     {
-      "arterial": "Alcatraz Avenue then College Avenue",
+      "arterial": "College Avenue",
       "block": "Hillegass Avenue SB",
-      "from": "san-pablo",
-      "to": "south-oakland",
+      "from": "telegraph-north",
+      "to": "college-north",
       "vph": 1.0
     },
     {
       "arterial": "Telegraph Avenue",
       "block": "Colby Street SB",
       "from": "telegraph-north",
+      "to": "sr24-west-on",
+      "vph": 16.0
+    },
+    {
+      "arterial": "College Avenue then Claremont Avenue then SR-24",
+      "block": "Colby Street SB",
+      "from": "college-north",
       "to": "sr24-west-on",
       "vph": 14.0
     },
@@ -1170,49 +1114,35 @@
       "arterial": "Telegraph Avenue",
       "block": "Colby Street SB",
       "from": "berkeley-north",
-      "to": "south-oakland",
-      "vph": 12.0
-    },
-    {
-      "arterial": "Claremont Avenue then SR-24",
-      "block": "Colby Street SB",
-      "from": "berkeley-north",
       "to": "sr24-west-on",
-      "vph": 10.0
+      "vph": 13.0
     },
     {
       "arterial": "Claremont Avenue then SR-24",
       "block": "Colby Street SB",
       "from": "claremont-hills",
       "to": "sr24-west-on",
-      "vph": 10.0
+      "vph": 12.0
     },
     {
-      "arterial": "College Avenue then Claremont Avenue then SR-24",
+      "arterial": "Alcatraz Avenue then Claremont Avenue",
       "block": "Colby Street SB",
-      "from": "college-north",
-      "to": "sr24-west-on",
-      "vph": 6.0
+      "from": "berkeley-north",
+      "to": "berkeley-north",
+      "vph": 8.0
     },
     {
       "arterial": "Alcatraz Avenue then College Avenue",
       "block": "Colby Street SB",
-      "from": "san-pablo",
+      "from": "alcatraz-west",
       "to": "college-north",
-      "vph": 5.0
+      "vph": 3.0
     },
     {
-      "arterial": "Alcatraz Avenue then College Avenue",
+      "arterial": "Telegraph Avenue",
       "block": "Colby Street SB",
-      "from": "san-pablo",
+      "from": "berkeley-north",
       "to": "south-oakland",
-      "vph": 4.0
-    },
-    {
-      "arterial": "SR-24",
-      "block": "Colby Street SB",
-      "from": "ashby-west",
-      "to": "sr13",
       "vph": 3.0
     },
     {
@@ -1223,66 +1153,80 @@
       "vph": 3.0
     },
     {
-      "arterial": "SR-24",
-      "block": "Colby Street SB",
-      "from": "alcatraz-west",
-      "to": "sr13",
-      "vph": 2.0
-    },
-    {
       "arterial": "Alcatraz Avenue then College Avenue",
       "block": "Colby Street SB",
-      "from": "berkeley-north",
-      "to": "berkeley-north",
-      "vph": 2.0
-    },
-    {
-      "arterial": "Claremont Avenue",
-      "block": "Colby Street SB",
-      "from": "berkeley-northwest",
-      "to": "hills-northeast",
+      "from": "ashby-west",
+      "to": "college-north",
       "vph": 2.0
     },
     {
       "arterial": "SR-24",
       "block": "Colby Street SB",
       "from": "ashby-west",
-      "to": "sr24-east-on",
-      "vph": 1.0
+      "to": "sr13",
+      "vph": 2.0
     },
     {
-      "arterial": "Alcatraz Avenue then Claremont Avenue",
+      "arterial": "Telegraph Avenue",
       "block": "Colby Street SB",
-      "from": "berkeley-north",
-      "to": "hills-northeast",
+      "from": "telegraph-north",
+      "to": "south-oakland",
+      "vph": 2.0
+    },
+    {
+      "arterial": "SR-24",
+      "block": "Colby Street SB",
+      "from": "alcatraz-west",
+      "to": "sr13",
       "vph": 1.0
     },
     {
       "arterial": "Claremont Avenue",
       "block": "Colby Street SB",
       "from": "claremont-hills",
+      "to": "south-oakland",
+      "vph": 1.0
+    },
+    {
+      "arterial": "Alcatraz Avenue then Telegraph Avenue",
+      "block": "Colby Street SB",
+      "from": "college-north",
       "to": "telegraph-south",
+      "vph": 1.0
+    },
+    {
+      "arterial": "College Avenue then Alcatraz Avenue",
+      "block": "Colby Street SB",
+      "from": "college-north",
+      "to": "west-streets",
       "vph": 1.0
     },
     {
       "arterial": "Claremont Avenue",
       "block": "Colby Street SB",
       "from": "hills-northeast",
-      "to": "southwest-oakland",
+      "to": "south-oakland",
       "vph": 1.0
     },
     {
-      "arterial": "College Avenue",
+      "arterial": "Claremont Avenue",
       "block": "Colby Street SB",
-      "from": "shattuck-north",
-      "to": "berkeley-north",
+      "from": "hills-northeast",
+      "to": "telegraph-south",
+      "vph": 1.0
+    },
+    {
+      "arterial": "Claremont Avenue then College Avenue",
+      "block": "Colby Street SB",
+      "from": "san-pablo",
+      "to": "college-north",
       "vph": 1.0
     },
     {
       "arterial": "College Avenue",
       "block": "Colby Street SB",
       "from": "telegraph-north",
-      "to": "berkeley-north",
+      "to": "college-north",
       "vph": 1.0
     },
     {
@@ -1293,178 +1237,164 @@
       "vph": 1.0
     },
     {
-      "arterial": "Alcatraz Avenue then Claremont Avenue",
+      "arterial": "Claremont Avenue",
       "block": "Colby Street SB",
-      "from": "west-streets",
-      "to": "berkeley-north",
+      "from": "telegraph-south",
+      "to": "claremont-hills",
       "vph": 1.0
     },
     {
-      "arterial": "Alcatraz Avenue then College Avenue",
-      "block": "Colby Street SB",
-      "from": "west-streets",
-      "to": "south-oakland",
-      "vph": 1.0
+      "arterial": "Telegraph Avenue",
+      "block": "Study area, all residential and service streets",
+      "from": "sr24-off-west",
+      "to": "telegraph-north",
+      "vph": 55.0
+    },
+    {
+      "arterial": "Telegraph Avenue",
+      "block": "Study area, all residential and service streets",
+      "from": "berkeley-north",
+      "to": "sr24-west-on",
+      "vph": 43.0
     },
     {
       "arterial": "Telegraph Avenue",
       "block": "Study area, all residential and service streets",
       "from": "telegraph-north",
       "to": "sr24-west-on",
-      "vph": 36.0
+      "vph": 29.0
     },
     {
-      "arterial": "Telegraph Avenue",
+      "arterial": "Claremont Avenue",
       "block": "Study area, all residential and service streets",
-      "from": "sr24-off-west",
-      "to": "telegraph-north",
-      "vph": 35.0
-    },
-    {
-      "arterial": "Telegraph Avenue",
-      "block": "Study area, all residential and service streets",
-      "from": "berkeley-north",
-      "to": "sr24-west-on",
-      "vph": 34.0
-    },
-    {
-      "arterial": "Telegraph Avenue",
-      "block": "Study area, all residential and service streets",
-      "from": "berkeley-north",
+      "from": "san-pablo",
       "to": "south-oakland",
-      "vph": 25.0
-    },
-    {
-      "arterial": "Claremont Avenue then SR-24",
-      "block": "Study area, all residential and service streets",
-      "from": "claremont-hills",
-      "to": "sr24-west-on",
       "vph": 22.0
-    },
-    {
-      "arterial": "Claremont Avenue then College Avenue",
-      "block": "Study area, all residential and service streets",
-      "from": "san-pablo",
-      "to": "college-north",
-      "vph": 15.0
-    },
-    {
-      "arterial": "College Avenue then Claremont Avenue then SR-24",
-      "block": "Study area, all residential and service streets",
-      "from": "college-north",
-      "to": "sr24-west-on",
-      "vph": 13.0
-    },
-    {
-      "arterial": "Telegraph Avenue",
-      "block": "Study area, all residential and service streets",
-      "from": "south-oakland",
-      "to": "berkeley-north",
-      "vph": 13.0
-    },
-    {
-      "arterial": "Claremont Avenue then College Avenue",
-      "block": "Study area, all residential and service streets",
-      "from": "south-oakland",
-      "to": "telegraph-north",
-      "vph": 13.0
-    },
-    {
-      "arterial": "Telegraph Avenue",
-      "block": "Study area, all residential and service streets",
-      "from": "sr24-off-west",
-      "to": "berkeley-north",
-      "vph": 12.0
-    },
-    {
-      "arterial": "Claremont Avenue",
-      "block": "Study area, all residential and service streets",
-      "from": "southwest-oakland",
-      "to": "south-oakland",
-      "vph": 11.0
-    },
-    {
-      "arterial": "SR-24",
-      "block": "Study area, all residential and service streets",
-      "from": "sr24-off-west",
-      "to": "claremont-hills",
-      "vph": 11.0
-    },
-    {
-      "arterial": "Alcatraz Avenue then College Avenue",
-      "block": "Study area, all residential and service streets",
-      "from": "san-pablo",
-      "to": "south-oakland",
-      "vph": 10.0
-    },
-    {
-      "arterial": "Claremont Avenue",
-      "block": "Study area, all residential and service streets",
-      "from": "south-oakland",
-      "to": "san-pablo",
-      "vph": 9.0
-    },
-    {
-      "arterial": "none near the study area",
-      "block": "Study area, all residential and service streets",
-      "from": "south-oakland",
-      "to": "ashby-west",
-      "vph": 7.0
     },
     {
       "arterial": "Claremont Avenue then Telegraph Avenue",
       "block": "Study area, all residential and service streets",
       "from": "south-oakland",
       "to": "telegraph-south",
-      "vph": 7.0
+      "vph": 22.0
+    },
+    {
+      "arterial": "Claremont Avenue then SR-24",
+      "block": "Study area, all residential and service streets",
+      "from": "claremont-hills",
+      "to": "sr24-west-on",
+      "vph": 21.0
     },
     {
       "arterial": "Telegraph Avenue",
       "block": "Study area, all residential and service streets",
-      "from": "southwest-oakland",
+      "from": "south-oakland",
+      "to": "berkeley-north",
+      "vph": 20.0
+    },
+    {
+      "arterial": "College Avenue then Claremont Avenue then SR-24",
+      "block": "Study area, all residential and service streets",
+      "from": "college-north",
+      "to": "sr24-west-on",
+      "vph": 18.0
+    },
+    {
+      "arterial": "Claremont Avenue",
+      "block": "Study area, all residential and service streets",
+      "from": "south-oakland",
+      "to": "berkeley-northwest",
+      "vph": 18.0
+    },
+    {
+      "arterial": "Telegraph Avenue",
+      "block": "Study area, all residential and service streets",
+      "from": "berkeley-north",
+      "to": "south-oakland",
+      "vph": 14.0
+    },
+    {
+      "arterial": "Telegraph Avenue",
+      "block": "Study area, all residential and service streets",
+      "from": "south-oakland",
       "to": "telegraph-north",
-      "vph": 7.0
+      "vph": 12.0
+    },
+    {
+      "arterial": "College Avenue",
+      "block": "Study area, all residential and service streets",
+      "from": "berkeley-north",
+      "to": "berkeley-north",
+      "vph": 11.0
+    },
+    {
+      "arterial": "SR-24 then Claremont Avenue",
+      "block": "Study area, all residential and service streets",
+      "from": "sr24-off-west",
+      "to": "berkeley-north",
+      "vph": 9.0
+    },
+    {
+      "arterial": "Alcatraz Avenue then College Avenue",
+      "block": "Study area, all residential and service streets",
+      "from": "alcatraz-west",
+      "to": "college-north",
+      "vph": 8.0
+    },
+    {
+      "arterial": "Claremont Avenue then College Avenue",
+      "block": "Study area, all residential and service streets",
+      "from": "san-pablo",
+      "to": "college-north",
+      "vph": 8.0
     },
     {
       "arterial": "SR-24",
       "block": "Study area, all residential and service streets",
       "from": "southwest-oakland",
       "to": "claremont-hills",
-      "vph": 6.0
+      "vph": 8.0
     },
     {
-      "arterial": "Claremont Avenue then Alcatraz Avenue",
+      "arterial": "SR-24",
       "block": "Study area, all residential and service streets",
-      "from": "sr24-off-east",
-      "to": "berkeley-north",
-      "vph": 6.0
+      "from": "sr24-off-west",
+      "to": "claremont-hills",
+      "vph": 8.0
+    },
+    {
+      "arterial": "College Avenue then Alcatraz Avenue",
+      "block": "Study area, all residential and service streets",
+      "from": "college-north",
+      "to": "west-streets",
+      "vph": 7.0
     },
     {
       "arterial": "Telegraph Avenue",
       "block": "Study area, all residential and service streets",
       "from": "telegraph-south",
       "to": "telegraph-north",
+      "vph": 7.0
+    },
+    {
+      "arterial": "Telegraph Avenue",
+      "block": "Study area, all residential and service streets",
+      "from": "telegraph-north",
+      "to": "south-oakland",
       "vph": 6.0
     },
     {
-      "arterial": "College Avenue",
+      "arterial": "Alcatraz Avenue then College Avenue",
       "block": "Study area, all residential and service streets",
-      "from": "berkeley-northwest",
-      "to": "berkeley-north",
+      "from": "ashby-west",
+      "to": "college-north",
       "vph": 5.0
     },
     {
-      "arterial": "College Avenue then Alcatraz Avenue",
+      "arterial": "Telegraph Avenue",
       "block": "Study area, all residential and service streets",
-      "from": "college-north",
-      "to": "alcatraz-west",
-      "vph": 5.0
-    },
-    {
-      "arterial": "Claremont Avenue then Alcatraz Avenue",
-      "block": "Study area, all residential and service streets",
-      "from": "sr13",
-      "to": "berkeley-north",
+      "from": "southwest-oakland",
+      "to": "telegraph-north",
       "vph": 5.0
     },
     {
@@ -1472,49 +1402,14 @@
       "block": "Study area, all residential and service streets",
       "from": "sr24-off-west",
       "to": "college-north",
-      "vph": 5.0
-    },
-    {
-      "arterial": "Telegraph Avenue",
-      "block": "Study area, all residential and service streets",
-      "from": "telegraph-south",
-      "to": "berkeley-north",
-      "vph": 5.0
-    },
-    {
-      "arterial": "College Avenue",
-      "block": "Study area, all residential and service streets",
-      "from": "shattuck-north",
-      "to": "berkeley-north",
       "vph": 4.0
     },
     {
-      "arterial": "Claremont Avenue",
+      "arterial": "none near the study area",
       "block": "Study area, all residential and service streets",
-      "from": "south-oakland",
-      "to": "southwest-oakland",
+      "from": "west-streets",
+      "to": "south-oakland",
       "vph": 4.0
-    },
-    {
-      "arterial": "SR-24",
-      "block": "Study area, all residential and service streets",
-      "from": "alcatraz-west",
-      "to": "sr13",
-      "vph": 3.0
-    },
-    {
-      "arterial": "SR-24",
-      "block": "Study area, all residential and service streets",
-      "from": "ashby-west",
-      "to": "sr13",
-      "vph": 3.0
-    },
-    {
-      "arterial": "Claremont Avenue then College Avenue",
-      "block": "Study area, all residential and service streets",
-      "from": "san-pablo",
-      "to": "berkeley-north",
-      "vph": 3.0
     },
     {
       "arterial": "none near the study area",
@@ -1524,52 +1419,73 @@
       "vph": 3.0
     },
     {
+      "arterial": "SR-24 then Telegraph Avenue then Alcatraz Avenue",
+      "block": "Study area, all residential and service streets",
+      "from": "south-oakland",
+      "to": "shattuck-north",
+      "vph": 3.0
+    },
+    {
+      "arterial": "Claremont Avenue then Alcatraz Avenue",
+      "block": "Study area, all residential and service streets",
+      "from": "sr13",
+      "to": "berkeley-north",
+      "vph": 3.0
+    },
+    {
       "arterial": "Claremont Avenue",
-      "block": "Study area, all residential and service streets",
-      "from": "southwest-oakland",
-      "to": "berkeley-north",
-      "vph": 3.0
-    },
-    {
-      "arterial": "College Avenue",
-      "block": "Study area, all residential and service streets",
-      "from": "telegraph-north",
-      "to": "berkeley-north",
-      "vph": 3.0
-    },
-    {
-      "arterial": "Claremont Avenue then College Avenue",
       "block": "Study area, all residential and service streets",
       "from": "telegraph-south",
-      "to": "college-north",
+      "to": "claremont-hills",
       "vph": 3.0
     },
     {
-      "arterial": "Alcatraz Avenue then College Avenue",
+      "arterial": "Telegraph Avenue then Alcatraz Avenue then College Avenue",
+      "block": "Study area, all residential and service streets",
+      "from": "telegraph-south",
+      "to": "south-oakland",
+      "vph": 3.0
+    },
+    {
+      "arterial": "SR-24",
       "block": "Study area, all residential and service streets",
       "from": "ashby-west",
-      "to": "south-oakland",
+      "to": "sr13",
       "vph": 2.0
     },
     {
-      "arterial": "Alcatraz Avenue then College Avenue",
+      "arterial": "Alcatraz Avenue then Telegraph Avenue",
       "block": "Study area, all residential and service streets",
-      "from": "berkeley-north",
-      "to": "berkeley-north",
-      "vph": 2.0
-    },
-    {
-      "arterial": "Claremont Avenue",
-      "block": "Study area, all residential and service streets",
-      "from": "berkeley-northwest",
-      "to": "hills-northeast",
+      "from": "college-north",
+      "to": "telegraph-south",
       "vph": 2.0
     },
     {
       "arterial": "Alcatraz Avenue then Claremont Avenue",
       "block": "Study area, all residential and service streets",
       "from": "san-pablo",
-      "to": "claremont-hills",
+      "to": "hills-northeast",
+      "vph": 2.0
+    },
+    {
+      "arterial": "none near the study area",
+      "block": "Study area, all residential and service streets",
+      "from": "south-oakland",
+      "to": "ashby-west",
+      "vph": 2.0
+    },
+    {
+      "arterial": "Claremont Avenue",
+      "block": "Study area, all residential and service streets",
+      "from": "south-oakland",
+      "to": "san-pablo",
+      "vph": 2.0
+    },
+    {
+      "arterial": "Claremont Avenue",
+      "block": "Study area, all residential and service streets",
+      "from": "south-oakland",
+      "to": "southwest-oakland",
       "vph": 2.0
     },
     {
@@ -1580,87 +1496,108 @@
       "vph": 2.0
     },
     {
-      "arterial": "SR-24 then Telegraph Avenue",
+      "arterial": "Claremont Avenue then Alcatraz Avenue",
       "block": "Study area, all residential and service streets",
       "from": "sr24-off-east",
-      "to": "ashby-west",
+      "to": "berkeley-north",
+      "vph": 2.0
+    },
+    {
+      "arterial": "College Avenue",
+      "block": "Study area, all residential and service streets",
+      "from": "telegraph-north",
+      "to": "college-north",
+      "vph": 2.0
+    },
+    {
+      "arterial": "Claremont Avenue",
+      "block": "Study area, all residential and service streets",
+      "from": "telegraph-south",
+      "to": "berkeley-north",
+      "vph": 2.0
+    },
+    {
+      "arterial": "Alcatraz Avenue then Claremont Avenue",
+      "block": "Study area, all residential and service streets",
+      "from": "west-streets",
+      "to": "claremont-hills",
       "vph": 2.0
     },
     {
       "arterial": "none near the study area",
       "block": "Study area, all residential and service streets",
-      "from": "sr24-off-east",
-      "to": "telegraph-north",
-      "vph": 2.0
-    },
-    {
-      "arterial": "Telegraph Avenue",
-      "block": "Study area, all residential and service streets",
-      "from": "telegraph-north",
-      "to": "south-oakland",
+      "from": "west-streets",
+      "to": "sr24-west-on",
       "vph": 2.0
     },
     {
       "arterial": "SR-24",
       "block": "Study area, all residential and service streets",
-      "from": "ashby-west",
-      "to": "sr24-east-on",
+      "from": "alcatraz-west",
+      "to": "sr13",
       "vph": 1.0
     },
     {
-      "arterial": "Alcatraz Avenue then Claremont Avenue",
+      "arterial": "Alcatraz Avenue then College Avenue",
       "block": "Study area, all residential and service streets",
       "from": "berkeley-north",
-      "to": "hills-northeast",
-      "vph": 1.0
-    },
-    {
-      "arterial": "Claremont Avenue",
-      "block": "Study area, all residential and service streets",
-      "from": "claremont-hills",
-      "to": "telegraph-south",
-      "vph": 1.0
-    },
-    {
-      "arterial": "College Avenue then Alcatraz Avenue",
-      "block": "Study area, all residential and service streets",
-      "from": "college-north",
-      "to": "berkeley-north",
-      "vph": 1.0
-    },
-    {
-      "arterial": "Claremont Avenue",
-      "block": "Study area, all residential and service streets",
-      "from": "hills-northeast",
-      "to": "southwest-oakland",
-      "vph": 1.0
-    },
-    {
-      "arterial": "SR-24 then Telegraph Avenue",
-      "block": "Study area, all residential and service streets",
-      "from": "south-oakland",
-      "to": "alcatraz-west",
-      "vph": 1.0
-    },
-    {
-      "arterial": "none near the study area",
-      "block": "Study area, all residential and service streets",
-      "from": "south-oakland",
-      "to": "berkeley-northwest",
-      "vph": 1.0
-    },
-    {
-      "arterial": "College Avenue",
-      "block": "Study area, all residential and service streets",
-      "from": "south-oakland",
       "to": "college-north",
       "vph": 1.0
     },
     {
       "arterial": "none near the study area",
       "block": "Study area, all residential and service streets",
+      "from": "berkeley-northwest",
+      "to": "sr24-west-on",
+      "vph": 1.0
+    },
+    {
+      "arterial": "Claremont Avenue",
+      "block": "Study area, all residential and service streets",
+      "from": "claremont-hills",
+      "to": "south-oakland",
+      "vph": 1.0
+    },
+    {
+      "arterial": "Claremont Avenue",
+      "block": "Study area, all residential and service streets",
+      "from": "hills-northeast",
+      "to": "south-oakland",
+      "vph": 1.0
+    },
+    {
+      "arterial": "Claremont Avenue",
+      "block": "Study area, all residential and service streets",
+      "from": "hills-northeast",
+      "to": "telegraph-south",
+      "vph": 1.0
+    },
+    {
+      "arterial": "none near the study area",
+      "block": "Study area, all residential and service streets",
+      "from": "san-pablo",
+      "to": "berkeley-north",
+      "vph": 1.0
+    },
+    {
+      "arterial": "Alcatraz Avenue then Claremont Avenue",
+      "block": "Study area, all residential and service streets",
+      "from": "san-pablo",
+      "to": "claremont-hills",
+      "vph": 1.0
+    },
+    {
+      "arterial": "none near the study area",
+      "block": "Study area, all residential and service streets",
       "from": "south-oakland",
-      "to": "shattuck-north",
+      "to": "claremont-hills",
+      "vph": 1.0
+    },
+    {
+      "arterial": "Telegraph Avenue",
+      "block": "Study area, all residential and service streets",
+      "from": "southwest-oakland",
+      "to": "berkeley-north",
       "vph": 1.0
     },
     {
@@ -1671,13 +1608,6 @@
       "vph": 1.0
     },
     {
-      "arterial": "SR-24",
-      "block": "Study area, all residential and service streets",
-      "from": "sr24-off-east",
-      "to": "san-pablo",
-      "vph": 1.0
-    },
-    {
       "arterial": "none near the study area",
       "block": "Study area, all residential and service streets",
       "from": "telegraph-north",
@@ -1685,10 +1615,10 @@
       "vph": 1.0
     },
     {
-      "arterial": "Claremont Avenue",
+      "arterial": "Telegraph Avenue",
       "block": "Study area, all residential and service streets",
       "from": "telegraph-south",
-      "to": "south-oakland",
+      "to": "college-north",
       "vph": 1.0
     },
     {
@@ -1696,20 +1626,6 @@
       "block": "Study area, all residential and service streets",
       "from": "telegraph-south",
       "to": "sr24-west-on",
-      "vph": 1.0
-    },
-    {
-      "arterial": "Alcatraz Avenue then Claremont Avenue",
-      "block": "Study area, all residential and service streets",
-      "from": "west-streets",
-      "to": "berkeley-north",
-      "vph": 1.0
-    },
-    {
-      "arterial": "Alcatraz Avenue then College Avenue",
-      "block": "Study area, all residential and service streets",
-      "from": "west-streets",
-      "to": "south-oakland",
       "vph": 1.0
     }
   ],
@@ -1721,22 +1637,22 @@
       "invokedS": 0.0
     },
     "courtesy": {
-      "admissions": 23,
-      "blockedS": 72.0,
+      "admissions": 20,
+      "blockedS": 43.75,
       "initAdmissions": 0,
-      "invokedS": 79.75
+      "invokedS": 50.0
     },
-    "crossings": 511425,
+    "crossings": 520599,
     "eventsDropped": 0,
     "heldRemovals": 0,
     "initCrossings": 0,
     "initHeldRemovals": 0,
     "policy": "physical",
     "yieldFallback": {
-      "admissions": 7,
+      "admissions": 11,
       "blockedS": 0.0,
       "initAdmissions": 0,
-      "invokedS": 1.75
+      "invokedS": 2.75
     }
   },
   "linkFlowVehPerHour": null,
@@ -1747,7 +1663,7 @@
     "inputs": {
       "areaConfig": {
         "path": "data/areas/rockridge.json",
-        "sha256": "c477808b30cef18963d69c140963359202449c66343234ff0af543226b097f3b"
+        "sha256": "0dc295509ff01002ef2413195634ea1897ac26780f0c3d9e485165c1d404548b"
       },
       "countFile": {
         "path": "data/calibration/rockridge.volunteer-count-2025-02-25.json",
@@ -1755,12 +1671,12 @@
       },
       "demand": {
         "path": "public/data/rockridge.demand.json",
-        "sha256": "e4f1993916827e8209279dceab517772c1d6bdc14699147ffc1fafb71361ed27"
+        "sha256": "77ef92449de50092d491013117c4f89b7e261cd19a3bbe02717f9146be6e91b9"
       },
       "demandBuild": {
         "config": "505dd0f032fc7ae841c6b5b7bc04ddde65c3b2fa8e398472c375e5ffc8240544",
         "countFile": "0ac7a3b72c8a9b3a243019b9e54ecbbc3d410f4d1cefb5b8f37b1d97de7080ea",
-        "network": "f9fa09a5726644d77f5535bc402357b37f7201e53df9eaebb8bb455912da1576",
+        "network": "093cbd5469aad29c08974816085bd55f8cf9e6c24b9c8de6975d5a1018c4003c",
         "split": "be72380b485ec5fcd5e3c59d4c5601060f3736cfb8238d6aad912293ced0928a",
         "view": "shipped"
       },
@@ -1774,7 +1690,7 @@
       },
       "network": {
         "path": "public/data/rockridge.network.json",
-        "sha256": "f9fa09a5726644d77f5535bc402357b37f7201e53df9eaebb8bb455912da1576"
+        "sha256": "093cbd5469aad29c08974816085bd55f8cf9e6c24b9c8de6975d5a1018c4003c"
       },
       "split": {
         "path": "data/demand/rockridge.split.json",
@@ -1821,27 +1737,27 @@
     "simulator": {
       "dirty": false,
       "fingerprint": "d45a275dd7be0713cec6a64394b7d8a9",
-      "revision": "72ed2f9bd7b1c0db363ba47ece367f2f0a4a2215",
+      "revision": "c4f636f49b5e607a3030b4e49339d74e331e4e4d",
       "version": "0.1.0"
     }
   },
   "minutes": 60.0,
   "modes": {
     "bicycle": {
-      "completedTrips": 406,
-      "inNetwork": 16,
-      "meanTripTime": 163.4236044766926
+      "completedTrips": 394,
+      "inNetwork": 15,
+      "meanTripTime": 163.01975067357282
     },
     "car": {
-      "completedTrips": 16530,
-      "inNetwork": 1615,
-      "meanTripTime": 345.8787945839903
+      "completedTrips": 16650,
+      "inNetwork": 1630,
+      "meanTripTime": 346.0334075134186
     },
     "pedestrian": {
-      "completedTrips": 2584,
-      "inNetwork": 326,
-      "meanCrossingDelay": 6.941389063482087,
-      "meanTripTime": 447.0842364442241
+      "completedTrips": 2613,
+      "inNetwork": 328,
+      "meanCrossingDelay": 7.042512201387105,
+      "meanTripTime": 432.90276486679284
     }
   },
   "observedSignals": [
@@ -1849,37 +1765,37 @@
       "applies": true,
       "approaches": [
         {
-          "exitsPerHour": 350.4,
+          "exitsPerHour": 525.6,
           "links": [
             1569
           ],
-          "modeledGreenS": 48.23187255859375,
+          "modeledGreenS": 52.0,
           "observedGreenS": 29.0
         },
         {
-          "exitsPerHour": 160.79999999999998,
+          "exitsPerHour": 120.0,
           "links": [
             1570
           ],
-          "modeledGreenS": 18.768123626708984,
+          "modeledGreenS": 15.0,
           "observedGreenS": 13.0
         }
       ],
       "cycleS": 75.0,
       "greenS": [
-        48.23187255859375,
-        18.768123626708984
+        52.0,
+        15.0
       ],
       "node": 679,
       "observedCycleS": 50.0,
       "streets": "Martin Luther King Junior Way",
-      "ysum": 0.14663009345531464
+      "ysum": 0.17899969220161438
     },
     {
       "applies": true,
       "approaches": [
         {
-          "exitsPerHour": 766.8,
+          "exitsPerHour": 790.8,
           "links": [
             1662
           ],
@@ -1887,7 +1803,7 @@
           "observedGreenS": 57.20000076293945
         },
         {
-          "exitsPerHour": 404.4,
+          "exitsPerHour": 349.2,
           "links": [
             1666
           ],
@@ -1904,13 +1820,13 @@
       "node": 680,
       "observedCycleS": 110.0,
       "streets": "52nd Street / Shattuck Avenue",
-      "ysum": 0.38224485516548157
+      "ysum": 0.3931282162666321
     },
     {
       "applies": true,
       "approaches": [
         {
-          "exitsPerHour": 72.0,
+          "exitsPerHour": 93.6,
           "links": [
             2592
           ],
@@ -1920,20 +1836,20 @@
       ],
       "cycleS": 147.0,
       "greenS": [
-        60.77667236328125,
+        61.428443908691406,
         10.0,
-        61.22332763671875
+        60.57155227661133
       ],
       "node": 1069,
       "observedCycleS": 147.0,
       "streets": "Claremont Avenue / Colby Street / Forest Street",
-      "ysum": 0.2941440939903259
+      "ysum": 0.3172517418861389
     },
     {
       "applies": true,
       "approaches": [
         {
-          "exitsPerHour": 253.2,
+          "exitsPerHour": 262.8,
           "links": [
             4329
           ],
@@ -1941,7 +1857,7 @@
           "observedGreenS": 0.0
         },
         {
-          "exitsPerHour": 555.6,
+          "exitsPerHour": 518.4,
           "links": [
             3447
           ],
@@ -1951,52 +1867,52 @@
       ],
       "cycleS": 75.0,
       "greenS": [
-        29.999998092651367,
+        30.0,
         15.0,
         15.0
       ],
       "node": 1406,
       "observedCycleS": 0.0,
       "streets": "Ashby Avenue / Claremont Avenue",
-      "ysum": 0.47371235489845276
+      "ysum": 0.5089389681816101
     }
   ],
-  "offeredVehPerHour": 16175.480000000349,
+  "offeredVehPerHour": 16408.80000000039,
   "patternBypass": [
     {
       "arterial": "College Avenue",
-      "arterialOnly": 101,
+      "arterialOnly": 108,
       "bypass": "Hillegass Avenue",
-      "corridorTrips": 812,
+      "corridorTrips": 828,
       "dir": "N",
-      "meanBypassBlocks": 0.13916256157635468,
+      "meanBypassBlocks": 0.10507246376811594,
       "minBlocks": 3,
-      "other": 686,
-      "viaBypass": 25
+      "other": 703,
+      "viaBypass": 17
     },
     {
       "arterial": "College Avenue",
-      "arterialOnly": 209,
+      "arterialOnly": 196,
       "bypass": "Hillegass Avenue",
-      "corridorTrips": 970,
+      "corridorTrips": 939,
       "dir": "S",
-      "meanBypassBlocks": 0.2134020618556701,
+      "meanBypassBlocks": 0.12140575079872204,
       "minBlocks": 3,
-      "other": 716,
-      "viaBypass": 45
+      "other": 718,
+      "viaBypass": 25
     }
   ],
   "patternFreewayThrough": [
     {
-      "localMiles": 26.856160025451377,
-      "n": 1102,
-      "shareOfLocalMiles": 0.10393005603029613,
+      "localMiles": 24.939726994352977,
+      "n": 1049,
+      "shareOfLocalMiles": 0.09575456888662372,
       "trips": "surface gates to the freeway"
     },
     {
-      "localMiles": 18.587573570349146,
-      "n": 719,
-      "shareOfLocalMiles": 0.07193163731534512,
+      "localMiles": 24.616054740316542,
+      "n": 748,
+      "shareOfLocalMiles": 0.09451184890204496,
       "trips": "freeway to the surface gates"
     }
   ],
@@ -2005,100 +1921,100 @@
   "rampShares": [
     {
       "direction": "onto freeway",
-      "modelled": 0.18043478260869567,
-      "modelledSide": 0.21693121693121692,
-      "n": 460,
-      "nSide": 378,
+      "modelled": 0.15531914893617021,
+      "modelledSide": 0.18181818181818182,
+      "n": 470,
+      "nSide": 385,
       "observed": 0.16,
       "via": "College Avenue"
     },
     {
       "direction": "onto freeway",
-      "modelled": 0.14565217391304347,
-      "modelledSide": 0.17724867724867724,
-      "n": 460,
-      "nSide": 378,
+      "modelled": 0.1276595744680851,
+      "modelledSide": 0.15584415584415584,
+      "n": 470,
+      "nSide": 385,
       "observed": 0.12,
       "via": "Hillegass Avenue"
     },
     {
       "direction": "onto freeway",
-      "modelled": 0.15869565217391304,
-      "modelledSide": 0.19047619047619047,
-      "n": 460,
-      "nSide": 378,
+      "modelled": 0.14893617021276595,
+      "modelledSide": 0.17402597402597403,
+      "n": 470,
+      "nSide": 385,
       "observed": 0.1,
       "via": "Martin Street"
     },
     {
       "direction": "onto freeway",
-      "modelled": 0.12173913043478261,
-      "modelledSide": 0.14814814814814814,
-      "n": 460,
-      "nSide": 378,
+      "modelled": 0.15319148936170213,
+      "modelledSide": 0.18701298701298702,
+      "n": 470,
+      "nSide": 385,
       "observed": 0.08,
       "via": "Colby Street"
     },
     {
       "direction": "onto freeway",
-      "modelled": 0.12173913043478261,
-      "modelledSide": 0.12169312169312169,
-      "n": 460,
-      "nSide": 378,
+      "modelled": 0.13191489361702127,
+      "modelledSide": 0.12987012987012986,
+      "n": 470,
+      "nSide": 385,
       "observed": 0.08,
       "via": "Telegraph Avenue north of Alcatraz Avenue"
     },
     {
       "direction": "onto freeway",
-      "modelled": 0.0391304347826087,
-      "modelledSide": 0.047619047619047616,
-      "n": 460,
-      "nSide": 378,
+      "modelled": 0.04468085106382979,
+      "modelledSide": 0.05454545454545454,
+      "n": 470,
+      "nSide": 385,
       "observed": 0.05,
       "via": "Benvenue Avenue"
     },
     {
       "direction": "from freeway",
-      "modelled": 0.08488612836438923,
-      "modelledSide": 0.08686440677966102,
-      "n": 483,
-      "nSide": 472,
+      "modelled": 0.09163346613545817,
+      "modelledSide": 0.09484536082474226,
+      "n": 502,
+      "nSide": 485,
       "observed": 0.1,
       "via": "College Avenue"
     },
     {
       "direction": "from freeway",
-      "modelled": 0.11180124223602485,
-      "modelledSide": 0.11440677966101695,
-      "n": 483,
-      "nSide": 472,
+      "modelled": 0.12151394422310757,
+      "modelledSide": 0.12577319587628866,
+      "n": 502,
+      "nSide": 485,
       "observed": 0.1,
       "via": "Martin Street"
     },
     {
       "direction": "from freeway",
-      "modelled": 0.08074534161490683,
-      "modelledSide": 0.0826271186440678,
-      "n": 483,
-      "nSide": 472,
+      "modelled": 0.11752988047808766,
+      "modelledSide": 0.12164948453608247,
+      "n": 502,
+      "nSide": 485,
       "observed": 0.08,
       "via": "Colby Street"
     },
     {
       "direction": "from freeway",
-      "modelled": 0.08074534161490683,
-      "modelledSide": 0.0826271186440678,
-      "n": 483,
-      "nSide": 472,
+      "modelled": 0.08167330677290836,
+      "modelledSide": 0.08453608247422681,
+      "n": 502,
+      "nSide": 485,
       "observed": 0.05,
       "via": "Hillegass Avenue"
     },
     {
       "direction": "from freeway",
-      "modelled": 0.028985507246376812,
-      "modelledSide": 0.029661016949152543,
-      "n": 483,
-      "nSide": 472,
+      "modelled": 0.035856573705179286,
+      "modelledSide": 0.03711340206185567,
+      "n": 502,
+      "nSide": 485,
       "observed": 0.03,
       "via": "Benvenue Avenue"
     }
@@ -2107,108 +2023,108 @@
   "seed": 1,
   "series": [
     {
-      "arterialSpeed": 9.92858037625083,
+      "arterialSpeed": 9.901538143696301,
       "backlog": 1,
-      "completed": 1545,
+      "completed": 1505,
       "removed": 0,
       "tMin": 5.0,
-      "vehicles": 1639
+      "vehicles": 1695
     },
     {
-      "arterialSpeed": 9.795026404529768,
+      "arterialSpeed": 10.000052264147909,
       "backlog": 1,
-      "completed": 2920,
+      "completed": 2967,
       "removed": 0,
       "tMin": 10.0,
-      "vehicles": 1600
+      "vehicles": 1495
     },
     {
-      "arterialSpeed": 9.942836062362153,
+      "arterialSpeed": 10.106915428203198,
       "backlog": 0,
-      "completed": 4260,
+      "completed": 4236,
       "removed": 0,
       "tMin": 15.0,
-      "vehicles": 1624
+      "vehicles": 1564
     },
     {
-      "arterialSpeed": 10.232180761658038,
-      "backlog": 1,
-      "completed": 5684,
+      "arterialSpeed": 10.096104409338576,
+      "backlog": 0,
+      "completed": 5614,
       "removed": 0,
       "tMin": 20.0,
-      "vehicles": 1543
+      "vehicles": 1558
     },
     {
-      "arterialSpeed": 10.417789818230526,
-      "backlog": 1,
-      "completed": 7002,
+      "arterialSpeed": 10.19094984763547,
+      "backlog": 0,
+      "completed": 6948,
       "removed": 0,
       "tMin": 25.0,
-      "vehicles": 1600
+      "vehicles": 1612
     },
     {
-      "arterialSpeed": 9.811896881009687,
-      "backlog": 6,
-      "completed": 8353,
+      "arterialSpeed": 9.909196932606713,
+      "backlog": 0,
+      "completed": 8326,
       "removed": 0,
       "tMin": 30.0,
-      "vehicles": 1603
+      "vehicles": 1641
     },
     {
-      "arterialSpeed": 10.27331349166618,
-      "backlog": 0,
-      "completed": 9722,
+      "arterialSpeed": 10.24545448994675,
+      "backlog": 3,
+      "completed": 9718,
       "removed": 0,
       "tMin": 35.0,
-      "vehicles": 1620
+      "vehicles": 1606
     },
     {
-      "arterialSpeed": 10.113382646450843,
-      "backlog": 0,
-      "completed": 11094,
+      "arterialSpeed": 10.01831818054245,
+      "backlog": 2,
+      "completed": 11090,
       "removed": 0,
       "tMin": 40.0,
-      "vehicles": 1615
+      "vehicles": 1693
     },
     {
-      "arterialSpeed": 10.506260183286066,
-      "backlog": 0,
-      "completed": 12495,
+      "arterialSpeed": 10.205526562656779,
+      "backlog": 1,
+      "completed": 12556,
       "removed": 0,
       "tMin": 45.0,
-      "vehicles": 1624
+      "vehicles": 1613
     },
     {
-      "arterialSpeed": 10.125854922223953,
-      "backlog": 1,
-      "completed": 13867,
+      "arterialSpeed": 10.224423356508451,
+      "backlog": 2,
+      "completed": 13940,
       "removed": 0,
       "tMin": 50.0,
-      "vehicles": 1582
+      "vehicles": 1615
     },
     {
-      "arterialSpeed": 10.041250968332156,
+      "arterialSpeed": 9.945741878653397,
       "backlog": 1,
-      "completed": 15200,
+      "completed": 15326,
       "removed": 0,
       "tMin": 55.0,
-      "vehicles": 1568
+      "vehicles": 1613
     },
     {
-      "arterialSpeed": 10.0989596319966,
-      "backlog": 1,
-      "completed": 16530,
+      "arterialSpeed": 10.06455051690834,
+      "backlog": 0,
+      "completed": 16650,
       "removed": 0,
       "tMin": 60.0,
-      "vehicles": 1615
+      "vehicles": 1630
     }
   ],
   "shares": [
     {
       "block": "Hillegass Avenue NB",
       "headline": true,
-      "modelled": 0.45454545454545453,
-      "n": 143,
+      "modelled": 0.5234375,
+      "n": 128,
       "observed": 0.47,
       "observedPm": null,
       "side": "from",
@@ -2217,8 +2133,8 @@
     {
       "block": "Hillegass Avenue NB",
       "headline": false,
-      "modelled": 0.04895104895104895,
-      "n": 143,
+      "modelled": 0.0390625,
+      "n": 128,
       "observed": 0.21,
       "observedPm": 0.33,
       "side": "to",
@@ -2227,8 +2143,8 @@
     {
       "block": "Hillegass Avenue NB",
       "headline": false,
-      "modelled": 0.1048951048951049,
-      "n": 143,
+      "modelled": 0.09375,
+      "n": 128,
       "observed": 0.06,
       "observedPm": null,
       "side": "to",
@@ -2237,8 +2153,8 @@
     {
       "block": "Hillegass Avenue NB",
       "headline": false,
-      "modelled": 0.34265734265734266,
-      "n": 143,
+      "modelled": 0.3125,
+      "n": 128,
       "observed": 0.27,
       "observedPm": null,
       "side": "to",
@@ -2247,8 +2163,8 @@
     {
       "block": "Colby Street NB",
       "headline": true,
-      "modelled": 0.43870967741935485,
-      "n": 155,
+      "modelled": 0.5055555555555555,
+      "n": 180,
       "observed": 0.47,
       "observedPm": null,
       "side": "from",
@@ -2257,8 +2173,8 @@
     {
       "block": "Colby Street NB",
       "headline": false,
-      "modelled": 0.5032258064516129,
-      "n": 155,
+      "modelled": 0.5388888888888889,
+      "n": 180,
       "observed": 0.48,
       "observedPm": null,
       "side": "to",
@@ -2267,8 +2183,8 @@
     {
       "block": "Colby Street NB",
       "headline": false,
-      "modelled": 0.36774193548387096,
-      "n": 155,
+      "modelled": 0.4388888888888889,
+      "n": 180,
       "observed": 0.25,
       "observedPm": null,
       "side": "to",
@@ -2277,8 +2193,8 @@
     {
       "block": "Colby Street NB",
       "headline": false,
-      "modelled": 0.03870967741935484,
-      "n": 155,
+      "modelled": 0.022222222222222223,
+      "n": 180,
       "observed": 0.03,
       "observedPm": null,
       "side": "to",
@@ -2287,8 +2203,8 @@
     {
       "block": "Hillegass Avenue SB",
       "headline": false,
-      "modelled": 0.4036697247706422,
-      "n": 109,
+      "modelled": 0.30833333333333335,
+      "n": 120,
       "observed": 0.46,
       "observedPm": null,
       "side": "from",
@@ -2297,8 +2213,8 @@
     {
       "block": "Hillegass Avenue SB",
       "headline": false,
-      "modelled": 0.07339449541284404,
-      "n": 109,
+      "modelled": 0.03333333333333333,
+      "n": 120,
       "observed": 0.26,
       "observedPm": null,
       "side": "from",
@@ -2307,8 +2223,8 @@
     {
       "block": "Hillegass Avenue SB",
       "headline": false,
-      "modelled": 0.30275229357798167,
-      "n": 109,
+      "modelled": 0.14166666666666666,
+      "n": 120,
       "observed": 0.16,
       "observedPm": null,
       "side": "from",
@@ -2317,8 +2233,8 @@
     {
       "block": "Hillegass Avenue SB",
       "headline": true,
-      "modelled": 0.6513761467889908,
-      "n": 109,
+      "modelled": 0.5083333333333333,
+      "n": 120,
       "observed": 0.57,
       "observedPm": 0.68,
       "side": "to",
@@ -2327,8 +2243,8 @@
     {
       "block": "Colby Street SB",
       "headline": false,
-      "modelled": 0.22,
-      "n": 150,
+      "modelled": 0.26785714285714285,
+      "n": 168,
       "observed": 0.43,
       "observedPm": null,
       "side": "from",
@@ -2337,8 +2253,8 @@
     {
       "block": "Colby Street SB",
       "headline": false,
-      "modelled": 0.22666666666666666,
-      "n": 150,
+      "modelled": 0.25595238095238093,
+      "n": 168,
       "observed": 0.46,
       "observedPm": null,
       "side": "from",
@@ -2347,8 +2263,8 @@
     {
       "block": "Colby Street SB",
       "headline": false,
-      "modelled": 0.2,
-      "n": 150,
+      "modelled": 0.2261904761904762,
+      "n": 168,
       "observed": 0.22,
       "observedPm": null,
       "side": "from",
@@ -2357,8 +2273,8 @@
     {
       "block": "Colby Street SB",
       "headline": true,
-      "modelled": 0.44666666666666666,
-      "n": 150,
+      "modelled": 0.4642857142857143,
+      "n": 168,
       "observed": 0.45,
       "observedPm": null,
       "side": "to",
@@ -2367,8 +2283,8 @@
     {
       "block": "Colby Street SB",
       "headline": false,
-      "modelled": 0.21333333333333335,
-      "n": 150,
+      "modelled": 0.1130952380952381,
+      "n": 168,
       "observed": 0.34,
       "observedPm": null,
       "side": "to",
@@ -2380,99 +2296,99 @@
     {
       "dir": "N",
       "links": 12,
-      "maxVehPerHour": 702.0,
-      "medianVehPerHour": 661.1999999999999,
+      "maxVehPerHour": 778.8,
+      "medianVehPerHour": 698.4,
       "street": "Telegraph"
     },
     {
       "dir": "S",
       "links": 10,
-      "maxVehPerHour": 625.1999999999999,
-      "medianVehPerHour": 574.8,
+      "maxVehPerHour": 675.6,
+      "medianVehPerHour": 642.0,
       "street": "Telegraph"
     },
     {
       "dir": "N",
       "links": 3,
-      "maxVehPerHour": 195.6,
-      "medianVehPerHour": 195.6,
+      "maxVehPerHour": 208.79999999999998,
+      "medianVehPerHour": 208.79999999999998,
       "street": "College"
     },
     {
       "dir": "S",
       "links": 3,
-      "maxVehPerHour": 504.0,
-      "medianVehPerHour": 504.0,
+      "maxVehPerHour": 373.2,
+      "medianVehPerHour": 370.8,
       "street": "College"
     },
     {
       "dir": "N",
       "links": 6,
-      "maxVehPerHour": 428.4,
-      "medianVehPerHour": 277.2,
+      "maxVehPerHour": 396.0,
+      "medianVehPerHour": 268.8,
       "street": "Claremont"
     },
     {
       "dir": "S",
       "links": 7,
-      "maxVehPerHour": 454.79999999999995,
-      "medianVehPerHour": 169.2,
+      "maxVehPerHour": 444.0,
+      "medianVehPerHour": 150.0,
       "street": "Claremont"
     },
     {
       "dir": "E",
       "links": 6,
-      "maxVehPerHour": 345.59999999999997,
-      "medianVehPerHour": 327.59999999999997,
+      "maxVehPerHour": 417.59999999999997,
+      "medianVehPerHour": 367.2,
       "street": "Alcatraz"
     },
     {
       "dir": "W",
       "links": 6,
-      "maxVehPerHour": 284.4,
-      "medianVehPerHour": 240.0,
+      "maxVehPerHour": 279.59999999999997,
+      "medianVehPerHour": 223.2,
       "street": "Alcatraz"
     },
     {
       "dir": "N",
       "links": 4,
-      "maxVehPerHour": 94.8,
-      "medianVehPerHour": 73.2,
+      "maxVehPerHour": 74.39999999999999,
+      "medianVehPerHour": 60.0,
       "street": "Hillegass"
     },
     {
       "dir": "S",
       "links": 4,
-      "maxVehPerHour": 97.19999999999999,
-      "medianVehPerHour": 81.6,
+      "maxVehPerHour": 78.0,
+      "medianVehPerHour": 60.0,
       "street": "Hillegass"
     },
     {
       "dir": "N",
       "links": 7,
-      "maxVehPerHour": 85.2,
-      "medianVehPerHour": 79.2,
+      "maxVehPerHour": 98.39999999999999,
+      "medianVehPerHour": 88.8,
       "street": "Colby"
     },
     {
       "dir": "S",
       "links": 7,
-      "maxVehPerHour": 103.19999999999999,
-      "medianVehPerHour": 90.0,
+      "maxVehPerHour": 116.39999999999999,
+      "medianVehPerHour": 102.0,
       "street": "Colby"
     },
     {
       "dir": "E",
       "links": 2,
-      "maxVehPerHour": 84.0,
-      "medianVehPerHour": 84.0,
+      "maxVehPerHour": 76.8,
+      "medianVehPerHour": 76.8,
       "street": "Martin"
     },
     {
       "dir": "W",
       "links": 2,
-      "maxVehPerHour": 68.39999999999999,
-      "medianVehPerHour": 68.39999999999999,
+      "maxVehPerHour": 91.2,
+      "medianVehPerHour": 91.2,
       "street": "Martin"
     }
   ],
@@ -2480,9 +2396,9 @@
     {
       "block": "Hillegass Avenue NB",
       "freewayShare": 0.47,
-      "modeledFreewayTrips": 65.0,
-      "modeledThrough": 63.0,
-      "modeledWholeStreet": 28.799999999999997,
+      "modeledFreewayTrips": 67.0,
+      "modeledThrough": 46.0,
+      "modeledWholeStreet": 18.0,
       "observedFreewayEnd": null,
       "observedVehPerHour": null,
       "observedWholeStreet": null
@@ -2490,9 +2406,9 @@
     {
       "block": "Colby Street NB",
       "freewayShare": 0.47,
-      "modeledFreewayTrips": 68.0,
-      "modeledThrough": 65.0,
-      "modeledWholeStreet": 24.0,
+      "modeledFreewayTrips": 92.0,
+      "modeledThrough": 85.0,
+      "modeledWholeStreet": 33.6,
       "observedFreewayEnd": null,
       "observedVehPerHour": null,
       "observedWholeStreet": null
@@ -2500,9 +2416,9 @@
     {
       "block": "Hillegass Avenue SB",
       "freewayShare": 0.57,
-      "modeledFreewayTrips": 71.0,
-      "modeledThrough": 89.0,
-      "modeledWholeStreet": 40.8,
+      "modeledFreewayTrips": 61.0,
+      "modeledThrough": 61.0,
+      "modeledWholeStreet": 20.4,
       "observedFreewayEnd": null,
       "observedVehPerHour": null,
       "observedWholeStreet": null
@@ -2510,9 +2426,9 @@
     {
       "block": "Colby Street SB",
       "freewayShare": 0.45,
-      "modeledFreewayTrips": 71.0,
-      "modeledThrough": 82.0,
-      "modeledWholeStreet": 25.2,
+      "modeledFreewayTrips": 78.0,
+      "modeledThrough": 88.0,
+      "modeledWholeStreet": 34.8,
       "observedFreewayEnd": null,
       "observedVehPerHour": null,
       "observedWholeStreet": null
@@ -2520,227 +2436,227 @@
   ],
   "topLinks": [
     {
-      "delayVehH": 4.50096321105957,
+      "delayVehH": 4.815450191497803,
       "link": 1049,
-      "stoppedVehH": 3.8757338523864746,
+      "stoppedVehH": 4.136463642120361,
       "street": "Adeline Street"
     },
     {
-      "delayVehH": 3.664179801940918,
+      "delayVehH": 4.749271392822266,
       "link": 3395,
-      "stoppedVehH": 2.762742042541504,
+      "stoppedVehH": 3.4980413913726807,
       "street": "Ashby Avenue"
     },
     {
-      "delayVehH": 3.5398497581481934,
+      "delayVehH": 3.6186537742614746,
       "link": 498,
-      "stoppedVehH": 2.737213373184204,
+      "stoppedVehH": 2.7977137565612793,
       "street": "Sacramento Street"
     },
     {
-      "delayVehH": 3.4223361015319824,
-      "link": 1666,
-      "stoppedVehH": 3.0513525009155273,
-      "street": "52nd Street"
-    },
-    {
-      "delayVehH": 3.230390787124634,
-      "link": 2776,
-      "stoppedVehH": 2.8147623538970947,
-      "street": "Claremont Avenue"
-    },
-    {
-      "delayVehH": 2.7739124298095703,
-      "link": 2039,
-      "stoppedVehH": 2.04298996925354,
-      "street": "Telegraph Avenue"
-    },
-    {
-      "delayVehH": 2.742936372756958,
-      "link": 1108,
-      "stoppedVehH": 2.0001983642578125,
-      "street": "Market Street"
-    },
-    {
-      "delayVehH": 2.7007408142089844,
+      "delayVehH": 3.4474565982818604,
       "link": 1037,
-      "stoppedVehH": 1.9275412559509277,
+      "stoppedVehH": 2.5136377811431885,
       "street": "Sacramento Street"
     },
     {
-      "delayVehH": 2.677520990371704,
-      "link": 1662,
-      "stoppedVehH": 1.892714023590088,
-      "street": "52nd Street"
-    },
-    {
-      "delayVehH": 2.6552574634552,
-      "link": 3447,
-      "stoppedVehH": 1.9332406520843506,
+      "delayVehH": 3.099642038345337,
+      "link": 2776,
+      "stoppedVehH": 2.71626353263855,
       "street": "Claremont Avenue"
     },
     {
-      "delayVehH": 2.640899181365967,
-      "link": 2008,
-      "stoppedVehH": 1.7861583232879639,
-      "street": "Shattuck Avenue"
+      "delayVehH": 2.9312644004821777,
+      "link": 1051,
+      "stoppedVehH": 2.5822908878326416,
+      "street": "Adeline Street"
     },
     {
-      "delayVehH": 2.6374080181121826,
-      "link": 1763,
-      "stoppedVehH": 2.1043505668640137,
-      "street": "51st Street"
+      "delayVehH": 2.9295082092285156,
+      "link": 1666,
+      "stoppedVehH": 2.6274311542510986,
+      "street": "52nd Street"
     },
     {
-      "delayVehH": 2.6102139949798584,
+      "delayVehH": 2.9091811180114746,
       "link": 761,
-      "stoppedVehH": 2.018716812133789,
+      "stoppedVehH": 2.3530516624450684,
       "street": "Martin Luther King Junior Way"
     },
     {
-      "delayVehH": 2.604788303375244,
-      "link": 3463,
-      "stoppedVehH": 2.1540188789367676,
-      "street": "Tunnel Road"
+      "delayVehH": 2.9074900150299072,
+      "link": 114,
+      "stoppedVehH": 2.189958333969116,
+      "street": "San Pablo Avenue"
     },
     {
-      "delayVehH": 2.5816280841827393,
-      "link": 114,
-      "stoppedVehH": 2.097989797592163,
-      "street": "San Pablo Avenue"
+      "delayVehH": 2.8929362297058105,
+      "link": 1763,
+      "stoppedVehH": 2.3526997566223145,
+      "street": "51st Street"
+    },
+    {
+      "delayVehH": 2.8554747104644775,
+      "link": 2039,
+      "stoppedVehH": 2.066570997238159,
+      "street": "Telegraph Avenue"
+    },
+    {
+      "delayVehH": 2.842984437942505,
+      "link": 2008,
+      "stoppedVehH": 1.9409306049346924,
+      "street": "Shattuck Avenue"
+    },
+    {
+      "delayVehH": 2.835728168487549,
+      "link": 1108,
+      "stoppedVehH": 2.0720298290252686,
+      "street": "Market Street"
+    },
+    {
+      "delayVehH": 2.8118274211883545,
+      "link": 1662,
+      "stoppedVehH": 1.9707434177398682,
+      "street": "52nd Street"
+    },
+    {
+      "delayVehH": 2.756243944168091,
+      "link": 3447,
+      "stoppedVehH": 2.055312395095825,
+      "street": "Claremont Avenue"
     }
   ],
   "topNodes": [
     {
-      "blockedLaneH": 4.098750114440918,
+      "blockedLaneH": 4.101250171661377,
       "control": "signal",
-      "noSpaceLaneH": 0.02326388843357563,
-      "node": 680,
-      "streets": "52nd Street / Shattuck Avenue"
-    },
-    {
-      "blockedLaneH": 3.873472213745117,
-      "control": "signal",
-      "noSpaceLaneH": 0.03652777895331383,
+      "noSpaceLaneH": 0.034861110150814056,
       "node": 447,
       "streets": "Adeline Street / Alcatraz Avenue"
     },
     {
-      "blockedLaneH": 3.4944443702697754,
+      "blockedLaneH": 3.9206249713897705,
       "control": "signal",
-      "noSpaceLaneH": 0.056458331644535065,
+      "noSpaceLaneH": 0.021944444626569748,
+      "node": 680,
+      "streets": "52nd Street / Shattuck Avenue"
+    },
+    {
+      "blockedLaneH": 3.4596526622772217,
+      "control": "signal",
+      "noSpaceLaneH": 0.06034722179174423,
       "node": 446,
       "streets": "Market Street / Stanford Avenue"
     },
     {
-      "blockedLaneH": 3.19861102104187,
+      "blockedLaneH": 3.2357637882232666,
       "control": "signal",
-      "noSpaceLaneH": 0.06465277820825577,
+      "noSpaceLaneH": 0.06527777761220932,
       "node": 1406,
       "streets": "Ashby Avenue / Claremont Avenue"
     },
     {
-      "blockedLaneH": 2.7554166316986084,
+      "blockedLaneH": 3.012986183166504,
       "control": "signal",
-      "noSpaceLaneH": 0.025138888508081436,
+      "noSpaceLaneH": 0.020069444552063942,
       "node": 331,
       "streets": "52nd Street / Martin Luther King Junior Way"
     },
     {
-      "blockedLaneH": 2.7202084064483643,
+      "blockedLaneH": 2.8330554962158203,
       "control": "signal",
-      "noSpaceLaneH": 0.0061111110262572765,
-      "node": 1069,
-      "streets": "Claremont Avenue / Colby Street / Forest Street"
-    },
-    {
-      "blockedLaneH": 2.71423602104187,
-      "control": "signal",
-      "noSpaceLaneH": 0.028055556118488312,
+      "noSpaceLaneH": 0.02986111119389534,
       "node": 30,
       "streets": "57th Street / Adeline Street / Market Street"
     },
     {
-      "blockedLaneH": 2.560833215713501,
+      "blockedLaneH": 2.7176389694213867,
       "control": "signal",
-      "noSpaceLaneH": 0.03722222149372101,
-      "node": 1080,
-      "streets": "62nd Street / Claremont Avenue / College Avenue"
+      "noSpaceLaneH": 0.0030555555131286383,
+      "node": 1069,
+      "streets": "Claremont Avenue / Colby Street / Forest Street"
     },
     {
-      "blockedLaneH": 2.5286805629730225,
+      "blockedLaneH": 2.715625047683716,
       "control": "signal",
-      "noSpaceLaneH": 0.024236110970377922,
+      "noSpaceLaneH": 0.03618055582046509,
       "node": 185,
       "streets": "Alcatraz Avenue / Sacramento Street"
     },
     {
-      "blockedLaneH": 2.4552083015441895,
+      "blockedLaneH": 2.7055554389953613,
       "control": "signal",
-      "noSpaceLaneH": 0.025833332911133766,
+      "noSpaceLaneH": 0.03215277940034866,
       "node": 851,
       "streets": "Alcatraz Avenue / Telegraph Avenue"
     },
     {
-      "blockedLaneH": 2.408402681350708,
+      "blockedLaneH": 2.5298612117767334,
       "control": "signal",
-      "noSpaceLaneH": 0.0038194444496184587,
+      "noSpaceLaneH": 0.02916666679084301,
+      "node": 1080,
+      "streets": "62nd Street / Claremont Avenue / College Avenue"
+    },
+    {
+      "blockedLaneH": 2.5106945037841797,
+      "control": "signal",
+      "noSpaceLaneH": 0.008472221903502941,
       "node": 37,
       "streets": "San Pablo Avenue / Stanford Avenue"
     },
     {
-      "blockedLaneH": 2.309999942779541,
+      "blockedLaneH": 2.1588194370269775,
       "control": "signal",
-      "noSpaceLaneH": 0.0018055555410683155,
-      "node": 947,
-      "streets": "Ashby Avenue / Telegraph Avenue"
+      "noSpaceLaneH": 0.013402777723968029,
+      "node": 713,
+      "streets": "51st Street / Telegraph Avenue"
     },
     {
-      "blockedLaneH": 2.181666612625122,
+      "blockedLaneH": 2.14597225189209,
       "control": "signal",
-      "noSpaceLaneH": 0.01298611145466566,
+      "noSpaceLaneH": 0.014652777463197708,
       "node": 944,
       "streets": "Ashby Avenue / Shattuck Avenue"
     },
     {
-      "blockedLaneH": 2.049722194671631,
+      "blockedLaneH": 2.1349306106567383,
       "control": "signal",
-      "noSpaceLaneH": 0.042152777314186096,
+      "noSpaceLaneH": 0.041875001043081284,
       "node": 501,
       "streets": "Alcatraz Avenue / Shattuck Avenue"
     },
     {
-      "blockedLaneH": 2.0411806106567383,
+      "blockedLaneH": 2.1084721088409424,
       "control": "signal",
-      "noSpaceLaneH": 0.0009027777705341578,
+      "noSpaceLaneH": 0.0006249999860301614,
       "node": 242,
       "streets": "Ashby Avenue / Martin Luther King Junior Way"
     }
   ],
   "vulnerable": {
-    "bikeConflicts": 224,
-    "closePasses": 137,
+    "bikeConflicts": 222,
+    "closePasses": 131,
     "cyclist": {
-      "encounters": 1482,
+      "encounters": 1449,
       "endpoint": "MAIS3+F",
-      "meanSeverity": 0.0665518951062469,
+      "meanSeverity": 0.06992855339325886,
       "passes": {
-        "count": 670,
-        "meanVehicleSpeed": 8.568766745235589
+        "count": 666,
+        "meanVehicleSpeed": 8.59297103973324
       },
       "source": "Lubbe2022",
-      "supported": 785,
+      "supported": 754,
       "unavailable": null,
-      "unsupported": 697
+      "unsupported": 695
     },
-    "meanVehicleSpeedAtPedEncounter": 2.6538615853271703,
-    "pedConflicts": 386,
+    "meanVehicleSpeedAtPedEncounter": 2.697714415963377,
+    "pedConflicts": 389,
     "pedestrian": {
-      "encounters": 11352,
+      "encounters": 11155,
       "endpoint": "AIS4+",
-      "meanSeverity": 0.052378028993028986,
+      "meanSeverity": 0.052830741362619504,
       "source": "Tefft2013",
-      "supported": 11352,
+      "supported": 11155,
       "unavailable": null,
       "unsupported": 0
     },
@@ -2748,84 +2664,84 @@
   },
   "wander": [
     {
-      "meanDetour": 1.0845396764460127,
-      "meanDetourFreeFlow": 1.0218962856623253,
-      "meanSwitches": 0.0005247277974550702,
-      "medianDetour": 1.0502614974975586,
+      "meanDetour": 1.084597461941854,
+      "meanDetourFreeFlow": 1.0200538952195852,
+      "meanSwitches": 0.0011719512989126896,
+      "medianDetour": 1.0509212017059326,
       "set": "all trips",
-      "shareDetourFreeFlowOver1.3": 0.012068739341466614,
-      "shareDetourOver1.3": 0.03568149022694477,
-      "shareDetourOver2": 0.00006559097468188377,
+      "shareDetourFreeFlowOver1.3": 0.011849729800117195,
+      "shareDetourOver1.3": 0.03691646591574972,
+      "shareDetourOver2": 0.0,
       "shareLoops": 0.0,
-      "shareReversals": 0.002492457037911583,
-      "shareSwitched": 0.0005247277974550702,
-      "studyMiles": 1484.8855038555048,
-      "studyMilesShareDetourOver1.3": 0.0514694889518155,
-      "trips": 15246
+      "shareReversals": 0.0018230353538641838,
+      "shareSwitched": 0.0011719512989126896,
+      "studyMiles": 1541.277110642999,
+      "studyMilesShareDetourOver1.3": 0.051072568802053464,
+      "trips": 15359
     },
     {
-      "meanDetour": 1.0872085181640143,
-      "meanDetourFreeFlow": 1.0229981516770463,
-      "meanSwitches": 0.001309390198279087,
-      "medianDetour": 1.0521624088287354,
+      "meanDetour": 1.0871357960398822,
+      "meanDetourFreeFlow": 1.0214659623084763,
+      "meanSwitches": 0.002166456038996209,
+      "medianDetour": 1.0557080507278442,
       "set": "gate to gate",
-      "shareDetourFreeFlowOver1.3": 0.008791619902731014,
-      "shareDetourOver1.3": 0.02562663673774785,
-      "shareDetourOver2": 0.00018705574261129816,
+      "shareDetourFreeFlowOver1.3": 0.009749052175482938,
+      "shareDetourOver1.3": 0.025275320454955768,
+      "shareDetourOver2": 0.0,
       "shareLoops": 0.0,
-      "shareReversals": 0.001309390198279087,
-      "shareSwitched": 0.001309390198279087,
-      "studyMiles": 314.6400664042888,
-      "studyMilesShareDetourOver1.3": 0.08871225415756337,
-      "trips": 5346
+      "shareReversals": 0.0009026900162484203,
+      "shareSwitched": 0.002166456038996209,
+      "studyMiles": 337.0975998831679,
+      "studyMilesShareDetourOver1.3": 0.07872650224063338,
+      "trips": 5539
     },
     {
-      "meanDetour": 1.0830985019182917,
-      "meanDetourFreeFlow": 1.0213012780143758,
-      "meanSwitches": 0.00010101010101010101,
-      "medianDetour": 1.0495719909667969,
+      "meanDetour": 1.0831657070977625,
+      "meanDetourFreeFlow": 1.0192574146080406,
+      "meanSwitches": 0.0006109979633401223,
+      "medianDetour": 1.0485551357269287,
       "set": "with a local end",
-      "shareDetourFreeFlowOver1.3": 0.013838383838383839,
-      "shareDetourOver1.3": 0.04111111111111111,
+      "shareDetourFreeFlowOver1.3": 0.013034623217922607,
+      "shareDetourOver1.3": 0.0434826883910387,
       "shareDetourOver2": 0.0,
       "shareLoops": 0.0,
-      "shareReversals": 0.0031313131313131315,
-      "shareSwitched": 0.00010101010101010101,
-      "studyMiles": 1170.245437451216,
-      "studyMilesShareDetourOver1.3": 0.04145614838033873,
-      "trips": 9900
+      "shareReversals": 0.0023421588594704683,
+      "shareSwitched": 0.0006109979633401223,
+      "studyMiles": 1204.1795107598314,
+      "studyMilesShareDetourOver1.3": 0.04333113614506365,
+      "trips": 9820
     },
     {
-      "meanDetour": 1.0851323204476633,
-      "meanDetourFreeFlow": 1.0219200855447261,
-      "meanSwitches": 0.0011504170261719873,
-      "medianDetour": 1.0504311323165894,
+      "meanDetour": 1.084068479531098,
+      "meanDetourFreeFlow": 1.0202370149785447,
+      "meanSwitches": 0.0024478041756659467,
+      "medianDetour": 1.0495052337646484,
       "set": "guided drivers",
-      "shareDetourFreeFlowOver1.3": 0.011647972389991372,
-      "shareDetourOver1.3": 0.03710094909404659,
-      "shareDetourOver2": 0.0001438021282714984,
-      "shareLoops": 0.0,
-      "shareReversals": 0.0035950532067874604,
-      "shareSwitched": 0.0011504170261719873,
-      "studyMiles": 687.7453103845238,
-      "studyMilesShareDetourOver1.3": 0.04332588304711772,
-      "trips": 6954
-    },
-    {
-      "meanDetour": 1.084042661686307,
-      "meanDetourFreeFlow": 1.0218763261372148,
-      "meanSwitches": 0.0,
-      "medianDetour": 1.0501031875610352,
-      "set": "other drivers",
-      "shareDetourFreeFlowOver1.3": 0.012421611191509889,
-      "shareDetourOver1.3": 0.034491075735648816,
+      "shareDetourFreeFlowOver1.3": 0.011807055435565155,
+      "shareDetourOver1.3": 0.037005039596832254,
       "shareDetourOver2": 0.0,
       "shareLoops": 0.0,
-      "shareReversals": 0.001567776169802219,
-      "shareSwitched": 0.0,
-      "studyMiles": 797.1401934709809,
-      "studyMilesShareDetourOver1.3": 0.058495513754539874,
-      "trips": 8292
+      "shareReversals": 0.0017278617710583153,
+      "shareSwitched": 0.0024478041756659467,
+      "studyMiles": 700.0005501158375,
+      "studyMilesShareDetourOver1.3": 0.04969580891576841,
+      "trips": 6945
+    },
+    {
+      "meanDetour": 1.0850340893298622,
+      "meanDetourFreeFlow": 1.0199027463336838,
+      "meanSwitches": 0.0001188495364868077,
+      "medianDetour": 1.0515456199645996,
+      "set": "other drivers",
+      "shareDetourFreeFlowOver1.3": 0.01188495364868077,
+      "shareDetourOver1.3": 0.03684335631091039,
+      "shareDetourOver2": 0.0,
+      "shareLoops": 0.0,
+      "shareReversals": 0.0019015925837889231,
+      "shareSwitched": 0.0001188495364868077,
+      "studyMiles": 841.2765605271616,
+      "studyMilesShareDetourOver1.3": 0.05221812868449338,
+      "trips": 8414
     }
   ]
 }
