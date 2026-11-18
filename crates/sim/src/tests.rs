@@ -1723,15 +1723,27 @@ fn queued_minor_street_vehicles_depart_at_the_follow_up_headway() {
     assert!(flow > 800.0, "minor right-turn discharge with no major flow {flow} veh/h");
 }
 
-#[test]
-fn permissive_left_capacity_follows_the_gap_acceptance_formula() {
-    // Opposing 500 veh/h: Harders capacity with tc 4.1 s and tf 2.2 s is about 1,070 per green hour; a crossing conflict no longer
-    // holds the entering vehicle for the whole crossing.
+fn permissive_left_rate(queue_first: Option<bool>) -> f64 {
     let (net, x) = crate::validate::cross(Control::Signal, RoadClass::Secondary, 1, RoadClass::Secondary, 1, false);
     let fl = [(x.w, x.n, 4000.0, FlowMode::Car), (x.s, x.n, 4000.0, FlowMode::Car), (x.n, x.s, 4000.0, FlowMode::Car), (x.e, x.w, 500.0, FlowMode::Car)];
-    let mut r = crate::validate::Run::new(net, crate::validate::demand_m(&fl), cfg(1, 1.0));
+    let mut r = crate::validate::Run::new(net, crate::validate::demand_m(&fl), Config { queue_first_left: queue_first, ..cfg(1, 1.0) });
     r.advance(1500.0);
-    let rate = r.rate(&[x.w_in], 300.0, 1500.0);
+    r.rate(&[x.w_in], 300.0, 1500.0)
+}
+
+#[test]
+fn permissive_left_capacity_follows_the_queue_first_method() {
+    // Opposing 500 veh/h, green share about 0.5: left turns only after the opposing queue clears, then gaps and sneakers [Fambro1991],
+    // from the measured (tc 5.1 s, h 2.57 s, 0.88 sneakers, s 1,500) to the recommended values (4.5 s, 2.24 s, 2 sneakers, s 2,000).
+    let (lo, hi) = (crate::validate::permitted_left_cap(500.0, 1.0, 50.0, 100.0, 5.1, 2.57, 0.88, 1500.0), crate::validate::permitted_left_cap(500.0, 1.0, 50.0, 100.0, 4.5, 2.24, 2.0, 2000.0));
+    let rate = permissive_left_rate(None);
+    assert!(rate > 0.9 * lo && rate < 1.1 * hi, "left-turn discharge {rate} veh/h against {lo:.0} to {hi:.0}");
+}
+
+#[test]
+fn earlier_permissive_left_rule_stays_available() {
+    // `queue_first_left` off: the earlier rule (critical gap 4.1 s, courtesy wait) serves the left faster than the method allows.
+    let rate = permissive_left_rate(Some(false));
     assert!(rate > 350.0, "left-turn discharge {rate} veh/h");
 }
 
@@ -1781,7 +1793,8 @@ const GOLDEN_CORRIDOR: &str = r#"{"arterialMeanSpeed":5.677524024142892,"backlog
 // Updated with physical junction recovery (expose-junction-fallback-validity): vehicles held at a node exit brake and stand, so means move in the fourth digit; `JunctionRecovery::Historical` still gives the previous value.
 // Updated with local trip accounting (repair-local-trip-measurement-integrity): arrivals enter at the first step at or after them, local ends are drawn per end, the free-flow reference covers the driven part of each link and the last step counts.
 // Updated with emergence behind a moving leader and side-by-side exit checks (calibration round 28): same trips, speeds move in the fourth digit.
-const GOLDEN_CROSS: &str = r#"{"arterialMeanSpeed":8.414946184372877,"backlog":0,"completedTrips":551,"cutThrough":{"shareOfLocalVehKm":1.0,"vehKm":64.71006148147583},"gridlockRemoved":0,"meanTripDelay":15.534092318474315,"meanTripTime":50.77940936218723,"safety":{"localMeanSpeed":6.409204986099149,"localP85Speed":11.420308066740935,"shareAbove20mph":0.4694045861729056,"shareAbove25mph":0.17103062764293528,"ttcConflicts":10},"spawned":571,"time":1800.0,"unroutableTrips":0,"vehKm":217.629896941185,"vehiclesInNetwork":20}"#;
+// Updated with queue-first permissive left turns by default (repair-permissive-left-and-gate-fork): the s->w left waits for the opposing queue, same trips completed, means move in the third digit.
+const GOLDEN_CROSS: &str = r#"{"arterialMeanSpeed":8.413896650634388,"backlog":0,"completedTrips":551,"cutThrough":{"shareOfLocalVehKm":1.0,"vehKm":64.70944093704223},"gridlockRemoved":0,"meanTripDelay":15.639809196877218,"meanTripTime":50.88512624059014,"safety":{"localMeanSpeed":6.372398699961928,"localP85Speed":11.397084828551192,"shareAbove20mph":0.46346019733791893,"shareAbove25mph":0.16920445706986031,"ttcConflicts":7},"spawned":571,"time":1800.0,"unroutableTrips":0,"vehKm":217.62943276882172,"vehiclesInNetwork":20}"#;
 
 mod modes;
 mod initial;

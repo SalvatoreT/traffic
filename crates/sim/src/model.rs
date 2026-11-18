@@ -361,9 +361,10 @@ pub struct Config {
     pub lane_changes: Option<bool>,
     /// Additive: longest link (m) joining two signals that run one cycle with offsets by travel time (default `params::COORD_MAX_M`; 0 turns it off).
     pub coord_max_m: Option<f64>,
-    /// Additive (round 33): permissive left turns at a signal by the queue-first gap model [Fambro1991]: a conflicting car starting from the
-    /// line counts as arriving by its acceleration, the critical gap is `TC_PERMITTED_LEFT`, and the left-turner gets no courtesy or yield
-    /// fallback. Default off (round 33 kept the step out: the network got less stable); validation cases p1 to p3 measure it.
+    /// Permissive left turns at a signal by the queue-first gap model [Fambro1991]: a conflicting car starting from the line counts as
+    /// arriving by its acceleration, the critical gap is `TC_PERMITTED_LEFT`, and the left-turner gets no courtesy or yield fallback.
+    /// Default on (change repair-permissive-left-and-gate-fork); `Some(false)` restores the earlier rule for A/B checks. Validation cases
+    /// p1 to p3 measure it.
     pub queue_first_left: Option<bool>,
 }
 
