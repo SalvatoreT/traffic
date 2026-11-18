@@ -66,7 +66,7 @@ describe('picture words', () => {
     expect(pictureCaption('PM peak')).toBe('PM peak, change in through cars an hour on each block, proposal vs. today');
     expect(pictureCaption('PM peak', 'all')).toBe('PM peak, change in all cars an hour on each block, proposal vs. today');
     expect(legendSentence('all')).toContain('Blue: fewer all cars');
-    expect(legendSentence('all')).toContain('(about 40 cars an hour)');
+    expect(legendSentence('all')).toContain('(about 20 cars an hour)');
     expect(legendSentence('through')).toContain('Blue: fewer through cars');
   });
   it('names the biggest drop and gain in the alt text, with the card\'s total for that period', () => {
@@ -98,8 +98,8 @@ describe('picture words', () => {
 
 describe('all-car picture', () => {
   it('colors a block by all cars, on the flow scale, so a through-car fall can still be a rise', () => {
-    expect(blockIntensity(30, 'through')).toBeGreaterThan(0);
-    expect(blockIntensity(30, 'all')).toBe(0);
+    expect(blockIntensity(15, 'through')).toBeGreaterThan(0);
+    expect(blockIntensity(15, 'all')).toBe(0);
     expect(blockIntensity(246, 'all')).toBeGreaterThan(0);
     expect(blockIntensity(-246, 'all')).toBeLessThan(0);
   });

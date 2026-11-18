@@ -43,7 +43,7 @@ describe('dead band and clamping', () => {
   it('clamps to the fixed top on both sides', () => {
     expect(changeIntensity('cutthrough', A(500, 400), A(500, 0))).toBe(-1);
     expect(changeIntensity('flow', A(0, 0), A(2000, 0))).toBe(1);
-    expect(CHANGE_TOP.flow).toBe(800);
+    expect(CHANGE_TOP.flow).toBe(400);
   });
   it('marks streets with no traffic in either run', () => {
     expect(changeIntensity('flow', A(0, 0), A(0, 0))).toBe(NO_DATA);
@@ -65,7 +65,7 @@ describe('signed labels', () => {
   });
   it('builds legend ticks and the readout', () => {
     expect(changeTicks('cutthrough')).toEqual(['−100+', '−50', '0', '+50', '+100+']);
-    expect(changeTicks('flow')[4]).toBe('+800+');
+    expect(changeTicks('flow')[4]).toBe('+400+');
     expect(readoutText('cutthrough', A(80, 62), A(40, 18))).toBe('Through cars on this block: 62 → 18 cars an hour (−44)');
   });
 });

@@ -5,12 +5,12 @@ import { intensity } from './ramps';
 /** Marks a link with no traffic in the baseline or the scenario. */
 export const NO_DATA = -2;
 
-/** Fixed top of the two-sided scale, in display units (veh/h). Cut-through and flow match the one-sided tops in ramps.ts [see OVERLAY_TOP]. */
-export const CHANGE_TOP: Record<Overlay, number> = { cutthrough: 100, flow: 800 };
+/** Fixed top of the two-sided scale, in display units (veh/h). Cut-through matches the one-sided top in ramps.ts [see OVERLAY_TOP]. ASSUMPTION: flow tops out at 400, half the one-sided top, so the largest changes in the published proposals (about 250) read as strong (user decision, 2026-11-18). */
+export const CHANGE_TOP: Record<Overlay, number> = { cutthrough: 100, flow: 400 };
 
 /** Dead band half-width, display units. ASSUMPTION: 5% of the top, since seeded runs reshuffle arrivals and small differences are noise (design D4). */
 export const DEAD_BAND_CUTTHROUGH = 7.5;
-export const DEAD_BAND_FLOW = 40;
+export const DEAD_BAND_FLOW = 20;
 export const DEAD_BAND: Record<Overlay, number> = { cutthrough: DEAD_BAND_CUTTHROUGH, flow: DEAD_BAND_FLOW };
 
 export const CHANGE_UNIT: Record<Overlay, string> = { cutthrough: 'cars an hour', flow: 'cars an hour' };
