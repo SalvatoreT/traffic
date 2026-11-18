@@ -1,0 +1,8701 @@
+{
+  "case": "colby-north-pm",
+  "coordinatedPairs": [
+    {
+      "extraCostS": 0.09999847412109375,
+      "pair": [
+        5,
+        11
+      ]
+    },
+    {
+      "extraCostS": 0.09999847412109375,
+      "pair": [
+        6,
+        11
+      ]
+    },
+    {
+      "extraCostS": 0.09999847412109375,
+      "pair": [
+        8,
+        11
+      ]
+    },
+    {
+      "extraCostS": 0.20000457763671875,
+      "pair": [
+        0,
+        3
+      ]
+    },
+    {
+      "extraCostS": 0.20000457763671875,
+      "pair": [
+        0,
+        5
+      ]
+    },
+    {
+      "extraCostS": 0.20000457763671875,
+      "pair": [
+        0,
+        6
+      ]
+    },
+    {
+      "extraCostS": 0.20000457763671875,
+      "pair": [
+        0,
+        7
+      ]
+    },
+    {
+      "extraCostS": 0.20000457763671875,
+      "pair": [
+        0,
+        8
+      ]
+    },
+    {
+      "extraCostS": 0.20000457763671875,
+      "pair": [
+        0,
+        10
+      ]
+    },
+    {
+      "extraCostS": 0.20000457763671875,
+      "pair": [
+        0,
+        11
+      ]
+    },
+    {
+      "extraCostS": 0.5999984741210938,
+      "pair": [
+        1,
+        3
+      ]
+    },
+    {
+      "extraCostS": 0.5999984741210938,
+      "pair": [
+        2,
+        3
+      ]
+    },
+    {
+      "extraCostS": 0.5999984741210938,
+      "pair": [
+        3,
+        9
+      ]
+    },
+    {
+      "extraCostS": 1.0999984741210938,
+      "pair": [
+        1,
+        2
+      ]
+    },
+    {
+      "extraCostS": 1.0999984741210938,
+      "pair": [
+        1,
+        5
+      ]
+    },
+    {
+      "extraCostS": 1.0999984741210938,
+      "pair": [
+        1,
+        6
+      ]
+    },
+    {
+      "extraCostS": 1.0999984741210938,
+      "pair": [
+        1,
+        7
+      ]
+    },
+    {
+      "extraCostS": 1.0999984741210938,
+      "pair": [
+        1,
+        8
+      ]
+    },
+    {
+      "extraCostS": 1.0999984741210938,
+      "pair": [
+        1,
+        9
+      ]
+    },
+    {
+      "extraCostS": 1.0999984741210938,
+      "pair": [
+        1,
+        11
+      ]
+    },
+    {
+      "extraCostS": 1.100006103515625,
+      "pair": [
+        3,
+        5
+      ]
+    },
+    {
+      "extraCostS": 1.100006103515625,
+      "pair": [
+        3,
+        6
+      ]
+    },
+    {
+      "extraCostS": 1.100006103515625,
+      "pair": [
+        3,
+        8
+      ]
+    },
+    {
+      "extraCostS": 1.100006103515625,
+      "pair": [
+        5,
+        9
+      ]
+    },
+    {
+      "extraCostS": 1.100006103515625,
+      "pair": [
+        5,
+        10
+      ]
+    },
+    {
+      "extraCostS": 1.100006103515625,
+      "pair": [
+        6,
+        9
+      ]
+    },
+    {
+      "extraCostS": 1.100006103515625,
+      "pair": [
+        6,
+        10
+      ]
+    },
+    {
+      "extraCostS": 1.100006103515625,
+      "pair": [
+        8,
+        9
+      ]
+    },
+    {
+      "extraCostS": 1.100006103515625,
+      "pair": [
+        8,
+        10
+      ]
+    },
+    {
+      "extraCostS": 1.6999969482421875,
+      "pair": [
+        1,
+        4
+      ]
+    },
+    {
+      "extraCostS": 1.6999969482421875,
+      "pair": [
+        2,
+        4
+      ]
+    },
+    {
+      "extraCostS": 1.6999969482421875,
+      "pair": [
+        4,
+        9
+      ]
+    },
+    {
+      "extraCostS": 1.8000030517578125,
+      "pair": [
+        2,
+        10
+      ]
+    },
+    {
+      "extraCostS": 1.9000015258789062,
+      "pair": [
+        2,
+        5
+      ]
+    },
+    {
+      "extraCostS": 1.9000015258789062,
+      "pair": [
+        2,
+        6
+      ]
+    },
+    {
+      "extraCostS": 1.9000015258789062,
+      "pair": [
+        2,
+        7
+      ]
+    },
+    {
+      "extraCostS": 1.9000015258789062,
+      "pair": [
+        7,
+        9
+      ]
+    },
+    {
+      "extraCostS": 2.6999969482421875,
+      "pair": [
+        0,
+        1
+      ]
+    },
+    {
+      "extraCostS": 2.6999969482421875,
+      "pair": [
+        1,
+        10
+      ]
+    },
+    {
+      "extraCostS": 2.8000030517578125,
+      "pair": [
+        0,
+        2
+      ]
+    },
+    {
+      "extraCostS": 2.8000030517578125,
+      "pair": [
+        2,
+        9
+      ]
+    },
+    {
+      "extraCostS": 2.9000015258789062,
+      "pair": [
+        7,
+        11
+      ]
+    },
+    {
+      "extraCostS": 4.0,
+      "pair": [
+        0,
+        4
+      ]
+    },
+    {
+      "extraCostS": 4.0,
+      "pair": [
+        0,
+        9
+      ]
+    },
+    {
+      "extraCostS": 5.900001525878906,
+      "pair": [
+        2,
+        8
+      ]
+    },
+    {
+      "extraCostS": 5.900001525878906,
+      "pair": [
+        2,
+        11
+      ]
+    },
+    {
+      "extraCostS": 6.0,
+      "pair": [
+        3,
+        4
+      ]
+    },
+    {
+      "extraCostS": 6.0,
+      "pair": [
+        4,
+        10
+      ]
+    },
+    {
+      "extraCostS": 10.0,
+      "pair": [
+        3,
+        7
+      ]
+    },
+    {
+      "extraCostS": 10.0,
+      "pair": [
+        3,
+        11
+      ]
+    },
+    {
+      "extraCostS": 10.300003051757812,
+      "pair": [
+        4,
+        5
+      ]
+    },
+    {
+      "extraCostS": 10.300003051757812,
+      "pair": [
+        4,
+        6
+      ]
+    },
+    {
+      "extraCostS": 10.300003051757812,
+      "pair": [
+        4,
+        7
+      ]
+    },
+    {
+      "extraCostS": 10.300003051757812,
+      "pair": [
+        4,
+        8
+      ]
+    },
+    {
+      "extraCostS": 10.300003051757812,
+      "pair": [
+        4,
+        11
+      ]
+    }
+  ],
+  "coverageGroups": [
+    {
+      "candidates": [
+        0,
+        1,
+        2,
+        5,
+        6,
+        7,
+        8,
+        9,
+        11
+      ],
+      "fullHourBest": {
+        "score": 31.389384288747344,
+        "set": [
+          1,
+          5,
+          9
+        ]
+      },
+      "group": "generator",
+      "objectives": [
+        {
+          "best": {
+            "detourS": 0.2992867483467876,
+            "score": 31.389384288747344,
+            "set": [
+              1,
+              5,
+              9
+            ]
+          },
+          "objective": "most-removed"
+        },
+        {
+          "best": {
+            "detourS": 2.8717960637191595,
+            "score": 13.887670177137649,
+            "set": [
+              9,
+              11
+            ]
+          },
+          "objective": "no-closures"
+        },
+        {
+          "best": {
+            "detourS": -0.7165353982996407,
+            "score": 7.7019108280254756,
+            "set": [
+              2,
+              5,
+              11
+            ]
+          },
+          "objective": "least-detour"
+        },
+        {
+          "best": {
+            "detourS": 2.2427548136322457,
+            "score": 25.73609341825903,
+            "set": [
+              1,
+              7
+            ]
+          },
+          "objective": "fewest-changes"
+        }
+      ],
+      "screenBest": {
+        "score": 38.16299913662114,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      }
+    },
+    {
+      "candidates": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        11
+      ],
+      "fullHourBest": {
+        "score": 35.27961783439491,
+        "set": [
+          1,
+          4,
+          5
+        ]
+      },
+      "group": "generatorWithBypass",
+      "objectives": [
+        {
+          "best": {
+            "detourS": 0.4426533629972482,
+            "score": 35.27961783439491,
+            "set": [
+              1,
+              4,
+              5
+            ]
+          },
+          "objective": "most-removed"
+        },
+        {
+          "best": {
+            "detourS": 2.8717960637191595,
+            "score": 13.887670177137649,
+            "set": [
+              9,
+              11
+            ]
+          },
+          "objective": "no-closures"
+        },
+        {
+          "best": {
+            "detourS": -2.2248080580824876,
+            "score": 31.17660212852442,
+            "set": [
+              3,
+              6,
+              9
+            ]
+          },
+          "objective": "least-detour"
+        },
+        {
+          "best": {
+            "detourS": 2.2427548136322457,
+            "score": 25.73609341825903,
+            "set": [
+              1,
+              7
+            ]
+          },
+          "objective": "fewest-changes"
+        }
+      ],
+      "screenBest": {
+        "score": 38.16299913662114,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      }
+    }
+  ],
+  "fidelity": [
+    {
+      "fidelity": {
+        "fullWinner": [
+          1,
+          4,
+          5
+        ],
+        "packages": 239,
+        "screenWinner": [
+          1,
+          7,
+          9
+        ],
+        "screenWinnerFullRank": 12,
+        "spearman": 0.784791900935565,
+        "top10Overlap": 5,
+        "top5Overlap": 1
+      },
+      "minutesPerPackage": 20.0,
+      "setting": "20m-x1"
+    },
+    {
+      "fidelity": {
+        "fullWinner": [
+          1,
+          4,
+          5
+        ],
+        "packages": 239,
+        "screenWinner": [
+          1,
+          4,
+          7
+        ],
+        "screenWinnerFullRank": 43,
+        "spearman": 0.8276180635430564,
+        "top10Overlap": 6,
+        "top5Overlap": 1
+      },
+      "minutesPerPackage": 60.0,
+      "setting": "20m-x3"
+    },
+    {
+      "fidelity": {
+        "fullWinner": [
+          1,
+          4,
+          5
+        ],
+        "packages": 239,
+        "screenWinner": [
+          1,
+          7,
+          9
+        ],
+        "screenWinnerFullRank": 12,
+        "spearman": 0.8320185120281559,
+        "top10Overlap": 5,
+        "top5Overlap": 1
+      },
+      "minutesPerPackage": 30.0,
+      "setting": "30m-x1"
+    },
+    {
+      "fidelity": {
+        "fullWinner": [
+          1,
+          4,
+          5
+        ],
+        "packages": 239,
+        "screenWinner": [
+          1,
+          3,
+          7
+        ],
+        "screenWinnerFullRank": 5,
+        "spearman": 0.8932495751071391,
+        "top10Overlap": 5,
+        "top5Overlap": 3
+      },
+      "minutesPerPackage": 60.0,
+      "setting": "60m-x1"
+    }
+  ],
+  "fullSetting": "60m-x3",
+  "identity": {
+    "calibration": "uncalibrated",
+    "case": "colby-north-pm",
+    "caseSha256": "816329f0f95429267769292d45706631b6cd438e7537fe78337626ee72cbb940",
+    "harmBlocks": 68,
+    "inputs": {
+      "areas": "386731eb104a1ac7a35475d2e5952bcd2b98f6a29991a87b3f68334308477abd",
+      "demand": "bef51b684a8c079ce5e133e089df0659b422ca2ec77bd6b8f5784e38bf1bd93c",
+      "network": "6a8285d5076f9ddc9042b3a4554998e61b5427fdb8fbbbbaaa8572cd7b18f4b0"
+    },
+    "inputsLabel": "frozen inputs of the case",
+    "inputsMatchCase": true,
+    "links": 4411,
+    "method": "search-benchmark-results-1",
+    "nodes": 1762,
+    "simulator": "f0df1aabc323bca5893215e1df1afbff",
+    "sourceRevision": "f6c573d3b2f0"
+  },
+  "known": [
+    [
+      0,
+      6
+    ],
+    [
+      1,
+      5
+    ],
+    [
+      7,
+      9
+    ]
+  ],
+  "period": "pm_peak",
+  "primarySetting": "20m-x1",
+  "runs": [
+    {
+      "bestScreen": {
+        "score": 38.16299913662114,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "charged": 75,
+      "finalists": [
+        [
+          1,
+          7,
+          9
+        ],
+        [
+          7,
+          9
+        ],
+        [
+          2,
+          9,
+          11
+        ],
+        [
+          0,
+          3,
+          11
+        ],
+        [
+          9,
+          10,
+          11
+        ],
+        [
+          9
+        ],
+        [
+          11
+        ],
+        [
+          9,
+          11
+        ],
+        [
+          0,
+          3,
+          7
+        ],
+        [
+          0,
+          7,
+          10
+        ],
+        [
+          0,
+          4,
+          7
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          0,
+          7
+        ]
+      ],
+      "fullHour": {
+        "gap": 9.564545080117146,
+        "objectives": [
+          {
+            "found": false,
+            "gap": 9.564545080117146,
+            "objective": "most-removed",
+            "oracle": [
+              1,
+              4,
+              5
+            ],
+            "shortlist": [
+              1,
+              7,
+              9
+            ]
+          },
+          {
+            "found": true,
+            "gap": 0.0,
+            "objective": "no-closures",
+            "oracle": [
+              9,
+              10,
+              11
+            ],
+            "shortlist": [
+              9,
+              10,
+              11
+            ]
+          },
+          {
+            "found": false,
+            "gap": 2.91687193033556,
+            "objective": "least-detour",
+            "oracle": [
+              3,
+              6,
+              9
+            ],
+            "shortlist": [
+              0,
+              7
+            ]
+          },
+          {
+            "found": false,
+            "gap": 5.11820051333553,
+            "objective": "fewest-changes",
+            "oracle": [
+              1,
+              7
+            ],
+            "shortlist": [
+              7,
+              9
+            ]
+          }
+        ],
+        "oracleBest": {
+          "score": 35.27961783439491,
+          "set": [
+            1,
+            4,
+            5
+          ]
+        },
+        "shortlistBest": {
+          "adjustedHarm": 68.48621513238169,
+          "detourS": 2.403774793427772,
+          "rawMaxIncrease": 91.66666412353516,
+          "reductionPct": 32.563694267515935,
+          "score": 25.715072754277767,
+          "set": [
+            1,
+            7,
+            9
+          ]
+        },
+        "top1": 0,
+        "top3": 0,
+        "top5": 0
+      },
+      "method": "beam",
+      "mode": "cold",
+      "nondominated": {
+        "forwarded": 7,
+        "missed": [
+          [
+            3,
+            11
+          ],
+          [
+            6,
+            9,
+            11
+          ]
+        ],
+        "oracle": 9,
+        "visited": 7
+      },
+      "oracleBestScreen": {
+        "score": 38.16299913662114,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "rejectedAccess": 0,
+      "rejectedRun": 0,
+      "run": {
+        "allowance": 0,
+        "beamCharged": 75,
+        "knownCharged": 0,
+        "supplement": null
+      },
+      "screenGap": 0.0,
+      "setting": "20m-x1",
+      "simulatedMinutes": 1500.0,
+      "visited": 75
+    },
+    {
+      "bestScreen": {
+        "score": 38.16299913662114,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "charged": 77,
+      "finalists": [
+        [
+          1,
+          7,
+          9
+        ],
+        [
+          7,
+          9
+        ],
+        [
+          2,
+          9,
+          11
+        ],
+        [
+          0,
+          3,
+          11
+        ],
+        [
+          9,
+          10,
+          11
+        ],
+        [
+          9
+        ],
+        [
+          11
+        ],
+        [
+          3,
+          11
+        ],
+        [
+          9,
+          11
+        ],
+        [
+          0,
+          3,
+          7
+        ],
+        [
+          0,
+          7,
+          10
+        ],
+        [
+          0,
+          4,
+          7
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          0,
+          7
+        ]
+      ],
+      "fullHour": {
+        "gap": 9.564545080117146,
+        "objectives": [
+          {
+            "found": false,
+            "gap": 9.564545080117146,
+            "objective": "most-removed",
+            "oracle": [
+              1,
+              4,
+              5
+            ],
+            "shortlist": [
+              1,
+              7,
+              9
+            ]
+          },
+          {
+            "found": true,
+            "gap": 0.0,
+            "objective": "no-closures",
+            "oracle": [
+              9,
+              10,
+              11
+            ],
+            "shortlist": [
+              9,
+              10,
+              11
+            ]
+          },
+          {
+            "found": false,
+            "gap": 2.91687193033556,
+            "objective": "least-detour",
+            "oracle": [
+              3,
+              6,
+              9
+            ],
+            "shortlist": [
+              0,
+              7
+            ]
+          },
+          {
+            "found": false,
+            "gap": 5.11820051333553,
+            "objective": "fewest-changes",
+            "oracle": [
+              1,
+              7
+            ],
+            "shortlist": [
+              7,
+              9
+            ]
+          }
+        ],
+        "oracleBest": {
+          "score": 35.27961783439491,
+          "set": [
+            1,
+            4,
+            5
+          ]
+        },
+        "shortlistBest": {
+          "adjustedHarm": 68.48621513238169,
+          "detourS": 2.403774793427772,
+          "rawMaxIncrease": 91.66666412353516,
+          "reductionPct": 32.563694267515935,
+          "score": 25.715072754277767,
+          "set": [
+            1,
+            7,
+            9
+          ]
+        },
+        "top1": 0,
+        "top3": 0,
+        "top5": 0
+      },
+      "method": "beam+delete@extra",
+      "mode": "cold",
+      "nondominated": {
+        "forwarded": 8,
+        "missed": [
+          [
+            6,
+            9,
+            11
+          ]
+        ],
+        "oracle": 9,
+        "visited": 8
+      },
+      "oracleBestScreen": {
+        "score": 38.16299913662114,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "rejectedAccess": 0,
+      "rejectedRun": 0,
+      "run": {
+        "allowance": 19,
+        "beamCharged": 75,
+        "knownCharged": 0,
+        "supplement": {
+          "allowance": 19,
+          "charged": 2,
+          "evaluated": [
+            {
+              "origin": "delete",
+              "score": 8.56488592907397,
+              "set": [
+                3,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "delete",
+              "score": -3.614613339818005,
+              "set": [
+                3,
+                7
+              ],
+              "valid": true
+            }
+          ],
+          "firstRound": 2,
+          "moves": [
+            "delete"
+          ],
+          "queued": {
+            "coordinatedPairs": 0,
+            "delete": 2,
+            "secondRound": 0,
+            "swap": 0
+          },
+          "stop": "queues empty"
+        }
+      },
+      "screenGap": 0.0,
+      "setting": "20m-x1",
+      "simulatedMinutes": 1540.0,
+      "visited": 77
+    },
+    {
+      "bestScreen": {
+        "score": 38.16299913662114,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "charged": 94,
+      "finalists": [
+        [
+          1,
+          7,
+          9
+        ],
+        [
+          7,
+          9
+        ],
+        [
+          2,
+          9,
+          11
+        ],
+        [
+          0,
+          3,
+          11
+        ],
+        [
+          9,
+          10,
+          11
+        ],
+        [
+          9
+        ],
+        [
+          11
+        ],
+        [
+          9,
+          11
+        ],
+        [
+          0,
+          3,
+          7
+        ],
+        [
+          1,
+          4,
+          8
+        ],
+        [
+          0,
+          7,
+          10
+        ],
+        [
+          1,
+          3,
+          8
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          0,
+          7
+        ]
+      ],
+      "fullHour": {
+        "gap": 9.564545080117146,
+        "objectives": [
+          {
+            "found": false,
+            "gap": 9.564545080117146,
+            "objective": "most-removed",
+            "oracle": [
+              1,
+              4,
+              5
+            ],
+            "shortlist": [
+              1,
+              7,
+              9
+            ]
+          },
+          {
+            "found": true,
+            "gap": 0.0,
+            "objective": "no-closures",
+            "oracle": [
+              9,
+              10,
+              11
+            ],
+            "shortlist": [
+              9,
+              10,
+              11
+            ]
+          },
+          {
+            "found": false,
+            "gap": 2.7661853644243024,
+            "objective": "least-detour",
+            "oracle": [
+              3,
+              6,
+              9
+            ],
+            "shortlist": [
+              1,
+              3,
+              8
+            ]
+          },
+          {
+            "found": false,
+            "gap": 5.11820051333553,
+            "objective": "fewest-changes",
+            "oracle": [
+              1,
+              7
+            ],
+            "shortlist": [
+              7,
+              9
+            ]
+          }
+        ],
+        "oracleBest": {
+          "score": 35.27961783439491,
+          "set": [
+            1,
+            4,
+            5
+          ]
+        },
+        "shortlistBest": {
+          "adjustedHarm": 68.48621513238169,
+          "detourS": 2.403774793427772,
+          "rawMaxIncrease": 91.66666412353516,
+          "reductionPct": 32.563694267515935,
+          "score": 25.715072754277767,
+          "set": [
+            1,
+            7,
+            9
+          ]
+        },
+        "top1": 0,
+        "top3": 0,
+        "top5": 0
+      },
+      "method": "beam+swap@extra",
+      "mode": "cold",
+      "nondominated": {
+        "forwarded": 7,
+        "missed": [
+          [
+            3,
+            11
+          ],
+          [
+            6,
+            9,
+            11
+          ]
+        ],
+        "oracle": 9,
+        "visited": 7
+      },
+      "oracleBestScreen": {
+        "score": 38.16299913662114,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "rejectedAccess": 1,
+      "rejectedRun": 0,
+      "run": {
+        "allowance": 19,
+        "beamCharged": 75,
+        "knownCharged": 0,
+        "supplement": {
+          "allowance": 19,
+          "charged": 19,
+          "evaluated": [
+            {
+              "origin": "swap",
+              "score": 32.094339622641506,
+              "set": [
+                1,
+                5,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 21.773192748692267,
+              "set": [
+                1,
+                6,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 9.432608396488112,
+              "set": [
+                1,
+                8,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 31.871698113207543,
+              "set": [
+                1,
+                4,
+                5
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 23.524136144918685,
+              "set": [
+                1,
+                4,
+                6
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 10.719400849318301,
+              "set": [
+                1,
+                4,
+                8
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 17.550943396226415,
+              "set": [
+                1,
+                3,
+                5
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 19.837343692088496,
+              "set": [
+                1,
+                3,
+                6
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 15.392985754978678,
+              "set": [
+                1,
+                3,
+                8
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 28.27911050813143,
+              "set": [
+                4,
+                5,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 30.843261451527653,
+              "set": [
+                4,
+                6,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 12.60619330214849,
+              "set": [
+                4,
+                8,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 21.00566037735849,
+              "set": [
+                1,
+                5,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 10.984513503409248,
+              "set": [
+                1,
+                6,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 4.072231037997545,
+              "set": [
+                1,
+                8,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 23.966570660639057,
+              "set": [
+                1,
+                5,
+                10
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 14.835456899635666,
+              "set": [
+                1,
+                6,
+                10
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 13.12883481158245,
+              "set": [
+                1,
+                8,
+                10
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 26.255573511944352,
+              "set": [
+                2,
+                5,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": null,
+              "set": [
+                0,
+                1,
+                5
+              ],
+              "valid": false
+            }
+          ],
+          "firstRound": 20,
+          "moves": [
+            "swap"
+          ],
+          "queued": {
+            "coordinatedPairs": 0,
+            "delete": 0,
+            "secondRound": 0,
+            "swap": 78
+          },
+          "stop": "allowance"
+        }
+      },
+      "screenGap": 0.0,
+      "setting": "20m-x1",
+      "simulatedMinutes": 1880.0,
+      "visited": 95
+    },
+    {
+      "bestScreen": {
+        "score": 38.16299913662114,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "charged": 94,
+      "finalists": [
+        [
+          1,
+          7,
+          9
+        ],
+        [
+          7,
+          9
+        ],
+        [
+          2,
+          9,
+          11
+        ],
+        [
+          0,
+          3,
+          11
+        ],
+        [
+          9,
+          10,
+          11
+        ],
+        [
+          9
+        ],
+        [
+          11
+        ],
+        [
+          9,
+          11
+        ],
+        [
+          0,
+          3,
+          7
+        ],
+        [
+          0,
+          7,
+          10
+        ],
+        [
+          0,
+          6
+        ],
+        [
+          3,
+          7,
+          9
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          0,
+          7
+        ]
+      ],
+      "fullHour": {
+        "gap": 9.564545080117146,
+        "objectives": [
+          {
+            "found": false,
+            "gap": 9.564545080117146,
+            "objective": "most-removed",
+            "oracle": [
+              1,
+              4,
+              5
+            ],
+            "shortlist": [
+              1,
+              7,
+              9
+            ]
+          },
+          {
+            "found": true,
+            "gap": 0.0,
+            "objective": "no-closures",
+            "oracle": [
+              9,
+              10,
+              11
+            ],
+            "shortlist": [
+              9,
+              10,
+              11
+            ]
+          },
+          {
+            "found": false,
+            "gap": 2.91687193033556,
+            "objective": "least-detour",
+            "oracle": [
+              3,
+              6,
+              9
+            ],
+            "shortlist": [
+              0,
+              7
+            ]
+          },
+          {
+            "found": false,
+            "gap": 5.11820051333553,
+            "objective": "fewest-changes",
+            "oracle": [
+              1,
+              7
+            ],
+            "shortlist": [
+              7,
+              9
+            ]
+          }
+        ],
+        "oracleBest": {
+          "score": 35.27961783439491,
+          "set": [
+            1,
+            4,
+            5
+          ]
+        },
+        "shortlistBest": {
+          "adjustedHarm": 68.48621513238169,
+          "detourS": 2.403774793427772,
+          "rawMaxIncrease": 91.66666412353516,
+          "reductionPct": 32.563694267515935,
+          "score": 25.715072754277767,
+          "set": [
+            1,
+            7,
+            9
+          ]
+        },
+        "top1": 0,
+        "top3": 0,
+        "top5": 0
+      },
+      "method": "beam+coordinated@extra",
+      "mode": "cold",
+      "nondominated": {
+        "forwarded": 7,
+        "missed": [
+          [
+            3,
+            11
+          ],
+          [
+            6,
+            9,
+            11
+          ]
+        ],
+        "oracle": 9,
+        "visited": 7
+      },
+      "oracleBestScreen": {
+        "score": 38.16299913662114,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "rejectedAccess": 1,
+      "rejectedRun": 0,
+      "run": {
+        "allowance": 19,
+        "beamCharged": 75,
+        "knownCharged": 0,
+        "supplement": {
+          "allowance": 19,
+          "charged": 19,
+          "evaluated": [
+            {
+              "origin": "coordinated",
+              "score": 3.1495376035782208,
+              "set": [
+                5,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": -3.024047302082156,
+              "set": [
+                6,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 3.898646132337169,
+              "set": [
+                8,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 6.85368671949152,
+              "set": [
+                0,
+                5
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 6.24425275722737,
+              "set": [
+                0,
+                6
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 12.776328228925482,
+              "set": [
+                0,
+                8
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 9.93315328608549,
+              "set": [
+                1,
+                3
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 10.736926870991152,
+              "set": [
+                2,
+                3
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 7.290908866445484,
+              "set": [
+                3,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 6.9048020710345686,
+              "set": [
+                3,
+                5
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 25.53449518894094,
+              "set": [
+                3,
+                7,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": null,
+              "set": [
+                0,
+                1,
+                5
+              ],
+              "valid": false
+            },
+            {
+              "origin": "coordinated",
+              "score": 25.30188679245283,
+              "set": [
+                1,
+                2,
+                5
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 17.550943396226415,
+              "set": [
+                1,
+                3,
+                5
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 31.871698113207543,
+              "set": [
+                1,
+                4,
+                5
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 32.094339622641506,
+              "set": [
+                1,
+                5,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 23.966570660639057,
+              "set": [
+                1,
+                5,
+                10
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 21.00566037735849,
+              "set": [
+                1,
+                5,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 16.03670558741605,
+              "set": [
+                0,
+                6,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 21.773192748692267,
+              "set": [
+                1,
+                6,
+                9
+              ],
+              "valid": true
+            }
+          ],
+          "firstRound": 10,
+          "moves": [
+            "coordinated"
+          ],
+          "queued": {
+            "coordinatedPairs": 10,
+            "delete": 0,
+            "secondRound": 118,
+            "swap": 0
+          },
+          "stop": "allowance"
+        }
+      },
+      "screenGap": 0.0,
+      "setting": "20m-x1",
+      "simulatedMinutes": 1880.0,
+      "visited": 95
+    },
+    {
+      "bestScreen": {
+        "score": 38.16299913662114,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "charged": 94,
+      "finalists": [
+        [
+          1,
+          7,
+          9
+        ],
+        [
+          7,
+          9
+        ],
+        [
+          2,
+          9,
+          11
+        ],
+        [
+          0,
+          3,
+          11
+        ],
+        [
+          9,
+          10,
+          11
+        ],
+        [
+          9
+        ],
+        [
+          11
+        ],
+        [
+          3,
+          11
+        ],
+        [
+          9,
+          11
+        ],
+        [
+          0,
+          3,
+          7
+        ],
+        [
+          1,
+          4,
+          8
+        ],
+        [
+          0,
+          7,
+          10
+        ],
+        [
+          1,
+          3,
+          8
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          0,
+          7
+        ]
+      ],
+      "fullHour": {
+        "gap": 9.564545080117146,
+        "objectives": [
+          {
+            "found": false,
+            "gap": 9.564545080117146,
+            "objective": "most-removed",
+            "oracle": [
+              1,
+              4,
+              5
+            ],
+            "shortlist": [
+              1,
+              7,
+              9
+            ]
+          },
+          {
+            "found": true,
+            "gap": 0.0,
+            "objective": "no-closures",
+            "oracle": [
+              9,
+              10,
+              11
+            ],
+            "shortlist": [
+              9,
+              10,
+              11
+            ]
+          },
+          {
+            "found": false,
+            "gap": 2.7661853644243024,
+            "objective": "least-detour",
+            "oracle": [
+              3,
+              6,
+              9
+            ],
+            "shortlist": [
+              1,
+              3,
+              8
+            ]
+          },
+          {
+            "found": false,
+            "gap": 5.11820051333553,
+            "objective": "fewest-changes",
+            "oracle": [
+              1,
+              7
+            ],
+            "shortlist": [
+              7,
+              9
+            ]
+          }
+        ],
+        "oracleBest": {
+          "score": 35.27961783439491,
+          "set": [
+            1,
+            4,
+            5
+          ]
+        },
+        "shortlistBest": {
+          "adjustedHarm": 68.48621513238169,
+          "detourS": 2.403774793427772,
+          "rawMaxIncrease": 91.66666412353516,
+          "reductionPct": 32.563694267515935,
+          "score": 25.715072754277767,
+          "set": [
+            1,
+            7,
+            9
+          ]
+        },
+        "top1": 0,
+        "top3": 0,
+        "top5": 0
+      },
+      "method": "beam+all@extra",
+      "mode": "cold",
+      "nondominated": {
+        "forwarded": 8,
+        "missed": [
+          [
+            6,
+            9,
+            11
+          ]
+        ],
+        "oracle": 9,
+        "visited": 8
+      },
+      "oracleBestScreen": {
+        "score": 38.16299913662114,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "rejectedAccess": 1,
+      "rejectedRun": 0,
+      "run": {
+        "allowance": 19,
+        "beamCharged": 75,
+        "knownCharged": 0,
+        "supplement": {
+          "allowance": 19,
+          "charged": 19,
+          "evaluated": [
+            {
+              "origin": "delete",
+              "score": 8.56488592907397,
+              "set": [
+                3,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 32.094339622641506,
+              "set": [
+                1,
+                5,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 3.1495376035782208,
+              "set": [
+                5,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "delete",
+              "score": -3.614613339818005,
+              "set": [
+                3,
+                7
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 21.773192748692267,
+              "set": [
+                1,
+                6,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": -3.024047302082156,
+              "set": [
+                6,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 9.432608396488112,
+              "set": [
+                1,
+                8,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 3.898646132337169,
+              "set": [
+                8,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 31.871698113207543,
+              "set": [
+                1,
+                4,
+                5
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 6.85368671949152,
+              "set": [
+                0,
+                5
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 23.524136144918685,
+              "set": [
+                1,
+                4,
+                6
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 10.719400849318301,
+              "set": [
+                1,
+                4,
+                8
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 17.550943396226415,
+              "set": [
+                1,
+                3,
+                5
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 19.837343692088496,
+              "set": [
+                1,
+                3,
+                6
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 15.392985754978678,
+              "set": [
+                1,
+                3,
+                8
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 28.27911050813143,
+              "set": [
+                4,
+                5,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 30.843261451527653,
+              "set": [
+                4,
+                6,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 12.60619330214849,
+              "set": [
+                4,
+                8,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 21.00566037735849,
+              "set": [
+                1,
+                5,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": null,
+              "set": [
+                0,
+                1,
+                5
+              ],
+              "valid": false
+            }
+          ],
+          "firstRound": 20,
+          "moves": [
+            "delete",
+            "swap",
+            "coordinated"
+          ],
+          "queued": {
+            "coordinatedPairs": 4,
+            "delete": 2,
+            "secondRound": 0,
+            "swap": 78
+          },
+          "stop": "allowance"
+        }
+      },
+      "screenGap": 0.0,
+      "setting": "20m-x1",
+      "simulatedMinutes": 1880.0,
+      "visited": 95
+    },
+    {
+      "bestScreen": {
+        "score": 38.16299913662114,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "charged": 56,
+      "finalists": [
+        [
+          1,
+          7,
+          9
+        ],
+        [
+          7,
+          9
+        ],
+        [
+          9
+        ],
+        [
+          11
+        ],
+        [
+          9,
+          11
+        ],
+        [
+          10,
+          11
+        ],
+        [
+          0,
+          7,
+          9
+        ],
+        [
+          7,
+          9,
+          11
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          0,
+          7
+        ]
+      ],
+      "fullHour": {
+        "gap": 9.564545080117146,
+        "objectives": [
+          {
+            "found": false,
+            "gap": 9.564545080117146,
+            "objective": "most-removed",
+            "oracle": [
+              1,
+              4,
+              5
+            ],
+            "shortlist": [
+              1,
+              7,
+              9
+            ]
+          },
+          {
+            "found": false,
+            "gap": 1.2016985138004372,
+            "objective": "no-closures",
+            "oracle": [
+              9,
+              10,
+              11
+            ],
+            "shortlist": [
+              9,
+              11
+            ]
+          },
+          {
+            "found": false,
+            "gap": 2.91687193033556,
+            "objective": "least-detour",
+            "oracle": [
+              3,
+              6,
+              9
+            ],
+            "shortlist": [
+              0,
+              7
+            ]
+          },
+          {
+            "found": false,
+            "gap": 5.11820051333553,
+            "objective": "fewest-changes",
+            "oracle": [
+              1,
+              7
+            ],
+            "shortlist": [
+              7,
+              9
+            ]
+          }
+        ],
+        "oracleBest": {
+          "score": 35.27961783439491,
+          "set": [
+            1,
+            4,
+            5
+          ]
+        },
+        "shortlistBest": {
+          "adjustedHarm": 68.48621513238169,
+          "detourS": 2.403774793427772,
+          "rawMaxIncrease": 91.66666412353516,
+          "reductionPct": 32.563694267515935,
+          "score": 25.715072754277767,
+          "set": [
+            1,
+            7,
+            9
+          ]
+        },
+        "top1": 0,
+        "top3": 0,
+        "top5": 0
+      },
+      "method": "beam+delete@equal",
+      "mode": "cold",
+      "nondominated": {
+        "forwarded": 4,
+        "missed": [
+          [
+            0,
+            3,
+            11
+          ],
+          [
+            2,
+            9,
+            11
+          ],
+          [
+            3,
+            11
+          ],
+          [
+            6,
+            9,
+            11
+          ],
+          [
+            9,
+            10,
+            11
+          ]
+        ],
+        "oracle": 9,
+        "visited": 4
+      },
+      "oracleBestScreen": {
+        "score": 38.16299913662114,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "rejectedAccess": 0,
+      "rejectedRun": 0,
+      "run": {
+        "allowance": 19,
+        "beamCharged": 56,
+        "knownCharged": 0,
+        "supplement": {
+          "allowance": 19,
+          "charged": 0,
+          "evaluated": [],
+          "firstRound": 0,
+          "moves": [
+            "delete"
+          ],
+          "queued": {
+            "coordinatedPairs": 0,
+            "delete": 0,
+            "secondRound": 0,
+            "swap": 0
+          },
+          "stop": "queues empty"
+        }
+      },
+      "screenGap": 0.0,
+      "setting": "20m-x1",
+      "simulatedMinutes": 1120.0,
+      "visited": 56
+    },
+    {
+      "bestScreen": {
+        "score": 38.16299913662114,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "charged": 75,
+      "finalists": [
+        [
+          1,
+          7,
+          9
+        ],
+        [
+          7,
+          9
+        ],
+        [
+          9
+        ],
+        [
+          11
+        ],
+        [
+          9,
+          11
+        ],
+        [
+          10,
+          11
+        ],
+        [
+          1,
+          4,
+          8
+        ],
+        [
+          1,
+          3,
+          8
+        ],
+        [
+          4,
+          5,
+          9
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          0,
+          7
+        ]
+      ],
+      "fullHour": {
+        "gap": 9.281996597590236,
+        "objectives": [
+          {
+            "found": false,
+            "gap": 9.281996597590236,
+            "objective": "most-removed",
+            "oracle": [
+              1,
+              4,
+              5
+            ],
+            "shortlist": [
+              4,
+              5,
+              9
+            ]
+          },
+          {
+            "found": false,
+            "gap": 1.2016985138004372,
+            "objective": "no-closures",
+            "oracle": [
+              9,
+              10,
+              11
+            ],
+            "shortlist": [
+              9,
+              11
+            ]
+          },
+          {
+            "found": false,
+            "gap": 2.001138681960583,
+            "objective": "least-detour",
+            "oracle": [
+              3,
+              6,
+              9
+            ],
+            "shortlist": [
+              4,
+              5,
+              9
+            ]
+          },
+          {
+            "found": false,
+            "gap": 5.11820051333553,
+            "objective": "fewest-changes",
+            "oracle": [
+              1,
+              7
+            ],
+            "shortlist": [
+              7,
+              9
+            ]
+          }
+        ],
+        "oracleBest": {
+          "score": 35.27961783439491,
+          "set": [
+            1,
+            4,
+            5
+          ]
+        },
+        "shortlistBest": {
+          "adjustedHarm": 36.600220752972334,
+          "detourS": -0.2236693761219044,
+          "rawMaxIncrease": 46.66666793823242,
+          "reductionPct": 29.65764331210191,
+          "score": 25.997621236804676,
+          "set": [
+            4,
+            5,
+            9
+          ]
+        },
+        "top1": 0,
+        "top3": 0,
+        "top5": 0
+      },
+      "method": "beam+swap@equal",
+      "mode": "cold",
+      "nondominated": {
+        "forwarded": 4,
+        "missed": [
+          [
+            0,
+            3,
+            11
+          ],
+          [
+            2,
+            9,
+            11
+          ],
+          [
+            3,
+            11
+          ],
+          [
+            6,
+            9,
+            11
+          ],
+          [
+            9,
+            10,
+            11
+          ]
+        ],
+        "oracle": 9,
+        "visited": 4
+      },
+      "oracleBestScreen": {
+        "score": 38.16299913662114,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "rejectedAccess": 1,
+      "rejectedRun": 0,
+      "run": {
+        "allowance": 19,
+        "beamCharged": 56,
+        "knownCharged": 0,
+        "supplement": {
+          "allowance": 19,
+          "charged": 19,
+          "evaluated": [
+            {
+              "origin": "swap",
+              "score": 32.094339622641506,
+              "set": [
+                1,
+                5,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 21.773192748692267,
+              "set": [
+                1,
+                6,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 9.432608396488112,
+              "set": [
+                1,
+                8,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 31.871698113207543,
+              "set": [
+                1,
+                4,
+                5
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 23.524136144918685,
+              "set": [
+                1,
+                4,
+                6
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 10.719400849318301,
+              "set": [
+                1,
+                4,
+                8
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 17.550943396226415,
+              "set": [
+                1,
+                3,
+                5
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 19.837343692088496,
+              "set": [
+                1,
+                3,
+                6
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 15.392985754978678,
+              "set": [
+                1,
+                3,
+                8
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 28.27911050813143,
+              "set": [
+                4,
+                5,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 30.843261451527653,
+              "set": [
+                4,
+                6,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 12.60619330214849,
+              "set": [
+                4,
+                8,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 21.00566037735849,
+              "set": [
+                1,
+                5,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 10.984513503409248,
+              "set": [
+                1,
+                6,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 4.072231037997545,
+              "set": [
+                1,
+                8,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 23.966570660639057,
+              "set": [
+                1,
+                5,
+                10
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 14.835456899635666,
+              "set": [
+                1,
+                6,
+                10
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 13.12883481158245,
+              "set": [
+                1,
+                8,
+                10
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 26.255573511944352,
+              "set": [
+                2,
+                5,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": null,
+              "set": [
+                0,
+                1,
+                5
+              ],
+              "valid": false
+            }
+          ],
+          "firstRound": 20,
+          "moves": [
+            "swap"
+          ],
+          "queued": {
+            "coordinatedPairs": 0,
+            "delete": 0,
+            "secondRound": 0,
+            "swap": 51
+          },
+          "stop": "allowance"
+        }
+      },
+      "screenGap": 0.0,
+      "setting": "20m-x1",
+      "simulatedMinutes": 1500.0,
+      "visited": 76
+    },
+    {
+      "bestScreen": {
+        "score": 38.16299913662114,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "charged": 75,
+      "finalists": [
+        [
+          1,
+          7,
+          9
+        ],
+        [
+          7,
+          9
+        ],
+        [
+          9
+        ],
+        [
+          11
+        ],
+        [
+          9,
+          11
+        ],
+        [
+          10,
+          11
+        ],
+        [
+          0,
+          6
+        ],
+        [
+          3,
+          7,
+          9
+        ],
+        [
+          0,
+          7,
+          9
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          0,
+          7
+        ]
+      ],
+      "fullHour": {
+        "gap": 9.564545080117146,
+        "objectives": [
+          {
+            "found": false,
+            "gap": 9.564545080117146,
+            "objective": "most-removed",
+            "oracle": [
+              1,
+              4,
+              5
+            ],
+            "shortlist": [
+              1,
+              7,
+              9
+            ]
+          },
+          {
+            "found": false,
+            "gap": 1.2016985138004372,
+            "objective": "no-closures",
+            "oracle": [
+              9,
+              10,
+              11
+            ],
+            "shortlist": [
+              9,
+              11
+            ]
+          },
+          {
+            "found": false,
+            "gap": 2.91687193033556,
+            "objective": "least-detour",
+            "oracle": [
+              3,
+              6,
+              9
+            ],
+            "shortlist": [
+              0,
+              7
+            ]
+          },
+          {
+            "found": false,
+            "gap": 5.11820051333553,
+            "objective": "fewest-changes",
+            "oracle": [
+              1,
+              7
+            ],
+            "shortlist": [
+              7,
+              9
+            ]
+          }
+        ],
+        "oracleBest": {
+          "score": 35.27961783439491,
+          "set": [
+            1,
+            4,
+            5
+          ]
+        },
+        "shortlistBest": {
+          "adjustedHarm": 68.48621513238169,
+          "detourS": 2.403774793427772,
+          "rawMaxIncrease": 91.66666412353516,
+          "reductionPct": 32.563694267515935,
+          "score": 25.715072754277767,
+          "set": [
+            1,
+            7,
+            9
+          ]
+        },
+        "top1": 0,
+        "top3": 0,
+        "top5": 0
+      },
+      "method": "beam+coordinated@equal",
+      "mode": "cold",
+      "nondominated": {
+        "forwarded": 4,
+        "missed": [
+          [
+            0,
+            3,
+            11
+          ],
+          [
+            2,
+            9,
+            11
+          ],
+          [
+            3,
+            11
+          ],
+          [
+            6,
+            9,
+            11
+          ],
+          [
+            9,
+            10,
+            11
+          ]
+        ],
+        "oracle": 9,
+        "visited": 4
+      },
+      "oracleBestScreen": {
+        "score": 38.16299913662114,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "rejectedAccess": 1,
+      "rejectedRun": 0,
+      "run": {
+        "allowance": 19,
+        "beamCharged": 56,
+        "knownCharged": 0,
+        "supplement": {
+          "allowance": 19,
+          "charged": 19,
+          "evaluated": [
+            {
+              "origin": "coordinated",
+              "score": 3.1495376035782208,
+              "set": [
+                5,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": -3.024047302082156,
+              "set": [
+                6,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 3.898646132337169,
+              "set": [
+                8,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 6.85368671949152,
+              "set": [
+                0,
+                5
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 6.24425275722737,
+              "set": [
+                0,
+                6
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 12.776328228925482,
+              "set": [
+                0,
+                8
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 9.93315328608549,
+              "set": [
+                1,
+                3
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 10.736926870991152,
+              "set": [
+                2,
+                3
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 7.290908866445484,
+              "set": [
+                3,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 6.9048020710345686,
+              "set": [
+                3,
+                5
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 25.53449518894094,
+              "set": [
+                3,
+                7,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": null,
+              "set": [
+                0,
+                1,
+                5
+              ],
+              "valid": false
+            },
+            {
+              "origin": "coordinated",
+              "score": 25.30188679245283,
+              "set": [
+                1,
+                2,
+                5
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 17.550943396226415,
+              "set": [
+                1,
+                3,
+                5
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 31.871698113207543,
+              "set": [
+                1,
+                4,
+                5
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 32.094339622641506,
+              "set": [
+                1,
+                5,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 23.966570660639057,
+              "set": [
+                1,
+                5,
+                10
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 21.00566037735849,
+              "set": [
+                1,
+                5,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 16.03670558741605,
+              "set": [
+                0,
+                6,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 21.773192748692267,
+              "set": [
+                1,
+                6,
+                9
+              ],
+              "valid": true
+            }
+          ],
+          "firstRound": 10,
+          "moves": [
+            "coordinated"
+          ],
+          "queued": {
+            "coordinatedPairs": 10,
+            "delete": 0,
+            "secondRound": 136,
+            "swap": 0
+          },
+          "stop": "allowance"
+        }
+      },
+      "screenGap": 0.0,
+      "setting": "20m-x1",
+      "simulatedMinutes": 1500.0,
+      "visited": 76
+    },
+    {
+      "bestScreen": {
+        "score": 38.16299913662114,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "charged": 75,
+      "finalists": [
+        [
+          1,
+          7,
+          9
+        ],
+        [
+          7,
+          9
+        ],
+        [
+          9
+        ],
+        [
+          11
+        ],
+        [
+          9,
+          11
+        ],
+        [
+          10,
+          11
+        ],
+        [
+          1,
+          4,
+          8
+        ],
+        [
+          1,
+          3,
+          8
+        ],
+        [
+          4,
+          5,
+          9
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          0,
+          7
+        ]
+      ],
+      "fullHour": {
+        "gap": 9.281996597590236,
+        "objectives": [
+          {
+            "found": false,
+            "gap": 9.281996597590236,
+            "objective": "most-removed",
+            "oracle": [
+              1,
+              4,
+              5
+            ],
+            "shortlist": [
+              4,
+              5,
+              9
+            ]
+          },
+          {
+            "found": false,
+            "gap": 1.2016985138004372,
+            "objective": "no-closures",
+            "oracle": [
+              9,
+              10,
+              11
+            ],
+            "shortlist": [
+              9,
+              11
+            ]
+          },
+          {
+            "found": false,
+            "gap": 2.001138681960583,
+            "objective": "least-detour",
+            "oracle": [
+              3,
+              6,
+              9
+            ],
+            "shortlist": [
+              4,
+              5,
+              9
+            ]
+          },
+          {
+            "found": false,
+            "gap": 5.11820051333553,
+            "objective": "fewest-changes",
+            "oracle": [
+              1,
+              7
+            ],
+            "shortlist": [
+              7,
+              9
+            ]
+          }
+        ],
+        "oracleBest": {
+          "score": 35.27961783439491,
+          "set": [
+            1,
+            4,
+            5
+          ]
+        },
+        "shortlistBest": {
+          "adjustedHarm": 36.600220752972334,
+          "detourS": -0.2236693761219044,
+          "rawMaxIncrease": 46.66666793823242,
+          "reductionPct": 29.65764331210191,
+          "score": 25.997621236804676,
+          "set": [
+            4,
+            5,
+            9
+          ]
+        },
+        "top1": 0,
+        "top3": 0,
+        "top5": 0
+      },
+      "method": "beam+all@equal",
+      "mode": "cold",
+      "nondominated": {
+        "forwarded": 4,
+        "missed": [
+          [
+            0,
+            3,
+            11
+          ],
+          [
+            2,
+            9,
+            11
+          ],
+          [
+            3,
+            11
+          ],
+          [
+            6,
+            9,
+            11
+          ],
+          [
+            9,
+            10,
+            11
+          ]
+        ],
+        "oracle": 9,
+        "visited": 4
+      },
+      "oracleBestScreen": {
+        "score": 38.16299913662114,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "rejectedAccess": 1,
+      "rejectedRun": 0,
+      "run": {
+        "allowance": 19,
+        "beamCharged": 56,
+        "knownCharged": 0,
+        "supplement": {
+          "allowance": 19,
+          "charged": 19,
+          "evaluated": [
+            {
+              "origin": "swap",
+              "score": 32.094339622641506,
+              "set": [
+                1,
+                5,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 3.1495376035782208,
+              "set": [
+                5,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 21.773192748692267,
+              "set": [
+                1,
+                6,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": -3.024047302082156,
+              "set": [
+                6,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 9.432608396488112,
+              "set": [
+                1,
+                8,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 3.898646132337169,
+              "set": [
+                8,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 31.871698113207543,
+              "set": [
+                1,
+                4,
+                5
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 6.85368671949152,
+              "set": [
+                0,
+                5
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 23.524136144918685,
+              "set": [
+                1,
+                4,
+                6
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 10.719400849318301,
+              "set": [
+                1,
+                4,
+                8
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 17.550943396226415,
+              "set": [
+                1,
+                3,
+                5
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 19.837343692088496,
+              "set": [
+                1,
+                3,
+                6
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 15.392985754978678,
+              "set": [
+                1,
+                3,
+                8
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 28.27911050813143,
+              "set": [
+                4,
+                5,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 30.843261451527653,
+              "set": [
+                4,
+                6,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 12.60619330214849,
+              "set": [
+                4,
+                8,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 21.00566037735849,
+              "set": [
+                1,
+                5,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 10.984513503409248,
+              "set": [
+                1,
+                6,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 4.072231037997545,
+              "set": [
+                1,
+                8,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": null,
+              "set": [
+                0,
+                1,
+                5
+              ],
+              "valid": false
+            }
+          ],
+          "firstRound": 20,
+          "moves": [
+            "delete",
+            "swap",
+            "coordinated"
+          ],
+          "queued": {
+            "coordinatedPairs": 4,
+            "delete": 0,
+            "secondRound": 0,
+            "swap": 51
+          },
+          "stop": "allowance"
+        }
+      },
+      "screenGap": 0.0,
+      "setting": "20m-x1",
+      "simulatedMinutes": 1500.0,
+      "visited": 76
+    },
+    {
+      "bestScreen": {
+        "score": 38.16299913662114,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "charged": 84,
+      "finalists": [
+        [
+          1,
+          7,
+          9
+        ],
+        [
+          7,
+          9
+        ],
+        [
+          2,
+          9,
+          11
+        ],
+        [
+          0,
+          3,
+          11
+        ],
+        [
+          9,
+          10,
+          11
+        ],
+        [
+          9
+        ],
+        [
+          11
+        ],
+        [
+          9,
+          11
+        ],
+        [
+          0,
+          3,
+          7
+        ],
+        [
+          0,
+          7,
+          10
+        ],
+        [
+          0,
+          4,
+          7
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          0,
+          7
+        ]
+      ],
+      "fullHour": {
+        "gap": 9.564545080117146,
+        "objectives": [
+          {
+            "found": false,
+            "gap": 9.564545080117146,
+            "objective": "most-removed",
+            "oracle": [
+              1,
+              4,
+              5
+            ],
+            "shortlist": [
+              1,
+              7,
+              9
+            ]
+          },
+          {
+            "found": true,
+            "gap": 0.0,
+            "objective": "no-closures",
+            "oracle": [
+              9,
+              10,
+              11
+            ],
+            "shortlist": [
+              9,
+              10,
+              11
+            ]
+          },
+          {
+            "found": false,
+            "gap": 2.91687193033556,
+            "objective": "least-detour",
+            "oracle": [
+              3,
+              6,
+              9
+            ],
+            "shortlist": [
+              0,
+              7
+            ]
+          },
+          {
+            "found": false,
+            "gap": 5.11820051333553,
+            "objective": "fewest-changes",
+            "oracle": [
+              1,
+              7
+            ],
+            "shortlist": [
+              7,
+              9
+            ]
+          }
+        ],
+        "oracleBest": {
+          "score": 35.27961783439491,
+          "set": [
+            1,
+            4,
+            5
+          ]
+        },
+        "shortlistBest": {
+          "adjustedHarm": 68.48621513238169,
+          "detourS": 2.403774793427772,
+          "rawMaxIncrease": 91.66666412353516,
+          "reductionPct": 32.563694267515935,
+          "score": 25.715072754277767,
+          "set": [
+            1,
+            7,
+            9
+          ]
+        },
+        "top1": 0,
+        "top3": 0,
+        "top5": 0
+      },
+      "method": "wide@equal",
+      "mode": "cold",
+      "nondominated": {
+        "forwarded": 7,
+        "missed": [
+          [
+            3,
+            11
+          ],
+          [
+            6,
+            9,
+            11
+          ]
+        ],
+        "oracle": 9,
+        "visited": 7
+      },
+      "oracleBestScreen": {
+        "score": 38.16299913662114,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "rejectedAccess": 0,
+      "rejectedRun": 0,
+      "run": {
+        "allowance": 0,
+        "beamCharged": 84,
+        "knownCharged": 0,
+        "supplement": null
+      },
+      "screenGap": 0.0,
+      "setting": "20m-x1",
+      "simulatedMinutes": 1680.0,
+      "visited": 84
+    },
+    {
+      "bestScreen": {
+        "score": 38.16299913662114,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "charged": 88,
+      "finalists": [
+        [
+          1,
+          7,
+          9
+        ],
+        [
+          7,
+          9
+        ],
+        [
+          2,
+          9,
+          11
+        ],
+        [
+          0,
+          3,
+          11
+        ],
+        [
+          9,
+          10,
+          11
+        ],
+        [
+          9
+        ],
+        [
+          11
+        ],
+        [
+          0,
+          6
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          9,
+          11
+        ],
+        [
+          0,
+          3,
+          7
+        ],
+        [
+          0,
+          7,
+          10
+        ],
+        [
+          0,
+          7
+        ]
+      ],
+      "fullHour": {
+        "gap": 9.564545080117146,
+        "objectives": [
+          {
+            "found": false,
+            "gap": 9.564545080117146,
+            "objective": "most-removed",
+            "oracle": [
+              1,
+              4,
+              5
+            ],
+            "shortlist": [
+              1,
+              7,
+              9
+            ]
+          },
+          {
+            "found": true,
+            "gap": 0.0,
+            "objective": "no-closures",
+            "oracle": [
+              9,
+              10,
+              11
+            ],
+            "shortlist": [
+              9,
+              10,
+              11
+            ]
+          },
+          {
+            "found": false,
+            "gap": 2.91687193033556,
+            "objective": "least-detour",
+            "oracle": [
+              3,
+              6,
+              9
+            ],
+            "shortlist": [
+              0,
+              7
+            ]
+          },
+          {
+            "found": false,
+            "gap": 5.11820051333553,
+            "objective": "fewest-changes",
+            "oracle": [
+              1,
+              7
+            ],
+            "shortlist": [
+              7,
+              9
+            ]
+          }
+        ],
+        "oracleBest": {
+          "score": 35.27961783439491,
+          "set": [
+            1,
+            4,
+            5
+          ]
+        },
+        "shortlistBest": {
+          "adjustedHarm": 68.48621513238169,
+          "detourS": 2.403774793427772,
+          "rawMaxIncrease": 91.66666412353516,
+          "reductionPct": 32.563694267515935,
+          "score": 25.715072754277767,
+          "set": [
+            1,
+            7,
+            9
+          ]
+        },
+        "top1": 0,
+        "top3": 0,
+        "top5": 0
+      },
+      "method": "beam",
+      "mode": "known",
+      "nondominated": {
+        "forwarded": 7,
+        "missed": [
+          [
+            3,
+            11
+          ],
+          [
+            6,
+            9,
+            11
+          ]
+        ],
+        "oracle": 9,
+        "visited": 7
+      },
+      "oracleBestScreen": {
+        "score": 38.16299913662114,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "rejectedAccess": 1,
+      "rejectedRun": 0,
+      "run": {
+        "allowance": 0,
+        "beamCharged": 88,
+        "knownCharged": 3,
+        "supplement": null
+      },
+      "screenGap": 0.0,
+      "setting": "20m-x1",
+      "simulatedMinutes": 1760.0,
+      "visited": 89
+    },
+    {
+      "bestScreen": {
+        "score": 38.16299913662114,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "charged": 90,
+      "finalists": [
+        [
+          1,
+          7,
+          9
+        ],
+        [
+          7,
+          9
+        ],
+        [
+          2,
+          9,
+          11
+        ],
+        [
+          0,
+          3,
+          11
+        ],
+        [
+          9,
+          10,
+          11
+        ],
+        [
+          9
+        ],
+        [
+          11
+        ],
+        [
+          3,
+          11
+        ],
+        [
+          0,
+          6
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          9,
+          11
+        ],
+        [
+          0,
+          3,
+          7
+        ],
+        [
+          0,
+          7,
+          10
+        ],
+        [
+          0,
+          7
+        ]
+      ],
+      "fullHour": {
+        "gap": 9.564545080117146,
+        "objectives": [
+          {
+            "found": false,
+            "gap": 9.564545080117146,
+            "objective": "most-removed",
+            "oracle": [
+              1,
+              4,
+              5
+            ],
+            "shortlist": [
+              1,
+              7,
+              9
+            ]
+          },
+          {
+            "found": true,
+            "gap": 0.0,
+            "objective": "no-closures",
+            "oracle": [
+              9,
+              10,
+              11
+            ],
+            "shortlist": [
+              9,
+              10,
+              11
+            ]
+          },
+          {
+            "found": false,
+            "gap": 2.91687193033556,
+            "objective": "least-detour",
+            "oracle": [
+              3,
+              6,
+              9
+            ],
+            "shortlist": [
+              0,
+              7
+            ]
+          },
+          {
+            "found": false,
+            "gap": 5.11820051333553,
+            "objective": "fewest-changes",
+            "oracle": [
+              1,
+              7
+            ],
+            "shortlist": [
+              7,
+              9
+            ]
+          }
+        ],
+        "oracleBest": {
+          "score": 35.27961783439491,
+          "set": [
+            1,
+            4,
+            5
+          ]
+        },
+        "shortlistBest": {
+          "adjustedHarm": 68.48621513238169,
+          "detourS": 2.403774793427772,
+          "rawMaxIncrease": 91.66666412353516,
+          "reductionPct": 32.563694267515935,
+          "score": 25.715072754277767,
+          "set": [
+            1,
+            7,
+            9
+          ]
+        },
+        "top1": 0,
+        "top3": 0,
+        "top5": 0
+      },
+      "method": "beam+delete@extra",
+      "mode": "known",
+      "nondominated": {
+        "forwarded": 8,
+        "missed": [
+          [
+            6,
+            9,
+            11
+          ]
+        ],
+        "oracle": 9,
+        "visited": 8
+      },
+      "oracleBestScreen": {
+        "score": 38.16299913662114,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "rejectedAccess": 1,
+      "rejectedRun": 0,
+      "run": {
+        "allowance": 22,
+        "beamCharged": 88,
+        "knownCharged": 3,
+        "supplement": {
+          "allowance": 22,
+          "charged": 2,
+          "evaluated": [
+            {
+              "origin": "delete",
+              "score": 8.56488592907397,
+              "set": [
+                3,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "delete",
+              "score": -3.614613339818005,
+              "set": [
+                3,
+                7
+              ],
+              "valid": true
+            }
+          ],
+          "firstRound": 2,
+          "moves": [
+            "delete"
+          ],
+          "queued": {
+            "coordinatedPairs": 0,
+            "delete": 2,
+            "secondRound": 0,
+            "swap": 0
+          },
+          "stop": "queues empty"
+        }
+      },
+      "screenGap": 0.0,
+      "setting": "20m-x1",
+      "simulatedMinutes": 1800.0,
+      "visited": 91
+    },
+    {
+      "bestScreen": {
+        "score": 38.16299913662114,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "charged": 110,
+      "finalists": [
+        [
+          1,
+          7,
+          9
+        ],
+        [
+          7,
+          9
+        ],
+        [
+          6,
+          9,
+          11
+        ],
+        [
+          2,
+          9,
+          11
+        ],
+        [
+          0,
+          3,
+          11
+        ],
+        [
+          9,
+          10,
+          11
+        ],
+        [
+          9
+        ],
+        [
+          11
+        ],
+        [
+          0,
+          6
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          9,
+          11
+        ],
+        [
+          0,
+          3,
+          7
+        ],
+        [
+          1,
+          4,
+          8
+        ],
+        [
+          0,
+          7,
+          10
+        ],
+        [
+          1,
+          3,
+          8
+        ],
+        [
+          0,
+          7
+        ]
+      ],
+      "fullHour": {
+        "gap": 9.564545080117146,
+        "objectives": [
+          {
+            "found": false,
+            "gap": 9.564545080117146,
+            "objective": "most-removed",
+            "oracle": [
+              1,
+              4,
+              5
+            ],
+            "shortlist": [
+              1,
+              7,
+              9
+            ]
+          },
+          {
+            "found": true,
+            "gap": 0.0,
+            "objective": "no-closures",
+            "oracle": [
+              9,
+              10,
+              11
+            ],
+            "shortlist": [
+              9,
+              10,
+              11
+            ]
+          },
+          {
+            "found": false,
+            "gap": 2.7661853644243024,
+            "objective": "least-detour",
+            "oracle": [
+              3,
+              6,
+              9
+            ],
+            "shortlist": [
+              1,
+              3,
+              8
+            ]
+          },
+          {
+            "found": false,
+            "gap": 5.11820051333553,
+            "objective": "fewest-changes",
+            "oracle": [
+              1,
+              7
+            ],
+            "shortlist": [
+              7,
+              9
+            ]
+          }
+        ],
+        "oracleBest": {
+          "score": 35.27961783439491,
+          "set": [
+            1,
+            4,
+            5
+          ]
+        },
+        "shortlistBest": {
+          "adjustedHarm": 68.48621513238169,
+          "detourS": 2.403774793427772,
+          "rawMaxIncrease": 91.66666412353516,
+          "reductionPct": 32.563694267515935,
+          "score": 25.715072754277767,
+          "set": [
+            1,
+            7,
+            9
+          ]
+        },
+        "top1": 0,
+        "top3": 0,
+        "top5": 0
+      },
+      "method": "beam+swap@extra",
+      "mode": "known",
+      "nondominated": {
+        "forwarded": 8,
+        "missed": [
+          [
+            3,
+            11
+          ]
+        ],
+        "oracle": 9,
+        "visited": 8
+      },
+      "oracleBestScreen": {
+        "score": 38.16299913662114,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "rejectedAccess": 1,
+      "rejectedRun": 0,
+      "run": {
+        "allowance": 22,
+        "beamCharged": 88,
+        "knownCharged": 3,
+        "supplement": {
+          "allowance": 22,
+          "charged": 22,
+          "evaluated": [
+            {
+              "origin": "swap",
+              "score": 21.773192748692267,
+              "set": [
+                1,
+                6,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 9.432608396488112,
+              "set": [
+                1,
+                8,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 23.524136144918685,
+              "set": [
+                1,
+                4,
+                6
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 10.719400849318301,
+              "set": [
+                1,
+                4,
+                8
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 17.550943396226415,
+              "set": [
+                1,
+                3,
+                5
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 19.837343692088496,
+              "set": [
+                1,
+                3,
+                6
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 15.392985754978678,
+              "set": [
+                1,
+                3,
+                8
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 28.27911050813143,
+              "set": [
+                4,
+                5,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 30.843261451527653,
+              "set": [
+                4,
+                6,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 12.60619330214849,
+              "set": [
+                4,
+                8,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 10.984513503409248,
+              "set": [
+                1,
+                6,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 4.072231037997545,
+              "set": [
+                1,
+                8,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 14.835456899635666,
+              "set": [
+                1,
+                6,
+                10
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 13.12883481158245,
+              "set": [
+                1,
+                8,
+                10
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 26.255573511944352,
+              "set": [
+                2,
+                5,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 28.51972445534058,
+              "set": [
+                2,
+                6,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 6.374117830450377,
+              "set": [
+                2,
+                8,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 23.74137465907483,
+              "set": [
+                5,
+                9,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 27.128167111905018,
+              "set": [
+                6,
+                9,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 11.764683868186227,
+              "set": [
+                8,
+                9,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 27.51804698165547,
+              "set": [
+                2,
+                3,
+                5
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 22.080311132598865,
+              "set": [
+                2,
+                3,
+                6
+              ],
+              "valid": true
+            }
+          ],
+          "firstRound": 22,
+          "moves": [
+            "swap"
+          ],
+          "queued": {
+            "coordinatedPairs": 0,
+            "delete": 0,
+            "secondRound": 0,
+            "swap": 64
+          },
+          "stop": "allowance"
+        }
+      },
+      "screenGap": 0.0,
+      "setting": "20m-x1",
+      "simulatedMinutes": 2200.0,
+      "visited": 111
+    },
+    {
+      "bestScreen": {
+        "score": 38.16299913662114,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "charged": 110,
+      "finalists": [
+        [
+          1,
+          7,
+          9
+        ],
+        [
+          7,
+          9
+        ],
+        [
+          6,
+          9,
+          11
+        ],
+        [
+          2,
+          9,
+          11
+        ],
+        [
+          0,
+          3,
+          11
+        ],
+        [
+          9,
+          10,
+          11
+        ],
+        [
+          9
+        ],
+        [
+          11
+        ],
+        [
+          0,
+          6
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          9,
+          11
+        ],
+        [
+          0,
+          3,
+          7
+        ],
+        [
+          0,
+          7,
+          10
+        ],
+        [
+          3,
+          7,
+          9
+        ],
+        [
+          0,
+          7
+        ]
+      ],
+      "fullHour": {
+        "gap": 9.564545080117146,
+        "objectives": [
+          {
+            "found": false,
+            "gap": 9.564545080117146,
+            "objective": "most-removed",
+            "oracle": [
+              1,
+              4,
+              5
+            ],
+            "shortlist": [
+              1,
+              7,
+              9
+            ]
+          },
+          {
+            "found": true,
+            "gap": 0.0,
+            "objective": "no-closures",
+            "oracle": [
+              9,
+              10,
+              11
+            ],
+            "shortlist": [
+              9,
+              10,
+              11
+            ]
+          },
+          {
+            "found": false,
+            "gap": 2.91687193033556,
+            "objective": "least-detour",
+            "oracle": [
+              3,
+              6,
+              9
+            ],
+            "shortlist": [
+              0,
+              7
+            ]
+          },
+          {
+            "found": false,
+            "gap": 5.11820051333553,
+            "objective": "fewest-changes",
+            "oracle": [
+              1,
+              7
+            ],
+            "shortlist": [
+              7,
+              9
+            ]
+          }
+        ],
+        "oracleBest": {
+          "score": 35.27961783439491,
+          "set": [
+            1,
+            4,
+            5
+          ]
+        },
+        "shortlistBest": {
+          "adjustedHarm": 68.48621513238169,
+          "detourS": 2.403774793427772,
+          "rawMaxIncrease": 91.66666412353516,
+          "reductionPct": 32.563694267515935,
+          "score": 25.715072754277767,
+          "set": [
+            1,
+            7,
+            9
+          ]
+        },
+        "top1": 0,
+        "top3": 0,
+        "top5": 0
+      },
+      "method": "beam+coordinated@extra",
+      "mode": "known",
+      "nondominated": {
+        "forwarded": 8,
+        "missed": [
+          [
+            3,
+            11
+          ]
+        ],
+        "oracle": 9,
+        "visited": 8
+      },
+      "oracleBestScreen": {
+        "score": 38.16299913662114,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "rejectedAccess": 1,
+      "rejectedRun": 0,
+      "run": {
+        "allowance": 22,
+        "beamCharged": 88,
+        "knownCharged": 3,
+        "supplement": {
+          "allowance": 22,
+          "charged": 22,
+          "evaluated": [
+            {
+              "origin": "coordinated",
+              "score": 3.1495376035782208,
+              "set": [
+                5,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": -3.024047302082156,
+              "set": [
+                6,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 3.898646132337169,
+              "set": [
+                8,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 6.85368671949152,
+              "set": [
+                0,
+                5
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 12.776328228925482,
+              "set": [
+                0,
+                8
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 9.93315328608549,
+              "set": [
+                1,
+                3
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 10.736926870991152,
+              "set": [
+                2,
+                3
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 7.290908866445484,
+              "set": [
+                3,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 6.9048020710345686,
+              "set": [
+                3,
+                5
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 2.1016017719833027,
+              "set": [
+                3,
+                6
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": -3.79380669785151,
+              "set": [
+                3,
+                8
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 25.53449518894094,
+              "set": [
+                3,
+                7,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 17.550943396226415,
+              "set": [
+                1,
+                3,
+                5
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 21.773192748692267,
+              "set": [
+                1,
+                6,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 28.51972445534058,
+              "set": [
+                2,
+                6,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 26.16024258360313,
+              "set": [
+                3,
+                6,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 30.843261451527653,
+              "set": [
+                4,
+                6,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 21.78665767794275,
+              "set": [
+                6,
+                9,
+                10
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 27.128167111905018,
+              "set": [
+                6,
+                9,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 19.578215021378313,
+              "set": [
+                0,
+                5,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 26.255573511944352,
+              "set": [
+                2,
+                5,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 20.654582206244637,
+              "set": [
+                3,
+                5,
+                9
+              ],
+              "valid": true
+            }
+          ],
+          "firstRound": 11,
+          "moves": [
+            "coordinated"
+          ],
+          "queued": {
+            "coordinatedPairs": 11,
+            "delete": 0,
+            "secondRound": 109,
+            "swap": 0
+          },
+          "stop": "allowance"
+        }
+      },
+      "screenGap": 0.0,
+      "setting": "20m-x1",
+      "simulatedMinutes": 2200.0,
+      "visited": 111
+    },
+    {
+      "bestScreen": {
+        "score": 38.16299913662114,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "charged": 110,
+      "finalists": [
+        [
+          1,
+          7,
+          9
+        ],
+        [
+          7,
+          9
+        ],
+        [
+          2,
+          9,
+          11
+        ],
+        [
+          0,
+          3,
+          11
+        ],
+        [
+          9,
+          10,
+          11
+        ],
+        [
+          9
+        ],
+        [
+          11
+        ],
+        [
+          3,
+          11
+        ],
+        [
+          0,
+          6
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          9,
+          11
+        ],
+        [
+          0,
+          3,
+          7
+        ],
+        [
+          1,
+          4,
+          8
+        ],
+        [
+          0,
+          7,
+          10
+        ],
+        [
+          1,
+          3,
+          8
+        ],
+        [
+          0,
+          7
+        ]
+      ],
+      "fullHour": {
+        "gap": 9.564545080117146,
+        "objectives": [
+          {
+            "found": false,
+            "gap": 9.564545080117146,
+            "objective": "most-removed",
+            "oracle": [
+              1,
+              4,
+              5
+            ],
+            "shortlist": [
+              1,
+              7,
+              9
+            ]
+          },
+          {
+            "found": true,
+            "gap": 0.0,
+            "objective": "no-closures",
+            "oracle": [
+              9,
+              10,
+              11
+            ],
+            "shortlist": [
+              9,
+              10,
+              11
+            ]
+          },
+          {
+            "found": false,
+            "gap": 2.7661853644243024,
+            "objective": "least-detour",
+            "oracle": [
+              3,
+              6,
+              9
+            ],
+            "shortlist": [
+              1,
+              3,
+              8
+            ]
+          },
+          {
+            "found": false,
+            "gap": 5.11820051333553,
+            "objective": "fewest-changes",
+            "oracle": [
+              1,
+              7
+            ],
+            "shortlist": [
+              7,
+              9
+            ]
+          }
+        ],
+        "oracleBest": {
+          "score": 35.27961783439491,
+          "set": [
+            1,
+            4,
+            5
+          ]
+        },
+        "shortlistBest": {
+          "adjustedHarm": 68.48621513238169,
+          "detourS": 2.403774793427772,
+          "rawMaxIncrease": 91.66666412353516,
+          "reductionPct": 32.563694267515935,
+          "score": 25.715072754277767,
+          "set": [
+            1,
+            7,
+            9
+          ]
+        },
+        "top1": 0,
+        "top3": 0,
+        "top5": 0
+      },
+      "method": "beam+all@extra",
+      "mode": "known",
+      "nondominated": {
+        "forwarded": 8,
+        "missed": [
+          [
+            6,
+            9,
+            11
+          ]
+        ],
+        "oracle": 9,
+        "visited": 8
+      },
+      "oracleBestScreen": {
+        "score": 38.16299913662114,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "rejectedAccess": 1,
+      "rejectedRun": 0,
+      "run": {
+        "allowance": 22,
+        "beamCharged": 88,
+        "knownCharged": 3,
+        "supplement": {
+          "allowance": 22,
+          "charged": 22,
+          "evaluated": [
+            {
+              "origin": "delete",
+              "score": 8.56488592907397,
+              "set": [
+                3,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 21.773192748692267,
+              "set": [
+                1,
+                6,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 3.1495376035782208,
+              "set": [
+                5,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "delete",
+              "score": -3.614613339818005,
+              "set": [
+                3,
+                7
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 9.432608396488112,
+              "set": [
+                1,
+                8,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": -3.024047302082156,
+              "set": [
+                6,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 23.524136144918685,
+              "set": [
+                1,
+                4,
+                6
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 3.898646132337169,
+              "set": [
+                8,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 10.719400849318301,
+              "set": [
+                1,
+                4,
+                8
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 6.85368671949152,
+              "set": [
+                0,
+                5
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 17.550943396226415,
+              "set": [
+                1,
+                3,
+                5
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 19.837343692088496,
+              "set": [
+                1,
+                3,
+                6
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 15.392985754978678,
+              "set": [
+                1,
+                3,
+                8
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 28.27911050813143,
+              "set": [
+                4,
+                5,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 30.843261451527653,
+              "set": [
+                4,
+                6,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 12.60619330214849,
+              "set": [
+                4,
+                8,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 10.984513503409248,
+              "set": [
+                1,
+                6,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 4.072231037997545,
+              "set": [
+                1,
+                8,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 14.835456899635666,
+              "set": [
+                1,
+                6,
+                10
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 13.12883481158245,
+              "set": [
+                1,
+                8,
+                10
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 26.255573511944352,
+              "set": [
+                2,
+                5,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 28.51972445534058,
+              "set": [
+                2,
+                6,
+                9
+              ],
+              "valid": true
+            }
+          ],
+          "firstRound": 22,
+          "moves": [
+            "delete",
+            "swap",
+            "coordinated"
+          ],
+          "queued": {
+            "coordinatedPairs": 4,
+            "delete": 2,
+            "secondRound": 0,
+            "swap": 64
+          },
+          "stop": "allowance"
+        }
+      },
+      "screenGap": 0.0,
+      "setting": "20m-x1",
+      "simulatedMinutes": 2200.0,
+      "visited": 111
+    },
+    {
+      "bestScreen": {
+        "score": 38.16299913662114,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "charged": 66,
+      "finalists": [
+        [
+          1,
+          7,
+          9
+        ],
+        [
+          7,
+          9
+        ],
+        [
+          9
+        ],
+        [
+          11
+        ],
+        [
+          0,
+          6
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          9,
+          11
+        ],
+        [
+          10,
+          11
+        ],
+        [
+          0,
+          7,
+          10
+        ],
+        [
+          0,
+          4,
+          7
+        ],
+        [
+          0,
+          7
+        ]
+      ],
+      "fullHour": {
+        "gap": 9.564545080117146,
+        "objectives": [
+          {
+            "found": false,
+            "gap": 9.564545080117146,
+            "objective": "most-removed",
+            "oracle": [
+              1,
+              4,
+              5
+            ],
+            "shortlist": [
+              1,
+              7,
+              9
+            ]
+          },
+          {
+            "found": false,
+            "gap": 1.2016985138004372,
+            "objective": "no-closures",
+            "oracle": [
+              9,
+              10,
+              11
+            ],
+            "shortlist": [
+              9,
+              11
+            ]
+          },
+          {
+            "found": false,
+            "gap": 2.91687193033556,
+            "objective": "least-detour",
+            "oracle": [
+              3,
+              6,
+              9
+            ],
+            "shortlist": [
+              0,
+              7
+            ]
+          },
+          {
+            "found": false,
+            "gap": 5.11820051333553,
+            "objective": "fewest-changes",
+            "oracle": [
+              1,
+              7
+            ],
+            "shortlist": [
+              7,
+              9
+            ]
+          }
+        ],
+        "oracleBest": {
+          "score": 35.27961783439491,
+          "set": [
+            1,
+            4,
+            5
+          ]
+        },
+        "shortlistBest": {
+          "adjustedHarm": 68.48621513238169,
+          "detourS": 2.403774793427772,
+          "rawMaxIncrease": 91.66666412353516,
+          "reductionPct": 32.563694267515935,
+          "score": 25.715072754277767,
+          "set": [
+            1,
+            7,
+            9
+          ]
+        },
+        "top1": 0,
+        "top3": 0,
+        "top5": 0
+      },
+      "method": "beam+delete@equal",
+      "mode": "known",
+      "nondominated": {
+        "forwarded": 4,
+        "missed": [
+          [
+            0,
+            3,
+            11
+          ],
+          [
+            2,
+            9,
+            11
+          ],
+          [
+            3,
+            11
+          ],
+          [
+            6,
+            9,
+            11
+          ],
+          [
+            9,
+            10,
+            11
+          ]
+        ],
+        "oracle": 9,
+        "visited": 4
+      },
+      "oracleBestScreen": {
+        "score": 38.16299913662114,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "rejectedAccess": 1,
+      "rejectedRun": 0,
+      "run": {
+        "allowance": 22,
+        "beamCharged": 66,
+        "knownCharged": 3,
+        "supplement": {
+          "allowance": 22,
+          "charged": 0,
+          "evaluated": [],
+          "firstRound": 0,
+          "moves": [
+            "delete"
+          ],
+          "queued": {
+            "coordinatedPairs": 0,
+            "delete": 0,
+            "secondRound": 0,
+            "swap": 0
+          },
+          "stop": "queues empty"
+        }
+      },
+      "screenGap": 0.0,
+      "setting": "20m-x1",
+      "simulatedMinutes": 1320.0,
+      "visited": 67
+    },
+    {
+      "bestScreen": {
+        "score": 38.16299913662114,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "charged": 88,
+      "finalists": [
+        [
+          1,
+          7,
+          9
+        ],
+        [
+          7,
+          9
+        ],
+        [
+          6,
+          9,
+          11
+        ],
+        [
+          9
+        ],
+        [
+          11
+        ],
+        [
+          0,
+          6
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          9,
+          11
+        ],
+        [
+          10,
+          11
+        ],
+        [
+          1,
+          4,
+          8
+        ],
+        [
+          0,
+          7,
+          10
+        ],
+        [
+          1,
+          2,
+          8
+        ],
+        [
+          1,
+          3,
+          8
+        ],
+        [
+          0,
+          7
+        ]
+      ],
+      "fullHour": {
+        "gap": 9.564545080117146,
+        "objectives": [
+          {
+            "found": false,
+            "gap": 9.564545080117146,
+            "objective": "most-removed",
+            "oracle": [
+              1,
+              4,
+              5
+            ],
+            "shortlist": [
+              1,
+              7,
+              9
+            ]
+          },
+          {
+            "found": false,
+            "gap": 1.2016985138004372,
+            "objective": "no-closures",
+            "oracle": [
+              9,
+              10,
+              11
+            ],
+            "shortlist": [
+              9,
+              11
+            ]
+          },
+          {
+            "found": false,
+            "gap": 2.7661853644243024,
+            "objective": "least-detour",
+            "oracle": [
+              3,
+              6,
+              9
+            ],
+            "shortlist": [
+              1,
+              3,
+              8
+            ]
+          },
+          {
+            "found": false,
+            "gap": 5.11820051333553,
+            "objective": "fewest-changes",
+            "oracle": [
+              1,
+              7
+            ],
+            "shortlist": [
+              7,
+              9
+            ]
+          }
+        ],
+        "oracleBest": {
+          "score": 35.27961783439491,
+          "set": [
+            1,
+            4,
+            5
+          ]
+        },
+        "shortlistBest": {
+          "adjustedHarm": 68.48621513238169,
+          "detourS": 2.403774793427772,
+          "rawMaxIncrease": 91.66666412353516,
+          "reductionPct": 32.563694267515935,
+          "score": 25.715072754277767,
+          "set": [
+            1,
+            7,
+            9
+          ]
+        },
+        "top1": 0,
+        "top3": 0,
+        "top5": 0
+      },
+      "method": "beam+swap@equal",
+      "mode": "known",
+      "nondominated": {
+        "forwarded": 5,
+        "missed": [
+          [
+            0,
+            3,
+            11
+          ],
+          [
+            2,
+            9,
+            11
+          ],
+          [
+            3,
+            11
+          ],
+          [
+            9,
+            10,
+            11
+          ]
+        ],
+        "oracle": 9,
+        "visited": 5
+      },
+      "oracleBestScreen": {
+        "score": 38.16299913662114,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "rejectedAccess": 1,
+      "rejectedRun": 0,
+      "run": {
+        "allowance": 22,
+        "beamCharged": 66,
+        "knownCharged": 3,
+        "supplement": {
+          "allowance": 22,
+          "charged": 22,
+          "evaluated": [
+            {
+              "origin": "swap",
+              "score": 21.773192748692267,
+              "set": [
+                1,
+                6,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 9.432608396488112,
+              "set": [
+                1,
+                8,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 23.524136144918685,
+              "set": [
+                1,
+                4,
+                6
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 10.719400849318301,
+              "set": [
+                1,
+                4,
+                8
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 17.550943396226415,
+              "set": [
+                1,
+                3,
+                5
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 19.837343692088496,
+              "set": [
+                1,
+                3,
+                6
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 15.392985754978678,
+              "set": [
+                1,
+                3,
+                8
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 28.27911050813143,
+              "set": [
+                4,
+                5,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 30.843261451527653,
+              "set": [
+                4,
+                6,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 12.60619330214849,
+              "set": [
+                4,
+                8,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 10.984513503409248,
+              "set": [
+                1,
+                6,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 4.072231037997545,
+              "set": [
+                1,
+                8,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 14.835456899635666,
+              "set": [
+                1,
+                6,
+                10
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 13.12883481158245,
+              "set": [
+                1,
+                8,
+                10
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 26.255573511944352,
+              "set": [
+                2,
+                5,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 28.51972445534058,
+              "set": [
+                2,
+                6,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 6.374117830450377,
+              "set": [
+                2,
+                8,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 23.74137465907483,
+              "set": [
+                5,
+                9,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 27.128167111905018,
+              "set": [
+                6,
+                9,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 11.764683868186227,
+              "set": [
+                8,
+                9,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 26.966037735849056,
+              "set": [
+                1,
+                2,
+                6
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 11.42506122667679,
+              "set": [
+                1,
+                2,
+                8
+              ],
+              "valid": true
+            }
+          ],
+          "firstRound": 22,
+          "moves": [
+            "swap"
+          ],
+          "queued": {
+            "coordinatedPairs": 0,
+            "delete": 0,
+            "secondRound": 0,
+            "swap": 56
+          },
+          "stop": "allowance"
+        }
+      },
+      "screenGap": 0.0,
+      "setting": "20m-x1",
+      "simulatedMinutes": 1760.0,
+      "visited": 89
+    },
+    {
+      "bestScreen": {
+        "score": 38.16299913662114,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "charged": 88,
+      "finalists": [
+        [
+          1,
+          7,
+          9
+        ],
+        [
+          7,
+          9
+        ],
+        [
+          6,
+          9,
+          11
+        ],
+        [
+          9
+        ],
+        [
+          11
+        ],
+        [
+          0,
+          6
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          9,
+          11
+        ],
+        [
+          10,
+          11
+        ],
+        [
+          0,
+          7,
+          10
+        ],
+        [
+          3,
+          7,
+          9
+        ],
+        [
+          2,
+          6,
+          9
+        ],
+        [
+          0,
+          7
+        ]
+      ],
+      "fullHour": {
+        "gap": 9.564545080117146,
+        "objectives": [
+          {
+            "found": false,
+            "gap": 9.564545080117146,
+            "objective": "most-removed",
+            "oracle": [
+              1,
+              4,
+              5
+            ],
+            "shortlist": [
+              1,
+              7,
+              9
+            ]
+          },
+          {
+            "found": false,
+            "gap": 1.2016985138004372,
+            "objective": "no-closures",
+            "oracle": [
+              9,
+              10,
+              11
+            ],
+            "shortlist": [
+              9,
+              11
+            ]
+          },
+          {
+            "found": false,
+            "gap": 2.852796717826493,
+            "objective": "least-detour",
+            "oracle": [
+              3,
+              6,
+              9
+            ],
+            "shortlist": [
+              2,
+              6,
+              9
+            ]
+          },
+          {
+            "found": false,
+            "gap": 5.11820051333553,
+            "objective": "fewest-changes",
+            "oracle": [
+              1,
+              7
+            ],
+            "shortlist": [
+              7,
+              9
+            ]
+          }
+        ],
+        "oracleBest": {
+          "score": 35.27961783439491,
+          "set": [
+            1,
+            4,
+            5
+          ]
+        },
+        "shortlistBest": {
+          "adjustedHarm": 68.48621513238169,
+          "detourS": 2.403774793427772,
+          "rawMaxIncrease": 91.66666412353516,
+          "reductionPct": 32.563694267515935,
+          "score": 25.715072754277767,
+          "set": [
+            1,
+            7,
+            9
+          ]
+        },
+        "top1": 0,
+        "top3": 0,
+        "top5": 0
+      },
+      "method": "beam+coordinated@equal",
+      "mode": "known",
+      "nondominated": {
+        "forwarded": 5,
+        "missed": [
+          [
+            0,
+            3,
+            11
+          ],
+          [
+            2,
+            9,
+            11
+          ],
+          [
+            3,
+            11
+          ],
+          [
+            9,
+            10,
+            11
+          ]
+        ],
+        "oracle": 9,
+        "visited": 5
+      },
+      "oracleBestScreen": {
+        "score": 38.16299913662114,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "rejectedAccess": 1,
+      "rejectedRun": 0,
+      "run": {
+        "allowance": 22,
+        "beamCharged": 66,
+        "knownCharged": 3,
+        "supplement": {
+          "allowance": 22,
+          "charged": 22,
+          "evaluated": [
+            {
+              "origin": "coordinated",
+              "score": 3.1495376035782208,
+              "set": [
+                5,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": -3.024047302082156,
+              "set": [
+                6,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 3.898646132337169,
+              "set": [
+                8,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 6.85368671949152,
+              "set": [
+                0,
+                5
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 12.776328228925482,
+              "set": [
+                0,
+                8
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 9.93315328608549,
+              "set": [
+                1,
+                3
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 10.736926870991152,
+              "set": [
+                2,
+                3
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 7.290908866445484,
+              "set": [
+                3,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 6.9048020710345686,
+              "set": [
+                3,
+                5
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 2.1016017719833027,
+              "set": [
+                3,
+                6
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": -3.79380669785151,
+              "set": [
+                3,
+                8
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 25.53449518894094,
+              "set": [
+                3,
+                7,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 17.550943396226415,
+              "set": [
+                1,
+                3,
+                5
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 16.03670558741605,
+              "set": [
+                0,
+                6,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 21.773192748692267,
+              "set": [
+                1,
+                6,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 28.51972445534058,
+              "set": [
+                2,
+                6,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 26.16024258360313,
+              "set": [
+                3,
+                6,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 30.843261451527653,
+              "set": [
+                4,
+                6,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 21.78665767794275,
+              "set": [
+                6,
+                9,
+                10
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 27.128167111905018,
+              "set": [
+                6,
+                9,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 19.578215021378313,
+              "set": [
+                0,
+                5,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "coordinated",
+              "score": 26.255573511944352,
+              "set": [
+                2,
+                5,
+                9
+              ],
+              "valid": true
+            }
+          ],
+          "firstRound": 11,
+          "moves": [
+            "coordinated"
+          ],
+          "queued": {
+            "coordinatedPairs": 11,
+            "delete": 0,
+            "secondRound": 130,
+            "swap": 0
+          },
+          "stop": "allowance"
+        }
+      },
+      "screenGap": 0.0,
+      "setting": "20m-x1",
+      "simulatedMinutes": 1760.0,
+      "visited": 89
+    },
+    {
+      "bestScreen": {
+        "score": 38.16299913662114,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "charged": 88,
+      "finalists": [
+        [
+          1,
+          7,
+          9
+        ],
+        [
+          7,
+          9
+        ],
+        [
+          9
+        ],
+        [
+          11
+        ],
+        [
+          0,
+          6
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          9,
+          11
+        ],
+        [
+          10,
+          11
+        ],
+        [
+          1,
+          4,
+          8
+        ],
+        [
+          0,
+          7,
+          10
+        ],
+        [
+          1,
+          3,
+          8
+        ],
+        [
+          0,
+          7
+        ]
+      ],
+      "fullHour": {
+        "gap": 9.564545080117146,
+        "objectives": [
+          {
+            "found": false,
+            "gap": 9.564545080117146,
+            "objective": "most-removed",
+            "oracle": [
+              1,
+              4,
+              5
+            ],
+            "shortlist": [
+              1,
+              7,
+              9
+            ]
+          },
+          {
+            "found": false,
+            "gap": 1.2016985138004372,
+            "objective": "no-closures",
+            "oracle": [
+              9,
+              10,
+              11
+            ],
+            "shortlist": [
+              9,
+              11
+            ]
+          },
+          {
+            "found": false,
+            "gap": 2.7661853644243024,
+            "objective": "least-detour",
+            "oracle": [
+              3,
+              6,
+              9
+            ],
+            "shortlist": [
+              1,
+              3,
+              8
+            ]
+          },
+          {
+            "found": false,
+            "gap": 5.11820051333553,
+            "objective": "fewest-changes",
+            "oracle": [
+              1,
+              7
+            ],
+            "shortlist": [
+              7,
+              9
+            ]
+          }
+        ],
+        "oracleBest": {
+          "score": 35.27961783439491,
+          "set": [
+            1,
+            4,
+            5
+          ]
+        },
+        "shortlistBest": {
+          "adjustedHarm": 68.48621513238169,
+          "detourS": 2.403774793427772,
+          "rawMaxIncrease": 91.66666412353516,
+          "reductionPct": 32.563694267515935,
+          "score": 25.715072754277767,
+          "set": [
+            1,
+            7,
+            9
+          ]
+        },
+        "top1": 0,
+        "top3": 0,
+        "top5": 0
+      },
+      "method": "beam+all@equal",
+      "mode": "known",
+      "nondominated": {
+        "forwarded": 4,
+        "missed": [
+          [
+            0,
+            3,
+            11
+          ],
+          [
+            2,
+            9,
+            11
+          ],
+          [
+            3,
+            11
+          ],
+          [
+            6,
+            9,
+            11
+          ],
+          [
+            9,
+            10,
+            11
+          ]
+        ],
+        "oracle": 9,
+        "visited": 4
+      },
+      "oracleBestScreen": {
+        "score": 38.16299913662114,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "rejectedAccess": 1,
+      "rejectedRun": 0,
+      "run": {
+        "allowance": 22,
+        "beamCharged": 66,
+        "knownCharged": 3,
+        "supplement": {
+          "allowance": 22,
+          "charged": 22,
+          "evaluated": [
+            {
+              "origin": "swap",
+              "score": 21.773192748692267,
+              "set": [
+                1,
+                6,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 3.1495376035782208,
+              "set": [
+                5,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 9.432608396488112,
+              "set": [
+                1,
+                8,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": -3.024047302082156,
+              "set": [
+                6,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 23.524136144918685,
+              "set": [
+                1,
+                4,
+                6
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 3.898646132337169,
+              "set": [
+                8,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 10.719400849318301,
+              "set": [
+                1,
+                4,
+                8
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 6.85368671949152,
+              "set": [
+                0,
+                5
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 17.550943396226415,
+              "set": [
+                1,
+                3,
+                5
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 19.837343692088496,
+              "set": [
+                1,
+                3,
+                6
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 15.392985754978678,
+              "set": [
+                1,
+                3,
+                8
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 28.27911050813143,
+              "set": [
+                4,
+                5,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 30.843261451527653,
+              "set": [
+                4,
+                6,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 12.60619330214849,
+              "set": [
+                4,
+                8,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 10.984513503409248,
+              "set": [
+                1,
+                6,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 4.072231037997545,
+              "set": [
+                1,
+                8,
+                11
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 14.835456899635666,
+              "set": [
+                1,
+                6,
+                10
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 13.12883481158245,
+              "set": [
+                1,
+                8,
+                10
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 26.255573511944352,
+              "set": [
+                2,
+                5,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 28.51972445534058,
+              "set": [
+                2,
+                6,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 6.374117830450377,
+              "set": [
+                2,
+                8,
+                9
+              ],
+              "valid": true
+            },
+            {
+              "origin": "swap",
+              "score": 23.74137465907483,
+              "set": [
+                5,
+                9,
+                11
+              ],
+              "valid": true
+            }
+          ],
+          "firstRound": 22,
+          "moves": [
+            "delete",
+            "swap",
+            "coordinated"
+          ],
+          "queued": {
+            "coordinatedPairs": 4,
+            "delete": 0,
+            "secondRound": 0,
+            "swap": 56
+          },
+          "stop": "allowance"
+        }
+      },
+      "screenGap": 0.0,
+      "setting": "20m-x1",
+      "simulatedMinutes": 1760.0,
+      "visited": 89
+    },
+    {
+      "bestScreen": {
+        "score": 38.16299913662114,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "charged": 101,
+      "finalists": [
+        [
+          1,
+          7,
+          9
+        ],
+        [
+          7,
+          9
+        ],
+        [
+          2,
+          9,
+          11
+        ],
+        [
+          0,
+          3,
+          11
+        ],
+        [
+          9,
+          10,
+          11
+        ],
+        [
+          9
+        ],
+        [
+          11
+        ],
+        [
+          0,
+          6
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          9,
+          11
+        ],
+        [
+          0,
+          3,
+          7
+        ],
+        [
+          0,
+          7,
+          10
+        ],
+        [
+          0,
+          7
+        ]
+      ],
+      "fullHour": {
+        "gap": 9.564545080117146,
+        "objectives": [
+          {
+            "found": false,
+            "gap": 9.564545080117146,
+            "objective": "most-removed",
+            "oracle": [
+              1,
+              4,
+              5
+            ],
+            "shortlist": [
+              1,
+              7,
+              9
+            ]
+          },
+          {
+            "found": true,
+            "gap": 0.0,
+            "objective": "no-closures",
+            "oracle": [
+              9,
+              10,
+              11
+            ],
+            "shortlist": [
+              9,
+              10,
+              11
+            ]
+          },
+          {
+            "found": false,
+            "gap": 2.91687193033556,
+            "objective": "least-detour",
+            "oracle": [
+              3,
+              6,
+              9
+            ],
+            "shortlist": [
+              0,
+              7
+            ]
+          },
+          {
+            "found": false,
+            "gap": 5.11820051333553,
+            "objective": "fewest-changes",
+            "oracle": [
+              1,
+              7
+            ],
+            "shortlist": [
+              7,
+              9
+            ]
+          }
+        ],
+        "oracleBest": {
+          "score": 35.27961783439491,
+          "set": [
+            1,
+            4,
+            5
+          ]
+        },
+        "shortlistBest": {
+          "adjustedHarm": 68.48621513238169,
+          "detourS": 2.403774793427772,
+          "rawMaxIncrease": 91.66666412353516,
+          "reductionPct": 32.563694267515935,
+          "score": 25.715072754277767,
+          "set": [
+            1,
+            7,
+            9
+          ]
+        },
+        "top1": 0,
+        "top3": 0,
+        "top5": 0
+      },
+      "method": "wide@equal",
+      "mode": "known",
+      "nondominated": {
+        "forwarded": 7,
+        "missed": [
+          [
+            3,
+            11
+          ],
+          [
+            6,
+            9,
+            11
+          ]
+        ],
+        "oracle": 9,
+        "visited": 7
+      },
+      "oracleBestScreen": {
+        "score": 38.16299913662114,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "rejectedAccess": 1,
+      "rejectedRun": 0,
+      "run": {
+        "allowance": 0,
+        "beamCharged": 101,
+        "knownCharged": 3,
+        "supplement": null
+      },
+      "screenGap": 0.0,
+      "setting": "20m-x1",
+      "simulatedMinutes": 2020.0,
+      "visited": 102
+    },
+    {
+      "bestScreen": {
+        "score": 34.54715682618984,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "charged": 84,
+      "finalists": [
+        [
+          1,
+          7,
+          9
+        ],
+        [
+          1,
+          5,
+          9
+        ],
+        [
+          7,
+          9,
+          11
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          4,
+          5,
+          9
+        ],
+        [
+          1,
+          7
+        ],
+        [
+          5,
+          9,
+          11
+        ],
+        [
+          5,
+          9
+        ],
+        [
+          6,
+          9
+        ],
+        [
+          2,
+          9,
+          11
+        ],
+        [
+          9,
+          11
+        ],
+        [
+          11
+        ],
+        [
+          9,
+          10,
+          11
+        ],
+        [
+          10,
+          11
+        ],
+        [
+          1,
+          9,
+          11
+        ],
+        [
+          5,
+          9,
+          10
+        ],
+        [
+          1,
+          2,
+          6
+        ],
+        [
+          7,
+          9
+        ],
+        [
+          1,
+          11
+        ]
+      ],
+      "fullHour": {
+        "gap": 3.8902335456475683,
+        "objectives": [
+          {
+            "found": false,
+            "gap": 3.8902335456475683,
+            "objective": "most-removed",
+            "oracle": [
+              1,
+              4,
+              5
+            ],
+            "shortlist": [
+              1,
+              5,
+              9
+            ]
+          },
+          {
+            "found": true,
+            "gap": 0.0,
+            "objective": "no-closures",
+            "oracle": [
+              9,
+              10,
+              11
+            ],
+            "shortlist": [
+              9,
+              10,
+              11
+            ]
+          },
+          {
+            "found": false,
+            "gap": 1.6310563489621472,
+            "objective": "least-detour",
+            "oracle": [
+              3,
+              6,
+              9
+            ],
+            "shortlist": [
+              5,
+              9
+            ]
+          },
+          {
+            "found": true,
+            "gap": 0.0,
+            "objective": "fewest-changes",
+            "oracle": [
+              1,
+              7
+            ],
+            "shortlist": [
+              1,
+              7
+            ]
+          }
+        ],
+        "oracleBest": {
+          "score": 35.27961783439491,
+          "set": [
+            1,
+            4,
+            5
+          ]
+        },
+        "shortlistBest": {
+          "adjustedHarm": 27.66666666666667,
+          "detourS": 0.2992867483467876,
+          "rawMaxIncrease": 44.66666793823242,
+          "reductionPct": 34.15605095541401,
+          "score": 31.389384288747344,
+          "set": [
+            1,
+            5,
+            9
+          ]
+        },
+        "top1": 0,
+        "top3": 1,
+        "top5": 1
+      },
+      "method": "beam",
+      "mode": "cold",
+      "nondominated": {
+        "forwarded": 11,
+        "missed": [
+          [
+            1,
+            4,
+            7
+          ],
+          [
+            1,
+            7,
+            11
+          ],
+          [
+            3,
+            10,
+            11
+          ],
+          [
+            3,
+            11
+          ],
+          [
+            4,
+            6,
+            9
+          ]
+        ],
+        "oracle": 19,
+        "visited": 14
+      },
+      "oracleBestScreen": {
+        "score": 35.16153846153846,
+        "set": [
+          1,
+          4,
+          7
+        ]
+      },
+      "rejectedAccess": 1,
+      "rejectedRun": 0,
+      "run": {
+        "allowance": 0,
+        "beamCharged": 84,
+        "knownCharged": 0,
+        "supplement": null
+      },
+      "screenGap": 0.6143816353486216,
+      "setting": "20m-x3",
+      "simulatedMinutes": 5040.0,
+      "visited": 85
+    },
+    {
+      "bestScreen": {
+        "score": 34.54715682618984,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "charged": 91,
+      "finalists": [
+        [
+          1,
+          7,
+          9
+        ],
+        [
+          1,
+          5,
+          9
+        ],
+        [
+          7,
+          9,
+          11
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          4,
+          5,
+          9
+        ],
+        [
+          1,
+          7
+        ],
+        [
+          5,
+          9,
+          11
+        ],
+        [
+          5,
+          9
+        ],
+        [
+          6,
+          9
+        ],
+        [
+          2,
+          9,
+          11
+        ],
+        [
+          9,
+          11
+        ],
+        [
+          11
+        ],
+        [
+          0,
+          6
+        ],
+        [
+          7,
+          9
+        ],
+        [
+          9,
+          10,
+          11
+        ],
+        [
+          10,
+          11
+        ],
+        [
+          1,
+          9,
+          11
+        ],
+        [
+          5,
+          9,
+          10
+        ],
+        [
+          1,
+          11
+        ]
+      ],
+      "fullHour": {
+        "gap": 3.8902335456475683,
+        "objectives": [
+          {
+            "found": false,
+            "gap": 3.8902335456475683,
+            "objective": "most-removed",
+            "oracle": [
+              1,
+              4,
+              5
+            ],
+            "shortlist": [
+              1,
+              5,
+              9
+            ]
+          },
+          {
+            "found": true,
+            "gap": 0.0,
+            "objective": "no-closures",
+            "oracle": [
+              9,
+              10,
+              11
+            ],
+            "shortlist": [
+              9,
+              10,
+              11
+            ]
+          },
+          {
+            "found": false,
+            "gap": 1.6310563489621472,
+            "objective": "least-detour",
+            "oracle": [
+              3,
+              6,
+              9
+            ],
+            "shortlist": [
+              5,
+              9
+            ]
+          },
+          {
+            "found": true,
+            "gap": 0.0,
+            "objective": "fewest-changes",
+            "oracle": [
+              1,
+              7
+            ],
+            "shortlist": [
+              1,
+              7
+            ]
+          }
+        ],
+        "oracleBest": {
+          "score": 35.27961783439491,
+          "set": [
+            1,
+            4,
+            5
+          ]
+        },
+        "shortlistBest": {
+          "adjustedHarm": 27.66666666666667,
+          "detourS": 0.2992867483467876,
+          "rawMaxIncrease": 44.66666793823242,
+          "reductionPct": 34.15605095541401,
+          "score": 31.389384288747344,
+          "set": [
+            1,
+            5,
+            9
+          ]
+        },
+        "top1": 0,
+        "top3": 1,
+        "top5": 1
+      },
+      "method": "beam",
+      "mode": "known",
+      "nondominated": {
+        "forwarded": 11,
+        "missed": [
+          [
+            1,
+            4,
+            7
+          ],
+          [
+            1,
+            7,
+            11
+          ],
+          [
+            3,
+            10,
+            11
+          ],
+          [
+            3,
+            11
+          ],
+          [
+            4,
+            6,
+            9
+          ]
+        ],
+        "oracle": 19,
+        "visited": 14
+      },
+      "oracleBestScreen": {
+        "score": 35.16153846153846,
+        "set": [
+          1,
+          4,
+          7
+        ]
+      },
+      "rejectedAccess": 1,
+      "rejectedRun": 0,
+      "run": {
+        "allowance": 0,
+        "beamCharged": 91,
+        "knownCharged": 3,
+        "supplement": null
+      },
+      "screenGap": 0.6143816353486216,
+      "setting": "20m-x3",
+      "simulatedMinutes": 5460.0,
+      "visited": 92
+    },
+    {
+      "bestScreen": {
+        "score": 42.09027431421447,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "charged": 77,
+      "finalists": [
+        [
+          1,
+          7,
+          9
+        ],
+        [
+          1,
+          3,
+          7
+        ],
+        [
+          7,
+          9
+        ],
+        [
+          7,
+          9,
+          11
+        ],
+        [
+          9
+        ],
+        [
+          4
+        ],
+        [
+          11
+        ],
+        [
+          5
+        ],
+        [
+          0
+        ],
+        [
+          3
+        ],
+        [
+          9,
+          11
+        ],
+        [
+          9,
+          10,
+          11
+        ],
+        [
+          9,
+          10
+        ],
+        [
+          1,
+          4,
+          5
+        ],
+        [
+          4,
+          7,
+          9
+        ],
+        [
+          2,
+          9,
+          11
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          2,
+          3
+        ]
+      ],
+      "fullHour": {
+        "gap": 0.0,
+        "objectives": [
+          {
+            "found": true,
+            "gap": 0.0,
+            "objective": "most-removed",
+            "oracle": [
+              1,
+              4,
+              5
+            ],
+            "shortlist": [
+              1,
+              4,
+              5
+            ]
+          },
+          {
+            "found": true,
+            "gap": 0.0,
+            "objective": "no-closures",
+            "oracle": [
+              9,
+              10,
+              11
+            ],
+            "shortlist": [
+              9,
+              10,
+              11
+            ]
+          },
+          {
+            "found": false,
+            "gap": 2.667461421079736,
+            "objective": "least-detour",
+            "oracle": [
+              3,
+              6,
+              9
+            ],
+            "shortlist": [
+              1,
+              4,
+              5
+            ]
+          },
+          {
+            "found": false,
+            "gap": 5.11820051333553,
+            "objective": "fewest-changes",
+            "oracle": [
+              1,
+              7
+            ],
+            "shortlist": [
+              7,
+              9
+            ]
+          }
+        ],
+        "oracleBest": {
+          "score": 35.27961783439491,
+          "set": [
+            1,
+            4,
+            5
+          ]
+        },
+        "shortlistBest": {
+          "adjustedHarm": 23.0,
+          "detourS": 0.4426533629972482,
+          "rawMaxIncrease": 34.33333206176758,
+          "reductionPct": 37.57961783439491,
+          "score": 35.27961783439491,
+          "set": [
+            1,
+            4,
+            5
+          ]
+        },
+        "top1": 1,
+        "top3": 1,
+        "top5": 2
+      },
+      "method": "beam",
+      "mode": "cold",
+      "nondominated": {
+        "forwarded": 10,
+        "missed": [
+          [
+            3,
+            4
+          ],
+          [
+            3,
+            10
+          ]
+        ],
+        "oracle": 12,
+        "visited": 10
+      },
+      "oracleBestScreen": {
+        "score": 42.09027431421447,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "rejectedAccess": 1,
+      "rejectedRun": 0,
+      "run": {
+        "allowance": 0,
+        "beamCharged": 77,
+        "knownCharged": 0,
+        "supplement": null
+      },
+      "screenGap": 0.0,
+      "setting": "30m-x1",
+      "simulatedMinutes": 2310.0,
+      "visited": 78
+    },
+    {
+      "bestScreen": {
+        "score": 42.09027431421447,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "charged": 84,
+      "finalists": [
+        [
+          1,
+          7,
+          9
+        ],
+        [
+          1,
+          3,
+          7
+        ],
+        [
+          7,
+          9
+        ],
+        [
+          7,
+          9,
+          11
+        ],
+        [
+          9
+        ],
+        [
+          4
+        ],
+        [
+          11
+        ],
+        [
+          5
+        ],
+        [
+          0
+        ],
+        [
+          3
+        ],
+        [
+          0,
+          6
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          9,
+          11
+        ],
+        [
+          9,
+          10,
+          11
+        ],
+        [
+          9,
+          10
+        ],
+        [
+          1,
+          4,
+          5
+        ],
+        [
+          0,
+          6,
+          11
+        ],
+        [
+          4,
+          7,
+          9
+        ],
+        [
+          2,
+          3
+        ]
+      ],
+      "fullHour": {
+        "gap": 0.0,
+        "objectives": [
+          {
+            "found": true,
+            "gap": 0.0,
+            "objective": "most-removed",
+            "oracle": [
+              1,
+              4,
+              5
+            ],
+            "shortlist": [
+              1,
+              4,
+              5
+            ]
+          },
+          {
+            "found": true,
+            "gap": 0.0,
+            "objective": "no-closures",
+            "oracle": [
+              9,
+              10,
+              11
+            ],
+            "shortlist": [
+              9,
+              10,
+              11
+            ]
+          },
+          {
+            "found": false,
+            "gap": 2.667461421079736,
+            "objective": "least-detour",
+            "oracle": [
+              3,
+              6,
+              9
+            ],
+            "shortlist": [
+              1,
+              4,
+              5
+            ]
+          },
+          {
+            "found": false,
+            "gap": 5.11820051333553,
+            "objective": "fewest-changes",
+            "oracle": [
+              1,
+              7
+            ],
+            "shortlist": [
+              7,
+              9
+            ]
+          }
+        ],
+        "oracleBest": {
+          "score": 35.27961783439491,
+          "set": [
+            1,
+            4,
+            5
+          ]
+        },
+        "shortlistBest": {
+          "adjustedHarm": 23.0,
+          "detourS": 0.4426533629972482,
+          "rawMaxIncrease": 34.33333206176758,
+          "reductionPct": 37.57961783439491,
+          "score": 35.27961783439491,
+          "set": [
+            1,
+            4,
+            5
+          ]
+        },
+        "top1": 1,
+        "top3": 1,
+        "top5": 2
+      },
+      "method": "beam",
+      "mode": "known",
+      "nondominated": {
+        "forwarded": 10,
+        "missed": [
+          [
+            3,
+            4
+          ],
+          [
+            3,
+            10
+          ]
+        ],
+        "oracle": 12,
+        "visited": 10
+      },
+      "oracleBestScreen": {
+        "score": 42.09027431421447,
+        "set": [
+          1,
+          7,
+          9
+        ]
+      },
+      "rejectedAccess": 1,
+      "rejectedRun": 0,
+      "run": {
+        "allowance": 0,
+        "beamCharged": 84,
+        "knownCharged": 3,
+        "supplement": null
+      },
+      "screenGap": 0.0,
+      "setting": "30m-x1",
+      "simulatedMinutes": 2520.0,
+      "visited": 85
+    },
+    {
+      "bestScreen": {
+        "score": 34.47392283524892,
+        "set": [
+          1,
+          4,
+          5
+        ]
+      },
+      "charged": 66,
+      "finalists": [
+        [
+          1,
+          4,
+          5
+        ],
+        [
+          2,
+          3,
+          7
+        ],
+        [
+          0,
+          5,
+          9
+        ],
+        [
+          5,
+          9
+        ],
+        [
+          2,
+          9,
+          11
+        ],
+        [
+          9,
+          10,
+          11
+        ],
+        [
+          9,
+          11
+        ],
+        [
+          5
+        ],
+        [
+          9
+        ],
+        [
+          6
+        ],
+        [
+          11
+        ],
+        [
+          9,
+          10
+        ],
+        [
+          1,
+          5,
+          9
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          2,
+          3
+        ]
+      ],
+      "fullHour": {
+        "gap": 0.0,
+        "objectives": [
+          {
+            "found": true,
+            "gap": 0.0,
+            "objective": "most-removed",
+            "oracle": [
+              1,
+              4,
+              5
+            ],
+            "shortlist": [
+              1,
+              4,
+              5
+            ]
+          },
+          {
+            "found": true,
+            "gap": 0.0,
+            "objective": "no-closures",
+            "oracle": [
+              9,
+              10,
+              11
+            ],
+            "shortlist": [
+              9,
+              10,
+              11
+            ]
+          },
+          {
+            "found": false,
+            "gap": 1.6310563489621472,
+            "objective": "least-detour",
+            "oracle": [
+              3,
+              6,
+              9
+            ],
+            "shortlist": [
+              5,
+              9
+            ]
+          },
+          {
+            "found": false,
+            "gap": 1.3169222876114688,
+            "objective": "fewest-changes",
+            "oracle": [
+              1,
+              7
+            ],
+            "shortlist": [
+              5,
+              9
+            ]
+          }
+        ],
+        "oracleBest": {
+          "score": 35.27961783439491,
+          "set": [
+            1,
+            4,
+            5
+          ]
+        },
+        "shortlistBest": {
+          "adjustedHarm": 23.0,
+          "detourS": 0.4426533629972482,
+          "rawMaxIncrease": 34.33333206176758,
+          "reductionPct": 37.57961783439491,
+          "score": 35.27961783439491,
+          "set": [
+            1,
+            4,
+            5
+          ]
+        },
+        "top1": 1,
+        "top3": 2,
+        "top5": 2
+      },
+      "method": "beam",
+      "mode": "cold",
+      "nondominated": {
+        "forwarded": 8,
+        "missed": [
+          [
+            1,
+            3,
+            7
+          ],
+          [
+            1,
+            7,
+            9
+          ],
+          [
+            4,
+            10
+          ],
+          [
+            6,
+            9
+          ],
+          [
+            6,
+            9,
+            11
+          ],
+          [
+            7,
+            9
+          ]
+        ],
+        "oracle": 14,
+        "visited": 8
+      },
+      "oracleBestScreen": {
+        "score": 36.55647607934656,
+        "set": [
+          1,
+          3,
+          7
+        ]
+      },
+      "rejectedAccess": 1,
+      "rejectedRun": 0,
+      "run": {
+        "allowance": 0,
+        "beamCharged": 66,
+        "knownCharged": 0,
+        "supplement": null
+      },
+      "screenGap": 2.082553244097639,
+      "setting": "60m-x1",
+      "simulatedMinutes": 3960.0,
+      "visited": 67
+    },
+    {
+      "bestScreen": {
+        "score": 34.47392283524892,
+        "set": [
+          1,
+          4,
+          5
+        ]
+      },
+      "charged": 82,
+      "finalists": [
+        [
+          1,
+          4,
+          5
+        ],
+        [
+          1,
+          7,
+          9
+        ],
+        [
+          7,
+          9
+        ],
+        [
+          2,
+          3,
+          7
+        ],
+        [
+          6,
+          9
+        ],
+        [
+          2,
+          9,
+          11
+        ],
+        [
+          9,
+          10,
+          11
+        ],
+        [
+          9,
+          11
+        ],
+        [
+          5
+        ],
+        [
+          9
+        ],
+        [
+          6
+        ],
+        [
+          11
+        ],
+        [
+          0,
+          6
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          9,
+          10
+        ],
+        [
+          1,
+          5,
+          9
+        ],
+        [
+          0,
+          5,
+          9
+        ],
+        [
+          0,
+          6,
+          11
+        ],
+        [
+          1,
+          6
+        ],
+        [
+          2,
+          3
+        ]
+      ],
+      "fullHour": {
+        "gap": 0.0,
+        "objectives": [
+          {
+            "found": true,
+            "gap": 0.0,
+            "objective": "most-removed",
+            "oracle": [
+              1,
+              4,
+              5
+            ],
+            "shortlist": [
+              1,
+              4,
+              5
+            ]
+          },
+          {
+            "found": true,
+            "gap": 0.0,
+            "objective": "no-closures",
+            "oracle": [
+              9,
+              10,
+              11
+            ],
+            "shortlist": [
+              9,
+              10,
+              11
+            ]
+          },
+          {
+            "found": false,
+            "gap": 2.466773306130051,
+            "objective": "least-detour",
+            "oracle": [
+              3,
+              6,
+              9
+            ],
+            "shortlist": [
+              0,
+              5,
+              9
+            ]
+          },
+          {
+            "found": false,
+            "gap": 3.3054573194586006,
+            "objective": "fewest-changes",
+            "oracle": [
+              1,
+              7
+            ],
+            "shortlist": [
+              6,
+              9
+            ]
+          }
+        ],
+        "oracleBest": {
+          "score": 35.27961783439491,
+          "set": [
+            1,
+            4,
+            5
+          ]
+        },
+        "shortlistBest": {
+          "adjustedHarm": 23.0,
+          "detourS": 0.4426533629972482,
+          "rawMaxIncrease": 34.33333206176758,
+          "reductionPct": 37.57961783439491,
+          "score": 35.27961783439491,
+          "set": [
+            1,
+            4,
+            5
+          ]
+        },
+        "top1": 1,
+        "top3": 2,
+        "top5": 2
+      },
+      "method": "beam",
+      "mode": "known",
+      "nondominated": {
+        "forwarded": 11,
+        "missed": [
+          [
+            1,
+            3,
+            7
+          ],
+          [
+            4,
+            10
+          ],
+          [
+            6,
+            9,
+            11
+          ]
+        ],
+        "oracle": 14,
+        "visited": 11
+      },
+      "oracleBestScreen": {
+        "score": 36.55647607934656,
+        "set": [
+          1,
+          3,
+          7
+        ]
+      },
+      "rejectedAccess": 1,
+      "rejectedRun": 0,
+      "run": {
+        "allowance": 0,
+        "beamCharged": 82,
+        "knownCharged": 3,
+        "supplement": null
+      },
+      "screenGap": 2.082553244097639,
+      "setting": "60m-x1",
+      "simulatedMinutes": 4920.0,
+      "visited": 83
+    }
+  ],
+  "schema": "search-benchmark-analysis-1"
+}

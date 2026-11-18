@@ -1,0 +1,76 @@
+{
+  "case": "colby-north-pm",
+  "identity": {
+    "calibration": "uncalibrated",
+    "case": "colby-north-pm",
+    "caseSha256": "816329f0f95429267769292d45706631b6cd438e7537fe78337626ee72cbb940",
+    "harmBlocks": 68,
+    "inputs": {
+      "areas": "386731eb104a1ac7a35475d2e5952bcd2b98f6a29991a87b3f68334308477abd",
+      "demand": "bef51b684a8c079ce5e133e089df0659b422ca2ec77bd6b8f5784e38bf1bd93c",
+      "network": "6a8285d5076f9ddc9042b3a4554998e61b5427fdb8fbbbbaaa8572cd7b18f4b0"
+    },
+    "inputsLabel": "frozen inputs of the case",
+    "inputsMatchCase": true,
+    "links": 4411,
+    "method": "search-benchmark-results-1",
+    "nodes": 1762,
+    "simulator": "f0df1aabc323bca5893215e1df1afbff",
+    "sourceRevision": "f6c573d3b2f0"
+  },
+  "minutes": 60.0,
+  "packages": [
+    {
+      "fullHourScore": 25.715072754277767,
+      "selectedBy": [
+        "20m-x1 beam",
+        "20m-x1 beam+delete@extra",
+        "20m-x1 beam+swap@extra",
+        "20m-x1 beam+coordinated@extra",
+        "20m-x1 beam+all@extra",
+        "20m-x1 wide@equal"
+      ],
+      "set": [
+        1,
+        7,
+        9
+      ]
+    },
+    {
+      "fullHourScore": 31.389384288747344,
+      "selectedBy": [
+        "20m-x3 beam"
+      ],
+      "set": [
+        1,
+        5,
+        9
+      ]
+    },
+    {
+      "fullHourScore": 35.27961783439491,
+      "selectedBy": [
+        "30m-x1 beam",
+        "60m-x1 beam",
+        "full-hour best of all packages"
+      ],
+      "set": [
+        1,
+        4,
+        5
+      ]
+    }
+  ],
+  "seeds": [
+    301,
+    302,
+    303,
+    304,
+    305,
+    306,
+    307,
+    308,
+    309,
+    310
+  ]
+}

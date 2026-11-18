@@ -17,16 +17,16 @@
 - [x] 3.2 Add regression fixtures for useful combinations of weak singles and alternative junction designs whose value changes with the surrounding package.
 - [x] 3.3 Prototype deletion/replacement moves and coordinated or alternative-variant starts behind an experimental setting, sharing the evaluator/cache and enforcing all package constraints.
 - [x] 3.4 Freeze total budgets, budget allocation, tie rules, benchmark cases, and practical quality/runtime acceptance criteria before evaluating challengers. Compare with the unchanged beam at equal charged cost; label extra-budget comparisons separately.
-- [ ] 3.5 Report best-score gap, exact nondominated coverage where available, finalist coverage, all-car displacement, resident detour, rejection counts, and runtime. Include cold and known-package results and cases beyond the recorded Rockridge candidate set.
+- [x] 3.5 Report best-score gap, exact nondominated coverage where available, finalist coverage, all-car displacement, resident detour, rejection counts, and runtime. Include cold and known-package results and cases beyond the recorded Rockridge candidate set.
 
 ## 4. Test screening fidelity and confirm
 
-- [ ] 4.1 Preregister a comparison of screening horizons or seed counts with fixed model inputs; charge simulation work consistently and measure shortlist/rank stability against full-hour selection runs.
-- [ ] 4.2 Freeze the comparative shortlist before independent confirmation; record every selected package and outcome, use unused seeds, and retain unresolved paired comparisons and adverse street-level changes.
+- [x] 4.1 Preregister a comparison of screening horizons or seed counts with fixed model inputs; charge simulation work consistently and measure shortlist/rank stability against full-hour selection runs.
+- [x] 4.2 Freeze the comparative shortlist before independent confirmation; record every selected package and outcome, use unused seeds, and retain unresolved paired comparisons and adverse street-level changes.
 - [x] 4.3 Reconcile the existing paired-evidence and redistribution contracts, including raw versus adjusted harm, pointwise maximum intervals, incomplete-trip limits, and separate search-method provenance.
-- [ ] 4.4 Select production defaults only if the declared quality/cost criteria pass; otherwise retain the current defaults and document the result. Run relevant Rust tests and any affected CLI/schema tests.
+- [x] 4.4 Select production defaults only if the declared quality/cost criteria pass; otherwise retain the current defaults and document the result. Run relevant Rust tests and any affected CLI/schema tests.
 
 ## 5. Complete the implementation handoff
 
-- [ ] 5.1 Update the implementation record with adopted choices, rejected alternatives, evidence paths, and remaining limits. Keep results for different extents or input hashes separate.
+- [x] 5.1 Update the implementation record with adopted choices, rejected alternatives, evidence paths, and remaining limits. Keep results for different extents or input hashes separate.
 - [ ] 5.2 Validate the completed OpenSpec change, archive it with the implementation once checks pass, and commit the resulting specs and code.

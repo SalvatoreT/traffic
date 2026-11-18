@@ -1,0 +1,606 @@
+{
+  "development": "colby-north-pm",
+  "heldOut": [
+    "colby-north-am",
+    "second-cluster-pm"
+  ],
+  "screening": {
+    "adopt": null,
+    "settings": [
+      {
+        "cases": [
+          {
+            "case": "colby-north-am",
+            "costOk": true,
+            "found": [
+              3,
+              1
+            ],
+            "fullGap": [
+              0.0,
+              2.6595970016538857
+            ],
+            "gapOk": false,
+            "minutes": [
+              1560.0,
+              4260.0
+            ],
+            "spearman": [
+              0.9247121657864429,
+              0.9746670461077745
+            ],
+            "spearmanOk": true
+          },
+          {
+            "case": "second-cluster-pm",
+            "costOk": true,
+            "found": [
+              2,
+              2
+            ],
+            "fullGap": [
+              0.0,
+              0.0
+            ],
+            "gapOk": true,
+            "minutes": [
+              1580.0,
+              4320.0
+            ],
+            "spearman": [
+              0.7154582794321046,
+              0.882346102589689
+            ],
+            "spearmanOk": true
+          }
+        ],
+        "confirmation": [
+          {
+            "case": "colby-north-am",
+            "primary": 44.84513697329633,
+            "setting": 43.02128116607671
+          }
+        ],
+        "confirmationOk": false,
+        "costOk": true,
+        "gain": false,
+        "pass": false,
+        "perCaseChecks": false,
+        "setting": "20m-x3"
+      },
+      {
+        "cases": [
+          {
+            "case": "colby-north-am",
+            "costOk": true,
+            "found": [
+              3,
+              3
+            ],
+            "fullGap": [
+              0.0,
+              0.0
+            ],
+            "gapOk": true,
+            "minutes": [
+              1560.0,
+              2760.0
+            ],
+            "spearman": [
+              0.9247121657864429,
+              0.9485411201238286
+            ],
+            "spearmanOk": true
+          },
+          {
+            "case": "second-cluster-pm",
+            "costOk": true,
+            "found": [
+              2,
+              2
+            ],
+            "fullGap": [
+              0.0,
+              0.0
+            ],
+            "gapOk": true,
+            "minutes": [
+              1580.0,
+              2400.0
+            ],
+            "spearman": [
+              0.7154582794321046,
+              0.7475899735682147
+            ],
+            "spearmanOk": true
+          }
+        ],
+        "confirmation": [],
+        "confirmationOk": false,
+        "costOk": true,
+        "gain": false,
+        "pass": false,
+        "perCaseChecks": true,
+        "setting": "30m-x1"
+      },
+      {
+        "cases": [
+          {
+            "case": "colby-north-am",
+            "costOk": true,
+            "found": [
+              3,
+              3
+            ],
+            "fullGap": [
+              0.0,
+              0.0
+            ],
+            "gapOk": true,
+            "minutes": [
+              1560.0,
+              5280.0
+            ],
+            "spearman": [
+              0.9247121657864429,
+              0.9511939082649197
+            ],
+            "spearmanOk": true
+          },
+          {
+            "case": "second-cluster-pm",
+            "costOk": true,
+            "found": [
+              2,
+              0
+            ],
+            "fullGap": [
+              0.0,
+              0.11295116772823732
+            ],
+            "gapOk": false,
+            "minutes": [
+              1580.0,
+              4260.0
+            ],
+            "spearman": [
+              0.7154582794321046,
+              0.8157301363194517
+            ],
+            "spearmanOk": true
+          }
+        ],
+        "confirmation": [
+          {
+            "case": "second-cluster-pm",
+            "primary": 14.588221074288633,
+            "setting": 15.96930955827101
+          }
+        ],
+        "confirmationOk": true,
+        "costOk": true,
+        "gain": false,
+        "pass": false,
+        "perCaseChecks": false,
+        "setting": "60m-x1"
+      }
+    ]
+  },
+  "search": {
+    "adopt": null,
+    "challengers": [
+      {
+        "betterThanWideAtEqualCost": false,
+        "challenger": "delete",
+        "equalBudgetNotWorse": false,
+        "gainOverBeam": false,
+        "pass": false,
+        "perRunChecks": true,
+        "runs": [
+          {
+            "beam": {
+              "charged": 78,
+              "found": 3,
+              "fullGap": 0.0,
+              "recall": 0.875
+            },
+            "case": "colby-north-am",
+            "challenger": {
+              "charged": 81,
+              "found": 3,
+              "fullGap": 0.0,
+              "recall": 0.875
+            },
+            "fullGapOk": true,
+            "mode": "cold",
+            "objectivesOk": true,
+            "screenGapOk": true,
+            "wide": {
+              "charged": 94,
+              "found": 3,
+              "fullGap": 0.0,
+              "recall": 0.875
+            }
+          },
+          {
+            "beam": {
+              "charged": 83,
+              "found": 3,
+              "fullGap": 0.0,
+              "recall": 0.875
+            },
+            "case": "colby-north-am",
+            "challenger": {
+              "charged": 86,
+              "found": 3,
+              "fullGap": 0.0,
+              "recall": 0.875
+            },
+            "fullGapOk": true,
+            "mode": "known",
+            "objectivesOk": true,
+            "screenGapOk": true,
+            "wide": {
+              "charged": 99,
+              "found": 3,
+              "fullGap": 0.0,
+              "recall": 0.875
+            }
+          },
+          {
+            "beam": {
+              "charged": 79,
+              "found": 2,
+              "fullGap": 0.0,
+              "recall": 0.4666666666666667
+            },
+            "case": "second-cluster-pm",
+            "challenger": {
+              "charged": 80,
+              "found": 2,
+              "fullGap": 0.0,
+              "recall": 0.5333333333333333
+            },
+            "fullGapOk": true,
+            "mode": "cold",
+            "objectivesOk": true,
+            "screenGapOk": true,
+            "wide": {
+              "charged": 89,
+              "found": 2,
+              "fullGap": 0.0,
+              "recall": 0.6666666666666666
+            }
+          }
+        ],
+        "sums": {
+          "beam": [
+            2.216666666666667,
+            8.0,
+            0.0
+          ],
+          "challenger": [
+            2.283333333333333,
+            8.0,
+            0.0
+          ],
+          "runs": 3.0,
+          "wide": [
+            2.4166666666666665,
+            8.0,
+            0.0
+          ]
+        }
+      },
+      {
+        "betterThanWideAtEqualCost": false,
+        "challenger": "swap",
+        "equalBudgetNotWorse": true,
+        "gainOverBeam": false,
+        "pass": false,
+        "perRunChecks": true,
+        "runs": [
+          {
+            "beam": {
+              "charged": 78,
+              "found": 3,
+              "fullGap": 0.0,
+              "recall": 0.875
+            },
+            "case": "colby-north-am",
+            "challenger": {
+              "charged": 98,
+              "found": 3,
+              "fullGap": 0.0,
+              "recall": 0.875
+            },
+            "fullGapOk": true,
+            "mode": "cold",
+            "objectivesOk": true,
+            "screenGapOk": true,
+            "wide": {
+              "charged": 94,
+              "found": 3,
+              "fullGap": 0.0,
+              "recall": 0.875
+            }
+          },
+          {
+            "beam": {
+              "charged": 83,
+              "found": 3,
+              "fullGap": 0.0,
+              "recall": 0.875
+            },
+            "case": "colby-north-am",
+            "challenger": {
+              "charged": 104,
+              "found": 3,
+              "fullGap": 0.0,
+              "recall": 0.875
+            },
+            "fullGapOk": true,
+            "mode": "known",
+            "objectivesOk": true,
+            "screenGapOk": true,
+            "wide": {
+              "charged": 99,
+              "found": 3,
+              "fullGap": 0.0,
+              "recall": 0.875
+            }
+          },
+          {
+            "beam": {
+              "charged": 79,
+              "found": 2,
+              "fullGap": 0.0,
+              "recall": 0.4666666666666667
+            },
+            "case": "second-cluster-pm",
+            "challenger": {
+              "charged": 99,
+              "found": 2,
+              "fullGap": 0.0,
+              "recall": 0.6
+            },
+            "fullGapOk": true,
+            "mode": "cold",
+            "objectivesOk": true,
+            "screenGapOk": true,
+            "wide": {
+              "charged": 89,
+              "found": 2,
+              "fullGap": 0.0,
+              "recall": 0.6666666666666666
+            }
+          }
+        ],
+        "sums": {
+          "beam": [
+            2.216666666666667,
+            8.0,
+            0.0
+          ],
+          "challenger": [
+            2.35,
+            8.0,
+            0.0
+          ],
+          "runs": 3.0,
+          "wide": [
+            2.4166666666666665,
+            8.0,
+            0.0
+          ]
+        }
+      },
+      {
+        "betterThanWideAtEqualCost": false,
+        "challenger": "coordinated",
+        "equalBudgetNotWorse": true,
+        "gainOverBeam": false,
+        "pass": false,
+        "perRunChecks": true,
+        "runs": [
+          {
+            "beam": {
+              "charged": 78,
+              "found": 3,
+              "fullGap": 0.0,
+              "recall": 0.875
+            },
+            "case": "colby-north-am",
+            "challenger": {
+              "charged": 98,
+              "found": 3,
+              "fullGap": 0.0,
+              "recall": 0.875
+            },
+            "fullGapOk": true,
+            "mode": "cold",
+            "objectivesOk": true,
+            "screenGapOk": true,
+            "wide": {
+              "charged": 94,
+              "found": 3,
+              "fullGap": 0.0,
+              "recall": 0.875
+            }
+          },
+          {
+            "beam": {
+              "charged": 83,
+              "found": 3,
+              "fullGap": 0.0,
+              "recall": 0.875
+            },
+            "case": "colby-north-am",
+            "challenger": {
+              "charged": 104,
+              "found": 3,
+              "fullGap": 0.0,
+              "recall": 0.875
+            },
+            "fullGapOk": true,
+            "mode": "known",
+            "objectivesOk": true,
+            "screenGapOk": true,
+            "wide": {
+              "charged": 99,
+              "found": 3,
+              "fullGap": 0.0,
+              "recall": 0.875
+            }
+          },
+          {
+            "beam": {
+              "charged": 79,
+              "found": 2,
+              "fullGap": 0.0,
+              "recall": 0.4666666666666667
+            },
+            "case": "second-cluster-pm",
+            "challenger": {
+              "charged": 99,
+              "found": 2,
+              "fullGap": 0.0,
+              "recall": 0.5333333333333333
+            },
+            "fullGapOk": true,
+            "mode": "cold",
+            "objectivesOk": true,
+            "screenGapOk": true,
+            "wide": {
+              "charged": 89,
+              "found": 2,
+              "fullGap": 0.0,
+              "recall": 0.6666666666666666
+            }
+          }
+        ],
+        "sums": {
+          "beam": [
+            2.216666666666667,
+            8.0,
+            0.0
+          ],
+          "challenger": [
+            2.283333333333333,
+            8.0,
+            0.0
+          ],
+          "runs": 3.0,
+          "wide": [
+            2.4166666666666665,
+            8.0,
+            0.0
+          ]
+        }
+      },
+      {
+        "betterThanWideAtEqualCost": false,
+        "challenger": "all",
+        "equalBudgetNotWorse": true,
+        "gainOverBeam": false,
+        "pass": false,
+        "perRunChecks": true,
+        "runs": [
+          {
+            "beam": {
+              "charged": 78,
+              "found": 3,
+              "fullGap": 0.0,
+              "recall": 0.875
+            },
+            "case": "colby-north-am",
+            "challenger": {
+              "charged": 98,
+              "found": 3,
+              "fullGap": 0.0,
+              "recall": 0.875
+            },
+            "fullGapOk": true,
+            "mode": "cold",
+            "objectivesOk": true,
+            "screenGapOk": true,
+            "wide": {
+              "charged": 94,
+              "found": 3,
+              "fullGap": 0.0,
+              "recall": 0.875
+            }
+          },
+          {
+            "beam": {
+              "charged": 83,
+              "found": 3,
+              "fullGap": 0.0,
+              "recall": 0.875
+            },
+            "case": "colby-north-am",
+            "challenger": {
+              "charged": 104,
+              "found": 3,
+              "fullGap": 0.0,
+              "recall": 0.875
+            },
+            "fullGapOk": true,
+            "mode": "known",
+            "objectivesOk": true,
+            "screenGapOk": true,
+            "wide": {
+              "charged": 99,
+              "found": 3,
+              "fullGap": 0.0,
+              "recall": 0.875
+            }
+          },
+          {
+            "beam": {
+              "charged": 79,
+              "found": 2,
+              "fullGap": 0.0,
+              "recall": 0.4666666666666667
+            },
+            "case": "second-cluster-pm",
+            "challenger": {
+              "charged": 99,
+              "found": 2,
+              "fullGap": 0.0,
+              "recall": 0.6666666666666666
+            },
+            "fullGapOk": true,
+            "mode": "cold",
+            "objectivesOk": true,
+            "screenGapOk": true,
+            "wide": {
+              "charged": 89,
+              "found": 2,
+              "fullGap": 0.0,
+              "recall": 0.6666666666666666
+            }
+          }
+        ],
+        "sums": {
+          "beam": [
+            2.216666666666667,
+            8.0,
+            0.0
+          ],
+          "challenger": [
+            2.4166666666666665,
+            8.0,
+            0.0
+          ],
+          "runs": 3.0,
+          "wide": [
+            2.4166666666666665,
+            8.0,
+            0.0
+          ]
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,78 @@
+{
+ "job": "sb1",
+ "simulator": "f0df1aabc323bca5893215e1df1afbff",
+ "sourceRevision": "f6c573d3b2f0",
+ "note": "Results files exceed the 200 KB limit and are in the R2 bucket only. Keys are jobs/sb1/benchmark/<shard>/<name>; shards: pm=colby-north-pm, am=colby-north-am, second=second-cluster-pm. The bucket was not read in this session; hashes are of the copies provided to it.",
+ "results": [
+  {
+   "case": "colby-north-pm",
+   "key": "jobs/sb1/benchmark/pm/colby-north-pm.results.json",
+   "sha256": "7b020f08547424b6568c1abb7446dd7035c684088ba9c307565db370b7a6d070",
+   "bytes": 1468095
+  },
+  {
+   "case": "colby-north-am",
+   "key": "jobs/sb1/benchmark/am/colby-north-am.results.json",
+   "sha256": "93ade43763a03faa8979a03d309fe48df84e02ec65bcabfd84beebf1105a2ff9",
+   "bytes": 1418602
+  },
+  {
+   "case": "second-cluster-pm",
+   "key": "jobs/sb1/benchmark/second/second-cluster-pm.results.json",
+   "sha256": "0ffa71cc6b3bb1ae423ffc942d1d9e0f288f9a8db3138ba6109a3b3d3e0f683f",
+   "bytes": 1547427
+  }
+ ],
+ "committed": [
+  {
+   "file": "colby-north-am.analysis.json",
+   "sha256": "51e789eb3fc705ad3b6715a34b562b8209df727ea25abd1c282f211f38114010",
+   "bytes": 163011
+  },
+  {
+   "file": "colby-north-am.confirm.json",
+   "sha256": "536574e53049d377c30b72212d54212a4fb612d0c1b3528d3cde00892c7f69ef",
+   "bytes": 4630
+  },
+  {
+   "file": "colby-north-am.confirm.shortlist.json",
+   "sha256": "aa11bae0851c0b5a19df6a0077291cf47a14c3f789f0f805dee434049a3f950e",
+   "bytes": 1481
+  },
+  {
+   "file": "colby-north-pm.analysis.json",
+   "sha256": "fc3953a5faf1595ec7454cc8df75c2c6bff3b96c2b6735546757217c749221f9",
+   "bytes": 166492
+  },
+  {
+   "file": "colby-north-pm.confirm.json",
+   "sha256": "de5929bc82ddbf6fbcf43ff3ec8e1e70b1c4005ce0eeb01e68010ede064d3995",
+   "bytes": 5718
+  },
+  {
+   "file": "colby-north-pm.confirm.shortlist.json",
+   "sha256": "fa3debae6bcce6d90692b6afd0861bb4fe3f2683505853ff32069e4352a77461",
+   "bytes": 1622
+  },
+  {
+   "file": "decision.json",
+   "sha256": "aff167b331f881307681907d283e61cb7ae2e0000fb842ca3b7786880f33d93a",
+   "bytes": 14530
+  },
+  {
+   "file": "second-cluster-pm.analysis.json",
+   "sha256": "8778f8dca57d8be92414e34a4f7811a94c6773e347ce8b7c2bb22b7bf2994ebc",
+   "bytes": 85431
+  },
+  {
+   "file": "second-cluster-pm.confirm.json",
+   "sha256": "bc2e8a52557a888710c6057d03b5b0e630cb7c3cd1ebc274d70f1ec7c8752809",
+   "bytes": 4256
+  },
+  {
+   "file": "second-cluster-pm.confirm.shortlist.json",
+   "sha256": "1dabb45a1e1d315bdf4992eaf3e9c2b66841f7d719f187c4dcc1dcf6273a286a",
+   "bytes": 1467
+  }
+ ]
+}

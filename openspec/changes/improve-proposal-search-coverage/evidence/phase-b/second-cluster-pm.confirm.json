@@ -1,0 +1,168 @@
+{
+  "case": "second-cluster-pm",
+  "identity": {
+    "calibration": "uncalibrated",
+    "case": "second-cluster-pm",
+    "caseSha256": "b198d6812b8344801c90d7f0edd59422a52f39f1f0a139f6c8508a09ea86ae08",
+    "harmBlocks": 68,
+    "inputs": {
+      "areas": "386731eb104a1ac7a35475d2e5952bcd2b98f6a29991a87b3f68334308477abd",
+      "demand": "bef51b684a8c079ce5e133e089df0659b422ca2ec77bd6b8f5784e38bf1bd93c",
+      "network": "6a8285d5076f9ddc9042b3a4554998e61b5427fdb8fbbbbaaa8572cd7b18f4b0"
+    },
+    "inputsLabel": "frozen inputs of the case",
+    "inputsMatchCase": true,
+    "links": 4411,
+    "method": "search-benchmark-results-1",
+    "nodes": 1762,
+    "simulator": "f0df1aabc323bca5893215e1df1afbff",
+    "sourceRevision": "f6c573d3b2f0"
+  },
+  "method": "paired-t-2",
+  "minutes": 60.0,
+  "packages": [
+    {
+      "adjustedHarm": 0.0,
+      "insideTripTimeChangeS": {
+        "interval": [
+          0.0,
+          0.0
+        ],
+        "mean": 0.0,
+        "n": 10,
+        "sd": 0.0,
+        "status": "unresolved"
+      },
+      "labels": [],
+      "rawMaxBlock": "Hermann Street between Ayala Avenue and 58th Street / Martin Street",
+      "rawMaxIncrease": 0.0,
+      "reductionPct": 0.0,
+      "reject": null,
+      "score": 0.0,
+      "selectedBy": null,
+      "set": [],
+      "throughChange": {
+        "interval": [
+          0.0,
+          0.0
+        ],
+        "mean": 0.0,
+        "n": 10,
+        "sd": 0.0,
+        "status": "unresolved"
+      },
+      "throughVsFirstShortlisted": null
+    },
+    {
+      "adjustedHarm": 91.10719023365291,
+      "insideTripTimeChangeS": {
+        "interval": [
+          6.59,
+          13.75
+        ],
+        "mean": 10.17,
+        "n": 10,
+        "sd": 5.01,
+        "status": "increase"
+      },
+      "labels": [
+        "Modal filter at Ayala Avenue & Forest Street",
+        "Modal filter at Ayala Avenue & Martin Street"
+      ],
+      "rawMaxBlock": "Colby Street between Claremont Avenue / Forest Street and McAuley Street",
+      "rawMaxIncrease": 128.5,
+      "reductionPct": 23.698940097653924,
+      "reject": null,
+      "score": 14.588221074288633,
+      "selectedBy": [
+        "20m-x1 beam",
+        "20m-x1 beam+delete@extra",
+        "20m-x1 beam+swap@extra",
+        "20m-x1 beam+coordinated@extra",
+        "20m-x1 beam+all@extra",
+        "20m-x1 wide@equal",
+        "20m-x3 beam",
+        "30m-x1 beam",
+        "full-hour best of all packages"
+      ],
+      "set": [
+        0,
+        11
+      ],
+      "throughChange": {
+        "interval": [
+          -248.29,
+          -149.71
+        ],
+        "mean": -199.0,
+        "n": 10,
+        "sd": 68.91,
+        "status": "decrease"
+      },
+      "throughVsFirstShortlisted": null
+    },
+    {
+      "adjustedHarm": 81.10719023365291,
+      "insideTripTimeChangeS": {
+        "interval": [
+          5.23,
+          13.89
+        ],
+        "mean": 9.56,
+        "n": 10,
+        "sd": 6.05,
+        "status": "increase"
+      },
+      "labels": [
+        "Modal filter on Forest Street at Ayala Avenue",
+        "Modal filter at Ayala Avenue & Martin Street"
+      ],
+      "rawMaxBlock": "Colby Street between Claremont Avenue / Forest Street and McAuley Street",
+      "rawMaxIncrease": 118.5,
+      "reductionPct": 24.080028581636302,
+      "reject": null,
+      "score": 15.96930955827101,
+      "selectedBy": [
+        "60m-x1 beam"
+      ],
+      "set": [
+        1,
+        11
+      ],
+      "throughChange": {
+        "interval": [
+          -245.18,
+          -159.22
+        ],
+        "mean": -202.2,
+        "n": 10,
+        "sd": 60.09,
+        "status": "decrease"
+      },
+      "throughVsFirstShortlisted": {
+        "interval": [
+          -25.62,
+          19.22
+        ],
+        "mean": -3.2,
+        "n": 10,
+        "sd": 31.34,
+        "status": "unresolved"
+      }
+    }
+  ],
+  "schema": "search-benchmark-confirmation-1",
+  "scope": "Frozen shortlist only, on seeds no search or selection used. Paired Student t intervals over the seeds of one fixed model; pointwise; no interval for the nonlinear score or the largest block increase; trip times cover completed trips only.",
+  "seeds": [
+    301,
+    302,
+    303,
+    304,
+    305,
+    306,
+    307,
+    308,
+    309,
+    310
+  ]
+}

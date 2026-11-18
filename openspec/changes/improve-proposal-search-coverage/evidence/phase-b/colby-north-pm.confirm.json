@@ -1,0 +1,222 @@
+{
+  "case": "colby-north-pm",
+  "identity": {
+    "calibration": "uncalibrated",
+    "case": "colby-north-pm",
+    "caseSha256": "816329f0f95429267769292d45706631b6cd438e7537fe78337626ee72cbb940",
+    "harmBlocks": 68,
+    "inputs": {
+      "areas": "386731eb104a1ac7a35475d2e5952bcd2b98f6a29991a87b3f68334308477abd",
+      "demand": "bef51b684a8c079ce5e133e089df0659b422ca2ec77bd6b8f5784e38bf1bd93c",
+      "network": "6a8285d5076f9ddc9042b3a4554998e61b5427fdb8fbbbbaaa8572cd7b18f4b0"
+    },
+    "inputsLabel": "frozen inputs of the case",
+    "inputsMatchCase": true,
+    "links": 4411,
+    "method": "search-benchmark-results-1",
+    "nodes": 1762,
+    "simulator": "f0df1aabc323bca5893215e1df1afbff",
+    "sourceRevision": "f6c573d3b2f0"
+  },
+  "method": "paired-t-2",
+  "minutes": 60.0,
+  "packages": [
+    {
+      "adjustedHarm": 0.0,
+      "insideTripTimeChangeS": {
+        "interval": [
+          0.0,
+          0.0
+        ],
+        "mean": 0.0,
+        "n": 10,
+        "sd": 0.0,
+        "status": "unresolved"
+      },
+      "labels": [],
+      "rawMaxBlock": "Hermann Street between Ayala Avenue and 58th Street / Martin Street",
+      "rawMaxIncrease": 0.0,
+      "reductionPct": 0.0,
+      "reject": null,
+      "score": 0.0,
+      "selectedBy": null,
+      "set": [],
+      "throughChange": {
+        "interval": [
+          0.0,
+          0.0
+        ],
+        "mean": 0.0,
+        "n": 10,
+        "sd": 0.0,
+        "status": "unresolved"
+      },
+      "throughVsFirstShortlisted": null
+    },
+    {
+      "adjustedHarm": 45.77105560784385,
+      "insideTripTimeChangeS": {
+        "interval": [
+          -1.63,
+          3.75
+        ],
+        "mean": 1.06,
+        "n": 10,
+        "sd": 3.76,
+        "status": "unresolved"
+      },
+      "labels": [
+        "Modal filter at 63rd Street & Colby Street",
+        "Diagonal diverter at 63rd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 63rd Street (west), and Hillegass Avenue (south) with 63rd Street (east)",
+        "Slow Street on Colby Street (15 mph, Alcatraz Avenue to Claremont Avenue / Forest Street)"
+      ],
+      "rawMaxBlock": "Martin Street between Claremont Avenue and Ayala Avenue",
+      "rawMaxIncrease": 88.30000305175781,
+      "reductionPct": 32.999880909848756,
+      "reject": null,
+      "score": 28.42277534906437,
+      "selectedBy": [
+        "20m-x1 beam",
+        "20m-x1 beam+delete@extra",
+        "20m-x1 beam+swap@extra",
+        "20m-x1 beam+coordinated@extra",
+        "20m-x1 beam+all@extra",
+        "20m-x1 wide@equal"
+      ],
+      "set": [
+        1,
+        7,
+        9
+      ],
+      "throughChange": {
+        "interval": [
+          -340.17,
+          -214.03
+        ],
+        "mean": -277.1,
+        "n": 10,
+        "sd": 88.17,
+        "status": "decrease"
+      },
+      "throughVsFirstShortlisted": null
+    },
+    {
+      "adjustedHarm": 36.9,
+      "insideTripTimeChangeS": {
+        "interval": [
+          -2.31,
+          5.74
+        ],
+        "mean": 1.71,
+        "n": 10,
+        "sd": 5.63,
+        "status": "unresolved"
+      },
+      "labels": [
+        "Modal filter at 63rd Street & Colby Street",
+        "Modal filter at 63rd Street & Hillegass Avenue",
+        "Slow Street on Colby Street (15 mph, Alcatraz Avenue to Claremont Avenue / Forest Street)"
+      ],
+      "rawMaxBlock": "Martin Street between Claremont Avenue and Ayala Avenue",
+      "rawMaxIncrease": 69.19999694824219,
+      "reductionPct": 29.319995236393954,
+      "reject": null,
+      "score": 25.629995236393952,
+      "selectedBy": [
+        "20m-x3 beam"
+      ],
+      "set": [
+        1,
+        5,
+        9
+      ],
+      "throughChange": {
+        "interval": [
+          -317.98,
+          -174.42
+        ],
+        "mean": -246.2,
+        "n": 10,
+        "sd": 100.34,
+        "status": "decrease"
+      },
+      "throughVsFirstShortlisted": {
+        "interval": [
+          -5.33,
+          67.13
+        ],
+        "mean": 30.9,
+        "n": 10,
+        "sd": 50.65,
+        "status": "unresolved"
+      }
+    },
+    {
+      "adjustedHarm": 24.357224541955844,
+      "insideTripTimeChangeS": {
+        "interval": [
+          -2.17,
+          2.38
+        ],
+        "mean": 0.11,
+        "n": 10,
+        "sd": 3.19,
+        "status": "unresolved"
+      },
+      "labels": [
+        "Modal filter at 63rd Street & Colby Street",
+        "Modal filter at 63rd Street & Dana Street",
+        "Modal filter at 63rd Street & Hillegass Avenue"
+      ],
+      "rawMaxBlock": "Martin Street between Claremont Avenue and Ayala Avenue",
+      "rawMaxIncrease": 45.400001525878906,
+      "reductionPct": 33.059425985471,
+      "reject": null,
+      "score": 30.623703531275417,
+      "selectedBy": [
+        "30m-x1 beam",
+        "60m-x1 beam",
+        "full-hour best of all packages"
+      ],
+      "set": [
+        1,
+        4,
+        5
+      ],
+      "throughChange": {
+        "interval": [
+          -324.64,
+          -230.56
+        ],
+        "mean": -277.6,
+        "n": 10,
+        "sd": 65.76,
+        "status": "decrease"
+      },
+      "throughVsFirstShortlisted": {
+        "interval": [
+          -48.38,
+          47.38
+        ],
+        "mean": -0.5,
+        "n": 10,
+        "sd": 66.93,
+        "status": "unresolved"
+      }
+    }
+  ],
+  "schema": "search-benchmark-confirmation-1",
+  "scope": "Frozen shortlist only, on seeds no search or selection used. Paired Student t intervals over the seeds of one fixed model; pointwise; no interval for the nonlinear score or the largest block increase; trip times cover completed trips only.",
+  "seeds": [
+    301,
+    302,
+    303,
+    304,
+    305,
+    306,
+    307,
+    308,
+    309,
+    310
+  ]
+}
