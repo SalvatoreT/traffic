@@ -181,29 +181,37 @@ describe('rockridge network', () => {
     const t = net.links.filter((l) => l.osmWayId === 416105064);
     expect(t.map((l) => l.lanes).sort()).toEqual([2, 2]);
   });
-  it('applies the stop corrections of the area config and nothing else changes', () => {
-    const stats = buildNetwork(cfg, osm).stats;
-    expect(stats.stopExemptionsUnmatched).toEqual([]);
+  it('frees one stop approach and makes another junction all-way on the real extract, changing nothing else', () => {
+    // The two junctions of calibration round 43. The area config does not carry these corrections; the test supplies them.
+    const tried = buildNetwork(
+      {
+        ...cfg,
+        osmTagOverrides: { ...cfg.osmTagOverrides, 'node/53085953': { tags: { stop: 'all' }, source: 'test' } },
+        stopExemptions: [{ node: 53088342, way: 6350365, direction: 'backward', source: 'test' }],
+      },
+      osm,
+    );
+    expect(tried.stats.stopExemptionsUnmatched).toEqual([]);
     const at = (n: Network, osmId: number) => {
       const j = n.nodes.find((x) => x.osmId === osmId)!;
       return { control: j.control, ins: n.links.filter((l) => l.to === j.id).map((l) => ({ name: l.name, bearing: Math.round(l.toBearing! / 90) * 90, stop: l.stopAtEnd })) };
     };
-    const hillegass = at(net, 53085953);
+    expect(at(net, 53085953).control).toBe('two_way_stop');
+    expect(at(net, 53088342).control).toBe('all_way_stop');
+    const hillegass = at(tried.network, 53085953);
     expect(hillegass.control).toBe('all_way_stop');
     expect(hillegass.ins).toHaveLength(3);
-    const canning = at(net, 53088342);
+    const canning = at(tried.network, 53088342);
     expect(canning.control).toBe('two_way_stop');
     expect(canning.ins.filter((l) => !l.stop)).toEqual([{ name: '62nd Street', bearing: 90, stop: false }]);
     expect(canning.ins.filter((l) => l.stop)).toHaveLength(3);
-    const { 'node/53085953': _, ...others } = cfg.osmTagOverrides!;
-    const bare = buildNetwork({ ...cfg, osmTagOverrides: others, stopExemptions: [] }, osm).network;
     const changed = (a: Network, b: Network) => ({
       nodes: a.nodes.filter((n, i) => JSON.stringify(n) !== JSON.stringify(b.nodes[i])).map((n) => n.osmId),
       links: a.links.filter((l, i) => JSON.stringify(l) !== JSON.stringify(b.links[i])).map((l) => a.nodes[l.to].osmId),
     });
-    expect(bare.nodes.length).toBe(net.nodes.length);
-    expect(bare.links.length).toBe(net.links.length);
-    expect(changed(net, bare)).toEqual({ nodes: [53088342, 53085953], links: [53088342, 53085953, 53085953] });
+    expect(tried.network.nodes.length).toBe(net.nodes.length);
+    expect(tried.network.links.length).toBe(net.links.length);
+    expect(changed(tried.network, net)).toEqual({ nodes: [53088342, 53085953], links: [53088342, 53085953, 53085953] });
   });
   it('reads the lane count of a one-way way tagged only with turn lanes, keeping every link id', () => {
     const st = net.links.find((l) => l.osmWayId === 24606482)!;

@@ -33,13 +33,15 @@ D12. The iteration of D11 was not run, because the procedure it names is not par
 - Simulated membership for the sixteen blocks on the new network would be a change the published model does not have, so a better score could come from the membership and not from the refit. Rounds 39 to 42 also give no single procedure to copy: round 39 pooled ten seeds over two iterations, round 40 forty and sixty runs, round 42 forty runs over two demands, each under guard rails frozen for that round, and none has a convergence rule.
 The project lead decides whether to try it and, if so, with which seeds, pooling, number of iterations and comparison (design "What is not known").
 
+D13. Project lead, 2026-11-18, after D12: revert and record the discrepancy. The published model stays as it is. The two data entries (the `stop=all` override on node 53085953 and the exemption on node 53088342) are removed from both area configs; the `stopExemptions` mechanism, its type and its tests stay in the code, unused by any area. The assessment, the reports, the fit reports and the validation record are restored to the published ones, and `npm run data` reproduces the published network, demand and cross-validation demand (hashes in the record). No membership iteration is run (D12). The round stays in the record, marked rejected under the keep rule of D11. The Rockridge caveat gets one sentence saying what the imagery shows at the two junctions, that coding it made the PM fit worse (78 to 72 of 92 fitted locations) and that it is left out pending a field check; the calibration note is unchanged. D8 and D9 describe the networks of the trial, which are no longer the ones built.
+
 ## What is not known
 
 - Whether the barricades of D4 are still in place. If they are, Howell St, Forest St and Colby St carry less through traffic than the baseline allows, which bears on the held-out misses near Howell St. Open question for the project lead; a field check or dated imagery would settle it.
 - The date of the imagery behind D1 and D2. D2 rests on not seeing a sign, which is weaker evidence than seeing one.
 - The three open items of D3.
-- Whether the two corrections stay in the baseline, given D10 and D12. If simulated membership is to be brought back for the sixteen round-42 blocks, the project lead sets the procedure first: PM and AM seeds, whether runs of more than one demand are pooled, how many iterations, and whether the published network gets the same treatment so the two can be compared like for like.
+- Why the model fits the counts worse with the stop control the imagery shows. The model now differs from the street at these two junctions as far as the imagery can tell; a field check of both would say whether the imagery or the fit is off.
 
 ## Risks
 
-- The network hash changes, so stored proposals, precomputed results, text pages and previews go out of date until the proposal search and the publishing steps are run on the new inputs. That work is the project lead's and is outside this change.
+- None for the published data after D13: the network and demand are the published ones, so stored proposals and results stay valid.
