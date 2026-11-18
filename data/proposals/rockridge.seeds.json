@@ -15,17 +15,6 @@
       "score": null
     },
     {
-      "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2,175.355~mn,9q9p3fr7b5~mn,9q9p641p03,80.260~ow,9q9p3fp3vc,355",
-      "source": "search",
-      "note": "published by an earlier search (group charter, option p3, 2026-11-15 through-car change -49.6%)",
-      "added": "2026-11-15",
-      "lastPublished": "2026-11-15",
-      "group": "charter",
-      "size": 4,
-      "changePct": -49.6,
-      "score": null
-    },
-    {
       "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2,175.355~mn,9q9p3fr7b5~mn,9q9p641p03,80.260~ow,9q9p3fp3vc,355~mn,9q9p3cq6m9,120.300",
       "source": "search",
       "note": "published by an earlier search (group charter, option p4, 2026-11-15 through-car change -61.8%)",
@@ -45,28 +34,6 @@
       "group": "charter",
       "size": 6,
       "changePct": -75.7,
-      "score": null
-    },
-    {
-      "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2,175.355~mn,9q9p3fr7b5~mn,9q9p3cq6m9",
-      "source": "search",
-      "note": "published by an earlier search (group unconstrained, option p3, 2026-11-14 through-car change -62.5%)",
-      "added": "2026-11-14",
-      "lastPublished": "2026-11-15",
-      "group": "unconstrained",
-      "size": 3,
-      "changePct": -62.9,
-      "score": 56.4
-    },
-    {
-      "link": "#v1;a=rockridge;p=pm_peak;s=dd,9q9p3cz9dy,42~mn,9q9p3fprdr~mn,9q9p642ut2",
-      "source": "search",
-      "note": "published by an earlier search (group charter, option p3, 2026-11-15 through-car change -45.4%)",
-      "added": "2026-11-15",
-      "lastPublished": "2026-11-15",
-      "group": "charter",
-      "size": 3,
-      "changePct": -45.4,
       "score": null
     },
     {
@@ -90,17 +57,6 @@
       "size": 6,
       "changePct": -90.6,
       "score": 86.7
-    },
-    {
-      "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2,175.355~mn,9q9p3fr7b5",
-      "source": "search",
-      "note": "",
-      "added": "2026-11-15",
-      "lastPublished": "2026-11-15",
-      "group": "unconstrained",
-      "size": 2,
-      "changePct": -46.0,
-      "score": 42.8
     },
     {
       "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2,175.355~mn,9q9p3fr7b5~mn,9q9p3cq6m9~mn,9q9p3cx02b,125",
@@ -206,11 +162,11 @@
       "source": "search",
       "note": "published by an earlier search (group unconstrained, option p6, 2026-11-17 through-car change -27.9%)",
       "added": "2026-11-17",
-      "lastPublished": "2026-11-17",
+      "lastPublished": "2026-11-18",
       "group": "unconstrained",
       "size": 2,
-      "changePct": -27.9,
-      "score": null
+      "changePct": -29.7,
+      "score": 28.1
     },
     {
       "link": "#v1;a=rockridge;p=pm_peak;s=dd,9q9p3fpkk7,41~mn,9q9p642ut2,175.355~mn,9q9p3cq6m9,120.300~mn,9q9p3cx02b",
@@ -222,6 +178,50 @@
       "size": 4,
       "changePct": -46.2,
       "score": null
+    },
+    {
+      "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p3fprdr~mn,9q9p3cxtt7~mn,9q9p642ut2~dd,9q9p641p03,127~mn,9q9p3cq6m9~mn,9q9p3cx02b,125",
+      "source": "search",
+      "note": "",
+      "added": "2026-11-18",
+      "lastPublished": "2026-11-18",
+      "group": "unconstrained",
+      "size": 6,
+      "changePct": -78.2,
+      "score": 54.8
+    },
+    {
+      "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p3fprdr~mn,9q9p642ut2~dd,9q9p641p03,127~mn,9q9p3cq6m9~ow,9q9p3crqtn,305",
+      "source": "search",
+      "note": "",
+      "added": "2026-11-18",
+      "lastPublished": "2026-11-18",
+      "group": "unconstrained",
+      "size": 5,
+      "changePct": -62.0,
+      "score": 54.2
+    },
+    {
+      "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p3fprdr~mn,9q9p642ut2,80.260~mn,9q9p641p03~dd,9q9p3ctkug,42~ct,9q9p3cy1ne,a~ct,9q9p3cmuv6,a",
+      "source": "search",
+      "note": "",
+      "added": "2026-11-18",
+      "lastPublished": "2026-11-18",
+      "group": "unconstrained",
+      "size": 6,
+      "changePct": -48.7,
+      "score": 44.4
+    },
+    {
+      "link": "#v1;a=rockridge;p=pm_peak;s=ow,9q9p642z5y,355~ow,9q9p641h45,175~ow,9q9p3crqtn,305~ss,9q9p3cx9rf~tb,9q9p3cpnsz,15,300~ow,9q9p643b1e,260",
+      "source": "search",
+      "note": "",
+      "added": "2026-11-18",
+      "lastPublished": "2026-11-18",
+      "group": "unconstrained",
+      "size": 6,
+      "changePct": -38.1,
+      "score": 36.1
     }
   ]
 }
