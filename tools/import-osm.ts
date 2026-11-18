@@ -73,8 +73,9 @@ function main() {
     writeFileAtomic(resolve(outDir, `${cfg.id}.network.json`), JSON.stringify(network));
     writeFileAtomic(resolve(outDir, `${cfg.id}.basemap.json`), JSON.stringify(buildBasemap(cfg, osm)));
     console.log(summarize(network));
-    const { joinedList, gatesNearSignal, freewayGateMerges, freewayRampViolations, signalObservationsUnmatched, stopExemptionsUnmatched, ...rest } = stats;
+    const { joinedList, gatesNearSignal, freewayGateMerges, freewayRampViolations, signalObservationsUnmatched, speedLimitOverridesUnmatched, stopExemptionsUnmatched, ...rest } = stats;
     for (const m of signalObservationsUnmatched) console.warn(`WARNING: signal observation not applied: ${m}`);
+    for (const m of speedLimitOverridesUnmatched) console.warn(`WARNING: speed limit override not applied: ${m}`);
     for (const m of stopExemptionsUnmatched) console.warn(`WARNING: stop exemption not applied: ${m}`);
     console.log('stats:', JSON.stringify(rest));
     if (gatesNearSignal.length) {

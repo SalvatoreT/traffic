@@ -580,8 +580,8 @@
   },
   "calibration": {
     "status": "uncalibrated",
-    "note": "Preview of a compact model for comparison, not calibrated: PM through cars southbound on Hillegass Ave and Colby St are far above the counted ranges.",
-    "caveat": "This is a preview built to compare with the published Rockridge model (data/calibration/rockridge.extent-comparison.md). Its network ends a few hundred meters to about a kilometer beyond the Trapezoid: at Ashby Ave in the north, halfway to Shattuck Ave in the west, just past 51st St and the 52nd St freeway ramps in the southwest, and past Broadway and its SR-24 ramps in the east. Traffic enters and leaves at fixed volumes where the network ends, so traffic that a change pushes off its route cannot move to Shattuck Ave, Martin Luther King Jr Way, Broadway Terrace, SR-13 or the Berkeley streets north of Ashby Ave. It stays on Telegraph Ave, Alcatraz Ave, College Ave, Claremont Ave, Ashby Ave and Broadway, so the change on those streets is an upper bound. Most streets cut at the edge carry an assumed volume for their road class. PM peak, ten seeds: through cars on Hillegass Ave southbound 221 an hour (counted range 79 to 120) and Colby St southbound 235 (39 to 117); northbound Hillegass Ave 75 (48 to 95) and Colby St 138 (102 to 145) are inside their ranges. Three of the four headline freeway shares are within 10 points. The demand and every setting are those of the published model; nothing was tuned for this one.",
+    "note": "Before the Claremont speed-limit correction, this uncalibrated preview overestimated evening southbound through traffic on Hillegass and Colby.",
+    "caveat": "This is a preview built to compare with the published Rockridge model (data/calibration/rockridge.extent-comparison.md). Its network ends a few hundred meters to about a kilometer beyond the Trapezoid: at Ashby Ave in the north, halfway to Shattuck Ave in the west, just past 51st St and the 52nd St freeway ramps in the southwest, and past Broadway and its SR-24 ramps in the east. Traffic enters and leaves at fixed volumes where the network ends, so traffic that a change pushes off its route cannot move to Shattuck Ave, Martin Luther King Jr Way, Broadway Terrace, SR-13 or the Berkeley streets north of Ashby Ave. It stays on Telegraph Ave, Alcatraz Ave, College Ave, Claremont Ave, Ashby Ave and Broadway, so the change on those streets is an upper bound. Most streets cut at the edge carry an assumed volume for their road class. The ten-seed PM assessment used 25 mph on Claremont Ave between Hillegass and College. The model estimated 221 southbound through cars an hour on Hillegass Ave (counted range 79 to 120) and 235 on Colby St (39 to 117). Both northbound estimates fell within the counted ranges, with 75 on Hillegass Ave (48 to 95) and 138 on Colby St (102 to 145). Three of the four headline freeway shares were within 10 points. The demand and every setting are those of the published model; nothing was tuned for this one.",
     "defaultPeriod": "pm_peak",
     "experimentalPeriods": []
   },
@@ -873,7 +873,23 @@
       "source": "Field observation by a resident, relayed by the project lead (2026-11-16): the southbound Claremont Ave approach at Ashby Ave also has a green left arrow (DATA for the phasing). With the northbound arrow (2026-11-15) and the 2010 PM Synchro worksheet of [SafewayCollege-DEIR2011] (both Claremont Ave approaches as split phases, Ashby Ave eastbound and westbound in one phase with permitted lefts), each Claremont Ave approach runs alone on its green. ASSUMPTION pending a timing sheet: every period, and the cycle and greens follow the flows (Webster) on that phase structure rather than the 2010 greens"
     }
   ],
+  "speedLimitOverrides": [
+    {
+      "way": 281365722,
+      "fromNode": 1042286143,
+      "toNode": 53070334,
+      "mph": 30,
+      "source": "[OakDOTClaremontSpeed2026] Oakland lists a posted limit of 30 mph on Claremont Avenue from Hillegass Avenue to College Avenue."
+    }
+  ],
   "osmTagOverrides": {
+    "node/53128522": {
+      "tags": {
+        "highway": "stop",
+        "stop": "all"
+      },
+      "source": "[OakDOT53rdGaskill2022] Oakland installed all-way stop control at 53rd Street and Gaskill Street in November 2022."
+    },
     "way/416105064": {
       "tags": {
         "lanes": "4",

@@ -174,6 +174,8 @@ export interface BuildStats {
   gatesNearSignal: { gate: number; distM: number; street: string }[];
   /** Observed signal timings (area config `signalObservations`) that matched no signalized junction or approach. */
   signalObservationsUnmatched: string[];
+  /** Posted speed overrides that could not be applied to an unambiguous, nonoverlapping stretch of a way. */
+  speedLimitOverridesUnmatched: string[];
   /** Stop exemptions (area config `stopExemptions`) that matched no stopped approach or named a junction tagged `stop=all`. */
   stopExemptionsUnmatched: string[];
   /** Freeway-edge stubs merged into one gate: direction, the stub gates (OSM node ids), the gate that remains and the largest distance from the centroid. */
@@ -190,6 +192,26 @@ function parseSpeed(v: string | undefined): number | null {
   if (!m) return null;
   const n = parseFloat(m[1]);
   return m[2] === 'mph' ? n * PARAMS.mph : n * PARAMS.kph;
+}
+
+// Follow the source way in order. A gap from clipping or pruning, or a link merged with another way, cannot stand in for a surveyed block.
+function speedLimitSection(way: OsmWay, links: Link[], from: number, to: number, joinedNode: (id: number) => number): Link[] {
+  const onWay = links.filter((l) => l.ways.includes(way.id));
+  const ends = new Set(onWay.flatMap((l) => [l.from, l.to]));
+  const modeledNodes = way.nodes.map(joinedNode).filter((n) => ends.has(n));
+  const order = modeledNodes.filter((n, i) => i === 0 || n !== modeledNodes[i - 1]);
+  const a = order.indexOf(from);
+  const b = order.indexOf(to);
+  if (a < 0 || b < 0 || a === b || new Set(order).size !== order.length) return [];
+
+  const section: Link[] = [];
+  for (let i = Math.min(a, b); i < Math.max(a, b); i++) {
+    const start = order[i], end = order[i + 1];
+    const block = onWay.filter((l) => (l.from === start && l.to === end) || (l.from === end && l.to === start));
+    if (!block.length || block.some((l) => l.ways.length !== 1) || new Set(block.map((l) => l.from)).size !== block.length) return [];
+    section.push(...block);
+  }
+  return section;
 }
 
 const int = (v: string | undefined) => {
@@ -334,6 +356,7 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
     restrictionsUnresolved: 0,
     gatesNearSignal: [],
     signalObservationsUnmatched: [],
+    speedLimitOverridesUnmatched: [],
     stopExemptionsUnmatched: [],
     freewayGateMerges: [],
     freewayStubLinksJoined: 0,
@@ -1179,6 +1202,26 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
   const finalLinks = live.filter((l) => l.alive && keep[idx.get(l.from)!] && keep[idx.get(l.to)!]);
   stats.prunedLinks = live.filter((l) => l.alive).length - finalLinks.length;
 
+  // Match the finished topology before changing speeds, so a correction never renumbers links or silently widens to a whole way.
+  const joinedNode = (id: number) => {
+    const n = alias.get(id) ?? id;
+    return joinRemap.get(n) ?? n;
+  };
+  const speedSections = (cfg.speedLimitOverrides ?? []).map((override) => {
+    const matches = ways.filter((w) => w.id === override.way);
+    const section = matches.length === 1 && Number.isFinite(override.mph) && override.mph > 0
+      ? speedLimitSection(matches[0], finalLinks, override.fromNode, override.toNode, joinedNode) : [];
+    return { override, section };
+  });
+  const speedClaims = new Map<Link, number>();
+  for (const { section } of speedSections) for (const link of section) speedClaims.set(link, (speedClaims.get(link) ?? 0) + 1);
+  for (const { override, section } of speedSections) {
+    const label = `way/${override.way}, node/${override.fromNode} to node/${override.toNode}`;
+    if (!section.length) stats.speedLimitOverridesUnmatched.push(`${label}: invalid speed or no unambiguous chain of whole links`);
+    else if (section.some((l) => speedClaims.get(l)! > 1)) stats.speedLimitOverridesUnmatched.push(`${label}: overlaps another speed limit override`);
+    else for (const l of section) l.speed = override.mph * PARAMS.mph;
+  }
+
   const used = new Set<number>();
   for (const l of finalLinks) (used.add(l.from), used.add(l.to));
   const nodeIds = ids.filter((id) => used.has(id));
@@ -1325,7 +1368,7 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
       stats.restrictionsSkipped++;
       continue;
     }
-    const viaG = joinRemap.get(alias.get(via[0].ref) ?? via[0].ref) ?? alias.get(via[0].ref) ?? via[0].ref;
+    const viaG = joinedNode(via[0].ref);
     const ins = finalLinks.filter((l) => l.to === viaG && l.ways.includes(from.ref));
     const outs = finalLinks.filter((l) => l.from === viaG && l.ways.includes(to.ref));
     if (!ins.length || !outs.length) {

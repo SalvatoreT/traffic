@@ -36,6 +36,24 @@ describe('gate placement', () => {
 });
 
 describe('rockridge network', () => {
+  it('stops all three approaches at 53rd Street and Gaskill Street', () => {
+    const node = net.nodes.find((n) => n.osmId === 53128522)!;
+    expect(node.control).toBe('all_way_stop');
+    const incoming = net.links.filter((l) => l.to === node.id);
+    expect(incoming.map((l) => l.name).sort()).toEqual(['53rd Street', '53rd Street', 'Gaskill Street']);
+    expect(incoming.every((l) => l.stopAtEnd)).toBe(true);
+  });
+  it('sets the surveyed Claremont limit from Hillegass to College without extending it past Hillegass', () => {
+    const way = net.links.filter((l) => l.osmWayId === 281365722);
+    const between = (a: number, b: number) => way.filter((l) => {
+      const from = net.nodes[l.from].osmId;
+      const to = net.nodes[l.to].osmId;
+      return (from === a && to === b) || (from === b && to === a);
+    }).map((l) => l.speedLimit);
+    expect(between(1042286143, 5486906935)).toEqual([13.41, 13.41]);
+    expect(between(5486906935, 53070334)).toEqual([13.41, 13.41]);
+    expect(between(53116076, 1042286143)).toEqual([11.18, 11.18]);
+  });
   it('has junction ends straightened already, so the app step changes nothing', () => {
     expect(straightenJunctionEnds(net).changed).toBe(0);
   });

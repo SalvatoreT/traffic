@@ -109,6 +109,8 @@ export interface AreaConfig {
    * empty string, removes) tags and states its source; one that is not observed is labeled ASSUMPTION in `source`.
    */
   osmTagOverrides?: Record<string, { tags: Record<string, string>; source: string }>;
+  /** Posted speed in both directions on one OSM way between two modeled junctions, identified by their OSM node ids. */
+  speedLimitOverrides?: { way: number; fromNode: number; toNode: number; mph: number; source: string }[];
   /**
    * Approaches that do not stop at a junction whose stop tags cover every approach (a stop tag on the junction node cannot leave one out).
    * Each entry names the junction node, the way the approach arrives on and the direction of travel along the way's node order, and states its

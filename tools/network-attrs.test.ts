@@ -108,6 +108,49 @@ describe('importer attributes (synthetic)', () => {
     expect(n.links.length).toBe(net.links.length);
     expect(n.links.every((l) => l.bikeRoute === undefined)).toBe(true);
   });
+
+  describe('posted limits on part of a way', () => {
+    const osm = { elements: [...elements, nd(9, 0, -20), way(13, 'South Street', [9, 3])] };
+    const baseline = buildNetwork(cfg, osm).network;
+    const limit = { way: 10, fromNode: 4, toNode: 2, mph: 30, source: 'test survey' };
+    const build = (overrides: NonNullable<AreaConfig['speedLimitOverrides']>) =>
+      buildNetwork({ ...cfg, speedLimitOverrides: overrides }, osm);
+
+    it('changes only the speed on both directions of the surveyed blocks, independent of endpoint order', () => {
+      const { network, stats } = build([limit]);
+      const ends = new Set([2, 3, 4]);
+      const surveyed = baseline.links.filter((l) => l.osmWayId === 10 && ends.has(baseline.nodes[l.from].osmId) && ends.has(baseline.nodes[l.to].osmId));
+      expect(surveyed).toHaveLength(4);
+      expect(stats.speedLimitOverridesUnmatched).toEqual([]);
+      expect(network).toEqual({
+        ...baseline,
+        links: baseline.links.map((l) => surveyed.includes(l) ? { ...l, speedLimit: 13.41 } : l),
+      });
+      expect(build([{ ...limit, fromNode: 2, toNode: 4 }]).network).toEqual(network);
+    });
+
+    it('skips an unresolved, collapsed or identical endpoint, an unknown way and an invalid speed', () => {
+      for (const invalid of [{ fromNode: 6 }, { fromNode: 8 }, { fromNode: 2 }, { way: 404 }, { mph: 0 }]) {
+        const { stats, network } = build([{ ...limit, ...invalid }]);
+        expect(stats.speedLimitOverridesUnmatched).toHaveLength(1);
+        expect(network).toEqual(baseline);
+      }
+    });
+
+    it('rejects both overlapping sections, including the portions only one override covers', () => {
+      const { stats, network } = build([limit, { ...limit, fromNode: 3, toNode: 5, mph: 20 }]);
+      expect(stats.speedLimitOverridesUnmatched).toHaveLength(2);
+      expect(network).toEqual(baseline);
+    });
+
+    it('keeps the original speeds when the source way visits a junction twice', () => {
+      const loop = { elements: osm.elements.map((e) =>
+        e.type === 'way' && e.id === limit.way ? { ...e, nodes: [1, 2, 8, 3, 4, 3, 5] } : e) };
+      const { network, stats } = buildNetwork({ ...cfg, speedLimitOverrides: [limit] }, loop);
+      expect(stats.speedLimitOverridesUnmatched).toHaveLength(1);
+      expect(network).toEqual(buildNetwork(cfg, loop).network);
+    });
+  });
 });
 
 describe('rockridge network contract', () => {
