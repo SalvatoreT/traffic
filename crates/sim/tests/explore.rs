@@ -697,6 +697,25 @@ fn rockridge_reference_package_resolves_with_staggered_diverters() {
     }
 }
 
+#[test]
+fn rockridge_slow_streets_reference_resolves() {
+    use traffic_sim::explore::refs::{load, resolve};
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let Ok(study) = Study::load(&root, "rockridge") else {
+        eprintln!("skipped: generated rockridge data missing");
+        return;
+    };
+    let Ok(refs) = load(&root.join("data/proposals/rockridge.references.json")) else {
+        eprintln!("skipped: reference package missing");
+        return;
+    };
+    let pkg = refs.iter().find(|r| r.id == "colby-hillegass-slow-streets").expect("package");
+    let ivs = resolve(&study, pkg).unwrap_or_else(|e| panic!("{e}"));
+    assert_eq!(ivs.len(), 2);
+    let names: Vec<String> = ivs.iter().map(|iv| { assert_eq!(iv.ty, "slow_street"); study.net.links[iv.link.unwrap() as usize].name.clone() }).collect();
+    assert_eq!(names, ["Colby Street", "Hillegass Avenue"]);
+}
+
 fn grid_with_boundary() -> Study {
     let mut b = B::default();
     let mut ids = Vec::new();

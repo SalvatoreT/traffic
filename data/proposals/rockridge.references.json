@@ -39,5 +39,28 @@
         ]
       }
     ]
+  },
+  {
+    "id": "colby-hillegass-slow-streets",
+    "title": "Slow Streets on Colby Street and Hillegass Avenue",
+    "note": "Both streets limited to 15 mph for their whole length in the area, with nothing closed. Shown for comparison.",
+    "interventions": [
+      {
+        "type": "slow_street",
+        "on": "Colby Street",
+        "between": [
+          "62nd Street",
+          "63rd Street"
+        ]
+      },
+      {
+        "type": "slow_street",
+        "on": "Hillegass Avenue",
+        "between": [
+          "62nd Street",
+          "63rd Street"
+        ]
+      }
+    ]
   }
 ]
