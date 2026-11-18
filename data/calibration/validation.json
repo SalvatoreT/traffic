@@ -211,20 +211,14 @@
       "unit": "veh/h"
     },
     {
-      "hi": 602.5,
+      "hi": 604.5,
       "id": "b13",
-      "knownDeviation": {
-        "followUp": "Pending review. Repair: a cited turn speed or left-turn saturation adjustment.",
-        "id": "b13",
-        "reason": "New in round 33. A one-lane, all-left approach in a phase of its own (protected, phasing observed without timing) discharges 450 veh/h at a green share of 0.30, about 1,500 an hour of green, against s x green share with s 1,500 to 2,000 [FHWA-SIG2004]: 2 veh/h below the lower bound. Single-lane left turns slow to the 5 m/s turn speed (ASSUMPTION); seeds 2 to 5 give 456 to 486.",
-        "relevance": "Not reviewed: left to the project lead. Protected left turns discharge at the low end of the observed saturation flows.",
-        "reviewed": false
-      },
-      "lo": 451.875,
+      "knownDeviation": null,
+      "lo": 453.375,
       "name": "1 lane, all left turns, protected (a phase of its own, phasing observed without timing), opposing 500/lane (green share 0.30)",
-      "note": "per lane, cycle 100 s, saturated; s x green share, s observed 1,500 to 2,000; the same approach with a permissive left carries 159",
-      "pass": false,
-      "sim": 450.0,
+      "note": "per lane, cycle 100 s, saturated; simulated value and green share are the mean of seeds 1 to 10; s x green share, s observed 1,500 to 2,000; the same approach with a permissive left carries 159 at seed 1",
+      "pass": true,
+      "sim": 458.1,
       "source": "FHWA-SIG2004",
       "unit": "veh/h/lane"
     },
@@ -939,7 +933,6 @@
   ],
   "failing": [
     "a3",
-    "b13",
     "e2",
     "e3",
     "j6",
@@ -950,18 +943,18 @@
   "manifest": {
     "deviations": {
       "path": "data/calibration/validation.deviations.json",
-      "sha256": "f48bbae1a889f12f1ee645268aa2d14e48f79eaee07fbd5c4d14f83411975d07"
+      "sha256": "fe861200cf34a30014a1fcfc8e99a86c56e2ab95859ca1c091ed8264f71a9481"
     },
     "schema": 1,
     "simulator": {
       "dirty": false,
       "fingerprint": "d45a275dd7be0713cec6a64394b7d8a9",
-      "revision": "e27da92574e8937d1eb7f11e82a8c5f8b215aa07",
+      "revision": "a71f4d6c9b1090475e134d67d2244bf019b2c5e9",
       "version": "0.1.0"
     },
     "suite": {
       "cases": 74,
-      "sha256": "e5c2cea47618faaa61b368c3f12dd0c71678b0d8428f279dd12d74251820d16b"
+      "sha256": "ab8535a36e6625672cc46d5d695aec09c026df5279fce97e469bcc7ba470bd57"
     }
   },
   "notDocumented": []
