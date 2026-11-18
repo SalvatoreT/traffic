@@ -1,0 +1,689 @@
+block key	before	after
+102	43rd Street at a dead end	43rd Street between Salem Street and San Pablo Avenue
+615	43rd Street between Adeline Street and a dead end	43rd Street between Adeline Street and Essex Street
+96	43rd Street between Essex Street and a dead end	43rd Street between Essex Street and Salem Street
+100	43rd Street between Salem Street and a dead end	43rd Street between Salem Street and San Pablo Avenue
+4108	43rd Street between San Pablo Avenue and a dead end	43rd Street between San Pablo Avenue and Salem Street / San Pablo Avenue
+605	43rd Street between West Street and a dead end	43rd Street between West Street and the study-area edge
+617	43rd Street between a dead end and Essex Street	43rd Street between Adeline Street and Essex Street
+98	43rd Street between a dead end and Salem Street	43rd Street between Essex Street and Salem Street
+4107	43rd Street between a dead end and San Pablo Avenue	43rd Street between Salem Street / San Pablo Avenue and San Pablo Avenue
+607	43rd Street between a dead end and the study-area edge	43rd Street between West Street and the study-area edge
+595	44th Street between Market Street and a dead end	44th Street between Market Street and Linden Street
+589	44th Street between Martin Luther King Junior Way and a dead end	44th Street between Martin Luther King Junior Way and West Street
+597	44th Street between a dead end and Linden Street	44th Street between Market Street and Linden Street
+591	44th Street between a dead end and West Street	44th Street between Martin Luther King Junior Way and West Street
+25	45th Street at a dead end	45th Street between San Pablo Avenue and Doyle Street
+27	45th Street at a dead end	45th Street between San Pablo Avenue and Doyle Street
+70	45th Street at a dead end	45th Street between Essex Street and Salem Street
+1514	45th Street between Broadway / Whitmore Street and a dead end	45th Street between Broadway / Whitmore Street and Manila Avenue
+68	45th Street between Essex Street and a dead end	45th Street between Essex Street and Salem Street
+66	45th Street between Salem Street and a dead end	45th Street between Salem Street and San Pablo Avenue
+23	45th Street between San Pablo Avenue and a dead end	45th Street between San Pablo Avenue and Doyle Street
+4111	45th Street between San Pablo Avenue and a dead end	45th Street between San Pablo Avenue and Salem Street
+675	45th Street between West Street and a dead end	45th Street between West Street and Market Street
+29	45th Street between a dead end and Doyle Street	45th Street between San Pablo Avenue and Doyle Street
+1516	45th Street between a dead end and Manila Avenue	45th Street between Broadway / Whitmore Street and Manila Avenue
+677	45th Street between a dead end and Market Street	45th Street between West Street and Market Street
+72	45th Street between a dead end and Salem Street	45th Street between Essex Street and Salem Street
+4106	45th Street between a dead end and San Pablo Avenue	45th Street between Salem Street and San Pablo Avenue
+182	47th Street between San Pablo Avenue / Steve Dain Drive and a dead end	47th Street between San Pablo Avenue / Steve Dain Drive and a loop
+1506	47th Street between Shattuck Avenue and a dead end	47th Street between Shattuck Avenue and Dover Street
+1508	47th Street between a dead end and Dover Street	47th Street between Shattuck Avenue and Dover Street
+4105	47th Street between a dead end and San Pablo Avenue / Steve Dain Drive	47th Street between a loop and San Pablo Avenue / Steve Dain Drive
+1610	49th Street between Broadway and a dead end	49th Street between Broadway and Desmond Street
+1612	49th Street between a dead end and Desmond Street	49th Street between Broadway and Desmond Street
+1589	51st Street at a dead end	51st Street between 52nd Street / Telegraph Avenue and 52nd Street
+1592	51st Street between 52nd Street and a dead end	51st Street between 52nd Street and 52nd Street / Telegraph Avenue
+2477	51st Street between Broadway / Pleasant Valley Avenue and a dead end	51st Street between Broadway / Pleasant Valley Avenue and Desmond Street
+1701	51st Street between Clarke Street and a dead end	51st Street between Clarke Street and Telegraph Avenue
+2476	51st Street between Coronado Avenue and a dead end	51st Street between Coronado Avenue and Manila Avenue
+2479	51st Street between Coronado Avenue and a dead end	51st Street between Coronado Avenue and Desmond Street
+2480	51st Street between Desmond Street and a dead end	51st Street between Desmond Street and Broadway / Pleasant Valley Avenue
+1598	51st Street between Lawton Avenue and a dead end	51st Street between Lawton Avenue and Shafter Avenue
+2493	51st Street between Lawton Avenue and a dead end	51st Street between Lawton Avenue and Manila Avenue
+2492	51st Street between Manila Avenue and a dead end	51st Street between Manila Avenue and Lawton Avenue
+1703	51st Street between Miles Avenue and a dead end	51st Street between Miles Avenue and Clarke Street
+1597	51st Street between Shafter Avenue and a dead end	51st Street between Shafter Avenue and Lawton Avenue
+1694	51st Street between Shafter Avenue and a dead end	51st Street between Shafter Avenue and Webster Street
+1704	51st Street between Telegraph Avenue and a dead end	51st Street between Telegraph Avenue and Clarke Street
+1697	51st Street between Webster Street and a dead end	51st Street between Webster Street and Shafter Avenue
+1787	51st Street between a dead end and 52nd Street	51st Street between 52nd Street / Telegraph Avenue and 52nd Street
+2474	51st Street between a dead end and Broadway / Pleasant Valley Avenue	51st Street between Desmond Street and Broadway / Pleasant Valley Avenue
+1696	51st Street between a dead end and Clarke Street	51st Street between Telegraph Avenue and Clarke Street
+1698	51st Street between a dead end and Clarke Street	51st Street between Miles Avenue and Clarke Street
+2470	51st Street between a dead end and Desmond Street	51st Street between Broadway / Pleasant Valley Avenue and Desmond Street
+2472	51st Street between a dead end and Desmond Street	51st Street between Coronado Avenue and Desmond Street
+2491	51st Street between a dead end and Lawton Avenue	51st Street between Manila Avenue and Lawton Avenue
+2494	51st Street between a dead end and Lawton Avenue	51st Street between Shafter Avenue and Lawton Avenue
+2471	51st Street between a dead end and Manila Avenue	51st Street between Coronado Avenue and Manila Avenue
+2473	51st Street between a dead end and Manila Avenue	51st Street between Lawton Avenue and Manila Avenue
+1693	51st Street between a dead end and Shafter Avenue	51st Street between Webster Street and Shafter Avenue
+1695	51st Street between a dead end and Shafter Avenue	51st Street between Lawton Avenue and Shafter Avenue
+1700	51st Street between a dead end and Telegraph Avenue	51st Street between Clarke Street and Telegraph Avenue
+1763	51st Street between a dead end and Telegraph Avenue	51st Street between 52nd Street and Telegraph Avenue
+1699	51st Street between a dead end and Webster Street	51st Street between Shafter Avenue and Webster Street
+1664	52nd Street at a dead end	52nd Street between Shattuck Avenue and Dover Street / Shattuck Avenue
+1665	52nd Street at a dead end	52nd Street between Shattuck Avenue and Dover Street / Shattuck Avenue
+1668	52nd Street at a dead end	52nd Street between Shattuck Avenue and Dover Street / Shattuck Avenue
+1669	52nd Street at a dead end	52nd Street between Dover Street / Shattuck Avenue and Shattuck Avenue
+1749	52nd Street at a dead end	52nd Street between Dover Street / Shattuck Avenue and Shattuck Avenue
+4173	52nd Street at a dead end	52nd Street between Dover Street / Martin Luther King Junior Way and Martin Luther King Junior Way
+1667	52nd Street between 51st Street and a dead end	52nd Street between 51st Street and Shattuck Avenue
+1462	52nd Street between Claremont Avenue / Telegraph Avenue and a dead end	52nd Street between Claremont Avenue / Telegraph Avenue and 51st Street
+1595	52nd Street between Dover Street and a dead end	52nd Street between Dover Street and Martin Luther King Junior Way
+4131	52nd Street between Martin Luther King Junior Way and a dead end	52nd Street between Martin Luther King Junior Way and Dover Street
+1663	52nd Street between Shattuck Avenue and a dead end	52nd Street between Shattuck Avenue and Dover Street
+1591	52nd Street between a dead end and 51st Street	52nd Street between Claremont Avenue / Telegraph Avenue and 51st Street
+1593	52nd Street between a dead end and Dover Street	52nd Street between Shattuck Avenue and Dover Street
+758	52nd Street between a dead end and Martin Luther King Junior Way	52nd Street between Dover Street and Martin Luther King Junior Way
+1662	52nd Street between a dead end and Shattuck Avenue	52nd Street between Dover Street and Shattuck Avenue
+1666	52nd Street between a dead end and Shattuck Avenue	52nd Street between 51st Street and Shattuck Avenue
+90	53rd Street between Gaskill Street and a dead end	53rd Street between Gaskill Street and San Pablo Avenue
+655	53rd Street between Market Street and a dead end	53rd Street between Market Street and Adeline Street
+657	53rd Street between a dead end and Adeline Street	53rd Street between Market Street and Adeline Street
+92	53rd Street between a dead end and San Pablo Avenue	53rd Street between Gaskill Street and San Pablo Avenue
+714	55th Street between Martin Luther King Junior Way and a dead end	55th Street between Martin Luther King Junior Way and Genoa Street
+1575	55th Street between Telegraph Avenue and a dead end	55th Street between Telegraph Avenue and Shattuck Avenue
+716	55th Street between a dead end and Genoa Street	55th Street between Martin Luther King Junior Way and Genoa Street
+1577	55th Street between a dead end and Shattuck Avenue	55th Street between Telegraph Avenue and Shattuck Avenue
+1947	61st Street at a dead end	61st Street between Canning Street and Colby Street
+2019	61st Street at a dead end	61st Street between Colby Street and Canning Street
+2694	61st Street between Colby Street and a dead end	61st Street between Colby Street and Canning Street
+2013	61st Street between a dead end and Canning Street	61st Street between Colby Street and Canning Street
+229	62nd Street between Herzog Street and a dead end	62nd Street between Herzog Street and Baker Street
+231	62nd Street between a dead end and Baker Street	62nd Street between Herzog Street and Baker Street
+516	Acton Street between Ward Street and a dead end	Acton Street between Ward Street and Oregon Street
+389	Acton Street between a dead end and Oregon Street	Acton Street between Ward Street and Oregon Street
+1369	Adeline Street at a dead end	Adeline Street between Essex Street and Martin Luther King Junior Way
+1381	Adeline Street at a dead end	Adeline Street between Essex Street and Martin Luther King Junior Way
+1382	Adeline Street at a dead end	Adeline Street between Essex Street and Martin Luther King Junior Way
+1384	Adeline Street at a dead end	Adeline Street between Essex Street and Martin Luther King Junior Way
+1385	Adeline Street at a dead end	Adeline Street between Russell Street and Ashby Avenue
+1387	Adeline Street at a dead end	Adeline Street between Essex Street and Martin Luther King Junior Way
+1422	Adeline Street at a dead end	Adeline Street between Essex Street and Martin Luther King Junior Way
+1424	Adeline Street at a dead end	Adeline Street between Essex Street and Martin Luther King Junior Way
+4152	Adeline Street at a dead end	Adeline Street between Russell Street and Ashby Avenue
+4153	Adeline Street at a dead end	Adeline Street between Emerson Street and Essex Street
+807	Adeline Street between 53rd Street and a dead end	Adeline Street between 53rd Street and 47th Street
+1383	Adeline Street between Ashby Avenue and a dead end	Adeline Street between Ashby Avenue and Russell Street
+1390	Adeline Street between Emerson Street and a dead end	Adeline Street between Emerson Street and Essex Street
+1350	Adeline Street between Essex Street and a dead end	Adeline Street between Essex Street and Emerson Street
+1444	Adeline Street between Essex Street and a dead end	Adeline Street between Essex Street and Martin Luther King Junior Way
+1002	Adeline Street between Harmon Street and a dead end	Adeline Street between Harmon Street and Alcatraz Avenue
+1050	Adeline Street between Martin Luther King Junior Way / Stanford Avenue and a dead end	Adeline Street between Martin Luther King Junior Way / Stanford Avenue and Alcatraz Avenue
+1325	Adeline Street between Russell Street and a dead end	Adeline Street between Russell Street and Ashby Avenue
+1348	Adeline Street between Woolsey Street and a dead end	Adeline Street between Woolsey Street and Essex Street
+809	Adeline Street between a dead end and 47th Street	Adeline Street between 53rd Street and 47th Street
+1049	Adeline Street between a dead end and Alcatraz Avenue	Adeline Street between Harmon Street and Alcatraz Avenue
+1051	Adeline Street between a dead end and Alcatraz Avenue	Adeline Street between Martin Luther King Junior Way / Stanford Avenue and Alcatraz Avenue
+1439	Adeline Street between a dead end and Ashby Avenue	Adeline Street between Russell Street and Ashby Avenue
+1423	Adeline Street between a dead end and Emerson Street	Adeline Street between Essex Street and Emerson Street
+1349	Adeline Street between a dead end and Essex Street	Adeline Street between Woolsey Street and Essex Street
+1388	Adeline Street between a dead end and Essex Street	Adeline Street between Emerson Street and Essex Street
+1326	Adeline Street between a dead end and Martin Luther King Junior Way	Adeline Street between Essex Street and Martin Luther King Junior Way
+1370	Adeline Street between a dead end and Russell Street	Adeline Street between Ashby Avenue and Russell Street
+2066	Aileen Street between Carberry Avenue and a dead end	Aileen Street between Carberry Avenue and Telegraph Avenue
+1943	Aileen Street between a dead end and Telegraph Avenue	Aileen Street between Carberry Avenue and Telegraph Avenue
+2036	Alcatraz Avenue at a dead end	Alcatraz Avenue between Shattuck Avenue and Racine Street
+1047	Alcatraz Avenue between Adeline Street and a dead end	Alcatraz Avenue between Adeline Street and Dover Street
+4188	Alcatraz Avenue between Dana Street and a dead end	Alcatraz Avenue between Dana Street and Telegraph Avenue
+1167	Alcatraz Avenue between Ellis Street and a dead end	Alcatraz Avenue between Ellis Street and Adeline Street
+2070	Alcatraz Avenue between Irwin Court and a dead end	Alcatraz Avenue between Irwin Court and Telegraph Avenue
+2076	Alcatraz Avenue between Raymond Street and a dead end	Alcatraz Avenue between Raymond Street and Irwin Court
+2080	Alcatraz Avenue between Shattuck Avenue and a dead end	Alcatraz Avenue between Shattuck Avenue and Racine Street
+2032	Alcatraz Avenue between Telegraph Avenue and a dead end	Alcatraz Avenue between Telegraph Avenue and Dana Street
+1133	Alcatraz Avenue between a dead end and Adeline Street	Alcatraz Avenue between Ellis Street and Adeline Street
+4149	Alcatraz Avenue between a dead end and Dover Street	Alcatraz Avenue between Adeline Street and Dover Street
+2078	Alcatraz Avenue between a dead end and Irwin Court	Alcatraz Avenue between Raymond Street and Irwin Court
+2074	Alcatraz Avenue between a dead end and Racine Street	Alcatraz Avenue between Shattuck Avenue and Racine Street
+2062	Alcatraz Avenue between a dead end and Telegraph Avenue	Alcatraz Avenue between Irwin Court and Telegraph Avenue
+4343	Alvarado Road between Slater Lane and a dead end	Alvarado Road between Slater Lane and Gravatt Drive
+3356	Alvarado Road between Vicente Road and a dead end	Alvarado Road between Vicente Road and Slater Lane
+3487	Alvarado Road between a dead end and Gravatt Drive	Alvarado Road between Slater Lane and Gravatt Drive
+3485	Alvarado Road between a dead end and Slater Lane	Alvarado Road between Vicente Road and Slater Lane
+1373	Ashby Avenue between Adeline Street and a dead end	Ashby Avenue between Adeline Street and Newbury Street
+2960	Ashby Avenue between Benvenue Avenue and a dead end	Ashby Avenue between Benvenue Avenue and College Avenue
+3425	Ashby Avenue between Claremont Avenue and a dead end	Ashby Avenue between Claremont Avenue and Domingo Avenue / Tunnel Road
+2270	Ashby Avenue between Colby Street and a dead end	Ashby Avenue between Colby Street and Regent Street
+2241	Ashby Avenue between Fulton Street and a dead end	Ashby Avenue between Fulton Street and Deakin Street
+1395	Ashby Avenue between Otis Street and a dead end	Ashby Avenue between Otis Street and Adeline Street
+4191	Ashby Avenue between Telegraph Avenue and a dead end	Ashby Avenue between Telegraph Avenue and Florence Street
+1404	Ashby Avenue between a dead end and Adeline Street	Ashby Avenue between Otis Street and Adeline Street
+3039	Ashby Avenue between a dead end and College Avenue	Ashby Avenue between Benvenue Avenue and College Avenue
+2243	Ashby Avenue between a dead end and Deakin Street	Ashby Avenue between Fulton Street and Deakin Street
+4199	Ashby Avenue between a dead end and Deakin Street	Ashby Avenue between Telegraph Avenue and Deakin Street
+4397	Ashby Avenue between a dead end and Domingo Avenue / Tunnel Road	Ashby Avenue between Claremont Avenue and Domingo Avenue / Tunnel Road
+2293	Ashby Avenue between a dead end and Florence Street	Ashby Avenue between Telegraph Avenue and Florence Street
+1410	Ashby Avenue between a dead end and Newbury Street	Ashby Avenue between Adeline Street and Newbury Street
+2183	Ashby Avenue between a dead end and Regent Street	Ashby Avenue between Colby Street and Regent Street
+2245	Ashby Avenue between a dead end and Telegraph Avenue	Ashby Avenue between Deakin Street and Telegraph Avenue
+1468	Avon Street between Shafter Avenue and a dead end	Avon Street between Shafter Avenue and Miles Avenue
+1470	Avon Street between a dead end and Miles Avenue	Avon Street between Shafter Avenue and Miles Avenue
+3032	Benvenue Avenue between a dead end and Webster Street	Benvenue Avenue between Woolsey Street and Webster Street
+3030	Benvenue Avenue between a dead end and Woolsey Street	Benvenue Avenue between Webster Street and Woolsey Street
+2358	Boyd Avenue between Cavour Street and a dead end	Boyd Avenue between Cavour Street and Clifton Street
+2360	Boyd Avenue between a dead end and Clifton Street	Boyd Avenue between Cavour Street and Clifton Street
+3049	Broadway Terrace at a dead end	Broadway Terrace between Country Club Drive / Margarido Drive and Glenbrook Drive
+3750	Broadway Terrace at a dead end	Broadway Terrace between Glenwood Glade / Pinewood Road and Sheridan Road
+3789	Broadway Terrace at a dead end	Broadway Terrace between Glenwood Glade / Pinewood Road and Sheridan Road
+3130	Broadway Terrace between Country Club Drive / Margarido Drive and a dead end	Broadway Terrace between Country Club Drive / Margarido Drive and Glenbrook Drive
+3136	Broadway Terrace between Glenbrook Drive and a dead end	Broadway Terrace between Glenbrook Drive and Clarewood Drive / Ostrander Road
+4018	Broadway Terrace between Glenwood Glade / Pinewood Road and a dead end	Broadway Terrace between Glenwood Glade / Pinewood Road and Sheridan Road
+3265	Broadway Terrace between Golden Gate Avenue / Hermosa Avenue and a dead end	Broadway Terrace between Golden Gate Avenue / Hermosa Avenue and Harbord Drive
+3122	Broadway Terrace between Harbord Drive and a dead end	Broadway Terrace between Harbord Drive and Clarewood Drive
+2520	Broadway Terrace between Thomas Avenue and a dead end	Broadway Terrace between Thomas Avenue and Belgrave Place
+2522	Broadway Terrace between a dead end and Belgrave Place	Broadway Terrace between Thomas Avenue and Belgrave Place
+3124	Broadway Terrace between a dead end and Clarewood Drive	Broadway Terrace between Harbord Drive and Clarewood Drive
+3132	Broadway Terrace between a dead end and Clarewood Drive / Ostrander Road	Broadway Terrace between Glenbrook Drive and Clarewood Drive / Ostrander Road
+3134	Broadway Terrace between a dead end and Glenbrook Drive	Broadway Terrace between Country Club Drive / Margarido Drive and Glenbrook Drive
+4017	Broadway Terrace between a dead end and Glenwood Glade / Pinewood Road	Broadway Terrace between Sheridan Road and Glenwood Glade / Pinewood Road
+3267	Broadway Terrace between a dead end and Harbord Drive	Broadway Terrace between Golden Gate Avenue / Hermosa Avenue and Harbord Drive
+3770	Broadway Terrace between a dead end and Sheridan Road	Broadway Terrace between Glenwood Glade / Pinewood Road and Sheridan Road
+2497	Broadway at a dead end	Broadway between 49th Street and 51st Street / Pleasant Valley Avenue
+3224	Broadway at a dead end	Broadway between Patton Street and Brookside Avenue
+3234	Broadway at a dead end	Broadway between Golden Gate Way and Freeway Overpass
+3272	Broadway at a dead end	Broadway between Ocean View Drive and Keith Avenue
+3306	Broadway at a dead end	Broadway between Keith Avenue / Ocean View Drive and Keith Avenue
+4059	Broadway at a dead end	Broadway between Freeway Overpass and the study-area edge
+4072	Broadway at a dead end	Broadway between the study-area edge and Freeway Overpass
+4073	Broadway at a dead end	Broadway between Freeway Overpass and the study-area edge
+4082	Broadway at a dead end	Broadway between the study-area edge and Freeway Overpass
+4091	Broadway at a dead end	Broadway between the study-area edge and Freeway Overpass
+4219	Broadway at a dead end	Broadway between Coronado Avenue / Coronado Street and 51st Street / Pleasant Valley Avenue
+4281	Broadway at a dead end	Broadway between Brookside Avenue and Patton Street
+4358	Broadway at a dead end	Broadway between Freeway Overpass and Golden Gate Way
+2545	Broadway between 49th Street and a dead end	Broadway between 49th Street and 51st Street / Pleasant Valley Avenue
+2461	Broadway between 51st Street / Pleasant Valley Avenue and a dead end	Broadway between 51st Street / Pleasant Valley Avenue and Coronado Avenue / Coronado Street
+2543	Broadway between 51st Street / Pleasant Valley Avenue and a dead end	Broadway between 51st Street / Pleasant Valley Avenue and 49th Street
+2488	Broadway between Broadway Terrace and a dead end	Broadway between Broadway Terrace and Napa Street
+3228	Broadway between Brookside Avenue and a dead end	Broadway between Brookside Avenue and Golden Gate Way
+3274	Broadway between Brookside Avenue and a dead end	Broadway between Brookside Avenue and Patton Street
+2512	Broadway between Coronado Avenue / Coronado Street and a dead end	Broadway between Coronado Avenue / Coronado Street and 51st Street / Pleasant Valley Avenue
+4015	Broadway between Freeway Overpass and a dead end	Broadway between Freeway Overpass and the study-area edge
+3232	Broadway between Golden Gate Way and a dead end	Broadway between Golden Gate Way and Freeway Overpass
+4283	Broadway between Golden Gate Way and a dead end	Broadway between Golden Gate Way and Brookside Avenue
+3258	Broadway between Keith Avenue and a dead end	Broadway between Keith Avenue and Keith Avenue / Ocean View Drive
+3329	Broadway between Lawton Avenue / Rockridge Boulevard and a dead end	Broadway between Lawton Avenue / Rockridge Boulevard and Ocean View Drive
+2548	Broadway between Napa Street and a dead end	Broadway between Napa Street and Ada Street
+3327	Broadway between Ocean View Drive and a dead end	Broadway between Ocean View Drive and Keith Avenue
+3277	Broadway between Patton Street and a dead end	Broadway at Patton Street
+3280	Broadway between Patton Street and a dead end	Broadway between Patton Street and Brookside Avenue
+2544	Broadway between a dead end and 45th Street / Whitmore Street	Broadway between the study-area edge and 45th Street / Whitmore Street
+2499	Broadway between a dead end and 49th Street	Broadway between 51st Street / Pleasant Valley Avenue and 49th Street
+2487	Broadway between a dead end and 51st Street / Pleasant Valley Avenue	Broadway between Coronado Avenue / Coronado Street and 51st Street / Pleasant Valley Avenue
+2498	Broadway between a dead end and 51st Street / Pleasant Valley Avenue	Broadway between 49th Street and 51st Street / Pleasant Valley Avenue
+2546	Broadway between a dead end and Ada Street	Broadway between Napa Street and Ada Street
+2517	Broadway between a dead end and Coronado Avenue / Coronado Street	Broadway between 51st Street / Pleasant Valley Avenue and Coronado Avenue / Coronado Street
+4405	Broadway between a dead end and Freeway Overpass	Broadway between Golden Gate Way and Freeway Overpass
+3282	Broadway between a dead end and Keith Avenue	Broadway between Keith Avenue / Ocean View Drive and Keith Avenue
+4211	Broadway between a dead end and Napa Street	Broadway between Broadway Terrace and Napa Street
+3287	Broadway between a dead end and Ocean View Drive	Broadway between Lawton Avenue / Rockridge Boulevard and Ocean View Drive
+3283	Broadway between a dead end and Patton Street	Broadway at Patton Street
+4098	Broadway between a dead end and the study-area edge	Broadway between Freeway Overpass and the study-area edge
+2357	Broadway between the study-area edge and a dead end	Broadway between the study-area edge and 45th Street / Whitmore Street
+4034	Broadway between the study-area edge and a dead end	Broadway between the study-area edge and Freeway Overpass
+3781	CA 13 at a dead end	CA 13 between Tunnel Road and Warren Freeway
+3782	CA 13 at a dead end	CA 13 between Warren Freeway and Tunnel Road
+4355	CA 13 at a dead end	CA 13 between Warren Freeway and Tunnel Road
+3767	CA 13 between Tunnel Road and a dead end	CA 13 between Tunnel Road and Warren Freeway
+4360	CA 13 between Tunnel Road and a dead end	CA 13 between Tunnel Road and Warren Freeway
+3783	CA 13 between Warren Freeway and a dead end	CA 13 between Warren Freeway and Tunnel Road
+3894	CA 13 between a dead end and Tunnel Road	CA 13 between Warren Freeway and Tunnel Road
+3784	CA 13 between a dead end and Warren Freeway	CA 13 between Tunnel Road and Warren Freeway
+4032	Caldecott Lane at a dead end	Caldecott Lane at Freeway Overpass
+4060	Caldecott Lane at a dead end	Caldecott Lane between the study-area edge and Freeway Overpass
+4064	Caldecott Lane at a dead end	Caldecott Lane at Freeway Overpass
+4066	Caldecott Lane at a dead end	Caldecott Lane at Freeway Overpass
+4074	Caldecott Lane at a dead end	Caldecott Lane at Freeway Overpass
+4078	Caldecott Lane at a dead end	Caldecott Lane between Freeway Overpass and the study-area edge
+4021	Caldecott Lane between Freeway Overpass and a dead end	Caldecott Lane between Freeway Overpass and Tunnel Road
+4061	Caldecott Lane between a dead end and Freeway Overpass	Caldecott Lane between the study-area edge and Freeway Overpass
+3712	Caldecott Lane between a dead end and Tunnel Road	Caldecott Lane between Freeway Overpass and Tunnel Road
+4389	Caldecott Lane between a dead end and the study-area edge	Caldecott Lane between Freeway Overpass and the study-area edge
+1060	California Street between Harmon Street and a dead end	California Street between Harmon Street and Alcatraz Avenue
+1062	California Street between a dead end and Alcatraz Avenue	California Street between Harmon Street and Alcatraz Avenue
+1813	Cavour Street between Redondo Avenue and a dead end	Cavour Street between Redondo Avenue and Claremont Avenue
+1815	Cavour Street between a dead end and Claremont Avenue	Cavour Street between Redondo Avenue and Claremont Avenue
+3303	Chabot Road at a dead end	Chabot Road between Reata Place / Roanoke Road and Roanoke Road
+2714	Chabot Road between Chabot Crest and a dead end	Chabot Road between Chabot Crest and Roanoke Road
+3301	Chabot Road between Roanoke Road and a dead end	Chabot Road between Roanoke Road and Reata Place
+3302	Chabot Road between Roanoke Road and a dead end	Chabot Road between Roanoke Road and Chabot Crest
+3297	Chabot Road between a dead end and Reata Place	Chabot Road between Roanoke Road and Reata Place
+3304	Chabot Road between a dead end and Roanoke Road	Chabot Road between Chabot Crest and Roanoke Road
+3480	Chabot Road between a dead end and Roanoke Road	Chabot Road between Reata Place and Roanoke Road
+2754	Claremont Avenue between 60th Street / Hillegass Avenue and a dead end	Claremont Avenue between 60th Street / Hillegass Avenue and 62nd Street / College Avenue / +1
+1632	Claremont Avenue between Clifton Street and a dead end	Claremont Avenue between Clifton Street and Hudson Street
+2022	Claremont Avenue between Hudson Street and a dead end	Claremont Avenue between Hudson Street and Clifton Street
+2758	Claremont Avenue between Martin Street and a dead end	Claremont Avenue between Martin Street and Hudson Street
+2756	Claremont Avenue between a dead end and 62nd Street / College Avenue / +1	Claremont Avenue between 60th Street / Hillegass Avenue and 62nd Street / College Avenue / +1
+1644	Claremont Avenue between a dead end and Clarke Street	Claremont Avenue between Vicente Way and Clarke Street
+2021	Claremont Avenue between a dead end and Hudson Street	Claremont Avenue between Clifton Street and Hudson Street
+4187	Claremont Avenue between a dead end and Hudson Street	Claremont Avenue between Martin Street and Hudson Street
+4168	Claremont Avenue between a dead end and Vicente Way	Claremont Avenue between Clarke Street and Vicente Way
+3376	Claremont Crescent between Claremont Avenue and a dead end	Claremont Crescent between Claremont Avenue and Ashby Avenue
+3448	Claremont Crescent between a dead end and Ashby Avenue	Claremont Crescent between Claremont Avenue and Ashby Avenue
+3069	Clarewood Drive at a dead end	Clarewood Drive between Broadway Terrace / Ostrander Road and Clarewood Lane
+3071	Clarewood Drive at a dead end	Clarewood Drive between Broadway Terrace / Ostrander Road and Clarewood Lane
+3119	Clarewood Drive between Broadway Terrace / Ostrander Road and a dead end	Clarewood Drive between Broadway Terrace / Ostrander Road and Broadway Terrace / Clarewood Lane
+3079	Clarewood Drive between Emery Lane and a dead end	Clarewood Drive between Emery Lane and Truitt Lane
+3083	Clarewood Drive between Truitt Lane and a dead end	Clarewood Drive between Truitt Lane and Harbord Drive
+3118	Clarewood Drive between a dead end and Broadway Terrace	Clarewood Drive between Broadway Terrace / Clarewood Lane / +1 and Broadway Terrace
+3073	Clarewood Drive between a dead end and Clarewood Lane	Clarewood Drive between Broadway Terrace / Ostrander Road and Clarewood Lane
+3085	Clarewood Drive between a dead end and Harbord Drive	Clarewood Drive between Truitt Lane and Harbord Drive
+3081	Clarewood Drive between a dead end and Truitt Lane	Clarewood Drive between Emery Lane and Truitt Lane
+2092	Colby Street at a dead end	Colby Street between Webster Street and a dead end
+2094	Colby Street at a dead end	Colby Street between Webster Street and a dead end
+2760	College Avenue between 62nd Street / Claremont Avenue / +1 and a dead end	College Avenue between 62nd Street / Claremont Avenue / +1 and Armanino Court
+2802	College Avenue between 63rd Street and a dead end	College Avenue between 63rd Street and 62nd Street / Claremont Avenue / +1
+2530	College Avenue between Clifton Street and a dead end	College Avenue between Clifton Street and Broadway
+2720	College Avenue between Keith Avenue / Shafter Avenue and a dead end	College Avenue between Keith Avenue / Shafter Avenue and Miles Avenue
+2819	College Avenue between a dead end and 62nd Street / Claremont Avenue / +1	College Avenue between 63rd Street and 62nd Street / Claremont Avenue / +1
+2732	College Avenue between a dead end and Armanino Court	College Avenue between 62nd Street / Claremont Avenue / +1 and Armanino Court
+2468	College Avenue between a dead end and Broadway	College Avenue between Clifton Street and Broadway
+2768	College Avenue between a dead end and Miles Avenue	College Avenue between Keith Avenue / Shafter Avenue and Miles Avenue
+2495	Coronado Street at a dead end	Coronado Street between a dead end and Broadway / Coronado Avenue
+2535	Coronado Street at a dead end	Coronado Street between a dead end and Broadway / Coronado Avenue
+3244	Cross Road between Acacia Avenue / Golden Gate Avenue and a dead end	Cross Road between Acacia Avenue / Golden Gate Avenue and Golden Gate Avenue / Romany Road
+3158	Cross Road between Romany Road and a dead end	Cross Road between Romany Road and Acacia Avenue / Golden Gate Avenue
+3317	Cross Road between a dead end and Golden Gate Avenue	Cross Road between Acacia Avenue / Golden Gate Avenue / +1 and Golden Gate Avenue
+1342	Derby Street between Milvia Street and a dead end	Derby Street between Milvia Street and Shattuck Avenue
+2322	Derby Street between a dead end and Shattuck Avenue	Derby Street between Milvia Street and Shattuck Avenue
+4341	Domingo Avenue between Ashby Avenue / Tunnel Road and a dead end	Domingo Avenue between Ashby Avenue / Tunnel Road and El Camino Real
+3481	Domingo Avenue between El Camino Real and a dead end	Domingo Avenue between El Camino Real and Hazel Road
+3472	Domingo Avenue between a dead end and El Camino Real	Domingo Avenue between Ashby Avenue / Tunnel Road and El Camino Real
+3441	Domingo Avenue between a dead end and Hazel Road	Domingo Avenue between El Camino Real and Hazel Road
+3388	El Camino Real at a dead end	El Camino Real between The Uplands and a loop
+3389	El Camino Real at a dead end	El Camino Real between a loop and The Uplands
+2837	Elmwood Avenue between Ashby Avenue / Ashby Place and a dead end	Elmwood Avenue between Ashby Avenue / Ashby Place and Piedmont Avenue
+2959	Elmwood Avenue between a dead end and Ashby Avenue / Ashby Place	Elmwood Avenue between Piedmont Avenue and Ashby Avenue / Ashby Place
+2957	Elmwood Avenue between a dead end and Piedmont Avenue	Elmwood Avenue between Ashby Avenue / Ashby Place and Piedmont Avenue
+3384	Encina Place between Parkside Drive and a dead end	Encina Place between Parkside Drive and Parkside Drive / The Plaza Drive / +1
+3364	Encina Place between The Plaza Drive and a dead end	Encina Place between The Plaza Drive and Parkside Drive / The Uplands
+3020	Encina Place between a dead end and Parkside Drive / The Uplands	Encina Place between Parkside Drive / The Plaza Drive and Parkside Drive / The Uplands
+736	Essex Street between 43rd Street and a dead end	Essex Street between 43rd Street and 45th Street
+738	Essex Street between a dead end and 45th Street	Essex Street between 43rd Street and 45th Street
+3648	Florence Avenue between Harbord Drive and a dead end	Florence Avenue between Harbord Drive and Masonic Avenue / Proctor Avenue
+3515	Florence Avenue between Hermosa Avenue and a dead end	Florence Avenue between Hermosa Avenue and Morpeth Street
+3650	Florence Avenue between a dead end and Masonic Avenue / Proctor Avenue	Florence Avenue between Harbord Drive and Masonic Avenue / Proctor Avenue
+3517	Florence Avenue between a dead end and Morpeth Street	Florence Avenue between Hermosa Avenue and Morpeth Street
+4030	Freeway Overpass between Caldecott Lane and a dead end	Freeway Overpass between Caldecott Lane and Broadway
+4383	Freeway Overpass between a dead end and Broadway	Freeway Overpass between Caldecott Lane and Broadway
+3966	Glenwood Glade at a dead end	Glenwood Glade between Broadway Terrace / Pinewood Road and the study-area edge
+3969	Glenwood Glade at a dead end	Glenwood Glade at Broadway Terrace / Pinewood Road
+3970	Glenwood Glade at a dead end	Glenwood Glade at Broadway Terrace / Pinewood Road
+3980	Glenwood Glade at a dead end	Glenwood Glade between the study-area edge and Broadway Terrace / Pinewood Road
+3982	Glenwood Glade at a dead end	Glenwood Glade at Broadway Terrace / Pinewood Road
+3983	Glenwood Glade at a dead end	Glenwood Glade at Broadway Terrace / Pinewood Road
+3973	Glenwood Glade between a dead end and Broadway Terrace / Pinewood Road	Glenwood Glade between the study-area edge and Broadway Terrace / Pinewood Road
+3971	Glenwood Glade between a dead end and the study-area edge	Glenwood Glade between Broadway Terrace / Pinewood Road and the study-area edge
+3295	Grove Shafter Freeway at a dead end	Grove Shafter Freeway between the study-area edge and a dead end
+3296	Grove Shafter Freeway at a dead end	Grove Shafter Freeway at the study-area edge
+3742	Grove Shafter Freeway at a dead end	Grove Shafter Freeway at the study-area edge
+3776	Grove Shafter Freeway at a dead end	Grove Shafter Freeway between the study-area edge and a dead end
+4019	Grove Shafter Freeway at a dead end	Grove Shafter Freeway between the study-area edge and a dead end
+4089	Grove Shafter Freeway at a dead end	Grove Shafter Freeway between the study-area edge and a dead end
+4090	Grove Shafter Freeway at a dead end	Grove Shafter Freeway at the study-area edge
+4163	Grove Shafter Freeway at a dead end	Grove Shafter Freeway at the study-area edge
+4164	Grove Shafter Freeway at a dead end	Grove Shafter Freeway between the study-area edge and a dead end
+4177	Grove Shafter Freeway at a dead end	Grove Shafter Freeway at the study-area edge
+4182	Grove Shafter Freeway at a dead end	Grove Shafter Freeway between the study-area edge and a dead end
+4227	Grove Shafter Freeway at a dead end	Grove Shafter Freeway at the study-area edge
+4230	Grove Shafter Freeway at a dead end	Grove Shafter Freeway between the study-area edge and a dead end
+4275	Grove Shafter Freeway at a dead end	Grove Shafter Freeway between the study-area edge and a dead end
+4290	Grove Shafter Freeway at a dead end	Grove Shafter Freeway between the study-area edge and a dead end
+4291	Grove Shafter Freeway at a dead end	Grove Shafter Freeway at the study-area edge
+4356	Grove Shafter Freeway at a dead end	Grove Shafter Freeway between the study-area edge and a dead end
+4357	Grove Shafter Freeway at a dead end	Grove Shafter Freeway at the study-area edge
+4385	Grove Shafter Freeway at a dead end	Grove Shafter Freeway between the study-area edge and a dead end
+4386	Grove Shafter Freeway at a dead end	Grove Shafter Freeway at the study-area edge
+4088	Grove Shafter Freeway between a dead end and the study-area edge	Grove Shafter Freeway at the study-area edge
+1447	Grove Shafter Freeway between the study-area edge and a dead end	Grove Shafter Freeway at the study-area edge
+2113	Halcyon Court between Prince Street and a dead end	Halcyon Court between Prince Street and Webster Street
+2167	Halcyon Court between a dead end and Prince Street	Halcyon Court between Webster Street and Prince Street
+2168	Halcyon Court between a dead end and Webster Street	Halcyon Court between Prince Street and Webster Street
+3065	Harbord Drive at a dead end	Harbord Drive between Broadway Terrace and Buckeye Avenue
+3563	Harbord Drive at a dead end	Harbord Drive between Florence Avenue and Clarewood Drive
+3565	Harbord Drive at a dead end	Harbord Drive between Florence Avenue and Clarewood Drive
+3063	Harbord Drive between Broadway Terrace and a dead end	Harbord Drive between Broadway Terrace and Broadway Terrace / Buckeye Avenue
+3561	Harbord Drive between Florence Avenue and a dead end	Harbord Drive between Florence Avenue and Clarewood Drive
+3099	Harbord Drive between a dead end and Broadway Terrace	Harbord Drive between Broadway Terrace / Buckeye Avenue and Broadway Terrace
+3067	Harbord Drive between a dead end and Buckeye Avenue	Harbord Drive between Broadway Terrace and Buckeye Avenue
+3567	Harbord Drive between a dead end and Clarewood Drive	Harbord Drive between Florence Avenue and Clarewood Drive
+2541	Hemphill Place between Coronado Avenue and a dead end	Hemphill Place between Coronado Avenue and Desmond Street
+2425	Hemphill Place between a dead end and Desmond Street	Hemphill Place between Coronado Avenue and Desmond Street
+3547	Jacobus Avenue at a dead end	Jacobus Avenue between Dulwich Road / Hermosa Avenue and a dead end
+2775	Keith Avenue between Presley Way and a dead end	Keith Avenue between Presley Way and Broadway
+3269	Keith Avenue between a dead end and Broadway	Keith Avenue between Presley Way and Broadway
+2126	Lorina Street between Russell Street and a dead end	Lorina Street between Russell Street and Ashby Avenue
+2175	Lorina Street between a dead end and Ashby Avenue	Lorina Street between Russell Street and Ashby Avenue
+1065	Lowell Street between a dead end and 62nd Street	Lowell Street between Market Street and 62nd Street
+888	Lowell Street between a dead end and Market Street	Lowell Street between 62nd Street and Market Street
+3061	Margarido Drive between Broadway Terrace / Country Club Drive and a dead end	Margarido Drive between Broadway Terrace / Country Club Drive and Lawton Avenue / Manila Avenue
+3240	Margarido Drive between Manila Avenue and a dead end	Margarido Drive between Manila Avenue and Broadway Terrace / Country Club Drive / +2
+3241	Margarido Drive between a dead end and Lawton Avenue / Manila Avenue	Margarido Drive between Broadway Terrace / Country Club Drive / +1 and Lawton Avenue / Manila Avenue
+835	Market Street at a dead end	Market Street between 56th Street and 55th Street
+1109	Market Street at a dead end	Market Street between 59th Street and Stanford Avenue
+752	Market Street between 55th Street and a dead end	Market Street between 55th Street and 54th Street
+805	Market Street between 56th Street and a dead end	Market Street between 56th Street and 55th Street
+940	Market Street between 59th Street and a dead end	Market Street between 59th Street and Stanford Avenue
+1116	Market Street between 61st Street and a dead end	Market Street between 61st Street and 60th Street
+1007	Market Street between Arlington Avenue and a dead end	Market Street between Arlington Avenue and 57th Street / Adeline Street
+771	Market Street between a dead end and 54th Street	Market Street between 55th Street and 54th Street
+750	Market Street between a dead end and 55th Street	Market Street between 56th Street and 55th Street
+1113	Market Street between a dead end and 57th Street / Adeline Street	Market Street between Arlington Avenue and 57th Street / Adeline Street
+1110	Market Street between a dead end and 60th Street	Market Street between 61st Street and 60th Street
+1108	Market Street between a dead end and Stanford Avenue	Market Street between 59th Street and Stanford Avenue
+0	Marshall Street between 55th Street and a dead end	Marshall Street between 55th Street and Stanford Avenue
+174	Marshall Street between a dead end and Stanford Avenue	Marshall Street between 55th Street and Stanford Avenue
+766	Martin Luther King Junior Way at a dead end	Martin Luther King Junior Way between 55th Street and 54th Street
+812	Martin Luther King Junior Way at a dead end	Martin Luther King Junior Way between 52nd Street and 53rd Street / West Street
+1344	Martin Luther King Junior Way at a dead end	Martin Luther King Junior Way between Adeline Street and Ashby Avenue
+1345	Martin Luther King Junior Way at a dead end	Martin Luther King Junior Way between Adeline Street and Ashby Avenue
+1346	Martin Luther King Junior Way at a dead end	Martin Luther King Junior Way between Adeline Street and Ashby Avenue
+1397	Martin Luther King Junior Way at a dead end	Martin Luther King Junior Way between Adeline Street and Ashby Avenue
+1398	Martin Luther King Junior Way at a dead end	Martin Luther King Junior Way between Ashby Avenue and Prince Street
+1400	Martin Luther King Junior Way at a dead end	Martin Luther King Junior Way between Adeline Street and Ashby Avenue
+1569	Martin Luther King Junior Way at a dead end	Martin Luther King Junior Way between 47th Street / 51st Street and 47th Street / 52nd Street
+1650	Martin Luther King Junior Way at a dead end	Martin Luther King Junior Way between 47th Street / 51st Street and 52nd Street
+4134	Martin Luther King Junior Way at a dead end	Martin Luther King Junior Way between 47th Street / 51st Street and 52nd Street
+573	Martin Luther King Junior Way between 46th Street and a dead end	Martin Luther King Junior Way between 46th Street and 47th Street
+1570	Martin Luther King Junior Way between 47th Street and a dead end	Martin Luther King Junior Way between 47th Street and 51st Street / 52nd Street
+1760	Martin Luther King Junior Way between 51st Street and a dead end	Martin Luther King Junior Way between 51st Street and 47th Street / 52nd Street
+811	Martin Luther King Junior Way between 52nd Street and a dead end	Martin Luther King Junior Way between 52nd Street and 53rd Street / West Street
+837	Martin Luther King Junior Way between 53rd Street / West Street and a dead end	Martin Luther King Junior Way between 53rd Street / West Street and 52nd Street
+768	Martin Luther King Junior Way between 54th Street and a dead end	Martin Luther King Junior Way between 54th Street and 53rd Street / West Street
+770	Martin Luther King Junior Way between 54th Street and a dead end	Martin Luther King Junior Way between 54th Street and 55th Street
+765	Martin Luther King Junior Way between 55th Street and a dead end	Martin Luther King Junior Way between 55th Street and 54th Street
+735	Martin Luther King Junior Way between 56th Street and a dead end	Martin Luther King Junior Way between 56th Street and 55th Street
+1105	Martin Luther King Junior Way between 58th Street and a dead end	Martin Luther King Junior Way between 58th Street and 59th Street
+1023	Martin Luther King Junior Way between 60th Street and a dead end	Martin Luther King Junior Way between 60th Street and 59th Street
+1024	Martin Luther King Junior Way between 61st Street and a dead end	Martin Luther King Junior Way between 61st Street and 62nd Street / Adeline Street / +1
+1093	Martin Luther King Junior Way between 62nd Street and a dead end	Martin Luther King Junior Way between 62nd Street and 61st Street / Adeline Street / +1
+1231	Martin Luther King Junior Way between Adeline Street and a dead end	Martin Luther King Junior Way between Adeline Street and Ashby Avenue
+1401	Martin Luther King Junior Way between Ashby Avenue and a dead end	Martin Luther King Junior Way between Ashby Avenue and Prince Street
+1367	Martin Luther King Junior Way between Russell Street and a dead end	Martin Luther King Junior Way between Russell Street and Ashby Avenue
+1572	Martin Luther King Junior Way between a dead end and 47th Street	Martin Luther King Junior Way between 51st Street / 52nd Street and 47th Street
+1634	Martin Luther King Junior Way between a dead end and 47th Street	Martin Luther King Junior Way between 46th Street and 47th Street
+704	Martin Luther King Junior Way between a dead end and 52nd Street	Martin Luther King Junior Way between 53rd Street / West Street and 52nd Street
+761	Martin Luther King Junior Way between a dead end and 52nd Street	Martin Luther King Junior Way between 47th Street / 51st Street and 52nd Street
+762	Martin Luther King Junior Way between a dead end and 53rd Street / West Street	Martin Luther King Junior Way between 54th Street and 53rd Street / West Street
+763	Martin Luther King Junior Way between a dead end and 53rd Street / West Street	Martin Luther King Junior Way between 52nd Street and 53rd Street / West Street
+767	Martin Luther King Junior Way between a dead end and 54th Street	Martin Luther King Junior Way between 55th Street and 54th Street
+764	Martin Luther King Junior Way between a dead end and 55th Street	Martin Luther King Junior Way between 54th Street and 55th Street
+834	Martin Luther King Junior Way between a dead end and 55th Street	Martin Luther King Junior Way between 56th Street and 55th Street
+1118	Martin Luther King Junior Way between a dead end and 59th Street	Martin Luther King Junior Way between 58th Street and 59th Street
+1119	Martin Luther King Junior Way between a dead end and 59th Street	Martin Luther King Junior Way between 60th Street and 59th Street
+1025	Martin Luther King Junior Way between a dead end and Adeline Street / Stanford Avenue	Martin Luther King Junior Way between 61st Street / 62nd Street and Adeline Street / Stanford Avenue
+1391	Martin Luther King Junior Way between a dead end and Ashby Avenue	Martin Luther King Junior Way between Russell Street and Ashby Avenue
+1399	Martin Luther King Junior Way between a dead end and Ashby Avenue	Martin Luther King Junior Way between Adeline Street and Ashby Avenue
+1228	Martin Luther King Junior Way between a dead end and Prince Street	Martin Luther King Junior Way between Ashby Avenue and Prince Street
+1492	Miles Avenue at a dead end	Miles Avenue between Cavour Street and Clifton Street
+2815	Miles Avenue at a dead end	Miles Avenue between Presley Way and College Avenue
+2816	Miles Avenue at a dead end	Miles Avenue between Presley Way and College Avenue
+4231	Miles Avenue at a dead end	Miles Avenue between Presley Way and College Avenue
+1490	Miles Avenue between Cavour Street and a dead end	Miles Avenue between Cavour Street and Clifton Street
+4224	Miles Avenue between College Avenue and a dead end	Miles Avenue between College Avenue and Forest Street
+4242	Miles Avenue between Ivanhoe Road and a dead end	Miles Avenue between Ivanhoe Road and Presley Way
+4304	Miles Avenue between Patton Street and a dead end	Miles Avenue between Patton Street and Clover Drive
+1494	Miles Avenue between a dead end and Clifton Street	Miles Avenue between Cavour Street and Clifton Street
+4294	Miles Avenue between a dead end and Clover Drive	Miles Avenue between Patton Street and Clover Drive
+2770	Miles Avenue between a dead end and College Avenue	Miles Avenue between Presley Way and College Avenue
+2771	Miles Avenue between a dead end and Forest Street	Miles Avenue between College Avenue and Forest Street
+4232	Miles Avenue between a dead end and Presley Way	Miles Avenue between College Avenue and Presley Way
+4241	Miles Avenue between a dead end and Presley Way	Miles Avenue between Ivanhoe Road and Presley Way
+1291	Milvia Street between Stuart Street and a dead end	Milvia Street between Stuart Street and Oregon Street
+1293	Milvia Street between a dead end and Oregon Street	Milvia Street between Stuart Street and Oregon Street
+3611	Morpeth Street between Harbord Drive and a dead end	Morpeth Street between Harbord Drive and Florence Avenue
+3613	Morpeth Street between a dead end and Florence Avenue	Morpeth Street between Harbord Drive and Florence Avenue
+2111	Newbury Street between Russell Street and a dead end	Newbury Street between Russell Street and Ashby Avenue
+2341	Newbury Street between a dead end and Ashby Avenue	Newbury Street between Russell Street and Ashby Avenue
+4035	Norfolk Road between Buckingham Boulevard and a dead end	Norfolk Road between Buckingham Boulevard and Westmoorland Drive
+4037	Norfolk Road between a dead end and Westmoorland Drive	Norfolk Road between Buckingham Boulevard and Westmoorland Drive
+955	Occidental Street between a dead end and 61st Street	Occidental Street between Market Street and 61st Street
+872	Occidental Street between a dead end and Market Street	Occidental Street between 61st Street and Market Street
+3212	Ocean View Drive between Broadway and a dead end	Ocean View Drive between Broadway and Margarido Drive
+3214	Ocean View Drive between a dead end and Margarido Drive	Ocean View Drive between Broadway and Margarido Drive
+4335	Parkside Drive between Nogales Street and a dead end	Parkside Drive between Nogales Street and The Plaza Drive
+3352	Parkside Drive between The Plaza Drive and a dead end	Parkside Drive between The Plaza Drive and Nogales Street
+3350	Parkside Drive between a dead end and The Plaza Drive	Parkside Drive between Nogales Street and The Plaza Drive
+3278	Patton Street between Broadway and a dead end	Patton Street between Broadway and Miles Avenue
+3259	Patton Street between Miles Avenue and a dead end	Patton Street between Miles Avenue and Chabot Road / Miles Avenue
+3230	Patton Street between a dead end and Chabot Road	Patton Street between Miles Avenue and Chabot Road
+3331	Patton Street between a dead end and Miles Avenue	Patton Street between Broadway and Miles Avenue
+4293	Patton Street between a dead end and Miles Avenue	Patton Street between Chabot Road / Miles Avenue and Miles Avenue
+4024	Pinewood Road between Broadway Terrace / Glenwood Glade and a dead end	Pinewood Road between Broadway Terrace / Glenwood Glade and Caldwell Road
+4001	Pinewood Road between a dead end and Caldwell Road	Pinewood Road between Broadway Terrace / Glenwood Glade and Caldwell Road
+2486	Pleasant Valley Avenue at a dead end	Pleasant Valley Avenue between 51st Street / Broadway and Gilbert Street
+2485	Pleasant Valley Avenue between 51st Street / Broadway and a dead end	Pleasant Valley Avenue between 51st Street / Broadway and Gilbert Street
+2482	Pleasant Valley Avenue between Gilbert Street and a dead end	Pleasant Valley Avenue between Gilbert Street and 51st Street / Broadway
+2481	Pleasant Valley Avenue between a dead end and 51st Street / Broadway	Pleasant Valley Avenue between Gilbert Street and 51st Street / Broadway
+2483	Pleasant Valley Avenue between a dead end and Gilbert Street	Pleasant Valley Avenue between the study-area edge and Gilbert Street
+2484	Pleasant Valley Avenue between a dead end and Gilbert Street	Pleasant Valley Avenue between 51st Street / Broadway and Gilbert Street
+2355	Pleasant Valley Avenue between the study-area edge and a dead end	Pleasant Valley Avenue between the study-area edge and Gilbert Street
+2923	Prince Street between a dead end and Claremont Avenue	Prince Street between College Avenue and Claremont Avenue
+2846	Prince Street between a dead end and College Avenue	Prince Street between Claremont Avenue and College Avenue
+2308	Prince Street between a dead end and Deakin Street	Prince Street between Halcyon Court and Deakin Street
+2309	Prince Street between a dead end and Halcyon Court	Prince Street between Deakin Street and Halcyon Court
+1881	Racine Street between a dead end and 58th Street / Telegraph Avenue	Racine Street between 59th Street and 58th Street / Telegraph Avenue
+1949	Racine Street between a dead end and 59th Street	Racine Street between 58th Street / Telegraph Avenue and 59th Street
+2847	Regent Street between Russell Street and a dead end	Regent Street between Russell Street and Ashby Avenue
+2849	Regent Street between a dead end and Ashby Avenue	Regent Street between Russell Street and Ashby Avenue
+3895	Roble Road at a dead end	Roble Road between Chabot Road and Roble Court
+3896	Roble Road at a dead end	Roble Road between Roble Court and Chabot Road
+3346	Roble Road between Roble Court and a dead end	Roble Road between Roble Court and Chabot Road
+4312	Roble Road between Roble Court and a dead end	Roble Road between Roble Court and Tunnel Road
+3430	Roble Road between Tunnel Road and a dead end	Roble Road between Tunnel Road and Roble Court / Tunnel Road
+3755	Roble Road between a dead end and Chabot Road	Roble Road between Roble Court and Chabot Road
+3429	Roble Road between a dead end and Tunnel Road	Roble Road between Roble Court / Tunnel Road and Tunnel Road
+2921	Russell Street between Pine Avenue and a dead end	Russell Street between Pine Avenue and Claremont Boulevard
+3394	Russell Street between a dead end and Claremont Boulevard	Russell Street between Pine Avenue and Claremont Boulevard
+2165	Russell Street between a dead end and Fulton Street	Russell Street between Wheeler Street and Fulton Street
+2164	Russell Street between a dead end and Wheeler Street	Russell Street between Fulton Street and Wheeler Street
+1044	Sacramento Street between 66th Street and a dead end	Sacramento Street between 66th Street and Fairview Street
+1379	Sacramento Street between 67th Street and a dead end	Sacramento Street between 67th Street and Woolsey Street
+513	Sacramento Street between Ashby Avenue and a dead end	Sacramento Street between Ashby Avenue and Prince Street
+495	Sacramento Street between Carleton Street and a dead end	Sacramento Street between Carleton Street and Derby Street
+1040	Sacramento Street between Fairview Street and a dead end	Sacramento Street between Fairview Street and 66th Street
+1000	Sacramento Street between Harmon Street and a dead end	Sacramento Street between Harmon Street and Alcatraz Avenue
+1046	Sacramento Street between Harmon Street and a dead end	Sacramento Street between Harmon Street and Fairview Street
+508	Sacramento Street between Julia Street and a dead end	Sacramento Street between Julia Street and Russell Street
+512	Sacramento Street between Oregon Street and a dead end	Sacramento Street between Oregon Street and Russell Street
+501	Sacramento Street between Russell Street and a dead end	Sacramento Street between Russell Street and Oregon Street
+503	Sacramento Street between Russell Street and a dead end	Sacramento Street between Russell Street and Ashby Avenue
+461	Sacramento Street between Tyler Street and a dead end	Sacramento Street between Tyler Street and Ashby Avenue
+546	Sacramento Street between Ward Street and a dead end	Sacramento Street between Ward Street and Derby Street
+1035	Sacramento Street between a dead end and 66th Street	Sacramento Street between Fairview Street and 66th Street
+1036	Sacramento Street between a dead end and Alcatraz Avenue	Sacramento Street between Harmon Street and Alcatraz Avenue
+498	Sacramento Street between a dead end and Ashby Avenue	Sacramento Street between Tyler Street and Ashby Avenue
+500	Sacramento Street between a dead end and Ashby Avenue	Sacramento Street between Russell Street and Ashby Avenue
+492	Sacramento Street between a dead end and Derby Street	Sacramento Street between Ward Street and Derby Street
+493	Sacramento Street between a dead end and Derby Street	Sacramento Street between Carleton Street and Derby Street
+1038	Sacramento Street between a dead end and Fairview Street	Sacramento Street between Harmon Street and Fairview Street
+1039	Sacramento Street between a dead end and Fairview Street	Sacramento Street between 66th Street and Fairview Street
+499	Sacramento Street between a dead end and Oregon Street	Sacramento Street between Russell Street and Oregon Street
+1380	Sacramento Street between a dead end and Prince Street	Sacramento Street between Ashby Avenue and Prince Street
+502	Sacramento Street between a dead end and Russell Street	Sacramento Street between Julia Street and Russell Street
+504	Sacramento Street between a dead end and Russell Street	Sacramento Street between Oregon Street and Russell Street
+1042	Sacramento Street between a dead end and Woolsey Street	Sacramento Street between 67th Street and Woolsey Street
+104	Salem Street between 43rd Street and a dead end	Salem Street between 43rd Street and 45th Street
+106	Salem Street between a dead end and 45th Street	Salem Street between 43rd Street and 45th Street
+173	San Pablo Avenue between 43rd Street and a dead end	San Pablo Avenue between 43rd Street and 45th Street
+143	San Pablo Avenue between 45th Street and a dead end	San Pablo Avenue between 45th Street and 43rd Street
+145	San Pablo Avenue between 45th Street and a dead end	San Pablo Avenue between 45th Street and 47th Street / Steve Dain Drive
+142	San Pablo Avenue between 48th Street and a dead end	San Pablo Avenue between 48th Street and 53rd Street
+4110	San Pablo Avenue between 53rd Street and a dead end	San Pablo Avenue between 53rd Street and 47th Street / Steve Dain Drive
+61	San Pablo Avenue between 54th Street and a dead end	San Pablo Avenue between 54th Street and 53rd Street
+136	San Pablo Avenue between 55th Street and a dead end	San Pablo Avenue at 55th Street
+119	San Pablo Avenue between 57th Street and a dead end	San Pablo Avenue between 57th Street and Stanford Avenue
+340	San Pablo Avenue between 59th Street and a dead end	San Pablo Avenue at 59th Street
+341	San Pablo Avenue between 59th Street and a dead end	San Pablo Avenue between 59th Street and Stanford Avenue
+113	San Pablo Avenue between 60th Street and a dead end	San Pablo Avenue between 60th Street and 61st Street
+335	San Pablo Avenue between 61st Street and a dead end	San Pablo Avenue between 61st Street and 60th Street
+342	San Pablo Avenue between 61st Street and a dead end	San Pablo Avenue between 61st Street and 62nd Street
+352	San Pablo Avenue between 62nd Street and a dead end	San Pablo Avenue between 62nd Street and 61st Street
+133	San Pablo Avenue between Aileen Street and a dead end	San Pablo Avenue between Aileen Street and 56th Street
+128	San Pablo Avenue between Stanford Avenue and a dead end	San Pablo Avenue between Stanford Avenue and Aileen Street
+120	San Pablo Avenue between a dead end and 43rd Street	San Pablo Avenue between 45th Street and 43rd Street
+121	San Pablo Avenue between a dead end and 45th Street	San Pablo Avenue between 43rd Street and 45th Street
+126	San Pablo Avenue between a dead end and 47th Street / Steve Dain Drive	San Pablo Avenue between 53rd Street and 47th Street / Steve Dain Drive
+127	San Pablo Avenue between a dead end and 47th Street / Steve Dain Drive	San Pablo Avenue between 45th Street and 47th Street / Steve Dain Drive
+123	San Pablo Avenue between a dead end and 53rd Street	San Pablo Avenue between 54th Street and 53rd Street
+125	San Pablo Avenue between a dead end and 53rd Street	San Pablo Avenue between 48th Street and 53rd Street
+132	San Pablo Avenue between a dead end and 55th Street	San Pablo Avenue at 55th Street
+131	San Pablo Avenue between a dead end and 56th Street	San Pablo Avenue between Aileen Street and 56th Street
+336	San Pablo Avenue between a dead end and 59th Street	San Pablo Avenue at 59th Street
+344	San Pablo Avenue between a dead end and 60th Street	San Pablo Avenue between 61st Street and 60th Street
+337	San Pablo Avenue between a dead end and 61st Street	San Pablo Avenue between 60th Street and 61st Street
+338	San Pablo Avenue between a dead end and 61st Street	San Pablo Avenue between 62nd Street and 61st Street
+334	San Pablo Avenue between a dead end and 62nd Street	San Pablo Avenue between 61st Street and 62nd Street
+124	San Pablo Avenue between a dead end and Aileen Street	San Pablo Avenue between Stanford Avenue and Aileen Street
+114	San Pablo Avenue between a dead end and Stanford Avenue	San Pablo Avenue between 57th Street and Stanford Avenue
+115	San Pablo Avenue between a dead end and Stanford Avenue	San Pablo Avenue between 59th Street and Stanford Avenue
+2693	Shafter Avenue between Forest Street and a dead end	Shafter Avenue between Forest Street and College Avenue / Keith Avenue
+2759	Shafter Avenue between a dead end and College Avenue / Keith Avenue	Shafter Avenue between Forest Street and College Avenue / Keith Avenue
+1784	Shattuck Avenue at a dead end	Shattuck Avenue between 51st Street and 52nd Street
+1776	Shattuck Avenue between 48th Street and a dead end	Shattuck Avenue between 48th Street and 49th Street
+1782	Shattuck Avenue between 51st Street and a dead end	Shattuck Avenue between 51st Street and 52nd Street
+1652	Shattuck Avenue between 52nd Street and a dead end	Shattuck Avenue between 52nd Street and 53rd Street
+2137	Shattuck Avenue between Adeline Street and a dead end	Shattuck Avenue between Adeline Street and Derby Street
+2333	Shattuck Avenue between Adeline Street and a dead end	Shattuck Avenue between Adeline Street and Stuart Street / Ward Street
+4194	Shattuck Avenue between Ashby Avenue and a dead end	Shattuck Avenue between Ashby Avenue and Russell Street
+2297	Shattuck Avenue between Derby Street and a dead end	Shattuck Avenue between Derby Street and Adeline Street
+2285	Shattuck Avenue between Emerson Street and a dead end	Shattuck Avenue between Emerson Street and Ashby Avenue
+2295	Shattuck Avenue between Stuart Street and a dead end	Shattuck Avenue between Stuart Street and Adeline Street / Ward Street
+1778	Shattuck Avenue between a dead end and 49th Street	Shattuck Avenue between 48th Street and 49th Street
+1705	Shattuck Avenue between a dead end and 52nd Street	Shattuck Avenue between 51st Street and 52nd Street
+1654	Shattuck Avenue between a dead end and 53rd Street	Shattuck Avenue between 52nd Street and 53rd Street
+2182	Shattuck Avenue between a dead end and Adeline Street	Shattuck Avenue between Derby Street and Adeline Street
+2277	Shattuck Avenue between a dead end and Ashby Avenue	Shattuck Avenue between Emerson Street and Ashby Avenue
+2266	Shattuck Avenue between a dead end and Derby Street	Shattuck Avenue between Adeline Street and Derby Street
+2289	Shattuck Avenue between a dead end and Russell Street	Shattuck Avenue between Ashby Avenue and Russell Street
+2148	Shattuck Avenue between a dead end and Ward Street	Shattuck Avenue between Adeline Street / Stuart Street and Ward Street
+542	Sojourner Truth Court at a dead end	Sojourner Truth Court between a loop and Ward Street
+543	Sojourner Truth Court at a dead end	Sojourner Truth Court between Ward Street and a loop
+3881	South Hill Court at a dead end	South Hill Court between Hiller Drive / North Hill Court and a loop
+3882	South Hill Court at a dead end	South Hill Court between a loop and Hiller Drive / North Hill Court
+1009	Stanford Avenue at a dead end	Stanford Avenue between Market Street and Genoa Street
+1015	Stanford Avenue at a dead end	Stanford Avenue between Market Street and Genoa Street
+315	Stanford Avenue between 59th Street / Grace Avenue / +1 and a dead end	Stanford Avenue between 59th Street / Grace Avenue / +1 and San Pablo Avenue
+1003	Stanford Avenue between 61st Street and a dead end	Stanford Avenue between 61st Street and Market Street
+168	Stanford Avenue between Gaskill Street and a dead end	Stanford Avenue between Gaskill Street and 59th Street / Grace Avenue / +1
+4142	Stanford Avenue between Genoa Street and a dead end	Stanford Avenue between Genoa Street and 62nd Street / Adeline Street
+1034	Stanford Avenue between Lowell Street and a dead end	Stanford Avenue between Lowell Street and 59th Street / Grace Avenue / +1
+1008	Stanford Avenue between Market Street and a dead end	Stanford Avenue between Market Street and Genoa Street
+1054	Stanford Avenue between Occidental Street and a dead end	Stanford Avenue between Occidental Street and Market Street
+110	Stanford Avenue between San Pablo Avenue and a dead end	Stanford Avenue between San Pablo Avenue and Gaskill Street
+332	Stanford Avenue between a dead end and 59th Street / Grace Avenue / +1	Stanford Avenue between Gaskill Street and 59th Street / Grace Avenue / +1
+333	Stanford Avenue between a dead end and 59th Street / Grace Avenue / +1	Stanford Avenue between Lowell Street and 59th Street / Grace Avenue / +1
+1052	Stanford Avenue between a dead end and 62nd Street / Adeline Street	Stanford Avenue between Genoa Street and 62nd Street / Adeline Street
+167	Stanford Avenue between a dead end and Gaskill Street	Stanford Avenue between San Pablo Avenue and Gaskill Street
+1010	Stanford Avenue between a dead end and Genoa Street	Stanford Avenue between Market Street and Genoa Street
+941	Stanford Avenue between a dead end and Market Street	Stanford Avenue between Occidental Street and Market Street
+1055	Stanford Avenue between a dead end and Market Street	Stanford Avenue between 61st Street and Market Street
+108	Stanford Avenue between a dead end and San Pablo Avenue	Stanford Avenue between 59th Street / Grace Avenue / +1 and San Pablo Avenue
+3885	Starview Drive at a dead end	Starview Drive between Starview Court and Hiller Drive
+4409	Starview Drive between Starview Court and a dead end	Starview Drive between Starview Court and Hiller Drive
+3887	Starview Drive between a dead end and Hiller Drive	Starview Drive between Starview Court and Hiller Drive
+74	Steve Dain Drive at a dead end	Steve Dain Drive between 47th Street / San Pablo Avenue and the study-area edge
+76	Steve Dain Drive at a dead end	Steve Dain Drive between 47th Street / San Pablo Avenue and the study-area edge
+178	Steve Dain Drive between 47th Street / San Pablo Avenue and a dead end	Steve Dain Drive between 47th Street / San Pablo Avenue and the study-area edge
+180	Steve Dain Drive between a dead end and the study-area edge	Steve Dain Drive between 47th Street / San Pablo Avenue and the study-area edge
+177	Steve Dain Drive between the study-area edge and a dead end	Steve Dain Drive between the study-area edge and 47th Street / San Pablo Avenue
+1670	Telegraph Avenue at a dead end	Telegraph Avenue between 55th Street and 52nd Street / Claremont Avenue
+1672	Telegraph Avenue at a dead end	Telegraph Avenue between 55th Street and 52nd Street / Claremont Avenue
+1674	Telegraph Avenue at a dead end	Telegraph Avenue between 55th Street and 52nd Street / Claremont Avenue
+1689	Telegraph Avenue at a dead end	Telegraph Avenue between 51st Street and 49th Street
+1748	Telegraph Avenue at a dead end	Telegraph Avenue between 45th Street and 46th Street / 47th Street
+2025	Telegraph Avenue at a dead end	Telegraph Avenue between 57th Street and Aileen Street
+2316	Telegraph Avenue at a dead end	Telegraph Avenue between Webster Street and Ashby Avenue
+4178	Telegraph Avenue at a dead end	Telegraph Avenue between 45th Street / 46th Street and 46th Street / 47th Street
+1765	Telegraph Avenue between 45th Street and a dead end	Telegraph Avenue between 45th Street and 46th Street / 47th Street
+1691	Telegraph Avenue between 47th Street and a dead end	Telegraph Avenue between 47th Street and 45th Street / 46th Street
+1687	Telegraph Avenue between 49th Street and a dead end	Telegraph Avenue between 49th Street and 48th Street
+1628	Telegraph Avenue between 51st Street and a dead end	Telegraph Avenue between 51st Street and 49th Street
+1676	Telegraph Avenue between 55th Street and a dead end	Telegraph Avenue between 55th Street and 52nd Street / Claremont Avenue
+1608	Telegraph Avenue between 56th Street and a dead end	Telegraph Avenue between 56th Street and 55th Street
+2023	Telegraph Avenue between 57th Street and a dead end	Telegraph Avenue between 57th Street and Aileen Street
+2044	Telegraph Avenue between 65th Street and a dead end	Telegraph Avenue between 65th Street and Alcatraz Avenue
+4201	Telegraph Avenue between 66th Street and a dead end	Telegraph Avenue between 66th Street and Woolsey Street
+1605	Telegraph Avenue between Aileen Street and a dead end	Telegraph Avenue between Aileen Street and 57th Street
+2038	Telegraph Avenue between Alcatraz Avenue and a dead end	Telegraph Avenue between Alcatraz Avenue and North Street
+2318	Telegraph Avenue between Ashby Avenue and a dead end	Telegraph Avenue between Ashby Avenue and Howe Street
+2136	Telegraph Avenue between Dowling Place and a dead end	Telegraph Avenue between Dowling Place and Webster Street
+2274	Telegraph Avenue between Webster Street and a dead end	Telegraph Avenue between Webster Street and Ashby Avenue
+2342	Telegraph Avenue between Woolsey Street and a dead end	Telegraph Avenue between Woolsey Street and 66th Street
+1762	Telegraph Avenue between a dead end and 46th Street	Telegraph Avenue between 45th Street / 47th Street and 46th Street
+4174	Telegraph Avenue between a dead end and 46th Street	Telegraph Avenue between 45th Street / 47th Street and 46th Street
+1684	Telegraph Avenue between a dead end and 48th Street	Telegraph Avenue between 49th Street and 48th Street
+1680	Telegraph Avenue between a dead end and 49th Street	Telegraph Avenue between 51st Street and 49th Street
+1630	Telegraph Avenue between a dead end and 52nd Street / Claremont Avenue	Telegraph Avenue between 55th Street and 52nd Street / Claremont Avenue
+1678	Telegraph Avenue between a dead end and 55th Street	Telegraph Avenue between 56th Street and 55th Street
+1603	Telegraph Avenue between a dead end and 56th Street	Telegraph Avenue between 55th Street and 56th Street
+1606	Telegraph Avenue between a dead end and Aileen Street	Telegraph Avenue between 57th Street and Aileen Street
+2040	Telegraph Avenue between a dead end and Alcatraz Avenue	Telegraph Avenue between 65th Street and Alcatraz Avenue
+2272	Telegraph Avenue between a dead end and Ashby Avenue	Telegraph Avenue between Webster Street and Ashby Avenue
+2298	Telegraph Avenue between a dead end and Howe Street	Telegraph Avenue between Ashby Avenue and Howe Street
+2060	Telegraph Avenue between a dead end and North Street	Telegraph Avenue between Alcatraz Avenue and North Street
+2276	Telegraph Avenue between a dead end and Webster Street	Telegraph Avenue between Dowling Place and Webster Street
+2343	Telegraph Avenue between a dead end and Woolsey Street	Telegraph Avenue between 66th Street and Woolsey Street
+3458	Tunnel Road at a dead end	Tunnel Road between Ashby Avenue / Domingo Avenue and Oak Ridge Road
+3460	Tunnel Road at a dead end	Tunnel Road between Ashby Avenue / Domingo Avenue and Oak Ridge Road
+3478	Tunnel Road at a dead end	Tunnel Road between Alvarado Road / Oak Ridge Road and Alvarado Road
+3759	Tunnel Road at a dead end	Tunnel Road between CA 13 / Hiller Drive and Caldecott Lane
+3897	Tunnel Road at a dead end	Tunnel Road between Hiller Drive and CA 13 / Roble Road / +1
+3900	Tunnel Road at a dead end	Tunnel Road between CA 13 and Caldecott Lane / Hiller Drive
+3907	Tunnel Road at a dead end	Tunnel Road between Roble Road and CA 13 / Hiller Drive / +1
+4366	Tunnel Road at a dead end	Tunnel Road between Caldecott Lane and CA 13 / Hiller Drive
+4370	Tunnel Road at a dead end	Tunnel Road between CA 13 / Hiller Drive and Roble Road / Vicente Road
+3467	Tunnel Road between Alvarado Road and a dead end	Tunnel Road between Alvarado Road and Oak Ridge Road
+3462	Tunnel Road between Ashby Avenue / Domingo Avenue and a dead end	Tunnel Road between Ashby Avenue / Domingo Avenue and Oak Ridge Road
+3484	Tunnel Road between Bridge Road and a dead end	Tunnel Road between Bridge Road and The Uplands
+4375	Tunnel Road between CA 13 and a dead end	Tunnel Road between CA 13 and Caldecott Lane / Hiller Drive
+3765	Tunnel Road between Caldecott Lane and a dead end	Tunnel Road between Caldecott Lane and CA 13 / Hiller Drive
+3726	Tunnel Road between Charing Cross Road and a dead end	Tunnel Road between Charing Cross Road and the study-area edge
+4374	Tunnel Road between Hiller Drive and a dead end	Tunnel Road between Hiller Drive and CA 13 / Roble Road / +1
+3362	Tunnel Road between Oak Ridge Road and a dead end	Tunnel Road between Oak Ridge Road and Alvarado Road
+4376	Tunnel Road between Roble Road and a dead end	Tunnel Road between Roble Road and CA 13 / Hiller Drive / +1
+3469	Tunnel Road between The Uplands and a dead end	Tunnel Road between The Uplands and Roble Road
+3479	Tunnel Road between a dead end and Alvarado Road	Tunnel Road between Oak Ridge Road and Alvarado Road
+3898	Tunnel Road between a dead end and CA 13	Tunnel Road between Hiller Drive / Roble Road / +1 and CA 13
+3901	Tunnel Road between a dead end and Hiller Drive	Tunnel Road between CA 13 / Caldecott Lane and Hiller Drive
+3360	Tunnel Road between a dead end and Oak Ridge Road	Tunnel Road between Ashby Avenue / Domingo Avenue and Oak Ridge Road
+3464	Tunnel Road between a dead end and Roble Road	Tunnel Road between The Uplands and Roble Road
+3483	Tunnel Road between a dead end and The Uplands	Tunnel Road between Bridge Road and The Uplands
+4372	Tunnel Road between a dead end and Vicente Road	Tunnel Road between CA 13 / Hiller Drive / +1 and Vicente Road
+3728	Tunnel Road between a dead end and the study-area edge	Tunnel Road between Charing Cross Road and the study-area edge
+3797	Vicente Place between Vicente Road and a dead end	Vicente Place between Vicente Road and West View Drive
+3799	Vicente Place between a dead end and West View Drive	Vicente Place between Vicente Road and West View Drive
+1464	Vicente Way between Claremont Avenue and a dead end	Vicente Way between Claremont Avenue and 55th Street
+1466	Vicente Way between a dead end and 55th Street	Vicente Way between Claremont Avenue and 55th Street
+528	Ward Street between Acton Street and a dead end	Ward Street between Acton Street and Dohr Street
+526	Ward Street between Park Street and a dead end	Ward Street between Park Street and Acton Street
+530	Ward Street between a dead end and Acton Street	Ward Street between Park Street and Acton Street
+442	Ward Street between a dead end and Dohr Street	Ward Street between Acton Street and Dohr Street
+3752	Warren Freeway at a dead end	Warren Freeway between the study-area edge and CA 13
+3777	Warren Freeway at a dead end	Warren Freeway between the study-area edge and CA 13
+4350	Warren Freeway at a dead end	Warren Freeway between CA 13 and the study-area edge
+4363	Warren Freeway at a dead end	Warren Freeway between CA 13 and the study-area edge
+4381	Warren Freeway at a dead end	Warren Freeway between CA 13 and the study-area edge
+4382	Warren Freeway at a dead end	Warren Freeway between the study-area edge and CA 13
+4349	Warren Freeway between CA 13 and a dead end	Warren Freeway between CA 13 and the study-area edge
+3753	Warren Freeway between a dead end and CA 13	Warren Freeway between the study-area edge and CA 13
+3977	Warren Freeway between a dead end and the study-area edge	Warren Freeway between CA 13 and the study-area edge
+3976	Warren Freeway between the study-area edge and a dead end	Warren Freeway between the study-area edge and CA 13
+2313	Webster Street at a dead end	Webster Street between Halcyon Court and Telegraph Avenue
+2927	Webster Street at a dead end	Webster Street between College Avenue and Piedmont Avenue
+2930	Webster Street at a dead end	Webster Street between Piedmont Avenue and College Avenue
+2941	Webster Street between College Avenue and a dead end	Webster Street between College Avenue and Piedmont Avenue
+2101	Webster Street between Halcyon Court and a dead end	Webster Street between Halcyon Court and Telegraph Avenue
+2945	Webster Street between Hillegass Avenue and a dead end	Webster Street between Hillegass Avenue and Benvenue Avenue
+2942	Webster Street between a dead end and Benvenue Avenue	Webster Street between Hillegass Avenue and Benvenue Avenue
+2929	Webster Street between a dead end and College Avenue	Webster Street between Piedmont Avenue and College Avenue
+2931	Webster Street between a dead end and Piedmont Avenue	Webster Street between College Avenue and Piedmont Avenue
+2320	Webster Street between a dead end and Telegraph Avenue	Webster Street between Halcyon Court and Telegraph Avenue
+2154	Wheeler Street between Russell Street and a dead end	Wheeler Street between Russell Street and Ashby Avenue
+2174	Wheeler Street between a dead end and Ashby Avenue	Wheeler Street between Russell Street and Ashby Avenue
+1223	Woolsey Street between Shattuck Avenue and a dead end	Woolsey Street between Shattuck Avenue and Wheeler Street
+4193	Woolsey Street between Wheeler Street and a dead end	Woolsey Street between Wheeler Street and Shattuck Avenue / Wheeler Street
+2263	Woolsey Street between a dead end and Wheeler Street	Woolsey Street between Shattuck Avenue / Wheeler Street and Wheeler Street

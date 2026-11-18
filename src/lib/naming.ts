@@ -74,7 +74,33 @@ export function buildIndex(net: Network): NetIndex {
     const name = linkName[first.id];
     const others = (nid: number) => nodeStreets[nid].filter((s) => s !== name && s !== UNNAMED);
     const isDeadEnd = (nid: number) => !net.nodes[nid].gate && incoming[nid].length + outgoing[nid].length <= (rev ? 2 : 1);
-    const endText = (nid: number) => joinNames(others(nid), net.nodes[nid].gate ? 'the study-area edge' : 'a dead end');
+    const ends = new Set([first.from, first.to]);
+    const endText = (nid: number) => {
+      const o = others(nid);
+      if (o.length) return joinNames(o, '');
+      if (net.nodes[nid].gate) return 'the study-area edge';
+      // No other street meets this end: follow the same street on, past the block's own ends, to the next cross streets.
+      const seen = new Set([nid]);
+      const queue = [nid];
+      const found: string[] = [];
+      let edge = false, closed = false;
+      while (queue.length) {
+        const cur = queue.shift()!;
+        for (const id of [...outgoing[cur], ...incoming[cur]]) {
+          if (ids.includes(id) || linkStreet(net.links[id]) !== name) continue;
+          const m = net.links[id].from === cur ? net.links[id].to : net.links[id].from;
+          if (m === (nid === first.from ? first.to : first.from)) closed = true;
+          if (ends.has(m) || seen.has(m)) continue;
+          seen.add(m);
+          const om = others(m);
+          if (om.length) for (const s of om) { if (!found.includes(s)) found.push(s); }
+          else if (net.nodes[m].gate) edge = true;
+          else queue.push(m);
+        }
+      }
+      if (found.length) return joinNames(found.sort((p, q) => p.localeCompare(q)), '');
+      return edge ? 'the study-area edge' : closed ? 'a loop' : 'a dead end';
+    };
     let label: string;
     if (unnamed) {
       const dead = isDeadEnd(first.from) ? first.from : isDeadEnd(first.to) ? first.to : -1;
