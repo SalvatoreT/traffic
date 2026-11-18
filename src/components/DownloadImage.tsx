@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { Intervention, Network } from '../types';
 import type { NetIndex } from '../lib/naming';
-import { buildPicture, pictureFacts } from '../lib/picture';
+import { buildPicture, cardPicture } from '../lib/picture';
 import type { EvidenceStatus, Proposal } from '../lib/proposals';
 import { canvasMeasure, buildShareSvg, shareInputFor, svgToPng } from '../lib/shareimage';
 
@@ -30,14 +30,14 @@ export function DownloadImage({ net, index, p, ivs, areaName, areaId, status, op
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
   const pic = p.picture;
-  const facts = useMemo(() => (pic ? pictureFacts(p, pic, index) : null), [p, pic, index]);
-  if (!pic || !facts) return null;
+  const card = useMemo(() => (pic ? cardPicture(p, pic, index) : null), [p, pic, index]);
+  if (!pic || !card) return null;
   const short = (id: string) => periodLabel(id).replace(/\s*\(.*\)\s*$/, '');
   const go = async () => {
     setBusy(true); setMsg('Drawing the image…');
     try {
-      const model = buildPicture(net, index, p, pic, ivs, facts);
-      const input = shareInputFor({ areaName, status: `${status}${evidenceSuffix(evidence)}`, p, pic, facts, model, searched: searchedPeriods, periodLabel, shortLabel: short, caption: '', openUrl, runs });
+      const model = buildPicture(net, index, p, card.pic, ivs, card.facts, card.kind);
+      const input = shareInputFor({ areaName, status: `${status}${evidenceSuffix(evidence)}`, p, pic, facts: card.facts, kind: card.kind, model, searched: searchedPeriods, periodLabel, shortLabel: short, caption: '', openUrl, runs });
       const blob = await svgToPng(buildShareSvg(input, canvasMeasure()));
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');

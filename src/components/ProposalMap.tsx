@@ -4,7 +4,7 @@ import { changeTicks, DEAD_BAND_CUTTHROUGH, DEAD_BAND_FLOW } from '../lib/change
 import { badgeKey } from '../lib/legend';
 import { ATTRIBUTION, BADGE_NAME, BADGE_TEXT } from '../lib/mapexport';
 import type { NetIndex } from '../lib/naming';
-import { allCarFacts, blockChanges, buildPicture, mismatchNote, periodNote, pathOf, pictureAlt, pictureFacts, wholeChange, type BlockChange, type PictureKind } from '../lib/picture';
+import { blockChanges, buildPicture, cardPicture, mismatchNote, periodNote, pathOf, pictureAlt, wholeChange, type BlockChange } from '../lib/picture';
 import { allCarsByBlock, allCarsFromFile, allCarsShort, ALL_CARS_MISSING, blockFigures, blockTip, changeTip, mostlyVisible, noiseNote, signedCars, streetsThatChange, throughLine, type Box, type TipText } from '../lib/proposal-map';
 import { seedsPhrase, signedNum, type LoadedHashes, type Proposal, type ProposalGroup } from '../lib/proposals';
 import { changeWidthFor, colorForIntensity, divergingGradient, mutedColor, type Mode } from '../lib/ramps';
@@ -71,9 +71,7 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
   const runs = p.evidence?.seeds ?? group.computed.seeds;
   const redist = useRedistribution(near, areaId, group, p, pic.period, loaded);
 
-  const kind: PictureKind = p.pictureAll ? 'all' : 'through';
-  const mapPic = p.pictureAll ?? pic;
-  const facts = useMemo(() => (kind === 'all' ? allCarFacts(mapPic, index) : pictureFacts(p, pic, index)), [p, pic, mapPic, kind, index]);
+  const { kind, pic: mapPic, facts } = useMemo(() => cardPicture(p, pic, index), [p, pic, index]);
   const model = useMemo(() => buildPicture(net, index, p, mapPic, ivs, facts, kind), [net, index, p, mapPic, ivs, facts, kind]);
   const changes = useMemo(() => new Map(blockChanges(pic, index).map((c) => [c.block, c])), [pic, index]);
   const allCars = useMemo(() => allCarsByBlock(p, index), [p, index]);

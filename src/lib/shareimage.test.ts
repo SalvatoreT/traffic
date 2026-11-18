@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildFixture } from '../fixtures/area';
 import { buildMockProposals } from '../fixtures/proposals';
 import { buildIndex } from './naming';
-import { buildPicture, pictureFacts } from './picture';
+import { buildPicture, cardPicture, pictureFacts } from './picture';
 import { buildShareSvg, firstClause, freeCorner, qrMatrix, QR_MODULE, shareAlt, shareInputFor, SHARE_MAX_H, SHARE_SCALE, SHARE_W, wrapText, type Measure } from './shareimage';
 import type { Proposal, ProposalPicture } from './proposals';
 
@@ -14,7 +14,7 @@ const labels: Record<string, string> = { pm_peak: 'PM peak (16:00-18:00 weekday,
 const label = (id: string) => labels[id] ?? id;
 const short = (id: string) => label(id).replace(/\s*\(.*\)\s*$/, '');
 
-function build(searched: string[], changes = 2, withPeriod = true) {
+function build(searched: string[], changes = 2, withPeriod = true, all = false) {
   const inside = net.links.filter((l) => l.inStudyArea);
   const pic: ProposalPicture = { period: 'pm_peak', links: inside.slice(0, 4).map((l) => l.id), base: [40, 30, 20, 10], scen: [5, 5, 25, 10] };
   const p: Proposal = {
@@ -23,11 +23,36 @@ function build(searched: string[], changes = 2, withPeriod = true) {
     cutThrough: { baselineVehPerHour: 445, scenarioVehPerHour: 94, changePct: -78.9 },
     byPeriod: !withPeriod ? {} : { ...mock.byPeriod, pm_peak: { ...mock.byPeriod[Object.keys(mock.byPeriod)[0]], cutThrough: { baselineVehPerHour: 610, scenarioVehPerHour: 130, changePct: -78.7 } } },
   };
-  const facts = pictureFacts(p, pic, index);
-  const model = buildPicture(net, index, p, pic, [], facts);
-  const input = shareInputFor({ areaName: 'Test Area', status: 'Calibrated, with limits.', p, pic, facts, model, searched, periodLabel: label, shortLabel: short, caption: '', openUrl: 'https://example.org/#v1;a=test;p=pm_peak;s=mn,9q9p642ut2~mf,9q9p3cqyux' });
+  if (all) p.pictureAll = { ...pic, base: [100, 100, 100, 100], scen: [400, 400, 20, 20] };
+  const card = cardPicture(p, pic, index);
+  const { facts } = card;
+  const model = buildPicture(net, index, p, card.pic, [], facts, card.kind);
+  const input = shareInputFor({ areaName: 'Test Area', status: 'Calibrated, with limits.', p, pic, facts, kind: card.kind, model, searched, periodLabel: label, shortLabel: short, caption: '', openUrl: 'https://example.org/#v1;a=test;p=pm_peak;s=mn,9q9p642ut2~mf,9q9p3cqyux' });
   return { input, img: buildShareSvg(input, measure) };
 }
+
+describe('shareable picture of all cars', () => {
+  it('captions, labels and explains the map as all cars while the headline stays through cars', () => {
+    const { input, img } = build(['pm_peak'], 2, true, true);
+    expect(input.kind).toBe('all');
+    expect(input.caption).toBe('PM peak (16:00-18:00 weekday), change in all cars an hour on each block, proposal vs. today');
+    expect(input.periodFigure?.label).toMatch(/^Through cars on all the area's side streets/);
+    expect(input.periodFigure?.label).not.toContain('this picture shows');
+    expect(img.svg).toContain('Blue: fewer all cars');
+    expect(img.svg).toContain('headline figures count through cars over');
+    expect(input.model.pins[0].text).toMatch(/^\+\d+$/);
+    expect(input.keys.some((k) => k.kind === 'pin' && k.text.includes(`labeled ${input.model.pins[0].text}`) && k.text.includes('biggest gain in all cars'))).toBe(true);
+    expect(input.keys.some((k) => k.kind === 'pin-dashed' && k.text.includes('labeled −') && k.text.includes('biggest drop in all cars'))).toBe(true);
+    expect(img.svg).toContain('<text');
+    expect(img.svg).not.toContain('about 8 cars an hour');
+  });
+  it('keeps the through-car wording for a file without pictureAll', () => {
+    const { input, img } = build(['pm_peak']);
+    expect(input.kind).toBe('through');
+    expect(img.svg).toContain('Blue: fewer through cars');
+    expect(input.periodFigure?.label).toContain('the period this picture shows');
+  });
+});
 
 describe('shareable picture', () => {
   it('says whether the figures are a mean and over how many runs, and names the block honestly', () => {

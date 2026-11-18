@@ -1,9 +1,9 @@
 import qrcode from 'qrcode-generator';
-import { changeTicks, DEAD_BAND_CUTTHROUGH } from './change';
+import { changeTicks } from './change';
 import { badgeKey } from './legend';
 import { BADGE_STYLE, BADGE_TEXT, ATTRIBUTION } from './mapexport';
 import { speedSignSvg, signOffset } from './speedsign';
-import type { Mark, PictureFacts, PictureModel } from './picture';
+import { legendSentence, pictureCaption, type Mark, type PictureFacts, type PictureKind, type PictureModel } from './picture';
 import { seedsPhrase, signedPct, type Proposal, type ProposalPicture } from './proposals';
 import { changeWidthFor, colorForIntensity, divergingStops, mutedColor, widthFor } from './ramps';
 
@@ -32,6 +32,8 @@ export interface ShareInput {
   /** The card's average over the searched periods; null when the picture's period is the only one. */
   averageFigure: ShareHeadline | null;
   caption: string;
+  /** Which cars the map's colors and numbers count. */
+  kind: PictureKind;
   /** Sentences under the legend ramp, in order, each drawn with the swatch of its kind. */
   keys: { kind: 'bar' | 'pin' | 'pin-dashed' | 'text' | 'sign'; text: string; mph?: number | string }[];
   status: string;
@@ -112,13 +114,13 @@ export interface MapOptions {
   /** Blocks colored on the sequential today scale (value 0..1) instead of the change scale. */
   sequential?: boolean;
   /** Street names and the labeled outlines; off for a map shown small. */
-  labels?: boolean;
+  labels?: boolean | 'pins';
 }
 export function mapSvg(model: PictureModel, opts: MapOptions = {}): string {
   const unit = model.unit * (opts.boost ?? 1);
   const bb = (opts.boost ?? 1) * (opts.barBoost ?? 1);
   const bar = { len: model.bar.len * bb, thick: model.bar.thick * bb };
-  const names = opts.labels === false ? [] : model.names, pins = opts.labels === false ? [] : model.pins;
+  const names = opts.labels === false || opts.labels === 'pins' ? [] : model.names, pins = opts.labels === false ? [] : model.pins;
   const muted = mutedColor('light');
   const fontSize = 10.5 * unit;
   const parts: string[] = [];
@@ -314,7 +316,7 @@ function layoutShare(inp: ShareInput, changes: string[], measure: Measure, qrBel
   const legendTop = y;
   let ly = y;
   ly += para(inp.caption, MARGIN, ly, BAND_LEFT, 20, 700, INK) + 8;
-  const ticks = changeTicks('cutthrough');
+  const ticks = changeTicks(inp.kind === 'all' ? 'flow' : 'cutthrough');
   out.push(`<defs><linearGradient id="ramp" x1="0" x2="1" y1="0" y2="0">${divergingStops('light').map((s) => `<stop offset="${((s.t + 1) * 50).toFixed(1)}%" stop-color="${s.color}"/>`).join('')}</linearGradient></defs>`);
   out.push(`<rect x="${MARGIN}" y="${n1(ly)}" width="${BAND_LEFT}" height="16" rx="3" fill="url(#ramp)" stroke="${RULE}"/>`);
   ly += 16 + 19;
@@ -323,7 +325,7 @@ function layoutShare(inp: ShareInput, changes: string[], measure: Measure, qrBel
     text(t, x, ly, 17, 400, INK, i === 0 ? 'start' : i === ticks.length - 1 ? 'end' : 'middle');
   });
   ly += 8;
-  ly += para(`Cars an hour. Blue: fewer through cars. Orange: more. Thin gray: within normal run-to-run variation (about ${Math.round(DEAD_BAND_CUTTHROUGH)} cars an hour).`, MARGIN, ly, BAND_LEFT, 17, 400, MUTED);
+  ly += para(legendSentence(inp.kind), MARGIN, ly, BAND_LEFT, 17, 400, MUTED);
   sections.push({ name: 'legend', left: MARGIN, top: legendTop, right: MARGIN + BAND_LEFT, bottom: ly });
 
   const kx = MARGIN + BAND_LEFT + COL_GAP, kw = SHARE_W - MARGIN - kx;
@@ -406,12 +408,15 @@ export function shareInputFor(a: {
   periodLabel(id: string): string; shortLabel(id: string): string; caption: string; openUrl: string;
   /** The seeds behind the figures, so the picture says whether they are a mean and over how many runs. */
   runs?: number[];
+  /** Which cars the map counts; through cars when the file has no all-car picture. */
+  kind?: PictureKind;
 }): ShareInput {
   const { p, pic, facts } = a;
+  const kind = a.kind ?? 'through';
   const when = hoursOnly(a.periodLabel(pic.period));
   const r = p.byPeriod[pic.period]?.cutThrough;
   const basis = a.runs && a.runs.length > 0 ? `, ${seedsPhrase(a.runs)}` : '';
-  const periodFigure = r ? { label: `Through cars on all the area's side streets, ${when}, the period this picture shows${basis}`, figures: through(r.baselineVehPerHour, r.scenarioVehPerHour, r.changePct) } : null;
+  const periodFigure = r ? { label: `Through cars on all the area's side streets, ${when}, ${kind === 'all' ? '' : ', the period this picture shows'}${basis}`, figures: through(r.baselineVehPerHour, r.scenarioVehPerHour, r.changePct) } : null;
   const names = a.searched.map(a.shortLabel);
   const list = names.length <= 1 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
   const averageFigure = names.length > 1 || (!periodFigure && names.length === 1)
@@ -421,14 +426,20 @@ export function shareInputFor(a: {
   const kinds = new Set(a.model.marks.map((m) => m.kind));
   if (kinds.has('bar')) keys.push({ kind: 'bar', text: 'Yellow and black bar across a street: closed to through cars.' });
   const pins = a.model.pins;
-  if (pins.length > 0 && facts.named) keys.push({ kind: 'pin', text: `Outlined, labeled ${pins[0].text}: ${facts.named.label}, ${facts.namedKind === 'largest' ? 'the block with the largest through-car increase' : "the block the search flagged with an assumed noise band, which need not have the largest increase"}, averaged over the periods searched.` });
-  if (pins.length > 1 && facts.gain) keys.push({ kind: 'pin-dashed', text: `Dashed outline, labeled ${pins[1].text}: ${facts.gain.label}, the biggest gain in the ${a.shortLabel(pic.period)}.` });
+  if (kind === 'all') {
+    const pinOf = (c: typeof facts.gain, i: number, dashed: boolean) => { if (c && pins[i]) keys.push({ kind: dashed ? 'pin-dashed' : 'pin', text: `${dashed ? 'Dashed outline' : 'Outlined'}, labeled ${pins[i].text}: ${c.label}, the biggest ${dashed ? 'drop' : 'gain'} in all cars in the ${a.shortLabel(pic.period)}.` }); };
+    pinOf(facts.gain, 0, false);
+    pinOf(facts.drop, facts.gain ? 1 : 0, true);
+  } else {
+    if (pins.length > 0 && facts.named) keys.push({ kind: 'pin', text: `Outlined, labeled ${pins[0].text}: ${facts.named.label}, ${facts.namedKind === 'largest' ? 'the block with the largest through-car increase' : "the block the search flagged with an assumed noise band, which need not have the largest increase"}, averaged over the periods searched.` });
+    if (pins.length > 1 && facts.gain) keys.push({ kind: 'pin-dashed', text: `Dashed outline, labeled ${pins[1].text}: ${facts.gain.label}, the biggest gain in the ${a.shortLabel(pic.period)}.` });
+  }
   for (const t of new Set(a.model.marks.flatMap((m) => (m.kind === 'sign' ? [m.type] : [])))) { const k = badgeKey(t); keys.push({ kind: 'sign', text: `${k.label}.`, mph: k.sign }); }
   if (kinds.has('diverter')) keys.push({ kind: 'text', text: 'Striped line across a junction: diagonal diverter.' });
   if (kinds.has('arrow')) keys.push({ kind: 'text', text: 'Arrow: one-way street, in the direction shown.' });
   return {
     areaName: a.areaName, title: p.title, changes: p.interventions.map((iv) => iv.label),
-    period: when, periodFigure, averageFigure, caption: `${when}: change in through cars an hour on each block, proposal vs. today`, keys, status: a.status, model: a.model, openUrl: a.openUrl,
+    period: when, periodFigure, averageFigure, caption: pictureCaption(when, kind), kind, keys, status: a.status, model: a.model, openUrl: a.openUrl,
   };
 }
 

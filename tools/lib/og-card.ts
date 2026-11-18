@@ -26,7 +26,7 @@ export interface CardInput {
   lines: string[];
   /** Pinned to the bottom of the text panel. */
   footer: string[];
-  map: { model: PictureModel; sequential: boolean; boost: number; key: 'change' | 'today' | 'none' };
+  map: { model: PictureModel; sequential: boolean; boost: number; key: 'change' | 'change-all' | 'today' | 'none'; /** Draw the labeled outlines (the biggest gain and drop) without street names. */ pins?: boolean };
 }
 
 export interface LaidText { text: string; size: number; x: number; y: number; width: number }
@@ -95,7 +95,7 @@ export function buildCard(inp: CardInput, measure: Measure): Card {
 
   const m = inp.map.model, v = m.view;
   const mapX = PANEL, mapW = CARD_W - PANEL;
-  const chipRows = inp.map.key === 'none' ? [] : inp.map.key === 'change' ? [['#14509a', 'Fewer through cars'], ['#bd5a0a', 'More through cars']] : [['ramp', 'Darker: more through cars']];
+  const chipRows = inp.map.key === 'none' ? [] : inp.map.key === 'change' ? [['#14509a', 'Fewer through cars'], ['#bd5a0a', 'More through cars']] : inp.map.key === 'change-all' ? [['#14509a', 'All cars: fewer'], ['#bd5a0a', 'All cars: more']] : [['ramp', 'Darker: more through cars']];
   const chipW = Math.max(0, ...chipRows.map((r) => measure(r[1], 28, 700))) + 24 + 44 + 16;
   const chipH = chipRows.length * 42 + 20;
   const chipX = CARD_W - 20 - chipW, chipY = CARD_H - 20 - chipH;
@@ -114,7 +114,7 @@ export function buildCard(inp: CardInput, measure: Measure): Card {
 
   const map = `<clipPath id="mapclip"><rect x="${mapX}" y="0" width="${mapW}" height="${CARD_H}"/></clipPath>`
     + `<g clip-path="url(#mapclip)"><rect x="${mapX}" y="0" width="${mapW}" height="${CARD_H}" fill="${MAP_BG}"/>`
-    + `<svg x="${mapX}" y="0" width="${mapW}" height="${CARD_H}" viewBox="${n1(v.x)} ${n1(v.y)} ${n1(v.w)} ${n1(v.h)}" preserveAspectRatio="xMidYMid meet">${mapSvg(m, { boost: inp.map.boost, barBoost: 1.7, sequential: inp.map.sequential, labels: false })}</svg></g>`
+    + `<svg x="${mapX}" y="0" width="${mapW}" height="${CARD_H}" viewBox="${n1(v.x)} ${n1(v.y)} ${n1(v.w)} ${n1(v.h)}" preserveAspectRatio="xMidYMid meet">${mapSvg(m, { boost: inp.map.boost, barBoost: 1.7, sequential: inp.map.sequential, labels: inp.map.pins ? 'pins' : false })}</svg></g>`
     + `<line x1="${mapX}" y1="0" x2="${mapX}" y2="${CARD_H}" stroke="${RULE}" stroke-width="2"/>`;
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${CARD_W}" height="${CARD_H}" viewBox="0 0 ${CARD_W} ${CARD_H}" font-family="${esc(CARD_FONT)}"><rect width="${CARD_W}" height="${CARD_H}" fill="#ffffff"/>${map}${chip.join('')}${out.join('')}</svg>`;

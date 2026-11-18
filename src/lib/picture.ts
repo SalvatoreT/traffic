@@ -1,5 +1,5 @@
 import type { Intervention, Network, Overlay } from '../types';
-import { DEAD_BAND_CUTTHROUGH, softChange } from './change';
+import { DEAD_BAND_CUTTHROUGH, DEAD_BAND_FLOW, softChange } from './change';
 import type { BadgedType, SignType } from './mapexport';
 import { speedSign } from './slowstreet';
 import { barPx, blockBar, filterLegs, legBars } from './blocked';
@@ -76,8 +76,24 @@ export function pictureFacts(p: Proposal, pic: ProposalPicture, index: NetIndex)
   return { named, namedKind, drop, gain };
 }
 
-export function pictureCaption(periodLabel: string): string {
-  return `${periodLabel}, change in through cars an hour on each block, proposal vs. today`;
+/** What a card's map draws: all cars from the file's `pictureAll` when it has one, else through cars from `picture` (older files), with the facts its labels use. */
+export function cardPicture(p: Proposal, pic: ProposalPicture, index: NetIndex): { kind: PictureKind; pic: ProposalPicture; facts: PictureFacts } {
+  const kind: PictureKind = p.pictureAll ? 'all' : 'through';
+  const mapPic = p.pictureAll ?? pic;
+  return { kind, pic: mapPic, facts: kind === 'all' ? allCarFacts(mapPic, index) : pictureFacts(p, pic, index) };
+}
+
+/** The caption of a card's map: the period, which cars, and what is compared. */
+export function pictureCaption(periodLabel: string, kind: PictureKind = 'through'): string {
+  return `${periodLabel}, change in ${kind === 'all' ? 'all' : 'through'} cars an hour on each block, proposal vs. today`;
+}
+
+/** The legend sentence under the ramp: the unit, what blue and orange mean, the gray band for this kind of cars, and for all cars how the map differs from the headline. */
+export function legendSentence(kind: PictureKind): string {
+  const which = kind === 'all' ? 'all cars' : 'through cars';
+  const band = Math.round(kind === 'all' ? DEAD_BAND_FLOW : DEAD_BAND_CUTTHROUGH);
+  const head = `Cars an hour. Blue: fewer ${which}. Orange: more. Thin gray: within normal run-to-run variation (about ${band} cars an hour).`;
+  return kind === 'all' ? `${head} Colors and numbers count all cars on the block, through cars and local trips together; the headline figures count through cars over the whole area.` : head;
 }
 
 /** Said once per card: the figures average the searched periods and the picture shows one. Empty when only that one period was searched. */

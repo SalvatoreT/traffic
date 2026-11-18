@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { buildFixture } from '../../src/fixtures/area';
 import { buildMockProposals } from '../../src/fixtures/proposals';
 import type { Proposals } from '../../src/lib/proposals';
+import { blockIntensity } from '../../src/lib/picture';
 import { VIEWS } from '../../src/lib/route';
 import { publishedList } from '../../src/lib/share-path';
 import { buildCard, CARD_H, CARD_W, MIN_TEXT_PX } from './og-card';
@@ -156,6 +157,45 @@ describe('planned previews', () => {
   });
   it('is deterministic', () => {
     expect(JSON.stringify(planPreviews(input()).plans.map((p) => [p.path, p.meta, p.card.title, p.card.big]))).toBe(JSON.stringify(plans.map((p) => [p.path, p.meta, p.card.title, p.card.big])));
+  });
+});
+
+describe('proposal map in a preview', () => {
+  const ids = bundle.network.links.filter((l) => l.inStudyArea).map((l) => l.id).slice(0, 12);
+  const withAll = (): Proposals => {
+    const f: Proposals = JSON.parse(JSON.stringify(file));
+    for (const g of f.groups) for (const p of g.proposals) p.pictureAll = { period: 'pm-peak', links: ids, base: ids.map(() => 100), scen: ids.map((_, i) => (i < 6 ? 400 : 20)) };
+    return f;
+  };
+  const first = (f: Proposals) => planPreviews(input({ proposals: f })).plans.find((p) => p.path === `/p/${publishedList(f)[0].slug}`)!;
+
+  it('colors and labels by all cars, keeps the through-car headline, and says so in the legend chip and the alt text', () => {
+    const plan = first(withAll());
+    expect(plan.card.map.key).toBe('change-all');
+    expect(plan.card.map.model.pins.length).toBeGreaterThan(0);
+    expect(plan.card.map.model.pins[0].text).toMatch(/^\+\d+$/);
+    expect(plan.card.big?.label).toMatch(/^through cars, /);
+    expect(plan.meta.description).toContain('through cars on side streets');
+    expect(plan.meta.imageAlt).toContain('change in all cars an hour on each block');
+    expect(plan.meta.imageAlt).toContain(`${plan.card.map.model.pins[0].text} cars an hour, is labeled on`);
+    const c = buildCard(plan.card, measure);
+    expect(c.svg).toContain('All cars: fewer');
+    expect(c.svg).not.toContain('More through cars');
+  });
+  it('uses the all-car scale of the card map for every block', () => {
+    const plan = first(withAll());
+    const blocks = plan.card.map.model.blocks;
+    expect(blocks.length).toBeGreaterThan(0);
+    for (const b of blocks) expect(b.t).toBe(blockIntensity(b.delta, 'all'));
+    expect(blocks.some((b) => b.t > 0)).toBe(true);
+    expect(blocks.some((b) => b.t < 0)).toBe(true);
+  });
+  it('falls back to through cars for a file without pictureAll', () => {
+    const plan = first(file);
+    expect(plan.card.map.key).toBe('change');
+    expect(plan.meta.imageAlt).toContain('blue where through cars drop');
+    expect(plan.meta.imageAlt).not.toContain('all cars');
+    expect(buildCard(plan.card, measure).svg).toContain('Fewer through cars');
   });
 });
 

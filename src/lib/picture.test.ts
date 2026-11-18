@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildFixture } from '../fixtures/area';
 import { buildIndex } from './naming';
-import { allCarFacts, blockChanges, blockIntensity, buildPicture, mismatchNote, periodNote, pictureAlt, pictureCaption, pictureFacts, wholeChange } from './picture';
+import { cardPicture, legendSentence, allCarFacts, blockChanges, blockIntensity, buildPicture, mismatchNote, periodNote, pictureAlt, pictureCaption, pictureFacts, wholeChange } from './picture';
 import { parseProposals, type Proposal, type ProposalPicture } from './proposals';
 import { buildMockProposals } from '../fixtures/proposals';
 import { colorForIntensity } from './ramps';
@@ -64,6 +64,10 @@ describe('picture words', () => {
     expect(periodNote(['PM peak'], 'PM peak')).toBe('');
     expect(periodNote(['AM peak', 'PM peak', 'Midday'], 'PM peak')).toBe('The figures on this card average AM peak, PM peak and Midday. This map shows the PM peak only.');
     expect(pictureCaption('PM peak')).toBe('PM peak, change in through cars an hour on each block, proposal vs. today');
+    expect(pictureCaption('PM peak', 'all')).toBe('PM peak, change in all cars an hour on each block, proposal vs. today');
+    expect(legendSentence('all')).toContain('Blue: fewer all cars');
+    expect(legendSentence('all')).toContain('(about 40 cars an hour)');
+    expect(legendSentence('through')).toContain('Blue: fewer through cars');
   });
   it('names the biggest drop and gain in the alt text, with the card\'s total for that period', () => {
     const { pic, loss, gain } = makePic();

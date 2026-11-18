@@ -3,8 +3,9 @@ import { aggregate } from '../../src/lib/change';
 import { calibrationStatusText } from '../../src/lib/caveat';
 import { decodeScenario } from '../../src/lib/hash';
 import { buildIndex, type NetIndex } from '../../src/lib/naming';
-import { buildBaseMap, buildPicture, pathOf, pictureFacts, type PictureModel } from '../../src/lib/picture';
+import { buildBaseMap, buildPicture, cardPicture, pathOf, wholeChange, type PictureModel } from '../../src/lib/picture';
 import { bestForText, evidenceStatus, linkHash, signedPct, type EvidenceStatus, type LoadedHashes, type Proposal, type Proposals } from '../../src/lib/proposals';
+import { signedCars } from '../../src/lib/proposal-map';
 import { OVERLAY_TOP, quantizeIntensity } from '../../src/lib/ramps';
 import { VIEWS, titleFor, type View } from '../../src/lib/route';
 import { defaultPeriod } from '../../src/lib/run';
@@ -52,6 +53,15 @@ export function proposalFigure(p: Proposal): Figure {
 }
 export const bigPct = (pct: number, before: number, after: number): string => (before === after ? 'No change' : signedPct(pct));
 const toneOf = (before: number, after: number) => (after < before ? 'down' : after > before ? 'up' : 'flat') as 'down' | 'up' | 'flat';
+
+/** What a proposal card's map shows, in words: which cars the colors count and the labeled blocks. Through cars only for a file without an all-car picture. */
+export function mapAlt(areaName: string, card: ReturnType<typeof cardPicture>, when: string): string {
+  if (card.kind === 'through') return `Map of ${areaName} with this proposal's changes drawn on the streets, blue where through cars drop and orange where they rise.`;
+  const { gain, drop } = card.facts;
+  const part = (what: string, c: NonNullable<typeof gain>) => `the biggest ${what}, ${signedCars(wholeChange(c))} cars an hour, is labeled on ${c.label}`;
+  const named = [gain ? part('gain', gain) : '', drop ? part('drop', drop) : ''].filter(Boolean).join('; ');
+  return `Map of ${areaName} with this proposal's changes drawn on the streets. Colors and numbers are the change in all cars an hour on each block (through cars and local trips together), blue where all cars drop and orange where they rise${named ? `; ${named}` : ''}.`;
+}
 
 export interface PageMeta { title: string; description: string; imageAlt: string }
 export interface Plan { path: string; name: string; meta: PageMeta; card: CardInput }
@@ -117,7 +127,8 @@ export function planPreviews(inp: PreviewInput): PreviewPlans {
     let ivs: Intervention[] = [];
     try { ivs = decodeScenario(network, linkHash(p.link)).interventions; } catch { /* drawn without its marks */ }
     if (ivs.length === 0) { skipped.push(`${where}: its link does not place on this network`); continue; }
-    const model = buildPicture(network, index, p, p.picture, ivs, pictureFacts(p, p.picture, index));
+    const card = cardPicture(p, p.picture, index);
+    const model = buildPicture(network, index, p, card.pic, ivs, card.facts, card.kind);
     const fig = proposalFigure(p);
     const period = periodLabel(p.picture.period);
     const periodWords = fig.averaged ? 'average of the searched periods' : period;
@@ -135,7 +146,7 @@ export function planPreviews(inp: PreviewInput): PreviewPlans {
       fig.before === fig.after ? `Simulated ${periodWords}${mean}: no change in through cars on the side streets, ${fig.before} an hour.` : `Simulated ${periodWords}${mean}: through cars on the side streets go from ${fig.before} to ${fig.after} an hour (${pctText}).`,
       `${nChanges}.`,
       ...(bestForText(p) ? [`${bestForText(p)}.`] : []),
-      `Map of ${area.name} with this proposal's changes drawn on the streets, blue where through cars drop and orange where they rise.`,
+      mapAlt(area.name, card, periodWords),
       'Simulation, not a forecast.',
     ].join(' ');
     proposalPlans.push({
@@ -144,7 +155,7 @@ export function planPreviews(inp: PreviewInput): PreviewPlans {
         kicker: area.name, title: p.title,
         big: { figure: big, label: `through cars, ${periodWords}`, tone: toneOf(fig.before, fig.after) },
         lines: [`${fig.before} → ${fig.after} an hour`, nChanges],
-        footer, map: { model, sequential: false, boost: BOOST, key: 'change' },
+        footer, map: { model, sequential: false, boost: BOOST, key: card.kind === 'all' ? 'change-all' : 'change', pins: card.kind === 'all' },
       },
     });
   }
