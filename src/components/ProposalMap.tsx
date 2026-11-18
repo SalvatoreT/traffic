@@ -1,17 +1,17 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Intervention, Network } from '../types';
-import { changeTicks, DEAD_BAND_CUTTHROUGH } from '../lib/change';
+import { changeTicks, DEAD_BAND_CUTTHROUGH, DEAD_BAND_FLOW } from '../lib/change';
 import { badgeKey } from '../lib/legend';
 import { ATTRIBUTION, BADGE_NAME, BADGE_TEXT } from '../lib/mapexport';
 import type { NetIndex } from '../lib/naming';
-import { blockChanges, buildPicture, mismatchNote, periodNote, pathOf, pictureAlt, pictureFacts, type BlockChange } from '../lib/picture';
-import { allCarsByBlock, allCarsLine, allCarsPictureLine, allCarsShort, ALL_CARS_MISSING, blockTip, changeTip, mostlyVisible, noiseNote, placeTip, streetsThatChange, throughLine, type Box, type TipText } from '../lib/proposal-map';
+import { allCarFacts, blockChanges, buildPicture, mismatchNote, periodNote, pathOf, pictureAlt, pictureFacts, wholeChange, type BlockChange, type PictureKind } from '../lib/picture';
+import { allCarsByBlock, allCarsFromFile, allCarsShort, ALL_CARS_MISSING, blockFigures, blockTip, changeTip, mostlyVisible, noiseNote, signedCars, streetsThatChange, throughLine, type Box, type TipText } from '../lib/proposal-map';
 import { seedsPhrase, signedNum, type LoadedHashes, type Proposal, type ProposalGroup } from '../lib/proposals';
 import { changeWidthFor, colorForIntensity, divergingGradient, mutedColor, type Mode } from '../lib/ramps';
 import { canTrace } from '../lib/redistribution-view';
 import { blockMeasured } from '../lib/scope';
 import { controlLabel } from '../lib/selection';
-import { itemFor, parseRedistribution, redistributionBasis, redistributionLine, redistributionRows, redistributionTip, redistributionUrl, redistributionVerdict, type StoredItem, type StoredRedistribution } from '../lib/stored-redistribution';
+import { cellCars, itemFor, parseRedistribution, redistributionBasis, redistributionFigures, redistributionLine, redistributionTip, redistributionUrl, redistributionVerdict, type StoredItem, type StoredRedistribution } from '../lib/stored-redistribution';
 import { markCenter, markSvg } from '../lib/shareimage';
 import { useNear } from '../lib/useNear';
 
@@ -71,11 +71,15 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
   const runs = p.evidence?.seeds ?? group.computed.seeds;
   const redist = useRedistribution(near, areaId, group, p, pic.period, loaded);
 
-  const facts = useMemo(() => pictureFacts(p, pic, index), [p, pic, index]);
-  const model = useMemo(() => buildPicture(net, index, p, pic, ivs, facts), [net, index, p, pic, ivs, facts]);
+  const kind: PictureKind = p.pictureAll ? 'all' : 'through';
+  const mapPic = p.pictureAll ?? pic;
+  const facts = useMemo(() => (kind === 'all' ? allCarFacts(mapPic, index) : pictureFacts(p, pic, index)), [p, pic, mapPic, kind, index]);
+  const model = useMemo(() => buildPicture(net, index, p, mapPic, ivs, facts, kind), [net, index, p, mapPic, ivs, facts, kind]);
   const changes = useMemo(() => new Map(blockChanges(pic, index).map((c) => [c.block, c])), [pic, index]);
   const allCars = useMemo(() => allCarsByBlock(p, index), [p, index]);
-  const ranked = useMemo(() => streetsThatChange([...changes.values()].filter((c) => blockMeasured(index.blocks[c.block]))), [changes, index]);
+  const mapChanges = useMemo(() => blockChanges(mapPic, index), [mapPic, index]);
+  const ranked = useMemo(() => streetsThatChange(mapChanges.filter((c) => blockMeasured(index.blocks[c.block]))), [mapChanges, index]);
+  const band = kind === 'all' ? DEAD_BAND_FLOW : DEAD_BAND_CUTTHROUGH;
   const streets = useMemo(() => (near ? index.blocks.flatMap((b, i) => (blockMeasured(b) ? [{ i, d: pathOf(net.links[b.links[0]].geometry), label: b.label }] : [])) : []), [near, index, net]);
   const marksBy = useMemo(() => {
     const m = new Map<number, typeof model.marks>();
@@ -90,12 +94,8 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
   const [pin, setPin] = useState<Sel>(null);
   const [back, setBack] = useState<HTMLElement | null>(null);
   const [mapSeen, setMapSeen] = useState(true);
-  const [anchor, setAnchor] = useState<{ x: number; y: number } | null>(null);
-  const [tipAt, setTipAt] = useState<{ x: number; y: number } | null>(null);
   const grid = useRef<HTMLDivElement>(null);
-  const tipBox = useRef<HTMLDivElement>(null);
   const pinBy = useRef<'focus' | 'click' | null>(null);
-  const pointer = useRef<{ key: string; x: number; y: number } | null>(null);
   const sel = hover ?? pin;
   const keyOf = (s: Sel) => (s ? `${s.kind}:${s.kind === 'block' ? s.block : s.iv}` : null);
   const selectionKey = keyOf(sel);
@@ -116,8 +116,7 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
     const r = root?.getBoundingClientRect();
     return r ? { left: r.left, top: r.top, right: r.right, bottom: r.bottom } : { left: 0, top: 0, right: innerWidth, bottom: innerHeight };
   };
-  const toggle = (s: Sel, e?: React.MouseEvent) => {
-    if (e) pointer.current = { key: keyOf(s)!, x: e.clientX, y: e.clientY };
+  const toggle = (s: Sel) => {
     if (same(pin, s) && pinBy.current === 'click') { dismiss(); return; }
     setPin(s); pinBy.current = 'click';
   };
@@ -141,44 +140,23 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
     io.observe(el);
     return () => io.disconnect();
   }, []);
-  const mouseEnter = (s: Sel) => (e: React.PointerEvent) => {
-    if (e.pointerType !== 'mouse') return;
-    pointer.current = { key: keyOf(s)!, x: e.clientX, y: e.clientY };
-    setHover(s);
-  };
+  const mouseEnter = (s: Sel) => (e: React.PointerEvent) => { if (e.pointerType === 'mouse') setHover(s); };
   const leave = (e: React.PointerEvent) => { if (e.pointerType === 'mouse') setHover(null); };
-
-  useLayoutEffect(() => {
-    const fr = box.current;
-    if (!fr || !sel || !selectionKey) { setAnchor(null); setTipAt(null); return; }
-    const r = fr.getBoundingClientRect();
-    setTipAt(null);
-    const q = pointer.current && pointer.current.key === selectionKey ? pointer.current : null;
-    if (q) { setAnchor({ x: q.x - r.left, y: q.y - r.top }); return; }
-    const el = fr.querySelector<SVGGraphicsElement>(sel.kind === 'block' ? `[data-street="${sel.block}"]` : `[data-iv="${sel.iv}"]`);
-    if (!el) { setAnchor(null); return; }
-    if (sel.kind === 'block' && el instanceof SVGPathElement) {
-      const m = el.getPointAtLength(el.getTotalLength() / 2), ctm = el.getScreenCTM();
-      if (ctm) { setAnchor({ x: ctm.a * m.x + ctm.c * m.y + ctm.e - r.left, y: ctm.b * m.x + ctm.d * m.y + ctm.f - r.top }); return; }
-    }
-    const b = el.getBoundingClientRect();
-    setAnchor({ x: b.left + b.width / 2 - r.left, y: b.top + b.height / 2 - r.top });
-  }, [selectionKey, near]);
 
   const v = model.view;
   const unit = model.unit;
   const muted = mutedColor(mode);
   const ink = INK[mode], bg = BG[mode];
-  const alt = pictureAlt(p, pic, facts, when);
+  const alt = pictureAlt(p, mapPic, facts, when, kind);
   const note = periodNote(searchedPeriods.map(short), when);
-  const mismatch = mismatchNote(facts, when);
+  const mismatch = kind === 'through' ? mismatchNote(facts, when) : '';
   const kinds = new Set(model.marks.map((m) => m.kind));
   const badgeTypes = [...new Set(model.marks.flatMap((m) => (m.kind === 'badge' ? [m.type] : [])))];
   const signTypes = [...new Set(model.marks.flatMap((m) => (m.kind === 'sign' ? [m.type] : [])))];
   const controls = [...new Set(ivs.flatMap((iv) => (iv.type === 'control' ? [controlLabel(iv.control).toLowerCase()] : [])))];
   const badgeName = (t: Intervention['type']) => (t === 'control' && controls.length ? `${BADGE_NAME.control} (${controls.join(', ')})` : BADGE_NAME[t]);
   const traceable = ivs.map((iv, i) => ({ iv, i })).filter(({ iv }) => canTrace(iv));
-  const ticks = changeTicks('cutthrough');
+  const ticks = changeTicks(kind === 'all' ? 'flow' : 'cutthrough');
 
   const selItem = sel?.kind === 'iv' ? itemOf(sel.iv) : undefined;
   const routes = selItem ? selItem.routes.filter((r) => r.links.length > 1 && r.perHour >= 0.5).slice(0, 3) : [];
@@ -192,9 +170,16 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
 
   const blockText = (b: number) => {
     const c: BlockChange = changes.get(b) ?? { block: b, label: index.blocks[b].label, base: 0, scen: 0, delta: 0 };
-    const a = allCars ? (allCars.get(b) ?? { block: b, label: c.label, base: 0, scen: 0, delta: 0 }) : null;
-    return { c, line: throughLine(c, when), noise: noiseNote(c.delta), all: a ? allCarsPictureLine(a, c, when) : allCarsLine(p, pic, c.label, when), allShort: a ? allCarsShort(a) : null };
+    const a = allCars ? (allCars.get(b) ?? { block: b, label: c.label, base: 0, scen: 0, delta: 0 }) : allCarsFromFile(p, pic, c.label);
+    return { c, line: throughLine(c, when), noise: noiseNote(a ? wholeChange(a) : c.delta, band), rows: blockFigures(c, a), hasAll: !!a, allShort: a ? allCarsShort(a) : null };
   };
+  const figTable = (caption: string, head: string[], body: React.ReactNode) => (
+    <table className="pm-fig">
+      <caption>{caption}</caption>
+      <thead><tr>{head.map((h, k) => <th key={h} scope="col" className={k === 0 ? 'pm-fig-corner' : undefined}>{h}</th>)}</tr></thead>
+      <tbody>{body}</tbody>
+    </table>
+  );
   const readout = (() => {
     if (!sel) return <p className="muted pm-hint">Hover or tap a street or a change on the map, or pick one from the lists. Only side streets inside the study area are measured; the rest is faint context.</p>;
     if (sel.kind === 'block') {
@@ -202,10 +187,13 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
       return (
         <div>
           <p className="pm-name"><strong>{t.c.label}</strong></p>
-          <p>{t.line}</p>
+          {figTable(`${when}, cars an hour on this block`, ['Cars', 'Today', 'With this proposal', 'Change'],
+            t.rows.map((r) => (
+              <tr key={r.label}><th scope="row">{r.label}</th><td>{r.today}</td><td>{r.withProposal}</td><td className="pm-chg">{signedCars(r.change)}</td></tr>
+            )))}
           {t.noise && <p className="muted small">{t.noise}</p>}
-          <p className="small">{t.all ?? ALL_CARS_MISSING}</p>
-          <p className="muted small">Through cars only: cars with no trip that starts or ends in the area; {seedsPhrase(runs)}.</p>
+          {!t.hasAll && <p className="muted small">{ALL_CARS_MISSING}</p>}
+          <p className="muted small pm-foot">Through cars: cars with no trip that starts or ends in the area. Local trips: cars of people who start or end a trip in the area. Figures are the {seedsPhrase(runs)}.</p>
         </div>
       );
     }
@@ -220,16 +208,24 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
         <p className="pm-name"><strong>{label}</strong></p>
         {selItem ? (
           <>
-            <p>{redistributionLine(selItem, when)}</p>
-            {routes.length > 0 && (
-              <ul className="pm-routes">{selItem.routes.slice(0, 3).map((r, k) => <li key={r.streets}><strong>{k + 1}.</strong> {r.streets}: {Math.round(r.perHour)} cars an hour</li>)}</ul>
+            {figTable(`${when}, through cars an hour`, ['Through cars', 'Cars an hour'], <tr><th scope="row">Used this change today</th><td>{cellCars(selItem.usedPerHour)}</td></tr>)}
+            {selItem.usedPerHour >= 0.5 && (
+              <>
+                {figTable('Where those cars went with the proposal', ['Where they went', 'Cars an hour'],
+                  redistributionFigures(selItem).map((r) => <tr key={r.label}><th scope="row">{r.label}</th><td>{cellCars(r.value)}</td></tr>))}
+                {routes.length > 0 && figTable('Main routes, numbered as on the map', ['Route', 'Cars an hour'],
+                  routes.map((r, k) => <tr key={r.streets}><th scope="row"><span className="pm-rn">{k + 1}.</span> {r.streets}</th><td>{cellCars(r.perHour)}</td></tr>))}
+                {selItem.receiving.length > 0 && (
+                  <details className="pm-detail">
+                    <summary>Side streets that gain these cars</summary>
+                    {figTable('Side-street blocks that gain these cars', ['Block', 'Cars an hour'],
+                      selItem.receiving.map((x) => <tr key={x.block}><th scope="row">{x.block}</th><td>{cellCars(x.perHour)}</td></tr>))}
+                  </details>
+                )}
+              </>
             )}
-            <details className="pm-detail">
-              <summary>Where they went, in detail</summary>
-              <dl className="pm-rows">{redistributionRows(selItem).map((r) => <div key={r.label}><dt>{r.label}</dt><dd>{r.value}</dd></div>)}</dl>
-              {selItem.receiving.length > 0 && <p className="small">Side streets that gain these cars: {selItem.receiving.map((x) => `${x.block} (${Math.round(x.perHour)} an hour)`).join('; ')}.</p>}
-            </details>
-            {stored && <p className="muted small">{redistributionBasis(stored)}</p>}
+            {selItem.usedPerHour < 0.5 && <p className="small">Almost no through cars used this in the {when}, so nothing is redirected.</p>}
+            {stored && <p className="muted small pm-foot">{redistributionBasis(stored)}</p>}
           </>
         ) : (
           <p className="small">{missing} {onTrace && <button type="button" className="btn small-btn" onClick={onTrace}>Where traffic goes</button>}</p>
@@ -245,15 +241,6 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
     if (!iv || !canTrace(iv)) return changeTip(ivLabel(sel.iv), 'Closes no car movement, so no traffic is redirected.');
     return changeTip(ivLabel(sel.iv), selItem ? redistributionTip(selItem) : redist.status === 'loading' || redist.status === 'idle' ? 'Loading the redirect data…' : 'No redirect data for this change.');
   })();
-  const tipSig = tipText ? `${tipText.title}|${tipText.lines.join('|')}` : '';
-  useLayoutEffect(() => {
-    const fr = box.current, t = tipBox.current;
-    if (!fr || !t || !anchor) return;
-    const r = fr.getBoundingClientRect(), v = viewBox();
-    const bounds: Box = { left: 4, top: Math.max(4, v.top - r.top + 4), right: r.width - 4, bottom: Math.min(r.height - 4, v.bottom - r.top - 4) };
-    if (bounds.bottom - bounds.top < t.offsetHeight) { bounds.top = 4; bounds.bottom = r.height - 4; }
-    setTipAt(placeTip(anchor, { w: t.offsetWidth, h: t.offsetHeight }, bounds));
-  }, [anchor, tipSig]);
   const rowProps = (s: Sel) => ({
     onMouseEnter: () => setHover(s), onMouseLeave: () => setHover(null),
     onFocus: (e: React.FocusEvent<HTMLElement>) => { if (e.currentTarget.matches(':focus-visible')) { setPin(s); pinBy.current = 'focus'; } },
@@ -265,18 +252,20 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
   const top = ranked.slice(0, 8), rest = ranked.slice(8);
   const row = (c: BlockChange) => {
     const s: Sel = { kind: 'block', block: c.block };
+    const t = changes.get(c.block);
     return (
       <tr key={c.block} className={rowCls(s)}>
         <th scope="row"><button type="button" className="pm-link" {...rowProps(s)}>{c.label}</button></th>
-        <td data-label="Through cars">{Math.round(c.base)} → {Math.round(c.scen)}</td>
-        <td data-label="Change">{signedNum(Math.round(c.scen) - Math.round(c.base), '', 0).trim()}</td>
-        {allCars && (() => { const a = allCars.get(c.block); return <td data-label="All cars">{a ? `${Math.round(a.base)} → ${Math.round(a.scen)}` : 'none'}</td>; })()}
+        <td data-label={kind === 'all' ? 'All cars' : 'Through cars'}>{Math.round(c.base)} → {Math.round(c.scen)}</td>
+        <td data-label="Change">{signedCars(wholeChange(c))}</td>
+        {kind === 'all' && <td data-label="Through cars">{t ? `${Math.round(t.base)} → ${Math.round(t.scen)}` : 'none'}</td>}
+        {kind === 'through' && allCars && (() => { const a = allCars.get(c.block); return <td data-label="All cars">{a ? `${Math.round(a.base)} → ${Math.round(a.scen)}` : 'none'}</td>; })()}
       </tr>
     );
   };
   const table = (rows: BlockChange[]) => (
     <table className="pm-table">
-      <thead><tr><th scope="col">Street block</th><th scope="col">Through cars an hour, today → proposal</th><th scope="col">Change</th>{allCars && <th scope="col">All cars an hour, today → proposal</th>}</tr></thead>
+      <thead><tr><th scope="col">Street block</th><th scope="col">{kind === 'all' ? 'All cars' : 'Through cars'} an hour, today → proposal</th><th scope="col">Change</th>{kind === 'all' && <th scope="col">Through cars an hour, today → proposal</th>}{kind === 'through' && allCars && <th scope="col">All cars an hour, today → proposal</th>}</tr></thead>
       <tbody>{rows.map(row)}</tbody>
     </table>
   );
@@ -299,7 +288,7 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
                 {model.pins.map((q) => <text key={q.text + q.x} x={q.x} y={q.y} textAnchor={q.end ? 'end' : 'start'} fontSize={10.5 * unit * 1.15} fontWeight={700} fill={ink} stroke={bg} strokeWidth={3.5 * unit} paintOrder="stroke" strokeLinejoin="round">{q.text}</text>)}
                 {streets.map((s) => (
                   <path key={s.i} data-street={s.i} d={s.d} fill="none" stroke="transparent" strokeWidth={22 * unit} strokeLinecap="round" style={{ pointerEvents: 'stroke', cursor: 'pointer' }}
-                    onPointerEnter={mouseEnter({ kind: 'block', block: s.i })} onClick={(e) => toggle({ kind: 'block', block: s.i }, e)} />
+                    onPointerEnter={mouseEnter({ kind: 'block', block: s.i })} onClick={() => toggle({ kind: 'block', block: s.i })} />
                 ))}
                 {routeGeom.map((r, k) => (
                   <g key={k} stroke={ROUTE_COLOR[mode]} fill={ROUTE_COLOR[mode]} pointerEvents="none">
@@ -312,7 +301,7 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
                 {[...marksBy.entries()].map(([i, ms]) => {
                   const s: Sel = { kind: 'iv', iv: i };
                   return (
-                    <g key={i} data-iv={i} style={{ cursor: 'pointer' }} onPointerEnter={mouseEnter(s)} onClick={(e) => toggle(s, e)}>
+                    <g key={i} data-iv={i} style={{ cursor: 'pointer' }} onPointerEnter={mouseEnter(s)} onClick={() => toggle(s)}>
                       {ms.map((m, k) => {
                         const c = markCenter(m, unit);
                         return (
@@ -328,22 +317,19 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
                 })}
               </svg>
             ) : <p className="pm-wait muted small">Map loads as you scroll.</p>}
-            {tipText && anchor && (
-              <div ref={tipBox} className="pm-tip" aria-hidden="true" style={tipAt ? { left: tipAt.x, top: tipAt.y } : { left: anchor.x, top: anchor.y, visibility: 'hidden' }}>
-                <strong>{tipText.title}</strong>{tipText.lines.map((l) => <span key={l}><br />{l}</span>)}
-              </div>
-            )}
             <p className="pm-attr">{ATTRIBUTION}</p>
           </div>
           <div className="pm-ramp-block">
             <div className="pm-ramp" style={{ background: divergingGradient(mode) }} role="presentation" />
             <div className="pm-ticks" aria-hidden="true">{ticks.map((t) => <span key={t}>{t}</span>)}</div>
-            <p className="small muted">{when}, change in through cars an hour on each block, proposal vs. today. Blue: fewer. Orange: more. Thicker line: bigger change. Thin gray: within normal run-to-run variation (about {Math.round(DEAD_BAND_CUTTHROUGH)} cars an hour). Only side streets inside the study area are measured.</p>
+            {kind === 'all'
+              ? <p className="small muted">{when}, change in all cars an hour on each block (through cars and local trips together), proposal vs. today, {seedsPhrase(runs)}. Colors and numbers on the map are this change. Blue: fewer. Orange: more. Thicker line: bigger change. Thin gray: within normal run-to-run variation (about {Math.round(band)} cars an hour). Only side streets inside the study area are measured. The headline at the top of the card counts through cars over the whole area; this map shows all cars, block by block.</p>
+              : <p className="small muted">{when}, change in through cars an hour on each block, proposal vs. today. Blue: fewer. Orange: more. Thicker line: bigger change. Thin gray: within normal run-to-run variation (about {Math.round(band)} cars an hour). Only side streets inside the study area are measured. This file has no all-car map, so the map shows through cars only.</p>}
           </div>
         </div>
         <div className="pm-side">
           <div className="pm-mid">
-            <div ref={readoutBox} className="pm-read" role="region" aria-label={`${p.title}: street and intervention details`} tabIndex={0} aria-live="polite">
+            <div ref={readoutBox} className="pm-read" role="region" aria-label={`${p.title}: street and intervention details`} tabIndex={0} aria-live="polite" aria-atomic="true">
               {back && sel && <button type="button" className="btn small-btn pm-back" onClick={backToList}>Back to list</button>}
               {readout}
             </div>
@@ -351,7 +337,7 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
               <h4>Streets that change</h4>
               {ranked.length === 0 ? <p className="muted small">No side-street block changes by a whole car an hour in the {when}.</p> : (
                 <>
-                  <p className="muted small">Through cars an hour in the {when}, largest change first{allCars ? ', with all cars (through cars and local trips) beside them' : ''}; {seedsPhrase(runs)}. Select a street to see it on the map.</p>
+                  <p className="muted small">{kind === 'all' ? `All cars an hour in the ${when}, largest change first, with through cars beside them` : `Through cars an hour in the ${when}, largest change first${allCars ? ', with all cars (through cars and local trips) beside them' : ''}`}; {seedsPhrase(runs)}. Select a street to see it on the map.</p>
                   {table(top)}
                   {rest.length > 0 && <details className="pm-more"><summary>{rest.length} more {rest.length === 1 ? 'block' : 'blocks'}</summary>{table(rest)}</details>}
                 </>
@@ -385,7 +371,8 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
                 {kinds.has('arrow') && <li>Arrow: one-way street, in the direction shown.</li>}
                 {signTypes.map((t) => <li key={t}>{badgeKey(t).label}.</li>)}
                 {badgeTypes.length > 0 && <li>Lettered badges: {badgeTypes.map((t) => `${BADGE_TEXT[t]} ${badgeName(t)}`).join(', ')}.</li>}
-                {model.pins.length > 0 && facts.named && <li>Bold number: change on {facts.named.label}, {facts.namedKind === 'largest' ? 'the block with the largest through-car increase' : 'the block the search flagged'}{model.pins.length > 1 && facts.gain ? `, and on ${facts.gain.label}, the biggest gain in the ${when}` : ''}.</li>}
+                {model.pins.length > 0 && kind === 'all' && <li>Bold number: change in all cars an hour on that block, for the biggest gain{facts.drop ? ' and the biggest drop' : ''} in the {when}.</li>}
+                {model.pins.length > 0 && kind === 'through' && facts.named && <li>Bold number: change on {facts.named.label}, {facts.namedKind === 'largest' ? 'the block with the largest through-car increase' : 'the block the search flagged'}{model.pins.length > 1 && facts.gain ? `, and on ${facts.gain.label}, the biggest gain in the ${when}` : ''}.</li>}
                 {routeGeom.length > 0 && <li>Purple dashed line with a number and an arrow: a route the redirected cars take.</li>}
               </ul>
             )}

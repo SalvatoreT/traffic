@@ -119,19 +119,25 @@ export function redistributionTip(item: StoredItem): string {
   return `About ${round(item.usedPerHour)} through cars an hour used this${top ? `; most go via ${top.streets} (${round(top.perHour)} an hour)` : ''}.`;
 }
 
-/** The full breakdown, for the list under the map and the text alternative. */
-export function redistributionRows(item: StoredItem): { label: string; value: string }[] {
+/** The full breakdown as numbers (cars an hour), for the table in the detail box; the parts add up to `usedPerHour`. */
+export function redistributionFigures(item: StoredItem): { label: string; value: number }[] {
   const p = item.perHour;
   const rows = [
-    { label: 'Drive side streets they did not use before', value: carsAnHour(p.sideStreets) },
-    { label: 'Stay on bounding streets or streets they already used', value: carsAnHour(p.stayOnArterials) },
+    { label: 'Drive side streets they did not use before', value: p.sideStreets },
+    { label: 'Stay on bounding streets or streets they already used', value: p.stayOnArterials },
   ];
-  if (p.removed >= 0.05) rows.push({ label: 'Removed by the simulator (gridlock)', value: carsAnHour(p.removed) });
-  if (p.unroutable >= 0.05) rows.push({ label: 'Found no route', value: carsAnHour(p.unroutable) });
-  if (p.waiting >= 0.05) rows.push({ label: 'Still waiting to start at the end of the hour', value: carsAnHour(p.waiting) });
-  if (p.unmatched >= 0.05) rows.push({ label: 'Could not be followed', value: carsAnHour(p.unmatched) });
+  if (p.removed >= 0.05) rows.push({ label: 'Removed by the simulator (gridlock)', value: p.removed });
+  if (p.unroutable >= 0.05) rows.push({ label: 'Found no route', value: p.unroutable });
+  if (p.waiting >= 0.05) rows.push({ label: 'Still waiting to start at the end of the hour', value: p.waiting });
+  if (p.unmatched >= 0.05) rows.push({ label: 'Could not be followed', value: p.unmatched });
   return rows;
 }
+
+/** The same breakdown as text, for the text alternative. */
+export const redistributionRows = (item: StoredItem): { label: string; value: string }[] => redistributionFigures(item).map((r) => ({ label: r.label, value: carsAnHour(r.value) }));
+
+/** A figure for a table cell whose header names the unit: whole cars, "<1" for a positive amount that rounds to none. */
+export const cellCars = (n: number): string => (n > 0 && n < 0.5 ? '<1' : String(round(n)));
 
 export const redistributionBasis = (r: StoredRedistribution): string =>
   `Through cars only (no trip starts or ends in the area), followed from today's run into the proposal's run on the same seeds: ${seedsPhrase(r.seeds)}. A simulation of an uncalibrated model, not a forecast.`;

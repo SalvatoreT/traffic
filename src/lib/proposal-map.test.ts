@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { allCarsByBlock, allCarsLine, allCarsPictureLine, allCarsShort, ALL_CARS_MISSING, blockTip, changeTip, mostlyVisible, noiseNote, placeTip, streetsThatChange, throughLine } from './proposal-map';
+import { allCarsByBlock, allCarsFromFile, allCarsShort, ALL_CARS_MISSING, blockFigures, blockTip, changeTip, mostlyVisible, noiseNote, signedCars, streetsThatChange, throughLine } from './proposal-map';
 import type { NetIndex } from './naming';
 import type { Proposal, ProposalPicture } from './proposals';
 
@@ -16,13 +16,14 @@ describe('proposal map readouts', () => {
   it('flags changes inside the dead band', () => {
     expect(noiseNote(3)).toMatch(/run-to-run/);
     expect(noiseNote(-40)).toBeNull();
+    expect(noiseNote(30, 40)).toMatch(/about 40 cars/);
+    expect(noiseNote(-246, 40)).toBeNull();
   });
   it('gives all cars only for the block the file records them for', () => {
     const p = { byPeriod: { pm: { allTraffic: { largestIncrease: { block: 'North St', baselineVehPerHour: 36, scenarioVehPerHour: 151, increaseVehPerHour: 115, throughIncreaseVehPerHour: 52 }, adjustedPenalty: { block: null, penaltyVehPerHour: null }, blocksAboveBand: 0 } } } } as unknown as Proposal;
     const pic = { period: 'pm', links: [], base: [], scen: [] } as ProposalPicture;
-    expect(allCarsLine(p, pic, 'North St', 'PM peak')).toContain('36 → 151');
-    expect(allCarsLine(p, pic, 'North St', 'PM peak')).toContain('local trips +63');
-    expect(allCarsLine(p, pic, 'Other St', 'PM peak')).toBeNull();
+    expect(allCarsFromFile(p, pic, 'North St')).toEqual({ base: 36, scen: 151 });
+    expect(allCarsFromFile(p, pic, 'Other St')).toBeNull();
   });
   it('reads all cars per block from pictureAll, both directions together, and says nothing when the file has none', () => {
     const index = { blockOfLink: [0, 0, 1, -1], blocks: [{ label: 'North St' }, { label: 'Dana St' }] } as unknown as NetIndex;
@@ -32,11 +33,21 @@ describe('proposal map readouts', () => {
     expect(by.get(0)).toMatchObject({ label: 'North St', base: 70, scen: 278, delta: 208 });
     expect(allCarsByBlock({}, index)).toBeNull();
   });
-  it('splits the all-car change into through cars and local trips', () => {
-    const line = allCarsPictureLine({ base: 70, scen: 278 }, { base: 5, scen: 99 }, 'PM peak');
-    expect(line).toBe('All cars on this block, PM peak: 70 → 278 an hour (+208 cars an hour): through cars +94, local trips +114.');
-    expect(allCarsPictureLine({ base: 70, scen: 60 }, { base: 5, scen: 0 }, 'PM peak')).toContain('local trips −5');
-    expect(allCarsShort({ base: 70.4, scen: 277.6 })).toBe('70 → 278 all cars an hour');
+  it('gives one row of whole cars for through cars alone when the file has no all-car figures', () => {
+    expect(blockFigures({ base: 207.6, scen: 0.2 }, null)).toEqual([{ label: 'Through cars', today: 208, withProposal: 0, change: -208 }]);
+  });
+  it('splits all cars into through cars and local trips so each row adds up', () => {
+    const rows = blockFigures({ base: 5, scen: 99 }, { base: 70, scen: 278 });
+    expect(rows.map((r) => r.label)).toEqual(['Through cars', 'Local trips', 'All cars']);
+    expect(rows[1]).toEqual({ label: 'Local trips', today: 65, withProposal: 179, change: 114 });
+    expect(rows[2]).toEqual({ label: 'All cars', today: 70, withProposal: 278, change: 208 });
+    for (const r of rows) expect(r.withProposal - r.today).toBe(r.change);
+    expect(blockFigures({ base: 5, scen: 0 }, { base: 70, scen: 60 })[1].change).toBe(-5);
+  });
+  it('writes changes with the real minus sign and no unit', () => {
+    expect(signedCars(-208)).toBe('−208');
+    expect(signedCars(29)).toBe('+29');
+    expect(signedCars(0.2)).toBe('0');
   });
   it('keeps the old wording when the file has no all-car picture', () => {
     expect(ALL_CARS_MISSING).toMatch(/not in the published file/);
@@ -46,17 +57,11 @@ describe('proposal map readouts', () => {
 describe('map tooltip', () => {
   it('puts all cars on a second line only when the file has them', () => {
     expect(blockTip('A St', '5 → 9 through cars', null).lines).toEqual(['5 → 9 through cars']);
-    expect(blockTip('A St', '5 → 9 through cars', '10 → 20 all cars an hour').lines).toHaveLength(2);
+    expect(blockTip('A St', '5 → 9 through cars', '10 → 20 all cars an hour').lines).toEqual(['10 → 20 all cars an hour', '5 → 9 through cars']);
   });
   it('has no line for a change whose redirect data has not loaded', () => {
     expect(changeTip('One-way', null)).toEqual({ title: 'One-way', lines: [] });
     expect(changeTip('One-way', 'About 9 used this.').lines).toEqual(['About 9 used this.']);
-  });
-  it('places the tip below and right of the anchor, flips near the edges and stays inside', () => {
-    const b = { left: 0, top: 0, right: 300, bottom: 200 };
-    expect(placeTip({ x: 20, y: 20 }, { w: 100, h: 50 }, b)).toEqual({ x: 32, y: 32 });
-    expect(placeTip({ x: 280, y: 190 }, { w: 100, h: 50 }, b)).toEqual({ x: 168, y: 128 });
-    expect(placeTip({ x: 10, y: 10 }, { w: 400, h: 300 }, b)).toEqual({ x: 0, y: 0 });
   });
   it('knows when the map is already in view', () => {
     const view = { left: 0, top: 0, right: 400, bottom: 800 };

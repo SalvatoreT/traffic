@@ -1,4 +1,4 @@
-import type { Intervention, Network } from '../types';
+import type { Intervention, Network, Overlay } from '../types';
 import { DEAD_BAND_CUTTHROUGH, softChange } from './change';
 import type { BadgedType, SignType } from './mapexport';
 import { speedSign } from './slowstreet';
@@ -31,8 +31,15 @@ export function blockChanges(pic: ProposalPicture, index: NetIndex): BlockChange
   return [...by.values()];
 }
 
-/** Intensity -1..1 of a block's change: the same soft dead band and top as the map's cut-through change layer. */
-export const blockIntensity = (delta: number): number => softChange(delta, 'cutthrough');
+/** Which cars a picture counts: through cars only (the older files), or all cars on the block. */
+export type PictureKind = 'through' | 'all';
+const overlayOf = (kind: PictureKind): Overlay => (kind === 'all' ? 'flow' : 'cutthrough');
+
+/** Intensity -1..1 of a block's change: the same soft dead band and top as the map's change layer for the same kind of cars (cut-through for through cars, flow for all cars). */
+export const blockIntensity = (delta: number, kind: PictureKind = 'through'): number => softChange(delta, overlayOf(kind));
+
+/** The change in whole cars an hour as it is written on the map and in the detail box: today and with the proposal are rounded first, so the two always agree. */
+export const wholeChange = (c: { base: number; scen: number }): number => Math.round(c.scen) - Math.round(c.base);
 
 export interface PictureFacts {
   /** The block the card names, as the picture's period sees it; null when the card names none or the name is not on this network. */
@@ -42,6 +49,14 @@ export interface PictureFacts {
   /** Largest drop and largest gain in the picture's period; null when no block moves that way. */
   drop: BlockChange | null;
   gain: BlockChange | null;
+}
+
+/** Facts for a picture of all cars: no named block (the card names one by through cars), only the largest drop and gain in all cars. */
+export function allCarFacts(pic: ProposalPicture, index: NetIndex): PictureFacts {
+  const changes = blockChanges(pic, index).filter((c) => blockMeasured(index.blocks[c.block]));
+  const drop = changes.reduce<BlockChange | null>((m, c) => (wholeChange(c) < 0 && (!m || c.delta < m.delta) ? c : m), null);
+  const gain = changes.reduce<BlockChange | null>((m, c) => (wholeChange(c) > 0 && (!m || c.delta > m.delta) ? c : m), null);
+  return { named: null, namedKind: 'largest', drop, gain };
 }
 
 export function pictureFacts(p: Proposal, pic: ProposalPicture, index: NetIndex): PictureFacts {
@@ -86,7 +101,12 @@ export function mismatchNote(f: PictureFacts, pictureLabel: string): string {
 }
 
 /** The picture in words: what the drawing shows, for the image's text alternative. */
-export function pictureAlt(p: Proposal, pic: ProposalPicture, f: PictureFacts, pictureLabel: string): string {
+export function pictureAlt(p: Proposal, pic: ProposalPicture, f: PictureFacts, pictureLabel: string, kind: PictureKind = 'through'): string {
+  if (kind === 'all') {
+    const drop = f.drop ? `The biggest drop is on ${f.drop.label}: ${signedNum(wholeChange(f.drop), 'cars an hour', 0)}.` : 'No block drops.';
+    const gain = f.gain ? `The biggest gain is on ${f.gain.label}: ${signedNum(wholeChange(f.gain), 'cars an hour', 0)}.` : 'No block gains.';
+    return `Map of the area in the ${pictureLabel}. Colors and numbers are the change in all cars an hour on each block, through cars and local trips together, mean of the runs. Blue where all cars drop and orange where they rise, with this proposal's changes drawn on the streets. ${drop} ${gain}`;
+  }
   const r = p.byPeriod[pic.period]?.cutThrough;
   const b = r ? Math.round(r.baselineVehPerHour) : 0, s = r ? Math.round(r.scenarioVehPerHour) : 0;
   const d = s - b;
@@ -176,10 +196,10 @@ export function buildBaseMap(net: Network): BaseMap {
   return { view, unit, outline: `${ring.map((q, i) => `${i ? 'L' : 'M'}${fmt(q[0])} ${fmt(-q[1])}`).join('')}Z`, major: major.join(''), minor: minor.join(''), names };
 }
 
-export function buildPicture(net: Network, index: NetIndex, p: Proposal, pic: ProposalPicture, ivs: Intervention[], f: PictureFacts): PictureModel {
+export function buildPicture(net: Network, index: NetIndex, p: Proposal, pic: ProposalPicture, ivs: Intervention[], f: PictureFacts, kind: PictureKind = 'through'): PictureModel {
   const { view, unit, outline, major, minor, names } = buildBaseMap(net);
   const blocks: PictureBlockLine[] = blockChanges(pic, index).filter((c) => blockMeasured(index.blocks[c.block])).map((c) => ({
-    block: c.block, d: pathOf(net.links[index.blocks[c.block].links[0]].geometry), delta: c.delta, t: blockIntensity(c.delta),
+    block: c.block, d: pathOf(net.links[index.blocks[c.block].links[0]].geometry), delta: c.delta, t: blockIntensity(c.delta, kind),
   })).sort((a, b) => Math.abs(a.t) - Math.abs(b.t));
 
   const marks: Mark[] = [];
@@ -216,10 +236,15 @@ export function buildPicture(net: Network, index: NetIndex, p: Proposal, pic: Pr
     const q = pointAlong(l.geometry, l.length / 2);
     const px = q.x, py = -q.y;
     const end = px > view.x + view.w * 0.6;
-    pins.push({ x: px + (end ? -9 : 9) * unit, y: py - 9 * unit, text: signedNum(c.delta, '', 0).trim(), end, d: pathOf(l.geometry), dashed });
+    pins.push({ x: px + (end ? -9 : 9) * unit, y: py - 9 * unit, text: signedNum(wholeChange(c), '', 0).trim(), end, d: pathOf(l.geometry), dashed });
   };
-  pin(f.named, false);
-  if (f.gain && f.gain.block !== f.named?.block && f.named && f.gain.delta > f.named.delta + DEAD_BAND_CUTTHROUGH / 2) pin(f.gain, true);
+  if (kind === 'all') {
+    pin(f.gain, false);
+    if (f.drop) pin(f.drop, true);
+  } else {
+    pin(f.named, false);
+  }
+  if (kind === 'through' && f.gain && f.gain.block !== f.named?.block && f.named && f.gain.delta > f.named.delta + DEAD_BAND_CUTTHROUGH / 2) pin(f.gain, true);
 
   const bp = barPx(BAR_ZOOM);
   return {
