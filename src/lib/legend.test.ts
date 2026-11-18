@@ -15,12 +15,13 @@ describe('map symbols', () => {
     expect(mapSymbols([{ type: 'traffic_circle' }, { type: 'control', control: 'traffic_circle' }], false).badges).toEqual(['traffic_circle']);
   });
   it('names each picture in words and never in letters', () => {
-    expect(badgeKey('turn_ban').label).toBe('Turn arrow in a red slashed circle: turn banned');
+    expect(badgeKey('turn_ban_left').label).toBe('Left-turn arrow in a red slashed circle: left turn banned');
+    expect(badgeKey('turn_ban_right').label).toBe('Right-turn arrow in a red slashed circle: right turn banned');
     expect(badgeKey('stop').label).toBe('Red stop sign: intersection changed to a two-way stop');
     expect(badgeKey('all_way_stop').label).toContain('ALL plaque');
     expect(badgeKey('signal').label).toMatch(/^Traffic light:/);
     expect(badgeKey('signal_timing').label).toMatch(/^Traffic light with a clock:/);
-    const all = mapSymbols([{ type: 'one_way' }, { type: 'traffic_circle' }, { type: 'signal_timing' }, { type: 'turn_ban' }, { type: 'speed_hump' }, { type: 'control', control: 'uncontrolled' }], false).badges;
+    const all = mapSymbols([{ type: 'one_way' }, { type: 'traffic_circle' }, { type: 'signal_timing' }, { type: 'turn_ban', turn: 'right' }, { type: 'speed_hump' }, { type: 'control', control: 'uncontrolled' }], false).badges;
     expect(all).toHaveLength(6);
     for (const t of all) { expect(badgeKey(t).picto).toBe(t); expect(badgeKey(t).label).not.toMatch(/\b(IC|ST|SH|TC|1W|TB)\b/); }
     expect(badgeKey('speed_hump').label).toContain(BADGE_NAME.speed_hump);

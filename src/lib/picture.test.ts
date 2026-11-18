@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildFixture } from '../fixtures/area';
 import { buildIndex } from './naming';
-import { cardPicture, legendSentence, allCarFacts, blockChanges, blockIntensity, buildPicture, mismatchNote, periodNote, pictureAlt, pictureCaption, pictureFacts, wholeChange } from './picture';
+import { cardPicture, legendSentence, allCarFacts, blockChanges, blockIntensity, buildPicture, pinCoversMark, mismatchNote, periodNote, pictureAlt, pictureCaption, pictureFacts, wholeChange } from './picture';
 import { parseProposals, type Proposal, type ProposalPicture } from './proposals';
 import { buildMockProposals } from '../fixtures/proposals';
 import { colorForIntensity } from './ramps';
@@ -140,6 +140,21 @@ describe('picture drawing model', () => {
     expect(m.pins.length).toBe(1);
     expect(m.view.w).toBeGreaterThan(0);
     expect(m.minor + m.major).toMatch(/^M/);
+  });
+});
+
+describe('picture marks and numbers', () => {
+  it('never lets a picture or sign cover a number label, even on the numbered block', () => {
+    const { pic, gain } = makePic();
+    const p = withPic(pic, index.blocks[gain].label, 20);
+    const f = pictureFacts(p, pic, index);
+    const onBlock = index.blocks[gain].links[0];
+    for (const kind of ['through', 'all'] as const) {
+      const m = buildPicture(net, index, p, pic, [{ type: 'one_way', link: onBlock }, { type: 'modal_filter', link: onBlock }, { type: 'speed_hump', link: onBlock, position: net.links[onBlock].length / 2 }], f, kind);
+      expect(m.marks.some((k) => k.kind === 'picto')).toBe(true);
+      expect(m.pins.length).toBeGreaterThan(0);
+      for (const pin of m.pins) expect(pinCoversMark(pin, m.marks, m.unit, m.bar.len)).toBe(false);
+    }
   });
 });
 

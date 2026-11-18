@@ -4,7 +4,7 @@ import { badgeKey, orderSymbols, type LegendSymbol } from './legend';
 import { ATTRIBUTION } from './mapexport';
 import { pictoSvg, type MapPicto } from './signs';
 import { speedSignSvg, signOffset } from './speedsign';
-import { legendSentence, pictureCaption, type Mark, type PictureFacts, type PictureKind, type PictureModel } from './picture';
+import { legendSentence, pictureCaption, picturePictoH, type Mark, type PictureFacts, type PictureKind, type PictureModel } from './picture';
 import { seedsPhrase, signedPct, type Proposal, type ProposalPicture } from './proposals';
 import { changeWidthFor, colorForIntensity, divergingStops, mutedColor, widthFor } from './ramps';
 
@@ -75,8 +75,6 @@ export function wrapText(text: string, size: number, weight: number, maxW: numbe
 
 /** Height of the speed-limit sign in a picture, in nominal CSS px (scaled by `unit`). */
 const PIC_SIGN_H = 22;
-/** Height of an intervention picture (stop sign, traffic light and the rest) in a picture, in nominal CSS px. */
-const PIC_PICTO_H = 24;
 /** Where a mark's hit area and selection ring belong: on the street, or at its sign. */
 export function markCenter(m: Mark, unit: number): { x: number; y: number } {
   if (m.kind !== 'sign') return { x: m.x, y: m.y };
@@ -98,7 +96,7 @@ export function markSvg(m: Mark, unit: number, bar: { len: number; thick: number
     const ln = (w: number, c: string, d = '') => `<line x1="0" y1="${n1(-h)}" x2="0" y2="${n1(h)}" stroke="${c}" stroke-width="${n1(w * k)}"${d}/>`;
     return `<g transform="translate(${n1(m.x)} ${n1(m.y)}) rotate(${n1(m.bearing)})">${ln(14, '#fff')}${ln(10, '#111')}${ln(6, '#ffd43b', ` stroke-dasharray="${n1(7 * k)} ${n1(3 * k)}"`)}</g>`;
   }
-  return `<g transform="translate(${n1(m.x)} ${n1(m.y)}) scale(${n1(unit)})">${pictoSvg(m.picto, PIC_PICTO_H, { rotate: m.rotate })}</g>`;
+  return `<g transform="translate(${n1(m.x)} ${n1(m.y)}) scale(${n1(unit)})">${pictoSvg(m.picto, picturePictoH(m.picto), { rotate: m.rotate })}</g>`;
 }
 
 /** The map as SVG in its own coordinates (meters, y down), light colors. */

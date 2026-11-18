@@ -13,7 +13,7 @@ import { MapMenu } from './MapMenu';
 import { legendModel, mapSymbols } from '../lib/legend';
 import { fitSheetRect } from '../lib/sheet';
 import { captionOf, composeImage, drawBadges, EXPORT_SCALE, exportFileName, FORMATS, SIGN_PX, type BadgeMark, type ImageFormat } from '../lib/mapexport';
-import { PICTO_PX, pictoElement, pictoOf, rotationOfHeading } from '../lib/signs';
+import { PICTO_PX, pictoElement, pictoOf, rotationOfHeading, symbolOf } from '../lib/signs';
 import { speedSign } from '../lib/slowstreet';
 import { signOffset, speedSignElement } from '../lib/speedsign';
 import { FADE_TIERS, interventionInRegion, REGION_FEATHER_M, type Region } from '../lib/region';
@@ -893,7 +893,7 @@ export function MapView(p: Props) {
           offset = [o.dx, o.dy];
           at = proj.toLonLat(sign.x, sign.y);
         } else {
-          const picto = pictoOf(iv);
+          const picto = pictoOf(symbolOf(iv, net));
           if (picto) {
             el.className = 'iv-sign';
             el.innerHTML = pictoElement(picto, PICTO_PX, { rotate: pictoRotation(iv, net) });
@@ -1042,7 +1042,7 @@ export function MapView(p: Props) {
           return [{ x: s.x + o.dx, y: s.y + o.dy, type: 'speed_sign' as const, mph: sign.mph }];
         }
         if (iv.type === 'diagonal_diverter') return [{ x: q.x, y: q.y, type: 'diagonal_diverter' as const, bearing: iv.bearing }];
-        const picto = pictoOf(iv);
+        const picto = pictoOf(symbolOf(iv, net));
         return picto ? [{ x: q.x, y: q.y, type: 'picto' as const, picto, rotate: pictoRotation(iv, net) }] : [];
       });
       const change = L.view === 'change';
@@ -1058,7 +1058,7 @@ export function MapView(p: Props) {
           interventions: L.interventions.map((iv) => describeInterventionFull(iv, net, L.index)),
         }),
         legend,
-        keys: { car: L.modes.car && !L.still, bicycle: L.modes.bicycle && !L.still, pedestrian: L.modes.pedestrian && !L.still, symbols: mapSymbols(L.interventions.filter((iv) => interventionInRegion(iv, net, L.region)), !!L.intentPaths?.length), reasonColor: INTENT_COLORS[L.mode].line, agents: { car: AGENT_COLORS[L.mode].car, bike: AGENT_COLORS[L.mode].bike, ped: AGENT_COLORS[L.mode].ped, ring: AGENT_COLORS[L.mode].ring } },
+        keys: { car: L.modes.car && !L.still, bicycle: L.modes.bicycle && !L.still, pedestrian: L.modes.pedestrian && !L.still, symbols: mapSymbols(L.interventions.filter((iv) => interventionInRegion(iv, net, L.region)).map((iv) => symbolOf(iv, net)), !!L.intentPaths?.length), reasonColor: INTENT_COLORS[L.mode].line, agents: { car: AGENT_COLORS[L.mode].car, bike: AGENT_COLORS[L.mode].bike, ped: AGENT_COLORS[L.mode].ped, ring: AGENT_COLORS[L.mode].ring } },
         theme: { surface: v('--surface', '#ffffff'), text: v('--text', '#1b2430'), muted: v('--muted', '#4a5565'), border: v('--border', '#c9c6bc') },
       });
       const blob = await new Promise<Blob | null>((res) => cv.toBlob(res, FORMATS[fmt].mime, 0.92));

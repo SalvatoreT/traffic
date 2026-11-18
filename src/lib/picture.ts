@@ -1,7 +1,7 @@
 import type { Intervention, Network, Overlay } from '../types';
 import { DEAD_BAND_CUTTHROUGH, DEAD_BAND_FLOW, softChange } from './change';
 import type { SignType } from './mapexport';
-import { pictoOf, rotationOfHeading, type MapPicto } from './signs';
+import { pictoOf, rotationOfHeading, symbolOf, type MapPicto } from './signs';
 import { speedSign } from './slowstreet';
 import { barPx, blockBar, filterLegs, legBars } from './blocked';
 import { pointAlong } from './geom';
@@ -148,6 +148,25 @@ export type Mark =
 export interface StreetName { text: string; x: number; y: number; angle: number }
 export interface Pin { x: number; y: number; text: string; end: boolean; d: string; dashed: boolean }
 
+/** Height of an intervention picture in a proposal's picture, in nominal CSS px (scaled by `unit`); a one-way sign is small, near the footprint of the arrow it replaced. */
+export const picturePictoH = (id: MapPicto): number => (id === 'one_way' ? 16 : 24);
+/** Radius of the circle that holds a picto mark whatever its turn, in meters. */
+export const pictoRadius = (m: Extract<Mark, { kind: 'picto' }>, unit: number): number => (m.picto === 'one_way' ? 0.56 : 0.5) * picturePictoH(m.picto) * unit;
+/** Where a number label sits: the box its text and halo cover, in meters (x east, y down). */
+export function pinBox(p: Pin, unit: number): { x0: number; x1: number; y0: number; y1: number } {
+  const size = 10.5 * unit * 1.15, w = p.text.length * 0.62 * size + 3.5 * unit;
+  return { x0: p.end ? p.x - w : p.x - 1.7 * unit, x1: p.end ? p.x + 1.7 * unit : p.x + w, y0: p.y - size * 0.95 - 1.7 * unit, y1: p.y + size * 0.3 + 1.7 * unit };
+}
+const hitsCircle = (b: ReturnType<typeof pinBox>, cx: number, cy: number, r: number) => {
+  const dx = Math.max(b.x0 - cx, 0, cx - b.x1), dy = Math.max(b.y0 - cy, 0, cy - b.y1);
+  return dx * dx + dy * dy < r * r;
+};
+/** True where a number label's box touches a picture, a speed-limit sign, a bar (`barLen` long) or a diverter on the map. */
+export function pinCoversMark(p: Pin, marks: readonly Mark[], unit: number, barLen = 0): boolean {
+  const b = pinBox(p, unit);
+  return marks.some((m) => hitsCircle(b, m.x, m.y, m.kind === 'picto' ? pictoRadius(m, unit) : m.kind === 'sign' ? 20 * unit : m.kind === 'bar' ? barLen / 2 : 11 * unit));
+}
+
 export interface PictureModel {
   view: { x: number; y: number; w: number; h: number };
   /** Meters per nominal CSS pixel. */
@@ -162,6 +181,7 @@ export interface PictureModel {
   bar: { len: number; thick: number };
 }
 
+const boxesTouch = (a: ReturnType<typeof pinBox>, b: ReturnType<typeof pinBox>) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
 const fmt = (v: number) => (Math.round(v * 10) / 10).toString();
 export const pathOf = (g: [number, number][]) => g.map(([x, y], i) => `${i ? 'L' : 'M'}${fmt(x)} ${fmt(-y)}`).join('');
 const FIT = 1.15;
@@ -240,19 +260,25 @@ export function buildPicture(net: Network, index: NetIndex, p: Proposal, pic: Pr
         marks.push({ kind: 'picto', picto: 'speed_hump', ...at(q.x, q.y), rotate: 0, iv: ivi });
         break;
       }
-      case 'traffic_circle': case 'control': case 'signal_timing': { const n = net.nodes[iv.node]; const id = pictoOf(iv) as MapPicto | null; if (n && id) marks.push({ kind: 'picto', picto: id, ...at(n.x, n.y), rotate: 0, iv: ivi }); break; }
-      case 'turn_ban': { const a = net.links[iv.fromLink]; const n = a ? net.nodes[a.to] : undefined; if (n) marks.push({ kind: 'picto', picto: 'turn_ban', ...at(n.x, n.y), rotate: 0, iv: ivi }); break; }
+      case 'traffic_circle': case 'control': case 'signal_timing': { const n = net.nodes[iv.node]; const id = pictoOf(symbolOf(iv, net)) as MapPicto | null; if (n && id) marks.push({ kind: 'picto', picto: id, ...at(n.x, n.y), rotate: 0, iv: ivi }); break; }
+      case 'turn_ban': { const a = net.links[iv.fromLink]; const n = a ? net.nodes[a.to] : undefined; const id = pictoOf(symbolOf(iv, net)) as MapPicto | null; if (n && id) marks.push({ kind: 'picto', picto: id, ...at(n.x, n.y), rotate: 0, iv: ivi }); break; }
     }
   });
 
+  const bar0 = barPx(BAR_ZOOM);
   const pins: Pin[] = [];
   const pin = (c: BlockChange | null, dashed: boolean) => {
     if (!c) return;
     const l = net.links[index.blocks[c.block].links[0]];
     const q = pointAlong(l.geometry, l.length / 2);
     const px = q.x, py = -q.y;
-    const end = px > view.x + view.w * 0.6;
-    pins.push({ x: px + (end ? -9 : 9) * unit, y: py - 9 * unit, text: signedNum(wholeChange(c), '', 0).trim(), end, d: pathOf(l.geometry), dashed });
+    const end0 = px > view.x + view.w * 0.6;
+    const text = signedNum(wholeChange(c), '', 0).trim(), d = pathOf(l.geometry);
+    // A published number is never covered: try the usual spot, then the other side and farther above and below.
+    const spots: [boolean, number][] = [[end0, -9], [!end0, -9], [end0, 20], [!end0, 20], [end0, -26], [!end0, -26], [end0, 36], [!end0, 36]];
+    const made = spots.map(([end, dy]): Pin => ({ x: px + (end ? -9 : 9) * unit, y: py + dy * unit, text, end, d, dashed }));
+    const free = made.find((q) => !pinCoversMark(q, marks, unit, bar0.length * unit) && pins.every((o) => !boxesTouch(pinBox(q, unit), pinBox(o, unit))));
+    pins.push(free ?? made[0]);
   };
   if (kind === 'all') {
     pin(f.gain, false);
@@ -262,7 +288,7 @@ export function buildPicture(net: Network, index: NetIndex, p: Proposal, pic: Pr
   }
   if (kind === 'through' && f.gain && f.gain.block !== f.named?.block && f.named && f.gain.delta > f.named.delta + DEAD_BAND_CUTTHROUGH / 2) pin(f.gain, true);
 
-  const bp = barPx(BAR_ZOOM);
+  const bp = bar0;
   return {
     view, unit, outline, major, minor, blocks, marks, names, pins,
     bar: { len: bp.length * unit, thick: bp.thick * unit },

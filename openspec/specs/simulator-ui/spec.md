@@ -390,7 +390,7 @@ Hovering a street on the map SHALL show, under the block's name, the metric the 
 - **THEN** two lines show, one per direction, each with its own swatch and value and naming its direction, for example "toward Elm St"
 
 ### Requirement: Modal filters show what they close
-The map SHALL mark every street a modal filter closes to through cars, and only those streets, with a short bar drawn across the road at a right angle to it, by shape and pattern as well as color, and SHALL draw no badge for a modal filter. Bars SHALL be map features centered on their street at a geographic point, sized from the drawn road with a minimum size so they are legible at every zoom. A leg's bar SHALL sit 8 m along its street from where the leg begins at every zoom, so zoomed out the bars of a junction overlap into one compact mark no wider than about 22 CSS px at the fitted overview. Each filter SHALL keep an invisible control of at least 24 by 24 CSS px at its location that is reachable by keyboard, has a visible focus ring and the filter's description as its name, and selects the filter when activated; clicking a bar SHALL select its filter. The Scenario list, selection pop-up and tooltip SHALL say in words which legs are closed.
+The map SHALL mark every street a modal filter closes to through cars, and only those streets, with a short bar drawn across the road at a right angle to it, by shape and pattern as well as color, and SHALL draw no sign picture for a modal filter. Bars SHALL be map features centered on their street at a geographic point, sized from the drawn road with a minimum size so they are legible at every zoom. A leg's bar SHALL sit 8 m along its street from where the leg begins at every zoom, so zoomed out the bars of a junction overlap into one compact mark no wider than about 22 CSS px at the fitted overview. Each filter SHALL keep an invisible control of at least 24 by 24 CSS px at its location that is reachable by keyboard, has a visible focus ring and the filter's description as its name, and selects the filter when activated; clicking a bar SHALL select its filter. The Scenario list, selection pop-up and tooltip SHALL say in words which legs are closed.
 
 #### Scenario: Text matches the map
 - **WHEN** a filter is placed
@@ -410,7 +410,7 @@ The map SHALL mark every street a modal filter closes to through cars, and only 
 
 #### Scenario: Block filter
 - **WHEN** a filter is on a block
-- **THEN** one bar crosses the block at its midpoint, with no badge and no tape along the block, and the text names the block
+- **THEN** one bar crosses the block at its midpoint, with no sign picture and no tape along the block, and the text names the block
 
 #### Scenario: Zooming out
 - **WHEN** the map is at the fitted overview
@@ -1055,11 +1055,11 @@ On cards without a sticky map, tapping a list row SHALL scroll the map into view
 - **THEN** the map scrolls into view with the selection pinned, and "Back to list" returns focus to that row
 
 ### Requirement: Intervention pictures
-Every surface that marks an intervention SHALL mark a control change, a signal timing change, a speed hump, a traffic circle, a one-way street and a turn ban with a small sign-style picture, never with letters. The pictures SHALL differ in shape and pattern, not only in color, and every surface SHALL draw each from the same shape data. Marks keep their text alternatives, keyboard operation and visible focus.
+Every surface that marks an intervention SHALL mark a control change, a signal timing change, a speed hump, a traffic circle, a one-way street and a turn ban with a small sign-style picture, never with letters, each different in shape and pattern and drawn from the same shape data. A turn ban SHALL show a left, right or U-turn arrow from the geometry of its two links. A picture SHALL never cover a published change number in a proposal's picture. Marks keep their text alternatives, keyboard operation and visible focus.
 
 #### Scenario: Which picture
 - **WHEN** interventions are drawn
-- **THEN** a two-way stop is a stop sign, an all-way stop the same sign with an ALL plaque, a signal a traffic light, an uncontrolled intersection a gray stop sign with a slash, signal timing a traffic light with a clock, a speed hump a yellow diamond with a bump, a traffic circle (or a control that becomes one) a blue disc with circling arrows, a one-way street a black sign with a white arrow, and a turn ban a turn arrow in a red slashed circle
+- **THEN** a two-way stop is a stop sign, an all-way stop the same sign with an ALL plaque, a signal a traffic light, an uncontrolled intersection a gray stop sign with a slash, signal timing a traffic light with a clock, a speed hump a yellow diamond with a bump, a traffic circle (or a control that becomes one) a blue disc with circling arrows, a one-way street a black sign with a white arrow, and a turn ban a left-turn, right-turn or U-turn arrow in a red slashed circle
 
 #### Scenario: Control variants
 - **WHEN** a scenario holds an all-way stop and a signal
@@ -1068,3 +1068,26 @@ Every surface that marks an intervention SHALL mark a control change, a signal t
 #### Scenario: One-way direction
 - **WHEN** a one-way street is placed on a street running north to south
 - **THEN** its sign points south along the street
+
+#### Scenario: Turn side
+- **WHEN** a turn ban turns from a link onto a link on its right
+- **THEN** its picture and its key show a right-turn arrow
+
+#### Scenario: Number stays visible
+- **WHEN** a one-way sign sits on the block whose change number a proposal's picture prints
+- **THEN** the number is placed where the sign does not cover it
+
+### Requirement: Menu choice pictures
+The menu that opens when a street or intersection is selected SHALL show, beside each choice that places a mark, the picture of that mark, in a fixed-width column so the labels line up. The pictures SHALL be decorative: each choice's text stays its accessible name, and its keyboard operation and focus ring stay as they were.
+
+#### Scenario: Which pictures
+- **WHEN** the menu lists choices
+- **THEN** a modal filter shows the bar, a diverter the striped line, a speed limit or Slow Street the speed-limit sign, a control choice the picture of the control it sets, a turn ban the side it turns, and every other choice its sign picture
+
+#### Scenario: Control choices
+- **WHEN** a person opens "Change control" at an intersection
+- **THEN** each choice shows its own sign beside its text, with the labels aligned in one column
+
+#### Scenario: Phone width
+- **WHEN** the menu is open as a sheet on a phone
+- **THEN** the pictures and labels fit without horizontal scrolling

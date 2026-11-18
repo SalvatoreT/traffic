@@ -1,9 +1,9 @@
 import type { Network } from '../types';
 import { pointAlong, polylineLength } from './geom';
 import { compassWord } from './naming';
+import { turnGeometry, type TurnKind } from './turnkind';
 import { buildBaseMap, type BaseMap, type StreetName } from './picture';
 
-export type TurnKind = 'left' | 'right' | 'straight' | 'u-turn';
 
 /** The static map of one turn is this many meters wide and 0.7 times as high, centered on the junction. ASSUMPTION: display scale. */
 export const TURN_VIEW_M = 340;
@@ -15,40 +15,10 @@ const NOMINAL_OVERVIEW = 400;
 const REACH = 62;
 const FONT = 11.5;
 const CHAR_W = 0.56;
-/** A turn whose heading changes by less than this is straight on, and more than its complement a U-turn (degrees). */
-const STRAIGHT_DEG = 25;
-const U_DEG = 155;
-
 type XY = [number, number];
 const fmt = (v: number) => (Math.round(v * 10) / 10).toString();
 const pathOf = (g: XY[]) => g.map(([x, y], i) => `${i ? 'L' : 'M'}${fmt(x)} ${fmt(-y)}`).join('');
 const norm = (a: number) => { let r = a; while (r > 90) r -= 180; while (r <= -90) r += 180; return r; };
-
-export interface TurnGeometry {
-  turn: TurnKind;
-  /** Where the arrow leaves the approach link, the corner it turns round and where it enters the exit link (network coordinates, y up). */
-  start: XY; corner: XY; end: XY;
-  /** Heading (radians, y up) arriving at the junction on the approach and leaving it on the exit. */
-  headingIn: number; headingOut: number;
-}
-
-/** The turn from link `from` into link `to`: its direction, and the three points of the curved arrow, the first on the approach link and the last on the exit link. */
-export function turnGeometry(net: Network, from: number, to: number, reach: number): TurnGeometry {
-  const a = net.links[from], b = net.links[to];
-  const ra = Math.min(reach, 0.8 * polylineLength(a.geometry)), rb = Math.min(reach, 0.8 * polylineLength(b.geometry));
-  const r = Math.min(ra, rb);
-  const pa = pointAlong(a.geometry, polylineLength(a.geometry) - r), ea = a.geometry[a.geometry.length - 1];
-  const pb = pointAlong(b.geometry, r), sb = b.geometry[0];
-  const start: XY = [pa.x, pa.y], end: XY = [pb.x, pb.y];
-  const corner: XY = [(ea[0] + sb[0]) / 2, (ea[1] + sb[1]) / 2];
-  const headingIn = Math.atan2(corner[1] - start[1], corner[0] - start[0]);
-  const headingOut = Math.atan2(end[1] - corner[1], end[0] - corner[0]);
-  let d = ((headingOut - headingIn) * 180) / Math.PI;
-  while (d > 180) d -= 360;
-  while (d <= -180) d += 360;
-  const turn: TurnKind = Math.abs(d) < STRAIGHT_DEG ? 'straight' : Math.abs(d) > U_DEG ? 'u-turn' : d > 0 ? 'left' : 'right';
-  return { turn, start, corner, end, headingIn, headingOut };
-}
 
 const SHORT: [RegExp, string][] = [[/\bStreet\b/g, 'St'], [/\bAvenue\b/g, 'Ave'], [/\bBoulevard\b/g, 'Blvd'], [/\bRoad\b/g, 'Rd'], [/\bDrive\b/g, 'Dr']];
 export const shortStreet = (name: string): string => SHORT.reduce((s, [re, t]) => s.replace(re, t), name.trim());
@@ -157,3 +127,5 @@ export function buildOverview(net: Network, turns: { n: number; from: number; to
   const names = base.names.filter((nm) => nm.x > view.x && nm.x < view.x + view.w && nm.y > view.y && nm.y < view.y + view.h);
   return { ...base, view, unit, names, markers, junctions, fontSize: size, radius: r };
 }
+
+export { turnGeometry, type TurnKind, type TurnGeometry } from './turnkind';

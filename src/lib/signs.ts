@@ -1,4 +1,5 @@
-import type { ControlType, Intervention } from '../types';
+import type { ControlType, Intervention, Network } from '../types';
+import { turnKindOf, type TurnKind } from './turnkind';
 
 /**
  * The sign-style pictures that mark an intervention on the map, in the scenario list, in the legend, in a proposal's picture and in the exported image.
@@ -7,7 +8,7 @@ import type { ControlType, Intervention } from '../types';
  * (octagonal stop, yellow warning diamond, regulatory one-way and turn-prohibition signs) but are simplified for 20 to 30 px; none claims to be an official sign.
  */
 export type PictoId =
-  | 'stop' | 'all_way_stop' | 'signal' | 'uncontrolled' | 'signal_timing' | 'speed_hump' | 'traffic_circle' | 'one_way' | 'turn_ban'
+  | 'stop' | 'all_way_stop' | 'signal' | 'uncontrolled' | 'signal_timing' | 'speed_hump' | 'traffic_circle' | 'one_way' | 'turn_ban_left' | 'turn_ban_right' | 'turn_ban'
   | 'modal_filter' | 'diagonal_diverter';
 
 /** The pictures a map or a proposal's picture draws as marks; a modal filter is a bar and a diverter a striped line there, and only the scenario list uses their small pictures. */
@@ -133,17 +134,21 @@ export function pictoGeometry(id: PictoId, h: number): PictoGeometry {
         ],
         texts: [],
       };
-    case 'turn_ban':
+    case 'turn_ban_left': case 'turn_ban_right': case 'turn_ban': {
+      const m = id === 'turn_ban_right' ? -1 : 1, x = (v: number) => r1(m * v);
+      const arrow: PictoShape[] = id === 'turn_ban'
+        ? [{ d: 'M4 9.5V-0.5A4 4 0 0 0 -4 -0.5V1', stroke: INK, sw: 3.2, cap: 'butt' }, { d: polygon([[-8.6, 0.6], [0.6, 0.6], [-4, 6.8]]), fill: INK }]
+        : [{ d: `M${x(3.5)} 9.5V1.5Q${x(3.5)} -3.6 ${x(-1.5)} -3.6H${x(-4)}`, stroke: INK, sw: 3.4, cap: 'butt' }, { d: polygon([[m * -3, -9.4], [m * -10.4, -3.6], [m * -3, 2.2]]), fill: INK }];
       return {
         shapes: [
           { d: circle(0, 0, 15), fill: WHITE, stroke: INK, sw: 1 },
-          { d: 'M3.5 9.5V1.5Q3.5 -3.6 -1.5 -3.6H-4', stroke: INK, sw: 3.4, cap: 'butt' },
-          { d: polygon([[-3, -9.4], [-10.4, -3.6], [-3, 2.2]]), fill: INK },
+          ...arrow,
           { d: circle(0, 0, 12.3), stroke: RED, sw: 2.8 },
           { d: 'M-8.7 -8.7L8.7 8.7', stroke: RED, sw: 2.8, cap: 'butt' },
         ],
         texts: [],
       };
+    }
     case 'modal_filter':
       return {
         shapes: [
@@ -166,7 +171,7 @@ export function pictoGeometry(id: PictoId, h: number): PictoGeometry {
 }
 
 /** Which picture marks an intervention, or null where another drawing does (a speed-limit sign). */
-export function pictoOf(iv: { type: Intervention['type']; control?: ControlType }): PictoId | null {
+export function pictoOf(iv: { type: Intervention['type']; control?: ControlType; turn?: TurnKind | null }): PictoId | null {
   switch (iv.type) {
     case 'speed_limit': case 'slow_street': return null;
     case 'control':
@@ -177,9 +182,17 @@ export function pictoOf(iv: { type: Intervention['type']; control?: ControlType 
         case 'traffic_circle': return 'traffic_circle';
         default: return 'stop';
       }
+    case 'turn_ban': return iv.turn === 'left' ? 'turn_ban_left' : iv.turn === 'right' ? 'turn_ban_right' : 'turn_ban';
     default: return iv.type;
   }
 }
+
+/** What `pictoOf` and the legend need to know about an intervention: its type, a control's value and a turn ban's side, read from the geometry of the two links (a U-turn or straight-on ban has no side). */
+export const symbolOf = (iv: Intervention, net: Network): { type: Intervention['type']; control?: ControlType; turn?: TurnKind | null } => ({
+  type: iv.type,
+  control: iv.type === 'control' ? iv.control : undefined,
+  turn: iv.type === 'turn_ban' ? turnKindOf(net, iv.fromLink, iv.toLink) : undefined,
+});
 
 /** Degrees clockwise on the page for a street heading (radians counterclockwise from east, as the network stores it), so the one-way arrow points the way cars may go. */
 export const rotationOfHeading = (heading: number): number => Math.round(((-heading * 180) / Math.PI) * 10) / 10 + 0;

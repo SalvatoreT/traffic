@@ -1,5 +1,6 @@
 import type { ControlType, Intervention, Overlay } from '../types';
 import { BADGE_NAME, type SignType } from './mapexport';
+import type { TurnKind } from './turnkind';
 import { pictoOf, type MapPicto, type PictoId } from './signs';
 import { SLOW_STREET_MPH } from './slowstreet';
 import { changeLabel, changeTicks } from './change';
@@ -37,12 +38,12 @@ export interface MapSymbols {
   reason: boolean;
 }
 export type LegendSymbol = SignType | MapPicto;
-const ORDER: LegendSymbol[] = ['speed_hump', 'speed_limit', 'slow_street', 'traffic_circle', 'stop', 'all_way_stop', 'signal', 'uncontrolled', 'signal_timing', 'one_way', 'turn_ban'];
+const ORDER: LegendSymbol[] = ['speed_hump', 'speed_limit', 'slow_street', 'traffic_circle', 'stop', 'all_way_stop', 'signal', 'uncontrolled', 'signal_timing', 'one_way', 'turn_ban_left', 'turn_ban_right', 'turn_ban'];
 
 /** The kinds in the legend's fixed order, each once. */
 export const orderSymbols = (kinds: Iterable<LegendSymbol>): LegendSymbol[] => { const s = new Set(kinds); return ORDER.filter((t) => s.has(t)); };
 
-export function mapSymbols(ivs: readonly { type: Intervention['type']; control?: ControlType }[], reason: boolean): MapSymbols {
+export function mapSymbols(ivs: readonly { type: Intervention['type']; control?: ControlType; turn?: TurnKind | null }[], reason: boolean): MapSymbols {
   const types = new Set(ivs.map((iv) => iv.type));
   const drawn = new Set<string>(ivs.map((iv) => (iv.type === 'speed_limit' || iv.type === 'slow_street' ? iv.type : pictoOf(iv) ?? '')));
   return { bar: types.has('modal_filter'), diverter: types.has('diagonal_diverter'), badges: ORDER.filter((t) => drawn.has(t)), reason };
@@ -57,7 +58,9 @@ const PICTURE_NAME: Record<MapPicto, string> = {
   uncontrolled: 'Gray stop sign with a slash',
   signal_timing: 'Traffic light with a clock',
   one_way: 'Black sign with a white arrow',
-  turn_ban: 'Turn arrow in a red slashed circle',
+  turn_ban_left: 'Left-turn arrow in a red slashed circle',
+  turn_ban_right: 'Right-turn arrow in a red slashed circle',
+  turn_ban: 'U-turn arrow in a red slashed circle',
 };
 const PICTURE_MEANING: Record<MapPicto, string> = {
   speed_hump: 'speed hump',
@@ -68,7 +71,9 @@ const PICTURE_MEANING: Record<MapPicto, string> = {
   uncontrolled: 'stop control removed, intersection uncontrolled',
   signal_timing: 'signal timing changed',
   one_way: 'one-way street, the arrow points the way cars may go',
-  turn_ban: 'turn banned',
+  turn_ban_left: 'left turn banned',
+  turn_ban_right: 'right turn banned',
+  turn_ban: 'U-turn or straight-on movement banned',
 };
 /** `label` is the key's words; `sign` is the mph of a speed-limit sign drawn as the key's symbol, where the kind is one; `picto` names the picture otherwise. */
 export function badgeKey(t: LegendSymbol): { name: string; label: string; sign?: number | string; picto?: PictoId } {

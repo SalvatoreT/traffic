@@ -37,6 +37,7 @@ import { baselineCheck, checkThroughRoutes, routeHeadline } from './lib/throughr
 import { effectiveView, initViewState, viewReducer } from './lib/change';
 import { showCalibrationBanner } from './lib/caveat';
 import { mapSymbols } from './lib/legend';
+import { symbolOf } from './lib/signs';
 import type { RedistRequest } from './components/Redistribution';
 import { canTrace } from './lib/redistribution-view';
 const MapView = lazy(() => import('./components/MapView').then((m) => ({ default: m.MapView })));
@@ -485,7 +486,7 @@ function Simulator({ bundle, start, onRestart }: { bundle: AreaBundle; start: St
     return r ? rampPoint(bundle.network, r) : null;
   }, [intentSel, intentDefs, demand.ramps, bundle.network]);
   const mapVisible = view === 'map';
-  const symbols = useMemo(() => mapSymbols(interventions, view === 'map' && !!intentPathsShown), [interventions, view, intentPathsShown]);
+  const symbols = useMemo(() => mapSymbols(interventions.map((iv) => symbolOf(iv, network)), view === 'map' && !!intentPathsShown), [interventions, network, view, intentPathsShown]);
   useEffect(() => setHoverPlace(null), [view]);
   // On phones the Streets tab is a full-height table; each row's Show on map button opens the Map tab on that block.
   const mapShown = mapVisible || (view === 'streets' && !phone);

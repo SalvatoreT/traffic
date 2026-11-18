@@ -4,6 +4,9 @@ import type { NetIndex } from '../lib/naming';
 import { describeIntervention } from '../lib/describe';
 import { filterSentence, filterText } from '../lib/blocked';
 import { EARLY_LABEL } from '../lib/run';
+import { menuSymbol, menuSymbolHtml, type MenuSymbol } from '../lib/menusymbols';
+import { turnKindOf } from '../lib/turnkind';
+import { pictoOf, symbolOf } from '../lib/signs';
 import { aggregate, CHANGE_NAME, CHANGE_UNIT, diffValue, formatSigned, metricValue, readoutText } from '../lib/change';
 import { blockMeasured } from '../lib/scope';
 import { linkStatsView, type Overlay } from '../types';
@@ -24,17 +27,22 @@ interface Props {
   readout?: { overlay: Overlay; scen: Float32Array | null; base: Float32Array | null; early?: boolean } | null;
 }
 
-interface Choice { key: string; label: string; detail?: string; pick(): void }
+interface Choice { key: string; label: string; detail?: string; symbol?: MenuSymbol | null; pick(): void }
+
+/** A fixed-width column for a choice's picture, so the labels line up whether or not a choice has one. Decorative: the choice's text is its name. */
+function Ico({ symbol }: { symbol?: MenuSymbol | null }) {
+  return <span className="sel-ico" aria-hidden="true" {...(symbol ? { dangerouslySetInnerHTML: { __html: menuSymbolHtml(symbol) } } : {})} />;
+}
 
 /** A button that reveals a few choices. Picking one applies it, folds the list and returns focus to the button. */
-function ChoiceGroup({ label, hint, note, defaultOpen, choices }: { label: string; hint?: string; note?: string | null; defaultOpen?: boolean; choices: Choice[] }) {
+function ChoiceGroup({ label, hint, note, defaultOpen, symbol, choices }: { label: string; hint?: string; note?: string | null; defaultOpen?: boolean; symbol?: MenuSymbol | null; choices: Choice[] }) {
   const [open, setOpen] = useState(!!defaultOpen);
   const btn = useRef<HTMLButtonElement>(null);
   const id = useId();
   return (
     <>
       <button ref={btn} type="button" className="sel-act has-choices" aria-expanded={open} aria-controls={id} onClick={() => setOpen((o) => !o)}>
-        <span>{label}</span>{hint && <span className="sel-hint">{hint}</span>}
+        <Ico symbol={symbol} /><span>{label}</span>{hint && <span className="sel-hint">{hint}</span>}
       </button>
       <div id={id} className={`collapse ${open ? 'open' : ''}`} inert={!open}>
         <div>
@@ -42,7 +50,7 @@ function ChoiceGroup({ label, hint, note, defaultOpen, choices }: { label: strin
           <ul className="sel-choices">
             {choices.map((c) => (
               <li key={c.key}>
-                <button type="button" className="sel-choice" aria-describedby={c.detail ? `${id}-${c.key}` : undefined} onClick={() => { c.pick(); setOpen(false); btn.current?.focus(); }}>{c.label}</button>
+                <button type="button" className="sel-choice" aria-describedby={c.detail ? `${id}-${c.key}` : undefined} onClick={() => { c.pick(); setOpen(false); btn.current?.focus(); }}><Ico symbol={c.symbol} /><span>{c.label}</span></button>
                 {c.detail && <span className="iv-more" id={`${id}-${c.key}`}>{c.detail}</span>}
               </li>
             ))}
@@ -54,7 +62,7 @@ function ChoiceGroup({ label, hint, note, defaultOpen, choices }: { label: strin
 }
 
 interface TurnFrom { link: number; label: string; to: { link: number; label: string }[] }
-function TurnBan({ options, onPick }: { options: TurnFrom[]; onPick(from: number, to: number, fromLabel: string, toLabel: string): void }) {
+function TurnBan({ options, net, onPick }: { options: TurnFrom[]; net: AreaBundle['network']; onPick(from: number, to: number, fromLabel: string, toLabel: string): void }) {
   const [open, setOpen] = useState(false);
   const [from, setFrom] = useState<TurnFrom | null>(null);
   const btn = useRef<HTMLButtonElement>(null);
@@ -68,7 +76,7 @@ function TurnBan({ options, onPick }: { options: TurnFrom[]; onPick(from: number
     <>
       <button ref={btn} type="button" className="sel-act has-choices" aria-expanded={open} aria-controls={id}
         onClick={() => { setOpen((o) => !o); setFrom(null); }}>
-        <span>Ban a turn</span>
+        <Ico symbol={{ picto: 'turn_ban_left' }} /><span>Ban a turn</span>
       </button>
       <div id={id} className={`collapse ${open ? 'open' : ''}`} inert={!open}>
         <div><div ref={box} className="sel-turn">
@@ -84,7 +92,7 @@ function TurnBan({ options, onPick }: { options: TurnFrom[]; onPick(from: number
               <p className="sel-q" id={`${id}-q2`}>{fromStillThere ? `From ${fromStillThere.label}: may not turn` : ''}</p>
               <ul className="sel-choices" aria-labelledby={`${id}-q2`}>
                 {fromStillThere?.to.map((t) => (
-                  <li key={t.link}><button type="button" className="sel-choice" onClick={() => { onPick(from!.link, t.link, from!.label, t.label); finish(); }}>{t.label}</button></li>
+                  <li key={t.link}><button type="button" className="sel-choice" onClick={() => { onPick(from!.link, t.link, from!.label, t.label); finish(); }}><Ico symbol={{ picto: pictoOf({ type: 'turn_ban', turn: turnKindOf(net, from!.link, t.link) })! }} /><span>{t.label}</span></button></li>
                 ))}
               </ul>
               <button type="button" className="link" onClick={() => setFrom(null)}>Back</button>
@@ -131,21 +139,21 @@ export function SelectionMenu(p: Props) {
     const hereLink = (iv: Intervention) => 'link' in iv && blk.links.includes(iv.link);
     actions = (
       <>
-        {a.modalFilter && <li><button type="button" className="sel-act" onClick={() => apply({ add: [{ type: 'modal_filter', link: first }] })}>Add modal filter</button></li>}
+        {a.modalFilter && <li><button type="button" className="sel-act" onClick={() => apply({ add: [{ type: 'modal_filter', link: first }] })}><Ico symbol={{ picto: 'modal_filter' }} /><span>Add modal filter</span></button></li>}
         {a.hump && (
           <li><button type="button" className="sel-act" onClick={() => apply({ add: [{ type: 'speed_hump', link: first, position: humpPosition(net, X, s.block, s.point) }] })}>
-            {a.hump === 'move' ? 'Move speed hump here' : 'Add speed hump'}</button></li>
+            <Ico symbol={{ picto: 'speed_hump' }} /><span>{a.hump === 'move' ? 'Move speed hump here' : 'Add speed hump'}</span></button></li>
         )}
         {(a.slowStreet || a.speedLimit.choices.length > 0) && (
-          <li><ChoiceGroup label="Set speed limit" hint={`now ${a.speedLimit.currentMph} mph`} defaultOpen={!!a.slowStreet}
+          <li><ChoiceGroup label="Set speed limit" hint={`now ${a.speedLimit.currentMph} mph`} defaultOpen={!!a.slowStreet} symbol={{ mph: 'NN' }}
             choices={[
-              ...(a.slowStreet ? [{ key: 'slow-street', label: 'Apply to the whole street (Slow Street, 15 mph)', detail: a.slowStreet.label, pick: () => apply({ add: [{ type: 'slow_street' as const, link: a.slowStreet!.link }] }) }] : []),
-              ...a.speedLimit.choices.map((mph) => ({ key: String(mph), label: `This block only: ${mph} mph`, pick: () => apply({ add: [{ type: 'speed_limit' as const, link: first, speed: mphToMps(mph) }] }) })),
+              ...(a.slowStreet ? [{ key: 'slow-street', label: 'Apply to the whole street (Slow Street, 15 mph)', detail: a.slowStreet.label, symbol: menuSymbol({ type: 'slow_street', link: a.slowStreet.link }, net), pick: () => apply({ add: [{ type: 'slow_street' as const, link: a.slowStreet!.link }] }) }] : []),
+              ...a.speedLimit.choices.map((mph) => ({ key: String(mph), label: `This block only: ${mph} mph`, symbol: { mph }, pick: () => apply({ add: [{ type: 'speed_limit' as const, link: first, speed: mphToMps(mph) }] }) })),
             ]} /></li>
         )}
         {a.oneWay.length > 0 && (
-          <li><ChoiceGroup label="Make one-way"
-            choices={a.oneWay.map((o) => ({ key: String(o.link), label: o.label, pick: () => apply({ add: [{ type: 'one_way', link: o.link }], remove: (iv) => iv.type === 'one_way' && hereLink(iv) }) }))} /></li>
+          <li><ChoiceGroup label="Make one-way" symbol={{ picto: 'one_way' }}
+            choices={a.oneWay.map((o) => ({ key: String(o.link), label: o.label, symbol: menuSymbol({ type: 'one_way', link: o.link }, net), pick: () => apply({ add: [{ type: 'one_way', link: o.link }], remove: (iv) => iv.type === 'one_way' && hereLink(iv) }) }))} /></li>
         )}
       </>
     );
@@ -161,33 +169,33 @@ export function SelectionMenu(p: Props) {
           const F = a.filters;
           const dropLegs = (iv: Intervention) => iv.type === 'modal_filter' && 'node' in iv && iv.node === node && iv.legs !== undefined;
           if (F.streets.length === 0) {
-            return <li><button type="button" className="sel-act" onClick={() => apply({ add: [{ type: 'modal_filter', node }] })}>Add modal filter (no through traffic)</button>{F.wholeClosed && <p className="iv-more">{F.wholeClosed}</p>}</li>;
+            return <li><button type="button" className="sel-act" onClick={() => apply({ add: [{ type: 'modal_filter', node }] })}><Ico symbol={{ picto: 'modal_filter' }} /><span>Add modal filter (no through traffic)</span></button>{F.wholeClosed && <p className="iv-more">{F.wholeClosed}</p>}</li>;
           }
           const streets: Choice[] = F.streets.map((o) => ({
-            key: o.links.join('.'), label: o.label, detail: o.closed,
+            key: o.links.join('.'), label: o.label, detail: o.closed, symbol: { picto: 'modal_filter' },
             pick: () => apply({ add: [{ type: 'modal_filter', node, legs: o.links }] }, `Added: Modal filter on ${o.street} at ${heading}.`),
           }));
           const whole: Choice[] = F.whole ? [{
-            key: 'whole', label: 'Filter the whole intersection', detail: F.wholeClosed,
+            key: 'whole', label: 'Filter the whole intersection', detail: F.wholeClosed, symbol: { picto: 'modal_filter' },
             pick: () => apply({ add: [{ type: 'modal_filter', node }], remove: dropLegs }),
           }] : [];
-          return <li><ChoiceGroup label="Add modal filter" hint="no through traffic for cars" note={F.why} defaultOpen={F.merged}
+          return <li><ChoiceGroup label="Add modal filter" symbol={{ picto: 'modal_filter' }} hint="no through traffic for cars" note={F.why} defaultOpen={F.merged}
             choices={F.merged ? [...streets, ...whole] : [...whole, ...streets]} /></li>;
         })()}
-        {a.trafficCircle && <li><button type="button" className="sel-act" onClick={() => apply({ add: [{ type: 'traffic_circle', node }], remove: dropCycle('traffic_circle') })}>Add traffic circle</button></li>}
+        {a.trafficCircle && <li><button type="button" className="sel-act" onClick={() => apply({ add: [{ type: 'traffic_circle', node }], remove: dropCycle('traffic_circle') })}><Ico symbol={{ picto: 'traffic_circle' }} /><span>Add traffic circle</span></button></li>}
         {a.control.choices.length > 0 && (
           <li><ChoiceGroup label="Change control" hint={`now ${controlLabel(a.control.current).toLowerCase()}`}
-            choices={a.control.choices.map((c) => ({ key: c.value, label: c.label, pick: () => apply({ add: [{ type: 'control', node, control: c.value }], remove: dropCycle(c.value) }) }))} /></li>
+            choices={a.control.choices.map((c) => ({ key: c.value, label: c.label, symbol: menuSymbol({ type: 'control', node, control: c.value }, net), pick: () => apply({ add: [{ type: 'control', node, control: c.value }], remove: dropCycle(c.value) }) }))} /></li>
         )}
         {a.cycles && (
-          <li><ChoiceGroup label="Set signal cycle"
-            choices={a.cycles.map((c) => ({ key: String(c), label: `${c} s`, pick: () => apply({ add: [{ type: 'signal_timing', node, cycle: c }] }) }))} /></li>
+          <li><ChoiceGroup label="Set signal cycle" symbol={{ picto: 'signal_timing' }}
+            choices={a.cycles.map((c) => ({ key: String(c), label: `${c} s`, symbol: menuSymbol({ type: 'signal_timing', node, cycle: c }, net), pick: () => apply({ add: [{ type: 'signal_timing', node, cycle: c }] }) }))} /></li>
         )}
         {a.diverter.options.length > 0 && (
           <li><ChoiceGroup label={a.diverter.switching ? 'Switch diagonal diverter' : 'Add diagonal diverter'}
-            hint="no through traffic for cars"
+            hint="no through traffic for cars" symbol={{ picto: 'diagonal_diverter' }}
             choices={a.diverter.options.map((o) => ({
-              key: String(o.bearing),
+              key: String(o.bearing), symbol: { picto: 'diagonal_diverter' },
               label: a.diverter.switching ? `Switch to ${o.label}` : o.label,
               pick: () => apply(
                 { add: [{ type: 'diagonal_diverter', node, bearing: o.bearing }], remove: (iv) => iv.type === 'diagonal_diverter' && iv.node === node },
@@ -196,7 +204,7 @@ export function SelectionMenu(p: Props) {
             }))} /></li>
         )}
         {a.turnBan.length > 0 && (
-          <li><TurnBan options={a.turnBan}
+          <li><TurnBan options={a.turnBan} net={net}
             onPick={(fromLink, toLink, fl, tl) => apply({ add: [{ type: 'turn_ban', fromLink, toLink }] }, `Added turn ban at ${heading}: ${fl} may not turn ${tl}.`)} /></li>
         )}
       </>

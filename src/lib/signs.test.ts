@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { PICTO_PX, pictoGeometry, pictoOf, pictoSvg, rotationOfHeading, type PictoId } from './signs';
+import { PICTO_PX, pictoGeometry, pictoOf, pictoSvg, rotationOfHeading, symbolOf, type PictoId } from './signs';
+import { turnKindOf } from './turnkind';
+import { buildFixture } from '../fixtures/area';
 import type { ControlType } from '../types';
 
-const MAP: PictoId[] = ['stop', 'all_way_stop', 'signal', 'uncontrolled', 'signal_timing', 'speed_hump', 'traffic_circle', 'one_way', 'turn_ban'];
+const MAP: PictoId[] = ['stop', 'all_way_stop', 'signal', 'uncontrolled', 'signal_timing', 'speed_hump', 'traffic_circle', 'one_way', 'turn_ban_left', 'turn_ban_right', 'turn_ban'];
 
 describe('pictures', () => {
   it('picks the picture from the type and, for a control, its value', () => {
@@ -34,5 +36,16 @@ describe('pictures', () => {
   it('turns a heading east to 0 and north to -90 degrees on the page', () => {
     expect(rotationOfHeading(0)).toBe(0);
     expect(rotationOfHeading(Math.PI / 2)).toBe(-90);
+  });
+  it('draws a turn ban as a left, right or fallback sign from the geometry of its two links', () => {
+    const net = buildFixture().network;
+    const seen = new Map<string, PictoId | null>();
+    for (const a of net.links) for (const b of net.links.filter((l) => l.from === a.to)) {
+      const kind = turnKindOf(net, a.id, b.id);
+      if (kind) seen.set(kind, pictoOf(symbolOf({ type: 'turn_ban', fromLink: a.id, toLink: b.id }, net)));
+    }
+    expect(seen.get('left')).toBe('turn_ban_left');
+    expect(seen.get('right')).toBe('turn_ban_right');
+    for (const k of ['u-turn', 'straight']) if (seen.has(k)) expect(seen.get(k)).toBe('turn_ban');
   });
 });

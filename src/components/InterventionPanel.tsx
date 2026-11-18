@@ -4,7 +4,7 @@ import type { NetIndex } from '../lib/naming';
 import { interventionInRegion, type Region } from '../lib/region';
 import { describeIntervention } from '../lib/describe';
 import { filterSentence, filterText } from '../lib/blocked';
-import { pictoElement, pictoOf } from '../lib/signs';
+import { pictoElement, pictoOf, symbolOf } from '../lib/signs';
 import { speedSign } from '../lib/slowstreet';
 import { speedSignElement } from '../lib/speedsign';
 import type { Selection } from '../lib/selection';
@@ -53,7 +53,7 @@ export function InterventionPanel(p: Props) {
               const sign = speedSign(B.network, iv);
               return (
                 <li key={i}>
-                  <span className="iv-sign static" aria-hidden="true" dangerouslySetInnerHTML={{ __html: sign ? speedSignElement(sign.mph, 24) : pictoElement(pictoOf(iv)!, 22) }} />
+                  <span className="iv-sign static" aria-hidden="true" dangerouslySetInnerHTML={{ __html: sign ? speedSignElement(sign.mph, 24) : pictoElement(pictoOf(symbolOf(iv, B.network))!, 22) }} />
                   <span className="desc">
                     <button type="button" className="desc-btn" title="Select this place" onClick={() => p.onSelectIntervention(i)}>{d}</button>
                     {!interventionInRegion(iv, B.network, p.region) && <>{' '}<span className="tag">outside the map</span></>}
