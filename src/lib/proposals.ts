@@ -144,6 +144,23 @@ export interface Proposals { version: 4 | 5; area: string; groups: ProposalGroup
 
 export const UNCONSTRAINED_GROUP = { id: 'unconstrained', title: 'Proposals', note: '' };
 
+/** The fragment of a card's address: `proposal-1` for search option p1 of the default group, `proposal-<reference id>` for a reference, and `proposal-<group id>-<n or reference id>` for any other group so each stays unique. */
+export function proposalAnchor(groupId: string, proposalId: string): string {
+  const m = /^p(\d+)$/.exec(proposalId);
+  const tail = m ? m[1] : proposalId;
+  return groupId === UNCONSTRAINED_GROUP.id ? `proposal-${tail}` : `proposal-${groupId}-${tail}`;
+}
+
+/** The new fragment for an address made before cards were named `proposal-…` (`unconstrained-p1`, `charter-p2`, either with a `-v2` variant suffix); null for any other fragment. Another group's references cannot be told from its id and are not mapped. */
+export function legacyProposalAnchor(id: string): string | null {
+  const bare = id.replace(/^(.*-p\d+)-v\d+$/, '$1');
+  if (bare.startsWith('proposal-')) return null;
+  const prefix = `${UNCONSTRAINED_GROUP.id}-`;
+  if (bare.startsWith(prefix) && bare.length > prefix.length) return proposalAnchor(UNCONSTRAINED_GROUP.id, bare.slice(prefix.length));
+  const m = /^(.+)-(p\d+)$/.exec(bare);
+  return m ? proposalAnchor(m[1], m[2]) : null;
+}
+
 export type ProposalsState =
   | { status: 'idle' | 'loading' }
   | { status: 'none' }

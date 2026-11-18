@@ -5,7 +5,7 @@ import { buildMockProposals } from '../fixtures/proposals';
 import { decodeScenario } from './hash';
 import {
   allProposals, allTrafficHeadline, allTrafficNote, allTrafficRows, beforeAfterPct, comparisonText, cutThroughHeadline, evidenceNote, evidenceStatus, hashMatches, hashText, harmHeadline, intervalText,
-  linkHash, listOptions, largestAllCarRise, needsConfirm, openReducer, parseProposals, periodsPhrase, proposalNotices, REPORT_METHOD, seedsPhrase, signedPct, staleInputs, throughRemoved,
+  legacyProposalAnchor, linkHash, listOptions, largestAllCarRise, needsConfirm, openReducer, parseProposals, periodsPhrase, proposalAnchor, proposalNotices, REPORT_METHOD, seedsPhrase, signedPct, staleInputs, throughRemoved,
   type ComparisonStatus, type Effect, type Proposal, type ThroughHarm,
 } from './proposals';
 
@@ -417,5 +417,25 @@ describe('open on the map', () => {
     expect(s).toEqual({ step: 'confirm', id: 'x' });
     expect(openReducer(s, { type: 'cancel' })).toEqual({ step: 'idle' });
     expect(openReducer(s, { type: 'done' })).toEqual({ step: 'idle' });
+  });
+});
+
+describe('card anchors', () => {
+  it('names a card proposal-N for the default group, by reference id for a reference, and keeps other groups apart', () => {
+    expect(proposalAnchor('unconstrained', 'p1')).toBe('proposal-1');
+    expect(proposalAnchor('unconstrained', 'p14')).toBe('proposal-14');
+    expect(proposalAnchor('unconstrained', 'earlier-62nd-diverters')).toBe('proposal-earlier-62nd-diverters');
+    expect(proposalAnchor('unconstrained', 'colby-hillegass-slow-streets')).toBe('proposal-colby-hillegass-slow-streets');
+    expect(proposalAnchor('charter', 'p1')).toBe('proposal-charter-1');
+    expect(proposalAnchor('charter', 'p1')).not.toBe(proposalAnchor('unconstrained', 'p1'));
+  });
+  it('turns an old fragment into the new one and leaves everything else alone', () => {
+    expect(legacyProposalAnchor('unconstrained-p1')).toBe('proposal-1');
+    expect(legacyProposalAnchor('unconstrained-p3-v2')).toBe('proposal-3');
+    expect(legacyProposalAnchor('unconstrained-earlier-62nd-diverters')).toBe('proposal-earlier-62nd-diverters');
+    expect(legacyProposalAnchor('charter-p2')).toBe('proposal-charter-2');
+    expect(legacyProposalAnchor('proposal-1')).toBeNull();
+    expect(legacyProposalAnchor('proposals-for-comparison')).toBeNull();
+    expect(legacyProposalAnchor('unconstrained-')).toBeNull();
   });
 });

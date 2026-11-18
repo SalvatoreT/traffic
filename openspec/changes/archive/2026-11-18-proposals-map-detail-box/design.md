@@ -24,3 +24,11 @@ The project lead, decided by card: the number drawn on a street and the street's
 - The street list under the map is ordered by all-car change, with through cars beside it.
 - The card headline is unchanged (through cars over the whole area). One sentence in the map legend says the headline counts through cars over the whole area and the map shows all cars block by block.
 - Not changed: the share image and link-preview cards still draw through cars (`DownloadImage`, `tools/lib/previews.ts`).
+
+## Decision: card anchors
+
+The project lead, verbatim: "don't make the anchors called unconstrained. You can just be proposal one, proposal two, or proposal diverter, proposal Colby Hillegass slow streets."
+
+- A card's fragment is `proposal-<n>` for search option p<n> of the default group, and `proposal-<reference id>` for a reference (for example `proposal-earlier-62nd-diverters`, `proposal-colby-hillegass-slow-streets`). Any other group uses `proposal-<group id>-<n or reference id>` so anchors stay unique. Nothing is area-specific.
+- Old fragments (`unconstrained-p1`, with or without a `-v2` suffix, and `<group>-p<n>`) are mapped by `canonicalAnchor`, the same path that already redirects older Assumptions and Sources ids, so they scroll to the same card and the address is rewritten with `history.replaceState`. Another group's old reference ids cannot be told from the group id and are not mapped.
+- The group id in the data files, React keys, the open and confirm state, and the share slug (`/p/unconstrained-<hash>`) and preview image paths keep the old composite id. Only the URL fragment and the copied card links change.

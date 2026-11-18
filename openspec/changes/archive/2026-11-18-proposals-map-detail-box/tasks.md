@@ -10,6 +10,8 @@
 - [x] 2.4 Style the tables (tabular numerals, right-aligned, light and dark, 360 px)
 - [x] 2.5 Color and number the map by all cars; legend, text alternative and headline sentence
 
+- [x] 2.6 Card anchors `proposal-N` with older ids redirected, and a unit test
+
 ## 3. Verification
 
 - [x] 3.1 `npx tsc --noEmit` and `npx vitest run`

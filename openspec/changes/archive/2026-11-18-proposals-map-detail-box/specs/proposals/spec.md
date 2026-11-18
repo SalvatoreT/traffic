@@ -66,3 +66,17 @@ When a proposal carries an all-car picture, the card map SHALL color each block,
 
 - **WHEN** a proposal has no all-car picture
 - **THEN** the map is drawn by through cars and the legend says the file has no all-car map
+
+### Requirement: Proposal cards have readable anchors
+
+A proposal card SHALL be addressable by the fragment `proposal-<n>` for option p<n> of the default group, `proposal-<reference id>` for a reference, and `proposal-<group id>-<n or reference id>` for any other group. An address that uses an older card id SHALL open the same card and be rewritten to the new fragment without a reload.
+
+#### Scenario: Default group option
+
+- **WHEN** a person opens `/proposals#proposal-1` or `/proposals#unconstrained-p1`
+- **THEN** the page scrolls to card 1 and the address bar shows `#proposal-1`
+
+#### Scenario: Reference proposal
+
+- **WHEN** a reference with id `earlier-62nd-diverters` is listed
+- **THEN** its card is `#proposal-earlier-62nd-diverters`

@@ -1,3 +1,5 @@
+import { legacyProposalAnchor } from './proposals';
+
 export type View = 'map' | 'proposals' | 'streets' | 'methodology' | 'assumptions' | 'sources';
 
 /** One row per tab: the path is derived from the id, and the same table answers both directions. */
@@ -41,6 +43,7 @@ const ALIASES: Partial<Record<View, Record<string, string>>> = {
 export function canonicalAnchor(view: View, id: string): string {
   const hit = ALIASES[view]?.[id];
   if (hit) return hit;
+  if (view === 'proposals') return legacyProposalAnchor(id) ?? id;
   return view === 'sources' && /^ref-.+/.test(id) ? id.slice(4) : id;
 }
 
