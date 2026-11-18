@@ -73,8 +73,9 @@ function main() {
     writeFileAtomic(resolve(outDir, `${cfg.id}.network.json`), JSON.stringify(network));
     writeFileAtomic(resolve(outDir, `${cfg.id}.basemap.json`), JSON.stringify(buildBasemap(cfg, osm)));
     console.log(summarize(network));
-    const { joinedList, gatesNearSignal, freewayGateMerges, freewayRampViolations, signalObservationsUnmatched, ...rest } = stats;
+    const { joinedList, gatesNearSignal, freewayGateMerges, freewayRampViolations, signalObservationsUnmatched, stopExemptionsUnmatched, ...rest } = stats;
     for (const m of signalObservationsUnmatched) console.warn(`WARNING: signal observation not applied: ${m}`);
+    for (const m of stopExemptionsUnmatched) console.warn(`WARNING: stop exemption not applied: ${m}`);
     console.log('stats:', JSON.stringify(rest));
     if (gatesNearSignal.length) {
       console.warn(`WARNING: ${gatesNearSignal.length} gate(s) within ${cfg.gateSignalWarnM ?? 60} m of a signalized junction (a gate should sit mid-block; move the bbox edge or accept the corridor):`);

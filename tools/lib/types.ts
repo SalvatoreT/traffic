@@ -109,6 +109,12 @@ export interface AreaConfig {
    * empty string, removes) tags and states its source; one that is not observed is labeled ASSUMPTION in `source`.
    */
   osmTagOverrides?: Record<string, { tags: Record<string, string>; source: string }>;
+  /**
+   * Approaches that do not stop at a junction whose stop tags cover every approach (a stop tag on the junction node cannot leave one out).
+   * Each entry names the junction node, the way the approach arrives on and the direction of travel along the way's node order, and states its
+   * source. The other approaches keep their stops. An entry that matches no stopped approach, or a junction tagged `stop=all`, is reported.
+   */
+  stopExemptions?: { node: number; way: number; direction: 'forward' | 'backward'; source: string }[];
   /** Where cars cleared from gridlock count against the stability rule: the study area plus nodes within `bufferM` of it along the network (read by `calibrate`). */
   judgedZone?: { bufferM: number; source: string };
   /**

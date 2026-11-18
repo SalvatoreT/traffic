@@ -181,6 +181,30 @@ describe('rockridge network', () => {
     const t = net.links.filter((l) => l.osmWayId === 416105064);
     expect(t.map((l) => l.lanes).sort()).toEqual([2, 2]);
   });
+  it('applies the stop corrections of the area config and nothing else changes', () => {
+    const stats = buildNetwork(cfg, osm).stats;
+    expect(stats.stopExemptionsUnmatched).toEqual([]);
+    const at = (n: Network, osmId: number) => {
+      const j = n.nodes.find((x) => x.osmId === osmId)!;
+      return { control: j.control, ins: n.links.filter((l) => l.to === j.id).map((l) => ({ name: l.name, bearing: Math.round(l.toBearing! / 90) * 90, stop: l.stopAtEnd })) };
+    };
+    const hillegass = at(net, 53085953);
+    expect(hillegass.control).toBe('all_way_stop');
+    expect(hillegass.ins).toHaveLength(3);
+    const canning = at(net, 53088342);
+    expect(canning.control).toBe('two_way_stop');
+    expect(canning.ins.filter((l) => !l.stop)).toEqual([{ name: '62nd Street', bearing: 90, stop: false }]);
+    expect(canning.ins.filter((l) => l.stop)).toHaveLength(3);
+    const { 'node/53085953': _, ...others } = cfg.osmTagOverrides!;
+    const bare = buildNetwork({ ...cfg, osmTagOverrides: others, stopExemptions: [] }, osm).network;
+    const changed = (a: Network, b: Network) => ({
+      nodes: a.nodes.filter((n, i) => JSON.stringify(n) !== JSON.stringify(b.nodes[i])).map((n) => n.osmId),
+      links: a.links.filter((l, i) => JSON.stringify(l) !== JSON.stringify(b.links[i])).map((l) => a.nodes[l.to].osmId),
+    });
+    expect(bare.nodes.length).toBe(net.nodes.length);
+    expect(bare.links.length).toBe(net.links.length);
+    expect(changed(net, bare)).toEqual({ nodes: [53088342, 53085953], links: [53088342, 53085953, 53085953] });
+  });
   it('reads the lane count of a one-way way tagged only with turn lanes, keeping every link id', () => {
     const st = net.links.find((l) => l.osmWayId === 24606482)!;
     expect(st.lanes).toBe(3);
@@ -360,6 +384,60 @@ describe('junction joining (synthetic)', () => {
     const inner = junctions(net);
     expect(inner).toHaveLength(1);
     expect(inner[0].control).toBe('all_way_stop');
+  });
+});
+
+describe('stop exemptions (synthetic)', () => {
+  const lat0 = 37.84;
+  const lon0 = -122.26;
+  const d = 0.0001;
+  const nd = (id: number, dx: number, dy: number, tags?: Record<string, string>) => ({
+    type: 'node' as const, id, lon: lon0 + dx * d, lat: lat0 + dy * d, ...(tags ? { tags } : {}),
+  });
+  const way = (id: number, name: string, nodes: number[]) => ({ type: 'way' as const, id, nodes, tags: { highway: 'residential', name } });
+  // Main St (west to east) crossed by Cross St (south to north) at node 2, which carries the stop tag.
+  const els = (tags: Record<string, string>): Overpass['elements'] => [
+    nd(1, -30, 0), nd(2, 0, 0, tags), nd(3, 30, 0), nd(4, 0, -30), nd(5, 0, 30),
+    way(10, 'Main Street', [1, 2, 3]), way(11, 'Cross Street', [4, 2, 5]),
+  ];
+  const build = (tags: Record<string, string>, stopExemptions?: AreaConfig['stopExemptions']) =>
+    buildNetwork(
+      {
+        id: 't', name: 't', extract: '', bbox: [lon0 - 40 * d, lat0 - 40 * d, lon0 + 40 * d, lat0 + 40 * d],
+        studyArea: [[lon0 - 5 * d, lat0 - 5 * d], [lon0 + 5 * d, lat0 - 5 * d], [lon0 + 5 * d, lat0 + 5 * d], [lon0 - 5 * d, lat0 + 5 * d], [lon0 - 5 * d, lat0 - 5 * d]],
+        ...(stopExemptions ? { stopExemptions } : {}),
+      },
+      { elements: els(tags) },
+    );
+  const approaches = (n: Network) => {
+    const j = n.nodes.find((x) => x.osmId === 2)!;
+    return { control: j.control, ins: n.links.filter((l) => l.to === j.id).map((l) => ({ name: l.name, eastbound: n.nodes[l.from].x < j.x - 1, stop: l.stopAtEnd })) };
+  };
+
+  it('reads a stop tag on a crossing of two through ways as an all-way stop', () => {
+    const r = approaches(build({ highway: 'stop' }).network);
+    expect(r.control).toBe('all_way_stop');
+    expect(r.ins.map((l) => l.stop)).toEqual([true, true, true, true]);
+  });
+  it('frees the one named approach and keeps the other three stopped', () => {
+    const { network, stats } = build({ highway: 'stop' }, [{ node: 2, way: 10, direction: 'forward', source: 'test' }]);
+    const r = approaches(network);
+    expect(stats.stopExemptionsUnmatched).toEqual([]);
+    expect(r.control).toBe('two_way_stop');
+    expect(r.ins.filter((l) => !l.stop)).toEqual([{ name: 'Main Street', eastbound: true, stop: false }]);
+    expect(r.ins.filter((l) => l.stop)).toHaveLength(3);
+  });
+  it('takes the direction from the node order of the way', () => {
+    const r = approaches(build({ highway: 'stop' }, [{ node: 2, way: 10, direction: 'backward', source: 'test' }]).network);
+    expect(r.ins.filter((l) => !l.stop)).toEqual([{ name: 'Main Street', eastbound: false, stop: false }]);
+  });
+  it('reports an exemption at a junction tagged stop=all, or one that matches no stopped approach, and changes nothing', () => {
+    const all = build({ highway: 'stop', stop: 'all' }, [{ node: 2, way: 10, direction: 'forward', source: 'test' }]);
+    expect(all.stats.stopExemptionsUnmatched).toEqual(['node/2 way/10 forward']);
+    expect(approaches(all.network).control).toBe('all_way_stop');
+    const none = build({ highway: 'stop' }, [{ node: 2, way: 12, direction: 'forward', source: 'test' }]);
+    expect(none.stats.stopExemptionsUnmatched).toEqual(['node/2 way/12 forward']);
+    expect(approaches(none.network).control).toBe('all_way_stop');
   });
 });
 

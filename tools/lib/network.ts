@@ -174,6 +174,8 @@ export interface BuildStats {
   gatesNearSignal: { gate: number; distM: number; street: string }[];
   /** Observed signal timings (area config `signalObservations`) that matched no signalized junction or approach. */
   signalObservationsUnmatched: string[];
+  /** Stop exemptions (area config `stopExemptions`) that matched no stopped approach or named a junction tagged `stop=all`. */
+  stopExemptionsUnmatched: string[];
   /** Freeway-edge stubs merged into one gate: direction, the stub gates (OSM node ids), the gate that remains and the largest distance from the centroid. */
   freewayGateMerges: { role: 'entry' | 'exit'; gates: number[]; into: number; spreadM: number }[];
   /** Parallel stub links between the same two nodes joined into one link (lanes added). */
@@ -332,6 +334,7 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
     restrictionsUnresolved: 0,
     gatesNearSignal: [],
     signalObservationsUnmatched: [],
+    stopExemptionsUnmatched: [],
     freewayGateMerges: [],
     freewayStubLinksJoined: 0,
     freewayRampViolations: [],
@@ -719,6 +722,17 @@ export function buildNetwork(cfg: AreaConfig, osm: Overpass): { network: Network
     }
     if (hits.length === 0 && stopTargets.size === before) stats.stopsUnattributed++;
     if (all) for (const h of hits) allWay.add(h);
+  }
+  for (const x of cfg.stopExemptions ?? []) {
+    const link = (occ.get(x.node) ?? [])
+      .filter((o) => o.run.way.id === x.way)
+      .map((o) => {
+        const segs = segsByRun.get(o.run) ?? [];
+        return x.direction === 'forward' ? segs.find((s) => s.b === o.idx)?.fwdLink : segs.find((s) => s.a === o.idx)?.bwdLink;
+      })
+      .find((l) => l?.to === x.node && l.stopAtEnd);
+    if (!link || allWay.has(x.node)) stats.stopExemptionsUnmatched.push(`node/${x.node} way/${x.way} ${x.direction}`);
+    else link.stopAtEnd = false;
   }
 
   // Junction joining: graph nodes that form one real intersection (dual carriageways, offset signal tags, offset T

@@ -886,7 +886,21 @@
         "stop": "all"
       },
       "source": "Field observation by a resident, relayed by the project lead (2026-11-16): Claremont Ave at Russell St is an all-way stop; every approach stops (DATA). The map tags highway=stop on the junction node with no stop value, which the importer already read as an all-way stop, so the network is unchanged"
+    },
+    "node/53085953": {
+      "tags": {
+        "stop": "all"
+      },
+      "source": "Street-level imagery, read by the project lead (2026-11-18): Hillegass Ave at 61st St is an all-way stop. STOP legends and stop signs show on both Hillegass Ave approaches and on 61st St (imagery undated, appears 2023 to 2025; sign detections in older imagery seen 2019-12-22 agree). High confidence (DATA). The map tags highway=stop on the junction node with no stop value; 61st St ends there, so the importer stopped 61st St only"
     }
   },
+  "stopExemptions": [
+    {
+      "node": 53088342,
+      "way": 6350365,
+      "direction": "backward",
+      "source": "Street-level imagery, read by the project lead (2026-11-18): at Canning St and 62nd St the eastbound 62nd St approach (the west leg) has no stop sign and no STOP legend in a clear view, and sign detections in older imagery show none on that corner; the other three approaches stop. Medium confidence, ASSUMPTION pending a field check. The map tags highway=stop on the junction node, which the importer read as an all-way stop. Way 6350365 runs east to west, so the eastbound approach is its backward direction"
+    }
+  ],
   "preview": true
 }
