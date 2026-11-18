@@ -29,4 +29,4 @@
 ## 5. Complete the implementation handoff
 
 - [x] 5.1 Update the implementation record with adopted choices, rejected alternatives, evidence paths, and remaining limits. Keep results for different extents or input hashes separate.
-- [ ] 5.2 Validate the completed OpenSpec change, archive it with the implementation once checks pass, and commit the resulting specs and code.
+- [x] 5.2 Validate the completed OpenSpec change, archive it with the implementation once checks pass, and commit the resulting specs and code.
