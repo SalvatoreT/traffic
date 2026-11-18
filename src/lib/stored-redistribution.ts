@@ -8,7 +8,7 @@ import { hashMatches, seedsPhrase } from './proposals';
 import { scenarioKey } from './redistribution';
 
 export const STORED_REDIST_VERSION = 1;
-export const STORED_REDIST_METHOD = 'displacement-1';
+export const STORED_REDIST_METHOD = 'displacement-2';
 /** Routes and receiving blocks kept per intervention. */
 export const STORED_TOP = 4;
 
@@ -52,6 +52,26 @@ export interface StoredRedistribution {
 }
 
 export const redistributionUrl = (area: string, group: string, proposal: string) => `/data/redistribution/${area}/${group}.${proposal}.json`;
+
+/** A link list cut into runs of consecutive links (each link starts where the one before it ends), so no line is drawn between non-adjacent nodes. */
+export function connectedRuns(links: readonly number[], from: ArrayLike<number>, to: ArrayLike<number>): number[][] {
+  const runs: number[][] = [];
+  for (const l of links) {
+    const run = runs[runs.length - 1];
+    if (run && to[run[run.length - 1]] === from[l]) run.push(l);
+    else runs.push([l]);
+  }
+  return runs;
+}
+
+/** What is wrong with a stored route, or null: a gap between consecutive links, or a street driven that its street list does not name. */
+export function routeProblem(r: StoredRoute, from: ArrayLike<number>, to: ArrayLike<number>, name: ArrayLike<string>): string | null {
+  const runs = connectedRuns(r.links, from, to);
+  if (runs.length > 1) return `links are not connected (${runs.length} runs)`;
+  const named = new Set(r.streets.split(' → '));
+  const missing = r.links.map((l) => name[l]).find((n) => !named.has(n));
+  return missing === undefined ? null : `drives ${missing}, which its street list does not name`;
+}
 
 /** The stored file, or null when it is missing or not in this reader's form. */
 export function parseRedistribution(text: string): StoredRedistribution | null {

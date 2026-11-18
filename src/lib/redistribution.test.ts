@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Intervention } from '../types';
-import { analyzeSeed, checkStored, displacement, COMPARISONS, localRoute, OUTCOMES, REQ_STRIDE, REDISTRIBUTION_SCHEMA, DIAGNOSTIC_METHOD, type Geo, type Role, type TraceRun } from './redistribution';
+import { analyzeSeed, checkStored, displacement, COMPARISONS, localPart, localRoute, OUTCOMES, REQ_STRIDE, REDISTRIBUTION_SCHEMA, DIAGNOSTIC_METHOD, type Geo, type Role, type TraceRun } from './redistribution';
 
 // Six links on a small graph: nodes 0, 4 and 5 are gates outside the study area, 1 to 3 inside. Link i runs from linkFrom[i] to linkTo[i].
 const geo: Geo = {
@@ -140,5 +140,29 @@ describe('stored diagnostics', () => {
     expect(checkStored(ok, { ...want, network: 'ffff0000ffff' })).toMatchObject({ ok: false });
     expect(checkStored(ok, { ...want, package: [c] })).toMatchObject({ ok: false, reason: 'made for other scenarios' });
     expect(checkStored({ aggregate: true }, want)).toMatchObject({ ok: false });
+  });
+});
+
+describe('local part of a path', () => {
+  // A path that leaves the 400 m radius around the closure at node 0 and comes back: 0 > 1 > 2 > 3 > 4 > 5 > 6, nodes 2 to 4 are far.
+  const far: Geo = {
+    nodeXY: [[0, 0], [300, 0], [900, 0], [900, 600], [300, 600], [100, 300], [0, 100]],
+    linkFrom: [0, 1, 2, 3, 4, 5], linkTo: [1, 2, 3, 4, 5, 6],
+    linkName: ['A St', 'B St', 'C St', 'D St', 'E St', 'F St'],
+    inStudy: [true, true, false, false, false, true, true],
+  };
+  const connected = (links: number[]) => links.every((l, k) => k === 0 || far.linkTo[links[k - 1]] === far.linkFrom[l]);
+
+  it('keeps the links between a departure from the radius and the return, so the list is a connected path', () => {
+    const p = localPart(far, [[0, 0]], [0, 1, 2, 3, 4, 5]);
+    expect(p.links).toEqual([0, 1, 2, 3, 4, 5]);
+    expect(connected(p.links)).toBe(true);
+    expect(p.key).toBe('A St → B St → C St → D St → E St → F St');
+  });
+
+  it('drops the links before the first and after the last one near the closure', () => {
+    const p = localPart(far, [[0, 0]], [3, 4, 5]);
+    expect(p.links).toEqual([4, 5]);
+    expect(localPart(far, [[0, 0]], [2, 3]).key).toBe('');
   });
 });

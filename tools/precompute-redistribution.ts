@@ -14,7 +14,7 @@ import { buildIndex } from '../src/lib/naming';
 import { displacement, FAR_ROUTE, geoOf, scenarioKey, type GraphQuery, type TraceRun, type TraceSummary } from '../src/lib/redistribution';
 import { parseProposals, linkHash, proposalsUrl, type Proposal, type ProposalGroup } from '../src/lib/proposals';
 import { canTrace } from '../src/lib/redistribution-view';
-import { redistributionUrl, redistributionVerdict, parseRedistribution, STORED_REDIST_METHOD, STORED_REDIST_VERSION, STORED_TOP, type StoredItem, type StoredRedistribution } from '../src/lib/stored-redistribution';
+import { redistributionUrl, routeProblem, redistributionVerdict, parseRedistribution, STORED_REDIST_METHOD, STORED_REDIST_VERSION, STORED_TOP, type StoredItem, type StoredRedistribution } from '../src/lib/stored-redistribution';
 import { DEFAULT_DATA_DIR, fileOf, loadAreaFiles, type AreaFiles } from './lib/agent-area';
 import { writeFileAtomic } from './lib/atomic';
 import { defaultJobs } from './lib/redistribution-cli';
@@ -132,6 +132,10 @@ async function main() {
         receiving: [...a.blocks.entries()].sort((x, y) => y[1] - x[1] || x[0] - y[0]).slice(0, STORED_TOP).map(([b, n]) => ({ block: index.blocks[b].label, perHour: r1(n * perHour) })),
       };
     });
+    for (const it of items) for (const r of it.routes) {
+      const bad = routeProblem(r, geo.linkFrom, geo.linkTo, geo.linkName);
+      if (bad) throw new Error(`${w.g.id}/${w.p.id}, "${it.label}", route "${r.streets}": ${bad}. Nothing was written for this proposal.`);
+    }
     const out: StoredRedistribution = {
       kind: 'proposal-redistribution', version: STORED_REDIST_VERSION, method: STORED_REDIST_METHOD,
       area, group: w.g.id, proposal: w.p.id, link: w.p.link, period: w.period,

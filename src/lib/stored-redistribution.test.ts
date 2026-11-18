@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Intervention } from '../types';
 import { scenarioKey } from './redistribution';
-import { itemFor, parseRedistribution, redistributionLine, redistributionRows, redistributionTip, redistributionVerdict, STORED_REDIST_METHOD, STORED_REDIST_VERSION, type StoredItem, type StoredRedistribution } from './stored-redistribution';
+import { connectedRuns, routeProblem, itemFor, parseRedistribution, redistributionLine, redistributionRows, redistributionTip, redistributionVerdict, STORED_REDIST_METHOD, STORED_REDIST_VERSION, type StoredItem, type StoredRedistribution } from './stored-redistribution';
 
 const iv = { type: 'modal_filter', link: 7 } as unknown as Intervention;
 const item: StoredItem = {
@@ -44,5 +44,18 @@ describe('stored redistribution', () => {
   it('gives a short tip with the one route most take', () => {
     expect(redistributionTip(item)).toBe('About 42 through cars an hour used this; most go via Colby Street → 63rd Street (25 an hour).');
     expect(redistributionTip({ ...item, usedPerHour: 0.2 })).toBe('Almost no through cars used this.');
+  });
+});
+
+describe('route checks', () => {
+  const from = [0, 1, 2, 5], to = [1, 2, 3, 6], name = ['A St', 'B St', 'C St', 'D St'];
+  it('cuts a link list at every jump between non-adjacent nodes', () => {
+    expect(connectedRuns([0, 1, 2], from, to)).toEqual([[0, 1, 2]]);
+    expect(connectedRuns([0, 1, 3], from, to)).toEqual([[0, 1], [3]]);
+  });
+  it('reports a gap and a street missing from the list, and accepts a clean route', () => {
+    expect(routeProblem({ streets: 'A St → B St → D St', perHour: 1, links: [0, 1, 3] }, from, to, name)).toMatch(/not connected/);
+    expect(routeProblem({ streets: 'A St → B St', perHour: 1, links: [0, 1, 2] }, from, to, name)).toMatch(/C St/);
+    expect(routeProblem({ streets: 'A St → B St → C St', perHour: 1, links: [0, 1, 2] }, from, to, name)).toBeNull();
   });
 });
