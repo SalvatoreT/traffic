@@ -14,3 +14,9 @@
 - [x] 3.2 `npm run assess -- --publish --noise`, seeds 1 to 10
 - [x] 3.3 Before and after table; round 43 in the record
 - [ ] 3.4 Area note and caveat with the new figures and `public/data/areas.json`, only if the assessment is no worse (design D6). Not done: the assessment is worse (design D10), so the note and caveat stay as they were
+
+## 4. Refit decision (2026-11-18)
+
+- [x] 4.1 Record the project lead's decision and the keep rule in design.md (D11) before any run
+- [ ] 4.2 Membership iteration on the corrected network. Not run: the published model uses static membership and the procedure would have to be chosen (design D12); waiting for the project lead
+- [x] 4.3 Move rounds thirty to thirty-three of the record to `rockridge.record-archive-3.md`
