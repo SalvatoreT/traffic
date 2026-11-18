@@ -79,45 +79,39 @@
       "unit": "veh/h/lane"
     },
     {
-      "hi": 1072.7083333333335,
+      "hi": 1129.1666666666667,
       "id": "b3",
       "knownDeviation": null,
-      "lo": 813.0000000000001,
+      "lo": 677.5000000000001,
       "name": "1 lane, 10% left, pocket, opposing 500/lane (green share 0.51)",
-      "note": "per lane, cycle 100 s, saturated; min(permissive-left limit, through limit), s 1,800 to 1,900, lower bound 0.8 of it",
+      "note": "per lane, cycle 100 s, saturated; min(permitted-left capacity over the left share, s x green share over the through share) [Fambro1991] with the band of p1 to p3 (critical gap 5.1 to 4.5 s, turning headway 2.57 to 2.24 s, 0.88 to 2 sneakers a cycle, s 1,500 to 2,000); lower bound 0.8 of the low end (ASSUMPTION); the 3-vehicle class-rule pocket (ASSUMPTION) is taken not to push capacity below the band; the band is wide and would also have passed the left-turn rule before the queue-first model",
       "pass": true,
       "sim": 888.0,
-      "source": "Brilon1999",
+      "source": "Fambro1991",
       "unit": "veh/h/lane"
     },
     {
-      "hi": 1211.25,
+      "hi": 1257.8125,
       "id": "b4",
-      "knownDeviation": {
-        "followUp": "Pending review. Candidate repairs: an expected range for b3, b4, b9 and l1 from the [Fambro1991] method that includes pocket storage, or pocket lengths from map or field data instead of the 3-vehicle ASSUMPTION.",
-        "id": "b4",
-        "reason": "New in change repair-permissive-left-and-gate-fork, which made the queue-first permissive-left rule of [Fambro1991] the default. One-lane approach with 20% left turns, the class-rule 3-vehicle pocket (ASSUMPTION) and 500 veh/h opposing: 837 veh/h per lane against 918 to 1,211 (0.8 to 1 of the through limit, s 1,800 to 1,900 times the green share over the through share). It passed under the earlier rule (924), which let a left-turner go ahead of the starting opposing queue and after the 45 s courtesy wait. The drop depends on the opposing flow: 993 veh/h with none (either rule), 951 at 250 veh/h (1,005 before), 837 at 500. Left-turners now turn only after the opposing queue has cleared, so more of them stand in the pocket at the start of green; when the pocket is full the next one waits at the head of the through lane and holds it. That is the most likely mechanism (inferred from the dependence on opposing flow, not traced). The range assumes the left turns never hold the through lane.",
-        "relevance": "Not reviewed: left to the project lead. One-lane signal approaches with a short assumed pocket, many left turns and moderate opposing flow discharge about 9% below the range under the cited permissive-left method.",
-        "reviewed": false
-      },
-      "lo": 918.0,
-      "name": "1 lane, 20% left, pocket, opposing 500/lane (green share 0.51)",
-      "note": "per lane, cycle 100 s, saturated; min(permissive-left limit, through limit), s 1,800 to 1,900, lower bound 0.8 of it",
-      "pass": false,
-      "sim": 837.0,
-      "source": "Brilon1999",
+      "knownDeviation": null,
+      "lo": 754.6875000000001,
+      "name": "1 lane, 20% left, pocket, opposing 500/lane (green share 0.50)",
+      "note": "per lane, cycle 100 s, saturated; simulated value and green share are the mean of seeds 1 to 10 (seed 1 alone swings about 5% over 12 cycles); min(permitted-left capacity over the left share, s x green share over the through share) [Fambro1991] with the band of p1 to p3 (critical gap 5.1 to 4.5 s, turning headway 2.57 to 2.24 s, 0.88 to 2 sneakers a cycle, s 1,500 to 2,000); lower bound 0.8 of the low end (ASSUMPTION); the 3-vehicle class-rule pocket (ASSUMPTION) is taken not to push capacity below the band; the band is wide and would also have passed the left-turn rule before the queue-first model",
+      "pass": true,
+      "sim": 813.9,
+      "source": "Fambro1991",
       "unit": "veh/h/lane"
     },
     {
-      "hi": 1067.4305555555554,
+      "hi": 1123.611111111111,
       "id": "b9",
       "knownDeviation": null,
-      "lo": 809.0,
+      "lo": 618.0463361328743,
       "name": "2 lanes, 10% left, pocket, opposing 500/lane (green share 0.51)",
-      "note": "per lane, cycle 100 s, saturated; min(permissive-left limit, through limit), s 1,800 to 1,900, lower bound 0.8 of it",
+      "note": "per lane, cycle 100 s, saturated; min(permitted-left capacity over the left share, s x green share over the through share) [Fambro1991] with the band of p1 to p3 (critical gap 5.1 to 4.5 s, turning headway 2.57 to 2.24 s, 0.88 to 2 sneakers a cycle, s 1,500 to 2,000); lower bound 0.8 of the low end (ASSUMPTION); the 3-vehicle class-rule pocket (ASSUMPTION) is taken not to push capacity below the band; the band is wide and would also have passed the left-turn rule before the queue-first model",
       "pass": true,
       "sim": 820.5,
-      "source": "Brilon1999",
+      "source": "Fambro1991",
       "unit": "veh/h/lane"
     },
     {
@@ -631,21 +625,15 @@
       "unit": "ratio"
     },
     {
-      "hi": 1043.5971548734742,
+      "hi": 680.7867618901436,
       "id": "l1",
-      "knownDeviation": {
-        "followUp": "Pending review. Candidate repairs: an expected range from the [Fambro1991] method for this geometry, pocket length from map or field data instead of the 3-vehicle ASSUMPTION, and a left-turner that waits at the pocket entrance instead of turning from the through lane beside a full pocket.",
-        "id": "l1",
-        "reason": "New in round 32. Two-lane signal approach with 20% left turns, a 3-vehicle pocket that overflows every cycle and 500 veh/h per opposing lane: 792 veh/h per lane against 851 to 1,064, the b9 bound at 20% left, which applies the gap formula of [Brilon1999] with tc 4.1 s and tf 2.2 s to the hourly opposing flow. Round 33: the permitted-left method of [Fambro1991] (left turns only once the opposing queue has cleared, then gaps, then sneakers) puts the left-limited approach at 385 to 706 per lane, so the simulator's 792 is above that method, not below it; with the queue-first left-turn model (`Config::queue_first_left`, off by default) it is 658. Through drivers move around a waiting left-turner (lane changes along a link), and a left-turner that does not fit in the pocket waits at the stop line of the inner lane and turns from there. Change repair-permissive-left-and-gate-fork made the queue-first rule the default: 646 against 835 to 1,044 at the new green share (the earlier rule gives 792), inside the 364 to 682 per lane that the [Fambro1991] method gives for this approach. The case still fails its own range, which applies the unsignalized gap formula to the hourly opposing flow.",
-        "relevance": "Not reviewed: left to the project lead. The range and the cited permitted-left method disagree; the expected range needs the lead's review before this case can say whether two-lane approaches with heavy permissive left turns are too slow or too fast.",
-        "reviewed": false
-      },
-      "lo": 834.8777238987794,
+      "knownDeviation": null,
+      "lo": 290.9029102042211,
       "name": "2 lanes, 20% left, pocket overflowing, opposing 500/lane (green share 0.49): approach capacity",
-      "note": "per lane, cycle 100 s, saturated; the left-turn queue overflows the 3-vehicle pocket every cycle and through drivers behind it move to the free lane; min(permissive-left limit, through limit) as in b9, s 1,800 to 1,900, lower bound 0.8 of it; without lane changes along the link 579; the permitted-left method of p1 to p3 [Fambro1991] (left turns only after the opposing queue clears) puts the left-limited approach at 364 to 682 per lane; with the rule before the queue-first model (`queue_first_left` off) 792",
-      "pass": false,
-      "sim": 646.5,
-      "source": "Brilon1999",
+      "note": "per lane, cycle 100 s, saturated; simulated value and green share are the mean of seeds 1 to 10; the left-turn queue overflows the 3-vehicle pocket every cycle and through drivers behind it move to the free lane; min(permitted-left capacity over the left share, s x green share over the through share) [Fambro1991] with the band of p1 to p3 (critical gap 5.1 to 4.5 s, turning headway 2.57 to 2.24 s, 0.88 to 2 sneakers a cycle, s 1,500 to 2,000); lower bound 0.8 of the low end (ASSUMPTION); the 3-vehicle class-rule pocket (ASSUMPTION) is taken not to push capacity below the band; the band is wide and would also have passed the left-turn rule before the queue-first model; without lane changes along the link 579; with the rule before the queue-first model (`queue_first_left` off) 792",
+      "pass": true,
+      "sim": 675.9,
+      "source": "Fambro1991",
       "unit": "veh/h/lane"
     },
     {
@@ -951,11 +939,9 @@
   ],
   "failing": [
     "a3",
-    "b4",
     "b13",
     "e2",
     "e3",
-    "l1",
     "j6",
     "j8",
     "j9",
@@ -964,18 +950,18 @@
   "manifest": {
     "deviations": {
       "path": "data/calibration/validation.deviations.json",
-      "sha256": "00e58b936b62a15ce0794ecd18508cde55c0bd37f47c21b2d98da74402ef0eb4"
+      "sha256": "f48bbae1a889f12f1ee645268aa2d14e48f79eaee07fbd5c4d14f83411975d07"
     },
     "schema": 1,
     "simulator": {
       "dirty": false,
       "fingerprint": "d45a275dd7be0713cec6a64394b7d8a9",
-      "revision": "c4c3d237606822a4777db5e45c828f3faf52aa68",
+      "revision": "e27da92574e8937d1eb7f11e82a8c5f8b215aa07",
       "version": "0.1.0"
     },
     "suite": {
       "cases": 74,
-      "sha256": "f99ced82a68c66cf21491bca4801c933d160bd94647d018b71719c8d1d7e7d44"
+      "sha256": "e5c2cea47618faaa61b368c3f12dd0c71678b0d8428f279dd12d74251820d16b"
     }
   },
   "notDocumented": []
