@@ -84,3 +84,5 @@ D10. What remains open, for the lead:
 - Signals with heavy permissive lefts where [FHWA-STM2008] Figure 4-11 would put a left-turn phase (Adeline St at Alcatraz Ave with four modeled opposing lanes) have no protected phase unless one is observed. Applying the guideline to unobserved signals would be an ASSUMPTION about the field; it needs the lead's decision or timing sheets.
 - AM Telegraph Ave southbound is 1 s above its observed range.
 - Stored proposal results, text pages and previews are out of date with the new fingerprint; proposals are searched again in the next change, by the lead's decision.
+
+D11. Decision by the project lead, 2026-11-17 Pacific (by card): adopt the repair and search again. The proposals were searched on the repaired simulator (revision 72ed2f9bd7b1, fingerprint d45a275dd7be0713cec6a64394b7d8a9, search finished 10:04 PM Pacific) and replace the set published earlier that evening. Baseline through cars on the side streets, mean of the three periods on seeds 101 to 110: 567 an hour (550 before the repair). The search chose six options and kept both reference packages. b4, l1 and b13 stay unreviewed, so the model stays uncalibrated.

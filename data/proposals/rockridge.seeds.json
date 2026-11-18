@@ -15,17 +15,6 @@
       "score": null
     },
     {
-      "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2,175.355~mn,9q9p3fr7b5~mn,9q9p641p03,80.260~ow,9q9p3fp3vc,355~mn,9q9p3cq6m9,120.300",
-      "source": "search",
-      "note": "published by an earlier search (group charter, option p4, 2026-11-15 through-car change -61.8%)",
-      "added": "2026-11-15",
-      "lastPublished": "2026-11-15",
-      "group": "charter",
-      "size": 5,
-      "changePct": -61.8,
-      "score": null
-    },
-    {
       "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2,175.355~mn,9q9p3fr7b5~mn,9q9p641p03,80.260~ow,9q9p3fp3vc,355~mn,9q9p3cq6m9~mn,9q9p3cx02b,125",
       "source": "search",
       "note": "published by an earlier search (group charter, option p5, 2026-11-15 through-car change -75.7%)",
@@ -34,17 +23,6 @@
       "group": "charter",
       "size": 6,
       "changePct": -75.7,
-      "score": null
-    },
-    {
-      "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p3cxtt7~mn,9q9p3fr7b5~mn,9q9p642ut2~mn,9q9p3cx02b~mn,9q9p3cw3sm",
-      "source": "search",
-      "note": "published by an earlier search (group charter, option p4, 2026-11-15 through-car change -62.7%)",
-      "added": "2026-11-15",
-      "lastPublished": "2026-11-15",
-      "group": "charter",
-      "size": 5,
-      "changePct": -62.7,
       "score": null
     },
     {
@@ -125,15 +103,15 @@
       "score": null
     },
     {
-      "link": "#v1;a=rockridge;p=pm_peak;s=ow,9q9p642z5y,175~ow,9q9p3fr726,175~ow,9q9p3crqtn,305~ow,9q9p3cqb23,305~ow,9q9p643b1e,260~ss,9q9p3cx9rf",
+      "link": "#v1;a=rockridge;p=pm_peak;s=ow,9q9p642z5y,175~ow,9q9p3fr726,175~ow,9q9p3cqb23,305~ow,9q9p3crqtn,305~ss,9q9p3cx9rf~ow,9q9p643b1e,260",
       "source": "search",
       "note": "published by an earlier search (group unconstrained, option p3, 2026-11-17 through-car change -48.5%)",
       "added": "2026-11-17",
-      "lastPublished": "2026-11-17",
+      "lastPublished": "2026-11-18",
       "group": "unconstrained",
       "size": 6,
-      "changePct": -48.5,
-      "score": null
+      "changePct": -44.1,
+      "score": 38.7
     },
     {
       "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p3fprdr~dd,9q9p642ut2,41~mf,9q9p643b1e~ss,9q9p3cx9rf",
@@ -165,8 +143,8 @@
       "lastPublished": "2026-11-18",
       "group": "unconstrained",
       "size": 2,
-      "changePct": -29.7,
-      "score": 28.1
+      "changePct": -30.9,
+      "score": 28.9
     },
     {
       "link": "#v1;a=rockridge;p=pm_peak;s=dd,9q9p3fpkk7,41~mn,9q9p642ut2,175.355~mn,9q9p3cq6m9,120.300~mn,9q9p3cx02b",
@@ -180,15 +158,15 @@
       "score": null
     },
     {
-      "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p3fprdr~mn,9q9p3cxtt7~mn,9q9p642ut2~dd,9q9p641p03,127~mn,9q9p3cq6m9~mn,9q9p3cx02b,125",
+      "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2~mn,9q9p3fprdr~dd,9q9p641p03,127~mn,9q9p3cxtt7~mn,9q9p3cq6m9~mn,9q9p3cx02b,125",
       "source": "search",
       "note": "",
       "added": "2026-11-18",
       "lastPublished": "2026-11-18",
       "group": "unconstrained",
       "size": 6,
-      "changePct": -78.2,
-      "score": 54.8
+      "changePct": -77.6,
+      "score": 53.5
     },
     {
       "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p3fprdr~mn,9q9p642ut2~dd,9q9p641p03,127~mn,9q9p3cq6m9~ow,9q9p3crqtn,305",
@@ -202,15 +180,15 @@
       "score": 54.2
     },
     {
-      "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p3fprdr~mn,9q9p642ut2,80.260~mn,9q9p641p03~dd,9q9p3ctkug,42~ct,9q9p3cy1ne,a~ct,9q9p3cmuv6,a",
+      "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2,80.260~mn,9q9p3fprdr~mn,9q9p641p03~dd,9q9p3ctkug,42~ct,9q9p3cmuv6,a~ct,9q9p3cy1ne,a",
       "source": "search",
       "note": "",
       "added": "2026-11-18",
       "lastPublished": "2026-11-18",
       "group": "unconstrained",
       "size": 6,
-      "changePct": -48.7,
-      "score": 44.4
+      "changePct": -50.7,
+      "score": 47.4
     },
     {
       "link": "#v1;a=rockridge;p=pm_peak;s=ow,9q9p642z5y,355~ow,9q9p641h45,175~ow,9q9p3crqtn,305~ss,9q9p3cx9rf~tb,9q9p3cpnsz,15,300~ow,9q9p643b1e,260",
@@ -222,6 +200,28 @@
       "size": 6,
       "changePct": -38.1,
       "score": 36.1
+    },
+    {
+      "link": "#v1;a=rockridge;p=pm_peak;s=dd,9q9p642ut2,41~mn,9q9p3fprdr~dd,9q9p3cz9dy,42~ow,9q9p3cx9rf,175~mn,9q9p3cq6m9~mn,9q9p3cx02b,125",
+      "source": "search",
+      "note": "",
+      "added": "2026-11-18",
+      "lastPublished": "2026-11-18",
+      "group": "unconstrained",
+      "size": 6,
+      "changePct": -71.6,
+      "score": 54.7
+    },
+    {
+      "link": "#v1;a=rockridge;p=pm_peak;s=dd,9q9p642ut2,41~mn,9q9p3fpkk7~mn,9q9p3cq6m9~mn,9q9p3cx02b~ss,9q9p3cx9rf",
+      "source": "search",
+      "note": "",
+      "added": "2026-11-18",
+      "lastPublished": "2026-11-18",
+      "group": "unconstrained",
+      "size": 5,
+      "changePct": -66.6,
+      "score": 56.2
     }
   ]
 }
