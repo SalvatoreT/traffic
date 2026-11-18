@@ -768,9 +768,9 @@ pub fn run_all() -> Vec<Case> {
         let protect = |net: &mut Network, x: &Cross| {
             net.nodes[x.c as usize].signal_timing = vec![SignalTiming { periods: vec!["p".into()], cycle_s: 0.0, greens: vec![ApproachGreen { links: vec![x.w_in], green_s: 0.0, own_phase: true, runs_with: Vec::new(), clearance_s: None }], source: "phasing only".into(), clearance_s: None }];
         };
-        let (cap, gc) = approach_cap(a, 1, &[], protect);
+        let (cap, gc) = ten_seed_mean(|sd| approach_cap(a, sd, &[], protect));
         let (perm, _) = approach_cap(a, 1, &[], |_, _| {});
-        out.push(case("b13", format!("1 lane, all left turns, protected (a phase of its own, phasing observed without timing), opposing 500/lane (green share {gc:.2})"), "veh/h/lane", cap, 1500.0 * gc, 2000.0 * gc, "FHWA-SIG2004", format!("per lane, cycle 100 s, saturated; s x green share, s observed 1,500 to 2,000; the same approach with a permissive left carries {perm:.0}")));
+        out.push(case("b13", format!("1 lane, all left turns, protected (a phase of its own, phasing observed without timing), opposing 500/lane (green share {gc:.2})"), "veh/h/lane", cap, 1500.0 * gc, 2000.0 * gc, "FHWA-SIG2004", format!("per lane, cycle 100 s, saturated; simulated value and green share are the mean of seeds 1 to 10; s x green share, s observed 1,500 to 2,000; the same approach with a permissive left carries {perm:.0} at seed 1")));
     }
     // Right turn on red (ASSUMPTION: permitted at every signal after a stop; the legal basis is California Vehicle Code 21453 [CVC21453], 2010 text only; gap-acceptance treatment of RTOR: [Virkler1998], [Stewart1995], abstracts only). Gap acceptance for the turn is the two-way-stop minor right (tc 6.2 s, tf 3.3 s [Brilon1999]); the stop costs the rest of the
     // follow-up headway, so the red-time discharge is at most 3600 / tf = 1,090 veh/h.

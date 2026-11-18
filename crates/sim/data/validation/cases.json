@@ -16,7 +16,7 @@
   {"id":"p1","unit":"veh/h","lo":363.74320066099034,"hi":497.2249799618101,"source":"Fambro1991"},
   {"id":"p2","unit":"veh/h","lo":190.0195453914769,"hi":338.6761243555563,"source":"Fambro1991"},
   {"id":"p3","unit":"veh/h","lo":31.68,"hi":170.2765879548761,"source":"Fambro1991"},
-  {"id":"b13","unit":"veh/h/lane","lo":451.875,"hi":602.5,"source":"FHWA-SIG2004"},
+  {"id":"b13","unit":"veh/h/lane","lo":453.375,"hi":604.5,"source":"FHWA-SIG2004"},
   {"id":"b10","unit":"ratio","lo":1.0908333333333333,"hi":1.2422222222222223,"source":"ASSUMPTION"},
   {"id":"b11","unit":"ratio","lo":0.95,"hi":1.15,"source":"ASSUMPTION"},
   {"id":"c5","unit":"ratio","lo":0.9,"hi":1.1,"source":"ASSUMPTION"},

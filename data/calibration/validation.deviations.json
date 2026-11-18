@@ -49,13 +49,6 @@
    "reviewed": true,
    "relevance": "As j6: the floor is a guess and the cyclist flow is far above the study area's.",
    "followUp": "As j6."
-  },
-  {
-   "id": "b13",
-   "reason": "New in round 33. A one-lane, all-left approach in a phase of its own (protected, phasing observed without timing) discharges 450 veh/h at a green share of 0.30, about 1,500 an hour of green, against s x green share with s 1,500 to 2,000 [FHWA-SIG2004]: 2 veh/h below the lower bound. Single-lane left turns slow to the 5 m/s turn speed (ASSUMPTION); seeds 2 to 5 give 456 to 486.",
-   "reviewed": false,
-   "relevance": "Not reviewed: left to the project lead. Protected left turns discharge at the low end of the observed saturation flows.",
-   "followUp": "Pending review. Repair: a cited turn speed or left-turn saturation adjustment."
   }
  ]
 }
