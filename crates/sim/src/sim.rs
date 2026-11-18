@@ -2276,15 +2276,33 @@ impl Simulation {
         Some(at)
     }
 
+    /// Gate queue of a trip: its first link and, where that link forks into branches with lanes of their own, the lanes of its branch.
+    fn spawn_key(&self, first: u32, next: Option<u32>) -> (u32, u32) {
+        let band = next.and_then(|a| self.topo.find_mv(first, a)).map(|m| self.topo.fork_band[m as usize]).filter(|&(_, hi)| hi != 255);
+        (first, band.map_or(u32::MAX, |(lo, hi)| (lo as u32) << 8 | hi as u32))
+    }
+
     fn try_spawns(&mut self) {
         for n in 0..self.topo.n_nodes {
-            let (mut spawned, mut idx) = (0, 0);
-            let mut blocked: Vec<u32> = Vec::new();
+            let (mut spawned, mut idx, mut examined) = (0, 0, 0);
+            // Blocked (first link, fork branch) pairs: where the first link forks into straight-ahead branches with lanes of their own (`fork_band`),
+            // a trip waits only behind trips bound for the same branch (`SPAWN_SCAN`). A planned trip behind a blocked pair is passed over without
+            // counting toward the scan.
+            let mut blocked: Vec<(u32, u32)> = Vec::new();
             // ASSUMPTION: at most 4 trips enter the network per node per step (a gate stands for a multilane road with side-by-side arrivals); no source.
-            while spawned < 4 && idx < SPAWN_SCAN && blocked.len() < self.topo.outs[n].len() {
+            while spawned < 4 && examined < SPAWN_SCAN {
                 let Some(trip) = self.backlog[n].get(idx) else { break };
                 let (dest, seed, tuid) = (trip.dest, trip.noise_seed, trip.uid);
                 let (vplan, curbs) = (trip.vplan, trip.curbs);
+                if !blocked.is_empty() {
+                    if let Some((_, first, r)) = self.spawn_cache.get(&tuid) {
+                        if blocked.contains(&self.spawn_key(*first, r.first().copied())) {
+                            idx += 1;
+                            continue;
+                        }
+                    }
+                }
+                examined += 1;
                 let mut route = std::mem::take(&mut self.scratch);
                 route.clear();
                 let planned = if let Some((via, first, r)) = self.spawn_cache.get(&tuid) {
@@ -2305,7 +2323,8 @@ impl Simulation {
                     self.st.unroutable += 1;
                     continue;
                 };
-                if blocked.contains(&b) {
+                let key = self.spawn_key(b, route.first().copied());
+                if blocked.contains(&key) {
                     self.scratch = route;
                     idx += 1;
                     continue;
@@ -2324,7 +2343,7 @@ impl Simulation {
                 };
                 let Some((lane, v_ins, pos_ins, at)) = entry else {
                     self.scratch = route;
-                    blocked.push(b);
+                    blocked.push(key);
                     idx += 1;
                     continue;
                 };
@@ -2549,12 +2568,17 @@ impl Simulation {
         veh.next().and_then(|b| self.topo.find_mv(l as u32, b)).map_or(false, |m| self.topo.mvs[m as usize].kind == K_LEFT)
     }
 
+    /// Permissive lefts at signals by the queue-first gap model [Fambro1991] (`Config::queue_first_left`, default on).
+    fn queue_first_left(&self) -> bool {
+        self.cfg.queue_first_left != Some(false)
+    }
+
     fn critical_gap(&self, mv: u32, ctrl: Control, gap_f: f32) -> f32 {
         let m = &self.topo.mvs[mv as usize];
         let base = match ctrl {
             Control::Signal => {
                 if m.kind == K_LEFT {
-                    if self.cfg.queue_first_left == Some(true) { TC_PERMITTED_LEFT } else { TC_MAJOR_LEFT }
+                    if self.queue_first_left() { TC_PERMITTED_LEFT } else { TC_MAJOR_LEFT }
                 } else {
                     TC_UNCONTROLLED
                 }
@@ -2670,10 +2694,10 @@ impl Simulation {
         if ctrl == Control::TrafficCircle && !self.eff.ring_node[node] {
             return (true, rec);
         }
-        // `queue_first_left`: a permissive left at a signal gets no courtesy or yield fallback: its wait spans the red, and the opposing queue it would cut in
+        // Queue-first (`queue_first_left`, default): a permissive left at a signal gets no courtesy or yield fallback: its wait spans the red, and the opposing queue it would cut in
         // front of stands only because of it. Its way out is a gap after the opposing queue or the change interval, one or two vehicles
         // a cycle [FHWA-STM2008] 4.8.4, [Fambro1991].
-        let permissive = self.cfg.queue_first_left == Some(true) && ctrl == Control::Signal && !rtor && self.topo.mvs[mv as usize].kind == K_LEFT;
+        let permissive = self.queue_first_left() && ctrl == Control::Signal && !rtor && self.topo.mvs[mv as usize].kind == K_LEFT;
         let behavioral = policy != JunctionRecovery::NoBehavioral && !permissive;
         let courtesy = behavioral && veh.wait_t >= YIELD_COURTESY_S;
         if behavioral && veh.wait_t >= YIELD_FALLBACK_S {
@@ -2730,7 +2754,7 @@ impl Simulation {
                 for &x in q.iter().take(4) {
                     let xv = &self.vehs[x as usize];
                     let dx = (self.topo.stop_pos[e as usize] - xv.pos).max(0.0) + self.topo.length[e as usize].min(R_NODE as f32 * 4.0).min(R_NODE as f32);
-                    let tx = if ctrl == Control::Signal && self.cfg.queue_first_left == Some(true) { approach_time(dx, xv.v, xv.drv.a, self.eff.limit[e as usize] * xv.drv.fcomp) } else { dx / xv.v.max(MIN_APPROACH_SPEED) };
+                    let tx = if ctrl == Control::Signal && self.queue_first_left() { approach_time(dx, xv.v, xv.drv.a, self.eff.limit[e as usize] * xv.drv.fcomp) } else { dx / xv.v.max(MIN_APPROACH_SPEED) };
                     if tx > tc {
                         break;
                     }
