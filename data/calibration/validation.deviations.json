@@ -51,20 +51,6 @@
    "followUp": "As j6."
   },
   {
-   "id": "b4",
-   "reason": "New in change repair-permissive-left-and-gate-fork, which made the queue-first permissive-left rule of [Fambro1991] the default. One-lane approach with 20% left turns, the class-rule 3-vehicle pocket (ASSUMPTION) and 500 veh/h opposing: 837 veh/h per lane against 918 to 1,211 (0.8 to 1 of the through limit, s 1,800 to 1,900 times the green share over the through share). It passed under the earlier rule (924), which let a left-turner go ahead of the starting opposing queue and after the 45 s courtesy wait. The drop depends on the opposing flow: 993 veh/h with none (either rule), 951 at 250 veh/h (1,005 before), 837 at 500. Left-turners now turn only after the opposing queue has cleared, so more of them stand in the pocket at the start of green; when the pocket is full the next one waits at the head of the through lane and holds it. That is the most likely mechanism (inferred from the dependence on opposing flow, not traced). The range assumes the left turns never hold the through lane.",
-   "reviewed": false,
-   "relevance": "Not reviewed: left to the project lead. One-lane signal approaches with a short assumed pocket, many left turns and moderate opposing flow discharge about 9% below the range under the cited permissive-left method.",
-   "followUp": "Pending review. Candidate repairs: an expected range for b3, b4, b9 and l1 from the [Fambro1991] method that includes pocket storage, or pocket lengths from map or field data instead of the 3-vehicle ASSUMPTION."
-  },
-  {
-   "id": "l1",
-   "reason": "New in round 32. Two-lane signal approach with 20% left turns, a 3-vehicle pocket that overflows every cycle and 500 veh/h per opposing lane: 792 veh/h per lane against 851 to 1,064, the b9 bound at 20% left, which applies the gap formula of [Brilon1999] with tc 4.1 s and tf 2.2 s to the hourly opposing flow. Round 33: the permitted-left method of [Fambro1991] (left turns only once the opposing queue has cleared, then gaps, then sneakers) puts the left-limited approach at 385 to 706 per lane, so the simulator's 792 is above that method, not below it; with the queue-first left-turn model (`Config::queue_first_left`, off by default) it is 658. Through drivers move around a waiting left-turner (lane changes along a link), and a left-turner that does not fit in the pocket waits at the stop line of the inner lane and turns from there. Change repair-permissive-left-and-gate-fork made the queue-first rule the default: 646 against 835 to 1,044 at the new green share (the earlier rule gives 792), inside the 364 to 682 per lane that the [Fambro1991] method gives for this approach. The case still fails its own range, which applies the unsignalized gap formula to the hourly opposing flow.",
-   "reviewed": false,
-   "relevance": "Not reviewed: left to the project lead. The range and the cited permitted-left method disagree; the expected range needs the lead's review before this case can say whether two-lane approaches with heavy permissive left turns are too slow or too fast.",
-   "followUp": "Pending review. Candidate repairs: an expected range from the [Fambro1991] method for this geometry, pocket length from map or field data instead of the 3-vehicle ASSUMPTION, and a left-turner that waits at the pocket entrance instead of turning from the through lane beside a full pocket."
-  },
-  {
    "id": "b13",
    "reason": "New in round 33. A one-lane, all-left approach in a phase of its own (protected, phasing observed without timing) discharges 450 veh/h at a green share of 0.30, about 1,500 an hour of green, against s x green share with s 1,500 to 2,000 [FHWA-SIG2004]: 2 veh/h below the lower bound. Single-lane left turns slow to the 5 m/s turn speed (ASSUMPTION); seeds 2 to 5 give 456 to 486.",
    "reviewed": false,
