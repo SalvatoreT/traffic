@@ -875,7 +875,7 @@ function loadMeasured(fc: { assignment?: { measured?: { file: string; alpha: num
   return { delayS: j.delayS as Record<string, number[]>, alpha: m.alpha, weight: m.weight, source: `${m.file}, ${j.note}` };
 }
 // A through-car target counts distinct trips with both ends outside the study area that visit any link of the corridor.
-function loadThrough(fc: { stationsOutput?: string; throughTargets?: { enabled: boolean | 'report'; targets: string; weight: number; otherPeriods?: 'ceiling' | 'none'; measured?: { file: string; priorTrips: number }; measuredStations?: string[]; measuredStationsTraining?: string } }, notes: string[]): ThroughFit | undefined {
+function loadThrough(fc: { stationsOutput?: string; throughTargets?: { enabled: boolean | 'report'; targets: string; weight: number; otherPeriods?: 'ceiling' | 'none'; measured?: { file: string; priorTrips: number }; measuredStations?: string[]; measuredStationsTraining?: string; simulatedMembership?: { method: 'export-supported'; file: string; trainingFile: string; priorTrips: number } } }, notes: string[]): ThroughFit | undefined {
   const tt = fc.throughTargets;
   if (!tt?.enabled) return undefined;
   const tf = JSON.parse(readFileSync(tt.targets, 'utf8'));
@@ -897,8 +897,10 @@ function loadThrough(fc: { stationsOutput?: string; throughTargets?: { enabled: 
   }
   if (!targets.length) notes.push('No comparable unique-corridor through counts enter this fit. Whole-street traversal counts are scored on the end-to-end path.');
   let measured: ThroughFit['measured'];
-  const mf = tt.measured;
-  const membershipFile = training ? tt.measuredStationsTraining : mf?.file;
+  // Calibration round 48 (off unless the entry is present): every station the report binary exports takes the membership of the loop's file of this view (tools/membership-loop.ts).
+  const sm = tt.simulatedMembership;
+  const mf = sm ? { file: sm.file, priorTrips: sm.priorTrips } : tt.measured;
+  const membershipFile = sm ? (training ? sm.trainingFile : sm.file) : training ? tt.measuredStationsTraining : mf?.file;
   if (membershipFile && existsSync(membershipFile)) {
     const j = JSON.parse(readFileSync(membershipFile, 'utf8'));
     const stationPath = fc.stationsOutput && (existsSync(outPath(fc.stationsOutput)) ? outPath(fc.stationsOutput) : fc.stationsOutput);
@@ -909,8 +911,8 @@ function loadThrough(fc: { stationsOutput?: string; throughTargets?: { enabled: 
     };
     if (j.network === net.id && sameMembershipEvidence(j.evidence, evidence)) { measured = j.periods; notes.push(`Simulated membership from ${membershipFile} (${view} view)`); }
     else notes.push(`${membershipFile} lacks matching source, detector, split or demand-view evidence. Using static membership.`);
-  } else if (mf) notes.push(`No simulated membership file for the ${view} view. Using static route shares.`);
-  return { targets, inStudy: new Set(net.nodes.filter((n: { inStudyArea?: boolean }) => n.inStudyArea).map((n: { id: number }) => n.id)), measured, priorTrips: mf?.priorTrips ?? 5, reportOnly: tt.enabled === 'report', measuredStations: tt.measuredStations };
+  } else if (mf) notes.push(`No simulated membership file for the ${view} view${sm ? ` (${membershipFile})` : ''}. Using static route shares.`);
+  return { targets, inStudy: new Set(net.nodes.filter((n: { inStudyArea?: boolean }) => n.inStudyArea).map((n: { id: number }) => n.id)), measured, priorTrips: mf?.priorTrips ?? 5, reportOnly: tt.enabled === 'report', measuredStations: sm ? 'all' : tt.measuredStations };
 }
 const localScaleLines = (): string[] => {
   if (!countEnds || !Object.keys(localScale).length) return [];
