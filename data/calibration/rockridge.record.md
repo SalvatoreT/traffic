@@ -89,6 +89,146 @@ Claremont Ave: checked end to end. OSM lanes (3 with one forward and one backwar
 
 Ramp junctions: after joining all four SR-24 terminals are single signalized nodes (Aileen/Telegraph and Clifton/Claremont off-ramps, Hudson/Claremont and 56th/Telegraph on-ramps) with 2-lane ramp approaches at 35 mph. Mean discharge in the PM peak (seeds 1 to 3, measured before the third round): Aileen off-ramp 584 veh/h (offered 656), Clifton off-ramp 914 veh/h (offered about 1,025), on-ramps 783 and 555 veh/h. That is 290 to 460 veh/h per lane averaged over the hour; the signal gives the ramp 30 to 45% of the cycle and the shortfall is downstream spill-back on Claremont and Telegraph, not the ramp signal itself. Before the third round the remaining gridlock removals were mostly vehicles queued on the 4-lane freeway stub behind the single-lane Clifton off-ramp (26 of about 45 removals over six seeds at scale 0.3). The third round checked the ramp lanes against OSM: the off-ramps are tagged one lane for most of their length and two lanes (turn lanes left | left;through;right at Clifton, left | right at Aileen) on the final way before the signal, and the importer keeps that per segment (a test covers it), so no lane count is lost. After step M the stub accounts for about one removal per run.
 
+## Audit of the missed count locations and imagery survey (2026-11-18/19)
+
+Read-only: no code, data or network was changed, and the published network 53c823f20d9165ed, demand 9cdebdabf05c4460 and cross-validation demand 2f9ae152b9bbf78e stand.
+
+### Method limit
+
+Ten-seed values per station are not stored for the published build, so the audit used one seed (seed 1, 60 min, shipped demand for fitted stations, cross-validation demand for held-out ones). One seed gives PM fitted 70/92, PM held out 14/24, AM fitted 66/77 and AM held out 14/19, against the ten-seed 74/92, 14/24, 70/77 and 14/19. Counts are therefore good to about 3 stations, and a station at single-seed GEH 5.0 to 6.5 is borderline. About 4 of the 22 single-seed PM fitted misses pass on the ten-seed mean. Rebuilding the network from `data/osm` and `data/areas/rockridge.json` reproduces the published hash.
+
+### Where the misses cluster
+
+- The diagonal Telegraph Ave, McAuley St or 60th St, Ayala Ave or Howell St, Forest St, Claremont Ave. The demand fit matches the counts there, but the simulation carries 2 to 5 times the count.
+- Links no trip uses: Dana St southbound and Canning St northbound.
+- 62nd St and 63rd St eastbound between Hillegass Ave and Colby St.
+- The Caldecott Lane on-ramp.
+
+### Coding issue found
+
+One Caltrans on-ramp row at Caldecott Lane is split 50/50 over two ramps, although a turn ban sends the flow to one of them. Correcting it could flip at most one station. Not changed.
+
+### Held-out gate targets
+
+Six of the ten PM held-out misses are gate targets derived from annual average daily traffic (San Pablo Ave, Tunnel Rd, Ashby Ave), not hourly counts. No correction to the network can fix those.
+
+### Checked and clean
+
+- Direction labels of all 136 volunteer block stations agree with the bearing of the mapped link (largest error under 50 degrees; none flipped).
+- Count transcription: in versus out at fully counted junctions agrees within 16 veh/h at all but one PM node (Canning St at 59th St, 46, a known missing southbound label) and one AM node (25). No swapped or mistyped digits at the failing stations. The Dana St labels are right: swapping them would raise the imbalance at 63rd St and Dana St from 14 to 46.
+- OSM tags against the network: speed limit, lanes, one-way and class match for every way in the study area. Seven OSM stop nodes are not attributed, all far west of the area. Of 37 restriction relations that do not resolve, the only one inside the area is Telegraph Ave to 58th St, no left turn 7 to 9 AM.
+- No barrier, access or motor_vehicle=no tag on any node or way in the area. The barricades seen in imagery are not in OSM.
+
+### Imagery survey
+
+Street-level imagery, undated; traffic-control facts only.
+
+- No stop sign at Howell St and McAuley St, Ayala Ave and McAuley St, Ayala Ave and Howell St, Howell St and 59th St, 60th St and Howell St, or Martin St, Hermann St and 58th St. None is missing from the model at these seven junctions. Ayala Ave and Martin St is unresolved: no sign legible in the one frame, and the model stops Martin St.
+- Telegraph Ave and McAuley St: stop sign on McAuley St; no median and no turn restriction on Telegraph Ave. Telegraph Ave and 60th St: stop bars on both 60th St approaches; no median. Both match the model.
+- No hump signs or markings on Howell St, McAuley St, 60th St, Forest St or Ayala Ave between Martin St and McAuley St. Confidence is low to medium (40 m sampling gap, shadows, some washed-out frames).
+- Forest St and Claremont Ave: signal heads on all four legs; temporary utility work and a temporary no-left-turn sign on Claremont Ave. Confidence on turn rules is low.
+- A "road closed to thru traffic" barricade across Forest St at Ayala Ave in one undated frame. A similar object near the Howell St and Ayala Ave corner is low confidence.
+
+The project lead stated on 2026-11-18 that the Forest St and Ayala Ave barricade is gone. It is not coded.
+
+### Verdict
+
+The remaining misses point to route choice in the simulation disagreeing with the fit's static assignment, not to data errors. Reaching 79 of 92 PM fitted stations is not attainable from the data corrections found so far.
+
+### Open items
+
+- Resolved: the Forest St and Ayala Ave barricade is gone; removed from the field-check list.
+- Field checks still open: the Howell St and Ayala Ave barricade (low confidence), the Forest St signal timing, and the stop signs at Hillegass Ave and 61st St and at Canning St and 62nd St.
+- To decide: the Caldecott Lane on-ramp pairing, and the held-out gate targets derived from annual average daily traffic.
+
+## Forty-fifth round: a shorter Forest St green (change calibration-round-45)
+
+Passes the keep rule, not adopted (user decision, 2026-11-18). The published network 53c823f20d9165ed, demand 9cdebdabf05c4460 and cross-validation demand 2f9ae152b9bbf78e of the baseline assessment of 2026-11-18 (commit b1ff0ef, assessment ff5d667) stand, and so do the area note and caveat. Simulator fingerprint d45a275dd7be0713cec6a64394b7d8a9 throughout.
+
+### What was tried
+
+Nothing in the simulator was changed. The area config's existing `signalObservations` entries set one approach's green, and the simulator holds an observed green fixed. Three candidates set the Forest St eastbound green (heading 123) at Claremont Ave / Colby St / Forest St to 25, 18 and 12 s of the 79 s cycle in the AM and PM peaks, each labeled ASSUMPTION. The baseline model gives Forest St about 35.3 s in the PM peak. Only node 1069 differs from the baseline network and every link is identical. The fitted demand periods of each candidate equal the baseline's, because the fit reads no signal timing. The keep rule (design D4) and the screen (D5) were written before any run.
+
+The run was on the project lead's laptop session on 2026-11-18, about 8:05 PM to 9:06 PM Pacific (M3 Pro, 12 jobs), from the change's `runbook.md`. The evidence is in the archived change's `evidence/` folder.
+
+Hashes (SHA-256, first 16 characters): baseline network 53c823f20d9165ed, demand 9cdebdabf05c4460, training 2f9ae152b9bbf78e.
+
+| Candidate | Network | Demand | Training demand |
+| --- | --- | --- | --- |
+| forest-25 | 176cc2f5263d5faf | b109f88b583a4462 | 4caa790802774b25 |
+| forest-18 | 29606b40ec23be91 | d9e3b333f5eb94d6 | c42216f3e257d672 |
+| forest-12 | 611804b2c98aa041 | e4ea8ad62e5c0e26 | 6276ffe774338037 |
+
+### Screen: three seeds
+
+Stations within GEH 5 on seeds 1 to 3 (no verdict). No car was cleared from gridlock in the judged zone in any candidate, and all three advanced to ten seeds.
+
+| Run | PM fitted of 92 | PM held out of 24 | AM fitted of 77 | AM held out of 19 |
+| --- | --- | --- | --- | --- |
+| baseline | 73 | 14 | 70 | 14 |
+| forest-25 | 73 | 12 | 69 | 14 |
+| forest-18 | 74 | 12 | 71 | 13 |
+| forest-12 | 74 | 13 | 70 | 12 |
+
+### Result: ten seeds
+
+Keep rule D4. The line is the b1ff0ef baseline.
+
+| Criterion | Line | forest-25 | forest-18 | forest-12 |
+| --- | --- | --- | --- | --- |
+| PM fitted, recent, GEH < 5 | 74 of 92 | 74 | 75 | 77 |
+| PM held out | 14 of 24 | 14 | 14 | 14 |
+| AM fitted | 70 of 77 | 71 | 71 | 69 (fails) |
+| AM held out | 14 of 19 | 14 | 13 (fails) | 13 (fails) |
+| D5 headline shares within 10 points | 4 of 4 | 4 of 4 (mean error 4.9) | 4 of 4 (4.2) | 3 of 4 (fails; Hillegass Ave SB to freeway, 10.2 points off) |
+| Whole-street traversals, GEH < 5 | 8 of 8 | 8 | 8 | 8 |
+| D16 in every period | holds | holds | holds | holds |
+| Validation | 67 of 74 | 67 | 67 | 67 |
+| Verdict | | passes | fails on AM held out | fails on AM fitted, AM held out and D5 |
+
+D5, PM freeway shares in percent (observed / baseline / forest-25 / forest-18 / forest-12):
+
+| Share | Observed | Baseline | forest-25 | forest-18 | forest-12 |
+| --- | --- | --- | --- | --- | --- |
+| Hillegass Ave NB from freeway | 47 | 48.4 | 48.4 | 47.8 | 47.5 |
+| Colby St NB from freeway | 47 | 50.5 | 50.4 | 50.6 | 50.1 |
+| Hillegass Ave SB to freeway | 68 | 58.1 | 58.1 | 59.6 | 57.8 |
+| Colby St SB to freeway | 45 | 41.4 | 40.1 | 40.9 | 41.3 |
+
+### What moved
+
+A shorter Forest St green moves Forest St eastbound, Ayala Ave northbound and McAuley St eastbound toward their counts. PM, cars per hour (counted / baseline / forest-25 / forest-18 / forest-12):
+
+| Station | Counted | Baseline | forest-25 | forest-18 | forest-12 |
+| --- | --- | --- | --- | --- | --- |
+| McAuley St EB, Howell St to Canning St (held out) | 12 | 183 | 140 | 139 | 118 |
+| 60th St EB, Howell St to Canning St (held out) | 23 | 162 | 156 | 153 | 144 |
+| Ayala Ave NB, Martin St to Howell St (held out) | 60 | 212 | 160 | 115 | 101 |
+| Forest St EB, Colby St / Claremont Ave to Ayala Ave (fitted) | 66 | 183 | 167 | 125 | 101 |
+| 60th St EB at Telegraph Ave | 27 | 83 | 77 | 69 | 72 |
+| McAuley St EB at Telegraph Ave | 14 | 48 | 42 | 36 | 35 |
+| Howell St SB, 59th St to McAuley St | 17 | 72 | 64 | 62 | 62 |
+| Ayala Ave SB, Forest St to McAuley St | 20 | 107 | 99 | 74 | 69 |
+
+AM, cars per hour (counted / baseline / forest-25 / forest-18 / forest-12): McAuley St EB 4 / 84 / 89 / 79 / 74; 60th St EB 6 / 79 / 84 / 76 / 73; Ayala Ave NB 50 / 86 / 88 / 74 / 70; Forest St EB 50 / 85 / 83 / 74 / 61.
+
+Against the baseline, forest-25 flips two stations from fail to pass (Colby St NB, 62nd St to 63rd St, AM; Colby St NB at 63rd St, PM, held out) and one from pass to fail (Canning St SB, 59th St to McAuley St, PM, held out, 21 to 17 against 49 counted). The AM held-out stations (Colby St SB, McAuley St to 60th St) and the Hillegass Ave SB share to the freeway get worse as the green gets shorter. forest-25 passes with three lines exactly on their limits (PM fitted 74, PM held out 14, AM held out 14) and changes no status.
+
+### Verdict
+
+forest-25 passes the keep rule. forest-18 fails on AM held out. forest-12 fails on AM fitted, AM held out and D5.
+
+Decision (user, 2026-11-18): not adopted. The gain is one AM location, the Forest St timing is unobserved, and adopting it would need a new proposal search and a republish with no change in status. The published network stays 53c823f20d9165ed. A field timing of the Forest St green would reopen it.
+
+### Open items
+
+Earlier diagnostics from 2026-11-18, kept short; none has been confirmed in the field. After round 45 no known untested lever remains.
+Earlier diagnostics from 2026-11-18, kept short; none has been confirmed in the field.
+
+- Barricade diagnostic: no variant of the Howell St, Forest St and Colby St barricades passes the held-out rule. A closure of Colby St at 61st St contradicts the count: 102 cars an hour counted northbound along the whole street against 0 modeled.
+- Trace of McAuley St and 60th St eastbound: 83% of the through cars on them take the diagonal Telegraph Ave, McAuley St or 60th St, Ayala Ave or Howell St, Forest St, Claremont Ave. The green time for Forest St is an unobserved assumption and a strong lever in a two-seed probe: with a 10 s green, Forest St eastbound fell from 448 to 142 and McAuley St eastbound from 158 to 94. Round 45 tested three assumed values for that green (25, 18 and 12 s); the entry below gives the result. The green itself is still unobserved, and a field reading of the Forest St green and queue remains the open check.
+- Street-level imagery (undated) shows no median and no turn restriction on Telegraph Ave at 59th St to 63rd St.
+
 ## Forty-fourth round: the demand fit reads measured control delay (change calibration-round-44)
 
 Rejected under the keep rule (design D3), written before any run of the candidate. The published network 53c823f20d91, demand 9cdebdabf05c and cross-validation demand 2f9ae152b9bb of the baseline assessment of 2026-11-18 (commit b1ff0ef, assessment ff5d667) stand, and so do the area note and caveat. The mechanism stays in the code and is off unless the demand config names a control delay file (`countFit.assignment.controlDelays`); the shipped config does not. The figures below are those of the trial.
@@ -126,14 +266,6 @@ The delays had not settled after two passes. From pass 0 to pass 1 the RMS chang
 The Howell-area held-out stations moved toward their counts. PM, counted / baseline / candidate on the cross-validation demand: McAuley St eastbound, Howell St to Canning St, 12 / 183 / 81; 60th St eastbound, Howell St to Canning St, 23 / 162 / 117; Ayala Ave northbound, Martin St to Howell St, 60 / 212 / 93, now within GEH 5. The first two stay far above their counts. Other held-out stations went the other way (Hillegass Ave southbound, 62nd St to 61st St, 151 counted, 165 to 89; Canning St southbound, 59th St to McAuley St, 49 counted, 21 to 11), so the held-out totals did not change.
 
 Hashes (SHA-256, first 16 characters): network 53c823f20d9165ed throughout; pass 0 demand a9acd0d97316ab6c, training 615e6673197e309a, delay files 8680288fa205a6b6 and b4dcc391bb0d843f; pass 1 (candidate) demand 19ee7b952638016d, training 5284e73cfa916f74, delay files 10228ecf206db509 and f541623d9549fe34. The four delay files stay in `data/demand/` (each under 30 KB) as evidence, unused by the shipped config. The candidate's fit reports, the station flips, the run logs and the assessment (`rockridge.assessment-r44.md`) are in the change's evidence.
-
-### Open items
-
-Earlier diagnostics from 2026-11-18, kept short; none has been confirmed in the field.
-
-- Barricade diagnostic: no variant of the Howell St, Forest St and Colby St barricades passes the held-out rule. A closure of Colby St at 61st St contradicts the count: 102 cars an hour counted northbound along the whole street against 0 modeled.
-- Trace of McAuley St and 60th St eastbound: 83% of the through cars on them take the diagonal Telegraph Ave, McAuley St or 60th St, Ayala Ave or Howell St, Forest St, Claremont Ave. The green time for Forest St is an unobserved assumption and a strong lever in a two-seed probe: with a 10 s green, Forest St eastbound fell from 448 to 142 and McAuley St eastbound from 158 to 94.
-- Street-level imagery (undated) shows no median and no turn restriction on Telegraph Ave at 59th St to 63rd St.
 
 ## Forty-third round: stop control at Hillegass Ave / 61st St and Canning St / 62nd St (change calibration-round-43)
 
@@ -199,7 +331,7 @@ After the result above the project lead chose to keep both corrections on the br
 ### Open for the project lead
 
 - The model differs from the street-level imagery at two junctions: the imagery shows an all-way stop at Hillegass Ave and 61st St and no stop for eastbound 62nd St at Canning St, and the model has neither. Coding them made the PM fit worse (78 to 72 of 92 recent fitted stations), so they are left out pending a field check, and the Rockridge caveat says so. `stopExemptions` stays in the importer for when the check is done.
-- The imagery shows "Road closed to thru traffic" barricades on Howell St at Ayala Ave, on Forest St at Ayala Ave and on Colby St at 61st St. It is undated and nobody has confirmed they are still there, so the baseline leaves them out (design D4). If they stand, they bear directly on the held-out misses near Howell St.
+- The imagery shows "Road closed to thru traffic" barricades on Howell St at Ayala Ave, on Forest St at Ayala Ave and on Colby St at 61st St. It is undated and nobody has confirmed they are still there, so the baseline leaves them out (design D4). Update 2026-11-18: the project lead reports the Forest St and Ayala Ave barricade is gone (see the audit entry at the top). If they stand, they bear directly on the held-out misses near Howell St.
 - Lower-confidence items from the survey, unchanged: Dana St at North St (the model stops North St; none seen), Canning St at 63rd St (a possible stop on 63rd St), 63rd St at Dana St.
 
 ## Forty-second round: the failing count stations (change calibration-round-42)

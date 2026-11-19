@@ -1,0 +1,10 @@
+base pm_peak to 675 3778 from 675 0 total 31283
+base am_peak to 675 3159 from 675 0 total 26135
+r46 pm_peak to 675 3677 from 675 0 total 30550
+r46 am_peak to 675 3101 from 675 0 total 26559
+basecv pm_peak to 675 4156 from 675 0 total 28715
+basecv am_peak to 675 3859 from 675 0 total 23515
+r46cv pm_peak to 675 4156 from 675 0 total 28715
+r46cv am_peak to 675 3859 from 675 0 total 23515
+r46min2cv pm_peak to 675 3738 from 675 0 total 28202
+r46min2cv am_peak to 675 3435 from 675 0 total 23483
