@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fitPeriod, fitReport, gatePriorStations, type FitConfig, type Station } from './lib/demand-fit';
+import { fitPeriod, fitReport, gatePriorStations, projectToCeilings, type FitConfig, type Station } from './lib/demand-fit';
 import { assigned, DEFAULT_FIT, fitToCounts, type Constraint } from './lib/fit-counts';
 import { gatePriorFromReport } from './lib/membership-loop';
 
@@ -91,6 +91,33 @@ describe('gate prior ceiling stations', () => {
     expect(on.cons).toBe(1);
   });
 
+  it('projects the final flows onto the ceilings and states what it removed and what it cost', () => {
+    const on = run([count], { gatePrior: { ...prior, weight: 0.001 }, membership: true });
+    const g = on.gatePrior!;
+    expect(g.projection.removed).toBeGreaterThan(0);
+    for (const r of g.rows) expect(r.final).toBeLessThanOrEqual(r.ceiling * 1.001 + 1e-6);
+    expect(g.rows.some((r) => r.beforeProjection > r.ceiling * 1.01)).toBe(true);
+    expect(g.projection.worst.length).toBeGreaterThan(0);
+    expect(g.projection.stations).toBe(1);
+    const text = fitReport('t', [on], { pm: flows }, { fit: DEFAULT_FIT, draws: 1, dispersion: 0, guardExcess: 0, guardWeight: 0, guardOn: false, tolOk: 15 }, [], []);
+    expect(text).toMatch(/Hard projection pm: removed \d+ veh\/h/);
+    expect(text).toMatch(/within their tolerance before \d+ and after \d+ of 1/);
+  });
+
+  it('alternates origin and destination sides, only lowers flows, and stops', () => {
+    const ceil = (id: string, side: 'origins' | 'destinations', node: number, c: number): Station => ({ id, kind: 'gate-prior', label: id, basis: 't', links: [], [side]: [node], target: { pm: c }, ceiling: c, weight: 10, tolPct: 0, records: [] });
+    const fl = [{ origin: 0, destination: 2 }, { origin: 3, destination: 2 }];
+    const r = projectToCeilings([100, 100], fl, [ceil('o0', 'origins', 0, 60), ceil('d2', 'destinations', 2, 150)]);
+    expect(r.volume[0]).toBeLessThanOrEqual(60 * 1.001);
+    expect(r.volume[0] + r.volume[1]).toBeCloseTo(150);
+    expect(r.volume[0] + r.volume[1]).toBeLessThanOrEqual(150 * 1.001);
+    expect(r.volume.every((v, k) => v <= 100 + 1e-9)).toBe(true);
+    expect(r.removed.get('o0')).toBeCloseTo(40);
+    const none = projectToCeilings([100, 100], fl, [ceil('d2', 'destinations', 2, 250)]);
+    expect(none.volume).toEqual([100, 100]);
+    expect(none.removed.size).toBe(0);
+  });
+
   it('reports the ceiling stations and the flow types, and the loop reads the line', () => {
     const on = run([count], { gatePrior: { ...prior, weight: 0.001 }, membership: true });
     const text = fitReport('t', [on], { pm: flows }, { fit: DEFAULT_FIT, draws: 1, dispersion: 0, guardExcess: 0, guardWeight: 0, guardOn: false, tolOk: 15 }, [], []);
@@ -98,8 +125,9 @@ describe('gate prior ceiling stations', () => {
     expect(text).toMatch(/Offered car veh\/h by flow type, static fit then final: through 300, local 0, ramp 0; through \d+, local 0, ramp 0\./);
     const got = gatePriorFromReport(text).pm;
     expect(got.stations).toBe(3);
-    expect(got.above).toBeGreaterThan(0);
-    expect(text).toMatch(/\| Gate node \| Street \|/);
+    expect(got.above).toBe(0);
+    expect(got.staticTotal).toBe(300);
+    expect(got.finalTotal).toBeGreaterThan(0);
     expect(gatePriorFromReport('no section')).toEqual({});
   });
 });

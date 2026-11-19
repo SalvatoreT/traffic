@@ -7,7 +7,7 @@ import { hashFile } from './run-manifest';
 import { writeFileAtomic } from './atomic';
 import { withheldStationIds, type SplitManifest } from './lineage';
 import type { SelectOd } from './through-membership';
-import { assertNoWithheld, checkFitReport, gatePriorFromReport, checkRunSet, iterationShift, iterationStats, membershipFile, poolStations, selectStations, type CeilingStat, type IterationStats, type Pooled, type RunSet, type Selection, type Shift, type StationRec } from './membership-loop';
+import { assertNoWithheld, CEILING_ABORT_SHARE, checkFitReport, gatePriorFromReport, checkRunSet, iterationShift, iterationStats, membershipFile, poolStations, selectStations, type CeilingStat, type IterationStats, type Pooled, type RunSet, type Selection, type Shift, type StationRec } from './membership-loop';
 import type { MembershipEvidence } from './through-membership';
 
 export type View = 'shipped' | 'training';
@@ -67,6 +67,9 @@ export async function runLoop(o: LoopOptions, r: Runner, log: (s: string) => voi
     for (const [q, v] of Object.entries(res.periods)) if (v.stations !== minStations[q]) throw new Error(`${view} view, ${q}: ${v.stations} stations took simulated membership but the file holds ${minStations[q]}`);
     const ceil = gatePriorFromReport(text);
     if (Object.keys(ceil).length) { (state.ceilings ??= {})[`${view}:${k}`] = ceil; log(`pass ${k} ${view} build: gate prior ceilings ${o.periods.map((q) => (ceil[q] ? `${q} ${ceil[q].stations} stations, ${ceil[q].above} above ceiling, excess ${ceil[q].excess} veh/h` : `${q} none`)).join('; ')}`); }
+    if (k >= 1) for (const [q, c] of Object.entries(ceil)) {
+      if (c.finalTotal > c.staticTotal * (1 + CEILING_ABORT_SHARE)) throw new Error(`${view} view, ${q}, pass ${k}: offered car demand ${c.finalTotal} veh/h is ${(100 * (c.finalTotal / c.staticTotal - 1)).toFixed(1)}% above the static fit's ${c.staticTotal} (limit ${100 * CEILING_ABORT_SHARE}%, ASSUMPTION): the growth moved to non-gate origins. Stopping before this pass's seed runs; send the loop log, the build log and the fit report to the lead`);
+    }
     return res;
   };
   const build = async (id: string, view: View, k: number, final: boolean) => {
