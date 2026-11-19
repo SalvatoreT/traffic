@@ -141,6 +141,67 @@ The remaining misses point to route choice in the simulation disagreeing with th
 - Field checks still open: the Howell St and Ayala Ave barricade (low confidence), the Forest St signal timing, and the stop signs at Hillegass Ave and 61st St and at Canning St and 62nd St.
 - To decide: the Caldecott Lane on-ramp pairing, and the held-out gate targets derived from annual average daily traffic.
 
+## Router diagnosis for the diagonal (diagnostic, nothing adopted) (2026-11-19)
+
+Nothing shipped changed. Published network 53c823f2, demand 9cdebdab. Every run was a single seed (seed 1, PM peak, 60 min) in the cloud container, so every figure below is a diagnostic, not an assessment result. One seed moves the fitted-station pass count by about 3 and the diagonal sum by 10 to 15% between neighboring settings. The runs used the throwaway branch `router-diagnosis` (6bf5f6a), which adds environment switches to `eff.rs` and `sim.rs` plus scoring scripts under `tools/diag/`. It changes the simulator fingerprint source and is not for merge. The Shattuck tests changed network data only and ran on the original binary (fingerprint d45a275dd7be0713cec6a64394b7d8a9).
+
+Metrics. DIAG5 is the sum of the simulated flow at the five diagonal stations, in cars per hour, against the counted 178 (Forest St EB 66, McAuley St EB 12, 60th St EB 23, Ayala Ave NB 60, Howell St SB 17). The pass counts are stations within GEH 5, as fitted/held out (base 70 of 92 and 14 of 24 PM). Colby St NB is the sim/count ratio of six block stations (base 742/1046 = 0.71). Travel times are seconds.
+
+### What was asked
+
+The audit above found the simulation carrying 2 to 5 times the count on the diagonal Telegraph Ave, McAuley St or 60th St, Ayala Ave or Howell St, Forest St, Claremont Ave, while the demand fit matches the counts. This diagnosis asked whether the router's cost model sends those trips there, and whether a router change would fix it.
+
+### How route cost is built
+
+A route costs the sum over its arcs of link cost times a class weight, plus a movement cost, each arc perceived with a per-driver normal error.
+
+- Link cost is the larger of free-flow time (length over speed limit, plus 3 s per hump, HUMP_FF_PENALTY, ASSUMPTION) and a moving average of measured link times (alpha 0.3, refreshed every 60 s). The measured time includes queue and signal wait.
+- Movement cost is static (turn penalty, control constant, crossing time at the turn speed) plus the measured movement time minus the measured link time.
+- Class weight LOCAL_COST_FACTOR is 1.25 on residential and service links (ASSUMPTION, no source) and 1.0 elsewhere.
+- Turn penalties: right 1 s, left 4 s, U-turn 25 s (ASSUMPTION). Turn speeds: right 4, left 5, U-turn 3 m/s, through 1.4 times the limit, circle 5 m/s (ASSUMPTION).
+- Control constants from `crates/sim/data/node-delays.json`: signal 10 s, all-way stop 8 s, minor stop 14 s, circle 4 s, uncontrolled 0 (round 12).
+- Perception is probit [DaganzoSheffi1977][Sheffi1985 eq 11.12] with variance ROUTE_DISPERSION_S = 2.0 (ASSUMPTION, chosen by sweep in round 31) times the arc cost, drawn once per driver and arc.
+- GUIDED_SHARE 0.46 [Guin2021] (transfer ASSUMPTION) re-plans each epoch. Others keep the departure route unless blocked. SWITCH_BAND 0.2, SWITCH_MIN_GAIN_S 30, MAX_SWITCHES 2, MIN_SWITCH_GAP_S 120, BLOCKED_REROUTE_S 60 (ASSUMPTION) [Mahmassani1987][Srinivasan2000][Di2016]. INITIAL_CONGESTION 1.3 (ASSUMPTION).
+
+The demand fit's static assignment uses the same local factor, turn penalties, constants and dispersion, but link time is free flow plus BPR (alpha 0.15, beta 4) with control delay subtracted, and it has no measured movement times and no live queues.
+
+### The diagonal is the router's own cheapest path
+
+Of 198 through trips that used a diagonal link, 80 went to south Oakland, 61 to the SR-24 westbound on-ramps, 22 to the hills via Claremont Ave, 11 to Telegraph Ave south and 24 elsewhere. With dispersion 0 (137 trips, 115 of which drive the router's best route), the diagonal beats the arterial alternative (all study-area locals closed) by 49 s mean and 24 s median of perceived cost (583 against 631 s). Measured link plus movement time is 373 against 442 s, and the route is 3,184 against 3,408 m.
+
+For the ramp-bound trips (Berkeley north and west streets to the Claremont Ave/Hudson St ramp), the diagonal is 1,498 m with perceived cost 282 s. The arterial route (Telegraph Ave, Alcatraz Ave, College Ave, Claremont Ave) is 2,159 m at 397 s: 660 m (30%) longer, with 15 to 34 s of delay on each of four approaches. The fit's static assignment sends the same pairs to the 52nd St ramps and puts only 13 of the 198 trips on the diagonal. In the simulator the Telegraph Ave approaches to those ramps carry 20 to 40 s per signal, so drivers pick the Claremont ramp. The diagonal has almost no control (uncontrolled junctions at Ayala/McAuley, Ayala/Howell, Howell/59th/60th, per the imagery survey) and the simulation drives it near the 25 mph limit.
+
+### Variants tried (PM seed 1; DIAG5 base 901 against 178)
+
+- Local factor (all drivers): 1.6 gives 866, 2.0 gives 953, 3.0 gives 812; Colby St NB falls to 0.48, 0.42, 0.15 and fitted passes to 67, 62, 57. At 3.0 the arterial alternative saturates (measured 380 to 560 s) and the perceived costs equalize (752 against 760 s). Unguided drivers at 2.0: 671, Colby NB 0.63.
+- Arterial weight 0.8 gives 679 and 0.6 gives 659 (Colby NB 0.55 and 0.43). Dispersion 0 gives 885 and 8 gives 935. Guided share 0 gives 993 and 1 gives 845.
+- Turn penalties (left/right, seconds): 7/3 gives 771; 10/5 gives 609 (fitted 75, held 12, Colby NB 0.72); 15/8 gives 850; 20/10 gives 594 (Colby NB 0.58). Left 10 alone gives 742 and right 8 alone gives 815. The results are not monotone (609, 850, 594), so no trend is claimed.
+- Extra seconds per local-to-local movement at uncontrolled or two-way-stop nodes: 10 s gives 645, 30 s gives 456, but Colby NB falls to 0.30 and 0.08 and fitted passes to 58 and 47. This is the lowest diagonal flow reached, and it costs counted flow elsewhere.
+- Double-charged control delay (below): drop the constant once the link is measured gives 863; link cost as the larger of free flow plus constant and measurement, with the constant dropped from the movement cost, gives 767 (Colby NB 0.74, fitted 72).
+- Residential speed limit scaled 0.85, 0.75, 0.65 (physics and routing): 782, 946, 994, with Colby NB 0.60, 0.48, 0.43. A scale below 1 is not supported by the speed literature records seen (search records only, no values read).
+- Combinations: turn 10/5 with unguided local factor 2.0 gives 633; 10 s crossing with arterial weight 0.85 and unguided factor 1.6 gives 602 (Colby NB 0.29, fitted 58); control fix with 0.85 speed gives 644; with turn 7/3 added, 741; control fix with turn 7/3, 702. AM (four stations, counted 110) ranged 173 to 332 across five variants, against a baseline of 291.
+- Shattuck Ave capacity (data-only): a lane added on the Shattuck approaches at 55th St and Alcatraz Ave gives 844; the signals at 55th St and Alcatraz Ave removed gives 1,202; the lane plus the 55th St approaches gives 794.
+
+No variant brought DIAG5 near 178. The ones that cut it by half or more also cut flow at Colby St NB, a station group that was close to its count. Its through cars are mostly SR-24 off-ramp traffic to Telegraph Ave north (45 of 97).
+
+### Confirmed double charge of control delay
+
+The link cost already contains queue and signal wait from the measured times, and `eff.rs` adds the 10, 14 and 8 s constants to the movement cost on top, so control delay is counted twice at signals and stops. The constants were written in round 12 from simulated time lost against the limit (flow-weighted median), and they were the free-flow prior of the static router. No decision to charge both is recorded, and the demand fit (round 44) subtracts control delay so queues count once. Removing it is principled and matches the fit, but it moved DIAG5 only from 901 to 767 or 863, and it changes the route cost code and so the simulator fingerprint.
+
+### Shattuck Ave travel time
+
+Shattuck Ave is the one arterial that fails against observed travel times: NB 268 s against 144 to 178 s, SB 316 s against 158 to 221 s. Telegraph Ave (314 and 351 s against 302 to 420 and 300 to 376 s) and College Ave (223 and 206 s against 188 to 318 and 202 to 293 s) are inside the range. The cause is the signals: NB loses 116 s at 52nd St, 55th St and Alcatraz Ave, and SB queues 600 m behind 55th St (cycle 79 s, 31 s green for Shattuck Ave). The 2013 EIR PM entering counts at Shattuck Ave/55th St show the simulation carrying about 260 veh/h too many on the cross street and about 30% too few on Shattuck Ave. This matters only to the trips that use Shattuck Ave as their alternative. No observed time exists for Alcatraz Ave or Claremont Ave.
+
+### Conclusion
+
+The diagonal is the cheapest path under the router as built, and no single parameter family removes it without damaging stations that now pass. No router change was sent on for a ten-seed assessment.
+
+### Open leads
+
+- The ramp peak-hour factor. Config `ramps.kFactor` 0.09 is an unsourced ASSUMPTION. Counted ramps give 0.0571 to 0.0877 (pooled 0.0734); this is round 46 (`calibration-round-46`). The simulated Claremont Ave ramp carries 740 to 898 veh/h against a count of 598, and ramp-bound trips are 61 of the 198 diagonal trips. Not tested here.
+- The Caldecott Lane pair-sum fit (design D9 of round 46): one Caltrans row split 50/50 over two ramps. Its own round.
+- Fitting demand to simulated routes, so that the fit's static assignment and the simulator's router agree on which ramp and which street these trips use.
+
 ## Forty-fifth round: a shorter Forest St green (change calibration-round-45)
 
 Passes the keep rule, not adopted (user decision, 2026-11-18). The published network 53c823f20d9165ed, demand 9cdebdabf05c4460 and cross-validation demand 2f9ae152b9bbf78e of the baseline assessment of 2026-11-18 (commit b1ff0ef, assessment ff5d667) stand, and so do the area note and caveat. Simulator fingerprint d45a275dd7be0713cec6a64394b7d8a9 throughout.
