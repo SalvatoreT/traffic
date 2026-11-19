@@ -1,0 +1,7 @@
+{
+  "gatePriorTotals": {
+    "tolerancePct": 10,
+    "weight": 10,
+    "_note": "Calibration round 49. Every gate direction that no gate station in the fit counts is held to at most its own pre-fit car total times (1 + tolerancePct / 100) by a one-sided soft constraint of the given weight (tools/lib/demand-fit.ts gatePriorStations). No count value sets a ceiling. tolerancePct reuses the gate count tolerance (countFit.tolerancePct.gate) and weight is five times the ramp weight; both are ASSUMPTIONS, not sourced. Applies in every period and both views."
+  }
+}

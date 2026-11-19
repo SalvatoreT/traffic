@@ -1,0 +1,14 @@
+{
+  "gatePriorTotals": {
+    "tolerancePct": 10,
+    "weight": 10,
+    "_note": "Calibration round 49. Every gate direction that no gate station in the fit counts is held to at most its own pre-fit car total times (1 + tolerancePct / 100) by a one-sided soft constraint of the given weight (tools/lib/demand-fit.ts gatePriorStations). No count value sets a ceiling. tolerancePct reuses the gate count tolerance (countFit.tolerancePct.gate) and weight is five times the ramp weight; both are ASSUMPTIONS, not sourced. Applies in every period and both views."
+  },
+  "simulatedMembership": {
+    "method": "export-supported",
+    "file": "target/membership/rockridge.membership.json",
+    "trainingFile": "target/membership/rockridge.membership-training.json",
+    "priorTrips": 5,
+    "_note": "Calibration round 48. Every fitted station the report binary exports (link stations with a detector list or counted at the block, movement and route stations) takes its membership from simulated trips: each pair's share of trips at the station over seed runs of the demand of the same view, pooled with equal weight over the loop's passes (tools/membership-loop.ts), with the static share as a prior worth priorTrips trips (ASSUMPTION). Stations without an export (gate totals) and periods without runs (midday) keep static membership. The training view reads trainingFile, built only from runs of the cross-validation demand and naming no withheld station. The files are under target/ and are not committed. While this entry is present it replaces the hand-picked measuredStations list and the measured file."
+  }
+}
