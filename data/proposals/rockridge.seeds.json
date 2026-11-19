@@ -15,39 +15,6 @@
       "score": null
     },
     {
-      "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2,175.355~mn,9q9p3fr7b5~mn,9q9p641p03,80.260~ow,9q9p3fp3vc,355~mn,9q9p3cq6m9~mn,9q9p3cx02b,125",
-      "source": "search",
-      "note": "published by an earlier search (group charter, option p5, 2026-11-15 through-car change -75.7%)",
-      "added": "2026-11-15",
-      "lastPublished": "2026-11-15",
-      "group": "charter",
-      "size": 6,
-      "changePct": -75.7,
-      "score": null
-    },
-    {
-      "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2~dd,9q9p3cz9dy,128~mn,9q9p3cxtt7~mn,9q9p3fr7b5~mn,9q9p3cq6m9,120.300~mn,9q9p3cx02b",
-      "source": "search",
-      "note": "published by an earlier search (group charter, option p5, 2026-11-15 through-car change -90.3%)",
-      "added": "2026-11-15",
-      "lastPublished": "2026-11-15",
-      "group": "unconstrained",
-      "size": 6,
-      "changePct": -90.6,
-      "score": 86.7
-    },
-    {
-      "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2,175.355~mn,9q9p3fr7b5~mn,9q9p3cq6m9~mn,9q9p3cx02b,125",
-      "source": "search",
-      "note": "",
-      "added": "2026-11-15",
-      "lastPublished": "2026-11-15",
-      "group": "unconstrained",
-      "size": 4,
-      "changePct": -73.1,
-      "score": 65.8
-    },
-    {
       "link": "#v1;a=rockridge;p=pm_peak;s=dd,9q9p642ut2,41~mf,9q9p3fr338~mn,9q9p3czrpw,175.355~mn,9q9p3cxtt7~mn,9q9p3cq6m9~mn,9q9p3cx02b",
       "source": "search",
       "note": "published by an earlier search (group unconstrained, option p1, 2026-11-16 through-car change -71.5%)",
@@ -81,17 +48,6 @@
       "score": null
     },
     {
-      "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p641p03",
-      "source": "search",
-      "note": "published by an earlier search (group unconstrained, option p5, 2026-11-16 through-car change -14.1%)",
-      "added": "2026-11-16",
-      "lastPublished": "2026-11-16",
-      "group": "unconstrained",
-      "size": 1,
-      "changePct": -14.1,
-      "score": null
-    },
-    {
       "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p3fprdr~dd,9q9p642ut2,41~mn,9q9p3cq6m9~mn,9q9p3cx02b~mf,9q9p643b1e~ss,9q9p3cx9rf",
       "source": "search",
       "note": "published by an earlier search (group unconstrained, option p1, 2026-11-17 through-car change -73%)",
@@ -107,11 +63,11 @@
       "source": "search",
       "note": "published by an earlier search (group unconstrained, option p3, 2026-11-17 through-car change -48.5%)",
       "added": "2026-11-17",
-      "lastPublished": "2026-11-18",
+      "lastPublished": "2026-11-19",
       "group": "unconstrained",
       "size": 6,
-      "changePct": -44.1,
-      "score": 38.7
+      "changePct": -42.2,
+      "score": 40.5
     },
     {
       "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p3fprdr~dd,9q9p642ut2,41~mf,9q9p643b1e~ss,9q9p3cx9rf",
@@ -125,15 +81,15 @@
       "score": null
     },
     {
-      "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p3fprdr~mn,9q9p642ut2",
+      "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2~mn,9q9p3fprdr",
       "source": "search",
       "note": "published by an earlier search (group unconstrained, option p5, 2026-11-17 through-car change -31.2%)",
       "added": "2026-11-17",
-      "lastPublished": "2026-11-17",
+      "lastPublished": "2026-11-19",
       "group": "unconstrained",
       "size": 2,
-      "changePct": -31.2,
-      "score": null
+      "changePct": -31.6,
+      "score": 28.1
     },
     {
       "link": "#v1;a=rockridge;p=pm_peak;s=dd,9q9p642ut2,41~ss,9q9p3cx9rf",
@@ -158,26 +114,26 @@
       "score": null
     },
     {
-      "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2~mn,9q9p3fprdr~dd,9q9p641p03,127~mn,9q9p3cxtt7~mn,9q9p3cq6m9~mn,9q9p3cx02b,125",
+      "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2~mn,9q9p3fprdr~mn,9q9p3cxtt7~dd,9q9p641p03,127~mn,9q9p3cq6m9~mn,9q9p3cx02b,125",
       "source": "search",
       "note": "",
       "added": "2026-11-18",
-      "lastPublished": "2026-11-18",
+      "lastPublished": "2026-11-19",
       "group": "unconstrained",
       "size": 6,
-      "changePct": -77.6,
-      "score": 53.5
+      "changePct": -76.9,
+      "score": 57.6
     },
     {
-      "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p3fprdr~mn,9q9p642ut2~dd,9q9p641p03,127~mn,9q9p3cq6m9~ow,9q9p3crqtn,305",
+      "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2~mn,9q9p3fprdr~dd,9q9p641p03,127~mn,9q9p3cq6m9~ow,9q9p3crqtn,305",
       "source": "search",
       "note": "",
       "added": "2026-11-18",
-      "lastPublished": "2026-11-18",
+      "lastPublished": "2026-11-19",
       "group": "unconstrained",
       "size": 5,
-      "changePct": -62.0,
-      "score": 54.2
+      "changePct": -61.5,
+      "score": 54.6
     },
     {
       "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2,80.260~mn,9q9p3fprdr~mn,9q9p641p03~dd,9q9p3ctkug,42~ct,9q9p3cmuv6,a~ct,9q9p3cy1ne,a",
@@ -222,6 +178,50 @@
       "size": 5,
       "changePct": -66.6,
       "score": 56.2
+    },
+    {
+      "link": "#v1;a=rockridge;p=pm_peak;s=tb,9q9p61c5xf,35,335~tb,9q9p61c5xf,210,335~tb,9q9p648cuw,80,175~tb,9q9p648cuw,260,175",
+      "source": "hand",
+      "note": "Turn bans onto Hillegass Avenue: every turn from Claremont Avenue onto Hillegass Avenue at the 60th St / Claremont Ave / Hillegass Ave junction, and both turns from Alcatraz Avenue onto Hillegass Avenue southbound. User decision 2026-11-18: the search also considers turn-ban sets.",
+      "added": "2026-11-19",
+      "lastPublished": "",
+      "group": "",
+      "size": 4,
+      "changePct": null,
+      "score": null
+    },
+    {
+      "link": "#v1;a=rockridge;p=pm_peak;s=tb,9q9p61c5xf,35,335~tb,9q9p61c5xf,210,335~tb,9q9p648cuw,80,175~tb,9q9p648cuw,260,175~tb,9q9p3crvgs,215,230~tb,9q9p3crvgs,35,230~tb,9q9p3fx20z,80,175~tb,9q9p3fx20z,260,175",
+      "source": "hand",
+      "note": "Turn bans onto Hillegass Avenue and Colby Street: the Hillegass Avenue turn bans plus both turns from Claremont Avenue onto Colby Street at Claremont Ave / Colby St / Forest St and both turns from Alcatraz Avenue onto Colby Street southbound. User decision 2026-11-18: the search also considers turn-ban sets.",
+      "added": "2026-11-19",
+      "lastPublished": "",
+      "group": "",
+      "size": 8,
+      "changePct": null,
+      "score": null
+    },
+    {
+      "link": "#v1;a=rockridge;p=pm_peak;s=dd,9q9p642ut2,41~mn,9q9p3fprdr~mn,9q9p3cq6m9~mn,9q9p3cx02b~ss,9q9p3cx9rf",
+      "source": "search",
+      "note": "",
+      "added": "2026-11-19",
+      "lastPublished": "2026-11-19",
+      "group": "unconstrained",
+      "size": 5,
+      "changePct": -65.9,
+      "score": 57.6
+    },
+    {
+      "link": "#v1;a=rockridge;p=pm_peak;s=dd,9q9p642ut2,41~mn,9q9p3fprdr~ss,9q9p3cx9rf",
+      "source": "search",
+      "note": "",
+      "added": "2026-11-19",
+      "lastPublished": "2026-11-19",
+      "group": "unconstrained",
+      "size": 3,
+      "changePct": -41.6,
+      "score": 37.9
     }
   ]
 }

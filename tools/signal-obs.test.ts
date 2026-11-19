@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { applySignalObservations } from './lib/signal-obs';
 import type { NetLink, NetNode } from './lib/types';
@@ -76,4 +77,30 @@ describe('signal observations', () => {
   it('reports an observation that matches no signal', () => {
     expect(applySignalObservations(nodes, links, [{ ...obs, at: ['Pine Street', 'Elm Street'] }])).toHaveLength(1);
   });
+});
+
+describe('round 45 candidates for the Forest Street green', () => {
+  const dir = 'openspec/changes/calibration-round-45/candidates';
+  const area = JSON.parse(readFileSync('data/areas/rockridge.json', 'utf8'));
+  const colby = (period: string) => area.signalObservations.find((o: { approach: string; periods: string[] }) => o.approach === 'Colby Street' && o.periods[0] === period);
+  const ns = [node(0, 'signal'), node(1, 'uncontrolled'), node(2, 'uncontrolled'), node(3, 'uncontrolled'), node(4, 'uncontrolled')];
+  const ls = [{ ...link(0, 1, 0, 'Forest Street'), toBearing: 123 }, { ...link(1, 2, 0, 'Forest Street'), toBearing: 303 }, { ...link(2, 3, 0, 'Colby Street'), toBearing: 182 }, { ...link(3, 4, 0, 'Claremont Avenue'), toBearing: 212 }] as NetLink[];
+  for (const g of [25, 18, 12]) {
+    it(`forest-${g} joins the Colby Street timing of the same cycle and periods and fits the cycle`, () => {
+      const cand = JSON.parse(readFileSync(`${dir}/forest-${g}.json`, 'utf8'));
+      expect(cand.map((o: { periods: string[] }) => o.periods[0])).toEqual(['am_peak', 'pm_peak']);
+      for (const o of cand) {
+        const c = colby(o.periods[0]);
+        expect(o.cycleSeconds).toBe(c.cycleSeconds);
+        expect(o.greenSeconds).toBe(g);
+        expect(o.source).toContain('ASSUMPTION');
+        // three phases (Claremont Avenue, Colby Street, Forest Street) with 5 s of clearance each and at least 5 s of green for Claremont Avenue
+        expect(o.greenSeconds + c.greenSeconds + 3 * 5 + 5).toBeLessThanOrEqual(o.cycleSeconds);
+        const n = ns.map((x) => ({ ...x })), l = ls.map((x) => ({ ...x }));
+        expect(applySignalObservations(n, l, [{ ...c, at: ['Forest Street', 'Colby Street', 'Claremont Avenue'] }, { ...o, at: ['Forest Street', 'Colby Street', 'Claremont Avenue'] }].map((x) => ({ ...x })))).toEqual([]);
+        expect(n[0].signalTiming).toHaveLength(1);
+        expect(n[0].signalTiming![0].greens.map((x) => [x.links, x.greenS])).toEqual([[[2], c.greenSeconds], [[0], g]]);
+      }
+    });
+  }
 });
