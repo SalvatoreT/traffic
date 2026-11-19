@@ -1,0 +1,309 @@
+  baseline pm_peak seed 101 60 min: cut-through 708 veh/h, unroutable 0, gridlock removed 3, backlog 25
+  baseline pm_peak seed 102 60 min: cut-through 671 veh/h, unroutable 0, gridlock removed 4, backlog 79
+  baseline pm_peak seed 103 60 min: cut-through 724 veh/h, unroutable 0, gridlock removed 8, backlog 159
+  baseline pm_peak seed 104 60 min: cut-through 752 veh/h, unroutable 0, gridlock removed 5, backlog 90
+  baseline pm_peak seed 105 60 min: cut-through 645 veh/h, unroutable 0, gridlock removed 4, backlog 60
+  baseline pm_peak seed 106 60 min: cut-through 741 veh/h, unroutable 0, gridlock removed 9, backlog 34
+  baseline pm_peak seed 107 60 min: cut-through 724 veh/h, unroutable 0, gridlock removed 2, backlog 81
+  baseline pm_peak seed 108 60 min: cut-through 741 veh/h, unroutable 0, gridlock removed 4, backlog 65
+  baseline pm_peak seed 109 60 min: cut-through 673 veh/h, unroutable 0, gridlock removed 4, backlog 107
+  baseline pm_peak seed 110 60 min: cut-through 713 veh/h, unroutable 0, gridlock removed 4, backlog 96
+  baseline am_peak seed 101 60 min: cut-through 472 veh/h, unroutable 0, gridlock removed 0, backlog 161
+  baseline am_peak seed 102 60 min: cut-through 419 veh/h, unroutable 0, gridlock removed 1, backlog 10
+  baseline am_peak seed 103 60 min: cut-through 453 veh/h, unroutable 0, gridlock removed 0, backlog 51
+  baseline am_peak seed 104 60 min: cut-through 465 veh/h, unroutable 0, gridlock removed 1, backlog 3
+  baseline am_peak seed 105 60 min: cut-through 370 veh/h, unroutable 0, gridlock removed 0, backlog 92
+  baseline am_peak seed 106 60 min: cut-through 419 veh/h, unroutable 0, gridlock removed 2, backlog 22
+  baseline am_peak seed 107 60 min: cut-through 395 veh/h, unroutable 0, gridlock removed 4, backlog 6
+  baseline am_peak seed 108 60 min: cut-through 432 veh/h, unroutable 0, gridlock removed 0, backlog 2
+  baseline am_peak seed 109 60 min: cut-through 444 veh/h, unroutable 0, gridlock removed 0, backlog 3
+  baseline am_peak seed 110 60 min: cut-through 422 veh/h, unroutable 0, gridlock removed 1, backlog 32
+  baseline midday seed 101 60 min: cut-through 393 veh/h, unroutable 0, gridlock removed 0, backlog 1
+  baseline midday seed 102 60 min: cut-through 377 veh/h, unroutable 0, gridlock removed 0, backlog 1
+  baseline midday seed 103 60 min: cut-through 417 veh/h, unroutable 0, gridlock removed 0, backlog 0
+  baseline midday seed 104 60 min: cut-through 396 veh/h, unroutable 0, gridlock removed 0, backlog 1
+  baseline midday seed 105 60 min: cut-through 406 veh/h, unroutable 0, gridlock removed 0, backlog 1
+  baseline midday seed 106 60 min: cut-through 336 veh/h, unroutable 0, gridlock removed 0, backlog 0
+  baseline midday seed 107 60 min: cut-through 367 veh/h, unroutable 0, gridlock removed 0, backlog 1
+  baseline midday seed 108 60 min: cut-through 407 veh/h, unroutable 0, gridlock removed 0, backlog 0
+  baseline midday seed 109 60 min: cut-through 388 veh/h, unroutable 0, gridlock removed 0, backlog 0
+  baseline midday seed 110 60 min: cut-through 381 veh/h, unroutable 0, gridlock removed 0, backlog 1
+  baseline pm_peak seed 101 20 min: cut-through 759 veh/h, unroutable 0, gridlock removed 1, backlog 16
+  baseline pm_peak seed 102 20 min: cut-through 654 veh/h, unroutable 0, gridlock removed 0, backlog 10
+  baseline pm_peak seed 103 20 min: cut-through 726 veh/h, unroutable 0, gridlock removed 2, backlog 29
+  baseline pm_peak seed 104 20 min: cut-through 669 veh/h, unroutable 0, gridlock removed 0, backlog 14
+  baseline pm_peak seed 105 20 min: cut-through 582 veh/h, unroutable 0, gridlock removed 1, backlog 9
+  baseline pm_peak seed 106 20 min: cut-through 648 veh/h, unroutable 0, gridlock removed 1, backlog 17
+  baseline pm_peak seed 107 20 min: cut-through 741 veh/h, unroutable 0, gridlock removed 0, backlog 10
+  baseline pm_peak seed 108 20 min: cut-through 651 veh/h, unroutable 0, gridlock removed 1, backlog 13
+  baseline pm_peak seed 109 20 min: cut-through 660 veh/h, unroutable 0, gridlock removed 0, backlog 4
+  baseline pm_peak seed 110 20 min: cut-through 639 veh/h, unroutable 0, gridlock removed 0, backlog 8
+candidate list: 218 candidates under profile unconstrained
+  candidate 1 [node_filter] Modal filter at 63rd Street & Colby Street
+  candidate 2 [node_filter] Modal filter on 63rd Street at Colby Street
+  candidate 3 [control] All-way stop at 63rd Street & Colby Street
+  candidate 4 [node_filter] Modal filter at 63rd Street & Colby Street
+  candidate 5 [node_filter] Modal filter on 63rd Street at Colby Street
+  candidate 6 [control] All-way stop at 63rd Street & Colby Street
+  candidate 7 [node_filter] Modal filter at 62nd Street & Colby Street
+  candidate 8 [node_filter] Modal filter on 62nd Street at Colby Street
+  candidate 9 [node_filter] Modal filter on Colby Street at 62nd Street
+  candidate 10 [diagonal_diverter] Diagonal diverter at 62nd Street & Colby Street, connecting Colby Street (north) with 62nd Street (west), and Colby Street (south) with 62nd Street (east)
+  candidate 11 [diagonal_diverter] Diagonal diverter at 62nd Street & Colby Street, connecting Colby Street (north) with 62nd Street (east), and Colby Street (south) with 62nd Street (west)
+  candidate 12 [traffic_circle] Traffic circle at 62nd Street & Colby Street
+  candidate 13 [control] All-way stop at 62nd Street & Colby Street
+  candidate 14 [node_filter] Modal filter at 60th Street & Colby Street
+  candidate 15 [node_filter] Modal filter on 60th Street at Colby Street
+  candidate 16 [node_filter] Modal filter on Colby Street at 60th Street
+  candidate 17 [diagonal_diverter] Diagonal diverter at 60th Street & Colby Street, connecting Colby Street (north) with 60th Street (west), and Colby Street (south) with 60th Street (east)
+  candidate 18 [diagonal_diverter] Diagonal diverter at 60th Street & Colby Street, connecting Colby Street (north) with 60th Street (east), and Colby Street (south) with 60th Street (west)
+  candidate 19 [traffic_circle] Traffic circle at 60th Street & Colby Street
+  candidate 20 [control] All-way stop at 60th Street & Colby Street
+  candidate 21 [modal_filter] Modal filter on Colby Street at 63rd Street
+  candidate 22 [one_way] One-way northbound on Colby Street at 63rd Street (toward 63rd Street)
+  candidate 23 [one_way] One-way southbound on Colby Street at 63rd Street (toward 63rd Street)
+  candidate 24 [node_filter] Modal filter at Colby Street & North Street
+  candidate 25 [node_filter] Modal filter on North Street at Colby Street
+  candidate 26 [control] All-way stop at Colby Street & North Street
+  candidate 27 [node_filter] Modal filter at 61st Street & Colby Street
+  candidate 28 [node_filter] Modal filter on 61st Street at Colby Street
+  candidate 29 [node_filter] Modal filter on Colby Street at 61st Street
+  candidate 30 [diagonal_diverter] Diagonal diverter at 61st Street & Colby Street, connecting Colby Street (north) with 61st Street (west), and Colby Street (south) with 61st Street (east)
+  candidate 31 [diagonal_diverter] Diagonal diverter at 61st Street & Colby Street, connecting Colby Street (north) with 61st Street (east), and Colby Street (south) with 61st Street (west)
+  candidate 32 [traffic_circle] Traffic circle at 61st Street & Colby Street
+  candidate 33 [signal_timing] Signal cycle 60 s at Claremont Avenue & Colby Street & +1
+  candidate 34 [signal_timing] Signal cycle 120 s at Claremont Avenue & Colby Street & +1
+  candidate 35 [modal_filter] Modal filter on Colby Street between North Street and Alcatraz Avenue
+  candidate 36 [one_way] One-way northbound on Colby Street between North Street and Alcatraz Avenue (toward Alcatraz Avenue)
+  candidate 37 [one_way] One-way southbound on Colby Street between North Street and Alcatraz Avenue (toward North Street)
+  candidate 38 [modal_filter] Modal filter on Colby Street between 63rd Street and North Street
+  candidate 39 [one_way] One-way northbound on Colby Street between 63rd Street and North Street (toward North Street)
+  candidate 40 [one_way] One-way southbound on Colby Street between 63rd Street and North Street (toward 63rd Street)
+  candidate 41 [node_filter] Modal filter at 63rd Street & Hillegass Avenue
+  candidate 42 [node_filter] Modal filter on 63rd Street at Hillegass Avenue
+  candidate 43 [node_filter] Modal filter on Hillegass Avenue at 63rd Street
+  candidate 44 [diagonal_diverter] Diagonal diverter at 63rd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 63rd Street (west), and Hillegass Avenue (south) with 63rd Street (east)
+  candidate 45 [diagonal_diverter] Diagonal diverter at 63rd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 63rd Street (east), and Hillegass Avenue (south) with 63rd Street (west)
+  candidate 46 [traffic_circle] Traffic circle at 63rd Street & Hillegass Avenue
+  candidate 47 [modal_filter] Modal filter on Colby Street between 62nd Street and 63rd Street
+  candidate 48 [one_way] One-way northbound on Colby Street between 62nd Street and 63rd Street (toward 63rd Street)
+  candidate 49 [one_way] One-way southbound on Colby Street between 62nd Street and 63rd Street (toward 62nd Street)
+  candidate 50 [speed_hump] Speed hump on Colby Street between 62nd Street and 63rd Street
+  candidate 51 [node_filter] Modal filter at Colby Street & McAuley Street
+  candidate 52 [node_filter] Modal filter on McAuley Street at Colby Street
+  candidate 53 [control] All-way stop at Colby Street & McAuley Street
+  candidate 54 [modal_filter] Modal filter on Hillegass Avenue between Alcatraz Avenue and 63rd Street
+  candidate 55 [one_way] One-way southbound on Hillegass Avenue between Alcatraz Avenue and 63rd Street (toward 63rd Street)
+  candidate 56 [one_way] One-way northbound on Hillegass Avenue between Alcatraz Avenue and 63rd Street (toward Alcatraz Avenue)
+  candidate 57 [speed_hump] Speed hump on Hillegass Avenue between Alcatraz Avenue and 63rd Street
+  candidate 58 [modal_filter] Modal filter on Colby Street between McAuley Street and 60th Street
+  candidate 59 [one_way] One-way northbound on Colby Street between McAuley Street and 60th Street (toward 60th Street)
+  candidate 60 [one_way] One-way southbound on Colby Street between McAuley Street and 60th Street (toward McAuley Street)
+  candidate 61 [speed_hump] Speed hump on Colby Street between McAuley Street and 60th Street
+  candidate 62 [modal_filter] Modal filter on Colby Street between 60th Street and 61st Street
+  candidate 63 [one_way] One-way northbound on Colby Street between 60th Street and 61st Street (toward 61st Street)
+  candidate 64 [one_way] One-way southbound on Colby Street between 60th Street and 61st Street (toward 60th Street)
+  candidate 65 [modal_filter] Modal filter on Colby Street between 61st Street and 62nd Street
+  candidate 66 [one_way] One-way northbound on Colby Street between 61st Street and 62nd Street (toward 62nd Street)
+  candidate 67 [one_way] One-way southbound on Colby Street between 61st Street and 62nd Street (toward 61st Street)
+  candidate 68 [node_filter] Modal filter at 62nd Street & Hillegass Avenue
+  candidate 69 [node_filter] Modal filter on 62nd Street at Hillegass Avenue
+  candidate 70 [node_filter] Modal filter on Hillegass Avenue at 62nd Street
+  candidate 71 [diagonal_diverter] Diagonal diverter at 62nd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 62nd Street (west), and Hillegass Avenue (south) with 62nd Street (east)
+  candidate 72 [diagonal_diverter] Diagonal diverter at 62nd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 62nd Street (east), and Hillegass Avenue (south) with 62nd Street (west)
+  candidate 73 [traffic_circle] Traffic circle at 62nd Street & Hillegass Avenue
+  candidate 74 [modal_filter] Modal filter on Colby Street between Claremont Avenue / Forest Street and McAuley Street
+  candidate 75 [one_way] One-way northbound on Colby Street between Claremont Avenue / Forest Street and McAuley Street (toward McAuley Street)
+  candidate 76 [one_way] One-way southbound on Colby Street between Claremont Avenue / Forest Street and McAuley Street (toward Claremont Avenue and Forest Street)
+  candidate 77 [control] All-way stop at Alcatraz Avenue & Colby Street
+  candidate 78 [control] All-way stop at Alcatraz Avenue & Hillegass Avenue
+  candidate 79 [modal_filter] Modal filter on Hillegass Avenue between 63rd Street and 62nd Street
+  candidate 80 [one_way] One-way southbound on Hillegass Avenue between 63rd Street and 62nd Street (toward 62nd Street)
+  candidate 81 [one_way] One-way northbound on Hillegass Avenue between 63rd Street and 62nd Street (toward 63rd Street)
+  candidate 82 [node_filter] Modal filter at Ayala Avenue & Martin Street
+  candidate 83 [node_filter] Modal filter on Ayala Avenue at Martin Street
+  candidate 84 [node_filter] Modal filter on Martin Street at Ayala Avenue
+  candidate 85 [diagonal_diverter] Diagonal diverter at Ayala Avenue & Martin Street, connecting Ayala Avenue (north) with Martin Street (east), and Ayala Avenue (south) with Martin Street (west)
+  candidate 86 [diagonal_diverter] Diagonal diverter at Ayala Avenue & Martin Street, connecting Ayala Avenue (north) with Martin Street (west), and Ayala Avenue (south) with Martin Street (east)
+  candidate 87 [traffic_circle] Traffic circle at Ayala Avenue & Martin Street
+  candidate 88 [control] All-way stop at Ayala Avenue & Martin Street
+  candidate 89 [node_filter] Modal filter at 61st Street & Hillegass Avenue
+  candidate 90 [node_filter] Modal filter on 61st Street at Hillegass Avenue
+  candidate 91 [control] All-way stop at 61st Street & Hillegass Avenue
+  candidate 92 [modal_filter] Modal filter on Hillegass Avenue between 62nd Street and 61st Street
+  candidate 93 [one_way] One-way southbound on Hillegass Avenue between 62nd Street and 61st Street (toward 61st Street)
+  candidate 94 [one_way] One-way northbound on Hillegass Avenue between 62nd Street and 61st Street (toward 62nd Street)
+  candidate 95 [speed_hump] Speed hump on Hillegass Avenue between 62nd Street and 61st Street
+  candidate 96 [modal_filter] Modal filter on Hillegass Avenue between 61st Street and 60th Street / Claremont Avenue
+  candidate 97 [one_way] One-way southbound on Hillegass Avenue between 61st Street and 60th Street / Claremont Avenue (toward 60th Street and Claremont Avenue)
+  candidate 98 [one_way] One-way northbound on Hillegass Avenue between 61st Street and 60th Street / Claremont Avenue (toward 61st Street)
+  candidate 99 [modal_filter] Modal filter on Martin Street between Claremont Avenue and Ayala Avenue
+  candidate 100 [one_way] One-way westbound on Martin Street between Claremont Avenue and Ayala Avenue (toward Ayala Avenue)
+  candidate 101 [one_way] One-way eastbound on Martin Street between Claremont Avenue and Ayala Avenue (toward Claremont Avenue)
+  candidate 102 [speed_hump] Speed hump on Martin Street between Claremont Avenue and Ayala Avenue
+  candidate 103 [node_filter] Modal filter at Ayala Avenue & Howell Street
+  candidate 104 [node_filter] Modal filter on Howell Street at Ayala Avenue
+  candidate 105 [control] All-way stop at Ayala Avenue & Howell Street
+  candidate 106 [node_filter] Modal filter at Ayala Avenue & Forest Street
+  candidate 107 [node_filter] Modal filter on Forest Street at Ayala Avenue
+  candidate 108 [control] All-way stop at Ayala Avenue & Forest Street
+  candidate 109 [modal_filter] Modal filter on Forest Street between Claremont Avenue / Colby Street and Ayala Avenue
+  candidate 110 [one_way] One-way westbound on Forest Street between Claremont Avenue / Colby Street and Ayala Avenue (toward Ayala Avenue)
+  candidate 111 [one_way] One-way eastbound on Forest Street between Claremont Avenue / Colby Street and Ayala Avenue (toward Claremont Avenue and Colby Street)
+  candidate 112 [speed_hump] Speed hump on Forest Street between Claremont Avenue / Colby Street and Ayala Avenue
+  candidate 113 [node_filter] Modal filter at Howell Street & McAuley Street
+  candidate 114 [node_filter] Modal filter on Howell Street at McAuley Street
+  candidate 115 [node_filter] Modal filter on McAuley Street at Howell Street
+  candidate 116 [diagonal_diverter] Diagonal diverter at Howell Street & McAuley Street, connecting Howell Street (north) with McAuley Street (west), and Howell Street (south) with McAuley Street (east)
+  candidate 117 [diagonal_diverter] Diagonal diverter at Howell Street & McAuley Street, connecting Howell Street (north) with McAuley Street (east), and Howell Street (south) with McAuley Street (west)
+  candidate 118 [traffic_circle] Traffic circle at Howell Street & McAuley Street
+  candidate 119 [control] All-way stop at Howell Street & McAuley Street
+  candidate 120 [modal_filter] Modal filter on Ayala Avenue between Martin Street and Howell Street
+  candidate 121 [one_way] One-way northbound on Ayala Avenue between Martin Street and Howell Street (toward Howell Street)
+  candidate 122 [one_way] One-way southbound on Ayala Avenue between Martin Street and Howell Street (toward Martin Street)
+  candidate 123 [speed_hump] Speed hump on Ayala Avenue between Martin Street and Howell Street
+  candidate 124 [node_filter] Modal filter at 59th Street & Howell Street
+  candidate 125 [node_filter] Modal filter on 59th Street at Howell Street
+  candidate 126 [control] All-way stop at 59th Street & Howell Street
+  candidate 127 [modal_filter] Modal filter on Howell Street between Ayala Avenue and 59th Street
+  candidate 128 [one_way] One-way westbound on Howell Street between Ayala Avenue and 59th Street (toward 59th Street)
+  candidate 129 [one_way] One-way southbound on Howell Street between Ayala Avenue and 59th Street (toward Ayala Avenue)
+  candidate 130 [speed_hump] Speed hump on Howell Street between Ayala Avenue and 59th Street
+  candidate 131 [node_filter] Modal filter at 60th Street & Canning Street
+  candidate 132 [node_filter] Modal filter on 60th Street at Canning Street
+  candidate 133 [node_filter] Modal filter on Canning Street at 60th Street
+  candidate 134 [diagonal_diverter] Diagonal diverter at 60th Street & Canning Street, connecting Canning Street (north) with 60th Street (west), and Canning Street (south) with 60th Street (east)
+  candidate 135 [diagonal_diverter] Diagonal diverter at 60th Street & Canning Street, connecting Canning Street (north) with 60th Street (east), and Canning Street (south) with 60th Street (west)
+  candidate 136 [traffic_circle] Traffic circle at 60th Street & Canning Street
+  candidate 137 [modal_filter] Modal filter on Ayala Avenue between Howell Street and Forest Street
+  candidate 138 [one_way] One-way northbound on Ayala Avenue between Howell Street and Forest Street (toward Forest Street)
+  candidate 139 [one_way] One-way southbound on Ayala Avenue between Howell Street and Forest Street (toward Howell Street)
+  candidate 140 [speed_hump] Speed hump on Ayala Avenue between Howell Street and Forest Street
+  candidate 141 [node_filter] Modal filter at Canning Street & McAuley Street
+  candidate 142 [node_filter] Modal filter on Canning Street at McAuley Street
+  candidate 143 [node_filter] Modal filter on McAuley Street at Canning Street
+  candidate 144 [diagonal_diverter] Diagonal diverter at Canning Street & McAuley Street, connecting Canning Street (north) with McAuley Street (west), and Canning Street (south) with McAuley Street (east)
+  candidate 145 [diagonal_diverter] Diagonal diverter at Canning Street & McAuley Street, connecting Canning Street (north) with McAuley Street (east), and Canning Street (south) with McAuley Street (west)
+  candidate 146 [traffic_circle] Traffic circle at Canning Street & McAuley Street
+  candidate 147 [control] All-way stop at Canning Street & McAuley Street
+  candidate 148 [node_filter] Modal filter at Ayala Avenue & McAuley Street
+  candidate 149 [node_filter] Modal filter on Ayala Avenue at McAuley Street
+  candidate 150 [control] All-way stop at Ayala Avenue & McAuley Street
+  candidate 151 [node_filter] Modal filter at 58th Street & Canning Street
+  candidate 152 [node_filter] Modal filter on Canning Street at 58th Street
+  candidate 153 [control] All-way stop at 58th Street & Canning Street
+  candidate 154 [modal_filter] Modal filter on Ayala Avenue between Forest Street and McAuley Street
+  candidate 155 [one_way] One-way northbound on Ayala Avenue between Forest Street and McAuley Street (toward McAuley Street)
+  candidate 156 [one_way] One-way southbound on Ayala Avenue between Forest Street and McAuley Street (toward Forest Street)
+  candidate 157 [speed_hump] Speed hump on Ayala Avenue between Forest Street and McAuley Street
+  candidate 158 [modal_filter] Modal filter on 58th Street between Hermann Street / Martin Street and Canning Street
+  candidate 159 [one_way] One-way westbound on 58th Street between Hermann Street / Martin Street and Canning Street (toward Canning Street)
+  candidate 160 [one_way] One-way eastbound on 58th Street between Hermann Street / Martin Street and Canning Street (toward Hermann Street and Martin Street)
+  candidate 161 [speed_hump] Speed hump on 58th Street between Hermann Street / Martin Street and Canning Street
+  candidate 162 [node_filter] Modal filter at 60th Street & Howell Street
+  candidate 163 [node_filter] Modal filter on Howell Street at 60th Street
+  candidate 164 [control] All-way stop at 60th Street & Howell Street
+  candidate 165 [node_filter] Modal filter at 58th Street & Hermann Street & +1
+  candidate 166 [node_filter] Modal filter on 58th Street at Hermann Street and Martin Street
+  candidate 167 [node_filter] Modal filter on Hermann Street at 58th Street and Martin Street
+  candidate 168 [node_filter] Modal filter on Martin Street at 58th Street and Hermann Street
+  candidate 169 [diagonal_diverter] Diagonal diverter at 58th Street & Hermann Street & +1, connecting Martin Street (southeast) with 58th Street (east), and Hermann Street (south) with 58th Street (west)
+  candidate 170 [diagonal_diverter] Diagonal diverter at 58th Street & Hermann Street & +1, connecting 58th Street (east) with 58th Street (west), and Hermann Street (south) with Martin Street (southeast)
+  candidate 171 [traffic_circle] Traffic circle at 58th Street & Hermann Street & +1
+  candidate 172 [control] All-way stop at 58th Street & Hermann Street & +1
+  candidate 173 [modal_filter] Modal filter on Howell Street between 59th Street and McAuley Street
+  candidate 174 [one_way] One-way northbound on Howell Street between 59th Street and McAuley Street (toward McAuley Street)
+  candidate 175 [one_way] One-way southbound on Howell Street between 59th Street and McAuley Street (toward 59th Street)
+  candidate 176 [speed_hump] Speed hump on Howell Street between 59th Street and McAuley Street
+  candidate 177 [node_filter] Modal filter at 59th Street & Canning Street
+  candidate 178 [node_filter] Modal filter on 59th Street at Canning Street
+  candidate 179 [node_filter] Modal filter on Canning Street at 59th Street
+  candidate 180 [diagonal_diverter] Diagonal diverter at 59th Street & Canning Street, connecting Canning Street (north) with 59th Street (west), and Canning Street (south) with 59th Street (east)
+  candidate 181 [diagonal_diverter] Diagonal diverter at 59th Street & Canning Street, connecting Canning Street (north) with 59th Street (east), and Canning Street (south) with 59th Street (west)
+  candidate 182 [traffic_circle] Traffic circle at 59th Street & Canning Street
+  candidate 183 [modal_filter] Modal filter on Martin Street between Ayala Avenue and 58th Street / Hermann Street
+  candidate 184 [one_way] One-way westbound on Martin Street between Ayala Avenue and 58th Street / Hermann Street (toward 58th Street and Hermann Street)
+  candidate 185 [one_way] One-way eastbound on Martin Street between Ayala Avenue and 58th Street / Hermann Street (toward Ayala Avenue)
+  candidate 186 [speed_hump] Speed hump on Martin Street between Ayala Avenue and 58th Street / Hermann Street
+  candidate 187 [modal_filter] Modal filter on 60th Street between Howell Street and Canning Street
+  candidate 188 [one_way] One-way westbound on 60th Street between Howell Street and Canning Street (toward Canning Street)
+  candidate 189 [one_way] One-way eastbound on 60th Street between Howell Street and Canning Street (toward Howell Street)
+  candidate 190 [speed_hump] Speed hump on 60th Street between Howell Street and Canning Street
+  candidate 191 [modal_filter] Modal filter on McAuley Street between Howell Street and Canning Street
+  candidate 192 [one_way] One-way westbound on McAuley Street between Howell Street and Canning Street (toward Canning Street)
+  candidate 193 [one_way] One-way eastbound on McAuley Street between Howell Street and Canning Street (toward Howell Street)
+  candidate 194 [speed_hump] Speed hump on McAuley Street between Howell Street and Canning Street
+  candidate 195 [modal_filter] Modal filter on Howell Street between McAuley Street and 60th Street
+  candidate 196 [one_way] One-way northbound on Howell Street between McAuley Street and 60th Street (toward 60th Street)
+  candidate 197 [one_way] One-way southbound on Howell Street between McAuley Street and 60th Street (toward McAuley Street)
+  candidate 198 [speed_hump] Speed hump on Howell Street between McAuley Street and 60th Street
+  candidate 199 [slow_street] Slow Street on Colby Street (15 mph, Alcatraz Avenue to Claremont Avenue / Forest Street)
+  candidate 200 [slow_street] Slow Street on Hillegass Avenue (15 mph, 60th Street / Claremont Avenue to Alcatraz Avenue)
+  candidate 201 [slow_street] Slow Street on Martin Street (15 mph, 58th Street / Hermann Street to Claremont Avenue)
+  candidate 202 [slow_street] Slow Street on Forest Street (15 mph, Ayala Avenue to Claremont Avenue / Colby Street)
+  candidate 203 [slow_street] Slow Street on Ayala Avenue (15 mph, 57th Street to McAuley Street)
+  candidate 204 [slow_street] Slow Street on Howell Street (15 mph, 60th Street to Ayala Avenue)
+  candidate 205 [slow_street] Slow Street on 60th Street (15 mph, Claremont Avenue / Hillegass Avenue to Telegraph Avenue)
+  candidate 206 [slow_street] Slow Street on 58th Street (15 mph, a dead end to Telegraph Avenue)
+  candidate 207 [slow_street] Slow Street on 62nd Street (15 mph, Claremont Avenue / College Avenue / +1 to Telegraph Avenue)
+  candidate 208 [slow_street] Slow Street on McAuley Street (15 mph, Colby Street to Telegraph Avenue)
+  candidate 209 [turn_ban] Turn ban at Claremont Avenue & Martin Street: Claremont Avenue to Martin Street
+  candidate 210 [turn_ban] Turn ban at 60th Street & Claremont Avenue & +1: Claremont Avenue to Hillegass Avenue
+  candidate 211 [turn_ban] Turn ban at Claremont Avenue & Colby Street & +1: Claremont Avenue to Colby Street
+  candidate 212 [turn_ban] Turn ban at Alcatraz Avenue & Hillegass Avenue: Alcatraz Avenue to Hillegass Avenue
+  candidate 213 [turn_ban] Turn ban at Alcatraz Avenue & Hillegass Avenue: Alcatraz Avenue to Hillegass Avenue
+  candidate 214 [turn_ban] Turn ban at Alcatraz Avenue & Colby Street: Alcatraz Avenue to Colby Street
+  candidate 215 [turn_ban] Turn ban at Alcatraz Avenue & Colby Street: Alcatraz Avenue to Colby Street
+  candidate 216 [turn_ban] Turn ban at 60th Street & Telegraph Avenue: Telegraph Avenue to 60th Street
+  candidate 217 [turn_ban] Turn ban at McAuley Street & Telegraph Avenue: Telegraph Avenue to McAuley Street
+  candidate 218 [turn_ban] Turn ban at 63rd Street & College Avenue: College Avenue to 63rd Street
+
+#v1;a=rockridge;p=pm_peak;s=tb,9q9p61c5xf,35,335~tb,9q9p61c5xf,210,335~tb,9q9p648cuw,80,175~tb,9q9p648cuw,260,175
+  Turn ban at 60th Street & Claremont Avenue & +1: Claremont Avenue to Hillegass Avenue: profile allows, candidate 210
+  Turn ban at 60th Street & Claremont Avenue & +1: Claremont Avenue to Hillegass Avenue: profile allows, NOT in the candidate list
+  Turn ban at Alcatraz Avenue & Hillegass Avenue: Alcatraz Avenue to Hillegass Avenue: profile allows, candidate 213
+  Turn ban at Alcatraz Avenue & Hillegass Avenue: Alcatraz Avenue to Hillegass Avenue: profile allows, candidate 212
+  access check: passes
+
+#v1;a=rockridge;p=pm_peak;s=tb,9q9p61c5xf,35,335~tb,9q9p61c5xf,210,335~tb,9q9p648cuw,80,175~tb,9q9p648cuw,260,175~tb,9q9p3crvgs,215,230~tb,9q9p3crvgs,35,230~tb,9q9p3fx20z,80,175~tb,9q9p3fx20z,260,175
+  Turn ban at 60th Street & Claremont Avenue & +1: Claremont Avenue to Hillegass Avenue: profile allows, candidate 210
+  Turn ban at 60th Street & Claremont Avenue & +1: Claremont Avenue to Hillegass Avenue: profile allows, NOT in the candidate list
+  Turn ban at Alcatraz Avenue & Hillegass Avenue: Alcatraz Avenue to Hillegass Avenue: profile allows, candidate 213
+  Turn ban at Alcatraz Avenue & Hillegass Avenue: Alcatraz Avenue to Hillegass Avenue: profile allows, candidate 212
+  Turn ban at Claremont Avenue & Colby Street & +1: Claremont Avenue to Colby Street: profile allows, NOT in the candidate list
+  Turn ban at Claremont Avenue & Colby Street & +1: Claremont Avenue to Colby Street: profile allows, candidate 211
+  Turn ban at Alcatraz Avenue & Colby Street: Alcatraz Avenue to Colby Street: profile allows, candidate 214
+  Turn ban at Alcatraz Avenue & Colby Street: Alcatraz Avenue to Colby Street: profile allows, candidate 215
+  access check: passes
+
+#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2~mn,9q9p3fprdr
+  Modal filter at 63rd Street & Hillegass Avenue: profile allows, candidate 41
+  Modal filter at 63rd Street & Colby Street: profile allows, candidate 1
+  access check: passes
+
+recheck of 4 intervention(s): no rejection
+  through cars an hour, mean of periods: 508.4 -> 479.4 (-5.7%); score -3.9; ranking penalty 96 on Colby Street between McAuley Street and 60th Street
+  block with the largest through-car increase: Colby Street between North Street and Alcatraz Avenue (+53; 95% interval +49 to +57 cars an hour over 10 seeds), 21 block(s) with a resolved increase, 9 past the noise band
+  through-car change interval: 95% interval -41 to -17 cars an hour over 10 seeds
+  Resident elapsed time through the 60-minute cutoff was +1.8 s per request. Unfinished requests numbered 3619 of 39316 at baseline and 3693 of 39316 with the package.
+  pm_peak: through 709 -> 668 (-5.9%); all-traffic block with the largest increase Colby Street between McAuley Street and 60th Street 287 -> 420
+  am_peak: through 429 -> 402 (-6.2%); all-traffic block with the largest increase Colby Street between McAuley Street and 60th Street 234 -> 292
+  midday: through 387 -> 368 (-4.9%); all-traffic block with the largest increase Colby Street between McAuley Street and 60th Street 194 -> 262
+
+recheck of 8 intervention(s): no rejection
+  through cars an hour, mean of periods: 508.4 -> 444.5 (-12.6%); score +3.9; ranking penalty 87 on 60th Street between Claremont Avenue / Hillegass Avenue and Colby Street
+  block with the largest through-car increase: Dana Street between North Street and Alcatraz Avenue (+42; 95% interval +38 to +46 cars an hour over 10 seeds), 32 block(s) with a resolved increase, 10 past the noise band
+  through-car change interval: 95% interval -73 to -55 cars an hour over 10 seeds
+  Resident elapsed time through the 60-minute cutoff was +2.7 s per request. Unfinished requests numbered 3619 of 39316 at baseline and 3710 of 39316 with the package.
+  pm_peak: through 709 -> 633 (-10.8%); all-traffic block with the largest increase 60th Street between Claremont Avenue / Hillegass Avenue and Colby Street 40 -> 140
+  am_peak: through 429 -> 370 (-13.7%); all-traffic block with the largest increase 60th Street between Claremont Avenue / Hillegass Avenue and Colby Street 23 -> 66
+  midday: through 387 -> 330 (-14.6%); all-traffic block with the largest increase Dana Street between North Street and Alcatraz Avenue 18 -> 58
+
+recheck of 2 intervention(s): no rejection
+  through cars an hour, mean of periods: 508.4 -> 347.6 (-31.6%); score +28.1; ranking penalty 35 on 63rd Street between Dana Street and Canning Street
+  block with the largest through-car increase: 62nd Street between Claremont Avenue / College Avenue / +1 and Hillegass Avenue (+26; 95% interval +23 to +29 cars an hour over 10 seeds), 33 block(s) with a resolved increase, 12 past the noise band
+  through-car change interval: 95% interval -171 to -150 cars an hour over 10 seeds
+  Resident elapsed time through the 60-minute cutoff was +2.2 s per request. Unfinished requests numbered 3619 of 39316 at baseline and 3660 of 39316 with the package.
+  pm_peak: through 709 -> 518 (-26.9%); all-traffic block with the largest increase Martin Street between Claremont Avenue and Ayala Avenue 248 -> 298
+  am_peak: through 429 -> 283 (-34.0%); all-traffic block with the largest increase 63rd Street between Dana Street and Canning Street 96 -> 145
+  midday: through 387 -> 241 (-37.7%); all-traffic block with the largest increase Dana Street between 63rd Street and North Street 65 -> 90

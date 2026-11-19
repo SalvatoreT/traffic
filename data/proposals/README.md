@@ -40,9 +40,14 @@ Flow figures, through and all, use the same window: after a warm-up of the first
 
 Select-link analysis of the baseline ranks the in-study blocks and intersections by cut-through trips. The top `--candidates` locations get every intervention the app offers there and that fits: modal filter on a block; modal filter at an intersection and diagonal diverters (both orientations, four-leg intersections), only where every street is residential or service; one-way in each direction on two-way blocks; speed hump at mid-block where none exists; traffic circle at four-leg uncontrolled or stop-controlled intersections of local streets; 15 and 20 mph limits where the limit is higher; all-way stop where the control is a two-way stop or none; 60 and 120 s cycles at existing signals that cut-through passes. Turn bans cover the heaviest cut-through movements from an arterial onto a local street. A proposal never adds a signal. Equivalent candidates are merged.
 
-### Planned for the next search
+### Turn-ban packages
 
-Turn-ban candidates today cover single movements. A ten-seed check on 2026-11-18 (seeds 101 to 110, three periods, baseline 567 through cars an hour) found that banning the turns from Claremont Avenue and Alcatraz Avenue onto Hillegass Avenue removes 30 through cars an hour (5.3%) because most of them move to Colby Street, while the same bans onto both Hillegass Avenue and Colby Street remove 79 (14.0%) and push some traffic to Dana Street and North Street. The next search, whenever one runs for another reason, will also offer two set candidates: every arterial turn onto one street, and the same for a pair of parallel streets (user decision, 2026-11-18). No search runs for this alone.
+Turn-ban candidates cover single movements, so two packages were entered by hand for the search of 2026-11-18 (user decision, 2026-11-18) and measured on seeds 101 to 110 over three periods, on the network and demand of that search (baseline 508.4 through cars an hour):
+
+- Banning the four turns from Claremont Avenue and Alcatraz Avenue onto Hillegass Avenue removes 29.0 through cars an hour (95% interval 17 to 41; 5.7%). Most of them move to Colby Street: one block (McAuley Street to 60th Street) gains 133 cars an hour of all traffic in the PM peak.
+- Banning the same turns onto both Hillegass Avenue and Colby Street (eight bans) removes 63.9 (55 to 73; 12.6%) and adds 100 cars an hour in the PM peak to 60th Street between Claremont Avenue and Colby Street. Through traffic also moves to Dana Street.
+
+Neither is published as an option: two filters on 63rd Street remove 160.8 with a smaller rise on any one block. The eight-ban package has more changes than the search depth of 6, so the search dropped it and it was measured with `explore --check`. The figures are in `openspec/changes/archive/2026-11-19-calibration-round-44/evidence/search-c5/tb-check.md`. Generating whole-street and paired-street ban sets as search candidates is not built.
 
 ## Search
 
