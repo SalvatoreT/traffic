@@ -143,7 +143,7 @@ The remaining misses point to route choice in the simulation disagreeing with th
 
 ## Forty-eighth round: simulated membership for every exported station (not adopted) (2026-11-19)
 
-Fails the keep rule, not adopted (change calibration-round-48, left open until its evidence is pushed). The published network 53c823f20d9165ed, demand 9cdebdabf05c4460 and cross-validation demand 2f9ae152b9bbf78e stand. Simulator fingerprint d45a275dd7be0713cec6a64394b7d8a9 throughout. Nothing under `data/` or `public/data/` changed apart from this record. The evidence commit (6a50e3e on the laptop) is not pushed yet; the evidence files follow from the laptop, and the numbers below come from the laptop's report.
+Fails the keep rule, not adopted (change calibration-round-48, archived). The published network 53c823f20d9165ed, demand 9cdebdabf05c4460 and cross-validation demand 2f9ae152b9bbf78e stand. Simulator fingerprint d45a275dd7be0713cec6a64394b7d8a9 throughout. Nothing under `data/` or `public/data/` changed apart from this record. The evidence is in `openspec/changes/archive/2026-11-19-calibration-round-48/evidence/` (laptop commits 6a50e3e and 71af51a), and the numbers below come from the laptop's report.
 
 ### What was tried
 
@@ -232,7 +232,7 @@ Mean through cars per hour on the study area's residential and service streets (
 - Fitted counts: PM 74 to 78 of 92, AM 70 to 72 of 77. Older counts, which are not conditions: AM fitted 35 to 40 of 48, AM held out 8 to 14 of 16, PM fitted 55 to 65 of 95, PM held out 16 to 12 of 34.
 - The diagonal. Five diagonal stations, PM, counted 178 (Forest St EB 66, McAuley St EB 12, 60th St EB 23, Ayala Ave NB 60, Howell St SB 17). The simulated sum went from 495 to 462 in the shipped view and from 1234 to 651 in the training view. Per station, baseline shipped and training, then candidate shipped and training: Forest St 183, 516 then 151, 260; McAuley St 83, 183 then 78, 99; 60th St 76, 162 then 80, 83; Ayala Ave 81, 212 then 73, 129; Howell St 72, 162 then 80, 80. AM, four stations, counted 110: 206 and 428 (baseline shipped, training) to 165 and 341.
 - Colby St northbound, simulated over counted, on the seven northbound blocks with counts (2591, 2593, 2595, 2597, 2599, 2601, 2605; the runbook said six): PM shipped 0.75 to 0.81, training 0.77 to 0.87; AM shipped 0.73 to 0.79, training 0.87 to 0.88. Whole-street PM Colby St northbound: 73 to 83, observed 102.
-- SR-24 ramps, PM, target; baseline shipped, training; candidate shipped, training: Claremont on (833) 598; 773, 975; 690, 850. Clifton off (683) 617; 697, 943; 750, 905. 52nd on (725) 996; 968, 1054; 923, 975. 52nd off (727) 1024; 1029, 1013; 1054, 1040. MLK on (679) 1547; 1266, 1014; 1513, 1175. MLK off (719) 1614; 1512, 1519; 1526, 1481. MLK Grove St on (280) 190; 282, 532; 240, 633. Telegraph on (701) 657; 906, 1272; 1068, 1305. Aileen off (702) 621; 724, 646; 733, 721. The other 13 ramps and the AM table are in the evidence still to come from the laptop.
+- SR-24 ramps, PM, target; baseline shipped, training; candidate shipped, training: Claremont on (833) 598; 773, 975; 690, 850. Clifton off (683) 617; 697, 943; 750, 905. 52nd on (725) 996; 968, 1054; 923, 975. 52nd off (727) 1024; 1029, 1013; 1054, 1040. MLK on (679) 1547; 1266, 1014; 1513, 1175. MLK off (719) 1614; 1512, 1519; 1526, 1481. MLK Grove St on (280) 190; 282, 532; 240, 633. Telegraph on (701) 657; 906, 1272; 1068, 1305. Aileen off (702) 621; 724, 646; 733, 721. The other 13 ramps and the AM table are in the archived evidence.
 
 ### Also reported
 
@@ -241,7 +241,7 @@ Mean through cars per hour on the study area's residential and service streets (
 
 ### Verdict
 
-Fails the keep rule on three lines: PM held out 13 of 24 (line 14), D5 2 of 4 (line 4), and D16 in the AM and PM. Not adopted. The code stays on main with the switch off, and the shipped config has no `simulatedMembership` entry. The published data are unchanged. Step H was not run. The change stays open until the evidence is pushed from the laptop.
+Fails the keep rule on three lines: PM held out 13 of 24 (line 14), D5 2 of 4 (line 4), and D16 in the AM and PM. Not adopted. The code stays on main with the switch off, and the shipped config has no `simulatedMembership` entry. The published data are unchanged. Step H was not run. The change is archived with its evidence.
 
 ### Next lead
 

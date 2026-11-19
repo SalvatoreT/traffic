@@ -22,7 +22,7 @@ export interface LoopPaths { config: string; demand: Record<View, string>; repor
 /** File locations from the demand config; the membership files are the ones `countFit.throughTargets.simulatedMembership` names. */
 export function loopPaths(root: string, configPath: string, cfg: any): LoopPaths {
   const fc = cfg.countFit, sm = fc?.throughTargets?.simulatedMembership;
-  if (!sm) throw new Error('the config has no countFit.throughTargets.simulatedMembership entry; apply the round 48 candidate first (openspec/changes/calibration-round-48/apply-candidate.py)');
+  if (!sm) throw new Error('the config has no countFit.throughTargets.simulatedMembership entry; apply the round 48 candidate first (openspec/changes/archive/2026-11-19-calibration-round-48/apply-candidate.py)');
   const abs = (p: string) => resolve(root, p);
   return {
     config: abs(configPath), demand: { shipped: abs(cfg.output), training: abs(fc.validation.demandOutput) },

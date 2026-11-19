@@ -1,0 +1,11 @@
+2026-11-19 09:46:34 AM PST start at 5cebe93; status: ?? openspec/changes/calibration-round-48/evidence/;
+applied simulated-membership
+2026-11-19 09:46:34 AM PST config b74e86f898dd3a8f (loop used b74e86f898dd3a8f)
+2026-11-19 09:46:34 AM PST membership b99c26686c4c0cfc 8f11b43838d3134d 
+2026-11-19 09:52:41 AM PST shipped build exit=0 wall_s=367
+2026-11-19 09:58:01 AM PST training build exit=0 wall_s=320
+2026-11-19 09:58:01 AM PST hashes 1771a9c4a51968c6 83396aeb2a4b1b63  (expected 1771a9c4a51968c6 83396aeb2a4b1b63)
+data/demand/rockridge.fit.md:- Simulated membership from target/membership/rockridge.membership.json (shipped view)
+data/demand/rockridge.fit.cv.md:- Simulated membership from target/membership/rockridge.membership-training.json (training view)
+2026-11-19 09:58:01 AM PST restore: 53c823f20d9165ed 9cdebdabf05c4460 2f9ae152b9bbf78e  status: ?? openspec/changes/calibration-round-48/evidence/;
+2026-11-19 09:58:01 AM PST REBUILD DONE

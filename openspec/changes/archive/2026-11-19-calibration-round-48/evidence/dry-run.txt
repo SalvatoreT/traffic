@@ -1,0 +1,61 @@
+membership loop, dry run
+stations file data/demand/rockridge.stations.json: 357 stations; the frozen split withholds 91 from the training view
+shipped pm_peak: 337 selected (245 link, 92 movement or route), 6 stay static
+  static: gate 265 in: no links and no movement or route feature (a gate total)
+  static: gate 265 out: no links and no movement or route feature (a gate total)
+  static: gate 295 in: no links and no movement or route feature (a gate total)
+  static: gate 295 out: no links and no movement or route feature (a gate total)
+  static: gate 763 in: no links and no movement or route feature (a gate total)
+  static: gate 1735 out: no links and no movement or route feature (a gate total)
+shipped am_peak: 272 selected (200 link, 72 movement or route), 6 stay static
+  static: gate 265 in: no links and no movement or route feature (a gate total)
+  static: gate 265 out: no links and no movement or route feature (a gate total)
+  static: gate 295 in: no links and no movement or route feature (a gate total)
+  static: gate 295 out: no links and no movement or route feature (a gate total)
+  static: gate 763 in: no links and no movement or route feature (a gate total)
+  static: gate 1735 out: no links and no movement or route feature (a gate total)
+training pm_peak: 256 selected (187 link, 69 movement or route), 0 stay static, 87 withheld
+training am_peak: 201 selected (148 link, 53 movement or route), 0 stay static, 77 withheld
+midday: no runs, static membership; its demand is fitted as before
+
+i0-shipped-build: build the shipped demand with static membership
+    npx tsx tools/build-demand.ts
+i0-shipped-check: check that the report says no membership file was used
+i0-shipped-runs: seeds 1-10, pm_peak and am_peak: one process per seed, each with its own --select-od file
+    target/release/calibrate --area AREA --period PERIOD --minutes 60 --scale 1 --seed N --demand <copy of the shipped demand> --select-od <dir>/sod-PERIOD-N.json --no-write
+i0-training-build: build the training demand with static membership
+    npx tsx tools/build-demand.ts --view training
+i0-training-check: check that the report says no membership file was used
+i0-training-runs: seeds 1-10, pm_peak and am_peak: one process per seed, each with its own --select-od file
+    target/release/calibrate --area AREA --period PERIOD --minutes 60 --scale 1 --seed N --demand <copy of the training demand> --select-od <dir>/sod-PERIOD-N.json --no-write
+i0-pool: pool passes 0 to 0 with equal weight into the membership files, list zero-hit stations, compare pass 0 with pass 0 (nothing to compare)
+i1-shipped-build: build the shipped demand with the pool of passes 0 to 0
+    npx tsx tools/build-demand.ts
+i1-shipped-check: check the fit report for the simulated membership notes (fails if absent)
+i1-shipped-runs: seeds 1-10, pm_peak and am_peak: one process per seed, each with its own --select-od file
+    target/release/calibrate --area AREA --period PERIOD --minutes 60 --scale 1 --seed N --demand <copy of the shipped demand> --select-od <dir>/sod-PERIOD-N.json --no-write
+i1-training-build: build the training demand with the pool of passes 0 to 0
+    npx tsx tools/build-demand.ts --view training
+i1-training-check: check the fit report for the simulated membership notes (fails if absent)
+i1-training-runs: seeds 1-10, pm_peak and am_peak: one process per seed, each with its own --select-od file
+    target/release/calibrate --area AREA --period PERIOD --minutes 60 --scale 1 --seed N --demand <copy of the training demand> --select-od <dir>/sod-PERIOD-N.json --no-write
+i1-pool: pool passes 0 to 1 with equal weight into the membership files, list zero-hit stations, compare pass 1 with pass 0 (stop rule)
+i2-shipped-build: build the shipped demand with the pool of passes 0 to 1
+    npx tsx tools/build-demand.ts
+i2-shipped-check: check the fit report for the simulated membership notes (fails if absent)
+i2-shipped-runs: seeds 1-10, pm_peak and am_peak: one process per seed, each with its own --select-od file
+    target/release/calibrate --area AREA --period PERIOD --minutes 60 --scale 1 --seed N --demand <copy of the shipped demand> --select-od <dir>/sod-PERIOD-N.json --no-write
+i2-training-build: build the training demand with the pool of passes 0 to 1
+    npx tsx tools/build-demand.ts --view training
+i2-training-check: check the fit report for the simulated membership notes (fails if absent)
+i2-training-runs: seeds 1-10, pm_peak and am_peak: one process per seed, each with its own --select-od file
+    target/release/calibrate --area AREA --period PERIOD --minutes 60 --scale 1 --seed N --demand <copy of the training demand> --select-od <dir>/sod-PERIOD-N.json --no-write
+i2-pool: pool passes 0 to 2 with equal weight into the membership files, list zero-hit stations, compare pass 2 with pass 1 (stop rule)
+final-shipped-build: final shipped build with the last pool (earlier if the stop rule fired)
+    npx tsx tools/build-demand.ts
+final-shipped-check: check the fit report, record the demand hashes
+final-training-build: final training build with the last pool (earlier if the stop rule fired)
+    npx tsx tools/build-demand.ts --view training
+final-training-check: check the fit report, record the demand hashes
+
+about 156 minutes on 4 cores scaled to 4 jobs (96 of builds, 60 of seed runs); a stop after pass 1 saves one pass of runs and two builds

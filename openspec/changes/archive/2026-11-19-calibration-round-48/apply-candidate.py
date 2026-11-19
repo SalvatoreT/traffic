@@ -1,4 +1,4 @@
-# Usage: python3 openspec/changes/calibration-round-48/apply-candidate.py [simulated-membership | simulated-membership-prior20] [config-path]
+# Usage: python3 openspec/changes/archive/2026-11-19-calibration-round-48/apply-candidate.py [simulated-membership | simulated-membership-prior20] [config-path]
 # Reads candidates/<name>.json and inserts it as countFit.throughTargets.simulatedMembership in data/demand/rockridge.config.json (or the path given).
 # Absent, the build is byte-identical to the baseline. The config file's hash is part of the membership evidence, so apply it once, before the loop, and do not edit the config afterwards.
 import json

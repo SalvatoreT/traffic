@@ -19,11 +19,11 @@
 - [x] 2.4 Screen the final demand on seeds 1 to 3
 - [x] 2.5 Validation suite and ten-seed assessment if the screen passes
 - [ ] 2.6 Optional: the loop again with the prior worth 20 trips (step H, not run)
-- [ ] 2.7 Commit the evidence under `evidence/` (committed on the laptop as 6a50e3e, not pushed yet)
+- [x] 2.7 Commit the evidence under `evidence/` (laptop commits 6a50e3e and 71af51a, now on main)
 
 ## 3. Verdict (lead)
 
 - [x] 3.1 Keep-rule table and the verdict (design D7): fails
 - [x] 3.2 Record entry in `data/calibration/rockridge.record.md`
 - [ ] 3.3 Adoption, if the project lead decides it: not applicable, not adopted
-- [ ] 3.4 Validate the change and archive (validated; archive pending the evidence push)
+- [x] 3.4 Validate the change and archive
