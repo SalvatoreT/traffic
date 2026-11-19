@@ -210,15 +210,37 @@ export function checkFitReport(text: string, o: { view: string; file: string | n
   return { problems, periods };
 }
 
-export interface CeilingStat { stations: number; above: number; excess: number; /** Offered car veh/h of the period's static fit and of the final fit. */ staticTotal: number; finalTotal: number }
+export interface KindStat { stations: number; above: number; excess: number; removed: number }
+export interface CeilingStat {
+  stations: number; above: number; excess: number; /** Offered car veh/h of the period's static fit and of the final fit. */ staticTotal: number; finalTotal: number;
+  /** Round 50 lines, absent in a round 49 report: the split of the ceiling stations into gates and non-gate nodes, the offered car veh/h by flow type (static, final) and the non-gate node trip ends (static, final). */
+  gate?: KindStat; nonGate?: KindStat;
+  byType?: { static: Record<string, number>; final: Record<string, number> };
+  ends?: { originInside: [number, number]; originOutside: [number, number]; destInside: [number, number]; destOutside: [number, number] };
+}
 
 /** The gate prior ceiling lines of a fit report (round 49), per period; empty when the switch is off. */
 /** Loop abort (round 49, D11', ASSUMPTION written before any run): after a build from pass 1 on, offered car demand above the static fit's by more than this share stops the loop. */
 export const CEILING_ABORT_SHARE = 0.03;
+/** Round 50 (D4, ASSUMPTION written before any run): after the final build, offered car demand more than this share below the static fit's is reported with a stop-and-report warning (every node is capped, so the fit can only cut). */
+export const CEILING_LOW_SHARE = 0.10;
+/** Final offered car demand as a share of the static fit's. */
+export const offeredShare = (c: Pick<CeilingStat, 'staticTotal' | 'finalTotal'>): number => (c.staticTotal > 0 ? c.finalTotal / c.staticTotal : NaN);
 
 export function gatePriorFromReport(text: string): Record<string, CeilingStat> {
   const out: Record<string, CeilingStat> = {};
   for (const m of text.matchAll(/^Gate prior ceilings (\S+): (\d+) stations; (\d+) above ceiling; excess (\d+) veh\/h; offered car (\d+) to (\d+) veh\/h/gm)) out[m[1]] = { stations: +m[2], above: +m[3], excess: +m[4], staticTotal: +m[5], finalTotal: +m[6] };
+  const kind = (t: string): KindStat | undefined => { const m = /^(\d+) stations, (\d+) above ceiling, excess (\d+) veh\/h, removed by the projection (\d+) veh\/h$/.exec(t.trim()); return m ? { stations: +m[1], above: +m[2], excess: +m[3], removed: +m[4] } : undefined; };
+  const types = (t: string) => Object.fromEntries([...t.matchAll(/(through|local|ramp) (\d+)/g)].map((x) => [x[1], +x[2]]));
+  const pr = (t: string): [number, number] => { const x = /^(\d+) to (\d+)$/.exec(t); return x ? [+x[1], +x[2]] : [NaN, NaN]; };
+  let cur: string | null = null;
+  for (const line of text.split('\n')) {
+    let m: RegExpExecArray | null;
+    if ((m = /^Gate prior ceilings (\S+): /.exec(line))) cur = out[m[1]] ? m[1] : null;
+    else if (cur && (m = /^Offered car veh\/h by flow type, static fit then final: (.*?); (.*?)\.$/.exec(line))) out[cur].byType = { static: types(m[1]), final: types(m[2]) };
+    else if ((m = /^Ceiling stations by kind (\S+): gate (.*?); non-gate (.*?)\.$/.exec(line)) && out[m[1]]) { out[m[1]].gate = kind(m[2]); out[m[1]].nonGate = kind(m[3]); }
+    else if ((m = /^Non-gate node trip ends (\S+) \(veh\/h, static fit to final\): origins inside the study area (\d+ to \d+), outside (\d+ to \d+); destinations inside (\d+ to \d+), outside (\d+ to \d+)\.$/.exec(line)) && out[m[1]]) out[m[1]].ends = { originInside: pr(m[2]), originOutside: pr(m[3]), destInside: pr(m[4]), destOutside: pr(m[5]) };
+  }
   return out;
 }
 

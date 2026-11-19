@@ -248,7 +248,18 @@ describe('the loop with a fake build and a fake simulator', () => {
     const out = await runLoop(s.opts, s.runner, (l) => logs.push(l));
     expect(out.passes).toBe(2);
     expect(logs.some((l) => /pass 1 shipped build: gate prior ceilings pm_peak 3 stations, 0 above ceiling/.test(l))).toBe(true);
-    expect(renderReport(out, s.opts)).toMatch(/Gate ceiling stations/);
+    expect(renderReport(out, s.opts)).toMatch(/Ceiling stations .* Offered \/ static fit/);
+  });
+  it('reports offered demand as a share of the static fit and warns after the final build when it is more than 10% below', async () => {
+    const s = scratch({ flat: true, growth: -0.11 });
+    const logs: string[] = [];
+    await runLoop(s.opts, s.runner, (l) => logs.push(l));
+    expect(logs.some((l) => /pass 1 shipped pm_peak: offered car demand is 89\.0% of the static fit's \(890 of 1000 veh\/h\)/.test(l))).toBe(true);
+    expect(logs.filter((l) => /^WARNING shipped view, pm_peak, final build: offered car demand is 11\.0% below/.test(l))).toHaveLength(1);
+    const ok = scratch({ flat: true, growth: -0.09 });
+    const logs2: string[] = [];
+    await runLoop(ok.opts, ok.runner, (l) => logs2.push(l));
+    expect(logs2.some((l) => /^WARNING/.test(l))).toBe(false);
   });
   it('fails loudly when a build falls back to static membership', async () => {
     const s = scratch({ flat: true, dropNote: true });
