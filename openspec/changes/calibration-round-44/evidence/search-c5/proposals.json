@@ -1,0 +1,2324 @@
+{
+  "area": "rockridge",
+  "groups": [
+    {
+      "baseline": {
+        "cutThroughVehPerHour": {
+          "am_peak": 429.1,
+          "midday": 386.8,
+          "pm_peak": 709.2
+        }
+      },
+      "computed": {
+        "calibration": "uncalibrated",
+        "date": "2026-11-19",
+        "demandHash": "9cdebdabf05c4460",
+        "displacement": {
+          "dropped": [],
+          "floorVehPerHour": 10.0,
+          "rule": "An option that is not the winner of a goal is not published when another published option removes at least as many through cars, or is not distinguishable from it on the paired comparison, and its largest all-car rise on one block is smaller by more than the noise of the two rises: the paired intervals' half widths combined, or a floor when either has none. The rule runs on the search seeds when the options are chosen and again on the confirmation seeds, whose figures are the published ones; each dropped record says which (`basis`, `seeds`). The list is not refilled. ASSUMPTION: the floor."
+        },
+        "estimation": {
+          "aggregation": "Equal-weight mean of the periods within each seed, then paired by seed. Percent changes divide by the baseline mean.",
+          "level": 0.95,
+          "maximum": "The block with the largest raw increase is chosen after looking at all blocks, so its interval is not adjusted for that choice.",
+          "method": "Student t interval on per-seed differences, scenario minus baseline on the same period and seed",
+          "minPairs": 10,
+          "practicalFloors": "The noise band, its floor and the reduction floor are assumed dead bands for screening. They are not uncertainty intervals.",
+          "scope": "Seed variability with the network, demand and model fixed. It does not cover calibration error, demand error or day-to-day variation in real traffic.",
+          "selection": {
+            "confirmationSeeds": [101, 102, 103, 104, 105, 106, 107, 108, 109, 110],
+            "discoverySeeds": [1, 2, 3],
+            "estimates": "confirmation",
+            "failed": [],
+            "shortlist": [
+              "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2~mn,9q9p3fprdr~mn,9q9p3cxtt7~dd,9q9p641p03,127~mn,9q9p3cq6m9~mn,9q9p3cx02b,125",
+              "#v1;a=rockridge;p=pm_peak;s=dd,9q9p642ut2,41~mn,9q9p3fprdr~mn,9q9p3cq6m9~mn,9q9p3cx02b~ss,9q9p3cx9rf",
+              "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2~mn,9q9p3fprdr~dd,9q9p641p03,127~mn,9q9p3cq6m9~ow,9q9p3crqtn,305",
+              "#v1;a=rockridge;p=pm_peak;s=ow,9q9p642z5y,175~ow,9q9p3fr726,175~ow,9q9p3cqb23,305~ow,9q9p3crqtn,305~ss,9q9p3cx9rf~ow,9q9p643b1e,260",
+              "#v1;a=rockridge;p=pm_peak;s=dd,9q9p642ut2,41~mn,9q9p3fprdr~ss,9q9p3cx9rf",
+              "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2~mn,9q9p3fprdr"
+            ]
+          }
+        },
+        "initialLoad": true,
+        "knownPackages": {
+          "dropped": 1,
+          "droppedBy": [
+            {
+              "count": 1,
+              "reason": "8 interventions, more than the search depth of 6"
+            }
+          ],
+          "droppedPackages": [
+            {
+              "link": "#v1;a=rockridge;p=pm_peak;s=tb,9q9p61c5xf,35,335~tb,9q9p61c5xf,210,335~tb,9q9p648cuw,80,175~tb,9q9p648cuw,260,175~tb,9q9p3crvgs,215,230~tb,9q9p3crvgs,35,230~tb,9q9p3fx20z,80,175~tb,9q9p3fx20z,260,175",
+              "reason": "8 interventions, more than the search depth of 6"
+            }
+          ],
+          "loaded": 20,
+          "rechecked": 19
+        },
+        "minutes": 60.0,
+        "networkHash": "53c823f20d9165ed",
+        "objectives": {
+          "detourReductionFloor": 0.5,
+          "detourTieSeconds": 1.0,
+          "list": [
+            {
+              "id": "most-removed",
+              "label": "most cut-through removed",
+              "rule": "Through cars removed, minus the light penalty for the largest all-car rise on one block."
+            },
+            {
+              "id": "no-closures",
+              "label": "no street closures",
+              "rule": "The same score, among packages made only of measures that close nothing to cars: Slow Streets, one-ways, all-way stops, traffic circles, speed humps and turn bans. No modal filters or diverters."
+            },
+            {
+              "id": "least-detour",
+              "label": "least detour for residents",
+              "rule": "The smallest increase in elapsed time per requested car trip with an end inside the study area, measured until completion or the run cutoff, among packages that remove at least 50% of the most removed (ASSUMPTION: the share). Ties and differences the paired comparison cannot resolve go to the larger reduction, then fewer changes."
+            },
+            {
+              "id": "fewest-changes",
+              "label": "fewest changes",
+              "rule": "The same score, among packages of at most 2 changes."
+            }
+          ],
+          "note": "Each option lists the objectives it is the best for. Detour compares the same requested car trips with at least one end in the study area. Each accrues time from its request until arrival at the destination or the run cutoff, including unserved requests. Warm-up trips are excluded. ASSUMPTION: the reduction floor, and the detour tie threshold used only when fewer than the minimum seed pairs are available."
+        },
+        "periods": [
+          "pm_peak",
+          "am_peak",
+          "midday"
+        ],
+        "reportMethod": "paired-t-3",
+        "screenMinutes": 20.0,
+        "seeds": [101, 102, 103, 104, 105, 106, 107, 108, 109, 110],
+        "settings": {
+          "beam": 5,
+          "budgetEvals": null,
+          "candidates": 40,
+          "depth": 6,
+          "expand": 12,
+          "finalists": 12,
+          "goalFloorPct": 1.0,
+          "harmWeight": 0.1,
+          "noiseFloorVehPerHour": 10.0,
+          "noiseSigmas": 2.0,
+          "options": 6,
+          "profile": "unconstrained"
+        },
+        "settleSeconds": 120.0,
+        "similarity": {
+          "folded": [
+            {
+              "from": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2~mn,9q9p3fprdr~mn,9q9p3cz9dy,80.260~mn,9q9p3cxtt7~mn,9q9p3cq6m9~mn,9q9p3cx02b,125",
+              "into": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2~mn,9q9p3fprdr~mn,9q9p3cxtt7~dd,9q9p641p03,127~mn,9q9p3cq6m9~mn,9q9p3cx02b,125",
+              "intoPublished": true,
+              "reason": "changes through cars on the side-street blocks almost identically (distance 0.09, limit 0.10)",
+              "why": "same-picture"
+            },
+            {
+              "from": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2~mn,9q9p3fprdr~dd,9q9p3cz9dy,128~mn,9q9p3cxtt7~mn,9q9p3cq6m9~mn,9q9p3cx02b,125",
+              "into": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2~mn,9q9p3fprdr~mn,9q9p3cxtt7~dd,9q9p641p03,127~mn,9q9p3cq6m9~mn,9q9p3cx02b,125",
+              "intoPublished": true,
+              "reason": "changes through cars on the side-street blocks almost identically (distance 0.09, limit 0.10)",
+              "why": "same-picture"
+            },
+            {
+              "from": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2~mn,9q9p3fprdr~mn,9q9p3cxtt7~mn,9q9p3cq6m9~mn,9q9p3cx02b,125",
+              "into": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2~mn,9q9p3fprdr~mn,9q9p3cxtt7~dd,9q9p641p03,127~mn,9q9p3cq6m9~mn,9q9p3cx02b,125",
+              "intoPublished": true,
+              "reason": "changes through cars on the side-street blocks almost identically (distance 0.06, limit 0.10)",
+              "why": "same-picture"
+            }
+          ],
+          "pictureDistanceMax": 0.1,
+          "rule": "Two rechecked packages are similar when they act at the same places, or differ by at most one change and cut through cars alike on the paired comparison, or change through cars on the side-street blocks almost identically. One of each similar group is published; the others are listed on it as variants. ASSUMPTION: the thresholds."
+        },
+        "simulator": "d45a275dd7be0713cec6a64394b7d8a9",
+        "sourceRevision": "1705753d6946",
+        "window": "From t = 0 over `minutes` simulated minutes, after the initial load and settle interval: the run the app and the stored results make. Published figures come from the rechecks only; screening runs are the same run at `screenMinutes`."
+      },
+      "id": "unconstrained",
+      "note": "",
+      "optionComparisons": [
+        {
+          "against": "p2",
+          "extraCutPoints": {
+            "interval": [9.81, 12.2],
+            "mean": 11.0,
+            "n": 10,
+            "sd": 1.67,
+            "status": "better"
+          },
+          "extraCutVehPerHour": {
+            "interval": [49.86, 62.0],
+            "mean": 55.93,
+            "n": 10,
+            "sd": 8.48,
+            "status": "better"
+          },
+          "option": "p1"
+        },
+        {
+          "against": "p3",
+          "extraCutPoints": {
+            "interval": [2.68, 6.2],
+            "mean": 4.44,
+            "n": 10,
+            "sd": 2.46,
+            "status": "better"
+          },
+          "extraCutVehPerHour": {
+            "interval": [13.6, 31.53],
+            "mean": 22.57,
+            "n": 10,
+            "sd": 12.53,
+            "status": "better"
+          },
+          "option": "p2"
+        },
+        {
+          "against": "p4",
+          "extraCutPoints": {
+            "interval": [17.32, 21.16],
+            "mean": 19.24,
+            "n": 10,
+            "sd": 2.68,
+            "status": "better"
+          },
+          "extraCutVehPerHour": {
+            "interval": [88.04, 107.56],
+            "mean": 97.8,
+            "n": 10,
+            "sd": 13.64,
+            "status": "better"
+          },
+          "option": "p3"
+        },
+        {
+          "against": "p5",
+          "extraCutPoints": {
+            "interval": [-0.94, 2.25],
+            "mean": 0.66,
+            "n": 10,
+            "sd": 2.24,
+            "status": "unresolved"
+          },
+          "extraCutVehPerHour": {
+            "interval": [-4.79, 11.46],
+            "mean": 3.33,
+            "n": 10,
+            "sd": 11.36,
+            "status": "unresolved"
+          },
+          "option": "p4"
+        },
+        {
+          "against": "p6",
+          "extraCutPoints": {
+            "interval": [8.7, 11.21],
+            "mean": 9.95,
+            "n": 10,
+            "sd": 1.75,
+            "status": "better"
+          },
+          "extraCutVehPerHour": {
+            "interval": [44.23, 56.97],
+            "mean": 50.6,
+            "n": 10,
+            "sd": 8.91,
+            "status": "better"
+          },
+          "option": "p5"
+        }
+      ],
+      "proposals": [
+        {
+          "byPeriod": {
+            "am_peak": {
+              "allTraffic": {
+                "adjustedPenalty": {
+                  "block": "60th Street between Claremont Avenue / Hillegass Avenue and Colby Street",
+                  "penaltyVehPerHour": 114.9
+                },
+                "blocksAboveBand": 18,
+                "largestIncrease": {
+                  "baselineVehPerHour": 22.7,
+                  "block": "60th Street between Claremont Avenue / Hillegass Avenue and Colby Street",
+                  "effect": {
+                    "interval": [118.44, 131.36],
+                    "mean": 124.9,
+                    "n": 10,
+                    "sd": 9.04,
+                    "status": "increase"
+                  },
+                  "increaseVehPerHour": 124.9,
+                  "scenarioVehPerHour": 147.6,
+                  "throughIncreaseVehPerHour": 24.1
+                }
+              },
+              "cutThrough": {
+                "baselineVehPerHour": 429.1,
+                "changePct": -80.0,
+                "effect": {
+                  "interval": [-367.2, -319.2],
+                  "mean": -343.2,
+                  "n": 10,
+                  "sd": 33.55,
+                  "status": "decrease"
+                },
+                "scenarioVehPerHour": 85.9
+              }
+            },
+            "midday": {
+              "allTraffic": {
+                "adjustedPenalty": {
+                  "block": "60th Street between Claremont Avenue / Hillegass Avenue and Colby Street",
+                  "penaltyVehPerHour": 64.7
+                },
+                "blocksAboveBand": 17,
+                "largestIncrease": {
+                  "baselineVehPerHour": 31.3,
+                  "block": "60th Street between Claremont Avenue / Hillegass Avenue and Colby Street",
+                  "effect": {
+                    "interval": [70.25, 85.75],
+                    "mean": 78.0,
+                    "n": 10,
+                    "sd": 10.83,
+                    "status": "increase"
+                  },
+                  "increaseVehPerHour": 78.0,
+                  "scenarioVehPerHour": 109.3,
+                  "throughIncreaseVehPerHour": 14.5
+                }
+              },
+              "cutThrough": {
+                "baselineVehPerHour": 386.8,
+                "changePct": -75.8,
+                "effect": {
+                  "interval": [-308.09, -278.31],
+                  "mean": -293.2,
+                  "n": 10,
+                  "sd": 20.82,
+                  "status": "decrease"
+                },
+                "scenarioVehPerHour": 93.6
+              }
+            },
+            "pm_peak": {
+              "allTraffic": {
+                "adjustedPenalty": {
+                  "block": "60th Street between Claremont Avenue / Hillegass Avenue and Colby Street",
+                  "penaltyVehPerHour": 193.5
+                },
+                "blocksAboveBand": 15,
+                "largestIncrease": {
+                  "baselineVehPerHour": 39.8,
+                  "block": "60th Street between Claremont Avenue / Hillegass Avenue and Colby Street",
+                  "effect": {
+                    "interval": [186.89, 228.11],
+                    "mean": 207.5,
+                    "n": 10,
+                    "sd": 28.81,
+                    "status": "increase"
+                  },
+                  "increaseVehPerHour": 207.5,
+                  "scenarioVehPerHour": 247.3,
+                  "throughIncreaseVehPerHour": 53.4
+                }
+              },
+              "cutThrough": {
+                "baselineVehPerHour": 709.2,
+                "changePct": -75.7,
+                "effect": {
+                  "interval": [-561.2, -512.2],
+                  "mean": -536.7,
+                  "n": 10,
+                  "sd": 34.25,
+                  "status": "decrease"
+                },
+                "scenarioVehPerHour": 172.5
+              }
+            }
+          },
+          "context": {
+            "bikeConflictsChangePct": -0.6,
+            "boundingStreets": [
+              {
+                "flowChangePct": 7.7,
+                "name": "Telegraph Avenue",
+                "speedChangeMph": -0.3
+              },
+              {
+                "flowChangePct": -1.2,
+                "name": "Alcatraz Avenue",
+                "speedChangeMph": 0.1
+              },
+              {
+                "flowChangePct": 2.7,
+                "name": "Claremont Avenue",
+                "speedChangeMph": 0.7
+              },
+              {
+                "flowChangePct": 15.3,
+                "name": "College Avenue",
+                "speedChangeMph": -0.5
+              }
+            ],
+            "insideTripTimeChangePct": 5.2,
+            "pedConflictsChangePct": 0.3
+          },
+          "cutThrough": {
+            "baselineVehPerHour": 508.4,
+            "changePct": -76.9,
+            "changePctEffect": {
+              "interval": [-79.74, -74.1],
+              "mean": -76.92,
+              "n": 10,
+              "sd": 3.95,
+              "status": "decrease"
+            },
+            "effect": {
+              "interval": [-405.39, -376.68],
+              "mean": -391.03,
+              "n": 10,
+              "sd": 20.06,
+              "status": "decrease"
+            },
+            "scenarioVehPerHour": 117.3
+          },
+          "evidence": {
+            "baselineVehPerHour": {
+              "am_peak": [472.0, 419.0, 453.0, 465.0, 370.0, 419.0, 395.0, 432.0, 444.0, 422.0],
+              "midday": [393.0, 377.0, 417.0, 396.0, 406.0, 336.0, 367.0, 407.0, 388.0, 381.0],
+              "pm_peak": [708.0, 671.0, 724.0, 752.0, 645.0, 741.0, 724.0, 741.0, 673.0, 713.0]
+            },
+            "role": "confirmation",
+            "scenarioVehPerHour": {
+              "am_peak": [80.0, 89.0, 82.0, 90.0, 77.0, 86.0, 95.0, 79.0, 77.0, 104.0],
+              "midday": [114.0, 85.0, 105.0, 94.0, 87.0, 81.0, 99.0, 104.0, 75.0, 92.0],
+              "pm_peak": [135.0, 151.0, 182.0, 211.0, 175.0, 210.0, 185.0, 147.0, 167.0, 162.0]
+            },
+            "seeds": [101, 102, 103, 104, 105, 106, 107, 108, 109, 110]
+          },
+          "harm": {
+            "through": {
+              "adjustedPenalty": {
+                "block": "Dana Street between 63rd Street and North Street",
+                "penaltyVehPerHour": 32.5
+              },
+              "blocksAboveBand": 12,
+              "blocksResolvedIncrease": 15,
+              "largestIncrease": {
+                "baselineVehPerHour": 14.6,
+                "block": "Dana Street between 63rd Street and North Street",
+                "effect": {
+                  "interval": [37.34, 47.59],
+                  "mean": 42.47,
+                  "n": 10,
+                  "sd": 7.16,
+                  "status": "increase"
+                },
+                "increaseVehPerHour": 42.5,
+                "scenarioVehPerHour": 57.1
+              }
+            }
+          },
+          "id": "p1",
+          "interventions": [
+            {
+              "label": "Modal filter at 63rd Street & Hillegass Avenue",
+              "type": "modal_filter"
+            },
+            {
+              "label": "Modal filter at 63rd Street & Colby Street",
+              "type": "modal_filter"
+            },
+            {
+              "label": "Modal filter at Colby Street & McAuley Street",
+              "type": "modal_filter"
+            },
+            {
+              "label": "Diagonal diverter at 62nd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 62nd Street (east), and Hillegass Avenue (south) with 62nd Street (west)",
+              "type": "diagonal_diverter"
+            },
+            {
+              "label": "Modal filter at Ayala Avenue & Martin Street",
+              "type": "modal_filter"
+            },
+            {
+              "label": "Modal filter on Forest Street at Ayala Avenue",
+              "type": "modal_filter"
+            }
+          ],
+          "kind": "search",
+          "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2~mn,9q9p3fprdr~mn,9q9p3cxtt7~dd,9q9p641p03,127~mn,9q9p3cq6m9~mn,9q9p3cx02b,125",
+          "origin": {
+            "added": "2026-11-18",
+            "kind": "seed"
+          },
+          "picture": {
+            "base": [1, 2, 54, 12, 72, 52, 29, 7, 43, 43, 24, 64, 3, 8, 5, 11, 11, 14, 9, 24, 7, 28, 5, 15, 10, 12, 21, 45, 20, 56, 0, 16, 19, 30, 13, 30, 16, 6, 5, 27, 5, 15, 1, 7, 0, 6, 0, 5, 7, 27, 7, 28, 13, 2, 10, 3, 18, 8, 16, 46, 12, 56, 21, 34, 2, 0, 54, 14, 26, 15, 26, 15, 2, 12, 6, 20, 2, 10, 13, 49, 15, 38, 61, 22, 90, 80, 94, 91, 88, 94, 95, 80, 95, 95, 96, 93, 94, 93, 98, 91, 15, 3, 6, 45, 18, 15, 7, 10, 119, 69, 106, 51, 86, 51, 81, 59, 2, 22, 2, 12, 28, 104, 17, 56, 7, 27],
+            "links": [1823, 1824, 1825, 1826, 1827, 1828, 1829, 1830, 1831, 1832, 1833, 1834, 1845, 1846, 1847, 1848, 1855, 1856, 1857, 1858, 1859, 1860, 1863, 1864, 1865, 1866, 1867, 1868, 1869, 1870, 1884, 1886, 1887, 1888, 1889, 1894, 1896, 1897, 1898, 1899, 1900, 1901, 1902, 1903, 1904, 1905, 1906, 1907, 1916, 1917, 1918, 1919, 1924, 1925, 1926, 1927, 1928, 1929, 1930, 1931, 1932, 1933, 1934, 1935, 1947, 1948, 1987, 1988, 1989, 1990, 1991, 1992, 2013, 2014, 2015, 2016, 2019, 2020, 2054, 2055, 2056, 2057, 2058, 2059, 2591, 2592, 2593, 2594, 2595, 2596, 2597, 2598, 2599, 2600, 2601, 2602, 2603, 2604, 2605, 2606, 2619, 2620, 2621, 2622, 2625, 2626, 2627, 2628, 2669, 2670, 2671, 2672, 2673, 2674, 2675, 2676, 2677, 2678, 2694, 2695, 2696, 2697, 2800, 2801, 4180, 4181],
+            "period": "pm_peak",
+            "scen": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 16, 4, 3, 0, 0, 44, 32, 4, 33, 21, 53, 20, 36, 17, 34, 12, 29, 1, 2, 2, 3, 1, 2, 1, 1, 1, 4, 3, 5, 3, 28, 1, 42, 7, 22, 0, 0, 0, 1, 32, 44, 11, 38, 0, 0, 0, 0, 1, 1, 3, 1, 8, 1, 0, 0, 0, 2, 0, 1, 13, 45, 13, 21, 12, 36, 2, 2, 3, 3, 0, 0, 0, 0, 0, 0, 2, 18, 2, 3, 0, 0, 0, 0, 0, 0, 22, 7, 13, 30, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 13, 0, 43, 13, 0, 13, 13, 45, 0, 0, 0, 0, 0, 0]
+          },
+          "pictureAll": {
+            "base": [5, 11, 94, 50, 135, 113, 101, 53, 79, 67, 44, 80, 25, 34, 33, 21, 31, 37, 44, 74, 31, 78, 19, 21, 24, 29, 39, 68, 50, 71, 0, 0, 1, 1, 8, 1, 30, 33, 41, 26, 61, 4, 49, 14, 15, 42, 28, 39, 37, 33, 2, 22, 4, 21, 10, 1, 37, 90, 36, 97, 60, 3, 29, 4, 39, 16, 23, 59, 14, 66, 43, 37, 15, 1, 96, 65, 60, 73, 72, 58, 29, 23, 30, 45, 38, 21, 25, 63, 27, 50, 94, 45, 120, 137, 123, 164, 119, 139, 125, 119, 134, 162, 122, 135, 140, 142, 142, 111, 33, 6, 19, 111, 44, 21, 38, 32, 153, 118, 141, 74, 127, 105, 119, 151, 8, 52, 22, 29, 95, 157, 40, 91, 43, 92],
+            "links": [1823, 1824, 1825, 1826, 1827, 1828, 1829, 1830, 1831, 1832, 1833, 1834, 1845, 1846, 1847, 1848, 1855, 1856, 1857, 1858, 1859, 1860, 1863, 1864, 1865, 1866, 1867, 1868, 1869, 1870, 1875, 1876, 1882, 1883, 1884, 1885, 1886, 1887, 1888, 1889, 1894, 1895, 1896, 1897, 1898, 1899, 1900, 1901, 1902, 1903, 1904, 1905, 1906, 1907, 1908, 1909, 1916, 1917, 1918, 1919, 1924, 1925, 1926, 1927, 1928, 1929, 1930, 1931, 1932, 1933, 1934, 1935, 1947, 1948, 1987, 1988, 1989, 1990, 1991, 1992, 2013, 2014, 2015, 2016, 2019, 2020, 2054, 2055, 2056, 2057, 2058, 2059, 2591, 2592, 2593, 2594, 2595, 2596, 2597, 2598, 2599, 2600, 2601, 2602, 2603, 2604, 2605, 2606, 2619, 2620, 2621, 2622, 2625, 2626, 2627, 2628, 2669, 2670, 2671, 2672, 2673, 2674, 2675, 2676, 2677, 2678, 2694, 2695, 2696, 2697, 2800, 2801, 4180, 4181],
+            "period": "pm_peak",
+            "scen": [10, 17, 12, 2, 2, 1, 54, 25, 10, 1, 25, 18, 42, 44, 42, 30, 1, 21, 82, 94, 28, 87, 69, 179, 58, 100, 31, 71, 45, 49, 3, 3, 1, 1, 13, 4, 35, 28, 30, 25, 44, 11, 41, 11, 12, 17, 12, 28, 30, 60, 13, 62, 24, 45, 10, 1, 31, 58, 33, 71, 79, 53, 28, 40, 0, 0, 2, 1, 3, 10, 28, 5, 16, 1, 24, 35, 40, 71, 53, 54, 49, 65, 43, 50, 49, 54, 23, 27, 32, 29, 18, 16, 4, 1, 33, 3, 18, 69, 7, 48, 2, 35, 1, 0, 6, 0, 62, 18, 28, 40, 18, 20, 1, 0, 0, 0, 11, 14, 18, 13, 42, 39, 83, 94, 35, 25, 33, 62, 43, 0, 18, 10, 37, 60]
+          },
+          "residentsDetour": {
+            "coverage": {
+              "baselineRequests": 39316,
+              "baselineUnfinished": 3619,
+              "scenarioRequests": 39316,
+              "scenarioUnfinished": 3846,
+              "supportedPairs": 30,
+              "totalPairs": 30
+            },
+            "cutoffMinutes": 60.0,
+            "effect": {
+              "interval": [14.31, 17.6],
+              "mean": 15.96,
+              "n": 10,
+              "sd": 2.3,
+              "status": "increase"
+            },
+            "method": "requested-elapsed-to-cutoff",
+            "secondsPerTrip": 16.0,
+            "vehicleMinutesPerHour": 365.7
+          },
+          "summary": "It makes six changes: Modal filter at 63rd Street & Hillegass Avenue; modal filter at 63rd Street & Colby Street; modal filter at Colby Street & McAuley Street; diagonal diverter at 62nd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 62nd Street (east), and Hillegass Avenue (south) with 62nd Street (west), and 2 more. In the simulation it cuts through traffic on the area's side streets by 77%, from 508 to 117 through cars an hour (mean of 10 seeds and of the periods searched; 95% interval -405 to -377 cars an hour over 10 seeds). The side-street block with the largest increase in through traffic is Dana Street between 63rd Street and North Street, about 42 more through cars an hour on average (resolved from seed variation: 95% interval +37 to +48 cars an hour over 10 seeds). 15 blocks in all have an increase resolved from seed variation.",
+          "title": "Five filters on 63rd, Hillegass, Colby and 4 other streets, plus one other change",
+          "variants": [
+            {
+              "cutThrough": {
+                "baselineVehPerHour": 525.8,
+                "changePct": -73.4,
+                "role": "selection",
+                "scenarioVehPerHour": 139.9,
+                "seeds": [1, 2, 3]
+              },
+              "differs": [
+                "Drop: Diagonal diverter at 62nd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 62nd Street (east), and Hillegass Avenue (south) with 62nd Street (west)",
+                "Add: Modal filter on 60th Street at Colby Street"
+              ],
+              "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2~mn,9q9p3fprdr~mn,9q9p3cz9dy,80.260~mn,9q9p3cxtt7~mn,9q9p3cq6m9~mn,9q9p3cx02b,125",
+              "origin": {
+                "kind": "search"
+              },
+              "why": "same-picture"
+            },
+            {
+              "cutThrough": {
+                "baselineVehPerHour": 525.8,
+                "changePct": -71.4,
+                "role": "selection",
+                "scenarioVehPerHour": 150.1,
+                "seeds": [1, 2, 3]
+              },
+              "differs": [
+                "Drop: Diagonal diverter at 62nd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 62nd Street (east), and Hillegass Avenue (south) with 62nd Street (west)",
+                "Add: Diagonal diverter at 60th Street & Colby Street, connecting Colby Street (north) with 60th Street (east), and Colby Street (south) with 60th Street (west)"
+              ],
+              "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2~mn,9q9p3fprdr~dd,9q9p3cz9dy,128~mn,9q9p3cxtt7~mn,9q9p3cq6m9~mn,9q9p3cx02b,125",
+              "origin": {
+                "kind": "search"
+              },
+              "why": "same-picture"
+            },
+            {
+              "cutThrough": {
+                "baselineVehPerHour": 525.8,
+                "changePct": -69.3,
+                "role": "selection",
+                "scenarioVehPerHour": 161.2,
+                "seeds": [1, 2, 3]
+              },
+              "differs": [
+                "Drop: Diagonal diverter at 62nd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 62nd Street (east), and Hillegass Avenue (south) with 62nd Street (west)"
+              ],
+              "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2~mn,9q9p3fprdr~mn,9q9p3cxtt7~mn,9q9p3cq6m9~mn,9q9p3cx02b,125",
+              "origin": {
+                "kind": "search"
+              },
+              "why": "same-picture"
+            }
+          ]
+        },
+        {
+          "byPeriod": {
+            "am_peak": {
+              "allTraffic": {
+                "adjustedPenalty": {
+                  "block": "McAuley Street between Colby Street and Ayala Avenue",
+                  "penaltyVehPerHour": 57.1
+                },
+                "blocksAboveBand": 13,
+                "largestIncrease": {
+                  "baselineVehPerHour": 40.1,
+                  "block": "McAuley Street between Colby Street and Ayala Avenue",
+                  "effect": {
+                    "interval": [69.08, 86.32],
+                    "mean": 77.7,
+                    "n": 10,
+                    "sd": 12.05,
+                    "status": "increase"
+                  },
+                  "increaseVehPerHour": 77.7,
+                  "scenarioVehPerHour": 117.8,
+                  "throughIncreaseVehPerHour": 18.7
+                }
+              },
+              "cutThrough": {
+                "baselineVehPerHour": 429.1,
+                "changePct": -69.8,
+                "effect": {
+                  "interval": [-322.41, -276.59],
+                  "mean": -299.5,
+                  "n": 10,
+                  "sd": 32.02,
+                  "status": "decrease"
+                },
+                "scenarioVehPerHour": 129.6
+              }
+            },
+            "midday": {
+              "allTraffic": {
+                "adjustedPenalty": {
+                  "block": "McAuley Street between Ayala Avenue and Howell Street",
+                  "penaltyVehPerHour": 35.2
+                },
+                "blocksAboveBand": 13,
+                "largestIncrease": {
+                  "baselineVehPerHour": 28.2,
+                  "block": "McAuley Street between Ayala Avenue and Howell Street",
+                  "effect": {
+                    "interval": [44.93, 54.67],
+                    "mean": 49.8,
+                    "n": 10,
+                    "sd": 6.81,
+                    "status": "increase"
+                  },
+                  "increaseVehPerHour": 49.8,
+                  "scenarioVehPerHour": 78.0,
+                  "throughIncreaseVehPerHour": 4.8
+                }
+              },
+              "cutThrough": {
+                "baselineVehPerHour": 386.8,
+                "changePct": -69.2,
+                "effect": {
+                  "interval": [-280.67, -254.53],
+                  "mean": -267.6,
+                  "n": 10,
+                  "sd": 18.27,
+                  "status": "decrease"
+                },
+                "scenarioVehPerHour": 119.2
+              }
+            },
+            "pm_peak": {
+              "allTraffic": {
+                "adjustedPenalty": {
+                  "block": "McAuley Street between Colby Street and Ayala Avenue",
+                  "penaltyVehPerHour": 83.5
+                },
+                "blocksAboveBand": 14,
+                "largestIncrease": {
+                  "baselineVehPerHour": 55.6,
+                  "block": "McAuley Street between Colby Street and Ayala Avenue",
+                  "effect": {
+                    "interval": [96.15, 118.05],
+                    "mean": 107.1,
+                    "n": 10,
+                    "sd": 15.31,
+                    "status": "increase"
+                  },
+                  "increaseVehPerHour": 107.1,
+                  "scenarioVehPerHour": 162.7,
+                  "throughIncreaseVehPerHour": 46.0
+                }
+              },
+              "cutThrough": {
+                "baselineVehPerHour": 709.2,
+                "changePct": -61.8,
+                "effect": {
+                  "interval": [-463.15, -413.25],
+                  "mean": -438.2,
+                  "n": 10,
+                  "sd": 34.88,
+                  "status": "decrease"
+                },
+                "scenarioVehPerHour": 271.0
+              }
+            }
+          },
+          "context": {
+            "bikeConflictsChangePct": 1.8,
+            "boundingStreets": [
+              {
+                "flowChangePct": 5.9,
+                "name": "Telegraph Avenue",
+                "speedChangeMph": -0.3
+              },
+              {
+                "flowChangePct": -3.2,
+                "name": "Alcatraz Avenue",
+                "speedChangeMph": 0.1
+              },
+              {
+                "flowChangePct": -0.9,
+                "name": "Claremont Avenue",
+                "speedChangeMph": 0.9
+              },
+              {
+                "flowChangePct": 15.9,
+                "name": "College Avenue",
+                "speedChangeMph": -0.5
+              }
+            ],
+            "insideTripTimeChangePct": 3.5,
+            "pedConflictsChangePct": 0.8
+          },
+          "cutThrough": {
+            "baselineVehPerHour": 508.4,
+            "changePct": -65.9,
+            "changePctEffect": {
+              "interval": [-68.41, -63.43],
+              "mean": -65.92,
+              "n": 10,
+              "sd": 3.48,
+              "status": "decrease"
+            },
+            "effect": {
+              "interval": [-347.77, -322.43],
+              "mean": -335.1,
+              "n": 10,
+              "sd": 17.71,
+              "status": "decrease"
+            },
+            "scenarioVehPerHour": 173.3
+          },
+          "evidence": {
+            "baselineVehPerHour": {
+              "am_peak": [472.0, 419.0, 453.0, 465.0, 370.0, 419.0, 395.0, 432.0, 444.0, 422.0],
+              "midday": [393.0, 377.0, 417.0, 396.0, 406.0, 336.0, 367.0, 407.0, 388.0, 381.0],
+              "pm_peak": [708.0, 671.0, 724.0, 752.0, 645.0, 741.0, 724.0, 741.0, 673.0, 713.0]
+            },
+            "role": "confirmation",
+            "scenarioVehPerHour": {
+              "am_peak": [125.0, 122.0, 124.0, 137.0, 118.0, 134.0, 135.0, 131.0, 121.0, 149.0],
+              "midday": [142.0, 122.0, 136.0, 122.0, 107.0, 95.0, 118.0, 139.0, 104.0, 107.0],
+              "pm_peak": [235.0, 280.0, 297.0, 304.0, 263.0, 322.0, 273.0, 266.0, 242.0, 228.0]
+            },
+            "seeds": [101, 102, 103, 104, 105, 106, 107, 108, 109, 110]
+          },
+          "harm": {
+            "through": {
+              "adjustedPenalty": {
+                "block": "60th Street between Colby Street and Howell Street",
+                "penaltyVehPerHour": 15.4
+              },
+              "blocksAboveBand": 7,
+              "blocksResolvedIncrease": 15,
+              "largestIncrease": {
+                "baselineVehPerHour": 15.3,
+                "block": "60th Street between Colby Street and Howell Street",
+                "effect": {
+                  "interval": [22.65, 28.15],
+                  "mean": 25.4,
+                  "n": 10,
+                  "sd": 3.85,
+                  "status": "increase"
+                },
+                "increaseVehPerHour": 25.4,
+                "scenarioVehPerHour": 40.7
+              }
+            }
+          },
+          "id": "p2",
+          "interventions": [
+            {
+              "label": "Diagonal diverter at 63rd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 63rd Street (west), and Hillegass Avenue (south) with 63rd Street (east)",
+              "type": "diagonal_diverter"
+            },
+            {
+              "label": "Modal filter at 63rd Street & Colby Street",
+              "type": "modal_filter"
+            },
+            {
+              "label": "Modal filter at Ayala Avenue & Martin Street",
+              "type": "modal_filter"
+            },
+            {
+              "label": "Modal filter at Ayala Avenue & Forest Street",
+              "type": "modal_filter"
+            },
+            {
+              "label": "Slow Street on Colby Street (15 mph, Alcatraz Avenue to Claremont Avenue / Forest Street)",
+              "type": "slow_street"
+            }
+          ],
+          "kind": "search",
+          "link": "#v1;a=rockridge;p=pm_peak;s=dd,9q9p642ut2,41~mn,9q9p3fprdr~mn,9q9p3cq6m9~mn,9q9p3cx02b~ss,9q9p3cx9rf",
+          "objectives": [
+            "most-removed"
+          ],
+          "origin": {
+            "kind": "search"
+          },
+          "picture": {
+            "base": [1, 2, 54, 12, 72, 52, 29, 7, 43, 43, 24, 64, 3, 8, 5, 11, 11, 14, 9, 24, 7, 28, 5, 15, 10, 12, 21, 45, 20, 56, 0, 16, 19, 30, 13, 30, 16, 6, 5, 27, 5, 15, 1, 7, 0, 6, 0, 5, 7, 27, 7, 28, 13, 2, 10, 3, 18, 8, 16, 46, 12, 56, 21, 34, 2, 0, 54, 14, 26, 15, 26, 15, 2, 12, 6, 20, 2, 10, 13, 49, 15, 38, 61, 22, 90, 80, 94, 91, 88, 94, 95, 80, 95, 95, 96, 93, 94, 93, 98, 91, 15, 3, 6, 45, 18, 15, 7, 10, 119, 69, 106, 51, 86, 51, 81, 59, 2, 22, 2, 12, 28, 104, 17, 56, 7, 27],
+            "links": [1823, 1824, 1825, 1826, 1827, 1828, 1829, 1830, 1831, 1832, 1833, 1834, 1845, 1846, 1847, 1848, 1855, 1856, 1857, 1858, 1859, 1860, 1863, 1864, 1865, 1866, 1867, 1868, 1869, 1870, 1884, 1886, 1887, 1888, 1889, 1894, 1896, 1897, 1898, 1899, 1900, 1901, 1902, 1903, 1904, 1905, 1906, 1907, 1916, 1917, 1918, 1919, 1924, 1925, 1926, 1927, 1928, 1929, 1930, 1931, 1932, 1933, 1934, 1935, 1947, 1948, 1987, 1988, 1989, 1990, 1991, 1992, 2013, 2014, 2015, 2016, 2019, 2020, 2054, 2055, 2056, 2057, 2058, 2059, 2591, 2592, 2593, 2594, 2595, 2596, 2597, 2598, 2599, 2600, 2601, 2602, 2603, 2604, 2605, 2606, 2619, 2620, 2621, 2622, 2625, 2626, 2627, 2628, 2669, 2670, 2671, 2672, 2673, 2674, 2675, 2676, 2677, 2678, 2694, 2695, 2696, 2697, 2800, 2801, 4180, 4181],
+            "period": "pm_peak",
+            "scen": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 15, 4, 15, 0, 0, 20, 21, 3, 25, 7, 30, 23, 47, 28, 53, 23, 49, 1, 9, 3, 10, 3, 2, 2, 1, 3, 15, 6, 17, 3, 21, 1, 21, 18, 13, 0, 0, 0, 1, 21, 19, 10, 3, 32, 40, 32, 40, 18, 33, 16, 18, 6, 1, 0, 0, 0, 2, 0, 2, 9, 30, 12, 26, 8, 24, 3, 9, 9, 9, 0, 0, 51, 74, 21, 40, 3, 22, 1, 1, 0, 0, 0, 0, 5, 31, 16, 47, 6, 8, 2, 22, 3, 2, 5, 31, 5, 30, 3, 2, 4, 9, 7, 11, 1, 15, 9, 30, 0, 0, 0, 0, 0, 0]
+          },
+          "pictureAll": {
+            "base": [5, 11, 94, 50, 135, 113, 101, 53, 79, 67, 44, 80, 25, 34, 33, 21, 31, 37, 44, 74, 31, 78, 19, 21, 24, 29, 39, 68, 50, 71, 0, 0, 1, 1, 8, 1, 30, 33, 41, 26, 61, 4, 49, 14, 15, 42, 28, 39, 37, 33, 2, 22, 4, 21, 10, 1, 37, 90, 36, 97, 60, 3, 29, 4, 39, 16, 23, 59, 14, 66, 43, 37, 15, 1, 96, 65, 60, 73, 72, 58, 29, 23, 30, 45, 38, 21, 25, 63, 27, 50, 94, 45, 120, 137, 123, 164, 119, 139, 125, 119, 134, 162, 122, 135, 140, 142, 142, 111, 33, 6, 19, 111, 44, 21, 38, 32, 153, 118, 141, 74, 127, 105, 119, 151, 8, 52, 22, 29, 95, 157, 40, 91, 43, 92],
+            "links": [1823, 1824, 1825, 1826, 1827, 1828, 1829, 1830, 1831, 1832, 1833, 1834, 1845, 1846, 1847, 1848, 1855, 1856, 1857, 1858, 1859, 1860, 1863, 1864, 1865, 1866, 1867, 1868, 1869, 1870, 1875, 1876, 1882, 1883, 1884, 1885, 1886, 1887, 1888, 1889, 1894, 1895, 1896, 1897, 1898, 1899, 1900, 1901, 1902, 1903, 1904, 1905, 1906, 1907, 1908, 1909, 1916, 1917, 1918, 1919, 1924, 1925, 1926, 1927, 1928, 1929, 1930, 1931, 1932, 1933, 1934, 1935, 1947, 1948, 1987, 1988, 1989, 1990, 1991, 1992, 2013, 2014, 2015, 2016, 2019, 2020, 2054, 2055, 2056, 2057, 2058, 2059, 2591, 2592, 2593, 2594, 2595, 2596, 2597, 2598, 2599, 2600, 2601, 2602, 2603, 2604, 2605, 2606, 2619, 2620, 2621, 2622, 2625, 2626, 2627, 2628, 2669, 2670, 2671, 2672, 2673, 2674, 2675, 2676, 2677, 2678, 2694, 2695, 2696, 2697, 2800, 2801, 4180, 4181],
+            "period": "pm_peak",
+            "scen": [9, 15, 12, 2, 2, 1, 53, 25, 10, 1, 16, 2, 30, 42, 34, 41, 1, 21, 61, 86, 27, 83, 28, 47, 40, 80, 41, 81, 55, 66, 4, 4, 1, 1, 12, 2, 47, 27, 32, 21, 44, 13, 48, 13, 8, 31, 18, 44, 29, 52, 11, 44, 33, 42, 10, 1, 30, 58, 31, 68, 72, 32, 19, 5, 73, 90, 64, 89, 24, 62, 40, 24, 13, 1, 24, 34, 37, 67, 50, 49, 40, 49, 37, 55, 40, 41, 26, 35, 22, 19, 0, 6, 103, 168, 42, 97, 22, 37, 8, 3, 2, 35, 1, 0, 36, 51, 74, 64, 17, 12, 8, 90, 19, 9, 33, 54, 34, 61, 30, 10, 38, 51, 42, 85, 2, 48, 25, 46, 43, 0, 9, 16, 36, 59]
+          },
+          "residentsDetour": {
+            "coverage": {
+              "baselineRequests": 39316,
+              "baselineUnfinished": 3619,
+              "scenarioRequests": 39316,
+              "scenarioUnfinished": 3785,
+              "supportedPairs": 30,
+              "totalPairs": 30
+            },
+            "cutoffMinutes": 60.0,
+            "effect": {
+              "interval": [8.94, 12.41],
+              "mean": 10.67,
+              "n": 10,
+              "sd": 2.43,
+              "status": "increase"
+            },
+            "method": "requested-elapsed-to-cutoff",
+            "secondsPerTrip": 10.7,
+            "vehicleMinutesPerHour": 241.2
+          },
+          "summary": "It makes five changes: Diagonal diverter at 63rd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 63rd Street (west), and Hillegass Avenue (south) with 63rd Street (east); modal filter at 63rd Street & Colby Street; modal filter at Ayala Avenue & Martin Street; modal filter at Ayala Avenue & Forest Street, and 1 more. In the simulation it cuts through traffic on the area's side streets by 66%, from 508 to 173 through cars an hour (mean of 10 seeds and of the periods searched; 95% interval -348 to -322 cars an hour over 10 seeds). The side-street block with the largest increase in through traffic is 60th Street between Colby Street and Howell Street, about 25 more through cars an hour on average (resolved from seed variation: 95% interval +23 to +28 cars an hour over 10 seeds). 15 blocks in all have an increase resolved from seed variation.",
+          "title": "Three filters on 63rd, Colby, Martin and 2 other streets, plus two other changes"
+        },
+        {
+          "byPeriod": {
+            "am_peak": {
+              "allTraffic": {
+                "adjustedPenalty": {
+                  "block": "63rd Street between Dana Street and Canning Street",
+                  "penaltyVehPerHour": 52.6
+                },
+                "blocksAboveBand": 20,
+                "largestIncrease": {
+                  "baselineVehPerHour": 96.5,
+                  "block": "63rd Street between Dana Street and Canning Street",
+                  "effect": {
+                    "interval": [54.1, 76.9],
+                    "mean": 65.5,
+                    "n": 10,
+                    "sd": 15.93,
+                    "status": "increase"
+                  },
+                  "increaseVehPerHour": 65.5,
+                  "scenarioVehPerHour": 162.0,
+                  "throughIncreaseVehPerHour": 16.9
+                }
+              },
+              "cutThrough": {
+                "baselineVehPerHour": 429.1,
+                "changePct": -62.1,
+                "effect": {
+                  "interval": [-287.93, -244.87],
+                  "mean": -266.4,
+                  "n": 10,
+                  "sd": 30.1,
+                  "status": "decrease"
+                },
+                "scenarioVehPerHour": 162.7
+              }
+            },
+            "midday": {
+              "allTraffic": {
+                "adjustedPenalty": {
+                  "block": "Dana Street between 63rd Street and North Street",
+                  "penaltyVehPerHour": 40.8
+                },
+                "blocksAboveBand": 18,
+                "largestIncrease": {
+                  "baselineVehPerHour": 65.1,
+                  "block": "Dana Street between 63rd Street and North Street",
+                  "effect": {
+                    "interval": [45.7, 58.3],
+                    "mean": 52.0,
+                    "n": 10,
+                    "sd": 8.81,
+                    "status": "increase"
+                  },
+                  "increaseVehPerHour": 52.0,
+                  "scenarioVehPerHour": 117.1,
+                  "throughIncreaseVehPerHour": 41.7
+                }
+              },
+              "cutThrough": {
+                "baselineVehPerHour": 386.8,
+                "changePct": -66.2,
+                "effect": {
+                  "interval": [-266.72, -245.68],
+                  "mean": -256.2,
+                  "n": 10,
+                  "sd": 14.71,
+                  "status": "decrease"
+                },
+                "scenarioVehPerHour": 130.6
+              }
+            },
+            "pm_peak": {
+              "allTraffic": {
+                "adjustedPenalty": {
+                  "block": "61st Street between Colby Street and Canning Street",
+                  "penaltyVehPerHour": 69.1
+                },
+                "blocksAboveBand": 17,
+                "largestIncrease": {
+                  "baselineVehPerHour": 52.4,
+                  "block": "61st Street between Colby Street and Canning Street",
+                  "effect": {
+                    "interval": [67.16, 91.24],
+                    "mean": 79.2,
+                    "n": 10,
+                    "sd": 16.84,
+                    "status": "increase"
+                  },
+                  "increaseVehPerHour": 79.2,
+                  "scenarioVehPerHour": 131.6,
+                  "throughIncreaseVehPerHour": 54.4
+                }
+              },
+              "cutThrough": {
+                "baselineVehPerHour": 709.2,
+                "changePct": -58.5,
+                "effect": {
+                  "interval": [-450.31, -379.69],
+                  "mean": -415.0,
+                  "n": 10,
+                  "sd": 49.36,
+                  "status": "decrease"
+                },
+                "scenarioVehPerHour": 294.2
+              }
+            }
+          },
+          "context": {
+            "bikeConflictsChangePct": -0.3,
+            "boundingStreets": [
+              {
+                "flowChangePct": 6.7,
+                "name": "Telegraph Avenue",
+                "speedChangeMph": -0.3
+              },
+              {
+                "flowChangePct": -2.2,
+                "name": "Alcatraz Avenue",
+                "speedChangeMph": 0.1
+              },
+              {
+                "flowChangePct": -1.0,
+                "name": "Claremont Avenue",
+                "speedChangeMph": 0.7
+              },
+              {
+                "flowChangePct": 12.8,
+                "name": "College Avenue",
+                "speedChangeMph": -0.4
+              }
+            ],
+            "insideTripTimeChangePct": 3.9,
+            "pedConflictsChangePct": 1.1
+          },
+          "cutThrough": {
+            "baselineVehPerHour": 508.4,
+            "changePct": -61.5,
+            "changePctEffect": {
+              "interval": [-64.74, -58.21],
+              "mean": -61.48,
+              "n": 10,
+              "sd": 4.57,
+              "status": "decrease"
+            },
+            "effect": {
+              "interval": [-329.14, -295.93],
+              "mean": -312.53,
+              "n": 10,
+              "sd": 23.21,
+              "status": "decrease"
+            },
+            "scenarioVehPerHour": 195.8
+          },
+          "evidence": {
+            "baselineVehPerHour": {
+              "am_peak": [472.0, 419.0, 453.0, 465.0, 370.0, 419.0, 395.0, 432.0, 444.0, 422.0],
+              "midday": [393.0, 377.0, 417.0, 396.0, 406.0, 336.0, 367.0, 407.0, 388.0, 381.0],
+              "pm_peak": [708.0, 671.0, 724.0, 752.0, 645.0, 741.0, 724.0, 741.0, 673.0, 713.0]
+            },
+            "role": "confirmation",
+            "scenarioVehPerHour": {
+              "am_peak": [165.0, 149.0, 172.0, 183.0, 159.0, 143.0, 170.0, 163.0, 149.0, 174.0],
+              "midday": [158.0, 120.0, 156.0, 137.0, 127.0, 100.0, 124.0, 144.0, 114.0, 126.0],
+              "pm_peak": [243.0, 280.0, 284.0, 298.0, 304.0, 341.0, 374.0, 254.0, 290.0, 274.0]
+            },
+            "seeds": [101, 102, 103, 104, 105, 106, 107, 108, 109, 110]
+          },
+          "harm": {
+            "through": {
+              "adjustedPenalty": {
+                "block": "Dana Street between 63rd Street and North Street",
+                "penaltyVehPerHour": 33.7
+              },
+              "blocksAboveBand": 11,
+              "blocksResolvedIncrease": 17,
+              "largestIncrease": {
+                "baselineVehPerHour": 14.6,
+                "block": "Dana Street between 63rd Street and North Street",
+                "effect": {
+                  "interval": [37.92, 49.54],
+                  "mean": 43.73,
+                  "n": 10,
+                  "sd": 8.12,
+                  "status": "increase"
+                },
+                "increaseVehPerHour": 43.7,
+                "scenarioVehPerHour": 58.3
+              }
+            }
+          },
+          "id": "p3",
+          "interventions": [
+            {
+              "label": "Modal filter at 63rd Street & Hillegass Avenue",
+              "type": "modal_filter"
+            },
+            {
+              "label": "Modal filter at 63rd Street & Colby Street",
+              "type": "modal_filter"
+            },
+            {
+              "label": "Diagonal diverter at 62nd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 62nd Street (east), and Hillegass Avenue (south) with 62nd Street (west)",
+              "type": "diagonal_diverter"
+            },
+            {
+              "label": "Modal filter at Ayala Avenue & Martin Street",
+              "type": "modal_filter"
+            },
+            {
+              "label": "One-way westbound on Forest Street between Claremont Avenue / Colby Street and Ayala Avenue (toward Ayala Avenue)",
+              "type": "one_way"
+            }
+          ],
+          "kind": "search",
+          "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2~mn,9q9p3fprdr~dd,9q9p641p03,127~mn,9q9p3cq6m9~ow,9q9p3crqtn,305",
+          "origin": {
+            "added": "2026-11-18",
+            "kind": "seed"
+          },
+          "picture": {
+            "base": [1, 2, 54, 12, 72, 52, 29, 7, 43, 43, 24, 64, 3, 8, 5, 11, 11, 14, 9, 24, 7, 28, 5, 15, 10, 12, 21, 45, 20, 56, 0, 16, 19, 30, 13, 30, 0, 16, 6, 5, 27, 5, 15, 1, 7, 0, 6, 0, 5, 7, 27, 7, 28, 13, 2, 10, 3, 18, 8, 16, 46, 12, 56, 21, 34, 2, 54, 14, 26, 15, 26, 15, 2, 12, 6, 20, 2, 10, 13, 49, 15, 38, 61, 22, 90, 80, 94, 91, 88, 94, 95, 80, 95, 95, 96, 93, 94, 93, 98, 91, 15, 3, 6, 45, 18, 15, 7, 10, 119, 69, 106, 51, 86, 51, 81, 59, 2, 22, 2, 12, 28, 104, 17, 56, 7, 27],
+            "links": [1823, 1824, 1825, 1826, 1827, 1828, 1829, 1830, 1831, 1832, 1833, 1834, 1845, 1846, 1847, 1848, 1855, 1856, 1857, 1858, 1859, 1860, 1863, 1864, 1865, 1866, 1867, 1868, 1869, 1870, 1884, 1886, 1887, 1888, 1889, 1894, 1895, 1896, 1897, 1898, 1899, 1900, 1901, 1902, 1903, 1904, 1905, 1906, 1907, 1916, 1917, 1918, 1919, 1924, 1925, 1926, 1927, 1928, 1929, 1930, 1931, 1932, 1933, 1934, 1935, 1947, 1987, 1988, 1989, 1990, 1991, 1992, 2013, 2014, 2015, 2016, 2019, 2020, 2054, 2055, 2056, 2057, 2058, 2059, 2591, 2592, 2593, 2594, 2595, 2596, 2597, 2598, 2599, 2600, 2601, 2602, 2603, 2604, 2605, 2606, 2619, 2620, 2621, 2622, 2625, 2626, 2627, 2628, 2669, 2670, 2671, 2672, 2673, 2674, 2675, 2676, 2677, 2678, 2694, 2695, 2696, 2697, 2800, 2801, 4180, 4181],
+            "period": "pm_peak",
+            "scen": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 33, 0, 2, 15, 5, 6, 0, 0, 45, 31, 3, 33, 5, 33, 24, 44, 40, 43, 36, 41, 1, 28, 3, 25, 3, 2, 1, 6, 1, 4, 8, 7, 8, 3, 34, 1, 45, 13, 22, 0, 0, 0, 1, 31, 45, 11, 33, 14, 22, 41, 22, 31, 20, 29, 12, 10, 0, 0, 1, 2, 0, 1, 12, 57, 16, 31, 12, 47, 14, 5, 21, 4, 0, 33, 42, 70, 30, 51, 8, 37, 2, 4, 0, 0, 0, 0, 0, 0, 22, 13, 6, 25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 11, 0, 35, 7, 0, 11, 12, 57, 60, 0, 27, 0, 0, 0]
+          },
+          "pictureAll": {
+            "base": [5, 11, 94, 50, 135, 113, 101, 53, 79, 67, 44, 80, 25, 34, 33, 21, 31, 37, 44, 74, 31, 78, 19, 21, 24, 29, 39, 68, 50, 71, 0, 0, 1, 1, 8, 1, 30, 33, 41, 26, 61, 4, 49, 14, 15, 42, 28, 39, 37, 33, 2, 22, 4, 21, 10, 1, 37, 90, 36, 97, 60, 3, 29, 4, 39, 16, 23, 59, 14, 66, 43, 37, 15, 1, 96, 65, 60, 73, 72, 58, 29, 23, 30, 45, 38, 21, 25, 63, 27, 50, 94, 45, 120, 137, 123, 164, 119, 139, 125, 119, 134, 162, 122, 135, 140, 142, 142, 111, 33, 6, 19, 111, 44, 21, 38, 32, 153, 118, 141, 74, 127, 105, 119, 151, 8, 52, 22, 29, 95, 157, 40, 91, 43, 92],
+            "links": [1823, 1824, 1825, 1826, 1827, 1828, 1829, 1830, 1831, 1832, 1833, 1834, 1845, 1846, 1847, 1848, 1855, 1856, 1857, 1858, 1859, 1860, 1863, 1864, 1865, 1866, 1867, 1868, 1869, 1870, 1875, 1876, 1882, 1883, 1884, 1885, 1886, 1887, 1888, 1889, 1894, 1895, 1896, 1897, 1898, 1899, 1900, 1901, 1902, 1903, 1904, 1905, 1906, 1907, 1908, 1909, 1916, 1917, 1918, 1919, 1924, 1925, 1926, 1927, 1928, 1929, 1930, 1931, 1932, 1933, 1934, 1935, 1947, 1948, 1987, 1988, 1989, 1990, 1991, 1992, 2013, 2014, 2015, 2016, 2019, 2020, 2054, 2055, 2056, 2057, 2058, 2059, 2591, 2592, 2593, 2594, 2595, 2596, 2597, 2598, 2599, 2600, 2601, 2602, 2603, 2604, 2605, 2606, 2619, 2620, 2621, 2622, 2625, 2626, 2627, 2628, 2669, 2670, 2671, 2672, 2673, 2674, 2675, 2676, 2677, 2678, 2694, 2695, 2696, 2697, 2800, 2801, 4180, 4181],
+            "period": "pm_peak",
+            "scen": [8, 15, 12, 2, 2, 1, 54, 25, 10, 1, 78, 5, 40, 43, 42, 17, 1, 21, 86, 93, 26, 86, 18, 85, 44, 80, 62, 71, 69, 59, 4, 4, 1, 1, 11, 3, 78, 28, 49, 18, 40, 17, 49, 13, 12, 23, 29, 32, 45, 69, 14, 68, 29, 45, 10, 1, 30, 57, 31, 67, 78, 57, 25, 36, 26, 66, 64, 56, 39, 43, 54, 16, 18, 1, 23, 34, 39, 62, 51, 46, 53, 79, 45, 56, 53, 66, 39, 20, 40, 10, 10, 74, 79, 168, 63, 116, 32, 97, 8, 51, 2, 35, 1, 0, 6, 0, 62, 25, 20, 31, 18, 20, 1, 0, 0, 0, 11, 14, 18, 13, 40, 39, 71, 85, 35, 23, 38, 76, 154, 0, 63, 9, 36, 58]
+          },
+          "residentsDetour": {
+            "coverage": {
+              "baselineRequests": 39316,
+              "baselineUnfinished": 3619,
+              "scenarioRequests": 39316,
+              "scenarioUnfinished": 3821,
+              "supportedPairs": 30,
+              "totalPairs": 30
+            },
+            "cutoffMinutes": 60.0,
+            "effect": {
+              "interval": [10.28, 13.72],
+              "mean": 12.0,
+              "n": 10,
+              "sd": 2.4,
+              "status": "increase"
+            },
+            "method": "requested-elapsed-to-cutoff",
+            "secondsPerTrip": 12.0,
+            "vehicleMinutesPerHour": 275.4
+          },
+          "summary": "It makes five changes: Modal filter at 63rd Street & Hillegass Avenue; modal filter at 63rd Street & Colby Street; diagonal diverter at 62nd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 62nd Street (east), and Hillegass Avenue (south) with 62nd Street (west); modal filter at Ayala Avenue & Martin Street, and 1 more. In the simulation it cuts through traffic on the area's side streets by 61%, from 508 to 196 through cars an hour (mean of 10 seeds and of the periods searched; 95% interval -329 to -296 cars an hour over 10 seeds). The side-street block with the largest increase in through traffic is Dana Street between 63rd Street and North Street, about 44 more through cars an hour on average (resolved from seed variation: 95% interval +38 to +50 cars an hour over 10 seeds). 17 blocks in all have an increase resolved from seed variation.",
+          "title": "Three filters on 63rd, Hillegass, Colby and 2 other streets, plus two other changes"
+        },
+        {
+          "byPeriod": {
+            "am_peak": {
+              "allTraffic": {
+                "adjustedPenalty": {
+                  "block": "McAuley Street between Colby Street and Ayala Avenue",
+                  "penaltyVehPerHour": 17.7
+                },
+                "blocksAboveBand": 6,
+                "largestIncrease": {
+                  "baselineVehPerHour": 40.1,
+                  "block": "McAuley Street between Colby Street and Ayala Avenue",
+                  "effect": {
+                    "interval": [29.44, 47.16],
+                    "mean": 38.3,
+                    "n": 10,
+                    "sd": 12.38,
+                    "status": "increase"
+                  },
+                  "increaseVehPerHour": 38.3,
+                  "scenarioVehPerHour": 78.4,
+                  "throughIncreaseVehPerHour": -5.9
+                }
+              },
+              "cutThrough": {
+                "baselineVehPerHour": 429.1,
+                "changePct": -40.9,
+                "effect": {
+                  "interval": [-191.77, -159.43],
+                  "mean": -175.6,
+                  "n": 10,
+                  "sd": 22.61,
+                  "status": "decrease"
+                },
+                "scenarioVehPerHour": 253.5
+              }
+            },
+            "midday": {
+              "allTraffic": {
+                "adjustedPenalty": {
+                  "block": "Dana Street between 63rd Street and North Street",
+                  "penaltyVehPerHour": 10.3
+                },
+                "blocksAboveBand": 3,
+                "largestIncrease": {
+                  "baselineVehPerHour": 65.1,
+                  "block": "Dana Street between 63rd Street and North Street",
+                  "effect": {
+                    "interval": [17.27, 25.73],
+                    "mean": 21.5,
+                    "n": 10,
+                    "sd": 5.91,
+                    "status": "increase"
+                  },
+                  "increaseVehPerHour": 21.5,
+                  "scenarioVehPerHour": 86.6,
+                  "throughIncreaseVehPerHour": 10.3
+                }
+              },
+              "cutThrough": {
+                "baselineVehPerHour": 386.8,
+                "changePct": -47.1,
+                "effect": {
+                  "interval": [-193.47, -171.13],
+                  "mean": -182.3,
+                  "n": 10,
+                  "sd": 15.62,
+                  "status": "decrease"
+                },
+                "scenarioVehPerHour": 204.5
+              }
+            },
+            "pm_peak": {
+              "allTraffic": {
+                "adjustedPenalty": {
+                  "block": "60th Street between Claremont Avenue / Hillegass Avenue and Colby Street",
+                  "penaltyVehPerHour": 17.2
+                },
+                "blocksAboveBand": 6,
+                "largestIncrease": {
+                  "baselineVehPerHour": 62.7,
+                  "block": "Dana Street between 63rd Street and North Street",
+                  "effect": {
+                    "interval": [24.38, 39.22],
+                    "mean": 31.8,
+                    "n": 10,
+                    "sd": 10.38,
+                    "status": "increase"
+                  },
+                  "increaseVehPerHour": 31.8,
+                  "scenarioVehPerHour": 94.5,
+                  "throughIncreaseVehPerHour": 16.0
+                }
+              },
+              "cutThrough": {
+                "baselineVehPerHour": 709.2,
+                "changePct": -40.4,
+                "effect": {
+                  "interval": [-305.7, -266.9],
+                  "mean": -286.3,
+                  "n": 10,
+                  "sd": 27.12,
+                  "status": "decrease"
+                },
+                "scenarioVehPerHour": 422.9
+              }
+            }
+          },
+          "context": {
+            "bikeConflictsChangePct": 0.9,
+            "boundingStreets": [
+              {
+                "flowChangePct": 2.9,
+                "name": "Telegraph Avenue",
+                "speedChangeMph": -0.0
+              },
+              {
+                "flowChangePct": -3.3,
+                "name": "Alcatraz Avenue",
+                "speedChangeMph": 0.3
+              },
+              {
+                "flowChangePct": 1.0,
+                "name": "Claremont Avenue",
+                "speedChangeMph": 0.3
+              },
+              {
+                "flowChangePct": 17.0,
+                "name": "College Avenue",
+                "speedChangeMph": 0.5
+              }
+            ],
+            "insideTripTimeChangePct": 1.7,
+            "pedConflictsChangePct": 0.1
+          },
+          "cutThrough": {
+            "baselineVehPerHour": 508.4,
+            "changePct": -42.2,
+            "changePctEffect": {
+              "interval": [-44.36, -40.12],
+              "mean": -42.24,
+              "n": 10,
+              "sd": 2.97,
+              "status": "decrease"
+            },
+            "effect": {
+              "interval": [-225.52, -203.94],
+              "mean": -214.73,
+              "n": 10,
+              "sd": 15.08,
+              "status": "decrease"
+            },
+            "scenarioVehPerHour": 293.6
+          },
+          "evidence": {
+            "baselineVehPerHour": {
+              "am_peak": [472.0, 419.0, 453.0, 465.0, 370.0, 419.0, 395.0, 432.0, 444.0, 422.0],
+              "midday": [393.0, 377.0, 417.0, 396.0, 406.0, 336.0, 367.0, 407.0, 388.0, 381.0],
+              "pm_peak": [708.0, 671.0, 724.0, 752.0, 645.0, 741.0, 724.0, 741.0, 673.0, 713.0]
+            },
+            "role": "confirmation",
+            "scenarioVehPerHour": {
+              "am_peak": [267.0, 253.0, 264.0, 268.0, 232.0, 233.0, 248.0, 265.0, 247.0, 258.0],
+              "midday": [227.0, 205.0, 237.0, 209.0, 196.0, 173.0, 196.0, 229.0, 187.0, 186.0],
+              "pm_peak": [421.0, 409.0, 431.0, 427.0, 393.0, 471.0, 470.0, 413.0, 371.0, 423.0]
+            },
+            "seeds": [101, 102, 103, 104, 105, 106, 107, 108, 109, 110]
+          },
+          "harm": {
+            "through": {
+              "adjustedPenalty": {
+                "block": "Dana Street between 63rd Street and North Street",
+                "penaltyVehPerHour": 2.7
+              },
+              "blocksAboveBand": 1,
+              "blocksResolvedIncrease": 8,
+              "largestIncrease": {
+                "baselineVehPerHour": 14.6,
+                "block": "Dana Street between 63rd Street and North Street",
+                "effect": {
+                  "interval": [9.63, 15.77],
+                  "mean": 12.7,
+                  "n": 10,
+                  "sd": 4.3,
+                  "status": "increase"
+                },
+                "increaseVehPerHour": 12.7,
+                "scenarioVehPerHour": 27.3
+              }
+            }
+          },
+          "id": "p4",
+          "interventions": [
+            {
+              "label": "One-way southbound on Hillegass Avenue between Alcatraz Avenue and 63rd Street (toward 63rd Street)",
+              "type": "one_way"
+            },
+            {
+              "label": "One-way southbound on Colby Street between 63rd Street and North Street (toward 63rd Street)",
+              "type": "one_way"
+            },
+            {
+              "label": "One-way westbound on Martin Street between Claremont Avenue and Ayala Avenue (toward Ayala Avenue)",
+              "type": "one_way"
+            },
+            {
+              "label": "One-way westbound on Forest Street between Claremont Avenue / Colby Street and Ayala Avenue (toward Ayala Avenue)",
+              "type": "one_way"
+            },
+            {
+              "label": "Slow Street on Colby Street (15 mph, Alcatraz Avenue to Claremont Avenue / Forest Street)",
+              "type": "slow_street"
+            },
+            {
+              "label": "One-way westbound on 62nd Street between Claremont Avenue / College Avenue / +1 and Hillegass Avenue (toward Hillegass Avenue)",
+              "type": "one_way"
+            }
+          ],
+          "kind": "search",
+          "link": "#v1;a=rockridge;p=pm_peak;s=ow,9q9p642z5y,175~ow,9q9p3fr726,175~ow,9q9p3cqb23,305~ow,9q9p3crqtn,305~ss,9q9p3cx9rf~ow,9q9p643b1e,260",
+          "objectives": [
+            "no-closures"
+          ],
+          "origin": {
+            "added": "2026-11-17",
+            "kind": "seed",
+            "note": "published by an earlier search (group unconstrained, option p3, 2026-11-17 through-car change -48.5%)"
+          },
+          "picture": {
+            "base": [1, 2, 54, 12, 72, 52, 29, 7, 43, 43, 24, 64, 3, 8, 5, 11, 11, 14, 9, 24, 7, 28, 5, 15, 10, 12, 21, 45, 20, 56, 0, 16, 19, 30, 13, 30, 16, 6, 5, 27, 5, 15, 1, 7, 0, 6, 5, 7, 27, 7, 28, 13, 2, 10, 3, 18, 8, 16, 46, 12, 56, 21, 34, 2, 54, 14, 26, 15, 26, 15, 2, 12, 6, 20, 2, 10, 13, 49, 15, 38, 61, 22, 90, 80, 94, 91, 88, 94, 95, 80, 95, 95, 96, 93, 94, 93, 98, 91, 15, 3, 6, 45, 18, 15, 7, 10, 119, 69, 106, 51, 86, 51, 81, 59, 2, 22, 2, 12, 28, 104, 17, 56, 7, 27],
+            "links": [1823, 1824, 1825, 1826, 1827, 1828, 1829, 1830, 1831, 1832, 1833, 1834, 1845, 1846, 1847, 1848, 1855, 1856, 1857, 1858, 1859, 1860, 1863, 1864, 1865, 1866, 1867, 1868, 1869, 1870, 1884, 1886, 1887, 1888, 1889, 1894, 1896, 1897, 1898, 1899, 1900, 1901, 1902, 1903, 1904, 1905, 1907, 1916, 1917, 1918, 1919, 1924, 1925, 1926, 1927, 1928, 1929, 1930, 1931, 1932, 1933, 1934, 1935, 1947, 1987, 1988, 1989, 1990, 1991, 1992, 2013, 2014, 2015, 2016, 2019, 2020, 2054, 2055, 2056, 2057, 2058, 2059, 2591, 2592, 2593, 2594, 2595, 2596, 2597, 2598, 2599, 2600, 2601, 2602, 2603, 2604, 2605, 2606, 2619, 2620, 2621, 2622, 2625, 2626, 2627, 2628, 2669, 2670, 2671, 2672, 2673, 2674, 2675, 2676, 2677, 2678, 2694, 2695, 2696, 2697, 2800, 2801, 4180, 4181],
+            "period": "pm_peak",
+            "scen": [1, 0, 72, 0, 97, 0, 5, 7, 31, 7, 40, 0, 2, 1, 4, 3, 16, 2, 5, 20, 4, 21, 3, 29, 6, 36, 26, 37, 27, 37, 1, 22, 2, 42, 3, 41, 21, 0, 7, 8, 5, 6, 2, 4, 1, 3, 13, 6, 5, 6, 5, 30, 1, 18, 2, 2, 26, 21, 23, 17, 19, 31, 11, 3, 73, 0, 34, 1, 33, 1, 4, 13, 7, 16, 4, 10, 22, 2, 25, 6, 7, 22, 7, 55, 8, 33, 2, 23, 9, 12, 11, 14, 1, 17, 0, 21, 13, 21, 13, 3, 2, 0, 1, 25, 2, 7, 129, 0, 117, 7, 118, 9, 119, 20, 4, 2, 4, 13, 37, 0, 22, 0, 6, 5]
+          },
+          "pictureAll": {
+            "base": [5, 11, 94, 50, 135, 113, 101, 53, 79, 67, 44, 80, 25, 34, 33, 21, 31, 37, 44, 74, 31, 78, 19, 21, 24, 29, 39, 68, 50, 71, 1, 1, 8, 1, 30, 33, 41, 26, 61, 4, 49, 14, 15, 42, 28, 39, 37, 33, 2, 22, 4, 21, 10, 1, 37, 90, 36, 97, 60, 3, 29, 4, 39, 16, 23, 59, 14, 66, 43, 37, 15, 1, 96, 65, 60, 73, 72, 58, 29, 23, 30, 45, 38, 21, 25, 63, 27, 50, 94, 45, 120, 137, 123, 164, 119, 139, 125, 119, 134, 162, 122, 135, 140, 142, 142, 111, 33, 6, 19, 111, 44, 21, 38, 32, 153, 118, 141, 74, 127, 105, 119, 151, 8, 52, 22, 29, 95, 157, 40, 91, 43, 92],
+            "links": [1823, 1824, 1825, 1826, 1827, 1828, 1829, 1830, 1831, 1832, 1833, 1834, 1845, 1846, 1847, 1848, 1855, 1856, 1857, 1858, 1859, 1860, 1863, 1864, 1865, 1866, 1867, 1868, 1869, 1870, 1882, 1883, 1884, 1885, 1886, 1887, 1888, 1889, 1894, 1895, 1896, 1897, 1898, 1899, 1900, 1901, 1902, 1903, 1904, 1905, 1906, 1907, 1908, 1909, 1916, 1917, 1918, 1919, 1924, 1925, 1926, 1927, 1928, 1929, 1930, 1931, 1932, 1933, 1934, 1935, 1947, 1948, 1987, 1988, 1989, 1990, 1991, 1992, 2013, 2014, 2015, 2016, 2019, 2020, 2054, 2055, 2056, 2057, 2058, 2059, 2591, 2592, 2593, 2594, 2595, 2596, 2597, 2598, 2599, 2600, 2601, 2602, 2603, 2604, 2605, 2606, 2619, 2620, 2621, 2622, 2625, 2626, 2627, 2628, 2669, 2670, 2671, 2672, 2673, 2674, 2675, 2676, 2677, 2678, 2694, 2695, 2696, 2697, 2800, 2801, 4180, 4181],
+            "period": "pm_peak",
+            "scen": [7, 7, 117, 21, 164, 0, 62, 64, 76, 26, 67, 4, 27, 27, 34, 13, 55, 25, 45, 70, 30, 71, 17, 54, 16, 64, 42, 62, 57, 53, 1, 1, 8, 2, 41, 20, 57, 14, 86, 3, 64, 7, 20, 20, 30, 29, 40, 34, 5, 23, 1, 47, 10, 1, 47, 57, 47, 63, 92, 2, 31, 3, 7, 76, 30, 48, 21, 34, 54, 15, 14, 1, 123, 30, 73, 51, 84, 37, 33, 28, 35, 41, 39, 24, 44, 8, 42, 11, 37, 50, 24, 159, 24, 95, 21, 62, 21, 48, 27, 68, 3, 66, 0, 58, 40, 35, 29, 15, 11, 0, 9, 74, 20, 20, 167, 0, 157, 55, 184, 55, 190, 99, 11, 25, 23, 30, 109, 0, 70, 11, 53, 58]
+          },
+          "residentsDetour": {
+            "coverage": {
+              "baselineRequests": 39316,
+              "baselineUnfinished": 3619,
+              "scenarioRequests": 39316,
+              "scenarioUnfinished": 3724,
+              "supportedPairs": 30,
+              "totalPairs": 30
+            },
+            "cutoffMinutes": 60.0,
+            "effect": {
+              "interval": [3.88, 6.32],
+              "mean": 5.1,
+              "n": 10,
+              "sd": 1.7,
+              "status": "increase"
+            },
+            "method": "requested-elapsed-to-cutoff",
+            "secondsPerTrip": 5.1,
+            "vehicleMinutesPerHour": 113.7
+          },
+          "summary": "It makes six changes: One-way southbound on Hillegass Avenue between Alcatraz Avenue and 63rd Street (toward 63rd Street); one-way southbound on Colby Street between 63rd Street and North Street (toward 63rd Street); one-way westbound on Martin Street between Claremont Avenue and Ayala Avenue (toward Ayala Avenue); one-way westbound on Forest Street between Claremont Avenue / Colby Street and Ayala Avenue (toward Ayala Avenue), and 2 more. In the simulation it cuts through traffic on the area's side streets by 42%, from 508 to 294 through cars an hour (mean of 10 seeds and of the periods searched; 95% interval -226 to -204 cars an hour over 10 seeds). The side-street block with the largest increase in through traffic is Dana Street between 63rd Street and North Street, about 13 more through cars an hour on average (resolved from seed variation: 95% interval +10 to +16 cars an hour over 10 seeds). 8 blocks in all have an increase resolved from seed variation.",
+          "title": "Five one-way conversions on Hillegass, Colby, Martin and 2 other streets, plus one other change"
+        },
+        {
+          "byPeriod": {
+            "am_peak": {
+              "allTraffic": {
+                "adjustedPenalty": {
+                  "block": "Martin Street between Claremont Avenue and Ayala Avenue",
+                  "penaltyVehPerHour": 26.8
+                },
+                "blocksAboveBand": 21,
+                "largestIncrease": {
+                  "baselineVehPerHour": 200.0,
+                  "block": "Martin Street between Claremont Avenue and Ayala Avenue",
+                  "effect": {
+                    "interval": [37.59, 50.81],
+                    "mean": 44.2,
+                    "n": 10,
+                    "sd": 9.24,
+                    "status": "increase"
+                  },
+                  "increaseVehPerHour": 44.2,
+                  "scenarioVehPerHour": 244.2,
+                  "throughIncreaseVehPerHour": 30.0
+                }
+              },
+              "cutThrough": {
+                "baselineVehPerHour": 429.1,
+                "changePct": -43.5,
+                "effect": {
+                  "interval": [-209.45, -163.95],
+                  "mean": -186.7,
+                  "n": 10,
+                  "sd": 31.81,
+                  "status": "decrease"
+                },
+                "scenarioVehPerHour": 242.4
+              }
+            },
+            "midday": {
+              "allTraffic": {
+                "adjustedPenalty": {
+                  "block": "Howell Street between Ayala Avenue and 59th Street",
+                  "penaltyVehPerHour": 10.1
+                },
+                "blocksAboveBand": 13,
+                "largestIncrease": {
+                  "baselineVehPerHour": 196.6,
+                  "block": "Martin Street between Claremont Avenue and Ayala Avenue",
+                  "effect": {
+                    "interval": [28.86, 45.54],
+                    "mean": 37.2,
+                    "n": 10,
+                    "sd": 11.66,
+                    "status": "increase"
+                  },
+                  "increaseVehPerHour": 37.2,
+                  "scenarioVehPerHour": 233.8,
+                  "throughIncreaseVehPerHour": 29.5
+                }
+              },
+              "cutThrough": {
+                "baselineVehPerHour": 386.8,
+                "changePct": -49.6,
+                "effect": {
+                  "interval": [-203.25, -180.15],
+                  "mean": -191.7,
+                  "n": 10,
+                  "sd": 16.15,
+                  "status": "decrease"
+                },
+                "scenarioVehPerHour": 195.1
+              }
+            },
+            "pm_peak": {
+              "allTraffic": {
+                "adjustedPenalty": {
+                  "block": "Martin Street between Claremont Avenue and Ayala Avenue",
+                  "penaltyVehPerHour": 36.9
+                },
+                "blocksAboveBand": 20,
+                "largestIncrease": {
+                  "baselineVehPerHour": 248.4,
+                  "block": "Martin Street between Claremont Avenue and Ayala Avenue",
+                  "effect": {
+                    "interval": [47.47, 89.33],
+                    "mean": 68.4,
+                    "n": 10,
+                    "sd": 29.25,
+                    "status": "increase"
+                  },
+                  "increaseVehPerHour": 68.4,
+                  "scenarioVehPerHour": 316.8,
+                  "throughIncreaseVehPerHour": 60.5
+                }
+              },
+              "cutThrough": {
+                "baselineVehPerHour": 709.2,
+                "changePct": -36.1,
+                "effect": {
+                  "interval": [-272.6, -239.0],
+                  "mean": -255.8,
+                  "n": 10,
+                  "sd": 23.48,
+                  "status": "decrease"
+                },
+                "scenarioVehPerHour": 453.4
+              }
+            }
+          },
+          "context": {
+            "bikeConflictsChangePct": 0.7,
+            "boundingStreets": [
+              {
+                "flowChangePct": 6.0,
+                "name": "Telegraph Avenue",
+                "speedChangeMph": -0.2
+              },
+              {
+                "flowChangePct": -7.3,
+                "name": "Alcatraz Avenue",
+                "speedChangeMph": 0.2
+              },
+              {
+                "flowChangePct": -3.5,
+                "name": "Claremont Avenue",
+                "speedChangeMph": 0.2
+              },
+              {
+                "flowChangePct": 10.5,
+                "name": "College Avenue",
+                "speedChangeMph": -0.2
+              }
+            ],
+            "insideTripTimeChangePct": 1.1,
+            "pedConflictsChangePct": 0.7
+          },
+          "cutThrough": {
+            "baselineVehPerHour": 508.4,
+            "changePct": -41.6,
+            "changePctEffect": {
+              "interval": [-43.94, -39.22],
+              "mean": -41.58,
+              "n": 10,
+              "sd": 3.3,
+              "status": "decrease"
+            },
+            "effect": {
+              "interval": [-223.4, -199.4],
+              "mean": -211.4,
+              "n": 10,
+              "sd": 16.77,
+              "status": "decrease"
+            },
+            "scenarioVehPerHour": 297.0
+          },
+          "evidence": {
+            "baselineVehPerHour": {
+              "am_peak": [472.0, 419.0, 453.0, 465.0, 370.0, 419.0, 395.0, 432.0, 444.0, 422.0],
+              "midday": [393.0, 377.0, 417.0, 396.0, 406.0, 336.0, 367.0, 407.0, 388.0, 381.0],
+              "pm_peak": [708.0, 671.0, 724.0, 752.0, 645.0, 741.0, 724.0, 741.0, 673.0, 713.0]
+            },
+            "role": "confirmation",
+            "scenarioVehPerHour": {
+              "am_peak": [227.0, 246.0, 249.0, 262.0, 236.0, 257.0, 242.0, 230.0, 244.0, 231.0],
+              "midday": [228.0, 179.0, 210.0, 191.0, 195.0, 154.0, 188.0, 206.0, 190.0, 210.0],
+              "pm_peak": [427.0, 437.0, 436.0, 481.0, 414.0, 509.0, 479.0, 461.0, 442.0, 448.0]
+            },
+            "seeds": [101, 102, 103, 104, 105, 106, 107, 108, 109, 110]
+          },
+          "harm": {
+            "through": {
+              "adjustedPenalty": {
+                "block": "Martin Street between Claremont Avenue and Ayala Avenue",
+                "penaltyVehPerHour": 27.5
+              },
+              "blocksAboveBand": 17,
+              "blocksResolvedIncrease": 27,
+              "largestIncrease": {
+                "baselineVehPerHour": 92.7,
+                "block": "Martin Street between Claremont Avenue and Ayala Avenue",
+                "effect": {
+                  "interval": [33.19, 46.81],
+                  "mean": 40.0,
+                  "n": 10,
+                  "sd": 9.52,
+                  "status": "increase"
+                },
+                "increaseVehPerHour": 40.0,
+                "scenarioVehPerHour": 132.7
+              }
+            }
+          },
+          "id": "p5",
+          "interventions": [
+            {
+              "label": "Diagonal diverter at 63rd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 63rd Street (west), and Hillegass Avenue (south) with 63rd Street (east)",
+              "type": "diagonal_diverter"
+            },
+            {
+              "label": "Modal filter at 63rd Street & Colby Street",
+              "type": "modal_filter"
+            },
+            {
+              "label": "Slow Street on Colby Street (15 mph, Alcatraz Avenue to Claremont Avenue / Forest Street)",
+              "type": "slow_street"
+            }
+          ],
+          "kind": "search",
+          "link": "#v1;a=rockridge;p=pm_peak;s=dd,9q9p642ut2,41~mn,9q9p3fprdr~ss,9q9p3cx9rf",
+          "objectives": [
+            "least-detour"
+          ],
+          "origin": {
+            "kind": "search"
+          },
+          "picture": {
+            "base": [1, 2, 54, 12, 72, 52, 29, 7, 43, 43, 24, 64, 3, 8, 5, 11, 11, 14, 9, 24, 7, 28, 5, 15, 10, 12, 21, 45, 20, 56, 0, 16, 19, 30, 13, 30, 0, 16, 6, 5, 27, 5, 15, 1, 7, 0, 6, 0, 5, 7, 27, 7, 28, 13, 2, 10, 3, 18, 8, 16, 46, 12, 56, 21, 34, 2, 54, 14, 26, 15, 26, 15, 2, 12, 6, 20, 2, 10, 13, 49, 15, 38, 61, 22, 90, 80, 94, 91, 88, 94, 95, 80, 95, 95, 96, 93, 94, 93, 98, 91, 15, 3, 6, 45, 18, 15, 7, 10, 119, 69, 106, 51, 86, 51, 81, 59, 2, 22, 2, 12, 28, 104, 17, 56, 7, 27],
+            "links": [1823, 1824, 1825, 1826, 1827, 1828, 1829, 1830, 1831, 1832, 1833, 1834, 1845, 1846, 1847, 1848, 1855, 1856, 1857, 1858, 1859, 1860, 1863, 1864, 1865, 1866, 1867, 1868, 1869, 1870, 1884, 1886, 1887, 1888, 1889, 1894, 1895, 1896, 1897, 1898, 1899, 1900, 1901, 1902, 1903, 1904, 1905, 1906, 1907, 1916, 1917, 1918, 1919, 1924, 1925, 1926, 1927, 1928, 1929, 1930, 1931, 1932, 1933, 1934, 1935, 1947, 1987, 1988, 1989, 1990, 1991, 1992, 2013, 2014, 2015, 2016, 2019, 2020, 2054, 2055, 2056, 2057, 2058, 2059, 2591, 2592, 2593, 2594, 2595, 2596, 2597, 2598, 2599, 2600, 2601, 2602, 2603, 2604, 2605, 2606, 2619, 2620, 2621, 2622, 2625, 2626, 2627, 2628, 2669, 2670, 2671, 2672, 2673, 2674, 2675, 2676, 2677, 2678, 2694, 2695, 2696, 2697, 2800, 2801, 4180, 4181],
+            "period": "pm_peak",
+            "scen": [2, 4, 78, 20, 106, 78, 37, 9, 53, 56, 39, 90, 1, 11, 3, 14, 0, 0, 3, 22, 3, 28, 3, 13, 5, 14, 24, 66, 24, 82, 1, 25, 25, 48, 17, 43, 1, 20, 9, 8, 41, 6, 24, 2, 9, 1, 7, 1, 13, 8, 34, 8, 34, 22, 3, 10, 3, 2, 6, 19, 70, 14, 85, 24, 52, 2, 79, 24, 38, 24, 37, 23, 2, 10, 7, 24, 2, 8, 18, 70, 21, 54, 74, 26, 5, 12, 4, 7, 1, 5, 1, 0, 0, 0, 0, 0, 5, 3, 16, 2, 2, 4, 2, 19, 4, 2, 5, 3, 5, 3, 4, 2, 3, 8, 4, 7, 1, 12, 2, 10, 37, 128, 17, 64, 8, 34]
+          },
+          "pictureAll": {
+            "base": [5, 11, 94, 50, 135, 113, 101, 53, 79, 67, 44, 80, 25, 34, 33, 21, 31, 37, 44, 74, 31, 78, 19, 21, 24, 29, 39, 68, 50, 71, 1, 1, 8, 1, 30, 33, 41, 26, 61, 4, 49, 14, 15, 42, 28, 39, 37, 33, 2, 22, 4, 21, 10, 1, 37, 90, 36, 97, 60, 3, 29, 4, 39, 16, 23, 59, 14, 66, 43, 37, 15, 1, 96, 65, 60, 73, 72, 58, 29, 23, 30, 45, 38, 21, 25, 63, 27, 50, 94, 45, 120, 137, 123, 164, 119, 139, 125, 119, 134, 162, 122, 135, 140, 142, 142, 111, 33, 6, 19, 111, 44, 21, 38, 32, 153, 118, 141, 74, 127, 105, 119, 151, 8, 52, 22, 29, 95, 157, 40, 91, 43, 92],
+            "links": [1823, 1824, 1825, 1826, 1827, 1828, 1829, 1830, 1831, 1832, 1833, 1834, 1845, 1846, 1847, 1848, 1855, 1856, 1857, 1858, 1859, 1860, 1863, 1864, 1865, 1866, 1867, 1868, 1869, 1870, 1882, 1883, 1884, 1885, 1886, 1887, 1888, 1889, 1894, 1895, 1896, 1897, 1898, 1899, 1900, 1901, 1902, 1903, 1904, 1905, 1906, 1907, 1908, 1909, 1916, 1917, 1918, 1919, 1924, 1925, 1926, 1927, 1928, 1929, 1930, 1931, 1932, 1933, 1934, 1935, 1947, 1948, 1987, 1988, 1989, 1990, 1991, 1992, 2013, 2014, 2015, 2016, 2019, 2020, 2054, 2055, 2056, 2057, 2058, 2059, 2591, 2592, 2593, 2594, 2595, 2596, 2597, 2598, 2599, 2600, 2601, 2602, 2603, 2604, 2605, 2606, 2619, 2620, 2621, 2622, 2625, 2626, 2627, 2628, 2669, 2670, 2671, 2672, 2673, 2674, 2675, 2676, 2677, 2678, 2694, 2695, 2696, 2697, 2800, 2801, 4180, 4181],
+            "period": "pm_peak",
+            "scen": [5, 14, 120, 59, 172, 144, 109, 56, 89, 84, 58, 112, 30, 38, 34, 26, 1, 21, 50, 88, 25, 86, 17, 16, 15, 30, 41, 94, 54, 98, 1, 1, 8, 1, 39, 40, 60, 30, 76, 5, 55, 19, 21, 64, 32, 60, 43, 47, 12, 37, 21, 42, 10, 1, 41, 97, 41, 104, 73, 21, 19, 6, 15, 12, 27, 86, 18, 101, 46, 56, 7, 1, 122, 75, 71, 82, 82, 66, 37, 21, 35, 50, 38, 19, 28, 88, 33, 70, 107, 48, 21, 47, 17, 49, 19, 15, 7, 3, 2, 35, 1, 0, 36, 22, 72, 20, 17, 7, 8, 86, 19, 9, 33, 24, 33, 32, 30, 10, 37, 50, 36, 85, 2, 44, 22, 19, 106, 180, 42, 95, 46, 98]
+          },
+          "residentsDetour": {
+            "coverage": {
+              "baselineRequests": 39316,
+              "baselineUnfinished": 3619,
+              "scenarioRequests": 39316,
+              "scenarioUnfinished": 3672,
+              "supportedPairs": 30,
+              "totalPairs": 30
+            },
+            "cutoffMinutes": 60.0,
+            "effect": {
+              "interval": [2.59, 4.25],
+              "mean": 3.42,
+              "n": 10,
+              "sd": 1.16,
+              "status": "increase"
+            },
+            "method": "requested-elapsed-to-cutoff",
+            "secondsPerTrip": 3.4,
+            "vehicleMinutesPerHour": 78.4
+          },
+          "summary": "It makes three changes: Diagonal diverter at 63rd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 63rd Street (west), and Hillegass Avenue (south) with 63rd Street (east); modal filter at 63rd Street & Colby Street; slow Street on Colby Street (15 mph, Alcatraz Avenue to Claremont Avenue / Forest Street). In the simulation it cuts through traffic on the area's side streets by 42%, from 508 to 297 through cars an hour (mean of 10 seeds and of the periods searched; 95% interval -223 to -199 cars an hour over 10 seeds). The side-street block with the largest increase in through traffic is Martin Street between Claremont Avenue and Ayala Avenue, about 40 more through cars an hour on average (resolved from seed variation: 95% interval +33 to +47 cars an hour over 10 seeds). 27 blocks in all have an increase resolved from seed variation.",
+          "title": "Diagonal diverter on 63rd and Hillegass, plus two other changes"
+        },
+        {
+          "byPeriod": {
+            "am_peak": {
+              "allTraffic": {
+                "adjustedPenalty": {
+                  "block": "63rd Street between Dana Street and Canning Street",
+                  "penaltyVehPerHour": 35.4
+                },
+                "blocksAboveBand": 17,
+                "largestIncrease": {
+                  "baselineVehPerHour": 96.5,
+                  "block": "63rd Street between Dana Street and Canning Street",
+                  "effect": {
+                    "interval": [40.6, 56.0],
+                    "mean": 48.3,
+                    "n": 10,
+                    "sd": 10.76,
+                    "status": "increase"
+                  },
+                  "increaseVehPerHour": 48.3,
+                  "scenarioVehPerHour": 144.8,
+                  "throughIncreaseVehPerHour": 1.6
+                }
+              },
+              "cutThrough": {
+                "baselineVehPerHour": 429.1,
+                "changePct": -34.0,
+                "effect": {
+                  "interval": [-164.32, -127.68],
+                  "mean": -146.0,
+                  "n": 10,
+                  "sd": 25.61,
+                  "status": "decrease"
+                },
+                "scenarioVehPerHour": 283.1
+              }
+            },
+            "midday": {
+              "allTraffic": {
+                "adjustedPenalty": {
+                  "block": "Dana Street between 63rd Street and North Street",
+                  "penaltyVehPerHour": 14.2
+                },
+                "blocksAboveBand": 5,
+                "largestIncrease": {
+                  "baselineVehPerHour": 65.1,
+                  "block": "Dana Street between 63rd Street and North Street",
+                  "effect": {
+                    "interval": [21.51, 29.29],
+                    "mean": 25.4,
+                    "n": 10,
+                    "sd": 5.44,
+                    "status": "increase"
+                  },
+                  "increaseVehPerHour": 25.4,
+                  "scenarioVehPerHour": 90.5,
+                  "throughIncreaseVehPerHour": 16.7
+                }
+              },
+              "cutThrough": {
+                "baselineVehPerHour": 386.8,
+                "changePct": -37.7,
+                "effect": {
+                  "interval": [-157.48, -133.92],
+                  "mean": -145.7,
+                  "n": 10,
+                  "sd": 16.47,
+                  "status": "decrease"
+                },
+                "scenarioVehPerHour": 241.1
+              }
+            },
+            "pm_peak": {
+              "allTraffic": {
+                "adjustedPenalty": {
+                  "block": "North Street between Colby Street and Dana Street",
+                  "penaltyVehPerHour": 29.9
+                },
+                "blocksAboveBand": 16,
+                "largestIncrease": {
+                  "baselineVehPerHour": 248.4,
+                  "block": "Martin Street between Claremont Avenue and Ayala Avenue",
+                  "effect": {
+                    "interval": [33.09, 65.51],
+                    "mean": 49.3,
+                    "n": 10,
+                    "sd": 22.67,
+                    "status": "increase"
+                  },
+                  "increaseVehPerHour": 49.3,
+                  "scenarioVehPerHour": 297.7,
+                  "throughIncreaseVehPerHour": 45.0
+                }
+              },
+              "cutThrough": {
+                "baselineVehPerHour": 709.2,
+                "changePct": -26.9,
+                "effect": {
+                  "interval": [-214.71, -166.69],
+                  "mean": -190.7,
+                  "n": 10,
+                  "sd": 33.57,
+                  "status": "decrease"
+                },
+                "scenarioVehPerHour": 518.5
+              }
+            }
+          },
+          "context": {
+            "bikeConflictsChangePct": 0.0,
+            "boundingStreets": [
+              {
+                "flowChangePct": 4.9,
+                "name": "Telegraph Avenue",
+                "speedChangeMph": -0.2
+              },
+              {
+                "flowChangePct": -3.2,
+                "name": "Alcatraz Avenue",
+                "speedChangeMph": 0.2
+              },
+              {
+                "flowChangePct": -2.7,
+                "name": "Claremont Avenue",
+                "speedChangeMph": 0.1
+              },
+              {
+                "flowChangePct": 16.8,
+                "name": "College Avenue",
+                "speedChangeMph": -0.3
+              }
+            ],
+            "insideTripTimeChangePct": 0.7,
+            "pedConflictsChangePct": 0.6
+          },
+          "cutThrough": {
+            "baselineVehPerHour": 508.4,
+            "changePct": -31.6,
+            "changePctEffect": {
+              "interval": [-33.69, -29.57],
+              "mean": -31.63,
+              "n": 10,
+              "sd": 2.88,
+              "status": "decrease"
+            },
+            "effect": {
+              "interval": [-171.29, -150.31],
+              "mean": -160.8,
+              "n": 10,
+              "sd": 14.66,
+              "status": "decrease"
+            },
+            "scenarioVehPerHour": 347.6
+          },
+          "evidence": {
+            "baselineVehPerHour": {
+              "am_peak": [472.0, 419.0, 453.0, 465.0, 370.0, 419.0, 395.0, 432.0, 444.0, 422.0],
+              "midday": [393.0, 377.0, 417.0, 396.0, 406.0, 336.0, 367.0, 407.0, 388.0, 381.0],
+              "pm_peak": [708.0, 671.0, 724.0, 752.0, 645.0, 741.0, 724.0, 741.0, 673.0, 713.0]
+            },
+            "role": "confirmation",
+            "scenarioVehPerHour": {
+              "am_peak": [289.0, 270.0, 294.0, 310.0, 277.0, 273.0, 270.0, 307.0, 277.0, 264.0],
+              "midday": [283.0, 234.0, 259.0, 235.0, 238.0, 194.0, 233.0, 264.0, 232.0, 239.0],
+              "pm_peak": [505.0, 530.0, 521.0, 525.0, 493.0, 563.0, 548.0, 486.0, 487.0, 527.0]
+            },
+            "seeds": [101, 102, 103, 104, 105, 106, 107, 108, 109, 110]
+          },
+          "harm": {
+            "through": {
+              "adjustedPenalty": {
+                "block": "62nd Street between Claremont Avenue / College Avenue / +1 and Hillegass Avenue",
+                "penaltyVehPerHour": 15.8
+              },
+              "blocksAboveBand": 12,
+              "blocksResolvedIncrease": 33,
+              "largestIncrease": {
+                "baselineVehPerHour": 38.8,
+                "block": "62nd Street between Claremont Avenue / College Avenue / +1 and Hillegass Avenue",
+                "effect": {
+                  "interval": [23.03, 28.57],
+                  "mean": 25.8,
+                  "n": 10,
+                  "sd": 3.87,
+                  "status": "increase"
+                },
+                "increaseVehPerHour": 25.8,
+                "scenarioVehPerHour": 64.6
+              }
+            }
+          },
+          "id": "p6",
+          "interventions": [
+            {
+              "label": "Modal filter at 63rd Street & Hillegass Avenue",
+              "type": "modal_filter"
+            },
+            {
+              "label": "Modal filter at 63rd Street & Colby Street",
+              "type": "modal_filter"
+            }
+          ],
+          "kind": "search",
+          "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2~mn,9q9p3fprdr",
+          "objectives": [
+            "fewest-changes"
+          ],
+          "origin": {
+            "added": "2026-11-17",
+            "kind": "seed",
+            "note": "published by an earlier search (group unconstrained, option p5, 2026-11-17 through-car change -31.2%)"
+          },
+          "picture": {
+            "base": [1, 2, 54, 12, 72, 52, 29, 7, 43, 43, 24, 64, 3, 8, 5, 11, 11, 14, 9, 24, 7, 28, 5, 15, 10, 12, 21, 45, 20, 56, 16, 19, 30, 13, 30, 0, 16, 6, 5, 27, 5, 15, 1, 7, 0, 6, 0, 5, 7, 27, 7, 28, 13, 2, 10, 3, 18, 8, 16, 46, 12, 56, 21, 34, 2, 54, 14, 26, 15, 26, 15, 2, 12, 6, 20, 2, 10, 13, 49, 15, 38, 61, 22, 90, 80, 94, 91, 88, 94, 95, 80, 95, 95, 96, 93, 94, 93, 98, 91, 15, 3, 6, 45, 18, 15, 7, 10, 119, 69, 106, 51, 86, 51, 81, 59, 2, 22, 2, 12, 28, 104, 17, 56, 7, 27],
+            "links": [1823, 1824, 1825, 1826, 1827, 1828, 1829, 1830, 1831, 1832, 1833, 1834, 1845, 1846, 1847, 1848, 1855, 1856, 1857, 1858, 1859, 1860, 1863, 1864, 1865, 1866, 1867, 1868, 1869, 1870, 1886, 1887, 1888, 1889, 1894, 1895, 1896, 1897, 1898, 1899, 1900, 1901, 1902, 1903, 1904, 1905, 1906, 1907, 1916, 1917, 1918, 1919, 1924, 1925, 1926, 1927, 1928, 1929, 1930, 1931, 1932, 1933, 1934, 1935, 1947, 1987, 1988, 1989, 1990, 1991, 1992, 2013, 2014, 2015, 2016, 2019, 2020, 2054, 2055, 2056, 2057, 2058, 2059, 2591, 2592, 2593, 2594, 2595, 2596, 2597, 2598, 2599, 2600, 2601, 2602, 2603, 2604, 2605, 2606, 2619, 2620, 2621, 2622, 2625, 2626, 2627, 2628, 2669, 2670, 2671, 2672, 2673, 2674, 2675, 2676, 2677, 2678, 2694, 2695, 2696, 2697, 2800, 2801, 4180, 4181],
+            "period": "pm_peak",
+            "scen": [1, 3, 76, 20, 99, 70, 32, 9, 47, 52, 34, 79, 2, 12, 5, 12, 0, 0, 11, 31, 4, 35, 4, 15, 13, 17, 27, 61, 25, 77, 23, 23, 43, 16, 38, 1, 18, 9, 7, 34, 7, 18, 3, 13, 2, 13, 4, 21, 8, 31, 8, 31, 30, 11, 10, 9, 6, 6, 19, 59, 15, 71, 26, 46, 4, 76, 22, 40, 22, 39, 21, 9, 24, 13, 29, 9, 20, 15, 61, 17, 46, 64, 25, 18, 33, 16, 30, 4, 23, 3, 1, 0, 0, 0, 0, 0, 0, 21, 4, 13, 6, 53, 28, 0, 0, 0, 0, 0, 0, 0, 0, 55, 19, 54, 25, 1, 12, 9, 24, 33, 111, 15, 54, 8, 30]
+          },
+          "pictureAll": {
+            "base": [5, 11, 94, 50, 135, 113, 101, 53, 79, 67, 44, 80, 25, 34, 33, 21, 31, 37, 44, 74, 31, 78, 19, 21, 24, 29, 39, 68, 50, 71, 1, 1, 8, 1, 30, 33, 41, 26, 61, 4, 49, 14, 15, 42, 28, 39, 37, 33, 2, 22, 4, 21, 10, 1, 37, 90, 36, 97, 60, 3, 29, 4, 39, 16, 23, 59, 14, 66, 43, 37, 15, 1, 96, 65, 60, 73, 72, 58, 29, 23, 30, 45, 38, 21, 25, 63, 27, 50, 94, 45, 120, 137, 123, 164, 119, 139, 125, 119, 134, 162, 122, 135, 140, 142, 142, 111, 33, 6, 19, 111, 44, 21, 38, 32, 153, 118, 141, 74, 127, 105, 119, 151, 8, 52, 22, 29, 95, 157, 40, 91, 43, 92],
+            "links": [1823, 1824, 1825, 1826, 1827, 1828, 1829, 1830, 1831, 1832, 1833, 1834, 1845, 1846, 1847, 1848, 1855, 1856, 1857, 1858, 1859, 1860, 1863, 1864, 1865, 1866, 1867, 1868, 1869, 1870, 1882, 1883, 1884, 1885, 1886, 1887, 1888, 1889, 1894, 1895, 1896, 1897, 1898, 1899, 1900, 1901, 1902, 1903, 1904, 1905, 1906, 1907, 1908, 1909, 1916, 1917, 1918, 1919, 1924, 1925, 1926, 1927, 1928, 1929, 1930, 1931, 1932, 1933, 1934, 1935, 1947, 1948, 1987, 1988, 1989, 1990, 1991, 1992, 2013, 2014, 2015, 2016, 2019, 2020, 2054, 2055, 2056, 2057, 2058, 2059, 2591, 2592, 2593, 2594, 2595, 2596, 2597, 2598, 2599, 2600, 2601, 2602, 2603, 2604, 2605, 2606, 2619, 2620, 2621, 2622, 2625, 2626, 2627, 2628, 2669, 2670, 2671, 2672, 2673, 2674, 2675, 2676, 2677, 2678, 2694, 2695, 2696, 2697, 2800, 2801, 4180, 4181],
+            "period": "pm_peak",
+            "scen": [5, 13, 117, 57, 164, 134, 105, 54, 83, 78, 51, 99, 31, 46, 35, 29, 1, 21, 55, 94, 26, 90, 17, 20, 25, 34, 44, 88, 55, 92, 1, 1, 7, 1, 37, 38, 54, 28, 71, 5, 51, 16, 17, 53, 31, 49, 46, 49, 16, 43, 21, 46, 10, 1, 39, 94, 38, 100, 79, 27, 22, 12, 16, 13, 25, 73, 18, 86, 48, 49, 15, 1, 119, 72, 74, 79, 85, 64, 44, 41, 38, 57, 48, 36, 24, 77, 26, 60, 97, 44, 45, 80, 40, 80, 27, 42, 11, 9, 2, 35, 1, 0, 6, 0, 61, 15, 30, 17, 60, 108, 1, 0, 0, 0, 11, 14, 18, 14, 88, 74, 81, 107, 4, 50, 33, 43, 99, 158, 37, 81, 44, 95]
+          },
+          "residentsDetour": {
+            "coverage": {
+              "baselineRequests": 39316,
+              "baselineUnfinished": 3619,
+              "scenarioRequests": 39316,
+              "scenarioUnfinished": 3660,
+              "supportedPairs": 30,
+              "totalPairs": 30
+            },
+            "cutoffMinutes": 60.0,
+            "effect": {
+              "interval": [0.94, 3.52],
+              "mean": 2.23,
+              "n": 10,
+              "sd": 1.8,
+              "status": "increase"
+            },
+            "method": "requested-elapsed-to-cutoff",
+            "secondsPerTrip": 2.2,
+            "vehicleMinutesPerHour": 58.2
+          },
+          "summary": "It makes two changes: Modal filter at 63rd Street & Hillegass Avenue; modal filter at 63rd Street & Colby Street. In the simulation it cuts through traffic on the area's side streets by 32%, from 508 to 348 through cars an hour (mean of 10 seeds and of the periods searched; 95% interval -171 to -150 cars an hour over 10 seeds). The side-street block with the largest increase in through traffic is 62nd Street between Claremont Avenue / College Avenue / +1 and Hillegass Avenue, about 26 more through cars an hour on average (resolved from seed variation: 95% interval +23 to +29 cars an hour over 10 seeds). 33 blocks in all have an increase resolved from seed variation.",
+          "title": "Two filters on 63rd, Hillegass and Colby"
+        },
+        {
+          "byPeriod": {
+            "am_peak": {
+              "allTraffic": {
+                "adjustedPenalty": {
+                  "block": "62nd Street between Hillegass Avenue and Colby Street",
+                  "penaltyVehPerHour": 82.7
+                },
+                "blocksAboveBand": 6,
+                "largestIncrease": {
+                  "baselineVehPerHour": 21.9,
+                  "block": "62nd Street between Hillegass Avenue and Colby Street",
+                  "effect": {
+                    "interval": [84.7, 100.7],
+                    "mean": 92.7,
+                    "n": 10,
+                    "sd": 11.19,
+                    "status": "increase"
+                  },
+                  "increaseVehPerHour": 92.7,
+                  "scenarioVehPerHour": 114.6,
+                  "throughIncreaseVehPerHour": 23.0
+                }
+              },
+              "cutThrough": {
+                "baselineVehPerHour": 429.1,
+                "changePct": -17.3,
+                "effect": {
+                  "interval": [-90.88, -57.92],
+                  "mean": -74.4,
+                  "n": 10,
+                  "sd": 23.04,
+                  "status": "decrease"
+                },
+                "scenarioVehPerHour": 354.7
+              }
+            },
+            "midday": {
+              "allTraffic": {
+                "adjustedPenalty": {
+                  "block": "62nd Street between Hillegass Avenue and Colby Street",
+                  "penaltyVehPerHour": 48.1
+                },
+                "blocksAboveBand": 7,
+                "largestIncrease": {
+                  "baselineVehPerHour": 27.7,
+                  "block": "62nd Street between Hillegass Avenue and Colby Street",
+                  "effect": {
+                    "interval": [51.14, 66.26],
+                    "mean": 58.7,
+                    "n": 10,
+                    "sd": 10.57,
+                    "status": "increase"
+                  },
+                  "increaseVehPerHour": 58.7,
+                  "scenarioVehPerHour": 86.4,
+                  "throughIncreaseVehPerHour": 17.7
+                }
+              },
+              "cutThrough": {
+                "baselineVehPerHour": 386.8,
+                "changePct": -14.3,
+                "effect": {
+                  "interval": [-64.57, -45.83],
+                  "mean": -55.2,
+                  "n": 10,
+                  "sd": 13.1,
+                  "status": "decrease"
+                },
+                "scenarioVehPerHour": 331.6
+              }
+            },
+            "pm_peak": {
+              "allTraffic": {
+                "adjustedPenalty": {
+                  "block": "62nd Street between Hillegass Avenue and Colby Street",
+                  "penaltyVehPerHour": 78.6
+                },
+                "blocksAboveBand": 10,
+                "largestIncrease": {
+                  "baselineVehPerHour": 60.3,
+                  "block": "62nd Street between Hillegass Avenue and Colby Street",
+                  "effect": {
+                    "interval": [85.38, 97.82],
+                    "mean": 91.6,
+                    "n": 10,
+                    "sd": 8.69,
+                    "status": "increase"
+                  },
+                  "increaseVehPerHour": 91.6,
+                  "scenarioVehPerHour": 151.9,
+                  "throughIncreaseVehPerHour": 33.3
+                }
+              },
+              "cutThrough": {
+                "baselineVehPerHour": 709.2,
+                "changePct": -6.1,
+                "effect": {
+                  "interval": [-80.58, -5.42],
+                  "mean": -43.0,
+                  "n": 10,
+                  "sd": 52.53,
+                  "status": "decrease"
+                },
+                "scenarioVehPerHour": 666.2
+              }
+            }
+          },
+          "context": {
+            "bikeConflictsChangePct": 0.4,
+            "boundingStreets": [
+              {
+                "flowChangePct": 2.9,
+                "name": "Telegraph Avenue",
+                "speedChangeMph": -0.1
+              },
+              {
+                "flowChangePct": -1.3,
+                "name": "Alcatraz Avenue",
+                "speedChangeMph": -0.0
+              },
+              {
+                "flowChangePct": 6.5,
+                "name": "Claremont Avenue",
+                "speedChangeMph": 0.3
+              },
+              {
+                "flowChangePct": 4.7,
+                "name": "College Avenue",
+                "speedChangeMph": -0.6
+              }
+            ],
+            "insideTripTimeChangePct": 1.6,
+            "pedConflictsChangePct": -0.3
+          },
+          "cutThrough": {
+            "baselineVehPerHour": 508.4,
+            "changePct": -11.3,
+            "changePctEffect": {
+              "interval": [-14.07, -8.57],
+              "mean": -11.32,
+              "n": 10,
+              "sd": 3.84,
+              "status": "decrease"
+            },
+            "effect": {
+              "interval": [-71.5, -43.56],
+              "mean": -57.53,
+              "n": 10,
+              "sd": 19.53,
+              "status": "decrease"
+            },
+            "scenarioVehPerHour": 450.8
+          },
+          "evidence": {
+            "baselineVehPerHour": {
+              "am_peak": [472.0, 419.0, 453.0, 465.0, 370.0, 419.0, 395.0, 432.0, 444.0, 422.0],
+              "midday": [393.0, 377.0, 417.0, 396.0, 406.0, 336.0, 367.0, 407.0, 388.0, 381.0],
+              "pm_peak": [708.0, 671.0, 724.0, 752.0, 645.0, 741.0, 724.0, 741.0, 673.0, 713.0]
+            },
+            "role": "reference",
+            "scenarioVehPerHour": {
+              "am_peak": [363.0, 355.0, 368.0, 373.0, 336.0, 339.0, 331.0, 374.0, 343.0, 365.0],
+              "midday": [356.0, 330.0, 344.0, 324.0, 358.0, 275.0, 326.0, 353.0, 339.0, 311.0],
+              "pm_peak": [613.0, 600.0, 689.0, 724.0, 621.0, 787.0, 742.0, 606.0, 606.0, 674.0]
+            },
+            "seeds": [101, 102, 103, 104, 105, 106, 107, 108, 109, 110]
+          },
+          "harm": {
+            "through": {
+              "adjustedPenalty": {
+                "block": "62nd Street between Claremont Avenue / College Avenue / +1 and Hillegass Avenue",
+                "penaltyVehPerHour": 42.2
+              },
+              "blocksAboveBand": 4,
+              "blocksResolvedIncrease": 32,
+              "largestIncrease": {
+                "baselineVehPerHour": 38.8,
+                "block": "62nd Street between Claremont Avenue / College Avenue / +1 and Hillegass Avenue",
+                "effect": {
+                  "interval": [45.4, 59.07],
+                  "mean": 52.23,
+                  "n": 10,
+                  "sd": 9.56,
+                  "status": "increase"
+                },
+                "increaseVehPerHour": 52.2,
+                "scenarioVehPerHour": 91.1
+              }
+            }
+          },
+          "id": "earlier-62nd-diverters",
+          "interventions": [
+            {
+              "label": "Diagonal diverter at 62nd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 62nd Street (east), and Hillegass Avenue (south) with 62nd Street (west)",
+              "type": "diagonal_diverter"
+            },
+            {
+              "label": "Diagonal diverter at 62nd Street & Colby Street, connecting Colby Street (north) with 62nd Street (east), and Colby Street (south) with 62nd Street (west)",
+              "type": "diagonal_diverter"
+            }
+          ],
+          "kind": "reference",
+          "link": "#v1;a=rockridge;p=pm_peak;s=dd,9q9p641p03,127~dd,9q9p3fpkk7,127",
+          "note": "A package proposed earlier that many residents did not support. Shown for comparison.",
+          "origin": {
+            "kind": "search"
+          },
+          "picture": {
+            "base": [1, 2, 54, 12, 72, 52, 29, 7, 43, 43, 24, 64, 3, 8, 5, 11, 11, 14, 9, 24, 7, 28, 5, 15, 10, 12, 21, 45, 20, 56, 0, 16, 19, 30, 13, 30, 0, 16, 6, 5, 27, 5, 15, 1, 7, 0, 6, 0, 5, 7, 27, 7, 28, 13, 2, 10, 3, 18, 8, 16, 46, 12, 56, 21, 34, 2, 54, 14, 26, 15, 26, 15, 2, 12, 6, 20, 2, 10, 13, 49, 15, 38, 61, 22, 90, 80, 94, 91, 88, 94, 95, 80, 95, 95, 96, 93, 94, 93, 98, 91, 15, 3, 6, 45, 18, 15, 7, 10, 119, 69, 106, 51, 86, 51, 81, 59, 2, 22, 2, 12, 28, 104, 17, 56, 7, 27],
+            "links": [1823, 1824, 1825, 1826, 1827, 1828, 1829, 1830, 1831, 1832, 1833, 1834, 1845, 1846, 1847, 1848, 1855, 1856, 1857, 1858, 1859, 1860, 1863, 1864, 1865, 1866, 1867, 1868, 1869, 1870, 1884, 1886, 1887, 1888, 1889, 1894, 1895, 1896, 1897, 1898, 1899, 1900, 1901, 1902, 1903, 1904, 1905, 1906, 1907, 1916, 1917, 1918, 1919, 1924, 1925, 1926, 1927, 1928, 1929, 1930, 1931, 1932, 1933, 1934, 1935, 1947, 1987, 1988, 1989, 1990, 1991, 1992, 2013, 2014, 2015, 2016, 2019, 2020, 2054, 2055, 2056, 2057, 2058, 2059, 2591, 2592, 2593, 2594, 2595, 2596, 2597, 2598, 2599, 2600, 2601, 2602, 2603, 2604, 2605, 2606, 2619, 2620, 2621, 2622, 2625, 2626, 2627, 2628, 2669, 2670, 2671, 2672, 2673, 2674, 2675, 2676, 2677, 2678, 2694, 2695, 2696, 2697, 2800, 2801, 4180, 4181],
+            "period": "pm_peak",
+            "scen": [1, 3, 57, 18, 75, 69, 32, 6, 43, 52, 27, 77, 1, 1, 4, 7, 10, 16, 11, 34, 5, 37, 4, 17, 9, 17, 22, 62, 21, 76, 1, 19, 23, 34, 16, 32, 1, 17, 9, 6, 35, 6, 20, 3, 13, 2, 9, 1, 11, 6, 30, 6, 31, 18, 1, 9, 2, 5, 8, 19, 60, 14, 71, 25, 45, 3, 58, 21, 27, 21, 27, 21, 2, 19, 6, 27, 2, 16, 13, 59, 15, 46, 62, 21, 15, 29, 14, 26, 3, 20, 1, 1, 47, 11, 63, 21, 69, 31, 79, 30, 2, 1, 18, 127, 31, 31, 9, 13, 147, 42, 127, 18, 11, 48, 11, 48, 46, 11, 2, 19, 30, 107, 16, 55, 6, 30]
+          },
+          "pictureAll": {
+            "base": [5, 11, 94, 50, 135, 113, 101, 53, 79, 67, 44, 80, 25, 34, 33, 21, 31, 37, 44, 74, 31, 78, 19, 21, 24, 29, 39, 68, 50, 71, 1, 1, 8, 1, 30, 33, 41, 26, 61, 4, 49, 14, 15, 42, 28, 39, 37, 33, 2, 22, 4, 21, 10, 1, 37, 90, 36, 97, 60, 3, 29, 4, 39, 16, 23, 59, 14, 66, 43, 37, 15, 1, 96, 65, 60, 73, 72, 58, 29, 23, 30, 45, 38, 21, 25, 63, 27, 50, 94, 45, 120, 137, 123, 164, 119, 139, 125, 119, 134, 162, 122, 135, 140, 142, 142, 111, 33, 6, 19, 111, 44, 21, 38, 32, 153, 118, 141, 74, 127, 105, 119, 151, 8, 52, 22, 29, 95, 157, 40, 91, 43, 92],
+            "links": [1823, 1824, 1825, 1826, 1827, 1828, 1829, 1830, 1831, 1832, 1833, 1834, 1845, 1846, 1847, 1848, 1855, 1856, 1857, 1858, 1859, 1860, 1863, 1864, 1865, 1866, 1867, 1868, 1869, 1870, 1882, 1883, 1884, 1885, 1886, 1887, 1888, 1889, 1894, 1895, 1896, 1897, 1898, 1899, 1900, 1901, 1902, 1903, 1904, 1905, 1906, 1907, 1908, 1909, 1916, 1917, 1918, 1919, 1924, 1925, 1926, 1927, 1928, 1929, 1930, 1931, 1932, 1933, 1934, 1935, 1947, 1948, 1987, 1988, 1989, 1990, 1991, 1992, 2013, 2014, 2015, 2016, 2019, 2020, 2054, 2055, 2056, 2057, 2058, 2059, 2591, 2592, 2593, 2594, 2595, 2596, 2597, 2598, 2599, 2600, 2601, 2602, 2603, 2604, 2605, 2606, 2619, 2620, 2621, 2622, 2625, 2626, 2627, 2628, 2669, 2670, 2671, 2672, 2673, 2674, 2675, 2676, 2677, 2678, 2694, 2695, 2696, 2697, 2800, 2801, 4180, 4181],
+            "period": "pm_peak",
+            "scen": [6, 13, 96, 55, 138, 132, 104, 52, 77, 75, 45, 92, 25, 27, 39, 18, 40, 47, 65, 97, 34, 89, 16, 20, 21, 33, 39, 85, 53, 89, 1, 1, 8, 1, 33, 38, 45, 28, 63, 5, 49, 18, 16, 51, 30, 48, 48, 47, 15, 40, 5, 31, 10, 1, 36, 93, 36, 100, 61, 2, 20, 3, 17, 15, 25, 72, 18, 81, 47, 49, 8, 1, 100, 71, 62, 80, 74, 64, 38, 32, 32, 53, 37, 28, 23, 70, 25, 57, 90, 41, 41, 72, 36, 74, 25, 36, 5, 2, 92, 65, 101, 57, 112, 75, 126, 49, 17, 3, 31, 166, 65, 40, 43, 56, 179, 89, 177, 32, 82, 92, 78, 128, 87, 65, 22, 28, 97, 149, 38, 79, 42, 94]
+          },
+          "residentsDetour": {
+            "coverage": {
+              "baselineRequests": 39316,
+              "baselineUnfinished": 3619,
+              "scenarioRequests": 39316,
+              "scenarioUnfinished": 3766,
+              "supportedPairs": 30,
+              "totalPairs": 30
+            },
+            "cutoffMinutes": 60.0,
+            "effect": {
+              "interval": [3.52, 6.07],
+              "mean": 4.8,
+              "n": 10,
+              "sd": 1.78,
+              "status": "increase"
+            },
+            "method": "requested-elapsed-to-cutoff",
+            "secondsPerTrip": 4.8,
+            "vehicleMinutesPerHour": 115.5
+          },
+          "summary": "It makes two changes: Diagonal diverter at 62nd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 62nd Street (east), and Hillegass Avenue (south) with 62nd Street (west); diagonal diverter at 62nd Street & Colby Street, connecting Colby Street (north) with 62nd Street (east), and Colby Street (south) with 62nd Street (west). In the simulation it cuts through traffic on the area's side streets by 11%, from 508 to 451 through cars an hour (mean of 10 seeds and of the periods searched; 95% interval -72 to -44 cars an hour over 10 seeds). The side-street block with the largest increase in through traffic is 62nd Street between Claremont Avenue / College Avenue / +1 and Hillegass Avenue, about 52 more through cars an hour on average (resolved from seed variation: 95% interval +45 to +59 cars an hour over 10 seeds). 32 blocks in all have an increase resolved from seed variation.",
+          "title": "Diagonal diverters on 62nd Street at Hillegass and Colby"
+        },
+        {
+          "byPeriod": {
+            "am_peak": {
+              "allTraffic": {
+                "adjustedPenalty": {
+                  "block": "Howell Street between Ayala Avenue and 59th Street",
+                  "penaltyVehPerHour": 1.4
+                },
+                "blocksAboveBand": 3,
+                "largestIncrease": {
+                  "baselineVehPerHour": 82.5,
+                  "block": "Howell Street between Ayala Avenue and 59th Street",
+                  "effect": {
+                    "interval": [14.26, 20.14],
+                    "mean": 17.2,
+                    "n": 10,
+                    "sd": 4.1,
+                    "status": "increase"
+                  },
+                  "increaseVehPerHour": 17.2,
+                  "scenarioVehPerHour": 99.7,
+                  "throughIncreaseVehPerHour": 8.7
+                }
+              },
+              "cutThrough": {
+                "baselineVehPerHour": 429.1,
+                "changePct": -21.4,
+                "effect": {
+                  "interval": [-105.22, -78.58],
+                  "mean": -91.9,
+                  "n": 10,
+                  "sd": 18.63,
+                  "status": "decrease"
+                },
+                "scenarioVehPerHour": 337.2
+              }
+            },
+            "midday": {
+              "allTraffic": {
+                "adjustedPenalty": {
+                  "block": null,
+                  "penaltyVehPerHour": 0.0
+                },
+                "blocksAboveBand": 0,
+                "largestIncrease": {
+                  "baselineVehPerHour": 53.7,
+                  "block": "63rd Street between College Avenue and Hillegass Avenue",
+                  "effect": {
+                    "interval": [6.94, 12.46],
+                    "mean": 9.7,
+                    "n": 10,
+                    "sd": 3.86,
+                    "status": "increase"
+                  },
+                  "increaseVehPerHour": 9.7,
+                  "scenarioVehPerHour": 63.4,
+                  "throughIncreaseVehPerHour": 9.9
+                }
+              },
+              "cutThrough": {
+                "baselineVehPerHour": 386.8,
+                "changePct": -20.0,
+                "effect": {
+                  "interval": [-86.35, -68.05],
+                  "mean": -77.2,
+                  "n": 10,
+                  "sd": 12.79,
+                  "status": "decrease"
+                },
+                "scenarioVehPerHour": 309.6
+              }
+            },
+            "pm_peak": {
+              "allTraffic": {
+                "adjustedPenalty": {
+                  "block": null,
+                  "penaltyVehPerHour": 0.0
+                },
+                "blocksAboveBand": 0,
+                "largestIncrease": {
+                  "baselineVehPerHour": 248.4,
+                  "block": "Martin Street between Claremont Avenue and Ayala Avenue",
+                  "effect": {
+                    "interval": [10.39, 45.01],
+                    "mean": 27.7,
+                    "n": 10,
+                    "sd": 24.2,
+                    "status": "increase"
+                  },
+                  "increaseVehPerHour": 27.7,
+                  "scenarioVehPerHour": 276.1,
+                  "throughIncreaseVehPerHour": 22.4
+                }
+              },
+              "cutThrough": {
+                "baselineVehPerHour": 709.2,
+                "changePct": -11.9,
+                "effect": {
+                  "interval": [-108.92, -59.28],
+                  "mean": -84.1,
+                  "n": 10,
+                  "sd": 34.7,
+                  "status": "decrease"
+                },
+                "scenarioVehPerHour": 625.1
+              }
+            }
+          },
+          "context": {
+            "bikeConflictsChangePct": 0.1,
+            "boundingStreets": [
+              {
+                "flowChangePct": 2.1,
+                "name": "Telegraph Avenue",
+                "speedChangeMph": -0.1
+              },
+              {
+                "flowChangePct": -2.6,
+                "name": "Alcatraz Avenue",
+                "speedChangeMph": 0.0
+              },
+              {
+                "flowChangePct": 1.6,
+                "name": "Claremont Avenue",
+                "speedChangeMph": 0.2
+              },
+              {
+                "flowChangePct": 4.5,
+                "name": "College Avenue",
+                "speedChangeMph": -0.3
+              }
+            ],
+            "insideTripTimeChangePct": 0.3,
+            "pedConflictsChangePct": 0.7
+          },
+          "cutThrough": {
+            "baselineVehPerHour": 508.4,
+            "changePct": -16.6,
+            "changePctEffect": {
+              "interval": [-18.38, -14.82],
+              "mean": -16.6,
+              "n": 10,
+              "sd": 2.49,
+              "status": "decrease"
+            },
+            "effect": {
+              "interval": [-93.46, -75.34],
+              "mean": -84.4,
+              "n": 10,
+              "sd": 12.66,
+              "status": "decrease"
+            },
+            "scenarioVehPerHour": 424.0
+          },
+          "evidence": {
+            "baselineVehPerHour": {
+              "am_peak": [472.0, 419.0, 453.0, 465.0, 370.0, 419.0, 395.0, 432.0, 444.0, 422.0],
+              "midday": [393.0, 377.0, 417.0, 396.0, 406.0, 336.0, 367.0, 407.0, 388.0, 381.0],
+              "pm_peak": [708.0, 671.0, 724.0, 752.0, 645.0, 741.0, 724.0, 741.0, 673.0, 713.0]
+            },
+            "role": "reference",
+            "scenarioVehPerHour": {
+              "am_peak": [362.0, 349.0, 326.0, 368.0, 292.0, 333.0, 327.0, 334.0, 341.0, 340.0],
+              "midday": [337.0, 310.0, 341.0, 302.0, 328.0, 254.0, 303.0, 329.0, 309.0, 283.0],
+              "pm_peak": [562.0, 604.0, 645.0, 698.0, 590.0, 668.0, 613.0, 613.0, 583.0, 675.0]
+            },
+            "seeds": [101, 102, 103, 104, 105, 106, 107, 108, 109, 110]
+          },
+          "harm": {
+            "through": {
+              "adjustedPenalty": {
+                "block": null,
+                "penaltyVehPerHour": 0.0
+              },
+              "blocksAboveBand": 0,
+              "blocksResolvedIncrease": 22,
+              "largestIncrease": {
+                "baselineVehPerHour": 92.7,
+                "block": "Martin Street between Claremont Avenue and Ayala Avenue",
+                "effect": {
+                  "interval": [5.83, 17.5],
+                  "mean": 11.67,
+                  "n": 10,
+                  "sd": 8.16,
+                  "status": "increase"
+                },
+                "increaseVehPerHour": 11.7,
+                "scenarioVehPerHour": 104.4
+              }
+            }
+          },
+          "id": "colby-hillegass-slow-streets",
+          "interventions": [
+            {
+              "label": "Slow Street on Colby Street (15 mph, Alcatraz Avenue to Claremont Avenue / Forest Street)",
+              "type": "slow_street"
+            },
+            {
+              "label": "Slow Street on Hillegass Avenue (15 mph, 60th Street / Claremont Avenue to Alcatraz Avenue)",
+              "type": "slow_street"
+            }
+          ],
+          "kind": "reference",
+          "link": "#v1;a=rockridge;p=pm_peak;s=ss,9q9p3cx9rf~ss,9q9p642z5y",
+          "note": "Both streets limited to 15 mph for their whole length in the area, with nothing closed. Shown for comparison.",
+          "origin": {
+            "kind": "search"
+          },
+          "picture": {
+            "base": [1, 2, 54, 12, 72, 52, 29, 7, 43, 43, 24, 64, 3, 8, 5, 11, 11, 14, 9, 24, 7, 28, 5, 15, 10, 12, 21, 45, 20, 56, 16, 19, 30, 13, 30, 0, 16, 6, 5, 27, 5, 15, 1, 7, 0, 6, 0, 5, 7, 27, 7, 28, 13, 2, 10, 3, 18, 8, 16, 46, 12, 56, 21, 34, 2, 54, 14, 26, 15, 26, 15, 2, 12, 6, 20, 2, 10, 13, 49, 15, 38, 61, 22, 90, 80, 94, 91, 88, 94, 95, 80, 95, 95, 96, 93, 94, 93, 98, 91, 15, 3, 6, 45, 18, 15, 7, 10, 119, 69, 106, 51, 86, 51, 81, 59, 2, 22, 2, 12, 28, 104, 17, 56, 7, 27],
+            "links": [1823, 1824, 1825, 1826, 1827, 1828, 1829, 1830, 1831, 1832, 1833, 1834, 1845, 1846, 1847, 1848, 1855, 1856, 1857, 1858, 1859, 1860, 1863, 1864, 1865, 1866, 1867, 1868, 1869, 1870, 1886, 1887, 1888, 1889, 1894, 1895, 1896, 1897, 1898, 1899, 1900, 1901, 1902, 1903, 1904, 1905, 1906, 1907, 1916, 1917, 1918, 1919, 1924, 1925, 1926, 1927, 1928, 1929, 1930, 1931, 1932, 1933, 1934, 1935, 1947, 1987, 1988, 1989, 1990, 1991, 1992, 2013, 2014, 2015, 2016, 2019, 2020, 2054, 2055, 2056, 2057, 2058, 2059, 2591, 2592, 2593, 2594, 2595, 2596, 2597, 2598, 2599, 2600, 2601, 2602, 2603, 2604, 2605, 2606, 2619, 2620, 2621, 2622, 2625, 2626, 2627, 2628, 2669, 2670, 2671, 2672, 2673, 2674, 2675, 2676, 2677, 2678, 2694, 2695, 2696, 2697, 2800, 2801, 4180, 4181],
+            "period": "pm_peak",
+            "scen": [1, 3, 59, 16, 83, 63, 30, 8, 46, 48, 31, 78, 1, 8, 3, 12, 5, 11, 7, 28, 5, 32, 8, 14, 4, 12, 18, 54, 20, 68, 20, 24, 36, 16, 33, 1, 18, 9, 6, 35, 4, 21, 1, 8, 1, 6, 1, 7, 8, 28, 8, 29, 18, 2, 12, 3, 4, 9, 17, 58, 13, 69, 23, 43, 1, 59, 18, 27, 18, 27, 18, 1, 7, 4, 19, 1, 6, 15, 58, 17, 45, 66, 23, 36, 22, 42, 22, 44, 23, 54, 17, 56, 26, 59, 23, 64, 27, 70, 27, 13, 2, 6, 57, 20, 22, 8, 7, 126, 43, 107, 27, 68, 27, 65, 37, 3, 16, 1, 7, 35, 113, 20, 56, 8, 28]
+          },
+          "pictureAll": {
+            "base": [5, 11, 94, 50, 135, 113, 101, 53, 79, 67, 44, 80, 25, 34, 33, 21, 31, 37, 44, 74, 31, 78, 19, 21, 24, 29, 39, 68, 50, 71, 1, 1, 8, 1, 30, 33, 41, 26, 61, 4, 49, 14, 15, 42, 28, 39, 37, 33, 2, 22, 4, 21, 10, 1, 37, 90, 36, 97, 60, 3, 29, 4, 39, 16, 23, 59, 14, 66, 43, 37, 15, 1, 96, 65, 60, 73, 72, 58, 29, 23, 30, 45, 38, 21, 25, 63, 27, 50, 94, 45, 120, 137, 123, 164, 119, 139, 125, 119, 134, 162, 122, 135, 140, 142, 142, 111, 33, 6, 19, 111, 44, 21, 38, 32, 153, 118, 141, 74, 127, 105, 119, 151, 8, 52, 22, 29, 95, 157, 40, 91, 43, 92],
+            "links": [1823, 1824, 1825, 1826, 1827, 1828, 1829, 1830, 1831, 1832, 1833, 1834, 1845, 1846, 1847, 1848, 1855, 1856, 1857, 1858, 1859, 1860, 1863, 1864, 1865, 1866, 1867, 1868, 1869, 1870, 1882, 1883, 1884, 1885, 1886, 1887, 1888, 1889, 1894, 1895, 1896, 1897, 1898, 1899, 1900, 1901, 1902, 1903, 1904, 1905, 1906, 1907, 1908, 1909, 1916, 1917, 1918, 1919, 1924, 1925, 1926, 1927, 1928, 1929, 1930, 1931, 1932, 1933, 1934, 1935, 1947, 1948, 1987, 1988, 1989, 1990, 1991, 1992, 2013, 2014, 2015, 2016, 2019, 2020, 2054, 2055, 2056, 2057, 2058, 2059, 2591, 2592, 2593, 2594, 2595, 2596, 2597, 2598, 2599, 2600, 2601, 2602, 2603, 2604, 2605, 2606, 2619, 2620, 2621, 2622, 2625, 2626, 2627, 2628, 2669, 2670, 2671, 2672, 2673, 2674, 2675, 2676, 2677, 2678, 2694, 2695, 2696, 2697, 2800, 2801, 4180, 4181],
+            "period": "pm_peak",
+            "scen": [4, 12, 101, 54, 149, 127, 103, 54, 81, 71, 52, 94, 23, 34, 33, 22, 16, 34, 43, 79, 28, 83, 22, 19, 16, 30, 36, 78, 51, 83, 1, 1, 8, 2, 35, 37, 47, 28, 66, 5, 53, 17, 19, 51, 30, 47, 37, 36, 3, 26, 2, 22, 10, 1, 39, 92, 39, 99, 55, 3, 18, 4, 21, 14, 24, 68, 16, 79, 45, 46, 14, 1, 103, 69, 60, 76, 72, 61, 26, 17, 28, 44, 34, 15, 27, 71, 31, 57, 96, 45, 53, 70, 57, 83, 66, 55, 72, 45, 78, 84, 78, 57, 100, 69, 111, 42, 27, 6, 14, 130, 46, 27, 33, 28, 155, 92, 143, 48, 104, 78, 100, 123, 5, 49, 18, 22, 106, 163, 45, 88, 45, 93]
+          },
+          "residentsDetour": {
+            "coverage": {
+              "baselineRequests": 39316,
+              "baselineUnfinished": 3619,
+              "scenarioRequests": 39316,
+              "scenarioUnfinished": 3688,
+              "supportedPairs": 30,
+              "totalPairs": 30
+            },
+            "cutoffMinutes": 60.0,
+            "effect": {
+              "interval": [-0.28, 2.3],
+              "mean": 1.01,
+              "n": 10,
+              "sd": 1.81,
+              "status": "unresolved"
+            },
+            "method": "requested-elapsed-to-cutoff",
+            "secondsPerTrip": 1.0,
+            "vehicleMinutesPerHour": 22.6
+          },
+          "summary": "It makes two changes: Slow Street on Colby Street (15 mph, Alcatraz Avenue to Claremont Avenue / Forest Street); slow Street on Hillegass Avenue (15 mph, 60th Street / Claremont Avenue to Alcatraz Avenue). In the simulation it cuts through traffic on the area's side streets by 17%, from 508 to 424 through cars an hour (mean of 10 seeds and of the periods searched; 95% interval -93 to -75 cars an hour over 10 seeds). The side-street block with the largest increase in through traffic is Martin Street between Claremont Avenue and Ayala Avenue, about 12 more through cars an hour on average (resolved from seed variation: 95% interval +6 to +18 cars an hour over 10 seeds). 22 blocks in all have an increase resolved from seed variation.",
+          "title": "Slow Streets on Colby Street and Hillegass Avenue"
+        }
+      ],
+      "title": "Proposals"
+    }
+  ],
+  "version": 5
+}

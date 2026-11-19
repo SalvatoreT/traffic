@@ -1,0 +1,4 @@
+2026-11-18 05:17:42 PM PST network 53c823f20d9165ed demand 9cdebdabf05c4460 fingerprint d45a275dd7be0713cec6a64394b7d8a9
+2026-11-18 05:17:42 PM PST seeded proposals.json 388c91f025dafd556e5643ddb1fad247d20b4fc1a74054ac9bb9b53337b61459, report.md d0567ec9b615f0422da82cbb092181a912f8777ac2e6889d1a982ebe1ad4831b, seeds.json f759787416dab2de346b31e45dc7247cdd57ffcfdce03e1486e206b6a571d825
+2026-11-18 05:17:42 PM PST explore started
+2026-11-18 06:47:26 PM PST explore exit=0 wall_s=5384
