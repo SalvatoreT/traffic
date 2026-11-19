@@ -1,0 +1,2 @@
+target/membership-loop/iter0/shipped/demand.json periods equal to target/r48/demand.base.json: true
+target/membership-loop/iter0/training/demand.json periods equal to target/r48/demand.base.cv.json: true

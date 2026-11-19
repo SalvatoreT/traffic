@@ -1,0 +1,42 @@
+2026-11-19 08:29:06 AM PST START round 48 at 816c7b5
+2026-11-19 08:29:10 AM PST A: npm install
+2026-11-19 08:29:11 AM PST A: cargo build
+2026-11-19 08:29:11 AM PST A: fingerprint d45a275dd7be0713cec6a64394b7d8a9
+2026-11-19 08:29:12 AM PST A: vitest exit=0  Tests 20 passed (20)
+2026-11-19 08:29:12 AM PST B: npm run data
+2026-11-19 08:38:40 AM PST B: npm run data exit=0 wall_s=568
+2026-11-19 08:38:40 AM PST B: hashes 53c823f20d9165ed 9cdebdabf05c4460 2f9ae152b9bbf78e 
+2026-11-19 08:38:40 AM PST B: git status under data/: 0 line(s)
+2026-11-19 08:38:40 AM PST C: baseline screen
+2026-11-19 08:39:57 AM PST C: screen exit=0 wall_s=77
+2026-11-19 08:39:58 AM PST C: screen {"counts":{"am_peak":{"fitted":70,"fittedOf":77,"held":14,"heldOf":19},"pm_peak":{"fitted":73,"fittedOf":92,"held":14,"heldOf":24}},"gridlock":{"am_peak":{"scope":"judged zone","mean":0,"min":0,"max":0},"pm_peak":{"scope":"judged zone","mean":0,"min":0,"max":0}}}
+2026-11-19 08:39:58 AM PST BC done
+2026-11-19 08:39:58 AM PST D: start
+2026-11-19 08:39:58 AM PST D: status before apply: ?? openspec/changes/calibration-round-48/evidence/;
+applied simulated-membership
+2026-11-19 08:39:58 AM PST D:  1 file changed, 7 insertions(+)
+2026-11-19 08:39:58 AM PST D: config sha256 b74e86f898dd3a8f
+2026-11-19 08:39:58 AM PST D: dry run exit=0
+stations file data/demand/rockridge.stations.json: 357 stations; the frozen split withholds 91 from the training view
+shipped pm_peak: 337 selected (245 link, 92 movement or route), 6 stay static
+shipped am_peak: 272 selected (200 link, 72 movement or route), 6 stay static
+training pm_peak: 256 selected (187 link, 69 movement or route), 0 stay static, 87 withheld
+training am_peak: 201 selected (148 link, 53 movement or route), 0 stay static, 77 withheld
+2026-11-19 08:39:58 AM PST E: loop
+2026-11-19 09:29:16 AM PST E: loop exit=0 wall_s=2958
+2026-11-19 09:29:17 AM PST E: hashes 53c823f20d9165ed  public/data/rockridge.network.json;1771a9c4a51968c6  public/data/rockridge.demand.json;83396aeb2a4b1b63  target/validation/rockridge.demand.json;b99c26686c4c0cfc  target/membership/rockridge.membership-training.json;8f11b43838d3134d  target/membership/rockridge.membership.json;
+2026-11-19 09:29:17 AM PST E: network identical
+2026-11-19 09:29:17 AM PST E: pass 0 check: target/membership-loop/iter0/shipped/demand.json periods equal to target/r48/demand.base.json: true;target/membership-loop/iter0/training/demand.json periods equal to target/r48/demand.base.cv.json: true;
+2026-11-19 09:29:17 AM PST DE done
+2026-11-19 09:29:17 AM PST F: screen
+2026-11-19 09:30:53 AM PST F: screen exit=0 wall_s=96
+2026-11-19 09:30:54 AM PST F: {"counts":{"am_peak":{"fitted":73,"fittedOf":77,"held":15,"heldOf":19},"pm_peak":{"fitted":80,"fittedOf":92,"held":12,"heldOf":24}},"gridlock":{"am_peak":{"scope":"judged zone","mean":0,"min":0,"max":0},"pm_peak":{"scope":"judged zone","mean":0,"min":0,"max":0}}}
+2026-11-19 09:30:54 AM PST F: screen decision: PASS
+2026-11-19 09:30:54 AM PST G: validate
+2026-11-19 09:31:16 AM PST G: validate exit=0 r6   Route choice: share on a route 120 s (20%) costlier than the other, no link in common     0.01 [0.00 .. 0.04]  0.35 ok 67 of 74 cases pass wrote <worktree>/crates/sim/../../data/calibration/validation.md wrote <worktree>/crates/sim/../../data/calibration/validation.json 
+2026-11-19 09:31:16 AM PST G: changed after validate:  M data/calibration/validation.json;
+2026-11-19 09:34:25 AM PST G: assess exit=0 wall_s=189
+2026-11-19 09:34:25 AM PST FG done
+2026-11-19 09:34:25 AM PST restore: npm run data on the clean config
+2026-11-19 09:43:46 AM PST restore: exit=0 hashes 53c823f20d9165ed 9cdebdabf05c4460 2f9ae152b9bbf78e  status: ?? openspec/changes/calibration-round-48/evidence/;
+2026-11-19 09:43:46 AM PST ALL DONE 
