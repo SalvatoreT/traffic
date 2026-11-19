@@ -89,6 +89,8 @@ pub struct Eff {
     /// Perceived-cost weight per link in route choice (street-hierarchy preference; 1.0 on arterials).
     pub route_w: Vec<f32>,
     pub route_w_ung: Vec<f32>,
+    pub mv_ctrl: Vec<f32>,
+    pub link_ctrl: Vec<f32>,
     pub sig: Vec<Option<SigPlan>>,
     pub cycle_override: Vec<Option<f32>>,
     /// Links closed by a `one_way` intervention (everyone obeys); `closed` is the union with modal filters.
@@ -118,7 +120,8 @@ impl Eff {
         let nl = topo.n_links;
         let nn = topo.n_nodes;
         let mut closed = vec![false; nl];
-        let mut limit: Vec<f32> = net.links.iter().map(|l| l.speed_limit.max(1.0) as f32).collect();
+        let res_v = envf("ROUTER_RES_V", 1.0);
+        let mut limit: Vec<f32> = net.links.iter().map(|l| (l.speed_limit.max(1.0) as f32) * if matches!(l.class, RoadClass::Residential | RoadClass::Service) { res_v } else { 1.0 }).collect();
         let mut humps: Vec<Vec<f32>> = net
             .links
             .iter()
@@ -312,6 +315,7 @@ impl Eff {
         let mut mv_cost = vec![0.0; nm];
         let mut mv_vturn = vec![0.0; nm];
         let mut mv_ff = vec![0.0; nm];
+        let mut mv_ctrl = vec![0.0f32; nm];
         let mut mv_banned = vec![false; nm];
         let mut bike_mv_ok = vec![true; nm];
         let mut bike_mv_cost = vec![0.0; nm];
@@ -368,6 +372,7 @@ impl Eff {
                 K_UTURN => TURN_U_S,
                 _ => 0.0,
             };
+            let c_before = c;
             c += match ctrl[n] {
                 Control::Signal => dl.signal,
                 Control::AllWayStop => dl.all_way_stop,
@@ -381,6 +386,7 @@ impl Eff {
                 Control::TrafficCircle => dl.circle,
                 Control::Uncontrolled => 0.0,
             };
+            mv_ctrl[i] = c - c_before;
             {
                 let loc = |l: u32| matches!(net.links[l as usize].class, RoadClass::Residential | RoadClass::Service);
                 if loc(m.a) && loc(m.b) && matches!(ctrl[n], Control::Uncontrolled | Control::TwoWayStop) {
@@ -421,6 +427,14 @@ impl Eff {
             leg_in_closed,
             leg_out_closed,
             mv_ok,
+            link_ctrl: {
+                let mut lc = vec![0.0f32; nl];
+                for (i, m) in topo.mvs.iter().enumerate() {
+                    lc[m.a as usize] = mv_ctrl[i];
+                }
+                lc
+            },
+            mv_ctrl,
             mv_static: mv_cost.clone(),
             mv_cost,
             mv_vturn,
@@ -943,6 +957,11 @@ pub fn phase_state(p: &SigPlan, phase: usize, t: f64) -> u8 {
 
 /// Route-choice weight of a link class: residential and service streets are perceived as `local_factor` times
 /// their travel time [ASSUMPTION], everything else as 1.
+pub fn ctrl_mode() -> u8 {
+    static M: std::sync::OnceLock<u8> = std::sync::OnceLock::new();
+    *M.get_or_init(|| envf("ROUTER_CTRL_MODE", 0.0) as u8)
+}
+
 pub fn envf(name: &str, d: f32) -> f32 {
     std::env::var(name).ok().and_then(|v| v.parse().ok()).unwrap_or(d)
 }

@@ -1,8 +1,10 @@
 // Diagnostic only (router-diagnosis): score one-seed PM runs the way the audit did.
 // usage: tsx tools/diag/router-score.ts <runs-dir-prefix> [more prefixes...]   (prefix has _ship and _cv directories)
 import { readFileSync } from 'node:fs';
-import { readSeeds, scoreStations, shareStats, type StationFile } from '../lib/assess';
-const area = 'rockridge', p = 'pm_peak';
+import { readSeeds, scoreStations, shareStats, travelTimes, type StationFile } from '../lib/assess';
+const area = 'rockridge', p = process.env.PERIOD ?? 'pm_peak';
+const targets = JSON.parse(readFileSync(`data/calibration/${area}.targets.json`, 'utf8'));
+const netj = JSON.parse(readFileSync(`public/data/${area}.network.json`, 'utf8'));
 const stations: StationFile = JSON.parse(readFileSync(`data/demand/${area}.stations.json`, 'utf8'));
 const rec = JSON.parse(readFileSync(`data/demand/${area}.config.json`, 'utf8')).countFit.recency;
 const DIAG: Record<string, string> = { '2697': 'Forest EB', '1933': 'McAuley EB H-C(h)', '1868': '60th EB H-C(h)', '1831': 'Ayala NB M-H(h)', '2055': 'Howell SB 59-McA', '1870': '60th EB C-T', '1935': 'McAuley EB C-T', '2057': 'Howell SB McA-60', '1931': 'McAuley EB A-H', '2801': 'Ayala SB F-McA', '1832': 'Ayala SB M-H(h)' };
@@ -30,7 +32,10 @@ for (const pref of process.argv.slice(2)) {
   const cs = cn.reduce((a, j) => a + j.modeled, 0), cc = cn.reduce((a, j) => a + j.counted, 0);
   console.log(` Colby NB (6 blocks) sim/count ${Math.round(cs)}/${Math.round(cc)} = ${(cs / cc).toFixed(2)}; others:`, Object.entries(OTHER).map(([n, id]) => `${n} ${g(id)}`).join('; '));
   const d5ids = ['2697', '1933', '1868', '1831', '2055'];
-  console.log(` DIAG5 sum sim/count ${Math.round(d5ids.reduce((a, id) => a + by.get(id).modeled, 0))}/${Math.round(d5ids.reduce((a, id) => a + by.get(id).counted, 0))}`);
+  const ex = d5ids.filter((id) => by.get(id));
+  console.log(` DIAG5 (${ex.length} stations with a ${p} target) sum sim/count ${Math.round(ex.reduce((a, id) => a + by.get(id).modeled, 0))}/${Math.round(ex.reduce((a, id) => a + by.get(id).counted, 0))}`);
   console.log(' D5 shares model(obs):', head.join('; '));
+  console.log(' whole-street model/obs:', (run.throughCheck ?? []).map((r: any) => `${r.block} ${Math.round(r.modeledWholeStreet)}/${Math.round(r.observedWholeStreet)}`).join('; '), '| through cars:', (run.throughCheck ?? []).map((r: any) => Math.round(r.modeledThrough)).join('/'));
+  console.log(' gridlockRemoved', run.health.gridlockRemoved, ' travel s (sim vs observed range):', travelTimes([run], netj, targets.travelTimes.segments, p).map((r) => `${r.id.split(',')[0].replace(' Ave','')} ${Math.round(r.modeledS)} (${Math.round(r.observedS[0])}-${Math.round(r.observedS[1])})`).join('; '));
   console.log(' health: completed', Math.round(run.health.completed), 'backlog%', run.health.backlogPct?.toFixed?.(1), 'arterial speed', run.health.arterialMeanSpeed?.toFixed?.(2));
 }

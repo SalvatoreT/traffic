@@ -1241,7 +1241,7 @@ impl Simulation {
         self.win_exit.iter_mut().for_each(|x| *x = 0);
         self.next_adapt_t = self.t + self.adapt_interval();
         for l in 0..self.topo.n_links {
-            self.link_cost[l] = self.eff.ff[l].max(self.ema[l]);
+            self.link_cost[l] = if crate::eff::ctrl_mode() == 2 { (self.eff.ff[l] + self.eff.link_ctrl[l]).max(self.ema[l]) } else { self.eff.ff[l].max(self.ema[l]) };
         }
         self.apply_mv_times();
         self.router.invalidate();
@@ -3833,7 +3833,7 @@ impl Simulation {
             }
             self.tt_sum[l] = 0.0;
             self.tt_n[l] = 0;
-            self.link_cost[l] = self.eff.ff[l].max(self.ema[l]);
+            self.link_cost[l] = if crate::eff::ctrl_mode() == 2 { (self.eff.ff[l] + self.eff.link_ctrl[l]).max(self.ema[l]) } else { self.eff.ff[l].max(self.ema[l]) };
         }
         for m in 0..self.mv_ema.len() {
             let a = self.topo.mvs[m].a as usize;
@@ -3859,8 +3859,10 @@ impl Simulation {
     pub(crate) fn apply_mv_times(&mut self) {
         for m in 0..self.mv_ema.len() {
             let a = self.topo.mvs[m].a as usize;
-            let extra = if self.mv_ema[m] > 0.0 { self.mv_ema[m].max(self.eff.ff[a]) - self.link_cost[a] } else { 0.0 };
-            self.eff.mv_cost[m] = self.eff.mv_static[m] + extra * self.eff.route_w[a];
+            let base = self.eff.ff[a].max(self.ema[a]);
+            let extra = if self.mv_ema[m] > 0.0 { self.mv_ema[m].max(self.eff.ff[a]) - base } else { 0.0 };
+            let sub = match crate::eff::ctrl_mode() { 1 => if self.ema[a] > 0.0 { self.eff.mv_ctrl[m] } else { 0.0 }, 2 => self.eff.mv_ctrl[m], _ => 0.0 };
+            self.eff.mv_cost[m] = self.eff.mv_static[m] - sub + extra * self.eff.route_w[a];
         }
     }
 
