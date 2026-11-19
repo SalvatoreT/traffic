@@ -88,6 +88,7 @@ pub struct Eff {
     pub ff: Vec<f32>,
     /// Perceived-cost weight per link in route choice (street-hierarchy preference; 1.0 on arterials).
     pub route_w: Vec<f32>,
+    pub route_w_ung: Vec<f32>,
     pub sig: Vec<Option<SigPlan>>,
     pub cycle_override: Vec<Option<f32>>,
     /// Links closed by a `one_way` intervention (everyone obeys); `closed` is the union with modal filters.
@@ -362,8 +363,8 @@ impl Eff {
             }
             mv_ff[i] = len / vt.min(vlim);
             let mut c = match m.kind {
-                K_RIGHT => TURN_RIGHT_S,
-                K_LEFT => TURN_LEFT_S,
+                K_RIGHT => envf("ROUTER_TURN_R", TURN_RIGHT_S),
+                K_LEFT => envf("ROUTER_TURN_L", TURN_LEFT_S),
                 K_UTURN => TURN_U_S,
                 _ => 0.0,
             };
@@ -380,6 +381,12 @@ impl Eff {
                 Control::TrafficCircle => dl.circle,
                 Control::Uncontrolled => 0.0,
             };
+            {
+                let loc = |l: u32| matches!(net.links[l as usize].class, RoadClass::Residential | RoadClass::Service);
+                if loc(m.a) && loc(m.b) && matches!(ctrl[n], Control::Uncontrolled | Control::TwoWayStop) {
+                    c += envf("ROUTER_XING_S", 0.0);
+                }
+            }
             mv_cost[i] = c + mv_ff[i];
             // Bicycle movement cost: same turn and control delays, ASSUMPTION: crossing time at bicycle turn speed.
             let bt = bike_mv_vturn[i].min(BIKE_COST_V).max(1.0);
@@ -424,6 +431,7 @@ impl Eff {
             ring_node,
             ff,
             route_w: net.links.iter().map(|l| class_weight(l.class, LOCAL_COST_FACTOR)).collect(),
+            route_w_ung: net.links.iter().map(|l| class_weight(l.class, envf("ROUTER_UNG_LF", LOCAL_COST_FACTOR))).collect(),
             sig: (0..nn).map(|_| None).collect(),
             cycle_override,
             oneway_closed,
@@ -935,10 +943,15 @@ pub fn phase_state(p: &SigPlan, phase: usize, t: f64) -> u8 {
 
 /// Route-choice weight of a link class: residential and service streets are perceived as `local_factor` times
 /// their travel time [ASSUMPTION], everything else as 1.
+pub fn envf(name: &str, d: f32) -> f32 {
+    std::env::var(name).ok().and_then(|v| v.parse().ok()).unwrap_or(d)
+}
+
 pub fn class_weight(class: crate::model::RoadClass, local_factor: f32) -> f32 {
     match class {
         crate::model::RoadClass::Residential | crate::model::RoadClass::Service => local_factor,
-        _ => 1.0,
+        crate::model::RoadClass::Motorway => 1.0,
+        _ => envf("ROUTER_ART_W", 1.0),
     }
 }
 

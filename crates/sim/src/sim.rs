@@ -3499,7 +3499,11 @@ impl Simulation {
             Start::Link(l) => route::From::Link(l),
         };
         let any = |_: u32| true;
-        self.perceived.search(&self.topo, self.eff.car_modal(), &self.link_cost, beta, seed, from, goal, first_ok.unwrap_or(&any), out).is_some()
+        let mut modal = self.eff.car_modal();
+        if seed != NO_NOISE && !self.is_guided(seed) {
+            modal.w = &self.eff.route_w_ung;
+        }
+        self.perceived.search(&self.topo, modal, &self.link_cost, beta, seed, from, goal, first_ok.unwrap_or(&any), out).is_some()
     }
 
     /// Cheapest cost-to-go over the first steps from `start` (the first link out of a node, or the movements out of a link) in cost table `tab`.
