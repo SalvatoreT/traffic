@@ -1,0 +1,635 @@
+
+> data
+> tsx tools/import-osm.ts && tsx tools/build-demand.ts && tsx tools/build-demand.ts --view training && tsx tools/build-assumptions.ts
+
+rockridge-compact: 553 nodes, 1305 links
+links by class: motorway=32 primary=90 residential=737 secondary=172 service=85 tertiary=189
+nodes by control: all_way_stop=24 signal=37 traffic_circle=6 two_way_stop=137 uncontrolled=349
+stopAtEnd links: 267, links with humps: 104
+gates: 78
+  (unnamed)=8 (unnamed)/Grove Shafter Freeway=2 49th Street=1 50th Street=1 51st Street=2 52nd Street=1 55th Street=1 56th Street=1 57th Street=1 58th Street=1 59th Street=1 61st Street=1 62nd Street=1 63rd Street=1 66th Street=1 Aileen Street=1 Alcatraz Avenue=1 Ashby Avenue=1 Avon Street=1 Benvenue Avenue=1 Boyd Avenue=1 Broadway=2 Brookside Avenue=1 Bryant Avenue=1 Carlton Street=1 Cavour Street=1 Chabot Road=1 Claremont Avenue=1 Claremont Boulevard=1 Clarke Street=1 Clifton Street=1 College Avenue=2 Domingo Avenue=1 Ellsworth Street=1 Florence Street=1 Fulton Street=1 Golden Gate Avenue=1 Grove Shafter Freeway=2 Hillegass Avenue=1 Hudson Street=1 Kales Avenue=1 Lawton Avenue=2 Manila Avenue=2 Margarido Drive=1 Mendocino Avenue=1 Monroe Avenue=1 Oak Ridge Road=1 Ocean View Drive=1 Piedmont Avenue=1 Pine Avenue=1 Prince Street=1 Regent Street=1 Rockridge Place=1 Shafter Avenue=1 Shattuck Avenue=2 South Rockridge Boulevard=1 Taft Avenue=1 Telegraph Avenue=2 The Uplands=1 Thomas Avenue=1 Tunnel Road=1 Webster Street=1
+study area: 69 nodes, 197 links (residential=132 secondary=41 service=4 tertiary=20)
+WARNING: signal observation not applied: Martin Luther King Junior Way (Martin Luther King Junior Way): no signal matches
+WARNING: signal observation not applied: Martin Luther King Junior Way (Martin Luther King Junior Way): no signal matches
+WARNING: signal observation not applied: Martin Luther King Junior Way (Martin Luther King Junior Way): no signal matches
+WARNING: signal observation not applied: Martin Luther King Junior Way (Martin Luther King Junior Way): no signal matches
+WARNING: signal observation not applied: Martin Luther King Junior Way (Martin Luther King Junior Way): no signal matches
+WARNING: signal observation not applied: Martin Luther King Junior Way (Martin Luther King Junior Way): no signal matches
+stats: {"promotedSignals":1,"stopsIgnoredFar":0,"stopsUnattributed":1,"humpsAtJunction":0,"prunedLinks":21,"gateCandidates":88,"merged":117,"collapsedRings":68,"joinedClusters":59,"joinedNodes":125,"turnBans":26,"turnBansTimed":6,"restrictionsSkipped":91,"restrictionsUnresolved":78,"freewayStubLinksJoined":0}
+freeway exit gates merged: OSM nodes -2000000000072, -2000000000068 -> -2000000000072 (stubs within 6 m of their centroid)
+freeway exit gates merged: OSM nodes -2000000000008, -2000000000007 -> -2000000000007 (stubs within 9 m of their centroid)
+freeway entry gates merged: OSM nodes -2000000000004, -2000000000010 -> -2000000000004 (stubs within 15 m of their centroid)
+freeway entry gates merged: OSM nodes -2000000000069, -2000000000070 -> -2000000000069 (stubs within 5 m of their centroid)
+joined clusters (largest ten of 59):
+  4 nodes, other: 58th Street / Racine Street / Telegraph Avenue
+  4 nodes, other: Prince Street / Telegraph Avenue
+  3 nodes, other: 49th Street / Telegraph Avenue
+  3 nodes, other: 53rd Street / Shattuck Avenue
+  3 nodes, other: College Avenue
+  2 nodes, other: Ashby Avenue / Ashby Place / Elmwood Avenue
+  2 nodes, other: Brookside Avenue / Brookside Drive / Claremont Avenue
+  2 nodes, signal: 52nd Street / Claremont Avenue / Telegraph Avenue
+  2 nodes, other: 60th Street / Claremont Avenue / Hillegass Avenue
+  2 nodes, signal: Ashby Avenue / Domingo Avenue / Tunnel Road
+rockridge: 1762 nodes, 4411 links
+links by class: motorway=97 primary=240 residential=2692 secondary=401 service=307 tertiary=674
+nodes by control: all_way_stop=86 signal=94 traffic_circle=37 two_way_stop=414 uncontrolled=1131
+stopAtEnd links: 896, links with humps: 497
+gates: 123
+  (unnamed)=8 (unnamed)/45th Street=1 (unnamed)/Grove Shafter Freeway=1 42nd Street=2 43rd Street=2 43rd Street/West Street=1 44th Street=2 54th Street=1 55th Street=1 59th Street=1 61st Street=1 62nd Street=1 63rd Street=1 65th Street=1 66th Street=1 67th Street=1 Acton Street=1 Acton Street/Carleton Street=1 Adeline Street=1 Alcatraz Avenue=1 Alvarado Road=1 Amito Avenue=1 Aquarius Way=1 Ashby Avenue=1 Benvenue Avenue=1 Boyer Street=1 Boyer Street/53rd Street=1 Broadway Terrace=1 Broadway=3 Buckingham Boulevard=1 Burnett Street=1 Caldecott Lane=1 California Street=1 Carleton Street=1 Carleton Street/Grant Street=1 Carleton Street/McGee Avenue=1 Carrison Street=1 Claremont Avenue=1 Claremont Boulevard=1 College Avenue=1 Dana Street=1 Derby Street=2 Doyle Street=1 Duncan Way=1 Ellsworth Street=1 Estates Drive=1 Evergreen Lane=1 Fairlane Drive=1 Fulton Street=1 Glenwood Glade=1 Gravatt Drive=2 Grove Shafter Freeway/(unnamed)=2 Harbord Drive=1 Harbord Drive/Moraga Avenue=1 Haskell Street=1 Herzog Street=1 Hillegass Avenue=1 Hilltop Crescent=1 Mabel Street=1 Mabel Street/Russell Street=1 Market Street=1 Marshall Street=1 Martin Luther King Junior Way=2 Masonic Avenue=1 Masonic Place=1 Maxwelton Road=1 Milvia Street=1 Moraga Avenue=1 Mountain Boulevard=1 Norfolk Road=1 Oak Knoll Terrace=1 Palm Court=1 Parker Street=1 Parker Street/Sacramento Street=1 Piedmont Avenue=1 Pinewood Road=1 Pleasant Valley Avenue=1 Pleasant Valley Avenue/(unnamed)=1 Powell Street=2 Regent Street=1 Ruthland Road=1 Sacramento Street/Parker Street=1 Salem Street=1 San Pablo Avenue=3 San Pablo Avenue/43rd Street=1 Shafter Avenue/44th Street=1 Shattuck Avenue=2 Stanford Avenue=1 Steve Dain Drive=2 Swainland Road=1 Telegraph Avenue=2 Tunnel Road=2 Ward Street=1 Ward Street/Telegraph Avenue=1 Warren Freeway=2 Webster Street/44th Street=1 Westmoorland Drive=1 Whitmore Place=1 Whitmore Street/Gilbert Street=1
+study area: 69 nodes, 197 links (residential=132 secondary=41 service=4 tertiary=20)
+stats: {"promotedSignals":1,"stopsIgnoredFar":0,"stopsUnattributed":7,"humpsAtJunction":12,"prunedLinks":311,"gateCandidates":157,"merged":323,"collapsedRings":68,"joinedClusters":173,"joinedNodes":382,"turnBans":66,"turnBansTimed":11,"restrictionsSkipped":91,"restrictionsUnresolved":37,"freewayStubLinksJoined":2}
+WARNING: 2 gate(s) within 60 m of a signalized junction (a gate should sit mid-block; move the bbox edge or accept the corridor):
+  gate 265 Ashby Avenue: 22 m
+  gate 973 Broadway: 11 m
+freeway entry gates merged: OSM nodes 9064855959, 9064855966, 9072821325 -> 9064855966 (stubs within 24 m of their centroid)
+freeway exit gates merged: OSM nodes 9067630505, 95110111 -> 9067630505 (stubs within 15 m of their centroid)
+freeway entry gates merged: OSM nodes 7281342648, 7281343323 -> 7281342648 (stubs within 8 m of their centroid)
+freeway exit gates merged: OSM nodes 6505249024, 1214165558 -> 6505249024 (stubs within 7 m of their centroid)
+joined clusters (largest ten of 173):
+  4 nodes, signal: 53rd Street / Martin Luther King Junior Way / West Street
+  4 nodes, other: 58th Street / Racine Street / Telegraph Avenue
+  4 nodes, signal: 51st Street / Broadway / Pleasant Valley Avenue
+  4 nodes, signal: 54th Street / Martin Luther King Junior Way
+  4 nodes, other: 51st Street / Desmond Street
+  4 nodes, other: Prince Street / Telegraph Avenue
+  4 nodes, signal: 48th Street / Telegraph Avenue
+  4 nodes, signal: San Pablo Avenue / Stanford Avenue
+  4 nodes, signal: Market Street / Stanford Avenue
+  3 nodes, other: 59th Street / Grace Avenue / Los Angeles Street / Stanford Avenue
+Intent flows am_peak: on-2853241697 0, on-other 0, off-52990846 0, off-other 0, south-to-north 1496, north-to-south 1491, oakland-crosstown 2144, none 18073 veh/h (all flows, through or not)
+Intent flows midday: on-2853241697 0, on-other 0, off-52990846 0, off-other 0, south-to-north 1104, north-to-south 1048, oakland-crosstown 1513, none 12556 veh/h (all flows, through or not)
+Intent flows pm_peak: on-2853241697 0, on-other 0, off-52990846 0, off-other 0, south-to-north 1702, north-to-south 1463, oakland-crosstown 3076, none 21371 veh/h (all flows, through or not)
+Demand for rockridge: 117 surface gates, 6 freeway gates, 36 ramps, 1101 local nodes (LODES ok); TMC ok
+
+Period        total veh/h  through   local    ramp  (ramp->local)  through%  local%  ramp%  flows  pruned
+am_peak           23204     3745    9587    9872           6241       16%     41%    43%  10913 1449923
+midday            16221     3093    6176    6952           4256       19%     38%    43%  10804 1452017
+pm_peak           27612     5908   10361   11343           7420       21%     38%    41%  11324 1451397
+through supply 9409 vs demand 9343 veh/h (demand scaled to supply)
+pruning kept 100% of the volume; after fitting, class total factors ramp 1.022, through 1.001, local 1.091
+Class defaults:
+  primary: 2 counted street(s) (sanpablo 20500, ashby 28000), fewer than 9999, documented 14000 kept
+  secondary: 1 counted street(s) (telegraph 18018), fewer than 9999, documented 9000 kept
+  tertiary: 4 counted street(s) (alcatraz 12992, market 11497, west 5289, tunnel 27000), fewer than 9999, documented 5000 kept
+  residential: 1 counted street(s) (55th 3767), fewer than 9999, documented 800 kept
+  service: 0 counted street(s), fewer than 9999, documented 150 kept
+Peripheral rules:
+  am_peak: P1 dropped 615 veh/h of 10078 through veh/h (perimeter gap < 600 m 127, route within 300 m of the edge 588; the two overlap by 100); P2 cap removed 3089 veh/h of peripheral trips, 1819 veh/h above cap with no peripheral trips left
+    8 Powell Street out target 379, lane cap 1674, other 137, through 383, cut 141
+    14 55th Street out target 81, lane cap 837, other 30, through 84, cut 33
+    24 Boyer Street out target 13, lane cap 1674, other 5, through 13, cut 5
+    25 Boyer Street out target 13, lane cap 837, other 5, through 13, cut 5
+    26 Doyle Street out target 26, lane cap 837, other 10, through 26, cut 10
+    40 Marshall Street out target 61, lane cap 837, other 22, through 62, cut 23
+    44 54th Street out target 26, lane cap 837, other 9, through 27, cut 10
+    74 San Pablo Avenue out target 329, lane cap 3348, other 141, through 293, cut 105
+    86 45th Street out target 26, lane cap 1674, other 10, through 26, cut 10
+    103 Steve Dain Drive out target 34, lane cap 837, other 13, through 34, cut 13
+    106 Haskell Street out target 26, lane cap 837, other 8, through 30, cut 12
+    111 65th Street out target 26, lane cap 837, other 9, through 28, cut 11
+    133 62nd Street out target 26, lane cap 837, other 8, through 25, cut 8
+    139 63rd Street out target 26, lane cap 837, other 9, through 28, cut 11
+    150 Salem Street out target 26, lane cap 837, other 9, through 28, cut 11
+    157 59th Street out target 26, lane cap 837, other 8, through 26, cut 8
+    179 San Pablo Avenue out target 863, lane cap 1674, other 285, through 825, cut 247
+    181 66th Street out target 26, lane cap 837, other 8, through 29, cut 11
+    182 61st Street out target 26, lane cap 837, other 9, through 25, cut 8
+    184 Alcatraz Avenue out target 400, lane cap 837, other 139, through 436, cut 175
+    214 Parker Street out target 54, lane cap 1674, other 18, through 58, cut 23
+    219 Carrison Street out target 26, lane cap 837, other 8, through 30, cut 12
+    223 Ward Street out target 26, lane cap 837, other 8, through 30, cut 12
+    234 Derby Street out target 26, lane cap 837, other 8, through 28, cut 10
+    243 Acton Street out target 13, lane cap 2511, other 4, through 14, cut 5
+    253 Sacramento Street out target 54, lane cap 2511, other 19, through 58, cut 23
+    259 Acton Street out target 13, lane cap 837, other 4, through 14, cut 5
+    261 Burnett Street out target 26, lane cap 837, other 8, through 29, cut 12
+    262 Mabel Street out target 13, lane cap 837, other 4, through 15, cut 6
+    263 Mabel Street out target 13, lane cap 1674, other 4, through 15, cut 6
+    265 Ashby Avenue out target 900, lane cap 1674, other 292, through 1041, cut 432
+    275 Market Street out target 249, lane cap 837, other 125, through 186, cut 62
+    276 Martin Luther King Junior Way out target 289, lane cap 1674, other 162, through 213, cut 86
+    288 Adeline Street out target 289, lane cap 837, other 134, through 232, cut 77
+    295 43rd Street out target 81, lane cap 2511, other 44, through 56, cut 19
+    545 California Street out target 26, lane cap 837, other 9, through 28, cut 11
+    553 Milvia Street out target 26, lane cap 837, other 11, through 25, cut 10
+    577 Martin Luther King Junior Way out target 161, lane cap 1674, other 65, through 163, cut 67
+    901 Fulton Street out target 26, lane cap 837, other 12, through 24, cut 10
+    918 Dana Street out target 26, lane cap 837, other 12, through 24, cut 10
+    921 Derby Street out target 26, lane cap 837, other 12, through 24, cut 10
+    928 Ellsworth Street out target 26, lane cap 837, other 11, through 24, cut 10
+    943 Ward Street out target 548, lane cap 2511, other 254, through 501, cut 208
+    953 Shattuck Avenue out target 379, lane cap 1674, other 179, through 342, cut 142
+    970 Pleasant Valley Avenue out target 344, lane cap 1674, other 251, through 128, cut 35
+    971 Pleasant Valley Avenue out target 145, lane cap 837, other 101, through 61, cut 17
+    973 Broadway out target 589, lane cap 1674, other 450, through 196, cut 57
+    1168 Regent Street out target 26, lane cap 837, other 12, through 24, cut 10
+    1178 Benvenue Avenue out target 26, lane cap 837, other 12, through 23, cut 10
+    1180 Hillegass Avenue out target 26, lane cap 837, other 12, through 24, cut 10
+    1200 Piedmont Avenue out target 26, lane cap 837, other 12, through 23, cut 10
+    1219 College Avenue out target 161, lane cap 837, other 82, through 134, cut 56
+    1223 Oak Knoll Terrace out target 26, lane cap 837, other 12, through 25, cut 7
+    1225 Palm Court out target 26, lane cap 837, other 12, through 24, cut 10
+    1369 Gravatt Drive out target 13, lane cap 837, other 3, through 17, cut 5
+    1370 Gravatt Drive out target 13, lane cap 837, other 4, through 16, cut 4
+    1394 Evergreen Lane out target 26, lane cap 837, other 8, through 31, cut 9
+    1398 Claremont Boulevard out target 161, lane cap 837, other 77, through 146, cut 42
+    1447 Alvarado Road out target 26, lane cap 837, other 8, through 31, cut 9
+    1478 Hilltop Crescent out target 26, lane cap 837, other 11, through 26, cut 4
+    1497 Maxwelton Road out target 26, lane cap 837, other 11, through 26, cut 4
+    1518 Harbord Drive out target 80, lane cap 1674, other 33, through 83, cut 12
+    1519 Harbord Drive out target 96, lane cap 1674, other 37, through 103, cut 15
+    1548 Tunnel Road out target 434, lane cap 1674, other 134, through 522, cut 133
+    1622 Amito Avenue out target 26, lane cap 837, other 6, through 34, cut 10
+    1644 Broadway Terrace out target 161, lane cap 837, other 70, through 159, cut 15
+    1650 Masonic Avenue out target 26, lane cap 837, other 10, through 28, cut 3
+    1655 Duncan Way out target 161, lane cap 837, other 71, through 156, cut 15
+    1657 Aquarius Way out target 26, lane cap 837, other 10, through 27, cut 3
+    1660 Masonic Place out target 26, lane cap 837, other 10, through 28, cut 3
+    1661 Estates Drive out target 26, lane cap 837, other 10, through 28, cut 3
+    1668 Glenwood Glade out target 26, lane cap 837, other 11, through 25, cut 3
+    1675 Moraga Avenue out target 145, lane cap 837, other 56, through 155, cut 23
+    1676 Mountain Boulevard out target 26, lane cap 837, other 10, through 27, cut 2
+    1678 Ruthland Road out target 26, lane cap 837, other 11, through 26, cut 2
+    1682 Fairlane Drive out target 26, lane cap 837, other 9, through 29, cut 2
+    1684 Pinewood Road out target 26, lane cap 837, other 11, through 26, cut 2
+    1685 Swainland Road out target 26, lane cap 837, other 9, through 29, cut 3
+    1697 Broadway out target 26, lane cap 837, other 12, through 23, cut 1
+    1702 Norfolk Road out target 26, lane cap 837, other 7, through 33, cut 9
+    1708 Westmoorland Drive out target 26, lane cap 837, other 6, through 33, cut 9
+    1717 Tunnel Road out target 434, lane cap 837, other 129, through 531, cut 136
+    1724 (unnamed) out target 26, lane cap 837, other 8, through 31, cut 8
+    1730 Herzog Street out target 26, lane cap 837, other 8, through 28, cut 11
+    1735 Telegraph Avenue out target 466, lane cap 837, other 308, through 264, cut 106
+    1756 Claremont Avenue out target 289, lane cap 837, other 133, through 273, cut 77
+    1760 Buckingham Boulevard out target 26, lane cap 837, other 7, through 33, cut 8
+    1761 Caldecott Lane out target 26, lane cap 837, other 10, through 28, cut 3
+  midday: P1 dropped 354 veh/h of 5213 through veh/h (perimeter gap < 600 m 70, route within 300 m of the edge 338; the two overlap by 55); P2 cap removed 0 veh/h of peripheral trips, 0 veh/h above cap with no peripheral trips left
+  pm_peak: P1 dropped 579 veh/h of 9343 through veh/h (perimeter gap < 600 m 118, route within 300 m of the edge 556; the two overlap by 94); P2 cap removed 0 veh/h of peripheral trips, 0 veh/h above cap with no peripheral trips left
+
+Pedestrian and bicycle flows (persons/h; 4 Oakland counts)
+  pedestrian: PM peak crosswalk traversals at the counted intersection 159 before scaling, observed 151, factor 0.534, in the final flow list 150
+    am_peak    2228/h in 2000 flows of 7661 (unroutable demand 98.1 persons/h, to gates 518, to commercial streets 322, gate-to-gate 0)
+    midday     2645/h in 2000 flows of 9231 (unroutable demand 103.3 persons/h, to gates 621, to commercial streets 394, gate-to-gate 0)
+    pm_peak    2907/h in 2000 flows of 10009 (unroutable demand 98.8 persons/h, to gates 690, to commercial streets 446, gate-to-gate 0)
+  bicycle: PM peak bicycle movements at the counted intersection 766 before scaling, observed 82, factor 0.107, in the final flow list 0
+    am_peak     703/h in  497 flows of 497 (unroutable demand 0.0 persons/h, to gates 321, to commercial streets 0, gate-to-gate 182)
+    midday      386/h in  105 flows of 105 (unroutable demand 0.0 persons/h, to gates 178, to commercial streets 0, gate-to-gate 99)
+    pm_peak     764/h in  626 flows of 626 (unroutable demand 0.0 persons/h, to gates 356, to commercial streets 0, gate-to-gate 194)
+  flows per period, all modes: am_peak 10913, midday 10804, pm_peak 11324
+Unroutable flows dropped by the final check (all periods, veh/h): 2.2
+
+Freeway ramps (kind, surface node, surface streets -> freeway gate(s); volume source)
+  on  node 280  Martin Luther King Junior Way      to   gate 675  ADT   9650 DATA: Caltrans ramp ADT: 04-ALA-024 PM R2.503 "SEG WB ON FR GROVE ST." 19300 (2012), shared by 2 ramps
+  on  node 679  Martin Luther King Junior Way      to   gate 675  ADT   9650 DATA: Caltrans ramp ADT: 04-ALA-024 PM R2.503 "SEG WB ON FR GROVE ST." 19300 (2012), shared by 2 ramps
+  off node 683  Claremont Avenue / Clifton Street  from gate 602  ADT  10800 DATA: Caltrans ramp ADT: 04-ALA-024 PM R3.064 "EB OFF TO CLAREMONT" 10800 (2012)
+  on  node 701  Telegraph Avenue / 56th Street     to   gate 1674,1726 ADT   7300 DATA: Caltrans ramp ADT: 04-ALA-024 PM R3.250 "EB ON FR TELEGRAPH" 7300 (2012)
+  off node 702  Telegraph Avenue / Aileen Street   from gate 1672,1719 ADT   6900 DATA: Caltrans ramp ADT: 04-ALA-024 PM R3.360 "WB OFF TO TELEGRAPH AVE." 6900 (2012)
+  off node 719  Martin Luther King Junior Way      from gate 602  ADT  18400 DATA: Caltrans ramp ADT: 04-ALA-024 PM R2.560 "SEG OFF EB 24/RTE 580 TO ML KING JR" 18400 (2017)
+  on  node 725  52nd Street                        to   gate 675  ADT  12900 DATA: Caltrans ramp ADT: 04-ALA-024 PM R2.502 "SEG WB ON FR 52ND ST." 12900 (2012)
+  off node 727  52nd Street                        from gate 602  ADT  14200 DATA: Caltrans ramp ADT: 04-ALA-024 PM R2.559 "SEG OFF RTE 24/RTE 580 TO 52ND ST" 14200 (2017)
+  on  node 833  Claremont Avenue / Hudson Street   to   gate 675  ADT   9800 DATA: Caltrans ramp ADT: 04-ALA-024 PM R3.270 "WB ON FR CLAREMONT" 9800 (2012)
+  off node 1133 Keith Avenue                       from gate 602  ADT   5300 DATA: Caltrans ramp ADT: 04-ALA-024 PM R3.973 "EB OFF TO BROADWAY" 5300 (2012)
+  on  node 1312 Brookside Avenue / Broadway        to   gate 1674,1726 ADT   3900 DATA: Caltrans ramp ADT: 04-ALA-024 PM R4.391 "EB ON FR BROADWAY" 7800 (2012), shared by 2 ramps
+  on  node 1320 Broadway                           to   gate 1674,1726 ADT   3900 DATA: Caltrans ramp ADT: 04-ALA-024 PM R4.391 "EB ON FR BROADWAY" 7800 (2012), shared by 2 ramps
+  off node 1350 Broadway                           from gate 1672,1719 ADT   3500 DATA: Caltrans ramp ADT: 04-ALA-024 PM R4.412 "WB OFF TO BROADWAY" 3500 (2012)
+  off node 1556 Broadway Terrace                   from gate 602,1719 ADT   3525 DATA: Caltrans ramp ADT: 04-ALA-013 PM 8.869 "NB OFF TO BROADWAY TERR." 2950 (2012); 04-ALA-013 PM R9.199 "SB OFF TO BROADWAY TERR." 4100 (2012), shared by 2 ramps
+  on  node 1556 Broadway Terrace                   to   gate 1674 ADT   2425 DATA: Caltrans ramp ADT: 04-ALA-013 PM R9.176 "NB ON FR BROADWAY TERR." 4850 (2012), shared by 2 ramps
+  off node 1567 CA 13                              from gate 1672 ADT    500 ASSUMPTION: no published ramp count matched; default ADT 500
+  off node 1577 Broadway Terrace                   from gate 602,1719 ADT   3525 DATA: Caltrans ramp ADT: 04-ALA-013 PM 8.869 "NB OFF TO BROADWAY TERR." 2950 (2012); 04-ALA-013 PM R9.199 "SB OFF TO BROADWAY TERR." 4100 (2012), shared by 2 ramps
+  off node 1581 CA 13                              from gate 1719 ADT    500 ASSUMPTION: no published ramp count matched; default ADT 500
+  on  node 1583 CA 13                              to   gate 1674 ADT    500 ASSUMPTION: no published ramp count matched; default ADT 500
+  off node 1663 Glenwood Glade                     from gate 1672 ADT    500 ASSUMPTION: no published ramp count matched; default ADT 500
+  off node 1667 Glenwood Glade                     from gate 1672 ADT    500 ASSUMPTION: no published ramp count matched; default ADT 500
+  on  node 1669 Glenwood Glade / Broadway Terrace / Pinewood Road to   gate 1726,675 ADT   2425 DATA: Caltrans ramp ADT: 04-ALA-013 PM R9.176 "NB ON FR BROADWAY TERR." 4850 (2012), shared by 2 ramps
+  off node 1671 Glenwood Glade                     from gate 1672 ADT    500 ASSUMPTION: no published ramp count matched; default ADT 500
+  on  node 1683 Pinewood Road                      to   gate 1726,675 ADT    500 ASSUMPTION: no published ramp count matched; default ADT 500
+  off node 1695 Caldecott Lane                     from gate 1719 ADT   1250 DATA: Caltrans ramp ADT: 04-ALA-024 PM R5.682 "WB OFF TO CALDECOTT LN." 1250 (2024)
+  on  node 1695 Caldecott Lane                     to   gate 1674,675 ADT    675 DATA: Caltrans ramp ADT: 04-ALA-024 PM R5.584 "WB ON FR CALDECOTT LANE" 1350 (2024), shared by 2 ramps
+  off node 1698 Broadway                           from gate 1672,602 ADT    500 ASSUMPTION: no published ramp count matched; default ADT 500
+  on  node 1698 Broadway                           to   gate 1726 ADT    500 ASSUMPTION: no published ramp count matched; default ADT 500
+  on  node 1711 Caldecott Lane                     to   gate 1674,675 ADT    675 DATA: Caltrans ramp ADT: 04-ALA-024 PM R5.584 "WB ON FR CALDECOTT LANE" 1350 (2024), shared by 2 ramps
+  on  node 1713 Broadway                           to   gate 1726 ADT    500 ASSUMPTION: no published ramp count matched; default ADT 500
+  off node 1715 Broadway                           from gate 1672,602 ADT    500 ASSUMPTION: no published ramp count matched; default ADT 500
+  off node 1720 Broadway                           from gate 1672,602 ADT    500 ASSUMPTION: no published ramp count matched; default ADT 500
+  off node 1722 Broadway                           from gate 1672,602 ADT    500 ASSUMPTION: no published ramp count matched; default ADT 500
+  on  node 1722 Broadway                           to   gate 1726 ADT    500 ASSUMPTION: no published ramp count matched; default ADT 500
+  on  node 1741 Miles Avenue                       to   gate 675  ADT   4000 DATA: Caltrans ramp ADT: 04-ALA-024 PM R3.980 "WB ON FR PATTON ST." 4000 (2012)
+  off node 1743 Miles Avenue                       from gate 1672,1719 ADT   3500 DATA: Caltrans ramp ADT: 04-ALA-024 PM R4.190 "WB OFF TO COLLEGE AVE" 3500 (2012)
+
+Freeway gates, veh/h by period (out = enters the model at the gate, in = leaves it)
+  gate 602  am_peak out 3656 in 0  |  midday out 2537 in 0  |  pm_peak out 3945 in 0
+  gate 675  am_peak out 0 in 3159  |  midday out 0 in 2087  |  pm_peak out 0 in 3778
+  gate 1672 am_peak out 821 in 0  |  midday out 733 in 0  |  pm_peak out 660 in 0
+  gate 1674 am_peak out 0 in 1081  |  midday out 0 in 745  |  pm_peak out 0 in 1305
+  gate 1719 am_peak out 337 in 0  |  midday out 286 in 0  |  pm_peak out 947 in 0
+  gate 1726 am_peak out 0 in 818  |  midday out 0 in 565  |  pm_peak out 0 in 709
+
+Freeway-origin trips (PM peak 5551 veh/h) by destination compass sector from the off-ramps: W 48%, NW 23%, SW 23%, SE 3%, NE 2%, N 1%, E 0%, S 0%
+Freeway-origin trips by destination street (top 10): (in-area local) 56%, Broadway 6%, Martin Luther King Junior Way 5%, Pleasant Valley Avenue 4%, Ashby Avenue 4%, Ward Street 3%, San Pablo Avenue 2%, Alcatraz Avenue 2%, Claremont Avenue 2%, College Avenue 2%
+
+Surface gate targets (PM peak, veh/h) vs count data
+gate  street       class        dir  target_in target_out  kind        data/source
+265   ashby        primary      295       1134       1386  DATA(adt)   Caltrans AADT: SR-13 Ashby Ave at the SR-123 junction (San Pablo Ave), Berkeley PM 13.178, back AADT 28,000 (east side; ahead 43,500): applies to the Ashby Ave gate at the west edge (Caltrans 2023-24 count year). ADT 28000
+943   telegraph    secondary      0       1064        900  DATA        Oakland TMC AlcatrazAve N-leg avg of 4 counts, 1152 m away, shared by 1 gate node(s)
+1548  tunnel       tertiary      61        547        668  DATA(adt)   Caltrans AADT: SR-13 at Domingo Ave, Berkeley PM 10.69, back AADT 27,000 (east side; ahead 32,500): applies to the Tunnel Road gate east of the SR-24/SR-13 ramps (Caltrans 2023-24 count year). ADT 27000
+1717  tunnel       tertiary      63        547        668  DATA(adt)   Caltrans AADT: SR-13 at Domingo Ave, Berkeley PM 10.69, back AADT 27,000 (east side; ahead 32,500): applies to the Tunnel Road gate east of the SR-24/SR-13 ramps (Caltrans 2023-24 count year). ADT 27000
+184   alcatraz     tertiary     280        547        623  DATA        Oakland TMC AlcatrazAve W-leg avg of 4 counts, 2131 m away, shared by 1 gate node(s)
+275   market       tertiary     225        607        428  DATA        Oakland TMC MarketSt_55thSt S-leg avg of 4 counts, 757 m away, shared by 1 gate node(s)
+179   sanpablo     primary      275          0       1015  DATA(adt)   Caltrans AADT: SR-123 San Pablo Ave at Stanford Ave, Oakland PM 1.12, AADT 21,300 back / 19,700 ahead (mean 20,500). ADT 20500
+74    sanpablo     primary      238        415        507  DATA(adt)   Caltrans AADT: SR-123 San Pablo Ave at Stanford Ave, Oakland PM 1.12, AADT 21,300 back / 19,700 ahead (mean 20,500). ADT 20500
+104   sanpablo     primary      236        923          0  DATA(adt)   Caltrans AADT: SR-123 San Pablo Ave at Stanford Ave, Oakland PM 1.12, AADT 21,300 back / 19,700 ahead (mean 20,500). ADT 20500
+183   sanpablo     primary      274        830          0  DATA(adt)   Caltrans AADT: SR-123 San Pablo Ave at Stanford Ave, Oakland PM 1.12, AADT 21,300 back / 19,700 ahead (mean 20,500). ADT 20500
+1756  claremont    secondary     35        365        446  ASSUMPTION  class default (secondary) ADT 9000
+288   adeline      secondary    234        365        446  ASSUMPTION  class default (secondary) ADT 9000
+276   mlk          secondary    212        365        446  ASSUMPTION  class default (secondary) ADT 9000
+763   telegraph    secondary    197        731          0  DATA        Oakland TMC TelegraphAve_40thSt N-leg avg of 4 counts, 387 m away, shared by 1 gate node(s)
+973   -            primary      156          0        693  ASSUMPTION  class default (primary) ADT 14000
+974   -            primary      158        567          0  ASSUMPTION  class default (primary) ADT 14000
+1735  telegraph    secondary    198          0        549  DATA        Oakland TMC TelegraphAve_40thSt N-leg avg of 4 counts, 375 m away, shared by 1 gate node(s)
+295   west         tertiary     219        335        142  DATA        Oakland TMC 40thSt_WestSt N-leg avg of 4 counts, 268 m away, shared by 1 gate node(s)
+1655  -            tertiary      99        203        248  ASSUMPTION  class default (tertiary) ADT 5000
+1644  broadwayterr tertiary      96        203        248  ASSUMPTION  class default (tertiary) ADT 5000
+1398  -            tertiary      33        203        248  ASSUMPTION  class default (tertiary) ADT 5000
+1219  college      tertiary      16        203        248  ASSUMPTION  class default (tertiary) ADT 5000
+577   mlk          tertiary     329        203        248  ASSUMPTION  class default (tertiary) ADT 5000
+8     -            secondary    261          0        446  ASSUMPTION  class default (secondary) ADT 9000
+953   shattuck     secondary    340          0        446  ASSUMPTION  class default (secondary) ADT 9000
+1675  -            secondary    111        182        223  ASSUMPTION  class default (secondary) ADT 9000
+971   -            secondary    146        182        223  ASSUMPTION  class default (secondary) ADT 9000
+970   -            secondary    146          0        405  ASSUMPTION  class default (secondary) ADT 9000
+89    -            secondary    261        365          0  ASSUMPTION  class default (secondary) ADT 9000
+952   shattuck     secondary    339        365          0  ASSUMPTION  class default (secondary) ADT 9000
+14    55th         residential  254        200        139  DATA        Oakland TMC MarketSt_55thSt W-leg avg of 4 counts, 903 m away, shared by 1 gate node(s)
+1519  -            secondary    110        122        149  ASSUMPTION  class default (secondary) ADT 9000
+1518  -            tertiary     110        101        124  ASSUMPTION  class default (tertiary) ADT 5000
+214   sacramento   tertiary     315         68         83  ASSUMPTION  class default (tertiary) ADT 5000
+253   sacramento   tertiary     315         68         83  ASSUMPTION  class default (tertiary) ADT 5000
+26    -            residential  244         32         40  ASSUMPTION  class default (residential) ADT 800
+38    -            residential  260         72          0  ASSUMPTION  class default (residential) ADT 800
+40    -            residential  264          0         72  ASSUMPTION  class default (residential) ADT 800
+44    -            residential  253         32         40  ASSUMPTION  class default (residential) ADT 800
+86    -            residential  243         32         40  ASSUMPTION  class default (residential) ADT 800
+106   -            residential  290         32         40  ASSUMPTION  class default (residential) ADT 800
+111   -            residential  283         32         40  ASSUMPTION  class default (residential) ADT 800
+133   -            residential  273         32         40  ASSUMPTION  class default (residential) ADT 800
+139   -            residential  277         32         40  ASSUMPTION  class default (residential) ADT 800
+144   -            residential  290         72          0  ASSUMPTION  class default (residential) ADT 800
+150   -            residential  282         32         40  ASSUMPTION  class default (residential) ADT 800
+157   -            residential  267         32         40  ASSUMPTION  class default (residential) ADT 800
+181   -            residential  285         32         40  ASSUMPTION  class default (residential) ADT 800
+182   -            residential  271         32         40  ASSUMPTION  class default (residential) ADT 800
+219   -            residential  293         32         40  ASSUMPTION  class default (residential) ADT 800
+223   -            residential  305         32         40  ASSUMPTION  class default (residential) ADT 800
+234   -            residential  307         32         40  ASSUMPTION  class default (residential) ADT 800
+261   -            residential  297         32         40  ASSUMPTION  class default (residential) ADT 800
+545   -            residential  317         32         40  ASSUMPTION  class default (residential) ADT 800
+553   -            residential  334         32         40  ASSUMPTION  class default (residential) ADT 800
+901   -            residential  346         32         40  ASSUMPTION  class default (residential) ADT 800
+918   -            residential  358         32         40  ASSUMPTION  class default (residential) ADT 800
+921   -            residential  342         32         40  ASSUMPTION  class default (residential) ADT 800
+928   -            residential  352         32         40  ASSUMPTION  class default (residential) ADT 800
+998   -            residential  149         32         40  ASSUMPTION  class default (residential) ADT 800
+1011  -            residential  154         32         40  ASSUMPTION  class default (residential) ADT 800
+1168  -            residential    6         32         40  ASSUMPTION  class default (residential) ADT 800
+1178  -            residential   12         32         40  ASSUMPTION  class default (residential) ADT 800
+1180  -            residential    9         32         40  ASSUMPTION  class default (residential) ADT 800
+1200  -            residential   21         32         40  ASSUMPTION  class default (residential) ADT 800
+1223  -            residential   29         32         40  ASSUMPTION  class default (residential) ADT 800
+1225  -            residential   24         32         40  ASSUMPTION  class default (residential) ADT 800
+1394  -            residential   42         32         40  ASSUMPTION  class default (residential) ADT 800
+1447  -            residential   45         32         40  ASSUMPTION  class default (residential) ADT 800
+1478  -            residential  113         32         40  ASSUMPTION  class default (residential) ADT 800
+1497  -            residential  114         32         40  ASSUMPTION  class default (residential) ADT 800
+1622  -            residential   49         32         40  ASSUMPTION  class default (residential) ADT 800
+1650  -            residential  109         32         40  ASSUMPTION  class default (residential) ADT 800
+1657  -            residential   94         32         40  ASSUMPTION  class default (residential) ADT 800
+1660  -            residential  108         32         40  ASSUMPTION  class default (residential) ADT 800
+1661  -            residential  106         32         40  ASSUMPTION  class default (residential) ADT 800
+1668  -            residential  102         32         40  ASSUMPTION  class default (residential) ADT 800
+1676  -            residential   95         32         40  ASSUMPTION  class default (residential) ADT 800
+1678  -            residential   90         32         40  ASSUMPTION  class default (residential) ADT 800
+1682  -            residential   87         32         40  ASSUMPTION  class default (residential) ADT 800
+1684  -            residential   89         32         40  ASSUMPTION  class default (residential) ADT 800
+1685  -            residential   85         32         40  ASSUMPTION  class default (residential) ADT 800
+1697  -            residential   72         32         40  ASSUMPTION  class default (residential) ADT 800
+1702  -            residential   59         32         40  ASSUMPTION  class default (residential) ADT 800
+1708  -            residential   59         32         40  ASSUMPTION  class default (residential) ADT 800
+1724  -            residential   61         32         40  ASSUMPTION  class default (residential) ADT 800
+1730  -            residential  287         32         40  ASSUMPTION  class default (residential) ADT 800
+1760  -            residential   60         32         40  ASSUMPTION  class default (residential) ADT 800
+1761  -            residential   70         32         40  ASSUMPTION  class default (residential) ADT 800
+103   -            residential  247          0         40  ASSUMPTION  class default (residential) ADT 800
+24    -            residential  251         16         20  ASSUMPTION  class default (residential) ADT 800
+25    -            residential  251         16         20  ASSUMPTION  class default (residential) ADT 800
+243   -            residential  310         16         20  ASSUMPTION  class default (residential) ADT 800
+259   -            residential  312         16         20  ASSUMPTION  class default (residential) ADT 800
+262   -            residential  298         16         20  ASSUMPTION  class default (residential) ADT 800
+263   -            residential  298         16         20  ASSUMPTION  class default (residential) ADT 800
+299   -            residential  228         16         20  ASSUMPTION  class default (residential) ADT 800
+300   -            residential  231         16         20  ASSUMPTION  class default (residential) ADT 800
+1369  -            residential   51         16         20  ASSUMPTION  class default (residential) ADT 800
+1370  -            residential   52         16         20  ASSUMPTION  class default (residential) ADT 800
+102   -            residential  246         32          0  ASSUMPTION  class default (residential) ADT 800
+297   -            residential  223         11         13  ASSUMPTION  class default (residential) ADT 800
+294   -            residential  217         11         13  ASSUMPTION  class default (residential) ADT 800
+249   -            residential  326         11         13  ASSUMPTION  class default (residential) ADT 800
+248   -            residential  326         11         13  ASSUMPTION  class default (residential) ADT 800
+247   -            residential  321         11         13  ASSUMPTION  class default (residential) ADT 800
+212   -            residential  311         11         13  ASSUMPTION  class default (residential) ADT 800
+604   -            residential  179          8         10  ASSUMPTION  class default (residential) ADT 800
+607   -            residential  183          8         10  ASSUMPTION  class default (residential) ADT 800
+609   -            residential  175          8         10  ASSUMPTION  class default (residential) ADT 800
+610   -            residential  186          8         10  ASSUMPTION  class default (residential) ADT 800
+1422  -            service       38          6          7  ASSUMPTION  class default (service) ADT 150
+380   -            service      222          6          7  ASSUMPTION  class default (service) ADT 150
+373   -            service      234          6          7  ASSUMPTION  class default (service) ADT 150
+100   -            service      236          6          7  ASSUMPTION  class default (service) ADT 150
+88    -            service      236          6          7  ASSUMPTION  class default (service) ADT 150
+87    -            service      243          6          7  ASSUMPTION  class default (service) ADT 150
+
+TMC AlcatrazAve legs (PM peak hour, avg): leg entering leaving
+  N: 1064 900
+  S: 1093 910
+  E: 418 689
+  W: 547 623
+
+TMC TelegraphAve_40thSt legs (PM peak hour, avg): leg entering leaving
+  N: 549 731
+  S: 714 446
+  E: 469 797
+  W: 812 570
+
+TMC 40thSt_WestSt legs (PM peak hour, avg): leg entering leaving
+  N: 142 335
+  S: 468 150
+  E: 488 840
+  W: 836 609
+
+TMC MarketSt_55thSt legs (PM peak hour, avg): leg entering leaving
+  N: 679 817
+  S: 607 428
+  E: 402 505
+  W: 200 139
+
+Gate accounting, PM peak (veh/h): kind, gates, target in / modeled in, target out / modeled out
+  ASSUMPTION  103  in   6249 /   5277  out   7938 /   6976
+  DATA          7  in   3483 /   2976  out   2779 /   2685
+  DATA(adt)     7  in   4395 /   3332  out   4245 /   3523
+Counted gates (DATA, DATA(adt)): gate street target_in modeled_in ratio | target_out modeled_out ratio
+  265   ashby       1134  1134 1.00 |  1386  1386 1.00
+  943   telegraph   1064  1194 1.12 |   900   990 1.10
+  1548  tunnel       547   229 0.42 |   668   216 0.32
+  1717  tunnel       547   182 0.33 |   668   260 0.39
+  184   alcatraz     547   308 0.56 |   623   771 1.24
+  275   market       607   308 0.51 |   428    42 0.10
+  179   sanpablo       0     0 - |  1015  1203 1.19
+  74    sanpablo     415   239 0.58 |   507   458 0.90
+  104   sanpablo     923   525 0.57 |     0     0 -
+  183   sanpablo     830  1023 1.23 |     0     0 -
+  763   telegraph    731   747 1.02 |     0     0 -
+  1735  telegraph      0     0 - |   549   584 1.06
+  295   west         335   333 1.00 |   142   141 1.00
+  14    55th         200    86 0.43 |   139   157 1.13
+Ramp totals, PM: modeled off-ramp trips (mainline gate origin) 5551 vs sum of off-ramp ADT x K 6786; on-ramp trips 5792 vs 6282
+Origins at local nodes 10475 veh/h
+
+PM surface-gate two-way volume by street: unnamed 9297, 55th 339, sanpablo 3690, alcatraz 1169, sacramento 300, ashby 2520, market 1035, mlk 1260, adeline 810, west 476, telegraph 3243, shattuck 810, college 450, tunnel 2430, broadwayterr 450, claremont 810
+Intent flows am_peak: on-2853241697 0, on-other 0, off-52990846 0, off-other 0, south-to-north 1132, north-to-south 1528, oakland-crosstown 3013, none 14911 veh/h (all flows, through or not)
+Intent flows midday: on-2853241697 0, on-other 0, off-52990846 0, off-other 0, south-to-north 1005, north-to-south 895, oakland-crosstown 2308, none 12383 veh/h (all flows, through or not)
+Intent flows pm_peak: on-2853241697 0, on-other 0, off-52990846 0, off-other 0, south-to-north 1439, north-to-south 1406, oakland-crosstown 3307, none 18892 veh/h (all flows, through or not)
+Demand for rockridge: 117 surface gates, 6 freeway gates, 36 ramps, 1101 local nodes (LODES ok); TMC ok
+
+Period        total veh/h  through   local    ramp  (ramp->local)  through%  local%  ramp%  flows  pruned
+am_peak           20584     2456    8315    9813           5576       12%     40%    48%  10877 1456602
+midday            16592     1955    7311    7325           4143       12%     44%    44%  10729 1456450
+pm_peak           25044     2786   10874   11385           6165       11%     43%    45%  11178 1456605
+through supply 6430 vs demand 6231 veh/h (demand scaled to supply)
+pruning kept 100% of the volume; after fitting, class total factors ramp 1.029, through 1.001, local 1.058
+Class defaults:
+  primary: 0 counted street(s), fewer than 9999, documented 14000 kept
+  secondary: 1 counted street(s) (telegraph 22032), fewer than 9999, documented 9000 kept
+  tertiary: 2 counted street(s) (alcatraz 12992, market 11497), fewer than 9999, documented 5000 kept
+  residential: 0 counted street(s), fewer than 9999, documented 800 kept
+  service: 0 counted street(s), fewer than 9999, documented 150 kept
+Peripheral rules:
+  am_peak: P1 dropped 266 veh/h of 3699 through veh/h (perimeter gap < 600 m 52, route within 300 m of the edge 251; the two overlap by 37); P2 cap removed 0 veh/h of peripheral trips, 0 veh/h above cap with no peripheral trips left
+  midday: P1 dropped 231 veh/h of 3338 through veh/h (perimeter gap < 600 m 48, route within 300 m of the edge 219; the two overlap by 37); P2 cap removed 0 veh/h of peripheral trips, 0 veh/h above cap with no peripheral trips left
+  pm_peak: P1 dropped 429 veh/h of 6231 through veh/h (perimeter gap < 600 m 94, route within 300 m of the edge 409; the two overlap by 74); P2 cap removed 59 veh/h of peripheral trips, 0 veh/h above cap with no peripheral trips left
+    1735 Telegraph Avenue out target 910, lane cap 837, other 625, through 271, cut 59
+
+Pedestrian and bicycle flows (persons/h; 4 Oakland counts)
+  pedestrian: PM peak crosswalk traversals at the counted intersection 159 before scaling, observed 151, factor 0.534, in the final flow list 150
+    am_peak    2228/h in 2000 flows of 7661 (unroutable demand 98.1 persons/h, to gates 518, to commercial streets 322, gate-to-gate 0)
+    midday     2645/h in 2000 flows of 9231 (unroutable demand 103.3 persons/h, to gates 621, to commercial streets 394, gate-to-gate 0)
+    pm_peak    2907/h in 2000 flows of 10009 (unroutable demand 98.8 persons/h, to gates 690, to commercial streets 446, gate-to-gate 0)
+  bicycle: PM peak bicycle movements at the counted intersection 766 before scaling, observed 82, factor 0.107, in the final flow list 0
+    am_peak     703/h in  497 flows of 497 (unroutable demand 0.0 persons/h, to gates 321, to commercial streets 0, gate-to-gate 182)
+    midday      386/h in  105 flows of 105 (unroutable demand 0.0 persons/h, to gates 178, to commercial streets 0, gate-to-gate 99)
+    pm_peak     764/h in  626 flows of 626 (unroutable demand 0.0 persons/h, to gates 356, to commercial streets 0, gate-to-gate 194)
+  flows per period, all modes: am_peak 10877, midday 10729, pm_peak 11178
+Unroutable flows dropped by the final check (all periods, veh/h): 2.2
+
+Freeway ramps (kind, surface node, surface streets -> freeway gate(s); volume source)
+  on  node 280  Martin Luther King Junior Way      to   gate 675  ADT   9650 DATA: Caltrans ramp ADT: 04-ALA-024 PM R2.503 "SEG WB ON FR GROVE ST." 19300 (2012), shared by 2 ramps
+  on  node 679  Martin Luther King Junior Way      to   gate 675  ADT   9650 DATA: Caltrans ramp ADT: 04-ALA-024 PM R2.503 "SEG WB ON FR GROVE ST." 19300 (2012), shared by 2 ramps
+  off node 683  Claremont Avenue / Clifton Street  from gate 602  ADT  10800 DATA: Caltrans ramp ADT: 04-ALA-024 PM R3.064 "EB OFF TO CLAREMONT" 10800 (2012)
+  on  node 701  Telegraph Avenue / 56th Street     to   gate 1674,1726 ADT    500 ASSUMPTION: withheld in the training view; default ADT 500
+  off node 702  Telegraph Avenue / Aileen Street   from gate 1672,1719 ADT   6900 DATA: Caltrans ramp ADT: 04-ALA-024 PM R3.360 "WB OFF TO TELEGRAPH AVE." 6900 (2012)
+  off node 719  Martin Luther King Junior Way      from gate 602  ADT  18400 DATA: Caltrans ramp ADT: 04-ALA-024 PM R2.560 "SEG OFF EB 24/RTE 580 TO ML KING JR" 18400 (2017)
+  on  node 725  52nd Street                        to   gate 675  ADT  12900 DATA: Caltrans ramp ADT: 04-ALA-024 PM R2.502 "SEG WB ON FR 52ND ST." 12900 (2012)
+  off node 727  52nd Street                        from gate 602  ADT  14200 DATA: Caltrans ramp ADT: 04-ALA-024 PM R2.559 "SEG OFF RTE 24/RTE 580 TO 52ND ST" 14200 (2017)
+  on  node 833  Claremont Avenue / Hudson Street   to   gate 675  ADT   9800 DATA: Caltrans ramp ADT: 04-ALA-024 PM R3.270 "WB ON FR CLAREMONT" 9800 (2012)
+  off node 1133 Keith Avenue                       from gate 602  ADT   5300 DATA: Caltrans ramp ADT: 04-ALA-024 PM R3.973 "EB OFF TO BROADWAY" 5300 (2012)
+  on  node 1312 Brookside Avenue / Broadway        to   gate 1674,1726 ADT   3900 DATA: Caltrans ramp ADT: 04-ALA-024 PM R4.391 "EB ON FR BROADWAY" 7800 (2012), shared by 2 ramps
+  on  node 1320 Broadway                           to   gate 1674,1726 ADT   3900 DATA: Caltrans ramp ADT: 04-ALA-024 PM R4.391 "EB ON FR BROADWAY" 7800 (2012), shared by 2 ramps
+  off node 1350 Broadway                           from gate 1672,1719 ADT   3500 DATA: Caltrans ramp ADT: 04-ALA-024 PM R4.412 "WB OFF TO BROADWAY" 3500 (2012)
+  off node 1556 Broadway Terrace                   from gate 602,1719 ADT    500 ASSUMPTION: withheld in the training view; default ADT 500
+  on  node 1556 Broadway Terrace                   to   gate 1674 ADT    500 ASSUMPTION: withheld in the training view; default ADT 500
+  off node 1567 CA 13                              from gate 1672 ADT    500 ASSUMPTION: no published ramp count matched; default ADT 500
+  off node 1577 Broadway Terrace                   from gate 602,1719 ADT    500 ASSUMPTION: withheld in the training view; default ADT 500
+  off node 1581 CA 13                              from gate 1719 ADT    500 ASSUMPTION: no published ramp count matched; default ADT 500
+  on  node 1583 CA 13                              to   gate 1674 ADT    500 ASSUMPTION: no published ramp count matched; default ADT 500
+  off node 1663 Glenwood Glade                     from gate 1672 ADT    500 ASSUMPTION: no published ramp count matched; default ADT 500
+  off node 1667 Glenwood Glade                     from gate 1672 ADT    500 ASSUMPTION: no published ramp count matched; default ADT 500
+  on  node 1669 Glenwood Glade / Broadway Terrace / Pinewood Road to   gate 1726,675 ADT    500 ASSUMPTION: withheld in the training view; default ADT 500
+  off node 1671 Glenwood Glade                     from gate 1672 ADT    500 ASSUMPTION: no published ramp count matched; default ADT 500
+  on  node 1683 Pinewood Road                      to   gate 1726,675 ADT    500 ASSUMPTION: no published ramp count matched; default ADT 500
+  off node 1695 Caldecott Lane                     from gate 1719 ADT   1250 DATA: Caltrans ramp ADT: 04-ALA-024 PM R5.682 "WB OFF TO CALDECOTT LN." 1250 (2024)
+  on  node 1695 Caldecott Lane                     to   gate 1674,675 ADT    675 DATA: Caltrans ramp ADT: 04-ALA-024 PM R5.584 "WB ON FR CALDECOTT LANE" 1350 (2024), shared by 2 ramps
+  off node 1698 Broadway                           from gate 1672,602 ADT    500 ASSUMPTION: no published ramp count matched; default ADT 500
+  on  node 1698 Broadway                           to   gate 1726 ADT    500 ASSUMPTION: no published ramp count matched; default ADT 500
+  on  node 1711 Caldecott Lane                     to   gate 1674,675 ADT    675 DATA: Caltrans ramp ADT: 04-ALA-024 PM R5.584 "WB ON FR CALDECOTT LANE" 1350 (2024), shared by 2 ramps
+  on  node 1713 Broadway                           to   gate 1726 ADT    500 ASSUMPTION: no published ramp count matched; default ADT 500
+  off node 1715 Broadway                           from gate 1672,602 ADT    500 ASSUMPTION: no published ramp count matched; default ADT 500
+  off node 1720 Broadway                           from gate 1672,602 ADT    500 ASSUMPTION: no published ramp count matched; default ADT 500
+  off node 1722 Broadway                           from gate 1672,602 ADT    500 ASSUMPTION: no published ramp count matched; default ADT 500
+  on  node 1722 Broadway                           to   gate 1726 ADT    500 ASSUMPTION: no published ramp count matched; default ADT 500
+  on  node 1741 Miles Avenue                       to   gate 675  ADT   4000 DATA: Caltrans ramp ADT: 04-ALA-024 PM R3.980 "WB ON FR PATTON ST." 4000 (2012)
+  off node 1743 Miles Avenue                       from gate 1672,1719 ADT   3500 DATA: Caltrans ramp ADT: 04-ALA-024 PM R4.190 "WB OFF TO COLLEGE AVE" 3500 (2012)
+
+Freeway gates, veh/h by period (out = enters the model at the gate, in = leaves it)
+  gate 602  am_peak out 3696 in 0  |  midday out 2537 in 0  |  pm_peak out 4112 in 0
+  gate 675  am_peak out 0 in 3859  |  midday out 0 in 2795  |  pm_peak out 0 in 4156
+  gate 1672 am_peak out 444 in 0  |  midday out 448 in 0  |  pm_peak out 570 in 0
+  gate 1674 am_peak out 0 in 672  |  midday out 0 in 624  |  pm_peak out 0 in 903
+  gate 1719 am_peak out 376 in 0  |  midday out 274 in 0  |  pm_peak out 753 in 0
+  gate 1726 am_peak out 0 in 765  |  midday out 0 in 647  |  pm_peak out 0 in 891
+
+Freeway-origin trips (PM peak 5435 veh/h) by destination compass sector from the off-ramps: W 52%, SW 24%, NW 19%, NE 2%, SE 1%, N 1%, E 0%, S 0%
+Freeway-origin trips by destination street (top 10): (in-area local) 52%, Broadway 6%, Pleasant Valley Avenue 5%, Martin Luther King Junior Way 4%, Alcatraz Avenue 4%, San Pablo Avenue 4%, Telegraph Avenue 3%, Ashby Avenue 3%, Ward Street 2%, Powell Street 2%
+
+Surface gate targets (PM peak, veh/h) vs count data
+gate  street       class        dir  target_in target_out  kind        data/source
+943   telegraph    secondary      0       1064        900  DATA        Oakland TMC AlcatrazAve N-leg avg of 4 counts, 1152 m away, shared by 1 gate node(s)
+265   ashby        primary      295        567        693  ASSUMPTION  class default (primary) ADT 14000
+184   alcatraz     tertiary     280        547        623  DATA        Oakland TMC AlcatrazAve W-leg avg of 4 counts, 2131 m away, shared by 1 gate node(s)
+763   telegraph    secondary    197       1093          0  DATA        Oakland TMC AlcatrazAve S-leg avg of 4 counts, 1967 m away, shared by 1 gate node(s)
+275   market       tertiary     225        607        428  DATA        Oakland TMC MarketSt_55thSt S-leg avg of 4 counts, 757 m away, shared by 1 gate node(s)
+1735  telegraph    secondary    198          0        910  DATA        Oakland TMC AlcatrazAve S-leg avg of 4 counts, 1978 m away, shared by 1 gate node(s)
+1756  claremont    secondary     35        365        446  ASSUMPTION  class default (secondary) ADT 9000
+288   adeline      secondary    234        365        446  ASSUMPTION  class default (secondary) ADT 9000
+276   mlk          secondary    212        365        446  ASSUMPTION  class default (secondary) ADT 9000
+179   sanpablo     primary      275          0        693  ASSUMPTION  class default (primary) ADT 14000
+973   -            primary      156          0        693  ASSUMPTION  class default (primary) ADT 14000
+74    sanpablo     primary      238        284        347  ASSUMPTION  class default (primary) ADT 14000
+104   sanpablo     primary      236        630          0  ASSUMPTION  class default (primary) ADT 14000
+183   sanpablo     primary      274        567          0  ASSUMPTION  class default (primary) ADT 14000
+974   -            primary      158        567          0  ASSUMPTION  class default (primary) ADT 14000
+1655  -            tertiary      99        203        248  ASSUMPTION  class default (tertiary) ADT 5000
+1644  broadwayterr tertiary      96        203        248  ASSUMPTION  class default (tertiary) ADT 5000
+1398  -            tertiary      33        203        248  ASSUMPTION  class default (tertiary) ADT 5000
+1219  college      tertiary      16        203        248  ASSUMPTION  class default (tertiary) ADT 5000
+577   mlk          tertiary     329        203        248  ASSUMPTION  class default (tertiary) ADT 5000
+8     -            secondary    261          0        446  ASSUMPTION  class default (secondary) ADT 9000
+953   shattuck     secondary    340          0        446  ASSUMPTION  class default (secondary) ADT 9000
+1675  -            secondary    111        182        223  ASSUMPTION  class default (secondary) ADT 9000
+971   -            secondary    146        182        223  ASSUMPTION  class default (secondary) ADT 9000
+970   -            secondary    146          0        405  ASSUMPTION  class default (secondary) ADT 9000
+89    -            secondary    261        365          0  ASSUMPTION  class default (secondary) ADT 9000
+952   shattuck     secondary    339        365          0  ASSUMPTION  class default (secondary) ADT 9000
+1519  -            secondary    110        122        149  ASSUMPTION  class default (secondary) ADT 9000
+1717  tunnel       tertiary      63        101        124  ASSUMPTION  class default (tertiary) ADT 5000
+1548  tunnel       tertiary      61        101        124  ASSUMPTION  class default (tertiary) ADT 5000
+1518  -            tertiary     110        101        124  ASSUMPTION  class default (tertiary) ADT 5000
+214   sacramento   tertiary     315         68         83  ASSUMPTION  class default (tertiary) ADT 5000
+253   sacramento   tertiary     315         68         83  ASSUMPTION  class default (tertiary) ADT 5000
+295   west         tertiary     219         68         83  ASSUMPTION  class default (tertiary) ADT 5000
+14    55th         residential  254         32         40  ASSUMPTION  class default (residential) ADT 800
+26    -            residential  244         32         40  ASSUMPTION  class default (residential) ADT 800
+38    -            residential  260         72          0  ASSUMPTION  class default (residential) ADT 800
+40    -            residential  264          0         72  ASSUMPTION  class default (residential) ADT 800
+44    -            residential  253         32         40  ASSUMPTION  class default (residential) ADT 800
+86    -            residential  243         32         40  ASSUMPTION  class default (residential) ADT 800
+106   -            residential  290         32         40  ASSUMPTION  class default (residential) ADT 800
+111   -            residential  283         32         40  ASSUMPTION  class default (residential) ADT 800
+133   -            residential  273         32         40  ASSUMPTION  class default (residential) ADT 800
+139   -            residential  277         32         40  ASSUMPTION  class default (residential) ADT 800
+144   -            residential  290         72          0  ASSUMPTION  class default (residential) ADT 800
+150   -            residential  282         32         40  ASSUMPTION  class default (residential) ADT 800
+157   -            residential  267         32         40  ASSUMPTION  class default (residential) ADT 800
+181   -            residential  285         32         40  ASSUMPTION  class default (residential) ADT 800
+182   -            residential  271         32         40  ASSUMPTION  class default (residential) ADT 800
+219   -            residential  293         32         40  ASSUMPTION  class default (residential) ADT 800
+223   -            residential  305         32         40  ASSUMPTION  class default (residential) ADT 800
+234   -            residential  307         32         40  ASSUMPTION  class default (residential) ADT 800
+261   -            residential  297         32         40  ASSUMPTION  class default (residential) ADT 800
+545   -            residential  317         32         40  ASSUMPTION  class default (residential) ADT 800
+553   -            residential  334         32         40  ASSUMPTION  class default (residential) ADT 800
+901   -            residential  346         32         40  ASSUMPTION  class default (residential) ADT 800
+918   -            residential  358         32         40  ASSUMPTION  class default (residential) ADT 800
+921   -            residential  342         32         40  ASSUMPTION  class default (residential) ADT 800
+928   -            residential  352         32         40  ASSUMPTION  class default (residential) ADT 800
+998   -            residential  149         32         40  ASSUMPTION  class default (residential) ADT 800
+1011  -            residential  154         32         40  ASSUMPTION  class default (residential) ADT 800
+1168  -            residential    6         32         40  ASSUMPTION  class default (residential) ADT 800
+1178  -            residential   12         32         40  ASSUMPTION  class default (residential) ADT 800
+1180  -            residential    9         32         40  ASSUMPTION  class default (residential) ADT 800
+1200  -            residential   21         32         40  ASSUMPTION  class default (residential) ADT 800
+1223  -            residential   29         32         40  ASSUMPTION  class default (residential) ADT 800
+1225  -            residential   24         32         40  ASSUMPTION  class default (residential) ADT 800
+1394  -            residential   42         32         40  ASSUMPTION  class default (residential) ADT 800
+1447  -            residential   45         32         40  ASSUMPTION  class default (residential) ADT 800
+1478  -            residential  113         32         40  ASSUMPTION  class default (residential) ADT 800
+1497  -            residential  114         32         40  ASSUMPTION  class default (residential) ADT 800
+1622  -            residential   49         32         40  ASSUMPTION  class default (residential) ADT 800
+1650  -            residential  109         32         40  ASSUMPTION  class default (residential) ADT 800
+1657  -            residential   94         32         40  ASSUMPTION  class default (residential) ADT 800
+1660  -            residential  108         32         40  ASSUMPTION  class default (residential) ADT 800
+1661  -            residential  106         32         40  ASSUMPTION  class default (residential) ADT 800
+1668  -            residential  102         32         40  ASSUMPTION  class default (residential) ADT 800
+1676  -            residential   95         32         40  ASSUMPTION  class default (residential) ADT 800
+1678  -            residential   90         32         40  ASSUMPTION  class default (residential) ADT 800
+1682  -            residential   87         32         40  ASSUMPTION  class default (residential) ADT 800
+1684  -            residential   89         32         40  ASSUMPTION  class default (residential) ADT 800
+1685  -            residential   85         32         40  ASSUMPTION  class default (residential) ADT 800
+1697  -            residential   72         32         40  ASSUMPTION  class default (residential) ADT 800
+1702  -            residential   59         32         40  ASSUMPTION  class default (residential) ADT 800
+1708  -            residential   59         32         40  ASSUMPTION  class default (residential) ADT 800
+1724  -            residential   61         32         40  ASSUMPTION  class default (residential) ADT 800
+1730  -            residential  287         32         40  ASSUMPTION  class default (residential) ADT 800
+1760  -            residential   60         32         40  ASSUMPTION  class default (residential) ADT 800
+1761  -            residential   70         32         40  ASSUMPTION  class default (residential) ADT 800
+103   -            residential  247          0         40  ASSUMPTION  class default (residential) ADT 800
+24    -            residential  251         16         20  ASSUMPTION  class default (residential) ADT 800
+25    -            residential  251         16         20  ASSUMPTION  class default (residential) ADT 800
+243   -            residential  310         16         20  ASSUMPTION  class default (residential) ADT 800
+259   -            residential  312         16         20  ASSUMPTION  class default (residential) ADT 800
+262   -            residential  298         16         20  ASSUMPTION  class default (residential) ADT 800
+263   -            residential  298         16         20  ASSUMPTION  class default (residential) ADT 800
+299   -            residential  228         16         20  ASSUMPTION  class default (residential) ADT 800
+300   -            residential  231         16         20  ASSUMPTION  class default (residential) ADT 800
+1369  -            residential   51         16         20  ASSUMPTION  class default (residential) ADT 800
+1370  -            residential   52         16         20  ASSUMPTION  class default (residential) ADT 800
+102   -            residential  246         32          0  ASSUMPTION  class default (residential) ADT 800
+297   -            residential  223         11         13  ASSUMPTION  class default (residential) ADT 800
+294   -            residential  217         11         13  ASSUMPTION  class default (residential) ADT 800
+249   -            residential  326         11         13  ASSUMPTION  class default (residential) ADT 800
+248   -            residential  326         11         13  ASSUMPTION  class default (residential) ADT 800
+247   -            residential  321         11         13  ASSUMPTION  class default (residential) ADT 800
+212   -            residential  311         11         13  ASSUMPTION  class default (residential) ADT 800
+604   -            residential  179          8         10  ASSUMPTION  class default (residential) ADT 800
+607   -            residential  183          8         10  ASSUMPTION  class default (residential) ADT 800
+609   -            residential  175          8         10  ASSUMPTION  class default (residential) ADT 800
+610   -            residential  186          8         10  ASSUMPTION  class default (residential) ADT 800
+1422  -            service       38          6          7  ASSUMPTION  class default (service) ADT 150
+380   -            service      222          6          7  ASSUMPTION  class default (service) ADT 150
+373   -            service      234          6          7  ASSUMPTION  class default (service) ADT 150
+100   -            service      236          6          7  ASSUMPTION  class default (service) ADT 150
+88    -            service      236          6          7  ASSUMPTION  class default (service) ADT 150
+87    -            service      243          6          7  ASSUMPTION  class default (service) ADT 150
+
+TMC AlcatrazAve legs (PM peak hour, avg): leg entering leaving
+  N: 1064 900
+  S: 1093 910
+  W: 547 623
+
+TMC TelegraphAve_40thSt legs (PM peak hour, avg): leg entering leaving
+  S: 714 446
+  E: 469 797
+  W: 812 570
+
+TMC 40thSt_WestSt legs (PM peak hour, avg): leg entering leaving
+  S: 468 150
+  E: 488 840
+  W: 836 609
+
+TMC MarketSt_55thSt legs (PM peak hour, avg): leg entering leaving
+  N: 679 817
+  S: 607 428
+  E: 402 505
+
+Gate accounting, PM peak (veh/h): kind, gates, target in / modeled in, target out / modeled out
+  ASSUMPTION  112  in   8599 /   6488  out  10040 /   8768
+  DATA          5  in   3310 /   2966  out   2860 /   2704
+Counted gates (DATA, DATA(adt)): gate street target_in modeled_in ratio | target_out modeled_out ratio
+  943   telegraph   1064   962 0.90 |   900   691 0.77
+  184   alcatraz     547   287 0.52 |   623   787 1.26
+  763   telegraph   1093  1359 1.24 |     0     0 -
+  275   market       607   358 0.59 |   428    94 0.22
+  1735  telegraph      0     0 - |   910  1133 1.24
+Ramp totals, PM: modeled off-ramp trips (mainline gate origin) 5435 vs sum of off-ramp ADT x K 6242; on-ramp trips 5949 vs 5324
+Origins at local nodes 10156 veh/h
+
+PM surface-gate two-way volume by street: unnamed 9297, 55th 72, sanpablo 2520, alcatraz 1169, sacramento 300, ashby 1260, market 1035, mlk 1260, adeline 810, west 150, telegraph 3966, shattuck 810, college 450, tunnel 450, broadwayterr 450, claremont 810
+wrote <worktree>/public/data/rockridge.assumptions.json: 8 movements, demand d9e3b333f5eb
