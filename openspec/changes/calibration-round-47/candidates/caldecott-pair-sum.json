@@ -1,0 +1,6 @@
+[
+  {
+    "stations": ["ramp on 1695", "ramp on 1711"],
+    "_note": "ASSUMPTION (calibration round 47): one Caltrans on-ramp row (WB ON FR CALDECOTT LANE, 1,350 ADT in 2024) was split 50/50 over two network ramps, although a turn ban sends the flow to one of them. The target is the sum of the two shares (ADT x K x period factor), held over the sum of the flows on the two ramp links. The row says nothing about how the flow divides between the ramps."
+  }
+]
