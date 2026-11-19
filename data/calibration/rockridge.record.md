@@ -141,6 +141,140 @@ The remaining misses point to route choice in the simulation disagreeing with th
 - Field checks still open: the Howell St and Ayala Ave barricade (low confidence), the Forest St signal timing, and the stop signs at Hillegass Ave and 61st St and at Canning St and 62nd St.
 - To decide: the Caldecott Lane on-ramp pairing, and the held-out gate targets derived from annual average daily traffic.
 
+## Forty-ninth round: simulated membership with ceilings on uncounted gate totals (not adopted) (2026-11-19)
+
+Fails the keep rule, not adopted (change calibration-round-49, archived). The published network 53c823f20d9165ed, demand 9cdebdabf05c4460 and cross-validation demand 2f9ae152b9bbf78e stand. Simulator fingerprint d45a275dd7be0713cec6a64394b7d8a9 throughout. Nothing under `data/` or `public/data/` changed apart from this record. The evidence is in `openspec/changes/archive/2026-11-19-calibration-round-49/evidence/` (laptop commits a6a84ad and 4efe00a), and the numbers below come from the laptop's report and its two notes during the run.
+
+### What was tried
+
+Round 48 ran the simulated-membership loop, and its fit added 1,200 to 2,100 veh/h of car demand at gates with no count. That demand queued at the SR-24 eastbound entry and the Claremont gates and failed D16. Round 49 ran the same loop with a ceiling on each uncounted gate direction. The switch is `countFit.gatePriorTotals` (`tools/lib/demand-fit.ts`, `tools/lib/fit-counts.ts`, `tools/build-demand.ts`). It is absent from the shipped config, so it is off by default, as is `simulatedMembership`. The keep rule, the screen and the loop abort were written before any run.
+
+- First design: the ceiling was each gate's own total before the fit, plus 10%. Container builds showed that anchor sits above what the static fit gives (SR-24 eastbound entry, node 602, PM: 3,945 final in the baseline against a ceiling of 5,139, where round 48 had reached 4,114). The ceiling stations also made the flows at uncovered gates count as touching a count, so those flows escaped the median rule and regrew (the training view rose 5.2% in the PM). The project lead moved the anchor to the static fit.
+- Final design: with simulated membership in use, the fit first runs as the baseline does and takes each uncovered gate direction's car total from that result. It then runs again with simulated membership and a ceiling station per direction at that total (tolerance 0). The ceiling's weight is 10 (five times the ramp weight), an assumption. With no membership file in use (pass 0, midday) no ceilings apply, so pass 0 reproduces the baseline.
+- Hard projection: in a check with made-up membership, the soft ceiling at weight 10 left node 602 at 4,165 against a ceiling of 3,944 (+5.6%). After the fit converges, the fit now scales down any ceiling gate direction still more than 0.1% over its ceiling, alternating over origin and destination sides, so each ends at its ceiling.
+- Loop abort: after each build from pass 1, the driver stops if offered car demand in any view and period exceeds the static fit's by more than 3% (an assumption; round 48 failed at +4.4% to +9.0%).
+- Screen addition: the screen also fails if the end-of-run backlog is 2% or more in any of the three seeds, AM or PM. Round 48's screen passed while ten seeds failed on backlog.
+
+The run was on the project lead's laptop session on 2026-11-19. Steps A to C ran 11:39 to 11:50 AM Pacific. The loop took 3,948 s and ended with exit 0, and the whole run ended at 1:11 PM. The config was restored afterward and gave the baseline hashes again.
+
+#### The restart
+
+The first loop start was stopped about one minute in, before any seed ran, because round 48's loop files were still on disk (`target/membership-loop/` and `target/membership/*.json`). Without `--resume` the driver started a fresh state file but did not clear the folder. Passes 1 and 2 would have run their seeds on round 48's demand, and the pass-0 build would have read round 48's membership files. The laptop moved both folders to `target/r48-loop/` and restarted at 11:51 AM with the same config hash. Its first pass-0 check had compared round 48's leftover files and proved nothing, so it was redone on the new builds (true for both views, at mid-run and at the end). The driver now refuses to start without `--resume` when either exists (commit 1f9409d); it deletes nothing.
+
+### Hashes
+
+- Baseline: network 53c823f20d9165ed, shipped demand 9cdebdabf05c4460, training demand 2f9ae152b9bbf78e. Ten-seed baseline set 60r47-base, same inputs.
+- Gate checks: fingerprint d45a275dd7be0713cec6a64394b7d8a9; `npx vitest run` on the gate-prior and membership-loop tests 32 of 32; nothing changed under `data/`.
+- Config with the two entries: 99f6e16a372c7df3 (`apply-candidate.py` added 2 blocks, 13 lines).
+- Candidate: network 53c823f20d9165ed (identical); shipped demand 93b8cef7ecaa5df5; training demand 0dc1dbdeefa03203; membership files shipped b625cdb060d12258, training a6bc6aff8bdbaeed. The stations file is identical.
+- After the run the config was restored; the restore build gave 53c823f20d9165ed, 9cdebdabf05c4460 and 2f9ae152b9bbf78e.
+
+### Loop behavior
+
+The dry run matched the runbook. The split withholds 91 stations. Shipped view: PM 337 stations selected (245 link, 92 movement or route), AM 272 (200, 72), six gate stations static in each. Training view: PM 256 (187, 69) with 87 withheld, AM 201 (148, 53) with 77 withheld.
+
+Three passes ran (0, 1, 2) plus the final builds. The stop rule did not fire: the flow and membership changes are still 1.72 to 2.32 standard errors in pass 2 for the PM and 1.79 to 2.62 for the AM, above the threshold of 1. The abort did not fire either: no build went above its static fit. Stations with pairs: shipped PM 335 of 337 in passes 0 and 1 and 336 in pass 2, shipped AM 271 of 272, training all. Zero hits: shipped PM sr24-clifton-claremont 1600>1771 (passes 0 and 1) and telegraph-51st 1629>1764; shipped AM telegraph-51st; training none. No station lacked an export.
+
+Per pass: offered car demand in veh/h; from pass 1, the change in flow and in membership per station as a ratio to its seed standard error (flow / membership).
+
+| Pass | Shipped PM | Shipped AM | Training PM | Training AM |
+| --- | --- | --- | --- | --- |
+| 0 | 27612 | 23204 | 25044 | 20584 |
+| 1 | 26349; 4.24 / 3.55 | 22926; 4.23 / 3.45 | 24623; 3.87 / 3.40 | 20026; 3.32 / 3.25 |
+| 2 | 26917; 1.91 / 2.32 | 23130; 2.62 / 1.97 | 24903; 1.72 / 2.05 | 19999; 1.79 / 1.95 |
+| Final demand file | 26990 | 23187 | 24952 | 20328 |
+
+### Ceiling lines per build
+
+Offered car veh/h, static fit to final; then by flow type (through, local, ramp) static fit to final; the volume the projection removed (veh/h); and fitted stations within tolerance, before to after the projection. Ceiling stations: shipped 216 PM and 217 AM, training 222 PM and 223 AM. Above ceiling after the projection: 1 station by 1 veh/h in pass 1 of the shipped AM, 1 by 1 in the final training PM, none elsewhere.
+
+| Build | Total | Through | Local | Ramp | Removed | Within tolerance |
+| --- | --- | --- | --- | --- | --- | --- |
+| Shipped PM, pass 1 | 27609 to 26347 | 5907 to 4429 | 10360 to 10581 | 11342 to 11338 | 49 | 200 to 198 of 343 |
+| Shipped PM, pass 2 | 27609 to 26916 | 5907 to 4483 | 10360 to 11094 | 11342 to 11339 | 70 | 182 to 184 |
+| Shipped PM, final | 27609 to 26988 | 5907 to 4460 | 10360 to 11189 | 11342 to 11339 | 77 | 175 to 175 |
+| Shipped AM, pass 1 | 23202 to 22925 | 3745 to 3216 | 9586 to 9863 | 9871 to 9846 | 27 | 175 to 174 of 278 |
+| Shipped AM, pass 2 | 23202 to 23128 | 3745 to 3056 | 9586 to 10226 | 9871 to 9846 | 46 | 164 to 163 |
+| Shipped AM, final | 23202 to 23186 | 3745 to 3048 | 9586 to 10290 | 9871 to 9849 | 41 | 162 to 162 |
+| Training PM, pass 1 | 25042 to 24621 | 2785 to 2062 | 10873 to 11200 | 11384 to 11360 | 73 | 156 to 156 of 260 |
+| Training PM, pass 2 | 25042 to 24901 | 2785 to 2236 | 10873 to 11314 | 11384 to 11351 | 151 | 150 to 151 |
+| Training PM, final | 25042 to 24951 | 2785 to 2116 | 10873 to 11475 | 11384 to 11360 | 154 | 150 to 150 |
+| Training AM, pass 1 | 20582 to 20024 | 2455 to 1943 | 8314 to 8340 | 9813 to 9741 | 9 | 132 to 132 of 205 |
+| Training AM, pass 2 | 20582 to 19997 | 2455 to 1897 | 8314 to 8315 | 9813 to 9785 | 18 | 120 to 119 |
+| Training AM, final | 20582 to 20327 | 2455 to 2176 | 8314 to 8356 | 9813 to 9795 | 117 | 108 to 110 |
+
+Each static-fit total here is 2 to 3 veh/h below the pass-0 offered figure in the demand file (for example 27609 against 27612). The laptop did not trace the difference.
+
+Total offered demand stays below the static fit in every build. Through demand falls 20 to 26% in the shipped view. Local demand rises: +829 veh/h in the shipped PM, +704 in the shipped AM, +602 in the training PM, +42 in the training AM. Fitted stations within tolerance fall over the passes in every view, for example 200 to 175 of 343 in the shipped PM. The worst five gates per build and the final per-gate dumps are in the evidence (`laptop/ceilings-per-build.md`, `gate-prior/`).
+
+### Screen, three seeds
+
+Baseline to candidate. PM fitted 73 to 85 of 92, PM held out 14 to 12 of 24, AM fitted 70 to 71 of 77, AM held out 14 to 16 of 19. Gridlock in the judged zone was 0 in both periods. Backlog was under 2% in 3 of 3 seeds in both periods (mean and max): AM 0.13% and 0.21% to 0.54% and 0.78%; PM 0.30% and 0.49% to 1.56% and 1.96%. The PM maximum sits just under the line. The screen passed.
+
+### Keep rule, ten seeds
+
+"Fitted" stations are in the demand fit. "Held out" stations are withheld by the frozen split and scored on the cross-validation demand. Each count is the number of stations that pass GEH on the ten-seed mean. D5 is the four headline freeway shares for Hillegass St and Colby St (within 10 points). Whole-street traversals are the eight street runs checked end to end (within GEH 5). D16 is the stability check: backlog under 2% of trips, no backlog growth, and cars cleared from gridlock in the judged zone within the limit. The baseline is the ten-seed set 60r47-base.
+
+| Line | Line to meet | Baseline | Round 48 | Candidate | Result |
+| --- | --- | --- | --- | --- | --- |
+| PM fitted | 74 | 74 of 92 | 78 | 81 of 92 | pass |
+| PM held out | 14 | 14 of 24 | 13 | 13 of 24 | fail |
+| AM fitted | 70 | 70 of 77 | 72 | 74 of 77 | pass |
+| AM held out | 14 | 14 of 19 | 15 | 14 of 19 | pass |
+| D5 headline shares | 4 of 4 | 4 of 4 (mean error 4.6) | 2 (12.5) | 2 of 4 (mean error 10.6) | fail |
+| Whole-street traversals | 8 of 8 | 8 of 8 | 8 of 8 | 7 of 8 | fail |
+| D16 stability | holds | holds | fails AM and PM | holds in every period | pass |
+| Validation suite | 67 of 74 | 67 of 74 | 67 | 67 of 74 | pass |
+
+D5 detail, PM headline shares, observed against modeled (candidate): Hillegass St northbound from the freeway 47 against 52.6 (ok); Colby St northbound from the freeway 47 against 50.4 (ok); Hillegass St southbound to the freeway 68 against 48.6 (-19.4, fails); Colby St southbound to the freeway 45 against 31.0 (-14.0, fails).
+
+Whole-street failure: PM Colby St southbound, modeled 81 veh/h against 39 observed, GEH 5.5. The baseline modeled 57, GEH 2.5.
+
+D16 detail. PM: backlog under 2% in 10 of 10 seeds (mean 1.33%, max 1.96%); cars cleared from gridlock in the judged zone 0.20 per hour (max 2.00 in one seed). AM: 10 of 10 (mean 0.43%, max 0.78%). Midday: 10 of 10.
+
+### Reported lists
+
+Baseline to candidate, shipped view (training view in brackets). These are reported, not conditions.
+
+- Five diagonal stations, PM, counted 178: simulated sum 495 to 355 [1234 to 492]; simulated over counted 2.78 to 2.00 [6.93 to 2.77]. By station, with the count: Forest St EB 183 to 113 [516 to 170] (66); McAuley St EB 83 to 60 (12); 60th St EB 76 to 62 (23); Ayala Ave NB 81 to 61 (60); Howell St SB 72 to 60 (17). AM, four stations, counted 110: 206 to 175 [428 to 293].
+- Colby St northbound, simulated over counted on the seven blocks with counts: PM 0.75 to 0.77 [0.77 to 1.01]; AM 0.73 to 0.77 [0.87 to 0.86].
+- SR-24 mainline, PM: node 602 entry offered 3945 to 3943, flow 3896 to 3707, trips waiting 46 to 168 in 10 of 10 seeds [training 48 to 153]; node 1719 entry 947 to 947, flow 948 to 949, waiting 0; node 675 exit flow 3770 to 3683; node 1726 exit flow 710 to 670. AM: node 602 waiting 4 to 16; node 675 exit flow 3152 to 3156; node 1726 exit flow 823 to 800.
+- Through cars in the study area, per hour: PM 729 to 852 [1019 to 986]; AM 447 to 425 [549 to 512].
+- SR-24 ramps, PM, against the target, shipped [training]: Claremont on (598) 773 to 692 [975 to 844]; Clifton off (617) 697 to 723 [943 to 882]; 52nd on (996) 968 to 916 [1054 to 955]; 52nd off (1024) 1029 to 995; MLK on (1547) 1266 to 1438 [1014 to 1082]; MLK off (1614) 1512 to 1522; node 280 (190) 282 to 265 [532 to 705]; Telegraph on, node 701 (657) 906 to 1021 [1272 to 1300]; Aileen off, node 702 (621) 724 to 731. The AM and the other ramps are in `laptop/compare.md`.
+- Travel times inside the observed range: 7 of 12 to 6 of 12. PM Telegraph Ave southbound 335 to 475 s (range 300 to 376, now too slow); PM College Ave northbound 236 to 305 s and southbound 216 to 283 s, both still inside. AM inside: Telegraph Ave northbound, Shattuck Ave southbound, College Ave southbound. All rows are in `laptop/travel-times.md`.
+- The 20 gates that grew most in round 48, offered veh/h, shipped PM, only those that changed (origin/destination where both moved): 577 178/417 to 116/142; 974 924 to 778; 952 171 to 159; 288 174/150 to 116/143; 8 destination 253 to 234; 973 destination 1126 to 1003; 184 destination 771 to 664; 943 1194/990 to 1069/857; 1672 660 to 659; 183 1023 to 1021; 602 3945 to 3943; 675 3778 to 3776; 1674 destination 1305 to 1306. Nodes 1398, 1756, 276, 1719, 1219, 1726 and 275 are unchanged. None of the 20 grew by more than 1 veh/h in any view or period (`laptop/gates20.txt`; all 123 gates in `laptop/gates-pm.md` and `laptop/gates-am.md`).
+
+### Trips waiting by gate
+
+Trips still waiting at the end of the run, seed mean, baseline to candidate. All origins: PM 78 to 355, AM 27 to 99.
+
+| Gate | PM baseline | PM candidate | AM baseline | AM candidate |
+| --- | --- | --- | --- | --- |
+| 602 | 46 | 168 | 4 | 16 |
+| 183 | 14 | 0 to 4 | 0 to 0.2 | 0 to 0.1 |
+| 1756 | 0 to 1 | 81 | 18 | 69 |
+| 1398 | 0 to 1 | 12 to 14 | about 0 | about 0 |
+
+A gate missing from a seed's top-10 backlog table is given as a range, 0 at the low end and the tenth row at the high end (`laptop/backlog-gates.md`). No seed was rerun for these.
+
+### Reading (the lead's reading, 2026-11-19)
+
+The ceilings did their job. No gate grew (none of the 20 by more than 1 veh/h), D16 holds in every period, the diagonal fell from 495 to 355 against 178 counted, PM fitted rose to 81 and AM fitted to 74.
+
+The fit, though, turned 20 to 26% of through demand into local demand (+829 veh/h shipped PM, +704 shipped AM). Fitted stations within tolerance inside the fit fell over the passes (shipped PM 200 to 175 of 343), and the stop rule did not fire, so the loop has not converged.
+
+Hypothesis, not a finding: the added local trips are the likely cause of the Colby St southbound overshoot (81 against 39 observed) and of the two southbound to-freeway shares falling, since more of the southbound cars are not headed to the freeway. Nothing in this run separates that from other causes.
+
+Trips waiting at Claremont Ave (node 1756) rose from about 0 to 81 in the PM and from 18 to 69 in the AM with an unchanged gate total (412 and 567 in the PM, 487 and 428 in the AM). The ceilings hold the totals but not the queue, so the queue there comes from routing inside the network, not from offered volume.
+
+### Verdict
+
+Fails the keep rule on three lines: PM held out 13 of 24 (line 14), D5 2 of 4 (line 4), and whole-street traversals 7 of 8 (line 8 of 8, PM Colby St southbound). Not adopted. The code stays on main with the switch off, and the shipped config has no `gatePriorTotals` or `simulatedMembership` entry. The published data are unchanged. The change is archived with its evidence.
+
+### Next lead
+
+Run the same loop with ceilings on every origin and destination node total, not only gates, anchored on the static fit. The fit can then move trips among pairs but cannot convert through demand into local demand.
+
 ## Forty-eighth round: simulated membership for every exported station (not adopted) (2026-11-19)
 
 Fails the keep rule, not adopted (change calibration-round-48, archived). The published network 53c823f20d9165ed, demand 9cdebdabf05c4460 and cross-validation demand 2f9ae152b9bbf78e stand. Simulator fingerprint d45a275dd7be0713cec6a64394b7d8a9 throughout. Nothing under `data/` or `public/data/` changed apart from this record. The evidence is in `openspec/changes/archive/2026-11-19-calibration-round-48/evidence/` (laptop commits 6a50e3e and 71af51a), and the numbers below come from the laptop's report.
