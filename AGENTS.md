@@ -72,6 +72,11 @@ decides architecture and reviews. It does no bulk work itself.
 Give subagents the spec/contract paths to read rather than restating them, and
 run independent work in parallel.
 
+Heavy simulation batches (ten-seed assessments, calibration-round passes, proposal
+searches) run on the user's laptop session whenever it is available, with design,
+review and publishing in the cloud session (user decision, 2026-11-18). Fall back to
+the cloud container only when the laptop is offline.
+
 ## OpenSpec: run the full cycle automatically
 
 Every non-trivial change goes through OpenSpec without asking the user:
