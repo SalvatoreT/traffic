@@ -1,0 +1,397 @@
+{
+ "done": [
+  "i0-shipped-build",
+  "i0-shipped-runs",
+  "i0-training-build",
+  "i0-training-runs",
+  "i0-pool",
+  "i1-shipped-build",
+  "i1-shipped-runs",
+  "i1-training-build",
+  "i1-training-runs",
+  "i1-pool",
+  "i2-shipped-build",
+  "i2-shipped-runs",
+  "i2-training-build",
+  "i2-training-runs",
+  "i2-pool",
+  "final-shipped-build",
+  "final-training-build"
+ ],
+ "stoppedAfter": null,
+ "reports": [
+  {
+   "pass": 0,
+   "view": "shipped",
+   "period": "pm_peak",
+   "offered": 27612,
+   "selected": 337,
+   "withHits": 335,
+   "zeroHit": [
+    "ix sr24-clifton-claremont move 1600>1771",
+    "ix telegraph-51st move 1629>1764"
+   ],
+   "absent": [],
+   "shift": null
+  },
+  {
+   "pass": 0,
+   "view": "shipped",
+   "period": "am_peak",
+   "offered": 23204,
+   "selected": 272,
+   "withHits": 271,
+   "zeroHit": [
+    "ix telegraph-51st move 1629>1764"
+   ],
+   "absent": [],
+   "shift": null
+  },
+  {
+   "pass": 0,
+   "view": "training",
+   "period": "pm_peak",
+   "offered": 25044,
+   "selected": 256,
+   "withHits": 256,
+   "zeroHit": [],
+   "absent": [],
+   "shift": null
+  },
+  {
+   "pass": 0,
+   "view": "training",
+   "period": "am_peak",
+   "offered": 20584,
+   "selected": 201,
+   "withHits": 201,
+   "zeroHit": [],
+   "absent": [],
+   "shift": null
+  },
+  {
+   "pass": 1,
+   "view": "shipped",
+   "period": "pm_peak",
+   "offered": 26349,
+   "selected": 337,
+   "withHits": 335,
+   "zeroHit": [
+    "ix sr24-clifton-claremont move 1600>1771",
+    "ix telegraph-51st move 1629>1764"
+   ],
+   "absent": [],
+   "shift": {
+    "stations": 335,
+    "flowRms": 60.621638420419835,
+    "flowSeRms": 14.28512615230949,
+    "flowRatio": 4.243689399314061,
+    "membershipRms": 396.61644602024666,
+    "membershipSeRms": 111.59844196846443,
+    "membershipRatio": 3.5539604229629194,
+    "converged": false
+   },
+   "ceiling": {
+    "stations": 216,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 27609,
+    "finalTotal": 26347
+   }
+  },
+  {
+   "pass": 1,
+   "view": "shipped",
+   "period": "am_peak",
+   "offered": 22926,
+   "selected": 272,
+   "withHits": 271,
+   "zeroHit": [
+    "ix telegraph-51st move 1629>1764"
+   ],
+   "absent": [],
+   "shift": {
+    "stations": 271,
+    "flowRms": 54.37540991065749,
+    "flowSeRms": 12.845685019345451,
+    "flowRatio": 4.232970824737548,
+    "membershipRms": 355.5017748462296,
+    "membershipSeRms": 102.9832743304238,
+    "membershipRatio": 3.452034101242454,
+    "converged": false
+   },
+   "ceiling": {
+    "stations": 217,
+    "above": 1,
+    "excess": 1,
+    "staticTotal": 23202,
+    "finalTotal": 22925
+   }
+  },
+  {
+   "pass": 1,
+   "view": "training",
+   "period": "pm_peak",
+   "offered": 24623,
+   "selected": 256,
+   "withHits": 256,
+   "zeroHit": [],
+   "absent": [],
+   "shift": {
+    "stations": 256,
+    "flowRms": 60.96950441614233,
+    "flowSeRms": 15.740734984339909,
+    "flowRatio": 3.8733581676331803,
+    "membershipRms": 398.24073494401625,
+    "membershipSeRms": 117.07321934711071,
+    "membershipRatio": 3.401638198427526,
+    "converged": false
+   },
+   "ceiling": {
+    "stations": 222,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 25042,
+    "finalTotal": 24621
+   }
+  },
+  {
+   "pass": 1,
+   "view": "training",
+   "period": "am_peak",
+   "offered": 20026,
+   "selected": 201,
+   "withHits": 201,
+   "zeroHit": [],
+   "absent": [],
+   "shift": {
+    "stations": 201,
+    "flowRms": 57.96515379714237,
+    "flowSeRms": 17.441495509742357,
+    "flowRatio": 3.323405023655487,
+    "membershipRms": 343.47136468446524,
+    "membershipSeRms": 105.61520125440053,
+    "membershipRatio": 3.2521015971661966,
+    "converged": false
+   },
+   "ceiling": {
+    "stations": 223,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 20582,
+    "finalTotal": 20024
+   }
+  },
+  {
+   "pass": 2,
+   "view": "shipped",
+   "period": "pm_peak",
+   "offered": 26917,
+   "selected": 337,
+   "withHits": 336,
+   "zeroHit": [
+    "ix telegraph-51st move 1629>1764"
+   ],
+   "absent": [],
+   "shift": {
+    "stations": 336,
+    "flowRms": 27.600031810713205,
+    "flowSeRms": 14.459054691304603,
+    "flowRatio": 1.908840681494298,
+    "membershipRms": 259.67952129454227,
+    "membershipSeRms": 111.81038140663432,
+    "membershipRatio": 2.322499199337621,
+    "converged": false
+   },
+   "ceiling": {
+    "stations": 216,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 27609,
+    "finalTotal": 26916
+   }
+  },
+  {
+   "pass": 2,
+   "view": "shipped",
+   "period": "am_peak",
+   "offered": 23130,
+   "selected": 272,
+   "withHits": 271,
+   "zeroHit": [
+    "ix telegraph-51st move 1629>1764"
+   ],
+   "absent": [],
+   "shift": {
+    "stations": 271,
+    "flowRms": 35.267176339158055,
+    "flowSeRms": 13.469619590267536,
+    "flowRatio": 2.618275601832165,
+    "membershipRms": 201.0356330516008,
+    "membershipSeRms": 102.13322863814217,
+    "membershipRatio": 1.9683665711173164,
+    "converged": false
+   },
+   "ceiling": {
+    "stations": 217,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 23202,
+    "finalTotal": 23128
+   }
+  },
+  {
+   "pass": 2,
+   "view": "training",
+   "period": "pm_peak",
+   "offered": 24903,
+   "selected": 256,
+   "withHits": 256,
+   "zeroHit": [],
+   "absent": [],
+   "shift": {
+    "stations": 255,
+    "flowRms": 27.882881810157574,
+    "flowSeRms": 16.244399336507385,
+    "flowRatio": 1.7164612388895206,
+    "membershipRms": 224.68844564828805,
+    "membershipSeRms": 109.63078226389699,
+    "membershipRatio": 2.049501435713838,
+    "converged": false
+   },
+   "ceiling": {
+    "stations": 222,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 25042,
+    "finalTotal": 24901
+   }
+  },
+  {
+   "pass": 2,
+   "view": "training",
+   "period": "am_peak",
+   "offered": 19999,
+   "selected": 201,
+   "withHits": 201,
+   "zeroHit": [],
+   "absent": [],
+   "shift": {
+    "stations": 201,
+    "flowRms": 33.95737670721667,
+    "flowSeRms": 18.995306074050944,
+    "flowRatio": 1.7876719951148914,
+    "membershipRms": 204.2212451366767,
+    "membershipSeRms": 104.95513539780141,
+    "membershipRatio": 1.945795642706157,
+    "converged": false
+   },
+   "ceiling": {
+    "stations": 223,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 20582,
+    "finalTotal": 19997
+   }
+  }
+ ],
+ "stationsSha": "c9db41c930acf37d63d842cbe0d2b89a67d7dd24150be0ef3adbaea2ef25937c",
+ "ceilings": {
+  "shipped:1": {
+   "am_peak": {
+    "stations": 217,
+    "above": 1,
+    "excess": 1,
+    "staticTotal": 23202,
+    "finalTotal": 22925
+   },
+   "pm_peak": {
+    "stations": 216,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 27609,
+    "finalTotal": 26347
+   }
+  },
+  "training:1": {
+   "am_peak": {
+    "stations": 223,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 20582,
+    "finalTotal": 20024
+   },
+   "pm_peak": {
+    "stations": 222,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 25042,
+    "finalTotal": 24621
+   }
+  },
+  "shipped:2": {
+   "am_peak": {
+    "stations": 217,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 23202,
+    "finalTotal": 23128
+   },
+   "pm_peak": {
+    "stations": 216,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 27609,
+    "finalTotal": 26916
+   }
+  },
+  "training:2": {
+   "am_peak": {
+    "stations": 223,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 20582,
+    "finalTotal": 19997
+   },
+   "pm_peak": {
+    "stations": 222,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 25042,
+    "finalTotal": 24901
+   }
+  },
+  "shipped:3": {
+   "am_peak": {
+    "stations": 217,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 23202,
+    "finalTotal": 23186
+   },
+   "pm_peak": {
+    "stations": 216,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 27609,
+    "finalTotal": 26988
+   }
+  },
+  "training:3": {
+   "am_peak": {
+    "stations": 223,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 20582,
+    "finalTotal": 20327
+   },
+   "pm_peak": {
+    "stations": 222,
+    "above": 1,
+    "excess": 1,
+    "staticTotal": 25042,
+    "finalTotal": 24951
+   }
+  }
+ }
+}

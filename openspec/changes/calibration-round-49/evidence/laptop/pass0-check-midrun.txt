@@ -1,0 +1,12 @@
+12:02 PM
+target/membership-loop/iter0/shipped/demand.json periods equal to target/r49/demand.base.json: true
+target/membership-loop/iter0/training/demand.json periods equal to target/r49/demand.base.cv.json: true
+start i0-shipped-build
+start i0-shipped-runs
+start i0-training-build
+start i0-training-runs
+training pm_peak: 256 selected (187 link, 69 movement or route), 0 stay static, 87 withheld
+training am_peak: 201 selected (148 link, 53 movement or route), 0 stay static, 77 withheld
+2026-11-19 11:51:50 AM PST D: loop
+
+[exited with code 0]
