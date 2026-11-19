@@ -1,8 +1,9 @@
 {
   "gatePriorTotals": {
-    "tolerancePct": 10,
+    "anchor": "staticFit",
+    "tolerancePct": 0,
     "weight": 10,
-    "_note": "Calibration round 49. Every gate direction that no gate station in the fit counts is held to at most its own pre-fit car total times (1 + tolerancePct / 100) by a one-sided soft constraint of the given weight (tools/lib/demand-fit.ts gatePriorStations). No count value sets a ceiling. tolerancePct reuses the gate count tolerance (countFit.tolerancePct.gate) and weight is five times the ramp weight; both are ASSUMPTIONS, not sourced. Applies in every period and both views."
+    "_note": "Calibration round 49. In a period whose stations take simulated membership, the fit first runs as the baseline does (static membership, no ceilings); every gate direction that no gate station in the fit counts is then held, by a one-sided soft constraint of the given weight, to at most its car total in that static fit times (1 + tolerancePct / 100) (tools/lib/demand-fit.ts gatePriorStations). Simulated membership may move a gate's trips among pairs but not add trips at the gate. A regularizer toward the static fit: tolerancePct 0 and weight 10 (five times the ramp weight) are ASSUMPTIONS, not sourced. No count value sets a ceiling. Periods without simulated membership (the loop's pass 0, midday) have no ceilings and no second fit."
   },
   "simulatedMembership": {
     "method": "export-supported",
