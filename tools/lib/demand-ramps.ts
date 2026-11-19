@@ -12,7 +12,7 @@ export interface Ramp {
   path: number[]; // freeway-class node ids from the surface node to the gate(s), for reporting
 }
 export interface RampRow { route: string; postmile: string; desc: string; adt: Record<string, number> }
-export interface RampVolume { adt: number; kind: 'DATA' | 'ASSUMPTION'; source: string; /** Source-observation ids of the Caltrans rows the volume sums (ramps that share a row share these). */ rows?: string[]; /** Count year of the latest value, ADT-weighted over the rows of the ramp's group; null without a count. */ year: number | null }
+export interface RampVolume { adt: number; kind: 'DATA' | 'ASSUMPTION'; source: string; /** Source-observation ids of the Caltrans rows the volume sums (ramps that share a row share these). */ rows?: string[]; /** Count year of the latest value, ADT-weighted over the rows of the ramp's group; null without a count. */ year: number | null; /** ADT by year of each Caltrans row the volume sums, and how many ramps share them (round 46: nearest-year ADT for the ramp K). */ adtByRow?: Record<string, number>[]; sharedBy?: number }
 
 export function discoverRamps(nodes: RNode[], links: RLink[], freeway: Set<string>): { ramps: Ramp[]; freewayGates: Set<number> } {
   const fw = links.filter((l) => freeway.has(l.class));
@@ -84,7 +84,7 @@ export function matchRampVolumes(
     if (!g.rows.length) continue;
     const parts = describe(g.rows);
     const total = parts.reduce((a, p) => a + p.adt, 0);
-    for (const r of g.ramps) out.set(r, { adt: total / g.ramps.length, kind: 'DATA', rows: parts.map((p) => rampRowObservation(p.h.route, p.h.postmile, p.h.desc)), year: total > 0 ? parts.reduce((a, p) => a + p.year * p.adt, 0) / total : null, street: g.street, source: `${rowsLabel}: ${label(parts)}${g.ramps.length > 1 ? `, shared by ${g.ramps.length} ramps` : ''}` });
+    for (const r of g.ramps) out.set(r, { adt: total / g.ramps.length, kind: 'DATA', adtByRow: g.rows.map((h) => h.adt), sharedBy: g.ramps.length, rows: parts.map((p) => rampRowObservation(p.h.route, p.h.postmile, p.h.desc)), year: total > 0 ? parts.reduce((a, p) => a + p.year * p.adt, 0) / total : null, street: g.street, source: `${rowsLabel}: ${label(parts)}${g.ramps.length > 1 ? `, shared by ${g.ramps.length} ramps` : ''}` });
   }
   for (const r of ramps) if (!out.has(r)) out.set(r, { adt: defaultAdt, kind: 'ASSUMPTION', year: null, street: keyOf(r), source: `no published ramp count matched; default ADT ${defaultAdt}` });
   return out;

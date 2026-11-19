@@ -1,0 +1,28 @@
+== shipped PM: target | after fit | final  (baseline -> ramp-k-counted -> min2)
+Forest EB 2697                   66/60/61           -> 66/53/59           -> 66/53/59            Forest Street Colby Street / Claremont Avenue to A
+McAuley EB 1933                  12/38/37           -> 12/32/33           -> 12/32/33            McAuley Street Howell Street to Canning Street, EB
+60th EB 1868                     23/33/34           -> 23/25/25           -> 23/25/25            60th Street Howell Street to Canning Street, EB (l
+Ayala NB 1831                    60/53/49           -> 60/53/46           -> 60/53/46            Ayala Avenue Martin Street to Howell Street, NB (l
+Howell SB 2055                   17/35/34           -> 17/34/30           -> 17/34/30            Howell Street 59th Street to McAuley Street, SB (l
+Claremont on leg (W leaving)     598/630/724        -> 598/615/698        -> 598/615/698         SR-24 westbound on-ramp, Hudson St and Claremont A
+Hudson SB->W 465                 465/529/580        -> 465/496/557        -> 465/496/557         SR-24 westbound on-ramp, Hudson St and Claremont A
+Clifton off leg (W entering)     617/655/711        -> 617/637/692        -> 617/637/692         SR-24 eastbound off-ramp, Clifton St and Claremont
+52nd on leg (N leaving)          996/969/964        -> 996/962/958        -> 996/962/958         SR-24 ramps and 52nd St, ramp (N leg) leaving
+52nd off leg (S entering)        1024/1035/1045     -> 1024/1051/1053     -> 1024/1051/1053      SR-24 ramps and 52nd St, ramp (S leg) entering
+MLK on leg (E leaving)           1547/1318/1325     -> 1547/1332/1331     -> 1547/1332/1331      SR-24 ramps and Martin Luther King Jr Way, ramp (E
+MLK off leg (E entering)         1614/1579/1569     -> 1614/1562/1561     -> 1614/1562/1561      SR-24 ramps and Martin Luther King Jr Way, ramp (E
+ramp node 280                    190/350/344        -> 190/337/337        -> 190/337/337         on-ramp at node 280 (Martin Luther King Junior Way
+ramp node 701                    657/771/775        -> 536/623/622        -> 536/623/622         on-ramp at node 701 (Telegraph Avenue / 56th Stree
+ramp node 702                    621/671/670        -> 506/540/545        -> 506/540/545         off-ramp at node 702 (Telegraph Avenue / Aileen St
+ramp node 1695 off               113/109/110        -> 92/92/92           -> 92/92/92            off-ramp at node 1695 (Caldecott Lane)
+== training PM: target | after fit | final  (baseline -> ramp-k-counted -> min2)
+Forest EB 2697                   66/63/65           -> 66/63/65           -> 66/61/60            Forest Street Colby Street / Claremont Avenue to A
+Howell SB 2055                   17/33/31           -> 17/33/31           -> 17/32/29            Howell Street 59th Street to McAuley Street, SB (l
+Hudson SB->W 465                 465/572/686        -> 465/572/686        -> 465/556/627         SR-24 westbound on-ramp, Hudson St and Claremont A
+52nd off leg (S entering)        1024/1041/1042     -> 1024/1041/1042     -> 1024/1048/1021      SR-24 ramps and 52nd St, ramp (S leg) entering
+MLK off leg (E entering)         1614/1579/1575     -> 1614/1579/1575     -> 1614/1569/1593      SR-24 ramps and Martin Luther King Jr Way, ramp (E
+ramp node 833                    882/838/894        -> 882/838/894        -> 793/777/840         on-ramp at node 833 (Claremont Avenue / Hudson Str
+ramp node 683                    972/968/976        -> 972/968/976        -> 874/874/896         off-ramp at node 683 (Claremont Avenue / Clifton S
+ramp node 280                    869/866/867        -> 869/866/867        -> 781/774/774         on-ramp at node 280 (Martin Luther King Junior Way
+ramp node 702                    621/631/627        -> 621/631/627        -> 558/567/569         off-ramp at node 702 (Telegraph Avenue / Aileen St
+ramp node 1695 off               113/111/111        -> 113/111/111        -> 101/100/100         off-ramp at node 1695 (Caldecott Lane)

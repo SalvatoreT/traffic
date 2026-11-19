@@ -1,0 +1,6 @@
+{
+  "method": "counted-ramps",
+  "fallback": 0.09,
+  "minRamps": 2,
+  "_note": "ASSUMPTION (calibration round 46): K, the peak-hour share of a ramp's ADT, is estimated as the sum of counted peak hours over the sum of ADTs of the ramps that have both. A view uses only the counted ramp legs it may see (the training view leaves out the legs the frozen split withholds), takes the ADT of each Caltrans row at the year nearest to the count, and skips a ramp whose ADT row several ramps share. The counts are PM hours of 2010 and 2013 environmental-review studies and the ADTs are of 2012 to 2017, so the estimate mixes years. A ramp without a counted hour is assumed to have the same K as the counted ones, and AM and midday take the PM value times the period volume factors. Below minRamps usable ramps the view keeps the fallback, which is the assumed ramps.kFactor."
+}

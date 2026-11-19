@@ -23,6 +23,7 @@ import { intersectionStations, type IxConfig, type IxFile } from './lib/intersec
 import { assumedMovementFlows, assumedReportLines, belowMinReport, withAlternatives, type AssumedMovementCfg, type AssumedReport, type Carve } from './lib/assumed-movements';
 import { annotateFlows, rampOut, resolveIntents, type IntentFlow, type ThroughIntentsCfg } from './lib/through-intents';
 import { deriveRamps } from './lib/ramps';
+import { estimateRampK, rampKNotes, type RampKConfig, type RampKPair } from './lib/ramp-k';
 import { deriveApproachGroups, expandGroups, groupOfNode, groupsFile, type ApproachGroups, type ApproachGroupsCfg } from './lib/approach-groups';
 import { countReportLines, countStations, linkBearing, mapMovement, nodeStreets, rawMovementCounts, tripEnds, type CountConfig, type CountFile, type CountReport, type TripEnds } from './lib/volunteer-count';
 import { writeFileAtomic } from './lib/atomic';
@@ -339,7 +340,30 @@ const rampRows: RampRow[] = JSON.parse(readFileSync(cfg.raw.caltransRamps, 'utf8
 const rc = cfg.ramps;
 const rampVol = matchRampVolumes(ramps, rampRows, cfg.streetMatch, streetKey, rc.defaultAdt, 'Caltrans ramp ADT', (rc.aliases ?? []).map((a: { lat?: number; lon?: number }) => ({ ...a, at: a.lat === undefined ? undefined : toXY(a.lat, a.lon!) })), rc.excludeRows ?? [], (id) => [nodeById.get(id)!.x, nodeById.get(id)!.y]);
 if (training) for (const r of ramps) { const v = rampVol.get(r)!; if (v.rows?.some((o) => withheldObs.has(o))) rampVol.set(r, { ...v, adt: rc.defaultAdt, kind: 'ASSUMPTION', year: null, rows: undefined, source: `withheld in the training view; default ADT ${rc.defaultAdt}` }); }
-const rampVeh = (r: Ramp, p: string) => (rampVol.get(r)!.adt * rc.kFactor * pf[p].volume) / r.gates.length;
+// Peak-hour factor of ramp ADT: the assumed rc.kFactor, or (countFit.rampK, off by default) the ratio of counted peak hours to ADT over the ramps this view may see.
+// A counted ramp leg that the training view withholds is not used, and neither is a ramp whose ADT row is withheld.
+const rampKCfg = cfg.countFit?.rampK as RampKConfig | undefined;
+const rampKNoteLines: string[] = [];
+let rampK: number = rc.kFactor;
+if (rampKCfg && cfg.intersectionCounts?.enabled) {
+  const icfg = cfg.intersectionCounts as IxConfig;
+  const pmF = pf[icfg.periods.pm]?.volume, midF = icfg.periods.midday ? pf[icfg.periods.midday]?.volume : undefined;
+  const legs = intersectionStations(JSON.parse(readFileSync(icfg.file, 'utf8')) as IxFile, net as never, { ...icfg, freewayClass: (cfg.freewayClasses ?? ['motorway'])[0] }, toXY, pmF && midF ? midF / pmF : null);
+  const fwc = new Set<string>(cfg.freewayClasses ?? ['motorway']);
+  const pairs: RampKPair[] = [];
+  for (const q of legs.stations) {
+    if (!q.rampLinks || withheldSt.has(q.id) || !((q.target[icfg.periods.pm] ?? 0) > 0)) continue;
+    const r = ramps.find((x) => { const own = (net.links as { from: number; to: number; class: string }[]).map((l, i) => ({ l, i })).filter(({ l }) => fwc.has(l.class) && (x.kind === 'off' ? l.to : l.from) === x.surface).map(({ i }) => i); return own.length === q.rampLinks!.length && own.every((i) => q.rampLinks!.includes(i)); });
+    const v = r ? rampVol.get(r) : undefined;
+    if (!r || !v || v.kind !== 'DATA' || !v.adtByRow) { rampKNoteLines.push(`ramp K skipped: ${q.label}: no ramp with a published ADT row matches the counted leg`); continue; }
+    pairs.push({ ramp: `${r.kind}-ramp at node ${r.surface} (${r.streets.join(' / ') || 'unnamed'})`, count: q.target[icfg.periods.pm], countYear: q.year ?? null, adtByRow: v.adtByRow, sharedBy: v.sharedBy ?? 1, station: q.id });
+  }
+  const est = estimateRampK(pairs, rampKCfg);
+  rampK = est.k;
+  rampKNoteLines.push(...rampKNotes(est, rampKCfg, view, rc.kFactor));
+  console.log(rampKNoteLines.join('\n'));
+}
+const rampVeh = (r: Ramp, p: string) => (rampVol.get(r)!.adt * rampK * pf[p].volume) / r.gates.length;
 const offRamps = offRampLinks(ramps.filter((r) => r.kind === 'off').map((r) => r.surface), net.links as never, new Set<string>(cfg.freewayClasses ?? []));
 interface FwGate { id: number; deg: number; inT: Record<string, number>; outT: Record<string, number> }
 const fwGates: FwGate[] = [...freewayIds].map((id) => {
@@ -903,8 +927,9 @@ const links = net.links;
 if (fc?.enabled) {
   const stationNotes: string[] = [];
   if (cdLoad.used === false && cdLoad.reason) stationNotes.push(cdLoad.reason);
+  stationNotes.push(...rampKNoteLines);
   const stations = buildStations({
-    nodes: net.nodes as never, links: net.links as NetLinkIn[], periodIds, lastPeriod, periodFactors: pf, kFactor: cfg.kFactor, rampKFactor: rc.kFactor, center,
+    nodes: net.nodes as never, links: net.links as NetLinkIn[], periodIds, lastPeriod, periodFactors: pf, kFactor: cfg.kFactor, rampKFactor: rampK, center,
     inBbox: (x, y) => x >= rect.minX && x <= rect.maxX && y >= rect.minY && y <= rect.maxY,
     streetKey, gates: gates.map((g) => ({ id: g.id, kind: g.kind, street: g.street, source: g.source, year: g.year, sourceId: g.sourceId, record: g.record, inflowDirection: g.inflowDirection, shareIn: g.shareIn, shareOut: g.shareOut, inT: g.inT, outT: g.outT, group: gateGroup(g.id) })),
     tmcs: tmcs.map((c) => ({ id: c.id, year: c.year, x: c.x, y: c.y, legs: c.legs, legStreets: c.legStreets })),
@@ -936,9 +961,9 @@ if (fc?.enabled) {
       if (q.rampLinks) {
         const i = stations.findIndex((st) => st.kind === 'ramp' && st.links.length === q.rampLinks!.length && st.links.every((l) => q.rampLinks!.includes(l)));
         if (i >= 0) { stationNotes.push(`${stations[i].label}: its ADT x K station (${periodIds.map((p) => Math.round(stations[i].target[p])).join(' / ')} veh/h) is replaced by the peak-hour count ${q.label} (${periodIds.map((p) => Math.round(q.target[p] ?? 0)).join(' / ')}); a counted hour comes before an assumed K`); const old = stations[i], r = (q.target[ic.periods.pm] ?? 0) / (old.target[ic.periods.pm] || 1); for (const p of periodIds) if (!q.target[p] && r > 0) { q.target[p] = old.target[p] * r; (q.derived ??= []).push(p); } stations.splice(i, 1);
-          // Ramps that share one published ADT row each took an equal part of it. With one of them counted, the others share what the row leaves.
+          // Ramps that share one published ADT row each took an equal part of it. With one of them counted, the others share what the row leaves, at the assumed K: a shared row is left out of the ramp K estimate (round 46), and a count above the row's ADT x the estimated K would leave the others nothing.
           const sib = stations.filter((st) => st.kind === 'ramp' && st.basis === old.basis);
-          if (sib.length) { for (const p of periodIds) { const rest = Math.max(0, old.target[p] * (sib.length + 1) - (q.target[p] ?? 0)) / sib.length; for (const st of sib) st.target[p] = rest; } stationNotes.push(`${sib.map((st) => st.label).join(', ')}: shares the ADT row of the counted ramp above and takes the rest of it (${periodIds.map((p) => Math.round(sib[0].target[p])).join(' / ')} veh/h)`); }
+          if (sib.length) { for (const p of periodIds) { const rest = Math.max(0, old.target[p] * (rc.kFactor / rampK) * (sib.length + 1) - (q.target[p] ?? 0)) / sib.length; for (const st of sib) st.target[p] = rest; } stationNotes.push(`${sib.map((st) => st.label).join(', ')}: shares the ADT row of the counted ramp above and takes the rest of it (${periodIds.map((p) => Math.round(sib[0].target[p])).join(' / ')} veh/h)`); }
         }
       }
       stations.push({ id: q.id, kind: 'tmc', label: q.label, basis: q.basis, links: q.links, detectors: q.detectors, target: Object.fromEntries(periodIds.map((p) => [p, q.target[p] ?? 0])), weight: q.weight, tolPct: q.tolPct, records: [{ key: q.id, share: 1 }], feature: q.feature, weightByPeriod: q.weightByPeriod, corridor: q.corridor, source: q.source, year: q.year, ramp: !!q.rampLinks, derived: q.derived });
@@ -1286,8 +1311,8 @@ for (const c of tmcs) {
     const ti = g.inT[lastPeriod], to = g.outT[lastPeriod], i = mi.get(g.id) ?? 0, o = mo.get(g.id) ?? 0;
     console.log(`  ${String(g.id).padEnd(5)} ${(g.street ?? '-').padEnd(10)} ${ti.toFixed(0).padStart(5)} ${i.toFixed(0).padStart(5)} ${ti ? (i / ti).toFixed(2) : '-'} | ${to.toFixed(0).padStart(5)} ${o.toFixed(0).padStart(5)} ${to ? (o / to).toFixed(2) : '-'}`);
   }
-  const expOff = ramps.filter((r) => r.kind === 'off').reduce((a, r) => a + (rampVol.get(r)!.adt * rc.kFactor * pf[lastPeriod].volume), 0);
-  const expOn = ramps.filter((r) => r.kind === 'on').reduce((a, r) => a + (rampVol.get(r)!.adt * rc.kFactor * pf[lastPeriod].volume), 0);
+  const expOff = ramps.filter((r) => r.kind === 'off').reduce((a, r) => a + (rampVol.get(r)!.adt * rampK * pf[lastPeriod].volume), 0);
+  const expOn = ramps.filter((r) => r.kind === 'on').reduce((a, r) => a + (rampVol.get(r)!.adt * rampK * pf[lastPeriod].volume), 0);
   const fwIn = [...fwGates].reduce((a, g) => a + (mi.get(g.id) ?? 0), 0), fwOut = [...fwGates].reduce((a, g) => a + (mo.get(g.id) ?? 0), 0);
   console.log(`Ramp totals, PM: modeled off-ramp trips (mainline gate origin) ${fwIn.toFixed(0)} vs sum of off-ramp ADT x K ${expOff.toFixed(0)}; on-ramp trips ${fwOut.toFixed(0)} vs ${expOn.toFixed(0)}`);
   const nodeMi = [...mi].filter(([id]) => !gates.some((g) => g.id === id) && !fwGates.some((g) => g.id === id)).reduce((a, [, v]) => a + v, 0);
