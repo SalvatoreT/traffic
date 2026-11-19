@@ -80,7 +80,7 @@ describe('signal observations', () => {
 });
 
 describe('round 45 candidates for the Forest Street green', () => {
-  const dir = 'openspec/changes/calibration-round-45/candidates';
+  const dir = 'openspec/changes/archive/2026-11-19-calibration-round-45/candidates';
   const area = JSON.parse(readFileSync('data/areas/rockridge.json', 'utf8'));
   const colby = (period: string) => area.signalObservations.find((o: { approach: string; periods: string[] }) => o.approach === 'Colby Street' && o.periods[0] === period);
   const ns = [node(0, 'signal'), node(1, 'uncontrolled'), node(2, 'uncontrolled'), node(3, 'uncontrolled'), node(4, 'uncontrolled')];

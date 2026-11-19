@@ -59,3 +59,20 @@ D8. The heavy runs (demand builds, validation, screens, assessments) run on the 
 
 - All three candidates may fail. Then the record says so and nothing published changes.
 - A candidate may pass the station counts by moving cars to places no count covers. D5 and the whole-street rows are the check; the through-car figures are model output with no counted range.
+
+## Outcome
+
+The laptop run of 2026-11-18 (about 8:05 PM to 9:06 PM Pacific, M3 Pro, 12 jobs) reproduced the baseline hashes (network 53c823f20d9165ed, demand 9cdebdabf05c4460, training demand 2f9ae152b9bbf78e, fingerprint d45a275dd7be0713cec6a64394b7d8a9 unchanged). Each candidate differed from the baseline in node 1069 only and its fitted demand periods equalled the baseline's (D6). All three passed the screen (D5) and went to ten seeds. The evidence is in this change's `evidence/` folder after archive.
+
+| Candidate | PM fitted | PM held out | AM fitted | AM held out | D5 | Whole-street | D16 | Validation | D4 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| forest-25 | 74 | 14 | 71 | 14 | 4 of 4 (mean error 4.9) | 8 of 8 | holds | 67 | passes |
+| forest-18 | 75 | 14 | 71 | 13 | 4 of 4 (4.2) | 8 of 8 | holds | 67 | fails on AM held out |
+| forest-12 | 77 | 14 | 69 | 13 | 3 of 4 (Hillegass Ave SB to freeway, 10.2 points off) | 8 of 8 | holds | 67 | fails on AM fitted, AM held out and D5 |
+
+D9. User decision, 2026-11-18: forest-25 is not adopted, although it passes D4. It sits exactly on three lines (PM fitted, PM held out, AM held out) and changes no status. The one gain is an AM location, the Forest St timing is unobserved, and adopting it would need a new demand build, proposal search and republish for no change in status. The published network stays 53c823f20d9165ed. A field timing of the Forest St green would reopen the question. Under D7 forest-25 was the only candidate to choose among. The shorter greens move Forest St eastbound, Ayala Ave northbound and McAuley St eastbound toward their counts, and they make the AM held-out Colby St SB station and the Hillegass Ave SB share to the freeway worse.
+
+The proposed spec delta (an assumed signal timing is labeled ASSUMPTION) was dropped before archive. Nothing shipped carries an assumed signal timing and no check enforces the label, so the requirement would not describe the shipped system. The candidate fragments keep their ASSUMPTION source and a test (`tools/signal-obs.test.ts`) checks them. The change archives without spec updates.
+
+The record entry is in `data/calibration/rockridge.record.md`, and the area caveat gained one sentence. That text goes to `areas.json` only; it is not part of the network or demand hashes.
+
