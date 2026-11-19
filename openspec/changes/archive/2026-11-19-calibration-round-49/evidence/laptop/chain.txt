@@ -1,0 +1,80 @@
+2026-11-19 11:39:56 AM PST START round 49 at f9a20b7
+2026-11-19 11:39:56 AM PST A: npm install
+2026-11-19 11:39:56 AM PST A: cargo build
+2026-11-19 11:39:57 AM PST A: fingerprint d45a275dd7be0713cec6a64394b7d8a9
+2026-11-19 11:39:58 AM PST A: vitest exit=0  Tests 32 passed (32)
+2026-11-19 11:39:58 AM PST B: npm run data
+2026-11-19 11:49:08 AM PST B: npm run data exit=0 wall_s=550
+2026-11-19 11:49:08 AM PST B: hashes 53c823f20d9165ed 9cdebdabf05c4460 2f9ae152b9bbf78e 
+2026-11-19 11:49:08 AM PST B: git status under data/: 0 line(s)
+2026-11-19 11:49:08 AM PST C: baseline screen
+2026-11-19 11:50:25 AM PST C: screen exit=0 wall_s=77
+2026-11-19 11:50:25 AM PST C: screen {"counts":{"am_peak":{"fitted":70,"fittedOf":77,"held":14,"heldOf":19},"pm_peak":{"fitted":73,"fittedOf":92,"held":14,"heldOf":24}},"gridlock":{"am_peak":{"scope":"judged zone","mean":0,"min":0,"max":0},"pm_peak":{"scope":"judged zone","mean":0,"min":0,"max":0}},"backlog":{"am_peak":{"k":3,"n":3,"mean":0.13,"max":0.21},"pm_peak":{"k":3,"n":3,"mean":0.3,"max":0.49}}}
+2026-11-19 11:50:25 AM PST C: baseline backlog under 2% in 3 of 3 seeds, both periods: yes
+2026-11-19 11:50:25 AM PST BC done
+2026-11-19 11:50:25 AM PST D: start
+2026-11-19 11:50:25 AM PST D: status before apply: ?? openspec/changes/calibration-round-49/evidence/;
+applied gate-ceiling-membership
+2026-11-19 11:50:26 AM PST D:  1 file changed, 13 insertions(+)
+2026-11-19 11:50:26 AM PST D: blocks added: 2
+2026-11-19 11:50:26 AM PST D: config sha256 99f6e16a372c7df3
+2026-11-19 11:50:26 AM PST D: dry run exit=0
+stations file data/demand/rockridge.stations.json: 357 stations; the frozen split withholds 91 from the training view
+shipped pm_peak: 337 selected (245 link, 92 movement or route), 6 stay static
+shipped am_peak: 272 selected (200 link, 72 movement or route), 6 stay static
+training pm_peak: 256 selected (187 link, 69 movement or route), 0 stay static, 87 withheld
+training am_peak: 201 selected (148 link, 53 movement or route), 0 stay static, 77 withheld
+2026-11-19 11:50:26 AM PST D: loop
+2026-11-19 11:51:30 AM PST STOPPED by hand: target/membership-loop and target/membership held round 48's files (iter0-2 demand.json, membership files); the loop does not clear them, so pass 0 would read round 48's membership and passes 1-2 would run seeds on round 48's demand. Moving them aside and restarting from D.
+2026-11-19 11:51:50 AM PST RESTART round 49 at D, f9a20b7
+2026-11-19 11:51:50 AM PST D: start
+2026-11-19 11:51:50 AM PST D: status before apply: ?? openspec/changes/calibration-round-49/evidence/;
+applied gate-ceiling-membership
+2026-11-19 11:51:50 AM PST D:  1 file changed, 13 insertions(+)
+2026-11-19 11:51:50 AM PST D: blocks added: 2
+2026-11-19 11:51:50 AM PST D: config sha256 99f6e16a372c7df3
+2026-11-19 11:51:50 AM PST D: dry run exit=0
+stations file data/demand/rockridge.stations.json: 357 stations; the frozen split withholds 91 from the training view
+shipped pm_peak: 337 selected (245 link, 92 movement or route), 6 stay static
+shipped am_peak: 272 selected (200 link, 72 movement or route), 6 stay static
+training pm_peak: 256 selected (187 link, 69 movement or route), 0 stay static, 87 withheld
+training am_peak: 201 selected (148 link, 53 movement or route), 0 stay static, 77 withheld
+2026-11-19 11:51:50 AM PST D: loop
+2026-11-19 12:57:38 PM PST D: loop exit=0 wall_s=3948
+pass 0 shipped pm_peak: 27612 car veh/h offered; 335 of 337 selected stations have pairs; zero hits: ix sr24-clifton-claremont move 1600>1771, ix telegraph-51st move 1629>1764; not exported: none
+pass 0 shipped am_peak: 23204 car veh/h offered; 271 of 272 selected stations have pairs; zero hits: ix telegraph-51st move 1629>1764; not exported: none
+pass 0 training pm_peak: 25044 car veh/h offered; 256 of 256 selected stations have pairs; zero hits: none; not exported: none
+pass 0 training am_peak: 20584 car veh/h offered; 201 of 201 selected stations have pairs; zero hits: none; not exported: none
+pass 1 shipped build: gate prior ceilings pm_peak 216 stations, 0 above ceiling, excess 0 veh/h; am_peak 217 stations, 1 above ceiling, excess 1 veh/h
+pass 1 training build: gate prior ceilings pm_peak 222 stations, 0 above ceiling, excess 0 veh/h; am_peak 223 stations, 0 above ceiling, excess 0 veh/h
+pass 1 shipped pm_peak: 26349 car veh/h offered; 335 of 337 selected stations have pairs; zero hits: ix sr24-clifton-claremont move 1600>1771, ix telegraph-51st move 1629>1764; not exported: none; ceiling stations 216, above ceiling 0, excess 0 veh/h; flow change 4.24 and membership change 3.55 of the seed standard error over 335 stations
+pass 1 shipped am_peak: 22926 car veh/h offered; 271 of 272 selected stations have pairs; zero hits: ix telegraph-51st move 1629>1764; not exported: none; ceiling stations 217, above ceiling 1, excess 1 veh/h; flow change 4.23 and membership change 3.45 of the seed standard error over 271 stations
+pass 1 training pm_peak: 24623 car veh/h offered; 256 of 256 selected stations have pairs; zero hits: none; not exported: none; ceiling stations 222, above ceiling 0, excess 0 veh/h; flow change 3.87 and membership change 3.40 of the seed standard error over 256 stations
+pass 1 training am_peak: 20026 car veh/h offered; 201 of 201 selected stations have pairs; zero hits: none; not exported: none; ceiling stations 223, above ceiling 0, excess 0 veh/h; flow change 3.32 and membership change 3.25 of the seed standard error over 201 stations
+pass 2 shipped build: gate prior ceilings pm_peak 216 stations, 0 above ceiling, excess 0 veh/h; am_peak 217 stations, 0 above ceiling, excess 0 veh/h
+pass 2 training build: gate prior ceilings pm_peak 222 stations, 0 above ceiling, excess 0 veh/h; am_peak 223 stations, 0 above ceiling, excess 0 veh/h
+pass 2 shipped pm_peak: 26917 car veh/h offered; 336 of 337 selected stations have pairs; zero hits: ix telegraph-51st move 1629>1764; not exported: none; ceiling stations 216, above ceiling 0, excess 0 veh/h; flow change 1.91 and membership change 2.32 of the seed standard error over 336 stations
+pass 2 shipped am_peak: 23130 car veh/h offered; 271 of 272 selected stations have pairs; zero hits: ix telegraph-51st move 1629>1764; not exported: none; ceiling stations 217, above ceiling 0, excess 0 veh/h; flow change 2.62 and membership change 1.97 of the seed standard error over 271 stations
+pass 2 training pm_peak: 24903 car veh/h offered; 256 of 256 selected stations have pairs; zero hits: none; not exported: none; ceiling stations 222, above ceiling 0, excess 0 veh/h; flow change 1.72 and membership change 2.05 of the seed standard error over 255 stations
+pass 2 training am_peak: 19999 car veh/h offered; 201 of 201 selected stations have pairs; zero hits: none; not exported: none; ceiling stations 223, above ceiling 0, excess 0 veh/h; flow change 1.79 and membership change 1.95 of the seed standard error over 201 stations
+pass 3 shipped build: gate prior ceilings pm_peak 216 stations, 0 above ceiling, excess 0 veh/h; am_peak 217 stations, 0 above ceiling, excess 0 veh/h
+pass 3 training build: gate prior ceilings pm_peak 222 stations, 1 above ceiling, excess 1 veh/h; am_peak 223 stations, 0 above ceiling, excess 0 veh/h
+# Membership loop (calibration round 48)
+report: <worktree>/openspec/changes/calibration-round-49/evidence/membership-loop.md
+2026-11-19 12:57:38 PM PST D: hashes 53c823f20d9165ed  public/data/rockridge.network.json;93b8cef7ecaa5df5  public/data/rockridge.demand.json;0dc1dbdeefa03203  target/validation/rockridge.demand.json;a6bc6aff8bdbaeed  target/membership/rockridge.membership-training.json;b625cdb060d12258  target/membership/rockridge.membership.json;
+2026-11-19 12:57:38 PM PST D: network identical
+2026-11-19 12:57:38 PM PST D: stations file identical
+2026-11-19 12:57:38 PM PST D: pass 0 check: target/membership-loop/iter0/shipped/demand.json periods equal to target/r49/demand.base.json: true;target/membership-loop/iter0/training/demand.json periods equal to target/r49/demand.base.cv.json: true;
+2026-11-19 12:57:38 PM PST D done
+2026-11-19 12:57:39 PM PST E: screen
+2026-11-19 12:58:59 PM PST E: screen exit=0 wall_s=80
+2026-11-19 12:58:59 PM PST E: {"counts":{"am_peak":{"fitted":71,"fittedOf":77,"held":16,"heldOf":19},"pm_peak":{"fitted":85,"fittedOf":92,"held":12,"heldOf":24}},"gridlock":{"am_peak":{"scope":"judged zone","mean":0,"min":0,"max":0},"pm_peak":{"scope":"judged zone","mean":0,"min":0,"max":0}},"backlog":{"am_peak":{"k":3,"n":3,"mean":0.54,"max":0.78},"pm_peak":{"k":3,"n":3,"mean":1.56,"max":1.96}}}
+2026-11-19 12:58:59 PM PST E: screen decision: PASS
+2026-11-19 12:58:59 PM PST F: validate
+2026-11-19 12:59:22 PM PST F: validate exit=0 r6   Route choice: share on a route 120 s (20%) costlier than the other, no link in common     0.01 [0.00 .. 0.04]  0.35 ok 67 of 74 cases pass wrote <worktree>/crates/sim/../../data/calibration/validation.md wrote <worktree>/crates/sim/../../data/calibration/validation.json 
+2026-11-19 12:59:22 PM PST F: changed after validate:  M data/calibration/validation.json;
+2026-11-19 01:01:58 PM PST F: assess exit=0 wall_s=156
+2026-11-19 01:01:58 PM PST EF done
+2026-11-19 01:01:58 PM PST restore: npm run data on the clean config
+2026-11-19 01:11:15 PM PST restore: exit=0 hashes 53c823f20d9165ed 9cdebdabf05c4460 2f9ae152b9bbf78e  status: ?? openspec/changes/calibration-round-49/evidence/;
+2026-11-19 01:11:15 PM PST ALL DONE 

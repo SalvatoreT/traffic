@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { assertNoWithheld, checkFitReport, exportOf, iterationShift, iterationStats, planLoop, poolStations, selectStations, type RunSet, type StationRec } from './lib/membership-loop';
 import { loopPaths, renderReport, runLoop, type CalibrateJob, type Runner, type View } from './lib/membership-loop-run';
 import { hashFile } from './lib/run-manifest';
@@ -206,6 +206,29 @@ describe('the loop with a fake build and a fake simulator', () => {
     expect(out.selected['training:pm_peak']).toBe(3);
     expect(renderReport(out, s.opts)).toMatch(/Zero hits/);
   });
+  it('refuses a non-empty loop directory without resume, before any build', async () => {
+    const s = scratch({ flat: true });
+    mkdirSync(s.opts.dir, { recursive: true });
+    writeFileSync(join(s.opts.dir, 'state.json'), '{}');
+    await expect(runLoop(s.opts, s.runner, () => undefined)).rejects.toThrow(/leftover loop files.*loop.*--resume/);
+    expect(s.builds).toEqual([]);
+  });
+  it('refuses a leftover membership file without resume, before any build', async () => {
+    const s = scratch({ flat: true });
+    mkdirSync(dirname(s.paths.membership.shipped), { recursive: true });
+    writeFileSync(s.paths.membership.shipped, '{}');
+    await expect(runLoop(s.opts, s.runner, () => undefined)).rejects.toThrow(new RegExp(`leftover loop files.*${s.paths.membership.shipped.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
+    expect(s.builds).toEqual([]);
+  });
+  it('accepts leftover files with resume and an empty or missing directory without it', async () => {
+    const s = scratch({ flat: true });
+    mkdirSync(s.opts.dir, { recursive: true });
+    await expect(runLoop(s.opts, s.runner, () => undefined)).resolves.toBeDefined();
+    const t = scratch({ flat: true });
+    mkdirSync(t.opts.dir, { recursive: true });
+    writeFileSync(join(t.opts.dir, 'state.json'), '{"done":[],"stoppedAfter":null,"reports":[],"stationsSha":null}');
+    await expect(runLoop({ ...t.opts, resume: true }, t.runner, () => undefined)).resolves.toBeDefined();
+  });
   it('runs all passes when the flows keep moving', async () => {
     const s = scratch({ flat: false });
     const out = await runLoop({ ...s.opts, seeds: [1, 2, 3, 4, 5, 6] }, s.runner, () => undefined);
@@ -225,7 +248,18 @@ describe('the loop with a fake build and a fake simulator', () => {
     const out = await runLoop(s.opts, s.runner, (l) => logs.push(l));
     expect(out.passes).toBe(2);
     expect(logs.some((l) => /pass 1 shipped build: gate prior ceilings pm_peak 3 stations, 0 above ceiling/.test(l))).toBe(true);
-    expect(renderReport(out, s.opts)).toMatch(/Gate ceiling stations/);
+    expect(renderReport(out, s.opts)).toMatch(/Ceiling stations .* Offered \/ static fit/);
+  });
+  it('reports offered demand as a share of the static fit and warns after the final build when it is more than 10% below', async () => {
+    const s = scratch({ flat: true, growth: -0.11 });
+    const logs: string[] = [];
+    await runLoop(s.opts, s.runner, (l) => logs.push(l));
+    expect(logs.some((l) => /pass 1 shipped pm_peak: offered car demand is 89\.0% of the static fit's \(890 of 1000 veh\/h\)/.test(l))).toBe(true);
+    expect(logs.filter((l) => /^WARNING shipped view, pm_peak, final build: offered car demand is 11\.0% below/.test(l))).toHaveLength(1);
+    const ok = scratch({ flat: true, growth: -0.09 });
+    const logs2: string[] = [];
+    await runLoop(ok.opts, ok.runner, (l) => logs2.push(l));
+    expect(logs2.some((l) => /^WARNING/.test(l))).toBe(false);
   });
   it('fails loudly when a build falls back to static membership', async () => {
     const s = scratch({ flat: true, dropNote: true });

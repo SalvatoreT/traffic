@@ -1,0 +1,243 @@
+{
+ "done": [
+  "i0-shipped-build",
+  "i0-shipped-runs",
+  "i0-training-build",
+  "i0-training-runs",
+  "i0-pool",
+  "i1-shipped-build",
+  "i1-shipped-runs",
+  "i1-training-build",
+  "i1-training-runs",
+  "i1-pool",
+  "i2-shipped-build",
+  "i2-shipped-runs",
+  "i2-training-build",
+  "i2-training-runs",
+  "i2-pool",
+  "final-shipped-build",
+  "final-training-build"
+ ],
+ "stoppedAfter": null,
+ "reports": [
+  {
+   "pass": 0,
+   "view": "shipped",
+   "period": "pm_peak",
+   "offered": 27612,
+   "selected": 337,
+   "withHits": 335,
+   "zeroHit": [
+    "ix sr24-clifton-claremont move 1600>1771",
+    "ix telegraph-51st move 1629>1764"
+   ],
+   "absent": [],
+   "shift": null
+  },
+  {
+   "pass": 0,
+   "view": "shipped",
+   "period": "am_peak",
+   "offered": 23204,
+   "selected": 272,
+   "withHits": 271,
+   "zeroHit": [
+    "ix telegraph-51st move 1629>1764"
+   ],
+   "absent": [],
+   "shift": null
+  },
+  {
+   "pass": 0,
+   "view": "training",
+   "period": "pm_peak",
+   "offered": 25044,
+   "selected": 256,
+   "withHits": 256,
+   "zeroHit": [],
+   "absent": [],
+   "shift": null
+  },
+  {
+   "pass": 0,
+   "view": "training",
+   "period": "am_peak",
+   "offered": 20584,
+   "selected": 201,
+   "withHits": 201,
+   "zeroHit": [],
+   "absent": [],
+   "shift": null
+  },
+  {
+   "pass": 1,
+   "view": "shipped",
+   "period": "pm_peak",
+   "offered": 28169,
+   "selected": 337,
+   "withHits": 335,
+   "zeroHit": [
+    "ix sr24-clifton-claremont move 1600>1771",
+    "ix telegraph-51st move 1629>1764"
+   ],
+   "absent": [],
+   "shift": {
+    "stations": 335,
+    "flowRms": 54.46301058872949,
+    "flowSeRms": 14.193469640337327,
+    "flowRatio": 3.837187944091386,
+    "membershipRms": 430.30638394021224,
+    "membershipSeRms": 113.67052565023604,
+    "membershipRatio": 3.7855581425238065,
+    "converged": false
+   }
+  },
+  {
+   "pass": 1,
+   "view": "shipped",
+   "period": "am_peak",
+   "offered": 24819,
+   "selected": 272,
+   "withHits": 271,
+   "zeroHit": [
+    "ix telegraph-51st move 1629>1764"
+   ],
+   "absent": [],
+   "shift": {
+    "stations": 271,
+    "flowRms": 54.56302831625632,
+    "flowSeRms": 12.292923393548648,
+    "flowRatio": 4.438572223177696,
+    "membershipRms": 383.901455394317,
+    "membershipSeRms": 104.43840136712353,
+    "membershipRatio": 3.675864915289353,
+    "converged": false
+   }
+  },
+  {
+   "pass": 1,
+   "view": "training",
+   "period": "pm_peak",
+   "offered": 25428,
+   "selected": 256,
+   "withHits": 256,
+   "zeroHit": [],
+   "absent": [],
+   "shift": {
+    "stations": 256,
+    "flowRms": 64.93206455837131,
+    "flowSeRms": 17.3473156995302,
+    "flowRatio": 3.743061213795158,
+    "membershipRms": 452.7229254484053,
+    "membershipSeRms": 118.66717617894379,
+    "membershipRatio": 3.8150644519064243,
+    "converged": false
+   }
+  },
+  {
+   "pass": 1,
+   "view": "training",
+   "period": "am_peak",
+   "offered": 21407,
+   "selected": 201,
+   "withHits": 201,
+   "zeroHit": [],
+   "absent": [],
+   "shift": {
+    "stations": 201,
+    "flowRms": 46.95423091687292,
+    "flowSeRms": 16.971593344535865,
+    "flowRatio": 2.7666365769947108,
+    "membershipRms": 366.9219618251975,
+    "membershipSeRms": 106.44987684077593,
+    "membershipRatio": 3.44689888532259,
+    "converged": false
+   }
+  },
+  {
+   "pass": 2,
+   "view": "shipped",
+   "period": "pm_peak",
+   "offered": 29107,
+   "selected": 337,
+   "withHits": 336,
+   "zeroHit": [
+    "ix telegraph-51st move 1629>1764"
+   ],
+   "absent": [],
+   "shift": {
+    "stations": 336,
+    "flowRms": 34.77440818023672,
+    "flowSeRms": 16.014150488646468,
+    "flowRatio": 2.171480042284521,
+    "membershipRms": 324.7826950256063,
+    "membershipSeRms": 116.00406935869346,
+    "membershipRatio": 2.799752601965655,
+    "converged": false
+   }
+  },
+  {
+   "pass": 2,
+   "view": "shipped",
+   "period": "am_peak",
+   "offered": 24861,
+   "selected": 272,
+   "withHits": 271,
+   "zeroHit": [
+    "ix telegraph-51st move 1629>1764"
+   ],
+   "absent": [],
+   "shift": {
+    "stations": 271,
+    "flowRms": 30.179052386581485,
+    "flowSeRms": 13.388342245292385,
+    "flowRatio": 2.2541291396396037,
+    "membershipRms": 234.74644152386765,
+    "membershipSeRms": 105.583702487049,
+    "membershipRatio": 2.2233207966225836,
+    "converged": false
+   }
+  },
+  {
+   "pass": 2,
+   "view": "training",
+   "period": "pm_peak",
+   "offered": 26455,
+   "selected": 256,
+   "withHits": 256,
+   "zeroHit": [],
+   "absent": [],
+   "shift": {
+    "stations": 256,
+    "flowRms": 37.111141668473365,
+    "flowSeRms": 19.998155405388157,
+    "flowRatio": 1.855728236738995,
+    "membershipRms": 324.303372811922,
+    "membershipSeRms": 113.15919141722507,
+    "membershipRatio": 2.865903942492793,
+    "converged": false
+   }
+  },
+  {
+   "pass": 2,
+   "view": "training",
+   "period": "am_peak",
+   "offered": 21755,
+   "selected": 201,
+   "withHits": 201,
+   "zeroHit": [],
+   "absent": [],
+   "shift": {
+    "stations": 201,
+    "flowRms": 31.52839358403865,
+    "flowSeRms": 18.129653745782264,
+    "flowRatio": 1.7390510611033323,
+    "membershipRms": 261.2414997545958,
+    "membershipSeRms": 100.41147510752492,
+    "membershipRatio": 2.6017096101301886,
+    "converged": false
+   }
+  }
+ ],
+ "stationsSha": "c9db41c930acf37d63d842cbe0d2b89a67d7dd24150be0ef3adbaea2ef25937c"
+}

@@ -1,0 +1,40 @@
+1422  -            service       38          6          7  ASSUMPTION  class default (service) ADT 150
+380   -            service      222          6          7  ASSUMPTION  class default (service) ADT 150
+373   -            service      234          6          7  ASSUMPTION  class default (service) ADT 150
+100   -            service      236          6          7  ASSUMPTION  class default (service) ADT 150
+88    -            service      236          6          7  ASSUMPTION  class default (service) ADT 150
+87    -            service      243          6          7  ASSUMPTION  class default (service) ADT 150
+
+TMC AlcatrazAve legs (PM peak hour, avg): leg entering leaving
+  N: 1064 900
+  S: 1093 910
+  W: 547 623
+
+TMC TelegraphAve_40thSt legs (PM peak hour, avg): leg entering leaving
+  S: 714 446
+  E: 469 797
+  W: 812 570
+
+TMC 40thSt_WestSt legs (PM peak hour, avg): leg entering leaving
+  S: 468 150
+  E: 488 840
+  W: 836 609
+
+TMC MarketSt_55thSt legs (PM peak hour, avg): leg entering leaving
+  N: 679 817
+  S: 607 428
+  E: 402 505
+
+Gate accounting, PM peak (veh/h): kind, gates, target in / modeled in, target out / modeled out
+  ASSUMPTION  112  in   8599 /   5896  out  10040 /   8933
+  DATA          5  in   3310 /   3759  out   2860 /   2382
+Counted gates (DATA, DATA(adt)): gate street target_in modeled_in ratio | target_out modeled_out ratio
+  943   telegraph   1064  1064 1.00 |   900   491 0.55
+  184   alcatraz     547   423 0.77 |   623   407 0.65
+  763   telegraph   1093  1857 1.70 |     0     0 -
+  275   market       607   415 0.68 |   428   168 0.39
+  1735  telegraph      0     0 - |   910  1316 1.45
+Ramp totals, PM: modeled off-ramp trips (mainline gate origin) 5653 vs sum of off-ramp ADT x K 6242; on-ramp trips 6290 vs 5324
+Origins at local nodes 10120 veh/h
+
+PM surface-gate two-way volume by street: unnamed 9297, 55th 72, sanpablo 2520, alcatraz 1169, sacramento 300, ashby 1260, market 1035, mlk 1260, adeline 810, west 150, telegraph 3966, shattuck 810, college 450, tunnel 450, broadwayterr 450, claremont 810

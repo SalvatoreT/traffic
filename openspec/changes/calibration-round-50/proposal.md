@@ -1,0 +1,21 @@
+## Why
+
+Round 49 held every gate and the D16 stability rule, and lowered the PM diagonal from 495 to 355 (counted 178). It still failed the keep rule on three lines: PM held out 13 of 24, D5 headline shares 2 of 4, and whole-street traversals 7 of 8 (PM Colby St southbound, modeled 81 against 39 observed). The simulated-membership fit cut through demand by 20 to 26% and added local demand (+829 PM, +704 AM in the shipped view).
+
+The laptop's breakdown of that growth (archived round 49 evidence, `evidence/laptop/nodes50-*.md` and `shares50-pm.md`) shows where it went. All of the local growth sits at non-gate nodes outside the study area: in the PM, flows from outside nodes to gates rose by 480 veh/h, flows between two outside nodes by 339 and flows from gates to outside nodes by 102, while flows that touch a study-area node fell by 93. Many of those nodes grew from almost nothing (node 1210, Hillegass Ave and Woolsey St, as an origin: 1 to 92 veh/h). On Colby St southbound, cars not headed for the freeway rose from 151.5 to 187.2 per hour and cars headed for the freeway fell from 106.1 to 83.1; the extra whole-street cars mostly turned in from Alcatraz Ave.
+
+The round 49 ceilings cover gates only, and the fit put its new trip ends at ordinary nodes. This round extends the same mechanism to every node.
+
+## What changes
+
+- `countFit.gatePriorTotals` gets an optional `scope`. Absent, or `gates`, nothing changes from round 49. With `allNodes`, every node direction that has car trips in the period (every origin and every destination, gate or not) gets a one-sided ceiling at its car total in the static fit of the same view and period, with the same soft weight, the same hard projection onto the ceilings, the same exclusion from the touched and counted tests, and the same rule that it applies only where simulated membership is in use. Gate directions that a surviving gate station counts stay uncapped, as in round 49. A direction with a static-fit total of 0 gets no ceiling (a multiplicative fit cannot raise a zero flow). Meaning: simulated membership may move trips among pairs but may not add a trip end at any node, so through demand cannot be converted into local demand.
+- The fit report splits the ceiling stations into gates and non-gate nodes (count, above ceiling, excess, volume removed by the projection) and gives the car trip ends at non-gate nodes inside and outside the study area, as origins and as destinations, static fit against final. The existing flow-type lines stay.
+- The membership loop prints the same figures per build and the offered car demand as a share of the static fit. After the final builds it warns when offered demand in any view and period is more than 10% below the static fit (ASSUMPTION), and the runbook says to stop and report. The 3% abort for growth stays.
+- One candidate, `node-ceiling-membership`: the `allNodes` ceilings plus the round 48 simulated membership, run through the three-pass loop, then the three-seed screen (backlog under 2% in 3 of 3 seeds, AM and PM), then ten seeds if the screen passes.
+- Two read-only scripts for the laptop (`scripts/nodes.cjs`, `scripts/shares.cjs`), cleaned from the round 49 evidence, so the breakdown of growth by node and the southbound shares are produced the same way for this round.
+- The round 49 archived evidence gets the three breakdown tables and the two scripts, and its record entry says what the breakdown shows.
+- No simulator, network or split change.
+
+## Impact
+
+Tools only. The simulator fingerprint stays d45a275dd7be0713cec6a64394b7d8a9 and the network 53c823f20d9165ed. With the entry absent the shipped demand stays 9cdebdabf05c4460 and the training demand 2f9ae152b9bbf78e. With the entry present the demand config's hash changes, so the provenance in the demand files changes; the demand periods stay the baseline's until a membership file is in use. From pass 1 of the loop each build runs the fit twice per period that takes simulated membership, with about 2 x (gates + 840 non-gate nodes) ceiling constraints per period, so builds take longer than round 49's. If the candidate is adopted, the published proposals, results and redistribution files need a new search. If it fails the keep rule, nothing published changes.

@@ -1,0 +1,8 @@
+2026-11-19 11:56:51 AM PST snapshot i0-shipped-build
+2026-11-19 12:02:32 PM PST snapshot i0-training-build
+2026-11-19 12:11:53 PM PST snapshot i1-shipped-build
+2026-11-19 12:20:54 PM PST snapshot i1-training-build
+2026-11-19 12:30:36 PM PST snapshot i2-shipped-build
+2026-11-19 12:39:57 PM PST snapshot i2-training-build
+2026-11-19 12:49:39 PM PST snapshot final-shipped-build
+2026-11-19 12:57:20 PM PST snapshot final-training-build

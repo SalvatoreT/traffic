@@ -1,4 +1,4 @@
-// Fits the demand on the simulator's own route choice for every station the report binary exports (calibration round 48, openspec/changes/calibration-round-48).
+// Fits the demand on the simulator's own route choice for every station the report binary exports (calibration round 48, openspec/changes/archive/2026-11-19-calibration-round-48).
 // Pass k builds both views, runs seeds with `calibrate --select-od` (one process per seed, so that each seed writes its own file), pools passes 0 to k with equal
 // weight into the membership files that `countFit.throughTargets.simulatedMembership` names, and compares pass k with pass k-1. The last build uses the last pool.
 //   npx tsx tools/membership-loop.ts [--area rockridge] [--views shipped,training] [--periods pm_peak,am_peak] [--seeds 1-10] [--iterations 3] [--jobs 4]
