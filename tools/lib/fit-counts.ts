@@ -26,6 +26,8 @@ export interface Constraint {
   member?: ArrayLike<number>;
   /** One-sided target: the constraint acts only while the assigned volume is above this value (then it pulls toward `target`). */
   ceiling?: number;
+  /** The constraint only caps its flows: it does not make them count as touching a count, so the median rule and the capacity guard's cut treat them as before (round 49). */
+  ceilingOnly?: boolean;
 }
 
 export interface FitOptions {
@@ -178,7 +180,7 @@ export function fitToCounts(a: Assignment, v0: ArrayLike<number>, types: FlowTyp
   const n = a.routable.length;
   const { kk, cc, pp, nf } = membership(a, cons, nLinks);
   const counted = new Uint8Array(n);
-  for (let i = 0; i < kk.length; i++) if (!cons[cc[i]].ratio) counted[kk[i]] = 1;
+  for (let i = 0; i < kk.length; i++) if (!cons[cc[i]].ratio && !cons[cc[i]].ceilingOnly) counted[kk[i]] = 1;
   const f = Float64Array.from({ length: n }, (_, k) => v0[k]);
   const pin = (k: number) => !!opt.pinned && opt.pinned[k] === 1;
   const loB = (k: number) => (pin(k) ? 1 : opt.byType?.[types[k]]?.lo ?? opt.lo), hiB = (k: number) => (pin(k) ? 1 : opt.byType?.[types[k]]?.hi ?? opt.hi);
@@ -336,7 +338,7 @@ export function fitToCounts(a: Assignment, v0: ArrayLike<number>, types: FlowTyp
   for (const t of ['through', 'local', 'ramp'] as FlowType[]) medians[t] = med((k) => types[k] === t);
   medians.all = med(() => true);
   const touched = new Uint8Array(n);
-  for (const k of kk) touched[k] = 1;
+  for (let i = 0; i < kk.length; i++) if (!cons[cc[i]].ceilingOnly) touched[kk[i]] = 1;
   for (let k = 0; k < n; k++) {
     if (touched[k] || !a.routable[k]) continue;
     const m = opt.uncounted === 'one' ? 1 : opt.uncounted === 'medianAll' ? medians.all : medians[types[k]];

@@ -875,12 +875,12 @@ function loadMeasured(fc: { assignment?: { measured?: { file: string; alpha: num
   return { delayS: j.delayS as Record<string, number[]>, alpha: m.alpha, weight: m.weight, source: `${m.file}, ${j.note}` };
 }
 // A through-car target counts distinct trips with both ends outside the study area that visit any link of the corridor.
-// Ceilings on the gates no gate count holds (calibration round 49, `countFit.gatePriorTotals`, absent by default). Both numbers are ASSUMPTIONS.
-function loadGatePrior(fc: { gatePriorTotals?: { tolerancePct: number; weight: number } }, notes: string[]): GatePriorConfig | undefined {
+// Ceilings on the gates no gate count holds (calibration round 49, `countFit.gatePriorTotals`, absent by default). The anchor is the static fit of the same view and period; tolerance and weight are ASSUMPTIONS.
+function loadGatePrior(fc: { gatePriorTotals?: { anchor: string; tolerancePct: number; weight: number } }, notes: string[]): GatePriorConfig | undefined {
   const g = fc.gatePriorTotals;
   if (!g) return undefined;
-  if (!(Number.isFinite(g.tolerancePct) && g.tolerancePct >= 0) || !(Number.isFinite(g.weight) && g.weight > 0)) throw new Error('countFit.gatePriorTotals needs tolerancePct >= 0 and weight > 0');
-  notes.push(`gate prior ceilings (ASSUMPTION, round 49): every gate direction that no gate station in the fit counts is held to at most its own pre-fit car total plus ${g.tolerancePct}% (weight ${g.weight}); no count value sets a ceiling`);
+  if (g.anchor !== 'staticFit' || !(Number.isFinite(g.tolerancePct) && g.tolerancePct >= 0) || !(Number.isFinite(g.weight) && g.weight > 0)) throw new Error('countFit.gatePriorTotals needs anchor "staticFit", tolerancePct >= 0 and weight > 0');
+  notes.push(`gate prior ceilings (ASSUMPTION, round 49): in a period whose stations take simulated membership, every gate direction that no gate station in the fit counts is held to at most its car total in the static fit of the same view and period plus ${g.tolerancePct}% (weight ${g.weight}); no count value sets a ceiling`);
   return { tolerancePct: g.tolerancePct, weight: g.weight, gateIds: net.nodes.filter((q) => q.gate).map((q) => q.id) };
 }
 
