@@ -1,0 +1,3 @@
+data/demand/rockridge.stations.json
+  pm_peak: recent fitted 91, recent held out 24
+  am_peak: recent fitted 77, recent held out 19

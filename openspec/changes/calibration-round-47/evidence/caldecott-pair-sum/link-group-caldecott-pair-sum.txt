@@ -1,0 +1,2 @@
+link group ramp on 1695 + ramp on 1711: 2 stations of one source row become one station over links 4080, 4058; the target is the sum (am_peak 103, midday 75, pm_peak 122 veh/h, members 52/38/61 and 52/38/61), weight 2 (the larger member weight, 2 counts becoming one)
+link group ramp on 1695 + ramp on 1711: 2 stations of one source row become one station over links 4080, 4058; the target is the sum (am_peak 103, midday 75, pm_peak 122 veh/h, members 52/38/61 and 52/38/61), weight 2 (the larger member weight, 2 counts becoming one)
