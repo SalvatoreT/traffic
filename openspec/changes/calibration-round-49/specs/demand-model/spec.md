@@ -37,6 +37,13 @@ The ceiling of a station SHALL be the gate's car total in the static fit of the 
 - **WHEN** a flow's only constraint is a ceiling station
 - **THEN** it still takes the median rule for flows that touch no count
 
+### Requirement: The ceilings hold on the final flows
+After the fit, the median rule and the guard cut, the fit SHALL scale down the car flows of every ceiling gate direction whose total exceeds its ceiling by more than 0.1%, proportionally and alternating over origin and destination sides until none does, and SHALL report the volume removed and the fitted stations within tolerance before and after.
+
+#### Scenario: Soft ceiling leaks
+- **WHEN** a gate direction ends above its ceiling after the soft fit
+- **THEN** its final total is at most 0.1% above the ceiling and the report states the volume removed
+
 ### Requirement: Ceiling stations read no count and are not scored
 A ceiling station SHALL take its ceiling only from the static fit of the view being built. It SHALL NOT appear in the stations output file, in the validation split, among the stations scored by `calibrate` or `assess`, or among the stations the simulated membership rule selects.
 
@@ -50,6 +57,13 @@ With the entry present, the fit report SHALL list, per period, the number of cei
 #### Scenario: Report lines
 - **WHEN** a build runs with the entry present
 - **THEN** the report has one line per period with the ceiling station count, the count above ceiling and the excess in veh/h
+
+### Requirement: The loop stops when offered demand outgrows the static fit
+After each build from the second pass on, the loop SHALL stop with a non-zero exit, before running that pass's seeds, if the offered car demand of any view and period exceeds the static fit's by more than 3%.
+
+#### Scenario: Growth past the limit
+- **WHEN** a build offers 3.1% more car demand than its static fit
+- **THEN** the loop stops before the seed runs and the message names the view, period and figures
 
 ### Requirement: The membership loop reports the ceilings
 When the fit report carries the ceiling lines, the membership loop SHALL include, in its per-pass lines and its report, the number of ceiling stations, the number above ceiling and the excess sum of each build.

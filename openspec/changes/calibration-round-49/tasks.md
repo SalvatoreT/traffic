@@ -10,6 +10,8 @@
 - [x] 1.8 Builds of both views with the switch absent reproduce both hashes
 - [x] 1.9 Entry present, no membership file: periods identical to the baseline
 - [x] 1.10 Entry present with a made-up membership file, with and without ceilings: offered demand, ceiling report, gate sums, flow types
+- [x] 1.13 Hard projection onto the ceilings and its report lines (design D3'')
+- [x] 1.14 Loop abort when offered demand exceeds the static fit by more than 3% (design D11'), tested with the fake build
 - [x] 1.11 Write the keep rule and the screen (design D6) before any run
 - [x] 1.12 Write `runbook.md` for the laptop
 

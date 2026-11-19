@@ -22,6 +22,8 @@ D3'. (Lead, 2026-11-19, replaces D3.) The ceiling is anchored on the static fit,
 
 D4. The fit report gets a section listing, per period, the number of ceiling stations, how many end above their ceiling and by how much (the sum, and the worst five gates with node id and street), the total offered car demand of the static fit against the final fit, and (lead's addition) that demand by flow type, so growth that moves to local origins is visible. The membership loop's per-pass report includes the count above ceiling and the excess sum.
 
+D3''. (Lead, 2026-11-19, after the made-up-membership check showed node 602 ending 5.6% over its ceiling at weight 10, above round 48's 4,114.) Hard projection. After the fit with ceilings has converged, and after the median rule and the guard cut (on the final flows), the fit scales down the car flows of every ceiling gate direction that still exceeds its ceiling by more than 0.1% so it ends at the ceiling. The scaling is proportional over that gate's flows and alternates over origin and destination sides for up to 200 passes until no ceiling gate direction exceeds its ceiling by more than 0.1%. Scaling only lowers flows, so it terminates. The soft ceiling stays in the iteration so the fit plans around it; the projection is the guarantee. The report states, per period, the volume removed by the projection (sum and the worst five gates) and the number of fitted stations within their tolerance before and after it, so the cost to the count fit is visible (`projectToCeilings` in `tools/lib/demand-fit.ts`).
+
 D5'. (Lead, 2026-11-19, replaces D5.) One candidate, `candidates/gate-ceiling-membership.json`: `gatePriorTotals` plus `throughTargets.simulatedMembership` exactly as round 48's candidate. Stage 1 (the ceiling alone on static membership) is dropped: static plus this ceiling is the baseline by construction. The path is the three-pass loop (`tools/membership-loop.ts`), the screen with the backlog addition (D6), and ten seeds if the screen passes.
 
 D6. Keep rule: round 48's D7, unchanged. A candidate is adopted only if none of these is worse than the baseline.
@@ -42,6 +44,8 @@ D7. Reported, not conditions: the lists of round 48's D7 (the five diagonal stat
 D8. Citations: no new reference from memory. The ceiling is a constraint on a trip-table estimate. It is labeled ASSUMPTION. The method family is count-based trip-table estimation, [VanZuylen1980] (the entry says only its title was read: it states the problem of estimating a table from link counts); the ceiling is not in that paper as far as this change knows. [PowellSheffi1982] stays the source of the 1/n pooling in the loop, with the limits its entry states.
 
 D9'. (Lead, replaces D9 for the single stage.) Heavy runs go to the project lead's laptop from `runbook.md`: the loop, with the expected hashes, what to report back, no push to main, no `data:push`, `validation.json` checked out after `validate`, evidence under `evidence/`, commits on `salvatoret/peaceful-fermi-dlwt0u`. Round 48's run sets are not reused: the config hash differs. From pass 1 each build runs the fit twice per period that takes simulated membership, so builds take roughly twice as long.
+
+D11'. (Lead, 2026-11-19, written before any run; the 3% threshold is an ASSUMPTION.) Loop abort. After each build from pass 1 on (the final builds included), if the total offered car demand in any view and period exceeds that view and period's static fit by more than 3%, the driver stops with a clear message and a non-zero exit before running that pass's seeds. Round 48 failed at +4.4% to +9.0%. The gates are now held, so growth past 3% would have moved to non-gate origins, and the result goes back to the lead instead of spending laptop hours. The driver reads the static fit's and the final fit's offered totals from the report's ceiling line (`CEILING_ABORT_SHARE` in `tools/lib/membership-loop.ts`).
 
 P1. (Preparation choice.) The second fit is a recursive call of `fitPeriod` on the same flows with `gatePrior` and the measured memberships removed from the config, so it is the baseline's code path, not a copy. The ceiling stations are built in `fitPeriod`, not appended to the station list in `build-demand.ts`: that list feeds the stations output, `checkManifest`, the split and the report's station tables, and building them where the fit consumes them leaves all of that untouched. The gate node list is the network's nodes with `gate: true`.
 
@@ -151,34 +155,32 @@ All builds used `--out-root`, so no file under `data/` or `public/data/` changed
 
 1. Switch absent reproduces the baseline with the revised code: shipped demand 9cdebdabf05c4460, training demand 2f9ae152b9bbf78e. The first version's builds also showed the stations file is byte-identical with the entry present; the revised code builds the ceilings the same way (inside `fitPeriod`) and the stations output is written before the fit.
 2. Entry present, no membership file (shipped view, scratch config = `apply-candidate.py` output; the build says "No simulated membership file for the shipped view"): every period's flows are identical to the baseline's (`JSON.stringify(periods)` equal), the report has no ceiling stations and no second fit ran. Pass 0 of the loop therefore reproduces the baseline periods.
-3. Entry present with a made-up membership file (valid evidence; 8 random pairs per selected station, 30% of their offered trips, 20 runs; shipped view; plumbing check, not a model result). The fit report says "20 runs; 337 of 343 fitted stations" (PM) and "272 of 278" (AM). The same file and config with the ceilings removed is the reference (a second config, so a second file with its own evidence).
+3. Entry present with a made-up membership file (valid evidence; 8 random pairs per selected station, 30% of their offered trips, 20 runs; shipped view; plumbing check, not a model result). The fit report says "20 runs; 337 of 343 fitted stations" (PM) and "272 of 278" (AM). The reference is the same file and config with the ceilings removed (a second config, so a second file with its own evidence). Results with the hard projection (D3''):
 
-   | Shipped view, offered car veh/h | Static fit (baseline) | Made-up membership, no ceilings | Made-up membership, ceilings |
+   | Shipped view, offered car veh/h | Static fit (baseline) | Made-up membership, no ceilings | Made-up membership, ceilings and projection |
    | --- | --- | --- | --- |
-   | PM | 27,609 | 57,373 | 34,278 |
-   | AM | 23,202 | 53,527 | 29,626 |
+   | PM | 27,609 | 57,373 | 33,551 |
+   | AM | 23,202 | 53,527 | 28,970 |
    | Midday (no membership in the file) | 16,218 | 16,218 | 16,218 |
 
-   Gate and non-gate sums from the demand files (veh/h; all gate nodes, counted gates included):
+   | Period, run (veh/h, from the demand files) | All | Gate origins | Gate destinations | Non-gate origins | Node 602 entering | Node 675 leaving |
+   | --- | --- | --- | --- | --- | --- | --- |
+   | PM static | 27,612 | 17,136 | 18,976 | 10,475 | 3,945 | 3,778 |
+   | PM no ceilings | 57,375 | 32,979 | 34,685 | 24,396 | 12,079 | 9,619 |
+   | PM ceilings | 33,552 | 17,033 | 18,432 | 16,519 | 3,940 | 3,766 |
+   | AM static | 23,204 | 15,103 | 14,464 | 8,101 | 3,656 | 3,159 |
+   | AM no ceilings | 53,529 | 29,986 | 32,598 | 23,543 | 11,061 | 9,712 |
+   | AM ceilings | 28,970 | 14,870 | 14,433 | 14,099 | 3,654 | 3,158 |
 
-   | Period, run | All | Gate origins | Gate destinations | Non-gate origins |
-   | --- | --- | --- | --- | --- |
-   | PM static | 27,612 | 17,136 | 18,976 | 10,475 |
-   | PM no ceilings | 57,375 | 32,979 | 34,685 | 24,396 |
-   | PM ceilings | 34,281 | 17,494 | 18,887 | 16,786 |
-   | AM static | 23,204 | 15,103 | 14,464 | 8,101 |
-   | AM no ceilings | 53,529 | 29,986 | 32,598 | 23,543 |
-   | AM ceilings | 29,628 | 15,246 | 14,858 | 14,382 |
+   By flow type, PM, static fit then final: through 5,907 to 3,541, local 10,360 to 18,684, ramp 11,342 to 11,326 (AM: through 3,745 to 2,245, local 9,586 to 16,857, ramp 9,871 to 9,868).
 
-   By flow type, PM, static fit then final with ceilings: through 5,907 to 3,620, local 10,360 to 18,823, ramp 11,342 to 11,835 (AM: through 3,745 to 2,303, local 9,586 to 16,988, ramp 9,871 to 10,335).
-
-   Reading it. Under this pressure the ceilings keep the gate origins within 2.1% of the static fit in the PM (17,494 against 17,136) and 1.0% in the AM, where without them the gate origins nearly double. The ceiling stations in all, 216 PM and 217 AM, end above their ceilings at 85 and 77, by 767 and 682 veh/h in all; their summed totals move 31,784 to 31,819 (PM) and 25,891 to 26,231 (AM). The soft constraint leaks at the large gates, though: PM node 602 ends at 4,165 against a ceiling of 3,944 (+5.6%, above round 48's 4,114), node 675 at 3,939 against 3,777 (+4.3%); AM node 602 3,837 against 3,656 (+5.0%). The demand that the ceilings keep out of the gates goes to local origins and destinations (PM non-gate origins 10,475 to 16,786) and the through flow falls. With made-up pairs this says how the constraint behaves, not what the model does; with real pairs the loop's reports show it.
+   Reading it. All 216 PM and 217 AM ceiling stations end at or below their ceilings. Before the projection the soft constraint at weight 10 had left PM node 602 at 4,165 against a ceiling of 3,944 (+5.6%, above round 48's 4,114), node 675 at 3,939 against 3,777 and AM node 602 at 3,837 against 3,656. The projection removed 727 veh/h in the PM (node 602 215, node 675 154, node 1719 33, node 1674 29, node 1672 24) and 657 in the AM (602 177, 675 174, 1672 25, 1674 25, 1719 24), and node 602 now ends at 3,940 (PM) and 3,654 (AM). The cost to the count fit: fitted stations within their tolerance go from 65 to 64 of 343 (PM) and from 69 to 62 of 278 (AM), under made-up pairs, so most stations are far off already. The demand that the ceilings keep out of the gates goes to local origins and destinations (PM non-gate origins 10,475 to 16,519; offered demand ends 21.5% above the static fit in the PM and 24.8% in the AM). The loop's abort rule (D11', 3%) would stop a loop that saw this. With made-up pairs this shows how the constraint behaves, not what the model does.
 4. `npx vitest run tools/`, `npx tsc --noEmit` (only the missing WASM package) and `openspec validate calibration-round-49 --strict --no-interactive` pass; the new tests are listed in the commit and cover the anchor value, no ceilings without membership, the held gates, one-sided behavior, unchanged treatment of unconstrained flows, and the exclusion from scored stations.
 
 
 ## What is not known
 
-- Whether the ceilings hold with real simulated pairs. In the made-up-pairs check they hold the summed gate totals but the large gates (nodes 602 and 675) end 4% to 6% above their ceilings at weight 10. Round 48's 4,114 at node 602 is below that check's 4,165. A larger weight is the lever; none was tried.
+- How much the projection costs the count fit with real pairs. In the made-up-pairs check it removed about 700 veh/h per peak, mostly at nodes 602 and 675, and fitted stations within tolerance fell by 1 (PM) and 7 (AM). The report gives the same two numbers for every build of the loop.
 - Whether holding the gates helps the three lines round 48 failed. D5 and PM held out failed with gates growing, but the held-out loss may come from the membership fit alone. The loop, the screen and the ten seeds show it.
 - Where the demand goes. In the made-up check the demand kept out of the gates moves to local origins and destinations. The report prints the flow types for each period so the loop's real pairs show whether local demand grows.
 - Ceilings at "via" gates. San Pablo Ave (node 183) is a gate whose static-fit total already exceeds its target in some periods; its ceiling is that static-fit total, so the counted stations that need more trips there lose to the ceiling in part.
@@ -190,6 +192,6 @@ All builds used `--out-root`, so no file under `data/` or `public/data/` changed
 
 - Ceilings that bind while counts disagree show up as stations outside tolerance in the fit report ("Stations that cannot be met"), which can lower fitted scores. The screen shows it early.
 - A ceiling at a gate the simulator needs to fill (the SR-24 mainline entries) can starve a counted ramp or movement downstream. The ramp table in the reported lists shows it.
-- Soft ceilings leak (4% to 6% at the large gates in the check above), and demand moves to local origins. Both are reported, not bounded.
+- Soft ceilings leak (4% to 6% at the large gates before the projection in the check above); the projection removes the leak and the report states its cost. Demand moves to local origins; the 3% abort rule stops the loop when that growth passes the limit, and a run can still end at 3% or less with the shift.
 - The static fit is itself not a good estimate everywhere (the diagonal overshoot round 48 set out to fix). Anchoring on it means simulated membership cannot add trips at the gates, only move them.
 - The loop's memory of the first pass is permanent in the pool (1/n weighting), as in round 48.
