@@ -13,17 +13,17 @@
 
 ## 2. Laptop runs (runbook.md)
 
-- [ ] 2.1 Gate: reproduce the baseline hashes and the fingerprint
-- [ ] 2.2 Baseline three-seed screen
-- [ ] 2.3 Apply the candidate, dry-run the loop, run it (three passes at most, ten seeds, PM and AM, both views)
-- [ ] 2.4 Screen the final demand on seeds 1 to 3
-- [ ] 2.5 Validation suite and ten-seed assessment if the screen passes
-- [ ] 2.6 Optional: the loop again with the prior worth 20 trips
-- [ ] 2.7 Commit the evidence under `evidence/`
+- [x] 2.1 Gate: reproduce the baseline hashes and the fingerprint
+- [x] 2.2 Baseline three-seed screen
+- [x] 2.3 Apply the candidate, dry-run the loop, run it (three passes at most, ten seeds, PM and AM, both views)
+- [x] 2.4 Screen the final demand on seeds 1 to 3
+- [x] 2.5 Validation suite and ten-seed assessment if the screen passes
+- [ ] 2.6 Optional: the loop again with the prior worth 20 trips (step H, not run)
+- [ ] 2.7 Commit the evidence under `evidence/` (committed on the laptop as 6a50e3e, not pushed yet)
 
 ## 3. Verdict (lead)
 
-- [ ] 3.1 Keep-rule table and the verdict (design D7)
-- [ ] 3.2 Record entry in `data/calibration/rockridge.record.md`
-- [ ] 3.3 Adoption, if the project lead decides it (config entry, membership files to R2, rebuilt data, new proposal search)
-- [ ] 3.4 Validate the change and archive
+- [x] 3.1 Keep-rule table and the verdict (design D7): fails
+- [x] 3.2 Record entry in `data/calibration/rockridge.record.md`
+- [ ] 3.3 Adoption, if the project lead decides it: not applicable, not adopted
+- [ ] 3.4 Validate the change and archive (validated; archive pending the evidence push)
