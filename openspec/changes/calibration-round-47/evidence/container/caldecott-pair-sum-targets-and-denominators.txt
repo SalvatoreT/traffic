@@ -1,0 +1,11 @@
+stations: baseline 357, candidate 356; only in baseline 2; only in candidate 1
+REMOVED fit   2024 ramp on 1695 | on-ramp at node 1695 (Caldecott Lane) | links 4080 | am_peak 52, midday 38, pm_peak 61
+REMOVED fit   2024 ramp on 1711 | on-ramp at node 1711 (Caldecott Lane) | links 4058 | am_peak 52, midday 38, pm_peak 61
+ADDED   fit   2024 ramp on 1695 + ramp on 1711 | on-ramp at node 1695 (Caldecott Lane) + on-ramp at node 1711 (Caldecott Lane), sum | links 4080,4058 | detectors start,start | am_peak 103, midday 75, pm_peak 122
+0 stations with a changed target
+/tmp/claude-0/-home-user-traffic/63747ff2-00d2-578a-835b-42b5dc589c5f/scratchpad/r47/base/data/demand/rockridge.stations.json
+  pm_peak: recent fitted 92, recent held out 24
+  am_peak: recent fitted 77, recent held out 19
+/tmp/claude-0/-home-user-traffic/63747ff2-00d2-578a-835b-42b5dc589c5f/scratchpad/r47/cand/data/demand/rockridge.stations.json
+  pm_peak: recent fitted 91, recent held out 24
+  am_peak: recent fitted 77, recent held out 19

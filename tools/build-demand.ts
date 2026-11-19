@@ -24,6 +24,7 @@ import { assumedMovementFlows, assumedReportLines, belowMinReport, withAlternati
 import { annotateFlows, rampOut, resolveIntents, type IntentFlow, type ThroughIntentsCfg } from './lib/through-intents';
 import { deriveRamps } from './lib/ramps';
 import { estimateRampK, rampKNotes, type RampKConfig, type RampKPair } from './lib/ramp-k';
+import { mergeLinkGroups, type LinkGroupConfig } from './lib/link-groups';
 import { deriveApproachGroups, expandGroups, groupOfNode, groupsFile, type ApproachGroups, type ApproachGroupsCfg } from './lib/approach-groups';
 import { countReportLines, countStations, linkBearing, mapMovement, nodeStreets, rawMovementCounts, tripEnds, type CountConfig, type CountFile, type CountReport, type TripEnds } from './lib/volunteer-count';
 import { writeFileAtomic } from './lib/atomic';
@@ -999,6 +1000,9 @@ if (fc?.enabled) {
       stationNotes.push(`validation set (frozen split ${manifestHash!.slice(0, 12)}, rule ${manifest!.rule.name}): ${held.length} of ${stations.length} stations in ${manifest!.groups.filter((g) => g.held).length} dependency groups are held out of the cross-validation demand, which is built from the training view with their observations removed (about ${Math.round(100 * (fc.validation.fraction ?? 0.25))}% of each corridor, at least one per corridor); ${manifest!.withheldAggregates.length} aggregate counts overlapping held blocks are left out of that demand and are not scored; they are reported separately`);
     }
   }
+  // Link groups (countFit.linkGroups, off by default): stations of one source row become one station over the sum of their links. After the split, which names the members.
+  const lg = mergeLinkGroups(stations, fc.linkGroups as LinkGroupConfig[] | undefined, periodIds);
+  if (lg.notes.length) { stations.splice(0, stations.length, ...lg.stations); stationNotes.push(...lg.notes); console.log(lg.notes.join('\n')); }
   const rcy = fc.recency as RecencyConfig | undefined;
   if (rcy?.enabled) {
     const sum = applyRecency(stations, rcy);
