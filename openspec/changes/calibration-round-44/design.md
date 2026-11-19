@@ -16,6 +16,8 @@ D3. Keep rule, written before any run of the candidate. Against the assessment o
 
 D4. No other change: no station-specific adjustment, no new parameter, no membership file, no network edit, no change to the split, the targets or the fit settings. If the round fails the rule, the published demand, assessment and area note stay as committed in ff5d667.
 
+D5. User decision, 2026-11-18: the heavy runs (the two measurement passes, the candidate demand builds, the validation suite on the candidate and the ten-seed candidate assessment) run on the user's laptop, from `runbook.md`, not in the container that built the mechanism. The container did the baseline assessment (ff5d667), the mechanism and its tests, and this keep rule, all before any candidate run; no candidate demand was built and no candidate run was made there. The measured delay files of pass 0 that the container produced for a smoke test are not committed.
+
 ## What is not known
 
 - Whether the delay the simulator measures on an approach includes queueing that BPR already charges, which would count it twice. D1 leaves the BPR factor on, as the fit does today; round 38 found that half of the measured link delay reproduced the simulator's routing best, and that the whole delay sent too little traffic toward the study area. This round replaces only the control part, and the held-out stations judge it.
