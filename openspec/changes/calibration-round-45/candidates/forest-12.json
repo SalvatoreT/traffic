@@ -1,0 +1,32 @@
+[
+  {
+    "at": [
+      "Claremont Avenue",
+      "Colby Street",
+      "Forest Street"
+    ],
+    "approach": "Forest Street",
+    "heading": 123,
+    "periods": [
+      "am_peak"
+    ],
+    "cycleSeconds": 79,
+    "greenSeconds": 12,
+    "source": "ASSUMPTION (calibration round 45, candidate forest-12): Forest Street eastbound green of 12 s in the 79 s cycle of the volunteer count, which did not time the Forest Street approach. The simulator's flow-based plan gives it about 35 s. The rest of the cycle goes to Claremont Avenue by flow ratio [Webster1958]."
+  },
+  {
+    "at": [
+      "Claremont Avenue",
+      "Colby Street",
+      "Forest Street"
+    ],
+    "approach": "Forest Street",
+    "heading": 123,
+    "periods": [
+      "pm_peak"
+    ],
+    "cycleSeconds": 79,
+    "greenSeconds": 12,
+    "source": "ASSUMPTION (calibration round 45, candidate forest-12): Forest Street eastbound green of 12 s in the 79 s cycle of the volunteer count, which did not time the Forest Street approach. The simulator's flow-based plan gives it about 35 s. The rest of the cycle goes to Claremont Avenue by flow ratio [Webster1958]."
+  }
+]
