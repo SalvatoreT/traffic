@@ -4,6 +4,7 @@ import { reverseCountDirection, type CountDirection } from './gate-count';
 import { geh, withinBand, evaluateCases, summarizeCases } from './acceptance';
 import { SIM_ROUTE_PARAMS, assign, assignMsa, buildGraph, linkVolumes, type ALink, type ANode, type ATurnBan, type Assignment, type Feature, type Graph } from './assign';
 import { assigned, fitToCounts, type Constraint, type FitOptions, type FlowType } from './fit-counts';
+import { controlDelayArray, type ControlDelayFile } from './control-delays';
 import { sourceYearLines, type RecencyConfig } from './recency';
 import { heldStationIds, observationOfKey, type SplitManifest, type SplitStation } from './lineage';
 import { routeShareTally, impliedVolumes, type ImpliedVolume, type ShareSpec, type Targets } from './share-targets';
@@ -296,6 +297,8 @@ export interface FitConfig {
   /** Measured mean delay per vehicle (s) on every link, per period, from a simulator run (`tools/cost-loop.ts`); omitted: free-flow and BPR costs only. */
   /** `weight` scales the measured delay (1 when omitted): a damped step toward the simulator's costs, see `countFit.assignment.measured` in the demand config. */
   measured?: { delayS: Record<string, number[]>; alpha: number; source: string; weight?: number };
+  /** Measured control delay per approach link (tools/control-delays.ts), already checked against the build; omitted: the constants of crates/sim/data/node-delays.json. */
+  controlDelays?: ControlDelayFile;
   draws: number; dispersion: number;
   guard: { enabled: boolean; excessShare: number; weight: number; capacity: CapTable };
   /** Through-car targets on named street runs (calibration round 39); see `throughConstraints`. */
@@ -389,7 +392,8 @@ export interface PeriodResult {
 export function fitPeriod(
   id: string, flows: FlowIn[], types: FlowType[], stations: Station[], nodes: ANode[], links: NetLinkIn[], bans: ATurnBan[], cfg: FitConfig,
 ): PeriodResult {
-  const g: Graph = buildGraph(nodes, links, bans, id);
+  const cdl = controlDelayArray(links, id, cfg.controlDelays);
+  const g: Graph = buildGraph(nodes, links, bans, id, SIM_ROUTE_PARAMS, cdl);
   const nodeBy = new Map(nodes.map((n) => [n.id, n]));
   const v0 = flows.map((f) => f.vehPerHour);
   const fitOpt: FitOptions = flows.some((f) => f.via) ? { ...cfg.fit, pinned: flows.map((f) => (f.via ? 1 : 0)) } : cfg.fit;
@@ -476,6 +480,10 @@ export function fitPeriod(
   const guardBound: PeriodResult['guardBound'] = [];
   const notes: string[] = [];
   let residualOver: PeriodResult['residualOver'] = [];
+  if (cdl && cfg.controlDelays) {
+    const n = cdl.reduce((a, x) => a + (Number.isFinite(x) ? 1 : 0), 0);
+    notes.push(`control delay per approach measured on ${cfg.controlDelays.measuredOn.sha256.slice(0, 12)} (${cfg.controlDelays.view} view, seeds ${cfg.controlDelays.seeds[0]} to ${cfg.controlDelays.seeds[cfg.controlDelays.seeds.length - 1]}): ${n} approaches (at least ${cfg.controlDelays.minFlowVehPerHour} veh/h) replace the control-type constants`);
+  }
   if (extra && cfg.measured) notes.push(`link costs include the simulator's measured delay per vehicle (${cfg.measured.source}; mean ${(extra.reduce((x, y) => x + y, 0) / nL).toFixed(1)} s per link after the control delay is removed, weight ${mw}, BPR alpha ${cfg.measured.alpha})`);
   if (measSt.size) notes.push(`stations whose membership comes from simulated trips (${stMeas!.runs} runs; their assigned volumes in the station tables use it): ${[...measSt].join(', ')}`);
   if (as.method === 'msa') notes.push(`assignment by successive averages (${as.iterations} passes x ${as.drawsPerPass} draws of perceived costs, BPR alpha ${alphaUse} beta ${as.beta}, route-choice dispersion ${as.dispersion} s), ${rounds} round(s) with the table refitted and reassigned at its own volumes; relative link-volume change at the last pass ${(a as ReturnType<typeof assignMsa>).relChange?.toFixed(3)}`);

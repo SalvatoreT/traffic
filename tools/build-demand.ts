@@ -9,7 +9,8 @@ import { buildActiveFlows, parseActiveCounts, type AFlow } from './lib/demand-ac
 import { discoverRamps, matchRampVolumes, type Ramp, type RampRow, type RampVolume } from './lib/demand-ramps';
 import { linkMetrics, perimeterGap, perimeterLength, perimeterPos, relevanceOf, Router, routeStat, sideOf, type Rect, type Relevance, type RouteStat } from './lib/demand-audit';
 import { makeProjection, pointInPolygon } from './lib/geo';
-import { buildGraph, costToGo, treeFrom, type Graph } from './lib/assign';
+import { buildGraph, costToGo, treeFrom, SIM_ROUTE_PARAMS, type Graph } from './lib/assign';
+import { controlDelayArray, readControlDelays, type ControlDelayFile } from './lib/control-delays';
 import { applySplit, buildStations, corridorOf, overusedRecords, fitPeriod, fitReport, splitStationOf, stationObservations, type FitConfig, type NetLinkIn, type PeriodResult, type ThroughFit, type ThroughTarget } from './lib/demand-fit';
 import { resolveBlock } from './lib/share-targets';
 import { corridorThroughCounts, sameMembershipEvidence, throughTargetId } from './lib/through-membership';
@@ -71,6 +72,12 @@ if (missing.length) {
 }
 const net: Network = JSON.parse(readFileSync(cfg.network, 'utf8'));
 const periodIds: string[] = cfg.periods.map((p: { id: string }) => p.id);
+// Measured control delay per approach (round 44): the file of this view, used only when its network, view and simulator match this build; a file that does not match is reported, never used silently.
+const cdCfg = cfg.countFit?.enabled ? cfg.countFit.assignment?.controlDelays as { file: string; trainingFile: string } | undefined : undefined;
+const cdPath = cdCfg ? (training ? cdCfg.trainingFile : cdCfg.file) : undefined;
+const cdLoad = readControlDelays(cdPath, { area: cfg.area, view, network: createHash('sha256').update(readFileSync(cfg.network)).digest('hex'), simulator: cdPath && existsSync(cdPath) ? execFileSync('cargo', ['run', '--quiet', '--release', '--bin', 'fingerprint'], { encoding: 'utf8' }).trim() : '' });
+if (cdLoad.used === false && cdLoad.reason) console.warn(`control delays: ${cdLoad.reason}`);
+const controlDelays: ControlDelayFile | undefined = cdLoad.used ? cdLoad.file : undefined;
 const lastPeriod = 'pm_peak';
 
 const M_LAT = 110540;
@@ -421,7 +428,7 @@ const rampAccess = (r: Ramp, period: string): Float64Array => {
   let t = accessTable.get(key);
   if (t) return t;
   let g = accessGraph.get(period);
-  if (!g) { g = buildGraph(net.nodes as never, net.links as never, net.turnBans ?? [], period); accessGraph.set(period, g); }
+  if (!g) { g = buildGraph(net.nodes as never, net.links as never, net.turnBans ?? [], period, SIM_ROUTE_PARAMS, controlDelayArray(net.links as never, period, controlDelays)); accessGraph.set(period, g); }
   t = new Float64Array(net.nodes.length).fill(Infinity);
   const idx = new Map(net.nodes.map((n, i) => [n.id, i]));
   if (r.kind === 'on') { const h = costToGo(g, r.surface, g.cost); for (const n of net.nodes) for (const l of g.outLinks.get(n.id) ?? []) t[idx.get(n.id)!] = Math.min(t[idx.get(n.id)!], h[l]); }
@@ -895,6 +902,7 @@ const fc = cfg.countFit;
 const links = net.links;
 if (fc?.enabled) {
   const stationNotes: string[] = [];
+  if (cdLoad.used === false && cdLoad.reason) stationNotes.push(cdLoad.reason);
   const stations = buildStations({
     nodes: net.nodes as never, links: net.links as NetLinkIn[], periodIds, lastPeriod, periodFactors: pf, kFactor: cfg.kFactor, rampKFactor: rc.kFactor, center,
     inBbox: (x, y) => x >= rect.minX && x <= rect.maxX && y >= rect.minY && y <= rect.maxY,
@@ -979,6 +987,7 @@ if (fc?.enabled) {
     draws: fc.draws, dispersion: fc.dispersion,
     assignment: fc.assignment ? { method: fc.assignment.method, iterations: fc.assignment.iterations, drawsPerPass: fc.assignment.drawsPerPass, alpha: fc.assignment.alpha, beta: fc.assignment.beta, dispersion: fc.assignment.dispersion, rounds: fc.assignment.rounds } : undefined,
     measured: loadMeasured(fc),
+    controlDelays,
     through: loadThrough(fc, stationNotes),
     implied: fc.implied?.enabled && fc.shares?.enabled ? { weight: fc.implied.weight } : undefined,
     shares: fc.shares?.enabled ? { targets: JSON.parse(readFileSync(fc.shares.targets, 'utf8')), weight: fc.shares.weight, pmPeriod: lastPeriod } : undefined,
@@ -1010,7 +1019,7 @@ if (fc?.enabled) {
     });
     const grp = groups ? { groupOf: (id: number) => groupOfNode(groups, nodeById, id), expand: (ref: string | string[]) => expandGroups(groups, ref) } : undefined;
     for (const per of outPeriods) {
-      const g = buildGraph(net.nodes as never, net.links as never, net.turnBans ?? [], per.id);
+      const g = buildGraph(net.nodes as never, net.links as never, net.turnBans ?? [], per.id, SIM_ROUTE_PARAMS, controlDelayArray(net.links as never, per.id, controlDelays));
       const seed = per.flows.filter((q) => !q.mode && !q.via);
       const carves = new Map<number, number>(), hard = new Map<number, number>();
       for (const { mv, a, b, st, first, raw } of maps) {

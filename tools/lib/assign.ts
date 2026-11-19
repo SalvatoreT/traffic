@@ -54,8 +54,8 @@ function linkPoint(g: Geo, s: number, off: number): { p: Pt; h: number } {
   return { p: [p0[0] + dx * u + off * Math.sin(h), p0[1] + dy * u - off * Math.cos(h)], h };
 }
 
-/** Build the movement graph for one period (`period` selects the time-conditional turn bans). */
-export function buildGraph(nodes: ANode[], links: ALink[], bans: ATurnBan[], period: string | null, prm: RouteParams = SIM_ROUTE_PARAMS): Graph {
+/** Build the movement graph for one period (`period` selects the time-conditional turn bans). `controlDelayS` gives a measured control delay per approach link (position in `links`); a finite value replaces the constant of that approach's control type, NaN keeps the constant. */
+export function buildGraph(nodes: ANode[], links: ALink[], bans: ATurnBan[], period: string | null, prm: RouteParams = SIM_ROUTE_PARAMS, controlDelayS?: ArrayLike<number>): Graph {
   const nl = links.length;
   const nodeIdx = new Map(nodes.map((n, i) => [n.id, i]));
   const linkIdx = new Map(links.map((l, i) => [l.id, i]));
@@ -136,7 +136,9 @@ export function buildGraph(nodes: ANode[], links: ALink[], bans: ATurnBan[], per
         len = Math.max(prm.rCircle * arc + 4, 10);
       }
       let c = kind === 'r' ? prm.turnRightS : kind === 'l' ? prm.turnLeftS : kind === 'u' ? prm.turnUS : 0;
-      c += node.control === 'signal' ? prm.delaySignalS : node.control === 'all_way_stop' ? prm.delayAllwayS : node.control === 'two_way_stop' ? (minor[a] ? prm.delayMinorS : 0) : node.control === 'traffic_circle' ? prm.delayCircleS : 0;
+      const ctrl = node.control === 'signal' ? prm.delaySignalS : node.control === 'all_way_stop' ? prm.delayAllwayS : node.control === 'two_way_stop' ? (minor[a] ? prm.delayMinorS : 0) : node.control === 'traffic_circle' ? prm.delayCircleS : 0;
+      const meas = controlDelayS?.[a];
+      c += ctrl > 0 && meas !== undefined && Number.isFinite(meas) ? meas : ctrl;
       mvTo.push(b); mvFrom.push(a); mvCost.push(c + len / Math.min(vt, vlim));
     }
   }
