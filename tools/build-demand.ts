@@ -11,7 +11,7 @@ import { linkMetrics, perimeterGap, perimeterLength, perimeterPos, relevanceOf, 
 import { makeProjection, pointInPolygon } from './lib/geo';
 import { buildGraph, costToGo, treeFrom, SIM_ROUTE_PARAMS, type Graph } from './lib/assign';
 import { controlDelayArray, readControlDelays, type ControlDelayFile } from './lib/control-delays';
-import { applySplit, buildStations, corridorOf, overusedRecords, fitPeriod, fitReport, splitStationOf, stationObservations, type FitConfig, type NetLinkIn, type PeriodResult, type ThroughFit, type ThroughTarget } from './lib/demand-fit';
+import { applySplit, buildStations, corridorOf, overusedRecords, fitPeriod, fitReport, splitStationOf, stationObservations, type FitConfig, type GatePriorConfig, type NetLinkIn, type PeriodResult, type ThroughFit, type ThroughTarget } from './lib/demand-fit';
 import { resolveBlock } from './lib/share-targets';
 import { corridorThroughCounts, sameMembershipEvidence, throughTargetId } from './lib/through-membership';
 import { checkManifest, freezeSplit, manifestSha256, manifestText, overrideObservation, tmcObservation, withheldObservations, withheldStationIds, DEFAULT_RULE, type SplitManifest, type SplitStation } from './lib/lineage';
@@ -875,6 +875,15 @@ function loadMeasured(fc: { assignment?: { measured?: { file: string; alpha: num
   return { delayS: j.delayS as Record<string, number[]>, alpha: m.alpha, weight: m.weight, source: `${m.file}, ${j.note}` };
 }
 // A through-car target counts distinct trips with both ends outside the study area that visit any link of the corridor.
+// Ceilings on the gates no gate count holds (calibration round 49, `countFit.gatePriorTotals`, absent by default). Both numbers are ASSUMPTIONS.
+function loadGatePrior(fc: { gatePriorTotals?: { tolerancePct: number; weight: number } }, notes: string[]): GatePriorConfig | undefined {
+  const g = fc.gatePriorTotals;
+  if (!g) return undefined;
+  if (!(Number.isFinite(g.tolerancePct) && g.tolerancePct >= 0) || !(Number.isFinite(g.weight) && g.weight > 0)) throw new Error('countFit.gatePriorTotals needs tolerancePct >= 0 and weight > 0');
+  notes.push(`gate prior ceilings (ASSUMPTION, round 49): every gate direction that no gate station in the fit counts is held to at most its own pre-fit car total plus ${g.tolerancePct}% (weight ${g.weight}); no count value sets a ceiling`);
+  return { tolerancePct: g.tolerancePct, weight: g.weight, gateIds: net.nodes.filter((q) => q.gate).map((q) => q.id) };
+}
+
 function loadThrough(fc: { stationsOutput?: string; throughTargets?: { enabled: boolean | 'report'; targets: string; weight: number; otherPeriods?: 'ceiling' | 'none'; measured?: { file: string; priorTrips: number }; measuredStations?: string[]; measuredStationsTraining?: string; simulatedMembership?: { method: 'export-supported'; file: string; trainingFile: string; priorTrips: number } } }, notes: string[]): ThroughFit | undefined {
   const tt = fc.throughTargets;
   if (!tt?.enabled) return undefined;
@@ -1020,6 +1029,7 @@ if (fc?.enabled) {
     measured: loadMeasured(fc),
     controlDelays,
     through: loadThrough(fc, stationNotes),
+    gatePrior: loadGatePrior(fc, stationNotes),
     implied: fc.implied?.enabled && fc.shares?.enabled ? { weight: fc.implied.weight } : undefined,
     shares: fc.shares?.enabled ? { targets: JSON.parse(readFileSync(fc.shares.targets, 'utf8')), weight: fc.shares.weight, pmPeriod: lastPeriod } : undefined,
     guard: { enabled: fc.capacityGuard.enabled, excessShare: fc.capacityGuard.excessShare, weight: fc.capacityGuard.weight, capacity: fc.capacityGuard.capacity },
@@ -1085,6 +1095,8 @@ if (fc?.enabled) {
     for (const q of stations) q.held = !!q.outOfFit;
     const r = fitPeriod(per.id, cars, types, stations, net.nodes as never, net.links as NetLinkIn[], net.turnBans ?? [], fitCfg);
     fitResults.push(r);
+    // Debug aid: every ceiling station of the period (node, direction, pre-fit total, ceiling, final total) as JSON, one file per view and period.
+    if (process.env.GATE_PRIOR_DUMP && r.gatePrior) writeFileAtomic(process.env.GATE_PRIOR_DUMP.replace(/\.json$/, `.${view}.${per.id}.json`), JSON.stringify(r.gatePrior.rows));
     if (process.env.ASSIGN_DUMP && per.id === lastPeriod) {
       // Trips of every flow that loads one of the links in ASSIGN_LINKS (comma list of link ids), for the select-link comparison with the simulator.
       const want = new Set((process.env.ASSIGN_LINKS ?? '').split(',').filter(Boolean).map(Number));

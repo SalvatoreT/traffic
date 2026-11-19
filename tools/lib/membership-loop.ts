@@ -210,6 +210,15 @@ export function checkFitReport(text: string, o: { view: string; file: string | n
   return { problems, periods };
 }
 
+export interface CeilingStat { stations: number; above: number; excess: number }
+
+/** The gate prior ceiling lines of a fit report (round 49), per period; empty when the switch is off. */
+export function gatePriorFromReport(text: string): Record<string, CeilingStat> {
+  const out: Record<string, CeilingStat> = {};
+  for (const m of text.matchAll(/^Gate prior ceilings (\S+): (\d+) stations; (\d+) above ceiling; excess (\d+) veh\/h;/gm)) out[m[1]] = { stations: +m[2], above: +m[3], excess: +m[4] };
+  return out;
+}
+
 export interface Step { id: string; iteration: number; view: string | null; kind: 'build' | 'check' | 'runs' | 'pool' | 'final'; title: string; cmd?: string }
 
 /** The loop as an ordered list, for the dry run and for `--resume`: pass k builds both views, runs them, checks the report and pools; the last pass builds without runs. */
