@@ -87,3 +87,9 @@ D13. The heavy runs (builds that need the simulator's fingerprint, seed runs, sc
 - Pair shares measured at ten seeds are noisy for pairs with few trips. Equal-weight pooling over passes helps, and the prior of 5 limits what one pair can do.
 - A fit that matches counts through the simulator's routes can remove through trips that the simulator then needs to fill gates. The reported through cars per hour and the SR-24 gate totals show it.
 - The loop's memory of the first pass is permanent in the pool (1/n weighting), so a first pass that is far from the later ones keeps pulling. The stop rule and the pass count are the only controls.
+
+## Outcome
+
+Ran on the laptop on 2026-11-19 (runbook steps A to G; step H, the prior worth 20 trips, was not run). The candidate passed the three-seed screen and failed the ten-seed keep rule (D7) on three lines: PM held out 13 of 24 (line 14), D5 headline shares 2 of 4 (line 4), and D16 in both the AM and the PM (midday holds). The loop added 1,200 to 2,100 veh/h of car demand at gates with no count (the SR-24 mainline entries and exits, San Pablo Ave, Claremont Ave and Blvd). The backlog at the SR-24 eastbound entry and the Claremont gates fails D16. The screen does not measure backlog.
+
+Not adopted. The switch stays off and the shipped config has no `simulatedMembership` entry; published data are unchanged. The record entry is in `data/calibration/rockridge.record.md`. The evidence commit (6a50e3e on the laptop) is not pushed yet and follows from the laptop. Archive is pending until it arrives. Next lead: the same loop with the totals of the uncounted gates held, so offered demand cannot grow there.

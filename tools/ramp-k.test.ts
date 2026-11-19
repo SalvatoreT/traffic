@@ -60,7 +60,7 @@ describe('ramp volumes keep the ADT rows by year', () => {
 });
 
 describe('the candidate fragments', () => {
-  const dir = 'openspec/changes/calibration-round-46/candidates';
+  const dir = 'openspec/changes/archive/2026-11-19-calibration-round-46/candidates';
   const files = readdirSync(dir).filter((f) => f.endsWith('.json'));
   it('are labeled ASSUMPTION and fall back to the assumed K', () => {
     const base = JSON.parse(readFileSync('data/demand/rockridge.config.json', 'utf8'));

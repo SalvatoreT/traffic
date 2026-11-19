@@ -210,6 +210,18 @@ export function checkFitReport(text: string, o: { view: string; file: string | n
   return { problems, periods };
 }
 
+export interface CeilingStat { stations: number; above: number; excess: number; /** Offered car veh/h of the period's static fit and of the final fit. */ staticTotal: number; finalTotal: number }
+
+/** The gate prior ceiling lines of a fit report (round 49), per period; empty when the switch is off. */
+/** Loop abort (round 49, D11', ASSUMPTION written before any run): after a build from pass 1 on, offered car demand above the static fit's by more than this share stops the loop. */
+export const CEILING_ABORT_SHARE = 0.03;
+
+export function gatePriorFromReport(text: string): Record<string, CeilingStat> {
+  const out: Record<string, CeilingStat> = {};
+  for (const m of text.matchAll(/^Gate prior ceilings (\S+): (\d+) stations; (\d+) above ceiling; excess (\d+) veh\/h; offered car (\d+) to (\d+) veh\/h/gm)) out[m[1]] = { stations: +m[2], above: +m[3], excess: +m[4], staticTotal: +m[5], finalTotal: +m[6] };
+  return out;
+}
+
 export interface Step { id: string; iteration: number; view: string | null; kind: 'build' | 'check' | 'runs' | 'pool' | 'final'; title: string; cmd?: string }
 
 /** The loop as an ordered list, for the dry run and for `--resume`: pass k builds both views, runs them, checks the report and pools; the last pass builds without runs. */

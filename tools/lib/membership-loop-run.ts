@@ -7,7 +7,7 @@ import { hashFile } from './run-manifest';
 import { writeFileAtomic } from './atomic';
 import { withheldStationIds, type SplitManifest } from './lineage';
 import type { SelectOd } from './through-membership';
-import { assertNoWithheld, checkFitReport, checkRunSet, iterationShift, iterationStats, membershipFile, poolStations, selectStations, type IterationStats, type Pooled, type RunSet, type Selection, type Shift, type StationRec } from './membership-loop';
+import { assertNoWithheld, CEILING_ABORT_SHARE, checkFitReport, gatePriorFromReport, checkRunSet, iterationShift, iterationStats, membershipFile, poolStations, selectStations, type CeilingStat, type IterationStats, type Pooled, type RunSet, type Selection, type Shift, type StationRec } from './membership-loop';
 import type { MembershipEvidence } from './through-membership';
 
 export type View = 'shipped' | 'training';
@@ -35,8 +35,8 @@ export function loopPaths(root: string, configPath: string, cfg: any): LoopPaths
 const readJson = <T>(p: string): T => JSON.parse(readFileSync(p, 'utf8')) as T;
 const sodFiles = (dir: string, period: string) => readdirSync(dir).filter((f) => f.startsWith(`sod-${period}-`) && f.endsWith('.json')).sort((a, b) => Number(a.match(/-(\d+)\.json$/)![1]) - Number(b.match(/-(\d+)\.json$/)![1]));
 
-export interface PassReport { pass: number; view: View; period: string; /** Car veh/h the pass's demand offers; the loop reports it because a fit on simulated membership can move volume. */ offered: number; selected: number; withHits: number; zeroHit: string[]; absent: string[]; shift: Shift | null }
-export interface LoopSummary { passes: number; stoppedEarly: boolean; reports: PassReport[]; hashes: Record<string, string>; stayStatic: Record<string, Selection['stayStatic']>; selected: Record<string, number>; withheld: Record<string, number> }
+export interface PassReport { pass: number; view: View; period: string; /** Car veh/h the pass's demand offers; the loop reports it because a fit on simulated membership can move volume. */ offered: number; selected: number; withHits: number; zeroHit: string[]; absent: string[]; shift: Shift | null; /** Gate prior ceilings of the build this pass ran on (round 49): stations, how many ended above their ceiling and the excess in veh/h; absent when the switch is off. */ ceiling?: CeilingStat }
+export interface LoopSummary { passes: number; stoppedEarly: boolean; reports: PassReport[]; hashes: Record<string, string>; stayStatic: Record<string, Selection['stayStatic']>; selected: Record<string, number>; withheld: Record<string, number>; /** Gate prior ceilings per build, keyed `view:pass` (the final build has the pass number `passes`); absent when the switch is off. */ ceilings?: Record<string, Record<string, CeilingStat>> }
 
 /** The stations file's entries and the split's withheld ids, read when needed (the stations file is rewritten by the shipped build). */
 function selections(p: LoopPaths, periods: string[]): Record<View, Selection[]> {
@@ -51,7 +51,7 @@ export async function runLoop(o: LoopOptions, r: Runner, log: (s: string) => voi
   if (o.seeds.length < 2) throw new Error('at least two seeds are needed for a standard error');
   mkdirSync(o.dir, { recursive: true });
   const statePath = join(o.dir, 'state.json');
-  const state: { done: string[]; stoppedAfter: number | null; reports: PassReport[]; stationsSha: string | null } = o.resume && existsSync(statePath) ? readJson(statePath) : { done: [], stoppedAfter: null, reports: [], stationsSha: null };
+  const state: { done: string[]; stoppedAfter: number | null; reports: PassReport[]; stationsSha: string | null; ceilings?: Record<string, Record<string, CeilingStat>> } = o.resume && existsSync(statePath) ? readJson(statePath) : { done: [], stoppedAfter: null, reports: [], stationsSha: null };
   const save = () => writeFileAtomic(statePath, JSON.stringify(state, null, 1));
   const configSha = hashFile(p.config), splitSha = hashFile(p.split);
   const once = async (id: string, f: () => void | Promise<void>) => { if (state.done.includes(id)) { log(`skip ${id} (done)`); return; } log(`start ${id}`); await f(); state.done.push(id); save(); };
@@ -65,6 +65,11 @@ export async function runLoop(o: LoopOptions, r: Runner, log: (s: string) => voi
     const res = checkFitReport(text, { view, file: used ? p.membershipConfig[view] : null, runs: used ? runs : {}, minStations });
     if (res.problems.length) throw new Error(`${view} view, pass ${k}: ${res.problems.join('; ')}`);
     for (const [q, v] of Object.entries(res.periods)) if (v.stations !== minStations[q]) throw new Error(`${view} view, ${q}: ${v.stations} stations took simulated membership but the file holds ${minStations[q]}`);
+    const ceil = gatePriorFromReport(text);
+    if (Object.keys(ceil).length) { (state.ceilings ??= {})[`${view}:${k}`] = ceil; log(`pass ${k} ${view} build: gate prior ceilings ${o.periods.map((q) => (ceil[q] ? `${q} ${ceil[q].stations} stations, ${ceil[q].above} above ceiling, excess ${ceil[q].excess} veh/h` : `${q} none`)).join('; ')}`); }
+    if (k >= 1) for (const [q, c] of Object.entries(ceil)) {
+      if (c.finalTotal > c.staticTotal * (1 + CEILING_ABORT_SHARE)) throw new Error(`${view} view, ${q}, pass ${k}: offered car demand ${c.finalTotal} veh/h is ${(100 * (c.finalTotal / c.staticTotal - 1)).toFixed(1)}% above the static fit's ${c.staticTotal} (limit ${100 * CEILING_ABORT_SHARE}%, ASSUMPTION): the growth moved to non-gate origins. Stopping before this pass's seed runs; send the loop log, the build log and the fit report to the lead`);
+    }
     return res;
   };
   const build = async (id: string, view: View, k: number, final: boolean) => {
@@ -114,7 +119,7 @@ export async function runLoop(o: LoopOptions, r: Runner, log: (s: string) => voi
           const s = sel[v][qi];
           pooled[q] = poolStations(sets, new Set(s.selected.map((x) => x.id)));
           const last = stats[`${v}:${q}`];
-          reports.push({ pass: k, view: v, period: q, offered: Math.round(sets[sets.length - 1].flows.reduce((a, f) => a + f.vehPerHour, 0)), selected: s.selected.length, withHits: Object.keys(pooled[q].measured.hits).length, zeroHit: pooled[q].zeroHit, absent: pooled[q].absent, shift: last.length > 1 ? iterationShift(last[last.length - 2], last[last.length - 1]) : null });
+          reports.push({ pass: k, view: v, period: q, offered: Math.round(sets[sets.length - 1].flows.reduce((a, f) => a + f.vehPerHour, 0)), selected: s.selected.length, withHits: Object.keys(pooled[q].measured.hits).length, zeroHit: pooled[q].zeroHit, absent: pooled[q].absent, shift: last.length > 1 ? iterationShift(last[last.length - 2], last[last.length - 1]) : null, ...(state.ceilings?.[`${v}:${k}`]?.[q] ? { ceiling: state.ceilings[`${v}:${k}`][q] } : {}) });
         }
         const file = membershipFile({ area: o.area, networkId: readJson<{ id: string }>(p.network).id, evidence: evidence[v]!, setups, periods: pooled, iterations: k + 1, view: v });
         if (v === 'training') assertNoWithheld(file as never, withheldStationIds(readJson<SplitManifest>(p.split)));
@@ -122,7 +127,7 @@ export async function runLoop(o: LoopOptions, r: Runner, log: (s: string) => voi
         writeFileAtomic(p.membership[v], JSON.stringify(file));
       }
       state.reports.push(...reports);
-      for (const x of reports) log(`pass ${k} ${x.view} ${x.period}: ${x.offered} car veh/h offered; ${x.withHits} of ${x.selected} selected stations have pairs; zero hits: ${x.zeroHit.length ? x.zeroHit.join(', ') : 'none'}; not exported: ${x.absent.length ? x.absent.join(', ') : 'none'}${x.shift ? `; flow change ${x.shift.flowRatio.toFixed(2)} and membership change ${x.shift.membershipRatio.toFixed(2)} of the seed standard error over ${x.shift.stations} stations` : ''}`);
+      for (const x of reports) log(`pass ${k} ${x.view} ${x.period}: ${x.offered} car veh/h offered; ${x.withHits} of ${x.selected} selected stations have pairs; zero hits: ${x.zeroHit.length ? x.zeroHit.join(', ') : 'none'}; not exported: ${x.absent.length ? x.absent.join(', ') : 'none'}${x.ceiling ? `; ceiling stations ${x.ceiling.stations}, above ceiling ${x.ceiling.above}, excess ${x.ceiling.excess} veh/h` : ''}${x.shift ? `; flow change ${x.shift.flowRatio.toFixed(2)} and membership change ${x.shift.membershipRatio.toFixed(2)} of the seed standard error over ${x.shift.stations} stations` : ''}`);
       if (k >= 1 && reports.every((x) => x.shift?.converged)) state.stoppedAfter = k;
     });
     if (state.stoppedAfter !== null && state.stoppedAfter <= k) { log(`stop rule met at pass ${state.stoppedAfter}`); break; }
@@ -138,14 +143,14 @@ export async function runLoop(o: LoopOptions, r: Runner, log: (s: string) => voi
   const stay: LoopSummary['stayStatic'] = {}, selected: LoopSummary['selected'] = {}, withheldN: LoopSummary['withheld'] = {};
   const sel = selections(p, o.periods);
   for (const v of o.views) for (const s of sel[v]) { stay[`${v}:${s.period}`] = s.stayStatic; selected[`${v}:${s.period}`] = s.selected.length; withheldN[`${v}:${s.period}`] = s.withheld.length; }
-  return { passes, stoppedEarly: state.stoppedAfter !== null && state.stoppedAfter + 1 < o.iterations, reports: state.reports, hashes, stayStatic: stay, selected, withheld: withheldN };
+  return { passes, stoppedEarly: state.stoppedAfter !== null && state.stoppedAfter + 1 < o.iterations, reports: state.reports, hashes, stayStatic: stay, selected, withheld: withheldN, ...(state.ceilings ? { ceilings: state.ceilings } : {}) };
 }
 
 /** The loop's report as Markdown. */
 export function renderReport(s: LoopSummary, o: { seeds: number[]; periods: string[] }): string {
   const L = ['# Membership loop (calibration round 48)', '', `Seeds ${o.seeds[0]} to ${o.seeds[o.seeds.length - 1]} per pass, periods ${o.periods.join(', ')}. Passes run: ${s.passes}${s.stoppedEarly ? ' (stop rule fired)' : ''}. Pooled with equal weight over passes (successive averages, step 1/n, ASSUMPTION for this fixed point).`, '',
-    '| Pass | View | Period | Offered car veh/h | Selected | With pairs | Zero hits | Not exported | Flow change / seed SE | Membership change / seed SE |', '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
-    ...s.reports.map((x) => `| ${x.pass} | ${x.view} | ${x.period} | ${x.offered} | ${x.selected} | ${x.withHits} | ${x.zeroHit.join(', ') || '-'} | ${x.absent.join(', ') || '-'} | ${x.shift ? x.shift.flowRatio.toFixed(2) : '-'} | ${x.shift ? x.shift.membershipRatio.toFixed(2) : '-'} |`),
-    '', '## Static membership', '', ...Object.entries(s.stayStatic).map(([k, v]) => `- ${k}: ${v.length ? v.map((x) => `${x.id} (${x.reason})`).join('; ') : 'none'}`), '', '## Files', '', ...Object.entries(s.hashes).map(([k, v]) => `- ${k}: ${v}`), ''];
+    '| Pass | View | Period | Offered car veh/h | Selected | With pairs | Zero hits | Not exported | Flow change / seed SE | Membership change / seed SE | Gate ceiling stations | Above ceiling | Excess veh/h |', '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+    ...s.reports.map((x) => `| ${x.pass} | ${x.view} | ${x.period} | ${x.offered} | ${x.selected} | ${x.withHits} | ${x.zeroHit.join(', ') || '-'} | ${x.absent.join(', ') || '-'} | ${x.shift ? x.shift.flowRatio.toFixed(2) : '-'} | ${x.shift ? x.shift.membershipRatio.toFixed(2) : '-'} | ${x.ceiling ? x.ceiling.stations : '-'} | ${x.ceiling ? x.ceiling.above : '-'} | ${x.ceiling ? x.ceiling.excess : '-'} |`),
+    '', '## Static membership', '', ...Object.entries(s.stayStatic).map(([k, v]) => `- ${k}: ${v.length ? v.map((x) => `${x.id} (${x.reason})`).join('; ') : 'none'}`), '', ...(s.ceilings ? ['## Gate prior ceilings, by build', '', ...Object.entries(s.ceilings).flatMap(([k, v]) => Object.entries(v).map(([q, c]) => `- ${k} ${q}: ${c.stations} stations, ${c.above} above ceiling, excess ${c.excess} veh/h`)), ''] : []), '## Files', '', ...Object.entries(s.hashes).map(([k, v]) => `- ${k}: ${v}`), ''];
   return L.join('\n');
 }
