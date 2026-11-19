@@ -313,7 +313,7 @@ export interface ThroughTarget { id: string; label: string; links: number[]; tar
 /** Simulated through trips per origin-destination pair (`tools/through-membership.ts`): over `runs` seed runs, `hits[id]["o>d"]` trips of the pair counted on target `id`, `trips["o>d"]` trips of the pair offered (veh/h summed over the runs; only pairs with a counted trip). */
 export interface ThroughMeasured { runs: number; source: string; hits: Record<string, Record<string, number>>; trips: Record<string, number>; /** Movement and route stations' pairs, all trips (round 41). */ stations?: ThroughMeasured }
 /** `reportOnly`: the figures are reported, no constraint enters the fit (the table is the one built without targets). */
-export interface ThroughFit { targets: ThroughTarget[]; inStudy: Set<number>; measured?: Record<string, ThroughMeasured>; priorTrips: number; reportOnly?: boolean; /** Station ids whose membership comes from the simulated pairs of `measured[period].stations`. */ measuredStations?: string[] }
+export interface ThroughFit { targets: ThroughTarget[]; inStudy: Set<number>; measured?: Record<string, ThroughMeasured>; priorTrips: number; reportOnly?: boolean; /** Station ids whose membership comes from the simulated pairs of `measured[period].stations`; 'all' takes every fitted station that has pairs there (calibration round 48). */ measuredStations?: string[] | 'all' }
 
 /**
  * Per-flow proportions of a through target. Static: the share of the flow's assigned routes that use the run (through flows only). Measured: per pair, the
@@ -418,7 +418,8 @@ export function fitPeriod(
   // Named movement and route stations with simulated pairs for this period take a simulated membership (round 41); the others keep their route feature.
   const stMeas = cfg.through?.measured?.[id]?.stations;
   // The loader verifies the station definitions and detector-count version before accepting measured OD fractions.
-  const measSt = new Set((cfg.through?.measuredStations ?? []).filter((sid) => stMeas?.hits[sid] && (featOf.has(sid) || countCons0.some((c) => c.id === sid && c.links.length))));
+  const wanted = cfg.through?.measuredStations;
+  const measSt = new Set((wanted === 'all' ? countCons0.map((c) => c.id) : wanted ?? []).filter((sid) => stMeas?.hits[sid] && (featOf.has(sid) || countCons0.some((c) => c.id === sid && c.links.length))));
   const stationCons = (aa: Assignment): Constraint[] => {
     if (!measSt.size) return countCons0;
     return countCons0.map((c) => {
@@ -485,7 +486,7 @@ export function fitPeriod(
     notes.push(`control delay per approach measured on ${cfg.controlDelays.measuredOn.sha256.slice(0, 12)} (${cfg.controlDelays.view} view, seeds ${cfg.controlDelays.seeds[0]} to ${cfg.controlDelays.seeds[cfg.controlDelays.seeds.length - 1]}): ${n} approaches (at least ${cfg.controlDelays.minFlowVehPerHour} veh/h) replace the control-type constants`);
   }
   if (extra && cfg.measured) notes.push(`link costs include the simulator's measured delay per vehicle (${cfg.measured.source}; mean ${(extra.reduce((x, y) => x + y, 0) / nL).toFixed(1)} s per link after the control delay is removed, weight ${mw}, BPR alpha ${cfg.measured.alpha})`);
-  if (measSt.size) notes.push(`stations whose membership comes from simulated trips (${stMeas!.runs} runs; their assigned volumes in the station tables use it): ${[...measSt].join(', ')}`);
+  if (measSt.size) notes.push(`stations whose membership comes from simulated trips (${stMeas!.runs} runs${wanted === 'all' ? `; ${measSt.size} of ${countCons0.length} fitted stations` : ''}; their assigned volumes in the station tables use it): ${[...measSt].join(', ')}`);
   if (as.method === 'msa') notes.push(`assignment by successive averages (${as.iterations} passes x ${as.drawsPerPass} draws of perceived costs, BPR alpha ${alphaUse} beta ${as.beta}, route-choice dispersion ${as.dispersion} s), ${rounds} round(s) with the table refitted and reassigned at its own volumes; relative link-volume change at the last pass ${(a as ReturnType<typeof assignMsa>).relChange?.toFixed(3)}`);
   if (cfg.guard.enabled) {
     const V1 = linkVolumes(countOnly.a, f1, nL);
