@@ -89,6 +89,52 @@ Claremont Ave: checked end to end. OSM lanes (3 with one forward and one backwar
 
 Ramp junctions: after joining all four SR-24 terminals are single signalized nodes (Aileen/Telegraph and Clifton/Claremont off-ramps, Hudson/Claremont and 56th/Telegraph on-ramps) with 2-lane ramp approaches at 35 mph. Mean discharge in the PM peak (seeds 1 to 3, measured before the third round): Aileen off-ramp 584 veh/h (offered 656), Clifton off-ramp 914 veh/h (offered about 1,025), on-ramps 783 and 555 veh/h. That is 290 to 460 veh/h per lane averaged over the hour; the signal gives the ramp 30 to 45% of the cycle and the shortfall is downstream spill-back on Claremont and Telegraph, not the ramp signal itself. Before the third round the remaining gridlock removals were mostly vehicles queued on the 4-lane freeway stub behind the single-lane Clifton off-ramp (26 of about 45 removals over six seeds at scale 0.3). The third round checked the ramp lanes against OSM: the off-ramps are tagged one lane for most of their length and two lanes (turn lanes left | left;through;right at Clifton, left | right at Aileen) on the final way before the signal, and the importer keeps that per segment (a test covers it), so no lane count is lost. After step M the stub accounts for about one removal per run.
 
+## Forty-fourth round: the demand fit reads measured control delay (change calibration-round-44)
+
+Rejected under the keep rule (design D3), written before any run of the candidate. The published network 53c823f20d91, demand 9cdebdabf05c and cross-validation demand 2f9ae152b9bb of the baseline assessment of 2026-11-18 (commit b1ff0ef, assessment ff5d667) stand, and so do the area note and caveat. The mechanism stays in the code and is off unless the demand config names a control delay file (`countFit.assignment.controlDelays`); the shipped config does not. The figures below are those of the trial.
+
+### What was tried
+
+A diagnosis on the PM peak found that the fit's static assignment charges flat control delays per control type (signal 10 s, all-way stop 8 s, minor stop 14 s, `crates/sim/data/node-delays.json`), while the simulator's arterial signal approaches cost 15 to 50 s per car. The fit saw the arterials as faster than the simulator does, and the simulator sent two to seven times more cars through the grid than the fit's final assignment planned on fitted stations (PM, counted, fit's static final, simulated: Forest St eastbound 66, 75, 201; 60th St eastbound at Telegraph Ave 27, 25, 74; Howell St southbound 17, 33, 84).
+
+The trial let the fit read the simulator's measured control delay per approach link and period in place of the constant, with no new knob (design D1). The measured value is the flow-weighted mean delay per car over ten seeds, less the median delay of links that end at no control, floored at zero, for approaches with at least 20 veh/h (ASSUMPTION, the cut of `tools/node-delays.ts`). Two fixed passes, no convergence tuning (D2): pass 0 measured delays on the b1ff0ef demand and refit; pass 1 measured on the pass-0 demand and refit. The pass-1 demand was the candidate. The cross-validation demand was built the same way from delays measured on training-view demand only. The BPR factor, the split, the targets and every other fit setting stayed as they were (D4). Simulator fingerprint d45a275dd7be0713cec6a64394b7d8a9, unchanged; validation 67 of 74, unchanged.
+
+The heavy passes (12 jobs: the two measurement passes, the demand builds, the validation suite and the ten-seed assessment) ran on the project lead's laptop session from `openspec/changes/archive/2026-11-19-calibration-round-44/runbook.md`, per design D5. The laptop reproduced the container's baseline exactly: network, demand and cross-validation demand hashes, and the baseline station tallies recomputed from its own runs (PM 74 of 92 and 14 of 24, AM 70 of 77 and 14 of 19).
+
+### Result: ten seeds
+
+Keep rule D3, against the assessment of b1ff0ef. The first column is the published assessment of 2026-11-17 on the previous network, shown as a report and not a condition.
+
+| Criterion | 2026-11-17 published | b1ff0ef baseline (the line) | Round 44 candidate | Result |
+| --- | --- | --- | --- | --- |
+| PM recent fitted stations, GEH < 5 | 78 of 92 | 74 of 92 | 69 of 92 | worse |
+| PM held out | 13 of 24 | 14 of 24 | 14 of 24 | same |
+| AM recent fitted stations | 67 of 77 | 70 of 77 | 67 of 77 | worse |
+| AM held out | 14 of 19 | 14 of 19 | 14 of 19 | same |
+| D5, PM headline shares within 10 points | 4 of 4 (error 3.7) | 4 of 4 (error 4.6) | 2 of 4 (error 12.8) | worse |
+| Whole-street traversals, GEH < 5 | 8 of 8 | 8 of 8 | 7 of 8 | worse |
+| D16 in every period | holds | holds | holds | same |
+
+Verdict: 4 of 7 criteria are worse than the line, so the candidate is rejected and nothing is adopted. PM fitted falls 74 to 69 of 92, AM fitted 70 to 67 of 77, D5 from 4 of 4 to 2 of 4 (Colby St northbound from the freeway 36.0 against 47, Hillegass Ave southbound to the freeway 45.2 against 68), and the whole-street traversals from 8 to 7 of 8 (Colby St southbound in the PM peak, 81 modeled against 39 counted, GEH 5.4). Both held-out figures are unchanged. Among recent stations 11 flipped in the AM peak (4 to pass, 7 to fail) and 15 in the PM peak (5 to pass, 10 to fail); `evidence/stations.md` lists them. Validation passes 67 of 74 as before. Status stays `uncalibrated`.
+
+### What moved
+
+The measured delays closed most of the gap between what the fit plans and what the simulator does, but the fit closed it by planning more traffic through the grid. On Forest St eastbound (PM, counted 66) the fit's static final went from 61 to 183 and the simulated flow from 183 to 205. On Ayala Ave southbound, Forest St to McAuley St (counted 20), the static final went from 42 to 111, while the simulated flow went from 107 to 92.
+
+The delays had not settled after two passes. From pass 0 to pass 1 the RMS change of an approach's delay in the shipped view was 11.4 s in the AM peak, 6.3 s at midday and 31.7 s in the PM peak (training view 25.8, 5.7 and 25.2 s). The mean measured control delay in the PM peak rose from 17.1 s to 23.6 s. Offered car demand fell slightly (PM 27,612 to 26,555 veh/h) and through trips in the shipped fit went from 3745 to 3746 (AM), 3093 to 3175 (midday) and 5907 to 5701 (PM).
+
+The Howell-area held-out stations moved toward their counts. PM, counted / baseline / candidate on the cross-validation demand: McAuley St eastbound, Howell St to Canning St, 12 / 183 / 81; 60th St eastbound, Howell St to Canning St, 23 / 162 / 117; Ayala Ave northbound, Martin St to Howell St, 60 / 212 / 93, now within GEH 5. The first two stay far above their counts. Other held-out stations went the other way (Hillegass Ave southbound, 62nd St to 61st St, 151 counted, 165 to 89; Canning St southbound, 59th St to McAuley St, 49 counted, 21 to 11), so the held-out totals did not change.
+
+Hashes (SHA-256, first 16 characters): network 53c823f20d9165ed throughout; pass 0 demand a9acd0d97316ab6c, training 615e6673197e309a, delay files 8680288fa205a6b6 and b4dcc391bb0d843f; pass 1 (candidate) demand 19ee7b952638016d, training 5284e73cfa916f74, delay files 10228ecf206db509 and f541623d9549fe34. The four delay files stay in `data/demand/` (each under 30 KB) as evidence, unused by the shipped config. The candidate's fit reports, the station flips, the run logs and the assessment (`rockridge.assessment-r44.md`) are in the change's evidence.
+
+### Open items
+
+Earlier diagnostics from 2026-11-18, kept short; none has been confirmed in the field.
+
+- Barricade diagnostic: no variant of the Howell St, Forest St and Colby St barricades passes the held-out rule. A closure of Colby St at 61st St contradicts the count: 102 cars an hour counted northbound along the whole street against 0 modeled.
+- Trace of McAuley St and 60th St eastbound: 83% of the through cars on them take the diagonal Telegraph Ave, McAuley St or 60th St, Ayala Ave or Howell St, Forest St, Claremont Ave. The green time for Forest St is an unobserved assumption and a strong lever in a two-seed probe: with a 10 s green, Forest St eastbound fell from 448 to 142 and McAuley St eastbound from 158 to 94.
+- Street-level imagery (undated) shows no median and no turn restriction on Telegraph Ave at 59th St to 63rd St.
+
 ## Forty-third round: stop control at Hillegass Ave / 61st St and Canning St / 62nd St (change calibration-round-43)
 
 Rejected. The two corrections were tried, failed the keep rule (design D11) and were taken out again on the project lead's decision of 2026-11-18 (design D13). The published network f9fa09a5726644d7, demand e4f1993916827e82 and cross-validation demand e480933c18b970f6 stand, and `npm run data` reproduces them after the revert. The assessment files in `data/calibration` are the published ones of 2026-11-17. The figures below are those of the trial.

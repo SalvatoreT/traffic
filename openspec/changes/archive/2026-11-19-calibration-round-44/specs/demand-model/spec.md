@@ -35,3 +35,10 @@ The demand build SHALL use a file only when its area, view, network hash and sim
 #### Scenario: Training view
 - **WHEN** the build is the training view of the validation split
 - **THEN** it reads the training file, which was measured on training-view demand only, so no held-out count informs any input
+
+### Requirement: Measured control delay is off unless the area config names a file
+The demand build SHALL read a control delay file only when the area's demand config names one under the count fit's assignment settings. Without that entry the build SHALL ignore every control delay file on disk and use the constants of the control types.
+
+#### Scenario: Default build
+- **WHEN** the demand config has no control delay entry and delay files exist in the data folder
+- **THEN** the build output is the same as a build without those files

@@ -22,5 +22,5 @@
 
 - [x] 4.1 Validation suite, same fingerprint
 - [x] 4.2 Ten-seed assessment of the pass-1 demand
-- [ ] 4.3 Three-column table (2026-11-17 published, b1ff0ef baseline, candidate) and the keep-rule verdict
-- [ ] 4.4 Adopt (area note, caveat, areas.json, record) or reject (record only), archive, commit
+- [x] 4.3 Three-column table (2026-11-17 published, b1ff0ef baseline, candidate) and the keep-rule verdict: rejected, 4 of 7 worse (record entry and design.md)
+- [x] 4.4 Reject (record only): record entry written, config and area note stay as in ff5d667, the caveat gains one sentence, archive, commit. `public/data/areas.json` is not regenerated in this change if the commit says so
