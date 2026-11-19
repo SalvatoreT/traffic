@@ -1,0 +1,3 @@
+(baseline) target/r47/stations.base.json
+  pm_peak: recent fitted 92, recent held out 24
+  am_peak: recent fitted 77, recent held out 19

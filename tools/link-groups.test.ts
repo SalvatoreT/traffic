@@ -135,7 +135,7 @@ describe('the fit and the scoring read a link group as one count over the sum', 
 });
 
 describe('the candidate fragment', () => {
-  const dir = 'openspec/changes/calibration-round-47/candidates';
+  const dir = 'openspec/changes/archive/2026-11-19-calibration-round-47/candidates';
   it('is labeled ASSUMPTION and names two stations the config produces', () => {
     expect(readdirSync(dir)).toEqual(['caldecott-pair-sum.json']);
     const c = JSON.parse(readFileSync(`${dir}/caldecott-pair-sum.json`, 'utf8'));

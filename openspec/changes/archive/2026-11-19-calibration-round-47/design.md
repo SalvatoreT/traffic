@@ -68,3 +68,24 @@ D12. The heavy runs (baseline set, screens, validation, assessment) run on the u
 
 - The candidate may only trade one failing station for one failing station: the PM fitted count then moves by at most one. Both fills of D8 exist so that this cannot be counted as a gain.
 - A merged station is one row in the station file. Anything that reads the station list by member id (a re-freeze of the split, an old assessment compared by station id) will not find the members. The split is not re-frozen; old assessments are compared by label.
+
+## Outcome
+
+Passes the keep rule narrowly, changes no status, not adopted (2026-11-19). The laptop run was 7:51 to 8:27 AM Pacific, ten seeds. The gate reproduced the baseline hashes (53c823f20d9165ed, 9cdebdabf05c4460, 2f9ae152b9bbf78e) at fingerprint d45a275dd7be0713cec6a64394b7d8a9. The candidate `caldecott-pair-sum` has shipped demand a97b0d3fdd118cc8, training demand b9464e7b65bdd542 and the same network. The full entry is in `data/calibration/rockridge.record.md`; the evidence is under `evidence/`.
+
+`b` = 1. In the PM ten-seed baseline `ramp on 1695` passes (91 against 61) and `ramp on 1711` fails (150 against 61). The baseline set reproduced 74 of 92, 14 of 24, 70 of 77 and 14 of 19. So the two PM fills of D8 are 73 of 90 for the common stations and 74 of 91 for every station.
+
+- PM fitted, common stations: 74 of 90 (line 73). Pass.
+- PM fitted, every station: 74 of 91 (line 74, exactly on it). Pass.
+- PM held out 14 of 24 (line 14); AM fitted 72 of 77 (line 70); AM held out 14 of 19 (line 14). Pass.
+- D5: 4 of 4 within 10 points, mean error 4.7 (baseline 4.6). Whole-street traversals 8 of 8. D16 holds. Validation suite 67 of 74. Pass.
+
+Reported, not conditions:
+
+- The merged station still fails: PM 219 simulated against 122 counted, GEH 7.4 (baseline pair sum 241); AM 225 against 103, GEH 9.5.
+- The fit moved flow between the two ramp links more than it cut the total. PM link 4080 91 to 31, link 4058 150 to 187.
+- Five diagonal stations, PM (counted 178): shipped view 495 to 539, training view 1234 to 1253.
+- Flips: three fail to pass (Canning St 62nd to 63rd NB in the PM; Colby St 62nd to 63rd NB and 60th St Canning to Telegraph EB in the AM, the last borderline). None pass to fail, apart from the member's pass lost to the merge.
+- Shattuck Ave NB, PM: 266 to 297 s.
+
+Decision, by the project lead, 2026-11-19: it passes narrowly and changes no status, so it is not adopted. `tools/lib/link-groups.ts` and `countFit.linkGroups` stay on main, off by default, and may be combined with a later round.

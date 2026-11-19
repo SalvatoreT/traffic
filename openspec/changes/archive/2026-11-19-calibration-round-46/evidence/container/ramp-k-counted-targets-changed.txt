@@ -1,0 +1,32 @@
+stations: baseline 357, candidate 357; only in baseline 0; only in candidate 0
+held  2012 ramp on 701 | on-ramp at node 701 (Telegraph Avenue / 56th Street)
+      am_peak 558 -> 455, midday 407 -> 332, pm_peak 657 -> 536
+fit   2012 ramp off 702 | off-ramp at node 702 (Telegraph Avenue / Aileen Street)
+      am_peak 528 -> 430, midday 385 -> 314, pm_peak 621 -> 506
+fit   2012 ramp off 1133 | off-ramp at node 1133 (Keith Avenue)
+      am_peak 405 -> 330, midday 296 -> 241, pm_peak 477 -> 389
+fit   2012 ramp on 1312 | on-ramp at node 1312 (Brookside Avenue / Broadway)
+      am_peak 298 -> 243, midday 218 -> 177, pm_peak 351 -> 286
+fit   2012 ramp on 1320 | on-ramp at node 1320 (Broadway)
+      am_peak 298 -> 243, midday 218 -> 177, pm_peak 351 -> 286
+fit   2012 ramp off 1350 | off-ramp at node 1350 (Broadway)
+      am_peak 268 -> 218, midday 195 -> 159, pm_peak 315 -> 257
+held  2012 ramp off 1556 | off-ramp at node 1556 (Broadway Terrace)
+      am_peak 270 -> 220, midday 197 -> 160, pm_peak 317 -> 259
+held  2012 ramp on 1556 | on-ramp at node 1556 (Broadway Terrace)
+      am_peak 186 -> 151, midday 135 -> 110, pm_peak 218 -> 178
+held  2012 ramp off 1577 | off-ramp at node 1577 (Broadway Terrace)
+      am_peak 270 -> 220, midday 197 -> 160, pm_peak 317 -> 259
+held  2012 ramp on 1669 | on-ramp at node 1669 (Glenwood Glade / Broadway Terrace / Pinewood Road)
+      am_peak 186 -> 151, midday 135 -> 110, pm_peak 218 -> 178
+fit   2024 ramp off 1695 | off-ramp at node 1695 (Caldecott Lane)
+      am_peak 96 -> 78, midday 70 -> 57, pm_peak 113 -> 92
+fit   2024 ramp on 1695 | on-ramp at node 1695 (Caldecott Lane)
+      am_peak 52 -> 42, midday 38 -> 31, pm_peak 61 -> 50
+fit   2024 ramp on 1711 | on-ramp at node 1711 (Caldecott Lane)
+      am_peak 52 -> 42, midday 38 -> 31, pm_peak 61 -> 50
+fit   2012 ramp on 1741 | on-ramp at node 1741 (Miles Avenue)
+      am_peak 306 -> 249, midday 223 -> 182, pm_peak 360 -> 293
+fit   2012 ramp off 1743 | off-ramp at node 1743 (Miles Avenue)
+      am_peak 268 -> 218, midday 195 -> 159, pm_peak 315 -> 257
+15 stations with a changed target

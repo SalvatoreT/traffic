@@ -1,0 +1,12 @@
+ramp K (round 46, shipped view): 0.0734 from 5 counted ramps (pooled ratio; median 0.0721), against the assumed 0.09
+ramp K input: off-ramp at node 727 (52nd Street): counted 1024 veh/h (2013) over ADT 14200 (2016) = 0.0721
+ramp K input: on-ramp at node 725 (52nd Street): counted 996 veh/h (2013) over ADT 12900 (2012) = 0.0772
+ramp K input: off-ramp at node 719 (Martin Luther King Junior Way): counted 1614 veh/h (2013) over ADT 18400 (2016) = 0.0877
+ramp K input: on-ramp at node 833 (Claremont Avenue / Hudson Street): counted 598 veh/h (2010) over ADT 9800 (2012) = 0.0610
+ramp K input: off-ramp at node 683 (Claremont Avenue / Clifton Street): counted 617 veh/h (2010) over ADT 10800 (2012) = 0.0571
+ramp K skipped: on-ramp at node 679 (Martin Luther King Junior Way): its ADT row is shared by 2 ramps
+ramp K is an ASSUMPTION-grade estimate: it mixes count years with ADT years of other dates (the nearest year of each row), the counts are one PM hour of environmental-review studies, and the other periods take the PM value times the period volume factors. A ramp without a counted hour is assumed to have the same K as the counted ones.
+ramp K (round 46, training view): 0.0809 from 2 counted ramps (pooled ratio; median 0.0799), against the assumed 0.09
+ramp K input: off-ramp at node 727 (52nd Street): counted 1024 veh/h (2013) over ADT 14200 (2016) = 0.0721
+ramp K input: off-ramp at node 719 (Martin Luther King Junior Way): counted 1614 veh/h (2013) over ADT 18400 (2016) = 0.0877
+ramp K is an ASSUMPTION-grade estimate: it mixes count years with ADT years of other dates (the nearest year of each row), the counts are one PM hour of environmental-review studies, and the other periods take the PM value times the period volume factors. A ramp without a counted hour is assumed to have the same K as the counted ones.

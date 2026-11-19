@@ -1,0 +1,49 @@
+2026-11-19 07:51:26 AM PST START round 47 at 2903013
+2026-11-19 07:51:27 AM PST A: npm install
+2026-11-19 07:51:27 AM PST A: cargo build
+2026-11-19 07:51:27 AM PST A: fingerprint d45a275dd7be0713cec6a64394b7d8a9
+2026-11-19 07:51:29 AM PST A: vitest exit=0  Tests 13 passed (13)
+2026-11-19 07:51:29 AM PST B: npm run data
+2026-11-19 08:00:43 AM PST B: npm run data exit=0 wall_s=554
+2026-11-19 08:00:43 AM PST B: hashes 53c823f20d9165ed 9cdebdabf05c4460 2f9ae152b9bbf78e 
+2026-11-19 08:00:43 AM PST B: git status under data/: 0 line(s)
+2026-11-19 08:00:43 AM PST B: denominators  pm_peak: recent fitted 92, recent held out 24; am_peak: recent fitted 77, recent held out 19;
+2026-11-19 08:00:43 AM PST C: baseline screen
+2026-11-19 08:02:01 AM PST C: screen exit=0 wall_s=78
+2026-11-19 08:02:01 AM PST C: screen {"counts":{"am_peak":{"fitted":70,"fittedOf":77,"held":14,"heldOf":19},"pm_peak":{"fitted":73,"fittedOf":92,"held":14,"heldOf":24}},"gridlock":{"am_peak":{"scope":"judged zone","mean":0,"min":0,"max":0},"pm_peak":{"scope":"judged zone","mean":0,"min":0,"max":0}}}
+2026-11-19 08:02:01 AM PST C: baseline ten seeds
+2026-11-19 08:04:34 AM PST C: assess exit=0 wall_s=153
+2026-11-19 08:04:34 AM PST C: ten-seed {"counts":{"am_peak":{"fitted":70,"fittedOf":77,"held":14,"heldOf":19},"pm_peak":{"fitted":74,"fittedOf":92,"held":14,"heldOf":24}},"gridlock":{"am_peak":{"scope":"judged zone","mean":0,"min":0,"max":0},"midday":{"scope":"judged zone","mean":0,"min":0,"max":0},"pm_peak":{"scope":"judged zone","mean":0,"min":0,"max":0}}}
+2026-11-19 08:04:34 AM PST C: station table ten exit=0
+2026-11-19 08:04:34 AM PST C: station table screen exit=0
+2026-11-19 08:04:34 AM PST C: ten members {"pm_peak":{"seeds":10,"fitted":74,"fittedN":92,"held":14,"heldN":24,"stations":{"ramp off 1695":{"held":"no","year":"2024","derived":"no","counted":113,"modeled":126,"geh":1.2,"ok":true},"ramp on 1695":{"held":"no","year":"2024","derived":"no","counted":61,"modeled":91,"geh":3.5,"ok":true},"ramp on 1711":{"held":"no","year":"2024","derived":"no","counted":61,"modeled":150,"geh":8.6,"ok":false}}},"am_peak":{"seeds":10,"fitted":70,"fittedN":77,"held":14,"heldN":19,"stations":{"ramp off 1695":{"held":"no","year":"2024","derived":"yes","counted":96,"modeled":67,"geh":3.2,"ok":true},"ramp on 1695":{"held":"no","year":"2024","derived":"yes","counted":52,"modeled":33,"geh":3,"ok":true},"ramp on 1711":{"held":"no","year":"2024","derived":"yes","counted":52,"modeled":226,"geh":14.7,"ok":false}}}}
+2026-11-19 08:04:34 AM PST C: screen members {"pm_peak":{"seeds":3,"fitted":73,"fittedN":92,"held":14,"heldN":24,"stations":{"ramp off 1695":{"held":"no","year":"2024","derived":"no","counted":113,"modeled":129,"geh":1.5,"ok":true},"ramp on 1695":{"held":"no","year":"2024","derived":"no","counted":61,"modeled":96,"geh":4,"ok":true},"ramp on 1711":{"held":"no","year":"2024","derived":"no","counted":61,"modeled":138,"geh":7.7,"ok":false}}},"am_peak":{"seeds":3,"fitted":70,"fittedN":77,"held":14,"heldN":19,"stations":{"ramp off 1695":{"held":"no","year":"2024","derived":"yes","counted":96,"modeled":60,"geh":4,"ok":true},"ramp on 1695":{"held":"no","year":"2024","derived":"yes","counted":52,"modeled":30,"geh":3.5,"ok":true},"ramp on 1711":{"held":"no","year":"2024","derived":"yes","counted":52,"modeled":221,"geh":14.4,"ok":false}}}}
+2026-11-19 08:04:34 AM PST C: ten-seed baseline REPRODUCED
+2026-11-19 08:04:34 AM PST BC done
+2026-11-19 08:04:35 AM PST caldecott-pair-sum D: start
+2026-11-19 08:04:35 AM PST caldecott-pair-sum D: status before apply: ?? openspec/changes/calibration-round-47/evidence/baseline-denominators.txt;?? openspec/changes/calibration-round-47/evidence/baseline-hashes.txt;?? openspec/changes/calibration-round-47/evidence/baseline/;?? openspec/changes/calibration-round-47/evidence/rockridge.assessment-r47-base.md;?? openspec/changes/calibration-round-47/evidence/stations-base-screen.md;?? openspec/changes/calibration-round-47/evidence/stations-base-ten.md;
+applied caldecott-pair-sum
+2026-11-19 08:04:35 AM PST caldecott-pair-sum D:  1 file changed, 9 insertions(+)
+2026-11-19 08:13:50 AM PST caldecott-pair-sum D: npm run data exit=0 wall_s=555
+2026-11-19 08:13:50 AM PST caldecott-pair-sum D: link group lines: 2
+2026-11-19 08:13:50 AM PST caldecott-pair-sum D: hashes 53c823f20d9165ed a97b0d3fdd118cc8 b9464e7b65bdd542 
+2026-11-19 08:13:50 AM PST caldecott-pair-sum D: targets: stations: baseline 357, candidate 356; only in baseline 2; only in candidate 1; 0 stations with a changed target
+2026-11-19 08:13:50 AM PST caldecott-pair-sum D: denominators  pm_peak: recent fitted 91, recent held out 24; am_peak: recent fitted 77, recent held out 19;
+2026-11-19 08:13:50 AM PST caldecott-pair-sum D: network identical
+2026-11-19 08:13:50 AM PST caldecott-pair-sum D: split unchanged
+2026-11-19 08:13:50 AM PST caldecott-pair-sum E: screen
+2026-11-19 08:15:07 AM PST caldecott-pair-sum E: screen exit=0 wall_s=77
+2026-11-19 08:15:07 AM PST caldecott-pair-sum E: {"counts":{"am_peak":{"fitted":71,"fittedOf":77,"held":14,"heldOf":19},"pm_peak":{"fitted":71,"fittedOf":91,"held":14,"heldOf":24}},"gridlock":{"am_peak":{"scope":"judged zone","mean":0,"min":0,"max":0},"pm_peak":{"scope":"judged zone","mean":0,"min":0,"max":0}}}
+2026-11-19 08:15:07 AM PST caldecott-pair-sum E: station table exit=0
+2026-11-19 08:15:08 AM PST caldecott-pair-sum E: members {"pm_peak":{"seeds":3,"fitted":71,"fittedN":91,"held":14,"heldN":24,"stations":{"ramp off 1695":{"held":"no","year":"2024","derived":"no","counted":113,"modeled":129,"geh":1.5,"ok":true},"ramp on 1695 + ramp on 1711":{"held":"no","year":"2024","derived":"no","counted":122,"modeled":212,"geh":6.9,"ok":false}}},"am_peak":{"seeds":3,"fitted":71,"fittedN":77,"held":14,"heldN":19,"stations":{"ramp off 1695":{"held":"no","year":"2024","derived":"yes","counted":96,"modeled":76,"geh":2.2,"ok":true},"ramp on 1695 + ramp on 1711":{"held":"no","year":"2024","derived":"yes","counted":103,"modeled":222,"geh":9.3,"ok":false}}}}
+2026-11-19 08:15:08 AM PST caldecott-pair-sum E: screen decision: PASS | pm_peak fitted common 71 vs 72; pm_peak held 14 vs 14; am_peak fitted common 71 vs 70; am_peak held 14 vs 14
+2026-11-19 08:15:08 AM PST caldecott-pair-sum F: validate
+2026-11-19 08:15:30 AM PST caldecott-pair-sum F: validate exit=0 r6   Route choice: share on a route 120 s (20%) costlier than the other, no link in common     0.01 [0.00 .. 0.04]  0.35 ok 67 of 74 cases pass wrote <worktree>/crates/sim/../../data/calibration/validation.md wrote <worktree>/crates/sim/../../data/calibration/validation.json 
+2026-11-19 08:15:30 AM PST caldecott-pair-sum F: changed after validate:  M data/calibration/validation.json;
+2026-11-19 08:18:04 AM PST caldecott-pair-sum F: assess exit=0 wall_s=154
+2026-11-19 08:18:04 AM PST caldecott-pair-sum F: station table exit=0
+2026-11-19 08:18:04 AM PST caldecott-pair-sum F: members {"pm_peak":{"seeds":10,"fitted":74,"fittedN":91,"held":14,"heldN":24,"stations":{"ramp off 1695":{"held":"no","year":"2024","derived":"no","counted":113,"modeled":125,"geh":1.1,"ok":true},"ramp on 1695 + ramp on 1711":{"held":"no","year":"2024","derived":"no","counted":122,"modeled":219,"geh":7.4,"ok":false}}},"am_peak":{"seeds":10,"fitted":72,"fittedN":77,"held":14,"heldN":19,"stations":{"ramp off 1695":{"held":"no","year":"2024","derived":"yes","counted":96,"modeled":77,"geh":2,"ok":true},"ramp on 1695 + ramp on 1711":{"held":"no","year":"2024","derived":"yes","counted":103,"modeled":225,"geh":9.5,"ok":false}}}}
+2026-11-19 08:18:04 AM PST caldecott-pair-sum done; status: ?? openspec/changes/calibration-round-47/evidence/baseline-denominators.txt;?? openspec/changes/calibration-round-47/evidence/baseline-hashes.txt;?? openspec/changes/calibration-round-47/evidence/baseline/;?? openspec/changes/calibration-round-47/evidence/caldecott-pair-sum-denominators.txt;?? openspec/changes/calibration-round-47/evidence/caldecott-pair-sum-hashes.txt;?? openspec/changes/calibration-round-47/evidence/caldecott-pair-sum-targets-changed.txt;?? openspec/changes/calibration-round-47/evidence/caldecott-pair-sum/;?? openspec/changes/calibration-round-47/evidence/rockridge.assessment-r47-base.md;?? openspec/changes/calibration-round-47/evidence/stations-base-screen.md;?? openspec/changes/calibration-round-47/evidence/stations-base-ten.md;?? openspec/changes/calibration-round-47/evidence/stations-caldecott-pair-sum-screen.md;?? openspec/changes/calibration-round-47/evidence/stations-caldecott-pair-sum-ten.md;
+2026-11-19 08:18:04 AM PST restore: npm run data on the clean config
+2026-11-19 08:27:21 AM PST restore: exit=0 hashes 53c823f20d9165ed 9cdebdabf05c4460 2f9ae152b9bbf78e  status: ?? openspec/changes/calibration-round-47/evidence/baseline-denominators.txt;?? openspec/changes/calibration-round-47/evidence/baseline-hashes.txt;?? openspec/changes/calibration-round-47/evidence/baseline/;?? openspec/changes/calibration-round-47/evidence/caldecott-pair-sum-denominators.txt;?? openspec/changes/calibration-round-47/evidence/caldecott-pair-sum-hashes.txt;?? openspec/changes/calibration-round-47/evidence/caldecott-pair-sum-targets-changed.txt;?? openspec/changes/calibration-round-47/evidence/caldecott-pair-sum/;?? openspec/changes/calibration-round-47/evidence/rockridge.assessment-r47-base.md;?? openspec/changes/calibration-round-47/evidence/stations-base-screen.md;?? openspec/changes/calibration-round-47/evidence/stations-base-ten.md;?? openspec/changes/calibration-round-47/evidence/stations-caldecott-pair-sum-screen.md;?? openspec/changes/calibration-round-47/evidence/stations-caldecott-pair-sum-ten.md;
+2026-11-19 08:27:21 AM PST ALL DONE

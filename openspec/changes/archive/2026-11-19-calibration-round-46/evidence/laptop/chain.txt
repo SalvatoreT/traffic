@@ -1,0 +1,46 @@
+2026-11-19 07:03:04 AM PST START round 46 at 6277f7d
+2026-11-19 07:03:05 AM PST A: npm install
+2026-11-19 07:03:05 AM PST A: cargo build
+2026-11-19 07:03:05 AM PST A: fingerprint d45a275dd7be0713cec6a64394b7d8a9
+2026-11-19 07:03:08 AM PST A: vitest exit=0  Tests 9 passed (9)
+2026-11-19 07:03:08 AM PST B: npm run data
+2026-11-19 07:12:20 AM PST B: npm run data exit=0 wall_s=552
+2026-11-19 07:12:20 AM PST B: hashes 53c823f20d9165ed 9cdebdabf05c4460 2f9ae152b9bbf78e 
+2026-11-19 07:12:20 AM PST B: git status under data/: 0 line(s)
+2026-11-19 07:12:20 AM PST C: baseline screen
+2026-11-19 07:13:37 AM PST C: assess exit=0 wall_s=77
+2026-11-19 07:13:37 AM PST C: {"counts":{"am_peak":{"fitted":70,"fittedOf":77,"held":14,"heldOf":19},"pm_peak":{"fitted":73,"fittedOf":92,"held":14,"heldOf":24}},"gridlock":{"am_peak":{"scope":"judged zone","mean":0,"min":0,"max":0},"pm_peak":{"scope":"judged zone","mean":0,"min":0,"max":0}}}
+2026-11-19 07:13:37 AM PST BC done
+2026-11-19 07:13:38 AM PST ramp-k-counted D: start
+2026-11-19 07:13:38 AM PST ramp-k-counted D: status before apply: ?? openspec/changes/calibration-round-46/evidence/baseline-hashes.txt;?? openspec/changes/calibration-round-46/evidence/baseline/;
+applied ramp-k-counted
+2026-11-19 07:13:38 AM PST ramp-k-counted D:  1 file changed, 6 insertions(+)
+2026-11-19 07:22:47 AM PST ramp-k-counted D: npm run data exit=0 wall_s=549
+2026-11-19 07:22:47 AM PST ramp-k-counted D: K lines: ramp K (round 46, shipped view): 0.0734 from 5 counted ramps (pooled ratio; median 0.0721), against the assumed 0.09;ramp K (round 46, training view): 0.09 (fallback): 2 usable counted ramps, fewer than the 3 required;
+2026-11-19 07:22:47 AM PST ramp-k-counted D: hashes 53c823f20d9165ed 8a28540b43bc3a75 650b9f0e12d6f563 
+2026-11-19 07:22:47 AM PST ramp-k-counted D: targets: stations: baseline 357, candidate 357; only in baseline 0; only in candidate 0; 15 stations with a changed target
+2026-11-19 07:22:47 AM PST ramp-k-counted D: network identical
+2026-11-19 07:22:47 AM PST ramp-k-counted D: cross-validation demand periods identical to the baseline: true
+2026-11-19 07:22:47 AM PST ramp-k-counted E: screen
+2026-11-19 07:24:03 AM PST ramp-k-counted E: assess exit=0 wall_s=76
+2026-11-19 07:24:03 AM PST ramp-k-counted E: {"counts":{"am_peak":{"fitted":70,"fittedOf":77,"held":14,"heldOf":19},"pm_peak":{"fitted":73,"fittedOf":92,"held":14,"heldOf":24}},"gridlock":{"am_peak":{"scope":"judged zone","mean":0,"min":0,"max":0},"pm_peak":{"scope":"judged zone","mean":0.33,"min":0,"max":1}}}
+2026-11-19 07:24:03 AM PST ramp-k-counted E: screen decision: FAIL pm_peak gridlock {"scope":"judged zone","mean":0.33,"min":0,"max":1}
+2026-11-19 07:24:03 AM PST ramp-k-counted done; status: ?? openspec/changes/calibration-round-46/evidence/baseline-hashes.txt;?? openspec/changes/calibration-round-46/evidence/baseline/;?? openspec/changes/calibration-round-46/evidence/ramp-k-counted-hashes.txt;?? openspec/changes/calibration-round-46/evidence/ramp-k-counted-targets-changed.txt;?? openspec/changes/calibration-round-46/evidence/ramp-k-counted/;
+2026-11-19 07:24:03 AM PST ramp-k-counted-min2 D: start
+2026-11-19 07:24:03 AM PST ramp-k-counted-min2 D: status before apply: ?? openspec/changes/calibration-round-46/evidence/baseline-hashes.txt;?? openspec/changes/calibration-round-46/evidence/baseline/;?? openspec/changes/calibration-round-46/evidence/ramp-k-counted-hashes.txt;?? openspec/changes/calibration-round-46/evidence/ramp-k-counted-targets-changed.txt;?? openspec/changes/calibration-round-46/evidence/ramp-k-counted/;
+applied ramp-k-counted-min2
+2026-11-19 07:24:03 AM PST ramp-k-counted-min2 D:  1 file changed, 6 insertions(+)
+2026-11-19 07:33:13 AM PST ramp-k-counted-min2 D: npm run data exit=0 wall_s=550
+2026-11-19 07:33:13 AM PST ramp-k-counted-min2 D: K lines: ramp K (round 46, shipped view): 0.0734 from 5 counted ramps (pooled ratio; median 0.0721), against the assumed 0.09;ramp K (round 46, training view): 0.0809 from 2 counted ramps (pooled ratio; median 0.0799), against the assumed 0.09;
+2026-11-19 07:33:13 AM PST ramp-k-counted-min2 D: hashes 53c823f20d9165ed 583834696da85cfd 514c17c9f88af777 
+2026-11-19 07:33:13 AM PST ramp-k-counted-min2 D: targets: stations: baseline 357, candidate 357; only in baseline 0; only in candidate 0; 15 stations with a changed target
+2026-11-19 07:33:13 AM PST ramp-k-counted-min2 D: network identical
+2026-11-19 07:33:13 AM PST ramp-k-counted-min2 D: cross-validation demand periods identical to the baseline: false
+2026-11-19 07:33:13 AM PST ramp-k-counted-min2 E: screen
+2026-11-19 07:34:31 AM PST ramp-k-counted-min2 E: assess exit=0 wall_s=78
+2026-11-19 07:34:31 AM PST ramp-k-counted-min2 E: {"counts":{"am_peak":{"fitted":70,"fittedOf":77,"held":12,"heldOf":19},"pm_peak":{"fitted":73,"fittedOf":92,"held":12,"heldOf":24}},"gridlock":{"am_peak":{"scope":"judged zone","mean":0,"min":0,"max":0},"pm_peak":{"scope":"judged zone","mean":0.33,"min":0,"max":1}}}
+2026-11-19 07:34:31 AM PST ramp-k-counted-min2 E: screen decision: FAIL pm_peak gridlock {"scope":"judged zone","mean":0.33,"min":0,"max":1}
+2026-11-19 07:34:31 AM PST ramp-k-counted-min2 done; status: ?? openspec/changes/calibration-round-46/evidence/baseline-hashes.txt;?? openspec/changes/calibration-round-46/evidence/baseline/;?? openspec/changes/calibration-round-46/evidence/ramp-k-counted-hashes.txt;?? openspec/changes/calibration-round-46/evidence/ramp-k-counted-min2-hashes.txt;?? openspec/changes/calibration-round-46/evidence/ramp-k-counted-min2-targets-changed.txt;?? openspec/changes/calibration-round-46/evidence/ramp-k-counted-min2/;?? openspec/changes/calibration-round-46/evidence/ramp-k-counted-targets-changed.txt;?? openspec/changes/calibration-round-46/evidence/ramp-k-counted/;
+2026-11-19 07:34:31 AM PST restore: npm run data on the clean config
+2026-11-19 07:43:48 AM PST restore: exit=0 hashes 53c823f20d9165ed 9cdebdabf05c4460 2f9ae152b9bbf78e  status: ?? openspec/changes/calibration-round-46/evidence/baseline-hashes.txt;?? openspec/changes/calibration-round-46/evidence/baseline/;?? openspec/changes/calibration-round-46/evidence/ramp-k-counted-hashes.txt;?? openspec/changes/calibration-round-46/evidence/ramp-k-counted-min2-hashes.txt;?? openspec/changes/calibration-round-46/evidence/ramp-k-counted-min2-targets-changed.txt;?? openspec/changes/calibration-round-46/evidence/ramp-k-counted-min2/;?? openspec/changes/calibration-round-46/evidence/ramp-k-counted-targets-changed.txt;?? openspec/changes/calibration-round-46/evidence/ramp-k-counted/;
+2026-11-19 07:43:48 AM PST ALL DONE

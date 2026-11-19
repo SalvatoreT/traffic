@@ -141,6 +141,42 @@ The remaining misses point to route choice in the simulation disagreeing with th
 - Field checks still open: the Howell St and Ayala Ave barricade (low confidence), the Forest St signal timing, and the stop signs at Hillegass Ave and 61st St and at Canning St and 62nd St.
 - To decide: the Caldecott Lane on-ramp pairing, and the held-out gate targets derived from annual average daily traffic.
 
+## Forty-seventh round: one station over the Caldecott Lane on-ramp pair (change calibration-round-47)
+
+Passes the keep rule narrowly, changes no status, not adopted (2026-11-19). The published network 53c823f20d9165ed, demand 9cdebdabf05c4460 and cross-validation demand 2f9ae152b9bbf78e stand. Simulator fingerprint d45a275dd7be0713cec6a64394b7d8a9 throughout.
+
+### What was tried
+
+One Caltrans ramp row (WB ON FR CALDECOTT LANE, 1,350 ADT in 2024) is shared by the on-ramps at nodes 1695 and 1711, and the build split it into two stations of 61 veh/h each in the PM peak. A turn ban sends the flow to one ramp, so one target was unmeetable and the other too low. The candidate `caldecott-pair-sum` (`countFit.linkGroups`, `tools/lib/link-groups.ts`) replaces the two stations by one whose target is the row total, 122 veh/h in the PM. Shipped demand a97b0d3fdd118cc8, training demand b9464e7b65bdd542, network unchanged. The station file has 356 stations against 357; no other target changed. The split was not re-frozen. The keep rule (design D8) and the screen (D9) were written before any run.
+
+The run was on the project lead's laptop session on 2026-11-19, 7:51 to 8:27 AM Pacific, ten seeds. The gate reproduced the baseline hashes. The ten-seed baseline reproduced 74 of 92, 14 of 24, 70 of 77 and 14 of 19, and gave b = 1: ramp on 1695 passes (91 against 61, GEH 3.5) and ramp on 1711 fails (150 against 61, GEH 8.6). The three-seed screen passed.
+
+### Keep rule, ten seeds
+
+| Line | Baseline | Candidate | Line to meet | Result |
+| --- | --- | --- | --- | --- |
+| PM fitted, common stations | 73 of 90 | 74 of 90 | 73 | pass |
+| PM fitted, every station | 74 of 92 | 74 of 91 | 74 | pass, exactly on it |
+| PM held out | 14 of 24 | 14 of 24 | 14 | pass |
+| AM fitted | 70 of 77 | 72 of 77 | 70 | pass |
+| AM held out | 14 of 19 | 14 of 19 | 14 | pass |
+| D5 headline shares | 4 of 4, mean error 4.6 | 4 of 4, mean error 4.7 | 4 of 4 | pass |
+| Whole-street traversals | 8 of 8 | 8 of 8 | 8 of 8 | pass |
+| D16 stability | holds | holds | holds | pass |
+| Validation suite | 67 of 74 | 67 of 74 | 67 | pass |
+
+### Reported
+
+- The merged station still fails. PM simulated 219 against 122 counted, GEH 7.4; the baseline pair summed to 241. AM 225 against 103, GEH 9.5.
+- The fit moved flow between the two ramp links more than it cut the total. PM link 4080 fell from 91 to 31 and link 4058 rose from 150 to 187.
+- Five diagonal stations, PM (counted 178): shipped view 495 to 539, training view 1234 to 1253.
+- Flips: three fail to pass (Canning St 62nd to 63rd NB in the PM; Colby St 62nd to 63rd NB and 60th St Canning to Telegraph EB in the AM, the last borderline). None pass to fail apart from the member's pass lost to the merge.
+- Shattuck Ave NB, PM: 266 to 297 s.
+
+### Verdict
+
+Decision by the project lead, 2026-11-19: it passes narrowly and changes no status, so it is not adopted. The code stays on main, off by default, and may be combined with a later round.
+
 ## Forty-sixth round: a count-derived ramp peak-hour factor (change calibration-round-46)
 
 Fails the screen, not adopted (2026-11-19). The published network 53c823f20d9165ed, demand 9cdebdabf05c4460 and cross-validation demand 2f9ae152b9bbf78e stand. Simulator fingerprint d45a275dd7be0713cec6a64394b7d8a9 throughout. No ten-seed assessment ran.
