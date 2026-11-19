@@ -14,13 +14,13 @@
 
 ## 3. Schedule (D2), on the laptop (runbook.md)
 
-- [ ] 3.1 Pass 0: delays from the baseline runs (shipped and training demand, every period, seeds 1 to 10); refit
-- [ ] 3.2 Pass 1: delays from runs on the pass-0 demands; refit; stop. Report the movement between passes
-- [ ] 3.3 Record the hash of each pass's network, demand, training demand and delay files
+- [x] 3.1 Pass 0: delays from the baseline runs (shipped and training demand, every period, seeds 1 to 10); refit
+- [x] 3.2 Pass 1: delays from runs on the pass-0 demands; refit; stop. Report the movement between passes
+- [x] 3.3 Record the hash of each pass's network, demand, training demand and delay files
 
 ## 4. Evaluation
 
-- [ ] 4.1 Validation suite, same fingerprint
-- [ ] 4.2 Ten-seed assessment of the pass-1 demand
+- [x] 4.1 Validation suite, same fingerprint
+- [x] 4.2 Ten-seed assessment of the pass-1 demand
 - [ ] 4.3 Three-column table (2026-11-17 published, b1ff0ef baseline, candidate) and the keep-rule verdict
 - [ ] 4.4 Adopt (area note, caveat, areas.json, record) or reject (record only), archive, commit

@@ -1,0 +1,16 @@
+diff --git i/data/demand/rockridge.config.json w/data/demand/rockridge.config.json
+index 73a9749..86c3df2 100644
+--- i/data/demand/rockridge.config.json
++++ w/data/demand/rockridge.config.json
+@@ -594,6 +594,11 @@
+       "beta": 4,
+       "dispersion": 2,
+       "rounds": 2,
++      "controlDelays": {
++        "file": "data/demand/rockridge.control-delays.json",
++        "trainingFile": "data/demand/rockridge.control-delays.training.json",
++        "_note": "Round 44 (tools/control-delays.ts): measured control delay per approach link from ten-seed baseline runs replaces the control-type constants of crates/sim/data/node-delays.json where the approach carried at least 20 veh/h (ASSUMPTION). The training view reads its own file, measured on training-view demand. A file for another network, view or simulator is not used."
++      },
+       "measured": {
+         "file": "data/demand/rockridge.linkdelays.json",
+         "alpha": 0.0,
