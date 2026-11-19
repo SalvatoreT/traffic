@@ -1,0 +1,1237 @@
+{
+ "done": [
+  "i0-shipped-build",
+  "i0-shipped-runs",
+  "i0-training-build",
+  "i0-training-runs",
+  "i0-pool",
+  "i1-shipped-build",
+  "i1-shipped-runs",
+  "i1-training-build",
+  "i1-training-runs",
+  "i1-pool",
+  "i2-shipped-build",
+  "i2-shipped-runs",
+  "i2-training-build",
+  "i2-training-runs",
+  "i2-pool",
+  "final-shipped-build",
+  "final-training-build"
+ ],
+ "stoppedAfter": null,
+ "reports": [
+  {
+   "pass": 0,
+   "view": "shipped",
+   "period": "pm_peak",
+   "offered": 27612,
+   "selected": 337,
+   "withHits": 335,
+   "zeroHit": [
+    "ix sr24-clifton-claremont move 1600>1771",
+    "ix telegraph-51st move 1629>1764"
+   ],
+   "absent": [],
+   "shift": null
+  },
+  {
+   "pass": 0,
+   "view": "shipped",
+   "period": "am_peak",
+   "offered": 23204,
+   "selected": 272,
+   "withHits": 271,
+   "zeroHit": [
+    "ix telegraph-51st move 1629>1764"
+   ],
+   "absent": [],
+   "shift": null
+  },
+  {
+   "pass": 0,
+   "view": "training",
+   "period": "pm_peak",
+   "offered": 25044,
+   "selected": 256,
+   "withHits": 256,
+   "zeroHit": [],
+   "absent": [],
+   "shift": null
+  },
+  {
+   "pass": 0,
+   "view": "training",
+   "period": "am_peak",
+   "offered": 20584,
+   "selected": 201,
+   "withHits": 201,
+   "zeroHit": [],
+   "absent": [],
+   "shift": null
+  },
+  {
+   "pass": 1,
+   "view": "shipped",
+   "period": "pm_peak",
+   "offered": 24551,
+   "selected": 337,
+   "withHits": 335,
+   "zeroHit": [
+    "ix sr24-clifton-claremont move 1600>1771",
+    "ix telegraph-51st move 1629>1764"
+   ],
+   "absent": [],
+   "shift": {
+    "stations": 335,
+    "flowRms": 53.190162091157234,
+    "flowSeRms": 14.414769351469106,
+    "flowRatio": 3.6899766339817477,
+    "membershipRms": 358.2000188754716,
+    "membershipSeRms": 109.366145793648,
+    "membershipRatio": 3.275236740547877,
+    "converged": false
+   },
+   "ceiling": {
+    "stations": 1991,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 27609,
+    "finalTotal": 24550,
+    "byType": {
+     "static": {
+      "through": 5907,
+      "local": 10360,
+      "ramp": 11342
+     },
+     "final": {
+      "through": 4943,
+      "local": 8283,
+      "ramp": 11324
+     }
+    },
+    "gate": {
+     "stations": 216,
+     "above": 0,
+     "excess": 0,
+     "removed": 66
+    },
+    "nonGate": {
+     "stations": 1775,
+     "above": 0,
+     "excess": 0,
+     "removed": 40
+    },
+    "ends": {
+     "originInside": [
+      951,
+      777
+     ],
+     "originOutside": [
+      9523,
+      7862
+     ],
+     "destInside": [
+      734,
+      513
+     ],
+     "destOutside": [
+      7901,
+      6227
+     ]
+    }
+   }
+  },
+  {
+   "pass": 1,
+   "view": "shipped",
+   "period": "am_peak",
+   "offered": 21528,
+   "selected": 272,
+   "withHits": 271,
+   "zeroHit": [
+    "ix telegraph-51st move 1629>1764"
+   ],
+   "absent": [],
+   "shift": {
+    "stations": 271,
+    "flowRms": 52.81141062545976,
+    "flowSeRms": 11.995622749555416,
+    "flowRatio": 4.402556809934445,
+    "membershipRms": 250.3564943106993,
+    "membershipSeRms": 101.13802441622431,
+    "membershipRatio": 2.4753943509948346,
+    "converged": false
+   },
+   "ceiling": {
+    "stations": 2034,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 23202,
+    "finalTotal": 21527,
+    "byType": {
+     "static": {
+      "through": 3745,
+      "local": 9586,
+      "ramp": 9871
+     },
+     "final": {
+      "through": 3558,
+      "local": 8208,
+      "ramp": 9761
+     }
+    },
+    "gate": {
+     "stations": 217,
+     "above": 0,
+     "excess": 0,
+     "removed": 44
+    },
+    "nonGate": {
+     "stations": 1817,
+     "above": 0,
+     "excess": 0,
+     "removed": 34
+    },
+    "ends": {
+     "originInside": [
+      612,
+      522
+     ],
+     "originOutside": [
+      7488,
+      6472
+     ],
+     "destInside": [
+      528,
+      433
+     ],
+     "destOutside": [
+      8211,
+      6986
+     ]
+    }
+   }
+  },
+  {
+   "pass": 1,
+   "view": "training",
+   "period": "pm_peak",
+   "offered": 22798,
+   "selected": 256,
+   "withHits": 256,
+   "zeroHit": [],
+   "absent": [],
+   "shift": {
+    "stations": 256,
+    "flowRms": 61.19521306084735,
+    "flowSeRms": 15.753882761040567,
+    "flowRatio": 3.884452740259273,
+    "membershipRms": 339.33423655971336,
+    "membershipSeRms": 112.837089043305,
+    "membershipRatio": 3.0072934301724366,
+    "converged": false
+   },
+   "ceiling": {
+    "stations": 1959,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 25042,
+    "finalTotal": 22797,
+    "byType": {
+     "static": {
+      "through": 2785,
+      "local": 10873,
+      "ramp": 11384
+     },
+     "final": {
+      "through": 2809,
+      "local": 8612,
+      "ramp": 11375
+     }
+    },
+    "gate": {
+     "stations": 222,
+     "above": 0,
+     "excess": 0,
+     "removed": 141
+    },
+    "nonGate": {
+     "stations": 1737,
+     "above": 0,
+     "excess": 0,
+     "removed": 37
+    },
+    "ends": {
+     "originInside": [
+      1387,
+      1073
+     ],
+     "originOutside": [
+      8768,
+      7493
+     ],
+     "destInside": [
+      881,
+      643
+     ],
+     "destOutside": [
+      6740,
+      5367
+     ]
+    }
+   }
+  },
+  {
+   "pass": 1,
+   "view": "training",
+   "period": "am_peak",
+   "offered": 18989,
+   "selected": 201,
+   "withHits": 201,
+   "zeroHit": [],
+   "absent": [],
+   "shift": {
+    "stations": 201,
+    "flowRms": 62.2673624610895,
+    "flowSeRms": 16.433006700893774,
+    "flowRatio": 3.7891643078136665,
+    "membershipRms": 276.08455614051377,
+    "membershipSeRms": 102.63047821453232,
+    "membershipRatio": 2.6900835009596653,
+    "converged": false
+   },
+   "ceiling": {
+    "stations": 2022,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 20582,
+    "finalTotal": 18988,
+    "byType": {
+     "static": {
+      "through": 2455,
+      "local": 8314,
+      "ramp": 9813
+     },
+     "final": {
+      "through": 2526,
+      "local": 6673,
+      "ramp": 9789
+     }
+    },
+    "gate": {
+     "stations": 223,
+     "above": 0,
+     "excess": 0,
+     "removed": 69
+    },
+    "nonGate": {
+     "stations": 1799,
+     "above": 0,
+     "excess": 0,
+     "removed": 27
+    },
+    "ends": {
+     "originInside": [
+      1040,
+      885
+     ],
+     "originOutside": [
+      7095,
+      6033
+     ],
+     "destInside": [
+      735,
+      578
+     ],
+     "destOutside": [
+      5907,
+      4920
+     ]
+    }
+   }
+  },
+  {
+   "pass": 2,
+   "view": "shipped",
+   "period": "pm_peak",
+   "offered": 25018,
+   "selected": 337,
+   "withHits": 336,
+   "zeroHit": [
+    "ix telegraph-51st move 1629>1764"
+   ],
+   "absent": [],
+   "shift": {
+    "stations": 336,
+    "flowRms": 28.464736956451915,
+    "flowSeRms": 15.533561335951838,
+    "flowRatio": 1.8324668980172218,
+    "membershipRms": 206.71941891066322,
+    "membershipSeRms": 106.49973074103887,
+    "membershipRatio": 1.9410323150329378,
+    "converged": false
+   },
+   "ceiling": {
+    "stations": 1991,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 27609,
+    "finalTotal": 25017,
+    "byType": {
+     "static": {
+      "through": 5907,
+      "local": 10360,
+      "ramp": 11342
+     },
+     "final": {
+      "through": 5209,
+      "local": 8495,
+      "ramp": 11312
+     }
+    },
+    "gate": {
+     "stations": 216,
+     "above": 0,
+     "excess": 0,
+     "removed": 105
+    },
+    "nonGate": {
+     "stations": 1775,
+     "above": 0,
+     "excess": 0,
+     "removed": 66
+    },
+    "ends": {
+     "originInside": [
+      951,
+      743
+     ],
+     "originOutside": [
+      9523,
+      8228
+     ],
+     "destInside": [
+      734,
+      445
+     ],
+     "destOutside": [
+      7901,
+      6447
+     ]
+    }
+   }
+  },
+  {
+   "pass": 2,
+   "view": "shipped",
+   "period": "am_peak",
+   "offered": 21450,
+   "selected": 272,
+   "withHits": 271,
+   "zeroHit": [
+    "ix telegraph-51st move 1629>1764"
+   ],
+   "absent": [],
+   "shift": {
+    "stations": 271,
+    "flowRms": 37.570048229743335,
+    "flowSeRms": 12.205674044672374,
+    "flowRatio": 3.078080578937154,
+    "membershipRms": 133.49273664888065,
+    "membershipSeRms": 98.59974168502826,
+    "membershipRatio": 1.3538852573804527,
+    "converged": false
+   },
+   "ceiling": {
+    "stations": 2034,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 23202,
+    "finalTotal": 21449,
+    "byType": {
+     "static": {
+      "through": 3745,
+      "local": 9586,
+      "ramp": 9871
+     },
+     "final": {
+      "through": 3546,
+      "local": 8154,
+      "ramp": 9749
+     }
+    },
+    "gate": {
+     "stations": 217,
+     "above": 0,
+     "excess": 0,
+     "removed": 54
+    },
+    "nonGate": {
+     "stations": 1817,
+     "above": 0,
+     "excess": 0,
+     "removed": 47
+    },
+    "ends": {
+     "originInside": [
+      612,
+      536
+     ],
+     "originOutside": [
+      7488,
+      6442
+     ],
+     "destInside": [
+      528,
+      452
+     ],
+     "destOutside": [
+      8211,
+      6947
+     ]
+    }
+   }
+  },
+  {
+   "pass": 2,
+   "view": "training",
+   "period": "pm_peak",
+   "offered": 22719,
+   "selected": 256,
+   "withHits": 256,
+   "zeroHit": [],
+   "absent": [],
+   "shift": {
+    "stations": 255,
+    "flowRms": 26.53577681132384,
+    "flowSeRms": 16.827037067487197,
+    "flowRatio": 1.5769726247644418,
+    "membershipRms": 179.7049101863895,
+    "membershipSeRms": 107.60836586100878,
+    "membershipRatio": 1.6699901420164995,
+    "converged": false
+   },
+   "ceiling": {
+    "stations": 1959,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 25042,
+    "finalTotal": 22718,
+    "byType": {
+     "static": {
+      "through": 2785,
+      "local": 10873,
+      "ramp": 11384
+     },
+     "final": {
+      "through": 2851,
+      "local": 8493,
+      "ramp": 11374
+     }
+    },
+    "gate": {
+     "stations": 222,
+     "above": 0,
+     "excess": 0,
+     "removed": 190
+    },
+    "nonGate": {
+     "stations": 1737,
+     "above": 0,
+     "excess": 0,
+     "removed": 45
+    },
+    "ends": {
+     "originInside": [
+      1387,
+      1035
+     ],
+     "originOutside": [
+      8768,
+      7454
+     ],
+     "destInside": [
+      881,
+      592
+     ],
+     "destOutside": [
+      6740,
+      5271
+     ]
+    }
+   }
+  },
+  {
+   "pass": 2,
+   "view": "training",
+   "period": "am_peak",
+   "offered": 18874,
+   "selected": 201,
+   "withHits": 201,
+   "zeroHit": [],
+   "absent": [],
+   "shift": {
+    "stations": 201,
+    "flowRms": 32.05101344242593,
+    "flowSeRms": 16.651422547576306,
+    "flowRatio": 1.924821338888617,
+    "membershipRms": 158.50186620995976,
+    "membershipSeRms": 97.8230157064274,
+    "membershipRatio": 1.6202921681093245,
+    "converged": false
+   },
+   "ceiling": {
+    "stations": 2022,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 20582,
+    "finalTotal": 18873,
+    "byType": {
+     "static": {
+      "through": 2455,
+      "local": 8314,
+      "ramp": 9813
+     },
+     "final": {
+      "through": 2441,
+      "local": 6631,
+      "ramp": 9800
+     }
+    },
+    "gate": {
+     "stations": 223,
+     "above": 0,
+     "excess": 0,
+     "removed": 53
+    },
+    "nonGate": {
+     "stations": 1799,
+     "above": 0,
+     "excess": 0,
+     "removed": 30
+    },
+    "ends": {
+     "originInside": [
+      1040,
+      852
+     ],
+     "originOutside": [
+      7095,
+      5991
+     ],
+     "destInside": [
+      735,
+      570
+     ],
+     "destOutside": [
+      5907,
+      4810
+     ]
+    }
+   }
+  }
+ ],
+ "stationsSha": "c9db41c930acf37d63d842cbe0d2b89a67d7dd24150be0ef3adbaea2ef25937c",
+ "ceilings": {
+  "shipped:1": {
+   "am_peak": {
+    "stations": 2034,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 23202,
+    "finalTotal": 21527,
+    "byType": {
+     "static": {
+      "through": 3745,
+      "local": 9586,
+      "ramp": 9871
+     },
+     "final": {
+      "through": 3558,
+      "local": 8208,
+      "ramp": 9761
+     }
+    },
+    "gate": {
+     "stations": 217,
+     "above": 0,
+     "excess": 0,
+     "removed": 44
+    },
+    "nonGate": {
+     "stations": 1817,
+     "above": 0,
+     "excess": 0,
+     "removed": 34
+    },
+    "ends": {
+     "originInside": [
+      612,
+      522
+     ],
+     "originOutside": [
+      7488,
+      6472
+     ],
+     "destInside": [
+      528,
+      433
+     ],
+     "destOutside": [
+      8211,
+      6986
+     ]
+    }
+   },
+   "pm_peak": {
+    "stations": 1991,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 27609,
+    "finalTotal": 24550,
+    "byType": {
+     "static": {
+      "through": 5907,
+      "local": 10360,
+      "ramp": 11342
+     },
+     "final": {
+      "through": 4943,
+      "local": 8283,
+      "ramp": 11324
+     }
+    },
+    "gate": {
+     "stations": 216,
+     "above": 0,
+     "excess": 0,
+     "removed": 66
+    },
+    "nonGate": {
+     "stations": 1775,
+     "above": 0,
+     "excess": 0,
+     "removed": 40
+    },
+    "ends": {
+     "originInside": [
+      951,
+      777
+     ],
+     "originOutside": [
+      9523,
+      7862
+     ],
+     "destInside": [
+      734,
+      513
+     ],
+     "destOutside": [
+      7901,
+      6227
+     ]
+    }
+   }
+  },
+  "training:1": {
+   "am_peak": {
+    "stations": 2022,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 20582,
+    "finalTotal": 18988,
+    "byType": {
+     "static": {
+      "through": 2455,
+      "local": 8314,
+      "ramp": 9813
+     },
+     "final": {
+      "through": 2526,
+      "local": 6673,
+      "ramp": 9789
+     }
+    },
+    "gate": {
+     "stations": 223,
+     "above": 0,
+     "excess": 0,
+     "removed": 69
+    },
+    "nonGate": {
+     "stations": 1799,
+     "above": 0,
+     "excess": 0,
+     "removed": 27
+    },
+    "ends": {
+     "originInside": [
+      1040,
+      885
+     ],
+     "originOutside": [
+      7095,
+      6033
+     ],
+     "destInside": [
+      735,
+      578
+     ],
+     "destOutside": [
+      5907,
+      4920
+     ]
+    }
+   },
+   "pm_peak": {
+    "stations": 1959,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 25042,
+    "finalTotal": 22797,
+    "byType": {
+     "static": {
+      "through": 2785,
+      "local": 10873,
+      "ramp": 11384
+     },
+     "final": {
+      "through": 2809,
+      "local": 8612,
+      "ramp": 11375
+     }
+    },
+    "gate": {
+     "stations": 222,
+     "above": 0,
+     "excess": 0,
+     "removed": 141
+    },
+    "nonGate": {
+     "stations": 1737,
+     "above": 0,
+     "excess": 0,
+     "removed": 37
+    },
+    "ends": {
+     "originInside": [
+      1387,
+      1073
+     ],
+     "originOutside": [
+      8768,
+      7493
+     ],
+     "destInside": [
+      881,
+      643
+     ],
+     "destOutside": [
+      6740,
+      5367
+     ]
+    }
+   }
+  },
+  "shipped:2": {
+   "am_peak": {
+    "stations": 2034,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 23202,
+    "finalTotal": 21449,
+    "byType": {
+     "static": {
+      "through": 3745,
+      "local": 9586,
+      "ramp": 9871
+     },
+     "final": {
+      "through": 3546,
+      "local": 8154,
+      "ramp": 9749
+     }
+    },
+    "gate": {
+     "stations": 217,
+     "above": 0,
+     "excess": 0,
+     "removed": 54
+    },
+    "nonGate": {
+     "stations": 1817,
+     "above": 0,
+     "excess": 0,
+     "removed": 47
+    },
+    "ends": {
+     "originInside": [
+      612,
+      536
+     ],
+     "originOutside": [
+      7488,
+      6442
+     ],
+     "destInside": [
+      528,
+      452
+     ],
+     "destOutside": [
+      8211,
+      6947
+     ]
+    }
+   },
+   "pm_peak": {
+    "stations": 1991,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 27609,
+    "finalTotal": 25017,
+    "byType": {
+     "static": {
+      "through": 5907,
+      "local": 10360,
+      "ramp": 11342
+     },
+     "final": {
+      "through": 5209,
+      "local": 8495,
+      "ramp": 11312
+     }
+    },
+    "gate": {
+     "stations": 216,
+     "above": 0,
+     "excess": 0,
+     "removed": 105
+    },
+    "nonGate": {
+     "stations": 1775,
+     "above": 0,
+     "excess": 0,
+     "removed": 66
+    },
+    "ends": {
+     "originInside": [
+      951,
+      743
+     ],
+     "originOutside": [
+      9523,
+      8228
+     ],
+     "destInside": [
+      734,
+      445
+     ],
+     "destOutside": [
+      7901,
+      6447
+     ]
+    }
+   }
+  },
+  "training:2": {
+   "am_peak": {
+    "stations": 2022,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 20582,
+    "finalTotal": 18873,
+    "byType": {
+     "static": {
+      "through": 2455,
+      "local": 8314,
+      "ramp": 9813
+     },
+     "final": {
+      "through": 2441,
+      "local": 6631,
+      "ramp": 9800
+     }
+    },
+    "gate": {
+     "stations": 223,
+     "above": 0,
+     "excess": 0,
+     "removed": 53
+    },
+    "nonGate": {
+     "stations": 1799,
+     "above": 0,
+     "excess": 0,
+     "removed": 30
+    },
+    "ends": {
+     "originInside": [
+      1040,
+      852
+     ],
+     "originOutside": [
+      7095,
+      5991
+     ],
+     "destInside": [
+      735,
+      570
+     ],
+     "destOutside": [
+      5907,
+      4810
+     ]
+    }
+   },
+   "pm_peak": {
+    "stations": 1959,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 25042,
+    "finalTotal": 22718,
+    "byType": {
+     "static": {
+      "through": 2785,
+      "local": 10873,
+      "ramp": 11384
+     },
+     "final": {
+      "through": 2851,
+      "local": 8493,
+      "ramp": 11374
+     }
+    },
+    "gate": {
+     "stations": 222,
+     "above": 0,
+     "excess": 0,
+     "removed": 190
+    },
+    "nonGate": {
+     "stations": 1737,
+     "above": 0,
+     "excess": 0,
+     "removed": 45
+    },
+    "ends": {
+     "originInside": [
+      1387,
+      1035
+     ],
+     "originOutside": [
+      8768,
+      7454
+     ],
+     "destInside": [
+      881,
+      592
+     ],
+     "destOutside": [
+      6740,
+      5271
+     ]
+    }
+   }
+  },
+  "shipped:3": {
+   "am_peak": {
+    "stations": 2034,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 23202,
+    "finalTotal": 21428,
+    "byType": {
+     "static": {
+      "through": 3745,
+      "local": 9586,
+      "ramp": 9871
+     },
+     "final": {
+      "through": 3482,
+      "local": 8215,
+      "ramp": 9731
+     }
+    },
+    "gate": {
+     "stations": 217,
+     "above": 0,
+     "excess": 0,
+     "removed": 61
+    },
+    "nonGate": {
+     "stations": 1817,
+     "above": 0,
+     "excess": 0,
+     "removed": 50
+    },
+    "ends": {
+     "originInside": [
+      612,
+      529
+     ],
+     "originOutside": [
+      7488,
+      6455
+     ],
+     "destInside": [
+      528,
+      439
+     ],
+     "destOutside": [
+      8211,
+      6963
+     ]
+    }
+   },
+   "pm_peak": {
+    "stations": 1991,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 27609,
+    "finalTotal": 24953,
+    "byType": {
+     "static": {
+      "through": 5907,
+      "local": 10360,
+      "ramp": 11342
+     },
+     "final": {
+      "through": 5049,
+      "local": 8596,
+      "ramp": 11309
+     }
+    },
+    "gate": {
+     "stations": 216,
+     "above": 0,
+     "excess": 0,
+     "removed": 112
+    },
+    "nonGate": {
+     "stations": 1775,
+     "above": 0,
+     "excess": 0,
+     "removed": 69
+    },
+    "ends": {
+     "originInside": [
+      951,
+      743
+     ],
+     "originOutside": [
+      9523,
+      8202
+     ],
+     "destInside": [
+      734,
+      445
+     ],
+     "destOutside": [
+      7901,
+      6434
+     ]
+    }
+   }
+  },
+  "training:3": {
+   "am_peak": {
+    "stations": 2022,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 20582,
+    "finalTotal": 18895,
+    "byType": {
+     "static": {
+      "through": 2455,
+      "local": 8314,
+      "ramp": 9813
+     },
+     "final": {
+      "through": 2436,
+      "local": 6666,
+      "ramp": 9793
+     }
+    },
+    "gate": {
+     "stations": 223,
+     "above": 0,
+     "excess": 0,
+     "removed": 62
+    },
+    "nonGate": {
+     "stations": 1799,
+     "above": 0,
+     "excess": 0,
+     "removed": 30
+    },
+    "ends": {
+     "originInside": [
+      1040,
+      866
+     ],
+     "originOutside": [
+      7095,
+      6051
+     ],
+     "destInside": [
+      735,
+      561
+     ],
+     "destOutside": [
+      5907,
+      4799
+     ]
+    }
+   },
+   "pm_peak": {
+    "stations": 1959,
+    "above": 1,
+    "excess": 1,
+    "staticTotal": 25042,
+    "finalTotal": 22543,
+    "byType": {
+     "static": {
+      "through": 2785,
+      "local": 10873,
+      "ramp": 11384
+     },
+     "final": {
+      "through": 2744,
+      "local": 8425,
+      "ramp": 11373
+     }
+    },
+    "gate": {
+     "stations": 222,
+     "above": 1,
+     "excess": 1,
+     "removed": 209
+    },
+    "nonGate": {
+     "stations": 1737,
+     "above": 0,
+     "excess": 0,
+     "removed": 47
+    },
+    "ends": {
+     "originInside": [
+      1387,
+      1005
+     ],
+     "originOutside": [
+      8768,
+      7388
+     ],
+     "destInside": [
+      881,
+      565
+     ],
+     "destOutside": [
+      6740,
+      5222
+     ]
+    }
+   }
+  }
+ }
+}

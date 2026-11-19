@@ -1,7 +1,7 @@
 // Numerators and denominators of the southbound route shares and the whole-street traversals, ten-seed means from the per-seed calibrate reports
 // (60-minute runs at scale 1, so trips per run read as cars per hour). Read-only; prints Markdown.
 // usage: node shares.cjs <period> <label=dir> [<label=dir> ...]     (dir holds rockridge-<period>-s1-seed<N>.json for N = 1 to 10)
-// Round 50, PM: node openspec/changes/calibration-round-50/scripts/shares.cjs pm_peak baseline=target/assess-seeds/60r47-base candidate=target/assess-seeds/60r50 'baseline cv=target/assess-seeds/60r47-base-cv' 'candidate cv=target/assess-seeds/60r50-cv'
+// Round 50, PM: node openspec/changes/archive/2026-11-19-calibration-round-50/scripts/shares.cjs pm_peak baseline=target/assess-seeds/60r47-base candidate=target/assess-seeds/60r50 'baseline cv=target/assess-seeds/60r47-base-cv' 'candidate cv=target/assess-seeds/60r50-cv'
 const fs = require('fs');
 const [p = 'pm_peak', ...args] = process.argv.slice(2);
 if (!args.length) { console.error('usage: node shares.cjs <period> <label=dir> [<label=dir> ...]'); process.exit(2); }
