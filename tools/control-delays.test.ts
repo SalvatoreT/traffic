@@ -16,7 +16,7 @@ const links = [link(10, 0, 1), link(11, 1, 3), link(12, 0, 2), link(13, 2, 3)];
 const routeOf = (delays?: ArrayLike<number>) => {
   const g = buildGraph(nodes, links, [], 'pm', undefined, delays);
   let first: number[] = [];
-  assign(g, [{ origin: 0, destination: 3, vehPerHour: 100 }], 1, 0, [], (_k, r) => { first = r; });
+  assign(g, [{ origin: 0, destination: 3 }], 1, 0, [], (_k, r) => { first = r; });
   return first.map((i) => links[i].id);
 };
 
