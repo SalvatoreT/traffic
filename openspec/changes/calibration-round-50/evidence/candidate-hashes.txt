@@ -1,0 +1,5 @@
+53c823f20d9165ed  public/data/rockridge.network.json
+0a589118e2ef6719  public/data/rockridge.demand.json
+26f4b0bd65c74a3c  target/validation/rockridge.demand.json
+2854ebafc745f58d  target/membership/rockridge.membership-training.json
+994662b2f7280647  target/membership/rockridge.membership.json
