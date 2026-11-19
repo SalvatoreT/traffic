@@ -49,6 +49,10 @@ export async function runLoop(o: LoopOptions, r: Runner, log: (s: string) => voi
   const cfg = readJson<any>(resolve(o.root, o.configPath));
   const p = loopPaths(o.root, o.configPath, cfg);
   if (o.seeds.length < 2) throw new Error('at least two seeds are needed for a standard error');
+  if (!o.resume) {
+    const stale = [...(existsSync(o.dir) && readdirSync(o.dir).length ? [o.dir] : []), ...o.views.map((v) => p.membership[v]).filter((f) => existsSync(f))];
+    if (stale.length) throw new Error(`leftover loop files from an earlier run: ${stale.join(', ')}; move them away or pass --resume`);
+  }
   mkdirSync(o.dir, { recursive: true });
   const statePath = join(o.dir, 'state.json');
   const state: { done: string[]; stoppedAfter: number | null; reports: PassReport[]; stationsSha: string | null; ceilings?: Record<string, Record<string, CeilingStat>> } = o.resume && existsSync(statePath) ? readJson(statePath) : { done: [], stoppedAfter: null, reports: [], stationsSha: null };

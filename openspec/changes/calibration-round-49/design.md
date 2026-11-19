@@ -188,6 +188,10 @@ All builds used `--out-root`, so no file under `data/` or `public/data/` changed
 - Whether `assess --diagnostic` prints the backlog line on the laptop as the code says it does (P6). It was read, not run.
 - Where the per-gate "trips waiting at the end of the run" figures come from on the laptop. The per-seed calibrate report lists the top 10 origin nodes by entry backlog. Round 48's evidence scripts that tabulated all gates are not in the repository; if a gate is not in the top 10 the runbook has the laptop rerun one seed.
 
+## Found on the laptop
+
+On 2026-11-19, before any seed ran, the laptop found that a start without `--resume` did not clear the loop directory: leftover `iterK/<view>/demand.json` files from round 48 would have been reused, and leftover membership files would have been read by the pass-0 build. It moved the round 48 folders to `target/r48-loop/` and restarted. The driver now refuses to start without `--resume` when the loop directory is non-empty or a configured membership file exists; it deletes nothing.
+
 ## Risks
 
 - Ceilings that bind while counts disagree show up as stations outside tolerance in the fit report ("Stations that cannot be met"), which can lower fitted scores. The screen shows it early.

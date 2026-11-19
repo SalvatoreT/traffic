@@ -23,6 +23,8 @@ JOBS=12
 mkdir -p target/r49 openspec/changes/calibration-round-49/evidence
 ```
 
+Without `--resume` the loop driver refuses to start if `target/membership-loop/` is non-empty or a configured membership file already exists; move those away first (round 48's folders go to `target/r48-loop/`).
+
 Git-ignored inputs (`data/osm/*.json`, `data/demand/raw/`) are needed. Get them as in round 44: `data:pull` with the R2 credentials already on the laptop, or copy `data/osm` and `data/demand/raw` from a checkout that has them. `npm run data:fetch` may give other bytes; do not use it. The OSM extract must be the 2026-11-11 one: the importer must give network 53c823f20d9165ed in step B.
 
 ```
