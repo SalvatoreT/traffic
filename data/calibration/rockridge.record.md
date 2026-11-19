@@ -141,6 +141,45 @@ The remaining misses point to route choice in the simulation disagreeing with th
 - Field checks still open: the Howell St and Ayala Ave barricade (low confidence), the Forest St signal timing, and the stop signs at Hillegass Ave and 61st St and at Canning St and 62nd St.
 - To decide: the Caldecott Lane on-ramp pairing, and the held-out gate targets derived from annual average daily traffic.
 
+## Forty-sixth round: a count-derived ramp peak-hour factor (change calibration-round-46)
+
+Fails the screen, not adopted (2026-11-19). The published network 53c823f20d9165ed, demand 9cdebdabf05c4460 and cross-validation demand 2f9ae152b9bbf78e stand. Simulator fingerprint d45a275dd7be0713cec6a64394b7d8a9 throughout. No ten-seed assessment ran.
+
+### What was tried
+
+The ramp peak-hour factor K (`ramps.kFactor` 0.09, an unsourced ASSUMPTION) was replaced by a pooled ratio of counted PM ramp hours to ramp ADT (`countFit.rampK`, `tools/lib/ramp-k.ts`). The shipped view gives K 0.0734 from 5 counted ramps. The training view sees only 2 ramps because the split withholds three. `ramp-k-counted` requires 3 and falls back to 0.09 there; `ramp-k-counted-min2` accepts 2 and gets 0.0809. The 15 ADT x K stations (10 fitted, 5 held out) change in the shipped view. The keep rule (design D4) and the screen (D6) were written before any run.
+
+The run was on the project lead's laptop session on 2026-11-19, 7:03 to 7:44 AM Pacific (12 jobs, seeds 1 to 3, PM and AM). The gate reproduced the baseline hashes 53c823f20d9165ed, 9cdebdabf05c4460 and 2f9ae152b9bbf78e at the same fingerprint.
+
+| Candidate | Shipped demand | Training demand |
+| --- | --- | --- |
+| ramp-k-counted | 8a28540b43bc3a75 | 650b9f0e12d6f563 (periods equal to baseline) |
+| ramp-k-counted-min2 | 583834696da85cfd | 514c17c9f88af777 |
+
+### Screen: three seeds
+
+Stations within GEH 5 on seeds 1 to 3.
+
+| Run | PM fitted of 92 | PM held out of 24 | AM fitted of 77 | AM held out of 19 | PM gridlock in judged zone |
+| --- | --- | --- | --- | --- | --- |
+| baseline | 73 | 14 | 70 | 14 | none |
+| ramp-k-counted | 73 | 14 | 70 | 14 | 0.33 cars/h |
+| ramp-k-counted-min2 | 73 | 12 | 70 | 12 | 0.33 cars/h |
+
+Without the 15 changed stations, ramp-k-counted has PM fitted 71 of 89, the same as the baseline. The min2 held-out counts are 2 lower in each period, inside the screen's tolerance of 3.
+
+### Why both fail
+
+Screen D6 allows no car cleared from gridlock in the judged zone. In both candidates one car in one of three seeds was cleared at Alcatraz Ave / Racine St. That is 212 m from the study area, outside the 200 m judged zone. It counts because its blocked chain reached the zone. The buffer sensitivity is 0.00 at 100 m and 0.33 at 400 m. The rule was written before the run, so it was applied as written.
+
+### Beyond the screen (lead's judgment)
+
+The candidates show no improvement to pursue. PM, three-seed sum over the five diagonal stations (counted 178): shipped view baseline 520, both candidates 540; training view baseline 1253, ramp-k-counted 1253, min2 1228. Claremont Ave on-ramp (counted 598): shipped 794 to 783; min2 training 997 to 1054, although its stand-in target fell from 882 to 793. Telegraph Ave on-ramp, shipped: 913 to 774 (target 657 to 536). The shipped PM fitted flips cancel. Gains: Colby St 60th to 61st NB, Colby St Forest to McAuley NB, 62nd St Hillegass to Colby EB. Losses: 61st St Canning to Telegraph EB, McAuley St Colby to Ayala WB, Ayala Ave Hermann to Martin NB. The travel-time pass and fail pattern is unchanged.
+
+### Verdict
+
+Not adopted. The code is on main and off by default; `ramps.kFactor` 0.09 remains an unsourced ASSUMPTION. Next leads: round 47 (Caldecott Lane link-group station) and round 48 (simulated membership), both to run on the laptop.
+
 ## Router diagnosis for the diagonal (diagnostic, nothing adopted) (2026-11-19)
 
 Nothing shipped changed. Published network 53c823f2, demand 9cdebdab. Every run was a single seed (seed 1, PM peak, 60 min) in the cloud container, so every figure below is a diagnostic, not an assessment result. One seed moves the fitted-station pass count by about 3 and the diagonal sum by 10 to 15% between neighboring settings. The runs used the throwaway branch `router-diagnosis` (6bf5f6a), which adds environment switches to `eff.rs` and `sim.rs` plus scoring scripts under `tools/diag/`. It changes the simulator fingerprint source and is not for merge. The Shattuck tests changed network data only and ran on the original binary (fingerprint d45a275dd7be0713cec6a64394b7d8a9).

@@ -89,3 +89,16 @@ D10. The heavy runs (screens, validation, assessments) run on the user's laptop 
 - All candidates may fail. Then the record says so and nothing published changes.
 - Lower ramp targets reduce the through volume on the freeway side of the demand. The keep rule's D5 shares and the whole-street counts are the check for cars moving elsewhere.
 - A candidate may pass the fitted-station counts because the ramp targets it moved are easier to meet. The second fill of the keep rule (without those stations) is the check.
+
+## Outcome
+
+Fails screen D6, not adopted (2026-11-19). The laptop run was 7:03 to 7:44 AM Pacific, 12 jobs, seeds 1 to 3, PM and AM. The gate reproduced the baseline hashes (53c823f20d9165ed, 9cdebdabf05c4460, 2f9ae152b9bbf78e) at fingerprint d45a275dd7be0713cec6a64394b7d8a9. The full entry is in `data/calibration/rockridge.record.md`.
+
+- Baseline screen: PM fitted 73 of 92, PM held out 14 of 24, AM fitted 70 of 77, AM held out 14 of 19, no car cleared from gridlock in the judged zone.
+- `ramp-k-counted` (shipped 8a28540b43bc3a75, training 650b9f0e12d6f563): counts equal to the baseline (73, 14, 70, 14). Without the 15 changed stations, PM fitted is 71 of 89, as in the baseline. PM judged-zone gridlock is 0.33 cars/h (one car, one of three seeds), which fails D6.
+- `ramp-k-counted-min2` (shipped 583834696da85cfd, training 514c17c9f88af777): PM 73 of 92 and 12 of 24, AM 70 of 77 and 12 of 19. Held out is 2 lower in each period, within the tolerance of 3. The same one car fails D6.
+- The car was cleared at Alcatraz Ave / Racine St, 212 m from the study area and outside the 200 m judged zone. It counts because its blocked chain reached the zone. Buffer sensitivity: 100 m 0.00, 400 m 0.33. D6 allows zero and was written before the run, so it was not reinterpreted. No validation run or ten-seed assessment followed.
+
+Lead's judgment: beyond the screen, the candidates show no improvement to pursue. PM, three-seed sum over the five diagonal stations (counted 178): shipped view baseline 520, both candidates 540; training view baseline 1253, `ramp-k-counted` 1253, min2 1228. Claremont Ave on-ramp (counted 598): shipped 794 to 783; min2 training 997 to 1054 although its stand-in target fell from 882 to 793. Telegraph Ave on-ramp, shipped: 913 to 774 (target 657 to 536). The shipped PM fitted flips cancel: gains at Colby St 60th to 61st NB, Colby St Forest to McAuley NB and 62nd St Hillegass to Colby EB; losses at 61st St Canning to Telegraph EB, McAuley St Colby to Ayala WB and Ayala Ave Hermann to Martin NB. The travel-time pass and fail pattern is unchanged.
+
+Decision: not adopted. `tools/lib/ramp-k.ts` and `countFit.rampK` stay on main, off by default. `ramps.kFactor` 0.09 remains an unsourced ASSUMPTION. Next leads: round 47 (Caldecott Lane link-group station) and round 48 (simulated membership), both on the laptop.
