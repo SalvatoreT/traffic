@@ -1,0 +1,66 @@
+2026-11-18 08:04:58 PM PST B: cargo build
+2026-11-18 08:04:58 PM PST B: fingerprint d45a275dd7be0713cec6a64394b7d8a9
+2026-11-18 08:04:58 PM PST B: npm run data
+2026-11-18 08:14:14 PM PST B: npm run data exit=0 wall_s=556
+2026-11-18 08:14:14 PM PST B: hashes 53c823f20d9165ed 9cdebdabf05c4460 2f9ae152b9bbf78e 
+2026-11-18 08:14:14 PM PST B: git status under data/: 0 line(s)
+2026-11-18 08:14:14 PM PST C: baseline screen
+2026-11-18 08:15:32 PM PST C: assess exit=0 wall_s=78
+2026-11-18 08:15:32 PM PST BC done
+2026-11-18 08:15:53 PM PST forest-25 D: start
+2026-11-18 08:15:53 PM PST forest-25 D: status before apply: ?? openspec/changes/calibration-round-45/evidence/;
+applied forest-25
+2026-11-18 08:15:53 PM PST forest-25 D:  1 file changed, 2 insertions(+)
+2026-11-18 08:25:11 PM PST forest-25 D: npm run data exit=0 wall_s=558
+2026-11-18 08:25:11 PM PST forest-25 D: hashes 176cc2f5263d5faf b109f88b583a4462 4caa790802774b25 
+2026-11-18 08:25:11 PM PST forest-25 D: links identical: True | nodes that differ: [1069] | node count 1762 1762
+2026-11-18 08:25:11 PM PST forest-25 D: public/data/rockridge.demand.json periods identical: true target/validation/rockridge.demand.json periods identical: true 
+2026-11-18 08:25:11 PM PST forest-25 E: screen
+2026-11-18 08:26:28 PM PST forest-25 E: assess exit=0 wall_s=77
+2026-11-18 08:26:28 PM PST forest-25 E: plan-issue lines naming Forest Street: 0
+2026-11-18 08:26:28 PM PST forest-25 E: {"counts":{"am_peak":{"fitted":69,"fittedOf":77,"held":14,"heldOf":19},"pm_peak":{"fitted":73,"fittedOf":92,"held":12,"heldOf":24}},"gridlock":{"am_peak":{"scope":"judged zone","mean":0,"min":0,"max":0},"pm_peak":{"scope":"judged zone","mean":0,"min":0,"max":0}}}
+2026-11-18 08:26:28 PM PST forest-25 E: screen decision: PASS
+2026-11-18 08:26:28 PM PST forest-25 F: validate
+2026-11-18 08:26:51 PM PST forest-25 F: validate exit=0 r6   Route choice: share on a route 120 s (20%) costlier than the other, no link in common     0.01 [0.00 .. 0.04]  0.35 ok 67 of 74 cases pass wrote <worktree>/crates/sim/../../data/calibration/validation.md wrote <worktree>/crates/sim/../../data/calibration/validation.json 
+2026-11-18 08:26:51 PM PST forest-25 F: changed after validate:  M data/calibration/validation.json;
+2026-11-18 08:29:23 PM PST forest-25 F: assess exit=0 wall_s=152
+2026-11-18 08:29:23 PM PST forest-25 done; status: ?? openspec/changes/calibration-round-45/evidence/;
+2026-11-18 08:29:23 PM PST forest-18 D: start
+2026-11-18 08:29:23 PM PST forest-18 D: status before apply: ?? openspec/changes/calibration-round-45/evidence/;
+applied forest-18
+2026-11-18 08:29:24 PM PST forest-18 D:  1 file changed, 2 insertions(+)
+2026-11-18 08:38:42 PM PST forest-18 D: npm run data exit=0 wall_s=558
+2026-11-18 08:38:42 PM PST forest-18 D: hashes 29606b40ec23be91 d9e3b333f5eb94d6 c42216f3e257d672 
+2026-11-18 08:38:42 PM PST forest-18 D: links identical: True | nodes that differ: [1069] | node count 1762 1762
+2026-11-18 08:38:42 PM PST forest-18 D: public/data/rockridge.demand.json periods identical: true target/validation/rockridge.demand.json periods identical: true 
+2026-11-18 08:38:42 PM PST forest-18 E: screen
+2026-11-18 08:40:00 PM PST forest-18 E: assess exit=0 wall_s=78
+2026-11-18 08:40:00 PM PST forest-18 E: plan-issue lines naming Forest Street: 0
+2026-11-18 08:40:00 PM PST forest-18 E: {"counts":{"am_peak":{"fitted":71,"fittedOf":77,"held":13,"heldOf":19},"pm_peak":{"fitted":74,"fittedOf":92,"held":12,"heldOf":24}},"gridlock":{"am_peak":{"scope":"judged zone","mean":0,"min":0,"max":0},"pm_peak":{"scope":"judged zone","mean":0,"min":0,"max":0}}}
+2026-11-18 08:40:00 PM PST forest-18 E: screen decision: PASS
+2026-11-18 08:40:00 PM PST forest-18 F: validate
+2026-11-18 08:40:22 PM PST forest-18 F: validate exit=0 r6   Route choice: share on a route 120 s (20%) costlier than the other, no link in common     0.01 [0.00 .. 0.04]  0.35 ok 67 of 74 cases pass wrote <worktree>/crates/sim/../../data/calibration/validation.md wrote <worktree>/crates/sim/../../data/calibration/validation.json 
+2026-11-18 08:40:22 PM PST forest-18 F: changed after validate:  M data/calibration/validation.json;
+2026-11-18 08:42:54 PM PST forest-18 F: assess exit=0 wall_s=152
+2026-11-18 08:42:55 PM PST forest-18 done; status: ?? openspec/changes/calibration-round-45/evidence/;
+2026-11-18 08:42:55 PM PST forest-12 D: start
+2026-11-18 08:42:55 PM PST forest-12 D: status before apply: ?? openspec/changes/calibration-round-45/evidence/;
+applied forest-12
+2026-11-18 08:42:55 PM PST forest-12 D:  1 file changed, 2 insertions(+)
+2026-11-18 08:52:12 PM PST forest-12 D: npm run data exit=0 wall_s=557
+2026-11-18 08:52:12 PM PST forest-12 D: hashes 611804b2c98aa041 e4ea8ad62e5c0e26 6276ffe774338037 
+2026-11-18 08:52:12 PM PST forest-12 D: links identical: True | nodes that differ: [1069] | node count 1762 1762
+2026-11-18 08:52:12 PM PST forest-12 D: public/data/rockridge.demand.json periods identical: true target/validation/rockridge.demand.json periods identical: true 
+2026-11-18 08:52:12 PM PST forest-12 E: screen
+2026-11-18 08:53:29 PM PST forest-12 E: assess exit=0 wall_s=77
+2026-11-18 08:53:29 PM PST forest-12 E: plan-issue lines naming Forest Street: 0
+2026-11-18 08:53:29 PM PST forest-12 E: {"counts":{"am_peak":{"fitted":70,"fittedOf":77,"held":12,"heldOf":19},"pm_peak":{"fitted":74,"fittedOf":92,"held":13,"heldOf":24}},"gridlock":{"am_peak":{"scope":"judged zone","mean":0,"min":0,"max":0},"pm_peak":{"scope":"judged zone","mean":0,"min":0,"max":0}}}
+2026-11-18 08:53:29 PM PST forest-12 E: screen decision: PASS
+2026-11-18 08:53:29 PM PST forest-12 F: validate
+2026-11-18 08:53:52 PM PST forest-12 F: validate exit=0 r6   Route choice: share on a route 120 s (20%) costlier than the other, no link in common     0.01 [0.00 .. 0.04]  0.35 ok 67 of 74 cases pass wrote <worktree>/crates/sim/../../data/calibration/validation.md wrote <worktree>/crates/sim/../../data/calibration/validation.json 
+2026-11-18 08:53:52 PM PST forest-12 F: changed after validate:  M data/calibration/validation.json;
+2026-11-18 08:56:25 PM PST forest-12 F: assess exit=0 wall_s=153
+2026-11-18 08:56:25 PM PST forest-12 done; status: ?? openspec/changes/calibration-round-45/evidence/;
+2026-11-18 08:56:25 PM PST restore: npm run data on the clean config
+2026-11-18 09:05:42 PM PST restore: exit=0 hashes 53c823f20d9165ed 9cdebdabf05c4460 2f9ae152b9bbf78e  status: ?? openspec/changes/calibration-round-45/evidence/;
+2026-11-18 09:05:42 PM PST ALL DONE
