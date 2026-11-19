@@ -17,7 +17,7 @@ export type DetectorEnd = 'start' | 'stop';
 
 export interface Station {
   id: string;
-  kind: 'gate' | 'tmc' | 'caltrans' | 'ramp' | 'count';
+  kind: 'gate' | 'tmc' | 'caltrans' | 'ramp' | 'count' | 'gate-prior';
   label: string;
   /** DATA, or DATA with an ASSUMPTION factor (what the factor is). */
   basis: string;
@@ -51,6 +51,8 @@ export interface Station {
   outOfFit?: boolean;
   /** Source observations the target derives from (lineage.ts); defaults to the record keys without direction. */
   observations?: string[];
+  /** One-sided station: the constraint acts only while the assigned volume is above this value (then it pulls toward `target`). Used by the gate prior ceilings (round 49). */
+  ceiling?: number;
 }
 
 /** Source observations of a station: stations that share one are one dependency group in the validation split. */
@@ -303,6 +305,64 @@ export interface FitConfig {
   guard: { enabled: boolean; excessShare: number; weight: number; capacity: CapTable };
   /** Through-car targets on named street runs (calibration round 39); see `throughConstraints`. */
   through?: ThroughFit;
+  /** Ceilings on the car totals of gates that no gate station counts, anchored on the static fit (calibration round 49, `countFit.gatePriorTotals`, off by default); see `gatePriorStations`. */
+  gatePrior?: GatePriorConfig;
+}
+
+/** `tolerancePct` and `weight` are ASSUMPTIONS (a regularizer toward the static fit, no reference): 0 lets simulated membership move a gate's trips among pairs but add none; weight 10 is five times the ramp weight. `gateIds` are the network's gate nodes (surface gates and freeway mainline gates). */
+export interface GatePriorConfig { tolerancePct: number; weight: number; gateIds: number[] }
+export interface GatePriorRow { node: number; direction: 'origin' | 'destination'; street: string; anchor: number; ceiling: number; /** Total before the hard projection, and the final total. */ beforeProjection: number; final: number }
+/** What the hard projection took off (veh/h) and what it cost the count fit: fitted stations within their tolerance before and after. */
+export interface GateProjection { removed: number; worst: { node: number; direction: 'origin' | 'destination'; street: string; removed: number }[]; stations: number; withinBefore: number; withinAfter: number }
+export interface GatePriorReport { tolerancePct: number; weight: number; rows: GatePriorRow[]; /** Car veh/h of the static fit of the period (the anchor) and of the final fit, in all and by flow type. */ staticTotal: number; finalTotal: number; staticByType: Record<string, number>; finalByType: Record<string, number>; projection: GateProjection }
+
+/**
+ * Hard projection onto the ceilings (round 49): scales the flows of every ceiling gate direction whose total exceeds its ceiling by more than 0.1% down to the
+ * ceiling, alternating over the stations until none does. A pass only ever lowers flows, so it terminates. Returns the new volumes and, per station id, the volume removed.
+ */
+export function projectToCeilings(volume: number[], flows: { origin: number; destination: number }[], stations: Station[], maxPass = 200): { volume: number[]; removed: Map<string, number> } {
+  const v = volume.slice(), removed = new Map<string, number>();
+  const idx = (pick: (f: { origin: number; destination: number }) => number) => { const m = new Map<number, number[]>(); flows.forEach((f, k) => { const n = pick(f); (m.get(n) ?? m.set(n, []).get(n)!).push(k); }); return m; };
+  const byO = idx((f) => f.origin), byD = idx((f) => f.destination);
+  for (let pass = 0; pass < maxPass; pass++) {
+    let changed = false;
+    for (const q of stations) {
+      const ks = (q.origins ? byO.get(q.origins[0]) : byD.get(q.destinations![0])) ?? [];
+      const total = ks.reduce((a, k) => a + v[k], 0);
+      if (total > q.ceiling! * 1.001) { const m = q.ceiling! / total; for (const k of ks) v[k] *= m; removed.set(q.id, (removed.get(q.id) ?? 0) + total - q.ceiling!); changed = true; }
+    }
+    if (!changed) break;
+  }
+  return { volume: v, removed };
+}
+
+/**
+ * One-sided ceiling stations for the gate directions that no gate station holds in this period. A direction is covered when a station of kind 'gate'
+ * that is in the fit (`counted`) names the node as an origin (entering) or a destination (leaving). For every other direction of every gate with trips,
+ * the ceiling is the gate's car total in `flows` (the volumes of the static fit of the same view and period, so no count value is read) times
+ * (1 + tolerancePct / 100). The station has no links and static membership 1 (every flow that starts, or ends, at the node), so it only caps the gate's total.
+ */
+export function gatePriorStations(id: string, flows: { origin: number; destination: number; vehPerHour: number }[], counted: Pick<Station, 'kind' | 'origins' | 'destinations'>[], cfg: GatePriorConfig, streetOf: (node: number) => string): Station[] {
+  const coveredO = new Set<number>(), coveredD = new Set<number>();
+  for (const q of counted) if (q.kind === 'gate') { for (const o of q.origins ?? []) coveredO.add(o); for (const d of q.destinations ?? []) coveredD.add(d); }
+  const gate = new Set(cfg.gateIds), outV = new Map<number, number>(), inV = new Map<number, number>();
+  for (const f of flows) {
+    if (gate.has(f.origin)) outV.set(f.origin, (outV.get(f.origin) ?? 0) + f.vehPerHour);
+    if (gate.has(f.destination)) inV.set(f.destination, (inV.get(f.destination) ?? 0) + f.vehPerHour);
+  }
+  const out: Station[] = [];
+  const make = (node: number, direction: 'origin' | 'destination', total: number) => {
+    const ceiling = total * (1 + cfg.tolerancePct / 100);
+    out.push({
+      id: `gate-prior ${direction} ${node}`, kind: 'gate-prior', label: `gate ${node} ${streetOf(node)} ${direction === 'origin' ? 'entering' : 'leaving'} (ceiling)`, basis: `ASSUMPTION (the gate's total in the static fit plus ${cfg.tolerancePct}%, no count)`,
+      links: [], ...(direction === 'origin' ? { origins: [node] } : { destinations: [node] }), target: { [id]: ceiling }, ceiling, weight: cfg.weight, tolPct: cfg.tolerancePct, records: [],
+    });
+  };
+  for (const node of [...cfg.gateIds].sort((x, y) => x - y)) {
+    if ((outV.get(node) ?? 0) > 0 && !coveredO.has(node)) make(node, 'origin', outV.get(node)!);
+    if ((inV.get(node) ?? 0) > 0 && !coveredD.has(node)) make(node, 'destination', inV.get(node)!);
+  }
+  return out;
 }
 
 /**
@@ -380,6 +440,8 @@ export interface PeriodResult {
   shareRows: { spec: ShareSpec; offered: number; afterFit: number; final: number; n: number }[];
   /** Through-car targets: the figure under the proportions the fit used (measured or static) and under the static route shares, offered and final. */
   throughRows: { t: ThroughTarget; target: number; lo: number; hi: number; oneSided: boolean; measured: boolean; offered: number; final: number; staticOffered: number; staticFinal: number }[];
+  /** Gate prior ceilings (round 49); absent when the switch is off. */
+  gatePrior?: GatePriorReport;
   unroutable: number;
   graphBans: number;
   cons: number;
@@ -412,7 +474,7 @@ export function fitPeriod(
   const thr = (cfg.through?.targets ?? []).filter((t) => (t.target[id] ?? 0) > 0 && t.links.length);
   for (const t of thr) { featOf.set(t.id, features.length); features.push({ kind: 'any', links: t.links }); }
   const pinnedK = (k: number) => !!flows[k].via;
-  const toCons = (s: Station): Constraint => ({ id: s.id, kind: s.kind, label: s.label, links: s.links, origins: s.origins, destinations: s.destinations, target: s.target[id], weight: s.weightByPeriod?.[id] ?? s.weight, feature: featOf.get(s.id) });
+  const toCons = (s: Station): Constraint => ({ id: s.id, kind: s.kind, label: s.label, links: s.links, origins: s.origins, destinations: s.destinations, target: s.target[id], weight: s.weightByPeriod?.[id] ?? s.weight, feature: featOf.get(s.id), ...(s.ceiling !== undefined ? { ceiling: s.ceiling, ceilingOnly: true } : {}) });
   const heldCons: Constraint[] = stations.filter((s) => s.held && (s.target[id] ?? 0) > 0).map(toCons);
   const countCons0: Constraint[] = stations.filter((s) => !s.held && (s.target[id] ?? 0) > 0).map(toCons);
   // Named movement and route stations with simulated pairs for this period take a simulated membership (round 41); the others keep their route feature.
@@ -420,6 +482,16 @@ export function fitPeriod(
   // The loader verifies the station definitions and detector-count version before accepting measured OD fractions.
   const wanted = cfg.through?.measuredStations;
   const measSt = new Set((wanted === 'all' ? countCons0.map((c) => c.id) : wanted ?? []).filter((sid) => stMeas?.hits[sid] && (featOf.has(sid) || countCons0.some((c) => c.id === sid && c.links.length))));
+  // Ceilings on the gates no gate station counts (round 49, ASSUMPTION). Only where simulated membership is in use: the fit runs once as the baseline does (static membership, no
+  // ceilings), and the fit with simulated membership may not take a gate above that fit's total. They live inside the fit only: not in `stations`, not scored, not in the stations file.
+  const incident = (n: number) => links.find((l) => (l.from === n || l.to === n) && l.name)?.name || '(unnamed)';
+  let staticFit: PeriodResult | undefined;
+  let priorSt: Station[] = [];
+  if (cfg.gatePrior && measSt.size) {
+    staticFit = fitPeriod(id, flows, types, stations, nodes, links, bans, { ...cfg, gatePrior: undefined, through: cfg.through ? { ...cfg.through, measured: undefined, measuredStations: undefined } : undefined });
+    priorSt = gatePriorStations(id, flows.map((f, k) => ({ origin: f.origin, destination: f.destination, vehPerHour: staticFit!.volume[k] })), countCons0 as Pick<Station, 'kind' | 'origins' | 'destinations'>[], cfg.gatePrior, incident);
+  }
+  const priorCons: Constraint[] = priorSt.map(toCons);
   const stationCons = (aa: Assignment): Constraint[] => {
     if (!measSt.size) return countCons0;
     return countCons0.map((c) => {
@@ -456,7 +528,7 @@ export function fitPeriod(
     const throughCons: Constraint[] = cfg.through?.reportOnly ? [] : thr.map((t, i) => ({
       id: t.id, kind: 'through', label: t.label, links: [], target: t.target[id], weight: t.weight, member: mem[i].use, ...(t.ceiling.includes(id) ? { ceiling: t.hi[id] } : {}),
     }));
-    const counts = [...stationCons(a), ...throughCons];
+    const counts = [...stationCons(a), ...priorCons, ...throughCons];
     return { a, specs, implied, mem, counts, cons: [...counts, ...impliedCons, ...shareCons] };
   };
   const offered = load(v0);
@@ -471,6 +543,12 @@ export function fitPeriod(
       ? fitToCounts(input.a, v0, types, input.cons, nL, fitOpt, undefined, cfg.guard.enabled ? { limit, weight: cfg.guard.weight } : undefined) : r1;
     f1 = v0.map((v, k) => input.a.routable[k] ? v * r1.g[k] : v);
     volume = v0.map((v, k) => input.a.routable[k] ? v * rFinal.g[k] : v);
+  }
+  // Hard projection onto the ceilings (round 49): the soft ceilings plan around them, this guarantees them on the final flows (after the median rule and the guard cut).
+  let projection: { pre: number[]; removed: Map<string, number> } | undefined;
+  if (priorSt.length) {
+    const pr = projectToCeilings(volume, flows, priorSt);
+    if (pr.removed.size) { projection = { pre: volume, removed: pr.removed }; volume = pr.volume; }
   }
   const shipped = reload(volume);
   const countOnly = f1.every((v, k) => v === volume[k]) ? shipped : reload(f1);
@@ -506,11 +584,26 @@ export function fitPeriod(
   const impliedRows = input.implied.map((iv) => { const i = byId.get(iv.id)!; return { iv, before: before[i], afterFit: afterFit[i], final: final[i] }; });
   const dot = (m: ArrayLike<number>, f: ArrayLike<number>) => { let x = 0; for (let k = 0; k < f.length; k++) x += m[k] * f[k]; return x; };
   const throughRows = thr.map((t, i) => ({ t, target: t.target[id], lo: t.lo[id], hi: t.hi[id], oneSided: t.ceiling.includes(id), measured: !!cfg.through?.measured?.[id]?.hits[t.id], offered: dot(offered.mem[i].use, v0), final: dot(shipped.mem[i].use, volume), staticOffered: dot(offered.mem[i].stat, v0), staticFinal: dot(shipped.mem[i].stat, volume) }));
+  const tolOf = new Map(stations.map((q) => [q.id, q.tolPct]));
+  const within = (r: ReturnType<typeof load>, vol: number[]) => {
+    const cs = r.counts.filter((c) => c.kind !== 'gate-prior' && c.kind !== 'through' && c.target > 0);
+    const got = assigned(r.a, vol, cs, nL);
+    return cs.reduce((n, c, i) => n + (Math.abs(got[i] / c.target - 1) <= (tolOf.get(c.id) ?? 15) / 100 ? 1 : 0), 0);
+  };
+  const preVol = projection?.pre ?? volume;
+  const sideTotal = (q: Station, vol: number[]) => { let t = 0; flows.forEach((f, k) => { if (q.origins ? f.origin === q.origins[0] : f.destination === q.destinations![0]) t += vol[k]; }); return t; };
+  const nWithin = priorSt.length ? within(shipped, volume) : 0;
+  const gatePrior: GatePriorReport | undefined = cfg.gatePrior && staticFit ? {
+    tolerancePct: cfg.gatePrior.tolerancePct, weight: cfg.gatePrior.weight, staticTotal: Object.values(staticFit.totals).reduce((x, q) => x + q.final, 0), finalTotal: t2.through + t2.local + t2.ramp,
+    staticByType: Object.fromEntries(Object.entries(staticFit.totals).map(([k, q]) => [k, q.final])), finalByType: { ...t2 },
+    projection: { removed: projection ? [...projection.removed.values()].reduce((x, y) => x + y, 0) : 0, stations: shipped.counts.filter((c) => c.kind !== 'gate-prior' && c.kind !== 'through' && c.target > 0).length, withinBefore: projection ? within(reload(preVol), preVol) : nWithin, withinAfter: nWithin, worst: priorSt.map((q) => ({ node: (q.origins ?? q.destinations!)[0], direction: q.origins ? 'origin' as const : 'destination' as const, street: incident((q.origins ?? q.destinations!)[0]), removed: projection?.removed.get(q.id) ?? 0 })).filter((x) => x.removed > 0).sort((x, y) => y.removed - x.removed).slice(0, 5) },
+    rows: priorSt.map((q) => ({ node: (q.origins ?? q.destinations!)[0], direction: q.origins ? 'origin' as const : 'destination' as const, street: incident((q.origins ?? q.destinations!)[0]), anchor: q.ceiling! / (1 + cfg.gatePrior!.tolerancePct / 100), ceiling: q.ceiling!, beforeProjection: sideTotal(q, preVol), final: final[byId.get(q.id)!] })),
+  } : undefined;
   const heldIdx = heldCons.length ? { b: assigned(offered.a, v0, heldCons, nL), f1: assigned(countOnly.a, f1, heldCons, nL), f: assigned(a, volume, heldCons, nL) } : null;
   const heldRows = heldCons.map((c, i) => ({ st: stations.find((q) => q.id === c.id)!, target: c.target, before: heldIdx!.b[i], afterFit: heldIdx!.f1[i], final: heldIdx!.f[i] }));
   const stationRows = stations.filter((s) => byId.has(s.id)).map((s) => { const i = byId.get(s.id)!; return { st: s, target: cons[i].target, before: before[i], afterFit: afterFit[i], final: final[i] }; });
   const guardRemoved = Object.values(totals).reduce((x, q) => x + q.afterFit - q.final, 0);
-  return { id, volume, totals, stationRows, fit: rFinal, gFinal: [...rFinal.g], counted: rFinal.counted, types, guardBound, guardRemoved, guardFlows, residualOver, shareRows, heldRows, impliedRows, throughRows, unroutable: [...a.routable].filter((x) => !x).length, graphBans: g.banned, cons: countCons0.length, notes, offeredAssignment: offered.a, assignment: a };
+  return { id, volume, totals, stationRows, fit: rFinal, gFinal: [...rFinal.g], counted: rFinal.counted, types, guardBound, guardRemoved, guardFlows, residualOver, shareRows, heldRows, impliedRows, throughRows, ...(gatePrior ? { gatePrior } : {}), unroutable: [...a.routable].filter((x) => !x).length, graphBans: g.banned, cons: countCons0.length, notes, offeredAssignment: offered.a, assignment: a };
 }
 
 // ---------- report ----------
@@ -541,6 +634,23 @@ export function fitReport(area: string, results: PeriodResult[], flowsBy: Record
       L.push(`| ${r.id} | ${t} | ${f0(q.start)} | ${f0(q.afterFit)} | ${f0(q.final)} | ${f0(q.start - q.afterFit)} | ${f0(q.afterFit - q.final)} | ${pctOf(q.final, q.start)} |`);
     }
     L.push(`| ${r.id} | **all** | ${f0(s0)} | ${f0(s1)} | ${f0(s2)} | ${f0(s0 - s1)} | ${f0(s1 - s2)} | ${pctOf(s2, s0)} |`);
+  }
+  if (results.some((r) => r.gatePrior)) {
+    const gp = results.find((r) => r.gatePrior)!.gatePrior!;
+    L.push('', '## Gate prior ceilings (ASSUMPTION)', '', `In a period whose stations take simulated membership, the fit first runs as the baseline does (static membership, no ceilings). Each gate direction that no gate count holds in the period (no gate station in the fit names it) then has a one-sided ceiling: its car total in that static fit plus ${gp.tolerancePct}%, weight ${gp.weight}. The ceiling acts only while the gate's assigned total is above it, reads no count value, and does not change how flows that touch no count are treated. After the fit (median rule and guard cut included) a hard projection scales the flows of every ceiling gate direction still more than 0.1% above its ceiling down to it, so the ceilings hold on the final flows; the cost to the count fit is the change in fitted stations within their tolerance. A regularizer toward the static fit; the tolerance and the weight are assumptions, not data. Excess = final total above the ceiling (more than 0.5 veh/h). Periods without simulated membership have no ceilings.`, '');
+    const byType = (o: Record<string, number>) => ['through', 'local', 'ramp'].map((t) => `${t} ${f0(o[t] ?? 0)}`).join(', ');
+    for (const r of results) {
+      const g = r.gatePrior;
+      if (!g) { L.push(`Gate prior ceilings ${r.id}: none (static membership in this period).`, ''); continue; }
+      const over = g.rows.filter((x) => x.final > x.ceiling + 0.5), excess = over.reduce((a, x) => a + x.final - x.ceiling, 0), pj = g.projection;
+      L.push(`Gate prior ceilings ${r.id}: ${g.rows.length} stations; ${over.length} above ceiling; excess ${f0(excess)} veh/h; offered car ${f0(g.staticTotal)} to ${f0(g.finalTotal)} veh/h.`, '', `Offered car veh/h by flow type, static fit then final: ${byType(g.staticByType)}; ${byType(g.finalByType)}.`, '',
+        `Hard projection ${r.id}: removed ${f0(pj.removed)} veh/h from ${pj.worst.length ? 'gate flows (worst five below)' : 'no gate'}; fitted stations within their tolerance before ${pj.withinBefore} and after ${pj.withinAfter} of ${pj.stations}.`, '');
+      if (pj.worst.length) {
+        L.push('| Gate node | Street | Direction | Static fit (ceiling) | Total before the projection | Final | Removed |', '| --- | --- | --- | --- | --- | --- | --- |');
+        for (const x of pj.worst) { const row = g.rows.find((y) => y.node === x.node && y.direction === x.direction)!; L.push(`| ${x.node} | ${x.street} | ${x.direction === 'origin' ? 'entering' : 'leaving'} | ${f0(row.ceiling)} | ${f0(row.beforeProjection)} | ${f0(row.final)} | ${f0(x.removed)} |`); }
+        L.push('');
+      }
+    }
   }
   L.push('', '## Fit status and per-flow factors', '', 'Stopping errors and conflicts describe the last fitting iteration. The station tables score each resulting demand after routing it at its own volumes. Factor = final volume / offered volume of a flow. Percentiles are volume-weighted over the offered volume. "At bound" counts flows on a counted link whose factor sits on the lower or upper bound.', '');
   L.push('| Period | Flows | Touch a count | Iterations | Stopped by | Worst error, unblocked stations | Worst error, all stations | Stations outside tolerance | Flows at lower bound | Flows at upper bound | Stations no flow crosses | Unroutable flows |', '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |');

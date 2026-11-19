@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { assertNoWithheld, checkFitReport, exportOf, iterationShift, iterationStats, planLoop, poolStations, selectStations, type RunSet, type StationRec } from './lib/membership-loop';
 import { loopPaths, renderReport, runLoop, type CalibrateJob, type Runner, type View } from './lib/membership-loop-run';
 import { hashFile } from './lib/run-manifest';
@@ -138,7 +138,7 @@ describe('plan', () => {
 });
 
 // A scratch checkout with a fake build and a fake calibrate that write what the real ones write.
-function scratch(opt: { flat: boolean; dropNote?: boolean }) {
+function scratch(opt: { flat: boolean; dropNote?: boolean; growth?: number }) {
   const root = mkdtempSync(join(tmpdir(), 'mloop-'));
   const w = (f: string, text: string) => { mkdirSync(join(root, f, '..'), { recursive: true }); writeFileSync(join(root, f), text); };
   const cfg = { area: 't', network: 'net.json', output: 'out/demand.json', countFit: { output: 'out/fit.md', stationsOutput: 'st.json', validation: { demandOutput: 'out/cv.json', splitFile: 'split.json' }, throughTargets: { simulatedMembership: { method: 'export-supported', file: 'm/ship.json', trainingFile: 'm/train.json', priorTrips: 5 } } } };
@@ -162,6 +162,7 @@ function scratch(opt: { flat: boolean; dropNote?: boolean }) {
       const lines = prior && !opt.dropNote
         ? [`- Simulated membership from ${paths.membershipConfig[view]} (${view} view)`, ...Object.entries(prior.periods).map(([q, v]: [string, any]) => `- ${q}: stations whose membership comes from simulated trips (${v.stations.runs} runs; ${Object.keys(v.stations.hits).length} of ${Object.keys(v.stations.hits).length + 1} fitted stations; their assigned volumes in the station tables use it): ${Object.keys(v.stations.hits).join(', ')}`)]
         : prior ? [`- ${paths.membershipConfig[view]} lacks matching source, detector, split or demand-view evidence. Using static membership.`] : [`- No simulated membership file for the ${view} view (${paths.membershipConfig[view]}). Using static route shares.`];
+      if (opt.growth !== undefined) lines.push(...['pm_peak', 'am_peak'].map((q) => `Gate prior ceilings ${q}: 3 stations; 0 above ceiling; excess 0 veh/h; offered car 1000 to ${Math.round(1000 * (1 + (prior ? opt.growth ?? 0 : 0)))} veh/h.`));
       writeFileSync(paths.report[view], lines.join('\n'));
     },
     async calibrate(jobs) {
@@ -205,12 +206,49 @@ describe('the loop with a fake build and a fake simulator', () => {
     expect(out.selected['training:pm_peak']).toBe(3);
     expect(renderReport(out, s.opts)).toMatch(/Zero hits/);
   });
+  it('refuses a non-empty loop directory without resume, before any build', async () => {
+    const s = scratch({ flat: true });
+    mkdirSync(s.opts.dir, { recursive: true });
+    writeFileSync(join(s.opts.dir, 'state.json'), '{}');
+    await expect(runLoop(s.opts, s.runner, () => undefined)).rejects.toThrow(/leftover loop files.*loop.*--resume/);
+    expect(s.builds).toEqual([]);
+  });
+  it('refuses a leftover membership file without resume, before any build', async () => {
+    const s = scratch({ flat: true });
+    mkdirSync(dirname(s.paths.membership.shipped), { recursive: true });
+    writeFileSync(s.paths.membership.shipped, '{}');
+    await expect(runLoop(s.opts, s.runner, () => undefined)).rejects.toThrow(new RegExp(`leftover loop files.*${s.paths.membership.shipped.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
+    expect(s.builds).toEqual([]);
+  });
+  it('accepts leftover files with resume and an empty or missing directory without it', async () => {
+    const s = scratch({ flat: true });
+    mkdirSync(s.opts.dir, { recursive: true });
+    await expect(runLoop(s.opts, s.runner, () => undefined)).resolves.toBeDefined();
+    const t = scratch({ flat: true });
+    mkdirSync(t.opts.dir, { recursive: true });
+    writeFileSync(join(t.opts.dir, 'state.json'), '{"done":[],"stoppedAfter":null,"reports":[],"stationsSha":null}');
+    await expect(runLoop({ ...t.opts, resume: true }, t.runner, () => undefined)).resolves.toBeDefined();
+  });
   it('runs all passes when the flows keep moving', async () => {
     const s = scratch({ flat: false });
     const out = await runLoop({ ...s.opts, seeds: [1, 2, 3, 4, 5, 6] }, s.runner, () => undefined);
     expect(out.stoppedEarly).toBe(false);
     expect(out.passes).toBe(3);
     expect(s.builds.length).toBe(2 * 4);
+  });
+  it('stops before the seed runs when offered demand grows more than 3% over the static fit', async () => {
+    const s = scratch({ flat: true, growth: 0.031 });
+    await expect(runLoop(s.opts, s.runner, () => undefined)).rejects.toThrow(/3\.1% above the static fit.*Stopping before this pass's seed runs/);
+    expect(s.jobsSeen.every((j) => j.demand.includes('iter0'))).toBe(true);
+    expect(s.jobsSeen.length).toBe(2 * 2 * 6);
+  });
+  it('carries on when the growth stays within 3% and reports the ceiling figures', async () => {
+    const s = scratch({ flat: true, growth: 0.029 });
+    const logs: string[] = [];
+    const out = await runLoop(s.opts, s.runner, (l) => logs.push(l));
+    expect(out.passes).toBe(2);
+    expect(logs.some((l) => /pass 1 shipped build: gate prior ceilings pm_peak 3 stations, 0 above ceiling/.test(l))).toBe(true);
+    expect(renderReport(out, s.opts)).toMatch(/Gate ceiling stations/);
   });
   it('fails loudly when a build falls back to static membership', async () => {
     const s = scratch({ flat: true, dropNote: true });

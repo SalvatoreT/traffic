@@ -1,0 +1,15 @@
+{
+  "gatePriorTotals": {
+    "anchor": "staticFit",
+    "tolerancePct": 0,
+    "weight": 10,
+    "_note": "Calibration round 49. In a period whose stations take simulated membership, the fit first runs as the baseline does (static membership, no ceilings); every gate direction that no gate station in the fit counts is then held, by a one-sided soft constraint of the given weight, to at most its car total in that static fit times (1 + tolerancePct / 100) (tools/lib/demand-fit.ts gatePriorStations). Simulated membership may move a gate's trips among pairs but not add trips at the gate. A regularizer toward the static fit: tolerancePct 0 and weight 10 (five times the ramp weight) are ASSUMPTIONS, not sourced. No count value sets a ceiling. Periods without simulated membership (the loop's pass 0, midday) have no ceilings and no second fit."
+  },
+  "simulatedMembership": {
+    "method": "export-supported",
+    "file": "target/membership/rockridge.membership.json",
+    "trainingFile": "target/membership/rockridge.membership-training.json",
+    "priorTrips": 5,
+    "_note": "Calibration round 48. Every fitted station the report binary exports (link stations with a detector list or counted at the block, movement and route stations) takes its membership from simulated trips: each pair's share of trips at the station over seed runs of the demand of the same view, pooled with equal weight over the loop's passes (tools/membership-loop.ts), with the static share as a prior worth priorTrips trips (ASSUMPTION). Stations without an export (gate totals) and periods without runs (midday) keep static membership. The training view reads trainingFile, built only from runs of the cross-validation demand and naming no withheld station. The files are under target/ and are not committed. While this entry is present it replaces the hand-picked measuredStations list and the measured file."
+  }
+}

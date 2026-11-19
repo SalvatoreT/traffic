@@ -1,0 +1,20 @@
+## Why
+
+Round 48 fitted every eligible station on the simulator's own route choice. Fitted counts rose and the diagonal overshoot in the training view halved. The fit also added 1,200 to 2,100 veh/h of car demand at gates with no count (109 of 123 gates). That demand queued at the SR-24 eastbound entry (node 602), San Pablo Ave (183) and the Claremont gates (1756, 1398), and the candidate failed D16, D5 and PM held out.
+
+Nothing in the fit holds the total of an uncounted gate. `fitToCounts` scales flows multiplicatively, every constraint is soft, and the bounds are only a lower and an upper factor per flow. When a counted station is short and the simulated membership says the missing trips come from an uncounted gate, the fit grows that gate.
+
+This round adds the missing constraint: a one-sided ceiling on the car total of every gate direction that no gate count holds, set from that gate's total in the static fit of the same view and period. It then runs the round 48 loop with the ceiling in place. A first version anchored the ceiling on each gate's total before the fit; the container builds showed that anchor sits far above the baseline's final totals (design.md, "Why the anchor moved").
+
+## What changes
+
+- A config entry `countFit.gatePriorTotals` (`{ "anchor": "staticFit", "tolerancePct": 0, "weight": 10 }`), absent by default. In a period whose stations take simulated membership, `fitPeriod` first runs the fit as the baseline does (static membership, no ceilings) and takes each uncovered gate direction's car total from that result. It then runs the fit with simulated membership plus a one-sided ceiling station (kind `gate-prior`, no links, static membership 1) per uncovered gate direction at that total. Simulated membership may move a gate's trips among pairs but may not add trips at any gate beyond what the static fit of the same view and period gives. Ceiling stations only cap: they do not make flows count as touching a count, so the median rule and the capacity guard treat unconstrained flows as before. After the fit, a hard projection lowers any ceiling gate direction still above its ceiling, so the ceilings hold on the final flows; the report states what it removed and what it cost the count fit. They live inside the fit only: not in the stations output, not scored by `calibrate` or `assess`, not in the split, not eligible for the membership rule.
+- Without a membership file for a period (the loop's pass 0, midday) no second fit runs and no ceiling applies, so pass 0 reproduces the baseline's demand periods.
+- A fit report section per period: number of ceiling stations, how many end above their ceiling and by how much (sum and the worst five gates), offered car demand of the static fit against the final fit, in all and by flow type. The membership loop's per-pass report carries the count above ceiling and the excess sum.
+- One candidate, `gate-ceiling-membership`: the round 48 simulated membership plus the ceilings, run through the three-pass loop, then a three-seed screen (with an added backlog line, because round 48 passed its screen and failed ten seeds on backlog), then ten seeds if the screen passes.
+- A loop abort: after a build from pass 1 on, offered car demand more than 3% above the static fit's in any view and period stops the driver before its seed runs (ASSUMPTION threshold).
+- No simulator, network or split change.
+
+## Impact
+
+Tools only. The simulator fingerprint stays d45a275dd7be0713cec6a64394b7d8a9 and the network stays 53c823f20d9165ed. With the entry absent the shipped demand stays 9cdebdabf05c4460 and the training demand 2f9ae152b9bbf78e. With the entry present the demand config's hash changes, so the provenance in the demand files changes; the demand periods stay the baseline's until a membership file is in use. From pass 1 of the loop each build runs the fit twice per period that takes simulated membership, so builds take about twice as long. If the candidate is adopted, the published proposals, results and redistribution files need a new search. If it fails the keep rule, nothing published changes.
