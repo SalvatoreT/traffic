@@ -1,1 +1,3 @@
 stop at D: low-demand warning
+lead decision: continue with E and F on the saved candidate after the low-demand stop
+screen PASS

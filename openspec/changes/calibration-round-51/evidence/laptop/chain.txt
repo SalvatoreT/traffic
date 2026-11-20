@@ -476,3 +476,21 @@ report: <worktree>/openspec/changes/calibration-round-51/evidence/membership-loo
 2026-11-19 05:30:59 PM PST restore: npm run data on the clean config
 2026-11-19 05:40:15 PM PST restore: exit=0 hashes 53c823f20d9165ed 9cdebdabf05c4460 2f9ae152b9bbf78e  status: ?? openspec/changes/calibration-round-51/evidence/;
 2026-11-19 05:40:15 PM PST ALL DONE (stopped in D)
+2026-11-19 06:33:11 PM PST RESUME round 51 at E on the saved candidate (lead decision), 8ada504
+applied shares-membership
+2026-11-19 06:33:11 PM PST E0: config sha256 1080597767aac58c
+2026-11-19 06:33:11 PM PST E0: hashes 53c823f20d9165ed 5d6be8a70618e905 7164fa2ab08f612a 74a88c864d406903 7d0fdb063236304d 
+2026-11-19 06:33:11 PM PST E0: stations file identical
+2026-11-19 06:33:11 PM PST E0: post-loop state restored; status  M data/demand/rockridge.config.json; M data/demand/rockridge.fit.cv.md; M data/demand/rockridge.fit.cv.stations-am_peak.md; M data/demand/rockridge.fit.cv.stations-pm_peak.md; M data/demand/rockridge.fit.md; M data/demand/rockridge.fit.stations-am_peak.md; M data/demand/rockridge.fit.stations-pm_peak.md;
+2026-11-19 06:33:11 PM PST E: screen
+2026-11-19 06:34:29 PM PST E: screen exit=0 wall_s=78
+2026-11-19 06:34:29 PM PST E: {"counts":{"am_peak":{"fitted":73,"fittedOf":77,"held":15,"heldOf":19},"pm_peak":{"fitted":81,"fittedOf":92,"held":15,"heldOf":24}},"gridlock":{"am_peak":{"scope":"judged zone","mean":0,"min":0,"max":0},"pm_peak":{"scope":"judged zone","mean":0,"min":0,"max":0}},"backlog":{"am_peak":{"k":3,"n":3,"mean":0.53,"max":0.88},"pm_peak":{"k":3,"n":3,"mean":1.19,"max":1.51}}}
+2026-11-19 06:34:29 PM PST E: screen decision: PASS
+2026-11-19 06:34:29 PM PST F: validate
+2026-11-19 06:34:51 PM PST F: validate exit=0 r6   Route choice: share on a route 120 s (20%) costlier than the other, no link in common     0.01 [0.00 .. 0.04]  0.35 ok 67 of 74 cases pass wrote <worktree>/crates/sim/../../data/calibration/validation.md wrote <worktree>/crates/sim/../../data/calibration/validation.json 
+2026-11-19 06:34:51 PM PST F: changed after validate:  M data/calibration/validation.json;
+2026-11-19 06:37:18 PM PST F: assess exit=0 wall_s=147
+2026-11-19 06:37:18 PM PST EF done
+2026-11-19 06:37:19 PM PST restore: npm run data on the clean config
+2026-11-19 06:46:37 PM PST restore: exit=0 hashes 53c823f20d9165ed 9cdebdabf05c4460 2f9ae152b9bbf78e  status: ?? openspec/changes/calibration-round-51/evidence/assess-r51.txt;?? openspec/changes/calibration-round-51/evidence/decision-r51.txt;?? openspec/changes/calibration-round-51/evidence/rockridge.assessment-r51-screen.md;?? openspec/changes/calibration-round-51/evidence/rockridge.assessment-r51.md;?? openspec/changes/calibration-round-51/evidence/screen-r51.json;?? openspec/changes/calibration-round-51/evidence/screen-r51.txt;?? openspec/changes/calibration-round-51/evidence/validate-r51.txt;
+2026-11-19 06:46:37 PM PST ALL DONE 
