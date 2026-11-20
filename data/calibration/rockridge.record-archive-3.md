@@ -1,6 +1,92 @@
 # Rockridge baseline calibration record: archive, part 3
 
-Rounds thirty to thirty-three, moved unchanged from `rockridge.record.md` in round 43 (2026-11-18); rounds thirty-four to thirty-six, moved unchanged in round 50 (2026-11-19); round thirty-seven, moved unchanged in round 51 (2026-11-19). Newer rounds are in `rockridge.record.md`; older ones in `rockridge.record-archive-2.md` and `rockridge.record-archive.md`.
+Rounds thirty to thirty-three, moved unchanged from `rockridge.record.md` in round 43 (2026-11-18); rounds thirty-four to thirty-six, moved unchanged in round 50 (2026-11-19); round thirty-seven, moved unchanged in round 51 (2026-11-19); round thirty-eight, moved unchanged when round 51 closed (2026-11-20). Newer rounds are in `rockridge.record.md`; older ones in `rockridge.record-archive-2.md` and `rockridge.record-archive.md`.
+
+## Thirty-eighth round: Telegraph Ave at Alcatraz Ave, the SR-24 mainline gate (change calibration-round-38)
+
+On 2026-11-16 the project lead kept the current model ("Keep the current model"). The delay-feedback refit is not adopted, because it reached the cut-through ranges partly by sending too little traffic toward the study area (Telegraph Ave at Alcatraz Ave, north leg, 763 veh/h against 1,064 counted) and by leaving 370 to 460 trips waiting at far entries. The entry-backlog check stays network-wide. This round looks at two measured errors of the shipped model: Telegraph Ave carries 1,307 veh/h at the Alcatraz Ave north leg, a fitted station counted at 1,064, and 143 trips per PM seed are still waiting at the SR-24 mainline gate at the end of the hour. Each change is kept only if validation and the network both improve on PM seeds 1 to 10 and 11 to 20. Through-car ranges, headline shares and held-out stations are checks, not targets. Decisions are in `openspec/changes/calibration-round-38/design.md`. Simulator fingerprint f0df1aabc323, network f9fa09a5726644d7, demand 1c798217e72fb1ba and cross-validation demand a367850a13850985, all unchanged. Times Pacific; the round ran on 2026-11-16.
+
+### Reproduction and memory
+
+`npm run data` in a fresh worktree reproduced the network, the demand and the cross-validation demand byte for byte. The container restarted during the round. Run alone with its memory sampled every second, a demand build peaked at 1.8 to 1.9 GB resident (shipped and training views, with and without measured delays) on a 16 GB machine, so the builds do not exhaust memory.
+
+### Step 1: why Telegraph Ave carries too much
+
+Fit = the demand fit's final assigned flow on the shipped demand; simulated = mean of PM seeds 1 to 10 on the shipped demand (seeds 11 to 20 in brackets).
+
+| Station (PM) | Counted | Fit | Simulated |
+| --- | --- | --- | --- |
+| Telegraph Ave at Alcatraz Ave, N leg entering (fitted) | 1,064 | 1,080 | 1,307 (1,368) |
+| Telegraph Ave at Alcatraz Ave, W leg entering (Alcatraz Ave from the west, fitted) | 547 | 569 | 285 (292) |
+| Telegraph Ave at Alcatraz Ave, S leg leaving (fitted) | 910 | 891 | 1,128 (1,168) |
+| Telegraph Ave at Alcatraz Ave, E leg leaving (held out) | 689 | 605 | 539 (555) |
+| SR-24 eastbound on-ramp at Telegraph Ave / 56th St (held out) | 657 | 789 | 979 (992) |
+| SR-24 westbound on-ramp at Claremont Ave / Hudson St (held out) | 598 | 727 | 853 (873) |
+| Telegraph Ave at 55th St, N leg entering (fitted) | 1,099 | 1,090 | 1,141 (1,162) |
+| Telegraph Ave at 52nd St, N leg entering (fitted) | 1,121 | 1,108 | 1,117 (1,187) |
+
+Link by link, Telegraph Ave southbound agrees from the north edge to Ashby Ave (697 assigned, 665 simulated). Past Ashby Ave the fit has 476 and the simulation 628: Ashby Ave westbound brings 466 into the junction against 337 and turns left onto Telegraph Ave. 66th St adds 94 more (131 against 37), and the excess reaches 228 at Alcatraz Ave. Alcatraz Ave eastbound from the west is one lane between Shattuck Ave and Telegraph Ave, with 35, 32 and 33 s of simulated delay per vehicle on the links into Shattuck Ave, Irwin Ct and Telegraph Ave. The excess stays on Telegraph Ave and leaves it at the 56th St on-ramp to SR-24 eastbound. Eastbound on-ramps farther east take less (Broadway, 219 against 359), and Ashby Ave eastbound toward Tunnel Rd carries 474 against 975, with 69 to 76 s of delay at Claremont Ave and at Domingo Ave (round 36's chain).
+
+The candidate causes, measured:
+- (a) Same trips, different routes. The shipped PM car flows were assigned again on the fit's own cost model, without a refit, adding the ten-seed simulated delay per vehicle to each link (control delay removed, as in the fit). With the fit's costs the north leg gets 1,082; with all measured delays 1,615; with half of them 1,347; with delays only on links within 200 m or 600 m of the study area, 958 and 1,109. At the W leg the figures are 580, 96, 300, 56 and 58 (simulated 285), and at the 56th St on-ramp 791, 1,266, 935, 753 and 743 (simulated 979). Over all non-freeway links with at least 100 veh/h, the root-mean-square difference from the simulated flows is 169 veh/h for the fit's costs, 171 with all delays, 130 with half and 199 and 203 with the zone-only delays. Half of the measured delay reproduces the simulator's routing best: drivers see delays smoothed per minute, 46% follow live guidance and each draws a perception error once. So the excess is cause (a), and the delays behind it lie mostly outside the judged zone.
+- (b) Assumed movements: none is on Telegraph Ave. The volunteer-count movements are about 280 veh/h of turns inside the study area; the large `via` volumes are the SR-24 off-ramp choices.
+- (c) Signal coordination: with it off (`--coord-max-m 0`, PM seeds 1 to 3) the north leg carries 1,271 against 1,321, so about 50 of the excess.
+- Live guidance: with it off (`--guided-share 0`) the north leg carries 1,350, so en-route switching is not the cause.
+
+### Step 2: the cures
+
+- Delays only in and around the judged zone were not built: at every buffer tried they reproduce the simulation worse than the current costs (step 1).
+- Damped feedback, tested. Method of successive averages with step 1/n [PowellSheffi1982]: with the free-flow costs as the first iterate and the simulated delays as the second, the link cost carries half the measured delay, which is also the weight that matched the simulation. `countFit.assignment.measured.weight` (default 1, unused by the shipped build) was added, and a demand built with weight 0.5, BPR alpha 0.15 and the ten-seed delays of the shipped demand in each period.
+
+| PM, seeds 1-10 (11-20) | Shipped | Half-weight delays |
+| --- | --- | --- |
+| Telegraph Ave at Alcatraz Ave, N leg | 1,307 (1,368) | 1,210 (1,191) |
+| Alcatraz Ave W leg / 56th St on-ramp | 285 / 979 (292 / 992) | 352 / 896 (338 / 912) |
+| Through cars HSB / CSB / HNB / CNB | 142 / 132 / 97 / 150 (146 / 139 / 96 / 152) | 138 / 134 / 94 / 154 (141 / 150 / 93 / 139) |
+| Headline error, shares within 10 points | 7.5, 3 of 4 (6.0, 3 of 4) | 5.5, 4 of 4 (7.0, 3 of 4) |
+| Cars cleared from gridlock an hour, all / judged | 1.1 / 0.6 (1.3 / 0.0) | 17.4 / 0.1 (15.2 / 0.2) |
+| Arterial speed, m/s | 8.26 (8.34) | 7.27 (7.29) |
+| Recent fitted stations GEH<5 | 75 of 92 (75) | 70 of 92 (70) |
+
+The far gridlock is at Avalon Ave / Claremont Blvd, Ashby Ave at Claremont Crescent and Claremont Ave, Martin Luther King Jr Way at 61st and 62nd St, and King St. The step halves the Telegraph Ave excess, but the network gets worse on both seed sets, so it is not kept.
+
+### Step 3: the SR-24 mainline gate
+
+The gate (node 602) has two first links: the four-lane mainline (no delay, all of its demand enters) and a three-lane, 75 m collector. The collector forks into the 52nd St off-ramp and the Martin Luther King Jr Way off-ramp, which drops from two lanes to one. The demand sends 1,630 veh/h to the second ramp and 1,009 to the first. The simulation passes 1,516 and 925 (counted 1,614 and 1,024), with 57 s of delay per vehicle on the two lanes before the drop. Validation case i5 puts the model's lane drop at 0.81 of one lane (1,542 veh/h), below the count on that ramp. That part of the waiting is a capacity limit of the model's lane drop. The backlog grows from minute 25, when the queue reaches the gate. Waiting trips then leave the gate in order per first link, so trips for the 52nd St ramp wait behind trips for the lane drop although they use other lanes. That part is an insertion artifact.
+
+New validation cases (in `validate.rs`, outside the fingerprint): h3, a 3-lane gate link admits 1,922 veh/h per lane (pass); h4, a gate onto a 3-lane fork with one branch queued back to the gate passes 0.43 of the free branch's flow (range 0.90 to 1.10, ASSUMPTION; fail, listed as a deviation, not reviewed). Tested engine fix: a waiting trip waits only behind trips for the same fork branch (fingerprint ba5e76c11ec1). Every other case is unchanged and h4 rises to 0.64. On PM seeds 1 to 10 (11 to 20) the trips waiting at the gate fall from 143 to 84 per seed (68), the backlog from 0.71% to 0.52% (0.57% to 0.44%), and the 52nd St off-ramp carries 990 (996) against 1,024 counted. The study area does not change: Telegraph Ave north leg 1,309 (1,376), through cars 143 / 139 / 97 / 151 (146 / 144 / 97 / 151), recent fitted stations 75 (74) of 92, mean fitted GEH 3.83 (3.78) against 3.73 (3.76). The fix was not landed: the station fit does not improve, the gain lies outside the study area, and a new fingerprint would mark every published proposal out of date. The patch is kept with the round's scratch output (`target/r38/gate-band.patch`).
+
+### Result: ten seeds
+
+The shipped model is unchanged, so `npm run assess -- --publish --noise` reproduced round 37 in every simulated figure, and PM seeds 11 to 20 equal round 37's runs seed for seed. Round 37 in brackets.
+
+| | Target | PM 1-10 | PM 11-20 | AM 1-10 | Midday 1-10 |
+| --- | --- | --- | --- | --- | --- |
+| Through cars HSB / CSB / HNB / CNB | 79-120 / 39-117 / 48-95 / 102-145 | 143 / 132 / 98 / 150 (same) | 146 / 140 / 96 / 152 (same) | no counts | no counts |
+| Headline shares HNB / CNB / HSB / CSB | 47 / 47 / 68 / 45 | 52.9 / 50.5 / 55.1 / 37.4, 3 of 4, error 7.5 (same) | 52.8 / 47.9 / 56.6 / 38.9, 3 of 4 (same) | 50.8 / 43.9 / 59.6 / 47.3 (same) | 52.6 / 37.2 / 62.8 / 45.5 (same) |
+| Cars cleared from gridlock per hour near the study area, judged (D16) | below 1 | 0.60 (same) | 0.00 (same) | 0.00 (same) | 0.00 (same) |
+| Far, with a chain into the zone | | 0.50, 0 (same) | 1.30, 0 (same) | 0.30, 0 (same) | 0, 0 (same) |
+| Entry backlog, mean %; trips waiting at zone origins / all at the end | below 2% | 0.71; 0.9 / 185 (same) | 0.57; 1.5 / 150 (same) | 0.03; 0.4 / 5.6 (same) | 0.01; 0.1 / 0.8 (same) |
+| Telegraph Ave NB / SB, s | PM 302-420 / 300-376; AM 280-315 / 245-285 | 345 / 317 (same) | | 294 / 299 (same) | |
+| Recent stations GEH<5, fitted / held out | above 85% | 75 of 92 (82%) / 13 of 24 (54%) (same) | | 67 of 77 (87%) / 14 of 19 (74%) (same) | no counts |
+
+Validation: 62 of 74 cases pass (61 of 72 in round 37, plus h3 passing and h4 failing). Failing: a3, e2, e3, j6, j8, j9, j12 (reviewed), l1, p2, p3, b13, h4 (not reviewed). WASM parity and trace identity: hold (`npm run check:wasm`, PM seed 1, 300 s: every field identical).
+
+### Verdict
+
+Status `uncalibrated`, rule by rule:
+- D16 (stability, judged near the study area, backlog network-wide): passes in every period: PM 0.60 and 0.00 judged cars cleared from gridlock an hour on the two seed sets, backlog under 2% in 10 of 10 seeds; AM and midday 0.00.
+- D5 (headline shares within 10 points): fails in the PM peak, 3 of 4 on both seed sets (Hillegass Ave SB 55 to 57 against 68).
+- Through cars on the four counted blocks: fail, all four above their ranges except Hillegass Ave NB at the top edge (98 and 96 against 48 to 95).
+- Station rule, recent counts within GEH 5 in at least 85%: PM fails fitted (82%) and held out (54%); AM passes fitted (87%) and fails held out (74%).
+- Telegraph Ave travel times: PM inside both ranges; AM southbound 299 s against 245 to 285.
+- Primitive validation: p2, p3, b13, l1 and h4 fail with no reviewed exception.
+
+### What remains off
+
+- Telegraph Ave at Alcatraz Ave stays 23% over its count, because the simulation routes freeway-bound trips around delays on Alcatraz Ave west of Telegraph Ave and on Ashby Ave toward Tunnel Rd that the fit's costs do not see. The half-weight fit halves it but brings far gridlock. Data that would settle it: a PM turning-movement count with queue lengths at Alcatraz Ave / Shattuck Ave and on the west approach of Alcatraz Ave / Telegraph Ave, a current count of the SR-24 eastbound on-ramp at Telegraph Ave / 56th St (the 2012 figure is held out), and the Claremont Ave / Russell St count named in round 36.
+- The SR-24 mainline gate keeps about 143 trips waiting per PM seed: the lane drop on the Martin Luther King Jr Way off-ramp (i5) and the gate order (h4). The tested fix is ready if the lead accepts a fingerprint change.
+- As before: the far gridlock, the queue-first left-turn model, the second eastbound lane on Ashby Ave, l1 and b13, the field checks of rounds 30 to 32, and stale stored proposal results, text pages and previews.
 
 ## Thirty-seventh round: gridlock judged near the Trapezoid (change calibration-round-37)
 

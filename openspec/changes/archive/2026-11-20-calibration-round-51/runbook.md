@@ -67,7 +67,7 @@ Write down from the "Status rules, per period" section the four station counts (
 
 ```
 git checkout data/demand; git status --short
-python3 openspec/changes/calibration-round-51/apply-candidate.py shares-membership
+python3 openspec/changes/archive/2026-11-20-calibration-round-51/apply-candidate.py shares-membership
 git diff --stat data/demand/rockridge.config.json                        # two blocks added, 18 lines; simulatedMembership has throughTargets and shares true
 npx tsx tools/membership-loop.ts --dry-run 2>&1 | tee openspec/changes/calibration-round-51/evidence/dry-run.txt
 ```

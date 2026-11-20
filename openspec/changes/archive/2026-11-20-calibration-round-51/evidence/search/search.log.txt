@@ -1,0 +1,275 @@
+baseline: 3 period(s) x 3 seed(s) at 60 min, plus 3 screening run(s) at 20 min
+  baseline pm_peak seed 1 60 min: cut-through 804 veh/h, unroutable 0, gridlock removed 0, backlog 246
+  baseline pm_peak seed 2 60 min: cut-through 831 veh/h, unroutable 0, gridlock removed 11, backlog 267
+  baseline pm_peak seed 3 60 min: cut-through 735 veh/h, unroutable 0, gridlock removed 7, backlog 364
+  baseline am_peak seed 1 60 min: cut-through 443 veh/h, unroutable 0, gridlock removed 0, backlog 109
+  baseline am_peak seed 2 60 min: cut-through 489 veh/h, unroutable 0, gridlock removed 0, backlog 188
+  baseline am_peak seed 3 60 min: cut-through 394 veh/h, unroutable 0, gridlock removed 1, backlog 42
+  baseline midday seed 1 60 min: cut-through 393 veh/h, unroutable 0, gridlock removed 0, backlog 2
+  baseline midday seed 2 60 min: cut-through 398 veh/h, unroutable 0, gridlock removed 0, backlog 2
+  baseline midday seed 3 60 min: cut-through 387 veh/h, unroutable 0, gridlock removed 0, backlog 0
+  baseline pm_peak seed 1 20 min: cut-through 663 veh/h, unroutable 0, gridlock removed 0, backlog 106
+  baseline pm_peak seed 2 20 min: cut-through 699 veh/h, unroutable 0, gridlock removed 2, backlog 48
+  baseline pm_peak seed 3 20 min: cut-through 627 veh/h, unroutable 0, gridlock removed 0, backlog 71
+baseline done in 34s; cut-through pm_peak 790 veh/h, am_peak 442 veh/h, midday 393 veh/h
+220 candidate interventions:
+    1 [node_filter] Modal filter at 63rd Street & Colby Street
+    2 [node_filter] Modal filter on 63rd Street at Colby Street
+    3 [control] All-way stop at 63rd Street & Colby Street
+    4 [node_filter] Modal filter at 63rd Street & Colby Street
+    5 [node_filter] Modal filter on 63rd Street at Colby Street
+    6 [control] All-way stop at 63rd Street & Colby Street
+    7 [node_filter] Modal filter at 60th Street & Colby Street
+    8 [node_filter] Modal filter on 60th Street at Colby Street
+    9 [node_filter] Modal filter on Colby Street at 60th Street
+   10 [diagonal_diverter] Diagonal diverter at 60th Street & Colby Street, connecting Colby Street (north) with 60th Street (west), and Colby Street (south) with 60th Street (east)
+   11 [diagonal_diverter] Diagonal diverter at 60th Street & Colby Street, connecting Colby Street (north) with 60th Street (east), and Colby Street (south) with 60th Street (west)
+   12 [traffic_circle] Traffic circle at 60th Street & Colby Street
+   13 [control] All-way stop at 60th Street & Colby Street
+   14 [node_filter] Modal filter at 62nd Street & Colby Street
+   15 [node_filter] Modal filter on 62nd Street at Colby Street
+   16 [node_filter] Modal filter on Colby Street at 62nd Street
+   17 [diagonal_diverter] Diagonal diverter at 62nd Street & Colby Street, connecting Colby Street (north) with 62nd Street (west), and Colby Street (south) with 62nd Street (east)
+   18 [diagonal_diverter] Diagonal diverter at 62nd Street & Colby Street, connecting Colby Street (north) with 62nd Street (east), and Colby Street (south) with 62nd Street (west)
+   19 [traffic_circle] Traffic circle at 62nd Street & Colby Street
+   20 [control] All-way stop at 62nd Street & Colby Street
+   21 [node_filter] Modal filter at Colby Street & North Street
+   22 [node_filter] Modal filter on North Street at Colby Street
+   23 [control] All-way stop at Colby Street & North Street
+   24 [modal_filter] Modal filter on Colby Street between North Street and Alcatraz Avenue
+   25 [one_way] One-way northbound on Colby Street between North Street and Alcatraz Avenue (toward Alcatraz Avenue)
+   26 [one_way] One-way southbound on Colby Street between North Street and Alcatraz Avenue (toward North Street)
+   27 [modal_filter] Modal filter on Colby Street at 63rd Street
+   28 [one_way] One-way northbound on Colby Street at 63rd Street (toward 63rd Street)
+   29 [one_way] One-way southbound on Colby Street at 63rd Street (toward 63rd Street)
+   30 [modal_filter] Modal filter on Colby Street between 63rd Street and North Street
+   31 [one_way] One-way northbound on Colby Street between 63rd Street and North Street (toward North Street)
+   32 [one_way] One-way southbound on Colby Street between 63rd Street and North Street (toward 63rd Street)
+   33 [node_filter] Modal filter at 61st Street & Colby Street
+   34 [node_filter] Modal filter on 61st Street at Colby Street
+   35 [node_filter] Modal filter on Colby Street at 61st Street
+   36 [diagonal_diverter] Diagonal diverter at 61st Street & Colby Street, connecting Colby Street (north) with 61st Street (west), and Colby Street (south) with 61st Street (east)
+   37 [diagonal_diverter] Diagonal diverter at 61st Street & Colby Street, connecting Colby Street (north) with 61st Street (east), and Colby Street (south) with 61st Street (west)
+   38 [traffic_circle] Traffic circle at 61st Street & Colby Street
+   39 [node_filter] Modal filter at 63rd Street & Hillegass Avenue
+   40 [node_filter] Modal filter on 63rd Street at Hillegass Avenue
+   41 [node_filter] Modal filter on Hillegass Avenue at 63rd Street
+   42 [diagonal_diverter] Diagonal diverter at 63rd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 63rd Street (west), and Hillegass Avenue (south) with 63rd Street (east)
+   43 [diagonal_diverter] Diagonal diverter at 63rd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 63rd Street (east), and Hillegass Avenue (south) with 63rd Street (west)
+   44 [traffic_circle] Traffic circle at 63rd Street & Hillegass Avenue
+   45 [modal_filter] Modal filter on Colby Street between 62nd Street and 63rd Street
+   46 [one_way] One-way northbound on Colby Street between 62nd Street and 63rd Street (toward 63rd Street)
+   47 [one_way] One-way southbound on Colby Street between 62nd Street and 63rd Street (toward 62nd Street)
+   48 [speed_hump] Speed hump on Colby Street between 62nd Street and 63rd Street
+   49 [modal_filter] Modal filter on Hillegass Avenue between Alcatraz Avenue and 63rd Street
+   50 [one_way] One-way southbound on Hillegass Avenue between Alcatraz Avenue and 63rd Street (toward 63rd Street)
+   51 [one_way] One-way northbound on Hillegass Avenue between Alcatraz Avenue and 63rd Street (toward Alcatraz Avenue)
+   52 [speed_hump] Speed hump on Hillegass Avenue between Alcatraz Avenue and 63rd Street
+   53 [node_filter] Modal filter at Colby Street & McAuley Street
+   54 [node_filter] Modal filter on McAuley Street at Colby Street
+   55 [control] All-way stop at Colby Street & McAuley Street
+   56 [signal_timing] Signal cycle 60 s at Claremont Avenue & Colby Street & +1
+   57 [signal_timing] Signal cycle 120 s at Claremont Avenue & Colby Street & +1
+   58 [modal_filter] Modal filter on Colby Street between McAuley Street and 60th Street
+   59 [one_way] One-way northbound on Colby Street between McAuley Street and 60th Street (toward 60th Street)
+   60 [one_way] One-way southbound on Colby Street between McAuley Street and 60th Street (toward McAuley Street)
+   61 [speed_hump] Speed hump on Colby Street between McAuley Street and 60th Street
+   62 [modal_filter] Modal filter on Colby Street between 60th Street and 61st Street
+   63 [one_way] One-way northbound on Colby Street between 60th Street and 61st Street (toward 61st Street)
+   64 [one_way] One-way southbound on Colby Street between 60th Street and 61st Street (toward 60th Street)
+   65 [node_filter] Modal filter at 62nd Street & Hillegass Avenue
+   66 [node_filter] Modal filter on 62nd Street at Hillegass Avenue
+   67 [node_filter] Modal filter on Hillegass Avenue at 62nd Street
+   68 [diagonal_diverter] Diagonal diverter at 62nd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 62nd Street (west), and Hillegass Avenue (south) with 62nd Street (east)
+   69 [diagonal_diverter] Diagonal diverter at 62nd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 62nd Street (east), and Hillegass Avenue (south) with 62nd Street (west)
+   70 [traffic_circle] Traffic circle at 62nd Street & Hillegass Avenue
+   71 [modal_filter] Modal filter on Colby Street between 61st Street and 62nd Street
+   72 [one_way] One-way northbound on Colby Street between 61st Street and 62nd Street (toward 62nd Street)
+   73 [one_way] One-way southbound on Colby Street between 61st Street and 62nd Street (toward 61st Street)
+   74 [control] All-way stop at Alcatraz Avenue & Colby Street
+   75 [modal_filter] Modal filter on Colby Street between Claremont Avenue / Forest Street and McAuley Street
+   76 [one_way] One-way northbound on Colby Street between Claremont Avenue / Forest Street and McAuley Street (toward McAuley Street)
+   77 [one_way] One-way southbound on Colby Street between Claremont Avenue / Forest Street and McAuley Street (toward Claremont Avenue and Forest Street)
+   78 [control] All-way stop at Alcatraz Avenue & Hillegass Avenue
+   79 [modal_filter] Modal filter on Hillegass Avenue between 63rd Street and 62nd Street
+   80 [one_way] One-way southbound on Hillegass Avenue between 63rd Street and 62nd Street (toward 62nd Street)
+   81 [one_way] One-way northbound on Hillegass Avenue between 63rd Street and 62nd Street (toward 63rd Street)
+   82 [node_filter] Modal filter at Ayala Avenue & Martin Street
+   83 [node_filter] Modal filter on Ayala Avenue at Martin Street
+   84 [node_filter] Modal filter on Martin Street at Ayala Avenue
+   85 [diagonal_diverter] Diagonal diverter at Ayala Avenue & Martin Street, connecting Ayala Avenue (north) with Martin Street (east), and Ayala Avenue (south) with Martin Street (west)
+   86 [diagonal_diverter] Diagonal diverter at Ayala Avenue & Martin Street, connecting Ayala Avenue (north) with Martin Street (west), and Ayala Avenue (south) with Martin Street (east)
+   87 [traffic_circle] Traffic circle at Ayala Avenue & Martin Street
+   88 [control] All-way stop at Ayala Avenue & Martin Street
+   89 [node_filter] Modal filter at 61st Street & Hillegass Avenue
+   90 [node_filter] Modal filter on 61st Street at Hillegass Avenue
+   91 [control] All-way stop at 61st Street & Hillegass Avenue
+   92 [modal_filter] Modal filter on Martin Street between Claremont Avenue and Ayala Avenue
+   93 [one_way] One-way westbound on Martin Street between Claremont Avenue and Ayala Avenue (toward Ayala Avenue)
+   94 [one_way] One-way eastbound on Martin Street between Claremont Avenue and Ayala Avenue (toward Claremont Avenue)
+   95 [speed_hump] Speed hump on Martin Street between Claremont Avenue and Ayala Avenue
+   96 [modal_filter] Modal filter on Hillegass Avenue between 62nd Street and 61st Street
+   97 [one_way] One-way southbound on Hillegass Avenue between 62nd Street and 61st Street (toward 61st Street)
+   98 [one_way] One-way northbound on Hillegass Avenue between 62nd Street and 61st Street (toward 62nd Street)
+   99 [speed_hump] Speed hump on Hillegass Avenue between 62nd Street and 61st Street
+  100 [modal_filter] Modal filter on Hillegass Avenue between 61st Street and 60th Street / Claremont Avenue
+  101 [one_way] One-way southbound on Hillegass Avenue between 61st Street and 60th Street / Claremont Avenue (toward 60th Street and Claremont Avenue)
+  102 [one_way] One-way northbound on Hillegass Avenue between 61st Street and 60th Street / Claremont Avenue (toward 61st Street)
+  103 [node_filter] Modal filter at Ayala Avenue & Howell Street
+  104 [node_filter] Modal filter on Howell Street at Ayala Avenue
+  105 [control] All-way stop at Ayala Avenue & Howell Street
+  106 [node_filter] Modal filter at Howell Street & McAuley Street
+  107 [node_filter] Modal filter on Howell Street at McAuley Street
+  108 [node_filter] Modal filter on McAuley Street at Howell Street
+  109 [diagonal_diverter] Diagonal diverter at Howell Street & McAuley Street, connecting Howell Street (north) with McAuley Street (west), and Howell Street (south) with McAuley Street (east)
+  110 [diagonal_diverter] Diagonal diverter at Howell Street & McAuley Street, connecting Howell Street (north) with McAuley Street (east), and Howell Street (south) with McAuley Street (west)
+  111 [traffic_circle] Traffic circle at Howell Street & McAuley Street
+  112 [control] All-way stop at Howell Street & McAuley Street
+  113 [node_filter] Modal filter at Ayala Avenue & Forest Street
+  114 [node_filter] Modal filter on Forest Street at Ayala Avenue
+  115 [control] All-way stop at Ayala Avenue & Forest Street
+  116 [modal_filter] Modal filter on Forest Street between Claremont Avenue / Colby Street and Ayala Avenue
+  117 [one_way] One-way westbound on Forest Street between Claremont Avenue / Colby Street and Ayala Avenue (toward Ayala Avenue)
+  118 [one_way] One-way eastbound on Forest Street between Claremont Avenue / Colby Street and Ayala Avenue (toward Claremont Avenue and Colby Street)
+  119 [speed_hump] Speed hump on Forest Street between Claremont Avenue / Colby Street and Ayala Avenue
+  120 [node_filter] Modal filter at 60th Street & Canning Street
+  121 [node_filter] Modal filter on 60th Street at Canning Street
+  122 [node_filter] Modal filter on Canning Street at 60th Street
+  123 [diagonal_diverter] Diagonal diverter at 60th Street & Canning Street, connecting Canning Street (north) with 60th Street (west), and Canning Street (south) with 60th Street (east)
+  124 [diagonal_diverter] Diagonal diverter at 60th Street & Canning Street, connecting Canning Street (north) with 60th Street (east), and Canning Street (south) with 60th Street (west)
+  125 [traffic_circle] Traffic circle at 60th Street & Canning Street
+  126 [node_filter] Modal filter at 59th Street & Howell Street
+  127 [node_filter] Modal filter on 59th Street at Howell Street
+  128 [control] All-way stop at 59th Street & Howell Street
+  129 [modal_filter] Modal filter on Howell Street between Ayala Avenue and 59th Street
+  130 [one_way] One-way westbound on Howell Street between Ayala Avenue and 59th Street (toward 59th Street)
+  131 [one_way] One-way southbound on Howell Street between Ayala Avenue and 59th Street (toward Ayala Avenue)
+  132 [speed_hump] Speed hump on Howell Street between Ayala Avenue and 59th Street
+  133 [modal_filter] Modal filter on Ayala Avenue between Martin Street and Howell Street
+  134 [one_way] One-way northbound on Ayala Avenue between Martin Street and Howell Street (toward Howell Street)
+  135 [one_way] One-way southbound on Ayala Avenue between Martin Street and Howell Street (toward Martin Street)
+  136 [speed_hump] Speed hump on Ayala Avenue between Martin Street and Howell Street
+  137 [modal_filter] Modal filter on 60th Street between Canning Street and Telegraph Avenue
+  138 [one_way] One-way westbound on 60th Street between Canning Street and Telegraph Avenue (toward Telegraph Avenue)
+  139 [one_way] One-way eastbound on 60th Street between Canning Street and Telegraph Avenue (toward Canning Street)
+  140 [speed_hump] Speed hump on 60th Street between Canning Street and Telegraph Avenue
+  141 [node_filter] Modal filter at Canning Street & McAuley Street
+  142 [node_filter] Modal filter on Canning Street at McAuley Street
+  143 [node_filter] Modal filter on McAuley Street at Canning Street
+  144 [diagonal_diverter] Diagonal diverter at Canning Street & McAuley Street, connecting Canning Street (north) with McAuley Street (west), and Canning Street (south) with McAuley Street (east)
+  145 [diagonal_diverter] Diagonal diverter at Canning Street & McAuley Street, connecting Canning Street (north) with McAuley Street (east), and Canning Street (south) with McAuley Street (west)
+  146 [traffic_circle] Traffic circle at Canning Street & McAuley Street
+  147 [control] All-way stop at Canning Street & McAuley Street
+  148 [node_filter] Modal filter at 60th Street & Howell Street
+  149 [node_filter] Modal filter on Howell Street at 60th Street
+  150 [control] All-way stop at 60th Street & Howell Street
+  151 [modal_filter] Modal filter on 60th Street between Howell Street and Canning Street
+  152 [one_way] One-way westbound on 60th Street between Howell Street and Canning Street (toward Canning Street)
+  153 [one_way] One-way eastbound on 60th Street between Howell Street and Canning Street (toward Howell Street)
+  154 [speed_hump] Speed hump on 60th Street between Howell Street and Canning Street
+  155 [node_filter] Modal filter at 58th Street & Hermann Street & +1
+  156 [node_filter] Modal filter on 58th Street at Hermann Street and Martin Street
+  157 [node_filter] Modal filter on Hermann Street at 58th Street and Martin Street
+  158 [node_filter] Modal filter on Martin Street at 58th Street and Hermann Street
+  159 [diagonal_diverter] Diagonal diverter at 58th Street & Hermann Street & +1, connecting Martin Street (southeast) with 58th Street (east), and Hermann Street (south) with 58th Street (west)
+  160 [diagonal_diverter] Diagonal diverter at 58th Street & Hermann Street & +1, connecting 58th Street (east) with 58th Street (west), and Hermann Street (south) with Martin Street (southeast)
+  161 [traffic_circle] Traffic circle at 58th Street & Hermann Street & +1
+  162 [control] All-way stop at 58th Street & Hermann Street & +1
+  163 [node_filter] Modal filter at 58th Street & Canning Street
+  164 [node_filter] Modal filter on Canning Street at 58th Street
+  165 [control] All-way stop at 58th Street & Canning Street
+  166 [modal_filter] Modal filter on 58th Street between Hermann Street / Martin Street and Canning Street
+  167 [one_way] One-way westbound on 58th Street between Hermann Street / Martin Street and Canning Street (toward Canning Street)
+  168 [one_way] One-way eastbound on 58th Street between Hermann Street / Martin Street and Canning Street (toward Hermann Street and Martin Street)
+  169 [speed_hump] Speed hump on 58th Street between Hermann Street / Martin Street and Canning Street
+  170 [node_filter] Modal filter at Ayala Avenue & McAuley Street
+  171 [node_filter] Modal filter on Ayala Avenue at McAuley Street
+  172 [control] All-way stop at Ayala Avenue & McAuley Street
+  173 [modal_filter] Modal filter on Martin Street between Ayala Avenue and 58th Street / Hermann Street
+  174 [one_way] One-way westbound on Martin Street between Ayala Avenue and 58th Street / Hermann Street (toward 58th Street and Hermann Street)
+  175 [one_way] One-way eastbound on Martin Street between Ayala Avenue and 58th Street / Hermann Street (toward Ayala Avenue)
+  176 [speed_hump] Speed hump on Martin Street between Ayala Avenue and 58th Street / Hermann Street
+  177 [node_filter] Modal filter at 63rd Street & Dana Street
+  178 [node_filter] Modal filter on Dana Street at 63rd Street
+  179 [control] All-way stop at 63rd Street & Dana Street
+  180 [modal_filter] Modal filter on Ayala Avenue between Forest Street and McAuley Street
+  181 [one_way] One-way northbound on Ayala Avenue between Forest Street and McAuley Street (toward McAuley Street)
+  182 [one_way] One-way southbound on Ayala Avenue between Forest Street and McAuley Street (toward Forest Street)
+  183 [speed_hump] Speed hump on Ayala Avenue between Forest Street and McAuley Street
+  184 [node_filter] Modal filter at 63rd Street & Canning Street
+  185 [node_filter] Modal filter on Canning Street at 63rd Street
+  186 [control] All-way stop at 63rd Street & Canning Street
+  187 [node_filter] Modal filter at 59th Street & Canning Street
+  188 [node_filter] Modal filter on 59th Street at Canning Street
+  189 [node_filter] Modal filter on Canning Street at 59th Street
+  190 [diagonal_diverter] Diagonal diverter at 59th Street & Canning Street, connecting Canning Street (north) with 59th Street (west), and Canning Street (south) with 59th Street (east)
+  191 [diagonal_diverter] Diagonal diverter at 59th Street & Canning Street, connecting Canning Street (north) with 59th Street (east), and Canning Street (south) with 59th Street (west)
+  192 [traffic_circle] Traffic circle at 59th Street & Canning Street
+  193 [modal_filter] Modal filter on Howell Street between 59th Street and McAuley Street
+  194 [one_way] One-way northbound on Howell Street between 59th Street and McAuley Street (toward McAuley Street)
+  195 [one_way] One-way southbound on Howell Street between 59th Street and McAuley Street (toward 59th Street)
+  196 [speed_hump] Speed hump on Howell Street between 59th Street and McAuley Street
+  197 [modal_filter] Modal filter on Ayala Avenue between Howell Street and Forest Street
+  198 [one_way] One-way northbound on Ayala Avenue between Howell Street and Forest Street (toward Forest Street)
+  199 [one_way] One-way southbound on Ayala Avenue between Howell Street and Forest Street (toward Howell Street)
+  200 [speed_hump] Speed hump on Ayala Avenue between Howell Street and Forest Street
+  201 [slow_street] Slow Street on Colby Street (15 mph, Alcatraz Avenue to Claremont Avenue / Forest Street)
+  202 [slow_street] Slow Street on Hillegass Avenue (15 mph, 60th Street / Claremont Avenue to Alcatraz Avenue)
+  203 [slow_street] Slow Street on Martin Street (15 mph, 58th Street / Hermann Street to Claremont Avenue)
+  204 [slow_street] Slow Street on Forest Street (15 mph, Ayala Avenue to Claremont Avenue / Colby Street)
+  205 [slow_street] Slow Street on Howell Street (15 mph, 60th Street to Ayala Avenue)
+  206 [slow_street] Slow Street on Ayala Avenue (15 mph, 57th Street to McAuley Street)
+  207 [slow_street] Slow Street on 60th Street (15 mph, Claremont Avenue / Hillegass Avenue to Telegraph Avenue)
+  208 [slow_street] Slow Street on 58th Street (15 mph, a dead end to Telegraph Avenue)
+  209 [slow_street] Slow Street on 62nd Street (15 mph, Claremont Avenue / College Avenue / +1 to Telegraph Avenue)
+  210 [slow_street] Slow Street on 63rd Street (15 mph, Colby Street to Telegraph Avenue; this connected stretch only, the street has another stretch in the study area)
+  211 [turn_ban] Turn ban at Claremont Avenue & Colby Street & +1: Claremont Avenue to Colby Street
+  212 [turn_ban] Turn ban at 60th Street & Claremont Avenue & +1: Claremont Avenue to Hillegass Avenue
+  213 [turn_ban] Turn ban at Claremont Avenue & Martin Street: Claremont Avenue to Martin Street
+  214 [turn_ban] Turn ban at Alcatraz Avenue & Hillegass Avenue: Alcatraz Avenue to Hillegass Avenue
+  215 [turn_ban] Turn ban at Alcatraz Avenue & Colby Street: Alcatraz Avenue to Colby Street
+  216 [turn_ban] Turn ban at 60th Street & Telegraph Avenue: Telegraph Avenue to 60th Street
+  217 [turn_ban] Turn ban at Alcatraz Avenue & Hillegass Avenue: Alcatraz Avenue to Hillegass Avenue
+  218 [turn_ban] Turn ban at Alcatraz Avenue & Colby Street: Alcatraz Avenue to Colby Street
+  219 [turn_ban] Turn ban at 63rd Street & College Avenue: College Avenue to 63rd Street
+  220 [turn_ban] Turn ban at 63rd Street & Telegraph Avenue: Telegraph Avenue to 63rd Street
+known package 18: not used, 8 interventions, more than the search depth of 6
+known packages: 20 loaded, 19 to recheck, 1 dropped
+depth 1: best so far +59.1 (cut-through -69.2%, harm 101 veh/h, 6 intervention(s)): Modal filter on Colby Street at 63rd Street; Modal filter on Colby Street at 61st Street; Diagonal diverter at 63rd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 63rd Street (west), and Hillegass Avenue (south) with 63rd Street (east); Modal filter at Colby Street & McAuley Street; Modal filter at Ayala Avenue & Martin Street; Modal filter at Ayala Avenue & Forest Street | evals 325 | 405s
+known packages: 19 famil(ies) screened, 5 starting point(s) for the beam, best +59.1
+depth 2: best so far +62.4 (cut-through -72.9%, harm 104 veh/h, 6 intervention(s)): Modal filter at 63rd Street & Colby Street; Diagonal diverter at 63rd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 63rd Street (west), and Hillegass Avenue (south) with 63rd Street (east); Modal filter at Colby Street & McAuley Street; Modal filter at Ayala Avenue & Martin Street; Modal filter at Ayala Avenue & Forest Street; Slow Street on Colby Street (15 mph, Alcatraz Avenue to Claremont Avenue / Forest Street) | evals 625 | 772s
+depth 3: best so far +62.4 (cut-through -72.9%, harm 104 veh/h, 6 intervention(s)): Modal filter at 63rd Street & Colby Street; Diagonal diverter at 63rd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 63rd Street (west), and Hillegass Avenue (south) with 63rd Street (east); Modal filter at Colby Street & McAuley Street; Modal filter at Ayala Avenue & Martin Street; Modal filter at Ayala Avenue & Forest Street; Slow Street on Colby Street (15 mph, Alcatraz Avenue to Claremont Avenue / Forest Street) | evals 819 | 1017s
+depth 3: no package beats the best of the previous level in this line; stopping it
+depth 4: best so far +62.4 (cut-through -72.9%, harm 104 veh/h, 6 intervention(s)): Modal filter at 63rd Street & Colby Street; Diagonal diverter at 63rd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 63rd Street (west), and Hillegass Avenue (south) with 63rd Street (east); Modal filter at Colby Street & McAuley Street; Modal filter at Ayala Avenue & Martin Street; Modal filter at Ayala Avenue & Forest Street; Slow Street on Colby Street (15 mph, Alcatraz Avenue to Claremont Avenue / Forest Street) | evals 1034 | 1285s
+depth 5: best so far +62.4 (cut-through -72.9%, harm 104 veh/h, 6 intervention(s)): Modal filter at 63rd Street & Colby Street; Diagonal diverter at 63rd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 63rd Street (west), and Hillegass Avenue (south) with 63rd Street (east); Modal filter at Colby Street & McAuley Street; Modal filter at Ayala Avenue & Martin Street; Modal filter at Ayala Avenue & Forest Street; Slow Street on Colby Street (15 mph, Alcatraz Avenue to Claremont Avenue / Forest Street) | evals 1266 | 1577s
+depth 6: best so far +62.4 (cut-through -72.9%, harm 104 veh/h, 6 intervention(s)): Modal filter at 63rd Street & Colby Street; Diagonal diverter at 63rd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 63rd Street (west), and Hillegass Avenue (south) with 63rd Street (east); Modal filter at Colby Street & McAuley Street; Modal filter at Ayala Avenue & Martin Street; Modal filter at Ayala Avenue & Forest Street; Slow Street on Colby Street (15 mph, Alcatraz Avenue to Claremont Avenue / Forest Street) | evals 1482 | 1843s
+beam for no street closures
+depth 1: best so far +62.4 (cut-through -72.9%, harm 104 veh/h, 6 intervention(s)): Modal filter at 63rd Street & Colby Street; Diagonal diverter at 63rd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 63rd Street (west), and Hillegass Avenue (south) with 63rd Street (east); Modal filter at Colby Street & McAuley Street; Modal filter at Ayala Avenue & Martin Street; Modal filter at Ayala Avenue & Forest Street; Slow Street on Colby Street (15 mph, Alcatraz Avenue to Claremont Avenue / Forest Street) | evals 1482 | 1843s
+known packages: 3 famil(ies) screened, 5 starting point(s) for the beam, best +36.2
+depth 2: best so far +62.4 (cut-through -72.9%, harm 104 veh/h, 6 intervention(s)): Modal filter at 63rd Street & Colby Street; Diagonal diverter at 63rd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 63rd Street (west), and Hillegass Avenue (south) with 63rd Street (east); Modal filter at Colby Street & McAuley Street; Modal filter at Ayala Avenue & Martin Street; Modal filter at Ayala Avenue & Forest Street; Slow Street on Colby Street (15 mph, Alcatraz Avenue to Claremont Avenue / Forest Street) | evals 1677 | 2088s
+depth 3: best so far +62.4 (cut-through -72.9%, harm 104 veh/h, 6 intervention(s)): Modal filter at 63rd Street & Colby Street; Diagonal diverter at 63rd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 63rd Street (west), and Hillegass Avenue (south) with 63rd Street (east); Modal filter at Colby Street & McAuley Street; Modal filter at Ayala Avenue & Martin Street; Modal filter at Ayala Avenue & Forest Street; Slow Street on Colby Street (15 mph, Alcatraz Avenue to Claremont Avenue / Forest Street) | evals 1812 | 2259s
+depth 3: no package beats the best of the previous level in this line; stopping it
+depth 4: best so far +62.4 (cut-through -72.9%, harm 104 veh/h, 6 intervention(s)): Modal filter at 63rd Street & Colby Street; Diagonal diverter at 63rd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 63rd Street (west), and Hillegass Avenue (south) with 63rd Street (east); Modal filter at Colby Street & McAuley Street; Modal filter at Ayala Avenue & Martin Street; Modal filter at Ayala Avenue & Forest Street; Slow Street on Colby Street (15 mph, Alcatraz Avenue to Claremont Avenue / Forest Street) | evals 1986 | 2476s
+depth 5: best so far +62.4 (cut-through -72.9%, harm 104 veh/h, 6 intervention(s)): Modal filter at 63rd Street & Colby Street; Diagonal diverter at 63rd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 63rd Street (west), and Hillegass Avenue (south) with 63rd Street (east); Modal filter at Colby Street & McAuley Street; Modal filter at Ayala Avenue & Martin Street; Modal filter at Ayala Avenue & Forest Street; Slow Street on Colby Street (15 mph, Alcatraz Avenue to Claremont Avenue / Forest Street) | evals 2148 | 2677s
+depth 6: best so far +62.4 (cut-through -72.9%, harm 104 veh/h, 6 intervention(s)): Modal filter at 63rd Street & Colby Street; Diagonal diverter at 63rd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 63rd Street (west), and Hillegass Avenue (south) with 63rd Street (east); Modal filter at Colby Street & McAuley Street; Modal filter at Ayala Avenue & Martin Street; Modal filter at Ayala Avenue & Forest Street; Slow Street on Colby Street (15 mph, Alcatraz Avenue to Claremont Avenue / Forest Street) | evals 2281 | 2848s
+beam for no street closures: 799 new screening run(s)
+beam for least detour for residents
+depth 1: best so far +62.4 (cut-through -72.9%, harm 104 veh/h, 6 intervention(s)): Modal filter at 63rd Street & Colby Street; Diagonal diverter at 63rd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 63rd Street (west), and Hillegass Avenue (south) with 63rd Street (east); Modal filter at Colby Street & McAuley Street; Modal filter at Ayala Avenue & Martin Street; Modal filter at Ayala Avenue & Forest Street; Slow Street on Colby Street (15 mph, Alcatraz Avenue to Claremont Avenue / Forest Street) | evals 2281 | 2848s
+known packages: 19 famil(ies) screened, 5 starting point(s) for the beam, best +36.5
+depth 2: best so far +62.4 (cut-through -72.9%, harm 104 veh/h, 6 intervention(s)): Modal filter at 63rd Street & Colby Street; Diagonal diverter at 63rd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 63rd Street (west), and Hillegass Avenue (south) with 63rd Street (east); Modal filter at Colby Street & McAuley Street; Modal filter at Ayala Avenue & Martin Street; Modal filter at Ayala Avenue & Forest Street; Slow Street on Colby Street (15 mph, Alcatraz Avenue to Claremont Avenue / Forest Street) | evals 2408 | 3007s
+depth 3: best so far +62.4 (cut-through -72.9%, harm 104 veh/h, 6 intervention(s)): Modal filter at 63rd Street & Colby Street; Diagonal diverter at 63rd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 63rd Street (west), and Hillegass Avenue (south) with 63rd Street (east); Modal filter at Colby Street & McAuley Street; Modal filter at Ayala Avenue & Martin Street; Modal filter at Ayala Avenue & Forest Street; Slow Street on Colby Street (15 mph, Alcatraz Avenue to Claremont Avenue / Forest Street) | evals 2515 | 3142s
+depth 3: no package beats the best of the previous level in this line; stopping it
+depth 4: best so far +62.4 (cut-through -72.9%, harm 104 veh/h, 6 intervention(s)): Modal filter at 63rd Street & Colby Street; Diagonal diverter at 63rd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 63rd Street (west), and Hillegass Avenue (south) with 63rd Street (east); Modal filter at Colby Street & McAuley Street; Modal filter at Ayala Avenue & Martin Street; Modal filter at Ayala Avenue & Forest Street; Slow Street on Colby Street (15 mph, Alcatraz Avenue to Claremont Avenue / Forest Street) | evals 2595 | 3242s
+depth 4: no package beats the best of the previous level in this line; stopping it
+beam for least detour for residents: 314 new screening run(s)
+beam for fewest changes
+depth 1: best so far +62.4 (cut-through -72.9%, harm 104 veh/h, 6 intervention(s)): Modal filter at 63rd Street & Colby Street; Diagonal diverter at 63rd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 63rd Street (west), and Hillegass Avenue (south) with 63rd Street (east); Modal filter at Colby Street & McAuley Street; Modal filter at Ayala Avenue & Martin Street; Modal filter at Ayala Avenue & Forest Street; Slow Street on Colby Street (15 mph, Alcatraz Avenue to Claremont Avenue / Forest Street) | evals 2595 | 3242s
+known packages: 2 famil(ies) screened, 5 starting point(s) for the beam, best +32.5
+depth 2: best so far +62.4 (cut-through -72.9%, harm 104 veh/h, 6 intervention(s)): Modal filter at 63rd Street & Colby Street; Diagonal diverter at 63rd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 63rd Street (west), and Hillegass Avenue (south) with 63rd Street (east); Modal filter at Colby Street & McAuley Street; Modal filter at Ayala Avenue & Martin Street; Modal filter at Ayala Avenue & Forest Street; Slow Street on Colby Street (15 mph, Alcatraz Avenue to Claremont Avenue / Forest Street) | evals 2627 | 3283s
+beam for fewest changes: 32 new screening run(s)
+rechecking 36 finalist(s) over 3 period(s) x 3 seed(s) at 60 min
+confirming 6 chosen option(s) and 2 reference(s) on 10 unused seed(s) per period
+rechecking 2 reference package(s)
+chose 6 option(s); total 4902s
+seeds file target/r51-search/seeds.json: 20 package(s)
+wrote group unconstrained to target/r51-search/proposals.json and target/r51-search/report.md

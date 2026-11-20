@@ -1,0 +1,10 @@
+2026-11-19 08:30:18 PM PST START fresh-seed confirmation at 90e655b, seeds 11-20
+2026-11-19 08:30:18 PM PST baseline inputs: config 505dd0f032fc7ae8; hashes 53c823f20d9165ed 9cdebdabf05c4460 2f9ae152b9bbf78e ; fingerprint d45a275dd7be0713cec6a64394b7d8a9; status 
+2026-11-19 08:32:55 PM PST baseline assess exit=0 wall_s=157
+applied shares-membership
+2026-11-19 08:32:55 PM PST candidate inputs: config 1080597767aac58c; hashes 53c823f20d9165ed 5d6be8a70618e905 7164fa2ab08f612a 74a88c864d406903 7d0fdb063236304d 
+2026-11-19 08:35:23 PM PST candidate assess exit=0 wall_s=148
+2026-11-19 08:35:23 PM PST status before restore:  M data/demand/rockridge.config.json; M data/demand/rockridge.fit.cv.md; M data/demand/rockridge.fit.cv.stations-am_peak.md; M data/demand/rockridge.fit.cv.stations-pm_peak.md; M data/demand/rockridge.fit.md; M data/demand/rockridge.fit.stations-am_peak.md; M data/demand/rockridge.fit.stations-pm_peak.md;
+2026-11-19 08:35:23 PM PST restore: npm run data on the clean config
+2026-11-19 08:44:42 PM PST restore: exit=0 hashes 53c823f20d9165ed 9cdebdabf05c4460 2f9ae152b9bbf78e  config 505dd0f032fc7ae8 status: 
+2026-11-19 08:44:42 PM PST ALL DONE 

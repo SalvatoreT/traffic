@@ -21,10 +21,12 @@
 - [x] 2.4 Screen the final demand on seeds 1 to 3, with the backlog line
 - [x] 2.5 Validation suite and ten-seed assessment (if the screen passes)
 - [x] 2.6 Commit the evidence under `evidence/`
+- [x] 2.7 Staged proposal search on the candidate (`evidence/search/`, not published)
+- [x] 2.8 Fresh-seed confirmation on seeds 11 to 20 (`evidence/confirm/`): fails one line
 
 ## 3. Verdict (lead)
 
 - [x] 3.1 Keep-rule table and the verdict (design D6)
 - [x] 3.2 Record entry in `data/calibration/rockridge.record.md`
-- [ ] 3.3 Adoption decision (pending the project lead's review)
-- [ ] 3.4 Validate the change and archive (not archived: adoption is undecided and a proposal search is running)
+- [x] 3.3 Fresh-seed confirmation on seeds 11 to 20 and the adoption decision: failed one line (whole-street traversals 7 of 8), not adopted, the project lead's decision of 2026-11-19
+- [x] 3.4 Validate the change and archive

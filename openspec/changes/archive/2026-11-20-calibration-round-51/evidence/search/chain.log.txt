@@ -1,0 +1,11 @@
+2026-11-19 06:50:21 PM PST START staged search on the round 51 candidate at 223d60a
+applied shares-membership
+2026-11-19 06:50:21 PM PST inputs: config 1080597767aac58c; hashes 53c823f20d9165ed 5d6be8a70618e905 7164fa2ab08f612a 74a88c864d406903 7d0fdb063236304d ; fingerprint d45a275dd7be0713cec6a64394b7d8a9
+2026-11-19 06:50:21 PM PST seeded proposals.json 3822705a26ca879d (search-c5 output), report.md 8a443b947c606e50, seeds.json fbcf6d37a7e8cad3 (data/proposals/rockridge.seeds.json)
+2026-11-19 06:50:21 PM PST explore started
+2026-11-19 08:12:04 PM PST explore exit=0 wall_s=4903
+2026-11-19 08:12:04 PM PST status after explore:  M data/demand/rockridge.config.json; M data/demand/rockridge.fit.cv.md; M data/demand/rockridge.fit.cv.stations-am_peak.md; M data/demand/rockridge.fit.cv.stations-pm_peak.md; M data/demand/rockridge.fit.md; M data/demand/rockridge.fit.stations-am_peak.md; M data/demand/rockridge.fit.stations-pm_peak.md;
+2026-11-19 08:12:04 PM PST restore: npm run data on the clean config
+2026-11-19 08:21:20 PM PST restore: exit=0 hashes 53c823f20d9165ed 9cdebdabf05c4460 2f9ae152b9bbf78e  status: 
+2026-11-19 08:21:20 PM PST published-file check: 388c91f025dafd55 (before 388c91f025dafd55)
+2026-11-19 08:21:20 PM PST ALL DONE 
