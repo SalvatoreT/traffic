@@ -1,0 +1,90 @@
+#!/bin/zsh
+# Round 52, step D (apply route-weight, dry run, check its counts, run the loop) and the record of the final demand.
+# A watcher copies the fit reports and the gate prior dumps after every build, since later builds overwrite them.
+cd "$(git rev-parse --show-toplevel)" || exit 1
+EV=openspec/changes/calibration-round-52/evidence; T=target/r52; JOBS=12; R=openspec/changes/calibration-round-52
+now() { date '+%Y-%m-%d %I:%M:%S %p %Z'; }
+log() { echo "$(now) $*" | tee -a $T/chain.log; }
+snap() {
+  local id=$1 d=$T/snap/$1
+  mkdir -p $d && cp data/demand/rockridge.fit*.md $d/ 2>/dev/null; cp $T/node-prior.*.json $d/ 2>/dev/null
+  echo "$(now) snapshot $id" >> $T/snap.log
+}
+watch_builds() {
+  local seen=""
+  while true; do
+    if [ -f target/membership-loop/state.json ]; then
+      for id in $(node -e "try{const s=JSON.parse(require('fs').readFileSync('target/membership-loop/state.json'));console.log(s.done.filter(x=>x.endsWith('-build')).join(' '))}catch(e){}"); do
+        [[ " $seen " == *" $id "* ]] || { snap $id; seen="$seen $id"; }
+      done
+    fi
+    sleep 20
+  done
+}
+log "D: start"
+git checkout data/demand
+git status --short > $T/status-D-pre.txt; log "D: status before apply: $(tr '\n' ';' < $T/status-D-pre.txt)"
+python3 $R/apply-candidate.py route-weight | tee -a $T/chain.log || { log "D: apply FAILED"; exit 1; }
+log "D: $(git diff --stat data/demand/rockridge.config.json | tail -1)"
+git diff data/demand/rockridge.config.json > $T/config.diff
+log "D: blocks added: $(grep -cE '^\+ *"(gatePriorTotals|simulatedMembership)": \{' $T/config.diff)"
+log "D: config entries: $(node -e "const c=JSON.parse(require('fs').readFileSync('data/demand/rockridge.config.json','utf8')).countFit;const sm=c.throughTargets.simulatedMembership;console.log('gatePriorTotals.scope='+c.gatePriorTotals?.scope+'; simulatedMembership throughTargets='+sm?.throughTargets+' shares='+sm?.shares+' routeWeightPerBlock='+sm?.routeWeightPerBlock)")"
+shasum -a 256 data/demand/rockridge.config.json | cut -c1-16 > $T/config-hash.txt; log "D: config sha256 $(cat $T/config-hash.txt)"
+npx tsx tools/membership-loop.ts --dry-run > $EV/dry-run.txt 2>&1; RC=$?; log "D: dry run exit=$RC"
+grep -E 'withholds|selected' $EV/dry-run.txt | tee -a $T/chain.log
+MISS=""
+for want in 'the frozen split withholds 91 from the training view' 'shipped pm_peak: 337 selected (245 link, 92 movement or route), 6 stay static' 'shipped am_peak: 272 selected (200 link, 72 movement or route), 6 stay static' 'training pm_peak: 256 selected (187 link, 69 movement or route), 0 stay static, 87 withheld' 'training am_peak: 201 selected (148 link, 53 movement or route), 0 stay static, 77 withheld'; do
+  grep -qF "$want" $EV/dry-run.txt || MISS="$MISS [$want]"
+done
+if [ $RC != 0 ] || [ -n "$MISS" ]; then log "D: dry run differs from the expected counts, stop:$MISS"; echo "stop at D:$MISS" >> $T/decisions.txt; git checkout data/demand; exit 1; fi
+if [ -e target/membership-loop ] || [ -e target/membership ]; then log "D: target/membership-loop or target/membership exists from an earlier loop, stop"; echo "stop at D: stale loop files" >> $T/decisions.txt; exit 1; fi
+log "D: loop"
+watch_builds & WPID=$!
+S=$(date +%s); GATE_PRIOR_DUMP=$T/node-prior.json npx tsx tools/membership-loop.ts --jobs $JOBS --report $EV/membership-loop.md > $T/loop.log 2>&1; RC=$?
+sleep 25; kill $WPID 2>/dev/null
+log "D: loop exit=$RC wall_s=$(( $(date +%s) - S ))"
+cp $T/loop.log $EV/loop.txt
+grep -E 'gate prior ceilings|offered|ratio|zero-hit|stop|WARNING|ceiling stations|non-gate|flow type|share|through blocks|route weight|Inside-study-area' $T/loop.log | tee -a $T/chain.log > /dev/null
+if [ $RC != 0 ]; then
+  log "D: loop stopped with exit $RC (abort or failure), stop and send the loop log, the build log and the fit report"
+  tail -30 $T/loop.log | tee -a $T/chain.log
+  mkdir -p $EV/abort && cp data/demand/rockridge.fit*.md $EV/abort/ 2>/dev/null
+  for f in target/membership-loop/logs/*-build.log; do tail -n 60 "$f" > $EV/abort/$(basename "$f" .log).txt; done
+  cp $T/node-prior.*.json $EV/abort/ 2>/dev/null
+  cp target/membership-loop/state.json $EV/abort/ 2>/dev/null
+  echo "stop at D: loop exit $RC" >> $T/decisions.txt
+  exit 2
+fi
+sha256sum public/data/rockridge.network.json public/data/rockridge.demand.json target/validation/rockridge.demand.json target/membership/*.json | cut -c1-16,65- | tee $EV/candidate-hashes.txt
+log "D: hashes $(tr '\n' ';' < $EV/candidate-hashes.txt)"
+cmp -s $T/network.base.json public/data/rockridge.network.json && log "D: network identical" || { log "D: network differs, stop"; echo "stop at D: network" >> $T/decisions.txt; exit 1; }
+cmp -s $T/stations.base.json data/demand/rockridge.stations.json && log "D: stations file identical" || log "D: stations file DIFFERS"
+mkdir -p $EV/fit && cp data/demand/rockridge.fit*.md data/demand/rockridge.stations.json $EV/fit/
+cp target/membership-loop/state.json $EV/
+cp public/data/rockridge.demand.json $T/demand.cand.json
+cp target/validation/rockridge.demand.json $T/demand.cand.cv.json
+mkdir -p $T/fit-cand && cp data/demand/rockridge.fit*.md $T/fit-cand/
+node -e "
+const fs=require('fs'), f=(p)=>JSON.parse(fs.readFileSync(p));
+const pairs=[['target/membership-loop/iter0/shipped/demand.json','$T/demand.base.json'],['target/membership-loop/iter0/training/demand.json','$T/demand.base.cv.json']];
+for (const [a,b] of pairs) console.log(a, fs.existsSync(a) ? 'periods equal to '+b+': '+(JSON.stringify(f(a).periods)===JSON.stringify(f(b).periods)) : 'missing');
+" > $T/pass0-check.txt 2>&1; log "D: pass 0 check: $(tr '\n' ';' < $T/pass0-check.txt)"
+ls -R target/membership-loop | head -40 > $T/loop-files.txt
+grep -E '^WARNING .*final build: offered car demand is' $T/loop.log > $T/low-demand.txt
+if [ -s $T/low-demand.txt ]; then log "D: low-demand figure (reported, not a stop in round 52): $(tr '\n' ';' < $T/low-demand.txt)"; cp $T/low-demand.txt $EV/; else log "D: no low-demand figure"; fi
+# Round 52 record: copies the confirmation needs, the fit's own route and block values per build, node prior CSV, node and gate tables.
+shasum -a 256 data/demand/rockridge.config.json | cut -c1-16 > $T/cand-config.sha
+sha256sum public/data/rockridge.network.json public/data/rockridge.demand.json target/validation/rockridge.demand.json target/membership/rockridge.membership.json target/membership/rockridge.membership-training.json | cut -c1-16 > $T/cand-hashes.txt
+log "D: cand-config $(cat $T/cand-config.sha); cand-hashes $(tr '\n' ' ' < $T/cand-hashes.txt)"
+for q in pm_peak am_peak; do
+  A=(); for st in i0 i1 i2 final; do f=target/membership-loop/fits/$st-shipped-build/rockridge.fit.stations-$q.md; [ -f $f ] && A+=(fit=$([ $st = final ] && echo final || echo pass${st#i})=$f); done
+  node openspec/changes/calibration-round-52/scripts/route-lines.cjs $q "${A[@]}" > $EV/route-fit-$q.md 2> $T/route-fit-$q.err; log "D: route-fit $q exit=$? columns ${#A[@]}"
+done
+mkdir -p $EV/node-prior-csv
+for f in $T/node-prior.*.json; do node -e "const r=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'));const f=x=>Math.round(x*100)/100;console.log('node,direction,gate,anchor,ceiling,beforeProjection,final,removed');for(const x of r)console.log([x.node,x.direction,x.gate?1:0,f(x.anchor),f(x.ceiling),f(x.beforeProjection),f(x.final),f(x.removed)].join(','))" "$f" > $EV/node-prior-csv/$(basename "$f" .json).csv; done
+log "D: node-prior csv $(ls $EV/node-prior-csv | tr '\n' ' '); over 190k: $(find $EV -size +190k | tr '\n' ' ')"
+node openspec/changes/archive/2026-11-19-calibration-round-50/scripts/nodes.cjs $T/network.base.json $T/demand.base.json public/data/rockridge.demand.json shipped > $EV/nodes-shipped.md 2> $T/nodes.err
+node openspec/changes/archive/2026-11-19-calibration-round-50/scripts/nodes.cjs $T/network.base.json $T/demand.base.cv.json target/validation/rockridge.demand.json training > $EV/nodes-training.md 2>> $T/nodes.err
+node -e "const G=[1398,1756,276,577,1719,1219,974,952,675,602,288,8,1726,1674,973,1672,183,184,943,275];for(const f of process.argv.slice(1)){const d=JSON.parse(require('fs').readFileSync(f,'utf8'));for(const p of d.periods.filter(x=>['pm_peak','am_peak'].includes(x.id))){const o={},t={};for(const q of p.flows.filter(q=>!q.mode)){o[q.origin]=(o[q.origin]||0)+q.vehPerHour;t[q.destination]=(t[q.destination]||0)+q.vehPerHour}console.log(f,p.id,G.map(g=>g+' '+Math.round(o[g]||0)+'/'+Math.round(t[g]||0)).join(', '))}}" $T/demand.base.json public/data/rockridge.demand.json $T/demand.base.cv.json target/validation/rockridge.demand.json > $EV/gate-totals.txt 2>&1
+log "D: nodes and gate totals written"
+log "D done"

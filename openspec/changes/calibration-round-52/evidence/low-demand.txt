@@ -1,0 +1,1 @@
+WARNING shipped view, pm_peak, final build: offered car demand is 10.3% below the static fit's (limit 10%, ASSUMPTION): the fit may be trading volume for fit. Reported figure, not a stop (lead decision of 2026-11-19, kept in round 52): carry on to the screen and report it
