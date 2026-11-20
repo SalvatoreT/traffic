@@ -880,15 +880,17 @@ function loadGatePrior(fc: { gatePriorTotals?: { anchor: string; tolerancePct: n
   const g = fc.gatePriorTotals;
   if (!g) return undefined;
   if (g.anchor !== 'staticFit' || !(Number.isFinite(g.tolerancePct) && g.tolerancePct >= 0) || !(Number.isFinite(g.weight) && g.weight > 0)) throw new Error('countFit.gatePriorTotals needs anchor "staticFit", tolerancePct >= 0 and weight > 0');
-  if (g.scope !== undefined && g.scope !== 'gates' && g.scope !== 'allNodes') throw new Error('countFit.gatePriorTotals.scope must be "gates" or "allNodes"');
-  const scope = g.scope === 'allNodes' ? 'allNodes' as const : 'gates' as const;
-  notes.push(scope === 'allNodes'
+  if (g.scope !== undefined && g.scope !== 'gates' && g.scope !== 'allNodes' && g.scope !== 'outsideStudyArea') throw new Error('countFit.gatePriorTotals.scope must be "gates", "allNodes" or "outsideStudyArea"');
+  const scope = g.scope === 'allNodes' ? 'allNodes' as const : g.scope === 'outsideStudyArea' ? 'outsideStudyArea' as const : 'gates' as const;
+  notes.push(scope === 'outsideStudyArea'
+    ? `node prior ceilings (ASSUMPTION, round 52): in a period whose stations take simulated membership, every gate direction and every non-gate node direction outside the study area that no gate station in the fit counts is held to at most its car total in the static fit of the same view and period plus ${g.tolerancePct}% (weight ${g.weight}); non-gate nodes inside the study area have no ceiling; no count value sets a ceiling`
+    : scope === 'allNodes'
     ? `node prior ceilings (ASSUMPTION, round 50): in a period whose stations take simulated membership, every node direction (origin or destination of a car flow, gates and non-gate nodes) that no gate station in the fit counts is held to at most its car total in the static fit of the same view and period plus ${g.tolerancePct}% (weight ${g.weight}); no count value sets a ceiling`
     : `gate prior ceilings (ASSUMPTION, round 49): in a period whose stations take simulated membership, every gate direction that no gate station in the fit counts is held to at most its car total in the static fit of the same view and period plus ${g.tolerancePct}% (weight ${g.weight}); no count value sets a ceiling`);
   return { tolerancePct: g.tolerancePct, weight: g.weight, gateIds: net.nodes.filter((q) => q.gate).map((q) => q.id), scope, studyIds: net.nodes.filter((q) => q.inStudyArea).map((q) => q.id) };
 }
 
-function loadThrough(fc: { stationsOutput?: string; throughTargets?: { enabled: boolean | 'report'; targets: string; weight: number; otherPeriods?: 'ceiling' | 'none'; measured?: { file: string; priorTrips: number }; measuredStations?: string[]; measuredStationsTraining?: string; simulatedMembership?: { method: 'export-supported'; file: string; trainingFile: string; priorTrips: number; throughTargets?: boolean; shares?: boolean } } }, notes: string[]): ThroughFit | undefined {
+function loadThrough(fc: { stationsOutput?: string; throughTargets?: { enabled: boolean | 'report'; targets: string; weight: number; otherPeriods?: 'ceiling' | 'none'; measured?: { file: string; priorTrips: number }; measuredStations?: string[]; measuredStationsTraining?: string; simulatedMembership?: { method: 'export-supported'; file: string; trainingFile: string; priorTrips: number; throughTargets?: boolean; shares?: boolean; routeWeightPerBlock?: boolean } } }, notes: string[]): ThroughFit | undefined {
   const tt = fc.throughTargets;
   if (!tt?.enabled) return undefined;
   const tf = JSON.parse(readFileSync(tt.targets, 'utf8'));
@@ -912,9 +914,9 @@ function loadThrough(fc: { stationsOutput?: string; throughTargets?: { enabled: 
   let measured: ThroughFit['measured'];
   // Calibration round 48 (off unless the entry is present): every station the report binary exports takes the membership of the loop's file of this view (tools/membership-loop.ts).
   const sm = tt.simulatedMembership;
-  for (const k of ['throughTargets', 'shares'] as const) if (sm && sm[k] !== undefined && typeof sm[k] !== 'boolean') throw new Error(`countFit.throughTargets.simulatedMembership.${k} must be true or false`);
+  for (const k of ['throughTargets', 'shares', 'routeWeightPerBlock'] as const) if (sm && sm[k] !== undefined && typeof sm[k] !== 'boolean') throw new Error(`countFit.throughTargets.simulatedMembership.${k} must be true or false`);
   // Round 51 sub-switches: through targets and select-link shares take the simulated block pairs of the loop's file. Absent, rounds 48 to 50.
-  const simulated = sm && (sm.throughTargets !== undefined || sm.shares !== undefined) ? { throughTargets: !!sm.throughTargets, shares: !!sm.shares } : undefined;
+  const simulated = sm && (sm.throughTargets !== undefined || sm.shares !== undefined || sm.routeWeightPerBlock !== undefined) ? { throughTargets: !!sm.throughTargets, shares: !!sm.shares, ...(sm.routeWeightPerBlock ? { routeWeightPerBlock: true } : {}) } : undefined;
   const mf = sm ? { file: sm.file, priorTrips: sm.priorTrips } : tt.measured;
   const membershipFile = sm ? (training ? sm.trainingFile : sm.file) : training ? tt.measuredStationsTraining : mf?.file;
   if (membershipFile && existsSync(membershipFile)) {
