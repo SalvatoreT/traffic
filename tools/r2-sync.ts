@@ -1,16 +1,12 @@
 import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join, relative } from "node:path";
+import { dirname, relative } from "node:path";
 import { contentType } from "./lib/content-type";
+import { MAPPINGS, localPath } from "./lib/r2-map";
 import { walk } from "./lib/walk";
 
 const BUCKET = "traffic-data";
 const MANIFEST = "data/manifest.json";
-const MAPPINGS: { local: string; prefix: string; match?: RegExp }[] = [
-  { local: "data/osm", prefix: "osm", match: /\.json$/ },
-  { local: "data/demand/raw", prefix: "demand/raw" },
-  { local: "public/data", prefix: "areas" },
-];
 
 const SITE = process.env.TRAFFIC_UPLOAD_URL?.replace(/\/$/, "");
 const TOKEN = process.env.TRAFFIC_UPLOAD_TOKEN ?? "proxy-injected";
@@ -62,9 +58,8 @@ async function push() {
 async function pull() {
   const keys: string[] = JSON.parse(readFileSync(MANIFEST, "utf8")).keys;
   for (const key of keys) {
-    const m = MAPPINGS.find((x) => key.startsWith(`${x.prefix}/`));
-    if (!m) continue;
-    const file = join(m.local, key.slice(m.prefix.length + 1));
+    const file = localPath(key);
+    if (!file) continue;
     mkdirSync(dirname(file), { recursive: true });
     if (SITE) await siteGet(key, file);
     else wrangler(["r2", "object", "get", `${BUCKET}/${key}`, "--file", file, "--remote"]);
