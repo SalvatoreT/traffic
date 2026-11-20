@@ -48,7 +48,23 @@ P5. (Preparation choice.) The loop's low-demand message no longer says "STOP and
 
 ## Checked in the container
 
-CHECKS_PLACEHOLDER
+All builds ran in the container on 2026-11-20 with `--out-root`, so nothing under `data/` or `public/data/` changed. Simulator fingerprint d45a275dd7be0713cec6a64394b7d8a9 (RAN).
+
+- Switch absent, config as committed: shipped demand 9cdebdabf05c4460, training demand 2f9ae152b9bbf78e, network 53c823f20d9165ed. Both baseline hashes reproduce.
+- Candidate entry, no membership file: the shipped build's periods are identical to the baseline's (JSON equal). The report says static route shares, lists the ceiling scope and prints every route weight as `static; weight 1`.
+- Candidate entry and a made-up membership file (PM only, 26 stations with pairs: the seven Colby Street and four Hillegass Avenue blocks per direction plus the four route stations, pairs taken from the static assignment of the baseline fit, each pair at 10 trips and hits at the static share times 10; this is a wiring check and carries no evidence about real simulated membership). The weights used: Colby Street routes 7 (base 1 times 7 blocks), Hillegass Avenue routes 4. AM and midday print static, weight 1.
+
+| PM, made-up membership | Without `routeWeightPerBlock` | With it |
+| --- | --- | --- |
+| Colby Street SB whole street, fit / final (39 counted) | 65 / 75 (GEH 4.7) | 53 / 54 (GEH 2.2) |
+| Colby Street SB blocks, final (counts 139 to 170) | 127 to 184 | 108 to 173 |
+| Hillegass Avenue SB whole street, final (79 counted) | 74 | 73 |
+| Non-gate trip ends inside the study area, static fit to final: origins | 951 to 954 | 951 to 961 |
+| same, destinations | 734 to 677 | 734 to 690 |
+| Inside nodes that grew: origins, destinations | 11 of 57, 19 of 56 | 10 of 57, 18 of 56 |
+| Offered car demand, static fit to final | 27609 to 26216 | 27609 to 26181 |
+
+Both builds end 5% under the static fit, far from the 3% abort above it. The route weight moves the whole-street figure toward its count and takes the Colby Street SB blocks down by 7 to 19 cars an hour each, the cost the design predicts. The inside trip ends hardly move on this file, which has no fractional membership and so no incentive to add along-the-street trips; whether they grow on real membership is for the laptop run to show.
 
 ## What is not known
 
