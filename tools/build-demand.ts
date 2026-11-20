@@ -888,7 +888,7 @@ function loadGatePrior(fc: { gatePriorTotals?: { anchor: string; tolerancePct: n
   return { tolerancePct: g.tolerancePct, weight: g.weight, gateIds: net.nodes.filter((q) => q.gate).map((q) => q.id), scope, studyIds: net.nodes.filter((q) => q.inStudyArea).map((q) => q.id) };
 }
 
-function loadThrough(fc: { stationsOutput?: string; throughTargets?: { enabled: boolean | 'report'; targets: string; weight: number; otherPeriods?: 'ceiling' | 'none'; measured?: { file: string; priorTrips: number }; measuredStations?: string[]; measuredStationsTraining?: string; simulatedMembership?: { method: 'export-supported'; file: string; trainingFile: string; priorTrips: number } } }, notes: string[]): ThroughFit | undefined {
+function loadThrough(fc: { stationsOutput?: string; throughTargets?: { enabled: boolean | 'report'; targets: string; weight: number; otherPeriods?: 'ceiling' | 'none'; measured?: { file: string; priorTrips: number }; measuredStations?: string[]; measuredStationsTraining?: string; simulatedMembership?: { method: 'export-supported'; file: string; trainingFile: string; priorTrips: number; throughTargets?: boolean; shares?: boolean } } }, notes: string[]): ThroughFit | undefined {
   const tt = fc.throughTargets;
   if (!tt?.enabled) return undefined;
   const tf = JSON.parse(readFileSync(tt.targets, 'utf8'));
@@ -912,6 +912,9 @@ function loadThrough(fc: { stationsOutput?: string; throughTargets?: { enabled: 
   let measured: ThroughFit['measured'];
   // Calibration round 48 (off unless the entry is present): every station the report binary exports takes the membership of the loop's file of this view (tools/membership-loop.ts).
   const sm = tt.simulatedMembership;
+  for (const k of ['throughTargets', 'shares'] as const) if (sm && sm[k] !== undefined && typeof sm[k] !== 'boolean') throw new Error(`countFit.throughTargets.simulatedMembership.${k} must be true or false`);
+  // Round 51 sub-switches: through targets and select-link shares take the simulated block pairs of the loop's file. Absent, rounds 48 to 50.
+  const simulated = sm && (sm.throughTargets !== undefined || sm.shares !== undefined) ? { throughTargets: !!sm.throughTargets, shares: !!sm.shares } : undefined;
   const mf = sm ? { file: sm.file, priorTrips: sm.priorTrips } : tt.measured;
   const membershipFile = sm ? (training ? sm.trainingFile : sm.file) : training ? tt.measuredStationsTraining : mf?.file;
   if (membershipFile && existsSync(membershipFile)) {
@@ -925,7 +928,7 @@ function loadThrough(fc: { stationsOutput?: string; throughTargets?: { enabled: 
     if (j.network === net.id && sameMembershipEvidence(j.evidence, evidence)) { measured = j.periods; notes.push(`Simulated membership from ${membershipFile} (${view} view)`); }
     else notes.push(`${membershipFile} lacks matching source, detector, split or demand-view evidence. Using static membership.`);
   } else if (mf) notes.push(`No simulated membership file for the ${view} view${sm ? ` (${membershipFile})` : ''}. Using static route shares.`);
-  return { targets, inStudy: new Set(net.nodes.filter((n: { inStudyArea?: boolean }) => n.inStudyArea).map((n: { id: number }) => n.id)), measured, priorTrips: mf?.priorTrips ?? 5, reportOnly: tt.enabled === 'report', measuredStations: sm ? 'all' : tt.measuredStations };
+  return { targets, inStudy: new Set(net.nodes.filter((n: { inStudyArea?: boolean }) => n.inStudyArea).map((n: { id: number }) => n.id)), measured, priorTrips: mf?.priorTrips ?? 5, reportOnly: tt.enabled === 'report', measuredStations: sm ? 'all' : tt.measuredStations, ...(simulated ? { simulated } : {}) };
 }
 const localScaleLines = (): string[] => {
   if (!countEnds || !Object.keys(localScale).length) return [];

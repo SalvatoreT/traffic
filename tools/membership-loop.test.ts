@@ -138,12 +138,12 @@ describe('plan', () => {
 });
 
 // A scratch checkout with a fake build and a fake calibrate that write what the real ones write.
-function scratch(opt: { flat: boolean; dropNote?: boolean; growth?: number }) {
+function scratch(opt: { flat: boolean; dropNote?: boolean; growth?: number; blocks?: boolean; dropShareNote?: boolean }) {
   const root = mkdtempSync(join(tmpdir(), 'mloop-'));
   const w = (f: string, text: string) => { mkdirSync(join(root, f, '..'), { recursive: true }); writeFileSync(join(root, f), text); };
-  const cfg = { area: 't', network: 'net.json', output: 'out/demand.json', countFit: { output: 'out/fit.md', stationsOutput: 'st.json', validation: { demandOutput: 'out/cv.json', splitFile: 'split.json' }, throughTargets: { simulatedMembership: { method: 'export-supported', file: 'm/ship.json', trainingFile: 'm/train.json', priorTrips: 5 } } } };
+  const cfg = { area: 't', network: 'net.json', output: 'out/demand.json', countFit: { output: 'out/fit.md', stationsOutput: 'st.json', validation: { demandOutput: 'out/cv.json', splitFile: 'split.json' }, throughTargets: { simulatedMembership: { method: 'export-supported', file: 'm/ship.json', trainingFile: 'm/train.json', priorTrips: 5, ...(opt.blocks ? { throughTargets: true, shares: true } : {}) } } } };
   w('cfg.json', JSON.stringify(cfg));
-  w('net.json', JSON.stringify({ id: 'net1' }));
+  w('net.json', JSON.stringify({ id: 'net1', nodes: [{ id: 3, inStudyArea: true }, { id: 1 }] }));
   const fixture: StationRec[] = [st('a', { links: [1] }), st('m', { feature: { kind: 'move', a: 1, b: 2 } }), st('held', { links: [3] }), st('gate'), st('quiet', { links: [4] })];
   w('st.json', JSON.stringify({ stations: fixture }));
   w('split.json', JSON.stringify({ groups: [{ held: true, stations: ['held'], observations: [] }], withheldAggregates: [] }));
@@ -162,6 +162,10 @@ function scratch(opt: { flat: boolean; dropNote?: boolean; growth?: number }) {
       const lines = prior && !opt.dropNote
         ? [`- Simulated membership from ${paths.membershipConfig[view]} (${view} view)`, ...Object.entries(prior.periods).map(([q, v]: [string, any]) => `- ${q}: stations whose membership comes from simulated trips (${v.stations.runs} runs; ${Object.keys(v.stations.hits).length} of ${Object.keys(v.stations.hits).length + 1} fitted stations; their assigned volumes in the station tables use it): ${Object.keys(v.stations.hits).join(', ')}`)]
         : prior ? [`- ${paths.membershipConfig[view]} lacks matching source, detector, split or demand-view evidence. Using static membership.`] : [`- No simulated membership file for the ${view} view (${paths.membershipConfig[view]}). Using static route shares.`];
+      if (prior && opt.blocks && !opt.dropShareNote) {
+        lines.push(...Object.entries(prior.periods).map(([q, v]: [string, any]) => `- ${q}: select-link shares take simulated membership (${v.blocks.runs} runs; ${Object.keys(v.blocks.hits).length} of 2 share constraints; blocks without a simulated trip keep static routes)`));
+        lines.push(...['pm_peak', 'am_peak'].flatMap((q) => [`Share ${q} Main Street NB, trips to the freeway: simulated; target 50%; offered 40% (35%); final 48% (41%); 7 flows.`, `Share ${q} Quiet Street SB, trips to the freeway: static; target 45%; offered 30% (30%); final 31% (31%); 4 flows.`, `Through target ${q} Main Street NB, through cars (A to B): simulated; target 90; offered 70 (static routes 60); final 88 (static routes 75).`]));
+      }
       if (opt.growth !== undefined) lines.push(...['pm_peak', 'am_peak'].map((q) => `Gate prior ceilings ${q}: 3 stations; 0 above ceiling; excess 0 veh/h; offered car 1000 to ${Math.round(1000 * (1 + (prior ? opt.growth ?? 0 : 0)))} veh/h.`));
       writeFileSync(paths.report[view], lines.join('\n'));
     },
@@ -177,7 +181,7 @@ function scratch(opt: { flat: boolean; dropNote?: boolean; growth?: number }) {
           inputs: { network: { path: '', sha256: b.network }, demand: { path: j.demand, sha256: sha(j.demand) }, demandBuild: b, targets: { path: '', sha256: 't' }, stations: { path: '', sha256: sha(paths.stations) }, split: { path: '', sha256: b.split }, demandConfig: { path: '', sha256: b.config }, areaConfig: { path: '', sha256: 'a' }, groups: { path: '', sha256: 'g' } },
           run: { area: 't', period: j.period, scale: 1, seed: j.seed, minutes: 60, warmupMin: 10, measurementWindow: { fromMin: 10, toMin: 60 }, initialLoad: true, settings: {} },
         };
-        const sod = { stationCountVersion: 2, manifest, period: j.period, seed: j.seed, minutes: 60, blocks: [], features: [{ id: 'm', trips: [[5, 6, n(20)]] }], links: [{ id: 'a', trips: [[1, 2, n(30)], [3, 4, n(10)]] }, { id: 'held', trips: [[3, 4, n(8)]] }, { id: 'quiet', trips: [] }] };
+        const sod = { stationCountVersion: 2, manifest, period: j.period, seed: j.seed, minutes: 60, blocks: opt.blocks ? [{ label: 'Main Street NB', links: [1], trips: [[1, 2, n(20)], [3, 4, n(10)], [5, 6, n(6)]] }, { label: 'Quiet Street SB', links: [2], trips: [] }] : [], features: [{ id: 'm', trips: [[5, 6, n(20)]] }], links: [{ id: 'a', trips: [[1, 2, n(30)], [3, 4, n(10)]] }, { id: 'held', trips: [[3, 4, n(8)]] }, { id: 'quiet', trips: [] }] };
         writeFileSync(j.out, JSON.stringify(sod));
       }
     },
@@ -205,6 +209,43 @@ describe('the loop with a fake build and a fake simulator', () => {
     expect(out.stayStatic['shipped:pm_peak'].map((x) => x.id)).toEqual(['gate']);
     expect(out.selected['training:pm_peak']).toBe(3);
     expect(renderReport(out, s.opts)).toMatch(/Zero hits/);
+  });
+  it('with the sub-switches: through and block pairs go into the file, the training file stays clean, zero-hit blocks are listed and the targets are logged', async () => {
+    const s = scratch({ flat: true, blocks: true });
+    const logs: string[] = [];
+    const out = await runLoop(s.opts, s.runner, (l) => logs.push(l));
+    const ship = existsMembership(s.paths.membership.shipped), train = existsMembership(s.paths.membership.training);
+    for (const f of [ship, train]) {
+      const p = f.periods.pm_peak;
+      expect(Object.keys(p.hits)).toEqual(['through Main Street NB']);
+      expect(Object.keys(p.hits['through Main Street NB']).sort()).toEqual(['1>2', '5>6']);
+      expect(Object.keys(p.blocks.hits['through Main Street NB']).sort()).toEqual(['1>2', '3>4', '5>6']);
+      expect(p.throughZeroHit).toEqual(['Quiet Street SB']);
+      expect(p.blocks.zeroHit).toEqual(['Quiet Street SB']);
+      expect(p.runs).toBe(12);
+      expect(p.blocks.runs).toBe(12);
+    }
+    expect(out.reports.find((x) => x.pass === 1 && x.view === 'shipped' && x.period === 'pm_peak')).toMatchObject({ zeroHitBlocks: ['Quiet Street SB'], zeroHitThrough: ['Quiet Street SB'] });
+    expect(logs.some((l) => /pass 1 shipped pm_peak: .*share blocks without a simulated trip \(static routes\): Quiet Street SB; through blocks without a counted through trip \(static routes\): Quiet Street SB/.test(l))).toBe(true);
+    expect(logs).toContain('pass 1 shipped pm_peak: share Main Street NB, trips to the freeway (simulated): target 50%, fit 48% on simulated membership, 41% on static routes, offered 40% (static routes 35%), 7 flows');
+    expect(logs).toContain('pass 1 training am_peak: through target Main Street NB, through cars (A to B) (simulated): target 90 veh/h, fit 88 on the membership used, 75 on static routes, offered 70 (static routes 60)');
+    const text = renderReport(out, s.opts);
+    expect(text).toMatch(/## Share and through targets, by build/);
+    expect(text).toMatch(/shipped:1 pm_peak share Main Street NB, trips to the freeway \(simulated\): target 50%, fit 48% \(static routes 41%\)/);
+  });
+  it('with the shares switch on, a build whose report lacks the shares note stops the loop', async () => {
+    const s = scratch({ flat: true, blocks: true, dropShareNote: true });
+    await expect(runLoop(s.opts, s.runner, () => undefined)).rejects.toThrow(/no "select-link shares take simulated membership" note/);
+  });
+  it('without the sub-switches the file and the log carry nothing of round 51', async () => {
+    const s = scratch({ flat: true });
+    const logs: string[] = [];
+    const out = await runLoop(s.opts, s.runner, (l) => logs.push(l));
+    const p = existsMembership(s.paths.membership.shipped).periods.pm_peak;
+    expect(p).toMatchObject({ runs: 0, hits: {}, trips: {} });
+    expect(p.blocks).toBeUndefined();
+    expect(logs.some((l) => /share blocks|through blocks|share Main/.test(l))).toBe(false);
+    expect(renderReport(out, s.opts)).not.toMatch(/Share and through targets/);
   });
   it('refuses a non-empty loop directory without resume, before any build', async () => {
     const s = scratch({ flat: true });
