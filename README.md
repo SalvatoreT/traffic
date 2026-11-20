@@ -73,7 +73,9 @@ The Rockridge area is marked `uncalibrated` in `data/areas/rockridge.json`.
 - Validated: a suite of small synthetic networks checks the simulator's own capacities (signal saturation flow, stop and
   circle entry, link and motorway lane capacity, pedestrian and cyclist effects) against published ranges. Not every
   case passes. Results are in [data/calibration/validation.md](data/calibration/validation.md).
-- Rockridge opens in the PM peak. The current station detectors and demand fit need a new multi-seed assessment.
+- Rockridge opens in the PM peak. The demand is fitted on the simulator's own route choice with caps on trip ends
+  (round 52; an assumption without a published reference). Ten-seed assessment: PM 81 of 92 fitted and 14 of 24 held-out
+  count stations pass GEH 5; AM 72 of 77 and 15 of 19.
   Earlier stability figures and freeway-share results belong to the model version recorded with each run.
 - At Hillegass Avenue and Colby Street, the volunteer route diagrams count drivers who traveled the full length in
   each direction. The simulator reports those traversals separately from drivers who used only part of the street.
