@@ -116,7 +116,12 @@ export function findRamps(links: ShareLink[], location: string): RampNode[] {
   return ramps;
 }
 
-export interface ShareSpec { id: string; label: string; target: number; weight: number; kind: 'select' | 'ramp'; note: string; ratio: NonNullable<Constraint['ratio']> }
+type Ratio = NonNullable<Constraint['ratio']>;
+/** `simulated`: the ratio takes its membership from simulated block trips (round 51); `staticRatio` is the same share on the static routes, kept for the report. */
+export interface ShareSpec { id: string; label: string; target: number; weight: number; kind: 'select' | 'ramp'; note: string; ratio: Ratio; simulated?: boolean; staticRatio?: Ratio; block?: string }
+
+/** Simulated denominator membership of a select-link block: per flow, the share of its trips on the block, from the static fraction `stat` as a prior; undefined keeps static routes. */
+export type BlockMembership = (block: string, stat: Float64Array) => Float64Array | undefined;
 
 /** Tally route events before sampled paths are reduced to per-link marginal shares. */
 export function routeShareTally(
@@ -140,7 +145,7 @@ export function routeShareTally(
     totals.push({ matches, counts });
     return counts;
   };
-  const rules: { spec: Omit<ShareSpec, 'ratio'>; denominator: Uint32Array; numerator: Uint32Array }[] = [];
+  const rules: { spec: Omit<ShareSpec, 'ratio'>; denominator: Uint32Array; numerator: Uint32Array; block?: string; end?: Uint8Array }[] = [];
   for (const t of targets.selectLink ?? []) {
     const block = resolveBlock(links, nodeBy, t.street, t.direction, t.between ?? []);
     if (!block.links.length) continue;
@@ -149,7 +154,7 @@ export function routeShareTally(
     for (const side of ['from', 'to'] as const) for (const e of t[side] ?? []) {
       if (!parseVia(e.via).freeway) continue;
       const num = total((k, visited) => visited.has(blockId) && freeway.has(side === 'from' ? flows[k].origin : flows[k].destination));
-      rules.push({ denominator: den, numerator: num, spec: {
+      rules.push({ denominator: den, numerator: num, block: `${t.street} ${t.direction}`, end: Uint8Array.from(flows, (f) => (freeway.has(side === 'from' ? f.origin : f.destination) ? 1 : 0)), spec: {
         id: `share ${t.street} ${t.direction} ${side} freeway`, label: `${t.street} ${t.direction}, trips ${side} the freeway`,
         target: period === pmPeriod && e.pmPeakShare !== undefined ? e.pmPeakShare : e.share, weight, kind: 'select', note: `block: ${block.note}`,
       } });
@@ -193,13 +198,28 @@ export function routeShareTally(
       for (const link of route) for (const id of groupsByLink[link]) visited.add(id);
       if (visited.size) for (const { matches, counts } of totals) if (matches(k, visited)) counts[k]++;
     },
-    constraints(): ShareSpec[] {
-      return rules.map(({ spec, denominator, numerator }) => {
+    /**
+     * With `member`, a select-link share whose block has simulated trips takes them as membership (round 51): the denominator is each pair's simulated share of trips on the
+     * block (the static fraction as a prior), the numerator is the same where the pair's origin ("from") or destination ("to") is a freeway node and 0 elsewhere, the definition the
+     * simulator's report uses. Ramp via-street shares and blocks without a simulated hit keep static routes.
+     */
+    constraints(member?: BlockMembership): ShareSpec[] {
+      const cache = new Map<string, Float64Array | undefined>();
+      return rules.map(({ spec, denominator, numerator, block, end }) => {
         const members: number[] = [], den: number[] = [], num: number[] = [];
         for (let k = 0; k < flows.length; k++) if (denominator[k]) {
           members.push(k); den.push(denominator[k] / samples[k]); num.push(numerator[k] / samples[k]);
         }
-        return { ...spec, ratio: { flows: Int32Array.from(members), den: Float64Array.from(den), num: Float64Array.from(num) } };
+        const staticRatio: Ratio = { flows: Int32Array.from(members), den: Float64Array.from(den), num: Float64Array.from(num) };
+        let sim: Float64Array | undefined;
+        if (member && block !== undefined && end) {
+          if (!cache.has(block)) cache.set(block, member(block, Float64Array.from(flows, (_, k) => (samples[k] ? denominator[k] / samples[k] : 0))));
+          sim = cache.get(block);
+        }
+        if (!sim) return { ...spec, ratio: staticRatio };
+        const sm: number[] = [], sd: number[] = [], sn: number[] = [];
+        for (let k = 0; k < flows.length; k++) if (sim[k] > 0) { sm.push(k); sd.push(sim[k]); sn.push(end![k] ? sim[k] : 0); }
+        return { ...spec, ratio: { flows: Int32Array.from(sm), den: Float64Array.from(sd), num: Float64Array.from(sn) }, staticRatio, simulated: true, block };
       });
     },
     sideFraction(on: boolean, volume: ArrayLike<number>) {
