@@ -1,0 +1,1 @@
+WARNING shipped view, pm_peak, final build: offered car demand is 10.6% below the static fit's (limit 10%, ASSUMPTION): the fit may be trading volume for fit. STOP and report to the lead before running the screen or the ten seeds
