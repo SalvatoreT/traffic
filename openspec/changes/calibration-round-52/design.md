@@ -90,3 +90,24 @@ The candidate passes the screen and every line of the keep rule (D4) on seeds 1 
 The evidence is under `evidence/`, from laptop commit d2bfe91 on the development branch (unsigned; the membership parts stay on that branch and are not on main). The record entry is in `data/calibration/rockridge.record.md`. The code is on `main` with the switches off, and the shipped config has neither `gatePriorTotals` nor `simulatedMembership`. The published data are unchanged.
 
 Adoption is pending the project lead's review. A proposal search on the candidate is running on the laptop and will be staged, not published. The change stays open until adoption is decided.
+
+## Decision of the project lead (2026-11-20): adopt and publish round 52
+
+Asked on 2026-11-20 (about 1:35 AM Pacific), the project lead decided to publish round 52 as the model, with its assumptions, maps and the staged proposals. The model status stays "Not calibrated".
+
+What they were shown:
+
+- The keep rule on seeds 1 to 10: PM fitted 81 of 92, PM held out 14 of 24, AM fitted 72 of 77, AM held out 15 of 19, D5 4 of 4, whole-street 8 of 8, D16 holds in every period, validation 67 of 74. The fresh-seed confirmation on seeds 11 to 20 holds: no line is worse than the baseline's.
+- The costs:
+  - PM Colby St southbound whole-street goes from 67 to 75 cars an hour against 39 counted (GEH 4.7), so it is the weakest line.
+  - PM backlog is about fourfold (mean 0.28% to 1.07% of trips) and stays under 2% in every seed.
+  - PM Telegraph Ave southbound travel time is now out of range (400 s against 300 to 376 s observed).
+  - The shipped PM build offers 10.3% less demand than the static fit.
+  - The demand is fitted on the simulator's own route choice with caps on trip ends. That is an assumption without a published reference.
+- The staged proposals: baseline 522.5 through cars an hour against 508.4 for the published set, and the top option unchanged at -74.0%.
+
+Adoption steps:
+
+1. This branch (`adopt-round-52`): the demand config with the candidate entry (sha256 2405ff02c92b2837), the fit reports and audit from the byte-identical rebuild, membership files synced through R2 (`demand/membership/`), the area status text, and the staged proposals as the published set (`data/proposals/rockridge.md`, `rockridge.seeds.json`).
+2. Laptop, after it merges the branch: pull the membership files, rebuild the demand and check its hashes (demand 2d16d8f8eb0950ca, cross-validation demand 1c3b1666f24156f1), `npm run assess -- --publish --noise`, the validation suite, `npm run data:redistribution`, `npm run data:results`, `npm run data:assumptions`, `npm run data:llms`, `npm run data:previews`.
+3. Cloud: merge to main, copy the proposals file (`evidence/search/proposals.json`, sha256 197a99cdafc026f8) to `public/data/rockridge.proposals.json`, `data:push` (membership files included), write the record entry for the publish, archive the change.
