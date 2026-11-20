@@ -41,7 +41,7 @@ shasum -a 256 -c $D/UNCHANGED.txt
 
 ## How they were made
 
-The laptop merged `adopt-round-52` (`fd8c0fe`) into the development branch as `ad48d3e` and placed `evidence/search/proposals.json` at `public/data/rockridge.proposals.json`.
+The laptop merged `adopt-round-52` (`fd8c0fe`) into the development branch as `dd87d88` and placed `evidence/search/proposals.json` at `public/data/rockridge.proposals.json`.
 
 | Input | Hash |
 | --- | --- |

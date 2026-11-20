@@ -1,6 +1,6 @@
 # Round 52 evidence (laptop run, 2026-11-19)
 
-This round ran the runbook as written. The run went from 9:59 PM to 11:43 PM PST, with code at `4f5a783`. Simulator fingerprint `d45a275dd7be0713cec6a64394b7d8a9`.
+This round ran the runbook as written. The run went from 9:59 PM to 11:43 PM PST, with code at `8e1dcdd`. Simulator fingerprint `d45a275dd7be0713cec6a64394b7d8a9`.
 
 ## Result
 
@@ -35,5 +35,5 @@ Adopting the candidate is the lead's and the project lead's decision.
   - backlog by gate
   - arterial travel times
 - `confirm/`: the fresh-seed confirmation.
-- `membership/`: the candidate's membership files, split into parts. They stay on the development branch (`salvatoret/peaceful-fermi-dlwt0u`, commit d2bfe91) and are not on main.
+- `membership/`: the candidate's membership files, split into parts. They stay on the development branch (`salvatoret/peaceful-fermi-dlwt0u`, commit 39d92df) and are not on main.
 - `laptop/`: the scripts that drove the run and the chain log, with local paths replaced by `<worktree>` and `~`.

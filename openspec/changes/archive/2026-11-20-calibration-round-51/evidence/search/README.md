@@ -5,7 +5,7 @@ The lead asked on 2026-11-19 for the proposal search to run on the round 51 cand
 ## Inputs
 
 - Candidate config `1080597767aac58c`. Network `53c823f20d9165ed`, demand `5d6be8a70618e905`, cross-validation demand `7164fa2ab08f612a`, membership `74a88c864d406903` (shipped) and `7d0fdb063236304d` (training).
-- Simulator fingerprint `d45a275dd7be0713cec6a64394b7d8a9`, code at `223d60a`.
+- Simulator fingerprint `d45a275dd7be0713cec6a64394b7d8a9`, code at `d4b2095`.
 - The stations file was identical to the baseline's.
 - `--out` started as a copy of the search-c5 output, which is the published set (`3822705a26ca879d`). `--known` started as a copy of `data/proposals/rockridge.seeds.json` (`fbcf6d37a7e8cad3`).
 - The flags match search-c5's (`command.txt`).

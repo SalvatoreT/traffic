@@ -141,9 +141,13 @@ The remaining misses point to route choice in the simulation disagreeing with th
 - Field checks still open: the Howell St and Ayala Ave barricade (low confidence), the Forest St signal timing, and the stop signs at Hillegass Ave and 61st St and at Canning St and 62nd St.
 - To decide: the Caldecott Lane on-ramp pairing, and the held-out gate targets derived from annual average daily traffic.
 
+## Development-branch commit hashes after re-signing (2026-11-20)
+
+The laptop evidence commits of rounds 48 to 52 on the development branch were made unsigned while commit signing was unavailable. On 2026-11-20 they were re-signed at the project lead's request: 19 commits were rebuilt with the same trees, messages, authors and dates, so only their hashes changed (branch head be03fbb became 3ddf1b4). The hashes cited in this record and in the archived designs and evidence READMEs of those rounds now name the re-signed commits. As-run outputs keep the hash they ran at: evidence logs, assessment reports, the proposals report, and the simulator revision in `validation.json` (ad48d3e9, now dd87d88, the same tree). Nothing on `main` or in the published data changed.
+
 ## Fifty-second round: whole-street counts weighted by the blocks they span, ceilings outside the study area only (passes the keep rule and the fresh-seed confirmation; adopted and published 2026-11-20)
 
-Passes the screen and every line of the keep rule on seeds 1 to 10, and the fresh-seed confirmation on seeds 11 to 20 (the candidate is no worse than the baseline on every line). At the time of the verdict, adoption was pending the project lead's review, and the published network 53c823f20d9165ed, demand 9cdebdabf05c4460 and cross-validation demand 2f9ae152b9bbf78e stood. The model status stays "Not calibrated". Simulator fingerprint d45a275dd7be0713cec6a64394b7d8a9 throughout. Nothing under `data/` or `public/data/` changed at the verdict apart from this record. The evidence is in `openspec/changes/archive/2026-11-20-calibration-round-52/evidence/` (laptop commit d2bfe91 on the development branch, unsigned; the merge commit 4f5a783 is also unsigned). The numbers below come from the laptop's final report, its pass-1 note and its read-only breakdown of round 51's Colby St SB blocks. The candidate's two membership files were sent as gzip parts on the development branch only (d2bfe91) and are not on main. A proposal search on the candidate then ran on the laptop (below).
+Passes the screen and every line of the keep rule on seeds 1 to 10, and the fresh-seed confirmation on seeds 11 to 20 (the candidate is no worse than the baseline on every line). At the time of the verdict, adoption was pending the project lead's review, and the published network 53c823f20d9165ed, demand 9cdebdabf05c4460 and cross-validation demand 2f9ae152b9bbf78e stood. The model status stays "Not calibrated". Simulator fingerprint d45a275dd7be0713cec6a64394b7d8a9 throughout. Nothing under `data/` or `public/data/` changed at the verdict apart from this record. The evidence is in `openspec/changes/archive/2026-11-20-calibration-round-52/evidence/` (laptop commit 39d92df on the development branch, unsigned; the merge commit 8e1dcdd is also unsigned). The numbers below come from the laptop's final report, its pass-1 note and its read-only breakdown of round 51's Colby St SB blocks. The candidate's two membership files were sent as gzip parts on the development branch only (39d92df) and are not on main. A proposal search on the candidate then ran on the laptop (below).
 
 Adopted and published on 2026-11-20 after the project lead's decision. The sections at the end of this entry record the staged proposal search, the decision and the publish; the verdict is as of 2026-11-19, before that decision.
 
@@ -418,7 +422,7 @@ Reproducibility check in the cloud, before publishing: the cloud rebuilt both de
 
 The branch `adopt-round-52` (fd8c0fe) merged to main as 37bb0fb. It carries the config, the fit reports and audit, the R2 mapping for `target/membership` (`tools/lib/r2-map.ts`, prefix `demand/membership/`, not served at `/data`), the status note and caveat, and the proposals report and seeds.
 
-The laptop ran the heavy steps from 8:06 to 8:38 AM Pacific on 2026-11-20. The commits on the development branch are ad48d3e (merge), fcf463a (assessment) and be03fbb (parts), all unsigned there, as the project lead allows on that branch.
+The laptop ran the heavy steps from 8:06 to 8:38 AM Pacific on 2026-11-20. The commits on the development branch are dd87d88 (merge), d21a60b (assessment) and 3ddf1b4 (parts), all unsigned there, as the project lead allows on that branch.
 
 - WASM build; the native/WASM parity check passed.
 - `npm run data`: network 53c823f20d9165ed, demand 2d16d8f8eb0950ca, cross-validation demand 1c3b1666f24156f1. The fit reports and audit came out identical to the committed ones.
@@ -431,11 +435,11 @@ The 65 changed `public/data` files (11,571,323 bytes) came to the cloud as 22 gz
 
 The cloud published at about 8:40 AM Pacific. All checksums verified, and the laptop's demand file is byte-identical to the cloud's own rebuild. Tools and worker tests passed (580 of 580). `data:push` uploaded the files and the two membership files. The live site was then read back: demand 2d16d8f8eb0950ca, proposals 197a99cdafc026f8, network 53c823f20d9165ed, noise 4d6850cccc2f43e8 and `areas.json` match the local files. The status note on the site reads "Not calibrated: PM count locations held out of the fit pass 14 of 24 (rule: over 85%), and PM fitted locations pass 81 of 92." Main is at 0b25a0d (`feat(data): publish the round 52 model, assessment and proposals`).
 
-Published now: network 53c823f20d9165ed, demand 2d16d8f8eb0950ca, cross-validation demand 1c3b1666f24156f1, proposals 197a99cdafc026f8 (the staged search above), assessment from the laptop run fcf463a. The change `calibration-round-52` is archived.
+Published now: network 53c823f20d9165ed, demand 2d16d8f8eb0950ca, cross-validation demand 1c3b1666f24156f1, proposals 197a99cdafc026f8 (the staged search above), assessment from the laptop run d21a60b. The change `calibration-round-52` is archived.
 
 ## Fifty-first round: route shares on simulated membership, with node ceilings (passes the keep rule on seeds 1 to 10, fails the fresh-seed confirmation, not adopted) (2026-11-19)
 
-Passed the screen and every line of the keep rule on seeds 1 to 10. It then failed the fresh-seed confirmation on one line, the whole-street traversals (7 of 8 against the baseline's 8 of 8 on seeds 11 to 20), and the project lead decided not to adopt it (change calibration-round-51, archived). The published network 53c823f20d9165ed, demand 9cdebdabf05c4460 and cross-validation demand 2f9ae152b9bbf78e stand, and the model status stays "Not calibrated". Simulator fingerprint d45a275dd7be0713cec6a64394b7d8a9 throughout. Nothing under `data/` or `public/data/` changed apart from this record. The evidence is in `openspec/changes/archive/2026-11-20-calibration-round-51/evidence/` (laptop commits 8ada504, 223d60a, 90e655b and 74afa36, all unsigned). The numbers in the first sections come from the laptop's stop report, its pass-1 note and its final report; the search and confirmation sections come from its search and confirmation reports. The two membership files were sent as 7 gzip parts on the development branch only (74afa36) and are not on main.
+Passed the screen and every line of the keep rule on seeds 1 to 10. It then failed the fresh-seed confirmation on one line, the whole-street traversals (7 of 8 against the baseline's 8 of 8 on seeds 11 to 20), and the project lead decided not to adopt it (change calibration-round-51, archived). The published network 53c823f20d9165ed, demand 9cdebdabf05c4460 and cross-validation demand 2f9ae152b9bbf78e stand, and the model status stays "Not calibrated". Simulator fingerprint d45a275dd7be0713cec6a64394b7d8a9 throughout. Nothing under `data/` or `public/data/` changed apart from this record. The evidence is in `openspec/changes/archive/2026-11-20-calibration-round-51/evidence/` (laptop commits d28897d, d4b2095, 2557fc9 and 6c5ff1b, all unsigned). The numbers in the first sections come from the laptop's stop report, its pass-1 note and its final report; the search and confirmation sections come from its search and confirmation reports. The two membership files were sent as 7 gzip parts on the development branch only (6c5ff1b) and are not on main.
 
 ### What was tried
 
@@ -615,9 +619,9 @@ The pass is a keep-rule pass and nothing stronger. The shares are fit targets, s
 
 ### Staged proposal search
 
-The lead asked on 2026-11-19 for the proposal search to run on the candidate, in the same shape as the published search-c5, with the outputs staged. Nothing was published: no `data:redistribution`, `data:results`, `data:llms`, `data:previews` or `data:push` ran, and nothing was written to `data/proposals` or `public/data/rockridge.proposals.json` (388c91f025dafd55 before and after). The evidence is in `evidence/search/` (laptop commit 90e655b).
+The lead asked on 2026-11-19 for the proposal search to run on the candidate, in the same shape as the published search-c5, with the outputs staged. Nothing was published: no `data:redistribution`, `data:results`, `data:llms`, `data:previews` or `data:push` ran, and nothing was written to `data/proposals` or `public/data/rockridge.proposals.json` (388c91f025dafd55 before and after). The evidence is in `evidence/search/` (laptop commit 2557fc9).
 
-Run: config 1080597767aac58c; hashes 53c823f20d9165ed, 5d6be8a70618e905, 7164fa2ab08f612a, 74a88c864d406903, 7d0fdb063236304d; fingerprint d45a275dd7be0713cec6a64394b7d8a9; stations identical; code 223d60a. The flags were search-c5's. `--out` was seeded with the search-c5 output (3822705a26ca879d) and `--known` was a copy of `data/proposals/rockridge.seeds.json` (fbcf6d37a7e8cad3). Explore took 4903 s (search-c5 took 5384 s) and exited 0. The restore (`npm run data`) gave back 53c823f20d9165ed, 9cdebdabf05c4460 and 2f9ae152b9bbf78e with a clean status.
+Run: config 1080597767aac58c; hashes 53c823f20d9165ed, 5d6be8a70618e905, 7164fa2ab08f612a, 74a88c864d406903, 7d0fdb063236304d; fingerprint d45a275dd7be0713cec6a64394b7d8a9; stations identical; code d4b2095. The flags were search-c5's. `--out` was seeded with the search-c5 output (3822705a26ca879d) and `--known` was a copy of `data/proposals/rockridge.seeds.json` (fbcf6d37a7e8cad3). Explore took 4903 s (search-c5 took 5384 s) and exited 0. The restore (`npm run data`) gave back 53c823f20d9165ed, 9cdebdabf05c4460 and 2f9ae152b9bbf78e with a clean status.
 
 Baseline through cars per hour, mean over confirmation seeds 101 to 110, candidate against the published search-c5 set:
 
@@ -649,7 +653,7 @@ On the least-detour change, search-c5 p5 is finalist 26 in this run. On the disc
 
 ### Fresh-seed confirmation
 
-The rule was written by the lead on 2026-11-19, before the run: on seeds 11 to 20 the candidate must be no worse than the baseline on every keep-rule line computed on the same seeds. It confirms on independent seeds and leaves the keep rule in place. The evidence is in `evidence/confirm/` (laptop commit 74afa36).
+The rule was written by the lead on 2026-11-19, before the run: on seeds 11 to 20 the candidate must be no worse than the baseline on every keep-rule line computed on the same seeds. It confirms on independent seeds and leaves the keep rule in place. The evidence is in `evidence/confirm/` (laptop commit 6c5ff1b).
 
 Mode: `tools/assess.ts` in verdict mode for a non-published set (`--suffix`, no `--diagnostic`, `--publish` or `--noise`), seeds 11 to 20, all three periods, `--jobs 12`. Baseline: suffix r51-confirm-base, config 505dd0f032fc7ae8, hashes 53c823f20d9165ed, 9cdebdabf05c4460, 2f9ae152b9bbf78e, 155 s. Candidate: suffix r51-confirm, config 1080597767aac58c, hashes 53c823f20d9165ed, 5d6be8a70618e905, 7164fa2ab08f612a, membership 74a88c864d406903 and 7d0fdb063236304d, stations identical, 148 s. Both exited 0 on fingerprint d45a275dd7be0713cec6a64394b7d8a9. The baseline was restored afterwards and its three hashes checked. Station sets were identical in every column (92 fitted and 24 held out in the PM peak, 77 and 19 in the AM peak).
 
@@ -674,7 +678,7 @@ Watched lines, baseline against candidate on seeds 11 to 20:
 - PM backlog (under 2% in every seed, mean / max): 0.25% / 0.75% against 0.99% / 1.47% (seeds 1 to 10: 0.28% / 0.49% against 1.11% / 1.51%). AM: 0.18% / 0.37% against 0.39% / 0.81%.
 - Cars cleared from gridlock near the area, mean per hour (max): PM 0 (0) against 0.1 (1); AM 0 (0) against 0.1 (1). Midday 0 in both.
 
-The two membership files that rebuild the candidate demand were sent as 7 gzip parts, each at most 190,000 bytes, with a SHA256SUMS list, in the same laptop commit 74afa36 on the development branch. They are not on main. Both reassembled to the recorded hashes (74a88c864d406903 and 7d0fdb063236304d) when checked.
+The two membership files that rebuild the candidate demand were sent as 7 gzip parts, each at most 190,000 bytes, with a SHA256SUMS list, in the same laptop commit 6c5ff1b on the development branch. They are not on main. Both reassembled to the recorded hashes (74a88c864d406903 and 7d0fdb063236304d) when checked.
 
 ### Decisions of the project lead (2026-11-19)
 
@@ -694,7 +698,7 @@ Fit the counted whole-street traversals on the simulator's routes, on top of rou
 
 ## Fiftieth round: simulated membership with ceilings on every origin and destination node (not adopted) (2026-11-19)
 
-Fails the keep rule, not adopted (change calibration-round-50, archived). The published network 53c823f20d9165ed, demand 9cdebdabf05c4460 and cross-validation demand 2f9ae152b9bbf78e stand. Simulator fingerprint d45a275dd7be0713cec6a64394b7d8a9 throughout. Nothing under `data/` or `public/data/` changed apart from this record. The evidence is in `openspec/changes/archive/2026-11-19-calibration-round-50/evidence/` (laptop commit 3deb970), and the numbers below come from the laptop's final report and its pass-1 note.
+Fails the keep rule, not adopted (change calibration-round-50, archived). The published network 53c823f20d9165ed, demand 9cdebdabf05c4460 and cross-validation demand 2f9ae152b9bbf78e stand. Simulator fingerprint d45a275dd7be0713cec6a64394b7d8a9 throughout. Nothing under `data/` or `public/data/` changed apart from this record. The evidence is in `openspec/changes/archive/2026-11-19-calibration-round-50/evidence/` (laptop commit b3f4dd0), and the numbers below come from the laptop's final report and its pass-1 note.
 
 ### What was tried
 
@@ -861,7 +865,7 @@ Give the select-link share constraints and the through-car targets simulated mem
 
 ## Forty-ninth round: simulated membership with ceilings on uncounted gate totals (not adopted) (2026-11-19)
 
-Fails the keep rule, not adopted (change calibration-round-49, archived). The published network 53c823f20d9165ed, demand 9cdebdabf05c4460 and cross-validation demand 2f9ae152b9bbf78e stand. Simulator fingerprint d45a275dd7be0713cec6a64394b7d8a9 throughout. Nothing under `data/` or `public/data/` changed apart from this record. The evidence is in `openspec/changes/archive/2026-11-19-calibration-round-49/evidence/` (laptop commits a6a84ad and 4efe00a), and the numbers below come from the laptop's report and its two notes during the run.
+Fails the keep rule, not adopted (change calibration-round-49, archived). The published network 53c823f20d9165ed, demand 9cdebdabf05c4460 and cross-validation demand 2f9ae152b9bbf78e stand. Simulator fingerprint d45a275dd7be0713cec6a64394b7d8a9 throughout. Nothing under `data/` or `public/data/` changed apart from this record. The evidence is in `openspec/changes/archive/2026-11-19-calibration-round-49/evidence/` (laptop commits ed7cb9e and ce4139e), and the numbers below come from the laptop's report and its two notes during the run.
 
 ### What was tried
 
@@ -995,7 +999,7 @@ Run the same loop with ceilings on every origin and destination node total, not 
 
 ## Forty-eighth round: simulated membership for every exported station (not adopted) (2026-11-19)
 
-Fails the keep rule, not adopted (change calibration-round-48, archived). The published network 53c823f20d9165ed, demand 9cdebdabf05c4460 and cross-validation demand 2f9ae152b9bbf78e stand. Simulator fingerprint d45a275dd7be0713cec6a64394b7d8a9 throughout. Nothing under `data/` or `public/data/` changed apart from this record. The evidence is in `openspec/changes/archive/2026-11-19-calibration-round-48/evidence/` (laptop commits 6a50e3e and 71af51a), and the numbers below come from the laptop's report.
+Fails the keep rule, not adopted (change calibration-round-48, archived). The published network 53c823f20d9165ed, demand 9cdebdabf05c4460 and cross-validation demand 2f9ae152b9bbf78e stand. Simulator fingerprint d45a275dd7be0713cec6a64394b7d8a9 throughout. Nothing under `data/` or `public/data/` changed apart from this record. The evidence is in `openspec/changes/archive/2026-11-19-calibration-round-48/evidence/` (laptop commits 534e31d and 71ce359), and the numbers below come from the laptop's report.
 
 ### What was tried
 
