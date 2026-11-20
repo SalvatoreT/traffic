@@ -1,0 +1,4 @@
+| pm_peak | baseline | 78 | 602 Grove Shafter Freeway 46; 183 San Pablo Avenue 14; 442 63rd Street / Martin Luther King Junior Way 1; 140 63rd Street / Baker Street 1; 301 47th Street / Martin Luther King Junior Way 1; 127 59th Street / Idaho Street 1 |
+| am_peak | baseline | 27 | 1756 Claremont Avenue 18; 602 Grove Shafter Freeway 4; 1372 Domingo Avenue / Russell Street 1; 1385 Oak Ridge Road / Tunnel Road 1; 265 Ashby Avenue 0; 500 Alcatraz Avenue / Dover Street 0 |
+| pm_peak | candidate | 276 | 602 Grove Shafter Freeway 192; 1756 Claremont Avenue 48; 1398 Claremont Boulevard 6; 301 47th Street / Martin Luther King Junior Way 5; 448 Adeline Street / Harmon Street 2; 449 Adeline Street / Fairview Street 2 |
+| am_peak | candidate | 79 | 1756 Claremont Avenue 50; 602 Grove Shafter Freeway 24; 265 Ashby Avenue 1; 1372 Domingo Avenue / Russell Street 1; 1430 Claremont Avenue / Russell Street 1; 1383 Alvarado Road / Bridge Road 0 |

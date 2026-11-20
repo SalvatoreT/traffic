@@ -85,3 +85,9 @@ Reading the stress. The mechanism does what D2 says. With made-up pairs that mak
 - A ceiling at a node the simulator needs to fill (the SR-24 mainline entries, the large gates) can starve a counted ramp or movement downstream, as in round 49. The ramp table in the reported lists shows it.
 - Soft ceilings leak and the projection removes the leak, so the final fit can sit a little below what the soft fit planned, and fitted stations within tolerance can fall by the projection.
 - The loop's memory of the first pass is permanent in the pool (1/n weighting), as in round 48.
+
+## Outcome
+
+Ran on the laptop on 2026-11-19 (runbook steps A to G; evidence commit 3deb970 on the dev branch salvatoret/peaceful-fermi-dlwt0u). The loop ran three passes (0, 1, 2) plus the final builds and exited 0. The stop rule did not fire and no abort fired. The 10% low-demand warning (D4, P6) did not fire either: the lowest final build was training PM at 90.0% of the static fit (22,543 of 25,042 veh/h, 9.98% below). The candidate passed the three-seed screen, including the backlog line, and failed the ten-seed keep rule (D5) on two lines: PM held out 13 of 24 (line 14) and D5 headline shares 2 of 4 (line 4). Whole-street traversals are 8 of 8, D16 holds in every period, and validation stays 67 of 74. No node total grew in any build.
+
+Not adopted. The switch stays off: the shipped config has no `gatePriorTotals` or `simulatedMembership` entry, and published data are unchanged. The record entry is in `data/calibration/rockridge.record.md`. The evidence is in the archived change's `evidence/` folder (evidence commit 3deb970). Next lead: give the select-link share constraints and the through-car targets simulated membership from the same `--select-od` block export, inside the loop with the node ceilings (ramp via-street shares stay static: nothing exports them per pair).

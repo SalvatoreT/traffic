@@ -1,0 +1,40 @@
+  N: 549 731
+  S: 714 446
+  E: 469 797
+  W: 812 570
+
+TMC 40thSt_WestSt legs (PM peak hour, avg): leg entering leaving
+  N: 142 335
+  S: 468 150
+  E: 488 840
+  W: 836 609
+
+TMC MarketSt_55thSt legs (PM peak hour, avg): leg entering leaving
+  N: 679 817
+  S: 607 428
+  E: 402 505
+  W: 200 139
+
+Gate accounting, PM peak (veh/h): kind, gates, target in / modeled in, target out / modeled out
+  ASSUMPTION  103  in   6249 /   4688  out   7938 /   6301
+  DATA          7  in   3483 /   2980  out   2779 /   2384
+  DATA(adt)     7  in   4395 /   2695  out   4245 /   3350
+Counted gates (DATA, DATA(adt)): gate street target_in modeled_in ratio | target_out modeled_out ratio
+  265   ashby       1134  1154 1.02 |  1386  1377 0.99
+  943   telegraph   1064  1162 1.09 |   900   893 0.99
+  1548  tunnel       547   165 0.30 |   668   216 0.32
+  1717  tunnel       547   137 0.25 |   668   260 0.39
+  184   alcatraz     547   307 0.56 |   623   623 1.00
+  275   market       607   308 0.51 |   428    42 0.10
+  179   sanpablo       0     0 - |  1015  1123 1.11
+  74    sanpablo     415    44 0.11 |   507   375 0.74
+  104   sanpablo     923   175 0.19 |     0     0 -
+  183   sanpablo     830  1021 1.23 |     0     0 -
+  763   telegraph    731   789 1.08 |     0     0 -
+  1735  telegraph      0     0 - |   549   598 1.09
+  295   west         335   332 0.99 |   142   144 1.02
+  14    55th         200    83 0.41 |   139    84 0.60
+Ramp totals, PM: modeled off-ramp trips (mainline gate origin) 5548 vs sum of off-ramp ADT x K 6786; on-ramp trips 5776 vs 6282
+Origins at local nodes 8640 veh/h
+
+PM surface-gate two-way volume by street: unnamed 9297, 55th 339, sanpablo 3690, alcatraz 1169, sacramento 300, ashby 2520, market 1035, mlk 1260, adeline 810, west 476, telegraph 3243, shattuck 810, college 450, tunnel 2430, broadwayterr 450, claremont 810

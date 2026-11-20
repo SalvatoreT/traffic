@@ -2,8 +2,8 @@
 // (gate, inside the study area, outside). Flow types as tools/build-demand.ts typeOf: ramp touches a freeway gate (a gate on a motorway link),
 // through is gate to gate, local is the rest. Read-only; prints Markdown.
 // usage: node nodes.cjs <network.json> <baseline demand.json> <candidate demand.json> [label]
-// Round 50 shipped:  node openspec/changes/calibration-round-50/scripts/nodes.cjs target/r50/network.base.json target/r50/demand.base.json public/data/rockridge.demand.json shipped
-// Round 50 training: node openspec/changes/calibration-round-50/scripts/nodes.cjs target/r50/network.base.json target/r50/demand.base.cv.json target/validation/rockridge.demand.json training
+// Round 50 shipped:  node openspec/changes/archive/2026-11-19-calibration-round-50/scripts/nodes.cjs target/r50/network.base.json target/r50/demand.base.json public/data/rockridge.demand.json shipped
+// Round 50 training: node openspec/changes/archive/2026-11-19-calibration-round-50/scripts/nodes.cjs target/r50/network.base.json target/r50/demand.base.cv.json target/validation/rockridge.demand.json training
 const fs = require('fs');
 const [netFile, baseFile, candFile, label = 'shipped'] = process.argv.slice(2);
 if (!candFile) { console.error('usage: node nodes.cjs <network.json> <baseline demand.json> <candidate demand.json> [label]'); process.exit(2); }

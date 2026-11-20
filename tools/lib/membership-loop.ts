@@ -3,7 +3,7 @@
 // successive averages with step 1/n [PowellSheffi1982]. Applying that step rule to this fixed point (demand, routes, membership, demand) is an ASSUMPTION: the
 // reference concerns equilibrium assignment, and its paper was not opened.
 import type { ThroughMeasured } from './demand-fit';
-import { checkSelectOdSeed, membershipEvidence, pooledStations, sameMembershipEvidence, type MembershipEvidence, type SelectOd } from './through-membership';
+import { checkSelectOdSeed, membershipEvidence, pooledMembership, pooledStations, sameMembershipEvidence, throughTargetId, type MembershipEvidence, type SelectOd } from './through-membership';
 
 /** The fields of a stations-file entry that decide what the report binary can export. */
 export interface StationRec {
@@ -127,7 +127,7 @@ export function assertEqualWeight(sets: RunSet[]): void {
   if (n.size !== 1 || sets.some((s) => s.sod.length < 2)) throw new Error(`iterations must carry the same number of seeds (at least two) to pool with equal weight, got ${sets.map((s) => s.sod.length).join(', ')}`);
 }
 
-export interface Pooled { measured: ThroughMeasured; zeroHit: string[]; absent: string[]; dropped: string[] }
+export interface Pooled { measured: ThroughMeasured; zeroHit: string[]; absent: string[]; dropped: string[]; /** Round 51: the through targets' pool (study-area trips left out) and the shares' pool (every trip), when the sub-switches are on. */ through?: PooledBlocks; blocks?: PooledBlocks }
 
 /**
  * Equal-weight pool of the iteration runs for the selected stations only. A station with no simulated trip in any pooled run is not written: the fit
@@ -148,6 +148,31 @@ export function poolStations(sets: RunSet[], selected: Set<string>): Pooled {
   const trips = Object.fromEntries(Object.entries(m.trips).filter(([q]) => keep.has(q)));
   const absent = [...selected].filter((id) => !(id in m.hits)).sort();
   return { measured: { runs: m.runs, source: m.source, hits, trips }, zeroHit: zeroHit.sort(), absent, dropped: dropped.sort() };
+}
+
+/** Round 51 sub-switches of the candidate's `simulatedMembership` entry: through targets and select-link shares take simulated membership from the runs' block export. */
+export interface BlockSwitches { throughTargets: boolean; shares: boolean }
+export const blockSwitches = (sm: { throughTargets?: unknown; shares?: unknown } | undefined): BlockSwitches => ({ throughTargets: sm?.throughTargets === true, shares: sm?.shares === true });
+
+export interface PooledBlocks { measured: ThroughMeasured; /** Blocks the runs exported without a counted trip (after the study-area filter, if any): they keep static routes. */ zeroHit: string[] }
+
+/**
+ * Equal-weight pool of the iteration runs' select-link block pairs (`blocks` of `calibrate --select-od`: per block, every trip that used a link of it). With `inStudy`, trips with a
+ * trip end in the study area are left out (the through targets' definition, `pooledMembership`); with an empty set every trip counts (the select-link shares' definition). A block with no
+ * counted trip is not written, so the fit keeps its static routes, and is listed in `zeroHit`. Hits are keyed `through <label>` as the through targets are.
+ */
+export function poolBlocks(sets: RunSet[], inStudy: Set<number>): PooledBlocks {
+  assertEqualWeight(sets);
+  for (const s of sets) for (const r of s.sod) if (!Array.isArray(r.blocks)) throw new Error(`seed ${r.seed} of ${s.label} has no block export (blocks); the binary or its arguments are wrong`);
+  const m = pooledMembership(sets, inStudy);
+  const labels = new Set(sets.flatMap((s) => s.sod.flatMap((r) => r.blocks.map((b) => throughTargetId(b.label)))));
+  const hits: ThroughMeasured['hits'] = {}, zeroHit: string[] = [];
+  for (const id of [...labels].sort()) {
+    const h = m.hits[id];
+    if (h && Object.values(h).reduce((a, b) => a + b, 0) > 0) hits[id] = h; else zeroHit.push(id.slice('through '.length));
+  }
+  const keep = new Set(Object.values(hits).flatMap((h) => Object.keys(h)));
+  return { measured: { runs: m.runs, source: m.source, hits, trips: Object.fromEntries(Object.entries(m.trips).filter(([q]) => keep.has(q))) }, zeroHit };
 }
 
 /** Evidence and run-setting checks of one iteration's seed runs of one period and view, as `tools/through-membership.ts` makes them. Returns the evidence and the setup string. */
@@ -174,14 +199,18 @@ export function membershipFile(i: MembershipFileInput): object {
   return {
     area: i.area, network: i.networkId, evidence: i.evidence, setups: i.setups,
     note: `Simulated station pairs, ${i.view} view, equal-weight pool of ${i.iterations} iteration(s) of seed runs (calibration round 48). Model output, not data. A station with no simulated trip is listed in zeroHit and keeps its static membership. Written by tools/membership-loop.ts.`,
-    periods: Object.fromEntries(Object.entries(i.periods).map(([p, v]) => [p, { runs: 0, source: '', hits: {}, trips: {}, stations: { ...v.measured, zeroHit: v.zeroHit } }])),
+    periods: Object.fromEntries(Object.entries(i.periods).map(([p, v]) => [p, {
+      runs: v.through?.measured.runs ?? 0, source: v.through?.measured.source ?? '', hits: v.through?.measured.hits ?? {}, trips: v.through?.measured.trips ?? {},
+      ...(v.through ? { throughZeroHit: v.through.zeroHit } : {}), ...(v.blocks ? { blocks: { ...v.blocks.measured, zeroHit: v.blocks.zeroHit } } : {}),
+      stations: { ...v.measured, zeroHit: v.zeroHit },
+    }])),
   };
 }
 
 /** The training view's file must name no withheld station, in hits or in zero-hit lists. */
-export function assertNoWithheld(file: { periods: Record<string, { stations?: ThroughMeasured & { zeroHit?: string[] } }> }, withheld: Set<string>): void {
+export function assertNoWithheld(file: { periods: Record<string, { hits?: Record<string, unknown>; throughZeroHit?: string[]; blocks?: ThroughMeasured & { zeroHit?: string[] }; stations?: ThroughMeasured & { zeroHit?: string[] } }> }, withheld: Set<string>): void {
   const bad: string[] = [];
-  for (const [p, v] of Object.entries(file.periods)) for (const id of [...Object.keys(v.stations?.hits ?? {}), ...(v.stations?.zeroHit ?? [])]) if (withheld.has(id)) bad.push(`${p}: ${id}`);
+  for (const [p, v] of Object.entries(file.periods)) for (const id of [...Object.keys(v.stations?.hits ?? {}), ...(v.stations?.zeroHit ?? []), ...Object.keys(v.hits ?? {}), ...(v.throughZeroHit ?? []), ...Object.keys(v.blocks?.hits ?? {}), ...(v.blocks?.zeroHit ?? [])]) if (withheld.has(id) || withheld.has(id.replace(/^through /, ''))) bad.push(`${p}: ${id}`);
   if (bad.length) throw new Error(`the training membership file names withheld stations: ${bad.slice(0, 5).join('; ')}`);
 }
 
@@ -192,7 +221,7 @@ export interface ReportCheck { problems: string[]; periods: Record<string, { run
  * the note with its run count and station count; a silent fall back to static membership is the failure this guards against. With none expected (the first
  * pass), the report must say that there was no file.
  */
-export function checkFitReport(text: string, o: { view: string; file: string | null; runs: Record<string, number>; minStations: Record<string, number> }): ReportCheck {
+export function checkFitReport(text: string, o: { view: string; file: string | null; runs: Record<string, number>; minStations: Record<string, number>; /** Round 51: per period, the runs and the number of blocks with simulated trips in the file, when the shares take simulated membership. */ blocks?: Record<string, { runs: number; blocks: number }> }): ReportCheck {
   const problems: string[] = [];
   const periods: ReportCheck['periods'] = {};
   if (o.file === null) {
@@ -206,6 +235,12 @@ export function checkFitReport(text: string, o: { view: string; file: string | n
     periods[p] = { runs: +m[1], stations: +m[2], of: +m[3] };
     if (+m[1] !== runs) problems.push(`${p}: the fit pooled ${m[1]} runs, expected ${runs}`);
     if (+m[2] < (o.minStations[p] ?? 1)) problems.push(`${p}: only ${m[2]} stations took simulated membership, expected at least ${o.minStations[p]}`);
+  }
+  for (const [p, b] of Object.entries(o.blocks ?? {})) {
+    const m = new RegExp(`^- ${p}: select-link shares take simulated membership \\((\\d+) runs; (\\d+) of (\\d+) share constraints;`, 'm').exec(text);
+    if (!m) { problems.push(`${p}: the report has no "select-link shares take simulated membership" note (the file has simulated trips on ${b.blocks} block(s))`); continue; }
+    if (+m[1] !== b.runs) problems.push(`${p}: the share constraints pooled ${m[1]} runs, expected ${b.runs}`);
+    if (b.blocks > 0 && +m[2] < 1) problems.push(`${p}: no share constraint took simulated membership although the file has simulated trips on ${b.blocks} block(s)`);
   }
   return { problems, periods };
 }
@@ -242,6 +277,20 @@ export function gatePriorFromReport(text: string): Record<string, CeilingStat> {
     else if ((m = /^Non-gate node trip ends (\S+) \(veh\/h, static fit to final\): origins inside the study area (\d+ to \d+), outside (\d+ to \d+); destinations inside (\d+ to \d+), outside (\d+ to \d+)\.$/.exec(line)) && out[m[1]]) out[m[1]].ends = { originInside: pr(m[2]), originOutside: pr(m[3]), destInside: pr(m[4]), destOutside: pr(m[5]) };
   }
   return out;
+}
+
+export interface ShareLine { period: string; label: string; membership: 'simulated' | 'static'; target: number; offered: number; staticOffered: number; final: number; staticFinal: number; flows: number }
+export interface ThroughLine { period: string; label: string; membership: 'simulated' | 'static'; target: number; offered: number; staticOffered: number; final: number; staticFinal: number }
+
+/** The "Share <period> <label>: ..." lines of a fit report (round 51): each select-link or ramp share's fit figure against its target, on simulated membership and on the static routes. Empty when no share took simulated membership. */
+export function shareLinesFromReport(text: string): ShareLine[] {
+  const pc = (t: string) => (t === 'n/a' ? NaN : +t.replace('%', ''));
+  return [...text.matchAll(/^Share (\S+) (.+?): (simulated|static); target (\S+); offered (\S+) \((\S+)\); final (\S+) \((\S+)\); (\d+) flows\.$/gm)].map((m) => ({ period: m[1], label: m[2], membership: m[3] as ShareLine['membership'], target: pc(m[4]), offered: pc(m[5]), staticOffered: pc(m[6]), final: pc(m[7]), staticFinal: pc(m[8]), flows: +m[9] }));
+}
+
+/** The "Through target <period> <label>: ..." lines (round 51), in cars per hour. */
+export function throughLinesFromReport(text: string): ThroughLine[] {
+  return [...text.matchAll(/^Through target (\S+) (.+?): (simulated|static); target (\d+); offered (\d+) \(static routes (\d+)\); final (\d+) \(static routes (\d+)\)\.$/gm)].map((m) => ({ period: m[1], label: m[2], membership: m[3] as ThroughLine['membership'], target: +m[4], offered: +m[5], staticOffered: +m[6], final: +m[7], staticFinal: +m[8] }));
 }
 
 export interface Step { id: string; iteration: number; view: string | null; kind: 'build' | 'check' | 'runs' | 'pool' | 'final'; title: string; cmd?: string }

@@ -7,7 +7,8 @@ import { assigned, fitToCounts, type Constraint, type FitOptions, type FlowType 
 import { controlDelayArray, type ControlDelayFile } from './control-delays';
 import { sourceYearLines, type RecencyConfig } from './recency';
 import { heldStationIds, observationOfKey, type SplitManifest, type SplitStation } from './lineage';
-import { routeShareTally, impliedVolumes, type ImpliedVolume, type ShareSpec, type Targets } from './share-targets';
+import { routeShareTally, impliedVolumes, type BlockMembership, type ImpliedVolume, type ShareSpec, type Targets } from './share-targets';
+import { throughTargetId } from './through-membership';
 
 export interface NetLinkIn extends ALink { name: string; lanes?: number; inStudyArea?: boolean }
 /** `via`: an assumed movement flow (link positions a, b); its volume is pinned in the fit. `maxDetour` and `alternatives` are read by the simulator (ASSUMPTION). */
@@ -379,9 +380,9 @@ export function gatePriorStations(id: string, flows: { origin: number; destinati
  */
 export interface ThroughTarget { id: string; label: string; links: number[]; target: Record<string, number>; lo: Record<string, number>; hi: Record<string, number>; ceiling: string[]; derived: string[]; weight: number; basis: string }
 /** Simulated through trips per origin-destination pair (`tools/through-membership.ts`): over `runs` seed runs, `hits[id]["o>d"]` trips of the pair counted on target `id`, `trips["o>d"]` trips of the pair offered (veh/h summed over the runs; only pairs with a counted trip). */
-export interface ThroughMeasured { runs: number; source: string; hits: Record<string, Record<string, number>>; trips: Record<string, number>; /** Movement and route stations' pairs, all trips (round 41). */ stations?: ThroughMeasured }
+export interface ThroughMeasured { runs: number; source: string; hits: Record<string, Record<string, number>>; trips: Record<string, number>; /** Movement and route stations' pairs, all trips (round 41). */ stations?: ThroughMeasured; /** Select-link blocks' pairs, every trip that used the block, no study-area filter, hits keyed like the through targets (round 51); `zeroHit` lists blocks without a simulated trip. */ blocks?: ThroughMeasured & { zeroHit?: string[] } }
 /** `reportOnly`: the figures are reported, no constraint enters the fit (the table is the one built without targets). */
-export interface ThroughFit { targets: ThroughTarget[]; inStudy: Set<number>; measured?: Record<string, ThroughMeasured>; priorTrips: number; reportOnly?: boolean; /** Station ids whose membership comes from the simulated pairs of `measured[period].stations`; 'all' takes every fitted station that has pairs there (calibration round 48). */ measuredStations?: string[] | 'all' }
+export interface ThroughFit { targets: ThroughTarget[]; inStudy: Set<number>; measured?: Record<string, ThroughMeasured>; priorTrips: number; reportOnly?: boolean; /** Station ids whose membership comes from the simulated pairs of `measured[period].stations`; 'all' takes every fitted station that has pairs there (calibration round 48). */ measuredStations?: string[] | 'all'; /** Round 51 sub-switches of `simulatedMembership`: through targets and select-link shares take simulated membership from the loop's block pairs; absent or false keeps rounds 48 to 50. */ simulated?: { throughTargets: boolean; shares: boolean } }
 
 /**
  * Per-flow proportions of a through target. Static: the share of the flow's assigned routes that use the run (through flows only). Measured: per pair, the
@@ -445,7 +446,8 @@ export interface PeriodResult {
   /** Validation-only stations: assigned volume before, after the count fit and final (never fitted). */
   heldRows: { st: Station; target: number; before: number; afterFit: number; final: number }[];
   impliedRows: { iv: ImpliedVolume; before: number; afterFit: number; final: number }[];
-  shareRows: { spec: ShareSpec; offered: number; afterFit: number; final: number; n: number }[];
+  /** `simulated`: the share's membership came from simulated block trips; `staticOffered`, `staticAfterFit` and `staticFinal` are the same share on the static routes (round 51). */
+  shareRows: { spec: ShareSpec; offered: number; afterFit: number; final: number; n: number; simulated?: boolean; staticOffered?: number; staticAfterFit?: number; staticFinal?: number }[];
   /** Through-car targets: the figure under the proportions the fit used (measured or static) and under the static route shares, offered and final. */
   throughRows: { t: ThroughTarget; target: number; lo: number; hi: number; oneSided: boolean; measured: boolean; offered: number; final: number; staticOffered: number; staticFinal: number }[];
   /** Gate prior ceilings (round 49); absent when the switch is off. */
@@ -520,6 +522,12 @@ export function fitPeriod(
   links.forEach((_, l) => { if (!exempt.has(l)) limit[l] = (1 + cfg.guard.excessShare) * ruleOf[l].cap; });
   const rampTargets = stations.filter((q) => q.kind === 'ramp' && (q.target[id] ?? 0) > 0).map((q) => ({ links: q.links, target: q.target[id] }));
   const capacity = ruleOf.map((r) => r.cap);
+  // Round 51: with the sub-switches on, through targets and select-link shares take the pairs of the loop's block export. Without `simulated` (rounds 39 to 50) nothing changes.
+  const simSwitch = cfg.through?.simulated;
+  const throughMeasuredOf = (tid: string) => (!simSwitch || simSwitch.throughTargets) && cfg.through?.measured?.[id]?.hits[tid] ? cfg.through.measured[id] : undefined;
+  const blockPairs = simSwitch?.shares ? cfg.through?.measured?.[id]?.blocks : undefined;
+  const blockMembership: BlockMembership | undefined = blockPairs
+    ? (block, stat) => (blockPairs.hits[throughTargetId(block)] ? measuredShare(stat, flows, blockPairs, throughTargetId(block), cfg.through!.priorTrips, pinnedK, () => false) : undefined) : undefined;
   const load = (vol: number[]) => {
     const shares = cfg.shares;
     const tally = shares && (shares.weight > 0 || (cfg.implied?.weight ?? 0) > 0)
@@ -527,12 +535,12 @@ export function fitPeriod(
     const a = as.method === 'msa'
       ? assignMsa(g, flows, vol, { iterations: as.iterations, drawsPerPass: as.drawsPerPass, alpha: alphaUse, beta: as.beta, dispersion: as.dispersion, capacity, extraCost: extra, features, onRoute: tally?.onRoute })
       : assign(g, flows, cfg.draws, cfg.dispersion, features, tally?.onRoute);
-    const specs = shares && shares.weight > 0 ? tally!.constraints() : [];
+    const specs = shares && shares.weight > 0 ? tally!.constraints(blockMembership) : [];
     const shareCons: Constraint[] = specs.map((q) => ({ id: q.id, kind: 'share', label: q.label, links: [], target: q.target, weight: q.weight, ratio: q.ratio }));
     const implied = shares && cfg.implied && cfg.implied.weight > 0
       ? impliedVolumes(nodes, links, shares.targets, (on) => tally!.sideFraction(on, v0), id, shares.pmPeriod, rampTargets) : [];
     const impliedCons: Constraint[] = implied.map((q) => ({ id: q.id, kind: 'derived', label: q.label, links: [q.link], target: q.target, weight: cfg.implied!.weight }));
-    const mem = thr.map((t) => throughMembership(a, flows, featOf.get(t.id)!, cfg.through!.inStudy, cfg.through!.measured?.[id]?.hits[t.id] ? cfg.through!.measured[id] : undefined, t.id, cfg.through!.priorTrips, pinnedK));
+    const mem = thr.map((t) => throughMembership(a, flows, featOf.get(t.id)!, cfg.through!.inStudy, throughMeasuredOf(t.id), t.id, cfg.through!.priorTrips, pinnedK));
     const throughCons: Constraint[] = cfg.through?.reportOnly ? [] : thr.map((t, i) => ({
       id: t.id, kind: 'through', label: t.label, links: [], target: t.target[id], weight: t.weight, member: mem[i].use, ...(t.ceiling.includes(id) ? { ceiling: t.hi[id] } : {}),
     }));
@@ -573,6 +581,11 @@ export function fitPeriod(
   }
   if (extra && cfg.measured) notes.push(`link costs include the simulator's measured delay per vehicle (${cfg.measured.source}; mean ${(extra.reduce((x, y) => x + y, 0) / nL).toFixed(1)} s per link after the control delay is removed, weight ${mw}, BPR alpha ${cfg.measured.alpha})`);
   if (measSt.size) notes.push(`stations whose membership comes from simulated trips (${stMeas!.runs} runs${wanted === 'all' ? `; ${measSt.size} of ${countCons0.length} fitted stations` : ''}; their assigned volumes in the station tables use it): ${[...measSt].join(', ')}`);
+  if (blockPairs) {
+    const sel = specs.filter((q) => q.kind === 'select'), stat = sel.filter((q) => !q.simulated);
+    notes.push(`select-link shares take simulated membership (${blockPairs.runs} runs; ${sel.length - stat.length} of ${sel.length} share constraints; the denominator is each pair's simulated share of trips on the block with the static fraction as a prior of ${cfg.through!.priorTrips} trips, the numerator the same for pairs with a freeway end; blocks without a simulated trip keep static routes${stat.length ? `: ${stat.map((q) => q.label).join(', ')}` : ''}; ramp via-street shares keep static routes)`);
+  }
+  if (simSwitch?.throughTargets && cfg.through?.measured?.[id] && thr.length) notes.push(`through targets take simulated membership (${cfg.through.measured[id].runs} runs; ${thr.filter((t) => throughMeasuredOf(t.id)).length} of ${thr.length} targets; the others keep static routes)`);
   if (as.method === 'msa') notes.push(`assignment by successive averages (${as.iterations} passes x ${as.drawsPerPass} draws of perceived costs, BPR alpha ${alphaUse} beta ${as.beta}, route-choice dispersion ${as.dispersion} s), ${rounds} round(s) with the table refitted and reassigned at its own volumes; relative link-volume change at the last pass ${(a as ReturnType<typeof assignMsa>).relChange?.toFixed(3)}`);
   if (cfg.guard.enabled) {
     const V1 = linkVolumes(countOnly.a, f1, nL);
@@ -588,10 +601,16 @@ export function fitPeriod(
   const totals: PeriodResult['totals'] = {};
   for (const t of ['through', 'local', 'ramp']) totals[t] = { start: t0[t], afterFit: t1[t], final: t2[t] };
   const byId = new Map(cons.map((c, i) => [c.id, i]));
-  const shareRows = specs.map((q) => { const i = byId.get(q.id)!; return { spec: q, offered: before[i], afterFit: afterFit[i], final: final[i], n: q.ratio.flows.length }; });
+  const staticShares = (r: ReturnType<typeof load>, vol: number[]) => {
+    const cs = r.specs.filter((q) => q.simulated).map((q): Constraint => ({ id: q.id, kind: 'share', label: q.label, links: [], target: q.target, weight: q.weight, ratio: q.staticRatio }));
+    const got = cs.length ? assigned(r.a, vol, cs, nL) : [];
+    return new Map(cs.map((c, i) => [c.id, got[i]]));
+  };
+  const sOff = staticShares(offered, v0), sAfter = staticShares(countOnly, f1), sFin = staticShares(shipped, volume);
+  const shareRows = specs.map((q) => { const i = byId.get(q.id)!; return { spec: q, offered: before[i], afterFit: afterFit[i], final: final[i], n: q.ratio.flows.length, ...(q.simulated ? { simulated: true, staticOffered: sOff.get(q.id), staticAfterFit: sAfter.get(q.id), staticFinal: sFin.get(q.id) } : {}) }; });
   const impliedRows = input.implied.map((iv) => { const i = byId.get(iv.id)!; return { iv, before: before[i], afterFit: afterFit[i], final: final[i] }; });
   const dot = (m: ArrayLike<number>, f: ArrayLike<number>) => { let x = 0; for (let k = 0; k < f.length; k++) x += m[k] * f[k]; return x; };
-  const throughRows = thr.map((t, i) => ({ t, target: t.target[id], lo: t.lo[id], hi: t.hi[id], oneSided: t.ceiling.includes(id), measured: !!cfg.through?.measured?.[id]?.hits[t.id], offered: dot(offered.mem[i].use, v0), final: dot(shipped.mem[i].use, volume), staticOffered: dot(offered.mem[i].stat, v0), staticFinal: dot(shipped.mem[i].stat, volume) }));
+  const throughRows = thr.map((t, i) => ({ t, target: t.target[id], lo: t.lo[id], hi: t.hi[id], oneSided: t.ceiling.includes(id), measured: !!throughMeasuredOf(t.id), offered: dot(offered.mem[i].use, v0), final: dot(shipped.mem[i].use, volume), staticOffered: dot(offered.mem[i].stat, v0), staticFinal: dot(shipped.mem[i].stat, volume) }));
   const tolOf = new Map(stations.map((q) => [q.id, q.tolPct]));
   const within = (r: ReturnType<typeof load>, vol: number[]) => {
     const cs = r.counts.filter((c) => c.kind !== 'gate-prior' && c.kind !== 'through' && c.target > 0);
@@ -694,6 +713,10 @@ export function fitReport(area: string, results: PeriodResult[], flowsBy: Record
     L.push('| Period | Share | Observed | Offered | Count-only fit | Final | Flows |', '| --- | --- | --- | --- | --- | --- | --- |');
     const pc = (x: number) => (Number.isNaN(x) ? 'n/a' : `${(100 * x).toFixed(0)}%`);
     for (const r of results) for (const q of r.shareRows) L.push(`| ${r.id} | ${q.spec.label} | ${pc(q.spec.target)} | ${pc(q.offered)} | ${pc(q.afterFit)} | ${pc(q.final)} | ${q.n} |`);
+    if (results.some((r) => r.shareRows.some((q) => q.simulated))) {
+      L.push('', 'Select-link shares with simulated membership (round 51): "simulated" takes each pair\'s share of trips on the block from seed runs of the simulator, "static" keeps the fit\'s own routes (ramp via-street shares, blocks without a simulated trip). The figures in parentheses are the same share on the static routes, at the same volumes.', '');
+      for (const r of results) for (const q of r.shareRows) L.push(`Share ${r.id} ${q.spec.label}: ${q.simulated ? 'simulated' : 'static'}; target ${pc(q.spec.target)}; offered ${pc(q.offered)} (${pc(q.staticOffered ?? q.offered)}); final ${pc(q.final)} (${pc(q.staticFinal ?? q.final)}); ${q.n} flows.`);
+    }
   }
   L.push('', '## Station fit by family', '', 'Within own tolerance = gates 10%, ramps 5%, turning-movement legs and Caltrans stations 15%. Ramp totals are the sums over counted ramps of the assigned freeway-link volume against ADT x K (off = freeway to surface, on = surface to freeway).', '');
   L.push('| Period | Family | Stations | Within own tolerance | Within +/-' + opt.tolOk + '% | Sum of targets | Sum assigned before | Sum assigned after the fit | Sum assigned final | Final / target |', '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |');
@@ -745,6 +768,10 @@ export function fitReport(area: string, results: PeriodResult[], flowsBy: Record
   if (results.some((r) => r.throughRows.length)) {
     L.push('', '## Through-car targets on street runs', '', 'Cars an hour with neither trip end in the study area that use any link of the street run, each counted once (the calibrate report\'s through figure). Each fitted period has a direct observation of those trips in observedCorridorThroughVehPerHour. "Simulated membership": each pair\'s share of trips on the run comes from seed runs of the simulator (`countFit.throughTargets.measured`); "static": from the fit\'s own route shares.', '', '| Period | Street run | Range | Target | Membership | Offered | Final | Static route shares, offered | Static, final |', '| --- | --- | --- | --- | --- | --- | --- | --- | --- |');
     for (const r of results) for (const x of r.throughRows) L.push(`| ${r.id} | ${x.t.label} | ${f0(x.lo)} to ${f0(x.hi)}${x.oneSided ? ' (upper limit only)' : ''} | ${f0(x.target)} | ${x.measured ? 'simulated' : 'static'} | ${f0(x.offered)} | ${f0(x.final)} | ${f0(x.staticOffered)} | ${f0(x.staticFinal)} |`);
+    if (results.some((r) => r.throughRows.some((x) => x.measured))) {
+      L.push('');
+      for (const r of results) for (const x of r.throughRows) L.push(`Through target ${r.id} ${x.t.label}: ${x.measured ? 'simulated' : 'static'}; target ${f0(x.target)}; offered ${f0(x.offered)} (static routes ${f0(x.staticOffered)}); final ${f0(x.final)} (static routes ${f0(x.staticFinal)}).`);
+    }
     L.push('');
   }
   if (opt.composition?.length && opt.links) {
