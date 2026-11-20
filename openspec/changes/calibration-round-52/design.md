@@ -82,3 +82,11 @@ Both builds end 5% under the static fit, far from the 3% abort above it. The rou
 - The ceilings outside the study area still freeze the static fit's errors at gates and outside nodes.
 - The loop has not run with the new report lines or the fits copy. A mismatch stops the loop at the check.
 - The shares and the loop's other round 51 checks are unchanged. The shares now see inside nodes that grow, which they could not before.
+
+## Outcome so far
+
+The candidate passes the screen and every line of the keep rule (D4) on seeds 1 to 10: PM fitted 81, PM held out 14 (exactly at its line), AM fitted 72, AM held out 15, D5 4 of 4, whole-street 8 of 8, D16 holds in every period, validation 67 of 74. It also passes the fresh-seed confirmation on seeds 11 to 20: no keep-rule line is worse than the baseline's on the same seeds, and PM Colby St SB whole-street is 67 (GEH 3.9) against round 51's failed 78 (GEH 5.0). PM Colby St SB stays the weakest line (74.5, GEH 4.7, on seeds 1 to 10; 39 counted). D5 and the whole-street line are fitted quantities in the shipped view; the held-out station counts are the independent check, and the assessment's 85% station rule still fails for held-out stations (PM 14 of 24, AM 15 of 19). The cost shows in congestion: PM backlog roughly fourfold but under 2% in every seed, trips waiting at gate 602 from 46 to 170, and one more travel time out of range. The shipped PM build offers 10.3% less demand than the static fit (reported only).
+
+The evidence is under `evidence/`, from laptop commit d2bfe91 on the development branch (unsigned; the membership parts stay on that branch and are not on main). The record entry is in `data/calibration/rockridge.record.md`. The code is on `main` with the switches off, and the shipped config has neither `gatePriorTotals` nor `simulatedMembership`. The published data are unchanged.
+
+Adoption is pending the project lead's review. A proposal search on the candidate is running on the laptop and will be staged, not published. The change stays open until adoption is decided.
