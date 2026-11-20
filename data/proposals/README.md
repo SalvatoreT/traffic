@@ -49,7 +49,7 @@ Turn-ban candidates cover single movements, so two packages were entered by hand
 
 Neither is published as an option: two filters on 63rd Street remove 160.8 with a smaller rise on any one block. The eight-ban package has more changes than the search depth of 6, so the search dropped it and it was measured with `explore --check`. The figures are in `openspec/changes/archive/2026-11-19-calibration-round-44/evidence/search-c5/tb-check.md`. Generating whole-street and paired-street ban sets as search candidates is not built.
 
-The published set since 2026-11-20 is the search on the round 52 demand (baseline 522.5 through cars an hour, evidence in `openspec/changes/calibration-round-52/evidence/search/`). These two packages were not measured again on that demand, so their figures above belong to the earlier one.
+The published set since 2026-11-20 is the search on the round 52 demand (baseline 522.5 through cars an hour, evidence in `openspec/changes/archive/2026-11-20-calibration-round-52/evidence/search/`). These two packages were not measured again on that demand, so their figures above belong to the earlier one.
 
 ## Search
 

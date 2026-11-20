@@ -1,0 +1,44 @@
+2026-11-20 08:06:30 AM PST START round 52 adoption steps at ad48d3e on the development branch
+2026-11-20 08:06:30 AM PST inputs: config 2405ff02c92b2837; proposals 197a99cdafc026f8; membership 3d639670c1feb38f c1cd4ce96fb28791; seeds file e464cc90ca3e1472
+2026-11-20 08:06:30 AM PST build: start
+2026-11-20 08:06:30 AM PST build: exit=0 wall_s=0
+2026-11-20 08:06:30 AM PST fingerprint d45a275dd7be0713cec6a64394b7d8a9
+2026-11-20 08:06:30 AM PST wasm: start
+2026-11-20 08:06:46 AM PST wasm: exit=0 wall_s=16
+2026-11-20 08:06:46 AM PST data: start
+2026-11-20 08:23:45 AM PST data: exit=0 wall_s=1019
+2026-11-20 08:23:45 AM PST hashes after data: 53c823f20d9165ed 2d16d8f8eb0950ca 1c3b1666f24156f1; status: 
+2026-11-20 08:23:45 AM PST fit reports, audit and area config identical to the committed ones
+2026-11-20 08:23:45 AM PST parity: start
+2026-11-20 08:24:13 AM PST parity: exit=0 wall_s=28
+2026-11-20 08:24:13 AM PST parity: vehicles: identical native and WASM agree (pm_peak, 300 s, seed 1) 
+2026-11-20 08:24:13 AM PST validate: start
+2026-11-20 08:24:34 AM PST validate: exit=0 wall_s=21
+2026-11-20 08:24:34 AM PST validate: 67 of 74 cases pass
+2026-11-20 08:24:34 AM PST validation diff: validation.json differing paths: manifest.simulator.revision "b1ff0ef3d2c04dfb7a6f4b16f950baeaad024b92" -> "ad48d3e9a5f43aa4ff771765e2b3c533b4530e49" validation.md changed lines: 0 VALIDATION DIFF REVISION-ONLY 
+2026-11-20 08:24:34 AM PST assess: start
+2026-11-20 08:27:02 AM PST assess: exit=0 wall_s=148
+2026-11-20 08:27:02 AM PST assessment inputs: - Inputs (SHA-256, first 12): network 53c823f20d91, shipped demand 2d16d8f8eb09 (built as shipped), cross-validation demand 1c3b1666f241 (built as training), targets 9d1d593d3d35, stations c9db41c930ac, validation split be72380b485e.
+2026-11-20 08:27:02 AM PST assessment verdict: Suggested status: **uncalibrated**; experimental periods: none. Not calibrated because: station rule not met or not judgeable in am_peak; station rule not met or not judgeable in pm_peak. Qualifications: limited use: a3: Saturation flow (a1, a2, a4) and signal capacity (b1 to b12) pass, so the missi
+2026-11-20 08:27:02 AM PST round 52 verdict:   Suggested status: **uncalibrated**; experimental periods: none. Not calibrated because: station rule not met or not judgeable in am_peak; station rule not met or not judgeable in pm_peak. Qualifications: limited use: a3: Saturation flow (a1, a2, a4) and signal capacity (b1 to b12) pass, so the missi
+2026-11-20 08:27:02 AM PST keep rule: KEEP PASS
+2026-11-20 08:27:02 AM PST keep-rule table identical to round 52
+2026-11-20 08:27:02 AM PST whole-street rows identical to round 52
+2026-11-20 08:27:02 AM PST verdict section vs round 52: 0 diff lines
+2026-11-20 08:27:02 AM PST noise file identical to round 52's (4d6850cccc2f43e8)
+2026-11-20 08:27:02 AM PST redistribution: start
+2026-11-20 08:36:29 AM PST redistribution: exit=0 wall_s=567
+2026-11-20 08:36:29 AM PST results: start
+2026-11-20 08:38:49 AM PST results: exit=0 wall_s=140
+2026-11-20 08:38:49 AM PST assumptions: start
+2026-11-20 08:38:49 AM PST assumptions: exit=0 wall_s=0
+2026-11-20 08:38:49 AM PST llms: start
+2026-11-20 08:38:49 AM PST llms: exit=0 wall_s=0
+2026-11-20 08:38:49 AM PST previews: start
+2026-11-20 08:38:51 AM PST previews: exit=0 wall_s=2
+2026-11-20 08:38:51 AM PST previews: 
+2026-11-20 08:38:51 AM PST llms: 
+2026-11-20 08:38:51 AM PST final hashes: network 53c823f20d9165ed demand 2d16d8f8eb0950ca cv 1c3b1666f24156f1 proposals 197a99cdafc026f8 config 2405ff02c92b2837
+2026-11-20 08:38:51 AM PST files: results 26, redistribution 8, llms 11, og 15; public/data 16576 KB
+2026-11-20 08:38:51 AM PST status:  M data/calibration/reports/rockridge-am_peak-s1-seed1.json; M data/calibration/reports/rockridge-am_peak-s1-seed1.md; M data/calibration/reports/rockridge-am_peak-s1-seeds1-10.json; M data/calibration/reports/rockridge-am_peak-s1-seeds1-10.md; M data/calibration/reports/rockridge-midday-s1-seed1.json; M data/calibration/reports/rockridge-midday-s1-seed1.md; M data/calibration/reports/rockridge-midday-s1-seeds1-10.json; M data/calibration/reports/rockridge-pm_peak-s1-seed1.json; M data/calibration/reports/rockridge-pm_peak-s1-seed1.md; M data/calibration/reports/rockridge-pm_peak-s1-seeds1-10.json; M data/calibration/reports/rockridge-pm_peak-s1-seeds1-10.md; M data/calibration/rockridge.assessment.md; M data/calibration/validation.json;
+2026-11-20 08:38:51 AM PST ALL DONE

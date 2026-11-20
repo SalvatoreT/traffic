@@ -83,13 +83,20 @@ Both builds end 5% under the static fit, far from the 3% abort above it. The rou
 - The loop has not run with the new report lines or the fits copy. A mismatch stops the loop at the check.
 - The shares and the loop's other round 51 checks are unchanged. The shares now see inside nodes that grow, which they could not before.
 
-## Outcome so far
+## Outcome
 
-The candidate passes the screen and every line of the keep rule (D4) on seeds 1 to 10: PM fitted 81, PM held out 14 (exactly at its line), AM fitted 72, AM held out 15, D5 4 of 4, whole-street 8 of 8, D16 holds in every period, validation 67 of 74. It also passes the fresh-seed confirmation on seeds 11 to 20: no keep-rule line is worse than the baseline's on the same seeds, and PM Colby St SB whole-street is 67 (GEH 3.9) against round 51's failed 78 (GEH 5.0). PM Colby St SB stays the weakest line (74.5, GEH 4.7, on seeds 1 to 10; 39 counted). D5 and the whole-street line are fitted quantities in the shipped view; the held-out station counts are the independent check, and the assessment's 85% station rule still fails for held-out stations (PM 14 of 24, AM 15 of 19). The cost shows in congestion: PM backlog roughly fourfold but under 2% in every seed, trips waiting at gate 602 from 46 to 170, and one more travel time out of range. The shipped PM build offers 10.3% less demand than the static fit (reported only).
+Adopted and published on 2026-11-20, after the project lead's decision below.
 
-The evidence is under `evidence/`, from laptop commit d2bfe91 on the development branch (unsigned; the membership parts stay on that branch and are not on main). The record entry is in `data/calibration/rockridge.record.md`. The code is on `main` with the switches off, and the shipped config has neither `gatePriorTotals` nor `simulatedMembership`. The published data are unchanged.
+The candidate passed the screen and every line of the keep rule (D4) on seeds 1 to 10: PM fitted 81, PM held out 14 (exactly at its line), AM fitted 72, AM held out 15, D5 4 of 4, whole-street 8 of 8, D16 holds in every period, validation 67 of 74. It also passed the fresh-seed confirmation on seeds 11 to 20: no keep-rule line is worse than the baseline's on the same seeds, and PM Colby St SB whole-street is 67 (GEH 3.9) against round 51's failed 78 (GEH 5.0). PM Colby St SB stays the weakest line (74.5, GEH 4.7, on seeds 1 to 10; 39 counted). D5 and the whole-street line are fitted quantities in the shipped view; the held-out station counts are the independent check, and the assessment's 85% station rule still fails for held-out stations (PM 14 of 24, AM 15 of 19). The cost shows in congestion: PM backlog roughly fourfold but under 2% in every seed, trips waiting at gate 602 from 46 to 170, and one more travel time out of range. The shipped PM build offers 10.3% less demand than the static fit (reported only).
 
-Adoption is pending the project lead's review. A proposal search on the candidate is running on the laptop and will be staged, not published. The change stays open until adoption is decided.
+What is published:
+
+- Config sha256 prefix 2405ff02c92b2837 (`data/demand/rockridge.config.json`); membership files 3d639670c1feb38f (shipped) and c1cd4ce96fb28791 (training), in R2 under `demand/membership/` and not served at `/data`.
+- Network 53c823f20d9165ed, demand 2d16d8f8eb0950ca, cross-validation demand 1c3b1666f24156f1. The cloud rebuilt both demand views byte-identically from the laptop's membership files, and the laptop's rebuild matched.
+- Proposals 197a99cdafc026f8: the staged search on this demand (`evidence/search/`), six options p1 to p6 with a baseline of 522.5 through cars an hour against 508.4 for the earlier set, and the top option unchanged at -74.0%. Redistribution, finished hours, text pages and previews were made on this demand.
+- Assessment on seeds 1 to 10 with noise (noise file 4d6850cccc2f43e8), identical to the candidate's ten-seed result; the suggested status and the status on the site stay "Not calibrated".
+
+Commits: `adopt-round-52` (fd8c0fe) merged to main as 37bb0fb; the publish is main 0b25a0d (`feat(data): publish the round 52 model, assessment and proposals`). The laptop's heavy steps are on the development branch (ad48d3e merge, fcf463a assessment, be03fbb parts), unsigned there. The small publish evidence files are in `evidence/publish/`; the 22 parts are on the development branch only. The record entry is in `data/calibration/rockridge.record.md`.
 
 ## Decision of the project lead (2026-11-20): adopt and publish round 52
 
