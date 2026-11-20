@@ -8,18 +8,65 @@ Settings: factor bounds 0.1 to 3, damping 1, tolerance 1.0% on the unblocked cou
 
 | Period | Type | Offered (build) | After count fit | After guard (final) | Removed by the count-only fit | Removed by the share and guard terms (final minus count-only) | Final / offered |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| am_peak | through | 3433 | 2702 | 2455 | 732 | 246 | 72% |
-| am_peak | local | 7255 | 8564 | 8314 | -1309 | 250 | 115% |
-| am_peak | ramp | 9585 | 9808 | 9813 | -223 | -5 | 102% |
-| am_peak | **all** | 20273 | 21073 | 20582 | -800 | 491 | 102% |
+| am_peak | through | 3433 | 2382 | 2356 | 1051 | 25 | 69% |
+| am_peak | local | 7255 | 6892 | 6966 | 363 | -74 | 96% |
+| am_peak | ramp | 9585 | 9888 | 9801 | -303 | 87 | 102% |
+| am_peak | **all** | 20273 | 19161 | 19123 | 1112 | 39 | 94% |
 | midday | through | 3107 | 1960 | 1955 | 1147 | 5 | 63% |
 | midday | local | 5301 | 7497 | 7310 | -2196 | 186 | 138% |
 | midday | ramp | 6987 | 7200 | 7325 | -212 | -125 | 105% |
 | midday | **all** | 15395 | 16657 | 16590 | -1261 | 67 | 108% |
-| pm_peak | through | 5743 | 3262 | 2785 | 2482 | 477 | 48% |
-| pm_peak | local | 8344 | 11016 | 10873 | -2671 | 143 | 130% |
-| pm_peak | ramp | 11286 | 11272 | 11384 | 14 | -113 | 101% |
-| pm_peak | **all** | 25374 | 25549 | 25042 | -176 | 507 | 99% |
+| pm_peak | through | 5743 | 2838 | 2744 | 2905 | 95 | 48% |
+| pm_peak | local | 8344 | 8554 | 8540 | -209 | 14 | 102% |
+| pm_peak | ramp | 11286 | 11474 | 11375 | -188 | 99 | 101% |
+| pm_peak | **all** | 25374 | 22866 | 22659 | 2508 | 207 | 89% |
+
+## Gate prior ceilings (ASSUMPTION)
+
+In a period whose stations take simulated membership, the fit first runs as the baseline does (static membership, no ceilings). Each node direction (every origin or destination of a car flow at a gate or at a non-gate node outside the study area; non-gate nodes inside the study area have no ceiling) that no gate count holds in the period (no gate station in the fit names it) then has a one-sided ceiling: its car total in that static fit plus 0%, weight 10. The ceiling acts only while the gate's assigned total is above it, reads no count value, and does not change how flows that touch no count are treated. After the fit (median rule and guard cut included) a hard projection scales the flows of every ceiling gate direction still more than 0.1% above its ceiling down to it, so the ceilings hold on the final flows; the cost to the count fit is the change in fitted stations within their tolerance. A regularizer toward the static fit; the tolerance and the weight are assumptions, not data. Excess = final total above the ceiling (more than 0.5 veh/h). Periods without simulated membership have no ceilings.
+
+Gate prior ceilings am_peak: 1909 stations; 1 above ceiling; excess 3 veh/h; offered car 20582 to 19123 veh/h.
+
+Offered car veh/h by flow type, static fit then final: through 2455, local 8314, ramp 9813; through 2356, local 6966, ramp 9801.
+
+Hard projection am_peak: removed 62 veh/h from ceiling nodes (worst five below); fitted stations within their tolerance before 111 and after 111 of 205.
+
+Ceiling stations by kind am_peak: gate 223 stations, 1 above ceiling, excess 3 veh/h, removed by the projection 42 veh/h; non-gate 1686 stations, 0 above ceiling, excess 0 veh/h, removed by the projection 20 veh/h.
+
+Non-gate node trip ends am_peak (veh/h, static fit to final): origins inside the study area 1040 to 1213, outside 7095 to 5882; destinations inside 735 to 765, outside 5907 to 4773.
+
+Inside-study-area nodes that grew am_peak: origins 23 of 57, destinations 17 of 56.
+
+| Node | Street | Direction | Static fit (ceiling) | Total before the projection | Final | Removed |
+| --- | --- | --- | --- | --- | --- | --- |
+| 763 | Telegraph Avenue | entering | 1053 | 1060 | 1053 | 7 |
+| 1719 | Grove Shafter Freeway | entering | 376 | 383 | 376 | 6 |
+| 1672 | Warren Freeway | entering | 444 | 448 | 444 | 3 |
+| 184 | Alcatraz Avenue | entering | 217 | 221 | 217 | 3 |
+| 974 | Broadway | entering | 724 | 727 | 724 | 3 |
+
+Gate prior ceilings midday: none (static membership in this period).
+
+Gate prior ceilings pm_peak: 1846 stations; 1 above ceiling; excess 1 veh/h; offered car 25042 to 22659 veh/h.
+
+Offered car veh/h by flow type, static fit then final: through 2785, local 10873, ramp 11384; through 2744, local 8540, ramp 11375.
+
+Hard projection pm_peak: removed 240 veh/h from ceiling nodes (worst five below); fitted stations within their tolerance before 139 and after 132 of 260.
+
+Ceiling stations by kind pm_peak: gate 222 stations, 1 above ceiling, excess 1 veh/h, removed by the projection 199 veh/h; non-gate 1624 stations, 0 above ceiling, excess 0 veh/h, removed by the projection 41 veh/h.
+
+Non-gate node trip ends pm_peak (veh/h, static fit to final): origins inside the study area 1387 to 1173, outside 8768 to 7372; destinations inside 881 to 763, outside 6740 to 5138.
+
+Inside-study-area nodes that grew pm_peak: origins 12 of 57, destinations 17 of 56.
+
+| Node | Street | Direction | Static fit (ceiling) | Total before the projection | Final | Removed |
+| --- | --- | --- | --- | --- | --- | --- |
+| 602 | Grove Shafter Freeway | entering | 4112 | 4184 | 4110 | 71 |
+| 763 | Telegraph Avenue | entering | 1359 | 1385 | 1357 | 24 |
+| 675 | (unnamed) | leaving | 4156 | 4197 | 4149 | 22 |
+| 275 | Market Street | entering | 358 | 364 | 358 | 6 |
+| 276 | Martin Luther King Junior Way | entering | 361 | 367 | 360 | 6 |
+
 
 ## Fit status and per-flow factors
 
@@ -27,34 +74,34 @@ Stopping errors and conflicts describe the last fitting iteration. The station t
 
 | Period | Flows | Touch a count | Iterations | Stopped by | Worst error, unblocked stations | Worst error, all stations | Stations outside tolerance | Flows at lower bound | Flows at upper bound | Stations no flow crosses | Unroutable flows |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| am_peak | 8128 | 6082 | 458 | stalled (no gain over the window) | 2888.8% | 2888.8% | 185 | 3313 | 483 | none | 0 |
+| am_peak | 8128 | 6166 | 558 | stalled (no gain over the window) | 1843.2% | 41217496.4% | 350 | 3277 | 287 | none | 0 |
 | midday | 8328 | 6735 | 600 | iteration limit | 6.2% | 1818.5% | 232 | 3184 | 578 | none | 0 |
-| pm_peak | 8226 | 6520 | 282 | tolerance (blocked and tense stations excluded) | 1.0% | 52439.4% | 229 | 3145 | 482 | none | 0 |
+| pm_peak | 8226 | 6644 | 600 | iteration limit | 38330.9% | 928693973.7% | 452 | 3759 | 361 | none | 0 |
 
 Errors are relative (assigned / target - 1 in size). "Unblocked" leaves out stations that cannot move (their flows sit on a bound) or are in tension with another station; both kinds are listed under "Stations that cannot be met" below.
 
 | Period | Group | Flows | p5 | p25 | median | p75 | p95 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| am_peak | counted through | 913 | 0.10 | 0.10 | 0.10 | 1.58 | 3.00 |
-| am_peak | counted local | 3145 | 0.10 | 0.10 | 0.10 | 1.36 | 10.00 |
-| am_peak | counted ramp | 2024 | 0.10 | 0.10 | 0.20 | 1.22 | 5.58 |
-| am_peak | uncounted through | 221 | 0.05 | 0.10 | 0.10 | 0.10 | 0.10 |
-| am_peak | uncounted local | 1629 | 0.10 | 0.10 | 0.10 | 0.10 | 0.10 |
-| am_peak | uncounted ramp | 196 | 0.19 | 0.19 | 0.19 | 0.19 | 0.19 |
+| am_peak | counted through | 917 | 0.10 | 0.10 | 0.13 | 1.16 | 3.00 |
+| am_peak | counted local | 3209 | 0.10 | 0.10 | 0.10 | 0.99 | 9.76 |
+| am_peak | counted ramp | 2040 | 0.10 | 0.10 | 0.13 | 1.42 | 4.27 |
+| am_peak | uncounted through | 217 | 0.12 | 0.12 | 0.13 | 0.13 | 0.13 |
+| am_peak | uncounted local | 1565 | 0.10 | 0.10 | 0.10 | 0.10 | 0.10 |
+| am_peak | uncounted ramp | 180 | 0.13 | 0.13 | 0.13 | 0.13 | 0.13 |
 | midday | counted through | 1227 | 0.10 | 0.10 | 0.20 | 1.15 | 3.00 |
 | midday | counted local | 3529 | 0.10 | 0.10 | 0.16 | 1.62 | 10.00 |
 | midday | counted ramp | 1979 | 0.10 | 0.10 | 0.23 | 1.19 | 5.48 |
 | midday | uncounted through | 179 | 0.20 | 0.20 | 0.20 | 0.20 | 0.20 |
 | midday | uncounted local | 1260 | 0.14 | 0.14 | 0.14 | 0.14 | 0.14 |
 | midday | uncounted ramp | 154 | 0.22 | 0.22 | 0.22 | 0.22 | 0.22 |
-| pm_peak | counted through | 1342 | 0.10 | 0.10 | 0.10 | 0.47 | 3.00 |
-| pm_peak | counted local | 3220 | 0.10 | 0.10 | 0.12 | 1.74 | 10.00 |
-| pm_peak | counted ramp | 1958 | 0.10 | 0.10 | 0.25 | 1.19 | 4.71 |
-| pm_peak | uncounted through | 283 | 0.09 | 0.10 | 0.10 | 0.10 | 0.10 |
-| pm_peak | uncounted local | 1254 | 0.11 | 0.11 | 0.11 | 0.11 | 0.11 |
-| pm_peak | uncounted ramp | 169 | 0.23 | 0.23 | 0.23 | 0.23 | 0.23 |
+| pm_peak | counted through | 1374 | 0.10 | 0.10 | 0.10 | 0.39 | 2.95 |
+| pm_peak | counted local | 3283 | 0.10 | 0.10 | 0.10 | 0.96 | 9.85 |
+| pm_peak | counted ramp | 1987 | 0.10 | 0.10 | 0.21 | 1.09 | 4.71 |
+| pm_peak | uncounted through | 251 | 0.05 | 0.10 | 0.10 | 0.10 | 0.10 |
+| pm_peak | uncounted local | 1191 | 0.09 | 0.10 | 0.10 | 0.10 | 0.10 |
+| pm_peak | uncounted ramp | 140 | 0.21 | 0.21 | 0.21 | 0.21 | 0.22 |
 
-Uncounted-flow rule medians (factor given to flows touching no count, by type): am_peak through 0.10, local 0.10, ramp 0.19; midday through 0.20, local 0.14, ramp 0.22; pm_peak through 0.10, local 0.11, ramp 0.23. These are the medians of the counted flows before the guard's ceilings apply to them.
+Uncounted-flow rule medians (factor given to flows touching no count, by type): am_peak through 0.13, local 0.10, ramp 0.13; midday through 0.20, local 0.14, ramp 0.22; pm_peak through 0.10, local 0.10, ramp 0.22. These are the medians of the counted flows before the guard's ceilings apply to them.
 
 ## Route shares
 
@@ -62,20 +109,20 @@ Observed shares are StreetLight device-sample estimates (`data/calibration/READM
 
 | Period | Share | Observed | Offered | Count-only fit | Final | Flows |
 | --- | --- | --- | --- | --- | --- | --- |
-| am_peak | Hillegass Avenue NB, trips from the freeway | 47% | 57% | 45% | 46% | 445 |
-| am_peak | Colby Street NB, trips from the freeway | 47% | 62% | 41% | 45% | 342 |
-| am_peak | Hillegass Avenue SB, trips to the freeway | 57% | 73% | 65% | 56% | 135 |
-| am_peak | Colby Street SB, trips to the freeway | 45% | 77% | 63% | 42% | 524 |
-| am_peak | Onto the freeway at the ramps, via College Avenue | 16% | 23% | 29% | 16% | 227 |
-| am_peak | Onto the freeway at the ramps, via Hillegass Avenue | 12% | 9% | 14% | 12% | 227 |
-| am_peak | Onto the freeway at the ramps, via Martin Street | 10% | 28% | 14% | 10% | 227 |
-| am_peak | Onto the freeway at the ramps, via Colby Street | 8% | 17% | 22% | 10% | 227 |
+| am_peak | Hillegass Avenue NB, trips from the freeway | 47% | 55% | 47% | 45% | 598 |
+| am_peak | Colby Street NB, trips from the freeway | 47% | 60% | 48% | 45% | 491 |
+| am_peak | Hillegass Avenue SB, trips to the freeway | 57% | 79% | 71% | 57% | 286 |
+| am_peak | Colby Street SB, trips to the freeway | 45% | 69% | 52% | 40% | 818 |
+| am_peak | Onto the freeway at the ramps, via College Avenue | 16% | 23% | 27% | 16% | 227 |
+| am_peak | Onto the freeway at the ramps, via Hillegass Avenue | 12% | 9% | 13% | 12% | 227 |
+| am_peak | Onto the freeway at the ramps, via Martin Street | 10% | 28% | 10% | 10% | 227 |
+| am_peak | Onto the freeway at the ramps, via Colby Street | 8% | 17% | 21% | 11% | 227 |
 | am_peak | Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue | 8% | 14% | 7% | 7% | 227 |
 | am_peak | Onto the freeway at the ramps, via Benvenue Avenue | 5% | 1% | 2% | 5% | 227 |
-| am_peak | From the freeway at the ramps, via College Avenue | 10% | 35% | 33% | 11% | 210 |
-| am_peak | From the freeway at the ramps, via Martin Street | 10% | 19% | 17% | 10% | 210 |
-| am_peak | From the freeway at the ramps, via Colby Street | 8% | 8% | 13% | 9% | 210 |
-| am_peak | From the freeway at the ramps, via Hillegass Avenue | 5% | 10% | 10% | 6% | 210 |
+| am_peak | From the freeway at the ramps, via College Avenue | 10% | 35% | 22% | 11% | 210 |
+| am_peak | From the freeway at the ramps, via Martin Street | 10% | 19% | 23% | 11% | 210 |
+| am_peak | From the freeway at the ramps, via Colby Street | 8% | 8% | 15% | 9% | 210 |
+| am_peak | From the freeway at the ramps, via Hillegass Avenue | 5% | 10% | 9% | 6% | 210 |
 | am_peak | From the freeway at the ramps, via Benvenue Avenue | 3% | 2% | 2% | 3% | 210 |
 | midday | Hillegass Avenue NB, trips from the freeway | 47% | 59% | 47% | 46% | 454 |
 | midday | Colby Street NB, trips from the freeway | 47% | 70% | 51% | 46% | 376 |
@@ -92,21 +139,69 @@ Observed shares are StreetLight device-sample estimates (`data/calibration/READM
 | midday | From the freeway at the ramps, via Colby Street | 8% | 9% | 17% | 8% | 203 |
 | midday | From the freeway at the ramps, via Hillegass Avenue | 5% | 11% | 12% | 6% | 203 |
 | midday | From the freeway at the ramps, via Benvenue Avenue | 3% | 2% | 1% | 3% | 203 |
-| pm_peak | Hillegass Avenue NB, trips from the freeway | 47% | 58% | 32% | 45% | 457 |
-| pm_peak | Colby Street NB, trips from the freeway | 47% | 73% | 38% | 44% | 491 |
-| pm_peak | Hillegass Avenue SB, trips to the freeway | 68% | 79% | 78% | 64% | 175 |
-| pm_peak | Colby Street SB, trips to the freeway | 45% | 75% | 57% | 41% | 548 |
-| pm_peak | Onto the freeway at the ramps, via College Avenue | 16% | 31% | 23% | 16% | 217 |
-| pm_peak | Onto the freeway at the ramps, via Hillegass Avenue | 12% | 11% | 37% | 15% | 217 |
-| pm_peak | Onto the freeway at the ramps, via Martin Street | 10% | 24% | 15% | 10% | 217 |
-| pm_peak | Onto the freeway at the ramps, via Colby Street | 8% | 15% | 25% | 11% | 217 |
-| pm_peak | Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue | 8% | 13% | 12% | 9% | 217 |
-| pm_peak | Onto the freeway at the ramps, via Benvenue Avenue | 5% | 1% | 2% | 5% | 217 |
-| pm_peak | From the freeway at the ramps, via College Avenue | 10% | 24% | 12% | 10% | 204 |
-| pm_peak | From the freeway at the ramps, via Martin Street | 10% | 19% | 19% | 10% | 204 |
-| pm_peak | From the freeway at the ramps, via Colby Street | 8% | 12% | 15% | 9% | 204 |
-| pm_peak | From the freeway at the ramps, via Hillegass Avenue | 5% | 9% | 8% | 5% | 204 |
-| pm_peak | From the freeway at the ramps, via Benvenue Avenue | 3% | 1% | 0% | 3% | 204 |
+| pm_peak | Hillegass Avenue NB, trips from the freeway | 47% | 55% | 35% | 44% | 667 |
+| pm_peak | Colby Street NB, trips from the freeway | 47% | 62% | 38% | 42% | 703 |
+| pm_peak | Hillegass Avenue SB, trips to the freeway | 68% | 76% | 75% | 65% | 519 |
+| pm_peak | Colby Street SB, trips to the freeway | 45% | 63% | 58% | 44% | 1062 |
+| pm_peak | Onto the freeway at the ramps, via College Avenue | 16% | 31% | 21% | 17% | 217 |
+| pm_peak | Onto the freeway at the ramps, via Hillegass Avenue | 12% | 11% | 23% | 14% | 217 |
+| pm_peak | Onto the freeway at the ramps, via Martin Street | 10% | 24% | 13% | 10% | 217 |
+| pm_peak | Onto the freeway at the ramps, via Colby Street | 8% | 15% | 17% | 12% | 217 |
+| pm_peak | Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue | 8% | 13% | 11% | 8% | 217 |
+| pm_peak | Onto the freeway at the ramps, via Benvenue Avenue | 5% | 1% | 2% | 4% | 217 |
+| pm_peak | From the freeway at the ramps, via College Avenue | 10% | 24% | 14% | 10% | 204 |
+| pm_peak | From the freeway at the ramps, via Martin Street | 10% | 19% | 11% | 10% | 204 |
+| pm_peak | From the freeway at the ramps, via Colby Street | 8% | 12% | 19% | 9% | 204 |
+| pm_peak | From the freeway at the ramps, via Hillegass Avenue | 5% | 9% | 8% | 6% | 204 |
+| pm_peak | From the freeway at the ramps, via Benvenue Avenue | 3% | 1% | 1% | 3% | 204 |
+
+Select-link shares with simulated membership (round 51): "simulated" takes each pair's share of trips on the block from seed runs of the simulator, "static" keeps the fit's own routes (ramp via-street shares, blocks without a simulated trip). The figures in parentheses are the same share on the static routes, at the same volumes.
+
+Share am_peak Hillegass Avenue NB, trips from the freeway: simulated; target 47%; offered 55% (57%); final 45% (40%); 598 flows.
+Share am_peak Colby Street NB, trips from the freeway: simulated; target 47%; offered 60% (62%); final 45% (42%); 491 flows.
+Share am_peak Hillegass Avenue SB, trips to the freeway: simulated; target 57%; offered 79% (73%); final 57% (55%); 286 flows.
+Share am_peak Colby Street SB, trips to the freeway: simulated; target 45%; offered 69% (77%); final 40% (47%); 818 flows.
+Share am_peak Onto the freeway at the ramps, via College Avenue: static; target 16%; offered 23% (23%); final 16% (16%); 227 flows.
+Share am_peak Onto the freeway at the ramps, via Hillegass Avenue: static; target 12%; offered 9% (9%); final 12% (12%); 227 flows.
+Share am_peak Onto the freeway at the ramps, via Martin Street: static; target 10%; offered 28% (28%); final 10% (10%); 227 flows.
+Share am_peak Onto the freeway at the ramps, via Colby Street: static; target 8%; offered 17% (17%); final 11% (11%); 227 flows.
+Share am_peak Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue: static; target 8%; offered 14% (14%); final 7% (7%); 227 flows.
+Share am_peak Onto the freeway at the ramps, via Benvenue Avenue: static; target 5%; offered 1% (1%); final 5% (5%); 227 flows.
+Share am_peak From the freeway at the ramps, via College Avenue: static; target 10%; offered 35% (35%); final 11% (11%); 210 flows.
+Share am_peak From the freeway at the ramps, via Martin Street: static; target 10%; offered 19% (19%); final 11% (11%); 210 flows.
+Share am_peak From the freeway at the ramps, via Colby Street: static; target 8%; offered 8% (8%); final 9% (9%); 210 flows.
+Share am_peak From the freeway at the ramps, via Hillegass Avenue: static; target 5%; offered 10% (10%); final 6% (6%); 210 flows.
+Share am_peak From the freeway at the ramps, via Benvenue Avenue: static; target 3%; offered 2% (2%); final 3% (3%); 210 flows.
+Share midday Hillegass Avenue NB, trips from the freeway: static; target 47%; offered 59% (59%); final 46% (46%); 454 flows.
+Share midday Colby Street NB, trips from the freeway: static; target 47%; offered 70% (70%); final 46% (46%); 376 flows.
+Share midday Hillegass Avenue SB, trips to the freeway: static; target 57%; offered 76% (76%); final 53% (53%); 117 flows.
+Share midday Colby Street SB, trips to the freeway: static; target 45%; offered 75% (75%); final 41% (41%); 444 flows.
+Share midday Onto the freeway at the ramps, via College Avenue: static; target 16%; offered 28% (28%); final 16% (16%); 212 flows.
+Share midday Onto the freeway at the ramps, via Hillegass Avenue: static; target 12%; offered 11% (11%); final 14% (14%); 212 flows.
+Share midday Onto the freeway at the ramps, via Martin Street: static; target 10%; offered 19% (19%); final 10% (10%); 212 flows.
+Share midday Onto the freeway at the ramps, via Colby Street: static; target 8%; offered 17% (17%); final 10% (10%); 212 flows.
+Share midday Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue: static; target 8%; offered 13% (13%); final 8% (8%); 212 flows.
+Share midday Onto the freeway at the ramps, via Benvenue Avenue: static; target 5%; offered 1% (1%); final 5% (5%); 212 flows.
+Share midday From the freeway at the ramps, via College Avenue: static; target 10%; offered 30% (30%); final 10% (10%); 203 flows.
+Share midday From the freeway at the ramps, via Martin Street: static; target 10%; offered 14% (14%); final 10% (10%); 203 flows.
+Share midday From the freeway at the ramps, via Colby Street: static; target 8%; offered 9% (9%); final 8% (8%); 203 flows.
+Share midday From the freeway at the ramps, via Hillegass Avenue: static; target 5%; offered 11% (11%); final 6% (6%); 203 flows.
+Share midday From the freeway at the ramps, via Benvenue Avenue: static; target 3%; offered 2% (2%); final 3% (3%); 203 flows.
+Share pm_peak Hillegass Avenue NB, trips from the freeway: simulated; target 47%; offered 55% (58%); final 44% (45%); 667 flows.
+Share pm_peak Colby Street NB, trips from the freeway: simulated; target 47%; offered 62% (73%); final 42% (48%); 703 flows.
+Share pm_peak Hillegass Avenue SB, trips to the freeway: simulated; target 68%; offered 76% (79%); final 65% (75%); 519 flows.
+Share pm_peak Colby Street SB, trips to the freeway: simulated; target 45%; offered 63% (75%); final 44% (59%); 1062 flows.
+Share pm_peak Onto the freeway at the ramps, via College Avenue: static; target 16%; offered 31% (31%); final 17% (17%); 217 flows.
+Share pm_peak Onto the freeway at the ramps, via Hillegass Avenue: static; target 12%; offered 11% (11%); final 14% (14%); 217 flows.
+Share pm_peak Onto the freeway at the ramps, via Martin Street: static; target 10%; offered 24% (24%); final 10% (10%); 217 flows.
+Share pm_peak Onto the freeway at the ramps, via Colby Street: static; target 8%; offered 15% (15%); final 12% (12%); 217 flows.
+Share pm_peak Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue: static; target 8%; offered 13% (13%); final 8% (8%); 217 flows.
+Share pm_peak Onto the freeway at the ramps, via Benvenue Avenue: static; target 5%; offered 1% (1%); final 4% (4%); 217 flows.
+Share pm_peak From the freeway at the ramps, via College Avenue: static; target 10%; offered 24% (24%); final 10% (10%); 204 flows.
+Share pm_peak From the freeway at the ramps, via Martin Street: static; target 10%; offered 19% (19%); final 10% (10%); 204 flows.
+Share pm_peak From the freeway at the ramps, via Colby Street: static; target 8%; offered 12% (12%); final 9% (9%); 204 flows.
+Share pm_peak From the freeway at the ramps, via Hillegass Avenue: static; target 5%; offered 9% (9%); final 6% (6%); 204 flows.
+Share pm_peak From the freeway at the ramps, via Benvenue Avenue: static; target 3%; offered 1% (1%); final 3% (3%); 204 flows.
 
 ## Station fit by family
 
@@ -114,21 +209,21 @@ Within own tolerance = gates 10%, ramps 5%, turning-movement legs and Caltrans s
 
 | Period | Family | Stations | Within own tolerance | Within +/-15% | Sum of targets | Sum assigned before | Sum assigned after the fit | Sum assigned final | Final / target |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| am_peak | count block | 77 | 45 | 40 | 4097 | 5124 | 3981 | 3879 | 0.95 |
-| am_peak | count move | 17 | 8 | 8 | 1146 | 1740 | 1162 | 1095 | 0.96 |
-| am_peak | ramp off | 6 | 6 | 6 | 2391 | 3919 | 2409 | 2440 | 1.02 |
-| am_peak | ramp on | 9 | 7 | 8 | 4219 | 3935 | 4215 | 4236 | 1.00 |
-| am_peak | tmc | 96 | 66 | 61 | 45235 | 41133 | 44149 | 44145 | 0.98 |
+| am_peak | count block | 77 | 38 | 31 | 4097 | 5446 | 4095 | 3945 | 0.96 |
+| am_peak | count move | 17 | 9 | 7 | 1146 | 1519 | 1139 | 1040 | 0.91 |
+| am_peak | ramp off | 6 | 4 | 6 | 2391 | 3721 | 2425 | 2454 | 1.03 |
+| am_peak | ramp on | 9 | 8 | 8 | 4219 | 3810 | 4200 | 4203 | 1.00 |
+| am_peak | tmc | 96 | 52 | 47 | 45235 | 36097 | 42299 | 42068 | 0.93 |
 | midday | count block | 91 | 56 | 45 | 3284 | 4269 | 3202 | 3033 | 0.92 |
 | midday | count move | 15 | 7 | 4 | 722 | 645 | 601 | 536 | 0.74 |
 | midday | ramp off | 6 | 6 | 6 | 1744 | 2762 | 1745 | 1759 | 1.01 |
 | midday | ramp on | 9 | 9 | 9 | 3077 | 2927 | 3040 | 3067 | 1.00 |
 | midday | tmc | 141 | 104 | 99 | 41536 | 45331 | 41347 | 41446 | 1.00 |
-| pm_peak | count block | 89 | 47 | 43 | 5160 | 7262 | 4991 | 4745 | 0.92 |
-| pm_peak | count move | 15 | 6 | 4 | 1164 | 1103 | 1013 | 896 | 0.77 |
-| pm_peak | ramp off | 6 | 6 | 6 | 2813 | 4382 | 2819 | 2824 | 1.00 |
-| pm_peak | ramp on | 9 | 8 | 9 | 4964 | 4697 | 4870 | 4925 | 0.99 |
-| pm_peak | tmc | 141 | 98 | 96 | 66994 | 73810 | 66276 | 66529 | 0.99 |
+| pm_peak | count block | 89 | 37 | 27 | 5160 | 10081 | 5238 | 5065 | 0.98 |
+| pm_peak | count move | 15 | 7 | 4 | 1164 | 1274 | 969 | 914 | 0.79 |
+| pm_peak | ramp off | 6 | 3 | 5 | 2813 | 4111 | 2844 | 2825 | 1.00 |
+| pm_peak | ramp on | 9 | 7 | 9 | 4964 | 4543 | 4725 | 4727 | 0.95 |
+| pm_peak | tmc | 141 | 78 | 72 | 66994 | 64519 | 62523 | 61936 | 0.92 |
 
 ## Stations, am_peak
 
@@ -150,10 +245,10 @@ Freeway-related volume on a street = ramp volume x the street's share of the ram
 
 | Block | Arithmetic | Implied (B to A) | Target | Assigned before | After the count fit | Final |
 | --- | --- | --- | --- | --- | --- | --- |
-| Hillegass Avenue SB, implied volume | 750 veh/h on-ramps x 12% via Hillegass Avenue (x 88% from the north side, reading B) = 79 to 90 freeway-related; / 57% freeway share = 138 to 158 veh/h | 138 to 158 | 148 | 68 | 84 | 98 |
-| Colby Street SB, implied volume | 750 veh/h on-ramps x 8% via Colby Street (x 88% from the north side, reading B) = 53 to 60 freeway-related; / 45% freeway share = 117 to 133 veh/h | 117 to 133 | 125 | 256 | 177 | 161 |
-| Colby Street NB, implied volume | 826 veh/h off-ramps x 8% via Colby Street (x 92% from the north side, reading B) = 61 to 66 freeway-related; / 47% freeway share = 129 to 141 veh/h | 129 to 141 | 135 | 120 | 131 | 123 |
-| Hillegass Avenue NB, implied volume | 826 veh/h off-ramps x 5% via Hillegass Avenue (x 92% from the north side, reading B) = 38 to 41 freeway-related; / 47% freeway share = 81 to 88 veh/h | 81 to 88 | 84 | 109 | 78 | 70 |
+| Hillegass Avenue SB, implied volume | 750 veh/h on-ramps x 12% via Hillegass Avenue (x 88% from the north side, reading B) = 79 to 90 freeway-related; / 57% freeway share = 138 to 158 veh/h | 138 to 158 | 148 | 68 | 53 | 80 |
+| Colby Street SB, implied volume | 750 veh/h on-ramps x 8% via Colby Street (x 88% from the north side, reading B) = 53 to 60 freeway-related; / 45% freeway share = 117 to 133 veh/h | 117 to 133 | 125 | 256 | 182 | 151 |
+| Colby Street NB, implied volume | 826 veh/h off-ramps x 8% via Colby Street (x 92% from the north side, reading B) = 61 to 66 freeway-related; / 47% freeway share = 129 to 141 veh/h | 129 to 141 | 135 | 120 | 126 | 121 |
+| Hillegass Avenue NB, implied volume | 826 veh/h off-ramps x 5% via Hillegass Avenue (x 92% from the north side, reading B) = 38 to 41 freeway-related; / 47% freeway share = 81 to 88 veh/h | 81 to 88 | 84 | 109 | 77 | 72 |
 
 ### midday
 
@@ -168,10 +263,10 @@ Freeway-related volume on a street = ramp volume x the street's share of the ram
 
 | Block | Arithmetic | Implied (B to A) | Target | Assigned before | After the count fit | Final |
 | --- | --- | --- | --- | --- | --- | --- |
-| Hillegass Avenue SB, implied volume | 882 veh/h on-ramps x 12% via Hillegass Avenue (x 91% from the north side, reading B) = 96 to 106 freeway-related; / 68% freeway share = 142 to 156 veh/h | 142 to 156 | 149 | 106 | 107 | 101 |
-| Colby Street SB, implied volume | 882 veh/h on-ramps x 8% via Colby Street (x 91% from the north side, reading B) = 64 to 71 freeway-related; / 45% freeway share = 143 to 157 veh/h | 143 to 157 | 150 | 257 | 167 | 149 |
-| Colby Street NB, implied volume | 972 veh/h off-ramps x 8% via Colby Street (x 93% from the north side, reading B) = 72 to 78 freeway-related; / 47% freeway share = 154 to 165 veh/h | 154 to 165 | 160 | 242 | 190 | 177 |
-| Hillegass Avenue NB, implied volume | 972 veh/h off-ramps x 5% via Hillegass Avenue (x 93% from the north side, reading B) = 45 to 49 freeway-related; / 47% freeway share = 96 to 103 veh/h | 96 to 103 | 100 | 97 | 58 | 73 |
+| Hillegass Avenue SB, implied volume | 882 veh/h on-ramps x 12% via Hillegass Avenue (x 91% from the north side, reading B) = 96 to 106 freeway-related; / 68% freeway share = 142 to 156 veh/h | 142 to 156 | 149 | 106 | 93 | 88 |
+| Colby Street SB, implied volume | 882 veh/h on-ramps x 8% via Colby Street (x 91% from the north side, reading B) = 64 to 71 freeway-related; / 45% freeway share = 143 to 157 veh/h | 143 to 157 | 150 | 257 | 129 | 126 |
+| Colby Street NB, implied volume | 972 veh/h off-ramps x 8% via Colby Street (x 93% from the north side, reading B) = 72 to 78 freeway-related; / 47% freeway share = 154 to 165 veh/h | 154 to 165 | 160 | 242 | 224 | 156 |
+| Hillegass Avenue NB, implied volume | 972 veh/h off-ramps x 5% via Hillegass Avenue (x 93% from the north side, reading B) = 45 to 49 freeway-related; / 47% freeway share = 96 to 103 veh/h | 96 to 103 | 100 | 97 | 62 | 58 |
 
 
 ## Who uses the interior streets: composition of the assigned traffic
@@ -180,18 +275,18 @@ Mean assigned volume per block (veh/h) on the links of a street inside the study
 
 | Period | Street | Direction | Links | Offered local-end | Offered through | Offered freeway | Offered total | Final local-end | Final through | Final freeway | Final total |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| am_peak | Colby Street | north half | 8 | 24 | 0 | 52 | 76 | 50 | 0 | 57 | 107 |
-| am_peak | Colby Street | south half | 8 | 26 | 1 | 139 | 165 | 72 | 0 | 61 | 133 |
-| am_peak | Hillegass Avenue | north half | 4 | 40 | 2 | 71 | 114 | 39 | 2 | 42 | 83 |
-| am_peak | Hillegass Avenue | south half | 4 | 12 | 0 | 53 | 65 | 29 | 0 | 54 | 83 |
+| am_peak | Colby Street | north half | 8 | 24 | 0 | 52 | 76 | 43 | 0 | 56 | 99 |
+| am_peak | Colby Street | south half | 8 | 26 | 1 | 139 | 165 | 57 | 0 | 61 | 119 |
+| am_peak | Hillegass Avenue | north half | 4 | 40 | 2 | 71 | 114 | 41 | 2 | 39 | 81 |
+| am_peak | Hillegass Avenue | south half | 4 | 12 | 0 | 53 | 65 | 27 | 0 | 43 | 70 |
 | midday | Colby Street | north half | 8 | 13 | 0 | 33 | 46 | 36 | 0 | 41 | 78 |
 | midday | Colby Street | south half | 8 | 22 | 0 | 92 | 114 | 46 | 0 | 38 | 84 |
 | midday | Hillegass Avenue | north half | 4 | 24 | 1 | 48 | 72 | 31 | 1 | 29 | 61 |
 | midday | Hillegass Avenue | south half | 4 | 10 | 0 | 64 | 74 | 28 | 0 | 54 | 83 |
-| pm_peak | Colby Street | north half | 8 | 31 | 5 | 103 | 138 | 63 | 0 | 74 | 137 |
-| pm_peak | Colby Street | south half | 8 | 24 | 1 | 123 | 147 | 62 | 0 | 64 | 126 |
-| pm_peak | Hillegass Avenue | north half | 4 | 39 | 2 | 69 | 110 | 50 | 2 | 41 | 93 |
-| pm_peak | Hillegass Avenue | south half | 4 | 17 | 0 | 91 | 107 | 40 | 0 | 75 | 115 |
+| pm_peak | Colby Street | north half | 8 | 31 | 5 | 103 | 138 | 46 | 0 | 69 | 116 |
+| pm_peak | Colby Street | south half | 8 | 24 | 1 | 123 | 147 | 25 | 0 | 61 | 86 |
+| pm_peak | Hillegass Avenue | north half | 4 | 39 | 2 | 69 | 110 | 43 | 2 | 39 | 83 |
+| pm_peak | Hillegass Avenue | south half | 4 | 17 | 0 | 91 | 107 | 24 | 0 | 71 | 94 |
 
 
 ## Stations that cannot be met
@@ -200,30 +295,30 @@ A station is listed when the last fitting iteration ended more than 5% off its t
 
 ### am_peak
 
-143 stations; the 20 furthest from their target are listed (the full list of every station is in the table of its period above).
+183 stations; the 20 furthest from their target are listed (the full list of every station is in the table of its period above).
 
 | Station | Target | Assigned | Error | Pinned | Opposing stations |
 | --- | --- | --- | --- | --- | --- |
-| Canning Street 58th Street to 59th Street, SB (link 1895) | 19 | 1 | -97% | 0% | Martin Street from northwest (Ayala side) to Claremont Avenue toward s (10%, 1 veh/h); Martin Street Claremont Avenue to Ayala Avenue, EB (link 1828) (14%, 1 veh/h) |
-| Dana Street from north to 63rd Street toward east (Colby side) at Dana Street / 63rd Street | 37 | 2 | -95% | 26% | North Street Colby Street to Dana Street, EB (link 1907) (11%, 2 veh/h); Colby Street from north to Claremont Avenue toward southwest (Telegrap (47%, 1 veh/h) |
-| Telegraph Ave, 52nd St and Claremont Ave, 52nd Street (W leg) entering | 12 | 131 | 990% | 18% | Telegraph Ave, 52nd St and Claremont Ave, Telegraph Avenue (S leg) ent (-24%, 110 veh/h); Telegraph Ave and 51st St, Telegraph Avenue (N leg) leaving (-25%, 110 veh/h) |
-| Martin Luther King Jr Way and 55th St, EB approach to the S leg | 219 | 37 | -83% | 88% at the upper bound | MarketSt_55thSt S leg leaving (24%, 30 veh/h); on-ramp at node 679 (Martin Luther King Junior Way) (5%, 27 veh/h) |
-| Telegraph Ave and 55th St, NB approach to the E leg | 40 | 7 | -83% | 0% | Telegraph Ave and 55th St, Telegraph Avenue (S leg) entering (8%, 7 veh/h); off-ramp at node 683 (Claremont Avenue / Clifton Street) (4%, 3 veh/h) |
-| Martin Luther King Jr Way and 55th St, NB approach to the E leg | 49 | 10 | -80% | 40% | Martin Luther King Jr Way and 55th St, 55th Street (E leg) leaving (16%, 10 veh/h); Shattuck Ave and 52nd St, EB approach to the N leg (10%, 8 veh/h) |
-| Canning Street 62nd Street to 63rd Street, NB (link 1904) | 34 | 11 | -69% | 96% at the upper bound | 63rd Street Canning Street to Telegraph Avenue, EB (link 1860) (26%, 10 veh/h); Martin Street from southeast to 58th Street toward west at Martin Stre (36%, 10 veh/h) |
-| Martin Luther King Jr Way and 52nd St, SB approach to the E leg | 105 | 38 | -64% | 82% at the upper bound | SR-24 ramps and 52nd St, 52nd Street (W leg) entering (8%, 38 veh/h); Telegraph Ave and 51st St, 51st Street (E leg) leaving (15%, 36 veh/h) |
-| North Street Colby Street to Dana Street, WB (link 1906) | 25 | 10 | -60% | 86% at the upper bound | Dana Street North Street to Alcatraz Avenue, SB (link 1927) (12%, 6 veh/h); 63rd Street Colby Street to Dana Street, WB (link 1855) (72%, 4 veh/h) |
-| McAuley Street Canning Street to Telegraph Avenue, EB (link 1935) | 7 | 17 | 143% | 29% | Forest Street Colby Street / Claremont Avenue to Ayala Avenue, EB (lin (-2%, 14 veh/h); Colby Street Forest Street / Claremont Avenue to McAuley Street, SB (l (-1%, 12 veh/h) |
-| 60th Street Canning Street to Telegraph Avenue, EB (link 1870) | 8 | 19 | 140% | 50% | Canning Street McAuley Street to 60th Street, SB (link 1899) (-33%, 13 veh/h); Martin Street Ayala Avenue to Hermann Street / 58th Street, EB (link 1 (-25%, 8 veh/h) |
-| Hermann Street Ayala Avenue to Martin Street / 58th Street, NB (link 1823) | 7 | 3 | -58% | 69% | Shattuck Ave and 52nd St, Shattuck Avenue (S leg) entering (16%, 2 veh/h); Shattuck Ave and 52nd St, Shattuck Avenue (N leg) leaving (2%, 2 veh/h) |
-| 61st Street Hillegass Avenue to Colby Street, EB (link 2620) | 15 | 7 | -53% | 100% at the upper bound | Colby Street 61st Street to 62nd Street, NB (link 2597) (3%, 5 veh/h); 63rd Street Hillegass Avenue to Colby Street, EB (link 2628) (89%, 3 veh/h) |
-| Telegraph Ave and 51st St, NB approach to the E leg | 58 | 28 | -52% | 92% at the upper bound | Telegraph Ave and 51st St, 51st Street (E leg) leaving (15%, 28 veh/h); Martin Luther King Jr Way and 52nd St, Martin Luther King Junior Way ( (2%, 5 veh/h) |
-| Alcatraz Avenue from west to Colby Street toward south at Colby Street / Alcatraz Avenue | 81 | 41 | -50% | 91% at the upper bound | on-ramp at node 833 (Claremont Avenue / Hudson Street) (3%, 23 veh/h); Colby Street SB, implied volume (29%, 22 veh/h) |
-| Martin Luther King Jr Way and 52nd St, WB approach to the S leg | 63 | 120 | 90% | 16% | Shattuck Ave and 52nd St, 52nd Street (W leg) leaving (-9%, 112 veh/h); SR-24 ramps and 52nd St, 52nd Street (E leg) entering (-9%, 112 veh/h) |
-| 63rd Street Hillegass Avenue to Colby Street, EB (link 2628) | 13 | 25 | 89% | 92% at the lower bound | Colby Street 62nd Street to 63rd Street, NB (link 2599) (-7%, 17 veh/h); Hillegass Avenue 63rd Street to 62nd Street, NB (link 2672) (-13%, 13 veh/h) |
-| 61st Street Hillegass Avenue to Colby Street, WB (link 2619) | 9 | 16 | 82% | 18% | Hillegass Avenue SB, implied volume (-34%, 11 veh/h); Colby Street 60th Street to 61st Street, SB (link 2596) (-8%, 11 veh/h) |
-| Colby Street from south to Alcatraz Avenue toward west at Colby Street / Alcatraz Avenue | 78 | 44 | -44% | 80% | 63rd Street Colby Street to Dana Street, WB (link 1855) (72%, 19 veh/h); Dana Street North Street to Alcatraz Avenue, NB (link 1926) (4%, 13 veh/h) |
-| Shattuck Ave and 55th St, NB approach to the W leg | 28 | 49 | 76% | 17% | Martin Luther King Jr Way and 55th St, 55th Street (E leg) entering (-18%, 40 veh/h); Shattuck Ave and 52nd St, 52nd Street (W leg) leaving (-9%, 33 veh/h) |
+| gate 269 Market Street entering (ceiling) | 0 | 0 | 41217496% | 100% at the lower bound | - |
+| gate 315 53rd Street leaving (ceiling) | 0 | 0 | 41217496% | 100% at the lower bound | - |
+| Martin Luther King Jr Way and 55th St, EB approach to the S leg | 219 | 11 | -95% | 32% | MarketSt_55thSt E leg leaving (4%, 10 veh/h); MarketSt_55thSt S leg leaving (9%, 10 veh/h) |
+| Telegraph Ave and 51st St, NB approach to the E leg | 58 | 3 | -94% | 17% | Telegraph Ave and 51st St, 51st Street (E leg) leaving (2%, 3 veh/h); Shattuck Ave and 52nd St, Shattuck Avenue (S leg) entering (26%, 2 veh/h) |
+| Canning Street 58th Street to 59th Street, SB (link 1895) | 19 | 1 | -93% | 27% | Martin Street Claremont Avenue to Ayala Avenue, EB (link 1828) (18%, 1 veh/h); Martin Street from northwest (Ayala side) to Claremont Avenue toward s (17%, 1 veh/h) |
+| North Street Colby Street to Dana Street, WB (link 1906) | 25 | 2 | -92% | 66% | 63rd Street Colby Street to Dana Street, WB (link 1855) (56%, 2 veh/h); Dana Street North Street to Alcatraz Avenue, NB (link 1926) (6%, 1 veh/h) |
+| Telegraph Ave, 52nd St and Claremont Ave, 52nd Street (W leg) entering | 12 | 78 | 548% | 21% | Telegraph Ave, 52nd St and Claremont Ave, Telegraph Avenue (S leg) ent (-26%, 60 veh/h); Telegraph Ave and 51st St, Telegraph Avenue (N leg) leaving (-26%, 60 veh/h) |
+| Martin Luther King Jr Way and 55th St, NB approach to the E leg | 49 | 9 | -81% | 8% | Martin Luther King Jr Way and 55th St, 55th Street (E leg) leaving (3%, 9 veh/h); Shattuck Ave and 55th St, 55th Street (W leg) entering (6%, 8 veh/h) |
+| 60th Street Canning Street to Telegraph Avenue, EB (link 1870) | 8 | 39 | 387% | 43% | AlcatrazAve S leg leaving (-3%, 29 veh/h); AlcatrazAve N leg entering (-6%, 28 veh/h) |
+| Telegraph Ave and 55th St, NB approach to the E leg | 40 | 9 | -77% | 4% | Telegraph Ave and 55th St, Telegraph Avenue (S leg) entering (18%, 9 veh/h); Telegraph Ave, 52nd St and Claremont Ave, 52nd Street (W leg) entering (548%, 3 veh/h) |
+| 60th Street Hillegass Avenue / Claremont Avenue to Colby Street, EB (link 1864) | 4 | 16 | 308% | 45% | Colby Street Forest Street / Claremont Avenue to McAuley Street, SB (l (-27%, 10 veh/h); Colby Street 60th Street to 61st Street, SB (link 2596) (-21%, 10 veh/h) |
+| Dana Street from north to 63rd Street toward east (Colby side) at Dana Street / 63rd Street | 37 | 11 | -70% | 81% at the upper bound | Dana Street 63rd Street to North Street, SB (link 1925) (20%, 11 veh/h); 63rd Street Canning Street to Telegraph Avenue, WB (link 1859) (9%, 11 veh/h) |
+| Telegraph Ave and 51st St, SB approach to the E leg | 146 | 43 | -70% | 38% | Telegraph Ave and 51st St, 51st Street (E leg) leaving (2%, 43 veh/h); Shattuck Ave and 52nd St, Shattuck Avenue (N leg) entering (34%, 23 veh/h) |
+| McAuley Street Canning Street to Telegraph Avenue, EB (link 1935) | 7 | 22 | 220% | 39% | AlcatrazAve S leg leaving (-3%, 18 veh/h); AlcatrazAve N leg entering (-6%, 17 veh/h) |
+| Hermann Street Ayala Avenue to Martin Street / 58th Street, NB (link 1823) | 7 | 2 | -68% | 17% | Ayala Avenue Hermann Street to Martin Street, SB (link 1830) (26%, 2 veh/h); 58th Street Canning Street to Vicente Street, WB (link 1989) (11%, 1 veh/h) |
+| 62nd Street Hillegass Avenue to Colby Street, WB (link 2677) | 17 | 6 | -68% | 57% | 61st Street Hillegass Avenue to Colby Street, WB (link 2619) (163%, 5 veh/h); Hillegass Avenue 63rd Street to 62nd Street, SB (link 2671) (7%, 3 veh/h) |
+| 61st Street Hillegass Avenue to Colby Street, EB (link 2620) | 15 | 5 | -64% | 65% | 62nd Street Hillegass Avenue to Colby Street, EB (link 2678) (40%, 4 veh/h); 63rd Street Hillegass Avenue to Colby Street, EB (link 2628) (140%, 3 veh/h) |
+| 61st Street Hillegass Avenue to Colby Street, WB (link 2619) | 9 | 24 | 163% | 13% | Colby Street Forest Street / Claremont Avenue to McAuley Street, NB (l (-7%, 15 veh/h); Colby Street 60th Street to 61st Street, NB (link 2595) (-14%, 15 veh/h) |
+| 63rd Street Hillegass Avenue to Colby Street, EB (link 2628) | 13 | 31 | 140% | 86% at the lower bound | Colby Street 62nd Street to 63rd Street, NB (link 2599) (-16%, 19 veh/h); Colby Street 61st Street to 62nd Street, NB (link 2597) (-12%, 18 veh/h) |
+| Hermann Street Ayala Avenue to Martin Street / 58th Street, SB (link 1824) | 3 | 7 | 138% | 31% | Martin Street Ayala Avenue to Hermann Street / 58th Street, EB (link 1 (-25%, 4 veh/h); Martin Street Ayala Avenue to Hermann Street / 58th Street, WB (link 1 (-18%, 3 veh/h) |
 
 ### midday
 
@@ -254,46 +349,44 @@ A station is listed when the last fitting iteration ended more than 5% off its t
 
 ### pm_peak
 
-179 stations; the 20 furthest from their target are listed (the full list of every station is in the table of its period above).
+220 stations; the 20 furthest from their target are listed (the full list of every station is in the table of its period above).
 
 | Station | Target | Assigned | Error | Pinned | Opposing stations |
 | --- | --- | --- | --- | --- | --- |
-| Colby Street from north to Claremont Avenue toward northeast (College side) at Colby Street / Claremont Avenue | 75 | 0 | -100% | 100% at the upper bound | Hillegass Avenue from south to Alcatraz Avenue toward west at Hillegas (22%, 0 veh/h); Claremont Avenue from southwest to Hillegass Avenue toward north at Hi (19%, 0 veh/h) |
-| SR-24 eastbound off-ramp, Clifton St and Claremont Ave, NB approach to the E leg | 67 | 0 | -99% | 95% at the upper bound | Telegraph Ave, 52nd St and Claremont Ave, Claremont Avenue (E leg) lea (28%, 0 veh/h); Martin Luther King Jr Way and 52nd St, 52nd Street (E leg) leaving (12%, 0 veh/h) |
-| 61st Street Hillegass Avenue to Colby Street, EB (link 2620) | 11 | 0 | -96% | 88% at the upper bound | 63rd Street Hillegass Avenue to Colby Street, EB (link 2628) (377%, 0 veh/h); Hillegass Avenue Alcatraz Avenue to 63rd Street, NB (link 2670) (5%, 0 veh/h) |
-| Canning Street 62nd Street to 63rd Street, NB (link 1904) | 18 | 2 | -88% | 0% | Shattuck Ave and 52nd St, EB approach to the N leg (21%, 2 veh/h); SR-24 eastbound off-ramp, Clifton St and Claremont Ave, EB approach to (9%, 2 veh/h) |
-| North Street Colby Street to Dana Street, WB (link 1906) | 11 | 2 | -86% | 26% | Dana Street 63rd Street to North Street, NB (link 1924) (32%, 1 veh/h); Colby Street NB, implied volume (11%, 1 veh/h) |
-| Martin Luther King Jr Way and 55th St, EB approach to the S leg | 161 | 24 | -85% | 80% at the upper bound | MarketSt_55thSt S leg leaving (8%, 18 veh/h); MarketSt_55thSt E leg leaving (4%, 18 veh/h) |
-| Martin Luther King Jr Way and 55th St, NB approach to the E leg | 87 | 15 | -83% | 20% | Martin Luther King Jr Way and 52nd St, 52nd Street (E leg) leaving (12%, 15 veh/h); Shattuck Ave and 55th St, 55th Street (W leg) entering (8%, 15 veh/h) |
-| Colby Street from south to Alcatraz Avenue toward east at Colby Street / Alcatraz Avenue | 32 | 6 | -82% | 99% at the upper bound | Alcatraz Ave and College Ave, College Avenue (N leg) leaving (7%, 5 veh/h); Alcatraz Ave and College Ave, EB approach to the N leg (10%, 5 veh/h) |
-| Shattuck Ave and 52nd St, WB approach to the S leg | 35 | 192 | 449% | 3% | Telegraph Ave, 52nd St and Claremont Ave, Telegraph Avenue (S leg) lea (-30%, 189 veh/h); Telegraph Ave and 51st St, Telegraph Avenue (N leg) entering (-30%, 189 veh/h) |
-| 63rd Street Hillegass Avenue to Colby Street, EB (link 2628) | 7 | 33 | 377% | 79% | Colby Street 62nd Street to 63rd Street, NB (link 2599) (-2%, 17 veh/h); Alcatraz Ave and College Ave, Alcatraz Avenue (W leg) entering (-5%, 17 veh/h) |
-| Telegraph Ave and 55th St, NB approach to the E leg | 54 | 12 | -78% | 0% | Telegraph Ave and 55th St, Telegraph Avenue (S leg) entering (12%, 12 veh/h); SR-24 eastbound off-ramp, Clifton St and Claremont Ave, Claremont Aven (10%, 8 veh/h) |
-| Telegraph Ave, 52nd St and Claremont Ave, 52nd Street (W leg) entering | 40 | 153 | 283% | 14% | Telegraph Ave, 52nd St and Claremont Ave, Telegraph Avenue (S leg) ent (-20%, 132 veh/h); Telegraph Ave and 51st St, Telegraph Avenue (N leg) leaving (-22%, 132 veh/h) |
-| Martin Luther King Jr Way and 52nd St, SB approach to the E leg | 143 | 44 | -69% | 35% | Martin Luther King Jr Way and 52nd St, 52nd Street (E leg) leaving (12%, 44 veh/h); Shattuck Ave and 55th St, 55th Street (W leg) entering (8%, 38 veh/h) |
-| Colby Street from south to Alcatraz Avenue toward west at Colby Street / Alcatraz Avenue | 131 | 41 | -69% | 59% | AlcatrazAve N leg leaving (2%, 21 veh/h); McAuley Street Canning Street to Telegraph Avenue, WB (link 1934) (19%, 15 veh/h) |
-| Ashby Ave and Claremont Ave, SB approach to the E leg | 272 | 85 | -69% | 100% at the upper bound | Ashby Ave and Claremont Ave, Ashby Avenue (E leg) leaving (2%, 85 veh/h); Ashby Ave and Claremont Ave, Claremont Avenue (S leg) leaving (7%, 1 veh/h) |
-| SR-24 westbound on-ramp, Hudson St and Claremont Ave, SB approach to the E leg | 49 | 16 | -66% | 72% | SR-24 westbound on-ramp, Hudson St and Claremont Ave, Claremont Avenue (32%, 16 veh/h); SR-24 westbound on-ramp, Hudson St and Claremont Ave, Claremont Avenue (10%, 9 veh/h) |
-| Shattuck Ave and 55th St, NB approach to the W leg | 27 | 71 | 165% | 20% | Shattuck Ave and 52nd St, Shattuck Avenue (N leg) leaving (-6%, 71 veh/h); Martin Luther King Jr Way and 55th St, 55th Street (E leg) entering (-10%, 70 veh/h) |
-| Ashby Ave and Claremont Ave, NB approach to the W leg | 53 | 22 | -59% | 100% at the upper bound | Alcatraz Ave and College Ave, College Avenue (N leg) leaving (7%, 7 veh/h); Alcatraz Ave and College Ave, Alcatraz Avenue (E leg) entering (12%, 5 veh/h) |
-| Ashby Ave and Claremont Ave, EB approach to the N leg | 99 | 42 | -58% | 42% | Ashby Ave and Claremont Ave, Ashby Avenue (E leg) leaving (2%, 42 veh/h); Ashby Ave and Claremont Ave, Claremont Avenue (N leg) leaving (5%, 42 veh/h) |
-| Howell Street McAuley Street to 60th Street, NB (link 2056) | 6 | 13 | 117% | 49% | 58th Street Hermann Street / Martin Street to Canning Street, WB (link (-3%, 8 veh/h); Colby Street 60th Street to 61st Street, NB (link 2595) (-12%, 8 veh/h) |
+| gate 76 San Pablo Avenue leaving (ceiling) | 0 | 0 | 928693974% | 100% at the lower bound | - |
+| SR-24 eastbound off-ramp, Clifton St and Claremont Ave, NB approach to the E leg | 67 | 0 | -100% | 0% | SR-24 westbound on-ramp, Hudson St and Claremont Ave, Claremont Avenue (5%, 0 veh/h); SR-24 eastbound off-ramp, Clifton St and Claremont Ave, Claremont Aven (5%, 0 veh/h) |
+| Colby Street from north to Claremont Avenue toward northeast (College side) at Colby Street / Claremont Avenue | 75 | 1 | -99% | 55% | 60th Street Hillegass Avenue / Claremont Avenue to Colby Street, EB (l (18%, 1 veh/h); Forest Street Colby Street / Claremont Avenue to Ayala Avenue, EB (lin (107%, 0 veh/h) |
+| Ashby Ave and Claremont Ave, SB approach to the E leg | 272 | 31 | -89% | 85% at the upper bound | Alcatraz Ave and College Ave, Alcatraz Avenue (W leg) entering (1%, 1 veh/h); Forest Street Colby Street / Claremont Avenue to Ayala Avenue, EB (lin (107%, 1 veh/h) |
+| Martin Luther King Jr Way and 55th St, EB approach to the S leg | 161 | 19 | -88% | 26% | MarketSt_55thSt E leg leaving (12%, 16 veh/h); Martin Luther King Jr Way and 55th St, Martin Luther King Junior Way ( (3%, 13 veh/h) |
+| Telegraph Ave and 51st St, NB approach to the E leg | 99 | 13 | -87% | 39% | Telegraph Ave and 51st St, 51st Street (E leg) leaving (6%, 13 veh/h); Telegraph Ave and 55th St, Telegraph Avenue (S leg) entering (5%, 7 veh/h) |
+| North Street Colby Street to Dana Street, WB (link 1906) | 11 | 2 | -83% | 79% | 63rd Street Colby Street to Dana Street, WB (link 1855) (67%, 1 veh/h); Dana Street North Street to Alcatraz Avenue, NB (link 1926) (98%, 1 veh/h) |
+| 63rd Street Hillegass Avenue to Colby Street, EB (link 2628) | 7 | 38 | 439% | 77% | Colby Street 62nd Street to 63rd Street, NB (link 2599) (-5%, 16 veh/h); Colby Street 61st Street to 62nd Street, NB (link 2597) (-11%, 14 veh/h) |
+| Colby Street from south to Alcatraz Avenue toward west at Colby Street / Alcatraz Avenue | 131 | 25 | -81% | 73% | 63rd Street Colby Street to Dana Street, WB (link 1855) (67%, 8 veh/h); Dana Street North Street to Alcatraz Avenue, NB (link 1926) (98%, 7 veh/h) |
+| Martin Luther King Jr Way and 55th St, NB approach to the E leg | 87 | 17 | -80% | 9% | Shattuck Ave and 55th St, 55th Street (W leg) entering (2%, 17 veh/h); Martin Luther King Jr Way and 52nd St, 52nd Street (E leg) leaving (13%, 16 veh/h) |
+| Howell Street McAuley Street to 60th Street, NB (link 2056) | 6 | 26 | 336% | 20% | SR-24 westbound on-ramp, Hudson St and Claremont Ave, Claremont Avenue (-2%, 23 veh/h); 58th Street Hermann Street / Martin Street to Canning Street, WB (link (-7%, 22 veh/h) |
+| SR-24 eastbound off-ramp, Clifton St and Claremont Ave, WB approach to the N leg | 32 | 130 | 307% | 2% | SR-24 westbound on-ramp, Hudson St and Claremont Ave, Claremont Avenue (-2%, 98 veh/h); SR-24 westbound on-ramp, Hudson St and Claremont Ave, Hudson Street (E (-19%, 88 veh/h) |
+| Howell Street 59th Street to McAuley Street, NB (link 2054) | 7 | 27 | 284% | 21% | SR-24 westbound on-ramp, Hudson St and Claremont Ave, Claremont Avenue (-2%, 23 veh/h); Colby Street Forest Street / Claremont Avenue to McAuley Street, NB (l (-13%, 22 veh/h) |
+| 61st Street Hillegass Avenue to Colby Street, EB (link 2620) | 11 | 3 | -69% | 36% | 62nd Street Hillegass Avenue to Colby Street, EB (link 2678) (93%, 3 veh/h); 60th Street Hillegass Avenue / Claremont Avenue to Colby Street, EB (l (18%, 2 veh/h) |
+| Ayala Avenue Forest Street to McAuley Street, SB (link 2801) | 20 | 58 | 188% | 54% | AlcatrazAve S leg leaving (-23%, 33 veh/h); Colby Street Forest Street / Claremont Avenue to McAuley Street, SB (l (-24%, 30 veh/h) |
+| McAuley Street Ayala Avenue to Howell Street, EB (link 1931) | 15 | 42 | 182% | 58% | AlcatrazAve S leg leaving (-23%, 26 veh/h); Canning Street McAuley Street to 60th Street, SB (link 1899) (-40%, 22 veh/h) |
+| Colby Street from south to Alcatraz Avenue toward east at Colby Street / Alcatraz Avenue | 32 | 11 | -64% | 64% | Alcatraz Ave and College Ave, College Avenue (N leg) leaving (14%, 8 veh/h); Alcatraz Ave and College Ave, Alcatraz Avenue (W leg) entering (1%, 6 veh/h) |
+| Howell Street 59th Street to McAuley Street, SB (link 2055) | 17 | 46 | 172% | 63% | AlcatrazAve S leg leaving (-23%, 25 veh/h); Canning Street McAuley Street to 60th Street, SB (link 1899) (-40%, 21 veh/h) |
+| Ashby Ave and Claremont Ave, EB approach to the S leg | 34 | 14 | -60% | 42% | Ashby Ave and Claremont Ave, Claremont Avenue (S leg) leaving (7%, 14 veh/h); on-ramp at node 833 (Claremont Avenue / Hudson Street) (3%, 6 veh/h) |
+| Ashby Ave and Claremont Ave, NB approach to the W leg | 53 | 21 | -60% | 59% | Alcatraz Ave and College Ave, College Avenue (N leg) leaving (14%, 9 veh/h); SR-24 westbound on-ramp, Hudson St and Claremont Ave, Claremont Avenue (5%, 4 veh/h) |
 
 
 ## Capacity guard
 
 ### am_peak
 
-The guard removed 491 veh/h net compared with the count-only fit; 2216 flows are more than 0.1% smaller. Links the count-only solution puts above capacity x 1.10 (4), worst first, up to 20, with the volume after the guard:
+The guard removed 39 veh/h net compared with the count-only fit; 4330 flows are more than 0.1% smaller. Links the count-only solution puts above capacity x 1.10 (2), worst first, up to 20, with the volume after the guard:
 
 | Link | Street | Rule | Capacity | Assigned before | After |
 | --- | --- | --- | --- | --- | --- |
-| 576 | Adeline Street | all_way_stop | 473 | 758 | 525 |
-| 729 | Adeline Street | all_way_stop | 473 | 738 | 501 |
-| 562 | Market Street | all_way_stop | 473 | 712 | 530 |
-| 4132 | Market Street | all_way_stop | 473 | 688 | 585 |
+| 4132 | Market Street | all_way_stop | 473 | 604 | 582 |
+| 562 | Market Street | all_way_stop | 473 | 549 | 537 |
 
-After the final count refit 3 uncounted link(s) remain above their limit (worst: link 4132 Market Street 585 against 520; link 562 Market Street 530 against 520; link 576 Adeline Street 525 against 520); counted flows use them and the counts (weight 1) won over the guard (weight 0.5).
+After the final count refit 2 uncounted link(s) remain above their limit (worst: link 4132 Market Street 582 against 520; link 562 Market Street 537 against 520); counted flows use them and the counts (weight 1) won over the guard (weight 0.5).
 
 ### midday
 
@@ -308,16 +401,14 @@ After the final count refit 0 uncounted link(s) remain above their limit; counte
 
 ### pm_peak
 
-The guard removed 507 veh/h net compared with the count-only fit; 4302 flows are more than 0.1% smaller. Links the count-only solution puts above capacity x 1.10 (4), worst first, up to 20, with the volume after the guard:
+The guard removed 207 veh/h net compared with the count-only fit; 5492 flows are more than 0.1% smaller. Links the count-only solution puts above capacity x 1.10 (2), worst first, up to 20, with the volume after the guard:
 
 | Link | Street | Rule | Capacity | Assigned before | After |
 | --- | --- | --- | --- | --- | --- |
-| 4132 | Market Street | all_way_stop | 473 | 647 | 595 |
-| 576 | Adeline Street | all_way_stop | 473 | 616 | 523 |
-| 729 | Adeline Street | all_way_stop | 473 | 589 | 464 |
-| 562 | Market Street | all_way_stop | 473 | 554 | 455 |
+| 4132 | Market Street | all_way_stop | 473 | 640 | 609 |
+| 576 | Adeline Street | all_way_stop | 473 | 528 | 520 |
 
-After the final count refit 2 uncounted link(s) remain above their limit (worst: link 4132 Market Street 595 against 520; link 576 Adeline Street 523 against 520); counted flows use them and the counts (weight 1) won over the guard (weight 0.5).
+After the final count refit 1 uncounted link(s) remain above their limit (worst: link 4132 Market Street 609 against 520); counted flows use them and the counts (weight 1) won over the guard (weight 0.5).
 
 ## Notes
 
@@ -340,7 +431,8 @@ After the final count refit 2 uncounted link(s) remain above their limit (worst:
 - training view of split be72380b485e: 77 observations of held groups and 5 aggregate counts overlapping held blocks are removed from the gate totals, ramp volumes, trip ends, assumed movements and the fit
 - recency weights (ASSUMPTION, reference year 2026): caltrans-ramp 2012: 12 stations, weight x1 (ramp stations, exempt from the age bands); caltrans-ramp 2024: 3 stations, weight x1; CHRCO-EIR2014 2013: 84 stations, weight x0.5; CHRCO-EIR2014 2013: 2 stations, weight x1 (ramp stations, exempt from the age bands); oakland-tmc 2019: 12 stations, weight x1; SafewayCollege-DEIR2011 2010: 45 stations, weight x0.5; volunteer-count 2025: 112 stations, weight x1
 - No comparable unique-corridor through counts enter this fit. Whole-street traversal counts are scored on the end-to-end path.
-- data/demand/rockridge.station-membership-training.json lacks matching source, detector, split or demand-view evidence. Using static membership.
+- Simulated membership from target/membership/rockridge.membership-training.json (training view)
+- node prior ceilings (ASSUMPTION, round 52): in a period whose stations take simulated membership, every gate direction and every non-gate node direction outside the study area that no gate station in the fit counts is held to at most its car total in the static fit of the same view and period plus 0% (weight 10); non-gate nodes inside the study area have no ceiling; no count value sets a ceiling
 - assumed movement colby-nb-left-alcatraz-west: its whole-street count overlaps a held block and is withheld; not assumed in the training view
 - assumed movement colby-nb-right-alcatraz-east: its whole-street count overlaps a held block and is withheld; not assumed in the training view
 - assumed movement intents, am_peak: 145.7 veh/h taken from plain flows between the same pairs
@@ -350,15 +442,19 @@ After the final count refit 2 uncounted link(s) remain above their limit (worst:
 - assumed movement intents, pm_peak: 229.0 veh/h taken from plain flows between the same pairs
 - assumed movements, pm_peak (ASSUMPTION, round 26): 521.0 veh/h taken from plain flows of other pairs whose best route makes a counted turn that the pinned flows already fill
 - assumed movement flows: hillegass-nb-left-alcatraz-west am_peak 125 flows, 18 through and 24 local veh/h; hillegass-nb-right-alcatraz-east am_peak 154 flows, 23 through and 30 local veh/h; alcatraz-west-hillegass-south am_peak 1 flows, 13 through and 0 local veh/h; alcatraz-east-hillegass-south am_peak 4 flows, 21 through and 0 local veh/h; alcatraz-west-colby-south am_peak 8 flows, 30 through and 0 local veh/h; alcatraz-east-colby-south am_peak 0 flows, 0 through and 0 local veh/h; hillegass-nb-left-alcatraz-west midday 146 flows, 12 through and 15 local veh/h; hillegass-nb-right-alcatraz-east midday 178 flows, 15 through and 19 local veh/h; alcatraz-west-hillegass-south midday 1 flows, 24 through and 0 local veh/h; alcatraz-east-hillegass-south midday 9 flows, 30 through and 0 local veh/h; alcatraz-west-colby-south midday 6 flows, 17 through and 0 local veh/h; alcatraz-east-colby-south midday 6 flows, 11 through and 0 local veh/h; hillegass-nb-left-alcatraz-west pm_peak 114 flows, 19 through and 24 local veh/h; hillegass-nb-right-alcatraz-east pm_peak 178 flows, 24 through and 30 local veh/h; alcatraz-west-hillegass-south pm_peak 2 flows, 38 through and 0 local veh/h; alcatraz-east-hillegass-south pm_peak 26 flows, 49 through and 0 local veh/h; alcatraz-west-colby-south pm_peak 9 flows, 28 through and 0 local veh/h; alcatraz-east-colby-south pm_peak 6 flows, 18 through and 0 local veh/h
-- ramp choice made upstream (ASSUMPTION), am_peak: 840 off-ramp flows got a ramp movement, 260 of them divided over two ramps or more; volume by ramp link 4161 1509, 4160 888, 1573 841, 4277 357, 4289 156, 1945 141, 4280 113, 4063 45, 3744 34, 3778 19, 3753 18, 3984 16, 4081 2 veh/h
+- ramp choice made upstream (ASSUMPTION), am_peak: 840 off-ramp flows got a ramp movement, 262 of them divided over two ramps or more; volume by ramp link 4161 1554, 4160 894, 1573 850, 4277 357, 4289 187, 1945 185, 4280 57, 3744 18, 4063 17, 3753 10, 3778 8, 3984 5, 4081 1 veh/h
 - ramp choice made upstream (ASSUMPTION), midday: 1126 off-ramp flows got a ramp movement, 318 of them divided over two ramps or more; volume by ramp link 4161 1019, 1573 616, 4160 606, 1945 233, 4277 228, 4289 186, 4280 152, 3753 78, 4063 30, 4362 29, 3744 22, 3778 17, 3984 10, 4081 1, 3975 0 veh/h
-- ramp choice made upstream (ASSUMPTION), pm_peak: 1182 off-ramp flows got a ramp movement, 410 of them divided over two ramps or more; volume by ramp link 4161 1597, 4160 1018, 1573 979, 4277 394, 1945 391, 4289 300, 4280 255, 4362 178, 3753 79, 3778 53, 3744 40, 4063 39, 3984 11, 4081 3, 3975 0 veh/h
-- am_peak: assignment by successive averages (10 passes x 2 draws of perceived costs, BPR alpha 0.15 beta 4, route-choice dispersion 2 s), 2 round(s) with the table refitted and reassigned at its own volumes; relative link-volume change at the last pass 0.026
-- am_peak: the guard cut 11 veh/h from flows that touch no count (after the median rule)
+- ramp choice made upstream (ASSUMPTION), pm_peak: 1182 off-ramp flows got a ramp movement, 408 of them divided over two ramps or more; volume by ramp link 4161 1763, 4160 970, 1573 916, 1945 611, 4277 398, 4289 306, 4280 193, 4362 73, 3753 36, 3744 33, 3778 24, 4063 15, 3984 9, 4081 3, 3975 0 veh/h
+- am_peak: stations whose membership comes from simulated trips (30 runs; 201 of 205 fitted stations; their assigned volumes in the station tables use it): tmc AlcatrazAve N entering, tmc AlcatrazAve N leaving, tmc AlcatrazAve S entering, tmc AlcatrazAve S leaving, tmc AlcatrazAve W entering, tmc AlcatrazAve W leaving, tmc MarketSt_55thSt N entering, tmc MarketSt_55thSt N leaving, tmc MarketSt_55thSt E entering, tmc MarketSt_55thSt E leaving, tmc MarketSt_55thSt S entering, tmc MarketSt_55thSt S leaving, ramp on 280, ramp off 702, ramp off 1133, ramp on 1312, ramp on 1320, ramp off 1350, ramp off 1695, ramp on 1695, ramp on 1711, ramp on 1741, ramp off 1743, count block 1927, count block 1926, count block 1925, count block 1924, count block 2606, count block 2605, count block 2600, count block 2599, count block 2598, count block 2597, count block 2596, count block 2595, count block 2592, count block 2591, count block 1906, count block 1907, count block 1855, count block 1856, count block 1859, count block 1860, count block 2627, count block 2628, count block 2625, count block 2626, count block 1847, count block 1848, count block 2677, count block 2678, count block 2621, count block 2622, count block 1904, count block 1905, count block 1902, count block 1903, count block 1900, count block 1901, count block 1898, count block 1899, count block 1894, count block 1895, count block 2015, count block 2016, count block 2619, count block 2620, count block 1869, count block 1870, count block 1865, count block 1866, count block 1863, count block 1864, count block 2669, count block 2670, count block 2671, count block 2672, count block 2675, count block 2676, count block 1928, count block 1929, count block 1934, count block 1935, count block 1886, count block 1887, count block 1888, count block 1889, count block 1987, count block 1988, count block 1989, count block 1823, count block 1824, count block 1825, count block 1826, count block 1827, count block 1828, count block 1830, count block 1829, count block 2696, count block 2697, count move 2776>2591, count move 2730>2591, count move 2605>2035, count move 2034>2606, count move 1856>2600, count move 2592>2777, count move 2752>2676, count move 2670>2765, count move 2670>2766, count move 2764>2669, count move 2767>2669, count move 2675>2753, count move 2812>1827, count move 1825>1987, count move 1828>2758, count move 4189>1927, count move 1925>1856, ix mlk-55th N entering, ix mlk-55th S leaving, ix mlk-55th E entering, ix mlk-55th E leaving, ix mlk-55th W entering, ix mlk-55th W leaving, ix mlk-55th move 834>713, ix mlk-55th move 712>705, ix mlk-55th move 764>714, ix mlk-55th move 764>713, ix mlk-55th move 715>765, ix shattuck-55th N entering, ix shattuck-55th S entering, ix shattuck-55th S leaving, ix shattuck-55th E entering, ix shattuck-55th W entering, ix shattuck-55th W leaving, ix shattuck-55th move 1751>1578, ix shattuck-55th move 1751>710, ix shattuck-55th move 1577>1750, ix shattuck-55th move 1660>710, ix shattuck-55th move 711>1661, ix telegraph-55th N entering, ix telegraph-55th S entering, ix telegraph-55th S leaving, ix telegraph-55th E entering, ix telegraph-55th W entering, ix telegraph-55th W leaving, ix telegraph-55th move 1678>1565, ix telegraph-55th move 1564>1676, ix telegraph-55th move 1677>1575, ix telegraph-55th move 1677>1565, ix telegraph-55th move 1576>1679, ix mlk-52nd N entering, ix mlk-52nd N leaving, ix mlk-52nd S entering, ix mlk-52nd E leaving, ix mlk-52nd W leaving, ix mlk-52nd move 704>4131, ix mlk-52nd move 758>831, ix mlk-52nd move 761>759, ix mlk-52nd move 761>4131, ix mlk-52nd move 760>811, ix mlk-52nd move 760>831, ix sr24-52nd S entering, ix sr24-52nd E entering, ix sr24-52nd W entering, ix sr24-52nd W leaving, ix sr24-52nd move 1665>4165, ix sr24-52nd move 4160>1749, ix shattuck-52nd N entering, ix shattuck-52nd N leaving, ix shattuck-52nd S entering, ix shattuck-52nd E entering, ix shattuck-52nd W leaving, ix shattuck-52nd move 1653>1571, ix shattuck-52nd move 1653>1663, ix shattuck-52nd move 1666>1652, ix shattuck-52nd move 1705>1663, ix shattuck-52nd move 1662>1652, ix shattuck-52nd move 1662>1706, ix telegraph-52nd-claremont N entering, ix telegraph-52nd-claremont S entering, ix telegraph-52nd-claremont S leaving, ix telegraph-52nd-claremont E entering, ix telegraph-52nd-claremont E leaving, ix telegraph-52nd-claremont W entering, ix telegraph-52nd-claremont W leaving, ix telegraph-52nd-claremont move 1630>1462, ix telegraph-52nd-claremont move 1646>4170, ix telegraph-52nd-claremont move 1646>1631, ix telegraph-51st N entering, ix telegraph-51st N leaving, ix telegraph-51st S entering, ix telegraph-51st S leaving, ix telegraph-51st E entering, ix telegraph-51st E leaving, ix telegraph-51st W entering, ix telegraph-51st W leaving, ix telegraph-51st move 4170>1704, ix telegraph-51st move 1700>1628, ix telegraph-51st move 1629>1704, ix telegraph-51st move 1763>1628, ix sr24-mlk E entering
+- am_peak: select-link shares take simulated membership (30 runs; 4 of 4 share constraints; the denominator is each pair's simulated share of trips on the block with the static fraction as a prior of 5 trips, the numerator the same for pairs with a freeway end; blocks without a simulated trip keep static routes; ramp via-street shares keep static routes)
+- am_peak: assignment by successive averages (10 passes x 2 draws of perceived costs, BPR alpha 0.15 beta 4, route-choice dispersion 2 s), 2 round(s) with the table refitted and reassigned at its own volumes; relative link-volume change at the last pass 0.025
+- am_peak: the guard cut 6 veh/h from flows that touch no count (after the median rule)
 - midday: assignment by successive averages (10 passes x 2 draws of perceived costs, BPR alpha 0.15 beta 4, route-choice dispersion 2 s), 2 round(s) with the table refitted and reassigned at its own volumes; relative link-volume change at the last pass 0.028
 - midday: the guard cut 0 veh/h from flows that touch no count (after the median rule)
+- pm_peak: stations whose membership comes from simulated trips (30 runs; 256 of 260 fitted stations; their assigned volumes in the station tables use it): tmc AlcatrazAve N entering, tmc AlcatrazAve N leaving, tmc AlcatrazAve S entering, tmc AlcatrazAve S leaving, tmc AlcatrazAve W entering, tmc AlcatrazAve W leaving, tmc MarketSt_55thSt N entering, tmc MarketSt_55thSt N leaving, tmc MarketSt_55thSt E entering, tmc MarketSt_55thSt E leaving, tmc MarketSt_55thSt S entering, tmc MarketSt_55thSt S leaving, ramp on 280, ramp off 702, ramp off 1133, ramp on 1312, ramp on 1320, ramp off 1350, ramp off 1695, ramp on 1695, ramp on 1711, ramp on 1741, ramp off 1743, count block 1927, count block 1926, count block 1925, count block 1924, count block 2606, count block 2605, count block 2600, count block 2599, count block 2598, count block 2597, count block 2596, count block 2595, count block 2592, count block 2591, count block 1906, count block 1907, count block 1855, count block 1856, count block 1859, count block 1860, count block 2627, count block 2628, count block 2625, count block 2626, count block 1847, count block 1848, count block 2677, count block 2678, count block 2621, count block 2622, count block 1904, count block 1905, count block 1902, count block 1903, count block 1900, count block 1901, count block 1898, count block 1899, count block 1894, count block 2015, count block 2016, count block 2619, count block 2620, count block 1869, count block 1870, count block 1865, count block 1866, count block 1863, count block 1864, count block 2669, count block 2670, count block 2671, count block 2672, count block 2675, count block 2676, count block 1928, count block 1929, count block 1934, count block 1935, count block 1886, count block 1887, count block 1888, count block 1889, count block 1987, count block 1988, count block 1823, count block 1824, count block 1825, count block 1826, count block 1827, count block 1828, count block 1830, count block 1829, count block 2696, count block 2697, count block 2057, count block 2056, count block 2055, count block 2054, count block 1930, count block 1931, count block 1991, count block 1992, count block 1918, count block 1919, count block 2801, count block 2800, count block 2059, count block 2058, count move 2776>2591, count move 2730>2591, count move 2605>2035, count move 2605>2762, count move 2034>2606, count move 2763>2606, count move 2592>2777, count move 2592>2750, count move 2752>2676, count move 2670>2765, count move 2670>2766, count move 2764>2669, count move 2767>2669, count move 2671>2622, count move 2675>2753, ix mlk-55th N entering, ix mlk-55th S leaving, ix mlk-55th E entering, ix mlk-55th E leaving, ix mlk-55th W entering, ix mlk-55th W leaving, ix mlk-55th move 834>713, ix mlk-55th move 712>705, ix mlk-55th move 764>714, ix mlk-55th move 764>713, ix mlk-55th move 715>765, ix shattuck-55th N entering, ix shattuck-55th S entering, ix shattuck-55th S leaving, ix shattuck-55th E entering, ix shattuck-55th W entering, ix shattuck-55th W leaving, ix shattuck-55th move 1577>1750, ix shattuck-55th move 1660>710, ix shattuck-55th move 711>1661, ix shattuck-55th move 1660>1578, ix telegraph-55th N entering, ix telegraph-55th S entering, ix telegraph-55th S leaving, ix telegraph-55th E entering, ix telegraph-55th W entering, ix telegraph-55th W leaving, ix telegraph-55th move 1678>1565, ix telegraph-55th move 1564>1676, ix telegraph-55th move 1677>1575, ix telegraph-55th move 1677>1565, ix telegraph-55th move 1576>1679, ix mlk-52nd N entering, ix mlk-52nd N leaving, ix mlk-52nd S entering, ix mlk-52nd E leaving, ix mlk-52nd W leaving, ix mlk-52nd move 704>4131, ix mlk-52nd move 758>831, ix mlk-52nd move 761>759, ix mlk-52nd move 761>4131, ix mlk-52nd move 760>811, ix mlk-52nd move 760>831, ix sr24-52nd S entering, ix sr24-52nd E entering, ix sr24-52nd W entering, ix sr24-52nd W leaving, ix sr24-52nd move 1665>4165, ix sr24-52nd move 4160>1749, ix shattuck-52nd N entering, ix shattuck-52nd N leaving, ix shattuck-52nd S entering, ix shattuck-52nd E entering, ix shattuck-52nd W leaving, ix shattuck-52nd move 1653>1571, ix shattuck-52nd move 1653>1663, ix shattuck-52nd move 1666>1652, ix shattuck-52nd move 1705>1663, ix shattuck-52nd move 1662>1652, ix shattuck-52nd move 1662>1706, ix shattuck-52nd move 1666>1706, ix telegraph-52nd-claremont N entering, ix telegraph-52nd-claremont S entering, ix telegraph-52nd-claremont S leaving, ix telegraph-52nd-claremont E entering, ix telegraph-52nd-claremont E leaving, ix telegraph-52nd-claremont W entering, ix telegraph-52nd-claremont W leaving, ix telegraph-52nd-claremont move 1630>1462, ix telegraph-52nd-claremont move 1646>4170, ix telegraph-52nd-claremont move 1646>1631, ix telegraph-51st N entering, ix telegraph-51st N leaving, ix telegraph-51st S entering, ix telegraph-51st S leaving, ix telegraph-51st E entering, ix telegraph-51st E leaving, ix telegraph-51st W entering, ix telegraph-51st W leaving, ix telegraph-51st move 4170>1704, ix telegraph-51st move 1700>1628, ix telegraph-51st move 1629>1704, ix telegraph-51st move 1763>1628, ix sr24-mlk E entering, ix ashby-claremont N leaving, ix ashby-claremont S entering, ix ashby-claremont S leaving, ix ashby-claremont E entering, ix ashby-claremont E leaving, ix ashby-claremont W entering, ix ashby-claremont move 3447>3425, ix ashby-claremont move 3426>4328, ix ashby-claremont move 4329>3396, ix ashby-claremont move 3395>3446, ix ashby-claremont move 3395>4328, ix alcatraz-college N entering, ix alcatraz-college N leaving, ix alcatraz-college S entering, ix alcatraz-college S leaving, ix alcatraz-college E entering, ix alcatraz-college E leaving, ix alcatraz-college W entering, ix alcatraz-college W leaving, ix alcatraz-college move 3008>4239, ix alcatraz-college move 4238>3009, ix alcatraz-claremont N entering, ix alcatraz-claremont S entering, ix alcatraz-claremont S leaving, ix alcatraz-claremont W entering, ix alcatraz-claremont move 2794>2956, ix alcatraz-claremont move 2955>2795, ix alcatraz-claremont move 2955>2796, ix sr24-hudson-claremont N entering, ix sr24-hudson-claremont N leaving, ix sr24-hudson-claremont S entering, ix sr24-hudson-claremont S leaving, ix sr24-hudson-claremont E entering, ix sr24-hudson-claremont move 4187>2818, ix sr24-hudson-claremont move 4187>1938, ix sr24-hudson-claremont move 2817>2812, ix sr24-hudson-claremont move 2021>1938, ix sr24-clifton-claremont N entering, ix sr24-clifton-claremont N leaving, ix sr24-clifton-claremont S entering, ix sr24-clifton-claremont S leaving, ix sr24-clifton-claremont move 1770>1632, ix sr24-clifton-claremont move 1600>1771, ix sr24-clifton-claremont move 1573>1632, ix sr24-clifton-claremont move 1573>1599
+- pm_peak: select-link shares take simulated membership (30 runs; 4 of 4 share constraints; the denominator is each pair's simulated share of trips on the block with the static fraction as a prior of 5 trips, the numerator the same for pairs with a freeway end; blocks without a simulated trip keep static routes; ramp via-street shares keep static routes)
 - pm_peak: assignment by successive averages (10 passes x 2 draws of perceived costs, BPR alpha 0.15 beta 4, route-choice dispersion 2 s), 2 round(s) with the table refitted and reassigned at its own volumes; relative link-volume change at the last pass 0.025
-- pm_peak: the guard cut 6 veh/h from flows that touch no count (after the median rule)
+- pm_peak: the guard cut 13 veh/h from flows that touch no count (after the median rule)
 
 
 ## Resident volunteer count: what was mapped
