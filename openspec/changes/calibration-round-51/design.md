@@ -85,3 +85,24 @@ Reading the check. The mechanism does what D2 and D3 say, in the build the loop 
 - Moving a share's membership changes which flows the share constraint touches. Pairs that enter only through simulated trips were free before and are now tied to a share, which can move local trips into the blocks.
 - The ceilings still freeze the static fit's errors at each node (round 50's risk). The share constraint can only trade among pairs.
 - The loop has not run with the block export pooled. A seed run that lacks `blocks` stops the loop at the pooling step.
+
+## Lead decision on the low-demand stop (2026-11-19)
+
+The loop ran three passes and the final builds without aborting. The final shipped PM build offered 24,688 car veh/h, 10.6% below the static fit's 27,609, past the 10% warning line (an assumption), and the driver stopped before the screen, the validation or the ten seeds. The other three final builds were inside the line (shipped AM 92.4%, training PM 90.1%, training AM 91.5%).
+
+The lead decided to continue with the screen and the ten seeds on the saved candidate. The reasons:
+
+- The 10% line is a stop-and-report point, not a keep-rule line. It asks for a decision and does not fail a candidate.
+- Round 50 ran in full at 9.98% below the static fit, so the two candidates carry practically the same volume. The comparison needs the same measurements.
+- The keep rule (D6) and the screen are unchanged, so the shortfall cannot loosen either.
+- The shortfall is reported with the result, and adoption is the project lead's decision.
+
+The loop was not rerun. The screen and the ten seeds ran on the saved config, fit reports and demand files, whose hashes were checked first.
+
+## Outcome so far
+
+The candidate passes the screen and every line of the keep rule (D6): PM fitted 82, PM held out 14 (exactly at its line), AM fitted 74, AM held out 15, D5 4 of 4, whole-street 8 of 8, D16 holds in every period, validation 67 of 74. D5 is not independent evidence, because the shares are fit targets; the held-out station counts are the independent check, and the assessment's own 85% station rule still fails for held-out stations (PM 14 of 24, AM 15 of 19). The shortfall in offered demand (shipped PM 10.6% below the static fit) is reported with the result.
+
+The evidence is under `evidence/`, from laptop commits 8ada504 (stopped at the low-demand warning) and 223d60a (screen and ten seeds), both unsigned. The record entry is in `data/calibration/rockridge.record.md`. The code is on `main` with the switches off, and the shipped config has no `gatePriorTotals` or `simulatedMembership` entry. Published data (network 53c823f20d9165ed, demand 9cdebdabf05c4460) is unchanged and the model status stays "Not calibrated".
+
+Adoption is pending the project lead's review. A proposal search on the candidate is running on the laptop and will be staged, not published. The change stays open until adoption is decided.
