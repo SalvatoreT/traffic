@@ -15,16 +15,18 @@
 
 ## 2. Laptop runs (runbook.md)
 
-- [ ] 2.1 Gate: reproduce the baseline hashes and the fingerprint
-- [ ] 2.2 Baseline three-seed screen
-- [ ] 2.3 Apply the candidate, dry-run the loop, run it (three passes at most, ten seeds, PM and AM, both views)
-- [ ] 2.4 Screen the final demand on seeds 1 to 3, with the backlog line
-- [ ] 2.5 Validation suite and ten-seed assessment (if the screen passes)
-- [ ] 2.6 Commit the evidence under `evidence/`
+- [x] 2.1 Gate: reproduce the baseline hashes and the fingerprint
+- [x] 2.2 Baseline three-seed screen
+- [x] 2.3 Apply the candidate, dry-run the loop, run it (three passes at most, ten seeds, PM and AM, both views); stopped at the low-demand warning, continued on the lead's decision of 2026-11-19
+- [x] 2.4 Screen the final demand on seeds 1 to 3, with the backlog line
+- [x] 2.5 Validation suite and ten-seed assessment (if the screen passes)
+- [x] 2.6 Commit the evidence under `evidence/`
+- [x] 2.7 Staged proposal search on the candidate (`evidence/search/`, not published)
+- [x] 2.8 Fresh-seed confirmation on seeds 11 to 20 (`evidence/confirm/`): fails one line
 
 ## 3. Verdict (lead)
 
-- [ ] 3.1 Keep-rule table and the verdict (design D6)
-- [ ] 3.2 Record entry in `data/calibration/rockridge.record.md`
-- [ ] 3.3 Adoption decision
-- [ ] 3.4 Validate the change and archive
+- [x] 3.1 Keep-rule table and the verdict (design D6)
+- [x] 3.2 Record entry in `data/calibration/rockridge.record.md`
+- [x] 3.3 Fresh-seed confirmation on seeds 11 to 20 and the adoption decision: failed one line (whole-street traversals 7 of 8), not adopted, the project lead's decision of 2026-11-19
+- [x] 3.4 Validate the change and archive

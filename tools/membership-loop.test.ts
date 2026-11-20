@@ -138,10 +138,10 @@ describe('plan', () => {
 });
 
 // A scratch checkout with a fake build and a fake calibrate that write what the real ones write.
-function scratch(opt: { flat: boolean; dropNote?: boolean; growth?: number; blocks?: boolean; dropShareNote?: boolean }) {
+function scratch(opt: { flat: boolean; dropNote?: boolean; growth?: number; blocks?: boolean; dropShareNote?: boolean; route?: boolean; dropRoute?: boolean }) {
   const root = mkdtempSync(join(tmpdir(), 'mloop-'));
   const w = (f: string, text: string) => { mkdirSync(join(root, f, '..'), { recursive: true }); writeFileSync(join(root, f), text); };
-  const cfg = { area: 't', network: 'net.json', output: 'out/demand.json', countFit: { output: 'out/fit.md', stationsOutput: 'st.json', validation: { demandOutput: 'out/cv.json', splitFile: 'split.json' }, throughTargets: { simulatedMembership: { method: 'export-supported', file: 'm/ship.json', trainingFile: 'm/train.json', priorTrips: 5, ...(opt.blocks ? { throughTargets: true, shares: true } : {}) } } } };
+  const cfg = { area: 't', network: 'net.json', output: 'out/demand.json', countFit: { output: 'out/fit.md', stationsOutput: 'st.json', validation: { demandOutput: 'out/cv.json', splitFile: 'split.json' }, throughTargets: { simulatedMembership: { method: 'export-supported', file: 'm/ship.json', trainingFile: 'm/train.json', priorTrips: 5, ...(opt.blocks ? { throughTargets: true, shares: true } : {}), ...(opt.route ? { routeWeightPerBlock: true } : {}) } } } };
   w('cfg.json', JSON.stringify(cfg));
   w('net.json', JSON.stringify({ id: 'net1', nodes: [{ id: 3, inStudyArea: true }, { id: 1 }] }));
   const fixture: StationRec[] = [st('a', { links: [1] }), st('m', { feature: { kind: 'move', a: 1, b: 2 } }), st('held', { links: [3] }), st('gate'), st('quiet', { links: [4] })];
@@ -166,6 +166,7 @@ function scratch(opt: { flat: boolean; dropNote?: boolean; growth?: number; bloc
         lines.push(...Object.entries(prior.periods).map(([q, v]: [string, any]) => `- ${q}: select-link shares take simulated membership (${v.blocks.runs} runs; ${Object.keys(v.blocks.hits).length} of 2 share constraints; blocks without a simulated trip keep static routes)`));
         lines.push(...['pm_peak', 'am_peak'].flatMap((q) => [`Share ${q} Main Street NB, trips to the freeway: simulated; target 50%; offered 40% (35%); final 48% (41%); 7 flows.`, `Share ${q} Quiet Street SB, trips to the freeway: static; target 45%; offered 30% (30%); final 31% (31%); 4 flows.`, `Through target ${q} Main Street NB, through cars (A to B): simulated; target 90; offered 70 (static routes 60); final 88 (static routes 75).`]));
       }
+      if (opt.route && prior && !opt.dropRoute) lines.push(...['pm_peak', 'am_peak'].flatMap((q) => [view === 'shipped' ? `Route weight ${q} count route 2606>2592: simulated; base 1; blocks 7; weight 7; Colby Street SB, whole street (links 2606 to 2592).` : '']).filter(Boolean));
       if (opt.growth !== undefined) lines.push(...['pm_peak', 'am_peak'].map((q) => `Gate prior ceilings ${q}: 3 stations; 0 above ceiling; excess 0 veh/h; offered car 1000 to ${Math.round(1000 * (1 + (prior ? opt.growth ?? 0 : 0)))} veh/h.`));
       writeFileSync(paths.report[view], lines.join('\n'));
     },
@@ -246,6 +247,20 @@ describe('the loop with a fake build and a fake simulator', () => {
     expect(p.blocks).toBeUndefined();
     expect(logs.some((l) => /share blocks|through blocks|share Main/.test(l))).toBe(false);
     expect(renderReport(out, s.opts)).not.toMatch(/Share and through targets/);
+  });
+  it('with routeWeightPerBlock: logs and records the route weights, keeps each build\'s fit report, and stops when a build has no route weight line', async () => {
+    const s = scratch({ flat: true, route: true });
+    const logs: string[] = [];
+    const out = await runLoop(s.opts, s.runner, (l) => logs.push(l));
+    expect(logs).toContain('pass 1 shipped pm_peak: route weight count route 2606>2592 (simulated): base 1, 7 blocks, weight 7');
+    expect(renderReport(out, s.opts)).toMatch(/shipped:1 pm_peak route weight count route 2606>2592 \(simulated\): base 1, 7 blocks, weight 7/);
+    expect(readFileSync(join(s.opts.dir, 'fits', 'i1-shipped-build', 'fit.md'), 'utf8')).toMatch(/Route weight pm_peak/);
+    const t = scratch({ flat: true, route: true, dropRoute: true });
+    await expect(runLoop(t.opts, t.runner, () => undefined)).rejects.toThrow(/no "Route weight" line/);
+    const u = scratch({ flat: true });
+    const quiet: string[] = [];
+    await runLoop(u.opts, u.runner, (l) => quiet.push(l));
+    expect(quiet.some((l) => /route weight/.test(l))).toBe(false);
   });
   it('refuses a non-empty loop directory without resume, before any build', async () => {
     const s = scratch({ flat: true });

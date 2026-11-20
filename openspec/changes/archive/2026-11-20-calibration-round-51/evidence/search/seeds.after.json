@@ -1,0 +1,227 @@
+{
+  "version": 1,
+  "area": "rockridge",
+  "cap": 20,
+  "seeds": [
+    {
+      "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2~mn,9q9p3fr7b5~mn,9q9p3cz9dy~mn,9q9p3cq6m9~mn,9q9p3cwkcz~mf,9q9p3cqyux",
+      "source": "hand",
+      "note": "Six whole-junction and block filters (63rd & Hillegass, Colby & North, 60th & Colby, Ayala & Martin, Howell & McAuley, and Ayala between Howell and Forest). The pilot-limits search published it in an earlier round; on the final model it cuts through cars by 92% (464 to 38 an hour) with no block gaining through cars beyond noise, and the next search missed it.",
+      "added": "2026-11-15",
+      "lastPublished": "2026-11-14",
+      "group": "",
+      "size": 6,
+      "changePct": null,
+      "score": null
+    },
+    {
+      "link": "#v1;a=rockridge;p=pm_peak;s=dd,9q9p642ut2,41~mf,9q9p3fr338~mn,9q9p3czrpw,175.355~mn,9q9p3cxtt7~mn,9q9p3cq6m9~mn,9q9p3cx02b",
+      "source": "search",
+      "note": "published by an earlier search (group unconstrained, option p1, 2026-11-16 through-car change -71.5%)",
+      "added": "2026-11-16",
+      "lastPublished": "2026-11-16",
+      "group": "unconstrained",
+      "size": 6,
+      "changePct": -71.5,
+      "score": null
+    },
+    {
+      "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p3fprdr~dd,9q9p642ut2,41~mn,9q9p3cq6m9~mn,9q9p3cx02b~mf,9q9p643b1e~ss,9q9p3cx9rf",
+      "source": "search",
+      "note": "published by an earlier search (group unconstrained, option p1, 2026-11-17 through-car change -73%)",
+      "added": "2026-11-17",
+      "lastPublished": "2026-11-17",
+      "group": "unconstrained",
+      "size": 6,
+      "changePct": -73.0,
+      "score": null
+    },
+    {
+      "link": "#v1;a=rockridge;p=pm_peak;s=ow,9q9p3fr726,175~ow,9q9p642z5y,175~ow,9q9p3cqb23,305~ow,9q9p3crqtn,305~ss,9q9p3cx9rf~ow,9q9p643b1e,260",
+      "source": "search",
+      "note": "published by an earlier search (group unconstrained, option p3, 2026-11-17 through-car change -48.5%)",
+      "added": "2026-11-17",
+      "lastPublished": "2026-11-20",
+      "group": "unconstrained",
+      "size": 6,
+      "changePct": -39.5,
+      "score": 35.0
+    },
+    {
+      "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p3fprdr~dd,9q9p642ut2,41~mf,9q9p643b1e~ss,9q9p3cx9rf",
+      "source": "search",
+      "note": "published by an earlier search (group unconstrained, option p4, 2026-11-17 through-car change -45.8%)",
+      "added": "2026-11-17",
+      "lastPublished": "2026-11-17",
+      "group": "unconstrained",
+      "size": 4,
+      "changePct": -45.8,
+      "score": null
+    },
+    {
+      "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p642ut2~mn,9q9p3fprdr",
+      "source": "search",
+      "note": "published by an earlier search (group unconstrained, option p5, 2026-11-17 through-car change -31.2%)",
+      "added": "2026-11-17",
+      "lastPublished": "2026-11-19",
+      "group": "unconstrained",
+      "size": 2,
+      "changePct": -31.6,
+      "score": 28.1
+    },
+    {
+      "link": "#v1;a=rockridge;p=pm_peak;s=dd,9q9p642ut2,41~ss,9q9p3cx9rf",
+      "source": "search",
+      "note": "published by an earlier search (group unconstrained, option p6, 2026-11-17 through-car change -27.9%)",
+      "added": "2026-11-17",
+      "lastPublished": "2026-11-18",
+      "group": "unconstrained",
+      "size": 2,
+      "changePct": -30.9,
+      "score": 28.9
+    },
+    {
+      "link": "#v1;a=rockridge;p=pm_peak;s=dd,9q9p3fpkk7,41~mn,9q9p642ut2,175.355~mn,9q9p3cq6m9,120.300~mn,9q9p3cx02b",
+      "source": "search",
+      "note": "published by an earlier search (group unconstrained, option p3, 2026-11-17 through-car change -46.2%)",
+      "added": "2026-11-17",
+      "lastPublished": "2026-11-17",
+      "group": "unconstrained",
+      "size": 4,
+      "changePct": -46.2,
+      "score": null
+    },
+    {
+      "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p3fprdr~mn,9q9p642ut2~mn,9q9p3cxtt7~dd,9q9p641p03,127~mn,9q9p3cq6m9~mn,9q9p3cx02b,125",
+      "source": "search",
+      "note": "",
+      "added": "2026-11-18",
+      "lastPublished": "2026-11-20",
+      "group": "unconstrained",
+      "size": 6,
+      "changePct": -74.7,
+      "score": 56.1
+    },
+    {
+      "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p3fprdr~mn,9q9p642ut2~dd,9q9p641p03,127~mn,9q9p3cq6m9~ow,9q9p3crqtn,305",
+      "source": "search",
+      "note": "",
+      "added": "2026-11-18",
+      "lastPublished": "2026-11-20",
+      "group": "unconstrained",
+      "size": 5,
+      "changePct": -59.1,
+      "score": 52.4
+    },
+    {
+      "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p3fprdr~mn,9q9p642ut2,80.260~mn,9q9p641p03~dd,9q9p3ctkug,42~ct,9q9p3cy1ne,a~ct,9q9p3cmuv6,a",
+      "source": "search",
+      "note": "",
+      "added": "2026-11-18",
+      "lastPublished": "2026-11-20",
+      "group": "unconstrained",
+      "size": 6,
+      "changePct": -48.4,
+      "score": 42.5
+    },
+    {
+      "link": "#v1;a=rockridge;p=pm_peak;s=ow,9q9p642z5y,355~ow,9q9p641h45,175~ow,9q9p3crqtn,305~ss,9q9p3cx9rf~tb,9q9p3cpnsz,15,300~ow,9q9p643b1e,260",
+      "source": "search",
+      "note": "",
+      "added": "2026-11-18",
+      "lastPublished": "2026-11-18",
+      "group": "unconstrained",
+      "size": 6,
+      "changePct": -38.1,
+      "score": 36.1
+    },
+    {
+      "link": "#v1;a=rockridge;p=pm_peak;s=dd,9q9p642ut2,41~mn,9q9p3fprdr~dd,9q9p3cz9dy,42~ow,9q9p3cx9rf,175~mn,9q9p3cq6m9~mn,9q9p3cx02b,125",
+      "source": "search",
+      "note": "",
+      "added": "2026-11-18",
+      "lastPublished": "2026-11-18",
+      "group": "unconstrained",
+      "size": 6,
+      "changePct": -71.6,
+      "score": 54.7
+    },
+    {
+      "link": "#v1;a=rockridge;p=pm_peak;s=dd,9q9p642ut2,41~mn,9q9p3fpkk7~mn,9q9p3cq6m9~mn,9q9p3cx02b~ss,9q9p3cx9rf",
+      "source": "search",
+      "note": "",
+      "added": "2026-11-18",
+      "lastPublished": "2026-11-18",
+      "group": "unconstrained",
+      "size": 5,
+      "changePct": -66.6,
+      "score": 56.2
+    },
+    {
+      "link": "#v1;a=rockridge;p=pm_peak;s=tb,9q9p61c5xf,35,335~tb,9q9p61c5xf,210,335~tb,9q9p648cuw,80,175~tb,9q9p648cuw,260,175",
+      "source": "hand",
+      "note": "Turn bans onto Hillegass Avenue: every turn from Claremont Avenue onto Hillegass Avenue at the 60th St / Claremont Ave / Hillegass Ave junction, and both turns from Alcatraz Avenue onto Hillegass Avenue southbound. User decision 2026-11-18: the search also considers turn-ban sets.",
+      "added": "2026-11-19",
+      "lastPublished": "",
+      "group": "",
+      "size": 4,
+      "changePct": null,
+      "score": null
+    },
+    {
+      "link": "#v1;a=rockridge;p=pm_peak;s=tb,9q9p61c5xf,35,335~tb,9q9p61c5xf,210,335~tb,9q9p648cuw,80,175~tb,9q9p648cuw,260,175~tb,9q9p3crvgs,215,230~tb,9q9p3crvgs,35,230~tb,9q9p3fx20z,80,175~tb,9q9p3fx20z,260,175",
+      "source": "hand",
+      "note": "Turn bans onto Hillegass Avenue and Colby Street: the Hillegass Avenue turn bans plus both turns from Claremont Avenue onto Colby Street at Claremont Ave / Colby St / Forest St and both turns from Alcatraz Avenue onto Colby Street southbound. User decision 2026-11-18: the search also considers turn-ban sets.",
+      "added": "2026-11-19",
+      "lastPublished": "",
+      "group": "",
+      "size": 8,
+      "changePct": null,
+      "score": null
+    },
+    {
+      "link": "#v1;a=rockridge;p=pm_peak;s=dd,9q9p642ut2,41~mn,9q9p3fprdr~mn,9q9p3cq6m9~mn,9q9p3cx02b~ss,9q9p3cx9rf",
+      "source": "search",
+      "note": "",
+      "added": "2026-11-19",
+      "lastPublished": "2026-11-19",
+      "group": "unconstrained",
+      "size": 5,
+      "changePct": -65.9,
+      "score": 57.6
+    },
+    {
+      "link": "#v1;a=rockridge;p=pm_peak;s=dd,9q9p642ut2,41~mn,9q9p3fprdr~ss,9q9p3cx9rf",
+      "source": "search",
+      "note": "",
+      "added": "2026-11-19",
+      "lastPublished": "2026-11-19",
+      "group": "unconstrained",
+      "size": 3,
+      "changePct": -41.6,
+      "score": 37.9
+    },
+    {
+      "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p3fprdr~mn,9q9p3fr7b5,260~dd,9q9p642ut2,41~ow,9q9p3cx9rf,175~mn,9q9p3cq6m9~mn,9q9p3cx02b,125",
+      "source": "search",
+      "note": "",
+      "added": "2026-11-20",
+      "lastPublished": "2026-11-20",
+      "group": "unconstrained",
+      "size": 6,
+      "changePct": -66.0,
+      "score": 56.1
+    },
+    {
+      "link": "#v1;a=rockridge;p=pm_peak;s=mn,9q9p3fprdr~dd,9q9p642ut2,41",
+      "source": "search",
+      "note": "",
+      "added": "2026-11-20",
+      "lastPublished": "2026-11-20",
+      "group": "unconstrained",
+      "size": 2,
+      "changePct": -35.9,
+      "score": 29.7
+    }
+  ]
+}

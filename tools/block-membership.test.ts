@@ -26,17 +26,17 @@ function tally() {
 describe('select-link shares on simulated membership', () => {
   it('static routes: the numerator is the denominator for pairs with a freeway end and 0 for the rest', () => {
     const [from, to] = tally().constraints();
-    expect([...from.ratio.flows]).toEqual([0, 1, 2]);
-    expect([...from.ratio.den]).toEqual([1, 1, 1]);
-    expect([...from.ratio.num]).toEqual([1, 0, 0]);
-    expect([...to.ratio.num]).toEqual([0, 0, 1]);
+    expect(Array.from(from.ratio.flows)).toEqual([0, 1, 2]);
+    expect(Array.from(from.ratio.den)).toEqual([1, 1, 1]);
+    expect(Array.from(from.ratio.num)).toEqual([1, 0, 0]);
+    expect(Array.from(to.ratio.num)).toEqual([0, 0, 1]);
     expect(from.simulated).toBeUndefined();
   });
 
   it('simulated: the denominator is each pair\'s share of trips on the block with the static fraction as a prior', () => {
     const [from] = tally().constraints((_, stat) => member(stat));
     expect(from.simulated).toBe(true);
-    expect([...from.ratio.flows]).toEqual([0, 1, 2, 3]);
+    expect(Array.from(from.ratio.flows)).toEqual([0, 1, 2, 3]);
     expect(from.ratio.den[0]).toBeCloseTo((120 + 5) / (200 + 5), 10);
     expect(from.ratio.den[1]).toBeCloseTo((60 + 5) / 205, 10);
     expect(from.ratio.den[2]).toBeCloseTo((20 + 5) / 205, 10);
@@ -46,15 +46,15 @@ describe('select-link shares on simulated membership', () => {
 
   it('the numerator keeps the pairs whose origin ("from") or destination ("to") is a freeway node', () => {
     const [from, to] = tally().constraints((_, stat) => member(stat));
-    expect([...from.ratio.num]).toEqual([from.ratio.den[0], 0, 0, 0]);
-    expect([...to.ratio.num]).toEqual([0, 0, to.ratio.den[2], 0]);
-    expect(from.ratio.num[0] / [...from.ratio.den].reduce((a, b) => a + b, 0)).toBeGreaterThan(0.4);
+    expect(Array.from(from.ratio.num)).toEqual([from.ratio.den[0], 0, 0, 0]);
+    expect(Array.from(to.ratio.num)).toEqual([0, 0, to.ratio.den[2], 0]);
+    expect(from.ratio.num[0] / Array.from(from.ratio.den).reduce((a, b) => a + b, 0)).toBeGreaterThan(0.4);
   });
 
   it('keeps the static version beside the simulated one for the report', () => {
     const [from] = tally().constraints((_, stat) => member(stat));
-    expect([...from.staticRatio!.flows]).toEqual([0, 1, 2]);
-    expect([...from.staticRatio!.num]).toEqual([1, 0, 0]);
+    expect(Array.from(from.staticRatio!.flows)).toEqual([0, 1, 2]);
+    expect(Array.from(from.staticRatio!.num)).toEqual([1, 0, 0]);
   });
 
   it('a block without a simulated hit keeps static routes and is not marked simulated', () => {
@@ -62,8 +62,8 @@ describe('select-link shares on simulated membership', () => {
     const plain = tally().constraints();
     for (const [a, b] of specs.map((s, i) => [s, plain[i]] as const)) {
       expect(a.simulated).toBeUndefined();
-      expect([...a.ratio.den]).toEqual([...b.ratio.den]);
-      expect([...a.ratio.num]).toEqual([...b.ratio.num]);
+      expect(Array.from(a.ratio.den)).toEqual(Array.from(b.ratio.den));
+      expect(Array.from(a.ratio.num)).toEqual(Array.from(b.ratio.num));
     }
   });
 

@@ -85,3 +85,31 @@ Reading the check. The mechanism does what D2 and D3 say, in the build the loop 
 - Moving a share's membership changes which flows the share constraint touches. Pairs that enter only through simulated trips were free before and are now tied to a share, which can move local trips into the blocks.
 - The ceilings still freeze the static fit's errors at each node (round 50's risk). The share constraint can only trade among pairs.
 - The loop has not run with the block export pooled. A seed run that lacks `blocks` stops the loop at the pooling step.
+
+## Lead decision on the low-demand stop (2026-11-19)
+
+The loop ran three passes and the final builds without aborting. The final shipped PM build offered 24,688 car veh/h, 10.6% below the static fit's 27,609, past the 10% warning line (an assumption), and the driver stopped before the screen, the validation or the ten seeds. The other three final builds were inside the line (shipped AM 92.4%, training PM 90.1%, training AM 91.5%).
+
+The lead decided to continue with the screen and the ten seeds on the saved candidate. The reasons:
+
+- The 10% line is a stop-and-report point, not a keep-rule line. It asks for a decision and does not fail a candidate.
+- Round 50 ran in full at 9.98% below the static fit, so the two candidates carry practically the same volume. The comparison needs the same measurements.
+- The keep rule (D6) and the screen are unchanged, so the shortfall cannot loosen either.
+- The shortfall is reported with the result, and adoption is the project lead's decision.
+
+The loop was not rerun. The screen and the ten seeds ran on the saved config, fit reports and demand files, whose hashes were checked first.
+
+## Outcome
+
+The candidate passed the screen and every line of the keep rule (D6) on seeds 1 to 10: PM fitted 82, PM held out 14 (exactly at its line), AM fitted 74, AM held out 15, D5 4 of 4, whole-street 8 of 8, D16 holds in every period, validation 67 of 74. D5 is not independent evidence, because the shares are fit targets. The shortfall in offered demand (shipped PM 10.6% below the static fit) was reported with the result.
+
+The lead wrote a fresh-seed confirmation rule on 2026-11-19, before the run: on seeds 11 to 20 the candidate must be no worse than the baseline on every keep-rule line computed on the same seeds. It failed on one line. Whole-street traversals are 7 of 8 for the candidate against 8 of 8 for the baseline, because PM Colby St southbound is 78 cars an hour modeled against 39 counted (GEH 5.0; the baseline on the same seeds is 58, GEH 2.8). Every other line holds or improves. The baseline itself is below the keep-rule line on these seeds for PM held out (13) and AM held out (13).
+
+The staged proposal search on the candidate (laptop commit 90e655b) was never published. Baseline through cars per hour on the candidate are PM 806.9, AM 414.0, midday 386.8 and mean 535.9, against the published 709.2, 429.1, 386.8 and 508.4. The six options and the comparison with search-c5 are in the record entry.
+
+Decisions of the project lead (2026-11-19):
+
+1. Publish round 51 only if the fresh-seed check holds; otherwise record it and come back to it.
+2. After the check failed: do not adopt it and keep the published model. The next step is to fit the counted whole-street traversals on the simulator's routes, on top of round 51. They then stop being an independent check, as the route shares did in round 51. The held-out station counts stay independent.
+
+The evidence is under `evidence/`, from laptop commits 8ada504 (stopped at the low-demand warning), 223d60a (screen and ten seeds), 90e655b (staged search) and 74afa36 (confirmation), all unsigned. The two membership files were sent as 7 gzip parts on the development branch only (74afa36) and are not on main. The record entry is in `data/calibration/rockridge.record.md`. The code is on `main` with the switches off, and the shipped config has neither `gatePriorTotals` nor `simulatedMembership`. Published data (network 53c823f20d9165ed, demand 9cdebdabf05c4460) is unchanged and the model status stays "Not calibrated".

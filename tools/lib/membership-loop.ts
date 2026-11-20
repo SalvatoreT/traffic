@@ -152,6 +152,8 @@ export function poolStations(sets: RunSet[], selected: Set<string>): Pooled {
 
 /** Round 51 sub-switches of the candidate's `simulatedMembership` entry: through targets and select-link shares take simulated membership from the runs' block export. */
 export interface BlockSwitches { throughTargets: boolean; shares: boolean }
+/** Round 52 sub-switch: a whole-street route count with simulated membership weighs its blocks spanned. */
+export const routeWeightSwitch = (sm: { routeWeightPerBlock?: unknown } | undefined): boolean => sm?.routeWeightPerBlock === true;
 export const blockSwitches = (sm: { throughTargets?: unknown; shares?: unknown } | undefined): BlockSwitches => ({ throughTargets: sm?.throughTargets === true, shares: sm?.shares === true });
 
 export interface PooledBlocks { measured: ThroughMeasured; /** Blocks the runs exported without a counted trip (after the study-area filter, if any): they keep static routes. */ zeroHit: string[] }
@@ -291,6 +293,13 @@ export function shareLinesFromReport(text: string): ShareLine[] {
 /** The "Through target <period> <label>: ..." lines (round 51), in cars per hour. */
 export function throughLinesFromReport(text: string): ThroughLine[] {
   return [...text.matchAll(/^Through target (\S+) (.+?): (simulated|static); target (\d+); offered (\d+) \(static routes (\d+)\); final (\d+) \(static routes (\d+)\)\.$/gm)].map((m) => ({ period: m[1], label: m[2], membership: m[3] as ThroughLine['membership'], target: +m[4], offered: +m[5], staticOffered: +m[6], final: +m[7], staticFinal: +m[8] }));
+}
+
+export interface RouteWeightLine { period: string; id: string; membership: 'simulated' | 'static'; base: number; blocks: number; weight: number; label: string }
+
+/** The "Route weight <period> <id>: ..." lines of a fit report (round 52): the weight each whole-street route station had in the fit. Empty when the sub-switch is off. */
+export function routeWeightLinesFromReport(text: string): RouteWeightLine[] {
+  return [...text.matchAll(/^Route weight (\S+) (count route \S+): (simulated|static); base (\S+); blocks (\d+); weight (\S+); (.+)\.$/gm)].map((m) => ({ period: m[1], id: m[2], membership: m[3] as RouteWeightLine['membership'], base: +m[4], blocks: +m[5], weight: +m[6], label: m[7] }));
 }
 
 export interface Step { id: string; iteration: number; view: string | null; kind: 'build' | 'check' | 'runs' | 'pool' | 'final'; title: string; cmd?: string }

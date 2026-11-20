@@ -2,12 +2,12 @@
 // so tests can stand in for them. Leak guards: the training file is pooled only from runs of the training demand and checked for withheld station ids; station
 // choice and the stop rule read stations, the frozen split and simulated flows, never an assessment or a held-out score; the split file is hashed before and after.
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 import { hashFile } from './run-manifest';
 import { writeFileAtomic } from './atomic';
 import { withheldStationIds, type SplitManifest } from './lineage';
 import type { SelectOd } from './through-membership';
-import { assertNoWithheld, blockSwitches, CEILING_ABORT_SHARE, CEILING_LOW_SHARE, checkFitReport, offeredShare, gatePriorFromReport, checkRunSet, iterationShift, iterationStats, membershipFile, poolBlocks, poolStations, selectStations, shareLinesFromReport, throughLinesFromReport, type BlockSwitches, type CeilingStat, type IterationStats, type Pooled, type RunSet, type Selection, type ShareLine, type Shift, type StationRec, type ThroughLine } from './membership-loop';
+import { assertNoWithheld, blockSwitches, CEILING_ABORT_SHARE, CEILING_LOW_SHARE, checkFitReport, offeredShare, gatePriorFromReport, checkRunSet, iterationShift, iterationStats, membershipFile, poolBlocks, poolStations, routeWeightLinesFromReport, routeWeightSwitch, selectStations, shareLinesFromReport, throughLinesFromReport, type BlockSwitches, type CeilingStat, type IterationStats, type Pooled, type RouteWeightLine, type RunSet, type Selection, type ShareLine, type Shift, type StationRec, type ThroughLine } from './membership-loop';
 import type { MembershipEvidence } from './through-membership';
 
 export type View = 'shipped' | 'training';
@@ -17,7 +17,7 @@ export interface Runner {
   build(view: View, logFile: string): void;
   calibrate(jobs: CalibrateJob[], concurrency: number, logDir: string): Promise<void>;
 }
-export interface LoopPaths { config: string; demand: Record<View, string>; report: Record<View, string>; stations: string; membership: Record<View, string>; membershipConfig: Record<View, string>; split: string; network: string; /** Round 51 sub-switches of the simulatedMembership entry. */ blocks: BlockSwitches }
+export interface LoopPaths { config: string; demand: Record<View, string>; report: Record<View, string>; stations: string; membership: Record<View, string>; membershipConfig: Record<View, string>; split: string; network: string; /** Round 51 sub-switches of the simulatedMembership entry. */ blocks: BlockSwitches; /** Round 52 sub-switch routeWeightPerBlock. */ routeWeight?: boolean }
 
 /** File locations from the demand config; the membership files are the ones `countFit.throughTargets.simulatedMembership` names. */
 export function loopPaths(root: string, configPath: string, cfg: any): LoopPaths {
@@ -28,7 +28,7 @@ export function loopPaths(root: string, configPath: string, cfg: any): LoopPaths
     config: abs(configPath), demand: { shipped: abs(cfg.output), training: abs(fc.validation.demandOutput) },
     report: { shipped: abs(fc.output), training: abs(fc.output.replace(/\.md$/, '.cv.md')) },
     stations: abs(fc.stationsOutput), membership: { shipped: abs(sm.file), training: abs(sm.trainingFile) }, membershipConfig: { shipped: sm.file, training: sm.trainingFile },
-    split: abs(fc.validation.splitFile ?? `data/demand/${cfg.area}.split.json`), network: abs(cfg.network), blocks: blockSwitches(sm),
+    split: abs(fc.validation.splitFile ?? `data/demand/${cfg.area}.split.json`), network: abs(cfg.network), blocks: blockSwitches(sm), ...(routeWeightSwitch(sm) ? { routeWeight: true } : {}),
   };
 }
 
@@ -36,7 +36,7 @@ const readJson = <T>(p: string): T => JSON.parse(readFileSync(p, 'utf8')) as T;
 const sodFiles = (dir: string, period: string) => readdirSync(dir).filter((f) => f.startsWith(`sod-${period}-`) && f.endsWith('.json')).sort((a, b) => Number(a.match(/-(\d+)\.json$/)![1]) - Number(b.match(/-(\d+)\.json$/)![1]));
 
 export interface PassReport { pass: number; view: View; period: string; /** Car veh/h the pass's demand offers; the loop reports it because a fit on simulated membership can move volume. */ offered: number; selected: number; withHits: number; zeroHit: string[]; absent: string[]; /** Round 51: select-link blocks without a counted trip in the pool (they keep static routes in the fit), for the through targets and for the shares; absent when the sub-switch is off. */ zeroHitThrough?: string[]; zeroHitBlocks?: string[]; shift: Shift | null; /** Gate prior ceilings of the build this pass ran on (round 49): stations, how many ended above their ceiling and the excess in veh/h; absent when the switch is off. */ ceiling?: CeilingStat }
-export interface LoopSummary { passes: number; stoppedEarly: boolean; reports: PassReport[]; hashes: Record<string, string>; stayStatic: Record<string, Selection['stayStatic']>; selected: Record<string, number>; withheld: Record<string, number>; /** Gate prior ceilings per build, keyed `view:pass` (the final build has the pass number `passes`); absent when the switch is off. */ ceilings?: Record<string, Record<string, CeilingStat>>; /** Round 51: each build's share and through lines from the fit report, keyed `view:pass`. */ targets?: Record<string, { shares: ShareLine[]; through: ThroughLine[] }> }
+export interface LoopSummary { passes: number; stoppedEarly: boolean; reports: PassReport[]; hashes: Record<string, string>; stayStatic: Record<string, Selection['stayStatic']>; selected: Record<string, number>; withheld: Record<string, number>; /** Gate prior ceilings per build, keyed `view:pass` (the final build has the pass number `passes`); absent when the switch is off. */ ceilings?: Record<string, Record<string, CeilingStat>>; /** Round 51: each build's share and through lines from the fit report, keyed `view:pass`. */ targets?: Record<string, { shares: ShareLine[]; through: ThroughLine[]; routes?: RouteWeightLine[] }> }
 
 /** The stations file's entries and the split's withheld ids, read when needed (the stations file is rewritten by the shipped build). */
 function selections(p: LoopPaths, periods: string[]): Record<View, Selection[]> {
@@ -55,7 +55,7 @@ export async function runLoop(o: LoopOptions, r: Runner, log: (s: string) => voi
   }
   mkdirSync(o.dir, { recursive: true });
   const statePath = join(o.dir, 'state.json');
-  const state: { done: string[]; stoppedAfter: number | null; reports: PassReport[]; stationsSha: string | null; ceilings?: Record<string, Record<string, CeilingStat>>; targets?: Record<string, { shares: ShareLine[]; through: ThroughLine[] }> } = o.resume && existsSync(statePath) ? readJson(statePath) : { done: [], stoppedAfter: null, reports: [], stationsSha: null };
+  const state: { done: string[]; stoppedAfter: number | null; reports: PassReport[]; stationsSha: string | null; ceilings?: Record<string, Record<string, CeilingStat>>; targets?: Record<string, { shares: ShareLine[]; through: ThroughLine[]; routes?: RouteWeightLine[] }> } = o.resume && existsSync(statePath) ? readJson(statePath) : { done: [], stoppedAfter: null, reports: [], stationsSha: null };
   const save = () => writeFileAtomic(statePath, JSON.stringify(state, null, 1));
   const configSha = hashFile(p.config), splitSha = hashFile(p.split);
   const once = async (id: string, f: () => void | Promise<void>) => { if (state.done.includes(id)) { log(`skip ${id} (done)`); return; } log(`start ${id}`); await f(); state.done.push(id); save(); };
@@ -77,10 +77,16 @@ export async function runLoop(o: LoopOptions, r: Runner, log: (s: string) => voi
       if (c.gate && c.nonGate) log(`pass ${k} ${view} ${q}: ceiling stations gate ${c.gate.stations} (${c.gate.above} above, excess ${c.gate.excess}, removed by projection ${c.gate.removed}), non-gate ${c.nonGate.stations} (${c.nonGate.above} above, excess ${c.nonGate.excess}, removed by projection ${c.nonGate.removed})`);
       if (c.byType) log(`pass ${k} ${view} ${q}: offered car by flow type, static then final: ${['through', 'local', 'ramp'].map((t) => `${t} ${c.byType!.static[t] ?? 0} to ${c.byType!.final[t] ?? 0}`).join(', ')}`);
       if (c.ends) log(`pass ${k} ${view} ${q}: non-gate trip ends, static then final: origins inside the study area ${c.ends.originInside.join(' to ')}, outside ${c.ends.originOutside.join(' to ')}; destinations inside ${c.ends.destInside.join(' to ')}, outside ${c.ends.destOutside.join(' to ')}`);
-      if (final && c.finalTotal < c.staticTotal * (1 - CEILING_LOW_SHARE)) log(`WARNING ${view} view, ${q}, final build: offered car demand is ${(100 * (1 - offeredShare(c))).toFixed(1)}% below the static fit's (limit ${100 * CEILING_LOW_SHARE}%, ASSUMPTION): the fit may be trading volume for fit. STOP and report to the lead before running the screen or the ten seeds`);
+      if (final && c.finalTotal < c.staticTotal * (1 - CEILING_LOW_SHARE)) log(`WARNING ${view} view, ${q}, final build: offered car demand is ${(100 * (1 - offeredShare(c))).toFixed(1)}% below the static fit's (limit ${100 * CEILING_LOW_SHARE}%, ASSUMPTION): the fit may be trading volume for fit. Reported figure, not a stop (lead decision of 2026-11-19, kept in round 52): carry on to the screen and report it`);
     }
     const shareLines = shareLinesFromReport(text).filter((x) => o.periods.includes(x.period)), throughLines = throughLinesFromReport(text).filter((x) => o.periods.includes(x.period));
-    if (shareLines.length || throughLines.length) (state.targets ??= {})[`${view}:${k}`] = { shares: shareLines, through: throughLines };
+    const routeLines = routeWeightLinesFromReport(text).filter((x) => o.periods.includes(x.period));
+    if (p.routeWeight && used && view === 'shipped') {
+      if (!routeLines.length) throw new Error(`${view} view, pass ${k}: the fit report has no "Route weight" line although routeWeightPerBlock is on: the build did not apply the sub-switch`);
+      for (const q of o.periods) if (!routeLines.some((x) => x.period === q && x.membership === 'simulated')) log(`WARNING pass ${k} ${view} ${q}: no whole-street route station took simulated membership, so none was weighted by its blocks (static routes)`);
+    }
+    if (shareLines.length || throughLines.length || routeLines.length) (state.targets ??= {})[`${view}:${k}`] = { shares: shareLines, through: throughLines, ...(routeLines.length ? { routes: routeLines } : {}) };
+    for (const x of routeLines) log(`pass ${k} ${view} ${x.period}: route weight ${x.id} (${x.membership}): base ${x.base}, ${x.blocks} blocks, weight ${x.weight}`);
     for (const x of shareLines) log(`pass ${k} ${view} ${x.period}: share ${x.label} (${x.membership}): target ${x.target}%, fit ${x.final}% on simulated membership, ${x.staticFinal}% on static routes, offered ${x.offered}% (static routes ${x.staticOffered}%), ${x.flows} flows`);
     for (const x of throughLines) log(`pass ${k} ${view} ${x.period}: through target ${x.label} (${x.membership}): target ${x.target} veh/h, fit ${x.final} on the membership used, ${x.staticFinal} on static routes, offered ${x.offered} (static routes ${x.staticOffered})`);
     if (k >= 1) for (const [q, c] of Object.entries(ceil)) {
@@ -96,6 +102,9 @@ export async function runLoop(o: LoopOptions, r: Runner, log: (s: string) => voi
       if (state.stationsSha && s !== state.stationsSha) throw new Error('the stations file changed between builds; membership evidence is tied to its hash');
       if (view === 'shipped') state.stationsSha = s;
       verify(view, k, k === 0 && !final ? 'first' : 'pooled', final);
+      const rp = p.report[view], stem = basename(rp, '.md'), dst = join(o.dir, 'fits', id);
+      mkdirSync(dst, { recursive: true });
+      for (const f of readdirSync(dirname(rp))) if (f === basename(rp) || (f.startsWith(`${stem}.stations-`) && f.endsWith('.md'))) copyFileSync(join(dirname(rp), f), join(dst, f));
     });
   };
 
@@ -170,6 +179,6 @@ export function renderReport(s: LoopSummary, o: { seeds: number[]; periods: stri
   const L = ['# Membership loop (calibration rounds 48 to 51)', '', `Seeds ${o.seeds[0]} to ${o.seeds[o.seeds.length - 1]} per pass, periods ${o.periods.join(', ')}. Passes run: ${s.passes}${s.stoppedEarly ? ' (stop rule fired)' : ''}. Pooled with equal weight over passes (successive averages, step 1/n, ASSUMPTION for this fixed point).`, '',
     '| Pass | View | Period | Offered car veh/h | Selected | With pairs | Zero hits | Not exported | Flow change / seed SE | Membership change / seed SE | Ceiling stations | Above ceiling | Excess veh/h | Offered / static fit |', '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
     ...s.reports.map((x) => `| ${x.pass} | ${x.view} | ${x.period} | ${x.offered} | ${x.selected} | ${x.withHits} | ${x.zeroHit.join(', ') || '-'} | ${x.absent.join(', ') || '-'} | ${x.shift ? x.shift.flowRatio.toFixed(2) : '-'} | ${x.shift ? x.shift.membershipRatio.toFixed(2) : '-'} | ${x.ceiling ? x.ceiling.stations : '-'} | ${x.ceiling ? x.ceiling.above : '-'} | ${x.ceiling ? x.ceiling.excess : '-'} | ${x.ceiling ? `${(100 * offeredShare(x.ceiling)).toFixed(1)}%` : '-'} |`),
-    '', '## Static membership', '', ...Object.entries(s.stayStatic).map(([k, v]) => `- ${k}: ${v.length ? v.map((x) => `${x.id} (${x.reason})`).join('; ') : 'none'}`), '', ...(s.ceilings ? ['## Gate prior ceilings, by build', '', ...Object.entries(s.ceilings).flatMap(([k, v]) => Object.entries(v).map(([q, c]) => `- ${k} ${q}: ${c.stations} stations, ${c.above} above ceiling, excess ${c.excess} veh/h; offered ${(100 * offeredShare(c)).toFixed(1)}% of the static fit${c.gate && c.nonGate ? `; gate ${c.gate.stations} (${c.gate.above} above, removed ${c.gate.removed}), non-gate ${c.nonGate.stations} (${c.nonGate.above} above, removed ${c.nonGate.removed})` : ''}${c.ends ? `; non-gate ends origins inside ${c.ends.originInside.join(' to ')}, outside ${c.ends.originOutside.join(' to ')}, destinations inside ${c.ends.destInside.join(' to ')}, outside ${c.ends.destOutside.join(' to ')}` : ''}`)), ''] : []), ...(s.targets ? ['## Share and through targets, by build', '', 'Each target against the fit\'s own figure on the membership it used and on the static routes (calibration round 51). Shares in percent, through figures in cars per hour.', '', ...Object.entries(s.targets).flatMap(([k, v]) => [...v.shares.map((x) => `- ${k} ${x.period} share ${x.label} (${x.membership}): target ${x.target}%, fit ${x.final}% (static routes ${x.staticFinal}%), offered ${x.offered}% (static routes ${x.staticOffered}%), ${x.flows} flows`), ...v.through.map((x) => `- ${k} ${x.period} through ${x.label} (${x.membership}): target ${x.target}, fit ${x.final} (static routes ${x.staticFinal}), offered ${x.offered} (static routes ${x.staticOffered})`)]), ''] : []), '## Files', '', ...Object.entries(s.hashes).map(([k, v]) => `- ${k}: ${v}`), ''];
+    '', '## Static membership', '', ...Object.entries(s.stayStatic).map(([k, v]) => `- ${k}: ${v.length ? v.map((x) => `${x.id} (${x.reason})`).join('; ') : 'none'}`), '', ...(s.ceilings ? ['## Gate prior ceilings, by build', '', ...Object.entries(s.ceilings).flatMap(([k, v]) => Object.entries(v).map(([q, c]) => `- ${k} ${q}: ${c.stations} stations, ${c.above} above ceiling, excess ${c.excess} veh/h; offered ${(100 * offeredShare(c)).toFixed(1)}% of the static fit${c.gate && c.nonGate ? `; gate ${c.gate.stations} (${c.gate.above} above, removed ${c.gate.removed}), non-gate ${c.nonGate.stations} (${c.nonGate.above} above, removed ${c.nonGate.removed})` : ''}${c.ends ? `; non-gate ends origins inside ${c.ends.originInside.join(' to ')}, outside ${c.ends.originOutside.join(' to ')}, destinations inside ${c.ends.destInside.join(' to ')}, outside ${c.ends.destOutside.join(' to ')}` : ''}`)), ''] : []), ...(s.targets ? ['## Share and through targets, by build', '', 'Each target against the fit\'s own figure on the membership it used and on the static routes (calibration round 51). Shares in percent, through figures in cars per hour.', '', ...Object.entries(s.targets).flatMap(([k, v]) => [...v.shares.map((x) => `- ${k} ${x.period} share ${x.label} (${x.membership}): target ${x.target}%, fit ${x.final}% (static routes ${x.staticFinal}%), offered ${x.offered}% (static routes ${x.staticOffered}%), ${x.flows} flows`), ...v.through.map((x) => `- ${k} ${x.period} through ${x.label} (${x.membership}): target ${x.target}, fit ${x.final} (static routes ${x.staticFinal}), offered ${x.offered} (static routes ${x.staticOffered})`), ...(v.routes ?? []).map((x) => `- ${k} ${x.period} route weight ${x.id} (${x.membership}): base ${x.base}, ${x.blocks} blocks, weight ${x.weight}`)]), ''] : []), '## Files', '', ...Object.entries(s.hashes).map(([k, v]) => `- ${k}: ${v}`), ''];
   return L.join('\n');
 }
