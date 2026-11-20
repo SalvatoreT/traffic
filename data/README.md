@@ -7,6 +7,7 @@ and generated study-area files live in the Cloudflare R2 bucket `traffic-data`:
 | --- | --- | --- |
 | `data/osm/<area>.overpass.json` | `osm/<area>.overpass.json` | Raw OpenStreetMap extract (Rockridge: 8.7 MB) |
 | `data/demand/raw/*` | `demand/raw/*` | Raw counts / census downloads |
+| `target/membership/*.json` | `demand/membership/*` | Simulated route membership of the fitted count stations (see below); not served at `/data` |
 | `public/data/*` | `areas/*` | Generated network, demand, basemap served to the app |
 | `public/data/results/<area>/*.json` | `areas/results/<area>/*` | Precomputed finished hours of the published proposals (see below) |
 
@@ -22,6 +23,12 @@ The deployed Worker reads `areas/*` from the bucket at `/data/*`; local dev serv
 The OSM extract now includes bicycle route relations. A machine that holds an older extract can add them without changing any way or node id: `npx tsx tools/fetch-osm.ts --relations`.
 
 The OSM fetch tries the Overpass mirrors first. When none answers (the case on 2026-11-12), `tools/fetch-osm.ts` falls back to the OpenStreetMap map API, tiled into 40 requests and converted to the same JSON shape; `npx tsx tools/fetch-osm.ts --force --api` uses it directly. The extract covers the model area in `data/areas/<area>.json` (`bbox`), which is wider than the study area.
+
+## Membership files
+
+Since round 52 the shipped demand is fitted on the simulator's own route choice. The config (`countFit.throughTargets.simulatedMembership` in `data/demand/<area>.config.json`) names two files under `target/membership/`: `<area>.membership.json` for the shipped demand and `<area>.membership-training.json` for the cross-validation demand. Each holds, for every fitted count station, the share of simulated trips that use each origin-destination pair, pooled over the passes of `tools/membership-loop.ts`, with the hashes of the network, split, config, stations, targets and simulator they were made on. They are 2 to 3 MB each, so they are not in git. `data:push` uploads them to `demand/membership/*` in the bucket (a prefix the Worker accepts for upload and does not serve at `/data`), lists them in `data/manifest.json` with the other source inputs, and `data:pull` restores them to `target/membership/`.
+
+`npm run data` needs them. Without a file, or when its recorded hashes do not match the current inputs, the build notes it in the fit report and falls back to static membership, which gives a different demand (and different hashes everywhere downstream). Pull before building.
 
 ## Precomputed scenario results
 

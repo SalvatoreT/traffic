@@ -35,5 +35,5 @@ Adopting the candidate is the lead's and the project lead's decision.
   - backlog by gate
   - arterial travel times
 - `confirm/`: the fresh-seed confirmation.
-- `membership/`: the candidate's membership files, split into parts (see its README).
+- `membership/`: the candidate's membership files, split into parts. They stay on the development branch (`salvatoret/peaceful-fermi-dlwt0u`, commit d2bfe91) and are not on main.
 - `laptop/`: the scripts that drove the run and the chain log, with local paths replaced by `<worktree>` and `~`.

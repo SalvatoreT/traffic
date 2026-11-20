@@ -1,6 +1,204 @@
 # Rockridge baseline calibration record: archive, part 3
 
-Rounds thirty to thirty-three, moved unchanged from `rockridge.record.md` in round 43 (2026-11-18); rounds thirty-four to thirty-six, moved unchanged in round 50 (2026-11-19); round thirty-seven, moved unchanged in round 51 (2026-11-19); round thirty-eight, moved unchanged when round 51 closed (2026-11-20). Newer rounds are in `rockridge.record.md`; older ones in `rockridge.record-archive-2.md` and `rockridge.record-archive.md`.
+Rounds thirty to thirty-three, moved unchanged from `rockridge.record.md` in round 43 (2026-11-18); rounds thirty-four to thirty-six, moved unchanged in round 50 (2026-11-19); round thirty-seven, moved unchanged in round 51 (2026-11-19); round thirty-eight, moved unchanged when round 51 closed (2026-11-20); rounds thirty-nine to forty-one, moved unchanged when round 52 was recorded (2026-11-20). Newer rounds are in `rockridge.record.md`; older ones in `rockridge.record-archive-2.md` and `rockridge.record-archive.md`.
+
+## Forty-first round: Colby St NB and the Forest St turn (change calibration-round-41)
+
+Round 40 traced the remaining Colby St NB excess (150.6 on twenty seeds, SE 3.3, against 102 to 145) to cars that join Colby St partway, mostly from Forest St. This round checked the volunteer count at Claremont Ave / Colby St / Forest St and tried one change. Guard rails G1 to G5 were carried over against the round-40 demand and frozen with the keep rule in `openspec/changes/calibration-round-41/design.md` before any result. Nothing shipped: demand 930a1d90b2d1af05, network f9fa09a5726644d7, split, cross-validation demand and fingerprint f0df1aabc323 are all unchanged. Times Pacific; the round ran on 2026-11-17, 00:45 to 01:45.
+
+### What the count gives at the junction
+
+PM, route diagrams of Colby St NB and SB:
+- Claremont Ave from the southwest onto Colby St NB, 121, and Forest St from the southeast onto Colby St NB, 57: fit stations (weight 0.5), not held out.
+- Claremont Ave from the northeast onto Colby St NB, 4: below the 25-vehicle minimum for a constraint; unused.
+- Colby St SB onto Claremont Ave toward the southwest, 84: fit station, not held out.
+- Colby St SB onto Claremont Ave toward the northeast, 75: fit station with a quarter weight for a doubtful reading (the exits read 218 against 162 on the feeding block); not held out.
+- Colby St SB straight onto Forest St, 59: not a movement station; the Forest St eastbound block from the junction (66) covers it. It is southbound traffic and not part of the Colby St NB excess, and a new station would change the station list the frozen split was checked against, so it was not added.
+
+No movement there is both counted and unused, so there was nothing new to add. All four movement stations were already in the fit. Their membership came from the fit's static routes, which send fewer cars from Forest St onto Colby St NB than the simulator does.
+
+### Change tried: simulated membership for the four movement stations
+
+`calibrate --select-od` now also writes the pairs of the trips that made each movement or route station, and `countFit.throughTargets.measuredStations` lets named stations take their membership from those simulated trips (all trips, not only through trips; prior 5 trips at the static share, ASSUMPTION; station weights unchanged; PM only). The pairs came from twenty seeds of the round-40 demand; the through targets kept round 40's membership. PM, round 40 in brackets:
+
+| | 1-10 | 11-20 | 1-20 (SE) |
+| --- | --- | --- | --- |
+| Through HNB / CNB / HSB / CSB | 96 / 152 / 121 / 120 (92 / 150 / 119 / 111) | 96 / 150 / 123 / 116 (93 / 151 / 126 / 113) | 96.0 (2.7) / 151.3 (3.0) / 122.2 (2.5) / 118.0 (2.4) (92.6 / 150.6 / 122.4 / 111.8) |
+| Distance outside the ranges | 12.5 (4.9) | 9.2 (12.0) | 10.5 (8.0) |
+| Forest St onto Colby St NB (57) | | | 75.9 (2.7) (81.0) |
+| Claremont Ave onto Colby St NB (121) | | | 103.1 (2.7) (106.2) |
+| Colby St NB whole street (102) | | | 93.7 (2.1) (93.2) |
+| Recent fitted stations | 75 of 92 (75) | 77 of 92 (75) | |
+| Headline error, within 10 | 5.6, 4 of 4 (5.9) | 5.6, 4 of 4 (5.3) | |
+| Mean backlog | 0.63% (0.68%) | 0.58% (0.67%) | |
+| Largest leg GEH rise (limit 1.5) | none | W +0.94 | |
+
+The fit itself could bring the Forest St turn only to 77 under simulated membership (its target is 57), because the same pairs carry the block and gate counts. In the simulation the turn fell from 81 to 76 and Colby St NB did not move. The rails held, but the twenty-seed distance rose from 8.0 to 10.5, so by the frozen rule the change was reverted. The option stays in the code, unused by the shipped build.
+
+### 62nd St and Forest St eastbound today
+
+Twenty seeds on the shipped (round-40) demand, nothing changed: 62nd St eastbound from Florio St / Claremont Ave to Hillegass Ave carries 96.9 (SE 3.0) against 59 counted. Forest St eastbound from Colby St / Claremont Ave to Ayala Ave carries 189.5 (SE 6.3) against 66, 2.9 times its count, while Forest St westbound matches (63.6 against 66). Colby St SB onto Claremont Ave toward the northeast carries 0.5 against 75 counted (the doubtful reading). Where the model sends those cars instead, and how much of the Forest St eastbound excess they explain, was not traced in this round.
+
+### Verdict
+
+Unchanged from round 40: status `uncalibrated`; D16 and D5 pass; the through-car check fails on Colby St NB (150.6, SE 3.3, against 145); the station rule fails in the PM peak fitted (82%) and held out (54%) and in the AM held out (74%); AM Telegraph Ave southbound is 300 s against 245 to 285; p2, p3, b13, l1 and h4 fail with no reviewed exception.
+
+### What remains off
+
+- Colby St NB, the Forest St turn onto it, and Forest St eastbound. A count of the Colby St / Claremont Ave / Forest St junction that settles the doubtful 75 (Colby St SB onto Claremont Ave toward College Ave) would show whether the model's straight-through traffic onto Forest St is wrong.
+- Weight 8 of round 40 (all four through figures inside, G5 broken on one seed set) awaits the project lead.
+
+## Fortieth round: twenty seeds, target weight, Colby St NB against the count (change calibration-round-40)
+
+Round 39 left Colby St NB and Hillegass Ave SB above their ranges, and its two ten-seed sets disagreed by up to 13 cars an hour. The project lead asked for four steps in order: judge on twenty seeds, raise the through targets' weight, check Colby St NB against data before constraining any route, and test a second membership iteration. A step is kept only if the summed distance outside the ranges falls on seeds 1 to 10 and on 11 to 20 and the guard rails G1 to G5 of round 39 hold, now measured against the round-39 demand. Rails and rules were frozen in `openspec/changes/calibration-round-40/design.md` before any new result. Simulator fingerprint f0df1aabc323, network f9fa09a5726644d7, split and cross-validation flows unchanged; demand 86ec26e0a271a7e3 became 930a1d90b2d1af05. Times Pacific; the round ran on 2026-11-16 and 17, 23:45 to 03:00.
+
+### Step 1: noise
+
+Twenty seeds (1 to 20) on the round-39 demand, mean and standard error of the mean (standard deviation over the seeds divided by the square root of 20): Hillegass Ave NB 95.0 (SE 2.0), Colby St NB 154.4 (3.6), Hillegass Ave SB 127.2 (3.2), Colby St SB 118.0 (2.7). The standard deviation over seeds is 9 to 16 cars an hour, so a ten-seed mean carries 3 to 5 of standard error, and round 39's 148 against 161 on Colby St NB is about two standard errors of their difference: noise. From this round the membership pools twenty seeds per demand, the figures are given on 1 to 10, 11 to 20 and 1 to 20, and the assessment's through table shows the standard error. On twenty seeds, round 39 had Hillegass Ave NB at its upper end and Colby St SB 1.0 above it, both inside within one standard error; Colby St NB (+9.4) and Hillegass Ave SB (+7.2) were not.
+
+### Step 3: Colby St NB against the count
+
+Before anything else was changed, the round-39 runs were checked against the counts on Colby St NB. The cars leaving it at Alcatraz Ave match: 130 turning left (131 counted) and 29 right (32). SR-24 off-ramp traffic heading west or north on it is 64 an hour against 52 implied (38 to 62), but that implied value is the counted left turns times an assumed freeway share, so it does not support a route constraint. Two counted figures disagree: whole-street cars are 92 against 102 counted, and the turn from Forest St onto Colby St NB carries 86 against 57 counted (a movement station of weight 0.5 in the fit). So the excess through cars join Colby St partway, mostly from Forest St, instead of driving it from the ramps. No route constraint was added; the through target and its weight are left to deal with it.
+
+### Steps 2 and 4: membership and weight
+
+Membership: round 39 pooled the ten baseline seeds; step A pools forty runs (seeds 1 to 20 on the round-38 and on the round-39 demand). Weights 2, 4 and 8 use the forty-run membership. W2-i2 is a second iteration at weight 2, pooling sixty runs (the forty plus weight 2's twenty). Every row is twenty seeds; figures are the twenty-seed means; distance is the cars an hour outside the ranges, summed over the four runs.
+
+| Step | Weight | HNB / CNB / HSB / CSB, seeds 1-20 (48-95 / 102-145 / 79-120 / 39-117) | Distance 1-10 / 11-20 / 1-20 | G1 fitted stations 1-10 / 11-20 | G2 within 10, error 1-10 / 11-20 | G5 largest GEH rise 1-10 / 11-20 (limit 1.5) | Fit: blocks within tolerance; static freeway shares HNB / CNB / HSB / CSB (47 / 47 / 68 / 45); ramps within tolerance off / on | Kept |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Round 39 | 1 | 95.0 / 154.4 / 127.2 / 118.0 | 8.5 / 29.2 / 17.6 | 75 / 75 | 4 of 4, 6.2 / 5.7 | | 41 of 107; 35 / 45 / 59 / 43; 6 of 7 / 6 of 9 | shipped |
+| A, forty runs | 1 | 93.5 / 152.8 / 125.5 / 122.0 | 7.8 / 28.8 / 18.3 | 74 / 74 | 4 of 4, 6.1 / 6.1 | +0.14 / +0.83 | 41; 35 / 45 / 60 / 44; same | no change within noise |
+| Weight 2 | 2 | 92.6 / 150.6 / 122.4 / 111.8 | 4.9 / 12.0 / 8.0 | 75 / 75 | 4 of 4, 5.9 / 5.3 | none / +0.77 | 41; 37 / 46 / 61 / 45; same | yes |
+| Weight 4 | 4 | 95.1 / 152.0 / 114.0 / 104.3 | 3.8 / 10.7 / 7.1 | 75 / 77 | 4 of 4, 5.7 / 5.1 | +0.68 / +1.54 (E leg) | 43; 39 / 46 / 63 / 47; same | no, G5 |
+| Weight 8 | 8 | 90.5 / 137.8 / 109.6 / 98.3 | 0 / 0 / 0 | 76 / 75 | 4 of 4, 6.0 / 4.5 | +1.21 / +1.67 (E leg) | 44; 44 / 49 / 63 / 50; same | no, G5 |
+| W2-i2, sixty runs | 2 | 92.4 / 150.5 / 119.5 / 114.3 | 0 / 17.3 / 5.5 | 75 / 75 | 4 of 4, 6.1 / 5.2 | none / +1.23 | 41; 37 / 46 / 61 / 45; same | no, distance rose on 11-20 |
+
+Step A cut the distance on both ten-seed sets by under 1 car an hour and raised it on twenty seeds, so a second iteration at weight 1 changes nothing beyond noise. So round 39's rise from 8.5 to 13.9 at its second iteration was seed noise in the ten-seed shares: with four times as many runs pooled the prior (5 trips, ASSUMPTION) weighs a quarter as much per pair, and the figures did not move. A higher weight costs little in the fit itself. Ramp counts stay inside their tolerance as before, block counts within tolerance rise from 41 to 44 of 107, and the static freeway shares move toward the observed ones. In the simulation the cost falls on the held-out east leg of Telegraph Ave / Alcatraz Ave (Alcatraz Ave leaving eastward, counted 689): 542 an hour on round 39's seeds 11 to 20, 527 at weight 2, 506 at weight 4, 503 at weight 8. Weight 8 brings all four figures inside their ranges on both seed sets. On seeds 11 to 20 it raises that leg's GEH by 1.67, over the frozen limit of 1.5; on twenty seeds the rise is 1.44. Weight 4 misses the limit by 0.04 on the same set. Weight 2 is the highest weight that holds every rail, and W2-i2 is not kept, so the round stops at weight 2 with the forty-run membership.
+
+### Where the trips went
+
+They were again removed from their pairs, not rerouted; at counted gates the fit restored the totals from other pairs (PM car trips 26,349 to 26,371). Largest changes against round 39: West Berkeley to the SR-24 westbound on-ramps -31, Ashby Ave from the west to College Ave north -15 and to the Berkeley hills -14, and up: study-area trips to the hills east +18, Berkeley side streets to south-east Oakland +14. AM and midday demand are within 4 cars an hour of round 39. `calibrate --od-costs`, PM seeds 1 to 4, completed through trips an hour, round 39 to round 40: Hillegass Ave SB 117 to 107 (Ashby Ave from the west to College Ave north 17 to 12), Colby St SB 103 to 96 (same group 17 to 12; Berkeley side streets to south-east Oakland 10 to 5), Hillegass Ave NB 78 to 77, Colby St NB 127 to 127 (SR-24 off-ramp to Telegraph Ave north 53 to 53).
+
+### Result: ten seeds
+
+`npm run assess -- --publish --noise` (PM seeds 1 to 10, AM, midday); PM seeds 11 to 20 run separately on the same demand. Round 39 in brackets.
+
+| | Target | PM 1-10 | PM 11-20 | PM 1-20 (SE) | AM 1-10 | Midday 1-10 |
+| --- | --- | --- | --- | --- | --- | --- |
+| Through cars HSB / CSB / HNB / CNB (fitted) | 79-120 / 39-117 / 48-95 / 102-145 | 119 / 111 / 92 / 150 (125 / 116 / 94 / 148) | 126 / 113 / 93 / 151 (129 / 120 / 96 / 161) | 122 (2.8) / 112 (3.3) / 93 (2.0) / 151 (3.3) (127 / 118 / 95 / 154) | no counts | no counts |
+| Headline shares HNB / CNB / HSB / CSB | 47 / 47 / 68 / 45 | 52.8 / 50.1 / 59.8 / 38.6, 4 of 4, error 5.9 (6.2) | 53.6 / 47.3 / 59.8 / 38.7, 4 of 4, error 5.3 (5.7) | | 50.7 / 43.1 / 59.3 / 47.2, error 3.0 (3.2) | 53.0 / 37.8 / 62.9 / 47.3, error 5.9 (5.4) |
+| Cars cleared from gridlock per hour, judged (D16) / far | below 1 | 0.60 / 1.40 (0.10 / 1.90) | 0.00 / 1.90 (0.00 / 1.00) | | 0.00 / 0.10 (0.00 / 0.60) | 0.00 / 0.00 |
+| Entry backlog, mean %, seeds under 2% | below 2% | 0.68, 10 (0.70) | 0.67, 10 (0.57) | | 0.03, 10 | 0.01, 10 |
+| Arterial speed, m/s | above 4 | 8.32 (8.27) | 8.29 (8.34) | | 9.32 | 10.06 |
+| Telegraph Ave NB / SB, s | PM 302-420 / 300-376; AM 280-315 / 245-285 | 342 / 309 (338 / 307) | 348 / 317 (345 / 313) | | 296 / 300 (296 / 303) | |
+| Telegraph Ave at Alcatraz Ave, N / W / S / E, veh/h (GEH) | 1,064 / 547 / 910 / 689 | 1,294 (6.7) / 291 (12.5) / 1,124 (6.7) / 533 (6.3) (GEH 7.6 / 13.2 / 7.5 / 6.6) | 1,339 (7.9) / 283 (13.0) / 1,183 (8.4) / 527 (6.6) (GEH 8.1 / 13.0 / 7.7 / 5.9) | | | |
+| Recent stations GEH<5, fitted / held out (out of sample) | above 85% | 75 of 92 (82%) / 13 of 24 (54%) (same) | 75 of 92 (75) | | 67 of 77 (87%) / 14 of 19 (74%) (same) | no counts |
+
+The held-out stations are scored on the cross-validation demand, whose flows are still unchanged (the through targets stay out of the training view), so their out-of-sample scores are unchanged by construction; on the shipped demand they are 18 of 24 in sample (18). Validation is unchanged (engine and suite unchanged: 62 of 74). WASM parity and trace identity hold (`npm run check:wasm`).
+
+### Guard rails
+
+- G1: 75 of 92 on both PM sets (75 and 75); AM 67 of 77 (67). Holds.
+- G2: 4 of 4 within 10 points on both sets, error 5.9 and 5.3 (6.2 and 5.7). Holds.
+- G3: judged clearings 0.60 and 0.00 an hour, backlog under 2% in 10 of 10 seeds on both sets, mean backlog 0.68% and 0.67% (limits 0.85% and 0.72%), arterial speed above 8 m/s. Holds. On seeds 11 to 20 far clearings rose from 1.0 to 1.9 and mean backlog from 0.57% to 0.67%.
+- G4: PM inside on both sets; AM northbound 296 s inside, southbound 300 s (303). Holds.
+- G5: no leg rises on seeds 1 to 10; on 11 to 20 the S leg rises by 0.77 and the E leg by 0.65 (limit 1.5). Holds.
+
+### Verdict
+
+Status `uncalibrated`, rule by rule, round 39 in brackets; the status is the project lead's decision:
+- D16 (stability): passes in every period (passes).
+- D5 (headline shares within 10 points): passes in the PM peak, 4 of 4 on both sets (passes).
+- Through cars on the four counted blocks, fitted: fail (fail). On twenty seeds Hillegass Ave NB and Colby St SB are inside, Hillegass Ave SB is 2.4 above its range with a standard error of 2.8 (inside within noise), Colby St NB is 5.6 above with a standard error of 3.3. On seeds 1 to 10 three of four are inside (two); on 11 to 20 two of four (none).
+- Station rule, recent counts within GEH 5 in at least 85%: PM fails fitted (82%) and held out (54%) (same); AM passes fitted (87%) and fails held out (74%) (same).
+- Telegraph Ave travel times: PM inside; AM southbound 300 s against 245 to 285 (303).
+- Primitive validation: p2, p3, b13, l1 and h4 fail with no reviewed exception (same).
+
+### What remains off
+
+- Colby St NB stays above its range at weight 2 (150.6 on twenty seeds, SE 3.3), and Hillegass Ave SB is inside within noise (122.4, SE 2.8). Weight 8 brings both inside on both seed sets, but it also lowers Alcatraz Ave eastbound out of the Telegraph Ave junction (a held-out leg) by 1.67 GEH on one seed set, over the limit the rails set. Whether that trade is acceptable is the project lead's decision.
+- The excess on Colby St NB enters from Forest St (86 against 57 counted). The fitted movement station there has weight 0.5, and the simulator overshoots it.
+- As before: Telegraph Ave at Alcatraz Ave about 22 to 26% over its count, the SR-24 mainline gate backlog, the far gridlock, l1 and b13. The published proposals need a new search on this demand.
+
+## Thirty-ninth round: the four through-car figures become fit targets (change calibration-round-39)
+
+On 2026-11-16 the project lead decided ("Yes, fit to the cut-through counts") that the four counted through-car figures, Hillegass Ave and Colby St in each direction in the PM peak from the resident volunteer count of Feb 25, 2025, become targets of the demand fit. Until now they were only a check. The cost is that they stop being an independent check. The checks that stay independent are the held-out count stations, the headline freeway shares, stability and the arterial travel times. The compact model is shelved: its second round failed the lead's stop rule (`rockridge.extent-comparison.md`). Guard rails and the stopping rule were frozen in `openspec/changes/calibration-round-39/design.md` (D8, D9) before any result of a new demand was seen. Simulator fingerprint f0df1aabc323 and network f9fa09a5726644d7 are unchanged. Demand 1c798217e72fb1ba became 86ec26e0a271a7e3. The cross-validation demand's flows are unchanged (file 9de2bcebd9fb2a34; it differs from a367850a13850985 only in the config hash it records). Frozen split unchanged; no link renumbered. Times Pacific; the round ran on 2026-11-16, 22:00 to 23:59.
+
+### What the four figures are
+
+From the volunteer count (PM, route diagrams and block maps) come the whole-street cars (Hillegass Ave NB 48, Colby St NB 102, Hillegass Ave SB 79, Colby St SB 39), the cars whose trip ended along the street (15, 29, 40, 43) and the block volume, the median of the street's counted blocks (110, 174, 160, 160). Whole-street cars are through cars, so they are a lower bound. The block volume less the cars ending along the street is an upper bound, since it still holds cars that start along the street or end elsewhere in the study area. That gives the ranges 48 to 95, 102 to 145, 79 to 120 and 39 to 117, unchanged since round 19. The count does not say where in the range the true figure lies, so the fit aims at the middle (71.5, 123.5, 99.5, 78; ASSUMPTION) and the range is the tolerance.
+
+The fit already used, from the same count, the block volumes (directed links, every fourth held out), the whole-street route counts (all cars driving the street end to end), the turning movements at the street ends and the assumed movement flows that pin the Alcatraz Ave turn-ins and turn-outs. The pinned flows carry 87 through trips an hour on Hillegass Ave SB, 46 on Colby St SB, 25 on Colby St NB and 7 on Hillegass Ave NB. They stay pinned and count toward the target. No existing station counts through cars on any link of a street run, so nothing is counted twice.
+
+### Mechanism
+
+The target sits inside the count fit and the simulator supplies its membership (design D5, option c). A through flow's proportion on a street run is its pair's share of trips counted on the run over ten seeds (`calibrate --select-od`), less the pinned flows, with the static route share as a prior worth 5 trips (ASSUMPTION). Every other count stays a constraint in the same fit, so gate totals stay with their counts. The simulator's figure counts each car once per run when any link of the run is in its trip and neither trip end is at a study-area node. The fit mirrors that with a new route feature (`any`) on the same links. Pooled over the ten baseline seeds, the select-link files give 97.5, 149.8, 142.5 and 132.1, the report's means exactly.
+
+Two options were not chosen. (a) Static targets only: the fit's own routes already put 80, 135, 104 and 73 on these runs, three of them inside their ranges, against 98, 150, 143 and 132 simulated, so such targets would barely act. (b) A correction outside the fit: scaling flows there moves every count they cross and needs a second balancing step.
+
+AM and midday take the PM range times the period volume factor (0.85, 0.62) as an upper limit only (ASSUMPTION). Their baseline figures are AM 70 / 89 / 70 / 90 and midday 54 / 76 / 70 / 78 (HNB / CNB / HSB / CSB). All are below the limits except midday Colby St SB (78 against 73), and none binds at the end of the fit.
+
+### Iterations
+
+Simulated = mean of PM seeds 1 to 10. Distance = the cars an hour outside the range, summed over the four runs. The fit columns use the simulated membership.
+
+| Iteration | Membership from | Fit HNB / CNB / HSB / CSB | Simulated HNB / CNB / HSB / CSB | Distance |
+| --- | --- | --- | --- | --- |
+| 0 (shipped) | | 98 / 160 / 143 / 127 (static routes 80 / 135 / 104 / 73) | 97.5 / 149.8 / 142.5 / 132.1 | 44.9 |
+| 1 | baseline, 10 runs | 92 / 157 / 125 / 108 | 93.9 / 148.1 / 125.4 / 115.7 | 8.5 |
+| 2 | baseline and iteration 1, 20 runs | 93 / 158 / 126 / 111 | 96.4 / 148.6 / 126.9 / 119.0 | 13.9 |
+
+Iteration 2 did not cut the distance, so the loop stopped and iteration 1 is the result (D9). On seeds 11 to 20 it gives 96.1 / 160.8 / 129.0 / 120.3, distance 29.2 against 56.8 for the shipped demand. The fit itself stops about 25% above the middle on Colby St NB and Hillegass Ave SB, because the flows on these runs also carry the ramp counts (weight 2), the freeway shares of the blocks (weight 3), Telegraph Ave and the block counts. On Colby St NB the largest group is SR-24 off-ramp traffic bound for Telegraph Ave north (53 an hour). Only a small part of that pair uses Colby St, so lowering the pair costs counts elsewhere.
+
+### Where the trips taken off these streets went
+
+They were removed from their pairs, not rerouted (D5). PM car trips went from 26,352 to 26,349: at counted gates the fit restored the totals from other pairs. The largest changes by origin and destination group: Ashby Ave from the west to the Berkeley hills -40, West Berkeley to the SR-24 westbound on-ramps -18, College Ave from the north to south-east Oakland -16, Berkeley side streets north of Alcatraz Ave to SR-13 +15. `calibrate --od-costs`, PM seeds 1 to 4, completed through trips an hour before and after: Colby St SB 119 to 103 (Berkeley side streets to south-east Oakland, 13 to 10), Hillegass Ave SB 129 to 117 (same group, 8 to 4), Hillegass Ave NB 86 to 78 (south-east Oakland to the Berkeley side streets, 16 to 11), Colby St NB 125 to 127 (SR-24 off-ramp to Telegraph Ave north, 53 to 53). AM and midday demand moved by at most 6 cars an hour in any group. The limits did not bind there, but the flows they touch no longer take the median factor of untouched flows.
+
+### Result: ten seeds
+
+`npm run assess -- --publish --noise`; PM seeds 11 to 20 run separately on the same demand. Round 38 in brackets.
+
+| | Target | PM 1-10 | PM 11-20 | AM 1-10 | Midday 1-10 |
+| --- | --- | --- | --- | --- | --- |
+| Through cars HSB / CSB / HNB / CNB (now fitted) | 79-120 / 39-117 / 48-95 / 102-145 | 125 / 116 / 94 / 148 (143 / 132 / 98 / 150) | 129 / 120 / 96 / 161 (146 / 140 / 96 / 152) | no counts | no counts |
+| Headline shares HNB / CNB / HSB / CSB | 47 / 47 / 68 / 45 | 52.9 / 50.7 / 59.2 / 38.5, 4 of 4, error 6.2 (52.9 / 50.5 / 55.1 / 37.4, 3 of 4, 7.5) | 53.9 / 46.4 / 59.4 / 38.2, 4 of 4, error 5.7 (52.8 / 47.9 / 56.6 / 38.9, 3 of 4, 6.0) | 50.9 / 42.7 / 60.0 / 46.8, error 3.2 (3.0) | 53.4 / 37.5 / 62.7 / 45.1, error 5.4 (5.4) |
+| Cars cleared from gridlock per hour near the study area, judged (D16) | below 1 | 0.10 (0.60) | 0.00 (0.00) | 0.00 (0.00) | 0.00 (0.00) |
+| Far | | 1.90 (0.50) | 1.00 (1.30) | 0.60 (0.30) | 0.00 (0.00) |
+| Entry backlog, mean %, seeds under 2% | below 2% | 0.70, 10 (0.71, 10) | 0.57, 10 (0.57, 10) | 0.03, 10 (0.03) | 0.01, 10 (0.01) |
+| Arterial speed, m/s | above 4 | 8.27 (8.26) | 8.34 (8.34) | 9.32 | 10.06 |
+| Telegraph Ave NB / SB, s | PM 302-420 / 300-376; AM 280-315 / 245-285 | 338 / 307 (345 / 317) | 345 / 313 | 296 / 303 (294 / 299) | |
+| Telegraph Ave at Alcatraz Ave, N / W / S / E legs, veh/h (GEH) | 1,064 / 547 / 910 / 689 | 1,327 (7.6) / 279 (13.2) / 1,150 (7.5) / 527 (6.6) (GEH 7.1 / 12.9 / 6.8 / 6.0) | 1,346 (8.1) / 282 (13.0) / 1,157 (7.7) / 542 (5.9) (GEH 8.7 / 12.5 / 8.0 / 5.4) | | |
+| Recent stations GEH<5, fitted / held out (out of sample) | above 85% | 75 of 92 (82%) / 13 of 24 (54%) (same) | 75 of 92 | 67 of 77 (87%) / 14 of 19 (74%) (same) | no counts |
+| Held-out stations on the shipped demand (in sample) | | 18 of 24 (same) | 17 of 24 | 17 of 19 | |
+| Older counts GEH<5, fitted | | 53 of 95 (48) | 52 of 95 | 25 of 48 | |
+
+The held-out stations are scored out of sample on the cross-validation demand. Its flows did not change, because every street run holds a held-out block and the targets stay out of the training view (design D7), so the out-of-sample scores are round 38's by construction.
+
+Validation: 62 of 74 cases pass, as in round 38; failing a3, e2, e3, j6, j8, j9, j12 (reviewed), l1, p2, p3, b13, h4 (not reviewed). `cargo test -p traffic-sim --release` passes. WASM parity and trace identity hold (`npm run check:wasm`, PM seed 1, 300 s: every field identical).
+
+### Guard rails (design D8)
+
+- G1 station fit: 75 of 92 on both PM sets (75), AM 67 of 77 (67). Holds.
+- G2 headline shares: 4 of 4 within 10 points on both sets (3 of 4), error 6.2 and 5.7 (7.5 and 6.0). Holds.
+- G3 stability: judged clearings 0.10 and 0.00 an hour, backlog under 2% in 10 of 10 seeds, no runaway growth, arterial speed 8.27 and 8.34 m/s, mean backlog 0.70% and 0.57% (0.71% and 0.57%). Holds. Far clearings rose on seeds 1 to 10 (0.5 to 1.9) and fell on 11 to 20 (1.3 to 1.0).
+- G4 Telegraph Ave: PM inside on both sets; AM northbound 296 s inside, southbound 303 s (299, limit 309). Holds.
+- G5 Telegraph Ave / Alcatraz Ave legs: the largest GEH rise is 0.64 (S leg, seeds 1 to 10) against the 1.5 allowed. Holds.
+
+### Verdict
+
+Status `uncalibrated`, rule by rule; whether to change it is the project lead's decision:
+- D16 (stability): passes in every period.
+- D5 (headline shares within 10 points): passes in the PM peak on both seed sets (4 of 4).
+- Through cars on the four counted blocks, now fitted and no longer independent: fail. On seeds 1 to 10 Hillegass Ave NB and Colby St SB are inside, Colby St NB (148) and Hillegass Ave SB (125) above; on seeds 11 to 20 none is inside.
+- Station rule, recent counts within GEH 5 in at least 85%: PM fails fitted (82%) and held out (54%); AM passes fitted (87%) and fails held out (74%).
+- Telegraph Ave travel times: PM inside both ranges; AM southbound 303 s against 245 to 285.
+- Primitive validation: p2, p3, b13, l1 and h4 fail with no reviewed exception.
+
+### What remains off
+
+- Colby St NB and Hillegass Ave SB stay above their ranges. The fit holds them about 25% above the middle because the same flows carry ramp counts, the freeway shares and the block counts. A higher weight on the targets, or a route constraint for the SR-24 off-ramp traffic that uses Colby St NB to reach Telegraph Ave, would be the next lever; neither was tried.
+- The seed-to-seed spread on these blocks is large (Colby St NB 148 and 161 on the two seed sets), so one seed set can land on either side of a range edge.
+- As before: Telegraph Ave at Alcatraz Ave about 25% over its count, the SR-24 mainline gate backlog, the far gridlock, l1 and b13. The published proposals were searched on the round-33 demand and need a new search on this one.
 
 ## Thirty-eighth round: Telegraph Ave at Alcatraz Ave, the SR-24 mainline gate (change calibration-round-38)
 

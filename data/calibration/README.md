@@ -125,9 +125,10 @@ their results. The current demand build disables that inferred target. A future 
 unique through drivers would require an observation of distinct corridor users with both
 trip ends outside the study area.
 
-Simulated membership can inform count fitting when its input and detector provenance
-matches the build. Legacy membership files lack that evidence. The build reports when it
-uses static assignment for those stations. Run `calibrate --select-od` on matching inputs
-to collect fresh evidence.
+Since round 52 the shipped demand is fitted on simulated membership: the build uses a
+membership file only when its recorded input and detector provenance matches the build,
+and otherwise reports that it uses static assignment for those stations. The files come
+from `tools/membership-loop.ts` (`data/README.md`, "Membership files"). Legacy files lack
+the evidence; run `calibrate --select-od` on matching inputs to collect fresh evidence.
 
 The router's control delays (signal, all-way stop, minor stop approach, circle) are in `crates/sim/data/node-delays.json`, read by the simulator and by the demand fit. `npx tsx tools/node-delays.ts --dir DIR --seeds 1-3 --write` rewrites them from kept seed reports (`--keep-seeds DIR`) and writes `rockridge.node-delays.md`. `calibrate` reports, in the seed JSON, simulated turning movements and continuous whole-street traversals (`features`, counted at the final detector of each station defined in the demand build) and the plan of every signal with an observed timing (`observedSignals`); `tools/assess.ts` prints them with the interior blocks, the entries by side and Colby Street and Hillegass Avenue block by block.

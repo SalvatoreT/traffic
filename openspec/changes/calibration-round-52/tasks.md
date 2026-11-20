@@ -14,17 +14,23 @@
 
 ## 2. Laptop runs (runbook.md)
 
-- [ ] 2.1 Gate: reproduce the baseline hashes and the fingerprint
-- [ ] 2.2 Baseline three-seed screen
-- [ ] 2.3 Apply the candidate, dry-run the loop, run it (three passes at most, ten seeds, PM and AM, both views)
-- [ ] 2.4 Screen the final demand on seeds 1 to 3, with the backlog line
-- [ ] 2.5 Validation suite and ten-seed assessment (if the screen passes)
-- [ ] 2.6 Fresh-seed confirmation on seeds 11 to 20 with the baseline (if the keep rule passes), automatically
-- [ ] 2.7 Commit the evidence under `evidence/`
+- [x] 2.1 Gate: reproduce the baseline hashes and the fingerprint
+- [x] 2.2 Baseline three-seed screen
+- [x] 2.3 Apply the candidate, dry-run the loop, run it (three passes at most, ten seeds, PM and AM, both views)
+- [x] 2.4 Screen the final demand on seeds 1 to 3, with the backlog line
+- [x] 2.5 Validation suite and ten-seed assessment (if the screen passes)
+- [x] 2.6 Fresh-seed confirmation on seeds 11 to 20 with the baseline (if the keep rule passes), automatically
+- [x] 2.7 Commit the evidence under `evidence/`
 
 ## 3. Verdict (lead)
 
-- [ ] 3.1 Keep-rule table, confirmation table and the verdict (design D4)
-- [ ] 3.2 Record entry in `data/calibration/rockridge.record.md`
-- [ ] 3.3 Adoption decision (the project lead's)
+- [x] 3.1 Keep-rule table, confirmation table and the verdict (design D4)
+- [x] 3.2 Record entry in `data/calibration/rockridge.record.md`
+- [x] 3.3 Adoption decision (the project lead, 2026-11-20: adopt and publish; design.md)
 - [ ] 3.4 Validate the change and archive
+
+## 4. Adoption (design.md, Adoption steps)
+
+- [x] 4.1 Branch `adopt-round-52`: config, fit reports, membership sync, status text, proposals
+- [ ] 4.2 Laptop: publish assessment, validation, redistribution, results, assumptions, text pages, previews
+- [ ] 4.3 Cloud: merge, data push, record entry for the publish
