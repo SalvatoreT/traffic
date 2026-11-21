@@ -890,7 +890,7 @@ function loadGatePrior(fc: { gatePriorTotals?: { anchor: string; tolerancePct: n
   return { tolerancePct: g.tolerancePct, weight: g.weight, gateIds: net.nodes.filter((q) => q.gate).map((q) => q.id), scope, studyIds: net.nodes.filter((q) => q.inStudyArea).map((q) => q.id) };
 }
 
-function loadThrough(fc: { stationsOutput?: string; throughTargets?: { enabled: boolean | 'report'; targets: string; weight: number; otherPeriods?: 'ceiling' | 'none'; measured?: { file: string; priorTrips: number }; measuredStations?: string[]; measuredStationsTraining?: string; simulatedMembership?: { method: 'export-supported'; file: string; trainingFile: string; priorTrips: number; throughTargets?: boolean; shares?: boolean; routeWeightPerBlock?: boolean } } }, notes: string[]): ThroughFit | undefined {
+function loadThrough(fc: { stationsOutput?: string; endAlong?: { weight: number }; throughTargets?: { enabled: boolean | 'report'; targets: string; weight: number; otherPeriods?: 'ceiling' | 'none'; measured?: { file: string; priorTrips: number }; measuredStations?: string[]; measuredStationsTraining?: string; simulatedMembership?: { method: 'export-supported'; file: string; trainingFile: string; priorTrips: number; throughTargets?: boolean; shares?: boolean; routeWeightPerBlock?: boolean; endAlong?: boolean } } }, notes: string[]): ThroughFit | undefined {
   const tt = fc.throughTargets;
   if (!tt?.enabled) return undefined;
   const tf = JSON.parse(readFileSync(tt.targets, 'utf8'));
@@ -914,9 +914,24 @@ function loadThrough(fc: { stationsOutput?: string; throughTargets?: { enabled: 
   let measured: ThroughFit['measured'];
   // Calibration round 48 (off unless the entry is present): every station the report binary exports takes the membership of the loop's file of this view (tools/membership-loop.ts).
   const sm = tt.simulatedMembership;
-  for (const k of ['throughTargets', 'shares', 'routeWeightPerBlock'] as const) if (sm && sm[k] !== undefined && typeof sm[k] !== 'boolean') throw new Error(`countFit.throughTargets.simulatedMembership.${k} must be true or false`);
+  for (const k of ['throughTargets', 'shares', 'routeWeightPerBlock', 'endAlong'] as const) if (sm && sm[k] !== undefined && typeof sm[k] !== 'boolean') throw new Error(`countFit.throughTargets.simulatedMembership.${k} must be true or false`);
   // Round 51 sub-switches: through targets and select-link shares take the simulated block pairs of the loop's file. Absent, rounds 48 to 50.
-  const simulated = sm && (sm.throughTargets !== undefined || sm.shares !== undefined || sm.routeWeightPerBlock !== undefined) ? { throughTargets: !!sm.throughTargets, shares: !!sm.shares, ...(sm.routeWeightPerBlock ? { routeWeightPerBlock: true } : {}) } : undefined;
+  // Round 53 sub-switch endAlong: the count's "ended along the street" figures of the select-link runs are fit targets (weight countFit.endAlong.weight). Like the whole-street route stations they describe the
+  // whole street between its ends, so a run with a held block on it is left out of the training view (the same test as the through targets).
+  let endAlong: { weight: number; skip: string[] } | undefined;
+  if (sm?.endAlong) {
+    const w = fc.endAlong?.weight;
+    if (!(typeof w === 'number' && Number.isFinite(w) && w > 0)) throw new Error('simulatedMembership.endAlong needs countFit.endAlong.weight > 0');
+    if (!sm.shares) throw new Error('simulatedMembership.endAlong needs simulatedMembership.shares (the block pairs of the runs)');
+    const skip: string[] = [];
+    for (const t of tf.selectLink ?? []) {
+      if (!t.endAlongVehPerHour) continue;
+      const label = `${t.street} ${t.direction}`, blk = resolveBlock(net.links as never, nodeBy as never, t.street, t.direction, t.between ?? []);
+      if (training && blk.links.some((l) => heldBlocks.has(l))) { skip.push(label); notes.push(`end-along target ${label}: its street run holds a held-out block; left out of the training view`); }
+    }
+    endAlong = { weight: w, skip };
+  } else if (fc.endAlong) throw new Error('countFit.endAlong is read only with simulatedMembership.endAlong true');
+  const simulated = sm && (sm.throughTargets !== undefined || sm.shares !== undefined || sm.routeWeightPerBlock !== undefined || sm.endAlong !== undefined) ? { throughTargets: !!sm.throughTargets, shares: !!sm.shares, ...(sm.routeWeightPerBlock ? { routeWeightPerBlock: true } : {}), ...(endAlong ? { endAlong } : {}) } : undefined;
   const mf = sm ? { file: sm.file, priorTrips: sm.priorTrips } : tt.measured;
   const membershipFile = sm ? (training ? sm.trainingFile : sm.file) : training ? tt.measuredStationsTraining : mf?.file;
   if (membershipFile && existsSync(membershipFile)) {

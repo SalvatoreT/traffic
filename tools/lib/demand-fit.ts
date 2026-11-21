@@ -7,7 +7,7 @@ import { assigned, fitToCounts, type Constraint, type FitOptions, type FlowType 
 import { controlDelayArray, type ControlDelayFile } from './control-delays';
 import { sourceYearLines, type RecencyConfig } from './recency';
 import { heldStationIds, observationOfKey, type SplitManifest, type SplitStation } from './lineage';
-import { routeShareTally, impliedVolumes, type BlockMembership, type ImpliedVolume, type ShareSpec, type Targets } from './share-targets';
+import { routeShareTally, impliedVolumes, type BlockMembership, type EndAlongSpec, type ImpliedVolume, type ShareSpec, type Targets } from './share-targets';
 import { throughTargetId } from './through-membership';
 
 export interface NetLinkIn extends ALink { name: string; lanes?: number; inStudyArea?: boolean }
@@ -383,7 +383,7 @@ export interface ThroughTarget { id: string; label: string; links: number[]; tar
 /** Simulated through trips per origin-destination pair (`tools/through-membership.ts`): over `runs` seed runs, `hits[id]["o>d"]` trips of the pair counted on target `id`, `trips["o>d"]` trips of the pair offered (veh/h summed over the runs; only pairs with a counted trip). */
 export interface ThroughMeasured { runs: number; source: string; hits: Record<string, Record<string, number>>; trips: Record<string, number>; /** Movement and route stations' pairs, all trips (round 41). */ stations?: ThroughMeasured; /** Select-link blocks' pairs, every trip that used the block, no study-area filter, hits keyed like the through targets (round 51); `zeroHit` lists blocks without a simulated trip. */ blocks?: ThroughMeasured & { zeroHit?: string[] } }
 /** `reportOnly`: the figures are reported, no constraint enters the fit (the table is the one built without targets). */
-export interface ThroughFit { targets: ThroughTarget[]; inStudy: Set<number>; measured?: Record<string, ThroughMeasured>; priorTrips: number; reportOnly?: boolean; /** Station ids whose membership comes from the simulated pairs of `measured[period].stations`; 'all' takes every fitted station that has pairs there (calibration round 48). */ measuredStations?: string[] | 'all'; /** Round 51 sub-switches of `simulatedMembership`: through targets and select-link shares take simulated membership from the loop's block pairs; absent or false keeps rounds 48 to 50. */ simulated?: { throughTargets: boolean; shares: boolean; /** Round 52: a whole-street route count with simulated membership weighs `weight` times the blocks it spans that are fitted; absent or false keeps round 51. */ routeWeightPerBlock?: boolean } }
+export interface ThroughFit { targets: ThroughTarget[]; inStudy: Set<number>; measured?: Record<string, ThroughMeasured>; priorTrips: number; reportOnly?: boolean; /** Station ids whose membership comes from the simulated pairs of `measured[period].stations`; 'all' takes every fitted station that has pairs there (calibration round 48). */ measuredStations?: string[] | 'all'; /** Round 51 sub-switches of `simulatedMembership`: through targets and select-link shares take simulated membership from the loop's block pairs; absent or false keeps rounds 48 to 50. */ simulated?: { throughTargets: boolean; shares: boolean; /** Round 52: a whole-street route count with simulated membership weighs `weight` times the blocks it spans that are fitted; absent or false keeps round 51. */ routeWeightPerBlock?: boolean; /** Round 53: the count's "ended along the street" figure of each select-link run is a fit constraint of weight `weight`, from the simulated block pairs; `skip` lists the runs left out (training view: a held block lies on the run). Absent keeps round 52. */ endAlong?: { weight: number; skip: string[] } } }
 
 /**
  * Per-flow proportions of a through target. Static: the share of the flow's assigned routes that use the run (through flows only). Measured: per pair, the
@@ -429,6 +429,8 @@ export function measuredShare(stat: Float64Array, flows: FlowIn[], m: ThroughMea
   return use;
 }
 
+export interface EndAlongRow { spec: EndAlongSpec; weight: number; offered: number; staticOffered: number; afterFit: number; staticAfterFit: number; final: number; staticFinal: number }
+
 /** `simulated`: the station took simulated membership, so `weight` is `base` times `blocks` (fitted block stations on the route's links); otherwise `weight` is `base`. */
 export interface RouteWeightRow { id: string; label: string; simulated: boolean; base: number; blocks: number; weight: number }
 
@@ -454,6 +456,8 @@ export interface PeriodResult {
   shareRows: { spec: ShareSpec; offered: number; afterFit: number; final: number; n: number; simulated?: boolean; staticOffered?: number; staticAfterFit?: number; staticFinal?: number }[];
   /** Round 52: the weight of every whole-street route station in the fit, only when `routeWeightPerBlock` is on. */
   routeWeights?: RouteWeightRow[];
+  /** Round 53: the end-along constraints of the period, offered, after the count-only fit and final, on the membership used and on the static routes; absent when none was built. */
+  endRows?: EndAlongRow[];
   /** Through-car targets: the figure under the proportions the fit used (measured or static) and under the static route shares, offered and final. */
   throughRows: { t: ThroughTarget; target: number; lo: number; hi: number; oneSided: boolean; measured: boolean; offered: number; final: number; staticOffered: number; staticFinal: number }[];
   /** Gate prior ceilings (round 49); absent when the switch is off. */
@@ -546,10 +550,13 @@ export function fitPeriod(
   const blockPairs = simSwitch?.shares ? cfg.through?.measured?.[id]?.blocks : undefined;
   const blockMembership: BlockMembership | undefined = blockPairs
     ? (block, stat) => (blockPairs.hits[throughTargetId(block)] ? measuredShare(stat, flows, blockPairs, throughTargetId(block), cfg.through!.priorTrips, pinnedK, () => false) : undefined) : undefined;
+  // Round 53 (ASSUMPTION): only where the period's select-link blocks have simulated trips; the static fit that anchors the ceilings, pass 0 and midday never see it.
+  const endOn = !!simSwitch?.endAlong && !!blockPairs;
+  if (endOn && !cfg.shares) throw new Error('simulatedMembership.endAlong needs the select-link share targets (countFit.shares.enabled)');
   const load = (vol: number[]) => {
     const shares = cfg.shares;
-    const tally = shares && (shares.weight > 0 || (cfg.implied?.weight ?? 0) > 0)
-      ? routeShareTally(nodes, links, shares.targets, flows, id, shares.pmPeriod, shares.weight) : undefined;
+    const tally = shares && (shares.weight > 0 || (cfg.implied?.weight ?? 0) > 0 || endOn)
+      ? routeShareTally(nodes, links, shares.targets, flows, id, shares.pmPeriod, shares.weight, endOn ? { skip: new Set(simSwitch!.endAlong!.skip) } : undefined) : undefined;
     const a = as.method === 'msa'
       ? assignMsa(g, flows, vol, { iterations: as.iterations, drawsPerPass: as.drawsPerPass, alpha: alphaUse, beta: as.beta, dispersion: as.dispersion, capacity, extraCost: extra, features, onRoute: tally?.onRoute })
       : assign(g, flows, cfg.draws, cfg.dispersion, features, tally?.onRoute);
@@ -562,8 +569,10 @@ export function fitPeriod(
     const throughCons: Constraint[] = cfg.through?.reportOnly ? [] : thr.map((t, i) => ({
       id: t.id, kind: 'through', label: t.label, links: [], target: t.target[id], weight: t.weight, member: mem[i].use, ...(t.ceiling.includes(id) ? { ceiling: t.hi[id] } : {}),
     }));
-    const counts = [...stationCons(a), ...priorCons, ...throughCons];
-    return { a, specs, implied, mem, counts, cons: [...counts, ...impliedCons, ...shareCons] };
+    const ends = endOn ? tally!.endAlong(blockMembership) : [];
+    const endCons: Constraint[] = ends.map((q) => ({ id: q.id, kind: 'end-along', label: `${q.label}, trips that ended along the street`, links: [], target: q.target, weight: simSwitch!.endAlong!.weight, member: q.member }));
+    const counts = [...stationCons(a), ...priorCons, ...throughCons, ...endCons];
+    return { a, specs, implied, mem, ends, counts, cons: [...counts, ...impliedCons, ...shareCons] };
   };
   const offered = load(v0);
   const reload = (vol: number[]) => as.method === 'msa' ? load(vol) : offered;
@@ -629,10 +638,15 @@ export function fitPeriod(
   const shareRows = specs.map((q) => { const i = byId.get(q.id)!; return { spec: q, offered: before[i], afterFit: afterFit[i], final: final[i], n: q.ratio.flows.length, ...(q.simulated ? { simulated: true, staticOffered: sOff.get(q.id), staticAfterFit: sAfter.get(q.id), staticFinal: sFin.get(q.id) } : {}) }; });
   const impliedRows = input.implied.map((iv) => { const i = byId.get(iv.id)!; return { iv, before: before[i], afterFit: afterFit[i], final: final[i] }; });
   const dot = (m: ArrayLike<number>, f: ArrayLike<number>) => { let x = 0; for (let k = 0; k < f.length; k++) x += m[k] * f[k]; return x; };
+  const endRows: EndAlongRow[] = shipped.ends.map((q, i) => ({
+    spec: q, weight: simSwitch!.endAlong!.weight, offered: dot(offered.ends[i].member, v0), staticOffered: dot(offered.ends[i].staticMember, v0),
+    afterFit: dot(countOnly.ends[i].member, f1), staticAfterFit: dot(countOnly.ends[i].staticMember, f1), final: dot(q.member, volume), staticFinal: dot(q.staticMember, volume),
+  }));
+  if (endRows.length) notes.push(`trips that ended along the street are fit targets (round 53, ASSUMPTION): ${endRows.length} select-link run(s), weight ${simSwitch!.endAlong!.weight}; each pair's share of trips that used a link of the run, simulated${endRows.some((q) => !q.spec.simulated) ? ' (static routes for a run without a simulated trip)' : ''} with the static fraction as a prior of ${cfg.through!.priorTrips} trips, counts where the pair's destination is a node strictly between the run's ends; runs: ${endRows.map((q) => `${q.spec.label} ${q.spec.simulated ? 'simulated' : 'static'} (${q.spec.nodes.length} nodes)`).join(', ')}`);
   const throughRows = thr.map((t, i) => ({ t, target: t.target[id], lo: t.lo[id], hi: t.hi[id], oneSided: t.ceiling.includes(id), measured: !!throughMeasuredOf(t.id), offered: dot(offered.mem[i].use, v0), final: dot(shipped.mem[i].use, volume), staticOffered: dot(offered.mem[i].stat, v0), staticFinal: dot(shipped.mem[i].stat, volume) }));
   const tolOf = new Map(stations.map((q) => [q.id, q.tolPct]));
   const within = (r: ReturnType<typeof load>, vol: number[]) => {
-    const cs = r.counts.filter((c) => c.kind !== 'gate-prior' && c.kind !== 'through' && c.target > 0);
+    const cs = r.counts.filter((c) => c.kind !== 'gate-prior' && c.kind !== 'through' && c.kind !== 'end-along' && c.target > 0);
     const got = assigned(r.a, vol, cs, nL);
     return cs.reduce((n, c, i) => n + (Math.abs(got[i] / c.target - 1) <= (tolOf.get(c.id) ?? 15) / 100 ? 1 : 0), 0);
   };
@@ -663,10 +677,11 @@ export function fitPeriod(
   const heldRows = heldCons.map((c, i) => ({ st: stations.find((q) => q.id === c.id)!, target: c.target, before: heldIdx!.b[i], afterFit: heldIdx!.f1[i], final: heldIdx!.f[i] }));
   const stationRows = stations.filter((s) => byId.has(s.id)).map((s) => { const i = byId.get(s.id)!; return { st: s, target: cons[i].target, before: before[i], afterFit: afterFit[i], final: final[i] }; });
   const guardRemoved = Object.values(totals).reduce((x, q) => x + q.afterFit - q.final, 0);
-  return { id, volume, totals, stationRows, fit: rFinal, gFinal: [...rFinal.g], counted: rFinal.counted, types, guardBound, guardRemoved, guardFlows, residualOver, shareRows, heldRows, impliedRows, throughRows, ...(routeWeights.length ? { routeWeights } : {}), ...(gatePrior ? { gatePrior } : {}), unroutable: [...a.routable].filter((x) => !x).length, graphBans: g.banned, cons: countCons0.length, notes, offeredAssignment: offered.a, assignment: a };
+  return { id, volume, totals, stationRows, fit: rFinal, gFinal: [...rFinal.g], counted: rFinal.counted, types, guardBound, guardRemoved, guardFlows, residualOver, shareRows, heldRows, impliedRows, throughRows, ...(routeWeights.length ? { routeWeights } : {}), ...(endRows.length ? { endRows } : {}), ...(gatePrior ? { gatePrior } : {}), unroutable: [...a.routable].filter((x) => !x).length, graphBans: g.banned, cons: countCons0.length, notes, offeredAssignment: offered.a, assignment: a };
 }
 
 // ---------- report ----------
+const fd1 = (v: number) => v.toFixed(1);
 const f0 = (v: number) => Math.round(v).toLocaleString('en-US').replace(/,/g, '');
 const pctOf = (a: number, b: number) => (b > 0 ? `${((100 * a) / b).toFixed(0)}%` : '-');
 export function percentiles(vals: number[], w: number[], ps: number[]): number[] {
@@ -799,6 +814,11 @@ export function fitReport(area: string, results: PeriodResult[], flowsBy: Record
       L.push('');
       for (const r of results) for (const x of r.throughRows) L.push(`Through target ${r.id} ${x.t.label}: ${x.measured ? 'simulated' : 'static'}; target ${f0(x.target)}; offered ${f0(x.offered)} (static routes ${f0(x.staticOffered)}); final ${f0(x.final)} (static routes ${f0(x.staticFinal)}).`);
     }
+    L.push('');
+  }
+  if (results.some((r) => r.endRows?.length)) {
+    L.push('', '## Trips that ended along the street (round 53, ASSUMPTION)', '', 'Cars an hour of a counted street run that used a link of it and ended their trip at a node strictly between its ends: the volunteer count\'s "destination along the route" (`endAlongVehPerHour`). Each pair counts its share of trips on the run, taken from the simulator\'s block export with the static fraction as a prior (static routes for a run without a simulated trip). The figure is a fit target of the shipped view; the training view never sees it where a held block lies on the run.', '');
+    for (const r of results) for (const x of r.endRows ?? []) L.push(`End along ${r.id} ${x.spec.label}: ${x.spec.simulated ? 'simulated' : 'static'}; target ${f0(x.spec.target)}; weight ${x.weight}; offered ${fd1(x.offered)} (static routes ${fd1(x.staticOffered)}); after fit ${fd1(x.afterFit)} (static routes ${fd1(x.staticAfterFit)}); final ${fd1(x.final)} (static routes ${fd1(x.staticFinal)}); ${x.spec.flows} flows; ${x.spec.nodes.length} nodes (${x.spec.nodes.join(' ')}).`);
     L.push('');
   }
   if (results.some((r) => r.routeWeights?.length)) {
