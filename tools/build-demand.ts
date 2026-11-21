@@ -13,7 +13,7 @@ import { buildGraph, costToGo, treeFrom, SIM_ROUTE_PARAMS, type Graph } from './
 import { controlDelayArray, readControlDelays, type ControlDelayFile } from './lib/control-delays';
 import { applySplit, buildStations, corridorOf, overusedRecords, fitPeriod, fitReport, splitStationOf, stationObservations, type FitConfig, type GatePriorConfig, type NetLinkIn, type PeriodResult, type ThroughFit, type ThroughTarget } from './lib/demand-fit';
 import { resolveBlock } from './lib/share-targets';
-import { corridorThroughCounts, sameMembershipEvidence, throughTargetId } from './lib/through-membership';
+import { corridorThroughCounts, membershipEvidenceMismatches, sameMembershipEvidence, staleMembershipMessage, throughTargetId } from './lib/through-membership';
 import { checkManifest, freezeSplit, manifestSha256, manifestText, overrideObservation, tmcObservation, withheldObservations, withheldStationIds, DEFAULT_RULE, type SplitManifest, type SplitStation } from './lib/lineage';
 import { createHash } from 'node:crypto';
 import type { FlowType } from './lib/fit-counts';
@@ -928,6 +928,7 @@ function loadThrough(fc: { stationsOutput?: string; throughTargets?: { enabled: 
       simulator: j.evidence?.stationCountVersion === 2 ? execFileSync('cargo', ['run', '--quiet', '--release', '--bin', 'fingerprint'], { encoding: 'utf8' }).trim() : '',
     };
     if (j.network === net.id && sameMembershipEvidence(j.evidence, evidence)) { measured = j.periods; notes.push(`Simulated membership from ${membershipFile} (${view} view)`); }
+    else if (sm) { console.error(staleMembershipMessage(membershipFile, j.network === net.id ? [] : ['network id'], membershipEvidenceMismatches(j.evidence, evidence), j.evidence, evidence)); process.exit(1); }
     else notes.push(`${membershipFile} lacks matching source, detector, split or demand-view evidence. Using static membership.`);
   } else if (mf) notes.push(`No simulated membership file for the ${view} view${sm ? ` (${membershipFile})` : ''}. Using static route shares.`);
   return { targets, inStudy: new Set(net.nodes.filter((n: { inStudyArea?: boolean }) => n.inStudyArea).map((n: { id: number }) => n.id)), measured, priorTrips: mf?.priorTrips ?? 5, reportOnly: tt.enabled === 'report', measuredStations: sm ? 'all' : tt.measuredStations, ...(simulated ? { simulated } : {}) };

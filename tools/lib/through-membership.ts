@@ -9,10 +9,23 @@ export interface MembershipEvidence {
   view: string; network: string; split: string; config: string; countFile: string; stations: string; targets: string; simulator: string; stationCountVersion: number;
 }
 
+const EVIDENCE_FIELDS: (keyof MembershipEvidence)[] = ['view', 'network', 'split', 'config', 'countFile', 'stations', 'targets', 'simulator', 'stationCountVersion'];
+
+/** The evidence fields that differ or are missing; all of them when the file has no evidence. */
+export function membershipEvidenceMismatches(a: MembershipEvidence | undefined, b: MembershipEvidence): (keyof MembershipEvidence)[] {
+  return EVIDENCE_FIELDS.filter((field) => !a || !b[field] || a[field] !== b[field]);
+}
+
+/** Message for a build that finds a membership file whose evidence does not match; a silent fallback to static membership would change the published demand unnoticed. */
+export function staleMembershipMessage(file: string, extra: string[], fields: (keyof MembershipEvidence)[], a: MembershipEvidence | undefined, b: MembershipEvidence): string {
+  const short = (v: unknown) => (typeof v === 'string' && v.length > 16 ? v.slice(0, 16) : String(v ?? 'missing'));
+  const parts = [...extra, ...fields.map((f) => `${f} (file ${short(a?.[f])}, build ${short(b[f])})`)];
+  return `${file} holds membership evidence that does not match this build: ${parts.join('; ')}. Rerun the membership loop (npx tsx tools/membership-loop.ts) on the current inputs, or move the file away to build on static membership.`;
+}
+
 /** One pool is for one network, source observation set, split and demand view. */
 export function sameMembershipEvidence(a: MembershipEvidence | undefined, b: MembershipEvidence): boolean {
-  const fields: (keyof MembershipEvidence)[] = ['view', 'network', 'split', 'config', 'countFile', 'stations', 'targets', 'simulator', 'stationCountVersion'];
-  return !!a && fields.every((field) => !!b[field] && a[field] === b[field]);
+  return !!a && membershipEvidenceMismatches(a, b).length === 0;
 }
 
 export function membershipEvidence(run: SelectOd, demandHash: string): MembershipEvidence {

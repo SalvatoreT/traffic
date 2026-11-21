@@ -3,7 +3,7 @@ import { featureIndex, routeFeatures, type Assignment, type Feature } from './li
 import { assigned, DEFAULT_FIT, fitToCounts, type Constraint, type FlowType } from './lib/fit-counts';
 import { linkShare, measuredShare, throughMembership, type ThroughMeasured } from './lib/demand-fit';
 import { throughStats } from './lib/assess';
-import { checkSelectOdSeed, corridorThroughCounts, membershipEvidence, sameMembershipEvidence, pooledStations, pooledMembership, throughTargetId, type SelectOd } from './lib/through-membership';
+import { checkSelectOdSeed, corridorThroughCounts, membershipEvidence, membershipEvidenceMismatches, sameMembershipEvidence, staleMembershipMessage, pooledStations, pooledMembership, throughTargetId, type SelectOd } from './lib/through-membership';
 
 // Three flows on a two-link network: flow 0 uses link 0, flow 1 uses links 0 and 1, flow 2 uses link 1. One assignment, every route share 1.
 const asg = (feat?: Assignment['feat']): Assignment => ({
@@ -156,6 +156,17 @@ describe('measured station provenance', () => {
     expect(sameMembershipEvidence(undefined, source)).toBe(false);
     expect(sameMembershipEvidence(source, source)).toBe(true);
     for (const field of Object.keys(source)) expect(sameMembershipEvidence({ ...source, [field]: 'other' }, source)).toBe(false);
+  });
+  it('names the evidence fields that differ, so a stale membership file stops the build', () => {
+    const source = { view: 'training', network: 'net', split: 'split', config: 'cfg', countFile: 'count', stations: 'stations', targets: 'targets', simulator: 'sim', stationCountVersion: 2 };
+    expect(membershipEvidenceMismatches(source, source)).toEqual([]);
+    expect(membershipEvidenceMismatches(undefined, source)).toHaveLength(Object.keys(source).length);
+    const old = { ...source, simulator: 'd45a275dd7be0713cec6a64394b7d8a9' };
+    const fields = membershipEvidenceMismatches(old, { ...source, simulator: '6b886c8f52ee07397773ddd0ebbcb447' });
+    expect(fields).toEqual(['simulator']);
+    const text = staleMembershipMessage('target/membership/a.json', [], fields, old, { ...source, simulator: '6b886c8f52ee07397773ddd0ebbcb447' });
+    expect(text).toMatch(/simulator \(file d45a275dd7be0713, build 6b886c8f52ee0739\)/);
+    expect(text).toMatch(/Rerun the membership loop/);
   });
   it('counts each seed once per demand and rejects mislabeled and backup files', () => {
     const seen = new Set<string>();
