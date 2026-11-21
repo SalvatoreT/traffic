@@ -11,6 +11,7 @@ import { linkMetrics, perimeterGap, perimeterLength, perimeterPos, relevanceOf, 
 import { makeProjection, pointInPolygon } from './lib/geo';
 import { buildGraph, costToGo, treeFrom, SIM_ROUTE_PARAMS, type Graph } from './lib/assign';
 import { controlDelayArray, readControlDelays, type ControlDelayFile } from './lib/control-delays';
+import { seedEndAlong } from './lib/end-along-seed';
 import { applySplit, buildStations, corridorOf, overusedRecords, fitPeriod, fitReport, splitStationOf, stationObservations, type FitConfig, type GatePriorConfig, type NetLinkIn, type PeriodResult, type ThroughFit, type ThroughTarget } from './lib/demand-fit';
 import { resolveBlock } from './lib/share-targets';
 import { corridorThroughCounts, membershipEvidenceMismatches, sameMembershipEvidence, staleMembershipMessage, throughTargetId } from './lib/through-membership';
@@ -890,7 +891,7 @@ function loadGatePrior(fc: { gatePriorTotals?: { anchor: string; tolerancePct: n
   return { tolerancePct: g.tolerancePct, weight: g.weight, gateIds: net.nodes.filter((q) => q.gate).map((q) => q.id), scope, studyIds: net.nodes.filter((q) => q.inStudyArea).map((q) => q.id) };
 }
 
-function loadThrough(fc: { stationsOutput?: string; endAlong?: { weight: number }; throughTargets?: { enabled: boolean | 'report'; targets: string; weight: number; otherPeriods?: 'ceiling' | 'none'; measured?: { file: string; priorTrips: number }; measuredStations?: string[]; measuredStationsTraining?: string; simulatedMembership?: { method: 'export-supported'; file: string; trainingFile: string; priorTrips: number; throughTargets?: boolean; shares?: boolean; routeWeightPerBlock?: boolean; endAlong?: boolean } } }, notes: string[]): ThroughFit | undefined {
+function loadThrough(fc: { stationsOutput?: string; endAlong?: { weight: number; seedPairs?: boolean }; throughTargets?: { enabled: boolean | 'report'; targets: string; weight: number; otherPeriods?: 'ceiling' | 'none'; measured?: { file: string; priorTrips: number }; measuredStations?: string[]; measuredStationsTraining?: string; simulatedMembership?: { method: 'export-supported'; file: string; trainingFile: string; priorTrips: number; throughTargets?: boolean; shares?: boolean; routeWeightPerBlock?: boolean; endAlong?: boolean } } }, notes: string[]): ThroughFit | undefined {
   const tt = fc.throughTargets;
   if (!tt?.enabled) return undefined;
   const tf = JSON.parse(readFileSync(tt.targets, 'utf8'));
@@ -918,7 +919,7 @@ function loadThrough(fc: { stationsOutput?: string; endAlong?: { weight: number 
   // Round 51 sub-switches: through targets and select-link shares take the simulated block pairs of the loop's file. Absent, rounds 48 to 50.
   // Round 53 sub-switch endAlong: the count's "ended along the street" figures of the select-link runs are fit targets (weight countFit.endAlong.weight). Like the whole-street route stations they describe the
   // whole street between its ends, so a run with a held block on it is left out of the training view (the same test as the through targets).
-  let endAlong: { weight: number; skip: string[] } | undefined;
+  let endAlong: { weight: number; skip: string[]; seedPairs?: boolean; seeded?: Record<string, Set<string>> } | undefined;
   if (sm?.endAlong) {
     const w = fc.endAlong?.weight;
     if (!(typeof w === 'number' && Number.isFinite(w) && w > 0)) throw new Error('simulatedMembership.endAlong needs countFit.endAlong.weight > 0');
@@ -929,7 +930,9 @@ function loadThrough(fc: { stationsOutput?: string; endAlong?: { weight: number 
       const label = `${t.street} ${t.direction}`, blk = resolveBlock(net.links as never, nodeBy as never, t.street, t.direction, t.between ?? []);
       if (training && blk.links.some((l) => heldBlocks.has(l))) { skip.push(label); notes.push(`end-along target ${label}: its street run holds a held-out block; left out of the training view`); }
     }
-    endAlong = { weight: w, skip };
+    const sp = fc.endAlong?.seedPairs;
+    if (sp !== undefined && typeof sp !== 'boolean') throw new Error('countFit.endAlong.seedPairs must be true or false');
+    endAlong = { weight: w, skip, ...(sp ? { seedPairs: true, seeded: {} as Record<string, Set<string>> } : {}) };
   } else if (fc.endAlong) throw new Error('countFit.endAlong is read only with simulatedMembership.endAlong true');
   const simulated = sm && (sm.throughTargets !== undefined || sm.shares !== undefined || sm.routeWeightPerBlock !== undefined || sm.endAlong !== undefined) ? { throughTargets: !!sm.throughTargets, shares: !!sm.shares, ...(sm.routeWeightPerBlock ? { routeWeightPerBlock: true } : {}), ...(endAlong ? { endAlong } : {}) } : undefined;
   const mf = sm ? { file: sm.file, priorTrips: sm.priorTrips } : tt.measured;
@@ -1114,11 +1117,16 @@ if (fc?.enabled) {
     stationNotes.push(`assumed movement flows: ${assumedReports.map((r) => `${r.id} ${r.period} ${r.flows} flows, ${r.throughVeh.toFixed(0)} through and ${r.localVeh.toFixed(0)} local veh/h`).join('; ')}`);
   }
   for (const per of outPeriods) {
-    const cars = per.flows.filter((q) => !q.mode);
-    const types = cars.map((q) => typeOf(q.origin, q.destination));
+    let cars = per.flows.filter((q) => !q.mode);
+    let types = cars.map((q) => typeOf(q.origin, q.destination));
+    // Round 53 D8 (off unless countFit.endAlong.seedPairs): pairs that end along a counted street are seeded before the fit, in the shipped view and only where the period has block pairs.
+    const seedSwitch = fitCfg.through?.simulated?.endAlong;
+    const seeded = seedSwitch?.seedPairs ? seedEndAlong(per.id, cars, types, net.nodes as never, net.links as NetLinkIn[], net.turnBans ?? [], fitCfg, typeOf) : undefined;
+    if (seeded) { cars = seeded.flows as typeof cars; types = seeded.types; seedSwitch!.seeded![per.id] = seeded.keys; }
     // The shipped fit uses every count. The cross-validation demand is the training view (a build of its own), not a first fit on the same preprocessed trips.
     for (const q of stations) q.held = !!q.outOfFit;
     const r = fitPeriod(per.id, cars, types, stations, net.nodes as never, net.links as NetLinkIn[], net.turnBans ?? [], fitCfg);
+    if (seeded) r.endSeed = seeded.rows;
     fitResults.push(r);
     // Debug aid: every ceiling station of the period (node, direction, pre-fit total, ceiling, final total) as JSON, one file per view and period.
     if (process.env.GATE_PRIOR_DUMP && r.gatePrior) writeFileAtomic(process.env.GATE_PRIOR_DUMP.replace(/\.json$/, `.${view}.${per.id}.json`), JSON.stringify(r.gatePrior.rows));

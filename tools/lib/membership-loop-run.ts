@@ -7,7 +7,7 @@ import { hashFile } from './run-manifest';
 import { writeFileAtomic } from './atomic';
 import { withheldStationIds, type SplitManifest } from './lineage';
 import type { SelectOd } from './through-membership';
-import { assertNoWithheld, blockSwitches, CEILING_ABORT_SHARE, endAlongLinesFromReport, endAlongSwitch, CEILING_LOW_SHARE, checkFitReport, offeredShare, gatePriorFromReport, checkRunSet, iterationShift, iterationStats, membershipFile, poolBlocks, poolStations, routeWeightLinesFromReport, routeWeightSwitch, selectStations, shareLinesFromReport, throughLinesFromReport, type BlockSwitches, type CeilingStat, type EndAlongLine, type IterationStats, type Pooled, type RouteWeightLine, type RunSet, type Selection, type ShareLine, type Shift, type StationRec, type ThroughLine } from './membership-loop';
+import { assertNoWithheld, blockSwitches, CEILING_ABORT_SHARE, endAlongLinesFromReport, endAlongSwitch, endSeedLinesFromReport, seedPairsSwitch, CEILING_LOW_SHARE, checkFitReport, offeredShare, gatePriorFromReport, checkRunSet, iterationShift, iterationStats, membershipFile, poolBlocks, poolStations, routeWeightLinesFromReport, routeWeightSwitch, selectStations, shareLinesFromReport, throughLinesFromReport, type BlockSwitches, type CeilingStat, type EndAlongLine, type IterationStats, type Pooled, type RouteWeightLine, type RunSet, type Selection, type ShareLine, type Shift, type StationRec, type ThroughLine } from './membership-loop';
 import type { MembershipEvidence } from './through-membership';
 
 export type View = 'shipped' | 'training';
@@ -17,7 +17,7 @@ export interface Runner {
   build(view: View, logFile: string): void;
   calibrate(jobs: CalibrateJob[], concurrency: number, logDir: string): Promise<void>;
 }
-export interface LoopPaths { config: string; demand: Record<View, string>; report: Record<View, string>; stations: string; membership: Record<View, string>; membershipConfig: Record<View, string>; split: string; network: string; /** Round 51 sub-switches of the simulatedMembership entry. */ blocks: BlockSwitches; /** Round 52 sub-switch routeWeightPerBlock. */ routeWeight?: boolean; /** Round 53 sub-switch endAlong. */ endAlong?: boolean }
+export interface LoopPaths { config: string; demand: Record<View, string>; report: Record<View, string>; stations: string; membership: Record<View, string>; membershipConfig: Record<View, string>; split: string; network: string; /** Round 51 sub-switches of the simulatedMembership entry. */ blocks: BlockSwitches; /** Round 52 sub-switch routeWeightPerBlock. */ routeWeight?: boolean; /** Round 53 sub-switch endAlong. */ endAlong?: boolean; /** Round 53 D8 countFit.endAlong.seedPairs. */ seedPairs?: boolean }
 
 /** File locations from the demand config; the membership files are the ones `countFit.throughTargets.simulatedMembership` names. */
 export function loopPaths(root: string, configPath: string, cfg: any): LoopPaths {
@@ -28,7 +28,7 @@ export function loopPaths(root: string, configPath: string, cfg: any): LoopPaths
     config: abs(configPath), demand: { shipped: abs(cfg.output), training: abs(fc.validation.demandOutput) },
     report: { shipped: abs(fc.output), training: abs(fc.output.replace(/\.md$/, '.cv.md')) },
     stations: abs(fc.stationsOutput), membership: { shipped: abs(sm.file), training: abs(sm.trainingFile) }, membershipConfig: { shipped: sm.file, training: sm.trainingFile },
-    split: abs(fc.validation.splitFile ?? `data/demand/${cfg.area}.split.json`), network: abs(cfg.network), blocks: blockSwitches(sm), ...(routeWeightSwitch(sm) ? { routeWeight: true } : {}), ...(endAlongSwitch(sm) ? { endAlong: true } : {}),
+    split: abs(fc.validation.splitFile ?? `data/demand/${cfg.area}.split.json`), network: abs(cfg.network), blocks: blockSwitches(sm), ...(routeWeightSwitch(sm) ? { routeWeight: true } : {}), ...(endAlongSwitch(sm) ? { endAlong: true } : {}), ...(seedPairsSwitch(fc.endAlong) ? { seedPairs: true } : {}),
   };
 }
 
@@ -90,6 +90,9 @@ export async function runLoop(o: LoopOptions, r: Runner, log: (s: string) => voi
       for (const q of o.periods) if (!endLines.some((x) => x.period === q)) throw new Error(`${view} view, pass ${k}: the fit report has no "End along" line for ${q} although endAlong is on: the build did not apply the sub-switch`);
       for (const x of endLines) if (x.membership !== 'simulated') log(`WARNING pass ${k} ${view} ${x.period}: the end-along target of ${x.label} took static routes (no simulated trip on the run)`);
     }
+    const seedLines = endSeedLinesFromReport(text).filter((x) => o.periods.includes(x.period));
+    if (p.seedPairs && used && view === 'shipped') for (const q of o.periods) if (!seedLines.some((x) => x.period === q)) throw new Error(`${view} view, pass ${k}: the fit report has no "End along seed" line for ${q} although seedPairs is on: the build did not seed`);
+    for (const x of seedLines) log(`pass ${k} ${view} ${x.period}: end along seed ${x.label}: target ${x.target} veh/h, seed before ${x.before}, added ${x.added} (capped ${x.capped}), after ${x.after}, ${x.pairs} pairs from ${x.origins} origins`);
     if (shareLines.length || throughLines.length || routeLines.length || endLines.length) (state.targets ??= {})[`${view}:${k}`] = { shares: shareLines, through: throughLines, ...(routeLines.length ? { routes: routeLines } : {}), ...(endLines.length ? { endAlong: endLines } : {}) };
     for (const x of endLines) log(`pass ${k} ${view} ${x.period}: end along ${x.label} (${x.membership}): target ${x.target} veh/h, weight ${x.weight}, fit ${x.final} on the membership used (${x.staticFinal} on static routes), after the count-only fit ${x.afterFit} (${x.staticAfterFit}), offered ${x.offered} (${x.staticOffered}), ${x.flows} flows, ${x.nodes.length} nodes`);
     for (const x of routeLines) log(`pass ${k} ${view} ${x.period}: route weight ${x.id} (${x.membership}): base ${x.base}, ${x.blocks} blocks, weight ${x.weight}`);
