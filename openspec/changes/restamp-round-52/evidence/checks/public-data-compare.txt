@@ -1,0 +1,92 @@
+common files 69: identical 22, stamp-only 40, DIFFERENT 7; only before 0; only after 0
+
+Stamp fields that changed (path: files):
+  computed: 32
+  generated: 1
+  groups.*.computed.date: 1
+  groups.*.computed.simulator: 1
+  groups.*.computed.sourceRevision: 1
+  inputs.simulator: 32
+  llms text line: Generated 2026-11-21 for Rockridge Trapezoid (`rockridge`) from network file `53c823f20d91: 3
+  llms text line: Generated 2026-11-21 from https://github.com/SalvatoreT/traffic/blob/main/docs/data-files.: 1
+  llms text line: Generated 2026-11-21 from https://github.com/SalvatoreT/traffic/blob/main/docs/run-locally: 1
+  llms text line: Generated 2026-11-21 from https://github.com/SalvatoreT/traffic/blob/main/docs/scenario-li: 1
+
+Stamp-only files:
+  llms/assumptions.md
+  llms/data-files.md
+  llms/methodology.md
+  llms/run-locally.md
+  llms/scenario-links.md
+  llms/sources.md
+  redistribution/rockridge/unconstrained.colby-hillegass-slow-streets.json
+  redistribution/rockridge/unconstrained.earlier-62nd-diverters.json
+  redistribution/rockridge/unconstrained.p2.json
+  redistribution/rockridge/unconstrained.p4.json
+  redistribution/rockridge/unconstrained.p5.json
+  redistribution/rockridge/unconstrained.p6.json
+  results/rockridge/0c55264230cbfa2d.json
+  results/rockridge/2499729ec4a878dc.json
+  results/rockridge/264b8a9f2770557e.json
+  results/rockridge/33c59ea44601445c.json
+  results/rockridge/3e7f418b1f24614d.json
+  results/rockridge/5d788a62186b8e6f.json
+  results/rockridge/6b4c67684ff52929.json
+  results/rockridge/89bada14f14feebd.json
+  results/rockridge/8c62bc360a3b4cd7.json
+  results/rockridge/8d986999b4cf6317.json
+  results/rockridge/983ce8e36dffc0f0.json
+  results/rockridge/992d8dd6a0ec8446.json
+  results/rockridge/9fc12eda82be6e29.json
+  results/rockridge/a16f06f0d7cb9c02.json
+  results/rockridge/baseline-intents.json
+  results/rockridge/bf325cc30e32f14e.json
+  results/rockridge/c0f3b4e96abf4b4a.json
+  results/rockridge/cded2929ddacb632.json
+  results/rockridge/d7dae88b756d32ed.json
+  results/rockridge/d88d885c08d7adb9.json
+  results/rockridge/dcaf82a54cf72fd9.json
+  results/rockridge/e99d8089d3699eea.json
+  results/rockridge/efa35c4c4b7ff3e0.json
+  results/rockridge/fd25da6100a5e603.json
+  results/rockridge/feefe2e4439b812e.json
+  results/rockridge/index.json
+  rockridge.assumptions.json
+  rockridge.proposals.json
+
+DIFFERENT files:
+  areas.json: *.noise
+  llms/index.md: 1 lines differ after stamps are set aside
+  llms/llms-full.txt: 2 lines differ after stamps are set aside
+  llms/proposals.md: 1 lines differ after stamps are set aside
+  llms/streets.md: 1 lines differ after stamps are set aside
+  redistribution/rockridge/unconstrained.p1.json: items.*.routes.*.links.*
+  redistribution/rockridge/unconstrained.p3.json: items.*.routes.*.links.*
+
+Only in the published set:
+
+Only in the new set:
+
+Identical files:
+  llms/llms.txt
+  og/assumptions-31f63d2c.jpg
+  og/home-08418c94.jpg
+  og/index.json
+  og/methodology-b75e3519.jpg
+  og/p-unconstrained-4ls8kc6w-4131ea8c.jpg
+  og/p-unconstrained-8zs9gx56-025b995c.jpg
+  og/p-unconstrained-cuhr0lwl-8fb7fa8e.jpg
+  og/p-unconstrained-igxrvaz7-105a6661.jpg
+  og/p-unconstrained-opb1knh8-86c52e9d.jpg
+  og/p-unconstrained-q9x9u694-73f5d751.jpg
+  og/p-unconstrained-t3zct9ya-336a9571.jpg
+  og/p-unconstrained-uu394v1t-bad77d32.jpg
+  og/proposals-304b648b.jpg
+  og/sources-a9f185df.jpg
+  og/streets-3af1747b.jpg
+  rockridge-compact.basemap.json
+  rockridge-compact.network.json
+  rockridge.basemap.json
+  rockridge.demand.json
+  rockridge.network.json
+  rockridge.noise.json

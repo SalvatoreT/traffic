@@ -1,0 +1,11 @@
+llms/assumptions.md: 0 lines after dates and fingerprints
+llms/data-files.md: 0 lines after dates and fingerprints
+llms/index.md: 0 lines after dates and fingerprints
+llms/llms-full.txt: 4 lines after dates and fingerprints
+llms/llms.txt: 0 lines after dates and fingerprints
+llms/methodology.md: 0 lines after dates and fingerprints
+llms/proposals.md: 4 lines after dates and fingerprints
+llms/run-locally.md: 0 lines after dates and fingerprints
+llms/scenario-links.md: 0 lines after dates and fingerprints
+llms/sources.md: 0 lines after dates and fingerprints
+llms/streets.md: 0 lines after dates and fingerprints

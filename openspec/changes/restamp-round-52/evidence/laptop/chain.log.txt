@@ -1,0 +1,134 @@
+2026-11-21 08:20:32 AM PST START restamp of round 52, steps 1-2, at dd0be1e on salvatoret/peaceful-fermi-dlwt0u
+2026-11-21 08:20:32 AM PST inputs: config 2405ff02c92b2837 proposals 197a99cdafc026f8 network 53c823f20d9165ed demand 2d16d8f8eb0950ca cv 1c3b1666f24156f1 membership 3d639670c1feb38f c1cd4ce96fb28791
+2026-11-21 08:20:32 AM PST copied the published public/data to target/restamp52/pd-before (16576 KB)
+2026-11-21 08:20:32 AM PST build: start
+2026-11-21 08:21:09 AM PST build: exit=0 wall_s=37
+2026-11-21 08:21:09 AM PST fingerprint 6b886c8f52ee07397773ddd0ebbcb447
+2026-11-21 08:21:09 AM PST wasm: start
+2026-11-21 08:21:18 AM PST wasm: exit=0 wall_s=9
+2026-11-21 08:21:18 AM PST parity: start
+2026-11-21 08:21:29 AM PST parity: exit=0 wall_s=11
+2026-11-21 08:21:29 AM PST parity: vehicles: identical native and WASM agree (pm_peak, 300 s, seed 1) 
+2026-11-21 08:21:29 AM PST moved target/membership-loop to target/r52-loop and target/membership (published files) to target/r52-membership
+2026-11-21 08:21:29 AM PST dry run exit=0
+stations file data/demand/rockridge.stations.json: 357 stations; the frozen split withholds 91 from the training view
+shipped pm_peak: 337 selected (245 link, 92 movement or route), 6 stay static
+shipped am_peak: 272 selected (200 link, 72 movement or route), 6 stay static
+training pm_peak: 256 selected (187 link, 69 movement or route), 0 stay static, 87 withheld
+training am_peak: 201 selected (148 link, 53 movement or route), 0 stay static, 77 withheld
+2026-11-21 08:21:29 AM PST loop: start
+2026-11-21 09:24:26 AM PST loop: exit=0 wall_s=3777 (round 52: 3992)
+2026-11-21 09:24:26 AM PST loop iter0/shipped demand.json identical to round 52's
+2026-11-21 09:24:26 AM PST loop iter0/training demand.json identical to round 52's
+2026-11-21 09:24:26 AM PST loop iter1/shipped demand.json identical to round 52's
+2026-11-21 09:24:26 AM PST loop iter1/training demand.json identical to round 52's
+2026-11-21 09:24:26 AM PST loop iter2/shipped demand.json identical to round 52's
+2026-11-21 09:24:26 AM PST loop iter2/training demand.json identical to round 52's
+2026-11-21 09:24:26 AM PST fit reports after i0-shipped-build: 3 files differ from round 52's
+2026-11-21 09:24:26 AM PST fit reports after i0-training-build: identical to round 52's
+2026-11-21 09:24:26 AM PST fit reports after i1-shipped-build: identical to round 52's
+2026-11-21 09:24:26 AM PST fit reports after i1-training-build: identical to round 52's
+2026-11-21 09:24:26 AM PST fit reports after i2-shipped-build: identical to round 52's
+2026-11-21 09:24:26 AM PST fit reports after i2-training-build: identical to round 52's
+2026-11-21 09:24:26 AM PST fit reports after final-shipped-build: identical to round 52's
+2026-11-21 09:24:26 AM PST fit reports after final-training-build: identical to round 52's
+2026-11-21 09:24:26 AM PST gate prior dump node-prior.shipped.am_peak.json identical
+2026-11-21 09:24:26 AM PST gate prior dump node-prior.shipped.pm_peak.json identical
+2026-11-21 09:24:26 AM PST gate prior dump node-prior.training.am_peak.json identical
+2026-11-21 09:24:26 AM PST gate prior dump node-prior.training.pm_peak.json identical
+2026-11-21 09:24:26 AM PST loop summary lines vs round 52: 2 diff lines
+2026-11-21 09:24:26 AM PST loop report vs round 52's: 8 diff lines
+2026-11-21 09:24:27 AM PST membership: new 56e688e7e5749d23, published 3d639670c1feb38f; 0 differing paths, 1 ignored paths; target/r52-membership/rockridge.membership.json vs target/membership/rockridge.membership.json: 0 differing paths, 1 ignored paths   ignored evidence.simulator: "d45a275dd7be0713cec6a64394b7d8a9" -> "6b886c8f52ee07397773ddd0ebbcb447" 
+2026-11-21 09:24:27 AM PST membership-training: new cf32e3e0d9e6f23e, published c1cd4ce96fb28791; 0 differing paths, 1 ignored paths; target/r52-membership/rockridge.membership-training.json vs target/membership/rockridge.membership-training.json: 0 differing paths, 1 ignored paths   ignored evidence.simulator: "d45a275dd7be0713cec6a64394b7d8a9" -> "6b886c8f52ee07397773ddd0ebbcb447" 
+2026-11-21 09:24:27 AM PST data: start
+2026-11-21 09:41:24 AM PST data: exit=0 wall_s=1017
+2026-11-21 09:41:24 AM PST hashes after npm run data: 53c823f20d9165ed 2d16d8f8eb0950ca 1c3b1666f24156f1
+2026-11-21 09:41:24 AM PST fit reports, audit and area config identical to the committed ones
+2026-11-21 09:41:24 AM PST status: 
+2026-11-21 09:41:24 AM PST A DONE
+2026-11-21 09:41:55 AM PST START restamp of round 52, steps 3-4, at dd0be1e
+2026-11-21 09:41:55 AM PST inputs: config 2405ff02c92b2837 network 53c823f20d9165ed demand 2d16d8f8eb0950ca cv 1c3b1666f24156f1 fingerprint 6b886c8f52ee07397773ddd0ebbcb447; membership 56e688e7e5749d23 cf32e3e0d9e6f23e
+2026-11-21 09:41:56 AM PST validate: start
+2026-11-21 09:42:14 AM PST validate: exit=0 wall_s=18
+2026-11-21 09:42:14 AM PST validate: 67 of 74 cases pass
+2026-11-21 09:42:14 AM PST validation.json: target/restamp52/head/data/calibration/validation.json vs data/calibration/validation.json: 0 differing paths, 2 ignored paths   ignored manifest.simulator.fingerprint: "d45a275dd7be0713cec6a64394b7d8a9" -> "6b886c8f52ee07397773ddd0ebbcb447"   ignored manifest.simulator.revision: "ad48d3e9a5f43aa4ff771765e2b3c533b4530e49" -> "dd0be1efa83562b19ad0f5d55b7e0a721315ad84" 
+2026-11-21 09:42:14 AM PST validation.md unchanged
+2026-11-21 09:42:14 AM PST assess: start
+2026-11-21 09:43:24 AM PST assess: exit=0 wall_s=70
+2026-11-21 09:43:24 AM PST assessment stamp: - Simulator: fingerprint `6b886c8f52ee`, revision dd0be1efa835.
+2026-11-21 09:43:24 AM PST assessment verdict: Suggested status: **uncalibrated**; experimental periods: none. Not calibrated because: station rule not met or not judgeable in am_peak; station rule not met or not judgeable in pm_peak. Qualificatio
+2026-11-21 09:43:24 AM PST assessment vs published, stamps set aside: 0 diff lines
+2026-11-21 09:43:24 AM PST report data/calibration/reports/rockridge-am_peak-s1-seed1.md: <anonymous_script>:1 # Calibration report: rockridge am_peak scale 1 seed 1 (60 min) ^  SyntaxError: Unexpected token '#', "# Calibrat"... is not valid JSON     at JSON.parse (<anonymous>)     at Object.<anonymous> (<worktree>/target/restamp52/jdiff.cjs:6:16)     at Module._compile (node:internal/modules/cjs/loader:1934:14)     at Object..js (node:internal
+2026-11-21 09:43:24 AM PST report data/calibration/reports/rockridge-am_peak-s1-seeds1-10.json: target/restamp52/head/data/calibration/reports/rockridge-am_peak-s1-seeds1-10.json vs data/calibration/reports/rockridge-am_peak-s1-seeds1-10.json: 12 differing paths, 0 ignored paths   DIFF manifest.run.simulator.fingerprint: "d45a275dd7be0713cec6a64394b7d8a9" -> "6b886c8f52ee07397773ddd0ebbcb447"   DIFF manifest.run.simulator.revision: "ad48d3e9a5f43aa4ff771765e2b3c533b4530e49" -> "dd0be1efa8356
+2026-11-21 09:43:24 AM PST report data/calibration/reports/rockridge-am_peak-s1-seeds1-10.md: <anonymous_script>:1 # rockridge-am_peak-s1 over 10 seeds (1, 2, 3, 4, 5, 6, 7, 8, 9, 10) ^  SyntaxError: Unexpected token '#', "# rockridg"... is not valid JSON     at JSON.parse (<anonymous>)     at Object.<anonymous> (<worktree>/target/restamp52/jdiff.cjs:6:16)     at Module._compile (node:internal/modules/cjs/loader:1934:14)     at Object..js (node:int
+2026-11-21 09:43:24 AM PST report data/calibration/reports/rockridge-midday-s1-seed1.md: <anonymous_script>:1 # Calibration report: rockridge midday scale 1 seed 1 (60 min) ^  SyntaxError: Unexpected token '#', "# Calibrat"... is not valid JSON     at JSON.parse (<anonymous>)     at Object.<anonymous> (<worktree>/target/restamp52/jdiff.cjs:6:16)     at Module._compile (node:internal/modules/cjs/loader:1934:14)     at Object..js (node:internal/
+2026-11-21 09:43:25 AM PST report data/calibration/reports/rockridge-midday-s1-seeds1-10.json: target/restamp52/head/data/calibration/reports/rockridge-midday-s1-seeds1-10.json vs data/calibration/reports/rockridge-midday-s1-seeds1-10.json: 12 differing paths, 0 ignored paths   DIFF manifest.run.simulator.fingerprint: "d45a275dd7be0713cec6a64394b7d8a9" -> "6b886c8f52ee07397773ddd0ebbcb447"   DIFF manifest.run.simulator.revision: "ad48d3e9a5f43aa4ff771765e2b3c533b4530e49" -> "dd0be1efa83562b
+2026-11-21 09:43:25 AM PST report data/calibration/reports/rockridge-midday-s1-seeds1-10.md: <anonymous_script>:1 # rockridge-midday-s1 over 10 seeds (1, 2, 3, 4, 5, 6, 7, 8, 9, 10) ^  SyntaxError: Unexpected token '#', "# rockridg"... is not valid JSON     at JSON.parse (<anonymous>)     at Object.<anonymous> (<worktree>/target/restamp52/jdiff.cjs:6:16)     at Module._compile (node:internal/modules/cjs/loader:1934:14)     at Object..js (node:inte
+2026-11-21 09:43:25 AM PST report data/calibration/reports/rockridge-pm_peak-s1-seed1.md: <anonymous_script>:1 # Calibration report: rockridge pm_peak scale 1 seed 1 (60 min) ^  SyntaxError: Unexpected token '#', "# Calibrat"... is not valid JSON     at JSON.parse (<anonymous>)     at Object.<anonymous> (<worktree>/target/restamp52/jdiff.cjs:6:16)     at Module._compile (node:internal/modules/cjs/loader:1934:14)     at Object..js (node:internal
+2026-11-21 09:43:25 AM PST report data/calibration/reports/rockridge-pm_peak-s1-seeds1-10.json: target/restamp52/head/data/calibration/reports/rockridge-pm_peak-s1-seeds1-10.json vs data/calibration/reports/rockridge-pm_peak-s1-seeds1-10.json: 12 differing paths, 0 ignored paths   DIFF manifest.run.simulator.fingerprint: "d45a275dd7be0713cec6a64394b7d8a9" -> "6b886c8f52ee07397773ddd0ebbcb447"   DIFF manifest.run.simulator.revision: "ad48d3e9a5f43aa4ff771765e2b3c533b4530e49" -> "dd0be1efa8356
+2026-11-21 09:43:25 AM PST report data/calibration/reports/rockridge-pm_peak-s1-seeds1-10.md: <anonymous_script>:1 # rockridge-pm_peak-s1 over 10 seeds (1, 2, 3, 4, 5, 6, 7, 8, 9, 10) ^  SyntaxError: Unexpected token '#', "# rockridg"... is not valid JSON     at JSON.parse (<anonymous>)     at Object.<anonymous> (<worktree>/target/restamp52/jdiff.cjs:6:16)     at Module._compile (node:internal/modules/cjs/loader:1934:14)     at Object..js (node:int
+2026-11-21 09:43:25 AM PST reports: 12 tracked, untracked new: 0; every tracked report identical apart from fingerprint and revision: NO
+2026-11-21 09:43:25 AM PST changed files:  M data/calibration/reports/rockridge-am_peak-s1-seed1.json; M data/calibration/reports/rockridge-am_peak-s1-seed1.md; M data/calibration/reports/rockridge-am_peak-s1-seeds1-10.json; M data/calibration/reports/rockridge-midday-s1-seed1.json; M data/calibration/reports/rockridge-midday-s1-seed1.md; M data/calibration/reports/rockridge-midday-s1-seeds1-10.json; M data/calibration/reports/rockridge-pm_peak-s1-seed1.json; M data/calibration/reports/rockridge-pm_peak-s1-seed1.md; M data/calibration/reports/rockridge-pm_peak-s1-seeds1-10.json; M data/calibration/rockridge.assessment.md; M data/calibration/validation.json;
+2026-11-21 09:43:25 AM PST noise file identical to the published one (4d6850cccc2f43e8)
+2026-11-21 09:43:25 AM PST STOP: the assessment differs from the published one beyond the stamps
+2026-11-21 09:43:25 AM PST status:  M data/calibration/reports/rockridge-am_peak-s1-seed1.json; M data/calibration/reports/rockridge-am_peak-s1-seed1.md; M data/calibration/reports/rockridge-am_peak-s1-seeds1-10.json; M data/calibration/reports/rockridge-midday-s1-seed1.json; M data/calibration/reports/rockridge-midday-s1-seed1.md; M data/calibration/reports/rockridge-midday-s1-seeds1-10.json; M data/calibration/reports/rockridge-pm_peak-s1-seed1.json; M data/calibration/reports/rockridge-pm_peak-s1-seed1.md; M data/calibration/reports/rockridge-pm_peak-s1-seeds1-10.json; M data/calibration/rockridge.assessment.md; M data/calibration/validation.json;
+2026-11-21 09:43:25 AM PST B DONE (stopped)
+2026-11-21 09:44:26 AM PST NOTE: the B stop was the script's own report check (JSON diff run on .md files; manifest.run.simulator not listed). Rechecked by hand in reports-check.txt: figures identical; stamps, wall-clock lines and per-seed summary hashes only. Continuing with the search (b2.zsh).
+2026-11-21 09:44:50 AM PST START restamp of round 52, step 4 (search), at dd0be1e
+2026-11-21 09:44:50 AM PST inputs: config 2405ff02c92b2837 network 53c823f20d9165ed demand 2d16d8f8eb0950ca cv 1c3b1666f24156f1 fingerprint 6b886c8f52ee07397773ddd0ebbcb447 proposals 197a99cdafc026f8 seeds e464cc90ca3e1472; membership 56e688e7e5749d23 cf32e3e0d9e6f23e
+2026-11-21 09:44:50 AM PST seeded proposals.json, report.md, seeds.json: 3822705a26ca879d 8a443b947c606e50 fbcf6d37a7e8cad3 (round 52: 3822705a26ca879d 8a443b947c606e50 fbcf6d37a7e8cad3)
+2026-11-21 09:44:50 AM PST explore flags identical to round 52's
+2026-11-21 09:44:50 AM PST search: start
+2026-11-21 10:30:26 AM PST search: exit=0 wall_s=2736
+2026-11-21 10:30:26 AM PST search wall time above; round 52: 5606 s
+2026-11-21 10:30:26 AM PST status after explore: 
+2026-11-21 10:30:26 AM PST proposals.json: new c5cbe25f39e61414, published 197a99cdafc026f8; 
+2026-11-21 10:30:26 AM PST report.md vs published, stamps set aside: 60 diff lines
+2026-11-21 10:30:26 AM PST seeds.after 48b200cf2a6c2e3b DIFFERS from the committed e464cc90ca3e1472
+2026-11-21 10:30:26 AM PST STOP: the search differs from the published set beyond the stamps
+2026-11-21 10:30:26 AM PST status:  M data/calibration/reports/rockridge-am_peak-s1-seed1.json; M data/calibration/reports/rockridge-am_peak-s1-seed1.md; M data/calibration/reports/rockridge-am_peak-s1-seeds1-10.json; M data/calibration/reports/rockridge-midday-s1-seed1.json; M data/calibration/reports/rockridge-midday-s1-seed1.md; M data/calibration/reports/rockridge-midday-s1-seeds1-10.json; M data/calibration/reports/rockridge-pm_peak-s1-seed1.json; M data/calibration/reports/rockridge-pm_peak-s1-seed1.md; M data/calibration/reports/rockridge-pm_peak-s1-seeds1-10.json; M data/calibration/rockridge.assessment.md; M data/calibration/validation.json;
+2026-11-21 10:30:26 AM PST B DONE (stopped)
+2026-11-21 10:31:27 AM PST NOTE: the B2 stop came from the script (proposals diff not run, unquoted glob) and from stamps: rechecked by hand in search-check.txt; proposals 0 differing paths (date, simulator, sourceRevision only), report words differ only in date, fingerprint, revision and run seconds, seeds.after only in dates (committed seeds file kept). Search figures hold; B DONE
+2026-11-21 10:31:45 AM PST START restamp of round 52, step 5, at dd0be1e
+2026-11-21 10:31:45 AM PST inputs: config 2405ff02c92b2837 network 53c823f20d9165ed demand 2d16d8f8eb0950ca cv 1c3b1666f24156f1 fingerprint 6b886c8f52ee07397773ddd0ebbcb447
+2026-11-21 10:31:45 AM PST placed proposals c5cbe25f39e61414 and data/proposals/rockridge.md bb0af630991924a4; seeds file e464cc90ca3e1472
+2026-11-21 10:31:45 AM PST redistribution: start
+2026-11-21 10:36:11 AM PST redistribution: exit=0 wall_s=266
+2026-11-21 10:36:11 AM PST results: start
+2026-11-21 10:37:17 AM PST results: exit=0 wall_s=66
+2026-11-21 10:37:17 AM PST assumptions: start
+2026-11-21 10:37:17 AM PST assumptions: exit=0 wall_s=0
+2026-11-21 10:37:17 AM PST llms: start
+2026-11-21 10:37:18 AM PST llms: exit=0 wall_s=1
+2026-11-21 10:37:18 AM PST previews: start
+2026-11-21 10:37:19 AM PST previews: exit=0 wall_s=1
+2026-11-21 10:37:19 AM PST previews: 
+2026-11-21 10:37:19 AM PST llms: 
+2026-11-21 10:37:19 AM PST files: results 26, redistribution 8, llms 11, og 15
+2026-11-21 10:37:19 AM PST public/data vs published: common files 69: identical 22, stamp-only 40, DIFFERENT 7; only before 0; only after 0
+Stamp fields that changed (path: files):
+  computed: 32
+  generated: 1
+  groups.*.computed.date: 1
+  groups.*.computed.simulator: 1
+  groups.*.computed.sourceRevision: 1
+  inputs.simulator: 32
+  llms text line: Generated 2026-11-21 for Rockridge Trapezoid (`rockridge`) from network file `53c823f20d91: 3
+  llms text line: Generated 2026-11-21 from https://github.com/SalvatoreT/traffic/blob/main/docs/data-files.: 1
+  llms text line: Generated 2026-11-21 from https://github.com/SalvatoreT/traffic/blob/main/docs/run-locally: 1
+  llms text line: Generated 2026-11-21 from https://github.com/SalvatoreT/traffic/blob/main/docs/scenario-li: 1
+
+DIFFERENT files:
+  areas.json: *.noise
+  llms/index.md: 1 lines differ after stamps are set aside
+  llms/llms-full.txt: 2 lines differ after stamps are set aside
+  llms/proposals.md: 1 lines differ after stamps are set aside
+  llms/streets.md: 1 lines differ after stamps are set aside
+  redistribution/rockridge/unconstrained.p1.json: items.*.routes.*.links.*
+  redistribution/rockridge/unconstrained.p3.json: items.*.routes.*.links.*
+Only in the published set:
+Only in the new set:
+Identical files:
+2026-11-21 10:37:19 AM PST STOP: public/data differs from the published set beyond the stamps
+2026-11-21 10:37:19 AM PST status:  M data/calibration/reports/rockridge-am_peak-s1-seed1.json; M data/calibration/reports/rockridge-am_peak-s1-seed1.md; M data/calibration/reports/rockridge-am_peak-s1-seeds1-10.json; M data/calibration/reports/rockridge-midday-s1-seed1.json; M data/calibration/reports/rockridge-midday-s1-seed1.md; M data/calibration/reports/rockridge-midday-s1-seeds1-10.json; M data/calibration/reports/rockridge-pm_peak-s1-seed1.json; M data/calibration/reports/rockridge-pm_peak-s1-seed1.md; M data/calibration/reports/rockridge-pm_peak-s1-seeds1-10.json; M data/calibration/rockridge.assessment.md; M data/calibration/validation.json; M data/proposals/rockridge.md;
+2026-11-21 10:37:19 AM PST C DONE (stopped)
