@@ -133,6 +133,11 @@ fn parse_args() -> Args {
     a
 }
 
+/// A dependency group of the split whose source observations are daily totals (tools/lib/lineage.ts `isDerivedGroup`).
+fn is_derived_group(group: &Value) -> bool {
+    group["observations"].as_array().into_iter().flatten().filter_map(Value::as_str).any(|o| o.starts_with("ov ") || o.starts_with("ramp-row "))
+}
+
 fn usage(msg: &str) -> ! {
     if !msg.is_empty() {
         eprintln!("error: {msg}");
@@ -452,7 +457,8 @@ fn main() {
     let mut withheld = std::collections::HashSet::new();
     if fitted_view == Some("training") {
         let split: Value = serde_json::from_str(&read(root.join(inputs["split"]["path"].as_str().expect("split file")))).expect("split json");
-        for group in split["groups"].as_array().into_iter().flatten().filter(|g| g["held"] == true) {
+        // Derived targets (a daily total times assumed factors: Caltrans AADT records `ov ...`, ramp ADT rows `ramp-row ...`) are never held out; tools/lib/lineage.ts `isHeldGroup`.
+        for group in split["groups"].as_array().into_iter().flatten().filter(|g| g["held"] == true && !is_derived_group(g)) {
             withheld.extend(group["stations"].as_array().into_iter().flatten().filter_map(Value::as_str).map(str::to_owned));
         }
         withheld.extend(split["withheldAggregates"].as_array().into_iter().flatten().filter_map(|r| r["station"].as_str().map(str::to_owned)));
@@ -1437,5 +1443,20 @@ fn main() {
         });
         std::fs::write(dir.join(format!("{stem}.json")), serde_json::to_string_pretty(&js).unwrap()).expect("write json");
         eprintln!("wrote {}/{stem}.md and .json", dir.display());
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn groups_of_daily_totals_are_derived() {
+        let g = |o: &[&str]| json!({ "observations": o, "held": true });
+        assert!(is_derived_group(&g(&["ov SR-13 at Claremont Ave"])));
+        assert!(is_derived_group(&g(&["ramp-row 04-ALA-024 PM R3.250 \"EB ON FR TELEGRAPH\""])));
+        assert!(!is_derived_group(&g(&["tmc A|N", "ix B"])));
+        assert!(!is_derived_group(&g(&["count block 12"])));
+        assert!(!is_derived_group(&json!({ "held": true })));
     }
 }

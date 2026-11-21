@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { readRuns, type StationFile } from './assess';
+import { isDerivedTarget } from './derived-targets';
 import { buildEvidence, checkPair, checkRunSet, seedFileName, type BuildEvidence, type ExpectedInputs, type RunManifest } from './run-manifest';
 import { loadManifest, verifyLocal, type Ctx, type InputsManifest } from './shard-inputs';
 import { checkName, getJson, jobKey, putJson, sha256 } from './shard-store';
@@ -19,9 +20,9 @@ export function parseSeeds(spec: string): number[] {
   return seeds;
 }
 
-/** Same rule as tools/assess.ts: a period has counts of its own when some station target in it is not derived. Without the stations file every period counts. */
+/** Same rule as tools/assess.ts: a period has counts of its own when some station target in it is an hourly count (not a scaled copy of another period, not derived from a daily total). Without the stations file every period counts. */
 export function periodHasCounts(stations: StationFile | null, p: string): boolean {
-  return !stations || stations.stations.some((q) => (q.target[p] ?? 0) > 0 && !q.derived?.includes(p));
+  return !stations || stations.stations.some((q) => (q.target[p] ?? 0) > 0 && !q.derived?.includes(p) && !isDerivedTarget(q));
 }
 
 export function readStations(root: string, area: string): StationFile | null {

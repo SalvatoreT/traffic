@@ -12,15 +12,16 @@
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
 import { resolve, join, dirname } from 'node:path';
-import { throughStats, stationEvidenceProblems, corridorRatios, recoverySentence, zoneLines, featureStats, headlineError, headlineSharesPass, meanLinkFlow, noiseFile, rampStats, readRuns, scoreStations, shareStats, travelTimes, type SeedRun, type StationFile, type TravelNet } from './lib/assess';
+import { derivedTargetLines, throughStats, stationEvidenceProblems, corridorRatios, recoverySentence, zoneLines, featureStats, headlineError, headlineSharesPass, meanLinkFlow, noiseFile, rampStats, readRuns, scoreStations, shareStats, travelTimes, type SeedRun, type StationFile, type TravelNet } from './lib/assess';
 import { seedStat } from './lib/acceptance';
 import { computeStability, judgedClearings, stabilityRule, suggestStatus, type Stability } from './lib/verdict';
-import { MIN_HELD_RECENT, outOfSampleSplit, ruleSplit, ruleVerdicts, sourceYearLines, type RuleSplit, type RuleVerdict } from './lib/recency';
+import { MIN_HELD_RECENT, outOfSampleSplit, ruleSplit, ruleVerdicts, scopeComparisonLines, sourceYearLines, type RuleSplit, type RuleVerdict } from './lib/recency';
 import { writeFileAtomic } from './lib/atomic';
 import { assessmentSplitPath, buildEvidence, hashFile, checkPair, checkRunSet, expectedInputs, type RunManifest } from './lib/run-manifest';
 import { isolationProblems, resolveOutputs } from './lib/assess-outputs';
 import { primitiveEvidence, primitiveLines, toVerdict, type ValidationFile } from './lib/primitive-evidence';
 import { scopeLines } from './lib/validation-scope';
+import { DERIVED_TARGET_PHRASE, DERIVED_TARGET_RULE, isDerivedTarget } from './lib/derived-targets';
 import { pedestrianCountLines, readPedestrianStation } from './lib/pedestrian-count';
 
 const has = (k: string) => process.argv.includes(k);
@@ -62,8 +63,8 @@ const keepCv = reuse ? `${reuse}-cv` : outputs.seedsCv;
 const summaryDir = write ? outputs.reports : join(keep, 'summary');
 if (!reuse) { rmSync(keep, { recursive: true, force: true }); mkdirSync(keep, { recursive: true }); }
 if (!reuse && cvPath) { rmSync(keepCv, { recursive: true, force: true }); mkdirSync(keepCv, { recursive: true }); }
-/** A period has counts of its own when some station target in it is not derived (midday has none: its targets are the PM counts times a factor). */
-const hasCounts = (p: string): boolean => !stations || stations.stations.some((q) => (q.target[p] ?? 0) > 0 && !q.derived?.includes(p));
+/** A period has counts of its own when some station target in it is an hourly count: not a scaled copy of another period (midday has none: its targets are the PM counts times a factor) and not derived from a daily total. */
+const hasCounts = (p: string): boolean => !stations || stations.stations.some((q) => (q.target[p] ?? 0) > 0 && !q.derived?.includes(p) && !isDerivedTarget(q));
 const minHeld: number = targets.acceptance?.minHeldStations ?? MIN_HELD_RECENT;
 
 const areaCfg = JSON.parse(readFileSync(resolve(root, `data/areas/${area}.json`), 'utf8')) as { signalObservations?: { at: string[]; periods: string[]; observedCarsPerCycle?: { mean?: number; median?: number } }[] };
@@ -78,11 +79,12 @@ const f = (x: number, d = 2) => (Number.isFinite(x) ? x.toFixed(d) : '-');
 const L: string[] = [];
 const byPeriod: Record<string, SeedRun[]> = {};
 const splits: Record<string, RuleSplit | null> = {};
-const scores: Record<string, { source?: string; year: number | null; derived?: boolean }[]> = {};
+const scores: Record<string, { source?: string; year: number | null; derived?: boolean; dailyTotal?: boolean }[]> = {};
 const throughRows: Record<string, ReturnType<typeof throughStats>> = {};
 const verdicts: Record<string, { stable: boolean; d5: boolean | null; flow: boolean | null; through: boolean | null; rule: ReturnType<typeof ruleVerdicts> | null }> = {};
 const cvRuns: Record<string, SeedRun[]> = {};
 const heldFails: Record<string, { label: string; source?: string; year: number | null; counted: number; cv: number; cvGeh: number; shipped: number; shippedGeh: number }[]> = {};
+const derivedLines: Record<string, string[]> = {};
 const rule = targets.acceptance?.stability ?? {};
 
 /** What the assessment is made from, so a reader can tell which runs, simulator and inputs it describes. */
@@ -192,7 +194,7 @@ for (const p of periods) {
   const split = mainSplit ? outOfSampleSplit(mainSplit, cvSplit) : null;
   if (sc && scCv && recencyCfg) {
     const shipped = new Map(sc.cases.map((c) => [c.stationId, c]));
-    heldFails[p] = scCv.cases.filter((c) => c.held && !c.derived && c.year != null && recencyCfg.referenceYear - c.year <= recencyCfg.recentYears && !c.gehOk).sort((x, y) => y.geh - x.geh)
+    heldFails[p] = scCv.cases.filter((c) => c.held && !c.derived && !c.dailyTotal && c.year != null && recencyCfg.referenceYear - c.year <= recencyCfg.recentYears && !c.gehOk).sort((x, y) => y.geh - x.geh)
       .map((c) => ({ label: c.label, source: c.source, year: c.year, counted: c.counted, cv: c.modeled, cvGeh: c.geh, shipped: shipped.get(c.stationId)!.modeled, shippedGeh: shipped.get(c.stationId)!.geh }));
   }
   splits[p] = split;
@@ -212,11 +214,13 @@ for (const p of periods) {
   L.push('Ramp via-street shares, trips from (to) the north side:', '', '| Ramp share | Observed | Modeled | 95% interval | Error (points) |', '| --- | --- | --- | --- | --- |');
   for (const q of rs) L.push(`| ${q.direction} via ${q.via} | ${pct(q.observed, 0)} | ${pct(q.mean)} | ${pct(q.lo)} to ${pct(q.hi)} | ${f(q.errPoints, 1)} |`);
   if (sc) {
-    L.push('', `Count stations, simulator flows (mean over seeds) against the counts [WebTAG-M3.1] [TfL-TMG4]; ${sc.skippedGates} gate stations and ${sc.skippedFeatures} movement or route stations have no link: the gates are scored only in the demand fit report, the movements and routes below as select-link counts. Held-out stations in this table are in the shipped fit; the out-of-sample figures are in the verdict:`, '', '| Set | Stations | GEH < 5 | Size bands | Mean GEH | Rule (more than 85%) |', '| --- | --- | --- | --- | --- | --- |');
+    L.push('', `Count stations, simulator flows (mean over seeds) against the counts [WebTAG-M3.1] [TfL-TMG4]; ${sc.skippedGates} gate stations and ${sc.skippedFeatures} movement or route stations have no link: the gates are scored only in the demand fit report, the movements and routes below as select-link counts. Held-out stations in this table are in the shipped fit; the out-of-sample figures are in the verdict. Targets derived from a daily total are left out of these counts and listed in their own table below (${sc.derivedTargets.n} link-based in this period; with them the fitted rate would be ${sc.legacy.fitted.gehOk} of ${sc.legacy.fitted.n} and the validation stations ${sc.legacy.held.gehOk} of ${sc.legacy.held.n}):`, '', '| Set | Stations | GEH < 5 | Size bands | Mean GEH | Rule (more than 85%) |', '| --- | --- | --- | --- | --- | --- |');
     for (const [name, s] of [['fitted', sc.fitted], ['validation stations, in the shipped fit', sc.held]] as const) L.push(`| ${name} | ${s.n} | ${s.gehOk} (${pct(s.gehShare, 0)}%) | ${s.bandOk} (${pct(s.bandShare, 0)}%) | ${f(s.meanGeh, 1)} | ${s.meets ? 'met' : 'not met'} |`);
     if (recencyCfg) L.push('', 'Count stations by source and count year, simulator flows (the station file lists the source and count year of each station):', '', ...sourceYearLines(sc.cases.map((c) => ({ source: c.source, year: c.year, c })), recencyCfg));
     L.push('', 'Interior streets (volunteer-count blocks) against the other stations (arterials, ramps, Caltrans and turning-movement counts), simulator flows:', '', '| Group | Set | Stations | GEH < 5 | Size bands | Mean GEH |', '| --- | --- | --- | --- | --- | --- |');
     for (const [gname, g] of [['interior blocks', sc.interior], ['other stations', sc.other]] as const) for (const [name, s] of [['fitted', g.fitted], ['validation stations, in the shipped fit', g.held]] as const) L.push(`| ${gname} | ${name} | ${s.n} | ${s.gehOk} (${pct(s.gehShare, 0)}%) | ${s.bandOk} (${pct(s.bandShare, 0)}%) | ${f(s.meanGeh, 1)} |`);
+    derivedLines[p] = derivedTargetLines(sc, scCv, stations!, p);
+    L.push(...derivedLines[p]);
     const streetsOf = [...new Set<string>((targets.selectLink ?? []).map((t: { street: string }) => t.street))];
     for (const st of streetsOf) {
       const rows = sc.cases.filter((c) => c.kind === 'count' && c.label.startsWith(`${st} `)).sort((a, b) => Number(/link (\d+)/.exec(a.label)?.[1]) - Number(/link (\d+)/.exec(b.label)?.[1]));
@@ -283,13 +287,14 @@ const calibrated = status.calibrated;
 const yn = (v: boolean | null, na = 'n/a') => (diagnostic ? 'not judged' : v === null ? na : v ? 'pass' : 'FAIL');
 const tl = (b: { n: number; ok: number }) => (b.n ? `${b.ok} of ${b.n} (${pct(b.ok / b.n, 0)}%)` : 'none');
 const rvText = (v: RuleVerdict) => (diagnostic ? 'not judged' : v === 'met' ? 'pass' : v === 'not met' ? 'FAIL' : v === 'too few' ? `too few to judge (fewer than ${minHeld}), not a pass` : 'no counts');
-L.push('## Verdict', '', `Status rules, per period. D16 stability; D5 headline shares (PM peak only, the other periods have no observed shares); the station rule (GEH below 5 at more than 85% of stations) judged on counts from the last ${recencyCfg?.recentYears ?? 5} years: the fitted stations on the shipped demand, the held-out stations on the cross-validation demand (a fit that left them out, same seeds), so the held-out figure is out of sample; at least ${minHeld} recent held-out stations are needed to judge it. A target that is a scaled copy of another period's count (midday = PM x factor, ASSUMPTION) is not a count and is not judged. The PM whole-street check compares complete modeled traversals with every observed directional whole-street count and requires GEH below 5 for each. Each counted block is assessed against its own volume.`, '', '| Period | D16 | D5 | Station rule, recent counts, fitted (shipped fit) | Station rule, recent counts, held out (out of sample) | Whole-street traversals | Validation stations, in the shipped fit (in sample, not judged) | Older counts, fitted / held out (out of sample) |', '| --- | --- | --- | --- | --- | --- | --- | --- |');
+L.push('## Verdict', '', `Status rules, per period. D16 stability; D5 headline shares (PM peak only, the other periods have no observed shares); the station rule (GEH below 5 at more than 85% of stations) judged on counts from the last ${recencyCfg?.recentYears ?? 5} years: the fitted stations on the shipped demand, the held-out stations on the cross-validation demand (a fit that left them out, same seeds), so the held-out figure is out of sample; at least ${minHeld} recent held-out stations are needed to judge it. A target that is a scaled copy of another period's count (midday = PM x factor, ASSUMPTION) is not a count and is not judged. ${DERIVED_TARGET_RULE} The PM whole-street check compares complete modeled traversals with every observed directional whole-street count and requires GEH below 5 for each. Each counted block is assessed against its own volume.`, '', '| Period | D16 | D5 | Station rule, recent counts, fitted (shipped fit) | Station rule, recent counts, held out (out of sample) | Whole-street traversals | Validation stations, in the shipped fit (in sample, not judged) | Older counts, fitted / held out (out of sample) |', '| --- | --- | --- | --- | --- | --- | --- | --- |');
 for (const p of periods) {
   const sp = splits[p], v = verdicts[p];
   const thr = p === 'pm_peak' && v.through === null ? 'FAIL: no matched whole-street counts' : yn(v.through, 'no target');
   if (!sp || !v.rule || noCounts(p)) { L.push(`| ${p} | ${yn(v.stable)} | ${yn(v.d5, 'not gated')} | no ${p === 'midday' ? 'midday ' : ''}counts: stability only | no counts | ${thr} | - | - |`); continue; }
   L.push(`| ${p} | ${yn(v.stable)} | ${yn(v.d5, 'not gated')} | ${tl(sp.recent.fitted)}, ${rvText(v.rule.fitted)} | ${tl(sp.recent.held)}, ${rvText(v.rule.held)} | ${thr} | ${sp.heldInFit ? tl(sp.heldInFit.recent) : '-'} | ${tl(sp.older.fitted)} / ${tl(sp.older.held)} |`);
 }
+L.push('', `Scope of the station rule, before and after targets ${DERIVED_TARGET_PHRASE} were set apart (same thresholds, GEH below 5 at more than 85% of hourly counts, ${minHeld} or more recent held-out stations to judge; [WebTAG-M3.1] [TfL-TMG4]). Old scope: derived targets counted, on the side the frozen draw gives them; on this cross-validation demand, which fits them, their held-out figures are no longer out of sample, so only the new scope is a verdict.`, '', ...scopeComparisonLines(periods.map((p) => ({ period: p, split: splits[p] })), 0.85, minHeld));
 L.push('', 'Complete traversals of each street in the counted direction, vehicles per hour. Each matching trip covers the full ordered street. The standard error is across seeds. A fitted whole-street count is an in-sample comparison. Intersection and ramp counts use crossings at the observed end of each link. Block counts with no surveyed detector location use total link exits as a proxy.', '', '| Period | Street and direction | Modeled | Standard error | Observed | GEH | GEH < 5 | Count fitted |', '| --- | --- | --- | --- | --- | --- | --- | --- |');
 for (const p of periods) for (const q of throughRows[p] ?? []) L.push(`| ${p} | ${q.block} | ${f(q.mean, 0)} | ${f(q.se, 1)} | ${q.observed} | ${f(q.geh, 1)} | ${q.inside ? 'yes' : 'NO'} | ${q.fitted === undefined ? 'unknown' : q.fitted ? 'yes' : 'no'} |`);
 const failing = periods.filter((p) => heldFails[p]?.length);
@@ -298,7 +303,7 @@ if (failing.length) {
   for (const p of failing) for (const c of heldFails[p]) L.push(`| ${p} | ${c.label} | ${c.source ?? '-'} ${c.year ?? ''} | ${Math.round(c.counted)} | ${Math.round(c.cv)} | ${f(c.cvGeh, 1)} | ${Math.round(c.shipped)} | ${f(c.shippedGeh, 1)} |`);
 }
 const allCounts = (p: string) => { const sp = splits[p]; return sp ? `${tl(sp.all.fitted)} fitted, ${tl(sp.all.held)} held out (out of sample)` : '-'; };
-const dominant = (p: string) => { const m = new Map<string, number>(); let n = 0; for (const c of scores[p] ?? []) { const age = c.year == null || c.derived ? null : recencyCfg!.referenceYear - c.year; if (age !== null && age <= recencyCfg!.recentYears) { n++; m.set(c.source ?? 'unknown', (m.get(c.source ?? 'unknown') ?? 0) + 1); } } const [src, k] = [...m].sort((a, b) => b[1] - a[1])[0] ?? ['none', 0]; return `${p}: ${k} of ${n} recent stations come from one source (${src})`; };
+const dominant = (p: string) => { const m = new Map<string, number>(); let n = 0; for (const c of scores[p] ?? []) { const age = c.year == null || c.derived || c.dailyTotal ? null : recencyCfg!.referenceYear - c.year; if (age !== null && age <= recencyCfg!.recentYears) { n++; m.set(c.source ?? 'unknown', (m.get(c.source ?? 'unknown') ?? 0) + 1); } } const [src, k] = [...m].sort((a, b) => b[1] - a[1])[0] ?? ['none', 0]; return `${p}: ${k} of ${n} recent stations come from one source (${src})`; };
 const midday = periods.filter(noCounts);
 L.push('', `${midday.length ? `No ${midday.join(', ')} counts exist; ${midday.join(', ')} is checked for stability only, and its station targets (the PM count times a factor, ASSUMPTION) are not judged. ` : ''}Where the recent pass rate comes from: ${recencyCfg ? periods.filter((p) => !noCounts(p)).map(dominant).join('; ') : '-'}. A source counted on a single day carries one hour of that day. The older counts pass less: ${periods.filter((p) => !noCounts(p)).map((p) => `${p} ${splits[p] ? tl(splits[p]!.older.fitted) : '-'} fitted`).join(', ')}. All counts together: ${periods.filter((p) => !noCounts(p)).map((p) => `${p} ${allCounts(p)}`).join('; ')}.`, '', '', ...primitiveLines(primitives), `${diagnostic ? '**No status is suggested: diagnostic output.**' : `Suggested status: **${calibrated ? 'calibrated' : 'uncalibrated'}**; experimental periods: ${status.experimental.join(', ') || 'none'}.${calibrated ? '' : ` Not calibrated because: ${status.reasons.join('; ')}.`}${status.qualifications.length ? ` Qualifications: ${status.qualifications.join('; ')}.` : ''}`}`, '');
 console.log(L.join('\n'));

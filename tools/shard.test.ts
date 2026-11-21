@@ -1,3 +1,4 @@
+import { withheldDigest } from './lib/lineage';
 import { spawn, spawnSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -35,7 +36,7 @@ function makeRoot(lead: boolean): string {
     put(root, 'public/data/rockridge.network.json', NET);
     const sources = { split, network: sha256(Buffer.from(NET)), config: sha256(readFileSync(join(root, 'data/demand/rockridge.config.json'))), countFile: sha256(readFileSync(join(root, 'data/calibration/rockridge.volunteer-count-2025-02-25.json'))) };
     put(root, 'public/data/rockridge.demand.json', JSON.stringify({ periods: [], build: { view: 'shipped', ...sources } }));
-    put(root, 'target/validation/rockridge.demand.json', JSON.stringify({ periods: [], build: { view: 'training', ...sources } }));
+    put(root, 'target/validation/rockridge.demand.json', JSON.stringify({ periods: [], build: { view: 'training', ...sources, withheld: withheldDigest({ groups: [], withheldAggregates: [] } as never) } }));
     put(root, 'public/data/areas.json', '[]');
   }
   return root;

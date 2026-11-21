@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { buildStations, splitStationOf, stationObservations, applySplit, type Station, type StationInputs } from './lib/demand-fit';
-import { checkManifest, dependencyGroups, freezeSplit, heldStationIds, observationOfKey, routeSupportLinks, selectGroupHoldout, withheldObservations, withheldStationIds, DEFAULT_RULE, type SplitStation } from './lib/lineage';
+import { checkManifest, dependencyGroups, drawnHeldStationIds, freezeSplit, heldStationIds, isHeldGroup, observationOfKey, routeSupportLinks, selectGroupHoldout, withheldObservations, withheldStationIds, DEFAULT_RULE, type SplitStation } from './lib/lineage';
 import { countStations, overlapsHeld, type CountConfig, type CountFile } from './lib/volunteer-count';
 
 const mk = (id: string, kind: Station['kind'], label: string, keys: string[], pm: number): Station => ({ id, kind, label, basis: 'DATA', links: [], target: { pm_peak: pm }, weight: 1, tolPct: 10, records: keys.map((key) => ({ key, share: 1 })) });
@@ -47,7 +47,7 @@ describe('observation lineage (C1)', () => {
     const sts = fixture();
     const m = freezeSplit('t', sts.map(splitStationOf));
     const held = heldStationIds(m);
-    for (const g of m.groups) for (const id of g.stations) expect(held.has(id)).toBe(g.held);
+    for (const g of m.groups) for (const id of g.stations) expect(held.has(id)).toBe(isHeldGroup(g));
     // the four source locations of the audit: in and out are on the same side
     for (const s of ['ashby 544,1277', 'tunnel 734,1282', 'sanpablo -2703,-608']) expect(held.has(`caltrans ${s} in`)).toBe(held.has(`caltrans ${s} out`));
     expect(held.size).toBeGreaterThan(0);
@@ -84,12 +84,13 @@ describe('frozen split ignores values (D1)', () => {
     const m = freezeSplit('t', sts.map(splitStationOf));
     const held = applySplit(sts, m);
     expect(sts.filter((s) => s.held).map((s) => s.id).sort()).toEqual([...held].sort());
+    expect([...held].sort()).toEqual([...drawnHeldStationIds(m)].sort());
   });
 
   it('removes every observation of a held group from training', () => {
     const m = freezeSplit('t', fixture().map(splitStationOf));
     const obs = withheldObservations(m);
-    for (const g of m.groups) for (const o of g.observations) expect(obs.has(o)).toBe(g.held);
+    for (const g of m.groups) for (const o of g.observations) expect(obs.has(o)).toBe(isHeldGroup(g));
     expect(withheldStationIds(m).size).toBeGreaterThanOrEqual(heldStationIds(m).size);
   });
 
@@ -116,7 +117,9 @@ describe('training view inputs do not move when held values change (1.4)', () =>
   };
   it('builds identical training stations whatever the withheld values are, and different scoring targets', () => {
     const m = freezeSplit('t', buildStations(inputs(1, new Set()), []).map(splitStationOf));
-    const w = withheldObservations(m);
+    // The draw, not the derived-target rule (these stations are Caltrans AADT records): the property under test is that values never reach the training inputs.
+    const w = new Set(m.groups.filter((g) => g.held).flatMap((g) => g.observations));
+    const heldStationIds = drawnHeldStationIds;
     expect(w.size).toBeGreaterThan(0);
     const a = buildStations(inputs(1, w), []), b = buildStations(inputs(1.6, w), []);
     const held = buildStations(inputs(1, new Set()), []).filter((s) => heldStationIds(m).has(s.id)), heldPerturbed = buildStations(inputs(1.6, new Set()), []).filter((s) => heldStationIds(m).has(s.id));

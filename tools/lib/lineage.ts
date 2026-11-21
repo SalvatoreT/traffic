@@ -11,8 +11,11 @@ export const SPLIT_VERSION = 1;
 export const observationOfKey = (key: string): string => key.replace(/\|(entering|leaving)$/, '');
 
 export const tmcObservation = (countId: string, leg: string): string => `tmc ${countId}|${leg}`;
-export const overrideObservation = (source: string): string => `ov ${source}`;
-export const rampRowObservation = (route: string, postmile: string, desc: string): string => `ramp-row ${route} PM ${postmile} "${desc}"`;
+const OVERRIDE_PREFIX = 'ov ', RAMP_ROW_PREFIX = 'ramp-row ';
+export const overrideObservation = (source: string): string => `${OVERRIDE_PREFIX}${source}`;
+export const rampRowObservation = (route: string, postmile: string, desc: string): string => `${RAMP_ROW_PREFIX}${route} PM ${postmile} "${desc}"`;
+/** Observations that are daily totals: a Caltrans AADT record or a published ramp ADT row. Their stations are derived targets (derived-targets.ts). */
+export const isDailyTotalObservation = (o: string): boolean => o.startsWith(OVERRIDE_PREFIX) || o.startsWith(RAMP_ROW_PREFIX);
 export const blockObservation = (link: number): string => `count block ${link}`;
 /** Station ids of an intersection count are `ix <name> <leg or move> ...`: its published table is one source. */
 export const intersectionObservation = (stationId: string): string => `ix ${stationId.split(' ')[1]}`;
@@ -120,8 +123,18 @@ export function freezeSplit(area: string, stations: SplitStation[], rule: SplitR
   return { version: SPLIT_VERSION, area, rule, groups, withheldAggregates, retained: RETAINED_NOTES };
 }
 
-export const heldStationIds = (m: SplitManifest): Set<string> => new Set(m.groups.filter((g) => g.held).flatMap((g) => g.stations));
-export const withheldObservations = (m: SplitManifest): Set<string> => new Set(m.groups.filter((g) => g.held).flatMap((g) => g.observations));
+/**
+ * The manifest holds the structural draw: hash order within each corridor, no value read, frozen before any count-derived step. Derived targets are never held out
+ * (change derived-targets-not-judged), so a group of daily-total observations is fitted whatever the draw says. The rule is applied here, on top of the draw, because the
+ * shipped demand records the manifest's hash: re-freezing the file for it would change the shipped demand and everything stamped with it. The draw itself did not move.
+ */
+export const isDerivedGroup = (g: Pick<SplitGroup, 'observations'>): boolean => g.observations.some(isDailyTotalObservation);
+/** Held out of the cross-validation demand: drawn as held and not a derived target. */
+export const isHeldGroup = (g: Pick<SplitGroup, 'held' | 'observations'>): boolean => g.held && !isDerivedGroup(g);
+/** The stations the draw alone holds, before the derived-target rule (what the stations file records as `held`). */
+export const drawnHeldStationIds = (m: SplitManifest): Set<string> => new Set(m.groups.filter((g) => g.held).flatMap((g) => g.stations));
+export const heldStationIds = (m: SplitManifest): Set<string> => new Set(m.groups.filter(isHeldGroup).flatMap((g) => g.stations));
+export const withheldObservations = (m: SplitManifest): Set<string> => new Set(m.groups.filter(isHeldGroup).flatMap((g) => g.observations));
 /** Everything the training view leaves out: held stations and the aggregates that overlap held blocks. */
 export const withheldStationIds = (m: SplitManifest): Set<string> => new Set([...heldStationIds(m), ...m.withheldAggregates.map((a) => a.station)]);
 
@@ -142,6 +155,9 @@ export function checkManifest(m: SplitManifest, stations: SplitStation[]): strin
   if (wa !== wb) problems.push('the aggregate stations that overlap held blocks differ from the manifest');
   return problems;
 }
+
+/** SHA-256 of the station ids the training view leaves out under the current rule; recorded in the training demand and in its membership evidence so that a file built under an earlier rule cannot pass for this one. */
+export const withheldDigest = (m: SplitManifest): string => createHash('sha256').update([...withheldStationIds(m)].sort().join('\n')).digest('hex');
 
 /** Stable text of a manifest for hashing and for committing (sorted, one group per line is not needed: groups are sorted by id). */
 export const manifestText = (m: SplitManifest): string => JSON.stringify(m, null, 1) + '\n';

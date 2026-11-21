@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
+import { withheldDigest } from './lib/lineage';
 import { buildEvidence, checkPair, checkRunSet, type RunManifest } from './lib/run-manifest';
 import { isolationProblems, resolveOutputs } from './lib/assess-outputs';
 import { fittedRampCountError, headlineSharesPass, scoreStations, stationEvidenceProblems, type SeedRun, type StationFile } from './lib/assess';
@@ -30,7 +31,7 @@ function makeRoot(): string {
     network: sha(join(root, 'public/data/rockridge.network.json')), countFile: sha(join(root, 'data/calibration/rockridge.volunteer-count-2025-02-25.json')),
   };
   put(root, 'public/data/rockridge.demand.json', JSON.stringify({ periods: [], build: { view: 'shipped', ...sources } }));
-  put(root, 'target/validation/rockridge.demand.json', JSON.stringify({ periods: [], build: { view: 'training', ...sources } }));
+  put(root, 'target/validation/rockridge.demand.json', JSON.stringify({ periods: [], build: { view: 'training', ...sources, withheld: withheldDigest({ groups: [], withheldAggregates: [] } as never) } }));
   put(root, 'data/calibration/rockridge.assessment.md', 'PUBLISHED ASSESSMENT\n');
   put(root, 'data/calibration/reports/rockridge-pm_peak-s1-seeds1-10.json', '{"published":true}\n');
   put(root, 'public/data/rockridge.noise.json', '{"published":true}\n');
