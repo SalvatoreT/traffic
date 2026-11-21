@@ -1,0 +1,582 @@
+2026-11-21 01:24:11 PM PST START round 53 at 2fdd5f7 on salvatoret/peaceful-fermi-dlwt0u, fingerprint 6b886c8f52ee07397773ddd0ebbcb447
+2026-11-21 01:24:12 PM PST B: config 2405ff02c92b2837; published membership 56e688e7e5749d23 cf32e3e0d9e6f23e
+2026-11-21 01:24:12 PM PST B-data: start
+2026-11-21 01:41:16 PM PST B-data: exit=0 wall_s=1024
+2026-11-21 01:41:16 PM PST B: hashes 53c823f20d9165ed 2d16d8f8eb0950ca 1c3b1666f24156f1 ; config 2405ff02c92b2837; status under data/: 
+2026-11-21 01:41:16 PM PST B: moved the restamp's loop folder to target/restamp52-loop (target/r52-loop already holds round 52's)
+2026-11-21 01:41:16 PM PST B: published membership files moved to target/r53/membership-aside (copy in target/r53/published-membership)
+2026-11-21 01:41:16 PM PST screen-base: start
+2026-11-21 01:41:55 PM PST screen-base: exit=0 wall_s=39
+2026-11-21 01:41:55 PM PST C: baseline screen {"counts":{"am_peak":{"fitted":72,"fittedOf":77,"held":14,"heldOf":19},"pm_peak":{"fitted":82,"fittedOf":92,"held":12,"heldOf":24}},"gridlock":{"am_peak":{"scope":"judged zone","mean":0,"min":0,"max":0},"pm_peak":{"scope":"judged zone","mean":0,"min":0,"max":0}},"backlog":{"am_peak":{"k":3,"n":3,"mean":0.43,"max":0.64},"pm_peak":{"k":3,"n":3,"mean":1.13,"max":1.37}}}
+2026-11-21 01:41:56 PM PST D: status before apply: ?? openspec/changes/calibration-round-53/evidence/baseline-hashes.txt;?? openspec/changes/calibration-round-53/evidence/rockridge.assessment-r53-base-screen.md;?? openspec/changes/calibration-round-53/evidence/screen-base.json;
+2026-11-21 01:41:56 PM PST D: applied end-along config hash 19b6d2c3957f4f56
+2026-11-21 01:41:56 PM PST D:  1 file changed, 8 insertions(+), 2 deletions(-)
+2026-11-21 01:41:56 PM PST D: dry run exit=0
+stations file data/demand/rockridge.stations.json: 357 stations; the frozen split withholds 91 from the training view
+shipped pm_peak: 337 selected (245 link, 92 movement or route), 6 stay static
+shipped am_peak: 272 selected (200 link, 72 movement or route), 6 stay static
+training pm_peak: 256 selected (187 link, 69 movement or route), 0 stay static, 87 withheld
+training am_peak: 201 selected (148 link, 53 movement or route), 0 stay static, 77 withheld
+2026-11-21 01:41:56 PM PST D: loop
+2026-11-21 02:48:05 PM PST D: loop exit=0 wall_s=3969
+pass 0 shipped pm_peak: 27612 car veh/h offered; 335 of 337 selected stations have pairs; zero hits: ix sr24-clifton-claremont move 1600>1771, ix telegraph-51st move 1629>1764; not exported: none; share blocks without a simulated trip (static routes): none; through blocks without a counted through trip (static routes): none
+pass 0 shipped am_peak: 23204 car veh/h offered; 271 of 272 selected stations have pairs; zero hits: ix telegraph-51st move 1629>1764; not exported: none; share blocks without a simulated trip (static routes): none; through blocks without a counted through trip (static routes): none
+pass 0 training pm_peak: 25044 car veh/h offered; 256 of 256 selected stations have pairs; zero hits: none; not exported: none; share blocks without a simulated trip (static routes): none; through blocks without a counted through trip (static routes): none
+pass 0 training am_peak: 20584 car veh/h offered; 201 of 201 selected stations have pairs; zero hits: none; not exported: none; share blocks without a simulated trip (static routes): none; through blocks without a counted through trip (static routes): none
+pass 1 shipped build: gate prior ceilings pm_peak 1878 stations, 0 above ceiling, excess 0 veh/h; am_peak 1923 stations, 1 above ceiling, excess 2 veh/h
+pass 1 shipped am_peak: offered car demand is 93.1% of the static fit's (21609 of 23218 veh/h)
+pass 1 shipped am_peak: ceiling stations gate 217 (1 above, excess 2, removed by projection 44), non-gate 1706 (0 above, excess 0, removed by projection 25)
+pass 1 shipped am_peak: offered car by flow type, static then final: through 3733 to 3553, local 9610 to 8276, ramp 9875 to 9780
+pass 1 shipped pm_peak: offered car demand is 89.2% of the static fit's (24680 of 27653 veh/h)
+pass 1 shipped pm_peak: ceiling stations gate 216 (0 above, excess 0, removed by projection 76), non-gate 1662 (0 above, excess 0, removed by projection 32)
+pass 1 shipped pm_peak: offered car by flow type, static then final: through 5891 to 4922, local 10436 to 8448, ramp 11326 to 11310
+pass 1 shipped am_peak: end along seed Hillegass Avenue NB: target 9 veh/h, seed before 69.3, added 0 (capped 0), after 69.3, 0 pairs from 0 origins
+pass 1 shipped am_peak: end along seed Colby Street NB: target 14 veh/h, seed before 41.8, added 0 (capped 0), after 41.8, 0 pairs from 0 origins
+pass 1 shipped am_peak: end along seed Hillegass Avenue SB: target 9 veh/h, seed before 3.1, added 6.4 (capped 0), after 9, 56 pairs from 20 origins
+pass 1 shipped am_peak: end along seed Colby Street SB: target 15 veh/h, seed before 2.7, added 14.9 (capped 0), after 15, 622 pairs from 130 origins
+pass 1 shipped pm_peak: end along seed Hillegass Avenue NB: target 15 veh/h, seed before 84, added 0 (capped 0), after 84, 0 pairs from 0 origins
+pass 1 shipped pm_peak: end along seed Colby Street NB: target 29 veh/h, seed before 85.9, added 0 (capped 0), after 85.9, 0 pairs from 0 origins
+pass 1 shipped pm_peak: end along seed Hillegass Avenue SB: target 40 veh/h, seed before 4.7, added 38.8 (capped 0), after 40, 36 pairs from 13 origins
+pass 1 shipped pm_peak: end along seed Colby Street SB: target 43 veh/h, seed before 3.2, added 46 (capped 0), after 43, 99 pairs from 25 origins
+pass 1 shipped am_peak: end along Hillegass Avenue NB (simulated): target 9 veh/h, weight 2, fit 10.7 on the membership used (15.2 on static routes), after the count-only fit 9.6 (15), offered 63 (63.7), 18 flows, 3 nodes
+pass 1 shipped am_peak: end along Colby Street NB (simulated): target 14 veh/h, weight 2, fit 20.6 on the membership used (23.2 on static routes), after the count-only fit 20.5 (21.2), offered 43.6 (41.5), 95 flows, 7 nodes
+pass 1 shipped am_peak: end along Hillegass Avenue SB (simulated): target 9 veh/h, weight 2, fit 9.1 on the membership used (9.9 on static routes), after the count-only fit 9.6 (9.7), offered 7.4 (8.9), 62 flows, 3 nodes
+pass 1 shipped am_peak: end along Colby Street SB (simulated): target 15 veh/h, weight 2, fit 16.6 on the membership used (17.8 on static routes), after the count-only fit 17.3 (17.5), offered 13.4 (13.7), 632 flows, 7 nodes
+pass 1 shipped pm_peak: end along Hillegass Avenue NB (simulated): target 15 veh/h, weight 2, fit 18.4 on the membership used (19 on static routes), after the count-only fit 17.7 (16.6), offered 52 (55.2), 13 flows, 3 nodes
+pass 1 shipped pm_peak: end along Colby Street NB (simulated): target 29 veh/h, weight 2, fit 31.9 on the membership used (24.3 on static routes), after the count-only fit 30.8 (25.2), offered 62.7 (62.6), 36 flows, 7 nodes
+pass 1 shipped pm_peak: end along Hillegass Avenue SB (simulated): target 40 veh/h, weight 2, fit 38.3 on the membership used (38.6 on static routes), after the count-only fit 43.2 (42.6), offered 36.9 (36.8), 40 flows, 3 nodes
+pass 1 shipped pm_peak: end along Colby Street SB (simulated): target 43 veh/h, weight 2, fit 49.9 on the membership used (50.3 on static routes), after the count-only fit 46.8 (47.1), offered 38.8 (40), 112 flows, 7 nodes
+pass 1 shipped am_peak: share Hillegass Avenue NB, trips from the freeway (simulated): target 47%, fit 41% on simulated membership, 44% on static routes, offered 64% (static routes 59%), 493 flows
+pass 1 shipped am_peak: share Colby Street NB, trips from the freeway (simulated): target 47%, fit 45% on simulated membership, 47% on static routes, offered 66% (static routes 69%), 445 flows
+pass 1 shipped am_peak: share Hillegass Avenue SB, trips to the freeway (simulated): target 57%, fit 57% on simulated membership, 55% on static routes, offered 83% (static routes 78%), 410 flows
+pass 1 shipped am_peak: share Colby Street SB, trips to the freeway (simulated): target 45%, fit 40% on simulated membership, 38% on static routes, offered 76% (static routes 78%), 1177 flows
+pass 1 shipped am_peak: share Onto the freeway at the ramps, via College Avenue (static): target 16%, fit 16% on simulated membership, 16% on static routes, offered 24% (static routes 24%), 243 flows
+pass 1 shipped am_peak: share Onto the freeway at the ramps, via Hillegass Avenue (static): target 12%, fit 12% on simulated membership, 12% on static routes, offered 9% (static routes 9%), 243 flows
+pass 1 shipped am_peak: share Onto the freeway at the ramps, via Martin Street (static): target 10%, fit 12% on simulated membership, 12% on static routes, offered 27% (static routes 27%), 243 flows
+pass 1 shipped am_peak: share Onto the freeway at the ramps, via Colby Street (static): target 8%, fit 12% on simulated membership, 12% on static routes, offered 17% (static routes 17%), 243 flows
+pass 1 shipped am_peak: share Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue (static): target 8%, fit 7% on simulated membership, 7% on static routes, offered 15% (static routes 15%), 243 flows
+pass 1 shipped am_peak: share Onto the freeway at the ramps, via Benvenue Avenue (static): target 5%, fit 5% on simulated membership, 5% on static routes, offered 1% (static routes 1%), 243 flows
+pass 1 shipped am_peak: share From the freeway at the ramps, via College Avenue (static): target 10%, fit 12% on simulated membership, 12% on static routes, offered 35% (static routes 35%), 221 flows
+pass 1 shipped am_peak: share From the freeway at the ramps, via Martin Street (static): target 10%, fit 14% on simulated membership, 14% on static routes, offered 18% (static routes 18%), 221 flows
+pass 1 shipped am_peak: share From the freeway at the ramps, via Colby Street (static): target 8%, fit 11% on simulated membership, 11% on static routes, offered 9% (static routes 9%), 221 flows
+pass 1 shipped am_peak: share From the freeway at the ramps, via Hillegass Avenue (static): target 5%, fit 7% on simulated membership, 7% on static routes, offered 10% (static routes 10%), 221 flows
+pass 1 shipped am_peak: share From the freeway at the ramps, via Benvenue Avenue (static): target 3%, fit 2% on simulated membership, 2% on static routes, offered 2% (static routes 2%), 221 flows
+pass 1 shipped pm_peak: share Hillegass Avenue NB, trips from the freeway (simulated): target 47%, fit 44% on simulated membership, 42% on static routes, offered 68% (static routes 58%), 570 flows
+pass 1 shipped pm_peak: share Colby Street NB, trips from the freeway (simulated): target 47%, fit 46% on simulated membership, 49% on static routes, offered 61% (static routes 65%), 625 flows
+pass 1 shipped pm_peak: share Hillegass Avenue SB, trips to the freeway (simulated): target 68%, fit 64% on simulated membership, 59% on static routes, offered 72% (static routes 68%), 287 flows
+pass 1 shipped pm_peak: share Colby Street SB, trips to the freeway (simulated): target 45%, fit 43% on simulated membership, 50% on static routes, offered 73% (static routes 75%), 663 flows
+pass 1 shipped pm_peak: share Onto the freeway at the ramps, via College Avenue (static): target 16%, fit 17% on simulated membership, 17% on static routes, offered 32% (static routes 32%), 234 flows
+pass 1 shipped pm_peak: share Onto the freeway at the ramps, via Hillegass Avenue (static): target 12%, fit 14% on simulated membership, 14% on static routes, offered 11% (static routes 11%), 234 flows
+pass 1 shipped pm_peak: share Onto the freeway at the ramps, via Martin Street (static): target 10%, fit 11% on simulated membership, 11% on static routes, offered 23% (static routes 23%), 234 flows
+pass 1 shipped pm_peak: share Onto the freeway at the ramps, via Colby Street (static): target 8%, fit 12% on simulated membership, 12% on static routes, offered 15% (static routes 15%), 234 flows
+pass 1 shipped pm_peak: share Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue (static): target 8%, fit 9% on simulated membership, 9% on static routes, offered 14% (static routes 14%), 234 flows
+pass 1 shipped pm_peak: share Onto the freeway at the ramps, via Benvenue Avenue (static): target 5%, fit 4% on simulated membership, 4% on static routes, offered 1% (static routes 1%), 234 flows
+pass 1 shipped pm_peak: share From the freeway at the ramps, via College Avenue (static): target 10%, fit 10% on simulated membership, 10% on static routes, offered 25% (static routes 25%), 234 flows
+pass 1 shipped pm_peak: share From the freeway at the ramps, via Martin Street (static): target 10%, fit 11% on simulated membership, 11% on static routes, offered 19% (static routes 19%), 234 flows
+pass 1 shipped pm_peak: share From the freeway at the ramps, via Colby Street (static): target 8%, fit 14% on simulated membership, 14% on static routes, offered 14% (static routes 14%), 234 flows
+pass 1 shipped pm_peak: share From the freeway at the ramps, via Hillegass Avenue (static): target 5%, fit 6% on simulated membership, 6% on static routes, offered 7% (static routes 7%), 234 flows
+pass 1 shipped pm_peak: share From the freeway at the ramps, via Benvenue Avenue (static): target 3%, fit 3% on simulated membership, 3% on static routes, offered 2% (static routes 2%), 234 flows
+pass 1 training build: gate prior ceilings pm_peak 1846 stations, 0 above ceiling, excess 0 veh/h; am_peak 1909 stations, 0 above ceiling, excess 0 veh/h
+pass 1 training am_peak: offered car demand is 93.3% of the static fit's (19193 of 20582 veh/h)
+pass 1 training am_peak: ceiling stations gate 223 (0 above, excess 0, removed by projection 61), non-gate 1686 (0 above, excess 0, removed by projection 16)
+pass 1 training am_peak: offered car by flow type, static then final: through 2455 to 2452, local 8314 to 6949, ramp 9813 to 9792
+pass 1 training pm_peak: offered car demand is 91.5% of the static fit's (22911 of 25042 veh/h)
+pass 1 training pm_peak: ceiling stations gate 222 (0 above, excess 0, removed by projection 140), non-gate 1624 (0 above, excess 0, removed by projection 29)
+pass 1 training pm_peak: offered car by flow type, static then final: through 2785 to 2786, local 10873 to 8750, ramp 11384 to 11375
+pass 1 training am_peak: share Hillegass Avenue NB, trips from the freeway (simulated): target 47%, fit 45% on simulated membership, 42% on static routes, offered 56% (static routes 57%), 536 flows
+pass 1 training am_peak: share Colby Street NB, trips from the freeway (simulated): target 47%, fit 45% on simulated membership, 43% on static routes, offered 62% (static routes 62%), 414 flows
+pass 1 training am_peak: share Hillegass Avenue SB, trips to the freeway (simulated): target 57%, fit 57% on simulated membership, 50% on static routes, offered 78% (static routes 73%), 204 flows
+pass 1 training am_peak: share Colby Street SB, trips to the freeway (simulated): target 45%, fit 41% on simulated membership, 42% on static routes, offered 73% (static routes 77%), 674 flows
+pass 1 training am_peak: share Onto the freeway at the ramps, via College Avenue (static): target 16%, fit 16% on simulated membership, 16% on static routes, offered 23% (static routes 23%), 227 flows
+pass 1 training am_peak: share Onto the freeway at the ramps, via Hillegass Avenue (static): target 12%, fit 12% on simulated membership, 12% on static routes, offered 9% (static routes 9%), 227 flows
+pass 1 training am_peak: share Onto the freeway at the ramps, via Martin Street (static): target 10%, fit 10% on simulated membership, 10% on static routes, offered 28% (static routes 28%), 227 flows
+pass 1 training am_peak: share Onto the freeway at the ramps, via Colby Street (static): target 8%, fit 11% on simulated membership, 11% on static routes, offered 17% (static routes 17%), 227 flows
+pass 1 training am_peak: share Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue (static): target 8%, fit 7% on simulated membership, 7% on static routes, offered 14% (static routes 14%), 227 flows
+pass 1 training am_peak: share Onto the freeway at the ramps, via Benvenue Avenue (static): target 5%, fit 5% on simulated membership, 5% on static routes, offered 1% (static routes 1%), 227 flows
+pass 1 training am_peak: share From the freeway at the ramps, via College Avenue (static): target 10%, fit 11% on simulated membership, 11% on static routes, offered 35% (static routes 35%), 210 flows
+pass 1 training am_peak: share From the freeway at the ramps, via Martin Street (static): target 10%, fit 11% on simulated membership, 11% on static routes, offered 19% (static routes 19%), 210 flows
+pass 1 training am_peak: share From the freeway at the ramps, via Colby Street (static): target 8%, fit 9% on simulated membership, 9% on static routes, offered 8% (static routes 8%), 210 flows
+pass 1 training am_peak: share From the freeway at the ramps, via Hillegass Avenue (static): target 5%, fit 6% on simulated membership, 6% on static routes, offered 10% (static routes 10%), 210 flows
+pass 1 training am_peak: share From the freeway at the ramps, via Benvenue Avenue (static): target 3%, fit 3% on simulated membership, 3% on static routes, offered 2% (static routes 2%), 210 flows
+pass 1 training pm_peak: share Hillegass Avenue NB, trips from the freeway (simulated): target 47%, fit 45% on simulated membership, 43% on static routes, offered 56% (static routes 58%), 585 flows
+pass 1 training pm_peak: share Colby Street NB, trips from the freeway (simulated): target 47%, fit 42% on simulated membership, 45% on static routes, offered 68% (static routes 73%), 599 flows
+pass 1 training pm_peak: share Hillegass Avenue SB, trips to the freeway (simulated): target 68%, fit 66% on simulated membership, 74% on static routes, offered 78% (static routes 79%), 371 flows
+pass 1 training pm_peak: share Colby Street SB, trips to the freeway (simulated): target 45%, fit 42% on simulated membership, 56% on static routes, offered 66% (static routes 75%), 827 flows
+pass 1 training pm_peak: share Onto the freeway at the ramps, via College Avenue (static): target 16%, fit 17% on simulated membership, 17% on static routes, offered 31% (static routes 31%), 217 flows
+pass 1 training pm_peak: share Onto the freeway at the ramps, via Hillegass Avenue (static): target 12%, fit 13% on simulated membership, 13% on static routes, offered 11% (static routes 11%), 217 flows
+pass 1 training pm_peak: share Onto the freeway at the ramps, via Martin Street (static): target 10%, fit 10% on simulated membership, 10% on static routes, offered 24% (static routes 24%), 217 flows
+pass 1 training pm_peak: share Onto the freeway at the ramps, via Colby Street (static): target 8%, fit 12% on simulated membership, 12% on static routes, offered 15% (static routes 15%), 217 flows
+pass 1 training pm_peak: share Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue (static): target 8%, fit 8% on simulated membership, 8% on static routes, offered 13% (static routes 13%), 217 flows
+pass 1 training pm_peak: share Onto the freeway at the ramps, via Benvenue Avenue (static): target 5%, fit 5% on simulated membership, 5% on static routes, offered 1% (static routes 1%), 217 flows
+pass 1 training pm_peak: share From the freeway at the ramps, via College Avenue (static): target 10%, fit 10% on simulated membership, 10% on static routes, offered 24% (static routes 24%), 204 flows
+pass 1 training pm_peak: share From the freeway at the ramps, via Martin Street (static): target 10%, fit 10% on simulated membership, 10% on static routes, offered 19% (static routes 19%), 204 flows
+pass 1 training pm_peak: share From the freeway at the ramps, via Colby Street (static): target 8%, fit 10% on simulated membership, 10% on static routes, offered 12% (static routes 12%), 204 flows
+pass 1 training pm_peak: share From the freeway at the ramps, via Hillegass Avenue (static): target 5%, fit 5% on simulated membership, 5% on static routes, offered 9% (static routes 9%), 204 flows
+pass 1 training pm_peak: share From the freeway at the ramps, via Benvenue Avenue (static): target 3%, fit 3% on simulated membership, 3% on static routes, offered 1% (static routes 1%), 204 flows
+pass 1 shipped pm_peak: 24681 car veh/h offered; 335 of 337 selected stations have pairs; zero hits: ix sr24-clifton-claremont move 1600>1771, ix telegraph-51st move 1629>1764; not exported: none; share blocks without a simulated trip (static routes): none; through blocks without a counted through trip (static routes): none; ceiling stations 1878, above ceiling 0, excess 0 veh/h; flow change 3.36 
+pass 1 shipped am_peak: 21610 car veh/h offered; 271 of 272 selected stations have pairs; zero hits: ix telegraph-51st move 1629>1764; not exported: none; share blocks without a simulated trip (static routes): none; through blocks without a counted through trip (static routes): none; ceiling stations 1923, above ceiling 1, excess 2 veh/h; flow change 4.38 and membership change 2.57 of the seed sta
+pass 1 training pm_peak: 22912 car veh/h offered; 256 of 256 selected stations have pairs; zero hits: none; not exported: none; share blocks without a simulated trip (static routes): none; through blocks without a counted through trip (static routes): none; ceiling stations 1846, above ceiling 0, excess 0 veh/h; flow change 3.57 and membership change 3.01 of the seed standard error over 256 statio
+pass 1 training am_peak: 19194 car veh/h offered; 201 of 201 selected stations have pairs; zero hits: none; not exported: none; share blocks without a simulated trip (static routes): none; through blocks without a counted through trip (static routes): none; ceiling stations 1909, above ceiling 0, excess 0 veh/h; flow change 3.40 and membership change 2.69 of the seed standard error over 201 statio
+pass 2 shipped build: gate prior ceilings pm_peak 1878 stations, 0 above ceiling, excess 0 veh/h; am_peak 1923 stations, 0 above ceiling, excess 0 veh/h
+pass 2 shipped am_peak: offered car demand is 92.6% of the static fit's (21502 of 23217 veh/h)
+pass 2 shipped am_peak: ceiling stations gate 217 (0 above, excess 0, removed by projection 54), non-gate 1706 (0 above, excess 0, removed by projection 37)
+pass 2 shipped am_peak: offered car by flow type, static then final: through 3733 to 3555, local 9609 to 8160, ramp 9875 to 9787
+pass 2 shipped pm_peak: offered car demand is 90.2% of the static fit's (25009 of 27734 veh/h)
+pass 2 shipped pm_peak: ceiling stations gate 216 (0 above, excess 0, removed by projection 105), non-gate 1662 (0 above, excess 0, removed by projection 48)
+pass 2 shipped pm_peak: offered car by flow type, static then final: through 5892 to 5052, local 10519 to 8659, ramp 11324 to 11298
+pass 2 shipped am_peak: end along seed Hillegass Avenue NB: target 9 veh/h, seed before 69.3, added 0 (capped 0), after 69.3, 0 pairs from 0 origins
+pass 2 shipped am_peak: end along seed Colby Street NB: target 14 veh/h, seed before 41.8, added 0 (capped 0), after 41.8, 0 pairs from 0 origins
+pass 2 shipped am_peak: end along seed Hillegass Avenue SB: target 9 veh/h, seed before 3.1, added 6.4 (capped 0), after 9, 56 pairs from 20 origins
+pass 2 shipped am_peak: end along seed Colby Street SB: target 15 veh/h, seed before 2.7, added 15 (capped 0), after 15, 622 pairs from 130 origins
+pass 2 shipped pm_peak: end along seed Hillegass Avenue NB: target 15 veh/h, seed before 84, added 0 (capped 0), after 84, 0 pairs from 0 origins
+pass 2 shipped pm_peak: end along seed Colby Street NB: target 29 veh/h, seed before 85.9, added 0 (capped 0), after 85.9, 0 pairs from 0 origins
+pass 2 shipped pm_peak: end along seed Hillegass Avenue SB: target 40 veh/h, seed before 4.7, added 39.6 (capped 0), after 40, 36 pairs from 13 origins
+pass 2 shipped pm_peak: end along seed Colby Street SB: target 43 veh/h, seed before 3.2, added 45.9 (capped 0), after 43, 99 pairs from 25 origins
+pass 2 shipped am_peak: end along Hillegass Avenue NB (simulated): target 9 veh/h, weight 2, fit 10.7 on the membership used (15.5 on static routes), after the count-only fit 8.5 (12.9), offered 63.1 (63.7), 18 flows, 3 nodes
+pass 2 shipped am_peak: end along Colby Street NB (simulated): target 14 veh/h, weight 2, fit 21.7 on the membership used (24.3 on static routes), after the count-only fit 22 (22.3), offered 43.6 (41.5), 95 flows, 7 nodes
+pass 2 shipped am_peak: end along Hillegass Avenue SB (simulated): target 9 veh/h, weight 2, fit 9.1 on the membership used (9 on static routes), after the count-only fit 9.8 (9.2), offered 7.4 (8.9), 62 flows, 3 nodes
+pass 2 shipped am_peak: end along Colby Street SB (simulated): target 15 veh/h, weight 2, fit 17.5 on the membership used (19.8 on static routes), after the count-only fit 18.4 (18.9), offered 13.4 (13.7), 632 flows, 7 nodes
+pass 2 shipped pm_peak: end along Hillegass Avenue NB (simulated): target 15 veh/h, weight 2, fit 19.7 on the membership used (20.3 on static routes), after the count-only fit 17.9 (17.4), offered 52.6 (54.9), 13 flows, 3 nodes
+pass 2 shipped pm_peak: end along Colby Street NB (simulated): target 29 veh/h, weight 2, fit 33.4 on the membership used (22.9 on static routes), after the count-only fit 31.1 (24.8), offered 62.9 (62.6), 37 flows, 7 nodes
+pass 2 shipped pm_peak: end along Hillegass Avenue SB (simulated): target 40 veh/h, weight 2, fit 37.5 on the membership used (42.2 on static routes), after the count-only fit 41.4 (43.1), offered 36.7 (37.5), 40 flows, 3 nodes
+pass 2 shipped pm_peak: end along Colby Street SB (simulated): target 43 veh/h, weight 2, fit 52.5 on the membership used (52.6 on static routes), after the count-only fit 49.2 (48.3), offered 40.3 (40), 112 flows, 7 nodes
+pass 2 shipped am_peak: share Hillegass Avenue NB, trips from the freeway (simulated): target 47%, fit 42% on simulated membership, 44% on static routes, offered 63% (static routes 59%), 532 flows
+pass 2 shipped am_peak: share Colby Street NB, trips from the freeway (simulated): target 47%, fit 44% on simulated membership, 47% on static routes, offered 67% (static routes 69%), 485 flows
+pass 2 shipped am_peak: share Hillegass Avenue SB, trips to the freeway (simulated): target 57%, fit 56% on simulated membership, 56% on static routes, offered 84% (static routes 78%), 445 flows
+pass 2 shipped am_peak: share Colby Street SB, trips to the freeway (simulated): target 45%, fit 39% on simulated membership, 40% on static routes, offered 74% (static routes 78%), 1234 flows
+pass 2 shipped am_peak: share Onto the freeway at the ramps, via College Avenue (static): target 16%, fit 16% on simulated membership, 16% on static routes, offered 24% (static routes 24%), 243 flows
+pass 2 shipped am_peak: share Onto the freeway at the ramps, via Hillegass Avenue (static): target 12%, fit 12% on simulated membership, 12% on static routes, offered 9% (static routes 9%), 243 flows
+pass 2 shipped am_peak: share Onto the freeway at the ramps, via Martin Street (static): target 10%, fit 12% on simulated membership, 12% on static routes, offered 27% (static routes 27%), 243 flows
+pass 2 shipped am_peak: share Onto the freeway at the ramps, via Colby Street (static): target 8%, fit 12% on simulated membership, 12% on static routes, offered 17% (static routes 17%), 243 flows
+pass 2 shipped am_peak: share Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue (static): target 8%, fit 7% on simulated membership, 7% on static routes, offered 15% (static routes 15%), 243 flows
+pass 2 shipped am_peak: share Onto the freeway at the ramps, via Benvenue Avenue (static): target 5%, fit 5% on simulated membership, 5% on static routes, offered 1% (static routes 1%), 243 flows
+pass 2 shipped am_peak: share From the freeway at the ramps, via College Avenue (static): target 10%, fit 12% on simulated membership, 12% on static routes, offered 35% (static routes 35%), 221 flows
+pass 2 shipped am_peak: share From the freeway at the ramps, via Martin Street (static): target 10%, fit 14% on simulated membership, 14% on static routes, offered 18% (static routes 18%), 221 flows
+pass 2 shipped am_peak: share From the freeway at the ramps, via Colby Street (static): target 8%, fit 11% on simulated membership, 11% on static routes, offered 9% (static routes 9%), 221 flows
+pass 2 shipped am_peak: share From the freeway at the ramps, via Hillegass Avenue (static): target 5%, fit 7% on simulated membership, 7% on static routes, offered 10% (static routes 10%), 221 flows
+pass 2 shipped am_peak: share From the freeway at the ramps, via Benvenue Avenue (static): target 3%, fit 2% on simulated membership, 2% on static routes, offered 2% (static routes 2%), 221 flows
+pass 2 shipped pm_peak: share Hillegass Avenue NB, trips from the freeway (simulated): target 47%, fit 42% on simulated membership, 44% on static routes, offered 68% (static routes 58%), 629 flows
+pass 2 shipped pm_peak: share Colby Street NB, trips from the freeway (simulated): target 47%, fit 46% on simulated membership, 48% on static routes, offered 63% (static routes 65%), 685 flows
+pass 2 shipped pm_peak: share Hillegass Avenue SB, trips to the freeway (simulated): target 68%, fit 62% on simulated membership, 60% on static routes, offered 71% (static routes 68%), 370 flows
+pass 2 shipped pm_peak: share Colby Street SB, trips to the freeway (simulated): target 45%, fit 42% on simulated membership, 53% on static routes, offered 71% (static routes 75%), 812 flows
+pass 2 shipped pm_peak: share Onto the freeway at the ramps, via College Avenue (static): target 16%, fit 19% on simulated membership, 19% on static routes, offered 32% (static routes 32%), 234 flows
+pass 2 shipped pm_peak: share Onto the freeway at the ramps, via Hillegass Avenue (static): target 12%, fit 15% on simulated membership, 15% on static routes, offered 11% (static routes 11%), 234 flows
+pass 2 shipped pm_peak: share Onto the freeway at the ramps, via Martin Street (static): target 10%, fit 11% on simulated membership, 11% on static routes, offered 23% (static routes 23%), 234 flows
+pass 2 shipped pm_peak: share Onto the freeway at the ramps, via Colby Street (static): target 8%, fit 12% on simulated membership, 12% on static routes, offered 15% (static routes 15%), 234 flows
+pass 2 shipped pm_peak: share Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue (static): target 8%, fit 9% on simulated membership, 9% on static routes, offered 14% (static routes 14%), 234 flows
+pass 2 shipped pm_peak: share Onto the freeway at the ramps, via Benvenue Avenue (static): target 5%, fit 4% on simulated membership, 4% on static routes, offered 1% (static routes 1%), 234 flows
+pass 2 shipped pm_peak: share From the freeway at the ramps, via College Avenue (static): target 10%, fit 10% on simulated membership, 10% on static routes, offered 25% (static routes 25%), 234 flows
+pass 2 shipped pm_peak: share From the freeway at the ramps, via Martin Street (static): target 10%, fit 12% on simulated membership, 12% on static routes, offered 19% (static routes 19%), 234 flows
+pass 2 shipped pm_peak: share From the freeway at the ramps, via Colby Street (static): target 8%, fit 14% on simulated membership, 14% on static routes, offered 14% (static routes 14%), 234 flows
+pass 2 shipped pm_peak: share From the freeway at the ramps, via Hillegass Avenue (static): target 5%, fit 6% on simulated membership, 6% on static routes, offered 7% (static routes 7%), 234 flows
+pass 2 shipped pm_peak: share From the freeway at the ramps, via Benvenue Avenue (static): target 3%, fit 3% on simulated membership, 3% on static routes, offered 2% (static routes 2%), 234 flows
+pass 2 training build: gate prior ceilings pm_peak 1846 stations, 1 above ceiling, excess 1 veh/h; am_peak 1909 stations, 0 above ceiling, excess 0 veh/h
+pass 2 training am_peak: offered car demand is 92.7% of the static fit's (19085 of 20582 veh/h)
+pass 2 training am_peak: ceiling stations gate 223 (0 above, excess 0, removed by projection 34), non-gate 1686 (0 above, excess 0, removed by projection 19)
+pass 2 training am_peak: offered car by flow type, static then final: through 2455 to 2368, local 8314 to 6913, ramp 9813 to 9804
+pass 2 training pm_peak: offered car demand is 90.9% of the static fit's (22759 of 25042 veh/h)
+pass 2 training pm_peak: ceiling stations gate 222 (1 above, excess 1, removed by projection 190), non-gate 1624 (0 above, excess 0, removed by projection 39)
+pass 2 training pm_peak: offered car by flow type, static then final: through 2785 to 2783, local 10873 to 8601, ramp 11384 to 11375
+pass 2 training am_peak: share Hillegass Avenue NB, trips from the freeway (simulated): target 47%, fit 45% on simulated membership, 41% on static routes, offered 55% (static routes 57%), 567 flows
+pass 2 training am_peak: share Colby Street NB, trips from the freeway (simulated): target 47%, fit 45% on simulated membership, 43% on static routes, offered 61% (static routes 62%), 456 flows
+pass 2 training am_peak: share Hillegass Avenue SB, trips to the freeway (simulated): target 57%, fit 57% on simulated membership, 54% on static routes, offered 79% (static routes 73%), 261 flows
+pass 2 training am_peak: share Colby Street SB, trips to the freeway (simulated): target 45%, fit 41% on simulated membership, 45% on static routes, offered 70% (static routes 77%), 770 flows
+pass 2 training am_peak: share Onto the freeway at the ramps, via College Avenue (static): target 16%, fit 16% on simulated membership, 16% on static routes, offered 23% (static routes 23%), 227 flows
+pass 2 training am_peak: share Onto the freeway at the ramps, via Hillegass Avenue (static): target 12%, fit 12% on simulated membership, 12% on static routes, offered 9% (static routes 9%), 227 flows
+pass 2 training am_peak: share Onto the freeway at the ramps, via Martin Street (static): target 10%, fit 10% on simulated membership, 10% on static routes, offered 28% (static routes 28%), 227 flows
+pass 2 training am_peak: share Onto the freeway at the ramps, via Colby Street (static): target 8%, fit 11% on simulated membership, 11% on static routes, offered 17% (static routes 17%), 227 flows
+pass 2 training am_peak: share Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue (static): target 8%, fit 7% on simulated membership, 7% on static routes, offered 14% (static routes 14%), 227 flows
+pass 2 training am_peak: share Onto the freeway at the ramps, via Benvenue Avenue (static): target 5%, fit 5% on simulated membership, 5% on static routes, offered 1% (static routes 1%), 227 flows
+pass 2 training am_peak: share From the freeway at the ramps, via College Avenue (static): target 10%, fit 11% on simulated membership, 11% on static routes, offered 35% (static routes 35%), 210 flows
+pass 2 training am_peak: share From the freeway at the ramps, via Martin Street (static): target 10%, fit 11% on simulated membership, 11% on static routes, offered 19% (static routes 19%), 210 flows
+pass 2 training am_peak: share From the freeway at the ramps, via Colby Street (static): target 8%, fit 9% on simulated membership, 9% on static routes, offered 8% (static routes 8%), 210 flows
+pass 2 training am_peak: share From the freeway at the ramps, via Hillegass Avenue (static): target 5%, fit 6% on simulated membership, 6% on static routes, offered 10% (static routes 10%), 210 flows
+pass 2 training am_peak: share From the freeway at the ramps, via Benvenue Avenue (static): target 3%, fit 3% on simulated membership, 3% on static routes, offered 2% (static routes 2%), 210 flows
+pass 2 training pm_peak: share Hillegass Avenue NB, trips from the freeway (simulated): target 47%, fit 44% on simulated membership, 45% on static routes, offered 56% (static routes 58%), 646 flows
+pass 2 training pm_peak: share Colby Street NB, trips from the freeway (simulated): target 47%, fit 42% on simulated membership, 46% on static routes, offered 65% (static routes 73%), 669 flows
+pass 2 training pm_peak: share Hillegass Avenue SB, trips to the freeway (simulated): target 68%, fit 65% on simulated membership, 77% on static routes, offered 76% (static routes 79%), 480 flows
+pass 2 training pm_peak: share Colby Street SB, trips to the freeway (simulated): target 45%, fit 43% on simulated membership, 59% on static routes, offered 64% (static routes 75%), 980 flows
+pass 2 training pm_peak: share Onto the freeway at the ramps, via College Avenue (static): target 16%, fit 17% on simulated membership, 17% on static routes, offered 31% (static routes 31%), 217 flows
+pass 2 training pm_peak: share Onto the freeway at the ramps, via Hillegass Avenue (static): target 12%, fit 14% on simulated membership, 14% on static routes, offered 11% (static routes 11%), 217 flows
+pass 2 training pm_peak: share Onto the freeway at the ramps, via Martin Street (static): target 10%, fit 10% on simulated membership, 10% on static routes, offered 24% (static routes 24%), 217 flows
+pass 2 training pm_peak: share Onto the freeway at the ramps, via Colby Street (static): target 8%, fit 12% on simulated membership, 12% on static routes, offered 15% (static routes 15%), 217 flows
+pass 2 training pm_peak: share Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue (static): target 8%, fit 8% on simulated membership, 8% on static routes, offered 13% (static routes 13%), 217 flows
+pass 2 training pm_peak: share Onto the freeway at the ramps, via Benvenue Avenue (static): target 5%, fit 4% on simulated membership, 4% on static routes, offered 1% (static routes 1%), 217 flows
+pass 2 training pm_peak: share From the freeway at the ramps, via College Avenue (static): target 10%, fit 10% on simulated membership, 10% on static routes, offered 24% (static routes 24%), 204 flows
+pass 2 training pm_peak: share From the freeway at the ramps, via Martin Street (static): target 10%, fit 10% on simulated membership, 10% on static routes, offered 19% (static routes 19%), 204 flows
+pass 2 training pm_peak: share From the freeway at the ramps, via Colby Street (static): target 8%, fit 9% on simulated membership, 9% on static routes, offered 12% (static routes 12%), 204 flows
+pass 2 training pm_peak: share From the freeway at the ramps, via Hillegass Avenue (static): target 5%, fit 6% on simulated membership, 6% on static routes, offered 9% (static routes 9%), 204 flows
+pass 2 training pm_peak: share From the freeway at the ramps, via Benvenue Avenue (static): target 3%, fit 3% on simulated membership, 3% on static routes, offered 1% (static routes 1%), 204 flows
+pass 2 shipped pm_peak: 25010 car veh/h offered; 336 of 337 selected stations have pairs; zero hits: ix telegraph-51st move 1629>1764; not exported: none; share blocks without a simulated trip (static routes): none; through blocks without a counted through trip (static routes): none; ceiling stations 1878, above ceiling 0, excess 0 veh/h; flow change 1.57 and membership change 1.88 of the seed sta
+pass 2 shipped am_peak: 21502 car veh/h offered; 271 of 272 selected stations have pairs; zero hits: ix telegraph-51st move 1629>1764; not exported: none; share blocks without a simulated trip (static routes): none; through blocks without a counted through trip (static routes): none; ceiling stations 1923, above ceiling 0, excess 0 veh/h; flow change 3.06 and membership change 1.41 of the seed sta
+pass 2 training pm_peak: 22760 car veh/h offered; 256 of 256 selected stations have pairs; zero hits: none; not exported: none; share blocks without a simulated trip (static routes): none; through blocks without a counted through trip (static routes): none; ceiling stations 1846, above ceiling 1, excess 1 veh/h; flow change 1.56 and membership change 1.56 of the seed standard error over 255 statio
+pass 2 training am_peak: 19085 car veh/h offered; 201 of 201 selected stations have pairs; zero hits: none; not exported: none; share blocks without a simulated trip (static routes): none; through blocks without a counted through trip (static routes): none; ceiling stations 1909, above ceiling 0, excess 0 veh/h; flow change 2.51 and membership change 1.71 of the seed standard error over 201 statio
+pass 3 shipped build: gate prior ceilings pm_peak 1878 stations, 0 above ceiling, excess 0 veh/h; am_peak 1923 stations, 1 above ceiling, excess 1 veh/h
+pass 3 shipped am_peak: offered car demand is 92.6% of the static fit's (21508 of 23219 veh/h)
+pass 3 shipped am_peak: ceiling stations gate 217 (1 above, excess 1, removed by projection 60), non-gate 1706 (0 above, excess 0, removed by projection 36)
+pass 3 shipped am_peak: offered car by flow type, static then final: through 3731 to 3483, local 9613 to 8238, ramp 9875 to 9786
+pass 3 shipped pm_peak: offered car demand is 89.9% of the static fit's (24873 of 27654 veh/h)
+pass 3 shipped pm_peak: ceiling stations gate 216 (0 above, excess 0, removed by projection 124), non-gate 1662 (0 above, excess 0, removed by projection 52)
+pass 3 shipped pm_peak: offered car by flow type, static then final: through 5891 to 5051, local 10437 to 8526, ramp 11326 to 11297
+WARNING shipped view, pm_peak, final build: offered car demand is 10.1% below the static fit's (limit 10%, ASSUMPTION): the fit may be trading volume for fit. Reported figure, not a stop (lead decision of 2026-11-19, kept in round 52): carry on to the screen and report it
+pass 3 shipped am_peak: end along seed Hillegass Avenue NB: target 9 veh/h, seed before 69.3, added 0 (capped 0), after 69.3, 0 pairs from 0 origins
+pass 3 shipped am_peak: end along seed Colby Street NB: target 14 veh/h, seed before 41.8, added 0 (capped 0), after 41.8, 0 pairs from 0 origins
+pass 3 shipped am_peak: end along seed Hillegass Avenue SB: target 9 veh/h, seed before 3.1, added 6.4 (capped 0), after 9, 56 pairs from 20 origins
+pass 3 shipped am_peak: end along seed Colby Street SB: target 15 veh/h, seed before 2.7, added 15 (capped 0), after 15, 622 pairs from 130 origins
+pass 3 shipped pm_peak: end along seed Hillegass Avenue NB: target 15 veh/h, seed before 84, added 0 (capped 0), after 84, 0 pairs from 0 origins
+pass 3 shipped pm_peak: end along seed Colby Street NB: target 29 veh/h, seed before 85.9, added 0 (capped 0), after 85.9, 0 pairs from 0 origins
+pass 3 shipped pm_peak: end along seed Hillegass Avenue SB: target 40 veh/h, seed before 4.7, added 39.4 (capped 0), after 40, 36 pairs from 13 origins
+pass 3 shipped pm_peak: end along seed Colby Street SB: target 43 veh/h, seed before 3.2, added 45.7 (capped 0), after 43, 99 pairs from 25 origins
+pass 3 shipped am_peak: end along Hillegass Avenue NB (simulated): target 9 veh/h, weight 2, fit 10.7 on the membership used (16.1 on static routes), after the count-only fit 9.9 (15.8), offered 63 (63.7), 18 flows, 3 nodes
+pass 3 shipped am_peak: end along Colby Street NB (simulated): target 14 veh/h, weight 2, fit 20.8 on the membership used (23.1 on static routes), after the count-only fit 19.7 (18.8), offered 43.9 (41.4), 95 flows, 7 nodes
+pass 3 shipped am_peak: end along Hillegass Avenue SB (simulated): target 9 veh/h, weight 2, fit 9.1 on the membership used (8.5 on static routes), after the count-only fit 9.4 (8.3), offered 7.3 (8.9), 62 flows, 3 nodes
+pass 3 shipped am_peak: end along Colby Street SB (simulated): target 15 veh/h, weight 2, fit 16.7 on the membership used (20.7 on static routes), after the count-only fit 17.2 (19.9), offered 13.3 (13.7), 632 flows, 7 nodes
+pass 3 shipped pm_peak: end along Hillegass Avenue NB (simulated): target 15 veh/h, weight 2, fit 18.8 on the membership used (19.5 on static routes), after the count-only fit 17.2 (17.1), offered 52.7 (55), 13 flows, 3 nodes
+pass 3 shipped pm_peak: end along Colby Street NB (simulated): target 29 veh/h, weight 2, fit 33.6 on the membership used (23.5 on static routes), after the count-only fit 31.7 (26.3), offered 62.2 (62.8), 39 flows, 7 nodes
+pass 3 shipped pm_peak: end along Hillegass Avenue SB (simulated): target 40 veh/h, weight 2, fit 36.2 on the membership used (36.4 on static routes), after the count-only fit 42.9 (42.1), offered 36.4 (37.7), 40 flows, 3 nodes
+pass 3 shipped pm_peak: end along Colby Street SB (simulated): target 43 veh/h, weight 2, fit 51.9 on the membership used (52.3 on static routes), after the count-only fit 49.3 (49), offered 40.4 (40), 112 flows, 7 nodes
+pass 3 shipped am_peak: share Hillegass Avenue NB, trips from the freeway (simulated): target 47%, fit 42% on simulated membership, 43% on static routes, offered 63% (static routes 59%), 549 flows
+pass 3 shipped am_peak: share Colby Street NB, trips from the freeway (simulated): target 47%, fit 44% on simulated membership, 46% on static routes, offered 69% (static routes 69%), 510 flows
+pass 3 shipped am_peak: share Hillegass Avenue SB, trips to the freeway (simulated): target 57%, fit 56% on simulated membership, 56% on static routes, offered 84% (static routes 78%), 461 flows
+pass 3 shipped am_peak: share Colby Street SB, trips to the freeway (simulated): target 45%, fit 39% on simulated membership, 40% on static routes, offered 73% (static routes 78%), 1261 flows
+pass 3 shipped am_peak: share Onto the freeway at the ramps, via College Avenue (static): target 16%, fit 16% on simulated membership, 16% on static routes, offered 24% (static routes 24%), 243 flows
+pass 3 shipped am_peak: share Onto the freeway at the ramps, via Hillegass Avenue (static): target 12%, fit 12% on simulated membership, 12% on static routes, offered 9% (static routes 9%), 243 flows
+pass 3 shipped am_peak: share Onto the freeway at the ramps, via Martin Street (static): target 10%, fit 12% on simulated membership, 12% on static routes, offered 27% (static routes 27%), 243 flows
+pass 3 shipped am_peak: share Onto the freeway at the ramps, via Colby Street (static): target 8%, fit 12% on simulated membership, 12% on static routes, offered 17% (static routes 17%), 243 flows
+pass 3 shipped am_peak: share Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue (static): target 8%, fit 7% on simulated membership, 7% on static routes, offered 15% (static routes 15%), 243 flows
+pass 3 shipped am_peak: share Onto the freeway at the ramps, via Benvenue Avenue (static): target 5%, fit 5% on simulated membership, 5% on static routes, offered 1% (static routes 1%), 243 flows
+pass 3 shipped am_peak: share From the freeway at the ramps, via College Avenue (static): target 10%, fit 12% on simulated membership, 12% on static routes, offered 35% (static routes 35%), 221 flows
+pass 3 shipped am_peak: share From the freeway at the ramps, via Martin Street (static): target 10%, fit 14% on simulated membership, 14% on static routes, offered 18% (static routes 18%), 221 flows
+pass 3 shipped am_peak: share From the freeway at the ramps, via Colby Street (static): target 8%, fit 11% on simulated membership, 11% on static routes, offered 9% (static routes 9%), 221 flows
+pass 3 shipped am_peak: share From the freeway at the ramps, via Hillegass Avenue (static): target 5%, fit 7% on simulated membership, 7% on static routes, offered 10% (static routes 10%), 221 flows
+pass 3 shipped am_peak: share From the freeway at the ramps, via Benvenue Avenue (static): target 3%, fit 2% on simulated membership, 2% on static routes, offered 2% (static routes 2%), 221 flows
+pass 3 shipped pm_peak: share Hillegass Avenue NB, trips from the freeway (simulated): target 47%, fit 43% on simulated membership, 45% on static routes, offered 69% (static routes 58%), 642 flows
+pass 3 shipped pm_peak: share Colby Street NB, trips from the freeway (simulated): target 47%, fit 45% on simulated membership, 48% on static routes, offered 62% (static routes 65%), 710 flows
+pass 3 shipped pm_peak: share Hillegass Avenue SB, trips to the freeway (simulated): target 68%, fit 61% on simulated membership, 62% on static routes, offered 71% (static routes 68%), 418 flows
+pass 3 shipped pm_peak: share Colby Street SB, trips to the freeway (simulated): target 45%, fit 42% on simulated membership, 52% on static routes, offered 70% (static routes 75%), 878 flows
+pass 3 shipped pm_peak: share Onto the freeway at the ramps, via College Avenue (static): target 16%, fit 19% on simulated membership, 19% on static routes, offered 32% (static routes 32%), 234 flows
+pass 3 shipped pm_peak: share Onto the freeway at the ramps, via Hillegass Avenue (static): target 12%, fit 15% on simulated membership, 15% on static routes, offered 11% (static routes 11%), 234 flows
+pass 3 shipped pm_peak: share Onto the freeway at the ramps, via Martin Street (static): target 10%, fit 11% on simulated membership, 11% on static routes, offered 23% (static routes 23%), 234 flows
+pass 3 shipped pm_peak: share Onto the freeway at the ramps, via Colby Street (static): target 8%, fit 12% on simulated membership, 12% on static routes, offered 15% (static routes 15%), 234 flows
+pass 3 shipped pm_peak: share Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue (static): target 8%, fit 9% on simulated membership, 9% on static routes, offered 14% (static routes 14%), 234 flows
+pass 3 shipped pm_peak: share Onto the freeway at the ramps, via Benvenue Avenue (static): target 5%, fit 4% on simulated membership, 4% on static routes, offered 1% (static routes 1%), 234 flows
+pass 3 shipped pm_peak: share From the freeway at the ramps, via College Avenue (static): target 10%, fit 10% on simulated membership, 10% on static routes, offered 25% (static routes 25%), 234 flows
+pass 3 shipped pm_peak: share From the freeway at the ramps, via Martin Street (static): target 10%, fit 12% on simulated membership, 12% on static routes, offered 19% (static routes 19%), 234 flows
+pass 3 shipped pm_peak: share From the freeway at the ramps, via Colby Street (static): target 8%, fit 14% on simulated membership, 14% on static routes, offered 14% (static routes 14%), 234 flows
+pass 3 shipped pm_peak: share From the freeway at the ramps, via Hillegass Avenue (static): target 5%, fit 6% on simulated membership, 6% on static routes, offered 7% (static routes 7%), 234 flows
+pass 3 shipped pm_peak: share From the freeway at the ramps, via Benvenue Avenue (static): target 3%, fit 3% on simulated membership, 3% on static routes, offered 2% (static routes 2%), 234 flows
+pass 3 training build: gate prior ceilings pm_peak 1846 stations, 1 above ceiling, excess 1 veh/h; am_peak 1909 stations, 1 above ceiling, excess 3 veh/h
+pass 3 training am_peak: offered car demand is 92.9% of the static fit's (19123 of 20582 veh/h)
+pass 3 training am_peak: ceiling stations gate 223 (1 above, excess 3, removed by projection 42), non-gate 1686 (0 above, excess 0, removed by projection 20)
+pass 3 training am_peak: offered car by flow type, static then final: through 2455 to 2356, local 8314 to 6966, ramp 9813 to 9801
+pass 3 training pm_peak: offered car demand is 90.5% of the static fit's (22659 of 25042 veh/h)
+pass 3 training pm_peak: ceiling stations gate 222 (1 above, excess 1, removed by projection 199), non-gate 1624 (0 above, excess 0, removed by projection 41)
+pass 3 training pm_peak: offered car by flow type, static then final: through 2785 to 2744, local 10873 to 8540, ramp 11384 to 11375
+pass 3 training am_peak: share Hillegass Avenue NB, trips from the freeway (simulated): target 47%, fit 45% on simulated membership, 40% on static routes, offered 55% (static routes 57%), 598 flows
+pass 3 training am_peak: share Colby Street NB, trips from the freeway (simulated): target 47%, fit 45% on simulated membership, 42% on static routes, offered 60% (static routes 62%), 491 flows
+pass 3 training am_peak: share Hillegass Avenue SB, trips to the freeway (simulated): target 57%, fit 57% on simulated membership, 55% on static routes, offered 79% (static routes 73%), 286 flows
+pass 3 training am_peak: share Colby Street SB, trips to the freeway (simulated): target 45%, fit 40% on simulated membership, 47% on static routes, offered 69% (static routes 77%), 818 flows
+pass 3 training am_peak: share Onto the freeway at the ramps, via College Avenue (static): target 16%, fit 16% on simulated membership, 16% on static routes, offered 23% (static routes 23%), 227 flows
+pass 3 training am_peak: share Onto the freeway at the ramps, via Hillegass Avenue (static): target 12%, fit 12% on simulated membership, 12% on static routes, offered 9% (static routes 9%), 227 flows
+pass 3 training am_peak: share Onto the freeway at the ramps, via Martin Street (static): target 10%, fit 10% on simulated membership, 10% on static routes, offered 28% (static routes 28%), 227 flows
+pass 3 training am_peak: share Onto the freeway at the ramps, via Colby Street (static): target 8%, fit 11% on simulated membership, 11% on static routes, offered 17% (static routes 17%), 227 flows
+pass 3 training am_peak: share Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue (static): target 8%, fit 7% on simulated membership, 7% on static routes, offered 14% (static routes 14%), 227 flows
+pass 3 training am_peak: share Onto the freeway at the ramps, via Benvenue Avenue (static): target 5%, fit 5% on simulated membership, 5% on static routes, offered 1% (static routes 1%), 227 flows
+pass 3 training am_peak: share From the freeway at the ramps, via College Avenue (static): target 10%, fit 11% on simulated membership, 11% on static routes, offered 35% (static routes 35%), 210 flows
+pass 3 training am_peak: share From the freeway at the ramps, via Martin Street (static): target 10%, fit 11% on simulated membership, 11% on static routes, offered 19% (static routes 19%), 210 flows
+pass 3 training am_peak: share From the freeway at the ramps, via Colby Street (static): target 8%, fit 9% on simulated membership, 9% on static routes, offered 8% (static routes 8%), 210 flows
+pass 3 training am_peak: share From the freeway at the ramps, via Hillegass Avenue (static): target 5%, fit 6% on simulated membership, 6% on static routes, offered 10% (static routes 10%), 210 flows
+pass 3 training am_peak: share From the freeway at the ramps, via Benvenue Avenue (static): target 3%, fit 3% on simulated membership, 3% on static routes, offered 2% (static routes 2%), 210 flows
+pass 3 training pm_peak: share Hillegass Avenue NB, trips from the freeway (simulated): target 47%, fit 44% on simulated membership, 45% on static routes, offered 55% (static routes 58%), 667 flows
+pass 3 training pm_peak: share Colby Street NB, trips from the freeway (simulated): target 47%, fit 42% on simulated membership, 48% on static routes, offered 62% (static routes 73%), 703 flows
+pass 3 training pm_peak: share Hillegass Avenue SB, trips to the freeway (simulated): target 68%, fit 65% on simulated membership, 75% on static routes, offered 76% (static routes 79%), 519 flows
+pass 3 training pm_peak: share Colby Street SB, trips to the freeway (simulated): target 45%, fit 44% on simulated membership, 59% on static routes, offered 63% (static routes 75%), 1062 flows
+pass 3 training pm_peak: share Onto the freeway at the ramps, via College Avenue (static): target 16%, fit 17% on simulated membership, 17% on static routes, offered 31% (static routes 31%), 217 flows
+pass 3 training pm_peak: share Onto the freeway at the ramps, via Hillegass Avenue (static): target 12%, fit 14% on simulated membership, 14% on static routes, offered 11% (static routes 11%), 217 flows
+pass 3 training pm_peak: share Onto the freeway at the ramps, via Martin Street (static): target 10%, fit 10% on simulated membership, 10% on static routes, offered 24% (static routes 24%), 217 flows
+pass 3 training pm_peak: share Onto the freeway at the ramps, via Colby Street (static): target 8%, fit 12% on simulated membership, 12% on static routes, offered 15% (static routes 15%), 217 flows
+pass 3 training pm_peak: share Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue (static): target 8%, fit 8% on simulated membership, 8% on static routes, offered 13% (static routes 13%), 217 flows
+pass 3 training pm_peak: share Onto the freeway at the ramps, via Benvenue Avenue (static): target 5%, fit 4% on simulated membership, 4% on static routes, offered 1% (static routes 1%), 217 flows
+pass 3 training pm_peak: share From the freeway at the ramps, via College Avenue (static): target 10%, fit 10% on simulated membership, 10% on static routes, offered 24% (static routes 24%), 204 flows
+pass 3 training pm_peak: share From the freeway at the ramps, via Martin Street (static): target 10%, fit 10% on simulated membership, 10% on static routes, offered 19% (static routes 19%), 204 flows
+pass 3 training pm_peak: share From the freeway at the ramps, via Colby Street (static): target 8%, fit 9% on simulated membership, 9% on static routes, offered 12% (static routes 12%), 204 flows
+pass 3 training pm_peak: share From the freeway at the ramps, via Hillegass Avenue (static): target 5%, fit 6% on simulated membership, 6% on static routes, offered 9% (static routes 9%), 204 flows
+pass 3 training pm_peak: share From the freeway at the ramps, via Benvenue Avenue (static): target 3%, fit 3% on simulated membership, 3% on static routes, offered 1% (static routes 1%), 204 flows
+# Membership loop (calibration rounds 48 to 51)
+| Pass | View | Period | Offered car veh/h | Selected | With pairs | Zero hits | Not exported | Flow change / seed SE | Membership change / seed SE | Ceiling stations | Above ceiling | Excess veh/h | Offered / static fit |
+## Gate prior ceilings, by build
+- shipped:1 am_peak: 1923 stations, 1 above ceiling, excess 2 veh/h; offered 93.1% of the static fit; gate 217 (1 above, removed 44), non-gate 1706 (0 above, removed 25); non-gate ends origins inside 605 to 682, outside 7539 to 6406, destinations inside 562 to 505, outside 8211 to 6978
+- shipped:1 pm_peak: 1878 stations, 0 above ceiling, excess 0 veh/h; offered 89.2% of the static fit; gate 216 (0 above, removed 76), non-gate 1662 (0 above, removed 32); non-gate ends origins inside 893 to 872, outside 9645 to 7942, destinations inside 822 to 791, outside 7872 to 6139
+- training:1 am_peak: 1909 stations, 0 above ceiling, excess 0 veh/h; offered 93.3% of the static fit; gate 223 (0 above, removed 61), non-gate 1686 (0 above, removed 16); non-gate ends origins inside 1040 to 1213, outside 7095 to 5895, destinations inside 735 to 812, outside 5907 to 4838
+- training:1 pm_peak: 1846 stations, 0 above ceiling, excess 0 veh/h; offered 91.5% of the static fit; gate 222 (0 above, removed 140), non-gate 1624 (0 above, removed 29); non-gate ends origins inside 1387 to 1226, outside 8768 to 7439, destinations inside 881 to 839, outside 6740 to 5307
+- shipped:2 am_peak: 1923 stations, 0 above ceiling, excess 0 veh/h; offered 92.6% of the static fit; gate 217 (0 above, removed 54), non-gate 1706 (0 above, removed 37); non-gate ends origins inside 604 to 713, outside 7539 to 6332, destinations inside 562 to 494, outside 8211 to 6937
+- shipped:2 pm_peak: 1878 stations, 0 above ceiling, excess 0 veh/h; offered 90.2% of the static fit; gate 216 (0 above, removed 105), non-gate 1662 (0 above, removed 48); non-gate ends origins inside 899 to 839, outside 9686 to 8155, destinations inside 822 to 700, outside 7920 to 6386
+- training:2 am_peak: 1909 stations, 0 above ceiling, excess 0 veh/h; offered 92.7% of the static fit; gate 223 (0 above, removed 34), non-gate 1686 (0 above, removed 19); non-gate ends origins inside 1040 to 1209, outside 7095 to 5872, destinations inside 735 to 793, outside 5907 to 4757
+- training:2 pm_peak: 1846 stations, 1 above ceiling, excess 1 veh/h; offered 90.9% of the static fit; gate 222 (1 above, removed 190), non-gate 1624 (0 above, removed 39); non-gate ends origins inside 1387 to 1152, outside 8768 to 7447, destinations inside 881 to 762, outside 6740 to 5168
+- shipped:3 am_peak: 1923 stations, 1 above ceiling, excess 1 veh/h; offered 92.6% of the static fit; gate 217 (1 above, removed 60), non-gate 1706 (0 above, removed 36); non-gate ends origins inside 605 to 770, outside 7542 to 6302, destinations inside 562 to 502, outside 8213 to 6940
+- shipped:3 pm_peak: 1878 stations, 0 above ceiling, excess 0 veh/h; offered 89.9% of the static fit; gate 216 (0 above, removed 124), non-gate 1662 (0 above, removed 52); non-gate ends origins inside 893 to 837, outside 9647 to 8052, destinations inside 822 to 673, outside 7872 to 6237
+- training:3 am_peak: 1909 stations, 1 above ceiling, excess 3 veh/h; offered 92.9% of the static fit; gate 223 (1 above, removed 42), non-gate 1686 (0 above, removed 20); non-gate ends origins inside 1040 to 1213, outside 7095 to 5882, destinations inside 735 to 765, outside 5907 to 4773
+- training:3 pm_peak: 1846 stations, 1 above ceiling, excess 1 veh/h; offered 90.5% of the static fit; gate 222 (1 above, removed 199), non-gate 1624 (0 above, removed 41); non-gate ends origins inside 1387 to 1173, outside 8768 to 7372, destinations inside 881 to 763, outside 6740 to 5138
+Each target against the fit's own figure on the membership it used and on the static routes (calibration round 51). Shares in percent, through figures in cars per hour.
+- shipped:1 am_peak share Hillegass Avenue NB, trips from the freeway (simulated): target 47%, fit 41% (static routes 44%), offered 64% (static routes 59%), 493 flows
+- shipped:1 am_peak share Colby Street NB, trips from the freeway (simulated): target 47%, fit 45% (static routes 47%), offered 66% (static routes 69%), 445 flows
+- shipped:1 am_peak share Hillegass Avenue SB, trips to the freeway (simulated): target 57%, fit 57% (static routes 55%), offered 83% (static routes 78%), 410 flows
+- shipped:1 am_peak share Colby Street SB, trips to the freeway (simulated): target 45%, fit 40% (static routes 38%), offered 76% (static routes 78%), 1177 flows
+- shipped:1 am_peak share Onto the freeway at the ramps, via College Avenue (static): target 16%, fit 16% (static routes 16%), offered 24% (static routes 24%), 243 flows
+- shipped:1 am_peak share Onto the freeway at the ramps, via Hillegass Avenue (static): target 12%, fit 12% (static routes 12%), offered 9% (static routes 9%), 243 flows
+- shipped:1 am_peak share Onto the freeway at the ramps, via Martin Street (static): target 10%, fit 12% (static routes 12%), offered 27% (static routes 27%), 243 flows
+- shipped:1 am_peak share Onto the freeway at the ramps, via Colby Street (static): target 8%, fit 12% (static routes 12%), offered 17% (static routes 17%), 243 flows
+- shipped:1 am_peak share Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue (static): target 8%, fit 7% (static routes 7%), offered 15% (static routes 15%), 243 flows
+- shipped:1 am_peak share Onto the freeway at the ramps, via Benvenue Avenue (static): target 5%, fit 5% (static routes 5%), offered 1% (static routes 1%), 243 flows
+- shipped:1 am_peak share From the freeway at the ramps, via College Avenue (static): target 10%, fit 12% (static routes 12%), offered 35% (static routes 35%), 221 flows
+- shipped:1 am_peak share From the freeway at the ramps, via Martin Street (static): target 10%, fit 14% (static routes 14%), offered 18% (static routes 18%), 221 flows
+- shipped:1 am_peak share From the freeway at the ramps, via Colby Street (static): target 8%, fit 11% (static routes 11%), offered 9% (static routes 9%), 221 flows
+- shipped:1 am_peak share From the freeway at the ramps, via Hillegass Avenue (static): target 5%, fit 7% (static routes 7%), offered 10% (static routes 10%), 221 flows
+- shipped:1 am_peak share From the freeway at the ramps, via Benvenue Avenue (static): target 3%, fit 2% (static routes 2%), offered 2% (static routes 2%), 221 flows
+- shipped:1 pm_peak share Hillegass Avenue NB, trips from the freeway (simulated): target 47%, fit 44% (static routes 42%), offered 68% (static routes 58%), 570 flows
+- shipped:1 pm_peak share Colby Street NB, trips from the freeway (simulated): target 47%, fit 46% (static routes 49%), offered 61% (static routes 65%), 625 flows
+- shipped:1 pm_peak share Hillegass Avenue SB, trips to the freeway (simulated): target 68%, fit 64% (static routes 59%), offered 72% (static routes 68%), 287 flows
+- shipped:1 pm_peak share Colby Street SB, trips to the freeway (simulated): target 45%, fit 43% (static routes 50%), offered 73% (static routes 75%), 663 flows
+- shipped:1 pm_peak share Onto the freeway at the ramps, via College Avenue (static): target 16%, fit 17% (static routes 17%), offered 32% (static routes 32%), 234 flows
+- shipped:1 pm_peak share Onto the freeway at the ramps, via Hillegass Avenue (static): target 12%, fit 14% (static routes 14%), offered 11% (static routes 11%), 234 flows
+- shipped:1 pm_peak share Onto the freeway at the ramps, via Martin Street (static): target 10%, fit 11% (static routes 11%), offered 23% (static routes 23%), 234 flows
+- shipped:1 pm_peak share Onto the freeway at the ramps, via Colby Street (static): target 8%, fit 12% (static routes 12%), offered 15% (static routes 15%), 234 flows
+- shipped:1 pm_peak share Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue (static): target 8%, fit 9% (static routes 9%), offered 14% (static routes 14%), 234 flows
+- shipped:1 pm_peak share Onto the freeway at the ramps, via Benvenue Avenue (static): target 5%, fit 4% (static routes 4%), offered 1% (static routes 1%), 234 flows
+- shipped:1 pm_peak share From the freeway at the ramps, via College Avenue (static): target 10%, fit 10% (static routes 10%), offered 25% (static routes 25%), 234 flows
+- shipped:1 pm_peak share From the freeway at the ramps, via Martin Street (static): target 10%, fit 11% (static routes 11%), offered 19% (static routes 19%), 234 flows
+- shipped:1 pm_peak share From the freeway at the ramps, via Colby Street (static): target 8%, fit 14% (static routes 14%), offered 14% (static routes 14%), 234 flows
+- shipped:1 pm_peak share From the freeway at the ramps, via Hillegass Avenue (static): target 5%, fit 6% (static routes 6%), offered 7% (static routes 7%), 234 flows
+- shipped:1 pm_peak share From the freeway at the ramps, via Benvenue Avenue (static): target 3%, fit 3% (static routes 3%), offered 2% (static routes 2%), 234 flows
+- shipped:1 am_peak end along Hillegass Avenue NB (simulated): target 9, weight 2, fit 10.7 (static routes 15.2), after fit 9.6 (static routes 15), offered 63 (static routes 63.7), 18 flows, nodes 1085 1086 1090
+- shipped:1 am_peak end along Colby Street NB (simulated): target 14, weight 2, fit 20.6 (static routes 23.2), after fit 20.5 (static routes 21.2), offered 43.6 (static routes 41.5), 95 flows, nodes 786 793 799 819 828 1070 1071
+- shipped:1 am_peak end along Hillegass Avenue SB (simulated): target 9, weight 2, fit 9.1 (static routes 9.9), after fit 9.6 (static routes 9.7), offered 7.4 (static routes 8.9), 62 flows, nodes 1085 1086 1090
+- shipped:1 am_peak end along Colby Street SB (simulated): target 15, weight 2, fit 16.6 (static routes 17.8), after fit 17.3 (static routes 17.5), offered 13.4 (static routes 13.7), 632 flows, nodes 786 793 799 819 828 1070 1071
+- shipped:1 pm_peak end along Hillegass Avenue NB (simulated): target 15, weight 2, fit 18.4 (static routes 19), after fit 17.7 (static routes 16.6), offered 52 (static routes 55.2), 13 flows, nodes 1085 1086 1090
+- shipped:1 pm_peak end along Colby Street NB (simulated): target 29, weight 2, fit 31.9 (static routes 24.3), after fit 30.8 (static routes 25.2), offered 62.7 (static routes 62.6), 36 flows, nodes 786 793 799 819 828 1070 1071
+- shipped:1 pm_peak end along Hillegass Avenue SB (simulated): target 40, weight 2, fit 38.3 (static routes 38.6), after fit 43.2 (static routes 42.6), offered 36.9 (static routes 36.8), 40 flows, nodes 1085 1086 1090
+- shipped:1 pm_peak end along Colby Street SB (simulated): target 43, weight 2, fit 49.9 (static routes 50.3), after fit 46.8 (static routes 47.1), offered 38.8 (static routes 40), 112 flows, nodes 786 793 799 819 828 1070 1071
+- training:1 am_peak share Hillegass Avenue NB, trips from the freeway (simulated): target 47%, fit 45% (static routes 42%), offered 56% (static routes 57%), 536 flows
+- training:1 am_peak share Colby Street NB, trips from the freeway (simulated): target 47%, fit 45% (static routes 43%), offered 62% (static routes 62%), 414 flows
+- training:1 am_peak share Hillegass Avenue SB, trips to the freeway (simulated): target 57%, fit 57% (static routes 50%), offered 78% (static routes 73%), 204 flows
+- training:1 am_peak share Colby Street SB, trips to the freeway (simulated): target 45%, fit 41% (static routes 42%), offered 73% (static routes 77%), 674 flows
+- training:1 am_peak share Onto the freeway at the ramps, via College Avenue (static): target 16%, fit 16% (static routes 16%), offered 23% (static routes 23%), 227 flows
+- training:1 am_peak share Onto the freeway at the ramps, via Hillegass Avenue (static): target 12%, fit 12% (static routes 12%), offered 9% (static routes 9%), 227 flows
+- training:1 am_peak share Onto the freeway at the ramps, via Martin Street (static): target 10%, fit 10% (static routes 10%), offered 28% (static routes 28%), 227 flows
+- training:1 am_peak share Onto the freeway at the ramps, via Colby Street (static): target 8%, fit 11% (static routes 11%), offered 17% (static routes 17%), 227 flows
+- training:1 am_peak share Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue (static): target 8%, fit 7% (static routes 7%), offered 14% (static routes 14%), 227 flows
+- training:1 am_peak share Onto the freeway at the ramps, via Benvenue Avenue (static): target 5%, fit 5% (static routes 5%), offered 1% (static routes 1%), 227 flows
+- training:1 am_peak share From the freeway at the ramps, via College Avenue (static): target 10%, fit 11% (static routes 11%), offered 35% (static routes 35%), 210 flows
+- training:1 am_peak share From the freeway at the ramps, via Martin Street (static): target 10%, fit 11% (static routes 11%), offered 19% (static routes 19%), 210 flows
+- training:1 am_peak share From the freeway at the ramps, via Colby Street (static): target 8%, fit 9% (static routes 9%), offered 8% (static routes 8%), 210 flows
+- training:1 am_peak share From the freeway at the ramps, via Hillegass Avenue (static): target 5%, fit 6% (static routes 6%), offered 10% (static routes 10%), 210 flows
+- training:1 am_peak share From the freeway at the ramps, via Benvenue Avenue (static): target 3%, fit 3% (static routes 3%), offered 2% (static routes 2%), 210 flows
+- training:1 pm_peak share Hillegass Avenue NB, trips from the freeway (simulated): target 47%, fit 45% (static routes 43%), offered 56% (static routes 58%), 585 flows
+- training:1 pm_peak share Colby Street NB, trips from the freeway (simulated): target 47%, fit 42% (static routes 45%), offered 68% (static routes 73%), 599 flows
+- training:1 pm_peak share Hillegass Avenue SB, trips to the freeway (simulated): target 68%, fit 66% (static routes 74%), offered 78% (static routes 79%), 371 flows
+- training:1 pm_peak share Colby Street SB, trips to the freeway (simulated): target 45%, fit 42% (static routes 56%), offered 66% (static routes 75%), 827 flows
+- training:1 pm_peak share Onto the freeway at the ramps, via College Avenue (static): target 16%, fit 17% (static routes 17%), offered 31% (static routes 31%), 217 flows
+- training:1 pm_peak share Onto the freeway at the ramps, via Hillegass Avenue (static): target 12%, fit 13% (static routes 13%), offered 11% (static routes 11%), 217 flows
+- training:1 pm_peak share Onto the freeway at the ramps, via Martin Street (static): target 10%, fit 10% (static routes 10%), offered 24% (static routes 24%), 217 flows
+- training:1 pm_peak share Onto the freeway at the ramps, via Colby Street (static): target 8%, fit 12% (static routes 12%), offered 15% (static routes 15%), 217 flows
+- training:1 pm_peak share Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue (static): target 8%, fit 8% (static routes 8%), offered 13% (static routes 13%), 217 flows
+- training:1 pm_peak share Onto the freeway at the ramps, via Benvenue Avenue (static): target 5%, fit 5% (static routes 5%), offered 1% (static routes 1%), 217 flows
+- training:1 pm_peak share From the freeway at the ramps, via College Avenue (static): target 10%, fit 10% (static routes 10%), offered 24% (static routes 24%), 204 flows
+- training:1 pm_peak share From the freeway at the ramps, via Martin Street (static): target 10%, fit 10% (static routes 10%), offered 19% (static routes 19%), 204 flows
+- training:1 pm_peak share From the freeway at the ramps, via Colby Street (static): target 8%, fit 10% (static routes 10%), offered 12% (static routes 12%), 204 flows
+- training:1 pm_peak share From the freeway at the ramps, via Hillegass Avenue (static): target 5%, fit 5% (static routes 5%), offered 9% (static routes 9%), 204 flows
+- training:1 pm_peak share From the freeway at the ramps, via Benvenue Avenue (static): target 3%, fit 3% (static routes 3%), offered 1% (static routes 1%), 204 flows
+- shipped:2 am_peak share Hillegass Avenue NB, trips from the freeway (simulated): target 47%, fit 42% (static routes 44%), offered 63% (static routes 59%), 532 flows
+- shipped:2 am_peak share Colby Street NB, trips from the freeway (simulated): target 47%, fit 44% (static routes 47%), offered 67% (static routes 69%), 485 flows
+- shipped:2 am_peak share Hillegass Avenue SB, trips to the freeway (simulated): target 57%, fit 56% (static routes 56%), offered 84% (static routes 78%), 445 flows
+- shipped:2 am_peak share Colby Street SB, trips to the freeway (simulated): target 45%, fit 39% (static routes 40%), offered 74% (static routes 78%), 1234 flows
+- shipped:2 am_peak share Onto the freeway at the ramps, via College Avenue (static): target 16%, fit 16% (static routes 16%), offered 24% (static routes 24%), 243 flows
+- shipped:2 am_peak share Onto the freeway at the ramps, via Hillegass Avenue (static): target 12%, fit 12% (static routes 12%), offered 9% (static routes 9%), 243 flows
+- shipped:2 am_peak share Onto the freeway at the ramps, via Martin Street (static): target 10%, fit 12% (static routes 12%), offered 27% (static routes 27%), 243 flows
+- shipped:2 am_peak share Onto the freeway at the ramps, via Colby Street (static): target 8%, fit 12% (static routes 12%), offered 17% (static routes 17%), 243 flows
+- shipped:2 am_peak share Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue (static): target 8%, fit 7% (static routes 7%), offered 15% (static routes 15%), 243 flows
+- shipped:2 am_peak share Onto the freeway at the ramps, via Benvenue Avenue (static): target 5%, fit 5% (static routes 5%), offered 1% (static routes 1%), 243 flows
+- shipped:2 am_peak share From the freeway at the ramps, via College Avenue (static): target 10%, fit 12% (static routes 12%), offered 35% (static routes 35%), 221 flows
+- shipped:2 am_peak share From the freeway at the ramps, via Martin Street (static): target 10%, fit 14% (static routes 14%), offered 18% (static routes 18%), 221 flows
+- shipped:2 am_peak share From the freeway at the ramps, via Colby Street (static): target 8%, fit 11% (static routes 11%), offered 9% (static routes 9%), 221 flows
+- shipped:2 am_peak share From the freeway at the ramps, via Hillegass Avenue (static): target 5%, fit 7% (static routes 7%), offered 10% (static routes 10%), 221 flows
+- shipped:2 am_peak share From the freeway at the ramps, via Benvenue Avenue (static): target 3%, fit 2% (static routes 2%), offered 2% (static routes 2%), 221 flows
+- shipped:2 pm_peak share Hillegass Avenue NB, trips from the freeway (simulated): target 47%, fit 42% (static routes 44%), offered 68% (static routes 58%), 629 flows
+- shipped:2 pm_peak share Colby Street NB, trips from the freeway (simulated): target 47%, fit 46% (static routes 48%), offered 63% (static routes 65%), 685 flows
+- shipped:2 pm_peak share Hillegass Avenue SB, trips to the freeway (simulated): target 68%, fit 62% (static routes 60%), offered 71% (static routes 68%), 370 flows
+- shipped:2 pm_peak share Colby Street SB, trips to the freeway (simulated): target 45%, fit 42% (static routes 53%), offered 71% (static routes 75%), 812 flows
+- shipped:2 pm_peak share Onto the freeway at the ramps, via College Avenue (static): target 16%, fit 19% (static routes 19%), offered 32% (static routes 32%), 234 flows
+- shipped:2 pm_peak share Onto the freeway at the ramps, via Hillegass Avenue (static): target 12%, fit 15% (static routes 15%), offered 11% (static routes 11%), 234 flows
+- shipped:2 pm_peak share Onto the freeway at the ramps, via Martin Street (static): target 10%, fit 11% (static routes 11%), offered 23% (static routes 23%), 234 flows
+- shipped:2 pm_peak share Onto the freeway at the ramps, via Colby Street (static): target 8%, fit 12% (static routes 12%), offered 15% (static routes 15%), 234 flows
+- shipped:2 pm_peak share Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue (static): target 8%, fit 9% (static routes 9%), offered 14% (static routes 14%), 234 flows
+- shipped:2 pm_peak share Onto the freeway at the ramps, via Benvenue Avenue (static): target 5%, fit 4% (static routes 4%), offered 1% (static routes 1%), 234 flows
+- shipped:2 pm_peak share From the freeway at the ramps, via College Avenue (static): target 10%, fit 10% (static routes 10%), offered 25% (static routes 25%), 234 flows
+- shipped:2 pm_peak share From the freeway at the ramps, via Martin Street (static): target 10%, fit 12% (static routes 12%), offered 19% (static routes 19%), 234 flows
+- shipped:2 pm_peak share From the freeway at the ramps, via Colby Street (static): target 8%, fit 14% (static routes 14%), offered 14% (static routes 14%), 234 flows
+- shipped:2 pm_peak share From the freeway at the ramps, via Hillegass Avenue (static): target 5%, fit 6% (static routes 6%), offered 7% (static routes 7%), 234 flows
+- shipped:2 pm_peak share From the freeway at the ramps, via Benvenue Avenue (static): target 3%, fit 3% (static routes 3%), offered 2% (static routes 2%), 234 flows
+- shipped:2 am_peak end along Hillegass Avenue NB (simulated): target 9, weight 2, fit 10.7 (static routes 15.5), after fit 8.5 (static routes 12.9), offered 63.1 (static routes 63.7), 18 flows, nodes 1085 1086 1090
+- shipped:2 am_peak end along Colby Street NB (simulated): target 14, weight 2, fit 21.7 (static routes 24.3), after fit 22 (static routes 22.3), offered 43.6 (static routes 41.5), 95 flows, nodes 786 793 799 819 828 1070 1071
+- shipped:2 am_peak end along Hillegass Avenue SB (simulated): target 9, weight 2, fit 9.1 (static routes 9), after fit 9.8 (static routes 9.2), offered 7.4 (static routes 8.9), 62 flows, nodes 1085 1086 1090
+- shipped:2 am_peak end along Colby Street SB (simulated): target 15, weight 2, fit 17.5 (static routes 19.8), after fit 18.4 (static routes 18.9), offered 13.4 (static routes 13.7), 632 flows, nodes 786 793 799 819 828 1070 1071
+- shipped:2 pm_peak end along Hillegass Avenue NB (simulated): target 15, weight 2, fit 19.7 (static routes 20.3), after fit 17.9 (static routes 17.4), offered 52.6 (static routes 54.9), 13 flows, nodes 1085 1086 1090
+- shipped:2 pm_peak end along Colby Street NB (simulated): target 29, weight 2, fit 33.4 (static routes 22.9), after fit 31.1 (static routes 24.8), offered 62.9 (static routes 62.6), 37 flows, nodes 786 793 799 819 828 1070 1071
+- shipped:2 pm_peak end along Hillegass Avenue SB (simulated): target 40, weight 2, fit 37.5 (static routes 42.2), after fit 41.4 (static routes 43.1), offered 36.7 (static routes 37.5), 40 flows, nodes 1085 1086 1090
+- shipped:2 pm_peak end along Colby Street SB (simulated): target 43, weight 2, fit 52.5 (static routes 52.6), after fit 49.2 (static routes 48.3), offered 40.3 (static routes 40), 112 flows, nodes 786 793 799 819 828 1070 1071
+- training:2 am_peak share Hillegass Avenue NB, trips from the freeway (simulated): target 47%, fit 45% (static routes 41%), offered 55% (static routes 57%), 567 flows
+- training:2 am_peak share Colby Street NB, trips from the freeway (simulated): target 47%, fit 45% (static routes 43%), offered 61% (static routes 62%), 456 flows
+- training:2 am_peak share Hillegass Avenue SB, trips to the freeway (simulated): target 57%, fit 57% (static routes 54%), offered 79% (static routes 73%), 261 flows
+- training:2 am_peak share Colby Street SB, trips to the freeway (simulated): target 45%, fit 41% (static routes 45%), offered 70% (static routes 77%), 770 flows
+- training:2 am_peak share Onto the freeway at the ramps, via College Avenue (static): target 16%, fit 16% (static routes 16%), offered 23% (static routes 23%), 227 flows
+- training:2 am_peak share Onto the freeway at the ramps, via Hillegass Avenue (static): target 12%, fit 12% (static routes 12%), offered 9% (static routes 9%), 227 flows
+- training:2 am_peak share Onto the freeway at the ramps, via Martin Street (static): target 10%, fit 10% (static routes 10%), offered 28% (static routes 28%), 227 flows
+- training:2 am_peak share Onto the freeway at the ramps, via Colby Street (static): target 8%, fit 11% (static routes 11%), offered 17% (static routes 17%), 227 flows
+- training:2 am_peak share Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue (static): target 8%, fit 7% (static routes 7%), offered 14% (static routes 14%), 227 flows
+- training:2 am_peak share Onto the freeway at the ramps, via Benvenue Avenue (static): target 5%, fit 5% (static routes 5%), offered 1% (static routes 1%), 227 flows
+- training:2 am_peak share From the freeway at the ramps, via College Avenue (static): target 10%, fit 11% (static routes 11%), offered 35% (static routes 35%), 210 flows
+- training:2 am_peak share From the freeway at the ramps, via Martin Street (static): target 10%, fit 11% (static routes 11%), offered 19% (static routes 19%), 210 flows
+- training:2 am_peak share From the freeway at the ramps, via Colby Street (static): target 8%, fit 9% (static routes 9%), offered 8% (static routes 8%), 210 flows
+- training:2 am_peak share From the freeway at the ramps, via Hillegass Avenue (static): target 5%, fit 6% (static routes 6%), offered 10% (static routes 10%), 210 flows
+- training:2 am_peak share From the freeway at the ramps, via Benvenue Avenue (static): target 3%, fit 3% (static routes 3%), offered 2% (static routes 2%), 210 flows
+- training:2 pm_peak share Hillegass Avenue NB, trips from the freeway (simulated): target 47%, fit 44% (static routes 45%), offered 56% (static routes 58%), 646 flows
+- training:2 pm_peak share Colby Street NB, trips from the freeway (simulated): target 47%, fit 42% (static routes 46%), offered 65% (static routes 73%), 669 flows
+- training:2 pm_peak share Hillegass Avenue SB, trips to the freeway (simulated): target 68%, fit 65% (static routes 77%), offered 76% (static routes 79%), 480 flows
+- training:2 pm_peak share Colby Street SB, trips to the freeway (simulated): target 45%, fit 43% (static routes 59%), offered 64% (static routes 75%), 980 flows
+- training:2 pm_peak share Onto the freeway at the ramps, via College Avenue (static): target 16%, fit 17% (static routes 17%), offered 31% (static routes 31%), 217 flows
+- training:2 pm_peak share Onto the freeway at the ramps, via Hillegass Avenue (static): target 12%, fit 14% (static routes 14%), offered 11% (static routes 11%), 217 flows
+- training:2 pm_peak share Onto the freeway at the ramps, via Martin Street (static): target 10%, fit 10% (static routes 10%), offered 24% (static routes 24%), 217 flows
+- training:2 pm_peak share Onto the freeway at the ramps, via Colby Street (static): target 8%, fit 12% (static routes 12%), offered 15% (static routes 15%), 217 flows
+- training:2 pm_peak share Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue (static): target 8%, fit 8% (static routes 8%), offered 13% (static routes 13%), 217 flows
+- training:2 pm_peak share Onto the freeway at the ramps, via Benvenue Avenue (static): target 5%, fit 4% (static routes 4%), offered 1% (static routes 1%), 217 flows
+- training:2 pm_peak share From the freeway at the ramps, via College Avenue (static): target 10%, fit 10% (static routes 10%), offered 24% (static routes 24%), 204 flows
+- training:2 pm_peak share From the freeway at the ramps, via Martin Street (static): target 10%, fit 10% (static routes 10%), offered 19% (static routes 19%), 204 flows
+- training:2 pm_peak share From the freeway at the ramps, via Colby Street (static): target 8%, fit 9% (static routes 9%), offered 12% (static routes 12%), 204 flows
+- training:2 pm_peak share From the freeway at the ramps, via Hillegass Avenue (static): target 5%, fit 6% (static routes 6%), offered 9% (static routes 9%), 204 flows
+- training:2 pm_peak share From the freeway at the ramps, via Benvenue Avenue (static): target 3%, fit 3% (static routes 3%), offered 1% (static routes 1%), 204 flows
+- shipped:3 am_peak share Hillegass Avenue NB, trips from the freeway (simulated): target 47%, fit 42% (static routes 43%), offered 63% (static routes 59%), 549 flows
+- shipped:3 am_peak share Colby Street NB, trips from the freeway (simulated): target 47%, fit 44% (static routes 46%), offered 69% (static routes 69%), 510 flows
+- shipped:3 am_peak share Hillegass Avenue SB, trips to the freeway (simulated): target 57%, fit 56% (static routes 56%), offered 84% (static routes 78%), 461 flows
+- shipped:3 am_peak share Colby Street SB, trips to the freeway (simulated): target 45%, fit 39% (static routes 40%), offered 73% (static routes 78%), 1261 flows
+- shipped:3 am_peak share Onto the freeway at the ramps, via College Avenue (static): target 16%, fit 16% (static routes 16%), offered 24% (static routes 24%), 243 flows
+- shipped:3 am_peak share Onto the freeway at the ramps, via Hillegass Avenue (static): target 12%, fit 12% (static routes 12%), offered 9% (static routes 9%), 243 flows
+- shipped:3 am_peak share Onto the freeway at the ramps, via Martin Street (static): target 10%, fit 12% (static routes 12%), offered 27% (static routes 27%), 243 flows
+- shipped:3 am_peak share Onto the freeway at the ramps, via Colby Street (static): target 8%, fit 12% (static routes 12%), offered 17% (static routes 17%), 243 flows
+- shipped:3 am_peak share Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue (static): target 8%, fit 7% (static routes 7%), offered 15% (static routes 15%), 243 flows
+- shipped:3 am_peak share Onto the freeway at the ramps, via Benvenue Avenue (static): target 5%, fit 5% (static routes 5%), offered 1% (static routes 1%), 243 flows
+- shipped:3 am_peak share From the freeway at the ramps, via College Avenue (static): target 10%, fit 12% (static routes 12%), offered 35% (static routes 35%), 221 flows
+- shipped:3 am_peak share From the freeway at the ramps, via Martin Street (static): target 10%, fit 14% (static routes 14%), offered 18% (static routes 18%), 221 flows
+- shipped:3 am_peak share From the freeway at the ramps, via Colby Street (static): target 8%, fit 11% (static routes 11%), offered 9% (static routes 9%), 221 flows
+- shipped:3 am_peak share From the freeway at the ramps, via Hillegass Avenue (static): target 5%, fit 7% (static routes 7%), offered 10% (static routes 10%), 221 flows
+- shipped:3 am_peak share From the freeway at the ramps, via Benvenue Avenue (static): target 3%, fit 2% (static routes 2%), offered 2% (static routes 2%), 221 flows
+- shipped:3 pm_peak share Hillegass Avenue NB, trips from the freeway (simulated): target 47%, fit 43% (static routes 45%), offered 69% (static routes 58%), 642 flows
+- shipped:3 pm_peak share Colby Street NB, trips from the freeway (simulated): target 47%, fit 45% (static routes 48%), offered 62% (static routes 65%), 710 flows
+- shipped:3 pm_peak share Hillegass Avenue SB, trips to the freeway (simulated): target 68%, fit 61% (static routes 62%), offered 71% (static routes 68%), 418 flows
+- shipped:3 pm_peak share Colby Street SB, trips to the freeway (simulated): target 45%, fit 42% (static routes 52%), offered 70% (static routes 75%), 878 flows
+- shipped:3 pm_peak share Onto the freeway at the ramps, via College Avenue (static): target 16%, fit 19% (static routes 19%), offered 32% (static routes 32%), 234 flows
+- shipped:3 pm_peak share Onto the freeway at the ramps, via Hillegass Avenue (static): target 12%, fit 15% (static routes 15%), offered 11% (static routes 11%), 234 flows
+- shipped:3 pm_peak share Onto the freeway at the ramps, via Martin Street (static): target 10%, fit 11% (static routes 11%), offered 23% (static routes 23%), 234 flows
+- shipped:3 pm_peak share Onto the freeway at the ramps, via Colby Street (static): target 8%, fit 12% (static routes 12%), offered 15% (static routes 15%), 234 flows
+- shipped:3 pm_peak share Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue (static): target 8%, fit 9% (static routes 9%), offered 14% (static routes 14%), 234 flows
+- shipped:3 pm_peak share Onto the freeway at the ramps, via Benvenue Avenue (static): target 5%, fit 4% (static routes 4%), offered 1% (static routes 1%), 234 flows
+- shipped:3 pm_peak share From the freeway at the ramps, via College Avenue (static): target 10%, fit 10% (static routes 10%), offered 25% (static routes 25%), 234 flows
+- shipped:3 pm_peak share From the freeway at the ramps, via Martin Street (static): target 10%, fit 12% (static routes 12%), offered 19% (static routes 19%), 234 flows
+- shipped:3 pm_peak share From the freeway at the ramps, via Colby Street (static): target 8%, fit 14% (static routes 14%), offered 14% (static routes 14%), 234 flows
+- shipped:3 pm_peak share From the freeway at the ramps, via Hillegass Avenue (static): target 5%, fit 6% (static routes 6%), offered 7% (static routes 7%), 234 flows
+- shipped:3 pm_peak share From the freeway at the ramps, via Benvenue Avenue (static): target 3%, fit 3% (static routes 3%), offered 2% (static routes 2%), 234 flows
+- shipped:3 am_peak end along Hillegass Avenue NB (simulated): target 9, weight 2, fit 10.7 (static routes 16.1), after fit 9.9 (static routes 15.8), offered 63 (static routes 63.7), 18 flows, nodes 1085 1086 1090
+- shipped:3 am_peak end along Colby Street NB (simulated): target 14, weight 2, fit 20.8 (static routes 23.1), after fit 19.7 (static routes 18.8), offered 43.9 (static routes 41.4), 95 flows, nodes 786 793 799 819 828 1070 1071
+- shipped:3 am_peak end along Hillegass Avenue SB (simulated): target 9, weight 2, fit 9.1 (static routes 8.5), after fit 9.4 (static routes 8.3), offered 7.3 (static routes 8.9), 62 flows, nodes 1085 1086 1090
+- shipped:3 am_peak end along Colby Street SB (simulated): target 15, weight 2, fit 16.7 (static routes 20.7), after fit 17.2 (static routes 19.9), offered 13.3 (static routes 13.7), 632 flows, nodes 786 793 799 819 828 1070 1071
+- shipped:3 pm_peak end along Hillegass Avenue NB (simulated): target 15, weight 2, fit 18.8 (static routes 19.5), after fit 17.2 (static routes 17.1), offered 52.7 (static routes 55), 13 flows, nodes 1085 1086 1090
+- shipped:3 pm_peak end along Colby Street NB (simulated): target 29, weight 2, fit 33.6 (static routes 23.5), after fit 31.7 (static routes 26.3), offered 62.2 (static routes 62.8), 39 flows, nodes 786 793 799 819 828 1070 1071
+- shipped:3 pm_peak end along Hillegass Avenue SB (simulated): target 40, weight 2, fit 36.2 (static routes 36.4), after fit 42.9 (static routes 42.1), offered 36.4 (static routes 37.7), 40 flows, nodes 1085 1086 1090
+- shipped:3 pm_peak end along Colby Street SB (simulated): target 43, weight 2, fit 51.9 (static routes 52.3), after fit 49.3 (static routes 49), offered 40.4 (static routes 40), 112 flows, nodes 786 793 799 819 828 1070 1071
+- training:3 am_peak share Hillegass Avenue NB, trips from the freeway (simulated): target 47%, fit 45% (static routes 40%), offered 55% (static routes 57%), 598 flows
+- training:3 am_peak share Colby Street NB, trips from the freeway (simulated): target 47%, fit 45% (static routes 42%), offered 60% (static routes 62%), 491 flows
+- training:3 am_peak share Hillegass Avenue SB, trips to the freeway (simulated): target 57%, fit 57% (static routes 55%), offered 79% (static routes 73%), 286 flows
+- training:3 am_peak share Colby Street SB, trips to the freeway (simulated): target 45%, fit 40% (static routes 47%), offered 69% (static routes 77%), 818 flows
+- training:3 am_peak share Onto the freeway at the ramps, via College Avenue (static): target 16%, fit 16% (static routes 16%), offered 23% (static routes 23%), 227 flows
+- training:3 am_peak share Onto the freeway at the ramps, via Hillegass Avenue (static): target 12%, fit 12% (static routes 12%), offered 9% (static routes 9%), 227 flows
+- training:3 am_peak share Onto the freeway at the ramps, via Martin Street (static): target 10%, fit 10% (static routes 10%), offered 28% (static routes 28%), 227 flows
+- training:3 am_peak share Onto the freeway at the ramps, via Colby Street (static): target 8%, fit 11% (static routes 11%), offered 17% (static routes 17%), 227 flows
+- training:3 am_peak share Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue (static): target 8%, fit 7% (static routes 7%), offered 14% (static routes 14%), 227 flows
+- training:3 am_peak share Onto the freeway at the ramps, via Benvenue Avenue (static): target 5%, fit 5% (static routes 5%), offered 1% (static routes 1%), 227 flows
+- training:3 am_peak share From the freeway at the ramps, via College Avenue (static): target 10%, fit 11% (static routes 11%), offered 35% (static routes 35%), 210 flows
+- training:3 am_peak share From the freeway at the ramps, via Martin Street (static): target 10%, fit 11% (static routes 11%), offered 19% (static routes 19%), 210 flows
+- training:3 am_peak share From the freeway at the ramps, via Colby Street (static): target 8%, fit 9% (static routes 9%), offered 8% (static routes 8%), 210 flows
+- training:3 am_peak share From the freeway at the ramps, via Hillegass Avenue (static): target 5%, fit 6% (static routes 6%), offered 10% (static routes 10%), 210 flows
+- training:3 am_peak share From the freeway at the ramps, via Benvenue Avenue (static): target 3%, fit 3% (static routes 3%), offered 2% (static routes 2%), 210 flows
+- training:3 pm_peak share Hillegass Avenue NB, trips from the freeway (simulated): target 47%, fit 44% (static routes 45%), offered 55% (static routes 58%), 667 flows
+- training:3 pm_peak share Colby Street NB, trips from the freeway (simulated): target 47%, fit 42% (static routes 48%), offered 62% (static routes 73%), 703 flows
+- training:3 pm_peak share Hillegass Avenue SB, trips to the freeway (simulated): target 68%, fit 65% (static routes 75%), offered 76% (static routes 79%), 519 flows
+- training:3 pm_peak share Colby Street SB, trips to the freeway (simulated): target 45%, fit 44% (static routes 59%), offered 63% (static routes 75%), 1062 flows
+- training:3 pm_peak share Onto the freeway at the ramps, via College Avenue (static): target 16%, fit 17% (static routes 17%), offered 31% (static routes 31%), 217 flows
+- training:3 pm_peak share Onto the freeway at the ramps, via Hillegass Avenue (static): target 12%, fit 14% (static routes 14%), offered 11% (static routes 11%), 217 flows
+- training:3 pm_peak share Onto the freeway at the ramps, via Martin Street (static): target 10%, fit 10% (static routes 10%), offered 24% (static routes 24%), 217 flows
+- training:3 pm_peak share Onto the freeway at the ramps, via Colby Street (static): target 8%, fit 12% (static routes 12%), offered 15% (static routes 15%), 217 flows
+- training:3 pm_peak share Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue (static): target 8%, fit 8% (static routes 8%), offered 13% (static routes 13%), 217 flows
+- training:3 pm_peak share Onto the freeway at the ramps, via Benvenue Avenue (static): target 5%, fit 4% (static routes 4%), offered 1% (static routes 1%), 217 flows
+- training:3 pm_peak share From the freeway at the ramps, via College Avenue (static): target 10%, fit 10% (static routes 10%), offered 24% (static routes 24%), 204 flows
+- training:3 pm_peak share From the freeway at the ramps, via Martin Street (static): target 10%, fit 10% (static routes 10%), offered 19% (static routes 19%), 204 flows
+- training:3 pm_peak share From the freeway at the ramps, via Colby Street (static): target 8%, fit 9% (static routes 9%), offered 12% (static routes 12%), 204 flows
+- training:3 pm_peak share From the freeway at the ramps, via Hillegass Avenue (static): target 5%, fit 6% (static routes 6%), offered 9% (static routes 9%), 204 flows
+- training:3 pm_peak share From the freeway at the ramps, via Benvenue Avenue (static): target 3%, fit 3% (static routes 3%), offered 1% (static routes 1%), 204 flows
+report: /Users/sal/Developer/traffic/.claude/worktrees/batch/openspec/changes/calibration-round-53/evidence/membership-loop.md
+53c823f20d9165ed  public/data/rockridge.network.json
+a009d7bb4722a7c9  public/data/rockridge.demand.json
+afbe8635af49dc7f  target/validation/rockridge.demand.json
+196188c75964afa8  target/membership/rockridge.membership-training.json
+87b61668bfa7781d  target/membership/rockridge.membership.json
+2026-11-21 02:48:05 PM PST D: network identical
+2026-11-21 02:48:05 PM PST D: stations file identical
+2026-11-21 02:48:05 PM PST D: cand-config 19b6d2c3957f4f56; cand-hashes 53c823f20d9165ed a009d7bb4722a7c9 afbe8635af49dc7f 87b61668bfa7781d 196188c75964afa8 
+2026-11-21 02:48:05 PM PST D: periods checks: target/membership-loop/iter0/shipped/demand.json periods equal to target/r53/demand.base.json: false;target/membership-loop/iter0/training/demand.json periods equal to target/r53/demand.base.cv.json: false;target/validation/rockridge.demand.json periods equal to target/r53/demand.base.cv.json: true;
+2026-11-21 02:48:06 PM PST D: end-along-fit pm_peak exit=0 (3 builds)
+2026-11-21 02:48:06 PM PST D: route-fit pm_peak exit=0 (4 builds)
+2026-11-21 02:48:06 PM PST D: node-ends pm_peak exit=0
+2026-11-21 02:48:06 PM PST D: node-ends-cv pm_peak exit=0
+2026-11-21 02:48:06 PM PST D: end-along-fit am_peak exit=0 (3 builds)
+2026-11-21 02:48:06 PM PST D: route-fit am_peak exit=0 (4 builds)
+2026-11-21 02:48:06 PM PST D: node-ends am_peak exit=0
+2026-11-21 02:48:06 PM PST D: node-ends-cv am_peak exit=0
+2026-11-21 02:48:06 PM PST D: seeding table lines: 48; node-total lines: 24
+2026-11-21 02:48:06 PM PST D done
+2026-11-21 02:48:06 PM PST screen-r53: start
+2026-11-21 02:48:46 PM PST screen-r53: exit=0 wall_s=40
+2026-11-21 02:48:46 PM PST E: candidate screen {"counts":{"am_peak":{"fitted":72,"fittedOf":77,"held":14,"heldOf":19},"pm_peak":{"fitted":81,"fittedOf":92,"held":12,"heldOf":24}},"gridlock":{"am_peak":{"scope":"judged zone","mean":0,"min":0,"max":0},"pm_peak":{"scope":"judged zone","mean":0,"min":0,"max":0}},"backlog":{"am_peak":{"k":3,"n":3,"mean":0.3,"max":0.39},"pm_peak":{"k":3,"n":3,"mean":1.22,"max":1.35}}}
+2026-11-21 02:48:46 PM PST E: screen decision: PASS
+2026-11-21 02:48:46 PM PST validate-r53: start
+2026-11-21 02:49:06 PM PST validate-r53: exit=0 wall_s=20
+2026-11-21 02:49:06 PM PST F: 67 of 74 cases pass
+2026-11-21 02:49:06 PM PST F: changed after validate:  M data/calibration/validation.json;
+2026-11-21 02:49:06 PM PST assess-r53: start
+2026-11-21 02:50:30 PM PST assess-r53: exit=0 wall_s=84
+2026-11-21 02:50:30 PM PST F: per-seed dirs: target/assess-seeds/60r53 target/assess-seeds/60r53-base-screen target/assess-seeds/60r53-base-screen-cv target/assess-seeds/60r53-cv target/assess-seeds/60r53-screen target/assess-seeds/60r53-screen-cv 
+2026-11-21 02:50:30 PM PST F: keep rule: KEEP FAIL: D5 headline shares within 10 points
+| Criterion | Line to meet | Candidate | Pass |
+| --- | --- | --- | --- |
+| PM fitted recent stations, GEH < 5 | at least 81 of 92 | 81 of 92 | yes |
+| PM held out | at least 14 of 24 | 14 of 24 | yes |
+| AM fitted | at least 72 of 77 | 72 of 77 | yes |
+| AM held out | at least 15 of 19 | 15 of 19 | yes |
+| D5 headline shares within 10 points | 4 of 4 | 3 of 4 (mean error 6.2) | NO |
+| Whole-street traversals, GEH < 5 | 8 of 8 | 8 of 8 | yes |
+| D16 stability in every period | holds | am_peak holds, midday holds, pm_peak holds | yes |
+| Validation suite | 67 of 74 | 67 of 74 | yes |
+2026-11-21 02:50:30 PM PST F: route-sim pm_peak exit=0
+2026-11-21 02:50:30 PM PST F: route-sim am_peak exit=0
+2026-11-21 02:50:31 PM PST F: shares exit=0
+2026-11-21 02:51:09 PM PST F: sod base exit=0 files       20 wall_s=38
+2026-11-21 02:51:43 PM PST F: sod cand exit=0 files       20 wall_s=34
+2026-11-21 02:51:43 PM PST F: end-along-sim pm_peak exit=0
+2026-11-21 02:51:43 PM PST F: end-along-sim am_peak exit=0
+2026-11-21 02:51:43 PM PST F done
+2026-11-21 02:51:43 PM PST G: skipped (keep rule not passed)
+2026-11-21 02:51:43 PM PST I: restore (scripts/restore.zsh)
+2026-11-21 02:51:43 PM PST published membership files back: 56e688e7e5749d23 cf32e3e0d9e6f23e  (expected 56e688e7e5749d23 cf32e3e0d9e6f23e )
+2026-11-21 03:11:49 PM PST npm run data exit=0; hashes 53c823f20d9165ed 2d16d8f8eb0950ca 1c3b1666f24156f1  (expected 53c823f20d9165ed 2d16d8f8eb0950ca 1c3b1666f24156f1 ); config 2405ff02c92b2837 (expected 2405ff02c92b2837); status: ?? data/calibration/rockridge.assessment-r53.md;?? openspec/changes/calibration-round-53/evidence/baseline-hashes.txt;?? openspec/changes/calibration-round-53/evidence/candidate-hashes.txt;?? openspec/changes/calibration-round-53/evidence/colby-sb-shares.md;?? openspec/changes/calibration-round-53/evidence/decision-r53.txt;?? openspec/changes/calibration-round-53/evidence/dry-run.txt;?? openspec/changes/calibration-round-53/evidence/end-along-fit-am_peak.md;?? openspec/changes/calibration-round-53/evidence/end-along-fit-pm_peak.md;?? openspec/changes/calibration-round-53/evidence/end-along-sim-am_peak.md;?? openspec/changes/calibration-round-53/evidence/end-along-sim-pm_peak.md;?? openspec/changes/calibration-round-53/evidence/fit/;?? openspec/changes/calibration-round-53/evidence/keep-rule.md;?? openspec/changes/calibration-round-53/evidence/membership-loop.md;?? openspec/changes/calibration-round-53/evidence/node-ends-am_peak.md;?? openspec/changes/calibration-round-53/evidence/node-ends-cv-am_peak.md;?? openspec/changes/calibration-round-53/evidence/node-ends-cv-pm_peak.md;?? openspec/changes/calibration-round-53/evidence/node-ends-pm_peak.md;?? openspec/changes/calibration-round-53/evidence/pass0-check.txt;?? openspec/changes/calibration-round-53/evidence/rockridge.assessment-r53-base-screen.md;?? openspec/changes/calibration-round-53/evidence/rockridge.assessment-r53-screen.md;?? openspec/changes/calibration-round-53/evidence/rockridge.assessment-r53.md;?? openspec/changes/calibration-round-53/evidence/route-fit-am_peak.md;?? openspec/changes/calibration-round-53/evidence/route-fit-pm_peak.md;?? openspec/changes/calibration-round-53/evidence/route-sim-am_peak.md;?? openspec/changes/calibration-round-53/evidence/route-sim-pm_peak.md;?? openspec/changes/calibration-round-53/evidence/screen-base.json;?? openspec/changes/calibration-round-53/evidence/screen-r53.json;?? openspec/changes/calibration-round-53/evidence/seeding.md;?? openspec/changes/calibration-round-53/evidence/shares-pm.md;?? openspec/changes/calibration-round-53/evidence/state.json;
+2026-11-21 03:11:49 PM PST restore verified: demand 2d16d8f8eb0950ca and cross-validation demand 1c3b1666f24156f1
+2026-11-21 03:11:49 PM PST I: restore exit=0
+2026-11-21 03:11:49 PM PST status: ?? data/calibration/rockridge.assessment-r53.md;?? openspec/changes/calibration-round-53/evidence/baseline-hashes.txt;?? openspec/changes/calibration-round-53/evidence/candidate-hashes.txt;?? openspec/changes/calibration-round-53/evidence/colby-sb-shares.md;?? openspec/changes/calibration-round-53/evidence/decision-r53.txt;?? openspec/changes/calibration-round-53/evidence/dry-run.txt;?? openspec/changes/calibration-round-53/evidence/end-along-fit-am_peak.md;?? openspec/changes/calibration-round-53/evidence/end-along-fit-pm_peak.md;?? openspec/changes/calibration-round-53/evidence/end-along-sim-am_peak.md;?? openspec/changes/calibration-round-53/evidence/end-along-sim-pm_peak.md;?? openspec/changes/calibration-round-53/evidence/fit/;?? openspec/changes/calibration-round-53/evidence/keep-rule.md;?? openspec/changes/calibration-round-53/evidence/membership-loop.md;?? openspec/changes/calibration-round-53/evidence/node-ends-am_peak.md;?? openspec/changes/calibration-round-53/evidence/node-ends-cv-am_peak.md;?? openspec/changes/calibration-round-53/evidence/node-ends-cv-pm_peak.md;?? openspec/changes/calibration-round-53/evidence/node-ends-pm_peak.md;?? openspec/changes/calibration-round-53/evidence/pass0-check.txt;?? openspec/changes/calibration-round-53/evidence/rockridge.assessment-r53-base-screen.md;?? openspec/changes/calibration-round-53/evidence/rockridge.assessment-r53-screen.md;?? openspec/changes/calibration-round-53/evidence/rockridge.assessment-r53.md;?? openspec/changes/calibration-round-53/evidence/route-fit-am_peak.md;?? openspec/changes/calibration-round-53/evidence/route-fit-pm_peak.md;?? openspec/changes/calibration-round-53/evidence/route-sim-am_peak.md;?? openspec/changes/calibration-round-53/evidence/route-sim-pm_peak.md;?? openspec/changes/calibration-round-53/evidence/screen-base.json;?? openspec/changes/calibration-round-53/evidence/screen-r53.json;?? openspec/changes/calibration-round-53/evidence/seeding.md;?? openspec/changes/calibration-round-53/evidence/shares-pm.md;?? openspec/changes/calibration-round-53/evidence/state.json;
+2026-11-21 03:11:49 PM PST ALL DONE
