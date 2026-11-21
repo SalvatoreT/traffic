@@ -10,7 +10,7 @@ export interface ShareLink { id: number; from: number; to: number; name: string;
 export interface ShareNode { id: number; x: number; y: number }
 
 export interface Targets {
-  selectLink?: { street: string; direction: string; between?: string[]; observedVehPerHour?: Record<string, number>; from?: { via: string; share: number; pmPeakShare?: number }[]; to?: { via: string; share: number; pmPeakShare?: number }[] }[];
+  selectLink?: { street: string; direction: string; between?: string[]; observedVehPerHour?: Record<string, number>; endAlongVehPerHour?: Record<string, number>; from?: { via: string; share: number; pmPeakShare?: number }[]; to?: { via: string; share: number; pmPeakShare?: number }[] }[];
   freewayRamp?: { location?: string; side?: string; ontoFreewayFromNorth?: { via: string; share: number }[]; fromFreewayGoingNorth?: { via: string; share: number }[] };
 }
 
@@ -123,9 +123,21 @@ export interface ShareSpec { id: string; label: string; target: number; weight: 
 /** Simulated denominator membership of a select-link block: per flow, the share of its trips on the block, from the static fraction `stat` as a prior; undefined keeps static routes. */
 export type BlockMembership = (block: string, stat: Float64Array) => Float64Array | undefined;
 
-/** Tally route events before sampled paths are reduced to per-link marginal shares. */
+/**
+ * Round 53: a counted street run's trips that ended along it. `member` is, per flow, the share of its trips that used a link of the run times 1 when its destination is an
+ * interior node of the run (not the first or the last), and `staticMember` the same on the static routes; `simulated` says which of the two `member` is.
+ */
+export interface EndAlongSpec { id: string; label: string; block: string; target: number; simulated: boolean; member: Float64Array; staticMember: Float64Array; flows: number; nodes: number[] }
+
+/** Nodes strictly between the ends of a street run: the heads of its links that are also the tail of another link of the run. */
+export function interiorNodes(links: ShareLink[], run: number[]): number[] {
+  const tails = new Set(run.map((i) => links[i].from));
+  return [...new Set(run.map((i) => links[i].to).filter((n) => tails.has(n)))].sort((a, b) => a - b);
+}
+
+/** Tally route events before sampled paths are reduced to per-link marginal shares. `endAlong` (round 53) also records, for each select-link run with an end-along count in the period that is not in `skip`, the run's interior nodes. */
 export function routeShareTally(
-  nodes: ShareNode[], links: ShareLink[], targets: Targets, flows: OdFlow[], period: string, pmPeriod: string, weight: number,
+  nodes: ShareNode[], links: ShareLink[], targets: Targets, flows: OdFlow[], period: string, pmPeriod: string, weight: number, endAlong?: { skip: ReadonlySet<string> },
 ) {
   const nodeBy = new Map(nodes.map((n) => [n.id, n]));
   const freeway = new Set<number>();
@@ -146,11 +158,17 @@ export function routeShareTally(
     return counts;
   };
   const rules: { spec: Omit<ShareSpec, 'ratio'>; denominator: Uint32Array; numerator: Uint32Array; block?: string; end?: Uint8Array }[] = [];
+  const endRules: { label: string; target: number; denominator: Uint32Array; interior: Set<number> }[] = [];
   for (const t of targets.selectLink ?? []) {
     const block = resolveBlock(links, nodeBy, t.street, t.direction, t.between ?? []);
     if (!block.links.length) continue;
     const blockId = group(block.links);
     const den = total((_, visited) => visited.has(blockId));
+    const endTarget = t.endAlongVehPerHour?.[period];
+    if (endAlong && endTarget !== undefined && endTarget > 0 && !endAlong.skip.has(`${t.street} ${t.direction}`)) {
+      const interior = interiorNodes(links, block.links);
+      if (interior.length) endRules.push({ label: `${t.street} ${t.direction}`, target: endTarget, denominator: den, interior: new Set(interior) });
+    }
     for (const side of ['from', 'to'] as const) for (const e of t[side] ?? []) {
       if (!parseVia(e.via).freeway) continue;
       const num = total((k, visited) => visited.has(blockId) && freeway.has(side === 'from' ? flows[k].origin : flows[k].destination));
@@ -220,6 +238,20 @@ export function routeShareTally(
         const sm: number[] = [], sd: number[] = [], sn: number[] = [];
         for (let k = 0; k < flows.length; k++) if (sim[k] > 0) { sm.push(k); sd.push(sim[k]); sn.push(end![k] ? sim[k] : 0); }
         return { ...spec, ratio: { flows: Int32Array.from(sm), den: Float64Array.from(sd), num: Float64Array.from(sn) }, staticRatio, simulated: true, block };
+      });
+    },
+    /**
+     * Round 53 (ASSUMPTION, no reference): the cars an hour of a select-link run that end their trip at an interior node of the run, as constraints of the count's "ended along the street" figure.
+     * With `member`, a run with simulated trips takes each pair's simulated share of trips on the run (the static fraction as a prior), as the shares do; a run without one keeps static routes.
+     */
+    endAlong(member?: BlockMembership): EndAlongSpec[] {
+      return endRules.map(({ label, target, denominator, interior }) => {
+        const stat = Float64Array.from(flows, (_, k) => (samples[k] ? denominator[k] / samples[k] : 0));
+        const sim = member?.(label, stat);
+        const at = Uint8Array.from(flows, (f) => (interior.has(f.destination) ? 1 : 0));
+        const staticMember = Float64Array.from(stat, (v, k) => v * at[k]);
+        const used = sim ? Float64Array.from(sim, (v, k) => v * at[k]) : staticMember;
+        return { id: `end along ${label}`, label, block: label, target, simulated: !!sim, member: used, staticMember, flows: used.reduce((n, v) => n + (v > 0 ? 1 : 0), 0), nodes: [...interior].sort((a, b) => a - b) };
       });
     },
     sideFraction(on: boolean, volume: ArrayLike<number>) {

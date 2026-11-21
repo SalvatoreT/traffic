@@ -1,0 +1,11 @@
+{
+  "endAlong": {
+    "weight": 2,
+    "seedPairs": true,
+    "_note": "Calibration round 53. With simulatedMembership.endAlong true, the volunteer count's cars that ended a trip along a counted street (endAlongVehPerHour of the select-link runs in data/calibration/rockridge.targets.json: Hillegass Ave and Colby St, both directions, PM and AM) are fit targets of this weight in the periods whose select-link blocks have simulated trips. A pair counts its share of trips that used a link of the run (simulated, with the static fraction as a prior of simulatedMembership.priorTrips trips) where its destination is a node strictly between the run's ends. The weight 2 is an ASSUMPTION, the weight of the ramp counts: the figure is one count by volunteers over one peak hour. The figures describe the whole street between its ends, like the route stations, so the training view leaves out a run with a held block on it. Passes without a membership file and midday keep the baseline build. With seedPairs true (round 53, D8) the seed table is first given the pairs that end along a run whose static end-along flow is under its target: origins weighted by their flow on the run's first block, destinations by their existing volume, the volume taken from the other inbound pairs of the same node (at most 80%), so no node's destination total changes (ASSUMPTION: the proportions and the cap; DATA: the targets). The training view never seeds."
+  },
+  "simulatedMembership": {
+    "endAlong": true,
+    "noteSuffix": " Round 53 sub-switch endAlong, absent in rounds 48 to 52: the count's cars that ended a trip along a counted street are fit targets (countFit.endAlong), from the same block pairs as the shares (ASSUMPTION, no reference)."
+  }
+}
