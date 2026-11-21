@@ -1,0 +1,4083 @@
+{
+ "done": [
+  "i0-shipped-build",
+  "i0-shipped-runs",
+  "i0-training-build",
+  "i0-training-runs",
+  "i0-pool",
+  "i1-shipped-build",
+  "i1-shipped-runs",
+  "i1-training-build",
+  "i1-training-runs",
+  "i1-pool",
+  "i2-shipped-build",
+  "i2-shipped-runs",
+  "i2-training-build",
+  "i2-training-runs",
+  "i2-pool",
+  "final-shipped-build",
+  "final-training-build"
+ ],
+ "stoppedAfter": null,
+ "reports": [
+  {
+   "pass": 0,
+   "view": "shipped",
+   "period": "pm_peak",
+   "zeroHitThrough": [],
+   "zeroHitBlocks": [],
+   "offered": 27612,
+   "selected": 337,
+   "withHits": 335,
+   "zeroHit": [
+    "ix sr24-clifton-claremont move 1600>1771",
+    "ix telegraph-51st move 1629>1764"
+   ],
+   "absent": [],
+   "shift": null
+  },
+  {
+   "pass": 0,
+   "view": "shipped",
+   "period": "am_peak",
+   "zeroHitThrough": [],
+   "zeroHitBlocks": [],
+   "offered": 23204,
+   "selected": 272,
+   "withHits": 271,
+   "zeroHit": [
+    "ix telegraph-51st move 1629>1764"
+   ],
+   "absent": [],
+   "shift": null
+  },
+  {
+   "pass": 0,
+   "view": "training",
+   "period": "pm_peak",
+   "zeroHitThrough": [],
+   "zeroHitBlocks": [],
+   "offered": 25044,
+   "selected": 256,
+   "withHits": 256,
+   "zeroHit": [],
+   "absent": [],
+   "shift": null
+  },
+  {
+   "pass": 0,
+   "view": "training",
+   "period": "am_peak",
+   "zeroHitThrough": [],
+   "zeroHitBlocks": [],
+   "offered": 20584,
+   "selected": 201,
+   "withHits": 201,
+   "zeroHit": [],
+   "absent": [],
+   "shift": null
+  },
+  {
+   "pass": 1,
+   "view": "shipped",
+   "period": "pm_peak",
+   "zeroHitThrough": [],
+   "zeroHitBlocks": [],
+   "offered": 24681,
+   "selected": 337,
+   "withHits": 335,
+   "zeroHit": [
+    "ix sr24-clifton-claremont move 1600>1771",
+    "ix telegraph-51st move 1629>1764"
+   ],
+   "absent": [],
+   "shift": {
+    "stations": 335,
+    "flowRms": 53.88593563910246,
+    "flowSeRms": 16.02121365249334,
+    "flowRatio": 3.3634115871562784,
+    "membershipRms": 369.14522478974976,
+    "membershipSeRms": 110.95662731537263,
+    "membershipRatio": 3.326932637746155,
+    "converged": false
+   },
+   "ceiling": {
+    "stations": 1878,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 27653,
+    "finalTotal": 24680,
+    "byType": {
+     "static": {
+      "through": 5891,
+      "local": 10436,
+      "ramp": 11326
+     },
+     "final": {
+      "through": 4922,
+      "local": 8448,
+      "ramp": 11310
+     }
+    },
+    "gate": {
+     "stations": 216,
+     "above": 0,
+     "excess": 0,
+     "removed": 76
+    },
+    "nonGate": {
+     "stations": 1662,
+     "above": 0,
+     "excess": 0,
+     "removed": 32
+    },
+    "ends": {
+     "originInside": [
+      893,
+      872
+     ],
+     "originOutside": [
+      9645,
+      7942
+     ],
+     "destInside": [
+      822,
+      791
+     ],
+     "destOutside": [
+      7872,
+      6139
+     ]
+    }
+   }
+  },
+  {
+   "pass": 1,
+   "view": "shipped",
+   "period": "am_peak",
+   "zeroHitThrough": [],
+   "zeroHitBlocks": [],
+   "offered": 21610,
+   "selected": 272,
+   "withHits": 271,
+   "zeroHit": [
+    "ix telegraph-51st move 1629>1764"
+   ],
+   "absent": [],
+   "shift": {
+    "stations": 271,
+    "flowRms": 54.494793413913335,
+    "flowSeRms": 12.439948742790191,
+    "flowRatio": 4.380628452789794,
+    "membershipRms": 259.9956139283766,
+    "membershipSeRms": 101.26551512840116,
+    "membershipRatio": 2.56746448777465,
+    "converged": false
+   },
+   "ceiling": {
+    "stations": 1923,
+    "above": 1,
+    "excess": 2,
+    "staticTotal": 23218,
+    "finalTotal": 21609,
+    "byType": {
+     "static": {
+      "through": 3733,
+      "local": 9610,
+      "ramp": 9875
+     },
+     "final": {
+      "through": 3553,
+      "local": 8276,
+      "ramp": 9780
+     }
+    },
+    "gate": {
+     "stations": 217,
+     "above": 1,
+     "excess": 2,
+     "removed": 44
+    },
+    "nonGate": {
+     "stations": 1706,
+     "above": 0,
+     "excess": 0,
+     "removed": 25
+    },
+    "ends": {
+     "originInside": [
+      605,
+      682
+     ],
+     "originOutside": [
+      7539,
+      6406
+     ],
+     "destInside": [
+      562,
+      505
+     ],
+     "destOutside": [
+      8211,
+      6978
+     ]
+    }
+   }
+  },
+  {
+   "pass": 1,
+   "view": "training",
+   "period": "pm_peak",
+   "zeroHitThrough": [],
+   "zeroHitBlocks": [],
+   "offered": 22912,
+   "selected": 256,
+   "withHits": 256,
+   "zeroHit": [],
+   "absent": [],
+   "shift": {
+    "stations": 256,
+    "flowRms": 56.90893012634308,
+    "flowSeRms": 15.927472880564295,
+    "flowRatio": 3.573004365041923,
+    "membershipRms": 339.4828989387772,
+    "membershipSeRms": 112.82687734852232,
+    "membershipRatio": 3.0088832281524045,
+    "converged": false
+   },
+   "ceiling": {
+    "stations": 1846,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 25042,
+    "finalTotal": 22911,
+    "byType": {
+     "static": {
+      "through": 2785,
+      "local": 10873,
+      "ramp": 11384
+     },
+     "final": {
+      "through": 2786,
+      "local": 8750,
+      "ramp": 11375
+     }
+    },
+    "gate": {
+     "stations": 222,
+     "above": 0,
+     "excess": 0,
+     "removed": 140
+    },
+    "nonGate": {
+     "stations": 1624,
+     "above": 0,
+     "excess": 0,
+     "removed": 29
+    },
+    "ends": {
+     "originInside": [
+      1387,
+      1226
+     ],
+     "originOutside": [
+      8768,
+      7439
+     ],
+     "destInside": [
+      881,
+      839
+     ],
+     "destOutside": [
+      6740,
+      5307
+     ]
+    }
+   }
+  },
+  {
+   "pass": 1,
+   "view": "training",
+   "period": "am_peak",
+   "zeroHitThrough": [],
+   "zeroHitBlocks": [],
+   "offered": 19194,
+   "selected": 201,
+   "withHits": 201,
+   "zeroHit": [],
+   "absent": [],
+   "shift": {
+    "stations": 201,
+    "flowRms": 61.53733648033953,
+    "flowSeRms": 18.106396439926996,
+    "flowRatio": 3.3986517794695787,
+    "membershipRms": 278.8393884965241,
+    "membershipSeRms": 103.65665468079915,
+    "membershipRatio": 2.6900288201966736,
+    "converged": false
+   },
+   "ceiling": {
+    "stations": 1909,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 20582,
+    "finalTotal": 19193,
+    "byType": {
+     "static": {
+      "through": 2455,
+      "local": 8314,
+      "ramp": 9813
+     },
+     "final": {
+      "through": 2452,
+      "local": 6949,
+      "ramp": 9792
+     }
+    },
+    "gate": {
+     "stations": 223,
+     "above": 0,
+     "excess": 0,
+     "removed": 61
+    },
+    "nonGate": {
+     "stations": 1686,
+     "above": 0,
+     "excess": 0,
+     "removed": 16
+    },
+    "ends": {
+     "originInside": [
+      1040,
+      1213
+     ],
+     "originOutside": [
+      7095,
+      5895
+     ],
+     "destInside": [
+      735,
+      812
+     ],
+     "destOutside": [
+      5907,
+      4838
+     ]
+    }
+   }
+  },
+  {
+   "pass": 2,
+   "view": "shipped",
+   "period": "pm_peak",
+   "zeroHitThrough": [],
+   "zeroHitBlocks": [],
+   "offered": 25010,
+   "selected": 337,
+   "withHits": 336,
+   "zeroHit": [
+    "ix telegraph-51st move 1629>1764"
+   ],
+   "absent": [],
+   "shift": {
+    "stations": 335,
+    "flowRms": 26.133329779672817,
+    "flowSeRms": 16.65341144539118,
+    "flowRatio": 1.569247830414062,
+    "membershipRms": 204.00827726842422,
+    "membershipSeRms": 108.38341157871892,
+    "membershipRatio": 1.8822832230211992,
+    "converged": false
+   },
+   "ceiling": {
+    "stations": 1878,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 27734,
+    "finalTotal": 25009,
+    "byType": {
+     "static": {
+      "through": 5892,
+      "local": 10519,
+      "ramp": 11324
+     },
+     "final": {
+      "through": 5052,
+      "local": 8659,
+      "ramp": 11298
+     }
+    },
+    "gate": {
+     "stations": 216,
+     "above": 0,
+     "excess": 0,
+     "removed": 105
+    },
+    "nonGate": {
+     "stations": 1662,
+     "above": 0,
+     "excess": 0,
+     "removed": 48
+    },
+    "ends": {
+     "originInside": [
+      899,
+      839
+     ],
+     "originOutside": [
+      9686,
+      8155
+     ],
+     "destInside": [
+      822,
+      700
+     ],
+     "destOutside": [
+      7920,
+      6386
+     ]
+    }
+   }
+  },
+  {
+   "pass": 2,
+   "view": "shipped",
+   "period": "am_peak",
+   "zeroHitThrough": [],
+   "zeroHitBlocks": [],
+   "offered": 21502,
+   "selected": 272,
+   "withHits": 271,
+   "zeroHit": [
+    "ix telegraph-51st move 1629>1764"
+   ],
+   "absent": [],
+   "shift": {
+    "stations": 271,
+    "flowRms": 38.009752098804135,
+    "flowSeRms": 12.403006222107342,
+    "flowRatio": 3.0645596251540104,
+    "membershipRms": 139.62878090696285,
+    "membershipSeRms": 99.32620371113747,
+    "membershipRatio": 1.405759766204638,
+    "converged": false
+   },
+   "ceiling": {
+    "stations": 1923,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 23217,
+    "finalTotal": 21502,
+    "byType": {
+     "static": {
+      "through": 3733,
+      "local": 9609,
+      "ramp": 9875
+     },
+     "final": {
+      "through": 3555,
+      "local": 8160,
+      "ramp": 9787
+     }
+    },
+    "gate": {
+     "stations": 217,
+     "above": 0,
+     "excess": 0,
+     "removed": 54
+    },
+    "nonGate": {
+     "stations": 1706,
+     "above": 0,
+     "excess": 0,
+     "removed": 37
+    },
+    "ends": {
+     "originInside": [
+      604,
+      713
+     ],
+     "originOutside": [
+      7539,
+      6332
+     ],
+     "destInside": [
+      562,
+      494
+     ],
+     "destOutside": [
+      8211,
+      6937
+     ]
+    }
+   }
+  },
+  {
+   "pass": 2,
+   "view": "training",
+   "period": "pm_peak",
+   "zeroHitThrough": [],
+   "zeroHitBlocks": [],
+   "offered": 22760,
+   "selected": 256,
+   "withHits": 256,
+   "zeroHit": [],
+   "absent": [],
+   "shift": {
+    "stations": 255,
+    "flowRms": 25.528601414806843,
+    "flowSeRms": 16.343454780468537,
+    "flowRatio": 1.5620076512412258,
+    "membershipRms": 164.71461427834177,
+    "membershipSeRms": 105.74228681483142,
+    "membershipRatio": 1.5576986202953849,
+    "converged": false
+   },
+   "ceiling": {
+    "stations": 1846,
+    "above": 1,
+    "excess": 1,
+    "staticTotal": 25042,
+    "finalTotal": 22759,
+    "byType": {
+     "static": {
+      "through": 2785,
+      "local": 10873,
+      "ramp": 11384
+     },
+     "final": {
+      "through": 2783,
+      "local": 8601,
+      "ramp": 11375
+     }
+    },
+    "gate": {
+     "stations": 222,
+     "above": 1,
+     "excess": 1,
+     "removed": 190
+    },
+    "nonGate": {
+     "stations": 1624,
+     "above": 0,
+     "excess": 0,
+     "removed": 39
+    },
+    "ends": {
+     "originInside": [
+      1387,
+      1152
+     ],
+     "originOutside": [
+      8768,
+      7447
+     ],
+     "destInside": [
+      881,
+      762
+     ],
+     "destOutside": [
+      6740,
+      5168
+     ]
+    }
+   }
+  },
+  {
+   "pass": 2,
+   "view": "training",
+   "period": "am_peak",
+   "zeroHitThrough": [],
+   "zeroHitBlocks": [],
+   "offered": 19085,
+   "selected": 201,
+   "withHits": 201,
+   "zeroHit": [],
+   "absent": [],
+   "shift": {
+    "stations": 201,
+    "flowRms": 42.922788482859296,
+    "flowSeRms": 17.11492128757634,
+    "flowRatio": 2.5079162072464096,
+    "membershipRms": 169.03598898500735,
+    "membershipSeRms": 98.63631579988845,
+    "membershipRatio": 1.7137297517067087,
+    "converged": false
+   },
+   "ceiling": {
+    "stations": 1909,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 20582,
+    "finalTotal": 19085,
+    "byType": {
+     "static": {
+      "through": 2455,
+      "local": 8314,
+      "ramp": 9813
+     },
+     "final": {
+      "through": 2368,
+      "local": 6913,
+      "ramp": 9804
+     }
+    },
+    "gate": {
+     "stations": 223,
+     "above": 0,
+     "excess": 0,
+     "removed": 34
+    },
+    "nonGate": {
+     "stations": 1686,
+     "above": 0,
+     "excess": 0,
+     "removed": 19
+    },
+    "ends": {
+     "originInside": [
+      1040,
+      1209
+     ],
+     "originOutside": [
+      7095,
+      5872
+     ],
+     "destInside": [
+      735,
+      793
+     ],
+     "destOutside": [
+      5907,
+      4757
+     ]
+    }
+   }
+  }
+ ],
+ "stationsSha": "c9db41c930acf37d63d842cbe0d2b89a67d7dd24150be0ef3adbaea2ef25937c",
+ "targets": {
+  "shipped:0": {
+   "shares": [],
+   "through": [],
+   "routes": [
+    {
+     "period": "am_peak",
+     "id": "count route 2591>2605",
+     "membership": "static",
+     "base": 1,
+     "blocks": 7,
+     "weight": 1,
+     "label": "Colby Street NB, whole street between Claremont Avenue and Alcatraz Avenue (links 2591 to 2605)"
+    },
+    {
+     "period": "am_peak",
+     "id": "count route 2606>2592",
+     "membership": "static",
+     "base": 1,
+     "blocks": 7,
+     "weight": 1,
+     "label": "Colby Street SB, whole street between Claremont Avenue and Alcatraz Avenue (links 2606 to 2592)"
+    },
+    {
+     "period": "am_peak",
+     "id": "count route 2676>2670",
+     "membership": "static",
+     "base": 1,
+     "blocks": 4,
+     "weight": 1,
+     "label": "Hillegass Avenue NB, whole street between Claremont Avenue and Alcatraz Avenue (links 2676 to 2670)"
+    },
+    {
+     "period": "am_peak",
+     "id": "count route 2669>2675",
+     "membership": "static",
+     "base": 1,
+     "blocks": 4,
+     "weight": 1,
+     "label": "Hillegass Avenue SB, whole street between Claremont Avenue and Alcatraz Avenue (links 2669 to 2675)"
+    },
+    {
+     "period": "pm_peak",
+     "id": "count route 2591>2605",
+     "membership": "static",
+     "base": 1,
+     "blocks": 7,
+     "weight": 1,
+     "label": "Colby Street NB, whole street between Claremont Avenue and Alcatraz Avenue (links 2591 to 2605)"
+    },
+    {
+     "period": "pm_peak",
+     "id": "count route 2606>2592",
+     "membership": "static",
+     "base": 1,
+     "blocks": 7,
+     "weight": 1,
+     "label": "Colby Street SB, whole street between Claremont Avenue and Alcatraz Avenue (links 2606 to 2592)"
+    },
+    {
+     "period": "pm_peak",
+     "id": "count route 2676>2670",
+     "membership": "static",
+     "base": 1,
+     "blocks": 4,
+     "weight": 1,
+     "label": "Hillegass Avenue NB, whole street between Claremont Avenue and Alcatraz Avenue (links 2676 to 2670)"
+    },
+    {
+     "period": "pm_peak",
+     "id": "count route 2669>2675",
+     "membership": "static",
+     "base": 1,
+     "blocks": 4,
+     "weight": 1,
+     "label": "Hillegass Avenue SB, whole street between Claremont Avenue and Alcatraz Avenue (links 2669 to 2675)"
+    }
+   ]
+  },
+  "shipped:1": {
+   "shares": [
+    {
+     "period": "am_peak",
+     "label": "Hillegass Avenue NB, trips from the freeway",
+     "membership": "simulated",
+     "target": 47,
+     "offered": 64,
+     "staticOffered": 59,
+     "final": 41,
+     "staticFinal": 44,
+     "flows": 493
+    },
+    {
+     "period": "am_peak",
+     "label": "Colby Street NB, trips from the freeway",
+     "membership": "simulated",
+     "target": 47,
+     "offered": 66,
+     "staticOffered": 69,
+     "final": 45,
+     "staticFinal": 47,
+     "flows": 445
+    },
+    {
+     "period": "am_peak",
+     "label": "Hillegass Avenue SB, trips to the freeway",
+     "membership": "simulated",
+     "target": 57,
+     "offered": 83,
+     "staticOffered": 78,
+     "final": 57,
+     "staticFinal": 55,
+     "flows": 410
+    },
+    {
+     "period": "am_peak",
+     "label": "Colby Street SB, trips to the freeway",
+     "membership": "simulated",
+     "target": 45,
+     "offered": 76,
+     "staticOffered": 78,
+     "final": 40,
+     "staticFinal": 38,
+     "flows": 1177
+    },
+    {
+     "period": "am_peak",
+     "label": "Onto the freeway at the ramps, via College Avenue",
+     "membership": "static",
+     "target": 16,
+     "offered": 24,
+     "staticOffered": 24,
+     "final": 16,
+     "staticFinal": 16,
+     "flows": 243
+    },
+    {
+     "period": "am_peak",
+     "label": "Onto the freeway at the ramps, via Hillegass Avenue",
+     "membership": "static",
+     "target": 12,
+     "offered": 9,
+     "staticOffered": 9,
+     "final": 12,
+     "staticFinal": 12,
+     "flows": 243
+    },
+    {
+     "period": "am_peak",
+     "label": "Onto the freeway at the ramps, via Martin Street",
+     "membership": "static",
+     "target": 10,
+     "offered": 27,
+     "staticOffered": 27,
+     "final": 12,
+     "staticFinal": 12,
+     "flows": 243
+    },
+    {
+     "period": "am_peak",
+     "label": "Onto the freeway at the ramps, via Colby Street",
+     "membership": "static",
+     "target": 8,
+     "offered": 17,
+     "staticOffered": 17,
+     "final": 12,
+     "staticFinal": 12,
+     "flows": 243
+    },
+    {
+     "period": "am_peak",
+     "label": "Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue",
+     "membership": "static",
+     "target": 8,
+     "offered": 15,
+     "staticOffered": 15,
+     "final": 7,
+     "staticFinal": 7,
+     "flows": 243
+    },
+    {
+     "period": "am_peak",
+     "label": "Onto the freeway at the ramps, via Benvenue Avenue",
+     "membership": "static",
+     "target": 5,
+     "offered": 1,
+     "staticOffered": 1,
+     "final": 5,
+     "staticFinal": 5,
+     "flows": 243
+    },
+    {
+     "period": "am_peak",
+     "label": "From the freeway at the ramps, via College Avenue",
+     "membership": "static",
+     "target": 10,
+     "offered": 35,
+     "staticOffered": 35,
+     "final": 12,
+     "staticFinal": 12,
+     "flows": 221
+    },
+    {
+     "period": "am_peak",
+     "label": "From the freeway at the ramps, via Martin Street",
+     "membership": "static",
+     "target": 10,
+     "offered": 18,
+     "staticOffered": 18,
+     "final": 14,
+     "staticFinal": 14,
+     "flows": 221
+    },
+    {
+     "period": "am_peak",
+     "label": "From the freeway at the ramps, via Colby Street",
+     "membership": "static",
+     "target": 8,
+     "offered": 9,
+     "staticOffered": 9,
+     "final": 11,
+     "staticFinal": 11,
+     "flows": 221
+    },
+    {
+     "period": "am_peak",
+     "label": "From the freeway at the ramps, via Hillegass Avenue",
+     "membership": "static",
+     "target": 5,
+     "offered": 10,
+     "staticOffered": 10,
+     "final": 7,
+     "staticFinal": 7,
+     "flows": 221
+    },
+    {
+     "period": "am_peak",
+     "label": "From the freeway at the ramps, via Benvenue Avenue",
+     "membership": "static",
+     "target": 3,
+     "offered": 2,
+     "staticOffered": 2,
+     "final": 2,
+     "staticFinal": 2,
+     "flows": 221
+    },
+    {
+     "period": "pm_peak",
+     "label": "Hillegass Avenue NB, trips from the freeway",
+     "membership": "simulated",
+     "target": 47,
+     "offered": 68,
+     "staticOffered": 58,
+     "final": 44,
+     "staticFinal": 42,
+     "flows": 570
+    },
+    {
+     "period": "pm_peak",
+     "label": "Colby Street NB, trips from the freeway",
+     "membership": "simulated",
+     "target": 47,
+     "offered": 61,
+     "staticOffered": 65,
+     "final": 46,
+     "staticFinal": 49,
+     "flows": 625
+    },
+    {
+     "period": "pm_peak",
+     "label": "Hillegass Avenue SB, trips to the freeway",
+     "membership": "simulated",
+     "target": 68,
+     "offered": 72,
+     "staticOffered": 68,
+     "final": 64,
+     "staticFinal": 59,
+     "flows": 287
+    },
+    {
+     "period": "pm_peak",
+     "label": "Colby Street SB, trips to the freeway",
+     "membership": "simulated",
+     "target": 45,
+     "offered": 73,
+     "staticOffered": 75,
+     "final": 43,
+     "staticFinal": 50,
+     "flows": 663
+    },
+    {
+     "period": "pm_peak",
+     "label": "Onto the freeway at the ramps, via College Avenue",
+     "membership": "static",
+     "target": 16,
+     "offered": 32,
+     "staticOffered": 32,
+     "final": 17,
+     "staticFinal": 17,
+     "flows": 234
+    },
+    {
+     "period": "pm_peak",
+     "label": "Onto the freeway at the ramps, via Hillegass Avenue",
+     "membership": "static",
+     "target": 12,
+     "offered": 11,
+     "staticOffered": 11,
+     "final": 14,
+     "staticFinal": 14,
+     "flows": 234
+    },
+    {
+     "period": "pm_peak",
+     "label": "Onto the freeway at the ramps, via Martin Street",
+     "membership": "static",
+     "target": 10,
+     "offered": 23,
+     "staticOffered": 23,
+     "final": 11,
+     "staticFinal": 11,
+     "flows": 234
+    },
+    {
+     "period": "pm_peak",
+     "label": "Onto the freeway at the ramps, via Colby Street",
+     "membership": "static",
+     "target": 8,
+     "offered": 15,
+     "staticOffered": 15,
+     "final": 12,
+     "staticFinal": 12,
+     "flows": 234
+    },
+    {
+     "period": "pm_peak",
+     "label": "Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue",
+     "membership": "static",
+     "target": 8,
+     "offered": 14,
+     "staticOffered": 14,
+     "final": 9,
+     "staticFinal": 9,
+     "flows": 234
+    },
+    {
+     "period": "pm_peak",
+     "label": "Onto the freeway at the ramps, via Benvenue Avenue",
+     "membership": "static",
+     "target": 5,
+     "offered": 1,
+     "staticOffered": 1,
+     "final": 4,
+     "staticFinal": 4,
+     "flows": 234
+    },
+    {
+     "period": "pm_peak",
+     "label": "From the freeway at the ramps, via College Avenue",
+     "membership": "static",
+     "target": 10,
+     "offered": 25,
+     "staticOffered": 25,
+     "final": 10,
+     "staticFinal": 10,
+     "flows": 234
+    },
+    {
+     "period": "pm_peak",
+     "label": "From the freeway at the ramps, via Martin Street",
+     "membership": "static",
+     "target": 10,
+     "offered": 19,
+     "staticOffered": 19,
+     "final": 11,
+     "staticFinal": 11,
+     "flows": 234
+    },
+    {
+     "period": "pm_peak",
+     "label": "From the freeway at the ramps, via Colby Street",
+     "membership": "static",
+     "target": 8,
+     "offered": 14,
+     "staticOffered": 14,
+     "final": 14,
+     "staticFinal": 14,
+     "flows": 234
+    },
+    {
+     "period": "pm_peak",
+     "label": "From the freeway at the ramps, via Hillegass Avenue",
+     "membership": "static",
+     "target": 5,
+     "offered": 7,
+     "staticOffered": 7,
+     "final": 6,
+     "staticFinal": 6,
+     "flows": 234
+    },
+    {
+     "period": "pm_peak",
+     "label": "From the freeway at the ramps, via Benvenue Avenue",
+     "membership": "static",
+     "target": 3,
+     "offered": 2,
+     "staticOffered": 2,
+     "final": 3,
+     "staticFinal": 3,
+     "flows": 234
+    }
+   ],
+   "through": [],
+   "routes": [
+    {
+     "period": "am_peak",
+     "id": "count route 2591>2605",
+     "membership": "simulated",
+     "base": 1,
+     "blocks": 7,
+     "weight": 7,
+     "label": "Colby Street NB, whole street between Claremont Avenue and Alcatraz Avenue (links 2591 to 2605)"
+    },
+    {
+     "period": "am_peak",
+     "id": "count route 2606>2592",
+     "membership": "simulated",
+     "base": 1,
+     "blocks": 7,
+     "weight": 7,
+     "label": "Colby Street SB, whole street between Claremont Avenue and Alcatraz Avenue (links 2606 to 2592)"
+    },
+    {
+     "period": "am_peak",
+     "id": "count route 2676>2670",
+     "membership": "simulated",
+     "base": 1,
+     "blocks": 4,
+     "weight": 4,
+     "label": "Hillegass Avenue NB, whole street between Claremont Avenue and Alcatraz Avenue (links 2676 to 2670)"
+    },
+    {
+     "period": "am_peak",
+     "id": "count route 2669>2675",
+     "membership": "simulated",
+     "base": 1,
+     "blocks": 4,
+     "weight": 4,
+     "label": "Hillegass Avenue SB, whole street between Claremont Avenue and Alcatraz Avenue (links 2669 to 2675)"
+    },
+    {
+     "period": "pm_peak",
+     "id": "count route 2591>2605",
+     "membership": "simulated",
+     "base": 1,
+     "blocks": 7,
+     "weight": 7,
+     "label": "Colby Street NB, whole street between Claremont Avenue and Alcatraz Avenue (links 2591 to 2605)"
+    },
+    {
+     "period": "pm_peak",
+     "id": "count route 2606>2592",
+     "membership": "simulated",
+     "base": 1,
+     "blocks": 7,
+     "weight": 7,
+     "label": "Colby Street SB, whole street between Claremont Avenue and Alcatraz Avenue (links 2606 to 2592)"
+    },
+    {
+     "period": "pm_peak",
+     "id": "count route 2676>2670",
+     "membership": "simulated",
+     "base": 1,
+     "blocks": 4,
+     "weight": 4,
+     "label": "Hillegass Avenue NB, whole street between Claremont Avenue and Alcatraz Avenue (links 2676 to 2670)"
+    },
+    {
+     "period": "pm_peak",
+     "id": "count route 2669>2675",
+     "membership": "simulated",
+     "base": 1,
+     "blocks": 4,
+     "weight": 4,
+     "label": "Hillegass Avenue SB, whole street between Claremont Avenue and Alcatraz Avenue (links 2669 to 2675)"
+    }
+   ],
+   "endAlong": [
+    {
+     "period": "am_peak",
+     "label": "Hillegass Avenue NB",
+     "membership": "simulated",
+     "target": 9,
+     "weight": 2,
+     "offered": 63,
+     "staticOffered": 63.7,
+     "afterFit": 9.6,
+     "staticAfterFit": 15,
+     "final": 10.7,
+     "staticFinal": 15.2,
+     "flows": 18,
+     "nodes": [
+      1085,
+      1086,
+      1090
+     ]
+    },
+    {
+     "period": "am_peak",
+     "label": "Colby Street NB",
+     "membership": "simulated",
+     "target": 14,
+     "weight": 2,
+     "offered": 43.6,
+     "staticOffered": 41.5,
+     "afterFit": 20.5,
+     "staticAfterFit": 21.2,
+     "final": 20.6,
+     "staticFinal": 23.2,
+     "flows": 95,
+     "nodes": [
+      786,
+      793,
+      799,
+      819,
+      828,
+      1070,
+      1071
+     ]
+    },
+    {
+     "period": "am_peak",
+     "label": "Hillegass Avenue SB",
+     "membership": "simulated",
+     "target": 9,
+     "weight": 2,
+     "offered": 7.4,
+     "staticOffered": 8.9,
+     "afterFit": 9.6,
+     "staticAfterFit": 9.7,
+     "final": 9.1,
+     "staticFinal": 9.9,
+     "flows": 62,
+     "nodes": [
+      1085,
+      1086,
+      1090
+     ]
+    },
+    {
+     "period": "am_peak",
+     "label": "Colby Street SB",
+     "membership": "simulated",
+     "target": 15,
+     "weight": 2,
+     "offered": 13.4,
+     "staticOffered": 13.7,
+     "afterFit": 17.3,
+     "staticAfterFit": 17.5,
+     "final": 16.6,
+     "staticFinal": 17.8,
+     "flows": 632,
+     "nodes": [
+      786,
+      793,
+      799,
+      819,
+      828,
+      1070,
+      1071
+     ]
+    },
+    {
+     "period": "pm_peak",
+     "label": "Hillegass Avenue NB",
+     "membership": "simulated",
+     "target": 15,
+     "weight": 2,
+     "offered": 52,
+     "staticOffered": 55.2,
+     "afterFit": 17.7,
+     "staticAfterFit": 16.6,
+     "final": 18.4,
+     "staticFinal": 19,
+     "flows": 13,
+     "nodes": [
+      1085,
+      1086,
+      1090
+     ]
+    },
+    {
+     "period": "pm_peak",
+     "label": "Colby Street NB",
+     "membership": "simulated",
+     "target": 29,
+     "weight": 2,
+     "offered": 62.7,
+     "staticOffered": 62.6,
+     "afterFit": 30.8,
+     "staticAfterFit": 25.2,
+     "final": 31.9,
+     "staticFinal": 24.3,
+     "flows": 36,
+     "nodes": [
+      786,
+      793,
+      799,
+      819,
+      828,
+      1070,
+      1071
+     ]
+    },
+    {
+     "period": "pm_peak",
+     "label": "Hillegass Avenue SB",
+     "membership": "simulated",
+     "target": 40,
+     "weight": 2,
+     "offered": 36.9,
+     "staticOffered": 36.8,
+     "afterFit": 43.2,
+     "staticAfterFit": 42.6,
+     "final": 38.3,
+     "staticFinal": 38.6,
+     "flows": 40,
+     "nodes": [
+      1085,
+      1086,
+      1090
+     ]
+    },
+    {
+     "period": "pm_peak",
+     "label": "Colby Street SB",
+     "membership": "simulated",
+     "target": 43,
+     "weight": 2,
+     "offered": 38.8,
+     "staticOffered": 40,
+     "afterFit": 46.8,
+     "staticAfterFit": 47.1,
+     "final": 49.9,
+     "staticFinal": 50.3,
+     "flows": 112,
+     "nodes": [
+      786,
+      793,
+      799,
+      819,
+      828,
+      1070,
+      1071
+     ]
+    }
+   ]
+  },
+  "training:1": {
+   "shares": [
+    {
+     "period": "am_peak",
+     "label": "Hillegass Avenue NB, trips from the freeway",
+     "membership": "simulated",
+     "target": 47,
+     "offered": 56,
+     "staticOffered": 57,
+     "final": 45,
+     "staticFinal": 42,
+     "flows": 536
+    },
+    {
+     "period": "am_peak",
+     "label": "Colby Street NB, trips from the freeway",
+     "membership": "simulated",
+     "target": 47,
+     "offered": 62,
+     "staticOffered": 62,
+     "final": 45,
+     "staticFinal": 43,
+     "flows": 414
+    },
+    {
+     "period": "am_peak",
+     "label": "Hillegass Avenue SB, trips to the freeway",
+     "membership": "simulated",
+     "target": 57,
+     "offered": 78,
+     "staticOffered": 73,
+     "final": 57,
+     "staticFinal": 50,
+     "flows": 204
+    },
+    {
+     "period": "am_peak",
+     "label": "Colby Street SB, trips to the freeway",
+     "membership": "simulated",
+     "target": 45,
+     "offered": 73,
+     "staticOffered": 77,
+     "final": 41,
+     "staticFinal": 42,
+     "flows": 674
+    },
+    {
+     "period": "am_peak",
+     "label": "Onto the freeway at the ramps, via College Avenue",
+     "membership": "static",
+     "target": 16,
+     "offered": 23,
+     "staticOffered": 23,
+     "final": 16,
+     "staticFinal": 16,
+     "flows": 227
+    },
+    {
+     "period": "am_peak",
+     "label": "Onto the freeway at the ramps, via Hillegass Avenue",
+     "membership": "static",
+     "target": 12,
+     "offered": 9,
+     "staticOffered": 9,
+     "final": 12,
+     "staticFinal": 12,
+     "flows": 227
+    },
+    {
+     "period": "am_peak",
+     "label": "Onto the freeway at the ramps, via Martin Street",
+     "membership": "static",
+     "target": 10,
+     "offered": 28,
+     "staticOffered": 28,
+     "final": 10,
+     "staticFinal": 10,
+     "flows": 227
+    },
+    {
+     "period": "am_peak",
+     "label": "Onto the freeway at the ramps, via Colby Street",
+     "membership": "static",
+     "target": 8,
+     "offered": 17,
+     "staticOffered": 17,
+     "final": 11,
+     "staticFinal": 11,
+     "flows": 227
+    },
+    {
+     "period": "am_peak",
+     "label": "Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue",
+     "membership": "static",
+     "target": 8,
+     "offered": 14,
+     "staticOffered": 14,
+     "final": 7,
+     "staticFinal": 7,
+     "flows": 227
+    },
+    {
+     "period": "am_peak",
+     "label": "Onto the freeway at the ramps, via Benvenue Avenue",
+     "membership": "static",
+     "target": 5,
+     "offered": 1,
+     "staticOffered": 1,
+     "final": 5,
+     "staticFinal": 5,
+     "flows": 227
+    },
+    {
+     "period": "am_peak",
+     "label": "From the freeway at the ramps, via College Avenue",
+     "membership": "static",
+     "target": 10,
+     "offered": 35,
+     "staticOffered": 35,
+     "final": 11,
+     "staticFinal": 11,
+     "flows": 210
+    },
+    {
+     "period": "am_peak",
+     "label": "From the freeway at the ramps, via Martin Street",
+     "membership": "static",
+     "target": 10,
+     "offered": 19,
+     "staticOffered": 19,
+     "final": 11,
+     "staticFinal": 11,
+     "flows": 210
+    },
+    {
+     "period": "am_peak",
+     "label": "From the freeway at the ramps, via Colby Street",
+     "membership": "static",
+     "target": 8,
+     "offered": 8,
+     "staticOffered": 8,
+     "final": 9,
+     "staticFinal": 9,
+     "flows": 210
+    },
+    {
+     "period": "am_peak",
+     "label": "From the freeway at the ramps, via Hillegass Avenue",
+     "membership": "static",
+     "target": 5,
+     "offered": 10,
+     "staticOffered": 10,
+     "final": 6,
+     "staticFinal": 6,
+     "flows": 210
+    },
+    {
+     "period": "am_peak",
+     "label": "From the freeway at the ramps, via Benvenue Avenue",
+     "membership": "static",
+     "target": 3,
+     "offered": 2,
+     "staticOffered": 2,
+     "final": 3,
+     "staticFinal": 3,
+     "flows": 210
+    },
+    {
+     "period": "pm_peak",
+     "label": "Hillegass Avenue NB, trips from the freeway",
+     "membership": "simulated",
+     "target": 47,
+     "offered": 56,
+     "staticOffered": 58,
+     "final": 45,
+     "staticFinal": 43,
+     "flows": 585
+    },
+    {
+     "period": "pm_peak",
+     "label": "Colby Street NB, trips from the freeway",
+     "membership": "simulated",
+     "target": 47,
+     "offered": 68,
+     "staticOffered": 73,
+     "final": 42,
+     "staticFinal": 45,
+     "flows": 599
+    },
+    {
+     "period": "pm_peak",
+     "label": "Hillegass Avenue SB, trips to the freeway",
+     "membership": "simulated",
+     "target": 68,
+     "offered": 78,
+     "staticOffered": 79,
+     "final": 66,
+     "staticFinal": 74,
+     "flows": 371
+    },
+    {
+     "period": "pm_peak",
+     "label": "Colby Street SB, trips to the freeway",
+     "membership": "simulated",
+     "target": 45,
+     "offered": 66,
+     "staticOffered": 75,
+     "final": 42,
+     "staticFinal": 56,
+     "flows": 827
+    },
+    {
+     "period": "pm_peak",
+     "label": "Onto the freeway at the ramps, via College Avenue",
+     "membership": "static",
+     "target": 16,
+     "offered": 31,
+     "staticOffered": 31,
+     "final": 17,
+     "staticFinal": 17,
+     "flows": 217
+    },
+    {
+     "period": "pm_peak",
+     "label": "Onto the freeway at the ramps, via Hillegass Avenue",
+     "membership": "static",
+     "target": 12,
+     "offered": 11,
+     "staticOffered": 11,
+     "final": 13,
+     "staticFinal": 13,
+     "flows": 217
+    },
+    {
+     "period": "pm_peak",
+     "label": "Onto the freeway at the ramps, via Martin Street",
+     "membership": "static",
+     "target": 10,
+     "offered": 24,
+     "staticOffered": 24,
+     "final": 10,
+     "staticFinal": 10,
+     "flows": 217
+    },
+    {
+     "period": "pm_peak",
+     "label": "Onto the freeway at the ramps, via Colby Street",
+     "membership": "static",
+     "target": 8,
+     "offered": 15,
+     "staticOffered": 15,
+     "final": 12,
+     "staticFinal": 12,
+     "flows": 217
+    },
+    {
+     "period": "pm_peak",
+     "label": "Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue",
+     "membership": "static",
+     "target": 8,
+     "offered": 13,
+     "staticOffered": 13,
+     "final": 8,
+     "staticFinal": 8,
+     "flows": 217
+    },
+    {
+     "period": "pm_peak",
+     "label": "Onto the freeway at the ramps, via Benvenue Avenue",
+     "membership": "static",
+     "target": 5,
+     "offered": 1,
+     "staticOffered": 1,
+     "final": 5,
+     "staticFinal": 5,
+     "flows": 217
+    },
+    {
+     "period": "pm_peak",
+     "label": "From the freeway at the ramps, via College Avenue",
+     "membership": "static",
+     "target": 10,
+     "offered": 24,
+     "staticOffered": 24,
+     "final": 10,
+     "staticFinal": 10,
+     "flows": 204
+    },
+    {
+     "period": "pm_peak",
+     "label": "From the freeway at the ramps, via Martin Street",
+     "membership": "static",
+     "target": 10,
+     "offered": 19,
+     "staticOffered": 19,
+     "final": 10,
+     "staticFinal": 10,
+     "flows": 204
+    },
+    {
+     "period": "pm_peak",
+     "label": "From the freeway at the ramps, via Colby Street",
+     "membership": "static",
+     "target": 8,
+     "offered": 12,
+     "staticOffered": 12,
+     "final": 10,
+     "staticFinal": 10,
+     "flows": 204
+    },
+    {
+     "period": "pm_peak",
+     "label": "From the freeway at the ramps, via Hillegass Avenue",
+     "membership": "static",
+     "target": 5,
+     "offered": 9,
+     "staticOffered": 9,
+     "final": 5,
+     "staticFinal": 5,
+     "flows": 204
+    },
+    {
+     "period": "pm_peak",
+     "label": "From the freeway at the ramps, via Benvenue Avenue",
+     "membership": "static",
+     "target": 3,
+     "offered": 1,
+     "staticOffered": 1,
+     "final": 3,
+     "staticFinal": 3,
+     "flows": 204
+    }
+   ],
+   "through": []
+  },
+  "shipped:2": {
+   "shares": [
+    {
+     "period": "am_peak",
+     "label": "Hillegass Avenue NB, trips from the freeway",
+     "membership": "simulated",
+     "target": 47,
+     "offered": 63,
+     "staticOffered": 59,
+     "final": 42,
+     "staticFinal": 44,
+     "flows": 532
+    },
+    {
+     "period": "am_peak",
+     "label": "Colby Street NB, trips from the freeway",
+     "membership": "simulated",
+     "target": 47,
+     "offered": 67,
+     "staticOffered": 69,
+     "final": 44,
+     "staticFinal": 47,
+     "flows": 485
+    },
+    {
+     "period": "am_peak",
+     "label": "Hillegass Avenue SB, trips to the freeway",
+     "membership": "simulated",
+     "target": 57,
+     "offered": 84,
+     "staticOffered": 78,
+     "final": 56,
+     "staticFinal": 56,
+     "flows": 445
+    },
+    {
+     "period": "am_peak",
+     "label": "Colby Street SB, trips to the freeway",
+     "membership": "simulated",
+     "target": 45,
+     "offered": 74,
+     "staticOffered": 78,
+     "final": 39,
+     "staticFinal": 40,
+     "flows": 1234
+    },
+    {
+     "period": "am_peak",
+     "label": "Onto the freeway at the ramps, via College Avenue",
+     "membership": "static",
+     "target": 16,
+     "offered": 24,
+     "staticOffered": 24,
+     "final": 16,
+     "staticFinal": 16,
+     "flows": 243
+    },
+    {
+     "period": "am_peak",
+     "label": "Onto the freeway at the ramps, via Hillegass Avenue",
+     "membership": "static",
+     "target": 12,
+     "offered": 9,
+     "staticOffered": 9,
+     "final": 12,
+     "staticFinal": 12,
+     "flows": 243
+    },
+    {
+     "period": "am_peak",
+     "label": "Onto the freeway at the ramps, via Martin Street",
+     "membership": "static",
+     "target": 10,
+     "offered": 27,
+     "staticOffered": 27,
+     "final": 12,
+     "staticFinal": 12,
+     "flows": 243
+    },
+    {
+     "period": "am_peak",
+     "label": "Onto the freeway at the ramps, via Colby Street",
+     "membership": "static",
+     "target": 8,
+     "offered": 17,
+     "staticOffered": 17,
+     "final": 12,
+     "staticFinal": 12,
+     "flows": 243
+    },
+    {
+     "period": "am_peak",
+     "label": "Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue",
+     "membership": "static",
+     "target": 8,
+     "offered": 15,
+     "staticOffered": 15,
+     "final": 7,
+     "staticFinal": 7,
+     "flows": 243
+    },
+    {
+     "period": "am_peak",
+     "label": "Onto the freeway at the ramps, via Benvenue Avenue",
+     "membership": "static",
+     "target": 5,
+     "offered": 1,
+     "staticOffered": 1,
+     "final": 5,
+     "staticFinal": 5,
+     "flows": 243
+    },
+    {
+     "period": "am_peak",
+     "label": "From the freeway at the ramps, via College Avenue",
+     "membership": "static",
+     "target": 10,
+     "offered": 35,
+     "staticOffered": 35,
+     "final": 12,
+     "staticFinal": 12,
+     "flows": 221
+    },
+    {
+     "period": "am_peak",
+     "label": "From the freeway at the ramps, via Martin Street",
+     "membership": "static",
+     "target": 10,
+     "offered": 18,
+     "staticOffered": 18,
+     "final": 14,
+     "staticFinal": 14,
+     "flows": 221
+    },
+    {
+     "period": "am_peak",
+     "label": "From the freeway at the ramps, via Colby Street",
+     "membership": "static",
+     "target": 8,
+     "offered": 9,
+     "staticOffered": 9,
+     "final": 11,
+     "staticFinal": 11,
+     "flows": 221
+    },
+    {
+     "period": "am_peak",
+     "label": "From the freeway at the ramps, via Hillegass Avenue",
+     "membership": "static",
+     "target": 5,
+     "offered": 10,
+     "staticOffered": 10,
+     "final": 7,
+     "staticFinal": 7,
+     "flows": 221
+    },
+    {
+     "period": "am_peak",
+     "label": "From the freeway at the ramps, via Benvenue Avenue",
+     "membership": "static",
+     "target": 3,
+     "offered": 2,
+     "staticOffered": 2,
+     "final": 2,
+     "staticFinal": 2,
+     "flows": 221
+    },
+    {
+     "period": "pm_peak",
+     "label": "Hillegass Avenue NB, trips from the freeway",
+     "membership": "simulated",
+     "target": 47,
+     "offered": 68,
+     "staticOffered": 58,
+     "final": 42,
+     "staticFinal": 44,
+     "flows": 629
+    },
+    {
+     "period": "pm_peak",
+     "label": "Colby Street NB, trips from the freeway",
+     "membership": "simulated",
+     "target": 47,
+     "offered": 63,
+     "staticOffered": 65,
+     "final": 46,
+     "staticFinal": 48,
+     "flows": 685
+    },
+    {
+     "period": "pm_peak",
+     "label": "Hillegass Avenue SB, trips to the freeway",
+     "membership": "simulated",
+     "target": 68,
+     "offered": 71,
+     "staticOffered": 68,
+     "final": 62,
+     "staticFinal": 60,
+     "flows": 370
+    },
+    {
+     "period": "pm_peak",
+     "label": "Colby Street SB, trips to the freeway",
+     "membership": "simulated",
+     "target": 45,
+     "offered": 71,
+     "staticOffered": 75,
+     "final": 42,
+     "staticFinal": 53,
+     "flows": 812
+    },
+    {
+     "period": "pm_peak",
+     "label": "Onto the freeway at the ramps, via College Avenue",
+     "membership": "static",
+     "target": 16,
+     "offered": 32,
+     "staticOffered": 32,
+     "final": 19,
+     "staticFinal": 19,
+     "flows": 234
+    },
+    {
+     "period": "pm_peak",
+     "label": "Onto the freeway at the ramps, via Hillegass Avenue",
+     "membership": "static",
+     "target": 12,
+     "offered": 11,
+     "staticOffered": 11,
+     "final": 15,
+     "staticFinal": 15,
+     "flows": 234
+    },
+    {
+     "period": "pm_peak",
+     "label": "Onto the freeway at the ramps, via Martin Street",
+     "membership": "static",
+     "target": 10,
+     "offered": 23,
+     "staticOffered": 23,
+     "final": 11,
+     "staticFinal": 11,
+     "flows": 234
+    },
+    {
+     "period": "pm_peak",
+     "label": "Onto the freeway at the ramps, via Colby Street",
+     "membership": "static",
+     "target": 8,
+     "offered": 15,
+     "staticOffered": 15,
+     "final": 12,
+     "staticFinal": 12,
+     "flows": 234
+    },
+    {
+     "period": "pm_peak",
+     "label": "Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue",
+     "membership": "static",
+     "target": 8,
+     "offered": 14,
+     "staticOffered": 14,
+     "final": 9,
+     "staticFinal": 9,
+     "flows": 234
+    },
+    {
+     "period": "pm_peak",
+     "label": "Onto the freeway at the ramps, via Benvenue Avenue",
+     "membership": "static",
+     "target": 5,
+     "offered": 1,
+     "staticOffered": 1,
+     "final": 4,
+     "staticFinal": 4,
+     "flows": 234
+    },
+    {
+     "period": "pm_peak",
+     "label": "From the freeway at the ramps, via College Avenue",
+     "membership": "static",
+     "target": 10,
+     "offered": 25,
+     "staticOffered": 25,
+     "final": 10,
+     "staticFinal": 10,
+     "flows": 234
+    },
+    {
+     "period": "pm_peak",
+     "label": "From the freeway at the ramps, via Martin Street",
+     "membership": "static",
+     "target": 10,
+     "offered": 19,
+     "staticOffered": 19,
+     "final": 12,
+     "staticFinal": 12,
+     "flows": 234
+    },
+    {
+     "period": "pm_peak",
+     "label": "From the freeway at the ramps, via Colby Street",
+     "membership": "static",
+     "target": 8,
+     "offered": 14,
+     "staticOffered": 14,
+     "final": 14,
+     "staticFinal": 14,
+     "flows": 234
+    },
+    {
+     "period": "pm_peak",
+     "label": "From the freeway at the ramps, via Hillegass Avenue",
+     "membership": "static",
+     "target": 5,
+     "offered": 7,
+     "staticOffered": 7,
+     "final": 6,
+     "staticFinal": 6,
+     "flows": 234
+    },
+    {
+     "period": "pm_peak",
+     "label": "From the freeway at the ramps, via Benvenue Avenue",
+     "membership": "static",
+     "target": 3,
+     "offered": 2,
+     "staticOffered": 2,
+     "final": 3,
+     "staticFinal": 3,
+     "flows": 234
+    }
+   ],
+   "through": [],
+   "routes": [
+    {
+     "period": "am_peak",
+     "id": "count route 2591>2605",
+     "membership": "simulated",
+     "base": 1,
+     "blocks": 7,
+     "weight": 7,
+     "label": "Colby Street NB, whole street between Claremont Avenue and Alcatraz Avenue (links 2591 to 2605)"
+    },
+    {
+     "period": "am_peak",
+     "id": "count route 2606>2592",
+     "membership": "simulated",
+     "base": 1,
+     "blocks": 7,
+     "weight": 7,
+     "label": "Colby Street SB, whole street between Claremont Avenue and Alcatraz Avenue (links 2606 to 2592)"
+    },
+    {
+     "period": "am_peak",
+     "id": "count route 2676>2670",
+     "membership": "simulated",
+     "base": 1,
+     "blocks": 4,
+     "weight": 4,
+     "label": "Hillegass Avenue NB, whole street between Claremont Avenue and Alcatraz Avenue (links 2676 to 2670)"
+    },
+    {
+     "period": "am_peak",
+     "id": "count route 2669>2675",
+     "membership": "simulated",
+     "base": 1,
+     "blocks": 4,
+     "weight": 4,
+     "label": "Hillegass Avenue SB, whole street between Claremont Avenue and Alcatraz Avenue (links 2669 to 2675)"
+    },
+    {
+     "period": "pm_peak",
+     "id": "count route 2591>2605",
+     "membership": "simulated",
+     "base": 1,
+     "blocks": 7,
+     "weight": 7,
+     "label": "Colby Street NB, whole street between Claremont Avenue and Alcatraz Avenue (links 2591 to 2605)"
+    },
+    {
+     "period": "pm_peak",
+     "id": "count route 2606>2592",
+     "membership": "simulated",
+     "base": 1,
+     "blocks": 7,
+     "weight": 7,
+     "label": "Colby Street SB, whole street between Claremont Avenue and Alcatraz Avenue (links 2606 to 2592)"
+    },
+    {
+     "period": "pm_peak",
+     "id": "count route 2676>2670",
+     "membership": "simulated",
+     "base": 1,
+     "blocks": 4,
+     "weight": 4,
+     "label": "Hillegass Avenue NB, whole street between Claremont Avenue and Alcatraz Avenue (links 2676 to 2670)"
+    },
+    {
+     "period": "pm_peak",
+     "id": "count route 2669>2675",
+     "membership": "simulated",
+     "base": 1,
+     "blocks": 4,
+     "weight": 4,
+     "label": "Hillegass Avenue SB, whole street between Claremont Avenue and Alcatraz Avenue (links 2669 to 2675)"
+    }
+   ],
+   "endAlong": [
+    {
+     "period": "am_peak",
+     "label": "Hillegass Avenue NB",
+     "membership": "simulated",
+     "target": 9,
+     "weight": 2,
+     "offered": 63.1,
+     "staticOffered": 63.7,
+     "afterFit": 8.5,
+     "staticAfterFit": 12.9,
+     "final": 10.7,
+     "staticFinal": 15.5,
+     "flows": 18,
+     "nodes": [
+      1085,
+      1086,
+      1090
+     ]
+    },
+    {
+     "period": "am_peak",
+     "label": "Colby Street NB",
+     "membership": "simulated",
+     "target": 14,
+     "weight": 2,
+     "offered": 43.6,
+     "staticOffered": 41.5,
+     "afterFit": 22,
+     "staticAfterFit": 22.3,
+     "final": 21.7,
+     "staticFinal": 24.3,
+     "flows": 95,
+     "nodes": [
+      786,
+      793,
+      799,
+      819,
+      828,
+      1070,
+      1071
+     ]
+    },
+    {
+     "period": "am_peak",
+     "label": "Hillegass Avenue SB",
+     "membership": "simulated",
+     "target": 9,
+     "weight": 2,
+     "offered": 7.4,
+     "staticOffered": 8.9,
+     "afterFit": 9.8,
+     "staticAfterFit": 9.2,
+     "final": 9.1,
+     "staticFinal": 9,
+     "flows": 62,
+     "nodes": [
+      1085,
+      1086,
+      1090
+     ]
+    },
+    {
+     "period": "am_peak",
+     "label": "Colby Street SB",
+     "membership": "simulated",
+     "target": 15,
+     "weight": 2,
+     "offered": 13.4,
+     "staticOffered": 13.7,
+     "afterFit": 18.4,
+     "staticAfterFit": 18.9,
+     "final": 17.5,
+     "staticFinal": 19.8,
+     "flows": 632,
+     "nodes": [
+      786,
+      793,
+      799,
+      819,
+      828,
+      1070,
+      1071
+     ]
+    },
+    {
+     "period": "pm_peak",
+     "label": "Hillegass Avenue NB",
+     "membership": "simulated",
+     "target": 15,
+     "weight": 2,
+     "offered": 52.6,
+     "staticOffered": 54.9,
+     "afterFit": 17.9,
+     "staticAfterFit": 17.4,
+     "final": 19.7,
+     "staticFinal": 20.3,
+     "flows": 13,
+     "nodes": [
+      1085,
+      1086,
+      1090
+     ]
+    },
+    {
+     "period": "pm_peak",
+     "label": "Colby Street NB",
+     "membership": "simulated",
+     "target": 29,
+     "weight": 2,
+     "offered": 62.9,
+     "staticOffered": 62.6,
+     "afterFit": 31.1,
+     "staticAfterFit": 24.8,
+     "final": 33.4,
+     "staticFinal": 22.9,
+     "flows": 37,
+     "nodes": [
+      786,
+      793,
+      799,
+      819,
+      828,
+      1070,
+      1071
+     ]
+    },
+    {
+     "period": "pm_peak",
+     "label": "Hillegass Avenue SB",
+     "membership": "simulated",
+     "target": 40,
+     "weight": 2,
+     "offered": 36.7,
+     "staticOffered": 37.5,
+     "afterFit": 41.4,
+     "staticAfterFit": 43.1,
+     "final": 37.5,
+     "staticFinal": 42.2,
+     "flows": 40,
+     "nodes": [
+      1085,
+      1086,
+      1090
+     ]
+    },
+    {
+     "period": "pm_peak",
+     "label": "Colby Street SB",
+     "membership": "simulated",
+     "target": 43,
+     "weight": 2,
+     "offered": 40.3,
+     "staticOffered": 40,
+     "afterFit": 49.2,
+     "staticAfterFit": 48.3,
+     "final": 52.5,
+     "staticFinal": 52.6,
+     "flows": 112,
+     "nodes": [
+      786,
+      793,
+      799,
+      819,
+      828,
+      1070,
+      1071
+     ]
+    }
+   ]
+  },
+  "training:2": {
+   "shares": [
+    {
+     "period": "am_peak",
+     "label": "Hillegass Avenue NB, trips from the freeway",
+     "membership": "simulated",
+     "target": 47,
+     "offered": 55,
+     "staticOffered": 57,
+     "final": 45,
+     "staticFinal": 41,
+     "flows": 567
+    },
+    {
+     "period": "am_peak",
+     "label": "Colby Street NB, trips from the freeway",
+     "membership": "simulated",
+     "target": 47,
+     "offered": 61,
+     "staticOffered": 62,
+     "final": 45,
+     "staticFinal": 43,
+     "flows": 456
+    },
+    {
+     "period": "am_peak",
+     "label": "Hillegass Avenue SB, trips to the freeway",
+     "membership": "simulated",
+     "target": 57,
+     "offered": 79,
+     "staticOffered": 73,
+     "final": 57,
+     "staticFinal": 54,
+     "flows": 261
+    },
+    {
+     "period": "am_peak",
+     "label": "Colby Street SB, trips to the freeway",
+     "membership": "simulated",
+     "target": 45,
+     "offered": 70,
+     "staticOffered": 77,
+     "final": 41,
+     "staticFinal": 45,
+     "flows": 770
+    },
+    {
+     "period": "am_peak",
+     "label": "Onto the freeway at the ramps, via College Avenue",
+     "membership": "static",
+     "target": 16,
+     "offered": 23,
+     "staticOffered": 23,
+     "final": 16,
+     "staticFinal": 16,
+     "flows": 227
+    },
+    {
+     "period": "am_peak",
+     "label": "Onto the freeway at the ramps, via Hillegass Avenue",
+     "membership": "static",
+     "target": 12,
+     "offered": 9,
+     "staticOffered": 9,
+     "final": 12,
+     "staticFinal": 12,
+     "flows": 227
+    },
+    {
+     "period": "am_peak",
+     "label": "Onto the freeway at the ramps, via Martin Street",
+     "membership": "static",
+     "target": 10,
+     "offered": 28,
+     "staticOffered": 28,
+     "final": 10,
+     "staticFinal": 10,
+     "flows": 227
+    },
+    {
+     "period": "am_peak",
+     "label": "Onto the freeway at the ramps, via Colby Street",
+     "membership": "static",
+     "target": 8,
+     "offered": 17,
+     "staticOffered": 17,
+     "final": 11,
+     "staticFinal": 11,
+     "flows": 227
+    },
+    {
+     "period": "am_peak",
+     "label": "Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue",
+     "membership": "static",
+     "target": 8,
+     "offered": 14,
+     "staticOffered": 14,
+     "final": 7,
+     "staticFinal": 7,
+     "flows": 227
+    },
+    {
+     "period": "am_peak",
+     "label": "Onto the freeway at the ramps, via Benvenue Avenue",
+     "membership": "static",
+     "target": 5,
+     "offered": 1,
+     "staticOffered": 1,
+     "final": 5,
+     "staticFinal": 5,
+     "flows": 227
+    },
+    {
+     "period": "am_peak",
+     "label": "From the freeway at the ramps, via College Avenue",
+     "membership": "static",
+     "target": 10,
+     "offered": 35,
+     "staticOffered": 35,
+     "final": 11,
+     "staticFinal": 11,
+     "flows": 210
+    },
+    {
+     "period": "am_peak",
+     "label": "From the freeway at the ramps, via Martin Street",
+     "membership": "static",
+     "target": 10,
+     "offered": 19,
+     "staticOffered": 19,
+     "final": 11,
+     "staticFinal": 11,
+     "flows": 210
+    },
+    {
+     "period": "am_peak",
+     "label": "From the freeway at the ramps, via Colby Street",
+     "membership": "static",
+     "target": 8,
+     "offered": 8,
+     "staticOffered": 8,
+     "final": 9,
+     "staticFinal": 9,
+     "flows": 210
+    },
+    {
+     "period": "am_peak",
+     "label": "From the freeway at the ramps, via Hillegass Avenue",
+     "membership": "static",
+     "target": 5,
+     "offered": 10,
+     "staticOffered": 10,
+     "final": 6,
+     "staticFinal": 6,
+     "flows": 210
+    },
+    {
+     "period": "am_peak",
+     "label": "From the freeway at the ramps, via Benvenue Avenue",
+     "membership": "static",
+     "target": 3,
+     "offered": 2,
+     "staticOffered": 2,
+     "final": 3,
+     "staticFinal": 3,
+     "flows": 210
+    },
+    {
+     "period": "pm_peak",
+     "label": "Hillegass Avenue NB, trips from the freeway",
+     "membership": "simulated",
+     "target": 47,
+     "offered": 56,
+     "staticOffered": 58,
+     "final": 44,
+     "staticFinal": 45,
+     "flows": 646
+    },
+    {
+     "period": "pm_peak",
+     "label": "Colby Street NB, trips from the freeway",
+     "membership": "simulated",
+     "target": 47,
+     "offered": 65,
+     "staticOffered": 73,
+     "final": 42,
+     "staticFinal": 46,
+     "flows": 669
+    },
+    {
+     "period": "pm_peak",
+     "label": "Hillegass Avenue SB, trips to the freeway",
+     "membership": "simulated",
+     "target": 68,
+     "offered": 76,
+     "staticOffered": 79,
+     "final": 65,
+     "staticFinal": 77,
+     "flows": 480
+    },
+    {
+     "period": "pm_peak",
+     "label": "Colby Street SB, trips to the freeway",
+     "membership": "simulated",
+     "target": 45,
+     "offered": 64,
+     "staticOffered": 75,
+     "final": 43,
+     "staticFinal": 59,
+     "flows": 980
+    },
+    {
+     "period": "pm_peak",
+     "label": "Onto the freeway at the ramps, via College Avenue",
+     "membership": "static",
+     "target": 16,
+     "offered": 31,
+     "staticOffered": 31,
+     "final": 17,
+     "staticFinal": 17,
+     "flows": 217
+    },
+    {
+     "period": "pm_peak",
+     "label": "Onto the freeway at the ramps, via Hillegass Avenue",
+     "membership": "static",
+     "target": 12,
+     "offered": 11,
+     "staticOffered": 11,
+     "final": 14,
+     "staticFinal": 14,
+     "flows": 217
+    },
+    {
+     "period": "pm_peak",
+     "label": "Onto the freeway at the ramps, via Martin Street",
+     "membership": "static",
+     "target": 10,
+     "offered": 24,
+     "staticOffered": 24,
+     "final": 10,
+     "staticFinal": 10,
+     "flows": 217
+    },
+    {
+     "period": "pm_peak",
+     "label": "Onto the freeway at the ramps, via Colby Street",
+     "membership": "static",
+     "target": 8,
+     "offered": 15,
+     "staticOffered": 15,
+     "final": 12,
+     "staticFinal": 12,
+     "flows": 217
+    },
+    {
+     "period": "pm_peak",
+     "label": "Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue",
+     "membership": "static",
+     "target": 8,
+     "offered": 13,
+     "staticOffered": 13,
+     "final": 8,
+     "staticFinal": 8,
+     "flows": 217
+    },
+    {
+     "period": "pm_peak",
+     "label": "Onto the freeway at the ramps, via Benvenue Avenue",
+     "membership": "static",
+     "target": 5,
+     "offered": 1,
+     "staticOffered": 1,
+     "final": 4,
+     "staticFinal": 4,
+     "flows": 217
+    },
+    {
+     "period": "pm_peak",
+     "label": "From the freeway at the ramps, via College Avenue",
+     "membership": "static",
+     "target": 10,
+     "offered": 24,
+     "staticOffered": 24,
+     "final": 10,
+     "staticFinal": 10,
+     "flows": 204
+    },
+    {
+     "period": "pm_peak",
+     "label": "From the freeway at the ramps, via Martin Street",
+     "membership": "static",
+     "target": 10,
+     "offered": 19,
+     "staticOffered": 19,
+     "final": 10,
+     "staticFinal": 10,
+     "flows": 204
+    },
+    {
+     "period": "pm_peak",
+     "label": "From the freeway at the ramps, via Colby Street",
+     "membership": "static",
+     "target": 8,
+     "offered": 12,
+     "staticOffered": 12,
+     "final": 9,
+     "staticFinal": 9,
+     "flows": 204
+    },
+    {
+     "period": "pm_peak",
+     "label": "From the freeway at the ramps, via Hillegass Avenue",
+     "membership": "static",
+     "target": 5,
+     "offered": 9,
+     "staticOffered": 9,
+     "final": 6,
+     "staticFinal": 6,
+     "flows": 204
+    },
+    {
+     "period": "pm_peak",
+     "label": "From the freeway at the ramps, via Benvenue Avenue",
+     "membership": "static",
+     "target": 3,
+     "offered": 1,
+     "staticOffered": 1,
+     "final": 3,
+     "staticFinal": 3,
+     "flows": 204
+    }
+   ],
+   "through": []
+  },
+  "shipped:3": {
+   "shares": [
+    {
+     "period": "am_peak",
+     "label": "Hillegass Avenue NB, trips from the freeway",
+     "membership": "simulated",
+     "target": 47,
+     "offered": 63,
+     "staticOffered": 59,
+     "final": 42,
+     "staticFinal": 43,
+     "flows": 549
+    },
+    {
+     "period": "am_peak",
+     "label": "Colby Street NB, trips from the freeway",
+     "membership": "simulated",
+     "target": 47,
+     "offered": 69,
+     "staticOffered": 69,
+     "final": 44,
+     "staticFinal": 46,
+     "flows": 510
+    },
+    {
+     "period": "am_peak",
+     "label": "Hillegass Avenue SB, trips to the freeway",
+     "membership": "simulated",
+     "target": 57,
+     "offered": 84,
+     "staticOffered": 78,
+     "final": 56,
+     "staticFinal": 56,
+     "flows": 461
+    },
+    {
+     "period": "am_peak",
+     "label": "Colby Street SB, trips to the freeway",
+     "membership": "simulated",
+     "target": 45,
+     "offered": 73,
+     "staticOffered": 78,
+     "final": 39,
+     "staticFinal": 40,
+     "flows": 1261
+    },
+    {
+     "period": "am_peak",
+     "label": "Onto the freeway at the ramps, via College Avenue",
+     "membership": "static",
+     "target": 16,
+     "offered": 24,
+     "staticOffered": 24,
+     "final": 16,
+     "staticFinal": 16,
+     "flows": 243
+    },
+    {
+     "period": "am_peak",
+     "label": "Onto the freeway at the ramps, via Hillegass Avenue",
+     "membership": "static",
+     "target": 12,
+     "offered": 9,
+     "staticOffered": 9,
+     "final": 12,
+     "staticFinal": 12,
+     "flows": 243
+    },
+    {
+     "period": "am_peak",
+     "label": "Onto the freeway at the ramps, via Martin Street",
+     "membership": "static",
+     "target": 10,
+     "offered": 27,
+     "staticOffered": 27,
+     "final": 12,
+     "staticFinal": 12,
+     "flows": 243
+    },
+    {
+     "period": "am_peak",
+     "label": "Onto the freeway at the ramps, via Colby Street",
+     "membership": "static",
+     "target": 8,
+     "offered": 17,
+     "staticOffered": 17,
+     "final": 12,
+     "staticFinal": 12,
+     "flows": 243
+    },
+    {
+     "period": "am_peak",
+     "label": "Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue",
+     "membership": "static",
+     "target": 8,
+     "offered": 15,
+     "staticOffered": 15,
+     "final": 7,
+     "staticFinal": 7,
+     "flows": 243
+    },
+    {
+     "period": "am_peak",
+     "label": "Onto the freeway at the ramps, via Benvenue Avenue",
+     "membership": "static",
+     "target": 5,
+     "offered": 1,
+     "staticOffered": 1,
+     "final": 5,
+     "staticFinal": 5,
+     "flows": 243
+    },
+    {
+     "period": "am_peak",
+     "label": "From the freeway at the ramps, via College Avenue",
+     "membership": "static",
+     "target": 10,
+     "offered": 35,
+     "staticOffered": 35,
+     "final": 12,
+     "staticFinal": 12,
+     "flows": 221
+    },
+    {
+     "period": "am_peak",
+     "label": "From the freeway at the ramps, via Martin Street",
+     "membership": "static",
+     "target": 10,
+     "offered": 18,
+     "staticOffered": 18,
+     "final": 14,
+     "staticFinal": 14,
+     "flows": 221
+    },
+    {
+     "period": "am_peak",
+     "label": "From the freeway at the ramps, via Colby Street",
+     "membership": "static",
+     "target": 8,
+     "offered": 9,
+     "staticOffered": 9,
+     "final": 11,
+     "staticFinal": 11,
+     "flows": 221
+    },
+    {
+     "period": "am_peak",
+     "label": "From the freeway at the ramps, via Hillegass Avenue",
+     "membership": "static",
+     "target": 5,
+     "offered": 10,
+     "staticOffered": 10,
+     "final": 7,
+     "staticFinal": 7,
+     "flows": 221
+    },
+    {
+     "period": "am_peak",
+     "label": "From the freeway at the ramps, via Benvenue Avenue",
+     "membership": "static",
+     "target": 3,
+     "offered": 2,
+     "staticOffered": 2,
+     "final": 2,
+     "staticFinal": 2,
+     "flows": 221
+    },
+    {
+     "period": "pm_peak",
+     "label": "Hillegass Avenue NB, trips from the freeway",
+     "membership": "simulated",
+     "target": 47,
+     "offered": 69,
+     "staticOffered": 58,
+     "final": 43,
+     "staticFinal": 45,
+     "flows": 642
+    },
+    {
+     "period": "pm_peak",
+     "label": "Colby Street NB, trips from the freeway",
+     "membership": "simulated",
+     "target": 47,
+     "offered": 62,
+     "staticOffered": 65,
+     "final": 45,
+     "staticFinal": 48,
+     "flows": 710
+    },
+    {
+     "period": "pm_peak",
+     "label": "Hillegass Avenue SB, trips to the freeway",
+     "membership": "simulated",
+     "target": 68,
+     "offered": 71,
+     "staticOffered": 68,
+     "final": 61,
+     "staticFinal": 62,
+     "flows": 418
+    },
+    {
+     "period": "pm_peak",
+     "label": "Colby Street SB, trips to the freeway",
+     "membership": "simulated",
+     "target": 45,
+     "offered": 70,
+     "staticOffered": 75,
+     "final": 42,
+     "staticFinal": 52,
+     "flows": 878
+    },
+    {
+     "period": "pm_peak",
+     "label": "Onto the freeway at the ramps, via College Avenue",
+     "membership": "static",
+     "target": 16,
+     "offered": 32,
+     "staticOffered": 32,
+     "final": 19,
+     "staticFinal": 19,
+     "flows": 234
+    },
+    {
+     "period": "pm_peak",
+     "label": "Onto the freeway at the ramps, via Hillegass Avenue",
+     "membership": "static",
+     "target": 12,
+     "offered": 11,
+     "staticOffered": 11,
+     "final": 15,
+     "staticFinal": 15,
+     "flows": 234
+    },
+    {
+     "period": "pm_peak",
+     "label": "Onto the freeway at the ramps, via Martin Street",
+     "membership": "static",
+     "target": 10,
+     "offered": 23,
+     "staticOffered": 23,
+     "final": 11,
+     "staticFinal": 11,
+     "flows": 234
+    },
+    {
+     "period": "pm_peak",
+     "label": "Onto the freeway at the ramps, via Colby Street",
+     "membership": "static",
+     "target": 8,
+     "offered": 15,
+     "staticOffered": 15,
+     "final": 12,
+     "staticFinal": 12,
+     "flows": 234
+    },
+    {
+     "period": "pm_peak",
+     "label": "Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue",
+     "membership": "static",
+     "target": 8,
+     "offered": 14,
+     "staticOffered": 14,
+     "final": 9,
+     "staticFinal": 9,
+     "flows": 234
+    },
+    {
+     "period": "pm_peak",
+     "label": "Onto the freeway at the ramps, via Benvenue Avenue",
+     "membership": "static",
+     "target": 5,
+     "offered": 1,
+     "staticOffered": 1,
+     "final": 4,
+     "staticFinal": 4,
+     "flows": 234
+    },
+    {
+     "period": "pm_peak",
+     "label": "From the freeway at the ramps, via College Avenue",
+     "membership": "static",
+     "target": 10,
+     "offered": 25,
+     "staticOffered": 25,
+     "final": 10,
+     "staticFinal": 10,
+     "flows": 234
+    },
+    {
+     "period": "pm_peak",
+     "label": "From the freeway at the ramps, via Martin Street",
+     "membership": "static",
+     "target": 10,
+     "offered": 19,
+     "staticOffered": 19,
+     "final": 12,
+     "staticFinal": 12,
+     "flows": 234
+    },
+    {
+     "period": "pm_peak",
+     "label": "From the freeway at the ramps, via Colby Street",
+     "membership": "static",
+     "target": 8,
+     "offered": 14,
+     "staticOffered": 14,
+     "final": 14,
+     "staticFinal": 14,
+     "flows": 234
+    },
+    {
+     "period": "pm_peak",
+     "label": "From the freeway at the ramps, via Hillegass Avenue",
+     "membership": "static",
+     "target": 5,
+     "offered": 7,
+     "staticOffered": 7,
+     "final": 6,
+     "staticFinal": 6,
+     "flows": 234
+    },
+    {
+     "period": "pm_peak",
+     "label": "From the freeway at the ramps, via Benvenue Avenue",
+     "membership": "static",
+     "target": 3,
+     "offered": 2,
+     "staticOffered": 2,
+     "final": 3,
+     "staticFinal": 3,
+     "flows": 234
+    }
+   ],
+   "through": [],
+   "routes": [
+    {
+     "period": "am_peak",
+     "id": "count route 2591>2605",
+     "membership": "simulated",
+     "base": 1,
+     "blocks": 7,
+     "weight": 7,
+     "label": "Colby Street NB, whole street between Claremont Avenue and Alcatraz Avenue (links 2591 to 2605)"
+    },
+    {
+     "period": "am_peak",
+     "id": "count route 2606>2592",
+     "membership": "simulated",
+     "base": 1,
+     "blocks": 7,
+     "weight": 7,
+     "label": "Colby Street SB, whole street between Claremont Avenue and Alcatraz Avenue (links 2606 to 2592)"
+    },
+    {
+     "period": "am_peak",
+     "id": "count route 2676>2670",
+     "membership": "simulated",
+     "base": 1,
+     "blocks": 4,
+     "weight": 4,
+     "label": "Hillegass Avenue NB, whole street between Claremont Avenue and Alcatraz Avenue (links 2676 to 2670)"
+    },
+    {
+     "period": "am_peak",
+     "id": "count route 2669>2675",
+     "membership": "simulated",
+     "base": 1,
+     "blocks": 4,
+     "weight": 4,
+     "label": "Hillegass Avenue SB, whole street between Claremont Avenue and Alcatraz Avenue (links 2669 to 2675)"
+    },
+    {
+     "period": "pm_peak",
+     "id": "count route 2591>2605",
+     "membership": "simulated",
+     "base": 1,
+     "blocks": 7,
+     "weight": 7,
+     "label": "Colby Street NB, whole street between Claremont Avenue and Alcatraz Avenue (links 2591 to 2605)"
+    },
+    {
+     "period": "pm_peak",
+     "id": "count route 2606>2592",
+     "membership": "simulated",
+     "base": 1,
+     "blocks": 7,
+     "weight": 7,
+     "label": "Colby Street SB, whole street between Claremont Avenue and Alcatraz Avenue (links 2606 to 2592)"
+    },
+    {
+     "period": "pm_peak",
+     "id": "count route 2676>2670",
+     "membership": "simulated",
+     "base": 1,
+     "blocks": 4,
+     "weight": 4,
+     "label": "Hillegass Avenue NB, whole street between Claremont Avenue and Alcatraz Avenue (links 2676 to 2670)"
+    },
+    {
+     "period": "pm_peak",
+     "id": "count route 2669>2675",
+     "membership": "simulated",
+     "base": 1,
+     "blocks": 4,
+     "weight": 4,
+     "label": "Hillegass Avenue SB, whole street between Claremont Avenue and Alcatraz Avenue (links 2669 to 2675)"
+    }
+   ],
+   "endAlong": [
+    {
+     "period": "am_peak",
+     "label": "Hillegass Avenue NB",
+     "membership": "simulated",
+     "target": 9,
+     "weight": 2,
+     "offered": 63,
+     "staticOffered": 63.7,
+     "afterFit": 9.9,
+     "staticAfterFit": 15.8,
+     "final": 10.7,
+     "staticFinal": 16.1,
+     "flows": 18,
+     "nodes": [
+      1085,
+      1086,
+      1090
+     ]
+    },
+    {
+     "period": "am_peak",
+     "label": "Colby Street NB",
+     "membership": "simulated",
+     "target": 14,
+     "weight": 2,
+     "offered": 43.9,
+     "staticOffered": 41.4,
+     "afterFit": 19.7,
+     "staticAfterFit": 18.8,
+     "final": 20.8,
+     "staticFinal": 23.1,
+     "flows": 95,
+     "nodes": [
+      786,
+      793,
+      799,
+      819,
+      828,
+      1070,
+      1071
+     ]
+    },
+    {
+     "period": "am_peak",
+     "label": "Hillegass Avenue SB",
+     "membership": "simulated",
+     "target": 9,
+     "weight": 2,
+     "offered": 7.3,
+     "staticOffered": 8.9,
+     "afterFit": 9.4,
+     "staticAfterFit": 8.3,
+     "final": 9.1,
+     "staticFinal": 8.5,
+     "flows": 62,
+     "nodes": [
+      1085,
+      1086,
+      1090
+     ]
+    },
+    {
+     "period": "am_peak",
+     "label": "Colby Street SB",
+     "membership": "simulated",
+     "target": 15,
+     "weight": 2,
+     "offered": 13.3,
+     "staticOffered": 13.7,
+     "afterFit": 17.2,
+     "staticAfterFit": 19.9,
+     "final": 16.7,
+     "staticFinal": 20.7,
+     "flows": 632,
+     "nodes": [
+      786,
+      793,
+      799,
+      819,
+      828,
+      1070,
+      1071
+     ]
+    },
+    {
+     "period": "pm_peak",
+     "label": "Hillegass Avenue NB",
+     "membership": "simulated",
+     "target": 15,
+     "weight": 2,
+     "offered": 52.7,
+     "staticOffered": 55,
+     "afterFit": 17.2,
+     "staticAfterFit": 17.1,
+     "final": 18.8,
+     "staticFinal": 19.5,
+     "flows": 13,
+     "nodes": [
+      1085,
+      1086,
+      1090
+     ]
+    },
+    {
+     "period": "pm_peak",
+     "label": "Colby Street NB",
+     "membership": "simulated",
+     "target": 29,
+     "weight": 2,
+     "offered": 62.2,
+     "staticOffered": 62.8,
+     "afterFit": 31.7,
+     "staticAfterFit": 26.3,
+     "final": 33.6,
+     "staticFinal": 23.5,
+     "flows": 39,
+     "nodes": [
+      786,
+      793,
+      799,
+      819,
+      828,
+      1070,
+      1071
+     ]
+    },
+    {
+     "period": "pm_peak",
+     "label": "Hillegass Avenue SB",
+     "membership": "simulated",
+     "target": 40,
+     "weight": 2,
+     "offered": 36.4,
+     "staticOffered": 37.7,
+     "afterFit": 42.9,
+     "staticAfterFit": 42.1,
+     "final": 36.2,
+     "staticFinal": 36.4,
+     "flows": 40,
+     "nodes": [
+      1085,
+      1086,
+      1090
+     ]
+    },
+    {
+     "period": "pm_peak",
+     "label": "Colby Street SB",
+     "membership": "simulated",
+     "target": 43,
+     "weight": 2,
+     "offered": 40.4,
+     "staticOffered": 40,
+     "afterFit": 49.3,
+     "staticAfterFit": 49,
+     "final": 51.9,
+     "staticFinal": 52.3,
+     "flows": 112,
+     "nodes": [
+      786,
+      793,
+      799,
+      819,
+      828,
+      1070,
+      1071
+     ]
+    }
+   ]
+  },
+  "training:3": {
+   "shares": [
+    {
+     "period": "am_peak",
+     "label": "Hillegass Avenue NB, trips from the freeway",
+     "membership": "simulated",
+     "target": 47,
+     "offered": 55,
+     "staticOffered": 57,
+     "final": 45,
+     "staticFinal": 40,
+     "flows": 598
+    },
+    {
+     "period": "am_peak",
+     "label": "Colby Street NB, trips from the freeway",
+     "membership": "simulated",
+     "target": 47,
+     "offered": 60,
+     "staticOffered": 62,
+     "final": 45,
+     "staticFinal": 42,
+     "flows": 491
+    },
+    {
+     "period": "am_peak",
+     "label": "Hillegass Avenue SB, trips to the freeway",
+     "membership": "simulated",
+     "target": 57,
+     "offered": 79,
+     "staticOffered": 73,
+     "final": 57,
+     "staticFinal": 55,
+     "flows": 286
+    },
+    {
+     "period": "am_peak",
+     "label": "Colby Street SB, trips to the freeway",
+     "membership": "simulated",
+     "target": 45,
+     "offered": 69,
+     "staticOffered": 77,
+     "final": 40,
+     "staticFinal": 47,
+     "flows": 818
+    },
+    {
+     "period": "am_peak",
+     "label": "Onto the freeway at the ramps, via College Avenue",
+     "membership": "static",
+     "target": 16,
+     "offered": 23,
+     "staticOffered": 23,
+     "final": 16,
+     "staticFinal": 16,
+     "flows": 227
+    },
+    {
+     "period": "am_peak",
+     "label": "Onto the freeway at the ramps, via Hillegass Avenue",
+     "membership": "static",
+     "target": 12,
+     "offered": 9,
+     "staticOffered": 9,
+     "final": 12,
+     "staticFinal": 12,
+     "flows": 227
+    },
+    {
+     "period": "am_peak",
+     "label": "Onto the freeway at the ramps, via Martin Street",
+     "membership": "static",
+     "target": 10,
+     "offered": 28,
+     "staticOffered": 28,
+     "final": 10,
+     "staticFinal": 10,
+     "flows": 227
+    },
+    {
+     "period": "am_peak",
+     "label": "Onto the freeway at the ramps, via Colby Street",
+     "membership": "static",
+     "target": 8,
+     "offered": 17,
+     "staticOffered": 17,
+     "final": 11,
+     "staticFinal": 11,
+     "flows": 227
+    },
+    {
+     "period": "am_peak",
+     "label": "Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue",
+     "membership": "static",
+     "target": 8,
+     "offered": 14,
+     "staticOffered": 14,
+     "final": 7,
+     "staticFinal": 7,
+     "flows": 227
+    },
+    {
+     "period": "am_peak",
+     "label": "Onto the freeway at the ramps, via Benvenue Avenue",
+     "membership": "static",
+     "target": 5,
+     "offered": 1,
+     "staticOffered": 1,
+     "final": 5,
+     "staticFinal": 5,
+     "flows": 227
+    },
+    {
+     "period": "am_peak",
+     "label": "From the freeway at the ramps, via College Avenue",
+     "membership": "static",
+     "target": 10,
+     "offered": 35,
+     "staticOffered": 35,
+     "final": 11,
+     "staticFinal": 11,
+     "flows": 210
+    },
+    {
+     "period": "am_peak",
+     "label": "From the freeway at the ramps, via Martin Street",
+     "membership": "static",
+     "target": 10,
+     "offered": 19,
+     "staticOffered": 19,
+     "final": 11,
+     "staticFinal": 11,
+     "flows": 210
+    },
+    {
+     "period": "am_peak",
+     "label": "From the freeway at the ramps, via Colby Street",
+     "membership": "static",
+     "target": 8,
+     "offered": 8,
+     "staticOffered": 8,
+     "final": 9,
+     "staticFinal": 9,
+     "flows": 210
+    },
+    {
+     "period": "am_peak",
+     "label": "From the freeway at the ramps, via Hillegass Avenue",
+     "membership": "static",
+     "target": 5,
+     "offered": 10,
+     "staticOffered": 10,
+     "final": 6,
+     "staticFinal": 6,
+     "flows": 210
+    },
+    {
+     "period": "am_peak",
+     "label": "From the freeway at the ramps, via Benvenue Avenue",
+     "membership": "static",
+     "target": 3,
+     "offered": 2,
+     "staticOffered": 2,
+     "final": 3,
+     "staticFinal": 3,
+     "flows": 210
+    },
+    {
+     "period": "pm_peak",
+     "label": "Hillegass Avenue NB, trips from the freeway",
+     "membership": "simulated",
+     "target": 47,
+     "offered": 55,
+     "staticOffered": 58,
+     "final": 44,
+     "staticFinal": 45,
+     "flows": 667
+    },
+    {
+     "period": "pm_peak",
+     "label": "Colby Street NB, trips from the freeway",
+     "membership": "simulated",
+     "target": 47,
+     "offered": 62,
+     "staticOffered": 73,
+     "final": 42,
+     "staticFinal": 48,
+     "flows": 703
+    },
+    {
+     "period": "pm_peak",
+     "label": "Hillegass Avenue SB, trips to the freeway",
+     "membership": "simulated",
+     "target": 68,
+     "offered": 76,
+     "staticOffered": 79,
+     "final": 65,
+     "staticFinal": 75,
+     "flows": 519
+    },
+    {
+     "period": "pm_peak",
+     "label": "Colby Street SB, trips to the freeway",
+     "membership": "simulated",
+     "target": 45,
+     "offered": 63,
+     "staticOffered": 75,
+     "final": 44,
+     "staticFinal": 59,
+     "flows": 1062
+    },
+    {
+     "period": "pm_peak",
+     "label": "Onto the freeway at the ramps, via College Avenue",
+     "membership": "static",
+     "target": 16,
+     "offered": 31,
+     "staticOffered": 31,
+     "final": 17,
+     "staticFinal": 17,
+     "flows": 217
+    },
+    {
+     "period": "pm_peak",
+     "label": "Onto the freeway at the ramps, via Hillegass Avenue",
+     "membership": "static",
+     "target": 12,
+     "offered": 11,
+     "staticOffered": 11,
+     "final": 14,
+     "staticFinal": 14,
+     "flows": 217
+    },
+    {
+     "period": "pm_peak",
+     "label": "Onto the freeway at the ramps, via Martin Street",
+     "membership": "static",
+     "target": 10,
+     "offered": 24,
+     "staticOffered": 24,
+     "final": 10,
+     "staticFinal": 10,
+     "flows": 217
+    },
+    {
+     "period": "pm_peak",
+     "label": "Onto the freeway at the ramps, via Colby Street",
+     "membership": "static",
+     "target": 8,
+     "offered": 15,
+     "staticOffered": 15,
+     "final": 12,
+     "staticFinal": 12,
+     "flows": 217
+    },
+    {
+     "period": "pm_peak",
+     "label": "Onto the freeway at the ramps, via Telegraph Avenue north of Alcatraz Avenue",
+     "membership": "static",
+     "target": 8,
+     "offered": 13,
+     "staticOffered": 13,
+     "final": 8,
+     "staticFinal": 8,
+     "flows": 217
+    },
+    {
+     "period": "pm_peak",
+     "label": "Onto the freeway at the ramps, via Benvenue Avenue",
+     "membership": "static",
+     "target": 5,
+     "offered": 1,
+     "staticOffered": 1,
+     "final": 4,
+     "staticFinal": 4,
+     "flows": 217
+    },
+    {
+     "period": "pm_peak",
+     "label": "From the freeway at the ramps, via College Avenue",
+     "membership": "static",
+     "target": 10,
+     "offered": 24,
+     "staticOffered": 24,
+     "final": 10,
+     "staticFinal": 10,
+     "flows": 204
+    },
+    {
+     "period": "pm_peak",
+     "label": "From the freeway at the ramps, via Martin Street",
+     "membership": "static",
+     "target": 10,
+     "offered": 19,
+     "staticOffered": 19,
+     "final": 10,
+     "staticFinal": 10,
+     "flows": 204
+    },
+    {
+     "period": "pm_peak",
+     "label": "From the freeway at the ramps, via Colby Street",
+     "membership": "static",
+     "target": 8,
+     "offered": 12,
+     "staticOffered": 12,
+     "final": 9,
+     "staticFinal": 9,
+     "flows": 204
+    },
+    {
+     "period": "pm_peak",
+     "label": "From the freeway at the ramps, via Hillegass Avenue",
+     "membership": "static",
+     "target": 5,
+     "offered": 9,
+     "staticOffered": 9,
+     "final": 6,
+     "staticFinal": 6,
+     "flows": 204
+    },
+    {
+     "period": "pm_peak",
+     "label": "From the freeway at the ramps, via Benvenue Avenue",
+     "membership": "static",
+     "target": 3,
+     "offered": 1,
+     "staticOffered": 1,
+     "final": 3,
+     "staticFinal": 3,
+     "flows": 204
+    }
+   ],
+   "through": []
+  }
+ },
+ "ceilings": {
+  "shipped:1": {
+   "am_peak": {
+    "stations": 1923,
+    "above": 1,
+    "excess": 2,
+    "staticTotal": 23218,
+    "finalTotal": 21609,
+    "byType": {
+     "static": {
+      "through": 3733,
+      "local": 9610,
+      "ramp": 9875
+     },
+     "final": {
+      "through": 3553,
+      "local": 8276,
+      "ramp": 9780
+     }
+    },
+    "gate": {
+     "stations": 217,
+     "above": 1,
+     "excess": 2,
+     "removed": 44
+    },
+    "nonGate": {
+     "stations": 1706,
+     "above": 0,
+     "excess": 0,
+     "removed": 25
+    },
+    "ends": {
+     "originInside": [
+      605,
+      682
+     ],
+     "originOutside": [
+      7539,
+      6406
+     ],
+     "destInside": [
+      562,
+      505
+     ],
+     "destOutside": [
+      8211,
+      6978
+     ]
+    }
+   },
+   "pm_peak": {
+    "stations": 1878,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 27653,
+    "finalTotal": 24680,
+    "byType": {
+     "static": {
+      "through": 5891,
+      "local": 10436,
+      "ramp": 11326
+     },
+     "final": {
+      "through": 4922,
+      "local": 8448,
+      "ramp": 11310
+     }
+    },
+    "gate": {
+     "stations": 216,
+     "above": 0,
+     "excess": 0,
+     "removed": 76
+    },
+    "nonGate": {
+     "stations": 1662,
+     "above": 0,
+     "excess": 0,
+     "removed": 32
+    },
+    "ends": {
+     "originInside": [
+      893,
+      872
+     ],
+     "originOutside": [
+      9645,
+      7942
+     ],
+     "destInside": [
+      822,
+      791
+     ],
+     "destOutside": [
+      7872,
+      6139
+     ]
+    }
+   }
+  },
+  "training:1": {
+   "am_peak": {
+    "stations": 1909,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 20582,
+    "finalTotal": 19193,
+    "byType": {
+     "static": {
+      "through": 2455,
+      "local": 8314,
+      "ramp": 9813
+     },
+     "final": {
+      "through": 2452,
+      "local": 6949,
+      "ramp": 9792
+     }
+    },
+    "gate": {
+     "stations": 223,
+     "above": 0,
+     "excess": 0,
+     "removed": 61
+    },
+    "nonGate": {
+     "stations": 1686,
+     "above": 0,
+     "excess": 0,
+     "removed": 16
+    },
+    "ends": {
+     "originInside": [
+      1040,
+      1213
+     ],
+     "originOutside": [
+      7095,
+      5895
+     ],
+     "destInside": [
+      735,
+      812
+     ],
+     "destOutside": [
+      5907,
+      4838
+     ]
+    }
+   },
+   "pm_peak": {
+    "stations": 1846,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 25042,
+    "finalTotal": 22911,
+    "byType": {
+     "static": {
+      "through": 2785,
+      "local": 10873,
+      "ramp": 11384
+     },
+     "final": {
+      "through": 2786,
+      "local": 8750,
+      "ramp": 11375
+     }
+    },
+    "gate": {
+     "stations": 222,
+     "above": 0,
+     "excess": 0,
+     "removed": 140
+    },
+    "nonGate": {
+     "stations": 1624,
+     "above": 0,
+     "excess": 0,
+     "removed": 29
+    },
+    "ends": {
+     "originInside": [
+      1387,
+      1226
+     ],
+     "originOutside": [
+      8768,
+      7439
+     ],
+     "destInside": [
+      881,
+      839
+     ],
+     "destOutside": [
+      6740,
+      5307
+     ]
+    }
+   }
+  },
+  "shipped:2": {
+   "am_peak": {
+    "stations": 1923,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 23217,
+    "finalTotal": 21502,
+    "byType": {
+     "static": {
+      "through": 3733,
+      "local": 9609,
+      "ramp": 9875
+     },
+     "final": {
+      "through": 3555,
+      "local": 8160,
+      "ramp": 9787
+     }
+    },
+    "gate": {
+     "stations": 217,
+     "above": 0,
+     "excess": 0,
+     "removed": 54
+    },
+    "nonGate": {
+     "stations": 1706,
+     "above": 0,
+     "excess": 0,
+     "removed": 37
+    },
+    "ends": {
+     "originInside": [
+      604,
+      713
+     ],
+     "originOutside": [
+      7539,
+      6332
+     ],
+     "destInside": [
+      562,
+      494
+     ],
+     "destOutside": [
+      8211,
+      6937
+     ]
+    }
+   },
+   "pm_peak": {
+    "stations": 1878,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 27734,
+    "finalTotal": 25009,
+    "byType": {
+     "static": {
+      "through": 5892,
+      "local": 10519,
+      "ramp": 11324
+     },
+     "final": {
+      "through": 5052,
+      "local": 8659,
+      "ramp": 11298
+     }
+    },
+    "gate": {
+     "stations": 216,
+     "above": 0,
+     "excess": 0,
+     "removed": 105
+    },
+    "nonGate": {
+     "stations": 1662,
+     "above": 0,
+     "excess": 0,
+     "removed": 48
+    },
+    "ends": {
+     "originInside": [
+      899,
+      839
+     ],
+     "originOutside": [
+      9686,
+      8155
+     ],
+     "destInside": [
+      822,
+      700
+     ],
+     "destOutside": [
+      7920,
+      6386
+     ]
+    }
+   }
+  },
+  "training:2": {
+   "am_peak": {
+    "stations": 1909,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 20582,
+    "finalTotal": 19085,
+    "byType": {
+     "static": {
+      "through": 2455,
+      "local": 8314,
+      "ramp": 9813
+     },
+     "final": {
+      "through": 2368,
+      "local": 6913,
+      "ramp": 9804
+     }
+    },
+    "gate": {
+     "stations": 223,
+     "above": 0,
+     "excess": 0,
+     "removed": 34
+    },
+    "nonGate": {
+     "stations": 1686,
+     "above": 0,
+     "excess": 0,
+     "removed": 19
+    },
+    "ends": {
+     "originInside": [
+      1040,
+      1209
+     ],
+     "originOutside": [
+      7095,
+      5872
+     ],
+     "destInside": [
+      735,
+      793
+     ],
+     "destOutside": [
+      5907,
+      4757
+     ]
+    }
+   },
+   "pm_peak": {
+    "stations": 1846,
+    "above": 1,
+    "excess": 1,
+    "staticTotal": 25042,
+    "finalTotal": 22759,
+    "byType": {
+     "static": {
+      "through": 2785,
+      "local": 10873,
+      "ramp": 11384
+     },
+     "final": {
+      "through": 2783,
+      "local": 8601,
+      "ramp": 11375
+     }
+    },
+    "gate": {
+     "stations": 222,
+     "above": 1,
+     "excess": 1,
+     "removed": 190
+    },
+    "nonGate": {
+     "stations": 1624,
+     "above": 0,
+     "excess": 0,
+     "removed": 39
+    },
+    "ends": {
+     "originInside": [
+      1387,
+      1152
+     ],
+     "originOutside": [
+      8768,
+      7447
+     ],
+     "destInside": [
+      881,
+      762
+     ],
+     "destOutside": [
+      6740,
+      5168
+     ]
+    }
+   }
+  },
+  "shipped:3": {
+   "am_peak": {
+    "stations": 1923,
+    "above": 1,
+    "excess": 1,
+    "staticTotal": 23219,
+    "finalTotal": 21508,
+    "byType": {
+     "static": {
+      "through": 3731,
+      "local": 9613,
+      "ramp": 9875
+     },
+     "final": {
+      "through": 3483,
+      "local": 8238,
+      "ramp": 9786
+     }
+    },
+    "gate": {
+     "stations": 217,
+     "above": 1,
+     "excess": 1,
+     "removed": 60
+    },
+    "nonGate": {
+     "stations": 1706,
+     "above": 0,
+     "excess": 0,
+     "removed": 36
+    },
+    "ends": {
+     "originInside": [
+      605,
+      770
+     ],
+     "originOutside": [
+      7542,
+      6302
+     ],
+     "destInside": [
+      562,
+      502
+     ],
+     "destOutside": [
+      8213,
+      6940
+     ]
+    }
+   },
+   "pm_peak": {
+    "stations": 1878,
+    "above": 0,
+    "excess": 0,
+    "staticTotal": 27654,
+    "finalTotal": 24873,
+    "byType": {
+     "static": {
+      "through": 5891,
+      "local": 10437,
+      "ramp": 11326
+     },
+     "final": {
+      "through": 5051,
+      "local": 8526,
+      "ramp": 11297
+     }
+    },
+    "gate": {
+     "stations": 216,
+     "above": 0,
+     "excess": 0,
+     "removed": 124
+    },
+    "nonGate": {
+     "stations": 1662,
+     "above": 0,
+     "excess": 0,
+     "removed": 52
+    },
+    "ends": {
+     "originInside": [
+      893,
+      837
+     ],
+     "originOutside": [
+      9647,
+      8052
+     ],
+     "destInside": [
+      822,
+      673
+     ],
+     "destOutside": [
+      7872,
+      6237
+     ]
+    }
+   }
+  },
+  "training:3": {
+   "am_peak": {
+    "stations": 1909,
+    "above": 1,
+    "excess": 3,
+    "staticTotal": 20582,
+    "finalTotal": 19123,
+    "byType": {
+     "static": {
+      "through": 2455,
+      "local": 8314,
+      "ramp": 9813
+     },
+     "final": {
+      "through": 2356,
+      "local": 6966,
+      "ramp": 9801
+     }
+    },
+    "gate": {
+     "stations": 223,
+     "above": 1,
+     "excess": 3,
+     "removed": 42
+    },
+    "nonGate": {
+     "stations": 1686,
+     "above": 0,
+     "excess": 0,
+     "removed": 20
+    },
+    "ends": {
+     "originInside": [
+      1040,
+      1213
+     ],
+     "originOutside": [
+      7095,
+      5882
+     ],
+     "destInside": [
+      735,
+      765
+     ],
+     "destOutside": [
+      5907,
+      4773
+     ]
+    }
+   },
+   "pm_peak": {
+    "stations": 1846,
+    "above": 1,
+    "excess": 1,
+    "staticTotal": 25042,
+    "finalTotal": 22659,
+    "byType": {
+     "static": {
+      "through": 2785,
+      "local": 10873,
+      "ramp": 11384
+     },
+     "final": {
+      "through": 2744,
+      "local": 8540,
+      "ramp": 11375
+     }
+    },
+    "gate": {
+     "stations": 222,
+     "above": 1,
+     "excess": 1,
+     "removed": 199
+    },
+    "nonGate": {
+     "stations": 1624,
+     "above": 0,
+     "excess": 0,
+     "removed": 41
+    },
+    "ends": {
+     "originInside": [
+      1387,
+      1173
+     ],
+     "originOutside": [
+      8768,
+      7372
+     ],
+     "destInside": [
+      881,
+      763
+     ],
+     "destOutside": [
+      6740,
+      5138
+     ]
+    }
+   }
+  }
+ }
+}

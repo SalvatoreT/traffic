@@ -1,0 +1,77 @@
+a1   Signal: saturation headway, 1 lane, standing queue, 55 s green, 25 mph             2.14 [1.80 .. 2.40]  1.02 ok
+a2   Signal: saturation flow per lane, 25 mph                                           1681 [1500 .. 2000]  0.96 ok
+a4   Signal: saturation flow per lane, 35 mph                                           1764 [1500 .. 2000]  1.01 ok
+a3   Signal: start-up lost time                                                         0.28 [1.00 .. 3.00]  0.14 FAIL
+b1   Signal capacity, 1 lane through (green share 0.50)                                  837 [755 .. 1006]  0.95 ok
+b2   Signal capacity, 2 lanes through (green share 0.50)                                 844 [755 .. 1007]  0.96 ok
+b3   1 lane, 10% left, pocket, opposing 500/lane (green share 0.51)                      888 [678 .. 1129]  0.98 ok
+b4   1 lane, 20% left, pocket, opposing 500/lane (green share 0.50)                      814 [755 .. 1258]  0.81 ok
+b9   2 lanes, 10% left, pocket, opposing 500/lane (green share 0.51)                     820 [618 .. 1124]  0.94 ok
+b5   1 lane, 10% left, no pocket, opposing 500/lane (green share 0.40)                   420 [301 .. 722]  0.82 ok
+b6   1 lane, 20% left, no pocket, opposing 500/lane (green share 0.40)                   420 [242 .. 686]  0.90 ok
+b12  1 lane, all left turns, no opposing traffic (a protected left) (green share 0.51)      846 [645 .. 1012]  1.02 ok
+b7   1 lane, 10% right (green share 0.50)                                                816 [634 .. 994]  1.00 ok
+b8   1 lane, 20% right (green share 0.50)                                                804 [634 .. 994]  0.99 ok
+p1   Permissive left, left-only lane, opposing 200 veh/h (green share 0.39): left turns      411 [364 .. 497]  0.95 ok
+p2   Permissive left, left-only lane, opposing 400 veh/h (green share 0.39): left turns      246 [190 .. 339]  0.93 ok
+p3   Permissive left, left-only lane, opposing 600 veh/h (green share 0.38): left turns      120 [31.7 .. 170]  1.19 ok
+b13  1 lane, all left turns, protected (a phase of its own, phasing observed without timing), opposing 500/lane (green share 0.30)      458 [453 .. 604]  0.87 ok
+b10  Right turn on red, light cross traffic (100 veh/h/lane from the left): discharge over the no-turn-on-red discharge (green share 0.75)     1.15 [1.09 .. 1.24]  0.99 ok
+b11  Right turn on red, saturated cross street (4,000 veh/h/lane from the left): discharge over the no-turn-on-red discharge (green share 0.45)     1.14 [0.95 .. 1.15]  1.08 ok
+c5   Adaptive plan over fixed plan, saturated arterial (4,000 veh/h per direction) with a 500 veh/h cross street: vehicles served at the first signal     0.91 [0.90 .. 1.10]  0.91 ok
+c6   Adaptive plan: share of the cross-street demand (2 x 500 veh/h) served at the first signal     1.04 [0.90 .. 1.10]  1.04 ok
+c1   Two signals 100 m apart, fixed plan: through flow over the same plan 1000 m apart     1.03 [0.75 .. 1.15]  1.08 ok
+c2   Two signals 100 m apart, adaptive plan: through flow over the same plan 1000 m apart     1.03 [0.75 .. 1.15]  1.09 ok
+c3   Two signals 200 m apart, fixed plan: through flow over the same plan 1000 m apart     0.99 [0.75 .. 1.15]  1.04 ok
+c4   Two signals 200 m apart, adaptive plan: through flow over the same plan 1000 m apart     0.97 [0.75 .. 1.15]  1.02 ok
+d1   All-way stop: capacity per approach, balanced, 80/10/10 mix                         466 [400 .. 550]  0.98 ok
+d2   All-way stop: departure headway per approach                                       7.72 [3.90 .. 9.60]  1.14 ok
+e1   Two-way stop, minor right, major 200/direction (vc 200)                             694 [635 .. 1058]  0.82 ok
+e2   Two-way stop, minor right, major 600/direction (vc 600)                             320 [378 .. 631]  0.63 FAIL
+e3   Two-way stop, minor right, major 1000/direction (vc 1000)                           172 [223 .. 372]  0.58 FAIL
+e4   Two-way stop, minor through, major 200/direction (vc 400)                           566 [406 .. 677]  1.04 ok
+e5   Two-way stop, minor through, major 600/direction (vc 1200)                          189 [140 .. 233]  1.01 ok
+e6   Two-way stop, minor through, major 1000/direction (vc 2000)                        72.0 [45.5 .. 75.8]  1.19 ok
+e7   Two-way stop, minor left, major 200/direction (vc 400)                              502 [423 .. 705]  0.89 ok
+e8   Two-way stop, minor left, major 600/direction (vc 1200)                             152 [123 .. 204]  0.93 ok
+e9   Two-way stop, minor left, major 1000/direction (vc 2000)                           54.0 [33.9 .. 56.5]  1.19 ok
+f1   Circle entry capacity, circulating 200 veh/h                                       1089 [740 .. 1110]  1.18 ok
+f2   Circle entry capacity, circulating 600 veh/h                                        687 [496 .. 744]  1.11 ok
+f3   Circle entry capacity, circulating 1000 veh/h                                       346 [333 .. 499]  0.83 ok
+g1   Single-lane link at 25 mph: simulated flow, gate-fed                               1668 [1603 .. 1980]  0.93 ok
+h1   Gate insertion rate onto a free 25 mph link                                        1746 [1603 .. 5657]  0.48 ok
+g2   Single-lane link at 35 mph: simulated flow, gate-fed                               1896 [1785 .. 2205]  0.95 ok
+h2   Gate insertion rate onto a free 35 mph link                                        1938 [1785 .. 6301]  0.48 ok
+i1   Motorway mainline, 2 lanes, 65 mph: flow per lane                                  2187 [2115 .. 2468]  0.95 ok
+i3   Single-lane exit ramp, 45 mph: flow                                                2052 [1890 .. 2205]  1.00 ok
+i4   Two single-lane approaches merging onto a 2-lane exit at an uncontrolled node, saturated: exit flow     1692 [1575 .. 4411]  0.57 ok
+i5   Lane drop: a saturated 2-lane link continues as 1 lane at an uncontrolled node: flow over the same link with 1 lane throughout     0.81 [0.75 .. 1.00]  0.93 ok
+h3   Gate insertion rate onto a free 3-lane 35 mph link                                 1922 [1785 .. 6301]  0.48 ok
+h4   Gate onto a 3-lane link forking into two exits, one queued back to the gate: flow to the free exit     1.00 [0.90 .. 1.10]  1.00 ok
+l1   2 lanes, 20% left, pocket overflowing, opposing 500/lane (green share 0.49): approach capacity      676 [291 .. 681]  1.39 ok
+l2   Two-lane link with its left lane blocked by a standing vehicle, 1200 veh/h offered: flow past the obstruction over the offered flow     1.04 [0.90 .. 1.10]  1.04 ok
+i2   Off-ramp, 1 lane flaring to 2 at a signal (green share 0.28): per lane              444 [417 .. 556]  0.91 ok
+k1   Junction traversal delay, through, free flow                                      -0.31 [-0.50 .. 1.00] -1.25 ok
+k2   Junction traversal delay, left, free flow                                          4.55 [2.50 .. 6.00]  1.07 ok
+k3   Junction traversal delay, right, free flow                                         4.62 [3.00 .. 7.00]  0.92 ok
+j1   Signal, 1 lane, 10% left 15% right: capacity with 100 pedestrians/h per crosswalk     0.92 [0.60 .. 1.00]  1.15 ok
+j2   Signal, 1 lane, 10% left 15% right: capacity with 300 pedestrians/h per crosswalk     0.83 [0.60 .. 1.00]  1.04 ok
+j3   Signal, 1 lane, 10% left 15% right: capacity with 600 pedestrians/h per crosswalk     0.74 [0.60 .. 1.00]  0.92 ok
+j4   Signal, 1 lane, 10% left 15% right: capacity with 50 cyclists/h sharing the lane     0.81 [0.70 .. 1.00]  0.95 ok
+j5   Signal, 1 lane, 10% left 15% right: capacity with 150 cyclists/h sharing the lane     0.82 [0.70 .. 1.00]  0.96 ok
+j6   Signal, 1 lane, 10% left 15% right: capacity with 300 cyclists/h sharing the lane     0.62 [0.70 .. 1.00]  0.73 FAIL
+j7   All-way stop: capacity with 100 pedestrians/h on each crosswalk                    0.76 [0.60 .. 1.00]  0.94 ok
+j8   All-way stop: capacity with 300 pedestrians/h on each crosswalk                    0.49 [0.60 .. 1.00]  0.62 FAIL
+j9   All-way stop: capacity with 600 pedestrians/h on each crosswalk                    0.23 [0.60 .. 1.00]  0.29 FAIL
+j10  All-way stop: capacity with 50 cyclists/h per approach                             0.99 [0.70 .. 1.00]  1.17 ok
+j11  All-way stop: capacity with 150 cyclists/h per approach                            0.83 [0.70 .. 1.00]  0.98 ok
+j12  All-way stop: capacity with 300 cyclists/h per approach                            0.60 [0.70 .. 1.00]  0.71 FAIL
+r1   Route choice: two routes of equal cost, one with 1 junction(s) offering a side link onto the other (+314 s): share that stays on it     0.49 [0.45 .. 0.55]  0.99 ok
+r2   Route choice: two routes of equal cost, one with 20 junction(s) offering a side link onto the other (+314 s): share that stays on it     0.50 [0.45 .. 0.55]  1.01 ok
+r3   Route choice: share on a route 15 s (2%) costlier than the other, no link in common     0.37 [0.35 .. 0.41]  0.97 ok
+r4   Route choice: share on a route 30 s (5%) costlier than the other, no link in common     0.27 [0.24 .. 0.30]  0.97 ok
+r5   Route choice: share on a route 60 s (10%) costlier than the other, no link in common     0.12 [0.09 .. 0.15]  1.01 ok
+r6   Route choice: share on a route 120 s (20%) costlier than the other, no link in common     0.01 [0.00 .. 0.04]  0.35 ok
+67 of 74 cases pass
+wrote /Users/sal/Developer/traffic/.claude/worktrees/batch/crates/sim/../../data/calibration/validation.md
+wrote /Users/sal/Developer/traffic/.claude/worktrees/batch/crates/sim/../../data/calibration/validation.json

@@ -1,0 +1,3 @@
+target/membership-loop/iter0/shipped/demand.json periods equal to target/r53/demand.base.json: false
+target/membership-loop/iter0/training/demand.json periods equal to target/r53/demand.base.cv.json: false
+target/validation/rockridge.demand.json periods equal to target/r53/demand.base.cv.json: true
