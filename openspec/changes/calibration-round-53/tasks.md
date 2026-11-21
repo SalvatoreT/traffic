@@ -17,19 +17,19 @@
 
 ## 2. Laptop runs (runbook.md)
 
-- [ ] 2.1 Gate: reproduce the published hashes and the fingerprint
-- [ ] 2.2 Baseline three-seed screen
-- [ ] 2.3 Move the published membership files aside, apply the candidate, dry-run the loop, run it (three passes at most, ten seeds, PM and AM, both views)
-- [ ] 2.4 Screen the final demand on seeds 1 to 3, with the backlog line
-- [ ] 2.5 Validation suite and ten-seed assessment (if the screen passes)
-- [ ] 2.6 End-along figures from the ten-seed select-link runs, baseline and candidate
-- [ ] 2.7 Fresh-seed confirmation on seeds 11 to 20 with the baseline (if the keep rule passes), automatically
-- [ ] 2.8 Restore the published model and verify demand 2d16d8f8eb0950ca and cross-validation demand 1c3b1666f24156f1
-- [ ] 2.9 Commit the evidence under `evidence/`
+- [x] 2.1 Gate: reproduce the published hashes and the fingerprint
+- [x] 2.2 Baseline three-seed screen
+- [x] 2.3 Move the published membership files aside, apply the candidate, dry-run the loop, run it (three passes at most, ten seeds, PM and AM, both views)
+- [x] 2.4 Screen the final demand on seeds 1 to 3, with the backlog line
+- [x] 2.5 Validation suite and ten-seed assessment (if the screen passes)
+- [x] 2.6 End-along figures from the ten-seed select-link runs, baseline and candidate
+- [x] 2.7 Fresh-seed confirmation on seeds 11 to 20 with the baseline (if the keep rule passes), automatically: not run, the keep rule failed
+- [x] 2.8 Restore the published model and verify demand 2d16d8f8eb0950ca and cross-validation demand 1c3b1666f24156f1
+- [x] 2.9 Commit the evidence under `evidence/`
 
 ## 3. Verdict (lead)
 
-- [ ] 3.1 Keep-rule table, confirmation table, improvement test and the verdict (design D5)
-- [ ] 3.2 Record entry in `data/calibration/rockridge.record.md`
-- [ ] 3.3 Adoption decision (the project lead)
-- [ ] 3.4 Validate the change and archive
+- [x] 3.1 Keep-rule table, confirmation table, improvement test and the verdict (design D5)
+- [x] 3.2 Record entry in `data/calibration/rockridge.record.md`
+- [x] 3.3 Adoption: not adopted (the keep rule failed on D5; no user decision was involved)
+- [x] 3.4 Validate the change and archive

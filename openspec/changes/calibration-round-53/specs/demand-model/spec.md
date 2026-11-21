@@ -148,3 +148,11 @@ With `seedPairs` true the fit report SHALL give a section "End-along seeding" wi
 #### Scenario: Missing seed line
 - **WHEN** a shipped build from pass 1 has no `End along seed` line for a period although `seedPairs` is on
 - **THEN** the loop stops with an error naming the period
+
+### Requirement: The published model leaves both end-along switches off
+The committed demand config SHALL NOT contain `simulatedMembership.endAlong`, `countFit.endAlong` or `countFit.endAlong.seedPairs`. The end-along target and the seeding exist in the code as switches that are off in the published model, which stays the calibration round 52 model (config hash 2405ff02c92b2837). A candidate that turns them on lives outside the committed config.
+
+#### Scenario: Committed config
+- **WHEN** the demand is built from the committed config with the published membership files
+- **THEN** the shipped demand is 2d16d8f8eb0950ca, the cross-validation demand is 1c3b1666f24156f1, and the fit report has no end-along section
+

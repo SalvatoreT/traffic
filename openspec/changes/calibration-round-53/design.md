@@ -14,7 +14,7 @@ The end-along targets in the targets file, all from `routeDiagrams.tableTotals.d
 
 ## Revision of 2026-11-21 (D8): why seeding was added
 
-The first version of this change (constraint only) was wiring-checked in the container before any laptop run (the table under "First version" below). It could not work: in PM the pairs that use Colby Street SB and end at an interior node carry 0.3 cars an hour against 43 counted (Hillegass Avenue SB 1.7 against 40), and the northbound runs start far above their figures (Colby Street NB 101 against 29, Hillegass Avenue NB 83 against 15). The fit scales pairs that exist, so the southbound figures stayed unmet and the Colby Street SB whole-street fit stayed at 56 with and without the constraint. The lead asked for option 2 of that finding, seeding the missing pairs, on the same change and branch. The round keeps its number because nothing ran on the laptop.
+The first version of this change (constraint only) was wiring-checked in the container before any laptop run (the table under "First version" below). It could not work: in PM the pairs that use Colby Street SB and end at an interior node carry 0.3 cars an hour against 43 counted (Hillegass Avenue SB 1.7 against 40), and the northbound runs start far above their figures (Colby Street NB 101 against 29, Hillegass Avenue NB 83 against 15). The fit scales pairs that exist, so the southbound figures stayed unmet and the Colby Street SB whole-street fit stayed at 56 with and without the constraint. The lead asked for option 2 of that finding, seeding the missing pairs, on the same change and branch. The round keeps its number because nothing ran on the laptop. The cause is structural zeros: the fit moves pairs by multiplicative updates, so a pair absent from the seed table stays absent however large the shortfall, and the first design had no pair that could carry the southbound end-along cars. P12 says why no citation is given for that.
 
 ### Diagnosis: why the seed table has almost no trips from the Alcatraz side ending along Colby Street or Hillegass Avenue
 
@@ -180,3 +180,23 @@ The lead chose option 2 (seeding); see the revision above.
 - The weight 2, the node rule, the first-block share of one half, the origin and destination proportions and the 80% cap are assumptions with no reference (P12).
 - Seeded pairs enlarge the table by a few hundred pairs in AM (622 Colby Street SB pairs from 130 origins). The thinning cap of 8,000 flows is applied before seeding, so the table grows by that much.
 - The loop has not run with the new report lines or with seeding. A mismatch stops the loop at the check. The training view's membership pool is built from runs of a demand that is the published cross-validation demand, so its membership file should equal the published training file apart from its config hash.
+
+## Outcome
+
+Ran on the project lead's laptop on 2026-11-21 from 1:24 to 3:11 PM Pacific (runbook steps A to F and I; evidence commit 93899cf on the dev branch salvatoret/peaceful-fermi-dlwt0u, run at 2fdd5f7). Simulator fingerprint 6b886c8f52ee07397773ddd0ebbcb447. The loop took 3,969 s, exited 0 and ran three passes plus the final builds. The stop rule and the abort did not fire. The report-only warning did: offered car demand in the final shipped PM build is 10.1% below the static fit (89.9%). Candidate config 19b6d2c3957f4f56, demand a009d7bb4722a7c9, cross-validation demand afbe8635af49dc7f, membership files 87b61668bfa7781d (shipped) and 196188c75964afa8 (training). The published model was restored and verified afterward (demand 2d16d8f8eb0950ca, cross-validation demand 1c3b1666f24156f1, config 2405ff02c92b2837).
+
+The candidate passed the three-seed screen and failed one line of the ten-seed keep rule (D5): the headline shares. PM Hillegass Avenue SB to the freeway is 53.5% against 68 counted (baseline 60.0%), so 3 of 4 shares are within 10 points and the mean error is 6.2 (baseline 3.8). Every other line equals the baseline's: PM fitted 81 of 92, PM held out 14 of 24, AM fitted 72 of 77, AM held out 15 of 19, whole-street 8 of 8, D16 holds, validation 67 of 74.
+
+The improvement test also failed, on seeds 1 to 10: PM Colby Street SB whole-street traversals fell from 74.5 to 62.6 cars an hour, a fall of 11.9 against the 15 required (counted 39). Because the keep rule failed, the fresh-seed confirmation and the proposal search did not run.
+
+What the switches did. The simulated end-along figures moved to their targets in all eight run-periods (PM Colby Street SB 0.0 to 56.7 against 43, Hillegass Avenue SB 3.3 to 41.4 against 40, Hillegass Avenue NB 40.2 to 18.6 against 15, Colby Street NB 46.3 to 34.5 against 29). The seeded pairs end along the street, so none of them reaches the freeway. They raised the Hillegass Avenue SB block's trips from 197.1 to 219.9 cars an hour while the trips that went on to the freeway stayed at 118.0 and 118.1. The share fell because its denominator grew. The record entry has the numbers per pass.
+
+Deviations on the laptop (none changed code or scripts: `git diff 88965b2 93899cf -- tools openspec/changes/calibration-round-53/scripts openspec/changes/calibration-round-53/runbook.md` is empty):
+
+1. The morning's restamp loop folder was moved to `target/restamp52-loop`, because `target/r52-loop` already holds round 52's loop.
+2. `pass0-check.txt` reads `false` for pass 0 against `demand.base*.json`. The runbook's comparison was written when the baseline was a static build; the baseline is now the published simulated-membership model, so pass 0 cannot equal it. Pass 0 equals the restamp's pass 0 (the static build of the committed config) in both views, and the final training demand's periods equal the published cross-validation demand's. Only the `build` stamp differs, which carries the config hash.
+3. The baseline per-seed directories on the laptop are `target/assess-seeds/60` and `60-cv`, from the restamp's `assess --publish`.
+
+The README also lists a `build-logs/` folder that is not in the commit; the final build figures are in `loop.txt`, `seeding.md` and the `fit/` reports.
+
+Not adopted, and no user decision was involved: the keep rule failed. The published model stays round 52. Both switches (`endAlong` and `seedPairs`) are in the code and off in the committed config (hash 2405ff02c92b2837); the candidate exists only in `candidates/end-along.json`. The record entry in `data/calibration/rockridge.record.md` holds the full tables and the lead for round 54. The evidence is in this change's `evidence/` folder.
