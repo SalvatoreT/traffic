@@ -89,6 +89,127 @@ Claremont Ave: checked end to end. OSM lanes (3 with one forward and one backwar
 
 Ramp junctions: after joining all four SR-24 terminals are single signalized nodes (Aileen/Telegraph and Clifton/Claremont off-ramps, Hudson/Claremont and 56th/Telegraph on-ramps) with 2-lane ramp approaches at 35 mph. Mean discharge in the PM peak (seeds 1 to 3, measured before the third round): Aileen off-ramp 584 veh/h (offered 656), Clifton off-ramp 914 veh/h (offered about 1,025), on-ramps 783 and 555 veh/h. That is 290 to 460 veh/h per lane averaged over the hour; the signal gives the ramp 30 to 45% of the cycle and the shortfall is downstream spill-back on Claremont and Telegraph, not the ramp signal itself. Before the third round the remaining gridlock removals were mostly vehicles queued on the 4-lane freeway stub behind the single-lane Clifton off-ramp (26 of about 45 removals over six seeds at scale 0.3). The third round checked the ramp lanes against OSM: the off-ramps are tagged one lane for most of their length and two lanes (turn lanes left | left;through;right at Clifton, left | right at Aileen) on the final way before the signal, and the importer keeps that per segment (a test covers it), so no lane count is lost. After step M the stub accounts for about one removal per run.
 
+## Fifty-third round: end-along targets and seeded pairs (fails the keep rule on the headline shares, not adopted) (2026-11-21)
+
+Fails the keep rule on one line, the D5 headline shares (3 of 4 within 10 points, mean error 6.2 against 3.8), and the improvement test. Not adopted. The published model stays round 52: network 53c823f20d9165ed, demand 2d16d8f8eb0950ca, cross-validation demand 1c3b1666f24156f1, config 2405ff02c92b2837. Simulator fingerprint 6b886c8f52ee07397773ddd0ebbcb447 throughout. No user decision was involved. The change is archived with its evidence in `openspec/changes/archive/2026-11-21-calibration-round-53/` (laptop evidence commit 93899cf, run at 2fdd5f7). The numbers below come from the laptop's report and were checked against the evidence files.
+
+### What was tried
+
+PM Colby Street SB is the weakest line of the published model: about 75 cars an hour drive the whole street against 39 counted. The volunteer count says 43 of the 139 cars that enter at the top ended their trip along the street. Nothing in the fit used that figure. The change adds two switches, both off in the committed config. `simulatedMembership.endAlong` (weight `countFit.endAlong.weight` 2, an assumption) makes the cars that ended along each of the four runs (Hillegass Avenue and Colby Street, both directions) a fit target in PM and AM, from the same simulated block pairs as the shares. `countFit.endAlong.seedPairs` (design D8) seeds the missing pairs first.
+
+The first design (constraint only) was checked in the container before any laptop run and could not bind southbound. In PM the pairs that use Colby Street SB and end at an interior node carried 0.3 cars an hour against 43 counted (Hillegass Avenue SB 1.7 against 40), because the fit scales pairs that exist and the seed table had none from the Alcatraz Avenue side. The lead chose seeding on the same change. The training view leaves out all four runs, because each has a held-out block on it, so the held-out rows of the keep rule could not move by design (candidate cross-validation demand periods equal the published ones).
+
+### Hashes
+
+- Baseline: network 53c823f20d9165ed, demand 2d16d8f8eb0950ca, cross-validation demand 1c3b1666f24156f1, config 2405ff02c92b2837, membership 56e688e7e5749d23 and cf32e3e0d9e6f23e.
+- Candidate: config 19b6d2c3957f4f56 (`apply-candidate.py end-along`), network 53c823f20d9165ed (identical), demand a009d7bb4722a7c9, cross-validation demand afbe8635af49dc7f, membership shipped 87b61668bfa7781d and training 196188c75964afa8.
+- Restore verified at 3:11 PM: demand 2d16d8f8eb0950ca, cross-validation demand 1c3b1666f24156f1, config 2405ff02c92b2837, membership files back.
+- The committed `data/demand/rockridge.config.json` has no `endAlong` or `seedPairs` key; the candidate lives in the change folder only.
+
+### Run
+
+Laptop, 1:24 to 3:11 PM Pacific. The gate rebuild (`npm run data`, 1,024 s) reproduced the baseline hashes. The loop took 3,969 s and exited 0 after passes 0, 1 and 2 and the final build (`loop.txt` numbers the builds 0 to 3), with the abort and the early stop silent. The report-only warning fired once: offered car demand in the final shipped PM build is 89.9% of the static fit (10.1% below). Offered share of the static fit, shipped PM / AM: pass 1 89.2 / 93.1, pass 2 90.2 / 92.6, final 89.9 / 92.6; training PM / AM final 90.5 / 92.9. All four end-along lines read `simulated` in both periods from pass 1.
+
+Seeding added, cars an hour (before, added, after, pairs from origins): PM Hillegass Avenue SB 4.7, 38.8, 40.0, 36 from 13; PM Colby Street SB 3.2, 46.0, 43.0, 99 from 25; AM Hillegass Avenue SB 3.1, 6.4, 9.0, 56 from 20; AM Colby Street SB 2.7, 14.9, 15.0, 622 from 130. The northbound runs were already above their figures and got no pairs.
+
+### Screen, three seeds
+
+Baseline to candidate: PM fitted 82 to 81 of 92, PM held out 12 to 12 of 24, AM fitted 72 to 72 of 77, AM held out 14 to 14 of 19. No car cleared from gridlock in the judged zone. Backlog under 2% in 3 of 3 seeds in both periods (AM mean 0.43% to 0.30%, PM 1.13% to 1.22%). Passed.
+
+### Keep rule, ten seeds
+
+| Line | Line to meet | Baseline | Candidate | Result |
+| --- | --- | --- | --- | --- |
+| PM fitted | 81 | 81 of 92 | 81 of 92 | pass |
+| PM held out | 14 | 14 of 24 | 14 of 24 | pass |
+| AM fitted | 72 | 72 of 77 | 72 of 77 | pass |
+| AM held out | 15 | 15 of 19 | 15 of 19 | pass |
+| D5 headline shares | 4 of 4 | 4 (mean error 3.8) | 3 of 4 (mean error 6.2) | fail |
+| Whole-street traversals | 8 of 8 | 8 | 8 of 8 | pass |
+| D16 stability | holds | holds | holds in all three periods | pass |
+| Validation suite | 67 of 74 | 67 | 67 of 74 | pass |
+
+D5 detail, PM, observed against modeled, baseline to candidate: Hillegass Avenue NB from the freeway 47, 51.2 to 44.6; Colby Street NB from the freeway 47, 48.0 to 46.3; Hillegass Avenue SB to the freeway 68, 60.0 to 53.5 (-14.5, fails); Colby Street SB to the freeway 45, 42.8 to 37.7 (-7.3, holds).
+
+Whole street, cars an hour, observed, baseline, candidate: PM Hillegass Avenue NB 48, 56, 57; PM Colby Street NB 102, 86, 81; PM Hillegass Avenue SB 79, 78, 74; PM Colby Street SB 39, 75, 63 (GEH 3.3); AM Hillegass Avenue NB 34, 39, 38; AM Colby Street NB 33, 42, 43; AM Hillegass Avenue SB 36, 30, 35; AM Colby Street SB 46, 39, 32. All eight are inside GEH 5 for the candidate.
+
+### Improvement test, seeds 1 to 10
+
+PM Colby Street SB whole-street traversals fell from 74.5 to 62.6 cars an hour, a fall of 11.9 against the 15 required (counted 39). The fresh-seed confirmation (seeds 11 to 20) and the proposal search did not run, as the runbook says when the keep rule fails.
+
+### End-along figures, simulated
+
+Trips that ended along the street, ten-seed mean, cars an hour, baseline to candidate (target): PM Hillegass Avenue NB 40.2 to 18.6 (15); PM Colby Street NB 46.3 to 34.5 (29); PM Hillegass Avenue SB 3.3 to 41.4 (40); PM Colby Street SB 0.0 to 56.7 (43); AM Hillegass Avenue NB 20.2 to 11.6 (9); AM Colby Street NB 55.7 to 20.9 (14); AM Hillegass Avenue SB 7.1 to 9.7 (9); AM Colby Street SB 2.2 to 13.1 (15). All eight moved to or near their targets, and the southbound ones from zero. The seeded trips end along the street, so none of them reaches the freeway.
+
+### Shares in the simulator
+
+PM, ten-seed means, cars an hour on the southbound runs, baseline to candidate:
+
+| Block | All trips on the run | To the freeway | Not to the freeway | Share to the freeway |
+| --- | --- | --- | --- | --- |
+| Hillegass Avenue SB | 197.1 to 219.9 | 118.0 to 118.1 | 79.1 to 101.8 | 60.0% to 53.5% |
+| Colby Street SB | 220.5 to 260.6 | 94.0 to 97.8 | 126.5 to 162.8 | 42.8% to 37.7% |
+
+### Reported lists
+
+Baseline to candidate, shipped view, ten seeds. These are reported, not conditions; the full tables are in `evidence/reported/`.
+
+- Offered car demand, veh/h: PM 24,760 to 24,874; AM 21,511 to 21,508. The training demand is unchanged.
+- Diagonal stations, PM, counted 178: simulated sum 349 to 384 (Forest St EB 102 to 113, McAuley St EB 60 to 73, 60th St EB 61 to 66, Ayala Ave NB 64 to 68, Howell St SB 63 to 64). AM, counted 110: 167 to 184.
+- Colby St NB blocks, simulated over counted: PM 0.82 to 0.78; AM 0.76 to 0.71.
+- Through cars in the study area, per hour: PM 786 to 774; AM 394 to 402.
+- Flips among recent stations: PM McAuley St EB (link 1935) pass to fail, PM Howell St NB (link 2056) fail to pass; AM Colby St SB (link 2592) pass to fail, AM Canning St SB (link 1903) fail to pass.
+- SR-24 mainline, PM: node 602 entry offered 3,942 to 3,938, flow 3,751 to 3,733, trips waiting 170 to 177; node 675 exit flow 3,729 to 3,693; node 1726 exit 682 to 686. AM: node 602 waiting 3 to 7; node 675 3,079 to 3,115.
+- SR-24 ramps: no ramp moved by more than 53 veh/h in either period (PM largest: MLK Jr Way on-ramp 1,440 to 1,396 and the node 702 off-ramp 727 to 691; AM largest: node 280 on-ramp 306 to 253 and MLK Jr Way on-ramp 922 to 969). The lists are in `evidence/reported/compare.md`.
+- Travel times inside the observed range: 6 of 12 to 5 of 12 (AM Shattuck Ave SB 191 to 224 s, now too slow).
+- Trips waiting, all origins: PM 262 to 270; AM 62 to 50.
+
+### Deviations on the laptop
+
+None changed code or scripts (`git diff 88965b2 93899cf` over `tools`, the change's `scripts` and `runbook.md` is empty).
+
+- The morning's restamp loop folder was moved to `target/restamp52-loop`, because `target/r52-loop` already holds round 52's loop.
+- `pass0-check.txt` reads `false` for pass 0 against `demand.base*.json`. The runbook's comparison dates from round 52, when the baseline was a static build; now the baseline is the published simulated-membership model, so pass 0 cannot equal it. Pass 0 equals the restamp's pass 0 (the static build of the committed config) in both views, and the final training demand's periods equal the published cross-validation demand's. Only the `build` stamp differs, which carries the config hash.
+- The baseline per-seed directories are `target/assess-seeds/60` and `60-cv`, from the restamp's `assess --publish`.
+
+The evidence README lists a `build-logs/` folder that is not in the commit; the figures it would hold are in `loop.txt`, `seeding.md` and `fit/`.
+
+### Verdict
+
+Fails the keep rule on D5 (3 of 4) and the improvement test (fall of 11.9 against 15). Not adopted. The code stays on main with both switches off, and the committed config has neither key. The published data are unchanged.
+
+### Lead for round 54
+
+Question: why did the Hillegass Avenue SB to-freeway share fall from 60.0% to 53.5% when the fit was asked to hold it at 68? Everything below is from the evidence files of this round; the committed baseline fit report is `data/demand/rockridge.fit.stations-pm_peak.md`.
+
+(a) Block volume, PM. The share table's denominator is the number of trips on any link of the run (Hillegass Avenue SB 197.1 to 219.9, Colby Street SB 220.5 to 260.6), which no count measures. The counts are per link, so the comparison is per link, mean over the run's links:
+
+| Run (links) | Counted | Fit, final, baseline to candidate | Simulated, ten seeds, baseline to candidate |
+| --- | --- | --- | --- |
+| Hillegass Avenue SB (2669, 2671, 2673, 2675) | 178, 168, 151, 152; mean 162.3 | 145, 133, 120, 112 (127.5) to 160, 132, 132, 106 (132.5) | 157.6, 141.9, 127.1, 116.9 (135.9) to 172.8, 144.1, 143.6, 113.5 (143.5) |
+| Colby Street SB (2606, 2602, 2600, 2598, 2596, 2594, 2592) | 139, 156, 162, 160, 159, 170, 162; mean 158.3 | 102, 121, 119, 98, 120, 138, 126 (117.7) to 135, 142, 141, 122, 148, 143, 108 (134.1) | 120.2, 135.7, 138.3, 112.9, 142.8, 159.3, 151.1 (137.2) to 156.2, 157.4, 163.1, 138.8, 174.8, 172.2, 137.2 (157.1) |
+
+The fit did not hold the block count. In the baseline fit the blocks sit 21% (Hillegass Avenue SB) and 26% (Colby Street SB) under their counts; the candidate's sit 18% and 15% under, so the fit raised them (Hillegass Avenue SB +5.0 on the mean, Colby Street SB +16.4). The simulator then sits above the fit by about the same margin in both models (Hillegass Avenue SB +8.4 baseline, +11.0 candidate; Colby Street SB +19.5, +23.0). On Hillegass Avenue SB the simulated blocks stay 19 below their counts on average, so the block is not over its count. On Colby Street SB the simulated mean (157.1) is at the count (158.3), with blocks 2606 (+17) and 2596 (+16) above theirs. What grew is the trips on the run, not the freeway trips: Hillegass Avenue SB trips ending along the street rose 38.1 (3.3 to 41.4), the run's trips rose 22.8, and the non-freeway trips rose 22.7, so the other non-freeway trips fell by about 15 while the to-freeway trips stayed at 118. The margin D5 allowed was small: with 118.1 to-freeway trips the share stays at or above 58% only while the run carries at most 203.6 trips, 6.5 above the baseline's 197.1. Seeding added 22.8. A matching cut of the non-freeway trips back to 197.1 would restore 59.9%, the baseline; reaching 68% would need the run to carry 173.7 (a cut of 46).
+
+(b) The share constraint in the fit, PM (target 68 and 45; fit value on simulated membership, static routes in brackets; offered before the fit; flows):
+
+| Pass | Hillegass Avenue SB to the freeway | Colby Street SB to the freeway |
+| --- | --- | --- |
+| 1 | 64 (59), offered 72, 287 flows | 43 (50), offered 73, 663 flows |
+| 2 | 62 (60), offered 71, 370 flows | 42 (53), offered 71, 812 flows |
+| Final | 61 (62), offered 71, 418 flows | 42 (52), offered 70, 878 flows |
+| Baseline fit (round 52) | 64 (68), offered 81, 343 flows | 47 (61), offered 78, 779 flows |
+
+The fit did not think it met the share. Its own final value is 61% against 68 (7 under) and 42% against 45 (3 under). Hillegass Avenue SB started the fit near target (offered 71) and the other terms pulled it to 61; the evidence does not say which terms. The simulator then fell 7.5 points below the fit (53.5 against 61) where the baseline fell 4.0 below (60.0 against 64). On Colby Street SB the gap is 4.3 (37.7 against 42) and was 4.2 in the baseline (42.8 against 47). Against the baseline, the fit's Hillegass Avenue SB value fell 3 points (64 to 61) and the simulated share fell 6.5 (60.0 to 53.5).
+
+(c) Movement between passes. Yes, the figures still moved, in the wrong direction for the share. The Hillegass Avenue SB share fell 64, 62, 61 as its simulated pairs grew from 287 to 418, the Colby Street SB share held at 43, 42, 42. The fit's end-along figure for Hillegass Avenue SB (target 40) read 38.3, 37.5, 36.2 and for Colby Street SB (target 43) 49.9, 52.5, 51.9. The Colby Street SB whole-street fit value (target 39) rose 44, 47, 49 and the Hillegass Avenue SB one (target 79) read 89, 71, 68. Seeded pairs are simulated only from pass 1, so the membership had two passes of feedback. The evidence shows no sign of the share stabilizing at 68 or the whole-street value moving toward 39 by pass 3; it does not show where they would settle, because no fourth pass ran.
+
+Candidate next steps, to be judged against the above and not built here:
+
+- More loop passes with seeding. The share fell 2 points, then 1, and the fit's whole-street value for Colby Street SB rose each pass. Nothing in this run says a fourth or fifth pass turns either. The loop took 3,969 s for passes 0 to 2 and the final builds.
+- A higher share weight (now 3). The fit's own value missed by 7, and the simulator then fell a further 7.5 below it, so reaching 68 in the simulator would need the fit well above 68 if the 7.5 gap holds. The block volumes in the fit are already 18% under their counts, and the shares can only be raised there by removing the non-freeway trips, so the block-count GEH would be the cost. Not tested.
+- Seeding with a matching reduction of the non-freeway whole-street pairs. By the arithmetic in (a), cutting the Hillegass Avenue SB run back to the baseline's 197.1 trips restores 59.9%, which passes D5 (58% or more), and 68% would need the run at 173.7 trips. The end-along trips are non-freeway by construction and the other non-freeway trips on the run already fell by about 15 in this round. The evidence does not say whether a further cut could be made without taking the end-along figures or the whole-street figure of Colby Street SB the wrong way; the whole-street fall was 11.9 against the 15 required.
+
 ## Audit of the missed count locations and imagery survey (2026-11-18/19)
 
 Read-only: no code, data or network was changed, and the published network 53c823f20d9165ed, demand 9cdebdabf05c4460 and cross-validation demand 2f9ae152b9bbf78e stand.
@@ -1402,73 +1523,6 @@ The Howell-area held-out stations moved toward their counts. PM, counted / basel
 
 Hashes (SHA-256, first 16 characters): network 53c823f20d9165ed throughout; pass 0 demand a9acd0d97316ab6c, training 615e6673197e309a, delay files 8680288fa205a6b6 and b4dcc391bb0d843f; pass 1 (candidate) demand 19ee7b952638016d, training 5284e73cfa916f74, delay files 10228ecf206db509 and f541623d9549fe34. The four delay files stay in `data/demand/` (each under 30 KB) as evidence, unused by the shipped config. The candidate's fit reports, the station flips, the run logs and the assessment (`rockridge.assessment-r44.md`) are in the change's evidence.
 
-## Forty-third round: stop control at Hillegass Ave / 61st St and Canning St / 62nd St (change calibration-round-43)
-
-Rejected. The two corrections were tried, failed the keep rule (design D11) and were taken out again on the project lead's decision of 2026-11-18 (design D13). The published network f9fa09a5726644d7, demand e4f1993916827e82 and cross-validation demand e480933c18b970f6 stand, and `npm run data` reproduces them after the revert. The assessment files in `data/calibration` are the published ones of 2026-11-17. The figures below are those of the trial.
-
-On 2026-11-18 the project lead compared the stop control of all 36 side-street junctions in the study area with street-level imagery and decided two corrections by card (`openspec/changes/archive/2026-11-18-calibration-round-43/design.md`, D1 to D4). Hillegass Ave at 61st St is an all-way stop (high confidence, DATA); the model stopped 61st St only. At Canning St and 62nd St the eastbound 62nd St approach has no stop (medium confidence, ASSUMPTION pending a field check); the model stopped all four approaches. No other junction differed at medium confidence or better. Nothing was tuned in this round: the network was corrected, the demand rebuilt with `npm run data` on the frozen split, and the result assessed.
-
-### What changed
-
-- Network f9fa09a5726644d7 became 093cbd5469aad29c. Two nodes and three links differ and nothing else: node 53085953 `two_way_stop` to `all_way_stop` with `stopAtEnd` on both Hillegass Ave approaches (links 2673, 2676); node 53088342 `all_way_stop` to `two_way_stop` with `stopAtEnd` cleared on the eastbound 62nd St approach (link 1848). No link id moved, so the frozen split (be72380b485e) and the stations stand.
-- The second correction needed a way to free one approach of a junction the map tags on its node: `stopExemptions` in the area config (design D5).
-- Demand e4f1993916827e82 became 77ef92449de50092 and cross-validation demand e480933c18b970f6 became 09d3f3d769ead5ec. The fit uses static membership, as the published fit of 2026-11-17 does: since the measurement repair the build rejects the round-42 membership files for lack of matching evidence and says so in `data/demand/rockridge.fit.md`.
-- Simulator fingerprint d45a275dd7be0713cec6a64394b7d8a9, unchanged. Validation 67 of 74, unchanged.
-
-### Result: ten seeds
-
-`npm run assess -- --publish --noise`, seeds 1 to 10, 60 minutes. The assessment of 2026-11-17 is in brackets.
-
-| | Target | PM | AM | Midday |
-| --- | --- | --- | --- | --- |
-| D16: cars cleared from gridlock per hour, judged / far | below 1 | 0.00 / 1.10 (0.00 / 5.20), holds | 0.00 / 0.40 (0.00 / 1.80), holds | 0.00 / 0.00 (0.00 / 0.00), holds |
-| Entry backlog, mean %, seeds under 2% | below 2% | 0.20, 10 (0.24, 10) | 0.13, 10 (0.26, 10) | 0.01, 10 (0.01, 10) |
-| Headline shares HNB from / CNB from / HSB to / CSB to freeway | PM 47 / 47 / 68 / 45 | 51.2 / 45.0 / 51.3 / 42.9, 3 of 4, error 6.3, D5 fails (51.4 / 48.8 / 66.0 / 38.4, 4 of 4, error 3.7) | 3 of 4, error 7.2, not a rule (4 of 4, error 3.1) | 4 of 4, error 5.8 (4 of 4, error 1.8) |
-| Recent stations GEH<5, fitted | above 85% | 72 of 92, 78% (78 of 92, 85%) | 69 of 77, 90% (67 of 77, 87%) | no counts |
-| Recent stations GEH<5, held out (out of sample) | above 85% | 12 of 24, 50% (13 of 24, 54%) | 15 of 19, 79% (14 of 19, 74%) | no counts |
-
-Whole-street traversals, cars an hour, simulated against counted (all fitted, so in sample):
-
-| | Counted | PM modeled | Counted | AM modeled |
-| --- | --- | --- | --- | --- |
-| Hillegass Ave SB | 79 | 56 (81) | 36 | 19 (38) |
-| Colby St SB | 39 | 58 (56) | 46 | 27 (24) |
-| Hillegass Ave NB | 48 | 40 (65) | 34 | 43 (51) |
-| Colby St NB | 102 | 84 (85) | 33 | 59 (54) |
-
-All eight stay within GEH 5 (largest 3.9, Colby St NB in the AM).
-
-The PM held-out misses near Howell St and Canning St, cross-validation demand against counted:
-
-| Station | Counted | Modeled |
-| --- | --- | --- |
-| McAuley St, Howell St to Canning St, EB | 12 | 163 (161) |
-| 60th St, Howell St to Canning St, EB | 23 | 136 (130) |
-| Ayala Ave, Martin St to Howell St, NB | 60 | 172 (155) |
-| 62nd St, Colby St to Canning St, EB | 11 | 22 (41), now within GEH 5 |
-
-Two PM held-out stations are new misses: 62nd St Colby St to Canning St westbound, 1 against 19 counted, and Ayala Ave Martin St to Howell St southbound, 89 against 44.
-
-### What moved
-
-The two extra stops on Hillegass Ave take through cars off it. Whole-street traversals of Hillegass Ave fall by about a third in the PM peak, the fitted block from 63rd St to 62nd St southbound carries 95 against 168 counted (128 before), and the share of Hillegass Ave southbound cars bound for the freeway falls from 66.0% to 51.3% against 68% observed, which is what fails D5. The freed 62nd St approach draws more cars than the count: 62nd St from Canning St to Telegraph Ave eastbound carries 33 against 9 counted (22 in earlier runs on the previous network, made with an older simulator build). The other PM fitted stations that left GEH 5 are small counts on Dana St, 63rd St and Howell St. The AM peak moves the other way on Colby St southbound, where the blocks from 61st St to 63rd St now carry 141 and 150 against 167 and 171 counted (103 and 91 before).
-
-The large held-out misses on McAuley St, 60th St and Ayala Ave did not move, so stop control at these two junctions does not explain them.
-
-### Verdict
-
-Status `uncalibrated`. By the keep rule written before the assessment (design D6) the result is worse than the assessment of 2026-11-17: recent PM fitted stations fall from 78 to 72 of 92, PM held-out stations from 13 to 12 of 24, and D5 fails in the PM peak, where it passed. Stability holds in every period, the eight whole-street counts stay within GEH 5, and the AM station counts rise. Following the project lead's instruction, the area note and caveat in `data/areas/rockridge.json` were not updated and nothing was tuned. The trial's assessment files were committed on the branch and then restored to the published ones with the revert.
-
-### Refit decision (2026-11-18)
-
-After the result above the project lead chose to keep both corrections on the branch, rerun the membership iteration of rounds 39 to 42 on the corrected network, and adopt the result only if it is no worse than the published assessment (design D11, with the keep rule written before any run). The iteration was not run. The published model no longer uses simulated membership: the measurement repair of 2026-11-17 added an evidence check, the round-42 membership files fail it, and both the published fit and this round's fit report "Using static membership". The through targets that rounds 39 and 40 iterated on were retired in the same repair. So the refit on the corrected network with the published procedure is the build already assessed above, and it fails the keep rule. Bringing simulated membership back for the sixteen round-42 blocks would add something the published model does not have, and its seeds, pooling and stopping point would have to be chosen now; that choice is the project lead's (design D12). The project lead then decided to revert and record the discrepancy (design D13).
-
-### Open for the project lead
-
-- The model differs from the street-level imagery at two junctions: the imagery shows an all-way stop at Hillegass Ave and 61st St and no stop for eastbound 62nd St at Canning St, and the model has neither. Coding them made the PM fit worse (78 to 72 of 92 recent fitted stations), so they are left out pending a field check, and the Rockridge caveat says so. `stopExemptions` stays in the importer for when the check is done.
-- The imagery shows "Road closed to thru traffic" barricades on Howell St at Ayala Ave, on Forest St at Ayala Ave and on Colby St at 61st St. It is undated and nobody has confirmed they are still there, so the baseline leaves them out (design D4). Update 2026-11-18: the project lead reports the Forest St and Ayala Ave barricade is gone (see the audit entry at the top). If they stand, they bear directly on the held-out misses near Howell St.
-- Lower-confidence items from the survey, unchanged: Dana St at North St (the model stops North St; none seen), Canning St at 63rd St (a possible stop on 63rd St), 63rd St at Dana St.
-
 ## Measurement corrections after round 42
 
 The rebuilt Rockridge demand uses 731 vehicles per hour entering at the southern Telegraph Avenue gate and 549 leaving it in the PM peak. The volunteer route diagrams now compare with cars that drove the full length of the counted street. The earlier corridor range, derived from a representative block volume, has been retired. The training build keeps the same 86 held-out stations.
@@ -1479,4 +1533,4 @@ The decisions and verification are in [the measurement and assignment change](..
 
 ## Older rounds
 
-The thirtieth to forty-second rounds are in `rockridge.record-archive-3.md`. The seventeenth to twenty-ninth rounds are in `rockridge.record-archive-2.md`. The eleventh to sixteenth rounds, the initial-loading note, the tenth round and everything before it (ninth to fourth, sixth, fifth, and the third-round history) are in `rockridge.record-archive.md`, moved unchanged.
+The thirtieth to forty-third rounds are in `rockridge.record-archive-3.md`. The seventeenth to twenty-ninth rounds are in `rockridge.record-archive-2.md`. The eleventh to sixteenth rounds, the initial-loading note, the tenth round and everything before it (ninth to fourth, sixth, fifth, and the third-round history) are in `rockridge.record-archive.md`, moved unchanged.
