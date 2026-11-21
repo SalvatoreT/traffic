@@ -1,6 +1,6 @@
 # Round 52 restamp: laptop evidence
 
-On 2026-11-21 the laptop reran the published round 52 set on simulator `6b886c8f52ee07397773ddd0ebbcb447`, following the lead's plan from that morning. That simulator comes from main `1e6b825`, merged into the development branch as `dd0be1e`. Under the lead's rule, every figure had to match the published set; only the simulator fingerprint, the revision and dates could change. Steps 1 to 4 held. Step 5 found three files that differ in more than stamps, so the laptop stopped there. It packed nothing, ran no `data:push`, made no `/api/` request and used no upload token.
+On 2026-11-21 the laptop reran the published round 52 set on simulator `6b886c8f52ee07397773ddd0ebbcb447`, following the lead's plan from that morning. That simulator comes from main `1e6b825`, merged into the development branch as `dd0be1e`. Under the lead's rule, every figure had to match the published set; only the simulator fingerprint, the revision and dates could change. Steps 1 to 4 held. Step 5 found three files that differ in more than stamps, so the laptop stopped there and reported. The lead then chose to publish the step 5 set as it came out (option A, `areas.json` with the noise pointer), and the laptop packed it in `publish/`. It ran no `data:push`, made no `/api/` request and used no upload token.
 
 ## Results by step
 
