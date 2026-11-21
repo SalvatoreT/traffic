@@ -46,11 +46,43 @@ P6. (Preparation choice.) The loop checks that a shipped build from pass 1 has a
 
 ## Checked in the container
 
-(Filled in below from the builds.)
+All builds ran in the container on 2026-11-21 with `--out-root`, so nothing under `data/` or `public/data/` changed. Simulator fingerprint 6b886c8f52ee07397773ddd0ebbcb447 (RAN).
+
+(a) Switch absent, config as committed (2405ff02c92b2837), published membership files in `target/membership/` (56e688e7e5749d23, cf32e3e0d9e6f23e): shipped demand 2d16d8f8eb0950ca and cross-validation demand 1c3b1666f24156f1. Both reproduce.
+
+(b) Candidate entry (config 35ba56ab82aa7070 with the membership paths pointed at files that do not exist), shipped view, against a build of the committed config with the same paths pointed away (static membership): the `periods` arrays are JSON-equal (PM 27,612, AM 23,204, midday 16,221 car veh/h), and the fit reports are identical apart from the config and file paths. The candidate's report has no end-along text and says "No simulated membership file".
+
+(c) Candidate entry with the published membership files, hand-stamped for the candidate's config hash in a scratch copy (a wiring check; the stamped files were never in `target/membership/` for longer than the two builds, and the published files were put back and hash-checked). Both views built. The training view notes all four runs as left out (`end-along target <run>: its street run holds a held-out block; left out of the training view`) and has no end-along line, as P4 predicts. The shipped view has the eight constraints, all `simulated`.
+
+| PM, published membership | Switch absent (published model) | Switch on (candidate) |
+| --- | --- | --- |
+| Colby Street SB end-along, target 43: offered / after fit / final | none | 0.3 / 0.2 / 0.2 (static routes 2.4 / 0.7 / 0.8), 13 flows, 86% of its flows at the upper bound |
+| Colby Street NB end-along, target 29 | none | 101.0 / 31.4 / 33.8 (static routes 100.7 / 27.1 / 25.1) |
+| Hillegass Avenue SB end-along, target 40 | none | 1.7 / 16.7 / 16.7 |
+| Hillegass Avenue NB end-along, target 15 | none | 82.8 / 16.7 / 18.5 |
+| Colby Street SB whole-street route station, target 39: after fit / final | 49 / 56 | 48 / 56 |
+| Colby Street SB blocks, final (counts 139 to 170) | 98 to 138 | 98 to 139 |
+| Hillegass Avenue SB whole street, final (79 counted) | 67 | 67 |
+| Colby Street SB share to the freeway, final (target 45%) | 47% | 47% |
+| Offered car demand, final (static fit 27,609) | 24,759 | 24,745 |
+| Non-gate trip ends inside the study area, origins / destinations, static fit to final | 951 to 794 / 734 to 614 | 951 to 790 / 734 to 599 |
+
+PM trip ends at the Colby Street interior nodes, destinations (published demand against the candidate's; the seed table before the fit in brackets): 819 0.7 to 2.1 (12.0), 1071 0.7 to 3.5 (9.6), 793 5.0 to 4.4 (18.6), 786 1.3 to 2.1 (13.0), 1070 3.1 to 2.5 (25.2), 799 12.4 to 8.6 (31.0), 828 29.1 to 18.9 (20.0); all ten nodes (with Hillegass Avenue 1085, 1086, 1090): destinations 101.8 to 84.4, origins 140.7 to 136.9. AM, same nodes: destinations 139.2 to 114.8, origins 172.8 to 168.0; AM end-along fits are close for Colby Street SB (target 15, final 12.8) and Hillegass Avenue SB (target 9, final 7.3) because the table offers 2.3 and 1.3 and scales them toward the figure, and above target for the NB runs (Colby 22.4 against 14, Hillegass 10.7 against 9). Offered AM demand 21,510 to 21,497.
+
+Finding. The constraint does not do what it was meant to do on the southbound runs. In PM the pairs that use Colby Street SB and end at an interior node carry 0.3 cars an hour in the table, against 43 counted (Hillegass Avenue SB 1.7 against 40). The seed table has 130 an hour of destinations at the Colby Street interior nodes, but they come from the south or the cross streets, so their membership on the southbound run is near zero; the trips the count describes (from the Alcatraz Avenue side to a destination along the street) are not in the table. Scaling existing pairs cannot add them, so the southbound end-along figures stay unmet, the whole-street route figure and the Colby Street SB blocks do not move (56 and 98 to 139 either way), and the simulated Colby Street SB whole-street figure (75 in ten seeds) is not expected to fall by the 15 that the improvement test asks. The northbound runs have the opposite problem: the offered PM Colby Street NB figure is 101 cars an hour against 29 counted, so that constraint pulls interior destinations down (PM destinations at the Colby Street nodes fall from 52 to 42), the reverse of what the round wants.
+
+Options, for the lead:
+1. Run the round as written. It costs about 2 hours and the container check says it will fail the improvement test; it would still show how the fit uses the constraint on 30 runs of real pairs.
+2. Seed the missing pairs before the fit: add local flows from the Alcatraz Avenue gates (and the northern entries) to the interior nodes, sized from the count's 139 entering cars, so that the southbound runs have pairs to scale. This changes the demand-building code and the seed table, needs its own spec, and is the change that addresses the cause.
+3. Keep the constraint for the southbound runs only, or only where the offered figure is within the fit's bound (offered at least target / 10): NB would then stop pulling destinations down. It still leaves the southbound shortfall.
+4. Stop here and record the finding.
+
+I implemented the design as specified; none of the options is built.
+
 
 ## What is not known
 
-- Whether the fit can reach the end-along figures. It scales existing pairs, at most 10 for local flows and 3 for through flows, so a node with almost no destination volume in the seed table cannot be lifted to its figure. The published PM Colby Street destinations at 819 and 1071 are 0.7 an hour each, so reaching a share of the 43 there would need a factor above 10; most of the volume sits at McAuley Street (828, 29 an hour) and Forest Street side nodes. The checks below report the seed volumes.
+- Whether the fit can reach the end-along figures. It scales existing pairs, at most 10 for local flows and 3 for through flows, so a node with almost no destination volume in the seed table cannot be lifted to its figure. The published PM Colby Street destinations at 819 and 1071 are 0.7 an hour each, so reaching a share of the 43 there would need a factor above 10; most of the volume sits at McAuley Street (828, 29 an hour) and Forest Street side nodes. The seed volumes and the result are in the checks above (the finding).
 - Whether destinations at the intersection nodes are ends along the street. A cross street also reaches 819 or 1071, and a trip from a cross street that ends at the intersection has not "ended along" Colby Street in the count's sense. The membership counts only trips that used a link of the run, which removes the pairs that never touch it, but a trip that enters the run for one block and ends at its next intersection counts although a volunteer might have seen it turn off.
 - Whether the end-along constraint raises the number of local trip ends enough to trigger the 3% abort. More local ends in the study area raise offered demand; round 52's PM shipped build offers 10.3% less than the static fit, so there is room, but the loop's abort above +3% stays.
 - Whether the three constraints on Colby Street SB (block counts, whole-street count, end-along count) can all be met at once by the pairs the table has. The counts agree (139 = 39 + 57 + 43) but the table's pairs may not.
