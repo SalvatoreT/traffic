@@ -1,0 +1,20 @@
+## Why
+
+The published model (round 52, adopted and published 2026-11-20, republished on the faster simulator 2026-11-21) sends about 75 cars an hour the whole length of Colby Street southbound in the PM peak against 39 counted (GEH 4.7; 67 on seeds 11 to 20). It is the weakest line of the published model.
+
+The volunteer count of 2025-02-25 says where the cars go. Of 139 cars entering Colby Street southbound at the top, 39 drove the whole street, 57 turned off at cross streets (each cross street takes 3 to 17 cars, below the 25 that make a station, so none is fitted) and 43 ended their trip along the street (`endAlongVehPerHour` in `data/calibration/rockridge.targets.json`, the count's "destination along the route"). Nothing in the fit uses the 43. The published PM demand has about 7 trip ends an hour at the upper Colby Street nodes (819, 1071, 793) and puts most of its interior destinations at McAuley Street (node 828). With no trips that end along the street, the fit fills the seven block counts (139 to 170 cars an hour each) with end-to-end cars. The controls along Colby Street match OpenStreetMap and the imagery audit, so the cause is in the demand, not the network.
+
+## What changes
+
+- A sub-switch `endAlong` of the candidate's `simulatedMembership` entry, with a weight in `countFit.endAlong.weight`. When on, every select-link run in the targets file that lists `endAlongVehPerHour` for the period (Hillegass Avenue and Colby Street, both directions, PM and AM: eight figures, none for midday) adds a fit constraint: the sum over origin-destination pairs whose destination is a node strictly between the run's ends of flow times the pair's share of trips that used a link of the run. The share comes from the simulator's block export (the pooled per-run pairs the loop keeps for the select-link shares), with the same prior of 5 trips toward the static-route fraction. A run without a simulated trip keeps static routes.
+- The constraint exists only where the period's block pairs exist: passes without a membership file (pass 0) and midday build as before, and so does the static fit that anchors the ceilings.
+- The training view leaves out a run with a held block on it, by the test the through targets use, because the figures describe the whole street between its ends like the route stations the frozen split already withholds. The split file and the stations file do not change.
+- The fit report lists each constraint (target, weight, offered, after fit and final, on the membership used and on the static routes) in a section and in lines the loop parses, prints and records. The loop stops if a shipped build from pass 1 has no line while the sub-switch is on.
+- One candidate, `end-along`: the published config plus the sub-switch and weight 2 (an assumption: the weight of the ramp counts). The loop, the three-seed screen, ten seeds, then the fresh-seed confirmation automatically.
+- A keep rule re-based on the published model, and a new improvement test written before any run: the round is worth adopting only if PM Colby Street SB whole-street traversals fall by at least 15 cars an hour against the baseline on both seed sets.
+- A runbook for the laptop and three read-only scripts for the reported figures.
+- No simulator, network, stations or split change.
+
+## Impact
+
+Tools only. Simulator fingerprint 6b886c8f52ee07397773ddd0ebbcb447, network 53c823f20d9165ed. With the entries absent the shipped demand stays 2d16d8f8eb0950ca and the training demand 1c3b1666f24156f1 (given the published membership files). With the candidate entry the config hash changes from 2405ff02c92b2837 to 35ba56ab82aa7070, so the published membership files no longer match and the demand build stops on them; the runbook moves them aside and restores them. If the candidate is adopted, the published proposals, results and redistribution files need a new search. If it fails the keep rule, the confirmation or the improvement test, nothing published changes. Adoption is the project lead's decision.
