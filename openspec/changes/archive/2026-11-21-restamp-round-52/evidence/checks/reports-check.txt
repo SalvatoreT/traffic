@@ -1,0 +1,14 @@
+Calibration reports, rechecked by hand after b.zsh stopped on its own check (it ran the JSON diff on the .md reports and did not list manifest.run.simulator).
+target/restamp52/head/data/calibration/reports/rockridge-am_peak-s1-seed1.json vs data/calibration/reports/rockridge-am_peak-s1-seed1.json: 0 differing paths, 2 ignored paths
+data/calibration/reports/rockridge-am_peak-s1-seed1.md: differs only in: Run took 11.1 s wall clock  (published: Run took 22.2 s wall clock )
+target/restamp52/head/data/calibration/reports/rockridge-am_peak-s1-seeds1-10.json vs data/calibration/reports/rockridge-am_peak-s1-seeds1-10.json: 0 differing paths, 12 ignored paths
+data/calibration/reports/rockridge-am_peak-s1-seeds1-10.md: byte-identical
+target/restamp52/head/data/calibration/reports/rockridge-midday-s1-seed1.json vs data/calibration/reports/rockridge-midday-s1-seed1.json: 0 differing paths, 2 ignored paths
+data/calibration/reports/rockridge-midday-s1-seed1.md: differs only in: Run took 7.2 s wall clock  (published: Run took 15.0 s wall clock )
+target/restamp52/head/data/calibration/reports/rockridge-midday-s1-seeds1-10.json vs data/calibration/reports/rockridge-midday-s1-seeds1-10.json: 0 differing paths, 12 ignored paths
+data/calibration/reports/rockridge-midday-s1-seeds1-10.md: byte-identical
+target/restamp52/head/data/calibration/reports/rockridge-pm_peak-s1-seed1.json vs data/calibration/reports/rockridge-pm_peak-s1-seed1.json: 0 differing paths, 2 ignored paths
+data/calibration/reports/rockridge-pm_peak-s1-seed1.md: differs only in: Run took 15.4 s wall clock  (published: Run took 30.3 s wall clock )
+target/restamp52/head/data/calibration/reports/rockridge-pm_peak-s1-seeds1-10.json vs data/calibration/reports/rockridge-pm_peak-s1-seeds1-10.json: 0 differing paths, 12 ignored paths
+data/calibration/reports/rockridge-pm_peak-s1-seeds1-10.md: byte-identical
+manifest.summaryOf.*.sha256 in the ten-seed reports: hashes of the per-seed summaries in target/assess-seeds/60, which carry the fingerprint; this run overwrote round 52's copies, so seeds 2-10 cannot be byte-compared. Seed 1's committed report matches apart from fingerprint and revision, and every metric of the ten-seed reports is identical.

@@ -302,6 +302,30 @@ export function routeWeightLinesFromReport(text: string): RouteWeightLine[] {
   return [...text.matchAll(/^Route weight (\S+) (count route \S+): (simulated|static); base (\S+); blocks (\d+); weight (\S+); (.+)\.$/gm)].map((m) => ({ period: m[1], id: m[2], membership: m[3] as RouteWeightLine['membership'], base: +m[4], blocks: +m[5], weight: +m[6], label: m[7] }));
 }
 
+export interface EndAlongLine { period: string; label: string; membership: 'simulated' | 'static'; target: number; weight: number; offered: number; staticOffered: number; afterFit: number; staticAfterFit: number; final: number; staticFinal: number; flows: number; nodes: number[] }
+
+/** Round 53 sub-switch: the count's "ended along the street" figures are fit targets. */
+export const endAlongSwitch = (sm: { endAlong?: unknown } | undefined): boolean => sm?.endAlong === true;
+
+/** The "End along <period> <label>: ..." lines of a fit report (round 53): each run's target against the fit's own figure on the membership used and on the static routes. Empty when the sub-switch is off. */
+export function endAlongLinesFromReport(text: string): EndAlongLine[] {
+  const n = '(-?[\\d.]+)';
+  const re = new RegExp(`^End along (\\S+) (.+?): (simulated|static); target ${n}; weight ${n}; offered ${n} \\(static routes ${n}\\); after fit ${n} \\(static routes ${n}\\); final ${n} \\(static routes ${n}\\); (\\d+) flows; \\d+ nodes \\(([\\d ]*)\\)\\.$`, 'gm');
+  return [...text.matchAll(re)].map((m) => ({ period: m[1], label: m[2], membership: m[3] as EndAlongLine['membership'], target: +m[4], weight: +m[5], offered: +m[6], staticOffered: +m[7], afterFit: +m[8], staticAfterFit: +m[9], final: +m[10], staticFinal: +m[11], flows: +m[12], nodes: m[13].split(' ').filter(Boolean).map(Number) }));
+}
+
+export interface EndSeedLine { period: string; label: string; target: number; before: number; added: number; capped: number; after: number; final: number; staticFinal: number; pairs: number; origins: number }
+
+/** Round 53 D8 sub-switch `countFit.endAlong.seedPairs`. */
+export const seedPairsSwitch = (ea: { seedPairs?: unknown } | undefined): boolean => ea?.seedPairs === true;
+
+/** The "End along seed <period> <run>: ..." lines of a fit report (round 53, D8): what seeding added to the seed table before the fit. Empty when the switch is off. */
+export function endSeedLinesFromReport(text: string): EndSeedLine[] {
+  const n = '(-?[\\d.]+)';
+  const re = new RegExp(`^End along seed (\\S+) (.+?): target ${n}; before ${n}; added ${n}; capped ${n}; after ${n}; final ${n} \\(static routes ${n}\\); (\\d+) pairs; (\\d+) origins\\.$`, 'gm');
+  return [...text.matchAll(re)].map((m) => ({ period: m[1], label: m[2], target: +m[3], before: +m[4], added: +m[5], capped: +m[6], after: +m[7], final: +m[8], staticFinal: +m[9], pairs: +m[10], origins: +m[11] }));
+}
+
 export interface Step { id: string; iteration: number; view: string | null; kind: 'build' | 'check' | 'runs' | 'pool' | 'final'; title: string; cmd?: string }
 
 /** The loop as an ordered list, for the dry run and for `--resume`: pass k builds both views, runs them, checks the report and pools; the last pass builds without runs. */

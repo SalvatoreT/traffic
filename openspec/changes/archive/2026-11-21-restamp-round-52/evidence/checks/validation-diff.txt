@@ -1,0 +1,3 @@
+target/restamp52/head/data/calibration/validation.json vs data/calibration/validation.json: 0 differing paths, 2 ignored paths
+  ignored manifest.simulator.fingerprint: "d45a275dd7be0713cec6a64394b7d8a9" -> "6b886c8f52ee07397773ddd0ebbcb447"
+  ignored manifest.simulator.revision: "ad48d3e9a5f43aa4ff771765e2b3c533b4530e49" -> "dd0be1efa83562b19ad0f5d55b7e0a721315ad84"

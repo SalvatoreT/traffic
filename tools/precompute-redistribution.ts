@@ -18,6 +18,7 @@ import { redistributionUrl, routeProblem, redistributionVerdict, parseRedistribu
 import { DEFAULT_DATA_DIR, fileOf, loadAreaFiles, type AreaFiles } from './lib/agent-area';
 import { writeFileAtomic } from './lib/atomic';
 import { defaultJobs } from './lib/redistribution-cli';
+import { mergeSamples } from './lib/redistribution-samples';
 
 const arg = (k: string, d: string) => { const i = process.argv.indexOf(k); return i >= 0 ? process.argv[i + 1] : d; };
 const flag = (k: string) => process.argv.includes(k);
@@ -109,7 +110,7 @@ async function main() {
         const selector = { kind: 'direct' as const, movements: g.closed.map((m) => [m[0], m[1]] as [number, number]), links: g.closedLinks };
         return [{ iv, i, centers, selector }];
       });
-    const acc = traced.map(() => ({ used: 0, side: 0, arterial: 0, removed: 0, unroutable: 0, waiting: 0, unmatched: 0, routes: new Map<string, number>(), samples: new Map<string, number[]>(), blocks: new Map<number, number>() }));
+    const acc = traced.map(() => ({ used: 0, side: 0, arterial: 0, removed: 0, unroutable: 0, waiting: 0, unmatched: 0, routes: new Map<string, number>(), samples: new Map<number, Map<string, number[]>>(), blocks: new Map<number, number>() }));
     await pool(files, jobs, seconds, w.seeds.map((seed) => ({ key: String(seed), config: { seed, period: w.period, interventions: w.ivs } })), (k, run) => {
       const base = byPeriodSeed.get(`${w.period}:${k}`)!;
       traced.forEach((t, j) => {
@@ -117,10 +118,11 @@ async function main() {
         const a = acc[j];
         a.used += d.displaced; a.side += d.local; a.arterial += d.arterialOnly; a.removed += d.removed; a.unroutable += d.unroutable; a.waiting += d.pending; a.unmatched += d.unmatched;
         for (const [x, n] of d.routes) a.routes.set(x, (a.routes.get(x) ?? 0) + n);
-        for (const [x, l] of d.samples) if (!a.samples.has(x)) a.samples.set(x, l);
+        a.samples.set(Number(k), d.samples);
         for (const [x, n] of d.byBlock) a.blocks.set(x, (a.blocks.get(x) ?? 0) + n);
       });
     });
+    const samples = acc.map((a) => mergeSamples(a.samples));
     const perHour = 3600 / seconds / w.seeds.length;
     const items: StoredItem[] = traced.map((t, j) => {
       const a = acc[j];
@@ -128,7 +130,7 @@ async function main() {
         key: scenarioKey([t.iv]), index: t.i, type: t.iv.type, label: w.p.interventions[t.i]?.label ?? t.iv.type,
         usedPerHour: r1(a.used * perHour),
         perHour: { sideStreets: r1(a.side * perHour), stayOnArterials: r1(a.arterial * perHour), removed: r1(a.removed * perHour), unroutable: r1(a.unroutable * perHour), waiting: r1(a.waiting * perHour), unmatched: r1(a.unmatched * perHour) },
-        routes: [...a.routes.entries()].filter(([k]) => k !== FAR_ROUTE).sort((x, y) => y[1] - x[1] || x[0].localeCompare(y[0])).slice(0, STORED_TOP).map(([streets, n]) => ({ streets, perHour: r1(n * perHour), links: a.samples.get(streets) ?? [] })),
+        routes: [...a.routes.entries()].filter(([k]) => k !== FAR_ROUTE).sort((x, y) => y[1] - x[1] || x[0].localeCompare(y[0])).slice(0, STORED_TOP).map(([streets, n]) => ({ streets, perHour: r1(n * perHour), links: samples[j].get(streets) ?? [] })),
         receiving: [...a.blocks.entries()].sort((x, y) => y[1] - x[1] || x[0] - y[0]).slice(0, STORED_TOP).map(([b, n]) => ({ block: index.blocks[b].label, perHour: r1(n * perHour) })),
       };
     });
