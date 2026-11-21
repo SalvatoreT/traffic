@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import './assumptions.css';
 import type { AreaBundle, DemandIntent } from '../types';
-import { assumptionsCurrent, belowThresholdText, fetchAssumptions, intentShares, MAP_UNAVAILABLE, type AssumedMovementView, type AssumptionsFile } from '../lib/assumptions';
+import { assumptionsCurrent, belowThresholdText, derivedFactorsSentence, fetchAssumptions, intentShares, MAP_UNAVAILABLE, type AssumedMovementView, type AssumptionsFile } from '../lib/assumptions';
 import { baselineIntent, baselineVerdict, fetchBaselineIntents, type BaselineIntents } from '../lib/baseline-intents';
 import { buildIntentMap } from '../lib/intentmap';
 import { IntentMap } from './IntentMap';
@@ -59,8 +59,47 @@ export function Assumptions({ bundle, index, mode, hashes, fingerprint }: Props)
       </p>
       {defs?.length ? <Reasons defs={defs} bundle={bundle} index={index} mode={mode} baseline={baseline.value} status={status} order={order.map((p) => p.id)} first={first} periodName={periodName} /> : null}
       <Movements file={assumed.value} loaded={assumed.done} order={order.map((p) => p.id)} periodName={periodName} demandHash={hashes?.demand ?? null} net={bundle.network} mode={mode} />
+      <DerivedTargets file={assumed.value} order={order.map((p) => p.id)} first={first} periodName={periodName} />
       <p className="muted small">Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a> (ODbL).</p>
     </div>
+  );
+}
+
+const DERIVED_ID = 'derived-targets';
+
+/** Targets that are a daily total times assumed factors (change derived-targets-not-judged). Shown only when the data file lists them, so the section appears with the data that describes it. */
+function DerivedTargets({ file, order, first, periodName }: { file: AssumptionsFile | null; order: string[]; first: string | undefined; periodName: (id: string) => string }) {
+  const d = file?.derivedTargets;
+  if (!d || !d.stations.length) return null;
+  const lead = first ?? order[0];
+  return (
+    <section aria-labelledby={DERIVED_ID}>
+      <AnchorHeading id={DERIVED_ID} className="sticky-h" label="Targets derived from daily totals">Targets derived from daily totals</AnchorHeading>
+      <p>
+        Some targets in the demand fit are not counts. Each state-route and freeway-ramp station starts from a published daily total: the annual average daily traffic of a Caltrans count station, or the average daily traffic of a ramp.
+        The model turns that total into an hourly target with assumed factors, and a day&apos;s total does not say what happened in the peak hour. These targets stay in the fit as inputs.
+        They are never held back to test the model, and the calibration check does not count them: it is judged on hourly counts only. The table lists them, each marked as derived from a daily total, not judged.
+      </p>
+      <p>{derivedFactorsSentence(d, lead, periodName)}</p>
+      <div className="derived-scroll" tabIndex={0} role="region" aria-label="Targets derived from daily totals, scrollable">
+        <table className="derived-table">
+          <caption className="muted small">Hourly targets, cars an hour. {d.stations.length} stations.</caption>
+          <thead>
+            <tr><th scope="col">Station</th><th scope="col">Source</th>{order.map((p) => <th scope="col" key={p}>{periodName(p)}</th>)}<th scope="col">Status</th></tr>
+          </thead>
+          <tbody>
+            {d.stations.map((s) => (
+              <tr key={s.id}>
+                <th scope="row">{s.label}</th>
+                <td>{s.source}{s.year ? `, ${s.year}` : ''}</td>
+                {order.map((p) => <td key={p}>{rounded(s.targets[p])}</td>)}
+                <td>derived from a daily total, not judged</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
   );
 }
 

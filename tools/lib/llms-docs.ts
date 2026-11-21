@@ -4,7 +4,7 @@ import { parseRefLinks } from '../../src/lib/ref-links';
 import type { StoredIndex, StoredInputs } from '../../src/lib/stored-results';
 import type { BaselineIntents } from '../../src/lib/baseline-intents';
 import type { AssumptionsFile } from '../../src/lib/assumptions';
-import { intentShares } from '../../src/lib/assumptions';
+import { derivedFactorsSentence, intentShares } from '../../src/lib/assumptions';
 import { aggregate, CHANGE_TOP, DEAD_BAND } from '../../src/lib/change';
 import { CARDS } from '../../src/lib/metrics';
 import { EARLY_NOTE, EARLY_SECONDS, RUN_SECONDS } from '../../src/lib/run';
@@ -21,7 +21,7 @@ import {
   provenanceLine, proposalNotices, bestForText, detourText, seedsPhrase, signedNum, signedPct, listOptions, type Proposal, type ProposalGroup, type Proposals,
 } from '../../src/lib/proposals';
 import {
-  ASSUMPTIONS_INTRO, EXPLORATORY_NOTE, FIXED_DEMAND_CAVEAT, LEGACY_GROUP_NOTE, MOVEMENTS_INTRO, PROPOSALS_LEAD, SOURCES_CALIBRATED, SOURCES_UNCALIBRATED, STREETS_INTRO,
+  ASSUMPTIONS_INTRO, DERIVED_TARGETS_INTRO, EXPLORATORY_NOTE, FIXED_DEMAND_CAVEAT, LEGACY_GROUP_NOTE, MOVEMENTS_INTRO, PROPOSALS_LEAD, SOURCES_CALIBRATED, SOURCES_UNCALIBRATED, STREETS_INTRO,
 } from '../../src/lib/copy';
 import {
   BUILD_ALT, BUILD_INTRO, BUILD_STEPS, CHECK_INTRO, CUT_ALT, CUT_INTRO, CUT_TRIPS, CUT_TRIP_STYLES, LIMITS, LIMITS_INTRO, PROPOSAL_ALT, PROPOSAL_INTRO, PROPOSAL_STEPS, checkStatus, whatThisIs,
@@ -352,6 +352,12 @@ export function assumptionsMd(i: LlmsInput): string {
       }
     }
     out.push(`Through cars that fit none of the listed reasons are tallied as Other${b ? `: ${order(i).map((p) => `${label(p)} ${Math.round(b.periods[p]?.byIntent.find((x) => x.id === 'other')?.vehiclesPerHour ?? 0)}`).join(', ')} an hour` : ''}.`, '');
+  }
+  const dt = f?.derivedTargets;
+  if (dt?.stations.length) {
+    const periods = order(i), lead = i.area.calibration?.defaultPeriod ?? periods[0];
+    out.push('', '## Targets derived from daily totals', '', DERIVED_TARGETS_INTRO, '', derivedFactorsSentence(dt, lead, label), '');
+    out.push(table(['Station', 'Source', ...periods.map(label), 'Status'], dt.stations.map((s) => [s.label, `${s.source}${s.year ? `, ${s.year}` : ''}`, ...periods.map((p) => s.targets[p] ?? '—'), 'derived from a daily total, not judged'])), '');
   }
   return out.join('\n');
 }

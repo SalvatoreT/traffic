@@ -20,6 +20,15 @@ export interface AssumedMovementView {
   /** Why no trips are assigned in those periods. */
   belowThresholdNote?: string;
 }
+/**
+ * Stations whose hourly target is a daily total times assumed factors (AADT or ramp ADT): in the fit as inputs, never held out, not judged (change derived-targets-not-judged).
+ * Absent in a file made before the change, and then the Assumptions tab shows no section for them.
+ */
+export interface DerivedTargetsView {
+  /** Assumed peak-hour share of the daily total, for streets and for ramps (fractions), and the assumed inbound share of each period. */
+  kFactor: number; rampKFactor: number; inboundShare: Record<string, number>;
+  stations: { id: string; label: string; kind: string; source: string; year: number | null; targets: Record<string, number> }[];
+}
 export interface AssumptionsFile {
   version: typeof ASSUMPTIONS_VERSION;
   area: string; generated: string;
@@ -27,6 +36,7 @@ export interface AssumptionsFile {
   /** What the counted numbers come from and which periods they were measured in; the others are scaled from them. */
   count: { label: string; measured: string[]; scaled: string[] };
   movements: AssumedMovementView[];
+  derivedTargets?: DerivedTargetsView;
 }
 
 export const assumptionsUrl = (area: string) => `/data/${area}.assumptions.json`;
@@ -36,6 +46,7 @@ export function parseAssumptions(text: string): AssumptionsFile | null {
     const r = JSON.parse(text) as AssumptionsFile;
     const ok = r?.version === ASSUMPTIONS_VERSION && typeof r.area === 'string' && typeof r.inputs?.demandHash === 'string'
       && typeof r.count?.label === 'string' && Array.isArray(r.count.measured) && Array.isArray(r.count.scaled)
+      && (r.derivedTargets === undefined || (typeof r.derivedTargets.kFactor === 'number' && typeof r.derivedTargets.rampKFactor === 'number' && Array.isArray(r.derivedTargets.stations)))
       && Array.isArray(r.movements) && r.movements.every((m) => typeof m.id === 'string' && typeof m.label === 'string' && [m.from, m.to, m.node].every((v) => v === undefined || Number.isInteger(v)) && Array.isArray(m.intents) && typeof m.assigned === 'object' && typeof m.counted === 'object');
     return ok ? r : null;
   } catch { return null; }
@@ -50,6 +61,13 @@ export async function fetchAssumptions(area: string): Promise<AssumptionsFile | 
 
 /** True when the file was made for the demand data that is loaded. An unknown loaded hash is not a difference. */
 export const assumptionsCurrent = (f: AssumptionsFile, demandHash: string | null): boolean => demandHash === null || hashMatches(f.inputs.demandHash, demandHash);
+
+/** The two assumed factors in one sentence, from the numbers the data file carries, with the period names people see. */
+export function derivedFactorsSentence(d: DerivedTargetsView, pm: string, name: (id: string) => string): string {
+  const pct = (x: number) => `${Math.round(x * 1000) / 10}%`;
+  const inbound = d.inboundShare[pm];
+  return `Assumed peak-hour share of the daily total (K): ${pct(d.kFactor)} for streets and ${pct(d.rampKFactor)} for ramps.${inbound === undefined ? '' : ` Assumed split on a two-way street in the ${name(pm)}: ${pct(inbound)} inbound and ${pct(1 - inbound)} outbound.`} The other periods take the ${name(pm)} figure times an assumed period factor.`;
+}
 
 /** The movements with their intents as plain sentences: "about half (47%)" style shares, from the assigned volumes of one period. */
 export function intentShares(m: AssumedMovementView, period: string): { id: string; label: string; through: boolean; vph: number; pct: number }[] {

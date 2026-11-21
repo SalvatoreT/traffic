@@ -132,6 +132,15 @@ describe('generated pages', () => {
     expect(none['index.md']).toContain('No stored baseline results');
     expect(none['assumptions.md']).toContain('not available for this area');
   });
+  it('adds a section for targets derived from daily totals only when the assumptions file lists them', () => {
+    const f = { version: 1, area: 'x', generated: 'g', inputs: { demandHash: HASHES.demand }, count: { label: 'c', measured: ['am'], scaled: [] }, movements: [] } as never;
+    expect(buildPages(input({ assumptions: f }))['assumptions.md']).not.toContain('Targets derived from daily totals');
+    const d = { ...(f as object), derivedTargets: { kFactor: 0.09, rampKFactor: 0.09, inboundShare: { am: 0.58 }, stations: [{ id: 's', label: 'Ashby station', kind: 'caltrans', source: 'caltrans-aadt', year: 2024, targets: { am: 900 } }] } } as never;
+    const md = buildPages(input({ assumptions: d }))['assumptions.md'];
+    expect(md).toContain('## Targets derived from daily totals');
+    expect(md).toContain('derived from a daily total, not judged');
+    expect(md).toContain('| Ashby station | caltrans-aadt, 2024 |');
+  });
   it('keeps the guide documents verbatim in the full text', () => {
     const full = pages['llms-full.txt'];
     expect(full).toContain('Stated limits.');

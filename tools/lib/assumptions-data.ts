@@ -1,5 +1,6 @@
 // The Assumptions tab's table of assumed movements: the demand config (movements and their intents) joined to the numbers of the demand fit report. No I/O.
-import { ASSUMPTIONS_VERSION, type AssumedMovementView, type AssumptionsFile } from '../../src/lib/assumptions';
+import { ASSUMPTIONS_VERSION, type AssumedMovementView, type AssumptionsFile, type DerivedTargetsView } from '../../src/lib/assumptions';
+import { isDerivedTarget } from './derived-targets';
 
 export interface MovementCfg {
   id: string; label: string; maxDetour: number;
@@ -19,6 +20,13 @@ export type MovementData = AssumedMovementView & {
   /** Why no trips are assigned in those periods. */
   belowThresholdNote?: string;
 };
+
+/** The stations that are derived targets, with the assumed factors they were made with, as the Assumptions tab shows them. Null when there are none. */
+export function derivedTargetsView(stations: { id: string; kind: string; label: string; source: string | null; year: number | null; target: Record<string, number> }[], cfg: { kFactor: number; ramps: { kFactor: number }; periodFactors: Record<string, { inboundShare: number }> }): DerivedTargetsView | null {
+  const rows = stations.filter(isDerivedTarget).map((s) => ({ id: s.id, label: s.label, kind: s.kind, source: s.source!, year: s.year, targets: Object.fromEntries(Object.entries(s.target).map(([p, v]) => [p, Math.round(v)])) }));
+  if (!rows.length) return null;
+  return { kFactor: cfg.kFactor, rampKFactor: cfg.ramps.kFactor, inboundShare: Object.fromEntries(Object.entries(cfg.periodFactors).map(([p, f]) => [p, f.inboundShare])), stations: rows.sort((a, b) => a.source.localeCompare(b.source) || a.label.localeCompare(b.label)) };
+}
 
 export interface MovementRow { movement: string; period: string; counted: number; through: number; local: number }
 export interface IntentRow { movement: string; period: string; intent: string; assigned: number }
@@ -57,7 +65,7 @@ const dayLabel = (id: string): string => {
 
 /** `countSourceId` is the id of the count file's source ("volunteer-count-2025-02-25"); its date names the count. */
 /** `links` gives each movement id's approach link, exit link and junction node in the network (see `buildAssumptions`'s caller); a movement it lacks gets no map fields. */
-export function buildAssumptions(cfg: AssumptionsCfg, fitText: string, o: { area: string; demandHash: string; countSourceId: string; generated: string; links?: Record<string, { from: number; to: number; node: number }> }): Omit<AssumptionsFile, 'movements'> & { movements: MovementData[] } {
+export function buildAssumptions(cfg: AssumptionsCfg, fitText: string, o: { area: string; demandHash: string; countSourceId: string; generated: string; links?: Record<string, { from: number; to: number; node: number }>; derivedTargets?: DerivedTargetsView | null }): Omit<AssumptionsFile, 'movements'> & { movements: MovementData[] } {
   const fit = parseFitReport(fitText);
   const vc = cfg.volunteerCount;
   const measured = vc ? [vc.periods.am, vc.periods.pm] : [];
@@ -84,5 +92,6 @@ export function buildAssumptions(cfg: AssumptionsCfg, fitText: string, o: { area
     version: ASSUMPTIONS_VERSION, area: o.area, generated: o.generated, inputs: { demandHash: o.demandHash },
     count: { label: day ? `the resident volunteer count of ${day}` : 'the resident volunteer count', measured, scaled },
     movements,
+    ...(o.derivedTargets ? { derivedTargets: o.derivedTargets } : {}),
   };
 }

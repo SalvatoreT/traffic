@@ -116,6 +116,20 @@ describe('assessment of reused runs (C4)', () => {
     expect(text).toMatch(/Suggested status: \*\*uncalibrated\*\*/);
   }, 60000);
 
+  it('sets targets derived from a daily total apart: own table, own words, both scopes, no held-out miss among them', () => {
+    const root = makeRoot();
+    const r = assess(root, ['--suffix', 'derived']);
+    expect(r.status).toBe(0);
+    const text = readFileSync(join(root, 'data/calibration/rockridge.assessment-derived.md'), 'utf8');
+    expect(text).toContain('Targets derived from a daily total, not judged.');
+    expect(text).toMatch(/\| caltrans ashby 544,1277 in|\| ashby station, link 3396 inward/);
+    expect(text).toMatch(/\d+ link-based derived targets in pm_peak/);
+    expect(text).toContain('Scope of the station rule, before and after targets derived from a daily total, not judged were set apart');
+    expect(text).toContain('| Period | New scope, recent, fitted | New scope, recent, held out | Old scope, recent, fitted | Old scope, recent, held out | Derived targets (not judged) |');
+    expect(text).toContain('A target computed from a daily total');
+    expect(text).not.toMatch(/\| pm_peak \| (sanpablo|tunnel|ashby) station/);
+  }, 60000);
+
   it('rejects incomplete detectors in one seed even when its manifest and other seeds match', () => {
     const root = makeRoot(), dir = join(root, 'reuse');
     stubRuns(root, dir);
