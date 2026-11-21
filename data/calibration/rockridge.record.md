@@ -143,7 +143,44 @@ The remaining misses point to route choice in the simulation disagreeing with th
 
 ## Development-branch commit hashes after re-signing (2026-11-20)
 
-The laptop evidence commits of rounds 48 to 52 on the development branch were made unsigned while commit signing was unavailable. On 2026-11-20 they were re-signed at the project lead's request: 19 commits were rebuilt with the same trees, messages, authors and dates, so only their hashes changed (branch head be03fbb became 3ddf1b4). The hashes cited in this record and in the archived designs and evidence READMEs of those rounds now name the re-signed commits. As-run outputs keep the hash they ran at: evidence logs, assessment reports, the proposals report, and the simulator revision in `validation.json` (ad48d3e9, now dd87d88, the same tree). Nothing on `main` or in the published data changed.
+The laptop evidence commits of rounds 48 to 52 on the development branch were made unsigned while commit signing was unavailable. On 2026-11-20 they were re-signed at the project lead's request: 19 commits were rebuilt with the same trees, messages, authors and dates, so only their hashes changed (branch head be03fbb became 3ddf1b4). The hashes cited in this record and in the archived designs and evidence READMEs of those rounds now name the re-signed commits. As-run outputs keep the hash they ran at: evidence logs, assessment reports, the proposals report, and the simulator revision in `validation.json` (ad48d3e9, now dd87d88, the same tree). Nothing on `main` or in the published data changed. The four laptop commits of 2026-11-21 on the development branch (dd0be1e, 16d66ef, 8f5ee49, 170d280) are unsigned because signing timed out; they are not re-signed, and their parts live on that branch, not on `main`.
+
+## Published set regenerated on the faster simulator (2026-11-21)
+
+Commit `1e6b825` (`perf(sim): speed up routing and fixed-step traffic updates`) changed the simulator fingerprint from `d45a275dd7be0713cec6a64394b7d8a9` to `6b886c8f52ee07397773ddd0ebbcb447`. Its equivalence evidence covered PM-hour runs (native seeds 1 to 5, WASM seeds 1 to 3) and fixtures. The deployed app ran the new WASM while the files published on 2026-11-20 carried the old fingerprint, so the site marked proposals out of date, showed the Assumptions cards without maps or counts, and ignored stored results and redistribution. A local `npm run data` would have used static membership without saying so, since the membership evidence includes the fingerprint and the only trace was a line in the fit report. Change `restamp-round-52` (`openspec/changes/archive/2026-11-21-restamp-round-52/`, evidence in its `evidence/`) records the decision. The model is the one of the Fifty-second round, so the rule set by the project lead was that every number must come out identical; only the fingerprint, revision and dates may differ.
+
+The laptop reran the chain on the new simulator on 2026-11-21:
+
+- Membership loop: the intermediate demands are byte-identical to round 52's. The membership files differ only in `evidence.simulator` (shipped `56e688e7e5749d23`, was `3d639670c1feb38f`; training `cf32e3e0d9e6f23e`, was `c1cd4ce96fb28791`).
+- `npm run data`: network `53c823f20d9165ed`, demand `2d16d8f8eb0950ca` and cross-validation demand `1c3b1666f24156f1`, all unchanged.
+- `validate`: 67 of 74 cases pass. `assess --publish --noise`: identical apart from stamps; the noise file `4d6850cccc2f43e8` is byte-identical.
+- Proposal search with round 52's flags and seeding: the same options and figures. The proposals file is `c5cbe25f39e61414` (was `197a99cdafc026f8`); only `computed.date`, `computed.simulator` and `computed.sourceRevision` differ. The seeds file stays as committed (`e464cc90ca3e1472`); the rerun's copy differed only in dates.
+- Redistribution, results, assumptions, text pages and preview cards were regenerated.
+
+| Comparison with the 69 published files | Files |
+| --- | --- |
+| Byte-identical | 22 |
+| Differ only in stamps (fingerprint, revision, dates) | 44 |
+| Differ in content, no figure changed | 3 |
+
+The three: `redistribution/rockridge/unconstrained.p1.json` and `unconstrained.p3.json` (9 drawn sample paths; counts, per-hour figures, shares and labels are identical; the tool kept the sample of whichever seed finished first, fixed afterwards in `aef1f46`, change `deterministic-redistribution-sample`) and `areas.json` (gains the `noise` pointer that `tools/import-osm.ts` writes when the noise file exists; no app code reads it). The laptop stopped on these three, as the rule required, and the project lead accepted them because no figure differs.
+
+| Step | Seconds on the faster simulator (round 52) |
+| --- | --- |
+| Membership loop (mostly demand builds, which did not change) | 3,777 (3,992) |
+| `npm run data` | 1,017 |
+| `validate` | 18 |
+| `assess --publish --noise` | 70 (148) |
+| Proposal search | 2,736 (5,606) |
+| Redistribution | 266 (567) |
+| Results | 66 (140) |
+| One single-seed `calibrate` run, PM peak / AM peak / midday | 15.4 (30.3) / 11.1 (22.2) / 7.2 (15.0) |
+
+The cloud session published on 2026-11-21 at about 10:55 AM Pacific: checksums verified, 1,106 TypeScript tests passed, `data:push`, and the live site read back proposals `c5cbe25f39e61414` and no longer shows "out of date" on the Proposals or Assumptions tabs. Main carries `e762a47` (republish) and `aef1f46` (sample fix).
+
+Left as is: `data/demand/rockridge.control-delays*.json` (round 44) still carry the old fingerprint. The config has no `controlDelays` entry, so the build never reads them.
+
+Follow-up: the demand build now exits with the differing evidence fields when a membership file exists and does not match, instead of falling back to static membership. `data/README.md`, "When the simulator fingerprint changes", lists the rerun order.
 
 ## Fifty-second round: whole-street counts weighted by the blocks they span, ceilings outside the study area only (passes the keep rule and the fresh-seed confirmation; adopted and published 2026-11-20)
 

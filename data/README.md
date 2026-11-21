@@ -28,7 +28,7 @@ The OSM fetch tries the Overpass mirrors first. When none answers (the case on 2
 
 Since round 52 the shipped demand is fitted on the simulator's own route choice. The config (`countFit.throughTargets.simulatedMembership` in `data/demand/<area>.config.json`) names two files under `target/membership/`: `<area>.membership.json` for the shipped demand and `<area>.membership-training.json` for the cross-validation demand. Each holds, for every fitted count station, the share of simulated trips that use each origin-destination pair, pooled over the passes of `tools/membership-loop.ts`, with the hashes of the network, split, config, stations, targets and simulator they were made on. They are 2 to 3 MB each, so they are not in git. `data:push` uploads them to `demand/membership/*` in the bucket (a prefix the Worker accepts for upload and does not serve at `/data`), lists them in `data/manifest.json` with the other source inputs, and `data:pull` restores them to `target/membership/`.
 
-`npm run data` needs them. Without a file, or when its recorded hashes do not match the current inputs, the build notes it in the fit report and falls back to static membership, which gives a different demand (and different hashes everywhere downstream). Pull before building.
+`npm run data` needs them. Without a file the build notes it in the fit report and uses static membership, which gives a different demand (and different hashes everywhere downstream); the first pass of the membership loop relies on that. With a file whose recorded hashes or simulator fingerprint do not match the current inputs, the build stops and names the fields that differ. Pull before building, and after a simulator change see "When the simulator fingerprint changes".
 
 ## Precomputed scenario results
 
@@ -59,6 +59,27 @@ The same run writes `public/data/results/<area>/baseline-intents.json`: today's 
 ## Link previews
 
 `npm run data:previews` writes `public/data/og/`: a 1200 x 630 JPEG card for the home page, each tab and each published proposal, and `index.json`, which says what each path's preview shows. They are published with the rest (`areas/og/*` in the bucket). The Worker serves the cards at `/og/<name>-<hash>.jpg` and, for `/`, the tab paths and `/p/<slug>`, puts the matching tags in the page head (title, description, canonical, Open Graph, Twitter card). A card's name carries a hash of its bytes, so a changed card is a new address. Order at publish time: the proposal search, `npm run data:results`, `npm run data:llms`, `npm run data:previews`, then `data:push`. The generator writes a card for a proposals group only when the group was computed on the network and demand now served, and the stored baseline map only when the stored baseline was too; it prints what it skipped. Cards are drawn in Node with `@resvg/resvg-js` and the Inter subset in `tools/fonts/` (SIL Open Font License), with no system fonts.
+
+## When the simulator fingerprint changes
+
+The fingerprint (`cargo run --release --bin fingerprint`, also stamped into the WASM) changes whenever a `.rs` source of the simulator changes, even a pure speedup. The published files record it, so after a change they stop matching the app the Worker serves:
+
+- On the site: proposals show "Out of date", the Assumptions cards lose their maps and counts, and stored results and redistribution are ignored, so scenarios simulate live.
+- In the tools: the membership files, `validation.json`, the calibration reports, the proposals file and the stored results no longer match, and `assess` and `explore` refuse or rerun. `npm run data` stops with the mismatching evidence fields rather than falling back to static membership.
+
+Regenerate the whole chain on the new simulator and compare it with what is published. Heavy steps run on the laptop; times below are from 2026-11-21 on an M3 Pro.
+
+1. `cargo build --release`, `npm run wasm`, `npm run check:wasm`; native and WASM runs must agree.
+2. `npx tsx tools/membership-loop.ts` (heavy, about an hour), then `npm run data` (about 17 minutes).
+3. `cargo run --release -p traffic-sim --bin validate` (seconds), then `npm run assess -- --publish --noise` on seeds 1 to 10 (about a minute on the faster simulator).
+4. The proposal search with the flags and seeding of the published round (`explore`, about 45 minutes; keep the committed seeds file unless a figure changed).
+5. `npm run data:redistribution`, `npm run data:results`, `npm run data:assumptions`, `npm run data:llms`, `npm run data:previews`.
+
+Identity rule: when the model itself has not changed, every number must come out the same. Only the fingerprint, the revision and dates may differ. Compare each regenerated file with the published one (hashes for the demand, network, noise and membership files; a diff with stamps masked for reports, proposals and results). Any other difference means stop and report to the project lead; do not push. The record names every difference that was accepted.
+
+The laptop does not push. It commits the regenerated files, split into parts under the 200 KB hook limit, with checksums and a list of how each file compares, on its development branch (round 52: `openspec/changes/archive/2026-11-21-restamp-round-52/evidence/publish/`). The cloud session reassembles them, verifies the checksums, clears the four generated folders (`results`, `og`, `llms`, `redistribution`) so that the manifest lists only new files, runs the TypeScript tests and then `data:push`, as under "Publishing without a Cloudflare token". It reads the live proposals file back.
+
+`data/demand/<area>.control-delays*.json` carry the fingerprint they were measured on (round 44 for Rockridge). The config has no `controlDelays` entry, so the build never reads them and they still show the old fingerprint. Measure them again before adding an entry.
 
 ## Publishing without a Cloudflare token
 

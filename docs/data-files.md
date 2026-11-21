@@ -82,7 +82,7 @@ A GeoJSON FeatureCollection of footways, buildings and the like that the map dra
 
 ## Hashes and staleness
 
-The proposals file records the first 16 hex characters of the SHA-256 of the exact bytes of the network and demand files it was computed on. Stored results and `baseline-intents.json` record the full hashes and the simulator fingerprint. When any of them differs from the file now served, the numbers were computed on other inputs and are out of date: the app ignores a stored result and runs the scenario live instead, and marks a proposal group "Out of date". The generated pages (`/proposals.md`, `/streets.md`, `/index.md`) say so in the same way and still show the numbers they have.
+The proposals file records the first 16 hex characters of the SHA-256 of the exact bytes of the network and demand files it was computed on. Stored results and `baseline-intents.json` record the full hashes and the simulator fingerprint. When any of them differs from the file now served, the numbers were computed on other inputs and are out of date: the app ignores a stored result and runs the scenario live instead, and marks a proposal group "Out of date". The generated pages (`/proposals.md`, `/streets.md`, `/index.md`) say so in the same way and still show the numbers they have. A change of the simulator fingerprint has the same effect on every stored result until the set is regenerated (`data/README.md`, "When the simulator fingerprint changes").
 
 ## Licenses
 
