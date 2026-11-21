@@ -505,6 +505,22 @@ fn pedestrian_at_a_signal_crosses_with_the_phase_parallel_to_the_walk() {
 }
 
 #[test]
+fn pedestrian_phases_follow_a_live_control_change() {
+    let (net, c) = ped_cross(Control::Uncontrolled, true);
+    let flows = [(c.w, c.e, 300.0, FlowMode::Pedestrian), (c.s, c.n, 200.0, FlowMode::Car)];
+    let config = Config { initial_load: false, ..cfg(3, 1.0) };
+    let signal = format!(r#"[{{"type":"control","node":{},"control":"signal"}}]"#, c.c);
+    let mut live = sim_with(net.clone(), &flows, config.clone());
+    live.set_interventions(&signal).unwrap();
+    let mut initial = sim_with(net, &flows, Config { interventions: serde_json::from_str(&signal).unwrap(), ..config });
+    step_n(&mut live, 900.0);
+    step_n(&mut initial, 900.0);
+    assert!(initial.pedestrian_crossings_at(c.c) > 0);
+    assert_eq!(live.metrics_json(), initial.metrics_json());
+    assert_eq!(live.vehicles(), initial.vehicles());
+}
+
+#[test]
 fn pedestrians_at_a_signal_cross_a_street_only_while_it_has_no_green() {
     // Pedestrians from every side, so some arrive along the very leg they cross. Each crosswalk is served with the phase of
     // the parallel street [FHWA-STM2008], and nobody steps off once the clearance interval has begun, so no approach gets

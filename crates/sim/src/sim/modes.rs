@@ -318,6 +318,9 @@ impl Simulation {
         self.ped_on = self.flows.iter().any(|f| f.mode == FlowMode::Pedestrian);
         if self.ped_on {
             self.world = PedWorld::build(&self.net, &self.topo);
+            for f in self.flows.iter().filter(|f| f.mode == FlowMode::Pedestrian) {
+                self.world.register_flow(f.origin, f.dest);
+            }
             self.set_yield_probabilities();
         }
     }
@@ -352,7 +355,9 @@ impl Simulation {
         if !self.bike_on {
             return;
         }
-        for n in 0..self.topo.n_nodes {
+        let mut origins = std::mem::take(&mut self.pending_bike_origins);
+        origins.sort_unstable();
+        for &n in &origins {
             for _ in 0..4 {
                 let Some(trip) = self.bike_backlog[n].front() else { break };
                 let dest = trip.dest;
@@ -392,6 +397,8 @@ impl Simulation {
                 self.lanes[idx].push_back(id);
             }
         }
+        origins.retain(|&n| !self.bike_backlog[n].is_empty());
+        self.pending_bike_origins = origins;
     }
 
     // ------------------------------------------------------------------ replanning after interventions
@@ -451,11 +458,11 @@ impl Simulation {
             {
                 let log = &mut self.node_log[node];
                 log.retain(|e| now - e.t_out < PET_ENCOUNTER_S as f64);
-                let h_me = mv_heading(&self.topo, mv);
                 for e in log.iter() {
                     if e.bike != is_bike && self.topo.conflicts(mv, e.mv, circle) {
                         // PET: time between the first user leaving the conflict area and the second arriving [Mahmud2017].
                         let pet = (now - e.t_out).max(0.0) as f32;
+                        let h_me = mv_heading(&self.topo, mv);
                         let h_e = mv_heading(&self.topo, e.mv);
                         let closing = (heading_angle(h_me, h_e) >= SUPPORTED_MIN_ANGLE_RAD).then(|| closing_speed(speed, h_me, e.speed, h_e));
                         self.vuln.bike_encounter(pet, closing, (if is_bike { e.speed } else { speed }) >= PET_MOVING_V);

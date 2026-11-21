@@ -65,7 +65,9 @@ impl Simulation {
             cfg.interventions.clear();
             cfg.select_links.clear();
             cfg.trace = false;
-            let probe = Simulation::build(self.net.clone(), self.demand.clone(), cfg, None).ok()?;
+            let mut probe = Simulation::prepare(self.net.clone(), self.demand.clone(), cfg, Some(self)).ok()?;
+            probe.initial_load();
+            self.world.take_walk_routes(&mut probe.world);
             Some((probe.ema, probe.mv_ema))
         }) else { return };
         self.ema.copy_from_slice(links);
@@ -309,7 +311,7 @@ impl Simulation {
         let v0 = if c.bike { c.v0_abs.min(limit.max(2.0)) } else { (limit * d.fcomp).max(1.0) };
         match lead {
             Some((gap, vl)) => {
-                let root = 2.0 * (d.a * d.b).sqrt();
+                let root = d.braking_denom;
                 let mut v = v0;
                 while v > 0.0 {
                     if d.s0 + v * d.t_hw + (v * (v - vl) / root).max(0.0) <= gap {

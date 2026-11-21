@@ -273,4 +273,41 @@ fn perceived_and_mean_routes_agree_on_a_fast_turn_off_a_congested_approach() {
     let en_route = forward.search(&topo, eff.car_modal(), &cost, 1e-9, 42, From::Link(0), Goal::Dest(d), &|_| true, &mut out).unwrap();
     assert_eq!(out, [1]);
     assert!((en_route - t).abs() < 0.001);
+
+    // Standalone queries may use new costs on their next goal.
+    let changed = [250.0, 10.0, 60.0];
+    router.ensure_link(1, &topo, &eff, &changed);
+    assert_eq!(router.link_tables[&1][0], 185.0);
+    out.clear();
+    forward.search(&topo, eff.car_modal(), &changed, 0.0, 42, From::Node(s), Goal::Dest(d), &|_| true, &mut out).unwrap();
+    assert_eq!(out, [2]);
+}
+
+#[test]
+fn equal_cost_routes_keep_the_first_settled_predecessor_at_short_and_long_travel_times() {
+    use crate::eff::Eff;
+    use crate::route::{From, Goal, Perceived, NO_NOISE};
+    use crate::topo::Topo;
+    let mut b = B::default();
+    let origin = b.node(0., 0., Control::Uncontrolled, true);
+    let left = b.node(100., 20., Control::Uncontrolled, false);
+    let right = b.node(100., -20., Control::Uncontrolled, false);
+    let merge = b.node(200., 0., Control::Uncontrolled, false);
+    let end = b.node(300., 0., Control::Uncontrolled, true);
+    for (from, to) in [(origin, left), (origin, right), (left, merge), (right, merge), (merge, end)] {
+        b.link(from, to, RoadClass::Residential, 1, 10., false);
+    }
+    let net = b.net();
+    let topo = Topo::new(&net);
+    let mut eff = Eff::derive(&topo, &net, &[]);
+    eff.route_w.fill(1.0);
+    eff.mv_cost.fill(0.0);
+    let mut search = Perceived::default();
+    for seconds in [0.0, 1.0, 5_000.0] {
+        let cost = [seconds; 5];
+        let mut path = Vec::new();
+        let time = search.search(&topo, eff.car_modal(), &cost, 2.0, NO_NOISE, From::Node(origin), Goal::Link(4), &|_| true, &mut path);
+        assert_eq!(path, [0, 2, 4]);
+        assert_eq!(time, Some(3.0 * seconds));
+    }
 }

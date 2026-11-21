@@ -26,7 +26,7 @@ impl Simulation {
             })
             .collect();
         order.sort_by_key(|&i| self.flows[i].dest);
-        let mut r = Router::new(self.topo.n_nodes);
+        let mut r = Router::for_epoch(self.topo.n_nodes);
         let mut prev = None;
         let mut path = Vec::new();
         for i in order {
@@ -121,7 +121,7 @@ impl Simulation {
     }
 
     /// A destination on the occupied link is reached directly only if its curb is ahead.
-    pub(super) fn remaining_path(&mut self, vid: u32, goal: Goal, endpoint: f32, seed: u32, first_ok: Option<&dyn Fn(u32) -> bool>, out: &mut Vec<u32>) -> bool {
+    pub(super) fn remaining_path(&mut self, vid: u32, goal: Goal, endpoint: f32, seed: u32, first_ok: Option<&dyn Fn(u32) -> bool>, limit: f32, out: &mut Vec<u32>) -> bool {
         let v = &self.vehs[vid as usize];
         let l = v.link;
         if matches!(goal, Goal::Link(target) if target == l) && endpoint < v.pos {
@@ -131,7 +131,7 @@ impl Simulation {
             }
             return false;
         }
-        self.plan(Start::Link(l), goal, seed, first_ok, out)
+        self.plan_below(Start::Link(l), goal, seed, first_ok, limit, out)
     }
 
     /// Positions use the canonical block's coordinate even when the scenario uses

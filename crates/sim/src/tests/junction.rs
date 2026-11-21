@@ -5,6 +5,19 @@ use crate::topo::Topo;
 
 const REC_BYPASS: u8 = 4;
 
+#[test]
+fn movement_lookup_identifies_only_adjacent_directed_links() {
+    let (net, _) = cross4(Control::TwoWayStop, RoadClass::Residential, true);
+    let topo = Topo::new(&net);
+    for a in &net.links {
+        for b in &net.links {
+            let movement = topo.mvs.iter().position(|m| m.a == a.id && m.b == b.id);
+            assert_eq!(topo.find_mv(a.id, b.id), movement.map(|i| i as u32));
+        }
+        assert!(topo.find_mv(a.id, u32::MAX).is_none());
+    }
+}
+
 fn place_at_line(sim: &mut Simulation, link: u32, dest: u32) -> u32 {
     let stop = sim.test_topo_stop(link);
     sim.test_place(link, 0, stop - 0.1, 0.0, dest, false)

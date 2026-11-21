@@ -8,13 +8,34 @@
 
 use super::*;
 
+struct LaneBand {
+    main: std::ops::Range<usize>,
+    pocket: Option<usize>,
+}
+
+impl LaneBand {
+    fn contains(&self, lane: usize) -> bool {
+        self.main.contains(&lane) || self.pocket == Some(lane)
+    }
+
+    // Left-turn pockets connect to main lane 0.
+    fn distance(&self, lane: usize) -> usize {
+        let to_main = if self.main.is_empty() {
+            usize::MAX
+        } else {
+            lane.abs_diff(lane.clamp(self.main.start, self.main.end - 1))
+        };
+        if self.pocket.is_some() { to_main.min(lane) } else { to_main }
+    }
+}
+
 impl Simulation {
-    pub(super) fn change_lanes(&mut self) {
+    pub(super) fn change_lanes(&mut self, occupied: &[usize]) {
         if self.cfg.lane_changes == Some(false) || self.cfg.junction_recovery == JunctionRecovery::Historical || self.step_n % LC_EVERY_STEPS != 0 {
             return;
         }
         let mut ids = std::mem::take(&mut self.scratch);
-        for l in 0..self.topo.n_links {
+        for &l in occupied {
             let nl = self.topo.nlanes(l);
             if nl < 2 {
                 continue;
@@ -35,7 +56,7 @@ impl Simulation {
         let v0 = (self.eff.limit[l] * drv.fcomp).max(1.0);
         let (rear, vl) = leader.unwrap_or((self.topo.stop_pos[l] + drv.s0, 0.0));
         let s = rear - pos;
-        idm(v, v0, s, v - vl, drv.a, drv.b, drv.t_hw, drv.s0).max(-B_MAX)
+        idm(v, v0, s, v - vl, drv)
     }
 
     fn rear(&self, id: u32) -> (f32, f32) {
@@ -43,36 +64,30 @@ impl Simulation {
         (v.pos - v.drv.len, v.v)
     }
 
-    /// Lanes of link `l` that serve the car's next movement, and whether its current lane is among them.
-    fn lc_allowed(&self, l: usize, vid: u32, k: usize) -> (Vec<usize>, bool) {
+    /// Lanes of link `l` that serve the car's next movement.
+    fn lc_allowed(&self, l: usize, vid: u32) -> LaneBand {
         let veh = &self.vehs[vid as usize];
         let main = self.topo.nmain[l];
-        let next = veh.next();
-        let here = self.mv_kind(l as u32, next);
+        let movement = veh.next().and_then(|b| self.topo.find_mv(l as u32, b));
+        let here = movement.map(|m| self.topo.mvs[m as usize].kind);
         let pocket = self.pocket_active(l);
-        let mut out: Vec<usize> = Vec::new();
-        if let Some(m) = next.and_then(|b| self.topo.find_mv(l as u32, b)) {
+        if let Some(m) = movement {
             let (lo, hi) = self.topo.fork_band[m as usize];
             if hi != 255 {
-                out.extend(lo as usize..(hi as usize).min(main));
-                return (out.clone(), out.contains(&k));
+                return LaneBand { main: lo as usize..(hi as usize).min(main), pocket: None };
             }
         }
         if here == Some(K_LEFT) && pocket && self.topo.left_marked[l] {
-            return (vec![main], k == main);
+            return LaneBand { main: 0..0, pocket: Some(main) };
         }
         let kind = self.lane_hint(l as u32, &veh.route[veh.ridx as usize..]);
         let half = (main + 1) / 2;
-        match kind {
-            Some(K_LEFT) if main >= 2 => out.extend(0..half),
-            Some(K_RIGHT) if main >= 2 => out.extend(main - half..main),
-            _ => out.extend(0..main),
-        }
-        if here == Some(K_LEFT) && pocket {
-            out.push(main);
-        }
-        let ok = out.contains(&k);
-        (out, ok)
+        let band = match kind {
+            Some(K_LEFT) if main >= 2 => 0..half,
+            Some(K_RIGHT) if main >= 2 => main - half..main,
+            _ => 0..main,
+        };
+        LaneBand { main: band, pocket: (here == Some(K_LEFT) && pocket).then_some(main) }
     }
 
     fn try_change(&mut self, l: usize, vid: u32) {
@@ -93,10 +108,10 @@ impl Simulation {
             return;
         }
         let main = self.topo.nmain[l];
-        let (allowed, ok_here) = self.lc_allowed(l, vid, k);
+        let allowed = self.lc_allowed(l, vid);
+        let ok_here = allowed.contains(k);
         let pocket_lane = if self.topo.pocket[l] { Some(main) } else { None };
         // Candidate lanes: adjacent ones (the pocket lies beside lane 0).
-        let mut cands: Vec<(usize, bool)> = Vec::new();
         let adj = |a: usize, b: usize| -> bool {
             match pocket_lane {
                 Some(p) if a == p || b == p => (a == p && b == 0) || (b == p && a == 0),
@@ -104,30 +119,27 @@ impl Simulation {
             }
         };
         let nl = self.topo.nlanes(l);
-        for t in 0..nl {
+        let mut cands = (0..nl).filter_map(|t| {
             if t == k || !adj(k, t) {
-                continue;
+                return None;
             }
             let into_pocket = Some(t) == pocket_lane;
             if into_pocket {
-                if !allowed.contains(&t) {
-                    continue;
+                if !allowed.contains(t) {
+                    return None;
                 }
                 if !self.topo.left_marked[l] && (self.lanes[self.topo.qidx(l, t)].len() >= POCKET_VEH || pos < stop - POCKET_LEN - 2.0) {
-                    continue;
+                    return None;
                 }
-                cands.push((t, true));
+                Some((t, true))
             } else if !ok_here {
                 // Forced: move toward the nearest lane that serves the next movement.
-                let dist = |x: usize| allowed.iter().map(|&a| if Some(a) == pocket_lane { 0 } else { a }).map(|a| a.abs_diff(x)).min().unwrap_or(usize::MAX);
-                if Some(k) == pocket_lane || dist(t) < dist(k) {
-                    cands.push((t, true));
-                }
-            } else if allowed.contains(&t) {
-                cands.push((t, false));
+                (Some(k) == pocket_lane || allowed.distance(t) < allowed.distance(k)).then_some((t, true))
+            } else {
+                allowed.contains(t).then_some((t, false))
             }
-        }
-        if cands.is_empty() {
+        }).peekable();
+        if cands.peek().is_none() {
             return;
         }
         let lead_cur = if i > 0 { Some(self.rear(self.lanes[qi][i - 1])) } else { None };

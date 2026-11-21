@@ -38,11 +38,124 @@ impl Eff {
     }
 }
 
+// Visit time ranges in ascending order, revisiting any link whose exact f32 label
+// improves inside the current range. Bin width affects workload only.
+const LAST_BIN: usize = 511;
+const MAX_BIN_POPS: usize = 1024;
+fn time_bin(seconds: f32) -> usize {
+    ((seconds as usize) / 4).min(LAST_BIN)
+}
+
+fn cost_key(cost: f32, link: u32) -> u64 {
+    (u64::from(cost.to_bits()) << 32) | u64::from(link)
+}
+
+fn unpack_key(key: u64) -> (f32, u32) {
+    (f32::from_bits((key >> 32) as u32), key as u32)
+}
+
+#[derive(Clone, Default)]
+struct CostQueue {
+    bins: Vec<Vec<u64>>,
+    overflow: BinaryHeap<Reverse<u64>>,
+    first: usize,
+    last: usize,
+    pops_in_bin: usize,
+    ordered: bool,
+}
+
+impl CostQueue {
+    fn clear(&mut self) {
+        self.overflow.clear();
+        self.ordered = false;
+        self.pops_in_bin = 0;
+        if self.first <= self.last && self.last < self.bins.len() {
+            for bin in &mut self.bins[self.first..=self.last] { bin.clear(); }
+        }
+        self.first = self.bins.len();
+        self.last = 0;
+    }
+
+    #[inline]
+    fn push(&mut self, cost: f32, link: u32) {
+        // Four seconds per bin, capped to keep memory bounded on large networks.
+        let bin = time_bin(cost);
+        if bin == LAST_BIN || self.ordered {
+            self.overflow.push(Reverse(cost_key(cost, link)));
+            return;
+        }
+        if bin >= self.bins.len() {
+            self.bins.resize_with(bin + 1, Vec::new);
+        }
+        self.first = self.first.min(bin);
+        self.last = self.last.max(bin);
+        self.bins[bin].push(cost_key(cost, link));
+    }
+
+    // For networks with many sub-second or zero-cost arcs an entire search can fit
+    // in one bin. Bound label revisits there by switching to exact distance order.
+    #[cold]
+    fn finish_in_heap(&mut self) {
+        for bin in &mut self.bins[self.first..=self.last] {
+            self.overflow.extend(bin.drain(..).map(Reverse));
+        }
+        self.ordered = true;
+        self.first = self.bins.len();
+        self.last = 0;
+    }
+
+    #[inline]
+    fn pop(&mut self) -> Option<(f32, u32)> {
+        while self.first <= self.last && self.first < self.bins.len() {
+            if let Some(key) = self.bins[self.first].pop() {
+                self.pops_in_bin += 1;
+                if self.pops_in_bin == MAX_BIN_POPS { self.finish_in_heap(); }
+                return Some(unpack_key(key));
+            }
+            self.first += 1;
+            self.pops_in_bin = 0;
+        }
+        self.overflow.pop().map(|Reverse(key)| unpack_key(key))
+    }
+}
+
 pub struct Router {
     pub tables: Vec<Option<Vec<f32>>>,
     /// Cost-to-go from the start of every link through one target link (the first leg of a trip that must make an assumed movement), each entry including the cost of the link itself and of the target link, cached per target for one cost epoch.
     pub link_tables: HashMap<u32, Vec<f32>>,
-    heap: BinaryHeap<Reverse<(u32, u32)>>,
+    heap: CostQueue,
+    reverse: ReverseCosts,
+    epoch_costs: bool,
+}
+
+// Open backward arcs and their common (driver-independent) traversal times for one
+// cost epoch. A shortest-path tree can walk these slices without loading junction geometry.
+#[derive(Default)]
+struct ReverseCosts {
+    offsets: Vec<usize>,
+    arcs: Vec<(u32, f32)>,
+}
+
+impl ReverseCosts {
+    fn ensure(&mut self, topo: &Topo, m: Modal<'_>, cost: &[f32]) {
+        if !self.offsets.is_empty() { return; }
+        self.arcs.clear();
+        self.offsets.push(0);
+        for predecessors in &topo.preds {
+            for &mv in predecessors {
+                let a = topo.mvs[mv as usize].a;
+                if m.mv_ok[mv as usize] && !m.closed[a as usize] {
+                    self.arcs.push((a, cost[a as usize] * m.w[a as usize] + m.mv_cost[mv as usize]));
+                }
+            }
+            self.offsets.push(self.arcs.len());
+        }
+    }
+
+    #[inline]
+    fn predecessors(&self, link: usize) -> &[(u32, f32)] {
+        &self.arcs[self.offsets[link]..self.offsets[link + 1]]
+    }
 }
 
 const SALT_MV: u32 = 0x5EED_0D15;
@@ -69,10 +182,9 @@ fn inv_norm(p: f64) -> f64 {
 
 /// Standard normal deviate fixed per (driver, key): the quantile of the midpoint of one of 4,096 equal-probability bins picked by a hash.
 #[inline]
-fn z(seed: u32, key: u32) -> f32 {
+fn normal_quantiles() -> &'static [f32] {
     static T: std::sync::OnceLock<Vec<f32>> = std::sync::OnceLock::new();
-    let t = T.get_or_init(|| (0..1u32 << Z_BITS).map(|i| inv_norm((i as f64 + 0.5) / (1u32 << Z_BITS) as f64) as f32).collect());
-    t[(hash32(seed, key) >> (32 - Z_BITS)) as usize]
+    T.get_or_init(|| (0..1u32 << Z_BITS).map(|i| inv_norm((i as f64 + 0.5) / (1u32 << Z_BITS) as f64) as f32).collect())
 }
 
 /// Perceived cost of an arc of measured cost `e` (s) for driver `seed`: normal with mean `e` and variance `beta` x `e`, truncated at zero,
@@ -83,7 +195,7 @@ pub fn perceive(e: f32, beta: f32, seed: u32, salt: u32, key: u32) -> f32 {
     if seed == NO_NOISE || beta <= 0.0 {
         return e;
     }
-    (e + (beta * e.max(0.0)).sqrt() * z(seed ^ salt, key)).max(0.0)
+    (e + (beta * e.max(0.0)).sqrt() * normal_quantiles()[(hash32(seed ^ salt, key) >> (32 - Z_BITS)) as usize]).max(0.0)
 }
 
 /// Perceived traversal of the approach and its outgoing movement, drawn once per (driver, movement).
@@ -118,7 +230,50 @@ pub enum Goal {
 pub struct Perceived {
     dist: Vec<f32>,
     pred: Vec<u32>,
-    heap: BinaryHeap<Reverse<(u32, u32)>>,
+    queue: SearchQueue,
+    offsets: Vec<usize>,
+    arcs: Vec<PerceivedArc>,
+    tied: Vec<bool>,
+}
+
+#[derive(Clone, Default)]
+struct SearchQueue {
+    buckets: CostQueue,
+    exact: BinaryHeap<Reverse<u64>>,
+}
+
+impl SearchQueue {
+    fn clear<const EXACT: bool>(&mut self) {
+        if EXACT { self.exact.clear(); } else { self.buckets.clear(); }
+    }
+
+    #[inline]
+    fn push<const EXACT: bool>(&mut self, cost: f32, link: u32) {
+        if EXACT {
+            self.exact.push(Reverse(cost_key(cost, link)));
+        } else {
+            self.buckets.push(cost, link);
+        }
+    }
+
+    #[inline]
+    fn pop<const EXACT: bool>(&mut self) -> Option<(f32, u32)> {
+        if EXACT {
+            self.exact.pop().map(|Reverse(key)| unpack_key(key))
+        } else {
+            self.buckets.pop()
+        }
+    }
+}
+
+enum PathResult { Found(f32), Unreachable, Tied }
+
+#[derive(Clone, Copy)]
+struct PerceivedArc {
+    to: u32,
+    movement: u32,
+    seconds: f32,
+    deviation: f32,
 }
 
 impl Perceived {
@@ -126,18 +281,60 @@ impl Perceived {
     /// appended to `out`, and their perceived cost; None when unreachable. `first_ok` filters the first link taken.
     #[allow(clippy::too_many_arguments)]
     pub fn search(&mut self, topo: &Topo, m: Modal<'_>, cost: &[f32], beta: f32, seed: u32, from: From, goal: Goal, first_ok: &dyn Fn(u32) -> bool, out: &mut Vec<u32>) -> Option<f32> {
+        self.invalidate();
+        self.search_cached(topo, m, cost, beta, seed, from, goal, first_ok, INF, out)
+    }
+
+    pub(crate) fn invalidate(&mut self) {
+        self.offsets.clear();
+    }
+
+    // The simulation reuses the open movement graph and the noise scale of each arc
+    // until observed travel times or interventions change.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn search_cached(&mut self, topo: &Topo, m: Modal<'_>, cost: &[f32], beta: f32, seed: u32, from: From, goal: Goal, first_ok: &dyn Fn(u32) -> bool, limit: f32, out: &mut Vec<u32>) -> Option<f32> {
+        if self.offsets.is_empty() {
+            self.arcs.clear();
+            self.offsets.push(0);
+            for a in 0..topo.n_links {
+                let link_time = cost[a] * m.w[a];
+                for mv in topo.lm_start[a]..topo.lm_start[a] + topo.lm_cnt[a] {
+                    let b = topo.mvs[mv as usize].b;
+                    if m.mv_ok[mv as usize] && !m.closed[b as usize] {
+                        let seconds = m.mv_cost[mv as usize] + link_time;
+                        self.arcs.push(PerceivedArc { to: b, movement: mv, seconds, deviation: (beta * seconds.max(0.0)).sqrt() });
+                    }
+                }
+                self.offsets.push(self.arcs.len());
+            }
+        }
+        // A unique shortest path has the same parents in either queue order. Equal
+        // labels on its predecessor chain require the original cost-then-link ordering.
+        let mut result = self.find::<false>(topo, m, cost, beta, seed, from, goal, first_ok, limit, out);
+        if matches!(result, PathResult::Tied) {
+            result = self.find::<true>(topo, m, cost, beta, seed, from, goal, first_ok, limit, out);
+        }
+        match result {
+            PathResult::Found(d) => Some(d),
+            PathResult::Unreachable => None,
+            PathResult::Tied => unreachable!("the exact queue resolves predecessor ties"),
+        }
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn find<const EXACT: bool>(&mut self, topo: &Topo, m: Modal<'_>, cost: &[f32], beta: f32, seed: u32, from: From, goal: Goal, first_ok: &dyn Fn(u32) -> bool, limit: f32, out: &mut Vec<u32>) -> PathResult {
         let n = topo.n_links;
         let done = |l| goal.reached(topo, l);
         if let From::Link(l) = from {
             if done(l) {
-                return Some(0.0);
+                return PathResult::Found(0.0);
             }
         }
         self.dist.clear();
         self.dist.resize(n, INF);
-        self.pred.clear();
         self.pred.resize(n, u32::MAX);
-        self.heap.clear();
+        self.tied.resize(n, false);
+        self.queue.clear::<EXACT>();
         let arc = |l: u32| cost[l as usize] * m.w[l as usize];
         match from {
             From::Node(o) => {
@@ -146,33 +343,48 @@ impl Perceived {
                         continue;
                     }
                     self.dist[b as usize] = 0.0;
-                    self.heap.push(Reverse((0, b)));
+                    self.pred[b as usize] = u32::MAX;
+                    if !EXACT { self.tied[b as usize] = false; }
+                    self.queue.push::<EXACT>(0.0, b);
                 }
             }
-            From::Link(l) => self.relax(topo, m, cost, beta, seed, l, 0.0, Some(first_ok)),
+            From::Link(l) => self.relax::<EXACT>(seed, beta, l, 0.0, Some(first_ok)),
         }
+        // At a single terminal the last traversal has the same price on every path.
+        let single_terminal = match goal {
+            Goal::Link(_) => true,
+            Goal::Dest(d) => topo.ins[d as usize].len() == 1,
+        };
+        let mut ceiling = limit;
         let mut hit: Option<(u32, f32)> = None;
-        while let Some(Reverse((bits, a))) = self.heap.pop() {
-            let d = f32::from_bits(bits);
-            if hit.is_some_and(|(_, best)| d > best) {
-                break;
+        while let Some((d, a)) = self.queue.pop::<EXACT>() {
+            if d > ceiling {
+                if EXACT || time_bin(d) > time_bin(ceiling) { break; }
+                continue;
             }
             if d > self.dist[a as usize] {
                 continue;
             }
             if done(a) {
                 let total = d + perceive_last(arc(a), beta, seed, a);
+                if total > limit { continue; }
                 if hit.is_none_or(|(link, best)| total < best || (total == best && a < link)) {
                     hit = Some((a, total));
+                    ceiling = if single_terminal { d } else { total };
+                    if EXACT && single_terminal { break; }
                 }
                 continue;
             }
-            self.relax(topo, m, cost, beta, seed, a, d, None);
+            self.relax::<EXACT>(seed, beta, a, d, None);
         }
-        let (g, d) = hit?;
+        let Some((g, d)) = hit else { return PathResult::Unreachable };
         let mark = out.len();
         let mut l = g;
         loop {
+            if !EXACT && self.tied[l as usize] {
+                out.truncate(mark);
+                return PathResult::Tied;
+            }
             out.push(l);
             let p = self.pred[l as usize];
             if p == u32::MAX {
@@ -181,26 +393,29 @@ impl Perceived {
             l = p;
         }
         out[mark..].reverse();
-        Some(d)
+        PathResult::Found(d)
     }
 
-    #[allow(clippy::too_many_arguments)]
     #[inline]
-    fn relax(&mut self, topo: &Topo, m: Modal<'_>, cost: &[f32], beta: f32, seed: u32, a: u32, d: f32, first_ok: Option<&dyn Fn(u32) -> bool>) {
-        let ms = topo.lm_start[a as usize];
-        for mv in ms..ms + topo.lm_cnt[a as usize] {
-            if !m.mv_ok[mv as usize] {
-                continue;
-            }
-            let b = topo.mvs[mv as usize].b;
-            if m.closed[b as usize] || first_ok.is_some_and(|f| !f(b)) {
-                continue;
-            }
-            let c = d + perceive_mv(m.mv_cost[mv as usize] + cost[a as usize] * m.w[a as usize], beta, seed, mv);
-            if c < self.dist[b as usize] {
-                self.dist[b as usize] = c;
-                self.pred[b as usize] = if first_ok.is_some() { u32::MAX } else { a };
-                self.heap.push(Reverse((c.to_bits(), b)));
+    fn relax<const EXACT: bool>(&mut self, seed: u32, beta: f32, a: u32, d: f32, first_ok: Option<&dyn Fn(u32) -> bool>) {
+        let quantiles = normal_quantiles();
+        for arc in &self.arcs[self.offsets[a as usize]..self.offsets[a as usize + 1]] {
+            if first_ok.is_some_and(|f| !f(arc.to)) { continue; }
+            let seconds = if seed == NO_NOISE || beta <= 0.0 {
+                arc.seconds
+            } else {
+                let bin = (hash32(seed ^ SALT_MV, arc.movement) >> (32 - Z_BITS)) as usize;
+                (arc.seconds + arc.deviation * quantiles[bin]).max(0.0)
+            };
+            let c = d + seconds;
+            let parent = if first_ok.is_some() { u32::MAX } else { a };
+            if c < self.dist[arc.to as usize] {
+                self.dist[arc.to as usize] = c;
+                self.pred[arc.to as usize] = parent;
+                if !EXACT { self.tied[arc.to as usize] = false; }
+                self.queue.push::<EXACT>(c, arc.to);
+            } else if !EXACT && c == self.dist[arc.to as usize] && self.pred[arc.to as usize] != parent {
+                self.tied[arc.to as usize] = true;
             }
         }
     }
@@ -225,10 +440,21 @@ impl Router {
     }
 
     pub fn new(n_nodes: usize) -> Router {
-        Router { tables: (0..n_nodes).map(|_| None).collect(), link_tables: HashMap::new(), heap: BinaryHeap::new() }
+        Router { tables: (0..n_nodes).map(|_| None).collect(), link_tables: HashMap::new(), heap: CostQueue::default(), reverse: ReverseCosts::default(), epoch_costs: false }
+    }
+
+    // The simulation calls invalidate at every cost epoch or policy change. Standalone
+    // callers may pass different weights for each newly requested tree.
+    pub(crate) fn for_epoch(n_nodes: usize) -> Router {
+        Router { epoch_costs: true, ..Router::new(n_nodes) }
     }
 
     pub fn invalidate(&mut self) {
+        self.reverse.offsets.clear();
+        self.clear_tables();
+    }
+
+    pub(crate) fn clear_tables(&mut self) {
         for t in self.tables.iter_mut() {
             *t = None;
         }
@@ -248,28 +474,11 @@ impl Router {
         self.heap.clear();
         if !m.closed[target as usize] {
             h[target as usize] = cost[target as usize] * m.w[target as usize];
-            self.heap.push(Reverse((h[target as usize].to_bits(), target)));
+            self.heap.push(h[target as usize], target);
         }
-        while let Some(Reverse((bits, l))) = self.heap.pop() {
-            let hl = f32::from_bits(bits);
-            if hl > h[l as usize] {
-                continue;
-            }
-            for &mv in &topo.preds[l as usize] {
-                if !m.mv_ok[mv as usize] {
-                    continue;
-                }
-                let a = topo.mvs[mv as usize].a as usize;
-                if m.closed[a] || a == target as usize {
-                    continue;
-                }
-                let cand = cost[a] * m.w[a] + m.mv_cost[mv as usize] + hl;
-                if cand < h[a] {
-                    h[a] = cand;
-                    self.heap.push(Reverse((cand.to_bits(), a as u32)));
-                }
-            }
-        }
+        if !self.epoch_costs { self.reverse.offsets.clear(); }
+        self.reverse.ensure(topo, m, cost);
+        self.fill_table(&mut h, |a| a == target);
         self.link_tables.insert(target, h);
     }
 
@@ -283,33 +492,30 @@ impl Router {
         }
         let mut h = vec![INF; topo.n_links];
         self.heap.clear();
-        for l in 0..topo.n_links {
-            if topo.link_to[l] == dest && !eff.closed[l] {
-                h[l] = cost[l] * eff.w[l];
-                self.heap.push(Reverse((h[l].to_bits(), l as u32)));
+        for &l in &topo.ins[dest as usize] {
+            if !eff.closed[l as usize] {
+                h[l as usize] = cost[l as usize] * eff.w[l as usize];
+                self.heap.push(h[l as usize], l);
             }
         }
-        while let Some(Reverse((bits, l))) = self.heap.pop() {
-            let hl = f32::from_bits(bits);
-            if hl > h[l as usize] {
-                continue;
-            }
-            for &mv in &topo.preds[l as usize] {
-                if !eff.mv_ok[mv as usize] {
-                    continue;
-                }
-                let a = topo.mvs[mv as usize].a as usize;
-                if eff.closed[a] || topo.link_to[a] == dest {
-                    continue;
-                }
-                let cand = cost[a] * eff.w[a] + eff.mv_cost[mv as usize] + hl;
-                if cand < h[a] {
-                    h[a] = cand;
-                    self.heap.push(Reverse((cand.to_bits(), a as u32)));
-                }
-            }
-        }
+        if !self.epoch_costs { self.reverse.offsets.clear(); }
+        self.reverse.ensure(topo, eff, cost);
+        self.fill_table(&mut h, |a| topo.link_to[a as usize] == dest);
         self.tables[dest as usize] = Some(h);
+    }
+
+    fn fill_table(&mut self, h: &mut [f32], is_goal: impl Fn(u32) -> bool) {
+        while let Some((hl, l)) = self.heap.pop() {
+            if hl > h[l as usize] { continue; }
+            for &(a, seconds) in self.reverse.predecessors(l as usize) {
+                if is_goal(a) { continue; }
+                let cand = seconds + hl;
+                if cand < h[a as usize] {
+                    h[a as usize] = cand;
+                    self.heap.push(cand, a);
+                }
+            }
+        }
     }
 
     /// Cost-to-go table for `dest` (must have been `ensure`d).
@@ -414,4 +620,33 @@ pub fn walk_to_link(table: &[f32], topo: &Topo, eff: &Eff, from: u32, target: u3
         }
     }
     true
+}
+
+#[cfg(test)]
+mod queue_tests {
+    use super::*;
+
+    #[test]
+    fn dense_time_bin_switches_to_exact_order_for_the_rest_of_the_search() {
+        let mut queue = CostQueue::default();
+        queue.push(3.0, 3);
+        queue.push(12.0, 4);
+        queue.push(100_000.0, 5);
+        for _ in 0..MAX_BIN_POPS {
+            queue.push(0.0, 0);
+            assert_eq!(queue.pop(), Some((0.0, 0)));
+        }
+        assert!(queue.ordered);
+        // Entries from the current bin, later bins and overflow still participate.
+        queue.push(2.0, 2);
+        queue.push(2.0, 1);
+        for item in [(2.0, 1), (2.0, 2), (3.0, 3), (12.0, 4), (100_000.0, 5)] {
+            assert_eq!(queue.pop(), Some(item));
+        }
+        assert_eq!(queue.pop(), None);
+        queue.clear();
+        assert!(!queue.ordered);
+        queue.push(1.0, 1);
+        assert_eq!(queue.pop(), Some((1.0, 1)));
+    }
 }

@@ -1,13 +1,14 @@
 //! Simulation core: microscopic IDM traffic on directed links with node control, routing,
 //! interventions and metrics. Pure Rust, deterministic, no I/O.
 
-use crate::eff::{phase_since_green, phase_state, Eff};
+use crate::eff::Eff;
 use crate::model::*;
 use crate::params::*;
 use crate::rng::{hash32, Rng};
 use crate::route::{self, Goal, Router, INF, NO_NOISE};
 use crate::topo::*;
-use std::collections::VecDeque;
+use std::cmp::Reverse;
+use std::collections::{BinaryHeap, VecDeque};
 use std::sync::OnceLock;
 
 mod curb;
@@ -46,6 +47,8 @@ struct Drv {
     fcomp: f32,
     a: f32,
     b: f32,
+    /// Constant denominator of the IIDM closing-speed term, 2 sqrt(a b).
+    braking_denom: f32,
     t_hw: f32,
     s0: f32,
     gap_f: f32,
@@ -54,16 +57,17 @@ struct Drv {
 impl Drv {
     /// Per-driver IDM parameters drawn from urban ranges.
     fn sample(rng: &mut Rng) -> Drv {
+        // ASSUMPTION: passenger-car length 4.4-5.0 m.
+        let len = rng.range(4.4, 5.0) as f32;
+        // ASSUMPTION: desired speed = limit x compliance factor ~ N(1.0, 0.12) clipped [0.75, 1.4].
+        let fcomp = (1.0 + 0.12 * rng.normal()).clamp(0.75, 1.4) as f32;
+        // Mean 1.5 m/s^2: urban signal-discharge calibration of [Treiber2014] (a = 1.5); [Kesting2010] Table 1 a = 1.4;
+        // [references.md 1.1] realistic 0.8-2.5. Width of the range is an ASSUMPTION.
+        let a = rng.range(1.1, 1.9) as f32;
+        // [Kesting2010] b=2.0; urban prior 1.5-2.0.
+        let b = rng.range(1.5, 2.2) as f32;
         Drv {
-            // ASSUMPTION: passenger-car length 4.4-5.0 m.
-            len: rng.range(4.4, 5.0) as f32,
-            // ASSUMPTION: desired speed = limit x compliance factor ~ N(1.0, 0.12) clipped [0.75, 1.4].
-            fcomp: (1.0 + 0.12 * rng.normal()).clamp(0.75, 1.4) as f32,
-            // Mean 1.5 m/s^2: urban signal-discharge calibration of [Treiber2014] (a = 1.5); [Kesting2010] Table 1 a = 1.4;
-            // [references.md 1.1] realistic 0.8-2.5. Width of the range is an ASSUMPTION.
-            a: rng.range(1.1, 1.9) as f32,
-            // [Kesting2010] b=2.0; urban prior 1.5-2.0.
-            b: rng.range(1.5, 2.2) as f32,
+            len, fcomp, a, b, braking_denom: 2.0 * (a * b).sqrt(),
             // Mean 1.2 s: urban signal-discharge calibration of [Treiber2014] (T = 1.2, IIDM); [Treiber2000] T = 1.6 and [Kesting2010] T = 1.5
             // are highway values. Width of the range is an ASSUMPTION.
             t_hw: rng.range(0.9, 1.5) as f32,
@@ -77,11 +81,12 @@ impl Drv {
 impl Drv {
     /// Cyclist IDM parameters; the desired speed is drawn separately (`bike_speed`). All ranges are ASSUMPTION.
     fn bike(rng: &mut Rng) -> Drv {
+        let a = rng.range(BIKE_A_RANGE.0, BIKE_A_RANGE.1) as f32;
+        let b = rng.range(BIKE_B_RANGE.0, BIKE_B_RANGE.1) as f32;
         Drv {
             len: BIKE_LEN,
             fcomp: 1.0,
-            a: rng.range(BIKE_A_RANGE.0, BIKE_A_RANGE.1) as f32,
-            b: rng.range(BIKE_B_RANGE.0, BIKE_B_RANGE.1) as f32,
+            a, b, braking_denom: 2.0 * (a * b).sqrt(),
             t_hw: rng.range(BIKE_T_RANGE.0, BIKE_T_RANGE.1) as f32,
             s0: BIKE_S0,
             gap_f: libm::exp(GAP_SIGMA * rng.normal()) as f32,
@@ -282,7 +287,7 @@ impl Veh {
             pos: 0.0,
             v: 0.0,
             acc: 0.0,
-            drv: Drv { len: 4.5, fcomp: 1.0, a: 1.4, b: 2.0, t_hw: 1.3, s0: 2.0, gap_f: 1.0 },
+            drv: Drv { len: 4.5, fcomp: 1.0, a: 1.4, b: 2.0, braking_denom: 2.0 * (1.4_f32 * 2.0).sqrt(), t_hw: 1.3, s0: 2.0, gap_f: 1.0 },
             origin: 0,
             dest: 0,
             through: false,
@@ -532,6 +537,8 @@ pub struct Simulation {
     eff: Eff,
     ivs: Vec<Intervention>,
     flows: Vec<FlowRt>,
+    /// Next eligible fixed step and flow index. Index order preserves simultaneous arrivals' UIDs.
+    arrivals: BinaryHeap<Reverse<(i64, usize)>>,
     via_plans: Vec<ViaPlan>,
     t: f64,
     pending_s: f64,
@@ -543,9 +550,14 @@ pub struct Simulation {
     uid_init: u32,
     n_alive: usize,
     lanes: Vec<VecDeque<u32>>,
+    occupied_links: Vec<usize>,
     transit: Vec<Vec<Transit>>,
     backlog: Vec<VecDeque<Trip>>,
+    pending_origins: Vec<usize>,
     awsc: Vec<Vec<u32>>,
+    signal_nodes: Vec<usize>,
+    /// Incoming links with at least one movement that has priority over each movement.
+    yield_approaches: Vec<Vec<u32>>,
     sig_state: Vec<u8>,
     /// Seconds since the green of each signalized approach ended (0 while green).
     sig_since: Vec<f32>,
@@ -600,6 +612,7 @@ pub struct Simulation {
     /// Route of each waiting trip (assumed movement, first link, links after it) on the costs in force; cleared when they change.
     spawn_cache: std::collections::HashMap<u32, (Option<(u32, u32)>, u32, Vec<u32>)>,
     bike_backlog: Vec<VecDeque<Trip>>,
+    pending_bike_origins: Vec<usize>,
     node_log: Vec<Vec<LogEnt>>,
     vuln: Vuln,
     ped_on: bool,
@@ -642,11 +655,20 @@ fn approach_time(dx: f32, v: f32, a: f32, vmax: f32) -> f32 {
 /// follows at a larger gap, which cut the queue discharge flow below the observed 1,800-1,900 veh/h/lane). For v <= v0 the
 /// acceleration is a (1 - z^2) when z = s*/s >= 1 and a_free (1 - z^(2a/a_free)) otherwise ([Treiber2014] eq. 1-3). Above v0 the
 /// branch is ASSUMPTION: the free-road deceleration plus the braking term a (1 - z^2) where z >= 1.
-fn idm(v: f32, v0: f32, s: f32, dv: f32, a: f32, b: f32, t_hw: f32, s0: f32) -> f32 {
+fn idm(v: f32, v0: f32, s: f32, dv: f32, drv: &Drv) -> f32 {
+    let a = drv.a;
+    if v == 0.0 {
+        // At rest a_free = a, the closing term vanishes, and both branches have exponent 2.
+        let z = drv.s0 / s.max(0.1);
+        return (a * (1.0 - z * z)).max(-B_MAX);
+    }
     let v0 = v0.max(0.5);
     let ratio = v / v0;
     let a_free = a * (1.0 - ratio * ratio * ratio * ratio); // IDM_DELTA = 4
-    let s_star = s0 + (v * t_hw + v * dv / (2.0 * (a * b).sqrt())).max(0.0);
+    if s == f32::INFINITY {
+        return a_free.max(-B_MAX);
+    }
+    let s_star = drv.s0 + (v * drv.t_hw + v * dv / drv.braking_denom).max(0.0);
     let s = s.max(0.1);
     let z = s_star / s;
     let acc = if a_free >= 0.0 {
@@ -680,7 +702,7 @@ pub fn equilibrium_flow(limit: f64, density: f64, n: usize, seed: u64) -> f64 {
         let (mut lo, mut hi) = (0.0f32, v0 * 1.5);
         for _ in 0..50 {
             let mid = 0.5 * (lo + hi);
-            if idm(mid, v0, s, 0.0, d.a, d.b, d.t_hw, d.s0) > 0.0 { lo = mid } else { hi = mid }
+            if idm(mid, v0, s, 0.0, &d) > 0.0 { lo = mid } else { hi = mid }
         }
         sum += density * 0.5 * (lo + hi) as f64 / 1000.0 * 3600.0;
     }
@@ -720,7 +742,19 @@ impl Simulation {
     }
 
     /// When supplied, the cell holds the baseline costs for placing initial traffic. The baseline probe itself uses free flow.
-    pub(crate) fn build(mut net: Network, demand: Demand, cfg: Config, loaded_costs: Option<&LoadedCosts>) -> Result<Simulation, String> {
+    pub(crate) fn build(net: Network, demand: Demand, cfg: Config, loaded_costs: Option<&LoadedCosts>) -> Result<Simulation, String> {
+        let mut s = Self::prepare(net, demand, cfg, None)?;
+        if s.cfg.initial_load {
+            if let Some(costs) = loaded_costs {
+                s.adopt_loaded_costs(costs);
+            }
+            s.initial_load();
+        }
+        Ok(s)
+    }
+
+    /// Set up an empty simulation. Only the initial-loading probe reuses its parent's freshly prepared inputs.
+    fn prepare(mut net: Network, demand: Demand, cfg: Config, probe_parent: Option<&Simulation>) -> Result<Simulation, String> {
         net.turn_bans.retain(|b| b.periods.is_empty() || b.periods.iter().any(|p| *p == cfg.period));
         net.turn_bans.retain(|b| (b.from as usize) < net.links.len() && (b.to as usize) < net.links.len());
         for (i, l) in net.links.iter().enumerate() {
@@ -746,6 +780,7 @@ impl Simulation {
             eff,
             ivs,
             flows: Vec::new(),
+            arrivals: BinaryHeap::new(),
             via_plans: Vec::new(),
             t: t0,
             pending_s: 0.0,
@@ -756,13 +791,17 @@ impl Simulation {
             uid_init: initial::INITIAL_UID_BASE,
             n_alive: 0,
             lanes: (0..topo.n_lanes + nl).map(|_| VecDeque::new()).collect(),
+            occupied_links: Vec::new(),
             transit: (0..nn).map(|_| Vec::new()).collect(),
             backlog: (0..nn).map(|_| VecDeque::new()).collect(),
+            pending_origins: Vec::new(),
             awsc: vec![Vec::new(); nn],
+            signal_nodes: Vec::new(),
+            yield_approaches: Vec::new(),
             sig_state: vec![0; nl],
             sig_since: vec![0.0; nl],
             sneak: vec![0; nl],
-            router: Router::new(nn),
+            router: Router::for_epoch(nn),
             link_cost: vec![0.0; nl],
             ema: vec![0.0; nl],
             tt_sum: vec![0.0; nl],
@@ -799,11 +838,12 @@ impl Simulation {
             next_adapt_t: 0.0,
             n_bike: 0,
             bike_on: false,
-            bike_router: Router::new(nn),
-            via_router: Router::new(nn),
+            bike_router: Router::for_epoch(nn),
+            via_router: Router::for_epoch(nn),
             perceived: route::Perceived::default(),
             spawn_cache: std::collections::HashMap::new(),
             bike_backlog: (0..nn).map(|_| VecDeque::new()).collect(),
+            pending_bike_origins: Vec::new(),
             node_log: (0..nn).map(|_| Vec::new()).collect(),
             vuln: Vuln::default(),
             ped_on: false,
@@ -824,18 +864,21 @@ impl Simulation {
         };
         s.init_select_links();
         s.init_flows();
-        s.assign_curbs();
+        if let Some(parent) = probe_parent {
+            // The probe has the same demand, flow order and unmodified address blocks.
+            debug_assert_eq!(s.flows.len(), parent.flows.len());
+            for (flow, source) in s.flows.iter_mut().zip(&parent.flows) {
+                flow.curbs = source.curbs;
+            }
+        } else {
+            s.assign_curbs();
+        }
         s.trace_init();
         s.init_intent_rules();
         s.init_modes();
-        s.rebuild_effective();
+        let baseline_approaches = probe_parent.filter(|parent| parent.ivs.is_empty()).map(|parent| parent.adapt_flow.as_slice());
+        s.rebuild_effective(baseline_approaches);
         s.signal_check()?;
-        if s.cfg.initial_load {
-            if let Some(costs) = loaded_costs {
-                s.adopt_loaded_costs(costs);
-            }
-            s.initial_load();
-        }
         Ok(s)
     }
 
@@ -1145,6 +1188,7 @@ impl Simulation {
 
     fn init_flows(&mut self) {
         self.flows.clear();
+        self.arrivals.clear();
         self.via_plans.clear();
         let period = self
             .demand
@@ -1174,6 +1218,7 @@ impl Simulation {
                 let n_int = self.demand.intents.len();
                 let intent = if through && n_int > 0 { f.intent.map_or(n_int, |i| (i as usize).min(n_int)) as u16 } else { NO_INTENT };
                 self.flows.push(FlowRt { curbs: Curbs::default(), src: k as u32, mode: f.mode, origin: f.origin, dest: f.destination, rate, rng, next_t, through, intent, via, vplan });
+                self.schedule_arrival(self.flows.len() - 1);
             }
         }
     }
@@ -1200,10 +1245,10 @@ impl Simulation {
             serde_json::from_str(json).map_err(|e| format!("interventions: {e}"))?
         };
         let old = std::mem::replace(&mut self.ivs, ivs);
-        self.rebuild_effective();
+        self.rebuild_effective(None);
         if let Err(e) = self.signal_check() {
             self.ivs = old;
-            self.rebuild_effective();
+            self.rebuild_effective(None);
             return Err(e);
         }
         self.reroute_all();
@@ -1222,7 +1267,7 @@ impl Simulation {
         Err(format!("signal timing: {}", self.eff.issues.iter().map(|i| i.to_string()).collect::<Vec<_>>().join("; ")))
     }
 
-    fn rebuild_effective(&mut self) {
+    fn rebuild_effective(&mut self, baseline_approaches: Option<&[f32]>) {
         let mut eff = Eff::derive(&self.topo, &self.net, &self.ivs);
         eff.period = self.cfg.period.clone();
         eff.coord_max_m = self.cfg.coord_max_m.map_or(COORD_MAX_M, |x| x as f32);
@@ -1230,14 +1275,26 @@ impl Simulation {
             eff.set_local_factor(&self.net, f.max(0.1) as f32);
         }
         self.eff = eff;
+        self.perceived.invalidate();
+        self.yield_approaches = (0..self.topo.mvs.len()).map(|i| {
+            let m = &self.topo.mvs[i];
+            let ctrl = self.eff.ctrl[m.node as usize];
+            self.topo.ins[m.node as usize].iter().copied().filter(|&l| {
+                let start = self.topo.lm_start[l as usize];
+                l != m.a && (start..start + self.topo.lm_cnt[l as usize]).any(|j| {
+                    self.topo.conflicts(i as u32, j, false) && self.yields(i as u32, j, ctrl)
+                })
+            }).collect()
+        }).collect();
         if self.eff.ctrl.contains(&Control::Signal) {
             self.link_cost.copy_from_slice(&self.eff.ff);
             self.router.invalidate();
             self.via_router.invalidate();
-            let est = self.estimate_flows();
+            let est = baseline_approaches.map_or_else(|| self.estimate_flows(), <[f32]>::to_vec);
             self.eff.plan_signals(&self.topo, &self.net, &est);
             self.adapt_flow = est;
         }
+        self.cache_ped_phases();
         self.win_exit.iter_mut().for_each(|x| *x = 0);
         self.next_adapt_t = self.t + self.adapt_interval();
         for l in 0..self.topo.n_links {
@@ -1259,6 +1316,7 @@ impl Simulation {
         self.sig_state.iter_mut().for_each(|x| *x = 0);
         self.sig_since.iter_mut().for_each(|x| *x = 0.0);
         self.sneak.iter_mut().for_each(|x| *x = 0);
+        self.signal_nodes = (0..self.eff.sig.len()).filter(|&n| self.eff.sig[n].is_some()).collect();
         self.update_signals();
     }
 
@@ -1274,8 +1332,8 @@ impl Simulation {
             let (origin, dest, curbs, vplan, rate) = (f.origin, f.dest, f.curbs, f.vplan, f.rate);
             if prev != Some(dest) {
                 // Keep the goal tables for only one destination and its address blocks.
-                self.router.invalidate();
-                self.via_router.invalidate();
+                self.router.clear_tables();
+                self.via_router.clear_tables();
                 prev = Some(dest);
             }
             route.clear();
@@ -1726,10 +1784,23 @@ impl Simulation {
         self.try_spawns();
         self.try_spawn_bikes();
         self.update_peds();
-        self.change_lanes();
-        self.eval_heads();
-        self.compute_accels();
-        self.update_vehicles();
+        // From lane changes through vehicle movement, cars can leave a link but enter
+        // a different one only when update_transit runs. Preserve ordered link visits.
+        let mut occupied = std::mem::take(&mut self.occupied_links);
+        occupied.clear();
+        for l in 0..self.topo.n_links {
+            let base = self.topo.lane_base[l] as usize;
+            if (self.bike_on && !self.lanes[self.topo.n_lanes + l].is_empty())
+                || self.lanes[base..base + self.topo.nlanes(l)].iter().any(|q| !q.is_empty())
+            {
+                occupied.push(l);
+            }
+        }
+        self.change_lanes(&occupied);
+        self.eval_heads(&occupied);
+        self.compute_accels(&occupied);
+        self.update_vehicles(&occupied);
+        self.occupied_links = occupied;
         self.update_transit();
         self.t += DT;
         self.step_n += 1;
@@ -1830,29 +1901,26 @@ impl Simulation {
     }
 
     fn update_signals(&mut self) {
-        for n in 0..self.topo.n_nodes {
-            if let Some(p) = self.eff.sig[n].as_mut() {
-                p.roll(self.t);
-            }
-            if let Some(p) = &self.eff.sig[n] {
-                // An approach in two phases (observed lead-lag) shows the better of the two states.
-                for links in &p.links {
-                    for &l in links {
-                        self.sig_state[l as usize] = 3;
-                        self.sig_since[l as usize] = f32::MAX;
-                    }
+        for &n in &self.signal_nodes {
+            let p = self.eff.sig[n].as_mut().unwrap();
+            p.roll(self.t);
+            let tc = p.cycle_time(self.t);
+            // An approach in two phases (observed lead-lag) shows the better of the two states.
+            for links in &p.links {
+                for &l in links {
+                    self.sig_state[l as usize] = 3;
+                    self.sig_since[l as usize] = f32::MAX;
                 }
-                for (ph, links) in p.links.iter().enumerate() {
-                    let s = phase_state(p, ph, self.t);
-                    let since = phase_since_green(p, ph, self.t);
-                    for &l in links {
-                        if s < self.sig_state[l as usize] || (s == self.sig_state[l as usize] && since < self.sig_since[l as usize]) {
-                            self.sig_state[l as usize] = s;
-                            self.sig_since[l as usize] = since;
-                        }
-                        if s == 1 {
-                            self.sneak[l as usize] = 0;
-                        }
+            }
+            for (ph, links) in p.links.iter().enumerate() {
+                let (s, since) = p.phase_status(ph, tc);
+                for &l in links {
+                    if s < self.sig_state[l as usize] || (s == self.sig_state[l as usize] && since < self.sig_since[l as usize]) {
+                        self.sig_state[l as usize] = s;
+                        self.sig_since[l as usize] = since;
+                    }
+                    if s == 1 {
+                        self.sneak[l as usize] = 0;
                     }
                 }
             }
@@ -1861,10 +1929,22 @@ impl Simulation {
 
     // ------------------------------------------------------------------ demand and spawning
 
+    fn schedule_arrival(&mut self, flow: usize) {
+        let time = self.flows[flow].next_t;
+        if time.is_finite() {
+            self.arrivals.push(Reverse(((time / DT).ceil() as i64, flow)));
+        }
+    }
+
     /// Every event within a step [t, t + DT) is stamped t. A requested arrival becomes eligible to enter at the first step that starts at or
     /// after it, so arrival <= entry <= completion; the trip time counts from the requested arrival, so waiting to enter is included.
     fn generate_arrivals(&mut self) {
-        for fi in 0..self.flows.len() {
+        let step = (self.t / DT) as i64;
+        while let Some(&Reverse((due, fi))) = self.arrivals.peek() {
+            if due > step {
+                break;
+            }
+            self.arrivals.pop();
             while self.flows[fi].next_t <= self.t {
                 let f = &mut self.flows[fi];
                 let t_arr = f.next_t;
@@ -1882,7 +1962,11 @@ impl Simulation {
                     let v0_abs = bike_speed(&mut f.rng);
                     let trip = Trip { curbs: Curbs::default(), v0_abs, uid: self.uid_next, origin: f.origin, dest: f.dest, t_arr, through: false, intent: NO_INTENT, noise_seed: NO_NOISE, drv, vplan: NO_PLAN };
                     self.uid_next += 1;
-                    self.bike_backlog[trip.origin as usize].push_back(trip);
+                    let origin = trip.origin as usize;
+                    if self.bike_backlog[origin].is_empty() {
+                        self.pending_bike_origins.push(origin);
+                    }
+                    self.bike_backlog[origin].push_back(trip);
                     continue;
                 }
                 let drv = Drv::sample(&mut f.rng);
@@ -1905,24 +1989,42 @@ impl Simulation {
                     self.st.resident.request(&trip);
                 }
                 self.trace_request(fi, &trip);
-                self.backlog[trip.origin as usize].push_back(trip);
+                let origin = trip.origin as usize;
+                if self.backlog[origin].is_empty() {
+                    self.pending_origins.push(origin);
+                }
+                self.backlog[origin].push_back(trip);
             }
+            self.schedule_arrival(fi);
         }
     }
 
     /// Room at the start of a lane less the vehicles already crossing the upstream node toward it, each taking its length plus 2 m
     /// (s0 of [Treiber2014]): what a driver choosing among lanes sees. Used to rank lanes only; admission still needs `lane_room_ahead`.
-    fn lane_rank_room(&self, l: u32, lane: usize, horizon: f32, x: Cross) -> f32 {
-        let r = self.lane_room_cross(l, lane, horizon, x);
+    fn lane_rank_room(&self, l: u32, lane: usize, room: f32) -> f32 {
         if self.cfg.junction_recovery == JunctionRecovery::Historical {
-            return r;
+            return room;
         }
         let idx = self.topo.qidx(l as usize, lane);
-        r - self.transit[self.topo.link_from[l as usize] as usize]
+        room - self.transit[self.topo.link_from[l as usize] as usize]
             .iter()
             .filter(|tr| tr.to_link == l && self.topo.qidx(l as usize, tr.lane as usize) == idx)
             .map(|tr| self.vehs[tr.veh as usize].drv.len + 2.0)
             .sum::<f32>()
+    }
+
+    fn best_lane(&self, link: u32, lanes: std::ops::Range<usize>, need: f32, horizon: f32, crossing: Cross) -> Option<usize> {
+        let mut best = None;
+        for lane in lanes {
+            let room = self.lane_room_cross(link, lane, horizon, crossing);
+            if room >= need {
+                let rank = self.lane_rank_room(link, lane, room);
+                if best.map_or(true, |(prior, _)| rank > prior + 1e-4) {
+                    best = Some((rank, lane));
+                }
+            }
+        }
+        best.map(|(_, lane)| lane)
     }
 
     /// `lane_room_ahead` for a vehicle about to cross the upstream node (`x`): a vehicle already crossing toward the lane from another
@@ -2017,8 +2119,7 @@ impl Simulation {
         for &nx in route {
             let m = self.topo.find_mv(cur, nx)?;
             let kind = self.topo.mvs[m as usize].kind;
-            let (ms, mc) = (self.topo.lm_start[cur as usize] as usize, self.topo.lm_cnt[cur as usize] as usize);
-            let choice = self.topo.mvs[ms..ms + mc].iter().filter(|x| x.kind != K_UTURN).count() > 1;
+            let choice = self.topo.has_turn_choice[cur as usize];
             if choice || cur == l && LANE_LOOKAHEAD_M <= 0.0 {
                 return if kind == K_LEFT || kind == K_RIGHT || cur == l { Some(kind) } else { None };
             }
@@ -2038,20 +2139,17 @@ impl Simulation {
         let lu = l as usize;
         let main = self.topo.nmain[lu];
         let need = self.room_need(lu);
-        if let Some(m) = after.and_then(|b| self.topo.find_mv(l, b)) {
+        if main == 1 && !self.topo.pocket[lu] {
+            return (self.lane_room_cross(l, 0, horizon, x) >= need).then_some(0);
+        }
+        let movement = after.and_then(|b| self.topo.find_mv(l, b));
+        if let Some(m) = movement {
             let (lo, hi) = self.topo.fork_band[m as usize];
             if hi != 255 {
-                let mut best: Option<(f32, usize)> = None;
-                for k in lo as usize..(hi as usize).min(main) {
-                    let r = self.lane_rank_room(l, k, horizon, x);
-                    if self.lane_room_cross(l, k, horizon, x) >= need && best.map_or(true, |(br, _)| r > br + 1e-4) {
-                        best = Some((r, k));
-                    }
-                }
-                return best.map(|b| b.1);
+                return self.best_lane(l, lo as usize..(hi as usize).min(main), need, horizon, x);
             }
         }
-        if self.mv_kind(l, after) == Some(K_LEFT) {
+        if movement.is_some_and(|m| self.topo.mvs[m as usize].kind == K_LEFT) {
             if self.pocket_open(lu, need, horizon, x) {
                 return Some(main);
             }
@@ -2073,24 +2171,16 @@ impl Simulation {
                 // number included. With no room there the driver waits and the lanes of the other side stay open for the others.
                 let half = (main + 1) / 2;
                 let (lo, hi) = if kind == Some(K_LEFT) { (0, half) } else { (main - half, main) };
-                let mut best: Option<(f32, usize)> = None;
-                for j in lo..hi {
-                    let r = self.lane_rank_room(l, j, horizon, x);
-                    if self.lane_room_cross(l, j, horizon, x) >= need && best.map_or(true, |(br, _)| r > br + 1e-4) {
-                        best = Some((r, j));
-                    }
-                }
-                return best.map(|b| b.1);
+                return self.best_lane(l, lo..hi, need, horizon, x);
             }
         }
-        let mut best: Option<(f32, usize)> = None;
-        for k in 0..main {
-            let r = self.lane_rank_room(l, k, horizon, x);
-            if self.lane_room_cross(l, k, horizon, x) >= need && best.map_or(true, |(br, _)| r > br + 1e-4) {
-                best = Some((r, k));
-            }
-        }
-        best.map(|b| b.1)
+        self.best_lane(l, 0..main, need, horizon, x)
+    }
+
+    fn receiving_lane(&self, veh: &Veh, link: u32, crossing: Cross) -> Option<usize> {
+        let route = &veh.route[(veh.ridx as usize + 1).min(veh.route.len())..];
+        let hint = if veh.kind == KIND_CAR && self.topo.nmain[link as usize] > 1 { self.lane_hint(link, route) } else { None };
+        self.pick_lane_for(veh.kind, link, hint, route.first().copied(), NODE_CROSS_S, crossing)
     }
 
     /// Kind of the movement from link `from` onto `to`, if the pair exists.
@@ -2152,7 +2242,7 @@ impl Simulation {
             Some(&l) => self.vehs[l as usize].v,
             None => return Some(v0),
         };
-        let root = 2.0 * (drv.a * drv.b).sqrt();
+        let root = drv.braking_denom;
         // Wait until the vehicle can enter at least as fast as its leader, so a slow leader does not make every follower enter slowly.
         let target = v0.min(vl).max(1.0);
         let mut v = v0;
@@ -2268,7 +2358,7 @@ impl Simulation {
         }
         if let Some(&f) = q.get(at) {
             let fo = &self.vehs[f as usize];
-            let need = fo.drv.s0 + fo.v * fo.drv.t_hw + fo.v * fo.v / (2.0 * (fo.drv.a * fo.drv.b).sqrt());
+            let need = fo.drv.s0 + fo.v * fo.drv.t_hw + fo.v * fo.v / fo.drv.braking_denom;
             if pos - drv.len - fo.pos < need {
                 return None;
             }
@@ -2283,7 +2373,9 @@ impl Simulation {
     }
 
     fn try_spawns(&mut self) {
-        for n in 0..self.topo.n_nodes {
+        let mut origins = std::mem::take(&mut self.pending_origins);
+        origins.sort_unstable();
+        for &n in &origins {
             let (mut spawned, mut idx, mut examined) = (0, 0, 0);
             // Blocked (first link, fork branch) pairs: where the first link forks into straight-ahead branches with lanes of their own (`fork_band`),
             // a trip waits only behind trips bound for the same branch (`SPAWN_SCAN`). A planned trip behind a blocked pair is passed over without
@@ -2400,15 +2492,17 @@ impl Simulation {
                 self.trace_enter(self.vehs[id as usize].uid, b);
             }
         }
+        origins.retain(|&n| !self.backlog[n].is_empty());
+        self.pending_origins = origins;
     }
 
     // ------------------------------------------------------------------ node permission
 
-    fn eval_heads(&mut self) {
-        let nl = self.topo.n_links;
+    fn eval_heads(&mut self, occupied: &[usize]) {
+        let nl = occupied.len();
         let rev = self.step_n % 2 == 1;
         for i in 0..nl {
-            let l = if rev { nl - 1 - i } else { i };
+            let l = occupied[if rev { nl - 1 - i } else { i }];
             let nlanes = self.topo.nlanes(l);
             for k in 0..nlanes + self.bike_on as usize {
                 let idx = self.topo.qidx(l, k);
@@ -2538,13 +2632,13 @@ impl Simulation {
             return (false, false, 0);
         }
         let x = Cross { t: self.cross_profile(veh, l, mv, ctrl).2, src: self.topo.qidx(l, veh.lane as usize) as u32 };
-        if self.pick_lane_for(veh.kind, b, self.lane_hint(b, &veh.route[(veh.ridx as usize + 1).min(veh.route.len())..]), veh.route.get(veh.ridx as usize + 1).copied(), NODE_CROSS_S, x).is_none() {
+        if self.receiving_lane(veh, b, x).is_none() {
             return (false, true, 0);
         }
         if self.ped_on && self.ped_block(veh, l as u32, b, ctrl) {
             return (false, false, 0);
         }
-        let (ok, rec) = self.conflict_free(vid, mv, ctrl, rtor);
+        let (ok, rec) = self.conflict_free(vid, mv, ctrl, rtor, x.t);
         (ok, false, rec)
     }
 
@@ -2666,10 +2760,9 @@ impl Simulation {
     }
 
     /// Does any vehicle in the node block movement `mv` of vehicle `veh` (`transit_blocks`)?
-    fn node_occupied(&self, veh: &Veh, mv: u32, ctrl: Control) -> bool {
+    fn node_occupied(&self, mv: u32, ctrl: Control, t_mine: f32) -> bool {
         let node = self.topo.mvs[mv as usize].node as usize;
         let circle = ctrl == Control::TrafficCircle && !self.eff.ring_node[node];
-        let t_mine = self.cross_profile(veh, veh.link as usize, mv, ctrl).2;
         self.transit[node].iter().any(|tr| self.transit_blocks(mv, tr, circle, t_mine))
     }
 
@@ -2677,12 +2770,12 @@ impl Simulation {
     /// A reason (`REC_*`) is invoked when its wait threshold is reached and the ordinary rule refuses entry; when the result is true the
     /// entry depends on it. Courtesy and the yield fallback change priority only. Physical exclusion (`node_occupied`) holds whatever the
     /// wait, except under `JunctionRecovery::Historical`, which skips it after `CONFLICT_FALLBACK_S`.
-    fn conflict_free(&self, vid: u32, mv: u32, ctrl: Control, rtor: bool) -> (bool, u8) {
+    fn conflict_free(&self, vid: u32, mv: u32, ctrl: Control, rtor: bool, crossing_time: f32) -> (bool, u8) {
         let veh = &self.vehs[vid as usize];
         let node = self.topo.mvs[mv as usize].node as usize;
         let policy = self.cfg.junction_recovery;
         let mut rec = 0u8;
-        if self.node_occupied(veh, mv, ctrl) {
+        if self.node_occupied(mv, ctrl, crossing_time) {
             if veh.wait_t < CONFLICT_FALLBACK_S {
                 return (false, 0);
             }
@@ -2718,7 +2811,6 @@ impl Simulation {
     fn priority_free(&self, vid: u32, mv: u32, ctrl: Control, rtor: bool, courtesy: bool) -> (bool, bool) {
         let veh = &self.vehs[vid as usize];
         let node = self.topo.mvs[mv as usize].node as usize;
-        let l = veh.link;
         if ctrl == Control::AllWayStop {
             for &w in &self.awsc[node] {
                 if w == vid {
@@ -2735,10 +2827,13 @@ impl Simulation {
             }
             return (true, false);
         }
+        // Turning on red yields to all conflicting approaches. For ordinary movements only
+        // inspect approaches that can have priority under this node's effective control.
+        let approaches = if rtor { &self.topo.ins[node] } else { &self.yield_approaches[mv as usize] };
         let mut used = false;
         let tc = if rtor { TC_MINOR_RIGHT * veh.drv.gap_f } else { self.critical_gap(mv, ctrl, veh.drv.gap_f) };
-        for &e in &self.topo.ins[node] {
-            if e == l {
+        for &e in approaches {
+            if e == veh.link {
                 continue;
             }
             if ctrl == Control::Signal && self.sig_state[e as usize] == 3 {
@@ -2779,37 +2874,39 @@ impl Simulation {
 
     // ------------------------------------------------------------------ dynamics
 
-    fn compute_accels(&mut self) {
-        let any_modes = self.bike_on || self.ped_on;
+    fn compute_accels(&mut self, occupied: &[usize]) {
         let lane_w = self.cfg.lane_width_m.unwrap_or(LANE_WIDTH_M) as f32;
         let Simulation { lanes, vehs, eff, topo, st, net, world, vuln, ped_on, bike_on, .. } = self;
         let mut ttc_new = 0u64;
-        for l in 0..topo.n_links {
+        for &l in occupied {
             let nlanes = topo.nlanes(l);
             let stop_pos = topo.stop_pos[l];
             let limit = eff.limit[l];
             let humps = &eff.humps[l];
             let res = topo.is_res_study[l];
+            let has_bikes = *bike_on && !lanes[topo.n_lanes + l].is_empty();
+            let has_crossing = *ped_on && world.mid[l].iter().any(|&(_, id)| {
+                let crossing = &world.xws[id as usize];
+                crossing.waiting != 0 || crossing.crossing != 0
+            });
             for k in 0..nlanes + *bike_on as usize {
                 let q = &lanes[topo.qidx(l, k)];
+                let mut leader = (f32::INFINITY, 0.0, NONE_UID);
                 for (i, &vid) in q.iter().enumerate() {
-                    let (lead_s, lead_v, lead_uid) = if i > 0 {
-                        let ld = &vehs[q[i - 1] as usize];
-                        (ld.pos - ld.drv.len, ld.v, ld.uid)
+                    let (lead_s, lead_v, lead_uid) = leader;
+                    let ex = if has_bikes || has_crossing {
+                        Ctx { topo, eff, net, lanes, vehs, world, ped_on: has_crossing, bike_on: has_bikes, lane_w }.extras(vid, l, k)
                     } else {
-                        (f32::INFINITY, 0.0, NONE_UID)
-                    };
-                    let ex = if any_modes {
-                        Ctx { topo, eff, net, lanes, vehs, world, ped_on: *ped_on, bike_on: *bike_on, lane_w }.extras(vid, l, k)
-                    } else {
-                        Extra::default()
+                        Extra { end_pass: vehs[vid as usize].passing != NONE_UID, ..Extra::default() }
                     };
                     let veh = &mut vehs[vid as usize];
                     if veh.frozen {
                         veh.acc = 0.0;
                         veh.v = 0.0;
+                        leader = (veh.pos - veh.drv.len, 0.0, veh.uid);
                         continue;
                     }
+                    leader = (veh.pos - veh.drv.len, veh.v, veh.uid);
                     if ex.ped_held {
                         veh.ped_held = true;
                     }
@@ -2890,12 +2987,12 @@ impl Simulation {
                             veh.ttc_leader = NONE_UID;
                         }
                     }
-                    let mut acc = idm(veh.v, v0, s, veh.v - vl, d.a, d.b, d.t_hw, d.s0).min(a_req);
+                    let mut acc = idm(veh.v, v0, s, veh.v - vl, d).min(a_req);
                     if let Some(so) = ex.obstacle {
-                        acc = acc.min(idm(veh.v, v0, so, veh.v, d.a, d.b, d.t_hw, d.s0));
+                        acc = acc.min(idm(veh.v, v0, so, veh.v, d));
                     }
                     if let Some((gs, vb)) = ex.bike_lead {
-                        acc = acc.min(idm(veh.v, v0, gs, veh.v - vb, d.a, d.b, d.t_hw, d.s0));
+                        acc = acc.min(idm(veh.v, v0, gs, veh.v - vb, d));
                     }
                     veh.acc = acc.max(-B_MAX);
                 }
@@ -2904,14 +3001,15 @@ impl Simulation {
         st.ttc += ttc_new;
     }
 
-    fn update_vehicles(&mut self) {
-        let nl = self.topo.n_links;
+    fn update_vehicles(&mut self, occupied: &[usize]) {
+        let nl = occupied.len();
         let rev = self.step_n % 2 == 0;
         let dt = DT as f32;
         for i in 0..nl {
-            let l = if rev { nl - 1 - i } else { i };
+            let l = occupied[if rev { nl - 1 - i } else { i }];
             let nlanes = self.topo.nlanes(l);
             let stop_pos = self.topo.stop_pos[l];
+            let has_midblock_crosswalk = self.ped_on && !self.world.mid[l].is_empty();
             for k in 0..nlanes + self.bike_on as usize {
                 let qi = self.topo.qidx(l, k);
                 let mut leader: Option<(f32, f32, f32)> = None; // pos, len, v
@@ -2951,7 +3049,7 @@ impl Simulation {
                     {
                         // A trip whose destination is local leaves the road along its last block.
                         let veh = &self.vehs[vid as usize];
-                        if veh.kind == KIND_CAR && veh.next().is_none() && veh.end_link == Some(l as u32) && x >= veh.end_pos {
+                        if veh.end_link == Some(l as u32) && x >= veh.end_pos && veh.kind == KIND_CAR && veh.next().is_none() {
                             let ex = veh.end_pos;
                             let (d, w) = part(ex);
                             self.account_motion(vid, l, d, v, w);
@@ -2963,13 +3061,9 @@ impl Simulation {
                         }
                     }
                     if idx == 0 {
-                        let (go, nxt) = {
-                            let veh = &self.vehs[vid as usize];
-                            (veh.go, veh.next())
-                        };
-                        if go && x >= stop_pos - 0.3 {
+                        if self.vehs[vid as usize].go && x >= stop_pos - 0.3 {
                             let (d, w) = part(stop_pos);
-                            if nxt.is_none() {
+                            if self.vehs[vid as usize].next().is_none() {
                                 self.account_motion(vid, l, d, v, w);
                                 self.vehs[vid as usize].pos = x;
                                 self.vehs[vid as usize].v = v;
@@ -3003,7 +3097,7 @@ impl Simulation {
                             veh.queued = true;
                         }
                     }
-                    if self.ped_on && !self.world.mid[l].is_empty() {
+                    if has_midblock_crosswalk {
                         self.mid_block_passes(vid, l, x0, x, v);
                     }
                     self.account_motion(vid, l, dist, v, DT);
@@ -3227,24 +3321,22 @@ impl Simulation {
         let node = self.topo.link_to[l] as usize;
         let ctrl = self.eff.ctrl[node];
         let mut rec = veh.go_rec;
-        if self.node_occupied(veh, mv, ctrl) {
+        let (m_len, v_exit, t_total) = self.cross_profile(veh, l, mv, ctrl);
+        if self.node_occupied(mv, ctrl, t_total) {
             if veh.wait_t < CONFLICT_FALLBACK_S || self.cfg.junction_recovery != JunctionRecovery::Historical {
                 return false;
             }
             rec |= REC_BYPASS;
         }
         let wait = veh.wait_t;
-        let after = veh.route.get(veh.ridx as usize + 1).copied();
-        let hint = self.lane_hint(b, &veh.route[(veh.ridx as usize + 1).min(veh.route.len())..]);
-        let x = Cross { t: self.cross_profile(veh, l, mv, ctrl).2, src: qi as u32 };
-        let Some(lane) = self.pick_lane_for(kind, b, hint, after, NODE_CROSS_S, x) else { return false };
+        let x = Cross { t: t_total, src: qi as u32 };
+        let Some(lane) = self.receiving_lane(veh, b, x) else { return false };
         if ctrl == Control::Signal && self.sig_state[l] >= 2 && self.topo.mvs[mv as usize].kind == K_LEFT {
             self.sneak[l] = self.sneak[l].saturating_add(1);
         }
         if ctrl == Control::Signal && self.sig_state[l] == 3 {
             self.st.red_entries += 1;
         }
-        let (m_len, v_exit, t_total) = self.cross_profile(veh, l, mv, ctrl);
         let (v, fcomp) = (veh.v, veh.drv.fcomp);
         let veh_t_enter = veh.t_enter;
         let mid_started = veh.mid_start;
@@ -3469,6 +3561,10 @@ impl Simulation {
     /// after `l`). A driver routes on its own perceived costs, drawn once for the trip (`route::Perceived`, [DaganzoSheffi1977], [Sheffi1985]);
     /// without perception error (`NO_NOISE`, or dispersion 0) it walks the router's cost-to-go table. `first_ok` filters the first link.
     fn plan(&mut self, start: Start, goal: Goal, seed: u32, first_ok: Option<&dyn Fn(u32) -> bool>, out: &mut Vec<u32>) -> bool {
+        self.plan_below(start, goal, seed, first_ok, INF, out)
+    }
+
+    fn plan_below(&mut self, start: Start, goal: Goal, seed: u32, first_ok: Option<&dyn Fn(u32) -> bool>, limit: f32, out: &mut Vec<u32>) -> bool {
         let beta = self.dispersion();
         if (seed == NO_NOISE || beta <= 0.0) && first_ok.is_none() {
             let table: &[f32] = match goal {
@@ -3499,7 +3595,7 @@ impl Simulation {
             Start::Link(l) => route::From::Link(l),
         };
         let any = |_: u32| true;
-        self.perceived.search(&self.topo, self.eff.car_modal(), &self.link_cost, beta, seed, from, goal, first_ok.unwrap_or(&any), out).is_some()
+        self.perceived.search_cached(&self.topo, self.eff.car_modal(), &self.link_cost, beta, seed, from, goal, first_ok.unwrap_or(&any), limit, out).is_some()
     }
 
     /// Cheapest cost-to-go over the first steps from `start` (the first link out of a node, or the movements out of a link) in cost table `tab`.
@@ -3683,18 +3779,18 @@ impl Simulation {
             }
         }
         if !ok {
-            ok = self.remaining_path(vid, dest, self.vehs[vid as usize].end_pos, seed, None, &mut route);
+            ok = self.remaining_path(vid, dest, self.vehs[vid as usize].end_pos, seed, None, INF, &mut route);
         }
         if !ok {
             route.clear();
-            ok = self.remaining_path(vid, dest, self.vehs[vid as usize].end_pos, NO_NOISE, None, &mut route);
+            ok = self.remaining_path(vid, dest, self.vehs[vid as usize].end_pos, NO_NOISE, None, INF, &mut route);
         }
         if !ok {
             if let Goal::Link(old) = dest {
                 if let Some(rev) = self.net.links[old as usize].reverse.filter(|&r| !self.eff.closed[r as usize]) {
                     route.clear();
                     let end = (1.0 - self.vehs[vid as usize].end_pos / self.topo.length[old as usize]) * self.topo.length[rev as usize];
-                    ok = self.remaining_path(vid, Goal::Link(rev), end, seed, None, &mut route);
+                    ok = self.remaining_path(vid, Goal::Link(rev), end, seed, None, INF, &mut route);
                     if ok {
                         let veh = &mut self.vehs[vid as usize];
                         veh.end_pos = end;
@@ -3749,7 +3845,7 @@ impl Simulation {
         route.clear();
         // A way out that comes back to the blocked junction, or to a junction the car has driven through, only circles; the car keeps waiting.
         let here = self.topo.link_to[l as usize];
-        if !self.remaining_path(vid, dest, self.vehs[vid as usize].end_pos, seed, Some(&first_ok), &mut route) || route.iter().any(|&x| self.topo.link_to[x as usize] == here || driven.contains(&self.topo.link_to[x as usize])) {
+        if !self.remaining_path(vid, dest, self.vehs[vid as usize].end_pos, seed, Some(&first_ok), INF, &mut route) || route.iter().any(|&x| self.topo.link_to[x as usize] == here || driven.contains(&self.topo.link_to[x as usize])) {
             self.scratch = route;
             return;
         }
@@ -3853,6 +3949,7 @@ impl Simulation {
     /// link look slow to drivers going straight on (and a free left look fast behind a through queue). Each movement's cost takes the
     /// difference between the time of the vehicles that made that movement and the time of the link as a whole, where it was measured.
     pub(crate) fn apply_mv_times(&mut self) {
+        self.perceived.invalidate();
         for m in 0..self.mv_ema.len() {
             let a = self.topo.mvs[m].a as usize;
             let extra = if self.mv_ema[m] > 0.0 { self.mv_ema[m].max(self.eff.ff[a]) - self.link_cost[a] } else { 0.0 };
@@ -3908,10 +4005,17 @@ impl Simulation {
         if switches >= MAX_SWITCHES || self.t - last < MIN_SWITCH_GAP_S || (self.vehs[vid as usize].ridx as usize) >= route_len || self.vehs[vid as usize].via.is_some() {
             return;
         }
+        let v = &self.vehs[vid as usize];
+        let cur_cost = self.path_cost(v.link, &v.route[v.ridx as usize..], seed);
+        let band = self.cfg.switch_band.map_or(SWITCH_BAND, |b| b.max(0.0) as f32);
+        let required_gain = (band * (cur_cost - (self.t - v.t_enter) as f32).max(0.0)).max(SWITCH_MIN_GAIN_S);
+        // No route with a higher perceived cost can meet this driver's switching threshold.
+        let limit = if cur_cost.is_finite() { cur_cost - required_gain } else { INF };
+        if limit <= 0.0 { return; }
         let mut alt = std::mem::take(&mut self.scratch);
         alt.clear();
-        let ok = self.remaining_path(vid, dest, self.vehs[vid as usize].end_pos, seed, None, &mut alt);
-        let switch = ok && self.accept_switch(vid, &alt);
+        let ok = self.remaining_path(vid, dest, self.vehs[vid as usize].end_pos, seed, None, limit, &mut alt);
+        let switch = ok && self.accept_switch(vid, &alt, cur_cost, required_gain);
         if switch {
             let veh = &mut self.vehs[vid as usize];
             let mut old = std::mem::replace(&mut veh.route, alt);
@@ -3925,17 +4029,14 @@ impl Simulation {
         }
     }
 
-    fn accept_switch(&mut self, vid: u32, alt: &[u32]) -> bool {
+    fn accept_switch(&mut self, vid: u32, alt: &[u32], cur_cost: f32, required_gain: f32) -> bool {
         let v = &self.vehs[vid as usize];
         let cur = &v.route[(v.ridx as usize).min(v.route.len())..];
         if cur == alt {
             return false;
         }
-        let cur_cost = self.path_cost(v.link, cur, v.noise_seed);
         let alt_cost = self.path_cost(v.link, alt, v.noise_seed);
-        let band = self.cfg.switch_band.map_or(SWITCH_BAND, |b| b.max(0.0) as f32);
-        let remaining_cost = (cur_cost - (self.t - v.t_enter) as f32).max(0.0);
-        if !alt_cost.is_finite() || (cur_cost.is_finite() && cur_cost - alt_cost <= (band * remaining_cost).max(SWITCH_MIN_GAIN_S)) {
+        if !alt_cost.is_finite() || (cur_cost.is_finite() && cur_cost - alt_cost <= required_gain) {
             return false;
         }
         // No backtracking: no node of the alternative may already be on this trip.
@@ -4203,6 +4304,7 @@ impl Simulation {
     pub(crate) fn test_set_ema(&mut self, link: usize, v: f32) {
         self.ema[link] = v;
         self.link_cost[link] = self.eff.ff[link].max(v);
+        self.perceived.invalidate();
         self.router.invalidate();
         self.spawn_cache.clear();
     }
@@ -4272,6 +4374,7 @@ impl Simulation {
         self.ped_on = true;
         self.world = PedWorld::build(&self.net, &self.topo);
         self.set_yield_probabilities();
+        self.cache_ped_phases();
     }
 
     /// (node, leg index, crossing, waiting, width) per crosswalk.
