@@ -1,0 +1,19 @@
+Redistribution files: route paths (links) that differ from the published files. Every other field (counts, shares, street labels, receiving streets) is identical in all 8 files.
+
+| File | Item (closure) | Route (street label) | Cars/h | Published first/last link | New first/last link |
+| --- | --- | --- | --- | --- | --- |
+| p1 | 2 Diagonal diverter at 62nd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 62nd Street (east), and Hillegass Avenue (south) with 62nd Street (west) | Claremont Avenue | 19 | 2750 .. 2797 (6) | 2796 .. 2751 (6) |
+| p1 | 2 Diagonal diverter at 62nd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 62nd Street (east), and Hillegass Avenue (south) with 62nd Street (west) | Alcatraz Avenue → Dana Street → 63rd Street → Canning Street → 61st Street → Hillegass Avenue → Claremont Avenue | 13.9 | 4189 .. 2751 (13) | 4189 .. 2751 (13) |
+| p1 | 4 Modal filter at Ayala Avenue & Martin Street | Telegraph Avenue | 41 | 1975 .. 1606 (9) | 1605 .. 1976 (9) |
+| p1 | 4 Modal filter at Ayala Avenue & Martin Street | 58th Street → Telegraph Avenue | 4.8 | 1878 .. 1606 (5) | 1880 .. 1976 (7) |
+| p1 | 5 Modal filter on Forest Street at Ayala Avenue | Forest Street → Claremont Avenue | 3.6 | 2728 .. 2754 (5) | 2728 .. 2022 (6) |
+| p1 | 5 Modal filter on Forest Street at Ayala Avenue | Claremont Avenue | 3.4 | 2021 .. 2754 (6) | 2755 .. 2022 (7) |
+| p3 | 1 Modal filter at 63rd Street & Hillegass Avenue | Claremont Avenue | 20.2 | 2796 .. 2753 (5) | 2752 .. 2797 (5) |
+| p3 | 2 Diagonal diverter at 62nd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 62nd Street (east), and Hillegass Avenue (south) with 62nd Street (west) | Claremont Avenue | 17.8 | 2796 .. 2751 (6) | 2750 .. 2797 (6) |
+| p3 | 2 Diagonal diverter at 62nd Street & Hillegass Avenue, connecting Hillegass Avenue (north) with 62nd Street (east), and Hillegass Avenue (south) with 62nd Street (west) | Alcatraz Avenue → Dana Street → 63rd Street → Canning Street → 61st Street → Hillegass Avenue → Claremont Avenue | 11.3 | 4189 .. 2751 (13) | 4189 .. 2751 (13) |
+
+Cause: tools/precompute-redistribution.ts:120 keeps, for each street label, the first route sample it receives (if (!a.samples.has(x)) a.samples.set(x, l)), and the seeds run in a worker pool, so the sample comes from whichever seed finishes first. A faster simulator changes that order.
+Check on the new binary, p1 only (npm run data:redistribution -- --only p1 --force):
+- --jobs 8, second run: identical to the first --jobs 8 run (all fields; computed timestamp aside). Same links: 24 of 24 routes.
+- --jobs 1 (seeds in order): same links as the --jobs 8 run for 18 of 24 routes; same links as the published file for 18 of 24 routes. Non-link fields identical to the published file: true.
+So the drawn path of a route depends on how the seeds are scheduled, not on the simulator. The p1 file in public/data is the first --jobs 8 run (put back after the check).
