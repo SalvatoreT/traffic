@@ -94,3 +94,57 @@ The membership loop SHALL parse the `End along` lines of every build, print and 
 #### Scenario: Static run
 - **WHEN** a line says `static`
 - **THEN** the loop logs a warning naming the run
+
+### Requirement: A second switch seeds the pairs that end along a street
+`countFit.endAlong` SHALL accept an optional boolean `seedPairs`; a non-boolean SHALL stop the build with an error naming the key. Absent or false, the build SHALL be the end-along build without seeding. With it true, a shipped build SHALL seed each period that has block pairs before the fit.
+
+#### Scenario: Switch absent
+- **WHEN** `seedPairs` is absent
+- **THEN** the seed table and the demand are those of the end-along build without seeding
+
+### Requirement: Seeding adds the missing end-along pairs
+For each end-along run whose static-route end-along flow in the seed table is below its target, seeding SHALL add pairs from origins to the run's interior nodes until the run starts at its target. The proportions are ASSUMPTIONS; the targets are DATA.
+
+#### Scenario: Shortfall
+- **WHEN** a run's seed end-along flow is 40 and its target 70
+- **THEN** after seeding its static-route end-along flow is 70, unless the cap binds, and the report gives the capped volume
+
+#### Scenario: Target already met
+- **WHEN** the seed end-along flow is at or above the target
+- **THEN** the run adds nothing and the table is unchanged
+
+### Requirement: Seeding chooses origins and destinations by fixed proportions
+Origins SHALL be weighted by their flow on the run's first block (the pair's membership on the run, limited by its static first-block share) and destinations by their existing volume. A pair whose static routes enter by the first block less than half of the time SHALL be dropped and the weights renormalized.
+
+#### Scenario: Pair by another street
+- **WHEN** a candidate pair's static routes use the run's first block in under half of the draws
+- **THEN** the pair is dropped
+
+### Requirement: Seeding keeps every node's destination total
+The added volume SHALL be taken from the other inbound pairs of the same node, pro rata and at most 80% of them (ASSUMPTION), so each node's destination total is unchanged. Where the node has less to give, the addition SHALL be capped and the report SHALL give the capped volume.
+
+#### Scenario: Conservation
+- **WHEN** seeding adds pairs ending at a node
+- **THEN** the node's destination total before and after seeding is equal
+
+#### Scenario: Cap
+- **WHEN** the volume to add at a node exceeds 80% of its other inbound volume
+- **THEN** the addition is cut to 80% and the difference is reported as capped
+
+### Requirement: Seeded pairs keep static membership until a simulated run contains them
+A pair that seeding added and that no simulated run of the pooled file contains SHALL take the static route share in every membership of the fit. The training view SHALL NOT seed.
+
+#### Scenario: New pair
+- **WHEN** a seeded pair is absent from the pooled trips
+- **THEN** its membership on the run is its static share, not a simulated zero
+
+#### Scenario: Training view
+- **WHEN** the training view builds
+- **THEN** no run is seeded and its periods equal those of the build without the end-along switches
+
+### Requirement: The report and the loop state what seeding did
+With `seedPairs` true the fit report SHALL give a section "End-along seeding" with, per period and run, the target, the seed flow before, the added and capped volume, the flow after, the fit's offered and final figures, and the destination totals of the interior nodes before and after, in lines `End along seed <period> <run>: ...`. The loop SHALL stop with an error naming the period when a shipped build from pass 1 has no such line.
+
+#### Scenario: Missing seed line
+- **WHEN** a shipped build from pass 1 has no `End along seed` line for a period although `seedPairs` is on
+- **THEN** the loop stops with an error naming the period

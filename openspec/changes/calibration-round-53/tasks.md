@@ -9,6 +9,9 @@
 - [x] 1.7 Switch absent: shipped and cross-validation demand reproduce with the published membership files
 - [x] 1.8 Candidate entry, no membership file: periods identical to a static build of the committed config
 - [x] 1.9 Candidate entry with the published membership files hand-stamped (scratch copy): end-along figures, Colby Street SB whole-street and block values, trip ends at the interior nodes, offered demand
+- [x] 1.9a Diagnose why the seed table has almost no pairs ending along the southbound runs (design.md, Diagnosis)
+- [x] 1.9b Seeding behind `countFit.endAlong.seedPairs` (`tools/lib/end-along-seed.ts`, `tools/lib/demand-fit.ts`, `tools/build-demand.ts`), report section and loop check, tests (`tools/end-along-seed.test.ts`)
+- [x] 1.9c Container checks again with seeding: published hashes, no-membership identity, hand-stamped wiring check, training view against the published cross-validation demand
 - [x] 1.10 Write the keep rule, the screen, the confirmation rule and the improvement test (design D5) before any run
 - [x] 1.11 Write `runbook.md` and the scripts (`confirm.zsh`, `confirm.cjs`, `restore.zsh`, `sod.zsh`, `route-lines.cjs`, `end-along-lines.cjs`, `end-along-sim.cjs`, `node-ends.cjs`)
 
