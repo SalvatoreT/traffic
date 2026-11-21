@@ -27,10 +27,10 @@
 - [x] 3.1 Keep-rule table, confirmation table and the verdict (design D4)
 - [x] 3.2 Record entry in `data/calibration/rockridge.record.md`
 - [x] 3.3 Adoption decision (the project lead, 2026-11-20: adopt and publish; design.md)
-- [ ] 3.4 Validate the change and archive
+- [x] 3.4 Validate the change and archive
 
 ## 4. Adoption (design.md, Adoption steps)
 
 - [x] 4.1 Branch `adopt-round-52`: config, fit reports, membership sync, status text, proposals
-- [ ] 4.2 Laptop: publish assessment, validation, redistribution, results, assumptions, text pages, previews
-- [ ] 4.3 Cloud: merge, data push, record entry for the publish
+- [x] 4.2 Laptop: publish assessment, validation, redistribution, results, assumptions, text pages, previews
+- [x] 4.3 Cloud: merge, data push, record entry for the publish

@@ -52,6 +52,21 @@ pub struct SigNext {
 }
 
 impl SigPlan {
+    pub(crate) fn cycle_time(&self, t: f64) -> f32 {
+        (t - self.t0).rem_euclid(self.cycle as f64) as f32
+    }
+
+    /// (Signal state, seconds since green ended) at an already computed point in the cycle.
+    pub(crate) fn phase_status(&self, phase: usize, tc: f32) -> (u8, f32) {
+        if self.always_green {
+            return (1, 0.0);
+        }
+        let (start, g) = self.phases[phase];
+        let rel = (tc - start).rem_euclid(self.cycle);
+        let state = if rel < g { 1 } else if rel < g + YELLOW { 2 } else { 3 };
+        (state, (rel - g).max(0.0))
+    }
+
     /// Switch to the pending plan once its start time has come.
     pub fn roll(&mut self, t: f64) {
         if self.next.as_ref().map_or(false, |n| t >= n.t0) {
@@ -918,19 +933,7 @@ fn plan_with_observation(net: &Network, period: &str, n: usize, groups: &[Vec<u3
 
 /// Signal state code (1 green, 2 yellow, 3 red) of a phase at time `t`.
 pub fn phase_state(p: &SigPlan, phase: usize, t: f64) -> u8 {
-    if p.always_green {
-        return 1;
-    }
-    let tc = (t - p.t0).rem_euclid(p.cycle as f64) as f32;
-    let (start, g) = p.phases[phase];
-    let rel = (tc - start).rem_euclid(p.cycle);
-    if rel < g {
-        1
-    } else if rel < g + YELLOW {
-        2
-    } else {
-        3
-    }
+    p.phase_status(phase, p.cycle_time(t)).0
 }
 
 /// Route-choice weight of a link class: residential and service streets are perceived as `local_factor` times
@@ -951,10 +954,5 @@ impl Eff {
 
 /// Seconds since the green of a phase ended (0 during green).
 pub fn phase_since_green(p: &SigPlan, phase: usize, t: f64) -> f32 {
-    if p.always_green {
-        return 0.0;
-    }
-    let tc = (t - p.t0).rem_euclid(p.cycle as f64) as f32;
-    let (start, g) = p.phases[phase];
-    ((tc - start).rem_euclid(p.cycle) - g).max(0.0)
+    p.phase_status(phase, p.cycle_time(t)).1
 }

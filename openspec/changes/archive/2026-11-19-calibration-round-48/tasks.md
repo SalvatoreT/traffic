@@ -19,7 +19,7 @@
 - [x] 2.4 Screen the final demand on seeds 1 to 3
 - [x] 2.5 Validation suite and ten-seed assessment if the screen passes
 - [ ] 2.6 Optional: the loop again with the prior worth 20 trips (step H, not run)
-- [x] 2.7 Commit the evidence under `evidence/` (laptop commits 6a50e3e and 71af51a, now on main)
+- [x] 2.7 Commit the evidence under `evidence/` (laptop commits 534e31d and 71ce359, now on main)
 
 ## 3. Verdict (lead)
 

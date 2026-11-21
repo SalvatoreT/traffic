@@ -28,7 +28,7 @@ Both runs used `tools/assess.ts` in verdict mode for a non-published set: `--suf
   - Membership `74a88c864d406903` and `7d0fdb063236304d`.
   - Stations file identical to the baseline's.
   - Ran 8:32 to 8:35 PM PST, exit 0.
-- **Simulator:** fingerprint `d45a275dd7be0713cec6a64394b7d8a9`, code at `90e655b`.
+- **Simulator:** fingerprint `d45a275dd7be0713cec6a64394b7d8a9`, code at `2557fc9`.
 - **Seed reports:** `target/assess-seeds/60r51-confirm-base(-cv)` and `60r51-confirm(-cv)` on the laptop.
 - **Restore:** finished at 8:44 PM PST, exit 0. Afterwards the hashes were `53c823f20d9165ed 9cdebdabf05c4460 2f9ae152b9bbf78e`, the config was `505dd0f032fc7ae8`, and the status was clean.
 

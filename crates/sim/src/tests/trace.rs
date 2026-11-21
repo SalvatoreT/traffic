@@ -28,6 +28,32 @@ fn summary(s: &Simulation) -> serde_json::Value {
 }
 
 #[test]
+fn arrivals_due_in_the_same_step_keep_flow_order() {
+    let (net, c) = corridor(13.4, Control::AllWayStop);
+    let demand = demand(&[(c.a[0], c.a[3], 18_000.0), (c.a[3], c.a[0], 18_000.0)]);
+    let config = Config { trace: true, ..cfg_empty(3, 1.0) };
+    let mut sim = Simulation::from_parts(net, demand, config).unwrap();
+    sim.step(8.0);
+    let requests = sim.trace_requests();
+    let mut previous = None;
+    let mut crossed_in_time = false;
+    let mut repeated_flow = false;
+    for request in requests.chunks_exact(REQ_STRIDE) {
+        let (flow, time) = (request[0] as usize, request[6]);
+        let step = (time / DT).ceil() as i64;
+        if let Some((last_step, last_flow, last_time)) = previous {
+            assert!((step, flow) >= (last_step, last_flow));
+            if step == last_step {
+                crossed_in_time |= time < last_time;
+                repeated_flow |= flow == last_flow;
+            }
+        }
+        previous = Some((step, flow, time));
+    }
+    assert!(crossed_in_time && repeated_flow);
+}
+
+#[test]
 fn tracing_changes_nothing_a_run_computes() {
     for ivs in ["[]".to_string(), closure()] {
         let (a, b) = (traced(false, None, &ivs, 1200.0), traced(true, None, &ivs, 1200.0));

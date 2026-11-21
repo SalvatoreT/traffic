@@ -55,6 +55,10 @@ pub struct Topo {
     /// Movements of link `a` are `lm_start[a] .. lm_start[a] + lm_cnt[a]`.
     pub lm_start: Vec<u32>,
     pub lm_cnt: Vec<u32>,
+    /// Position of each outgoing link in its origin's movement rows.
+    out_index: Vec<u32>,
+    /// More than one non-U-turn movement leaves the end of this link.
+    pub has_turn_choice: Vec<bool>,
     /// Movements of node `n` are `mbase[n] .. mbase[n] + mcount[n]`.
     pub mbase: Vec<u32>,
     pub mcount: Vec<u32>,
@@ -124,7 +128,9 @@ impl Topo {
         }
         let mut ins = vec![Vec::new(); n_nodes];
         let mut outs = vec![Vec::new(); n_nodes];
+        let mut out_index = vec![0; n_links];
         for l in &net.links {
+            out_index[l.id as usize] = outs[l.from as usize].len() as u32;
             outs[l.from as usize].push(l.id);
             ins[l.to as usize].push(l.id);
         }
@@ -149,6 +155,8 @@ impl Topo {
             mvs: Vec::new(),
             lm_start: vec![0; n_links],
             lm_cnt: vec![0; n_links],
+            out_index,
+            has_turn_choice: vec![false; n_links],
             mbase: vec![0; n_nodes],
             mcount: vec![0; n_nodes],
             cbase: vec![0; n_nodes],
@@ -331,7 +339,9 @@ impl Topo {
                     self.preds[b as usize].push(self.mvs.len() as u32);
                     self.mvs.push(Mv { a, b, node: n as u32, kind, p0: pa, x, p1: pb, len: len as f32, h_in: h_arrive, h_out: h_leave });
                 }
-                self.lm_cnt[a as usize] = self.mvs.len() as u32 - self.lm_start[a as usize];
+                let start = self.lm_start[a as usize];
+                self.lm_cnt[a as usize] = self.mvs.len() as u32 - start;
+                self.has_turn_choice[a as usize] = self.mvs[start as usize..].iter().filter(|m| m.kind != K_UTURN).nth(1).is_some();
             }
             self.mcount[n] = self.mvs.len() as u32 - self.mbase[n];
         }
@@ -385,9 +395,12 @@ impl Topo {
         }
     }
 
+    #[inline]
     pub fn find_mv(&self, a: u32, b: u32) -> Option<u32> {
-        let s = self.lm_start[a as usize];
-        (s..s + self.lm_cnt[a as usize]).find(|&m| self.mvs[m as usize].b == b)
+        if self.link_to[a as usize] != *self.link_from.get(b as usize)? {
+            return None;
+        }
+        Some(self.lm_start[a as usize] + self.out_index[b as usize])
     }
 
     /// Does movement `i` (global index) conflict with in-node movement `j`? `circle` selects the

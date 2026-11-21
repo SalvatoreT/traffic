@@ -9,7 +9,7 @@
 use super::*;
 use crate::topo::bearing_heading;
 use std::cmp::Reverse;
-use std::collections::BinaryHeap;
+use std::collections::{BTreeMap, BinaryHeap};
 
 pub(super) const NONE_XW: u32 = u32::MAX;
 
@@ -35,6 +35,7 @@ pub(super) struct Xw {
     pub out_links: Vec<u32>,
     pub crossing: u32,
     completed_crossings: u64,
+    walk_phase: Option<usize>,
     pub waiting: u32,
     pub last_clear_t: f64,
     pub last_pass_t: f64,
@@ -124,7 +125,10 @@ pub(super) struct PedWorld {
     adj: Vec<Vec<Edge>>,
     node_edges: Vec<NodeEdge>,
     node_states: Vec<Vec<u32>>,
-    cache: Vec<(u32, Vec<f32>)>,
+    // Walking distances depend only on the sidewalk graph. Keep paths for the configured demand,
+    // and discard the graph-sized distance table after routing the origins for one destination.
+    origins_by_dest: BTreeMap<u32, Vec<u32>>,
+    routes: BTreeMap<(u32, u32), Option<Vec<Step>>>,
     peds: Vec<Ped>,
     free: Vec<u32>,
     alive: usize,
@@ -142,16 +146,18 @@ pub fn planned_pedestrian_crossings(net: &Network, station: Option<u32>, pairs: 
     if station.is_some_and(|n| !valid_node(n)) || pairs.iter().flatten().any(|&n| !valid_node(n)) {
         return Err("pedestrian route query has an unknown node".into());
     }
-    let mut world = PedWorld::build(net, &Topo::new(net));
+    let world = PedWorld::build(net, &Topo::new(net));
     let mut results = vec![None; pairs.len()];
     // Reuse the production router's destination table for every origin bound for it.
     let mut order: Vec<usize> = (0..pairs.len()).collect();
     order.sort_unstable_by_key(|&i| pairs[i][1]);
-    for i in order {
-        let [origin, dest] = pairs[i];
-        if let Some(steps) = world.route(origin, dest) {
-            let count = steps.iter().filter(|s| matches!(s, Step::Cross { xw, .. } if Some(world.xws[*xw as usize].node) == station)).count();
-            results[i] = Some(count as u32);
+    for group in order.chunk_by(|&a, &b| pairs[a][1] == pairs[b][1]) {
+        let dist = world.distances_to(pairs[group[0]][1]);
+        for &i in group {
+            if let Some(steps) = world.walk(pairs[i][0], &dist) {
+                let count = steps.iter().filter(|s| matches!(s, Step::Cross { xw, .. } if Some(world.xws[*xw as usize].node) == station)).count();
+                results[i] = Some(count as u32);
+            }
         }
     }
     Ok(results)
@@ -257,6 +263,7 @@ impl PedWorld {
                     out_links: outs,
                     crossing: 0,
                     completed_crossings: 0,
+                    walk_phase: None,
                     waiting: 0,
                     last_clear_t: f64::NEG_INFINITY,
                     last_pass_t: f64::NEG_INFINITY,
@@ -306,6 +313,7 @@ impl PedWorld {
                 out_links: Vec::new(),
                 crossing: 0,
                 completed_crossings: 0,
+                walk_phase: None,
                 waiting: 0,
                 last_clear_t: f64::NEG_INFINITY,
                 last_pass_t: f64::NEG_INFINITY,
@@ -413,10 +421,7 @@ impl PedWorld {
     }
 
     /// Distance table (m) to the destination node over sidewalk states.
-    fn table(&mut self, dest: u32) -> usize {
-        if let Some(i) = self.cache.iter().position(|c| c.0 == dest) {
-            return i;
-        }
+    fn distances_to(&self, dest: u32) -> Vec<f32> {
         let mut dist = vec![f32::INFINITY; self.adj.len()];
         let mut heap: BinaryHeap<Reverse<(u32, u32)>> = BinaryHeap::new();
         for &s in &self.node_states[dest as usize] {
@@ -437,17 +442,38 @@ impl PedWorld {
                 }
             }
         }
-        if self.cache.len() >= 96 {
-            self.cache.remove(0);
-        }
-        self.cache.push((dest, dist));
-        self.cache.len() - 1
+        dist
     }
 
-    /// Steps of the shortest walk from `origin` to `dest`; None if there is none.
+    /// The free-flow probe and the subsequent placement use the same sidewalk graph and demand.
+    pub(super) fn take_walk_routes(&mut self, probe: &mut Self) {
+        self.routes = std::mem::take(&mut probe.routes);
+        self.origins_by_dest = std::mem::take(&mut probe.origins_by_dest);
+    }
+
+    pub(super) fn register_flow(&mut self, origin: u32, dest: u32) {
+        self.origins_by_dest.entry(dest).or_default().push(origin);
+    }
+
     fn route(&mut self, origin: u32, dest: u32) -> Option<Vec<Step>> {
-        let ti = self.table(dest);
-        let dist = &self.cache[ti].1;
+        if let Some(steps) = self.routes.get(&(origin, dest)) {
+            return steps.clone();
+        }
+        let dist = self.distances_to(dest);
+        if let Some(mut origins) = self.origins_by_dest.remove(&dest) {
+            origins.sort_unstable();
+            origins.dedup();
+            for o in origins {
+                let steps = self.walk(o, &dist);
+                self.routes.insert((o, dest), steps);
+            }
+        }
+        // Also allow a caller to request a walk outside the configured demand.
+        self.routes.get(&(origin, dest)).cloned().unwrap_or_else(|| self.walk(origin, &dist))
+    }
+
+    /// Reconstruct the shortest walk in the original adjacency order, including ties.
+    fn walk(&self, origin: u32, dist: &[f32]) -> Option<Vec<Step>> {
         let mut s = *self.node_states[origin as usize].iter().min_by(|&&a, &&b| dist[a as usize].partial_cmp(&dist[b as usize]).unwrap())?;
         if !dist[s as usize].is_finite() {
             return None;
@@ -674,23 +700,29 @@ impl Simulation {
         }
     }
 
-    /// Frontmost vehicle of each lane of link `l` that has not yet reached the crosswalk stop point: (vehicle, distance to it).
-    fn xw_front_vehicles(&self, l: u32, xw: u32, out: &mut Vec<(u32, f32)>) {
+    /// Check the first vehicle in each lane that has yet to reach this crosswalk.
+    fn approach_gap_ok(&self, l: u32, xw: u32, t_crit: f32) -> bool {
         let lu = l as usize;
-        let target = match self.world.mid[lu].iter().find(|m| m.1 == xw) {
-            Some(&(xp, _)) => xp - XW_STOP_M,
-            None => self.topo.stop_pos[lu],
+        let (target, limit) = match self.world.mid[lu].iter().find(|m| m.1 == xw) {
+            Some(&(xp, _)) => {
+                let target = xp - XW_STOP_M;
+                (target, target + XW_STOP_M - 0.3)
+            }
+            None => (self.topo.stop_pos[lu], self.topo.stop_pos[lu] + 0.01),
         };
-        let limit = if self.world.mid[lu].iter().any(|m| m.1 == xw) { target + XW_STOP_M - 0.3 } else { target + 0.01 };
         for k in 0..self.topo.nlanes(lu) + self.bike_on as usize {
             for &v in &self.lanes[self.topo.qidx(lu, k)] {
                 let veh = &self.vehs[v as usize];
                 if veh.pos <= limit {
-                    out.push((v, target - veh.pos));
+                    let d = target - veh.pos;
+                    if !self.world.xws[xw as usize].yields(xw, veh.uid, veh.v, d) && veh.v >= PED_STANDING_V && d / veh.v < t_crit {
+                        return false;
+                    }
                     break;
                 }
             }
         }
+        true
     }
 
     fn ped_try_start(&mut self, id: usize) {
@@ -700,9 +732,7 @@ impl Simulation {
             (xw, p.v, p.gap_f)
         };
         let node = self.world.xws[xw as usize].node;
-        let ctrl = if node == NONE_XW { Control::Uncontrolled } else { self.eff.ctrl[node as usize] };
-        let walk_phase = if node != NONE_XW && ctrl == Control::Signal { self.ped_phase(node, xw) } else { None };
-        let ok = if let Some(ph) = walk_phase {
+        let ok = if let Some(ph) = self.world.xws[xw as usize].walk_phase {
             // At a signal: cross with the phase of the parallel street, in its walk interval, when no vehicle is in the crosswalk.
             self.ped_walk_interval(node, xw, ph) && !self.transit_over_xw(node, xw)
         } else {
@@ -737,6 +767,18 @@ impl Simulation {
         if lp_uid != NONE_UID && pet < PET_ENCOUNTER_S && x.last_pair != (lp_uid, uid) {
             x.last_pair = (lp_uid, uid);
             self.vuln.ped_encounter(pet, lp_v);
+        }
+    }
+
+    pub(super) fn cache_ped_phases(&mut self) {
+        // Adaptive splits change phase durations, while approach membership changes only on a scenario rebuild.
+        for i in 0..self.world.xws.len() {
+            let node = self.world.xws[i].node;
+            self.world.xws[i].walk_phase = if node != NONE_XW && self.eff.ctrl[node as usize] == Control::Signal {
+                self.ped_phase(node, i as u32)
+            } else {
+                None
+            };
         }
     }
 
@@ -801,18 +843,8 @@ impl Simulation {
     /// Can the pedestrian step off? Yielding drivers will stop; the others must be at least `t_crit` s away.
     fn ped_gap_ok(&self, xw: u32, t_crit: f32) -> bool {
         let x = &self.world.xws[xw as usize];
-        let mut fronts: Vec<(u32, f32)> = Vec::new();
-        for &l in &x.in_links {
-            self.xw_front_vehicles(l, xw, &mut fronts);
-        }
-        for &(vid, d) in &fronts {
-            let v = &self.vehs[vid as usize];
-            if x.yields(xw, v.uid, v.v, d) || v.v < PED_STANDING_V {
-                continue;
-            }
-            if d / v.v < t_crit {
-                return false;
-            }
+        if x.in_links.iter().any(|&l| !self.approach_gap_ok(l, xw, t_crit)) {
+            return false;
         }
         if x.node != NONE_XW {
             let node = x.node as usize;
