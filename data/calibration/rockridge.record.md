@@ -137,7 +137,7 @@ All seven stay about where they were. The in-loop diagonal sum in the PM peak (f
 
 ### Stop rule at a fixed point
 
-A synthetic check with the repository's own `iterationShift` (design of `calibration-round-55`, "Noise floor of the stop rule") shows that at an exact fixed point each of the four lines fires only about half the time. With seeds independent between passes, two passes from the same distribution gave a flow ratio with median 0.997 and the rule fired on 107 of 200 draws; a drift of 2% of station flow already blocks it. So `STOP_RATIO = 1` rarely holds on all four lines at once. It stays an ASSUMPTION with no source and is unchanged: the project lead asked that it not be loosened to make it fire. The eight passes are best read as a loop at its noise floor, not as a loop that failed to converge.
+A synthetic check with the repository's own `iterationShift` (design of `calibration-round-55`, "Noise floor of the stop rule") shows that at an exact fixed point each of the four lines fires only about half the time. With seeds independent between passes, two passes from the same distribution gave a flow ratio with median 0.997 and the rule fired on 107 of 200 draws; a drift of 2% of station flow already blocks it. So `STOP_RATIO = 1` rarely holds on all four lines at once. It stays an ASSUMPTION with no source and is unchanged: loosening it would change a threshold, which is the project lead's decision. The eight passes are best read as a loop at its noise floor, not as a loop that failed to converge.
 
 ### Laptop script faults
 
