@@ -119,6 +119,18 @@ export function iterationShift(prev: IterationStats, cur: IterationStats): Shift
   return { stations: ids.length, flowRms, flowSeRms, flowRatio, membershipRms, membershipSeRms, membershipRatio, converged: ids.length > 0 && flowRatio <= STOP_RATIO && membershipRatio <= STOP_RATIO };
 }
 
+/** One line of the stop rule: a view and period with its change from the previous pass. */
+export interface StopLine { view: string; period: string; shift: Shift | null }
+
+/**
+ * The stop rule after pass k (k from 1): every view and every period must be at or below STOP_RATIO on both the flow and the membership change. One line above it, or a line with no
+ * comparison, blocks the stop. `blocking` names those lines for the log. The cap on passes is the caller's.
+ */
+export function stopDecision(k: number, lines: StopLine[]): { met: boolean; blocking: string[] } {
+  const blocking = lines.filter((x) => !x.shift?.converged).map((x) => (x.shift ? `${x.view} ${x.period} flow ${x.shift.flowRatio.toFixed(2)}, membership ${x.shift.membershipRatio.toFixed(2)}` : `${x.view} ${x.period} no previous pass`));
+  return { met: k >= 1 && lines.length > 0 && blocking.length === 0, blocking };
+}
+
 export interface RunSet { label: string; flows: { origin: number; destination: number; vehPerHour: number }[]; sod: SelectOd[] }
 
 /** Every iteration pooled in a file has the same number of seeds, so each weighs 1/n. */

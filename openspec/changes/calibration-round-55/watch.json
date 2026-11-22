@@ -1,0 +1,19 @@
+{
+  "note": "Stations the membership loop follows pass by pass (report only, never an input to a build, a pool or the stop rule). Named by station id in data/demand/rockridge.stations.json. heldOutMisses: the judged held-out misses of the published model under the derived-targets scope (PM and AM, one entry per station and period). diagonal: the five PM stations on the residential diagonal west of Colby Street whose counted sum is 178 veh/h.",
+  "heldOutMisses": [
+    { "id": "count block 1933", "period": "pm_peak", "note": "McAuley Street EB, Howell Street to Canning Street" },
+    { "id": "count block 1868", "period": "pm_peak", "note": "60th Street EB, Howell Street to Canning Street" },
+    { "id": "count block 1897", "period": "pm_peak", "note": "Canning Street SB, 59th Street to McAuley Street" },
+    { "id": "count block 1933", "period": "am_peak", "note": "McAuley Street EB, Howell Street to Canning Street" },
+    { "id": "count block 1868", "period": "am_peak", "note": "60th Street EB, Howell Street to Canning Street" },
+    { "id": "count block 1990", "period": "am_peak", "note": "58th Street EB, Canning Street to Vicente Street" },
+    { "id": "count block 1858", "period": "am_peak", "note": "63rd Street EB, Dana Street to Canning Street" }
+  ],
+  "diagonal": [
+    { "id": "count block 2697", "period": "pm_peak", "note": "Forest Street EB, counted 66" },
+    { "id": "count block 1933", "period": "pm_peak", "note": "McAuley Street EB, counted 12" },
+    { "id": "count block 1868", "period": "pm_peak", "note": "60th Street EB, counted 23" },
+    { "id": "count block 1831", "period": "pm_peak", "note": "Ayala Avenue NB, Martin Street to Howell Street, counted 60" },
+    { "id": "count block 2055", "period": "pm_peak", "note": "Howell Street SB, 59th Street to McAuley Street, counted 17" }
+  ]
+}

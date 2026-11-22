@@ -5,13 +5,14 @@ import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync } from '
 import { basename, dirname, join, resolve } from 'node:path';
 import { hashFile } from './run-manifest';
 import { writeFileAtomic } from './atomic';
-import { withheldStationIds, type SplitManifest } from './lineage';
+import { heldStationIds, withheldStationIds, type SplitManifest } from './lineage';
+import { diagnose, fitFinalsFromReport, renderDiagnostics, type PassDiag, type StationInfo, type WatchFile } from './loop-diagnostics';
 import type { SelectOd } from './through-membership';
-import { assertNoWithheld, blockSwitches, CEILING_ABORT_SHARE, endAlongLinesFromReport, endAlongSwitch, endSeedLinesFromReport, seedPairsSwitch, CEILING_LOW_SHARE, checkFitReport, offeredShare, gatePriorFromReport, checkRunSet, iterationShift, iterationStats, membershipFile, poolBlocks, poolStations, routeWeightLinesFromReport, routeWeightSwitch, selectStations, shareLinesFromReport, throughLinesFromReport, type BlockSwitches, type CeilingStat, type EndAlongLine, type IterationStats, type Pooled, type RouteWeightLine, type RunSet, type Selection, type ShareLine, type Shift, type StationRec, type ThroughLine } from './membership-loop';
+import { STOP_RATIO, assertNoWithheld, blockSwitches, CEILING_ABORT_SHARE, endAlongLinesFromReport, endAlongSwitch, endSeedLinesFromReport, seedPairsSwitch, CEILING_LOW_SHARE, checkFitReport, offeredShare, gatePriorFromReport, checkRunSet, iterationShift, iterationStats, membershipFile, poolBlocks, poolStations, routeWeightLinesFromReport, routeWeightSwitch, selectStations, shareLinesFromReport, stopDecision, throughLinesFromReport, type BlockSwitches, type CeilingStat, type EndAlongLine, type IterationStats, type Pooled, type RouteWeightLine, type RunSet, type Selection, type ShareLine, type Shift, type StationRec, type ThroughLine } from './membership-loop';
 import type { MembershipEvidence } from './through-membership';
 
 export type View = 'shipped' | 'training';
-export interface LoopOptions { root: string; area: string; views: View[]; periods: string[]; seeds: number[]; iterations: number; jobs: number; dir: string; configPath: string; resume: boolean }
+export interface LoopOptions { root: string; area: string; views: View[]; periods: string[]; seeds: number[]; iterations: number; jobs: number; dir: string; configPath: string; resume: boolean; /** Stations to follow pass by pass (report only). */ watch?: WatchFile }
 export interface CalibrateJob { period: string; seed: number; demand: string; out: string }
 export interface Runner {
   build(view: View, logFile: string): void;
@@ -36,7 +37,7 @@ const readJson = <T>(p: string): T => JSON.parse(readFileSync(p, 'utf8')) as T;
 const sodFiles = (dir: string, period: string) => readdirSync(dir).filter((f) => f.startsWith(`sod-${period}-`) && f.endsWith('.json')).sort((a, b) => Number(a.match(/-(\d+)\.json$/)![1]) - Number(b.match(/-(\d+)\.json$/)![1]));
 
 export interface PassReport { pass: number; view: View; period: string; /** Car veh/h the pass's demand offers; the loop reports it because a fit on simulated membership can move volume. */ offered: number; selected: number; withHits: number; zeroHit: string[]; absent: string[]; /** Round 51: select-link blocks without a counted trip in the pool (they keep static routes in the fit), for the through targets and for the shares; absent when the sub-switch is off. */ zeroHitThrough?: string[]; zeroHitBlocks?: string[]; shift: Shift | null; /** Gate prior ceilings of the build this pass ran on (round 49): stations, how many ended above their ceiling and the excess in veh/h; absent when the switch is off. */ ceiling?: CeilingStat }
-export interface LoopSummary { passes: number; stoppedEarly: boolean; reports: PassReport[]; hashes: Record<string, string>; stayStatic: Record<string, Selection['stayStatic']>; selected: Record<string, number>; withheld: Record<string, number>; /** Gate prior ceilings per build, keyed `view:pass` (the final build has the pass number `passes`); absent when the switch is off. */ ceilings?: Record<string, Record<string, CeilingStat>>; /** Round 51: each build's share and through lines from the fit report, keyed `view:pass`. */ targets?: Record<string, { shares: ShareLine[]; through: ThroughLine[]; routes?: RouteWeightLine[]; endAlong?: EndAlongLine[] }> }
+export interface LoopSummary { passes: number; stoppedEarly: boolean; /** The stop rule at the end of the run: met at a pass, or not met by the cap with the lines that blocked it. */ stop: { met: boolean; pass: number | null; cap: number; blocking: string[] }; /** Report-only per-pass diagnostics (round 55). */ diagnostics: PassDiag[]; reports: PassReport[]; hashes: Record<string, string>; stayStatic: Record<string, Selection['stayStatic']>; selected: Record<string, number>; withheld: Record<string, number>; /** Gate prior ceilings per build, keyed `view:pass` (the final build has the pass number `passes`); absent when the switch is off. */ ceilings?: Record<string, Record<string, CeilingStat>>; /** Round 51: each build's share and through lines from the fit report, keyed `view:pass`. */ targets?: Record<string, { shares: ShareLine[]; through: ThroughLine[]; routes?: RouteWeightLine[]; endAlong?: EndAlongLine[] }> }
 
 /** The stations file's entries and the split's withheld ids, read when needed (the stations file is rewritten by the shipped build). */
 function selections(p: LoopPaths, periods: string[]): Record<View, Selection[]> {
@@ -55,7 +56,7 @@ export async function runLoop(o: LoopOptions, r: Runner, log: (s: string) => voi
   }
   mkdirSync(o.dir, { recursive: true });
   const statePath = join(o.dir, 'state.json');
-  const state: { done: string[]; stoppedAfter: number | null; reports: PassReport[]; stationsSha: string | null; ceilings?: Record<string, Record<string, CeilingStat>>; targets?: Record<string, { shares: ShareLine[]; through: ThroughLine[]; routes?: RouteWeightLine[]; endAlong?: EndAlongLine[] }> } = o.resume && existsSync(statePath) ? readJson(statePath) : { done: [], stoppedAfter: null, reports: [], stationsSha: null };
+  const state: { done: string[]; stoppedAfter: number | null; reports: PassReport[]; stationsSha: string | null; diagnostics?: PassDiag[]; lastBlocking?: string[]; ceilings?: Record<string, Record<string, CeilingStat>>; targets?: Record<string, { shares: ShareLine[]; through: ThroughLine[]; routes?: RouteWeightLine[]; endAlong?: EndAlongLine[] }> } = o.resume && existsSync(statePath) ? readJson(statePath) : { done: [], stoppedAfter: null, reports: [], stationsSha: null };
   const save = () => writeFileAtomic(statePath, JSON.stringify(state, null, 1));
   const configSha = hashFile(p.config), splitSha = hashFile(p.split);
   const once = async (id: string, f: () => void | Promise<void>) => { if (state.done.includes(id)) { log(`skip ${id} (done)`); return; } log(`start ${id}`); await f(); state.done.push(id); save(); };
@@ -137,6 +138,7 @@ export async function runLoop(o: LoopOptions, r: Runner, log: (s: string) => voi
         const pooled: Record<string, Pooled> = {}, setups: Record<string, string> = {};
         for (const [qi, q] of o.periods.entries()) {
           const sets: RunSet[] = [];
+          let lastSod: SelectOd[] = [];
           stats[`${v}:${q}`] = [];
           for (let j = 0; j <= k; j++) {
             const dir = bin(v, j), demandPath = join(dir, 'demand.json');
@@ -148,10 +150,21 @@ export async function runLoop(o: LoopOptions, r: Runner, log: (s: string) => voi
             if (ev.evidence.config !== configSha || ev.evidence.stations !== hashFile(p.stations) || ev.evidence.network !== hashFile(p.network)) throw new Error(`${v} view, iteration ${j}: the runs do not match the config, stations or network on disk`);
             setups[q] = ev.setup;
             const demand = readJson<{ periods: { id: string; flows: { origin: number; destination: number; vehPerHour: number; mode?: string }[] }[] }>(demandPath);
+            lastSod = sod;
             sets.push({ label: `${dir} (${files.length} seeds)`, flows: demand.periods.find((x) => x.id === q)!.flows.filter((f) => !f.mode), sod });
             stats[`${v}:${q}`].push(iterationStats(sod, new Set(sel[v][qi].selected.map((s) => s.id))));
           }
           const s = sel[v][qi];
+          try {
+            const recency = cfg.countFit?.recency?.enabled ? { referenceYear: cfg.countFit.recency.referenceYear as number, recentYears: cfg.countFit.recency.recentYears as number } : null;
+            const rp = p.report[v], fitText = join(o.dir, 'fits', `i${k}-${v}-build`, `${basename(rp, '.md')}.stations-${q}.md`);
+            const d = diagnose({ pass: k, view: v, period: q, runs: lastSod, stations: readJson<{ stations: StationInfo[] }>(p.stations).stations, held: heldStationIds(readJson<SplitManifest>(p.split)), recency, watch: o.watch ?? null, fit: existsSync(fitText) ? fitFinalsFromReport(readFileSync(fitText, 'utf8')) : null });
+            (state.diagnostics ??= []).push(d);
+            if (d.geh) log(`pass ${k} ${v} ${q}: recent judged stations within GEH 5 on this pass's seeds: ${d.geh.ok} of ${d.geh.n} (${v === 'training' ? 'held out' : 'fitted'}; ${d.geh.unmeasured} not measured)`);
+            for (const w of d.watch.filter((x) => x.group === 'held-out miss')) log(`pass ${k} ${v} ${q}: watched ${w.label}: counted ${Math.round(w.counted)}, shipped fit ${w.fit === null ? '-' : Math.round(w.fit)}, simulated ${w.sim === null ? '-' : Math.round(w.sim)}`);
+            const dg = d.watch.filter((x) => x.group === 'diagonal');
+            if (dg.length) log(`pass ${k} ${v} ${q}: diagonal stations, counted ${Math.round(dg.reduce((a, w) => a + w.counted, 0))}, simulated ${dg.every((w) => w.sim !== null) ? Math.round(dg.reduce((a, w) => a + w.sim!, 0)) : '-'}`);
+          } catch (e) { log(`WARNING pass ${k} ${v} ${q}: diagnostics failed (${(e as Error).message}); the loop carries on, they are report only`); }
           pooled[q] = poolStations(sets, new Set(s.selected.map((x) => x.id)));
           if (p.blocks.throughTargets) pooled[q].through = poolBlocks(sets, inStudy);
           if (p.blocks.shares) pooled[q].blocks = poolBlocks(sets, new Set());
@@ -162,10 +175,16 @@ export async function runLoop(o: LoopOptions, r: Runner, log: (s: string) => voi
         if (v === 'training') assertNoWithheld(file as never, withheldStationIds(readJson<SplitManifest>(p.split)));
         mkdirSync(dirname(p.membership[v]), { recursive: true });
         writeFileAtomic(p.membership[v], JSON.stringify(file));
+        mkdirSync(join(o.dir, 'pools'), { recursive: true });
+        copyFileSync(p.membership[v], join(o.dir, 'pools', `i${k}-${v}.json`));
       }
       state.reports.push(...reports);
       for (const x of reports) log(`pass ${k} ${x.view} ${x.period}: ${x.offered} car veh/h offered; ${x.withHits} of ${x.selected} selected stations have pairs; zero hits: ${x.zeroHit.length ? x.zeroHit.join(', ') : 'none'}; not exported: ${x.absent.length ? x.absent.join(', ') : 'none'}${x.zeroHitBlocks ? `; share blocks without a simulated trip (static routes): ${x.zeroHitBlocks.length ? x.zeroHitBlocks.join(', ') : 'none'}` : ''}${x.zeroHitThrough ? `; through blocks without a counted through trip (static routes): ${x.zeroHitThrough.length ? x.zeroHitThrough.join(', ') : 'none'}` : ''}${x.ceiling ? `; ceiling stations ${x.ceiling.stations}, above ceiling ${x.ceiling.above}, excess ${x.ceiling.excess} veh/h` : ''}${x.shift ? `; flow change ${x.shift.flowRatio.toFixed(2)} and membership change ${x.shift.membershipRatio.toFixed(2)} of the seed standard error over ${x.shift.stations} stations` : ''}`);
-      if (k >= 1 && reports.every((x) => x.shift?.converged)) state.stoppedAfter = k;
+      const dec = stopDecision(k, reports);
+      state.lastBlocking = dec.blocking;
+      if (dec.met) state.stoppedAfter = k;
+      else if (k >= 1) log(`pass ${k}: stop rule not met (limit ${STOP_RATIO} on flow and membership change over the seed standard error): ${dec.blocking.join('; ')}`);
+      writeFileAtomic(join(o.dir, 'diagnostics.md'), renderDiagnostics(state.diagnostics ?? [], { reports: state.reports }));
     });
     if (state.stoppedAfter !== null && state.stoppedAfter <= k) { log(`stop rule met at pass ${state.stoppedAfter}`); break; }
   }
@@ -180,14 +199,16 @@ export async function runLoop(o: LoopOptions, r: Runner, log: (s: string) => voi
   const stay: LoopSummary['stayStatic'] = {}, selected: LoopSummary['selected'] = {}, withheldN: LoopSummary['withheld'] = {};
   const sel = selections(p, o.periods);
   for (const v of o.views) for (const s of sel[v]) { stay[`${v}:${s.period}`] = s.stayStatic; selected[`${v}:${s.period}`] = s.selected.length; withheldN[`${v}:${s.period}`] = s.withheld.length; }
-  return { passes, stoppedEarly: state.stoppedAfter !== null && state.stoppedAfter + 1 < o.iterations, reports: state.reports, hashes, stayStatic: stay, selected, withheld: withheldN, ...(state.ceilings ? { ceilings: state.ceilings } : {}), ...(state.targets ? { targets: state.targets } : {}) };
+  const stop = { met: state.stoppedAfter !== null, pass: state.stoppedAfter, cap: o.iterations, blocking: state.stoppedAfter !== null ? [] : state.lastBlocking ?? [] };
+  if (!stop.met) log(`stop rule not met by the cap of ${o.iterations} passes: ${stop.blocking.join('; ') || 'no comparison'}`);
+  return { passes, stoppedEarly: state.stoppedAfter !== null && state.stoppedAfter + 1 < o.iterations, stop, diagnostics: state.diagnostics ?? [], reports: state.reports, hashes, stayStatic: stay, selected, withheld: withheldN, ...(state.ceilings ? { ceilings: state.ceilings } : {}), ...(state.targets ? { targets: state.targets } : {}) };
 }
 
 /** The loop's report as Markdown. */
 export function renderReport(s: LoopSummary, o: { seeds: number[]; periods: string[] }): string {
-  const L = ['# Membership loop (calibration rounds 48 to 51)', '', `Seeds ${o.seeds[0]} to ${o.seeds[o.seeds.length - 1]} per pass, periods ${o.periods.join(', ')}. Passes run: ${s.passes}${s.stoppedEarly ? ' (stop rule fired)' : ''}. Pooled with equal weight over passes (successive averages, step 1/n, ASSUMPTION for this fixed point).`, '',
+  const L = ['# Membership loop (calibration rounds 48 to 55)', '', `Seeds ${o.seeds[0]} to ${o.seeds[o.seeds.length - 1]} per pass, periods ${o.periods.join(', ')}. Passes run: ${s.passes} of at most ${s.stop.cap}${s.stop.met ? ` (stop rule met at pass ${s.stop.pass})` : ` (stop rule not met: ${s.stop.blocking.join('; ') || 'no comparison'})`}. Pooled with equal weight over passes (successive averages, step 1/n, ASSUMPTION for this fixed point).`, '',
     '| Pass | View | Period | Offered car veh/h | Selected | With pairs | Zero hits | Not exported | Flow change / seed SE | Membership change / seed SE | Ceiling stations | Above ceiling | Excess veh/h | Offered / static fit |', '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
     ...s.reports.map((x) => `| ${x.pass} | ${x.view} | ${x.period} | ${x.offered} | ${x.selected} | ${x.withHits} | ${x.zeroHit.join(', ') || '-'} | ${x.absent.join(', ') || '-'} | ${x.shift ? x.shift.flowRatio.toFixed(2) : '-'} | ${x.shift ? x.shift.membershipRatio.toFixed(2) : '-'} | ${x.ceiling ? x.ceiling.stations : '-'} | ${x.ceiling ? x.ceiling.above : '-'} | ${x.ceiling ? x.ceiling.excess : '-'} | ${x.ceiling ? `${(100 * offeredShare(x.ceiling)).toFixed(1)}%` : '-'} |`),
-    '', '## Static membership', '', ...Object.entries(s.stayStatic).map(([k, v]) => `- ${k}: ${v.length ? v.map((x) => `${x.id} (${x.reason})`).join('; ') : 'none'}`), '', ...(s.ceilings ? ['## Gate prior ceilings, by build', '', ...Object.entries(s.ceilings).flatMap(([k, v]) => Object.entries(v).map(([q, c]) => `- ${k} ${q}: ${c.stations} stations, ${c.above} above ceiling, excess ${c.excess} veh/h; offered ${(100 * offeredShare(c)).toFixed(1)}% of the static fit${c.gate && c.nonGate ? `; gate ${c.gate.stations} (${c.gate.above} above, removed ${c.gate.removed}), non-gate ${c.nonGate.stations} (${c.nonGate.above} above, removed ${c.nonGate.removed})` : ''}${c.ends ? `; non-gate ends origins inside ${c.ends.originInside.join(' to ')}, outside ${c.ends.originOutside.join(' to ')}, destinations inside ${c.ends.destInside.join(' to ')}, outside ${c.ends.destOutside.join(' to ')}` : ''}`)), ''] : []), ...(s.targets ? ['## Share and through targets, by build', '', 'Each target against the fit\'s own figure on the membership it used and on the static routes (calibration round 51). Shares in percent, through figures in cars per hour.', '', ...Object.entries(s.targets).flatMap(([k, v]) => [...v.shares.map((x) => `- ${k} ${x.period} share ${x.label} (${x.membership}): target ${x.target}%, fit ${x.final}% (static routes ${x.staticFinal}%), offered ${x.offered}% (static routes ${x.staticOffered}%), ${x.flows} flows`), ...v.through.map((x) => `- ${k} ${x.period} through ${x.label} (${x.membership}): target ${x.target}, fit ${x.final} (static routes ${x.staticFinal}), offered ${x.offered} (static routes ${x.staticOffered})`), ...(v.routes ?? []).map((x) => `- ${k} ${x.period} route weight ${x.id} (${x.membership}): base ${x.base}, ${x.blocks} blocks, weight ${x.weight}`), ...(v.endAlong ?? []).map((x) => `- ${k} ${x.period} end along ${x.label} (${x.membership}): target ${x.target}, weight ${x.weight}, fit ${x.final} (static routes ${x.staticFinal}), after fit ${x.afterFit} (static routes ${x.staticAfterFit}), offered ${x.offered} (static routes ${x.staticOffered}), ${x.flows} flows, nodes ${x.nodes.join(' ')}`)]), ''] : []), '## Files', '', ...Object.entries(s.hashes).map(([k, v]) => `- ${k}: ${v}`), ''];
+    '', '## Static membership', '', ...Object.entries(s.stayStatic).map(([k, v]) => `- ${k}: ${v.length ? v.map((x) => `${x.id} (${x.reason})`).join('; ') : 'none'}`), '', ...(s.ceilings ? ['## Gate prior ceilings, by build', '', ...Object.entries(s.ceilings).flatMap(([k, v]) => Object.entries(v).map(([q, c]) => `- ${k} ${q}: ${c.stations} stations, ${c.above} above ceiling, excess ${c.excess} veh/h; offered ${(100 * offeredShare(c)).toFixed(1)}% of the static fit${c.gate && c.nonGate ? `; gate ${c.gate.stations} (${c.gate.above} above, removed ${c.gate.removed}), non-gate ${c.nonGate.stations} (${c.nonGate.above} above, removed ${c.nonGate.removed})` : ''}${c.ends ? `; non-gate ends origins inside ${c.ends.originInside.join(' to ')}, outside ${c.ends.originOutside.join(' to ')}, destinations inside ${c.ends.destInside.join(' to ')}, outside ${c.ends.destOutside.join(' to ')}` : ''}`)), ''] : []), ...(s.targets ? ['## Share and through targets, by build', '', 'Each target against the fit\'s own figure on the membership it used and on the static routes (calibration round 51). Shares in percent, through figures in cars per hour.', '', ...Object.entries(s.targets).flatMap(([k, v]) => [...v.shares.map((x) => `- ${k} ${x.period} share ${x.label} (${x.membership}): target ${x.target}%, fit ${x.final}% (static routes ${x.staticFinal}%), offered ${x.offered}% (static routes ${x.staticOffered}%), ${x.flows} flows`), ...v.through.map((x) => `- ${k} ${x.period} through ${x.label} (${x.membership}): target ${x.target}, fit ${x.final} (static routes ${x.staticFinal}), offered ${x.offered} (static routes ${x.staticOffered})`), ...(v.routes ?? []).map((x) => `- ${k} ${x.period} route weight ${x.id} (${x.membership}): base ${x.base}, ${x.blocks} blocks, weight ${x.weight}`), ...(v.endAlong ?? []).map((x) => `- ${k} ${x.period} end along ${x.label} (${x.membership}): target ${x.target}, weight ${x.weight}, fit ${x.final} (static routes ${x.staticFinal}), after fit ${x.afterFit} (static routes ${x.staticAfterFit}), offered ${x.offered} (static routes ${x.staticOffered}), ${x.flows} flows, nodes ${x.nodes.join(' ')}`)]), ''] : []), '## Files', '', ...Object.entries(s.hashes).map(([k, v]) => `- ${k}: ${v}`), '', ...(s.diagnostics.length ? [renderDiagnostics(s.diagnostics, { reports: s.reports }), ''] : [])];
   return L.join('\n');
 }
