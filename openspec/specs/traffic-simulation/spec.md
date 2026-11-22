@@ -163,7 +163,7 @@ The standing queue credited to a signalized approach in the adaptive plan SHALL 
 - **THEN** the ramp's standing vehicles count toward the approach's measured demand
 
 ### Requirement: Drivers keep their route unless an alternative is clearly better or the route is blocked
-A car SHALL choose its route at departure from current measured link times and afterwards change it only when the route is blocked, or when it follows live guidance and an alternative is cheaper than the remaining route by more than the indifference band. Costs use current link times and the driver's own per-link noise, fixed for the trip. The guidance share (`Config::guided_share`, [Guin2021]) replaces any flat re-route share; the band and limits are ASSUMPTIONS in `params.rs`.
+A car SHALL choose its route at departure from current measured link times and afterwards change it only when the route is blocked, or when it follows live guidance and an alternative is cheaper than the remaining route by more than the indifference band. Costs use current link times perceived with the driver's own perception error, drawn once for the trip (route choice on perceived costs). The guidance share (`Config::guided_share`, [Guin2021]) replaces any flat re-route share; the band and limits are ASSUMPTIONS in `params.rs`.
 
 #### Scenario: Near-equal routes
 - **WHEN** a driver following guidance faces an alternative cheaper by less than the band or the absolute floor
@@ -531,3 +531,26 @@ When trips are recorded, the end of the initial-load settle interval SHALL clear
 #### Scenario: A trip completes during the settle interval
 - **WHEN** a recorded run with initial loading completes a trip before time zero
 - **THEN** neither `trip_records` nor `trip_timings` contains it, and the two lists have equal length with equal ids at each position
+
+### Requirement: Route choice on perceived costs drawn once per driver
+A car SHALL choose and re-plan its route as the shortest path on its own perceived costs. Each arc (a trip's first link, or a movement with the link it enters) SHALL be perceived as normal with mean its current cost and variance `ROUTE_DISPERSION_S` times that cost, truncated at zero [DaganzoSheffi1977], [Sheffi1985]. Each arc's deviate SHALL be fixed for the trip and derived from the driver's seed and the arc.
+
+#### Scenario: Paired and native and WASM runs
+- **WHEN** the same driver asks for a route in a native and a WASM run, or in a baseline and a scenario run on the same costs
+- **THEN** it perceives every arc the same way
+
+#### Scenario: Dispersion is an assumption
+- **WHEN** no source gives a dispersion for urban street networks
+- **THEN** `ROUTE_DISPERSION_S` is labeled ASSUMPTION and `Config::route_dispersion` can override it
+
+#### Scenario: Equal routes with different numbers of junctions
+- **WHEN** two routes of equal cost lead from an origin to a destination and one offers a side link onto the other at each of 20 junctions, each side link costing 2.5 standard deviations of the perceived difference more
+- **THEN** between 45% and 55% of drivers stay on the route with the junctions (validation case r2)
+
+#### Scenario: A costlier route
+- **WHEN** two routes with no link in common differ in cost by d
+- **THEN** the share on the costlier route is within 0.03 of Phi(-d / sqrt(dispersion x (cA + cB))) (validation cases r3 to r6)
+
+#### Scenario: The same driver twice
+- **WHEN** a driver with the same seed asks for a route twice on the same costs
+- **THEN** it gets the same route

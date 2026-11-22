@@ -1,3 +1,5 @@
+> Round 31 ran on 2026-11-16 (`data/calibration/rockridge.record-archive-*.md`). Archived late, on 2026-11-22; its requirements were merged into the specs by hand first, so the archive ran with --skip-specs.
+
 ## Why
 
 Round 30 found that most of the excess through cars on Hillegass Ave and Colby St southbound, 62nd St eastbound and Forest St eastbound drive a route the router itself ranked costlier at departure (a median 40 to 74 s, about 10%, more). The cause is the form of the route-choice error: the walk scales each candidate's whole remaining cost by a fresh factor (1 +/- 8%, `ROUTE_NOISE`, an unsourced ASSUMPTION) at every node it passes. A side-street grid offers a new draw at every block, so a route's chance of being taken depends on how many decision points it has, not only on its cost. Changing the size of the factor does not help: round 30 measured 0, 0.04, 0.08 and 0.16 and none fixes it.

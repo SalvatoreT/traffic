@@ -189,14 +189,14 @@ The area's targets file SHALL be able to constrain the fit with the share of tri
 - **THEN** the report gives each share before the fit, after the count-only fit and final, and says so when the shares are disabled
 
 ### Requirement: The assignment follows the simulator's route choice and restrains capacity
-The static assignment SHALL choose routes like the simulator's drivers (the least cost-to-go over movements, with a per-driver perceived-cost factor on each candidate link) and SHALL be able to average several passes over link costs that grow with volume over capacity (method of successive averages, BPR form of the volume-delay function, capacities from the validation suite), citing verified entries of `docs/references.md`.
+The static assignment SHALL choose routes like the simulator's drivers: each draw samples a perceived cost for every link and movement, normal with mean the cost and variance `dispersion` times the cost (the simulator's route-choice dispersion), truncated at zero, and loads every flow on its shortest path over movements on that draw (probit loading [Sheffi1985] ch. 11.2). It SHALL be able to average several passes over link costs that grow with volume over capacity (method of successive averages, BPR form of the volume-delay function, capacities from the validation suite), citing verified entries of `docs/references.md`.
 
 #### Scenario: Loaded short route
 - **WHEN** a flow's short route is loaded beyond its capacity and a longer route is a little more costly
 - **THEN** the averaged assignment puts part of the flow on the longer route and conserves the volume
 
 #### Scenario: Light load
-- **WHEN** the volume is far below capacity
+- **WHEN** the volume is far below capacity and the dispersion is zero
 - **THEN** the whole flow stays on the short route
 
 ### Requirement: Ramp trips are drawn per ramp
