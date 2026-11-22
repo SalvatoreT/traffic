@@ -110,7 +110,7 @@ pub struct SupplementReport {
 pub fn supplement(study: &Study, period: &str, base: &[Cand], profile: &Profile, max_locations: usize) -> SupplementReport {
     let covered = |l: &Loc| match *l {
         Loc::Block(b) => base.iter().any(|c| c.block == Some(b)),
-        Loc::Node(n) => base.iter().any(|c| c.block.is_none() && c.kind != "turn_ban" && c.kind != "slow_street" && c.nodes == vec![n]),
+        Loc::Node(n) => base.iter().any(|c| c.block.is_none() && c.kind != "turn_ban" && c.kind != "ban_set" && c.kind != "slow_street" && c.nodes == vec![n]),
     };
     let mut per: Vec<(usize, Vec<(Loc, usize, Bypass)>)> = Vec::new();
     let mut log = Vec::new();

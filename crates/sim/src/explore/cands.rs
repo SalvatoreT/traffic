@@ -155,6 +155,17 @@ pub fn kept_locations(ranked: &[(Loc, f64, bool)], n_loc: usize, profile: &Profi
     out
 }
 
+/// The candidates of a search: the generated ones, and with `Params::ban_sets` the ban sets (`bansets`) after them, so the single candidates keep their indices.
+pub fn generate_search(study: &Study, hot: &Hotspots, p: &super::Params) -> Vec<Cand> {
+    let periods: Vec<&str> = p.periods.iter().map(String::as_str).collect();
+    let mut out = generate_for(study, hot, p.candidates, &p.profile, periods.iter().copied());
+    if p.ban_sets {
+        let wanted = |c: &Cand| !p.profile.exclude_types.iter().any(|t| t == "turn_ban" || t == "ban_set") && profile_allows(study, &p.profile, &c.iv);
+        out.extend(super::bansets::candidates(study, hot, &periods).into_iter().filter(wanted));
+    }
+    out
+}
+
 /// Candidates under a profile. Boundary locations are dropped before the top `n_loc` are taken, so a constrained search still gets `n_loc` locations.
 pub fn generate_with(study: &Study, hot: &Hotspots, n_loc: usize, profile: &Profile) -> Vec<Cand> {
     generate_for(study, hot, n_loc, profile, study.period_access.keys().map(String::as_str))
@@ -353,7 +364,21 @@ pub fn conflicts(a: &Cand, b: &Cand) -> bool {
         return true;
     }
     let node_kind = |c: &Cand| matches!(c.kind, "node_filter" | "diagonal_diverter" | "traffic_circle" | "control" | "signal_timing");
-    let on_node = |c: &Cand| c.block.is_none() && c.kind != "turn_ban" && c.kind != "slow_street";
+    let on_node = |c: &Cand| c.block.is_none() && c.kind != "turn_ban" && c.kind != "ban_set" && c.kind != "slow_street";
+    if a.kind == "ban_set" || b.kind == "ban_set" {
+        // A ban set conflicts with another that shares a ban and with a single turn ban it already holds.
+        let bans = |c: &Cand| -> Vec<(u32, u32)> {
+            match (c.kind, c.iv.from_link, c.iv.to_link) {
+                ("ban_set", ..) => super::bansets::pairs(&c.iv),
+                (_, Some(x), Some(y)) => vec![(x, y)],
+                _ => Vec::new(),
+            }
+        };
+        let (x, y) = (bans(a), bans(b));
+        if x.iter().any(|m| y.contains(m)) {
+            return true;
+        }
+    }
     if on_node(a) && on_node(b) && a.nodes == b.nodes {
         return true;
     }
@@ -366,7 +391,7 @@ pub fn conflicts(a: &Cand, b: &Cand) -> bool {
 
 /// Whether a profile permits an intervention: its type is not excluded and, when the profile keeps off the boundary, it touches no bounding street or its intersections.
 pub fn profile_allows(study: &Study, profile: &Profile, iv: &Intervention) -> bool {
-    if profile.exclude_types.iter().any(|t| *t == iv.ty) {
+    if profile.exclude_types.iter().any(|t| *t == iv.ty || (iv.ty == super::bansets::TYPE && t == "turn_ban")) {
         return false;
     }
     if !profile.exclude_boundary {
@@ -411,6 +436,7 @@ pub fn same_intervention(study: &Study, a: &Intervention, b: &Intervention) -> b
         "speed_limit" => block(a.link).is_some() && block(a.link) == block(b.link) && (a.speed.unwrap_or(0.0) - b.speed.unwrap_or(0.0)).abs() < 0.02,
         "one_way" => a.link == b.link,
         "turn_ban" => a.from_link == b.from_link && a.to_link == b.to_link,
+        "ban_set" => super::bansets::pairs(a) == super::bansets::pairs(b),
         "control" => a.node == b.node && a.control == b.control,
         "signal_timing" => a.node == b.node && a.cycle == b.cycle,
         "diagonal_diverter" => {
@@ -439,6 +465,13 @@ pub fn adopt(study: &Study, cands: &mut Vec<Cand>, iv: &Intervention) -> u16 {
         "slow_street" => ("slow_street", None, Vec::new(), iv.link.and_then(|l| super::street::street_run(net, l)).map(|r| vec![r.name]).unwrap_or_default()),
         "speed_limit" => ("speed_limit", blk, blk.map(|b| vec![idx.blocks[b].a, idx.blocks[b].b]).unwrap_or_default(), blk.map(|b| vec![idx.blocks[b].name.clone()]).unwrap_or_default()),
         "turn_ban" => ("turn_ban", None, iv.from_link.map(|a| vec![net.links[a as usize].to]).unwrap_or_default(), iv.to_link.map(|b| vec![idx.link_name[b as usize].clone()]).unwrap_or_default()),
+        "ban_set" => {
+            let moves = super::bansets::pairs(iv);
+            let mut nodes: Vec<u32> = moves.iter().filter_map(|&(a, _)| net.links.get(a as usize)).map(|l| l.to).collect();
+            nodes.sort_unstable();
+            nodes.dedup();
+            ("ban_set", None, nodes, Vec::new())
+        }
         "diagonal_diverter" => ("diagonal_diverter", None, vec![iv.node.unwrap_or(0)], idx.node_streets.get(iv.node.unwrap_or(0) as usize).cloned().unwrap_or_default()),
         "traffic_circle" => ("traffic_circle", None, vec![iv.node.unwrap_or(0)], idx.node_streets.get(iv.node.unwrap_or(0) as usize).cloned().unwrap_or_default()),
         "control" => ("control", None, vec![iv.node.unwrap_or(0)], idx.node_streets.get(iv.node.unwrap_or(0) as usize).cloned().unwrap_or_default()),

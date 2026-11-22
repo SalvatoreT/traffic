@@ -64,6 +64,35 @@ fn reapply_displacement(path: &Path, report: &Path) {
     }
 }
 
+/// `--list-ban-sets FILE`: the ban sets of the network over the searched periods (no simulation), as JSON, and a table on stderr.
+fn write_ban_sets(study: &Study, p: &Params, path: &Path) {
+    use traffic_sim::explore::bansets;
+    let periods: Vec<&str> = p.periods.iter().map(String::as_str).collect();
+    let g = bansets::generate(study, &periods);
+    let a = bansets::analyze(study, &periods);
+    let name = |l: u32| study.idx.link_name[l as usize].clone();
+    let sets: Vec<serde_json::Value> = g.sets.iter().map(|s| serde_json::json!({"id": s.id, "label": s.label, "bans": s.moves.len(), "note": s.note, "moves": s.moves, "link": study.encode(&[bansets::set_iv(&s.moves)], None)})).collect();
+    let json = serde_json::json!({
+        "area": p.area, "periods": p.periods, "boundingStreets": a.bounding, "entryMovements": g.entry_movements, "usableMovements": g.usable,
+        "turns": {"left": a.movements.iter().filter(|m| m.usable() && m.turn == bansets::Turn::Left).count(), "right": a.movements.iter().filter(|m| m.usable() && m.turn == bansets::Turn::Right).count()},
+        "sets": sets,
+        "dropped": g.dropped.iter().map(|d| serde_json::json!({"id": d.id, "label": d.label, "bans": d.bans, "reason": d.reason})).collect::<Vec<_>>(),
+        "movements": a.movements.iter().map(|m| serde_json::json!({"from": m.from, "to": m.to, "fromStreet": name(m.from), "toStreet": m.onto, "bounding": m.bounding, "turn": format!("{:?}", m.turn).to_lowercase(), "baseBanned": m.base_banned, "encodes": m.encodes})).collect::<Vec<_>>(),
+    });
+    if let Some(d) = path.parent() {
+        std::fs::create_dir_all(d).expect("create output directory");
+    }
+    std::fs::write(path, util::pretty_json(&json)).expect("write ban sets");
+    eprintln!("{} entry movements ({} usable); {} ban set candidates, {} dropped", g.entry_movements, g.usable, g.sets.len(), g.dropped.len());
+    for s in &g.sets {
+        eprintln!("  {:3} bans  {:28} {}", s.moves.len(), s.id, s.label);
+    }
+    for d in &g.dropped {
+        eprintln!("  dropped {:3} bans  {:28} {}: {}", d.bans, d.id, d.label, d.reason);
+    }
+    eprintln!("wrote {}", path.display());
+}
+
 fn main() {
     let argv: Vec<String> = std::env::args().skip(1).collect();
     let mut p = Params::new("rockridge");
@@ -85,6 +114,7 @@ fn main() {
     let mut check: Vec<String> = Vec::new();
     let mut check_subsets = false;
     let mut check_singles = false;
+    let mut list_ban_sets: Option<PathBuf> = None;
     let mut out_given = false;
     let mut i = 0;
     while i < argv.len() {
@@ -109,6 +139,11 @@ fn main() {
         }
         if k == "--annotate" {
             annotate = true;
+            i += 1;
+            continue;
+        }
+        if k == "--ban-sets" {
+            p.ban_sets = true;
             i += 1;
             continue;
         }
@@ -157,6 +192,7 @@ fn main() {
             "--seed-labels" => seed_labels = Some(PathBuf::from(v)),
             "--reapply-displacement" => reapply = Some(PathBuf::from(v)),
             "--known" => known_path = Some(PathBuf::from(v)),
+            "--list-ban-sets" => list_ban_sets = Some(PathBuf::from(v)),
             "--check" => check.push(v.clone()),
             "--out" => {
                 out = Some(PathBuf::from(v));
@@ -189,6 +225,10 @@ fn main() {
         if !study.demand.periods.iter().any(|d| &d.id == per) {
             usage(&format!("demand has no period {per}"));
         }
+    }
+    if let Some(path) = &list_ban_sets {
+        write_ban_sets(&study, &p, path);
+        return;
     }
     let out = out.unwrap_or_else(|| root.join(format!("public/data/{}.proposals.json", p.area)));
     if !add_seed.is_empty() || seed_labels.is_some() || !seed_files.is_empty() {
@@ -290,7 +330,8 @@ fn main() {
         }
         let known_file = known_path.clone().unwrap_or_else(|| root.join(format!("data/proposals/{}.seeds.json", p.area)));
         let mut seed_file = if no_known { seeds::SeedFile::empty(&p.area) } else { seeds::load(&known_file, &p.area).unwrap_or_else(|e| usage(&e)) };
-        let (known, dropped) = seeds::prepare(&study, &seed_file);
+        let ban_sets = if p.ban_sets { traffic_sim::explore::bansets::generate(&study, &p.periods.iter().map(String::as_str).collect::<Vec<_>>()).sets } else { Vec::new() };
+        let (known, dropped) = seeds::prepare_with(&study, &seed_file, &ban_sets);
         p.known = known;
         p.known_dropped = dropped;
         let o = explore(&study, &p);

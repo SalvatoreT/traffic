@@ -379,6 +379,7 @@ pub fn describe(net: &Network, topo: &Topo, idx: &NameIndex, iv: &Intervention) 
                 b.map_or("?".to_string(), |b| idx.link_name[b.id as usize].clone())
             )
         }
+        super::bansets::TYPE => super::bansets::label(net, &super::bansets::pairs(iv), None),
         other => other.to_string(),
     }
 }
