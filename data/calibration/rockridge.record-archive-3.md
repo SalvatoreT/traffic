@@ -1,6 +1,132 @@
 # Rockridge baseline calibration record: archive, part 3
 
-Rounds thirty to thirty-three, moved unchanged from `rockridge.record.md` in round 43 (2026-11-18); rounds thirty-four to thirty-six, moved unchanged in round 50 (2026-11-19); round thirty-seven, moved unchanged in round 51 (2026-11-19); round thirty-eight, moved unchanged when round 51 closed (2026-11-20); rounds thirty-nine to forty-one, moved unchanged when round 52 was recorded (2026-11-20); round forty-two, moved unchanged when round 52 was adopted (2026-11-20); round forty-three, moved unchanged when round 53 was recorded (2026-11-21). Newer rounds are in `rockridge.record.md`; older ones in `rockridge.record-archive-2.md` and `rockridge.record-archive.md`.
+Rounds thirty to thirty-three, moved unchanged from `rockridge.record.md` in round 43 (2026-11-18); rounds thirty-four to thirty-six, moved unchanged in round 50 (2026-11-19); round thirty-seven, moved unchanged in round 51 (2026-11-19); round thirty-eight, moved unchanged when round 51 closed (2026-11-20); rounds thirty-nine to forty-one, moved unchanged when round 52 was recorded (2026-11-20); round forty-two, moved unchanged when round 52 was adopted (2026-11-20); round forty-three, moved unchanged when round 53 was recorded (2026-11-21); rounds forty-four and forty-five, moved unchanged when derived targets were recorded (2026-11-22). Newer rounds are in `rockridge.record.md`; older ones in `rockridge.record-archive-2.md` and `rockridge.record-archive.md`.
+
+## Forty-fifth round: a shorter Forest St green (change calibration-round-45)
+
+Passes the keep rule, not adopted (user decision, 2026-11-18). The published network 53c823f20d9165ed, demand 9cdebdabf05c4460 and cross-validation demand 2f9ae152b9bbf78e of the baseline assessment of 2026-11-18 (commit b1ff0ef, assessment ff5d667) stand, and so do the area note and caveat. Simulator fingerprint d45a275dd7be0713cec6a64394b7d8a9 throughout.
+
+### What was tried
+
+Nothing in the simulator was changed. The area config's existing `signalObservations` entries set one approach's green, and the simulator holds an observed green fixed. Three candidates set the Forest St eastbound green (heading 123) at Claremont Ave / Colby St / Forest St to 25, 18 and 12 s of the 79 s cycle in the AM and PM peaks, each labeled ASSUMPTION. The baseline model gives Forest St about 35.3 s in the PM peak. Only node 1069 differs from the baseline network and every link is identical. The fitted demand periods of each candidate equal the baseline's, because the fit reads no signal timing. The keep rule (design D4) and the screen (D5) were written before any run.
+
+The run was on the project lead's laptop session on 2026-11-18, about 8:05 PM to 9:06 PM Pacific (M3 Pro, 12 jobs), from the change's `runbook.md`. The evidence is in the archived change's `evidence/` folder.
+
+Hashes (SHA-256, first 16 characters): baseline network 53c823f20d9165ed, demand 9cdebdabf05c4460, training 2f9ae152b9bbf78e.
+
+| Candidate | Network | Demand | Training demand |
+| --- | --- | --- | --- |
+| forest-25 | 176cc2f5263d5faf | b109f88b583a4462 | 4caa790802774b25 |
+| forest-18 | 29606b40ec23be91 | d9e3b333f5eb94d6 | c42216f3e257d672 |
+| forest-12 | 611804b2c98aa041 | e4ea8ad62e5c0e26 | 6276ffe774338037 |
+
+### Screen: three seeds
+
+Stations within GEH 5 on seeds 1 to 3 (no verdict). No car was cleared from gridlock in the judged zone in any candidate, and all three advanced to ten seeds.
+
+| Run | PM fitted of 92 | PM held out of 24 | AM fitted of 77 | AM held out of 19 |
+| --- | --- | --- | --- | --- |
+| baseline | 73 | 14 | 70 | 14 |
+| forest-25 | 73 | 12 | 69 | 14 |
+| forest-18 | 74 | 12 | 71 | 13 |
+| forest-12 | 74 | 13 | 70 | 12 |
+
+### Result: ten seeds
+
+Keep rule D4. The line is the b1ff0ef baseline.
+
+| Criterion | Line | forest-25 | forest-18 | forest-12 |
+| --- | --- | --- | --- | --- |
+| PM fitted, recent, GEH < 5 | 74 of 92 | 74 | 75 | 77 |
+| PM held out | 14 of 24 | 14 | 14 | 14 |
+| AM fitted | 70 of 77 | 71 | 71 | 69 (fails) |
+| AM held out | 14 of 19 | 14 | 13 (fails) | 13 (fails) |
+| D5 headline shares within 10 points | 4 of 4 | 4 of 4 (mean error 4.9) | 4 of 4 (4.2) | 3 of 4 (fails; Hillegass Ave SB to freeway, 10.2 points off) |
+| Whole-street traversals, GEH < 5 | 8 of 8 | 8 | 8 | 8 |
+| D16 in every period | holds | holds | holds | holds |
+| Validation | 67 of 74 | 67 | 67 | 67 |
+| Verdict | | passes | fails on AM held out | fails on AM fitted, AM held out and D5 |
+
+D5, PM freeway shares in percent (observed / baseline / forest-25 / forest-18 / forest-12):
+
+| Share | Observed | Baseline | forest-25 | forest-18 | forest-12 |
+| --- | --- | --- | --- | --- | --- |
+| Hillegass Ave NB from freeway | 47 | 48.4 | 48.4 | 47.8 | 47.5 |
+| Colby St NB from freeway | 47 | 50.5 | 50.4 | 50.6 | 50.1 |
+| Hillegass Ave SB to freeway | 68 | 58.1 | 58.1 | 59.6 | 57.8 |
+| Colby St SB to freeway | 45 | 41.4 | 40.1 | 40.9 | 41.3 |
+
+### What moved
+
+A shorter Forest St green moves Forest St eastbound, Ayala Ave northbound and McAuley St eastbound toward their counts. PM, cars per hour (counted / baseline / forest-25 / forest-18 / forest-12):
+
+| Station | Counted | Baseline | forest-25 | forest-18 | forest-12 |
+| --- | --- | --- | --- | --- | --- |
+| McAuley St EB, Howell St to Canning St (held out) | 12 | 183 | 140 | 139 | 118 |
+| 60th St EB, Howell St to Canning St (held out) | 23 | 162 | 156 | 153 | 144 |
+| Ayala Ave NB, Martin St to Howell St (held out) | 60 | 212 | 160 | 115 | 101 |
+| Forest St EB, Colby St / Claremont Ave to Ayala Ave (fitted) | 66 | 183 | 167 | 125 | 101 |
+| 60th St EB at Telegraph Ave | 27 | 83 | 77 | 69 | 72 |
+| McAuley St EB at Telegraph Ave | 14 | 48 | 42 | 36 | 35 |
+| Howell St SB, 59th St to McAuley St | 17 | 72 | 64 | 62 | 62 |
+| Ayala Ave SB, Forest St to McAuley St | 20 | 107 | 99 | 74 | 69 |
+
+AM, cars per hour (counted / baseline / forest-25 / forest-18 / forest-12): McAuley St EB 4 / 84 / 89 / 79 / 74; 60th St EB 6 / 79 / 84 / 76 / 73; Ayala Ave NB 50 / 86 / 88 / 74 / 70; Forest St EB 50 / 85 / 83 / 74 / 61.
+
+Against the baseline, forest-25 flips two stations from fail to pass (Colby St NB, 62nd St to 63rd St, AM; Colby St NB at 63rd St, PM, held out) and one from pass to fail (Canning St SB, 59th St to McAuley St, PM, held out, 21 to 17 against 49 counted). The AM held-out stations (Colby St SB, McAuley St to 60th St) and the Hillegass Ave SB share to the freeway get worse as the green gets shorter. forest-25 passes with three lines exactly on their limits (PM fitted 74, PM held out 14, AM held out 14) and changes no status.
+
+### Verdict
+
+forest-25 passes the keep rule. forest-18 fails on AM held out. forest-12 fails on AM fitted, AM held out and D5.
+
+Decision (user, 2026-11-18): not adopted. The gain is one AM location, the Forest St timing is unobserved, and adopting it would need a new proposal search and a republish with no change in status. The published network stays 53c823f20d9165ed. A field timing of the Forest St green would reopen it.
+
+### Open items
+
+Earlier diagnostics from 2026-11-18, kept short; none has been confirmed in the field. After round 45 no known untested lever remains.
+Earlier diagnostics from 2026-11-18, kept short; none has been confirmed in the field.
+
+- Barricade diagnostic: no variant of the Howell St, Forest St and Colby St barricades passes the held-out rule. A closure of Colby St at 61st St contradicts the count: 102 cars an hour counted northbound along the whole street against 0 modeled.
+- Trace of McAuley St and 60th St eastbound: 83% of the through cars on them take the diagonal Telegraph Ave, McAuley St or 60th St, Ayala Ave or Howell St, Forest St, Claremont Ave. The green time for Forest St is an unobserved assumption and a strong lever in a two-seed probe: with a 10 s green, Forest St eastbound fell from 448 to 142 and McAuley St eastbound from 158 to 94. Round 45 tested three assumed values for that green (25, 18 and 12 s); the entry below gives the result. The green itself is still unobserved, and a field reading of the Forest St green and queue remains the open check.
+- Street-level imagery (undated) shows no median and no turn restriction on Telegraph Ave at 59th St to 63rd St.
+
+## Forty-fourth round: the demand fit reads measured control delay (change calibration-round-44)
+
+Rejected under the keep rule (design D3), written before any run of the candidate. The published network 53c823f20d91, demand 9cdebdabf05c and cross-validation demand 2f9ae152b9bb of the baseline assessment of 2026-11-18 (commit b1ff0ef, assessment ff5d667) stand, and so do the area note and caveat. The mechanism stays in the code and is off unless the demand config names a control delay file (`countFit.assignment.controlDelays`); the shipped config does not. The figures below are those of the trial.
+
+### What was tried
+
+A diagnosis on the PM peak found that the fit's static assignment charges flat control delays per control type (signal 10 s, all-way stop 8 s, minor stop 14 s, `crates/sim/data/node-delays.json`), while the simulator's arterial signal approaches cost 15 to 50 s per car. The fit saw the arterials as faster than the simulator does, and the simulator sent two to seven times more cars through the grid than the fit's final assignment planned on fitted stations (PM, counted, fit's static final, simulated: Forest St eastbound 66, 75, 201; 60th St eastbound at Telegraph Ave 27, 25, 74; Howell St southbound 17, 33, 84).
+
+The trial let the fit read the simulator's measured control delay per approach link and period in place of the constant, with no new knob (design D1). The measured value is the flow-weighted mean delay per car over ten seeds, less the median delay of links that end at no control, floored at zero, for approaches with at least 20 veh/h (ASSUMPTION, the cut of `tools/node-delays.ts`). Two fixed passes, no convergence tuning (D2): pass 0 measured delays on the b1ff0ef demand and refit; pass 1 measured on the pass-0 demand and refit. The pass-1 demand was the candidate. The cross-validation demand was built the same way from delays measured on training-view demand only. The BPR factor, the split, the targets and every other fit setting stayed as they were (D4). Simulator fingerprint d45a275dd7be0713cec6a64394b7d8a9, unchanged; validation 67 of 74, unchanged.
+
+The heavy passes (12 jobs: the two measurement passes, the demand builds, the validation suite and the ten-seed assessment) ran on the project lead's laptop session from `openspec/changes/archive/2026-11-19-calibration-round-44/runbook.md`, per design D5. The laptop reproduced the container's baseline exactly: network, demand and cross-validation demand hashes, and the baseline station tallies recomputed from its own runs (PM 74 of 92 and 14 of 24, AM 70 of 77 and 14 of 19).
+
+### Result: ten seeds
+
+Keep rule D3, against the assessment of b1ff0ef. The first column is the published assessment of 2026-11-17 on the previous network, shown as a report and not a condition.
+
+| Criterion | 2026-11-17 published | b1ff0ef baseline (the line) | Round 44 candidate | Result |
+| --- | --- | --- | --- | --- |
+| PM recent fitted stations, GEH < 5 | 78 of 92 | 74 of 92 | 69 of 92 | worse |
+| PM held out | 13 of 24 | 14 of 24 | 14 of 24 | same |
+| AM recent fitted stations | 67 of 77 | 70 of 77 | 67 of 77 | worse |
+| AM held out | 14 of 19 | 14 of 19 | 14 of 19 | same |
+| D5, PM headline shares within 10 points | 4 of 4 (error 3.7) | 4 of 4 (error 4.6) | 2 of 4 (error 12.8) | worse |
+| Whole-street traversals, GEH < 5 | 8 of 8 | 8 of 8 | 7 of 8 | worse |
+| D16 in every period | holds | holds | holds | same |
+
+Verdict: 4 of 7 criteria are worse than the line, so the candidate is rejected and nothing is adopted. PM fitted falls 74 to 69 of 92, AM fitted 70 to 67 of 77, D5 from 4 of 4 to 2 of 4 (Colby St northbound from the freeway 36.0 against 47, Hillegass Ave southbound to the freeway 45.2 against 68), and the whole-street traversals from 8 to 7 of 8 (Colby St southbound in the PM peak, 81 modeled against 39 counted, GEH 5.4). Both held-out figures are unchanged. Among recent stations 11 flipped in the AM peak (4 to pass, 7 to fail) and 15 in the PM peak (5 to pass, 10 to fail); `evidence/stations.md` lists them. Validation passes 67 of 74 as before. Status stays `uncalibrated`.
+
+### What moved
+
+The measured delays closed most of the gap between what the fit plans and what the simulator does, but the fit closed it by planning more traffic through the grid. On Forest St eastbound (PM, counted 66) the fit's static final went from 61 to 183 and the simulated flow from 183 to 205. On Ayala Ave southbound, Forest St to McAuley St (counted 20), the static final went from 42 to 111, while the simulated flow went from 107 to 92.
+
+The delays had not settled after two passes. From pass 0 to pass 1 the RMS change of an approach's delay in the shipped view was 11.4 s in the AM peak, 6.3 s at midday and 31.7 s in the PM peak (training view 25.8, 5.7 and 25.2 s). The mean measured control delay in the PM peak rose from 17.1 s to 23.6 s. Offered car demand fell slightly (PM 27,612 to 26,555 veh/h) and through trips in the shipped fit went from 3745 to 3746 (AM), 3093 to 3175 (midday) and 5907 to 5701 (PM).
+
+The Howell-area held-out stations moved toward their counts. PM, counted / baseline / candidate on the cross-validation demand: McAuley St eastbound, Howell St to Canning St, 12 / 183 / 81; 60th St eastbound, Howell St to Canning St, 23 / 162 / 117; Ayala Ave northbound, Martin St to Howell St, 60 / 212 / 93, now within GEH 5. The first two stay far above their counts. Other held-out stations went the other way (Hillegass Ave southbound, 62nd St to 61st St, 151 counted, 165 to 89; Canning St southbound, 59th St to McAuley St, 49 counted, 21 to 11), so the held-out totals did not change.
+
+Hashes (SHA-256, first 16 characters): network 53c823f20d9165ed throughout; pass 0 demand a9acd0d97316ab6c, training 615e6673197e309a, delay files 8680288fa205a6b6 and b4dcc391bb0d843f; pass 1 (candidate) demand 19ee7b952638016d, training 5284e73cfa916f74, delay files 10228ecf206db509 and f541623d9549fe34. The four delay files stay in `data/demand/` (each under 30 KB) as evidence, unused by the shipped config. The candidate's fit reports, the station flips, the run logs and the assessment (`rockridge.assessment-r44.md`) are in the change's evidence.
 
 ## Forty-third round: stop control at Hillegass Ave / 61st St and Canning St / 62nd St (change calibration-round-43)
 
