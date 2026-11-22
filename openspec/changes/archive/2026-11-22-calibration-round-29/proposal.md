@@ -1,3 +1,5 @@
+> Round 29 ran on 2026-11-15 (`data/calibration/rockridge.record-archive-*.md`). Archived late, on 2026-11-22; its requirements were merged into the specs by hand first, so the archive ran with --skip-specs.
+
 ## Why
 
 Round 28 left the Hillegass Ave and Colby St southbound through cars far above the volunteer count's ranges, and found that no demand lever fixes them. The lead's hypothesis for round 29: the arterials around the Rockridge Trapezoid are too slow relative to reality on the repaired engine, because several capacity primitives sit at the floor of their published ranges, so the model diverts too much traffic onto the side streets. This round tests that hypothesis before changing anything, in the record's order: primitives, then signals, then route choice, then demand.
