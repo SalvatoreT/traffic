@@ -78,3 +78,39 @@
 .derived-table caption { text-align: left; padding-bottom: .25rem; }
 .derived-table th, .derived-table td { text-align: left; padding: .3rem .5rem; border-bottom: 1px solid var(--border); vertical-align: top; }
 .derived-table td:not(:first-of-type):not(:last-child) { font-variant-numeric: tabular-nums; text-align: right; }
+
+.flow-table { width: 100%; margin: .6rem 0 .3rem; border-collapse: collapse; font-size: .95rem; }
+.flow-table th, .flow-table td { padding: .55rem .6rem; border-top: 1px solid var(--border); text-align: left; vertical-align: top; }
+.flow-table thead th { border-top: 0; border-bottom: 2px solid var(--border); font-size: .8rem; color: var(--muted); font-weight: 600; }
+.flow-table thead th:not(:first-child), .flow-table td.flow-num { text-align: right; }
+.flow-table tfoot th, .flow-table tfoot td { border-top: 2px solid var(--border); font-weight: 600; }
+.flow-table tbody th { font-weight: 400; }
+.flow-table td.flow-num { width: 7rem; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.flow-cars { font-weight: 600; font-size: 1.05rem; }
+.flow-pct { color: var(--muted); font-size: .8rem; }
+.flow-corridor { display: block; font-weight: 600; }
+.flow-direction { display: block; color: var(--muted); font-size: .9rem; }
+.flow-why { margin-top: .3rem; font-size: .88rem; max-width: 60ch; }
+.flow-why summary { cursor: pointer; min-height: 24px; padding: .2rem 0; font-weight: 600; font-size: .85rem; }
+.flow-streets { margin: .3rem 0; font-size: .85rem; overflow-wrap: anywhere; }
+.flow-reasons, .flow-small { margin: .3rem 0 0; padding: 0; list-style: none; }
+.flow-reasons li, .flow-small li { margin: 0 0 .55rem; }
+.flow-reasons li:last-child, .flow-small li:last-child { margin-bottom: 0; }
+.flow-small .flow-reasons { margin-left: .8rem; padding-left: .6rem; border-left: 2px solid var(--border); }
+.flow-reason-name { font-weight: 600; margin-right: .3rem; }
+.flow-reason-avoids { display: block; color: var(--muted); }
+.flow-cross { margin: .2rem 0 .6rem; padding-left: 1.2rem; max-width: 75ch; }
+.reasons-all { margin: .6rem 0 0; }
+.reasons-all > summary { cursor: pointer; min-height: 24px; padding: .3rem 0; font-weight: 600; }
+
+@media (max-width: 719.98px) {
+  table.flow-table, .flow-table thead, .flow-table tbody, .flow-table tfoot { display: block; width: 100%; }
+  .flow-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .flow-table tr { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 .5rem; padding: .55rem .2rem; border-top: 1px solid var(--border); }
+  .flow-table th, .flow-table td { border-top: 0; padding: 0; }
+  .flow-table th[scope='row'] { grid-column: 1 / -1; margin-bottom: .35rem; }
+  .flow-table td.flow-num { width: auto; text-align: left; }
+  .flow-table td.flow-num::before { content: attr(data-label); display: block; font-size: .72rem; color: var(--muted); white-space: normal; }
+  .flow-table tfoot tr { border-top: 2px solid var(--border); }
+  .flow-table tfoot th, .flow-table tfoot td { border-top: 0; }
+}
