@@ -1,3 +1,5 @@
+> Round 36 ran on 2026-11-16 (`data/calibration/rockridge.record-archive-*.md`). Archived late, on 2026-11-22; its requirements were merged into the specs by hand first, so the archive ran with --skip-specs.
+
 ## Why
 
 Rounds 33 to 35 changed the phasing, the timing and one approach's lanes at Ashby Ave / Claremont Ave, and none of them reduced the cars cleared from gridlock there or on the hillside streets behind it. The delay-feedback fit stays rejected on that gridlock (10 to 16 cars an hour). The lead's reading: two northbound lanes with even 17 s of green in 100 s discharge about 600 an hour, yet the model passes 260 to 370, so the junction is limited by something other than its signal. This round finds that constraint before any further change to the signal.
