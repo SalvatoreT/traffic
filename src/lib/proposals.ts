@@ -529,18 +529,19 @@ export function allTrafficRows(p: Proposal, periodLabel: (id: string) => string)
  * local parts and its interval, so a cut in through cars is never read as the whole effect. `attribution` says that the card's figures do
  * not tell which trips moved: that needs the route diagnostic, and its absence is not a finding of no diversion.
  */
-export function allTrafficHeadline(rows: AllTrafficRow[]): { none: boolean; figure: string; label: string; split: string; interval: string; attribution: string } {
+export function allTrafficHeadline(rows: AllTrafficRow[]): { none: boolean; figure: string; label: string; short: string; split: string; interval: string; attribution: string } {
   const attribution = 'Which trips moved, and by which streets, is not part of these figures: open Where traffic goes to trace them. Until then no diversion has been ruled out.';
   const r = rows.filter((x) => x.block !== null && !x.flagged).sort((a, b) => b.change - a.change)[0];
   if (!r) {
     const old = rows.some((x) => x.flagged);
-    return { none: true, figure: '', label: old ? 'All traffic: this file records only the block the search flagged, not the largest rise in all cars.' : 'All traffic: not recorded in this file.', split: '', interval: '', attribution };
+    return { none: true, figure: '', label: old ? 'All traffic: this file records only the block the search flagged, not the largest rise in all cars.' : 'All traffic: not recorded in this file.', short: '', split: '', interval: '', attribution };
   }
   const n = Math.round(r.change);
   return {
     none: false,
     figure: n > 0 ? `+${n}` : n < 0 ? `${MINUS}${-n}` : '0',
     label: `all cars an hour on ${r.block} (${r.period}), ${Math.round(r.before)} → ${Math.round(r.after)}: the largest rise on any side-street block inside the study area`,
+    short: `all cars an hour on ${r.block} in the ${r.period.replace(/\s*\(.*\)\s*$/, '')} (${Math.round(r.before)} → ${Math.round(r.after)})`,
     split: `Through cars ${signedNum(r.through, '', 0).trim()}, local trips ${signedNum(r.local, '', 0).trim()}.`,
     interval: r.interval, attribution,
   };

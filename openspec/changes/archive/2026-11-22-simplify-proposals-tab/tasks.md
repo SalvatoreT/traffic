@@ -22,3 +22,10 @@
 - [x] 4.1 `npx vitest run tools/ worker/ src` and `npm run -s typecheck` pass; `npx vite build` succeeds (the WASM step was skipped, the copied pkg was used).
 - [x] 4.2 Screenshots before and after under the scratchpad folder.
 - [x] 4.3 Validate the change with `--strict`, archive it and check that `openspec/specs/` no longer requires a Streets tab.
+
+## 5. Review fixes
+
+- [x] 5.1 Compact phone footer, in flow on document tabs.
+- [x] 5.2 16 px fields on touch screens.
+- [x] 5.3 Readout shrinks when empty.
+- [x] 5.4 Shorter side-effect line.

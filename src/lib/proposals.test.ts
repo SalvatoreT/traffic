@@ -215,6 +215,7 @@ describe('details tables', () => {
     const h = allTrafficHeadline([row('AM', 12, 2), row('PM', 43, -7)]);
     expect(h).toMatchObject({ none: false, figure: '+43', split: 'Through cars −7, local trips +50.' });
     expect(h.label).toMatch(/B PM \(PM\), 100 → 143/);
+    expect(h.short).toBe('all cars an hour on B PM in the PM (100 → 143)');
     expect(h.attribution).toMatch(/no diversion has been ruled out/);
     expect(allTrafficHeadline([row('PM', 5, 1, true)])).toMatchObject({ none: true });
     expect(allTrafficHeadline([]).label).toMatch(/not recorded/);

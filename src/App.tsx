@@ -489,6 +489,23 @@ function Simulator({ bundle, start, onRestart }: { bundle: AreaBundle; start: St
   useEffect(() => setHoverPlace(null), [view]);
   const mapShown = mapVisible;
   const showPanel = view === 'map';
+  const short = (full: string, abbr: string) => <><span className="foot-full">{full}</span><span className="foot-short" aria-hidden="true">{abbr}</span></>;
+  const footer = (
+    <footer className="foot">
+      <span className="foot-left">Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>.</span>
+      <span className="foot-right">
+        <button type="button" className="link" aria-label="Sources & assumptions" onClick={() => go('sources')}>{short('Sources & assumptions', 'Sources')}</button>{' · '}
+        <a href="/llms.txt" aria-label="For AI agents">{short('For AI agents', 'AI agents')}</a>{' · '}
+        <a href={SOURCE_REPO_URL} target="_blank" rel="noopener noreferrer" aria-label="Source on GitHub">{short('Source on GitHub', 'GitHub')}</a>{' · '}
+        <label className="foot-theme"><span>Theme</span>
+          <select value={theme} onChange={(e) => setTheme(e.target.value as Theme)}>
+            <option value="auto">System</option><option value="light">Light</option><option value="dark">Dark</option>
+          </select>
+        </label>
+      </span>
+    </footer>
+  );
+  const docPhone = phone && view !== 'map';
   const placement: Placement | null = !selection ? null : selection.via === 'search' || !mapVisible ? 'inline' : phone ? 'sheet' : 'popover';
   const menu = selection && placement ? (
     <SelectionMenu bundle={bundle} index={index} selection={selection} interventions={interventions} placement={placement}
@@ -643,6 +660,7 @@ function Simulator({ bundle, start, onRestart }: { bundle: AreaBundle; start: St
             </Suspense>
           )}
           {view === 'sources' && <Suspense fallback={<p className="boot" role="status">Loading sources…</p>}><Sources demand={demand} synthetic={bundle.synthetic} calibration={bundle.synthetic ? undefined : { status: calStatus, note: bundle.entry.calibration?.note }} /></Suspense>}
+          {docPhone && footer}
         </div>
 
         {showPanel && !phone && (
@@ -670,20 +688,7 @@ function Simulator({ bundle, start, onRestart }: { bundle: AreaBundle; start: St
           </Sheet>
         )}
       </main>
-      <footer className="foot">
-        <span className="foot-left">
-          <span>Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>.</span>{' '}
-          <button type="button" className="link" onClick={() => go('sources')}>Sources &amp; assumptions</button>
-        </span>
-        <span className="foot-right">
-          <a href="/llms.txt">For AI agents</a>{' · '}<a href={SOURCE_REPO_URL} target="_blank" rel="noopener noreferrer">Source on GitHub</a>{' · '}
-          <label className="foot-theme"><span>Theme</span>
-            <select value={theme} onChange={(e) => setTheme(e.target.value as Theme)}>
-              <option value="auto">System</option><option value="light">Light</option><option value="dark">Dark</option>
-            </select>
-          </label>
-        </span>
-      </footer>
+      {!docPhone && footer}
     </div>
     </NavContext.Provider>
   );

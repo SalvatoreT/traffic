@@ -70,3 +70,12 @@ Measured at 320, 375 and 414 px, closed and open, on every tab, in Chromium with
 - Hiding the map's street list means a person must open a disclosure to pick a street from a list; hovering or tapping the map still works.
 - `llms-full.txt` includes `index.md`, so it now carries the street table (about 9 KB).
 - Tests cover helpers and source rules. The repo has no component or end-to-end test runner, and Playwright is not a dependency, so the layout check is a script, not part of `npm test`.
+
+## Revision, same day
+
+Lead review of the screenshots asked for four changes:
+
+- The phone footer is two short lines (attribution; then Sources, AI agents, GitHub and Theme with full accessible names). It is fixed under the Map tab only; on the document tabs it ends the scrolling content.
+- On coarse pointers every `input`, `select` and `textarea` is 16 px or larger, treating the iOS focus-zoom as the likely cause of the sideways pan. The viewport meta already allows zoom. `viewport-fit=cover` was not added, so the safe-area padding stays unverified.
+- The readout beside the map shrinks to its content when empty and grows to 15rem.
+- The side-effect line reads "Largest rise on one block: +194 all cars an hour on <block> in the PM peak (31 → 225)". The clock hours and "the largest rise on any side-street block inside the study area" moved into the all-cars disclosure.

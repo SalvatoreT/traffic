@@ -264,7 +264,7 @@ function Card({ p, group, evidence, comparison, comparisonLabel, shareUrl, onCop
         {p.accessProblem && <p className="notice err"><strong>Street access check failed.</strong> {p.accessProblem}.</p>}
         {p.simulationProblem && <p className="notice err"><strong>Simulation validity check failed.</strong> {p.simulationProblem}.</p>}
         <div className="fig fig-all">
-          <p className="fig-main">{all.none ? all.label : <><span className="fig-num">{all.figure}</span> {all.label}</>}</p>
+          <p className="fig-main">{all.none ? all.label : <><span className="fig-lead">Largest rise on one block:</span> <span className="fig-num">{all.figure}</span> {all.short}</>}</p>
         </div>
       </div>
       {hasPic && <ProposalMap net={bundle.network} index={index} p={p} group={group} ivs={ivs ?? []} areaId={bundle.entry.id} mode={mode} periodLabel={periodLabel} searchedPeriods={searched} loaded={loaded} onTrace={onTrace} />}
@@ -304,6 +304,7 @@ function Card({ p, group, evidence, comparison, comparisonLabel, shareUrl, onCop
         <p className="muted small">
           All traffic on side-street blocks inside the study area, through cars and local trips together. Every car on one block, both directions, including the local trips of people who start or end a trip in the area. For each period, the block with the largest increase in all cars is named. The search itself penalizes the largest rise in all cars on any one block past an assumed noise band, because residents experience all the cars on their street. That block can differ from the one with the largest increase, so it is listed beside it. The penalty is a screening rule, not an uncertainty interval.
         </p>
+        {!all.none && <p className="small"><strong>{all.figure}</strong> {all.label}.</p>}
         {!all.none && <p className="small">{all.split} {all.interval}</p>}
         <div className="table-scroll" role="region" aria-label="All traffic on side-street blocks by period, scrollable" tabIndex={0}>
           <table className="wide">

@@ -1200,7 +1200,7 @@ When the row of tabs is wider than the screen, the row SHALL scroll sideways and
 - **THEN** no cue is shown
 
 ### Requirement: Footer holds the theme control and the source link
-The Theme control SHALL be in the footer, beside "For AI agents" and "Source on GitHub", as a small labeled select with the same options, behavior and stored choice as before. The footer SHALL be visible on every tab at every width, including the Map tab on a phone, where the bottom sheet sits above it and never covers it. Its links and control SHALL be at least 24 by 24 CSS px, and its bottom padding SHALL allow for a device's safe area.
+The Theme control SHALL be in the footer, beside "For AI agents" and "Source on GitHub", as a small labeled select with the same options, behavior and stored choice as before. The footer SHALL be reachable on every tab at every width. On a phone it SHALL be at most two short lines: the OpenStreetMap attribution, then Sources, AI agents, GitHub (links keep their full accessible names) and the Theme control. On the Map tab it SHALL stay visible below the bottom sheet, which never covers it; on the Proposals, Methodology, Assumptions and Sources tabs it SHALL sit at the end of the scrolling content and take no reading space. Its links and control SHALL be at least 24 by 24 CSS px, and its bottom padding SHALL allow for a device's safe area.
 
 #### Scenario: Phone
 - **WHEN** any tab is shown at 320, 375 or 414 px
@@ -1211,7 +1211,7 @@ The Theme control SHALL be in the footer, beside "For AI agents" and "Source on 
 - **THEN** the app switches to the dark theme and keeps the choice on the next visit
 
 ### Requirement: No sideways panning on phones
-No tab SHALL be wider than the screen at 320, 375 or 414 px with disclosures closed or open, and dragging sideways on a touch screen SHALL NOT move the page or the scroll area. Wide tables, code and long unbroken text SHALL wrap or scroll inside their own container. The page and the scroll area SHALL also clip any stray horizontal overflow as a guard.
+No tab SHALL be wider than the screen at 320, 375 or 414 px with disclosures closed or open, and dragging sideways on a touch screen SHALL NOT move the page or the scroll area. Wide tables, code and long unbroken text SHALL wrap or scroll inside their own container. The page and the scroll area SHALL also clip any stray horizontal overflow as a guard. On touch screens every `input`, `select` and `textarea` SHALL have a font size of at least 16 px, so iOS Safari does not zoom the page on focus, and the viewport SHALL NOT disable user zoom.
 
 #### Scenario: Dragging sideways
 - **WHEN** a person drags sideways on any tab on a 375 px touch screen
