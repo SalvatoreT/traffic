@@ -1,0 +1,39 @@
+diff --git i/openspec/changes/calibration-round-54/scripts/pack.zsh w/openspec/changes/calibration-round-54/scripts/pack.zsh
+index df91313..21c0ca5 100644
+--- i/openspec/changes/calibration-round-54/scripts/pack.zsh
++++ w/openspec/changes/calibration-round-54/scripts/pack.zsh
+@@ -18,7 +18,7 @@ case $STAGE in
+   stage1)
+     FILES+=(${(f)"$(find target/r54-stage1 -maxdepth 1 -type f \( -name '*.md' -o -name '*.log' \) | LC_ALL=C sort)"})
+     FILES+=(${(f)"$(find $CH/evidence/stage1 -type f | LC_ALL=C sort)"})
+-    FILES+=(${(f)"$(ls target/r54-stage1/off-ship/calibrate.log target/r54-stage1/off-cv/calibrate.log target/r54-stage1/on-ship/calibrate.log target/r54-stage1/on-cv/calibrate.log 2>/dev/null)"})
++    FILES+=(${(f)"$(ls target/r54-stage1/{pm_peak,am_peak}/{off,on}-{ship,cv}/calibrate.log 2>/dev/null)"})
+     ;;
+   stage2)
+     FILES+=(${(f)"$(find target/r54 -maxdepth 1 -type f \( -name '*.log' -o -name '*.md' \) | LC_ALL=C sort)"})
+diff --git i/openspec/changes/calibration-round-54/scripts/stage1.zsh w/openspec/changes/calibration-round-54/scripts/stage1.zsh
+index e5ae522..283a1e3 100644
+--- i/openspec/changes/calibration-round-54/scripts/stage1.zsh
++++ w/openspec/changes/calibration-round-54/scripts/stage1.zsh
+@@ -30,7 +30,7 @@ for p in pm_peak am_peak; do
+   for opt in off on; do
+     flag=(); [ $opt = on ] && flag=(--single-control-charge) || flag=(--no-single-control-charge)
+     for view in ship cv; do
+-      D=$R/$opt-$view; rm -rf $D; mkdir -p $D
++      D=$R/$p/$opt-$view; rm -rf $D; mkdir -p $D
+       dem=(); [ $view = cv ] && dem=(--demand $R/cv.demand.json)
+       S0=$(date +%s)
+       $CAL --area rockridge --period $p --minutes 60 --scale 1 --seeds $SEEDS --jobs $JOBS --keep-seeds $D --out $D/summary $dem $flag > $D/calibrate.log 2>&1
+@@ -39,9 +39,9 @@ for p in pm_peak am_peak; do
+       [ $RC = 0 ] || { log "calibrate failed, stop"; exit 1; }
+     done
+   done
+-  node openspec/changes/calibration-round-54/scripts/check-option.cjs $R/off-ship $R/off-cv off $p || exit 1
+-  node openspec/changes/calibration-round-54/scripts/check-option.cjs $R/on-ship $R/on-cv on $p || exit 1
+-  npx tsx tools/diag/control-charge-score.ts --period $p --seeds $SEEDS --set off=$R/off-ship,$R/off-cv --set on=$R/on-ship,$R/on-cv | tee $CH/evidence/stage1/score-$p.md
++  node openspec/changes/calibration-round-54/scripts/check-option.cjs $R/$p/off-ship $R/$p/off-cv off $p || exit 1
++  node openspec/changes/calibration-round-54/scripts/check-option.cjs $R/$p/on-ship $R/$p/on-cv on $p || exit 1
++  npx tsx tools/diag/control-charge-score.ts --period $p --seeds $SEEDS --set off=$R/$p/off-ship,$R/$p/off-cv --set on=$R/$p/on-ship,$R/$p/on-cv | tee $CH/evidence/stage1/score-$p.md
+ done
+ log "git status after: $(git status --short | tr '\n' ';')"
+ log "Bar lines:"
