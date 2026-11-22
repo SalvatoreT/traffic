@@ -8,6 +8,7 @@ import { buildAssumptions, derivedTargetsView, type AssumptionsCfg } from './lib
 import { writeFileAtomic } from './lib/atomic';
 import { mapMovement, nodeStreets } from './lib/volunteer-count';
 import type { Network } from '../src/types';
+import { assignCorridors, corridorCfgOf } from './lib/cut-corridors';
 
 const root = resolve(import.meta.dirname, '..');
 const arg = (k: string, d: string) => { const i = process.argv.indexOf(k); return i >= 0 ? process.argv[i + 1] : d; };
@@ -26,10 +27,21 @@ for (const m of cfg.assumedMovementFlows.movements) {
   if (r.a === null || r.b === null) { console.warn(`no map for ${m.id}: ${r.reason}`); continue; }
   links[m.id] = { from: r.a, to: r.b, node: net.links[r.a].to };
 }
+const areaPath = resolve(root, `data/areas/${cfg.area}.json`);
+const corridorCfg = existsSync(areaPath) ? corridorCfgOf(JSON.parse(readFileSync(areaPath, 'utf8'))) : null;
+const assignment = corridorCfg ? assignCorridors(net, corridorCfg) : null;
+const corridorOf: Record<string, string> = {};
+if (corridorCfg && assignment) {
+  for (const [id, at] of Object.entries(links)) {
+    const c = [at.from, at.to].map((l) => assignment.corridorOf[l]).find((i) => i !== undefined && i >= 0 && i < corridorCfg.corridors.length);
+    if (c !== undefined) corridorOf[id] = corridorCfg.corridors[c].id;
+  }
+}
 const stationsPath = resolve(root, `data/demand/${cfg.area}.stations.json`);
 const derivedTargets = existsSync(stationsPath) ? derivedTargetsView((JSON.parse(readFileSync(stationsPath, 'utf8')) as { stations: never[] }).stations, cfg as never) : null;
 const file = buildAssumptions(cfg, readFileSync(fitPath, 'utf8'), {
   area: cfg.area, demandHash: await hashText(readFileSync(demandPath, 'utf8')), countSourceId, generated: new Date().toISOString(), links, derivedTargets,
+  corridors: corridorCfg ? { list: corridorCfg.corridors.map((c) => ({ id: c.id, name: c.name })), of: corridorOf } : undefined,
 });
 const out = resolve(root, `public/data/${cfg.area}.assumptions.json`);
 writeFileAtomic(out, JSON.stringify(file) + '\n');

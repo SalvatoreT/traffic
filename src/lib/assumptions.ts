@@ -19,6 +19,8 @@ export interface AssumedMovementView {
   belowThreshold?: Record<string, number>;
   /** Why no trips are assigned in those periods. */
   belowThresholdNote?: string;
+  /** Id of the corridor (`corridors`) whose street the movement turns from or onto; absent when the area defines no corridors or none fits. */
+  corridor?: string;
 }
 /**
  * Stations whose hourly target is a daily total times assumed factors (AADT or ramp ADT): in the fit as inputs, never held out, not judged (change derived-targets-not-judged).
@@ -36,6 +38,8 @@ export interface AssumptionsFile {
   /** What the counted numbers come from and which periods they were measured in; the others are scaled from them. */
   count: { label: string; measured: string[]; scaled: string[] };
   movements: AssumedMovementView[];
+  /** The corridors the movements are grouped under, in the area's order (area config `cutThroughCorridors`). */
+  corridors?: { id: string; name: string }[];
   derivedTargets?: DerivedTargetsView;
 }
 
@@ -46,6 +50,7 @@ export function parseAssumptions(text: string): AssumptionsFile | null {
     const r = JSON.parse(text) as AssumptionsFile;
     const ok = r?.version === ASSUMPTIONS_VERSION && typeof r.area === 'string' && typeof r.inputs?.demandHash === 'string'
       && typeof r.count?.label === 'string' && Array.isArray(r.count.measured) && Array.isArray(r.count.scaled)
+      && (r.corridors === undefined || (Array.isArray(r.corridors) && r.corridors.every((c) => typeof c.id === 'string' && typeof c.name === 'string')))
       && (r.derivedTargets === undefined || (typeof r.derivedTargets.kFactor === 'number' && typeof r.derivedTargets.rampKFactor === 'number' && Array.isArray(r.derivedTargets.stations)))
       && Array.isArray(r.movements) && r.movements.every((m) => typeof m.id === 'string' && typeof m.label === 'string' && [m.from, m.to, m.node].every((v) => v === undefined || Number.isInteger(v)) && Array.isArray(m.intents) && typeof m.assigned === 'object' && typeof m.counted === 'object');
     return ok ? r : null;

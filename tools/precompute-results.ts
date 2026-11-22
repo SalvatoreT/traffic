@@ -15,6 +15,8 @@ import { RESULT_SEED, RESULT_VERSION, canonicalItems, encodeStats, parseResult, 
 import { RUN_SECONDS } from '../src/lib/run';
 import { BASELINE_INTENTS_VERSION, encodeBaselinePeriod, parseBaselineIntents, type BaselineIntents } from '../src/lib/baseline-intents';
 import { loadEngine, runHour, type HourStats } from './lib/run-result';
+import { traceThroughHour, type TracedHour } from './lib/corridor-trace';
+import { assignCorridors, corridorCfgOf, corridorPeriod, isLocalLink } from './lib/cut-corridors';
 import { summarizeEnds } from './lib/intent-ends';
 import { deriveApproachGroups, groupOfNode, type ApproachGroupsCfg } from './lib/approach-groups';
 import { writeFileAtomic } from './lib/atomic';
@@ -23,14 +25,20 @@ const root = resolve(import.meta.dirname, '..');
 const arg = (k: string, d: string) => { const i = process.argv.indexOf(k); return i >= 0 ? process.argv[i + 1] : d; };
 const flag = (k: string) => process.argv.includes(k);
 
-interface Job { key: string | null; period: string; interventions: Intervention[] }
+interface Job { key: string | null; period: string; interventions: Intervention[]; /** A traced run of today's traffic for the corridor table. */ trace?: boolean }
 interface Payload { network: string; demand: string; jobs: Job[] }
 
 if (!isMainThread) {
   const { network, demand, jobs } = workerData as Payload;
   const e = await loadEngine();
+  const links = (JSON.parse(network) as Network).links;
   for (const j of jobs) {
     const t0 = Date.now();
+    if (j.trace) {
+      const traced = traceThroughHour(e, network, demand, j.period, (l) => isLocalLink(links[l]));
+      parentPort!.postMessage({ job: j, traced, ms: Date.now() - t0 });
+      continue;
+    }
     const s = runHour(e, network, demand, j.period, j.interventions);
     const stats = { metrics: s.metrics, linkStats: s.linkStats, intentLinks: s.intentLinks, intentTrips: s.intentTrips };
     parentPort!.postMessage({ job: j, stats, ms: Date.now() - t0 });
@@ -92,14 +100,27 @@ const sameInputs = (b: BaselineIntents | null) => !!b && b.inputs.networkHash ==
 const oldBaselines = readBaselines();
 const haveBaseline = (p: string) => sameInputs(oldBaselines) && !!oldBaselines!.periods[p];
 
+// Where today's through cars cut through (corridor, direction, reason): one traced run per period at the same seed, so its totals must equal the baseline's. Areas without `cutThroughCorridors` skip it.
+const areaCfgPath = join(root, 'data/areas', `${area}.json`);
+const areaCfg = existsSync(areaCfgPath) ? JSON.parse(readFileSync(areaCfgPath, 'utf8')) : {};
+const corridorCfg = corridorCfgOf(areaCfg);
+const corridorHash = corridorCfg ? (await hashText(JSON.stringify(corridorCfg))).slice(0, 16) : '';
+const haveCorridors = (p: string) => sameInputs(oldBaselines) && !!oldBaselines!.periods[p]?.corridors && oldBaselines!.corridorDefs?.configHash === corridorHash;
+
 // Baselines are shared: today's traffic does not depend on the scenario.
 const todo = baselinesOnly ? [] : [...wants.values()].filter((w) => force || !current(readResult(w.key)));
 const basePeriods = [...new Set([...todo.map((w) => w.period), ...(only ? [] : periods.filter((p) => force || !haveBaseline(p)))])];
-const jobs: Job[] = [...basePeriods.map((period) => ({ key: null, period, interventions: [] as Intervention[] })), ...todo.map((w) => ({ key: w.key, period: w.period, interventions: w.interventions }))];
+const corridorPeriods = corridorCfg && !only ? periods.filter((p) => force || !haveCorridors(p)) : [];
+const jobs: Job[] = [
+  ...basePeriods.map((period) => ({ key: null, period, interventions: [] as Intervention[] })),
+  ...corridorPeriods.map((period) => ({ key: null, period, interventions: [] as Intervention[], trace: true })),
+  ...todo.map((w) => ({ key: w.key, period: w.period, interventions: w.interventions })),
+];
 console.log(`${wants.size} results wanted, ${wants.size - todo.length} already current, ${todo.length} to run (${jobs.length} simulations, ${jobsN} at a time)`);
 if (jobs.length === 0) console.log('nothing to run');
 
 const done = new Map<string, HourStats>(); // key or `base:<period>`
+const traced = new Map<string, TracedHour>();
 const t0 = Date.now();
 await new Promise<void>((resolveAll, reject) => {
   const queues: Job[][] = Array.from({ length: Math.min(jobsN, Math.max(1, jobs.length)) }, () => []);
@@ -107,9 +128,9 @@ await new Promise<void>((resolveAll, reject) => {
   let live = queues.length, finished = 0;
   for (const q of queues) {
     const w = new Worker(new URL(import.meta.url), { workerData: { network: simNetwork, demand: demandText, jobs: q } as Payload, execArgv: process.execArgv });
-    w.on('message', (m: { job: Job; stats: HourStats; ms: number }) => {
-      done.set(m.job.key ?? `base:${m.job.period}`, m.stats);
-      console.log(`  ${++finished}/${jobs.length} ${m.job.key ?? 'baseline'} ${m.job.period} (${(m.ms / 1000).toFixed(0)} s)`);
+    w.on('message', (m: { job: Job; stats?: HourStats; traced?: TracedHour; ms: number }) => {
+      if (m.traced) traced.set(m.job.period, m.traced); else done.set(m.job.key ?? `base:${m.job.period}`, m.stats!);
+      console.log(`  ${++finished}/${jobs.length} ${m.job.trace ? 'traced baseline' : m.job.key ?? 'baseline'} ${m.job.period} (${(m.ms / 1000).toFixed(0)} s)`);
     });
     w.on('error', reject);
     w.on('exit', () => { if (--live === 0) resolveAll(); });
@@ -118,9 +139,7 @@ await new Promise<void>((resolveAll, reject) => {
 
 const computed = new Date().toISOString();
 // Where each reason's cars start and end, in approach groups (area config `approachGroups`), from the run's own per-trip tally.
-const areaCfgPath = join(root, 'data/areas', `${area}.json`);
-const groups = existsSync(areaCfgPath) && JSON.parse(readFileSync(areaCfgPath, 'utf8')).approachGroups
-  ? deriveApproachGroups(network.nodes, network.links, JSON.parse(readFileSync(areaCfgPath, 'utf8')).approachGroups as ApproachGroupsCfg) : null;
+const groups = areaCfg.approachGroups ? deriveApproachGroups(network.nodes, network.links, areaCfg.approachGroups as ApproachGroupsCfg) : null;
 const nodeById = new Map(network.nodes.map((n) => [n.id, n]));
 const endsOf = (s: HourStats) => {
   const by = s.metrics.cutThrough.byIntent;
@@ -135,8 +154,26 @@ const endsOf = (s: HourStats) => {
     const e = s ? encodeBaselinePeriod(s.metrics, s.intentLinks, endsOf(s)) : null;
     if (e) periodsOut[p] = e; else console.warn(`baseline ${p} has no intents: the demand carries none, so no baseline-intents entry`);
   }
-  if (basePeriods.length && Object.keys(periodsOut).length) {
-    const b: BaselineIntents = { version: BASELINE_INTENTS_VERSION, area, inputs, seed: RESULT_SEED, seconds: RUN_SECONDS, computed, periods: periodsOut };
+  let corridorDefs = sameInputs(oldBaselines) ? oldBaselines!.corridorDefs : undefined;
+  if (corridorCfg && corridorPeriods.length) {
+    const assignment = assignCorridors(network, corridorCfg);
+    corridorDefs = { ...assignment.defs, configHash: corridorHash };
+    for (const p of corridorPeriods) {
+      const t = traced.get(p), at = periodsOut[p];
+      if (!t || !at) { console.warn(`corridor table for ${p}: no traced run or no baseline entry, skipped`); continue; }
+      const same = t.metrics.cutThrough.vehiclesPerHour === at.totalVph && at.byIntent.length === t.metrics.cutThrough.byIntent?.length
+        && at.byIntent.every((b, i) => b.vehiclesPerHour === t.metrics.cutThrough.byIntent![i].vehiclesPerHour);
+      if (!same) throw new Error(`The traced ${p} run does not reproduce the stored baseline's through cars by reason; the corridor table would not add up to it.`);
+      if (t.check.unmatched || t.check.skippedEvents) throw new Error(`The traced ${p} run left ${t.check.unmatched} through cars without a route and dropped ${t.check.skippedEvents} route events.`);
+      const r = corridorPeriod(network, assignment, corridorCfg, t.trips, at.byIntent.length, RUN_SECONDS / 3600);
+      const total = r.period.flows.reduce((x, f) => x + f.vph, 0);
+      if (r.noLocal || Math.abs(total - at.totalVph) > 1e-6) throw new Error(`The corridor table for ${p} holds ${total} cars an hour, not the baseline's ${at.totalVph} (${r.noLocal} cars used no side street).`);
+      console.log(`corridor table ${p}: ${total} cars an hour in ${r.period.flows.length} flows (${t.check.ambiguousSteps} steps with ambiguous reasons)`);
+      periodsOut[p] = { ...at, corridors: r.period };
+    }
+  }
+  if ((basePeriods.length || corridorPeriods.length) && Object.keys(periodsOut).length) {
+    const b: BaselineIntents = { version: BASELINE_INTENTS_VERSION, area, inputs, seed: RESULT_SEED, seconds: RUN_SECONDS, computed, periods: periodsOut, ...(corridorDefs ? { corridorDefs } : {}) };
     writeFileAtomic(baselinePath, JSON.stringify(b));
     console.log(`wrote baseline-intents.json: ${Object.keys(periodsOut).join(', ')}`);
   }

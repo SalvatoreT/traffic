@@ -14,6 +14,7 @@ import { buildBaseMap } from '../lib/picture';
 import type { LoadedHashes } from '../lib/proposals';
 import type { Mode } from '../lib/ramps';
 import { AnchorHeading, NavLink } from './Anchor';
+import { Corridors, CORRIDORS_ID } from './Corridors';
 
 interface Props {
   bundle: AreaBundle; index: NetIndex; mode: Mode;
@@ -57,6 +58,7 @@ export function Assumptions({ bundle, index, mode, hashes, fingerprint }: Props)
         The measured inputs, the data behind them and the research are on the{' '}
         <NavLink view="sources" className="link">Sources</NavLink> page.
       </p>
+      {defs?.length ? <Corridors defs={defs} file={status === 'ok' ? baseline.value : null} status={status} order={order.map((p) => p.id)} first={first} periodName={periodName} /> : null}
       {defs?.length ? <Reasons defs={defs} bundle={bundle} index={index} mode={mode} baseline={baseline.value} status={status} order={order.map((p) => p.id)} first={first} periodName={periodName} /> : null}
       <Movements file={assumed.value} loaded={assumed.done} order={order.map((p) => p.id)} periodName={periodName} demandHash={hashes?.demand ?? null} net={bundle.network} mode={mode} />
       <DerivedTargets file={assumed.value} order={order.map((p) => p.id)} first={first} periodName={periodName} />
@@ -122,7 +124,7 @@ function Movements({ file, loaded, order, periodName, demandHash, net, mode }: {
   const detours = [...new Set(file.movements.map((m) => m.maxDetour))];
   const extra = detours.length === 1 ? ` A trip joins a turn only if the turn adds no more than ${Math.round((detours[0] - 1) * 100)}% to its best route.` : '';
   const scaled = file.count.scaled.map(periodName).join(' and ');
-  const groups = groupMovements(net, file.movements);
+  const groups = groupMovements(net, file.movements, file.corridors);
   const mapped = groups.some((g) => g.title !== null);
   return (
     <section aria-labelledby={MOVEMENTS_ID}>
@@ -143,19 +145,22 @@ function Movements({ file, loaded, order, periodName, demandHash, net, mode }: {
 
 interface MoveGroup { key: string; id: string | null; title: string | null; items: { m: AssumedMovementView; n: number }[] }
 
-/** The movements under a subheading per pair of streets they connect, numbered in the order shown; movements without map fields share one untitled group. */
-export function groupMovements(net: AreaBundle['network'], ms: AssumedMovementView[]): MoveGroup[] {
+/** The movements under a subheading per corridor they turn from or onto (the area's `cutThroughCorridors`, in its order) or, for a movement with no corridor, per pair of streets they connect; numbered in the order shown. Movements without map fields share one untitled group. */
+export function groupMovements(net: AreaBundle['network'], ms: AssumedMovementView[], corridors?: { id: string; name: string }[]): MoveGroup[] {
   const groups: MoveGroup[] = [];
   for (const m of ms) {
-    const names = m.from !== undefined && m.to !== undefined && net.links[m.from] && net.links[m.to]
+    const corridor = corridors?.find((c) => c.id === m.corridor);
+    const names = corridor ? [corridor.name] : m.from !== undefined && m.to !== undefined && net.links[m.from] && net.links[m.to]
       ? [...new Set([net.links[m.from].name.trim(), net.links[m.to].name.trim()])].filter(Boolean).sort() : [];
-    const key = names.join('|');
+    const key = corridor ? `corridor:${corridor.id}` : names.join('|');
     let g = groups.find((x) => x.key === key);
-    if (!g) { g = { key, id: null, title: names.length ? names.join(' and ') : null, items: [] }; groups.push(g); }
+    if (!g) { g = { key, id: null, title: names.length ? (corridor ? names[0] : names.join(' and ')) : null, items: [] }; groups.push(g); }
     g.items.push({ m, n: 0 });
   }
+  const rank = (g: MoveGroup) => { const i = corridors?.findIndex((c) => `corridor:${c.id}` === g.key) ?? -1; return i < 0 ? Infinity : i; };
+  if (corridors?.length) groups.sort((x, y) => (rank(x) === rank(y) ? 0 : rank(x) < rank(y) ? -1 : 1));
   let n = 0;
-  const taken = new Set<string>(['assumptions', MOVEMENTS_ID, REASONS_ID]);
+  const taken = new Set<string>(['assumptions', MOVEMENTS_ID, REASONS_ID, CORRIDORS_ID]);
   for (const g of groups) {
     for (const it of g.items) it.n = ++n;
     if (!g.title) continue;
@@ -267,13 +272,16 @@ function Reasons({ defs, bundle, index, mode, baseline, status, order, first, pe
         any other goes under Other. On side streets where volunteers counted the cars driving through, the PM peak trips are fitted to that count; the split between reasons is still assumed. <strong>{BASIS_TEXT.observed}:</strong> {BASIS_HELP.observed} <strong>{BASIS_TEXT.assumed}:</strong> {BASIS_HELP.assumed}
       </p>
       <p>
-        Each map shows today’s traffic in the {first ? periodName(first) : 'baseline'}: the dashed violet line is the typical path of that reason’s cars, drawn wider where more cars an hour use the street, with arrowheads for the direction.
+        The table above sorts the same through cars by where they drive. Each map below shows today’s traffic in the {first ? periodName(first) : 'baseline'}: the dashed violet line is the typical path of that reason’s cars, drawn wider where more cars an hour use the street, with arrowheads for the direction.
         {other && ` Through cars that fit none of the reasons are tallied as Other: ${Math.round(other.vehiclesPerHour)} an hour.`}
       </p>
       {status !== 'ok' && <p className="muted" role="status">{STATUS_NOTE[status]}</p>}
-      <ul className="reasons">
-        {sorted.map((d) => <ReasonCard key={d.id} d={d} net={net} index={index} mode={mode} base={base} file={file} status={status} order={order} first={first} periodName={periodName} defs={defs} ramps={bundle.demand.ramps} />)}
-      </ul>
+      <details className="reasons-all">
+        <summary>The {defs.length} reasons, each with its cars an hour and a map of its typical path</summary>
+        <ul className="reasons">
+          {sorted.map((d) => <ReasonCard key={d.id} d={d} net={net} index={index} mode={mode} base={base} file={file} status={status} order={order} first={first} periodName={periodName} defs={defs} ramps={bundle.demand.ramps} />)}
+        </ul>
+      </details>
     </section>
   );
 }

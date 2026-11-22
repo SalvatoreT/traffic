@@ -37,6 +37,7 @@ describe('Assumptions page layout', () => {
   });
   it('makes the section headings sticky, below the top bar offset, and clears anchors and focus', () => {
     expect(tsx.match(/className="sticky-h"/g)).toHaveLength(3);
+    expect(readFileSync("src/components/Corridors.tsx", "utf8")).toContain(`className="sticky-h"`);
     expect(css).toMatch(/h3\.sticky-h \{[^}]*position: sticky; top: var\(--sticky-top\)/);
     expect(css).toMatch(/\.stage \{ scroll-padding-top: calc\(var\(--sticky-top\) \+ var\(--sticky-h\)/);
   });
