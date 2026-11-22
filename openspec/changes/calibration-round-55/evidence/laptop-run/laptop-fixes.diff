@@ -1,0 +1,22 @@
+--- openspec/changes/calibration-round-55/laptop/a.zsh
++++ a.laptop.zsh
+@@ -23,7 +23,7 @@
+ want="config $EXP_CONFIG split $EXP_SPLIT stations $EXP_STATIONS network $EXP_NETWORK demand $EXP_DEMAND cv $EXP_CV membership $EXP_MEMB training $EXP_MEMBT proposals $EXP_PROPOSALS"
+ echo "published inputs: $got"
+ [ "$got" = "$want" ] || { echo "the local data is not the published set"; echo "expected: $want"; exit 1; }
+-git fetch origin $BR || exit 1
++timeout 120 git -c credential.helper= -c credential.helper='!gh auth git-credential' fetch https://github.com/SalvatoreT/traffic.git ${BR}:refs/remotes/origin/${BR} || exit 1  # laptop fix: HTTPS with the gh login, because the SSH agent cannot sign while 1Password is locked
+ [ -e $W ] && { echo "$W exists already; remove it (git worktree remove --force $W) or pick another W"; exit 1; }
+ 
+ # 1. The worktree with its own copies of the git-ignored data
+--- openspec/changes/calibration-round-55/laptop/b.zsh (lines 37-75)
++++ b2.zsh (same lines)
+@@ -9,7 +9,7 @@
+ for pair in "shipped:rockridge.membership.json" "training:rockridge.membership-training.json"; do
+   v=${pair%%:*}; f=${pair#*:}
+   [ -f target/membership-loop/pools/i2-$v.json ] || { log "no pass 2 pool for the $v view (the loop stopped earlier)"; continue; }
+-  node $JD target/published/$f target/membership-loop/pools/i2-$v.json --ignore periods.*.source --ignore periods.*.stations.source --ignore periods.*.blocks.source > $A/pool2-$v-diff.txt 2>&1 \
++  node $JD target/published/$f target/membership-loop/pools/i2-$v.json --ignore 'periods.*.source' --ignore 'periods.*.stations.source' --ignore 'periods.*.blocks.source' > $A/pool2-$v-diff.txt 2>&1 \
+     && log "pool after pass 2, $v view: equal to the published membership file apart from the recorded run paths" \
+     || stop "the pass 2 pool of the $v view differs from the published membership file: $(head -4 $A/pool2-$v-diff.txt | tr '\n' ' ')"
+ done
