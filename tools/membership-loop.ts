@@ -2,7 +2,9 @@
 // Pass k builds both views, runs seeds with `calibrate --select-od` (one process per seed, so that each seed writes its own file), pools passes 0 to k with equal
 // weight into the membership files that `countFit.throughTargets.simulatedMembership` names, and compares pass k with pass k-1. The last build uses the last pool.
 //   npx tsx tools/membership-loop.ts [--area rockridge] [--views shipped,training] [--periods pm_peak,am_peak] [--seeds 1-10] [--iterations 3] [--jobs 4]
-//     [--dir target/membership-loop] [--report FILE] [--resume] [--dry-run]
+//     [--dir target/membership-loop] [--report FILE] [--watch FILE] [--resume] [--dry-run]
+// --iterations is the cap on passes (default 3). The loop stops earlier when the stop rule holds after a pass in every view and period (STOP_RATIO in lib/membership-loop.ts); round 55 runs with a cap of 8.
+// --watch FILE names stations to follow pass by pass (report only; see openspec/changes/calibration-round-55/watch.json).
 // --dry-run reads the stations file and the split, prints the stations the rule selects per view and period, the stations that stay static and the steps, and runs nothing.
 // Needs the demand config with the round 48 entry (apply-candidate.py), target/release/calibrate and the data files; every demand build writes into public/data and data/demand.
 import { spawn, spawnSync } from 'node:child_process';
@@ -10,7 +12,8 @@ import { closeSync, existsSync, mkdirSync, openSync, readFileSync } from 'node:f
 import { join, resolve } from 'node:path';
 import { writeFileAtomic } from './lib/atomic';
 import { withheldStationIds, type SplitManifest } from './lib/lineage';
-import { planLoop, selectStations, type StationRec } from './lib/membership-loop';
+import type { WatchFile } from './lib/loop-diagnostics';
+import { planLoop, selectStations, STOP_RATIO, type StationRec } from './lib/membership-loop';
 import { loopPaths, renderReport, runLoop, type CalibrateJob, type LoopOptions, type Runner, type View } from './lib/membership-loop-run';
 
 const root = resolve(import.meta.dirname, '..');
@@ -21,6 +24,7 @@ const area = arg('--area', 'rockridge');
 const opts: LoopOptions = {
   root, area, views: arg('--views', 'shipped,training').split(',') as View[], periods: arg('--periods', 'pm_peak,am_peak').split(','), seeds: parseSeeds(arg('--seeds', '1-10')),
   iterations: Number(arg('--iterations', '3')), jobs: Number(arg('--jobs', '4')), dir: resolve(root, arg('--dir', 'target/membership-loop')), configPath: `data/demand/${area}.config.json`, resume: argv.includes('--resume'),
+  ...(arg('--watch', '') ? { watch: JSON.parse(readFileSync(resolve(root, arg('--watch', '')), 'utf8')) as WatchFile } : {}),
 };
 if (opts.views.some((v) => v !== 'shipped' && v !== 'training')) { console.error('--views takes shipped and training'); process.exit(2); }
 
@@ -28,6 +32,7 @@ const cfg = JSON.parse(readFileSync(resolve(root, opts.configPath), 'utf8'));
 const hasRule = !!cfg.countFit?.throughTargets?.simulatedMembership;
 
 // Minutes on a 4-core container (round 44, round 46 runbook): a demand build 12 per view, a ten-seed set of one period and view 5; the runs scale with 4 / jobs.
+// A pass is two builds plus the seed runs; the final builds come once. Round 52 on the laptop (12 jobs): 3,777 s for three passes and the final builds.
 const estimate = () => {
   const builds = opts.views.length * (opts.iterations + 1) * 12;
   const runs = opts.views.length * opts.periods.length * opts.iterations * 5 * (opts.seeds.length / 10) * (4 / opts.jobs);
@@ -49,7 +54,8 @@ if (argv.includes('--dry-run')) {
   console.log('');
   for (const s of planLoop({ views: opts.views, periods: opts.periods, seeds: opts.seeds, iterations: opts.iterations, jobs: opts.jobs })) console.log(`${s.id}: ${s.title}${s.cmd ? `\n    ${s.cmd}` : ''}`);
   const e = estimate();
-  console.log(`\nabout ${e.total} minutes on 4 cores scaled to ${opts.jobs} jobs (${e.builds} of builds, ${e.runs} of seed runs); a stop after pass 1 saves one pass of runs and two builds`);
+  console.log(`\nstop rule: after pass 1 or later, flow and membership change over the seed standard error at or below ${STOP_RATIO} in every view and period; cap ${opts.iterations} passes`);
+  console.log(`\nat most about ${e.total} minutes on 4 cores scaled to ${opts.jobs} jobs (${e.builds} of builds, ${e.runs} of seed runs); a stop after pass k saves the passes after k`);
   process.exit(0);
 }
 

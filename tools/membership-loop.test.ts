@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { assertNoWithheld, checkFitReport, exportOf, iterationShift, iterationStats, planLoop, poolStations, selectStations, type RunSet, type StationRec } from './lib/membership-loop';
+import { assertNoWithheld, checkFitReport, exportOf, iterationShift, iterationStats, planLoop, poolStations, selectStations, stopDecision, STOP_RATIO, type RunSet, type StationRec } from './lib/membership-loop';
+import { diagnose, fitFinalsFromReport, renderDiagnostics, type StationInfo, type WatchFile } from './lib/loop-diagnostics';
 import { loopPaths, renderReport, runLoop, type CalibrateJob, type Runner, type View } from './lib/membership-loop-run';
 import { hashFile } from './lib/run-manifest';
 import type { SelectOd } from './lib/through-membership';
@@ -138,27 +139,29 @@ describe('plan', () => {
 });
 
 // A scratch checkout with a fake build and a fake calibrate that write what the real ones write.
-function scratch(opt: { flat: boolean; dropNote?: boolean; growth?: number; blocks?: boolean; dropShareNote?: boolean; route?: boolean; dropRoute?: boolean; end?: boolean; dropEnd?: boolean }) {
+function scratch(opt: { flat: boolean; only?: View; recency?: boolean; dropNote?: boolean; growth?: number; blocks?: boolean; dropShareNote?: boolean; route?: boolean; dropRoute?: boolean; end?: boolean; dropEnd?: boolean }) {
   const root = mkdtempSync(join(tmpdir(), 'mloop-'));
   const w = (f: string, text: string) => { mkdirSync(join(root, f, '..'), { recursive: true }); writeFileSync(join(root, f), text); };
-  const cfg = { area: 't', network: 'net.json', output: 'out/demand.json', countFit: { output: 'out/fit.md', stationsOutput: 'st.json', validation: { demandOutput: 'out/cv.json', splitFile: 'split.json' }, throughTargets: { simulatedMembership: { method: 'export-supported', file: 'm/ship.json', trainingFile: 'm/train.json', priorTrips: 5, ...(opt.blocks ? { throughTargets: true, shares: true } : {}), ...(opt.route ? { routeWeightPerBlock: true } : {}), ...(opt.end ? { endAlong: true } : {}) } } } };
+  const cfg = { area: 't', network: 'net.json', output: 'out/demand.json', countFit: { output: 'out/fit.md', stationsOutput: 'st.json', validation: { demandOutput: 'out/cv.json', splitFile: 'split.json' }, ...(opt.recency ? { recency: { enabled: true, referenceYear: 2026, recentYears: 5 } } : {}), throughTargets: { simulatedMembership: { method: 'export-supported', file: 'm/ship.json', trainingFile: 'm/train.json', priorTrips: 5, ...(opt.blocks ? { throughTargets: true, shares: true } : {}), ...(opt.route ? { routeWeightPerBlock: true } : {}), ...(opt.end ? { endAlong: true } : {}) } } } };
   w('cfg.json', JSON.stringify(cfg));
   w('net.json', JSON.stringify({ id: 'net1', nodes: [{ id: 3, inStudyArea: true }, { id: 1 }] }));
-  const fixture: StationRec[] = [st('a', { links: [1] }), st('m', { feature: { kind: 'move', a: 1, b: 2 } }), st('held', { links: [3] }), st('gate'), st('quiet', { links: [4] })];
+  const fixture: StationRec[] = [st('a', { links: [1] }), st('m', { feature: { kind: 'move', a: 1, b: 2 } }), st('held', { links: [3] }), st('gate'), st('quiet', { links: [4] })].map((x) => (opt.recency ? { ...x, label: `${x.id} label`, year: 2025 } : x));
   w('st.json', JSON.stringify({ stations: fixture }));
   w('split.json', JSON.stringify({ groups: [{ held: true, stations: ['held'], observations: [] }], withheldAggregates: [] }));
   const paths = loopPaths(root, 'cfg.json', cfg);
   const sha = (p: string) => hashFile(p)!;
   const builds: string[] = [];
+  const memSeen: string[] = [];
   const jobsSeen: CalibrateJob[] = [];
   const runner: Runner = {
     build(view: View) {
       builds.push(view);
-      const k = opt.flat ? 0 : Math.floor((builds.length - 1) / 2);
+      const k = opt.flat || (opt.only && opt.only !== view) ? 0 : Math.floor((builds.length - 1) / 2);
       const demand = { build: { view, network: sha(paths.network), split: 'split-sha', config: sha(paths.config), countFile: 'cf' }, periods: ['pm_peak', 'am_peak'].map((id) => ({ id, flows: [{ origin: 1, destination: 2, vehPerHour: 100 + k }, { origin: 3, destination: 4, vehPerHour: 50 }, { origin: 5, destination: 6, vehPerHour: 30 }] })) };
       mkdirSync(join(paths.demand[view], '..'), { recursive: true });
       writeFileSync(paths.demand[view], JSON.stringify(demand));
       const prior = existsMembership(paths.membership[view]);
+      memSeen.push(prior ? JSON.stringify(prior) : '');
       const lines = prior && !opt.dropNote
         ? [`- Simulated membership from ${paths.membershipConfig[view]} (${view} view)`, ...Object.entries(prior.periods).map(([q, v]: [string, any]) => `- ${q}: stations whose membership comes from simulated trips (${v.stations.runs} runs; ${Object.keys(v.stations.hits).length} of ${Object.keys(v.stations.hits).length + 1} fitted stations; their assigned volumes in the station tables use it): ${Object.keys(v.stations.hits).join(', ')}`)]
         : prior ? [`- ${paths.membershipConfig[view]} lacks matching source, detector, split or demand-view evidence. Using static membership.`] : [`- No simulated membership file for the ${view} view (${paths.membershipConfig[view]}). Using static route shares.`];
@@ -188,7 +191,7 @@ function scratch(opt: { flat: boolean; dropNote?: boolean; growth?: number; bloc
       }
     },
   };
-  return { root, runner, builds, jobsSeen, paths, opts: { root, area: 't', views: ['shipped', 'training'] as View[], periods: ['pm_peak', 'am_peak'], seeds: [1, 2, 3, 4, 5, 6], iterations: 3, jobs: 2, dir: join(root, 'loop'), configPath: 'cfg.json', resume: false } };
+  return { root, runner, builds, memSeen, jobsSeen, paths, opts: { root, area: 't', views: ['shipped', 'training'] as View[], periods: ['pm_peak', 'am_peak'], seeds: [1, 2, 3, 4, 5, 6], iterations: 3, jobs: 2, dir: join(root, 'loop'), configPath: 'cfg.json', resume: false } };
 }
 const existsMembership = (p: string) => { try { return JSON.parse(readFileSync(p, 'utf8')); } catch { return null; } };
 
@@ -345,5 +348,154 @@ describe('the loop with a fake build and a fake simulator', () => {
     const s = scratch({ flat: true });
     const tamper: Runner = { ...s.runner, build(v, l) { s.runner.build(v, l); if (s.builds.length === 6) writeFileSync(s.paths.split, '{"groups":[],"withheldAggregates":[]}'); } };
     await expect(runLoop(s.opts, tamper, () => undefined)).rejects.toThrow(/split/);
+  });
+});
+
+describe('loop control (calibration round 55)', () => {
+  const shift = (flowRatio: number, membershipRatio: number) => ({ stations: 10, flowRms: 1, flowSeRms: 1, flowRatio, membershipRms: 1, membershipSeRms: 1, membershipRatio, converged: flowRatio <= STOP_RATIO && membershipRatio <= STOP_RATIO });
+  const lines = (...x: [string, string, number, number][]) => x.map(([view, period, f, m]) => ({ view, period, shift: shift(f, m) }));
+
+  it('stops only when every view and period is at or below the limit on flow and on membership', () => {
+    const all = lines(['shipped', 'pm_peak', 0.9, 0.8], ['shipped', 'am_peak', 1, 1], ['training', 'pm_peak', 0.5, 0.4], ['training', 'am_peak', 0.7, 0.9]);
+    expect(stopDecision(3, all)).toEqual({ met: true, blocking: [] });
+    const one = lines(['shipped', 'pm_peak', 0.9, 0.8], ['shipped', 'am_peak', 0.9, 0.9], ['training', 'pm_peak', 0.5, 0.4], ['training', 'am_peak', 1.01, 0.9]);
+    const d = stopDecision(3, one);
+    expect(d.met).toBe(false);
+    expect(d.blocking).toEqual(['training am_peak flow 1.01, membership 0.90']);
+    expect(stopDecision(2, lines(['shipped', 'pm_peak', 0.9, 1.2], ['training', 'pm_peak', 0.9, 0.9])).blocking).toEqual(['shipped pm_peak flow 0.90, membership 1.20']);
+  });
+  it('never stops before pass 1 and needs a comparison in every line', () => {
+    expect(stopDecision(0, lines(['shipped', 'pm_peak', 0, 0])).met).toBe(false);
+    const d = stopDecision(1, [{ view: 'shipped', period: 'pm_peak', shift: null }]);
+    expect(d).toEqual({ met: false, blocking: ['shipped pm_peak no previous pass'] });
+    expect(stopDecision(1, []).met).toBe(false);
+  });
+  it('keeps the limit at 1 standard error', () => { expect(STOP_RATIO).toBe(1); });
+
+  it('runs to the cap when the flows keep moving, says the rule was not met and names the lines', async () => {
+    const s = scratch({ flat: false });
+    const logs: string[] = [];
+    const out = await runLoop({ ...s.opts, iterations: 5, seeds: [1, 2, 3, 4, 5, 6] }, s.runner, (l) => logs.push(l));
+    expect(out.passes).toBe(5);
+    expect(out.stoppedEarly).toBe(false);
+    expect(out.stop).toMatchObject({ met: false, pass: null, cap: 5 });
+    expect(out.stop.blocking.length).toBeGreaterThan(0);
+    expect(s.builds.length).toBe(2 * 6);
+    expect(logs.some((l) => /^stop rule not met by the cap of 5 passes: /.test(l))).toBe(true);
+    expect(logs.some((l) => /^pass 1: stop rule not met .*(shipped|training) (pm|am)_peak flow/.test(l))).toBe(true);
+    expect(renderReport(out, s.opts)).toMatch(/Passes run: 5 of at most 5 \(stop rule not met:/);
+  });
+  it('does not stop while one view still moves, though the other is flat', async () => {
+    const s = scratch({ flat: false, only: 'training' });
+    const out = await runLoop({ ...s.opts, iterations: 4, seeds: [1, 2, 3, 4, 5, 6] }, s.runner, () => undefined);
+    expect(out.passes).toBe(4);
+    expect(out.stop.met).toBe(false);
+    expect(out.stop.blocking.every((x) => x.startsWith('training'))).toBe(true);
+    const flat = scratch({ flat: true });
+    const early = await runLoop({ ...flat.opts, iterations: 8 }, flat.runner, () => undefined);
+    expect(early.stop).toMatchObject({ met: true, pass: 1, cap: 8, blocking: [] });
+    expect(early.passes).toBe(2);
+  });
+  it('a larger cap leaves the first passes and the three-pass final build unchanged', async () => {
+    const three = scratch({ flat: false });
+    await runLoop({ ...three.opts, iterations: 3 }, three.runner, () => undefined);
+    const eight = scratch({ flat: false });
+    await runLoop({ ...eight.opts, iterations: 8 }, eight.runner, () => undefined);
+    expect(three.builds.length).toBe(8);
+    expect(eight.builds.length).toBe(2 * 9);
+    const norm = (xs: string[], root: string) => xs.map((x) => x.split(root).join('ROOT'));
+    expect(norm(eight.memSeen.slice(0, 8), eight.root)).toEqual(norm(three.memSeen, three.root));
+    expect(eight.memSeen[6]).not.toBe('');
+  });
+  it('the default dry-run plan is the three-pass plan of rounds 48 to 53', () => {
+    const ids = planLoop({ views: ['shipped', 'training'], periods: ['pm_peak', 'am_peak'], seeds: [1, 2, 3], iterations: 3, jobs: 4 }).map((x) => x.id);
+    expect(ids).toEqual(['i0-shipped-build', 'i0-shipped-check', 'i0-shipped-runs', 'i0-training-build', 'i0-training-check', 'i0-training-runs', 'i0-pool', 'i1-shipped-build', 'i1-shipped-check', 'i1-shipped-runs', 'i1-training-build', 'i1-training-check', 'i1-training-runs', 'i1-pool', 'i2-shipped-build', 'i2-shipped-check', 'i2-shipped-runs', 'i2-training-build', 'i2-training-check', 'i2-training-runs', 'i2-pool', 'final-shipped-build', 'final-shipped-check', 'final-training-build', 'final-training-check']);
+  });
+  it('pools eight passes with weight 1/8 each', () => {
+    const flows = [{ origin: 1, destination: 2, vehPerHour: 100 }];
+    const mk = (n: number): RunSet => ({ label: `p${n}`, flows, sod: [1, 2].map((seed) => run(seed, 60, { a: [[1, 2, n + 1]] })) });
+    const sets = Array.from({ length: 8 }, (_, n) => mk(n));
+    const p = poolStations(sets, new Set(['a']));
+    expect(p.measured.runs).toBe(16);
+    expect(p.measured.hits.a['1>2'] / p.measured.trips['1>2']).toBeCloseTo((1 + 2 + 3 + 4 + 5 + 6 + 7 + 8) / 8 / 100, 10);
+    expect(() => poolStations([...sets.slice(0, 7), { ...sets[7], sod: sets[7].sod.slice(0, 1) }], new Set(['a']))).toThrow(/same number of seeds/);
+  });
+});
+
+describe('per-pass diagnostics (report only)', () => {
+  const sod = (flows: Record<string, number>, seed: number): SelectOd => ({ period: 'pm_peak', seed, minutes: 60, blocks: [], links: Object.entries(flows).map(([id, n]) => ({ id, trips: [[1, 2, n]] })) }) as unknown as SelectOd;
+  const stationsInfo: StationInfo[] = [
+    { id: 'ok', kind: 'count', label: 'Ok Street', links: [1], target: { pm_peak: 100 }, year: 2025 },
+    { id: 'far', kind: 'count', label: 'Far Street', links: [2], target: { pm_peak: 100 }, year: 2025 },
+    { id: 'old', kind: 'count', label: 'Old Street', links: [3], target: { pm_peak: 100 }, year: 2010 },
+    { id: 'aadt', kind: 'count', label: 'Aadt Street', links: [4], target: { pm_peak: 100 }, year: 2025, source: 'caltrans-aadt' },
+    { id: 'copy', kind: 'count', label: 'Copy Street', links: [5], target: { pm_peak: 100 }, year: 2025, derived: ['pm_peak'] },
+    { id: 'heldout', kind: 'count', label: 'Held Street', links: [6], target: { pm_peak: 100 }, year: 2025 },
+    { id: 'nodet', kind: 'ramp', label: 'Ramp', links: [7], target: { pm_peak: 100 }, year: 2025 },
+  ];
+  const runs = [1, 2].map((seed) => sod({ ok: 98, far: 40, old: 100, aadt: 100, copy: 100, heldout: 101 }, seed));
+  const recency = { referenceYear: 2026, recentYears: 5 };
+  const watch: WatchFile = { heldOutMisses: [{ id: 'heldout', period: 'pm_peak' }, { id: 'heldout', period: 'am_peak' }], diagonal: [{ id: 'ok', period: 'pm_peak' }, { id: 'far', period: 'pm_peak' }] };
+
+  it('counts recent hourly-count stations within GEH 5 on the side of the view', () => {
+    const base = { pass: 2, period: 'pm_peak', runs, stations: stationsInfo, held: new Set(['heldout']), recency, watch: null, fit: null };
+    const ship = diagnose({ ...base, view: 'shipped' });
+    expect(ship.geh).toEqual({ n: 2, ok: 1, unmeasured: 1 });
+    const train = diagnose({ ...base, view: 'training' });
+    expect(train.geh).toEqual({ n: 1, ok: 1, unmeasured: 0 });
+    expect(diagnose({ ...base, view: 'shipped', recency: null }).geh).toBeNull();
+  });
+  it('lists watched stations of the period with counted, fit and simulated values', () => {
+    const fit = fitFinalsFromReport('| Station | Basis | Target | Assigned before | Ratio | After fit | Ratio | Final | Ratio |\n| --- | --- |\n| Ok Street | count | 100 | 150 | 1.5 | 101 | 1.0 | 97 | 0.97 | ok |\n| Far Street | count | 100 | 150 | 1.5 | 101 | 1.0 | 1,012 | 0.97 | ok |');
+    expect(fit.get('Ok Street')).toEqual({ target: 100, final: 97 });
+    expect(fit.get('Far Street')?.final).toBe(1012);
+    const d = diagnose({ pass: 1, view: 'shipped', period: 'pm_peak', runs, stations: stationsInfo, held: new Set(['heldout']), recency, watch, fit });
+    expect(d.watch.map((w) => [w.group, w.id, w.counted, w.fit, w.sim])).toEqual([['held-out miss', 'heldout', 100, null, 101], ['diagonal', 'ok', 100, 97, 98], ['diagonal', 'far', 100, 1012, 40]]);
+  });
+  it('renders the tables and the diagonal sum', () => {
+    const base = { stations: stationsInfo, held: new Set(['heldout']), recency, watch, fit: null };
+    const diags = [0, 1].flatMap((pass) => ['shipped', 'training'].map((view) => diagnose({ ...base, pass, view, period: 'pm_peak', runs })));
+    const text = renderDiagnostics(diags, { reports: [{ pass: 1, view: 'shipped', period: 'pm_peak', offered: 1000, shift: { flowRatio: 1.46, membershipRatio: 1.84 }, ceiling: { staticTotal: 1100, finalTotal: 990 } }] });
+    expect(text).toMatch(/\| 1 \| shipped \| pm_peak \| 1\.46 \| 1\.84 \| 1000 \| 90\.0% \|/);
+    expect(text).toMatch(/\| 1 \| shipped \| pm_peak \| 1 of 2 \| 1 \|/);
+    expect(text).toMatch(/\| held-out miss \| pm_peak \| Held Street \| 100 \| 1 \| - \| 101 \| 101 \|/);
+    expect(text).toMatch(/### Diagonal stations, pm_peak: sum[^#]*\| 1 \| 200 \| - \| 138 \| 138 \|/);
+  });
+  it('is logged and written by the loop, and changes no pooled file', async () => {
+    const plain = scratch({ flat: true, recency: true });
+    await runLoop(plain.opts, plain.runner, () => undefined);
+    const withWatch = scratch({ flat: true, recency: true });
+    const logs: string[] = [];
+    const out = await runLoop({ ...withWatch.opts, watch: { heldOutMisses: [{ id: 'held', period: 'pm_peak' }], diagonal: [{ id: 'a', period: 'pm_peak' }, { id: 'quiet', period: 'pm_peak' }] } }, withWatch.runner, (l) => logs.push(l));
+    expect(logs.some((l) => /^pass 1 shipped pm_peak: recent judged stations within GEH 5 on this pass's seeds: 0 of 2 \(fitted; 0 not measured\)/.test(l))).toBe(true);
+    expect(logs.some((l) => /^pass 1 training pm_peak: recent judged stations within GEH 5 .* 0 of 1 \(held out;/.test(l))).toBe(true);
+    expect(logs.some((l) => /^pass 1 training pm_peak: watched held label: counted 100, shipped fit -, simulated \d+/.test(l))).toBe(true);
+    expect(logs.some((l) => /diagonal stations, counted 200, simulated \d+/.test(l))).toBe(true);
+    expect(out.diagnostics.length).toBe(2 * 2 * 2);
+    expect(readFileSync(join(withWatch.opts.dir, 'diagnostics.md'), 'utf8')).toMatch(/### Watched stations/);
+    const same = (a: string, ra: string, b: string, rb: string) => expect(readFileSync(a, 'utf8').split(ra).join('ROOT')).toBe(readFileSync(b, 'utf8').split(rb).join('ROOT'));
+    same(withWatch.paths.membership.shipped, withWatch.root, plain.paths.membership.shipped, plain.root);
+    same(withWatch.paths.membership.training, withWatch.root, plain.paths.membership.training, plain.root);
+    same(withWatch.paths.demand.shipped, withWatch.root, plain.paths.demand.shipped, plain.root);
+  });
+  it('carries on without a watch file', async () => {
+    const s = scratch({ flat: true, recency: true });
+    const logs: string[] = [];
+    const out = await runLoop(s.opts, s.runner, (l) => logs.push(l));
+    expect(out.passes).toBe(2);
+    expect(logs.some((l) => /^WARNING/.test(l))).toBe(false);
+  });
+  it('the committed watch file names stations that exist, have a target in their period and are recent', () => {
+    const w = JSON.parse(readFileSync(join(import.meta.dirname, '../openspec/changes/calibration-round-55/watch.json'), 'utf8')) as WatchFile;
+    const st = (JSON.parse(readFileSync(join(import.meta.dirname, '../data/demand/rockridge.stations.json'), 'utf8')) as { stations: StationInfo[] }).stations;
+    expect(w.heldOutMisses.length).toBe(7);
+    expect(w.diagonal.length).toBe(5);
+    for (const e of [...w.heldOutMisses, ...w.diagonal]) {
+      const x = st.find((q) => q.id === e.id);
+      expect(x, e.id).toBeDefined();
+      expect(x!.target[e.period], `${e.id} ${e.period}`).toBeGreaterThan(0);
+      expect(2026 - x!.year!).toBeLessThanOrEqual(5);
+    }
+    expect(w.diagonal.reduce((a, e) => a + st.find((q) => q.id === e.id)!.target[e.period], 0)).toBe(178);
   });
 });
