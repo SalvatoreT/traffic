@@ -1,0 +1,22 @@
+off seed  1 cap/lane   646.5 gc 0.493 through 1059.0 left  252.0 oppS 1341.0
+off seed  2 cap/lane   750.0 gc 0.498 through 1227.0 left  273.0 oppS 1317.0
+off seed  3 cap/lane   705.0 gc 0.493 through 1185.0 left  255.0 oppS 1353.0
+off seed  4 cap/lane   694.5 gc 0.496 through 1152.0 left  315.0 oppS 1341.0
+off seed  5 cap/lane   658.5 gc 0.489 through 1101.0 left  228.0 oppS 1359.0
+off seed  6 cap/lane   597.0 gc 0.487 through 1020.0 left  288.0 oppS 1374.0
+off seed  7 cap/lane   685.5 gc 0.495 through 1116.0 left  261.0 oppS 1341.0
+off seed  8 cap/lane   660.0 gc 0.492 through 1089.0 left  261.0 oppS 1353.0
+off seed  9 cap/lane   687.0 gc 0.491 through 1128.0 left  255.0 oppS 1344.0
+off seed 10 cap/lane   675.0 gc 0.494 through 1131.0 left  240.0 oppS 1344.0
+off mean 675.90 sd 40.20 se 12.71 gc mean 0.4929
+on  seed  1 cap/lane   658.5 gc 0.493 through 1101.0 left  243.0 oppS 1335.0
+on  seed  2 cap/lane   750.0 gc 0.498 through 1227.0 left  273.0 oppS 1317.0
+on  seed  3 cap/lane   705.0 gc 0.496 through 1188.0 left  255.0 oppS 1338.0
+on  seed  4 cap/lane   717.0 gc 0.496 through 1209.0 left  321.0 oppS 1341.0
+on  seed  5 cap/lane   651.0 gc 0.488 through 1113.0 left  219.0 oppS 1362.0
+on  seed  6 cap/lane   660.0 gc 0.487 through 1155.0 left  291.0 oppS 1371.0
+on  seed  7 cap/lane   691.5 gc 0.495 through 1122.0 left  270.0 oppS 1338.0
+on  seed  8 cap/lane   663.0 gc 0.493 through 1104.0 left  258.0 oppS 1347.0
+on  seed  9 cap/lane   687.0 gc 0.491 through 1128.0 left  255.0 oppS 1344.0
+on  seed 10 cap/lane   688.5 gc 0.491 through 1167.0 left  249.0 oppS 1356.0
+on  mean 687.15 sd 30.96 se 9.79 gc mean 0.4929
