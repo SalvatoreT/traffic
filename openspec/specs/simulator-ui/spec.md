@@ -33,7 +33,7 @@ Users SHALL be able to pause, resume, change simulation speed, choose the time p
 
 #### Scenario: Max
 - **WHEN** the user chooses Max, with or without interventions
-- **THEN** both runs advance to the end of the hour without drawing every frame, the progress bar and a status note show how far they are, the page stays responsive, the overlay and results are not redrawn from partial averages on the way, the Results panel and Streets table say in a status message that figures appear when the run finishes instead of showing zeros, and when they finish the map shows the final state with the end-of-run results and overlays
+- **THEN** both runs advance to the end of the hour without drawing every frame, the progress bar and a status note show how far they are, the page stays responsive, the overlay and results are not redrawn from partial averages on the way, the Results panel says in a status message that figures appear when the run finishes instead of showing zeros, and when they finish the map shows the final state with the end-of-run results and overlays
 
 #### Scenario: Stopping a Max run
 - **WHEN** the user pauses or chooses another speed during a Max run
@@ -211,19 +211,6 @@ The UI SHALL report, without running the simulation and updated whenever the sce
 - **WHEN** a user asks to see the remaining routes
 - **THEN** each route is listed by the streets it uses and can be highlighted on the map
 
-### Requirement: Transient highlight from lists
-The UI SHALL light a street block or intersection on the map while the pointer is over, or keyboard focus is on, its row in the search results or the Streets table, and SHALL stop when the pointer or focus leaves. The highlight SHALL NOT change the selection or move the map, and SHALL use a distinct line style and width as well as color. On phones the Streets tab shows no map, so a Streets row lights nothing there.
-
-#### Scenario: Hovering a result
-- **WHEN** a user moves the pointer over a search result
-- **THEN** that block or intersection is outlined on the map and the selection is unchanged
-- **AND WHEN** the pointer leaves
-- **THEN** the outline is removed
-
-#### Scenario: Focusing a table row
-- **WHEN** keyboard focus moves to a row in the Streets table on a screen wide enough to show the map
-- **THEN** that block is outlined on the map until focus moves away
-
 ### Requirement: Persistent search results
 The search result list SHALL stay visible after the input loses focus while the query is not empty and there are results. It SHALL close when the query is cleared, Escape is pressed or a result is chosen, and SHALL reopen when the query changes.
 
@@ -232,19 +219,31 @@ The search result list SHALL stay visible after the input loses focus while the 
 - **THEN** the results remain listed and can be hovered or chosen
 
 ### Requirement: Proposals tab
-The UI SHALL provide a Proposals tab listing the published options as one list, ordered by through cars removed an hour, largest first (ties: fewer changes, then the smaller largest all-car rise), numbered in that order. The UI SHALL enforce the order when it reads a file, whatever order the file has. A card SHALL lead with through cars an hour before and after on the area's side streets, with what the figure is (the area's side streets, the periods, the mean of how many runs) and its 95% interval. It SHALL show next the largest rise in all cars on any one side-street block, with the split into through cars and local trips and its interval, and then the list of changes, the option's variants and the controls to open it on the map, copy its link and open Where traffic goes. Everything else, including the summary in words, where the figures come from, the comparison with the next option, the through-route count, the largest rise in through cars on one block, the tables by period, the bounding streets and the figures inside the area, SHALL be under a More detail disclosure. The UI SHALL NOT place an all-traffic number beside a through-car number without naming each. The tab SHALL state that the search penalizes increases in all traffic on one block, in the details. The UI SHALL let the user open any option on the map as a scenario. A group of options computed with an earlier measure SHALL be marked out of date and list no options.
+The UI SHALL provide a Proposals tab listing the published options as one list, ordered by through cars removed an hour, largest first (ties: fewer changes, then the smaller largest all-car rise), numbered in that order. The UI SHALL enforce the order when it reads a file, whatever order the file has. By default a card SHALL show only its number and title, the headline figure (through cars an hour before and after on the area's side streets, with the change in cars an hour and in percent), one line naming the side-street block with the largest rise in all cars an hour with its before and after, the map of the change, any failed validity check, and the controls to open it on the map, copy its link, download its image and open Where traffic goes. Everything else SHALL be in native `details` disclosures, closed by default, each with a summary that says what it holds: the list of changes when it has more than three (a short list MAY stay visible), the summary in words with what the headline figure counts and its 95% interval and where the figures come from, the comparison with the next option, the tables by period, the split of the largest rise in all cars into through cars and local trips with its interval and the search's ranking penalty, the largest rise in through cars on one block, the through-route count, the resident detour, the option's variants, and the map's street lists, filter list and key. Nothing a card showed before SHALL be removed: every figure and note SHALL stay reachable by opening a disclosure. The UI SHALL NOT place an all-traffic number beside a through-car number without naming each. The tab SHALL state that the search penalizes increases in all traffic on one block, in the details. The UI SHALL let the user open any option on the map as a scenario. A group of options computed with an earlier measure SHALL be marked out of date and list no options.
 
 #### Scenario: Opening an option
 - **WHEN** a user chooses to open a proposal
 - **THEN** the map view loads that proposal's interventions as the current scenario
 
+#### Scenario: Collapsed card
+- **WHEN** the tab is first shown with a published file
+- **THEN** each card shows its title, its headline figure, the one-line largest rise in all cars, the map and the open, copy, download and trace controls, and every `details` element on the card is closed
+
+#### Scenario: Reaching a figure
+- **WHEN** a user opens "Through cars an hour, by period" on a card
+- **THEN** the table of before, after, change and interval for each period is shown, with the period names
+
 #### Scenario: Uncalibrated baseline
 - **WHEN** the baseline's calibration status is not calibrated
-- **THEN** the tab states that the proposals are exploratory and why
+- **THEN** the tab states, outside any disclosure, that the proposals are exploratory and why
 
 #### Scenario: Out-of-date proposals
 - **WHEN** the proposals were computed on a different network or demand than the one loaded
-- **THEN** the tab says they are out of date
+- **THEN** the tab says, outside any disclosure, that they are out of date
+
+#### Scenario: Page introduction
+- **WHEN** the tab is shown
+- **THEN** one or two sentences of introduction are visible, and the rest of the introduction, the through-route caveat, the computed date and the provenance are under "How to read these cards, and where the figures come from"
 
 #### Scenario: No proposals published
 - **WHEN** no proposals file exists for the area
@@ -252,22 +251,22 @@ The UI SHALL provide a Proposals tab listing the published options as one list, 
 
 #### Scenario: Count in view
 - **WHEN** an option is listed
-- **THEN** its lead figure reads "N → M through cars an hour" with the change beside it and shows no distance unit
+- **THEN** its headline figure reads "N → M through cars an hour" with the change beside it and shows no distance unit
 
 #### Scenario: Largest rise in all cars
 - **WHEN** an option is listed
-- **THEN** the card's second figure names the block with the largest rise in all cars an hour in any period, its before and after, and how much of the rise is through cars and how much is local trips
+- **THEN** the card's second line names the block with the largest rise in all cars an hour in any period and its before and after, and the split of the rise into through cars and local trips is under "All cars on the worst block, and the search's ranking penalty"
 
 #### Scenario: Like-for-like side effect
 - **WHEN** a block gains through cars beyond run-to-run variation
-- **THEN** More detail reads "+N through cars an hour on <block>, the block with the largest increase" with a definition naming through cars only, both directions of that block, and the periods averaged
+- **THEN** "Context: through cars on one block, through routes, resident detour" reads "+N through cars an hour on <block>, the block with the largest increase" with a definition naming through cars only, both directions of that block, and the periods averaged
 
 #### Scenario: No block gains
 - **WHEN** no block gains through cars on average
-- **THEN** More detail says no block gains through cars on average, names the largest change, and shows no rise
+- **THEN** that disclosure says no block gains through cars on average, names the largest change, and shows no rise
 
 #### Scenario: Split of the extra cars
-- **WHEN** the details show a block that gains all traffic beyond noise
+- **WHEN** the all-cars disclosure shows a block that gains all traffic beyond noise
 - **THEN** the table splits its change into through cars and local trips, and a sentence says "Mostly local trips" only when local trips are at least half of the extra cars across the rows that gain
 
 #### Scenario: Older file
@@ -279,7 +278,7 @@ The UI SHALL provide a Proposals tab listing the published options as one list, 
 - **THEN** the tab shows them by through cars removed, largest first, and numbers them in that order
 
 ### Requirement: Groups of proposals
-The Proposals tab SHALL NOT show group headings or notes. It SHALL show the options of every group of the file as one list, sorted as the tab requires, with a package that two groups both list (the same scenario link) shown once. A status block with the computed date, the exploratory notice and the out-of-date notice SHALL appear once for each distinct provenance among the groups that list options.
+The Proposals tab SHALL NOT show group headings or notes. It SHALL show the options of every group of the file as one list, sorted as the tab requires, with a package that two groups both list (the same scenario link) shown once. The exploratory notice, the out-of-date notice and any failed-confirmation notice SHALL appear once, outside any disclosure, for each distinct provenance among the groups that list options. The computed date and the provenance line SHALL appear once for each of them under the page-level disclosure.
 
 #### Scenario: Older file with two groups
 - **WHEN** the file holds two groups, one under the 2025 neighborhood pilot's limits and one without
@@ -303,24 +302,6 @@ Streets and the vehicles on them SHALL run straight into a merged staggered junc
 #### Scenario: Staggered T-junctions
 - **WHEN** a cross street meets a street at two offset points that the importer merged into one node
 - **THEN** each leg ends on its own line near the node and vehicles follow it
-
-### Requirement: Keyboard access to scrollable regions
-Every scrollable region SHALL be reachable by keyboard, either by containing focusable content or by being focusable with an accessible name, at every layout width. The Streets table SHALL be one tab stop, with arrow keys, Page Up, Page Down, Home and End moving between rows.
-
-#### Scenario: Tablet width
-- **WHEN** the window is 768 px wide
-- **THEN** no scrollable region lacks focusable content or a focusable name
-
-#### Scenario: Tabbing through Streets
-- **WHEN** a user tabs into the Streets table and presses the down arrow
-- **THEN** focus moves to the next row and its block is outlined on the map, and the next Tab leaves the table
-
-### Requirement: Revealing more rows
-Choosing "Show more" in a list SHALL reveal the new rows with a short height and opacity transition (none under reduced motion), move focus to the first new row and announce how many rows appeared.
-
-#### Scenario: Show more in Streets
-- **WHEN** a user chooses "Show more" in the Streets table
-- **THEN** the new rows fade in, focus is on the first of them and a polite message gives the count
 
 ### Requirement: Steady street values without interventions
 The plain overlays (flow and cut-through) SHALL show each street's average over the simulated time so far, and a street that has carried traffic SHALL NOT return to the "no traffic" color during the run. The legend SHALL say the values are averages over the simulated time so far.
@@ -576,24 +557,6 @@ The map highlight for a reason SHALL use a color and line pattern that no overla
 - **WHEN** a reason is highlighted while the map shows change in cut-through
 - **THEN** its path is a dashed violet line with a solid casing, apart from the blue and orange of the scale
 
-### Requirement: Streets view on phones
-On phones (viewport under 720 px) the Streets tab SHALL be a full-height list with no map and no bottom sheet, each street block a card with a labeled grid of figures and a "Show on map" button that opens the Map tab with that block selected. A "Sort by" menu with a direction button of at least 24 by 24 CSS px SHALL replace header sort buttons, the table SHALL keep its caption and headers for assistive technology, and the page SHALL NOT scroll horizontally.
-
-#### Scenario: Reading the list on a phone
-- **WHEN** a user opens Streets on a 412 px wide screen
-- **THEN** no map or sheet is drawn, the first card's name is readable in full, and the last card can be scrolled fully into view
-
-#### Scenario: Show on map
-- **WHEN** a user chooses "Show on map" on a card
-- **THEN** the Map tab opens with that block selected
-
-### Requirement: Streets table columns
-Headers in the Streets table SHALL carry units ("All cars, cars an hour", "Through cars, cars an hour"), SHALL NOT wrap, and SHALL NOT overlap or clip the rows beneath them. The Scenario and Change columns SHALL appear only when a scenario can be compared with the baseline; without one the table SHALL say "Add a change on the Map tab to compare." Figures SHALL show a dash, not zero, while a run's results are withheld.
-
-#### Scenario: No scenario
-- **WHEN** no intervention has been added
-- **THEN** the table lists base figures only and carries the note, with no columns of dashes
-
 ### Requirement: Assumptions tab
 The app SHALL have a top-level Assumptions tab between Methodology and Sources. It SHALL open by saying its contents are the judgment calls in the model, the parts that rest on reasoning and not on a count, that they are the first things to question and that changing them would change the results, and it SHALL link to Sources for the measured inputs.
 
@@ -733,11 +696,15 @@ The results panel and the Assumptions tab SHALL list the reasons under the secti
 - **THEN** the map shows the path and a labeled point at the ramp, and the panel names the ramp
 
 ### Requirement: Tab URLs
-The path SHALL name the tab: `/` is the Map, and `/proposals`, `/streets`, `/methodology`, `/assumptions` and `/sources` are the others, each derived from the tab's id. Loading any of those paths SHALL open that tab. A path that names no tab SHALL open the Map and the address SHALL be corrected to `/`.
+The path SHALL name the tab: `/` is the Map, and `/proposals`, `/methodology`, `/assumptions` and `/sources` are the others, each derived from the tab's id. Loading any of those paths SHALL open that tab. A path that names no tab SHALL open the Map and the address SHALL be corrected to `/`, keeping a scenario fragment. The retired `/streets` path is such a path.
 
 #### Scenario: Direct load
 - **WHEN** a person opens `/assumptions` directly
 - **THEN** the Assumptions tab is open, its link is marked as the current page and the title starts with "Assumptions"
+
+#### Scenario: Old Streets link
+- **WHEN** a person opens `/streets` or `/streets#v1;a=rockridge;s=…`
+- **THEN** the Map is open without an error, the scenario in the fragment is applied, and the address reads `/` followed by the fragment
 
 #### Scenario: Unknown path
 - **WHEN** a person opens `/nope`
@@ -747,7 +714,7 @@ The path SHALL name the tab: `/` is the Map, and `/proposals`, `/streets`, `/met
 The tabs SHALL be links to their paths. A plain click SHALL stay in the page and add a history entry, so Back and Forward move between tabs; a click with a modifier key or another button SHALL be left to the browser. The current tab's link SHALL carry `aria-current="page"`.
 
 #### Scenario: Back and Forward
-- **WHEN** a person opens Proposals, then Streets, then presses Back
+- **WHEN** a person opens Proposals, then Methodology, then presses Back
 - **THEN** Proposals is open and the address is `/proposals`; Forward returns to Streets
 
 #### Scenario: Open in a new tab
@@ -765,8 +732,8 @@ The document title SHALL name the tab and the area, as in "Proposals · Traffic:
 A fragment that is `#v1` or begins `#v1;` SHALL be a scenario on any tab path, and existing links, QR codes and stored-result keys SHALL work unchanged on `/` and on every tab path. Any other non-empty fragment SHALL be a section anchor on the current tab, and SHALL NOT be reported as a scenario that could not be read. A URL whose fragment is an anchor SHALL open with no scenario.
 
 #### Scenario: Scenario on another tab
-- **WHEN** a person opens `/streets#v1;a=rockridge;s=…`
-- **THEN** the Streets tab opens with that scenario applied, and switching to Sources and then Map keeps the scenario fragment in the address
+- **WHEN** a person opens `/methodology#v1;a=rockridge;s=…`
+- **THEN** the Methodology tab opens with that scenario applied, and switching to Sources and then Map keeps the scenario fragment in the address
 
 #### Scenario: Old link
 - **WHEN** a person opens `/#v1;a=rockridge;s=…`
@@ -784,7 +751,7 @@ Switching tabs SHALL keep the scenario fragment in the address whenever a scenar
 - **THEN** the scenario fragment is in the address again and the scenario is unchanged
 
 ### Requirement: Section anchors
-Every section heading on the Proposals, Assumptions, Sources and Streets tabs SHALL have an id that is a slug of its heading or a data id, unique on the page and stable across reloads and data rebuilds. A proposal card SHALL use its group's id and the proposal's id, a reason card its reason id, a movement card its movement id and a source its citation key. Ids used before this change (`ref-intents`, `ref-movements`, `ref-calibration`, `ref-<citation key>`) SHALL still reach their sections.
+Every section heading on the Proposals, Assumptions and Sources tabs SHALL have an id that is a slug of its heading or a data id, unique on the page and stable across reloads and data rebuilds. A proposal card SHALL use its group's id and the proposal's id, a reason card its reason id, a movement card its movement id and a source its citation key. Ids used before this change (`ref-intents`, `ref-movements`, `ref-calibration`, `ref-<citation key>`) SHALL still reach their sections.
 
 #### Scenario: Old id
 - **WHEN** a person opens `/assumptions#ref-intents`
@@ -807,13 +774,6 @@ Each anchored heading SHALL have a link control, named "Link to this section: <h
 #### Scenario: Copying a section link
 - **WHEN** a person presses the control beside a heading
 - **THEN** the address reads `<tab path>#<id>`, the clipboard holds the full URL and "Link copied" is announced
-
-### Requirement: Internal links use tab URLs
-"About these reasons" SHALL link to `/assumptions#why-cars-cut-through`, citations in Results to `/sources#<key>`, the Sources and Assumptions pointers to each other's paths, and the calibration banner's "Details" to `/sources#calibration`. "Copy link to this scenario" SHALL copy the current tab's path with the scenario fragment. The proposal image's QR code and short URL SHALL still point at `/` with the scenario fragment.
-
-#### Scenario: Copy link on Streets
-- **WHEN** a person copies the scenario link on the Streets tab
-- **THEN** the copied address is `/streets` followed by the scenario fragment
 
 ### Requirement: Tab paths are served as the app
 A direct request for a tab path SHALL return the app with status 200, and so SHALL any other path that is not under `/api/` or `/data/`, after which the app shows the Map and corrects the address. A missing file under `/data/` SHALL still return a 404 JSON body.
@@ -894,21 +854,6 @@ A card whose option has variants SHALL list them under its changes in plain text
 #### Scenario: Unreadable variant
 - **WHEN** a variant in the file has no link or no description
 - **THEN** it is left out and the option's other variants stay
-
-### Requirement: Measured streets only
-Metrics SHALL apply only to the residential and service streets inside the study area. The map shading, hover and tap values, legend, Streets table, Results cards, text pages and headless report SHALL list and color those streets only and SHALL say so in text. The code SHALL decide this from the link's `inStudyArea` flag and class, not from street names.
-
-#### Scenario: Reading the map
-- **WHEN** a user views any map mode
-- **THEN** only side streets inside the study area are colored by the ramp, and the legend names them
-
-#### Scenario: Bounding streets
-- **WHEN** a user views the map
-- **THEN** bounding streets and everything outside the study area are drawn as plain context, with intervention markers still shown, and carry no figure
-
-#### Scenario: Streets table
-- **WHEN** a user opens the Streets tab
-- **THEN** every row is a side-street block inside the study area, and the intro says streets outside it are not measured
 
 ### Requirement: Context streets differ from streets with no traffic
 Streets that are not measured SHALL be drawn as a thin dashed line lighter than the basemap street, with no casing and no ramp color. A measured street with no traffic SHALL take the ramp's lowest color, thin, with a casing. The difference SHALL not rest on color alone, and SHALL hold in light and dark themes.
@@ -1001,7 +946,7 @@ Moving over, focusing, or tapping a drawn change SHALL show, from stored redirec
 
 ### Requirement: Tab pages use the screen width
 
-The Proposals, Streets, Methodology, Assumptions and Sources pages SHALL fill a fluid container centered on the screen, up to 1760 px wide, with side margins of at least 1rem. Running prose SHALL keep a measure of about 80 characters or less. The pages SHALL NOT scroll horizontally at any width from 320 CSS px up.
+The Proposals, Methodology, Assumptions and Sources pages SHALL fill a fluid container centered on the screen, up to 1760 px wide, with side margins of at least 1rem. Running prose SHALL keep a measure of about 80 characters or less. The pages SHALL NOT scroll horizontally at any width from 320 CSS px up.
 
 #### Scenario: Large screen
 
@@ -1015,21 +960,20 @@ The Proposals, Streets, Methodology, Assumptions and Sources pages SHALL fill a 
 
 ### Requirement: Proposal card arrangements
 
-A proposal card SHALL arrange its content by its own width: one column under 44rem; two columns from 44rem (map, then readout and lists); three columns from 76rem (map, then readout and "Streets that change", then "Where filtered traffic goes"). The street table SHALL show stacked labeled rows in any column narrower than 38rem and a table otherwise. Keyboard order SHALL follow the visual order in each arrangement.
+A proposal card SHALL arrange its content by its own width: one column under 44rem; two columns from 44rem (the map, then the readout and the closed disclosure holding the street list, the filter list and the key). The street table SHALL show stacked labeled rows in any column narrower than 38rem and a table otherwise. Keyboard order SHALL follow the visual order in each arrangement.
 
 #### Scenario: Wide card
-
-- **WHEN** a card is 76rem or wider
-- **THEN** the map, the readout, the first street rows and the filter list are visible together
+- **WHEN** a card is 44rem or wider
+- **THEN** the map and the readout are visible together, and the street list, the filter list and the key are one closed disclosure beside the map
 
 ### Requirement: Selection stays in view
 
-On cards of two or more columns, on screens at least 640 px tall, the map column and the readout SHALL stay in view while the lists scroll, and a focused row SHALL NOT be hidden under them.
+On cards of two or more columns, on screens at least 640 px tall, the map column and the readout SHALL stay in view, under the card's pinned header, while the card's disclosures scroll, and a focused row SHALL NOT be hidden under them.
 
 #### Scenario: Scrolling the lists
 
-- **WHEN** a row far down the lists is hovered or focused on a two-column card
-- **THEN** the map and the readout are still on screen and show that row's street
+- **WHEN** a row far down the street list is hovered or focused on a two-column card
+- **THEN** the map and the readout are still on screen, below the card's header, and show that row's street
 
 ### Requirement: Map tooltip
 
@@ -1167,3 +1111,108 @@ An area config SHALL be able to mark the area as a preview. The importer SHALL c
 #### Scenario: Link to the preview
 - **WHEN** a scenario link names the preview area with `a=<id>`
 - **THEN** the app opens the preview area
+
+### Requirement: Transient highlight from search results
+The UI SHALL light a street block or intersection on the map while the pointer is over, or keyboard focus is on, its row in the search results, and SHALL stop when the pointer or focus leaves. The highlight SHALL NOT change the selection or move the map, and SHALL use a distinct line style and width as well as color.
+
+#### Scenario: Hovering a result
+- **WHEN** a user moves the pointer over a search result
+- **THEN** that block or intersection is outlined on the map and the selection is unchanged
+- **AND WHEN** the pointer leaves
+- **THEN** the outline is removed
+
+#### Scenario: Focusing a result
+- **WHEN** keyboard focus moves to a search result
+- **THEN** that block or intersection is outlined on the map until focus moves away
+
+### Requirement: Scrollable regions are keyboard reachable
+Every scrollable region SHALL be reachable by keyboard, either by containing focusable content or by being focusable with an accessible name, at every layout width.
+
+#### Scenario: Tablet width
+- **WHEN** the window is 768 px wide
+- **THEN** no scrollable region lacks focusable content or a focusable name
+
+#### Scenario: Wide table in a card
+- **WHEN** a table in a proposal card is wider than the card
+- **THEN** it scrolls inside its own region, which is focusable and has an accessible name, and the page does not scroll sideways
+
+### Requirement: Links use tab URLs
+"About these reasons" SHALL link to `/assumptions#why-cars-cut-through`, citations in Results to `/sources#<key>`, the Sources and Assumptions pointers to each other's paths, and the calibration banner's "Details" to `/sources#calibration`. "Copy link to this scenario" SHALL copy the current tab's path with the scenario fragment. The proposal image's QR code and short URL SHALL still point at `/` with the scenario fragment.
+
+#### Scenario: Copy link on the Map
+- **WHEN** a person copies the scenario link on the Map tab
+- **THEN** the copied address is `/` followed by the scenario fragment
+
+### Requirement: Measured streets in the map and text pages
+Metrics SHALL apply only to the residential and service streets inside the study area. The map shading, hover and tap values, legend, Results cards, text pages and headless report SHALL list and color those streets only and SHALL say so in text. The code SHALL decide this from the link's `inStudyArea` flag and class, not from street names.
+
+#### Scenario: Reading the map
+- **WHEN** a user views any map mode
+- **THEN** only side streets inside the study area are colored by the ramp, and the legend names them
+
+#### Scenario: Bounding streets
+- **WHEN** a user views the map
+- **THEN** bounding streets and everything outside the study area are drawn as plain context, with intervention markers still shown, and carry no figure
+
+#### Scenario: Street-by-street text page
+- **WHEN** an agent reads `/index.md`
+- **THEN** its "Street by street" table lists only side-street blocks inside the study area, and its intro says streets outside it are not measured
+
+### Requirement: Proposal card headers stay in view
+Each proposal card SHALL have a header with its number, title and headline figure that stays pinned at the top of the page's scroll area, under the app bar, while any part of the card is on screen, and SHALL release when the card ends. The header SHALL be opaque with a themed background, and focused controls and anchors on the card SHALL NOT be hidden under it.
+
+#### Scenario: Reading an expanded card
+- **WHEN** a user opens "All cars on the worst block, and the search's ranking penalty" and scrolls down inside that card
+- **THEN** the card's title and headline figure stay at the top of the scroll area until the card ends
+
+#### Scenario: Narrow and zoomed
+- **WHEN** the tab is shown at 320 px width or at 200% zoom
+- **THEN** the header still pins, wraps its text, and does not scroll the page sideways
+
+#### Scenario: Keyboard focus under the header
+- **WHEN** a user tabs to a control that is below the pinned header's edge
+- **THEN** the page scrolls so the control is fully visible below the header
+
+### Requirement: Disclosures on the Proposals tab
+Disclosures on the Proposals tab SHALL be native `details` elements with a `summary` element that names what is inside, closed by default, operable with Enter and Space, with a visible focus indicator, a marker that does not rely on color, and no animation under reduced motion. A table inside a disclosure that is wider than its container SHALL scroll in its own focusable region with an accessible name.
+
+#### Scenario: Keyboard
+- **WHEN** a user tabs to a summary and presses Enter
+- **THEN** the disclosure opens, focus stays on the summary, and pressing Enter again closes it
+
+### Requirement: Tab bar overflow cue
+When the row of tabs is wider than the screen, the row SHALL scroll sideways and SHALL show a fade into the header color with an arrow on each edge that has more tabs to reach, and no cue on an edge that has none. The cue SHALL update on scroll and resize, work in both themes, take no pointer events and not hide a focused tab, and be removed in forced-colors mode. The active tab SHALL be centered when the tab changes and on load, and the row SHALL stay reachable by keyboard and touch.
+
+#### Scenario: Start of the row
+- **WHEN** the Map tab is active on a 375 px screen
+- **THEN** an arrow and fade show on the right edge only
+
+#### Scenario: Middle of the row
+- **WHEN** the Methodology tab is active on a 375 px screen
+- **THEN** it is centered and both edges show the cue
+
+#### Scenario: End of the row
+- **WHEN** the Sources tab is active on a 375 px screen
+- **THEN** the cue shows on the left edge only
+
+#### Scenario: Wide screen
+- **WHEN** every tab fits
+- **THEN** no cue is shown
+
+### Requirement: Footer holds the theme control and the source link
+The Theme control SHALL be in the footer, beside "For AI agents" and "Source on GitHub", as a small labeled select with the same options, behavior and stored choice as before. The footer SHALL be visible on every tab at every width, including the Map tab on a phone, where the bottom sheet sits above it and never covers it. Its links and control SHALL be at least 24 by 24 CSS px, and its bottom padding SHALL allow for a device's safe area.
+
+#### Scenario: Phone
+- **WHEN** any tab is shown at 320, 375 or 414 px
+- **THEN** "Source on GitHub", "For AI agents" and the Theme control are visible and reachable without covering or being covered by the bottom sheet
+
+#### Scenario: Theme
+- **WHEN** a person chooses Dark in the footer
+- **THEN** the app switches to the dark theme and keeps the choice on the next visit
+
+### Requirement: No sideways panning on phones
+No tab SHALL be wider than the screen at 320, 375 or 414 px with disclosures closed or open, and dragging sideways on a touch screen SHALL NOT move the page or the scroll area. Wide tables, code and long unbroken text SHALL wrap or scroll inside their own container. The page and the scroll area SHALL also clip any stray horizontal overflow as a guard.
+
+#### Scenario: Dragging sideways
+- **WHEN** a person drags sideways on any tab on a 375 px touch screen
+- **THEN** the page does not move
