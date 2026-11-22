@@ -31,16 +31,20 @@
 - [x] 4.4 Re-score of the published assessment under both scopes (arithmetic on the committed tables)
 - [x] 4.5 `npx vitest run tools/ worker/ src/lib`, `npx tsc --noEmit`, `cargo test` of `calibrate`
 
-## 5. Laptop run (project lead's session, after review of this change)
+## 5. Laptop run (2026-11-21, 4:35 PM to 6:01 PM Pacific)
 
-- [ ] 5.1 `laptop/a.zsh`: baseline hashes, candidate worktree, builds, tests, split, dry run
-- [ ] 5.2 `laptop/b.zsh`: membership loop, both demand builds, identity checks
-- [ ] 5.3 `laptop/c.zsh`: validation suite, ten-seed assessments on seeds 1 to 10 and 11 to 20
-- [ ] 5.4 `laptop/pack.zsh`: candidate outputs as gzip parts on the development branch
+- [x] 5.1 `laptop/a.zsh`: baseline hashes, candidate worktree, builds, tests, split, dry run
+- [x] 5.2 `laptop/b.zsh`: membership loop, both demand builds, identity checks
+- [x] 5.3 `laptop/c.zsh`: validation suite, ten-seed assessments on seeds 1 to 10 and 11 to 20
+- [x] 5.4 `laptop/pack.zsh`: candidate outputs as gzip parts on the development branch
 
-## 6. Adoption (after the project lead has reviewed the figures)
+## 6. Adoption (cloud, 2026-11-22, after the project lead reviewed the figures)
 
-- [ ] 6.1 Reassemble the parts, verify checksums, replace the training membership file, the cross-validation demand, the fit reports and the Assumptions data
-- [ ] 6.2 Run `data:llms` and `data:previews`, then `data:push`; the shipped demand, proposals, results and redistribution are unchanged
-- [ ] 6.3 Update `data/areas/rockridge.json` (calibration note and caveat) by the documented procedure from the new assessment
-- [ ] 6.4 Record entry in `data/calibration/rockridge.record.md`; archive this change
+- [x] 6.1 Verify the archive parts and files against `SHA256SUMS` and `FILES.txt`; install the cross-validation demand, the training membership file, the fit reports, the assessment and its reports
+- [x] 6.2 Rewrite the calibration note and caveat in `data/areas/rockridge.json` from the new assessment
+- [x] 6.3 `npm run data:assumptions`, `npx tsx tools/import-osm.ts` (areas.json), `data:llms`, `data:previews`; the four generated folders are complete
+- [x] 6.4 Local smoke check of the built app (Assumptions table, status wording, proposals)
+- [x] 6.5 Record entry in `data/calibration/rockridge.record.md`; rounds 44 and 45 moved unchanged into `rockridge.record-archive-3.md`
+- [ ] 6.6 `data:push` (project lead); the shipped demand, proposals, results and redistribution are unchanged
+- [x] 6.7 Archive this change
+

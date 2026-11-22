@@ -1,0 +1,2 @@
+<laptop>/traffic/.claude/worktrees/traffic-derived/target/derived/validation.head.json vs data/calibration/validation.json: 0 differing paths, 1 ignored paths
+  ignored manifest.simulator.revision: "dd0be1efa83562b19ad0f5d55b7e0a721315ad84" -> "e644ed978f7c0bf17ebcdc6c4359c3299d28c065"

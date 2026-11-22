@@ -1,0 +1,3 @@
+<laptop>/traffic/.claude/worktrees/traffic-derived/target/derived/pd-before/rockridge.assumptions.json vs public/data/rockridge.assumptions.json: 0 differing paths, 2 ignored paths
+  ignored generated: "2026-11-21T23:11:49.605Z" -> "2026-11-22T01:58:24.258Z"
+  ignored derivedTargets: "(absent)" -> {"kFactor":0.09,"rampKFactor":0.09,"inboundShare":{"am_peak":0.58,"midday":0.5,"pm_peak":0.45},"stations":[{"id":"caltra...
