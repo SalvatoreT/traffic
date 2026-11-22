@@ -1,6 +1,7 @@
 // Which stations are derived targets and what the held-out rule does to them (change derived-targets-not-judged). Reads the frozen split and the stations file only; no count value
 // is used to choose anything. Prints a Markdown report: the stations per period with their drawn and effective sides, the groups that moved, and a check that no other station did.
-//   npx tsx tools/derived-targets-report.ts [--area rockridge] [--out FILE]
+//   npx tsx tools/derived-targets-report.ts [--area rockridge] [--out FILE] [--held-diff]
+// --held-diff prints the held-out station ids before and after the rule as a diff: only derived targets appear as removed, and nothing is added.
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { writeFileAtomic } from './lib/atomic';
@@ -43,6 +44,8 @@ const groups = split.groups.filter((g) => g.held && isDerivedGroup(g));
 L.push('', '## Groups that change side', '', `${groups.length} dependency groups, ${groups.reduce((a, g) => a + g.stations.length, 0)} stations. Every other group keeps the side the frozen draw gave it.`, '', '| Group (source observation) | Corridor | Stations |', '| --- | --- | --- |');
 for (const g of groups) L.push(`| ${g.id} | ${g.corridor} | ${g.stations.join('; ')} |`);
 L.push('');
-const text = L.join('\n');
+const text = process.argv.includes('--held-diff')
+  ? ['--- held out by the frozen draw (data/demand/' + area + '.split.json, as the stations file records it)', '+++ held out after the derived-target rule', ...[...new Set([...drawn, ...effective])].sort().flatMap((id) => (drawn.has(id) && effective.has(id) ? [`  ${id}`] : drawn.has(id) ? [`- ${id}`] : [`+ ${id}`])), ''].join('\n')
+  : L.join('\n');
 const out = process.argv.includes('--out') ? resolve(root, arg('--out', '')) : null;
 if (out) writeFileAtomic(out, text); else console.log(text);

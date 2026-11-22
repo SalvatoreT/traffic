@@ -5,7 +5,7 @@ Ten of the 24 recent PM held-out stations of the round 52 assessment miss GEH 5,
 - The target of each is an annual average daily traffic [CaltransAADT] times K (0.09) times the directional split (inbound 0.45, outbound 0.55 in the PM peak). Both factors are ASSUMPTIONs: [FHWA-TMG2022] defines K and gives design-hour volume as AADT x K x D, and the 0.09 value is not in any source opened (see `docs/references.md`). The target is an hourly equivalent of a daily total, not a count of the hour.
 - Each station is the only count on its gate. Holding it out removes the gate's record from the cross-validation demand, so the gate takes the class default (ASSUMPTION): the San Pablo gate offers 202 veh/h against 1,020. The held-out miss measures that default and says little about the simulator (calibration record, round 42, and the audit of 2026-11-18 and 2026-11-19).
 
-With the six removed, PM recent held out is 14 of 18 (78%), still under the 85% rule. The change corrects what the rule counts. It does not change the status.
+With the six removed, PM recent held out is 14 of 18 (78%), still under the 85% rule. The change corrects what the rule counts; PM stays uncalibrated on the held-out rate.
 
 ## Decisions
 

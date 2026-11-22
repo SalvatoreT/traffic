@@ -1,0 +1,88 @@
+--- held out by the frozen draw (data/demand/rockridge.split.json, as the stations file records it)
++++ held out after the derived-target rule
+- caltrans ashby 544,1277 in
+- caltrans ashby 544,1277 out
+- caltrans sanpablo -2703,-608 in
+- caltrans sanpablo -2703,-608 out
+- caltrans tunnel 734,1282 in
+- caltrans tunnel 734,1282 out
+  count block 1831
+  count block 1832
+  count block 1845
+  count block 1846
+  count block 1857
+  count block 1858
+  count block 1867
+  count block 1868
+  count block 1896
+  count block 1897
+  count block 1932
+  count block 1933
+  count block 1990
+  count block 2593
+  count block 2594
+  count block 2601
+  count block 2602
+  count block 2673
+  count block 2674
+  gate 1735 out
+- gate 265 in
+- gate 265 out
+  gate 295 in
+  gate 295 out
+  gate 763 in
+  ix alcatraz-claremont N leaving
+  ix alcatraz-claremont W leaving
+  ix alcatraz-claremont move 2797>2956
+  ix alcatraz-college move 2805>4239
+  ix alcatraz-college move 3008>2955
+  ix alcatraz-college move 4238>2804
+  ix ashby-claremont N entering
+  ix ashby-claremont W leaving
+  ix ashby-claremont move 3447>3396
+  ix ashby-claremont move 4329>3425
+  ix mlk-52nd E entering
+  ix mlk-52nd S leaving
+  ix mlk-52nd W entering
+  ix mlk-52nd move 758>811
+  ix mlk-55th N leaving
+  ix mlk-55th S entering
+  ix mlk-55th move 712>765
+  ix mlk-55th move 834>714
+  ix shattuck-52nd E leaving
+  ix shattuck-52nd S leaving
+  ix shattuck-52nd W entering
+  ix shattuck-52nd move 1705>1571
+  ix shattuck-55th E leaving
+  ix shattuck-55th N leaving
+  ix shattuck-55th move 1577>1661
+  ix shattuck-55th move 711>1750
+  ix sr24-52nd E leaving
+  ix sr24-52nd N leaving
+  ix sr24-clifton-claremont E entering
+  ix sr24-clifton-claremont E leaving
+  ix sr24-clifton-claremont W entering
+  ix sr24-hudson-claremont E leaving
+  ix sr24-hudson-claremont W leaving
+  ix sr24-hudson-claremont move 2021>2818
+  ix sr24-mlk E leaving
+  ix telegraph-51st move 1629>1764
+  ix telegraph-51st move 1700>4171
+  ix telegraph-51st move 1763>4171
+  ix telegraph-51st move 4170>1764
+  ix telegraph-52nd-claremont N leaving
+  ix telegraph-52nd-claremont move 1630>1647
+  ix telegraph-52nd-claremont move 4171>1647
+  ix telegraph-55th E leaving
+  ix telegraph-55th N leaving
+  ix telegraph-55th move 1576>1676
+  ix telegraph-55th move 1678>1575
+- ramp off 1556
+- ramp off 1577
+- ramp on 1556
+- ramp on 1669
+- ramp on 701
+  tmc AlcatrazAve E entering
+  tmc AlcatrazAve E leaving
+  tmc MarketSt_55thSt W entering
+  tmc MarketSt_55thSt W leaving
