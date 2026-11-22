@@ -1,3 +1,5 @@
+> Round 37 ran 2026-11-16 to 2026-11-17 (`data/calibration/rockridge.record-archive-3.md`). Archived late, on 2026-11-22, with the specs already current; no spec sync was run.
+
 ## Why
 
 Round 36 traced the gridlock that keeps the delay-feedback fit rejected to the all-way stop at Claremont Ave / Russell St and the Berkeley hills streets north of Ashby Ave, more than a kilometer from the Rockridge Trapezoid, where the model has few counts. The PM peak's stability rule (D16, at most 1 car an hour cleared from gridlock) counted those clearings the same as ones on the study area's streets. On 2026-11-16 the project lead confirmed from a resident's field observation that Claremont Ave / Russell St is an all-way stop, so the network there is right, and chose to judge gridlock near the Trapezoid: the limit applies to the study area, its bounding streets and the junctions on them, and gridlock farther out is reported apart as a known weakness at the model's edges.

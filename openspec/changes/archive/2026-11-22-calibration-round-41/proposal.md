@@ -1,3 +1,5 @@
+> Round 41 ran on 2026-11-17 (`data/calibration/rockridge.record-archive-3.md`). Archived late, on 2026-11-22, with the specs already current; no spec sync was run.
+
 ## Why
 
 After round 40 Colby St NB is the one through figure clearly above its range (150.6 on twenty seeds against 102 to 145). The excess joins Colby St from Forest St, where the simulator sends 86 cars an hour against 57 counted, though that turn is already a fit station: the fit counts it on its own static routes.

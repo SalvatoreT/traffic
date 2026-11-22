@@ -1,3 +1,5 @@
+> Round 42 ran on 2026-11-17 (`data/calibration/rockridge.record-archive-3.md`). Archived late, on 2026-11-22, with the specs already current; no spec sync was run.
+
 ## Why
 
 After round 40 the one status rule that still fails in the PM peak is the count-station rule: GEH below 5 at more than 85% of recent stations. PM fitted stations pass at 82% and held-out stations at 54%; AM held-out stations pass at 74%. The project lead asked for a round that finds the causes of the failing stations and fixes them, with the rule and its ranges left as they are.

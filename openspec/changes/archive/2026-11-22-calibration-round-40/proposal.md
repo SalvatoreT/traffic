@@ -1,3 +1,5 @@
+> Round 40 ran on 2026-11-17 (`data/calibration/rockridge.record-archive-3.md`). Archived late, on 2026-11-22, with the specs already current; no spec sync was run.
+
 ## Why
 
 Round 39 brought two of the four fitted through-car figures inside their ranges on seeds 1 to 10; Colby St NB and Hillegass Ave SB stayed above, and the two ten-seed sets disagree by up to 13 cars an hour. The project lead asked for a round that judges on more seeds, raises the targets' weight if that helps, checks the Colby St NB off-ramp traffic against data, and tests a second membership iteration.
