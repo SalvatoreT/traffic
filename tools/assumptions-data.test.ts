@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildAssumptions, parseFitReport, type AssumptionsCfg } from './lib/assumptions-data';
+import { buildAssumptions, derivedTargetsView, parseFitReport, type AssumptionsCfg } from './lib/assumptions-data';
 import { intentShares, parseAssumptions } from '../src/lib/assumptions';
 
 const fit = `# Fit
@@ -91,5 +91,24 @@ describe('the assumptions data', () => {
     expect(parseAssumptions('{"version":2}')).toBeNull();
     expect(intentShares(m, 'pm_peak').map((s) => s.pct)).toEqual([47, 53]);
     expect(intentShares(m, 'midday')).toEqual([]);
+  });
+});
+
+describe('targets derived from daily totals', () => {
+  const st = (id: string, source: string | null, target: Record<string, number>) => ({ id, kind: 'caltrans', label: id, source, year: 2024 as number | null, target });
+  const factors = { kFactor: 0.09, ramps: { kFactor: 0.09 }, periodFactors: { pm_peak: { inboundShare: 0.45 }, am_peak: { inboundShare: 0.58 } } };
+  it('lists the stations made from an AADT or ramp ADT with the factors, and nothing else', () => {
+    const v = derivedTargetsView([st('a', 'caltrans-aadt', { pm_peak: 951.6 }), st('b', 'volunteer-count', { pm_peak: 50 }), st('c', 'caltrans-ramp', { pm_peak: 12.2 }), st('d', null, {})], factors)!;
+    expect(v.stations.map((s) => s.id)).toEqual(['a', 'c']);
+    expect(v.stations[0].targets).toEqual({ pm_peak: 952 });
+    expect(v.inboundShare).toEqual({ pm_peak: 0.45, am_peak: 0.58 });
+    expect(derivedTargetsView([st('b', 'volunteer-count', {})], factors)).toBeNull();
+  });
+  it('is carried in the assumptions file only when there is something to show', () => {
+    const o = { area: 'a', demandHash: 'h', countSourceId: '', generated: 'g' };
+    const v = derivedTargetsView([st('a', 'caltrans-aadt', { pm_peak: 900 })], factors);
+    expect(buildAssumptions(cfg, fit, { ...o, derivedTargets: v }).derivedTargets?.stations).toHaveLength(1);
+    expect('derivedTargets' in buildAssumptions(cfg, fit, { ...o, derivedTargets: null })).toBe(false);
+    expect('derivedTargets' in buildAssumptions(cfg, fit, o)).toBe(false);
   });
 });

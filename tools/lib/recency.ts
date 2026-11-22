@@ -1,5 +1,6 @@
 // Recency of count sources: weight bands by the age of a station's count year, an optional held-out-only band, and an optional growth rate per source.
 // No I/O, no street names. Every number comes from the area's config (`countFit.recency`); the weights and rates there are ASSUMPTIONs.
+import { DERIVED_TARGET_PHRASE } from './derived-targets';
 
 export interface RecencyBand { /** Upper age limit in years (inclusive); omitted on the last band. */ maxAgeYears?: number; /** Multiplier of the station weight; 0 takes the station out of the fit and reports it as held out. */ weight: number }
 export interface RecencyConfig {
@@ -51,7 +52,8 @@ export function applyRecency(stations: Dated[], cfg: RecencyConfig): RecencySumm
 /** Year label for reports: whole years as is, means of several count years to one decimal, "unknown" when null. */
 export const yearLabel = (y: number | null | undefined): string => (y == null ? 'unknown' : Number.isInteger(y) ? String(y) : y.toFixed(1));
 
-export interface CaseLike { gehOk: boolean; held?: boolean }
+/** `held` is the side a station is scored on (held out of the cross-validation fit or fitted). `drawnHeld` is the frozen draw before the derived-target rule; it equals `held` for every station that is not a derived target. */
+export interface CaseLike { gehOk: boolean; held?: boolean; drawnHeld?: boolean; /** The target is derived from a daily total (derived-targets.ts): reported apart, not judged. */ dailyTotal?: boolean }
 export interface GroupRow { source: string; year: number | null; fitted: { n: number; ok: number }; held: { n: number; ok: number } }
 
 /** GEH below 5 counts per source and count year, fitted and held out. */
@@ -86,18 +88,29 @@ export interface RuleSplit {
   heldInFit?: { recent: Tally; older: Tally; all: Tally };
   /** Stations whose target is a scaled copy of another period's count (midday): not counts, left out of the three groups above. */
   derived: Tally;
+  /** Stations whose target is derived from a daily total (AADT or ramp ADT times assumed factors), in every period: not hourly counts, left out of the groups above and of `derived`. They are fitted in both views. */
+  dailyTotal: Tally;
+  /** The same three groups under the scope before derived targets were set apart: every station that is not a scaled copy of another period's count, on the side the frozen draw gives it. For comparison with earlier assessments. */
+  legacy: { all: { fitted: Tally; held: Tally }; recent: { fitted: Tally; held: Tally }; older: { fitted: Tally; held: Tally } };
 }
 export type Tally = { n: number; ok: number };
 
-/** Pass counts of the stations of a period: all, recent (age at most `recentYears`) and older, each fitted and held out. A station with no year is older. A station whose target in the period is derived is not a count and goes to `derived`. */
+/**
+ * Pass counts of the stations of a period: all, recent (age at most `recentYears`) and older, each fitted and held out. A station with no year is older. A station whose
+ * target is derived from a daily total goes to `dailyTotal` (it is in the fit in both views and is not judged); one whose target in the period is a scaled copy of another
+ * period's count is not a count either and goes to `derived`. `legacy` holds the counts under the scope before derived targets were set apart.
+ */
 export function ruleSplit<T extends CaseLike & { derived?: boolean }>(items: { year?: number | null; c: T }[], cfg: { referenceYear: number; recentYears: number }): RuleSplit {
   const t = (): { fitted: Tally; held: Tally } => ({ fitted: { n: 0, ok: 0 }, held: { n: 0, ok: 0 } });
-  const out: RuleSplit = { all: t(), recent: t(), older: t(), derived: { n: 0, ok: 0 } };
+  const out: RuleSplit = { all: t(), recent: t(), older: t(), derived: { n: 0, ok: 0 }, dailyTotal: { n: 0, ok: 0 }, legacy: { all: t(), recent: t(), older: t() } };
+  const add = (b: Tally, ok: boolean) => { b.n++; if (ok) b.ok++; };
   for (const { year, c } of items) {
-    if (c.derived) { out.derived.n++; if (c.gehOk) out.derived.ok++; continue; }
     const age = ageOf(year, cfg.referenceYear);
-    const group = age !== null && age <= cfg.recentYears ? out.recent : out.older;
-    for (const g of [out.all, group]) { const b = c.held ? g.held : g.fitted; b.n++; if (c.gehOk) b.ok++; }
+    const recent = age !== null && age <= cfg.recentYears;
+    if (!c.derived) for (const g of [out.legacy.all, recent ? out.legacy.recent : out.legacy.older]) add((c.drawnHeld ?? c.held) ? g.held : g.fitted, c.gehOk);
+    if (c.dailyTotal) { add(out.dailyTotal, c.gehOk); continue; }
+    if (c.derived) { add(out.derived, c.gehOk); continue; }
+    for (const g of [out.all, recent ? out.recent : out.older]) add(c.held ? g.held : g.fitted, c.gehOk);
   }
   return out;
 }
@@ -110,7 +123,28 @@ export function outOfSampleSplit(main: RuleSplit, cv: RuleSplit | null): RuleSpl
     older: { fitted: main.older.fitted, held: cv ? cv.older.held : { n: 0, ok: 0 } },
     heldInFit: { recent: main.recent.held, older: main.older.held, all: main.all.held },
     derived: main.derived,
+    dailyTotal: main.dailyTotal,
+    legacy: {
+      all: { fitted: main.legacy.all.fitted, held: cv ? cv.legacy.all.held : { n: 0, ok: 0 } },
+      recent: { fitted: main.legacy.recent.fitted, held: cv ? cv.legacy.recent.held : { n: 0, ok: 0 } },
+      older: { fitted: main.legacy.older.fitted, held: cv ? cv.legacy.older.held : { n: 0, ok: 0 } },
+    },
   };
+}
+
+/**
+ * The pass counts of the station rule under both scopes, side by side, so that an assessment can be compared with earlier ones (change derived-targets-not-judged). New scope:
+ * hourly counts only. Old scope: derived targets counted too, on the side the frozen draw gives them (on a cross-validation demand that now fits them, their held-out
+ * figures are no longer out of sample). Thresholds are the same in both.
+ */
+export function scopeComparisonLines(rows: { period: string; split: RuleSplit | null }[], rule = 0.85, minHeld = MIN_HELD_RECENT): string[] {
+  const L = ['| Period | New scope, recent, fitted | New scope, recent, held out | Old scope, recent, fitted | Old scope, recent, held out | Derived targets (not judged) |', '| --- | --- | --- | --- | --- | --- |'];
+  for (const { period, split } of rows) {
+    if (!split) { L.push(`| ${period} | - | - | - | - | - |`); continue; }
+    const v = (b: Tally, minN: number) => (b.n ? `${cell(b)}, ${judge(b, rule, minN) === 'met' ? 'pass' : 'FAIL'}` : '-');
+    L.push(`| ${period} | ${v(split.recent.fitted, 1)} | ${v(split.recent.held, minHeld)} | ${v(split.legacy.recent.fitted, 1)} | ${v(split.legacy.recent.held, minHeld)} | ${split.dailyTotal.n ? `${cell(split.dailyTotal)} GEH below 5` : 'none'} |`);
+  }
+  return L;
 }
 
 /** Fewest recent held-out stations on which the rule is judged (ASSUMPTION: below it a pass rate is two or three stations). */
@@ -137,6 +171,7 @@ export function sourceYearLines<T extends CaseLike>(items: { source?: string; ye
   const rv = (b: Tally, minN: number) => judge(b, rule, minN);
   const r = ruleSplit(items, cfg);
   const both = (g: { fitted: Tally; held: Tally }, minHeld = 1) => `fitted ${cell(g.fitted)} (${rv(g.fitted, 1)}), held out ${cell(g.held)} (${rv(g.held, minHeld)})`;
-  L.push('', `Station rule (GEH below 5 at more than ${Math.round(rule * 100)}% of stations), judged on counts from the last ${cfg.recentYears} years, scores on the shipped demand (the held-out column here is in the shipped fit): ${both(r.recent)}. Older counts, reported beside it: ${both(r.older)}. All counts: ${both(r.all)}.${r.derived.n ? ` Scaled copies of another period's count (not counts, not judged): ${cell(r.derived)}.` : ''}`);
+  L.push('', `Station rule (GEH below 5 at more than ${Math.round(rule * 100)}% of stations), judged on counts from the last ${cfg.recentYears} years, scores on the shipped demand (the held-out column here is in the shipped fit): ${both(r.recent)}. Older counts, reported beside it: ${both(r.older)}. All counts: ${both(r.all)}.${r.dailyTotal.n ? ` Targets ${DERIVED_TARGET_PHRASE} (a Caltrans AADT or ramp ADT times assumed factors, fitted in both views): ${cell(r.dailyTotal)}.` : ''}${r.derived.n ? ` Scaled copies of another period's count (not counts, not judged): ${cell(r.derived)}.` : ''}`);
+  if (r.dailyTotal.n) L.push('', `Under the scope before derived targets were set apart, on the side the frozen draw gives each station: recent ${both(r.legacy.recent)}; older ${both(r.legacy.older)}; all ${both(r.legacy.all)}.`);
   return L;
 }

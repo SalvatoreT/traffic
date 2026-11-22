@@ -5,9 +5,10 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
+import { withheldDigest, type SplitManifest } from './lineage';
 
 export interface InputRef { path: string; sha256: string | null }
-export interface DemandBuild { view?: string; split?: string | null; config?: string | null; network?: string | null; countFile?: string | null }
+export interface DemandBuild { view?: string; split?: string | null; config?: string | null; network?: string | null; countFile?: string | null; /** Training view: digest of the stations it leaves out under the derived-target rule. */ withheld?: string | null }
 export interface RunManifest {
   schema: number;
   simulator: { fingerprint: string; revision?: string | null; dirty?: boolean | null; version?: string };
@@ -48,7 +49,7 @@ export interface BuildEvidence {
   /** Metadata embedded in the demand file whose bytes the simulator read. */
   recorded: DemandBuild | null;
   /** Null means the input was disabled. Undefined means an enabled source is missing. */
-  sources: Partial<Record<'config' | 'network' | 'countFile' | 'split', string | null | undefined>>;
+  sources: Partial<Record<'config' | 'network' | 'countFile' | 'split' | 'withheld', string | null | undefined>>;
 }
 
 /** Read once per demand view. A variant can come from another fitting config or from an external generator. */
@@ -62,9 +63,14 @@ export function buildEvidence(root: string, area: string, demandPath: string | n
   const needsSplit = view === 'training' || (cfg.countFit?.enabled && validation?.enabled);
   const splitPath = validation?.splitFile ?? `data/demand/${area}.split.json`;
   const countFile = count?.enabled ? (typeof count.file === 'string' ? hashFile(resolve(root, count.file)) ?? undefined : undefined) : null;
+  const splitFile = resolve(root, splitPath);
+  const readSplit = (): SplitManifest | null => { try { const m = JSON.parse(readFileSync(splitFile, 'utf8')); return { ...m, groups: Array.isArray(m.groups) ? m.groups : [], withheldAggregates: Array.isArray(m.withheldAggregates) ? m.withheldAggregates : [] }; } catch { return null; } };
+  const split = view === 'training' && existsSync(splitFile) ? readSplit() : null;
+  const withheld = view === 'training' ? (split ? withheldDigest(split) : undefined) : null;
   return { view, recorded, sources: {
     config: hashFile(configPath) ?? undefined, network, countFile,
-    split: needsSplit ? hashFile(resolve(root, splitPath)) ?? undefined : null,
+    split: needsSplit ? hashFile(splitFile) ?? undefined : null,
+    ...(view === 'training' ? { withheld } : {}),
   } };
 }
 

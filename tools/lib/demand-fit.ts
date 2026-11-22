@@ -6,7 +6,8 @@ import { SIM_ROUTE_PARAMS, assign, assignMsa, buildGraph, linkVolumes, type ALin
 import { assigned, fitToCounts, type Constraint, type FitOptions, type FlowType } from './fit-counts';
 import { controlDelayArray, type ControlDelayFile } from './control-delays';
 import { sourceYearLines, type RecencyConfig } from './recency';
-import { heldStationIds, observationOfKey, type SplitManifest, type SplitStation } from './lineage';
+import { SOURCE_CALTRANS_AADT, SOURCE_CALTRANS_RAMP, isDerivedTarget } from './derived-targets';
+import { drawnHeldStationIds, observationOfKey, type SplitManifest, type SplitStation } from './lineage';
 import { routeShareTally, impliedVolumes, type BlockMembership, type EndAlongSpec, type ImpliedVolume, type ShareSpec, type Targets } from './share-targets';
 import { throughTargetId } from './through-membership';
 import { SEED_FIRST_BLOCK_SHARE, SEED_TAKE_SHARE, type EndSeedRow } from './end-along-seed';
@@ -192,7 +193,7 @@ export function buildStations(s: StationInputs, notes: string[]): Station[] {
         id: `caltrans ${o.street} ${Math.round(o.x)},${Math.round(o.y)} ${k}`, kind: 'caltrans', label: `${o.street} station, link ${s.links[b.i].id} ${k}ward (${Math.round(b.d)} m from the station)`,
         basis: `DATA (Caltrans AADT ${Math.round(o.adt)}${factor !== 1 ? `, x ${factor} ASSUMPTION attenuation` : ''})`,
         links: [b.i], target: per((p) => o.adt * factor * s.kFactor * s.periodFactors[p].volume * share(p)), weight: W.caltrans ?? 1, tolPct: T.caltrans ?? 15,
-        records: [{ key: `ov ${o.source}|${k === 'in' ? 'entering' : 'leaving'}`, share: 1 }], source: 'caltrans-aadt', year: o.year,
+        records: [{ key: `ov ${o.source}|${k === 'in' ? 'entering' : 'leaving'}`, share: 1 }], source: SOURCE_CALTRANS_AADT, year: o.year,
       });
     }
   }
@@ -203,7 +204,7 @@ export function buildStations(s: StationInputs, notes: string[]): Station[] {
     const idx = (r.kind === 'off' ? inIdx : outIdx).get(r.surface) ?? [];
     const ls = idx.filter((i) => s.links[i].class === 'motorway');
     if (!ls.length) continue;
-    out.push({ id: `ramp ${r.kind} ${r.surface}`, kind: 'ramp', label: `${r.kind}-ramp at node ${r.surface} (${r.streets.join(' / ') || 'unnamed'})`, basis: `DATA (Caltrans ramp ADT ${Math.round(r.adt)}; ${r.source})`, links: ls, detectors: ls.map(() => r.kind === 'off' ? 'stop' : 'start'), target: per((p) => r.adt * s.rampKFactor * s.periodFactors[p].volume), weight: W.ramp ?? 1, tolPct: T.ramp ?? 5, records: [{ key: `ramp ${r.kind} ${r.surface}`, share: 1 }], source: 'caltrans-ramp', year: r.year, ...(r.rows?.length ? { observations: r.rows } : {}) });
+    out.push({ id: `ramp ${r.kind} ${r.surface}`, kind: 'ramp', label: `${r.kind}-ramp at node ${r.surface} (${r.streets.join(' / ') || 'unnamed'})`, basis: `DATA (Caltrans ramp ADT ${Math.round(r.adt)}; ${r.source})`, links: ls, detectors: ls.map(() => r.kind === 'off' ? 'stop' : 'start'), target: per((p) => r.adt * s.rampKFactor * s.periodFactors[p].volume), weight: W.ramp ?? 1, tolPct: T.ramp ?? 5, records: [{ key: `ramp ${r.kind} ${r.surface}`, share: 1 }], source: SOURCE_CALTRANS_RAMP, year: r.year, ...(r.rows?.length ? { observations: r.rows } : {}) });
   }
   return dedupeStations(out, notes);
 }
@@ -227,9 +228,12 @@ export function splitStationOf(st: Station): SplitStation {
   return { id: st.id, corridor: corridorOf(st), observations: stationObservations(st) };
 }
 
-/** Mark the validation stations from a frozen split manifest (design D17; protect-calibration-evidence D1). Returns the held ids. */
+/**
+ * Mark the validation stations from a frozen split manifest (design D17; protect-calibration-evidence D1). Returns the held ids. This is the draw as frozen: the stations
+ * file records it, and the readers that score or withhold apply the derived-target rule on top (lineage.ts `isHeldGroup`, derived-targets.ts `isDerivedTarget`).
+ */
 export function applySplit(stations: Station[], manifest: SplitManifest): string[] {
-  const held = heldStationIds(manifest);
+  const held = drawnHeldStationIds(manifest);
   for (const s of stations) s.held = held.has(s.id);
   return stations.filter((s) => s.held).map((s) => s.id);
 }
@@ -794,7 +798,7 @@ export function fitReport(area: string, results: PeriodResult[], flowsBy: Record
       L.push('', `Split by kind, GEH below 5 (size bands): interior blocks of the volunteer count fitted ${fi.gehOk} of ${fi.n} (${(fi.gehShare * 100).toFixed(0)}%; bands ${(fi.bandShare * 100).toFixed(0)}%), held out ${hi.gehOk} of ${hi.n} (${(hi.gehShare * 100).toFixed(0)}%; bands ${(hi.bandShare * 100).toFixed(0)}%, mean GEH ${hi.meanGeh.toFixed(1)}); other stations (gates, ramps, Caltrans, turning-movement legs, movements and routes of the volunteer count) fitted ${fo.gehOk} of ${fo.n} (${(fo.gehShare * 100).toFixed(0)}%; bands ${(fo.bandShare * 100).toFixed(0)}%), held out ${ho.gehOk} of ${ho.n} (${(ho.gehShare * 100).toFixed(0)}%; bands ${(ho.bandShare * 100).toFixed(0)}%, mean GEH ${ho.meanGeh.toFixed(1)}).`);
     }
     if (opt.recency) {
-      const tag = (x: { st: Station; final: number; target: number }, held: boolean) => ({ source: x.st.source, year: x.st.year, c: { gehOk: geh(x.final, x.target) < 5, held } });
+      const tag = (x: { st: Station; final: number; target: number }, held: boolean) => ({ source: x.st.source, year: x.st.year, c: { gehOk: geh(x.final, x.target) < 5, held, dailyTotal: isDerivedTarget(x.st) } });
       L.push('', `GEH below 5 by source and count year in the static assignment (${r.id}; fitted = in the fit that ships, held out = scored on the fit without them):`, '', ...sourceYearLines([...rows.map((x) => tag(x, false)), ...r.heldRows.map((x) => tag(x, true))], opt.recency));
     }
     if (r.heldRows.length) {

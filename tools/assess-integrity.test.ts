@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
+import { withheldDigest } from './lib/lineage';
 import { buildEvidence, checkPair, checkRunSet, type RunManifest } from './lib/run-manifest';
 import { isolationProblems, resolveOutputs } from './lib/assess-outputs';
 import { fittedRampCountError, headlineSharesPass, scoreStations, stationEvidenceProblems, type SeedRun, type StationFile } from './lib/assess';
@@ -30,7 +31,7 @@ function makeRoot(): string {
     network: sha(join(root, 'public/data/rockridge.network.json')), countFile: sha(join(root, 'data/calibration/rockridge.volunteer-count-2025-02-25.json')),
   };
   put(root, 'public/data/rockridge.demand.json', JSON.stringify({ periods: [], build: { view: 'shipped', ...sources } }));
-  put(root, 'target/validation/rockridge.demand.json', JSON.stringify({ periods: [], build: { view: 'training', ...sources } }));
+  put(root, 'target/validation/rockridge.demand.json', JSON.stringify({ periods: [], build: { view: 'training', ...sources, withheld: withheldDigest({ groups: [], withheldAggregates: [] } as never) } }));
   put(root, 'data/calibration/rockridge.assessment.md', 'PUBLISHED ASSESSMENT\n');
   put(root, 'data/calibration/reports/rockridge-pm_peak-s1-seeds1-10.json', '{"published":true}\n');
   put(root, 'public/data/rockridge.noise.json', '{"published":true}\n');
@@ -113,6 +114,20 @@ describe('assessment of reused runs (C4)', () => {
     expect(text).toMatch(/Stability rule \(D16\): fails/);
     expect(text).toMatch(/Cars cleared from gridlock \(all of them: no near\/far split\) 9999\.00 per hour/);
     expect(text).toMatch(/Suggested status: \*\*uncalibrated\*\*/);
+  }, 60000);
+
+  it('sets targets derived from a daily total apart: own table, own words, both scopes, no held-out miss among them', () => {
+    const root = makeRoot();
+    const r = assess(root, ['--suffix', 'derived']);
+    expect(r.status).toBe(0);
+    const text = readFileSync(join(root, 'data/calibration/rockridge.assessment-derived.md'), 'utf8');
+    expect(text).toContain('Targets derived from a daily total, not judged.');
+    expect(text).toMatch(/\| caltrans ashby 544,1277 in|\| ashby station, link 3396 inward/);
+    expect(text).toMatch(/\d+ link-based derived targets in pm_peak/);
+    expect(text).toContain('Scope of the station rule, before and after targets derived from a daily total, not judged were set apart');
+    expect(text).toContain('| Period | New scope, recent, fitted | New scope, recent, held out | Old scope, recent, fitted | Old scope, recent, held out | Derived targets (not judged) |');
+    expect(text).toContain('A target computed from a daily total');
+    expect(text).not.toMatch(/\| pm_peak \| (sanpablo|tunnel|ashby) station/);
   }, 60000);
 
   it('rejects incomplete detectors in one seed even when its manifest and other seeds match', () => {

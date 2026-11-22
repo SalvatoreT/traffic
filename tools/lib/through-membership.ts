@@ -7,13 +7,17 @@ export interface SelectOd { stationCountVersion?: number; manifest?: RunManifest
 
 export interface MembershipEvidence {
   view: string; network: string; split: string; config: string; countFile: string; stations: string; targets: string; simulator: string; stationCountVersion: number;
+  /** Training view only: digest of the stations the view leaves out (lineage.ts `withheldDigest`). It moves when the held-out rule does, which the split file's hash does not (change derived-targets-not-judged). */
+  withheld?: string;
 }
 
 const EVIDENCE_FIELDS: (keyof MembershipEvidence)[] = ['view', 'network', 'split', 'config', 'countFile', 'stations', 'targets', 'simulator', 'stationCountVersion'];
 
-/** The evidence fields that differ or are missing; all of them when the file has no evidence. */
+/** The evidence fields that differ or are missing; all of them when the file has no evidence. `withheld` is compared as it is: absent on both sides for the shipped view. */
 export function membershipEvidenceMismatches(a: MembershipEvidence | undefined, b: MembershipEvidence): (keyof MembershipEvidence)[] {
-  return EVIDENCE_FIELDS.filter((field) => !a || !b[field] || a[field] !== b[field]);
+  if (!a) return [...EVIDENCE_FIELDS];
+  const out = EVIDENCE_FIELDS.filter((field) => !b[field] || a[field] !== b[field]);
+  return (a.withheld ?? null) !== (b.withheld ?? null) ? [...out, 'withheld'] : out;
 }
 
 /** Message for a build that finds a membership file whose evidence does not match; a silent fallback to static membership would change the published demand unnoticed. */
@@ -36,7 +40,7 @@ export function membershipEvidence(run: SelectOd, demandHash: string): Membershi
       m.run.period !== run.period || m.run.seed !== run.seed || m.run.minutes !== run.minutes || m.run.scale !== 1) {
     throw new Error('select-OD run does not match the supplied demand and its source, split and network evidence');
   }
-  return { view: b.view, network: b.network, split: b.split, config: b.config, countFile: b.countFile, stations: m.inputs.stations.sha256, targets: m.inputs.targets.sha256, simulator: m.simulator.fingerprint, stationCountVersion: run.stationCountVersion };
+  return { view: b.view, network: b.network, split: b.split, config: b.config, countFile: b.countFile, stations: m.inputs.stations.sha256, targets: m.inputs.targets.sha256, simulator: m.simulator.fingerprint, stationCountVersion: run.stationCountVersion, ...(b.withheld ? { withheld: b.withheld } : {}) };
 }
 
 /** Each demand may contribute a given seed once, under its canonical filename. */

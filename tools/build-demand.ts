@@ -14,8 +14,9 @@ import { controlDelayArray, readControlDelays, type ControlDelayFile } from './l
 import { seedEndAlong } from './lib/end-along-seed';
 import { applySplit, buildStations, corridorOf, overusedRecords, fitPeriod, fitReport, splitStationOf, stationObservations, type FitConfig, type GatePriorConfig, type NetLinkIn, type PeriodResult, type ThroughFit, type ThroughTarget } from './lib/demand-fit';
 import { resolveBlock } from './lib/share-targets';
+import { derivedGroupProblems, SOURCE_CALTRANS_AADT } from './lib/derived-targets';
 import { corridorThroughCounts, membershipEvidenceMismatches, sameMembershipEvidence, staleMembershipMessage, throughTargetId } from './lib/through-membership';
-import { checkManifest, freezeSplit, manifestSha256, manifestText, overrideObservation, tmcObservation, withheldObservations, withheldStationIds, DEFAULT_RULE, type SplitManifest, type SplitStation } from './lib/lineage';
+import { checkManifest, freezeSplit, heldStationIds, isHeldGroup, manifestSha256, manifestText, overrideObservation, tmcObservation, withheldDigest, withheldObservations, withheldStationIds, DEFAULT_RULE, type SplitManifest, type SplitStation } from './lib/lineage';
 import { createHash } from 'node:crypto';
 import type { FlowType } from './lib/fit-counts';
 import { applyRecency, yearLabel, type RecencyConfig } from './lib/recency';
@@ -313,7 +314,7 @@ for (const n of surfaceGates) {
     source = `Oakland TMC ${hit.c.id} ${hit.leg}-leg avg of ${hit.c.legs[hit.leg].files} counts, ${Math.round(Math.hypot(n.x - hit.c.x, n.y - hit.c.y))} m away, shared by ${Math.max(grp.entering, grp.leaving)} gate node(s)`;
   } else {
     const ov = nearestOverride(n, street);
-    if (ov) { const o = ov as { lat?: number; lon?: number }; countDistM = o.lat === undefined ? null : Math.hypot(toXY(o.lat, o.lon!)[0] - n.x, toXY(o.lat, o.lon!)[1] - n.y); adt = ov.adt * (ov.factor ?? 1); kind = 'DATA(adt)'; year = ov.year ?? null; sourceId = 'caltrans-aadt'; source = `Caltrans AADT: ${ov.source}`; record = `ov ${ov.source}`; shareIn = shareOut = 1 / streetGroupSize(n); }
+    if (ov) { const o = ov as { lat?: number; lon?: number }; countDistM = o.lat === undefined ? null : Math.hypot(toXY(o.lat, o.lon!)[0] - n.x, toXY(o.lat, o.lon!)[1] - n.y); adt = ov.adt * (ov.factor ?? 1); kind = 'DATA(adt)'; year = ov.year ?? null; sourceId = SOURCE_CALTRANS_AADT; source = `Caltrans AADT: ${ov.source}`; record = `ov ${ov.source}`; shareIn = shareOut = 1 / streetGroupSize(n); }
     else { adt = classAdt[cls] ?? classAdt.residential; kind = 'ASSUMPTION'; source = `class default (${cls})`; }
     const pk = adt! * cfg.kFactor;
     // A two-way street can appear as a pair of one-way gate nodes (one enter-only, one exit-only, same street,
@@ -942,7 +943,7 @@ function loadThrough(fc: { stationsOutput?: string; endAlong?: { weight: number;
     const stationPath = fc.stationsOutput && (existsSync(outPath(fc.stationsOutput)) ? outPath(fc.stationsOutput) : fc.stationsOutput);
     const evidence = {
       view, network: sha(cfg.network) ?? '', split: manifestHash ?? '', config: sha(cfgPath) ?? '', stations: stationPath ? sha(stationPath) ?? '' : '',
-      targets: sha(tt.targets) ?? '', countFile: vc?.enabled ? sha(vc.file) ?? '' : '', stationCountVersion: 2,
+      targets: sha(tt.targets) ?? '', countFile: vc?.enabled ? sha(vc.file) ?? '' : '', stationCountVersion: 2, ...(training && manifest ? { withheld: withheldDigest(manifest) } : {}),
       simulator: j.evidence?.stationCountVersion === 2 ? execFileSync('cargo', ['run', '--quiet', '--release', '--bin', 'fingerprint'], { encoding: 'utf8' }).trim() : '',
     };
     if (j.network === net.id && sameMembershipEvidence(j.evidence, evidence)) { measured = j.periods; notes.push(`Simulated membership from ${membershipFile} (${view} view)`); }
@@ -1027,6 +1028,8 @@ if (fc?.enabled) {
       console.log(`Split manifest ${outPath(splitFile)}: ${m.groups.length} dependency groups over ${splitStations.filter((q) => !q.aggregate).length} scored stations, ${m.groups.filter((g) => g.held).length} groups (${nHeld} stations) held out, ${m.withheldAggregates.length} aggregate counts left out of training because they overlap held blocks.`);
       process.exit(0);
     }
+    const derivedProblems = derivedGroupProblems(manifest!, stations);
+    if (derivedProblems.length) throw new Error(`derived targets and the split disagree (a target from a daily total must sit in a group of daily-total observations, and the reverse):\n  ${derivedProblems.slice(0, 12).join('\n  ')}`);
     if (training) {
       const leaks = stations.filter((q) => withheldSt.has(q.id) || stationObservations(q).some((o) => withheldObs.has(o)));
       if (leaks.length) throw new Error(`training view still holds withheld observations: ${leaks.map((q) => q.id).join('; ')}`);
@@ -1035,8 +1038,10 @@ if (fc?.enabled) {
       const problems = checkManifest(manifest!, splitStations);
       if (manifest!.rule.fraction !== (fc.validation.fraction ?? DEFAULT_RULE.fraction) || manifest!.rule.minPerCorridor !== (fc.validation.minPerCorridor ?? DEFAULT_RULE.minPerCorridor)) problems.push('countFit.validation fraction or minPerCorridor differ from the rule recorded in the manifest');
       if (problems.length) throw new Error(`the split manifest ${splitFile} does not match this build (re-freeze it with --freeze-split):\n  ${problems.slice(0, 12).join('\n  ')}`);
-      const held = applySplit(stations, manifest!);
-      stationNotes.push(`validation set (frozen split ${manifestHash!.slice(0, 12)}, rule ${manifest!.rule.name}): ${held.length} of ${stations.length} stations in ${manifest!.groups.filter((g) => g.held).length} dependency groups are held out of the cross-validation demand, which is built from the training view with their observations removed (about ${Math.round(100 * (fc.validation.fraction ?? 0.25))}% of each corridor, at least one per corridor); ${manifest!.withheldAggregates.length} aggregate counts overlapping held blocks are left out of that demand and are not scored; they are reported separately`);
+      const drawn = applySplit(stations, manifest!);
+      const held = stations.filter((q) => heldStationIds(manifest!).has(q.id));
+      stationNotes.push(`derived targets (change derived-targets-not-judged): ${drawn.length - held.length} of the ${drawn.length} stations the frozen draw holds have a target derived from a daily total (Caltrans AADT or ramp ADT times assumed factors). They are never held out: they are in the fit in both views, and the stations file records the draw, not this rule`);
+      stationNotes.push(`validation set (frozen split ${manifestHash!.slice(0, 12)}, rule ${manifest!.rule.name}): ${held.length} of ${stations.length} stations in ${manifest!.groups.filter(isHeldGroup).length} dependency groups are held out of the cross-validation demand, which is built from the training view with their observations removed (about ${Math.round(100 * (fc.validation.fraction ?? 0.25))}% of each corridor, at least one per corridor); ${manifest!.withheldAggregates.length} aggregate counts overlapping held blocks are left out of that demand and are not scored; they are reported separately`);
     }
   }
   // Link groups (countFit.linkGroups, off by default): stations of one source row become one station over the sum of their links. After the split, which names the members.
@@ -1303,7 +1308,7 @@ if (intentRes.length) {
   }
 }
 // Provenance of this build for the assessment: which view, and the hashes of the inputs that decide what the demand is (run manifests compare them).
-const build = { view, split: manifestHash, config: sha(cfgPath), network: sha(cfg.network), countFile: vc?.enabled ? sha(vc.file) : null };
+const build = { view, split: manifestHash, config: sha(cfgPath), network: sha(cfg.network), countFile: vc?.enabled ? sha(vc.file) : null, ...(training && manifest ? { withheld: withheldDigest(manifest) } : {}) };
 const out = { version: 1, area: cfg.area, pedestrianCount, ...(intentRes.length ? { intents: intentRes.map((r) => r.out), ramps: intentRamps.map(rampOut) } : {}), periods: outPeriods.map((q) => ({ ...q, flows: q.flows.map(viaOut) })), provenance, build };
 const demandOut = training ? cfg.countFit.validation.demandOutput : cfg.output;
 if (!demandOut) { console.error('countFit.validation.demandOutput is not set; the training view has nowhere to write'); process.exit(1); }

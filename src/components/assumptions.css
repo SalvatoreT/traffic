@@ -72,3 +72,9 @@
   .reasons { grid-template-columns: 1fr; }
   .moves { grid-template-columns: 1fr; }
 }
+
+.derived-scroll { overflow-x: auto; margin: .5rem 0; }
+.derived-table { border-collapse: collapse; width: 100%; font-size: .85rem; }
+.derived-table caption { text-align: left; padding-bottom: .25rem; }
+.derived-table th, .derived-table td { text-align: left; padding: .3rem .5rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+.derived-table td:not(:first-of-type):not(:last-child) { font-variant-numeric: tabular-nums; text-align: right; }

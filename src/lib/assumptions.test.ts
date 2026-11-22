@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { belowThresholdText, MAP_UNAVAILABLE, parseAssumptions } from './assumptions';
+import { belowThresholdText, derivedFactorsSentence, MAP_UNAVAILABLE, parseAssumptions } from './assumptions';
 
 describe('assumptions file', () => {
   it('keeps the counted turns that are below the fit threshold, with their number and the note that no trips are assigned', () => {
@@ -31,9 +31,29 @@ describe('Assumptions page layout', () => {
     expect(tsx.indexOf('<Reasons defs=')).toBeGreaterThan(0);
     expect(tsx.indexOf('<Reasons defs=')).toBeLessThan(tsx.indexOf('<Movements file='));
   });
-  it('makes both section headings sticky, below the top bar offset, and clears anchors and focus', () => {
-    expect(tsx.match(/className="sticky-h"/g)).toHaveLength(2);
+  it('puts the derived targets after the movements and shows them only when the data file lists them', () => {
+    expect(tsx.indexOf('<Movements file=')).toBeLessThan(tsx.indexOf('<DerivedTargets file='));
+    expect(tsx).toContain('if (!d || !d.stations.length) return null;');
+  });
+  it('makes the section headings sticky, below the top bar offset, and clears anchors and focus', () => {
+    expect(tsx.match(/className="sticky-h"/g)).toHaveLength(3);
     expect(css).toMatch(/h3\.sticky-h \{[^}]*position: sticky; top: var\(--sticky-top\)/);
     expect(css).toMatch(/\.stage \{ scroll-padding-top: calc\(var\(--sticky-top\) \+ var\(--sticky-h\)/);
+  });
+});
+
+describe('derived targets in the assumptions file', () => {
+  const base = { version: JSON.parse(readFileSync('public/data/rockridge.assumptions.json', 'utf8')).version as number, area: 'x', inputs: { demandHash: 'h' }, count: { label: 'c', measured: ['am_peak'], scaled: [] }, movements: [] };
+  const derivedTargets = { kFactor: 0.09, rampKFactor: 0.09, inboundShare: { pm_peak: 0.45 }, stations: [{ id: 's', label: 'Ashby station', kind: 'caltrans', source: 'caltrans-aadt', year: 2024, targets: { pm_peak: 952 } }] };
+  it('is optional: a file from before the change still parses and a malformed one does not', () => {
+    expect(parseAssumptions(JSON.stringify(base))?.derivedTargets).toBeUndefined();
+    expect(parseAssumptions(JSON.stringify({ ...base, derivedTargets }))?.derivedTargets?.stations).toHaveLength(1);
+    expect(parseAssumptions(JSON.stringify({ ...base, derivedTargets: { ...derivedTargets, stations: 'no' } }))).toBeNull();
+  });
+  it('states the assumed factors from the file, with period names in words', () => {
+    const text = derivedFactorsSentence(derivedTargets, 'pm_peak', () => 'PM peak');
+    expect(text).toContain('9% for streets and 9% for ramps');
+    expect(text).toContain('45% inbound and 55% outbound');
+    expect(text).toContain('PM peak');
   });
 });

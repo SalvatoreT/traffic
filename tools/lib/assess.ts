@@ -7,6 +7,7 @@ import { seedFileName, type RunManifest } from './run-manifest';
 import type { DetectorEnd } from './demand-fit';
 import type { PedestrianSeedCount } from './pedestrian-count';
 import { backlogGrowth, type Stability, type ZoneSplit } from './verdict';
+import { DERIVED_TARGET_PHRASE, isDerivedTarget } from './derived-targets';
 
 export interface SeedRun {
   seed: number; minutes: number; period: string; area?: string; scale?: number;
@@ -133,7 +134,12 @@ export function rampStats(runs: SeedRun[]): RampStat[] {
 /** Mean absolute error of the headline shares, in points, on the seed means. */
 export const headlineError = (ss: ShareStat[]): number => { const h = ss.filter((q) => q.headline); return h.length ? h.reduce((a, q) => a + Math.abs(q.errPoints), 0) / h.length : NaN; };
 
-export interface StationScore { period: string; fitted: AcceptanceSummary; held: AcceptanceSummary; interior: { fitted: AcceptanceSummary; held: AcceptanceSummary }; other: { fitted: AcceptanceSummary; held: AcceptanceSummary }; cases: (CaseResult & { corridor: string; label: string; kind: string; stationId: string; source?: string; year: number | null; derived: boolean })[]; skippedWithoutLinks: number; /** Of those, gate stations and movement or route stations (select-link counts). */ skippedGates: number; skippedFeatures: number }
+/**
+ * `fitted`, `held`, `interior` and `other` leave out the derived targets (a daily total times assumed factors, derived-targets.ts); `derivedTargets` is their own summary and
+ * `legacy` the fitted and held figures under the scope before they were set apart. In a case, `held` is the side the station is scored on (a derived target is never held out)
+ * and `drawnHeld` the side the frozen draw gives it, which is what the stations file records.
+ */
+export interface StationScore { period: string; fitted: AcceptanceSummary; held: AcceptanceSummary; interior: { fitted: AcceptanceSummary; held: AcceptanceSummary }; other: { fitted: AcceptanceSummary; held: AcceptanceSummary }; derivedTargets: AcceptanceSummary; legacy: { fitted: AcceptanceSummary; held: AcceptanceSummary }; cases: (CaseResult & { corridor: string; label: string; kind: string; stationId: string; source?: string; year: number | null; derived: boolean; dailyTotal: boolean; drawnHeld: boolean })[]; skippedWithoutLinks: number; /** Of those, gate stations and movement or route stations (select-link counts). */ skippedGates: number; skippedFeatures: number }
 
 type Screenline = Pick<StationFile['stations'][number], 'links' | 'detectors' | 'kind'>;
 
@@ -177,11 +183,34 @@ export function scoreStations(runs: SeedRun[], file: StationFile, period: string
     if (!(target > 0)) continue;
     if (!st.links.length) { skipped++; if (st.feature) features++; else gates++; continue; }
     const modeled = completeMean(runs.map((r) => stationFlow(r, st)));
-    const [c] = evaluateCases([{ id: st.id, modeled, counted: target, held: st.held }]);
-    cases.push({ ...c, corridor: st.corridor, label: st.label, kind: st.kind, stationId: st.id, source: st.source ?? undefined, year: st.year ?? null, derived: !!st.derived?.includes(period) });
+    const dailyTotal = isDerivedTarget(st);
+    const [c] = evaluateCases([{ id: st.id, modeled, counted: target, held: st.held && !dailyTotal }]);
+    cases.push({ ...c, corridor: st.corridor, label: st.label, kind: st.kind, stationId: st.id, source: st.source ?? undefined, year: st.year ?? null, derived: !!st.derived?.includes(period), dailyTotal, drawnHeld: st.held });
   }
-  const part = (sel: (c: (typeof cases)[number]) => boolean) => ({ fitted: summarizeCases(cases.filter((c) => sel(c) && !c.held)), held: summarizeCases(cases.filter((c) => sel(c) && c.held)) });
-  return { period, fitted: summarizeCases(cases.filter((c) => !c.held)), held: summarizeCases(cases.filter((c) => c.held)), interior: part((c) => c.kind === 'count'), other: part((c) => c.kind !== 'count'), cases, skippedWithoutLinks: skipped, skippedGates: gates, skippedFeatures: features };
+  const judged = cases.filter((c) => !c.dailyTotal);
+  const part = (sel: (c: (typeof cases)[number]) => boolean) => ({ fitted: summarizeCases(judged.filter((c) => sel(c) && !c.held)), held: summarizeCases(judged.filter((c) => sel(c) && c.held)) });
+  return { period, fitted: summarizeCases(judged.filter((c) => !c.held)), held: summarizeCases(judged.filter((c) => c.held)), interior: part((c) => c.kind === 'count'), other: part((c) => c.kind !== 'count'), derivedTargets: summarizeCases(cases.filter((c) => c.dailyTotal)), legacy: { fitted: summarizeCases(cases.filter((c) => !c.drawnHeld)), held: summarizeCases(cases.filter((c) => c.drawnHeld)) }, cases, skippedWithoutLinks: skipped, skippedGates: gates, skippedFeatures: features };
+}
+
+/**
+ * The derived targets of a period in a table of their own (change derived-targets-not-judged): the target as an hourly equivalent, the simulator's mean on the shipped demand and on
+ * the cross-validation demand (both fit them), and GEH. Nothing here is judged. Gate stations have no link and are counted in a closing sentence.
+ */
+export function derivedTargetLines(sc: StationScore, scCv: StationScore | null, file: StationFile, period: string): string[] {
+  const rows = sc.cases.filter((c) => c.dailyTotal).sort((a, b) => b.counted - a.counted || a.label.localeCompare(b.label));
+  const gates = file.stations.filter((q) => isDerivedTarget(q) && !q.links.length && q.target[period] > 0).length;
+  if (!rows.length && !gates) return [];
+  const cv = new Map((scCv?.cases ?? []).map((c) => [c.stationId, c]));
+  const f1 = (x: number) => (Number.isFinite(x) ? x.toFixed(1) : '-');
+  const out = ['', `Targets ${DERIVED_TARGET_PHRASE}. Each is a Caltrans AADT or ramp ADT times an assumed peak-hour factor and directional split (ASSUMPTION), so the figure below is an hourly equivalent and not a count. The station is in the demand fit in both views and is never held out. GEH is shown for information. [FHWA-TMG2022] [CaltransAADT]`, '', '| Station | Source and count year | Target, hourly equivalent (veh/h) | Simulated, shipped demand | GEH | Simulated, cross-validation demand | GEH | Status |', '| --- | --- | --- | --- | --- | --- | --- | --- |'];
+  for (const c of rows) {
+    const o = cv.get(c.stationId);
+    out.push(`| ${c.label} | ${c.source ?? '-'} ${c.year ?? ''} | ${Math.round(c.counted)} | ${Math.round(c.modeled)} | ${f1(c.geh)} | ${o ? Math.round(o.modeled) : '-'} | ${o ? f1(o.geh) : '-'} | ${DERIVED_TARGET_PHRASE} |`);
+  }
+  const ok = (r: { gehOk: boolean }[]) => r.filter((c) => c.gehOk).length;
+  const cvRows = rows.map((c) => cv.get(c.stationId)).filter((c): c is NonNullable<typeof c> => !!c);
+  out.push('', `${rows.length} link-based derived targets in ${period}: GEH below 5 at ${ok(rows)} on the shipped demand${cvRows.length ? ` and at ${ok(cvRows)} of ${cvRows.length} on the cross-validation demand` : ''}. Not counted in the fitted or held-out pass rates.${gates ? ` ${gates} derived-target gate station${gates === 1 ? ' has' : 's have'} no link and ${gates === 1 ? 'is' : 'are'} scored only in the demand fit report.` : ''}`);
+  return out;
 }
 
 /** Fitted off-ramp screenlines used to choose a cost-loop iteration. All legs, including slip lanes, use their station detectors. */

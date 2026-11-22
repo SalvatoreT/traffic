@@ -16,6 +16,7 @@ describe('shared copy matches the components that show it', () => {
     ['STREETS_INTRO', copy.STREETS_INTRO, 'components/StreetsTable.tsx'],
     ['ASSUMPTIONS_INTRO', copy.ASSUMPTIONS_INTRO, 'components/Assumptions.tsx'],
     ['MOVEMENTS_INTRO', copy.MOVEMENTS_INTRO, 'components/Assumptions.tsx'],
+    ['DERIVED_TARGETS_INTRO', copy.DERIVED_TARGETS_INTRO, 'components/Assumptions.tsx'],
     ['FIXED_DEMAND_CAVEAT', copy.FIXED_DEMAND_CAVEAT, 'components/Comparison.tsx'],
     ['EXPLORATORY_NOTE', copy.EXPLORATORY_NOTE, 'components/Proposals.tsx'],
     ['LEGACY_GROUP_NOTE', copy.LEGACY_GROUP_NOTE, 'components/Proposals.tsx'],
