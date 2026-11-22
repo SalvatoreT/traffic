@@ -3950,7 +3950,8 @@ impl Simulation {
                 self.mv_ema[m] = if self.mv_ema[m] <= 0.0 { obs } else { (1.0 - EMA_ALPHA) * self.mv_ema[m] + EMA_ALPHA * obs };
             } else if self.mv_ema[m] > 0.0 {
                 // Nobody took the movement this epoch: drift toward the time of the link as a whole.
-                self.mv_ema[m] = (1.0 - EMA_ALPHA) * self.mv_ema[m] + EMA_ALPHA * self.link_cost[a];
+                let link_time = if self.single_control_charge() { self.eff.ff[a].max(self.ema[a]) } else { self.link_cost[a] };
+                self.mv_ema[m] = (1.0 - EMA_ALPHA) * self.mv_ema[m] + EMA_ALPHA * link_time;
             }
             self.mv_tt_sum[m] = 0.0;
             self.mv_tt_n[m] = 0;
@@ -4329,6 +4330,10 @@ impl Simulation {
         self.perceived.invalidate();
         self.router.invalidate();
         self.spawn_cache.clear();
+    }
+
+    pub(crate) fn test_update_costs(&mut self) {
+        self.update_costs();
     }
 
     pub(crate) fn test_set_mv_ema(&mut self, a: u32, b: u32, v: f32) {

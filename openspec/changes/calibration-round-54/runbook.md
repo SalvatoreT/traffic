@@ -59,7 +59,7 @@ Before the run, fill the PLACEHOLDER cells of design.md D4 from the derived-targ
 zsh openspec/changes/calibration-round-54/scripts/adopt.zsh
 ```
 
-It checks that `SINGLE_CONTROL_CHARGE` is false, records the fingerprint, flips it to true, builds, runs `cargo test -p traffic-sim --release`, builds the WASM and runs `npm run check:wasm`, writes `evidence/fingerprints.txt` (old and new) and commits on the checked-out branch. Tests that fail with the option on are reported and not edited: stop and send back `target/r54/cargo-test.log`. From here every tool routes with the control delay charged once and needs no flag.
+It checks that `SINGLE_CONTROL_CHARGE` is false, records the fingerprint, flips it to true, builds, runs `cargo test -p traffic-sim --release`, builds the WASM and runs `npm run check:wasm`, writes `evidence/fingerprints.txt` (old and new) and commits on the checked-out branch. Tests that fail with the option on are reported and not edited: stop and send back `target/r54/cargo-test.log`. The container found one: `validation_suite_has_no_new_failures` fails on case l1 with the default flipped (design.md, checked in the container, and open question 1). If that is the only failure, report it and wait for the project lead: the keep rule's validation line needs the decision. After it, run `ALLOW_FAIL=validation_suite_has_no_new_failures zsh openspec/changes/calibration-round-54/scripts/adopt.zsh`; the script then continues only if that test is the single failure. From here every tool routes with the control delay charged once and needs no flag.
 
 ### C. The membership loop
 

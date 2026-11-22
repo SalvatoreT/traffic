@@ -120,3 +120,21 @@ fn router_takes_the_route_that_measures_faster_only_when_control_is_charged_once
     assert_eq!(off.test_route_for(f.o, f.d, NO_NOISE).unwrap(), vec![f.o_m2, f.m2_d], "off: 38 s plus the 10 s constant against 40 s");
     assert_eq!(on.test_route_for(f.o, f.d, NO_NOISE).unwrap(), vec![f.o_m1, f.m1_d], "on: 38 s against 40 s");
 }
+
+#[test]
+fn unused_movement_drifts_toward_the_measured_link_time_not_the_floor() {
+    // With the option on the link cost carries the control delay as a floor, but the movement's measured time is compared with the link's measured time.
+    let (mut off, f) = sim(false);
+    let (mut on, _) = sim(true);
+    let ff = off.test_ff(f.o_m1);
+    for s in [&mut off, &mut on] {
+        s.test_set_ema(f.o_m1 as usize, ff + 5.0);
+        s.test_set_mv_ema(f.o_m1, f.m1_d, ff + 5.0);
+        s.test_update_costs();
+    }
+    let (_, mc_off, st, ctrl) = off.test_costs(f.o_m1, f.m1_d);
+    let mc_on = on.test_costs(f.o_m1, f.m1_d).1;
+    // The empty link's measured time and the movement's both move toward free flow, the movement by 0.7 x 5 + 0.3 x 3.5 = 4.55 s over ff against the link's 3.5 s.
+    assert!((mc_on - (st - ctrl + 1.05)).abs() < 1e-2, "on: {mc_on}");
+    assert!((mc_off - (st + 1.05)).abs() < 1e-2, "off: {mc_off}");
+}
