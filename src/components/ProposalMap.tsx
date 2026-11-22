@@ -15,6 +15,7 @@ import { blockMeasured } from '../lib/scope';
 import { cellCars, connectedRuns, itemFor, parseRedistribution, redistributionBasis, redistributionFigures, redistributionLine, redistributionTip, redistributionUrl, redistributionVerdict, type StoredItem, type StoredRedistribution } from '../lib/stored-redistribution';
 import { markCenter, markSvg } from '../lib/shareimage';
 import { useNear } from '../lib/useNear';
+import { shortStreets } from '../lib/streets';
 
 const ROUTE_COLOR = { light: '#5b2a86', dark: '#d9b8ff' } as const;
 const BG = { light: '#f1efe8', dark: '#1a222c' } as const;
@@ -85,7 +86,7 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
     for (const k of model.marks) m.set(k.iv, [...(m.get(k.iv) ?? []), k]);
     return m;
   }, [model]);
-  const ivLabel = (i: number) => p.interventions[i]?.label ?? (ivs[i] ? BADGE_NAME[ivs[i].type] : `Change ${i + 1}`);
+  const ivLabel = (i: number) => shortStreets(p.interventions[i]?.label ?? (ivs[i] ? BADGE_NAME[ivs[i].type] : `Change ${i + 1}`));
   const stored = redist.status === 'ok' ? redist.data : null;
   const itemOf = (i: number): StoredItem | undefined => (stored && ivs[i] ? itemFor(stored, ivs[i]) : undefined);
 
@@ -187,7 +188,7 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
       const t = blockText(sel.block);
       return (
         <div>
-          <p className="pm-name"><strong>{t.c.label}</strong></p>
+          <p className="pm-name"><strong>{shortStreets(t.c.label)}</strong></p>
           {figTable(`${when}, cars an hour on this block`, ['Cars', 'Today', 'With this proposal', 'Change'],
             t.rows.map((r) => (
               <tr key={r.label}><th scope="row">{r.label}</th><td>{r.today}</td><td>{r.withProposal}</td><td className="pm-chg">{signedCars(r.change)}</td></tr>
@@ -220,7 +221,7 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
                   <details className="pm-detail">
                     <summary>Side streets that gain these cars</summary>
                     {figTable('Side-street blocks that gain these cars', ['Block', 'Cars an hour'],
-                      selItem.receiving.map((x) => <tr key={x.block}><th scope="row">{x.block}</th><td>{cellCars(x.perHour)}</td></tr>))}
+                      selItem.receiving.map((x) => <tr key={x.block}><th scope="row">{shortStreets(x.block)}</th><td>{cellCars(x.perHour)}</td></tr>))}
                   </details>
                 )}
               </>
@@ -237,7 +238,7 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
 
   const tipText = ((): TipText | null => {
     if (!sel) return null;
-    if (sel.kind === 'block') { const t = blockText(sel.block); return blockTip(t.c.label, t.line, t.allShort); }
+    if (sel.kind === 'block') { const t = blockText(sel.block); return blockTip(shortStreets(t.c.label), t.line, t.allShort); }
     const iv = ivs[sel.iv];
     if (!iv || !canTrace(iv)) return changeTip(ivLabel(sel.iv), 'Closes no car movement, so no traffic is redirected.');
     return changeTip(ivLabel(sel.iv), selItem ? redistributionTip(selItem) : redist.status === 'loading' || redist.status === 'idle' ? 'Loading the redirect data…' : 'No redirect data for this change.');
@@ -256,7 +257,7 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
     const t = changes.get(c.block);
     return (
       <tr key={c.block} className={rowCls(s)}>
-        <th scope="row"><button type="button" className="pm-link" {...rowProps(s)}>{c.label}</button></th>
+        <th scope="row"><button type="button" className="pm-link" {...rowProps(s)}>{shortStreets(c.label)}</button></th>
         <td data-label={kind === 'all' ? 'All cars' : 'Through cars'}>{Math.round(c.base)} → {Math.round(c.scen)}</td>
         <td data-label="Change">{signedCars(wholeChange(c))}</td>
         {kind === 'all' && <td data-label="Through cars">{t ? `${Math.round(t.base)} → ${Math.round(t.scen)}` : 'none'}</td>}
@@ -285,7 +286,7 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
                 {model.blocks.map((b) => <path key={b.block} d={b.d} fill="none" stroke={colorForIntensity(b.t, mode, true)} strokeWidth={changeWidthFor(b.t) * WIDTH_SCALE * unit} strokeLinecap="round" strokeLinejoin="round" />)}
                 {sel?.kind === 'block' && (() => { const s = streets.find((x) => x.i === sel.block); return s ? <path d={s.d} fill="none" stroke={ink} strokeWidth={11 * unit} strokeLinecap="round" strokeLinejoin="round" opacity={0.9} /> : null; })()}
                 {sel?.kind === 'block' && (() => { const s = streets.find((x) => x.i === sel.block); const b = model.blocks.find((x) => x.block === sel.block); return s ? <path d={s.d} fill="none" stroke={b ? colorForIntensity(b.t, mode, true) : muted} strokeWidth={7.5 * unit} strokeLinecap="round" strokeLinejoin="round" /> : null; })()}
-                {model.names.map((nm) => <text key={nm.text} x={0} y={0} transform={`translate(${nm.x} ${nm.y}) rotate(${nm.angle})`} textAnchor="middle" dy={-3.5 * unit} fontSize={10.5 * unit} fontWeight={600} fill={ink} stroke={bg} strokeWidth={3 * unit} paintOrder="stroke" strokeLinejoin="round">{nm.text}</text>)}
+                {model.names.map((nm) => <text key={nm.text} x={0} y={0} transform={`translate(${nm.x} ${nm.y}) rotate(${nm.angle})`} textAnchor="middle" dy={-3.5 * unit} fontSize={10.5 * unit} fontWeight={600} fill={ink} stroke={bg} strokeWidth={3 * unit} paintOrder="stroke" strokeLinejoin="round">{shortStreets(nm.text)}</text>)}
                 {model.pins.map((q) => <text key={q.text + q.x} x={q.x} y={q.y} textAnchor={q.end ? 'end' : 'start'} fontSize={10.5 * unit * 1.15} fontWeight={700} fill={ink} stroke={bg} strokeWidth={3.5 * unit} paintOrder="stroke" strokeLinejoin="round">{q.text}</text>)}
                 {streets.map((s) => (
                   <path key={s.i} data-street={s.i} d={s.d} fill="none" stroke="transparent" strokeWidth={22 * unit} strokeLinecap="round" style={{ pointerEvents: 'stroke', cursor: 'pointer' }}
@@ -372,7 +373,7 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
                 {kinds.has('diverter') && <li>Striped line across a junction: diagonal diverter.</li>}
                 {symbols.map((t) => { const k = badgeKey(t); return <li key={t}><span className="key-sign" aria-hidden="true" dangerouslySetInnerHTML={{ __html: k.sign !== undefined ? speedSignElement(k.sign, 18) : pictoElement(k.picto!, 20) }} /> {k.label}.</li>; })}
                 {model.pins.length > 0 && kind === 'all' && <li>Bold number: change in all cars an hour on that block, for the biggest gain{facts.drop ? ' and the biggest drop' : ''} in the {when}.</li>}
-                {model.pins.length > 0 && kind === 'through' && facts.named && <li>Bold number: change on {facts.named.label}, {facts.namedKind === 'largest' ? 'the block with the largest through-car increase' : 'the block the search flagged'}{model.pins.length > 1 && facts.gain ? `, and on ${facts.gain.label}, the biggest gain in the ${when}` : ''}.</li>}
+                {model.pins.length > 0 && kind === 'through' && facts.named && <li>Bold number: change on {shortStreets(facts.named.label)}, {facts.namedKind === 'largest' ? 'the block with the largest through-car increase' : 'the block the search flagged'}{model.pins.length > 1 && facts.gain ? `, and on ${shortStreets(facts.gain.label)}, the biggest gain in the ${when}` : ''}.</li>}
                 {routeGeom.length > 0 && <li>Purple dashed line with a number and an arrow: a route the redirected cars take.</li>}
               </ul>
             )}

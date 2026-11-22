@@ -421,7 +421,7 @@ export function seedsPhrase(seeds: number[]): string {
  * Figure 1: through cars an hour across the area's side streets, before and after. `when` is a `periodsPhrase`, `runs` the seeds behind the
  * mean and `area` the study area's name; `scope` says what the figure counts, for which periods and from how many runs.
  */
-export function cutThroughHeadline(c: CutThrough, when = 'the searched periods', runs?: number[], area?: string): { figure: string; label: string; change: string; scope: string; interval: string } {
+export function cutThroughHeadline(c: CutThrough, when = 'the searched periods', runs?: number[], area?: string): { figure: string; label: string; change: string; lead: string; pct: string; scope: string; interval: string } {
   const b = Math.round(c.baselineVehPerHour), s = Math.round(c.scenarioVehPerHour);
   const d = s - b;
   const pct = signedPct(c.changePct);
@@ -429,6 +429,8 @@ export function cutThroughHeadline(c: CutThrough, when = 'the searched periods',
   return {
     figure: `${b} → ${s}`,
     label: 'through cars an hour',
+    lead: d < 0 ? 'Cut-through reduction:' : d > 0 ? 'Cut-through increase:' : 'Cut-through:',
+    pct,
     change: d === 0 ? `No change (${pct})` : `${d < 0 ? MINUS : '+'}${Math.abs(d)} cars an hour (${pct})`,
     scope: `Cars crossing ${area ? `${area}'s` : "the area's"} side streets without a trip that starts or ends there, each counted once. ${when[0].toUpperCase()}${when.slice(1)}; ${basis}.`,
     interval: c.changePctEffect !== undefined || c.effect !== undefined ? intervalText(c.changePctEffect ?? undefined, '%', 1) : intervalText(undefined),

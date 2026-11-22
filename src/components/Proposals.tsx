@@ -11,6 +11,7 @@ import type { NetIndex } from '../lib/naming';
 import { checkThroughRoutes, ROUTE_CAVEAT } from '../lib/throughroutes';
 import { buildMockProposals } from '../fixtures/proposals';
 import { canTrace } from '../lib/redistribution-view';
+import { shortStreetsDeep } from '../lib/streets';
 import {
   allTrafficHeadline, allTrafficNote, allTrafficRows, beforeAfterPct, comparisonText, cutThroughHeadline, detourText, evidenceNote, fetchProposals, formatComputed, harmHeadline, INTERVAL_SCOPE, intervalText, periodsPhrase,
   linkHash, listOptions, needsConfirm, objectiveTags, openReducer, parseProposals, proposalAnchor, provenanceLine, proposalNotices, proposalsUrl, seedsPhrase, signedNum, signedPct,
@@ -185,13 +186,16 @@ function variantProposal(p: Proposal, v: Variant): Proposal {
 }
 
 const SHORT_LIST = 3;
+/** Not shortened for display: links, and the map data matched against the network. */
+const DISPLAY_SKIP = new Set(['link', 'id', 'picture', 'pictureAll']);
 
-function Card({ p, group, evidence, comparison, comparisonLabel, shareUrl, onCopyLink, when, hid, anchorId, n, routes, ivs, searched, bundle, index, mode, loaded, today, periodLabel, confirmId, onRequest, onCancel, onConfirm, onTrace }: {
+function Card({ p: raw, group, evidence, comparison, comparisonLabel, shareUrl, onCopyLink, when, hid, anchorId, n, routes, ivs, searched, bundle, index, mode, loaded, today, periodLabel, confirmId, onRequest, onCancel, onConfirm, onTrace }: {
   p: Proposal; group: ProposalGroup; evidence: EvidenceStatus; comparison: OptionComparison | undefined; comparisonLabel(id: string): string; shareUrl: string; onCopyLink(): void; when: string; hid: string; anchorId: string; n: number | null; routes: number | null; ivs: Intervention[] | null; searched: string[]; bundle: AreaBundle; index: NetIndex; mode: Mode; loaded: LoadedHashes; today: number; periodLabel(id: string): string;
   /** The id of what is asking before it replaces the map's scenario: the option (`hid`) or one of its variants (`hid-v<k>`). */
   confirmId: string | null;
   onRequest(variant: number | null): void; onCancel(): void; onConfirm(variant: number | null): void; onTrace?(): void;
 }) {
+  const p = useMemo(() => shortStreetsDeep(raw, DISPLAY_SKIP), [raw]);
   const cut = cutThroughHeadline(p.cutThrough, when, group.computed.seeds, bundle.entry.name);
   const harm = harmHeadline(p.harm, when);
   const allRows = allTrafficRows(p, periodLabel);
@@ -263,14 +267,17 @@ function Card({ p, group, evidence, comparison, comparisonLabel, shareUrl, onCop
       <div className="prop-figs">
         {p.accessProblem && <p className="notice err"><strong>Street access check failed.</strong> {p.accessProblem}.</p>}
         {p.simulationProblem && <p className="notice err"><strong>Simulation validity check failed.</strong> {p.simulationProblem}.</p>}
+        <div className="fig fig-cut">
+          <p className="fig-main"><span className="fig-lead">{cut.lead}</span> <span className="fig-num">{cut.pct}</span> {cut.label} over all side streets ({cut.figure})</p>
+        </div>
         <div className="fig fig-all">
           <p className="fig-main">{all.none ? all.label : <><span className="fig-lead">Largest rise on one block:</span> <span className="fig-num">{all.figure}</span> {all.short}</>}</p>
         </div>
       </div>
-      {hasPic && <ProposalMap net={bundle.network} index={index} p={p} group={group} ivs={ivs ?? []} areaId={bundle.entry.id} mode={mode} periodLabel={periodLabel} searchedPeriods={searched} loaded={loaded} onTrace={onTrace} />}
+      {hasPic && <ProposalMap net={bundle.network} index={index} p={raw} group={group} ivs={ivs ?? []} areaId={bundle.entry.id} mode={mode} periodLabel={periodLabel} searchedPeriods={searched} loaded={loaded} onTrace={onTrace} />}
       <div className="prop-actions">
         {action}
-        {hasPic && confirmId !== hid && <DownloadImage net={bundle.network} index={index} p={p} ivs={ivs ?? []} areaName={bundle.entry.name} areaId={bundle.entry.id} status={calStatusText} openUrl={shareUrl} periodLabel={periodLabel} searchedPeriods={searched} runs={group.computed.seeds} evidence={evidence} />}
+        {hasPic && confirmId !== hid && <DownloadImage net={bundle.network} index={index} p={raw} ivs={ivs ?? []} areaName={bundle.entry.name} areaId={bundle.entry.id} status={calStatusText} openUrl={shareUrl} periodLabel={periodLabel} searchedPeriods={searched} runs={group.computed.seeds} evidence={evidence} />}
       </div>
       {p.interventions.length <= SHORT_LIST
         ? <div className="prop-changes"><h4 className="prop-h">Changes</h4>{changes}</div>

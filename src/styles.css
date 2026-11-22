@@ -646,6 +646,8 @@ table.intent-table td { text-align: left; font-variant-numeric: tabular-nums; }
   .redist-head { top: -.75rem; }
 }
 .fig-all { grid-column: 1 / -1; border-left: 4px solid var(--bad); padding-left: .6rem; }
+.fig-cut { grid-column: 1 / -1; border-left: 4px solid var(--accent); padding-left: .6rem; }
+.fig-cut .fig-num { color: var(--accent); }
 .md .ref-links { overflow-wrap: anywhere; }
 .prop-best { margin: .15rem 0 .5rem; }
 .prop-best-lead { font-weight: 600; }
