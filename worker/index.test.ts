@@ -73,14 +73,14 @@ describe("/data", () => {
 });
 
 describe("tab paths", () => {
-  const tabs = ["/", "/proposals", "/streets", "/methodology", "/assumptions", "/sources"];
+  const tabs = ["/", "/proposals", "/methodology", "/assumptions", "/sources"];
   const wrangler = JSON.parse(readFileSync(new URL("../wrangler.jsonc", import.meta.url), "utf8")) as { assets: { not_found_handling: string; run_worker_first: string[] } };
 
   it("sends tab paths and share paths to the Worker, which serves the app shell for them, and leaves every other path to the static fallback", () => {
     expect(wrangler.assets.not_found_handling).toBe("single-page-application");
     const claimed = wrangler.assets.run_worker_first.map((p) => new RegExp(`^${p.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*")}$`));
     for (const t of [...tabs, "/p/unconstrained-0abc1234", "/og/home-0a1b2c3d.jpg"]) expect(claimed.some((re) => re.test(t))).toBe(true);
-    for (const t of ["/streets/", "/nope", "/assets/index.js", "/index.html"]) expect(claimed.some((re) => re.test(t))).toBe(false);
+    for (const t of ["/streets", "/streets/", "/nope", "/assets/index.js", "/index.html"]) expect(claimed.some((re) => re.test(t))).toBe(false);
     for (const t of ["/api/health", "/api/data/x.json", "/data/rockridge.network.json"]) expect(claimed.some((re) => re.test(t))).toBe(true);
   });
   it("serves the app shell with status 200 for every tab path even when no preview index exists", async () => {

@@ -71,7 +71,7 @@ export function changeIntensity(o: Overlay, base: Agg, scen: Agg): number {
   return softChange(d, o);
 }
 
-/** Cut-through is colored per block from both directions together, as the Streets table, the picture and the cards count it. Flow is colored per direction. */
+/** Cut-through is colored per block from both directions together, as the picture and the cards count it. Flow is colored per direction. */
 export const BLOCK_LAYER: Record<Overlay, boolean> = { cutthrough: true, flow: false };
 /** The links one drawn link takes its color from: its whole block for a block layer, else itself. */
 export const colorGroup = (o: Overlay, id: number, block?: readonly number[]): readonly number[] => (BLOCK_LAYER[o] && block && block.length > 0 ? block : [id]);

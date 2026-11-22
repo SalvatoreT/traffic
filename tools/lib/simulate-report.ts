@@ -216,8 +216,8 @@ export interface BlockRow {
 const isSide = (net: Network, b: Block) => b.links.some((id) => isLocal(net.links[id]));
 
 /**
- * One row per block with its cars an hour (both directions summed), as the Streets tab shows them. `side` keeps the study area's residential
- * and service blocks, the streets the through-car count covers; `all` keeps every block the Streets tab lists, which is the same set. A block with no cars in either run is left out.
+ * One row per block with its cars an hour (both directions summed), as the overview text page lists them. `side` keeps the study area's residential
+ * and service blocks, the streets the through-car count covers; `all` keeps every listed block, which is the same set. A block with no cars in either run is left out.
  */
 export function blockRows(net: Network, idx: NetIndex, base: Float32Array, scen: Float32Array, scope: 'side' | 'all'): BlockRow[] {
   const B = linkStatsView(base), S = linkStatsView(scen);
@@ -285,7 +285,7 @@ export function buildReport(i: ReportInput) {
     } : null,
     networkHealth: { baseline: health(base.metrics), scenario: health(scen.metrics), invalidInterventionsSkippedBySimulator: scen.metrics.invalidInterventions ?? 0, unplacedInterventions: unplaced.length },
     blocks: i.blocks === 'none' ? null : {
-      scope: i.blocks === 'side' ? 'study-area residential and service blocks' : 'every block the Streets tab lists (side streets inside the study area)',
+      scope: i.blocks === 'side' ? 'study-area residential and service blocks' : 'every listed block (side streets inside the study area)',
       units: { allCars: 'cars an hour, both directions', throughCars: 'cars an hour, both directions' },
       noiseBandThroughCarsPerHour: DEAD_BAND_CUTTHROUGH,
       count: rows.length,

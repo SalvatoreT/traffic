@@ -7,7 +7,7 @@
   "assets": {
     "binding": "ASSETS",
     "not_found_handling": "single-page-application",
-    "run_worker_first": ["/api/*", "/data/*", "/og/*", "/", "/proposals", "/streets", "/methodology", "/assumptions", "/sources", "/p/*", "/llms.txt", "/llms-full.txt", "/index.md", "/proposals.md", "/streets.md", "/methodology.md", "/assumptions.md", "/sources.md", "/scenario-links.md", "/data-files.md", "/run-locally.md"]
+    "run_worker_first": ["/api/*", "/data/*", "/og/*", "/", "/proposals", "/methodology", "/assumptions", "/sources", "/p/*", "/llms.txt", "/llms-full.txt", "/index.md", "/proposals.md", "/streets.md", "/methodology.md", "/assumptions.md", "/sources.md", "/scenario-links.md", "/data-files.md", "/run-locally.md"]
   },
   "r2_buckets": [{ "binding": "DATA", "bucket_name": "traffic-data" }],
   "observability": { "enabled": true }

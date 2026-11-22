@@ -26,7 +26,6 @@ import { InterventionPanel } from './components/InterventionPanel';
 import { hasModes } from './lib/metrics';
 import { Comparison } from './components/Comparison';
 import type { Hover } from './lib/highlight';
-import { StreetsTable } from './components/StreetsTable';
 import { Proposals, useProposals } from './components/Proposals';
 import { fetchProposals, hashLoaded, linkHash, proposalsUrl, type LoadedHashes, type Proposal } from './lib/proposals';
 import { findBySlug, findPublished, pathOfSlug, slugFromPath, slugOf } from './lib/share-path';
@@ -488,9 +487,8 @@ function Simulator({ bundle, start, onRestart }: { bundle: AreaBundle; start: St
   const mapVisible = view === 'map';
   const symbols = useMemo(() => mapSymbols(interventions.map((iv) => symbolOf(iv, network)), view === 'map' && !!intentPathsShown), [interventions, network, view, intentPathsShown]);
   useEffect(() => setHoverPlace(null), [view]);
-  // On phones the Streets tab is a full-height table; each row's Show on map button opens the Map tab on that block.
-  const mapShown = mapVisible || (view === 'streets' && !phone);
-  const showPanel = view === 'map' || view === 'streets';
+  const mapShown = mapVisible;
+  const showPanel = view === 'map';
   const placement: Placement | null = !selection ? null : selection.via === 'search' || !mapVisible ? 'inline' : phone ? 'sheet' : 'popover';
   const menu = selection && placement ? (
     <SelectionMenu bundle={bundle} index={index} selection={selection} interventions={interventions} placement={placement}
@@ -550,7 +548,7 @@ function Simulator({ bundle, start, onRestart }: { bundle: AreaBundle; start: St
         <div className="brand">
           <h1>Traffic <span className="area">{bundle.entry.name}</span></h1>
         </div>
-        <ScrollRow aria-label="Views">
+        <ScrollRow aria-label="Views" current={view}>
           {VIEWS.map((v) => (
             <NavLink key={v.id} view={v.id} className="navbtn" aria-current={view === v.id ? 'page' : undefined} onClick={(e) => e.currentTarget.scrollIntoView({ block: 'nearest', inline: 'nearest' })}>
               {v.label}
@@ -563,11 +561,6 @@ function Simulator({ bundle, start, onRestart }: { bundle: AreaBundle; start: St
               Scenario ({interventions.length})
             </button>
           )}
-          <label className="inline"><span className="lbl">Theme</span>
-            <select value={theme} onChange={(e) => setTheme(e.target.value as Theme)}>
-              <option value="auto">System</option><option value="light">Light</option><option value="dark">Dark</option>
-            </select>
-          </label>
         </div>
       </header>
 
@@ -639,12 +632,6 @@ function Simulator({ bundle, start, onRestart }: { bundle: AreaBundle; start: St
               </div>
             )}
           </div>
-          {view === 'streets' && (
-            <StreetsTable bundle={bundle} index={index} showService={showService} onShowService={setShowService}
-              scen={withheld ? null : stats?.scenario.linkStats ?? null} base={baseStats} comparing={comparing} overlay={overlay} withheld={withheld} early={early}
-              baseMetrics={base} scenMetrics={scen} onHover={setHoverPlace}
-              phone={phone} onShowOnMap={(block) => { setHoverPlace(null); select({ kind: 'block', block, point: null, nearLink: null, via: 'list' }); go('map'); }} />
-          )}
           {view === 'proposals' && <Proposals bundle={bundle} index={index} today={todayRoutes.total} state={proposals} loaded={evidenceInputs ?? NO_HASHES} mode={mode} current={interventions} onOpen={onOpenProposal}
             onTrace={(p, ivs) => { const i = ivs.findIndex(canTrace); if (i >= 0) setRedist({ package: ivs, closure: i, source: 'proposal', title: p.title }); }} notice={goneNotice ? GONE_NOTICE : null} onCopyLink={(p, g) => copyLink(`${location.origin}${pathOfSlug(slugOf(g, p.link))}`, 'Link to this proposal copied.')} />}
           {view === 'methodology' && <Suspense fallback={<p className="boot" role="status">Loading methodology…</p>}><Methodology area={bundle.entry} /></Suspense>}
@@ -688,7 +675,14 @@ function Simulator({ bundle, start, onRestart }: { bundle: AreaBundle; start: St
           <span>Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>.</span>{' '}
           <button type="button" className="link" onClick={() => go('sources')}>Sources &amp; assumptions</button>
         </span>
-        <span className="foot-right"><a href="/llms.txt">For AI agents</a>{' · '}<a href={SOURCE_REPO_URL} target="_blank" rel="noopener noreferrer">Source on GitHub</a></span>
+        <span className="foot-right">
+          <a href="/llms.txt">For AI agents</a>{' · '}<a href={SOURCE_REPO_URL} target="_blank" rel="noopener noreferrer">Source on GitHub</a>{' · '}
+          <label className="foot-theme"><span>Theme</span>
+            <select value={theme} onChange={(e) => setTheme(e.target.value as Theme)}>
+              <option value="auto">System</option><option value="light">Light</option><option value="dark">Dark</option>
+            </select>
+          </label>
+        </span>
       </footer>
     </div>
     </NavContext.Provider>

@@ -5,7 +5,7 @@ import { parseProposals } from '../src/lib/proposals';
 import { pathOfSlug, slugOf } from '../src/lib/share-path';
 import { decodeScenario } from '../src/lib/hash';
 import { buildIndex } from '../src/lib/naming';
-import { buildPages, currency, demote, examplesMd, linkRefs, section, streetsMd, table, type LlmsInput } from './lib/llms-docs';
+import { buildPages, currency, demote, examplesMd, linkRefs, section, streetsSection, table, type LlmsInput } from './lib/llms-docs';
 
 const bundle = buildFixture();
 const entry = { ...bundle.entry, calibration: { status: 'uncalibrated' as const, note: 'Not calibrated: a test note.', defaultPeriod: 'am' } };
@@ -51,7 +51,7 @@ describe('currency of stored numbers', () => {
 describe('generated pages', () => {
   const pages = buildPages(input());
   it('writes every page', () => {
-    expect(Object.keys(pages).sort()).toEqual(['assumptions.md', 'data-files.md', 'index.md', 'llms-full.txt', 'llms.txt', 'methodology.md', 'proposals.md', 'run-locally.md', 'scenario-links.md', 'sources.md', 'streets.md']);
+    expect(Object.keys(pages).sort()).toEqual(['assumptions.md', 'data-files.md', 'index.md', 'llms-full.txt', 'llms.txt', 'methodology.md', 'proposals.md', 'run-locally.md', 'scenario-links.md', 'sources.md']);
   });
   it('follows the llms.txt layout: H1, blockquote summary, sections of links with descriptions', () => {
     const t = pages['llms.txt'];
@@ -128,7 +128,6 @@ describe('generated pages', () => {
   it('says so when there is nothing to show', () => {
     const none = buildPages(input({ proposals: null }));
     expect(none['proposals.md']).toContain('No proposals have been computed');
-    expect(none['streets.md']).toContain('No stored baseline results');
     expect(none['index.md']).toContain('No stored baseline results');
     expect(none['assumptions.md']).toContain('not available for this area');
   });
@@ -169,7 +168,7 @@ describe('worked examples', () => {
   });
 });
 
-describe('streets', () => {
+describe('street-by-street section', () => {
   it('lists blocks with cars an hour from a stored baseline, and marks stale ones', () => {
     const n = bundle.network.links.length;
     const stats = new Float32Array(n * 4);
@@ -177,11 +176,17 @@ describe('streets', () => {
     stats[link.id * 4] = 120; stats[link.id * 4 + 1] = 8; stats[link.id * 4 + 2] = 30;
     const metrics = { time: 3600, cutThrough: { vehiclesPerHour: 5 } } as never;
     const set = (inputs: { networkHash: string; demandHash: string; simulator: string }) => ({ am: { period: 'am', metrics, linkStats: stats, key: 'k', computed: '2026-01-01T00:00:00Z', inputs, seed: 1, seconds: 3600 } });
-    const fresh = streetsMd(input({ baselines: set({ networkHash: HASHES.network, demandHash: HASHES.demand, simulator: 's' }) }));
+    const fresh = streetsSection(input({ baselines: set({ networkHash: HASHES.network, demandHash: HASHES.demand, simulator: 's' }) }));
     expect(fresh).toContain('| 120 | 30 |');
     expect(fresh).not.toContain('**Out of date.**');
-    const old = streetsMd(input({ baselines: set({ networkHash: HASHES.network, demandHash: 'e'.repeat(64), simulator: 's' }) }));
+    const old = streetsSection(input({ baselines: set({ networkHash: HASHES.network, demandHash: 'e'.repeat(64), simulator: 's' }) }));
     expect(old).toContain('**Out of date.**');
     expect(buildIndex(bundle.network).blocks.length).toBeGreaterThan(0);
+  });
+  it('is part of the overview page and no page or link names the retired Streets page', () => {
+    const pages = buildPages(input({}));
+    expect(pages['index.md']).toContain('## Street by street');
+    expect(pages['streets.md']).toBeUndefined();
+    for (const [name, text] of Object.entries(pages)) expect(text, name).not.toMatch(/streets\.md|\/streets\b(?!-)/);
   });
 });

@@ -5,7 +5,7 @@ const SCENARIO = '#v1;a=rockridge;s=mn,9q9p642ut2~mn,9q9p3fr7b5;p=pm_peak';
 
 describe('path and tab', () => {
   it('maps every tab to one path and back', () => {
-    expect(VIEWS.map((v) => v.path)).toEqual(['/', '/proposals', '/streets', '/methodology', '/assumptions', '/sources']);
+    expect(VIEWS.map((v) => v.path)).toEqual(['/', '/proposals', '/methodology', '/assumptions', '/sources']);
     for (const v of VIEWS) { expect(pathOfView(v.id)).toBe(v.path); expect(viewOfPath(v.path)).toBe(v.id); }
   });
   it('derives each slug from the tab id', () => {
@@ -13,7 +13,6 @@ describe('path and tab', () => {
   });
   it('ignores trailing slashes and case, and reads index.html as the Map', () => {
     expect(viewOfPath('/proposals/')).toBe('proposals');
-    expect(viewOfPath('/Streets')).toBe('streets');
     expect(viewOfPath('/ASSUMPTIONS//')).toBe('assumptions');
     expect(viewOfPath('')).toBe('map');
     expect(viewOfPath('/index.html')).toBe('map');
@@ -109,7 +108,7 @@ describe('building the address', () => {
   it('escapes an anchor and keeps the query string', () => {
     expect(fragmentFor('', 'a b/c')).toBe('#a%20b%2Fc');
     expect(parseFragment(fragmentFor('', 'a b/c'))).toEqual({ kind: 'anchor', id: 'a b/c' });
-    expect(urlFor('streets', SCENARIO, null, '?mock=1')).toBe(`/streets?mock=1${SCENARIO}`);
+    expect(urlFor('sources', SCENARIO, null, '?mock=1')).toBe(`/sources?mock=1${SCENARIO}`);
   });
   it('round-trips every tab and fragment kind through the location parser', () => {
     for (const v of VIEWS) for (const anchor of [null, 'x-y']) {
@@ -119,6 +118,22 @@ describe('building the address', () => {
       expect(p.view).toBe(v.id);
       expect(p.fragment).toEqual(anchor ? { kind: 'anchor', id: anchor } : { kind: 'scenario', hash: SCENARIO });
     }
+  });
+});
+
+describe('the retired Streets tab', () => {
+  it('is not a tab', () => {
+    expect(VIEWS.map((v) => v.id)).not.toContain('streets' as View);
+    expect(viewOfPath('/streets')).toBeNull();
+  });
+  it('sends an old /streets link to the Map and keeps the scenario in it', () => {
+    for (const path of ['/streets', '/Streets/']) {
+      const p = parseLocation(path, SCENARIO);
+      expect(p.view).toBe('map');
+      expect(p.fragment).toEqual({ kind: 'scenario', hash: SCENARIO });
+    }
+    expect(parseLocation('/streets', '').view).toBe('map');
+    expect(urlFor(parseLocation('/streets', SCENARIO).view, SCENARIO)).toBe(`/${SCENARIO}`);
   });
 });
 

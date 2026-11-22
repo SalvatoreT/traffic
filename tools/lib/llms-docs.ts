@@ -192,10 +192,12 @@ export function indexMd(i: LlmsInput): string {
     '',
     `Periods: ${i.demand.periods.map((p) => `\`${p.id}\` is ${p.label}`).join('; ')}.`,
     '',
+    '## Street by street',
+    '',
+    streetsSection(i),
     '## Other pages',
     '',
     `- [Proposals](${abs(i, '/proposals.md')}): published packages of interventions, with their figures and scenario links.`,
-    `- [Streets](${abs(i, '/streets.md')}): today's cars an hour on every block.`,
     `- [Methodology](${abs(i, '/methodology.md')}): how the model and the proposals are made, in plain language.`,
     `- [Assumptions](${abs(i, '/assumptions.md')}): the judgment calls in the model.`,
     `- [Sources](${abs(i, '/sources.md')}): inputs, provenance and the bibliography.`,
@@ -400,12 +402,12 @@ export function streetRows(net: Network, idx: NetIndex, periods: string[], basel
   return rows;
 }
 
-export function streetsMd(i: LlmsInput): string {
+/** The block-by-block baseline table, folded into the overview page since the Streets tab was removed. */
+export function streetsSection(i: LlmsInput): string {
   const label = periodLabelOf(i.demand);
   const idx = buildIndex(i.network);
   const periods = order(i).filter((p) => i.baselines[p]);
-  const out: string[] = [header(i, { title: `Traffic: ${i.area.name}, streets`, human: '/streets', json: i.resultsIndex ? [`/data/results/${i.area.id}/index.json`] : [] })];
-  out.push(STREETS_INTRO, '');
+  const out: string[] = [STREETS_INTRO, ''];
   if (periods.length === 0) { out.push('No stored baseline results are available, so there are no street figures.', ''); return out.join('\n'); }
   const first = i.baselines[periods[0]];
   const c = currency(first.inputs, i);
@@ -539,7 +541,6 @@ export function llmsTxt(i: LlmsInput): string {
     '## Pages as text',
     '',
     `- [Proposals](${abs(i, '/proposals.md')}): every published package of interventions with its figures, scenario link and the run that produced the numbers (human page: ${abs(i, '/proposals')}).`,
-    `- [Streets](${abs(i, '/streets.md')}): today's all cars and through cars on every side-street block, by period (human page: ${abs(i, '/streets')}).`,
     `- [Methodology](${abs(i, '/methodology.md')}): how the model and the proposals are made, a short plain-language guide (human page: ${abs(i, '/methodology')}).`,
     `- [Assumptions](${abs(i, '/assumptions.md')}): the judgment calls: assumed movement flows and the reasons cars cut through (human page: ${abs(i, '/assumptions')}).`,
     `- [Sources](${abs(i, '/sources.md')}): input provenance, the calibration statement and the research bibliography (human page: ${abs(i, '/sources')}).`,
@@ -571,7 +572,7 @@ export function llmsFull(i: LlmsInput, pages: Record<string, string>): string {
   const strip = (md: string) => md.replace(/^# .*\n/, '').replace(/^> .*\n/m, '').trim();
   const out: string[] = [];
   out.push(`# Traffic: ${i.area.name}, full text`, '', `> ${NOT_A_FORECAST}`, '',
-    `Generated ${i.generated.slice(0, 10)} from network \`${short(i.hashes.network)}\` and demand \`${short(i.hashes.demand)}\`. This file holds the whole text of ${abs(i, '/llms.txt')} and the pages it links, so one fetch is enough. The block-by-block table is not repeated here: it is at ${abs(i, '/streets.md')}.`, '');
+    `Generated ${i.generated.slice(0, 10)} from network \`${short(i.hashes.network)}\` and demand \`${short(i.hashes.demand)}\`. This file holds the whole text of ${abs(i, '/llms.txt')} and the pages it links, so one fetch is enough.`, '');
   out.push('## What this is and is not', '',
     `Traffic simulates neighborhood traffic as it is today and lets people try interventions and compare outcomes. It is a microscopic simulation: individual cars, cyclists and pedestrians on a real street network, one simulated hour at a time. It is a simulation, not a forecast: results are hypotheses about what a change would do, not predictions. The same trips are made before and after every change, while real schemes also remove some traffic. Nothing here is a recommendation by a public agency.`, '',
     `Calibration status: ${calibrationLine(i.area)}`, '', calibrationCaveat(i.area.calibration) ?? '', '',
@@ -599,7 +600,7 @@ export function docPage(i: LlmsInput, title: string, body: string, source: strin
 /** Every generated file by name. */
 export function buildPages(i: LlmsInput): Record<string, string> {
   const pages: Record<string, string> = {
-    'index.md': indexMd(i), 'proposals.md': proposalsMd(i), 'methodology.md': methodologyMd(i), 'assumptions.md': assumptionsMd(i), 'sources.md': sourcesMd(i), 'streets.md': streetsMd(i),
+    'index.md': indexMd(i), 'proposals.md': proposalsMd(i), 'methodology.md': methodologyMd(i), 'assumptions.md': assumptionsMd(i), 'sources.md': sourcesMd(i),
     'scenario-links.md': docPage(i, 'Scenario links', i.docs.scenarioLinks, 'docs/scenario-links.md'),
     'data-files.md': docPage(i, 'Data files', i.docs.dataFiles, 'docs/data-files.md'),
     'run-locally.md': docPage(i, 'Run the model yourself', i.docs.runLocally, 'docs/run-locally.md'),

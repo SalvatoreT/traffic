@@ -49,12 +49,17 @@ describe("text pages for language models", () => {
     expect(await r.text()).toBe("");
   });
   it("returns a 404, not the app page, for a page that is not published", async () => {
-    for (const path of ["/streets.md", "/index.md", "/llms.txt"]) {
+    for (const path of ["/index.md", "/llms.txt"]) {
       const r = await get(path, env());
       expect(r.status).toBe(404);
       expect(r.headers.get("content-type")).toContain("text/plain");
       expect(r.headers.get("x-content-type-options")).toBe("nosniff");
     }
+  });
+  it("sends the retired /streets.md to the overview page", async () => {
+    const r = await get("/streets.md", env(files));
+    expect(r.status).toBe(301);
+    expect(r.headers.get("location")).toBe("/index.md");
   });
   it("reads the generated file from the static assets in local development", async () => {
     const seen: string[] = [];

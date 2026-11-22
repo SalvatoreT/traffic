@@ -3,7 +3,7 @@
  * `src/lib/copy.test.ts` checks that each one still appears in the component that shows it.
  */
 
-export const PROPOSALS_LEAD = "Each proposal is a package of changes found by searching the simulation for the most through traffic removed from the area's side streets with the least traffic added to any one of them. They are listed by through cars removed, largest first. A card shows through cars an hour before and after, then the largest rise in all cars on any one block, then the changes. Everything else is under More detail. Every figure is a mean over the runs named on its card, with a 95% interval over those runs when the file records one.";
+export const PROPOSALS_LEAD = "Each proposal is a package of changes found by searching the simulation for the most through traffic removed from the area's side streets with the least traffic added to any one of them. They are listed by through cars removed, largest first. A card shows through cars an hour before and after, then the largest rise in all cars on any one block, then the changes. Everything else is under the labeled sections on each card, closed until you open them. Every figure is a mean over the runs named on its card, with a 95% interval over those runs when the file records one.";
 
 export const STREETS_INTRO = "A text alternative to the map: one row per street block (both directions combined), inside the study area only. Streets outside it are not measured and are not listed. Each count is cars an hour on that one block, both directions: all cars (local trips included) and, separately, only the through cars among them, which cross the area without a trip that starts or ends in it. Through cars are always part of all cars, never added to them.";
 

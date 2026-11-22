@@ -131,7 +131,7 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
     toggle(s);
     if (turnOn && !stuck() && box.current && !mostlyVisible(box.current.getBoundingClientRect(), viewBox())) showOnMap(row);
   };
-  const backToList = () => { const el = back; setBack(null); el?.focus(); };
+  const backToList = () => { const el = back; setBack(null); const d = el?.closest('details'); if (d) d.open = true; el?.focus(); };
   useEffect(() => {
     const el = box.current;
     if (!el || typeof IntersectionObserver === 'undefined') return;
@@ -334,6 +334,8 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
               {back && sel && <button type="button" className="btn small-btn pm-back" onClick={backToList}>Back to list</button>}
               {readout}
             </div>
+            <details className="prop-d pm-moredetail">
+            <summary>Streets that change, where filtered traffic goes, and the map key</summary>
             <div className="pm-streets">
               <h4>Streets that change</h4>
               {ranked.length === 0 ? <p className="muted small">No side-street block changes by a whole car an hour in the {when}.</p> : (
@@ -344,7 +346,6 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
                 </>
               )}
             </div>
-          </div>
           <div className="pm-aside">
             {traceable.length > 0 && (
               <div className="pm-filters">
@@ -378,6 +379,8 @@ export function ProposalMap({ net, index, p, group, ivs, areaId, mode, periodLab
             {note && <p className="small muted">{note}</p>}
             {mismatch && <p className="small muted">{mismatch}</p>}
             </div>
+          </div>
+            </details>
           </div>
         </div>
         {sel && !mapSeen && tipText && (

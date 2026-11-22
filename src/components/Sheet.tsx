@@ -9,13 +9,18 @@ function loadSnap(): Snap {
   return 0;
 }
 
+/** The window above the footer, which stays in view under the sheet. */
+function availableHeight(): number {
+  return window.innerHeight - (document.querySelector<HTMLElement>('.foot')?.offsetHeight ?? 0);
+}
+
 interface Drag { id: number; y0: number; h0: number; active: boolean; samples: { t: number; h: number }[] }
 
 /** Phone bottom sheet with three snap positions, dragged from the handle, the header or (below full) the content. */
 export function Sheet({ label, tabs, children, raise = 0 }: { label: string; tabs: ReactNode; children: ReactNode; /** Bump to lift a collapsed sheet to half height. */ raise?: number }) {
   const [snap, setSnapState] = useState<Snap>(loadSnap);
   const [dragH, setDragH] = useState<number | null>(null);
-  const [vh, setVh] = useState(() => window.innerHeight);
+  const [vh, setVh] = useState(() => availableHeight());
   const bodyRef = useRef<HTMLDivElement>(null);
   const drag = useRef<Drag | null>(null);
   const suppress = useRef(false);
@@ -28,9 +33,16 @@ export function Sheet({ label, tabs, children, raise = 0 }: { label: string; tab
   }, []);
 
   useEffect(() => {
-    const on = () => setVh(window.innerHeight);
+    const foot = document.querySelector<HTMLElement>('.foot');
+    const on = () => {
+      document.documentElement.style.setProperty('--foot-h', `${foot?.offsetHeight ?? 0}px`);
+      setVh(availableHeight());
+    };
+    on();
     window.addEventListener('resize', on);
-    return () => window.removeEventListener('resize', on);
+    const ro = foot ? new ResizeObserver(on) : null;
+    if (foot) ro?.observe(foot);
+    return () => { window.removeEventListener('resize', on); ro?.disconnect(); document.documentElement.style.removeProperty('--foot-h'); };
   }, []);
   useEffect(() => { if (bodyRef.current) bodyRef.current.inert = snap === 0; }, [snap]);
   useEffect(() => {
@@ -80,7 +92,7 @@ export function Sheet({ label, tabs, children, raise = 0 }: { label: string; tab
 
   return (
     <aside className={`sheet ${dragH !== null ? 'dragging' : ''}`} aria-label={label}
-      style={{ height: full, transform: `translateY(${full - height}px)` }}>
+      style={{ height: full, transform: `translateY(${full - height}px)`, clipPath: `inset(-24px 0 ${full - height}px 0)` }}>
       <div className="sheet-head" {...handlers}
         onClickCapture={(e) => {
           if (suppress.current) { e.preventDefault(); e.stopPropagation(); return; }

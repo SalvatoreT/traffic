@@ -97,7 +97,7 @@ The ids in this example are placeholders. Take the real ones from `--find`.
 
 ## Tabs and sections
 
-The app's pages have their own paths: `/` (Map), `/proposals`, `/streets`, `/assumptions` and `/sources`. A scenario fragment goes after the path (for example `/proposals#v1;...`), and any other fragment on a tab is the id of a section on that page. Each tab also has a text version at `/<tab>.md` (`/index.md` for the Map), which names its sections. On the Proposals tab each card is a section named `proposal-1`, `proposal-2` and so on for the options in order, and `proposal-<id>` for an earlier or comparison proposal (for example `proposal-earlier-62nd-diverters`). An address that uses an older card id, such as `#unconstrained-p1`, opens the same card and is rewritten to the new form.
+The app's pages have their own paths: `/` (Map), `/proposals`, `/methodology`, `/assumptions` and `/sources`. A scenario fragment goes after the path (for example `/proposals#v1;...`), and any other fragment on a tab is the id of a section on that page. Each tab also has a text version at `/<tab>.md` (`/index.md` for the Map), which names its sections. The old `/streets` path opens the Map. On the Proposals tab each card is a section named `proposal-1`, `proposal-2` and so on for the options in order, and `proposal-<id>` for an earlier or comparison proposal (for example `proposal-earlier-62nd-diverters`). An address that uses an older card id, such as `#unconstrained-p1`, opens the same card and is rewritten to the new form.
 
 ## Share paths
 

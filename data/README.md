@@ -54,7 +54,7 @@ The same run writes `public/data/results/<area>/baseline-intents.json`: today's 
 
 ## Text pages for language models
 
-`npm run data:llms` writes `public/data/llms/` (`llms.txt`, `llms-full.txt`, `index.md`, `proposals.md`, `streets.md`, `assumptions.md`, `sources.md` and copies of the three guides in `docs/`) from the files in `public/data` and the docs. They are published with the rest (`areas/llms/*` in the bucket) and the Worker serves them at `/llms.txt`, `/llms-full.txt` and `/<name>.md`. Order at publish time: the proposal search, `npm run data:results`, then `npm run data:llms`, then `data:push`. Pages built from numbers that no longer match the network, demand or simulator say "Out of date" and still show them. Anyone can fetch the core files without credentials with `npm run data:download`.
+`npm run data:llms` writes `public/data/llms/` (`llms.txt`, `llms-full.txt`, `index.md` (with the street-by-street baseline table), `proposals.md`, `methodology.md`, `assumptions.md`, `sources.md` and copies of the three guides in `docs/`) from the files in `public/data` and the docs. They are published with the rest (`areas/llms/*` in the bucket) and the Worker serves them at `/llms.txt`, `/llms-full.txt` and `/<name>.md`. Order at publish time: the proposal search, `npm run data:results`, then `npm run data:llms`, then `data:push`. Pages built from numbers that no longer match the network, demand or simulator say "Out of date" and still show them. Anyone can fetch the core files without credentials with `npm run data:download`.
 
 ## Link previews
 

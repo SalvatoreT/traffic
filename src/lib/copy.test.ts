@@ -13,7 +13,6 @@ const tail = (s: string, n = 70) => flat(s).slice(-n);
 describe('shared copy matches the components that show it', () => {
   const cases: [string, string, string][] = [
     ['PROPOSALS_LEAD', copy.PROPOSALS_LEAD, 'components/Proposals.tsx'],
-    ['STREETS_INTRO', copy.STREETS_INTRO, 'components/StreetsTable.tsx'],
     ['ASSUMPTIONS_INTRO', copy.ASSUMPTIONS_INTRO, 'components/Assumptions.tsx'],
     ['MOVEMENTS_INTRO', copy.MOVEMENTS_INTRO, 'components/Assumptions.tsx'],
     ['DERIVED_TARGETS_INTRO', copy.DERIVED_TARGETS_INTRO, 'components/Assumptions.tsx'],

@@ -183,7 +183,7 @@ describe("pages through the Worker", () => {
     const e = env(stored(idx));
     const get1 = e.DATA.get.bind(e.DATA);
     (e.DATA as unknown as { get: unknown }).get = async (k: string, o?: unknown) => { reads++; return get1(k, o as never); };
-    await get("/", e); await get("/proposals", e); await get("/streets", e);
+    await get("/", e); await get("/proposals", e); await get("/sources", e);
     expect(reads).toBe(1);
   });
   it("leaves other methods to the assets", async () => {

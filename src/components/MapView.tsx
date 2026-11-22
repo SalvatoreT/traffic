@@ -69,9 +69,9 @@ interface Props {
   /** Menu shown as a pop-up tied to the selection (wide and mid-width layouts). */
   popover: ReactNode | null;
   visible: boolean;
-  /** False when the map is only context (Streets view): clicks do not select. */
+  /** False when the map is only context: clicks do not select. */
   interactive: boolean;
-  /** Transient highlight from the search results or the streets table. */
+  /** Transient highlight from the search results. */
   hover: Hover | null;
   reducedMotion: boolean;
   modes: ModeVisibility;
@@ -600,7 +600,7 @@ export function MapView(p: Props) {
     fitNow(false);
     lastSize = (() => { const m = measure(); return m ? `${Math.round(m.size.w)}x${Math.round(m.size.h)}` : ''; })();
     const cv = map.getCanvas();
-    cv.setAttribute('aria-label', `Map of ${b.network.name}. Streets, cars, bicycles, pedestrians and signals. Select a street or an intersection by clicking it, or find it by name in the Scenario panel. The same information is available in the Streets table.`);
+    cv.setAttribute('aria-label', `Map of ${b.network.name}. Streets, cars, bicycles, pedestrians and signals. Select a street or an intersection by clicking it, or find it by name in the Scenario panel.`);
 
     map.on('load', () => {
       const pr = makeProjection(b.network.origin);
@@ -916,7 +916,6 @@ export function MapView(p: Props) {
     (map.getSource('blocked') as maplibregl.GeoJSONSource | undefined)?.setData({ type: 'FeatureCollection', features: feats } as never);
   }, [p.interventions, ready, bundle, proj, p.index, region]);
 
-  // The Streets tab shows the map as context only: its filter controls neither select nor take focus there.
   useEffect(() => { setHitsInteractive(markers.current, p.interactive); }, [p.interactive]);
 
   // ---- selection highlight and keeping it in view
