@@ -260,7 +260,7 @@ for (const p of periods) {
     const cr = corridorRatios(runs, stations!, p);
     L.push('', 'Corridor ratios (simulated flow over counted flow, link-based stations of the corridor):', '', '| Corridor | Stations | Ratio | 95% interval |', '| --- | --- | --- | --- |');
     for (const c of cr) L.push(`| ${c.corridor} | ${c.stations} | ${f(c.ratio)} | ${f(c.lo)} to ${f(c.hi)} |`);
-    const bad = [...sc.cases].filter((c) => !c.gehOk).sort((a, b) => b.geh - a.geh).slice(0, 12);
+    const bad = [...sc.cases].filter((c) => !c.gehOk && !c.dailyTotal).sort((a, b) => b.geh - a.geh).slice(0, 12);
     if (bad.length) {
       L.push('', 'Stations with GEH of 5 or more (largest 12), with the reason class of the miss to be explained in the record [WebTAG-M3.1] 3.3.12:', '', '| Station | Validation station | Counted | Modeled | GEH | Class |', '| --- | --- | --- | --- | --- | --- |');
       for (const c of bad) L.push(`| ${c.label} | ${c.held ? 'yes' : 'no'} | ${Math.round(c.counted)} | ${Math.round(c.modeled)} | ${f(c.geh, 1)} | ${c.gehClass} |`);

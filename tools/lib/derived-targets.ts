@@ -20,8 +20,8 @@ export const DERIVED_TARGET_RULE = 'A target computed from a daily total (a Calt
 
 /**
  * The split recognizes a derived target by its source observation (an `ov` Caltrans record or a `ramp-row`), the stations by their source kind. The two must agree: a group
- * with a derived station and another station is a mixed group, and a derived station outside a derived group would be held out. Empty when they agree; only stations the
- * build has (the training view has fewer) are compared.
+ * with a derived station and another station is a mixed group, and a derived station inside another group could be held out. Empty when they agree; only stations the
+ * build has (the training view has fewer) are compared. A derived station in no group (the training view keeps the ADT row of a ramp whose counted leg it withholds) is fitted, so it is not a problem.
  */
 export function derivedGroupProblems(m: SplitManifest, stations: { id: string; source?: string | null }[]): string[] {
   const bySt = new Map(stations.map((s) => [s.id, s]));
@@ -31,7 +31,5 @@ export function derivedGroupProblems(m: SplitManifest, stations: { id: string; s
     const derived = present.filter(isDerivedTarget).length;
     if (isDerivedGroup(g) ? derived !== present.length : derived > 0) problems.push(`group ${g.id}: its observations ${isDerivedGroup(g) ? 'are daily totals' : 'are not daily totals'} but ${derived} of its ${present.length} stations have a derived-target source`);
   }
-  const inGroup = new Set(m.groups.flatMap((g) => g.stations));
-  for (const s of stations) if (isDerivedTarget(s) && !inGroup.has(s.id)) problems.push(`${s.id}: a derived target in no split group (an aggregate or a station added after the split was frozen)`);
   return problems;
 }

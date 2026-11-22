@@ -40,11 +40,15 @@ A split group whose source observations are daily totals (a Caltrans record or a
 - **THEN** the demand, the stations file and the shipped membership file are the ones published before the rule
 
 ### Requirement: The build stops when the split and the source kinds disagree
-The build SHALL stop and name the group when a split group has stations with a derived-target source and stations without one, when a station with a derived-target source is in a group of other observations, or when such a station is in no group.
+The build SHALL stop and name the group when a split group has stations with a derived-target source and stations without one, or when a station with a derived-target source is in a group of other observations. A derived-target station that is in no group is fitted and is not a problem.
 
 #### Scenario: A mixed group
 - **WHEN** a split group holds both a station with a derived-target source and one without
 - **THEN** the build exits non-zero and names the group
+
+#### Scenario: An ADT ramp the training view keeps
+- **WHEN** the training view withholds a ramp's counted leg and so keeps the ramp's ADT station, which the shipped view replaced
+- **THEN** the station is fitted and the build does not stop
 
 ### Requirement: The training view records what it withholds
 The training demand's `build` SHALL carry `withheld`, a digest of the station ids the training view leaves out, and its membership file's evidence SHALL carry the same digest. The shipped demand's `build` and membership evidence SHALL NOT change. The assessment SHALL refuse a cross-validation demand whose `withheld` is not the digest of the current rule.

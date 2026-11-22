@@ -70,6 +70,8 @@ describe('the frozen draw does not move; derived targets are fitted', () => {
     expect(derivedGroupProblems(m, sts)).toEqual([]);
     const mixed = sts.map((s) => (s.id === 'tmc N' ? { ...s, source: SOURCE_CALTRANS_AADT } : s));
     expect(derivedGroupProblems(m, mixed).length).toBeGreaterThan(0);
+    // The training view keeps the ADT station of a ramp whose counted leg it withholds; the frozen groups have no entry for it, and it is fitted.
+    expect(derivedGroupProblems(m, [...sts, mk('ramp on 999', 'ramp', SOURCE_CALTRANS_RAMP, ['ramp on 999'], 100)])).toEqual([]);
     const wrongSide = sts.map((s) => (s.id === 'caltrans a in' ? { ...s, source: 'oakland-tmc' } : s));
     expect(derivedGroupProblems(m, wrongSide).length).toBeGreaterThan(0);
   });
