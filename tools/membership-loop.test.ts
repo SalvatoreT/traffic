@@ -472,6 +472,8 @@ describe('per-pass diagnostics (report only)', () => {
     expect(logs.some((l) => /^pass 1 training pm_peak: watched held label: counted 100, shipped fit -, simulated \d+/.test(l))).toBe(true);
     expect(logs.some((l) => /diagonal stations, counted 200, simulated \d+/.test(l))).toBe(true);
     expect(out.diagnostics.length).toBe(2 * 2 * 2);
+    expect(readFileSync(join(withWatch.opts.dir, 'pools', 'i1-shipped.json'), 'utf8')).toBe(readFileSync(withWatch.paths.membership.shipped, 'utf8'));
+    expect(readFileSync(join(withWatch.opts.dir, 'pools', 'i0-training.json'), 'utf8')).toMatch(/pool of 1 iteration/);
     expect(readFileSync(join(withWatch.opts.dir, 'diagnostics.md'), 'utf8')).toMatch(/### Watched stations/);
     const same = (a: string, ra: string, b: string, rb: string) => expect(readFileSync(a, 'utf8').split(ra).join('ROOT')).toBe(readFileSync(b, 'utf8').split(rb).join('ROOT'));
     same(withWatch.paths.membership.shipped, withWatch.root, plain.paths.membership.shipped, plain.root);

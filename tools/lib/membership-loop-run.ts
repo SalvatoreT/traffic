@@ -175,6 +175,8 @@ export async function runLoop(o: LoopOptions, r: Runner, log: (s: string) => voi
         if (v === 'training') assertNoWithheld(file as never, withheldStationIds(readJson<SplitManifest>(p.split)));
         mkdirSync(dirname(p.membership[v]), { recursive: true });
         writeFileAtomic(p.membership[v], JSON.stringify(file));
+        mkdirSync(join(o.dir, 'pools'), { recursive: true });
+        copyFileSync(p.membership[v], join(o.dir, 'pools', `i${k}-${v}.json`));
       }
       state.reports.push(...reports);
       for (const x of reports) log(`pass ${k} ${x.view} ${x.period}: ${x.offered} car veh/h offered; ${x.withHits} of ${x.selected} selected stations have pairs; zero hits: ${x.zeroHit.length ? x.zeroHit.join(', ') : 'none'}; not exported: ${x.absent.length ? x.absent.join(', ') : 'none'}${x.zeroHitBlocks ? `; share blocks without a simulated trip (static routes): ${x.zeroHitBlocks.length ? x.zeroHitBlocks.join(', ') : 'none'}` : ''}${x.zeroHitThrough ? `; through blocks without a counted through trip (static routes): ${x.zeroHitThrough.length ? x.zeroHitThrough.join(', ') : 'none'}` : ''}${x.ceiling ? `; ceiling stations ${x.ceiling.stations}, above ceiling ${x.ceiling.above}, excess ${x.ceiling.excess} veh/h` : ''}${x.shift ? `; flow change ${x.shift.flowRatio.toFixed(2)} and membership change ${x.shift.membershipRatio.toFixed(2)} of the seed standard error over ${x.shift.stations} stations` : ''}`);
