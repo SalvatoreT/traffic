@@ -1,3 +1,5 @@
+> Round 34 ran on 2026-11-16 (`data/calibration/rockridge.record-archive-*.md`). Archived late, on 2026-11-22; its requirements were merged into the specs by hand first, so the archive ran with --skip-specs.
+
 ## Why
 
 Round 33 modeled the resident field observation at Ashby Ave / Claremont Ave ("Claremont northbound has a left-turn arrow") as a protected left phase added to a flow-based plan. That added a third phase, took green from Ashby Ave and left the gridlock of the delay-feedback fit at this junction and on the hillside streets behind it. The lead's reading: the observation and the 2010 PM worksheet in [SafewayCollege-DEIR2011] agree. The worksheet runs the two Claremont Ave approaches as split phases, and under split phasing every movement of the approach, the left included, runs on a green arrow with no opposing traffic. So the junction is the worksheet's split-phase plan, which round 33 tried only together with the experimental queue-first left-turn model. This round enters that plan on the default engine, checks whether the queue-first model now holds on the network, and redoes the fit.
