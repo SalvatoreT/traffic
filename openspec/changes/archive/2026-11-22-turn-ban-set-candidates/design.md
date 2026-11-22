@@ -23,9 +23,9 @@ On the Rockridge network, over the three periods: 53 entry movements, 21 left an
 | Set | Bans | Label |
 | --- | ---: | --- |
 | `left-turns` | 21 | No left turns from the bounding streets onto side streets |
-| `right-turns` | 22 | No right turns from the bounding streets and outside streets onto side streets |
-| `all-turns-access` | 41 | No turns from the bounding streets and outside streets onto side streets |
-| `through-streets` | 19 | No turns from the bounding streets and outside streets onto the through side streets |
+| `right-turns` | 22 | No right turns from the bounding streets and streets outside the area onto side streets |
+| `all-turns-access` | 41 | No turns from the bounding streets and streets outside the area onto side streets |
+| `through-streets` | 19 | No turns from the bounding streets and streets outside the area onto the through side streets |
 | `from-alcatraz-avenue`, `-left` | 6, 3 | No (left) turns from Alcatraz Avenue onto side streets |
 | `from-claremont-avenue`, `-left` | 12, 6 | No (left) turns from Claremont Avenue onto side streets |
 | `from-college-avenue`, `-left` | 4, 2 | No (left) turns from College Avenue onto side streets |
@@ -36,7 +36,7 @@ Dropped: `all-turns` (43 bans) and `from-telegraph-avenue` (20) and `onto-unname
 
 ### D3: Labels
 
-A label is made from the movements alone (`bansets::label`): the kind of turn (left, right, or both), where they start (all the bounding streets, a street, or "N streets"; "and outside streets" when a movement comes from an outside street that is not on a bounding street) and where they end (one street, or "side streets"), then the count: "No left turns from the bounding streets onto side streets (21 turns)", "No turns from Claremont Avenue onto side streets (12 turns)". A set onto one street from several leaves out the start: "No turns onto Colby Street (5 turns)". The title of a package that holds a set leads with the set's label. `describe` in `naming.rs` uses the same function, so a set adopted from a seed that was not generated still reads the same way.
+A label is made from the movements alone (`bansets::label`): the kind of turn (left, right, or both), where they start (all the bounding streets, a street, or "N streets"; "and streets outside the area" when a movement comes from an outside street that is not on a bounding street) and where they end (one street, or "side streets"), then the count: "No left turns from the bounding streets onto side streets (21 turns)", "No turns from Claremont Avenue onto side streets (12 turns)". A set onto one street from several leaves out the start: "No turns onto Colby Street (5 turns)". The title of a package that holds a set leads with the set's label. `describe` in `naming.rs` uses the same function, so a set adopted from a seed that was not generated still reads the same way.
 
 ### D4: Counting and reporting individual bans
 
@@ -66,7 +66,7 @@ As `perimeter-turn-bans` D8: a ban applies to every vehicle in every period (no 
 
 ### D9: Time
 
-About 65 minutes on the laptop at 12 jobs for the search (range 55 to 90), against 46 for the published one, from 3,207 screening runs in the published search and the following changes. The candidate list grows by 30, so the singles screen is 13% longer. Sets enter the repair moves of the beam, which the reduced search shows: with the flag it simulated 145 screening runs against 98 without, at settings that are not the same (expand 4 and 4 finalists, one hand seed). The two hand seeds are rechecked in full (about 1 to 2 minutes each at three periods and three seeds) with their sub-package screens. The confirmation is as long as before. A check is about 2.5 minutes. A to E: about 2 hours.
+About 65 minutes on the laptop at 12 jobs for the search (range 55 to 90; the run took 36 minutes), against 46 for the published one, from 3,207 screening runs in the published search and the following changes. The candidate list grows by 30, so the singles screen is 13% longer. Sets enter the repair moves of the beam, which the reduced search shows: with the flag it simulated 145 screening runs against 98 without, at settings that are not the same (expand 4 and 4 finalists, one hand seed). The two hand seeds are rechecked in full (about 1 to 2 minutes each at three periods and three seeds) with their sub-package screens. The confirmation is as long as before. A check is about 2.5 minutes. A to E: about 2 hours.
 
 ## Risks
 
@@ -74,3 +74,31 @@ About 65 minutes on the laptop at 12 jobs for the search (range 55 to 90), again
 - Sets enter more beams than singles do, which may crowd out singles at a fixed beam width. The comparison of the options against the published ones shows whether the published options survive (D7).
 - A set that passes the access check in the model can still leave a street hard to enter in practice.
 - The TypeScript and Rust turn classes are ported with the same cut-offs, but a network with a link whose geometry the two read differently could differ. `parity.cjs` runs in step A.
+
+## Outcome (laptop run of 2026-11-22)
+
+The laptop ran steps A to E between 1:03 and 2:00 AM Pacific on `d13b44e`, simulator `6b886c8f52ee07397773ddd0ebbcb447`, seeds 101 to 110, three periods. The search (`--ban-sets`, published settings) took 2,146 s, against the 65 minutes planned in D9. It loaded 22 known packages, rechecked 22 and dropped none. The evidence archive is on the dev branch at commit `2aa765f` (`evidence/README.md`). Nothing was pushed to the data bucket and nothing was published by the run.
+
+Through cars an hour, mean of the three periods, baseline 522.5:
+
+| Package | Interventions | Individual bans | Closures | Through cars an hour | Change vs today | Residents, seconds per request |
+| --- | ---: | ---: | ---: | --- | --- | ---: |
+| Published p1 (five modal filters and a diverter), re-checked | 6 | 0 | 6 | 135.7 | -74.0% | +16.0 |
+| Search option 1: `all-turns-access`, traffic circle at 60th Street & Colby Street, one-way northbound on Colby Street (North Street to Alcatraz Avenue), one-way eastbound on Forest Street (Claremont Avenue / Colby Street to Ayala Avenue), Slow Streets on Colby Street and Hillegass Avenue | 6 | 41 | 0 | 80.4 | -84.6% (-462 to -422 cars an hour) | +27.4 |
+| Search option 2: `all-turns-access` and a modal filter on Forest Street at Ayala Avenue | 2 | 41 | 1 | 142.4 | -72.7% | +25.4 |
+| Search option 3: an earlier four-closure package, no bans | 6 | 0 | 4 | 266.8 | -48.9% | +3.4 |
+| Search option 4: `left-turns` alone | 1 | 21 | 0 | 313.8 | -39.9% | +8.1 |
+| Hand check: `left-turns` and the Forest Street filter | 2 | 21 | 1 | 306.3 | -41.4% | |
+| Hand check: `left-turns` and two 63rd Street filters | 3 | 21 | 2 | 213.7 | -59.1% | |
+
+The re-check of p1 equals the published figure, so the inputs and the build are the published ones (D7). Option 1 removes 462 to 422 through cars an hour. No block gains through cars. Its worst block for all traffic is 57th Street between Vicente Street and Telegraph Avenue, which rises from 71 to 166 cars an hour at midday. The hand check with two 63rd Street filters puts 30 more through cars an hour on North Street. The search returned four options, and none of the six published ones survived: p1 is dropped because option 1 removes more through cars, rises less on one block and has no more changes.
+
+D7 triggers: (a) the top option differs from published p1, and (c) a checked package removes more through cars than p1 on the same seeds (option 1, by 10.6 points). (b) is not triggered: 10.6 points is under the 15 points of the rule.
+
+The cost sits in the residents' column. A ban applies to every driver in the model, residents included, so option 1 adds 27.4 s per request for trips that start or end in the area, against 16.0 s for p1.
+
+### Decision (project lead, 2026-11-22)
+
+The project lead chose, from a question card: "Both families (Recommended): Rerun the search so the list keeps the best package without turn bans (today's six-filter option) next to the ban packages, then publish. About 40 min on the laptop plus a small search change. Bans cost residents ~25 s per trip in a model with no resident exemption, so a filter-only option stays useful."
+
+The follow-on change is `publish-ban-set-proposals`: a "no turn restrictions" objective, the card and map for ban packages, and the laptop publish chain. The lead session publishes; this change publishes nothing. The label wording the laptop noticed is settled: the three sets say "streets outside the area", as `laptop/expected-sets.tsv` does.

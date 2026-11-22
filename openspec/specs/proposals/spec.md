@@ -259,11 +259,15 @@ Each seed and each package one intervention smaller than it SHALL be screened, a
 - **THEN** the three packages made by removing one of them are screened and extended
 
 ### Requirement: Packages are no larger than the search depth
-No package the search builds SHALL have more interventions than `--depth`, and a seed with more SHALL be dropped with that reason.
+No package the search builds SHALL have more interventions than `--depth`, and a seed with more SHALL be dropped with that reason. A ban set counts as one intervention, however many turn bans it holds.
 
 #### Scenario: Large seed
 - **WHEN** a seed has ten interventions and the depth is 6
 - **THEN** it is not rechecked and the run reports that it has more interventions than the search depth
+
+#### Scenario: A seed made of a ban set and a filter
+- **WHEN** ban sets are on and a seed link holds the 21 turn bans of a generated set and one modal filter, and the depth is 6
+- **THEN** the seed has two interventions, is rechecked, and starts a beam
 
 ### Requirement: Partial packages are ranked with a phased harm weight
 Inside the beam, a package SHALL be ranked by its cut-through reduction minus a harm weight that is zero for one intervention and grows linearly to the full weight at the search depth. A line of descent SHALL stop when no package of the next level beats the previous level's best at the new level's weight. The score published for a package, the finalists' recheck and the choice of options SHALL use the full weight.
@@ -841,3 +845,145 @@ Each figure on a card, in a text page, in a preview card and in an exported pict
 #### Scenario: Stale picture
 - **WHEN** a picture is exported from a group whose figures are stale or unverified
 - **THEN** the picture says so in its own text
+
+### Requirement: Entry movements are derived from the network
+`tools/turn-ban-sets.ts` SHALL list the entry movements of a study area from its network file alone. An entry movement SHALL be a turn from a link that is not a residential or service link inside the study area onto one that is, where the source link lies on a bounding street or outside the study area and the turn does not return to the node the source link came from. No study area or street SHALL be named in code.
+
+#### Scenario: A movement from a bounding street
+- **WHEN** a link of a bounding street meets a residential link inside the study area at a node
+- **THEN** the turn from the first onto the second is an entry movement with that street as its bounding street, and the turn from the residential link back onto the bounding street is not
+
+#### Scenario: A movement from outside
+- **WHEN** an outside residential link meets an in-study residential link at a node on the study-area edge
+- **THEN** the movement is an entry movement of kind `outside`, and it is straight-across when the two links continue each other
+
+### Requirement: Bounding streets are read from the network
+A bounding street SHALL be an in-study link that is not residential or service, taken with the other links of its name. An outside link with a bounding street's name SHALL count as on that street, and an outside link with another name SHALL be an outside source.
+
+#### Scenario: Continuation outside the area
+- **WHEN** a link outside the study area has the name of an in-study bounding link
+- **THEN** a movement from it onto an interior street has that bounding street
+
+### Requirement: Entry movements are classified
+The tool SHALL classify each entry movement by its bounding street, its side of the study area, its turn (left, right or straight-across, by `turnKindOf`), the interior street it enters and whether the base network already bans it. It SHALL treat local links with one name that share intersections as one interior street, and SHALL mark an interior street as a through street when it touches two different bounding streets.
+
+#### Scenario: Already banned
+- **WHEN** the network file bans a movement in every period
+- **THEN** it is listed with that base ban and is left out of every package
+
+#### Scenario: Through street
+- **WHEN** an interior street touches two bounding streets and another touches one
+- **THEN** the first is a through street and the second is not
+
+### Requirement: Turn-ban packages are named sets of entry bans
+The tool SHALL write these packages: every entry movement, every left and right turn, every left and right turn except those that would strand a node, left turns, right turns, every turn from each bounding street, every turn onto the through streets, every movement onto the through streets, and, when a ranking of the search's turn-ban candidates is given, the first k of them for k of 3, 5 and 10. It SHALL report for each the count of bans and the streets involved.
+
+#### Scenario: Straight-across movements stay open
+- **WHEN** the package of every entry turn is written
+- **THEN** it holds no straight-across movement
+
+#### Scenario: Turns that would strand a node
+- **WHEN** banning every entry turn leaves an in-study node with no way in that the base network does not already lack
+- **THEN** the package of turns that strand no node leaves out the turns onto the street next to that node and lists them
+
+#### Scenario: No ranking
+- **WHEN** no ranking of turn-ban candidates is given
+- **THEN** no top-k package is written and the table says why
+
+### Requirement: Package links are written and checked by the repository's encoder
+Each package SHALL be written as a scenario link made by `encodeScenario` and decoded by `decodeScenario` to the same set of bans, with no unplaced item and no more than 200 items. A movement whose link item does not decode to itself SHALL be left out of every package and reported. The tool SHALL write nothing under `public/data` or `data`.
+
+#### Scenario: Link round trip fails
+- **WHEN** a package's link does not decode to the package's bans
+- **THEN** the tool names the package and exits with an error
+
+#### Scenario: Movement that does not decode
+- **WHEN** a movement's link item decodes to another movement
+- **THEN** the movement is in no package and the table lists it
+
+### Requirement: Experiment output never replaces a published file
+The scripts of an experiment on turn-ban packages SHALL check the published inputs (network, demand, proposals file, seeds file and simulator fingerprint) before running and the published files after each step. They SHALL pass `--known` a scratch copy of the seeds file whose `cap` leaves the published seeds in place, SHALL write the search's proposals file and report under `target/`, and SHALL NOT publish, upload or push data.
+
+#### Scenario: A package larger than the search depth
+- **WHEN** a package has more bans than `--depth`
+- **THEN** it is measured with `explore --check` and is not added as a seed, and the log says why
+
+#### Scenario: Seeds file at its cap
+- **WHEN** a hand seed is added to a scratch copy of a seeds file that already holds its cap
+- **THEN** the scratch copy's cap is raised first so that no published seed is dropped
+
+#### Scenario: Published file changed
+- **WHEN** a step ends and the proposals file or the seeds file differs from its published hash
+- **THEN** the log says the run is not to be used and the script stops
+
+### Requirement: Experiment results are labeled and left to the project lead
+Results of the experiment SHALL be reported as a model that is not calibrated, with bans applying to every vehicle in every period and compliance assumed complete. A changed top proposal, or a change of more than 15% in a headline figure, SHALL be left to the project lead's decision, and nothing SHALL be published from the experiment without it.
+
+#### Scenario: Different top option
+- **WHEN** the search with turn-ban seeds ends with a top option whose interventions differ from the published one's
+- **THEN** the summary says so and the decision is the project lead's
+
+### Requirement: Ban sets are candidates behind a flag
+With `--ban-sets` the search SHALL add ban-set candidates after the generated ones. Without it the candidate list, the search and every output SHALL be what they were without the feature. A ban set SHALL be one candidate, and depth, beam width and the number-of-interventions objective SHALL count it as one intervention.
+
+#### Scenario: Flag off
+- **WHEN** the search runs without `--ban-sets`
+- **THEN** its candidates are those of the generator, and its proposals file is byte-identical to the one the same search made before the feature
+
+#### Scenario: Flag on
+- **WHEN** the search runs with `--ban-sets`
+- **THEN** the single candidates keep their indices, the ban sets follow them, and a package of a ban set and five other changes has six interventions
+
+### Requirement: Ban sets are derived from the network
+The ban sets SHALL be made from the network file alone and SHALL hold entry turns only: left and right turns from a bounding street or from outside the study area onto a residential or service street inside it. They SHALL be the left turns, the right turns, all turns (and a variant that keeps access), the turns onto the through streets, and each street's turns and left turns. No street SHALL be named in code.
+
+#### Scenario: Counts on the study-area network
+- **WHEN** the sets are generated for the Rockridge network over its three periods
+- **THEN** there are 53 entry movements, the left-turn set has 21 bans, the right-turn set 22, the access-safe all-turns set 41, the through-streets set 19, and the sets of Alcatraz, Claremont and College Avenues 6, 12 and 4
+
+#### Scenario: Same movements as the TypeScript generator
+- **WHEN** the Rust sets and the packages of `tools/turn-ban-sets.ts` are compared on one network
+- **THEN** each pair that both define holds the same movements
+
+### Requirement: Invalid and repeated ban sets are dropped
+A ban set that strands an in-study node in a searched period SHALL be dropped with the access reason, like any other invalid candidate. A set equal to an earlier one SHALL be merged into it. A set of fewer than two bans SHALL not be a set. A movement banned in the base network in every searched period, or whose link item does not decode to itself, SHALL be in no set.
+
+#### Scenario: A set that strands a node
+- **WHEN** banning every entry turn leaves an in-study node with no way in
+- **THEN** that set is dropped with the node named, and the access-safe set leaves out the turns onto the street next to it
+
+#### Scenario: Two names for one set
+- **WHEN** the left turns of the only bounding street are the left-turn set
+- **THEN** the per-street set is merged into the earlier one and reported as the same bans
+
+### Requirement: A ban set is listed in full wherever the package is shown
+The scenario link of a package SHALL list every ban of every ban set in it, and the access check and the simulation SHALL apply every one. The report and the proposals file SHALL say how many individual turn bans the package holds: an optional `bans` on each ban-set entry of `interventions` and an optional `turnBans` on the proposal, absent for a package without a ban set. A reader of the proposals file SHALL read a file that has neither as before.
+
+#### Scenario: A package of a set and a filter
+- **WHEN** an option holds a 21-ban set and one filter
+- **THEN** it lists two interventions, `turnBans` is 21, its link has 22 items, and the card's changes list says that the set is one change of 21 turn bans
+
+#### Scenario: An older file
+- **WHEN** the app reads a proposals file with no `bans` or `turnBans`
+- **THEN** it shows the changes as before
+
+### Requirement: A link that holds a whole ban set reads as the set
+With ban sets on, the turn bans of a decoded seed or checked link that make up a whole generated set SHALL be folded into that set, the largest first, and the bans that are not part of a whole set SHALL stay single.
+
+#### Scenario: Part of a set
+- **WHEN** a link holds 2 of the 3 bans of a set
+- **THEN** they stay two single turn bans
+
+### Requirement: Ban sets can be listed without a search
+`explore --list-ban-sets FILE` SHALL write the ban sets of a study area (id, label, bans, movements and link), the sets it dropped with the reason, and the entry movements, and SHALL simulate nothing.
+
+#### Scenario: List
+- **WHEN** it runs on a network
+- **THEN** the file lists each set and each dropped set, and nothing else is written
+
+### Requirement: Results of a ban-set search are left to the project lead
+The scripts of an experiment on ban sets SHALL check the published inputs and the simulator fingerprint before running and the published files after each step, SHALL write the search's output under `target/`, and SHALL NOT publish, upload or push data. A different top option, a top option more than 15 points from the published one, or any package that beats the published top option on the same seeds SHALL be left to the project lead.
+
+#### Scenario: A different top option
+- **WHEN** the search with ban sets ends with a top option whose interventions differ from the published one's
+- **THEN** the summary says so and the decision is the project lead's

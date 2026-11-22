@@ -21,8 +21,8 @@
 ## 3. Verdict (project lead)
 
 - [x] 3.1 Read the summary and the p1 re-check (design, Outcome)
-- [ ] 3.2 Decide, under design D7, whether any package or search option goes further (a seeds-file or references-file entry, a search candidate for whole-street sets, a published proposal). D7(b) is triggered and was reported to the project lead; no decision is taken here
-- [ ] 3.3 If anything is adopted: publish by the documented procedure in `data/README.md` (nothing is published by this change)
+- [x] 3.2 Decide, under design D7, whether any package or search option goes further. Verdict: superseded by `turn-ban-set-candidates`; the project lead chose on 2026-11-22 to publish both families (the best package with turn bans and the best without), recorded in that change's design (Outcome, Decision)
+- [x] 3.3 Publishing follows `data/README.md` and happens under `publish-ban-set-proposals`; nothing is published by this change
 
 ## 4. Follow-up
 

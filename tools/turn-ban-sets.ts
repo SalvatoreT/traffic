@@ -1,4 +1,4 @@
-// Entry movements and named turn-ban packages for the perimeter-turn-bans experiment (openspec/changes/perimeter-turn-bans).
+// Entry movements and named turn-ban packages for the perimeter-turn-bans experiment (openspec/changes/archive/2026-11-22-perimeter-turn-bans).
 //   npx tsx tools/turn-ban-sets.ts [--area rockridge] [--data public/data] [--out target/turn-bans] [--period pm_peak] [--ranked singles.log]
 // Reads the area's network, writes <out>/packages.json, packages.md and packages.tsv (id, bans, link). Runs nothing and sends nothing.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';

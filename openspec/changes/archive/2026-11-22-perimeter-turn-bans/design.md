@@ -187,3 +187,7 @@ Limits, as in D8: a ban applies to every vehicle, all day, and 100% compliance i
 The summary script printed percent bounds beyond -100% for a package that reaches zero (`all-entries`: -103.9% to -96.1%). `scripts/summary.cjs` now clamps the lower bound at -100%.
 
 Left turns carry the effect and the leak is one street, so all left turns plus one or two filters could approach p1 with far fewer closures. The search cannot form that package: it drops a seed larger than the depth, and its turn bans are single movements. The change `turn-ban-set-candidates` makes ban sets candidates. This change stays open for the project lead's verdict (tasks 3.2 and 3.3).
+
+## Verdict
+
+Superseded by `turn-ban-set-candidates` (Outcome and Decision in its design). On 2026-11-22 the project lead chose to publish both families: the best package with turn bans and the best package without. Nothing was published by this change.

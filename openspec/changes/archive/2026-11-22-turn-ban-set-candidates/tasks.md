@@ -14,14 +14,14 @@
 
 ## 2. Laptop runs (runbook.md)
 
-- [ ] 2.1 Step A: worktree, gates, build, tests, the ban-set list and the parity with the TypeScript packages
-- [ ] 2.2 Step B: the published search command plus `--ban-sets`
-- [ ] 2.3 Step C: `explore --check` of the search's options with a ban set and the hand combinations, with p1 on the same seeds
-- [ ] 2.4 Step D: the summary table
-- [ ] 2.5 Step E: pack the evidence to the dev branch
+- [x] 2.1 Step A: worktree, gates, build, tests, the ban-set list and the parity with the TypeScript packages
+- [x] 2.2 Step B: the published search command plus `--ban-sets`
+- [x] 2.3 Step C: `explore --check` of the search's options with a ban set and the hand combinations, with p1 on the same seeds
+- [x] 2.4 Step D: the summary table
+- [x] 2.5 Step E: pack the evidence to the dev branch
 
 ## 3. Verdict (project lead)
 
-- [ ] 3.1 Read the summary and the p1 re-check
-- [ ] 3.2 Decide, under design D7, whether anything goes further (a seeds-file or references-file entry, a published proposal, a default for `--ban-sets`)
-- [ ] 3.3 If anything is adopted: publish by the documented procedure in `data/README.md`; nothing is published by this change
+- [x] 3.1 Read the summary and the p1 re-check
+- [x] 3.2 Decide, under design D7, whether anything goes further: both families are published (design, Decision, 2026-11-22), and the work moves to `publish-ban-set-proposals`
+- [x] 3.3 Publishing follows the documented procedure in `data/README.md` and happens under `publish-ban-set-proposals`; nothing is published by this change
