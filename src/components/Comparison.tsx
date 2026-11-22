@@ -114,12 +114,17 @@ function HealthLine({ scen, base }: { scen: Metrics; base: Metrics | null }) {
 
 /** Policy and use of the junction recovery rules, as text, for the scenario and, when comparing, today's traffic. */
 function RecoveryNote({ scen, base }: { scen: Metrics; base: Metrics | null }) {
+  const s = recoverySummary(scen);
+  const b = base ? recoverySummary(base) : null;
+  const valid = s.physicallyValid && (b?.physicallyValid ?? true);
+  const reported = !!scen.junctionRecovery && (!base || !!base.junctionRecovery);
   return (
-    <section className="muted small" aria-label="Junction validity">
+    <details className="muted small" open={!valid}>
+      <summary>{!valid ? 'Junction checks: not passed, results are qualified' : reported ? 'Junction checks: passed' : 'Junction checks: not reported'}</summary>
       <ul>
-        <li>{base ? 'Scenario. ' : ''}{recoverySummary(scen).text}</li>
-        {base && <li>Baseline. {recoverySummary(base).text}</li>}
+        <li>{b ? 'Scenario. ' : ''}{s.text}</li>
+        {b && <li>Baseline. {b.text}</li>}
       </ul>
-    </section>
+    </details>
   );
 }
