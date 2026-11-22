@@ -1,3 +1,5 @@
+> Round 28 ran on 2026-11-15 (`data/calibration/rockridge.record-archive-*.md`). Archived late, on 2026-11-22; its requirements were merged into the specs by hand first, so the archive ran with --skip-specs.
+
 ## Why
 
 Three engine repairs (expose-junction-fallback-validity, repair-local-trip-measurement-integrity, repair-signal-timing-contracts) changed what the Rockridge baseline does. The old engine hid 677 to 791 vehicles an hour inside junction nodes in the PM peak; with them kept physical, through cars on the Trapezoid's side streets nearly doubled and the validation suite showed new failures. The demand had not been tuned for the new engine, and the published calibration note still described the old one.

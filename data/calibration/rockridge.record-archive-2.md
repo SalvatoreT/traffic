@@ -992,7 +992,7 @@ Four of the five are Caltrans counts at the edge of the model (three AADT link s
 
 ## Twenty-eighth round: primitives and demand on the repaired engine (change calibration-round-28)
 
-The first round on the engine of expose-junction-fallback-validity, repair-local-trip-measurement-integrity and repair-signal-timing-contracts. Under that engine vehicles waiting at a junction exit stay on the road; the old one held 677 to 791 of them inside junction nodes at the end of a PM hour, uncounted. Simulator fingerprint fcf19cdc05eb (start of the round) to 7d07b9a9fd07. Network a64c2a63399e5423 and demand 83bdd362657a2305 (built by the user from the frozen split; unchanged in this round). Cross-validation demand 1e0b2175a1b8079c. Decisions are in `openspec/changes/calibration-round-28/design.md`; the engine repairs are D11 to D13 of `openspec/changes/expose-junction-fallback-validity/design.md`.
+The first round on the engine of expose-junction-fallback-validity, repair-local-trip-measurement-integrity and repair-signal-timing-contracts. Under that engine vehicles waiting at a junction exit stay on the road; the old one held 677 to 791 of them inside junction nodes at the end of a PM hour, uncounted. Simulator fingerprint fcf19cdc05eb (start of the round) to 7d07b9a9fd07. Network a64c2a63399e5423 and demand 83bdd362657a2305 (built by the user from the frozen split; unchanged in this round). Cross-validation demand 1e0b2175a1b8079c. Decisions are in `openspec/changes/archive/2026-11-22-calibration-round-28/design.md`; the engine repairs are D11 to D13 of `openspec/changes/expose-junction-fallback-validity/design.md`.
 
 ### Primitives first
 

@@ -496,11 +496,15 @@ An assumed movement MAY name a whole-street route of the volunteer count (`whole
 - **THEN** the intent has no flows and the report says no candidate drives the whole street
 
 ### Requirement: Derived targets are marked
-A count station whose target in a period is another period's count times a factor SHALL list that period in `derived` in the station file. No AM target SHALL be derived.
+A count station whose target in a period is another period's count times a factor SHALL list that period in `derived` in the station file. This covers the AM and midday targets of ADT-based and gate stations, of ramps with no count in the period, and of turning-count legs counted in the PM only.
 
 #### Scenario: Midday
 - **WHEN** a station's midday target is its PM count times the period ratio
 - **THEN** the station lists `midday` as derived
+
+#### Scenario: Turning-count leg counted in the PM only
+- **WHEN** an Oakland turning-movement count gives one PM hour and the AM and midday leg targets are that count times the period factors
+- **THEN** the station lists `am_peak` and `midday` as derived
 
 ### Requirement: Uncounted entries are filled for the local trip rates
 When an entry or exit of the volunteer count has no count in a period but has one in the other, the trip-end estimate of the period SHALL use the other period's count times the ratio of the totals over the entries counted in both, SHALL NOT count it as zero, and the fit report SHALL list the entries filled and the ratio. The fill is an ASSUMPTION.
