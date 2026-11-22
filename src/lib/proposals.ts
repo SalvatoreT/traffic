@@ -746,7 +746,7 @@ export function banCount(p: Pick<Proposal, 'interventions' | 'turnBans'>): numbe
 }
 
 /** The standing caveat shown wherever a package with turn bans has its headline. */
-export const BAN_CAVEAT = 'Turn bans apply to every driver, residents included, all day, and assume full compliance (ASSUMPTION).';
+export const BAN_CAVEAT = 'Turn bans apply to every driver, residents included, all day, and assume full compliance.';
 
 /** The scale line of a package with turn bans, so it cannot be read as a small change: "41 turn restrictions around the edge of the area". Null for a package without any. */
 export function banHeadline(p: Pick<Proposal, 'interventions' | 'turnBans'>): { count: number; text: string; caveat: string } | null {
