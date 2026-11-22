@@ -456,7 +456,7 @@ describe('per-pass diagnostics (report only)', () => {
     const base = { stations: stationsInfo, held: new Set(['heldout']), recency, watch, fit: null };
     const diags = [0, 1].flatMap((pass) => ['shipped', 'training'].map((view) => diagnose({ ...base, pass, view, period: 'pm_peak', runs })));
     const text = renderDiagnostics(diags, { reports: [{ pass: 1, view: 'shipped', period: 'pm_peak', offered: 1000, shift: { flowRatio: 1.46, membershipRatio: 1.84 }, ceiling: { staticTotal: 1100, finalTotal: 990 } }] });
-    expect(text).toMatch(/\| 1 \| shipped \| pm_peak \| 1\.46 \| 1\.84 \| 1000 \| 90\.0% \|/);
+    expect(text).toMatch(/\| 1 \| shipped \| pm_peak \| 1\.46 \| 1\.84 \| 1000 \| 90\.0% \| 1\.06 \|/);
     expect(text).toMatch(/\| 1 \| shipped \| pm_peak \| 1 of 2 \| 1 \|/);
     expect(text).toMatch(/\| held-out miss \| pm_peak \| Held Street \| 100 \| 1 \| - \| 101 \| 101 \|/);
     expect(text).toMatch(/### Diagonal stations, pm_peak: sum[^#]*\| 1 \| 200 \| - \| 138 \| 138 \|/);
