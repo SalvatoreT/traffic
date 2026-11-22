@@ -1,3 +1,5 @@
+> Round 35 ran on 2026-11-16 (`data/calibration/rockridge.record-archive-*.md`). Archived late, on 2026-11-22; its requirements were merged into the specs by hand first, so the archive ran with --skip-specs.
+
 ## Why
 
 Round 34 left the delay-feedback fit rejected on gridlock at Ashby Ave / Claremont Ave and on the hillside streets behind it. The model codes Ashby Ave eastbound into that junction with one lane, from OSM, while the 2010 PM worksheet in [SafewayCollege-DEIR2011] codes two, and with one lane the approach cannot carry the 1,163 vehicles an hour Caltrans counted in 2024. On 2026-11-16 the project lead relayed two resident-provided field observations: Ashby Ave eastbound has two travel lanes at Claremont Ave in the PM peak, and Claremont Ave southbound has a green left arrow, as northbound does. With the worksheet, the second observation means both Claremont Ave approaches run as split phases.
