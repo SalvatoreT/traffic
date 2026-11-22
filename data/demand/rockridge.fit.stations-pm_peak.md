@@ -368,5 +368,7 @@ GEH below 5 by source and count year in the static assignment (pm_peak; fitted =
 | SafewayCollege-DEIR2011 | 2010 | 16 | 46 of 61 (75%) | - |
 | volunteer-count | 2025 | 1 | 117 of 126 (93%) | - |
 
-Station rule (GEH below 5 at more than 85% of stations), judged on counts from the last 5 years, scores on the shipped demand (the held-out column here is in the shipped fit): fitted 122 of 137 (89%) (met), held out - (no counts). Older counts, reported beside it: fitted 152 of 206 (74%) (not met), held out - (no counts). All counts: fitted 274 of 343 (80%) (not met), held out - (no counts).
+Station rule (GEH below 5 at more than 85% of stations), judged on counts from the last 5 years, scores on the shipped demand (the held-out column here is in the shipped fit): fitted 117 of 126 (93%) (met), held out - (no counts). Older counts, reported beside it: fitted 141 of 193 (73%) (not met), held out - (no counts). All counts: fitted 258 of 319 (81%) (not met), held out - (no counts). Targets derived from a daily total, not judged (a Caltrans AADT or ramp ADT times assumed factors, fitted in both views): 16 of 24 (67%).
+
+Under the scope before derived targets were set apart, on the side the frozen draw gives each station: recent fitted 122 of 137 (89%) (met), held out - (no counts); older fitted 152 of 206 (74%) (not met), held out - (no counts); all fitted 274 of 343 (80%) (not met), held out - (no counts).
 
