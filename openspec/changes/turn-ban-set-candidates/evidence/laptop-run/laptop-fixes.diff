@@ -1,0 +1,15 @@
+--- a.zsh	2026-11-22 01:00:27
++++ a.laptop.zsh	2026-11-22 01:03:18
+@@ -20,10 +20,10 @@
+ echo "published inputs: ${got}"
+ [ "${got}" = "${want}" ] || { echo "the local data is not the published set"; echo "expected: ${want}"; exit 1; }
+ cd ${MAIN} || exit 1
+-if ! git fetch origin ${BR}; then
++if ! timeout 60 git fetch origin ${BR}; then  # laptop fix: SSH hangs while 1Password is locked
+   echo "fetch over SSH failed; trying HTTPS with the gh login"
+   REMOTE=$(git remote get-url origin | sed -E 's#^git@github.com:#https://github.com/#; s#^ssh://git@github.com/#https://github.com/#')
+-  git -c credential.helper='!gh auth git-credential' fetch "${REMOTE}" "${BR}:refs/remotes/origin/${BR}" || { echo "fetch failed over SSH and HTTPS"; exit 1; }
++  git -c credential.helper= -c credential.helper='!gh auth git-credential' fetch "${REMOTE}" "${BR}:refs/remotes/origin/${BR}" || { echo "fetch failed over SSH and HTTPS"; exit 1; }
+ fi
+ [ -e ${W} ] && { echo "${W} exists already; remove it (git worktree remove --force ${W}) or pick another W"; exit 1; }
+ 
