@@ -128,6 +128,7 @@ impl Case {
         p.minutes = self.full.minutes;
         p.screen_minutes = self.screen[0].minutes;
         p.jobs = jobs;
+        p.objectives = objectives::BENCHMARK.to_vec();
         p
     }
 
@@ -553,6 +554,7 @@ pub fn objective_best<'a>(cands: &[Cand], pool: &[&'a Eval], obj: Objective, flo
                 Objective::NoClosures => e.set.iter().all(|&c| objectives::closes_nothing(&cands[c as usize])),
                 Objective::FewestChanges => e.set.len() <= objectives::FEWEST_MAX_CHANGES,
                 Objective::LeastDetour => e.detour_s.is_some() && e.reduction_pct >= floor,
+                Objective::NoTurnBans => e.set.iter().all(|&c| !objectives::is_ban(&cands[c as usize])),
             }
     };
     let tie = |a: &Eval, b: &Eval| b.set.len().cmp(&a.set.len()).then(b.set.cmp(&a.set));
@@ -577,7 +579,7 @@ pub fn assess(ctx: &Ctx, st: &SearchState, known: &[Vec<u16>], table: &ScreenTab
     let all_full: Vec<&Eval> = full.values().collect();
     let fin_full: Vec<&Eval> = fin_sets.iter().filter_map(|s| full.get(s)).collect();
     let floor = detour_floor(&all_full);
-    let per_obj: Vec<Value> = objectives::ALL
+    let per_obj: Vec<Value> = objectives::BENCHMARK
         .iter()
         .map(|&obj| {
             let best = objective_best(ctx.cands, &all_full, obj, floor);
@@ -875,7 +877,7 @@ pub fn analyze(study: &Study, case: &Case, res: &Results) -> Value {
                 "group": name, "candidates": ok,
                 "screenBest": best(primary.rows.values().map(|r| &r.0).collect()),
                 "fullHourBest": best(full.values().collect()),
-                "objectives": objectives::ALL.iter().map(|&o| json!({"objective": o.id(), "best": objective_best(&cands, &fl, o, floor).map(|e| json!({"set": e.set, "score": e.score, "detourS": e.detour_s}))})).collect::<Vec<_>>(),
+                "objectives": objectives::BENCHMARK.iter().map(|&o| json!({"objective": o.id(), "best": objective_best(&cands, &fl, o, floor).map(|e| json!({"set": e.set, "score": e.score, "detourS": e.detour_s}))})).collect::<Vec<_>>(),
             })
         })
         .collect();

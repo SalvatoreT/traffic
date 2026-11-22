@@ -18,9 +18,15 @@ pub enum Objective {
     LeastDetour,
     /// The best package of at most `FEWEST_MAX_CHANGES` changes.
     FewestChanges,
+    /// The best package that holds no turn ban at all (no ban set and no single turn ban), so the list keeps a filter-only option next to
+    /// the ban packages: a ban applies to every driver, residents included, with no exemption in the model.
+    NoTurnBans,
 }
 
-pub const ALL: [Objective; 4] = [Objective::MostRemoved, Objective::NoClosures, Objective::LeastDetour, Objective::FewestChanges];
+pub const ALL: [Objective; 5] = [Objective::MostRemoved, Objective::NoClosures, Objective::LeastDetour, Objective::FewestChanges, Objective::NoTurnBans];
+
+/// The four objectives of the search benchmark's recorded cases (the new one is not part of them).
+pub const BENCHMARK: [Objective; 4] = [Objective::MostRemoved, Objective::NoClosures, Objective::LeastDetour, Objective::FewestChanges];
 
 /// ASSUMPTION: "a simple first step" is at most two changes.
 pub const FEWEST_MAX_CHANGES: usize = 2;
@@ -40,6 +46,7 @@ impl Objective {
             Objective::NoClosures => "no-closures",
             Objective::LeastDetour => "least-detour",
             Objective::FewestChanges => "fewest-changes",
+            Objective::NoTurnBans => "no-turn-bans",
         }
     }
 
@@ -50,6 +57,7 @@ impl Objective {
             Objective::NoClosures => "no street closures",
             Objective::LeastDetour => "least detour for residents",
             Objective::FewestChanges => "fewest changes",
+            Objective::NoTurnBans => "no turn restrictions",
         }
     }
 
@@ -62,6 +70,7 @@ impl Objective {
                 DETOUR_REDUCTION_FLOOR * 100.0
             ),
             Objective::FewestChanges => format!("The same score, among packages of at most {FEWEST_MAX_CHANGES} changes."),
+            Objective::NoTurnBans => "The same score, among packages that hold no turn ban: no ban set and no single turn ban. It competes only with packages of its own kind, so a package with turn bans cannot displace it. It is the option for readers who want no turn restrictions, because a ban applies to every driver, residents included, in the model.".into(),
         }
     }
 
@@ -75,9 +84,14 @@ pub fn closes_nothing(c: &Cand) -> bool {
     matches!(c.kind, "slow_street" | "speed_limit" | "one_way" | "control" | "traffic_circle" | "speed_hump" | "turn_ban" | "ban_set")
 }
 
+/// Whether a candidate is a turn ban or a set of them.
+pub fn is_ban(c: &Cand) -> bool {
+    matches!(c.kind, "turn_ban" | "ban_set")
+}
+
 /// Which candidates a beam for `obj` may use.
 pub fn allowed(obj: Objective, cands: &[Cand]) -> Vec<bool> {
-    cands.iter().map(|c| obj != Objective::NoClosures || closes_nothing(c)).collect()
+    cands.iter().map(|c| (obj != Objective::NoClosures || closes_nothing(c)) && (obj != Objective::NoTurnBans || !is_ban(c))).collect()
 }
 
 /// The deepest package a beam for `obj` grows.
@@ -109,5 +123,6 @@ pub fn eligible(obj: Objective, f: &Final) -> bool {
         Objective::LeastDetour => f.detour_s.is_some(),
         Objective::NoClosures => !f.closes,
         Objective::FewestChanges => f.set.len() <= FEWEST_MAX_CHANGES,
+        Objective::NoTurnBans => !f.has_bans,
     }
 }

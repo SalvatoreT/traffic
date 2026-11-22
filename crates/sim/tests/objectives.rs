@@ -281,3 +281,67 @@ fn packages_at_the_same_places_fold_into_the_option_and_the_list_fills_with_the_
     // With room to spare, the next best by through cars removed joins the winners.
     assert!(picks.iter().any(|pk| pk.idx == 2 && pk.objectives.is_empty()));
 }
+
+fn with_bans(f: Final) -> Final {
+    Final { has_bans: true, ..f }
+}
+
+/// The run of 2026-11-22 in miniature: a ban package that dominates the filter package on every axis, the filter package that was published
+/// (six closures), a smaller filter package, and the left-turns package alone.
+fn ban_run() -> Vec<Final> {
+    vec![
+        with_bans(fin(&[10, 11, 12, 13, 14, 15], 84.6, false, 27.4)),
+        fin(&[0, 1, 2, 3, 4, 5], 74.0, true, 16.0),
+        fin(&[6, 7, 8, 9], 48.9, true, 3.4),
+        with_bans(fin(&[20], 39.9, false, 8.1)),
+    ]
+}
+
+#[test]
+fn no_turn_bans_objective_has_a_label_and_is_eligible_only_without_bans() {
+    assert_eq!(Objective::from_id("no-turn-bans"), Some(Objective::NoTurnBans));
+    assert_eq!(Objective::NoTurnBans.label(), "no turn restrictions");
+    assert!(traffic_sim::explore::objectives::ALL.contains(&Objective::NoTurnBans));
+    let f = ban_run();
+    assert!(!eligible(Objective::NoTurnBans, &f[0]) && eligible(Objective::NoTurnBans, &f[1]));
+    assert!(!eligible(Objective::NoTurnBans, &f[3]));
+}
+
+#[test]
+fn the_best_package_without_bans_stays_in_the_list_though_a_ban_package_dominates_it() {
+    let f = ban_run();
+    let (picks, notes, _, _) = select_by_objectives(&f, &params(), 6);
+    let by = |i: usize| picks.iter().find(|pk| pk.idx == i).map(ids);
+    assert_eq!(by(0), Some(vec!["most-removed", "no-closures"]), "{notes:?}");
+    assert_eq!(by(1), Some(vec!["no-turn-bans"]), "the filter package is the best without bans: {notes:?}");
+    assert!(picks.iter().filter(|pk| pk.idx == 1).count() == 1);
+    assert!(notes[1].contains("no turn restrictions"), "{}", notes[1]);
+    assert!(picks.iter().any(|pk| pk.idx == 3), "the left-turns package stays: {notes:?}");
+}
+
+#[test]
+fn the_winner_without_bans_is_chosen_inside_its_own_family() {
+    let mut f = ban_run();
+    f.push(fin(&[30, 31, 32, 33, 34, 35, 36], 60.0, true, 20.0));
+    let pool: Vec<usize> = (0..f.len()).filter(|&i| eligible(Objective::NoTurnBans, &f[i])).collect();
+    assert_eq!(objective_winner(&f, Objective::NoTurnBans, &pool), Some(1));
+    let (picks, _, _, _) = select_by_objectives(&f, &params(), 6);
+    assert!(picks.iter().any(|pk| pk.idx == 1 && pk.objectives.contains(&Objective::NoTurnBans)));
+}
+
+#[test]
+fn when_the_top_option_has_no_bans_the_objective_coincides_with_it() {
+    let mut f = ban_run();
+    f[1] = Final { reduction_pct: 90.0, score: 90.0, ..f[1].clone() };
+    let (picks, _, _, _) = select_by_objectives(&f, &params(), 6);
+    let top = picks.iter().filter(|pk| pk.idx == 1).collect::<Vec<_>>();
+    assert_eq!(top.len(), 1, "no duplicate option");
+    assert_eq!(ids(top[0]), vec!["most-removed", "no-turn-bans"]);
+}
+
+#[test]
+fn with_no_ban_in_the_list_the_tag_is_left_off() {
+    let f = finals();
+    let (picks, _, _, _) = select_by_objectives(&f, &params(), 6);
+    assert!(picks.iter().all(|pk| !pk.objectives.contains(&Objective::NoTurnBans)));
+}

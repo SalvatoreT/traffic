@@ -66,6 +66,8 @@ pub struct Final {
     pub detour_coverage: DetourCoverage,
     /// Some intervention in the package closes a street or an intersection to cars (a modal filter or a diverter).
     pub closes: bool,
+    /// Some intervention in the package is a turn ban or a ban set.
+    pub has_bans: bool,
     /// The objectives this package is the best for in the published list (set when it is chosen).
     pub objectives: Vec<super::objectives::Objective>,
 }
@@ -434,6 +436,7 @@ fn compare(ctx: &Ctx, set: &[u16], stats: &[PeriodStat], reject: Option<String>)
         detour_vmin_h,
         detour_coverage: coverage,
         closes: set.iter().any(|&i| !super::objectives::closes_nothing(&ctx.cands[i as usize])),
+        has_bans: set.iter().any(|&i| super::objectives::is_ban(&ctx.cands[i as usize])),
         objectives: Vec::new(),
     }
 }
@@ -474,6 +477,7 @@ impl Default for Final {
             detour_vmin_h: None,
             detour_coverage: Default::default(),
             closes: false,
+            has_bans: false,
             objectives: Vec::new(),
         }
     }
@@ -917,9 +921,19 @@ pub fn select_by_objectives(finals: &[Final], p: &Params, max: usize) -> (Vec<Pi
             None => break extra,
         }
     };
+    // With no turn ban in the list there is nothing to contrast with, so the no-turn-bans tag is left off.
+    if !chosen.iter().map(|c| c.0).chain(extra.iter().copied()).any(|i| finals[i].has_bans) {
+        for c in chosen.iter_mut() {
+            c.1.retain(|o| *o != Objective::NoTurnBans);
+        }
+    }
     let mut picks: Vec<Pick> = chosen
         .into_iter()
-        .map(|(idx, objs)| Pick { idx, why: format!("best for {}", objs.iter().map(|o| o.label()).collect::<Vec<_>>().join(" and ")), objectives: objs })
+        .map(|(idx, objs)| Pick {
+            idx,
+            why: if objs.is_empty() { "next best by through cars removed".into() } else { format!("best for {}", objs.iter().map(|o| o.label()).collect::<Vec<_>>().join(" and ")) },
+            objectives: objs,
+        })
         .chain(extra.into_iter().map(|idx| Pick { idx, why: "next best by through cars removed".into(), objectives: Vec::new() }))
         .collect();
     picks.sort_by(|a, b| similar::order_options(&finals[a.idx], &finals[b.idx]).then(a.idx.cmp(&b.idx)));

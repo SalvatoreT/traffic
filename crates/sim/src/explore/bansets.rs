@@ -301,7 +301,7 @@ pub fn label(net: &Network, moves: &[(u32, u32)], onto: Option<&str>) -> String 
     }
     let from_all = !bounding.is_empty() && from_b == bounding;
     let from = if from_all && other {
-        "from the bounding streets and outside streets".to_string()
+        "from the bounding streets and streets outside the area".to_string()
     } else if from_all {
         "from the bounding streets".to_string()
     } else if from_b.is_empty() {

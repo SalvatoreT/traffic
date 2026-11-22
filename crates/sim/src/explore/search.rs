@@ -579,7 +579,7 @@ impl BeamLimit {
     }
 
     pub fn for_objective(obj: Objective, p: &Params, cands: &[Cand]) -> BeamLimit {
-        let allowed = if obj == Objective::NoClosures { Some(super::objectives::allowed(obj, cands)) } else { None };
+        let allowed = if matches!(obj, Objective::NoClosures | Objective::NoTurnBans) { Some(super::objectives::allowed(obj, cands)) } else { None };
         BeamLimit { objective: obj, allowed, depth: super::objectives::depth(obj, p) }
     }
 
