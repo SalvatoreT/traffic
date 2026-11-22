@@ -1,3 +1,5 @@
+> Round 39 ran on 2026-11-17 (`data/calibration/rockridge.record-archive-*.md`). Archived late, on 2026-11-22; its requirements were merged into the specs by hand first, so the archive ran with --skip-specs.
+
 ## Why
 
 On 2026-11-16 the project lead decided ("Yes, fit to the cut-through counts") that the four counted through-car figures on Hillegass Ave and Colby St (each direction, PM peak, resident volunteer count of Feb 25, 2025) become targets of the demand fit. The app exists to give cut-through numbers for these streets. Three rounds of targeted fixes and a compact-extent model left all four above or at the top of their ranges. The cost: the figures stop being an independent check.

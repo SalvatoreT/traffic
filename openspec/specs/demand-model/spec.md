@@ -1157,3 +1157,25 @@ The committed demand config SHALL NOT contain `simulatedMembership.endAlong`, `c
 #### Scenario: Committed config
 - **WHEN** the demand is built from the committed config with the published membership files
 - **THEN** the shipped demand is 2d16d8f8eb0950ca, the cross-validation demand is 1c3b1666f24156f1, and the fit report has no end-along section
+
+### Requirement: Through cars on a street run are fit targets
+With `countFit.throughTargets.enabled` true, each select-link block marked `fitThrough` that lists a positive `observedCorridorThroughVehPerHour` for a period SHALL be a fit target in that period, with the weight `countFit.throughTargets.weight`: cars an hour with neither trip end in the study area that use any link of the run, each counted once. Pinned assumed-movement flows SHALL stay pinned and count toward it. A block with no positive figure SHALL have no target, and the build SHALL say so.
+
+#### Scenario: Target from the measured figure
+- **WHEN** a block is marked `fitThrough` and lists 60 cars an hour for the PM peak
+- **THEN** the PM target is 60 cars an hour on every link of the street run
+
+#### Scenario: No measured figure
+- **WHEN** a block marked `fitThrough` lists no positive figure for a period
+- **THEN** it has no target in that period and the fit report notes it
+
+### Requirement: Through targets follow the training-view rule
+In the training view a through target whose street run holds a held-out block SHALL be left out. With `enabled` set to `report`, the figures SHALL be reported and the fit SHALL be the one built without them.
+
+#### Scenario: Report only
+- **WHEN** `enabled` is `report`
+- **THEN** the built demand equals the demand built without through targets, and the fit report lists the through figures
+
+#### Scenario: Held-out block on the run
+- **WHEN** the training view builds and a held-out block lies on a through target's street run
+- **THEN** the target is left out and the build notes it

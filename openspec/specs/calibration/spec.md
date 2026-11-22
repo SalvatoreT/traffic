@@ -165,11 +165,19 @@ The targets file MAY list arterial segments by street and the two cross streets,
 - **THEN** the PM section of the assessment has a row with the simulated seconds and speed, the four observed speeds and yes or no for the range
 
 ### Requirement: Through cars on the counted blocks
-The calibration report SHALL keep observed block volumes and freeway shares separate from simulated unique vehicles using any part of the corridor. When an observation counts vehicles traveling a whole street in one direction, the model SHALL count continuous traversals in that direction between the recorded endpoints. Counts of vehicles ending along a street and summaries across blocks SHALL NOT supply an upper bound on unique users of a corridor.
+The calibration report SHALL keep observed block volumes and freeway shares separate from simulated unique vehicles using any part of the corridor. When an observation counts vehicles traveling a whole street in one direction, the model SHALL count continuous traversals in that direction between the recorded endpoints. Counts of vehicles ending along a street and summaries across blocks SHALL NOT supply an upper bound on unique users of a corridor. For each select-link target that lists `observedVehPerHour` for the period and a freeway share, `throughCheck` in the report JSON SHALL give the observed volume, the observed freeway share, the observed freeway-end trips (their product), the modeled through cars per hour (neither trip end in the study area) and the modeled trips per hour with a freeway end. When the target also lists `wholeStreetVehPerHour`, the through-car section SHALL give an observed through range from that value up to the block volume less `endAlongVehPerHour`. A whole-street count that is a target of the demand fit SHALL be marked fitted (`fitted: true`).
 
 #### Scenario: Colby Street northbound
 - **WHEN** the observation counts 102 drivers traveling the full street northbound
 - **THEN** the report compares it with simulated continuous northbound traversals
+
+#### Scenario: Block volume, freeway share and through range
+- **WHEN** the targets file gives Colby Street northbound 174 veh/h, a freeway share of 0.47, 102 whole-street cars and 29 end-along cars
+- **THEN** the row shows 82 observed freeway-end trips, an observed through range of 102 to 145 and the modeled figures
+
+#### Scenario: Whole-street count used in the fit
+- **WHEN** a corridor's whole-street count is a target of the demand fit the report was run against
+- **THEN** its row is marked fitted in the JSON and "yes" in the table's "Used in fit" column
 
 #### Scenario: Fitted through figure
 - **WHEN** a legacy fit inferred corridor-wide traffic from block volumes and cars ending along the street
