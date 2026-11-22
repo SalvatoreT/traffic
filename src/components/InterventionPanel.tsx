@@ -9,6 +9,7 @@ import { speedSign } from '../lib/slowstreet';
 import { speedSignElement } from '../lib/speedsign';
 import type { Selection } from '../lib/selection';
 import type { Hover } from '../lib/highlight';
+import { groupBans, scenarioEntries } from '../lib/bans';
 import { PlaceSearch } from './PlaceSearch';
 import { ThroughRoutes } from './ThroughRoutes';
 import type { RouteCheck } from '../lib/throughroutes';
@@ -21,6 +22,8 @@ interface Props {
   region: Region;
   interventions: Intervention[];
   onRemove(i: number): void;
+  /** Remove several interventions at once (a folded group of turn bans). */
+  onRemoveMany(indices: number[]): void;
   onClear(): void;
   onChoose(s: Selection): void;
   onHover(h: Hover | null): void;
@@ -47,7 +50,37 @@ export function InterventionPanel(p: Props) {
         <section className="scn-top" aria-labelledby={`${listId}-scn`}>
           <h3 className="scn-h" id={`${listId}-scn`}>Scenario <span className="count">{p.interventions.length}</span></h3>
           <ol className="scn-list">
-            {p.interventions.map((iv, i) => {
+            {scenarioEntries(p.interventions).map((entry) => {
+              if (entry.kind === 'bans') {
+                const n = entry.indices.length;
+                return (
+                  <li key="bans" className="scn-bans">
+                    <span className="iv-sign static" aria-hidden="true" dangerouslySetInnerHTML={{ __html: pictoElement('turn_ban_both', 22) }} />
+                    <span className="desc">
+                      <strong>{n} turn bans</strong>
+                      <span className="iv-more">Each applies to every driver, all day.</span>
+                      <details>
+                        <summary>Show the {n} turn bans</summary>
+                        {groupBans(p.interventions, B.network, X).map((g) => (
+                          <section key={g.street} aria-label={`From ${g.street}`}>
+                            <p className="scn-banstreet">From {g.street}</p>
+                            <ul className="scn-banlist">
+                              {g.bans.map((b) => (
+                                <li key={b.index}>
+                                  <button type="button" className="desc-btn" title="Select this place" onClick={() => p.onSelectIntervention(b.index)}>{b.text}</button>
+                                </li>
+                              ))}
+                            </ul>
+                          </section>
+                        ))}
+                      </details>
+                    </span>
+                    <button type="button" className="btn small-btn" onClick={() => p.onRemoveMany(entry.indices)} aria-label={`Remove all ${n} turn bans`}>Remove all {n}</button>
+                  </li>
+                );
+              }
+              const i = entry.index;
+              const iv = p.interventions[i];
               const d = describeIntervention(iv, B.network, X);
               const ft = filterText(iv, B.network, X);
               const sign = speedSign(B.network, iv);

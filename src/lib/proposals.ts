@@ -704,6 +704,7 @@ export const OBJECTIVE_LABELS: Record<string, string> = {
   'no-closures': 'no street closures',
   'least-detour': 'least detour for residents',
   'fewest-changes': 'fewest changes',
+  'no-turn-bans': 'no turn restrictions',
 };
 
 type ObjectiveEvidence = Pick<Proposal, 'objectives' | 'simulationProblem' | 'accessProblem' | 'residentsDetour'>;
@@ -737,4 +738,25 @@ export function detourText(d: ResidentsDetour | undefined): { figure: string; la
   const figure = `${s < 0 ? MINUS : s > 0 ? '+' : ''}${num(Math.abs(s), 1)} s`;
   const total = `${d.vehicleMinutesPerHour < 0 ? MINUS : '+'}${num(Math.abs(d.vehicleMinutesPerHour), 0)} vehicle-minutes an hour`;
   return { figure, label: window ? 'per requested resident trip' : 'per resident trip', detail: `${total}. ${scope} ${intervalText(d.effect, ' s', 1)}` };
+}
+
+/** Individual turn bans in a package: a ban set counts every ban it holds, a single ban counts one. */
+export function banCount(p: Pick<Proposal, 'interventions' | 'turnBans'>): number {
+  return p.turnBans ?? p.interventions.filter((iv) => iv.type === 'turn_ban').length;
+}
+
+/** The standing caveat shown wherever a package with turn bans has its headline. */
+export const BAN_CAVEAT = 'Turn bans apply to every driver, residents included, all day, and assume full compliance (ASSUMPTION).';
+
+/** The scale line of a package with turn bans, so it cannot be read as a small change: "41 turn restrictions around the edge of the area". Null for a package without any. */
+export function banHeadline(p: Pick<Proposal, 'interventions' | 'turnBans'>): { count: number; text: string; caveat: string } | null {
+  const count = banCount(p);
+  return count > 0 ? { count, text: `${count} turn ${count === 1 ? 'restriction' : 'restrictions'} around the edge of the area`, caveat: BAN_CAVEAT } : null;
+}
+
+/** The resident detour for the visible part of every card: "Resident detour: +16.0 s per requested resident trip". Null when the file recorded none. */
+export function detourHeadline(d: ResidentsDetour | undefined): { lead: string; figure: string; label: string } | null {
+  const t = detourText(d);
+  if (!t) return null;
+  return t.figure === 'Unavailable' ? { lead: 'Resident detour:', figure: 'unavailable', label: '' } : { lead: 'Resident detour:', figure: t.figure, label: t.label };
 }

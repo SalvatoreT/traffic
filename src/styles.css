@@ -139,6 +139,13 @@ main { flex: 1; min-height: 0; display: flex; }
 .scn-list { list-style: none; margin: 0 0 .6rem; padding: 0; display: flex; flex-direction: column; gap: .35rem; }
 .scn-list li { display: flex; align-items: center; gap: .55rem; padding: .35rem .5rem; border: 1px solid var(--border); border-radius: 8px; }
 .scn-list .desc { flex: 1; font-size: .9rem; }
+.scn-list li.scn-bans { align-items: flex-start; }
+.scn-bans > .desc { min-width: 0; }
+.scn-bans details { margin-top: .3rem; }
+.scn-bans details summary { cursor: pointer; font-size: .85rem; }
+.scn-banlist { list-style: none; margin: .3rem 0 0; padding: 0; display: flex; flex-direction: column; gap: .2rem; max-height: 18rem; overflow: auto; }
+.scn-banlist li { border: 0; padding: .1rem 0; display: flex; gap: .4rem; align-items: center; justify-content: space-between; }
+.scn-banstreet { margin: .4rem 0 .1rem; font-size: .82rem; font-weight: 600; }
 .share { margin-top: .75rem; }
 .toast { min-height: 1.4em; color: var(--muted); font-size: .9rem; }
 
@@ -446,6 +453,14 @@ input[type='checkbox'] { width: 18px; height: 18px; accent-color: var(--accent);
 .fig-sub { color: var(--muted); font-size: .88rem; font-variant-numeric: tabular-nums; margin-top: .15rem !important; }
 .prop-h { margin: .9rem 0 .25rem; font-size: .95rem; }
 .prop-ivs { margin: 0 0 .8rem; padding-left: 1.2rem; }
+.prop-headsub { margin: .1rem 0 0; font-size: .9rem; font-variant-numeric: tabular-nums; }
+.prop-headsub-lead { color: var(--muted); }
+.prop-ban { display: grid; gap: .3rem; }
+.prop-scale { margin: 0; font-size: 1.05rem; }
+.prop-banwarn { margin: 0; }
+.prop-banlist { margin: 0 0 .5rem; padding-left: 1.2rem; columns: 2 16rem; }
+.prop-bans .prop-h .count, .scn-bans .count { font-weight: 400; }
+@media (max-width: 719.98px) { .prop-headsub { font-size: .82rem; } }
 .prop-actions { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin: .8rem 0 .9rem; }
 .pm-moredetail { margin-top: .75rem; }
 .pm-moredetail .pm-streets, .pm-moredetail .pm-filters, .pm-moredetail .pm-key { margin-top: .6rem; }

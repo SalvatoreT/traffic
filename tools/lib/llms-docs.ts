@@ -19,7 +19,7 @@ import { ROUTE_CAVEAT } from '../../src/lib/throughroutes';
 import { SPEED_LIMITS_MPH, SIGNAL_CYCLES_S } from '../../src/lib/selection';
 import {
   allTrafficHeadline, allTrafficNote, allTrafficRows, beforeAfterPct, comparisonText, cutThroughHeadline, evidenceNote, formatComputed, harmHeadline, hashMatches, INTERVAL_SCOPE, intervalText, linkHash, periodsPhrase,
-  provenanceLine, proposalNotices, bestForText, detourText, seedsPhrase, signedNum, signedPct, listOptions, type Proposal, type ProposalGroup, type Proposals,
+  provenanceLine, proposalNotices, bestForText, detourText, banHeadline, seedsPhrase, signedNum, signedPct, listOptions, type Proposal, type ProposalGroup, type Proposals,
 } from '../../src/lib/proposals';
 import {
   ASSUMPTIONS_INTRO, DERIVED_TARGETS_INTRO, EXPLORATORY_NOTE, FIXED_DEMAND_CAVEAT, LEGACY_GROUP_NOTE, MOVEMENTS_INTRO, PROPOSALS_LEAD, SOURCES_CALIBRATED, SOURCES_UNCALIBRATED, STREETS_INTRO,
@@ -271,8 +271,10 @@ function cardMd(i: LlmsInput, g: ProposalGroup, p: Proposal, n: number | null, w
   const big = allTrafficHeadline(rows);
   out.push(big.none ? `- ${big.label}` : `- **${big.figure}** ${big.label}. ${big.split} ${big.interval}`);
   const dt = detourText(p.residentsDetour);
-  out.push(dt ? `- **${dt.figure}** ${dt.label}. ${dt.detail}` : '', '');
-  out.push('Changes:', '', ...p.interventions.map((iv) => `- ${iv.label} (${iv.type})`), '');
+  out.push(dt ? `- Resident detour: **${dt.figure}** ${dt.label}. ${dt.detail}` : '', '');
+  const ban = banHeadline(p);
+  if (ban) out.push(`**${ban.text}.** ${ban.caveat}`, '');
+  out.push('Changes:', '', ...p.interventions.map((iv) => `- ${iv.label} (${iv.type}${iv.bans !== undefined ? `, ${iv.bans} individual turn bans` : ''})`), '');
   if (p.variants?.length) {
     out.push('Variants (tweaks of this proposal that do about the same; each opens on the map and runs live; no share path or stored result):', '',
       ...p.variants.map((v) => `- ${v.differs.join('; ')}${v.cutThrough ? ` — through cars an hour ${Math.round(v.cutThrough.baselineVehPerHour)} → ${Math.round(v.cutThrough.scenarioVehPerHour)} (${signedPct(v.cutThrough.changePct)}${v.cutThrough.seeds?.length ? `; ${seedsPhrase(v.cutThrough.seeds)}` : ''})` : ''}: <${abs(i, `/${linkHash(v.link)}`)}>`), '');

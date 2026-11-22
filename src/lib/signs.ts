@@ -8,7 +8,7 @@ import { turnKindOf, type TurnKind } from './turnkind';
  * (octagonal stop, yellow warning diamond, regulatory one-way and turn-prohibition signs) but are simplified for 20 to 30 px; none claims to be an official sign.
  */
 export type PictoId =
-  | 'stop' | 'all_way_stop' | 'signal' | 'uncontrolled' | 'signal_timing' | 'speed_hump' | 'traffic_circle' | 'one_way' | 'turn_ban_left' | 'turn_ban_right' | 'turn_ban'
+  | 'stop' | 'all_way_stop' | 'signal' | 'uncontrolled' | 'signal_timing' | 'speed_hump' | 'traffic_circle' | 'one_way' | 'turn_ban_left' | 'turn_ban_right' | 'turn_ban_both' | 'turn_ban'
   | 'modal_filter' | 'diagonal_diverter';
 
 /** The pictures a map or a proposal's picture draws as marks; a modal filter is a bar and a diverter a striped line there, and only the scenario list uses their small pictures. */
@@ -149,6 +149,18 @@ export function pictoGeometry(id: PictoId, h: number): PictoGeometry {
         texts: [],
       };
     }
+    case 'turn_ban_both':
+      return {
+        shapes: [
+          { d: circle(0, 0, 15), fill: WHITE, stroke: INK, sw: 1 },
+          { d: 'M0 9.5V-3.6M-5 -3.6H5', stroke: INK, sw: 3.2, cap: 'butt' },
+          { d: polygon([[-3.4, -9.4], [-10.8, -3.6], [-3.4, 2.2]]), fill: INK },
+          { d: polygon([[3.4, -9.4], [10.8, -3.6], [3.4, 2.2]]), fill: INK },
+          { d: circle(0, 0, 12.3), stroke: RED, sw: 2.8 },
+          { d: 'M-8.7 -8.7L8.7 8.7', stroke: RED, sw: 2.8, cap: 'butt' },
+        ],
+        texts: [],
+      };
     case 'modal_filter':
       return {
         shapes: [

@@ -4,7 +4,7 @@ import { calibrationStatusText } from '../../src/lib/caveat';
 import { decodeScenario } from '../../src/lib/hash';
 import { buildIndex, type NetIndex } from '../../src/lib/naming';
 import { buildBaseMap, buildPicture, cardPicture, pathOf, wholeChange, type PictureModel } from '../../src/lib/picture';
-import { bestForText, evidenceStatus, linkHash, signedPct, type EvidenceStatus, type LoadedHashes, type Proposal, type Proposals } from '../../src/lib/proposals';
+import { banHeadline, bestForText, evidenceStatus, linkHash, signedPct, type EvidenceStatus, type LoadedHashes, type Proposal, type Proposals } from '../../src/lib/proposals';
 import { signedCars } from '../../src/lib/proposal-map';
 import { OVERLAY_TOP, quantizeIntensity } from '../../src/lib/ramps';
 import { VIEWS, titleFor, type View } from '../../src/lib/route';
@@ -139,11 +139,13 @@ export function planPreviews(inp: PreviewInput): PreviewPlans {
     const sentence = changesSentence(changes.map(firstClause), Math.max(70, DESCRIPTION_BEFORE_CAVEAT - lead.length));
     const description = `${lead} ${sentence} ${caveat}${evidence.state === 'unverified' ? ' Figures not verified against the current simulator.' : ''}`;
     const big = bigPct(fig.pct, fig.before, fig.after);
+    const ban = banHeadline(p);
     const nChanges = `${capital(numberWord(changes.length))} ${plural(changes.length, 'change')}`;
     const alt = [
       `${p.title}.`,
       fig.before === fig.after ? `Simulated ${periodWords}${mean}: no change in through cars on the side streets, ${fig.before} an hour.` : `Simulated ${periodWords}${mean}: through cars on the side streets go from ${fig.before} to ${fig.after} an hour (${pctText}).`,
       `${nChanges}.`,
+      ...(ban ? [`${ban.text}. ${ban.caveat}`] : []),
       ...(bestForText(p) ? [`${bestForText(p)}.`] : []),
       mapAlt(area.name, card, periodWords),
       'Simulation, not a forecast.',
@@ -153,7 +155,7 @@ export function planPreviews(inp: PreviewInput): PreviewPlans {
       card: {
         kicker: area.name, title: p.title,
         big: { figure: big, label: `through cars, ${periodWords}`, tone: toneOf(fig.before, fig.after) },
-        lines: [`${fig.before} → ${fig.after} an hour`, nChanges],
+        lines: [`${fig.before} → ${fig.after} an hour`, ban ? `${nChanges}, ${ban.count} turn bans` : nChanges],
         footer, map: { model, sequential: false, boost: BOOST, key: card.kind === 'all' ? 'change-all' : 'change', pins: card.kind === 'all' },
       },
     });
