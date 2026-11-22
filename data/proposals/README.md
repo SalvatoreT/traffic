@@ -42,12 +42,35 @@ Select-link analysis of the baseline ranks the in-study blocks and intersections
 
 ### Turn-ban packages
 
-Turn-ban candidates cover single movements, so two packages were entered by hand for the search of 2026-11-18 (user decision, 2026-11-18) and measured on seeds 101 to 110 over three periods, on the network and demand of that search (baseline 508.4 through cars an hour):
+Turn-ban candidates cover single movements. Ban packages measured on the round 52 demand are in the table at the end of this section; the two hand packages below are from the earlier demand.
+
+Earlier demand: two packages were entered by hand for the search of 2026-11-18 (user decision, 2026-11-18) and measured on seeds 101 to 110 over three periods, on the network and demand of that search (baseline 508.4 through cars an hour):
 
 - Banning the four turns from Claremont Avenue and Alcatraz Avenue onto Hillegass Avenue removes 29.0 through cars an hour (95% interval 17 to 41; 5.7%). Most of them move to Colby Street: one block (McAuley Street to 60th Street) gains 133 cars an hour of all traffic in the PM peak.
 - Banning the same turns onto both Hillegass Avenue and Colby Street (eight bans) removes 63.9 (55 to 73; 12.6%) and adds 100 cars an hour in the PM peak to 60th Street between Claremont Avenue and Colby Street. Through traffic also moves to Dana Street.
 
-Neither is published as an option: two filters on 63rd Street remove 160.8 with a smaller rise on any one block. The eight-ban package has more changes than the search depth of 6, so the search dropped it and it was measured with `explore --check`. The figures are in `openspec/changes/archive/2026-11-19-calibration-round-44/evidence/search-c5/tb-check.md`. Generating whole-street and paired-street ban sets as search candidates is not built. `tools/turn-ban-sets.ts` writes such sets (every entry turn, one street's turns, the through streets' turns) as scenario links for measurement with `explore --check` and as hand seeds up to the search depth; see `openspec/changes/perimeter-turn-bans`.
+Neither is published as an option: two filters on 63rd Street remove 160.8 with a smaller rise on any one block. The eight-ban package has more changes than the search depth of 6, so the search dropped it and it was measured with `explore --check`. The figures are in `openspec/changes/archive/2026-11-19-calibration-round-44/evidence/search-c5/tb-check.md`. `tools/turn-ban-sets.ts` writes whole-street and perimeter ban sets (every entry turn, one street's turns, the through streets' turns) as scenario links for measurement with `explore --check` and as hand seeds up to the search depth; see `openspec/changes/perimeter-turn-bans`.
+
+Perimeter packages on the round 52 demand (laptop run of 2026-11-21 and 22; baseline 522.5 through cars an hour, seeds 101 to 110, three periods; evidence on the dev branch at commit `bd267ca`, `openspec/changes/perimeter-turn-bans/evidence/README.md`). Published p1 re-checked: 522.5 to 135.7 (-74.0%), the published figures.
+
+| Package | Bans | Through cars an hour | Change (95% interval) | Worst block, all traffic (PM) |
+| --- | ---: | --- | --- | --- |
+| `all-turns-access` (every entry left and right turn, less two that would strand a node) | 41 | 192.9 | -63.1% (-67.2% to -59.1%) | Forest Street, Claremont/Colby to Ayala: 155 to 340 |
+| `left-turns` | 21 | 313.8 | -39.9% (-43.8% to -36.2%) | 57th Street, Vicente to Telegraph: +30 |
+| `through-streets-all` | 23 | 382.3 | -26.8% | Forest Street: +121 |
+| `top-10` | 10 | 402.5 | -23.0% | Forest Street: +121 |
+| `through-streets` | 19 | 419.5 | -19.7% | Forest Street: +127 |
+| `top-5` | 5 | 438.9 | -16.0% | Forest Street: +119 |
+| `street-claremont-avenue` | 12 | 444.3 | -15.0% | 63rd Street, College to Hillegass: +51 |
+| `top-3` | 3 | 457.7 | -12.4% | Forest Street: +123 |
+| `street-telegraph-avenue` (access fails: 1 node stranded) | 20 | 463.9 | -11.2% | Colby Street, 61st to 62nd: +36 |
+| `street-alcatraz-avenue` | 6 | 475.2 | -9.1% | 63rd Street, College to Hillegass: +34 |
+| `right-turns` | 22 | 477.0 | -8.7% | Forest Street: +30 |
+| `street-college-avenue` | 4 | 509.6 | -2.5% (interval includes 0) | Hillegass Avenue: +13 |
+| `all-turns` (access fails: 1 node stranded) | 43 | 192.8 | -63.1% | Forest Street: +185 |
+| `all-entries` (rejected: 37 nodes stranded, 284 unroutable PM trips) | 53 | 0.0 | -100% | none |
+
+No package reaches p1 (-74.0%). Left turns carry most of the effect with almost no displacement. The search at depth 6 with four small ban sets seeded returned the same eight options as the published list, p1 on top, and no option contains a ban set; nothing was published. Limits: a ban applies to every vehicle in every period and full compliance is an ASSUMPTION; the model is not calibrated; the intervals cover seed variability only. A seed larger than `--depth` is dropped and turn bans are single movements, so the search cannot combine a ban set with filters; `openspec/changes/turn-ban-set-candidates` adds ban sets as candidates behind `--ban-sets`.
 
 The published set since 2026-11-20 is the search on the round 52 demand (baseline 522.5 through cars an hour, evidence in `openspec/changes/archive/2026-11-20-calibration-round-52/evidence/search/`). These two packages were not measured again on that demand, so their figures above belong to the earlier one.
 

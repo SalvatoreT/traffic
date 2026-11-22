@@ -12,14 +12,19 @@
 
 ## 2. Laptop runs (runbook.md)
 
-- [ ] 2.1 Step A: worktree, gates, candidate ranking, packages
-- [ ] 2.2 Step B: `explore --check` of p1 and every package on the published settings
-- [ ] 2.3 Step C: the published search command against the scratch seeds file
-- [ ] 2.4 Step D: the summary table
-- [ ] 2.5 Step E: pack the evidence
+- [x] 2.1 Step A: worktree, gates, candidate ranking, packages (laptop, 2026-11-21, 11:03 PM to 11:09 PM PST)
+- [x] 2.2 Step B: `explore --check` of p1 and every package on the published settings
+- [x] 2.3 Step C: the published search command against the scratch seeds file (depth 6, 2,903 s)
+- [x] 2.4 Step D: the summary table
+- [x] 2.5 Step E: pack the evidence (dev branch `salvatoret/peaceful-fermi-dlwt0u`, commit `bd267ca`; see `evidence/README.md`)
 
 ## 3. Verdict (project lead)
 
-- [ ] 3.1 Read the summary and the p1 re-check
-- [ ] 3.2 Decide, under design D7, whether any package or search option goes further (a seeds-file or references-file entry, a search candidate for whole-street sets, a published proposal)
+- [x] 3.1 Read the summary and the p1 re-check (design, Outcome)
+- [ ] 3.2 Decide, under design D7, whether any package or search option goes further (a seeds-file or references-file entry, a search candidate for whole-street sets, a published proposal). D7(b) is triggered and was reported to the project lead; no decision is taken here
 - [ ] 3.3 If anything is adopted: publish by the documented procedure in `data/README.md` (nothing is published by this change)
+
+## 4. Follow-up
+
+- [x] 4.1 Report D7(b) to the project lead (done by the lead session)
+- [x] 4.2 Ban sets as search candidates: change `turn-ban-set-candidates`

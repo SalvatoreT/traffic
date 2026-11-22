@@ -17,6 +17,7 @@ const outFile = opt('out', 'target/tb/summary.md');
 
 const f1 = (x) => (Number.isFinite(x) ? x.toFixed(1) : '-');
 const f0 = (x) => (Number.isFinite(x) ? Math.round(x).toString() : '-');
+const pctBound = (x, base) => signed(Math.max(-100, (100 * x) / base));
 const signed = (x, d = 1) => (Number.isFinite(x) ? `${x >= 0 ? '+' : ''}${x.toFixed(d)}` : '-');
 
 const { parseCheck, num } = require('./parse-check.cjs');
@@ -48,7 +49,7 @@ for (const id of ids) {
   if (!r) { w(`| \`${id}\` | ${bans[id] ?? '-'} | not run | | | | | | | | |`); continue; }
   const per = (n) => { const p = r.periods.find((x) => x.period === n); return p ? `${f0(p.base)} -> ${f0(p.scen)} (${signed(p.pct)}%)` : '-'; };
   const diff = r.scen - r.base;
-  const interval = Number.isFinite(r.lo) ? `${signed(diff, 1)} cars/h (${signed(r.pct)}%; ${signed(r.lo, 0)} to ${signed(r.hi, 0)} cars/h, ${signed((100 * r.lo) / r.base)}% to ${signed((100 * r.hi) / r.base)}%)` : `${signed(diff, 1)} cars/h (${signed(r.pct)}%; ${r.noInterval ?? 'no interval'})`;
+  const interval = Number.isFinite(r.lo) ? `${signed(diff, 1)} cars/h (${signed(r.pct)}%; ${signed(r.lo, 0)} to ${signed(r.hi, 0)} cars/h, ${pctBound(r.lo, r.base)}% to ${pctBound(r.hi, r.base)}%)` : `${signed(diff, 1)} cars/h (${signed(r.pct)}%; ${r.noInterval ?? 'no interval'})`;
   const wa = worstAll(r);
   const why = [r.reject ? `rejected: ${r.reject}` : null, r.access && r.access !== 'passes' ? `access ${r.access}` : null, r.decode ? `does not decode: ${r.decode}` : null,
     r.allowLines !== bans[id] || r.n !== bans[id] ? `--check listed ${r.allowLines} and rechecked ${r.n} of ${bans[id]} bans` : null].filter(Boolean).join('; ') || 'none';

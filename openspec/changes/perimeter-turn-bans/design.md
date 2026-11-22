@@ -148,3 +148,42 @@ About 2 hours for A to E at depth 6. Checking all links in one invocation would 
 - A package that passes the access check in the model can still fail in the street: the check asks only that every in-study node has a path in and out.
 - The Rust and TypeScript turn classifications and decoders could differ on a network other than Rockridge. The round trip test is in TypeScript; the summary checks the Rust side by counting the bans `--check` lists.
 - A package is measured with ten seeds on the same seeds as the published confirmation. The packages were not chosen on those seeds, so they are not selection-biased, but the search in step C selects on seeds 1 to 3 and confirms on 101 to 110 as the published one does.
+
+## Outcome
+
+The laptop ran steps A to E on 2026-11-21 and 22 (Pacific), with simulator 6b886c8f52ee07397773ddd0ebbcb447 and the published network, demand, proposals and seeds files. The archive is on the dev branch at `bd267ca` (`evidence/README.md`). The baseline is 522.5 through cars an hour, the mean of the three periods on seeds 101 to 110. The model is not calibrated, so every figure is a comparison with that baseline.
+
+The p1 re-check matched the published figures: 522.5 to 135.7 (-74.0%). Intervals are paired 95% intervals over seeds. They do not cover calibration error, demand error or compliance.
+
+| Package | Bans | Through cars an hour | Change (95% interval) | Worst block, all traffic | Notes |
+| --- | ---: | --- | --- | --- | --- |
+| p1 (published) | 6 | 135.7 | -74.0% (-78.1% to -70.0%) | 60th Street, Claremont/Hillegass to Colby, PM +194 | filters and a diverter, not bans |
+| `all-entries` | 53 | 0.0 | -100% | none | rejected: 37 nodes stranded, 284 unroutable PM trips |
+| `all-turns` | 43 | 192.8 | -63.1% | Forest Street, Claremont/Colby to Ayala, PM +185 | access fails: 1 node stranded |
+| `all-turns-access` | 41 | 192.9 | -63.1% (-67.2% to -59.1%) | Forest Street, Claremont/Colby to Ayala, PM 155 to 340 | passes |
+| `left-turns` | 21 | 313.8 | -39.9% (-43.8% to -36.2%) | 57th Street, Vicente to Telegraph, PM +30 | passes |
+| `right-turns` | 22 | 477.0 | -8.7% | Forest Street, PM +30 | passes |
+| `through-streets-all` | 23 | 382.3 | -26.8% | Forest Street, PM +121 | passes |
+| `top-10` | 10 | 402.5 | -23.0% | Forest Street, PM +121 | passes |
+| `through-streets` | 19 | 419.5 | -19.7% | Forest Street, PM +127 | passes |
+| `top-5` | 5 | 438.9 | -16.0% | Forest Street, PM +119 | passes |
+| `street-claremont-avenue` | 12 | 444.3 | -15.0% | 63rd Street, College to Hillegass, PM +51 | passes |
+| `top-3` | 3 | 457.7 | -12.4% | Forest Street, PM +123 | passes |
+| `street-telegraph-avenue` | 20 | 463.9 | -11.2% | Colby Street, 61st to 62nd, PM +36 | access fails: 1 node stranded |
+| `street-alcatraz-avenue` | 6 | 475.2 | -9.1% | 63rd Street, College to Hillegass, PM +34 | passes |
+| `street-college-avenue` | 4 | 509.6 | -2.5% (interval includes 0) | Hillegass Avenue, PM +13 | passes |
+
+What the table says:
+
+- No package reaches p1. The best one that passes the access check is `all-turns-access`, 10.9 points short of p1, with 41 bans.
+- Left turns carry the effect. The 21 left-turn bans remove 39.9% and the worst all-traffic block rises by 30 cars an hour in the PM peak, against 185 for `all-turns-access`. Right turns alone remove 8.7%.
+- The leak in the large sets is Forest Street between Claremont/Colby and Ayala. Through cars on it rise by 1 in `all-turns-access`, yet all traffic goes from 155 to 340 in the PM peak, so the added cars there are not through cars.
+- `all-entries` reaches zero only by stranding 37 nodes. It is on record and is not a candidate.
+- Eight packages remove more than 15% on their own: `all-entries` (rejected), `all-turns` (access fails), `all-turns-access`, `left-turns`, `through-streets-all`, `top-10`, `through-streets` and `top-5`. D7(b) is triggered. It was reported to the project lead, and no publication decision is taken here.
+- The search at depth 6 with four small ban sets seeded (24 packages loaded, 23 rechecked, one dropped for having 8 interventions, more than the depth) returned the same eight options as the published list. p1 is on top and unchanged, and no option contains a ban set. D7(a) is not triggered. The larger sets could not enter the beam and were measured only in step B.
+
+Limits, as in D8: a ban applies to every vehicle, all day, and 100% compliance is an ASSUMPTION. The model is not calibrated. The intervals cover seed variability on a fixed network and demand only.
+
+The summary script printed percent bounds beyond -100% for a package that reaches zero (`all-entries`: -103.9% to -96.1%). `scripts/summary.cjs` now clamps the lower bound at -100%.
+
+Left turns carry the effect and the leak is one street, so all left turns plus one or two filters could approach p1 with far fewer closures. The search cannot form that package: it drops a seed larger than the depth, and its turn bans are single movements. The change `turn-ban-set-candidates` makes ban sets candidates. This change stays open for the project lead's verdict (tasks 3.2 and 3.3).
