@@ -1,3 +1,5 @@
+> Round 30 ran 2026-11-15 to 2026-11-16 (`data/calibration/rockridge.record-archive-*.md`). Archived late, on 2026-11-22; its requirements were merged into the specs by hand first, so the archive ran with --skip-specs.
+
 ## Why
 
 Round 29 left the southbound through cars on Hillegass Ave and Colby St at about 1.6 and 1.8 times the top of their counted ranges, with 62nd St and Forest St eastbound at three to four times their counts, and found that drivers choose the side streets at departure from the simulated costs. It did not say which trips those are or which cost makes the side street cheaper. Removals (4.5 an hour in the PM peak, 2.0 in the AM peak) still fail the stability rule, and the demand was fitted against the old engine's delays.
