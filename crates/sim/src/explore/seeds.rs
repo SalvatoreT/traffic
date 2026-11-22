@@ -161,9 +161,15 @@ pub struct Dropped {
 
 /// Decode every entry on the study's network. An entry with no match, or with no interventions, is dropped with the reason.
 pub fn prepare(study: &Study, file: &SeedFile) -> (Vec<Prepared>, Vec<Dropped>) {
+    prepare_with(study, file, &[])
+}
+
+/// As `prepare`, with the turn bans of each package that make up a whole ban set in `sets` folded into that set (`bansets::collapse`), so a
+/// package of a set and a filter counts two interventions, not twenty-two.
+pub fn prepare_with(study: &Study, file: &SeedFile, sets: &[super::bansets::Set]) -> (Vec<Prepared>, Vec<Dropped>) {
     let (mut ok, mut dropped) = (Vec::new(), Vec::new());
     for e in &file.seeds {
-        match decode_scenario(&study.net, &study.topo, study.origin, &e.link) {
+        match decode_scenario(&study.net, &study.topo, study.origin, &e.link).map(|ivs| super::bansets::collapse(sets, ivs)) {
             Ok(ivs) if !ivs.is_empty() => ok.push(Prepared { entry: e.clone(), ivs }),
             Ok(_) => dropped.push(Dropped { link: e.link.clone(), reason: "no interventions".into() }),
             Err(why) => dropped.push(Dropped { link: e.link.clone(), reason: format!("no longer decodes on this network: {why}") }),

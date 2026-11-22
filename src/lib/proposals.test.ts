@@ -4,7 +4,7 @@ import { buildFixture } from '../fixtures/area';
 import { buildMockProposals } from '../fixtures/proposals';
 import { decodeScenario } from './hash';
 import {
-  allProposals, allTrafficHeadline, allTrafficNote, allTrafficRows, beforeAfterPct, comparisonText, cutThroughHeadline, evidenceNote, evidenceStatus, hashMatches, hashText, harmHeadline, intervalText,
+  allProposals, allTrafficHeadline, changeAt, changesSummary, allTrafficNote, allTrafficRows, beforeAfterPct, comparisonText, cutThroughHeadline, evidenceNote, evidenceStatus, hashMatches, hashText, harmHeadline, intervalText,
   legacyProposalAnchor, linkHash, listOptions, largestAllCarRise, needsConfirm, openReducer, parseProposals, periodsPhrase, proposalAnchor, proposalNotices, REPORT_METHOD, seedsPhrase, signedPct, staleInputs, throughRemoved,
   type ComparisonStatus, type Effect, type Proposal, type ThroughHarm,
 } from './proposals';
@@ -438,5 +438,35 @@ describe('card anchors', () => {
     expect(legacyProposalAnchor('proposal-1')).toBeNull();
     expect(legacyProposalAnchor('proposals-for-comparison')).toBeNull();
     expect(legacyProposalAnchor('unconstrained-')).toBeNull();
+  });
+});
+
+describe('ban sets in a package', () => {
+  const plain = [{ type: 'modal_filter', label: 'Modal filter at A & B' }, { type: 'speed_hump', label: 'Speed hump on C' }];
+  const withSet = [{ type: 'ban_set', label: 'No left turns from the bounding streets onto side streets (3 turns)', bans: 3 }, { type: 'modal_filter', label: 'Modal filter on Top Street' }];
+
+  it('reads a file that has no ban counts as before', () => {
+    expect(changesSummary({ interventions: plain })).toBe('2');
+    expect(changeAt(plain, 1)?.label).toBe('Speed hump on C');
+    expect(changeAt(plain, 2)).toBeUndefined();
+  });
+
+  it('counts a set as one change and says how many bans it holds', () => {
+    expect(changesSummary({ interventions: withSet, turnBans: 3 })).toBe('2, holding 3 turn bans');
+    expect(changesSummary({ interventions: withSet })).toBe('2');
+  });
+
+  it('labels each decoded turn ban with its set, and the item after the set with its own change', () => {
+    expect([0, 1, 2].map((i) => changeAt(withSet, i)?.type)).toEqual(['ban_set', 'ban_set', 'ban_set']);
+    expect(changeAt(withSet, 3)?.label).toBe('Modal filter on Top Street');
+  });
+
+  it('keeps an unknown field on a proposal through parsing', () => {
+    const raw = JSON.parse(JSON.stringify(file));
+    raw.groups[0].proposals[0].interventions = withSet;
+    raw.groups[0].proposals[0].turnBans = 3;
+    const back = parseProposals(JSON.stringify(raw))!;
+    expect(back.groups[0].proposals[0].turnBans).toBe(3);
+    expect(back.groups[0].proposals[0].interventions[0].bans).toBe(3);
   });
 });

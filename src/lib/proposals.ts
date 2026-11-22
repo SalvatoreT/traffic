@@ -54,7 +54,10 @@ export interface Proposal {
   /** Absent means "search". Reference entries are hand-defined packages evaluated with the same metrics. */
   kind?: 'search' | 'reference'; note?: string;
   link: string;
-  interventions: { type: string; label: string }[];
+  /** One entry per change. A ban set is one change that holds `bans` individual turn bans; its link lists every one of them. `bans` is absent in files written before ban sets. */
+  interventions: { type: string; label: string; bans?: number }[];
+  /** Individual turn bans in the package, singles and ban sets together. Present only when the package holds a ban set. */
+  turnBans?: number;
   /** Through cars an hour across the area's side streets, averaged over the searched periods and the seeds. */
   cutThrough: CutThrough;
   /** Through cars only, averaged over the same periods and seeds. */
@@ -653,6 +656,25 @@ export function compareOptions(a: Proposal, b: Proposal): number {
   return tenths(throughRemoved(b)) - tenths(throughRemoved(a))
     || a.interventions.length - b.interventions.length
     || tenths(largestAllCarRise(a)) - tenths(largestAllCarRise(b));
+}
+
+/** The scenario-link items a change decodes to: one, or one per turn ban for a ban set. */
+export const slotsOf = (iv: { bans?: number }) => iv.bans ?? 1;
+
+/** The change whose label belongs to the i-th decoded intervention of the package's link (a ban set decodes to one intervention for each ban). */
+export function changeAt(interventions: Proposal['interventions'], i: number): Proposal['interventions'][number] | undefined {
+  let at = 0;
+  for (const iv of interventions) {
+    at += slotsOf(iv);
+    if (i < at) return iv;
+  }
+  return undefined;
+}
+
+/** "Changes in this package (2, holding 22 turn bans)": the count of changes, and the individual bans when a ban set hides them. */
+export function changesSummary(p: Pick<Proposal, 'interventions' | 'turnBans'>): string {
+  const n = p.interventions.length;
+  return p.turnBans !== undefined && p.interventions.some((iv) => iv.bans !== undefined) ? `${n}, holding ${p.turnBans} turn bans` : `${n}`;
 }
 
 export interface Listed { group: ProposalGroup; proposal: Proposal }

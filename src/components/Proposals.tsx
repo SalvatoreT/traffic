@@ -12,7 +12,7 @@ import { checkThroughRoutes, ROUTE_CAVEAT } from '../lib/throughroutes';
 import { buildMockProposals } from '../fixtures/proposals';
 import { canTrace } from '../lib/redistribution-view';
 import {
-  allTrafficHeadline, allTrafficNote, allTrafficRows, beforeAfterPct, comparisonText, cutThroughHeadline, detourText, evidenceNote, fetchProposals, formatComputed, harmHeadline, INTERVAL_SCOPE, intervalText, periodsPhrase,
+  allTrafficHeadline, allTrafficNote, changesSummary, allTrafficRows, beforeAfterPct, comparisonText, cutThroughHeadline, detourText, evidenceNote, fetchProposals, formatComputed, harmHeadline, INTERVAL_SCOPE, intervalText, periodsPhrase,
   linkHash, listOptions, needsConfirm, objectiveTags, openReducer, parseProposals, proposalAnchor, provenanceLine, proposalNotices, proposalsUrl, seedsPhrase, signedNum, signedPct,
   type EvidenceStatus, type Listed, type LoadedHashes, type OptionComparison, type Proposal, type ProposalGroup, type ProposalsState, type Variant,
 } from '../lib/proposals';
@@ -249,7 +249,7 @@ function Card({ p, group, evidence, comparison, comparisonLabel, shareUrl, onCop
     ro.observe(head);
     return () => ro.disconnect();
   }, []);
-  const changes = <ul className="prop-ivs">{p.interventions.map((iv, i) => <li key={i}>{iv.label}</li>)}</ul>;
+  const changes = <ul className="prop-ivs">{p.interventions.map((iv, i) => <li key={i}>{iv.label}{iv.bans !== undefined && <span className="muted">. One change, {iv.bans} individual turn bans.</span>}</li>)}</ul>;
   return (
     <li className="prop-card" aria-labelledby={anchorId}>
       <div ref={headRef} className="prop-head">
@@ -273,8 +273,8 @@ function Card({ p, group, evidence, comparison, comparisonLabel, shareUrl, onCop
         {hasPic && confirmId !== hid && <DownloadImage net={bundle.network} index={index} p={p} ivs={ivs ?? []} areaName={bundle.entry.name} areaId={bundle.entry.id} status={calStatusText} openUrl={shareUrl} periodLabel={periodLabel} searchedPeriods={searched} runs={group.computed.seeds} evidence={evidence} />}
       </div>
       {p.interventions.length <= SHORT_LIST
-        ? <div className="prop-changes"><h4 className="prop-h">Changes</h4>{changes}</div>
-        : <details className="prop-d"><summary>Changes in this package ({p.interventions.length})</summary>{changes}</details>}
+        ? <div className="prop-changes"><h4 className="prop-h">Changes{p.turnBans !== undefined ? ` (${changesSummary(p)})` : ''}</h4>{changes}</div>
+        : <details className="prop-d"><summary>Changes in this package ({changesSummary(p)})</summary>{changes}</details>}
       <details className="prop-d">
         <summary>In words, and where these figures come from</summary>
         <p className="small">{p.summary}</p>

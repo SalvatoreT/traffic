@@ -72,7 +72,7 @@ impl Objective {
 
 /// Measures that close nothing to cars (candidate kinds).
 pub fn closes_nothing(c: &Cand) -> bool {
-    matches!(c.kind, "slow_street" | "speed_limit" | "one_way" | "control" | "traffic_circle" | "speed_hump" | "turn_ban")
+    matches!(c.kind, "slow_street" | "speed_limit" | "one_way" | "control" | "traffic_circle" | "speed_hump" | "turn_ban" | "ban_set")
 }
 
 /// Which candidates a beam for `obj` may use.

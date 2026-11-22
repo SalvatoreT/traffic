@@ -36,6 +36,7 @@ areas are data.
 - `npm run simulate -- --link "<url or #v1;...>"`: run one scenario headless and print JSON (`--find "<streets>"` looks up places; needs `npm run wasm` and the data; see `docs/run-locally.md`)
 - `npm run shard -- <inputs|assess|explore> ...`: split a heavy batch across child sessions and merge the results (`docs/sharded-runs.md`)
 - `npx tsx tools/membership-loop.ts [--dry-run]`: fit demand on the simulator's own route choice for every exported station (round 48; the published model's `simulatedMembership` entry is in `data/demand/<area>.config.json` since round 52, and the earlier `apply-candidate.py` scripts are in the archived changes; needs `calibrate` built and the laptop; `--dry-run` runs nothing)
+- `npx tsx tools/turn-ban-sets.ts [--ranked FILE]`: list the entry movements of the study area and write named turn-ban packages as scenario links (`target/turn-bans/packages.{json,md,tsv}`); `FILE` is the log of `explore --check-singles` that ranks the turn-ban candidates (`openspec/changes/perimeter-turn-bans`)
 - `npm run data:download`: fetch the published `/data` files over plain HTTPS (`--all` adds proposals, assumptions, results)
 - `npm run data:llms`: write `public/data/llms/*` (`llms.txt`, `llms-full.txt`, `<tab>.md`) from the data and `docs/`; run after `data:results` and before `data:push`
 - `npm run data:previews`: write `public/data/og/*` (link-preview cards and `index.json`); run after `data:results` and `data:llms`, before `data:push`

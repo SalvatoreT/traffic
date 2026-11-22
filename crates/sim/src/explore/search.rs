@@ -840,5 +840,5 @@ fn pick_finalists_capped(evals: &[Eval], cap: usize) -> Vec<usize> {
 }
 
 pub fn make_cands(study: &Study, base: &Baseline, p: &Params) -> Vec<Cand> {
-    super::cands::generate_for(study, &base.hot, p.candidates, &p.profile, p.periods.iter().map(String::as_str))
+    super::cands::generate_search(study, &base.hot, p)
 }
