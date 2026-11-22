@@ -2,6 +2,7 @@ import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Metrics } from '../types';
 import { NavLink } from './Anchor';
 import { CARDS, networkHealth, summarize, type CardDef } from '../lib/metrics';
+import { recoverySummary } from '../lib/recovery';
 import { EARLY_NOTE, isEarly, RUN_SECONDS } from '../lib/run';
 import { formatDiff, formatValue } from '../lib/format';
 
@@ -44,6 +45,7 @@ export function Comparison({ base, scen, comparing, finished, withheld = false, 
       )}
       {scen && isEarly(finished, elapsed) && <p className="notice" role="note">{EARLY_NOTE}</p>}
       {scen && <HealthLine scen={scen} base={comparing ? base : null} />}
+      {scen && <RecoveryNote scen={scen} base={comparing ? base : null} />}
       {CARDS.map((c) => <Fragment key={c.id}><CardTable c={c} base={base} scen={scen} comparing={comparing} />{c.id === 'cut' && intents}</Fragment>)}
       <p className="muted small" role="note">
         Figures are for the side streets inside the study area. Bounding streets and everything outside it are not measured.
@@ -107,5 +109,17 @@ function HealthLine({ scen, base }: { scen: Metrics; base: Metrics | null }) {
       <strong>The simulated network is oversaturated at this demand level.</strong>{' '}
       Real congestion is worse than the model shows, so treat comparisons with care. Try a lower demand setting or another period.
     </p>
+  );
+}
+
+/** Policy and use of the junction recovery rules, as text, for the scenario and, when comparing, today's traffic. */
+function RecoveryNote({ scen, base }: { scen: Metrics; base: Metrics | null }) {
+  return (
+    <section className="muted small" aria-label="Junction validity">
+      <ul>
+        <li>{base ? 'Scenario. ' : ''}{recoverySummary(scen).text}</li>
+        {base && <li>Baseline. {recoverySummary(base).text}</li>}
+      </ul>
+    </section>
   );
 }
