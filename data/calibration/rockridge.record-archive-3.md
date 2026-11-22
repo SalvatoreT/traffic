@@ -1,6 +1,6 @@
 # Rockridge baseline calibration record: archive, part 3
 
-Rounds thirty to thirty-three, moved unchanged from `rockridge.record.md` in round 43 (2026-11-18); rounds thirty-four to thirty-six, moved unchanged in round 50 (2026-11-19); round thirty-seven, moved unchanged in round 51 (2026-11-19); round thirty-eight, moved unchanged when round 51 closed (2026-11-20); rounds thirty-nine to forty-one, moved unchanged when round 52 was recorded (2026-11-20); round forty-two, moved unchanged when round 52 was adopted (2026-11-20); round forty-three, moved unchanged when round 53 was recorded (2026-11-21); rounds forty-four and forty-five, moved unchanged when derived targets were recorded (2026-11-22). Newer rounds are in `rockridge.record.md`; older ones in `rockridge.record-archive-2.md` and `rockridge.record-archive.md`.
+Rounds thirty to thirty-three, moved unchanged from `rockridge.record.md` in round 43 (2026-11-18); rounds thirty-four to thirty-six, moved unchanged in round 50 (2026-11-19); round thirty-seven, moved unchanged in round 51 (2026-11-19); round thirty-eight, moved unchanged when round 51 closed (2026-11-20); rounds thirty-nine to forty-one, moved unchanged when round 52 was recorded (2026-11-20); round forty-two, moved unchanged when round 52 was adopted (2026-11-20); round forty-three, moved unchanged when round 53 was recorded (2026-11-21); rounds forty-four and forty-five, moved unchanged when derived targets were recorded (2026-11-22); rounds forty-six and forty-seven, moved unchanged when round 55 was recorded (2026-11-22). Newer rounds are in `rockridge.record.md`; older ones in `rockridge.record-archive-2.md` and `rockridge.record-archive.md`.
 
 ## Forty-fifth round: a shorter Forest St green (change calibration-round-45)
 
@@ -1280,3 +1280,77 @@ Status `uncalibrated` (no experimental period, as in rounds 28 and 29). D16 hold
 - Station ids are link ids, so an import repair that renumbers links would break the frozen split; the lane repair of this round avoids that by acting on finished links.
 - Stored proposal results, text pages and previews were made on an older engine and are stale.
 
+## Forty-seventh round: one station over the Caldecott Lane on-ramp pair (change calibration-round-47)
+
+Passes the keep rule narrowly, changes no status, not adopted (2026-11-19). The published network 53c823f20d9165ed, demand 9cdebdabf05c4460 and cross-validation demand 2f9ae152b9bbf78e stand. Simulator fingerprint d45a275dd7be0713cec6a64394b7d8a9 throughout.
+
+### What was tried
+
+One Caltrans ramp row (WB ON FR CALDECOTT LANE, 1,350 ADT in 2024) is shared by the on-ramps at nodes 1695 and 1711, and the build split it into two stations of 61 veh/h each in the PM peak. A turn ban sends the flow to one ramp, so one target was unmeetable and the other too low. The candidate `caldecott-pair-sum` (`countFit.linkGroups`, `tools/lib/link-groups.ts`) replaces the two stations by one whose target is the row total, 122 veh/h in the PM. Shipped demand a97b0d3fdd118cc8, training demand b9464e7b65bdd542, network unchanged. The station file has 356 stations against 357; no other target changed. The split was not re-frozen. The keep rule (design D8) and the screen (D9) were written before any run.
+
+The run was on the project lead's laptop session on 2026-11-19, 7:51 to 8:27 AM Pacific, ten seeds. The gate reproduced the baseline hashes. The ten-seed baseline reproduced 74 of 92, 14 of 24, 70 of 77 and 14 of 19, and gave b = 1: ramp on 1695 passes (91 against 61, GEH 3.5) and ramp on 1711 fails (150 against 61, GEH 8.6). The three-seed screen passed.
+
+### Keep rule, ten seeds
+
+| Line | Baseline | Candidate | Line to meet | Result |
+| --- | --- | --- | --- | --- |
+| PM fitted, common stations | 73 of 90 | 74 of 90 | 73 | pass |
+| PM fitted, every station | 74 of 92 | 74 of 91 | 74 | pass, exactly on it |
+| PM held out | 14 of 24 | 14 of 24 | 14 | pass |
+| AM fitted | 70 of 77 | 72 of 77 | 70 | pass |
+| AM held out | 14 of 19 | 14 of 19 | 14 | pass |
+| D5 headline shares | 4 of 4, mean error 4.6 | 4 of 4, mean error 4.7 | 4 of 4 | pass |
+| Whole-street traversals | 8 of 8 | 8 of 8 | 8 of 8 | pass |
+| D16 stability | holds | holds | holds | pass |
+| Validation suite | 67 of 74 | 67 of 74 | 67 | pass |
+
+### Reported
+
+- The merged station still fails. PM simulated 219 against 122 counted, GEH 7.4; the baseline pair summed to 241. AM 225 against 103, GEH 9.5.
+- The fit moved flow between the two ramp links more than it cut the total. PM link 4080 fell from 91 to 31 and link 4058 rose from 150 to 187.
+- Five diagonal stations, PM (counted 178): shipped view 495 to 539, training view 1234 to 1253.
+- Flips: three fail to pass (Canning St 62nd to 63rd NB in the PM; Colby St 62nd to 63rd NB and 60th St Canning to Telegraph EB in the AM, the last borderline). None pass to fail apart from the member's pass lost to the merge.
+- Shattuck Ave NB, PM: 266 to 297 s.
+
+### Verdict
+
+Decision by the project lead, 2026-11-19: it passes narrowly and changes no status, so it is not adopted. The code stays on main, off by default, and may be combined with a later round.
+
+## Forty-sixth round: a count-derived ramp peak-hour factor (change calibration-round-46)
+
+Fails the screen, not adopted (2026-11-19). The published network 53c823f20d9165ed, demand 9cdebdabf05c4460 and cross-validation demand 2f9ae152b9bbf78e stand. Simulator fingerprint d45a275dd7be0713cec6a64394b7d8a9 throughout. No ten-seed assessment ran.
+
+### What was tried
+
+The ramp peak-hour factor K (`ramps.kFactor` 0.09, an unsourced ASSUMPTION) was replaced by a pooled ratio of counted PM ramp hours to ramp ADT (`countFit.rampK`, `tools/lib/ramp-k.ts`). The shipped view gives K 0.0734 from 5 counted ramps. The training view sees only 2 ramps because the split withholds three. `ramp-k-counted` requires 3 and falls back to 0.09 there; `ramp-k-counted-min2` accepts 2 and gets 0.0809. The 15 ADT x K stations (10 fitted, 5 held out) change in the shipped view. The keep rule (design D4) and the screen (D6) were written before any run.
+
+The run was on the project lead's laptop session on 2026-11-19, 7:03 to 7:44 AM Pacific (12 jobs, seeds 1 to 3, PM and AM). The gate reproduced the baseline hashes 53c823f20d9165ed, 9cdebdabf05c4460 and 2f9ae152b9bbf78e at the same fingerprint.
+
+| Candidate | Shipped demand | Training demand |
+| --- | --- | --- |
+| ramp-k-counted | 8a28540b43bc3a75 | 650b9f0e12d6f563 (periods equal to baseline) |
+| ramp-k-counted-min2 | 583834696da85cfd | 514c17c9f88af777 |
+
+### Screen: three seeds
+
+Stations within GEH 5 on seeds 1 to 3.
+
+| Run | PM fitted of 92 | PM held out of 24 | AM fitted of 77 | AM held out of 19 | PM gridlock in judged zone |
+| --- | --- | --- | --- | --- | --- |
+| baseline | 73 | 14 | 70 | 14 | none |
+| ramp-k-counted | 73 | 14 | 70 | 14 | 0.33 cars/h |
+| ramp-k-counted-min2 | 73 | 12 | 70 | 12 | 0.33 cars/h |
+
+Without the 15 changed stations, ramp-k-counted has PM fitted 71 of 89, the same as the baseline. The min2 held-out counts are 2 lower in each period, inside the screen's tolerance of 3.
+
+### Why both fail
+
+Screen D6 allows no car cleared from gridlock in the judged zone. In both candidates one car in one of three seeds was cleared at Alcatraz Ave / Racine St. That is 212 m from the study area, outside the 200 m judged zone. It counts because its blocked chain reached the zone. The buffer sensitivity is 0.00 at 100 m and 0.33 at 400 m. The rule was written before the run, so it was applied as written.
+
+### Beyond the screen (lead's judgment)
+
+The candidates show no improvement to pursue. PM, three-seed sum over the five diagonal stations (counted 178): shipped view baseline 520, both candidates 540; training view baseline 1253, ramp-k-counted 1253, min2 1228. Claremont Ave on-ramp (counted 598): shipped 794 to 783; min2 training 997 to 1054, although its stand-in target fell from 882 to 793. Telegraph Ave on-ramp, shipped: 913 to 774 (target 657 to 536). The shipped PM fitted flips cancel. Gains: Colby St 60th to 61st NB, Colby St Forest to McAuley NB, 62nd St Hillegass to Colby EB. Losses: 61st St Canning to Telegraph EB, McAuley St Colby to Ayala WB, Ayala Ave Hermann to Martin NB. The travel-time pass and fail pattern is unchanged.
+
+### Verdict
+
+Not adopted. The code is on main and off by default; `ramps.kFactor` 0.09 remains an unsourced ASSUMPTION. Next leads: round 47 (Caldecott Lane link-group station) and round 48 (simulated membership), both to run on the laptop.

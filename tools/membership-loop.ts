@@ -4,7 +4,7 @@
 //   npx tsx tools/membership-loop.ts [--area rockridge] [--views shipped,training] [--periods pm_peak,am_peak] [--seeds 1-10] [--iterations 3] [--jobs 4]
 //     [--dir target/membership-loop] [--report FILE] [--watch FILE] [--resume] [--dry-run]
 // --iterations is the cap on passes (default 3). The loop stops earlier when the stop rule holds after a pass in every view and period (STOP_RATIO in lib/membership-loop.ts); round 55 runs with a cap of 8.
-// --watch FILE names stations to follow pass by pass (report only; see openspec/changes/calibration-round-55/watch.json).
+// --watch FILE names stations to follow pass by pass (report only; see openspec/changes/archive/2026-11-22-calibration-round-55/watch.json).
 // --dry-run reads the stations file and the split, prints the stations the rule selects per view and period, the stations that stay static and the steps, and runs nothing.
 // Needs the demand config with the round 48 entry (apply-candidate.py), target/release/calibrate and the data files; every demand build writes into public/data and data/demand.
 import { spawn, spawnSync } from 'node:child_process';

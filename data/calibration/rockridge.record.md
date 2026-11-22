@@ -89,6 +89,77 @@ Claremont Ave: checked end to end. OSM lanes (3 with one forward and one backwar
 
 Ramp junctions: after joining all four SR-24 terminals are single signalized nodes (Aileen/Telegraph and Clifton/Claremont off-ramps, Hudson/Claremont and 56th/Telegraph on-ramps) with 2-lane ramp approaches at 35 mph. Mean discharge in the PM peak (seeds 1 to 3, measured before the third round): Aileen off-ramp 584 veh/h (offered 656), Clifton off-ramp 914 veh/h (offered about 1,025), on-ramps 783 and 555 veh/h. That is 290 to 460 veh/h per lane averaged over the hour; the signal gives the ramp 30 to 45% of the cycle and the shortfall is downstream spill-back on Claremont and Telegraph, not the ramp signal itself. Before the third round the remaining gridlock removals were mostly vehicles queued on the 4-lane freeway stub behind the single-lane Clifton off-ramp (26 of about 45 removals over six seeds at scale 0.3). The third round checked the ramp lanes against OSM: the off-ramps are tagged one lane for most of their length and two lanes (turn lanes left | left;through;right at Clifton, left | right at Aileen) on the final way before the signal, and the importer keeps that per segment (a test covers it), so no lane count is lost. After step M the stub accounts for about one removal per run.
 
+## Fifty-fifth round: the membership loop run to eight passes (stop rule not met, keep rule fails, not adopted) (2026-11-21)
+
+The stop rule never fired in eight passes. The keep rule fails and so does the improvement test. Not adopted, nothing published. The published model stays round 52 under the derived-targets scope: network 53c823f20d9165ed, demand 2d16d8f8eb0950ca, cross-validation demand e1a9d4bd50539355. The staged proposal search did not run, because it is gated on the keep rule. This is the third round in a row (53, 54, 55) that did not improve a judged line; see "Stopping point" below. The change is `calibration-round-55`; its evidence archive is on the development branch `salvatoret/peaceful-fermi-dlwt0u`, commit 73e8d5d, under `openspec/changes/calibration-round-55/evidence/laptop-run/` (132 parts, 462 files, 25,076,720 bytes; parts are not kept on `main`).
+
+### What was tried
+
+Round 54 ended with the membership loop never having met its stop rule in three passes. Round 55 raised the cap to eight passes (`--iterations 8`) with the stop rule, the builds and the pooling unchanged, to see whether the loop settles and whether a settled loop moves the held-out stations. The code added for it is on `main`: `stopDecision` names the lines that block the stop rule and the loop says so at the cap, `--watch` writes per-pass diagnostics for named stations, `pools/` keeps a copy of each pass's pooled files, and `tools/lib/loop-diagnostics.ts` computes the diagnostics. The default stays three passes, so the published result reproduces.
+
+### Run
+
+Laptop, 2026-11-21, 6:40:56 to 9:15:36 PM Pacific: 9280 s for eight passes (round 52's three passes took 3777 s). The stop rule was not met. Passes 0 to 2 are byte-identical to the derived-targets loop, and the pass 2 pools equal the published membership files apart from the recorded run paths. From pass 4 on the membership ratio is below 1 everywhere, and one flow ratio or another sits just above 1 on each pass, in a different cell each time. That points to a noise floor and not to drift.
+
+Candidate hashes: demand dee59045466ceb31, cross-validation demand 130e9987b7942f2a, membership 2c3d81eb2306810c, training membership ecae60248a8d9176. Simulator fingerprint unchanged at 6b886c8f52ee07397773ddd0ebbcb447. Validation 67 of 74, identical to the committed result.
+
+### Keep rule
+
+Baseline (published model, derived-targets scope) to candidate, on seeds 1 to 10 and on seeds 11 to 20.
+
+| Line | Seeds 1-10 | Seeds 11-20 | Met |
+| --- | --- | --- | --- |
+| PM recent fitted | 79 to 78 of 89 | 80 to 79 of 89 | no, both sets |
+| PM recent held out | 15 to 15 of 18 | 15 to 15 of 18 | yes |
+| AM recent fitted | 72 to 74 of 77 | 74 to 72 of 77 | no on seeds 11-20 |
+| AM recent held out | 15 to 15 of 19 | 15 to 15 of 19 | yes |
+| D5 headline shares (PM) | 4 of 4, mean error 3.8 to 4.3 | 4 of 4, mean error 3.2 to 4.0 | yes |
+| Whole-street traversals | 8 of 8 | 8 of 8 | yes |
+| D16 | holds in every period | holds in every period | yes |
+
+The improvement test (a held-out line higher than the baseline on both seed sets) fails: PM held out is 15 of 18 and AM held out 15 of 19 on both sets, before and after.
+
+### Held-out misses
+
+The seven judged held-out misses, simulated on the cross-validation demand (veh/h, mean of ten seeds), baseline to candidate.
+
+| Period | Station | Counted | Seeds 1-10 | Seeds 11-20 |
+| --- | --- | --- | --- | --- |
+| AM | McAuley St Howell St to Canning St, EB | 4 | 64 to 68 | 72 to 62 |
+| AM | 60th St Howell St to Canning St, EB | 6 | 54 to 61 | 57 to 50 |
+| AM | 58th St Canning St to Vicente St, EB | 7 | 42 to 46 | 43 to 42 |
+| AM | 63rd St Dana St to Canning St, EB | 60 | 23 to 24 | 23 to 25 |
+| PM | McAuley St Howell St to Canning St, EB | 12 | 60 to 61 | 77 to 69 |
+| PM | Canning St 59th St to McAuley St, SB | 49 | 13 to 12 | 12 to 11 |
+| PM | 60th St Howell St to Canning St, EB | 23 | 57 to 56 | 61 to 59 |
+
+All seven stay about where they were. The in-loop diagonal sum in the PM peak (five stations, counted 178) fell: shipped simulated 373 at pass 2 to 285 at pass 7, training 416 to 325. The ten-seed judge did not move any held-out station with it. The only clear gain is PM Colby St SB whole street: 75 to 61 on seeds 1 to 10 and 67 to 63 on seeds 11 to 20, against 39 observed; that line already passed.
+
+### Stop rule at a fixed point
+
+A synthetic check with the repository's own `iterationShift` (design of `calibration-round-55`, "Noise floor of the stop rule") shows that at an exact fixed point each of the four lines fires only about half the time. With seeds independent between passes, two passes from the same distribution gave a flow ratio with median 0.997 and the rule fired on 107 of 200 draws; a drift of 2% of station flow already blocks it. So `STOP_RATIO = 1` rarely holds on all four lines at once. It stays an ASSUMPTION with no source and is unchanged: the project lead asked that it not be loosened to make it fire. The eight passes are best read as a loop at its noise floor, not as a loop that failed to converge.
+
+### Laptop script faults
+
+`a.zsh` failed at the fetch (the SSH agent was locked; fetching over HTTPS with the gh login worked, and the runbook now says so) and `b.zsh` line 48 had unquoted `--ignore` patterns. Both are fixed in the change's `laptop/` folder.
+
+### Verdict
+
+Keep rule fails (PM fitted on both seed sets, AM fitted on seeds 11 to 20). Improvement test fails. Not adopted; the published model stays round 52.
+
+### Stopping point
+
+Rounds 53, 54 and 55 failed in a row: none improved a judged line. That meets the project lead's stopping condition (goal of 2026-11-21, item 5), so calibration work stops here. Rockridge stays "Not calibrated": the held-out rule needs more than 85% of recent hourly counts within GEH 5, that is 16 of 18 in the PM peak and 17 of 19 in the AM peak, and the published model has 15 of 18 and 15 of 19.
+
+The published model and its numbers: held out PM 15 of 18, AM 15 of 19. Baseline through cars per hour, all-period mean 522.5 (PM 793.7, AM 387.0, midday 386.8). Top proposal p1: 522.5 to 135.7 through cars per hour, -74.0%.
+
+Open leads, all of which need field observation and not more modeling:
+
+- The green time and cycle of the Forest St approach at the Claremont, Colby and Forest signal. They are unobserved; the model assumes about 35 s of a 79 s cycle in the PM peak.
+- The stop control for eastbound 62nd St at Canning St.
+- The Howell St and Ayala Ave barricade.
+- The Martin Luther King Jr Way on-ramp (node 280), an open derived-target item: on the cross-validation demand it reads 652 (PM) and 648 (AM) against derived targets of 190 and 59.
+
 ## Fifty-fourth round: control delay charged once in the router (fails the stage 1 bar, not adopted, code not merged) (2026-11-21)
 
 Fails the stage 1 bar in both periods. Stage 2 never ran. Not adopted. The published model stays round 52: network 53c823f20d9165ed, demand 2d16d8f8eb0950ca, cross-validation demand e1a9d4bd50539355 (the training view built by the derived-targets job), config 2405ff02c92b2837, now scored under the derived-targets scope. Second failed round in a row after round 53. No user decision was involved except the lead for round 55 below. The change is archived with its evidence in `openspec/changes/archive/2026-11-22-calibration-round-54/` (laptop stage 1 evidence at ed612b6 on the development branch, run from 1334fec). The numbers below were checked against the stage 1 score files.
@@ -1399,81 +1470,6 @@ Fails the keep rule on three lines: PM held out 13 of 24 (line 14), D5 2 of 4 (l
 
 Run the same loop with the totals of the uncounted gates held fixed, so that offered demand cannot grow at gates with no count. The loop then keeps what helped (fitted counts and the diagonal) without the added load on the SR-24 eastbound entry and the Claremont gates. The screen should also add a backlog line, since it passed this candidate.
 
-## Forty-seventh round: one station over the Caldecott Lane on-ramp pair (change calibration-round-47)
-
-Passes the keep rule narrowly, changes no status, not adopted (2026-11-19). The published network 53c823f20d9165ed, demand 9cdebdabf05c4460 and cross-validation demand 2f9ae152b9bbf78e stand. Simulator fingerprint d45a275dd7be0713cec6a64394b7d8a9 throughout.
-
-### What was tried
-
-One Caltrans ramp row (WB ON FR CALDECOTT LANE, 1,350 ADT in 2024) is shared by the on-ramps at nodes 1695 and 1711, and the build split it into two stations of 61 veh/h each in the PM peak. A turn ban sends the flow to one ramp, so one target was unmeetable and the other too low. The candidate `caldecott-pair-sum` (`countFit.linkGroups`, `tools/lib/link-groups.ts`) replaces the two stations by one whose target is the row total, 122 veh/h in the PM. Shipped demand a97b0d3fdd118cc8, training demand b9464e7b65bdd542, network unchanged. The station file has 356 stations against 357; no other target changed. The split was not re-frozen. The keep rule (design D8) and the screen (D9) were written before any run.
-
-The run was on the project lead's laptop session on 2026-11-19, 7:51 to 8:27 AM Pacific, ten seeds. The gate reproduced the baseline hashes. The ten-seed baseline reproduced 74 of 92, 14 of 24, 70 of 77 and 14 of 19, and gave b = 1: ramp on 1695 passes (91 against 61, GEH 3.5) and ramp on 1711 fails (150 against 61, GEH 8.6). The three-seed screen passed.
-
-### Keep rule, ten seeds
-
-| Line | Baseline | Candidate | Line to meet | Result |
-| --- | --- | --- | --- | --- |
-| PM fitted, common stations | 73 of 90 | 74 of 90 | 73 | pass |
-| PM fitted, every station | 74 of 92 | 74 of 91 | 74 | pass, exactly on it |
-| PM held out | 14 of 24 | 14 of 24 | 14 | pass |
-| AM fitted | 70 of 77 | 72 of 77 | 70 | pass |
-| AM held out | 14 of 19 | 14 of 19 | 14 | pass |
-| D5 headline shares | 4 of 4, mean error 4.6 | 4 of 4, mean error 4.7 | 4 of 4 | pass |
-| Whole-street traversals | 8 of 8 | 8 of 8 | 8 of 8 | pass |
-| D16 stability | holds | holds | holds | pass |
-| Validation suite | 67 of 74 | 67 of 74 | 67 | pass |
-
-### Reported
-
-- The merged station still fails. PM simulated 219 against 122 counted, GEH 7.4; the baseline pair summed to 241. AM 225 against 103, GEH 9.5.
-- The fit moved flow between the two ramp links more than it cut the total. PM link 4080 fell from 91 to 31 and link 4058 rose from 150 to 187.
-- Five diagonal stations, PM (counted 178): shipped view 495 to 539, training view 1234 to 1253.
-- Flips: three fail to pass (Canning St 62nd to 63rd NB in the PM; Colby St 62nd to 63rd NB and 60th St Canning to Telegraph EB in the AM, the last borderline). None pass to fail apart from the member's pass lost to the merge.
-- Shattuck Ave NB, PM: 266 to 297 s.
-
-### Verdict
-
-Decision by the project lead, 2026-11-19: it passes narrowly and changes no status, so it is not adopted. The code stays on main, off by default, and may be combined with a later round.
-
-## Forty-sixth round: a count-derived ramp peak-hour factor (change calibration-round-46)
-
-Fails the screen, not adopted (2026-11-19). The published network 53c823f20d9165ed, demand 9cdebdabf05c4460 and cross-validation demand 2f9ae152b9bbf78e stand. Simulator fingerprint d45a275dd7be0713cec6a64394b7d8a9 throughout. No ten-seed assessment ran.
-
-### What was tried
-
-The ramp peak-hour factor K (`ramps.kFactor` 0.09, an unsourced ASSUMPTION) was replaced by a pooled ratio of counted PM ramp hours to ramp ADT (`countFit.rampK`, `tools/lib/ramp-k.ts`). The shipped view gives K 0.0734 from 5 counted ramps. The training view sees only 2 ramps because the split withholds three. `ramp-k-counted` requires 3 and falls back to 0.09 there; `ramp-k-counted-min2` accepts 2 and gets 0.0809. The 15 ADT x K stations (10 fitted, 5 held out) change in the shipped view. The keep rule (design D4) and the screen (D6) were written before any run.
-
-The run was on the project lead's laptop session on 2026-11-19, 7:03 to 7:44 AM Pacific (12 jobs, seeds 1 to 3, PM and AM). The gate reproduced the baseline hashes 53c823f20d9165ed, 9cdebdabf05c4460 and 2f9ae152b9bbf78e at the same fingerprint.
-
-| Candidate | Shipped demand | Training demand |
-| --- | --- | --- |
-| ramp-k-counted | 8a28540b43bc3a75 | 650b9f0e12d6f563 (periods equal to baseline) |
-| ramp-k-counted-min2 | 583834696da85cfd | 514c17c9f88af777 |
-
-### Screen: three seeds
-
-Stations within GEH 5 on seeds 1 to 3.
-
-| Run | PM fitted of 92 | PM held out of 24 | AM fitted of 77 | AM held out of 19 | PM gridlock in judged zone |
-| --- | --- | --- | --- | --- | --- |
-| baseline | 73 | 14 | 70 | 14 | none |
-| ramp-k-counted | 73 | 14 | 70 | 14 | 0.33 cars/h |
-| ramp-k-counted-min2 | 73 | 12 | 70 | 12 | 0.33 cars/h |
-
-Without the 15 changed stations, ramp-k-counted has PM fitted 71 of 89, the same as the baseline. The min2 held-out counts are 2 lower in each period, inside the screen's tolerance of 3.
-
-### Why both fail
-
-Screen D6 allows no car cleared from gridlock in the judged zone. In both candidates one car in one of three seeds was cleared at Alcatraz Ave / Racine St. That is 212 m from the study area, outside the 200 m judged zone. It counts because its blocked chain reached the zone. The buffer sensitivity is 0.00 at 100 m and 0.33 at 400 m. The rule was written before the run, so it was applied as written.
-
-### Beyond the screen (lead's judgment)
-
-The candidates show no improvement to pursue. PM, three-seed sum over the five diagonal stations (counted 178): shipped view baseline 520, both candidates 540; training view baseline 1253, ramp-k-counted 1253, min2 1228. Claremont Ave on-ramp (counted 598): shipped 794 to 783; min2 training 997 to 1054, although its stand-in target fell from 882 to 793. Telegraph Ave on-ramp, shipped: 913 to 774 (target 657 to 536). The shipped PM fitted flips cancel. Gains: Colby St 60th to 61st NB, Colby St Forest to McAuley NB, 62nd St Hillegass to Colby EB. Losses: 61st St Canning to Telegraph EB, McAuley St Colby to Ayala WB, Ayala Ave Hermann to Martin NB. The travel-time pass and fail pattern is unchanged.
-
-### Verdict
-
-Not adopted. The code is on main and off by default; `ramps.kFactor` 0.09 remains an unsourced ASSUMPTION. Next leads: round 47 (Caldecott Lane link-group station) and round 48 (simulated membership), both to run on the laptop.
-
 ## Router diagnosis for the diagonal (diagnostic, nothing adopted) (2026-11-19)
 
 Nothing shipped changed. Published network 53c823f2, demand 9cdebdab. Every run was a single seed (seed 1, PM peak, 60 min) in the cloud container, so every figure below is a diagnostic, not an assessment result. One seed moves the fitted-station pass count by about 3 and the diagonal sum by 10 to 15% between neighboring settings. The runs used the throwaway branch `router-diagnosis` (6bf5f6a), which adds environment switches to `eff.rs` and `sim.rs` plus scoring scripts under `tools/diag/`. It changes the simulator fingerprint source and is not for merge. The Shattuck tests changed network data only and ran on the original binary (fingerprint d45a275dd7be0713cec6a64394b7d8a9).
@@ -1545,4 +1541,4 @@ The decisions and verification are in [the measurement and assignment change](..
 
 ## Older rounds
 
-The thirtieth to forty-fifth rounds are in `rockridge.record-archive-3.md`. The seventeenth to twenty-ninth rounds are in `rockridge.record-archive-2.md`. The eleventh to sixteenth rounds, the initial-loading note, the tenth round and everything before it (ninth to fourth, sixth, fifth, and the third-round history) are in `rockridge.record-archive.md`, moved unchanged.
+The thirtieth to forty-seventh rounds are in `rockridge.record-archive-3.md`. The seventeenth to twenty-ninth rounds are in `rockridge.record-archive-2.md`. The eleventh to sixteenth rounds, the initial-loading note, the tenth round and everything before it (ninth to fourth, sixth, fifth, and the third-round history) are in `rockridge.record-archive.md`, moved unchanged.

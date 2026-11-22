@@ -492,7 +492,7 @@ describe('per-pass diagnostics (report only)', () => {
     expect(logs.some((l) => /^WARNING/.test(l))).toBe(false);
   });
   it('the committed watch file names stations that exist, have a target in their period and are recent', () => {
-    const w = JSON.parse(readFileSync(join(import.meta.dirname, '../openspec/changes/calibration-round-55/watch.json'), 'utf8')) as WatchFile;
+    const w = JSON.parse(readFileSync(join(import.meta.dirname, '../openspec/changes/archive/2026-11-22-calibration-round-55/watch.json'), 'utf8')) as WatchFile;
     const st = (JSON.parse(readFileSync(join(import.meta.dirname, '../data/demand/rockridge.stations.json'), 'utf8')) as { stations: StationInfo[] }).stations;
     expect(w.heldOutMisses.length).toBe(7);
     expect(w.diagonal.length).toBe(5);
