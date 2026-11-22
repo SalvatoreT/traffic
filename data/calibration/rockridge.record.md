@@ -157,7 +157,7 @@ Change `derived-targets-not-judged`. No round of demand fitting: the shipped mod
 - The same rule applies to every station of that kind: the 8 AADT stations (6 link stations, 2 gates) and the 16 ramp ADT stations make 24 targets. Of the 86 stations the frozen draw holds out, 13 are derived targets. They are never held out: they are in the fit in both views. The frozen split is not touched (its hash stays `be72380b485ec5fc`), so the rule is applied by the readers.
 - The station rule keeps its thresholds (GEH below 5 at more than 85% of hourly counts, 10 or more recent held-out stations to judge). Only the scope changes.
 - Publishing is authorized by the standing goal of 2026-11-21, because the shipped model's traffic figures are unchanged.
-- Published 2026-11-21 at about 6:45 PM Pacific: `data:push` from the cloud session, then the live site read back (`areas.json` 49a37a79b76d7f82, assumptions 2fa790a049673ff6, demand 2d16d8f8eb0950ca, proposals c5cbe25f39e61414 and `llms.txt` equal the local files; the home page shows the new note and no proposal is marked out of date). The cross-validation demand e1a9d4bd50539355 is not a pushed file; it is in the laptop archive on the development branch at f7ed0fe.
+- Published 2026-11-21 at about 6:20 PM Pacific: `data:push` from the cloud session, then the live site read back (`areas.json` 49a37a79b76d7f82, assumptions 2fa790a049673ff6, demand 2d16d8f8eb0950ca, proposals c5cbe25f39e61414 and `llms.txt` equal the local files; the home page shows the new note and no proposal is marked out of date). The cross-validation demand e1a9d4bd50539355 is not a pushed file; it is in the laptop archive on the development branch at f7ed0fe.
 
 ### Method
 
