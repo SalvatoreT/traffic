@@ -1,3 +1,5 @@
+> Round 32 ran on 2026-11-16 (`data/calibration/rockridge.record-archive-*.md`). Archived late, on 2026-11-22; its requirements were merged into the specs by hand first, so the archive ran with --skip-specs.
+
 ## Why
 
 After round 31 the PM peak still sends too many through cars down Hillegass Ave and Colby St southbound (155 and 160 an hour against counted ranges of 79 to 120 and 39 to 117), and Forest St eastbound carries four times its count. The delay-feedback fit can bring the southbound blocks into range, but only by loading the arterials until the PM peak is unstable. The lead's reading is that the arterials have a capacity deficit: the real ones carry their counted PM volumes without gridlock and the model's cannot. Rounds 29 and 30 named the candidates (lane use around a left-turn queue, the closely spaced signals at the SR-24 interchange and at 52nd St and 51st St, the College Ave / Claremont Ave / 62nd St signal) and did not try them. This round tries each as its own measured step and keeps a step only when both the validation suite and the network improve.
