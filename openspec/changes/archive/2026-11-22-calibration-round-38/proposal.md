@@ -1,3 +1,5 @@
+> Round 38 ran on 2026-11-17 (`data/calibration/rockridge.record-archive-*.md`). Archived late, on 2026-11-22; its requirements were merged into the specs by hand first, so the archive ran with --skip-specs.
+
 ## Why
 
 On 2026-11-16 the project lead kept the current model: the delay-feedback refit is not adopted and the entry-backlog check stays network-wide. The refit reached the cut-through ranges partly by sending too little traffic toward the study area (Telegraph Ave at Alcatraz Ave, north leg, 763 veh/h against 1,064 counted) and by leaving 370 to 460 trips waiting at far entries. This round goes after two measurable errors in the shipped model instead. Telegraph Ave carries 1,307 veh/h at the Alcatraz Ave north leg, a fitted station counted at 1,064. And about 143 to 206 trips per PM seed are still waiting at the SR-24 mainline gate at the end of the hour.
